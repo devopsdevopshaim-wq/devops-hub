@@ -14,6 +14,7 @@ docker compose version >/dev/null || { red "Docker Compose v2 is missing (docker
 
 if command -v nvidia-smi >/dev/null && nvidia-smi >/dev/null 2>&1; then
   grn "GPU: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | head -1)"
+  VRAM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1 | tr -dc 0-9)
 else
   red "nvidia-smi failed - no NVIDIA GPU/driver found. HunyuanVideo needs an NVIDIA GPU; only Seedance (API) will work."
 fi
@@ -29,9 +30,18 @@ if [ ! -f .env ]; then
   sed -i.bak "s#^GATEWAY_API_KEY=.*#GATEWAY_API_KEY=$key#" .env && rm -f .env.bak
   grn "Created .env with a random GATEWAY_API_KEY"
 fi
+MODE=${1:-}
+if [ -n "${VRAM:-}" ] && [ "$VRAM" -lt 20000 ] && [ -z "$MODE" ]; then
+  red "Only ${VRAM} MiB of VRAM - switching to the fp8 HunyuanVideo model (bf16 needs 24GB)."
+  MODE=--fp8
+fi
+if [ -n "${VRAM:-}" ] && [ "$VRAM" -le 12288 ] && grep -q '^COMFYUI_ARGS=\s*$' .env; then
+  sed -i.bak 's#^COMFYUI_ARGS=.*#COMFYUI_ARGS=--lowvram#' .env && rm -f .env.bak
+  red "Low-VRAM card: set COMFYUI_ARGS=--lowvram in .env"
+fi
 mkdir -p data/{models,output,input,custom_nodes,user,gateway,n8n}
 
-case "${1:-}" in
+case "$MODE" in
   --no-models) ;;
   --fp8) scripts/download-models.sh --fp8 ;;
   *) scripts/download-models.sh ;;

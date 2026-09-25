@@ -23,7 +23,15 @@ $gpu = $null
 if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
     $gpu = & nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>$null
 }
-if ($gpu) { Ok "GPU: $($gpu | Select-Object -First 1)" }
+$vramMiB = 0
+if ($gpu) {
+    Ok "GPU: $($gpu | Select-Object -First 1)"
+    if (($gpu | Select-Object -First 1) -match '(\d+)\s*MiB') { $vramMiB = [int]$Matches[1] }
+}
+if ($vramMiB -gt 0 -and $vramMiB -lt 20000 -and -not $Fp8) {
+    Write-Host "Only $vramMiB MiB of VRAM - switching to the fp8 HunyuanVideo model (the bf16 one needs 24GB)." -ForegroundColor Yellow
+    $Fp8 = [switch]$true
+}
 else { Bad 'nvidia-smi failed - install the latest NVIDIA driver. Without it only Seedance (API) will work.' }
 
 Write-Host 'Checking that Docker can use the GPU (first run downloads a ~3GB image)...'
@@ -38,6 +46,15 @@ if (-not (Test-Path .env)) {
     $text = [IO.File]::ReadAllText((Resolve-Path .env.example)) -replace '(?m)^GATEWAY_API_KEY=.*$', "GATEWAY_API_KEY=$key"
     [IO.File]::WriteAllText((Join-Path (Get-Location) '.env'), $text, (New-Object Text.UTF8Encoding $false))
     Ok 'Created .env with a random GATEWAY_API_KEY'
+}
+if ($vramMiB -gt 0 -and $vramMiB -le 12288) {
+    $envPath = Join-Path (Get-Location) '.env'
+    $text = [IO.File]::ReadAllText($envPath)
+    if ($text -match '(?m)^COMFYUI_ARGS=\s*$') {
+        $text = $text -replace '(?m)^COMFYUI_ARGS=\s*$', 'COMFYUI_ARGS=--lowvram'
+        [IO.File]::WriteAllText($envPath, $text, (New-Object Text.UTF8Encoding $false))
+        Write-Host 'Low-VRAM card: set COMFYUI_ARGS=--lowvram in .env' -ForegroundColor Yellow
+    }
 }
 foreach ($d in 'models', 'output', 'input', 'custom_nodes', 'user', 'gateway', 'n8n') {
     New-Item -ItemType Directory -Force -Path "data/$d" | Out-Null

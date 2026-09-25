@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 M=data/models
-HF=https://huggingface.co
+HF=${HF_BASE:-https://huggingface.co}
 REPO=$HF/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files
 
 fetch() {  # url dest
