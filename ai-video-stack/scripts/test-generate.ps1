@@ -1,12 +1,18 @@
 # Smoke test from Windows: generates one short video through the gateway and waits for it.
 #   powershell -ExecutionPolicy Bypass -File scripts\test-generate.ps1 [-Provider auto|hunyuan|seedance] [-Prompt "..."]
-param([string]$Provider = 'auto', [string]$Prompt = 'a red fox running through snow, cinematic, golden hour')
+#     [-Width 480] [-Height 320] [-Frames 25] [-Steps 20]   (small defaults so it also fits 6-8GB laptop GPUs)
+param(
+    [string]$Provider = 'auto',
+    [string]$Prompt = 'a red fox running through snow, cinematic, golden hour',
+    [int]$Width = 480, [int]$Height = 320, [int]$Frames = 25, [int]$Steps = 20
+)
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)
 $key = ((Get-Content .env | Where-Object { $_ -match '^GATEWAY_API_KEY=' }) -split '=', 2)[1].Trim()
 $gw = if ($env:GW) { $env:GW } else { 'http://127.0.0.1:8000' }
 $headers = @{ 'X-API-Key' = $key }
-$body = @{ provider = $Provider; prompt = $Prompt; frames = 33; steps = 20 } | ConvertTo-Json
+$body = @{ provider = $Provider; prompt = $Prompt; width = $Width; height = $Height; frames = $Frames; steps = $Steps } | ConvertTo-Json
+Write-Host "$Provider ${Width}x$Height, $Frames frames, $Steps steps - on a small GPU this can take a long time"
 $job = Invoke-RestMethod "$gw/v1/generate" -Method Post -Headers $headers -ContentType 'application/json' -Body $body
 Write-Host "job $($job.job_id)"
 do {
