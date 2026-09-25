@@ -59,6 +59,34 @@ scripts/setup.sh --fp8    # 12-16GB card (also add COMFYUI_ARGS=--lowvram to .en
 scripts/doctor.sh         # checks every link in the chain and shows what is broken
 ```
 
+### Windows
+
+Use **PowerShell**, not the old `cmd` prompt, and do not work in
+`C:\Windows\System32` because Windows blocks creating folders there.
+Install first:
+
+1. [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
+   with *Use the WSL 2 based engine* turned on. Start it and wait
+   for "Engine running".
+2. The latest NVIDIA driver (it includes GPU support for WSL2).
+3. [Git for Windows](https://git-scm.com/download/win).
+
+Then, in PowerShell:
+
+```powershell
+cd $HOME
+git clone -b claude/comfyui-hunyuanvideo-seedance-setup-4vy1gx https://github.com/devopsdevopshaim-wq/devops-hub.git
+cd devops-hub\ai-video-stack
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1          # 24GB+ card; add -Fp8 for 12-16GB
+powershell -ExecutionPolicy Bypass -File scripts\doctor.ps1
+powershell -ExecutionPolicy Bypass -File scripts\test-generate.ps1  # one short test video
+powershell -ExecutionPolicy Bypass -File scripts\quick-tunnel.ps1   # public URL for n8n Cloud
+```
+
+Every `.sh` script has a `.ps1` twin with the same behavior.
+
+### What setup does
+
 `setup.sh` checks that Docker can see the GPU, creates `.env` with a
 random API key, downloads the HunyuanVideo weights (resumable), and
 starts everything. The ComfyUI UI is at `http://127.0.0.1:8188`.

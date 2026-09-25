@@ -29,7 +29,7 @@ if [ -n "$status" ]; then
 import json,sys
 s=json.load(sys.stdin); c=s["comfyui"]; m=c.get("missing_hunyuan_models")
 print("       comfyui:", "ok" if c["ok"] else c.get("error"), "| devices:", c.get("devices"))
-print("       hunyuan models missing:", m or "none")
+print("       hunyuan models missing:", m or "none" if c["ok"] else "not checked (ComfyUI unreachable)")
 print("       seedance configured:", s["seedance"]["configured"], "| model:", s["seedance"]["model"])'
 else
   bad "gateway /v1/status failed (wrong GATEWAY_API_KEY?)"

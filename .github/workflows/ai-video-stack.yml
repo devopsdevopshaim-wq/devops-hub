@@ -28,6 +28,16 @@ jobs:
           git diff --exit-code n8n/workflows/
       - name: Shell scripts parse
         run: bash -n scripts/*.sh comfyui/entrypoint.sh
+      - name: PowerShell scripts parse
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($f in Get-ChildItem scripts/*.ps1) {
+            $errs = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$null, [ref]$errs) | Out-Null
+            foreach ($e in $errs) { Write-Host "$($f.Name):$($e.Extent.StartLineNumber) $($e.Message)"; $failed = $true }
+          }
+          if ($failed) { exit 1 }
       - name: docker compose config is valid
         run: docker compose config -q
       - name: Gateway image builds
