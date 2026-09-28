@@ -116,7 +116,6 @@ window.APP_DATA = (function () {
         { name: 'פארק תמנע', c: [29.7869, 34.9867] },
         { name: 'הקניון האדום', c: [29.7803, 34.9531] }
       ],
-      photo: 'https://images.unsplash.com/photo-1578922746465-3a80a228f223?w=1200&q=70',
       poster: { sky: ['#F7B267', '#F4845F'], sun: '#FFE5A8', land: '#B5543C', far: '#D9774F', icon: 'palms', ink: '#3B1F1A' }
     },
     {
@@ -169,7 +168,6 @@ window.APP_DATA = (function () {
         { name: 'מוזיאון ישראל', c: [31.7722, 35.2045] },
         { name: 'יד ושם', c: [31.7741, 35.1754] }
       ],
-      photo: 'https://images.unsplash.com/photo-1552423314-cf29ab68ad73?w=1200&q=70',
       poster: { sky: ['#F3D9A4', '#E8B26A'], sun: '#FFF3D1', land: '#A8763E', far: '#C99A5B', icon: 'walls', ink: '#3F2A12' }
     },
     {
@@ -221,7 +219,6 @@ window.APP_DATA = (function () {
         { name: 'נמל תל אביב', c: [32.0973, 34.7735] },
         { name: 'שרונה', c: [32.0719, 34.7867] }
       ],
-      photo: 'https://images.unsplash.com/photo-1544971587-b842c27f8e14?w=1200&q=70',
       poster: { sky: ['#9ED8DB', '#F6E3B4'], sun: '#FFF7E0', land: '#2B7A78', far: '#DEC49A', icon: 'city-sea', ink: '#153B3A' }
     },
     {
@@ -271,7 +268,6 @@ window.APP_DATA = (function () {
         { name: 'כפר נחום', c: [32.8810, 35.5750] },
         { name: 'ראש פינה', c: [32.9689, 35.5421] }
       ],
-      photo: 'https://images.unsplash.com/photo-1558642084-fd07fae5282e?w=1200&q=70',
       poster: { sky: ['#BFE0C8', '#F2E8C9'], sun: '#FFFBEA', land: '#4E7F52', far: '#8DB38B', icon: 'hills-lake', ink: '#1F3A22' }
     },
 
@@ -330,7 +326,6 @@ window.APP_DATA = (function () {
         { name: 'מונמרטר', c: [48.8867, 2.3431] },
         { name: 'לה מארה', c: [48.8575, 2.3622] }
       ],
-      photo: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1200&q=70',
       poster: { sky: ['#C7D3E8', '#F4D6C6'], sun: '#FFF1E6', land: '#3E4E6C', far: '#8A9BBB', icon: 'eiffel', ink: '#1E2A40' }
     },
     {
@@ -387,7 +382,6 @@ window.APP_DATA = (function () {
         { name: 'שוק בורו', c: [51.5055, -0.091] },
         { name: 'קמדן', c: [51.5416, -0.1462] }
       ],
-      photo: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=1200&q=70',
       poster: { sky: ['#B8C4CC', '#E6D5C3'], sun: '#F5EDE3', land: '#6B2E2E', far: '#8C9AA5', icon: 'bigben', ink: '#2A1616' }
     },
     {
@@ -444,7 +438,6 @@ window.APP_DATA = (function () {
         { name: 'הוותיקן', c: [41.9022, 12.4539] },
         { name: 'הגטו היהודי', c: [41.8925, 12.4777] }
       ],
-      photo: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1200&q=70',
       poster: { sky: ['#F5C98B', '#E9A26B'], sun: '#FFF0CF', land: '#9A4A2F', far: '#C98760', icon: 'colosseum', ink: '#3A1B10' }
     },
     {
@@ -500,7 +493,6 @@ window.APP_DATA = (function () {
         { name: 'לה בוקריה', c: [41.3817, 2.1716] },
         { name: 'ברצלונטה', c: [41.3784, 2.1925] }
       ],
-      photo: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=1200&q=70',
       poster: { sky: ['#F9D56E', '#F28F3B'], sun: '#FFF6D5', land: '#C8553D', far: '#588B8B', icon: 'sagrada', ink: '#3A1A12' }
     },
     {
@@ -557,7 +549,6 @@ window.APP_DATA = (function () {
         { name: 'ליקבטוס', c: [37.9819, 23.7437] },
         { name: 'נמל פיראוס', c: [37.9425, 23.6466] }
       ],
-      photo: 'https://images.unsplash.com/photo-1555993539-1732b0258235?w=1200&q=70',
       poster: { sky: ['#A7D3F2', '#FBE8C6'], sun: '#FFFBEF', land: '#1F5F8B', far: '#E8D5A9', icon: 'parthenon', ink: '#10304A' }
     },
     {
@@ -613,7 +604,6 @@ window.APP_DATA = (function () {
         { name: 'רובע יוזפוב', c: [50.0904, 14.4185] },
         { name: 'גבעת פטרין', c: [50.0833, 14.3954] }
       ],
-      photo: 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=1200&q=70',
       poster: { sky: ['#D6C6E1', '#F3D7C0'], sun: '#FFF4EA', land: '#4A3B5C', far: '#9C87B3', icon: 'castle', ink: '#241B30' }
     },
     {
@@ -670,7 +660,6 @@ window.APP_DATA = (function () {
         { name: 'גשר ברוקלין', c: [40.7061, -73.9969] },
         { name: 'פסל החירות', c: [40.6892, -74.0445] }
       ],
-      photo: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=1200&q=70',
       poster: { sky: ['#F6B38E', '#6C7FB8'], sun: '#FFE3C2', land: '#23263F', far: '#4B5580', icon: 'skyline', ink: '#15172A' }
     },
     {
@@ -726,7 +715,6 @@ window.APP_DATA = (function () {
         { name: 'שוק הזהב', c: [25.2702, 55.3024] },
         { name: 'אל פהידי', c: [25.2637, 55.2995] }
       ],
-      photo: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200&q=70',
       poster: { sky: ['#FAD7A0', '#E59866'], sun: '#FFF5E1', land: '#B9770E', far: '#D4AC6E', icon: 'burj', ink: '#3B2506' }
     },
     {
@@ -782,7 +770,6 @@ window.APP_DATA = (function () {
         { name: 'שוק צ׳אטוצ׳אק', c: [13.7999, 100.5502] },
         { name: 'ח׳או סאן', c: [13.7589, 100.4974] }
       ],
-      photo: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=1200&q=70',
       poster: { sky: ['#F7C873', '#E4724B'], sun: '#FFF1C9', land: '#7A2E3B', far: '#C1664C', icon: 'temple', ink: '#2F0F15' }
     },
     {
@@ -838,7 +825,6 @@ window.APP_DATA = (function () {
         { name: 'שינג׳וקו', c: [35.6938, 139.7034] },
         { name: 'טוקיו טאוור', c: [35.6586, 139.7454] }
       ],
-      photo: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=70',
       poster: { sky: ['#F9D3D8', '#F4A6A8'], sun: '#D64545', land: '#2E2A3A', far: '#6D6A8A', icon: 'pagoda', ink: '#1B1822' }
     }
   ];

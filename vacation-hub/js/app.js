@@ -166,8 +166,58 @@
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${enc('חופשה ב' + d.name)}&dates=${c(s.start)}/${c(end)}&details=${enc('תוכנן במסע — ' + d.tagline)}&location=${enc(d.nameEn)}`;
   }
 
-  /* ---------- פוסטר ---------- */
+  /* ---------- פוסטר, תמונות וסרטונים ---------- */
   const poster = (d, w, h) => window.Posters.svg(d, { w: w || 300, h: h || 340 });
+  const MEDIA = window.APP_MEDIA || {};
+  const mediaOf = (d) => MEDIA[d.id] || { photos: [], videos: [] };
+  const commonsImg = (file, w) => `https://commons.wikimedia.org/wiki/Special:FilePath/${enc(file)}?width=${w || 1280}`;
+  const commonsPage = (file) => `https://commons.wikimedia.org/wiki/File:${enc(file)}`;
+  /* תמונה אמיתית מעל הפוסטר; אם לא נטענה — הפוסטר נשאר */
+  function photoTag(d, w, i) {
+    const p = mediaOf(d).photos[i || 0];
+    return p ? `<img class="photo" src="${esc(commonsImg(p[0], w))}" alt="${esc(p[1])} — ${esc(d.name)}" loading="lazy" decoding="async">` : '';
+  }
+  const ytWatch = (id) => `https://www.youtube.com/watch?v=${id}`;
+  const ytThumb = (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  /* נגן מוטמע עובד רק מאתר אינטרנט (לא מקובץ מקומי ולא בתצוגה המקדימה) */
+  const EMBED_OK = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname);
+  function videoCard(d, v, opts) {
+    const [id, title, by, lang] = v;
+    const o = opts || {};
+    return `
+      <a class="yt-card" href="${ytWatch(id)}" target="_blank" rel="noopener" data-yt="${esc(id)}">
+        <span class="yt-frame">
+          ${poster(d, 480, 270)}
+          <img class="photo" src="${ytThumb(id)}" alt="" loading="lazy">
+          <span class="play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></span>
+          ${lang === 'he' ? '<span class="yt-lang">עברית</span>' : ''}
+        </span>
+        <span class="yt-meta">
+          ${o.showDest ? `<span class="eyebrow">${esc(d.name)}</span>` : ''}
+          <b dir="auto">${esc(title)}</b>
+          <span class="fine">${by ? esc(by) + ' · ' : ''}YouTube</span>
+        </span>
+      </a>`;
+  }
+  document.addEventListener('load', (e) => { if (e.target.classList && e.target.classList.contains('photo')) e.target.classList.add('loaded'); }, true);
+  document.addEventListener('error', (e) => { if (e.target.classList && e.target.classList.contains('photo')) e.target.remove(); }, true);
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-yt]');
+    if (!a || !EMBED_OK || e.metaKey || e.ctrlKey) return;
+    e.preventDefault();
+    const ifr = document.createElement('iframe');
+    ifr.src = `https://www.youtube-nocookie.com/embed/${a.dataset.yt}?autoplay=1&rel=0`;
+    ifr.title = a.querySelector('b').textContent;
+    ifr.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    ifr.allowFullscreen = true;
+    const frame = a.querySelector('.yt-frame');
+    frame.innerHTML = '';
+    frame.appendChild(ifr);
+    const card = document.createElement('div');
+    card.className = 'yt-card playing';
+    while (a.firstChild) card.appendChild(a.firstChild);
+    a.replaceWith(card);
+  });
 
   /* ---------- ניתוב ---------- */
   function route() {
@@ -270,6 +320,15 @@
             <p class="fine">המחירים משוערים לכל הקבוצה, כולל טיסה, לינה, אוכל, תחבורה ואטרקציות.</p>
           </div>
         </div>
+
+        <div class="section-head mt">
+          <div>
+            <span class="eyebrow">מטיילים ממליצים</span>
+            <h2 class="h-section">שמעו ממי שכבר היה שם</h2>
+            <p class="lead">סרטונים אמיתיים של מטיילים ויוצרי תוכן. בכל עמוד יעד יש עוד.</p>
+          </div>
+        </div>
+        <div class="yt-grid">${(window.APP_MEDIA_FEATURED || []).map(([id, i]) => byId[id] && mediaOf(byId[id]).videos[i] ? videoCard(byId[id], mediaOf(byId[id]).videos[i], { showDest: true }) : '').join('')}</div>
 
         <div class="section-head mt">
           <div>
@@ -396,7 +455,7 @@
     const key = sitesFor(d).filter(s => ['skyscanner', 'booking', 'kayakcars'].includes(s.id) || (d.flightTime === 0 && s.id === 'airbnb'));
     return `
       <article class="result">
-        <a class="result-poster" href="#dest-${d.id}" aria-label="${esc(d.name)}">${poster(d, 300, 300)}<span class="result-rank">#${i + 1}</span></a>
+        <a class="result-poster" href="#dest-${d.id}" aria-label="${esc(d.name)}">${poster(d, 300, 300)}${photoTag(d, 400, 0)}<span class="result-rank">#${i + 1}</span></a>
         <div class="result-body">
           <h3><a href="#dest-${d.id}" style="color:inherit;text-decoration:none">${esc(d.name)}</a><small>${esc(d.country)}</small></h3>
           <p class="fine">${esc(d.tagline)}</p>
@@ -498,6 +557,7 @@
       <a class="dest-card" href="#dest-${d.id}">
         <div class="dest-art">
           ${poster(d, 300, 340)}
+          ${photoTag(d, 640, 0)}
           <div class="poster-title"><span class="name">${esc(d.name)}</span><span class="code">${d.iata === 'TLV' ? 'ISR' : d.iata}</span></div>
         </div>
         <div class="dest-info">
@@ -516,8 +576,8 @@
      עמוד יעד
      ========================================================= */
   const TABS = [
-    ['overview', 'סקירה'], ['flights', 'טיסה ושדה'], ['hotels', 'מלונות'], ['car', 'השכרת רכב'],
-    ['food', 'מסעדות'], ['transit', 'תחבורה ועלויות'], ['routes', 'מסלולים'], ['map', 'מפה'], ['videos', 'סרטונים']
+    ['overview', 'סקירה'], ['gallery', 'תמונות'], ['flights', 'טיסה ושדה'], ['hotels', 'מלונות'], ['car', 'השכרת רכב'],
+    ['food', 'מסעדות'], ['transit', 'תחבורה ועלויות'], ['routes', 'מסלולים'], ['map', 'מפה'], ['videos', 'סרטונים וממליצים']
   ];
 
   function renderDest(id) {
@@ -530,7 +590,7 @@
         <div class="crumbs"><a href="#explore">יעדים</a><span>›</span><span>${esc(d.name)}</span></div>
         <div class="dest-hero">
           ${poster(d, 1200, 460)}
-          <img class="photo" src="${esc(d.photo)}" alt="${esc(d.name)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()">
+          ${photoTag(d, 1600, 0)}
           <div class="dest-hero-body">
             <span class="eyebrow" style="color:#F4B942">${esc(d.country)} · ${esc(d.nameEn)}</span>
             <h1 class="h-display">${esc(d.name)}</h1>
@@ -748,21 +808,33 @@
           </div>
         </div>
         <ul class="list mt">${d.pois.map((p, i) => `<li><span><span class="mono" style="color:var(--teal)">${pad(i + 1)}</span> <span class="t">${esc(p.name)}</span></span>${ext(`https://www.google.com/maps/search/?api=1&query=${p.c[0]},${p.c[1]}`, 'ניווט', 'btn btn-sm btn-ghost')}</li>`).join('')}</ul>`,
+      gallery: () => {
+        const ph = mediaOf(d).photos;
+        if (!ph.length) return '<div class="empty">אין עדיין תמונות ליעד הזה.</div>';
+        return `
+          <div class="gallery">${ph.map((p, i) => `
+            <figure class="${i === 0 ? 'wide' : ''}">
+              <div class="g-img">${poster(d, 800, 500)}<img class="photo" src="${esc(commonsImg(p[0], i === 0 ? 1600 : 900))}" alt="${esc(p[1])}" loading="lazy"></div>
+              <figcaption><span>${esc(p[1])}</span>${ext(commonsPage(p[0]), 'צלם ורישיון', 'fine')}</figcaption>
+            </figure>`).join('')}
+          </div>
+          <p class="fine mt">התמונות מ-Wikimedia Commons ברישיונות Creative Commons. שם הצלם ותנאי הרישיון מופיעים בעמוד של כל תמונה.</p>`;
+      },
       videos: () => {
-        const vids = [
-          [`${d.nameEn} travel guide`, 'מדריך טיול', 'סקירה מלאה של היעד'],
-          [`${d.nameEn} 4K walking tour`, 'סיור הליכה 4K', 'להרגיש את הרחובות לפני הטיסה'],
-          [`${d.nameEn} food tour`, 'סיור אוכל', 'מה לאכול ואיפה'],
-          [`טיול ל${d.name}`, 'ולוגים בעברית', 'המלצות של מטיילים ישראלים']
+        const vids = mediaOf(d).videos;
+        const more = [
+          [`${d.nameEn} 4K walking tour`, 'סיור הליכה 4K'],
+          [`${d.nameEn} food tour`, 'סיור אוכל'],
+          [`טיול ל${d.name}`, 'ולוגים בעברית']
         ];
         return `
-          <div class="grid-2">${vids.map(([q, t, sub]) => `
-            <a class="video-card" href="${ytSearch(q)}" target="_blank" rel="noopener">
-              ${poster(d, 480, 300)}
-              <span class="play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></span>
-              <span class="cap"><b>${esc(t)} · ${esc(d.name)}</b><span>${esc(sub)} — נפתח ב-YouTube</span></span>
-            </a>`).join('')}
-          </div>`;
+          <div class="section-head" style="margin-bottom:14px">
+            <div><span class="eyebrow">מטיילים ממליצים</span><h2 class="h-section" style="font-size:36px">מה אומרים מי שהיו ב${esc(d.name)}</h2></div>
+          </div>
+          <div class="yt-grid">${vids.map(v => videoCard(d, v)).join('')}</div>
+          <p class="fine" style="margin-top:10px">סרטונים אמיתיים של מטיילים ויוצרי תוכן ב-YouTube. ${EMBED_OK ? 'לחיצה מנגנת כאן בעמוד.' : 'לחיצה פותחת את הסרטון ב-YouTube.'}</p>
+          <h3 class="mt" style="margin-bottom:12px">עוד סרטונים</h3>
+          <div class="pass-meta">${more.map(([q, t]) => ext(ytSearch(q), esc(t), 'chip')).join('')}</div>`;
       }
     };
     body.innerHTML = T[st.tab]();
@@ -1112,7 +1184,7 @@
     const cd = until > 0 ? `עוד ${until} ימים` : until === 0 ? 'היום!' : diffDays(today, e) >= 0 ? 'בחופשה' : 'הסתיימה';
     return `
       <article class="trip" data-trip="${esc(t.id)}">
-        <a class="trip-art" href="#dest-${d.id}" aria-label="${esc(d.name)}">${poster(d, 240, 320)}</a>
+        <a class="trip-art" href="#dest-${d.id}" aria-label="${esc(d.name)}">${poster(d, 240, 320)}${photoTag(d, 400, 0)}</a>
         <div class="trip-body">
           <div class="trip-top">
             <div>
