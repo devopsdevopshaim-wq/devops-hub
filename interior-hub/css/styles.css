@@ -458,3 +458,8 @@ select, input[type=number] {
   .mainnav a { padding: 6px 10px; font-size: 0.9rem; }
   .brief-box > summary h2 { font-size: 1.35rem; }
 }
+.products { display: grid; gap: 6px; }
+.products ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.products li { font-size: 0.93rem; }
+.products a { font-weight: 600; }
+.credits { font-size: 0.8rem; color: var(--muted); margin-top: 6px; max-width: 110ch; }

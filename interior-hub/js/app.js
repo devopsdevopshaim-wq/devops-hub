@@ -145,9 +145,22 @@
 
   function renderTour() {
     const host = $('#tour');
-    if (!window.THREE || !hasWebGL()) {
+    if (!hasWebGL()) {
       $('#tour-fallback').hidden = false;
       $('#tab-2d').click();
+      return;
+    }
+    if (!IH.Tour) {
+      // the 3D module loads after this script; build the tour as soon as it arrives
+      if (!waitingTour) {
+        waitingTour = true;
+        window.addEventListener('ih-tour-ready', () => renderTour(), { once: true });
+        setTimeout(() => {
+          if (IH.Tour) return;
+          $('#tour-fallback').textContent = 'הסיור התלת-ממדי לא נטען. פתחו את האתר מכתובת אינטרנט (GitHub Pages או שרת מקומי) ולא מקובץ במחשב. התוכנית וכל הרשימות זמינות למטה.';
+          $('#tour-fallback').hidden = false;
+        }, 8000);
+      }
       return;
     }
     if (!tour) {
@@ -184,6 +197,7 @@
     miniMe = me;
   }
   let miniMe = null;
+  let waitingTour = false;
   function updateMini(x, z, yaw) {
     if (!miniMe) return;
     miniMe.setAttribute('transform', `translate(${x.toFixed(2)} ${z.toFixed(2)}) rotate(${(-yaw * 180 / Math.PI).toFixed(1)})`);
@@ -241,6 +255,20 @@
     return lines.join('');
   }
 
+  // real catalog products: IKEA product pages / catalog search, and a site search on every other chain
+  function productsBlock(it) {
+    const c = IH.CATALOG[it.type];
+    const ikea = IH.PRODUCTS[it.type] || [];
+    const others = storesFor(it).filter((s) => s !== 'ikea');
+    const links = ikea.map((p) => `<li><a href="${esc(p.url)}" target="_blank" rel="noopener"><b>${esc(p.name)}</b></a> <span class="muted">· איקאה · ${p.direct ? 'עמוד המוצר' : 'בקטלוג'}</span></li>`)
+      .concat(others.map((s) => {
+        const u = IH.storeSearchUrl(s, c.name);
+        return u ? `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(c.name)} באתר ${esc(IH.STORES[s].name)}</a> <span class="muted">· חיפוש בקטלוג הרשת</span></li>` : '';
+      }));
+    if (!links.length) return '';
+    return `<div class="products"><h4>מוצרים אמיתיים מהקטלוג</h4><ul>${links.join('')}</ul></div>`;
+  }
+
   /* ---------- selected item card ---------- */
   function select(id) {
     selected = id;
@@ -270,6 +298,7 @@
         <div><dt>מחיר משוער · ${IH.TIERS[state.budget]}</dt><dd class="num">${money(price(it))}</dd></div>
       </dl>
       <p class="ic-rule"><b>למה כאן:</b> ${rich(c.rule)}</p>
+      ${productsBlock(it)}
       <h4>איפה קונים · ${esc(IH.REGIONS[state.region])}</h4>
       <div class="ic-stores">${storesFor(it).map((s) => storeBlock(s)).join('')}</div>`;
     card.querySelector('.ic-close').onclick = () => { selected = null; renderItemCard(); renderPlan(); if (tour) tour.highlight(null); };
@@ -326,6 +355,7 @@
         </summary>
         <div class="ir-body">
           <p class="ic-rule"><b>למה כאן:</b> ${rich(c.rule)}</p>
+          ${productsBlock(it)}
           <div class="ic-stores">${stores.map((s) => storeBlock(s, true)).join('')}</div>
           <button type="button" class="link-btn" data-show="${it.id}">הצגה בתוכנית ובסיור</button>
         </div>

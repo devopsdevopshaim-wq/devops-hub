@@ -213,15 +213,16 @@
 
 <footer class="foot">
   <p>מתאר · תכנון ריהוט לבית. המחירים הם הערכה בלבד; את הטלפונים והכתובות כדאי לוודא מול הרשת לפני הגעה.</p>
+  <p class="credits">דגמי תלת-ממד: Glam Velvet Sofa ו-Damask Chair © Wayfair, Wood &amp; Leather Sofa ו-Plant © Darmstadt Graphics Group (CC BY 4.0), Sheen Chair © Wayfair ו-Glass Vase (CC0), מתוך Khronos glTF Sample Assets. תאורת HDR: Poly Haven (CC0). פרקט: three.js (MIT). IKEA ושמות המוצרים שייכים לבעליהם; הקישורים מובילים לאתרי הרשתות.</p>
 </footer>
 <!--APP-END-->
 
-<script src="vendor/three/three.min.js"></script>
 <script src="js/stores.js"></script>
 <script src="js/catalog.js"></script>
 <script src="js/planner.js"></script>
 <script src="js/plan2d.js"></script>
-<script src="js/tour3d.js"></script>
 <script src="js/app.js"></script>
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/jsm/" } }</script>
+<script type="module" src="js/tour3d.js"></script>
 </body>
 </html>

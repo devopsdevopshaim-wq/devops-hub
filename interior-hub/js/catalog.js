@@ -112,9 +112,61 @@
       rule: 'שולחן קטן ושני כיסאות או ספסל. חומרים עמידים לשמש: אלומיניום, טיק, חבל סינתטי.' }
   };
 
+
+  /* Real products. `url` entries were checked against ikea.com/il in September 2026;
+     the rest open the product line in the IKEA Israel catalog search. */
+  const IKEA_P = 'https://www.ikea.com/il/he/p/';
+  const IKEA_Q = 'https://www.ikea.com/il/he/search/?q=';
+  const PRODUCTS = {
+    sofa3: [{ name: 'KIVIK ספה תלת-מושבית', url: IKEA_P + 'kivik-3-seat-sofa-tibbleby-beige-grey-s49440597/' }, { name: 'KIVIK ספה תלת-מושבית, Tresund בז׳ בהיר', url: IKEA_P + 'kivik-3-seat-sofa-tresund-light-beige-s89482830/' }],
+    sofa2: [{ name: 'KIVIK ספה דו-מושבית', q: 'KIVIK' }, { name: 'LANDSKRONA ספה דו-מושבית', q: 'LANDSKRONA' }],
+    sofaL: [{ name: 'KIVIK ספה תלת-מושבית כולל שזלונג', url: IKEA_P + 'kivik-3-seat-sofa-with-chaise-longue-tibbleby-beige-grey-s99440590/' }],
+    armchair: [{ name: 'STRANDMON כורסה', q: 'STRANDMON' }, { name: 'POÄNG כורסה', q: 'POÄNG' }],
+    coffeeTable: [{ name: 'LACK שולחן סלון', q: 'LACK' }, { name: 'LISTERBY שולחן סלון', q: 'LISTERBY' }],
+    sideTable: [{ name: 'GLADOM שולחן מגש', q: 'GLADOM' }],
+    tvConsole: [{ name: 'LACK מעמד לטלוויזיה 90×26×45', url: IKEA_P + 'lack-tv-bench-white-00450088/' }, { name: 'BESTÅ מזנונים לטלוויזיה', url: 'https://www.ikea.com/il/he/cat/tv-media-storage-14885/' }],
+    rug: [{ name: 'STOCKHOLM שטיח', q: 'STOCKHOLM rug' }],
+    floorLamp: [{ name: 'HEKTAR מנורה עומדת', q: 'HEKTAR' }],
+    pendant: [{ name: 'NYMÅNE מנורה תלויה', q: 'NYMÅNE' }],
+    plant: [{ name: 'FEJKA צמח מלאכותי', q: 'FEJKA' }],
+    bookshelf: [{ name: 'BILLY ספרייה', q: 'BILLY' }, { name: 'KALLAX מדפים', q: 'KALLAX' }],
+    diningTable: [{ name: 'EKEDALEN שולחן נפתח', q: 'EKEDALEN' }],
+    chair: [{ name: 'EKEDALEN כיסא', q: 'EKEDALEN chair' }, { name: 'LISABO כיסא', q: 'LISABO' }],
+    stool: [{ name: 'INGOLF כיסא בר', q: 'INGOLF' }],
+    kitchenBase: [{ name: 'METOD מערכת מטבח', q: 'METOD' }],
+    kitchenUpper: [{ name: 'METOD ארון עליון', q: 'METOD wall cabinet' }],
+    island: [{ name: 'METOD אי מטבח', q: 'METOD island' }],
+    bedDouble: [{ name: 'MALM מסגרת מיטה גבוהה 160×200', url: IKEA_P + 'malm-bed-frame-high-white-stained-oak-veneer-40263103/' }, { name: 'MALM מיטה עם אחסון 160×200', url: IKEA_P + 'malm-ottoman-bed-white-20404806/' }],
+    nightstand: [{ name: 'HEMNES שידת לילה', q: 'HEMNES nightstand' }, { name: 'MALM שידת לילה', q: 'MALM nightstand' }],
+    wardrobe: [{ name: 'PAX ארון בגדים', url: IKEA_P + 'pax-wardrobe-combination-s09503134/' }, { name: 'PAX מערכת ארונות בהתאמה', url: 'https://www.ikea.com/il/he/cat/pax-system-19086/' }],
+    dresser: [{ name: 'HEMNES שידת מגירות', q: 'HEMNES chest' }, { name: 'MALM שידה', q: 'MALM chest' }],
+    bedSingle: [{ name: 'SLÄKT מיטת יחיד', q: 'SLÄKT' }, { name: 'מיטות ילדים', url: 'https://www.ikea.com/il/he/cat/beds-bm003/' }],
+    bunk: [{ name: 'SMÅSTAD מיטת קומותיים', q: 'SMÅSTAD bunk' }],
+    desk: [{ name: 'MICKE שולחן כתיבה', q: 'MICKE' }, { name: 'ALEX שולחן כתיבה', q: 'ALEX desk' }],
+    officeChair: [{ name: 'MARKUS כיסא משרדי', q: 'MARKUS' }],
+    sofaBed: [{ name: 'FRIHETEN ספה נפתחת', q: 'FRIHETEN' }],
+    vanity: [{ name: 'ENHET ארון לכיור', q: 'ENHET' }],
+    shoeCabinet: [{ name: 'TRONES ארון נעליים', q: 'TRONES' }, { name: 'HEMNES ארון נעליים', q: 'HEMNES shoe' }],
+    outdoorSet: [{ name: 'ÄPPLARÖ ריהוט מרפסת', q: 'ÄPPLARÖ' }]
+  };
+  Object.values(PRODUCTS).forEach((list) => list.forEach((p) => { if (!p.url) p.url = IKEA_Q + encodeURIComponent(p.q); p.store = 'ikea'; p.direct = !p.q; }));
+
+  // each chain's own site, for a site search of the piece's Hebrew name
+  const STORE_DOMAIN = {
+    homecenter: 'homecenter.co.il', ace: 'ace.co.il', beitili: 'betili-shop.com', hollandia: 'hollandia.co.il',
+    aminach: 'aminach.co.il', tollmans: 'tollmans.co.il', natuzzi: 'natuzzi.com', kastiel: 'kastiel', foxhome: 'foxhome.co.il',
+    golf: 'golfco.co.il', regba: 'regba.co.il', shekem: 'shekem-electric.co.il', payngo: 'payngo.co.il'
+  };
+  function storeSearchUrl(storeId, query) {
+    const d = STORE_DOMAIN[storeId];
+    if (!d) return null;
+    const q = d.includes('.') ? `site:${d} ${query}` : `${d} ${query}`;
+    return 'https://www.google.com/search?q=' + encodeURIComponent(q);
+  }
+
   const TIERS = { eco: 'חסכוני', mid: 'בינוני', prem: 'פרימיום' };
   const TIER_INDEX = { eco: 0, mid: 1, prem: 2 };
 
   window.IH = window.IH || {};
-  Object.assign(window.IH, { CATALOG, TIERS, TIER_INDEX });
+  Object.assign(window.IH, { CATALOG, TIERS, TIER_INDEX, PRODUCTS, storeSearchUrl });
 })();
