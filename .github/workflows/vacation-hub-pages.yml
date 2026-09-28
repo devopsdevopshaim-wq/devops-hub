@@ -6,7 +6,7 @@ name: Deploy vacation-hub to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['vacation-hub/**']
+    paths: ['vacation-hub/**', 'n8n/**']
   workflow_dispatch:
 
 permissions:
@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Build api/knowledge.json (read by the n8n agent)
+        run: node n8n/build-knowledge.mjs vacation-hub
       - name: Publish vacation-hub to gh-pages
         run: |
           set -euo pipefail

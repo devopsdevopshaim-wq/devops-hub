@@ -1,0 +1,4168 @@
+{
+ "generatedAt": "2026-09-28T11:12:54.959Z",
+ "brand": "מסע",
+ "agency": {
+  "phone": "054-497-9771",
+  "email": "devopsdevopshaim@gmail.com"
+ },
+ "disclaimer": "מחירים, זמנים ודירוגי מישלן הם הערכות. פרטי קשר נאספו ממקורות פומביים — מומלץ לאמת.",
+ "origin": {
+  "airport": "נתב\"ג — נמל התעופה בן גוריון",
+  "code": "TLV",
+  "terminals": [
+   {
+    "name": "טרמינל 3",
+    "use": "רוב הטיסות הבינלאומיות",
+    "arrive": 180
+   },
+   {
+    "name": "טרמינל 1",
+    "use": "חלק מחברות הלואו-קוסט וטיסות פנים",
+    "arrive": 150
+   }
+  ],
+  "checkinCloses": 60,
+  "gateCloses": 25,
+  "info": "מוקד מידע רשות שדות התעופה: 6663*",
+  "cities": [
+   {
+    "name": "תל אביב",
+    "car": 25,
+    "train": 20,
+    "taxi": 110
+   },
+   {
+    "name": "ירושלים",
+    "car": 45,
+    "train": 25,
+    "taxi": 250
+   },
+   {
+    "name": "חיפה",
+    "car": 75,
+    "train": 80,
+    "taxi": 450
+   },
+   {
+    "name": "באר שבע",
+    "car": 70,
+    "train": 75,
+    "taxi": 420
+   },
+   {
+    "name": "ראשון לציון",
+    "car": 20,
+    "train": 30,
+    "taxi": 100
+   },
+   {
+    "name": "פתח תקווה",
+    "car": 20,
+    "train": 35,
+    "taxi": 100
+   },
+   {
+    "name": "נתניה",
+    "car": 40,
+    "train": 50,
+    "taxi": 220
+   },
+   {
+    "name": "אשדוד",
+    "car": 35,
+    "train": 45,
+    "taxi": 200
+   },
+   {
+    "name": "מודיעין",
+    "car": 20,
+    "train": 15,
+    "taxi": 120
+   },
+   {
+    "name": "נצרת",
+    "car": 95,
+    "train": 0,
+    "taxi": 550
+   },
+   {
+    "name": "אילת",
+    "car": 270,
+    "train": 0,
+    "taxi": 0
+   }
+  ]
+ },
+ "holidays": [
+  {
+   "date": "2026-10-03",
+   "name": "הושענא רבה"
+  },
+  {
+   "date": "2026-10-04",
+   "name": "שמחת תורה"
+  },
+  {
+   "date": "2026-12-05",
+   "name": "חנוכה (נר ראשון)"
+  },
+  {
+   "date": "2026-12-12",
+   "name": "חנוכה (נר אחרון)"
+  },
+  {
+   "date": "2027-01-23",
+   "name": "ט״ו בשבט"
+  },
+  {
+   "date": "2027-03-23",
+   "name": "פורים"
+  },
+  {
+   "date": "2027-04-22",
+   "name": "פסח"
+  },
+  {
+   "date": "2027-04-28",
+   "name": "שביעי של פסח"
+  },
+  {
+   "date": "2027-05-12",
+   "name": "יום העצמאות"
+  },
+  {
+   "date": "2027-06-11",
+   "name": "שבועות"
+  },
+  {
+   "date": "2027-07-01",
+   "name": "חופש גדול"
+  },
+  {
+   "date": "2027-10-02",
+   "name": "ראש השנה"
+  },
+  {
+   "date": "2027-10-11",
+   "name": "יום כיפור"
+  },
+  {
+   "date": "2027-10-16",
+   "name": "סוכות"
+  }
+ ],
+ "destinations": [
+  {
+   "id": "eilat",
+   "name": "אילת",
+   "nameEn": "Eilat",
+   "country": "ישראל",
+   "region": "il",
+   "tagline": "שמש כל השנה, שוניות אלמוגים ומדבר אדום",
+   "about": "עיר הנופש הדרומית של ישראל, על חוף מפרץ אילת. חורף חמים, צלילה ושנורקלינג בשמורת האלמוגים, טיולי מדבר בהרי אילת ופטור ממע\"מ בקניות.",
+   "flight": {
+    "airport": "נמל התעופה רמון",
+    "code": "ETM",
+    "hoursFromTLV": 1,
+    "tzDiffFromIsrael": 0,
+    "transfers": [
+     {
+      "mode": "מונית",
+      "time": "20 דק׳",
+      "cost": "₪90–₪120"
+     },
+     {
+      "mode": "אוטובוס קו 30",
+      "time": "30 דק׳",
+      "cost": "₪5–₪8"
+     },
+     {
+      "mode": "רכב שכור (דלפקים בטרמינל)",
+      "time": "20 דק׳",
+      "cost": "לפי הזמנה"
+     }
+    ],
+    "note": "טיסות פנים מנתב\"ג (טרמינל 1) ומחיפה. חלופה: נסיעה של כ-4 שעות מהמרכז בכביש 90 או 40."
+   },
+   "practical": {
+    "language": "עברית",
+    "visa": "אין צורך",
+    "plug": "H / C",
+    "emergency": "משטרה 100 · מד\"א 101",
+    "drivingSide": "ימין",
+    "tipping": "10%–15% במסעדות"
+   },
+   "currency": {
+    "code": "ILS",
+    "name": "שקל",
+    "rate": 1,
+    "symbol": "₪",
+    "notes": "20, 50, 100, 200 ₪",
+    "coins": "10 אג׳, 50 אג׳, 1, 2, 5, 10 ₪",
+    "pay": "כרטיסי אשראי מתקבלים כמעט בכל מקום. אילת היא אזור סחר חופשי — אין מע״מ על רוב הקניות והשירותים.",
+    "atm": "כספומטים בכל העיר.",
+    "tax": "פטור ממע״מ (17%→0%) בקניות ובמלונות לתושבי ישראל.",
+    "prices": [
+     [
+      "קפה",
+      14
+     ],
+     [
+      "ארוחה עממית",
+      60
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      300
+     ],
+     [
+      "נסיעה באוטובוס",
+      5.5
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 21,
+    "פבר׳": 23,
+    "מרץ": 26,
+    "אפר׳": 31,
+    "מאי": 35,
+    "יוני": 38,
+    "יולי": 40,
+    "אוג׳": 40,
+    "ספט׳": 37,
+    "אוק׳": 32,
+    "נוב׳": 27,
+    "דצמ׳": 22
+   },
+   "bestMonths": [
+    "אוק׳",
+    "נוב׳",
+    "דצמ׳",
+    "ינו׳",
+    "פבר׳",
+    "מרץ",
+    "אפר׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 450,
+    "hotel": {
+     "budget": 450,
+     "mid": 850,
+     "lux": 1800
+    },
+    "car": 180,
+    "food": 220,
+    "transport": 30
+   },
+   "hotels": [
+    {
+     "name": "Isrotel Royal Beach",
+     "tier": "lux",
+     "price": 1900,
+     "area": "הטיילת הצפונית",
+     "addr": "North Beach, Eilat",
+     "phone": "+972 8 636 8888",
+     "web": "https://www.isrotel.com/isrotel-hotels/eilat/royal-beach/",
+     "note": "על קו המים, ספא וברכות"
+    },
+    {
+     "name": "Dan Eilat",
+     "tier": "lux",
+     "price": 1600,
+     "area": "החוף הצפוני",
+     "addr": "North Beach, Eilat",
+     "phone": "+972 8 636 2222",
+     "web": "https://www.danhotels.com/",
+     "note": "מתאים למשפחות"
+    },
+    {
+     "name": "Leonardo Plaza Eilat",
+     "tier": "mid",
+     "price": 850,
+     "area": "הלגונה",
+     "addr": "Tarshish St 8, Eilat",
+     "phone": "+972 8 636 1111",
+     "web": "https://www.leonardo-hotels.com/eilat/leonardo-plaza-hotel-eilat",
+     "note": "קרוב לטיילת ולקניון"
+    },
+    {
+     "name": "Isrotel Yam Suf",
+     "tier": "mid",
+     "price": 950,
+     "area": "חוף האלמוגים",
+     "addr": "Coral Beach, Eilat",
+     "phone": "+972 8 638 2222",
+     "web": "https://www.isrotel.com/isrotel-hotels/eilat/isrotel-yam-suf/",
+     "note": "גישה ישירה לשונית"
+    }
+   ],
+   "car": {
+    "need": "מומלץ לטיולי מדבר",
+    "companies": [
+     "שלמה סיקסט",
+     "אלדן",
+     "Hertz",
+     "Avis"
+    ],
+    "tips": [
+     "אילת אזור סחר חופשי — הדלק זול יותר",
+     "רכב 4×4 רק במסלולים מסומנים",
+     "מים בכמות גדולה ברכב בקיץ"
+    ]
+   },
+   "kosher": {
+    "note": "רוב המלונות הגדולים ומסעדות הטיילת בעלי תעודת כשרות. חפשו תעודה בתוקף בכניסה.",
+    "places": [
+     {
+      "name": "מסעדות המלונות (רויאל ביץ׳, דן, הרודס)",
+      "area": "הטיילת",
+      "note": "כשרות רבנות"
+     },
+     {
+      "name": "מסעדות בשריות במרינה",
+      "area": "המרינה",
+      "note": "לבדוק תעודה עדכנית"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "בישראל אין מדריך מישלן. אלה מסעדות שף מוערכות באזור.",
+    "places": []
+   },
+   "localFood": [
+    {
+     "name": "המפלט האחרון (The Last Refuge)",
+     "type": "דגים ופירות ים",
+     "area": "חוף האלמוגים",
+     "price": "₪₪₪"
+    },
+    {
+     "name": "דוכני הטיילת",
+     "type": "אוכל רחוב",
+     "area": "הטיילת",
+     "price": "₪"
+    }
+   ],
+   "transit": {
+    "system": "אוטובוסים עירוניים",
+    "card": "רב-קו / אפליקציות תשלום",
+    "single": "₪5.5",
+    "day": "₪12",
+    "apps": [
+     "Moovit",
+     "רב-פס"
+    ],
+    "notes": "קווים לאורך הטיילת ולחופים הדרומיים. בקיץ עדיף מונית או רכב."
+   },
+   "routes": [
+    {
+     "name": "סוף שבוע של ים",
+     "days": 3,
+     "stops": [
+      "שמורת האלמוגים",
+      "המצפה התת-ימי",
+      "חוף מוש",
+      "שייט זכוכית במפרץ"
+     ],
+     "desc": "ימים רגועים על המים, מתאים למשפחות."
+    },
+    {
+     "name": "מדבר והרים",
+     "days": 2,
+     "stops": [
+      "הר שלמה",
+      "הקניון האדום",
+      "פארק תמנע",
+      "עמודי עמרם"
+     ],
+     "desc": "מסלולי הליכה של 2–4 שעות. לצאת מוקדם בבוקר."
+    }
+   ],
+   "pointsOfInterest": [
+    "שמורת האלמוגים",
+    "המצפה התת-ימי",
+    "הטיילת והמרינה",
+    "פארק תמנע",
+    "הקניון האדום"
+   ],
+   "videos": [
+    {
+     "title": "טיילנו בשבילים הכי יפים בהרי אילת",
+     "url": "https://www.youtube.com/watch?v=Q-1tWhDCut4"
+    },
+    {
+     "title": "ככה סיימנו טיול של 3 ימים באילת",
+     "url": "https://www.youtube.com/watch?v=8SzaWdj2j10"
+    },
+    {
+     "title": "A Tour of Eilat on the Red Sea: Is it Worth Visiting?",
+     "url": "https://www.youtube.com/watch?v=9cqBlIrqvIM"
+    }
+   ],
+   "pageAnchor": "#dest-eilat"
+  },
+  {
+   "id": "jerusalem",
+   "name": "ירושלים",
+   "nameEn": "Jerusalem",
+   "country": "ישראל",
+   "region": "il",
+   "tagline": "אבן, היסטוריה ושווקים",
+   "about": "העיר העתיקה, הכותל המערבי, מוזיאון ישראל ושוק מחנה יהודה. עיר של הליכה ברגל, עם סצנת קולינריה חזקה ואווירה מיוחדת בשבת.",
+   "flight": {
+    "airport": "נתב\"ג",
+    "code": "TLV",
+    "hoursFromTLV": 0,
+    "tzDiffFromIsrael": 0,
+    "transfers": [
+     {
+      "mode": "רכבת ישירה לתחנת יצחק נבון",
+      "time": "25 דק׳",
+      "cost": "₪20 בערך"
+     },
+     {
+      "mode": "מונית שירות (נשר)",
+      "time": "50 דק׳",
+      "cost": "₪70 בערך"
+     },
+     {
+      "mode": "מונית",
+      "time": "45 דק׳",
+      "cost": "₪230–₪280"
+     }
+    ],
+    "note": "הרכבת אינה פועלת בשבת ובחגים."
+   },
+   "practical": {
+    "language": "עברית, ערבית",
+    "visa": "אין צורך",
+    "plug": "H / C",
+    "emergency": "משטרה 100 · מד\"א 101",
+    "drivingSide": "ימין",
+    "tipping": "10%–15% במסעדות"
+   },
+   "currency": {
+    "code": "ILS",
+    "name": "שקל",
+    "rate": 1,
+    "symbol": "₪",
+    "notes": "20, 50, 100, 200 ₪",
+    "coins": "10 אג׳, 50 אג׳, 1, 2, 5, 10 ₪",
+    "pay": "אשראי מתקבל כמעט בכל מקום; בשוק ובעיר העתיקה כדאי מזומן קטן.",
+    "atm": "כספומטים בכל העיר.",
+    "tax": "—",
+    "prices": [
+     [
+      "קפה",
+      14
+     ],
+     [
+      "ארוחה עממית",
+      60
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      320
+     ],
+     [
+      "נסיעה ברכבת הקלה",
+      5.5
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 12,
+    "פבר׳": 13,
+    "מרץ": 16,
+    "אפר׳": 21,
+    "מאי": 25,
+    "יוני": 27,
+    "יולי": 29,
+    "אוג׳": 29,
+    "ספט׳": 28,
+    "אוק׳": 24,
+    "נוב׳": 18,
+    "דצמ׳": 14
+   },
+   "bestMonths": [
+    "מרץ",
+    "אפר׳",
+    "מאי",
+    "ספט׳",
+    "אוק׳",
+    "נוב׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 0,
+    "hotel": {
+     "budget": 350,
+     "mid": 750,
+     "lux": 2200
+    },
+    "car": 170,
+    "food": 200,
+    "transport": 25
+   },
+   "hotels": [
+    {
+     "name": "King David",
+     "tier": "lux",
+     "price": 2600,
+     "area": "רחוב המלך דוד",
+     "addr": "23 King David St, Jerusalem",
+     "phone": "+972 2 620 8888",
+     "web": "https://www.danhotels.com/JerusalemHotels/KingDavidJerusalemHotel",
+     "note": "מלון היסטורי מול חומות העיר"
+    },
+    {
+     "name": "Mamilla Hotel",
+     "tier": "lux",
+     "price": 2100,
+     "area": "ממילא",
+     "addr": "11 Shlomo HaMelech St, Jerusalem",
+     "phone": "+972 2 548 2222",
+     "web": "https://www.mamillahotel.com/",
+     "note": "דקות משער יפו"
+    },
+    {
+     "name": "Harmony Hotel",
+     "tier": "mid",
+     "price": 800,
+     "area": "מדרחוב נחלת שבעה",
+     "addr": "6 Yoel Moshe Salomon St, Jerusalem",
+     "phone": "+972 73 337 0000",
+     "note": "בוטיק במרכז העיר"
+    },
+    {
+     "name": "Abraham Hostel",
+     "tier": "budget",
+     "price": 350,
+     "area": "דוידקה",
+     "addr": "67 HaNevi'im St, Jerusalem",
+     "phone": "+972 2 650 2200",
+     "web": "https://www.abraham.travel/jerusalem/",
+     "note": "הוסטל עם סיורים מאורגנים"
+    }
+   ],
+   "car": {
+    "need": "לא נחוץ בתוך העיר",
+    "companies": [
+     "שלמה סיקסט",
+     "אלדן",
+     "באדג׳ט"
+    ],
+    "tips": [
+     "חניה במרכז יקרה ומוגבלת",
+     "חניוני חנה וסע ליד הרכבת הקלה",
+     "רכב שימושי לים המלח ולמדבר יהודה"
+    ]
+   },
+   "kosher": {
+    "note": "רוב המסעדות במערב העיר כשרות. בשבת רוב המסעדות הכשרות סגורות.",
+    "places": [
+     {
+      "name": "Eucalyptus",
+      "area": "חוצות היוצר",
+      "note": "מטבח ישראלי-תנ״כי, כשר",
+      "addr": "14 Hativat Yerushalayim St (Hutzot HaYotzer), Jerusalem",
+      "phone": "+972 2 624 4331",
+      "web": "https://www.the-eucalyptus.com/"
+     },
+     {
+      "name": "Angelica",
+      "area": "מרכז העיר",
+      "note": "מסעדת שף, כשרה",
+      "addr": "4 George Washington St, Jerusalem",
+      "phone": "+972 2 623 0056",
+      "web": "https://angelicarest.com/en/"
+     },
+     {
+      "name": "דוכני שוק מחנה יהודה",
+      "area": "מחנה יהודה",
+      "note": "רובם בכשרות רבנות"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "בישראל אין מדריך מישלן. אלה מסעדות שף מוערכות.",
+    "places": []
+   },
+   "localFood": [
+    {
+     "name": "מחניודה",
+     "type": "מסעדת שף",
+     "area": "מחנה יהודה",
+     "price": "₪₪₪"
+    },
+    {
+     "name": "אזורה",
+     "type": "אוכל ביתי עיראקי-כורדי",
+     "area": "מחנה יהודה",
+     "price": "₪₪"
+    },
+    {
+     "name": "חומוס לינא",
+     "type": "חומוס",
+     "area": "העיר העתיקה",
+     "price": "₪"
+    }
+   ],
+   "transit": {
+    "system": "רכבת קלה (קו אדום) ואוטובוסים",
+    "card": "רב-קו",
+    "single": "₪5.5",
+    "day": "₪12.5",
+    "apps": [
+     "Moovit",
+     "רב-פס",
+     "Google Maps"
+    ],
+    "notes": "אין תחבורה ציבורית בשבת. הרכבת הקלה חוצה את העיר מצפון לדרום."
+   },
+   "routes": [
+    {
+     "name": "העיר העתיקה ביום אחד",
+     "days": 1,
+     "stops": [
+      "שער יפו",
+      "מגדל דוד",
+      "הרובע היהודי",
+      "הכותל המערבי",
+      "כנסיית הקבר",
+      "שוק הרובע המוסלמי"
+     ],
+     "desc": "כ-6 ק״מ הליכה על אבן. נעליים נוחות."
+    },
+    {
+     "name": "מוזיאונים ושוק",
+     "days": 2,
+     "stops": [
+      "מוזיאון ישראל",
+      "יד ושם",
+      "מחנה יהודה",
+      "נחלאות",
+      "המושבה הגרמנית"
+     ],
+     "desc": "שילוב של תרבות ואוכל."
+    }
+   ],
+   "pointsOfInterest": [
+    "הכותל המערבי",
+    "מגדל דוד",
+    "מחנה יהודה",
+    "מוזיאון ישראל",
+    "יד ושם"
+   ],
+   "videos": [
+    {
+     "title": "Jerusalem: Jewish Quarter and New City",
+     "url": "https://www.youtube.com/watch?v=X2n2PA2mNtY"
+    },
+    {
+     "title": "Jerusalem Travel Guide: Everything you need to know",
+     "url": "https://www.youtube.com/watch?v=3y3PWfAv2vo"
+    },
+    {
+     "title": "Walking Through the Old City of Jerusalem",
+     "url": "https://www.youtube.com/watch?v=uE8b7EwT4t4"
+    }
+   ],
+   "pageAnchor": "#dest-jerusalem"
+  },
+  {
+   "id": "telaviv",
+   "name": "תל אביב",
+   "nameEn": "Tel Aviv",
+   "country": "ישראל",
+   "region": "il",
+   "tagline": "חוף, באוהאוס ולילות ארוכים",
+   "about": "העיר הלבנה: 14 ק״מ של חופים, בנייני באוהאוס, יפו העתיקה, שוק הכרמל וסצנת מסעדות ובילוי שלא נגמרת.",
+   "flight": {
+    "airport": "נתב\"ג",
+    "code": "TLV",
+    "hoursFromTLV": 0,
+    "tzDiffFromIsrael": 0,
+    "transfers": [
+     {
+      "mode": "רכבת לתחנות תל אביב",
+      "time": "15–20 דק׳",
+      "cost": "₪13 בערך"
+     },
+     {
+      "mode": "מונית",
+      "time": "25 דק׳",
+      "cost": "₪100–₪150"
+     },
+     {
+      "mode": "אוטובוס",
+      "time": "45 דק׳",
+      "cost": "₪6 בערך"
+     }
+    ],
+    "note": "רכבת ישראל אינה פועלת בשבת. בשבת יש קווי \"נעים בסופ״ש\" עירוניים."
+   },
+   "practical": {
+    "language": "עברית",
+    "visa": "אין צורך",
+    "plug": "H / C",
+    "emergency": "משטרה 100 · מד\"א 101",
+    "drivingSide": "ימין",
+    "tipping": "10%–15% במסעדות"
+   },
+   "currency": {
+    "code": "ILS",
+    "name": "שקל",
+    "rate": 1,
+    "symbol": "₪",
+    "notes": "20, 50, 100, 200 ₪",
+    "coins": "10 אג׳, 50 אג׳, 1, 2, 5, 10 ₪",
+    "pay": "אשראי ותשלום בנייד בכל מקום.",
+    "atm": "כספומטים בכל העיר.",
+    "tax": "—",
+    "prices": [
+     [
+      "קפה",
+      15
+     ],
+     [
+      "ארוחה עממית",
+      65
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      350
+     ],
+     [
+      "נסיעה ברכבת הקלה",
+      5.5
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 18,
+    "פבר׳": 19,
+    "מרץ": 21,
+    "אפר׳": 24,
+    "מאי": 27,
+    "יוני": 29,
+    "יולי": 31,
+    "אוג׳": 31,
+    "ספט׳": 30,
+    "אוק׳": 28,
+    "נוב׳": 24,
+    "דצמ׳": 20
+   },
+   "bestMonths": [
+    "אפר׳",
+    "מאי",
+    "יוני",
+    "ספט׳",
+    "אוק׳",
+    "נוב׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 0,
+    "hotel": {
+     "budget": 400,
+     "mid": 950,
+     "lux": 2500
+    },
+    "car": 170,
+    "food": 250,
+    "transport": 25
+   },
+   "hotels": [
+    {
+     "name": "The Norman",
+     "tier": "lux",
+     "price": 3000,
+     "area": "שדרות רוטשילד",
+     "addr": "23–25 Nachmani St, Tel Aviv",
+     "phone": "+972 3 543 5555",
+     "web": "https://www.thenorman.com/",
+     "note": "מלון בוטיק יוקרתי"
+    },
+    {
+     "name": "The Setai",
+     "tier": "lux",
+     "price": 2600,
+     "area": "יפו",
+     "addr": "22 David Raziel St, Jaffa",
+     "phone": "+972 3 601 6000",
+     "web": "https://thesetaihotels.com/en/setai-tel-aviv/",
+     "note": "בניין עות׳מאני משוחזר"
+    },
+    {
+     "name": "Brown TLV",
+     "tier": "mid",
+     "price": 950,
+     "area": "מרכז העיר",
+     "addr": "25 Kalisher St, Tel Aviv",
+     "phone": "+972 3 717 0200",
+     "web": "https://brownhotels.com/tlv",
+     "note": "בר גג וסטייל"
+    },
+    {
+     "name": "Abraham Tel Aviv",
+     "tier": "budget",
+     "price": 400,
+     "area": "לוינסקי",
+     "addr": "21 Levontin St, Tel Aviv",
+     "phone": "+972 3 624 9200",
+     "web": "https://www.abraham.travel/tel-aviv/",
+     "note": "הוסטל חברתי"
+    }
+   ],
+   "car": {
+    "need": "לא נחוץ",
+    "companies": [
+     "שלמה סיקסט",
+     "אלדן",
+     "AutoTel (שיתופי)"
+    ],
+    "tips": [
+     "חניה קשה ויקרה — העדיפו חניונים",
+     "אופניים וקורקינטים שיתופיים בכל העיר"
+    ]
+   },
+   "kosher": {
+    "note": "יש עשרות מסעדות כשרות; חפשו תעודת כשרות. באזור הבורסה ברמת גן ריכוז גבוה.",
+    "places": [
+     {
+      "name": "מסעדות המלונות על הטיילת",
+      "area": "הירקון",
+      "note": "רובן בכשרות רבנות"
+     },
+     {
+      "name": "דוכני שוק הכרמל",
+      "area": "הכרם",
+      "note": "חלק כשרים — לבדוק"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "בישראל אין מדריך מישלן. אלה מסעדות שף מוערכות.",
+    "places": []
+   },
+   "localFood": [
+    {
+     "name": "OCD",
+     "type": "תפריט טעימות",
+     "area": "לבונטין",
+     "price": "₪₪₪₪"
+    },
+    {
+     "name": "טאיזו",
+     "type": "אסייתי מודרני",
+     "area": "מנחם בגין",
+     "price": "₪₪₪"
+    },
+    {
+     "name": "אבו חסן",
+     "type": "חומוס",
+     "area": "יפו",
+     "price": "₪"
+    }
+   ],
+   "transit": {
+    "system": "רכבת קלה (קו אדום), אוטובוסים, רכבת ישראל",
+    "card": "רב-קו",
+    "single": "₪5.5",
+    "day": "₪12.5",
+    "apps": [
+     "Moovit",
+     "רב-פס",
+     "Tel-O-Fun"
+    ],
+    "notes": "הקו האדום מחבר את פתח תקווה, מרכז העיר ובת ים."
+   },
+   "routes": [
+    {
+     "name": "יפו עד נמל תל אביב",
+     "days": 1,
+     "stops": [
+      "שעון יפו",
+      "פשפשים",
+      "נווה צדק",
+      "שוק הכרמל",
+      "רוטשילד",
+      "נמל תל אביב"
+     ],
+     "desc": "כ-8 ק״מ, רובם לאורך הים."
+    },
+    {
+     "name": "באוהאוס וגלריות",
+     "days": 1,
+     "stops": [
+      "כיכר דיזנגוף",
+      "מרכז הבאוהאוס",
+      "מוזיאון תל אביב",
+      "שרונה"
+     ],
+     "desc": "סיור אדריכלות ואמנות."
+    }
+   ],
+   "pointsOfInterest": [
+    "יפו העתיקה",
+    "שוק הכרמל",
+    "שדרות רוטשילד",
+    "נמל תל אביב",
+    "שרונה"
+   ],
+   "videos": [
+    {
+     "title": "Tel Aviv by a Local — Travel Tips",
+     "url": "https://www.youtube.com/watch?v=tXuYTsEhtnk"
+    },
+    {
+     "title": "Tel Aviv Travel Guide: Best Things To Do",
+     "url": "https://www.youtube.com/watch?v=PM2_kMrd0Ms"
+    },
+    {
+     "title": "48 Hours In Tel Aviv",
+     "url": "https://www.youtube.com/watch?v=GHfqWYdOMfE"
+    }
+   ],
+   "pageAnchor": "#dest-telaviv"
+  },
+  {
+   "id": "galilee",
+   "name": "הגליל והגולן",
+   "nameEn": "Galilee",
+   "country": "ישראל",
+   "region": "il",
+   "tagline": "כנרת, יקבים ומסלולי מים",
+   "about": "צפון ירוק: כנרת, צפת העתיקה, נחלים זורמים בגולן, יקבים, צימרים ורמת הגולן המושלגת בחורף בחרמון.",
+   "flight": {
+    "airport": "נתב\"ג",
+    "code": "TLV",
+    "hoursFromTLV": 0,
+    "tzDiffFromIsrael": 0,
+    "transfers": [
+     {
+      "mode": "רכב",
+      "time": "2 שעות לכנרת",
+      "cost": "דלק כ-₪120"
+     },
+     {
+      "mode": "רכבת לבית שאן / כרמיאל ואוטובוס",
+      "time": "2.5–3 שעות",
+      "cost": "₪40–₪60"
+     }
+    ],
+    "note": "רכב הוא הדרך הנוחה ביותר לטייל בצפון."
+   },
+   "practical": {
+    "language": "עברית, ערבית",
+    "visa": "אין צורך",
+    "plug": "H / C",
+    "emergency": "משטרה 100 · מד\"א 101",
+    "drivingSide": "ימין",
+    "tipping": "10%–15% במסעדות"
+   },
+   "currency": {
+    "code": "ILS",
+    "name": "שקל",
+    "rate": 1,
+    "symbol": "₪",
+    "notes": "20, 50, 100, 200 ₪",
+    "coins": "10 אג׳, 50 אג׳, 1, 2, 5, 10 ₪",
+    "pay": "אשראי מתקבל ברוב המקומות; בדוכנים ובצימרים קטנים כדאי מזומן.",
+    "atm": "כספומטים בערים ובמרכזים המסחריים.",
+    "tax": "—",
+    "prices": [
+     [
+      "קפה",
+      13
+     ],
+     [
+      "ארוחה עממית",
+      60
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      300
+     ],
+     [
+      "כניסה לשמורה",
+      30
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 17,
+    "פבר׳": 18,
+    "מרץ": 21,
+    "אפר׳": 26,
+    "מאי": 31,
+    "יוני": 34,
+    "יולי": 36,
+    "אוג׳": 36,
+    "ספט׳": 34,
+    "אוק׳": 30,
+    "נוב׳": 24,
+    "דצמ׳": 19
+   },
+   "bestMonths": [
+    "מרץ",
+    "אפר׳",
+    "מאי",
+    "אוק׳",
+    "נוב׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 0,
+    "hotel": {
+     "budget": 450,
+     "mid": 900,
+     "lux": 2000
+    },
+    "car": 170,
+    "food": 220,
+    "transport": 40
+   },
+   "hotels": [
+    {
+     "name": "The Scots Hotel",
+     "tier": "lux",
+     "price": 2000,
+     "area": "טבריה",
+     "addr": "1 Gdud Barak St, Tiberias",
+     "phone": "+972 4 671 0710",
+     "web": "https://www.scotshotels.com/",
+     "note": "בית חולים סקוטי היסטורי על הכנרת"
+    },
+    {
+     "name": "Pina Barosh",
+     "tier": "mid",
+     "price": 1100,
+     "area": "ראש פינה",
+     "addr": "8 HaChalutzim St, Rosh Pina",
+     "phone": "+972 4 848 7474",
+     "web": "https://en.pina-barosh.com/",
+     "note": "בוטיק במושבה הוותיקה"
+    },
+    {
+     "name": "כפר הנופש עין גב",
+     "tier": "mid",
+     "price": 800,
+     "area": "חוף מזרחי של הכנרת",
+     "addr": "Kibbutz Ein Gev",
+     "phone": "+972 4 665 9800",
+     "web": "https://eingev.com/en/",
+     "note": "חוף פרטי"
+    },
+    {
+     "name": "צימרים בגולן",
+     "tier": "budget",
+     "price": 550,
+     "area": "רמת הגולן",
+     "note": "מגוון רחב — להזמין מראש בחגים"
+    }
+   ],
+   "car": {
+    "need": "חיוני",
+    "companies": [
+     "שלמה סיקסט",
+     "אלדן",
+     "Hertz",
+     "Avis"
+    ],
+    "tips": [
+     "כבישים הרריים — לנהוג בזהירות בלילה",
+     "בחורף לבדוק פתיחת כביש החרמון",
+     "חניונים בתשלום בשמורות"
+    ]
+   },
+   "kosher": {
+    "note": "בטבריה, צפת וראש פינה ריכוז גבוה של מסעדות כשרות.",
+    "places": [
+     {
+      "name": "מסעדות טיילת טבריה",
+      "area": "טבריה",
+      "note": "רובן כשרות"
+     },
+     {
+      "name": "מסעדות העיר העתיקה בצפת",
+      "area": "צפת",
+      "note": "כשרות מהדרין נפוצה"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "בישראל אין מדריך מישלן. אלה מסעדות שף מוערכות.",
+    "places": []
+   },
+   "localFood": [
+    {
+     "name": "אורי בורי",
+     "type": "דגים ופירות ים",
+     "area": "עכו",
+     "price": "₪₪₪"
+    },
+    {
+     "name": "מסעדות דרוזיות",
+     "type": "מטבח דרוזי",
+     "area": "מג׳דל שמס / בוקעאתא",
+     "price": "₪₪"
+    }
+   ],
+   "transit": {
+    "system": "אוטובוסים בין-עירוניים",
+    "card": "רב-קו",
+    "single": "₪5.5–₪30",
+    "day": "—",
+    "apps": [
+     "Moovit",
+     "רב-פס"
+    ],
+    "notes": "תדירות נמוכה ביישובים הקטנים. אין תחבורה בשבת."
+   },
+   "routes": [
+    {
+     "name": "סובב כנרת",
+     "days": 2,
+     "stops": [
+      "טבריה",
+      "כפר נחום",
+      "טבחה",
+      "עין גב",
+      "חמת גדר"
+     ],
+     "desc": "כ-60 ק״מ נסיעה עם עצירות חוף."
+    },
+    {
+     "name": "גולן ומים",
+     "days": 3,
+     "stops": [
+      "נחל עיון",
+      "בניאס",
+      "נמרוד",
+      "יקב רמת הגולן",
+      "נחל זוויתן"
+     ],
+     "desc": "מסלולי מים — להביא נעלי מים."
+    }
+   ],
+   "pointsOfInterest": [
+    "טבריה",
+    "צפת העתיקה",
+    "בניאס",
+    "כפר נחום",
+    "ראש פינה"
+   ],
+   "videos": [
+    {
+     "title": "Experiencing the Sea of Galilee",
+     "url": "https://www.youtube.com/watch?v=zxbujTQr6Ec"
+    },
+    {
+     "title": "Israel's Northern Landscapes — Galilee & Golan (4K)",
+     "url": "https://www.youtube.com/watch?v=aYDSZtKQ-OU"
+    },
+    {
+     "title": "Scenic Drive Around the Sea of Galilee",
+     "url": "https://www.youtube.com/watch?v=BrqoNFXIOq4"
+    }
+   ],
+   "pageAnchor": "#dest-galilee"
+  },
+  {
+   "id": "paris",
+   "name": "פריז",
+   "nameEn": "Paris",
+   "country": "צרפת",
+   "region": "abroad",
+   "tagline": "שדרות, מוזיאונים ומאפיות בכל פינה",
+   "about": "הלובר, מגדל אייפל, מונמרטר ולה מארה. עיר של הליכה, בתי קפה ומסעדות מישלן, עם רכבת תחתית צפופה שמגיעה לכל מקום.",
+   "flight": {
+    "airport": "שארל דה גול",
+    "code": "CDG",
+    "hoursFromTLV": 5,
+    "tzDiffFromIsrael": -1,
+    "transfers": [
+     {
+      "mode": "RER B למרכז",
+      "time": "35–45 דק׳",
+      "cost": "€13 בערך"
+     },
+     {
+      "mode": "Roissybus לאופרה",
+      "time": "60–75 דק׳",
+      "cost": "€16 בערך"
+     },
+     {
+      "mode": "מונית (מחיר קבוע)",
+      "time": "45–60 דק׳",
+      "cost": "€56–€65"
+     }
+    ],
+    "note": "חלק מהטיסות נוחתות באורלי (ORY) — משם קו מטרו 14 למרכז."
+   },
+   "practical": {
+    "language": "צרפתית",
+    "visa": "פטור לבעלי דרכון ישראלי (שנגן, עד 90 יום). מערכת ETIAS צפויה להידרש.",
+    "plug": "C / E",
+    "emergency": "112",
+    "drivingSide": "ימין",
+    "tipping": "השירות כלול; עיגול כלפי מעלה מקובל"
+   },
+   "currency": {
+    "code": "EUR",
+    "name": "אירו",
+    "rate": 4.1,
+    "symbol": "€",
+    "notes": "€5, €10, €20, €50, €100, €200",
+    "coins": "1 סנט עד €2",
+    "pay": "כרטיס אשראי ללא מגע מתקבל כמעט בכל מקום, גם על סכומים קטנים.",
+    "atm": "כספומטים של בנקים (Distributeur). בחרו חיוב באירו ולא בשקלים.",
+    "tax": "החזר מע״מ (Détaxe) לתושבי חוץ בקנייה מעל כ-€100 בחנות אחת.",
+    "prices": [
+     [
+      "קפה (אספרסו בבר)",
+      2.5
+     ],
+     [
+      "ארוחה עממית",
+      16
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      80
+     ],
+     [
+      "נסיעה במטרו",
+      2.5
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 8,
+    "פבר׳": 9,
+    "מרץ": 13,
+    "אפר׳": 16,
+    "מאי": 20,
+    "יוני": 23,
+    "יולי": 26,
+    "אוג׳": 25,
+    "ספט׳": 21,
+    "אוק׳": 16,
+    "נוב׳": 11,
+    "דצמ׳": 8
+   },
+   "bestMonths": [
+    "אפר׳",
+    "מאי",
+    "יוני",
+    "ספט׳",
+    "אוק׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 1700,
+    "hotel": {
+     "budget": 550,
+     "mid": 1100,
+     "lux": 4000
+    },
+    "car": 220,
+    "food": 320,
+    "transport": 45
+   },
+   "hotels": [
+    {
+     "name": "Le Meurice",
+     "tier": "lux",
+     "price": 6000,
+     "area": "רחוב ריבולי",
+     "addr": "228 Rue de Rivoli, 75001 Paris",
+     "phone": "+33 1 44 58 10 10",
+     "web": "https://www.dorchestercollection.com/paris/le-meurice",
+     "note": "מול גני טווילרי"
+    },
+    {
+     "name": "Hôtel des Grands Boulevards",
+     "tier": "mid",
+     "price": 1300,
+     "area": "הרובע ה-2",
+     "addr": "17 Bd Poissonnière, 75002 Paris",
+     "phone": "+33 1 85 73 33 33",
+     "web": "https://www.grandsboulevardshotel.com/",
+     "note": "בוטיק עם מסעדה"
+    },
+    {
+     "name": "Hôtel Fabric",
+     "tier": "mid",
+     "price": 950,
+     "area": "הרובע ה-11",
+     "addr": "31 Rue de la Folie Méricourt, 75011 Paris",
+     "phone": "+33 1 43 57 27 00",
+     "web": "https://www.hotelfabric.com/",
+     "note": "לופט תעשייתי שקט"
+    },
+    {
+     "name": "Generator Paris",
+     "tier": "budget",
+     "price": 450,
+     "area": "הרובע ה-10",
+     "addr": "9–11 Place du Colonel Fabien, 75010 Paris",
+     "phone": "+33 1 70 98 84 00",
+     "web": "https://staygenerator.com/hostels/paris",
+     "note": "הוסטל עם חדרים פרטיים"
+    }
+   ],
+   "car": {
+    "need": "לא בעיר; כן לטיולים לנורמנדי ולעמק הלואר",
+    "companies": [
+     "Europcar",
+     "Sixt",
+     "Hertz",
+     "Avis"
+    ],
+    "tips": [
+     "אזורי ZFE — נדרש מדבקת Crit'Air",
+     "כבישי אגרה (Péage) — כרטיס אשראי",
+     "רישיון ישראלי תקף; מומלץ רישיון בינלאומי"
+    ]
+   },
+   "kosher": {
+    "note": "בפריז יש קהילה יהודית גדולה. ריכוזים: רחוב רוזייה בלה מארה, הרובע ה-17 וה-19.",
+    "places": [
+     {
+      "name": "Chez Marianne ורחוב רוזייה",
+      "area": "לה מארה (הרובע ה-4)",
+      "note": "לבדוק תעודה — חלק מהמקומות אינם כשרים"
+     },
+     {
+      "name": "מסעדות כשרות ברובע ה-17",
+      "area": "Rue de Levis",
+      "note": "ריכוז גבוה של מסעדות בפיקוח בית הדין"
+     },
+     {
+      "name": "בית חב״ד",
+      "area": "מספר סניפים",
+      "note": "ארוחות שבת בהרשמה מראש"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "Guy Savoy",
+      "stars": 3,
+      "cuisine": "צרפתי עכשווי",
+      "area": "מטבעה של פריז",
+      "addr": "11 Quai de Conti, 75006 Paris",
+      "phone": "+33 1 43 80 40 61",
+      "web": "https://www.guysavoy.com/en"
+     },
+     {
+      "name": "Arpège",
+      "stars": 3,
+      "cuisine": "ירקות מהגן",
+      "area": "הרובע ה-7"
+     },
+     {
+      "name": "Le Cinq",
+      "stars": 3,
+      "cuisine": "צרפתי קלאסי",
+      "area": "Four Seasons George V"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "Bouillon Chartier",
+     "type": "ביסטרו צרפתי קלאסי",
+     "area": "הרובע ה-9",
+     "price": "€"
+    },
+    {
+     "name": "L'As du Fallafel",
+     "type": "פלאפל",
+     "area": "לה מארה",
+     "price": "€"
+    },
+    {
+     "name": "Le Comptoir du Relais",
+     "type": "ביסטרו",
+     "area": "סן ז׳רמן",
+     "price": "€€"
+    }
+   ],
+   "transit": {
+    "system": "מטרו (16 קווים), RER, אוטובוסים, טראם",
+    "card": "Navigo Easy / כרטיס בטלפון",
+    "single": "€2.5 בערך",
+    "day": "€12 בערך (Paris Visite)",
+    "apps": [
+     "Bonjour RATP",
+     "Citymapper",
+     "Google Maps"
+    ],
+    "notes": "המטרו פועל עד כ-01:00 (עד 02:00 בסופ״ש)."
+   },
+   "routes": [
+    {
+     "name": "קלאסיקות ב-3 ימים",
+     "days": 3,
+     "stops": [
+      "מגדל אייפל",
+      "שאנז אליזה",
+      "הלובר",
+      "נוטרדאם",
+      "לה מארה",
+      "מונמרטר"
+     ],
+     "desc": "יום לכל גדה של הסן ויום למונמרטר."
+    },
+    {
+     "name": "טיול יום לוורסאי",
+     "days": 1,
+     "stops": [
+      "ארמון ורסאי",
+      "הגנים",
+      "הכפר של מארי אנטואנט"
+     ],
+     "desc": "RER C מהמרכז, כ-40 דק׳."
+    }
+   ],
+   "pointsOfInterest": [
+    "מגדל אייפל",
+    "הלובר",
+    "נוטרדאם",
+    "מונמרטר",
+    "לה מארה"
+   ],
+   "videos": [
+    {
+     "title": "Watch with Rick Steves — Paris with Steve Smith",
+     "url": "https://www.youtube.com/watch?v=NIC0DXY-swE"
+    },
+    {
+     "title": "Highlights of Paris: Eiffel and Monet to Crème Brûlée",
+     "url": "https://www.youtube.com/watch?v=xXnW4pD0OrA"
+    },
+    {
+     "title": "Paris: Montmartre",
+     "url": "https://www.youtube.com/watch?v=WKYL7unerzw"
+    }
+   ],
+   "pageAnchor": "#dest-paris"
+  },
+  {
+   "id": "london",
+   "name": "לונדון",
+   "nameEn": "London",
+   "country": "בריטניה",
+   "region": "abroad",
+   "tagline": "מוזיאונים בחינם, פארקים ומחזות זמר",
+   "about": "הביג בן, המוזיאון הבריטי, הווסט אנד ושווקים כמו בורו וקמדן. רוב המוזיאונים הגדולים בחינם.",
+   "flight": {
+    "airport": "הית׳רו",
+    "code": "LHR",
+    "hoursFromTLV": 5.5,
+    "tzDiffFromIsrael": -2,
+    "transfers": [
+     {
+      "mode": "Elizabeth line",
+      "time": "35–45 דק׳",
+      "cost": "£13 בערך"
+     },
+     {
+      "mode": "Heathrow Express לפדינגטון",
+      "time": "15 דק׳",
+      "cost": "£25 בערך"
+     },
+     {
+      "mode": "Piccadilly line",
+      "time": "50–60 דק׳",
+      "cost": "£6 בערך"
+     },
+     {
+      "mode": "מונית שחורה",
+      "time": "60 דק׳",
+      "cost": "£70–£100"
+     }
+    ],
+    "note": "טיסות לואו-קוסט נוחתות גם בלוטון ובסטנסטד — משם רכבות ואוטובוסים."
+   },
+   "practical": {
+    "language": "אנגלית",
+    "visa": "נדרש אישור ETA אלקטרוני לפני הטיסה",
+    "plug": "G",
+    "emergency": "999 / 112",
+    "drivingSide": "שמאל",
+    "tipping": "10%–12.5% (לעיתים כלול בחשבון)"
+   },
+   "currency": {
+    "code": "GBP",
+    "name": "ליש״ט",
+    "rate": 4.8,
+    "symbol": "£",
+    "notes": "£5, £10, £20, £50 (פולימר)",
+    "coins": "1p עד £2",
+    "pay": "כמעט הכל ללא מזומן — כרטיס ללא מגע או טלפון. חלק מהמקומות לא מקבלים מזומן בכלל.",
+    "atm": "כספומטים (Cash Machine) רבים, רובם ללא עמלת מפעיל.",
+    "tax": "אין החזר מע״מ לתיירים בבריטניה מאז 2021.",
+    "prices": [
+     [
+      "קפה",
+      3.8
+     ],
+     [
+      "ארוחה עממית",
+      17
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      90
+     ],
+     [
+      "נסיעה ב-Tube (אזור 1)",
+      2.9
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 8,
+    "פבר׳": 9,
+    "מרץ": 12,
+    "אפר׳": 15,
+    "מאי": 18,
+    "יוני": 21,
+    "יולי": 24,
+    "אוג׳": 23,
+    "ספט׳": 20,
+    "אוק׳": 16,
+    "נוב׳": 11,
+    "דצמ׳": 9
+   },
+   "bestMonths": [
+    "מאי",
+    "יוני",
+    "יולי",
+    "אוג׳",
+    "ספט׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 1800,
+    "hotel": {
+     "budget": 600,
+     "mid": 1300,
+     "lux": 4500
+    },
+    "car": 240,
+    "food": 350,
+    "transport": 55
+   },
+   "hotels": [
+    {
+     "name": "The Savoy",
+     "tier": "lux",
+     "price": 5500,
+     "area": "סטרנד",
+     "addr": "Strand, London WC2R 0EZ",
+     "phone": "+44 20 7836 4343",
+     "web": "https://www.thesavoylondon.com/",
+     "note": "אייקון על התמזה"
+    },
+    {
+     "name": "citizenM Tower of London",
+     "tier": "mid",
+     "price": 1100,
+     "area": "טאוור היל",
+     "addr": "40 Trinity Square, London EC3N 4DJ",
+     "phone": "+44 20 3519 4830",
+     "web": "https://www.citizenm.com/",
+     "note": "חדרים קומפקטיים ונוף"
+    },
+    {
+     "name": "The Hoxton Holborn",
+     "tier": "mid",
+     "price": 1300,
+     "area": "הולבורן",
+     "addr": "199–206 High Holborn, London WC1V 7BD",
+     "phone": "+44 20 7661 3000",
+     "web": "https://thehoxton.com/london/holborn/",
+     "note": "מרכזי ותוסס"
+    },
+    {
+     "name": "Generator London",
+     "tier": "budget",
+     "price": 500,
+     "area": "קינגס קרוס",
+     "addr": "37 Tavistock Place, London WC1H 9SE",
+     "phone": "+44 20 7388 7666",
+     "web": "https://staygenerator.com/hostels/london/kingscross",
+     "note": "הוסטל ליד תחנת הרכבת"
+    }
+   ],
+   "car": {
+    "need": "לא בעיר (אגרת גודש ו-ULEZ); כן לקוטסוולדס",
+    "companies": [
+     "Enterprise",
+     "Hertz",
+     "Sixt",
+     "Europcar"
+    ],
+    "tips": [
+     "נהיגה בצד שמאל",
+     "Congestion Charge במרכז",
+     "כיכרות — זכות קדימה מימין"
+    ]
+   },
+   "kosher": {
+    "note": "קהילה יהודית גדולה. ריכוזים: גולדרס גרין, הנדון, סטמפורד היל, אדג׳וור.",
+    "places": [
+     {
+      "name": "מסעדות Golders Green Road",
+      "area": "גולדרס גרין",
+      "note": "עשרות מסעדות בפיקוח KLBD / בית דין"
+     },
+     {
+      "name": "מסעדות כשרות במרכז",
+      "area": "West End / St John's Wood",
+      "note": "לבדוק תעודה עדכנית"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "Core by Clare Smyth",
+      "stars": 3,
+      "cuisine": "בריטי מודרני",
+      "area": "נוטינג היל"
+     },
+     {
+      "name": "Restaurant Gordon Ramsay",
+      "stars": 3,
+      "cuisine": "צרפתי",
+      "area": "צ׳לסי"
+     },
+     {
+      "name": "The Ledbury",
+      "stars": 2,
+      "cuisine": "מודרני",
+      "area": "נוטינג היל"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "Borough Market",
+     "type": "שוק אוכל",
+     "area": "סאות׳וורק",
+     "price": "£"
+    },
+    {
+     "name": "Dishoom",
+     "type": "הודי בומבאי",
+     "area": "מספר סניפים",
+     "price": "££"
+    },
+    {
+     "name": "Padella",
+     "type": "פסטה טרייה",
+     "area": "בורו",
+     "price": "£"
+    }
+   ],
+   "transit": {
+    "system": "Tube (11 קווים), Overground, אוטובוסים דו-קומתיים",
+    "card": "Oyster או תשלום באשראי ללא מגע",
+    "single": "£2.8 בערך (אזור 1)",
+    "day": "תקרה יומית כ-£8.5",
+    "apps": [
+     "TfL Go",
+     "Citymapper"
+    ],
+    "notes": "תשלום בכרטיס אשראי מגבלה אוטומטית לתקרה יומית."
+   },
+   "routes": [
+    {
+     "name": "לונדון הקלאסית",
+     "days": 3,
+     "stops": [
+      "ווסטמינסטר וביג בן",
+      "ארמון בקינגהאם",
+      "המוזיאון הבריטי",
+      "קובנט גארדן",
+      "גשר המצודה",
+      "שוק בורו"
+     ],
+     "desc": "שילוב של הליכה ושייט בתמזה."
+    },
+    {
+     "name": "שווקים ושכונות",
+     "days": 2,
+     "stops": [
+      "קמדן",
+      "נוטינג היל ופורטובלו",
+      "שורדיץ׳",
+      "בריק ליין"
+     ],
+     "desc": "סופ״ש הוא הזמן הטוב לשווקים."
+    }
+   ],
+   "pointsOfInterest": [
+    "ביג בן",
+    "המוזיאון הבריטי",
+    "גשר המצודה",
+    "שוק בורו",
+    "קמדן"
+   ],
+   "videos": [
+    {
+     "title": "55 essential London travel tips (a local's advice)",
+     "url": "https://www.youtube.com/watch?v=jmH8ijFeKoo"
+    },
+    {
+     "title": "London Travel Guide: Everything You Need to Know",
+     "url": "https://www.youtube.com/watch?v=tRDP_fGd7Rw"
+    },
+    {
+     "title": "Museums of London",
+     "url": "https://www.youtube.com/watch?v=b8BQbguFbGk"
+    }
+   ],
+   "pageAnchor": "#dest-london"
+  },
+  {
+   "id": "rome",
+   "name": "רומא",
+   "nameEn": "Rome",
+   "country": "איטליה",
+   "region": "abroad",
+   "tagline": "אלפיים שנה של היסטוריה בכל רחוב",
+   "about": "הקולוסיאום, הוותיקן, מזרקת טרווי וטרסטוורה. רובע הגטו היהודי הוותיק באירופה עם מסעדות כשרות.",
+   "flight": {
+    "airport": "פיומיצ׳ינו (ליאונרדו דה וינצ׳י)",
+    "code": "FCO",
+    "hoursFromTLV": 3.5,
+    "tzDiffFromIsrael": -1,
+    "transfers": [
+     {
+      "mode": "Leonardo Express לטרמיני",
+      "time": "32 דק׳",
+      "cost": "€14 בערך"
+     },
+     {
+      "mode": "אוטובוס (Terravision וכד׳)",
+      "time": "50–60 דק׳",
+      "cost": "€6–€7"
+     },
+     {
+      "mode": "מונית (מחיר קבוע)",
+      "time": "45 דק׳",
+      "cost": "€55 בערך"
+     }
+    ],
+    "note": "חלק מהלואו-קוסט נוחתות בצ׳מפינו (CIA)."
+   },
+   "practical": {
+    "language": "איטלקית",
+    "visa": "פטור (שנגן, עד 90 יום). מערכת ETIAS צפויה להידרש.",
+    "plug": "C / F / L",
+    "emergency": "112",
+    "drivingSide": "ימין",
+    "tipping": "לא חובה; Coperto נגבה בחשבון"
+   },
+   "currency": {
+    "code": "EUR",
+    "name": "אירו",
+    "rate": 4.1,
+    "symbol": "€",
+    "notes": "€5, €10, €20, €50, €100, €200",
+    "coins": "1 סנט עד €2",
+    "pay": "אשראי מתקבל ברוב המקומות; בברים ובדוכנים קטנים כדאי מזומן.",
+    "atm": "Bancomat של בנקים. היזהרו ממכונות המרה פרטיות באזורי תיירים.",
+    "tax": "Tax Free לתושבי חוץ בקנייה מעל כ-€70 בחנות אחת.",
+    "prices": [
+     [
+      "קפה (בבר, בעמידה)",
+      1.5
+     ],
+     [
+      "ארוחה עממית",
+      15
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      70
+     ],
+     [
+      "נסיעה במטרו/אוטובוס",
+      1.5
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 12,
+    "פבר׳": 13,
+    "מרץ": 16,
+    "אפר׳": 19,
+    "מאי": 23,
+    "יוני": 28,
+    "יולי": 31,
+    "אוג׳": 31,
+    "ספט׳": 27,
+    "אוק׳": 22,
+    "נוב׳": 16,
+    "דצמ׳": 13
+   },
+   "bestMonths": [
+    "אפר׳",
+    "מאי",
+    "יוני",
+    "ספט׳",
+    "אוק׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 1300,
+    "hotel": {
+     "budget": 450,
+     "mid": 950,
+     "lux": 3500
+    },
+    "car": 200,
+    "food": 280,
+    "transport": 35
+   },
+   "hotels": [
+    {
+     "name": "Hotel Hassler Roma",
+     "tier": "lux",
+     "price": 4500,
+     "area": "ראש המדרגות הספרדיות",
+     "addr": "Piazza della Trinità dei Monti 6, 00187 Roma",
+     "phone": "+39 06 699340",
+     "web": "https://www.hotelhasslerroma.com/",
+     "note": "נוף על העיר"
+    },
+    {
+     "name": "Hotel Artemide",
+     "tier": "mid",
+     "price": 1000,
+     "area": "Via Nazionale",
+     "addr": "Via Nazionale 22, 00184 Roma",
+     "phone": "+39 06 489911",
+     "web": "https://www.hotelartemide.it/",
+     "note": "קרוב לטרמיני"
+    },
+    {
+     "name": "Hotel Santa Maria",
+     "tier": "mid",
+     "price": 1050,
+     "area": "טרסטוורה",
+     "addr": "Vicolo del Piede 2, 00153 Roma",
+     "phone": "+39 06 589 4626",
+     "web": "https://www.hotelsantamariatrastevere.it/",
+     "note": "חצר פנימית שקטה"
+    },
+    {
+     "name": "The Beehive",
+     "tier": "budget",
+     "price": 400,
+     "area": "טרמיני",
+     "addr": "Via Marghera 8, 00185 Roma",
+     "phone": "+39 06 4470 4553",
+     "web": "https://www.the-beehive.com/",
+     "note": "אכסניה ידידותית"
+    }
+   ],
+   "car": {
+    "need": "לא בעיר (אזורי ZTL); כן לטוסקנה",
+    "companies": [
+     "Europcar",
+     "Hertz",
+     "Sixt",
+     "Maggiore"
+    ],
+    "tips": [
+     "ZTL — קנסות אוטומטיים על כניסה למרכז",
+     "אגרות בכבישים המהירים",
+     "לתעד את הרכב בווידאו באיסוף"
+    ]
+   },
+   "kosher": {
+    "note": "הגטו היהודי ליד בית הכנסת הגדול — רחוב Via del Portico d'Ottavia.",
+    "places": [
+     {
+      "name": "Ba'Ghetto",
+      "area": "הגטו היהודי",
+      "note": "מטבח רומאי-יהודי, כשר",
+      "addr": "Via del Portico d'Ottavia 57, 00186 Roma",
+      "phone": "+39 06 6889 2868",
+      "web": "https://www.baghetto.com/en/"
+     },
+     {
+      "name": "Nonna Betta",
+      "area": "הגטו היהודי",
+      "note": "ארטישוק יהודי — לבדוק סטטוס כשרות"
+     },
+     {
+      "name": "מסעדות Via del Portico d'Ottavia",
+      "area": "הגטו",
+      "note": "ריכוז של מסעדות כשרות"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "La Pergola",
+      "stars": 3,
+      "cuisine": "ים-תיכוני",
+      "area": "Rome Cavalieri"
+     },
+     {
+      "name": "Il Pagliaccio",
+      "stars": 2,
+      "cuisine": "איטלקי יצירתי",
+      "area": "מרכז היסטורי"
+     },
+     {
+      "name": "Enoteca La Pergola",
+      "stars": 1,
+      "cuisine": "איטלקי",
+      "area": "מרכז"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "Roscioli",
+     "type": "טרטוריה ומעדנייה",
+     "area": "קמפו דה פיורי",
+     "price": "€€"
+    },
+    {
+     "name": "Da Enzo al 29",
+     "type": "רומאי מסורתי",
+     "area": "טרסטוורה",
+     "price": "€€"
+    },
+    {
+     "name": "Pizzarium Bonci",
+     "type": "פיצה אל טאליו",
+     "area": "ליד הוותיקן",
+     "price": "€"
+    }
+   ],
+   "transit": {
+    "system": "מטרו (3 קווים), אוטובוסים, טראם",
+    "card": "כרטיס BIT / תשלום באשראי ללא מגע",
+    "single": "€1.5 (100 דק׳)",
+    "day": "€7 (24 שעות)",
+    "apps": [
+     "Moovit",
+     "MyCicero",
+     "Google Maps"
+    ],
+    "notes": "המטרו מוגבל במרכז ההיסטורי — הרבה הליכה."
+   },
+   "routes": [
+    {
+     "name": "רומא העתיקה",
+     "days": 2,
+     "stops": [
+      "הקולוסיאום",
+      "הפורום הרומי",
+      "הפלטין",
+      "הפנתאון",
+      "פיאצה נבונה",
+      "מזרקת טרווי"
+     ],
+     "desc": "להזמין כרטיסים לקולוסיאום מראש."
+    },
+    {
+     "name": "ותיקן וטרסטוורה",
+     "days": 1,
+     "stops": [
+      "מוזיאוני הוותיקן",
+      "הקפלה הסיסטינית",
+      "בזיליקת פטרוס",
+      "טרסטוורה בערב"
+     ],
+     "desc": "מוזיאוני הוותיקן סגורים בימי ראשון (למעט הראשון בחודש)."
+    }
+   ],
+   "pointsOfInterest": [
+    "הקולוסיאום",
+    "הפנתאון",
+    "מזרקת טרווי",
+    "הוותיקן",
+    "הגטו היהודי"
+   ],
+   "videos": [
+    {
+     "title": "Rome: Rick Steves' Travel Tips",
+     "url": "https://www.youtube.com/watch?v=4kqyR4jouuI"
+    },
+    {
+     "title": "Rome: Vibrant Trastevere",
+     "url": "https://www.youtube.com/watch?v=CdNd5R5lsMU"
+    },
+    {
+     "title": "Rome: Roman Forum",
+     "url": "https://www.youtube.com/watch?v=TPVvXvf4xRc"
+    }
+   ],
+   "pageAnchor": "#dest-rome"
+  },
+  {
+   "id": "barcelona",
+   "name": "ברצלונה",
+   "nameEn": "Barcelona",
+   "country": "ספרד",
+   "region": "abroad",
+   "tagline": "גאודי, חוף וטאפאס עד חצות",
+   "about": "סגרדה פמיליה, פארק גואל, הרובע הגותי והברצלונטה. עיר חוף עם תרבות לילה וקולינריה קטלאנית.",
+   "flight": {
+    "airport": "אל פראט",
+    "code": "BCN",
+    "hoursFromTLV": 4.5,
+    "tzDiffFromIsrael": -1,
+    "transfers": [
+     {
+      "mode": "Aerobús לפלאסה קטלוניה",
+      "time": "35 דק׳",
+      "cost": "€7 בערך"
+     },
+     {
+      "mode": "מטרו L9 Sud",
+      "time": "45 דק׳",
+      "cost": "€5.5 בערך"
+     },
+     {
+      "mode": "מונית",
+      "time": "25–35 דק׳",
+      "cost": "€35–€40"
+     }
+    ],
+    "note": "כרטיס T-casual אינו תקף לתחנת השדה במטרו — צריך כרטיס Aeroport."
+   },
+   "practical": {
+    "language": "ספרדית, קטלאנית",
+    "visa": "פטור (שנגן, עד 90 יום). מערכת ETIAS צפויה להידרש.",
+    "plug": "C / F",
+    "emergency": "112",
+    "drivingSide": "ימין",
+    "tipping": "5%–10% לא חובה"
+   },
+   "currency": {
+    "code": "EUR",
+    "name": "אירו",
+    "rate": 4.1,
+    "symbol": "€",
+    "notes": "€5, €10, €20, €50, €100, €200",
+    "coins": "1 סנט עד €2",
+    "pay": "אשראי ללא מגע בכל מקום.",
+    "atm": "כספומטים של בנקים. סרבו להמרה דינמית (DCC) ובחרו לחייב באירו.",
+    "tax": "Tax Free לתושבי חוץ בכל סכום (החזר דרך DIVA בשדה).",
+    "prices": [
+     [
+      "קפה",
+      1.8
+     ],
+     [
+      "ארוחה עממית (Menú del día)",
+      15
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      70
+     ],
+     [
+      "נסיעה במטרו",
+      2.6
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 14,
+    "פבר׳": 15,
+    "מרץ": 17,
+    "אפר׳": 19,
+    "מאי": 22,
+    "יוני": 26,
+    "יולי": 29,
+    "אוג׳": 29,
+    "ספט׳": 26,
+    "אוק׳": 22,
+    "נוב׳": 17,
+    "דצמ׳": 14
+   },
+   "bestMonths": [
+    "מאי",
+    "יוני",
+    "ספט׳",
+    "אוק׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 1400,
+    "hotel": {
+     "budget": 450,
+     "mid": 1000,
+     "lux": 3500
+    },
+    "car": 190,
+    "food": 270,
+    "transport": 35
+   },
+   "hotels": [
+    {
+     "name": "Hotel Arts Barcelona",
+     "tier": "lux",
+     "price": 3800,
+     "area": "הנמל האולימפי",
+     "addr": "Carrer de la Marina 19–21, 08005 Barcelona",
+     "phone": "+34 93 221 1000",
+     "web": "https://www.ritzcarlton.com/en/hotels/bcnrz-hotel-arts-barcelona/overview/",
+     "note": "מגדל על הים"
+    },
+    {
+     "name": "Casa Bonay",
+     "tier": "mid",
+     "price": 1100,
+     "area": "אישמפלה",
+     "addr": "Gran Via de les Corts Catalanes 700, 08010 Barcelona",
+     "phone": "+34 935 458 050",
+     "web": "https://casabonay.com/",
+     "note": "בוטיק עם בר גג"
+    },
+    {
+     "name": "Hotel Neri",
+     "tier": "lux",
+     "price": 2200,
+     "area": "הרובע הגותי",
+     "addr": "Carrer de Sant Sever 5, 08002 Barcelona",
+     "phone": "+34 933 040 655",
+     "web": "https://www.relaischateaux.com/us/hotel/hotel-neri/",
+     "note": "ארמון מהמאה ה-12"
+    },
+    {
+     "name": "Generator Barcelona",
+     "tier": "budget",
+     "price": 400,
+     "area": "גרסיה",
+     "addr": "Carrer de Còrsega 373, 08037 Barcelona",
+     "phone": "+34 932 200 377",
+     "web": "https://staygenerator.com/hostels/barcelona",
+     "note": "הוסטל מעוצב"
+    }
+   ],
+   "car": {
+    "need": "לא בעיר; כן לקוסטה בראבה",
+    "companies": [
+     "Europcar",
+     "Sixt",
+     "Hertz",
+     "Centauro"
+    ],
+    "tips": [
+     "גניבות מרכבים — לא להשאיר חפצים גלויים",
+     "אזור פליטה נמוכה (ZBE)",
+     "חניה במרכז יקרה"
+    ]
+   },
+   "kosher": {
+    "note": "קהילה קטנה. מסעדות כשרות בודדות ובתי חב״ד.",
+    "places": [
+     {
+      "name": "בית חב״ד ברצלונה",
+      "area": "מרכז העיר",
+      "note": "ארוחות ומידע על מקומות כשרים"
+     },
+     {
+      "name": "מסעדות כשרות בודדות",
+      "area": "Sant Gervasi / מרכז",
+      "note": "לבדוק באתר הקהילה"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "Disfrutar",
+      "stars": 3,
+      "cuisine": "יצירתי",
+      "area": "אישמפלה"
+     },
+     {
+      "name": "Lasarte",
+      "stars": 3,
+      "cuisine": "יצירתי",
+      "area": "Hotel Monument"
+     },
+     {
+      "name": "ABaC",
+      "stars": 3,
+      "cuisine": "קטלאני מודרני",
+      "area": "טיבידאבו"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "La Boqueria",
+     "type": "שוק",
+     "area": "לה רמבלה",
+     "price": "€"
+    },
+    {
+     "name": "Cervecería Catalana",
+     "type": "טאפאס",
+     "area": "אישמפלה",
+     "price": "€€"
+    },
+    {
+     "name": "Bar Cañete",
+     "type": "טאפאס",
+     "area": "אל ראבל",
+     "price": "€€"
+    }
+   ],
+   "transit": {
+    "system": "מטרו (12 קווים), אוטובוסים, טראם, רכבל",
+    "card": "T-casual (10 נסיעות)",
+    "single": "€2.6 בערך",
+    "day": "Hola Barcelona — 48 שעות",
+    "apps": [
+     "TMB App",
+     "Moovit",
+     "Citymapper"
+    ],
+    "notes": "המטרו פועל כל הלילה בשבת."
+   },
+   "routes": [
+    {
+     "name": "גאודי וברצלונה המודרניסטית",
+     "days": 2,
+     "stops": [
+      "סגרדה פמיליה",
+      "קאסה באטיו",
+      "לה פדררה",
+      "פארק גואל"
+     ],
+     "desc": "להזמין כרטיסים מראש — נמכרים מהר."
+    },
+    {
+     "name": "העיר העתיקה והים",
+     "days": 1,
+     "stops": [
+      "הרובע הגותי",
+      "אל בורן",
+      "מוזיאון פיקאסו",
+      "ברצלונטה"
+     ],
+     "desc": "לסיים בשקיעה על החוף."
+    }
+   ],
+   "pointsOfInterest": [
+    "סגרדה פמיליה",
+    "פארק גואל",
+    "הרובע הגותי",
+    "לה בוקריה",
+    "ברצלונטה"
+   ],
+   "videos": [
+    {
+     "title": "Barcelona: A Trip Down the Ramblas",
+     "url": "https://www.youtube.com/watch?v=OWWgsNPj4f8"
+    },
+    {
+     "title": "Barcelona: Park Güell",
+     "url": "https://www.youtube.com/watch?v=Fxab19LjBig"
+    },
+    {
+     "title": "Barcelona: Beaches and Gothic Quarter",
+     "url": "https://www.youtube.com/watch?v=KVaaqBs1-BQ"
+    }
+   ],
+   "pageAnchor": "#dest-barcelona"
+  },
+  {
+   "id": "athens",
+   "name": "אתונה והאיים",
+   "nameEn": "Athens",
+   "country": "יוון",
+   "region": "abroad",
+   "tagline": "האקרופוליס וקפיצה לאיים",
+   "about": "שעתיים טיסה מישראל: אקרופוליס, פלאקה, מונסטירקי ומעבורות לאיים — אגינה, הידרה, מיקונוס וסנטוריני.",
+   "flight": {
+    "airport": "אלפתריוס ונזילוס",
+    "code": "ATH",
+    "hoursFromTLV": 2,
+    "tzDiffFromIsrael": 0,
+    "transfers": [
+     {
+      "mode": "מטרו קו 3 לסינטגמה",
+      "time": "40 דק׳",
+      "cost": "€9 בערך"
+     },
+     {
+      "mode": "אוטובוס X95",
+      "time": "60–90 דק׳",
+      "cost": "€5.5 בערך"
+     },
+     {
+      "mode": "מונית (מחיר קבוע)",
+      "time": "35–45 דק׳",
+      "cost": "€40–€55"
+     }
+    ],
+    "note": "לנמל פיראוס (מעבורות לאיים): אוטובוס X96 או מטרו."
+   },
+   "practical": {
+    "language": "יוונית",
+    "visa": "פטור (שנגן, עד 90 יום). מערכת ETIAS צפויה להידרש.",
+    "plug": "C / F",
+    "emergency": "112",
+    "drivingSide": "ימין",
+    "tipping": "5%–10%"
+   },
+   "currency": {
+    "code": "EUR",
+    "name": "אירו",
+    "rate": 4.1,
+    "symbol": "€",
+    "notes": "€5, €10, €20, €50, €100, €200",
+    "coins": "1 סנט עד €2",
+    "pay": "אשראי מתקבל ברוב המקומות; באיים ובטברנות קטנות עדיף מזומן.",
+    "atm": "כספומטים של בנקים יווניים; הימנעו ממכונות Euronet עם עמלות גבוהות.",
+    "tax": "Tax Free לתושבי חוץ בקנייה מעל כ-€50.",
+    "prices": [
+     [
+      "קפה (פרדו)",
+      3.5
+     ],
+     [
+      "סובלאקי",
+      4
+     ],
+     [
+      "ארוחה זוגית בטברנה",
+      50
+     ],
+     [
+      "נסיעה במטרו",
+      1.2
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 13,
+    "פבר׳": 14,
+    "מרץ": 16,
+    "אפר׳": 20,
+    "מאי": 25,
+    "יוני": 30,
+    "יולי": 33,
+    "אוג׳": 33,
+    "ספט׳": 29,
+    "אוק׳": 24,
+    "נוב׳": 19,
+    "דצמ׳": 15
+   },
+   "bestMonths": [
+    "אפר׳",
+    "מאי",
+    "יוני",
+    "ספט׳",
+    "אוק׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 900,
+    "hotel": {
+     "budget": 350,
+     "mid": 750,
+     "lux": 2800
+    },
+    "car": 170,
+    "food": 220,
+    "transport": 25
+   },
+   "hotels": [
+    {
+     "name": "Hotel Grande Bretagne",
+     "tier": "lux",
+     "price": 3000,
+     "area": "כיכר סינטגמה",
+     "addr": "1 Vasileos Georgiou A', 105 64 Athens",
+     "phone": "+30 210 333 0000",
+     "web": "https://www.marriott.com/en-us/hotels/athlc-hotel-grande-bretagne-a-luxury-collection-hotel-athens/overview/",
+     "note": "מרפסת גג עם נוף לאקרופוליס"
+    },
+    {
+     "name": "Electra Metropolis",
+     "tier": "mid",
+     "price": 1200,
+     "area": "פלאקה",
+     "addr": "15 Mitropoleos St, 105 57 Athens",
+     "phone": "+30 214 100 6200",
+     "web": "https://www.electrahotels.gr/hotels/electra-metropolis-athens/",
+     "note": "בריכת גג"
+    },
+    {
+     "name": "Herodion Hotel",
+     "tier": "mid",
+     "price": 900,
+     "area": "מקרייאני",
+     "addr": "4 Rovertou Galli St, 117 42 Athens",
+     "phone": "+30 210 923 6832",
+     "note": "למרגלות האקרופוליס"
+    },
+    {
+     "name": "City Circus",
+     "tier": "budget",
+     "price": 350,
+     "area": "פסירי",
+     "addr": "16 Sarri St, 105 53 Athens",
+     "phone": "+30 213 023 7244",
+     "web": "https://citycircus.gr/",
+     "note": "הוסטל מעוצב"
+    }
+   ],
+   "car": {
+    "need": "כן באיים ולטיולי יום לסוניון ולדלפי",
+    "companies": [
+     "Avis",
+     "Hertz",
+     "Sixt",
+     "חברות מקומיות באיים"
+    ],
+    "tips": [
+     "באיים — טרקטורונים ורכב קטן",
+     "רישיון בינלאומי נדרש לעיתים",
+     "לבדוק ביטוח צמיגים וחלון"
+    ]
+   },
+   "kosher": {
+    "note": "מסעדה כשרה ובית חב״ד באתונה; באיים הגדולים לרוב בתי חב״ד עונתיים.",
+    "places": [
+     {
+      "name": "Gostijo",
+      "area": "פסירי",
+      "note": "מסעדה כשרה ותיקה",
+      "addr": "Esopou 10, 105 54 Athens",
+      "phone": "+30 210 323 3825",
+      "web": "https://gostijo.gr/"
+     },
+     {
+      "name": "בית חב״ד אתונה",
+      "area": "מרכז",
+      "note": "ארוחות שבת בהרשמה"
+     },
+     {
+      "name": "בתי חב״ד עונתיים",
+      "area": "רודוס, כרתים, סנטוריני",
+      "note": "בדרך כלל בקיץ"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "Delta",
+      "stars": 2,
+      "cuisine": "נורדי-יווני",
+      "area": "מרכז התרבות סטברוס ניארכוס"
+     },
+     {
+      "name": "Hervé",
+      "stars": 1,
+      "cuisine": "תפריט טעימות",
+      "area": "פטראלונה"
+     },
+     {
+      "name": "Spondi",
+      "stars": 2,
+      "cuisine": "צרפתי-ים תיכוני",
+      "area": "פנגרטי"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "Kostas Souvlaki",
+     "type": "סובלאקי",
+     "area": "סינטגמה",
+     "price": "€"
+    },
+    {
+     "name": "Ta Karamanlidika tou Fani",
+     "type": "מזטים ומעדנייה",
+     "area": "פסירי",
+     "price": "€€"
+    },
+    {
+     "name": "Diporto",
+     "type": "טברנה עממית",
+     "area": "השוק המרכזי",
+     "price": "€"
+    }
+   ],
+   "transit": {
+    "system": "מטרו (3 קווים), טראם, אוטובוסים, מעבורות",
+    "card": "ATH.ENA Card / אשראי ללא מגע",
+    "single": "€1.2 (90 דק׳)",
+    "day": "€4.1",
+    "apps": [
+     "OASA Telematics",
+     "Ferryhopper",
+     "Google Maps"
+    ],
+    "notes": "מעבורות מהירות לאיים — להזמין מראש בקיץ."
+   },
+   "routes": [
+    {
+     "name": "אתונה ב-2 ימים",
+     "days": 2,
+     "stops": [
+      "האקרופוליס",
+      "מוזיאון האקרופוליס",
+      "פלאקה",
+      "מונסטירקי",
+      "גבעת ליקבטוס בשקיעה"
+     ],
+     "desc": "לעלות לאקרופוליס בפתיחה, לפני החום."
+    },
+    {
+     "name": "קפיצת איים",
+     "days": 4,
+     "stops": [
+      "פיראוס",
+      "אגינה",
+      "הידרה",
+      "פורוס"
+     ],
+     "desc": "איי הסרוניק — קרובים וללא טיסה."
+    }
+   ],
+   "pointsOfInterest": [
+    "האקרופוליס",
+    "פלאקה",
+    "מונסטירקי",
+    "ליקבטוס",
+    "נמל פיראוס"
+   ],
+   "videos": [
+    {
+     "title": "Athens: Ancient Acropolis and Agora",
+     "url": "https://www.youtube.com/watch?v=xP-FsX0QW88"
+    },
+    {
+     "title": "Athens: The Tranquil Anafiotika Neighborhood",
+     "url": "https://www.youtube.com/watch?v=beiWL-80AVc"
+    },
+    {
+     "title": "Athens: National Archaeological Museum",
+     "url": "https://www.youtube.com/watch?v=1XVi_7b4byc"
+    }
+   ],
+   "pageAnchor": "#dest-athens"
+  },
+  {
+   "id": "prague",
+   "name": "פראג",
+   "nameEn": "Prague",
+   "country": "צ׳כיה",
+   "region": "abroad",
+   "tagline": "מגדלים, גשרים ושווקי חג המולד",
+   "about": "גשר קארל, הטירה, הרובע היהודי יוזפוב ושוקי חורף. עיר יפה, נגישה וזולה יחסית.",
+   "flight": {
+    "airport": "ואצלב האבל",
+    "code": "PRG",
+    "hoursFromTLV": 4,
+    "tzDiffFromIsrael": -1,
+    "transfers": [
+     {
+      "mode": "Airport Express לתחנה הראשית",
+      "time": "35 דק׳",
+      "cost": "100 קורונה בערך"
+     },
+     {
+      "mode": "אוטובוס 119 + מטרו A",
+      "time": "45 דק׳",
+      "cost": "40 קורונה בערך"
+     },
+     {
+      "mode": "מונית / Uber / Bolt",
+      "time": "25–30 דק׳",
+      "cost": "600–700 קורונה"
+     }
+    ],
+    "note": "להזמין מונית דרך אפליקציה או דלפק רשמי."
+   },
+   "practical": {
+    "language": "צ׳כית",
+    "visa": "פטור (שנגן, עד 90 יום). מערכת ETIAS צפויה להידרש.",
+    "plug": "C / E",
+    "emergency": "112",
+    "drivingSide": "ימין",
+    "tipping": "10%"
+   },
+   "currency": {
+    "code": "CZK",
+    "name": "קורונה צ׳כית",
+    "rate": 0.16,
+    "symbol": "Kč",
+    "notes": "100, 200, 500, 1,000, 2,000, 5,000 Kč",
+    "coins": "1, 2, 5, 10, 20, 50 Kč",
+    "pay": "אשראי מתקבל כמעט בכל מקום. האירו לא מטבע רשמי — אם משלמים באירו, השער גרוע.",
+    "atm": "השתמשו בכספומטים של בנקים (ČSOB, KB, Česká spořitelna) ולא ב-Euronet. אל תחליפו כסף ברחוב.",
+    "tax": "Tax Free לתושבי חוץ בקנייה מעל 2,001 Kč.",
+    "prices": [
+     [
+      "קפה",
+      75
+     ],
+     [
+      "ארוחה עממית",
+      250
+     ],
+     [
+      "חצי ליטר בירה",
+      65
+     ],
+     [
+      "נסיעה (30 דק׳)",
+      30
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 2,
+    "פבר׳": 4,
+    "מרץ": 9,
+    "אפר׳": 15,
+    "מאי": 19,
+    "יוני": 23,
+    "יולי": 25,
+    "אוג׳": 25,
+    "ספט׳": 19,
+    "אוק׳": 13,
+    "נוב׳": 7,
+    "דצמ׳": 3
+   },
+   "bestMonths": [
+    "מאי",
+    "יוני",
+    "ספט׳",
+    "דצמ׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 1300,
+    "hotel": {
+     "budget": 300,
+     "mid": 650,
+     "lux": 2500
+    },
+    "car": 170,
+    "food": 180,
+    "transport": 25
+   },
+   "hotels": [
+    {
+     "name": "Four Seasons Prague",
+     "tier": "lux",
+     "price": 3000,
+     "area": "גדת הוולטבה",
+     "addr": "Veleslavínova 2a/1098, 110 00 Praha 1",
+     "phone": "+420 221 427 000",
+     "web": "https://www.fourseasons.com/prague/",
+     "note": "נוף לגשר קארל"
+    },
+    {
+     "name": "Hotel Josef",
+     "tier": "mid",
+     "price": 800,
+     "area": "העיר העתיקה",
+     "addr": "Rybná 20, 110 00 Praha 1",
+     "phone": "+420 221 700 901",
+     "web": "https://www.hoteljosef.com/",
+     "note": "עיצוב מינימליסטי"
+    },
+    {
+     "name": "Hotel Paris Prague",
+     "tier": "mid",
+     "price": 950,
+     "area": "כיכר הרפובליקה",
+     "addr": "U Obecního domu 1, 110 00 Praha 1",
+     "phone": "+420 222 195 195",
+     "web": "https://www.hotel-paris.cz/en/",
+     "note": "בניין אר נובו"
+    },
+    {
+     "name": "Czech Inn",
+     "tier": "budget",
+     "price": 300,
+     "area": "וינוהראדי",
+     "addr": "Francouzská 76, 101 00 Praha 10",
+     "phone": "+420 210 011 100",
+     "web": "https://czechinn.com/",
+     "note": "הוסטל ומלון"
+    }
+   ],
+   "car": {
+    "need": "לא בעיר; כן לצ׳סקי קרומלוב וקרלובי וארי",
+    "companies": [
+     "Europcar",
+     "Sixt",
+     "Hertz"
+    ],
+    "tips": [
+     "מדבקת כביש מהיר (Vignette) אלקטרונית",
+     "אורות דלוקים ביום חובה",
+     "אפס אלכוהול בנהיגה"
+    ]
+   },
+   "kosher": {
+    "note": "הרובע היהודי יוזפוב — בתי כנסת עתיקים ומסעדות כשרות.",
+    "places": [
+     {
+      "name": "5th District by King Solomon",
+      "area": "יוזפוב",
+      "note": "המסעדה הכשרה הוותיקה בצ׳כיה",
+      "addr": "Široká 8, 110 00 Praha 1",
+      "phone": "+420 224 818 752"
+     },
+     {
+      "name": "Dinitz",
+      "area": "מרכז",
+      "note": "לבדוק סטטוס כשרות עדכני"
+     },
+     {
+      "name": "בית חב״ד פראג",
+      "area": "יוזפוב",
+      "note": "ארוחות ומינימרקט"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "Field",
+      "stars": 1,
+      "cuisine": "צ׳כי מודרני",
+      "area": "העיר העתיקה"
+     },
+     {
+      "name": "La Degustation Bohême Bourgeoise",
+      "stars": 1,
+      "cuisine": "תפריט טעימות צ׳כי",
+      "area": "העיר העתיקה"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "Lokál",
+     "type": "צ׳כי מסורתי ובירה",
+     "area": "העיר העתיקה",
+     "price": "Kč"
+    },
+    {
+     "name": "Café Savoy",
+     "type": "בית קפה וינאי",
+     "area": "מאלה סטראנה",
+     "price": "Kč Kč"
+    },
+    {
+     "name": "Manifesto Market",
+     "type": "שוק אוכל",
+     "area": "אנדל",
+     "price": "Kč"
+    }
+   ],
+   "transit": {
+    "system": "מטרו (3 קווים), טראם, אוטובוסים, רכבל פטרין",
+    "card": "כרטיס באפליקציה / אשראי",
+    "single": "30 קורונה (30 דק׳)",
+    "day": "120 קורונה (24 שעות)",
+    "apps": [
+     "PID Lítačka",
+     "Google Maps"
+    ],
+    "notes": "הטראם 22 עובר ליד רוב האתרים ועולה לטירה."
+   },
+   "routes": [
+    {
+     "name": "פראג הקלאסית",
+     "days": 2,
+     "stops": [
+      "כיכר העיר העתיקה",
+      "השעון האסטרונומי",
+      "גשר קארל",
+      "מאלה סטראנה",
+      "טירת פראג",
+      "רובע יוזפוב"
+     ],
+     "desc": "לחצות את הגשר מוקדם בבוקר."
+    },
+    {
+     "name": "יום בצ׳סקי קרומלוב",
+     "days": 1,
+     "stops": [
+      "העיר העתיקה",
+      "הטירה",
+      "שייט על הוולטבה"
+     ],
+     "desc": "כ-3 שעות נסיעה מפראג."
+    }
+   ],
+   "pointsOfInterest": [
+    "גשר קארל",
+    "טירת פראג",
+    "כיכר העיר העתיקה",
+    "רובע יוזפוב",
+    "גבעת פטרין"
+   ],
+   "videos": [
+    {
+     "title": "Prague: Prague Castle",
+     "url": "https://www.youtube.com/watch?v=isiXydJSK6s"
+    },
+    {
+     "title": "Prague: Old Town Square",
+     "url": "https://www.youtube.com/watch?v=nGfH_c8epuQ"
+    },
+    {
+     "title": "Prague: Jewish Quarter",
+     "url": "https://www.youtube.com/watch?v=CFD1N6eRWFg"
+    }
+   ],
+   "pageAnchor": "#dest-prague"
+  },
+  {
+   "id": "newyork",
+   "name": "ניו יורק",
+   "nameEn": "New York",
+   "country": "ארה״ב",
+   "region": "abroad",
+   "tagline": "העיר שלא ישנה לעולם",
+   "about": "מנהטן, סנטרל פארק, ברודווי, מוזיאונים ברמה עולמית ושכונות ברוקלין. יעד עם מבחר עצום של אוכל כשר.",
+   "flight": {
+    "airport": "ג׳ון פ. קנדי",
+    "code": "JFK",
+    "hoursFromTLV": 12,
+    "tzDiffFromIsrael": -7,
+    "transfers": [
+     {
+      "mode": "AirTrain + רכבת תחתית",
+      "time": "60–75 דק׳",
+      "cost": "$11 בערך"
+     },
+     {
+      "mode": "AirTrain + LIRR לפן סטיישן",
+      "time": "45 דק׳",
+      "cost": "$17–$19"
+     },
+     {
+      "mode": "מונית צהובה (מחיר קבוע למנהטן)",
+      "time": "45–70 דק׳",
+      "cost": "$70 + אגרות וטיפ"
+     }
+    ],
+    "note": "טיסות מסוימות נוחתות בניוארק (EWR) — משם AirTrain ורכבת NJ Transit."
+   },
+   "practical": {
+    "language": "אנגלית",
+    "visa": "פטור ויזה לישראלים — נדרש אישור ESTA לפני הטיסה",
+    "plug": "A / B (110V)",
+    "emergency": "911",
+    "drivingSide": "ימין",
+    "tipping": "18%–22% במסעדות"
+   },
+   "currency": {
+    "code": "USD",
+    "name": "דולר",
+    "rate": 3.6,
+    "symbol": "$",
+    "notes": "$1, $5, $10, $20, $50, $100",
+    "coins": "1¢, 5¢, 10¢, 25¢",
+    "pay": "אשראי בכל מקום. המחיר המוצג לא כולל מס (כ-8.875%), ובמסעדות מוסיפים טיפ 18%–22%.",
+    "atm": "כספומטים רבים; עמלת מפעיל $3–$5 נפוצה.",
+    "tax": "אין החזר מס לתיירים בארה״ב.",
+    "prices": [
+     [
+      "קפה",
+      5
+     ],
+     [
+      "ארוחה עממית",
+      22
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      140
+     ],
+     [
+      "נסיעה בסאבוויי",
+      2.9
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 4,
+    "פבר׳": 6,
+    "מרץ": 10,
+    "אפר׳": 17,
+    "מאי": 22,
+    "יוני": 27,
+    "יולי": 29,
+    "אוג׳": 29,
+    "ספט׳": 25,
+    "אוק׳": 19,
+    "נוב׳": 13,
+    "דצמ׳": 7
+   },
+   "bestMonths": [
+    "אפר׳",
+    "מאי",
+    "יוני",
+    "ספט׳",
+    "אוק׳",
+    "דצמ׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 3800,
+    "hotel": {
+     "budget": 800,
+     "mid": 1600,
+     "lux": 5000
+    },
+    "car": 280,
+    "food": 450,
+    "transport": 50
+   },
+   "hotels": [
+    {
+     "name": "The Plaza",
+     "tier": "lux",
+     "price": 5500,
+     "area": "סנטרל פארק דרום",
+     "addr": "768 Fifth Ave, New York, NY 10019",
+     "phone": "+1 212 759 3000",
+     "web": "https://www.theplazany.com/",
+     "note": "אייקון ניו יורקי"
+    },
+    {
+     "name": "Arlo SoHo",
+     "tier": "mid",
+     "price": 1400,
+     "area": "סוהו",
+     "addr": "231 Hudson St, New York, NY 10013",
+     "phone": "+1 212 342 7000",
+     "web": "https://arlohotels.com/soho/",
+     "note": "חדרים קטנים, מיקום מעולה"
+    },
+    {
+     "name": "citizenM Times Square",
+     "tier": "mid",
+     "price": 1500,
+     "area": "טיימס סקוור",
+     "addr": "218 W 50th St, New York, NY 10019",
+     "phone": "+1 212 461 3638",
+     "web": "https://www.citizenm.com/",
+     "note": "בר גג"
+    },
+    {
+     "name": "Pod Times Square",
+     "tier": "budget",
+     "price": 800,
+     "area": "מידטאון",
+     "addr": "400 W 42nd St, New York, NY 10036",
+     "phone": "+1 212 273 9222",
+     "web": "https://www.thepodhotel.com/pod-times-square",
+     "note": "חדרי מיקרו"
+    }
+   ],
+   "car": {
+    "need": "לא במנהטן; כן לטיולים מחוץ לעיר",
+    "companies": [
+     "Hertz",
+     "Avis",
+     "Enterprise",
+     "National"
+    ],
+    "tips": [
+     "חניה במנהטן $40+ ליום",
+     "אגרות גשרים ומנהרות — E-ZPass",
+     "מע״מ מקומי ומיסים לא כלולים במחיר המוצג"
+    ]
+   },
+   "kosher": {
+    "note": "מאות מסעדות כשרות: מידטאון, אפר ווסט סייד, ברוקלין (בורו פארק, קראון הייטס), קווינס.",
+    "places": [
+     {
+      "name": "Mike's Bistro",
+      "area": "מידטאון איסט",
+      "note": "כשר, מטבח אמריקאי",
+      "addr": "127 E 54th St, New York, NY 10022",
+      "phone": "+1 212 799 3911",
+      "web": "https://www.mikesbistro.com/"
+     },
+     {
+      "name": "מסעדות כשרות בברוקלין",
+      "area": "בורו פארק / קראון הייטס",
+      "note": "עשרות אפשרויות"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "Le Bernardin",
+      "stars": 3,
+      "cuisine": "דגים",
+      "area": "מידטאון"
+     },
+     {
+      "name": "Per Se",
+      "stars": 3,
+      "cuisine": "אמריקאי-צרפתי",
+      "area": "קולומבוס סירקל"
+     },
+     {
+      "name": "Masa",
+      "stars": 3,
+      "cuisine": "סושי",
+      "area": "קולומבוס סירקל"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "Katz's Delicatessen",
+     "type": "דלי (לא כשר)",
+     "area": "לואר איסט סייד",
+     "price": "$$"
+    },
+    {
+     "name": "Joe's Pizza",
+     "type": "פיצה ניו יורקית",
+     "area": "גריניץ׳ וילג׳",
+     "price": "$"
+    },
+    {
+     "name": "Chelsea Market",
+     "type": "שוק אוכל",
+     "area": "צ׳לסי",
+     "price": "$$"
+    }
+   ],
+   "transit": {
+    "system": "סאבוויי (24/7), אוטובוסים, מעבורות",
+    "card": "OMNY — אשראי או טלפון ללא מגע",
+    "single": "$2.9 בערך",
+    "day": "תקרה שבועית כ-$34",
+    "apps": [
+     "MTA",
+     "Citymapper",
+     "Google Maps"
+    ],
+    "notes": "הסאבוויי פועל 24 שעות. המעבורת לסטטן איילנד בחינם."
+   },
+   "routes": [
+    {
+     "name": "מנהטן הקלאסית",
+     "days": 3,
+     "stops": [
+      "טיימס סקוור",
+      "סנטרל פארק",
+      "המטרופוליטן",
+      "האמפייר סטייט",
+      "הליין הגבוה",
+      "אנדרטת 11/9",
+      "גשר ברוקלין"
+     ],
+     "desc": "יום למידטאון, יום לפארק ולמוזיאונים, יום לדאונטאון."
+    },
+    {
+     "name": "ברוקלין וקווינס",
+     "days": 1,
+     "stops": [
+      "דאמבו",
+      "וויליאמסבורג",
+      "פרוספקט פארק",
+      "קוני איילנד"
+     ],
+     "desc": "שכונות, שווקים ואוכל."
+    }
+   ],
+   "pointsOfInterest": [
+    "טיימס סקוור",
+    "סנטרל פארק",
+    "אמפייר סטייט",
+    "גשר ברוקלין",
+    "פסל החירות"
+   ],
+   "videos": [
+    {
+     "title": "25 Essential New York City Tips in 10 Minutes",
+     "url": "https://www.youtube.com/watch?v=I9gotv1kmzM"
+    },
+    {
+     "title": "The Ultimate NYC Travel Guide for First Timers",
+     "url": "https://www.youtube.com/watch?v=P_8yJokgJJc"
+    },
+    {
+     "title": "First Time NYC? Here's What You Need To Know",
+     "url": "https://www.youtube.com/watch?v=63iNRWLeJCw"
+    }
+   ],
+   "pageAnchor": "#dest-newyork"
+  },
+  {
+   "id": "dubai",
+   "name": "דובאי",
+   "nameEn": "Dubai",
+   "country": "איחוד האמירויות",
+   "region": "abroad",
+   "tagline": "מגדלים במדבר ושמש בחורף",
+   "about": "בורג׳ ח׳ליפה, המרינה, השווקים הישנים ומדבר הדיונות. יעד חורף חמים, שלוש שעות טיסה מישראל.",
+   "flight": {
+    "airport": "נמל התעופה הבינלאומי דובאי",
+    "code": "DXB",
+    "hoursFromTLV": 3.5,
+    "tzDiffFromIsrael": 1,
+    "transfers": [
+     {
+      "mode": "מטרו הקו האדום",
+      "time": "20–45 דק׳",
+      "cost": "5–8 דירהם"
+     },
+     {
+      "mode": "מונית",
+      "time": "20–40 דק׳",
+      "cost": "60–100 דירהם"
+     }
+    ],
+    "note": "לפני נסיעה לאמירויות — לבדוק את אזהרות המסע של המטה לביטחון לאומי."
+   },
+   "practical": {
+    "language": "ערבית, אנגלית",
+    "visa": "ויזה בהגעה / מראש — לבדוק הנחיות עדכניות והמלצות המל״ל",
+    "plug": "G",
+    "emergency": "משטרה 999 · אמבולנס 998",
+    "drivingSide": "ימין",
+    "tipping": "10%–15%"
+   },
+   "currency": {
+    "code": "AED",
+    "name": "דירהם",
+    "rate": 0.98,
+    "symbol": "د.إ",
+    "notes": "5, 10, 20, 50, 100, 200, 500, 1,000 דירהם",
+    "coins": "25 פילס, 50 פילס, 1 דירהם",
+    "pay": "אשראי ותשלום בנייד בכל מקום; לשווקים ישנים (Souk) כדאי מזומן.",
+    "atm": "כספומטים רבים בקניונים ובתחנות המטרו.",
+    "tax": "החזר מע״מ 5% לתיירים דרך Planet בשדה התעופה.",
+    "prices": [
+     [
+      "קפה",
+      20
+     ],
+     [
+      "ארוחה עממית",
+      45
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      350
+     ],
+     [
+      "נסיעה במטרו",
+      5
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 24,
+    "פבר׳": 25,
+    "מרץ": 29,
+    "אפר׳": 33,
+    "מאי": 38,
+    "יוני": 40,
+    "יולי": 41,
+    "אוג׳": 41,
+    "ספט׳": 39,
+    "אוק׳": 35,
+    "נוב׳": 30,
+    "דצמ׳": 26
+   },
+   "bestMonths": [
+    "נוב׳",
+    "דצמ׳",
+    "ינו׳",
+    "פבר׳",
+    "מרץ"
+   ],
+   "estimatedCostsILS": {
+    "flight": 1500,
+    "hotel": {
+     "budget": 450,
+     "mid": 950,
+     "lux": 4000
+    },
+    "car": 170,
+    "food": 300,
+    "transport": 35
+   },
+   "hotels": [
+    {
+     "name": "Burj Al Arab",
+     "tier": "lux",
+     "price": 7000,
+     "area": "ג׳ומיירה",
+     "addr": "Jumeirah Beach Rd, Umm Suqeim 3, Dubai",
+     "phone": "+971 4 301 7777",
+     "web": "https://www.jumeirah.com/",
+     "note": "המלון בצורת מפרש"
+    },
+    {
+     "name": "Atlantis The Palm",
+     "tier": "lux",
+     "price": 3500,
+     "area": "פאלם ג׳ומיירה",
+     "addr": "Crescent Rd, Palm Jumeirah, Dubai",
+     "phone": "+971 4 426 2000",
+     "web": "https://www.atlantis.com/dubai/atlantis-the-palm",
+     "note": "פארק מים ואקווריום"
+    },
+    {
+     "name": "Rove Downtown",
+     "tier": "mid",
+     "price": 650,
+     "area": "דאונטאון",
+     "addr": "312 Al Mustaqbal St, Zabeel 2, Dubai",
+     "phone": "+971 4 561 9999",
+     "web": "https://www.rovehotels.com/en/hotels/downtown/",
+     "note": "נוף לבורג׳ ח׳ליפה"
+    },
+    {
+     "name": "Premier Inn Dubai",
+     "tier": "budget",
+     "price": 400,
+     "area": "מספר סניפים",
+     "note": "רשת נוחה ונקייה"
+    }
+   ],
+   "car": {
+    "need": "שימושי; מוניות זולות יחסית",
+    "companies": [
+     "Hertz",
+     "Avis",
+     "Sixt",
+     "Europcar"
+    ],
+    "tips": [
+     "רישיון נהיגה בינלאומי",
+     "אגרת Salik אוטומטית",
+     "מצלמות מהירות רבות"
+    ]
+   },
+   "kosher": {
+    "note": "יש מסעדות כשרות ומשלוחי אוכל כשר; בית חב״ד פעיל.",
+    "places": [
+     {
+      "name": "Elli's Kosher Kitchen",
+      "area": "דובאי",
+      "note": "מסעדה ומשלוחים",
+      "addr": "Galleria Golden Mile 4, Palm Jumeirah, Dubai",
+      "phone": "+971 52 876 7493",
+      "web": "https://elliskosherkitchen.com/"
+     },
+     {
+      "name": "Armani/Kaf",
+      "area": "בורג׳ ח׳ליפה",
+      "note": "מסעדה כשרה במלון ארמני — לבדוק זמינות"
+     },
+     {
+      "name": "בית חב״ד דובאי",
+      "area": "דובאי",
+      "note": "ארוחות שבת"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "Trèsind Studio",
+      "stars": 3,
+      "cuisine": "הודי יצירתי",
+      "area": "Nakheel Mall"
+     },
+     {
+      "name": "Il Ristorante – Niko Romito",
+      "stars": 2,
+      "cuisine": "איטלקי",
+      "area": "Bvlgari Resort"
+     },
+     {
+      "name": "Ossiano",
+      "stars": 1,
+      "cuisine": "דגים",
+      "area": "אטלנטיס"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "Al Ustad Special Kebab",
+     "type": "קבב פרסי",
+     "area": "בר דובאי",
+     "price": "AED"
+    },
+    {
+     "name": "Arabian Tea House",
+     "type": "אמירתי",
+     "area": "אל פהידי",
+     "price": "AED AED"
+    },
+    {
+     "name": "Time Out Market",
+     "type": "שוק אוכל",
+     "area": "סוק אל בחאר",
+     "price": "AED AED"
+    }
+   ],
+   "transit": {
+    "system": "מטרו (קו אדום וירוק), טראם, אוטובוסים, אבראס",
+    "card": "Nol Card",
+    "single": "3–8 דירהם",
+    "day": "22 דירהם",
+    "apps": [
+     "RTA Dubai",
+     "Careem",
+     "Uber"
+    ],
+    "notes": "קרון Gold ואזורים לנשים וילדים במטרו."
+   },
+   "routes": [
+    {
+     "name": "דובאי המודרנית",
+     "days": 2,
+     "stops": [
+      "בורג׳ ח׳ליפה",
+      "דובאי מול",
+      "המזרקה",
+      "המרינה",
+      "פאלם ג׳ומיירה"
+     ],
+     "desc": "להזמין תצפית At the Top בשקיעה."
+    },
+    {
+     "name": "דובאי הישנה ומדבר",
+     "days": 2,
+     "stops": [
+      "אל פהידי",
+      "שוק הזהב",
+      "שוק התבלינים",
+      "ספארי דיונות"
+     ],
+     "desc": "ספארי מדבר אחה״צ עם ארוחת ערב."
+    }
+   ],
+   "pointsOfInterest": [
+    "בורג׳ ח׳ליפה",
+    "המרינה",
+    "פאלם ג׳ומיירה",
+    "שוק הזהב",
+    "אל פהידי"
+   ],
+   "videos": [
+    {
+     "title": "אטרקציות שאסור לפספס בדובאי",
+     "url": "https://www.youtube.com/watch?v=_wdNGINiZTM"
+    },
+    {
+     "title": "Dubai Travel Guide — Best Things To Do",
+     "url": "https://www.youtube.com/watch?v=zqVpDa3deUk"
+    },
+    {
+     "title": "Dubai Travel Guide — 15 Best Things To Do",
+     "url": "https://www.youtube.com/watch?v=_gjgkLdZxRo"
+    }
+   ],
+   "pageAnchor": "#dest-dubai"
+  },
+  {
+   "id": "bangkok",
+   "name": "בנגקוק ותאילנד",
+   "nameEn": "Bangkok",
+   "country": "תאילנד",
+   "region": "abroad",
+   "tagline": "מקדשים, אוכל רחוב ואיים טרופיים",
+   "about": "שער לתאילנד: מקדשים מוזהבים, שווקים צפים, אוכל רחוב מהטובים בעולם, ומשם לאיים בדרום ולצפון ההררי.",
+   "flight": {
+    "airport": "סוברנבומי",
+    "code": "BKK",
+    "hoursFromTLV": 11,
+    "tzDiffFromIsrael": 4,
+    "transfers": [
+     {
+      "mode": "Airport Rail Link לפאיה תאי",
+      "time": "30 דק׳",
+      "cost": "45 באט"
+     },
+     {
+      "mode": "מונית (מונה + אגרה + 50 באט)",
+      "time": "45–60 דק׳",
+      "cost": "350–450 באט"
+     },
+     {
+      "mode": "Grab / Bolt",
+      "time": "45–60 דק׳",
+      "cost": "400–500 באט"
+     }
+    ],
+    "note": "טיסות לואו-קוסט פנימיות יוצאות לרוב מדון מואנג (DMK)."
+   },
+   "practical": {
+    "language": "תאית",
+    "visa": "פטור מוויזה לתיירות קצרה לבעלי דרכון ישראלי — לבדוק את משך השהייה המותר",
+    "plug": "A / B / C",
+    "emergency": "משטרת תיירים 1155 · 191",
+    "drivingSide": "שמאל",
+    "tipping": "לא חובה; עיגול מקובל"
+   },
+   "currency": {
+    "code": "THB",
+    "name": "באט",
+    "rate": 0.11,
+    "symbol": "฿",
+    "notes": "฿20, ฿50, ฿100, ฿500, ฿1,000",
+    "coins": "฿1, ฿2, ฿5, ฿10",
+    "pay": "מזומן לאוכל רחוב, שווקים וטוק-טוק. בקניונים ובמלונות אשראי.",
+    "atm": "כמעט כל כספומט גובה עמלה קבועה של כ-฿220 למשיכה — כדאי למשוך סכומים גדולים יותר פחות פעמים.",
+    "tax": "VAT Refund לתיירים בקנייה מעל ฿2,000 בחנות משתתפת.",
+    "prices": [
+     [
+      "קפה",
+      70
+     ],
+     [
+      "מנה באוכל רחוב",
+      60
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      1200
+     ],
+     [
+      "נסיעה ב-BTS",
+      40
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 32,
+    "פבר׳": 33,
+    "מרץ": 34,
+    "אפר׳": 35,
+    "מאי": 34,
+    "יוני": 33,
+    "יולי": 33,
+    "אוג׳": 32,
+    "ספט׳": 32,
+    "אוק׳": 32,
+    "נוב׳": 32,
+    "דצמ׳": 31
+   },
+   "bestMonths": [
+    "נוב׳",
+    "דצמ׳",
+    "ינו׳",
+    "פבר׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 3000,
+    "hotel": {
+     "budget": 150,
+     "mid": 400,
+     "lux": 1500
+    },
+    "car": 130,
+    "food": 120,
+    "transport": 25
+   },
+   "hotels": [
+    {
+     "name": "Mandarin Oriental Bangkok",
+     "tier": "lux",
+     "price": 2500,
+     "area": "גדת הצ׳או פראיה",
+     "addr": "48 Oriental Ave, Bang Rak, Bangkok 10500",
+     "phone": "+66 2 659 9000",
+     "web": "https://www.mandarinoriental.com/en/bangkok/chao-phraya-river",
+     "note": "מהמלונות הוותיקים באסיה"
+    },
+    {
+     "name": "Siam Kempinski",
+     "tier": "lux",
+     "price": 1600,
+     "area": "סיאם",
+     "addr": "991/9 Rama 1 Rd, Pathumwan, Bangkok 10330",
+     "phone": "+66 2 162 9000",
+     "web": "https://www.kempinski.com/en/siam-hotel",
+     "note": "בריכה בלב העיר"
+    },
+    {
+     "name": "Novotel Bangkok Sukhumvit",
+     "tier": "mid",
+     "price": 450,
+     "area": "סוקומוויט",
+     "addr": "19/9 Soi Sukhumvit 20, Khlong Toei, Bangkok 10110",
+     "phone": "+66 2 009 4999",
+     "web": "https://www.novotelbangkoksukhumvit20.com/",
+     "note": "קרוב ל-BTS"
+    },
+    {
+     "name": "Lub d Bangkok",
+     "tier": "budget",
+     "price": 180,
+     "area": "סילום / סיאם",
+     "addr": "925/9 Rama 1 Rd, Pathumwan, Bangkok 10330",
+     "phone": "+66 2 612 4999",
+     "note": "הוסטל רשת"
+    }
+   ],
+   "car": {
+    "need": "לא בבנגקוק; קטנוע באיים (רק עם רישיון!)",
+    "companies": [
+     "Avis",
+     "Hertz",
+     "Sixt",
+     "Thai Rent A Car"
+    ],
+    "tips": [
+     "נהיגה בצד שמאל",
+     "ביטוח נסיעות לרוב לא מכסה קטנוע ללא רישיון אופנוע",
+     "קסדה חובה"
+    ]
+   },
+   "kosher": {
+    "note": "בתי חב״ד בבנגקוק (ח׳או סאן), קופנגן, קוסמוי, צ׳יאנג מאי ופוקט עם מסעדות כשרות.",
+    "places": [
+     {
+      "name": "בית חב״ד ח׳או סאן",
+      "area": "בנגקוק",
+      "note": "מסעדה כשרה ובית כנסת",
+      "addr": "96 Rambuttri Rd, Banglamphu, Bangkok",
+      "phone": "+66 2 629 2770",
+      "web": "https://www.jewishthailand.com/"
+     },
+     {
+      "name": "בתי חב״ד באיים",
+      "area": "קופנגן / סמוי / פוקט",
+      "note": "מסעדה כשרה בכל אחד"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "Sorn",
+      "stars": 3,
+      "cuisine": "דרום תאילנדי",
+      "area": "סוקומוויט"
+     },
+     {
+      "name": "Le Normandie by Alain Roux",
+      "stars": 2,
+      "cuisine": "צרפתי",
+      "area": "מנדרין אוריינטל"
+     },
+     {
+      "name": "Jay Fai",
+      "stars": 1,
+      "cuisine": "אוכל רחוב",
+      "area": "העיר העתיקה"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "Jay Fai",
+     "type": "אוכל רחוב (כוכב מישלן)",
+     "area": "העיר העתיקה",
+     "price": "฿฿฿"
+    },
+    {
+     "name": "Yaowarat Road",
+     "type": "אוכל רחוב בצ׳יינה טאון",
+     "area": "צ׳יינה טאון",
+     "price": "฿"
+    },
+    {
+     "name": "Or Tor Kor Market",
+     "type": "שוק",
+     "area": "צ׳אטוצ׳אק",
+     "price": "฿"
+    }
+   ],
+   "transit": {
+    "system": "BTS Skytrain, MRT, סירות על הנהר, טוק-טוק",
+    "card": "Rabbit Card (BTS) / אשראי ב-MRT",
+    "single": "17–60 באט",
+    "day": "150 באט (BTS)",
+    "apps": [
+     "Grab",
+     "Bolt",
+     "ViaBus"
+    ],
+    "notes": "סירת Chao Phraya Express — דרך יפה וזולה להגיע לארמון המלכותי."
+   },
+   "routes": [
+    {
+     "name": "בנגקוק ב-3 ימים",
+     "days": 3,
+     "stops": [
+      "הארמון המלכותי",
+      "וואט פו",
+      "וואט ארון",
+      "צ׳יינה טאון",
+      "שוק צ׳אטוצ׳אק",
+      "בר גג בסילום"
+     ],
+     "desc": "לבוש צנוע (כתפיים וברכיים מכוסות) במקדשים."
+    },
+    {
+     "name": "צפון ואיים",
+     "days": 10,
+     "stops": [
+      "צ׳יאנג מאי",
+      "פאי",
+      "קופנגן",
+      "קו טאו",
+      "קראבי"
+     ],
+     "desc": "טיסות פנים זולות בין האזורים."
+    }
+   ],
+   "pointsOfInterest": [
+    "הארמון המלכותי",
+    "וואט ארון",
+    "צ׳יינה טאון",
+    "שוק צ׳אטוצ׳אק",
+    "ח׳או סאן"
+   ],
+   "videos": [
+    {
+     "title": "Bangkok For Beginners: The Complete Guide (2026)",
+     "url": "https://www.youtube.com/watch?v=edCiLwmmqZw"
+    },
+    {
+     "title": "First Time In Bangkok? This Guide Is For You",
+     "url": "https://www.youtube.com/watch?v=hfEp5LjRhT4"
+    },
+    {
+     "title": "A Guide to Bangkok Neighborhoods for First Timers",
+     "url": "https://www.youtube.com/watch?v=ibq6VSTpBvg"
+    }
+   ],
+   "pageAnchor": "#dest-bangkok"
+  },
+  {
+   "id": "tokyo",
+   "name": "טוקיו",
+   "nameEn": "Tokyo",
+   "country": "יפן",
+   "region": "abroad",
+   "tagline": "ניאון, מקדשים ופריחת הדובדבן",
+   "about": "שינג׳וקו, שיבויה, אסקוסה ורכבות שמגיעות בדקה. אביב של סאקורה וסתיו אדום. בסיס לקיוטו ולהר פוג׳י.",
+   "flight": {
+    "airport": "הנדה (ונריטה)",
+    "code": "HND",
+    "hoursFromTLV": 13,
+    "tzDiffFromIsrael": 6,
+    "transfers": [
+     {
+      "mode": "Keikyu / מונורייל (מהנדה)",
+      "time": "20–30 דק׳",
+      "cost": "¥500–¥700"
+     },
+     {
+      "mode": "Narita Express (מנריטה)",
+      "time": "60 דק׳",
+      "cost": "¥3,000 בערך"
+     },
+     {
+      "mode": "Limousine Bus",
+      "time": "40–90 דק׳",
+      "cost": "¥1,300–¥3,200"
+     }
+    ],
+    "note": "יש טיסות ישירות מתל אביב לנריטה (NRT) בחלק מהתקופות."
+   },
+   "practical": {
+    "language": "יפנית",
+    "visa": "פטור לתיירות קצרה (עד 90 יום)",
+    "plug": "A / B (100V)",
+    "emergency": "משטרה 110 · אמבולנס 119",
+    "drivingSide": "שמאל",
+    "tipping": "לא נהוג"
+   },
+   "currency": {
+    "code": "JPY",
+    "name": "ין",
+    "rate": 0.024,
+    "symbol": "¥",
+    "notes": "¥1,000, ¥5,000, ¥10,000 (עיצוב חדש מ-2024)",
+    "coins": "¥1, ¥5, ¥10, ¥50, ¥100, ¥500",
+    "pay": "אשראי מתקבל ברוב המקומות, אבל מזומן עדיין נפוץ במסעדות קטנות ובמקדשים. כרטיס Suica משמש גם לתשלום בחנויות נוחות.",
+    "atm": "כספומטים של 7-Eleven ושל Japan Post מקבלים כרטיסים זרים.",
+    "tax": "קניות פטורות ממס מעל ¥5,000 בחנות משתתפת (עם דרכון). השיטה צפויה לעבור להחזר מס בשדה בנובמבר 2026.",
+    "prices": [
+     [
+      "קפה",
+      500
+     ],
+     [
+      "קערת ראמן",
+      1100
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      9000
+     ],
+     [
+      "נסיעה במטרו",
+      200
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 10,
+    "פבר׳": 10,
+    "מרץ": 14,
+    "אפר׳": 19,
+    "מאי": 23,
+    "יוני": 26,
+    "יולי": 30,
+    "אוג׳": 31,
+    "ספט׳": 27,
+    "אוק׳": 22,
+    "נוב׳": 17,
+    "דצמ׳": 12
+   },
+   "bestMonths": [
+    "מרץ",
+    "אפר׳",
+    "מאי",
+    "אוק׳",
+    "נוב׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 4200,
+    "hotel": {
+     "budget": 350,
+     "mid": 800,
+     "lux": 3500
+    },
+    "car": 250,
+    "food": 250,
+    "transport": 45
+   },
+   "hotels": [
+    {
+     "name": "Park Hyatt Tokyo",
+     "tier": "lux",
+     "price": 4000,
+     "area": "שינג׳וקו",
+     "addr": "3-7-1-2 Nishi-Shinjuku, Shinjuku-ku, Tokyo 163-1055",
+     "phone": "+81 3 5322 1234",
+     "web": "https://www.hyatt.com/park-hyatt/en-US/tyoph-park-hyatt-tokyo",
+     "note": "מהסרט \"אבודים בטוקיו\""
+    },
+    {
+     "name": "Hotel Gracery Shinjuku",
+     "tier": "mid",
+     "price": 750,
+     "area": "קבוקיצ׳ו",
+     "addr": "1-19-1 Kabukicho, Shinjuku-ku, Tokyo 160-8466",
+     "phone": "+81 3 6833 2489",
+     "web": "https://whgshinjuku.gracery.com/",
+     "note": "עם ראש גודזילה על הגג"
+    },
+    {
+     "name": "MUJI Hotel Ginza",
+     "tier": "mid",
+     "price": 1100,
+     "area": "גינזה",
+     "addr": "6F, 3-3-5 Ginza, Chuo-ku, Tokyo 104-0061",
+     "phone": "+81 3 3538 6101",
+     "web": "https://hotel.muji.com/ginza/en/",
+     "note": "מינימליזם יפני"
+    }
+   ],
+   "car": {
+    "need": "לא בטוקיו; אולי לאזור פוג׳י והוקאידו",
+    "companies": [
+     "Toyota Rent a Car",
+     "Times",
+     "Nippon Rent-A-Car"
+    ],
+    "tips": [
+     "נדרש רישיון בינלאומי (אמנת ז׳נבה)",
+     "נהיגה בצד שמאל",
+     "אגרות כבישים גבוהות"
+    ]
+   },
+   "kosher": {
+    "note": "בית חב״ד טוקיו מציע ארוחות ומשלוחים; מעט מסעדות כשרות.",
+    "places": [
+     {
+      "name": "בית חב״ד טוקיו",
+      "area": "מרכז",
+      "note": "ארוחות, משלוחים ומינימרקט"
+     },
+     {
+      "name": "בית חב״ד קיוטו / אוסקה",
+      "area": "קנסאי",
+      "note": "בתיאום מראש"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "דירוג הכוכבים מתעדכן מדי שנה — אמתו במדריך מישלן לפני הזמנה.",
+    "places": [
+     {
+      "name": "Sézanne",
+      "stars": 3,
+      "cuisine": "צרפתי",
+      "area": "מרונואוצ׳י"
+     },
+     {
+      "name": "Kanda",
+      "stars": 3,
+      "cuisine": "יפני (קאיסקי)",
+      "area": "מינאטו"
+     },
+     {
+      "name": "Den",
+      "stars": 2,
+      "cuisine": "יפני יצירתי",
+      "area": "ג׳ינגומאה"
+     }
+    ]
+   },
+   "localFood": [
+    {
+     "name": "Ichiran",
+     "type": "ראמן",
+     "area": "שיבויה / שינג׳וקו",
+     "price": "¥"
+    },
+    {
+     "name": "Tsukiji Outer Market",
+     "type": "שוק דגים ואוכל",
+     "area": "צוקיג׳י",
+     "price": "¥¥"
+    },
+    {
+     "name": "Omoide Yokocho",
+     "type": "יקיטורי בסמטאות",
+     "area": "שינג׳וקו",
+     "price": "¥"
+    }
+   ],
+   "transit": {
+    "system": "JR, מטרו טוקיו, Toei, שינקנסן",
+    "card": "Suica / Pasmo (גם בטלפון)",
+    "single": "¥180–¥330",
+    "day": "¥800 (Tokyo Subway Ticket 24h)",
+    "apps": [
+     "Google Maps",
+     "Japan Travel by Navitime",
+     "Suica"
+    ],
+    "notes": "רכבות מדויקות לדקה. לשינקנסן לקיוטו — כ-2:15 שעות."
+   },
+   "routes": [
+    {
+     "name": "טוקיו ב-4 ימים",
+     "days": 4,
+     "stops": [
+      "אסקוסה וסנסוג׳י",
+      "אקיהברה",
+      "שיבויה קרוסינג",
+      "הרג׳וקו ומקדש מייג׳י",
+      "שינג׳וקו בלילה",
+      "teamLab"
+     ],
+     "desc": "יום לכל אזור, לילה בשינג׳וקו."
+    },
+    {
+     "name": "טוקיו–קיוטו",
+     "days": 5,
+     "stops": [
+      "הקונה והר פוג׳י",
+      "קיוטו — פושימי אינרי",
+      "ארשיאמה",
+      "נארה"
+     ],
+     "desc": "שינקנסן בין הערים."
+    }
+   ],
+   "pointsOfInterest": [
+    "סנסוג׳י, אסקוסה",
+    "שיבויה קרוסינג",
+    "מקדש מייג׳י",
+    "שינג׳וקו",
+    "טוקיו טאוור"
+   ],
+   "videos": [
+    {
+     "title": "51 Tips I Wish I Knew Before Visiting Tokyo",
+     "url": "https://www.youtube.com/watch?v=BX7AhPb2aj8"
+    },
+    {
+     "title": "Ultimate Tokyo Travel Guide for First-Timers",
+     "url": "https://www.youtube.com/watch?v=jM0h2KAkx80"
+    },
+    {
+     "title": "Tokyo Travel Tips — 13 Things You Must Know",
+     "url": "https://www.youtube.com/watch?v=eNyO3naaUuw"
+    }
+   ],
+   "pageAnchor": "#dest-tokyo"
+  }
+ ],
+ "bookingSites": [
+  {
+   "category": "טיסות",
+   "sites": [
+    {
+     "name": "Skyscanner",
+     "url": "https://www.skyscanner.co.il/",
+     "about": "השוואת טיסות מכל החברות"
+    },
+    {
+     "name": "Google Flights",
+     "url": "https://www.google.com/travel/flights",
+     "about": "לוח מחירים לפי תאריך"
+    },
+    {
+     "name": "Kayak",
+     "url": "https://www.kayak.com/flights",
+     "about": "טיסות, מלונות ורכב"
+    },
+    {
+     "name": "Momondo",
+     "url": "https://www.momondo.co.il/",
+     "about": "השוואת מחירי טיסות"
+    },
+    {
+     "name": "אל על",
+     "url": "https://www.elal.com/he/",
+     "about": "טיסות ישירות מישראל"
+    },
+    {
+     "name": "ישראייר",
+     "url": "https://www.israir.co.il/",
+     "about": "טיסות וחבילות"
+    },
+    {
+     "name": "ארקיע",
+     "url": "https://www.arkia.co.il/",
+     "about": "טיסות לאילת ולחו״ל"
+    },
+    {
+     "name": "Wizz Air",
+     "url": "https://wizzair.com/",
+     "about": "לואו-קוסט לאירופה"
+    },
+    {
+     "name": "Ryanair",
+     "url": "https://www.ryanair.com/",
+     "about": "לואו-קוסט לאירופה"
+    },
+    {
+     "name": "easyJet",
+     "url": "https://www.easyjet.com/",
+     "about": "לואו-קוסט לאירופה"
+    }
+   ]
+  },
+  {
+   "category": "מלונות ודירות",
+   "sites": [
+    {
+     "name": "Booking.com",
+     "url": "https://www.booking.com/",
+     "about": "מלונות, דירות וצימרים"
+    },
+    {
+     "name": "Airbnb",
+     "url": "https://www.airbnb.com/",
+     "about": "דירות ובתים"
+    },
+    {
+     "name": "Expedia",
+     "url": "https://www.expedia.com/",
+     "about": "מלונות וחבילות"
+    },
+    {
+     "name": "Hotels.com",
+     "url": "https://www.hotels.com/",
+     "about": "מלונות עם צבירת לילות"
+    },
+    {
+     "name": "Agoda",
+     "url": "https://www.agoda.com/",
+     "about": "חזק במיוחד באסיה"
+    },
+    {
+     "name": "Trivago",
+     "url": "https://www.trivago.co.il/",
+     "about": "השוואת מחירי מלונות"
+    }
+   ]
+  },
+  {
+   "category": "חבילות נופש מישראל",
+   "sites": [
+    {
+     "name": "איסתא",
+     "url": "https://www.issta.co.il/",
+     "about": "טיסות, חבילות ונופש"
+    },
+    {
+     "name": "גוליבר",
+     "url": "https://www.gulliver.co.il/",
+     "about": "חבילות וטיסות"
+    },
+    {
+     "name": "אופיר טורס",
+     "url": "https://www.ophirtours.co.il/",
+     "about": "טיולים מאורגנים וחבילות"
+    },
+    {
+     "name": "דקה 90",
+     "url": "https://www.daka90.co.il/",
+     "about": "דילים של הרגע האחרון"
+    },
+    {
+     "name": "אשת טורס",
+     "url": "https://www.eshet.com/",
+     "about": "טיולים מאורגנים וחבילות"
+    }
+   ]
+  },
+  {
+   "category": "השכרת רכב",
+   "sites": [
+    {
+     "name": "Discover Cars",
+     "url": "https://www.discovercars.com/",
+     "about": "השוואת השכרת רכב"
+    },
+    {
+     "name": "Kayak Cars",
+     "url": "https://www.kayak.com/cars",
+     "about": "השוואת מחירים"
+    },
+    {
+     "name": "Rentalcars",
+     "url": "https://www.rentalcars.com/",
+     "about": "השכרת רכב בעולם"
+    },
+    {
+     "name": "Sixt",
+     "url": "https://www.sixt.com/",
+     "about": "השכרה בשדות תעופה"
+    },
+    {
+     "name": "Hertz",
+     "url": "https://www.hertz.com/",
+     "about": "השכרה בשדות תעופה"
+    },
+    {
+     "name": "Avis",
+     "url": "https://www.avis.com/",
+     "about": "השכרה בשדות תעופה"
+    },
+    {
+     "name": "Europcar",
+     "url": "https://www.europcar.com/",
+     "about": "השכרה באירופה"
+    },
+    {
+     "name": "שלמה סיקסט",
+     "url": "https://www.shlomo.co.il/",
+     "about": "השכרה בישראל"
+    },
+    {
+     "name": "אלדן",
+     "url": "https://www.eldan.co.il/",
+     "about": "השכרה בישראל"
+    }
+   ]
+  },
+  {
+   "category": "אטרקציות וסיורים",
+   "sites": [
+    {
+     "name": "GetYourGuide",
+     "url": "https://www.getyourguide.com/",
+     "about": "כרטיסים וסיורים"
+    },
+    {
+     "name": "Viator",
+     "url": "https://www.viator.com/",
+     "about": "סיורים ואטרקציות"
+    },
+    {
+     "name": "Klook",
+     "url": "https://www.klook.com/",
+     "about": "חזק באסיה"
+    },
+    {
+     "name": "Tripadvisor",
+     "url": "https://www.tripadvisor.com/",
+     "about": "ביקורות ודירוגים"
+    }
+   ]
+  },
+  {
+   "category": "ביטוח, גלישה וכסף",
+   "sites": [
+    {
+     "name": "PassportCard",
+     "url": "https://www.passportcard.co.il/",
+     "about": "ביטוח נסיעות"
+    },
+    {
+     "name": "Airalo",
+     "url": "https://www.airalo.com/",
+     "about": "eSIM לגלישה בחו״ל"
+    },
+    {
+     "name": "אזהרות מסע (מל״ל)",
+     "url": "https://www.gov.il/he/departments/news/travel-warnings",
+     "about": "לפני כל נסיעה"
+    },
+    {
+     "name": "רשות שדות התעופה",
+     "url": "https://www.iaa.gov.il/",
+     "about": "המראות ונחיתות בזמן אמת"
+    }
+   ]
+  }
+ ]
+}
