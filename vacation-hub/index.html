@@ -24,12 +24,14 @@
       <span class="brand-name">מסע</span>
     </a>
     <nav class="mainnav" aria-label="ניווט ראשי">
-      <a href="#home" data-nav="home">תכנון לפי תאריכים</a>
+      <a href="#home" data-nav="home">תכנון</a>
       <a href="#explore" data-nav="explore">יעדים</a>
-      <a href="#airport" data-nav="airport">זמני שדה תעופה</a>
-      <a href="#budget" data-nav="budget">מחשבון עלויות</a>
+      <a href="#deal" data-nav="deal" class="nav-deal">סגירת דיל</a>
+      <a href="#sites" data-nav="sites">כל האתרים</a>
+      <a href="#airport" data-nav="airport">שדה תעופה</a>
+      <a href="#budget" data-nav="budget">עלויות</a>
       <a href="#trips" data-nav="trips">החופשות שלי</a>
-      <a href="#help" data-nav="help">עזרה ותמיכה</a>
+      <a href="#help" data-nav="help">עזרה</a>
     </nav>
     <button class="icon-btn" id="themeBtn" type="button" aria-label="החלפת ערכת צבעים">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
@@ -41,6 +43,8 @@
   <section class="view" id="view-home" data-view="home"></section>
   <section class="view" id="view-explore" data-view="explore" hidden></section>
   <section class="view" id="view-dest" data-view="dest" hidden></section>
+  <section class="view" id="view-deal" data-view="deal" hidden></section>
+  <section class="view" id="view-sites" data-view="sites" hidden></section>
   <section class="view" id="view-airport" data-view="airport" hidden></section>
   <section class="view" id="view-budget" data-view="budget" hidden></section>
   <section class="view" id="view-trips" data-view="trips" hidden></section>
@@ -51,6 +55,7 @@
   <div class="wrap footer-inner">
     <div>
       <strong>מסע</strong> · מערכת לניהול חופשות בארץ ובחו״ל
+      <p class="fine" id="agencyLine"></p>
       <p class="fine">המחירים, השעות והדירוגים משוערים ומבוססים על מידע כללי. בדקו מול חברות התעופה, המלונות והרשויות לפני הזמנה. לפני נסיעה לחו״ל בדקו את אזהרות המסע של המטה לביטחון לאומי.</p>
     </div>
     <nav class="footer-links" aria-label="קישורים">
@@ -91,6 +96,9 @@
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="js/data.js"></script>
 <script src="js/media.js"></script>
+<script src="js/money.js"></script>
+<script src="js/sites.js"></script>
+<script src="js/config.js"></script>
 <script src="js/posters.js"></script>
 <script src="js/app.js"></script>
 </body>

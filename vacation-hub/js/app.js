@@ -8,6 +8,9 @@
   const DATA = window.APP_DATA;
   const DESTS = DATA.destinations;
   const byId = Object.fromEntries(DESTS.map(d => [d.id, d]));
+  const CFG = window.APP_CONFIG || { agency: {}, partners: {} };
+  const AG = CFG.agency || {}, PT = CFG.partners || {};
+  const MONEY = window.APP_MONEY || { currencies: {}, byDest: {} };
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -144,9 +147,15 @@
       case 'skyscanner': return `https://www.skyscanner.co.il/transport/flights/tlv/${d.iata.toLowerCase()}/${yymmdd(s.start)}/${yymmdd(s.end || addDays(s.start, 3))}/?adultsv2=${n}`;
       case 'gflights': return `https://www.google.com/travel/flights?q=${enc(`Flights from TLV to ${d.iata} on ${a} through ${b}`)}`;
       case 'kayak': return `https://www.kayak.com/flights/TLV-${d.iata}/${a}/${b}/${n}adults`;
-      case 'booking': return `https://www.booking.com/searchresults.he.html?ss=${city}&checkin=${a}&checkout=${b}&group_adults=${n}&no_rooms=${rooms}`;
+      case 'booking': return `https://www.booking.com/searchresults.he.html?ss=${city}&checkin=${a}&checkout=${b}&group_adults=${n}&no_rooms=${rooms}${PT.bookingAid ? '&aid=' + enc(PT.bookingAid) : ''}`;
       case 'airbnb': return `https://www.airbnb.com/s/${city}/homes?checkin=${a}&checkout=${b}&adults=${n}`;
-      case 'expedia': return `https://www.expedia.com/Hotel-Search?destination=${city}&startDate=${a}&endDate=${b}&adults=${n}`;
+      case 'expedia': return `https://www.expedia.com/Hotel-Search?destination=${city}&startDate=${a}&endDate=${b}&adults=${n}${PT.expediaAffcid ? '&affcid=' + enc(PT.expediaAffcid) : ''}`;
+      case 'discovercars': return `https://www.discovercars.com/${PT.discoverCarsAid ? '?a_aid=' + enc(PT.discoverCarsAid) : ''}`;
+      case 'getyourguide': return `https://www.getyourguide.com/s/?q=${city}&date_from=${a}&date_to=${b}${PT.getYourGuidePartner ? '&partner_id=' + enc(PT.getYourGuidePartner) : ''}`;
+      case 'aviasales': {
+        const dm = (x) => pad(x.getDate()) + pad(x.getMonth() + 1);
+        return `https://www.aviasales.com/search/TLV${dm(s.start)}${d.iata}${dm(s.end || addDays(s.start, 3))}${n}${PT.travelpayoutsMarker ? '?marker=' + enc(PT.travelpayoutsMarker) : ''}`;
+      }
       case 'kayakcars': return `https://www.kayak.com/cars/${city}/${a}/${b}`;
       case 'rentalcars': return 'https://www.rentalcars.com/';
       case 'tripadvisor': return `https://www.tripadvisor.com/Search?q=${city}`;
@@ -199,6 +208,18 @@
         </span>
       </a>`;
   }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-copy]'); if (!b) return;
+    const v = b.dataset.copy;
+    const target = b.dataset.copyTarget ? $(b.dataset.copyTarget) : b.previousElementSibling;
+    try {
+      navigator.clipboard.writeText(v).then(() => toast(b.dataset.copyMsg || 'הועתק: ' + v), () => { selectText(target); toast('סמנו והעתיקו ידנית'); });
+    } catch (err) { selectText(target); toast('סמנו והעתיקו ידנית'); }
+  });
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-deal]'); if (!a) return;
+    dealState.dest = a.dataset.deal; dealState.hotel = 0; dealState.id = null;
+  });
   document.addEventListener('load', (e) => { if (e.target.classList && e.target.classList.contains('photo')) e.target.classList.add('loaded'); }, true);
   document.addEventListener('error', (e) => { if (e.target.classList && e.target.classList.contains('photo')) e.target.remove(); }, true);
   document.addEventListener('click', (e) => {
@@ -235,7 +256,7 @@
       const on = a.dataset.nav === view || (view === 'dest' && a.dataset.nav === 'explore');
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    const R = { home: renderHome, explore: renderExplore, dest: () => renderDest(arg), airport: renderAirport, budget: renderBudget, trips: renderTrips, help: renderHelp };
+    const R = { home: renderHome, explore: renderExplore, dest: () => renderDest(arg), deal: renderDeal, sites: renderSites, airport: renderAirport, budget: renderBudget, trips: renderTrips, help: renderHelp };
     R[view]();
     window.scrollTo(0, 0);
   }
@@ -253,17 +274,19 @@
      ========================================================= */
   function renderHome() {
     const el = $('#view-home');
+    const SLIDES = ['paris', 'tokyo', 'athens', 'eilat', 'newyork', 'barcelona', 'prague'].map(id => byId[id]).filter(Boolean);
     el.innerHTML = `
-      <div class="wrap">
-        <div class="hero">
+      <section class="hero-band">
+        <div class="hero-slides" aria-hidden="true">${SLIDES.map((d, i) => `<div class="slide ${i === 0 ? 'on' : ''}" data-cap="${esc(d.name)} · ${esc((mediaOf(d).photos[0] || [])[1] || '')}">${poster(d, 1600, 760)}${photoTag(d, 1920, 0)}</div>`).join('')}</div>
+        <div class="wrap hero">
           <div class="hero-copy">
-            <span class="eyebrow">TLV → העולם</span>
+            <span class="eyebrow hero-eyebrow">TLV → העולם · ${DESTS.length} יעדים</span>
             <h1 class="h-display">סמנו תאריכים ביומן.<br><span>אנחנו נמצא לאן לטוס.</span></h1>
-            <p class="lead">מסע מדרג ${DESTS.length} יעדים בארץ ובחו״ל לפי מזג האוויר בתאריכים שבחרתם, אורך החופשה והתקציב. מכאן ממשיכים לטיסות, זמני הגעה לנתב״ג, מלונות, רכב, מסעדות כשרות ומישלן, תחבורה ציבורית ומסלולים.</p>
-            <div class="hero-stats">
-              <div><b class="num">${DESTS.length}</b><span>יעדים</span></div>
-              <div><b class="num">${DATA.bookingSites.length}</b><span>אתרי הזמנה מחוברים</span></div>
-              <div><b class="num">${DESTS.reduce((a, d) => a + d.routes.length, 0)}</b><span>מסלולי טיול</span></div>
+            <p class="lead">מדרגים את היעדים לפי מזג האוויר בתאריכים שלכם, בונים דיל עם מלון, טיסה ורכב, וסוגרים מול סוכן או ישירות אצל הספק. כולל זמני הגעה לנתב״ג, מסעדות כשרות ומישלן, תחבורה, כסף ומסלולים.</p>
+            <div class="hero-ctas">
+              <a class="btn btn-amber" href="#planner" id="goPlan">בחירת תאריכים</a>
+              <a class="btn btn-glass" href="#deal">סגירת דיל</a>
+              <a class="btn btn-glass" href="#sites">כל אתרי החופשות</a>
             </div>
           </div>
           <div class="board" aria-label="לוח המראות — היעדים המומלצים לתאריכים שלכם">
@@ -273,6 +296,16 @@
             </div>
             <div class="board-rows" id="boardRows"></div>
           </div>
+        </div>
+        <div class="wrap hero-cap"><span id="heroCap"></span></div>
+      </section>
+
+      <div class="wrap">
+        <div class="features">
+          <a class="feature" href="#deal"><span class="f-ico">${ICON_F.deal}</span><b>סגירת דיל</b><span>מלון, טיסה ורכב בסיכום אחד, מול סוכן או ישירות</span></a>
+          <a class="feature" href="#sites"><span class="f-ico">${ICON_F.sites}</span><b>כל האתרים</b><span>${(window.APP_SITES || []).reduce((a, g) => a + g.items.length, 0)} אתרי חופשות עם התאריכים שלכם</span></a>
+          <a class="feature" href="#airport"><span class="f-ico">${ICON_F.plane}</span><b>זמני שדה תעופה</b><span>מתי לצאת מהבית ומתי נוחתים</span></a>
+          <a class="feature" href="#dest-paris.money"><span class="f-ico">${ICON_F.money}</span><b>כסף בכל מדינה</b><span>מטבע, שער חי, ממיר ומחירים</span></a>
         </div>
 
         <div class="panel planner" id="planner">
@@ -351,7 +384,26 @@
     drawCal();
     updatePlan();
     tickClock();
+    $('#goPlan').onclick = (e) => { e.preventDefault(); $('#planner').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+    startSlides();
   }
+
+  function startSlides() {
+    clearInterval(startSlides._t);
+    const slides = $$('.hero-slides .slide');
+    const cap = $('#heroCap');
+    let i = 0;
+    const show = () => { slides.forEach((x, k) => x.classList.toggle('on', k === i)); if (cap) cap.textContent = slides[i] ? slides[i].dataset.cap : ''; };
+    show();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || slides.length < 2) return;
+    startSlides._t = setInterval(() => { if (!document.body.contains(slides[0])) return clearInterval(startSlides._t); i = (i + 1) % slides.length; show(); }, 6000);
+  }
+  const ICON_F = {
+    deal: '<svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 3.8 9.3 9 10 5.2-.7 9-5 9-10V6zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4z" fill="currentColor"/></svg>',
+    sites: '<svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z" fill="currentColor"/></svg>',
+    plane: '<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor"/></svg>',
+    money: '<svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zm9 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 8v2a2 2 0 0 0 2-2zm12 0a2 2 0 0 0 2 2V8zM5 16h2a2 2 0 0 0-2-2zm14-2a2 2 0 0 0-2 2h2z" fill="currentColor"/></svg>'
+  };
 
   function bindSeg(sel, key, after) {
     const seg = $(sel);
@@ -477,7 +529,7 @@
             <div class="amount">${money(e.est.total)}</div>
             <div class="per">${money(perP)} לאדם · ${e.est.nights} לילות</div>
           </div>
-          <button class="btn btn-amber btn-sm" type="button" data-save="${d.id}">שמירה לחופשות שלי</button>
+          <div class="result-links"><a class="btn btn-amber btn-sm" href="#deal" data-deal="${d.id}">סגירת דיל</a><button class="btn btn-sm" type="button" data-save="${d.id}">שמירה</button></div>
         </div>
       </article>`;
   }
@@ -577,7 +629,7 @@
      ========================================================= */
   const TABS = [
     ['overview', 'סקירה'], ['gallery', 'תמונות'], ['flights', 'טיסה ושדה'], ['hotels', 'מלונות'], ['car', 'השכרת רכב'],
-    ['food', 'מסעדות'], ['transit', 'תחבורה ועלויות'], ['routes', 'מסלולים'], ['map', 'מפה'], ['videos', 'סרטונים וממליצים']
+    ['food', 'מסעדות'], ['money', 'כסף ותשלומים'], ['contacts', 'אנשי קשר'], ['transit', 'תחבורה ועלויות'], ['routes', 'מסלולים'], ['map', 'מפה'], ['videos', 'סרטונים וממליצים']
   ];
 
   function renderDest(id) {
@@ -596,7 +648,8 @@
             <h1 class="h-display">${esc(d.name)}</h1>
             <p>${esc(d.about)}</p>
             <div class="result-links">
-              <button class="btn btn-amber btn-sm" type="button" id="destSave">שמירה לחופשות שלי</button>
+              <a class="btn btn-amber btn-sm" href="#deal" id="destDeal">סגירת דיל ל${esc(d.name)}</a>
+              <button class="btn btn-sm" type="button" id="destSave">שמירה לחופשות שלי</button>
               <a class="btn btn-sm" href="#budget" id="destBudget">חישוב עלויות</a>
               ${d.flightTime ? '<a class="btn btn-sm" href="#airport" id="destAirport">מתי לצאת לשדה?</a>' : ''}
             </div>
@@ -618,6 +671,7 @@
         <div id="tabBody" role="tabpanel"></div>
       </div>`;
     $('#destSave').onclick = () => saveTrip(d.id);
+    $('#destDeal').onclick = () => { dealState.dest = d.id; dealState.hotel = 0; dealState.id = null; };
     $('#destBudget').onclick = () => { budgetState.dest = d.id; budgetState.custom = null; };
     const ap = $('#destAirport'); if (ap) ap.onclick = () => { airState.dest = d.id; };
     $('#destTabs').onclick = (e) => {
@@ -704,7 +758,7 @@
           <ul class="list">
             ${d.hotels.map(h => `<li>
               <div><div class="t">${esc(h.name)} <span class="tier ${h.tier === 'lux' ? 'tier-lux' : ''}">${{ lux: 'יוקרה', mid: 'בינוני', budget: 'חסכוני' }[h.tier]}</span></div>
-                <div class="s">${esc(h.area)} · ${esc(h.note)}</div></div>
+                <div class="s">${esc(h.area)} · ${esc(h.note)}</div>${contactHTML(h)}</div>
               <div class="actions"><span class="chip num">כ-${money(h.price)}</span>
                 ${ext(`https://www.booking.com/searchresults.he.html?ss=${enc(h.name + ' ' + d.nameEn)}&checkin=${iso(s.start)}&checkout=${iso(s.end)}&group_adults=${s.travelers}`, 'בדיקת זמינות', 'btn btn-sm')}
                 ${ext(gmaps(h.name + ' ' + d.nameEn), 'במפה', 'btn btn-sm btn-ghost')}</div>
@@ -737,13 +791,13 @@
           <div class="card">
             <div class="row"><h3>מסעדות כשרות</h3><span class="chip chip-good">כשר</span></div>
             <p class="fine">${esc(d.kosherNote)}</p>
-            <ul class="list">${d.kosher.map(r => `<li><div><div class="t">${esc(r.name)}</div><div class="s">${esc(r.area)} · ${esc(r.note)}</div></div>${ext(gmaps(r.name + ' ' + d.nameEn), 'מפה', 'btn btn-sm btn-ghost')}</li>`).join('')}</ul>
+            <ul class="list">${d.kosher.map(r => `<li><div><div class="t">${esc(r.name)}</div><div class="s">${esc(r.area)} · ${esc(r.note)}</div>${contactHTML(r)}</div>${ext(gmaps(r.name + ' ' + d.nameEn), 'מפה', 'btn btn-sm btn-ghost')}</li>`).join('')}</ul>
             ${ext(gmaps('kosher restaurant ' + d.nameEn), 'כל המסעדות הכשרות במפה', 'btn btn-sm')}
           </div>
           <div class="card">
             <div class="row"><h3>${d.michelin.length ? 'מישלן' : 'מסעדות שף'}</h3>${d.michelin.length ? '<span class="stars" aria-label="כוכבי מישלן">✦✦✦</span>' : ''}</div>
             <p class="fine">${esc(d.michelinNote)}</p>
-            <ul class="list">${(d.michelin.length ? d.michelin : d.food.slice(0, 2)).map(r => `<li><div><div class="t">${esc(r.name)}</div><div class="s">${esc(r.cuisine || r.type)} · ${esc(r.area)}</div></div>
+            <ul class="list">${(d.michelin.length ? d.michelin : d.food.slice(0, 2)).map(r => `<li><div><div class="t">${esc(r.name)}</div><div class="s">${esc(r.cuisine || r.type)} · ${esc(r.area)}</div>${contactHTML(r)}</div>
               ${r.stars ? `<span class="stars" aria-label="${r.stars} כוכבים">${'✦'.repeat(r.stars)}</span>` : ''}</li>`).join('')}</ul>
             ${d.michelin.length ? ext('https://guide.michelin.com/', 'מדריך מישלן הרשמי', 'btn btn-sm') : ''}
           </div>
@@ -808,6 +862,8 @@
           </div>
         </div>
         <ul class="list mt">${d.pois.map((p, i) => `<li><span><span class="mono" style="color:var(--teal)">${pad(i + 1)}</span> <span class="t">${esc(p.name)}</span></span>${ext(`https://www.google.com/maps/search/?api=1&query=${p.c[0]},${p.c[1]}`, 'ניווט', 'btn btn-sm btn-ghost')}</li>`).join('')}</ul>`,
+      money: () => moneyTab(d),
+      contacts: () => contactsTab(d),
       gallery: () => {
         const ph = mediaOf(d).photos;
         if (!ph.length) return '<div class="empty">אין עדיין תמונות ליעד הזה.</div>';
@@ -840,6 +896,7 @@
     body.innerHTML = T[st.tab]();
     $$('[data-air]', body).forEach(a => a.onclick = () => { airState.dest = a.dataset.air; });
     if (st.tab === 'map') initMap(d);
+    if (st.tab === 'money') bindConverter(d);
   }
 
   function siteLinks(d, s, kinds) {
@@ -870,6 +927,338 @@
     });
     if (pts.length > 1) map.fitBounds(pts, { padding: [40, 40] });
     setTimeout(() => { if (ok === 0 && bad > 0) fb.hidden = false; }, 5000);
+  }
+
+  /* =========================================================
+     אנשי קשר של ספקים
+     ========================================================= */
+  const ICON = {
+    pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z" fill="currentColor"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z" fill="currentColor"/></svg>',
+    web: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 6h-3a15.6 15.6 0 0 0-1.4-3.6A8 8 0 0 1 18.9 8zM12 4c.8 1.2 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.8 1.9-4zM4.3 14a8.3 8.3 0 0 1 0-4h3.4a16 16 0 0 0 0 4zm.8 2h3a15.6 15.6 0 0 0 1.4 3.6A8 8 0 0 1 5.1 16zm3-8h-3a8 8 0 0 1 4.4-3.6C8.9 5.5 8.4 6.7 8.1 8zM12 20c-.8-1.2-1.5-2.5-1.9-4h3.8c-.4 1.5-1.1 2.8-1.9 4zm2.3-6H9.7a14 14 0 0 1 0-4h4.6a14 14 0 0 1 0 4zm.3 5.6c.6-1.1 1.1-2.3 1.4-3.6h3a8 8 0 0 1-4.4 3.6zm1.7-5.6a16 16 0 0 0 0-4h3.4a8.3 8.3 0 0 1 0 4z" fill="currentColor"/></svg>'
+  };
+  const telHref = (p) => 'tel:' + String(p).replace(/[^\d+]/g, '');
+  function contactHTML(x) {
+    if (!x || (!x.addr && !x.phone && !x.web)) return '';
+    return `<div class="contact">
+      ${x.addr ? `<a class="c-item" href="${esc(gmaps(x.name + ', ' + x.addr))}" target="_blank" rel="noopener">${ICON.pin}<span dir="ltr">${esc(x.addr)}</span></a>` : ''}
+      ${x.phone ? `<span class="c-item">${ICON.phone}<a href="${telHref(x.phone)}" dir="ltr" class="mono">${esc(x.phone)}</a><button type="button" class="c-copy" data-copy="${esc(x.phone)}" aria-label="העתקת מספר">העתקה</button></span>` : ''}
+      ${x.web ? `<a class="c-item" href="${esc(x.web)}" target="_blank" rel="noopener">${ICON.web}<span>אתר רשמי</span></a>` : ''}
+    </div>`;
+  }
+  const CAR_WEB = { Sixt: 'https://www.sixt.com/', Hertz: 'https://www.hertz.com/', Avis: 'https://www.avis.com/', Europcar: 'https://www.europcar.com/', Enterprise: 'https://www.enterprise.com/', National: 'https://www.nationalcar.com/', 'שלמה סיקסט': 'https://www.shlomo.co.il/', 'אלדן': 'https://www.eldan.co.il/' };
+  function contactsTab(d) {
+    const group = (title, items) => items.length ? `
+      <div class="card"><h3>${title}</h3><ul class="list">${items.map(x => `<li><div><div class="t">${esc(x.name)}</div>${x.sub ? `<div class="s">${esc(x.sub)}</div>` : ''}${contactHTML(x)}</div></li>`).join('')}</ul></div>` : '';
+    const hotels = d.hotels.map(h => ({ ...h, sub: `${{ lux: 'יוקרה', mid: 'בינוני', budget: 'חסכוני' }[h.tier]} · ${h.area}` }));
+    const kosher = d.kosher.map(k => ({ ...k, sub: k.area }));
+    const chef = d.michelin.filter(m => m.phone).map(m => ({ ...m, sub: `${'✦'.repeat(m.stars)} ${m.cuisine}` }));
+    const cars = d.car.companies.map(c => ({ name: c, sub: `השכרה ב-${d.airport.code}`, web: CAR_WEB[c] || '' }));
+    return `
+      <p class="lead" style="margin-bottom:16px">כתובות, טלפונים ואתרים רשמיים של ספקי השירות. לחיצה על כתובת פותחת ניווט; לחיצה על מספר מחייגת (במכשיר שתומך בזה).</p>
+      <div class="grid-2">
+        ${group('מלונות', hotels)}
+        <div class="stack-v">
+          ${group('מסעדות כשרות', kosher)}
+          ${group('מסעדות מישלן', chef)}
+          ${group('השכרת רכב', cars)}
+          <div class="card"><h3>חירום ומידע</h3><ul class="list">
+            <li><span class="t">חירום מקומי</span><span class="mono" dir="ltr">${esc(d.emergency)}</span></li>
+            <li><span class="t">חדר המצב של משרד החוץ</span><span><span class="mono" dir="ltr">+972 2 530 3155</span></span></li>
+            <li><span class="t">מידע טיסות נתב״ג</span><span class="mono" dir="ltr">*6663</span></li>
+          </ul></div>
+        </div>
+      </div>
+      <p class="fine mt">הפרטים נאספו ממקורות פומביים (אתרי המלונות והמסעדות, Yelp, Tripadvisor). מומלץ לאמת לפני הגעה.</p>`;
+  }
+
+  /* =========================================================
+     כסף ושערי מטבע
+     ========================================================= */
+  const RATES = { live: false, date: '', map: {} };
+  const rateOf = (d) => RATES.map[d.currency.code] || d.currency.rate;
+  const fmtRate = (r) => r >= 1 ? r.toFixed(2) : r >= 0.1 ? r.toFixed(3) : r.toFixed(4);
+  function applyRates(j) {
+    const codes = ['EUR', 'GBP', 'USD', 'CZK', 'THB', 'JPY'];
+    codes.forEach(c => { if (j.rates && j.rates[c]) RATES.map[c] = 1 / j.rates[c]; });
+    if (RATES.map.USD) RATES.map.AED = RATES.map.USD / 3.6725; // הדירהם צמוד לדולר
+    RATES.map.ILS = 1;
+    RATES.live = true; RATES.date = j.date || '';
+  }
+  function loadRates() {
+    const cached = store.get('rates', null);
+    if (cached && cached.fetched === iso(today)) { applyRates(cached); return; }
+    const urls = ['https://api.frankfurter.app/latest?from=ILS', 'https://api.frankfurter.dev/v1/latest?base=ILS'];
+    const tryNext = (i) => {
+      if (i >= urls.length || !window.fetch) return;
+      fetch(urls[i]).then(r => r.ok ? r.json() : Promise.reject()).then(j => {
+        applyRates(j); store.set('rates', { ...j, fetched: iso(today) });
+        if (location.hash.includes('.money')) route();
+      }).catch(() => tryNext(i + 1));
+    };
+    tryNext(0);
+  }
+  function moneyTab(d) {
+    const code = d.currency.code;
+    const c = MONEY.currencies[code] || {};
+    const m = MONEY.byDest[d.id] || {};
+    const r = rateOf(d);
+    const isIL = code === 'ILS';
+    return `
+      <div class="money-hero">
+        <div class="coin" aria-hidden="true">${esc(c.symbol || code)}</div>
+        <div>
+          <span class="eyebrow">המטבע ב${esc(d.country)}</span>
+          <h2 class="h-section" style="font-size:44px">${esc(d.currency.name)} <span class="mono fine" style="font-size:18px">${esc(code)}</span></h2>
+          ${isIL ? '<p class="lead">משלמים בשקלים — אין צורך בהמרה.</p>' : `<p class="lead"><b class="num">1 ${esc(code)} ≈ ₪${fmtRate(r)}</b> · <b class="num">₪100 ≈ ${Math.round(100 / r).toLocaleString('he-IL')} ${esc(code)}</b></p>
+          <span class="chip ${RATES.live ? 'chip-good' : ''}">${RATES.live ? `שער יציג של הבנק המרכזי האירופי · ${esc(RATES.date)}` : 'שער משוער — השער החי לא נטען'}</span>`}
+        </div>
+      </div>
+      ${isIL ? '' : `
+      <div class="panel converter">
+        <div class="field"><label for="cvIls">שקלים (₪)</label><input class="input" id="cvIls" type="number" min="0" step="10" value="1000" inputmode="decimal"></div>
+        <span class="cv-eq" aria-hidden="true">⇄</span>
+        <div class="field"><label for="cvLoc">${esc(d.currency.name)} (${esc(code)})</label><input class="input" id="cvLoc" type="number" min="0" step="1" inputmode="decimal"></div>
+      </div>`}
+      <div class="grid-3 mt">
+        <div class="card"><h3>שטרות ומטבעות</h3><ul class="list">
+          <li><span class="t">שטרות</span><span>${esc(c.notes || '—')}</span></li>
+          <li><span class="t">מטבעות</span><span>${esc(c.coins || '—')}</span></li>
+        </ul></div>
+        <div class="card"><h3>איך משלמים</h3><p>${esc(m.pay || '')}</p><p class="fine"><b>כספומטים:</b> ${esc(m.atm || '')}</p></div>
+        <div class="card"><h3>מס, טיפים והחזרים</h3><p>${esc(m.tax || '—')}</p><p class="fine"><b>טיפ:</b> ${esc(d.tipping)}</p></div>
+      </div>
+      ${m.prices ? `<div class="card mt"><h3>כמה דברים עולים</h3><div class="table-wrap"><table class="tbl">
+        <thead><tr><th>מה</th><th>מחיר מקומי</th>${isIL ? '' : '<th>בשקלים</th>'}</tr></thead>
+        <tbody>${m.prices.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${(c.symbol || '')}${v.toLocaleString('he-IL')}</td>${isIL ? '' : `<td class="num">${money(v * r)}</td>`}</tr>`).join('')}</tbody>
+      </table></div><p class="fine">מחירים טיפוסיים ומשוערים.</p></div>` : ''}
+      ${isIL ? '' : `<p class="warn-note mt">בתשלום באשראי או במשיכה מכספומט בחו״ל, כשהמכשיר שואל "לחייב בשקלים או ב-${esc(code)}?" — בחרו ${esc(code)}. חיוב בשקלים (DCC) כמעט תמיד בשער גרוע יותר.</p>`}`;
+  }
+  function bindConverter(d) {
+    const a = $('#cvIls'), b = $('#cvLoc'); if (!a || !b) return;
+    const r = rateOf(d);
+    const fromIls = () => { b.value = a.value === '' ? '' : Math.round((+a.value / r) * 100) / 100; };
+    const fromLoc = () => { a.value = b.value === '' ? '' : Math.round(+b.value * r * 100) / 100; };
+    a.oninput = fromIls; b.oninput = fromLoc; fromIls();
+  }
+
+  /* =========================================================
+     סגירת דיל
+     ========================================================= */
+  const dealState = Object.assign({ dest: 'paris', hotel: 0, flight: 'eco', car: 'none', ins: true, transfer: false, esim: true, name: '', phone: '', notes: '', id: null }, store.get('dealDraft', {}) || {});
+  const saveDeal = () => store.set('dealDraft', { dest: dealState.dest, hotel: dealState.hotel, flight: dealState.flight, car: dealState.car, ins: dealState.ins, transfer: dealState.transfer, esim: dealState.esim, name: dealState.name, phone: dealState.phone, notes: dealState.notes });
+  const CAR_OPTS = [['none', 'בלי רכב', 0], ['small', 'רכב קטן', 1], ['family', 'רכב משפחתי', 1.35], ['suv', 'SUV / 7 מקומות', 1.8]];
+  function dealCalc(d, s) {
+    const nights = Math.max(1, nightsOf(s)), days = nights + 1, n = s.travelers, rooms = Math.ceil(n / 2);
+    const peak = isPeak(s);
+    const h = d.hotels[dealState.hotel] || d.hotels[0];
+    const abroad = d.region === 'abroad';
+    const carF = (CAR_OPTS.find(c => c[0] === dealState.car) || CAR_OPTS[0])[2];
+    const lines = [];
+    if (d.flightTime && dealState.flight !== 'none') lines.push(['flight', dealState.flight === 'biz' ? 'טיסות — מחלקת עסקים' : 'טיסות — מחלקת תיירים', d.costs.flight * n * (peak ? 1.3 : 1) * (dealState.flight === 'biz' ? 3.2 : 1)]);
+    lines.push(['hotel', `${h.name} · ${nights} לילות · ${rooms} ${rooms > 1 ? 'חדרים' : 'חדר'}`, h.price * nights * rooms * (peak ? 1.2 : 1)]);
+    if (carF) lines.push(['car', `${CAR_OPTS.find(c => c[0] === dealState.car)[1]} · ${days} ימים`, d.costs.car * days * carF]);
+    if (dealState.ins) lines.push(['ins', `ביטוח נסיעות · ${n} מבוטחים`, (abroad ? 22 : 8) * n * days]);
+    if (dealState.transfer) lines.push(['transfer', 'העברות שדה–מלון הלוך וחזור', abroad ? 380 : 200]);
+    if (dealState.esim && abroad) lines.push(['esim', `eSIM גלישה · ${n} מכשירים`, 45 * n]);
+    const total = lines.reduce((a, l) => a + l[2], 0);
+    return { lines, total, nights, days, n, rooms, h, peak };
+  }
+  function dealId(d, s) {
+    if (!dealState.id) dealState.id = `MSA-${yymmdd(s.start)}-${d.iata === 'TLV' ? 'ISR' : d.iata}-${String(Math.floor(1000 + Math.random() * 9000))}`;
+    return dealState.id;
+  }
+  function dealText(d, s, c) {
+    return [
+      `בקשה לסגירת דיל ${dealId(d, s)}`,
+      `יעד: ${d.name} (${d.country})`,
+      `תאריכים: ${fmt(s.start)}.${s.start.getFullYear()} – ${fmt(s.end)}.${s.end.getFullYear()} · ${c.nights} לילות`,
+      `מטיילים: ${c.n}`,
+      ...c.lines.map(l => `• ${l[1]}: ${money(l[2])}`),
+      `סה״כ משוער: ${money(c.total)}`,
+      dealState.name ? `שם: ${dealState.name}` : '',
+      dealState.phone ? `טלפון: ${dealState.phone}` : '',
+      dealState.notes ? `הערות: ${dealState.notes}` : ''
+    ].filter(Boolean).join('\n');
+  }
+
+  function renderDeal() {
+    const el = $('#view-deal');
+    if (!byId[dealState.dest]) dealState.dest = 'paris';
+    const s = st.end ? st : { ...st, end: addDays(st.start, 4) };
+    el.innerHTML = `
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">בונים את הדיל</span>
+            <h1 class="h-section">סגירת דיל</h1>
+            <p class="lead">בוחרים יעד, מלון, טיסה, רכב ותוספות. מקבלים סיכום עם מספר דיל, וסוגרים מול הסוכן או מזמינים ישירות אצל כל ספק.</p>
+          </div>
+        </div>
+        <div class="deal-layout">
+          <div class="stack-v" id="dealSteps"></div>
+          <aside class="deal-pass" id="dealPass" aria-live="polite"></aside>
+        </div>
+      </div>`;
+    drawDeal();
+  }
+
+  function drawDeal() {
+    const d = byId[dealState.dest];
+    const s = st.end ? st : { ...st, end: addDays(st.start, 4) };
+    const steps = $('#dealSteps'); if (!steps) return;
+    const opt = (name, val, cur, label, sub) => `<label class="opt ${val === cur ? 'on' : ''}"><input type="radio" name="${name}" value="${val}" ${val === cur ? 'checked' : ''}><span><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</span></label>`;
+    steps.innerHTML = `
+      <section class="step-card">
+        <header><span class="step-n">1</span><h3>יעד ותאריכים</h3></header>
+        <div class="form-grid">
+          <div class="field"><label for="dlDest">יעד</label>
+            <select class="input" id="dlDest">${DESTS.map(x => `<option value="${x.id}" ${x.id === d.id ? 'selected' : ''}>${esc(x.name)} · ${esc(x.country)}</option>`).join('')}</select></div>
+          <div class="field"><span class="label">תאריכים ומטיילים</span>
+            <div class="date-pill"><span class="num">${fmt(s.start)} – ${fmt(s.end)}</span><span>${nightsOf(s)} לילות · ${s.travelers} מטיילים</span><a href="#home">שינוי ביומן</a></div></div>
+        </div>
+      </section>
+      <section class="step-card">
+        <header><span class="step-n">2</span><h3>מלון</h3></header>
+        <div class="hotel-opts">${d.hotels.map((h, i) => `
+          <label class="hotel-opt ${i === dealState.hotel ? 'on' : ''}">
+            <input type="radio" name="dlHotel" value="${i}" ${i === dealState.hotel ? 'checked' : ''}>
+            <span class="ho-top"><b>${esc(h.name)}</b><span class="tier ${h.tier === 'lux' ? 'tier-lux' : ''}">${{ lux: 'יוקרה', mid: 'בינוני', budget: 'חסכוני' }[h.tier]}</span></span>
+            <span class="fine">${esc(h.area)} · ${esc(h.note)}</span>
+            <span class="ho-price num">כ-${money(h.price)} ללילה</span>
+            ${h.phone ? `<span class="fine mono" dir="ltr">${esc(h.phone)}</span>` : ''}
+          </label>`).join('')}</div>
+      </section>
+      ${d.flightTime ? `<section class="step-card">
+        <header><span class="step-n">3</span><h3>טיסה</h3></header>
+        <div class="opts">${opt('dlFlight', 'eco', dealState.flight, 'מחלקת תיירים', `TLV → ${d.airport.code} · כ-${d.flightTime} ש׳`)}${opt('dlFlight', 'biz', dealState.flight, 'מחלקת עסקים', 'מושב נפתח, טרקלין')}${opt('dlFlight', 'none', dealState.flight, 'יש לי כבר טיסה', '')}</div>
+      </section>` : ''}
+      <section class="step-card">
+        <header><span class="step-n">${d.flightTime ? 4 : 3}</span><h3>רכב</h3></header>
+        <p class="fine">${esc(d.car.need)} · נהיגה בצד ${esc(d.drivingSide)}</p>
+        <div class="opts">${CAR_OPTS.map(c => opt('dlCar', c[0], dealState.car, c[1], c[2] ? `כ-${money(d.costs.car * c[2])} ליום` : '')).join('')}</div>
+      </section>
+      <section class="step-card">
+        <header><span class="step-n">${d.flightTime ? 5 : 4}</span><h3>תוספות</h3></header>
+        <div class="opts">
+          <label class="opt ${dealState.ins ? 'on' : ''}"><input type="checkbox" id="dlIns" ${dealState.ins ? 'checked' : ''}><span><b>ביטוח נסיעות</b><small>רפואי, כבודה וביטולים</small></span></label>
+          <label class="opt ${dealState.transfer ? 'on' : ''}"><input type="checkbox" id="dlTransfer" ${dealState.transfer ? 'checked' : ''}><span><b>העברות מהשדה</b><small>נהג ממתין בנחיתה</small></span></label>
+          ${d.region === 'abroad' ? `<label class="opt ${dealState.esim ? 'on' : ''}"><input type="checkbox" id="dlEsim" ${dealState.esim ? 'checked' : ''}><span><b>eSIM גלישה</b><small>מחובר מהנחיתה</small></span></label>` : ''}
+        </div>
+      </section>
+      <section class="step-card">
+        <header><span class="step-n">${d.flightTime ? 6 : 5}</span><h3>פרטי המזמין</h3></header>
+        <div class="form-grid">
+          <div class="field"><label for="dlName">שם מלא</label><input class="input" id="dlName" autocomplete="name" value="${esc(dealState.name)}"></div>
+          <div class="field"><label for="dlPhone">טלפון</label><input class="input" id="dlPhone" type="tel" autocomplete="tel" dir="ltr" value="${esc(dealState.phone)}"></div>
+        </div>
+        <div class="field"><label for="dlNotes">בקשות מיוחדות</label><textarea class="input" id="dlNotes" rows="2" placeholder="לדוגמה: חדר עם נוף, ארוחות כשרות, עגלת תינוק">${esc(dealState.notes)}</textarea></div>
+      </section>`;
+
+    const re = () => { saveDeal(); drawDeal(); };
+    $('#dlDest').onchange = (e) => { dealState.dest = e.target.value; dealState.hotel = 0; dealState.id = null; re(); };
+    $$('input[name=dlHotel]').forEach(i => i.onchange = () => { dealState.hotel = +i.value; re(); });
+    $$('input[name=dlFlight]').forEach(i => i.onchange = () => { dealState.flight = i.value; re(); });
+    $$('input[name=dlCar]').forEach(i => i.onchange = () => { dealState.car = i.value; re(); });
+    [['#dlIns', 'ins'], ['#dlTransfer', 'transfer'], ['#dlEsim', 'esim']].forEach(([sel, k]) => { const x = $(sel); if (x) x.onchange = () => { dealState[k] = x.checked; re(); }; });
+    [['#dlName', 'name'], ['#dlPhone', 'phone'], ['#dlNotes', 'notes']].forEach(([sel, k]) => { $(sel).oninput = (e) => { dealState[k] = e.target.value; saveDeal(); drawPass(); }; });
+    drawPass();
+  }
+
+  function drawPass() {
+    const d = byId[dealState.dest];
+    const s = st.end ? st : { ...st, end: addDays(st.start, 4) };
+    const c = dealCalc(d, s);
+    const id = dealId(d, s);
+    const text = dealText(d, s, c);
+    const wa = AG.whatsapp ? `https://wa.me/${String(AG.whatsapp).replace(/\D/g, '')}?text=${enc(text)}` : '';
+    const mail = AG.email ? `mailto:${AG.email}?subject=${enc('בקשה לסגירת דיל ' + id)}&body=${enc(text)}` : '';
+    const direct = [
+      ['לינה', c.h.name, `https://www.booking.com/searchresults.he.html?ss=${enc(c.h.name + ' ' + d.nameEn)}&checkin=${iso(s.start)}&checkout=${iso(s.end)}&group_adults=${c.n}&no_rooms=${c.rooms}${PT.bookingAid ? '&aid=' + enc(PT.bookingAid) : ''}`],
+      d.flightTime && dealState.flight !== 'none' ? ['טיסות', `TLV → ${d.airport.code}`, siteUrl('skyscanner', d, s)] : null,
+      dealState.car !== 'none' ? ['רכב', `איסוף ב-${d.airport.code}`, PT.discoverCarsAid ? siteUrl('discovercars', d, s) : siteUrl('kayakcars', d, s)] : null,
+      dealState.ins ? ['ביטוח', 'PassportCard', 'https://www.passportcard.co.il/'] : null,
+      ['אטרקציות', d.name, siteUrl('getyourguide', d, s)]
+    ].filter(Boolean);
+    $('#dealPass').innerHTML = `
+      <div class="dp-top">
+        ${poster(d, 600, 260)}${photoTag(d, 800, 0)}
+        <div class="dp-route"><span class="mono">TLV</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor" transform="rotate(-90 12 12)"/></svg><span class="mono">${d.iata === 'TLV' ? 'ISR' : d.airport.code}</span></div>
+        <div class="dp-name"><b>${esc(d.name)}</b><span>${fmt(s.start)} – ${fmt(s.end)} · ${c.nights} לילות · ${c.n} מטיילים</span></div>
+      </div>
+      <div class="dp-body">
+        <div class="dp-id"><span class="label">מספר דיל</span><span class="mono">${esc(id)}</span></div>
+        <ul class="dp-lines">${c.lines.map(l => `<li><span>${esc(l[1])}</span><span class="num">${money(l[2])}</span></li>`).join('')}</ul>
+        <div class="dp-total"><span>סה״כ משוער</span><b class="num">${money(c.total)}</b></div>
+        <div class="fine num">${money(c.total / c.n)} לאדם${c.peak ? ' · כולל תוספת עונת שיא' : ''}</div>
+
+        <div class="dp-actions">
+          ${wa ? `<a class="btn btn-amber" href="${esc(wa)}" target="_blank" rel="noopener">סגירת הדיל מול הסוכן בוואטסאפ</a>` : ''}
+          ${mail ? `<a class="btn" href="${esc(mail)}">שליחת הדיל במייל לסוכן</a>` : ''}
+          ${AG.phone ? `<div class="copy-row"><span>טלפון הסוכן</span><span class="mono" dir="ltr">${esc(AG.phone)}</span></div>` : ''}
+          ${!wa && !mail ? `<p class="note">חיבור לסוכן עוד לא הוגדר באתר. אפשר להעתיק את פרטי הדיל ולשלוח לסוכן, או להזמין ישירות אצל הספקים למטה.</p>` : ''}
+          <textarea class="input dp-text" id="dealText" rows="6" readonly>${esc(text)}</textarea>
+          <button type="button" class="btn" data-copy="${esc(text)}" data-copy-target="#dealText" data-copy-msg="פרטי הדיל הועתקו">העתקת פרטי הדיל</button>
+          <button type="button" class="btn btn-ghost" id="dealSave">שמירה לחופשות שלי</button>
+        </div>
+
+        <div class="dp-direct">
+          <span class="label">או הזמנה ישירה אצל הספק</span>
+          ${direct.map(([k, v, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener"><span class="kind">${k}</span><b>${esc(v)}</b><span class="go">להזמנה ←</span></a>`).join('')}
+        </div>
+        <p class="fine">המחירים משוערים. המחיר הסופי נקבע אצל הספק או הסוכן בזמן ההזמנה.</p>
+      </div>`;
+    $('#dealSave').onclick = () => saveTrip(d.id, { end: s.end, travelers: s.travelers, budget: c.total });
+  }
+
+  /* =========================================================
+     כל האתרים
+     ========================================================= */
+  const sitesState = { q: '', dest: null };
+  function renderSites() {
+    const el = $('#view-sites');
+    if (!sitesState.dest) sitesState.dest = dealState.dest || 'paris';
+    const s = st.end ? st : { ...st, end: addDays(st.start, 4) };
+    const groups = window.APP_SITES || [];
+    const total = groups.reduce((a, g) => a + g.items.length, 0);
+    el.innerHTML = `
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">${total} אתרים</span>
+            <h1 class="h-section">כל אתרי החופשות במקום אחד</h1>
+            <p class="lead">טיסות, מלונות, חבילות, רכב, אטרקציות וביטוח. באתרים המסומנים היעד והתאריכים שלכם כבר ממולאים.</p>
+          </div>
+        </div>
+        <div class="panel sites-bar">
+          <div class="field"><label for="stDest">יעד</label>
+            <select class="input" id="stDest">${DESTS.map(x => `<option value="${x.id}" ${x.id === sitesState.dest ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
+          <div class="date-pill"><span class="num">${fmt(s.start)} – ${fmt(s.end)}</span><span>${s.travelers} מטיילים</span><a href="#home">שינוי</a></div>
+          <div class="field" style="flex:1;min-width:180px"><label for="stQ">חיפוש אתר</label><input class="input" id="stQ" type="search" placeholder="לדוגמה: Booking, איסתא, רכב" value="${esc(sitesState.q)}"></div>
+        </div>
+        <div id="sitesList"></div>
+      </div>`;
+    const draw = () => {
+      const d = byId[sitesState.dest];
+      const q = sitesState.q.trim().toLowerCase();
+      const html = groups.map(g => {
+        const items = g.items.filter(it => !q || (it.n + ' ' + it.d + ' ' + g.cat).toLowerCase().includes(q));
+        if (!items.length) return '';
+        return `<section class="sites-group"><h2>${esc(g.cat)}</h2><div class="site-links">${items.map(it => {
+          const deep = it.deep && !(d.flightTime === 0 && ['skyscanner', 'gflights', 'kayak'].includes(it.deep));
+          const href = deep ? siteUrl(it.deep, d, s) : it.u;
+          return `<a class="site-link" href="${esc(href)}" target="_blank" rel="noopener">
+            <span class="site-mark" aria-hidden="true">${esc(it.n.replace(/[^A-Za-zא-ת]/g, '').slice(0, 1).toUpperCase())}</span>
+            <b>${esc(it.n)}</b><span>${esc(it.d)}</span>
+            ${deep ? `<span class="chip chip-good" style="justify-self:start;margin-top:4px">${esc(d.name)} · ${fmt(s.start)}–${fmt(s.end)}</span>` : ''}
+          </a>`;
+        }).join('')}</div></section>`;
+      }).join('');
+      $('#sitesList').innerHTML = html || '<div class="empty">לא נמצאו אתרים.</div>';
+    };
+    $('#stDest').onchange = (e) => { sitesState.dest = e.target.value; draw(); };
+    $('#stQ').oninput = (e) => { sitesState.q = e.target.value; draw(); };
+    draw();
   }
 
   /* =========================================================
@@ -1289,13 +1678,7 @@
         </div>
       </div>`;
     $('#openChat').onclick = () => openChat(true);
-    $$('[data-copy]', el).forEach(b => b.onclick = () => {
-      const v = b.dataset.copy;
-      const done = () => toast('הועתק: ' + v);
-      try {
-        navigator.clipboard.writeText(v).then(done, () => { selectText(b.previousElementSibling); toast('סמנו והעתיקו ידנית'); });
-      } catch (e) { selectText(b.previousElementSibling); }
-    });
+
   }
   function selectText(node) {
     try { const r = document.createRange(); r.selectNodeContents(node); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } catch (e) { /* */ }
@@ -1317,6 +1700,19 @@
     const d = findDest(q);
     const has = (...w) => w.some(x => q.includes(x));
     const need = (what) => `על איזה יעד? לדוגמה: "${what} בפריז". היעדים: ${DESTS.map(x => x.name).join(', ')}.`;
+    if (has('מטבע', 'כסף', 'שער', 'מזומן', 'כספומט', 'להמיר')) {
+      if (!d) return need('כסף ומטבע');
+      const c = MONEY.currencies[d.currency.code] || {};
+      return `<b>כסף ב${esc(d.country)}:</b> ${esc(d.currency.name)} (${esc(d.currency.code)}${c.symbol ? ' ' + esc(c.symbol) : ''}). 1 ${esc(d.currency.code)} ≈ ₪${fmtRate(rateOf(d))}.<br>${esc((MONEY.byDest[d.id] || {}).pay || '')}<br><a href="#dest-${d.id}.money">ממיר ומחירים טיפוסיים</a>`;
+    }
+    if (has('טלפון', 'כתובת', 'איש קשר', 'אנשי קשר', 'ליצור קשר')) {
+      if (!d) return need('אנשי קשר');
+      return `כתובות וטלפונים של מלונות ומסעדות ב${esc(d.name)}: <a href="#dest-${d.id}.contacts">לרשימה המלאה</a>`;
+    }
+    if (has('דיל', 'לסגור', 'להזמין', 'הזמנה', 'סוכן')) {
+      if (d) { dealState.dest = d.id; dealState.hotel = 0; dealState.id = null; }
+      return `בעמוד <a href="#deal">סגירת דיל</a> בוחרים מלון, טיסה, רכב ותוספות, ומקבלים סיכום עם מספר דיל. משם סוגרים מול הסוכן או מזמינים ישירות אצל הספקים.`;
+    }
     if (has('כשר')) {
       if (!d) return need('מסעדות כשרות');
       return `<b>אוכל כשר ב${esc(d.name)}</b><br>${esc(d.kosherNote)}<br>${d.kosher.map(r => `• ${esc(r.name)} — ${esc(r.area)}`).join('<br>')}<br><a href="#dest-${d.id}.food">לכל המסעדות</a>`;
@@ -1372,7 +1768,7 @@
     return 'לא הבנתי עד הסוף. אפשר לשאול על יעד, מלונות, רכב, מסעדות כשרות, מישלן, תחבורה, מזג אוויר, תקציב או זמני הגעה לשדה. נסו אחת מההצעות למטה.';
   }
 
-  const CHIPS = ['לאן כדאי לטוס בתאריכים שלי?', 'מסעדות כשרות ברומא', 'מתי לצאת לנתב״ג?', 'תחבורה בלונדון', 'מישלן בפריז', 'ויזה לארה״ב'];
+  const CHIPS = ['לאן כדאי לטוס בתאריכים שלי?', 'מסעדות כשרות ברומא', 'איזה כסף יש ביפן?', 'טלפון של מלונות בפריז', 'לסגור דיל לאתונה', 'מתי לצאת לנתב״ג?'];
   function botSay(html, who) {
     const log = $('#chatLog');
     const m = document.createElement('div');
@@ -1414,5 +1810,8 @@
   /* ---------- הפעלה ---------- */
   initTheme();
   initChat();
+  loadRates();
+  const agl = $('#agencyLine');
+  if (agl && (AG.name || AG.phone || AG.email)) agl.textContent = [AG.name, AG.phone, AG.email, AG.license ? 'רישיון ' + AG.license : ''].filter(Boolean).join(' · ');
   route();
 })();
