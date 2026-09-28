@@ -138,6 +138,12 @@ window.Posters = (function () {
       return s;
     },
 
+    /* מסה שטוחה — מצדה / שפת מכתש */
+    mesa: (c, p) => `
+      <path fill="${c}" d="M-40 160 L-10 104 Q-2 96 10 94 L70 92 Q84 92 92 100 L116 128 L140 160 Z"/>
+      <path fill="${p}" opacity=".18" d="M12 100 L68 98 L66 104 L14 106 Z"/>
+      <path d="M-4 150 Q20 132 34 118 Q42 110 52 104" stroke="${p}" stroke-opacity=".35" stroke-width="2" fill="none" stroke-dasharray="4 4"/>`,
+
     'hills-lake': (c, p) => `
       <path fill="${c}" d="M20 160 L22 96 Q26 70 28 60 Q30 70 34 96 L36 160 Z"/>
       <path fill="${c}" d="M40 160 L42 110 Q45 88 46 80 Q48 88 51 110 L52 160 Z"/>
@@ -173,7 +179,7 @@ window.Posters = (function () {
 
     const far = `<path fill="${p.far}" d="M0 ${horizon} Q${W * 0.18} ${horizon - H * 0.1} ${W * 0.38} ${horizon - H * 0.03} T${W * 0.72} ${horizon - H * 0.06} T${W} ${horizon - H * 0.02} L${W} ${H} L0 ${H} Z"/>`;
 
-    const sea = water[p.icon]
+    const sea = (p.sea !== undefined ? p.sea : water[p.icon])
       ? `<rect x="0" y="${H * 0.8}" width="${W}" height="${H * 0.2}" fill="${p.land}" opacity=".85"/>
          ${[0, 1, 2].map(i => `<path d="M${W * 0.05} ${H * (0.84 + i * 0.045)} q${W * 0.06} -6 ${W * 0.12} 0 t${W * 0.12} 0 t${W * 0.12} 0 t${W * 0.12} 0 t${W * 0.12} 0 t${W * 0.12} 0 t${W * 0.12} 0" stroke="${p.sun}" stroke-opacity=".5" stroke-width="1.4" fill="none"/>`).join('')}`
       : `<path fill="${p.land}" d="M0 ${H * 0.9} Q${W * 0.3} ${H * 0.84} ${W * 0.6} ${H * 0.88} T${W} ${H * 0.86} L${W} ${H} L0 ${H} Z"/>`;

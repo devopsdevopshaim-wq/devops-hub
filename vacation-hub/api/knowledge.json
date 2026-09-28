@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-28T11:12:54.959Z",
+ "generatedAt": "2026-09-28T15:50:21.800Z",
  "brand": "מסע",
  "agency": {
   "phone": "054-497-9771",
@@ -258,6 +258,11 @@
    "hotels": [
     {
      "name": "Isrotel Royal Beach",
+     "kind": "resort",
+     "tags": [
+      "pool",
+      "spa"
+     ],
      "tier": "lux",
      "price": 1900,
      "area": "הטיילת הצפונית",
@@ -268,6 +273,11 @@
     },
     {
      "name": "Dan Eilat",
+     "kind": "resort",
+     "tags": [
+      "family",
+      "pool"
+     ],
      "tier": "lux",
      "price": 1600,
      "area": "החוף הצפוני",
@@ -295,8 +305,96 @@
      "phone": "+972 8 638 2222",
      "web": "https://www.isrotel.com/isrotel-hotels/eilat/isrotel-yam-suf/",
      "note": "גישה ישירה לשונית"
+    },
+    {
+     "name": "Herods Palace",
+     "kind": "resort",
+     "tags": [
+      "pool",
+      "spa",
+      "family"
+     ],
+     "tier": "lux",
+     "price": 1700,
+     "area": "החוף הצפוני",
+     "addr": "HaYam St 7, Eilat",
+     "phone": "+972 8 638 0000",
+     "web": "https://www.herods-hotels.com/herods-hotels/herods-eilat/herods-palace/",
+     "note": "מתחם ארמון עם בריכות וספא"
     }
    ],
+   "attractions": [
+    {
+     "name": "המצפה התת-ימי (Coral World)",
+     "type": "אטרקציה",
+     "tags": [
+      "family",
+      "nature"
+     ],
+     "addr": "Coral Beach, Eilat",
+     "phone": "+972 8 636 4200",
+     "web": "https://coralworld.co.il/en/",
+     "note": "מגדל תצפית מתחת למים, כרישים וצבי ים"
+    },
+    {
+     "name": "חוף הדולפינים (Dolphin Reef)",
+     "type": "מים וטבע",
+     "tags": [
+      "family",
+      "couple",
+      "nature"
+     ],
+     "addr": "Southern Beach, Eilat",
+     "phone": "+972 8 630 0111",
+     "web": "https://www.dolphinreef.co.il/",
+     "note": "צפייה ושחייה ליד דולפינים, בריכות מרגוע"
+    },
+    {
+     "name": "Ice Park — קניון הקרח",
+     "type": "אטרקציה",
+     "tags": [
+      "family"
+     ],
+     "addr": "Kampen St 8, Eilat",
+     "phone": "+972 8 637 9552",
+     "web": "https://icemalleilat.co.il/en/home/",
+     "note": "החלקה על קרח באמצע המדבר, פתוח גם בערב"
+    },
+    {
+     "name": "פארק תמנע",
+     "type": "טבע",
+     "tags": [
+      "family",
+      "nature",
+      "adventure"
+     ],
+     "addr": "Timna Park, Arava (25 km north of Eilat)",
+     "phone": "+972 8 631 6756",
+     "web": "https://parktimna.co.il/en/",
+     "note": "עמודי שלמה, הקשתות ואגם — להגיע בבוקר"
+    },
+    {
+     "name": "טיילת אילת והמרינה",
+     "type": "בילוי ולילה",
+     "tags": [
+      "night",
+      "couple"
+     ],
+     "addr": "North Beach promenade, Eilat",
+     "note": "ברים, מסעדות ומופעי רחוב עד השעות הקטנות"
+    }
+   ],
+   "suitability0to3": {
+    "family": 3,
+    "couple": 2,
+    "nature": 2,
+    "relax": 3,
+    "culture": 0,
+    "night": 2,
+    "food": 1,
+    "adventure": 3,
+    "religious": 2
+   },
    "car": {
     "need": "מומלץ לטיולי מדבר",
     "companies": [
@@ -536,6 +634,10 @@
     },
     {
      "name": "Abraham Hostel",
+     "kind": "hostel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 350,
      "area": "דוידקה",
@@ -543,8 +645,113 @@
      "phone": "+972 2 650 2200",
      "web": "https://www.abraham.travel/jerusalem/",
      "note": "הוסטל עם סיורים מאורגנים"
+    },
+    {
+     "name": "The David Citadel",
+     "kind": "hotel",
+     "tags": [
+      "pool",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 2800,
+     "area": "ממילא",
+     "addr": "7 King David St, Jerusalem",
+     "phone": "+972 2 621 1111",
+     "web": "https://www.thedavidcitadel.com/",
+     "note": "נוף לחומות העיר העתיקה"
+    },
+    {
+     "name": "The Inbal",
+     "kind": "hotel",
+     "tags": [
+      "pool",
+      "family"
+     ],
+     "tier": "lux",
+     "price": 1900,
+     "area": "גן הפעמון",
+     "addr": "3 Jabotinsky St, Jerusalem",
+     "phone": "+972 2 675 6666",
+     "web": "https://www.inbalhotel.com/",
+     "note": "מול גן הפעמון, קרוב לתחנה הראשונה"
     }
    ],
+   "attractions": [
+    {
+     "name": "מוזיאון ישראל",
+     "type": "מוזיאון",
+     "tags": [
+      "culture",
+      "family"
+     ],
+     "addr": "11 Ruppin Blvd, Jerusalem",
+     "phone": "+972 2 670 8811",
+     "web": "https://www.imj.org.il/en",
+     "note": "היכל הספר (מגילות ים המלח) ודגם ירושלים"
+    },
+    {
+     "name": "מופע הלילה במגדל דוד",
+     "type": "בילוי ולילה",
+     "tags": [
+      "couple",
+      "family",
+      "culture",
+      "night"
+     ],
+     "addr": "Tower of David, Jaffa Gate, Jerusalem",
+     "phone": "+972 2 626 5333",
+     "web": "https://www.tod.org.il/en/night-shows/",
+     "note": "מופע אור-קולי על חומות המצודה, 45 דק׳ — להזמין מראש"
+    },
+    {
+     "name": "הגן הזואולוגי התנ״כי",
+     "type": "אטרקציה",
+     "tags": [
+      "family",
+      "nature"
+     ],
+     "addr": "Aharon Shulov 1, Jerusalem",
+     "phone": "+972 2 675 0111",
+     "web": "https://www.jerusalemzoo.org.il/en/biblical-zoo",
+     "note": "פתוח גם בשבת (בתשלום מראש)"
+    },
+    {
+     "name": "התחנה הראשונה",
+     "type": "בילוי ולילה",
+     "tags": [
+      "family",
+      "couple",
+      "food",
+      "night"
+     ],
+     "addr": "End of Emek Refaim, Jerusalem",
+     "web": "https://www.firststation.co.il/en/",
+     "note": "מתחם תחנת רכבת היסטורית עם מסעדות, הופעות ומסלול אופניים"
+    },
+    {
+     "name": "מחנה יהודה בלילה",
+     "type": "בילוי ולילה",
+     "tags": [
+      "night",
+      "food",
+      "couple"
+     ],
+     "addr": "Mahane Yehuda Market, Jerusalem",
+     "note": "אחרי שהדוכנים נסגרים — ברים ומוזיקה בסמטאות השוק"
+    }
+   ],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 2,
+    "nature": 1,
+    "relax": 1,
+    "culture": 3,
+    "night": 2,
+    "food": 3,
+    "adventure": 0,
+    "religious": 3
+   },
    "car": {
     "need": "לא נחוץ בתוך העיר",
     "companies": [
@@ -775,6 +982,10 @@
    "hotels": [
     {
      "name": "The Norman",
+     "kind": "boutique",
+     "tags": [
+      "couple"
+     ],
      "tier": "lux",
      "price": 3000,
      "area": "שדרות רוטשילד",
@@ -795,6 +1006,10 @@
     },
     {
      "name": "Brown TLV",
+     "kind": "boutique",
+     "tags": [
+      "couple"
+     ],
      "tier": "mid",
      "price": 950,
      "area": "מרכז העיר",
@@ -805,6 +1020,10 @@
     },
     {
      "name": "Abraham Tel Aviv",
+     "kind": "hostel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 400,
      "area": "לוינסקי",
@@ -812,8 +1031,109 @@
      "phone": "+972 3 624 9200",
      "web": "https://www.abraham.travel/tel-aviv/",
      "note": "הוסטל חברתי"
+    },
+    {
+     "name": "Carlton Tel Aviv",
+     "kind": "hotel",
+     "tags": [
+      "pool",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 2000,
+     "area": "המרינה",
+     "addr": "10 Eliezer Peri St, Tel Aviv",
+     "phone": "+972 3 520 1818",
+     "web": "https://www.carlton.co.il/en/",
+     "note": "בריכת גג מול הים"
+    },
+    {
+     "name": "Dan Tel Aviv",
+     "kind": "hotel",
+     "tags": [
+      "pool",
+      "family",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 2400,
+     "area": "טיילת הירקון",
+     "addr": "99 HaYarkon St, Tel Aviv",
+     "phone": "+972 3 520 2525",
+     "web": "https://www.danhotels.com/TelAvivHotels/DanTelAvivHotel",
+     "note": "מלון ותיק על קו החוף"
     }
    ],
+   "attractions": [
+    {
+     "name": "לונה פארק תל אביב",
+     "type": "אטרקציה",
+     "tags": [
+      "family",
+      "adventure"
+     ],
+     "addr": "Rokach Blvd 101, Tel Aviv",
+     "phone": "+972 3 642 7080",
+     "web": "https://www.lunapark.co.il/",
+     "note": "פארק שעשועים בגני התערוכה"
+    },
+    {
+     "name": "הספארי ברמת גן",
+     "type": "טבע",
+     "tags": [
+      "family",
+      "nature"
+     ],
+     "addr": "Sderat HaTzvi 1, Ramat Gan",
+     "phone": "+972 3 632 0222",
+     "web": "https://www.safari.co.il/",
+     "note": "נסיעה ברכב בין בעלי חיים אפריקאיים"
+    },
+    {
+     "name": "מוזיאון תל אביב לאמנות",
+     "type": "מוזיאון",
+     "tags": [
+      "culture",
+      "couple"
+     ],
+     "addr": "27 Shaul HaMelech Blvd, Tel Aviv",
+     "phone": "+972 3 607 7000",
+     "web": "https://www.tamuseum.org.il/en/",
+     "note": "אמנות ישראלית ובינלאומית"
+    },
+    {
+     "name": "שוק שרונה",
+     "type": "אוכל",
+     "tags": [
+      "food",
+      "couple",
+      "family"
+     ],
+     "addr": "3 Aluf Kalman Magen St, Tel Aviv",
+     "note": "שוק אוכל מקורה גדול; שישי עד אחה״צ"
+    },
+    {
+     "name": "רוטשילד, פלורנטין והנמל",
+     "type": "בילוי ולילה",
+     "tags": [
+      "night",
+      "couple"
+     ],
+     "addr": "Rothschild Blvd / Florentin / Tel Aviv Port",
+     "note": "ברים, מועדונים ומסעדות — העיר שלא נרדמת"
+    }
+   ],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 3,
+    "nature": 1,
+    "relax": 2,
+    "culture": 2,
+    "night": 3,
+    "food": 3,
+    "adventure": 1,
+    "religious": 1
+   },
    "car": {
     "need": "לא נחוץ",
     "companies": [
@@ -1025,6 +1345,10 @@
    "hotels": [
     {
      "name": "The Scots Hotel",
+     "kind": "boutique",
+     "tags": [
+      "couple"
+     ],
      "tier": "lux",
      "price": 2000,
      "area": "טבריה",
@@ -1035,6 +1359,10 @@
     },
     {
      "name": "Pina Barosh",
+     "kind": "boutique",
+     "tags": [
+      "couple"
+     ],
      "tier": "mid",
      "price": 1100,
      "area": "ראש פינה",
@@ -1045,6 +1373,11 @@
     },
     {
      "name": "כפר הנופש עין גב",
+     "kind": "kibbutz",
+     "tags": [
+      "family",
+      "nature"
+     ],
      "tier": "mid",
      "price": 800,
      "area": "חוף מזרחי של הכנרת",
@@ -1053,14 +1386,148 @@
      "web": "https://eingev.com/en/",
      "note": "חוף פרטי"
     },
+    null,
     {
-     "name": "צימרים בגולן",
-     "tier": "budget",
-     "price": 550,
-     "area": "רמת הגולן",
-     "note": "מגוון רחב — להזמין מראש בחגים"
+     "name": "Vered HaGalil",
+     "kind": "farm",
+     "tags": [
+      "couple",
+      "nature",
+      "view"
+     ],
+     "tier": "mid",
+     "price": 900,
+     "area": "מעל הכנרת",
+     "addr": "Vered HaGalil, near Korazim",
+     "phone": "+972 4 693 5785",
+     "web": "https://www.veredhagalil.com/",
+     "note": "חוות אירוח עם בקתות עץ ורכיבה על סוסים"
+    },
+    {
+     "name": "Mizpe Hayamim",
+     "kind": "spa",
+     "tags": [
+      "couple",
+      "spa",
+      "adults",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 2200,
+     "area": "ראש פינה",
+     "addr": "Rosh Pina (Upper Galilee)",
+     "phone": "+972 4 699 4555",
+     "web": "https://www.mizpe-hayamim.com/",
+     "note": "מלון ספא עם חווה אורגנית"
+    },
+    {
+     "name": "Merom Golan Resort Village",
+     "kind": "cabins",
+     "tags": [
+      "family",
+      "nature",
+      "view"
+     ],
+     "tier": "mid",
+     "price": 750,
+     "area": "הגולן, מול הר בנטל",
+     "addr": "Kibbutz Merom Golan",
+     "phone": "+972 4 696 0267",
+     "web": "https://english.meromgolantourism.co.il/",
+     "note": "בקתות עץ וסוויטות בקיבוץ"
+    },
+    {
+     "name": "Ramot Resort",
+     "kind": "cabins",
+     "tags": [
+      "couple",
+      "nature",
+      "view"
+     ],
+     "tier": "mid",
+     "price": 1000,
+     "area": "רמות, מעל הכנרת",
+     "web": "https://ramot-nofesh.co.il/en/",
+     "note": "בקתות עץ וצ׳אלטים עם ג׳קוזי פרטי"
+    },
+    {
+     "name": "Pastoral Kfar Blum",
+     "kind": "kibbutz",
+     "tags": [
+      "family",
+      "nature",
+      "pool"
+     ],
+     "tier": "mid",
+     "price": 800,
+     "area": "עמק החולה",
+     "addr": "Kibbutz Kfar Blum",
+     "phone": "+972 4 683 6611",
+     "web": "https://www.pastoral-hotel.com/",
+     "note": "מלון קיבוץ ליד הקיאקים בירדן"
     }
    ],
+   "attractions": [
+    {
+     "name": "חמת גדר",
+     "type": "מים וספא",
+     "tags": [
+      "family",
+      "couple",
+      "relax"
+     ],
+     "addr": "Hamat Gader, southern Golan",
+     "phone": "+972 4 665 9999",
+     "web": "https://hamat-gader.com/en/",
+     "note": "מעיינות חמים, חוות תנינים ופארק"
+    },
+    {
+     "name": "קיאקים כפר בלום",
+     "type": "אקסטרים ומים",
+     "tags": [
+      "family",
+      "adventure",
+      "nature"
+     ],
+     "addr": "Kibbutz Kfar Blum",
+     "phone": "+972 4 690 2616",
+     "note": "שייט קיאקים ורפטינג בירדן; קיץ בעיקר"
+    },
+    {
+     "name": "יקב רמת הגולן",
+     "type": "יין ואוכל",
+     "tags": [
+      "couple",
+      "food"
+     ],
+     "addr": "Derech HaYayin 4, Katzrin",
+     "phone": "+972 4 696 8435",
+     "note": "סיורים וטעימות; סגור בשבת"
+    },
+    {
+     "name": "אגמון החולה",
+     "type": "טבע",
+     "tags": [
+      "family",
+      "couple",
+      "nature"
+     ],
+     "addr": "Agamon Hula, Hula Valley",
+     "phone": "+972 4 681 7137",
+     "note": "צפרות ונדידת עגורים (סתיו–חורף), אופניים ועגלות גולף"
+    }
+   ],
+   "suitability0to3": {
+    "family": 3,
+    "couple": 3,
+    "nature": 3,
+    "relax": 2,
+    "culture": 2,
+    "night": 0,
+    "food": 2,
+    "adventure": 3,
+    "religious": 2
+   },
    "car": {
     "need": "חיוני",
     "companies": [
@@ -1167,6 +1634,925 @@
     }
    ],
    "pageAnchor": "#dest-galilee"
+  },
+  {
+   "id": "deadsea",
+   "name": "ים המלח",
+   "nameEn": "Dead Sea",
+   "country": "ישראל",
+   "region": "il",
+   "tagline": "הנקודה הנמוכה בעולם: ציפה, בוץ ומדבר",
+   "about": "עין בוקק ומלונות הספא, קיבוץ עין גדי והשמורה, מצדה בזריחה ומדבר יהודה. חופשת רוגע והחלמה כמעט כל השנה, עם חורף חמים ונעים.",
+   "flight": {
+    "airport": "נתב\"ג",
+    "code": "TLV",
+    "hoursFromTLV": 0,
+    "tzDiffFromIsrael": 0,
+    "transfers": [
+     {
+      "mode": "רכב (דרך ירושלים וכביש 90)",
+      "time": "שעה וחצי–שעתיים",
+      "cost": "דלק כ-₪100"
+     },
+     {
+      "mode": "אוטובוס בין-עירוני מירושלים",
+      "time": "כשעתיים",
+      "cost": "₪25–₪40 בערך"
+     }
+    ],
+    "note": "מירושלים כשעה נסיעה. אין רכבת לים המלח, והתחבורה הציבורית דלילה."
+   },
+   "practical": {
+    "language": "עברית",
+    "visa": "אין צורך",
+    "plug": "H / C",
+    "emergency": "משטרה 100 · מד\"א 101",
+    "drivingSide": "ימין",
+    "tipping": "10%–15% במסעדות"
+   },
+   "currency": {
+    "code": "ILS",
+    "name": "שקל",
+    "rate": 1,
+    "symbol": "₪",
+    "notes": "20, 50, 100, 200 ₪",
+    "coins": "10 אג׳, 50 אג׳, 1, 2, 5, 10 ₪",
+    "pay": "אשראי מתקבל במלונות ובקיוסקים; בחוף הציבורי כדאי מעט מזומן.",
+    "atm": "כספומטים במרכז המסחרי בעין בוקק — מעטים. הצטיידו מראש.",
+    "tax": "—",
+    "prices": [
+     [
+      "קפה",
+      14
+     ],
+     [
+      "ארוחה עממית",
+      70
+     ],
+     [
+      "כניסה למצדה עם רכבל",
+      90
+     ],
+     [
+      "טיפול ספא",
+      350
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 20,
+    "פבר׳": 21,
+    "מרץ": 25,
+    "אפר׳": 30,
+    "מאי": 34,
+    "יוני": 37,
+    "יולי": 39,
+    "אוג׳": 39,
+    "ספט׳": 36,
+    "אוק׳": 32,
+    "נוב׳": 26,
+    "דצמ׳": 21
+   },
+   "bestMonths": [
+    "נוב׳",
+    "דצמ׳",
+    "ינו׳",
+    "פבר׳",
+    "מרץ",
+    "אפר׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 0,
+    "hotel": {
+     "budget": 450,
+     "mid": 1100,
+     "lux": 2600
+    },
+    "car": 170,
+    "food": 230,
+    "transport": 40
+   },
+   "hotels": [
+    {
+     "name": "Kayma by Isrotel",
+     "kind": "spa",
+     "tags": [
+      "couple",
+      "adults",
+      "spa",
+      "pool"
+     ],
+     "tier": "lux",
+     "price": 7000,
+     "area": "עין בוקק",
+     "web": "https://www.isrotel.com/isrotel-hotels/dead-sea/kayma/",
+     "note": "מלון בוטיק למבוגרים בלבד (נפתח 2025), בריכת אינסוף"
+    },
+    {
+     "name": "Nevo by Isrotel (לשעבר Isrotel Dead Sea)",
+     "kind": "resort",
+     "tags": [
+      "family",
+      "spa",
+      "pool"
+     ],
+     "tier": "mid",
+     "price": 1100,
+     "area": "עין בוקק",
+     "addr": "Route 90, Ein Bokek",
+     "phone": "+972 8 668 9666",
+     "web": "https://www.isrotel.com/isrotel-hotels/dead-sea/",
+     "note": "ספא ובריכות, קרוב לחוף הציבורי"
+    },
+    {
+     "name": "David Dead Sea Resort & Spa",
+     "kind": "spa",
+     "tags": [
+      "family",
+      "spa",
+      "pool"
+     ],
+     "tier": "mid",
+     "price": 1300,
+     "area": "עין בוקק",
+     "addr": "Ein Bokek",
+     "phone": "+972 8 659 1234",
+     "web": "https://www.grandhotels-israel.com/david-dead-sea-hotel-contact-us",
+     "note": "ספא גדול ובריכות גופרית"
+    },
+    {
+     "name": "Ein Gedi Kibbutz Hotel",
+     "kind": "kibbutz",
+     "tags": [
+      "couple",
+      "nature",
+      "family"
+     ],
+     "tier": "mid",
+     "price": 1100,
+     "area": "קיבוץ עין גדי",
+     "addr": "Kibbutz Ein Gedi",
+     "phone": "+972 8 659 4220",
+     "web": "https://ngedi.co.il/en/contact-us/",
+     "note": "מלון בתוך גן בוטני, קרוב לשמורה"
+    },
+    {
+     "name": "HI Masada Hostel",
+     "kind": "hostel",
+     "tags": [
+      "budget",
+      "family"
+     ],
+     "tier": "budget",
+     "price": 400,
+     "area": "למרגלות מצדה",
+     "web": "https://en.iyha.org.il/masada-hostel",
+     "note": "אכסניה עם בריכה, מושלם לזריחה במצדה"
+    }
+   ],
+   "attractions": [
+    {
+     "name": "מצדה והרכבל",
+     "type": "היסטוריה וטבע",
+     "tags": [
+      "family",
+      "culture",
+      "adventure"
+     ],
+     "addr": "Masada National Park, Route 90",
+     "web": "https://en.parks.org.il/reserve-park/masada-national-park/",
+     "note": "שביל הנחש בזריחה או רכבל; קיץ 8:00–17:00"
+    },
+    {
+     "name": "שמורת עין גדי",
+     "type": "טבע",
+     "tags": [
+      "family",
+      "nature"
+     ],
+     "addr": "Ein Gedi Nature Reserve, Route 90",
+     "phone": "+972 8 658 4285",
+     "web": "https://en.parks.org.il/reserve-park/en-gedi-nature-reserve/",
+     "note": "אחרי נזקי שיטפון רק חלק מהמסלולים פתוחים (נחל דוד עד המפל הראשון) — בדקו לפני"
+    },
+    {
+     "name": "החוף הציבורי בעין בוקק",
+     "type": "מים וספא",
+     "tags": [
+      "family",
+      "couple",
+      "relax"
+     ],
+     "addr": "Ein Bokek public beach",
+     "note": "חוף חינם עם מקלחות וצל"
+    }
+   ],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 2,
+    "nature": 3,
+    "relax": 3,
+    "culture": 2,
+    "night": 0,
+    "food": 1,
+    "adventure": 1,
+    "religious": 2
+   },
+   "car": {
+    "need": "מומלץ — המרחקים גדולים",
+    "companies": [
+     "שלמה סיקסט",
+     "אלדן",
+     "Hertz",
+     "Avis"
+    ],
+    "tips": [
+     "שתו הרבה מים — חם מאוד רוב השנה",
+     "במצדה: לעלות מוקדם בבוקר או ברכבל",
+     "לא לטבול את הראש ולא להתיז — המים צורבים בעיניים"
+    ]
+   },
+   "kosher": {
+    "note": "רוב המלונות הגדולים בעין בוקק בכשרות רבנות — בדקו תעודה בתוקף.",
+    "places": [
+     {
+      "name": "חדרי האוכל במלונות עין בוקק",
+      "area": "עין בוקק",
+      "note": "ארוחות בוקר וערב כשרות ברוב המלונות"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "בישראל אין מדריך מישלן.",
+    "places": []
+   },
+   "localFood": [
+    {
+     "name": "מסעדות המלונות בעין בוקק",
+     "type": "מזנונים ומסעדות",
+     "area": "עין בוקק",
+     "price": "₪₪"
+    },
+    {
+     "name": "חדר האוכל של קיבוץ עין גדי",
+     "type": "אוכל ביתי",
+     "area": "עין גדי",
+     "price": "₪₪"
+    }
+   ],
+   "transit": {
+    "system": "אוטובוסים בין-עירוניים",
+    "card": "רב-קו",
+    "single": "₪25–₪40",
+    "day": "—",
+    "apps": [
+     "Moovit",
+     "רב-פס"
+    ],
+    "notes": "תדירות נמוכה ואין תחבורה בשבת. רכב נוח בהרבה."
+   },
+   "routes": [
+    {
+     "name": "זריחה במצדה ועין גדי",
+     "days": 1,
+     "stops": [
+      "שביל הנחש במצדה בזריחה",
+      "המוזיאון במצדה",
+      "שמורת עין גדי — נחל דוד",
+      "ציפה בחוף עין בוקק"
+     ],
+     "desc": "לצאת לפני הזריחה; בקיץ לסיים עד הצהריים."
+    },
+    {
+     "name": "סופ״ש ספא ורוגע",
+     "days": 2,
+     "stops": [
+      "החוף הציבורי בעין בוקק",
+      "בריכות גופרית וטיפולים במלון",
+      "בוץ ים המלח",
+      "שקיעה מעל הרי מואב"
+     ],
+     "desc": "חופשה בלי נהיגה ובלי לחץ."
+    }
+   ],
+   "pointsOfInterest": [
+    "מצדה",
+    "שמורת עין גדי",
+    "קיבוץ עין גדי",
+    "חוף עין בוקק"
+   ],
+   "videos": [
+    {
+     "title": "Masada, Ein Gedi and the Dead Sea — the ultimate guide",
+     "url": "https://www.youtube.com/watch?v=FfCRLcrSFCc"
+    },
+    {
+     "title": "Exploring the Dead Sea and Masada — self guided tour",
+     "url": "https://www.youtube.com/watch?v=yA6o5B8_nZ8"
+    },
+    {
+     "title": "En Gedi — oasis in the desert",
+     "url": "https://www.youtube.com/watch?v=ANUyV6M0qV4"
+    }
+   ],
+   "pageAnchor": "#dest-deadsea"
+  },
+  {
+   "id": "mitzperamon",
+   "name": "מצפה רמון והנגב",
+   "nameEn": "Mitzpe Ramon",
+   "country": "ישראל",
+   "region": "il",
+   "tagline": "המכתש הגדול, שקט מדברי ושמיים מלאי כוכבים",
+   "about": "מצפה רמון יושבת על שפת מכתש רמון: טיולי ג׳יפים ורגליים, תצפית כוכבים, חוות אלפקות ולינה מדברית — ממלון יוקרה על שפת המכתש ועד סוכות במדבר.",
+   "flight": {
+    "airport": "נתב\"ג",
+    "code": "TLV",
+    "hoursFromTLV": 0,
+    "tzDiffFromIsrael": 0,
+    "transfers": [
+     {
+      "mode": "רכב (דרך באר שבע)",
+      "time": "כשעתיים וחצי",
+      "cost": "דלק כ-₪130"
+     },
+     {
+      "mode": "רכבת לבאר שבע ואוטובוס",
+      "time": "כשלוש שעות",
+      "cost": "₪45–₪60 בערך"
+     }
+    ],
+    "note": "רכב מומלץ מאוד — המרחקים במכתש ובנגב גדולים."
+   },
+   "practical": {
+    "language": "עברית",
+    "visa": "אין צורך",
+    "plug": "H / C",
+    "emergency": "משטרה 100 · מד\"א 101",
+    "drivingSide": "ימין",
+    "tipping": "10%–15% במסעדות"
+   },
+   "currency": {
+    "code": "ILS",
+    "name": "שקל",
+    "rate": 1,
+    "symbol": "₪",
+    "notes": "20, 50, 100, 200 ₪",
+    "coins": "10 אג׳, 50 אג׳, 1, 2, 5, 10 ₪",
+    "pay": "אשראי ברוב המקומות; בחוות ובדוכנים קטנים עדיף מזומן.",
+    "atm": "כספומט אחד-שניים במרכז העיירה.",
+    "tax": "—",
+    "prices": [
+     [
+      "קפה",
+      13
+     ],
+     [
+      "ארוחה עממית",
+      60
+     ],
+     [
+      "סיור ג׳יפים (לאדם)",
+      250
+     ],
+     [
+      "תצפית כוכבים מודרכת",
+      120
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 15,
+    "פבר׳": 17,
+    "מרץ": 20,
+    "אפר׳": 25,
+    "מאי": 29,
+    "יוני": 32,
+    "יולי": 33,
+    "אוג׳": 33,
+    "ספט׳": 31,
+    "אוק׳": 27,
+    "נוב׳": 21,
+    "דצמ׳": 17
+   },
+   "bestMonths": [
+    "מרץ",
+    "אפר׳",
+    "מאי",
+    "אוק׳",
+    "נוב׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 0,
+    "hotel": {
+     "budget": 400,
+     "mid": 800,
+     "lux": 3200
+    },
+    "car": 170,
+    "food": 200,
+    "transport": 30
+   },
+   "hotels": [
+    {
+     "name": "Beresheet by Isrotel",
+     "kind": "resort",
+     "tags": [
+      "couple",
+      "spa",
+      "pool",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 3200,
+     "area": "שפת המכתש",
+     "addr": "Derech Beresheet 1, Mitzpe Ramon",
+     "phone": "+972 8 659 8000",
+     "web": "https://www.isrotel.com/isrotel-hotels/negev-desert/beresheet/",
+     "note": "וילות על שפת המכתש, בריכת אינסוף"
+    },
+    {
+     "name": "Daroma by Isrotel (לשעבר Ramon Inn)",
+     "kind": "hotel",
+     "tags": [
+      "family"
+     ],
+     "tier": "mid",
+     "price": 800,
+     "area": "מרכז העיירה",
+     "addr": "1 Ein Akev St, Mitzpe Ramon",
+     "phone": "+972 8 658 8822",
+     "note": "מלון נוח לבסיס טיולים"
+    },
+    {
+     "name": "Succah in the Desert",
+     "kind": "lodge",
+     "tags": [
+      "couple",
+      "nature"
+     ],
+     "tier": "mid",
+     "price": 700,
+     "area": "מדבר ליד מצפה רמון",
+     "phone": "+972 8 658 6280",
+     "web": "https://www.succah.co.il/",
+     "note": "סוכות אבן ועץ מבודדות — שקט וכוכבים"
+    }
+   ],
+   "attractions": [
+    {
+     "name": "מרכז המבקרים מכתש רמון",
+     "type": "מוזיאון וטבע",
+     "tags": [
+      "family",
+      "culture",
+      "nature"
+     ],
+     "addr": "Ma'ale Ben Tur 1, Mitzpe Ramon",
+     "phone": "+972 8 658 8691",
+     "note": "תערוכה אינטראקטיבית על שפת המכתש, סיור כשעה"
+    },
+    {
+     "name": "חוות האלפקות",
+     "type": "אטרקציה",
+     "tags": [
+      "family",
+      "nature"
+     ],
+     "phone": "+972 8 658 8047",
+     "web": "https://alpaca.co.il/en/",
+     "note": "פתוח חמישי–ראשון ובחופשות; גם לינה"
+    },
+    {
+     "name": "תצפית כוכבים",
+     "type": "טבע ולילה",
+     "tags": [
+      "couple",
+      "family",
+      "nature",
+      "night"
+     ],
+     "note": "שמיים חשוכים במיוחד — מומלץ סיור מודרך עם טלסקופ"
+    },
+    {
+     "name": "סיורי ג׳יפים במכתש",
+     "type": "אקסטרים",
+     "tags": [
+      "adventure",
+      "family",
+      "nature"
+     ],
+     "note": "מסלולי שטח בליווי מדריך"
+    }
+   ],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 3,
+    "nature": 3,
+    "relax": 2,
+    "culture": 0,
+    "night": 0,
+    "food": 1,
+    "adventure": 3,
+    "religious": 1
+   },
+   "car": {
+    "need": "חיוני",
+    "companies": [
+     "שלמה סיקסט",
+     "אלדן",
+     "Hertz"
+    ],
+    "tips": [
+     "4×4 רק בדרכים מסומנות — או סיור ג׳יפים מאורגן",
+     "לא לנהוג בלילה בדרכי עפר",
+     "תדלקו ותצטיידו במים לפני היציאה למכתש"
+    ]
+   },
+   "kosher": {
+    "note": "במלונות הגדולים יש כשרות — בדקו תעודה עדכנית. בעיירה מעט מסעדות.",
+    "places": [
+     {
+      "name": "חדרי האוכל במלונות",
+      "area": "מצפה רמון",
+      "note": "לבדוק תעודת כשרות עדכנית"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "בישראל אין מדריך מישלן.",
+    "places": []
+   },
+   "localFood": [
+    {
+     "name": "בתי הקפה והמסעדות בעיירה",
+     "type": "בתי קפה ופיצה",
+     "area": "מרכז מצפה רמון",
+     "price": "₪₪"
+    }
+   ],
+   "transit": {
+    "system": "אוטובוסים מבאר שבע",
+    "card": "רב-קו",
+    "single": "₪15–₪25",
+    "day": "—",
+    "apps": [
+     "Moovit",
+     "רב-פס"
+    ],
+    "notes": "תדירות נמוכה ואין תחבורה בשבת."
+   },
+   "routes": [
+    {
+     "name": "סובב מכתש רמון",
+     "days": 2,
+     "stops": [
+      "מרכז המבקרים",
+      "טיילת שפת המכתש",
+      "המנסרה (סלעי המנסרה)",
+      "עין סהרונים",
+      "חוות האלפקות",
+      "תצפית כוכבים בלילה"
+     ],
+     "desc": "יום לתוך המכתש, ערב לכוכבים."
+    }
+   ],
+   "pointsOfInterest": [
+    "מרכז המבקרים מכתש רמון",
+    "מרכז מצפה רמון"
+   ],
+   "videos": [
+    {
+     "title": "טיול במכתש רמון — אתרים מומלצים לביקור",
+     "url": "https://www.youtube.com/watch?v=5mzlfzpnNdI"
+    },
+    {
+     "title": "רעיונות לטיול הבא במצפה רמון",
+     "url": "https://www.youtube.com/watch?v=KN2MYP2LtXs"
+    },
+    {
+     "title": "Biggest crater on Earth: Mitzpe Ramon and the Negev",
+     "url": "https://www.youtube.com/watch?v=Gj5gMxlbM-8"
+    }
+   ],
+   "pageAnchor": "#dest-mitzperamon"
+  },
+  {
+   "id": "haifa",
+   "name": "חיפה והכרמל",
+   "nameEn": "Haifa",
+   "country": "ישראל",
+   "region": "il",
+   "tagline": "גנים תלויים, הר וים, יערות ויין",
+   "about": "הגנים הבהאיים, המושבה הגרמנית, הרכבל לסטלה מאריס, מדעטק ויערות הכרמל. בסביבה: עין הוד, זכרון יעקב והיקבים. עיר מעורבת שחלק מהתחבורה בה פועל גם בשבת.",
+   "flight": {
+    "airport": "נתב\"ג",
+    "code": "TLV",
+    "hoursFromTLV": 0,
+    "tzDiffFromIsrael": 0,
+    "transfers": [
+     {
+      "mode": "רכבת ישראל לחיפה",
+      "time": "כשעה וחצי",
+      "cost": "₪30–₪45 בערך"
+     },
+     {
+      "mode": "רכב",
+      "time": "כשעה וחצי",
+      "cost": "דלק כ-₪80"
+     }
+    ],
+    "note": "רכבת ישירה לתחנות חיפה; משם כרמלית או אוטובוס לכרמל."
+   },
+   "practical": {
+    "language": "עברית, ערבית",
+    "visa": "אין צורך",
+    "plug": "H / C",
+    "emergency": "משטרה 100 · מד\"א 101",
+    "drivingSide": "ימין",
+    "tipping": "10%–15% במסעדות"
+   },
+   "currency": {
+    "code": "ILS",
+    "name": "שקל",
+    "rate": 1,
+    "symbol": "₪",
+    "notes": "20, 50, 100, 200 ₪",
+    "coins": "10 אג׳, 50 אג׳, 1, 2, 5, 10 ₪",
+    "pay": "אשראי ותשלום בנייד בכל מקום.",
+    "atm": "כספומטים בכל השכונות.",
+    "tax": "—",
+    "prices": [
+     [
+      "קפה",
+      13
+     ],
+     [
+      "חומוס",
+      35
+     ],
+     [
+      "ארוחה זוגית במסעדה",
+      280
+     ],
+     [
+      "נסיעה בכרמלית",
+      5.5
+     ]
+    ]
+   },
+   "climateMaxC": {
+    "ינו׳": 18,
+    "פבר׳": 19,
+    "מרץ": 21,
+    "אפר׳": 25,
+    "מאי": 27,
+    "יוני": 30,
+    "יולי": 31,
+    "אוג׳": 32,
+    "ספט׳": 31,
+    "אוק׳": 28,
+    "נוב׳": 24,
+    "דצמ׳": 20
+   },
+   "bestMonths": [
+    "אפר׳",
+    "מאי",
+    "יוני",
+    "ספט׳",
+    "אוק׳",
+    "נוב׳"
+   ],
+   "estimatedCostsILS": {
+    "flight": 0,
+    "hotel": {
+     "budget": 400,
+     "mid": 750,
+     "lux": 1800
+    },
+    "car": 170,
+    "food": 200,
+    "transport": 25
+   },
+   "hotels": [
+    {
+     "name": "Dan Carmel Haifa",
+     "kind": "hotel",
+     "tags": [
+      "view",
+      "pool"
+     ],
+     "tier": "lux",
+     "price": 1300,
+     "area": "מרכז הכרמל",
+     "addr": "85–87 HaNassi Ave, Haifa",
+     "phone": "+972 4 830 3030",
+     "web": "https://www.danhotels.com/HaifaHotels/DanCarmelHaifaHotel",
+     "note": "נוף למפרץ מראש הכרמל"
+    },
+    {
+     "name": "The Colony Hotel",
+     "kind": "boutique",
+     "tags": [
+      "couple"
+     ],
+     "tier": "mid",
+     "price": 700,
+     "area": "המושבה הגרמנית",
+     "addr": "28 Ben Gurion Blvd, Haifa",
+     "phone": "+972 4 851 3344",
+     "web": "https://colonyhaifa.com/",
+     "note": "בניין בן יותר מ-100 שנה, למרגלות הגנים הבהאיים"
+    },
+    {
+     "name": "Carmel Forest Spa Resort",
+     "kind": "spa",
+     "tags": [
+      "couple",
+      "spa",
+      "nature"
+     ],
+     "tier": "lux",
+     "price": 2600,
+     "area": "יערות הכרמל",
+     "addr": "Beit Oren, Carmel Forest",
+     "phone": "+972 8 638 7797",
+     "web": "https://www.isrotel.com/isrotel-hotels/north-hotels/haifa/carmel-forest/",
+     "note": "ספא הבריאות הגדול בישראל, בלב היער"
+    },
+    {
+     "name": "Elma Arts Complex Hotel",
+     "kind": "boutique",
+     "tags": [
+      "couple",
+      "culture",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 1600,
+     "area": "זכרון יעקב",
+     "addr": "1 Yair St, Zichron Yaakov",
+     "phone": "+972 4 630 0111",
+     "web": "https://www.theelmahotel.com/",
+     "note": "מלון אמנות עם אולם קונצרטים ונוף לים"
+    }
+   ],
+   "attractions": [
+    {
+     "name": "הגנים הבהאיים",
+     "type": "אתר וגנים",
+     "tags": [
+      "couple",
+      "culture",
+      "family"
+     ],
+     "addr": "45 Yefe Nof St, Haifa",
+     "phone": "+972 4 831 3131",
+     "web": "https://ganbahai.org.il/visit-us-haifa/",
+     "note": "כניסה חופשית; סיור מודרך באנגלית (כ-50 דק׳)"
+    },
+    {
+     "name": "מדעטק — המוזיאון הלאומי למדע",
+     "type": "מוזיאון",
+     "tags": [
+      "family",
+      "culture"
+     ],
+     "addr": "25 Shmaryahu Levin St, Haifa",
+     "phone": "+972 4 861 4444",
+     "web": "https://www.madatech.org.il/en/",
+     "note": "מוזיאון מדע אינטראקטיבי לכל המשפחה"
+    },
+    {
+     "name": "הרכבל בת גלים — סטלה מאריס",
+     "type": "אטרקציה",
+     "tags": [
+      "family",
+      "couple"
+     ],
+     "phone": "+972 4 833 5970",
+     "note": "נסיעה קצרה עם נוף למפרץ"
+    },
+    {
+     "name": "המושבה הגרמנית בערב",
+     "type": "בילוי ולילה",
+     "tags": [
+      "couple",
+      "food",
+      "night"
+     ],
+     "addr": "Ben Gurion Blvd, Haifa",
+     "note": "מסעדות וברים מול המדרגות המוארות של הגנים"
+    }
+   ],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 2,
+    "nature": 2,
+    "relax": 1,
+    "culture": 2,
+    "night": 1,
+    "food": 2,
+    "adventure": 1,
+    "religious": 2
+   },
+   "car": {
+    "need": "שימושי לכרמל ולזכרון; בעיר — תחבורה ציבורית",
+    "companies": [
+     "שלמה סיקסט",
+     "אלדן",
+     "Hertz"
+    ],
+    "tips": [
+     "העיר תלולה — חניה ברחובות הכרמל מאתגרת",
+     "הכרמלית חוסכת עליות",
+     "בשבת חלק מהקווים פועלים"
+    ]
+   },
+   "kosher": {
+    "note": "יש מסעדות כשרות במרכז הכרמל ובמרכזי הקניות; חלק מהמסעדות בעיר אינן כשרות — בדקו תעודה.",
+    "places": [
+     {
+      "name": "מסעדות כשרות במרכז הכרמל",
+      "area": "מרכז הכרמל",
+      "note": "לבדוק תעודה בתוקף"
+     }
+    ]
+   },
+   "michelin": {
+    "note": "בישראל אין מדריך מישלן.",
+    "places": []
+   },
+   "localFood": [
+    {
+     "name": "מסעדות המושבה הגרמנית",
+     "type": "מגוון",
+     "area": "שדרות בן גוריון",
+     "price": "₪₪"
+    },
+    {
+     "name": "חומוס ומאפים בוואדי ניסנאס",
+     "type": "מטבח ערבי מסורתי",
+     "area": "ואדי ניסנאס",
+     "price": "₪"
+    }
+   ],
+   "transit": {
+    "system": "כרמלית (רכבת תחתית), מטרונית, אוטובוסים, רכבל",
+    "card": "רב-קו",
+    "single": "₪5.5",
+    "day": "לפי תעריף רב-קו",
+    "apps": [
+     "Moovit",
+     "רב-פס"
+    ],
+    "notes": "הכרמלית עולה מהעיר התחתית לכרמל. חלק מהקווים בחיפה פועלים גם בשבת."
+   },
+   "routes": [
+    {
+     "name": "חיפה ביום אחד",
+     "days": 1,
+     "stops": [
+      "הגנים הבהאיים (סיור מודרך)",
+      "המושבה הגרמנית",
+      "הרכבל לסטלה מאריס",
+      "חוף בת גלים"
+     ],
+     "desc": "להזמין מראש סיור בגנים."
+    },
+    {
+     "name": "כרמל, עין הוד וזכרון",
+     "days": 2,
+     "stops": [
+      "יערות הכרמל",
+      "כפר האמנים עין הוד",
+      "מדרחוב זכרון יעקב",
+      "יקב בזכרון"
+     ],
+     "desc": "אווירה כפרית ויין."
+    }
+   ],
+   "pointsOfInterest": [
+    "הגנים הבהאיים",
+    "המושבה הגרמנית",
+    "סטלה מאריס",
+    "מדעטק"
+   ],
+   "videos": [
+    {
+     "title": "Haifa evening walk: German Colony, Baháʼí Gardens & beaches",
+     "url": "https://www.youtube.com/watch?v=VEyqYDP7D30"
+    },
+    {
+     "title": "Haifa: Baha'i Gardens & city views — walking tour",
+     "url": "https://www.youtube.com/watch?v=bhxA865eSMc"
+    },
+    {
+     "title": "Drone video of the Bahai Gardens in Haifa",
+     "url": "https://www.youtube.com/watch?v=ZZX2Q7scTN8"
+    }
+   ],
+   "pageAnchor": "#dest-haifa"
   },
   {
    "id": "paris",
@@ -1282,6 +2668,10 @@
     },
     {
      "name": "Hôtel des Grands Boulevards",
+     "kind": "boutique",
+     "tags": [
+      "couple"
+     ],
      "tier": "mid",
      "price": 1300,
      "area": "הרובע ה-2",
@@ -1302,6 +2692,10 @@
     },
     {
      "name": "Generator Paris",
+     "kind": "hostel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 450,
      "area": "הרובע ה-10",
@@ -1311,6 +2705,18 @@
      "note": "הוסטל עם חדרים פרטיים"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 3,
+    "nature": 0,
+    "relax": 1,
+    "culture": 3,
+    "night": 2,
+    "food": 3,
+    "adventure": 0,
+    "religious": 2
+   },
    "car": {
     "need": "לא בעיר; כן לטיולים לנורמנדי ולעמק הלואר",
     "companies": [
@@ -1590,6 +2996,10 @@
     },
     {
      "name": "Generator London",
+     "kind": "hostel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 500,
      "area": "קינגס קרוס",
@@ -1599,6 +3009,18 @@
      "note": "הוסטל ליד תחנת הרכבת"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 2,
+    "nature": 1,
+    "relax": 1,
+    "culture": 3,
+    "night": 3,
+    "food": 2,
+    "adventure": 0,
+    "religious": 3
+   },
    "car": {
     "need": "לא בעיר (אגרת גודש ו-ULEZ); כן לקוטסוולדס",
     "companies": [
@@ -1865,6 +3287,10 @@
     },
     {
      "name": "The Beehive",
+     "kind": "hostel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 400,
      "area": "טרמיני",
@@ -1874,6 +3300,18 @@
      "note": "אכסניה ידידותית"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 3,
+    "nature": 0,
+    "relax": 1,
+    "culture": 3,
+    "night": 2,
+    "food": 3,
+    "adventure": 0,
+    "religious": 2
+   },
    "car": {
     "need": "לא בעיר (אזורי ZTL); כן לטוסקנה",
     "companies": [
@@ -2128,6 +3566,10 @@
     },
     {
      "name": "Casa Bonay",
+     "kind": "boutique",
+     "tags": [
+      "couple"
+     ],
      "tier": "mid",
      "price": 1100,
      "area": "אישמפלה",
@@ -2138,6 +3580,10 @@
     },
     {
      "name": "Hotel Neri",
+     "kind": "boutique",
+     "tags": [
+      "couple"
+     ],
      "tier": "lux",
      "price": 2200,
      "area": "הרובע הגותי",
@@ -2148,6 +3594,10 @@
     },
     {
      "name": "Generator Barcelona",
+     "kind": "hostel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 400,
      "area": "גרסיה",
@@ -2157,6 +3607,18 @@
      "note": "הוסטל מעוצב"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 3,
+    "nature": 1,
+    "relax": 2,
+    "culture": 3,
+    "night": 3,
+    "food": 3,
+    "adventure": 1,
+    "religious": 1
+   },
    "car": {
     "need": "לא בעיר; כן לקוסטה בראבה",
     "companies": [
@@ -2421,6 +3883,10 @@
     },
     {
      "name": "City Circus",
+     "kind": "hostel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 350,
      "area": "פסירי",
@@ -2430,6 +3896,18 @@
      "note": "הוסטל מעוצב"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 3,
+    "nature": 2,
+    "relax": 3,
+    "culture": 3,
+    "night": 2,
+    "food": 2,
+    "adventure": 1,
+    "religious": 1
+   },
    "car": {
     "need": "כן באיים ולטיולי יום לסוניון ולדלפי",
     "companies": [
@@ -2683,6 +4161,10 @@
     },
     {
      "name": "Hotel Josef",
+     "kind": "boutique",
+     "tags": [
+      "couple"
+     ],
      "tier": "mid",
      "price": 800,
      "area": "העיר העתיקה",
@@ -2703,6 +4185,10 @@
     },
     {
      "name": "Czech Inn",
+     "kind": "hostel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 300,
      "area": "וינוהראדי",
@@ -2712,6 +4198,18 @@
      "note": "הוסטל ומלון"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 3,
+    "nature": 1,
+    "relax": 1,
+    "culture": 3,
+    "night": 2,
+    "food": 2,
+    "adventure": 0,
+    "religious": 2
+   },
    "car": {
     "need": "לא בעיר; כן לצ׳סקי קרומלוב וקרלובי וארי",
     "companies": [
@@ -2978,6 +4476,10 @@
     },
     {
      "name": "Pod Times Square",
+     "kind": "hotel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 800,
      "area": "מידטאון",
@@ -2987,6 +4489,18 @@
      "note": "חדרי מיקרו"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 2,
+    "nature": 0,
+    "relax": 0,
+    "culture": 3,
+    "night": 3,
+    "food": 3,
+    "adventure": 0,
+    "religious": 3
+   },
    "car": {
     "need": "לא במנהטן; כן לטיולים מחוץ לעיר",
     "companies": [
@@ -3233,6 +4747,11 @@
     },
     {
      "name": "Atlantis The Palm",
+     "kind": "resort",
+     "tags": [
+      "family",
+      "pool"
+     ],
      "tier": "lux",
      "price": 3500,
      "area": "פאלם ג׳ומיירה",
@@ -3259,6 +4778,18 @@
      "note": "רשת נוחה ונקייה"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 3,
+    "couple": 2,
+    "nature": 1,
+    "relax": 3,
+    "culture": 1,
+    "night": 1,
+    "food": 2,
+    "adventure": 2,
+    "religious": 1
+   },
    "car": {
     "need": "שימושי; מוניות זולות יחסית",
     "companies": [
@@ -3532,6 +5063,10 @@
     },
     {
      "name": "Lub d Bangkok",
+     "kind": "hostel",
+     "tags": [
+      "budget"
+     ],
      "tier": "budget",
      "price": 180,
      "area": "סילום / סיאם",
@@ -3540,6 +5075,18 @@
      "note": "הוסטל רשת"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 1,
+    "couple": 2,
+    "nature": 2,
+    "relax": 2,
+    "culture": 3,
+    "night": 3,
+    "food": 3,
+    "adventure": 2,
+    "religious": 1
+   },
    "car": {
     "need": "לא בבנגקוק; קטנוע באיים (רק עם רישיון!)",
     "companies": [
@@ -3810,6 +5357,18 @@
      "note": "מינימליזם יפני"
     }
    ],
+   "attractions": [],
+   "suitability0to3": {
+    "family": 2,
+    "couple": 2,
+    "nature": 1,
+    "relax": 1,
+    "culture": 3,
+    "night": 2,
+    "food": 3,
+    "adventure": 1,
+    "religious": 1
+   },
    "car": {
     "need": "לא בטוקיו; אולי לאזור פוג׳י והוקאידו",
     "companies": [
