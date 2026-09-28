@@ -101,3 +101,18 @@ Prices are in local currency and are converted to ₪ with the live rate. Live r
 
 ## js/sites.js → `window.APP_SITES`
 `[{ cat: 'טיסות', items: [{ n: 'Skyscanner', u: 'https://…', d: 'תיאור', deep: 'skyscanner' }] }]`. `deep` (optional) names a `siteUrl()` case, so the link opens with the destination and dates filled in.
+
+## js/israel.js → `window.APP_IL` (optional, Israel sites)
+Powers two views: **#stays** (every hotel, zimmer, cabin, hostel, apartment and campsite in Israel, loaded live in the visitor's browser from the OpenStreetMap Overpass API, cached 7 days in localStorage, with the curated `hotels` of `region: 'il'` destinations always shown and used as fallback) and **#go** (point-to-point navigation: OSRM car route drawn on the map, Waze / Google / Moovit links, bus and rail lines).
+```js
+{
+  regions: [['north', 'גליל, גולן ועמקים'], ...],          // region filter on #stays; a stay's region = region of its nearest place
+  places: [{ id: 'tlv', name: 'תל אביב', c: [32.0853, 34.7818], r: 'center', rail: true, dest: 'telaviv' }],
+       // rail = has an Israel Railways station; dest = destination id (adds "how to get here" on its transit tab)
+  bus: [{ a: 'jlm', b: ['eingedi', 'masada'], lines: '486', op: 'אגד', from: 'terminal/platform', time: 'כ-2 ש׳', note: '' }],
+       // verify every line via Moovit / operator search; lines are matched both ways and one-transfer routes are derived
+  rail: [['tlv', 'jlm', 'כ-35 דק׳', 'note']],
+  links: { moovit, egged, rail }
+}
+```
+Live APIs (Overpass, OSRM, Wikidata photos) need a real browser on http(s) or file://; they are blocked inside Claude artifacts, where only the curated list and estimates appear.

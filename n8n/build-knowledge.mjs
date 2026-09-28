@@ -15,6 +15,8 @@ vm.createContext(ctx);
 for (const f of ['data', 'media', 'money', 'sites', 'config']) {
   vm.runInContext(fs.readFileSync(path.join(dir, 'js', f + '.js'), 'utf8'), ctx, { filename: f });
 }
+/* אופציונלי: קווי אוטובוס/רכבת ויישובים בישראל */
+if (fs.existsSync(path.join(dir, 'js', 'israel.js'))) vm.runInContext(fs.readFileSync(path.join(dir, 'js', 'israel.js'), 'utf8'), ctx, { filename: 'israel' });
 const W = ctx.window;
 const MONTHS = ['ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'יוני', 'יולי', 'אוג׳', 'ספט׳', 'אוק׳', 'נוב׳', 'דצמ׳'];
 const pick = (o, keys) => Object.fromEntries(keys.filter(k => o[k] !== undefined && o[k] !== '').map(k => [k, o[k]]));
@@ -50,6 +52,16 @@ const out = {
   origin: W.APP_DATA.origin,
   holidays: W.APP_DATA.holidays,
   destinations,
+  israelTravel: W.APP_IL ? (() => {
+    const nm = Object.fromEntries(W.APP_IL.places.map(p => [p.id, p.name]));
+    return {
+      note: 'רשימת כל הלינה בארץ נטענת חי מ-OpenStreetMap בעמוד #stays. ניווט: עמוד #go. קווים משתנים — לאמת ב-Moovit/אגד.',
+      places: W.APP_IL.places.map(p => ({ name: p.name, coords: p.c, region: p.r, train: !!p.rail })),
+      busLines: W.APP_IL.bus.map(l => ({ lines: l.lines, operator: l.op, between: [nm[l.a], ...l.b.map(b => nm[b])], departsFrom: l.from, time: l.time, note: l.note })),
+      rail: W.APP_IL.rail.map(r => ({ between: [nm[r[0]], nm[r[1]]], time: r[2], note: r[3] })),
+      pages: { allStays: '#stays', navigation: '#go' }
+    };
+  })() : undefined,
   bookingSites: W.APP_SITES.map(g => ({ category: g.cat, sites: g.items.map(i => ({ name: i.n, url: i.u, about: i.d })) }))
 };
 fs.mkdirSync(path.join(dir, 'api'), { recursive: true });
