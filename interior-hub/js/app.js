@@ -111,6 +111,7 @@
     renderPlan();
     renderTour();
     renderNotes();
+    renderRenders();
     renderRooms();
     renderBudget();
     renderItemCard();
@@ -305,6 +306,23 @@
   }
 
   /* ---------- room lists ---------- */
+  /* ---------- AI renders: assets/renders/<style>-<room>.jpg, shown only when the file exists ---------- */
+  const RENDER_ROOMS = [['living', 'סלון'], ['kitchen', 'מטבח ופינת אוכל'], ['master', 'חדר שינה הורים'], ['kid', 'חדר ילדים'], ['bath', 'חדר רחצה']];
+  const renderSrc = (room) => `assets/renders/${state.style}-${room}.jpg`;
+  function renderRenders() {
+    const grid = $('#render-grid');
+    const kinds = new Set(plan.rooms.map((r) => r.kind));
+    const list = RENDER_ROOMS.filter(([k]) => k !== 'kid' || kinds.has('kid'));
+    grid.innerHTML = list.map(([k, name]) => `<figure class="render" data-render="${k}" hidden><img src="${renderSrc(k)}" alt="הדמיה: ${esc(name)}, סגנון ${esc(plan.style.name)}" decoding="async"><figcaption>${esc(name)}</figcaption></figure>`).join('');
+    let shown = 0;
+    $$('.render', grid).forEach((f) => {
+      const img = f.querySelector('img');
+      img.addEventListener('load', () => { f.hidden = false; shown++; $('#renders').hidden = false; });
+      img.addEventListener('error', () => f.remove());
+    });
+    $('#renders').hidden = shown === 0;
+  }
+
   function renderRooms() {
     const rooms = plan.rooms.filter((r) => plan.items.some((it) => it.room === r.id && IH.CATALOG[it.type]));
     const ord = { living: 0, dining: 1, kitchen: 2, master: 3, ensuite: 4, kid: 5, adult: 6, office: 7, guest: 8, bath: 9, wc: 10, utility: 11, corridor: 12, balcony: 13 };

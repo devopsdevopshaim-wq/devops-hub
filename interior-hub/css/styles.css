@@ -463,3 +463,9 @@ select, input[type=number] {
 .products li { font-size: 0.93rem; }
 .products a { font-weight: 600; }
 .credits { font-size: 0.8rem; color: var(--muted); margin-top: 6px; max-width: 110ch; }
+.render-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 600px) { .render-grid { grid-template-columns: minmax(0, 1fr); } }
+.render { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.render img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
+.render figcaption { padding: 8px 12px; font-weight: 600; font-size: 0.92rem; }
+.render:first-child { grid-column: 1 / -1; }
