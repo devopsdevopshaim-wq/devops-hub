@@ -15,7 +15,7 @@ npx serve .          # או: python3 -m http.server 8080
 
 ואז פותחים את הכתובת שמופיעה (למשל `http://localhost:3000`).
 
-**כתובת אינטרנט קבועה (GitHub Pages):** בריפו יש כבר workflow שמעלה את האתר. פעם אחת: Settings → Pages → Source: **GitHub Actions**. מאותו רגע כל שינוי ב-`vacation-hub` שנכנס ל-`main` מתפרסם אוטומטית בכתובת `https://<שם-המשתמש>.github.io/devops-hub/`.
+**כתובת האתר (GitHub Pages):** https://devopsdevopshaim-wq.github.io/devops-hub/ — האתר מוגש מהענף `gh-pages`. כל שינוי ב-`vacation-hub` שנכנס ל-`main` מועתק לשם אוטומטית ומתפרסם תוך דקה-שתיים.
 
 אפשר גם להעלות את התיקייה כמו שהיא ל-Netlify או Vercel. אין צורך בשלב build.
 
