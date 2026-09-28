@@ -232,16 +232,35 @@ export class Tour {
     requestAnimationFrame(this.loop);
   }
 
+  // hosts that do not serve .glb/.exr get them packed as base64 JSON (window.IH_PACKED_ASSETS)
+  fetchBinary(path) {
+    if (!window.IH_PACKED_ASSETS) return fetch(ASSETS + path).then((r) => { if (!r.ok) throw new Error(path); return r.arrayBuffer(); });
+    return fetch(ASSETS + path + '.json').then((r) => r.json()).then((j) => {
+      const bin = atob(j.b64);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out.buffer;
+    });
+  }
+
   loadEnvironment() {
     const exr = new EXRLoader();
-    exr.load(ASSETS + 'hdri/apartment.exr', (t) => {
+    const load = (path, done) => this.fetchBinary(path).then((buf) => {
+      const d = exr.parse(buf);
+      const t = new THREE.DataTexture(d.data, d.width, d.height, d.format, d.type);
+      t.colorSpace = d.colorSpace || THREE.LinearSRGBColorSpace;
+      t.minFilter = t.magFilter = THREE.LinearFilter;
+      t.generateMipmaps = false;
+      t.flipY = false;
+      t.needsUpdate = true;
       t.mapping = THREE.EquirectangularReflectionMapping;
+      done(t);
+    }).catch(() => { /* plain lighting stays */ });
+    load('hdri/apartment.exr', (t) => {
       this.envMap = this.pmrem.fromEquirectangular(t).texture;
-      t.dispose();
       this.scene.environment = this.envMap;
     });
-    exr.load(ASSETS + 'hdri/city.exr', (t) => {
-      t.mapping = THREE.EquirectangularReflectionMapping;
+    load('hdri/city.exr', (t) => {
       this.sky = t;
       this.scene.background = t;
       this.scene.backgroundIntensity = 1.6;
@@ -251,7 +270,7 @@ export class Tour {
   loadModels() {
     const loader = new GLTFLoader();
     Object.entries(MODELS).forEach(([key, file]) => {
-      loader.load(ASSETS + file, (g) => {
+      this.fetchBinary(file).then((buf) => loader.parseAsync(buf, ASSETS)).then((g) => {
         g.scene.traverse((o) => {
           if (o.isMesh) {
             o.castShadow = true;
@@ -267,7 +286,7 @@ export class Tour {
           if (this.plan) this.refreshModels(true);
         });
         if (this.plan) this.refreshModels();
-      }, undefined, () => { /* the generated piece stays */ });
+      }).catch(() => { /* the generated piece stays */ });
     });
   }
 
