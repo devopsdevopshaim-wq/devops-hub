@@ -61,3 +61,11 @@ The script prints the `files` map. Publish with the Artifact tool, passing `file
 | Map tiles | ✓ | ✓ | link fallback |
 | Live exchange rate | ✓ | ✓ | fallback rate |
 | WhatsApp deal button | ✓ | ✓ | may not open for some viewers |
+
+## n8n (deals and AI agent)
+1. `node <skill>/scripts/build-knowledge.mjs <site-dir>` writes `<site-dir>/api/knowledge.json`. Commit it, and add the same command as a step in the Pages workflow before publishing so it stays current.
+2. `python3 <skill>/scripts/build-workflow.py --owner O --repo R --site-dir D --brand "שם" --email agent@x --prefix slug --out n8n/<slug>.json`.
+3. The user imports the JSON in n8n Cloud (Import from File), connects Gmail and an Anthropic key, optionally enables the Google Sheets node, and activates the workflow.
+4. The site served at `https://<name>.app.n8n.cloud/webhook/<slug>` connects to the deal and chat webhooks automatically, because n8n injects `window.APP_N8N`. For the GitHub Pages copy, set `n8n.base` in `js/config.js`.
+
+The site posts `text/plain` JSON (no CORS preflight). The Code nodes accept either a string or an object body. If n8n is unreachable, the chat falls back to the local keyword assistant and deals fall back to WhatsApp or copy-paste.

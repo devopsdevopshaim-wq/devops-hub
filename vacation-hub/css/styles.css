@@ -677,3 +677,5 @@ a.c-item:hover { color: var(--teal); }
 .sites-group h2 { font: 700 30px/1 var(--font-display); margin-bottom: 12px; }
 .site-link { position: relative; padding-inline-start: 62px; min-height: 76px; align-content: center; }
 .site-mark { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--board); color: var(--board-text); font: 700 17px/1 var(--font-mono); }
+
+.msg.typing { color: var(--muted); font-style: italic; }

@@ -23,6 +23,15 @@ window.APP_CONFIG = {
     license: ''        // מספר רישיון סוכן נסיעות (אם יש) — מוצג בתחתית האתר
   },
 
+  /* חיבור ל-n8n: כתובת הבסיס של ה-Webhooks, לדוגמה:
+     'https://your-name.app.n8n.cloud/webhook'
+     כשהאתר מוגש מתוך n8n עצמו — הכתובת מוגדרת אוטומטית ואין צורך למלא. */
+  n8n: {
+    base: '',
+    deal: 'masa-deal',   // נתיב ה-Webhook לקבלת דילים
+    chat: 'masa-chat'    // נתיב ה-Webhook של הסוכן החכם
+  },
+
   partners: {
     bookingAid: '',          // Booking.com Affiliate Partner Program → מספר aid
     travelpayoutsMarker: '', // Travelpayouts (טיסות ומלונות ממאות ספקים) → marker

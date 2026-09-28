@@ -11,6 +11,19 @@
   const CFG = window.APP_CONFIG || { agency: {}, partners: {} };
   const AG = CFG.agency || {}, PT = CFG.partners || {};
   const BRAND = (CFG.brand && CFG.brand.name) || 'מסע';
+  /* n8n: window.APP_N8N מוזרק כשהאתר מוגש מתוך n8n; אחרת מ-config.js */
+  const N8N = Object.assign({ base: '', deal: 'masa-deal', chat: 'masa-chat' }, CFG.n8n || {}, window.APP_N8N || {});
+  const n8nUrl = (hook) => N8N.base ? N8N.base.replace(/\/$/, '') + '/' + hook : '';
+  /* text/plain = בקשה "פשוטה" בלי preflight של CORS; n8n מפענח את ה-JSON */
+  function n8nPost(hook, payload, timeoutMs) {
+    const url = n8nUrl(hook);
+    if (!url || !window.fetch) return Promise.reject(new Error('n8n not configured'));
+    const ctl = window.AbortController ? new AbortController() : null;
+    const t = ctl && setTimeout(() => ctl.abort(), timeoutMs || 30000);
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(payload), signal: ctl ? ctl.signal : undefined })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+      .finally(() => t && clearTimeout(t));
+  }
   const MONEY = window.APP_MONEY || { currencies: {}, byDest: {} };
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -23,6 +36,8 @@
     get(k, def) { try { const v = localStorage.getItem('masa.' + k); return v == null ? def : JSON.parse(v); } catch (e) { return def; } },
     set(k, v) { try { localStorage.setItem('masa.' + k, JSON.stringify(v)); } catch (e) { /* אחסון חסום */ } }
   };
+
+  const sessionId = (() => { let v = store.get('session', null); if (!v) { v = 'web-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); store.set('session', v); } return v; })();
 
   /* ---------- תאריכים ---------- */
   const DOW = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
@@ -1194,7 +1209,8 @@
         <div class="fine num">${money(c.total / c.n)} לאדם${c.peak ? ' · כולל תוספת עונת שיא' : ''}</div>
 
         <div class="dp-actions">
-          ${wa ? `<a class="btn btn-amber" href="${esc(wa)}" target="_blank" rel="noopener">סגירת הדיל מול הסוכן בוואטסאפ</a>` : ''}
+          ${N8N.base ? `<button type="button" class="btn btn-primary" id="dealSend">שליחת הדיל לסוכן</button>` : ''}
+          ${wa ? `<a class="btn ${N8N.base ? '' : 'btn-amber'}" href="${esc(wa)}" target="_blank" rel="noopener">סגירת הדיל מול הסוכן בוואטסאפ</a>` : ''}
           ${mail ? `<a class="btn" href="${esc(mail)}">שליחת הדיל במייל לסוכן</a>` : ''}
           ${AG.phone ? `<div class="copy-row"><span>טלפון הסוכן</span><span class="mono" dir="ltr">${esc(AG.phone)}</span></div>` : ''}
           ${!wa && !mail ? `<p class="note">חיבור לסוכן עוד לא הוגדר באתר. אפשר להעתיק את פרטי הדיל ולשלוח לסוכן, או להזמין ישירות אצל הספקים למטה.</p>` : ''}
@@ -1210,6 +1226,23 @@
         <p class="fine">המחירים משוערים. המחיר הסופי נקבע אצל הספק או הסוכן בזמן ההזמנה.</p>
       </div>`;
     $('#dealSave').onclick = () => saveTrip(d.id, { end: s.end, travelers: s.travelers, budget: c.total });
+    const send = $('#dealSend');
+    if (send) send.onclick = () => {
+      if (!dealState.phone.trim()) { toast('הוסיפו טלפון כדי שהסוכן יוכל לחזור אליכם'); $('#dlPhone').focus(); return; }
+      send.disabled = true; send.textContent = 'שולח…';
+      n8nPost(N8N.deal, {
+        dealId: id, createdAt: new Date().toISOString(), sessionId,
+        destination: { id: d.id, name: d.name, country: d.country },
+        dates: { start: iso(s.start), end: iso(s.end), nights: c.nights }, travelers: c.n,
+        items: c.lines.map(l => ({ key: l[0], label: l[1], priceILS: Math.round(l[2]) })), totalILS: Math.round(c.total),
+        customer: { name: dealState.name, phone: dealState.phone, notes: dealState.notes }, text
+      }, 20000).then(() => {
+        send.textContent = 'הדיל נשלח ✓'; toast(`הדיל ${id} נשלח. הסוכן יחזור אליכם בהקדם.`);
+      }).catch(() => {
+        send.disabled = false; send.textContent = 'שליחת הדיל לסוכן';
+        toast(wa ? 'השליחה לא הצליחה — אפשר לשלוח בוואטסאפ' : 'השליחה לא הצליחה — העתיקו את פרטי הדיל ושלחו לסוכן');
+      });
+    };
   }
 
   /* =========================================================
@@ -1794,7 +1827,30 @@
     $('#chatForm').onsubmit = (e) => { e.preventDefault(); const v = $('#chatInput').value.trim(); if (v) { ask(v); $('#chatInput').value = ''; } };
     $('#chatLog').onclick = (e) => { if (e.target.closest('a[href^="#"]') && window.innerWidth < 700) openChat(false); };
   }
-  function ask(q) { botSay(esc(q), 'me'); setTimeout(() => botSay(answer(q)), 250); }
+  /* תשובת הסוכן מ-n8n: טקסט עם **הדגשה**, קישורים ושורות — מומר ל-HTML בטוח */
+  function agentHTML(t) {
+    return esc(t)
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      .replace(/\[([^\]]+)\]\((#[\w.-]+|https?:\/\/[^\s)]+)\)/g, (m, label, href) => href[0] === '#' ? `<a href="${href}">${label}</a>` : `<a href="${href}" target="_blank" rel="noopener">${label}</a>`)
+      .replace(/\n/g, '<br>');
+  }
+  function ask(q) {
+    botSay(esc(q), 'me');
+    const local = () => botSay(answer(q));
+    if (!N8N.base) { setTimeout(local, 250); return; }
+    const typing = document.createElement('div');
+    typing.className = 'msg bot typing'; typing.textContent = 'מקליד…';
+    $('#chatLog').appendChild(typing);
+    const page = (location.hash.match(/^#dest-([\w-]+)/) || [])[1] || '';
+    n8nPost(N8N.chat, {
+      sessionId, message: q,
+      context: { page: location.hash || '#home', destination: page, plan: { start: iso(st.start), end: st.end ? iso(st.end) : null, travelers: st.travelers, style: st.style } }
+    }, 45000).then(r => {
+      typing.remove();
+      const reply = r && (r.reply || r.output || r.text);
+      if (reply) botSay(agentHTML(String(reply))); else local();
+    }).catch(() => { typing.remove(); local(); });
+  }
 
   /* ---------- ערכת צבעים ---------- */
   function initTheme() {

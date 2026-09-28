@@ -65,6 +65,9 @@ Pick what fits the user. Details are in [references/deploy.md](references/deploy
 - **ZIP**: `<skill>/scripts/make-zip.sh <site-dir>`. The user unzips it and opens `index.html`.
 - **GitHub Pages**: `<skill>/scripts/publish-gh-pages.sh <site-dir>` pushes a `gh-pages` branch. For a **public** repo, that alone turns Pages on, with no Settings step. Private repos need a paid plan. For automatic updates, add the workflow from deploy.md.
 - **Netlify Drop**: the user drags the folder onto app.netlify.com/drop.
+- **n8n (backend and AI agent)**: `node <skill>/scripts/build-knowledge.mjs <site-dir>`, then
+  `python3 <skill>/scripts/build-workflow.py --owner <gh-owner> --repo <repo> --site-dir <dir> --brand "<name>" --email <agent email> --prefix <slug> --out <file>.json`.
+  This produces an importable workflow: the site served live from GitHub, a deal webhook that emails the agent (Gmail, plus optional Sheets), and a Claude chat agent grounded in `api/knowledge.json`. Setup steps are in references/deploy.md → n8n.
 
 ### 7. Report honestly
 Tell the user what you verified and where (list the sources), what is estimated, which listings you removed as closed, and what they still need to provide (contacts, partner IDs). Payment processing inside the site is **not** supported. It needs a merchant account and a backend. Deals close through the agent or at the provider.
