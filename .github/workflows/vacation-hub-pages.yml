@@ -6,7 +6,7 @@ name: Deploy vacation-hub to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['vacation-hub/**', 'n8n/**']
+    paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**']
   workflow_dispatch:
 
 permissions:
@@ -29,6 +29,10 @@ jobs:
           rm -rf /tmp/site && mkdir -p /tmp/site
           cp -r vacation-hub/. /tmp/site/
           rm -f /tmp/site/README.md
+          # the interior design planner is served under /interior/
+          mkdir -p /tmp/site/interior
+          cp -r interior-hub/. /tmp/site/interior/
+          rm -f /tmp/site/interior/README.md
           touch /tmp/site/.nojekyll
           cd /tmp/site
           git init -q -b gh-pages
