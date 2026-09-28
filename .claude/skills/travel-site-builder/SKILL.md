@@ -15,6 +15,7 @@ This skill builds a static site that runs from `index.html`, needs no build step
 | `js/data.js` | Destinations: facts, climate, costs, airport, hotels, car, food, transit, routes, map points, poster palette. Also origin airport, holidays and booking sites | Always |
 | `js/media.js` | Per destination: Wikimedia Commons photo file names and YouTube video IDs | Always |
 | `js/money.js` | Currencies (notes and coins), plus per-destination payment, ATM and tax tips and typical prices | Always |
+| `js/israel.js` | Israel only: places, regions, verified intercity bus/rail lines for the #stays (all stays, live OSM) and #go (navigation) views | For Israel sites |
 | `js/sites.js` | The all-sites portal (flights, hotels, packages, cars, activities, insurance) | Sometimes |
 | `css/styles.css` | Design tokens on `:root` (light) and the dark blocks | For rebranding |
 | `js/posters.js` | SVG travel-poster illustrations (14 landmark icons) | Rarely |

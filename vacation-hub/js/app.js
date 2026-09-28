@@ -72,7 +72,11 @@
     style: 'mid',
     calMonth: null,
     exploreFilter: 'all',
-    tab: 'overview'
+    tab: 'overview',
+    types: [],        // סוגי חופשה שנבחרו (family, couple, …)
+    kids: 0,          // מתוך המטיילים — כמה ילדים
+    stay: 'all',      // סינון סוג לינה בלשונית המלונות ובדיל
+    funTag: 'all'     // סינון בלשונית הבילוי
   };
   if (saved && saved.start && parse(saved.start) >= today) {
     st.start = parse(saved.start);
@@ -80,9 +84,11 @@
     st.travelers = saved.travelers || 2;
     st.region = saved.region || 'all';
     st.style = saved.style || 'mid';
+    st.types = Array.isArray(saved.types) ? saved.types : [];
+    st.kids = Math.min(saved.kids || 0, st.travelers - 1);
   }
   st.calMonth = new Date(st.start.getFullYear(), st.start.getMonth(), 1);
-  const savePlan = () => store.set('plan', { start: iso(st.start), end: st.end ? iso(st.end) : null, travelers: st.travelers, region: st.region, style: st.style });
+  const savePlan = () => store.set('plan', { start: iso(st.start), end: st.end ? iso(st.end) : null, travelers: st.travelers, region: st.region, style: st.style, types: st.types, kids: st.kids });
 
   const nightsOf = (s) => s.end ? diffDays(s.start, s.end) : 0;
 
@@ -99,8 +105,40 @@
     return n;
   }
 
+  /* ---------- סוגי חופשה, סוגי לינה ותגיות ---------- */
+  const TRIP_TYPES = [
+    ['family', 'משפחות עם ילדים'], ['couple', 'זוגות ורומנטיקה'], ['nature', 'טבע וטיולים'],
+    ['relax', 'ספא ובטן-גב'], ['culture', 'תרבות והיסטוריה'], ['night', 'בילויים וחיי לילה'],
+    ['food', 'קולינריה'], ['adventure', 'אקסטרים והרפתקאות'], ['religious', 'שומרי שבת וכשרות']
+  ];
+  const TYPE_LABEL = Object.fromEntries(TRIP_TYPES);
+  const STAY_KIND = { hotel: 'מלון', boutique: 'בוטיק', resort: 'ריזורט', spa: 'מלון ספא', zimmer: 'צימר', cabins: 'בקתות', farm: 'חוות אירוח', kibbutz: 'מלון קיבוץ', lodge: 'לינה מדברית', hostel: 'אכסניה' };
+  const STAY_FILTERS = [['all', 'הכל'], ['hotel', 'מלונות'], ['zimmer', 'צימרים, בקתות וחוות'], ['spa', 'ספא'], ['family', 'למשפחות'], ['couple', 'לזוגות'], ['budget', 'חסכוני']];
+  const TAG_LABEL = { family: 'משפחות', couple: 'זוגות', spa: 'ספא', pool: 'בריכה', adults: 'מבוגרים בלבד', nature: 'טבע', budget: 'חסכוני', view: 'נוף', culture: 'תרבות', night: 'לילה', food: 'אוכל', adventure: 'אקסטרים', relax: 'רוגע' };
+  function stayMatches(h, f) {
+    const kind = h.kind || 'hotel', tags = h.tags || [];
+    if (f === 'all') return true;
+    if (f === 'hotel') return ['hotel', 'boutique', 'resort', 'spa'].includes(kind);
+    if (f === 'zimmer') return ['zimmer', 'cabins', 'farm', 'lodge', 'kibbutz'].includes(kind);
+    if (f === 'spa') return kind === 'spa' || tags.includes('spa');
+    if (f === 'budget') return h.tier === 'budget' || tags.includes('budget');
+    return tags.includes(f);
+  }
+  const activeTypes = (s) => { const t = (s.types || []).slice(); if ((s.kids || 0) > 0 && !t.includes('family')) t.push('family'); return t; };
+  function typeFit(d, s) {
+    const types = activeTypes(s), v = d.vibes || {};
+    let pts = 0; const good = [], weak = [];
+    types.forEach(t => {
+      const x = v[t] === undefined ? 1 : v[t];
+      pts += (x - 1.5) * 10;
+      if (x >= 3) good.push(t); else if (x <= 0) weak.push(t);
+    });
+    if (types.includes('religious') && d.region === 'abroad' && !d.kosher.length) { pts -= 10; weak.push('religious'); }
+    return { pts, good, weak, types };
+  }
+
   /* ---------- הערכת יעד לתאריכים ---------- */
-  const IDEAL = { eilat: 28, telaviv: 27, dubai: 28, bangkok: 31, athens: 26, barcelona: 26 };
+  const IDEAL = { eilat: 28, deadsea: 29, telaviv: 27, dubai: 28, bangkok: 31, athens: 26, barcelona: 26 };
   function weatherWord(t) {
     if (t < 8) return 'קר';
     if (t < 16) return 'קריר';
@@ -136,7 +174,7 @@
     const m = mid.getMonth();
     const temp = d.climate[m];
     const ideal = IDEAL[d.id] || 23;
-    let score = 100 - Math.abs(temp - ideal) * 3.6;
+    let score = 100 - Math.abs(temp - ideal) * 3;
     const best = d.bestMonths.includes(m + 1);
     if (best) score += 8;
     const nights = nightsOf(s);
@@ -145,13 +183,15 @@
     if (tooShort) score -= 28;
     if (d.region === 'il' && nights <= 3) score += 6;
     if (!longHaul && d.region === 'abroad' && nights <= 5) score += 4;
-    return { score: Math.round(Math.max(0, Math.min(99, score))), temp, best, tooShort, month: m, est: estimate(d, s) };
+    const fit = typeFit(d, s);
+    score += fit.pts;
+    return { score: Math.round(Math.max(0, Math.min(99, score))), raw: score, temp, best, tooShort, month: m, est: estimate(d, s), fit };
   }
   function ranked(s, region) {
     return DESTS
       .filter(d => region === 'all' || d.region === region)
       .map(d => ({ d, e: evaluate(d, s) }))
-      .sort((a, b) => b.e.score - a.e.score);
+      .sort((a, b) => b.e.raw - a.e.raw);
   }
 
   /* ---------- קישורים לאתרי הזמנה ---------- */
@@ -266,13 +306,15 @@
       arg = parts[0];
       if (parts[1]) st.tab = parts[1];
     }
+    if (raw.startsWith('stays-')) { view = 'stays'; if (REGION_LABEL[raw.slice(6)]) staysState.r = raw.slice(6); }
+    if (raw.startsWith('go-')) { view = 'go'; arg = raw.slice(3); }
     if (!$('#view-' + view)) view = 'home';
     $$('.view').forEach(v => { v.hidden = v.dataset.view !== view; });
     $$('.mainnav [data-nav]').forEach(a => {
       const on = a.dataset.nav === view || (view === 'dest' && a.dataset.nav === 'explore');
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    const R = { home: renderHome, explore: renderExplore, dest: () => renderDest(arg), deal: renderDeal, sites: renderSites, airport: renderAirport, budget: renderBudget, trips: renderTrips, help: renderHelp };
+    const R = { home: renderHome, explore: renderExplore, dest: () => renderDest(arg), deal: renderDeal, sites: renderSites, airport: renderAirport, budget: renderBudget, trips: renderTrips, help: renderHelp, stays: renderStays, go: () => renderGo(arg) };
     R[view]();
     window.scrollTo(0, 0);
   }
@@ -366,6 +408,18 @@
                 <button type="button" data-v="lux">יוקרה</button>
               </div>
             </div>
+            <div class="field">
+              <span class="label">מתוכם ילדים</span>
+              <div class="stepper">
+                <button type="button" data-kids="-1" aria-label="פחות ילדים">−</button>
+                <output id="kidsOut">${st.kids}</output>
+                <button type="button" data-kids="1" aria-label="יותר ילדים">+</button>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label">איזו חופשה? אפשר לבחור כמה</span>
+              <div class="type-chips" id="typeChips">${typeChipsHTML()}</div>
+            </div>
             <p class="fine">המחירים משוערים לכל הקבוצה, כולל טיסה, לינה, אוכל, תחבורה ואטרקציות.</p>
           </div>
         </div>
@@ -393,8 +447,14 @@
     $('#calNext').onclick = () => { st.calMonth = new Date(st.calMonth.getFullYear(), st.calMonth.getMonth() + 1, 1); drawCal(); };
     $$('[data-step]', el).forEach(b => b.onclick = () => {
       st.travelers = Math.max(1, Math.min(12, st.travelers + Number(b.dataset.step)));
-      $('#travOut').textContent = st.travelers; updatePlan();
+      st.kids = Math.min(st.kids, st.travelers - 1);
+      $('#travOut').textContent = st.travelers; $('#kidsOut').textContent = st.kids; updatePlan();
     });
+    $$('[data-kids]', el).forEach(b => b.onclick = () => {
+      st.kids = Math.max(0, Math.min(st.travelers - 1, st.kids + Number(b.dataset.kids)));
+      $('#kidsOut').textContent = st.kids; updatePlan();
+    });
+    bindTypeChips($('#typeChips'), updatePlan);
     bindSeg('#regionSeg', 'region');
     bindSeg('#styleSeg', 'style');
     drawCal();
@@ -420,6 +480,20 @@
     plane: '<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor"/></svg>',
     money: '<svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zm9 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 8v2a2 2 0 0 0 2-2zm12 0a2 2 0 0 0 2 2V8zM5 16h2a2 2 0 0 0-2-2zm14-2a2 2 0 0 0-2 2h2z" fill="currentColor"/></svg>'
   };
+
+  function typeChipsHTML() {
+    return TRIP_TYPES.map(([k, v]) => `<button type="button" class="type-chip" data-type="${k}" aria-pressed="${st.types.includes(k)}">${v}</button>`).join('');
+  }
+  function bindTypeChips(box, after) {
+    if (!box) return;
+    box.onclick = (e) => {
+      const b = e.target.closest('[data-type]'); if (!b) return;
+      const k = b.dataset.type;
+      st.types = st.types.includes(k) ? st.types.filter(x => x !== k) : st.types.concat(k);
+      $$('[data-type]', box).forEach(x => x.setAttribute('aria-pressed', String(st.types.includes(x.dataset.type))));
+      after();
+    };
+  }
 
   function bindSeg(sel, key, after) {
     const seg = $(sel);
@@ -534,6 +608,7 @@
             ${d.flightTime ? `<span class="chip">${d.flightTime} ש׳ טיסה</span>` : '<span class="chip">נסיעה, בלי טיסה</span>'}
             ${e.tooShort ? '<span class="chip chip-bad">קצר מדי לטיסה ארוכה</span>' : ''}
           </div>
+          ${fitChips(e.fit)}
           <div class="result-links">
             ${key.map(s => ext(siteUrl(s.id, d, st), s.name, 'btn btn-sm')).join('')}
             <a class="btn btn-sm btn-ghost" href="#dest-${d.id}">כל המידע</a>
@@ -548,6 +623,14 @@
           <div class="result-links"><a class="btn btn-amber btn-sm" href="#deal" data-deal="${d.id}">סגירת דיל</a><button class="btn btn-sm" type="button" data-save="${d.id}">שמירה</button></div>
         </div>
       </article>`;
+  }
+
+  function fitChips(fit) {
+    if (!fit || !fit.types.length) return '';
+    return `<div class="result-facts fit-row">
+      ${fit.good.length ? `<span class="chip chip-good">מצוין ל: ${fit.good.map(t => TYPE_LABEL[t]).join(', ')}</span>` : ''}
+      ${fit.weak.length ? `<span class="chip chip-warn">פחות מתאים ל: ${fit.weak.map(t => TYPE_LABEL[t]).join(', ')}</span>` : ''}
+    </div>`;
   }
 
   function drawBoard(rows) {
@@ -594,6 +677,7 @@
             <button type="button" data-v="short">עד 4 ש׳ טיסה</button>
             <button type="button" data-v="kosher">הרבה אוכל כשר</button>
           </div>
+          <div class="type-chips" id="exTypes">${typeChipsHTML()}</div>
           <label class="field" style="min-width:220px">
             <span class="sr">חיפוש יעד</span>
             <input class="input" id="exSearch" type="search" placeholder="חיפוש: פריז, יוון, ים…">
@@ -612,9 +696,14 @@
         if (!q) return true;
         return [d.name, d.nameEn, d.country, d.tagline, d.about].join(' ').toLowerCase().includes(q);
       });
+      if (activeTypes(st).length) {
+        const sc = (d) => typeFit(d, st).pts;
+        list.sort((a, b) => sc(b) - sc(a));
+      }
       $('#destGrid').innerHTML = list.length ? list.map(destCard).join('') : `<div class="empty">לא נמצאו יעדים. נסו חיפוש אחר.</div>`;
     };
     bindSeg('#exSeg', 'exploreFilter', draw);
+    bindTypeChips($('#exTypes'), () => { savePlan(); draw(); });
     $('#exSearch').oninput = draw;
     draw();
   }
@@ -635,6 +724,7 @@
             ${d.flightTime ? `<span class="chip">${d.flightTime} ש׳ טיסה</span>` : '<span class="chip">ללא טיסה</span>'}
             <span class="chip">${e.temp}° ב${MONTHS_S[e.month]}</span>
             ${e.best ? '<span class="chip chip-good">עונה טובה</span>' : ''}
+            ${e.fit.good.length ? `<span class="chip chip-good">${e.fit.good.map(t => TYPE_LABEL[t]).join(' · ')}</span>` : ''}
           </div>
         </div>
       </a>`;
@@ -644,7 +734,7 @@
      עמוד יעד
      ========================================================= */
   const TABS = [
-    ['overview', 'סקירה'], ['gallery', 'תמונות'], ['flights', 'טיסה ושדה'], ['hotels', 'מלונות'], ['car', 'השכרת רכב'],
+    ['overview', 'סקירה'], ['gallery', 'תמונות'], ['flights', 'טיסה ושדה'], ['hotels', 'לינה'], ['fun', 'בילוי ואטרקציות'], ['car', 'השכרת רכב'],
     ['food', 'מסעדות'], ['money', 'כסף ותשלומים'], ['contacts', 'אנשי קשר'], ['transit', 'תחבורה ועלויות'], ['routes', 'מסלולים'], ['map', 'מפה'], ['videos', 'סרטונים וממליצים']
   ];
 
@@ -652,7 +742,8 @@
     const d = byId[id];
     const el = $('#view-dest');
     if (!d) { location.hash = '#explore'; return; }
-    if (!TABS.some(t => t[0] === st.tab)) st.tab = 'overview';
+    const tabs = TABS.filter(([k]) => k !== 'fun' || (d.fun && d.fun.length));
+    if (!tabs.some(t => t[0] === st.tab)) st.tab = 'overview';
     el.innerHTML = `
       <div class="wrap">
         <div class="crumbs"><a href="#explore">יעדים</a><span>›</span><span>${esc(d.name)}</span></div>
@@ -682,7 +773,7 @@
           ${fact('נהיגה', 'בצד ' + d.drivingSide)}
         </div>
         <div class="tabs" role="tablist" id="destTabs">
-          ${TABS.map(([k, v]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${k === st.tab}">${v}</button>`).join('')}
+          ${tabs.map(([k, v]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${k === st.tab}">${v}</button>`).join('')}
         </div>
         <div id="tabBody" role="tabpanel"></div>
       </div>`;
@@ -724,6 +815,7 @@
             </div>
             <div class="card">
               <h3>בתאריכים שלכם</h3>
+              ${fitChips(e.fit)}
               <div class="pass-meta">
                 <span class="chip ${e.score >= 75 ? 'chip-good' : e.score >= 50 ? 'chip-warn' : 'chip-bad'}">התאמה ${e.score}%</span>
                 <span class="chip">${e.temp}° · ${weatherWord(e.temp)}</span>
@@ -738,6 +830,13 @@
               ${d.region === 'abroad' ? `<p class="warn-note">לפני נסיעה בדקו את ${ext('https://www.gov.il/he/departments/news/travel-warnings', 'אזהרות המסע של המטה לביטחון לאומי')} ואת תוקף הדרכון (6 חודשים לפחות).</p>` : ''}
             </div>
           </div>
+          ${d.vibes ? `<div class="card mt">
+            <div class="row"><h3>למי ${esc(d.name)} מתאים?</h3><span class="fine">0–3 · לפי אופי היעד</span></div>
+            <div class="vibes">${TRIP_TYPES.map(([k, v]) => {
+              const x = d.vibes[k] || 0, on = activeTypes(st).includes(k);
+              return `<div class="vibe ${on ? 'on' : ''}"><span>${v}</span><span class="dots" aria-label="${x} מתוך 3">${[1, 2, 3].map(i => `<i class="${i <= x ? 'f' : ''}"></i>`).join('')}</span></div>`;
+            }).join('')}</div>
+          </div>` : ''}
           <div class="section-head mt"><h2 class="h-section" style="font-size:36px">הזמנה לתאריכים שבחרתם</h2><span class="fine">${fmt(s.start)} – ${fmt(s.end)} · ${s.travelers} מטיילים</span></div>
           ${siteLinks(d, s)}`;
       },
@@ -768,21 +867,44 @@
           </div>
           ${d.flightTime ? `<div class="section-head mt"><h2 class="h-section" style="font-size:36px">חיפוש טיסות לתאריכים שלכם</h2></div>${siteLinks(d, s, ['flight', 'package'])}` : ''}`;
       },
-      hotels: () => `
+      hotels: () => {
+        const counts = Object.fromEntries(STAY_FILTERS.map(([k]) => [k, d.hotels.filter(h => stayMatches(h, k)).length]));
+        const list = d.hotels.filter(h => stayMatches(h, st.stay));
+        return `
+        <div class="filters" style="justify-content:flex-start">
+          <div class="seg" id="stayFilter">${STAY_FILTERS.filter(([k]) => k === 'all' || counts[k]).map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="${st.stay === k}">${v} <span class="cnt">${counts[k]}</span></button>`).join('')}</div>
+        </div>
         <div class="card">
-          <div class="row"><h3>מלונות מומלצים ב${esc(d.name)}</h3><span class="fine">מחיר ללילה לחדר זוגי, משוער</span></div>
+          <div class="row"><h3>לינה ב${esc(d.name)}</h3><span class="fine">מחיר ללילה לחדר זוגי / יחידה, משוער</span></div>
           <ul class="list">
-            ${d.hotels.map(h => `<li>
-              <div><div class="t">${esc(h.name)} <span class="tier ${h.tier === 'lux' ? 'tier-lux' : ''}">${{ lux: 'יוקרה', mid: 'בינוני', budget: 'חסכוני' }[h.tier]}</span></div>
-                <div class="s">${esc(h.area)} · ${esc(h.note)}</div>${contactHTML(h)}</div>
-              <div class="actions"><span class="chip num">כ-${money(h.price)}</span>
-                ${ext(`https://www.booking.com/searchresults.he.html?ss=${enc(h.name + ' ' + d.nameEn)}&checkin=${iso(s.start)}&checkout=${iso(s.end)}&group_adults=${s.travelers}`, 'בדיקת זמינות', 'btn btn-sm')}
-                ${ext(gmaps(h.name + ' ' + d.nameEn), 'במפה', 'btn btn-sm btn-ghost')}</div>
-            </li>`).join('')}
+            ${list.length ? list.map(h => stayRow(d, s, h)).join('') : '<li class="fine">אין מקומות בקטגוריה הזו ביעד. נסו סינון אחר.</li>'}
           </ul>
         </div>
+        ${d.region === 'il' ? `<div class="card mt row"><div><h3>רוצים עוד אפשרויות?</h3><p class="fine">כל המלונות, הצימרים והבקתות ב${esc(REGION_LABEL[nearestPlace(d.coords).p.r])}, עם מפה, טלפונים וניווט.</p></div><a class="btn btn-primary" href="#stays-${nearestPlace(d.coords).p.r}">לכל הלינה באזור</a></div>` : ''}
+        ${d.region === 'il' ? `<p class="note mt">מחפשים עוד צימרים? ${ext(`https://www.booking.com/searchresults.he.html?ss=${enc(d.nameEn)}&checkin=${iso(s.start)}&checkout=${iso(s.end)}&group_adults=${s.travelers}`, 'עוד מקומות לינה ב-Booking', '')} · ${ext(`https://www.airbnb.com/s/${enc(d.nameEn)}/homes?checkin=${iso(s.start)}&checkout=${iso(s.end)}&adults=${s.travelers}`, 'בתים ובקתות ב-Airbnb', '')}</p>` : ''}
         <div class="section-head mt"><h2 class="h-section" style="font-size:36px">עוד לינה בתאריכים שלכם</h2></div>
-        ${siteLinks(d, s, ['hotel'])}`,
+        ${siteLinks(d, s, ['hotel'])}`;
+      },
+      fun: () => {
+        const tags = [...new Set((d.fun || []).flatMap(f => f.tags || []))];
+        const list = (d.fun || []).filter(f => st.funTag === 'all' || (f.tags || []).includes(st.funTag));
+        const rel = activeTypes(st).includes('religious') && d.region === 'il';
+        return `
+        <div class="filters" style="justify-content:flex-start">
+          <div class="seg" id="funFilter"><button type="button" data-v="all" aria-pressed="${st.funTag === 'all'}">הכל</button>${tags.map(t => `<button type="button" data-v="${t}" aria-pressed="${st.funTag === t}">${TAG_LABEL[t] || t}</button>`).join('')}</div>
+        </div>
+        ${rel ? '<p class="warn-note" style="margin-bottom:14px">שומרי שבת: בישראל רוב התחבורה הציבורית לא פועלת בשבת, וחלק מהאטרקציות פתוחות בשבת בתשלום מראש בלבד. הערות על שבת מופיעות ליד כל מקום כשידוע.</p>' : ''}
+        <div class="fun-grid">${list.map(f => `
+          <article class="card fun-card">
+            <div class="row"><span class="eyebrow">${esc(f.type || '')}</span>${(f.tags || []).slice(0, 3).map(t => `<span class="chip">${TAG_LABEL[t] || t}</span>`).join('')}</div>
+            <h3>${esc(f.name)}</h3>
+            ${f.note ? `<p class="fine">${esc(f.note)}</p>` : ''}
+            ${contactHTML(f)}
+            <div class="result-links">${ext(gmaps(f.name + ' ' + (f.addr || d.nameEn)), 'ניווט', 'btn btn-sm')}</div>
+          </article>`).join('')}
+        </div>
+        <p class="fine mt">שעות פתיחה ומחירים משתנים — כדאי להתקשר או לבדוק באתר לפני ההגעה.</p>`;
+      },
       car: () => `
         <div class="grid-2">
           <div class="card">
@@ -827,6 +949,7 @@
       transit: () => {
         const days = nightsOf(s) + 1;
         return `
+          ${d.region === 'il' ? `<div class="card row" style="margin-bottom:14px"><div><h3>איך מגיעים ל${esc(d.name)}?</h3><p class="fine">מסלול ברכב, Waze, קווי אוטובוס ורכבת מכל עיר בארץ.</p></div><a class="btn btn-primary" href="#go-${(IL.places.find(p => p.dest === d.id) || {}).id || ''}">ניווט וקווים</a></div>` : ''}
           <div class="grid-2">
             <div class="card">
               <h3>תחבורה ציבורית</h3>
@@ -913,6 +1036,24 @@
     $$('[data-air]', body).forEach(a => a.onclick = () => { airState.dest = a.dataset.air; });
     if (st.tab === 'map') initMap(d);
     if (st.tab === 'money') bindConverter(d);
+    const sf = $('#stayFilter'); if (sf) sf.onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; st.stay = b.dataset.v; drawTab(d); };
+    const ff = $('#funFilter'); if (ff) ff.onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; st.funTag = b.dataset.v; drawTab(d); };
+  }
+
+  function stayBadges(h) {
+    return `<span class="tier ${h.tier === 'lux' ? 'tier-lux' : ''}">${{ lux: 'יוקרה', mid: 'בינוני', budget: 'חסכוני' }[h.tier]}</span>
+      ${h.kind && h.kind !== 'hotel' ? `<span class="tier kind">${STAY_KIND[h.kind] || h.kind}</span>` : ''}`;
+  }
+  function stayRow(d, s, h) {
+    return `<li>
+      <div><div class="t">${esc(h.name)} ${stayBadges(h)}</div>
+        <div class="s">${esc(h.area)} · ${esc(h.note)}</div>
+        ${(h.tags || []).length ? `<div class="tag-row">${h.tags.map(t => `<span class="mini">${TAG_LABEL[t] || t}</span>`).join('')}</div>` : ''}
+        ${contactHTML(h)}</div>
+      <div class="actions"><span class="chip num">כ-${money(h.price)}</span>
+        ${ext(`https://www.booking.com/searchresults.he.html?ss=${enc(h.name + ' ' + d.nameEn)}&checkin=${iso(s.start)}&checkout=${iso(s.end)}&group_adults=${s.travelers}`, 'בדיקת זמינות', 'btn btn-sm')}
+        ${ext(gmaps(h.name + ' ' + d.nameEn), 'במפה', 'btn btn-sm btn-ghost')}</div>
+    </li>`;
   }
 
   function siteLinks(d, s, kinds) {
@@ -977,6 +1118,7 @@
         <div class="stack-v">
           ${group('מסעדות כשרות', kosher)}
           ${group('מסעדות מישלן', chef)}
+          ${group('בילוי ואטרקציות', (d.fun || []).filter(f => f.phone || f.addr).map(f => ({ ...f, sub: f.type })))}
           ${group('השכרת רכב', cars)}
           <div class="card"><h3>חירום ומידע</h3><ul class="list">
             <li><span class="t">חירום מקומי</span><span class="mono" dir="ltr">${esc(d.emergency)}</span></li>
@@ -1135,15 +1277,16 @@
         </div>
       </section>
       <section class="step-card">
-        <header><span class="step-n">2</span><h3>מלון</h3></header>
-        <div class="hotel-opts">${d.hotels.map((h, i) => `
+        <header><span class="step-n">2</span><h3>לינה</h3></header>
+        <div class="seg" id="dlStay">${STAY_FILTERS.filter(([k]) => k === 'all' || d.hotels.some(h => stayMatches(h, k))).map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="${st.stay === k}">${v}</button>`).join('')}</div>
+        <div class="hotel-opts">${d.hotels.map((h, i) => stayMatches(h, st.stay) || i === dealState.hotel ? `
           <label class="hotel-opt ${i === dealState.hotel ? 'on' : ''}">
             <input type="radio" name="dlHotel" value="${i}" ${i === dealState.hotel ? 'checked' : ''}>
-            <span class="ho-top"><b>${esc(h.name)}</b><span class="tier ${h.tier === 'lux' ? 'tier-lux' : ''}">${{ lux: 'יוקרה', mid: 'בינוני', budget: 'חסכוני' }[h.tier]}</span></span>
+            <span class="ho-top"><b>${esc(h.name)}</b><span>${stayBadges(h)}</span></span>
             <span class="fine">${esc(h.area)} · ${esc(h.note)}</span>
             <span class="ho-price num">כ-${money(h.price)} ללילה</span>
             ${h.phone ? `<span class="fine mono" dir="ltr">${esc(h.phone)}</span>` : ''}
-          </label>`).join('')}</div>
+          </label>` : '').join('')}</div>
       </section>
       ${d.flightTime ? `<section class="step-card">
         <header><span class="step-n">3</span><h3>טיסה</h3></header>
@@ -1174,6 +1317,7 @@
     const re = () => { saveDeal(); drawDeal(); };
     $('#dlDest').onchange = (e) => { dealState.dest = e.target.value; dealState.hotel = 0; dealState.id = null; re(); };
     $$('input[name=dlHotel]').forEach(i => i.onchange = () => { dealState.hotel = +i.value; re(); });
+    $('#dlStay').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; st.stay = b.dataset.v; drawDeal(); };
     $$('input[name=dlFlight]').forEach(i => i.onchange = () => { dealState.flight = i.value; re(); });
     $$('input[name=dlCar]').forEach(i => i.onchange = () => { dealState.car = i.value; re(); });
     [['#dlIns', 'ins'], ['#dlTransfer', 'transfer'], ['#dlEsim', 'esim']].forEach(([sel, k]) => { const x = $(sel); if (x) x.onchange = () => { dealState[k] = x.checked; re(); }; });
@@ -1293,6 +1437,420 @@
     $('#stDest').onchange = (e) => { sitesState.dest = e.target.value; draw(); };
     $('#stQ').oninput = (e) => { sitesState.q = e.target.value; draw(); };
     draw();
+  }
+
+  /* =========================================================
+     ישראל: כל הלינה בארץ (OpenStreetMap חי) וניווט בין מקומות
+     ========================================================= */
+  const IL = window.APP_IL || { regions: [], places: [], bus: [], rail: [], links: {} };
+  const placeById = Object.fromEntries(IL.places.map(p => [p.id, p]));
+  const REGION_LABEL = Object.fromEntries(IL.regions);
+  function kmBetween(a, b) {
+    const R = 6371, rad = Math.PI / 180;
+    const dLat = (b[0] - a[0]) * rad, dLon = (b[1] - a[1]) * rad;
+    const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(x));
+  }
+  function nearestPlace(c) {
+    let best = IL.places[0], bd = Infinity;
+    IL.places.forEach(p => { const k = kmBetween(c, p.c); if (k < bd) { bd = k; best = p; } });
+    return { p: best, km: bd };
+  }
+  const waze = (c) => `https://waze.com/ul?ll=${c[0]},${c[1]}&navigate=yes`;
+  const gdir = (from, to, mode) => `https://www.google.com/maps/dir/?api=1${from ? `&origin=${from[0]},${from[1]}` : ''}&destination=${to[0]},${to[1]}&travelmode=${mode || 'driving'}`;
+  const moovit = (from, fromName, to, toName) => `https://moovitapp.com/?to=${enc(toName)}&tll=${to[0]}_${to[1]}${from ? `&from=${enc(fromName)}&fll=${from[0]}_${from[1]}` : ''}&lang=he`;
+  const safeWeb = (u) => { u = String(u || '').trim().split(';')[0]; if (!u) return ''; if (/^www\./i.test(u)) u = 'https://' + u; return /^https?:\/\//i.test(u) ? u : ''; };
+
+  const OSM_KIND = { hotel: 'מלון', guest_house: 'צימר / בית הארחה', chalet: 'בקתה / צימר', hostel: 'אכסניה', motel: 'מוטל', apartment: 'דירת נופש', camp_site: 'קמפינג / חניון לילה' };
+  const OSM_COLOR = { hotel: '#0F6E6C', guest_house: '#C0612B', chalet: '#8A4FB5', hostel: '#2F6FB3', motel: '#6B7A8F', apartment: '#B3862F', camp_site: '#3F8F3A' };
+  const KIND_FILTERS = [['all', 'הכל'], ['hotel', 'מלונות'], ['zimmer', 'צימרים ובקתות'], ['hostel', 'אכסניות'], ['apartment', 'דירות נופש'], ['camp_site', 'קמפינג']];
+  const kindMatch = (x, k) => k === 'all' || (k === 'zimmer' ? (x.k === 'guest_house' || x.k === 'chalet') : k === 'hostel' ? (x.k === 'hostel' || x.k === 'motel') : x.k === k);
+  const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
+  const OSM_Q = '[out:json][timeout:90];area["ISO3166-1"="IL"][admin_level=2]->.il;(nwr["tourism"~"^(hotel|guest_house|hostel|chalet|motel|apartment|camp_site)$"](area.il););out center tags;';
+  const ilStays = { osm: null, loading: null, src: '', date: '', err: '' };
+
+  function slimOsm(e) {
+    const t = e.tags || {};
+    const c = e.lat != null ? [e.lat, e.lon] : e.center ? [e.center.lat, e.center.lon] : null;
+    const name = t['name:he'] || t.name || t['name:en'];
+    if (!name || !c || t.disused || t['disused:tourism']) return null;
+    const np = nearestPlace(c);
+    const city = t['addr:city'] || t['addr:place'] || '';
+    const street = [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' ');
+    return {
+      id: e.type[0] + e.id, n: name, en: t['name:en'] && t['name:en'] !== name ? t['name:en'] : '',
+      k: t.tourism, c: [+c[0].toFixed(5), +c[1].toFixed(5)], city, addr: [street, city].filter(Boolean).join(', '),
+      ph: (t.phone || t['contact:phone'] || t['contact:mobile'] || '').split(';')[0].trim(),
+      web: safeWeb(t.website || t['contact:website'] || t.url), st: parseFloat(t.stars) || 0,
+      img: /^https:\/\//.test(t.image || '') ? t.image : '', wc: /^File:/i.test(t.wikimedia_commons || '') ? t.wikimedia_commons.slice(5) : '',
+      wd: /^Q\d+$/.test(t.wikidata || '') ? t.wikidata : '', near: np.p.id, r: np.p.r
+    };
+  }
+  /* המקומות שנבדקו ידנית ביעדי הארץ — תמיד מוצגים, וגם כגיבוי כשאין חיבור ל-OpenStreetMap */
+  const CUR_KIND = { zimmer: 'guest_house', farm: 'guest_house', kibbutz: 'guest_house', cabins: 'chalet', lodge: 'chalet', hostel: 'hostel' };
+  const curatedStays = DESTS.filter(d => d.region === 'il').flatMap(d => d.hotels.map((h, i) => {
+    const np = nearestPlace(d.coords);
+    return { id: 'cur-' + d.id + '-' + i, n: h.name, en: '', k: CUR_KIND[h.kind] || 'hotel', c: d.coords, approx: true, city: h.area, addr: h.addr || '', ph: h.phone || '', web: h.web || '', st: 0, img: '', wc: '', wd: '', near: np.p.id, r: np.p.r, cur: true, dest: d.id, price: h.price, note: h.note, tier: h.tier };
+  }));
+
+  function loadIlStays() {
+    if (ilStays.osm) return Promise.resolve(ilStays.osm);
+    if (ilStays.loading) return ilStays.loading;
+    const cached = store.get('ilStays', null);
+    if (cached && cached.list && Date.now() - cached.t < 7 * 864e5) {
+      ilStays.osm = cached.list; ilStays.src = 'cache'; ilStays.date = new Date(cached.t).toLocaleDateString('he-IL');
+      return Promise.resolve(ilStays.osm);
+    }
+    if (!window.fetch) return Promise.reject(new Error('no fetch'));
+    const tryAt = (i) => {
+      if (i >= OVERPASS.length) return Promise.reject(new Error('all mirrors failed'));
+      const ctl = window.AbortController ? new AbortController() : null;
+      const t = ctl && setTimeout(() => ctl.abort(), 75000);
+      return fetch(OVERPASS[i], { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + enc(OSM_Q), signal: ctl ? ctl.signal : undefined })
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+        .then(j => { if (!j || !Array.isArray(j.elements) || !j.elements.length) throw new Error('empty'); return j; })
+        .finally(() => t && clearTimeout(t))
+        .catch(() => tryAt(i + 1));
+    };
+    ilStays.loading = tryAt(0).then(j => {
+      const list = j.elements.map(slimOsm).filter(Boolean);
+      ilStays.osm = list; ilStays.src = 'live'; ilStays.date = new Date().toLocaleDateString('he-IL');
+      store.set('ilStays', { t: Date.now(), list });
+      return list;
+    }).catch(err => { ilStays.err = String(err.message || err); ilStays.loading = null; throw err; });
+    return ilStays.loading;
+  }
+  function allIlStays() {
+    const osm = ilStays.osm || [];
+    const names = new Set(osm.flatMap(x => [x.n, x.en].filter(Boolean).map(v => v.toLowerCase())));
+    return curatedStays.filter(x => !names.has(x.n.toLowerCase())).concat(osm);
+  }
+
+  const staysState = { r: 'all', k: 'all', q: '', phone: false, sort: 'rec', shown: 48 };
+  let ilMap = null, ilLayer = null;
+  const wdImg = {};
+  function stayScore(x) { return (x.cur ? 100 : 0) + (x.ph ? 8 : 0) + (x.web ? 6 : 0) + (x.addr ? 3 : 0) + (x.img || x.wc || x.wd ? 5 : 0) + x.st; }
+  function filteredStays() {
+    const q = staysState.q.trim().toLowerCase();
+    const list = allIlStays().filter(x => (staysState.r === 'all' || x.r === staysState.r) && kindMatch(x, staysState.k) && (!staysState.phone || x.ph)
+      && (!q || [x.n, x.en, x.city, x.addr, (placeById[x.near] || {}).name].join(' ').toLowerCase().includes(q)));
+    const by = { rec: (a, b) => stayScore(b) - stayScore(a), name: (a, b) => a.n.localeCompare(b.n, 'he'), stars: (a, b) => (b.st - a.st) || (stayScore(b) - stayScore(a)) }[staysState.sort];
+    return list.sort(by);
+  }
+  const stayDates = () => (st.end ? st : { ...st, end: addDays(st.start, 2) });
+  function stayDealText(x, s) {
+    const p = placeById[x.near] || {};
+    return [`בקשת דיל ללינה בארץ`, `מקום: ${x.n}${x.city ? ' · ' + x.city : ''} (${p.name || ''})`, x.ph ? `טלפון המקום: ${x.ph}` : '', `תאריכים: ${fmt(s.start)}.${s.start.getFullYear()} – ${fmt(s.end)}.${s.end.getFullYear()} · ${nightsOf(s)} לילות`, `מטיילים: ${s.travelers}`, 'אשמח להצעת מחיר / דיל.'].filter(Boolean).join('\n');
+  }
+  function stayCard(x, s) {
+    const p = placeById[x.near] || { name: '' };
+    const kname = OSM_KIND[x.k] || 'לינה';
+    const where = x.city || p.name;
+    const q = x.n + ' ' + (x.en ? x.en + ' ' : '') + where;
+    const photo = x.img || (x.wc ? commonsImg(x.wc, 640) : '') || wdImg[x.wd] || '';
+    const book = `https://www.booking.com/searchresults.he.html?ss=${enc(x.n + ' ' + where)}&checkin=${iso(s.start)}&checkout=${iso(s.end)}&group_adults=${s.travelers}&no_rooms=${Math.ceil(s.travelers / 2)}${PT.bookingAid ? '&aid=' + enc(PT.bookingAid) : ''}`;
+    const text = stayDealText(x, s);
+    const wa = AG.whatsapp ? `https://wa.me/${String(AG.whatsapp).replace(/\D/g, '')}?text=${enc(text)}` : AG.email ? `mailto:${AG.email}?subject=${enc('בקשת דיל: ' + x.n)}&body=${enc(text)}` : '';
+    return `<article class="stay-card" data-sid="${esc(x.id)}">
+      <div class="sc-img" style="--k:${OSM_COLOR[x.k] || '#0F6E6C'}">
+        <span class="sc-glyph" aria-hidden="true">${x.k === 'camp_site' ? '⛺' : x.k === 'hotel' ? '🏨' : x.k === 'hostel' ? '🛏' : '🏡'}</span>
+        ${photo ? `<img class="photo" src="${esc(photo)}" alt="${esc(x.n)}" loading="lazy" decoding="async">` : ''}
+      </div>
+      <div class="sc-body">
+        <div class="sc-top"><span class="tier kind">${esc(kname)}</span>${x.st ? `<span class="tier">${'★'.repeat(Math.min(5, Math.round(x.st)))}</span>` : ''}${x.cur ? '<span class="tier tier-lux">נבדק ע״י הצוות</span>' : ''}</div>
+        <h3 dir="auto">${esc(x.n)}</h3>
+        ${x.en ? `<div class="fine" dir="ltr">${esc(x.en)}</div>` : ''}
+        <div class="fine">${esc(p.name ? (x.city && x.city !== p.name ? x.city + ' · ליד ' + p.name : 'ליד ' + p.name) : x.city)} · ${esc(REGION_LABEL[x.r] || '')}</div>
+        ${x.note ? `<div class="fine">${esc(x.note)}${x.price ? ` · <b class="num">כ-${money(x.price)}</b> ללילה (משוער)` : ''}</div>` : ''}
+        ${contactHTML({ name: x.n, addr: x.addr, phone: x.ph, web: x.web })}
+        <div class="sc-actions">
+          ${x.approx ? '' : ext(waze(x.c), 'Waze', 'btn btn-sm')}
+          ${ext(x.approx ? `https://www.google.com/maps/dir/?api=1&destination=${enc(q)}` : gdir(null, x.c), 'ניווט Google', 'btn btn-sm btn-ghost')}
+          <a class="btn btn-sm btn-ghost" href="#go" data-goto="${esc(x.id)}">איך מגיעים (רכב / אוטובוס)</a>
+        </div>
+        <div class="sc-actions">
+          ${ext(book, 'דילים ומחירים · Booking', 'btn btn-sm btn-primary')}
+          ${ext(`https://www.google.com/travel/search?q=${enc(q)}`, 'השוואת מחירים · Google', 'btn btn-sm btn-ghost')}
+          ${ext(gmaps(q), 'תמונות וביקורות עדכניות', 'btn btn-sm btn-ghost')}
+          ${wa ? ext(wa, 'דיל דרך הסוכן', 'btn btn-sm btn-deal') : ''}
+        </div>
+      </div>
+    </article>`;
+  }
+  function fillWikidataPhotos(root) {
+    $$('.stay-card', root).forEach(card => {
+      const x = stayIndex[card.dataset.sid];
+      if (!x || !x.wd || x.img || x.wc || wdImg[x.wd] === '' || !window.fetch) return;
+      if (wdImg[x.wd]) return;
+      wdImg[x.wd] = '';
+      fetch(`https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${x.wd}&property=P18&format=json&origin=*`)
+        .then(r => r.json()).then(j => {
+          const f = (((j.claims || {}).P18 || [])[0] || {}).mainsnak;
+          const file = f && f.datavalue && f.datavalue.value;
+          if (!file) return;
+          wdImg[x.wd] = commonsImg(file, 640);
+          const box = $(`.stay-card[data-sid="${x.id}"] .sc-img`);
+          if (box && !box.querySelector('img')) box.insertAdjacentHTML('beforeend', `<img class="photo" src="${esc(wdImg[x.wd])}" alt="${esc(x.n)}" loading="lazy">`);
+        }).catch(() => {});
+    });
+  }
+  let stayIndex = {};
+
+  function renderStays() {
+    const el = $('#view-stays');
+    el.innerHTML = `
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">לינה בכל הארץ</span>
+            <h1 class="h-section">כל המלונות והצימרים בישראל</h1>
+            <p class="lead">מלונות, צימרים, בקתות, אכסניות, דירות נופש וחניוני לילה מכל האזורים, עם כתובת, טלפון, אתר, מפה וניווט. לכל מקום יש קישור לדילים ולמחירים לתאריכים שלכם, ואפשר לבקש דיל דרך הסוכן.</p>
+          </div>
+        </div>
+        <div class="panel sites-bar stays-bar">
+          <div class="field"><label for="syRegion">אזור</label>
+            <select class="input" id="syRegion"><option value="all">כל הארץ</option>${IL.regions.map(([k, v]) => `<option value="${k}" ${staysState.r === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></div>
+          <div class="field" style="flex:1;min-width:180px"><label for="syQ">חיפוש לפי שם או יישוב</label><input class="input" id="syQ" type="search" placeholder="לדוגמה: ראש פינה, מלון דן, צימר" value="${esc(staysState.q)}"></div>
+          <div class="field"><label for="sySort">מיון</label>
+            <select class="input" id="sySort">${[['rec', 'הכי מפורטים קודם'], ['stars', 'כוכבים'], ['name', 'שם']].map(([k, v]) => `<option value="${k}" ${staysState.sort === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+          <label class="check"><input type="checkbox" id="syPhone" ${staysState.phone ? 'checked' : ''}> רק עם טלפון</label>
+          <div class="date-pill"><span class="num">${fmt(stayDates().start)} – ${fmt(stayDates().end)}</span><span>${st.travelers} מטיילים</span><a href="#home">שינוי</a></div>
+        </div>
+        <div class="seg" id="syKind" style="margin:8px 0 12px">${KIND_FILTERS.map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="${staysState.k === k}">${v}</button>`).join('')}</div>
+        <p class="fine" id="syStatus" aria-live="polite"></p>
+        <div class="map-box stays-map" dir="ltr">
+          <div id="ilMap" style="width:100%;height:100%"></div>
+          <div class="map-fallback" id="ilMapFallback" hidden dir="rtl"><div><strong>המפה לא נטענה בסביבה הזו</strong><div class="fine">בכל כרטיס יש כפתורי ניווט ב-Waze וב-Google Maps.</div></div></div>
+        </div>
+        <div class="stay-grid mt" id="syList"></div>
+        <div class="center mt"><button type="button" class="btn" id="syMore" hidden>עוד מקומות</button></div>
+        <div class="card mt">
+          <h3>איך עובדים הדילים?</h3>
+          <p class="fine">המחירים משתנים כל יום ולכן לא מוצגים כאן מחירים קבועים. "דילים ומחירים" פותח את Booking עם השם והתאריכים שלכם, "השוואת מחירים" פותח את Google שמשווה בין אתרי ההזמנה, ו"דיל דרך הסוכן" שולח לסוכן בקשה עם כל הפרטים לקבלת הצעה. לצימרים קטנים הכי משתלם להתקשר ישירות למספר שבכרטיס.</p>
+          <p class="fine">מקור הרשימה: OpenStreetMap (© תורמי OpenStreetMap, רישיון ODbL) — מאגר פתוח שמתעדכן כל הזמן. מקומות מסומנים "נבדק ע״י הצוות" נבדקו ידנית. פרטים במאגר הפתוח עלולים להיות חסרים או לא מעודכנים; מומלץ לאמת בטלפון לפני הגעה.</p>
+        </div>
+      </div>`;
+    const draw = (fit) => {
+      const s = stayDates();
+      const list = filteredStays();
+      stayIndex = Object.fromEntries(list.map(x => [x.id, x]));
+      const shown = list.slice(0, staysState.shown);
+      $('#syList').innerHTML = shown.length ? shown.map(x => stayCard(x, s)).join('') : '<div class="empty">לא נמצאו מקומות. נסו אזור או סינון אחר.</div>';
+      const more = $('#syMore'); more.hidden = list.length <= staysState.shown; more.textContent = `עוד מקומות (${list.length - shown.length})`;
+      const src = ilStays.osm ? `${ilStays.src === 'live' ? 'עודכן עכשיו' : 'עודכן ב-' + ilStays.date} מ-OpenStreetMap` : ilStays.loading ? 'טוען את כל מקומות הלינה בארץ מ-OpenStreetMap…' : 'מוצגים רק המקומות שנבדקו ידנית — הרשימה המלאה נטענת מהאינטרנט (באתר החי ב-GitHub Pages).';
+      $('#syStatus').innerHTML = `<b class="num">${list.length.toLocaleString('he-IL')}</b> מקומות לינה${staysState.r !== 'all' ? ' ב' + esc(REGION_LABEL[staysState.r]) : ' בכל הארץ'} · ${src}`;
+      drawIlMarkers(list, fit);
+      fillWikidataPhotos($('#syList'));
+    };
+    initIlMap();
+    $('#syRegion').onchange = (e) => { staysState.r = e.target.value; staysState.shown = 48; draw(true); };
+    $('#sySort').onchange = (e) => { staysState.sort = e.target.value; draw(); };
+    $('#syPhone').onchange = (e) => { staysState.phone = e.target.checked; staysState.shown = 48; draw(); };
+    $('#syQ').oninput = (e) => { staysState.q = e.target.value; staysState.shown = 48; clearTimeout(draw._t); draw._t = setTimeout(() => draw(true), 250); };
+    $('#syKind').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; staysState.k = b.dataset.v; staysState.shown = 48; $$('#syKind button').forEach(x => x.setAttribute('aria-pressed', x === b)); draw(); };
+    $('#syMore').onclick = () => { staysState.shown += 48; draw(); };
+    draw(true);
+    if (!ilStays.osm) loadIlStays().then(() => { if (!$('#view-stays').hidden) draw(true); }, () => { if (!$('#view-stays').hidden) draw(); });
+  }
+  function initIlMap() {
+    if (ilMap) { ilMap.remove(); ilMap = null; }
+    if (!window.L) { $('#ilMapFallback').hidden = false; return; }
+    ilMap = L.map('ilMap', { scrollWheelZoom: false, preferCanvas: true }).setView([31.5, 34.9], 7);
+    let ok = 0, bad = 0;
+    const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(ilMap);
+    tiles.on('tileload', () => { ok++; });
+    tiles.on('tileerror', () => { bad++; if (bad >= 4 && ok === 0) $('#ilMapFallback').hidden = false; });
+    ilLayer = L.layerGroup().addTo(ilMap);
+  }
+  function drawIlMarkers(list, fit) {
+    if (!ilMap || !ilLayer) return;
+    ilLayer.clearLayers();
+    const pts = [];
+    list.filter(x => !x.approx).forEach(x => {
+      const p = placeById[x.near] || {};
+      L.circleMarker(x.c, { radius: 6, color: '#fff', weight: 1.5, fillColor: OSM_COLOR[x.k] || '#0F6E6C', fillOpacity: .9 })
+        .bindPopup(`<div dir="rtl" style="min-width:180px"><b>${esc(x.n)}</b><br><span>${esc(OSM_KIND[x.k] || '')} · ${esc(x.city || p.name || '')}</span>${x.ph ? `<br><a href="${telHref(x.ph)}" dir="ltr">${esc(x.ph)}</a>` : ''}<br><a href="${esc(waze(x.c))}" target="_blank" rel="noopener">Waze</a> · <a href="${esc(gdir(null, x.c))}" target="_blank" rel="noopener">Google</a> · <a href="#go" data-goto="${esc(x.id)}">איך מגיעים</a></div>`)
+        .addTo(ilLayer);
+      pts.push(x.c);
+    });
+    if (fit) {
+      if (staysState.r !== 'all' && pts.length > 1) ilMap.fitBounds(pts, { padding: [30, 30], maxZoom: 13 });
+      else if (staysState.r === 'all') ilMap.setView([31.5, 34.9], 7);
+    }
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-goto]'); if (!a) return;
+    const x = stayIndex[a.dataset.goto] || allIlStays().find(y => y.id === a.dataset.goto);
+    if (!x) return;
+    goState.to = 'custom'; goState.toCustom = { name: x.n, c: x.c, approx: !!x.approx, q: x.n + ' ' + (x.city || '') };
+  });
+
+  /* ---------- ניווט בארץ ---------- */
+  const goState = { from: 'tlv', to: 'eilat', fromCustom: null, toCustom: null };
+  let goMap = null;
+  const osrmCache = {};
+  const goPoint = (which) => {
+    const v = goState[which], cu = goState[which + 'Custom'];
+    if ((v === 'custom' || v === 'me') && cu) return { id: v, name: cu.name, c: cu.c, approx: cu.approx, q: cu.q, near: nearestPlace(cu.c).p };
+    const p = placeById[v] || IL.places[0];
+    return { id: p.id, name: p.name, c: p.c, near: p };
+  };
+  function busBetween(a, b) {
+    return IL.bus.filter(l => (l.a === a && l.b.includes(b)) || (l.a === b && l.b.includes(a)))
+      .map(l => ({ ...l, rev: l.a !== a }));
+  }
+  function busTransfers(a, b) {
+    const out = [];
+    IL.places.forEach(h => {
+      if (h.id === a || h.id === b) return;
+      const x = busBetween(a, h.id), y = busBetween(h.id, b);
+      if (x.length && y.length) out.push({ hub: h, x: x[0], y: y[0] });
+    });
+    return out.slice(0, 3);
+  }
+  const railBetween = (a, b) => IL.rail.find(r => (r[0] === a && r[1] === b) || (r[0] === b && r[1] === a));
+  const busLi = (l, fromName) => `<li><div><div class="t"><span class="bus-no">${esc(l.lines)}</span> ${esc(l.op)}</div>
+      <div class="s">${l.rev ? `בכיוון ההפוך: יוצא מ${esc(fromName)} (בדקו את התחנה ב-Moovit)` : `יוצא מ: ${esc(l.from)}`} · ${esc(l.time)}</div>${l.note ? `<div class="s">${esc(l.note)}</div>` : ''}</div></li>`;
+
+  function renderGo(arg) {
+    if (arg && placeById[arg]) { goState.to = arg; goState.toCustom = null; }
+    const el = $('#view-go');
+    const opts = (which) => {
+      const cur = goState[which], cu = goState[which + 'Custom'];
+      return (cu && (cur === 'custom' || cur === 'me') ? `<option value="${cur}" selected>${esc(cu.name)}</option>` : '')
+        + (which === 'from' ? '<option value="me">📍 המיקום שלי</option>' : '')
+        + IL.regions.map(([rk, rv]) => `<optgroup label="${esc(rv)}">${IL.places.filter(p => p.r === rk).map(p => `<option value="${p.id}" ${p.id === cur ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</optgroup>`).join('');
+    };
+    el.innerHTML = `
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">דרכי הגעה בארץ</span>
+            <h1 class="h-section">ניווט ממקום למקום</h1>
+            <p class="lead">בוחרים מאיפה ולאן, ומקבלים מסלול ברכב על המפה עם מרחק וזמן, כפתורי Waze ו-Google Maps, וקווי האוטובוס והרכבת שמחברים בין המקומות.</p>
+          </div>
+        </div>
+        <div class="panel sites-bar go-bar">
+          <div class="field"><label for="goFrom">מאיפה</label><select class="input" id="goFrom">${opts('from')}</select></div>
+          <button type="button" class="btn btn-ghost" id="goSwap" aria-label="החלפת כיוון">⇄</button>
+          <div class="field"><label for="goTo">לאן</label><select class="input" id="goTo">${opts('to')}</select></div>
+        </div>
+        <div class="grid-2 mt">
+          <div class="stack-v">
+            <div class="card" id="goCar"></div>
+            <div class="card" id="goBus"></div>
+          </div>
+          <div class="map-box" dir="ltr">
+            <div id="goMap" style="width:100%;height:100%"></div>
+            <div class="map-fallback" id="goMapFallback" hidden dir="rtl"><div><strong>המפה לא נטענה בסביבה הזו</strong><div class="fine">כפתורי Waze ו-Google Maps פותחים את המסלול.</div></div></div>
+          </div>
+        </div>
+        <div class="card mt">
+          <h3>קווי אוטובוס בין-עירוניים עיקריים</h3>
+          <div class="table-wrap"><table class="bus-table">
+            <thead><tr><th>קו</th><th>מפעיל</th><th>בין</th><th>יוצא מ</th><th>זמן</th><th>הערות</th></tr></thead>
+            <tbody>${IL.bus.map(l => `<tr><td><span class="bus-no">${esc(l.lines)}</span></td><td>${esc(l.op)}</td><td>${esc(placeById[l.a].name)} ↔ ${l.b.map(b => esc(placeById[b].name)).join(', ')}</td><td>${esc(l.from)}</td><td style="white-space:nowrap">${esc(l.time)}</td><td class="fine">${esc(l.note)}</td></tr>`).join('')}</tbody>
+          </table></div>
+          <h3 class="mt">רכבת ישראל</h3>
+          <ul class="list">${IL.rail.map(r => `<li><span class="t">${esc(placeById[r[0]].name)} ↔ ${esc(placeById[r[1]].name)}</span><span class="fine">${esc(r[2])}${r[3] ? ' · ' + esc(r[3]) : ''}</span></li>`).join('')}</ul>
+          <p class="fine mt">קווים, רציפים ולוחות זמנים משתנים, ורוב הקווים והרכבת לא פועלים בשבת ובחגים. לפני נסיעה בדקו ב-${ext(IL.links.moovit, 'Moovit')}, ב-${ext(IL.links.egged, 'אגד')} (כולל הזמנת מקום לאילת) וב-${ext(IL.links.rail, 'רכבת ישראל')}. התשלום באוטובוס ברב-קו, באפליקציה או בכרטיס אשראי ללא מגע.</p>
+        </div>
+      </div>`;
+    const onPick = (which) => (e) => {
+      const v = e.target.value;
+      if (v === 'me') {
+        if (!navigator.geolocation) { toast('הדפדפן לא תומך במיקום'); return; }
+        toast('מאתר מיקום…');
+        navigator.geolocation.getCurrentPosition(pos => {
+          goState[which] = 'me'; goState[which + 'Custom'] = { name: 'המיקום שלי', c: [+pos.coords.latitude.toFixed(5), +pos.coords.longitude.toFixed(5)] };
+          renderGo();
+        }, () => toast('לא הצלחנו לאתר מיקום. בחרו יישוב מהרשימה.'), { timeout: 10000 });
+        return;
+      }
+      goState[which] = v; if (v !== 'custom') goState[which + 'Custom'] = null;
+      drawGo();
+    };
+    $('#goFrom').onchange = onPick('from');
+    $('#goTo').onchange = onPick('to');
+    $('#goSwap').onclick = () => { [goState.from, goState.to] = [goState.to, goState.from]; [goState.fromCustom, goState.toCustom] = [goState.toCustom, goState.fromCustom]; renderGo(); };
+    if (goMap) { goMap.remove(); goMap = null; }
+    if (window.L) {
+      goMap = L.map('goMap', { scrollWheelZoom: false }).setView([31.5, 34.9], 7);
+      let ok = 0, bad = 0;
+      const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(goMap);
+      tiles.on('tileload', () => { ok++; });
+      tiles.on('tileerror', () => { bad++; if (bad >= 4 && ok === 0) $('#goMapFallback').hidden = false; });
+      goMap._route = L.layerGroup().addTo(goMap);
+    } else $('#goMapFallback').hidden = false;
+    drawGo();
+  }
+
+  function drawGo() {
+    const A = goPoint('from'), B = goPoint('to');
+    const car = $('#goCar'), bus = $('#goBus'); if (!car) return;
+    const air = kmBetween(A.c, B.c);
+    const estKm = air * 1.3, estMin = estKm / 70 * 60;
+    const dur = (m) => m >= 60 ? `${Math.floor(m / 60)} ש׳ ${pad(Math.round(m % 60))} דק׳` : `${Math.round(m)} דק׳`;
+    const same = A.c[0] === B.c[0] && A.c[1] === B.c[1];
+    const destQ = B.approx ? B.q : null;
+    const carHTML = (kmv, min, live) => `
+      <div class="row"><h3>ברכב פרטי</h3><span class="chip ${live ? 'chip-good' : ''}">${live ? 'מסלול אמיתי' : 'הערכה'}</span></div>
+      <div class="go-stats"><div><span class="fine">מרחק</span><b class="num">${Math.round(kmv)} ק״מ</b></div><div><span class="fine">זמן נסיעה</span><b class="num">${dur(min)}</b></div></div>
+      <p class="fine">${esc(A.name)} ← ${esc(B.name)} · בלי פקקים. ${live ? '' : 'המסלול המדויק נטען מהאינטרנט באתר החי.'} ${B.approx ? 'מיקום היעד משוער — Google ימצא את הכתובת לפי השם.' : ''}</p>
+      <div class="sc-actions">
+        ${B.approx ? '' : ext(waze(B.c), 'ניווט ב-Waze', 'btn btn-sm btn-primary')}
+        ${ext(destQ ? `https://www.google.com/maps/dir/?api=1&origin=${A.c[0]},${A.c[1]}&destination=${enc(destQ)}&travelmode=driving` : gdir(A.c, B.c, 'driving'), 'Google Maps', 'btn btn-sm btn-ghost')}
+      </div>
+      <p class="fine">כביש 6 הוא כביש אגרה (חיוב אוטומטי לפי לוחית רישוי). ברכב שכור האגרה מחויבת דרך חברת ההשכרה.</p>`;
+    car.innerHTML = same ? '<h3>ברכב פרטי</h3><p class="fine">בחרו מוצא ויעד שונים.</p>' : carHTML(estKm, estMin, false);
+
+    /* תחבורה ציבורית */
+    const a = A.near.id, b = B.near.id;
+    const direct = a === b ? [] : busBetween(a, b);
+    const rail = a === b ? null : railBetween(a, b);
+    const bothRail = A.near.rail && B.near.rail && a !== b;
+    const tr = direct.length || rail ? [] : busTransfers(a, b);
+    const nearNote = [A, B].filter(x => x.id === 'custom' || x.id === 'me').map(x => `הקרוב ל${esc(x.name)}: ${esc(x.near.name)}`).join(' · ');
+    bus.innerHTML = same ? '' : `
+      <h3>בתחבורה ציבורית</h3>
+      ${nearNote ? `<p class="fine">${nearNote}</p>` : ''}
+      ${direct.length ? `<ul class="list">${direct.map(l => busLi(l, A.near.name)).join('')}</ul>` : ''}
+      ${rail ? `<ul class="list"><li><div><div class="t"><span class="bus-no">🚆</span> רכבת ישראל</div><div class="s">${esc(A.near.name)} ↔ ${esc(B.near.name)} · ${esc(rail[2])}${rail[3] ? ' · ' + esc(rail[3]) : ''}</div></div></li></ul>`
+        : bothRail ? `<p class="fine">🚆 יש תחנות רכבת בשני המקומות — בדקו חיבור (לפעמים עם החלפה) ב-${ext(IL.links.rail, 'רכבת ישראל')}.</p>` : ''}
+      ${tr.length ? `<p class="fine">אין קו ישיר בטבלה שלנו. אפשרות עם החלפה:</p><ul class="list">${tr.map(t => `<li><div><div class="t">דרך ${esc(t.hub.name)}</div><div class="s"><span class="bus-no">${esc(t.x.lines)}</span> עד ${esc(t.hub.name)}, ומשם <span class="bus-no">${esc(t.y.lines)}</span></div></div></li>`).join('')}</ul>` : ''}
+      ${!direct.length && !rail && !tr.length && !bothRail ? '<p class="fine">אין לנו קו ישיר בטבלה בין המקומות האלה. Moovit ו-Google יציגו את כל הקווים והחיבורים העדכניים.</p>' : ''}
+      <div class="sc-actions">
+        ${ext(moovit(A.c, A.name, B.c, B.name), 'קווים ושעות ב-Moovit', 'btn btn-sm btn-primary')}
+        ${ext(destQ ? `https://www.google.com/maps/dir/?api=1&origin=${A.c[0]},${A.c[1]}&destination=${enc(destQ)}&travelmode=transit` : gdir(A.c, B.c, 'transit'), 'תחבורה ציבורית ב-Google', 'btn btn-sm btn-ghost')}
+      </div>
+      <p class="fine">רוב הקווים והרכבת לא פועלים בשבת ובחגים.</p>`;
+
+    if (goMap) {
+      const layer = goMap._route; layer.clearLayers();
+      const pin = (n) => L.divIcon({ className: '', html: `<div class="pin"><span>${n}</span></div>`, iconSize: [28, 28], iconAnchor: [14, 28] });
+      L.marker(A.c, { icon: pin('א') }).addTo(layer).bindPopup(esc(A.name));
+      L.marker(B.c, { icon: pin('ב') }).addTo(layer).bindPopup(esc(B.name));
+      if (!same) goMap.fitBounds([A.c, B.c], { padding: [40, 40] });
+    }
+    if (same || !window.fetch) return;
+    const key = A.c.join() + '|' + B.c.join();
+    const apply = (r) => {
+      if (!r || $('#goCar') !== car) return;
+      car.innerHTML = carHTML(r.km, r.min, true);
+      if (goMap) { L.polyline(r.line, { color: '#0F6E6C', weight: 5, opacity: .85 }).addTo(goMap._route); goMap.fitBounds(r.line, { padding: [30, 30] }); }
+    };
+    if (osrmCache[key]) { apply(osrmCache[key]); return; }
+    const ctl = window.AbortController ? new AbortController() : null;
+    const t = ctl && setTimeout(() => ctl.abort(), 12000);
+    fetch(`https://router.project-osrm.org/route/v1/driving/${A.c[1]},${A.c[0]};${B.c[1]},${B.c[0]}?overview=full&geometries=geojson`, { signal: ctl ? ctl.signal : undefined })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+      .then(j => {
+        const rt = j.routes && j.routes[0]; if (!rt) return;
+        osrmCache[key] = { km: rt.distance / 1000, min: rt.duration / 60, line: rt.geometry.coordinates.map(p => [p[1], p[0]]) };
+        if (goPoint('from').c === A.c && goPoint('to').c === B.c) apply(osrmCache[key]);
+      })
+      .catch(() => {})
+      .finally(() => t && clearTimeout(t));
   }
 
   /* =========================================================
@@ -1517,6 +2075,8 @@
     }
     if (/חיוני|מומלץ|כן/.test(d.car.need)) items.push('השכרת רכב');
     if (d.kosher.length) items.push('שמירת מסעדות כשרות');
+    if (st.types.includes('religious')) items.push(d.region === 'il' ? 'לתכנן הגעה לפני שבת (אין תחבורה ציבורית)' : 'לבדוק בית חב״ד וזמני שבת ביעד');
+    if (st.kids > 0) items.push('עגלה, כיסא בטיחות ופעילויות לילדים');
     return items.map(t => ({ t, done: false }));
   }
 
@@ -1756,7 +2316,36 @@
       if (!d.michelin.length) return `${esc(d.michelinNote)}<br>${d.food.map(r => `• ${esc(r.name)} — ${esc(r.type)}`).join('<br>')}`;
       return `<b>מישלן ב${esc(d.name)}</b><br>${d.michelin.map(r => `• ${esc(r.name)} — ${'✦'.repeat(r.stars)} ${esc(r.cuisine)}`).join('<br>')}<br><a href="#dest-${d.id}.food">פרטים</a>`;
     }
-    if (has('מלון', 'לינה', 'לישון', 'צימר')) {
+    if (has('איך מגיעים', 'איך להגיע', 'ניווט', 'קו ', 'קווים', 'אוטובוס ל', 'לנסוע מ')) {
+      const found = IL.places.filter(p => q.includes(p.name.split(' (')[0])).sort((x, y) => q.indexOf(x.name.split(' (')[0]) - q.indexOf(y.name.split(' (')[0]));
+      if (found.length >= 2) { goState.from = found[0].id; goState.to = found[1].id; goState.fromCustom = goState.toCustom = null; }
+      else if (found.length === 1) { goState.to = found[0].id; goState.toCustom = null; }
+      if (!found.length && !(d && d.region === 'il')) return 'בעמוד <a href="#go">ניווט בארץ</a> בוחרים מאיפה ולאן, ומקבלים מסלול ברכב, Waze וקווי אוטובוס ורכבת.';
+      if (!found.length) { const p = IL.places.find(x => x.dest === d.id); if (p) goState.to = p.id; }
+      const A = goPoint('from'), B = goPoint('to');
+      const lines = busBetween(A.near.id, B.near.id);
+      return `<b>${esc(A.name)} ← ${esc(B.name)}</b><br>${lines.length ? lines.map(l => `• קו ${esc(l.lines)} (${esc(l.op)}), ${esc(l.time)}`).join('<br>') : 'אין קו ישיר בטבלה שלנו — Moovit יציג חיבורים.'}<br><a href="#go">מסלול ברכב, Waze וכל האפשרויות</a>`;
+    }
+    if (has('כל המלונות', 'כל הצימרים', 'כל הלינה', 'לינה בארץ')) return 'בעמוד <a href="#stays">לינה בארץ</a> יש את כל המלונות, הצימרים, האכסניות והקמפינג בישראל, עם מפה, טלפונים, ניווט ודילים.';
+    if (has('צימר', 'בקתה', 'בקתות', 'חווה')) {
+      const pool = (d ? [d] : DESTS.filter(x => x.region === 'il')).flatMap(x => x.hotels.filter(h => stayMatches(h, 'zimmer')).map(h => ({ x, h })));
+      if (!pool.length) return 'לא מצאתי צימרים ביעד הזה. נסו את הגליל והגולן או מצפה רמון.';
+      st.stay = 'zimmer';
+      return `<b>צימרים, בקתות וחוות אירוח:</b><br>${pool.slice(0, 6).map(({ x, h }) => `• <a href="#dest-${x.id}.hotels">${esc(h.name)}</a> — ${esc(x.name)}${h.phone ? ` · <span dir="ltr">${esc(h.phone)}</span>` : ''}`).join('<br>')}`;
+    }
+    if (has('בילוי', 'אטרקצי', 'מה לעשות', 'לילה', 'מוזיאון')) {
+      const withFun = d ? (d.fun ? [d] : []) : DESTS.filter(x => x.fun);
+      if (!withFun.length) return d ? `ב${esc(d.name)} כדאי לעבור על <a href="#dest-${d.id}.routes">המסלולים</a>.` : need('בילוי ואטרקציות');
+      if (!d) return `בילוי ואטרקציות יש בכל יעדי הארץ: ${withFun.map(x => `<a href="#dest-${x.id}.fun">${esc(x.name)}</a>`).join(', ')}.`;
+      return `<b>בילוי ב${esc(d.name)}:</b><br>${d.fun.map(f => `• ${esc(f.name)}${f.phone ? ` · <span dir="ltr">${esc(f.phone)}</span>` : ''}`).join('<br>')}<br><a href="#dest-${d.id}.fun">לכל האטרקציות</a>`;
+    }
+    const wantTypes = TRIP_TYPES.filter(([k]) => ({ family: ['משפח', 'ילד'], couple: ['זוג', 'רומנט', 'ירח דבש'], nature: ['טבע'], relax: ['ספא', 'רוגע', 'בטן גב'], culture: ['תרבות', 'היסטורי'], night: ['חיי לילה', 'מסיב'], food: ['קולינרי', 'אוכל טוב'], adventure: ['אקסטרים', 'הרפתק'], religious: ['שבת', 'דתי'] })[k].some(w => q.includes(w))).map(([k]) => k);
+    if (wantTypes.length && !d) {
+      st.types = [...new Set(st.types.concat(wantTypes))]; savePlan();
+      const top = ranked(st, st.region).slice(0, 4);
+      return `לחופשת ${wantTypes.map(t => TYPE_LABEL[t]).join(' + ')} הכי מתאימים עכשיו:<br>${top.map(({ d: x, e }) => `• <a href="#dest-${x.id}">${esc(x.name)}</a> — התאמה ${e.score}%${e.fit.good.length ? ' · ' + e.fit.good.map(t => TYPE_LABEL[t]).join(', ') : ''}`).join('<br>')}<br>סימנתי את זה גם ב<a href="#home">מתכנן</a>.`;
+    }
+    if (has('מלון', 'לינה', 'לישון')) {
       if (!d) return need('מלונות');
       return `<b>מלונות ב${esc(d.name)}</b><br>${d.hotels.map(h => `• ${esc(h.name)} (${esc(h.area)}) כ-${money(h.price)} ללילה`).join('<br>')}<br><a href="#dest-${d.id}.hotels">בדיקת זמינות לתאריכים</a>`;
     }
@@ -1786,7 +2375,7 @@
       budgetState.dest = d.id; budgetState.custom = null;
       return `הערכה ל${esc(d.name)}: <b>${money(e.total)}</b> ל-${st.travelers} מטיילים, ${e.nights} לילות. <a href="#budget">פירוט ועריכה</a>`;
     }
-    if (has('מסלול', 'טיול', 'לראות', 'אטרקצי')) {
+    if (has('מסלול', 'טיול', 'לראות')) {
       if (!d) return need('מסלולים');
       return d.routes.map(r => `<b>${esc(r.name)}</b> (${r.days} ימים): ${r.stops.map(esc).join(' ← ')}`).join('<br>') + `<br><a href="#dest-${d.id}.routes">למסלולים</a>`;
     }
@@ -1802,7 +2391,7 @@
     return 'לא הבנתי עד הסוף. אפשר לשאול על יעד, מלונות, רכב, מסעדות כשרות, מישלן, תחבורה, מזג אוויר, תקציב או זמני הגעה לשדה. נסו אחת מההצעות למטה.';
   }
 
-  const CHIPS = ['לאן כדאי לטוס בתאריכים שלי?', 'מסעדות כשרות ברומא', 'איזה כסף יש ביפן?', 'טלפון של מלונות בפריז', 'לסגור דיל לאתונה', 'מתי לצאת לנתב״ג?'];
+  const CHIPS = ['חופשה משפחתית בארץ', 'צימרים בגליל', 'מה לעשות באילת?', 'ספא ורוגע לזוג', 'איך מגיעים מתל אביב לאילת?', 'איזה כסף יש ביפן?'];
   function botSay(html, who) {
     const log = $('#chatLog');
     const m = document.createElement('div');

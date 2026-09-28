@@ -679,3 +679,50 @@ a.c-item:hover { color: var(--teal); }
 .site-mark { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--board); color: var(--board-text); font: 700 17px/1 var(--font-mono); }
 
 .msg.typing { color: var(--muted); font-style: italic; }
+
+/* ---------- סוגי חופשה ולינה ---------- */
+.type-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.type-chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 12px; font-size: 13.5px; cursor: pointer; transition: background .15s, border-color .15s; }
+.type-chip:hover { border-color: var(--teal); }
+.type-chip[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 600; }
+.fit-row { margin-top: -2px; }
+.seg .cnt { font: 600 11px/1 var(--font-mono); color: var(--muted); margin-inline-start: 4px; }
+.tier.kind { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 40%, transparent); background: var(--teal-soft); }
+.tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.mini { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); }
+.vibes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px 20px; }
+.vibe { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+.vibe.on span:first-child { font-weight: 700; color: var(--teal); }
+.dots { display: inline-flex; gap: 4px; direction: ltr; }
+.dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); display: block; }
+.dots i.f { background: var(--amber); }
+.fun-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.fun-card .row { justify-content: flex-start; gap: 6px; }
+.fun-card h3 { font-size: 18px; }
+#dlStay { margin-bottom: 4px; }
+
+/* ---------- לינה בכל הארץ וניווט ---------- */
+.stays-map { height: 420px; }
+@media (max-width: 640px) { .stays-map { height: 320px; } }
+.check { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; padding-bottom: 10px; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--teal); }
+.center { text-align: center; }
+.stay-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px; }
+.stay-card { display: grid; grid-template-rows: auto 1fr; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); min-width: 0; }
+.sc-img { position: relative; height: 150px; overflow: hidden; background: linear-gradient(135deg, var(--k), color-mix(in srgb, var(--k) 45%, var(--board))); display: grid; place-items: center; }
+.sc-glyph { font-size: 44px; opacity: .55; filter: grayscale(.2); }
+.sc-body { padding: 14px 16px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.sc-body h3 { margin: 0; font-size: 18px; line-height: 1.3; overflow-wrap: anywhere; }
+.sc-top { display: flex; gap: 6px; flex-wrap: wrap; }
+.sc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.btn-deal { background: #1FA855; border-color: #1FA855; color: #fff; }
+.btn-deal:hover { filter: brightness(1.08); }
+.go-bar { align-items: end; }
+.go-bar .field { flex: 1; min-width: 160px; }
+.go-stats { display: flex; gap: 24px; margin: 8px 0; }
+.go-stats div { display: grid; }
+.go-stats b { font-size: 26px; font-family: var(--font-display); line-height: 1.1; }
+.bus-no { direction: rtl; display: inline-block; font: 700 13px/1 var(--font-mono); background: var(--board); color: var(--board-text); padding: 5px 8px; border-radius: 6px; white-space: nowrap; }
+.bus-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 720px; }
+.bus-table th, .bus-table td { text-align: start; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.bus-table th { font-size: 12.5px; color: var(--muted); font-weight: 600; }

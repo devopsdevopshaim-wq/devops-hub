@@ -36,6 +36,9 @@ All data files assign a global on `window` and are plain scripts (no modules), s
     { name: 'Hotel Artemide', addr: 'Via Nazionale 22, 00184 Roma', phone: '+39 06 489911',
       web: 'https://…', area: 'Via Nazionale', tier: 'mid', price: 1000, note: 'קרוב לטרמיני' }
     // addr/phone/web optional — include ONLY when verified. phone format: +<country> <digits with spaces>
+    // kind (optional, default 'hotel'): hotel | boutique | resort | spa | zimmer | cabins | farm | kibbutz | lodge | hostel
+    //   → drives the stay filters (מלונות / צימרים, בקתות וחוות / ספא …). zimmer/cabins/farm/lodge/kibbutz count as "צימרים".
+    // tags (optional): family | couple | spa | pool | adults | nature | budget | view — only what the source supports
   ],
   car: { need: 'לא בעיר; כן לטוסקנה', companies: ['Europcar','Hertz'], tips: ['...'] },
       // need starting with חיוני|מומלץ|כן|שימושי → car is included in cost estimates
@@ -45,11 +48,18 @@ All data files assign a global on `window` and are plain scripts (no modules), s
   transit: { system, card, single, day, apps: ['Moovit'], notes },
   routes: [ { name, days: 2, stops: ['...'], desc } ],
   pois: [ { name: 'הקולוסיאום', c: [41.8902, 12.4922] } ],   // map markers, 4–6
+  fun: [                          // optional — "בילוי ואטרקציות" tab (shown only when present)
+    { name, type: 'מוזיאון', tags: ['family', 'culture'], addr?, phone?, web?, note: 'שעות, שבת, הזמנה מראש' }
+    // tags: family | couple | nature | relax | culture | night | food | adventure (filter chips are built from them)
+  ],
+  vibes: { family: 3, couple: 2, nature: 2, relax: 3, culture: 0, night: 2, food: 1, adventure: 3, religious: 2 },
+    // 0–3 per trip type; drives ranking when the visitor picks trip types (and kids > 0 adds 'family').
+    // religious = ease for Shabbat-observant / kosher travelers (kosher food, Chabad, Shabbat logistics).
   poster: { sky: ['#F5C98B','#E9A26B'], sun: '#FFF0CF', land: '#9A4A2F', far: '#C98760', icon: 'colosseum', ink: '#3A1B10' }
 }
 ```
 
-Poster icons: `eiffel, bigben, colosseum, sagrada, parthenon, castle, skyline, burj, temple, pagoda, palms, walls, city-sea, hills-lake`. Pick the closest silhouette. `palms`, `city-sea` and `hills-lake` add water. `pagoda` adds Mt Fuji.
+Poster icons: `mesa` (flat plateau — Masada, crater rim), `eiffel, bigben, colosseum, sagrada, parthenon, castle, skyline, burj, temple, pagoda, palms, walls, city-sea, hills-lake`. Pick the closest silhouette. `palms`, `city-sea` and `hills-lake` add water. `pagoda` adds Mt Fuji. Set `poster.sea: true|false` to force water on or off for any icon.
 
 ### Other keys in data.js
 - `origin`: departure airport (TLV), terminal arrival times, check-in and gate close minutes, and Israeli cities with car/train/taxi minutes to the airport (train 0 = no train). This feeds the airport planner.
@@ -91,3 +101,18 @@ Prices are in local currency and are converted to ₪ with the live rate. Live r
 
 ## js/sites.js → `window.APP_SITES`
 `[{ cat: 'טיסות', items: [{ n: 'Skyscanner', u: 'https://…', d: 'תיאור', deep: 'skyscanner' }] }]`. `deep` (optional) names a `siteUrl()` case, so the link opens with the destination and dates filled in.
+
+## js/israel.js → `window.APP_IL` (optional, Israel sites)
+Powers two views: **#stays** (every hotel, zimmer, cabin, hostel, apartment and campsite in Israel, loaded live in the visitor's browser from the OpenStreetMap Overpass API, cached 7 days in localStorage, with the curated `hotels` of `region: 'il'` destinations always shown and used as fallback) and **#go** (point-to-point navigation: OSRM car route drawn on the map, Waze / Google / Moovit links, bus and rail lines).
+```js
+{
+  regions: [['north', 'גליל, גולן ועמקים'], ...],          // region filter on #stays; a stay's region = region of its nearest place
+  places: [{ id: 'tlv', name: 'תל אביב', c: [32.0853, 34.7818], r: 'center', rail: true, dest: 'telaviv' }],
+       // rail = has an Israel Railways station; dest = destination id (adds "how to get here" on its transit tab)
+  bus: [{ a: 'jlm', b: ['eingedi', 'masada'], lines: '486', op: 'אגד', from: 'terminal/platform', time: 'כ-2 ש׳', note: '' }],
+       // verify every line via Moovit / operator search; lines are matched both ways and one-transfer routes are derived
+  rail: [['tlv', 'jlm', 'כ-35 דק׳', 'note']],
+  links: { moovit, egged, rail }
+}
+```
+Live APIs (Overpass, OSRM, Wikidata photos) need a real browser on http(s) or file://; they are blocked inside Claude artifacts, where only the curated list and estimates appear.

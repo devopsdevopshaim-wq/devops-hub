@@ -32,8 +32,10 @@ const REQ = ['id', 'name', 'nameEn', 'country', 'region', 'iata', 'coords', 'zoo
   'currency', 'language', 'tzDiff', 'flightTime', 'visa', 'plug', 'emergency', 'drivingSide', 'tipping',
   'climate', 'bestMonths', 'costs', 'airport', 'hotels', 'car', 'kosherNote', 'kosher', 'food',
   'michelinNote', 'michelin', 'transit', 'routes', 'pois', 'poster'];
-const ICONS = ['eiffel', 'bigben', 'colosseum', 'sagrada', 'parthenon', 'castle', 'skyline', 'burj', 'temple', 'pagoda', 'palms', 'walls', 'city-sea', 'hills-lake'];
+const ICONS = ['mesa', 'eiffel', 'bigben', 'colosseum', 'sagrada', 'parthenon', 'castle', 'skyline', 'burj', 'temple', 'pagoda', 'palms', 'walls', 'city-sea', 'hills-lake'];
 const ids = new Set();
+const KINDS = ['hotel', 'boutique', 'resort', 'spa', 'zimmer', 'cabins', 'farm', 'kibbutz', 'lodge', 'hostel'];
+const VIBE_KEYS = ['family', 'couple', 'nature', 'relax', 'culture', 'night', 'food', 'adventure', 'religious'];
 
 for (const d of D) {
   const tag = d.id || d.name || '?';
@@ -49,7 +51,11 @@ for (const d of D) {
     if (!h.phone) warnings.push(`${tag}: hotel "${h.name}" has no phone`);
     if (h.phone && !/^\+\d[\d ]{6,}$/.test(h.phone)) warnings.push(`${tag}: hotel "${h.name}" phone "${h.phone}" should be +<country> <number>`);
     if (!['lux', 'mid', 'budget'].includes(h.tier)) errors.push(`${tag}: hotel "${h.name}" tier must be lux/mid/budget`);
+    if (h.kind && !KINDS.includes(h.kind)) errors.push(`${tag}: hotel "${h.name}" kind "${h.kind}" — use one of ${KINDS.join(', ')}`);
   });
+  (d.fun || []).forEach(f => { if (!f.name) errors.push(`${tag}: fun entry without name`); });
+  if (!d.vibes) warnings.push(`${tag}: no vibes — trip-type matching treats every type as 1/3`);
+  else for (const k of VIBE_KEYS) if (typeof d.vibes[k] !== 'number' || d.vibes[k] < 0 || d.vibes[k] > 3) errors.push(`${tag}: vibes.${k} must be 0–3`);
   const m = W.APP_MEDIA && W.APP_MEDIA[d.id];
   if (!m) warnings.push(`${tag}: no entry in media.js (no photos/videos)`);
   else {

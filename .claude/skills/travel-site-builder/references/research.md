@@ -9,6 +9,12 @@ The goal is data a customer can act on: call the hotel, walk to the kosher resta
 4. If a result says **closed** or **permanently closed**, or sources conflict about whether it's open, replace the hotel.
 5. `price` is an estimated ₪ per night for a double room. Luxury in European capitals runs about ₪3,000–7,000, mid about ₪800–1,500, budget ₪250–500.
 
+## Zimmers, cabins and guest farms (Israel)
+Search named properties: "<name> <area> phone", for example kibbutz resort villages, guest farms and desert lodges. Generic "zimmers in the Golan" rows are not allowed; every stay must be a named, verifiable place. Set `kind` (zimmer / cabins / farm / kibbutz / lodge) and `tags` only from what the source says (hot tub, adults only, family).
+
+## Attractions and nightlife (`fun`)
+4–6 per destination: a family attraction, a nature site, a museum or culture spot, a water or spa option, and an evening area. Verify the phone and address for each. Add opening and Shabbat notes when the source states them (for example "closed on Shabbat" or "only part of the trails open after flood damage"). A nightlife *area* may appear without a phone.
+
 ## Restaurants
 - **Kosher:** search "<city> kosher restaurant address phone", Chabad house listings, and the city's Jewish quarter. Verify each named place individually. Prefer 2–3 named places plus the area with the highest concentration. Always keep the note that kashrut status changes.
 - **Michelin:** list 2–3 well-known starred restaurants with star counts. Stars change yearly; the site says so. Look up contact details for at least the top one.
