@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-28T15:50:21.800Z",
+ "generatedAt": "2026-09-28T16:09:07.572Z",
  "brand": "מסע",
  "agency": {
   "phone": "054-497-9771",
@@ -5502,6 +5502,603 @@
    "pageAnchor": "#dest-tokyo"
   }
  ],
+ "israelTravel": {
+  "note": "רשימת כל הלינה בארץ נטענת חי מ-OpenStreetMap בעמוד #stays. ניווט: עמוד #go. קווים משתנים — לאמת ב-Moovit/אגד.",
+  "places": [
+   {
+    "name": "תל אביב",
+    "coords": [
+     32.0853,
+     34.7818
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "ירושלים",
+    "coords": [
+     31.7683,
+     35.2137
+    ],
+    "region": "jerusalem",
+    "train": true
+   },
+   {
+    "name": "חיפה",
+    "coords": [
+     32.794,
+     34.9896
+    ],
+    "region": "haifa",
+    "train": true
+   },
+   {
+    "name": "אילת",
+    "coords": [
+     29.5577,
+     34.9519
+    ],
+    "region": "eilat",
+    "train": false
+   },
+   {
+    "name": "נתב״ג",
+    "coords": [
+     32.0055,
+     34.8854
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "הרצליה",
+    "coords": [
+     32.1624,
+     34.8447
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "נתניה",
+    "coords": [
+     32.3215,
+     34.8532
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "פתח תקווה",
+    "coords": [
+     32.087,
+     34.887
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "ראשון לציון",
+    "coords": [
+     31.973,
+     34.7925
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "רחובות",
+    "coords": [
+     31.894,
+     34.811
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "מודיעין",
+    "coords": [
+     31.898,
+     35.01
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "אשדוד",
+    "coords": [
+     31.804,
+     34.655
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "אשקלון",
+    "coords": [
+     31.6688,
+     34.5743
+    ],
+    "region": "center",
+    "train": true
+   },
+   {
+    "name": "חדרה",
+    "coords": [
+     32.434,
+     34.919
+    ],
+    "region": "haifa",
+    "train": true
+   },
+   {
+    "name": "קיסריה",
+    "coords": [
+     32.5,
+     34.892
+    ],
+    "region": "haifa",
+    "train": false
+   },
+   {
+    "name": "זכרון יעקב",
+    "coords": [
+     32.57,
+     34.954
+    ],
+    "region": "haifa",
+    "train": false
+   },
+   {
+    "name": "יקנעם",
+    "coords": [
+     32.659,
+     35.11
+    ],
+    "region": "haifa",
+    "train": true
+   },
+   {
+    "name": "עכו",
+    "coords": [
+     32.9281,
+     35.0818
+    ],
+    "region": "north",
+    "train": true
+   },
+   {
+    "name": "נהריה",
+    "coords": [
+     33.0059,
+     35.0941
+    ],
+    "region": "north",
+    "train": true
+   },
+   {
+    "name": "כרמיאל",
+    "coords": [
+     32.919,
+     35.295
+    ],
+    "region": "north",
+    "train": true
+   },
+   {
+    "name": "נצרת",
+    "coords": [
+     32.6996,
+     35.3035
+    ],
+    "region": "north",
+    "train": false
+   },
+   {
+    "name": "עפולה",
+    "coords": [
+     32.61,
+     35.29
+    ],
+    "region": "north",
+    "train": true
+   },
+   {
+    "name": "בית שאן",
+    "coords": [
+     32.497,
+     35.496
+    ],
+    "region": "north",
+    "train": true
+   },
+   {
+    "name": "טבריה",
+    "coords": [
+     32.7959,
+     35.53
+    ],
+    "region": "north",
+    "train": false
+   },
+   {
+    "name": "עין גב",
+    "coords": [
+     32.782,
+     35.642
+    ],
+    "region": "north",
+    "train": false
+   },
+   {
+    "name": "צפת",
+    "coords": [
+     32.9646,
+     35.496
+    ],
+    "region": "north",
+    "train": false
+   },
+   {
+    "name": "ראש פינה",
+    "coords": [
+     32.969,
+     35.542
+    ],
+    "region": "north",
+    "train": false
+   },
+   {
+    "name": "קריית שמונה",
+    "coords": [
+     33.2073,
+     35.57
+    ],
+    "region": "north",
+    "train": false
+   },
+   {
+    "name": "מטולה",
+    "coords": [
+     33.278,
+     35.578
+    ],
+    "region": "north",
+    "train": false
+   },
+   {
+    "name": "קצרין",
+    "coords": [
+     32.99,
+     35.69
+    ],
+    "region": "north",
+    "train": false
+   },
+   {
+    "name": "מג׳דל שמס (החרמון)",
+    "coords": [
+     33.269,
+     35.771
+    ],
+    "region": "north",
+    "train": false
+   },
+   {
+    "name": "עין גדי",
+    "coords": [
+     31.4613,
+     35.389
+    ],
+    "region": "deadsea",
+    "train": false
+   },
+   {
+    "name": "מצדה",
+    "coords": [
+     31.3156,
+     35.3536
+    ],
+    "region": "deadsea",
+    "train": false
+   },
+   {
+    "name": "עין בוקק (ים המלח)",
+    "coords": [
+     31.2,
+     35.3625
+    ],
+    "region": "deadsea",
+    "train": false
+   },
+   {
+    "name": "ערד",
+    "coords": [
+     31.261,
+     35.214
+    ],
+    "region": "deadsea",
+    "train": false
+   },
+   {
+    "name": "באר שבע",
+    "coords": [
+     31.252,
+     34.7915
+    ],
+    "region": "negev",
+    "train": true
+   },
+   {
+    "name": "דימונה",
+    "coords": [
+     31.07,
+     35.033
+    ],
+    "region": "negev",
+    "train": true
+   },
+   {
+    "name": "שדה בוקר",
+    "coords": [
+     30.874,
+     34.794
+    ],
+    "region": "negev",
+    "train": false
+   },
+   {
+    "name": "מצפה רמון",
+    "coords": [
+     30.61,
+     34.801
+    ],
+    "region": "negev",
+    "train": false
+   }
+  ],
+  "busLines": [
+   {
+    "lines": "394 (וגם 390)",
+    "operator": "אגד",
+    "between": [
+     "תל אביב",
+     "אילת"
+    ],
+    "departsFrom": "התחנה המרכזית החדשה, תל אביב",
+    "time": "כ-5 ש׳",
+    "note": "הקו הפופולרי לאילת. מומלץ להזמין מקום מראש באתר אגד."
+   },
+   {
+    "lines": "444",
+    "operator": "אגד",
+    "between": [
+     "ירושלים",
+     "אילת"
+    ],
+    "departsFrom": "התחנה המרכזית, ירושלים",
+    "time": "כ-4.5–5 ש׳",
+    "note": "דרך ים המלח והערבה. הזמנת מקום מראש."
+   },
+   {
+    "lines": "397",
+    "operator": "אגד",
+    "between": [
+     "באר שבע",
+     "אילת"
+    ],
+    "departsFrom": "התחנה המרכזית, באר שבע",
+    "time": "כ-3.5 ש׳",
+    "note": "הזמנת מקום מראש."
+   },
+   {
+    "lines": "486 (וגם 487)",
+    "operator": "אגד",
+    "between": [
+     "ירושלים",
+     "עין גדי",
+     "מצדה",
+     "עין בוקק (ים המלח)"
+    ],
+    "departsFrom": "התחנה המרכזית, ירושלים (רציף 5)",
+    "time": "כ-1.5–2 ש׳",
+    "note": "כ-₪19. מעט נסיעות ביום, לא בשבת."
+   },
+   {
+    "lines": "421",
+    "operator": "אגד",
+    "between": [
+     "תל אביב",
+     "עין גדי",
+     "מצדה",
+     "עין בוקק (ים המלח)"
+    ],
+    "departsFrom": "מסוף ארלוזורוב (רכבת סבידור)",
+    "time": "כ-2.5–3 ש׳",
+    "note": "פעמיים ביום בערך, כ-₪17. לא בשבת."
+   },
+   {
+    "lines": "485",
+    "operator": "אפיקים",
+    "between": [
+     "נתב״ג",
+     "ירושלים"
+    ],
+    "departsFrom": "נתב״ג טרמינל 3",
+    "time": "כ-1 ש׳",
+    "note": "פעם בשעה, גם בלילה. לא בשבת. כ-₪16."
+   },
+   {
+    "lines": "405, 480",
+    "operator": "אגד / דן",
+    "between": [
+     "ירושלים",
+     "תל אביב"
+    ],
+    "departsFrom": "התחנה המרכזית, ירושלים",
+    "time": "כ-1 ש׳",
+    "note": "405 לתחנה המרכזית בתל אביב, 480 למסוף ארלוזורוב. תדירות גבוהה."
+   },
+   {
+    "lines": "836",
+    "operator": "אגד",
+    "between": [
+     "תל אביב",
+     "טבריה"
+    ],
+    "departsFrom": "התחנה המרכזית החדשה, קומה 7",
+    "time": "כ-2 ש׳",
+    "note": "פעם בשעה בערך."
+   },
+   {
+    "lines": "962 (מהיר), 961, 959",
+    "operator": "אגד",
+    "between": [
+     "ירושלים",
+     "טבריה"
+    ],
+    "departsFrom": "התחנה המרכזית, ירושלים (רציפים 20–21)",
+    "time": "כ-2.5 ש׳",
+    "note": "קווים 953 ו-963 עוברים דרך עפולה."
+   },
+   {
+    "lines": "430",
+    "operator": "אגד",
+    "between": [
+     "חיפה",
+     "טבריה"
+    ],
+    "departsFrom": "מרכזית המפרץ, חיפה",
+    "time": "כ-1.25 ש׳",
+    "note": "כל 20–30 דקות."
+   },
+   {
+    "lines": "431",
+    "operator": "נתיב תחבורה (NTT)",
+    "between": [
+     "טבריה",
+     "נצרת"
+    ],
+    "departsFrom": "התחנה המרכזית, טבריה",
+    "time": "כ-50 דק׳",
+    "note": ""
+   },
+   {
+    "lines": "940, 960 (947 איטי)",
+    "operator": "אגד",
+    "between": [
+     "ירושלים",
+     "חיפה"
+    ],
+    "departsFrom": "התחנה המרכזית, ירושלים (רציף 19)",
+    "time": "כ-2 ש׳",
+    "note": "940 למסוף חוף הכרמל, 960 ללב המפרץ."
+   },
+   {
+    "lines": "845",
+    "operator": "אגד",
+    "between": [
+     "תל אביב",
+     "קריית שמונה"
+    ],
+    "departsFrom": "התחנה המרכזית החדשה, תל אביב",
+    "time": "כ-2.5 ש׳",
+    "note": "פעם בשעה בערך."
+   },
+   {
+    "lines": "843",
+    "operator": "אגד",
+    "between": [
+     "תל אביב",
+     "קצרין"
+    ],
+    "departsFrom": "התחנה המרכזית החדשה, תל אביב",
+    "time": "כ-3.5 ש׳",
+    "note": "יציאה יומית אחת בערך (16:00), דרך חופי הכנרת."
+   },
+   {
+    "lines": "64, 60",
+    "operator": "מטרופולין",
+    "between": [
+     "באר שבע",
+     "מצפה רמון"
+    ],
+    "departsFrom": "התחנה המרכזית, באר שבע",
+    "time": "כ-1–1.5 ש׳",
+    "note": "64 מהיר יותר."
+   }
+  ],
+  "rail": [
+   {
+    "between": [
+     "תל אביב",
+     "ירושלים"
+    ],
+    "time": "כ-35 דק׳",
+    "note": "לתחנת ירושלים–יצחק נבון"
+   },
+   {
+    "between": [
+     "תל אביב",
+     "נתב״ג"
+    ],
+    "time": "כ-15 דק׳",
+    "note": ""
+   },
+   {
+    "between": [
+     "ירושלים",
+     "נתב״ג"
+    ],
+    "time": "כ-25 דק׳",
+    "note": ""
+   },
+   {
+    "between": [
+     "תל אביב",
+     "חיפה"
+    ],
+    "time": "כ-1 ש׳",
+    "note": ""
+   },
+   {
+    "between": [
+     "תל אביב",
+     "באר שבע"
+    ],
+    "time": "כ-1–1.25 ש׳",
+    "note": ""
+   },
+   {
+    "between": [
+     "תל אביב",
+     "נהריה"
+    ],
+    "time": "כ-1.75 ש׳",
+    "note": "דרך חיפה ועכו"
+   },
+   {
+    "between": [
+     "חיפה",
+     "כרמיאל"
+    ],
+    "time": "כ-45 דק׳",
+    "note": ""
+   },
+   {
+    "between": [
+     "חיפה",
+     "בית שאן"
+    ],
+    "time": "כ-1 ש׳",
+    "note": "קו העמק, דרך עפולה"
+   }
+  ],
+  "pages": {
+   "allStays": "#stays",
+   "navigation": "#go"
+  }
+ },
  "bookingSites": [
   {
    "category": "טיסות",
