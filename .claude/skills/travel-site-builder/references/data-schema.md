@@ -36,6 +36,9 @@ All data files assign a global on `window` and are plain scripts (no modules), s
     { name: 'Hotel Artemide', addr: 'Via Nazionale 22, 00184 Roma', phone: '+39 06 489911',
       web: 'https://…', area: 'Via Nazionale', tier: 'mid', price: 1000, note: 'קרוב לטרמיני' }
     // addr/phone/web optional — include ONLY when verified. phone format: +<country> <digits with spaces>
+    // kind (optional, default 'hotel'): hotel | boutique | resort | spa | zimmer | cabins | farm | kibbutz | lodge | hostel
+    //   → drives the stay filters (מלונות / צימרים, בקתות וחוות / ספא …). zimmer/cabins/farm/lodge/kibbutz count as "צימרים".
+    // tags (optional): family | couple | spa | pool | adults | nature | budget | view — only what the source supports
   ],
   car: { need: 'לא בעיר; כן לטוסקנה', companies: ['Europcar','Hertz'], tips: ['...'] },
       // need starting with חיוני|מומלץ|כן|שימושי → car is included in cost estimates
@@ -45,11 +48,18 @@ All data files assign a global on `window` and are plain scripts (no modules), s
   transit: { system, card, single, day, apps: ['Moovit'], notes },
   routes: [ { name, days: 2, stops: ['...'], desc } ],
   pois: [ { name: 'הקולוסיאום', c: [41.8902, 12.4922] } ],   // map markers, 4–6
+  fun: [                          // optional — "בילוי ואטרקציות" tab (shown only when present)
+    { name, type: 'מוזיאון', tags: ['family', 'culture'], addr?, phone?, web?, note: 'שעות, שבת, הזמנה מראש' }
+    // tags: family | couple | nature | relax | culture | night | food | adventure (filter chips are built from them)
+  ],
+  vibes: { family: 3, couple: 2, nature: 2, relax: 3, culture: 0, night: 2, food: 1, adventure: 3, religious: 2 },
+    // 0–3 per trip type; drives ranking when the visitor picks trip types (and kids > 0 adds 'family').
+    // religious = ease for Shabbat-observant / kosher travelers (kosher food, Chabad, Shabbat logistics).
   poster: { sky: ['#F5C98B','#E9A26B'], sun: '#FFF0CF', land: '#9A4A2F', far: '#C98760', icon: 'colosseum', ink: '#3A1B10' }
 }
 ```
 
-Poster icons: `eiffel, bigben, colosseum, sagrada, parthenon, castle, skyline, burj, temple, pagoda, palms, walls, city-sea, hills-lake`. Pick the closest silhouette. `palms`, `city-sea` and `hills-lake` add water. `pagoda` adds Mt Fuji.
+Poster icons: `mesa` (flat plateau — Masada, crater rim), `eiffel, bigben, colosseum, sagrada, parthenon, castle, skyline, burj, temple, pagoda, palms, walls, city-sea, hills-lake`. Pick the closest silhouette. `palms`, `city-sea` and `hills-lake` add water. `pagoda` adds Mt Fuji. Set `poster.sea: true|false` to force water on or off for any icon.
 
 ### Other keys in data.js
 - `origin`: departure airport (TLV), terminal arrival times, check-in and gate close minutes, and Israeli cities with car/train/taxi minutes to the airport (train 0 = no train). This feeds the airport planner.

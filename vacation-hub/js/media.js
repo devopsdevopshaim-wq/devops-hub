@@ -57,6 +57,42 @@ window.APP_MEDIA = {
       ['BrqoNFXIOq4', 'Scenic Drive Around the Sea of Galilee', '', 'en']
     ]
   },
+  deadsea: {
+    photos: [
+      ['Israel-2013-Aerial_21-Masada.jpg', 'מצדה מהאוויר'],
+      ['Ein_Bokek_-_Dead_Sea2.jpg', 'חוף עין בוקק'],
+      ['Floating_on_the_Dead_Sea_(11664053513).jpg', 'ציפה בים המלח']
+    ],
+    videos: [
+      ['FfCRLcrSFCc', 'Masada, Ein Gedi and the Dead Sea — the ultimate guide', '', 'en'],
+      ['yA6o5B8_nZ8', 'Exploring the Dead Sea and Masada — self guided tour', '', 'en'],
+      ['ANUyV6M0qV4', 'En Gedi — oasis in the desert', '', 'en']
+    ]
+  },
+  mitzperamon: {
+    photos: [
+      ['Makhtesh_Ramon_2019.jpg', 'מכתש רמון'],
+      ['Israel-2013-Aerial_00-Negev-Makhtesh_Ramon_adjusted.jpg', 'המכתש מהאוויר'],
+      ['Machtesh_Ramon_Visitors_Center_Israel.JPG', 'מרכז המבקרים על שפת המכתש']
+    ],
+    videos: [
+      ['5mzlfzpnNdI', 'טיול במכתש רמון — אתרים מומלצים לביקור', '', 'he'],
+      ['KN2MYP2LtXs', 'רעיונות לטיול הבא במצפה רמון', '', 'he'],
+      ['Gj5gMxlbM-8', 'Biggest crater on Earth: Mitzpe Ramon and the Negev', '', 'en']
+    ]
+  },
+  haifa: {
+    photos: [
+      ['The_Hanging_Gardens_of_Haifa,_Israel_(50099173503).jpg', 'הגנים הבהאיים'],
+      ["Baha'i_Gardens_in_Haifa_at_night.jpg", 'הגנים והעיר בלילה'],
+      ['Bahai_Gardens_Haifa.jpg', 'הטרסות מול המפרץ']
+    ],
+    videos: [
+      ['VEyqYDP7D30', 'Haifa evening walk: German Colony, Baháʼí Gardens & beaches', '', 'en'],
+      ['bhxA865eSMc', "Haifa: Baha'i Gardens & city views — walking tour", '', 'en'],
+      ['ZZX2Q7scTN8', 'Drone video of the Bahai Gardens in Haifa', '', 'en']
+    ]
+  },
   paris: {
     photos: [
       ['Tour_Eiffel_Wikimedia_Commons.jpg', 'מגדל אייפל משדה מארס'],
