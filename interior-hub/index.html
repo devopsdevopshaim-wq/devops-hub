@@ -28,6 +28,7 @@
     <nav class="mainnav" aria-label="ניווט ראשי">
       <a href="#plan" data-nav="plan">התכנון שלי</a>
       <a href="#stores" data-nav="stores">חנויות בישראל</a>
+      <a href="#garden" data-nav="garden">עיצוב החצר</a>
       <a href="#rules" data-nav="rules">עקרונות התכנון</a>
     </nav>
   </div>
@@ -42,7 +43,14 @@
           <summary><h2 id="brief-title">הדרישות שלכם</h2><span class="brief-summary" id="brief-summary"></span></summary>
           <form id="brief" autocomplete="off" novalidate>
             <div class="field">
-              <label for="f-area">שטח הדירה <output id="o-area" for="f-area">100</output> מ״ר</label>
+              <span class="label" id="l-home">סוג הנכס</span>
+              <div class="seg" role="radiogroup" aria-labelledby="l-home">
+                <label><input type="radio" name="home" value="apartment" id="f-home-apartment" checked><span>דירה</span></label>
+                <label><input type="radio" name="home" value="house" id="f-home-house"><span>בית פרטי עם חצר</span></label>
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-area">שטח הבית <output id="o-area" for="f-area">100</output> מ״ר</label>
               <input type="range" id="f-area" name="area" min="35" max="260" step="1" value="100">
             </div>
             <div class="field">
@@ -104,8 +112,30 @@
             <fieldset class="checks">
               <legend class="label">מה עוד יש או צריך</legend>
               <label class="check"><input type="checkbox" id="f-mamad" name="mamad" checked><span>יש ממ״ד</span></label>
-              <label class="check"><input type="checkbox" id="f-balcony" name="balcony" checked><span>מרפסת שמש</span></label>
+              <label class="check" id="c-balcony"><input type="checkbox" id="f-balcony" name="balcony" checked><span>מרפסת שמש</span></label>
               <label class="check"><input type="checkbox" id="f-office" name="office"><span>עבודה מהבית</span></label>
+            </fieldset>
+            <fieldset class="garden-fields" id="garden-fields" hidden>
+              <legend class="label">החצר</legend>
+              <div class="field">
+                <label for="f-yard">שטח החצר <output id="o-yard" for="f-yard">250</output> מ״ר</label>
+                <input type="range" id="f-yard" name="yard" min="40" max="800" step="10" value="250">
+              </div>
+              <div class="field">
+                <label for="f-gstyle">סגנון הגינה</label>
+                <select id="f-gstyle" name="gardenStyle">
+                  <option value="med">ים-תיכוני</option>
+                  <option value="modern">מודרני</option>
+                  <option value="tropical">טרופי</option>
+                  <option value="dry">חסכוני במים</option>
+                </select>
+              </div>
+              <div class="checks">
+                <label class="check"><input type="checkbox" id="f-pool" name="pool" checked><span>בריכה</span></label>
+                <label class="check"><input type="checkbox" id="f-water" name="water" checked><span>מפל / מזרקה</span></label>
+                <label class="check"><input type="checkbox" id="f-pergola" name="pergola" checked><span>פרגולה</span></label>
+                <label class="check"><input type="checkbox" id="f-grill" name="grill" checked><span>גריל</span></label>
+              </div>
             </fieldset>
             <p class="brief-note">התכנון מתעדכן מיד. הנתונים נשמרים רק בדפדפן שלכם.</p>
           </form>
@@ -146,6 +176,7 @@
               </div>
               <svg class="tour-mini" id="tour-mini" aria-hidden="true"></svg>
               <div class="tour-tip" id="tour-tip" hidden></div>
+              <aside class="tour-card" id="tour-card" hidden aria-live="polite"></aside>
               <p class="tour-fallback" id="tour-fallback" hidden>הדפדפן לא תומך בתלת-ממד (WebGL). התוכנית הדו-ממדית ורשימת הרהיטים זמינות למטה.</p>
             </div>
           </div>
@@ -207,6 +238,34 @@
   </section>
 
   <!-- ============ RULES ============ -->
+  <section class="view" id="view-garden" data-view="garden" hidden>
+    <div class="page">
+      <div class="garden-hero">
+        <div class="section-head">
+          <p class="eyebrow">בית פרטי</p>
+          <h1>עיצוב החצר</h1>
+          <p id="garden-lede">דק, פרגולה, בריכה ומפל, עצים וצמחים: תכנון מקצועי של החצר סביב הבית, עם דגמים, מחירים ואיפה קונים.</p>
+        </div>
+        <div class="garden-actions" id="garden-actions"></div>
+      </div>
+      <div class="garden-empty" id="garden-empty" hidden>
+        <p>התכנון הנוכחי הוא לדירה. כדי לתכנן חצר, עברו לבית פרטי.</p>
+        <button type="button" class="btn" id="btn-to-house">תכנון בית פרטי עם חצר</button>
+      </div>
+      <div id="garden-body">
+        <dl class="facts garden-facts" id="garden-facts"></dl>
+        <div class="stage garden-stage"><div class="plan-wrap"><svg id="garden-svg" class="plan"></svg></div></div>
+        <section class="notes" id="garden-notes"></section>
+        <section class="rooms"><div id="garden-list"></div></section>
+        <section class="rules garden-rules" id="garden-rules"></section>
+        <section>
+          <div class="section-head"><h2>משתלות, בריכות וריהוט גן</h2><p>חנויות וקבלנים לגינה. טלפונים וכתובות מספטמבר 2026; כדאי לוודא לפני הגעה.</p></div>
+          <div class="store-cards" id="garden-stores"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+
   <section class="view" id="view-rules" data-view="rules" hidden>
     <div class="page">
       <div class="section-head">
@@ -228,6 +287,7 @@
 <script src="js/stores.js"></script>
 <script src="js/catalog.js"></script>
 <script src="js/planner.js"></script>
+<script src="js/garden.js"></script>
 <script src="js/plan2d.js"></script>
 <script src="js/app.js"></script>
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/jsm/" } }</script>

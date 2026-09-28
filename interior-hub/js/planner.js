@@ -45,7 +45,14 @@
       region: q.region || 'center',
       office: !!q.office,
       mamad: q.mamad !== false,
-      balcony: q.balcony !== false,
+      home: q.home === 'house' ? 'house' : 'apartment',
+      balcony: q.home !== 'house' && q.balcony !== false,
+      yard: clamp(n(q.yard, 150), 40, 800),
+      gardenStyle: ['med', 'modern', 'tropical', 'dry'].includes(q.gardenStyle) ? q.gardenStyle : 'med',
+      pool: q.pool !== false,
+      water: q.water !== false,
+      pergola: q.pergola !== false,
+      grill: q.grill !== false,
       kitchen: ['auto', 'linear', 'L', 'parallel', 'island'].includes(q.kitchen) ? q.kitchen : 'auto',
       seats: q.seats === 'auto' || !q.seats ? 'auto' : clamp(+q.seats, 2, 12)
     };
@@ -695,7 +702,8 @@
     // top wall openings
     if (kitchenWindow) opening(top, kitchenWindow[0], kitchenWindow[1], 'window', 1.05, 2.1);
     if (mode === 'row') { const c = dining.x + dining.w / 2; opening(top, c - 0.8, c + 0.8, 'window', 0.6, 2.2); }
-    opening(top, slider[0], slider[1], q.balcony ? 'slider' : 'window', q.balcony ? 0 : 0.5, 2.3);
+    const toOutside = q.balcony || q.home === 'house';
+    opening(top, slider[0], slider[1], toOutside ? 'slider' : 'window', toOutside ? 0 : 0.5, 2.3);
     if (L.frame === 'bottom') seg(L.x, Dp, L.x + L.w, Dp); // TV partition toward the corridor
     // private rooms
     privRooms.forEach((r, i) => {
@@ -745,11 +753,14 @@
     }
 
     const totalArea = rooms.filter((r) => !r.outdoor).reduce((s, r) => s + r.w * r.d, 0);
-    return {
+    const plan = {
       q, style, W: R(W), D: R(D), Dp: R(Dp), rooms, items, segs, checks, notes, triangle,
       kitchenShape: shape, kitchenShapeName: kShapeName, tvIn, seats, clashes,
-      area: R(totalArea), wallH: WALL_H
+      area: R(totalArea), wallH: WALL_H, slider,
+      bounds: { x0: -0.9, y0: balcony ? -1.8 : 0, x1: R(W), y1: R(D) }
     };
+    if (q.home === 'house' && window.IH.planGarden) window.IH.planGarden(plan);
+    return plan;
   }
 
   window.IH = window.IH || {};

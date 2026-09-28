@@ -6,13 +6,13 @@
   const CAT_CLASS = {
     'ישיבה': 'seat', 'שולחנות': 'table', 'אחסון': 'store', 'חשמל': 'appl', 'טקסטיל': 'rug',
     'תאורה': 'light', 'עיצוב': 'plant', 'מטבח': 'kitchen', 'שינה': 'bed', 'עבודה': 'table',
-    'רחצה': 'bath', 'חוץ': 'table'
+    'רחצה': 'bath', 'חוץ': 'table', 'גינה': 'table', 'בריכה': 'bath', 'עצים': 'plant'
   };
   const SHORT = {
     sofa3: 'ספה', sofa2: 'ספה', sofaL: 'ספה פינתית', armchair: 'כורסה', coffeeTable: 'שולחן', tvConsole: 'מזנון',
     diningTable: 'שולחן אוכל', bedDouble: 'מיטה זוגית', bedSingle: 'מיטה', bunk: 'קומותיים', wardrobe: 'ארון',
     desk: 'שולחן עבודה', sofaBed: 'ספה נפתחת', dresser: 'קומודה', bookshelf: 'ספרייה', fridge: 'מקרר',
-    island: 'אי', bathtub: 'אמבטיה', shower: 'מקלחון', outdoorSet: 'פינת ישיבה', washer: 'כביסה',
+    island: 'אי', bathtub: 'אמבטיה', pool: 'בריכה', deck: 'דק', outdoorSofa: 'ישיבה', outdoorDining: 'אוכל בחוץ', grill: 'גריל', playSet: 'משחקים', sunLounger: '', waterfall: 'מפל', fountain: 'מזרקה', shower: 'מקלחון', outdoorSet: 'פינת ישיבה', washer: 'כביסה',
     shoeCabinet: 'נעליים', vanity: 'כיור', toilet: 'אסלה', kitchenBase: '', cooktop: '', sink: '', dishwasher: 'מדיח'
   };
 
@@ -28,8 +28,9 @@
     const IH = window.IH;
     opts = opts || {};
     while (svg.firstChild) svg.removeChild(svg.firstChild);
-    const top = plan.rooms.some((r) => r.outdoor) ? -2.5 : -0.9;
-    const vb = [-0.9, top, plan.W + 1.8, plan.D - top + 0.9];
+    const B = plan.bounds || { x0: -0.9, y0: plan.rooms.some((r) => r.outdoor) ? -1.8 : 0, x1: plan.W, y1: plan.D };
+    const vx0 = Math.min(-0.9, B.x0 - 0.5), vy0 = Math.min(-0.9, B.y0 - 0.7);
+    const vb = [vx0, vy0, Math.max(plan.W + 0.9, B.x1 + 0.9) - vx0, Math.max(plan.D + 0.9, B.y1 + 0.9) - vy0];
     svg.setAttribute('viewBox', vb.map(f).join(' '));
     svg.setAttribute('role', 'img');
     svg.setAttribute('aria-label', `תוכנית דירה ${plan.W.toFixed(1)} על ${plan.D.toFixed(1)} מטר`);
@@ -40,8 +41,17 @@
     const gLabels = el('g', { class: 'fp-labels' }, svg);
     const gDims = el('g', { class: 'fp-dims' }, svg);
 
+    // plot: ground, house footprint shadow and boundary walls
+    if (plan.yard) {
+      const y = plan.yard;
+      el('rect', { x: f(y.x0), y: f(y.y0), width: f(y.x1 - y.x0), height: f(y.y1 - y.y0), class: 'fp-ground fp-ground-' + y.ground }, gFloor);
+      el('rect', { x: -0.1, y: -0.1, width: f(plan.W + 0.2), height: f(plan.D + 0.2), class: 'fp-house' }, gFloor);
+      y.walls.forEach((w) => el('line', { x1: f(w.x1), y1: f(w.y1), x2: f(w.x2), y2: f(w.y2), class: 'fp-plotwall' }, gWalls));
+    }
+
     // floors
     plan.rooms.forEach((r) => {
+      if (r.yard) return;
       const kind = r.outdoor ? 'deck' : ['bath', 'wc', 'ensuite', 'utility'].includes(r.kind) ? 'wet' : ['kitchen', 'corridor'].includes(r.kind) || plan.style.floorKind !== 'wood' ? 'tile' : 'wood';
       el('rect', { x: f(r.x), y: f(r.y), width: f(r.w), height: f(r.d), class: 'fp-floor fp-floor-' + kind, 'data-room': r.id }, gFloor);
     });
@@ -182,7 +192,47 @@
       if (face === 'E') return R(x, y, t, d, 'fp-back');
       return R(x + w - t, y, t, d, 'fp-back');
     };
+    const G = (cls, extra) => R(x, y, w, d, cls, extra);
     switch (it.type) {
+      case 'lawn': case 'gravel':
+        return;
+      case 'deck':
+        G('fp-deck');
+        for (let yy = y + 0.14; yy < y + d; yy += 0.14) el('line', { x1: f(x), y1: f(yy), x2: f(x + w), y2: f(yy), class: 'fp-detail' }, g);
+        return;
+      case 'pergola':
+        G('fp-upper');
+        for (let xx = x + 0.5; xx < x + w; xx += 0.5) el('line', { x1: f(xx), y1: f(y), x2: f(xx), y2: f(y + d), class: 'fp-pergola' }, g);
+        return;
+      case 'poolDeck': G('fp-paving'); return;
+      case 'pool':
+        G('fp-pool', { rx: 0.1 });
+        R(x + 0.12, y + 0.12, w - 0.24, d - 0.24, 'fp-pool-water', { rx: 0.08 });
+        return;
+      case 'waterfall': case 'fountain': G('fp-stone', { rx: 0.05 }); R(x + 0.1, y + 0.1, w - 0.2, d - 0.2, 'fp-pool-water'); return;
+      case 'oliveTree': case 'citrusTree': case 'palmTree': {
+        const cx = x + w / 2, cy = y + d / 2, rr = Math.min(w, d) / 2;
+        el('circle', { cx: f(cx), cy: f(cy), r: f(rr * (it.type === 'palmTree' ? 1.2 : 1.35)), class: 'fp-canopy fp-canopy-' + it.type }, g);
+        el('circle', { cx: f(cx), cy: f(cy), r: 0.09, class: 'fp-trunk' }, g);
+        return;
+      }
+      case 'planterBed': {
+        G('fp-bed', { rx: 0.05 });
+        const cols = it.colors || ['#7a9a5a'];
+        let k = 0;
+        for (let yy = y + 0.3; yy < y + d - 0.2; yy += 0.45) {
+          el('circle', { cx: f(x + w / 2 + ((k % 2) ? 0.15 : -0.15)), cy: f(yy), r: 0.2, fill: cols[k % cols.length], class: 'fp-shrub' }, g);
+          k++;
+        }
+        return;
+      }
+      case 'path':
+        for (let yy = y + 0.1; yy < y + d - 0.3; yy += 0.65) R(x + 0.1, yy, w - 0.2, 0.45, 'fp-stone', { rx: 0.06 });
+        return;
+      case 'gardenLight': case 'irrigation':
+        el('circle', { cx: f(x + w / 2), cy: f(y + d / 2), r: 0.1, class: 'fp-light' }, g);
+        return;
+      case 'playSet': G('fp-shape'); el('line', { x1: f(x), y1: f(y), x2: f(x + w), y2: f(y + d), class: 'fp-detail' }, g); return;
       case 'rug':
         R(x, y, w, d, 'fp-shape fp-rug', { rx: 0.04 });
         break;

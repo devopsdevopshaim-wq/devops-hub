@@ -469,3 +469,60 @@ select, input[type=number] {
 .render img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
 .render figcaption { padding: 8px 12px; font-weight: 600; font-size: 0.92rem; }
 .render:first-child { grid-column: 1 / -1; }
+
+/* ---------- garden (plan drawing) ---------- */
+:root { --fp-lawn: #cfe0b8; --fp-gravel: #e3dccd; --fp-water: #8fd0e2; --fp-deckwood: #d9b98e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --fp-lawn: #2f4226; --fp-gravel: #4a453b; --fp-water: #1f5a6b; --fp-deckwood: #5c4630; } }
+:root[data-theme="dark"] { --fp-lawn: #2f4226; --fp-gravel: #4a453b; --fp-water: #1f5a6b; --fp-deckwood: #5c4630; }
+.fp-ground-lawn { fill: var(--fp-lawn); }
+.fp-ground-gravel { fill: var(--fp-gravel); }
+.fp-house { fill: var(--surface); stroke: none; }
+.fp-plotwall { stroke: #8a7e6a; stroke-width: 0.3; }
+.fp-deck { fill: var(--fp-deckwood); stroke: var(--fp-wall); stroke-width: 0.018; }
+.fp-pergola { stroke: var(--muted); stroke-width: 0.02; stroke-dasharray: 0.08 0.06; }
+.fp-paving { fill: #e9e3d6; stroke: var(--fp-wall); stroke-width: 0.012; }
+.fp-pool { fill: #f4f1ea; stroke: var(--fp-wall); stroke-width: 0.02; }
+.fp-pool-water { fill: var(--fp-water); stroke: none; }
+.fp-stone { fill: #cbbfa9; stroke: var(--fp-wall); stroke-width: 0.012; }
+.fp-canopy { stroke: #3d5a2a; stroke-width: 0.02; fill-opacity: 0.75; }
+.fp-canopy-oliveTree { fill: #9aa884; } .fp-canopy-citrusTree { fill: #6f9a4f; } .fp-canopy-palmTree { fill: #8db36a; }
+.fp-trunk { fill: #6b5a45; }
+.fp-bed { fill: #8a7560; stroke: var(--fp-wall); stroke-width: 0.012; }
+.fp-shrub { stroke: #2f4a22; stroke-width: 0.01; }
+.fp-light { fill: #f2c230; stroke: var(--fp-wall); stroke-width: 0.01; }
+
+/* ---------- models table ---------- */
+.models { display: grid; gap: 6px; }
+.models-scroll { overflow-x: auto; }
+.models-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.models-table th { text-align: start; font-size: 0.75rem; color: var(--muted); font-weight: 600; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+.models-table td { padding: 6px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.models-table td:first-child { font-weight: 600; white-space: nowrap; }
+.models-table td:last-child { white-space: nowrap; }
+.models-table tr.is-found td:last-child { font-weight: 700; color: var(--ok); }
+.models-table a { font-weight: 600; }
+.models-note { font-size: 0.78rem; color: var(--muted); }
+
+/* ---------- card inside the 3D view ---------- */
+.tour-card {
+  position: absolute; z-index: 4; inset-inline-start: 10px; top: 52px; width: min(420px, calc(100% - 20px)); max-height: calc(100% - 110px); overflow-y: auto;
+  background: color-mix(in srgb, var(--raised) 96%, transparent); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 14px; display: grid; gap: 8px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+.tc-head { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+.tc-head h3 { font-size: 1.05rem; }
+.tc-meta { font-size: 0.9rem; color: var(--muted); }
+.tour-card .models-note { display: none; }
+.btn { border: 0; background: var(--ink); color: var(--ground); font-weight: 700; padding: 9px 16px; border-radius: 999px; }
+.btn:hover { background: var(--accent); color: var(--accent-ink); }
+.btn-small { padding: 6px 12px; font-size: 0.88rem; justify-self: start; }
+
+/* ---------- garden tab ---------- */
+.garden-fields { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px 12px; margin: 0; display: grid; gap: 12px; background: var(--raised); }
+.garden-fields legend { padding: 0 4px; }
+.garden-hero { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; }
+.garden-facts { grid-template-columns: repeat(5, auto); justify-content: start; }
+@media (max-width: 700px) { .garden-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.garden-empty { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: grid; gap: 12px; justify-items: start; }
+#garden-body { display: grid; gap: 22px; }
+.garden-rules { margin: 0; }

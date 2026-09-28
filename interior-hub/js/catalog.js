@@ -21,7 +21,11 @@
     textile: { [E]: ['ikea', 'golf'], [M]: ['foxhome', 'golf'], [P]: ['tollmans', 'foxhome'] },
     office: { [E]: ['ikea'], [M]: ['ikea', 'beitili'], [P]: ['tollmans', 'kastiel'] },
     outdoor: { [E]: ['ace', 'homecenter'], [M]: ['ace', 'ikea'], [P]: ['tollmans', 'ace'] },
-    plant: { [E]: ['homecenter', 'ikea'], [M]: ['homecenter', 'ace'], [P]: ['ace', 'homecenter'] }
+    plant: { [E]: ['homecenter', 'ikea'], [M]: ['homecenter', 'ace'], [P]: ['ace', 'homecenter'] },
+    tree: { [E]: ['azur', 'hadarnoy'], [M]: ['yagur', 'hadarnoy', 'azur'], [P]: ['yagur', 'hadarnoy'] },
+    pool: { [E]: ['adel', 'hagag'], [M]: ['adel', 'hagag'], [P]: ['hagag', 'adel'] },
+    hardscape: { [E]: ['homecenter', 'ace'], [M]: ['ace', 'homecenter', 'hagag'], [P]: ['hagag', 'ace'] },
+    gardenFurniture: { [E]: ['homecenter', 'ace', 'ikea'], [M]: ['ace', 'homecenter', 'ikea'], [P]: ['tollmans', 'ace'] }
   };
 
   const CATALOG = {
@@ -109,7 +113,122 @@
     shoeCabinet: { name: 'ארון נעליים', cat: 'אחסון', stores: S.casegood, price: [250, 800, 2600],
       rule: 'ארון רדוד (עד 30 ס״מ) בכניסה שומר על מעבר של 90 ס״מ במסדרון.' },
     outdoorSet: { name: 'פינת ישיבה למרפסת', cat: 'חוץ', stores: S.outdoor, price: [700, 2200, 7000],
-      rule: 'שולחן קטן ושני כיסאות או ספסל. חומרים עמידים לשמש: אלומיניום, טיק, חבל סינתטי.' }
+      rule: 'שולחן קטן ושני כיסאות או ספסל. חומרים עמידים לשמש: אלומיניום, טיק, חבל סינתטי.' },
+
+    /* ----- garden ----- */
+    lawn: { name: 'מדשאה', cat: 'גינה', stores: S.tree, unit: 'm2', price: [45, 150, 250],
+      rule: 'דשא טבעי צריך 6 שעות שמש והשקיה סדירה. דשא סינטטי חוסך מים ועולה כ-130–250 ₪ למ״ר כולל התקנה.' },
+    gravel: { name: 'חצץ וחלוקי נחל', cat: 'גינה', stores: S.hardscape, unit: 'm2', price: [60, 120, 220],
+      rule: 'גינה חסכונית: יריעה נגד עשבים, חצץ וחלוקים, וצמחים עמידים ליובש. חוסכת עד 70% מים לעומת מדשאה.' },
+    deck: { name: 'דק עץ', cat: 'גינה', stores: S.hardscape, unit: 'm2', price: [350, 650, 1100],
+      rule: 'דק מול יציאת הסלון מרחיב את חלל המגורים החוצה. שיפוע 1% מהבית לניקוז. איפאה (מ-600 ₪ למ״ר מותקן) או דק מרוכב שלא צריך שמן.' },
+    pergola: { name: 'פרגולה', cat: 'גינה', stores: S.hardscape, unit: 'm2', price: [490, 800, 1500],
+      rule: 'גובה 2.4–2.7 מ׳ והצללה של 50–70% שומרת על אור בחורף. אלומיניום לא צריך תחזוקה; עץ חם יותר למראה.' },
+    outdoorSofa: { name: 'פינת ישיבה לגינה', cat: 'גינה', stores: S.gardenFurniture, price: [600, 1000, 6000],
+      rule: 'פינת ישיבה על הדק, עם הגב לבית והפנים לגינה. ראטן סינטטי ואלומיניום עמידים לשמש ולגשם.' },
+    outdoorDining: { name: 'פינת אוכל בחוץ', cat: 'גינה', stores: S.gardenFurniture, price: [1200, 3000, 9000],
+      rule: 'שולחן לשישה צריך כ-2.4×1.9 מ׳ כולל מקום לכיסאות. קרוב למטבח ולגריל, בצל הפרגולה.' },
+    grill: { name: 'גריל גז / מטבח חוץ', cat: 'גינה', stores: S.gardenFurniture, price: [1500, 4500, 15000],
+      rule: 'צמוד לבית ליד המטבח, 3 מ׳ לפחות מחלונות פתוחים ומחומרים דליקים, כשהרוח מרחיקה את העשן מהבית.' },
+    pool: { name: 'בריכת שחייה', cat: 'בריכה', stores: S.pool, price: [65000, 110000, 180000],
+      rule: 'בריכה ביתית נפוצה 3.5×7 מ׳ בעומק 1.2–1.5. בשמש רוב היום, רחוק מעצים נשירים. עם ילדים: גדר 1.2 מ׳ ושער ננעל.' },
+    poolDeck: { name: 'ריצוף סביב הבריכה', cat: 'בריכה', stores: S.hardscape, unit: 'm2', price: [250, 450, 800],
+      rule: 'אבן או אריח מחוספס נגד החלקה, 1.2 מ׳ לפחות סביב המים, בשיפוע הרחק מהבריכה.' },
+    sunLounger: { name: 'מיטת שיזוף', cat: 'בריכה', stores: S.gardenFurniture, price: [430, 640, 2500],
+      rule: 'שתיים לפחות בצד הבריכה שפונה לשמש אחר הצהריים, עם 60 ס״מ ביניהן לשולחן צד.' },
+    waterfall: { name: 'מפל מים', cat: 'בריכה', stores: S.pool, price: [5000, 12000, 30000],
+      rule: 'מפל על דופן הבריכה הרחוקה נראה מהסלון. משאבה במחזור סגור וחשמל מוגן במפסק פחת.' },
+    fountain: { name: 'מזרקת קיר', cat: 'גינה', stores: S.hardscape, price: [800, 2500, 6000],
+      rule: 'מזרקה קטנה במחזור סגור בקצה הגינה: צליל מים בלי בריכה. צריך נקודת חשמל מוגנת.' },
+    oliveTree: { name: 'עץ זית בוגר', cat: 'עצים', stores: S.tree, price: [800, 1500, 2900],
+      rule: 'עמיד ליובש ומתאים לאקלים הים-תיכוני. שותלים 3 מ׳ לפחות מבריכה ומיסודות, וטפטוף בשנה הראשונה.' },
+    citrusTree: { name: 'עץ הדר (לימון/קלמנטינה)', cat: 'עצים', stores: S.tree, price: [180, 450, 1400],
+      rule: 'שמש מלאה והשקיה בטפטוף. פרי וריח פריחה ליד פינת הישיבה.' },
+    palmTree: { name: 'דקל', cat: 'עצים', stores: S.tree, price: [600, 1500, 4000],
+      rule: 'דקל נותן מראה טרופי ולא מפיל עלים לבריכה כמו עצים נשירים.' },
+    planterBed: { name: 'ערוגת שיחים לאורך הגדר', cat: 'עצים', stores: S.tree, unit: 'm', price: [250, 450, 800],
+      rule: 'לבנדר, רוזמרין, בוגנוויליה ודשא נוי: שיחים חסכוניים שמרככים את הגדר. בוגנוויליה 10 ליטר עולה כ-75 ₪.' },
+    path: { name: 'שביל אבני דריכה', cat: 'גינה', stores: S.hardscape, unit: 'm', price: [120, 250, 450],
+      rule: 'אבן כל 60–65 ס״מ (צעד), שקועה בגובה הדשא כדי שלא יפריע לכיסוח.' },
+    playSet: { name: 'מתקן משחקים', cat: 'גינה', stores: S.gardenFurniture, price: [1500, 4000, 9000],
+      rule: 'על משטח בולם (דשא או גומי), בקו ראייה מהבית, 2 מ׳ פנויים סביב.' },
+    gardenLight: { name: 'פנס שביל', cat: 'תאורה', stores: S.hardscape, price: [60, 250, 700],
+      rule: 'תאורה נמוכה בגוון חם (2700K) כל 2–3 מ׳ לאורך השביל. סולארית חוסכת חיווט.' },
+    irrigation: { name: 'מחשב השקיה וטפטוף', cat: 'גינה', stores: S.hardscape, price: [400, 900, 2000],
+      rule: 'טפטוף לערוגות ולעצים וממטירים למדשאה בלבד, בשעות הבוקר המוקדמות. חוסך עד 50% מים.' }
+  };
+
+  /* Real models with a published price where one was found (September 2026 web search;
+     prices change, confirm with the seller). `seller` is a store id from stores.js or a name. */
+  const MODELS = {
+    sofa3: [
+      { seller: 'beitili', name: 'ספה תלת-מושבית 255 ס״מ דגם קלינטון', price: 3499, url: 'https://www.betili-shop.com/catalogsearch/result/?q=%D7%A7%D7%9C%D7%99%D7%A0%D7%98%D7%95%D7%9F' },
+      { seller: 'beitili', name: 'ספה תלת-מושבית דגם פיראוס', price: 3051, url: 'https://www.betili-shop.com/catalogsearch/result/?q=%D7%A4%D7%99%D7%A8%D7%90%D7%95%D7%A1' },
+      { seller: 'beitili', name: 'ספה תלת-מושבית 260 ס״מ ירוק זית דגם ג׳ולי', url: 'https://www.betili-shop.com/500383.html' },
+      { seller: 'natuzzi', name: 'מערכת ישיבה מעור דגם ברונו', price: 7600, from: true, url: 'https://www.natuzzi.com/' },
+      { seller: 'tollmans', name: 'ספה מודולרית VESTA', price: 39693, url: 'https://www.tollmansdot.co.il/product/vesta-2/' }
+    ],
+    sofaBed: [
+      { seller: 'aminach', name: 'ספת אירוח נפתחת דגם ג׳נסיס', price: 3289, url: 'https://www.zap.co.il/models.aspx?sog=h-livingroomset&db137868=11574316' },
+      { seller: 'aminach', name: 'ספת אירוח נפתחת דגם יופיטר', price: 3989, url: 'https://www.zap.co.il/models.aspx?sog=h-livingroomset&db137868=11574316' },
+      { seller: 'aminach', name: 'ספה נפתחת למיטה דגם קליק', url: 'https://www.aminach.co.il/product/sleeping-sofas/open-sofas/click/' }
+    ],
+    bedDouble: [
+      { seller: 'hollandia', name: 'מזרן Butterfly 160×200', price: 3440, url: 'https://hollandia.co.il/%D7%9E%D7%96%D7%A8%D7%95%D7%A0%D7%99%D7%9D/' },
+      { seller: 'hollandia', name: 'מזרן Wings 160×200', price: 6502, url: 'https://hollandia.co.il/%D7%9E%D7%96%D7%A8%D7%9F-WINGS-2/' },
+      { seller: 'hollandia', name: 'מזרן TEMPUR PRO 160×200', price: 14938, url: 'https://hollandia.co.il/%D7%9E%D7%96%D7%A8%D7%95%D7%A0%D7%99%D7%9D/' }
+    ],
+    diningTable: [
+      { seller: 'beitili', name: 'שולחן אוכל נפתח 98×200 דגם אוסקר', price: 3730, url: 'https://www.betili-shop.com/catalogsearch/result/?q=%D7%90%D7%95%D7%A1%D7%A7%D7%A8' },
+      { seller: 'beitili', name: 'שולחן נפתח 180 פורניר אלון דגם אימפלה', price: 4554, url: 'https://www.betili-shop.com/catalogsearch/result/?q=%D7%90%D7%99%D7%9E%D7%A4%D7%9C%D7%94' },
+      { seller: 'kastiel', name: 'שולחנות אוכל קסטיאל', price: 3900, from: true, url: 'https://www.google.com/search?q=%D7%A7%D7%A1%D7%98%D7%99%D7%90%D7%9C+%D7%A9%D7%95%D7%9C%D7%97%D7%9F+%D7%90%D7%95%D7%9B%D7%9C' }
+    ],
+    chair: [{ seller: 'kastiel', name: 'כיסאות אוכל קסטיאל', price: 700, from: true, url: 'https://www.google.com/search?q=%D7%A7%D7%A1%D7%98%D7%99%D7%90%D7%9C+%D7%9B%D7%99%D7%A1%D7%90%D7%95%D7%AA' }],
+    dishwasher: [
+      { seller: 'TopMarket', name: 'Bosch SMS4HTI03E (סדרה 4)', price: 2444, url: 'https://www.topmarket.co.il/' },
+      { seller: 'TopMarket', name: 'Bosch SMS6ZCI08E', price: 5525, url: 'https://www.topmarket.co.il/en/bosch-sms6zci08e-dishwasher-60cm/' }
+    ],
+    tv: [{ seller: 'payngo', name: 'Samsung 65" UE65U8000F UHD 4K', url: 'https://www.payngo.co.il/354814.html' }],
+    fridge: [{ seller: 'Zabilo', name: 'Samsung 4 דלתות RF65A9011SL עם מצב שבת', url: 'https://zabilo.com/en/multi-doors-refrigerators/9104-rf65a9011sl.html' }],
+    outdoorSofa: [
+      { seller: 'homecenter', name: 'כתר: פינת ישיבה קורפו אפור (4 חלקים)', price: 999.9, url: 'https://www.homecenter.co.il/products/1214506331' },
+      { seller: 'homecenter', name: 'כתר: פינת ישיבה אמילי אפור', price: 599.9, url: 'https://www.homecenter.co.il/products/1710838478663' },
+      { seller: 'tollmans', name: 'ספות חוץ טולמנ׳ס דוט', url: 'https://www.tollmansdot.co.il/product_cat/seating-systems-outdoor/' }
+    ],
+    outdoorDining: [{ seller: 'ace', name: 'פינות אוכל לגינה באייס', url: 'https://www.ace.co.il/garden-furniture-outdoor-products/garden-furniture' }],
+    sunLounger: [
+      { seller: 'homecenter', name: 'כתר: מיטת שיזוף אטלנטיק ראטן אפור', price: 429.9, url: 'https://www.homecenter.co.il/products/1112000336' },
+      { seller: 'homecenter', name: 'כתר: מיטת שיזוף אטלנטיק ראטן לבן', price: 499.9, url: 'https://www.homecenter.co.il/products/1214506990' },
+      { seller: 'כתר', name: 'כתר: מיטת שיזוף דייטונה', price: 639, url: 'https://www.keter.com/he-il/daytona-deluxe-sun-lounger-252223.html' }
+    ],
+    pool: [
+      { seller: 'adel', name: 'בריכת בטון כולל תכנון ובנייה', price: 65000, from: true, url: 'https://www.adelpool.co.il/' },
+      { seller: 'hagag', name: 'בריכה מתועשת או בטון, כולל פיתוח נוף', url: 'https://hagag-pools.co.il/' }
+    ],
+    pergola: [
+      { seller: 'UniKit', name: 'פרגולת אלומיניום (למ״ר)', price: 490, from: true, url: 'https://www.unikit.co.il/%D7%A4%D7%A8%D7%92%D7%95%D7%9C%D7%95%D7%AA-%D7%90%D7%9C%D7%95%D7%9E%D7%99%D7%A0%D7%99%D7%95%D7%9D-%D7%9E%D7%97%D7%99%D7%A8%D7%95%D7%9F/' },
+      { seller: 'לִידָר', name: 'פרגולת אלומיניום (למ״ר)', price: 599, from: true, url: 'https://www.lidar.co.il/%D7%A4%D7%A8%D7%92%D7%95%D7%9C%D7%95%D7%AA-%D7%90%D7%9C%D7%95%D7%9E%D7%99%D7%A0%D7%99%D7%95%D7%9D/' }
+    ],
+    deck: [{ seller: 'GSOL', name: 'דק איפאה כולל התקנה (למ״ר)', price: 600, from: true, url: 'https://gsol.co.il/%D7%93%D7%A7-%D7%90%D7%99%D7%A4%D7%90%D7%94-%D7%9E%D7%97%D7%99%D7%A8/' }],
+    lawn: [
+      { seller: 'נטע גינון', name: 'דשא סינטטי כולל התקנה (למ״ר)', price: 130, from: true, url: 'https://www.neta-ginun.co.il/%D7%94%D7%AA%D7%A7%D7%A0%D7%AA-%D7%93%D7%A9%D7%90-%D7%A1%D7%99%D7%A0%D7%98%D7%98%D7%99-%D7%9E%D7%97%D7%99%D7%A8/' },
+      { seller: 'דשא קבוע', name: 'דשא סינטטי מהיבואן, חומר בלבד (למ״ר)', price: 20, from: true, url: 'https://www.deshe-kavua.co.il/prices-synthetic-grass/' }
+    ],
+    oliveTree: [{ seller: 'hadarnoy', name: 'עצי זית מעוצבים ומאוקלמים', url: 'https://www.hadarnoy.co.il/%D7%A7%D7%98%D7%92%D7%95%D7%A8%D7%99%D7%AA-%D7%94%D7%A7%D7%98%D7%9C%D7%95%D7%92/%D7%A2%D7%A6%D7%99-%D7%96%D7%99%D7%AA-%D7%9C%D7%9E%D7%9B%D7%99%D7%A8%D7%94/' }],
+    citrusTree: [
+      { seller: 'הכל בו לגן', name: 'עץ לימון בעציץ 25 ליטר', url: 'https://www.kolbogan.co.il/product/%D7%A2%D7%A5-%D7%9C%D7%99%D7%9E%D7%95%D7%9F-25-%D7%9C%D7%99%D7%98%D7%A8' },
+      { seller: 'אורגניקו', name: 'עץ לימון', price: 200, from: true, url: 'https://www.organi-co.co.il/product/lemon-tree-sale' }
+    ],
+    planterBed: [
+      { seller: 'hadarnoy', name: 'בוגנוויליה מיני תאי 10 ליטר', price: 75, url: 'https://www.hadarnoy.co.il/%D7%97%D7%A0%D7%95%D7%AA/%D7%91%D7%95%D7%92%D7%A0%D7%95%D7%95%D7%99%D7%9C%D7%99%D7%94-%D7%9E%D7%99%D7%A0%D7%99-%D7%AA%D7%90%D7%99-%D7%A0%D7%A0%D7%A1%D7%99%D7%AA/' },
+      { seller: 'אורגניקו', name: 'בוגנוויליה 10 ליטר', url: 'https://www.organi-co.co.il/product/bougainvillea' }
+    ],
+    grill: [
+      { seller: 'ג. חיון', name: 'מטבח חוץ Weber Spirit עם גריל E-320', url: 'https://ghaun.online/product-category/%D7%94%D7%9B%D7%9C-%D7%9C%D7%92%D7%99%D7%A0%D7%94/%D7%92%D7%A8%D7%99%D7%9C%D7%99%D7%9D-%D7%95%D7%91%D7%99%D7%A9%D7%95%D7%9C-%D7%9C%D7%92%D7%99%D7%A0%D7%94-%D7%94%D7%9B%D7%9C-%D7%9C%D7%92%D7%99%D7%A0%D7%94/%D7%9E%D7%98%D7%91%D7%97%D7%99-%D7%92%D7%99%D7%A0%D7%94-1/' },
+      { seller: 'כרמל דיירקט', name: 'גרילי גז Napoleon', url: 'https://carmeldirect.com/brand/napoleon-grill/' }
+    ],
+    waterfall: [{ seller: 'מידרג', name: 'מפל מים לגינה: מדריך מחירים', price: 5000, from: true, url: 'https://www.midrag.co.il/Content/Tip/12364' }],
+    fountain: [{ seller: 'rocks.co.il', name: 'מזרקות ובריכות נוי', url: 'https://www.rocks.co.il/%D7%91%D7%A8%D7%99%D7%9B%D7%95%D7%AA-%D7%9E%D7%99%D7%9D-%D7%95%D7%9E%D7%96%D7%A8%D7%A7%D7%95%D7%AA/' }]
   };
 
 
@@ -155,7 +274,8 @@
   const STORE_DOMAIN = {
     homecenter: 'homecenter.co.il', ace: 'ace.co.il', beitili: 'betili-shop.com', hollandia: 'hollandia.co.il',
     aminach: 'aminach.co.il', tollmans: 'tollmans.co.il', natuzzi: 'natuzzi.com', kastiel: 'kastiel', foxhome: 'foxhome.co.il',
-    golf: 'golfco.co.il', regba: 'regba.co.il', shekem: 'shekem-electric.co.il', payngo: 'payngo.co.il'
+    golf: 'golfco.co.il', regba: 'regba.co.il', shekem: 'shekem-electric.co.il', payngo: 'payngo.co.il',
+    yagur: 'yagurgan.co.il', azur: 'azurflowers.co.il', hadarnoy: 'hadarnoy.co.il', adel: 'adelpool.co.il', hagag: 'hagag-pools.co.il'
   };
   function storeSearchUrl(storeId, query) {
     const d = STORE_DOMAIN[storeId];
@@ -168,5 +288,7 @@
   const TIER_INDEX = { eco: 0, mid: 1, prem: 2 };
 
   window.IH = window.IH || {};
-  Object.assign(window.IH, { CATALOG, TIERS, TIER_INDEX, PRODUCTS, storeSearchUrl });
+  MODELS.sofaL = MODELS.sofa3;
+  MODELS.sofa2 = MODELS.sofa3.filter((m) => !/255|260/.test(m.name));
+  Object.assign(window.IH, { CATALOG, TIERS, TIER_INDEX, PRODUCTS, MODELS, storeSearchUrl });
 })();

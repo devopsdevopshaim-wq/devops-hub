@@ -11,7 +11,7 @@
   const cm = (m) => Math.round(m * 100);
   const STORE_KEY = 'matar.brief.v1';
 
-  const DEFAULTS = { area: 100, rooms: 4, adults: 2, kids: 2, style: 'scandi', budget: 'mid', region: 'center', seats: 'auto', kitchen: 'auto', mamad: true, balcony: true, office: false };
+  const DEFAULTS = { home: 'apartment', area: 100, rooms: 4, adults: 2, kids: 2, style: 'scandi', budget: 'mid', region: 'center', seats: 'auto', kitchen: 'auto', mamad: true, balcony: true, office: false, yard: 250, gardenStyle: 'med', pool: true, water: true, pergola: true, grill: true };
   let state = Object.assign({}, DEFAULTS);
   let plan = null;
   let tour = null;
@@ -70,6 +70,17 @@
     $('#f-mamad').checked = state.mamad;
     $('#f-balcony').checked = state.balcony;
     $('#f-office').checked = state.office;
+    const h = $(`#f-home-${state.home}`); if (h) h.checked = true;
+    $('#f-yard').value = state.yard;
+    $('#o-yard').textContent = state.yard;
+    $('#f-gstyle').value = state.gardenStyle;
+    ['pool', 'water', 'pergola', 'grill'].forEach((k) => { $('#f-' + k).checked = state[k]; });
+    syncHomeFields();
+  }
+  function syncHomeFields() {
+    const house = state.home === 'house';
+    $('#garden-fields').hidden = !house;
+    $('#c-balcony').hidden = house;
   }
   let timer = null;
   function onForm() {
@@ -87,9 +98,18 @@
       kitchen: $('#f-kitchen').value,
       mamad: $('#f-mamad').checked,
       balcony: $('#f-balcony').checked,
-      office: $('#f-office').checked
+      office: $('#f-office').checked,
+      home: val('home') || 'apartment',
+      yard: +$('#f-yard').value,
+      gardenStyle: $('#f-gstyle').value,
+      pool: $('#f-pool').checked,
+      water: $('#f-water').checked,
+      pergola: $('#f-pergola').checked,
+      grill: $('#f-grill').checked
     };
     $('#o-area').textContent = state.area;
+    $('#o-yard').textContent = state.yard;
+    syncHomeFields();
     $('#s-region').value = state.region;
     userEdited = true;
     save();
@@ -112,6 +132,7 @@
     renderTour();
     renderNotes();
     renderRenders();
+    renderGarden();
     renderRooms();
     renderBudget();
     renderItemCard();
@@ -168,7 +189,7 @@
       const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a8662b';
       tour = new IH.Tour(host, {
         accent,
-        onSelect: select,
+        onSelect: (id) => select(id, true),
         onHover: (id, e) => {
           const tip = $('#tour-tip');
           if (!id) { tip.hidden = true; return; }
@@ -219,8 +240,13 @@
     const c = IH.CATALOG[it.type];
     if (!c) return 0;
     const p = c.price[IH.TIER_INDEX[state.budget]];
-    const q = c.unit === 'm' ? Math.max(0.6, it.len || Math.max(it.w, it.d)) : 1;
-    return Math.round((p * q) / 10) * 10;
+    return Math.round((p * qty(it)) / 10) * 10;
+  }
+  function qty(it) {
+    const c = IH.CATALOG[it.type];
+    if (c.unit === 'm2') return Math.max(1, it.area || it.w * it.d);
+    if (c.unit === 'm') return Math.max(0.6, it.len || Math.max(it.w, it.d));
+    return 1;
   }
   function totalBudget() {
     return plan.items.reduce((s, it) => s + price(it), 0);
@@ -233,6 +259,10 @@
     const side = it.face === 'E' || it.face === 'W';
     const w = side ? it.d : it.w, d = side ? it.w : it.d;
     if (it.type === 'rug') return `${cm(Math.min(it.w, it.d))}×${cm(Math.max(it.w, it.d))}`;
+    const c = IH.CATALOG[it.type];
+    if (c && c.unit === 'm2') return `${Math.round(qty(it))} מ״ר`;
+    if (/Tree$/.test(it.type)) return `גובה ${(it.h).toFixed(1)} מ׳`;
+    if (it.type === 'pool') return it.note;
     return `${cm(w)}×${cm(d)}×${cm(it.h)}`;
   }
 
@@ -243,11 +273,11 @@
     const lines = [];
     lines.push(`<div class="store-line">
       <div class="store-id"><strong>${esc(s.name)}</strong> <span class="latin">${esc(s.latin)}</span></div>
-      <div class="store-contact">
+      ${phone ? `<div class="store-contact">
         <span class="phone" dir="ltr">${esc(phone)}</span>
         <button type="button" class="copy" data-copy="${esc(phone)}" aria-label="העתקת המספר ${esc(phone)}">העתקה</button>
         <a class="call" href="tel:${esc(phone.replace(/[^\d*+]/g, ''))}">חיוג</a>
-      </div>
+      </div>` : `<div class="store-contact"><a href="${s.site}" target="_blank" rel="noopener">הזמנה באתר ${esc(s.name)}</a></div>`}
       ${b ? `<div class="store-addr">${esc(b.addr)}, ${esc(b.city)} · <a href="${IH.wazeUrl(id, b)}" target="_blank" rel="noopener">Waze</a> · <a href="${IH.mapsUrl(id, b)}" target="_blank" rel="noopener">מפות</a></div>`
         : `<div class="store-addr">${esc(s.hotlineNote)} · <a href="${s.branchesUrl}" target="_blank" rel="noopener">רשימת הסניפים</a></div>`}
       ${!compact && b && b.phone && s.hotline !== b.phone ? `<div class="store-addr">${esc(s.hotlineNote)}: <span class="phone sm" dir="ltr">${esc(s.hotline)}</span></div>` : ''}
@@ -256,28 +286,62 @@
     return lines.join('');
   }
 
-  // real catalog products: IKEA product pages / catalog search, and a site search on every other chain
-  function productsBlock(it) {
+  // real models from several stores: published prices where found, IKEA product pages, and a
+  // search of the piece on every other chain in the style's budget tier
+  const sellerName = (id) => (IH.STORES[id] ? IH.STORES[id].name : id);
+  const modelPrice = (m) => (m.price ? `${m.from ? 'החל מ-' : ''}${money(m.price)}` : 'המחיר באתר');
+  function modelRows(it) {
     const c = IH.CATALOG[it.type];
-    const ikea = IH.PRODUCTS[it.type] || [];
-    const others = storesFor(it).filter((s) => s !== 'ikea');
-    const links = ikea.map((p) => `<li><a href="${esc(p.url)}" target="_blank" rel="noopener"><b>${esc(p.name)}</b></a> <span class="muted">· איקאה · ${p.direct ? 'עמוד המוצר' : 'בקטלוג'}</span></li>`)
-      .concat(others.map((s) => {
-        const u = IH.storeSearchUrl(s, c.name);
-        return u ? `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(c.name)} באתר ${esc(IH.STORES[s].name)}</a> <span class="muted">· חיפוש בקטלוג הרשת</span></li>` : '';
-      }));
-    if (!links.length) return '';
-    return `<div class="products"><h4>מוצרים אמיתיים מהקטלוג</h4><ul>${links.join('')}</ul></div>`;
+    const rows = [];
+    (IH.MODELS[it.type] || []).forEach((m) => rows.push({ seller: sellerName(m.seller), name: m.name, price: modelPrice(m), url: m.url, found: !!m.price }));
+    (IH.PRODUCTS[it.type] || []).forEach((p) => rows.push({ seller: 'איקאה', name: p.name, price: 'המחיר באתר', url: p.url, found: false }));
+    const listed = new Set(rows.map((r) => r.seller));
+    storesFor(it).forEach((sid) => {
+      const st = IH.STORES[sid];
+      if (!st || listed.has(st.name)) return;
+      const u = sid === 'ikea' ? null : IH.storeSearchUrl(sid, c.name);
+      if (u) rows.push({ seller: st.name, name: `${c.name} בקטלוג`, price: `כ-${money(price(it))}`, url: u, est: true });
+    });
+    return rows;
   }
+  function modelsBlock(it, limit) {
+    const rows = modelRows(it).slice(0, limit || 99);
+    if (!rows.length) return '';
+    return `<div class="models"><h4>דגמים ומחירים מכמה חנויות</h4>
+      <div class="models-scroll"><table class="models-table">
+        <thead><tr><th scope="col">חנות</th><th scope="col">דגם</th><th scope="col">מחיר</th></tr></thead>
+        <tbody>${rows.map((r) => `<tr${r.found ? ' class="is-found"' : ''}><td>${esc(r.seller)}</td><td><a href="${esc(r.url)}" target="_blank" rel="noopener">${rich(r.name)}</a></td><td class="num">${esc(r.price)}${r.est ? '<span class="muted"> הערכה</span>' : ''}</td></tr>`).join('')}</tbody>
+      </table></div>
+      <p class="models-note">מחירים מודגשים פורסמו באתר המוכר (בדיקה: ${IH.STORES_CHECKED}). מחירים משתנים ומבצעים מתחלפים; המחיר הסופי רק מול החנות.</p>
+    </div>`;
+  }
+  const productsBlock = (it) => modelsBlock(it);
 
   /* ---------- selected item card ---------- */
-  function select(id) {
+  function select(id, fromTour) {
     selected = id;
     const it = plan.items.find((x) => x.id === id);
     renderPlan();
     renderItemCard();
+    renderTourCard(true);
     $$('.item-row').forEach((r) => r.classList.toggle('is-selected', r.dataset.id === id));
     if (tour && it) tour.lookAtItem(id);
+  }
+
+  function renderTourCard(show) {
+    const card = $('#tour-card');
+    const it = selected && plan.items.find((x) => x.id === selected);
+    if (!it || !IH.CATALOG[it.type] || !show) { card.hidden = true; return; }
+    const c = IH.CATALOG[it.type];
+    card.hidden = false;
+    card.innerHTML = `
+      <div class="tc-head">
+        <div><p class="eyebrow">${esc(roomName(it.room))}</p><h3>${esc(c.name)}${it.note ? ` <span class="ic-note">${rich(it.note)}</span>` : ''}</h3></div>
+        <button type="button" class="ic-close" data-tc-close aria-label="סגירה">×</button>
+      </div>
+      <p class="tc-meta"><span class="num"><bdi dir="ltr">${dims(it)}</bdi></span> · הערכה ${esc(IH.TIERS[state.budget])}: <b class="num">${money(price(it))}</b></p>
+      ${modelsBlock(it, 5)}
+      <button type="button" class="btn btn-small" data-tc-more>כל הפרטים, הטלפונים והכתובות</button>`;
   }
 
   function renderItemCard() {
@@ -325,27 +389,30 @@
 
   function renderRooms() {
     const rooms = plan.rooms.filter((r) => plan.items.some((it) => it.room === r.id && IH.CATALOG[it.type]));
-    const ord = { living: 0, dining: 1, kitchen: 2, master: 3, ensuite: 4, kid: 5, adult: 6, office: 7, guest: 8, bath: 9, wc: 10, utility: 11, corridor: 12, balcony: 13 };
+    const ord = { living: 0, dining: 1, kitchen: 2, master: 3, ensuite: 4, kid: 5, adult: 6, office: 7, guest: 8, bath: 9, wc: 10, utility: 11, corridor: 12, balcony: 13, yard: 14 };
     rooms.sort((a, b) => (ord[a.kind] ?? 20) - (ord[b.kind] ?? 20));
-    $('#room-list').innerHTML = rooms.map((r) => {
-      const its = groupItems(plan.items.filter((it) => it.room === r.id && IH.CATALOG[it.type]));
-      const checks = plan.checks.filter((c) => c.room === r.id);
-      const sum = its.reduce((s, g) => s + g.total, 0);
-      return `<section class="room" id="room-${r.id}">
+    $('#room-list').innerHTML = rooms.map(roomSection).join('');
+  }
+
+  function roomSection(r) {
+    const its = groupItems(plan.items.filter((it) => it.room === r.id && IH.CATALOG[it.type]));
+    const checks = plan.checks.filter((c) => c.room === r.id);
+    const sum = its.reduce((s, g) => s + g.total, 0);
+    const meta = r.yard ? `${Math.round(plan.yard.area)} מ״ר סביב הבית` : `${(r.w * r.d).toFixed(1)} מ״ר · <bdi dir="ltr">${r.w.toFixed(2)}×${r.d.toFixed(2)}</bdi> מ׳`;
+    return `<section class="room" id="room-${r.id}">
         <header class="room-head">
           <div>
             <h3>${esc(r.name)}</h3>
-            <p class="room-meta">${(r.w * r.d).toFixed(1)} מ״ר · <bdi dir="ltr">${r.w.toFixed(2)}×${r.d.toFixed(2)}</bdi> מ׳</p>
+            <p class="room-meta">${meta}</p>
           </div>
           <div class="room-side">
             <span class="room-sum num">${money(sum)}</span>
-            <button type="button" class="link-btn" data-goto="${r.id}">לסיור בחדר</button>
+            <button type="button" class="link-btn" data-goto="${r.id}">${r.yard ? 'לסיור בחצר' : 'לסיור בחדר'}</button>
           </div>
         </header>
         ${checks.length ? `<ul class="checks-list">${checks.map((c) => `<li class="${c.ok ? 'ok' : 'warn'}"><span class="pill">${c.ok ? 'תקין' : 'לתשומת לב'}</span><span>${rich(c.text)}</span></li>`).join('')}</ul>` : ''}
         <ul class="items">${its.map(itemRow).join('')}</ul>
       </section>`;
-    }).join('');
   }
 
   // identical pieces in one room (chairs, stools, nightstands) share a row
@@ -417,7 +484,8 @@
     ['מטבחים', ['regba', 'ikea']],
     ['חשמל ומכשירים', ['shekem', 'payngo']],
     ['טקסטיל ושטיחים', ['foxhome', 'golf']],
-    ['רחצה, תאורה ומרפסת', ['homecenter', 'ace']]
+    ['רחצה, תאורה ומרפסת', ['homecenter', 'ace']],
+    ['גינה: משתלות ובריכות', ['yagur', 'azur', 'hadarnoy', 'adel', 'hagag']]
   ];
   function renderStores() {
     const region = $('#s-region').value || state.region;
@@ -433,10 +501,10 @@
     const branches = s.branches.slice().sort((a, b) => (a === near ? -1 : b === near ? 1 : 0));
     return `<article class="store-card">
       <header><h3>${esc(s.name)} <span class="latin">${esc(s.latin)}</span></h3><p>${esc(s.kind)}</p></header>
-      <div class="store-hot"><span class="label">${esc(s.hotlineNote)}</span>
+      ${s.hotline ? `<div class="store-hot"><span class="label">${esc(s.hotlineNote)}</span>
         <span class="phone" dir="ltr">${esc(s.hotline)}</span>
         <button type="button" class="copy" data-copy="${esc(s.hotline)}" aria-label="העתקת המספר ${esc(s.hotline)}">העתקה</button>
-      </div>
+      </div>` : `<p class="muted">${esc(s.hotlineNote)}</p>`}
       ${(s.extra || []).map(([k, v]) => `<div class="store-hot"><span class="label">${esc(k)}</span><span class="phone" dir="ltr">${esc(v)}</span><button type="button" class="copy" data-copy="${esc(v)}" aria-label="העתקת המספר ${esc(v)}">העתקה</button></div>`).join('')}
       ${s.office ? `<p class="muted">משרדי החברה: ${esc(s.office)}</p>` : ''}
       ${branches.length ? `<ul class="branches">${branches.map((b) => `<li${b === near ? ' class="is-near"' : ''}>
@@ -450,6 +518,27 @@
   }
 
   /* ---------- rules page ---------- */
+  const GARDEN_RULES = [
+    ['אזורים בחצר', [
+      ['דק', 'מול יציאת הסלון, באותו גובה של הרצפה בפנים (עד 2 ס״מ הפרש) ובשיפוע 1% החוצה.'],
+      ['אוכל וגריל', 'ליד המטבח, בצל פרגולה; הגריל 3 מ׳ לפחות מחלונות פתוחים וחומרים דליקים.'],
+      ['בריכה', 'בחלק השמשי והרחוק מהבית, עם 1.2 מ׳ ריצוף מחוספס מסביב.']
+    ], 'עקרונות אדריכלות נוף; משרד החקלאות, הנחיות לגינון חסכוני במים'],
+    ['בריכה ובטיחות', [
+      ['1.2 מ׳', 'גובה מינימלי לגדר בטיחות סביב בריכה כשיש ילדים, עם שער שנסגר וננעל מעצמו.'],
+      ['3.5×7 מ׳', 'מידה נפוצה לבריכה ביתית; עומק 1.2–1.5 מ׳ בלי קפיצות.'],
+      ['3 מ׳', 'מרחק מינימלי של עצים מהבריכה: פחות עלים במים, שורשים רחוקים מהמבנה.']
+    ], 'הנחיות בטיחות מקובלות לבריכות פרטיות'],
+    ['צמחייה ומים', [
+      ['טפטוף', 'לעצים ולערוגות; ממטירים רק למדשאה, בבוקר מוקדם. חוסך עד 50% מים.'],
+      ['6 שעות', 'שמש ישירה שמדשאה טבעית צריכה ביום; בצל חלקי עדיף חצץ וצמחי צל.'],
+      ['צמחים', 'זית, הדרים, לבנדר, רוזמרין ובוגנוויליה מתאימים לאקלים הים-תיכוני וחסכוניים במים.']
+    ], 'משרד החקלאות, שירותי ההדרכה; רשות המים'],
+    ['תאורה בחוץ', [
+      ['2700K', 'גוון חם לתאורת גינה; פנס שביל כל 2–3 מ׳ בגובה נמוך.'],
+      ['פחת', 'כל נקודת חשמל בחוץ (משאבה, מפל, תאורה) מוגנת במפסק פחת ובקופסה אטומה.']
+    ], 'IES; תקנות החשמל']
+  ];
   const RULES = [
     ['מעברים', [
       ['90 ס״מ', 'מעבר ראשי בבית (מסדרון, מאחורי ספה, סביב שולחן אוכל).'],
@@ -487,19 +576,51 @@
       ['וילונות', 'מסילה קרובה לתקרה ורחבה מהחלון ב-15–25 ס״מ לכל צד, כדי שהחלון ייראה גדול.']
     ], 'עקרונות עיצוב מקובלים; IES Lighting Handbook']
   ];
-  function renderRules() {
-    $('#rules').innerHTML = RULES.map(([title, rows, src]) => `
+  function rulesHtml(list) {
+    return list.map(([title, rows, src]) => `
       <section class="rule">
         <h2>${title}</h2>
         <dl>${rows.map(([k, v]) => `<div><dt>${rich(k)}</dt><dd>${rich(v)}</dd></div>`).join('')}</dl>
         <p class="rule-src">מקור: ${src}</p>
       </section>`).join('');
   }
+  function renderRules() {
+    $('#rules').innerHTML = rulesHtml(RULES.concat(GARDEN_RULES));
+  }
+
+  /* ---------- garden tab ---------- */
+  function renderGarden() {
+    const house = !!plan.yard;
+    $('#garden-empty').hidden = house;
+    $('#garden-body').hidden = !house;
+    $('#garden-rules').innerHTML = rulesHtml(GARDEN_RULES);
+    $('#garden-stores').innerHTML = ['yagur', 'azur', 'hadarnoy', 'adel', 'hagag', 'homecenter', 'ace'].map((id) => storeCard(id, state.region)).join('');
+    if (!house) { $('#garden-actions').innerHTML = ''; return; }
+    const y = plan.yard;
+    const yr = plan.rooms.find((r) => r.yard);
+    const its = plan.items.filter((it) => it.room === yr.id && IH.CATALOG[it.type]);
+    const sum = its.reduce((a, it) => a + price(it), 0);
+    const pool = its.find((it) => it.type === 'pool');
+    $('#garden-lede').textContent = `חצר ${y.styleName} של כ-${Math.round(y.area)} מ״ר סביב הבית: ${y.blurb}`;
+    $('#garden-facts').innerHTML = [
+      ['שטח החצר', `${Math.round(y.area)} מ״ר`],
+      ['סגנון', y.styleName],
+      ['בריכה', pool ? pool.note : 'אין'],
+      ['עצים', String(its.filter((it) => /Tree$/.test(it.type)).length)],
+      ['תקציב משוער', money(sum)]
+    ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('');
+    $('#garden-actions').innerHTML = `<button type="button" class="btn" data-garden-tour>לסיור בחצר ב-360°</button>`;
+    IH.renderPlan($('#garden-svg'), plan, { selected, onSelect: (id) => { location.hash = '#plan'; route(); $('#tab-3d').click(); select(id, true); $('.stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+    const warn = plan.checks.filter((c) => c.room === yr.id && !c.ok);
+    const gnotes = plan.notes.filter((n) => /חצר|בריכה|ג׳קוזי/.test(n));
+    $('#garden-notes').innerHTML = warn.length || gnotes.length ? `<h2 class="notes-title">שימו לב</h2><ul>${gnotes.map((n) => `<li class="note">${rich(n)}</li>`).concat(warn.map((c) => `<li class="note is-warn">${rich(c.text)}</li>`)).join('')}</ul>` : '';
+    $('#garden-list').innerHTML = roomSection(yr);
+  }
 
   /* ---------- navigation and events ---------- */
   function route() {
     const h = (location.hash || '#plan').slice(1);
-    const view = ['plan', 'stores', 'rules'].includes(h) ? h : 'plan';
+    const view = ['plan', 'stores', 'rules', 'garden'].includes(h) ? h : 'plan';
     $$('.view').forEach((v) => { v.hidden = v.dataset.view !== view; });
     $$('.mainnav a').forEach((a) => a.setAttribute('aria-current', a.dataset.nav === view ? 'page' : 'false'));
     if (view === 'stores') renderStores();
@@ -534,7 +655,26 @@
       b.addEventListener('pointerdown', on);
       ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, off));
     });
+    $('#btn-to-house').addEventListener('click', () => {
+      state.home = 'house';
+      if (state.area < 120) state.area = 160;
+      if (state.rooms < 5) state.rooms = 5;
+      writeForm(); save(); userEdited = true; run();
+    });
     document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-tc-close]')) { $('#tour-card').hidden = true; return; }
+      if (e.target.closest('[data-tc-more]')) { $('#item-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      if (e.target.closest('[data-garden-tour]')) {
+        location.hash = '#plan';
+        route();
+        setTimeout(() => {
+          $('#tab-3d').click();
+          const yr = plan.rooms.find((r) => r.yard);
+          if (tour && yr) tour.goToRoom(yr.id);
+          $('.stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+        return;
+      }
       const cp = e.target.closest('.copy');
       if (cp) {
         const txt = cp.dataset.copy;
@@ -546,12 +686,14 @@
       }
       const show = e.target.closest('[data-show]');
       if (show) {
+        if (location.hash === '#garden') { location.hash = '#plan'; route(); }
         select(show.dataset.show);
         $('.stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
       const go = e.target.closest('[data-goto]');
       if (go && tour) {
+        if (location.hash === '#garden') { location.hash = '#plan'; route(); }
         $('#tab-3d').click();
         tour.goToRoom(go.dataset.goto);
         $('.stage').scrollIntoView({ behavior: 'smooth', block: 'start' });

@@ -183,6 +183,59 @@
         { region: 'north', city: 'רגבה', addr: 'מפעל ואולם תצוגה, מושב רגבה, גליל מערבי', phone: '04-6088888' }
       ]
     },
+    yagur: {
+      name: 'משתלות יגור',
+      latin: 'Yagur Nurseries',
+      kind: 'משתלה: עצים בוגרים, שיחים, עציצים, כדים, השקיה ותכנון גינות',
+      hotline: '04-9848108',
+      hotlineNote: 'המשתלה',
+      site: 'https://www.yagurgan.co.il/',
+      branchesUrl: 'https://www.yagurgan.co.il/',
+      branches: [{ region: 'north', city: 'קיבוץ יגור', addr: 'משתלות יגור', phone: '04-9848108' }]
+    },
+    azur: {
+      name: 'משתלת אזור',
+      latin: 'Azur Nursery',
+      kind: 'משתלה: צמחים, עצים, אדניות וציוד גינה',
+      hotline: '03-5568916',
+      hotlineNote: 'המשתלה',
+      site: 'https://azurflowers.co.il/',
+      branchesUrl: 'https://azurflowers.co.il/',
+      branches: [{ region: 'center', city: 'חולון', addr: 'דרך השבעה 104', phone: '03-5568916' }]
+    },
+    hadarnoy: {
+      name: 'הדר נוי משתלות',
+      latin: 'Hadar Noy',
+      kind: 'משתלה אונליין: עצי זית מעוצבים, עצי פרי ושיחים, משלוח עד הבית',
+      hotline: '',
+      hotlineNote: 'הזמנה באתר',
+      site: 'https://www.hadarnoy.co.il/',
+      branchesUrl: 'https://www.hadarnoy.co.il/',
+      branches: []
+    },
+    adel: {
+      name: 'אדל בריכות שחייה',
+      latin: 'Adel Pools',
+      kind: 'תכנון והקמה של בריכות בטון, פיברגלס ומתועשות',
+      hotline: '077-9973313',
+      hotlineNote: 'סניף אשקלון',
+      site: 'https://www.adelpool.co.il/',
+      branchesUrl: 'https://www.adelpool.co.il/',
+      branches: [
+        { region: 'south', city: 'אשקלון', addr: 'אוסישקין 5', phone: '077-9973313' },
+        { region: 'center', city: 'אשדוד', addr: 'היהלומים 23', phone: '055-4522997' }
+      ]
+    },
+    hagag: {
+      name: 'חג׳ג׳ בריכות',
+      latin: 'Hagag Pools',
+      kind: 'בריכות ביתיות, פיתוח נוף, דקים ופרגולות',
+      hotline: '04-6490000',
+      hotlineNote: 'משרדים',
+      site: 'https://hagag-pools.co.il/',
+      branchesUrl: 'https://hagag-pools.co.il/',
+      branches: [{ region: 'north', city: 'צרופה', addr: 'הזית 17', phone: '04-6490000' }]
+    },
     shekem: {
       name: 'שקם אלקטריק',
       latin: 'Shekem Electric',
