@@ -400,6 +400,7 @@
 
   function renderImages() {
     var grid = $('#imageGrid');
+    $('#illusStyle').value = P.defaultArtStyle(project);
     if (!project.images.length) {
       grid.innerHTML = '<p class="empty-state">עוד לא נוספו תמונות. הספר ייראה מצוין גם בלעדיהן, אבל תמונה אחת טובה בכל פרק מוסיפה המון.</p>';
       return;
@@ -408,7 +409,8 @@
       var pos = (img.place && img.place.position) || 'start';
       var isCh = img.place && img.place.type === 'chapter';
       return '<article class="card img-card" data-id="' + img.id + '">' +
-        '<div class="thumb"><img alt="' + esc(img.caption || img.name || 'תמונה ' + (i + 1)) + '" data-src="' + img.id + '"></div>' +
+        '<div class="thumb"><img alt="' + esc(img.caption || img.name || 'תמונה ' + (i + 1)) + '" data-src="' + img.id + '">' +
+        (img.art ? '<span class="art-tag">' + esc(artLabel(img.art)) + '</span>' : '') + '</div>' +
         '<label for="cap-' + img.id + '">כיתוב (מוקרא גם לקוראי מסך)</label>' +
         '<input type="text" id="cap-' + img.id + '" data-f="caption" value="' + esc(img.caption) + '" placeholder="למשל: אבא ואני בנמל חיפה, 1974">' +
         '<label for="pl-' + img.id + '">איפה בספר?</label>' +
@@ -418,6 +420,9 @@
         '<option value="start"' + (pos === 'start' ? ' selected' : '') + '>בפתיחת הפרק</option>' +
         '<option value="end"' + (pos === 'end' ? ' selected' : '') + '>בסוף הפרק</option>' +
         '<option value="full"' + (pos === 'full' ? ' selected' : '') + '>עמוד מלא אחרי הפרק</option></select>' +
+        '<label for="fx-' + img.id + '">הפיכה לציור בעבודת יד</label>' +
+        '<div class="row"><select id="fx-' + img.id + '">' + Object.keys(window.ArtFx.STYLES).map(function (k) { return '<option value="' + k + '">' + esc(window.ArtFx.STYLES[k]) + '</option>'; }).join('') + '</select>' +
+        '<button type="button" class="btn small" data-act="fx">הפוך לציור</button></div>' +
         '<div class="row"><button type="button" class="btn small danger" data-act="del">מחיקה</button></div>' +
         '</article>';
     }).join('') + (project.chapters.length ? '' : '<p class="hint">כדי לשבץ תמונות בפרקים, בונים קודם את מבנה הספר בשלב 4.</p>');
@@ -459,6 +464,8 @@
       save();
     });
     grid.addEventListener('click', function (e) {
+      var fx = e.target.closest('[data-act="fx"]');
+      if (fx) return photoToPainting(fx);
       var b = e.target.closest('[data-act="del"]');
       if (!b) return;
       var id = b.closest('.img-card').dataset.id;
@@ -470,40 +477,124 @@
       renderImages();
     });
 
+    var styleSel = $('#illusStyle');
+    styleSel.innerHTML = Object.keys(P.ART_STYLES).map(function (k) { return '<option value="' + k + '">' + esc(P.ART_STYLES[k].label) + '</option>'; }).join('');
+    styleSel.addEventListener('change', function () { project.artStyle = styleSel.value; save(); });
     $('#illusForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var desc = $('#illusDesc').value.trim();
       if (!desc) return;
-      var btn = $('#illusForm button');
+      var btn = $('#illusForm button[type="submit"]');
       btn.disabled = true;
-      btn.textContent = 'מצייר…';
-      illustrate(desc, { name: 'איור: ' + desc.slice(0, 40), caption: '' })
+      btn.textContent = 'מצייר… (עד דקה)';
+      illustrate(desc, { name: 'ציור: ' + desc.slice(0, 40), caption: '' }, { style: styleSel.value, shape: $('#illusShape').value })
         .then(function (ok) { if (ok) { $('#illusDesc').value = ''; renderImages(); } })
-        .finally(function () { btn.disabled = false; btn.textContent = 'צייר איור'; });
+        .finally(function () { btn.disabled = false; btn.textContent = 'צייר'; });
     });
   }
 
-  function extractSvg(text) {
-    var m = String(text || '').match(/<svg[\s\S]*<\/svg>/i);
-    if (!m) return null;
-    // האיור מוצג בתוך <img>, כך שסקריפטים לא רצים; בכל זאת מנקים.
-    var svg = m[0].replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\son\w+="[^"]*"/gi, '');
-    if (!/xmlns=/.test(svg)) svg = svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
-    return svg;
+  function artLabel(k) {
+    return (window.ArtFx.STYLES[k]) || (P.ART_STYLES[k] && P.ART_STYLES[k].label) || '';
   }
 
-  function illustrate(description, meta) {
-    return runAI('illustration', { description: description }, null, { label: 'איור' }).then(function (res) {
-      if (!res) return false;
-      var svg = extractSvg(res.text);
-      if (!svg) { toast('לא התקבל איור תקין. נסו שוב או נסחו אחרת.', true); return false; }
-      var vb = svg.match(/viewBox="\s*[\d.-]+[\s,]+[\d.-]+[\s,]+([\d.]+)[\s,]+([\d.]+)/);
-      var src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      return addImageData({ src: src, w: vb ? +vb[1] : 1200, h: vb ? +vb[2] : 900 }, meta).then(function () {
-        toast('האיור נוסף לספר');
-        return true;
+  /* צילום → ציור (בדפדפן). המקור נשמר, והציור נכנס למקום שלו בספר. */
+  function photoToPainting(btn) {
+    var card = btn.closest('.img-card');
+    var img = project.images.find(function (x) { return x.id === card.dataset.id; });
+    var style = $('#fx-' + img.id).value;
+    btn.disabled = true;
+    btn.textContent = 'מצייר…';
+    getImage(img.id).then(function (r) {
+      if (!r) throw new Error('missing');
+      return window.ArtFx.paint(r.src, style);
+    }).then(function (d) {
+      return addImageData(d, { name: 'ציור: ' + (img.caption || img.name || ''), caption: img.caption, place: img.place, art: style });
+    }).then(function () {
+      img.place = { type: 'none' };
+      save();
+      renderImages();
+      toast('נוצר ' + artLabel(style) + '. הצילום המקורי נשמר, ולא משולב בספר.');
+    }).catch(function () {
+      btn.disabled = false;
+      btn.textContent = 'הפוך לציור';
+      toast('לא הצלחנו לצייר את התמונה הזו.', true);
+    });
+  }
+
+  function withTimeout(ms) {
+    var ctl = new AbortController();
+    setTimeout(function () { ctl.abort(); }, ms);
+    return ctl.signal;
+  }
+
+  /* תרגום התיאור לאנגלית כשאין שרת Claude (שירות חינמי; אם נכשל — משתמשים בתיאור כמו שהוא) */
+  function translateFree(text) {
+    if (!/[֐-׿]/.test(text)) return Promise.resolve(text);
+    var q = 'Translate this Hebrew scene description to English. Reply with the translation only:\n' + text;
+    return fetch('https://text.pollinations.ai/' + encodeURIComponent(q), { signal: withTimeout(25000) })
+      .then(function (r) { return r.ok ? r.text() : text; })
+      .then(function (t) { t = String(t || '').trim(); return t && t.length < 1500 ? t : text; })
+      .catch(function () { return text; });
+  }
+
+  function artPrompt(description, style) {
+    if (ai.mode === 'server') {
+      return runAI('artprompt', { description: description, style: style }, null, { label: 'ציור' }).then(function (res) {
+        var t = res && res.text ? res.text.trim() : '';
+        return t || P.artPromptFallback(description, style);
       });
+    }
+    return translateFree(description).then(function (en) { return P.artPromptFallback(en, style); });
+  }
+
+  var SHAPES = { landscape: [1536, 1024], portrait: [1024, 1536], square: [1280, 1280] };
+
+  function blobToData(blob) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(r.result); };
+      r.onerror = reject;
+      r.readAsDataURL(blob);
     });
+  }
+
+  function paintImage(prompt, shape) {
+    var dims = SHAPES[shape] || SHAPES.landscape;
+    if (ai.image === 'server') {
+      var headers = { 'content-type': 'application/json' };
+      if (ai.code) headers['x-access-code'] = ai.code;
+      return fetch('api/image', { method: 'POST', headers: headers, body: JSON.stringify({ prompt: prompt, shape: shape }), signal: withTimeout(180000) })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.src) throw new Error(j.error || 'שירות הציור לא זמין'); return j.src; }); })
+        .then(function (src) { return loadImg(src).then(function (im) { return { src: src, w: im.naturalWidth, h: im.naturalHeight }; }); });
+    }
+    var url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
+      '?width=' + dims[0] + '&height=' + dims[1] + '&nologo=true&enhance=true&seed=' + Math.floor(Math.random() * 1e9);
+    return fetch(url, { signal: withTimeout(150000) })
+      .then(function (r) { if (!r.ok) throw new Error('bad'); return r.blob(); })
+      .then(function (blob) {
+        if (!/^image\//.test(blob.type)) throw new Error('bad');
+        return blobToData(blob);
+      })
+      .then(function (src) { return loadImg(src).then(function (im) { return { src: src, w: im.naturalWidth, h: im.naturalHeight }; }); })
+      .catch(function () {
+        // אם הדפדפן חוסם שמירה מקומית, שומרים את כתובת הציור עצמה
+        return loadImg(url).then(function (im) { return { src: url, w: im.naturalWidth, h: im.naturalHeight }; });
+      })
+      .catch(function () { throw new Error('שירות הציור לא זמין כרגע. נסו שוב בעוד רגע.'); });
+  }
+
+  function illustrate(description, meta, opts) {
+    opts = opts || {};
+    var style = opts.style || P.defaultArtStyle(project);
+    return artPrompt(description, style)
+      .then(function (prompt) { return paintImage(prompt, opts.shape || 'landscape'); })
+      .then(function (data) {
+        return addImageData(data, Object.assign({ art: style }, meta)).then(function () {
+          toast('הציור (' + artLabel(style) + ') נוסף לספר');
+          return true;
+        });
+      })
+      .catch(function (err) { toast(err.message || 'הציור נכשל', true); return false; });
   }
 
   /* ================= חיבור ל-Claude ================= */
@@ -515,6 +606,7 @@
     fetch('api/status', { signal: ctl.signal, cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (s) {
+        ai.image = s && s.image === 'server' ? 'server' : 'free';
         if (s && s.ai) {
           ai.mode = 'server';
           ai.needCode = s.needCode;
@@ -559,7 +651,6 @@
     $('#manualPrompt').value = P.manualText(spec);
     $('#manualResult').value = '';
     $('#manualHint').textContent = task === 'outline' ? 'Claude יחזיר מבנה בפורמט JSON. מדביקים אותו כמו שהוא.'
-      : task === 'illustration' ? 'Claude יחזיר קוד SVG. מדביקים את כל הקוד.'
         : 'מדביקים רק את טקסט הפרק.';
     d.returnValue = '';
     d.showModal();
@@ -666,7 +757,7 @@
         '<div class="actions">' +
         '<button type="button" class="btn primary small" data-act="write">' + (c.text ? 'כתיבה מחדש' : 'כתיבת ה' + unit) + '</button>' +
         (c.text ? '<button type="button" class="btn small" data-act="continue">המשך כתיבה</button><button type="button" class="btn small" data-act="rewrite">שכתוב לפי הערה</button>' : '') +
-        '<button type="button" class="btn small ghost" data-act="illus">ציור איור ל' + unit + '</button>' +
+        '<button type="button" class="btn small ghost" data-act="illus">ציור ל' + unit + '</button>' +
         '<button type="button" class="btn small ghost" data-act="up" aria-label="הזזה למעלה"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
         '<button type="button" class="btn small ghost" data-act="down" aria-label="הזזה למטה"' + (i === project.chapters.length - 1 ? ' disabled' : '') + '>↓</button>' +
         '<button type="button" class="btn small danger" data-act="del">מחיקה</button>' +
@@ -791,6 +882,32 @@
     next();
   }
 
+  /* ציור לכל פרק שעוד אין בו תמונה */
+  function paintAll() {
+    var has = {};
+    project.images.forEach(function (m) { if (m.place && m.place.type === 'chapter') has[m.place.chapterId] = true; });
+    var todo = project.chapters.filter(function (c) { return !has[c.id] && (c.illustrationIdea || c.summary || c.title); });
+    if (!todo.length) { toast(project.chapters.length ? 'בכל הפרקים כבר יש תמונה.' : 'קודם בונים את מבנה הספר.'); return; }
+    if (!confirm('לצייר ' + todo.length + ' ציורים (' + artLabel(P.defaultArtStyle(project)) + ')? כל ציור לוקח עד דקה.')) return;
+    stopAll = false;
+    var btn = $('#paintAllBtn');
+    btn.disabled = true;
+    var done = 0;
+    (function next() {
+      if (stopAll || !todo.length) {
+        hideProgress(); btn.disabled = false;
+        $('#stopBtn').hidden = true;
+        if (!stopAll) toast('הציורים מוכנים ושובצו בפרקים.');
+        return;
+      }
+      var c = todo.shift();
+      $('#stopBtn').hidden = false;
+      showProgress('מצייר לפרק ״' + (c.title || '') + '״ (' + (done + 1) + ' מתוך ' + (done + todo.length + 1) + ')', done / (done + todo.length + 1));
+      illustrate((c.illustrationIdea || c.summary || c.title).trim(), { name: 'ציור: ' + (c.title || ''), caption: '', place: { type: 'chapter', chapterId: c.id, position: 'start' } })
+        .then(function (ok) { if (!ok) stopAll = true; done++; next(); });
+    })();
+  }
+
   function showProgress(text, frac) {
     $('#progress').hidden = false;
     $('#progressText').textContent = text;
@@ -816,6 +933,7 @@
     $('#writeAllBtn').addEventListener('click', writeAll);
     $('#stopBtn').addEventListener('click', function () { stopAll = true; if (busy) busy.abort(); });
     $('#blurb').addEventListener('input', function (e) { project.blurb = e.target.value; save(); });
+    $('#paintAllBtn').addEventListener('click', paintAll);
     $('#addChapter').addEventListener('click', function () {
       var c = { id: uid(), title: '', summary: '', targetWords: P.plan(project).wordsPerChapter, sourceNotes: '', illustrationIdea: '', text: '' };
       project.chapters.push(c);
@@ -853,9 +971,9 @@
       } else if (act === 'illus') {
         var desc = (c.illustrationIdea || c.summary || c.title || '').trim();
         if (!desc) { toast('כתבו קודם ״רעיון לאיור״ לפרק.'); $('#ci-' + c.id).focus(); return; }
-        b.disabled = true; b.textContent = 'מצייר…';
-        illustrate(desc, { name: 'איור: ' + (c.title || ''), caption: '', place: { type: 'chapter', chapterId: c.id, position: 'start' } })
-          .finally(function () { b.disabled = false; b.textContent = 'ציור איור'; });
+        b.disabled = true; b.textContent = 'מצייר… (עד דקה)';
+        illustrate(desc, { name: 'ציור: ' + (c.title || ''), caption: '', place: { type: 'chapter', chapterId: c.id, position: 'start' } })
+          .finally(function () { b.disabled = false; b.textContent = 'ציור לפרק'; });
       } else if (act === 'del') {
         if (!confirm('למחוק את ה' + (P.isKids(project) ? 'עמוד' : 'פרק') + ' ״' + (c.title || '') + '״?')) return;
         project.chapters.splice(i, 1);

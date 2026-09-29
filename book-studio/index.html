@@ -154,7 +154,7 @@
       <div class="hero small">
         <p class="eyebrow">שלב 3 מתוך 5</p>
         <h2>תמונות, צילומים ואיורים</h2>
-        <p class="lede">העלו צילומים מהאלבום המשפחתי או איורים, והחליטו איפה ישולבו: בתחילת פרק, בסופו, בעמוד מלא או על הכריכה. אפשר גם לבקש מ-Claude לצייר איור.</p>
+        <p class="lede">העלו צילומים מהאלבום המשפחתי והחליטו איפה ישולבו: בתחילת פרק, בסופו, בעמוד מלא או על הכריכה. כל צילום אפשר להפוך לציור בעבודת יד (עיפרון, פחם, צבעי מים, שמן), ואפשר להזמין ציור חדש מתיאור.</p>
       </div>
       <div class="drop" id="dropZone">
         <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true"><rect x="6" y="10" width="36" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="20" r="3.5" fill="currentColor"/><path d="M8 35l11-10 8 7 5-4 8 7" fill="none" stroke="currentColor" stroke-width="2"/></svg>
@@ -162,10 +162,17 @@
         <label class="btn primary file-btn">בחירת תמונות מהמחשב או מהטלפון<input type="file" id="imageInput" accept="image/*" multiple></label>
       </div>
       <form class="card gen-card" id="illusForm">
-        <h3>איור חדש מ-Claude</h3>
+        <h3>ציור חדש, כמו בעבודת יד</h3>
+        <p class="hint">מתארים את התמונה במילים, ומקבלים ציור אמיתי למראה: צבעי מים, שמן, עיפרון ועוד. אפשר לכתוב בעברית.</p>
         <label for="illusDesc">מה לצייר?</label>
-        <textarea id="illusDesc" rows="2" required placeholder="למשל: בית אבן קטן בשכונה ירושלמית בשקיעה, ילד יושב על המדרגות עם כלב"></textarea>
-        <button class="btn primary" type="submit">צייר איור</button>
+        <textarea id="illusDesc" rows="2" required placeholder="למשל: בית אבן קטן בשכונה ירושלמית בשקיעה, ילד יושב על המדרגות עם כלב, שנות השישים"></textarea>
+        <div class="gen-row">
+          <div class="field"><label for="illusStyle">סגנון הציור</label><select id="illusStyle"></select></div>
+          <div class="field"><label for="illusShape">צורה</label>
+            <select id="illusShape"><option value="landscape">לרוחב</option><option value="portrait">לגובה (מתאים לכריכה)</option><option value="square">ריבוע</option></select></div>
+        </div>
+        <button class="btn primary" type="submit">צייר</button>
+        <p class="hint small">התיאור (לא הצילומים שלכם) נשלח לשירות ציור חיצוני. ״הפוך לציור״ על צילום קיים נעשה כולו במחשב שלכם.</p>
       </form>
       <div id="imageGrid" class="image-grid" aria-live="polite"></div>
       <div class="next-row"><a class="btn ghost" href="#story">→ חזרה</a><a class="btn primary" href="#write">המשך: כתיבת הספר ←</a></div>
@@ -184,6 +191,7 @@
         <button class="btn primary" type="button" id="outlineBtn">1. בניית מבנה הספר</button>
         <button class="btn primary" type="button" id="writeAllBtn">2. כתיבת כל הפרקים</button>
         <button class="btn danger" type="button" id="stopBtn" hidden>עצירה</button>
+        <button class="btn" type="button" id="paintAllBtn">ציורים לכל הפרקים</button>
         <button class="btn ghost" type="button" id="addChapter">+ פרק ידני</button>
         <span class="spacer"></span>
         <span class="meter" id="writeMeter" aria-live="polite"></span>
@@ -354,6 +362,7 @@
 <script src="js/prompts.js"></script>
 <script src="js/store.js"></script>
 <script src="js/paginate.js"></script>
+<script src="js/artfx.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
