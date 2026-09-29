@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הפרויקטים שלי</title>
+<meta name="description" content="כל הפרויקטים שלי במקום אחד: אתרים, סוכני AI, כלים ומערכות ניהול.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Portfolio</p>
+    <h1>הפרויקטים שלי</h1>
+    <p class="lead">אתרים, סוכני AI, כלים ומערכות ניהול. כל פרויקט נמצא במאגר GitHub משלו.</p>
+    <dl class="stats" id="stats"></dl>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="חיפוש פרויקט…" aria-label="חיפוש פרויקט">
+    <div class="chips" id="chips" role="tablist" aria-label="קטגוריות"></div>
+  </div>
+  <p class="note" id="note" hidden></p>
+  <section class="grid" id="grid" aria-live="polite"></section>
+
+  <section id="extra-wrap" hidden>
+    <h2>עוד מאגרים ב־GitHub</h2>
+    <div class="grid" id="extra"></div>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <a id="gh-link" href="https://github.com/devopsdevopshaim-wq">github.com/devopsdevopshaim-wq</a>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
