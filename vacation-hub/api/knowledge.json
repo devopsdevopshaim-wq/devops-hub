@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-28T16:09:07.572Z",
+ "generatedAt": "2026-09-29T04:17:03.040Z",
  "brand": "מסע",
  "agency": {
   "phone": "054-497-9771",
@@ -611,7 +611,8 @@
      "addr": "23 King David St, Jerusalem",
      "phone": "+972 2 620 8888",
      "web": "https://www.danhotels.com/JerusalemHotels/KingDavidJerusalemHotel",
-     "note": "מלון היסטורי מול חומות העיר"
+     "note": "מלון היסטורי מול חומות העיר",
+     "rec": "המלון ההיסטורי של ירושלים — גן ובריכה עם נוף לחומות העיר העתיקה."
     },
     {
      "name": "Mamilla Hotel",
@@ -675,6 +676,20 @@
      "phone": "+972 2 675 6666",
      "web": "https://www.inbalhotel.com/",
      "note": "מול גן הפעמון, קרוב לתחנה הראשונה"
+    },
+    {
+     "name": "The American Colony Hotel",
+     "tags": [
+      "couple"
+     ],
+     "tier": "lux",
+     "price": 2400,
+     "area": "ליד שער שכם",
+     "addr": "1 Louis Vincent St, Jerusalem",
+     "phone": "+972 2 627 9777",
+     "web": "https://www.americancolony.com/",
+     "note": "אחוזה עות׳מאנית היסטורית (לא כשר)",
+     "rec": "לאוהבי היסטוריה: ארמון מהמאה ה-19 עם חצר פנימית פורחת."
     }
    ],
    "attractions": [
@@ -1062,6 +1077,21 @@
      "phone": "+972 3 520 2525",
      "web": "https://www.danhotels.com/TelAvivHotels/DanTelAvivHotel",
      "note": "מלון ותיק על קו החוף"
+    },
+    {
+     "name": "David InterContinental",
+     "tags": [
+      "family",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 1900,
+     "area": "בין נווה צדק ליפו",
+     "addr": "12 Kaufmann St, Tel Aviv",
+     "phone": "+972 3 795 1111",
+     "web": "https://telaviv.intercontinental.com/",
+     "note": "מול הים",
+     "rec": "מיקום מצוין בין נווה צדק, יפו והטיילת, עם נוף לים."
     }
    ],
    "attractions": [
@@ -1355,7 +1385,8 @@
      "addr": "1 Gdud Barak St, Tiberias",
      "phone": "+972 4 671 0710",
      "web": "https://www.scotshotels.com/",
-     "note": "בית חולים סקוטי היסטורי על הכנרת"
+     "note": "בית חולים סקוטי היסטורי על הכנרת",
+     "rec": "מתחם היסטורי מאבן בזלת על שפת הכנרת."
     },
     {
      "name": "Pina Barosh",
@@ -1386,7 +1417,6 @@
      "web": "https://eingev.com/en/",
      "note": "חוף פרטי"
     },
-    null,
     {
      "name": "Vered HaGalil",
      "kind": "farm",
@@ -1808,6 +1838,20 @@
      "area": "למרגלות מצדה",
      "web": "https://en.iyha.org.il/masada-hostel",
      "note": "אכסניה עם בריכה, מושלם לזריחה במצדה"
+    },
+    {
+     "name": "Herods Dead Sea",
+     "kind": "spa",
+     "tags": [
+      "spa",
+      "couple"
+     ],
+     "tier": "lux",
+     "price": 1500,
+     "area": "עין בוקק",
+     "phone": "+972 8 659 1591",
+     "note": "מלון ספא בעין בוקק",
+     "rec": "ספא גדול וקרבה לחוף — טוב לסוף שבוע של רוגע."
     }
    ],
    "attractions": [
@@ -2069,7 +2113,8 @@
      "addr": "Derech Beresheet 1, Mitzpe Ramon",
      "phone": "+972 8 659 8000",
      "web": "https://www.isrotel.com/isrotel-hotels/negev-desert/beresheet/",
-     "note": "וילות על שפת המכתש, בריכת אינסוף"
+     "note": "וילות על שפת המכתש, בריכת אינסוף",
+     "rec": "על שפת המכתש — לילות שקטים ונוף מדברי פתוח."
     },
     {
      "name": "Daroma by Isrotel (לשעבר Ramon Inn)",
@@ -2395,6 +2440,16 @@
      "phone": "+972 4 630 0111",
      "web": "https://www.theelmahotel.com/",
      "note": "מלון אמנות עם אולם קונצרטים ונוף לים"
+    },
+    {
+     "name": "Bay Club Hotel",
+     "kind": "boutique",
+     "tier": "mid",
+     "price": 600,
+     "area": "מרכז העיר",
+     "phone": "+972 4 811 9700",
+     "note": "מלון בוטיק של רשת אטלס",
+     "rec": "בוטיק במחיר נוח, בסיס טוב לטיול בחיפה."
     }
    ],
    "attractions": [
@@ -2664,7 +2719,8 @@
      "addr": "228 Rue de Rivoli, 75001 Paris",
      "phone": "+33 1 44 58 10 10",
      "web": "https://www.dorchestercollection.com/paris/le-meurice",
-     "note": "מול גני טווילרי"
+     "note": "מול גני טווילרי",
+     "rec": "ארמון מול גני הטווילרי, במרחק הליכה מהלובר."
     },
     {
      "name": "Hôtel des Grands Boulevards",
@@ -2703,6 +2759,36 @@
      "phone": "+33 1 70 98 84 00",
      "web": "https://staygenerator.com/hostels/paris",
      "note": "הוסטל עם חדרים פרטיים"
+    },
+    {
+     "name": "Hôtel Plaza Athénée",
+     "tags": [
+      "couple",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 6500,
+     "area": "שדרות מונטיין",
+     "addr": "25 Avenue Montaigne, 75008 Paris",
+     "phone": "+33 1 53 67 66 65",
+     "web": "https://www.dorchestercollection.com/paris/hotel-plaza-athenee",
+     "note": "מלון אייקוני בשדרת האופנה",
+     "rec": "לחופשה זוגית חגיגית: המרפסות האדומות המפורסמות ונוף למגדל אייפל מחלק מהחדרים."
+    },
+    {
+     "name": "Pullman Paris Tour Eiffel",
+     "tags": [
+      "family",
+      "view"
+     ],
+     "tier": "mid",
+     "price": 1500,
+     "area": "למרגלות מגדל אייפל",
+     "addr": "18 Avenue de Suffren, 75015 Paris",
+     "phone": "+33 1 44 38 56 00",
+     "web": "https://www.pullmanparistoureiffel.fr/en",
+     "note": "4 כוכבים, צמוד למגדל",
+     "rec": "מיקום מושלם למשפחות: מגדל אייפל, שיט בסן והטרוקדרו במרחק הליכה."
     }
    ],
    "attractions": [],
@@ -2972,7 +3058,8 @@
      "addr": "Strand, London WC2R 0EZ",
      "phone": "+44 20 7836 4343",
      "web": "https://www.thesavoylondon.com/",
-     "note": "אייקון על התמזה"
+     "note": "אייקון על התמזה",
+     "rec": "אגדה על התמזה, קרוב לקובנט גארדן ולתיאטראות."
     },
     {
      "name": "citizenM Tower of London",
@@ -3007,6 +3094,34 @@
      "phone": "+44 20 7388 7666",
      "web": "https://staygenerator.com/hostels/london/kingscross",
      "note": "הוסטל ליד תחנת הרכבת"
+    },
+    {
+     "name": "The Ritz London",
+     "tags": [
+      "couple"
+     ],
+     "tier": "lux",
+     "price": 4800,
+     "area": "פיקדילי",
+     "addr": "150 Piccadilly, London W1J 9BR",
+     "phone": "+44 20 7493 8181",
+     "note": "מלון היסטורי מול גרין פארק",
+     "rec": "לחוויה בריטית קלאסית: תה של אחר הצהריים המפורסם, במרחק הליכה מארמון בקינגהאם."
+    },
+    {
+     "name": "Park Plaza Westminster Bridge",
+     "tags": [
+      "family",
+      "view"
+     ],
+     "tier": "mid",
+     "price": 1300,
+     "area": "סאות׳ בנק",
+     "addr": "200 Westminster Bridge Road, London SE1 7UT",
+     "phone": "+44 333 400 6112",
+     "web": "https://www.parkplazawestminsterbridge.com/",
+     "note": "מול הביג בן והלונדון איי",
+     "rec": "למשפחות: יוצאים מהלובי ישר לביג בן, ללונדון איי ולטיילת של התמזה."
     }
    ],
    "attractions": [],
@@ -3298,6 +3413,20 @@
      "phone": "+39 06 4470 4553",
      "web": "https://www.the-beehive.com/",
      "note": "אכסניה ידידותית"
+    },
+    {
+     "name": "Hotel de Russie",
+     "tags": [
+      "couple"
+     ],
+     "tier": "lux",
+     "price": 4500,
+     "area": "פיאצה דל פופולו",
+     "addr": "Via del Babuino 9, 00187 Roma",
+     "phone": "+39 06 328881",
+     "web": "https://www.roccofortehotels.com/hotels-and-resorts/hotel-de-russie/",
+     "note": "בין פיאצה דל פופולו למדרגות הספרדיות",
+     "rec": "לזוגות: גן פנימי מדורג ושקט באמצע רומא, צעדים מרחובות הקניות."
     }
    ],
    "attractions": [],
@@ -3562,7 +3691,8 @@
      "addr": "Carrer de la Marina 19–21, 08005 Barcelona",
      "phone": "+34 93 221 1000",
      "web": "https://www.ritzcarlton.com/en/hotels/bcnrz-hotel-arts-barcelona/overview/",
-     "note": "מגדל על הים"
+     "note": "מגדל על הים",
+     "rec": "מגדל על חוף הים בנמל האולימפי — ים ועיר יחד."
     },
     {
      "name": "Casa Bonay",
@@ -3605,6 +3735,21 @@
      "phone": "+34 932 200 377",
      "web": "https://staygenerator.com/hostels/barcelona",
      "note": "הוסטל מעוצב"
+    },
+    {
+     "name": "W Barcelona",
+     "tags": [
+      "couple",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 2800,
+     "area": "ברצלונטה",
+     "addr": "Plaça de la Rosa dels Vents 1, 08039 Barcelona",
+     "phone": "+34 93 295 2800",
+     "web": "https://www.marriott.com/en-us/hotels/bcnwh-w-barcelona/overview/",
+     "note": "מגדל ה״מפרש״ על קו המים",
+     "rec": "ים ועיר באותה חופשה: על החוף של ברצלונטה עם נוף פתוח לים."
     }
    ],
    "attractions": [],
@@ -3860,7 +4005,8 @@
      "addr": "1 Vasileos Georgiou A', 105 64 Athens",
      "phone": "+30 210 333 0000",
      "web": "https://www.marriott.com/en-us/hotels/athlc-hotel-grande-bretagne-a-luxury-collection-hotel-athens/overview/",
-     "note": "מרפסת גג עם נוף לאקרופוליס"
+     "note": "מרפסת גג עם נוף לאקרופוליס",
+     "rec": "מול כיכר סינטגמה, עם מסעדת גג ונוף לאקרופוליס."
     },
     {
      "name": "Electra Metropolis",
@@ -3894,6 +4040,21 @@
      "phone": "+30 213 023 7244",
      "web": "https://citycircus.gr/",
      "note": "הוסטל מעוצב"
+    },
+    {
+     "name": "King George Athens",
+     "tags": [
+      "couple",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 2400,
+     "area": "סינטגמה",
+     "addr": "3 Vasileos Georgiou A' St, Syntagma Square, 105 64 Athens",
+     "phone": "+30 210 322 2210",
+     "web": "https://www.marriott.com/en-us/hotels/athgl-king-george-a-luxury-collection-hotel-athens/overview/",
+     "note": "על כיכר סינטגמה",
+     "rec": "מלון בוטיק יוקרתי במרכז, עם נוף לאקרופוליס מחלק מהחדרים."
     }
    ],
    "attractions": [],
@@ -4181,7 +4342,8 @@
      "addr": "U Obecního domu 1, 110 00 Praha 1",
      "phone": "+420 222 195 195",
      "web": "https://www.hotel-paris.cz/en/",
-     "note": "בניין אר נובו"
+     "note": "בניין אר נובו",
+     "rec": "ארט נובו אותנטי, צמוד לבית העירוני."
     },
     {
      "name": "Czech Inn",
@@ -4196,6 +4358,16 @@
      "phone": "+420 210 011 100",
      "web": "https://czechinn.com/",
      "note": "הוסטל ומלון"
+    },
+    {
+     "name": "Hotel Kings Court",
+     "tier": "lux",
+     "price": 1300,
+     "area": "העיר העתיקה",
+     "addr": "U Obecního domu 3, 110 00 Praha 1",
+     "phone": "+420 224 222 888",
+     "note": "ליד הבית העירוני ומגדל האבקה",
+     "rec": "בניין היסטורי מול הבית העירוני — כל העיר העתיקה במרחק הליכה."
     }
    ],
    "attractions": [],
@@ -4487,6 +4659,34 @@
      "phone": "+1 212 273 9222",
      "web": "https://www.thepodhotel.com/pod-times-square",
      "note": "חדרי מיקרו"
+    },
+    {
+     "name": "The Peninsula New York",
+     "tags": [
+      "couple",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 4200,
+     "area": "השדרה החמישית",
+     "addr": "700 Fifth Avenue, New York, NY 10019",
+     "phone": "+1 212 956 2888",
+     "note": "בר גג עם נוף למנהטן",
+     "rec": "לחובבי קניות: על השדרה החמישית, קרוב לסנטרל פארק."
+    },
+    {
+     "name": "Hotel Edison",
+     "tags": [
+      "family"
+     ],
+     "tier": "mid",
+     "price": 1100,
+     "area": "טיימס סקוור",
+     "addr": "228 West 47th Street, New York, NY 10036",
+     "phone": "+1 212 840 5000",
+     "web": "https://www.edisonhotelnyc.com/",
+     "note": "מלון ארט דקו באזור התיאטראות",
+     "rec": "במרחק הליכה מטיימס סקוור וברודוויי, במחיר סביר יחסית למנהטן."
     }
    ],
    "attractions": [],
@@ -4743,7 +4943,8 @@
      "addr": "Jumeirah Beach Rd, Umm Suqeim 3, Dubai",
      "phone": "+971 4 301 7777",
      "web": "https://www.jumeirah.com/",
-     "note": "המלון בצורת מפרש"
+     "note": "המלון בצורת מפרש",
+     "rec": "חוויה חד-פעמית: סוויטות בלבד ומבנה המפרש המפורסם מעל הים."
     },
     {
      "name": "Atlantis The Palm",
@@ -4776,6 +4977,21 @@
      "price": 400,
      "area": "מספר סניפים",
      "note": "רשת נוחה ונקייה"
+    },
+    {
+     "name": "Jumeirah Beach Hotel",
+     "tags": [
+      "family",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 2800,
+     "area": "ג׳ומיירה",
+     "addr": "Jumeirah Road, Umm Suqeim 3, Dubai",
+     "phone": "+971 4 348 0000",
+     "web": "https://www.jumeirah.com/en/stay/dubai/jumeirah-beach-hotel",
+     "note": "מבנה בצורת גל ליד בורג׳ אל ערב",
+     "rec": "חוף פרטי ונוף לבורג׳ אל ערב — מתאים למשפחות."
     }
    ],
    "attractions": [],
@@ -5073,6 +5289,20 @@
      "addr": "925/9 Rama 1 Rd, Pathumwan, Bangkok 10330",
      "phone": "+66 2 612 4999",
      "note": "הוסטל רשת"
+    },
+    {
+     "name": "The Peninsula Bangkok",
+     "tags": [
+      "couple",
+      "view"
+     ],
+     "tier": "lux",
+     "price": 1800,
+     "area": "גדת הצ׳או פראיה",
+     "addr": "333 Charoennakorn Road, Klongsan, Bangkok 10600",
+     "phone": "+66 2 861 2888",
+     "note": "על גדת הנהר, עם סירת שאטל של המלון",
+     "rec": "נוף לנהר והגעה בסירה לאתרים — יוקרה במחיר נמוך בהרבה מאירופה."
     }
    ],
    "attractions": [],
@@ -5334,7 +5564,8 @@
      "addr": "3-7-1-2 Nishi-Shinjuku, Shinjuku-ku, Tokyo 163-1055",
      "phone": "+81 3 5322 1234",
      "web": "https://www.hyatt.com/park-hyatt/en-US/tyoph-park-hyatt-tokyo",
-     "note": "מהסרט \"אבודים בטוקיו\""
+     "note": "מהסרט \"אבודים בטוקיו\"",
+     "rec": "בר המלון מהסרט \"אבודים בטוקיו\" ונוף עירוני מהקומות העליונות."
     },
     {
      "name": "Hotel Gracery Shinjuku",
@@ -5355,6 +5586,30 @@
      "phone": "+81 3 3538 6101",
      "web": "https://hotel.muji.com/ginza/en/",
      "note": "מינימליזם יפני"
+    },
+    {
+     "name": "Imperial Hotel Tokyo",
+     "tier": "lux",
+     "price": 2800,
+     "area": "היביה",
+     "addr": "1-1-1 Uchisaiwaicho, Chiyoda-ku, Tokyo",
+     "web": "https://www.imperialhotel.co.jp/en/tokyo",
+     "note": "מול גני הארמון הקיסרי",
+     "rec": "מלון היסטורי עם שירות יפני קלאסי, במרחק הליכה מגינזה."
+    },
+    {
+     "name": "Keio Plaza Hotel Tokyo",
+     "tags": [
+      "family"
+     ],
+     "tier": "mid",
+     "price": 1200,
+     "area": "שינג׳וקו",
+     "addr": "2-2-1 Nishi-Shinjuku, Shinjuku-ku, Tokyo",
+     "phone": "+81 3 3344 0111",
+     "web": "https://www.keioplaza.co.jp/en/",
+     "note": "מגדל ליד תחנת שינג׳וקו",
+     "rec": "נוח מאוד לתחבורה, קרוב לתחנת שינג׳וקו — בסיס טוב למשפחות."
     }
    ],
    "attractions": [],
@@ -5502,6 +5757,358 @@
    "pageAnchor": "#dest-tokyo"
   }
  ],
+ "travelWarnings": {
+  "source": "המטה לביטחון לאומי (המל״ל)",
+  "checked": "2026-09-29",
+  "basedOn": "הערכת המל״ל לקראת חגי תשרי (6.9.2026) ועדכונים קודמים שלא שונו",
+  "official": "https://www.gov.il/he/departments/dynamiccollectors/travel-warnings-nsc",
+  "note": "אזהרות משתנות — תמיד להפנות לאתר המל״ל לאימות. עמוד באתר: #safety",
+  "levels": {
+   "1": {
+    "name": "רמה 1 · איום נמוך",
+    "recommendation": "אין אזהרה מיוחדת. זהירות רגילה ושמירה על פרופיל נמוך."
+   },
+   "2": {
+    "name": "רמה 2 · איום מזדמן",
+    "recommendation": "לנקוט אמצעי זהירות מוגברים: להצניע סממנים ישראליים ויהודיים ולהימנע מהפגנות."
+   },
+   "3": {
+    "name": "רמה 3 · איום בינוני",
+    "recommendation": "להימנע מנסיעות שאינן חיוניות."
+   },
+   "4": {
+    "name": "רמה 4 · איום גבוה",
+    "recommendation": "לא לנסוע. מי שנמצא שם — לצאת בהקדם. להימנע גם מקונקשן (לא לצאת מהטרמינל)."
+   },
+   "5": {
+    "name": "מדינת אויב · כניסה אסורה בחוק",
+    "recommendation": "כניסה לאזרחים ישראלים אסורה בחוק, גם לא בטיסת המשך."
+   }
+  },
+  "countries": [
+   {
+    "country": "איראן",
+    "level": 5
+   },
+   {
+    "country": "עיראק (כולל כורדיסטן)",
+    "level": 5
+   },
+   {
+    "country": "סוריה",
+    "level": 5
+   },
+   {
+    "country": "לבנון",
+    "level": 5
+   },
+   {
+    "country": "תימן",
+    "level": 5
+   },
+   {
+    "country": "מצרים (כולל סיני)",
+    "level": 4,
+    "note": "כולל חצי האי סיני — המל״ל ממליץ להימנע לחלוטין."
+   },
+   {
+    "country": "ירדן",
+    "level": 4,
+    "note": "כולל פטרה ועקבה."
+   },
+   {
+    "country": "קטר",
+    "level": 4,
+    "note": "להימנע גם מקונקשן בדוחא."
+   },
+   {
+    "country": "סומליה וסומלילנד",
+    "level": 4
+   },
+   {
+    "country": "ערב הסעודית",
+    "level": 4
+   },
+   {
+    "country": "כווית",
+    "level": 4
+   },
+   {
+    "country": "עומאן",
+    "level": 4
+   },
+   {
+    "country": "מלזיה",
+    "level": 4
+   },
+   {
+    "country": "אינדונזיה",
+    "level": 4
+   },
+   {
+    "country": "תוניסיה",
+    "level": 4
+   },
+   {
+    "country": "אלג׳יריה",
+    "level": 4
+   },
+   {
+    "country": "לוב",
+    "level": 4
+   },
+   {
+    "country": "פקיסטן",
+    "level": 4
+   },
+   {
+    "country": "אפגניסטן",
+    "level": 4
+   },
+   {
+    "country": "בנגלדש",
+    "level": 4
+   },
+   {
+    "country": "איחוד האמירויות (דובאי, אבו דאבי)",
+    "level": 3,
+    "note": "המל״ל מציין איום מצד רשתות איראניות.",
+    "destinations": [
+     "dubai"
+    ]
+   },
+   {
+    "country": "טורקיה",
+    "level": 3,
+    "note": "המל״ל מציין איום מצד רשתות איראניות. גם קונקשן באיסטנבול כדאי לשקול."
+   },
+   {
+    "country": "אזרבייג׳ן",
+    "level": 3,
+    "note": "הועלתה במרץ 2026 בשל הקרבה לאיראן."
+   },
+   {
+    "country": "גאורגיה",
+    "level": 3,
+    "note": "הועלתה במרץ 2026 בשל הקרבה לאיראן."
+   },
+   {
+    "country": "ארמניה",
+    "level": 3,
+    "note": "הועלתה במרץ 2026 בשל הקרבה לאיראן."
+   },
+   {
+    "country": "מרוקו",
+    "level": 3
+   },
+   {
+    "country": "בחריין",
+    "level": 3
+   },
+   {
+    "country": "האיים המלדיביים",
+    "level": 3,
+    "note": "בדקו גם את מדיניות הכניסה לבעלי דרכון ישראלי."
+   },
+   {
+    "country": "בריטניה",
+    "level": 2,
+    "destinations": [
+     "london"
+    ]
+   },
+   {
+    "country": "צרפת",
+    "level": 2,
+    "destinations": [
+     "paris"
+    ]
+   },
+   {
+    "country": "גרמניה",
+    "level": 2
+   },
+   {
+    "country": "איטליה",
+    "level": 2,
+    "destinations": [
+     "rome"
+    ]
+   },
+   {
+    "country": "ספרד",
+    "level": 2,
+    "destinations": [
+     "barcelona"
+    ]
+   },
+   {
+    "country": "יוון",
+    "level": 2,
+    "destinations": [
+     "athens"
+    ]
+   },
+   {
+    "country": "פורטוגל",
+    "level": 2
+   },
+   {
+    "country": "הולנד",
+    "level": 2
+   },
+   {
+    "country": "אירלנד",
+    "level": 2
+   },
+   {
+    "country": "רוסיה",
+    "level": 2
+   },
+   {
+    "country": "סיישל",
+    "level": 2
+   },
+   {
+    "country": "אוסטרליה",
+    "level": 2
+   },
+   {
+    "country": "ארגנטינה",
+    "level": 2
+   },
+   {
+    "country": "תאילנד",
+    "level": 2,
+    "note": "רמה 2 בכל אזורי התיירות (בנגקוק, פוקט, קוסמוי, קופנגן, פטאיה).",
+    "exceptions": [
+     [
+      "דרום תאילנד (המחוזות הדרומיים)",
+      4
+     ]
+    ],
+    "destinations": [
+     "bangkok"
+    ]
+   },
+   {
+    "country": "הודו",
+    "level": 2,
+    "exceptions": [
+     [
+      "קשמיר",
+      4
+     ]
+    ]
+   },
+   {
+    "country": "סרי לנקה",
+    "level": 2,
+    "note": "הורדה לרמה 2 בכל המדינה."
+   },
+   {
+    "country": "הפיליפינים",
+    "level": 2
+   },
+   {
+    "country": "יפן",
+    "level": 1,
+    "destinations": [
+     "tokyo"
+    ]
+   },
+   {
+    "country": "ארצות הברית",
+    "level": 1,
+    "destinations": [
+     "newyork"
+    ]
+   },
+   {
+    "country": "קנדה",
+    "level": 1
+   },
+   {
+    "country": "קפריסין",
+    "level": 1
+   },
+   {
+    "country": "צ׳כיה",
+    "level": 1,
+    "destinations": [
+     "prague"
+    ]
+   },
+   {
+    "country": "פולין",
+    "level": 1
+   },
+   {
+    "country": "קרואטיה",
+    "level": 1
+   },
+   {
+    "country": "שווייץ",
+    "level": 1
+   },
+   {
+    "country": "איסלנד",
+    "level": 1
+   },
+   {
+    "country": "דנמרק",
+    "level": 1
+   },
+   {
+    "country": "פינלנד",
+    "level": 1
+   },
+   {
+    "country": "סלובקיה",
+    "level": 1
+   },
+   {
+    "country": "רומניה",
+    "level": 1
+   },
+   {
+    "country": "סרביה",
+    "level": 1
+   },
+   {
+    "country": "מונטנגרו",
+    "level": 1
+   },
+   {
+    "country": "אלבניה",
+    "level": 1
+   },
+   {
+    "country": "ליטא",
+    "level": 1
+   }
+  ],
+  "tips": [
+   "שמרו על פרופיל נמוך: הצניעו סממנים ישראליים ויהודיים במרחב הציבורי.",
+   "אל תפרסמו מיקום בזמן אמת ותוכניות נסיעה ברשתות החברתיות.",
+   "הסירו או הסתירו תכנים ברשתות שמעידים על שירות צבאי.",
+   "התרחקו מהפגנות ומעצרות, והימנעו מוויכוחים פוליטיים עם זרים.",
+   "היו ערניים ליד בתי חב״ד, מסעדות כשרות ובתי כנסת — שימו לב לחפצים ולאנשים חשודים.",
+   "חשדתם שעוקבים אחריכם או קיבלתם פנייה חריגה (הצעת עבודה, היכרות ברשת)? התרחקו ודווחו.",
+   "הימנעו מקונקשן במדינות ברמה 4 ובמדינות אויב.",
+   "המל״ל מציין את 7 באוקטובר כתאריך רגיש במיוחד לישראלים ויהודים בחו״ל."
+  ],
+  "contacts": [
+   [
+    "חדר המצב של משרד החוץ (24/7)",
+    "+972 2 530 3155"
+   ],
+   [
+    "מוקד אזהרות המסע של המל״ל",
+    "02-666-7444"
+   ]
+  ]
+ },
  "israelTravel": {
   "note": "רשימת כל הלינה בארץ נטענת חי מ-OpenStreetMap בעמוד #stays. ניווט: עמוד #go. קווים משתנים — לאמת ב-Moovit/אגד.",
   "places": [

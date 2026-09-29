@@ -8,7 +8,7 @@
         "height": 360,
         "color": 5
       },
-      "id": "f31f51b2-9615-4818-aa63-7f5af0e51525",
+      "id": "8d8b8955-cdd2-4219-be96-233f70ad5c10",
       "name": "Note 0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -24,7 +24,7 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "f987d7e1-48a9-4255-b575-934e6e4e9897",
+      "id": "4e1f9454-ecb3-4661-8468-723d4df6dc11",
       "name": "Site · Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -32,7 +32,7 @@
         0,
         -260
       ],
-      "webhookId": "e06b0828-6b4d-4845-ab08-2ff97cc47830"
+      "webhookId": "18f68105-8ef1-4b54-a8e7-5ebdccdc1d99"
     },
     {
       "parameters": {
@@ -45,7 +45,7 @@
           }
         }
       },
-      "id": "f10b57cf-e754-4227-9ccb-4f915b03b65e",
+      "id": "2f85f025-5c40-439f-8e7f-cafe5c4b6672",
       "name": "Site · Get index.html from GitHub",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -58,7 +58,7 @@
       "parameters": {
         "jsCode": "// Relative asset paths → GitHub Pages; tell the site where its n8n webhooks live.\nconst SITE = \"https://devopsdevopshaim-wq.github.io/devops-hub/\";\nconst hook = $('Site · Webhook').first().json;\nconst h = hook.headers || {};\nlet base = '';\nif (hook.webhookUrl) base = hook.webhookUrl.replace(/\\/masa\\/?$/, '');\nif (!base && h.host) base = (String(h['x-forwarded-proto'] || 'https').split(',')[0]) + '://' + (h['x-forwarded-host'] || h.host) + '/webhook';\nlet html = String($input.first().json.data || '');\nhtml = html.replace(/(href|src)=\"(css|js|vendor|api)\\//g, `$1=\"${SITE}$2/`);\nconst inject = `<script>window.APP_N8N = ${JSON.stringify({ base })};</script>`;\nhtml = html.replace(/<head>/i, '<head>\\n' + inject);\nreturn [{ json: { html } }];"
       },
-      "id": "3c8132af-f2a7-448c-95d4-82e20579d16d",
+      "id": "6e29e024-f0a1-4851-8be1-620d4dfd7907",
       "name": "Site · Point assets to Pages + connect n8n",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -86,7 +86,7 @@
           }
         }
       },
-      "id": "702180f8-2990-461c-b4c3-e571ebfc6076",
+      "id": "e8e2bf54-fdae-4214-9dd8-741e20b0a6a2",
       "name": "Site · Respond HTML",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -102,7 +102,7 @@
         "height": 380,
         "color": 4
       },
-      "id": "89265656-000e-41b6-8f8b-5825e63416fa",
+      "id": "93b8978c-9d06-490d-88b1-1e15865a6b3f",
       "name": "Note 5",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -118,7 +118,7 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "c3be6085-00f6-413e-b4f7-4ae81b6bb351",
+      "id": "3022e47f-e334-4ed5-a7f9-496bf6e40ef7",
       "name": "Deal · Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -126,13 +126,13 @@
         0,
         240
       ],
-      "webhookId": "4b8d0305-6966-4492-a713-df26b6cb0d65"
+      "webhookId": "af4efda5-bf4f-4908-a75c-2cf8c39b30a2"
     },
     {
       "parameters": {
         "jsCode": "// Body arrives as text/plain JSON (avoids CORS preflight) or as an object.\nconst raw = $input.first().json.body;\nlet deal;\ntry { deal = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { deal = null; }\nif (!deal || !deal.dealId) throw new Error('Invalid deal payload');\nconst ils = n => '₪' + Math.round(n || 0).toLocaleString('he-IL');\nconst c = deal.customer || {};\nconst rows = (deal.items || []).map(i => `<tr><td>${i.label}</td><td style=\"text-align:left\">${ils(i.priceILS)}</td></tr>`).join('');\nconst html = `<div dir=\"rtl\" style=\"font-family:Arial,sans-serif\">\n<h2>דיל חדש ${deal.dealId}</h2>\n<p><b>${deal.destination?.name || ''}</b> (${deal.destination?.country || ''}) · ${deal.dates?.start} – ${deal.dates?.end} · ${deal.dates?.nights} לילות · ${deal.travelers} מטיילים</p>\n<table cellpadding=\"6\" style=\"border-collapse:collapse\">${rows}<tr><td><b>סה״כ משוער</b></td><td style=\"text-align:left\"><b>${ils(deal.totalILS)}</b></td></tr></table>\n<p><b>לקוח:</b> ${c.name || '—'} · <a href=\"tel:${c.phone || ''}\">${c.phone || '—'}</a></p>\n${c.notes ? `<p><b>בקשות:</b> ${c.notes}</p>` : ''}\n<p><a href=\"https://wa.me/${String(c.phone || '').replace(/\\D/g, '').replace(/^0/, '972')}\">פתיחת וואטסאפ ללקוח</a></p>\n</div>`;\nreturn [{ json: {\n  dealId: deal.dealId, createdAt: deal.createdAt || new Date().toISOString(),\n  destination: deal.destination?.name || '', country: deal.destination?.country || '',\n  start: deal.dates?.start || '', end: deal.dates?.end || '', nights: deal.dates?.nights || '',\n  travelers: deal.travelers || '', totalILS: deal.totalILS || 0,\n  customerName: c.name || '', customerPhone: c.phone || '', notes: c.notes || '',\n  items: (deal.items || []).map(i => `${i.label}: ${ils(i.priceILS)}`).join(' | '),\n  subject: `דיל חדש ${deal.dealId} · ${deal.destination?.name || ''} · ${c.name || ''}`,\n  html\n} }];"
       },
-      "id": "49fa0f93-f53c-47f1-8bad-3bdf93545535",
+      "id": "2f4de160-6644-41df-89ef-4347af30861e",
       "name": "Deal · Parse & format",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -150,7 +150,7 @@
           "appendAttribution": false
         }
       },
-      "id": "67e20212-c7f1-4c50-9253-fa0f0fd26d53",
+      "id": "e97f8f88-d81e-4618-896c-73dd26e9466c",
       "name": "Deal · Email the agent (Gmail)",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
@@ -181,7 +181,7 @@
         },
         "options": {}
       },
-      "id": "1edef1cd-c86a-44df-a811-4502262f4cbb",
+      "id": "f284abee-d521-4357-88bd-892048a49531",
       "name": "Deal · Log to Google Sheets (optional)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
@@ -207,7 +207,7 @@
           }
         }
       },
-      "id": "5eb03179-6501-41ca-96d5-7dad5465208e",
+      "id": "4726eb2e-5fa1-4258-bbc8-ca173abec5d7",
       "name": "Deal · Respond OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -223,7 +223,7 @@
         "height": 380,
         "color": 6
       },
-      "id": "4e1a8948-e9e4-486c-aba6-e11032265ae0",
+      "id": "d51f4de8-b66f-4811-b493-3c18c70ddca3",
       "name": "Note 11",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -239,7 +239,7 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "4e2b0404-2b73-4297-ae1e-0564699a58e1",
+      "id": "e57a23ca-d21e-465c-b09d-21759e32b592",
       "name": "Chat · Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -247,14 +247,14 @@
         0,
         720
       ],
-      "webhookId": "fd2eb161-e9af-47f3-8cad-51f6dffc4420"
+      "webhookId": "a84abb72-34e0-4ef1-9b2a-72db970c933e"
     },
     {
       "parameters": {
         "url": "https://devopsdevopshaim-wq.github.io/devops-hub/api/knowledge.json",
         "options": {}
       },
-      "id": "6fc9ce33-62d7-4f17-b437-30e8fd6c54c4",
+      "id": "10efa5f4-edf1-4840-998a-a95cd0821733",
       "name": "Chat · Load knowledge",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -265,9 +265,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Picks only the destinations the question is about, to keep the prompt small.\nconst K = $input.first().json;\nconst raw = $('Chat · Webhook').first().json.body;\nlet req; try { req = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { req = {}; }\nconst message = String(req.message || '').slice(0, 2000);\nconst ctx = req.context || {};\nconst low = message.toLowerCase();\nconst hits = K.destinations.filter(d =>\n  [d.name, d.nameEn, d.country].some(n => n && low.includes(String(n).toLowerCase())) || d.id === ctx.destination);\nconst index = K.destinations.map(d => `${d.id} · ${d.name} (${d.country}) · ${d.tagline} · טיסה ${d.flight.hoursFromTLV} ש׳ · עונה: ${d.bestMonths.join(', ')}`).join('\\n');\nconst today = new Date().toISOString().slice(0, 10);\nconst systemPrompt = `את/ה הסוכן/ת הדיגיטלי/ת של \"${K.brand}\" — אתר לתכנון חופשות בארץ ובחו״ל. היום ${today}.\nענו בעברית, בקצרה ובחום, כמו סוכן נסיעות מקצועי.\nכללים:\n- עובדות (מלונות, טלפונים, כתובות, מסעדות, מחירים) רק מתוך הידע למטה. אם אין — אמרו שאין לכם את המידע והציעו לפנות לסוכן.\n- מחירים הם הערכות; אמרו זאת. אל תמציאו מחירים, טלפונים או זמינות.\n- כדי להפנות לעמוד באתר השתמשו בקישור בפורמט [טקסט](#dest-ID.TAB). לשוניות: overview, gallery, flights, hotels, car, food, money, contacts, transit, routes, map, videos. עמודים: [סגירת דיל](#deal), [כל האתרים](#sites), [זמני שדה תעופה](#airport), [מחשבון עלויות](#budget).\n- לסגירת דיל: הפנו ל-[סגירת דיל](#deal) או לסוכן: ${K.agency.phone || ''} ${K.agency.email || ''}.\n- ${K.disclaimer}\nתוכנית המשתמש באתר: ${JSON.stringify(ctx.plan || {})} · עמוד נוכחי: ${ctx.page || ''}\n\nיעדים באתר:\n${index}\n\nידע מפורט על היעדים הרלוונטיים:\n${hits.length ? JSON.stringify(hits.slice(0, 3)) : 'לא זוהה יעד ספציפי בשאלה — השתמשו ברשימת היעדים ושאלו לאיזה יעד הכוונה אם צריך.'}`;\nreturn [{ json: { sessionId: String(req.sessionId || 'anon').slice(0, 80), message, systemPrompt } }];"
+        "jsCode": "// Picks only the destinations the question is about, to keep the prompt small.\nconst K = $input.first().json;\nconst raw = $('Chat · Webhook').first().json.body;\nlet req; try { req = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { req = {}; }\nconst message = String(req.message || '').slice(0, 2000);\nconst ctx = req.context || {};\nconst low = message.toLowerCase();\nconst hits = K.destinations.filter(d =>\n  [d.name, d.nameEn, d.country].some(n => n && low.includes(String(n).toLowerCase())) || d.id === ctx.destination);\nconst index = K.destinations.map(d => `${d.id} · ${d.name} (${d.country}) · ${d.tagline} · טיסה ${d.flight.hoursFromTLV} ש׳ · עונה: ${d.bestMonths.join(', ')}`).join('\\n');\nconst today = new Date().toISOString().slice(0, 10);\nconst systemPrompt = `את/ה הסוכן/ת הדיגיטלי/ת של \"${K.brand}\" — אתר לתכנון חופשות בארץ ובחו״ל. היום ${today}.\nענו בעברית, בקצרה ובחום, כמו סוכן נסיעות מקצועי.\nכללים:\n- עובדות (מלונות, טלפונים, כתובות, מסעדות, מחירים) רק מתוך הידע למטה. אם אין — אמרו שאין לכם את המידע והציעו לפנות לסוכן.\n- מחירים הם הערכות; אמרו זאת. אל תמציאו מחירים, טלפונים או זמינות.\n- כדי להפנות לעמוד באתר השתמשו בקישור בפורמט [טקסט](#dest-ID.TAB). לשוניות: overview, gallery, flights, hotels, car, food, money, contacts, transit, routes, map, videos. עמודים: [סגירת דיל](#deal), [כל האתרים](#sites), [זמני שדה תעופה](#airport), [מחשבון עלויות](#budget).\n- לסגירת דיל: הפנו ל-[סגירת דיל](#deal) או לסוכן: ${K.agency.phone || ''} ${K.agency.email || ''}.\n- ${K.disclaimer}\n- אזהרות מסע: ענו לפי רשימת המל״ל למטה, ציינו את תאריך הבדיקה והפנו תמיד ל-[אזהרות מסע](#safety) ולאתר המל״ל לאימות. לינה נוספת: [לינה בארץ ובעולם](#stays), ניווט בארץ: [ניווט](#go).\nאזהרות מסע (נבדק ${(K.travelWarnings || {}).checked || ''}): ${K.travelWarnings ? K.travelWarnings.countries.map(c => c.country + ' ' + (c.level === 5 ? 'אסור' : 'רמה ' + c.level)).join('; ') : 'אין נתונים'}\nתוכנית המשתמש באתר: ${JSON.stringify(ctx.plan || {})} · עמוד נוכחי: ${ctx.page || ''}\n\nיעדים באתר:\n${index}\n\nידע מפורט על היעדים הרלוונטיים:\n${hits.length ? JSON.stringify(hits.slice(0, 3)) : 'לא זוהה יעד ספציפי בשאלה — השתמשו ברשימת היעדים ושאלו לאיזה יעד הכוונה אם צריך.'}`;\nreturn [{ json: { sessionId: String(req.sessionId || 'anon').slice(0, 80), message, systemPrompt } }];"
       },
-      "id": "78160551-3182-4b66-ba55-03874bf54f1e",
+      "id": "d67caee8-49c2-4907-878a-5a88da68c534",
       "name": "Chat · Build context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -284,7 +284,7 @@
           "systemMessage": "={{ $json.systemPrompt }}"
         }
       },
-      "id": "7ae01f85-bb36-4712-adfa-1bcddec41d29",
+      "id": "0cb612d3-0eb8-4fca-89a1-3315e397caab",
       "name": "AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
@@ -306,7 +306,7 @@
           "temperature": 0.4
         }
       },
-      "id": "7bcdf89b-caac-4c45-8610-72059eaf92ca",
+      "id": "fc40acfd-f618-4a0b-be1a-6ceda943f557",
       "name": "Claude (Anthropic)",
       "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
       "typeVersion": 1.3,
@@ -321,7 +321,7 @@
         "sessionKey": "={{ $('Chat · Build context').first().json.sessionId }}",
         "contextWindowLength": 10
       },
-      "id": "6bbc1ab8-41e8-45d9-a5d1-a29c0a336d3b",
+      "id": "02d4bdb2-1f55-4fdc-aa52-1eb66e1fd78c",
       "name": "Chat memory",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
@@ -345,7 +345,7 @@
           }
         }
       },
-      "id": "6b06ae79-8723-4142-b030-5c5216172fb8",
+      "id": "bfb6d626-0f16-4578-9baf-9dcebd460c1c",
       "name": "Chat · Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
