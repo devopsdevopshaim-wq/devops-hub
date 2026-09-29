@@ -17,6 +17,11 @@
     return n;
   }
 
+  // GitHub Pages address of an uploaded project, straight to its start page.
+  function pagesUrl(p) {
+    return 'https://' + state.data.owner + '.github.io/' + p.repo + '/' + (p.start ? encodeURIComponent(p.start) : '');
+  }
+
   // Works out where a project lives right now.
   function status(p) {
     var owner = state.data.owner;
@@ -27,11 +32,11 @@
     if (p.private) return { kind: 'private', label: 'מאגר פרטי', code: repo ? code : null };
     if (repo) {
       return repo.has_pages
-        ? { kind: 'live', label: 'באוויר', open: 'https://' + owner + '.github.io/' + p.repo + '/', code: code }
+        ? { kind: 'live', label: 'באוויר', open: pagesUrl(p), code: code }
         : { kind: 'wait', label: 'במאגר, בלי Pages', code: code };
     }
     // Without the GitHub list we cannot tell, so assume the upload script ran.
-    if (!state.repos) return { kind: 'wait', label: 'לא ידוע', open: 'https://' + owner + '.github.io/' + p.repo + '/', code: code };
+    if (!state.repos) return { kind: 'wait', label: 'לא ידוע', open: pagesUrl(p), code: code };
     return { kind: 'wait', label: 'ממתין להעלאה' };
   }
 
