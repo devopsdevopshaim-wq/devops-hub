@@ -1,0 +1,283 @@
+/* ספר — עיצוב עמודי הספר המודפס.
+   ארבעה סגנונות: מלכותי (ברירת מחדל), קלאסי, מודרני, וינטג׳. ספר ילדים בעיצוב משלו. */
+
+.book {
+  --pw: 148mm; --ph: 210mm; --mt: 18mm; --mb: 20mm; --mi: 14mm; --mo: 16mm; --fs: 11.2pt;
+  /* מלכותי */
+  --paper: #fbf6ea;
+  --ink: #1f1a12;
+  --ink-soft: #5b4d35;
+  --accent: #8a6724;
+  --accent-deep: #6a4c14;
+  --rule: #c9ad6e;
+  --b-body: 'Frank Ruhl Libre', 'David Libre', 'David', Georgia, serif;
+  --b-display: 'Bellefair', 'Frank Ruhl Libre', 'David', serif;
+  --b-label: 'Bellefair', 'Frank Ruhl Libre', serif;
+  --title-weight: 400;
+  --cover-bg: #111a33;
+  --cover-bg-2: #1d2a4f;
+  --cover-ink: #f3e7c6;
+  --foil: linear-gradient(100deg, #9c7a35 0%, #f6e2a4 20%, #c49a45 38%, #fff3c8 52%, #b38a3c 68%, #ecd18c 86%, #8e6b2b 100%);
+  --foil-ink: linear-gradient(100deg, #6a4c14 0%, #b48d3c 28%, #6f5018 48%, #c29a48 70%, #5f430f 100%);
+  --lh: 1.6;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 12mm 0;
+  width: calc(var(--pw) * 2 + 20mm);
+}
+.book.theme-classic {
+  --paper: #fcf8ef; --ink: #1b1611; --ink-soft: #594b3a; --accent: #7a1f2b; --accent-deep: #5c1520; --rule: #b98d5a;
+  --b-body: 'David Libre', 'Frank Ruhl Libre', 'David', serif;
+  --b-display: 'Frank Ruhl Libre', 'David Libre', serif; --b-label: 'David Libre', serif; --title-weight: 900;
+  --cover-bg: #4a1220; --cover-bg-2: #6b1c2e; --cover-ink: #f5e6c8; --lh: 1.62;
+}
+.book.theme-modern {
+  --paper: #fdfcf8; --ink: #141414; --ink-soft: #4d4d4d; --accent: #9a7b3c; --accent-deep: #6e5520; --rule: #c7b27e;
+  --b-body: 'Noto Serif Hebrew', 'Frank Ruhl Libre', serif;
+  --b-display: 'Noto Serif Hebrew', 'Frank Ruhl Libre', serif; --b-label: 'Assistant', 'Noto Serif Hebrew', sans-serif; --title-weight: 300;
+  --cover-bg: #0d0d0f; --cover-bg-2: #1b1b20; --cover-ink: #efe6d2; --lh: 1.68;
+}
+.book.theme-vintage {
+  --paper: #f4ead3; --ink: #2a1d10; --ink-soft: #5e4528; --accent: #7a4a1c; --accent-deep: #5a3410; --rule: #b58a52;
+  --b-body: 'Frank Ruhl Libre', 'David Libre', serif;
+  --b-display: 'Frank Ruhl Libre', serif; --b-label: 'Noto Rashi Hebrew', 'Frank Ruhl Libre', serif; --title-weight: 900;
+  --cover-bg: #3a2312; --cover-bg-2: #5a3519; --cover-ink: #f2dfb5; --lh: 1.58;
+}
+
+.book.single { width: calc(var(--pw) + 10mm); }
+.page-spacer { width: var(--pw); height: var(--ph); }
+.book.single .page-spacer { display: none; }
+
+/* ---------- העמוד ---------- */
+.page {
+  position: relative; width: var(--pw); height: var(--ph);
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(120% 90% at 50% 40%, transparent 60%, rgba(120, 90, 40, .07) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .2 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  color: var(--ink);
+  font-family: var(--b-body); font-size: var(--fs); line-height: var(--lh);
+  font-kerning: normal; font-feature-settings: 'kern', 'liga';
+  padding: var(--mt) var(--mo) var(--mb) var(--mi);
+  display: flex; flex-direction: column;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .1), 0 18px 40px rgba(0, 0, 0, .35);
+  overflow: hidden; color-scheme: light;
+}
+/* עמוד אי-זוגי בספר עברי יושב משמאל; השוליים הפנימיים (הכריכה) מימין */
+.page.recto { padding-right: calc(var(--mi) + 3mm); padding-left: var(--mo); }
+.page.verso { padding-left: calc(var(--mi) + 3mm); padding-right: var(--mo); }
+.book:not(.single) .page.verso { box-shadow: inset -16px 0 22px -16px rgba(60, 40, 10, .28), 0 18px 40px rgba(0, 0, 0, .35); }
+.book:not(.single) .page.recto { box-shadow: inset 16px 0 22px -16px rgba(60, 40, 10, .28), 0 18px 40px rgba(0, 0, 0, .35); }
+.book:not(.single) .page.solo, .book:not(.single) .page.cover { margin-inline: calc(var(--pw) / 2); }
+.book.single .page { margin-inline: 5mm; }
+.page-body { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+
+/* כותרת רצה ומספר עמוד */
+.run-head {
+  height: 7mm; margin-top: -8.5mm; margin-bottom: 1.5mm;
+  display: flex; align-items: center; justify-content: center; gap: .7em;
+  font-family: var(--b-label); font-size: .74em; letter-spacing: .14em; color: var(--accent);
+  white-space: nowrap; overflow: hidden;
+}
+.run-head:not(:empty)::before, .run-head:not(:empty)::after { content: ''; width: 2.2em; height: 0; border-top: .2mm solid var(--rule); flex: none; }
+.theme-modern .run-head { letter-spacing: .3em; color: var(--ink-soft); }
+.theme-modern .run-head::before, .theme-modern .run-head::after { display: none; }
+.folio {
+  position: absolute; bottom: calc(var(--mb) - 12mm); left: 0; right: 0;
+  display: flex; align-items: center; justify-content: center; gap: .5em;
+  font-family: var(--b-display); font-size: .82em; color: var(--accent-deep); font-variant-numeric: oldstyle-nums;
+}
+.folio:not(:empty)::before, .folio:not(:empty)::after { content: '◆'; font-size: .45em; color: var(--rule); }
+.theme-modern .folio::before, .theme-modern .folio::after { content: ''; width: 5mm; height: 0; border-top: .2mm solid var(--rule); font-size: 1em; }
+.page.opener .run-head { visibility: hidden; }
+
+/* טקסט רץ */
+.page p { margin: 0; text-align: justify; text-indent: 1.5em; hyphens: auto; orphans: 1; widows: 1; }
+.page p.first, .page p.cont, .page .scene-break + p { text-indent: 0; }
+.page p.split { text-align-last: justify; }
+.page p.first::first-letter {
+  font-family: var(--b-display); font-weight: var(--title-weight);
+  font-size: 3.55em; line-height: .82; float: right; margin: .08em 0 0 .12em; color: var(--accent);
+}
+.theme-royal .page p.first::first-letter, .book:not([class*="theme-"]) .page p.first::first-letter { font-size: 3.9em; }
+.theme-vintage .page p.first::first-letter {
+  padding: .06em .12em .02em; margin: .04em 0 0 .16em; line-height: .9; font-size: 3.2em;
+  color: var(--paper); background: var(--accent); border: .5mm double var(--rule); outline: .2mm solid var(--accent); outline-offset: .6mm;
+}
+.theme-modern .page p.first::first-letter { font-weight: 300; font-size: 4.2em; color: var(--ink); }
+.page p .lead { font-weight: 700; color: var(--accent-deep); letter-spacing: .02em; }
+.theme-modern .page p .lead { font-weight: 600; color: var(--ink); }
+.page p.empty { color: #9a8f79; text-align: center; text-indent: 0; margin-top: 2em; }
+
+.scene-break { display: flex; justify-content: center; margin: .9em 0; color: var(--accent); }
+.scene-break svg { width: 16mm; height: auto; }
+
+/* עיטורים */
+.orn { width: 52%; max-width: 64mm; height: auto; color: var(--accent); display: block; margin: .8em auto; }
+.deco { position: absolute; inset: 9mm; pointer-events: none; color: var(--accent); }
+.deco::before { content: ''; position: absolute; inset: 0; border: .25mm solid var(--rule); }
+.deco::after { content: ''; position: absolute; inset: 1.6mm; border: .12mm solid var(--rule); opacity: .7; }
+.deco .corner { position: absolute; width: 15mm; height: 15mm; }
+.deco .c-tr { top: -1.2mm; right: -1.2mm; }
+.deco .c-tl { top: -1.2mm; left: -1.2mm; transform: scaleX(-1); }
+.deco .c-br { bottom: -1.2mm; right: -1.2mm; transform: scaleY(-1); }
+.deco .c-bl { bottom: -1.2mm; left: -1.2mm; transform: scale(-1, -1); }
+.theme-modern .deco::after, .theme-modern .deco .corner { display: none; }
+
+.foil {
+  background: var(--foil-ink); -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+
+/* ---------- פתיחת פרק ---------- */
+.ch-head { text-align: center; padding-top: 9%; margin-bottom: 2em; }
+.ch-head .orn { width: 62%; }
+.ch-mark {
+  font-family: var(--b-display); font-weight: var(--title-weight); font-size: 5.6em; line-height: 1; margin: 0 0 .05em; padding: 0 .05em .06em;
+  text-indent: 0 !important; text-align: center !important;
+}
+.theme-modern .ch-mark { font-size: 6.4em; font-weight: 200; color: transparent; background: none; -webkit-text-stroke: .25mm var(--accent); }
+.ch-num {
+  font-family: var(--b-label); font-size: .85em; letter-spacing: .24em; color: var(--accent);
+  text-indent: 0 !important; text-align: center !important; margin: 0 0 .5em !important;
+}
+.ch-title {
+  font-family: var(--b-display); font-weight: var(--title-weight); font-size: 2.5em; color: var(--ink);
+  margin: .1em 0 0; line-height: 1.18; letter-spacing: .01em;
+}
+.theme-modern .ch-title { letter-spacing: .04em; font-size: 2em; }
+.ch-head .orn { margin-top: 1em; }
+
+/* ---------- תמונות ---------- */
+.fig { margin: 1em 0; text-align: center; }
+.fig img {
+  display: block; width: 100%; object-fit: contain; background: #fff;
+  padding: 1.6mm; border: .25mm solid var(--rule); box-shadow: 0 .6mm 2mm rgba(60, 40, 10, .18);
+}
+.theme-modern .fig img { padding: 0; border: 0; box-shadow: none; }
+.fig figcaption {
+  font-family: var(--b-label); font-size: .78em; color: var(--ink-soft); margin-top: .7em; line-height: 1.4; letter-spacing: .03em;
+  text-align: center; display: flex; align-items: center; justify-content: center; gap: .6em;
+}
+.fig figcaption::before, .fig figcaption::after { content: ''; width: 1.6em; border-top: .2mm solid var(--rule); flex: none; }
+.page.full .page-body { display: flex; align-items: center; justify-content: center; }
+.page.full .fig { margin: 0; width: 100%; }
+.page.full .fig img { height: auto; max-width: 100%; margin: 0 auto; padding: 2.4mm; }
+
+/* ---------- עמודים מקדימים ---------- */
+.page.front .page-body { display: flex; align-items: center; justify-content: center; text-align: center; }
+.half { font-family: var(--b-display); font-weight: var(--title-weight); font-size: 2.1em; color: var(--ink); margin: 0; }
+.half-wrap .orn { width: 30%; }
+.tp { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 8mm 4mm; }
+.tp .tp-label { font-family: var(--b-label); font-size: .85em; letter-spacing: .22em; color: var(--accent); text-indent: 0 !important; margin-bottom: 1.6em !important; }
+.tp h1, .tp h2 {
+  font-family: var(--b-display); font-weight: var(--title-weight); font-size: 4em; line-height: 1.05; margin: 0 0 .15em; padding: 0 .05em .08em;
+}
+.tp-sub { font-family: var(--b-display); font-size: 1.2em; color: var(--ink-soft); text-indent: 0 !important; text-align: center !important; }
+.tp-author {
+  font-family: var(--b-label); font-size: 1.25em; letter-spacing: .16em; color: var(--ink);
+  text-indent: 0 !important; text-align: center !important; margin-top: auto !important;
+}
+.tp > .orn { width: 70%; max-width: none; }
+.tp .emblem { width: 13mm; height: 13mm; color: var(--accent); margin-top: 1.4em; }
+.page.copyright .page-body { align-items: flex-end; }
+.copy { font-family: var(--b-body); }
+.copy p { font-size: .72em; color: var(--ink-soft); text-align: center !important; text-indent: 0 !important; margin-bottom: .7em !important; }
+.copy .emblem { width: 8mm; height: 8mm; color: var(--accent); display: block; margin: 0 auto 1em; }
+.ded { max-width: 80%; }
+.ded p { font-family: var(--b-display); font-size: 1.3em; line-height: 1.6; text-align: center !important; text-indent: 0 !important; color: var(--ink); }
+.ded .orn { width: 26%; }
+
+.page.toc-page .page-body { display: block; text-align: start; }
+.toc-title { font-family: var(--b-display); font-weight: var(--title-weight); text-align: center; font-size: 2.3em; margin: .6em 0 0; color: var(--ink); }
+.toc-head .orn { margin: .5em auto 1.6em; width: 30%; }
+.toc { list-style: none; margin: 0; padding: 0; }
+.toc li { display: flex; align-items: baseline; gap: .55em; margin-bottom: .85em; }
+.toc .k { font-family: var(--b-display); color: var(--accent); min-width: 1.6em; font-size: 1.05em; }
+.toc .t { font-family: var(--b-body); }
+.toc .dots { flex: 1; border-bottom: .3mm dotted var(--rule); transform: translateY(-.3em); }
+.toc .n { font-family: var(--b-display); color: var(--accent-deep); font-variant-numeric: oldstyle-nums tabular-nums; }
+
+/* ---------- כריכות ---------- */
+.page.cover, .page.back {
+  padding: 9mm; color: var(--cover-ink); background-color: var(--cover-bg);
+  background-image:
+    radial-gradient(120% 80% at 50% 30%, var(--cover-bg-2) 0%, transparent 70%),
+    radial-gradient(140% 100% at 50% 50%, transparent 55%, rgba(0, 0, 0, .45) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.theme-royal .page.cover.genre-romance, .theme-royal .page.back.genre-romance { --cover-bg: #3d0f22; --cover-bg-2: #62203a; }
+.theme-royal .page.cover.genre-drama, .theme-royal .page.back.genre-drama { --cover-bg: #221410; --cover-bg-2: #3e241c; }
+.theme-royal .page.cover.genre-thriller, .theme-royal .page.back.genre-thriller { --cover-bg: #0b0c0e; --cover-bg-2: #1c2026; }
+.theme-royal .page.cover.genre-historical, .theme-royal .page.back.genre-historical { --cover-bg: #2e1f10; --cover-bg-2: #4b331b; }
+.theme-royal .page.cover.genre-fantasy, .theme-royal .page.back.genre-fantasy { --cover-bg: #151234; --cover-bg-2: #2a2460; }
+.theme-royal .page.cover.genre-inspiration, .theme-royal .page.back.genre-inspiration { --cover-bg: #0f2d2a; --cover-bg-2: #1c4a44; }
+.page.cover .page-body, .page.back .page-body { overflow: hidden; }
+.page.cover .deco, .page.back .deco { inset: 6mm; color: #d9b96e; }
+.page.cover .deco::before, .page.back .deco::before { border-color: rgba(222, 190, 118, .8); border-width: .35mm; }
+.page.cover .deco::after, .page.back .deco::after { border-color: rgba(222, 190, 118, .55); }
+.cover-frame {
+  position: relative; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 12mm 8mm 10mm; gap: 3mm;
+}
+.cover-foil, .page.cover .foil, .page.back .foil { background-image: var(--foil); }
+.cover-genre {
+  display: flex; align-items: center; gap: .8em;
+  font-family: var(--b-label); font-size: .82em; letter-spacing: .22em; color: #dcc38a; text-indent: 0 !important;
+}
+.cover-genre::before, .cover-genre::after { content: ''; width: 9mm; border-top: .25mm solid rgba(222, 190, 118, .8); }
+.cover-title {
+  font-family: var(--b-display); font-weight: var(--title-weight); font-size: 5.2em; line-height: 1; margin: 0; padding: 0 .05em .08em;
+  text-shadow: none; filter: drop-shadow(0 .4mm .3mm rgba(0, 0, 0, .45));
+}
+.theme-modern .cover-title { letter-spacing: .05em; font-size: 4.4em; }
+.theme-classic .cover-title, .theme-vintage .cover-title { font-size: 4.6em; }
+.cover-sub { font-family: var(--b-display); font-size: 1.15em; opacity: .92; text-align: center !important; text-indent: 0 !important; letter-spacing: .04em; }
+.cover-author {
+  margin-top: auto !important; font-family: var(--b-label); font-size: 1.35em; letter-spacing: .2em;
+  text-align: center !important; text-indent: 0 !important;
+}
+.cover-art { width: 100%; flex: 0 1 50%; min-height: 0; display: flex; justify-content: center; }
+.cover-art img { max-width: 100%; max-height: 100%; object-fit: contain; padding: 1.4mm; border: .35mm solid rgba(222, 190, 118, .8); background: rgba(0, 0, 0, .25); }
+.cover-frame .cover-orn { width: 100%; }
+.cover-frame .cover-orn .orn { width: 78%; max-width: none; margin: 1mm auto; }
+.cover-medal { width: 38mm; height: 38mm; color: #d9b96e; margin: 4mm 0; }
+.cover-space { flex: 1; }
+.page.cover .orn, .page.back .orn { color: #d9b96e; }
+.back-title { font-family: var(--b-display); font-weight: var(--title-weight); font-size: 2.4em; padding: 0 .05em .08em; margin: 0 0 .4em; }
+.blurb-box { border-top: .25mm solid rgba(222, 190, 118, .6); border-bottom: .25mm solid rgba(222, 190, 118, .6); padding: 5mm 2mm; margin: 2mm 0; }
+.blurb { font-family: var(--b-body); text-align: center !important; text-indent: 0 !important; line-height: 1.75; margin-bottom: .6em !important; font-size: .95em; color: var(--cover-ink); }
+
+/* ---------- ספר ילדים ---------- */
+.book.kids {
+  --paper: #fffaf0; --ink: #2b1b05; --ink-soft: #6b4b1a; --accent: #d9541e; --accent-deep: #a8380f; --rule: #f0b650;
+  --b-body: 'Varela Round', 'Assistant', sans-serif; --b-display: 'Suez One', 'Varela Round', sans-serif; --b-label: 'Varela Round', sans-serif;
+  --title-weight: 400; --cover-bg: #f2b035; --cover-bg-2: #ffd66b; --cover-ink: #2b1b05; --lh: 1.5;
+}
+.book.kids .page { background-image: none; }
+.book.kids .page.cover, .book.kids .page.back { background-image: radial-gradient(120% 80% at 50% 30%, var(--cover-bg-2) 0%, transparent 70%); }
+.book.kids .cover-title { color: #3b1d00; background: none; -webkit-text-fill-color: currentColor; filter: drop-shadow(0 1mm 0 #fff) drop-shadow(0 .6mm 0 rgba(0, 0, 0, .15)); font-size: 3.6em; }
+.book.kids .cover-genre, .book.kids .cover-author { color: #3b1d00; background: none; -webkit-text-fill-color: currentColor; }
+.book.kids .page.cover .deco::before { border: .8mm dashed rgba(59, 29, 0, .45); border-radius: 7mm; }
+.book.kids .page.cover .deco::after, .book.kids .deco .corner { display: none; }
+.book.kids .cover-genre::before, .book.kids .cover-genre::after { border-color: rgba(59, 29, 0, .5); }
+.book.kids .cover-art img { border: 1.2mm solid #fff; border-radius: 6mm; padding: 0; box-shadow: 0 2mm 5mm rgba(0, 0, 0, .2); background: #fff; }
+.book.kids .cover-medal, .book.kids .page.cover .orn, .book.kids .page.back .orn { color: #7a3d00; }
+.kids-page .page-body { display: flex; flex-direction: column; gap: 5mm; }
+.kids-art { margin: 0; flex: 0 1 64%; min-height: 0; display: flex; justify-content: center; }
+.kids-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 6mm; border: 1.2mm solid #fff; box-shadow: 0 1.5mm 4mm rgba(90, 50, 0, .22); background: #fff; padding: 0; }
+.kids-text { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.kids-text p { text-align: center; text-indent: 0; margin-bottom: .4em; }
+.kids-page.no-art .kids-text { font-size: 120%; }
+.book.kids .ch-num, .book.kids .run-head { display: none; }
+.book.kids .folio { font-family: var(--b-display); color: var(--accent); }
+.book.kids .folio::before, .book.kids .folio::after { content: '★'; color: var(--rule); font-size: .7em; }
+
+/* ---------- הדפסה ---------- */
+@media print {
+  .page { background-image: none !important; }
+  .page:not(.cover):not(.back) { background-color: #fff !important; }
+  .page.cover, .page.back { background-image:
+    radial-gradient(120% 80% at 50% 30%, var(--cover-bg-2) 0%, transparent 70%),
+    radial-gradient(140% 100% at 50% 50%, transparent 55%, rgba(0, 0, 0, .45) 100%) !important; }
+  .fig img { box-shadow: none; }
+}

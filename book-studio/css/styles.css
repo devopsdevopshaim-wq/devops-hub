@@ -103,7 +103,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 700; line-height: 1.2; ma
 .topbar-inner { max-width: 1500px; margin: 0 auto; padding: .6rem 16px; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: .6rem; color: var(--text); text-decoration: none; }
 .brand-mark { width: 34px; height: 34px; color: var(--gold); }
-.brand-name { font-family: var(--display); font-weight: 900; font-size: 1.7rem; color: var(--gold-2); letter-spacing: .02em; }
+.brand-name { font-family: 'Bellefair', var(--display); font-weight: 400; font-size: 1.9rem; color: var(--gold-2); letter-spacing: .02em; }
 .brand-tag { color: var(--muted); font-size: .95rem; border-inline-start: 1px solid var(--line); padding-inline-start: .6rem; }
 .top-actions { margin-inline-start: auto; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .ai-badge { font-size: .85rem; padding: .25rem .7rem; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
@@ -200,8 +200,11 @@ main:focus { outline: none; }
 .panel { padding-top: 1.5rem; }
 .hero { padding: 2rem 0 1.5rem; }
 .hero.small { padding: 1rem 0 1rem; }
-.hero h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 900; color: var(--gold-2); margin-bottom: .3em; }
-.hero h2 { font-size: clamp(1.8rem, 3.5vw, 2.5rem); color: var(--gold-2); }
+.hero h1 { font-family: 'Bellefair', var(--display); font-size: clamp(2.6rem, 6vw, 4.4rem); font-weight: 400; margin-bottom: .25em; letter-spacing: .01em; background: linear-gradient(100deg, #b8913f, #f6e2a4 30%, #d4b06a 50%, #fff3c8 68%, #c49a45); -webkit-background-clip: text; background-clip: text; color: transparent; }
+:root[data-contrast="high"] .hero h1, :root[data-theme="light"] .hero h1 { background: none; color: var(--gold-2); }
+:root[data-readable="1"] .hero h1 { font-family: var(--display); }
+.hero h2 { font-family: 'Bellefair', var(--display); font-weight: 400; font-size: clamp(2rem, 4vw, 2.9rem); color: var(--gold-2); }
+:root[data-readable="1"] .hero h2 { font-family: var(--display); font-weight: 700; }
 .eyebrow { text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-size: .85rem; margin: 0 0 .5rem; }
 .lede { font-size: 1.15rem; color: var(--muted); max-width: 70ch; margin: 0; }
 
@@ -276,105 +279,33 @@ main:focus { outline: none; }
 .book-stage { overflow: auto; padding: 1.5rem 0 3rem; border-radius: var(--radius); background: color-mix(in srgb, var(--ink) 60%, transparent); border: 1px solid var(--line); max-height: 85vh; }
 .book-zoom { zoom: .8; width: max-content; margin: 0 auto; }
 
-.book { --pw: 148mm; --ph: 210mm; --mt: 18mm; --mb: 20mm; --mi: 14mm; --mo: 16mm; --fs: 11.2pt; display: flex; flex-wrap: wrap; justify-content: center; gap: 12mm 0; width: calc(var(--pw) * 2 + 20mm); }
-.book.single { width: calc(var(--pw) + 10mm); }
-.page-spacer { width: var(--pw); height: var(--ph); }
-.book.single .page-spacer { display: none; }
-.page {
-  position: relative; width: var(--pw); height: var(--ph);
-  background: var(--paper); color: var(--paper-ink);
-  font-family: var(--book); font-size: var(--fs); line-height: 1.55;
-  padding: var(--mt) var(--mo) var(--mb) var(--mi);
-  display: flex; flex-direction: column;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, .1), 0 18px 40px rgba(0, 0, 0, .35);
-  overflow: hidden; color-scheme: light;
+/* עיצוב עמודי הספר נמצא ב-css/book.css */
+.theme-picker { margin: 0 0 1rem; }
+.theme-picker legend { margin-bottom: .6rem; }
+.themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: .6rem; }
+.theme-opt {
+  position: relative; display: flex; align-items: center; gap: .8rem; cursor: pointer; font-weight: 500;
+  padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2);
 }
-/* עמוד אי-זוגי בספר עברי יושב משמאל; השוליים הפנימיים (הכריכה) מימין */
-.page.recto { padding-right: calc(var(--mi) + 3mm); padding-left: var(--mo); }
-.page.verso { padding-left: calc(var(--mi) + 3mm); padding-right: var(--mo); }
-.book:not(.single) .page.verso { box-shadow: inset -14px 0 18px -14px rgba(0, 0, 0, .25), 0 18px 40px rgba(0, 0, 0, .35); }
-.book:not(.single) .page.recto { box-shadow: inset 14px 0 18px -14px rgba(0, 0, 0, .25), 0 18px 40px rgba(0, 0, 0, .35); }
-.book:not(.single) .page.solo, .book:not(.single) .page.cover { margin-inline: calc(var(--pw) / 2); }
-.book.single .page { margin-inline: 5mm; }
-
-.run-head { height: 7mm; margin-top: -8mm; margin-bottom: 1mm; font-size: .72em; letter-spacing: .08em; color: #7a6a4c; text-align: center; font-variant: small-caps; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.folio { position: absolute; bottom: calc(var(--mb) - 11mm); left: 0; right: 0; text-align: center; font-size: .78em; color: #6c5f45; }
-.page-body { flex: 1; min-height: 0; overflow: hidden; position: relative; }
-
-.page p { margin: 0; text-align: justify; text-indent: 1.4em; hyphens: auto; orphans: 1; widows: 1; }
-.page p.first, .page p.cont, .page .scene-break + p { text-indent: 0; }
-.page p.split { text-align-last: justify; }
-.page p.first::first-letter { font-size: 3.1em; float: right; line-height: .9; margin: .06em 0 0 .08em; font-weight: 700; color: #6b4e17; }
-.page p.empty { color: #9a8f79; text-align: center; text-indent: 0; margin-top: 2em; }
-.scene-break { text-align: center; color: #9b7b3a; margin: .6em 0; font-size: .9em; letter-spacing: .6em; }
-.orn { width: 34%; max-width: 46mm; height: auto; color: #a88539; display: block; margin: .8em auto; }
-
-.ch-head { text-align: center; padding-top: 16%; margin-bottom: 2.2em; }
-.ch-num { font-size: .85em; letter-spacing: .25em; color: #8b6d2f; text-indent: 0 !important; text-align: center !important; }
-.ch-title { font-family: var(--display); font-weight: 700; font-size: 2em; color: #231d12; margin: .25em 0 0; line-height: 1.2; }
-.page.opener .run-head { visibility: hidden; }
-
-.fig { margin: .9em 0; text-align: center; }
-.fig img { display: block; width: 100%; object-fit: contain; border-radius: 1px; }
-.fig figcaption { font-size: .8em; color: #6c5f45; margin-top: .45em; font-style: italic; line-height: 1.35; text-align: center; }
-.page.full .page-body { display: flex; align-items: center; justify-content: center; }
-.page.full .fig { margin: 0; width: 100%; }
-.page.full .fig img { height: auto; max-width: 100%; margin: 0 auto; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
-
-.page.front .page-body { display: flex; align-items: center; justify-content: center; text-align: center; }
-.half { font-family: var(--display); font-size: 1.5em; font-weight: 500; color: #3c3322; }
-.tp h1, .tp h2 { font-family: var(--display); font-weight: 900; font-size: 2.6em; color: #1e1810; margin-bottom: .2em; }
-.tp-sub { font-size: 1.15em; color: #5a4c33; text-indent: 0 !important; text-align: center !important; }
-.tp-author { font-size: 1.3em; letter-spacing: .1em; text-indent: 0 !important; text-align: center !important; margin-top: 2em !important; }
-.page.copyright .page-body { align-items: flex-end; }
-.copy p { font-size: .75em; color: #5d5240; text-align: center !important; text-indent: 0 !important; margin-bottom: .6em !important; }
-.ded p { font-style: italic; font-size: 1.15em; text-align: center !important; text-indent: 0 !important; color: #3c3322; }
-.page.toc-page .page-body { display: block; text-align: start; }
-.toc-title { font-family: var(--display); text-align: center; font-size: 1.6em; margin: 1em 0 1.2em; color: #231d12; }
-.toc { list-style: none; margin: 0; padding: 0; }
-.toc li { display: flex; align-items: baseline; gap: .4em; margin-bottom: .7em; }
-.toc .dots { flex: 1; border-bottom: 1px dotted #9b8a66; transform: translateY(-.3em); }
-.toc .n { font-variant-numeric: tabular-nums; }
-
-/* כריכות */
-.page.cover, .page.back { padding: 10mm; background: #172038; color: #f3e6c4; }
-.page.cover.genre-romance, .page.back.genre-romance { background: #4a1d2c; }
-.page.cover.genre-drama, .page.back.genre-drama { background: #2a1c1a; }
-.page.cover.genre-thriller, .page.back.genre-thriller { background: #0f1113; }
-.page.cover.genre-historical, .page.back.genre-historical { background: #3b2a17; }
-.page.cover.genre-fantasy, .page.back.genre-fantasy { background: #1d1a3d; }
-.page.cover.genre-inspiration, .page.back.genre-inspiration { background: #173a36; }
-.page.cover.genre-kids, .page.back.genre-kids { background: #f2c14e; color: #2b1b05; }
-.cover-frame {
-  height: 100%; border: 1px solid rgba(232, 205, 143, .75); outline: 1px solid rgba(232, 205, 143, .4); outline-offset: -5mm;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 12mm 10mm; gap: 3mm;
+.theme-opt input { position: absolute; opacity: 0; }
+.theme-opt:has(input:checked) { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--bg-2)); }
+.theme-opt:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.theme-text { display: flex; flex-direction: column; line-height: 1.35; }
+.theme-text strong { font-size: 1.05rem; }
+.theme-text span { color: var(--muted); font-size: .82rem; }
+.swatch {
+  flex: none; width: 44px; height: 60px; border-radius: 2px 5px 5px 2px; display: grid; place-items: center;
+  box-shadow: inset 3px 0 0 rgba(0, 0, 0, .35), 0 4px 10px rgba(0, 0, 0, .35); outline: 1px solid rgba(222, 190, 118, .7); outline-offset: -5px;
 }
-.genre-kids .cover-frame { border-color: #2b1b05; outline-color: rgba(43, 27, 5, .4); border-radius: 8mm; }
-.page.cover .page-body, .page.back .page-body { overflow: hidden; }
-.cover-genre { font-size: .75em; letter-spacing: .35em; opacity: .8; text-indent: 0 !important; text-align: center !important; }
-.cover-title { font-family: var(--display); font-weight: 900; font-size: 3em; line-height: 1.05; margin: 0; color: #f0d796; }
-.genre-kids .cover-title { color: #2b1b05; font-family: 'Suez One', var(--kids); }
-.cover-sub { font-size: 1.1em; opacity: .9; text-align: center !important; text-indent: 0 !important; }
-.cover-author { margin-top: auto !important; font-size: 1.2em; letter-spacing: .2em; text-align: center !important; text-indent: 0 !important; }
-.cover-art { width: 100%; flex: 0 1 50%; min-height: 0; display: flex; justify-content: center; }
-.cover-art img { max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid rgba(232, 205, 143, .5); }
-.cover-orn .orn, .back .orn { color: #d4b06a; width: 50%; }
-.cover-space { flex: 1; }
-.cover-frame .cover-orn { width: 100%; }
-.cover-frame .cover-orn .orn { width: 62%; max-width: none; }
-.genre-kids .orn { color: #7a4b00; }
-.back-title { font-family: var(--display); color: #f0d796; font-size: 1.6em; }
-.blurb { text-align: center !important; text-indent: 0 !important; line-height: 1.7; margin-bottom: .6em !important; font-size: .95em; }
-
-/* ספר ילדים */
-.book.kids .page { font-family: var(--kids); line-height: 1.5; }
-.kids-page .page-body { display: flex; flex-direction: column; gap: 5mm; }
-.kids-art { margin: 0; flex: 0 1 64%; min-height: 0; display: flex; justify-content: center; }
-.kids-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 5mm; }
-.kids-text { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.kids-text p { text-align: center; text-indent: 0; margin-bottom: .4em; }
-.kids-page.no-art .kids-text { font-size: 120%; }
-.book.kids .ch-num, .book.kids .run-head { display: none; }
+.sw-letter { font-size: 28px; line-height: 1; background: linear-gradient(100deg, #9c7a35, #f6e2a4 35%, #c49a45 55%, #fff3c8 70%, #b38a3c); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.t-royal .swatch { background: radial-gradient(circle at 50% 35%, #1d2a4f, #111a33); }
+.t-royal .sw-letter { font-family: 'Bellefair', serif; }
+.t-classic .swatch { background: radial-gradient(circle at 50% 35%, #6b1c2e, #4a1220); }
+.t-classic .sw-letter { font-family: 'Frank Ruhl Libre', serif; font-weight: 900; }
+.t-modern .swatch { background: #0d0d0f; outline-color: rgba(199, 178, 126, .45); }
+.t-modern .sw-letter { font-family: 'Noto Serif Hebrew', serif; font-weight: 200; }
+.t-vintage .swatch { background: radial-gradient(circle at 50% 35%, #5a3519, #3a2312); }
+.t-vintage .sw-letter { font-family: 'Noto Rashi Hebrew', serif; }
 
 /* ---------- דיאלוגים והודעות ---------- */
 dialog {

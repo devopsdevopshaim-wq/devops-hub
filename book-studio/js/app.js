@@ -39,7 +39,7 @@
   function blankProject() {
     return {
       id: uid(), title: '', subtitle: '', author: '', genre: 'memoir', voice: 'first', register: 'high',
-      kidsAge: '4–7', targetPages: 200, trim: 'a5', fontScale: 1, dedication: '', notes: '', blurb: '',
+      kidsAge: '4–7', targetPages: 200, trim: 'a5', fontScale: 1, bookTheme: 'royal', dedication: '', notes: '', blurb: '',
       sections: [{ id: uid(), title: '', text: '' }], chapters: [], images: [], createdAt: Date.now()
     };
   }
@@ -882,11 +882,13 @@
 
   function fontsReady() {
     if (!document.fonts) return Promise.resolve();
+    var t = 'אבג';
     return Promise.all([
-      document.fonts.load('16px "Frank Ruhl Libre"', 'אבג'),
-      document.fonts.load('700 16px "Frank Ruhl Libre"', 'אבג'),
-      document.fonts.load('16px "Varela Round"', 'אבג')
-    ]).catch(function () {}).then(function () { return document.fonts.ready; });
+      '16px "Frank Ruhl Libre"', '700 16px "Frank Ruhl Libre"', '900 16px "Frank Ruhl Libre"',
+      '16px "Bellefair"', '16px "David Libre"', '700 16px "David Libre"',
+      '300 16px "Noto Serif Hebrew"', '400 16px "Noto Serif Hebrew"', '600 16px "Noto Serif Hebrew"',
+      '16px "Noto Rashi Hebrew"', '16px "Varela Round"', '16px "Suez One"'
+    ].map(function (f) { return document.fonts.load(f, t); })).catch(function () {}).then(function () { return document.fonts.ready; });
   }
 
   function layoutOnce(map) {
@@ -936,7 +938,22 @@
     $('#zoom').value = z;
   }
 
+  /* בחירת סגנון העיצוב: כרטיסים קטנים שמראים את הכריכה והאות של כל סגנון */
+  function renderThemePicker() {
+    var kids = P.isKids(project);
+    $('.theme-picker').hidden = kids;
+    if (kids) return;
+    var cur = L.THEMES[project.bookTheme] ? project.bookTheme : 'royal';
+    $('#themePicker').innerHTML = Object.keys(L.THEMES).map(function (k) {
+      var t = L.THEMES[k];
+      return '<label class="theme-opt t-' + k + '"><input type="radio" name="bookTheme" value="' + k + '"' + (k === cur ? ' checked' : '') + '>' +
+        '<span class="swatch" aria-hidden="true"><span class="sw-letter">א</span></span>' +
+        '<span class="theme-text"><strong>' + esc(t.label) + '</strong><span>' + esc(t.hint) + '</span></span></label>';
+    }).join('');
+  }
+
   function renderBook(force) {
+    renderThemePicker();
     if (!bookDirty && !force) return Promise.resolve();
     $('#bookStats').textContent = 'מעמד את הספר…';
     $('#fontScale').value = project.fontScale || 1;
@@ -1047,6 +1064,13 @@
       fsTimer = setTimeout(function () { save(); renderBook(true); }, 350);
     });
     $('#fitBtn').addEventListener('click', fitToTarget);
+    $('#themePicker').addEventListener('change', function (e) {
+      if (e.target.name !== 'bookTheme') return;
+      project.bookTheme = e.target.value;
+      save();
+      renderBook(true);
+      toast('סגנון העיצוב: ' + L.THEMES[project.bookTheme].label);
+    });
     $('#printBtn').addEventListener('click', function () {
       renderBook().then(function () { window.print(); });
     });
