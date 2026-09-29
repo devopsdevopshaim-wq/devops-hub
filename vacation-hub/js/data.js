@@ -146,12 +146,13 @@ window.APP_DATA = (function () {
         note: 'הרכבת אינה פועלת בשבת ובחגים.'
       },
       hotels: [
-        { name: 'King David', addr: "23 King David St, Jerusalem", phone: '+972 2 620 8888', web: 'https://www.danhotels.com/JerusalemHotels/KingDavidJerusalemHotel', area: 'רחוב המלך דוד', tier: 'lux', price: 2600, note: 'מלון היסטורי מול חומות העיר' },
+        { name: 'King David', photo: 'King_David_Hotel_Pool.jpg', rec: 'המלון ההיסטורי של ירושלים — גן ובריכה עם נוף לחומות העיר העתיקה.', addr: "23 King David St, Jerusalem", phone: '+972 2 620 8888', web: 'https://www.danhotels.com/JerusalemHotels/KingDavidJerusalemHotel', area: 'רחוב המלך דוד', tier: 'lux', price: 2600, note: 'מלון היסטורי מול חומות העיר' },
         { name: 'Mamilla Hotel', addr: "11 Shlomo HaMelech St, Jerusalem", phone: '+972 2 548 2222', web: 'https://www.mamillahotel.com/', area: 'ממילא', tier: 'lux', price: 2100, note: 'דקות משער יפו' },
         { name: 'Harmony Hotel', addr: "6 Yoel Moshe Salomon St, Jerusalem", phone: '+972 73 337 0000', area: 'מדרחוב נחלת שבעה', tier: 'mid', price: 800, note: 'בוטיק במרכז העיר' },
         { name: 'Abraham Hostel', kind: 'hostel', tags: ['budget'],  addr: "67 HaNevi'im St, Jerusalem", phone: '+972 2 650 2200', web: 'https://www.abraham.travel/jerusalem/', area: 'דוידקה', tier: 'budget', price: 350, note: 'הוסטל עם סיורים מאורגנים' },
         { name: 'The David Citadel', kind: 'hotel', tags: ['pool', 'view'], addr: '7 King David St, Jerusalem', phone: '+972 2 621 1111', web: 'https://www.thedavidcitadel.com/', area: 'ממילא', tier: 'lux', price: 2800, note: 'נוף לחומות העיר העתיקה' },
-        { name: 'The Inbal', kind: 'hotel', tags: ['pool', 'family'], addr: '3 Jabotinsky St, Jerusalem', phone: '+972 2 675 6666', web: 'https://www.inbalhotel.com/', area: 'גן הפעמון', tier: 'lux', price: 1900, note: 'מול גן הפעמון, קרוב לתחנה הראשונה' }
+        { name: 'The Inbal', kind: 'hotel', tags: ['pool', 'family'], addr: '3 Jabotinsky St, Jerusalem', phone: '+972 2 675 6666', web: 'https://www.inbalhotel.com/', area: 'גן הפעמון', tier: 'lux', price: 1900, note: 'מול גן הפעמון, קרוב לתחנה הראשונה' },
+        { name: 'The American Colony Hotel', tags: ['couple'], addr: '1 Louis Vincent St, Jerusalem', phone: '+972 2 627 9777', web: 'https://www.americancolony.com/', area: 'ליד שער שכם', tier: 'lux', price: 2400, note: 'אחוזה עות׳מאנית היסטורית (לא כשר)', photo: 'American_Colony_Hotel.jpg', rec: 'לאוהבי היסטוריה: ארמון מהמאה ה-19 עם חצר פנימית פורחת.' },
       ],
       car: { need: 'לא נחוץ בתוך העיר', companies: ['שלמה סיקסט', 'אלדן', 'באדג׳ט'], tips: ['חניה במרכז יקרה ומוגבלת', 'חניוני חנה וסע ליד הרכבת הקלה', 'רכב שימושי לים המלח ולמדבר יהודה'] },
       kosherNote: 'רוב המסעדות במערב העיר כשרות. בשבת רוב המסעדות הכשרות סגורות.',
@@ -213,7 +214,8 @@ window.APP_DATA = (function () {
         { name: 'Brown TLV', kind: 'boutique', tags: ['couple'],  addr: "25 Kalisher St, Tel Aviv", phone: '+972 3 717 0200', web: 'https://brownhotels.com/tlv', area: 'מרכז העיר', tier: 'mid', price: 950, note: 'בר גג וסטייל' },
         { name: 'Abraham Tel Aviv', kind: 'hostel', tags: ['budget'],  addr: "21 Levontin St, Tel Aviv", phone: '+972 3 624 9200', web: 'https://www.abraham.travel/tel-aviv/', area: 'לוינסקי', tier: 'budget', price: 400, note: 'הוסטל חברתי' },
         { name: 'Carlton Tel Aviv', kind: 'hotel', tags: ['pool', 'view'], addr: '10 Eliezer Peri St, Tel Aviv', phone: '+972 3 520 1818', web: 'https://www.carlton.co.il/en/', area: 'המרינה', tier: 'lux', price: 2000, note: 'בריכת גג מול הים' },
-        { name: 'Dan Tel Aviv', kind: 'hotel', tags: ['pool', 'family', 'view'], addr: '99 HaYarkon St, Tel Aviv', phone: '+972 3 520 2525', web: 'https://www.danhotels.com/TelAvivHotels/DanTelAvivHotel', area: 'טיילת הירקון', tier: 'lux', price: 2400, note: 'מלון ותיק על קו החוף' }
+        { name: 'Dan Tel Aviv', kind: 'hotel', tags: ['pool', 'family', 'view'], addr: '99 HaYarkon St, Tel Aviv', phone: '+972 3 520 2525', web: 'https://www.danhotels.com/TelAvivHotels/DanTelAvivHotel', area: 'טיילת הירקון', tier: 'lux', price: 2400, note: 'מלון ותיק על קו החוף' },
+        { name: 'David InterContinental', tags: ['family', 'view'], addr: '12 Kaufmann St, Tel Aviv', phone: '+972 3 795 1111', web: 'https://telaviv.intercontinental.com/', area: 'בין נווה צדק ליפו', tier: 'lux', price: 1900, note: 'מול הים', rec: 'מיקום מצוין בין נווה צדק, יפו והטיילת, עם נוף לים.' },
       ],
       car: { need: 'לא נחוץ', companies: ['שלמה סיקסט', 'אלדן', 'AutoTel (שיתופי)'], tips: ['חניה קשה ויקרה — העדיפו חניונים', 'אופניים וקורקינטים שיתופיים בכל העיר'] },
       kosherNote: 'יש עשרות מסעדות כשרות; חפשו תעודת כשרות. באזור הבורסה ברמת גן ריכוז גבוה.',
@@ -268,9 +270,9 @@ window.APP_DATA = (function () {
         note: 'רכב הוא הדרך הנוחה ביותר לטייל בצפון.'
       },
       hotels: [
-        { name: 'The Scots Hotel', kind: 'boutique', tags: ['couple'],  addr: "1 Gdud Barak St, Tiberias", phone: '+972 4 671 0710', web: 'https://www.scotshotels.com/', area: 'טבריה', tier: 'lux', price: 2000, note: 'בית חולים סקוטי היסטורי על הכנרת' },
+        { name: 'The Scots Hotel', photo: 'The_Scots_Hotel_Tiberias_(16078774992).jpg', rec: 'מתחם היסטורי מאבן בזלת על שפת הכנרת.', kind: 'boutique', tags: ['couple'],  addr: "1 Gdud Barak St, Tiberias", phone: '+972 4 671 0710', web: 'https://www.scotshotels.com/', area: 'טבריה', tier: 'lux', price: 2000, note: 'בית חולים סקוטי היסטורי על הכנרת' },
         { name: 'Pina Barosh', kind: 'boutique', tags: ['couple'],  addr: "8 HaChalutzim St, Rosh Pina", phone: '+972 4 848 7474', web: 'https://en.pina-barosh.com/', area: 'ראש פינה', tier: 'mid', price: 1100, note: 'בוטיק במושבה הוותיקה' },
-        { name: 'כפר הנופש עין גב', kind: 'kibbutz', tags: ['family', 'nature'],  addr: "Kibbutz Ein Gev", phone: '+972 4 665 9800', web: 'https://eingev.com/en/', area: 'חוף מזרחי של הכנרת', tier: 'mid', price: 800, note: 'חוף פרטי' },,
+        { name: 'כפר הנופש עין גב', kind: 'kibbutz', tags: ['family', 'nature'],  addr: "Kibbutz Ein Gev", phone: '+972 4 665 9800', web: 'https://eingev.com/en/', area: 'חוף מזרחי של הכנרת', tier: 'mid', price: 800, note: 'חוף פרטי' },
         { name: 'Vered HaGalil', kind: 'farm', tags: ['couple', 'nature', 'view'], addr: 'Vered HaGalil, near Korazim', phone: '+972 4 693 5785', web: 'https://www.veredhagalil.com/', area: 'מעל הכנרת', tier: 'mid', price: 900, note: 'חוות אירוח עם בקתות עץ ורכיבה על סוסים' },
         { name: 'Mizpe Hayamim', kind: 'spa', tags: ['couple', 'spa', 'adults', 'view'], addr: 'Rosh Pina (Upper Galilee)', phone: '+972 4 699 4555', web: 'https://www.mizpe-hayamim.com/', area: 'ראש פינה', tier: 'lux', price: 2200, note: 'מלון ספא עם חווה אורגנית' },
         { name: 'Merom Golan Resort Village', kind: 'cabins', tags: ['family', 'nature', 'view'], addr: 'Kibbutz Merom Golan', phone: '+972 4 696 0267', web: 'https://english.meromgolantourism.co.il/', area: 'הגולן, מול הר בנטל', tier: 'mid', price: 750, note: 'בקתות עץ וסוויטות בקיבוץ' },
@@ -334,7 +336,8 @@ window.APP_DATA = (function () {
         { name: 'Nevo by Isrotel (לשעבר Isrotel Dead Sea)', kind: 'resort', tags: ['family', 'spa', 'pool'], addr: 'Route 90, Ein Bokek', phone: '+972 8 668 9666', web: 'https://www.isrotel.com/isrotel-hotels/dead-sea/', area: 'עין בוקק', tier: 'mid', price: 1100, note: 'ספא ובריכות, קרוב לחוף הציבורי' },
         { name: 'David Dead Sea Resort & Spa', kind: 'spa', tags: ['family', 'spa', 'pool'], addr: 'Ein Bokek', phone: '+972 8 659 1234', web: 'https://www.grandhotels-israel.com/david-dead-sea-hotel-contact-us', area: 'עין בוקק', tier: 'mid', price: 1300, note: 'ספא גדול ובריכות גופרית' },
         { name: 'Ein Gedi Kibbutz Hotel', kind: 'kibbutz', tags: ['couple', 'nature', 'family'], addr: 'Kibbutz Ein Gedi', phone: '+972 8 659 4220', web: 'https://ngedi.co.il/en/contact-us/', area: 'קיבוץ עין גדי', tier: 'mid', price: 1100, note: 'מלון בתוך גן בוטני, קרוב לשמורה' },
-        { name: 'HI Masada Hostel', kind: 'hostel', tags: ['budget', 'family'], web: 'https://en.iyha.org.il/masada-hostel', area: 'למרגלות מצדה', tier: 'budget', price: 400, note: 'אכסניה עם בריכה, מושלם לזריחה במצדה' }
+        { name: 'HI Masada Hostel', kind: 'hostel', tags: ['budget', 'family'], web: 'https://en.iyha.org.il/masada-hostel', area: 'למרגלות מצדה', tier: 'budget', price: 400, note: 'אכסניה עם בריכה, מושלם לזריחה במצדה' },
+        { name: 'Herods Dead Sea', kind: 'spa', tags: ['spa', 'couple'], phone: '+972 8 659 1591', area: 'עין בוקק', tier: 'lux', price: 1500, note: 'מלון ספא בעין בוקק', rec: 'ספא גדול וקרבה לחוף — טוב לסוף שבוע של רוגע.' },
       ],
       car: { need: 'מומלץ — המרחקים גדולים', companies: ['שלמה סיקסט', 'אלדן', 'Hertz', 'Avis'], tips: ['שתו הרבה מים — חם מאוד רוב השנה', 'במצדה: לעלות מוקדם בבוקר או ברכבל', 'לא לטבול את הראש ולא להתיז — המים צורבים בעיניים'] },
       kosherNote: 'רוב המלונות הגדולים בעין בוקק בכשרות רבנות — בדקו תעודה בתוקף.',
@@ -383,7 +386,7 @@ window.APP_DATA = (function () {
         note: 'רכב מומלץ מאוד — המרחקים במכתש ובנגב גדולים.'
       },
       hotels: [
-        { name: 'Beresheet by Isrotel', kind: 'resort', tags: ['couple', 'spa', 'pool', 'view'], addr: 'Derech Beresheet 1, Mitzpe Ramon', phone: '+972 8 659 8000', web: 'https://www.isrotel.com/isrotel-hotels/negev-desert/beresheet/', area: 'שפת המכתש', tier: 'lux', price: 3200, note: 'וילות על שפת המכתש, בריכת אינסוף' },
+        { name: 'Beresheet by Isrotel', photo: 'Beresheet_Hotel_in_Mitzpe_Ramon.JPG', rec: 'על שפת המכתש — לילות שקטים ונוף מדברי פתוח.', kind: 'resort', tags: ['couple', 'spa', 'pool', 'view'], addr: 'Derech Beresheet 1, Mitzpe Ramon', phone: '+972 8 659 8000', web: 'https://www.isrotel.com/isrotel-hotels/negev-desert/beresheet/', area: 'שפת המכתש', tier: 'lux', price: 3200, note: 'וילות על שפת המכתש, בריכת אינסוף' },
         { name: 'Daroma by Isrotel (לשעבר Ramon Inn)', kind: 'hotel', tags: ['family'], addr: '1 Ein Akev St, Mitzpe Ramon', phone: '+972 8 658 8822', area: 'מרכז העיירה', tier: 'mid', price: 800, note: 'מלון נוח לבסיס טיולים' },
         { name: 'Succah in the Desert', kind: 'lodge', tags: ['couple', 'nature'], phone: '+972 8 658 6280', web: 'https://www.succah.co.il/', area: 'מדבר ליד מצפה רמון', tier: 'mid', price: 700, note: 'סוכות אבן ועץ מבודדות — שקט וכוכבים' }
       ],
@@ -434,7 +437,8 @@ window.APP_DATA = (function () {
         { name: 'Dan Carmel Haifa', kind: 'hotel', tags: ['view', 'pool'], addr: '85–87 HaNassi Ave, Haifa', phone: '+972 4 830 3030', web: 'https://www.danhotels.com/HaifaHotels/DanCarmelHaifaHotel', area: 'מרכז הכרמל', tier: 'lux', price: 1300, note: 'נוף למפרץ מראש הכרמל' },
         { name: 'The Colony Hotel', kind: 'boutique', tags: ['couple'], addr: '28 Ben Gurion Blvd, Haifa', phone: '+972 4 851 3344', web: 'https://colonyhaifa.com/', area: 'המושבה הגרמנית', tier: 'mid', price: 700, note: 'בניין בן יותר מ-100 שנה, למרגלות הגנים הבהאיים' },
         { name: 'Carmel Forest Spa Resort', kind: 'spa', tags: ['couple', 'spa', 'nature'], addr: 'Beit Oren, Carmel Forest', phone: '+972 8 638 7797', web: 'https://www.isrotel.com/isrotel-hotels/north-hotels/haifa/carmel-forest/', area: 'יערות הכרמל', tier: 'lux', price: 2600, note: 'ספא הבריאות הגדול בישראל, בלב היער' },
-        { name: 'Elma Arts Complex Hotel', kind: 'boutique', tags: ['couple', 'culture', 'view'], addr: '1 Yair St, Zichron Yaakov', phone: '+972 4 630 0111', web: 'https://www.theelmahotel.com/', area: 'זכרון יעקב', tier: 'lux', price: 1600, note: 'מלון אמנות עם אולם קונצרטים ונוף לים' }
+        { name: 'Elma Arts Complex Hotel', kind: 'boutique', tags: ['couple', 'culture', 'view'], addr: '1 Yair St, Zichron Yaakov', phone: '+972 4 630 0111', web: 'https://www.theelmahotel.com/', area: 'זכרון יעקב', tier: 'lux', price: 1600, note: 'מלון אמנות עם אולם קונצרטים ונוף לים' },
+        { name: 'Bay Club Hotel', kind: 'boutique', phone: '+972 4 811 9700', area: 'מרכז העיר', tier: 'mid', price: 600, note: 'מלון בוטיק של רשת אטלס', rec: 'בוטיק במחיר נוח, בסיס טוב לטיול בחיפה.' },
       ],
       car: { need: 'שימושי לכרמל ולזכרון; בעיר — תחבורה ציבורית', companies: ['שלמה סיקסט', 'אלדן', 'Hertz'], tips: ['העיר תלולה — חניה ברחובות הכרמל מאתגרת', 'הכרמלית חוסכת עליות', 'בשבת חלק מהקווים פועלים'] },
       kosherNote: 'יש מסעדות כשרות במרכז הכרמל ובמרכזי הקניות; חלק מהמסעדות בעיר אינן כשרות — בדקו תעודה.',
@@ -485,10 +489,12 @@ window.APP_DATA = (function () {
         note: 'חלק מהטיסות נוחתות באורלי (ORY) — משם קו מטרו 14 למרכז.'
       },
       hotels: [
-        { name: 'Le Meurice', addr: "228 Rue de Rivoli, 75001 Paris", phone: '+33 1 44 58 10 10', web: 'https://www.dorchestercollection.com/paris/le-meurice', area: 'רחוב ריבולי', tier: 'lux', price: 6000, note: 'מול גני טווילרי' },
+        { name: 'Le Meurice', photo: 'Paris_75001_Rue_de_Rivoli_no_228_Le_Meurice_20170528.jpg', rec: 'ארמון מול גני הטווילרי, במרחק הליכה מהלובר.', addr: "228 Rue de Rivoli, 75001 Paris", phone: '+33 1 44 58 10 10', web: 'https://www.dorchestercollection.com/paris/le-meurice', area: 'רחוב ריבולי', tier: 'lux', price: 6000, note: 'מול גני טווילרי' },
         { name: 'Hôtel des Grands Boulevards', kind: 'boutique', tags: ['couple'],  addr: "17 Bd Poissonnière, 75002 Paris", phone: '+33 1 85 73 33 33', web: 'https://www.grandsboulevardshotel.com/', area: 'הרובע ה-2', tier: 'mid', price: 1300, note: 'בוטיק עם מסעדה' },
         { name: 'Hôtel Fabric', addr: "31 Rue de la Folie Méricourt, 75011 Paris", phone: '+33 1 43 57 27 00', web: 'https://www.hotelfabric.com/', area: 'הרובע ה-11', tier: 'mid', price: 950, note: 'לופט תעשייתי שקט' },
-        { name: 'Generator Paris', kind: 'hostel', tags: ['budget'],  addr: "9–11 Place du Colonel Fabien, 75010 Paris", phone: '+33 1 70 98 84 00', web: 'https://staygenerator.com/hostels/paris', area: 'הרובע ה-10', tier: 'budget', price: 450, note: 'הוסטל עם חדרים פרטיים' }
+        { name: 'Generator Paris', kind: 'hostel', tags: ['budget'],  addr: "9–11 Place du Colonel Fabien, 75010 Paris", phone: '+33 1 70 98 84 00', web: 'https://staygenerator.com/hostels/paris', area: 'הרובע ה-10', tier: 'budget', price: 450, note: 'הוסטל עם חדרים פרטיים' },
+        { name: 'Hôtel Plaza Athénée', tags: ['couple', 'view'], addr: '25 Avenue Montaigne, 75008 Paris', phone: '+33 1 53 67 66 65', web: 'https://www.dorchestercollection.com/paris/hotel-plaza-athenee', area: 'שדרות מונטיין', tier: 'lux', price: 6500, note: 'מלון אייקוני בשדרת האופנה', rec: 'לחופשה זוגית חגיגית: המרפסות האדומות המפורסמות ונוף למגדל אייפל מחלק מהחדרים.' },
+        { name: 'Pullman Paris Tour Eiffel', tags: ['family', 'view'], addr: '18 Avenue de Suffren, 75015 Paris', phone: '+33 1 44 38 56 00', web: 'https://www.pullmanparistoureiffel.fr/en', area: 'למרגלות מגדל אייפל', tier: 'mid', price: 1500, note: '4 כוכבים, צמוד למגדל', rec: 'מיקום מושלם למשפחות: מגדל אייפל, שיט בסן והטרוקדרו במרחק הליכה.' },
       ],
       car: { need: 'לא בעיר; כן לטיולים לנורמנדי ולעמק הלואר', companies: ['Europcar', 'Sixt', 'Hertz', 'Avis'], tips: ['אזורי ZFE — נדרש מדבקת Crit\'Air', 'כבישי אגרה (Péage) — כרטיס אשראי', 'רישיון ישראלי תקף; מומלץ רישיון בינלאומי'] },
       kosherNote: 'בפריז יש קהילה יהודית גדולה. ריכוזים: רחוב רוזייה בלה מארה, הרובע ה-17 וה-19.',
@@ -543,10 +549,12 @@ window.APP_DATA = (function () {
         note: 'טיסות לואו-קוסט נוחתות גם בלוטון ובסטנסטד — משם רכבות ואוטובוסים.'
       },
       hotels: [
-        { name: 'The Savoy', addr: "Strand, London WC2R 0EZ", phone: '+44 20 7836 4343', web: 'https://www.thesavoylondon.com/', area: 'סטרנד', tier: 'lux', price: 5500, note: 'אייקון על התמזה' },
+        { name: 'The Savoy', photo: 'The_Savoy_Hotel_-_geograph.org.uk_-_7752638.jpg', rec: 'אגדה על התמזה, קרוב לקובנט גארדן ולתיאטראות.', addr: "Strand, London WC2R 0EZ", phone: '+44 20 7836 4343', web: 'https://www.thesavoylondon.com/', area: 'סטרנד', tier: 'lux', price: 5500, note: 'אייקון על התמזה' },
         { name: 'citizenM Tower of London', addr: "40 Trinity Square, London EC3N 4DJ", phone: '+44 20 3519 4830', web: 'https://www.citizenm.com/', area: 'טאוור היל', tier: 'mid', price: 1100, note: 'חדרים קומפקטיים ונוף' },
         { name: 'The Hoxton Holborn', addr: "199–206 High Holborn, London WC1V 7BD", phone: '+44 20 7661 3000', web: 'https://thehoxton.com/london/holborn/', area: 'הולבורן', tier: 'mid', price: 1300, note: 'מרכזי ותוסס' },
-        { name: 'Generator London', kind: 'hostel', tags: ['budget'],  addr: "37 Tavistock Place, London WC1H 9SE", phone: '+44 20 7388 7666', web: 'https://staygenerator.com/hostels/london/kingscross', area: 'קינגס קרוס', tier: 'budget', price: 500, note: 'הוסטל ליד תחנת הרכבת' }
+        { name: 'Generator London', kind: 'hostel', tags: ['budget'],  addr: "37 Tavistock Place, London WC1H 9SE", phone: '+44 20 7388 7666', web: 'https://staygenerator.com/hostels/london/kingscross', area: 'קינגס קרוס', tier: 'budget', price: 500, note: 'הוסטל ליד תחנת הרכבת' },
+        { name: 'The Ritz London', tags: ['couple'], addr: '150 Piccadilly, London W1J 9BR', phone: '+44 20 7493 8181', area: 'פיקדילי', tier: 'lux', price: 4800, note: 'מלון היסטורי מול גרין פארק', rec: 'לחוויה בריטית קלאסית: תה של אחר הצהריים המפורסם, במרחק הליכה מארמון בקינגהאם.' },
+        { name: 'Park Plaza Westminster Bridge', tags: ['family', 'view'], addr: '200 Westminster Bridge Road, London SE1 7UT', phone: '+44 333 400 6112', web: 'https://www.parkplazawestminsterbridge.com/', area: 'סאות׳ בנק', tier: 'mid', price: 1300, note: 'מול הביג בן והלונדון איי', rec: 'למשפחות: יוצאים מהלובי ישר לביג בן, ללונדון איי ולטיילת של התמזה.' },
       ],
       car: { need: 'לא בעיר (אגרת גודש ו-ULEZ); כן לקוטסוולדס', companies: ['Enterprise', 'Hertz', 'Sixt', 'Europcar'], tips: ['נהיגה בצד שמאל', 'Congestion Charge במרכז', 'כיכרות — זכות קדימה מימין'] },
       kosherNote: 'קהילה יהודית גדולה. ריכוזים: גולדרס גרין, הנדון, סטמפורד היל, אדג׳וור.',
@@ -602,7 +610,8 @@ window.APP_DATA = (function () {
         { name: 'Hotel Hassler Roma', addr: "Piazza della Trinità dei Monti 6, 00187 Roma", phone: '+39 06 699340', web: 'https://www.hotelhasslerroma.com/', area: 'ראש המדרגות הספרדיות', tier: 'lux', price: 4500, note: 'נוף על העיר' },
         { name: 'Hotel Artemide', addr: "Via Nazionale 22, 00184 Roma", phone: '+39 06 489911', web: 'https://www.hotelartemide.it/', area: 'Via Nazionale', tier: 'mid', price: 1000, note: 'קרוב לטרמיני' },
         { name: 'Hotel Santa Maria', addr: "Vicolo del Piede 2, 00153 Roma", phone: '+39 06 589 4626', web: 'https://www.hotelsantamariatrastevere.it/', area: 'טרסטוורה', tier: 'mid', price: 1050, note: 'חצר פנימית שקטה' },
-        { name: 'The Beehive', kind: 'hostel', tags: ['budget'],  addr: "Via Marghera 8, 00185 Roma", phone: '+39 06 4470 4553', web: 'https://www.the-beehive.com/', area: 'טרמיני', tier: 'budget', price: 400, note: 'אכסניה ידידותית' }
+        { name: 'The Beehive', kind: 'hostel', tags: ['budget'],  addr: "Via Marghera 8, 00185 Roma", phone: '+39 06 4470 4553', web: 'https://www.the-beehive.com/', area: 'טרמיני', tier: 'budget', price: 400, note: 'אכסניה ידידותית' },
+        { name: 'Hotel de Russie', tags: ['couple'], addr: 'Via del Babuino 9, 00187 Roma', phone: '+39 06 328881', web: 'https://www.roccofortehotels.com/hotels-and-resorts/hotel-de-russie/', area: 'פיאצה דל פופולו', tier: 'lux', price: 4500, note: 'בין פיאצה דל פופולו למדרגות הספרדיות', rec: 'לזוגות: גן פנימי מדורג ושקט באמצע רומא, צעדים מרחובות הקניות.' },
       ],
       car: { need: 'לא בעיר (אזורי ZTL); כן לטוסקנה', companies: ['Europcar', 'Hertz', 'Sixt', 'Maggiore'], tips: ['ZTL — קנסות אוטומטיים על כניסה למרכז', 'אגרות בכבישים המהירים', 'לתעד את הרכב בווידאו באיסוף'] },
       kosherNote: 'הגטו היהודי ליד בית הכנסת הגדול — רחוב Via del Portico d\'Ottavia.',
@@ -656,10 +665,11 @@ window.APP_DATA = (function () {
         note: 'כרטיס T-casual אינו תקף לתחנת השדה במטרו — צריך כרטיס Aeroport.'
       },
       hotels: [
-        { name: 'Hotel Arts Barcelona', addr: "Carrer de la Marina 19–21, 08005 Barcelona", phone: '+34 93 221 1000', web: 'https://www.ritzcarlton.com/en/hotels/bcnrz-hotel-arts-barcelona/overview/', area: 'הנמל האולימפי', tier: 'lux', price: 3800, note: 'מגדל על הים' },
+        { name: 'Hotel Arts Barcelona', photo: 'Hotel_Arts_by_night.JPG', rec: 'מגדל על חוף הים בנמל האולימפי — ים ועיר יחד.', addr: "Carrer de la Marina 19–21, 08005 Barcelona", phone: '+34 93 221 1000', web: 'https://www.ritzcarlton.com/en/hotels/bcnrz-hotel-arts-barcelona/overview/', area: 'הנמל האולימפי', tier: 'lux', price: 3800, note: 'מגדל על הים' },
         { name: 'Casa Bonay', kind: 'boutique', tags: ['couple'],  addr: "Gran Via de les Corts Catalanes 700, 08010 Barcelona", phone: '+34 935 458 050', web: 'https://casabonay.com/', area: 'אישמפלה', tier: 'mid', price: 1100, note: 'בוטיק עם בר גג' },
         { name: 'Hotel Neri', kind: 'boutique', tags: ['couple'],  addr: "Carrer de Sant Sever 5, 08002 Barcelona", phone: '+34 933 040 655', web: 'https://www.relaischateaux.com/us/hotel/hotel-neri/', area: 'הרובע הגותי', tier: 'lux', price: 2200, note: 'ארמון מהמאה ה-12' },
-        { name: 'Generator Barcelona', kind: 'hostel', tags: ['budget'],  addr: "Carrer de Còrsega 373, 08037 Barcelona", phone: '+34 932 200 377', web: 'https://staygenerator.com/hostels/barcelona', area: 'גרסיה', tier: 'budget', price: 400, note: 'הוסטל מעוצב' }
+        { name: 'Generator Barcelona', kind: 'hostel', tags: ['budget'],  addr: "Carrer de Còrsega 373, 08037 Barcelona", phone: '+34 932 200 377', web: 'https://staygenerator.com/hostels/barcelona', area: 'גרסיה', tier: 'budget', price: 400, note: 'הוסטל מעוצב' },
+        { name: 'W Barcelona', tags: ['couple', 'view'], addr: 'Plaça de la Rosa dels Vents 1, 08039 Barcelona', phone: '+34 93 295 2800', web: 'https://www.marriott.com/en-us/hotels/bcnwh-w-barcelona/overview/', area: 'ברצלונטה', tier: 'lux', price: 2800, note: 'מגדל ה״מפרש״ על קו המים', rec: 'ים ועיר באותה חופשה: על החוף של ברצלונטה עם נוף פתוח לים.' },
       ],
       car: { need: 'לא בעיר; כן לקוסטה בראבה', companies: ['Europcar', 'Sixt', 'Hertz', 'Centauro'], tips: ['גניבות מרכבים — לא להשאיר חפצים גלויים', 'אזור פליטה נמוכה (ZBE)', 'חניה במרכז יקרה'] },
       kosherNote: 'קהילה קטנה. מסעדות כשרות בודדות ובתי חב״ד.',
@@ -712,10 +722,11 @@ window.APP_DATA = (function () {
         note: 'לנמל פיראוס (מעבורות לאיים): אוטובוס X96 או מטרו.'
       },
       hotels: [
-        { name: 'Hotel Grande Bretagne', addr: "1 Vasileos Georgiou A', 105 64 Athens", phone: '+30 210 333 0000', web: 'https://www.marriott.com/en-us/hotels/athlc-hotel-grande-bretagne-a-luxury-collection-hotel-athens/overview/', area: 'כיכר סינטגמה', tier: 'lux', price: 3000, note: 'מרפסת גג עם נוף לאקרופוליס' },
+        { name: 'Hotel Grande Bretagne', photo: 'Hotel_Grande_Bretagne_-_Athènes_(GRA1)_-_2022-03-25_-_1.jpg', rec: 'מול כיכר סינטגמה, עם מסעדת גג ונוף לאקרופוליס.', addr: "1 Vasileos Georgiou A', 105 64 Athens", phone: '+30 210 333 0000', web: 'https://www.marriott.com/en-us/hotels/athlc-hotel-grande-bretagne-a-luxury-collection-hotel-athens/overview/', area: 'כיכר סינטגמה', tier: 'lux', price: 3000, note: 'מרפסת גג עם נוף לאקרופוליס' },
         { name: 'Electra Metropolis', addr: "15 Mitropoleos St, 105 57 Athens", phone: '+30 214 100 6200', web: 'https://www.electrahotels.gr/hotels/electra-metropolis-athens/', area: 'פלאקה', tier: 'mid', price: 1200, note: 'בריכת גג' },
         { name: 'Herodion Hotel', addr: "4 Rovertou Galli St, 117 42 Athens", phone: '+30 210 923 6832', area: 'מקרייאני', tier: 'mid', price: 900, note: 'למרגלות האקרופוליס' },
-        { name: 'City Circus', kind: 'hostel', tags: ['budget'],  addr: "16 Sarri St, 105 53 Athens", phone: '+30 213 023 7244', web: 'https://citycircus.gr/', area: 'פסירי', tier: 'budget', price: 350, note: 'הוסטל מעוצב' }
+        { name: 'City Circus', kind: 'hostel', tags: ['budget'],  addr: "16 Sarri St, 105 53 Athens", phone: '+30 213 023 7244', web: 'https://citycircus.gr/', area: 'פסירי', tier: 'budget', price: 350, note: 'הוסטל מעוצב' },
+        { name: 'King George Athens', tags: ['couple', 'view'], addr: "3 Vasileos Georgiou A' St, Syntagma Square, 105 64 Athens", phone: '+30 210 322 2210', web: 'https://www.marriott.com/en-us/hotels/athgl-king-george-a-luxury-collection-hotel-athens/overview/', area: 'סינטגמה', tier: 'lux', price: 2400, note: 'על כיכר סינטגמה', rec: 'מלון בוטיק יוקרתי במרכז, עם נוף לאקרופוליס מחלק מהחדרים.' },
       ],
       car: { need: 'כן באיים ולטיולי יום לסוניון ולדלפי', companies: ['Avis', 'Hertz', 'Sixt', 'חברות מקומיות באיים'], tips: ['באיים — טרקטורונים ורכב קטן', 'רישיון בינלאומי נדרש לעיתים', 'לבדוק ביטוח צמיגים וחלון'] },
       kosherNote: 'מסעדה כשרה ובית חב״ד באתונה; באיים הגדולים לרוב בתי חב״ד עונתיים.',
@@ -771,8 +782,9 @@ window.APP_DATA = (function () {
       hotels: [
         { name: 'Four Seasons Prague', addr: "Veleslavínova 2a/1098, 110 00 Praha 1", phone: '+420 221 427 000', web: 'https://www.fourseasons.com/prague/', area: 'גדת הוולטבה', tier: 'lux', price: 3000, note: 'נוף לגשר קארל' },
         { name: 'Hotel Josef', kind: 'boutique', tags: ['couple'],  addr: "Rybná 20, 110 00 Praha 1", phone: '+420 221 700 901', web: 'https://www.hoteljosef.com/', area: 'העיר העתיקה', tier: 'mid', price: 800, note: 'עיצוב מינימליסטי' },
-        { name: 'Hotel Paris Prague', addr: "U Obecního domu 1, 110 00 Praha 1", phone: '+420 222 195 195', web: 'https://www.hotel-paris.cz/en/', area: 'כיכר הרפובליקה', tier: 'mid', price: 950, note: 'בניין אר נובו' },
-        { name: 'Czech Inn', kind: 'hostel', tags: ['budget'],  addr: "Francouzská 76, 101 00 Praha 10", phone: '+420 210 011 100', web: 'https://czechinn.com/', area: 'וינוהראדי', tier: 'budget', price: 300, note: 'הוסטל ומלון' }
+        { name: 'Hotel Paris Prague', photo: 'Hotel_Paříž_vchod.jpg', rec: 'ארט נובו אותנטי, צמוד לבית העירוני.', addr: "U Obecního domu 1, 110 00 Praha 1", phone: '+420 222 195 195', web: 'https://www.hotel-paris.cz/en/', area: 'כיכר הרפובליקה', tier: 'mid', price: 950, note: 'בניין אר נובו' },
+        { name: 'Czech Inn', kind: 'hostel', tags: ['budget'],  addr: "Francouzská 76, 101 00 Praha 10", phone: '+420 210 011 100', web: 'https://czechinn.com/', area: 'וינוהראדי', tier: 'budget', price: 300, note: 'הוסטל ומלון' },
+        { name: 'Hotel Kings Court', addr: 'U Obecního domu 3, 110 00 Praha 1', phone: '+420 224 222 888', area: 'העיר העתיקה', tier: 'lux', price: 1300, note: 'ליד הבית העירוני ומגדל האבקה', rec: 'בניין היסטורי מול הבית העירוני — כל העיר העתיקה במרחק הליכה.' },
       ],
       car: { need: 'לא בעיר; כן לצ׳סקי קרומלוב וקרלובי וארי', companies: ['Europcar', 'Sixt', 'Hertz'], tips: ['מדבקת כביש מהיר (Vignette) אלקטרונית', 'אורות דלוקים ביום חובה', 'אפס אלכוהול בנהיגה'] },
       kosherNote: 'הרובע היהודי יוזפוב — בתי כנסת עתיקים ומסעדות כשרות.',
@@ -828,7 +840,9 @@ window.APP_DATA = (function () {
         { name: 'The Plaza', addr: "768 Fifth Ave, New York, NY 10019", phone: '+1 212 759 3000', web: 'https://www.theplazany.com/', area: 'סנטרל פארק דרום', tier: 'lux', price: 5500, note: 'אייקון ניו יורקי' },
         { name: 'Arlo SoHo', addr: "231 Hudson St, New York, NY 10013", phone: '+1 212 342 7000', web: 'https://arlohotels.com/soho/', area: 'סוהו', tier: 'mid', price: 1400, note: 'חדרים קטנים, מיקום מעולה' },
         { name: 'citizenM Times Square', addr: "218 W 50th St, New York, NY 10019", phone: '+1 212 461 3638', web: 'https://www.citizenm.com/', area: 'טיימס סקוור', tier: 'mid', price: 1500, note: 'בר גג' },
-        { name: 'Pod Times Square', kind: 'hotel', tags: ['budget'],  addr: "400 W 42nd St, New York, NY 10036", phone: '+1 212 273 9222', web: 'https://www.thepodhotel.com/pod-times-square', area: 'מידטאון', tier: 'budget', price: 800, note: 'חדרי מיקרו' }
+        { name: 'Pod Times Square', kind: 'hotel', tags: ['budget'],  addr: "400 W 42nd St, New York, NY 10036", phone: '+1 212 273 9222', web: 'https://www.thepodhotel.com/pod-times-square', area: 'מידטאון', tier: 'budget', price: 800, note: 'חדרי מיקרו' },
+        { name: 'The Peninsula New York', tags: ['couple', 'view'], addr: '700 Fifth Avenue, New York, NY 10019', phone: '+1 212 956 2888', area: 'השדרה החמישית', tier: 'lux', price: 4200, note: 'בר גג עם נוף למנהטן', rec: 'לחובבי קניות: על השדרה החמישית, קרוב לסנטרל פארק.' },
+        { name: 'Hotel Edison', tags: ['family'], addr: '228 West 47th Street, New York, NY 10036', phone: '+1 212 840 5000', web: 'https://www.edisonhotelnyc.com/', area: 'טיימס סקוור', tier: 'mid', price: 1100, note: 'מלון ארט דקו באזור התיאטראות', rec: 'במרחק הליכה מטיימס סקוור וברודוויי, במחיר סביר יחסית למנהטן.' },
       ],
       car: { need: 'לא במנהטן; כן לטיולים מחוץ לעיר', companies: ['Hertz', 'Avis', 'Enterprise', 'National'], tips: ['חניה במנהטן $40+ ליום', 'אגרות גשרים ומנהרות — E-ZPass', 'מע״מ מקומי ומיסים לא כלולים במחיר המוצג'] },
       kosherNote: 'מאות מסעדות כשרות: מידטאון, אפר ווסט סייד, ברוקלין (בורו פארק, קראון הייטס), קווינס.',
@@ -880,10 +894,11 @@ window.APP_DATA = (function () {
         note: 'לפני נסיעה לאמירויות — לבדוק את אזהרות המסע של המטה לביטחון לאומי.'
       },
       hotels: [
-        { name: 'Burj Al Arab', addr: "Jumeirah Beach Rd, Umm Suqeim 3, Dubai", phone: '+971 4 301 7777', web: 'https://www.jumeirah.com/', area: 'ג׳ומיירה', tier: 'lux', price: 7000, note: 'המלון בצורת מפרש' },
+        { name: 'Burj Al Arab', photo: 'Burj_Al_Arab,_Dubai.jpg', rec: 'חוויה חד-פעמית: סוויטות בלבד ומבנה המפרש המפורסם מעל הים.', addr: "Jumeirah Beach Rd, Umm Suqeim 3, Dubai", phone: '+971 4 301 7777', web: 'https://www.jumeirah.com/', area: 'ג׳ומיירה', tier: 'lux', price: 7000, note: 'המלון בצורת מפרש' },
         { name: 'Atlantis The Palm', kind: 'resort', tags: ['family', 'pool'],  addr: "Crescent Rd, Palm Jumeirah, Dubai", phone: '+971 4 426 2000', web: 'https://www.atlantis.com/dubai/atlantis-the-palm', area: 'פאלם ג׳ומיירה', tier: 'lux', price: 3500, note: 'פארק מים ואקווריום' },
         { name: 'Rove Downtown', addr: "312 Al Mustaqbal St, Zabeel 2, Dubai", phone: '+971 4 561 9999', web: 'https://www.rovehotels.com/en/hotels/downtown/', area: 'דאונטאון', tier: 'mid', price: 650, note: 'נוף לבורג׳ ח׳ליפה' },
-        { name: 'Premier Inn Dubai', area: 'מספר סניפים', tier: 'budget', price: 400, note: 'רשת נוחה ונקייה' }
+        { name: 'Premier Inn Dubai', area: 'מספר סניפים', tier: 'budget', price: 400, note: 'רשת נוחה ונקייה' },
+        { name: 'Jumeirah Beach Hotel', tags: ['family', 'view'], addr: 'Jumeirah Road, Umm Suqeim 3, Dubai', phone: '+971 4 348 0000', web: 'https://www.jumeirah.com/en/stay/dubai/jumeirah-beach-hotel', area: 'ג׳ומיירה', tier: 'lux', price: 2800, note: 'מבנה בצורת גל ליד בורג׳ אל ערב', rec: 'חוף פרטי ונוף לבורג׳ אל ערב — מתאים למשפחות.' },
       ],
       car: { need: 'שימושי; מוניות זולות יחסית', companies: ['Hertz', 'Avis', 'Sixt', 'Europcar'], tips: ['רישיון נהיגה בינלאומי', 'אגרת Salik אוטומטית', 'מצלמות מהירות רבות'] },
       kosherNote: 'יש מסעדות כשרות ומשלוחי אוכל כשר; בית חב״ד פעיל.',
@@ -940,7 +955,8 @@ window.APP_DATA = (function () {
         { name: 'Mandarin Oriental Bangkok', addr: "48 Oriental Ave, Bang Rak, Bangkok 10500", phone: '+66 2 659 9000', web: 'https://www.mandarinoriental.com/en/bangkok/chao-phraya-river', area: 'גדת הצ׳או פראיה', tier: 'lux', price: 2500, note: 'מהמלונות הוותיקים באסיה' },
         { name: 'Siam Kempinski', addr: "991/9 Rama 1 Rd, Pathumwan, Bangkok 10330", phone: '+66 2 162 9000', web: 'https://www.kempinski.com/en/siam-hotel', area: 'סיאם', tier: 'lux', price: 1600, note: 'בריכה בלב העיר' },
         { name: 'Novotel Bangkok Sukhumvit', addr: "19/9 Soi Sukhumvit 20, Khlong Toei, Bangkok 10110", phone: '+66 2 009 4999', web: 'https://www.novotelbangkoksukhumvit20.com/', area: 'סוקומוויט', tier: 'mid', price: 450, note: 'קרוב ל-BTS' },
-        { name: 'Lub d Bangkok', kind: 'hostel', tags: ['budget'],  addr: "925/9 Rama 1 Rd, Pathumwan, Bangkok 10330", phone: '+66 2 612 4999', area: 'סילום / סיאם', tier: 'budget', price: 180, note: 'הוסטל רשת' }
+        { name: 'Lub d Bangkok', kind: 'hostel', tags: ['budget'],  addr: "925/9 Rama 1 Rd, Pathumwan, Bangkok 10330", phone: '+66 2 612 4999', area: 'סילום / סיאם', tier: 'budget', price: 180, note: 'הוסטל רשת' },
+        { name: 'The Peninsula Bangkok', tags: ['couple', 'view'], addr: '333 Charoennakorn Road, Klongsan, Bangkok 10600', phone: '+66 2 861 2888', area: 'גדת הצ׳או פראיה', tier: 'lux', price: 1800, note: 'על גדת הנהר, עם סירת שאטל של המלון', photo: 'The_Peninsula_Bangkok.JPG', rec: 'נוף לנהר והגעה בסירה לאתרים — יוקרה במחיר נמוך בהרבה מאירופה.' },
       ],
       car: { need: 'לא בבנגקוק; קטנוע באיים (רק עם רישיון!)', companies: ['Avis', 'Hertz', 'Sixt', 'Thai Rent A Car'], tips: ['נהיגה בצד שמאל', 'ביטוח נסיעות לרוב לא מכסה קטנוע ללא רישיון אופנוע', 'קסדה חובה'] },
       kosherNote: 'בתי חב״ד בבנגקוק (ח׳או סאן), קופנגן, קוסמוי, צ׳יאנג מאי ופוקט עם מסעדות כשרות.',
@@ -993,9 +1009,11 @@ window.APP_DATA = (function () {
         note: 'יש טיסות ישירות מתל אביב לנריטה (NRT) בחלק מהתקופות.'
       },
       hotels: [
-        { name: 'Park Hyatt Tokyo', addr: "3-7-1-2 Nishi-Shinjuku, Shinjuku-ku, Tokyo 163-1055", phone: '+81 3 5322 1234', web: 'https://www.hyatt.com/park-hyatt/en-US/tyoph-park-hyatt-tokyo', area: 'שינג׳וקו', tier: 'lux', price: 4000, note: 'מהסרט "אבודים בטוקיו"' },
+        { name: 'Park Hyatt Tokyo', photo: 'Park_Hyatt_Tokyo.jpg', rec: 'בר המלון מהסרט "אבודים בטוקיו" ונוף עירוני מהקומות העליונות.', addr: "3-7-1-2 Nishi-Shinjuku, Shinjuku-ku, Tokyo 163-1055", phone: '+81 3 5322 1234', web: 'https://www.hyatt.com/park-hyatt/en-US/tyoph-park-hyatt-tokyo', area: 'שינג׳וקו', tier: 'lux', price: 4000, note: 'מהסרט "אבודים בטוקיו"' },
         { name: 'Hotel Gracery Shinjuku', addr: "1-19-1 Kabukicho, Shinjuku-ku, Tokyo 160-8466", phone: '+81 3 6833 2489', web: 'https://whgshinjuku.gracery.com/', area: 'קבוקיצ׳ו', tier: 'mid', price: 750, note: 'עם ראש גודזילה על הגג' },
         { name: 'MUJI Hotel Ginza', addr: "6F, 3-3-5 Ginza, Chuo-ku, Tokyo 104-0061", phone: '+81 3 3538 6101', web: 'https://hotel.muji.com/ginza/en/', area: 'גינזה', tier: 'mid', price: 1100, note: 'מינימליזם יפני' },
+        { name: 'Imperial Hotel Tokyo', addr: '1-1-1 Uchisaiwaicho, Chiyoda-ku, Tokyo', web: 'https://www.imperialhotel.co.jp/en/tokyo', area: 'היביה', tier: 'lux', price: 2800, note: 'מול גני הארמון הקיסרי', photo: 'Imperial_Hotel_Tokyo.JPG', rec: 'מלון היסטורי עם שירות יפני קלאסי, במרחק הליכה מגינזה.' },
+        { name: 'Keio Plaza Hotel Tokyo', tags: ['family'], addr: '2-2-1 Nishi-Shinjuku, Shinjuku-ku, Tokyo', phone: '+81 3 3344 0111', web: 'https://www.keioplaza.co.jp/en/', area: 'שינג׳וקו', tier: 'mid', price: 1200, note: 'מגדל ליד תחנת שינג׳וקו', rec: 'נוח מאוד לתחבורה, קרוב לתחנת שינג׳וקו — בסיס טוב למשפחות.' },
       ],
       car: { need: 'לא בטוקיו; אולי לאזור פוג׳י והוקאידו', companies: ['Toyota Rent a Car', 'Times', 'Nippon Rent-A-Car'], tips: ['נדרש רישיון בינלאומי (אמנת ז׳נבה)', 'נהיגה בצד שמאל', 'אגרות כבישים גבוהות'] },
       kosherNote: 'בית חב״ד טוקיו מציע ארוחות ומשלוחים; מעט מסעדות כשרות.',

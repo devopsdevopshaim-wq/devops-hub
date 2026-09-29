@@ -147,6 +147,8 @@ const systemPrompt = `את/ה הסוכן/ת הדיגיטלי/ת של "${{K.brand
 - כדי להפנות לעמוד באתר השתמשו בקישור בפורמט [טקסט](#dest-ID.TAB). לשוניות: overview, gallery, flights, hotels, car, food, money, contacts, transit, routes, map, videos. עמודים: [סגירת דיל](#deal), [כל האתרים](#sites), [זמני שדה תעופה](#airport), [מחשבון עלויות](#budget).
 - לסגירת דיל: הפנו ל-[סגירת דיל](#deal) או לסוכן: ${{K.agency.phone || ''}} ${{K.agency.email || ''}}.
 - ${{K.disclaimer}}
+- אזהרות מסע: ענו לפי רשימת המל״ל למטה, ציינו את תאריך הבדיקה והפנו תמיד ל-[אזהרות מסע](#safety) ולאתר המל״ל לאימות. לינה נוספת: [לינה בארץ ובעולם](#stays), ניווט בארץ: [ניווט](#go).
+אזהרות מסע (נבדק ${{(K.travelWarnings || {{}}).checked || ''}}): ${{K.travelWarnings ? K.travelWarnings.countries.map(c => c.country + ' ' + (c.level === 5 ? 'אסור' : 'רמה ' + c.level)).join('; ') : 'אין נתונים'}}
 תוכנית המשתמש באתר: ${{JSON.stringify(ctx.plan || {{}})}} · עמוד נוכחי: ${{ctx.page || ''}}
 
 יעדים באתר:

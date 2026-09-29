@@ -726,3 +726,25 @@ a.c-item:hover { color: var(--teal); }
 .bus-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 720px; }
 .bus-table th, .bus-table td { text-align: start; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .bus-table th { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+
+/* ---------- בטיחות ואזהרות מסע ---------- */
+.h-sub { font: 700 22px/1.2 var(--font-body); margin: 0 0 10px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 6px; vertical-align: middle; }
+.lv-badge { display: inline-flex; align-items: center; gap: 4px; margin: 6px 0 12px; padding: 6px 12px; border-radius: 999px; background: var(--lv); color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); width: fit-content; }
+.lv-badge.lv-sm { margin: 0; padding: 4px 9px; font-size: 12.5px; box-shadow: none; }
+.safety-status { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 14px 16px; }
+.safety-map { height: 420px; }
+@media (max-width: 640px) { .safety-map { height: 300px; } }
+.safety-ours { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 10px; }
+.safety-dest { display: grid; gap: 2px; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); border-inline-start: 5px solid var(--lv); text-decoration: none; color: var(--ink); }
+.safety-dest span { font-size: 13px; color: var(--lv); font-weight: 600; }
+.safety-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.safety-card { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--lv); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; align-content: start; }
+.safety-card .row { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.safety-card p { margin: 0; }
+.tips { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; font-size: 14.5px; }
+.rec { font-size: 13.5px; line-height: 1.5; background: var(--teal-soft); color: var(--ink); border-radius: 8px; padding: 6px 10px; margin-top: 4px; }
+.rec b { color: var(--teal); }
+.list li.has-thumb > div:nth-child(2) { flex: 1; min-width: 200px; }
+.stay-thumb { position: relative; display: block; flex: none; width: 96px; height: 72px; border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+@media (max-width: 640px) { .stay-thumb { width: 72px; height: 60px; } }
