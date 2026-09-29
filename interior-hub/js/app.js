@@ -147,6 +147,10 @@
     const s = plan.style;
     $('#plan-eyebrow').textContent = userEdited ? 'התכנון שלכם' : 'תכנון לדוגמה · שנו את הדרישות מימין';
     $('#plan-title').textContent = roomsLabel();
+    // the headline carries the home's real frontage as a drafting dimension line
+    const dim = $('#plan-dim');
+    dim.style.width = `min(100%, ${Math.round(plan.W * 44)}px)`;
+    dim.querySelector('span').innerHTML = `<bdi dir="ltr">${plan.W.toFixed(2)}</bdi> מ׳`;
     const people = state.adults + state.kids;
     $('#plan-lede').textContent = `${people} נפשות, סגנון ${s.name}: ${s.blurb}`;
     $('#brief-summary').textContent = `${state.rooms} חד׳ · ${state.area} מ״ר · ${s.name}`;
@@ -206,7 +210,11 @@
       });
       host.appendChild($('#tour-tip'));
     }
+    if (tour.pt) stopPhoto();
     tour.load(plan);
+    const qb = $('#btn-quality');
+    qb.setAttribute('aria-pressed', String(tour.quality));
+    qb.textContent = tour.quality ? 'איכות גבוהה' : 'איכות רגילה';
     $$('.tour-modes button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === tour.mode)));
     $('#tour-rooms').innerHTML = plan.rooms.filter((r) => r.kind !== 'corridor').map((r) => `<button type="button" data-room="${r.id}">${esc(r.name)}</button>`).join('');
     const mini = $('#tour-mini');
@@ -653,6 +661,26 @@
       $$('.tour-modes button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     }));
     $('#btn-spin').addEventListener('click', () => tour && tour.startSpin());
+    $('#btn-quality').addEventListener('click', (e) => {
+      if (!tour) return;
+      const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+      tour.setQuality(on);
+      e.currentTarget.setAttribute('aria-pressed', String(on));
+      e.currentTarget.textContent = on ? 'איכות גבוהה' : 'איכות רגילה';
+    });
+    $('#btn-photo').addEventListener('click', startPhoto);
+    $('#pt-close').addEventListener('click', stopPhoto);
+    $('#pt-save').addEventListener('click', async () => {
+      if (!tour) return;
+      const url = await tour.grabPhoto();
+      if (!url) return;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `matar-${state.style}-${Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
     $('#tour-rooms').addEventListener('click', (e) => {
       const b = e.target.closest('[data-room]');
       if (b && tour) tour.goToRoom(b.dataset.room);
@@ -714,6 +742,38 @@
     syncBrief();
     mq.addEventListener ? mq.addEventListener('change', syncBrief) : mq.addListener(syncBrief);
   }
+  /* ---------- photoreal still of the current view ---------- */
+  async function startPhoto() {
+    if (!tour || tour.pt) return;
+    const panel = $('#pt-panel');
+    const mobile = matchMedia('(pointer: coarse)').matches;
+    panel.hidden = false;
+    $('#tour').classList.add('is-photo');
+    $('#pt-save').disabled = true;
+    $('#pt-text').textContent = tour.software ? 'מכין את הסצנה… בדפדפן הזה אין האצת גרפיקה, ולכן החישוב יהיה איטי. במחשב עם כרטיס מסך זה לוקח כדקה.' : 'מכין את הסצנה…';
+    $('#pt-bar').style.width = '2%';
+    $('#tour-card').hidden = true;
+    try {
+      await tour.startPhoto((v, phase, n) => {
+        $('#pt-bar').style.width = (v * 100).toFixed(1) + '%';
+        if (phase === 'build') return;
+        const done = v >= 1;
+        $('#pt-text').textContent = done
+          ? 'התמונה מוכנה. אור השמש והשמיים נכנס מהחלונות, עם החזרים וצללים רכים.'
+          : `מחשב אור אמיתי: ${Math.round(v * 100)}% (${n} מעברים). התמונה מתחדדת עם הזמן.`;
+        $('#pt-save').disabled = n < 8;
+      }, tour.software ? 24 : mobile ? 90 : 220);
+    } catch (e) {
+      $('#pt-text').textContent = 'הדפדפן הזה לא מצליח לחשב צילום מציאותי. נסו במחשב או בדפדפן Chrome מעודכן.';
+      tour.stopPhoto();
+    }
+  }
+  function stopPhoto() {
+    if (tour) tour.stopPhoto();
+    $('#pt-panel').hidden = true;
+    $('#tour').classList.remove('is-photo');
+  }
+
   function selectText(node) {
     if (!node) return;
     const r = document.createRange();

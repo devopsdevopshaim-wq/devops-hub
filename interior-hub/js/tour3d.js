@@ -6,6 +6,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const EYE = 1.6;
 const RADIUS = 0.22;
@@ -236,6 +240,16 @@ const TEX = {
 };
 
 /* ---------- the tour ---------- */
+// software rendering (no graphics card): keep the heavy effects off
+function softwareGL(r) {
+  try {
+    const gl = r.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const name = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : '';
+    return /swiftshader|llvmpipe|software|basic render/i.test(name);
+  } catch (e) { return false; }
+}
+
 // bounding box of the visible pixels of a rendered cut-out
 function alphaBox(img, W, H) {
   const d = img.data;
@@ -291,6 +305,20 @@ export class Tour {
     this.clock = new THREE.Clock();
     this.pmrem = new THREE.PMREMGenerator(r);
 
+    // soft shadows where surfaces meet (ambient occlusion); off on phones to keep walking smooth
+    this.software = softwareGL(r);
+    this.quality = !mobile && !this.software;
+    try {
+      this.composer = new EffectComposer(r);
+      this.composer.addPass(new RenderPass(this.scene, this.camera));
+      this.gtao = new GTAOPass(this.scene, this.camera, 300, 300);
+      this.gtao.updateGtaoMaterial({ radius: 0.45, distanceExponent: 1.4, thickness: 1.2, scale: 1.1, samples: 16 });
+      this.gtao.updatePdMaterial({ radius: 6, rings: 2, samples: 16 });
+      this.gtao.blendIntensity = 0.9;
+      this.composer.addPass(this.gtao);
+      this.composer.addPass(new OutputPass());
+    } catch (e) { this.composer = null; }
+
     this.loadEnvironment();
     this.loadModels();
     this.bindInput();
@@ -327,6 +355,7 @@ export class Tour {
       done(t);
     }).catch(() => { /* plain lighting stays */ });
     load('hdri/apartment.exr', (t) => {
+      this.envEquirect = t;
       this.envMap = this.pmrem.fromEquirectangular(t).texture;
       this.scene.environment = this.envMap;
     });
@@ -1695,6 +1724,10 @@ export class Tour {
   resize() {
     const w = this.el.clientWidth || 300, h = this.el.clientHeight || 300;
     this.renderer.setSize(w, h, false);
+    if (this.composer) {
+      this.composer.setPixelRatio(this.renderer.getPixelRatio());
+      this.composer.setSize(w, h);
+    }
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
   }
@@ -1705,7 +1738,7 @@ export class Tour {
     const dt = Math.min(0.05, this.clock.getDelta());
     if (!this.plan || this.el.offsetParent === null) return;
 
-    if (this.mode === 'walk') {
+    if (this.pt) { /* view frozen while the photo renders */ } else if (this.mode === 'walk') {
       const k = this.keys;
       const speed = 1.8 * dt;
       let f = 0, t = 0;
@@ -1754,7 +1787,76 @@ export class Tour {
       this.waterTex.offset.set(t * 0.02, t * 0.013);
       if (this.fallTex) this.fallTex.offset.y = -t * 0.8;
     }
-    this.renderer.render(this.scene, this.camera);
+    if (this.pt) this.ptStep();
+    else if (this.composer && this.quality) this.composer.render(dt);
+    else this.renderer.render(this.scene, this.camera);
+  }
+
+  setQuality(on) { this.quality = !!on && !!this.composer; }
+
+  /* ---------- photoreal still: path tracing of the current view ---------- */
+  // Light is traced bounce by bounce (sun and sky through the windows, reflections, soft
+  // shadows), the way architectural renderers work. The view freezes until it is closed.
+  async startPhoto(onProgress, target) {
+    if (this.pt || !this.plan) return false;
+    // the tracer reads rotations that newer three.js scenes carry; r160 scenes get neutral ones
+    if (new THREE.Scene().environmentRotation === undefined) {
+      THREE.Scene.prototype.environmentRotation = new THREE.Euler();
+      THREE.Scene.prototype.backgroundRotation = new THREE.Euler();
+    }
+    const mod = await import('three-gpu-pathtracer');
+    const scene = this.scene;
+    const hidden = [];
+    scene.traverse((o) => {
+      if ((o.isMesh && o.material === this.shadowMat) || o === this.selectBox) { if (o.visible) { hidden.push(o); o.visible = false; } }
+    });
+    const env = scene.environment;
+    // the outdoor sky lights the rooms through the windows; the studio HDR fills in
+    scene.environment = this.sky || this.envEquirect || env;
+    scene.environmentIntensity = this.plan.yard ? 1.2 : 1.5;
+    const cam = this.camera.clone();
+    const tracer = new mod.WebGLPathTracer(this.renderer);
+    tracer.bounces = 6;
+    tracer.filteredGlossyFactor = 0.6;
+    tracer.tiles.set(2, 2);
+    tracer.minSamples = 1;
+    tracer.fadeDuration = 300;
+    tracer.renderDelay = 0;
+    tracer.dynamicLowRes = true;
+    tracer.lowResScale = 0.25;
+    const exposure = this.renderer.toneMappingExposure;
+    this.renderer.toneMappingExposure = 1.25;
+    this.pt = { tracer, cam, hidden, env, exposure, target: target || 160, onProgress, ready: false, grab: null };
+    this.running = true;
+    if (onProgress) onProgress(0.05, 'build');
+    await new Promise((res) => setTimeout(res, 60));
+    tracer.setScene(scene, cam);
+    if (this.pt) this.pt.ready = true;
+    return true;
+  }
+  ptStep() {
+    const pt = this.pt;
+    if (!pt.ready) { this.renderer.render(this.scene, pt.cam); return; }
+    if (pt.tracer.samples < pt.target) {
+      pt.tracer.renderSample();
+      if (pt.onProgress) pt.onProgress(0.1 + 0.9 * Math.min(1, pt.tracer.samples / pt.target), 'trace', Math.floor(pt.tracer.samples));
+    } else pt.tracer.renderSample();
+    if (pt.grab) { const g = pt.grab; pt.grab = null; g(this.renderer.domElement.toDataURL('image/jpeg', 0.93)); }
+  }
+  grabPhoto() {
+    return new Promise((res) => { if (!this.pt) res(null); else this.pt.grab = res; });
+  }
+  stopPhoto() {
+    const pt = this.pt;
+    if (!pt) return;
+    this.pt = null;
+    try { pt.tracer.dispose(); } catch (e) { /* already gone */ }
+    pt.hidden.forEach((o) => { o.visible = true; });
+    this.scene.environment = pt.env;
+    this.scene.environmentIntensity = 1;
+    this.renderer.toneMappingExposure = pt.exposure;
+    this.renderer.setRenderTarget(null);
+    this.resize();
   }
 
   dispose() {

@@ -9,13 +9,13 @@
 
   // report styles: used on the page when printing and inside the downloaded file
   const REPORT_CSS = `
-.rp{font-family:Assistant,Arial,sans-serif;color:#1c1a16;background:#fff;direction:rtl;font-size:11pt;line-height:1.45}
-.rp h1{font-family:Bellefair,Georgia,serif;font-weight:400;font-size:26pt;margin:0 0 4pt}
-.rp h2{font-family:Bellefair,Georgia,serif;font-weight:400;font-size:17pt;margin:0 0 8pt;padding-bottom:4pt;border-bottom:1.5pt solid #a8662b}
+.rp{font-family:'IBM Plex Sans Hebrew',Assistant,Arial,sans-serif;color:#1a1e21;background:#fff;direction:rtl;font-size:11pt;line-height:1.45}
+.rp h1{font-family:'IBM Plex Sans Hebrew',Arial,sans-serif;font-weight:300;font-size:26pt;letter-spacing:-.01em;margin:0 0 4pt}
+.rp h2{font-family:'IBM Plex Sans Hebrew',Arial,sans-serif;font-weight:400;font-size:16pt;margin:0 0 8pt;padding-bottom:4pt;border-bottom:1pt solid #2d5a4e}
 .rp h3{font-size:12pt;margin:10pt 0 4pt}
 .rp .rp-sec{break-before:page;page-break-before:always;padding-top:4pt}
 .rp .rp-sec.first{break-before:auto;page-break-before:auto}
-.rp .rp-eyebrow{color:#a8662b;font-weight:600;letter-spacing:.04em;margin:0}
+.rp .rp-eyebrow{font-family:'IBM Plex Mono',monospace;color:#a5723f;font-weight:600;letter-spacing:.04em;margin:0}
 .rp .rp-muted{color:#6b665c;font-size:9.5pt}
 .rp .rp-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:6pt 14pt;margin:12pt 0}
 .rp .rp-facts div{border-top:.75pt solid #d8d4ca;padding-top:4pt}
@@ -239,7 +239,7 @@
       const body = await build(selection(), true);
       const doc = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>מתאר · ${esc($('#plan-title').textContent)}</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@300;400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>body{margin:0;background:#fff}.rp{max-width:190mm;margin:0 auto;padding:12mm 10mm}@page{size:A4;margin:14mm 12mm}@media print{.rp{padding:0;max-width:none}}.rp-bar{position:sticky;top:0;background:#f4f1ea;padding:8px 12px;text-align:center;font-family:Assistant,Arial,sans-serif}@media print{.rp-bar{display:none}}${REPORT_CSS}</style>
 </head><body><div class="rp-bar"><button onclick="print()">הדפסה / שמירה כ-PDF</button></div>${body}</body></html>`;
       const a = document.createElement('a');

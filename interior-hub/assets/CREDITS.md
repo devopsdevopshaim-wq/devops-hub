@@ -16,3 +16,8 @@ HDR environments `hdri/apartment.exr` and `hdri/city.exr`: Poly Haven (CC0), in 
 EXR versions published by @pmndrs/assets.
 
 Wood floor photographs `textures/hardwood2_*.jpg`: three.js examples (MIT).
+
+## Rendering libraries
+
+- three-gpu-pathtracer 0.0.23 and three-mesh-bvh 0.7.6 by Garrett Johnson, MIT license (`vendor/*.LICENSE`). Used for the photoreal still.
+- three.js post-processing (EffectComposer, GTAOPass, OutputPass), MIT license.

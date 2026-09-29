@@ -7,7 +7,7 @@
 <meta name="description" content="מערכת לתכנון ריהוט הבית לפי גודל הדירה וההרכב המשפחתי: תוכנית קומה עם מידות, סיור תלת-ממדי 360°, והיכן לקנות כל רהיט בישראל עם טלפון וכתובת.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -152,6 +152,7 @@
           <div>
             <p class="eyebrow" id="plan-eyebrow">תכנון לדוגמה</p>
             <h1 id="plan-title">דירת 4 חדרים, 100 מ״ר</h1>
+            <div class="dimline" id="plan-dim" aria-hidden="true"><span></span></div>
             <p class="lede" id="plan-lede"></p>
           </div>
           <dl class="facts" id="facts"></dl>
@@ -171,6 +172,19 @@
                   <button type="button" data-mode="doll" aria-pressed="false">מבט על</button>
                 </div>
                 <button type="button" class="tour-btn" id="btn-spin">סיבוב 360°</button>
+                <button type="button" class="tour-btn tour-btn-photo" id="btn-photo" title="חישוב אור אמיתי של המבט הנוכחי">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+                  צילום מציאותי
+                </button>
+                <button type="button" class="tour-btn" id="btn-quality" aria-pressed="true" title="צללים רכים בפינות ובמגע בין משטחים">איכות גבוהה</button>
+              </div>
+              <div class="pt-panel" id="pt-panel" hidden role="status" aria-live="polite">
+                <div class="pt-meter"><span id="pt-bar"></span></div>
+                <p id="pt-text">מכין את הסצנה…</p>
+                <div class="pt-actions">
+                  <button type="button" class="btn btn-small" id="pt-save" disabled>שמירת התמונה</button>
+                  <button type="button" class="btn btn-small btn-ghost pt-back" id="pt-close">חזרה לסיור</button>
+                </div>
               </div>
               <div class="tour-rooms" id="tour-rooms" aria-label="קפיצה לחדר"></div>
               <div class="tour-pad" aria-label="הליכה">
@@ -310,7 +324,7 @@
 
 <footer class="foot">
   <p>מתאר · תכנון ריהוט לבית. המחירים הם הערכה בלבד; את הטלפונים והכתובות כדאי לוודא מול הרשת לפני הגעה.</p>
-  <p class="credits">דגמי תלת-ממד: Glam Velvet Sofa ו-Damask Chair © Wayfair, Wood &amp; Leather Sofa ו-Plant © Darmstadt Graphics Group (CC BY 4.0), Sheen Chair © Wayfair ו-Glass Vase (CC0), מתוך Khronos glTF Sample Assets. תאורת HDR: Poly Haven (CC0). פרקט: three.js (MIT). IKEA ושמות המוצרים שייכים לבעליהם; הקישורים מובילים לאתרי הרשתות.</p>
+  <p class="credits">דגמי תלת-ממד: Glam Velvet Sofa ו-Damask Chair © Wayfair, Wood &amp; Leather Sofa ו-Plant © Darmstadt Graphics Group (CC BY 4.0), Sheen Chair © Wayfair ו-Glass Vase (CC0), מתוך Khronos glTF Sample Assets. תאורת HDR: Poly Haven (CC0). פרקט: three.js (MIT). צילום מציאותי: three-gpu-pathtracer ו-three-mesh-bvh של Garrett Johnson (MIT). IKEA ושמות המוצרים שייכים לבעליהם; הקישורים מובילים לאתרי הרשתות.</p>
 </footer>
 <dialog class="print-dlg" id="print-dlg" aria-labelledby="print-title">
   <form method="dialog" id="print-form">
@@ -347,7 +361,7 @@
 <script src="js/app.js"></script>
 <script src="js/photos.js"></script>
 <script src="js/print.js"></script>
-<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/jsm/" } }</script>
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/jsm/", "three/examples/jsm/": "./vendor/three/jsm/", "three-mesh-bvh": "./vendor/three-mesh-bvh.module.js", "three-gpu-pathtracer": "./vendor/three-gpu-pathtracer.module.js" } }</script>
 <script type="module" src="js/tour3d.js"></script>
 </body>
 </html>
