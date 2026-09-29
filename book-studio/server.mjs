@@ -5,6 +5,8 @@
 //
 // משתנים אופציונליים: PORT (ברירת מחדל 8787), BOOK_MODEL (ברירת מחדל claude-opus-5-5),
 // ACCESS_CODE — קוד גישה שהאתר יבקש לפני שימוש ב-AI (מומלץ כשהשרת פתוח לאינטרנט).
+// OPENAI_API_KEY — אופציונלי: ציורים באיכות הגבוהה ביותר דרך שירות התמונות של OpenAI
+// (IMAGE_MODEL, ברירת מחדל gpt-image-1). בלעדיו האתר משתמש בשירות ציור חינמי.
 
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -24,6 +26,9 @@ const MAX_BODY = 40 * 1024 * 1024;
 const HAS_KEY = Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
 
 const client = HAS_KEY ? new Anthropic() : null;
+const IMAGE_KEY = process.env.OPENAI_API_KEY || '';
+const IMAGE_MODEL = process.env.IMAGE_MODEL || 'gpt-image-1';
+const IMAGE_SIZES = { landscape: '1536x1024', portrait: '1024x1536', square: '1024x1024' };
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -106,6 +111,26 @@ async function runTask(req, res) {
   res.end();
 }
 
+async function runImage(req, res) {
+  if (!IMAGE_KEY) return sendJson(res, 404, { error: 'אין שירות ציור בשרת' });
+  if (ACCESS_CODE && req.headers['x-access-code'] !== ACCESS_CODE) {
+    return sendJson(res, 401, { error: 'קוד הגישה שגוי.', needCode: true });
+  }
+  let body;
+  try { body = JSON.parse(await readBody(req)); } catch { return sendJson(res, 400, { error: 'בקשה לא תקינה' }); }
+  const prompt = String(body.prompt || '').slice(0, 4000);
+  if (!prompt) return sendJson(res, 400, { error: 'חסר תיאור לציור' });
+  const r = await fetch('https://api.openai.com/v1/images/generations', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${IMAGE_KEY}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ model: IMAGE_MODEL, prompt, size: IMAGE_SIZES[body.shape] || IMAGE_SIZES.landscape, quality: 'high', n: 1 })
+  });
+  const j = await r.json().catch(() => ({}));
+  const b64 = j && j.data && j.data[0] && j.data[0].b64_json;
+  if (!r.ok || !b64) return sendJson(res, 502, { error: 'שירות הציור החזיר שגיאה: ' + ((j.error && j.error.message) || r.status) });
+  sendJson(res, 200, { src: 'data:image/png;base64,' + b64 });
+}
+
 async function serveStatic(req, res) {
   const url = new URL(req.url, 'http://localhost');
   let rel = decodeURIComponent(url.pathname);
@@ -126,9 +151,10 @@ async function serveStatic(req, res) {
 http.createServer(async (req, res) => {
   try {
     if (req.url === '/api/status') {
-      return sendJson(res, 200, { ai: Boolean(client), model: MODEL, needCode: Boolean(ACCESS_CODE) });
+      return sendJson(res, 200, { ai: Boolean(client), model: MODEL, needCode: Boolean(ACCESS_CODE), image: IMAGE_KEY ? 'server' : 'free' });
     }
     if (req.url === '/api/run' && req.method === 'POST') return await runTask(req, res);
+    if (req.url === '/api/image' && req.method === 'POST') return await runImage(req, res);
     if (req.method === 'GET' || req.method === 'HEAD') return await serveStatic(req, res);
     res.writeHead(405); res.end();
   } catch (err) {

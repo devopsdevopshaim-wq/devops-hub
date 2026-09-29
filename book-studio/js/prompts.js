@@ -195,30 +195,48 @@
     };
   }
 
-  function illustrationRequest(p, description) {
-    var kids = isKids(p);
-    var style = kids
-      ? 'איור ילדים מקצועי: צורות רכות ומעוגלות, פלטה חמה והרמונית של 6–8 גוונים, דמויות חביבות עם הבעות ברורות, רקע מלא ועשיר, מראה של צבעי מים או גואש (באמצעות שכבות שקופות ומעברי צבע עדינים).'
-      : 'איור ספרותי אלגנטי בסגנון חיתוך עץ / תחריט מודרני: קווים נקיים, פלטה מאופקת של 3–5 גוונים (דיו כהה, שנהב, זהב עמום ועוד גוון אחד), קומפוזיציה מאוזנת ומרחב נשימה.';
+  /* סגנונות ציור אמיתי (בעבודת יד) לאיורי הספר */
+  var ART_STYLES = {
+    watercolor: { label: 'צבעי מים', en: 'traditional hand-painted watercolor on cold-press cotton paper, soft wet-on-wet washes, visible pigment granulation and paper texture, delicate pencil underdrawing, fine-art book illustration' },
+    oil: { label: 'ציור שמן', en: 'classical hand-painted oil painting on linen canvas, rich visible brushstrokes and impasto, soft chiaroscuro light, museum-quality fine art' },
+    pencil: { label: 'רישום עיפרון', en: 'detailed hand-drawn graphite pencil drawing on textured ivory paper, cross-hatching and soft shading, fine-art sketchbook study, monochrome' },
+    charcoal: { label: 'פחם בספיה', en: 'hand-drawn charcoal and sepia conté drawing on toned paper, expressive strokes, vintage fine-art study' },
+    ink: { label: 'דיו וצבעי מים', en: 'hand-drawn pen and ink illustration with light watercolor wash, fine confident linework, classic literary book illustration' },
+    gouache: { label: 'גואש לספר ילדים', en: 'hand-painted gouache storybook illustration, warm harmonious colors, soft textured brushwork, charming and gentle, classic picture-book art' }
+  };
+  var ART_AVOID = 'no text, no letters, no watermark, no signature, not a photograph, not digital art, not 3D, not cartoon, not vector';
+
+  function defaultArtStyle(p) { return p.artStyle && ART_STYLES[p.artStyle] ? p.artStyle : (isKids(p) ? 'gouache' : 'watercolor'); }
+
+  /* Claude כותב הנחיית ציור מדויקת באנגלית לשירות הציור */
+  function artPromptRequest(p, description, style) {
+    var st = ART_STYLES[style] || ART_STYLES[defaultArtStyle(p)];
     return {
-      task: 'illustration',
-      system: 'אתה מאייר ספרים מקצועי שמצייר ב-SVG. אתה מחזיר אך ורק קוד SVG תקין אחד, בלי הסברים ובלי Markdown.',
-      cached: 'כרטיס הספר:\n' + bookCard(p),
+      task: 'artprompt',
+      system: 'You are an art director who commissions hand-painted fine-art illustrations for printed books. You write one prompt for an image-generation model. Reply with the prompt only: one English paragraph of at most 90 words, no quotes, no preamble.',
+      cached: 'Book: ' + (p.title || '') + ' (' + ((GENRES[p.genre] || {}).label || '') + ').\n' + bookCard(p),
       instruction: [
-        'צייר איור לספר.',
-        'מה צריך להופיע: ' + description,
-        'סגנון: ' + style,
-        'דרישות טכניות: אלמנט <svg> יחיד עם viewBox="0 0 1200 900" ו-xmlns, בלי טקסט ובלי אותיות בתוך האיור, בלי <script>, בלי קישורים חיצוניים ובלי תמונות מוטמעות. השתמש ב-path, צורות, gradients ו-filters. הקפד על עומק, תאורה ופרטים — שיראה כמו איור מקצועי בספר מודפס.'
+        'Scene to paint (may be in Hebrew; translate faithfully, keep names of places and the era):',
+        description,
+        '',
+        'Medium and style: ' + st.en + '.',
+        'Describe subject, setting, period details, composition, light and mood concretely. Real people must look natural and dignified. Always end with: ' + ART_AVOID + '.'
       ].join('\n'),
-      maxTokens: 32000, effort: 'medium'
+      maxTokens: 4000, effort: 'low'
     };
+  }
+
+  /* הנחיה בלי Claude (כשאין שרת): התיאור + הסגנון */
+  function artPromptFallback(description, style) {
+    var st = ART_STYLES[style] || ART_STYLES.watercolor;
+    return description + '. ' + st.en + '. ' + ART_AVOID;
   }
 
   function build(task, p, extra) {
     extra = extra || {};
     if (task === 'outline') return outlineRequest(p);
     if (task === 'chapter') return chapterRequest(p, extra.index, extra);
-    if (task === 'illustration') return illustrationRequest(p, extra.description || '');
+    if (task === 'artprompt') return artPromptRequest(p, extra.description || '', extra.style);
     throw new Error('Unknown task: ' + task);
   }
 
@@ -233,7 +251,8 @@
   }
 
   return {
-    GENRES: GENRES, TRIMS: TRIMS, LENGTHS: LENGTHS,
+    GENRES: GENRES, TRIMS: TRIMS, LENGTHS: LENGTHS, ART_STYLES: ART_STYLES,
+    defaultArtStyle: defaultArtStyle, artPromptFallback: artPromptFallback,
     wordsCount: wordsCount, plan: plan, isKids: isKids,
     build: build, manualText: manualText
   };
