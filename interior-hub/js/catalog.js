@@ -6,13 +6,16 @@
 
   const E = 'eco', M = 'mid', P = 'prem';
 
+  // nurseries near the buyer (stores marked `local` are kept only in their own region)
+  const NURSERY = ['azur', 'ganyarak', 'rgnursery', 'ganod', 'bialik', 'beithai', 'kaduri'];
+
   // stores per tier: { eco: [...], mid: [...], prem: [...] }
   const S = {
-    sofa: { [E]: ['ikea', 'beitili'], [M]: ['aminach', 'beitili'], [P]: ['natuzzi', 'tollmans', 'kastiel'] },
-    table: { [E]: ['ikea', 'beitili'], [M]: ['beitili', 'kastiel'], [P]: ['kastiel', 'tollmans'] },
-    casegood: { [E]: ['ikea'], [M]: ['beitili', 'ikea'], [P]: ['tollmans', 'kastiel'] },
+    sofa: { [E]: ['ikea', 'beitili'], [M]: ['aminach', 'beitili', 'iddesign'], [P]: ['natuzzi', 'kuka', 'tollmans', 'kastiel'] },
+    table: { [E]: ['ikea', 'beitili'], [M]: ['beitili', 'iddesign', 'kastiel'], [P]: ['kastiel', 'tollmans'] },
+    casegood: { [E]: ['ikea'], [M]: ['beitili', 'iddesign', 'ikea'], [P]: ['tollmans', 'kastiel'] },
     bed: { [E]: ['ikea', 'aminach'], [M]: ['aminach', 'hollandia'], [P]: ['hollandia', 'tollmans'] },
-    kidbed: { [E]: ['ikea'], [M]: ['aminach', 'ikea'], [P]: ['hollandia', 'aminach'] },
+    kidbed: { [E]: ['ikea', 'shilav'], [M]: ['shilav', 'aminach', 'ikea'], [P]: ['hollandia', 'aminach', 'shilav'] },
     wardrobe: { [E]: ['ikea', 'homecenter'], [M]: ['ikea', 'beitili'], [P]: ['regba', 'tollmans'] },
     kitchen: { [E]: ['ikea', 'homecenter'], [M]: ['ikea', 'regba'], [P]: ['regba'] },
     appliance: { [E]: ['payngo', 'shekem'], [M]: ['shekem', 'payngo'], [P]: ['shekem', 'payngo'] },
@@ -21,8 +24,8 @@
     textile: { [E]: ['ikea', 'golf'], [M]: ['foxhome', 'golf'], [P]: ['tollmans', 'foxhome'] },
     office: { [E]: ['ikea'], [M]: ['ikea', 'beitili'], [P]: ['tollmans', 'kastiel'] },
     outdoor: { [E]: ['ace', 'homecenter'], [M]: ['ace', 'ikea'], [P]: ['tollmans', 'ace'] },
-    plant: { [E]: ['homecenter', 'ikea'], [M]: ['homecenter', 'ace'], [P]: ['ace', 'homecenter'] },
-    tree: { [E]: ['azur', 'hadarnoy'], [M]: ['yagur', 'hadarnoy', 'azur'], [P]: ['yagur', 'hadarnoy'] },
+    plant: { [E]: ['homecenter', 'ikea'].concat(NURSERY), [M]: NURSERY.concat(['homecenter']), [P]: NURSERY.concat(['ace']) },
+    tree: { [E]: NURSERY.concat(['hadarnoy']), [M]: NURSERY.concat(['yagur', 'hadarnoy']), [P]: ['yagur', 'hadarnoy'].concat(NURSERY) },
     pool: { [E]: ['adel', 'hagag'], [M]: ['adel', 'hagag'], [P]: ['hagag', 'adel'] },
     hardscape: { [E]: ['homecenter', 'ace'], [M]: ['ace', 'homecenter', 'hagag'], [P]: ['hagag', 'ace'] },
     gardenFurniture: { [E]: ['homecenter', 'ace', 'ikea'], [M]: ['ace', 'homecenter', 'ikea'], [P]: ['tollmans', 'ace'] }
@@ -275,7 +278,8 @@
     homecenter: 'homecenter.co.il', ace: 'ace.co.il', beitili: 'betili-shop.com', hollandia: 'hollandia.co.il',
     aminach: 'aminach.co.il', tollmans: 'tollmans.co.il', natuzzi: 'natuzzi.com', kastiel: 'kastiel', foxhome: 'foxhome.co.il',
     golf: 'golfco.co.il', regba: 'regba.co.il', shekem: 'shekem-electric.co.il', payngo: 'payngo.co.il',
-    yagur: 'yagurgan.co.il', azur: 'azurflowers.co.il', hadarnoy: 'hadarnoy.co.il', adel: 'adelpool.co.il', hagag: 'hagag-pools.co.il'
+    yagur: 'yagurgan.co.il', azur: 'azurflowers.co.il', hadarnoy: 'hadarnoy.co.il', adel: 'adelpool.co.il', hagag: 'hagag-pools.co.il',
+    bialik: 'bialik-mashtelot.com', rgnursery: 'mashtelatramatgan.co.il', ganyarak: 'gan-yarak.co.il', shilav: 'shilav.co.il', iddesign: 'iddesign-shop.co.il', kuka: 'kuka-home.co.il'
   };
   function storeSearchUrl(storeId, query) {
     const d = STORE_DOMAIN[storeId];

@@ -189,6 +189,7 @@
       kind: 'משתלה: עצים בוגרים, שיחים, עציצים, כדים, השקיה ותכנון גינות',
       hotline: '04-9848108',
       hotlineNote: 'המשתלה',
+      local: true,
       site: 'https://www.yagurgan.co.il/',
       branchesUrl: 'https://www.yagurgan.co.il/',
       branches: [{ region: 'north', city: 'קיבוץ יגור', addr: 'משתלות יגור', phone: '04-9848108' }]
@@ -199,6 +200,7 @@
       kind: 'משתלה: צמחים, עצים, אדניות וציוד גינה',
       hotline: '03-5568916',
       hotlineNote: 'המשתלה',
+      local: true,
       site: 'https://azurflowers.co.il/',
       branchesUrl: 'https://azurflowers.co.il/',
       branches: [{ region: 'center', city: 'חולון', addr: 'דרך השבעה 104', phone: '03-5568916' }]
@@ -235,6 +237,112 @@
       site: 'https://hagag-pools.co.il/',
       branchesUrl: 'https://hagag-pools.co.il/',
       branches: [{ region: 'north', city: 'צרופה', addr: 'הזית 17', phone: '04-6490000' }]
+    },
+    // more nurseries: `local` stores are listed only for buyers in their own region
+    bialik: {
+      name: 'משתלת ביאליק',
+      latin: 'Bialik Nursery',
+      kind: 'משתלה: צמחים, עצים, עציצים וציוד לגינה בצפון (פועלת יותר מ-25 שנה)',
+      hotline: '052-5448803',
+      hotlineNote: 'המשתלה',
+      local: true,
+      site: 'https://www.bialik-mashtelot.com/',
+      branchesUrl: 'https://www.bialik-mashtelot.com/contact.asp',
+      branches: [{ region: 'north', city: 'קריית ביאליק', addr: 'ג׳ורג׳ לנדאור 24', phone: '052-5448803' }]
+    },
+    beithai: {
+      name: 'משתלת בית חי',
+      latin: 'Beit Hai Nursery',
+      kind: 'משתלה ומתחם גינה גדול בעמק יזרעאל',
+      hotline: '04-6419271',
+      hotlineNote: 'המשתלה',
+      local: true,
+      site: 'https://www.google.com/search?q=%D7%9E%D7%A9%D7%AA%D7%9C%D7%AA+%D7%91%D7%99%D7%AA+%D7%97%D7%99',
+      branchesUrl: 'https://www.google.com/maps/search/%D7%9E%D7%A9%D7%AA%D7%9C%D7%AA+%D7%91%D7%99%D7%AA+%D7%97%D7%99',
+      branches: [{ region: 'north', city: 'עמק יזרעאל', addr: 'כביש 77, בין צומת בית רימון לצומת גולני', phone: '04-6419271' }]
+    },
+    ganod: {
+      name: 'משתלת גן עד',
+      latin: 'Gan Ad Nursery',
+      kind: 'משתלה: צמחי גינה ובית, עציצים ואדניות',
+      hotline: '072-3126177',
+      hotlineNote: 'המשתלה',
+      local: true,
+      site: 'https://www.d.co.il/12036370/32940/',
+      branchesUrl: 'https://www.d.co.il/12036370/32940/',
+      branches: [{ region: 'sharon', city: 'רמת השרון', addr: 'משתלת גן עד', phone: '072-3126177' }]
+    },
+    rgnursery: {
+      name: 'משתלת רמת גן',
+      latin: 'Ramat Gan Nursery',
+      kind: 'משתלה: צמחים, עציצים, כלי גינון והשקיה, משלוחים בגוש דן',
+      hotline: '03-7509080',
+      hotlineNote: 'המשתלה',
+      extra: [['וואטסאפ', '050-4447565']],
+      local: true,
+      site: 'https://mashtelatramatgan.co.il/',
+      branchesUrl: 'https://mashtelatramatgan.co.il/',
+      branches: [{ region: 'center', city: 'רמת גן', addr: 'אלוף שדה 101, ליד תחנת סונול המכבים', phone: '03-7509080' }]
+    },
+    ganyarak: {
+      name: 'משתלת גן ירק',
+      latin: 'Gan Yarak',
+      kind: 'משתלה גדולה במרכז, הזמנה אונליין ומשלוחים מהצפון עד באר שבע',
+      hotline: '03-5331771',
+      hotlineNote: 'המשתלה',
+      extra: [['מכירות', '053-5556777']],
+      site: 'https://www.gan-yarak.co.il/',
+      branchesUrl: 'https://www.gan-yarak.co.il/',
+      branches: [{ region: 'center', city: 'מושב חמד', addr: 'התמר 29', phone: '03-5331771' }]
+    },
+    kaduri: {
+      name: 'משתלת כדורי',
+      latin: 'Kaduri Nursery',
+      kind: 'משתלה בנגב מאז 1985: צמחים, השקיה ובריכות נוי',
+      hotline: '08-6232941',
+      hotlineNote: 'המשתלה',
+      local: true,
+      site: 'https://www.instagram.com/greenhousekaduri/',
+      branchesUrl: 'https://www.d.co.il/5063860/32940/',
+      branches: [{ region: 'south', city: 'באר שבע', addr: 'המנוף 6', phone: '08-6232941' }]
+    },
+    shilav: {
+      name: 'שילב',
+      latin: 'Shilav',
+      kind: 'חדרי תינוקות וילדים: מיטות, שידות החתלה, ארונות ומזרנים (כ-70 סניפים)',
+      hotline: '03-5775111',
+      hotlineNote: 'מוקד שירות',
+      site: 'https://www.shilav.co.il/',
+      branchesUrl: 'https://www.shilav.co.il/pages/%D7%A1%D7%A0%D7%99%D7%A4%D7%99%D7%9D',
+      branches: [
+        { region: 'center', city: 'יהוד', addr: 'דרך משה דיין 3', phone: '03-5365097' },
+        { region: 'center', city: 'רמלה', addr: 'קניון רמלה', phone: '08-9168520' },
+        { region: 'jerusalem', city: 'ירושלים', addr: 'קניון ירושלים, אגודת ספורט בית״ר 1', phone: '02-6793319' },
+        { region: 'north', city: 'חיפה', addr: 'קניון סינמול, שד׳ ההסתדרות 55' },
+        { region: 'south', city: 'באר שבע', addr: 'שד׳ יצחק רגר 151', phone: '08-6625338' }
+      ]
+    },
+    iddesign: {
+      name: 'IDdesign',
+      latin: 'IDdesign',
+      kind: 'רהיטים מעוצבים: ספות, פינות אוכל, חדרי שינה ומזנונים',
+      hotline: '*5814',
+      hotlineNote: 'שירות לקוחות',
+      extra: [['וואטסאפ', '050-8670035']],
+      site: 'https://iddesign-shop.co.il/',
+      branchesUrl: 'https://iddesign-shop.co.il/stores',
+      branches: [{ region: 'sharon', city: 'נתניה', addr: 'שדרות גיבורי ישראל 5' }]
+    },
+    kuka: {
+      name: 'KUKA HOME',
+      latin: 'KUKA HOME',
+      kind: 'ספות ומערכות ישיבה, כורסאות ריקליינר (קבוצת קאופמן)',
+      hotline: '073-3822999',
+      hotlineNote: 'חנות הדגל',
+      extra: [['וואטסאפ', '052-8552929']],
+      site: 'https://www.kuka-home.co.il/',
+      branchesUrl: 'https://www.kuka-home.co.il/%D7%A1%D7%A0%D7%99%D7%A4%D7%99%D7%9D',
+      branches: [{ region: 'north', city: 'קריית אתא', addr: 'דרך חיפה 44, מתחם רידיזיין', phone: '073-3822999' }]
     },
     shekem: {
       name: 'שקם אלקטריק',

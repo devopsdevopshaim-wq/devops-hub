@@ -28,9 +28,14 @@
     <nav class="mainnav" aria-label="ניווט ראשי">
       <a href="#plan" data-nav="plan">התכנון שלי</a>
       <a href="#stores" data-nav="stores">חנויות בישראל</a>
+      <a href="#photos" data-nav="photos">צילומי החדרים</a>
       <a href="#garden" data-nav="garden">עיצוב החצר</a>
       <a href="#rules" data-nav="rules">עקרונות התכנון</a>
     </nav>
+    <button type="button" class="print-btn" id="btn-print" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <span>הדפסה</span>
+    </button>
   </div>
 </header>
 
@@ -237,7 +242,32 @@
     </div>
   </section>
 
-  <!-- ============ RULES ============ -->
+  <!-- ============ ROOM PHOTOS ============ -->
+  <section class="view" id="view-photos" data-view="photos" hidden>
+    <div class="page">
+      <div class="section-head">
+        <p class="eyebrow">הריהוט החדש על החדר שלכם</p>
+        <h1>צילומי החדרים</h1>
+        <p>מעלים לכל חדר ארבעה קירות ורצפה, או סרטון. מוחקים מהתמונה את הרהיטים הישנים, והמערכת מציבה עליה את הרהיטים המומלצים מהתכנון, באותה זווית ובאותן מידות. אפשר להוריד כל תמונה, להכין סרטון לפני/אחרי ולהדפיס.</p>
+      </div>
+      <details class="ph-tips">
+        <summary>איך מצלמים כדי שההתאמה תצא מדויקת</summary>
+        <ol>
+          <li>עומדים באמצע הקיר שמול הקיר שמצלמים, עם הגב לקיר.</li>
+          <li>הטלפון לרוחב, בגובה החזה (כ-1.45 מ׳), ישר ולא מוטה למעלה או למטה. אם יש עדשה רחבה (0.5×), משתמשים בה.</li>
+          <li>רצפה: עומדים באמצע החדר ומצלמים ישר למטה.</li>
+          <li>סרטון: מסתובבים לאט 360° מאמצע החדר, או עוברים בכל הדירה. מהסרטון בוחרים פריים לכל קיר.</li>
+          <li>התמונות והסרטונים נשמרים רק בדפדפן שלכם ולא עולים לשום שרת.</li>
+        </ol>
+      </details>
+      <section class="ph-home" id="ph-home"></section>
+      <nav class="ph-rooms" id="ph-rooms" aria-label="בחירת חדר"></nav>
+      <section class="ph-room" id="ph-room"></section>
+      <section class="ph-editor" id="ph-editor" hidden aria-label="עריכת תמונה"></section>
+    </div>
+  </section>
+
+  <!-- ============ GARDEN ============ -->
   <section class="view" id="view-garden" data-view="garden" hidden>
     <div class="page">
       <div class="garden-hero">
@@ -282,6 +312,31 @@
   <p>מתאר · תכנון ריהוט לבית. המחירים הם הערכה בלבד; את הטלפונים והכתובות כדאי לוודא מול הרשת לפני הגעה.</p>
   <p class="credits">דגמי תלת-ממד: Glam Velvet Sofa ו-Damask Chair © Wayfair, Wood &amp; Leather Sofa ו-Plant © Darmstadt Graphics Group (CC BY 4.0), Sheen Chair © Wayfair ו-Glass Vase (CC0), מתוך Khronos glTF Sample Assets. תאורת HDR: Poly Haven (CC0). פרקט: three.js (MIT). IKEA ושמות המוצרים שייכים לבעליהם; הקישורים מובילים לאתרי הרשתות.</p>
 </footer>
+<dialog class="print-dlg" id="print-dlg" aria-labelledby="print-title">
+  <form method="dialog" id="print-form">
+    <h2 id="print-title">הדפסה ושמירה כ-PDF</h2>
+    <p class="muted">בוחרים מה להדפיס. בחלון ההדפסה אפשר לבחור ״שמירה כ-PDF״.</p>
+    <fieldset>
+      <legend>מה נכלל</legend>
+      <label><input type="checkbox" name="cover" checked> עמוד פתיחה: הדרישות והנתונים</label>
+      <label><input type="checkbox" name="plan" checked> תוכנית קומה עם מידות</label>
+      <label><input type="checkbox" name="views" checked> הדמיות תלת-ממד של כל חדר</label>
+      <label><input type="checkbox" name="photos" checked> צילומי החדרים לפני ואחרי</label>
+      <label><input type="checkbox" name="list" checked> רשימת קניות לפי חדר, עם מחירים</label>
+      <label><input type="checkbox" name="stores" checked> חנויות, טלפונים וכתובות</label>
+      <label><input type="checkbox" name="budget" checked> הערכת תקציב</label>
+      <label><input type="checkbox" name="garden" checked> תכנון החצר (בבית פרטי)</label>
+      <label><input type="checkbox" name="rules"> עקרונות התכנון</label>
+    </fieldset>
+    <p class="print-status" id="print-status" aria-live="polite"></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" id="print-go">הדפסה / PDF</button>
+      <button type="button" class="btn btn-ghost" id="print-file">הורדת הדוח כקובץ</button>
+      <button type="submit" class="btn btn-ghost" value="cancel">סגירה</button>
+    </div>
+  </form>
+</dialog>
+<div id="print-root" class="print-root"></div>
 <!--APP-END-->
 
 <script src="js/stores.js"></script>
@@ -290,6 +345,8 @@
 <script src="js/garden.js"></script>
 <script src="js/plan2d.js"></script>
 <script src="js/app.js"></script>
+<script src="js/photos.js"></script>
+<script src="js/print.js"></script>
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/jsm/" } }</script>
 <script type="module" src="js/tour3d.js"></script>
 </body>

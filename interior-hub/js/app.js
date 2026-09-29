@@ -136,6 +136,7 @@
     renderRooms();
     renderBudget();
     renderItemCard();
+    window.dispatchEvent(new Event('ih-plan'));
   }
 
   function roomsLabel() {
@@ -253,7 +254,11 @@
   }
   function storesFor(it) {
     const c = IH.CATALOG[it.type];
-    return c ? c.stores[state.budget] || [] : [];
+    if (!c) return [];
+    const all = c.stores[state.budget] || [];
+    // local shops (nurseries) only for buyers in their region; online and national chains always
+    const out = all.filter((id) => { const s = IH.STORES[id]; return s && (!s.local || s.branches.some((b) => b.region === state.region)); });
+    return out.length ? out : all.slice(0, 1);
   }
   function dims(it) {
     const side = it.face === 'E' || it.face === 'W';
@@ -479,13 +484,16 @@
 
   /* ---------- stores page ---------- */
   const STORE_GROUPS = [
-    ['ריהוט ועיצוב', ['ikea', 'beitili', 'aminach', 'tollmans', 'kastiel', 'natuzzi']],
+    ['ריהוט ועיצוב', ['ikea', 'beitili', 'iddesign', 'aminach', 'tollmans', 'kastiel', 'natuzzi', 'kuka']],
     ['שינה ומזרנים', ['hollandia', 'aminach']],
     ['מטבחים', ['regba', 'ikea']],
     ['חשמל ומכשירים', ['shekem', 'payngo']],
     ['טקסטיל ושטיחים', ['foxhome', 'golf']],
     ['רחצה, תאורה ומרפסת', ['homecenter', 'ace']],
-    ['גינה: משתלות ובריכות', ['yagur', 'azur', 'hadarnoy', 'adel', 'hagag']]
+    ['חדרי ילדים ותינוקות', ['shilav', 'ikea', 'aminach']],
+    ['ספות ורהיטים מעוצבים', ['iddesign', 'kuka']],
+    ['משתלות', ['ganyarak', 'rgnursery', 'azur', 'ganod', 'yagur', 'bialik', 'beithai', 'kaduri', 'hadarnoy']],
+    ['בריכות שחייה', ['adel', 'hagag']]
   ];
   function renderStores() {
     const region = $('#s-region').value || state.region;
@@ -594,7 +602,7 @@
     $('#garden-empty').hidden = house;
     $('#garden-body').hidden = !house;
     $('#garden-rules').innerHTML = rulesHtml(GARDEN_RULES);
-    $('#garden-stores').innerHTML = ['yagur', 'azur', 'hadarnoy', 'adel', 'hagag', 'homecenter', 'ace'].map((id) => storeCard(id, state.region)).join('');
+    $('#garden-stores').innerHTML = ['ganyarak', 'rgnursery', 'azur', 'ganod', 'yagur', 'bialik', 'beithai', 'kaduri', 'hadarnoy', 'adel', 'hagag', 'homecenter', 'ace'].map((id) => storeCard(id, state.region)).join('');
     if (!house) { $('#garden-actions').innerHTML = ''; return; }
     const y = plan.yard;
     const yr = plan.rooms.find((r) => r.yard);
@@ -620,10 +628,11 @@
   /* ---------- navigation and events ---------- */
   function route() {
     const h = (location.hash || '#plan').slice(1);
-    const view = ['plan', 'stores', 'rules', 'garden'].includes(h) ? h : 'plan';
+    const view = ['plan', 'stores', 'rules', 'garden', 'photos'].includes(h) ? h : 'plan';
     $$('.view').forEach((v) => { v.hidden = v.dataset.view !== view; });
     $$('.mainnav a').forEach((a) => a.setAttribute('aria-current', a.dataset.nav === view ? 'page' : 'false'));
     if (view === 'stores') renderStores();
+    if (view === 'photos' && IH.photos) IH.photos.show();
     if (tour) tour.resize();
   }
 
@@ -713,6 +722,22 @@
     s.removeAllRanges();
     s.addRange(r);
   }
+
+  // shared with photos.js and print.js
+  IH.app = {
+    get plan() { return plan; },
+    get state() { return state; },
+    get tour() { return tour; },
+    price, qty, dims, storesFor, modelRows, roomName, totalBudget, groupItems, storeCard, rulesHtml,
+    RULES, GARDEN_RULES, esc, rich, money,
+    show(id) {
+      location.hash = '#plan';
+      route();
+      $('#tab-3d').click();
+      select(id, true);
+      $('.stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   load();
   buildForm();

@@ -236,6 +236,22 @@ const TEX = {
 };
 
 /* ---------- the tour ---------- */
+// bounding box of the visible pixels of a rendered cut-out
+function alphaBox(img, W, H) {
+  const d = img.data;
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y += 2) {
+    const row = y * W * 4;
+    for (let x = 0; x < W; x += 2) {
+      if (d[row + x * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+  }
+  if (x1 < 0) return null;
+  x0 = Math.max(0, x0 - 3); y0 = Math.max(0, y0 - 3);
+  x1 = Math.min(W - 1, x1 + 3); y1 = Math.min(H - 1, y1 + 3);
+  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
 export class Tour {
   constructor(container, opts) {
     this.el = container;
@@ -257,7 +273,7 @@ export class Tour {
     this.variants = {};
 
     const mobile = matchMedia('(pointer: coarse)').matches;
-    const r = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2));
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 1.0;
@@ -749,6 +765,7 @@ export class Tour {
       g.add(f, art);
       g.position.set(it.x + it.w / 2 + back[0] * (it.w / 2 - 0.02), 1.45, it.y + it.d / 2 + back[1] * (it.d / 2 - 0.02));
       g.rotation.y = rot[it.face];
+      g.userData.decorFor = it.id;
       this.scene.add(g);
     });
   }
@@ -1552,6 +1569,129 @@ export class Tour {
   }
 
   /* ---------- frame loop ---------- */
+
+  /* ---------- photo overlays ---------- */
+  // Where a person stands to photograph one wall of a room: in the middle of the opposite
+  // wall, phone level at chest height. 'floor' looks straight down.
+  photoCamera(room, wall, aspect) {
+    const r = room, cx = r.x + r.w / 2, cz = r.y + r.d / 2;
+    if (wall === 'floor') {
+      const half = Math.max(r.w / 2 / aspect, r.d / 2) * 1.04;
+      const cam = new THREE.OrthographicCamera(-half * aspect, half * aspect, half, -half, 0.1, 20);
+      cam.position.set(cx, 6, cz);
+      cam.up.set(0, 0, -1);
+      cam.lookAt(cx, 0, cz);
+      return cam;
+    }
+    const V = { top: [0, -1], bottom: [0, 1], left: [-1, 0], right: [1, 0] }[wall];
+    const across = V[0] ? r.w : r.d, width = V[0] ? r.d : r.w;
+    const dist = Math.max(1.2, across - 0.2);
+    const px = cx - V[0] * (across / 2 - 0.1), pz = cz - V[1] * (across / 2 - 0.1);
+    let hf = 2 * Math.atan((width / 2) / dist) * 1.04;
+    hf = Math.min(Math.max(hf, THREE.MathUtils.degToRad(66)), THREE.MathUtils.degToRad(100));
+    const vf = 2 * Math.atan(Math.tan(hf / 2) / aspect);
+    const cam = new THREE.PerspectiveCamera(THREE.MathUtils.radToDeg(vf), aspect, 0.05, 60);
+    cam.position.set(px, 1.45, pz);
+    cam.lookAt(px + V[0] * dist, 1.2, pz + V[1] * dist);
+    return cam;
+  }
+
+  // Render every piece of furniture in a room, one at a time, as a transparent cut-out seen
+  // from the photo camera. Returns sprites with their box in the frame (0..1) and depth.
+  renderLayers(roomId, wall, W, H) {
+    const plan = this.plan;
+    const room = plan && plan.rooms.find((r) => r.id === roomId);
+    if (!room) return [];
+    const cam = this.photoCamera(room, wall, W / H);
+    const fwd = new THREE.Vector3();
+    cam.getWorldDirection(fwd);
+    const items = plan.items.filter((it) => it.room === roomId && this.itemGroups[it.id]).filter((it) => {
+      if (wall === 'floor') return true;
+      const c = new THREE.Vector3(it.x + it.w / 2, (it.z || 0) + it.h / 2, it.y + it.d / 2).sub(cam.position);
+      return c.dot(fwd) > 0.45;
+    });
+    const out = [];
+    this.offscreen((show) => {
+      items.forEach((it) => {
+        show(it.id);
+        this.renderer.render(this.scene, cam);
+        const src = this.renderer.domElement;
+        const full = document.createElement('canvas');
+        full.width = W; full.height = H;
+        const fx = full.getContext('2d', { willReadFrequently: true });
+        fx.drawImage(src, 0, 0, W, H);
+        const box = alphaBox(fx.getImageData(0, 0, W, H), W, H);
+        if (!box) return;
+        const cut = document.createElement('canvas');
+        cut.width = box.w; cut.height = box.h;
+        cut.getContext('2d').drawImage(full, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+        const c = new THREE.Vector3(it.x + it.w / 2, it.z || 0, it.y + it.d / 2);
+        const depth = wall === 'floor' ? -((it.z || 0) + it.h) : c.distanceTo(cam.position);
+        out.push({ id: it.id, type: it.type, canvas: cut, x: box.x / W, y: box.y / H, w: box.w / W, h: box.h / H, depth });
+      });
+    }, W, H, false);
+    return out.sort((a, b) => b.depth - a.depth);
+  }
+
+  // Full rendered view of a room from its best corner, for print and sharing.
+  snapshotRoom(roomId, W, H) {
+    const plan = this.plan;
+    const r = plan && plan.rooms.find((x) => x.id === roomId);
+    if (!r) return null;
+    let best = null;
+    for (let i = 1; i < 10; i++) for (let j = 1; j < 10; j++) {
+      const x = r.x + (r.w * i) / 10, z = r.y + (r.d * j) / 10;
+      if (this.collides(x, z, 0.35)) continue;
+      const sc = Math.hypot(x - (r.x + r.w / 2), z - (r.y + r.d / 2));
+      if (!best || sc > best.s) best = { x, z, s: sc };
+    }
+    if (!best) best = { x: r.x + r.w / 2, z: r.y + r.d / 2 };
+    const cam = new THREE.PerspectiveCamera(r.outdoor ? 60 : 68, W / H, 0.05, 300);
+    cam.position.set(best.x, r.outdoor ? 1.7 : EYE, best.z);
+    cam.lookAt(r.x + r.w / 2, r.outdoor ? 0.8 : 1.0, r.y + r.d / 2);
+    let url = null;
+    this.offscreen(() => {
+      this.renderer.render(this.scene, cam);
+      url = this.renderer.domElement.toDataURL('image/jpeg', 0.88);
+    }, W, H, true);
+    return url;
+  }
+
+  // run renders at a fixed size with the house in walk-through state, then restore the view
+  offscreen(fn, W, H, fullScene) {
+    const r = this.renderer, scene = this.scene;
+    const pr = r.getPixelRatio();
+    const wallScale = this.walls.scale.y, ceilVis = this.ceiling.visible;
+    const bg = scene.background, sel = this.selectBox;
+    if (sel) sel.visible = false;
+    r.setPixelRatio(1);
+    r.setSize(W, H, false);
+    this.walls.scale.y = 1;
+    this.ceiling.visible = true;
+    const vis = new Map();
+    if (!fullScene) {
+      scene.background = null;
+      r.setClearColor(0x000000, 0);
+      scene.children.forEach((o) => { vis.set(o, o.visible); if (!o.isLight) o.visible = false; });
+    }
+    const show = (id) => {
+      scene.children.forEach((o) => {
+        if (o.isLight) return;
+        const u = o.userData;
+        o.visible = u.itemId === id || u.decorFor === id;
+      });
+    };
+    try { fn(show); } finally {
+      vis.forEach((v, o) => { o.visible = v; });
+      scene.background = bg;
+      this.walls.scale.y = wallScale;
+      this.ceiling.visible = ceilVis;
+      if (sel) sel.visible = true;
+      r.setPixelRatio(pr);
+      this.resize();
+    }
+  }
+
   resize() {
     const w = this.el.clientWidth || 300, h = this.el.clientHeight || 300;
     this.renderer.setSize(w, h, false);
