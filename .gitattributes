@@ -7,3 +7,5 @@
 *.woff2 -text
 *.br -text
 *.gz -text
+*.mp4 -text
+*.jpg -text
