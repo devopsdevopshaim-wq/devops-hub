@@ -17,15 +17,18 @@ param(
   [switch]$DryRun
 )
 
-$ErrorActionPreference = 'Stop'
+# 'Continue', not 'Stop': Windows PowerShell 5.1 turns any stderr output from
+# gh/git into a terminating error under 'Stop', even when the exit code is what
+# we check. Cmdlets that must not fail get -ErrorAction Stop instead.
+$ErrorActionPreference = 'Continue'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$data = Get-Content -Raw -Encoding UTF8 (Join-Path $here 'projects.json') | ConvertFrom-Json
+$data = Get-Content -Raw -Encoding UTF8 -ErrorAction Stop (Join-Path $here 'projects.json') | ConvertFrom-Json
 $owner = $data.owner
 
 foreach ($tool in 'git', 'gh') {
   if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { throw "$tool is not installed" }
 }
-gh auth status *> $null
+gh auth status 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Run 'gh auth login' first" }
 
 $work = Join-Path $env:TEMP 'portfolio-upload'
@@ -43,7 +46,7 @@ foreach ($p in $data.projects) {
   if (-not (Test-Path -LiteralPath $src)) {
     Write-Warning "Not found: $src"; $skipped += $p.id; continue
   }
-  gh repo view $full *> $null
+  gh repo view $full 2>&1 | Out-Null
   if ($LASTEXITCODE -eq 0) {
     Write-Host "Repository already exists, skipping"; $skipped += $p.id; continue
   }
@@ -51,11 +54,11 @@ foreach ($p in $data.projects) {
 
   $dir = Join-Path $work $p.repo
   if (Test-Path -LiteralPath $dir) { Remove-Item -LiteralPath $dir -Recurse -Force }
-  New-Item -ItemType Directory -Path $dir | Out-Null
+  New-Item -ItemType Directory -Path $dir -ErrorAction Stop | Out-Null
 
   if ($p.local.mode -eq 'file') {
     # A single page becomes the site's index.html
-    Copy-Item -LiteralPath $src -Destination (Join-Path $dir 'index.html')
+    Copy-Item -LiteralPath $src -Destination (Join-Path $dir 'index.html') -ErrorAction Stop
   } else {
     robocopy $src $dir /E /XD node_modules .git .venv __pycache__ /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "Copy failed for $src" }
@@ -83,15 +86,17 @@ foreach ($p in $data.projects) {
 
   Push-Location $dir
   try {
-    git init -q
-    git checkout -q -b main
-    git add -A
-    git commit -q -m "Upload $($p.id)"
+    git init -q 2>&1 | Out-Null
+    git symbolic-ref HEAD refs/heads/main
+    git add -A 2>&1 | Out-Null
+    git commit -q -m "Upload $($p.id)" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "git commit failed in $dir" }
     $visibility = if ($p.private) { '--private' } else { '--public' }
     gh repo create $full $visibility --source . --remote origin --push
     if ($LASTEXITCODE -ne 0) { throw "gh repo create failed for $full" }
     if (-not $p.private) {
-      gh api -X POST "repos/$full/pages" -f "source[branch]=main" -f "source[path]=/" | Out-Null
+      gh api -X POST "repos/$full/pages" -f "source[branch]=main" -f "source[path]=/" 2>&1 | Out-Null
+      if ($LASTEXITCODE -ne 0) { Write-Warning "Could not turn on Pages for $full; turn it on in the repo's Settings > Pages" }
       Write-Host "Pages: https://$owner.github.io/$($p.repo)/" -ForegroundColor Green
     }
     $done += $p.id
