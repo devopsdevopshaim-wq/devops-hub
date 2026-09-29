@@ -16,6 +16,7 @@ for (const f of ['data', 'media', 'money', 'sites', 'config']) {
   vm.runInContext(fs.readFileSync(path.join(dir, 'js', f + '.js'), 'utf8'), ctx, { filename: f });
 }
 /* אופציונלי: קווי אוטובוס/רכבת ויישובים בישראל */
+for (const f of ['safety']) if (fs.existsSync(path.join(dir, 'js', f + '.js'))) vm.runInContext(fs.readFileSync(path.join(dir, 'js', f + '.js'), 'utf8'), ctx, { filename: f });
 if (fs.existsSync(path.join(dir, 'js', 'israel.js'))) vm.runInContext(fs.readFileSync(path.join(dir, 'js', 'israel.js'), 'utf8'), ctx, { filename: 'israel' });
 const W = ctx.window;
 const MONTHS = ['ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'יוני', 'יולי', 'אוג׳', 'ספט׳', 'אוק׳', 'נוב׳', 'דצמ׳'];
@@ -30,7 +31,7 @@ const destinations = W.APP_DATA.destinations.map(d => ({
   climateMaxC: Object.fromEntries(d.climate.map((t, i) => [MONTHS[i], t])),
   bestMonths: d.bestMonths.map(m => MONTHS[m - 1]),
   estimatedCostsILS: d.costs,
-  hotels: d.hotels.map(h => pick(h, ['name', 'kind', 'tags', 'tier', 'price', 'area', 'addr', 'phone', 'web', 'note'])),
+  hotels: d.hotels.map(h => pick(h, ['name', 'kind', 'tags', 'tier', 'price', 'area', 'addr', 'phone', 'web', 'note', 'rec'])),
   attractions: (d.fun || []).map(f => pick(f, ['name', 'type', 'tags', 'addr', 'phone', 'web', 'note'])),
   suitability0to3: d.vibes || {},
   car: d.car,
@@ -52,6 +53,13 @@ const out = {
   origin: W.APP_DATA.origin,
   holidays: W.APP_DATA.holidays,
   destinations,
+  travelWarnings: W.APP_SAFETY ? {
+    source: 'המטה לביטחון לאומי (המל״ל)', checked: W.APP_SAFETY.checked, basedOn: W.APP_SAFETY.basedOn, official: W.APP_SAFETY.official,
+    note: 'אזהרות משתנות — תמיד להפנות לאתר המל״ל לאימות. עמוד באתר: #safety',
+    levels: Object.fromEntries(Object.entries(W.APP_SAFETY.levels).map(([k, v]) => [k, { name: v.name, recommendation: v.rec }])),
+    countries: W.APP_SAFETY.countries.map(c => ({ country: c.name, level: c.level, note: c.note, exceptions: c.areas, destinations: c.dest })),
+    tips: W.APP_SAFETY.tips, contacts: W.APP_SAFETY.contacts
+  } : undefined,
   israelTravel: W.APP_IL ? (() => {
     const nm = Object.fromEntries(W.APP_IL.places.map(p => [p.id, p.name]));
     return {

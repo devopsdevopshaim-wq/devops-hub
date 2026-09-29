@@ -39,6 +39,8 @@ All data files assign a global on `window` and are plain scripts (no modules), s
     // kind (optional, default 'hotel'): hotel | boutique | resort | spa | zimmer | cabins | farm | kibbutz | lodge | hostel
     //   → drives the stay filters (מלונות / צימרים, בקתות וחוות / ספא …). zimmer/cabins/farm/lodge/kibbutz count as "צימרים".
     // tags (optional): family | couple | spa | pool | adults | nature | budget | view — only what the source supports
+    // photo (optional): Wikimedia Commons file name of THIS hotel (verified via search) — shown as a thumbnail and on #stays cards
+    // rec (optional): one-line editorial "why we recommend" based on verifiable facts (location, view, history). Never invented guest reviews.
   ],
   car: { need: 'לא בעיר; כן לטוסקנה', companies: ['Europcar','Hertz'], tips: ['...'] },
       // need starting with חיוני|מומלץ|כן|שימושי → car is included in cost estimates
@@ -116,3 +118,18 @@ Powers two views: **#stays** (every hotel, zimmer, cabin, hostel, apartment and 
 }
 ```
 Live APIs (Overpass, OSRM, Wikidata photos) need a real browser on http(s) or file://; they are blocked inside Claude artifacts, where only the curated list and estimates appear.
+
+## js/safety.js → `window.APP_SAFETY` (travel warnings)
+Powers the **#safety** view (world map, filter by level, per-country cards, NSC tips, emergency phones), the warning badge on destination pages/cards/results and on #stays for abroad destinations, and a chat intent.
+```js
+{
+  checked: 'YYYY-MM-DD', basedOn: 'text', official: 'https://www.gov.il/…/travel-warnings-nsc',
+  dataset: { resource: '<data.gov.il resource id>', page }, hotline: '02-…',
+  levels: { 1: { name, short, color, rec }, …, 5: {…enemy state, entry banned} },
+  countries: [{ iso: 'TH', name: 'תאילנד', level: 2, c: [lat, lon], dest: ['bangkok'], note: '', areas: [['דרום תאילנד', 4]] }],
+  tips: ['…'], contacts: [['name', 'phone']]
+}
+```
+Research each level via WebSearch of NSC publications/news (Hebrew: "אזהרת מסע המל״ל <country> רמה"); skip countries where sources conflict. `dest` links a country to destination ids. The page also reads the open data.gov.il dataset and overrides a level **only** when a record matches the country name exactly, has a clear 1–4 level and a date newer than `checked`. Always keep the "verify on the NSC site" notice.
+
+#stays also works for abroad destinations: the scope select lists every non-Israel destination and loads all hotels/hostels/apartments within a radius of its coords from Overpass (cached 7 days). Link with `#stays-<destId>`.

@@ -47,7 +47,9 @@ for (const d of D) {
   if (!Array.isArray(d.climate) || d.climate.length !== 12) errors.push(`${tag}: climate needs 12 monthly values`);
   if (d.costs && !(d.costs.hotel && d.costs.hotel.budget && d.costs.hotel.mid && d.costs.hotel.lux)) errors.push(`${tag}: costs.hotel needs budget/mid/lux`);
   if (d.poster && !ICONS.includes(d.poster.icon)) warnings.push(`${tag}: poster.icon "${d.poster.icon}" unknown — falls back to skyline. Known: ${ICONS.join(', ')}`);
+  if ((d.hotels || []).length !== Object.keys(d.hotels || []).length) errors.push(`${tag}: hotels array has an empty slot (double comma?)`);
   (d.hotels || []).forEach(h => {
+    if (h.photo && (typeof h.photo !== 'string' || /^https?:|^File:/i.test(h.photo))) errors.push(`${tag}: hotel "${h.name}" photo must be a bare Commons file name`);
     if (!h.phone) warnings.push(`${tag}: hotel "${h.name}" has no phone`);
     if (h.phone && !/^\+\d[\d ]{6,}$/.test(h.phone)) warnings.push(`${tag}: hotel "${h.name}" phone "${h.phone}" should be +<country> <number>`);
     if (!['lux', 'mid', 'budget'].includes(h.tier)) errors.push(`${tag}: hotel "${h.name}" tier must be lux/mid/budget`);

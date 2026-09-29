@@ -306,7 +306,7 @@
       arg = parts[0];
       if (parts[1]) st.tab = parts[1];
     }
-    if (raw.startsWith('stays-')) { view = 'stays'; if (REGION_LABEL[raw.slice(6)]) staysState.r = raw.slice(6); }
+    if (raw.startsWith('stays-')) { view = 'stays'; const k = raw.slice(6); if (REGION_LABEL[k]) staysState.r = k; else if (byId[k] && byId[k].region !== 'il') staysState.r = 'd:' + k; }
     if (raw.startsWith('go-')) { view = 'go'; arg = raw.slice(3); }
     if (!$('#view-' + view)) view = 'home';
     $$('.view').forEach(v => { v.hidden = v.dataset.view !== view; });
@@ -314,7 +314,7 @@
       const on = a.dataset.nav === view || (view === 'dest' && a.dataset.nav === 'explore');
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    const R = { home: renderHome, explore: renderExplore, dest: () => renderDest(arg), deal: renderDeal, sites: renderSites, airport: renderAirport, budget: renderBudget, trips: renderTrips, help: renderHelp, stays: renderStays, go: () => renderGo(arg) };
+    const R = { home: renderHome, explore: renderExplore, dest: () => renderDest(arg), deal: renderDeal, sites: renderSites, airport: renderAirport, budget: renderBudget, trips: renderTrips, help: renderHelp, stays: renderStays, go: () => renderGo(arg), safety: renderSafety };
     R[view]();
     window.scrollTo(0, 0);
   }
@@ -607,6 +607,7 @@
             ${e.best ? '<span class="chip chip-good">עונה מומלצת</span>' : ''}
             ${d.flightTime ? `<span class="chip">${d.flightTime} ש׳ טיסה</span>` : '<span class="chip">נסיעה, בלי טיסה</span>'}
             ${e.tooShort ? '<span class="chip chip-bad">קצר מדי לטיסה ארוכה</span>' : ''}
+            ${safetyBadge(d, true)}
           </div>
           ${fitChips(e.fit)}
           <div class="result-links">
@@ -722,6 +723,7 @@
           <div class="dest-meta">
             <span class="chip">${esc(d.country)}</span>
             ${d.flightTime ? `<span class="chip">${d.flightTime} ש׳ טיסה</span>` : '<span class="chip">ללא טיסה</span>'}
+            ${(() => { const c = safetyEntry(d); return c && levelOf(c) >= 2 ? `<span class="chip" style="color:${SAF.levels[levelOf(c)].color};border-color:currentColor">⚠ ${esc(SAF.levels[levelOf(c)].short)}</span>` : ''; })()}
             <span class="chip">${e.temp}° ב${MONTHS_S[e.month]}</span>
             ${e.best ? '<span class="chip chip-good">עונה טובה</span>' : ''}
             ${e.fit.good.length ? `<span class="chip chip-good">${e.fit.good.map(t => TYPE_LABEL[t]).join(' · ')}</span>` : ''}
@@ -753,6 +755,7 @@
           <div class="dest-hero-body">
             <span class="eyebrow" style="color:#F4B942">${esc(d.country)} · ${esc(d.nameEn)}</span>
             <h1 class="h-display">${esc(d.name)}</h1>
+            ${safetyBadge(d)}
             <p>${esc(d.about)}</p>
             <div class="result-links">
               <a class="btn btn-amber btn-sm" href="#deal" id="destDeal">סגירת דיל ל${esc(d.name)}</a>
@@ -880,7 +883,8 @@
             ${list.length ? list.map(h => stayRow(d, s, h)).join('') : '<li class="fine">אין מקומות בקטגוריה הזו ביעד. נסו סינון אחר.</li>'}
           </ul>
         </div>
-        ${d.region === 'il' ? `<div class="card mt row"><div><h3>רוצים עוד אפשרויות?</h3><p class="fine">כל המלונות, הצימרים והבקתות ב${esc(REGION_LABEL[nearestPlace(d.coords).p.r])}, עם מפה, טלפונים וניווט.</p></div><a class="btn btn-primary" href="#stays-${nearestPlace(d.coords).p.r}">לכל הלינה באזור</a></div>` : ''}
+        ${d.region === 'il' ? `<div class="card mt row"><div><h3>רוצים עוד אפשרויות?</h3><p class="fine">כל המלונות, הצימרים והבקתות ב${esc(REGION_LABEL[nearestPlace(d.coords).p.r])}, עם מפה, טלפונים וניווט.</p></div><a class="btn btn-primary" href="#stays-${nearestPlace(d.coords).p.r}">לכל הלינה באזור</a></div>`
+          : `<div class="card mt row"><div><h3>רוצים עוד אפשרויות?</h3><p class="fine">כל המלונות, האכסניות ודירות הנופש ב${esc(d.name)} על מפה, עם טלפונים, אתרים, תמונות ודילים.</p></div><a class="btn btn-primary" href="#stays-${d.id}">כל המלונות ב${esc(d.name)}</a></div>`}
         ${d.region === 'il' ? `<p class="note mt">מחפשים עוד צימרים? ${ext(`https://www.booking.com/searchresults.he.html?ss=${enc(d.nameEn)}&checkin=${iso(s.start)}&checkout=${iso(s.end)}&group_adults=${s.travelers}`, 'עוד מקומות לינה ב-Booking', '')} · ${ext(`https://www.airbnb.com/s/${enc(d.nameEn)}/homes?checkin=${iso(s.start)}&checkout=${iso(s.end)}&adults=${s.travelers}`, 'בתים ובקתות ב-Airbnb', '')}</p>` : ''}
         <div class="section-head mt"><h2 class="h-section" style="font-size:36px">עוד לינה בתאריכים שלכם</h2></div>
         ${siteLinks(d, s, ['hotel'])}`;
@@ -1045,9 +1049,11 @@
       ${h.kind && h.kind !== 'hotel' ? `<span class="tier kind">${STAY_KIND[h.kind] || h.kind}</span>` : ''}`;
   }
   function stayRow(d, s, h) {
-    return `<li>
+    return `<li class="${h.photo ? 'has-thumb' : ''}">
+      ${h.photo ? `<a class="stay-thumb" href="${esc(commonsPage(h.photo))}" target="_blank" rel="noopener" aria-label="תמונה: ${esc(h.name)}"><img class="photo" src="${esc(commonsImg(h.photo, 320))}" alt="${esc(h.name)}" loading="lazy"></a>` : ''}
       <div><div class="t">${esc(h.name)} ${stayBadges(h)}</div>
         <div class="s">${esc(h.area)} · ${esc(h.note)}</div>
+        ${h.rec ? `<div class="rec"><b>למה אנחנו ממליצים:</b> ${esc(h.rec)}</div>` : ''}
         ${(h.tags || []).length ? `<div class="tag-row">${h.tags.map(t => `<span class="mini">${TAG_LABEL[t] || t}</span>`).join('')}</div>` : ''}
         ${contactHTML(h)}</div>
       <div class="actions"><span class="chip num">כ-${money(h.price)}</span>
@@ -1440,6 +1446,139 @@
   }
 
   /* =========================================================
+     בטיחות ואזהרות מסע (המל״ל)
+     ========================================================= */
+  const SAF = window.APP_SAFETY || { levels: {}, countries: [], tips: [], contacts: [] };
+  const safeLive = { map: {}, status: '', tried: false };
+  const safetyEntry = (d) => d && d.region !== 'il' ? SAF.countries.find(c => (c.dest || []).includes(d.id)) : null;
+  const levelOf = (c) => (safeLive.map[c.iso] || {}).level || c.level;
+  function safetyBadge(d, small) {
+    const c = safetyEntry(d); if (!c) return '';
+    const L = SAF.levels[levelOf(c)] || {};
+    return `<a class="lv-badge${small ? ' lv-sm' : ''}" href="#safety" style="--lv:${L.color}" title="${esc(L.rec || '')}">${levelOf(c) >= 2 ? '⚠ ' : ''}אזהרת מסע: ${esc(L.short || '')}</a>`;
+  }
+  function parseAnyDate(s) {
+    s = String(s || '').trim();
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return new Date(+m[1], m[2] - 1, +m[3]);
+    m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})/); if (m) return new Date(+m[3], m[2] - 1, +m[1]);
+    return null;
+  }
+  /* קריאה זהירה של המאגר הפתוח: משנים רמה רק כשיש התאמה מדויקת לשם המדינה, רמה ברורה ותאריך חדש מהבדיקה שלנו */
+  function loadSafetyLive() {
+    if (safeLive.tried || !window.fetch || !SAF.dataset) return Promise.resolve();
+    safeLive.tried = true;
+    const checked = parseAnyDate(SAF.checked);
+    const ctl = window.AbortController ? new AbortController() : null;
+    const t = ctl && setTimeout(() => ctl.abort(), 15000);
+    return fetch(`https://data.gov.il/api/3/action/datastore_search?resource_id=${SAF.dataset.resource}&limit=1000`, { signal: ctl ? ctl.signal : undefined })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+      .then(j => {
+        const recs = (j && j.result && j.result.records) || [];
+        const found = {};
+        recs.forEach(r => {
+          let country = null, level = null, date = null;
+          Object.entries(r).forEach(([k, v]) => {
+            const s = String(v == null ? '' : v).trim(), kk = k.toLowerCase();
+            if (!country) country = SAF.countries.find(c => c.name.split(' (')[0] === s) || null;
+            if (level == null && /level|threat|רמ|איום/.test(kk)) { const m = s.match(/\b([1-4])\b/); if (m) level = +m[1]; }
+            if (!date && /date|update|תאריך|עדכון/.test(kk)) date = parseAnyDate(s);
+          });
+          if (!country || !level || !date || date <= checked) return;
+          const cur = found[country.iso];
+          if (!cur || date > cur.date || (+date === +cur.date && level < cur.level)) found[country.iso] = { level, date };
+        });
+        safeLive.map = found;
+        const n = Object.keys(found).length;
+        safeLive.status = recs.length ? (n ? `עודכנו אוטומטית ${n} מדינות ממאגר המידע הממשלתי.` : 'המאגר הממשלתי נבדק עכשיו — אין בו עדכונים חדשים מהבדיקה שלנו.') : '';
+      })
+      .catch(() => { safeLive.status = ''; })
+      .finally(() => t && clearTimeout(t));
+  }
+
+  const safetyState = { lv: 'all', q: '' };
+  let safeMap = null;
+  function renderSafety() {
+    const el = $('#view-safety');
+    const ours = DESTS.filter(d => safetyEntry(d));
+    el.innerHTML = `
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">בטיחות בחו״ל</span>
+            <h1 class="h-section">אזהרות מסע ורמות סיכון</h1>
+            <p class="lead">רמת האזהרה של המטה לביטחון לאומי לכל מדינה, מפת עולם, מה כל רמה אומרת, והמלצות בטיחות לישראלים בחו״ל.</p>
+          </div>
+        </div>
+        <div class="panel safety-status">
+          <div><b>נבדק לאחרונה: ${esc(SAF.checked ? SAF.checked.split('-').reverse().join('.') : '')}</b> · ${esc(SAF.basedOn || '')}<div class="fine" id="sfLive">${esc(safeLive.status)}</div></div>
+          ${ext(SAF.official, 'לאתר המל״ל הרשמי', 'btn btn-primary btn-sm')}
+        </div>
+        <p class="fine mt">אזהרות המסע משתנות לפעמים בתוך ימים. לפני הזמנה ולפני יציאה בדקו תמיד באתר המל״ל, או במוקד בטלפון <a href="${telHref(SAF.hotline || '')}" dir="ltr">${esc(SAF.hotline || '')}</a>.</p>
+
+        <h2 class="h-sub mt">היעדים שלנו</h2>
+        <div class="safety-ours">${ours.map(d => { const c = safetyEntry(d), L = SAF.levels[levelOf(c)]; return `<a class="safety-dest" href="#dest-${d.id}" style="--lv:${L.color}"><b>${esc(d.name)}</b><span>${esc(L.name)}</span></a>`; }).join('')}</div>
+
+        <div class="seg mt" id="sfLevels">${[['all', 'הכל']].concat([5, 4, 3, 2, 1].map(k => [String(k), SAF.levels[k].short])).map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="${safetyState.lv === k}">${k !== 'all' ? `<i class="dot" style="background:${SAF.levels[k].color}"></i>` : ''}${esc(v)} <span class="cnt">${k === 'all' ? SAF.countries.length : SAF.countries.filter(c => String(levelOf(c)) === k).length}</span></button>`).join('')}</div>
+        <div class="field mt" style="max-width:360px"><label for="sfQ">חיפוש מדינה</label><input class="input" id="sfQ" type="search" placeholder="לדוגמה: טורקיה, יוון, תאילנד" value="${esc(safetyState.q)}"></div>
+
+        <div class="map-box safety-map mt" dir="ltr">
+          <div id="safeMap" style="width:100%;height:100%"></div>
+          <div class="map-fallback" id="safeMapFallback" hidden dir="rtl"><div><strong>המפה לא נטענה בסביבה הזו</strong><div class="fine">הרשימה המלאה מופיעה למטה.</div></div></div>
+        </div>
+        <div id="sfList" class="mt"></div>
+
+        <div class="grid-2 mt">
+          <div class="card"><h3>מה אומרת כל רמה?</h3><ul class="list">${[1, 2, 3, 4, 5].map(k => `<li><div><div class="t"><i class="dot" style="background:${SAF.levels[k].color}"></i> ${esc(SAF.levels[k].name)}</div><div class="s">${esc(SAF.levels[k].rec)}</div></div></li>`).join('')}</ul></div>
+          <div class="stack-v">
+            <div class="card"><h3>המלצות המל״ל לישראלים בחו״ל</h3><ul class="tips">${SAF.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>
+            <div class="card"><h3>טלפונים לשעת חירום</h3><ul class="list">${SAF.contacts.map(([n, p]) => `<li><span class="t">${esc(n)}</span><a class="mono" dir="ltr" href="${telHref(p)}">${esc(p)}</a></li>`).join('')}</ul>
+              <p class="fine">מומלץ לרשום את הנסיעה ולשמור את מספר השגרירות הקרובה. ביטוח נסיעות לא תמיד מכסה אירועים ביעדים שיש אליהם אזהרת מסע — בדקו בפוליסה.</p></div>
+          </div>
+        </div>
+      </div>`;
+    const draw = () => {
+      const q = safetyState.q.trim();
+      const list = SAF.countries.filter(c => (safetyState.lv === 'all' || String(levelOf(c)) === safetyState.lv) && (!q || c.name.includes(q)));
+      const groups = [5, 4, 3, 2, 1].map(k => [k, list.filter(c => levelOf(c) === k)]).filter(g => g[1].length);
+      $('#sfList').innerHTML = groups.length ? groups.map(([k, cs]) => `
+        <section class="sites-group"><h2><i class="dot" style="background:${SAF.levels[k].color}"></i> ${esc(SAF.levels[k].name)}</h2>
+          <div class="safety-grid">${cs.map(c => {
+            const live = safeLive.map[c.iso];
+            const dests = (c.dest || []).filter(id => byId[id]);
+            return `<article class="safety-card" style="--lv:${SAF.levels[k].color}">
+              <div class="row"><b>${esc(c.name)}</b><span class="lv-badge lv-sm" style="--lv:${SAF.levels[k].color}">${esc(SAF.levels[k].short)}</span></div>
+              <p class="fine">${esc(SAF.levels[k].rec)}${c.note ? ' ' + esc(c.note) : ''}</p>
+              ${(c.areas || []).map(([a, lv]) => `<p class="fine">חריג: <b>${esc(a)}</b> — <span style="color:${SAF.levels[lv].color};font-weight:700">${esc(SAF.levels[lv].short)}</span></p>`).join('')}
+              ${live ? `<p class="fine">עודכן ממאגר המידע הממשלתי · ${live.date.toLocaleDateString('he-IL')}</p>` : ''}
+              ${dests.length ? `<div class="sc-actions">${dests.map(id => `<a class="btn btn-sm btn-ghost" href="#dest-${id}">${esc(byId[id].name)}</a>`).join('')}</div>` : ''}
+            </article>`;
+          }).join('')}</div></section>`).join('') : '<div class="empty">לא נמצאו מדינות.</div>';
+      if (safeMap) {
+        safeMap._pts.clearLayers();
+        list.forEach(c => {
+          const L = SAF.levels[levelOf(c)];
+          L_circle(c, L).addTo(safeMap._pts);
+        });
+      }
+    };
+    const L_circle = (c, L) => window.L.circleMarker(c.c, { radius: 8, color: '#fff', weight: 1.5, fillColor: L.color, fillOpacity: .92 })
+      .bindPopup(`<div dir="rtl"><b>${esc(c.name)}</b><br>${esc(L.name)}<br><span style="font-size:12px">${esc(L.rec)}</span></div>`);
+    if (safeMap) { safeMap.remove(); safeMap = null; }
+    if (window.L) {
+      safeMap = L.map('safeMap', { scrollWheelZoom: false, worldCopyJump: true }).setView([30, 30], 2);
+      let ok = 0, bad = 0;
+      const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 10, attribution: '&copy; OpenStreetMap contributors' }).addTo(safeMap);
+      tiles.on('tileload', () => { ok++; });
+      tiles.on('tileerror', () => { bad++; if (bad >= 4 && ok === 0) $('#safeMapFallback').hidden = false; });
+      safeMap._pts = L.layerGroup().addTo(safeMap);
+    } else $('#safeMapFallback').hidden = false;
+    $('#sfLevels').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; safetyState.lv = b.dataset.v; $$('#sfLevels button').forEach(x => x.setAttribute('aria-pressed', x === b)); draw(); };
+    $('#sfQ').oninput = (e) => { safetyState.q = e.target.value; draw(); };
+    draw();
+    if (!safeLive.tried) loadSafetyLive().then(() => { if (!$('#view-safety').hidden && Object.keys(safeLive.map).length) renderSafety(); else { const s = $('#sfLive'); if (s) s.textContent = safeLive.status; } });
+  }
+
+  /* =========================================================
      ישראל: כל הלינה בארץ (OpenStreetMap חי) וניווט בין מקומות
      ========================================================= */
   const IL = window.APP_IL || { regions: [], places: [], bus: [], rail: [], links: {} };
@@ -1467,14 +1606,24 @@
   const kindMatch = (x, k) => k === 'all' || (k === 'zimmer' ? (x.k === 'guest_house' || x.k === 'chalet') : k === 'hostel' ? (x.k === 'hostel' || x.k === 'motel') : x.k === k);
   const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
   const OSM_Q = '[out:json][timeout:90];area["ISO3166-1"="IL"][admin_level=2]->.il;(nwr["tourism"~"^(hotel|guest_house|hostel|chalet|motel|apartment|camp_site)$"](area.il););out center tags;';
-  const ilStays = { osm: null, loading: null, src: '', date: '', err: '' };
+  /* היקף: 'il' = כל ישראל; 'd:<id>' = יעד בחו״ל (מלונות ברדיוס סביב מרכז העיר) */
+  const STAY_CACHE = {};
+  const scopeOf = (r) => String(r).startsWith('d:') ? r : 'il';
+  const scopeDest = (sc) => sc.startsWith('d:') ? byId[sc.slice(2)] : null;
+  const stayBox = (sc) => STAY_CACHE[sc] || (STAY_CACHE[sc] = { osm: null, loading: null, src: '', date: '', err: '' });
+  const osmQuery = (sc) => {
+    const d = scopeDest(sc);
+    if (!d) return OSM_Q;
+    const rad = d.id === 'dubai' ? 15000 : d.id === 'newyork' || d.id === 'tokyo' || d.id === 'london' || d.id === 'bangkok' ? 9000 : 6000;
+    return `[out:json][timeout:60];(nwr["tourism"~"^(hotel|guest_house|hostel|motel|apartment)$"](around:${rad},${d.coords[0]},${d.coords[1]}););out center tags;`;
+  };
 
-  function slimOsm(e) {
+  function slimOsm(e, d) {
     const t = e.tags || {};
     const c = e.lat != null ? [e.lat, e.lon] : e.center ? [e.center.lat, e.center.lon] : null;
     const name = t['name:he'] || t.name || t['name:en'];
     if (!name || !c || t.disused || t['disused:tourism']) return null;
-    const np = nearestPlace(c);
+    const np = d ? null : nearestPlace(c);
     const city = t['addr:city'] || t['addr:place'] || '';
     const street = [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' ');
     return {
@@ -1483,20 +1632,21 @@
       ph: (t.phone || t['contact:phone'] || t['contact:mobile'] || '').split(';')[0].trim(),
       web: safeWeb(t.website || t['contact:website'] || t.url), st: parseFloat(t.stars) || 0,
       img: /^https:\/\//.test(t.image || '') ? t.image : '', wc: /^File:/i.test(t.wikimedia_commons || '') ? t.wikimedia_commons.slice(5) : '',
-      wd: /^Q\d+$/.test(t.wikidata || '') ? t.wikidata : '', near: np.p.id, r: np.p.r
+      wd: /^Q\d+$/.test(t.wikidata || '') ? t.wikidata : '', near: np ? np.p.id : '', r: np ? np.p.r : 'd:' + d.id
     };
   }
   /* המקומות שנבדקו ידנית ביעדי הארץ — תמיד מוצגים, וגם כגיבוי כשאין חיבור ל-OpenStreetMap */
   const CUR_KIND = { zimmer: 'guest_house', farm: 'guest_house', kibbutz: 'guest_house', cabins: 'chalet', lodge: 'chalet', hostel: 'hostel' };
-  const curatedStays = DESTS.filter(d => d.region === 'il').flatMap(d => d.hotels.map((h, i) => {
-    const np = nearestPlace(d.coords);
-    return { id: 'cur-' + d.id + '-' + i, n: h.name, en: '', k: CUR_KIND[h.kind] || 'hotel', c: d.coords, approx: true, city: h.area, addr: h.addr || '', ph: h.phone || '', web: h.web || '', st: 0, img: '', wc: '', wd: '', near: np.p.id, r: np.p.r, cur: true, dest: d.id, price: h.price, note: h.note, tier: h.tier };
+  const curatedStays = DESTS.flatMap(d => d.hotels.map((h, i) => {
+    const np = d.region === 'il' ? nearestPlace(d.coords) : null;
+    return { id: 'cur-' + d.id + '-' + i, n: h.name, en: '', k: CUR_KIND[h.kind] || 'hotel', c: d.coords, approx: true, city: d.region === 'il' ? h.area : d.name + ' · ' + h.area, addr: h.addr || '', ph: h.phone || '', web: h.web || '', st: 0, img: '', wc: h.photo || '', wd: '', near: np ? np.p.id : '', r: np ? np.p.r : 'd:' + d.id, cur: true, dest: d.id, price: h.price, note: h.note, rec: h.rec || '', tier: h.tier };
   }));
 
-  function loadIlStays() {
+  function loadStays(sc) {
+    const ilStays = stayBox(sc), d = scopeDest(sc), key = sc === 'il' ? 'ilStays' : 'stays.' + sc;
     if (ilStays.osm) return Promise.resolve(ilStays.osm);
     if (ilStays.loading) return ilStays.loading;
-    const cached = store.get('ilStays', null);
+    const cached = store.get(key, null);
     if (cached && cached.list && Date.now() - cached.t < 7 * 864e5) {
       ilStays.osm = cached.list; ilStays.src = 'cache'; ilStays.date = new Date(cached.t).toLocaleDateString('he-IL');
       return Promise.resolve(ilStays.osm);
@@ -1506,24 +1656,26 @@
       if (i >= OVERPASS.length) return Promise.reject(new Error('all mirrors failed'));
       const ctl = window.AbortController ? new AbortController() : null;
       const t = ctl && setTimeout(() => ctl.abort(), 75000);
-      return fetch(OVERPASS[i], { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + enc(OSM_Q), signal: ctl ? ctl.signal : undefined })
+      return fetch(OVERPASS[i], { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + enc(osmQuery(sc)), signal: ctl ? ctl.signal : undefined })
         .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
         .then(j => { if (!j || !Array.isArray(j.elements) || !j.elements.length) throw new Error('empty'); return j; })
         .finally(() => t && clearTimeout(t))
         .catch(() => tryAt(i + 1));
     };
     ilStays.loading = tryAt(0).then(j => {
-      const list = j.elements.map(slimOsm).filter(Boolean);
+      const list = j.elements.map(e => slimOsm(e, d)).filter(Boolean);
       ilStays.osm = list; ilStays.src = 'live'; ilStays.date = new Date().toLocaleDateString('he-IL');
-      store.set('ilStays', { t: Date.now(), list });
+      store.set(key, { t: Date.now(), list });
       return list;
     }).catch(err => { ilStays.err = String(err.message || err); ilStays.loading = null; throw err; });
     return ilStays.loading;
   }
-  function allIlStays() {
-    const osm = ilStays.osm || [];
+  function allIlStays(sc) {
+    sc = sc || scopeOf(staysState.r);
+    const osm = stayBox(sc).osm || [];
     const names = new Set(osm.flatMap(x => [x.n, x.en].filter(Boolean).map(v => v.toLowerCase())));
-    return curatedStays.filter(x => !names.has(x.n.toLowerCase())).concat(osm);
+    const cur = curatedStays.filter(x => sc === 'il' ? !String(x.r).startsWith('d:') : x.r === sc);
+    return cur.filter(x => !names.has(x.n.toLowerCase())).concat(osm);
   }
 
   const staysState = { r: 'all', k: 'all', q: '', phone: false, sort: 'rec', shown: 48 };
@@ -1540,7 +1692,7 @@
   const stayDates = () => (st.end ? st : { ...st, end: addDays(st.start, 2) });
   function stayDealText(x, s) {
     const p = placeById[x.near] || {};
-    return [`בקשת דיל ללינה בארץ`, `מקום: ${x.n}${x.city ? ' · ' + x.city : ''} (${p.name || ''})`, x.ph ? `טלפון המקום: ${x.ph}` : '', `תאריכים: ${fmt(s.start)}.${s.start.getFullYear()} – ${fmt(s.end)}.${s.end.getFullYear()} · ${nightsOf(s)} לילות`, `מטיילים: ${s.travelers}`, 'אשמח להצעת מחיר / דיל.'].filter(Boolean).join('\n');
+    return [`בקשת דיל ללינה${x.near ? ' בארץ' : ''}`, `מקום: ${x.n}${x.city ? ' · ' + x.city : ''}${p.name ? ` (${p.name})` : ''}`, x.ph ? `טלפון המקום: ${x.ph}` : '', `תאריכים: ${fmt(s.start)}.${s.start.getFullYear()} – ${fmt(s.end)}.${s.end.getFullYear()} · ${nightsOf(s)} לילות`, `מטיילים: ${s.travelers}`, 'אשמח להצעת מחיר / דיל.'].filter(Boolean).join('\n');
   }
   function stayCard(x, s) {
     const p = placeById[x.near] || { name: '' };
@@ -1560,13 +1712,14 @@
         <div class="sc-top"><span class="tier kind">${esc(kname)}</span>${x.st ? `<span class="tier">${'★'.repeat(Math.min(5, Math.round(x.st)))}</span>` : ''}${x.cur ? '<span class="tier tier-lux">נבדק ע״י הצוות</span>' : ''}</div>
         <h3 dir="auto">${esc(x.n)}</h3>
         ${x.en ? `<div class="fine" dir="ltr">${esc(x.en)}</div>` : ''}
-        <div class="fine">${esc(p.name ? (x.city && x.city !== p.name ? x.city + ' · ליד ' + p.name : 'ליד ' + p.name) : x.city)} · ${esc(REGION_LABEL[x.r] || '')}</div>
+        <div class="fine">${esc(p.name ? (x.city && x.city !== p.name ? x.city + ' · ליד ' + p.name : 'ליד ' + p.name) : x.city)}${REGION_LABEL[x.r] ? ' · ' + esc(REGION_LABEL[x.r]) : ''}</div>
         ${x.note ? `<div class="fine">${esc(x.note)}${x.price ? ` · <b class="num">כ-${money(x.price)}</b> ללילה (משוער)` : ''}</div>` : ''}
+        ${x.rec ? `<div class="rec"><b>למה אנחנו ממליצים:</b> ${esc(x.rec)}</div>` : ''}
         ${contactHTML({ name: x.n, addr: x.addr, phone: x.ph, web: x.web })}
         <div class="sc-actions">
           ${x.approx ? '' : ext(waze(x.c), 'Waze', 'btn btn-sm')}
           ${ext(x.approx ? `https://www.google.com/maps/dir/?api=1&destination=${enc(q)}` : gdir(null, x.c), 'ניווט Google', 'btn btn-sm btn-ghost')}
-          <a class="btn btn-sm btn-ghost" href="#go" data-goto="${esc(x.id)}">איך מגיעים (רכב / אוטובוס)</a>
+          ${x.near ? `<a class="btn btn-sm btn-ghost" href="#go" data-goto="${esc(x.id)}">איך מגיעים (רכב / אוטובוס)</a>` : ''}
         </div>
         <div class="sc-actions">
           ${ext(book, 'דילים ומחירים · Booking', 'btn btn-sm btn-primary')}
@@ -1602,14 +1755,14 @@
       <div class="wrap">
         <div class="section-head">
           <div>
-            <span class="eyebrow">לינה בכל הארץ</span>
-            <h1 class="h-section">כל המלונות והצימרים בישראל</h1>
-            <p class="lead">מלונות, צימרים, בקתות, אכסניות, דירות נופש וחניוני לילה מכל האזורים, עם כתובת, טלפון, אתר, מפה וניווט. לכל מקום יש קישור לדילים ולמחירים לתאריכים שלכם, ואפשר לבקש דיל דרך הסוכן.</p>
+            <span class="eyebrow">לינה בארץ ובעולם</span>
+            <h1 class="h-section">כל המלונות והצימרים</h1>
+            <p class="lead">כל מקומות הלינה בישראל — מלונות, צימרים, בקתות, אכסניות, דירות נופש וחניוני לילה — וכל המלונות ביעדים בחו״ל, עם כתובת, טלפון, אתר, תמונות, מפה וניווט. לכל מקום יש קישור לדילים ולמחירים לתאריכים שלכם, ואפשר לבקש דיל דרך הסוכן.</p>
           </div>
         </div>
         <div class="panel sites-bar stays-bar">
           <div class="field"><label for="syRegion">אזור</label>
-            <select class="input" id="syRegion"><option value="all">כל הארץ</option>${IL.regions.map(([k, v]) => `<option value="${k}" ${staysState.r === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></div>
+            <select class="input" id="syRegion"><optgroup label="ישראל"><option value="all">כל הארץ</option>${IL.regions.map(([k, v]) => `<option value="${k}" ${staysState.r === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</optgroup><optgroup label="חו״ל">${DESTS.filter(d => d.region !== 'il').map(d => `<option value="d:${d.id}" ${staysState.r === 'd:' + d.id ? 'selected' : ''}>${esc(d.name)} · ${esc(d.country)}</option>`).join('')}</optgroup></select></div>
           <div class="field" style="flex:1;min-width:180px"><label for="syQ">חיפוש לפי שם או יישוב</label><input class="input" id="syQ" type="search" placeholder="לדוגמה: ראש פינה, מלון דן, צימר" value="${esc(staysState.q)}"></div>
           <div class="field"><label for="sySort">מיון</label>
             <select class="input" id="sySort">${[['rec', 'הכי מפורטים קודם'], ['stars', 'כוכבים'], ['name', 'שם']].map(([k, v]) => `<option value="${k}" ${staysState.sort === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
@@ -1637,20 +1790,22 @@
       const shown = list.slice(0, staysState.shown);
       $('#syList').innerHTML = shown.length ? shown.map(x => stayCard(x, s)).join('') : '<div class="empty">לא נמצאו מקומות. נסו אזור או סינון אחר.</div>';
       const more = $('#syMore'); more.hidden = list.length <= staysState.shown; more.textContent = `עוד מקומות (${list.length - shown.length})`;
-      const src = ilStays.osm ? `${ilStays.src === 'live' ? 'עודכן עכשיו' : 'עודכן ב-' + ilStays.date} מ-OpenStreetMap` : ilStays.loading ? 'טוען את כל מקומות הלינה בארץ מ-OpenStreetMap…' : 'מוצגים רק המקומות שנבדקו ידנית — הרשימה המלאה נטענת מהאינטרנט (באתר החי ב-GitHub Pages).';
-      $('#syStatus').innerHTML = `<b class="num">${list.length.toLocaleString('he-IL')}</b> מקומות לינה${staysState.r !== 'all' ? ' ב' + esc(REGION_LABEL[staysState.r]) : ' בכל הארץ'} · ${src}`;
+      const box = stayBox(scopeOf(staysState.r)), sd = scopeDest(scopeOf(staysState.r));
+      const src = box.osm ? `${box.src === 'live' ? 'עודכן עכשיו' : 'עודכן ב-' + box.date} מ-OpenStreetMap` : box.loading ? `טוען את כל מקומות הלינה ${sd ? 'ב' + esc(sd.name) : 'בארץ'} מ-OpenStreetMap…` : 'מוצגים רק המקומות שנבדקו ידנית — הרשימה המלאה נטענת מהאינטרנט (באתר החי ב-GitHub Pages).';
+      $('#syStatus').innerHTML = `<b class="num">${list.length.toLocaleString('he-IL')}</b> מקומות לינה ${sd ? 'ב' + esc(sd.name) + ' ' + safetyBadge(sd, true) : staysState.r !== 'all' ? 'ב' + esc(REGION_LABEL[staysState.r]) : 'בכל הארץ'} · ${src}`;
       drawIlMarkers(list, fit);
       fillWikidataPhotos($('#syList'));
     };
     initIlMap();
-    $('#syRegion').onchange = (e) => { staysState.r = e.target.value; staysState.shown = 48; draw(true); };
+    const ensure = () => { const sc = scopeOf(staysState.r); if (stayBox(sc).osm) return; loadStays(sc).then(() => { if (!$('#view-stays').hidden && scopeOf(staysState.r) === sc) draw(true); }, () => { if (!$('#view-stays').hidden) draw(); }); };
+    $('#syRegion').onchange = (e) => { staysState.r = e.target.value; staysState.shown = 48; ensure(); draw(true); };
     $('#sySort').onchange = (e) => { staysState.sort = e.target.value; draw(); };
     $('#syPhone').onchange = (e) => { staysState.phone = e.target.checked; staysState.shown = 48; draw(); };
     $('#syQ').oninput = (e) => { staysState.q = e.target.value; staysState.shown = 48; clearTimeout(draw._t); draw._t = setTimeout(() => draw(true), 250); };
     $('#syKind').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; staysState.k = b.dataset.v; staysState.shown = 48; $$('#syKind button').forEach(x => x.setAttribute('aria-pressed', x === b)); draw(); };
     $('#syMore').onclick = () => { staysState.shown += 48; draw(); };
+    ensure();
     draw(true);
-    if (!ilStays.osm) loadIlStays().then(() => { if (!$('#view-stays').hidden) draw(true); }, () => { if (!$('#view-stays').hidden) draw(); });
   }
   function initIlMap() {
     if (ilMap) { ilMap.remove(); ilMap = null; }
@@ -1669,12 +1824,14 @@
     list.filter(x => !x.approx).forEach(x => {
       const p = placeById[x.near] || {};
       L.circleMarker(x.c, { radius: 6, color: '#fff', weight: 1.5, fillColor: OSM_COLOR[x.k] || '#0F6E6C', fillOpacity: .9 })
-        .bindPopup(`<div dir="rtl" style="min-width:180px"><b>${esc(x.n)}</b><br><span>${esc(OSM_KIND[x.k] || '')} · ${esc(x.city || p.name || '')}</span>${x.ph ? `<br><a href="${telHref(x.ph)}" dir="ltr">${esc(x.ph)}</a>` : ''}<br><a href="${esc(waze(x.c))}" target="_blank" rel="noopener">Waze</a> · <a href="${esc(gdir(null, x.c))}" target="_blank" rel="noopener">Google</a> · <a href="#go" data-goto="${esc(x.id)}">איך מגיעים</a></div>`)
+        .bindPopup(`<div dir="rtl" style="min-width:180px"><b>${esc(x.n)}</b><br><span>${esc(OSM_KIND[x.k] || '')} · ${esc(x.city || p.name || '')}</span>${x.ph ? `<br><a href="${telHref(x.ph)}" dir="ltr">${esc(x.ph)}</a>` : ''}<br><a href="${esc(waze(x.c))}" target="_blank" rel="noopener">Waze</a> · <a href="${esc(gdir(null, x.c))}" target="_blank" rel="noopener">Google</a> · ${x.near ? ` · <a href="#go" data-goto="${esc(x.id)}">איך מגיעים</a>` : ''}</div>`)
         .addTo(ilLayer);
       pts.push(x.c);
     });
     if (fit) {
-      if (staysState.r !== 'all' && pts.length > 1) ilMap.fitBounds(pts, { padding: [30, 30], maxZoom: 13 });
+      const sd = scopeDest(scopeOf(staysState.r));
+      if (staysState.r !== 'all' && pts.length > 1) ilMap.fitBounds(pts, { padding: [30, 30], maxZoom: 14 });
+      else if (sd) ilMap.setView(sd.coords, 12);
       else if (staysState.r === 'all') ilMap.setView([31.5, 34.9], 7);
     }
   }
@@ -2316,6 +2473,12 @@
       if (!d.michelin.length) return `${esc(d.michelinNote)}<br>${d.food.map(r => `• ${esc(r.name)} — ${esc(r.type)}`).join('<br>')}`;
       return `<b>מישלן ב${esc(d.name)}</b><br>${d.michelin.map(r => `• ${esc(r.name)} — ${'✦'.repeat(r.stars)} ${esc(r.cuisine)}`).join('<br>')}<br><a href="#dest-${d.id}.food">פרטים</a>`;
     }
+    if (has('אזהר', 'בטוח', 'בטיחות', 'מסוכן', 'מל״ל', 'מל"ל', 'טרור')) {
+      const qc = SAF.countries.find(c => q.includes(c.name.split(' (')[0])) || safetyEntry(d);
+      if (!qc) return d && d.region === 'il' ? `אזהרות המסע של המל״ל נוגעות ליעדים בחו״ל. <a href="#safety">כל האזהרות</a>` : `בעמוד <a href="#safety">בטיחות ואזהרות מסע</a> יש את רמת האזהרה של המל״ל לכל מדינה, מפה והמלצות.`;
+      const L = SAF.levels[levelOf(qc)];
+      return `<b>${esc(qc.name)}: ${esc(L.name)}</b><br>${esc(L.rec)}${qc.note ? '<br>' + esc(qc.note) : ''}${(qc.areas || []).map(([a, lv]) => `<br>חריג: ${esc(a)} — ${esc(SAF.levels[lv].short)}`).join('')}<br><a href="#safety">כל האזהרות וההמלצות</a> · נבדק ${esc(SAF.checked.split('-').reverse().join('.'))}, לאמת באתר המל״ל.`;
+    }
     if (has('איך מגיעים', 'איך להגיע', 'ניווט', 'קו ', 'קווים', 'אוטובוס ל', 'לנסוע מ')) {
       const found = IL.places.filter(p => q.includes(p.name.split(' (')[0])).sort((x, y) => q.indexOf(x.name.split(' (')[0]) - q.indexOf(y.name.split(' (')[0]));
       if (found.length >= 2) { goState.from = found[0].id; goState.to = found[1].id; goState.fromCustom = goState.toCustom = null; }
@@ -2391,7 +2554,7 @@
     return 'לא הבנתי עד הסוף. אפשר לשאול על יעד, מלונות, רכב, מסעדות כשרות, מישלן, תחבורה, מזג אוויר, תקציב או זמני הגעה לשדה. נסו אחת מההצעות למטה.';
   }
 
-  const CHIPS = ['חופשה משפחתית בארץ', 'צימרים בגליל', 'מה לעשות באילת?', 'ספא ורוגע לזוג', 'איך מגיעים מתל אביב לאילת?', 'איזה כסף יש ביפן?'];
+  const CHIPS = ['חופשה משפחתית בארץ', 'צימרים בגליל', 'מה לעשות באילת?', 'ספא ורוגע לזוג', 'איך מגיעים מתל אביב לאילת?', 'יש אזהרת מסע לתאילנד?'];
   function botSay(html, who) {
     const log = $('#chatLog');
     const m = document.createElement('div');
