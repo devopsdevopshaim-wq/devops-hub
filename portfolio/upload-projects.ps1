@@ -60,7 +60,7 @@ foreach ($p in $data.projects) {
     # A single page becomes the site's index.html
     Copy-Item -LiteralPath $src -Destination (Join-Path $dir 'index.html') -ErrorAction Stop
   } else {
-    robocopy $src $dir /E /XD node_modules .git .venv __pycache__ /NFL /NDL /NJH /NJS /NP | Out-Null
+    robocopy $src $dir /E /XD node_modules .git .venv __pycache__ /XF .env .env.* *.pem *.key /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "Copy failed for $src" }
     $entry = Get-ChildItem -LiteralPath $dir -File | Where-Object { $_.Name -like $p.local.entry } | Select-Object -First 1
     if (-not $entry) {
@@ -79,6 +79,19 @@ foreach ($p in $data.projects) {
   # GitHub rejects files over 100 MB
   $big = Get-ChildItem -LiteralPath $dir -Recurse -File | Where-Object { $_.Length -gt 95MB }
   foreach ($f in $big) { Write-Warning "Leaving out large file: $($f.FullName)"; Remove-Item -LiteralPath $f.FullName }
+
+  # Public repos must not carry API keys. Stop on anything that looks like one.
+  if (-not $p.private) {
+    $keyPattern = '(?<![A-Za-z0-9_-])sk-(ant-|proj-)?[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{35}|gh[pousr]_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}'
+    $textFiles = Get-ChildItem -LiteralPath $dir -Recurse -File | Where-Object { $_.Extension -match '^\.(html?|js|mjs|ts|json|py|txt|md|env|ya?ml|ini|cfg)$' }
+    $hits = $textFiles | Select-String -Pattern $keyPattern -List
+    if ($hits) {
+      foreach ($h in $hits) { Write-Warning "Possible API key in $($h.Path.Substring($dir.Length + 1)) line $($h.LineNumber)" }
+      Write-Warning "Not uploading $($p.id). Remove the key from $src and run again with -Only $($p.id)"
+      $skipped += $p.id
+      continue
+    }
+  }
 
   $readme = "# $($p.title)`n`n$($p.desc)`n`nSite: https://$owner.github.io/$($p.repo)/`n"
   [IO.File]::WriteAllText((Join-Path $dir 'README.md'), $readme, (New-Object Text.UTF8Encoding $false))
