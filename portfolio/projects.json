@@ -10,13 +10,13 @@
     "other": "מצגות ואפליקציות"
   },
   "projects": [
-    { "id": "vacation-hub", "title": "מסע — ניהול חופשות", "desc": "תכנון חופשות: יומן תאריכים, טיסות, מלונות, מסעדות ומפות.", "category": "web", "icon": "✈️", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/", "repo": "devops-hub" },
-    { "id": "book-studio", "title": "סטודיו ספרים", "desc": "יצירת ספרים מאוירים.", "category": "web", "icon": "📚", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/book-studio/", "repo": "devops-hub" },
+    { "id": "vacation-hub", "featured": true, "title": "מסע — ניהול חופשות", "desc": "תכנון חופשות: יומן תאריכים, טיסות, מלונות, מסעדות ומפות.", "category": "web", "icon": "✈️", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/", "repo": "devops-hub" },
+    { "id": "book-studio", "featured": true, "title": "סטודיו ספרים", "desc": "יצירת ספרים מאוירים.", "category": "web", "icon": "📚", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/book-studio/", "repo": "devops-hub" },
     { "id": "interior", "title": "עיצוב פנים", "desc": "אתר עיצוב פנים.", "category": "web", "icon": "🛋️", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/interior/", "repo": "devops-hub" },
     { "id": "devops-hubnew", "title": "DevOps Hub", "desc": "גרסת Vercel של ה־Hub.", "category": "web", "icon": "🧭", "url": "https://devops-hubnew.vercel.app/" },
     { "id": "dist-web", "title": "Dist Web", "desc": "אתר שפורסם ב־Vercel.", "category": "web", "icon": "🌐", "url": "https://dist-web-devopsdevopshaim-wq.vercel.app/" },
     { "id": "hapinkas-hayomi", "title": "הפנקס היומי", "desc": "אפליקציה שפורסמה ב־Render.", "category": "web", "icon": "📒", "url": "https://hapinkas-hayomi.onrender.com/" },
-    { "id": "smart-office-assistant", "title": "עוזר משרד חכם", "desc": "עוזר AI למשרד (Render).", "category": "ai", "icon": "🤖", "url": "https://smart-office-assistant.onrender.com/" },
+    { "id": "smart-office-assistant", "featured": true, "title": "עוזר משרד חכם", "desc": "עוזר AI למשרד (Render).", "category": "ai", "icon": "🤖", "url": "https://smart-office-assistant.onrender.com/" },
     { "id": "rork-app", "title": "אפליקציית Rork", "desc": "אפליקציית מובייל שנבנתה ב־Rork.", "category": "other", "icon": "📱", "url": "https://rork.com/p/rc724nfz3ymtplm26dtx2" },
     { "id": "gamma-deck", "title": "מצגת Gamma", "desc": "מצגת שנבנתה ב־Gamma.", "category": "other", "icon": "🎞️", "url": "https://gamma.app/docs/-iy2qvntue59gxjg?mode=present#card-ajcjprsdea40ui7" },
 
@@ -51,8 +51,8 @@
     { "id": "zohar", "title": "זוהר", "desc": "", "category": "study", "icon": "📜", "repo": "zohar", "start": "index10.html", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\20.12.25\\zohar", "entry": "index10.html" } },
     { "id": "zohar-v1", "title": "זוהר (18.12.25)", "desc": "", "category": "study", "icon": "📜", "repo": "zohar-v1", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\18.12.25\\זוהר1.html" } },
 
-    { "id": "local-4420", "title": "שרת מקומי — פורט 4420", "desc": "רץ על localhost. צריך להוסיף את נתיב התיקייה ב־projects.json.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:4420/" },
-    { "id": "local-3737", "title": "שרת מקומי — פורט 3737", "desc": "רץ על localhost. צריך להוסיף את נתיב התיקייה ב־projects.json.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:3737/" },
-    { "id": "local-8080", "title": "שרת מקומי — פורט 8080", "desc": "רץ על localhost. צריך להוסיף את נתיב התיקייה ב־projects.json.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:8080/" }
+    { "id": "local-4420", "title": "שרת מקומי — פורט 4420", "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:4420/" },
+    { "id": "local-3737", "title": "שרת מקומי — פורט 3737", "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:3737/" },
+    { "id": "local-8080", "title": "שרת מקומי — פורט 8080", "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:8080/" }
   ]
 }
