@@ -222,13 +222,24 @@
           });
           return { eyebrow: roomName(it.room), title: c.name, lines };
         },
-        onXR: (on) => { $('#tour').classList.toggle('is-xr', on); },
-        onGyroEnd: () => { $('#vr-exit').hidden = true; }
+        onLock: (on) => {
+          const h = $('#look-hint');
+          if (!tour || !tour.looking) { h.hidden = true; return; }
+          h.hidden = false;
+          h.textContent = on ? 'העכבר מסתכל · חיצים או WASD הולכים · לחיצה על רהיט מציגה מחיר · Esc משחרר את העכבר, ו-Esc נוסף יוצא' : 'לחצו על המסך כדי להסתכל עם העכבר · Esc או ״יציאה״ חוזרים לעמוד';
+        },
+        onLost: (lost) => {
+          const fb = $('#tour-fallback');
+          if (!lost) { fb.hidden = true; return; }
+          fb.innerHTML = 'כרטיס המסך של המחשב עצר את התלת-ממד (זה קורה לפעמים אחרי חישוב כבד). <button type="button" class="btn btn-small" onclick="location.reload()">טעינה מחדש</button>';
+          fb.hidden = false;
+        }
       });
       host.appendChild($('#tour-tip'));
     }
     if (tour.pt) stopPhoto();
     tour.load(plan);
+    if (!tour.lost) $('#tour-fallback').hidden = true;
     const qb = $('#btn-quality');
     qb.setAttribute('aria-pressed', String(tour.quality));
     qb.textContent = tour.quality ? 'איכות גבוהה' : 'איכות רגילה';
@@ -250,8 +261,18 @@
     if (!miniMe) return;
     miniMe.setAttribute('transform', `translate(${x.toFixed(2)} ${z.toFixed(2)}) rotate(${(-yaw * 180 / Math.PI).toFixed(1)})`);
   }
+  // tested once per visit; the test context is released so it doesn't count against the browser's limit
+  let webglOk = null;
   function hasWebGL() {
-    try { const c = document.createElement('canvas'); return !!(c.getContext('webgl') || c.getContext('experimental-webgl')); } catch (e) { return false; }
+    if (webglOk !== null) return webglOk;
+    try {
+      const c = document.createElement('canvas');
+      const gl = c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl');
+      webglOk = !!gl;
+      const lose = gl && gl.getExtension('WEBGL_lose_context');
+      if (lose) lose.loseContext();
+    } catch (e) { webglOk = false; }
+    return webglOk;
   }
 
   function renderNotes() {
@@ -686,22 +707,20 @@
       e.currentTarget.textContent = on ? 'איכות גבוהה' : 'איכות רגילה';
     });
     $('#btn-photo').addEventListener('click', startPhoto);
-    // virtual reality menu
+    // immersive walk-through: computer (mouse look) or phone (motion sensors, cardboard)
     const vrMenu = $('#vr-menu');
-    $('#btn-vr').addEventListener('click', async (e) => {
+    $('#btn-vr').addEventListener('click', (e) => {
       const open = vrMenu.hidden;
       vrMenu.hidden = !open;
       e.currentTarget.setAttribute('aria-expanded', String(open));
-      if (!open || !IH.Tour) return;
-      const ok = await IH.Tour.vrSupport();
-      const hb = vrMenu.querySelector('[data-vr="headset"]');
-      hb.disabled = !ok;
-      $('#vr-headset-note').textContent = ok
-        ? 'נכנסים לבית בגודל אמיתי. ג׳ויסטיק שמאלי הולך, ימני מסתובב, הדק על הרצפה קופץ לשם ועל רהיט פותח את הכרטיס שלו.'
-        : 'לא זוהו משקפי VR. פותחים את האתר בדפדפן של המשקפיים (Meta Quest Browser, Pico, Safari ב-Vision Pro) ולוחצים כאן.';
-      const coarse = matchMedia('(pointer: coarse)').matches;
-      vrMenu.querySelector('[data-vr="gyro"]').hidden = !coarse;
-      vrMenu.querySelector('[data-vr="stereo"]').hidden = !coarse;
+      const touch = matchMedia('(pointer: coarse)').matches;
+      const mouse = matchMedia('(any-pointer: fine)').matches;
+      vrMenu.querySelector('[data-vr="look"]').hidden = touch && !mouse;
+      vrMenu.querySelector('[data-vr="gyro"]').hidden = !touch;
+      vrMenu.querySelector('[data-vr="stereo"]').hidden = !touch;
+    });
+    document.addEventListener('click', (e) => {
+      if (!vrMenu.hidden && !e.target.closest('#vr-menu, #btn-vr')) { vrMenu.hidden = true; $('#btn-vr').setAttribute('aria-expanded', 'false'); }
     });
     vrMenu.addEventListener('click', async (e) => {
       const b = e.target.closest('[data-vr]');
@@ -709,16 +728,28 @@
       vrMenu.hidden = true;
       $('#btn-vr').setAttribute('aria-expanded', 'false');
       const kind = b.dataset.vr;
+      enterImmersive(kind === 'stereo');
+      if (kind === 'look') { tour.startLook(); return; }
       try {
-        if (kind === 'headset') await tour.enterVR();
-        else if (kind === 'full') { const el = $('#tour'); await (el.requestFullscreen ? el.requestFullscreen() : el.webkitRequestFullscreen()); }
-        else { await tour.startGyro(kind === 'stereo'); $('#vr-exit').hidden = false; }
+        await tour.startGyro(kind === 'stereo');
       } catch (err) {
-        $('#tour-tip').hidden = true;
-        alert(kind === 'headset' ? 'לא הצלחתי להיכנס למציאות מדומה. ודאו שהאתר פתוח בדפדפן של המשקפיים ושאישרתם גישה.' : 'הדפדפן לא נתן גישה לחיישני התנועה של הטלפון. אשרו גישה לתנועה והתמצאות ונסו שוב.');
+        exitImmersive();
+        const fb = $('#tour-fallback');
+        fb.textContent = 'הטלפון לא נתן גישה לחיישני התנועה. אשרו ״תנועה והתמצאות״ בהגדרות הדפדפן ונסו שוב.';
+        fb.hidden = false;
+        setTimeout(() => { fb.hidden = true; }, 5000);
       }
     });
-    $('#vr-exit').addEventListener('click', () => { if (tour) tour.stopGyro(); $('#vr-exit').hidden = true; });
+    $('#vr-exit').addEventListener('click', exitImmersive);
+    // Esc first frees the mouse (the browser does that), a second Esc leaves the immersive view
+    let freedAt = 0;
+    document.addEventListener('pointerlockchange', () => { if (!document.pointerLockElement) freedAt = Date.now(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !$('#tour').classList.contains('is-full') || document.pointerLockElement) return;
+      if (Date.now() - freedAt < 250) return;
+      exitImmersive();
+    });
+    document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && fullReal) exitImmersive(); });
     $('#pt-close').addEventListener('click', stopPhoto);
     $('#pt-save').addEventListener('click', async () => {
       if (!tour) return;
@@ -792,6 +823,39 @@
     syncBrief();
     mq.addEventListener ? mq.addEventListener('change', syncBrief) : mq.addListener(syncBrief);
   }
+  /* ---------- immersive screen: real full screen where allowed, otherwise the tour fills the window ---------- */
+  let fullReal = false;
+  function enterImmersive(landscape) {
+    const el = $('#tour');
+    el.classList.add('is-full');
+    document.body.classList.add('tour-full');
+    $('#vr-exit').hidden = false;
+    $('#tour-card').hidden = true;
+    fullReal = false;
+    try {
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      const p = req && req.call(el);
+      if (p && p.then) p.then(() => {
+        fullReal = true;
+        if (landscape && screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+      }).catch(() => {});
+      else if (req) fullReal = true;
+    } catch (e) { /* the window-filling fallback stays */ }
+    if (tour) tour.resize();
+  }
+  function exitImmersive() {
+    const el = $('#tour');
+    if (tour) { tour.stopGyro(); tour.stopLook(); }
+    el.classList.remove('is-full');
+    document.body.classList.remove('tour-full');
+    $('#vr-exit').hidden = true;
+    $('#look-hint').hidden = true;
+    const wasReal = fullReal;
+    fullReal = false;
+    try { if (wasReal && document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (e) { /* ignore */ }
+    if (tour) tour.resize();
+  }
+
   /* ---------- photoreal still of the current view ---------- */
   async function startPhoto() {
     if (!tour || tour.pt) return;

@@ -723,3 +723,18 @@ label.btn:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
 .tour.is-stereo::after { content: ''; position: absolute; inset-block: 0; left: 50%; width: 2px; background: #000; z-index: 3; pointer-events: none; }
 .tour:fullscreen { height: 100vh; width: 100vw; }
 .tour:-webkit-full-screen { height: 100vh; width: 100vw; }
+/* the tour fills the window: works also where the browser refuses real full screen (embedded views) */
+.tour.is-full { position: fixed; inset: 0; z-index: 1000; width: 100vw; height: 100vh; height: 100dvh; min-height: 0; border-radius: 0; }
+body.tour-full { overflow: hidden; }
+.tour.is-full .tour-mini { top: 60px; }
+.look-hint {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 6; max-width: calc(100% - 24px);
+  background: rgba(17,20,22,0.8); color: #fff; font-size: 0.88rem; padding: 7px 14px; border-radius: 999px; text-align: center; pointer-events: none;
+}
+.tour.is-look .tour-pad, .tour.is-look .tour-top, .tour.is-look .tour-rooms { display: none; }
+.tour.is-locked::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; z-index: 5; pointer-events: none;
+  border: 2px solid rgba(255,255,255,0.9); border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+}
+.tour.is-look .tour-canvas { cursor: pointer; }
+.tour-fallback .btn { margin-inline-start: 8px; }
