@@ -16,6 +16,7 @@ This skill builds a static site that runs from `index.html`, needs no build step
 | `js/media.js` | Per destination: Wikimedia Commons photo file names and YouTube video IDs | Always |
 | `js/money.js` | Currencies (notes and coins), plus per-destination payment, ATM and tax tips and typical prices | Always |
 | `js/safety.js` | Travel warnings (NSC levels per country, tips, emergency phones) for the #safety view and destination badges. **Re-research levels on every build** — they change often | Always |
+| `js/vr.js` + `vendor/three/` | #vr: 3D / VR walkthrough (zimmer, sea-view hotel, city apartment, desert cabin; day/sunset/night; WebXR; user 360° photos). Lazy-loaded. It is an illustration, never presented as a specific property | Rarely |
 | `js/israel.js` | Israel only: places, regions, verified intercity bus/rail lines for the #stays (all stays, live OSM) and #go (navigation) views | For Israel sites |
 | `js/sites.js` | The all-sites portal (flights, hotels, packages, cars, activities, insurance) | Sometimes |
 | `css/styles.css` | Design tokens on `:root` (light) and the dark blocks | For rebranding |

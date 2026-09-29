@@ -308,13 +308,15 @@
     }
     if (raw.startsWith('stays-')) { view = 'stays'; const k = raw.slice(6); if (REGION_LABEL[k]) staysState.r = k; else if (byId[k] && byId[k].region !== 'il') staysState.r = 'd:' + k; }
     if (raw.startsWith('go-')) { view = 'go'; arg = raw.slice(3); }
+    if (raw.startsWith('vr-')) { view = 'vr'; arg = raw.slice(3); }
     if (!$('#view-' + view)) view = 'home';
+    if (view !== 'vr' && vrCtl) { vrCtl.dispose(); vrCtl = null; }
     $$('.view').forEach(v => { v.hidden = v.dataset.view !== view; });
     $$('.mainnav [data-nav]').forEach(a => {
       const on = a.dataset.nav === view || (view === 'dest' && a.dataset.nav === 'explore');
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    const R = { home: renderHome, explore: renderExplore, dest: () => renderDest(arg), deal: renderDeal, sites: renderSites, airport: renderAirport, budget: renderBudget, trips: renderTrips, help: renderHelp, stays: renderStays, go: () => renderGo(arg), safety: renderSafety };
+    const R = { home: renderHome, explore: renderExplore, dest: () => renderDest(arg), deal: renderDeal, sites: renderSites, airport: renderAirport, budget: renderBudget, trips: renderTrips, help: renderHelp, stays: renderStays, go: () => renderGo(arg), safety: renderSafety, vr: () => renderVR(arg) };
     R[view]();
     window.scrollTo(0, 0);
   }
@@ -1048,6 +1050,7 @@
     return `<span class="tier ${h.tier === 'lux' ? 'tier-lux' : ''}">${{ lux: 'יוקרה', mid: 'בינוני', budget: 'חסכוני' }[h.tier]}</span>
       ${h.kind && h.kind !== 'hotel' ? `<span class="tier kind">${STAY_KIND[h.kind] || h.kind}</span>` : ''}`;
   }
+  const hotelPreset = (d, h) => vrPresetFor({ kind: h.kind, r: d.id === 'mitzperamon' || d.id === 'deadsea' ? 'negev' : d.id });
   function stayRow(d, s, h) {
     return `<li class="${h.photo ? 'has-thumb' : ''}">
       ${h.photo ? `<a class="stay-thumb" href="${esc(commonsPage(h.photo))}" target="_blank" rel="noopener" aria-label="תמונה: ${esc(h.name)}"><img class="photo" src="${esc(commonsImg(h.photo, 320))}" alt="${esc(h.name)}" loading="lazy"></a>` : ''}
@@ -1058,7 +1061,8 @@
         ${contactHTML(h)}</div>
       <div class="actions"><span class="chip num">כ-${money(h.price)}</span>
         ${ext(`https://www.booking.com/searchresults.he.html?ss=${enc(h.name + ' ' + d.nameEn)}&checkin=${iso(s.start)}&checkout=${iso(s.end)}&group_adults=${s.travelers}`, 'בדיקת זמינות', 'btn btn-sm')}
-        ${ext(gmaps(h.name + ' ' + d.nameEn), 'במפה', 'btn btn-sm btn-ghost')}</div>
+        ${ext(gmaps(h.name + ' ' + d.nameEn), 'במפה', 'btn btn-sm btn-ghost')}
+        <a class="btn btn-sm btn-ghost" href="#vr-${hotelPreset(d, h)}" data-vr="${hotelPreset(d, h)}" data-vr-name="${esc(h.name)}" data-vr-q="${esc(h.name + ' ' + d.nameEn)}">תלת ממד</a></div>
     </li>`;
   }
 
@@ -1446,6 +1450,136 @@
   }
 
   /* =========================================================
+     סיור תלת ממד / מציאות מדומה
+     ========================================================= */
+  const vrState = { preset: 'zimmer', time: 'day', stay: null, stop: 0, pano: '' };
+  let vrCtl = null;
+  const scriptCache = {};
+  const loadScript = (src) => scriptCache[src] || (scriptCache[src] = new Promise((ok, bad) => {
+    const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => { delete scriptCache[src]; bad(new Error('load ' + src)); }; document.head.appendChild(s);
+  }));
+  const VR_PRESETS = [['zimmer', 'צימר וגינה'], ['hotel', 'מלון מול הים'], ['apartment', 'דירה בעיר'], ['desert', 'בקתה במדבר']];
+  const VR_TIMES = [['day', 'יום'], ['sunset', 'שקיעה'], ['night', 'לילה']];
+  /* איזו הדמיה מתאימה לכל סוג לינה */
+  function vrPresetFor(x) {
+    const k = x.k || x.kind || 'hotel', r = x.r || '';
+    if (/camp_site|lodge/.test(k) || ((r === 'negev' || r === 'deadsea') && /guest_house|chalet|zimmer|cabins|farm/.test(k))) return 'desert';
+    if (/guest_house|chalet|zimmer|cabins|farm|kibbutz/.test(k)) return 'zimmer';
+    if (/apartment|hostel/.test(k)) return 'apartment';
+    return 'hotel';
+  }
+  const streetView = (c) => `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${c[0]},${c[1]}`;
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-vr]'); if (!a) return;
+    vrState.preset = a.dataset.vr; vrState.pano = '';
+    vrState.stay = a.dataset.vrName ? { name: a.dataset.vrName, c: a.dataset.vrC ? a.dataset.vrC.split(',').map(Number) : null, q: a.dataset.vrQ || a.dataset.vrName } : null;
+  });
+
+  function renderVR(arg) {
+    if (arg && window.MasaVR && window.MasaVR.PRESETS[arg] || ['zimmer', 'hotel', 'apartment', 'desert'].includes(arg)) vrState.preset = arg;
+    const el = $('#view-vr');
+    const P = (window.MasaVR && window.MasaVR.PRESETS) || {};
+    const sy = vrState.stay;
+    el.innerHTML = `
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">מציאות מדומה · תלת ממד</span>
+            <h1 class="h-section">סיור תלת ממד בחופשה</h1>
+            <p class="lead">מסתובבים בתוך הדירה, בחדרים, במרפסת ובגינה — כמו במציאות. גוררים כדי להסתכל מסביב, הולכים עם החיצים או המקשים W A S D, ובמשקפי VR נכנסים פנימה.</p>
+          </div>
+        </div>
+        <div class="panel vr-bar">
+          <div class="seg" id="vrPreset" role="group" aria-label="סוג לינה">${VR_PRESETS.map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="${!vrState.pano && vrState.preset === k}">${v}</button>`).join('')}<button type="button" data-v="pano" aria-pressed="${!!vrState.pano}">תמונת 360° שלכם</button></div>
+          <div class="seg" id="vrTime" role="group" aria-label="שעה ביום">${VR_TIMES.map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="${vrState.time === k}">${v}</button>`).join('')}</div>
+          <div class="vr-actions">
+            <button type="button" class="btn btn-sm" id="vrTour">▶ סיור אוטומטי</button>
+            <button type="button" class="btn btn-sm" id="vrFull">מסך מלא</button>
+            <button type="button" class="btn btn-sm btn-primary" id="vrXR" hidden>כניסה ל-VR</button>
+          </div>
+        </div>
+        ${sy ? `<div class="panel vr-stay"><div><b>${esc(sy.name)}</b><div class="fine">הדמיה בסגנון ${esc((P[vrState.preset] || {}).label || '')}. לראות את המקום האמיתי:</div></div>
+          <div class="sc-actions">${sy.c ? ext(streetView(sy.c), '360° ברחוב · Google', 'btn btn-sm btn-primary') : ''}${ext(gmaps(sy.q), 'תמונות אמיתיות ב-Google', 'btn btn-sm')}</div></div>` : ''}
+        <div class="vr-stage" id="vrStage" dir="ltr">
+          <div class="vr-loading" id="vrLoading" dir="rtl">טוען את הסצנה…</div>
+          <div class="vr-stops" id="vrStops" dir="rtl"></div>
+          <div class="vr-pad" id="vrPad" aria-label="הליכה">
+            <button type="button" data-hold="f" aria-label="קדימה">▲</button>
+            <button type="button" data-turn="1" aria-label="פנייה שמאלה">⟲</button>
+            <button type="button" data-hold="b" aria-label="אחורה">▼</button>
+            <button type="button" data-turn="-1" aria-label="פנייה ימינה">⟳</button>
+          </div>
+          <label class="vr-drop" id="vrDrop" hidden dir="rtl">
+            <input type="file" id="vrFile" accept="image/*">
+            <b>בחרו תמונת 360° (פנורמה כדורית)</b>
+            <span class="fine">צלמו את הדירה או הגינה במצב "פנורמה 360" או "Photo Sphere" בטלפון, ובחרו את הקובץ כאן. התמונה נשארת במכשיר שלכם ולא נשלחת לשום מקום.</span>
+          </label>
+        </div>
+        <p class="fine mt" id="vrDesc">${esc((P[vrState.preset] || {}).desc || '')}</p>
+        <div class="grid-2 mt">
+          <div class="card"><h3>מה רואים כאן?</h3>
+            <p class="fine">זו <b>הדמיה ממוחשבת להמחשה</b> של סוג הלינה — איך מרגיש צימר עם ג׳קוזי, סוויטה מול הים, דירה בעיר או בקתה במדבר, ביום, בשקיעה ובלילה. היא לא צילום של נכס מסוים, והמידות והריהוט לדוגמה בלבד.</p>
+            <p class="fine">כדי לראות מקום אמיתי: בכל כרטיס בעמוד <a href="#stays">לינה בארץ ובעולם</a> יש כפתור "360° ברחוב" שפותח את Google Street View בדיוק במיקום, וכפתור "תמונות וביקורות עדכניות".</p></div>
+          <div class="card"><h3>משקפי VR ומסך מלא</h3>
+            <p class="fine">במשקפי מציאות מדומה (Meta Quest ודומיהם) פתחו את האתר בדפדפן של המשקפיים ולחצו "כניסה ל-VR". בטלפון ובמחשב — "מסך מלא". אפשר גם להעלות תמונת 360° של נכס אמיתי ולהסתובב בה כאן.</p>
+            <p class="fine">בעלי נכסים יכולים לשלוח לסוכן סיור וירטואלי מצולם (Matterport, תמונות 360°) — נצרף אותו לכרטיס המקום.</p></div>
+        </div>
+      </div>`;
+    const stage = $('#vrStage'), loading = $('#vrLoading');
+    const drawStops = () => {
+      const box = $('#vrStops'); if (!box || !vrCtl) return;
+      const names = vrCtl.stops();
+      box.innerHTML = names.map((n, i) => `<button type="button" data-stop="${i}" aria-pressed="${i === vrState.stop}">${esc(n)}</button>`).join('');
+    };
+    const showPano = (on) => { $('#vrDrop').hidden = !on || !!vrState.pano; $('#vrPad').hidden = on; $('#vrTour').hidden = on; };
+    if (vrCtl) { vrCtl.dispose(); vrCtl = null; }
+    loadScript('vendor/three/three.min.js').then(() => loadScript('js/vr.js')).then(() => {
+      if ($('#view-vr').hidden || !stage.isConnected) return;
+      try {
+        vrCtl = window.MasaVR.start(stage, {
+          preset: vrState.preset, time: vrState.time,
+          onStop: (i) => { vrState.stop = i; $$('#vrStops [data-stop]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.stop === i)); },
+          onTour: (on) => { const b = $('#vrTour'); if (b) b.textContent = on ? '■ עצירת הסיור' : '▶ סיור אוטומטי'; },
+          onVR: (on) => { const b = $('#vrXR'); if (b) b.textContent = on ? 'יציאה מ-VR' : 'כניסה ל-VR'; }
+        });
+      } catch (err) {
+        loading.textContent = 'הדפדפן או המכשיר לא תומכים בתלת ממד (WebGL). נסו דפדפן Chrome, Edge או Safari מעודכן.'; return;
+      }
+      loading.hidden = true;
+      vrState.stop = 0; drawStops(); showPano(false);
+      if (vrState.pano) vrCtl.load360(vrState.pano).then(() => { drawStops(); showPano(true); }, () => { vrState.pano = ''; });
+      vrCtl.vrSupported().then(ok => { const b = $('#vrXR'); if (b) b.hidden = !ok; });
+    }, () => { loading.textContent = 'לא הצלחנו לטעון את מנוע התלת ממד. בדקו חיבור לאינטרנט ונסו שוב.'; });
+
+    $('#vrPreset').onclick = (e) => {
+      const b = e.target.closest('[data-v]'); if (!b) return;
+      $$('#vrPreset button').forEach(x => x.setAttribute('aria-pressed', x === b));
+      if (b.dataset.v === 'pano') { if (vrState.pano) { vrCtl && vrCtl.load360(vrState.pano); } showPano(true); $('#vrDrop').hidden = false; $('#vrStops').innerHTML = ''; return; }
+      vrState.preset = b.dataset.v; vrState.pano = ''; vrState.stop = 0; showPano(false);
+      $('#vrDesc').textContent = (P[vrState.preset] || {}).desc || '';
+      if (vrCtl) { vrCtl.setPreset(vrState.preset); drawStops(); }
+    };
+    $('#vrTime').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; vrState.time = b.dataset.v; $$('#vrTime button').forEach(x => x.setAttribute('aria-pressed', x === b)); if (vrCtl) vrCtl.setTime(vrState.time); };
+    $('#vrStops').onclick = (e) => { const b = e.target.closest('[data-stop]'); if (b && vrCtl) vrCtl.go(+b.dataset.stop); };
+    let touring = false;
+    $('#vrTour').onclick = () => { if (!vrCtl) return; touring = $('#vrTour').textContent.includes('■'); vrCtl.tour(!touring); };
+    $('#vrFull').onclick = () => { const f = stage.requestFullscreen || stage.webkitRequestFullscreen; if (document.fullscreenElement) document.exitFullscreen(); else if (f) f.call(stage); };
+    $('#vrXR').onclick = () => { if (vrCtl) vrCtl.enterVR().catch(() => toast('לא הצלחנו להיכנס למצב VR')); };
+    $('#vrFile').onchange = (e) => {
+      const f = e.target.files && e.target.files[0]; if (!f || !vrCtl) return;
+      if (vrState.pano) URL.revokeObjectURL(vrState.pano);
+      vrState.pano = URL.createObjectURL(f);
+      vrCtl.load360(vrState.pano).then(() => { $('#vrStops').innerHTML = ''; showPano(true); toast('גררו כדי להסתובב בתמונה'); }, () => toast('לא הצלחנו לפתוח את התמונה'));
+    };
+    const pad = $('#vrPad');
+    pad.addEventListener('pointerdown', (e) => {
+      const b = e.target.closest('button'); if (!b || !vrCtl) return; e.preventDefault();
+      if (b.dataset.hold) { vrCtl.hold(b.dataset.hold, true); const up = () => { vrCtl && vrCtl.hold(b.dataset.hold, false); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); }; window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up); }
+      if (b.dataset.turn) vrCtl.turn(+b.dataset.turn * .5);
+    });
+  }
+
+  /* =========================================================
      בטיחות ואזהרות מסע (המל״ל)
      ========================================================= */
   const SAF = window.APP_SAFETY || { levels: {}, countries: [], tips: [], contacts: [] };
@@ -1720,6 +1854,10 @@
           ${x.approx ? '' : ext(waze(x.c), 'Waze', 'btn btn-sm')}
           ${ext(x.approx ? `https://www.google.com/maps/dir/?api=1&destination=${enc(q)}` : gdir(null, x.c), 'ניווט Google', 'btn btn-sm btn-ghost')}
           ${x.near ? `<a class="btn btn-sm btn-ghost" href="#go" data-goto="${esc(x.id)}">איך מגיעים (רכב / אוטובוס)</a>` : ''}
+        </div>
+        <div class="sc-actions">
+          ${x.approx ? '' : ext(streetView(x.c), '360° ברחוב', 'btn btn-sm btn-ghost')}
+          <a class="btn btn-sm btn-ghost" href="#vr-${vrPresetFor(x)}" data-vr="${vrPresetFor(x)}" data-vr-name="${esc(x.n)}" data-vr-q="${esc(q)}"${x.approx ? '' : ` data-vr-c="${x.c.join(',')}"`}>סיור תלת ממד</a>
         </div>
         <div class="sc-actions">
           ${ext(book, 'דילים ומחירים · Booking', 'btn btn-sm btn-primary')}
@@ -2489,6 +2627,7 @@
       const lines = busBetween(A.near.id, B.near.id);
       return `<b>${esc(A.name)} ← ${esc(B.name)}</b><br>${lines.length ? lines.map(l => `• קו ${esc(l.lines)} (${esc(l.op)}), ${esc(l.time)}`).join('<br>') : 'אין קו ישיר בטבלה שלנו — Moovit יציג חיבורים.'}<br><a href="#go">מסלול ברכב, Waze וכל האפשרויות</a>`;
     }
+    if (has('תלת ממד', 'תלת-ממד', '3D', 'VR', 'מציאות מדומה', '360')) return 'בעמוד <a href="#vr">סיור תלת ממד</a> אפשר להסתובב בצימר, בחדר מלון מול הים, בדירה בעיר או בבקתה במדבר — ביום, בשקיעה ובלילה, גם במשקפי VR. למקום אמיתי יש בכל כרטיס בעמוד <a href="#stays">לינה</a> כפתור "360° ברחוב".';
     if (has('כל המלונות', 'כל הצימרים', 'כל הלינה', 'לינה בארץ')) return 'בעמוד <a href="#stays">לינה בארץ</a> יש את כל המלונות, הצימרים, האכסניות והקמפינג בישראל, עם מפה, טלפונים, ניווט ודילים.';
     if (has('צימר', 'בקתה', 'בקתות', 'חווה')) {
       const pool = (d ? [d] : DESTS.filter(x => x.region === 'il')).flatMap(x => x.hotels.filter(h => stayMatches(h, 'zimmer')).map(h => ({ x, h })));
