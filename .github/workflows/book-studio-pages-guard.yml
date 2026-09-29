@@ -1,0 +1,48 @@
+name: Keep book-studio on GitHub Pages
+
+# Other branches can run their own copy of the Pages deploy, and that copy
+# rebuilds gh-pages without /book-studio/. A workflow_run workflow always runs
+# from the default branch, so this one puts the site back after every deploy,
+# whichever branch the deploy came from.
+
+on:
+  workflow_run:
+    workflows: ['Deploy vacation-hub to GitHub Pages']
+    types: [completed]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: book-studio-pages-guard
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Put book-studio back on gh-pages if it is missing or stale
+        run: |
+          set -euo pipefail
+          git clone -q --depth 1 -b gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" /tmp/pages
+          cd /tmp/pages
+          rm -rf book-studio
+          mkdir book-studio
+          cp -r "$GITHUB_WORKSPACE/book-studio/index.html" "$GITHUB_WORKSPACE/book-studio/css" "$GITHUB_WORKSPACE/book-studio/js" book-studio/
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A book-studio .nojekyll
+          if git diff --cached --quiet; then
+            echo "book-studio is already published and up to date"
+            exit 0
+          fi
+          git commit -q -m "Restore book-studio from ${GITHUB_SHA}"
+          git push -q origin gh-pages
+          echo "book-studio restored on gh-pages"
