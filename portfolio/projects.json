@@ -1,0 +1,58 @@
+{
+  "owner": "devopsdevopshaim-wq",
+  "categories": {
+    "web": "אתרים ומערכות",
+    "ai": "סוכני AI",
+    "tools": "כלים ומחשבונים",
+    "data": "ניהול נתונים ומחסן",
+    "lotto": "לוטו",
+    "study": "לימוד ותוכן",
+    "other": "מצגות ואפליקציות"
+  },
+  "projects": [
+    { "id": "vacation-hub", "title": "מסע — ניהול חופשות", "desc": "תכנון חופשות: יומן תאריכים, טיסות, מלונות, מסעדות ומפות.", "category": "web", "icon": "✈️", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/", "repo": "devops-hub" },
+    { "id": "book-studio", "title": "סטודיו ספרים", "desc": "יצירת ספרים מאוירים.", "category": "web", "icon": "📚", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/book-studio/", "repo": "devops-hub" },
+    { "id": "interior", "title": "עיצוב פנים", "desc": "אתר עיצוב פנים.", "category": "web", "icon": "🛋️", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/interior/", "repo": "devops-hub" },
+    { "id": "devops-hubnew", "title": "DevOps Hub", "desc": "גרסת Vercel של ה־Hub.", "category": "web", "icon": "🧭", "url": "https://devops-hubnew.vercel.app/" },
+    { "id": "dist-web", "title": "Dist Web", "desc": "אתר שפורסם ב־Vercel.", "category": "web", "icon": "🌐", "url": "https://dist-web-devopsdevopshaim-wq.vercel.app/" },
+    { "id": "hapinkas-hayomi", "title": "הפנקס היומי", "desc": "אפליקציה שפורסמה ב־Render.", "category": "web", "icon": "📒", "url": "https://hapinkas-hayomi.onrender.com/" },
+    { "id": "smart-office-assistant", "title": "עוזר משרד חכם", "desc": "עוזר AI למשרד (Render).", "category": "ai", "icon": "🤖", "url": "https://smart-office-assistant.onrender.com/" },
+    { "id": "rork-app", "title": "אפליקציית Rork", "desc": "אפליקציית מובייל שנבנתה ב־Rork.", "category": "other", "icon": "📱", "url": "https://rork.com/p/rc724nfz3ymtplm26dtx2" },
+    { "id": "gamma-deck", "title": "מצגת Gamma", "desc": "מצגת שנבנתה ב־Gamma.", "category": "other", "icon": "🎞️", "url": "https://gamma.app/docs/-iy2qvntue59gxjg?mode=present#card-ajcjprsdea40ui7" },
+
+    { "id": "devops-course-he", "title": "קורס DevOps בעברית", "desc": "אתר הקורס.", "category": "study", "icon": "🎓", "repo": "devops-course-he", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\devops-course-he-site", "entry": "index.html" } },
+    { "id": "health-compass", "title": "מצפן בריאות", "desc": "מערכת בריאות מבוססת AI.", "category": "ai", "icon": "🩺", "repo": "health-compass", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\AI Agent\\health-system", "entry": "health-compass.html" } },
+    { "id": "astrology-decoder", "title": "פענוח אסטרולוגי משופר", "desc": "מערכת אסטרולוגיה.", "category": "ai", "icon": "🔮", "repo": "astrology-decoder", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\AI Agent\\astrology-system\\web", "entry": "פענוח-אסטרולוגי-משופר.html" } },
+    { "id": "jarvis-web", "title": "Jarvis", "desc": "עוזר אישי בדפדפן.", "category": "ai", "icon": "🧠", "repo": "jarvis-web", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\AI Agent\\jarvis-web", "entry": "index.html" } },
+    { "id": "housing-system", "title": "מערכת דיור", "desc": "חיפוש דירות.", "category": "ai", "icon": "🏠", "repo": "housing-system", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\AI Agent\\housing-system\\site", "entry": "landing.html" } },
+
+    { "id": "project-2026-01-03-new", "title": "פרויקט 3.1.26 — new", "desc": "", "category": "web", "icon": "🧩", "repo": "project-2026-01-03-new", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\3.1.26\\new", "entry": "index.html" } },
+    { "id": "project-2026-01-03-new2", "title": "פרויקט 3.1.26 — new2", "desc": "", "category": "web", "icon": "🧩", "repo": "project-2026-01-03-new2", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\3.1.26\\new2", "entry": "index.html" } },
+    { "id": "files-management", "title": "ניהול קבצים", "desc": "", "category": "data", "icon": "🗂️", "repo": "files-management", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\3.1.26\\files managment", "entry": "index.html" } },
+    { "id": "manage-files", "title": "ניהול קבצים (27.12)", "desc": "", "category": "data", "icon": "📁", "repo": "manage-files", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\27.12.25\\mange files", "entry": "index.html" } },
+    { "id": "project-2026-01-19", "title": "פרויקט 19.1.26", "desc": "", "category": "web", "icon": "🧩", "repo": "project-2026-01-19", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\19.1.26", "entry": "index.html" } },
+    { "id": "data-management", "title": "ניהול נתונים", "desc": "", "category": "data", "icon": "📊", "repo": "data-management", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\10.1.26\\ניהול נתונים", "entry": "index2.html" } },
+
+    { "id": "warehouse-management", "title": "ניהול מחסן ממוחשב", "desc": "תוכנה לניהול מחסן.", "category": "data", "icon": "🏭", "repo": "warehouse-management", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\תוכנ ה לניהול מחסן ממוחשב", "entry": "ניהול מחסן ממוחשב.html" } },
+    { "id": "warehouse-management-v2", "title": "ניהול מחסן ממוחשב (24.1.26)", "desc": "", "category": "data", "icon": "📦", "repo": "warehouse-management-v2", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\24.1.26\\ניהול מחסן ממוחשב .html" } },
+    { "id": "warehouse-management-v1", "title": "ניהול מחסן (20.12.25)", "desc": "", "category": "data", "icon": "📦", "repo": "warehouse-management-v1", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\20.12.25\\ניהול מחסן.html" } },
+
+    { "id": "recipe-calculator", "title": "מחשבון מצרכים למתכון", "desc": "", "category": "tools", "icon": "🍲", "repo": "recipe-calculator", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\מחשבון מצרכים למתכון", "entry": "*recepis5.html" } },
+    { "id": "translate-dub", "title": "תרגום ודיבוב", "desc": "", "category": "tools", "icon": "🗣️", "repo": "translate-dub", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\תרגום ודיבוב\\29.11.25", "entry": "*translate1.html" } },
+    { "id": "hebrew-calendar", "title": "לוח שנה עברי", "desc": "", "category": "tools", "icon": "📅", "repo": "hebrew-calendar", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\27.12.25\\hebrew-calendar1.html" } },
+    { "id": "israel-holidays", "title": "חגי ישראל", "desc": "", "category": "tools", "icon": "🕎", "repo": "israel-holidays", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\חגים", "entry": "Israel-holidays-browser3.html" } },
+    { "id": "insurance-analysis", "title": "ניתוח ביטוחים", "desc": "דוח אישי — נשמר כמאגר פרטי.", "category": "tools", "icon": "🛡️", "repo": "insurance-analysis", "private": true, "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\ביטוחים\\insurance_analysis_report.html" } },
+
+    { "id": "lotto", "title": "לוטו", "desc": "", "category": "lotto", "icon": "🎱", "repo": "lotto", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו חדש", "entry": "lotto.html" } },
+    { "id": "lotto-new", "title": "לוטו אמיתי — LOTO-NEW", "desc": "", "category": "lotto", "icon": "🎱", "repo": "lotto-new", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו אמיתי\\LOTO-NEW", "entry": "lotto.html" } },
+    { "id": "lotto-series", "title": "סדרות לוטו", "desc": "", "category": "lotto", "icon": "🎲", "repo": "lotto-series", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו אמיתי\\לוטו-חדש\\lotto_series.html" } },
+    { "id": "lotto-series-pro", "title": "סדרות לוטו Pro", "desc": "", "category": "lotto", "icon": "🎲", "repo": "lotto-series-pro", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו אמיתי\\לוטו-חדש\\חדש-חדש-חדש\\lotto_series_pro.html" } },
+
+    { "id": "zohar", "title": "זוהר", "desc": "", "category": "study", "icon": "📜", "repo": "zohar", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\20.12.25\\zohar", "entry": "index10.html" } },
+    { "id": "zohar-v1", "title": "זוהר (18.12.25)", "desc": "", "category": "study", "icon": "📜", "repo": "zohar-v1", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\18.12.25\\זוהר1.html" } },
+
+    { "id": "local-4420", "title": "שרת מקומי — פורט 4420", "desc": "רץ על localhost. צריך להוסיף את נתיב התיקייה ב־projects.json.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:4420/" },
+    { "id": "local-3737", "title": "שרת מקומי — פורט 3737", "desc": "רץ על localhost. צריך להוסיף את נתיב התיקייה ב־projects.json.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:3737/" },
+    { "id": "local-8080", "title": "שרת מקומי — פורט 8080", "desc": "רץ על localhost. צריך להוסיף את נתיב התיקייה ב־projects.json.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:8080/" }
+  ]
+}
