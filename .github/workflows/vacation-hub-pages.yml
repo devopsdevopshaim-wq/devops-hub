@@ -2,11 +2,12 @@ name: Deploy vacation-hub to GitHub Pages
 
 # GitHub Pages is served from the gh-pages branch.
 # Every change to vacation-hub/ on main is copied there automatically.
+# book-studio/ is published alongside it under /book-studio/ (static, copy-paste mode).
 
 on:
   push:
     branches: [main]
-    paths: ['vacation-hub/**', 'n8n/**']
+    paths: ['vacation-hub/**', 'n8n/**', 'book-studio/**']
   workflow_dispatch:
 
 permissions:
@@ -29,6 +30,8 @@ jobs:
           rm -rf /tmp/site && mkdir -p /tmp/site
           cp -r vacation-hub/. /tmp/site/
           rm -f /tmp/site/README.md
+          mkdir -p /tmp/site/book-studio
+          cp -r book-studio/index.html book-studio/css book-studio/js /tmp/site/book-studio/
           touch /tmp/site/.nojekyll
           cd /tmp/site
           git init -q -b gh-pages

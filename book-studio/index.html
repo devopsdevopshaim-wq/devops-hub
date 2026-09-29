@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ספר — סטודיו לכתיבת ספרים</title>
+<meta name="description" content="מספרים את הסיפור במילים שלכם, ו-Claude מנסח אותו לספר קריאה מקצועי ומעוצב, עם איורים ותמונות ובכל אורך: מספר ילדים ועד רומן של 350 עמודים.">
+<meta name="theme-color" content="#14192b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314192b'/%3E%3Cpath d='M8 8h7c1.7 0 1 1 1 2v14c0-1-1-2-2-2H8zM24 8h-7c-1.7 0-1 1-1 2v14c0-1 1-2 2-2h6z' fill='%23c9a45c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Suez+One&family=Varela+Round&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+<style id="pageSize"></style>
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#details" aria-label="ספר — חזרה לתחילת העבודה">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 7h8.5c1.8 0 2.5 1 2.5 2.4V26c0-1.2-1-2.2-2.4-2.2H5zM27 7h-8.5C16.7 7 16 8 16 9.4V26c0-1.2 1-2.2 2.4-2.2H27z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      <span class="brand-name">ספר</span>
+      <span class="brand-tag">סטודיו לכתיבת ספרים</span>
+    </a>
+    <div class="top-actions">
+      <span class="ai-badge" id="aiBadge" role="status">בודק חיבור…</span>
+      <button class="btn ghost small" type="button" id="projectsBtn" aria-haspopup="dialog">הספרים שלי</button>
+      <button class="btn ghost small" type="button" id="a11yBtn" aria-haspopup="dialog" aria-label="תפריט נגישות">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="4" r="2" fill="currentColor"/><path d="M4 8.5l8 1.5 8-1.5M12 10v5m0 0l-3.5 6.5M12 15l3.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>נגישות</span>
+      </button>
+    </div>
+  </div>
+  <nav class="steps" aria-label="שלבי העבודה">
+    <ol role="tablist">
+      <li><a role="tab" href="#details" data-step="details" id="tab-details" aria-controls="panel-details"><span class="num">1</span>פרטי הספר</a></li>
+      <li><a role="tab" href="#story" data-step="story" id="tab-story" aria-controls="panel-story"><span class="num">2</span>הסיפור שלך</a></li>
+      <li><a role="tab" href="#images" data-step="images" id="tab-images" aria-controls="panel-images"><span class="num">3</span>תמונות ואיורים</a></li>
+      <li><a role="tab" href="#write" data-step="write" id="tab-write" aria-controls="panel-write"><span class="num">4</span>כתיבת הספר</a></li>
+      <li><a role="tab" href="#book" data-step="book" id="tab-book" aria-controls="panel-book"><span class="num">5</span>הספר המוכן</a></li>
+    </ol>
+  </nav>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- 1. פרטי הספר -->
+  <section class="panel" id="panel-details" role="tabpanel" aria-labelledby="tab-details">
+    <div class="wrap">
+      <div class="hero">
+        <p class="eyebrow">שלב 1 מתוך 5</p>
+        <h1>כל חיים ראויים לספר.</h1>
+        <p class="lede">מספרים את הסיפור במילים שלכם, בלי הגבלת אורך, ו-Claude מנסח אותו לספר קריאה מקצועי: בשפה גבוהה ומלוטשת, עם איורים ותמונות, ובאורך שתבחרו.</p>
+      </div>
+
+      <form class="card form-grid" id="detailsForm" autocomplete="off">
+        <div class="field span-2">
+          <label for="f-title">שם הספר</label>
+          <input id="f-title" name="title" type="text" placeholder="למשל: הדרך הביתה">
+        </div>
+        <div class="field">
+          <label for="f-subtitle">כותרת משנה <span class="opt">(רשות)</span></label>
+          <input id="f-subtitle" name="subtitle" type="text" placeholder="סיפור חיים">
+        </div>
+        <div class="field">
+          <label for="f-author">שם המחבר/ת</label>
+          <input id="f-author" name="author" type="text" autocomplete="name">
+        </div>
+
+        <fieldset class="field span-2">
+          <legend>סוגת הספר</legend>
+          <div class="genre-grid" id="genreGrid"></div>
+        </fieldset>
+
+        <div class="field" id="kidsAgeField" hidden>
+          <label for="f-kidsAge">גיל הקוראים</label>
+          <select id="f-kidsAge" name="kidsAge">
+            <option value="2–4">2–4 (פעוטות)</option>
+            <option value="4–7" selected>4–7 (גן וכיתה א׳)</option>
+            <option value="7–10">7–10 (קוראים צעירים)</option>
+          </select>
+        </div>
+
+        <fieldset class="field">
+          <legend>קול המספר</legend>
+          <div class="seg">
+            <label><input type="radio" name="voice" value="first" checked> גוף ראשון (״אני״)</label>
+            <label><input type="radio" name="voice" value="third"> גוף שלישי</label>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label for="f-register">משלב לשוני</label>
+          <select id="f-register" name="register">
+            <option value="high">גבוה, ספרותי ועשיר</option>
+            <option value="mid">ספרותי אך נגיש</option>
+            <option value="simple">פשוט וזורם</option>
+          </select>
+        </div>
+
+        <fieldset class="field span-2">
+          <legend>אורך הספר</legend>
+          <div class="chips" id="lengthChips"></div>
+          <div class="inline">
+            <label for="f-targetPages">או מספר עמודים אחר:</label>
+            <input id="f-targetPages" name="targetPages" type="number" min="8" max="900" step="1" inputmode="numeric">
+          </div>
+        </fieldset>
+
+        <div class="field span-2">
+          <label for="f-trim">גודל הספר המודפס</label>
+          <select id="f-trim" name="trim"></select>
+        </div>
+
+        <div class="field span-2">
+          <label for="f-dedication">הקדשה <span class="opt">(רשות)</span></label>
+          <textarea id="f-dedication" name="dedication" rows="2" placeholder="לאמא, שלימדה אותי לא לוותר"></textarea>
+        </div>
+        <div class="field span-2">
+          <label for="f-notes">הנחיות מיוחדות לכתיבה <span class="opt">(רשות)</span></label>
+          <textarea id="f-notes" name="notes" rows="3" placeholder="למשל: לשלב הומור עדין, לא להזכיר שמות משפחה, לסיים באופטימיות"></textarea>
+        </div>
+      </form>
+
+      <div class="plan-box" id="planBox" aria-live="polite"></div>
+      <div class="next-row"><a class="btn primary" href="#story">המשך: הסיפור שלך ←</a></div>
+    </div>
+  </section>
+
+  <!-- 2. הסיפור -->
+  <section class="panel" id="panel-story" role="tabpanel" aria-labelledby="tab-story" hidden>
+    <div class="wrap">
+      <div class="hero small">
+        <p class="eyebrow">שלב 2 מתוך 5</p>
+        <h2>ספרו את הסיפור, במילים שלכם.</h2>
+        <p class="lede">כתבו חופשי, בלי לחשוב על ניסוח: מה קרה, מתי, מי היה שם, מה הרגשתם ומה זה עשה לכם אחר כך. אפשר לחלק לקטעים לפי תקופות, לכתוב כמה שרוצים, להדביק טקסטים או להקליט בקול.</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn" type="button" id="addSection">+ קטע חדש</button>
+        <label class="btn ghost file-btn">ייבוא מקובץ טקסט<input type="file" id="importText" accept=".txt,.md,text/plain" multiple></label>
+        <span class="spacer"></span>
+        <span class="meter" id="storyMeter" aria-live="polite"></span>
+      </div>
+      <div id="sections" class="sections"></div>
+      <div class="next-row"><a class="btn ghost" href="#details">→ חזרה</a><a class="btn primary" href="#images">המשך: תמונות ואיורים ←</a></div>
+    </div>
+  </section>
+
+  <!-- 3. תמונות -->
+  <section class="panel" id="panel-images" role="tabpanel" aria-labelledby="tab-images" hidden>
+    <div class="wrap">
+      <div class="hero small">
+        <p class="eyebrow">שלב 3 מתוך 5</p>
+        <h2>תמונות, צילומים ואיורים</h2>
+        <p class="lede">העלו צילומים מהאלבום המשפחתי או איורים, והחליטו איפה ישולבו: בתחילת פרק, בסופו, בעמוד מלא או על הכריכה. אפשר גם לבקש מ-Claude לצייר איור.</p>
+      </div>
+      <div class="drop" id="dropZone">
+        <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true"><rect x="6" y="10" width="36" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="20" r="3.5" fill="currentColor"/><path d="M8 35l11-10 8 7 5-4 8 7" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <p>גררו לכאן תמונות, או</p>
+        <label class="btn primary file-btn">בחירת תמונות מהמחשב או מהטלפון<input type="file" id="imageInput" accept="image/*" multiple></label>
+      </div>
+      <form class="card gen-card" id="illusForm">
+        <h3>איור חדש מ-Claude</h3>
+        <label for="illusDesc">מה לצייר?</label>
+        <textarea id="illusDesc" rows="2" required placeholder="למשל: בית אבן קטן בשכונה ירושלמית בשקיעה, ילד יושב על המדרגות עם כלב"></textarea>
+        <button class="btn primary" type="submit">צייר איור</button>
+      </form>
+      <div id="imageGrid" class="image-grid" aria-live="polite"></div>
+      <div class="next-row"><a class="btn ghost" href="#story">→ חזרה</a><a class="btn primary" href="#write">המשך: כתיבת הספר ←</a></div>
+    </div>
+  </section>
+
+  <!-- 4. כתיבה -->
+  <section class="panel" id="panel-write" role="tabpanel" aria-labelledby="tab-write" hidden>
+    <div class="wrap">
+      <div class="hero small">
+        <p class="eyebrow">שלב 4 מתוך 5</p>
+        <h2>כתיבת הספר</h2>
+        <p class="lede">קודם בונים את מבנה הספר: פרקים, שמות ותוכן. אחר כך Claude כותב פרק אחרי פרק. כל פרק אפשר לערוך ביד, להמשיך או לשכתב לפי הערה שלכם.</p>
+      </div>
+      <div class="toolbar sticky">
+        <button class="btn primary" type="button" id="outlineBtn">1. בניית מבנה הספר</button>
+        <button class="btn primary" type="button" id="writeAllBtn">2. כתיבת כל הפרקים</button>
+        <button class="btn danger" type="button" id="stopBtn" hidden>עצירה</button>
+        <button class="btn ghost" type="button" id="addChapter">+ פרק ידני</button>
+        <span class="spacer"></span>
+        <span class="meter" id="writeMeter" aria-live="polite"></span>
+      </div>
+      <div class="progress" id="progress" hidden><div class="bar"><span id="progressBar"></span></div><p id="progressText" role="status"></p></div>
+      <div class="card blurb-card">
+        <label for="blurb">טקסט הכריכה האחורית</label>
+        <textarea id="blurb" rows="3" placeholder="נכתב אוטומטית עם מבנה הספר, ואפשר לערוך"></textarea>
+      </div>
+      <div id="chapters" class="chapters"></div>
+      <div class="next-row"><a class="btn ghost" href="#images">→ חזרה</a><a class="btn primary" href="#book">לספר המוכן ←</a></div>
+    </div>
+  </section>
+
+  <!-- 5. הספר -->
+  <section class="panel" id="panel-book" role="tabpanel" aria-labelledby="tab-book" hidden>
+    <div class="wrap wide">
+      <div class="hero small">
+        <p class="eyebrow">שלב 5 מתוך 5</p>
+        <h2>הספר שלך</h2>
+        <p class="lede">כך ייראה הספר המודפס, עמוד אחרי עמוד. כדי לשמור PDF להדפסה בוחרים ״שמירה כ-PDF״ בחלון ההדפסה.</p>
+      </div>
+      <div class="toolbar book-tools">
+        <div class="seg" role="group" aria-label="תצוגה">
+          <button class="btn small" type="button" data-view="spread" aria-pressed="true">כפולות</button>
+          <button class="btn small" type="button" data-view="single" aria-pressed="false">עמוד בודד</button>
+        </div>
+        <label class="range">גודל אות
+          <input type="range" id="fontScale" min="0.8" max="1.3" step="0.02" value="1" aria-describedby="fontScaleOut">
+          <output id="fontScaleOut">100%</output>
+        </label>
+        <label class="range">הגדלת תצוגה
+          <input type="range" id="zoom" min="0.4" max="1.6" step="0.05" value="0.8">
+        </label>
+        <button class="btn" type="button" id="fitBtn">התאמה ליעד העמודים</button>
+        <span class="spacer"></span>
+        <button class="btn primary" type="button" id="printBtn">הדפסה / שמירה כ-PDF</button>
+        <button class="btn ghost" type="button" id="docBtn">הורדה ל-Word</button>
+        <button class="btn ghost" type="button" id="txtBtn">הורדת טקסט</button>
+      </div>
+      <p class="book-stats" id="bookStats" role="status"></p>
+      <div class="book-stage" id="bookStage">
+        <div class="book-zoom" id="bookZoom"><div id="book" class="book" aria-label="תצוגת הספר"></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <p><strong>ספר</strong> · כל הטקסטים והתמונות נשמרים רק בדפדפן שלכם.</p>
+    <p class="footer-links">
+      <button class="linklike" type="button" id="backupBtn">גיבוי הספר לקובץ</button>
+      <label class="linklike file-btn">שחזור מגיבוי<input type="file" id="restoreInput" accept=".json,application/json"></label>
+      <button class="linklike" type="button" id="a11yStatementBtn">הצהרת נגישות</button>
+    </p>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- תפריט נגישות -->
+<dialog id="a11yDialog" aria-labelledby="a11yTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="a11yTitle">התאמות נגישות</h2>
+    <div class="a11y-row">
+      <span id="fsLabel">גודל טקסט</span>
+      <div class="seg" role="group" aria-labelledby="fsLabel">
+        <button type="button" class="btn small" data-a11y="font-" aria-label="הקטנת טקסט">א−</button>
+        <button type="button" class="btn small" data-a11y="font0">רגיל</button>
+        <button type="button" class="btn small" data-a11y="font+" aria-label="הגדלת טקסט">א+</button>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" data-a11y="contrast"> ניגודיות גבוהה</label>
+    <label class="check"><input type="checkbox" data-a11y="light"> רקע בהיר</label>
+    <label class="check"><input type="checkbox" data-a11y="readable"> גופן קריא (ללא עיטורים)</label>
+    <label class="check"><input type="checkbox" data-a11y="links"> הדגשת קישורים וכפתורים</label>
+    <label class="check"><input type="checkbox" data-a11y="motion"> עצירת אנימציות</label>
+    <label class="check"><input type="checkbox" data-a11y="spacing"> ריווח שורות מוגדל</label>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" data-a11y="reset">איפוס</button>
+      <button class="btn primary" value="close">סגירה</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- הספרים שלי -->
+<dialog id="projectsDialog" aria-labelledby="projectsTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="projectsTitle">הספרים שלי</h2>
+    <ul id="projectList" class="project-list"></ul>
+    <div class="dlg-actions">
+      <button type="button" class="btn primary" id="newProject">+ ספר חדש</button>
+      <button class="btn ghost" value="close">סגירה</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- מצב העתק-הדבק -->
+<dialog id="manualDialog" aria-labelledby="manualTitle" class="wide-dlg">
+  <form method="dialog" class="dlg" id="manualForm">
+    <h2 id="manualTitle">כתיבה בעזרת Claude</h2>
+    <ol class="manual-steps">
+      <li>מעתיקים את ההנחיה: <button type="button" class="btn small primary" id="manualCopy">העתקת ההנחיה</button></li>
+      <li>פותחים את <a href="https://claude.ai/new" target="_blank" rel="noopener">Claude.ai</a> בלשונית חדשה, מדביקים ושולחים.</li>
+      <li>מעתיקים את התשובה ומדביקים כאן:</li>
+    </ol>
+    <label class="visually-hidden" for="manualPrompt">ההנחיה</label>
+    <textarea id="manualPrompt" class="manual-prompt" rows="4" readonly></textarea>
+    <label for="manualResult">התשובה של Claude</label>
+    <textarea id="manualResult" rows="10" required></textarea>
+    <p class="hint" id="manualHint"></p>
+    <div class="dlg-actions">
+      <button class="btn primary" value="apply" id="manualApply">הכנסה לספר</button>
+      <button class="btn ghost" value="cancel" formnovalidate>ביטול</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- שכתוב לפי הערה -->
+<dialog id="noteDialog" aria-labelledby="noteTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="noteTitle">שכתוב הפרק</h2>
+    <label for="noteText">מה לשנות?</label>
+    <textarea id="noteText" rows="4" placeholder="למשל: להוסיף יותר רגש בפגישה עם אבא, לקצר את הפתיחה, להדגיש את הריח של הפרדס"></textarea>
+    <div class="dlg-actions">
+      <button class="btn primary" value="ok">שכתוב</button>
+      <button class="btn ghost" value="cancel" formnovalidate>ביטול</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- קוד גישה -->
+<dialog id="codeDialog" aria-labelledby="codeTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="codeTitle">קוד גישה</h2>
+    <p>השרת הזה מוגן. הזינו את קוד הגישה שקיבלתם.</p>
+    <label for="codeInput">קוד</label>
+    <input id="codeInput" type="password" autocomplete="current-password">
+    <div class="dlg-actions">
+      <button class="btn primary" value="ok">אישור</button>
+      <button class="btn ghost" value="cancel" formnovalidate>ביטול</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- הצהרת נגישות -->
+<dialog id="statementDialog" aria-labelledby="statementTitle" class="wide-dlg">
+  <form method="dialog" class="dlg prose">
+    <h2 id="statementTitle">הצהרת נגישות</h2>
+    <p>האתר נבנה כדי שכל אחד ואחת יוכלו לכתוב בו את הספר שלהם, בהתאם לתקן הישראלי 5568 ולהנחיות WCAG 2.1 ברמה AA.</p>
+    <ul>
+      <li>ניווט מלא במקלדת, עם סימון מיקוד ברור וקישור ״דילוג לתוכן״.</li>
+      <li>תמיכה בקוראי מסך: תוויות לכל שדה, כותרות מסודרות והודעות סטטוס מוקראות.</li>
+      <li>תפריט נגישות: הגדלת טקסט, ניגודיות גבוהה, רקע בהיר, גופן קריא, הדגשת קישורים, ריווח ועצירת אנימציות.</li>
+      <li>הקלדה קולית (בדפדפנים שתומכים בה) לכתיבת הסיפור בלי מקלדת.</li>
+      <li>טקסט חלופי לכל תמונה, לפי הכיתוב שנותן המחבר.</li>
+    </ul>
+    <p>נתקלתם בקושי? נשמח לשמוע ולתקן.</p>
+    <div class="dlg-actions"><button class="btn primary" value="close">סגירה</button></div>
+  </form>
+</dialog>
+
+<script src="js/prompts.js"></script>
+<script src="js/store.js"></script>
+<script src="js/paginate.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
