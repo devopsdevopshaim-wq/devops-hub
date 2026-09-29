@@ -4,40 +4,159 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>הפרויקטים שלי</title>
-<meta name="description" content="כל הפרויקטים שלי במקום אחד: אתרים, סוכני AI, כלים ומערכות ניהול.">
+<meta name="description" content="כל הפרויקטים שלי במקום אחד: סוכני AI, אתרים, כלים ומערכות ניהול.">
+<meta name="theme-color" content="#0f0d24">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<header class="hero">
-  <div class="wrap">
-    <p class="eyebrow">Portfolio</p>
-    <h1>הפרויקטים שלי</h1>
-    <p class="lead">אתרים, סוכני AI, כלים ומערכות ניהול. כל פרויקט נמצא במאגר GitHub משלו.</p>
-    <dl class="stats" id="stats"></dl>
+<a class="skip" href="#all">דלג לפרויקטים</a>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top" aria-label="לראש העמוד">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.5"/><ellipse cx="20" cy="20" rx="18" ry="7" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5" transform="rotate(-24 20 20)"/><circle cx="20" cy="20" r="4.5" fill="currentColor"/><circle cx="35" cy="13" r="2.2" fill="currentColor"/></svg>
+      <span>הסדנה</span>
+    </a>
+    <nav class="links" aria-label="ניווט">
+      <a href="#featured">נבחרים</a>
+      <a href="#fields">תחומים</a>
+      <a href="#all">כל הפרויקטים</a>
+      <a href="#how">איך זה עובד</a>
+    </nav>
+    <a class="btn btn-ghost btn-sm" id="gh-top" href="https://github.com/devopsdevopshaim-wq" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0z"/></svg>
+      GitHub
+    </a>
   </div>
 </header>
 
-<main class="wrap">
-  <div class="toolbar">
-    <input id="q" type="search" placeholder="חיפוש פרויקט…" aria-label="חיפוש פרויקט">
-    <div class="chips" id="chips" role="tablist" aria-label="קטגוריות"></div>
-  </div>
-  <p class="note" id="note" hidden></p>
-  <section class="grid" id="grid" aria-live="polite"></section>
+<main id="top">
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow rise" style="--d:0">תיק עבודות · DevOps · AI · Web</p>
+        <h1 class="rise" style="--d:1">כל מה <em>שבניתי</em>,<br>במקום אחד.</h1>
+        <p class="lead rise" style="--d:2">סוכני AI, אתרים, כלים יומיומיים ומערכות ניהול. כל פרויקט יושב במאגר GitHub משלו, ואפשר לפתוח אותו מכאן בלחיצה.</p>
+        <div class="cta rise" style="--d:3">
+          <a class="btn btn-gold" href="#all">לכל הפרויקטים <span aria-hidden="true">↓</span></a>
+          <a class="btn btn-ghost" href="#featured">מאיפה להתחיל</a>
+        </div>
+        <dl class="stats rise" style="--d:4" id="stats"></dl>
+      </div>
 
-  <section id="extra-wrap" hidden>
-    <h2>עוד מאגרים ב־GitHub</h2>
-    <div class="grid" id="extra"></div>
+      <figure class="orbit rise" style="--d:2" id="orbit">
+        <svg id="orbit-svg" viewBox="-265 -160 530 320" role="img" aria-label="מפת כל הפרויקטים">
+          <defs>
+            <radialGradient id="core-fill" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#3a3280"/><stop offset="1" stop-color="#17143a"/></radialGradient>
+            <radialGradient id="core-glow"><stop offset="0" stop-color="#8b7bff" stop-opacity=".45"/><stop offset="1" stop-color="#8b7bff" stop-opacity="0"/></radialGradient>
+          </defs>
+          <g id="orbit-core" aria-hidden="true">
+            <circle r="120" fill="url(#core-glow)"/>
+            <circle r="66" fill="url(#core-fill)" stroke="rgba(224,178,90,.55)" stroke-width="1.2"/>
+            <circle r="76" fill="none" stroke="rgba(139,123,255,.18)" stroke-width="8"/>
+            <text class="core-num" id="core-num" y="10" text-anchor="middle">0</text>
+            <text class="core-label" y="34" text-anchor="middle">פרויקטים</text>
+          </g>
+        </svg>
+        <div class="orbit-tip" id="orbit-tip" hidden></div>
+        <figcaption>כל נקודה היא פרויקט. רחפו לראות שם, לחצו כדי לקפוץ אליו.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="featured">
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">נבחרים</p>
+        <h2>שלושה פרויקטים שכדאי להתחיל מהם</h2>
+      </header>
+      <div class="featured" id="featured-list"></div>
+    </div>
+  </section>
+
+  <section class="section" id="fields">
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">תחומים</p>
+        <h2>בחרו תחום</h2>
+      </header>
+      <div class="tiles" id="tiles" role="tablist" aria-label="סינון לפי תחום"></div>
+    </div>
+  </section>
+
+  <section class="section" id="all">
+    <div class="wrap">
+      <header class="sec-head sec-row reveal">
+        <div>
+          <p class="eyebrow" id="all-eyebrow">כל הפרויקטים</p>
+          <h2 id="all-title">הכול</h2>
+        </div>
+        <label class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="q" type="search" placeholder="חיפוש לפי שם…" aria-label="חיפוש פרויקט">
+        </label>
+      </header>
+      <p class="note" id="note" hidden></p>
+      <div class="grid" id="grid" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="section" id="extra-wrap" hidden>
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">עוד ב־GitHub</p>
+        <h2>מאגרים נוספים</h2>
+      </header>
+      <div class="grid" id="extra"></div>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">איך זה עובד</p>
+        <h2>מהמחשב לאוויר, בארבעה צעדים</h2>
+      </header>
+      <ol class="pipe reveal">
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="10" width="36" height="24" rx="3"/><path d="M16 40h16M24 34v6"/><path d="M14 20l4 3-4 3M22 26h8"/></svg>
+          <h3>תיקייה במחשב</h3>
+          <p>הפרויקט נבנה ונבדק מקומית.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="14" cy="12" r="4"/><circle cx="14" cy="36" r="4"/><circle cx="34" cy="20" r="4"/><path d="M14 16v16M34 24c0 6-8 6-16 10"/></svg>
+          <h3>מאגר ב־GitHub</h3>
+          <p>כל פרויקט מקבל מאגר נפרד משלו.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="16"/><path d="M8 24h32M24 8c-6 8-6 24 0 32M24 8c6 8 6 24 0 32"/></svg>
+          <h3>GitHub Pages</h3>
+          <p>האתר מתפרסם בכתובת קבועה משלו.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l4.5 12.5L41 23l-12.5 4.5L24 40l-4.5-12.5L7 23l12.5-4.5z"/></svg>
+          <h3>כאן, בסדנה</h3>
+          <p>העמוד בודק את GitHub ומעדכן סטטוס לבד.</p>
+        </li>
+      </ol>
+    </div>
   </section>
 </main>
 
-<footer class="wrap foot">
-  <a id="gh-link" href="https://github.com/devopsdevopshaim-wq">github.com/devopsdevopshaim-wq</a>
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <span class="brand brand-sm">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="4.5" fill="currentColor"/></svg>
+      הסדנה
+    </span>
+    <a id="gh-link" href="https://github.com/devopsdevopshaim-wq" target="_blank" rel="noopener">github.com/devopsdevopshaim-wq</a>
+  </div>
 </footer>
 
+<script src="js/art.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

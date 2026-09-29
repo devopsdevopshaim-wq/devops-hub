@@ -1,21 +1,26 @@
 (function () {
   'use strict';
 
+  var art = window.PORTFOLIO_ART;
   var grid = document.getElementById('grid');
-  var chips = document.getElementById('chips');
   var q = document.getElementById('q');
   var note = document.getElementById('note');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var state = { cat: 'all', query: '', data: null, repos: null };
 
   function el(tag, attrs, children) {
     var n = document.createElement(tag);
     Object.keys(attrs || {}).forEach(function (k) {
       if (k === 'text') n.textContent = attrs[k];
+      else if (k === 'html') n.innerHTML = attrs[k];
       else n.setAttribute(k, attrs[k]);
     });
     (children || []).forEach(function (c) { if (c) n.appendChild(c); });
     return n;
   }
+
+  var ICON_OUT = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3h7v7M13 3L4 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICON_CODE = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4L2 8l4 4M10 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   // GitHub Pages address of an uploaded project, straight to its start page.
   function pagesUrl(p) {
@@ -35,29 +40,51 @@
         ? { kind: 'live', label: 'באוויר', open: pagesUrl(p), code: code }
         : { kind: 'wait', label: 'במאגר, בלי Pages', code: code };
     }
-    // Without the GitHub list we cannot tell, so assume the upload script ran.
-    if (!state.repos) return { kind: 'wait', label: 'לא ידוע', open: pagesUrl(p), code: code };
+    // Without the GitHub list we cannot tell; every local project has been uploaded.
+    if (!state.repos) return { kind: 'live', label: 'באוויר', open: pagesUrl(p), code: code };
     return { kind: 'wait', label: 'ממתין להעלאה' };
+  }
+
+  // Live screenshot from WordPress mShots. While a shot is being generated it
+  // returns a small placeholder, so anything narrower than we asked for is
+  // ignored and the illustration stays.
+  function media(p, s, big) {
+    var box = el('div', { class: 'media cat-' + p.category, html: art(p.category) });
+    if (s.open && /^https:/.test(s.open)) {
+      var w = big ? 1200 : 800;
+      var img = el('img', { alt: '', loading: 'lazy', decoding: 'async', src: 'https://s0.wp.com/mshots/v1/' + encodeURIComponent(s.open) + '?w=' + w + '&h=' + Math.round(w * 0.62) });
+      img.addEventListener('load', function () { if (img.naturalWidth >= w * 0.9) img.classList.add('ok'); });
+      box.appendChild(img);
+      box.appendChild(el('div', { class: 'shade' }));
+    }
+    return box;
+  }
+
+  function actions(s) {
+    return [
+      s.open ? el('a', { class: 'link open', href: s.open, target: '_blank', rel: 'noopener', html: 'פתיחה ' + ICON_OUT }) : null,
+      s.code ? el('a', { class: 'link code', href: s.code, target: '_blank', rel: 'noopener', html: ICON_CODE + ' קוד' }) : null
+    ];
   }
 
   function card(p) {
     var s = status(p);
-    var cats = state.data.categories;
-    return el('article', { class: 'card' }, [
-      el('div', { class: 'card-top' }, [
-        el('span', { class: 'icon', 'aria-hidden': 'true', text: p.icon || '•' }),
-        el('div', {}, [
-          el('h3', { text: p.title }),
-          el('span', { class: 'cat', text: cats[p.category] || '' })
-        ])
-      ]),
-      p.desc ? el('p', { text: p.desc }) : null,
-      el('div', { class: 'card-foot' }, [
-        el('span', { class: 'badge ' + s.kind, text: s.label }),
-        s.open ? el('a', { class: 'btn', href: s.open, target: '_blank', rel: 'noopener', text: 'פתיחה' }) : null,
-        s.code ? el('a', { class: 'btn ghost', href: s.code, target: '_blank', rel: 'noopener', text: 'קוד' }) : null
+    var c = el('article', { class: 'card reveal cat-' + p.category, id: 'p-' + p.id }, [
+      el('span', { class: 'badge ' + s.kind, text: s.label }),
+      media(p, s, false),
+      el('div', { class: 'body' }, [
+        el('span', { class: 'cat', text: state.data.categories[p.category] || '' }),
+        el('h3', { text: p.title }),
+        p.desc ? el('p', { text: p.desc }) : null,
+        el('div', { class: 'row' }, actions(s))
       ])
     ]);
+    c.addEventListener('pointermove', function (e) {
+      var r = c.getBoundingClientRect();
+      c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+    return c;
   }
 
   function matches(p) {
@@ -70,38 +97,185 @@
   function render() {
     var list = state.data.projects.filter(matches);
     grid.replaceChildren.apply(grid, list.map(card));
-    if (!list.length) grid.appendChild(el('p', { class: 'empty', text: 'לא נמצאו פרויקטים.' }));
+    if (!list.length) grid.appendChild(el('p', { class: 'empty', text: 'אין פרויקט בשם הזה. נסו מילה אחרת או בחרו "הכול".' }));
+    document.getElementById('all-title').textContent = state.cat === 'all' ? 'הכול' : state.data.categories[state.cat];
+    document.getElementById('all-eyebrow').textContent = list.length + ' פרויקטים';
+    observe(grid.querySelectorAll('.reveal'));
     renderStats();
   }
 
   function renderStats() {
     var all = state.data.projects;
     var live = all.filter(function (p) { return status(p).kind === 'live'; }).length;
-    var wait = all.filter(function (p) { return status(p).kind === 'wait'; }).length;
-    var box = document.getElementById('stats');
-    box.replaceChildren();
-    [['פרויקטים', all.length], ['באוויר', live], ['ממתינים', wait]].forEach(function (row) {
-      box.appendChild(el('div', {}, [el('dt', { text: row[0] }), el('dd', { text: String(row[1]) })]));
-    });
-  }
-
-  function renderChips() {
-    var cats = state.data.categories;
     var used = {};
-    state.data.projects.forEach(function (p) { used[p.category] = true; });
-    var keys = ['all'].concat(Object.keys(cats).filter(function (k) { return used[k]; }));
-    keys.forEach(function (k) {
-      var b = el('button', { class: 'chip', role: 'tab', type: 'button', 'aria-selected': String(k === state.cat), text: k === 'all' ? 'הכול' : cats[k] });
-      b.addEventListener('click', function () {
-        state.cat = k;
-        Array.prototype.forEach.call(chips.children, function (c) { c.setAttribute('aria-selected', String(c === b)); });
-        render();
-      });
-      chips.appendChild(b);
-    });
+    all.forEach(function (p) { used[p.category] = true; });
+    var box = document.getElementById('stats');
+    box.replaceChildren(
+      el('div', {}, [el('dd', { text: String(all.length) }), el('dt', { text: 'פרויקטים' })]),
+      el('div', {}, [el('dd', { html: live + '<span class="live-dot" aria-hidden="true"></span>' }), el('dt', { text: 'באוויר עכשיו' })]),
+      el('div', {}, [el('dd', { text: String(Object.keys(used).length) }), el('dt', { text: 'תחומים' })])
+    );
   }
 
-  // Public repos that are not in projects.json still get a card.
+  function renderFeatured() {
+    var box = document.getElementById('featured-list');
+    var list = state.data.projects.filter(function (p) { return p.featured; }).slice(0, 3);
+    box.replaceChildren.apply(box, list.map(function (p, i) {
+      var s = status(p);
+      return el('article', { class: 'fcard reveal cat-' + p.category, style: '--rd:' + i * 120 + 'ms' }, [
+        el('span', { class: 'badge ' + s.kind, text: s.label }),
+        media(p, s, i === 0),
+        el('div', { class: 'body' }, [
+          el('h3', { text: p.title }),
+          p.desc ? el('p', { text: p.desc }) : null,
+          el('div', { class: 'row' }, actions(s))
+        ])
+      ]);
+    }));
+    observe(box.querySelectorAll('.reveal'));
+  }
+
+  function selectCat(k) {
+    state.cat = k;
+    Array.prototype.forEach.call(document.querySelectorAll('.tile'), function (t) {
+      t.setAttribute('aria-selected', String(t.dataset.cat === k));
+    });
+    render();
+  }
+
+  function renderTiles() {
+    var cats = state.data.categories;
+    var counts = {};
+    state.data.projects.forEach(function (p) { counts[p.category] = (counts[p.category] || 0) + 1; });
+    var box = document.getElementById('tiles');
+    var keys = ['all'].concat(Object.keys(cats).filter(function (k) { return counts[k]; }));
+    keys.forEach(function (k, i) {
+      var t = el('button', {
+        class: 'tile reveal ' + (k === 'all' ? 'all' : 'cat-' + k), type: 'button', role: 'tab',
+        'aria-selected': String(k === state.cat), 'data-cat': k, style: '--rd:' + i * 60 + 'ms'
+      }, [
+        el('span', { html: art(k === 'all' ? 'web' : k) }),
+        el('span', {}, [
+          el('b', { text: k === 'all' ? 'הכול' : cats[k] }),
+          el('small', { text: (k === 'all' ? state.data.projects.length : counts[k]) + ' פרויקטים' })
+        ])
+      ]);
+      t.addEventListener('click', function () {
+        selectCat(k);
+        document.getElementById('all').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+      });
+      box.appendChild(t);
+    });
+    observe(box.querySelectorAll('.reveal'));
+  }
+
+  // ---------- orbit ----------
+  function renderOrbit() {
+    var svg = document.getElementById('orbit-svg');
+    var tip = document.getElementById('orbit-tip');
+    var fig = document.getElementById('orbit');
+    var NS = 'http://www.w3.org/2000/svg';
+    var TILT = 0.5;
+    var radii = [118, 180, 245];
+    var core = document.getElementById('orbit-core');
+    var hues = getComputedStyle(document.documentElement);
+
+    radii.forEach(function (r, i) {
+      var e = document.createElementNS(NS, 'ellipse');
+      e.setAttribute('rx', r); e.setAttribute('ry', r * TILT);
+      e.setAttribute('class', 'ring' + (i === 1 ? ' dash' : ''));
+      svg.insertBefore(e, core);
+    });
+
+    var list = state.data.projects.slice().sort(function (a, b) { return a.category < b.category ? -1 : 1; });
+    var perRing = [[], [], []];
+    list.forEach(function (p, i) { perRing[i % 3].push(p); });
+
+    var nodes = [];
+    perRing.forEach(function (ring, ri) {
+      ring.forEach(function (p, i) {
+        var color = hues.getPropertyValue('--cat-' + p.category).trim() || '#8b7bff';
+        var g = document.createElementNS(NS, 'g');
+        g.setAttribute('class', 'node');
+        g.setAttribute('tabindex', '0');
+        g.setAttribute('role', 'button');
+        g.setAttribute('aria-label', p.title);
+        var halo = document.createElementNS(NS, 'circle');
+        halo.setAttribute('class', 'halo'); halo.setAttribute('r', 11); halo.setAttribute('fill', color);
+        var dot = document.createElementNS(NS, 'circle');
+        dot.setAttribute('r', 4.5); dot.setAttribute('fill', color);
+        g.appendChild(halo); g.appendChild(dot);
+        svg.appendChild(g);
+        var n = { front: true, p: p, g: g, r: radii[ri], a: (i / ring.length) * Math.PI * 2 + ri * 0.7, speed: [0.0021, -0.0014, 0.0009][ri], x: 0, y: 0 };
+        nodes.push(n);
+
+        function show() {
+          tip.innerHTML = '';
+          tip.appendChild(document.createTextNode(p.title));
+          tip.appendChild(el('small', { text: state.data.categories[p.category] || '' }));
+          place(n);
+          tip.hidden = false;
+          paused = true;
+        }
+        function hide() { tip.hidden = true; paused = false; }
+        g.addEventListener('pointerenter', show);
+        g.addEventListener('pointerleave', hide);
+        g.addEventListener('focus', show);
+        g.addEventListener('blur', hide);
+        function go() { jumpTo(p); }
+        g.addEventListener('click', go);
+        g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      });
+    });
+
+    function place(n) {
+      var box = svg.viewBox.baseVal;
+      var rect = svg.getBoundingClientRect();
+      var fr = fig.getBoundingClientRect();
+      var sx = rect.width / box.width, sy = rect.height / box.height;
+      tip.style.left = (rect.left - fr.left + (n.x - box.x) * sx) + 'px';
+      tip.style.top = (rect.top - fr.top + (n.y - box.y) * sy) + 'px';
+    }
+
+    var paused = false;
+    function frame() {
+      nodes.forEach(function (n) {
+        if (!paused) n.a += n.speed;
+        n.x = Math.cos(n.a) * n.r;
+        n.y = Math.sin(n.a) * n.r * TILT;
+        var depth = (Math.sin(n.a) + 1) / 2; // 0 = back, 1 = front
+        n.g.setAttribute('transform', 'translate(' + n.x.toFixed(1) + ' ' + n.y.toFixed(1) + ') scale(' + (0.7 + depth * 0.6).toFixed(2) + ')');
+        n.g.style.opacity = (0.4 + depth * 0.6).toFixed(2);
+        // pass behind the core on the far side of the ring, in front of it on the near side
+        var front = depth > 0.5;
+        if (front !== n.front) { n.front = front; if (front) svg.appendChild(n.g); else svg.insertBefore(n.g, core); }
+      });
+      if (!reduceMotion) requestAnimationFrame(frame);
+    }
+    frame();
+
+    // count up the number in the core
+    var target = state.data.projects.length, num = document.getElementById('core-num');
+    if (reduceMotion) { num.textContent = target; return; }
+    var t0 = performance.now();
+    (function count(t) {
+      var k = Math.min(1, (t - t0) / 1400);
+      num.textContent = Math.round(target * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(count);
+    })(t0);
+  }
+
+  function jumpTo(p) {
+    if (state.cat !== 'all' && state.cat !== p.category) selectCat('all');
+    var c = document.getElementById('p-' + p.id);
+    if (!c) { state.query = ''; q.value = ''; selectCat('all'); c = document.getElementById('p-' + p.id); }
+    if (!c) return;
+    c.classList.add('in');
+    c.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+  }
+
+  // ---------- extra repos ----------
   function renderExtra(list) {
     var known = {};
     state.data.projects.forEach(function (p) { if (p.repo) known[p.repo.toLowerCase()] = true; });
@@ -109,21 +283,32 @@
     if (!extra.length) return;
     var box = document.getElementById('extra');
     extra.forEach(function (r) {
-      var pages = r.has_pages ? 'https://' + state.data.owner + '.github.io/' + r.name + '/' : null;
-      box.appendChild(el('article', { class: 'card' }, [
-        el('div', { class: 'card-top' }, [
-          el('span', { class: 'icon', 'aria-hidden': 'true', text: '📦' }),
-          el('div', {}, [el('h3', { text: r.name }), el('span', { class: 'cat', text: r.language || 'GitHub' })])
-        ]),
-        r.description ? el('p', { text: r.description }) : null,
-        el('div', { class: 'card-foot' }, [
-          pages ? el('a', { class: 'btn', href: pages, target: '_blank', rel: 'noopener', text: 'פתיחה' }) : null,
-          el('a', { class: 'btn ghost', href: r.html_url, target: '_blank', rel: 'noopener', text: 'קוד' })
+      var p = { id: 'x-' + r.name, title: r.name, desc: r.description, category: 'web' };
+      var s = { kind: 'live', open: r.has_pages ? 'https://' + state.data.owner + '.github.io/' + r.name + '/' : null, code: r.html_url };
+      box.appendChild(el('article', { class: 'card reveal cat-web' }, [
+        media(p, s, false),
+        el('div', { class: 'body' }, [
+          el('span', { class: 'cat', text: r.language || 'GitHub' }),
+          el('h3', { text: r.name }),
+          r.description ? el('p', { text: r.description }) : null,
+          el('div', { class: 'row' }, actions(s))
         ])
       ]));
     });
     document.getElementById('extra-wrap').hidden = false;
+    observe(box.querySelectorAll('.reveal'));
   }
+
+  // ---------- scroll reveal ----------
+  var io = ('IntersectionObserver' in window && !reduceMotion)
+    ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+      }, { rootMargin: '0px 0px -8% 0px' })
+    : null;
+  function observe(nodes) {
+    Array.prototype.forEach.call(nodes, function (n) { if (io) io.observe(n); else n.classList.add('in'); });
+  }
+  observe(document.querySelectorAll('.reveal'));
 
   function loadRepos(owner) {
     return fetch('https://api.github.com/users/' + owner + '/repos?per_page=100&sort=updated')
@@ -132,12 +317,10 @@
         state.repos = {};
         list.forEach(function (r) { state.repos[r.name.toLowerCase()] = r; });
         render();
+        renderFeatured();
         renderExtra(list);
       })
-      .catch(function () {
-        note.textContent = 'לא הצלחתי לבדוק את GitHub כרגע, אז הסטטוס של חלק מהפרויקטים לא ידוע.';
-        note.hidden = false;
-      });
+      .catch(function () { /* statuses stay on their defaults */ });
   }
 
   q.addEventListener('input', function () { state.query = q.value.trim().toLowerCase(); render(); });
@@ -147,11 +330,15 @@
     .then(function (data) {
       state.data = data;
       document.getElementById('gh-link').href = 'https://github.com/' + data.owner;
-      renderChips();
+      document.getElementById('gh-top').href = 'https://github.com/' + data.owner;
+      renderOrbit();
+      renderFeatured();
+      renderTiles();
       render();
       loadRepos(data.owner);
     })
     .catch(function () {
-      grid.replaceChildren(el('p', { class: 'empty', text: 'לא הצלחתי לטעון את projects.json. אם פתחת את הקובץ ישירות מהמחשב, פתח אותו דרך שרת (למשל npx serve).' }));
+      note.textContent = 'לא הצלחתי לטעון את רשימת הפרויקטים. אם פתחתם את הקובץ ישירות מהמחשב, פתחו אותו דרך שרת (למשל npx serve).';
+      note.hidden = false;
     });
 })();
