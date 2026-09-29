@@ -1,0 +1,15 @@
+{
+  "name": "book-studio",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ספר — סטודיו לכתיבת ספרים בעברית בעזרת Claude",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0"
+  }
+}
