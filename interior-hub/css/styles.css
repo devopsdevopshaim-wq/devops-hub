@@ -699,3 +699,27 @@ label.btn:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
 }
 .section-head h2 { display: flex; align-items: center; gap: 10px; }
 .section-head h2::before { content: ''; flex: none; width: 14px; height: 14px; border-inline-start: 1px solid var(--oak); border-bottom: 1px solid var(--oak); }
+
+/* ---------- virtual reality ---------- */
+.tour-btn-vr { display: inline-flex; align-items: center; gap: 6px; }
+.tour-btn-vr svg { width: 19px; height: 19px; }
+.vr-menu {
+  position: absolute; top: 52px; inset-inline-start: 10px; z-index: 7; width: min(380px, calc(100% - 20px));
+  background: rgba(17, 20, 22, 0.94); color: #eef0ec; border-radius: 10px; padding: 8px; display: grid; gap: 4px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+}
+.vr-menu-title { font: 500 0.78rem/1.4 var(--mono); color: #86c0ad; padding: 6px 10px 2px; }
+.vr-menu button { text-align: start; border: 0; background: transparent; color: inherit; padding: 9px 10px; border-radius: 6px; display: grid; gap: 2px; }
+.vr-menu button:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
+.vr-menu button:disabled { opacity: 0.55; cursor: not-allowed; }
+.vr-menu button b { font-weight: 600; }
+.vr-menu button span { font-size: 0.82rem; color: rgba(238,240,236,0.72); line-height: 1.45; }
+.vr-exit {
+  position: absolute; top: 12px; inset-inline-end: 12px; z-index: 8; border: 0; border-radius: 999px;
+  background: rgba(17,20,22,0.8); color: #fff; font-weight: 600; padding: 8px 16px;
+}
+.tour.is-gyro .tour-top, .tour.is-gyro .tour-rooms, .tour.is-gyro .tour-mini, .tour.is-gyro .tour-card, .tour.is-gyro .vr-menu { display: none !important; }
+.tour.is-stereo .tour-pad { display: none; }
+.tour.is-stereo::after { content: ''; position: absolute; inset-block: 0; left: 50%; width: 2px; background: #000; z-index: 3; pointer-events: none; }
+.tour:fullscreen { height: 100vh; width: 100vw; }
+.tour:-webkit-full-screen { height: 100vh; width: 100vw; }

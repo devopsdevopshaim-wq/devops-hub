@@ -206,7 +206,24 @@
           tip.style.top = (e.clientY - r.top - 34) + 'px';
           tip.hidden = !c;
         },
-        onMove: updateMini
+        onMove: updateMini,
+        // the card that opens inside the headset when a piece of furniture is clicked
+        describe: (id) => {
+          const it = plan.items.find((x) => x.id === id);
+          const c = it && IH.CATALOG[it.type];
+          if (!c) return null;
+          const lines = [`${dims(it)} ס״מ · הערכה ${money(price(it))}`];
+          const m = (IH.MODELS[it.type] || []).find((x) => x.price);
+          if (m) lines.push(`${sellerName(m.seller)}: ${m.name} · ${money(m.price)}`);
+          storesFor(it).slice(0, 3).forEach((sid) => {
+            const st = IH.STORES[sid], b = IH.nearestBranch(sid, state.region);
+            const phone = (b && b.phone) || st.hotline;
+            lines.push(`${st.name}${phone ? ' · ' + phone : ''}${b ? ' · ' + b.city : ''}`);
+          });
+          return { eyebrow: roomName(it.room), title: c.name, lines };
+        },
+        onXR: (on) => { $('#tour').classList.toggle('is-xr', on); },
+        onGyroEnd: () => { $('#vr-exit').hidden = true; }
       });
       host.appendChild($('#tour-tip'));
     }
@@ -669,6 +686,39 @@
       e.currentTarget.textContent = on ? 'איכות גבוהה' : 'איכות רגילה';
     });
     $('#btn-photo').addEventListener('click', startPhoto);
+    // virtual reality menu
+    const vrMenu = $('#vr-menu');
+    $('#btn-vr').addEventListener('click', async (e) => {
+      const open = vrMenu.hidden;
+      vrMenu.hidden = !open;
+      e.currentTarget.setAttribute('aria-expanded', String(open));
+      if (!open || !IH.Tour) return;
+      const ok = await IH.Tour.vrSupport();
+      const hb = vrMenu.querySelector('[data-vr="headset"]');
+      hb.disabled = !ok;
+      $('#vr-headset-note').textContent = ok
+        ? 'נכנסים לבית בגודל אמיתי. ג׳ויסטיק שמאלי הולך, ימני מסתובב, הדק על הרצפה קופץ לשם ועל רהיט פותח את הכרטיס שלו.'
+        : 'לא זוהו משקפי VR. פותחים את האתר בדפדפן של המשקפיים (Meta Quest Browser, Pico, Safari ב-Vision Pro) ולוחצים כאן.';
+      const coarse = matchMedia('(pointer: coarse)').matches;
+      vrMenu.querySelector('[data-vr="gyro"]').hidden = !coarse;
+      vrMenu.querySelector('[data-vr="stereo"]').hidden = !coarse;
+    });
+    vrMenu.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-vr]');
+      if (!b || !tour) return;
+      vrMenu.hidden = true;
+      $('#btn-vr').setAttribute('aria-expanded', 'false');
+      const kind = b.dataset.vr;
+      try {
+        if (kind === 'headset') await tour.enterVR();
+        else if (kind === 'full') { const el = $('#tour'); await (el.requestFullscreen ? el.requestFullscreen() : el.webkitRequestFullscreen()); }
+        else { await tour.startGyro(kind === 'stereo'); $('#vr-exit').hidden = false; }
+      } catch (err) {
+        $('#tour-tip').hidden = true;
+        alert(kind === 'headset' ? 'לא הצלחתי להיכנס למציאות מדומה. ודאו שהאתר פתוח בדפדפן של המשקפיים ושאישרתם גישה.' : 'הדפדפן לא נתן גישה לחיישני התנועה של הטלפון. אשרו גישה לתנועה והתמצאות ונסו שוב.');
+      }
+    });
+    $('#vr-exit').addEventListener('click', () => { if (tour) tour.stopGyro(); $('#vr-exit').hidden = true; });
     $('#pt-close').addEventListener('click', stopPhoto);
     $('#pt-save').addEventListener('click', async () => {
       if (!tour) return;

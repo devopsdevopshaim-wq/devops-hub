@@ -324,10 +324,33 @@ export class Tour {
     this.bindInput();
     this.resize();
     this.ro = new ResizeObserver(() => this.resize());
+    document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && this.gyro) { this.stopGyro(); if (this.opts.onGyroEnd) this.opts.onGyroEnd(); } });
     this.ro.observe(container);
+    // virtual reality: headsets through WebXR; the rig carries the headset through the home
+    r.xr.enabled = true;
+    r.xr.setReferenceSpaceType('local-floor');
+    try { r.xr.setFoveation(1); } catch (e) { /* older runtimes */ }
+    this.rig = new THREE.Group();
+    this.rig.add(this.camera);
+    this.controllers = [0, 1].map((i) => {
+      const ctl = r.xr.getController(i);
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]), new THREE.LineBasicMaterial({ color: '#86c0ad', transparent: true, opacity: 0.8 }));
+      line.scale.z = 5;
+      ctl.add(line);
+      ctl.userData.line = line;
+      const dot = new THREE.Mesh(new THREE.RingGeometry(0.08, 0.12, 32), new THREE.MeshBasicMaterial({ color: '#86c0ad', side: THREE.DoubleSide, transparent: true, opacity: 0.9, depthTest: false }));
+      dot.rotation.x = -Math.PI / 2;
+      dot.visible = false;
+      ctl.userData.dot = dot;
+      ctl.addEventListener('select', () => this.xrSelect(ctl));
+      ctl.addEventListener('connected', (e) => { ctl.userData.source = e.data; });
+      ctl.addEventListener('disconnected', () => { ctl.userData.source = null; });
+      this.rig.add(ctl);
+      return ctl;
+    });
     this.loop = this.loop.bind(this);
     this.running = true;
-    requestAnimationFrame(this.loop);
+    r.setAnimationLoop(this.loop);
   }
 
   // hosts that do not serve .glb/.exr get them packed as base64 JSON (window.IH_PACKED_ASSETS)
@@ -433,6 +456,9 @@ export class Tour {
     this.plan = plan;
     const scene = this.scene;
     for (let i = scene.children.length - 1; i >= 0; i--) scene.remove(scene.children[i]);
+    scene.add(this.rig);
+    this.controllers.forEach((c) => scene.add(c.userData.dot));
+    this.vrCard = null;
     this.blockers = [];
     this.pickables = [];
     this.floors = [];
@@ -1511,6 +1537,7 @@ export class Tour {
     let drag = null;
     const pointers = new Map();
     const onDown = (e) => {
+      if (this.gyro) { this.hold.fwd = true; return; }
       c().focus({ preventScroll: true });
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       drag = { moved: 0, t: performance.now() };
@@ -1518,6 +1545,7 @@ export class Tour {
       this.spin = 0;
     };
     const onMove = (e) => {
+      if (this.gyro) return;
       if (!pointers.has(e.pointerId)) { this.hover(e); return; }
       const prev = pointers.get(e.pointerId);
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1544,6 +1572,7 @@ export class Tour {
       }
     };
     const onUp = (e) => {
+      if (this.gyro) { this.hold.fwd = false; return; }
       pointers.delete(e.pointerId);
       if (pointers.size < 2) this.pinch = null;
       if (drag && drag.moved < 6 && performance.now() - drag.t < 500) this.click(e);
@@ -1734,11 +1763,15 @@ export class Tour {
 
   loop() {
     if (!this.running) return;
-    requestAnimationFrame(this.loop);
     const dt = Math.min(0.05, this.clock.getDelta());
-    if (!this.plan || this.el.offsetParent === null) return;
+    if (!this.plan || (!this.renderer.xr.isPresenting && this.el.getClientRects().length === 0)) return;
 
-    if (this.pt) { /* view frozen while the photo renders */ } else if (this.mode === 'walk') {
+    const xr = this.renderer.xr.isPresenting;
+    if (this.pt) { /* view frozen while the photo renders */ } else if (xr) {
+      this.xrStep(dt);
+    } else if (this.gyro) {
+      this.gyroStep(dt);
+    } else if (this.mode === 'walk') {
       const k = this.keys;
       const speed = 1.8 * dt;
       let f = 0, t = 0;
@@ -1788,8 +1821,192 @@ export class Tour {
       if (this.fallTex) this.fallTex.offset.y = -t * 0.8;
     }
     if (this.pt) this.ptStep();
+    else if (xr) this.renderer.render(this.scene, this.camera);
+    else if (this.gyro && this.gyro.stereo) this.renderStereo();
     else if (this.composer && this.quality) this.composer.render(dt);
     else this.renderer.render(this.scene, this.camera);
+  }
+
+  /* ---------- virtual reality ---------- */
+  static async vrSupport() {
+    try { return !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch (e) { return false; }
+  }
+  async enterVR() {
+    const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] });
+    if (this.mode !== 'walk') this.setMode('walk');
+    this.walkTo = null; this.spin = 0;
+    this.rig.position.set(this.pos.x, 0, this.pos.z);
+    this.rig.rotation.set(0, this.yaw, 0);
+    session.addEventListener('end', () => {
+      this.rig.position.set(0, 0, 0);
+      this.rig.rotation.set(0, 0, 0);
+      this.controllers.forEach((c) => { c.userData.dot.visible = false; });
+      if (this.vrCard) { this.scene.remove(this.vrCard); this.vrCard = null; }
+      if (this.opts.onXR) this.opts.onXR(false);
+      this.resize();
+    });
+    await this.renderer.xr.setSession(session);
+    if (this.opts.onXR) this.opts.onXR(true);
+  }
+  exitVR() { const s = this.renderer.xr.getSession(); if (s) s.end(); }
+  headWorld(v) { return this.renderer.xr.getCamera().getWorldPosition(v || new THREE.Vector3()); }
+  xrRay(ctl) {
+    const m = new THREE.Matrix4().extractRotation(ctl.matrixWorld);
+    this.ray.ray.origin.setFromMatrixPosition(ctl.matrixWorld);
+    this.ray.ray.direction.set(0, 0, -1).applyMatrix4(m);
+    this.ray.far = 30;
+    const hits = this.ray.intersectObjects(this.pickables, false);
+    return hits.find((h) => h.object.visible) || null;
+  }
+  xrStep(dt) {
+    const session = this.renderer.xr.getSession();
+    const head = this.headWorld();
+    // thumbsticks: left walks where you look, right turns in 30° steps
+    const fwd = new THREE.Vector3();
+    this.renderer.xr.getCamera().getWorldDirection(fwd);
+    fwd.y = 0; fwd.normalize();
+    const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
+    for (const src of (session ? session.inputSources : [])) {
+      const gp = src.gamepad;
+      if (!gp || gp.axes.length < 2) continue;
+      const ax = gp.axes.length >= 4 ? gp.axes[2] : gp.axes[0];
+      const ay = gp.axes.length >= 4 ? gp.axes[3] : gp.axes[1];
+      if (src.handedness === 'right') {
+        if (Math.abs(ax) > 0.7 && !this.xrTurned) {
+          this.xrTurned = true;
+          const a = -Math.sign(ax) * Math.PI / 6;
+          const rel = this.rig.position.clone().sub(head).applyAxisAngle(new THREE.Vector3(0, 1, 0), a);
+          this.rig.position.copy(head).add(rel).setY(0);
+          this.rig.rotation.y += a;
+        } else if (Math.abs(ax) < 0.3) this.xrTurned = false;
+      } else if (Math.abs(ax) > 0.15 || Math.abs(ay) > 0.15) {
+        const sp = 1.5 * dt;
+        const d = fwd.clone().multiplyScalar(-ay * sp).add(right.clone().multiplyScalar(ax * sp));
+        if (!this.collides(head.x + d.x, head.z)) this.rig.position.x += d.x;
+        if (!this.collides(head.x, head.z + d.z)) this.rig.position.z += d.z;
+      }
+    }
+    // pointer rays show where a click lands
+    this.controllers.forEach((ctl) => {
+      const dot = ctl.userData.dot;
+      if (!ctl.userData.source) { dot.visible = false; return; }
+      const h = this.xrRay(ctl);
+      ctl.userData.line.scale.z = h ? h.distance : 5;
+      dot.visible = !!(h && h.object.userData.floor);
+      if (dot.visible) dot.position.copy(h.point).setY(0.02);
+    });
+    this.pos.set(head.x, EYE, head.z);
+    this.yaw = Math.atan2(-fwd.x, -fwd.z);
+    if (this.vrCard) this.vrCard.lookAt(head);
+    if (this.opts.onMove) this.opts.onMove(this.pos.x, this.pos.z, this.yaw);
+  }
+  // trigger: on the floor jumps there; on furniture opens its card in the room
+  xrSelect(ctl) {
+    const h = this.xrRay(ctl);
+    if (!h) return;
+    const id = h.object.userData.itemId;
+    if (id) { this.showVrCard(id, h.point); this.highlight(this.plan.items.find((x) => x.id === id)); return; }
+    if (this.vrCard) { this.scene.remove(this.vrCard); this.vrCard = null; this.highlight(null); }
+    if (h.object.userData.floor && !this.collides(h.point.x, h.point.z)) {
+      const head = this.headWorld();
+      this.rig.position.x += h.point.x - head.x;
+      this.rig.position.z += h.point.z - head.z;
+    }
+  }
+  showVrCard(id, at) {
+    const info = this.opts.describe ? this.opts.describe(id) : null;
+    if (!info) return;
+    if (this.vrCard) this.scene.remove(this.vrCard);
+    const W = 1024, lines = info.lines.slice(0, 6);
+    const H = 150 + lines.length * 62;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.fillStyle = 'rgba(17,20,22,0.92)';
+    x.beginPath(); x.roundRect ? x.roundRect(0, 0, W, H, 28) : x.rect(0, 0, W, H); x.fill();
+    x.direction = 'rtl'; x.textAlign = 'right'; x.textBaseline = 'top';
+    x.fillStyle = '#86c0ad'; x.font = '500 34px "IBM Plex Mono", monospace';
+    x.fillText(info.eyebrow || '', W - 48, 36);
+    x.fillStyle = '#ffffff'; x.font = '600 56px "IBM Plex Sans Hebrew", Arial, sans-serif';
+    x.fillText(info.title, W - 48, 78);
+    x.font = '400 40px "IBM Plex Sans Hebrew", Arial, sans-serif'; x.fillStyle = '#dfe3e0';
+    lines.forEach((l, i) => x.fillText(l, W - 48, 160 + i * 62));
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const w = 0.9, card = new THREE.Mesh(new THREE.PlaneGeometry(w, w * H / W), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, toneMapped: false }));
+    card.renderOrder = 10;
+    const head = this.headWorld();
+    const dir = at.clone().sub(head).setY(0).normalize();
+    card.position.copy(at).sub(dir.multiplyScalar(0.35)).setY(Math.max(1.1, Math.min(1.7, at.y + 0.5)));
+    card.lookAt(head);
+    this.scene.add(card);
+    this.vrCard = card;
+  }
+
+  /* ---------- phone: look around by moving the phone; optional side-by-side for cardboard viewers ---------- */
+  async startGyro(stereo) {
+    const D = window.DeviceOrientationEvent;
+    if (!D) throw new Error('no-orientation');
+    if (typeof D.requestPermission === 'function') {
+      const p = await D.requestPermission();
+      if (p !== 'granted') throw new Error('denied');
+    }
+    if (this.mode !== 'walk') this.setMode('walk');
+    this.gyro = { stereo: !!stereo, o: null, offset: null };
+    this.onOrient = (e) => { if (e.alpha != null && this.gyro) this.gyro.o = { a: e.alpha, b: e.beta, g: e.gamma }; };
+    window.addEventListener('deviceorientation', this.onOrient);
+    if (stereo) { this.stereo = new THREE.StereoCamera(); this.stereo.aspect = 0.5; this.stereo.eyeSep = 0.064; }
+    this.el.classList.add('is-gyro');
+    this.el.classList.toggle('is-stereo', !!stereo);
+    try { if (this.el.requestFullscreen) await this.el.requestFullscreen({ navigationUI: 'hide' }); else if (this.el.webkitRequestFullscreen) this.el.webkitRequestFullscreen(); } catch (e) { /* stays inline */ }
+    try { if (stereo && screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch (e) { /* not allowed */ }
+    this.resize();
+  }
+  stopGyro() {
+    if (!this.gyro) return;
+    window.removeEventListener('deviceorientation', this.onOrient);
+    this.gyro = null;
+    this.hold.fwd = false;
+    this.el.classList.remove('is-gyro', 'is-stereo');
+    try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) { /* ignore */ }
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* ignore */ }
+    this.resize();
+  }
+  gyroStep(dt) {
+    const g = this.gyro;
+    const cam = this.camera;
+    if (g.o) {
+      const deg = THREE.MathUtils.degToRad;
+      const orient = deg((screen.orientation && screen.orientation.angle) || window.orientation || 0);
+      const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(deg(g.o.b), deg(g.o.a), -deg(g.o.g), 'YXZ'));
+      q.multiply(new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)));
+      q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -orient));
+      const f = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+      const devYaw = Math.atan2(-f.x, -f.z);
+      if (g.offset === null) g.offset = this.yaw - devYaw;
+      cam.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), g.offset)).multiply(q);
+      this.yaw = devYaw + g.offset;
+    }
+    const k = this.keys;
+    let fw = 0;
+    if (this.hold.fwd || k.w || k.arrowup) fw += 1;
+    if (this.hold.back || k.s || k.arrowdown) fw -= 1;
+    if (fw) this.move(-Math.sin(this.yaw) * fw * 1.4 * dt, -Math.cos(this.yaw) * fw * 1.4 * dt);
+    cam.position.copy(this.pos);
+    if (!g.o) cam.lookAt(this.pos.clone().add(new THREE.Vector3(-Math.sin(this.yaw), this.pitch, -Math.cos(this.yaw))));
+    if (this.opts.onMove) this.opts.onMove(this.pos.x, this.pos.z, this.yaw);
+  }
+  renderStereo() {
+    const r = this.renderer, size = r.getSize(new THREE.Vector2());
+    this.camera.updateMatrixWorld();
+    this.stereo.update(this.camera);
+    r.setScissorTest(true);
+    r.setScissor(0, 0, size.x / 2, size.y); r.setViewport(0, 0, size.x / 2, size.y);
+    r.render(this.scene, this.stereo.cameraL);
+    r.setScissor(size.x / 2, 0, size.x / 2, size.y); r.setViewport(size.x / 2, 0, size.x / 2, size.y);
+    r.render(this.scene, this.stereo.cameraR);
+    r.setScissorTest(false);
+    r.setViewport(0, 0, size.x, size.y);
   }
 
   setQuality(on) { this.quality = !!on && !!this.composer; }
@@ -1861,6 +2078,7 @@ export class Tour {
 
   dispose() {
     this.running = false;
+    this.renderer.setAnimationLoop(null);
     this.ro.disconnect();
     this.renderer.dispose();
   }

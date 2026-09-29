@@ -177,7 +177,19 @@
                   צילום מציאותי
                 </button>
                 <button type="button" class="tour-btn" id="btn-quality" aria-pressed="true" title="צללים רכים בפינות ובמגע בין משטחים">איכות גבוהה</button>
+                <button type="button" class="tour-btn tour-btn-vr" id="btn-vr" aria-haspopup="true" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h13A2.5 2.5 0 0 1 21 8.5v6a2.5 2.5 0 0 1-2.5 2.5h-3.2l-2.1-2.6a1.5 1.5 0 0 0-2.4 0L8.7 17H5.5A2.5 2.5 0 0 1 3 14.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="8" cy="11.5" r="1.6" fill="currentColor"/><circle cx="16" cy="11.5" r="1.6" fill="currentColor"/></svg>
+                  מציאות מדומה
+                </button>
               </div>
+              <div class="vr-menu" id="vr-menu" hidden>
+                <p class="vr-menu-title">איך רוצים לראות את הבית?</p>
+                <button type="button" data-vr="headset"><b>משקפי VR</b><span id="vr-headset-note">Meta Quest, Pico, Apple Vision Pro: נכנסים לבית בגודל אמיתי. ג׳ויסטיק שמאלי הולך, ימני מסתובב, הדק על הרצפה קופץ לשם ועל רהיט פותח את הכרטיס שלו.</span></button>
+                <button type="button" data-vr="gyro"><b>טלפון: מסתכלים סביב עם הטלפון</b><span>מסך מלא. מזיזים את הטלפון כדי להסתכל, ולחיצה ארוכה על המסך הולכת קדימה.</span></button>
+                <button type="button" data-vr="stereo"><b>טלפון במשקפי קרטון</b><span>תצוגה כפולה לשתי העיניים, לטלפון בתוך משקפי VR פשוטות (Cardboard). לחיצה על המסך הולכת קדימה.</span></button>
+                <button type="button" data-vr="full"><b>מסך מלא</b><span>הסיור על כל המסך, עם עכבר, מקלדת או מגע.</span></button>
+              </div>
+              <button type="button" class="vr-exit" id="vr-exit" hidden>יציאה</button>
               <div class="pt-panel" id="pt-panel" hidden role="status" aria-live="polite">
                 <div class="pt-meter"><span id="pt-bar"></span></div>
                 <p id="pt-text">מכין את הסצנה…</p>
