@@ -738,3 +738,4 @@ body.tour-full { overflow: hidden; }
 }
 .tour.is-look .tour-canvas { cursor: pointer; }
 .tour-fallback .btn { margin-inline-start: 8px; }
+.err-bar { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-weight: 600; }

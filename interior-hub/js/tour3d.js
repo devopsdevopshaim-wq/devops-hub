@@ -317,7 +317,7 @@ export class Tour {
       this.gtao.blendIntensity = 0.9;
       this.composer.addPass(this.gtao);
       this.composer.addPass(new OutputPass());
-    } catch (e) { this.composer = null; }
+    } catch (e) { this.composer = null; this.quality = false; }
 
     this.loadEnvironment();
     this.loadModels();
@@ -1820,10 +1820,17 @@ export class Tour {
       this.waterTex.offset.set(t * 0.02, t * 0.013);
       if (this.fallTex) this.fallTex.offset.y = -t * 0.8;
     }
-    if (this.pt) this.ptStep();
-    else if (this.gyro && this.gyro.stereo) this.renderStereo();
-    else if (this.composer && this.quality) this.composer.render(dt);
-    else this.renderer.render(this.scene, this.camera);
+    try {
+      if (this.pt) this.ptStep();
+      else if (this.gyro && this.gyro.stereo) this.renderStereo();
+      else if (this.composer && this.quality) this.composer.render(dt);
+      else this.renderer.render(this.scene, this.camera);
+    } catch (err) {
+      // an effect this graphics card can't run: drop to the plain renderer and keep going
+      if (this.pt) { this.stopPhoto(); if (this.opts.onPhotoFail) this.opts.onPhotoFail(err); }
+      else if (this.quality) { this.quality = false; this.composer = null; if (this.opts.onQualityOff) this.opts.onQualityOff(); }
+      else if (!this.reported) { this.reported = true; if (this.opts.onError) this.opts.onError(err); }
+    }
   }
 
   /* ---------- phone: look around by moving the phone; optional side-by-side for cardboard viewers ---------- */

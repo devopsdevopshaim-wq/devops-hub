@@ -127,16 +127,32 @@
     }
     plan = p;
     selected = null;
-    renderHead();
-    renderPlan();
-    renderTour();
-    renderNotes();
-    renderRenders();
-    renderGarden();
-    renderRooms();
-    renderBudget();
-    renderItemCard();
+    // each part draws on its own: a failure in one (say, the 3D view) never blanks the rest
+    [renderHead, renderPlan, renderTour, renderNotes, renderRenders, renderGarden, renderRooms, renderBudget, renderItemCard].forEach((fn) => {
+      try { fn(); } catch (err) { reportError(fn.name, err); }
+    });
     window.dispatchEvent(new Event('ih-plan'));
+  }
+
+  // a visible note instead of a silent blank area, with the technical reason for support
+  function reportError(where, err) {
+    if (window.console) console.error(where, err);
+    if (where === 'renderTour') { tourFailed(err); return; }
+    let bar = $('#err-bar');
+    if (!bar) {
+      bar = document.createElement('p');
+      bar.id = 'err-bar';
+      bar.className = 'err-bar';
+      $('#main').prepend(bar);
+    }
+    bar.textContent = `חלק מהעמוד לא נטען (${where}: ${err && err.message ? err.message : err}). רעננו את העמוד; אם זה חוזר, צלמו את השורה הזו ושלחו.`;
+  }
+  function tourFailed(err) {
+    const fb = $('#tour-fallback');
+    fb.innerHTML = `הדפדפן לא פתח את התלת-ממד${err && err.message ? ` (${esc(err.message)})` : ''}. בדרך כלל זה נפתר כשסוגרים את כל חלונות הדפדפן ופותחים מחדש, או כשמפעילים ״האצת חומרה״ בהגדרות הדפדפן. התוכנית הדו-ממדית וכל הרשימות זמינות. <button type="button" class="btn btn-small" onclick="location.reload()">טעינה מחדש</button>`;
+    fb.hidden = false;
+    const t2 = $('#tab-2d');
+    if (t2 && t2.getAttribute('aria-selected') !== 'true') t2.click();
   }
 
   function roomsLabel() {
@@ -172,16 +188,12 @@
 
   function renderTour() {
     const host = $('#tour');
-    if (!hasWebGL()) {
-      $('#tour-fallback').hidden = false;
-      $('#tab-2d').click();
-      return;
-    }
+    if (!hasWebGL()) { tourFailed(null); return; }
     if (!IH.Tour) {
       // the 3D module loads after this script; build the tour as soon as it arrives
       if (!waitingTour) {
         waitingTour = true;
-        window.addEventListener('ih-tour-ready', () => renderTour(), { once: true });
+        window.addEventListener('ih-tour-ready', () => { try { renderTour(); } catch (err) { tourFailed(err); } }, { once: true });
         setTimeout(() => {
           if (IH.Tour) return;
           $('#tour-fallback').textContent = 'הסיור התלת-ממדי לא נטען. פתחו את האתר מכתובת אינטרנט (GitHub Pages או שרת מקומי) ולא מקובץ במחשב. התוכנית וכל הרשימות זמינות למטה.';
@@ -190,7 +202,9 @@
       }
       return;
     }
+    if (!tour && tourBroken) return;
     if (!tour) {
+      tourBroken = true;
       const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a8662b';
       tour = new IH.Tour(host, {
         accent,
@@ -228,6 +242,9 @@
           h.hidden = false;
           h.textContent = on ? 'העכבר מסתכל · חיצים או WASD הולכים · לחיצה על רהיט מציגה מחיר · Esc משחרר את העכבר, ו-Esc נוסף יוצא' : 'לחצו על המסך כדי להסתכל עם העכבר · Esc או ״יציאה״ חוזרים לעמוד';
         },
+        onQualityOff: () => { const qb = $('#btn-quality'); qb.setAttribute('aria-pressed', 'false'); qb.textContent = 'איכות רגילה'; },
+        onPhotoFail: () => { $('#pt-text').textContent = 'כרטיס המסך לא הצליח לחשב צילום מציאותי. הסיור הרגיל ממשיך לעבוד.'; $('#pt-save').disabled = true; },
+        onError: (err) => tourFailed(err),
         onLost: (lost) => {
           const fb = $('#tour-fallback');
           if (!lost) { fb.hidden = true; return; }
@@ -236,6 +253,7 @@
         }
       });
       host.appendChild($('#tour-tip'));
+      tourBroken = false;
     }
     if (tour.pt) stopPhoto();
     tour.load(plan);
@@ -257,6 +275,7 @@
   }
   let miniMe = null;
   let waitingTour = false;
+  let tourBroken = false;
   function updateMini(x, z, yaw) {
     if (!miniMe) return;
     miniMe.setAttribute('transform', `translate(${x.toFixed(2)} ${z.toFixed(2)}) rotate(${(-yaw * 180 / Math.PI).toFixed(1)})`);
