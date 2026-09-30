@@ -161,6 +161,31 @@ async function design(req, res) {
   await runWithChecks(res, messages, { system: FixPrompts.DESIGN_SYSTEM, schema: FixPrompts.DESIGN_SCHEMA, parse: FixPrompts.parseDesign });
 }
 
+// בדיקת תכנית חשמל לבית: אין כאן סכימה לבדוק, לכן סבב אחד בלבד.
+async function home(req, res) {
+  if (!guard(req, res)) return;
+  let messages;
+  try {
+    const body = JSON.parse(await readBody(req));
+    if (!body.plan || !Array.isArray(body.plan.rooms) || !body.plan.rooms.length) throw new Error('אין חדרים בתכנית');
+    messages = FixPrompts.homeMessages(body.request, body.plan);
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message || 'בקשה לא תקינה' });
+  }
+  res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' });
+  const write = (obj) => { if (!res.writableEnded) res.write(JSON.stringify(obj) + '\n'); };
+  const ctl = new AbortController();
+  res.on('close', () => { if (!res.writableFinished) ctl.abort(); });
+  try {
+    write({ phase: 'analyze' });
+    const out = await ask(messages, (p) => write(p), ctl.signal, { system: FixPrompts.HOME_SYSTEM, schema: FixPrompts.HOME_SCHEMA, parse: FixPrompts.parseHome });
+    write({ phase: 'done', result: out.result, model: out.model, usage: out.usage });
+  } catch (err) {
+    if (!ctl.signal.aborted) write({ error: hebrewError(err) });
+  }
+  res.end();
+}
+
 async function serveStatic(req, res) {
   const url = new URL(req.url, 'http://localhost');
   let rel = decodeURIComponent(url.pathname);
@@ -185,6 +210,7 @@ http.createServer(async (req, res) => {
     }
     if (req.url === '/api/diagnose' && req.method === 'POST') return await diagnose(req, res);
     if (req.url === '/api/design' && req.method === 'POST') return await design(req, res);
+    if (req.url === '/api/home' && req.method === 'POST') return await home(req, res);
     if (req.method === 'GET' || req.method === 'HEAD') return await serveStatic(req, res);
     res.writeHead(405); res.end();
   } catch (err) {

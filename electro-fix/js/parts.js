@@ -154,9 +154,9 @@
     {
       id: 'ne555', name: 'מהבהב עם טיימר 555', desc: 'NE555 במצב אסטבילי מהבהב נורית בכ-0.7Hz מסוללה 9V.',
       build: function () {
-        return sch('מהבהב NE555', ['f ≈ 1.44 / ((R1 + 2·R2) · C1) = 1.44 / (21kΩ · 10µF) ≈ 0.7Hz.'], [
+        return sch('מהבהב NE555', ['f ≈ 1.44 / ((R1 + 2·R2) · C1) = 1.44 / (21kΩ · 100µF) ≈ 0.69Hz; מחזור עבודה ≈ 52%.'], [
           make('battery', 'BT1', 0, 0), make('ic555', 'U1', 2, 0), make('resistor', 'R1', 1, 0, { value: '1kΩ' }), make('resistor', 'R2', 1, 1, { value: '10kΩ' }),
-          make('ecap', 'C1', 1, 2, { value: '10µF 16V' }), make('capacitor', 'C2', 3, 1, { value: '10nF' }), make('capacitor', 'C3', 0, 1),
+          make('ecap', 'C1', 1, 2, { value: '100µF 16V' }), make('capacitor', 'C2', 3, 1, { value: '10nF' }), make('capacitor', 'C3', 0, 1),
           make('resistor', 'R3', 3, 0, { value: '470Ω' }), make('led', 'D1', 4, 0)
         ], [
           ['BT1.+', 'U1.VCC', R], ['BT1.+', 'U1.RST', R], ['U1.GND', 'BT1.-', B], ['C3.1', 'BT1.+', R], ['C3.2', 'BT1.-', B],

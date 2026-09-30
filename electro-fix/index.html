@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>מעגל סגור — אבחון תקלות חשמל ואלקטרוניקה</title>
 <meta name="description" content="מרכז אבחון ותיקון תקלות לארונות חשמל תעשייתיים, חשמל ביתי, בתים חכמים ואלקטרוניקה ברמת הכרטיס. מתארים את התקלה, מצרפים תמונות, ו-Claude מאבחן, מוביל בבדיקות מדידה, בודק את הפתרון ומשרטט סכימת חיווט תקינה.">
-<meta name="theme-color" content="#14213d">
+<meta name="theme-color" content="#0c1424">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314213d'/%3E%3Cpath d='M9 16a7 7 0 1 0 14 0a7 7 0 1 0 -14 0' fill='none' stroke='%23ffb703' stroke-width='2.4'/%3E%3Cpath d='M17.5 9.5l-3 6h4l-3 6' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@300;400;500;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -24,6 +24,7 @@
     <nav class="mainnav" aria-label="ניווט ראשי">
       <a href="#diagnose" data-view="diagnose">אבחון תקלה</a>
       <a href="#design" data-view="design">תכנון כרטיס</a>
+      <a href="#home" data-view="home">חשמל לבית</a>
       <a href="#cases" data-view="cases">התיקים שלי <span class="count" id="caseCount"></span></a>
       <a href="#tools" data-view="tools">מחשבונים</a>
       <a href="#guide" data-view="guide">מקרא ובטיחות</a>
@@ -218,6 +219,10 @@
           <div class="card canvas-card">
             <div class="canvas-tools">
               <p class="hint" id="dHint">לחצו על פין ואז על פין אחר כדי לחבר חוט. גררו רכיב כדי להזיז אותו.</p>
+              <button class="btn ghost small probe-btn" type="button" id="dProbe" aria-pressed="false">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14 3l7 7-9 9H5v-7zM3 21l4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+                מדידה וירטואלית
+              </button>
               <label class="wire-pick">צבע חוט
                 <select id="dWireColor"></select>
               </label>
@@ -229,6 +234,7 @@
             </div>
             <div class="sch-canvas design-canvas" id="dCanvas" tabindex="0" aria-label="עורך המעגל"></div>
           </div>
+          <section class="card kits-card" id="dKits" aria-labelledby="kitsTitle"></section>
           <div id="dAiPanel"></div>
         </div>
 
@@ -252,6 +258,61 @@
           </section>
         </aside>
       </div>
+    </div>
+  </section>
+
+
+  <!-- ===== תכנון חשמל לבית ===== -->
+  <section class="view" id="view-home" data-view="home" hidden>
+    <div class="wrap wide home">
+      <div class="home-hero">
+        <div>
+          <p class="eyebrow">תכנון חשמל לבית · לוח חשמל · בית חכם</p>
+          <h1>מהחדרים — עד לוח החשמל.</h1>
+          <p class="lede">מגדירים חדרים, שקעים, תאורה ומכשירים. המערכת מחלקת למעגלים, מאזנת פאזות, מחשבת עומס, ומשרטטת את לוח החשמל הדירתי עם מרשם מעגלים מוכן להדבקה על הדלת. מעל זה אפשר להוסיף שכבת בית חכם.</p>
+        </div>
+        <div class="presets">
+          <span class="presets-label">התחלה מהירה</span>
+          <div class="preset-grid" id="hPresets"></div>
+        </div>
+      </div>
+
+      <div class="home-bar card">
+        <label class="hb-name"><span class="sr">שם התכנית</span><input id="hName" placeholder="שם התכנית" autocomplete="off"></label>
+        <label>חיבור חשמל<select id="hSupply"></select></label>
+        <label>בית חכם<select id="hTech"></select></label>
+        <label class="check small"><input type="checkbox" id="hSpd"> <span>מגן ברק</span></label>
+        <label class="check small"><input type="checkbox" id="hShabbat"> <span>מצב שבת</span></label>
+        <span class="spacer"></span>
+        <select id="hOpen" aria-label="התכניות שלי"></select>
+        <button class="btn ghost small" type="button" id="hPrint">הדפסת התכנית</button>
+        <button class="btn primary small" type="button" id="hAiBtn">בדיקה של Claude</button>
+      </div>
+
+      <div class="home-grid">
+        <aside class="home-rooms">
+          <div class="rooms-head">
+            <h2>חדרים <span class="muted" id="hRoomCount"></span></h2>
+            <div class="add-room">
+              <select id="hAddType" aria-label="סוג חדר"></select>
+              <button class="btn ghost small" type="button" id="hAddRoom">+ חדר</button>
+            </div>
+          </div>
+          <div id="hRooms" class="rooms-list"></div>
+        </aside>
+        <div class="home-main">
+          <div class="kpis" id="hKpis"></div>
+          <div class="seg" role="tablist" aria-label="תצוגות">
+            <button type="button" role="tab" data-htab="points" aria-selected="true">תכנית נקודות</button>
+            <button type="button" role="tab" data-htab="panel" aria-selected="false">לוח החשמל</button>
+            <button type="button" role="tab" data-htab="schedule" aria-selected="false">מרשם מעגלים</button>
+            <button type="button" role="tab" data-htab="smart" aria-selected="false">בית חכם</button>
+          </div>
+          <div id="hTab" class="htab"></div>
+          <div id="hAi"></div>
+        </div>
+      </div>
+      <p class="disclaimer">התכנית היא הצעה ראשונית לפי נוהג מקובל. תכנון מחייב, בחירת רכיבים וביצוע — על ידי חשמלאי בעל רישיון מתאים, לפי חוק החשמל ותקנותיו ובאישור חברת החשמל.</p>
     </div>
   </section>
 
@@ -370,6 +431,27 @@
   </form>
 </dialog>
 
+
+<!-- בדיקת תכנית בית -->
+<dialog class="modal" id="hAiDlg" aria-labelledby="hAiTitle">
+  <form method="dialog" class="modal-body">
+    <h2 id="hAiTitle">בדיקה של Claude לתכנית</h2>
+    <p>Claude יעבור על החדרים, המעגלים, הלוח ושכבת הבית החכם, ויחזיר המלצות ואזהרות.</p>
+    <textarea id="hAiReq" rows="3" dir="auto" placeholder="שאלות או דגשים (לא חובה). למשל: אני רוצה להוסיף משאבת חום ובריכה בעתיד."></textarea>
+    <div class="manual" id="hAiManual" hidden>
+      <p>אין חיבור ישיר ל-Claude. מעתיקים את ההנחיה ל-<a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a> ומדביקים כאן את התשובה (JSON).</p>
+      <div class="manual-step"><b>1</b><button class="btn ghost small" type="button" id="hAiCopy">העתקת ההנחיה</button></div>
+      <div class="manual-step"><b>2</b><span>מדביקים את התשובה:</span></div>
+      <textarea id="hAiPaste" rows="6" dir="ltr"></textarea>
+    </div>
+    <p class="error" id="hAiError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn primary" type="button" id="hAiSend">שליחה</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- מצב העתק-הדבק -->
 <dialog class="modal" id="manualDlg" aria-labelledby="manualTitle">
   <form method="dialog" class="modal-body">
@@ -404,9 +486,12 @@
 <script src="js/prompts.js"></script>
 <script src="js/netlist.js"></script>
 <script src="js/parts.js"></script>
+<script src="js/testkit.js"></script>
+<script src="js/homeplan.js"></script>
 <script src="js/store.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/app.js"></script>
 <script src="js/design.js"></script>
+<script src="js/home.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var N = window.Netlist, P = window.FixParts, FP = window.FixPrompts, Store = window.DesignStore, A = window.FixApp;
+  var TK = window.TestKit, N = window.Netlist, P = window.FixParts, FP = window.FixPrompts, Store = window.DesignStore, A = window.FixApp;
   var esc = A.esc;
 
   var TYPE_HE = {
@@ -21,7 +21,7 @@
     'מגבר שמע קטן עם LM386 מסוללה 9V'
   ];
 
-  var st = { d: null, sel: {}, pin: null, undo: [], zoom: null, mounted: false, busy: null, check: null, ai: null, aiMode: 'create', timer: null };
+  var st = { d: null, sel: {}, pin: null, probe: false, kit: 'unpowered', kitData: null, undo: [], zoom: null, mounted: false, busy: null, check: null, ai: null, aiMode: 'create', timer: null };
 
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
@@ -130,10 +130,14 @@
       host.innerHTML = '<div class="sch-inner">' + N.render(s, { issues: st.check.issues, interactive: true, selected: { comp: st.sel.comp, wire: st.sel.wire, pin: st.pin } }) + '</div>';
       applyZoom();
     }
-    $('#dHint').textContent = st.pin
-      ? 'נבחר הפין ' + st.pin + '. לחצו על פין נוסף כדי לחבר חוט (Esc לביטול).'
-      : 'לחצו על פין ואז על פין אחר כדי לחבר חוט. גררו רכיב כדי להזיז אותו. Delete מוחק את הנבחר.';
+    if (!st.probeText) $('#dHint').textContent = st.probe
+      ? 'מדידה וירטואלית: לחצו על פין כדי לראות את המתח הצפוי שלו ביחס ל-GND (הכרטיס מוזן, במצב מנוחה).'
+      : st.pin
+        ? 'נבחר הפין ' + st.pin + '. לחצו על פין נוסף כדי לחבר חוט (Esc לביטול).'
+        : 'לחצו על פין ואז על פין אחר כדי לחבר חוט. גררו רכיב כדי להזיז אותו. Delete מוחק את הנבחר.';
+    st.probeText = null;
     inspector();
+    renderKits();
     checks();
     bom();
   }
@@ -228,6 +232,7 @@
   }
 
   function pinClick(key) {
+    if (st.probe) return probeAt(key);
     if (!st.pin) { st.pin = key; st.sel = {}; refresh(); return; }
     if (st.pin === key) { st.pin = null; refresh(); return; }
     var a = st.pin, b = key;
@@ -239,6 +244,106 @@
       s.wires.push({ from: a, to: b, color: color, section: '', label: nextLabel() });
       st.sel = { wire: s.wires.length - 1 };
     });
+  }
+
+  function probeAt(key) {
+    var S = (st.kitData || TK.kits(sch())).solution, v = S.voltAt(key);
+    st.pin = key;
+    st.probeText = true;
+    var r = S.resistors.filter(function (x) { return x.c.terminals.some(function (t) { return x.c.id + '.' + t.id === key; }); })[0];
+    var d = S.diodes.filter(function (x) { return x.c.terminals.some(function (t) { return x.c.id + '.' + t.id === key; }); })[0];
+    var extra = r && r.i != null ? ' · זרם דרך ' + r.id + ': ' + TK.fmt(Math.abs(r.i), 'A') + ', הספק ' + TK.fmt(r.p, 'W')
+      : d ? (d.on ? ' · זרם ב-' + d.id + ': ' + TK.fmt(d.i, 'A') : ' · ' + d.id + ' לא מוליך') : '';
+    $('#dHint').innerHTML = '<b class="mono" dir="ltr">' + esc(key) + '</b> · מתח צפוי: <b class="probe-v" dir="ltr">' + (v == null ? 'לא מוגדר (צומת צף או מאחורי רכיב פעיל)' : TK.fmt(v, 'V', 3)) + '</b>' + esc(extra);
+    refresh();
+  }
+
+  /* ---------- ערכות מדידה ---------- */
+
+  var KIT_ICONS = {
+    eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    ohm: '<path d="M5 19h4v-2a7 7 0 1 1 6 0v2h4"/>',
+    bolt: '<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',
+    wave: '<path d="M2 12h3l2-6 4 12 4-12 2 6h5"/>',
+    shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'
+  };
+
+  function renderKits() {
+    var host = $('#dKits');
+    if (!host) return;
+    if (!sch().components.length) { host.innerHTML = ''; host.hidden = true; return; }
+    host.hidden = false;
+    st.kitData = TK.kits(sch());
+    var res = st.d.tests = st.d.tests || {};
+    var kits = st.kitData.kits;
+    var kit = kits.filter(function (k) { return k.id === st.kit; })[0] || kits[0];
+    function stats(k) {
+      var p = 0, f = 0;
+      k.steps.forEach(function (s) { var e = TK.evaluate(s, res[s.key]); if (e === 'pass') p++; if (e === 'fail') f++; });
+      return { p: p, f: f, n: k.steps.length };
+    }
+    var all = kits.reduce(function (a, k) { var x = stats(k); a.p += x.p; a.f += x.f; a.n += x.n; return a; }, { p: 0, f: 0, n: 0 });
+    host.innerHTML = '<div class="kits-head"><div><h3 id="kitsTitle">ערכות מדידה לכרטיס</h3>' +
+      '<p class="muted small">נבנות אוטומטית מהמעגל. הערכים הצפויים מחושבים בפותר DC. רושמים מה נמדד, והאתר מסמן תקין או חריג.</p></div>' +
+      '<div class="kits-total"><span class="ring" style="--p:' + (all.n ? Math.round(all.p / all.n * 100) : 0) + '"><b>' + all.p + '/' + all.n + '</b></span>' +
+      (all.f ? '<span class="chk bad">' + all.f + ' חריגים</span>' : '') +
+      '<button class="btn ghost small" type="button" data-kact="print">הדפסת דו״ח בדיקה</button><button class="btn ghost small" type="button" data-kact="reset">איפוס</button></div></div>' +
+      '<div class="kit-tabs" role="tablist">' + kits.map(function (k) {
+        var x = stats(k);
+        return '<button type="button" role="tab" class="kit-tab' + (k === kit ? ' on' : '') + (x.f ? ' has-fail' : x.p === x.n ? ' done' : '') + '" aria-selected="' + (k === kit) + '" data-kit="' + k.id + '">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + KIT_ICONS[k.icon] + '</svg>' +
+          '<span>' + esc(k.name) + '</span><small>' + x.p + '/' + x.n + '</small></button>';
+      }).join('') + '</div>' +
+      '<p class="kit-desc">' + esc(kit.desc) + '</p>' +
+      '<div class="table-wrap"><table class="table kit-table"><thead><tr><th>#</th><th>בדיקה</th><th>איפה מודדים</th><th>מכשיר</th><th>ערך צפוי</th><th>נמדד</th><th></th></tr></thead><tbody>' +
+      kit.steps.map(function (s, i) {
+        var v = res[s.key], e = TK.evaluate(s, v);
+        var input = s.expect.check
+          ? '<div class="okfail"><button type="button" data-ok="ok" class="' + (v === 'ok' ? 'on' : '') + '" aria-label="תקין">✓</button><button type="button" data-ok="fail" class="' + (v === 'fail' ? 'on bad' : '') + '" aria-label="לא תקין">✕</button></div>'
+          : '<input class="meas" dir="ltr" value="' + esc(v || '') + '" placeholder="' + esc(s.expect.unit || '') + '" aria-label="ערך שנמדד בבדיקה ' + (i + 1) + '">';
+        return '<tr data-k="' + esc(s.key) + '" class="' + (e || '') + '"><td class="n">' + (i + 1) + '</td><td><b>' + esc(s.title) + '</b>' + (s.note && (e === 'fail' || !v) ? '<small>' + esc(s.note) + '</small>' : '') + '</td>' +
+          '<td class="where" dir="auto">' + esc(s.where) + '</td><td>' + esc(s.instrument) + '</td><td class="mono" dir="auto">' + esc(s.expect.text) + '</td><td>' + input + '</td>' +
+          '<td class="res">' + (e === 'pass' ? '<span class="chk good">תקין</span>' : e === 'fail' ? '<span class="chk bad">חריג</span>' : '') + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+
+    $$('[data-kit]', host).forEach(function (b) { b.addEventListener('click', function () { st.kit = b.dataset.kit; renderKits(); }); });
+    function setVal(key, val) {
+      if (val) res[key] = val; else delete res[key];
+      scheduleSave();
+      renderKits();
+    }
+    $$('.meas', host).forEach(function (inp) {
+      inp.addEventListener('change', function () { setVal(inp.closest('tr').dataset.k, inp.value.trim()); });
+    });
+    $$('[data-ok]', host).forEach(function (b) {
+      b.addEventListener('click', function () { var k = b.closest('tr').dataset.k; setVal(k, res[k] === b.dataset.ok ? '' : b.dataset.ok); });
+    });
+    $('[data-kact="reset"]', host).addEventListener('click', function () {
+      if (!confirm('למחוק את כל הערכים שנמדדו בעיצוב הזה?')) return;
+      st.d.tests = {};
+      scheduleSave();
+      renderKits();
+    });
+    $('[data-kact="print"]', host).addEventListener('click', printReport);
+  }
+
+  function printReport() {
+    var res = st.d.tests || {}, kits = st.kitData.kits;
+    var w = window.open('', '_blank');
+    if (!w) return A.toast('הדפדפן חסם חלון חדש', true);
+    var svg = N.render(sch());
+    w.document.write('<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>דו״ח בדיקה — ' + esc(st.d.name) + '</title>' +
+      '<style>body{font:13px/1.5 Heebo,Arial,sans-serif;color:#111;margin:24px}h1{font-size:22px;margin:0}h2{font-size:16px;margin:22px 0 6px;border-bottom:2px solid #c9a45c;padding-bottom:4px}' +
+      'table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px 7px;text-align:start;vertical-align:top}th{background:#f3efe6}.pass{color:#1b7a36;font-weight:700}.fail{color:#b3261e;font-weight:700}' +
+      '.sch{direction:ltr;border:1px solid #ddd;margin:12px 0}.sch svg{width:100%;height:auto}.meta{color:#666}@page{size:A4;margin:12mm}</style></head><body>' +
+      '<h1>דו״ח בדיקת כרטיס: ' + esc(st.d.name) + '</h1><p class="meta">' + esc(new Date().toLocaleString('he-IL')) + ' · מעגל סגור</p><div class="sch">' + svg + '</div>' +
+      kits.map(function (k) {
+        return '<h2>' + esc(k.name) + '</h2><table><tr><th>#</th><th>בדיקה</th><th>איפה</th><th>צפוי</th><th>נמדד</th><th>תוצאה</th></tr>' + k.steps.map(function (s, i) {
+          var v = res[s.key], e = TK.evaluate(s, v);
+          return '<tr><td>' + (i + 1) + '</td><td>' + esc(s.title) + '</td><td>' + esc(s.where) + '</td><td>' + esc(s.expect.text) + '</td><td dir="ltr">' + esc(v === 'ok' ? '✓' : v === 'fail' ? '✕' : v || '') + '</td><td class="' + (e || '') + '">' + (e === 'pass' ? 'תקין' : e === 'fail' ? 'חריג' : '—') + '</td></tr>';
+        }).join('') + '</table>';
+      }).join('') + '<script>setTimeout(function(){print()},300)<\/script></body></html>');
+    w.document.close();
   }
 
   function nextLabel() {
@@ -652,6 +757,13 @@
     $('#dWireColor').innerHTML = '<option value="auto">אוטומטי</option>' + P.WIRE_COLORS.map(function (c) { return '<option>' + c + '</option>'; }).join('');
     bindCanvas();
     $('#dUndo').addEventListener('click', undo);
+    $('#dProbe').addEventListener('click', function () {
+      st.probe = !st.probe;
+      this.setAttribute('aria-pressed', String(st.probe));
+      this.classList.toggle('on', st.probe);
+      st.pin = null;
+      refresh();
+    });
     $('#dTemplates').addEventListener('click', function () { $('#tplDlg').showModal(); });
     $('#dOpen').addEventListener('change', function () {
       var id = this.value;

@@ -1,18 +1,18 @@
-/* שמירה ב-IndexedDB: תיקי תקלה (cases) ועיצובי כרטיסים (designs), כולל התמונות.
+/* שמירה ב-IndexedDB: תיקי תקלה (cases), עיצובי כרטיסים (designs) ותכניות חשמל לבית (homes).
    אם אין IndexedDB — בזיכרון בלבד. */
 (function () {
   'use strict';
-  var memory = { cases: new Map(), designs: new Map() };
+  var memory = { cases: new Map(), designs: new Map(), homes: new Map() };
   var dbPromise = null;
 
   function open() {
     if (dbPromise) return dbPromise;
     dbPromise = new Promise(function (resolve) {
       var req;
-      try { req = indexedDB.open('electro-fix', 2); } catch (e) { resolve(null); return; }
+      try { req = indexedDB.open('electro-fix', 3); } catch (e) { resolve(null); return; }
       req.onupgradeneeded = function () {
         var db = req.result;
-        ['cases', 'designs'].forEach(function (n) { if (!db.objectStoreNames.contains(n)) db.createObjectStore(n, { keyPath: 'id' }); });
+        ['cases', 'designs', 'homes'].forEach(function (n) { if (!db.objectStoreNames.contains(n)) db.createObjectStore(n, { keyPath: 'id' }); });
       };
       req.onsuccess = function () { resolve(req.result); };
       req.onerror = function () { resolve(null); };
@@ -50,4 +50,5 @@
 
   window.CaseStore = store('cases');
   window.DesignStore = store('designs');
+  window.HomeStore = store('homes');
 })();

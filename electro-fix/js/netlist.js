@@ -510,7 +510,7 @@
       if (sel.comp === c.id) boxes.push('<rect x="' + (b.x - 5) + '" y="' + (b.y - 5) + '" width="' + (BOX_W + 10) + '" height="' + (b.h + 10) + '" rx="11" fill="none" stroke="#1c6fe0" stroke-width="2.5" stroke-dasharray="6 4"/>');
       boxes.push('<rect x="' + b.x + '" y="' + b.y + '" width="' + BOX_W + '" height="' + b.h + '" rx="8" fill="#ffffff" stroke="' + (err ? '#e03131' : '#29344d') + '" stroke-width="' + (err ? 2.4 : 1.4) + '"/>');
       boxes.push('<path d="M' + b.x + ' ' + (b.y + 30) + 'V' + (b.y + 8) + 'q0 -8 8 -8H' + (b.x + BOX_W - 8) + 'q8 0 8 8V' + (b.y + 30) + 'z" fill="#14213d"/>');
-      boxes.push('<g transform="translate(' + (b.x + 18) + ',' + (b.y + 15) + ') scale(0.75)"><path d="' + (ICONS[c.type] || ICONS.other) + '" fill="none" stroke="#ffb703" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></g>');
+      boxes.push('<g transform="translate(' + (b.x + 18) + ',' + (b.y + 15) + ') scale(0.75)"><path d="' + (ICONS[c.type] || ICONS.other) + '" fill="none" stroke="#e3c78a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></g>');
       boxes.push(textAttr(b.x + 34, b.y + 20, 'start', 13, '#ffffff', ' font-weight="700" font-family="IBM Plex Mono, monospace"') + esc(c.id) + '</text>');
       boxes.push(textAttr(b.x + BOX_W - 10, b.y + 19.5, 'start', 10.5, '#c9d3e6', ' direction="rtl"') + esc(clip(c.label, 20)) + '</text>');
       if (c.value) boxes.push(textAttr(b.x + BOX_W / 2, b.y + 45, 'middle', 11, '#b35c00', ' font-weight="600" font-family="IBM Plex Mono, monospace"' + (HEB.test(c.value) ? ' direction="rtl"' : '')) + esc(clip(c.value, 24)) + '</text>');

@@ -6,6 +6,8 @@ const require = createRequire(import.meta.url);
 const Netlist = require('../js/netlist.js');
 const FixPrompts = require('../js/prompts.js');
 const FixParts = require('../js/parts.js');
+const TestKit = require('../js/testkit.js');
+const HomePlan = require('../js/homeplan.js');
 
 let n = 0;
 function test(name, fn) { fn(); n++; console.log('✓', name); }
@@ -165,6 +167,56 @@ test('סכמת התכנון תקינה ל-structured outputs, ופענוח תש�
   assert.deepEqual(r.pcb_notes, []);
   const m = FixPrompts.designMessages('review', 'שאלה', tpl('led'), [{ level: 'warning', message: 'x' }]);
   assert.match(m[0].content[0].text, /"D1"/);
+});
+
+test('פותר DC: מחלק מתח, זרם נורית ורגולטור', () => {
+  const near = (a, b, tol) => assert.ok(Math.abs(a - b) <= tol, a + ' ≠ ' + b);
+  const div = TestKit.solve(tpl('divider'));
+  near(div.voltAt('J2.1'), 12 * 3.3 / 13.3, 0.01);
+  const led = TestKit.solve(tpl('led'));
+  const d1 = led.diodes.find((d) => d.id === 'D1');
+  near(d1.i, (5 - 2) / 330, 1e-4);
+  const ldo = TestKit.solve(tpl('ldo'));
+  near(ldo.voltAt('U1.OUT'), 3.3, 1e-9);
+  // נורית הפוכה לא מוליכה
+  const rev = tpl('led');
+  rev.wires = [{ from: 'J1.VBUS', to: 'R1.1' }, { from: 'R1.2', to: 'D1.K' }, { from: 'D1.A', to: 'J1.GND' }];
+  assert.equal(TestKit.solve(rev).diodes[0].on, false);
+});
+
+test('ערכות מדידה: תדר 555, קצר, ובדיקת ערך נמדד', () => {
+  const k = TestKit.kits(tpl('ne555')).kits;
+  const f = k.find((x) => x.id === 'function').steps.find((s) => /תדר/.test(s.title));
+  assert.ok(Math.abs((f.expect.min + f.expect.max) / 2 - 1.44 / (21000 * 100e-6)) < 0.01);
+  const off = TestKit.kits(tpl('divider')).kits.find((x) => x.id === 'unpowered');
+  const short = off.steps.find((s) => /אין קצר/.test(s.title));
+  assert.equal(TestKit.evaluate(short, '3.2'), 'fail');
+  assert.equal(TestKit.evaluate(short, '13.3k'), 'pass');
+  assert.equal(TestKit.evaluate(short, 'OL'), 'pass');
+  assert.equal(TestKit.evaluate({ expect: { check: true } }, 'ok'), 'pass');
+  assert.equal(TestKit.parseMeasure('4.7k'), 4700);
+  assert.equal(TestKit.resistance('4k7'), 4700);
+  assert.equal(TestKit.resistance('2.2kΩ 0.5W'), 2200);
+  for (const t of FixParts.TEMPLATES) for (const kit of TestKit.kits(t.build()).kits) assert.ok(kit.steps.length > 0, t.id + '/' + kit.id);
+});
+
+test('תכנון לבית: מעגלים, פאזות, פחת ולוח', () => {
+  for (const k of Object.keys(HomePlan.PRESETS)) {
+    const plan = HomePlan.preset(k), P = HomePlan.panel(plan), C = P.circuits;
+    const lights = plan.rooms.reduce((s, r) => s + r.lights, 0);
+    assert.equal(C.circuits.filter((c) => c.kind === 'light').reduce((s, c) => s + c.points, 0), lights, k);
+    assert.ok(C.circuits.every((c) => c.points <= (c.kind === 'light' ? 10 : 8)), k + ' points per circuit');
+    assert.ok(C.circuits.every((c) => c.rcd), k + ' every circuit on an RCD');
+    assert.ok(P.spare / P.total >= 0.2, k + ' spare space');
+    if (C.tri) assert.ok(Math.max(...C.perPhaseA) - Math.min(...C.perPhaseA) < 3, k + ' phases balanced');
+    assert.match(HomePlan.renderPanel(P, 't'), /^<svg/);
+  }
+  const house = HomePlan.panel(HomePlan.preset('house'));
+  assert.ok(house.circuits.rcds.some((r) => r.type === 'B'), 'EV gets a type B RCD');
+  const one = HomePlan.preset('apt4'); one.supply = '1x40';
+  assert.equal(HomePlan.advice(one)[0].level, 'error');
+  const knx = HomePlan.preset('apt4'); knx.tech = 'knx';
+  assert.ok(HomePlan.smart(knx).panel.length >= 3);
 });
 
 console.log(`\n${n} בדיקות עברו`);

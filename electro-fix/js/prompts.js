@@ -261,7 +261,49 @@
     return r;
   }
 
+
+  /* ---------- תכנון חשמל לבית ---------- */
+
+  var HOME_SYSTEM = [
+    'אתה מהנדס חשמל ומתכנן מערכות חשמל למגורים בישראל, ומומחה לבתים חכמים (Wi-Fi/Shelly, Zigbee, KNX).',
+    'המשתמש בנה באתר תכנית חשמל ראשונית לבית: חדרים, שקעים, תאורה, מכשירים במעגלים ייעודיים, חלוקה למעגלים, ממסרי פחת, לוח חשמל ושכבת בית חכם. אתה מקבל את התכנית כ-JSON.',
+    'בדוק אותה כמו מתכנן מנוסה:',
+    '1. התאמה לחוק החשמל ולתקנות (הארקה, ממסרי פחת 30mA, חתכי כבלים מול מאמתים, אזורים רטובים, ממ״ד, חיבור דוד), ולנוהג המקובל בישראל.',
+    '2. נוחות ושימושיות: מספר ומיקום השקעים והנקודות בכל חדר, מתגים מחליפים, תאורת לילה, נקודות רשת ומזגנים.',
+    '3. חלוקה למעגלים ואיזון פאזות, עומס מול גודל החיבור, מקום שמור בלוח, והפרדה בין ממסרי פחת.',
+    '4. בית חכם: התאמת הטכנולוגיה לבית, מה חסר (אפס בקופסאות, רשת, רכזת), ותרחישים שימושיים כולל מצב שבת.',
+    'החזר אזהרות רק על בעיות אמיתיות. המלצות: קונקרטיות וממוספרות לפי חשיבות, עם הסבר קצר. אם חסר מידע חשוב, שאל ב-questions.',
+    'כתוב בעברית מקצועית ותמציתית. אל תמציא מספרי תקנות; כתוב "לפי תקנות החשמל" כשאינך בטוח במספר.'
+  ].join('\n');
+
+  var HOME_SCHEMA = obj({
+    title: str(),
+    summary: str(),
+    warnings: arr(str()),
+    recommendations: arr(obj({ title: str(), detail: str() })),
+    smart_tips: arr(str()),
+    questions: arr(str())
+  });
+
+  function homeText(request, plan) {
+    return ['בדוק את תכנית החשמל הבאה לבית.', request ? 'דגשים ושאלות שלי: ' + String(request).trim() : '', 'התכנית (JSON):', JSON.stringify(plan)].filter(Boolean).join('\n\n');
+  }
+  function homeMessages(request, plan) { return [{ role: 'user', content: [{ type: 'text', text: homeText(request, plan) }] }]; }
+  function manualHomePrompt(request, plan) {
+    return [HOME_SYSTEM, '', 'החזר JSON בלבד, בלי טקסט לפניו או אחריו ובלי ```, שתואם בדיוק לסכמה הבאה:', JSON.stringify(HOME_SCHEMA), '', homeText(request, plan)].join('\n');
+  }
+  function parseHome(text) {
+    var s = String(text || '').trim();
+    var a = s.indexOf('{'), b = s.lastIndexOf('}');
+    if (a < 0 || b < a) throw new Error('לא נמצא JSON בתשובה');
+    var r = JSON.parse(s.slice(a, b + 1));
+    if (!r || !r.summary) throw new Error('התשובה לא במבנה הצפוי');
+    ['warnings', 'recommendations', 'smart_tips', 'questions'].forEach(function (k) { if (!Array.isArray(r[k])) r[k] = []; });
+    return r;
+  }
+
   return {
+    HOME_SYSTEM: HOME_SYSTEM, HOME_SCHEMA: HOME_SCHEMA, homeMessages: homeMessages, manualHomePrompt: manualHomePrompt, parseHome: parseHome,
     DESIGN_SYSTEM: DESIGN_SYSTEM, DESIGN_SCHEMA: DESIGN_SCHEMA,
     designMessages: designMessages, manualDesignPrompt: manualDesignPrompt, parseDesign: parseDesign,
     DOMAINS: DOMAINS, SUPPLIES: SUPPLIES, COMPONENT_TYPES: COMPONENT_TYPES,
