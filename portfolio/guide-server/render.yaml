@@ -1,4 +1,4 @@
-# Render blueprint for Guy's AI server. New → Blueprint → pick this repo.
+# Render blueprint for Guy's AI server. New → Blueprint → this repo, Blueprint Path: portfolio/guide-server/render.yaml
 # Set ANTHROPIC_API_KEY in the Render dashboard (it is not stored here).
 services:
   - type: web

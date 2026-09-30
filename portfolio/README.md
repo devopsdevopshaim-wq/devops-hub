@@ -26,7 +26,7 @@ Actions → "Portfolio screenshots" → Run workflow (leave ids empty for all, o
 ## Turning on Guy's AI answers
 
 1. Create an API key at https://console.anthropic.com (usage is billed per question).
-2. On Render: New → Blueprint → this repo. It reads `portfolio/guide-server/render.yaml`. Paste the key into `ANTHROPIC_API_KEY`.
+2. On Render: New → Blueprint → this repo, and set **Blueprint Path** to `portfolio/guide-server/render.yaml`. Paste the key into `ANTHROPIC_API_KEY`.
 3. Put the service address (e.g. `https://hasadna-guide.onrender.com`) in `guideApi` in `projects.json`.
 
 The server answers only requests from the site's own address and limits each visitor to 40 questions an hour.
