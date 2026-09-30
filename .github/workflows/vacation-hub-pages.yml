@@ -44,7 +44,9 @@ jobs:
           fi
           if [ -d portfolio ]; then
             mkdir -p /tmp/site/portfolio
-            cp -r portfolio/index.html portfolio/projects.json portfolio/css portfolio/js /tmp/site/portfolio/
+            cp -r portfolio/. /tmp/site/portfolio/
+            # tooling and docs stay in the repo only
+            rm -rf /tmp/site/portfolio/README.md /tmp/site/portfolio/upload-projects.ps1 /tmp/site/portfolio/guide-server
           fi
           # keep sub-sites published earlier that this checkout does not contain
           if git clone -q --depth 1 -b gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" /tmp/old 2>/dev/null; then
