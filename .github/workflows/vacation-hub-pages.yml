@@ -2,8 +2,8 @@ name: Deploy vacation-hub to GitHub Pages
 
 # GitHub Pages is served from the gh-pages branch.
 # Every change to vacation-hub/ on main is copied there automatically.
-# book-studio/ is published under /book-studio/, assembly-studio/ under /assembly-studio/,
-# interior-hub/ under /interior/
+# book-studio/ is published under /book-studio/, interior-hub/ under /interior/,
+# electro-fix/ under /electro-fix/, assembly-studio/ under /assembly-studio/
 # and portfolio/ under /portfolio/.
 # Sub-sites already on gh-pages are kept when this run's checkout does not have
 # them, so a run from one branch does not wipe a site published from another.
@@ -11,7 +11,7 @@ name: Deploy vacation-hub to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**', 'book-studio/**', 'assembly-studio/**', 'portfolio/**']
+    paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**', 'book-studio/**', 'electro-fix/**', 'assembly-studio/**', 'portfolio/**']
   workflow_dispatch:
 
 permissions:
@@ -45,6 +45,10 @@ jobs:
             mkdir -p /tmp/site/book-studio
             cp -r book-studio/index.html book-studio/css book-studio/js /tmp/site/book-studio/
           fi
+          if [ -d electro-fix ]; then
+            mkdir -p /tmp/site/electro-fix
+            cp -r electro-fix/index.html electro-fix/css electro-fix/js /tmp/site/electro-fix/
+          fi
           if [ -d assembly-studio ]; then
             mkdir -p /tmp/site/assembly-studio
             cp -r assembly-studio/index.html assembly-studio/css assembly-studio/js /tmp/site/assembly-studio/
@@ -57,7 +61,7 @@ jobs:
           fi
           # keep sub-sites published earlier that this checkout does not contain
           if git clone -q --depth 1 -b gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" /tmp/old 2>/dev/null; then
-            for d in interior book-studio assembly-studio portfolio; do
+            for d in interior book-studio electro-fix assembly-studio portfolio; do
               if [ ! -d "/tmp/site/$d" ] && [ -d "/tmp/old/$d" ]; then cp -r "/tmp/old/$d" /tmp/site/; fi
             done
           fi
