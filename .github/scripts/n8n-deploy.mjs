@@ -1,11 +1,16 @@
 // Installs n8n/hasadna-multi-agent.json in n8n Cloud through the n8n public API,
 // connects Claude, activates it, and points the portfolio at it.
-// Env: N8N_URL (https://<name>.app.n8n.cloud), N8N_API_KEY, ANTHROPIC_API_KEY (first run only).
+// Env: N8N_URL (https://<name>.app.n8n.cloud), N8N_API_KEY, ANTHROPIC_API_KEY (first run only),
+// or all three together in HAIM_WEB_KEY.
 import fs from 'node:fs';
 
-const BASE = (process.env.N8N_URL || '').replace(/\/+$/, '');
-const KEY = process.env.N8N_API_KEY || '';
-const CLAUDE = process.env.ANTHROPIC_API_KEY || '';
+// The three values can also arrive together in one secret (HAIM_WEB_KEY), in any
+// layout: they are picked out by their shape.
+const combined = process.env.HAIM_WEB_KEY || '';
+const pick = (re) => (combined.match(re) || [])[0] || '';
+const BASE = (process.env.N8N_URL || pick(/https:\/\/[a-z0-9-]+\.app\.n8n\.cloud/i)).trim().replace(/\/+$/, '');
+const KEY = (process.env.N8N_API_KEY || pick(/eyJ[\w-]+\.[\w-]+\.[\w-]+/)).trim();
+const CLAUDE = (process.env.ANTHROPIC_API_KEY || pick(/sk-ant-[\w-]+/)).trim();
 const FILE = 'n8n/hasadna-multi-agent.json';
 const CRED_NAME = 'Claude · הסדנה';
 const out = (k, v) => fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', `${k}=${v}\n`);
