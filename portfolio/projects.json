@@ -150,10 +150,18 @@
   {
    "id": "hapinkas-hayomi",
    "title": "הפנקס היומי",
-   "desc": "אפליקציה שפורסמה ב־Render.",
+   "desc": "HKDAILY — מערכת הפעלה אישית: תוכניות, מגנטים, מיילים, יומן ולוח שנה עברי (Render).",
    "category": "web",
    "icon": "📒",
-   "url": "https://hapinkas-hayomi.onrender.com/"
+   "url": "https://hapinkas-hayomi.onrender.com/",
+   "tech": [
+    "Node.js",
+    "Express",
+    "Postgres",
+    "Remotion",
+    "WhatsApp",
+    "Docker"
+   ]
   },
   {
    "id": "smart-office-assistant",
@@ -775,31 +783,48 @@
    ]
   },
   {
-   "id": "local-4420",
-   "title": "שרת מקומי — פורט 4420",
-   "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.",
-   "category": "other",
-   "icon": "🖥️",
-   "repo": "",
-   "localhost": "http://localhost:4420/"
+   "id": "graphology",
+   "title": "גרפולוגיה — ניתוח כתב יד",
+   "desc": "מערכת לניתוח כתב יד שמבוססת על מאגר ידע גרפולוגי וצירופי תכונות.",
+   "category": "ai",
+   "icon": "✍️",
+   "repo": "graphology",
+   "local": {
+    "mode": "file",
+    "path": "C:\\Users\\user\\Desktop\\AI Agent\\graphology-system\\graphology-standalone.html"
+   },
+   "features": [
+    "ניתוח מאפייני כתב יד",
+    "מאגר ידע גרפולוגי וצירופי תכונות",
+    "גרסה שעובדת כולה בדפדפן",
+    "גרסת שרת עם n8n ו־Postgres"
+   ],
+   "tech": [
+    "JavaScript",
+    "Node.js",
+    "n8n",
+    "Postgres",
+    "Docker"
+   ]
   },
   {
-   "id": "local-3737",
-   "title": "שרת מקומי — פורט 3737",
-   "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.",
-   "category": "other",
-   "icon": "🖥️",
-   "repo": "",
-   "localhost": "http://localhost:3737/"
-  },
-  {
-   "id": "local-8080",
-   "title": "שרת מקומי — פורט 8080",
-   "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.",
-   "category": "other",
-   "icon": "🖥️",
-   "repo": "",
-   "localhost": "http://localhost:8080/"
+   "id": "parkomat",
+   "title": "Parkomat",
+   "desc": "אתר התדמית של Parkomat, שרץ עד עכשיו ב־Docker עם Nginx.",
+   "category": "web",
+   "icon": "🅿️",
+   "repo": "parkomat",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\.openclaw\\workspace\\n8n\\site",
+    "entry": "index.html"
+   },
+   "tech": [
+    "HTML",
+    "Nginx",
+    "Docker",
+    "n8n"
+   ]
   }
  ]
 }
