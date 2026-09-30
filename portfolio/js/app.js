@@ -28,7 +28,15 @@
   }
 
   // Works out where a project lives right now.
+  // Live result from the n8n control center overrides the static guess.
+  var LIVE = { ok: ['live', 'עובד עכשיו'], waking: ['wait', 'מתעורר'], locked: ['private', 'נעול'], down: ['down', 'לא זמין כרגע'] };
   function status(p) {
+    var s = baseStatus(p), live = state.live && state.live[p.id];
+    if (live && LIVE[live.state]) { s = Object.assign({}, s, { kind: LIVE[live.state][0], label: LIVE[live.state][1] }); }
+    return s;
+  }
+
+  function baseStatus(p) {
     var owner = state.data.owner;
     if (p.url) return { kind: 'live', label: 'באוויר', open: p.url, code: p.repo ? 'https://github.com/' + owner + '/' + p.repo : null };
     if (p.localhost) return { kind: 'local', label: 'רץ במחשב שלי', open: p.localhost };
@@ -564,6 +572,23 @@
     if (e.key === 'Escape' && !detail.hidden) { history.pushState('', '', location.pathname); closeDetail(); }
   });
 
+  // ---------- live status from n8n ----------
+  function loadLiveStatus(url) {
+    if (!url) return;
+    var link = document.getElementById('nav-status');
+    if (link) { link.href = url; link.hidden = false; }
+    fetch(url + (url.indexOf('?') < 0 ? '?' : '&') + 'format=json')
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) {
+        if (!j || !j.results || !j.results.length) return;
+        state.live = {};
+        j.results.forEach(function (r) { state.live[r.id] = r; });
+        render();
+        renderFeatured();
+      })
+      .catch(function () {});
+  }
+
   // ---------- extra repos ----------
   function renderExtra(list) {
     var known = {};
@@ -630,6 +655,7 @@
       render();
       loadRepos(data.owner);
       loadRecoCounts();
+      loadLiveStatus(data.statusUrl);
       countHome();
       if (window.Guide) window.Guide.init({
         projects: data.projects,

@@ -1,0 +1,41 @@
+flowchart TB
+  subgraph IN [שאלה נכנסת]
+    direction LR
+    V([גיא באתר הסדנה<br/>כתב או קול]):::user
+    CH([דף הצ׳אט של n8n]):::user
+  end
+  V -- "POST /webhook/hasadna-guide" --> NZ
+  CH -- "Chat Trigger" --> NZ
+  NZ["איחוד הקלט<br/>שאלה · שיחה · עמוד"]:::n8n --> KN["טעינת ידע<br/>knowledge.json"]:::n8n --> CX["חלוקת הידע בין המומחים<br/>+ מצב האתרים האחרון"]:::n8n
+  CX --> OR(["גיא · המתאם<br/>בוחר מומחים ומחבר תשובה"]):::ai
+  MEM[("זיכרון שיחה")]:::ai -.-> OR
+  OR <-. "שאלה ממוקדת / תשובה" .-> D1["סוכן DevOps ואירוח"]:::agent
+  OR <-.-> D2["סוכן AI"]:::agent
+  OR <-.-> D3["סוכן נתונים ומחסן"]:::agent
+  OR <-.-> D4["סוכן כלים, לוטו ולימוד"]:::agent
+  OR <-.-> D5["סוכן אתרים ואפליקציות"]:::agent
+  OR <-.-> D6["סוכן ניטור"]:::agent
+  OR --> SH["עיצוב התשובה<br/>תשובה · פרויקט · שאלות המשך"]:::n8n --> IF{"מהאתר?"}:::n8n
+  IF -- כן --> RS["תשובה לגיא באתר"]:::site
+  IF -- לא --> CHR["תשובה בצ׳אט של n8n"]:::site
+
+  subgraph MON [ניטור · כל 15 דקות]
+    direction LR
+    T["Schedule"]:::n8n --> L2["רשימת 35 האתרים"]:::n8n --> CK["בדיקת כולם במקביל<br/>(גם מעיר אתרי Render)"]:::n8n --> SM["סיווג: עובד · מתעורר · נעול · לא זמין<br/>שמירה בזיכרון ה־workflow"]:::n8n
+    SM -. "אתר נפל" .-> EM[("מייל התראה<br/>אופציונלי")]:::opt
+  end
+  SM -.-> D6
+  SM -.-> DB
+
+  subgraph CC [מרכז הבקרה]
+    direction LR
+    G["GET /webhook/hasadna-status"]:::n8n --> DB["דף חי: כל האתרים,<br/>הסטטוס וצוות הסוכנים"]:::site
+    DB -- "?format=json" --> PF["תגיות 'עובד עכשיו'<br/>באתר הסדנה"]:::site
+  end
+
+  classDef user fill:#4a3a14,stroke:#e0b25a,color:#f3d596
+  classDef site fill:#2a2466,stroke:#8b7bff,color:#f1eefc
+  classDef n8n fill:#3a1f2e,stroke:#ff6d5a,color:#f1eefc
+  classDef ai fill:#16384a,stroke:#62dcb8,color:#f1eefc
+  classDef agent fill:#123a30,stroke:#62dcb8,color:#f1eefc
+  classDef opt fill:#1c1a33,stroke:#6b668f,color:#a9a4cc,stroke-dasharray:4 3

@@ -601,3 +601,8 @@ html.detail-open { overflow: hidden; }
 .g-next { display: flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; }
 .g-next .g-btn { font-size: 13px; text-align: start; line-height: 1.35; }
 .g-bubble p { max-height: 40vh; overflow-y: auto; }
+
+/* live status from the n8n control center */
+.nav-live { color: var(--mint) !important; }
+.nav-live[hidden] { display: none; }
+.badge.down { color: #ff7a85; }

@@ -1,0 +1,1151 @@
+{
+  "name": "הסדנה · מערכת מולטי־אייג׳נט ומרכז בקרה",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## A · צוות הסוכנים\nשאלה מגיעה מגיא באתר (Webhook) או מדף הצ׳אט של n8n (Chat Trigger). המתאם בוחר מומחים, שואל אותם, ומחבר תשובה אחת. כל מומחה מכיר לעומק את הפרויקטים שלו מתוך `knowledge.json` (נבנה אוטומטית מהקוד בכל פרסום).",
+        "height": 240,
+        "width": 420,
+        "color": 5
+      },
+      "id": "7aa55ab3-7b02-5019-b8ee-182482be5688",
+      "name": "Note · Agents",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hasadna-guide",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "15011209-ca54-55ae-be01-80cfbd57d27b",
+      "name": "Guy · Site webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -80
+      ],
+      "webhookId": "033959f0-2fca-5142-9bca-4102c4793724"
+    },
+    {
+      "parameters": {
+        "public": true,
+        "mode": "hostedChat",
+        "options": {
+          "title": "הסדנה · צוות הסוכנים",
+          "subtitle": "שאלו על כל פרויקט, אוטומציה או זמינות",
+          "initialMessages": "היי, אני גיא, המתאם של צוות הסוכנים. על מה נדבר?",
+          "inputPlaceholder": "למשל: איך האתר מתעדכן לבד?"
+        }
+      },
+      "id": "05f33dba-05c2-5505-b760-966a2cfec3ed",
+      "name": "Team chat",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        100
+      ],
+      "webhookId": "a54b4bc5-18cf-58dd-9c16-44ed65a223ae"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Questions come from Guy on the site (webhook, JSON as text) or from n8n's chat page.\nconst j = $json;\nlet q = {}, source = 'chat';\nif (j.chatInput !== undefined) {\n  q = { question: j.chatInput, sessionId: j.sessionId, page: '' };\n} else {\n  source = 'site';\n  const raw = j.body;\n  try { q = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}); } catch (e) { q = {}; }\n}\nreturn [{ json: {\n  source,\n  question: String(q.question || '').slice(0, 1500).trim() || 'שלום',\n  sessionId: String(q.sessionId || 'anon').replace(/[^\\w-]/g, '').slice(0, 64) || 'anon',\n  page: String(q.page || '').slice(0, 80)\n} }];\n"
+      },
+      "id": "81eb2f1a-d592-596d-b48f-b92b2079681b",
+      "name": "Agents · Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/knowledge.json",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "af05ad53-873e-590d-9240-8b2ee3bdfea2",
+      "name": "Agents · Load knowledge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Splits the knowledge between the specialists and writes the coordinator's brief.\nconst K = $('Agents · Load knowledge').first().json;\nconst req = $('Agents · Normalize').first().json;\nconst TEAM = [{\"key\": \"devops\", \"name\": \"סוכן DevOps ואירוח\", \"fields\": [\"devops\"]}, {\"key\": \"ai\", \"name\": \"סוכן AI\", \"fields\": [\"ai\"]}, {\"key\": \"data\", \"name\": \"סוכן נתונים ומחסן\", \"fields\": [\"data\"]}, {\"key\": \"tools\", \"name\": \"סוכן כלים, לוטו ולימוד\", \"fields\": [\"tools\", \"lotto\", \"study\"]}, {\"key\": \"web\", \"name\": \"סוכן אתרים ואפליקציות\", \"fields\": [\"web\", \"other\"]}, {\"key\": \"monitor\", \"name\": \"סוכן ניטור\", \"fields\": []}];\nconst status = ($getWorkflowStaticData('global').status) || null;\n\nconst slim = p => ({ id: p.id, title: p.title, desc: p.desc, features: p.features, tech: p.tech, story: p.story, address: p.address,\n  code: p.code ? { files: p.code.files, versions: p.code.versions, screens: p.code.screens, actions: p.code.actions,\n    libraries: p.code.libraries, externalApis: p.code.externalApis, automation: p.code.automation, fileList: p.code.fileList, readme: p.code.readme } : undefined });\nconst byField = {};\nfor (const [key, label] of Object.entries(K.categories)) byField[key] = label;\nconst groups = {};\nfor (const t of TEAM) {\n  const own = K.projects.filter(p => t.fields.includes(Object.keys(byField).find(k => byField[k] === p.field)));\n  groups[t.key] = JSON.stringify(own.map(slim));\n}\n// The DevOps agent also sees every project that has real automation in its code.\ngroups.devops = JSON.stringify(K.projects.filter(p => p.field === byField.devops || (p.code && p.code.automation.some(a => /Docker|Nginx|שרת צד|Webhook של n8n|GitHub Actions|סקריפט התקנה/.test(a)))).map(slim));\ngroups.pipeline = K.pipeline.map(s => '- ' + s).join('\\n');\n\nlet statusText = 'עדיין לא נבדקו האתרים (הבדיקה רצה כל 15 דקות כשה־workflow פעיל).';\nif (status) {\n  const rows = status.results.map(r => `${r.title} · ${r.label}${r.code ? ' · HTTP ' + r.code : ''} · ${r.url}`);\n  statusText = `נבדק לאחרונה: ${status.checkedAt}. עובדים ${status.counts.ok} מתוך ${status.results.length}.\\n` + rows.join('\\n');\n}\ngroups.status = statusText;\n\nconst index = K.projects.map(p => `${p.id} · ${p.title} · ${p.field}`).join('\\n');\nconst team = TEAM.map(t => `- ${t.name}`).join('\\n');\nconst system = `אתה גיא, המתאם של צוות הסוכנים של \"הסדנה\" — אתר שמציג את כל הפרויקטים של מפתח DevOps ו־AI.\nהתשובות מוקראות בקול באתר: עברית מדוברת, חמה וברורה, בלי Markdown, בלי רשימות ובלי אימוג'י.\n\nהצוות שלך (כלים שאתה מפעיל):\n${team}\n\nאיך לעבוד:\n1. החלט אילו מומחים רלוונטיים לשאלה ושאל אותם — אחד או יותר. בשאלות על אוטומציה, שרתים או פריסה תמיד כלול את סוכן ה־DevOps. בשאלות \"האם עובד / זמין\" — את סוכן הניטור.\n2. העבר לכל מומחה שאלה ממוקדת ומלאה בעברית (הוא לא רואה את השיחה).\n3. חבר את התשובות לתשובה אחת: שאלה פשוטה — 1–3 משפטים; שאלה מעמיקה — 4–8 משפטים עם פרטים קונקרטיים.\n4. אל תמציא. אם המומחים לא יודעים, אמור זאת והצע לפתוח את הפרויקט.\n5. שאלה שלא קשורה לפרויקטים — משפט אחד שאתה כאן בשביל הפרויקטים, והצעה לפרויקט מתאים.\n\nבסוף, בשורות נפרדות:\nPROJECT: <id>   ← רק אם התשובה עוסקת בעיקר בפרויקט אחד\nNEXT: <שאלת המשך מעמיקה אחת>   ← תמיד, עד שתיים\n\nכל הפרויקטים (id · שם · תחום):\n${index}\n${req.page ? '\\nהמבקר נמצא עכשיו בעמוד של: ' + req.page : ''}`;\n\nreturn [{ json: { ...req, system, groups } }];\n"
+      },
+      "id": "98e52fcc-f912-563e-8247-b4044326b63c",
+      "name": "Agents · Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.question }}",
+        "options": {
+          "systemMessage": "={{ $json.system }}",
+          "maxIterations": 8
+        }
+      },
+      "id": "0479d5da-2627-5ac6-9cbe-f0de36cae55d",
+      "name": "גיא · המתאם",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 1500
+        }
+      },
+      "id": "b8d1383a-c85f-5546-8637-a56f7a66bb0c",
+      "name": "Claude · המתאם",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        760,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Agents · Normalize').first().json.sessionId }}",
+        "contextWindowLength": 8
+      },
+      "id": "8e2b53d2-8446-5fd5-905d-e301dc476d4b",
+      "name": "Memory · שיחה",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        900,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Splits the coordinator's text into answer, project to highlight and follow-ups.\nconst req = $('Agents · Normalize').first().json;\nconst out = String($json.output || '').trim();\nconst next = [];\nlet project = null;\nlet answer = out\n  .replace(/^\\s*NEXT:\\s*(.+)$/gim, (m, q) => { next.push(q.trim()); return ''; })\n  .replace(/^\\s*PROJECT:\\s*([\\w-]+)\\s*$/gim, (m, id) => { project = id; return ''; })\n  .replace(/[*#_`]+/g, '')\n  .trim();\nif (!answer) answer = 'לא הצלחתי לענות כרגע. אפשר לנסות שוב בעוד רגע, או לשאול על פרויקט מסוים.';\nconst chatText = answer + (next.length ? '\\n\\nאפשר לשאול גם: ' + next.join(' · ') : '');\nreturn [{ json: { answer, project, next: next.slice(0, 2), source: req.source, output: chatText, question: req.question, at: new Date().toISOString() } }];\n"
+      },
+      "id": "1709587d-8d55-5829-889b-b75945a2c5f6",
+      "name": "Agents · Shape answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "acf66ef6-3354-571e-942d-de342607425c",
+              "leftValue": "={{ $json.source }}",
+              "rightValue": "site",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0ae912f6-8cbd-56a1-89ac-b93072dfba83",
+      "name": "From the site?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { answer: $json.answer, project: $json.project, next: $json.next } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "aadd3ca7-f1e7-59d9-a8ed-faef1c23371d",
+      "name": "Guy · Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "מומחה לאוטומציה, שרתים, Docker, Nginx, פריסה, CI/CD, GitHub Actions, n8n ואיך האתר עצמו מתעדכן לבד. השתמש בו לכל שאלה על אוטומציה, תשתית, אירוח או פריסה — גם כשהיא על פרויקט מתחום אחר.",
+        "text": "={{ $fromAI('Prompt__User_Message_', 'השאלה המלאה בעברית שהמומחה צריך לענות עליה', 'string') }}",
+        "options": {
+          "systemMessage": "={{ 'אתה סוכן DevOps ואירוח של הסדנה. הידע שלך (JSON, כולל ניתוח קוד):\\n' + $('Agents · Context').first().json.groups.devops + '\\n\\nאיך האתר עצמו אוטומטי:\\n' + $('Agents · Context').first().json.groups.pipeline + '\\n\\nענה בעברית, ענייני ומפורט, רק מהידע הזה. ציין שמות פרויקטים ו־id. אם אין לך מידע — אמור זאת.\\nבשאלות על אוטומציה: הסבר מה מפעיל את התהליך, מה קורה צעד אחר צעד, מה יוצא, ואיך אפשר להרחיב (n8n, GitHub Actions, Docker, Webhook, תזמון).' }}",
+          "maxIterations": 3
+        }
+      },
+      "id": "eaf178ca-123a-535c-baf6-fa6f943ad156",
+      "name": "סוכן DevOps ואירוח",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        1060,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 1200
+        }
+      },
+      "id": "a2997723-fadb-5395-a471-ac5ece41e404",
+      "name": "Claude · סוכן DevOps ואירוח",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1060,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "מומחה לפרויקטי הבינה המלאכותית: JARVIS, מצפן בריאות, פענוח אסטרולוגי, DiraFinder, עוזר משרד חכם ועוד.",
+        "text": "={{ $fromAI('Prompt__User_Message_', 'השאלה המלאה בעברית שהמומחה צריך לענות עליה', 'string') }}",
+        "options": {
+          "systemMessage": "={{ 'אתה סוכן AI של הסדנה. הידע שלך על הפרויקטים (JSON, כולל ניתוח קוד):\\n' + $('Agents · Context').first().json.groups.ai + '\\n\\nענה בעברית, ענייני ומפורט, רק מהידע הזה. ציין שמות פרויקטים ו־id. אם אין לך מידע — אמור זאת.\\nכשמשווים גרסאות או פרויקטים, הסבר מה שונה בפועל (מסכים, יכולות, ספריות, אחסון).' }}",
+          "maxIterations": 3
+        }
+      },
+      "id": "ab1740d8-3d93-539c-92bb-2bbcbcd4142f",
+      "name": "סוכן AI",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        1290,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 1200
+        }
+      },
+      "id": "2a4198e2-f7a8-5007-9a12-2dd8b348f9c1",
+      "name": "Claude · סוכן AI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1290,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "מומחה למערכות ניהול: שלוש מערכות המחסן, ניהול קבצים, Excel, ברקודים, מלאי והזמנות. יודע להשוות בין הגרסאות.",
+        "text": "={{ $fromAI('Prompt__User_Message_', 'השאלה המלאה בעברית שהמומחה צריך לענות עליה', 'string') }}",
+        "options": {
+          "systemMessage": "={{ 'אתה סוכן נתונים ומחסן של הסדנה. הידע שלך על הפרויקטים (JSON, כולל ניתוח קוד):\\n' + $('Agents · Context').first().json.groups.data + '\\n\\nענה בעברית, ענייני ומפורט, רק מהידע הזה. ציין שמות פרויקטים ו־id. אם אין לך מידע — אמור זאת.\\nכשמשווים גרסאות או פרויקטים, הסבר מה שונה בפועל (מסכים, יכולות, ספריות, אחסון).' }}",
+          "maxIterations": 3
+        }
+      },
+      "id": "203c5240-eaab-53f4-9a88-de5ec81889ae",
+      "name": "סוכן נתונים ומחסן",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        1520,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 1200
+        }
+      },
+      "id": "64552742-1582-5b08-9a91-2ee8b5949f61",
+      "name": "Claude · סוכן נתונים ומחסן",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1520,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "מומחה לכלים היומיומיים (מתכונים, תרגום, לוח שנה, חגים), למערכות הלוטו ולפרויקטי הלימוד (הקורס, הזוהר).",
+        "text": "={{ $fromAI('Prompt__User_Message_', 'השאלה המלאה בעברית שהמומחה צריך לענות עליה', 'string') }}",
+        "options": {
+          "systemMessage": "={{ 'אתה סוכן כלים, לוטו ולימוד של הסדנה. הידע שלך על הפרויקטים (JSON, כולל ניתוח קוד):\\n' + $('Agents · Context').first().json.groups.tools + '\\n\\nענה בעברית, ענייני ומפורט, רק מהידע הזה. ציין שמות פרויקטים ו־id. אם אין לך מידע — אמור זאת.\\nכשמשווים גרסאות או פרויקטים, הסבר מה שונה בפועל (מסכים, יכולות, ספריות, אחסון).' }}",
+          "maxIterations": 3
+        }
+      },
+      "id": "4975be68-e314-51fc-ae5b-cb7c2eefff83",
+      "name": "סוכן כלים, לוטו ולימוד",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        1750,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 1200
+        }
+      },
+      "id": "e693f78e-f410-5e78-9df9-4034caa1e7e7",
+      "name": "Claude · סוכן כלים, לוטו ולימוד",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1750,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "מומחה לאתרים ולאפליקציות: מסע, סטודיו ספרים, מתאר, Vercel, Render, Rork ו־Gamma.",
+        "text": "={{ $fromAI('Prompt__User_Message_', 'השאלה המלאה בעברית שהמומחה צריך לענות עליה', 'string') }}",
+        "options": {
+          "systemMessage": "={{ 'אתה סוכן אתרים ואפליקציות של הסדנה. הידע שלך על הפרויקטים (JSON, כולל ניתוח קוד):\\n' + $('Agents · Context').first().json.groups.web + '\\n\\nענה בעברית, ענייני ומפורט, רק מהידע הזה. ציין שמות פרויקטים ו־id. אם אין לך מידע — אמור זאת.\\nכשמשווים גרסאות או פרויקטים, הסבר מה שונה בפועל (מסכים, יכולות, ספריות, אחסון).' }}",
+          "maxIterations": 3
+        }
+      },
+      "id": "734ff9b5-f070-5453-a926-bc123205e89b",
+      "name": "סוכן אתרים ואפליקציות",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        1980,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 1200
+        }
+      },
+      "id": "77eb0e1e-52f1-5f49-86af-36261d7d5c11",
+      "name": "Claude · סוכן אתרים ואפליקציות",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1980,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "יודע אילו אתרים עובדים עכשיו, אילו נעולים או ישנים, מתי נבדקו לאחרונה ומה קוד התשובה שלהם. השתמש בו לכל שאלה על זמינות, תקלות או \"האם האתר עובד\".",
+        "text": "={{ $fromAI('Prompt__User_Message_', 'השאלה המלאה בעברית שהמומחה צריך לענות עליה', 'string') }}",
+        "options": {
+          "systemMessage": "={{ 'אתה סוכן הניטור של הסדנה. זה מצב האתרים מהבדיקה האוטומטית האחרונה:\\n' + $('Agents · Context').first().json.groups.status + '\\n\\nענה בעברית, ענייני ומפורט, רק מהידע הזה. ציין שמות פרויקטים ו־id. אם אין לך מידע — אמור זאת.\\nהסבר מה המצב אומר: \"נעול\" = דורש התחברות (למשל Vercel Deployment Protection), \"מתעורר\" = שרת חינמי שנרדם ומתעורר, \"לא זמין\" = אין תשובה או שגיאה.' }}",
+          "maxIterations": 3
+        }
+      },
+      "id": "6ead81ca-8bed-5073-847a-12961a122bc3",
+      "name": "סוכן ניטור",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        2210,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 1200
+        }
+      },
+      "id": "37f53e23-8ac2-53eb-b9e4-12aabc34af28",
+      "name": "Claude · סוכן ניטור",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        2210,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## B · ניטור האתרים\nכל 15 דקות: טוען את רשימת האתרים, בודק את כולם במקביל, מסווג (עובד / מתעורר / נעול / לא זמין), ושומר בזיכרון של ה־workflow. הבדיקה גם מעירה אתרים חינמיים ב־Render כך שהם נשארים ערים.\n\nאופציונלי: מייל כשאתר נופל — מחברים Gmail ומפעילים את הצומת (מקש D).",
+        "height": 260,
+        "width": 420,
+        "color": 6
+      },
+      "id": "91114021-3962-57f2-b86b-92ca5574ea09",
+      "name": "Note · Monitor",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        760
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "16b27191-18f4-5ada-bec7-e0ebfc99964e",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/knowledge.json",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "d5b99004-71eb-53f1-883d-12a569c9f6a0",
+      "name": "Monitor · Load sites",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One item per project that has a public address.\nconst K = $input.first().json;\nreturn K.projects\n  .filter(p => p.address && /^https:/.test(p.address))\n  .map(p => ({ json: { id: p.id, title: p.title, field: p.field, url: p.address } }));\n"
+      },
+      "id": "aef3afa4-fbf0-5be9-8404-29cbf21773b5",
+      "name": "Monitor · Targets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 20000,
+          "allowUnauthorizedCerts": false,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "2d4aa448-bc9b-57ce-8518-245cf65b8a45",
+      "name": "Monitor · Check sites",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        1000
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Classifies every check, keeps the result in the workflow's memory, and lists what broke.\nconst targets = $('Monitor · Targets').all().map(i => i.json);\nconst checks = $input.all().map(i => i.json);\nconst sd = $getWorkflowStaticData('global');\nconst before = {};\nfor (const r of ((sd.status && sd.status.results) || [])) before[r.id] = r.state;\n\nconst LABEL = { ok: 'עובד', waking: 'מתעורר', locked: 'נעול', down: 'לא זמין' };\nconst results = targets.map((t, i) => {\n  const c = checks[i] || {};\n  const code = Number(c.statusCode || 0);\n  const body = String(c.body || c.data || '').slice(0, 20000);\n  let state = 'down';\n  if (c.error || !code) state = 'down';\n  else if (/waking up|spinning up|service is starting|application loading/i.test(body)) state = 'waking';\n  else if (code === 401 || code === 403 || /log in to vercel|vercel authentication|sso-protection/i.test(body)) state = 'locked';\n  else if (code >= 200 && code < 400) state = 'ok';\n  const titleTag = (body.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i) || [])[1];\n  return { id: t.id, title: t.title, field: t.field, url: t.url, code: code || null, state, label: LABEL[state],\n           pageTitle: titleTag ? titleTag.replace(/\\s+/g, ' ').trim().slice(0, 80) : null,\n           error: c.error ? String(c.error.message || c.error).slice(0, 120) : null };\n});\nconst counts = { ok: 0, waking: 0, locked: 0, down: 0 };\nfor (const r of results) counts[r.state]++;\nconst newlyDown = results.filter(r => r.state === 'down' && before[r.id] && before[r.id] !== 'down');\nconst checkedAt = new Date().toISOString();\nsd.status = { checkedAt, counts, results };\nreturn [{ json: { checkedAt, counts, newlyDown, total: results.length } }];\n"
+      },
+      "id": "a855a314-9509-5c6f-bd66-63f0b778e7bb",
+      "name": "Monitor · Summarize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "656b1767-3214-5362-9270-a5de87e7d83b",
+              "leftValue": "={{ $('Status · Webhook').isExecuted }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "70261d54-7389-57ff-b73e-2d622b1750df",
+      "name": "Opened from the control center?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b3f75258-16c2-5245-9d2f-710137a1308f",
+              "leftValue": "={{ $json.newlyDown.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "82604c6b-ff05-57be-8f3f-18828313ca96",
+      "name": "Something went down?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1540,
+        1140
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "devopsdevopshaim@gmail.com",
+        "subject": "={{ 'הסדנה: ' + $json.newlyDown.length + ' אתרים הפסיקו לעבוד' }}",
+        "emailType": "text",
+        "message": "={{ $json.newlyDown.map(r => r.title + ' — ' + r.url + ' (' + (r.code ? 'HTTP ' + r.code : (r.error || 'אין תשובה')) + ')').join('\\n') }}",
+        "options": {}
+      },
+      "id": "0e380d72-62f1-5560-a3e6-65467ee179b6",
+      "name": "Alert · Email (optional)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1760,
+        1140
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## C · מרכז הבקרה\n`GET /webhook/hasadna-status` — דף חי עם כל האתרים והסטטוס שלהם, צוות הסוכנים וקישור לצ׳אט. `?run=1` מריץ בדיקה עכשיו, `?format=json` מחזיר נתונים (האתר משתמש בזה).",
+        "height": 200,
+        "width": 420,
+        "color": 3
+      },
+      "id": "f69209c1-897b-5f7c-86dc-3ca50c19ccab",
+      "name": "Note · Control",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        1300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "hasadna-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7946e037-4954-5fa4-ace2-229d48478f94",
+      "name": "Status · Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1500
+      ],
+      "webhookId": "09b47374-f5ad-5acb-aae2-245ccdc1b117"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Serve the remembered status unless it is old or ?run=1 asks for a new check.\nconst q = $json.query || {};\nconst s = $getWorkflowStaticData('global').status;\nconst age = s ? (Date.now() - Date.parse(s.checkedAt)) / 60000 : Infinity;\nreturn [{ json: { fresh: age < 20 && q.run !== '1' } }];\n"
+      },
+      "id": "63df7e26-d7f7-5129-a1c4-ada54f21d7f0",
+      "name": "Status · Fresh?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ab8ba72-f3c5-5465-8ecc-78f12a846700",
+              "leftValue": "={{ $json.fresh }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "46d72194-ce23-508b-a094-2683034deb7b",
+      "name": "Use remembered status?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Renders the control center (HTML) or its data (?format=json).\nconst hook = $('Status · Webhook').first().json;\nconst q = hook.query || {};\nconst s = $getWorkflowStaticData('global').status || { checkedAt: null, counts: { ok: 0, waking: 0, locked: 0, down: 0 }, results: [] };\nif (q.format === 'json') {\n  return [{ json: { contentType: 'application/json; charset=utf-8', body: JSON.stringify(s) } }];\n}\nconst host = (hook.headers && (hook.headers['x-forwarded-host'] || hook.headers.host)) || '';\nconst chatUrl = host ? `https://${host}/webhook/a54b4bc5-18cf-58dd-9c16-44ed65a223ae/chat` : '';\nconst esc = v => String(v == null ? '' : v).replace(/[&<>\"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[ch]));\nconst SHOTS = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/shots/';\nconst TEAM = [\"גיא · המתאם\", \"סוכן DevOps ואירוח\", \"סוכן AI\", \"סוכן נתונים ומחסן\", \"סוכן כלים, לוטו ולימוד\", \"סוכן אתרים ואפליקציות\", \"סוכן ניטור\"];\nconst when = s.checkedAt ? new Date(s.checkedAt).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' }) : 'עדיין לא נבדק';\nconst ORDER = { down: 0, locked: 1, waking: 2, ok: 3 };\nconst cards = s.results.slice().sort((a, b) => ORDER[a.state] - ORDER[b.state]).map(r => `\n  <a class=\"card ${r.state}\" href=\"${esc(r.url)}\" target=\"_blank\" rel=\"noopener\">\n    <div class=\"shot\" style=\"background-image:url('${SHOTS}${esc(r.id)}.jpg')\"><span class=\"dot\"></span><span class=\"st\">${esc(r.label)}</span></div>\n    <div class=\"meta\"><b>${esc(r.title)}</b><small>${esc(r.field)}</small>\n    <code>${esc(r.url.replace(/^https:\\/\\//, ''))}</code>\n    <small class=\"http\">${r.code ? 'HTTP ' + r.code : esc(r.error || 'אין תשובה')}</small></div>\n  </a>`).join('');\nconst team = TEAM.map((t, i) => `<li style=\"--i:${i}\"><span></span>${esc(t)}</li>`).join('');\nconst html = `<!doctype html><html lang=\"he\" dir=\"rtl\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<meta http-equiv=\"refresh\" content=\"300\"><title>מרכז הבקרה · הסדנה</title>\n<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=JetBrains+Mono:wght@400&display=swap\">\n<style>\n:root{--bg:#0f0d24;--deep:#17143a;--line:rgba(241,238,252,.12);--txt:#f1eefc;--mist:#a9a4cc;--gold:#e0b25a;--ok:#62dcb8;--wake:#e0b25a;--lock:#b39ae6;--down:#ff7a85}\n*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 85% -10%,rgba(139,123,255,.25),transparent 60%),var(--bg);color:var(--txt);font:16px/1.5 Assistant,system-ui,sans-serif}\n.wrap{max-width:1200px;margin:0 auto;padding:28px 18px 60px}h1{font:400 clamp(34px,5vw,56px)/1.05 Bellefair,serif;margin:0}.sub{color:var(--mist);margin:6px 0 22px}\n.stats{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:22px}.stat{padding:12px 18px;border-radius:14px;background:var(--deep);border:1px solid var(--line);min-width:120px}\n.stat b{display:block;font:400 34px/1 Bellefair,serif}.stat small{color:var(--mist)}.stat.ok b{color:var(--ok)}.stat.waking b{color:var(--wake)}.stat.locked b{color:var(--lock)}.stat.down b{color:var(--down)}\n.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:26px}.btn{display:inline-block;padding:10px 18px;border-radius:999px;background:var(--gold);color:#1b1405;font-weight:700;text-decoration:none}\n.btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}\n.team{list-style:none;margin:0 0 30px;padding:18px;border-radius:18px;background:var(--deep);border:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px}\n.team li{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(241,238,252,.05);border:1px solid var(--line)}\n.team li span{width:9px;height:9px;border-radius:50%;background:var(--ok);animation:p 2s infinite;animation-delay:calc(var(--i)*.25s)}\n.team::before{content:'צוות הסוכנים — פעיל';width:100%;font-weight:700;color:var(--gold)}\n.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}\n.card{display:flex;flex-direction:column;border-radius:16px;overflow:hidden;background:var(--deep);border:1px solid var(--line);color:inherit;text-decoration:none;transition:transform .25s}\n.card:hover{transform:translateY(-4px)}.shot{position:relative;height:130px;background:#120f2e center top/cover no-repeat}\n.st{position:absolute;top:10px;inset-inline-start:30px;padding:2px 10px;border-radius:999px;background:rgba(15,13,36,.8);font-size:13px;font-weight:600}\n.dot{position:absolute;top:15px;inset-inline-start:12px;width:10px;height:10px;border-radius:50%;background:currentColor}\n.ok .dot,.ok .st{color:var(--ok)}.waking .dot,.waking .st{color:var(--wake)}.locked .dot,.locked .st{color:var(--lock)}.down .dot,.down .st{color:var(--down)}\n.ok .dot{animation:p 2s infinite}.down{border-color:rgba(255,122,133,.5)}\n.meta{display:flex;flex-direction:column;gap:2px;padding:12px 14px}.meta small{color:var(--mist)}.meta code{font:12px 'JetBrains Mono',monospace;color:var(--mist);direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.http{font-family:'JetBrains Mono',monospace}\n@keyframes p{0%{box-shadow:0 0 0 0 currentColor}70%,100%{box-shadow:0 0 0 8px transparent}}\n</style></head><body><div class=\"wrap\">\n<h1>מרכז הבקרה של הסדנה</h1>\n<p class=\"sub\">כל האתרים נבדקים אוטומטית ב־n8n כל 15 דקות · בדיקה אחרונה: ${esc(when)}</p>\n<div class=\"stats\"><div class=\"stat ok\"><b>${s.counts.ok}</b><small>עובדים</small></div><div class=\"stat waking\"><b>${s.counts.waking}</b><small>מתעוררים</small></div>\n<div class=\"stat locked\"><b>${s.counts.locked}</b><small>נעולים</small></div><div class=\"stat down\"><b>${s.counts.down}</b><small>לא זמינים</small></div></div>\n<div class=\"row\">${chatUrl ? `<a class=\"btn\" href=\"${chatUrl}\" target=\"_blank\" rel=\"noopener\">שיחה עם צוות הסוכנים</a>` : ''}\n<a class=\"btn ghost\" href=\"?run=1\">בדיקה עכשיו</a><a class=\"btn ghost\" href=\"https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/\" target=\"_blank\" rel=\"noopener\">לאתר הסדנה</a></div>\n<ul class=\"team\">${team}</ul>\n<div class=\"grid\">${cards || '<p>הבדיקה הראשונה עוד לא רצה. לחצו \"בדיקה עכשיו\".</p>'}</div>\n</div></body></html>`;\nreturn [{ json: { contentType: 'text/html; charset=utf-8', body: html } }];\n"
+      },
+      "id": "d5687506-51b1-5030-8262-e43e35155566",
+      "name": "Status · Render page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.body }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "={{ $json.contentType }}"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "6f5afb14-2cc4-5331-9d06-a82233d5e703",
+      "name": "Status · Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        1500
+      ]
+    }
+  ],
+  "connections": {
+    "Guy · Site webhook": {
+      "main": [
+        [
+          {
+            "node": "Agents · Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Team chat": {
+      "main": [
+        [
+          {
+            "node": "Agents · Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agents · Normalize": {
+      "main": [
+        [
+          {
+            "node": "Agents · Load knowledge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agents · Load knowledge": {
+      "main": [
+        [
+          {
+            "node": "Agents · Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agents · Context": {
+      "main": [
+        [
+          {
+            "node": "גיא · המתאם",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "גיא · המתאם": {
+      "main": [
+        [
+          {
+            "node": "Agents · Shape answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agents · Shape answer": {
+      "main": [
+        [
+          {
+            "node": "From the site?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "From the site?": {
+      "main": [
+        [
+          {
+            "node": "Guy · Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Monitor · Load sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor · Load sites": {
+      "main": [
+        [
+          {
+            "node": "Monitor · Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor · Targets": {
+      "main": [
+        [
+          {
+            "node": "Monitor · Check sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor · Check sites": {
+      "main": [
+        [
+          {
+            "node": "Monitor · Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor · Summarize": {
+      "main": [
+        [
+          {
+            "node": "Opened from the control center?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Opened from the control center?": {
+      "main": [
+        [
+          {
+            "node": "Status · Render page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Something went down?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Something went down?": {
+      "main": [
+        [
+          {
+            "node": "Alert · Email (optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status · Webhook": {
+      "main": [
+        [
+          {
+            "node": "Status · Fresh?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status · Fresh?": {
+      "main": [
+        [
+          {
+            "node": "Use remembered status?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use remembered status?": {
+      "main": [
+        [
+          {
+            "node": "Status · Render page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Monitor · Load sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status · Render page": {
+      "main": [
+        [
+          {
+            "node": "Status · Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude · המתאם": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "גיא · המתאם",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory · שיחה": {
+      "ai_memory": [
+        [
+          {
+            "node": "גיא · המתאם",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "סוכן DevOps ואירוח": {
+      "ai_tool": [
+        [
+          {
+            "node": "גיא · המתאם",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude · סוכן DevOps ואירוח": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "סוכן DevOps ואירוח",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "סוכן AI": {
+      "ai_tool": [
+        [
+          {
+            "node": "גיא · המתאם",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude · סוכן AI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "סוכן AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "סוכן נתונים ומחסן": {
+      "ai_tool": [
+        [
+          {
+            "node": "גיא · המתאם",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude · סוכן נתונים ומחסן": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "סוכן נתונים ומחסן",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "סוכן כלים, לוטו ולימוד": {
+      "ai_tool": [
+        [
+          {
+            "node": "גיא · המתאם",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude · סוכן כלים, לוטו ולימוד": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "סוכן כלים, לוטו ולימוד",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "סוכן אתרים ואפליקציות": {
+      "ai_tool": [
+        [
+          {
+            "node": "גיא · המתאם",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude · סוכן אתרים ואפליקציות": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "סוכן אתרים ואפליקציות",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "סוכן ניטור": {
+      "ai_tool": [
+        [
+          {
+            "node": "גיא · המתאם",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude · סוכן ניטור": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "סוכן ניטור",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

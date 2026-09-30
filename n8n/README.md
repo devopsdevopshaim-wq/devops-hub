@@ -4,38 +4,59 @@
 
 | קובץ | מה הוא |
 | --- | --- |
-| `hasadna-guide-agent.json` | **גיא — סוכן הפרויקטים** של אתר הסדנה (`portfolio/`). עונה לעומק על כל פרויקט ועל האוטומציות. |
+| `hasadna-multi-agent.json` | **מערכת המולטי־אייג׳נט של הסדנה**: מתאם + 6 סוכנים מומחים, ניטור של כל האתרים כל 15 דקות, ומרכז בקרה חי. |
 | `masa-vacation-agent.json` | האתר, הדילים והסוכן של **מסע** (למטה). |
 
-## גיא — סוכן הפרויקטים
+## הסדנה · מערכת מולטי־אייג׳נט ומרכז בקרה
 
-![תרשים הזרימה](guide-flow.png)
+![תרשים הזרימה](multi-agent-flow.png)
 
-מקור התרשים: `guide-flow.mmd` (Mermaid).
+מקור התרשים: `multi-agent-flow.mmd`. הקובץ נבנה עם `python3 n8n/build-multi-agent-workflow.py`.
 
-**איך זה עובד:**
-1. **Webhook:** האתר שולח את השאלה, מזהה שיחה, והעמוד שהמבקר נמצא בו.
-2. **טעינת ידע:** `portfolio/knowledge.json` מ־GitHub Pages. הקובץ נבנה אוטומטית בכל פרסום. GitHub Actions מוריד את הקוד של כל הפרויקטים ומחלץ ממנו מסכים, פעולות, ספריות ואוטומציות (Docker, שרתים, n8n, Excel, PDF, תזמון…).
-3. **בניית הקשר:** צומת Code בוחר את הפרויקטים שהשאלה עוסקת בהם, ובשאלות על אוטומציה מוסיף את הפרויקטים העשירים באוטומציה ואת האופן שבו האתר עצמו מתעדכן.
-4. **AI Agent:** Claude עם זיכרון של 8 ההודעות האחרונות בשיחה. בשאלה פשוטה הוא עונה בקצרה, ובשאלה מעמיקה ב־4–8 משפטים עם פרטים מהקוד.
-5. **עיצוב התשובה:** מפריד את התשובה, את הפרויקט שצריך להדגיש באתר, ושתי שאלות המשך מעמיקות. באתר הן מופיעות ככפתורים.
-6. **Respond:** מחזיר JSON לאתר. אפשר גם להפעיל יומן שאלות ב־Google Sheets.
+**שלושה חלקים ב־workflow אחד:**
 
-אם n8n לא זמין, גיא עונה מהאתר עצמו בזיהוי מילים, כך שהאתר לא נשבר.
+1. **צוות הסוכנים.** שאלה מגיעה מגיא באתר (`/webhook/hasadna-guide`) או מדף הצ׳אט של n8n.
+   - **גיא · המתאם** מחליט אילו מומחים לשאול, שולח לכל אחד שאלה ממוקדת, ומחבר תשובה אחת עם פרויקט להדגשה ושאלות המשך.
+   - המומחים (כל אחד הוא AI Agent עם Claude משלו): **DevOps ואירוח**, **AI**, **נתונים ומחסן**, **כלים, לוטו ולימוד**, **אתרים ואפליקציות**, ו**ניטור**.
+   - כל מומחה מקבל את הידע על הפרויקטים שלו מ־`knowledge.json`, שנבנה אוטומטית מהקוד בכל פרסום. זה כולל מסכים, פעולות, ספריות ואוטומציות.
+2. **ניטור.** כל 15 דקות n8n בודק את כל האתרים במקביל ומסווג כל אחד: עובד, מתעורר, נעול או לא זמין. התוצאה נשמרת בזיכרון ה־workflow, והבדיקה גם מעירה אתרי Render שנרדמו. אפשר להפעיל מייל התראה כשאתר נופל.
+3. **מרכז הבקרה.** `https://<שם>.app.n8n.cloud/webhook/hasadna-status` הוא דף חי שמציג:
+   - כל האתרים עם צילום מסך, סטטוס וקוד HTTP;
+   - צוות הסוכנים;
+   - קישור לצ׳אט וכפתור "בדיקה עכשיו".
 
-### התקנה (כ־5 דקות)
-1. ב־n8n Cloud: **Create workflow** ← תפריט `⋯` ← **Import from File** ← `hasadna-guide-agent.json` ← **Save**.
-2. פותחים את הצומת **Claude (Anthropic)** ← Credential ← **Create new** ← מדביקים API key מ־console.anthropic.com. אם שדה המודל אדום, בוחרים מהרשימה את Claude Opus העדכני.
-3. מתג **Active** למעלה.
-4. פותחים את **Guide · Webhook**, בלשונית **Production URL** מעתיקים את הכתובת (בסגנון `https://<שם>.app.n8n.cloud/webhook/hasadna-guide`).
-5. מדביקים אותה בשדה `guideApi` בקובץ `portfolio/projects.json` (אפשר לערוך ישירות ב־GitHub), ושומרים. תוך 2 דקות גיא מחובר.
+   אתר הסדנה קורא את אותו דף (`?format=json`) ומציג על כל כרטיס "עובד עכשיו" או "לא זמין כרגע".
 
-**בדיקה מהירה** (PowerShell):
-```powershell
-Invoke-RestMethod -Method Post -Uri "https://<שם>.app.n8n.cloud/webhook/hasadna-guide" -ContentType "text/plain" -Body '{"question":"איך האתר מתעדכן לבד?","sessionId":"test"}'
-```
+### התקנה אוטומטית מ־GitHub (מומלץ)
 
-**בנייה מחדש:** `python3 n8n/build-guide-workflow.py` (אפשר `--model` אחר).
+GitHub Action בשם **Deploy agents to n8n Cloud** מתקין הכול דרך ה־API של n8n:
+1. יוצר ב־n8n את ה־credential של Claude.
+2. יוצר או מעדכן את ה־workflow ומפעיל אותו.
+3. מחבר את גיא ואת מרכז הבקרה לאתר.
+
+**פעם אחת**, ב־GitHub ← devops-hub ← **Settings** ← **Secrets and variables** ← **Actions** ← **New repository secret**, מוסיפים שלושה סודות:
+
+| שם | ערך |
+| --- | --- |
+| `N8N_URL` | הכתובת של n8n שלכם, למשל `https://haim.app.n8n.cloud` (בלי `/` בסוף) |
+| `N8N_API_KEY` | ב־n8n: **Settings** ← **n8n API** ← **Create an API key** |
+| `ANTHROPIC_API_KEY` | מפתח מ־console.anthropic.com. נדרש רק בהתקנה הראשונה. |
+
+אחר כך: **Actions** ← **Deploy agents to n8n Cloud** ← **Run workflow**. בסיום, סיכום הריצה מציג את הקישור למרכז הבקרה. מכאן והלאה, כל שינוי בקובץ ה־workflow ב־GitHub מתעדכן ב־n8n לבד.
+
+המפתחות נשמרים כסודות ב־GitHub, ואף אחד (כולל Claude) לא רואה אותם.
+ה־API של n8n לא זמין בתקופת הניסיון החינמית של n8n Cloud. במקרה כזה, משתמשים בהתקנה הידנית.
+
+### התקנה ידנית (אם אין API)
+1. ב־n8n Cloud: **Create workflow** ← `⋯` ← **Import from File** ← `hasadna-multi-agent.json` ← **Save**.
+2. בכל אחד משבעת צומתי **Claude** בוחרים Credential של Anthropic. בפעם הראשונה בוחרים **Create new** ומדביקים את המפתח, ובשאר פשוט בוחרים אותו.
+3. **Active** למעלה.
+4. מעתיקים את ה־Production URL של **Guy · Site webhook** ושל **Status · Webhook** לשדות `guideApi` ו־`statusUrl` בקובץ `portfolio/projects.json`.
+
+### בדיקה
+- מרכז הבקרה: פותחים את `…/webhook/hasadna-status?run=1` בדפדפן.
+- הצ׳אט: לוחצים על "שיחה עם צוות הסוכנים" במרכז הבקרה.
+- גיא באתר: שואלים אותו "איך האתר מתעדכן לבד?".
 
 ---
 
