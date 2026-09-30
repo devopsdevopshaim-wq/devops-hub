@@ -6,9 +6,21 @@
 <title>הפרויקטים שלי</title>
 <meta name="description" content="כל הפרויקטים שלי במקום אחד: סוכני AI, אתרים, כלים ומערכות ניהול.">
 <meta name="theme-color" content="#0f0d24">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="הסדנה">
+<meta property="og:title" content="כל מה שבניתי, במקום אחד">
+<meta property="og:description" content="37 פרויקטים: סוכני AI, אתרים, כלי DevOps ומערכות ניהול. בואו לסיור עם גיא.">
+<meta property="og:url" content="https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/">
+<meta property="og:image" content="https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="הסדנה: מפת כל הפרויקטים סביב המספר 37">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='19' fill='%230f0d24'/%3E%3Ccircle cx='20' cy='20' r='14' fill='none' stroke='%23e0b25a' stroke-width='2'/%3E%3Ccircle cx='20' cy='20' r='5' fill='%23e0b25a'/%3E%3Ccircle cx='32' cy='12' r='3' fill='%23e0b25a'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -25,6 +37,7 @@
       <a href="#fields">תחומים</a>
       <a href="#all">כל הפרויקטים</a>
       <a href="#how">איך זה עובד</a>
+      <a href="#add" class="nav-add">+ הוספת פרויקט</a>
     </nav>
     <a class="btn btn-ghost btn-sm" id="gh-top" href="https://github.com/devopsdevopshaim-wq" target="_blank" rel="noopener">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0z"/></svg>
@@ -38,7 +51,7 @@
     <div class="wrap hero-inner">
       <div class="hero-copy">
         <p class="eyebrow rise" style="--d:0">תיק עבודות · DevOps · AI · Web</p>
-        <h1 class="rise" style="--d:1">כל מה <em>שבניתי</em>,<br>במקום אחד.</h1>
+        <h1 class="rise" style="--d:1">כל מה <em class="scribble">שבניתי<svg viewBox="0 0 300 24" preserveAspectRatio="none" aria-hidden="true"><path d="M4 16c40-9 90-12 150-9 50 3 95 1 142-6"/><path d="M30 21c60-5 130-6 220-4"/></svg></em>,<br>במקום אחד.</h1>
         <p class="lead rise" style="--d:2">סוכני AI, אתרים, כלים יומיומיים ומערכות ניהול. כל פרויקט יושב במאגר GitHub משלו, ואפשר לפתוח אותו מכאן בלחיצה.</p>
         <div class="cta rise" style="--d:3">
           <a class="btn btn-gold" href="#all">לכל הפרויקטים <span aria-hidden="true">↓</span></a>
@@ -62,7 +75,7 @@
           </g>
         </svg>
         <div class="orbit-tip" id="orbit-tip" hidden></div>
-        <figcaption>כל נקודה היא פרויקט. רחפו לראות שם, לחצו כדי לקפוץ אליו.</figcaption>
+        <figcaption><span class="hand">כל נקודה היא פרויקט אמיתי</span> רחפו לראות שם, לחצו כדי לקפוץ אליו.</figcaption>
       </figure>
     </div>
   </section>
@@ -71,7 +84,7 @@
     <div class="wrap">
       <header class="sec-head reveal">
         <p class="eyebrow">נבחרים</p>
-        <h2>שלושה פרויקטים שכדאי להתחיל מהם</h2>
+        <h2>שלושה פרויקטים שכדאי להתחיל מהם <span class="hand note">← התחילו מכאן</span></h2>
       </header>
       <div class="featured" id="featured-list"></div>
     </div>
@@ -114,6 +127,49 @@
     </div>
   </section>
 
+  <section class="section" id="add">
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">הוספת פרויקט</p>
+        <h2>יש פרויקט חדש? <span class="hand note">זה לוקח דקה</span></h2>
+      </header>
+      <div class="add-grid reveal">
+        <form class="add-form" id="add-form" novalidate>
+          <fieldset class="kind">
+            <legend>מה מוסיפים?</legend>
+            <label><input type="radio" name="kind" value="site" checked><span><b>אתר שכבר באוויר</b><small>כתובת של Vercel, Render, GitHub Pages או כל אתר</small></span></label>
+            <label><input type="radio" name="kind" value="repo"><span><b>מאגר GitHub</b><small>קישור למאגר, למשל github.com/…/my-app</small></span></label>
+            <label><input type="radio" name="kind" value="file"><span><b>קובץ HTML מהמחשב</b><small>נעלה אותו קודם ל־GitHub, בארבעה צעדים</small></span></label>
+          </fieldset>
+
+          <ol class="file-steps" id="file-steps" hidden>
+            <li><a href="https://github.com/new" target="_blank" rel="noopener">פתחו מאגר חדש ב־GitHub</a>. תנו לו שם באנגלית, סמנו Public ולחצו Create repository.</li>
+            <li>בעמוד שנפתח לחצו על <b>uploading an existing file</b>, גררו את קובץ ה־HTML (ואת הקבצים שלידו), ולחצו Commit changes. אם הקובץ לא נקרא index.html, שנו את שמו ל־index.html.</li>
+            <li>במאגר: Settings ← Pages ← Branch: <b>main</b> ← Save.</li>
+            <li>העתיקו את כתובת המאגר לשדה למטה, בחרו "מאגר GitHub", ושלחו.</li>
+          </ol>
+
+          <label class="field"><span>כתובת</span><input name="url" type="url" dir="ltr" placeholder="https://" required></label>
+          <label class="field"><span>שם הפרויקט</span><input name="title" type="text" maxlength="80" required></label>
+          <label class="field"><span>משפט אחד: מה הוא עושה?</span><textarea name="desc" rows="2" maxlength="300"></textarea></label>
+          <div class="field-row">
+            <label class="field"><span>תחום</span><select name="category" id="add-cat"></select></label>
+            <label class="field"><span>טכנולוגיות <small>(מופרדות בפסיק)</small></span><input name="tech" type="text" placeholder="JavaScript, Docker"></label>
+          </div>
+          <label class="field"><span>יכולות בולטות <small>(כל אחת בשורה)</small></span><textarea name="features" rows="3"></textarea></label>
+          <label class="field"><span>למה בניתם את זה? <small>(לא חובה)</small></span><textarea name="story" rows="2" maxlength="400"></textarea></label>
+          <p class="add-error" id="add-error" role="alert" hidden></p>
+          <button class="btn btn-gold" type="submit">שליחה ל־GitHub <span aria-hidden="true">↗</span></button>
+          <p class="add-note">נפתח עמוד ב־GitHub עם כל הפרטים. לוחצים שם <b>Create</b>, ותוך 2–3 דקות הפרויקט באתר, עם צילום מסך. רק בעל המאגר יכול להוסיף.</p>
+        </form>
+        <aside class="add-preview" aria-label="תצוגה מקדימה">
+          <p class="hand">ככה זה ייראה</p>
+          <div id="add-preview"></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="how">
     <div class="wrap">
       <header class="sec-head reveal">
@@ -146,6 +202,10 @@
   </section>
 </main>
 
+<div class="detail" id="detail" role="dialog" aria-modal="true" aria-labelledby="detail-title" hidden>
+  <div class="wrap detail-inner" id="detail-body"></div>
+</div>
+
 <footer class="foot">
   <div class="wrap foot-inner">
     <span class="brand brand-sm">
@@ -159,5 +219,6 @@
 <script src="js/art.js"></script>
 <script src="js/guide.js"></script>
 <script src="js/app.js"></script>
+<script src="js/add.js"></script>
 </body>
 </html>

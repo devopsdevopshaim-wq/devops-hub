@@ -47,6 +47,12 @@ window.PORTFOLIO_ART = (function () {
       '<path d="M40 40c10-2 22-1 30 3M40 52c10-2 22-1 30 3M40 64c10-2 22-1 30 3" ' + g + ' opacity=".8"/>' +
       '<path d="M90 43c8-4 20-5 30-3M90 55c8-4 20-5 30-3" ' + s + ' opacity=".55"/>' +
       '<path d="M112 8l2.4 6.6 6.6 2.4-6.6 2.4-2.4 6.6-2.4-6.6-6.6-2.4 6.6-2.4z" fill="var(--c2)"/>',
+    devops:
+      '<rect x="26" y="16" width="56" height="18" rx="4" ' + s + '/><rect x="26" y="40" width="56" height="18" rx="4" ' + s + '/><rect x="26" y="64" width="56" height="18" rx="4" ' + s + '/>' +
+      dot(36, 25, 2.6) + dot(36, 49, 2.6, '--c') + dot(36, 73, 2.6) + '<path d="M50 25h22M50 49h22M50 73h22" ' + s + ' opacity=".5"/>' +
+      '<path d="M96 30c10-10 30-10 38 4M134 34l1-9M134 34l-9-1" ' + g + '/>' +
+      '<path d="M134 68c-10 10-30 10-38-4M96 64l-1 9M96 64l9 1" ' + g + '/>' +
+      '<rect x="104" y="40" width="22" height="18" rx="3" ' + s + '/><path d="M110 46l4 3-4 3M117 52h5" ' + s + '/>',
     other:
       '<rect x="30" y="14" width="40" height="72" rx="9" ' + s + '/><path d="M44 22h12" ' + s + '/>' +
       '<rect x="37" y="30" width="26" height="20" rx="3" ' + g + '/><path d="M37 58h26M37 66h18" ' + s + ' opacity=".6"/>' +

@@ -35,6 +35,7 @@ window.Guide = (function () {
       '</g>' +
     '</svg>';
 
+  var history = [];
   var api, root, bubble, panel, log, input, faceBtn, micBtn, voiceBtn;
   var voice = null, voiceOn = true, talkTimer = null, blinkTimer = null, touring = false, tourStops = [], tourAt = 0;
   var hasTTS = 'speechSynthesis' in window;
@@ -166,6 +167,8 @@ window.Guide = (function () {
   }
 
   function addMsg(who, text) {
+    history.push({ role: who === 'me' ? 'user' : 'assistant', text: text });
+    if (history.length > 12) history.shift();
     if (!log) return;
     log.appendChild(h('div', { class: 'g-msg ' + who, text: text }));
     log.scrollTop = log.scrollHeight;
@@ -193,7 +196,8 @@ window.Guide = (function () {
     data: 'מערכת לניהול ומעקב אחרי מידע',
     lotto: 'כלי לניתוח ובחירת מספרים ללוטו',
     study: 'פרויקט של לימוד ותוכן',
-    other: 'אפליקציה או מצגת'
+    other: 'אפליקציה או מצגת',
+    devops: 'כלי DevOps לאירוח והפעלת שרתים'
   };
   function line(p, i) {
     if (p.say) return p.say;
@@ -255,6 +259,7 @@ window.Guide = (function () {
     data: ['מחסן', 'נתונים', 'קבצים', 'מלאי'],
     tools: ['כלים', 'כלי', 'מחשבון', 'לוח שנה', 'חגים', 'תרגום', 'ביטוח'],
     study: ['זוהר', 'לימוד', 'קורס', 'ללמוד'],
+    devops: ['devops', 'דבאופס', 'שרת', 'שרתים', 'אירוח', 'דוקר', 'docker', 'ענן'],
     web: ['אתרים', 'אתר', 'חופשה', 'חופשות', 'ספרים', 'עיצוב'],
     other: ['אפליקציה', 'אפליקציות', 'מצגת', 'מצגות', 'טלפון']
   };
@@ -263,7 +268,7 @@ window.Guide = (function () {
 
   function answer(raw) {
     var t = norm(raw);
-    addMsg('me', raw);
+    if (!answer.offline) addMsg('me', raw);
     if (!t) return;
     if (t.split(' ').some(function (w) { return ['עצור', 'די', 'שקט', 'תפסיק', 'stop'].indexOf(w) !== -1; })) { stopTour(); hush(); return say('בסדר, עצרתי.'); }
     if (has(t, ['סיור', 'טיול', 'תראה לי הכול', 'תראה לי הכל'])) return startTour();
@@ -288,6 +293,7 @@ window.Guide = (function () {
       return { p: p, score: score };
     }).filter(function (x) { return x.score > 0; }).sort(function (a, b) { return b.score - a.score; });
 
+    if (api.guideApi && !answer.offline) return askServer(raw, t, words, hits);
     var cat = Object.keys(CAT_WORDS).filter(function (k) { return has(t, CAT_WORDS[k]); })[0];
     if (hits.length && (hits.length === 1 || (hits[0].score > hits[1].score && !cat))) return present(hits[0].p);
     if (cat) {
@@ -300,6 +306,33 @@ window.Guide = (function () {
     if (hits.length) return say('מצאתי כמה: ' + hits.slice(0, 4).map(function (x) { return x.p.title; }).join(', ') + '. על איזה מהם לספר?');
     if (has(t, ['שלום', 'היי', 'הי', 'בוקר', 'ערב', 'מה נשמע', 'מה קורה'])) return say('היי! טוב לראות אותך. רוצה סיור, או לשאול על פרויקט מסוים?');
     say('לא הבנתי את זה. אפשר לשאול למשל על לוטו, על סוכני AI, על ניהול מחסן, או לבקש סיור.');
+  }
+
+  // Ask the AI server (portfolio/guide-server). On any failure fall back to
+  // word matching for this question.
+  function askServer(raw) {
+    root.classList.add('thinking');
+    var ctrl = 'AbortController' in window ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
+    fetch(api.guideApi.replace(/\/$/, '') + '/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: raw, history: history.slice(0, -1) }),
+      signal: ctrl ? ctrl.signal : undefined
+    })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) {
+        root.classList.remove('thinking');
+        var p = j.project && api.projects.filter(function (x) { return x.id === j.project; })[0];
+        if (p) lookAt(api.focusProject(p));
+        say(j.answer || '...');
+      })
+      .catch(function () {
+        root.classList.remove('thinking');
+        answer.offline = true;
+        try { answer(raw); } finally { answer.offline = false; }
+      })
+      .then(function () { clearTimeout(timer); });
   }
 
   function listen() {

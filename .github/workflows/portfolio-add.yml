@@ -1,0 +1,66 @@
+name: Portfolio add project
+
+# The "הוספת פרויקט" form on the portfolio opens an issue titled
+# "הוספת פרויקט: <name>". When the repository owner opens it, this adds the project to projects.json,
+# takes its screenshot, republishes the site and closes the issue.
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: portfolio-add
+  cancel-in-progress: false
+
+jobs:
+  add:
+    if: startsWith(github.event.issue.title, 'הוספת פרויקט:') && github.event.issue.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Add to projects.json
+        id: add
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: node .github/scripts/portfolio-add.mjs
+      - name: Commit
+        env:
+          TITLE: ${{ steps.add.outputs.title }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add portfolio/projects.json
+          git commit -q -m "portfolio: add $TITLE (#$ISSUE)"
+          git pull -q --rebase origin main
+          git push -q origin HEAD:main
+      - name: Screenshot and republish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ID: ${{ steps.add.outputs.id }}
+        run: |
+          gh workflow run vacation-hub-pages.yml --ref main
+          gh workflow run portfolio-shots.yml --ref main -f ids="$ID"
+      - name: Close the issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ID: ${{ steps.add.outputs.id }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" --comment "נוסף לאתר ✓ בעוד 2–3 דקות הוא יופיע כאן: https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/portfolio/#p/$ID"
+      - name: Report a failure on the issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "לא הצלחתי להוסיף את הפרויקט. בדקו שיש שם וכתובת שמתחילה ב־https, ונסו שוב מהאתר. פרטים: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

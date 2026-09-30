@@ -1,0 +1,9 @@
+{
+  "name": "hasadna-guide-server",
+  "private": true,
+  "type": "module",
+  "description": "Answers visitors' questions about the portfolio projects for Guy, the site's guide.",
+  "scripts": { "start": "node server.mjs" },
+  "engines": { "node": ">=20" },
+  "dependencies": { "@anthropic-ai/sdk": "^0.129.0" }
+}

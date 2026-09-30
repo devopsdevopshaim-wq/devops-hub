@@ -1,58 +1,756 @@
 {
-  "owner": "devopsdevopshaim-wq",
-  "categories": {
-    "web": "אתרים ומערכות",
-    "ai": "סוכני AI",
-    "tools": "כלים ומחשבונים",
-    "data": "ניהול נתונים ומחסן",
-    "lotto": "לוטו",
-    "study": "לימוד ותוכן",
-    "other": "מצגות ואפליקציות"
+ "owner": "devopsdevopshaim-wq",
+ "guideApi": "",
+ "categories": {
+  "web": "אתרים ומערכות",
+  "ai": "סוכני AI",
+  "devops": "DevOps ואירוח",
+  "tools": "כלים ומחשבונים",
+  "data": "ניהול נתונים ומחסן",
+  "lotto": "לוטו",
+  "study": "לימוד ותוכן",
+  "other": "מצגות ואפליקציות"
+ },
+ "projects": [
+  {
+   "id": "vacation-hub",
+   "featured": true,
+   "title": "מסע — ניהול חופשות",
+   "desc": "מתכנן חופשות שלם: בוחרים תאריכים ומקבלים יעדים מדורגים לפי מזג אוויר ועונה, עם טיסות, מלונות ומסעדות.",
+   "category": "web",
+   "icon": "✈️",
+   "url": "https://devopsdevopshaim-wq.github.io/devops-hub/",
+   "repo": "devops-hub",
+   "features": [
+    "יומן תאריכים שמדרג יעדים לפי עונה",
+    "עמוד לכל יעד: טיסות, מלונות, רכב ומסעדות",
+    "מפות, מסלולים ותחבורה ציבורית",
+    "מחשבון תקציב ושמירת טיולים"
+   ],
+   "tech": [
+    "HTML",
+    "JavaScript",
+    "Leaflet",
+    "n8n"
+   ],
+   "story": "רציתי מקום אחד שבו כל תכנון חופשה מתחיל ונגמר, במקום עשרות לשוניות פתוחות. מסע מרכז את כל ההחלטות לפי התאריכים שבחרתם."
   },
-  "projects": [
-    { "id": "vacation-hub", "featured": true, "title": "מסע — ניהול חופשות", "desc": "תכנון חופשות: יומן תאריכים, טיסות, מלונות, מסעדות ומפות.", "category": "web", "icon": "✈️", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/", "repo": "devops-hub" },
-    { "id": "book-studio", "featured": true, "title": "סטודיו ספרים", "desc": "יצירת ספרים מאוירים.", "category": "web", "icon": "📚", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/book-studio/", "repo": "devops-hub" },
-    { "id": "interior", "title": "עיצוב פנים", "desc": "אתר עיצוב פנים.", "category": "web", "icon": "🛋️", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/interior/", "repo": "devops-hub" },
-    { "id": "devops-hubnew", "aka": "דבאופס הב", "title": "DevOps Hub", "desc": "גרסת Vercel של ה־Hub.", "category": "web", "icon": "🧭", "url": "https://devops-hubnew.vercel.app/" },
-    { "id": "dist-web", "aka": "דיסט", "title": "Dist Web", "desc": "אתר שפורסם ב־Vercel.", "category": "web", "icon": "🌐", "url": "https://dist-web-devopsdevopshaim-wq.vercel.app/" },
-    { "id": "hapinkas-hayomi", "title": "הפנקס היומי", "desc": "אפליקציה שפורסמה ב־Render.", "category": "web", "icon": "📒", "url": "https://hapinkas-hayomi.onrender.com/" },
-    { "id": "smart-office-assistant", "featured": true, "title": "עוזר משרד חכם", "desc": "עוזר AI למשרד (Render).", "category": "ai", "icon": "🤖", "url": "https://smart-office-assistant.onrender.com/" },
-    { "id": "rork-app", "aka": "רורק", "title": "אפליקציית Rork", "desc": "אפליקציית מובייל שנבנתה ב־Rork.", "category": "other", "icon": "📱", "url": "https://rork.com/p/rc724nfz3ymtplm26dtx2" },
-    { "id": "gamma-deck", "aka": "גאמה", "title": "מצגת Gamma", "desc": "מצגת שנבנתה ב־Gamma.", "category": "other", "icon": "🎞️", "url": "https://gamma.app/docs/-iy2qvntue59gxjg?mode=present#card-ajcjprsdea40ui7" },
-
-    { "id": "devops-course-he", "aka": "דבאופס", "title": "קורס DevOps בעברית", "desc": "אתר הקורס.", "category": "study", "icon": "🎓", "repo": "devops-course-he", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\devops-course-he-site", "entry": "index.html" } },
-    { "id": "health-compass", "aka": "בריאות רפואה", "title": "מצפן בריאות", "desc": "מערכת בריאות מבוססת AI.", "category": "ai", "icon": "🩺", "repo": "health-compass", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\AI Agent\\health-system", "entry": "health-compass.html" } },
-    { "id": "astrology-decoder", "title": "פענוח אסטרולוגי משופר", "desc": "מערכת אסטרולוגיה.", "category": "ai", "icon": "🔮", "repo": "astrology-decoder", "start": "פענוח-אסטרולוגי-משופר.html", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\AI Agent\\astrology-system\\web", "entry": "פענוח-אסטרולוגי-משופר.html" } },
-    { "id": "jarvis-web", "aka": "גרוויס ג׳רוויס", "title": "Jarvis", "desc": "עוזר אישי בדפדפן.", "category": "ai", "icon": "🧠", "repo": "jarvis-web", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\AI Agent\\jarvis-web", "entry": "index.html" } },
-    { "id": "housing-system", "title": "מערכת דיור", "desc": "חיפוש דירות.", "category": "ai", "icon": "🏠", "repo": "housing-system", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\AI Agent\\housing-system\\site", "entry": "landing.html" } },
-
-    { "id": "project-2026-01-03-new", "title": "פרויקט 3.1.26 — new", "desc": "", "category": "web", "icon": "🧩", "repo": "project-2026-01-03-new", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\3.1.26\\new", "entry": "index.html" } },
-    { "id": "project-2026-01-03-new2", "title": "פרויקט 3.1.26 — new2", "desc": "", "category": "web", "icon": "🧩", "repo": "project-2026-01-03-new2", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\3.1.26\\new2", "entry": "index.html" } },
-    { "id": "files-management", "title": "ניהול קבצים", "desc": "", "category": "data", "icon": "🗂️", "repo": "files-management", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\3.1.26\\files managment", "entry": "index.html" } },
-    { "id": "manage-files", "title": "ניהול קבצים (27.12)", "desc": "", "category": "data", "icon": "📁", "repo": "manage-files", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\27.12.25\\mange files", "entry": "index.html" } },
-    { "id": "project-2026-01-19", "title": "פרויקט 19.1.26", "desc": "", "category": "web", "icon": "🧩", "repo": "project-2026-01-19", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\19.1.26", "entry": "index.html" } },
-    { "id": "data-management", "title": "ניהול נתונים", "desc": "", "category": "data", "icon": "📊", "repo": "data-management", "start": "index2.html", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\10.1.26\\ניהול נתונים", "entry": "index2.html" } },
-
-    { "id": "warehouse-management", "title": "ניהול מחסן ממוחשב", "desc": "תוכנה לניהול מחסן.", "category": "data", "icon": "🏭", "repo": "warehouse-management", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\תוכנ ה לניהול מחסן ממוחשב", "entry": "ניהול מחסן ממוחשב.html" } },
-    { "id": "warehouse-management-v2", "title": "ניהול מחסן ממוחשב (24.1.26)", "desc": "", "category": "data", "icon": "📦", "repo": "warehouse-management-v2", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\24.1.26\\ניהול מחסן ממוחשב .html" } },
-    { "id": "warehouse-management-v1", "title": "ניהול מחסן (20.12.25)", "desc": "", "category": "data", "icon": "📦", "repo": "warehouse-management-v1", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\20.12.25\\ניהול מחסן.html" } },
-
-    { "id": "recipe-calculator", "title": "מחשבון מצרכים למתכון", "desc": "", "category": "tools", "icon": "🍲", "repo": "recipe-calculator", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\מחשבון מצרכים למתכון", "entry": "*recepis5.html" } },
-    { "id": "translate-dub", "title": "תרגום ודיבוב", "desc": "", "category": "tools", "icon": "🗣️", "repo": "translate-dub", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\תרגום ודיבוב\\29.11.25", "entry": "*translate1.html" } },
-    { "id": "hebrew-calendar", "title": "לוח שנה עברי", "desc": "", "category": "tools", "icon": "📅", "repo": "hebrew-calendar", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\27.12.25\\hebrew-calendar1.html" } },
-    { "id": "israel-holidays", "title": "חגי ישראל", "desc": "", "category": "tools", "icon": "🕎", "repo": "israel-holidays", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\חגים", "entry": "Israel-holidays-browser3.html" } },
-    { "id": "insurance-analysis", "title": "ניתוח ביטוחים", "desc": "דוח אישי — נשמר כמאגר פרטי.", "category": "tools", "icon": "🛡️", "repo": "insurance-analysis", "private": true, "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\ביטוחים\\insurance_analysis_report.html" } },
-
-    { "id": "lotto", "title": "לוטו", "desc": "", "category": "lotto", "icon": "🎱", "repo": "lotto", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו חדש", "entry": "lotto.html" } },
-    { "id": "lotto-new", "title": "לוטו אמיתי — LOTO-NEW", "desc": "", "category": "lotto", "icon": "🎱", "repo": "lotto-new", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו אמיתי\\LOTO-NEW", "entry": "lotto.html" } },
-    { "id": "lotto-series", "title": "סדרות לוטו", "desc": "", "category": "lotto", "icon": "🎲", "repo": "lotto-series", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו אמיתי\\לוטו-חדש\\lotto_series.html" } },
-    { "id": "lotto-series-pro", "title": "סדרות לוטו Pro", "desc": "", "category": "lotto", "icon": "🎲", "repo": "lotto-series-pro", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו אמיתי\\לוטו-חדש\\חדש-חדש-חדש\\lotto_series_pro.html" } },
-
-    { "id": "zohar", "title": "זוהר", "desc": "", "category": "study", "icon": "📜", "repo": "zohar", "start": "index10.html", "local": { "mode": "folder", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\20.12.25\\zohar", "entry": "index10.html" } },
-    { "id": "zohar-v1", "title": "זוהר (18.12.25)", "desc": "", "category": "study", "icon": "📜", "repo": "zohar-v1", "local": { "mode": "file", "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\18.12.25\\זוהר1.html" } },
-
-    { "id": "local-4420", "title": "שרת מקומי — פורט 4420", "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:4420/" },
-    { "id": "local-3737", "title": "שרת מקומי — פורט 3737", "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:3737/" },
-    { "id": "local-8080", "title": "שרת מקומי — פורט 8080", "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.", "category": "other", "icon": "🖥️", "repo": "", "localhost": "http://localhost:8080/" }
-  ]
+  {
+   "id": "book-studio",
+   "featured": true,
+   "title": "סטודיו ספרים",
+   "desc": "סטודיו שהופך סיפור שכתבתם לספר מעומד עם איורים, מוכן להדפסה כ־PDF.",
+   "category": "web",
+   "icon": "📚",
+   "url": "https://devopsdevopshaim-wq.github.io/devops-hub/book-studio/",
+   "repo": "devops-hub",
+   "features": [
+    "כתיבה חופשית או הקלטה בקול",
+    "Claude מנסח כל פרק בשפה ספרותית",
+    "הפיכת צילומים לציורי יד בדפדפן",
+    "עימוד לגודל דפוס וייצוא PDF"
+   ],
+   "tech": [
+    "JavaScript",
+    "Claude API",
+    "Canvas",
+    "PDF"
+   ],
+   "story": "הרבה אנשים רוצים לכתוב ספר ונתקעים בניסוח ובעימוד. הסטודיו לוקח את המילים שלהם ומחזיר ספר אמיתי."
+  },
+  {
+   "id": "interior",
+   "title": "מתאר — תכנון פנים",
+   "desc": "מקבל את נתוני הדירה והמשפחה ומחזיר תכנון ריהוט מלא, עם סיור תלת־ממדי ורשימת קניות.",
+   "category": "web",
+   "icon": "🛋️",
+   "url": "https://devopsdevopshaim-wq.github.io/devops-hub/interior/",
+   "repo": "devops-hub",
+   "features": [
+    "תוכנית קומה עם מידות",
+    "סיור תלת־ממדי 360°",
+    "רשימת רהיטים והערכת תקציב",
+    "חנויות בישראל עם טלפון וקישור ל־Waze"
+   ],
+   "tech": [
+    "Three.js",
+    "JavaScript",
+    "WebGL"
+   ],
+   "story": "תכנון דירה חדשה מתחיל בדרך כלל בדף ריק. מתאר נותן נקודת פתיחה מלאה שאפשר להסתובב בה."
+  },
+  {
+   "id": "devops-hubnew",
+   "aka": "דבאופס הב",
+   "title": "DevOps Hub",
+   "desc": "גרסת Vercel של ה־Hub.",
+   "category": "web",
+   "icon": "🧭",
+   "url": "https://devops-hubnew.vercel.app/"
+  },
+  {
+   "id": "dist-web",
+   "aka": "דיסט",
+   "title": "Dist Web",
+   "desc": "אתר שפורסם ב־Vercel.",
+   "category": "web",
+   "icon": "🌐",
+   "url": "https://dist-web-devopsdevopshaim-wq.vercel.app/",
+   "noshot": true
+  },
+  {
+   "id": "hapinkas-hayomi",
+   "title": "הפנקס היומי",
+   "desc": "אפליקציה שפורסמה ב־Render.",
+   "category": "web",
+   "icon": "📒",
+   "url": "https://hapinkas-hayomi.onrender.com/"
+  },
+  {
+   "id": "smart-office-assistant",
+   "featured": true,
+   "title": "עוזר משרד חכם",
+   "desc": "עוזר AI למשרד (Render).",
+   "category": "ai",
+   "icon": "🤖",
+   "url": "https://smart-office-assistant.onrender.com/"
+  },
+  {
+   "id": "rork-app",
+   "aka": "רורק",
+   "title": "אפליקציית Rork",
+   "desc": "אפליקציית מובייל שנבנתה ב־Rork.",
+   "category": "other",
+   "icon": "📱",
+   "url": "https://rork.com/p/rc724nfz3ymtplm26dtx2"
+  },
+  {
+   "id": "gamma-deck",
+   "aka": "גאמה",
+   "title": "מצגת Gamma",
+   "desc": "מצגת שנבנתה ב־Gamma.",
+   "category": "other",
+   "icon": "🎞️",
+   "url": "https://gamma.app/docs/-iy2qvntue59gxjg?mode=present#card-ajcjprsdea40ui7"
+  },
+  {
+   "id": "devops-course-he",
+   "aka": "דבאופס",
+   "title": "My Academy — DevOps ו־AI",
+   "desc": "קורס דו־לשוני עם שני מסלולים: DevOps ו־AI Architect, שיעור אחרי שיעור מהבסיס ועד פרויקט.",
+   "category": "study",
+   "icon": "🎓",
+   "repo": "devops-course-he",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\devops-course-he-site",
+    "entry": "index.html"
+   },
+   "features": [
+    "12 שיעורים בכל מסלול",
+    "מצגות, מטרות וחומר קריאה לכל שיעור",
+    "עברית ואנגלית בלחיצה",
+    "סדר לימוד מ־Linux ועד Kubernetes ו־ArgoCD"
+   ],
+   "tech": [
+    "JavaScript",
+    "i18n",
+    "Three.js"
+   ],
+   "story": "כתבתי את הקורס שהייתי רוצה לקבל כשהתחלתי ללמוד DevOps: מסודר, בעברית, ובלי לדלג על הבסיס."
+  },
+  {
+   "id": "health-compass",
+   "aka": "בריאות רפואה",
+   "title": "מצפן בריאות",
+   "desc": "כלי אישי לניהול משקל, נפיחות ובעיות עיכול: אוסף נתונים, מסכם המלצות מרופאים ומנתח את המקרה שלכם.",
+   "category": "ai",
+   "icon": "🩺",
+   "repo": "health-compass",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\AI Agent\\health-system",
+    "entry": "health-compass.html"
+   },
+   "features": [
+    "סינון דגלים אדומים לפני הכול",
+    "שאלון נתונים עם שמירת טיוטה",
+    "תמצית המלצות תזונה ופעילות",
+    "ניתוח אישי וייצוא סיכום"
+   ],
+   "tech": [
+    "JavaScript",
+    "localStorage"
+   ],
+   "story": "מידע רפואי ברשת מפוזר וסותר. מצפן בריאות מרכז את ההנחיות במקום אחד ומתאים אותן לנתונים שלכם."
+  },
+  {
+   "id": "astrology-decoder",
+   "title": "פענוח אסטרולוגי",
+   "desc": "מחשב מפת לידה מדויקת עם גלגל, בתים והיבטים, ומשווה אותה לטרנזיטים של השמיים עכשיו.",
+   "category": "ai",
+   "icon": "🔮",
+   "repo": "astrology-decoder",
+   "start": "פענוח-אסטרולוגי-משופר.html",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\AI Agent\\astrology-system\\web",
+    "entry": "פענוח-אסטרולוגי-משופר.html"
+   },
+   "features": [
+    "גלגל מפה ומיקומי כוכבים ובתים",
+    "היבטים, יסודות ומופע ירח",
+    "טרנזיטים חיים מול מפת הלידה",
+    "תחזיות יומיות עד שנתיות והדפסה"
+   ],
+   "tech": [
+    "JavaScript",
+    "SVG",
+    "Node.js"
+   ]
+  },
+  {
+   "id": "jarvis-web",
+   "aka": "גרוויס ג׳רוויס",
+   "title": "JARVIS — עוזר רב־סוכנים",
+   "desc": "עוזר אישי בדפדפן שמפנה כל בקשה למחלקה המתאימה: מחקר, תכנון משימות, עזרה בקוד או דעה שנייה.",
+   "category": "ai",
+   "icon": "🧠",
+   "repo": "jarvis-web",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\AI Agent\\jarvis-web",
+    "entry": "index.html"
+   },
+   "features": [
+    "מחלקות סוכנים לפי סוג המשימה",
+    "דעה שנייה מ־Claude",
+    "חיבור ל־n8n דרך Webhook",
+    "בדיקת חיבור והגדרות שנשמרות"
+   ],
+   "tech": [
+    "JavaScript",
+    "n8n",
+    "AI agents"
+   ],
+   "story": "במקום צ׳אט אחד שעושה הכול, JARVIS מחלק עבודה בין סוכנים שכל אחד טוב בדבר אחד."
+  },
+  {
+   "id": "housing-system",
+   "title": "DiraFinder — חיפוש דירות",
+   "desc": "כל הדירות עד רמת השכונה בדף אחד, עם שמונה שכבות ניתוח לכל נכס ומחשבון משכנתא.",
+   "category": "ai",
+   "icon": "🏠",
+   "repo": "housing-system",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\AI Agent\\housing-system\\site",
+    "entry": "landing.html"
+   },
+   "features": [
+    "מכירה, השכרה, כינוס נכסים וחו״ל",
+    "מחיר מול השוק ומגמה בשכונה",
+    "תב״ע, בנייה עתידית ותמ״א 38",
+    "מחשבון זכאות ותמהיל משכנתא"
+   ],
+   "tech": [
+    "JavaScript",
+    "localStorage"
+   ],
+   "story": "לפני שמגישים הצעה על דירה צריך לבדוק עשרות דברים. DiraFinder שם את כולם על המסך יחד."
+  },
+  {
+   "id": "project-2026-01-03-new",
+   "title": "PRO Network Host",
+   "desc": "לוח בקרה לאירוח קבצים ולניטור רשת: מעלים קובץ, מפעילים שרת ועוקבים אחרי המצב בזמן אמת.",
+   "category": "devops",
+   "icon": "🧩",
+   "repo": "project-2026-01-03-new",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\3.1.26\\new",
+    "entry": "index.html"
+   },
+   "features": [
+    "העלאה והפעלה של קובץ בלחיצה",
+    "שרת אוטומטי עם Dockerfile",
+    "התראות בדפדפן",
+    "Node.js בצד השרת"
+   ],
+   "tech": [
+    "Node.js",
+    "Docker",
+    "JavaScript"
+   ]
+  },
+  {
+   "id": "project-2026-01-03-new2",
+   "title": "ProDev Host",
+   "desc": "מערכת אירוח לקבצי HTML: גוררים קובץ, מפעילים שרת וסורקים את הרשת, עם גרפים של הפעילות.",
+   "category": "devops",
+   "icon": "🧩",
+   "repo": "project-2026-01-03-new2",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\3.1.26\\new2",
+    "entry": "index.html"
+   },
+   "features": [
+    "גרירת קובץ HTML והפעלה מיידית",
+    "סריקת רשת ואיתור כתובת IP",
+    "גרפים של פעילות השרת",
+    "הגדרות שנשמרות"
+   ],
+   "tech": [
+    "JavaScript",
+    "Chart.js"
+   ]
+  },
+  {
+   "id": "files-management",
+   "title": "מערכת אירוח קבצי HTML",
+   "desc": "מעלים קבצי HTML, מנהלים אותם ומפרסמים: שרת מקומי, Docker או AWS, עם לוגים וגיבוי.",
+   "category": "devops",
+   "icon": "🗂️",
+   "repo": "files-management",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\3.1.26\\files managment",
+    "entry": "index.html"
+   },
+   "features": [
+    "העלאה, צפייה והעתקת קישור",
+    "פריסה מקומית, ב־Docker או ל־AWS",
+    "לוגים וניטור שרת",
+    "ייצוא וייבוא גיבוי"
+   ],
+   "tech": [
+    "Python",
+    "Docker",
+    "Nginx",
+    "JavaScript"
+   ],
+   "story": "רציתי דרך פשוטה להפוך קובץ HTML לאתר חי, בלי להסתבך בשרתים. זה היה אחד הצעדים הראשונים שלי ב־DevOps."
+  },
+  {
+   "id": "manage-files",
+   "title": "Archivum Pro",
+   "desc": "מערכת ניהול קבצים בסגנון ענן: לוח בקרה, סייר קבצים, הרשאות משתמשים ואינטגרציות.",
+   "category": "data",
+   "icon": "📁",
+   "repo": "manage-files",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\27.12.25\\mange files",
+    "entry": "index.html"
+   },
+   "features": [
+    "לוח בקרה עם סטטיסטיקות",
+    "העלאת קובץ, קבצים או תיקייה שלמה",
+    "סייר קבצים עם מיון",
+    "ניהול הרשאות ואינטגרציות"
+   ],
+   "tech": [
+    "JavaScript",
+    "Three.js",
+    "CSS"
+   ]
+  },
+  {
+   "id": "project-2026-01-19",
+   "title": "הורדת קבצי וידאו",
+   "desc": "כלי פשוט להורדת קבצי וידאו מקישור ישיר, עם היסטוריית הורדות.",
+   "category": "tools",
+   "icon": "🧩",
+   "repo": "project-2026-01-19",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\19.1.26",
+    "entry": "index.html"
+   },
+   "features": [
+    "הורדה מקישור ישיר",
+    "יצירת קובץ וידאו לדוגמה",
+    "רשימת קבצים שהורדתם"
+   ],
+   "tech": [
+    "JavaScript"
+   ]
+  },
+  {
+   "id": "data-management",
+   "title": "ProDev Host מורחב",
+   "desc": "הגרסה המורחבת של ProDev Host: בחירת סביבת הפעלה (Docker, Node.js, Python, PHP, Nginx), לוגים וייצוא.",
+   "category": "devops",
+   "icon": "📊",
+   "repo": "data-management",
+   "start": "index2.html",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\10.1.26\\ניהול נתונים",
+    "entry": "index2.html"
+   },
+   "features": [
+    "חמש סביבות הפעלה לבחירה",
+    "גרפים וסטטיסטיקות",
+    "יומן אירועים עם סינון",
+    "ייצוא והדפסה"
+   ],
+   "tech": [
+    "JavaScript",
+    "Chart.js",
+    "Docker"
+   ]
+  },
+  {
+   "id": "warehouse-management",
+   "title": "WMS חכם — ניהול מחסן",
+   "desc": "מערכת ניהול מחסן מלאה: מדפים, פריטים וספקים, סריקת ברקוד במצלמה, ייבוא וייצוא Excel וגרפים.",
+   "category": "data",
+   "icon": "🏭",
+   "repo": "warehouse-management",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\תוכנ ה לניהול מחסן ממוחשב",
+    "entry": "ניהול מחסן ממוחשב.html"
+   },
+   "features": [
+    "סריקת ברקוד ו־QR במצלמה",
+    "מפת מדפים ופריטים בכל מדף",
+    "ייבוא וייצוא Excel",
+    "דשבורד עם גרפים והתחברות משתמש"
+   ],
+   "tech": [
+    "JavaScript",
+    "Chart.js",
+    "SheetJS",
+    "html5-qrcode"
+   ],
+   "story": "מחסן אמיתי עובד עם מדפים, ברקודים וקבצי Excel. בניתי מערכת שמדברת בשפה הזאת, ורצה מהדפדפן בלי התקנה."
+  },
+  {
+   "id": "warehouse-management-v2",
+   "title": "ניהול מלאי וחלפים",
+   "desc": "ניהול מלאי, חלקי חילוף, הזמנות וספקים, עם התחלה מהירה מקובץ Excel ודוחות.",
+   "category": "data",
+   "icon": "📦",
+   "repo": "warehouse-management-v2",
+   "local": {
+    "mode": "file",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\24.1.26\\ניהול מחסן ממוחשב .html"
+   },
+   "features": [
+    "מלאי, חלפים, הזמנות וספקים",
+    "התחלה מהירה מ־Excel עם קובץ לדוגמה",
+    "התראות וסטטיסטיקות לפי קטגוריה",
+    "ייצוא דוחות ל־Excel"
+   ],
+   "tech": [
+    "JavaScript",
+    "SheetJS"
+   ]
+  },
+  {
+   "id": "warehouse-management-v1",
+   "title": "Mantis WMS",
+   "desc": "הגרסה הראשונה של מערכת המחסן: מלאי עם תמונות והערות, חלקי חילוף, הזמנות וייצוא ל־Excel.",
+   "category": "data",
+   "icon": "📦",
+   "repo": "warehouse-management-v1",
+   "local": {
+    "mode": "file",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\20.12.25\\ניהול מחסן.html"
+   },
+   "features": [
+    "פריטים עם תמונות והערות",
+    "העלאה מרובה וייבוא מ־Excel",
+    "הזמנות מכר וספקים",
+    "ייצוא הכול ל־Excel"
+   ],
+   "tech": [
+    "JavaScript",
+    "SheetJS"
+   ]
+  },
+  {
+   "id": "recipe-calculator",
+   "title": "ספר המתכונים",
+   "desc": "מחשבון שמתאים כמויות מצרכים לכל מספר סועדים, ושומר את המתכונים עם תמונות וסרטונים.",
+   "category": "tools",
+   "icon": "🍲",
+   "repo": "recipe-calculator",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\מחשבון מצרכים למתכון",
+    "entry": "*recepis5.html"
+   },
+   "features": [
+    "חישוב כמויות לפי מספר מנות",
+    "ספר מתכונים שמור עם מדיה",
+    "הקראה בקול של הוראות ההכנה",
+    "שיתוף והדפסה"
+   ],
+   "tech": [
+    "JavaScript",
+    "Web Speech",
+    "localStorage"
+   ]
+  },
+  {
+   "id": "translate-dub",
+   "title": "VocalizePro — תרגום ודיבוב",
+   "desc": "מתרגם טקסט ומקריא אותו בקול, עם אווטאר מדבר שבוחרים לו דמות וקול.",
+   "category": "tools",
+   "icon": "🗣️",
+   "repo": "translate-dub",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\תרגום ודיבוב\\29.11.25",
+    "entry": "*translate1.html"
+   },
+   "features": [
+    "תרגום טקסט",
+    "אווטאר מדבר עם בחירת דמות",
+    "בחירת קול ובקרת השמעה",
+    "העתקה, הדפסה ושמירה"
+   ],
+   "tech": [
+    "JavaScript",
+    "Web Speech"
+   ]
+  },
+  {
+   "id": "hebrew-calendar",
+   "title": "לוח שנה עברי תשפ״ו",
+   "desc": "לוח שנה עברי מדויק עם כל החגים והמועדים ופרשות השבוע, ופירוש מלא לכל פרשה.",
+   "category": "tools",
+   "icon": "📅",
+   "repo": "hebrew-calendar",
+   "local": {
+    "mode": "file",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\27.12.25\\hebrew-calendar1.html"
+   },
+   "features": [
+    "לוח חודשי עברי ולועזי",
+    "חגים ומועדים לשנה",
+    "כל פרשות השבוע",
+    "פירוש מלא לכל פרשה"
+   ],
+   "tech": [
+    "JavaScript"
+   ]
+  },
+  {
+   "id": "israel-holidays",
+   "title": "דפדפן חגי ישראל",
+   "desc": "כל חג במקום אחד: הסבר, תפילות, קריאת התורה, מקורות מהתנ״ך, הגמרא והזוהר, וזמני כניסה ויציאה.",
+   "category": "tools",
+   "icon": "🕎",
+   "repo": "israel-holidays",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\חגים",
+    "entry": "Israel-holidays-browser3.html"
+   },
+   "features": [
+    "זמני כניסה ויציאה לפי מיקום",
+    "תפילות וקריאת התורה",
+    "טקסטים מלאים מהמקורות",
+    "קישורים מומלצים"
+   ],
+   "tech": [
+    "JavaScript",
+    "Hebcal API",
+    "Sunrise-Sunset API"
+   ]
+  },
+  {
+   "id": "insurance-analysis",
+   "title": "ניתוח ביטוחים",
+   "desc": "דוח אישי שמנתח ומשווה פוליסות ביטוח.",
+   "category": "tools",
+   "icon": "🛡️",
+   "repo": "insurance-analysis",
+   "private": true,
+   "local": {
+    "mode": "file",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\ביטוחים\\insurance_analysis_report.html"
+   },
+   "features": [
+    "השוואת פוליסות",
+    "סיכום כיסויים"
+   ],
+   "tech": [
+    "HTML"
+   ]
+  },
+  {
+   "id": "lotto",
+   "title": "Lotto Predictor",
+   "desc": "מאגר תוצאות לוטו עם חיזוי מבוסס משקלים שאפשר לכוונן, גרפים וייבוא וייצוא.",
+   "category": "lotto",
+   "icon": "🎱",
+   "repo": "lotto",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו חדש",
+    "entry": "lotto.html"
+   },
+   "features": [
+    "מאגר הגרלות עם ייבוא CSV ו־JSON",
+    "חיזוי לפי משקלים מכווננים",
+    "גרפי שכיחות",
+    "ייצוא נתונים"
+   ],
+   "tech": [
+    "JavaScript",
+    "Chart.js",
+    "Bootstrap",
+    "PapaParse"
+   ]
+  },
+  {
+   "id": "lotto-new",
+   "title": "לוטו — מערכת חכמה",
+   "desc": "הגרסה המעוצבת של מערכת הלוטו: יצירת ניחושים, בדיקת דיוק מול תוצאות, סינון ומיון.",
+   "category": "lotto",
+   "icon": "🎱",
+   "repo": "lotto-new",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו אמיתי\\LOTO-NEW",
+    "entry": "lotto.html"
+   },
+   "features": [
+    "יצירת ניחושים",
+    "בדיקת דיוק מול הגרלות קודמות",
+    "מסננים ומיון לפי תאריך",
+    "ייבוא וייצוא CSV ו־JSON"
+   ],
+   "tech": [
+    "JavaScript",
+    "Chart.js",
+    "Bootstrap",
+    "PapaParse"
+   ]
+  },
+  {
+   "id": "lotto-series",
+   "title": "חיזוי סדרות לוטו",
+   "desc": "חיזוי סדרות של 6 מספרים ומספר נוסף, מתוך מאגר ההגרלות.",
+   "category": "lotto",
+   "icon": "🎲",
+   "repo": "lotto-series",
+   "local": {
+    "mode": "file",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו אמיתי\\לוטו-חדש\\lotto_series.html"
+   },
+   "features": [
+    "ייבוא מאגר מ־CSV",
+    "הפקת ניבויים לסדרות",
+    "גרפים",
+    "ייצוא CSV"
+   ],
+   "tech": [
+    "JavaScript",
+    "Chart.js",
+    "Bootstrap"
+   ]
+  },
+  {
+   "id": "lotto-series-pro",
+   "title": "Lotto Pro — הסתברויות",
+   "desc": "הגרסה המתקדמת: חיזוי לפי הסתברויות, ניתוח רצפים, משקלים שנשמרים והיסטוריית חיזויים.",
+   "category": "lotto",
+   "icon": "🎲",
+   "repo": "lotto-series-pro",
+   "local": {
+    "mode": "file",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\22.10.25\\14.10.25\\לוטו אמיתי\\לוטו-חדש\\חדש-חדש-חדש\\lotto_series_pro.html"
+   },
+   "features": [
+    "חיזוי לפי הסתברויות",
+    "ניתוח רצפים",
+    "שמירת משקלים והיסטוריה",
+    "ייצוא ל־PDF ו־CSV"
+   ],
+   "tech": [
+    "JavaScript",
+    "Chart.js",
+    "jsPDF",
+    "Bootstrap"
+   ]
+  },
+  {
+   "id": "zohar",
+   "title": "לוח שנה עם פירושי הפרשות",
+   "desc": "לוח שנה עברי עם חיפוש, חגים ומועדים, ופירושים מלאים לכל 54 פרשות השבוע.",
+   "category": "study",
+   "icon": "📜",
+   "repo": "zohar",
+   "start": "index10.html",
+   "local": {
+    "mode": "folder",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\20.12.25\\zohar",
+    "entry": "index10.html"
+   },
+   "features": [
+    "פירוש מלא לכל 54 הפרשות",
+    "חגים ומועדים",
+    "חיפוש בלוח",
+    "מעבר בין שנים"
+   ],
+   "tech": [
+    "JavaScript"
+   ]
+  },
+  {
+   "id": "zohar-v1",
+   "title": "פירושי הזוהר והקבלה",
+   "desc": "מאגר מאמרים ופירושים על הזוהר, מסודר לפי פרשה, ספר ונושא, עם אפשרות לשאול שאלה.",
+   "category": "study",
+   "icon": "📜",
+   "repo": "zohar-v1",
+   "local": {
+    "mode": "file",
+    "path": "C:\\Users\\user\\Desktop\\DEVOPS\\study\\privet\\18.12.25\\זוהר1.html"
+   },
+   "features": [
+    "פירושים לפי פרשה וספר",
+    "נושאים: פריון, שפע, משפחה ובריאות",
+    "מאמרים מומלצים ואקראיים",
+    "שליחת שאלה"
+   ],
+   "tech": [
+    "JavaScript"
+   ]
+  },
+  {
+   "id": "local-4420",
+   "title": "שרת מקומי — פורט 4420",
+   "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.",
+   "category": "other",
+   "icon": "🖥️",
+   "repo": "",
+   "localhost": "http://localhost:4420/"
+  },
+  {
+   "id": "local-3737",
+   "title": "שרת מקומי — פורט 3737",
+   "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.",
+   "category": "other",
+   "icon": "🖥️",
+   "repo": "",
+   "localhost": "http://localhost:3737/"
+  },
+  {
+   "id": "local-8080",
+   "title": "שרת מקומי — פורט 8080",
+   "desc": "רץ על המחשב האישי ונפתח כשהשרת פועל.",
+   "category": "other",
+   "icon": "🖥️",
+   "repo": "",
+   "localhost": "http://localhost:8080/"
+  }
+ ]
 }
