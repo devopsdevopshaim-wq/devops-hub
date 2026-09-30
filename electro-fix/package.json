@@ -1,0 +1,16 @@
+{
+  "name": "electro-fix",
+  "private": true,
+  "version": "1.0.0",
+  "description": "מעגל סגור — מרכז אבחון ותיקון תקלות חשמל ואלקטרוניקה בעזרת Claude",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test/netlist.test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0"
+  }
+}
