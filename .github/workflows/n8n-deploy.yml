@@ -35,6 +35,7 @@ jobs:
           N8N_URL: ${{ secrets.N8N_URL }}
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HAIM_WEB_KEY: ${{ secrets.HAIM_WEB_KEY }}
         run: node .github/scripts/n8n-deploy.mjs
       - name: Connect the portfolio
         if: steps.deploy.outputs.changed == 'true'
