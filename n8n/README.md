@@ -1,3 +1,44 @@
+# n8n
+
+בתיקייה שני Workflows מוכנים ל־n8n Cloud:
+
+| קובץ | מה הוא |
+| --- | --- |
+| `hasadna-guide-agent.json` | **גיא — סוכן הפרויקטים** של אתר הסדנה (`portfolio/`). עונה לעומק על כל פרויקט ועל האוטומציות. |
+| `masa-vacation-agent.json` | האתר, הדילים והסוכן של **מסע** (למטה). |
+
+## גיא — סוכן הפרויקטים
+
+![תרשים הזרימה](guide-flow.png)
+
+מקור התרשים: `guide-flow.mmd` (Mermaid).
+
+**איך זה עובד:**
+1. **Webhook:** האתר שולח את השאלה, מזהה שיחה, והעמוד שהמבקר נמצא בו.
+2. **טעינת ידע:** `portfolio/knowledge.json` מ־GitHub Pages. הקובץ נבנה אוטומטית בכל פרסום. GitHub Actions מוריד את הקוד של כל הפרויקטים ומחלץ ממנו מסכים, פעולות, ספריות ואוטומציות (Docker, שרתים, n8n, Excel, PDF, תזמון…).
+3. **בניית הקשר:** צומת Code בוחר את הפרויקטים שהשאלה עוסקת בהם, ובשאלות על אוטומציה מוסיף את הפרויקטים העשירים באוטומציה ואת האופן שבו האתר עצמו מתעדכן.
+4. **AI Agent:** Claude עם זיכרון של 8 ההודעות האחרונות בשיחה. בשאלה פשוטה הוא עונה בקצרה, ובשאלה מעמיקה ב־4–8 משפטים עם פרטים מהקוד.
+5. **עיצוב התשובה:** מפריד את התשובה, את הפרויקט שצריך להדגיש באתר, ושתי שאלות המשך מעמיקות. באתר הן מופיעות ככפתורים.
+6. **Respond:** מחזיר JSON לאתר. אפשר גם להפעיל יומן שאלות ב־Google Sheets.
+
+אם n8n לא זמין, גיא עונה מהאתר עצמו בזיהוי מילים, כך שהאתר לא נשבר.
+
+### התקנה (כ־5 דקות)
+1. ב־n8n Cloud: **Create workflow** ← תפריט `⋯` ← **Import from File** ← `hasadna-guide-agent.json` ← **Save**.
+2. פותחים את הצומת **Claude (Anthropic)** ← Credential ← **Create new** ← מדביקים API key מ־console.anthropic.com. אם שדה המודל אדום, בוחרים מהרשימה את Claude Opus העדכני.
+3. מתג **Active** למעלה.
+4. פותחים את **Guide · Webhook**, בלשונית **Production URL** מעתיקים את הכתובת (בסגנון `https://<שם>.app.n8n.cloud/webhook/hasadna-guide`).
+5. מדביקים אותה בשדה `guideApi` בקובץ `portfolio/projects.json` (אפשר לערוך ישירות ב־GitHub), ושומרים. תוך 2 דקות גיא מחובר.
+
+**בדיקה מהירה** (PowerShell):
+```powershell
+Invoke-RestMethod -Method Post -Uri "https://<שם>.app.n8n.cloud/webhook/hasadna-guide" -ContentType "text/plain" -Body '{"question":"איך האתר מתעדכן לבד?","sessionId":"test"}'
+```
+
+**בנייה מחדש:** `python3 n8n/build-guide-workflow.py` (אפשר `--model` אחר).
+
+---
+
 # מסע ב-n8n
 
 הקובץ `masa-vacation-agent.json` הוא Workflow מוכן ל-n8n Cloud עם שלושה חלקים:
