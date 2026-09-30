@@ -163,6 +163,8 @@
           add('error', 'N ו-PE מחוברים יחד: ' + desc + '. זה יגרום להפלת ממסר הפחת ומסכן. יש להפריד.', n.terminals);
         } else if (kinds.earth && kinds.dc0 && pots.length === 2) {
           add('warning', 'ה-0V מוארק: ' + desc + '. תקין אם זו הארקת מערכת פיקוד מכוונת (PELV) בנקודה אחת בלבד.', n.terminals);
+        } else if (pots.length === 2 && kinds.dcplus && !kinds.dc0 && !kinds.line && !kinds.neutral && !kinds.earth) {
+          add('error', 'שני מתחי הזנה שונים מחוברים יחד: ' + desc + '. רכיב יקבל מתח שגוי, או שיהיה קצר בין הספקים.', n.terminals);
         } else {
           add('error', 'קצר: פוטנציאלים שונים על אותו צומת — ' + desc + '.', n.terminals);
         }
@@ -207,6 +209,8 @@
       if (isAC && !hasPE) add('warning', 'לרכיב ' + c.id + ' (' + (c.label || c.type) + ') אין הדק הארקה בסכימה. גוף מתכתי של ציוד מתח רשת חייב להיות מוארק.', [c.id]);
     });
 
+    electronics(comps, degree, function (k) { return nets[find(k)]; }, add);
+
     var errors = issues.filter(function (i) { return i.level === 'error'; }).length;
     return {
       issues: issues,
@@ -214,6 +218,108 @@
       ok: errors === 0,
       stats: { components: comps.length, wires: wires.length, nets: netList.length, errors: errors, warnings: issues.length - errors }
     };
+  }
+
+  /* ---------- כללי אלקטרוניקה (כרטיסים) ---------- */
+
+  function railsOf(net) { return net ? Object.keys(net.potentials) : []; }
+  function plusV(net) {
+    var v = null;
+    railsOf(net).forEach(function (p) { if (kind(p) === 'dcplus') { var x = parseFloat(p.slice(1)); if (isFinite(x)) v = Math.max(v || 0, x); else v = v || 0; } });
+    return v;
+  }
+  function isPlus(net) { return plusV(net) !== null; }
+  function isGnd(net) { return railsOf(net).some(function (p) { return kind(p) === 'dc0'; }); }
+
+  function electronics(comps, degree, netOf, add) {
+    var byId = {};
+    comps.forEach(function (c) { byId[c.id] = c; });
+    function key(c, re) {
+      var t = (c.terminals || []).filter(function (x) { return re.test(String(x.id)); })[0];
+      return t ? c.id + '.' + t.id : null;
+    }
+    function net(k) { return k && degree[k] ? netOf(k) : null; }
+    function typeIn(k) { return byId[k.split('.')[0]] ? byId[k.split('.')[0]].type : ''; }
+    function name(c) { return c.id + (c.value ? ' (' + c.value + ')' : c.label ? ' (' + c.label + ')' : ''); }
+    // האם יש רכיב מסוג מסוים שהדק אחד שלו בצומת a והדק אחר בצומת b
+    function bridged(na, nb, types, cond) {
+      return comps.some(function (c) {
+        if (types.indexOf(c.type) < 0) return false;
+        var keys = (c.terminals || []).map(function (t) { return c.id + '.' + t.id; });
+        return keys.some(function (k1) {
+          return keys.some(function (k2) {
+            return k1 !== k2 && net(k1) === na && net(k2) === nb && (!cond || cond(c, k1, k2));
+          });
+        });
+      });
+    }
+    var RE_A = /^(A|\+|ANODE)$/i, RE_K = /^(K|C|-|CATHODE)$/i;
+    var RE_VCC = /^(VCC|VDD|3V3|3\.3V|5V|VIN|V\+|VBAT|VS)$/i, RE_GND = /^(GND|VSS|0V|V-|GND1)$/i;
+
+    comps.forEach(function (c) {
+      var isLed = c.type === 'led' || (c.type === 'diode' && /LED|נורית/i.test((c.label || '') + ' ' + (c.value || '')));
+      if (isLed || c.type === 'diode') {
+        var a = key(c, RE_A), k = key(c, RE_K), na = net(a), nk = net(k);
+        if (na && nk && isPlus(na) && isGnd(nk)) {
+          if (isLed) add('error', 'הנורית ' + name(c) + ' מחוברת ישירות בין ההזנה ל-GND בלי נגד טורי, ותישרף. הוסיפו נגד: R = (Vהזנה − Vנורית) / I, למשל 330Ω ל-5V ו-10mA.', [c.id]);
+          else add('error', 'הדיודה ' + name(c) + ' מחוברת בכיוון ההולכה ישירות בין ההזנה ל-GND — זה קצר דרך הדיודה.', [c.id]);
+        } else if (isLed && na && nk && isGnd(na) && isPlus(nk)) {
+          add('warning', 'הנורית ' + name(c) + ' מחוברת הפוך (האנודה ל-GND) ולא תדלק.', [c.id]);
+        }
+      }
+      if (c.type === 'capacitor') {
+        var cp = key(c, /^\+$/), cm = key(c, /^-$/), np = net(cp), nm = net(cm);
+        if (np && nm && isGnd(np) && isPlus(nm)) add('error', 'הקבל האלקטרוליטי ' + name(c) + ' מחובר הפוך (+ ל-GND). קבל הפוך מתחמם ועלול להתפוצץ.', [c.id]);
+        var rating = String(c.value || '').match(/(\d+(?:\.\d+)?)\s*V\b/i);
+        var rail = Math.max.apply(null, [0].concat((c.terminals || []).map(function (t) { return plusV(net(c.id + '.' + t.id)) || 0; })));
+        if (rating && rail) {
+          var r = parseFloat(rating[1]);
+          if (r < rail) add('error', 'מתח העבודה של ' + name(c) + ' (' + r + 'V) נמוך ממתח ההזנה (' + rail + 'V).', [c.id]);
+          else if (r < rail * 1.25) add('warning', 'מתח העבודה של ' + name(c) + ' קרוב מדי למתח ההזנה (' + rail + 'V). מקובל מרווח של 25% לפחות.', [c.id]);
+        }
+      }
+      if (c.type === 'relay' || c.type === 'contactor') {
+        var a1 = key(c, /^(A1|COIL1|COIL\+)$/i), a2 = key(c, /^(A2|COIL2|COIL-)$/i), n1 = net(a1), n2 = net(a2);
+        if (n1 && n2 && (isPlus(n1) || isPlus(n2)) && !(isPlus(n1) && isGnd(n2)) && !(isPlus(n2) && isGnd(n1))) {
+          // סליל DC שמופעל דרך מתג אלקטרוני — צריך דיודת גלגול חופשי במקביל
+          var hasDiode = bridged(n1, n2, ['diode'], null);
+          var reversed = bridged(n1, n2, ['diode'], function (d, k1) { return RE_A.test(k1.split('.')[1]) && isPlus(net(k1)); });
+          if (reversed) add('error', 'דיודת הגלגול החופשי על הסליל של ' + name(c) + ' הפוכה: הקתודה צריכה להיות בצד ה-+ של הסליל. כך היא יוצרת קצר כשהמתג סוגר.', [c.id]);
+          else if (!hasDiode) add('warning', 'אין דיודת גלגול חופשי (למשל 1N4007) במקביל לסליל של ' + name(c) + '. מתח ההשראה בניתוק יהרוס את הטרנזיסטור או את יציאת הבקר.', [c.id]);
+        }
+      }
+      if (c.type === 'transistor') {
+        var b = key(c, /^(B|BASE)$/i), nb = net(b);
+        if (nb) {
+          if (isPlus(nb) || isGnd(nb)) add('warning', 'הבסיס של ' + name(c) + ' מחובר ישירות לקו הזנה.', [c.id]);
+          else if (!nb.terminals.some(function (k) {
+            // נגד טורי: פין אחד בצומת הבסיס, והפין השני מחובר לאות (לא לקו הזנה ולא באוויר)
+            if (typeIn(k) !== 'resistor') return false;
+            var r = byId[k.split('.')[0]];
+            return (r.terminals || []).some(function (t) {
+              var o = r.id + '.' + t.id, no = net(o);
+              return o !== k && no && no !== nb && !isPlus(no) && !isGnd(no);
+            });
+          })) add('warning', 'אין נגד בסיס ל-' + name(c) + '. בלי נגד (למשל 1kΩ) היציאה שמזינה את הבסיס תספק זרם גבוה מדי ועלולה להישרף.', [c.id]);
+        }
+      }
+      if (c.type === 'ic' || c.type === 'mcu') {
+        var vcc = key(c, RE_VCC), gnd = key(c, RE_GND);
+        [vcc, gnd].forEach(function (k) { if (k && !degree[k]) add('error', 'פין ההזנה ' + k + ' לא מחובר — הרכיב לא יעבוד.', [k]); });
+        var nv = net(vcc), ng = net(gnd);
+        if (nv && ng && !bridged(nv, ng, ['capacitor'])) add('warning', 'אין קבל ניתוק (100nF) בין ' + vcc + ' ל-' + gnd + '. הניחו אותו צמוד לפין ההזנה.', [c.id]);
+      }
+      if (c.type === 'regulator') {
+        var vi = key(c, /^(IN|VIN|VI)$/i), vo = key(c, /^(OUT|VOUT|VO)$/i), g = key(c, /^(GND|ADJ|COM|0V)$/i);
+        var ni = net(vi), no = net(vo), nG = net(g);
+        [vi, vo, g].forEach(function (k) { if (k && !degree[k]) add('error', 'ההדק ' + k + ' של הרגולטור לא מחובר.', [k]); });
+        if (ni && nG && !bridged(ni, nG, ['capacitor'])) add('warning', 'חסר קבל כניסה בין IN ל-GND של ' + name(c) + '.', [c.id]);
+        if (no && nG && !bridged(no, nG, ['capacitor'])) add('warning', 'חסר קבל יציאה בין OUT ל-GND של ' + name(c) + '. ברגולטור LDO הוא נדרש ליציבות (ראו דף הנתונים).', [c.id]);
+        var vin = plusV(ni), vout = plusV(no);
+        if (vin !== null && vout !== null && vin && vout && vin <= vout) add('error', 'הרגולטור ' + name(c) + ' מקבל ' + vin + 'V ואמור לתת ' + vout + 'V. רגולטור לינארי לא יכול להעלות מתח.', [c.id]);
+        else if (vin && vout && vin - vout < 1.2 && !/LDO|1117|LM1117|MCP17|AP2112|XC6206|HT7333/i.test(c.value || c.label || '')) add('warning', 'הפרש המתח ברגולטור ' + name(c) + ' קטן (' + (vin - vout).toFixed(1) + 'V). ודאו שהוא LDO עם מתח נפילה נמוך מזה.', [c.id]);
+      }
+    });
   }
 
   /* ---------- שרטוט ---------- */
@@ -247,6 +353,11 @@
     diode: 'M-12 0h24M-4 -6v12l8 -6zM4 -6v12',
     transistor: 'M-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M-3 -6v12M-3 -2l7 -5M-3 2l7 5',
     load: 'M-10 -6h20v12h-20zM-10 6L10 -6',
+    led: 'M-12 0h24M-4 -6v12l8 -6zM4 -6v12M2 -9l4 -4M5 -7l4 -4',
+    regulator: 'M-10 -8h20v16h-20zM-14 -3h4M10 -3h4M0 8v4M-5 1h10',
+    mcu: 'M-9 -9h18v18h-18zM-5 -5h10v10h-10zM-12 -5h3M-12 0h3M-12 5h3M9 -5h3M9 0h3M9 5h3',
+    crystal: 'M-12 0h6M6 0h6M-6 -7v14M6 -7v14M-3 -5h6v10h-6z',
+    inductor: 'M-12 0h3a3 3 0 0 1 6 0a3 3 0 0 1 6 0a3 3 0 0 1 6 0h3',
     other: 'M-9 -7h18v14h-18z'
   };
 
@@ -266,7 +377,8 @@
         c: c, left: left, right: right,
         col: Math.max(0, parseInt(c.col, 10) || 0),
         row: Math.max(0, isFinite(parseInt(c.row, 10)) ? parseInt(c.row, 10) : i),
-        h: HEAD + rows * ROW + PAD
+        head: c.value ? HEAD + 14 : HEAD,
+        h: (c.value ? HEAD + 14 : HEAD) + rows * ROW + PAD
       };
     });
     // דחיסת עמודות ושורות ריקות
@@ -286,11 +398,11 @@
     comps.forEach(function (b) { b.x = colX[b.ci]; b.y = rowY[b.ri] + b.stackY; });
     var pins = {};
     comps.forEach(function (b) {
-      b.left.forEach(function (t, i) { pins[b.c.id + '.' + t.id] = { x: b.x, y: b.y + HEAD + i * ROW + ROW / 2, dir: -1, box: b, gap: b.ci - 1 }; });
-      b.right.forEach(function (t, i) { pins[b.c.id + '.' + t.id] = { x: b.x + BOX_W, y: b.y + HEAD + i * ROW + ROW / 2, dir: 1, box: b, gap: b.ci }; });
+      b.left.forEach(function (t, i) { pins[b.c.id + '.' + t.id] = { x: b.x, y: b.y + b.head + i * ROW + ROW / 2, dir: -1, box: b, gap: b.ci - 1 }; });
+      b.right.forEach(function (t, i) { pins[b.c.id + '.' + t.id] = { x: b.x + BOX_W, y: b.y + b.head + i * ROW + ROW / 2, dir: 1, box: b, gap: b.ci }; });
     });
     var width = EDGE * 2 + cols.length * BOX_W + Math.max(0, cols.length - 1) * GAP_X;
-    return { comps: comps, pins: pins, colX: colX, rowBottom: rowBottom, cols: cols.length, width: Math.max(width, 520), height: y - GAP_Y + ROW_GAP_BOTTOM };
+    return { comps: comps, pins: pins, colX: colX, rowY: rowY, rowBottom: rowBottom, colVals: cols, rowVals: rows, cols: cols.length, width: Math.max(width, 520), height: y - GAP_Y + ROW_GAP_BOTTOM };
   }
 
   function uniq(a) { return a.filter(function (v, i) { return a.indexOf(v) === i; }).sort(function (x, y) { return x - y; }); }
@@ -326,6 +438,9 @@
     };
   }
 
+  var HEB = /[\u0590-\u05FF]/;
+  function flip(anchor) { return anchor === 'start' ? 'end' : anchor === 'end' ? 'start' : anchor; }
+
   function textAttr(x, y, anchor, size, fill, extra) {
     return '<text x="' + x + '" y="' + y + '" text-anchor="' + anchor + '" font-size="' + size + '" fill="' + fill + '"' + (extra || '') + '>';
   }
@@ -336,6 +451,7 @@
     var L = layout(sch), idx = index(sch), route = router(L);
     var flagged = {};
     (opts.issues || []).forEach(function (i) { if (i.level === 'error') i.refs.forEach(function (r) { flagged[r] = true; }); });
+    var sel = opts.selected || {}, ia = !!opts.interactive;
     var out = [];
     out.push('<svg xmlns="http://www.w3.org/2000/svg" class="schematic-svg" viewBox="0 0 ' + L.width + ' ' + L.height + '" width="' + L.width + '" height="' + L.height + '" role="img" aria-label="' + esc(sch.title || 'סכימת חיווט') + '" font-family="Heebo, Assistant, Arial, sans-serif">');
     out.push('<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#e3e7ee" stroke-width="0.6"/></pattern></defs>');
@@ -343,8 +459,8 @@
     // בכיוון rtl ב-SVG, text-anchor=start מיישר לימין
     out.push(textAttr(L.width - 24, 32, 'start', 17, '#14213d', ' direction="rtl" font-weight="700"') + esc(sch.title || 'סכימת חיווט') + '</text>');
 
-    var wireSvg = [], labels = [], dots = {}, placed = [];
-    (sch.wires || []).forEach(function (w) {
+    var wireSvg = [], labels = [], dots = {}, placed = [], pinSvg = [];
+    (sch.wires || []).forEach(function (w, wi) {
       var a = resolve(idx, w.from), b = resolve(idx, w.to);
       if (!a || !b || a === b) return;
       var pa = L.pins[a], pb = L.pins[b];
@@ -354,9 +470,12 @@
       var col = wireColor(w.color);
       var bad = flagged[a] || flagged[b];
       var title = '<title>' + esc((w.label ? 'חוט ' + w.label + ': ' : '') + w.from + ' → ' + w.to + ' · ' + (w.color || '') + ' ' + (w.section || '')) + '</title>';
+      if (ia) wireSvg.push('<g class="wire' + (sel.wire === wi ? ' sel' : '') + '" data-w="' + wi + '"><path d="' + d + '" fill="none" stroke="transparent" stroke-width="12" stroke-linejoin="round"/>');
+      if (sel.wire === wi) wireSvg.push('<path d="' + d + '" fill="none" stroke="#1c6fe0" stroke-opacity="0.35" stroke-width="10" stroke-linejoin="round"/>');
       if (bad) wireSvg.push('<path d="' + d + '" fill="none" stroke="#ff4d4f" stroke-opacity="0.35" stroke-width="9" stroke-linejoin="round"/>');
       wireSvg.push('<path d="' + d + '" fill="none" stroke="' + col.main + '" stroke-width="2.4" stroke-linejoin="round">' + title + '</path>');
       if (col.stripe) wireSvg.push('<path d="' + d + '" fill="none" stroke="' + col.stripe + '" stroke-width="2.4" stroke-dasharray="7 7" stroke-linejoin="round"/>');
+      if (ia) wireSvg.push('</g>');
       dots[a] = pa; dots[b] = pb;
       var tag = [w.label, w.section ? w.section + (/^\d/.test(w.section) && !/mm|ממ|awg/i.test(w.section) ? 'mm²' : '') : ''].filter(Boolean).join(' · ');
       if (tag) {
@@ -388,14 +507,16 @@
     L.comps.forEach(function (b) {
       var c = b.c, err = flagged[c.id];
       boxes.push('<g class="comp" data-id="' + esc(c.id) + '"><title>' + esc(c.id + ' · ' + c.label) + '</title>');
+      if (sel.comp === c.id) boxes.push('<rect x="' + (b.x - 5) + '" y="' + (b.y - 5) + '" width="' + (BOX_W + 10) + '" height="' + (b.h + 10) + '" rx="11" fill="none" stroke="#1c6fe0" stroke-width="2.5" stroke-dasharray="6 4"/>');
       boxes.push('<rect x="' + b.x + '" y="' + b.y + '" width="' + BOX_W + '" height="' + b.h + '" rx="8" fill="#ffffff" stroke="' + (err ? '#e03131' : '#29344d') + '" stroke-width="' + (err ? 2.4 : 1.4) + '"/>');
       boxes.push('<path d="M' + b.x + ' ' + (b.y + 30) + 'V' + (b.y + 8) + 'q0 -8 8 -8H' + (b.x + BOX_W - 8) + 'q8 0 8 8V' + (b.y + 30) + 'z" fill="#14213d"/>');
       boxes.push('<g transform="translate(' + (b.x + 18) + ',' + (b.y + 15) + ') scale(0.75)"><path d="' + (ICONS[c.type] || ICONS.other) + '" fill="none" stroke="#ffb703" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></g>');
       boxes.push(textAttr(b.x + 34, b.y + 20, 'start', 13, '#ffffff', ' font-weight="700" font-family="IBM Plex Mono, monospace"') + esc(c.id) + '</text>');
       boxes.push(textAttr(b.x + BOX_W - 10, b.y + 19.5, 'start', 10.5, '#c9d3e6', ' direction="rtl"') + esc(clip(c.label, 20)) + '</text>');
+      if (c.value) boxes.push(textAttr(b.x + BOX_W / 2, b.y + 45, 'middle', 11, '#b35c00', ' font-weight="600" font-family="IBM Plex Mono, monospace"' + (HEB.test(c.value) ? ' direction="rtl"' : '')) + esc(clip(c.value, 24)) + '</text>');
       var both = b.left.length && b.right.length;
       function term(t, i, side) {
-        var y = b.y + HEAD + i * ROW + ROW / 2, key = c.id + '.' + t.id, bad = flagged[key];
+        var y = b.y + b.head + i * ROW + ROW / 2, key = c.id + '.' + t.id, bad = flagged[key];
         var x = side < 0 ? b.x : b.x + BOX_W;
         var p = normPotential(t.potential);
         boxes.push('<line x1="' + x + '" y1="' + y + '" x2="' + (x - side * 7) + '" y2="' + y + '" stroke="#29344d" stroke-width="1.2"/>');
@@ -406,7 +527,8 @@
         if (p) boxes.push(textAttr(nx, y + 4, side < 0 ? 'start' : 'end', 9, potColor(p), ' font-weight="700" font-family="IBM Plex Mono, monospace"') + esc(p) + '</text>');
         if (nm && nm !== p) {
           var off = p ? (p.length * 5.6 + 5) * -side : 0;
-          boxes.push(textAttr(nx + off, y + 4, side < 0 ? 'start' : 'end', 9.5, '#6b7385', ' direction="ltr" unicode-bidi="plaintext"') + esc(nm) + '<title>' + esc(t.name + (p ? ' · ' + p : '')) + '</title></text>');
+          var heb = HEB.test(nm), anc = side < 0 ? 'start' : 'end';
+          boxes.push(textAttr(nx + off, y + 4, heb ? flip(anc) : anc, 9.5, '#6b7385', heb ? ' direction="rtl"' : '') + esc(nm) + '<title>' + esc(t.name + (p ? ' · ' + p : '')) + '</title></text>');
         }
       }
       b.left.forEach(function (t, i) { term(t, i, -1); });
@@ -414,14 +536,22 @@
       boxes.push('</g>');
     });
 
-    var dotSvg = Object.keys(dots).map(function (k) {
+    if (ia) {
+      Object.keys(L.pins).forEach(function (k) {
+        var p = L.pins[k], on = sel.pin === k;
+        dots[k] = null;
+        pinSvg.push('<g class="pin' + (on ? ' sel' : '') + '" data-pin="' + esc(k) + '"><circle cx="' + p.x + '" cy="' + p.y + '" r="9" fill="transparent"/>' +
+          '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + (on ? 5.5 : 4) + '" fill="' + (on ? '#1c6fe0' : '#fbfcfe') + '" stroke="' + (on ? '#1c6fe0' : '#14213d') + '" stroke-width="1.6"/></g>');
+      });
+    }
+    var dotSvg = Object.keys(dots).filter(function (k) { return dots[k]; }).map(function (k) {
       var p = dots[k];
       return '<circle cx="' + p.x + '" cy="' + p.y + '" r="3.2" fill="#fbfcfe" stroke="#14213d" stroke-width="1.6"/>';
     });
 
     out.push('<g class="wires">' + wireSvg.join('') + '</g>');
     out.push(boxes.join(''));
-    out.push('<g class="dots">' + dotSvg.join('') + '</g>');
+    out.push('<g class="dots">' + dotSvg.join('') + pinSvg.join('') + '</g>');
     out.push('<g class="labels">' + labels.join('') + '</g>');
     out.push('</svg>');
     return out.join('');
@@ -446,5 +576,8 @@
     });
   }
 
-  return { check: check, render: render, wireTable: wireTable, wireColor: wireColor, normPotential: normPotential };
+  return {
+    check: check, render: render, layout: layout, wireTable: wireTable, wireColor: wireColor, normPotential: normPotential,
+    GEOM: { BOX_W: BOX_W, GAP_X: GAP_X, GAP_Y: GAP_Y, EDGE: EDGE, TOP: TOP }
+  };
 });

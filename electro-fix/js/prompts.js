@@ -21,7 +21,7 @@
   var COMPONENT_TYPES = [
     'source', 'breaker', 'rcd', 'fuse', 'contactor', 'relay', 'overload', 'switch', 'button', 'selector',
     'plc', 'psu', 'vfd', 'motor', 'lamp', 'sensor', 'terminal', 'socket', 'smart', 'ic', 'connector',
-    'resistor', 'capacitor', 'diode', 'transistor', 'load', 'other'
+    'resistor', 'capacitor', 'diode', 'transistor', 'load', 'led', 'regulator', 'mcu', 'crystal', 'inductor', 'other'
   ];
 
   var SYSTEM = [
@@ -42,6 +42,7 @@
     'סכימת החיווט (schematic):',
     'הגדר schematic.needed=true כשצריך חיווט חדש או מתוקן, או כשהמשתמש ביקש סכימה. אחרת needed=false ורשימות ריקות.',
     'הסכימה היא רשימת רכיבים והדקים, ורשימת חוטים בין הדקים. האתר משרטט אותה ובודק אותה אוטומטית, לכן היא חייבת להיות מדויקת ושלמה:',
+    '- value: ערך או דגם (10kΩ, 100nF 50V, 1N4007, LC1D09 230VAC). מחרוזת ריקה אם אין.',
     '- components: לכל רכיב id קצר לפי סימון תעשייתי (Q1, F1, K1, S1, H1, M1, PLC1, PSU1, X1, R1, U1, J1), label בעברית עם הדגם והדירוג, type מתוך הרשימה, col ו-row למיקום ברשת (col 0 משמאל = מקור הזנה, ואז הגנות, פיקוד, ובקצה הימני עומסים; row מלמעלה למטה, 0 ומעלה).',
     '- terminals: לכל הדק id כפי שמופיע על הרכיב בפועל (L1, N, PE, 1, 2, 13, 14, A1, A2, 95, 96, U, V, W, +, -, 0V, Q0.0, VCC, GND, IN, OUT), name תיאור קצר, side left או right (צד כניסה משמאל, צד יציאה מימין), ו-potential.',
     '- potential: רק להדקים שמחוברים קבוע לפס הזנה: L, L1, L2, L3, N, PE, PEN, +24V, 0V, +12V, +5V, +3.3V, GND, +V. להדק שמתחלף (אחרי מגע, מפסק, יציאת PLC) או להדק אות, השאר מחרוזת ריקה. זה חשוב: הבודק האוטומטי מזהה קצר כשהדקים עם potential שונה נמצאים על אותו חוט.',
@@ -55,6 +56,21 @@
   function arr(items) { return { type: 'array', items: items }; }
   function obj(props) {
     return { type: 'object', additionalProperties: false, required: Object.keys(props), properties: props };
+  }
+
+  function schematicSchema() {
+    return obj({
+      needed: { type: 'boolean' },
+      title: str(),
+      notes: arr(str()),
+      components: arr(obj({
+        id: str(), label: str(), value: str(),
+        type: { type: 'string', enum: COMPONENT_TYPES },
+        col: { type: 'integer' }, row: { type: 'integer' },
+        terminals: arr(obj({ id: str(), name: str(), side: { type: 'string', enum: ['left', 'right'] }, potential: str() }))
+      })),
+      wires: arr(obj({ from: str(), to: str(), color: str(), section: str(), label: str() }))
+    });
   }
 
   var SCHEMA = obj({
@@ -71,18 +87,7 @@
     parts: arr(obj({ name: str(), spec: str(), qty: str() })),
     verification: arr(obj({ check: str(), result: { type: 'string', enum: ['ok', 'warning', 'fail'] }, note: str() })),
     standards: arr(str()),
-    schematic: obj({
-      needed: { type: 'boolean' },
-      title: str(),
-      notes: arr(str()),
-      components: arr(obj({
-        id: str(), label: str(),
-        type: { type: 'string', enum: COMPONENT_TYPES },
-        col: { type: 'integer' }, row: { type: 'integer' },
-        terminals: arr(obj({ id: str(), name: str(), side: { type: 'string', enum: ['left', 'right'] }, potential: str() }))
-      })),
-      wires: arr(obj({ from: str(), to: str(), color: str(), section: str(), label: str() }))
-    })
+    schematic: schematicSchema()
   });
 
   function line(label, value) {
@@ -174,7 +179,91 @@
     return r;
   }
 
+
+  /* ---------- תכנון כרטיסים ---------- */
+
+  var DESIGN_SYSTEM = [
+    'אתה מהנדס אלקטרוניקה בכיר שמתכנן כרטיסים אלקטרוניים (PCB) ומעגלי פיקוד: ספקי כוח, רגולטורים, מיקרו-בקרים (ESP32, AVR, STM32), דרייברים לממסרים ומנועים, כניסות ויציאות תעשייתיות 24V, חיישנים ותקשורת.',
+    'המשתמש בונה מעגל בעורך סכימות. אתה מקבל בקשה לתכנן מעגל חדש, או מעגל קיים (JSON) לבדיקה ולתיקון.',
+    '',
+    'כללי תכנון:',
+    '1. מעגל שלם ועובד: הזנה, הגנות, קבלי ניתוק (100nF צמוד לכל פין הזנה של IC), קבלי כניסה ויציאה לרגולטורים לפי דף הנתונים, נגדי משיכה, נגד טורי לכל LED, נגד בסיס לכל טרנזיסטור, דיודת גלגול חופשי לכל סליל DC.',
+    '2. ערכים מחושבים: כתוב לכל רכיב ערך מדויק (value) עם דירוג מתח/הספק כשרלוונטי, והסבר חישובים חשובים ב-notes של הסכימה (זרם LED, מחלק מתח, תדר, פיזור הספק).',
+    '3. רכיבים זמינים ונפוצים. ציין דגם מדויק (AMS1117-3.3, BC547, 1N4007, PC817, SRD-05VDC).',
+    '4. בדיקה (verification): עבור על המעגל ובדוק מתחים, זרמים, הספקים, קוטביות, רמות לוגיות (3.3V מול 5V), פינים צפים, ומגבלות ה-GPIO. דווח ok / warning / fail, ותקן כל fail לפני שאתה מחזיר.',
+    '5. במצב בדיקה: שמור על המבנה, המזהים והמיקומים של המשתמש ככל האפשר, ותקן רק מה שצריך. פרט כל שינוי ב-changes. אם הכל תקין, החזר את המעגל כמו שהוא ו-changes ריק.',
+    '6. pcb_notes: הנחיות לעימוד הכרטיס — רוחב מסלולים לזרם, מישור אדמה, מיקום קבלי ניתוק, מרווחי בידוד למתח רשת (לפחות 6mm וחריץ), פיזור חום, אנטנה, מחברים בקצה.',
+    '7. אם המעגל מחובר למתח רשת, כתוב זאת במפורש ב-verification כאזהרה.',
+    '',
+    'פורמט הסכימה:',
+    '- schematic.needed תמיד true.',
+    '- components: id לפי סימון מקובל (R1, C1, D1, Q1, U1, K1, J1, S1, Y1, L1, F1, BT1), label תיאור קצר בעברית, value ערך/דגם, type מהרשימה, col ו-row למיקום ברשת: הזנה בעמודה 0 משמאל, והזרימה ימינה; רכיבים שקשורים זה לזה קרובים.',
+    '- type: led לנורית, diode לדיודה, capacitor לקבל, regulator לרגולטור, mcu למיקרו-בקר, ic לרכיב משולב אחר, source למקור הזנה, connector למחבר.',
+    '- terminals: id לפי שם הפין (1, 2, A, K, B, C, E, G, D, S, IN, OUT, GND, VCC, 3V3, IO2, +, -). לקבל אלקטרוליטי + ו-, לנורית ודיודה A ו-K. side: left לכניסות, right ליציאות.',
+    '- potential: רק למקורות הזנה ולפיני הזנה של רכיבים שחייבים מתח מסוים: +3.3V, +5V, +12V, +24V, 0V. לכל שאר הפינים מחרוזת ריקה. זה מאפשר לבודק האוטומטי לזהות קצרים וחיבור של רכיב 3.3V ל-5V.',
+    '- wires: from ו-to בפורמט "רכיב.פין", color (אדום להזנה חיובית, שחור ל-GND, צהוב/כתום לאותות), section ריק, label מספר רץ.',
+    '',
+    'כתוב בעברית מקצועית ותמציתית, חוץ ממונחים, דגמים ושמות פינים.'
+  ].join('\n');
+
+  var DESIGN_SCHEMA = obj({
+    title: str(),
+    summary: str(),
+    changes: arr(str()),
+    verification: arr(obj({ check: str(), result: { type: 'string', enum: ['ok', 'warning', 'fail'] }, note: str() })),
+    parts: arr(obj({ name: str(), spec: str(), qty: str() })),
+    pcb_notes: arr(str()),
+    schematic: schematicSchema()
+  });
+
+  function slimSchematic(sch) {
+    return {
+      title: sch.title || '', notes: sch.notes || [],
+      components: (sch.components || []).map(function (c) {
+        return { id: c.id, label: c.label || '', value: c.value || '', type: c.type, col: c.col | 0, row: c.row | 0, terminals: c.terminals };
+      }),
+      wires: sch.wires || []
+    };
+  }
+
+  function designText(mode, request, sch, issues) {
+    if (mode === 'create') {
+      return 'תכנן את המעגל הבא:\n' + String(request || '').trim() +
+        (sch && sch.components && sch.components.length ? '\n\nאפשר להתבסס על מה שכבר יש בעורך:\n' + JSON.stringify(slimSchematic(sch)) : '');
+    }
+    return [
+      'בדוק את המעגל שלי, מצא בעיות ותקן אותן.',
+      request ? 'הערות ושאלות שלי: ' + String(request).trim() : '',
+      issues && issues.length ? 'הבודק האוטומטי באתר מצא:\n' + issues.map(function (i) { return '- (' + i.level + ') ' + i.message; }).join('\n') : 'הבודק האוטומטי באתר לא מצא בעיות.',
+      'המעגל (JSON):',
+      JSON.stringify(slimSchematic(sch || {}))
+    ].filter(Boolean).join('\n\n');
+  }
+
+  function designMessages(mode, request, sch, issues) {
+    return [{ role: 'user', content: [{ type: 'text', text: designText(mode, request, sch, issues) }] }];
+  }
+
+  function manualDesignPrompt(mode, request, sch, issues) {
+    return [DESIGN_SYSTEM, '', 'החזר JSON בלבד, בלי טקסט לפניו או אחריו ובלי ```, שתואם בדיוק לסכמה הבאה:', JSON.stringify(DESIGN_SCHEMA), '', designText(mode, request, sch, issues)].join('\n');
+  }
+
+  function parseDesign(text) {
+    var s = String(text || '').trim();
+    var a = s.indexOf('{'), b = s.lastIndexOf('}');
+    if (a < 0 || b < a) throw new Error('לא נמצא JSON בתשובה');
+    var r = JSON.parse(s.slice(a, b + 1));
+    if (!r || !r.schematic || !Array.isArray(r.schematic.components)) throw new Error('בתשובה אין מעגל (schematic)');
+    ['changes', 'verification', 'parts', 'pcb_notes'].forEach(function (k) { if (!Array.isArray(r[k])) r[k] = []; });
+    r.schematic.needed = true;
+    if (!Array.isArray(r.schematic.wires)) r.schematic.wires = [];
+    if (!Array.isArray(r.schematic.notes)) r.schematic.notes = [];
+    return r;
+  }
+
   return {
+    DESIGN_SYSTEM: DESIGN_SYSTEM, DESIGN_SCHEMA: DESIGN_SCHEMA,
+    designMessages: designMessages, manualDesignPrompt: manualDesignPrompt, parseDesign: parseDesign,
     DOMAINS: DOMAINS, SUPPLIES: SUPPLIES, COMPONENT_TYPES: COMPONENT_TYPES,
     SYSTEM: SYSTEM, SCHEMA: SCHEMA,
     formatIntake: formatIntake, buildMessages: buildMessages,

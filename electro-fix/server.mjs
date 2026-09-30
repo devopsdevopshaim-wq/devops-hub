@@ -64,7 +64,7 @@ function hebrewError(err) {
 }
 
 // קריאה אחת ל-Claude בסטרימינג. מחזירה את התשובה המפוענחת.
-async function ask(messages, onProgress, signal) {
+async function ask(messages, onProgress, signal, spec = { system: FixPrompts.SYSTEM, schema: FixPrompts.SCHEMA, parse: FixPrompts.parseResult }) {
   const stream = client.beta.messages.stream({
     model: MODEL,
     max_tokens: 32000,
@@ -72,10 +72,10 @@ async function ask(messages, onProgress, signal) {
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',
     thinking: { type: 'adaptive', display: 'summarized' },
-    output_config: { effort: EFFORT, format: { type: 'json_schema', schema: FixPrompts.SCHEMA } },
+    output_config: { effort: EFFORT, format: { type: 'json_schema', schema: spec.schema } },
     // ההנחיות וההיסטוריה של התיק זהות בין סיבובים — נשמרות במטמון כדי לחסוך בעלות.
     cache_control: { type: 'ephemeral' },
-    system: FixPrompts.SYSTEM,
+    system: spec.system,
     messages
   }, { signal });
 
@@ -87,23 +87,11 @@ async function ask(messages, onProgress, signal) {
   if (msg.stop_reason === 'refusal') throw new Error('Claude סירב לבקשה הזו. נסחו אותה מחדש כבקשת אבחון טכנית.');
   if (msg.stop_reason === 'max_tokens') throw new Error('התשובה ארוכה מדי ונקטעה. צמצמו את היקף השאלה ונסו שוב.');
   const text = msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
-  return { result: FixPrompts.parseResult(text), usage: msg.usage, model: msg.model };
+  return { result: spec.parse(text), usage: msg.usage, model: msg.model };
 }
 
-async function diagnose(req, res) {
-  if (!client) return sendJson(res, 503, { error: 'לא הוגדר מפתח API בשרת (ANTHROPIC_API_KEY).' });
-  if (ACCESS_CODE && req.headers['x-access-code'] !== ACCESS_CODE) {
-    return sendJson(res, 401, { error: 'קוד הגישה שגוי.', needCode: true });
-  }
-
-  let body, messages;
-  try {
-    body = JSON.parse(await readBody(req));
-    messages = FixPrompts.buildMessages(body.turns);
-  } catch (e) {
-    return sendJson(res, 400, { error: e.message || 'בקשה לא תקינה' });
-  }
-
+// מריץ בקשה אחת ל-Claude, בודק את הסכימה שחזרה, ואם יש שגיאות מבקש תיקון.
+async function runWithChecks(res, messages, spec) {
   res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' });
   const write = (obj) => { if (!res.writableEnded) res.write(JSON.stringify(obj) + '\n'); };
   const ctl = new AbortController();
@@ -111,7 +99,7 @@ async function diagnose(req, res) {
 
   try {
     write({ phase: 'analyze' });
-    let out = await ask(messages, (p) => write(p), ctl.signal);
+    let out = await ask(messages, (p) => write(p), ctl.signal, spec);
     let checks = Netlist.check(out.result.schematic);
     let revisions = 0;
 
@@ -124,7 +112,7 @@ async function diagnose(req, res) {
         { role: 'assistant', content: [{ type: 'text', text: JSON.stringify(out.result) }] },
         { role: 'user', content: [{ type: 'text', text: FixPrompts.revisionRequest(errors) }] }
       );
-      out = await ask(next, (p) => write(p), ctl.signal);
+      out = await ask(next, (p) => write(p), ctl.signal, spec);
       checks = Netlist.check(out.result.schematic);
     }
 
@@ -133,6 +121,44 @@ async function diagnose(req, res) {
     if (!ctl.signal.aborted) write({ error: hebrewError(err) });
   }
   res.end();
+}
+
+function guard(req, res) {
+  if (!client) { sendJson(res, 503, { error: 'לא הוגדר מפתח API בשרת (ANTHROPIC_API_KEY).' }); return false; }
+  if (ACCESS_CODE && req.headers['x-access-code'] !== ACCESS_CODE) {
+    sendJson(res, 401, { error: 'קוד הגישה שגוי.', needCode: true });
+    return false;
+  }
+  return true;
+}
+
+async function diagnose(req, res) {
+  if (!guard(req, res)) return;
+  let messages;
+  try {
+    const body = JSON.parse(await readBody(req));
+    messages = FixPrompts.buildMessages(body.turns);
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message || 'בקשה לא תקינה' });
+  }
+  await runWithChecks(res, messages);
+}
+
+// תכנון כרטיס: mode=create (מעגל חדש מתיאור) או review (בדיקה ותיקון של המעגל בעורך)
+async function design(req, res) {
+  if (!guard(req, res)) return;
+  let messages;
+  try {
+    const body = JSON.parse(await readBody(req));
+    const mode = body.mode === 'review' ? 'review' : 'create';
+    if (mode === 'create' && !String(body.request || '').trim()) throw new Error('תארו מה המעגל צריך לעשות');
+    if (mode === 'review' && !(body.schematic && Array.isArray(body.schematic.components) && body.schematic.components.length)) throw new Error('אין מעגל לבדיקה');
+    const issues = mode === 'review' ? Netlist.check({ ...body.schematic, needed: true }).issues : [];
+    messages = FixPrompts.designMessages(mode, body.request, body.schematic, issues);
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message || 'בקשה לא תקינה' });
+  }
+  await runWithChecks(res, messages, { system: FixPrompts.DESIGN_SYSTEM, schema: FixPrompts.DESIGN_SCHEMA, parse: FixPrompts.parseDesign });
 }
 
 async function serveStatic(req, res) {
@@ -158,6 +184,7 @@ http.createServer(async (req, res) => {
       return sendJson(res, 200, { ai: Boolean(client), model: MODEL, needCode: Boolean(ACCESS_CODE) });
     }
     if (req.url === '/api/diagnose' && req.method === 'POST') return await diagnose(req, res);
+    if (req.url === '/api/design' && req.method === 'POST') return await design(req, res);
     if (req.method === 'GET' || req.method === 'HEAD') return await serveStatic(req, res);
     res.writeHead(405); res.end();
   } catch (err) {

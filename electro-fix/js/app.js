@@ -72,6 +72,7 @@
     $$('.mainnav a').forEach(function (a) { a.classList.toggle('active', a.dataset.view === view); a.setAttribute('aria-current', a.dataset.view === view ? 'page' : 'false'); });
     if (view === 'tools') window.FixCalc.mount($('#tools'));
     if (view === 'cases') renderCases();
+    if (view === 'design' && window.FixDesign) window.FixDesign.show();
     if (m) openCase(m[1]);
     else if (view === 'diagnose' && !state.busy) showIntake();
   }
@@ -394,7 +395,8 @@
 
     sec.innerHTML = '<div class="sch-head"><h3>סכימת חיווט</h3><div class="sch-tools">' +
       '<button class="btn ghost small" type="button" data-z="-1" aria-label="הקטנה">−</button><button class="btn ghost small" type="button" data-z="0">התאמה</button><button class="btn ghost small" type="button" data-z="1" aria-label="הגדלה">+</button>' +
-      '<button class="btn ghost small" type="button" data-dl="svg">SVG</button><button class="btn ghost small" type="button" data-dl="png">PNG</button></div></div>' +
+      '<button class="btn ghost small" type="button" data-dl="svg">SVG</button><button class="btn ghost small" type="button" data-dl="png">PNG</button>' +
+      '<button class="btn ghost small" type="button" data-edit>עריכה בעורך</button></div></div>' +
       '<div class="auto-check"><b>בדיקה אוטומטית:</b> ' + status + ' <span class="muted">' + checks.stats.components + ' רכיבים · ' + checks.stats.wires + ' חוטים · ' + checks.stats.nets + ' צמתים</span></div>' +
       (issues.length ? '<ul class="issues">' + issues.map(function (i) { return '<li class="' + i.level + '">' + esc(i.message) + '</li>'; }).join('') + '</ul>' : '') +
       '<div class="sch-canvas" tabindex="0" aria-label="סכימת החיווט. אפשר לגלול."><div class="sch-inner">' + N.render(sch, { issues: issues }) + '</div></div>' +
@@ -423,6 +425,11 @@
     });
     $$('[data-dl]', sec).forEach(function (b) {
       b.addEventListener('click', function () { download(svg, b.dataset.dl, 'wiring-' + (index + 1)); });
+    });
+    $('[data-edit]', sec).addEventListener('click', function () {
+      if (!window.FixDesign) return;
+      window.FixDesign.load(JSON.parse(JSON.stringify(sch)), sch.title || 'סכימה מאבחון');
+      location.hash = '#design';
     });
     return sec;
   }
@@ -725,6 +732,11 @@
   }
 
   /* ---------- התחלה ---------- */
+
+  // כלים משותפים לעורך הכרטיסים (design.js)
+  window.FixApp = {
+    state: state, toast: toast, copy: copy, askCode: askCode, download: download, save: save, esc: esc, when: when
+  };
 
   buildIntake();
   buildComposer();

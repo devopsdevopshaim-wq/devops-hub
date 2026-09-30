@@ -23,6 +23,7 @@
     </a>
     <nav class="mainnav" aria-label="ניווט ראשי">
       <a href="#diagnose" data-view="diagnose">אבחון תקלה</a>
+      <a href="#design" data-view="design">תכנון כרטיס</a>
       <a href="#cases" data-view="cases">התיקים שלי <span class="count" id="caseCount"></span></a>
       <a href="#tools" data-view="tools">מחשבונים</a>
       <a href="#guide" data-view="guide">מקרא ובטיחות</a>
@@ -179,6 +180,81 @@
     </div>
   </section>
 
+
+  <!-- ===== תכנון כרטיס ===== -->
+  <section class="view" id="view-design" data-view="design" hidden>
+    <div class="wrap wide design">
+      <div class="design-bar">
+        <div class="design-name">
+          <label class="sr" for="dName">שם הכרטיס</label>
+          <input id="dName" placeholder="שם הכרטיס" autocomplete="off">
+          <span class="saved muted" id="dSaved" aria-live="polite"></span>
+        </div>
+        <div class="design-actions">
+          <button class="btn ghost small" type="button" id="dTemplates">תבניות</button>
+          <select id="dOpen" aria-label="העיצובים שלי"></select>
+          <button class="btn ghost small" type="button" id="dUndo" disabled>ביטול פעולה</button>
+          <details class="menu">
+            <summary class="btn ghost small">ייצוא וייבוא</summary>
+            <div class="menu-list">
+              <button type="button" data-exp="svg">שרטוט SVG</button>
+              <button type="button" data-exp="png">שרטוט PNG</button>
+              <button type="button" data-exp="bom">רשימת חלקים CSV</button>
+              <button type="button" data-exp="json">קובץ מעגל JSON</button>
+              <label class="menu-file">ייבוא קובץ JSON<input type="file" id="dImport" accept=".json,application/json"></label>
+              <button type="button" data-exp="delete" class="danger-text">מחיקת העיצוב</button>
+            </div>
+          </details>
+          <button class="btn ghost small" type="button" id="dAiReview">בדיקה של Claude</button>
+          <button class="btn primary small" type="button" id="dAiCreate">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z" fill="currentColor"/></svg>
+            Claude יתכנן לי
+          </button>
+        </div>
+      </div>
+
+      <div class="design-grid">
+        <div class="design-main">
+          <div class="card canvas-card">
+            <div class="canvas-tools">
+              <p class="hint" id="dHint">לחצו על פין ואז על פין אחר כדי לחבר חוט. גררו רכיב כדי להזיז אותו.</p>
+              <label class="wire-pick">צבע חוט
+                <select id="dWireColor"></select>
+              </label>
+              <div class="zoom">
+                <button class="btn ghost small" type="button" data-dz="-1" aria-label="הקטנה">−</button>
+                <button class="btn ghost small" type="button" data-dz="0">התאמה</button>
+                <button class="btn ghost small" type="button" data-dz="1" aria-label="הגדלה">+</button>
+              </div>
+            </div>
+            <div class="sch-canvas design-canvas" id="dCanvas" tabindex="0" aria-label="עורך המעגל"></div>
+          </div>
+          <div id="dAiPanel"></div>
+        </div>
+
+        <aside class="design-side">
+          <section class="card side-sec">
+            <h3>הוספת רכיב</h3>
+            <div class="palette" id="palette"></div>
+          </section>
+          <section class="card side-sec" id="dInspector"></section>
+          <section class="card side-sec">
+            <h3>בדיקה אוטומטית <span id="dCheckBadge"></span></h3>
+            <div id="dChecks"></div>
+          </section>
+          <section class="card side-sec">
+            <h3>רשימת חלקים</h3>
+            <div id="dBom"></div>
+          </section>
+          <section class="card side-sec" id="dNotesSec">
+            <h3>הערות תכנון</h3>
+            <textarea id="dNotes" rows="4" placeholder="חישובים, הנחיות לעימוד, דגשים לייצור. שורה לכל הערה."></textarea>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </section>
+
   <!-- ===== תיקים ===== -->
   <section class="view" id="view-cases" data-view="cases" hidden>
     <div class="wrap">
@@ -262,6 +338,38 @@
   </div>
 </footer>
 
+
+<!-- תבניות -->
+<dialog class="modal wide" id="tplDlg" aria-labelledby="tplTitle">
+  <form method="dialog" class="modal-body">
+    <h2 id="tplTitle">תבניות לכרטיסים</h2>
+    <p>כל תבנית היא מעגל שלם ובדוק. בוחרים אחת, ומשם מוסיפים רכיבים, מחברים ובודקים.</p>
+    <div class="tpl-grid" id="tplGrid"></div>
+    <div class="modal-actions"><button class="btn ghost" value="cancel">סגירה</button></div>
+  </form>
+</dialog>
+
+<!-- בקשה ל-Claude בעורך -->
+<dialog class="modal" id="aiDlg" aria-labelledby="aiTitle">
+  <form method="dialog" class="modal-body" id="aiForm">
+    <h2 id="aiTitle">Claude יתכנן לי</h2>
+    <p id="aiIntro"></p>
+    <textarea id="aiRequest" rows="5" dir="auto"></textarea>
+    <div class="chips" id="aiExamples"></div>
+    <div class="manual" id="aiManual" hidden>
+      <p>אין חיבור ישיר ל-Claude. מעתיקים את ההנחיה ל-<a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a> ומדביקים כאן את התשובה (JSON).</p>
+      <div class="manual-step"><b>1</b><button class="btn ghost small" type="button" id="aiCopy">העתקת ההנחיה</button><a class="btn ghost small" href="https://claude.ai/new" target="_blank" rel="noopener">פתיחת claude.ai</a></div>
+      <div class="manual-step"><b>2</b><span>מדביקים את התשובה:</span></div>
+      <textarea id="aiPaste" rows="6" dir="ltr" placeholder='{"title": "...", "schematic": {...}}'></textarea>
+    </div>
+    <p class="error" id="aiError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn primary" type="button" id="aiSend">שליחה</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- מצב העתק-הדבק -->
 <dialog class="modal" id="manualDlg" aria-labelledby="manualTitle">
   <form method="dialog" class="modal-body">
@@ -295,8 +403,10 @@
 
 <script src="js/prompts.js"></script>
 <script src="js/netlist.js"></script>
+<script src="js/parts.js"></script>
 <script src="js/store.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/app.js"></script>
+<script src="js/design.js"></script>
 </body>
 </html>
