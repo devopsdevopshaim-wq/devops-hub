@@ -26,7 +26,7 @@ Actions → "Portfolio screenshots" → Run workflow (leave ids empty for all, o
 
 ## Turning on Guy's AI answers
 
-Recommended: the n8n Cloud workflow in `n8n/hasadna-guide-agent.json` (steps in `n8n/README.md`). The alternative below runs the same idea as a small server on Render.
+Recommended: the multi-agent n8n Cloud workflow in `n8n/hasadna-multi-agent.json`, installed by the "Deploy agents to n8n Cloud" action (steps in `n8n/README.md`). It also sets `statusUrl`, the live control center the cards read their status from. The alternative below runs the same idea as a small server on Render.
 
 1. Create an API key at https://console.anthropic.com (usage is billed per question).
 2. On Render: New → Blueprint → this repo, and set **Blueprint Path** to `portfolio/guide-server/render.yaml`. Paste the key into `ANTHROPIC_API_KEY`.
