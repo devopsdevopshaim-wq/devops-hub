@@ -27,6 +27,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build api/knowledge.json (read by the n8n agent)
         run: node n8n/build-knowledge.mjs vacation-hub
+      - name: Build portfolio/knowledge.json (read by Guy's n8n agent)
+        run: node .github/scripts/portfolio-knowledge.mjs /tmp/portfolio-clones || echo "knowledge build failed; publishing without it"
       - name: Publish vacation-hub to gh-pages
         run: |
           set -euo pipefail

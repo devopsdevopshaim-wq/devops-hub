@@ -1,0 +1,331 @@
+{
+  "name": "הסדנה · גיא — סוכן הפרויקטים",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## גיא · סוכן הפרויקטים של הסדנה\nהאתר שולח לכאן כל שאלה שמבקר שואל את גיא. הסוכן טוען את קובץ הידע (`knowledge.json`, נבנה אוטומטית מהקוד של כל הפרויקטים), בוחר את הפרויקטים הרלוונטיים, ועונה עם Claude — כולל שאלות מעמיקות על אוטומציה.\n\n**הפעלה:** 1. פתחו את Claude (Anthropic) ← Credential ← API key. 2. Active למעלה. 3. העתיקו את ה־Production URL של ה־Webhook לשדה `guideApi` בקובץ `portfolio/projects.json`.",
+        "height": 320,
+        "width": 520,
+        "color": 5
+      },
+      "id": "bba7d758-7669-55b1-a06b-b01f33995823",
+      "name": "Note · What this is",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hasadna-guide",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "144b973e-9b21-5c89-a8c0-6f8f20adbd78",
+      "name": "Guide · Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "b00a0330-42ba-5d70-a6b4-7b282222324f"
+    },
+    {
+      "parameters": {
+        "url": "https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/knowledge.json",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "0deedb6d-6aa5-5c3b-bbef-ef7be52a5cf1",
+      "name": "Guide · Load knowledge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Picks the projects the question is about and builds Guy's instructions.\nconst K = $('Guide · Load knowledge').first().json;\nconst raw = $('Guide · Webhook').first().json.body;\nlet req; try { req = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}); } catch (e) { req = {}; }\nconst question = String(req.question || '').slice(0, 1500).trim() || 'שלום';\nconst page = String(req.page || '');\nconst sessionId = String(req.sessionId || 'anon').replace(/[^\\w-]/g, '').slice(0, 64) || 'anon';\n\nconst norm = s => String(s || '').toLowerCase().replace(/[׳\"'״`]/g, '');\n// Hebrew glues ה/ו/ב/ל/מ/ש/כ to the front of words (\"המחסן\" → \"מחסן\").\nconst STOP = new Set(['מערכת', 'מערכות', 'פרויקט', 'פרויקטים', 'האתר', 'אתר', 'אתרים', 'תסביר', 'ספר', 'איך', 'מה', 'ההבדל', 'הבדל', 'עובד', 'עובדת', 'שלוש', 'שלושת', 'הזה', 'הזאת']);\nconst words = [];\nfor (const w of norm(question).split(/[^\\p{L}\\p{N}]+/u)) {\n  if (w.length < 3 || STOP.has(w)) continue;\n  words.push(w);\n  if (w.length >= 4 && 'הובלמשכ'.includes(w[0]) && !STOP.has(w.slice(1))) words.push(w.slice(1));\n}\nconst text = p => norm([p.field, p.desc, (p.tech || []).join(' '), (p.features || []).join(' '),\n  p.code ? p.code.automation.join(' ') + ' ' + p.code.libraries.join(' ') + ' ' + p.code.screens.join(' ') : ''].join(' '));\nconst ranked = K.projects\n  .map(p => {\n    const t = norm(p.title + ' ' + p.id), h = text(p);\n    let s = 0;\n    for (const w of words) s += t.includes(w) ? 3 : h.includes(w) ? 1 : 0;\n    if (p.id === page) s += 10;\n    return { p, s };\n  })\n  .filter(x => x.s > 0).sort((a, b) => b.s - a.s);\n\n// Automation questions pull in the projects with the most automation.\nconst automationQ = /אוטומצ|automat|n8n|ci\\/?cd|docker|pipeline|webhook|actions|פריס|deploy|שרת|מתעדכן|תהליך|תזמון|סקריפט|ענן/i.test(question);\nlet focus = ranked.slice(0, 4).map(x => x.p);\nif (automationQ) {\n  const auto = K.projects.filter(p => p.code && p.code.automation.length >= 2 && !focus.includes(p))\n    .sort((a, b) => b.code.automation.length - a.code.automation.length);\n  focus = focus.concat(auto.slice(0, Math.max(0, 6 - focus.length)));\n}\n\nconst index = K.projects.map(p => `${p.id} · ${p.title} · ${p.field} · ${p.desc || ''}`).join('\\n');\nconst details = focus.map(p => JSON.stringify(p)).join('\\n');\n\nconst systemPrompt = `אתה גיא, המדריך של \"הסדנה\" — אתר שמציג את כל הפרויקטים של מפתח אחד (DevOps, AI ו־Web).\nהתשובות שלך מוקראות בקול באתר, אז כתוב עברית מדוברת, חמה וברורה, בלי Markdown, בלי רשימות ובלי אימוג'י.\n\nאיך לענות:\n- שאלה פשוטה (מה זה, איפה, כמה): 1–3 משפטים.\n- שאלה מעמיקה (איך זה עובד, למה, מה ההבדל, אוטומציה, ארכיטקטורה, פריסה): 4–8 משפטים עם פרטים קונקרטיים מהידע — קבצים, ספריות, מסכים, פעולות, אוטומציות, ואיך החלקים מתחברים. אם הפרט נלקח מניתוח הקוד, אפשר לומר \"לפי הקוד\".\n- כשמשווים פרויקטים או גרסאות, הסבר מה שונה ביניהם בפועל.\n- בשאלות על אוטומציה: הסבר את התהליך צעד אחר צעד (מה מפעיל אותו, מה קורה, מה יוצא), והצע איך אפשר להרחיב אותו (למשל n8n, GitHub Actions, Docker, תזמון, Webhook).\n- אל תמציא. אם משהו לא מופיע בידע, אמור שאין לך את המידע והצע לפתוח את הפרויקט או את הקוד שלו.\n- שאלה שלא קשורה לפרויקטים: ענה במשפט שאתה כאן כדי להראות את הפרויקטים, והצע פרויקט מתאים.\n\nבסוף התשובה, בשורות נפרדות:\nPROJECT: <id>   ← רק אם התשובה עוסקת בעיקר בפרויקט אחד\nNEXT: <שאלת המשך מעמיקה אחת בעברית שהמבקר יכול לשאול>   ← תמיד, עד שתיים\n\nאיך האתר עצמו עובד (אוטומציה):\n${K.pipeline.map(s => '- ' + s).join('\\n')}\n\nכל הפרויקטים (id · שם · תחום · תיאור):\n${index}\n\nפרטים מלאים על הפרויקטים הרלוונטיים לשאלה (כולל ניתוח קוד):\n${details || '(אין פרויקט ספציפי — ענה מהרשימה הכללית)'}\n${page ? '\\nהמבקר נמצא עכשיו בעמוד של הפרויקט: ' + page : ''}`;\n\nreturn [{ json: { question, sessionId, systemPrompt } }];\n"
+      },
+      "id": "69c7499d-3d7f-5a01-bf0c-1c1f322345e6",
+      "name": "Guide · Build context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.question }}",
+        "options": {
+          "systemMessage": "={{ $json.systemPrompt }}",
+          "maxIterations": 4
+        }
+      },
+      "id": "d4302b4a-9068-54c6-aa46-aa0784527a76",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        900,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 1500
+        }
+      },
+      "id": "d8cd252a-6cc6-5018-8d04-99c26200b1fd",
+      "name": "Claude (Anthropic)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        820,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Guide · Build context').first().json.sessionId }}",
+        "contextWindowLength": 8
+      },
+      "id": "19ddcf2c-4462-5d7f-b3b4-7454c92f3cdc",
+      "name": "Conversation memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1000,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Splits the agent's text into the answer, the project to highlight and follow-up questions.\nconst out = String($json.output || '').trim();\nconst next = [];\nlet project = null;\nlet answer = out\n  .replace(/^\\s*NEXT:\\s*(.+)$/gim, (m, q) => { next.push(q.trim()); return ''; })\n  .replace(/^\\s*PROJECT:\\s*([\\w-]+)\\s*$/gim, (m, id) => { project = id; return ''; })\n  .replace(/[*#_`]+/g, '')\n  .trim();\nif (!answer) answer = 'לא הצלחתי לענות כרגע. אפשר לנסות שוב בעוד רגע, או לשאול על פרויקט מסוים.';\nreturn [{ json: { answer, project, next: next.slice(0, 2), question: $('Guide · Build context').first().json.question, at: new Date().toISOString() } }];\n"
+      },
+      "id": "da9bcc0c-b8c8-50dc-9c61-db7b9917c489",
+      "name": "Guide · Shape answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { answer: $json.answer, project: $json.project, next: $json.next } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d3aec0a3-80e5-599c-bfaa-b268fcec4ee2",
+      "name": "Guide · Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1400,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Questions"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "time": "={{ $json.at }}",
+            "question": "={{ $json.question }}",
+            "answer": "={{ $json.answer }}",
+            "project": "={{ $json.project }}"
+          },
+          "schema": [
+            {
+              "id": "time",
+              "displayName": "time",
+              "type": "string",
+              "display": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "question",
+              "displayName": "question",
+              "type": "string",
+              "display": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "answer",
+              "displayName": "answer",
+              "type": "string",
+              "display": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "project",
+              "displayName": "project",
+              "type": "string",
+              "display": true,
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4fdeb048-4435-5b1a-afaf-d7dbe3c02932",
+      "name": "Guide · Log question (Google Sheets, optional)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1400,
+        420
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "### אופציונלי: יומן שאלות\nמחברים Google Sheets, מדביקים קישור לגיליון עם לשונית `Questions` (עמודות time, question, answer, project), ומפעילים את הצומת (מקש D). כך רואים אילו שאלות מבקרים שואלים ואיפה כדאי להעמיק.",
+        "height": 200,
+        "width": 340,
+        "color": 7
+      },
+      "id": "d29880a8-fb3e-5590-971a-68284d8d2f35",
+      "name": "Note · Log",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        560
+      ]
+    }
+  ],
+  "connections": {
+    "Guide · Webhook": {
+      "main": [
+        [
+          {
+            "node": "Guide · Load knowledge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guide · Load knowledge": {
+      "main": [
+        [
+          {
+            "node": "Guide · Build context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guide · Build context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Guide · Shape answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guide · Shape answer": {
+      "main": [
+        [
+          {
+            "node": "Guide · Respond",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Guide · Log question (Google Sheets, optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude (Anthropic)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

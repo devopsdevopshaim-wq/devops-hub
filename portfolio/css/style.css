@@ -596,3 +596,8 @@ html.detail-open { overflow: hidden; }
 .thinking .guy .g-brows { transform: translateY(-2px); }
 /* the greeting would cover a project page; Guy himself stays */
 .detail-open .g-bubble { display: none !important; }
+
+/* follow-up questions under Guy's answer */
+.g-next { display: flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; }
+.g-next .g-btn { font-size: 13px; text-align: start; line-height: 1.35; }
+.g-bubble p { max-height: 40vh; overflow-y: auto; }

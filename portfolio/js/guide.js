@@ -276,9 +276,17 @@ window.Guide = (function () {
       var pool = api.projects.filter(function (p) { return !p.localhost; });
       return present(pool[Math.floor(Math.random() * pool.length)]);
     }
+    // With the n8n agent connected, every real question goes to it.
+    if (api.guideApi && !answer.offline) return askServer(raw);
     if (has(t, ['מי אתה', 'מה אתה', 'מי זה', 'עליך'])) return say('אני גיא, המדריך של הסדנה. אני מכיר את כל ' + api.projects.length + ' הפרויקטים כאן, ויכול להראות לך כל אחד מהם.');
     if (has(t, ['המלצה', 'המלצות', 'הערה', 'הערות', 'תגובה'])) return say('בכל כרטיס יש לשונית המלצות. לוחצים עליה, נכנסים עם GitHub, וכותבים. ההמלצות נשמרות ומופיעות לכולם.');
     if (has(t, ['כניסות', 'צפיות', 'ביקורים', 'כמה נכנסו'])) return say('מתחת לכל פרויקט רשום כמה פעמים פתחו אותו מהאתר הזה. בראש העמוד יש גם את מספר הביקורים בסדנה.');
+    if (has(t, ['אוטומציה', 'אוטומטי', 'אוטומציות', 'מתעדכן', 'n8n', 'ci', 'pipeline', 'github actions'])) {
+      var auto = api.projects.filter(function (p) { return (p.tech || []).some(function (x) { return /n8n|docker|nginx|python|node/i.test(x); }); });
+      return say('האתר עצמו אוטומטי לגמרי: כל שינוי מתפרסם לבד ב־GitHub Pages, GitHub Actions מצלם את כל הפרויקטים, וטופס הוספת פרויקט מוסיף פרויקט בלי לגעת בקוד. ' +
+        (auto.length ? 'בין הפרויקטים, אוטומציה ושרתים יש ב־' + auto.slice(0, 5).map(function (p) { return p.title; }).join(', ') + '.' : '') +
+        (api.guideApi ? '' : ' כשאחובר לסוכן ב־n8n אוכל להסביר כל תהליך לעומק.'));
+    }
     if (has(t, ['כמה'])) {
       var live = api.projects.filter(function (p) { return api.status(p).kind === 'live'; }).length;
       return say('יש כאן ' + api.projects.length + ' פרויקטים, ' + live + ' מהם באוויר עכשיו.');
@@ -293,7 +301,6 @@ window.Guide = (function () {
       return { p: p, score: score };
     }).filter(function (x) { return x.score > 0; }).sort(function (a, b) { return b.score - a.score; });
 
-    if (api.guideApi && !answer.offline) return askServer(raw, t, words, hits);
     var cat = Object.keys(CAT_WORDS).filter(function (k) { return has(t, CAT_WORDS[k]); })[0];
     if (hits.length && (hits.length === 1 || (hits[0].score > hits[1].score && !cat))) return present(hits[0].p);
     if (cat) {
@@ -310,22 +317,37 @@ window.Guide = (function () {
 
   // Ask the AI server (portfolio/guide-server). On any failure fall back to
   // word matching for this question.
+  // One id per browser tab, so the n8n agent remembers this conversation.
+  var sessionId = (function () {
+    var k = 'guide-session', v = null;
+    try { v = sessionStorage.getItem(k); } catch (e) {}
+    if (!v) { v = Math.random().toString(36).slice(2) + Date.now().toString(36); try { sessionStorage.setItem(k, v); } catch (e) {} }
+    return v;
+  })();
+
+  // Ask the AI agent: the n8n webhook (full URL) or portfolio/guide-server
+  // (base URL, /ask is added). text/plain keeps it a simple request, so the
+  // browser doesn't need a CORS preflight. Any failure falls back to word matching.
   function askServer(raw) {
     root.classList.add('thinking');
+    var url = /\/webhook(-test)?\/|\/ask$/.test(api.guideApi) ? api.guideApi : api.guideApi.replace(/\/$/, '') + '/ask';
+    var page = (/^#p\/(.+)$/.exec(location.hash) || [])[1] || '';
     var ctrl = 'AbortController' in window ? new AbortController() : null;
-    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
-    fetch(api.guideApi.replace(/\/$/, '') + '/ask', {
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 45000);
+    fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: raw, history: history.slice(0, -1) }),
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify({ question: raw, sessionId: sessionId, page: decodeURIComponent(page), history: history.slice(0, -1) }),
       signal: ctrl ? ctrl.signal : undefined
     })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (j) {
         root.classList.remove('thinking');
+        if (!j || !j.answer) throw new Error('empty');
         var p = j.project && api.projects.filter(function (x) { return x.id === j.project; })[0];
         if (p) lookAt(api.focusProject(p));
-        say(j.answer || '...');
+        say(j.answer);
+        followUps(j.next);
       })
       .catch(function () {
         root.classList.remove('thinking');
@@ -333,6 +355,17 @@ window.Guide = (function () {
         try { answer(raw); } finally { answer.offline = false; }
       })
       .then(function () { clearTimeout(timer); });
+  }
+
+  // Deeper questions the agent suggests, as buttons under its answer.
+  function followUps(list) {
+    if (!list || !list.length || !log) return;
+    var row = h('div', { class: 'g-next' });
+    list.slice(0, 2).forEach(function (q) {
+      row.appendChild(btn(q, function () { row.remove(); answer(q); }, 'chip'));
+    });
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
   }
 
   function listen() {
@@ -364,6 +397,10 @@ window.Guide = (function () {
 
     var chips = h('div', { class: 'g-chips' }, [
       btn('סיור מודרך', startTour, 'chip'),
+      btn('איך האתר מתעדכן לבד?', function () { answer('איך האתר הזה מתעדכן לבד? תסביר את האוטומציה'); }, 'chip'),
+      btn('אילו פרויקטים משתמשים באוטומציה?', function () { answer('אילו פרויקטים משתמשים באוטומציה, ואיך?'); }, 'chip'),
+      btn('איך JARVIS עובד עם n8n?', function () { answer('איך JARVIS עובד עם n8n?'); }, 'chip'),
+      btn('מה ההבדל בין מערכות המחסן?', function () { answer('מה ההבדל בין מערכות המחסן?'); }, 'chip'),
       btn('סוכני AI', function () { answer('סוכני AI'); }, 'chip'),
       btn('תפתיע אותי', function () { answer('תפתיע אותי'); }, 'chip'),
       btn('כמה פרויקטים יש?', function () { answer('כמה פרויקטים יש?'); }, 'chip'),
