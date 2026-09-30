@@ -25,3 +25,6 @@ packages/*/yarn.lock
 yarn-error.log
 !packages/utils/tests/fixtures/packages/node_modules
 i18n.import.ts
+
+# built on deploy by .github/scripts/portfolio-knowledge.mjs
+portfolio/knowledge.json
