@@ -60,31 +60,161 @@
     return box;
   }
 
-  function actions(s) {
+  var ICON_GLOBE = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 8h12.4M8 1.8c-2.2 3-2.2 9.4 0 12.4M8 1.8c2.2 3 2.2 9.4 0 12.4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';
+  var ICON_EYE = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>';
+  var ICON_TALK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 3v-3H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5 6.5h6M5 8.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+
+  // Visit counts live in Abacus, a free counter service (CountAPI's successor).
+  // "open-<id>" goes up each time someone opens a project from this page.
+  var COUNTER = 'https://abacus.jasoncameron.dev';
+  var COUNTER_NS = 'hasadna-devopsdevopshaim';
+  var visitCache = {};
+  function counter(action, key) {
+    return fetch(COUNTER + '/' + action + '/' + COUNTER_NS + '/' + key, action === 'hit' ? { keepalive: true } : undefined)
+      .then(function (r) { if (r.status === 404) return { value: 0 }; if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) { return Number(j.value) || 0; });
+  }
+  function showVisits(id, n) {
+    visitCache[id] = Promise.resolve(n);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-visits="' + id + '"]'), function (v) {
+      v.querySelector('b').textContent = n.toLocaleString('he-IL');
+      v.hidden = false;
+    });
+  }
+  var visitIO = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      visitIO.unobserve(e.target);
+      var id = e.target.getAttribute('data-visits');
+      if (!visitCache[id]) visitCache[id] = counter('get', 'open-' + id);
+      visitCache[id].then(function (n) { showVisits(id, n); }, function () {});
+    });
+  }, { rootMargin: '200px' }) : null;
+
+  // Recommendations are GitHub issues made by utterances, one per project.
+  var COMMENTS_REPO = 'devops-hub';
+  var COMMENTS_LABEL = 'portfolio-comment';
+  var recoCounts = {};
+
+  function prettyUrl(u) {
+    try {
+      var x = new URL(u);
+      return (x.host + decodeURIComponent(x.pathname)).replace(/\/$/, '');
+    } catch (e) { return u; }
+  }
+
+  function actions(s, p) {
+    var open = s.open ? el('a', { class: 'link open', href: s.open, target: '_blank', rel: 'noopener', html: 'פתיחה ' + ICON_OUT }) : null;
+    if (open && p) open.addEventListener('click', function () {
+      counter('hit', 'open-' + p.id).then(function (n) { showVisits(p.id, n); }, function () {});
+    });
+    var talk = null;
+    if (p && window.Guide) {
+      talk = el('button', { class: 'link say', type: 'button', html: ICON_TALK + ' ספר לי', title: 'גיא יספר על הפרויקט' });
+      talk.addEventListener('click', function () { window.Guide.present(p); });
+    }
     return [
-      s.open ? el('a', { class: 'link open', href: s.open, target: '_blank', rel: 'noopener', html: 'פתיחה ' + ICON_OUT }) : null,
-      s.code ? el('a', { class: 'link code', href: s.code, target: '_blank', rel: 'noopener', html: ICON_CODE + ' קוד' }) : null
+      open,
+      s.code ? el('a', { class: 'link code', href: s.code, target: '_blank', rel: 'noopener', html: ICON_CODE + ' קוד' }) : null,
+      talk
     ];
+  }
+
+  // Address and visit count, shown at the bottom of every card.
+  function foot(p, s) {
+    var url = s.open || s.code;
+    var visits = el('span', { class: 'visits', 'data-visits': p.id, title: 'כמה פעמים פתחו את הפרויקט מהאתר הזה', hidden: '', html: ICON_EYE + ' <b>0</b> כניסות' });
+    if (visitIO) visitIO.observe(visits);
+    return el('div', { class: 'card-foot' }, [
+      url ? el('a', { class: 'addr', href: url, target: '_blank', rel: 'noopener', title: url, html: ICON_GLOBE + '<span><bdi dir="ltr"></bdi></span>' }) : el('span', { class: 'addr muted', text: 'אין כתובת ציבורית' }),
+      visits
+    ]);
+  }
+
+  function loadComments(box, p) {
+    if (box.dataset.loaded) return;
+    box.dataset.loaded = '1';
+    var sc = document.createElement('script');
+    sc.src = 'https://utteranc.es/client.js';
+    sc.async = true;
+    sc.setAttribute('repo', state.data.owner + '/' + COMMENTS_REPO);
+    sc.setAttribute('issue-term', 'portfolio:' + p.id);
+    sc.setAttribute('label', COMMENTS_LABEL);
+    sc.setAttribute('theme', 'photon-dark');
+    sc.setAttribute('crossorigin', 'anonymous');
+    box.appendChild(sc);
+  }
+
+  function recoLabel(id) {
+    var n = recoCounts[id];
+    return 'המלצות' + (n ? ' · ' + n : '');
+  }
+
+  function loadRecoCounts() {
+    var q = 'repo:' + state.data.owner + '/' + COMMENTS_REPO + ' label:' + COMMENTS_LABEL + ' is:issue';
+    fetch('https://api.github.com/search/issues?per_page=100&q=' + encodeURIComponent(q))
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) {
+        (j.items || []).forEach(function (it) {
+          var m = /^portfolio:(.+)$/.exec(it.title);
+          if (m) recoCounts[m[1]] = it.comments;
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-reco-tab]'), function (b) {
+          b.textContent = recoLabel(b.getAttribute('data-reco-tab'));
+        });
+      })
+      .catch(function () {});
+  }
+
+  // "Overview" and "Recommendations" tabs inside a card.
+  function tabs(c, p, info) {
+    var reco = el('div', { class: 'pane reco', role: 'tabpanel', hidden: '' }, [
+      el('p', { class: 'reco-hint', text: 'ההמלצות נשמרות ב־GitHub ומוצגות לכולם. כדי לכתוב צריך להתחבר עם חשבון GitHub.' }),
+      el('div', { class: 'reco-box' })
+    ]);
+    var tInfo = el('button', { class: 'tab', role: 'tab', type: 'button', 'aria-selected': 'true', text: 'סקירה' });
+    var tReco = el('button', { class: 'tab', role: 'tab', type: 'button', 'aria-selected': 'false', 'data-reco-tab': p.id, text: recoLabel(p.id) });
+    function pick(showReco) {
+      tInfo.setAttribute('aria-selected', String(!showReco));
+      tReco.setAttribute('aria-selected', String(showReco));
+      info.hidden = showReco;
+      reco.hidden = !showReco;
+      c.classList.toggle('wide', showReco);
+      if (showReco) loadComments(reco.querySelector('.reco-box'), p);
+    }
+    tInfo.addEventListener('click', function () { pick(false); });
+    tReco.addEventListener('click', function () { pick(true); });
+    return [el('div', { class: 'tabs', role: 'tablist', 'aria-label': 'מידע על ' + p.title }, [tInfo, tReco]), info, reco];
   }
 
   function card(p) {
     var s = status(p);
-    var c = el('article', { class: 'card reveal cat-' + p.category, id: 'p-' + p.id }, [
+    var c = el('article', { class: 'card reveal cat-' + p.category, id: 'p-' + p.id });
+    var info = el('div', { class: 'pane info', role: 'tabpanel' }, [
+      p.desc ? el('p', { text: p.desc }) : null,
+      el('div', { class: 'row' }, actions(s, p))
+    ]);
+    [
       el('span', { class: 'badge ' + s.kind, text: s.label }),
       media(p, s, false),
       el('div', { class: 'body' }, [
         el('span', { class: 'cat', text: state.data.categories[p.category] || '' }),
-        el('h3', { text: p.title }),
-        p.desc ? el('p', { text: p.desc }) : null,
-        el('div', { class: 'row' }, actions(s))
-      ])
-    ]);
+        el('h3', { text: p.title })
+      ].concat(tabs(c, p, info))),
+      foot(p, s)
+    ].forEach(function (n) { c.appendChild(n); });
+    fillAddr(c, s);
     c.addEventListener('pointermove', function (e) {
       var r = c.getBoundingClientRect();
       c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
       c.style.setProperty('--my', (e.clientY - r.top) + 'px');
     });
     return c;
+  }
+
+  function fillAddr(root, s) {
+    var span = root.querySelector('.addr bdi');
+    if (span) span.textContent = prettyUrl(s.open || s.code);
   }
 
   function matches(p) {
@@ -104,6 +234,19 @@
     renderStats();
   }
 
+  var homeVisits = null;
+  function showHomeVisits() {
+    var box = document.getElementById('home-visits');
+    if (!box) return;
+    box.querySelector('dd').textContent = homeVisits.toLocaleString('he-IL');
+    box.hidden = false;
+  }
+  function countHome() {
+    var seen = false;
+    try { seen = sessionStorage.getItem('home-counted') === '1'; sessionStorage.setItem('home-counted', '1'); } catch (e) {}
+    counter(seen ? 'get' : 'hit', 'home').then(function (n) { homeVisits = n; showHomeVisits(); }, function () {});
+  }
+
   function renderStats() {
     var all = state.data.projects;
     var live = all.filter(function (p) { return status(p).kind === 'live'; }).length;
@@ -113,8 +256,10 @@
     box.replaceChildren(
       el('div', {}, [el('dd', { text: String(all.length) }), el('dt', { text: 'פרויקטים' })]),
       el('div', {}, [el('dd', { html: live + '<span class="live-dot" aria-hidden="true"></span>' }), el('dt', { text: 'באוויר עכשיו' })]),
-      el('div', {}, [el('dd', { text: String(Object.keys(used).length) }), el('dt', { text: 'תחומים' })])
+      el('div', {}, [el('dd', { text: String(Object.keys(used).length) }), el('dt', { text: 'תחומים' })]),
+      el('div', { id: 'home-visits', hidden: '' }, [el('dd', { text: '0' }), el('dt', { text: 'ביקורים בסדנה' })])
     );
+    if (homeVisits !== null) showHomeVisits();
   }
 
   function renderFeatured() {
@@ -128,10 +273,12 @@
         el('div', { class: 'body' }, [
           el('h3', { text: p.title }),
           p.desc ? el('p', { text: p.desc }) : null,
-          el('div', { class: 'row' }, actions(s))
-        ])
+          el('div', { class: 'row' }, actions(s, p))
+        ]),
+        foot(p, s)
       ]);
     }));
+    Array.prototype.forEach.call(box.querySelectorAll('.fcard'), function (f, i) { fillAddr(f, status(list[i])); });
     observe(box.querySelectorAll('.reveal'));
   }
 
@@ -269,10 +416,20 @@
     if (state.cat !== 'all' && state.cat !== p.category) selectCat('all');
     var c = document.getElementById('p-' + p.id);
     if (!c) { state.query = ''; q.value = ''; selectCat('all'); c = document.getElementById('p-' + p.id); }
-    if (!c) return;
+    if (!c) return null;
     c.classList.add('in');
     c.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
     c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+    return c;
+  }
+
+  // The guide's spotlight: one card at a time glows while he talks about it.
+  function spotlight(p) {
+    Array.prototype.forEach.call(document.querySelectorAll('.card.spot'), function (n) { n.classList.remove('spot'); });
+    if (!p) return null;
+    var c = jumpTo(p);
+    if (c) c.classList.add('spot');
+    return c;
   }
 
   // ---------- extra repos ----------
@@ -336,6 +493,15 @@
       renderTiles();
       render();
       loadRepos(data.owner);
+      loadRecoCounts();
+      countHome();
+      if (window.Guide) window.Guide.init({
+        projects: data.projects,
+        categories: data.categories,
+        status: status,
+        focusProject: spotlight,
+        filter: selectCat
+      });
     })
     .catch(function () {
       note.textContent = 'לא הצלחתי לטעון את רשימת הפרויקטים. אם פתחתם את הקובץ ישירות מהמחשב, פתחו אותו דרך שרת (למשל npx serve).';
