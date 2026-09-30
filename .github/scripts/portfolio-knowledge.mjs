@@ -13,7 +13,7 @@ const clones = path.resolve(process.argv[2] || '/tmp/portfolio-clones');
 fs.mkdirSync(clones, { recursive: true });
 
 // Sites that live inside this repo rather than in their own.
-const LOCAL = { 'vacation-hub': 'vacation-hub', 'book-studio': 'book-studio' };
+const LOCAL = { 'vacation-hub': 'vacation-hub', 'book-studio': 'book-studio', 'electro-fix': 'electro-fix' };
 
 const SIGNALS = [
   [/^dockerfile$/i, 'file', 'אפשר להריץ אותו בקונטיינר Docker (יש Dockerfile)'],
