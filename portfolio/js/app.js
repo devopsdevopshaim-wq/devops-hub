@@ -48,12 +48,23 @@
   // Live screenshot from WordPress mShots. While a shot is being generated it
   // returns a small placeholder, so anything narrower than we asked for is
   // ignored and the illustration stays.
+  // Screenshot from portfolio/shots/ (taken by the portfolio-shots workflow).
+  // Live sites without one fall back to WordPress mShots; while a shot is being
+  // generated mShots returns a small placeholder, which is ignored.
+  function shotSrc(p, mobile) {
+    if (p.noshot) return null;
+    var sh = state.shots && state.shots[p.id];
+    return sh ? 'shots/' + p.id + (mobile ? '-m' : '') + '.jpg?v=' + encodeURIComponent(sh.at || '') : null;
+  }
+
   function media(p, s, big) {
     var box = el('div', { class: 'media cat-' + p.category, html: art(p.category) });
-    if (s.open && /^https:/.test(s.open)) {
-      var w = big ? 1200 : 800;
-      var img = el('img', { alt: '', loading: 'lazy', decoding: 'async', src: 'https://s0.wp.com/mshots/v1/' + encodeURIComponent(s.open) + '?w=' + w + '&h=' + Math.round(w * 0.62) });
-      img.addEventListener('load', function () { if (img.naturalWidth >= w * 0.9) img.classList.add('ok'); });
+    var local = shotSrc(p, false);
+    var w = big ? 1200 : 800;
+    var src = local || (!p.noshot && s.open && /^https:/.test(s.open) ? 'https://s0.wp.com/mshots/v1/' + encodeURIComponent(s.open) + '?w=' + w + '&h=' + Math.round(w * 0.62) : null);
+    if (src) {
+      var img = el('img', { alt: 'צילום מסך של ' + p.title, loading: 'lazy', decoding: 'async', src: src });
+      img.addEventListener('load', function () { if (local || img.naturalWidth >= w * 0.9) img.classList.add('ok'); });
       box.appendChild(img);
       box.appendChild(el('div', { class: 'shade' }));
     }
@@ -196,10 +207,10 @@
     ]);
     [
       el('span', { class: 'badge ' + s.kind, text: s.label }),
-      media(p, s, false),
+      el('a', { class: 'media-link', href: '#p/' + p.id, 'aria-label': 'עמוד הפרויקט ' + p.title }, [media(p, s, false)]),
       el('div', { class: 'body' }, [
         el('span', { class: 'cat', text: state.data.categories[p.category] || '' }),
-        el('h3', { text: p.title })
+        el('h3', {}, [el('a', { class: 'more', href: '#p/' + p.id, text: p.title })])
       ].concat(tabs(c, p, info))),
       foot(p, s)
     ].forEach(function (n) { c.appendChild(n); });
@@ -269,9 +280,9 @@
       var s = status(p);
       return el('article', { class: 'fcard reveal cat-' + p.category, style: '--rd:' + i * 120 + 'ms' }, [
         el('span', { class: 'badge ' + s.kind, text: s.label }),
-        media(p, s, i === 0),
+        el('a', { class: 'media-link', href: '#p/' + p.id, 'aria-label': 'עמוד הפרויקט ' + p.title }, [media(p, s, i === 0)]),
         el('div', { class: 'body' }, [
-          el('h3', { text: p.title }),
+          el('h3', {}, [el('a', { class: 'more', href: '#p/' + p.id, text: p.title })]),
           p.desc ? el('p', { text: p.desc }) : null,
           el('div', { class: 'row' }, actions(s, p))
         ]),
@@ -427,10 +438,131 @@
   function spotlight(p) {
     Array.prototype.forEach.call(document.querySelectorAll('.card.spot'), function (n) { n.classList.remove('spot'); });
     if (!p) return null;
+    if (!detail.hidden) {
+      if (location.hash !== '#p/' + p.id) location.hash = '#p/' + p.id;
+      return detailBody.querySelector('.d-hero');
+    }
     var c = jumpTo(p);
     if (c) c.classList.add('spot');
     return c;
   }
+
+  // ---------- project page (#p/<id>) ----------
+  var detail = document.getElementById('detail');
+  var detailBody = document.getElementById('detail-body');
+  var lastScroll = 0;
+  var ICON_CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function devices(p, s) {
+    var desk = shotSrc(p, false), phone = shotSrc(p, true);
+    var screen = function (src, alt) {
+      var box = el('div', { class: 'screen media cat-' + p.category, html: art(p.category) });
+      if (src) {
+        var img = el('img', { alt: alt, src: src });
+        img.addEventListener('load', function () { img.classList.add('ok'); });
+        box.appendChild(img);
+      } else if (s.open && /^https:/.test(s.open)) {
+        box.replaceWith(media(p, s, true));
+        return media(p, s, true);
+      }
+      return box;
+    };
+    var kids = [el('div', { class: 'laptop' }, [el('div', { class: 'bar', html: '<i></i><i></i><i></i>' }), screen(desk, 'צילום מסך במחשב של ' + p.title)])];
+    if (phone) kids.push(el('div', { class: 'phone' }, [screen(phone, 'צילום מסך בטלפון של ' + p.title)]));
+    return el('div', { class: 'devices' + (phone ? '' : ' solo') }, kids);
+  }
+
+  function renderDetail(p) {
+    var s = status(p);
+    var list = state.data.projects;
+    var i = list.indexOf(p);
+    var prev = list[(i - 1 + list.length) % list.length], next = list[(i + 1) % list.length];
+    var cat = state.data.categories[p.category] || '';
+    var related = list.filter(function (x) { return x.category === p.category && x !== p; }).slice(0, 3);
+
+    var nav = el('div', { class: 'd-nav' }, [
+      el('a', { class: 'd-back', href: '#all', html: '<span aria-hidden="true">→</span> לכל הפרויקטים' }),
+      el('div', { class: 'd-step' }, [
+        el('a', { href: '#p/' + prev.id, title: prev.title, html: '<span aria-hidden="true">→</span> הקודם' }),
+        el('span', { text: (i + 1) + ' / ' + list.length }),
+        el('a', { href: '#p/' + next.id, title: next.title, html: 'הבא <span aria-hidden="true">←</span>' })
+      ])
+    ]);
+
+    var reco = el('div', { class: 'reco-box' });
+    var sections = [
+      el('header', { class: 'd-hero cat-' + p.category }, [
+        el('div', { class: 'd-copy' }, [
+          el('p', { class: 'eyebrow', text: cat }),
+          el('h1', { id: 'detail-title', text: p.title }),
+          el('p', { class: 'lead', text: p.desc || '' }),
+          el('div', { class: 'd-meta' }, [el('span', { class: 'badge static ' + s.kind, text: s.label })].concat(
+            (p.tech || []).slice(0, 4).map(function (t) { return el('span', { class: 'chip-tech', text: t }); }))),
+          el('div', { class: 'row' }, actions(s, p)),
+          foot(p, s)
+        ]),
+        devices(p, s)
+      ])
+    ];
+    if (p.story) sections.push(el('section', { class: 'd-sec d-story' }, [
+      el('p', { class: 'hand', text: 'למה בניתי את זה' }),
+      el('blockquote', { text: p.story })
+    ]));
+    if (p.features && p.features.length) sections.push(el('section', { class: 'd-sec' }, [
+      el('h2', { text: 'מה אפשר לעשות' }),
+      el('ul', { class: 'd-features' }, p.features.map(function (f) { return el('li', { html: ICON_CHECK }, [el('span', { text: f })]); }))
+    ]));
+    if (p.tech && p.tech.length) sections.push(el('section', { class: 'd-sec' }, [
+      el('h2', { text: 'בנוי עם' }),
+      el('div', { class: 'd-tech' }, p.tech.map(function (t) { return el('span', { class: 'chip-tech big', text: t }); }))
+    ]));
+    sections.push(el('section', { class: 'd-sec' }, [
+      el('h2', { text: 'המלצות והערות' }),
+      el('p', { class: 'reco-hint', text: 'ההמלצות נשמרות ב־GitHub ומוצגות לכולם. כדי לכתוב צריך להתחבר עם חשבון GitHub.' }),
+      reco
+    ]));
+    if (related.length) sections.push(el('section', { class: 'd-sec' }, [
+      el('h2', { text: 'עוד בתחום ' + cat }),
+      el('div', { class: 'grid d-related' }, related.map(function (r) {
+        var rs = status(r);
+        return el('a', { class: 'mini cat-' + r.category, href: '#p/' + r.id }, [media(r, rs, false), el('b', { text: r.title }), el('small', { text: r.desc || '' })]);
+      }))
+    ]));
+
+    fillAddr(sections[0], s);
+    detailBody.replaceChildren.apply(detailBody, [nav].concat(sections));
+    loadComments(reco, p);
+    document.title = p.title + ' · הסדנה';
+  }
+
+  function openDetail(id) {
+    var p = state.data && state.data.projects.filter(function (x) { return x.id === id; })[0];
+    if (!p) return closeDetail();
+    if (detail.hidden) lastScroll = window.scrollY;
+    renderDetail(p);
+    detail.hidden = false;
+    document.documentElement.classList.add('detail-open');
+    detail.scrollTop = 0;
+    document.getElementById('detail-title').focus({ preventScroll: true });
+  }
+
+  function closeDetail() {
+    if (detail.hidden) return;
+    detail.hidden = true;
+    document.documentElement.classList.remove('detail-open');
+    document.title = 'הפרויקטים שלי';
+    detailBody.replaceChildren();
+    if (!/^#(all|featured|fields|how|top)$/.test(location.hash)) window.scrollTo(0, lastScroll);
+  }
+
+  function route() {
+    var m = /^#p\/(.+)$/.exec(location.hash);
+    if (m) openDetail(decodeURIComponent(m[1])); else closeDetail();
+  }
+  window.addEventListener('hashchange', route);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !detail.hidden) { history.pushState('', '', location.pathname); closeDetail(); }
+  });
 
   // ---------- extra repos ----------
   function renderExtra(list) {
@@ -482,9 +614,13 @@
 
   q.addEventListener('input', function () { state.query = q.value.trim().toLowerCase(); render(); });
 
-  fetch('projects.json')
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
+  Promise.all([
+    fetch('projects.json').then(function (r) { return r.json(); }),
+    fetch('shots/index.json').then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
+  ])
+    .then(function (res) {
+      var data = res[0];
+      state.shots = res[1];
       state.data = data;
       document.getElementById('gh-link').href = 'https://github.com/' + data.owner;
       document.getElementById('gh-top').href = 'https://github.com/' + data.owner;
@@ -500,8 +636,10 @@
         categories: data.categories,
         status: status,
         focusProject: spotlight,
+        guideApi: data.guideApi || '',
         filter: selectCat
       });
+      route();
     })
     .catch(function () {
       note.textContent = 'לא הצלחתי לטעון את רשימת הפרויקטים. אם פתחתם את הקובץ ישירות מהמחשב, פתחו אותו דרך שרת (למשל npx serve).';

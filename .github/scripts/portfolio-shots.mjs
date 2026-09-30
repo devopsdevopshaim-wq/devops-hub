@@ -14,6 +14,7 @@ const index = fs.existsSync(indexFile) ? JSON.parse(fs.readFileSync(indexFile, '
 const only = process.argv.slice(2).filter(Boolean);
 
 function urlOf(p) {
+  if (p.noshot) return null;
   if (p.url) return p.url;
   if (p.localhost || p.private || !p.repo) return null;
   return `https://${data.owner}.github.io/${p.repo}/` + (p.start ? encodeURIComponent(p.start) : '');
@@ -29,6 +30,15 @@ async function shoot(browser, url, file, viewport, mobile) {
       await page.goto(url, { waitUntil: 'load', timeout: 60000 });
     }
     await page.waitForTimeout(3000);
+    // Free hosts (Render) show a wake-up page while the app starts, and some
+    // sites put a bot check first. Give them time, then load again.
+    for (let i = 0; i < 3; i++) {
+      const text = await page.evaluate(() => document.body ? document.body.innerText.slice(0, 2000) : '');
+      if (!/waking up|spinning up|service is starting|just a moment|checking your browser|verify you are human/i.test(text)) break;
+      await page.waitForTimeout(30000);
+      await page.reload({ waitUntil: 'load', timeout: 90000 }).catch(() => {});
+      await page.waitForTimeout(4000);
+    }
     await page.screenshot({ path: file, type: 'jpeg', quality: 72 });
   } finally {
     await ctx.close();

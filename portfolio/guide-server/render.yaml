@@ -1,0 +1,18 @@
+# Render blueprint for Guy's AI server. New → Blueprint → pick this repo.
+# Set ANTHROPIC_API_KEY in the Render dashboard (it is not stored here).
+services:
+  - type: web
+    name: hasadna-guide
+    runtime: node
+    rootDir: portfolio/guide-server
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SITE_URL
+        value: https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/
+      - key: ALLOWED_ORIGINS
+        value: https://devopsdevopshaim-wq.github.io
