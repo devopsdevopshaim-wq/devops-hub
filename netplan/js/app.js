@@ -1,4 +1,7 @@
-import { buildPlan, defaultConfig, applyProfile, PROFILES, WIFI_GENS, SERVICES, lookup } from './planner.js';
+import { buildPlan, defaultConfig, applyProfile, PROFILES, WIFI_GENS, SERVICES, lookup, subnetsFor, freeIps } from './planner.js';
+import { STATUSES, loadProjects, saveProjects, newProject, logChange } from './projects.js';
+import { parseDescription } from './intake.js';
+import { ipToInt } from './ip.js';
 import { allConfigs } from './configgen.js';
 import { riserSvg, logicSvg, rackSvg, resolveSvgVars, TYPE_META } from './diagram.js';
 import { Monitor, drawScope, fmtRate, fmtBytes, stats as seriesStats } from './monitor.js';
@@ -10,15 +13,16 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const n = (v) => Number(v).toLocaleString('he-IL');
 const ip = (s) => `<span class="ip">${esc(s)}</span>`;
 
-const STORE = 'netplan.cfg';
 const PREFS = 'netplan.prefs';
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
 };
 
+const projects = loadProjects(store, defaultConfig, migrate);
+const activeProject = () => projects.list.find((p) => p.id === projects.active);
 const state = {
-  cfg: migrate(store.get(STORE, null)) || defaultConfig(),
+  cfg: activeProject().cfg,
   plan: null,
   files: null,
   tab: 'overview',
@@ -30,11 +34,12 @@ const state = {
 function migrate(c) {
   if (!c || c.version !== 1) return null;
   const d = defaultConfig();
-  return { ...d, ...c, site: { ...d.site, ...c.site }, perRoom: { ...d.perRoom, ...c.perRoom }, addressing: { ...d.addressing, ...c.addressing } };
+  return { ...d, ...c, site: { ...d.site, ...c.site }, perRoom: { ...d.perRoom, ...c.perRoom }, addressing: { ...d.addressing, ...c.addressing }, overrides: { ...(c.overrides || {}) } };
 }
 
 // ---------------------------------------------------------------- utilities
 function toast(msg) {
+  $$('.toast').forEach((x) => x.remove());
   const t = document.createElement('div');
   t.className = 'toast';
   t.setAttribute('role', 'status');
@@ -76,10 +81,7 @@ function recompute({ save = true } = {}) {
     errBox.innerHTML = '';
     $('#globalAlert').innerHTML = '';
     $$('#planForm [aria-invalid]').forEach((x) => x.removeAttribute('aria-invalid'));
-    if (save) {
-      const ok = store.set(STORE, state.cfg);
-      $('#saveState').textContent = ok ? 'נשמר בדפדפן ✓' : 'לא ניתן לשמור בדפדפן (מצב פרטי?)';
-    }
+    if (save) persist();
     if (state.monitor) state.monitor.setPlan(plan);
     state.rendered.clear();
     state.rendered.add('plan'); // the form is the source of truth; re-rendering it would steal focus while typing
@@ -116,6 +118,7 @@ function activate(tab, { focus = false, push = true } = {}) {
   renderTab(tab);
   if (focus) $(`#${tab}`).focus({ preventScroll: false });
   if (tab === 'monitor' || tab === 'stats') ensureMonitor();
+  if (v3) { if (tab === 'view3d') v3.resume(); else v3.pause(); }
 }
 
 function renderTab(tab) {
@@ -123,7 +126,7 @@ function renderTab(tab) {
   state.rendered.add(tab);
   ({
     overview: renderOverview, plan: renderForm, topology: renderTopology, racks: renderRacks,
-    addresses: renderSubnets, rooms: renderRooms, configs: renderConfigs, monitor: renderMonitor,
+    addresses: renderSubnets, rooms: renderRooms, install: renderInstall, view3d: render3d, configs: renderConfigs, monitor: renderMonitor,
     stats: renderStats, guide: () => {},
   })[tab]?.();
 }
@@ -219,6 +222,7 @@ function renderForm() {
   $('#f-rprefix').closest('.field').hidden = c.addressing.mode !== 'room';
   $('#f-v6p').closest('.field').hidden = !c.addressing.ipv6;
   renderBuildings();
+  renderProjectCard();
 }
 
 function renderBuildings() {
@@ -288,25 +292,32 @@ $('#presets').addEventListener('click', (e) => {
   recompute();
   toast(`נטענה התבנית: ${p.title}`);
 });
-$('#exportBtn').addEventListener('click', () => download(`netplan-${slug(state.cfg.site.code)}.json`, JSON.stringify(state.cfg, null, 2), 'application/json'));
+$('#exportBtn').addEventListener('click', () => {
+  const p = activeProject();
+  download(`netplan-${slug(p.name)}.json`, JSON.stringify({ netplanProject: 1, name: p.name, status: p.status, created: p.created, cfg: state.cfg, install: p.install, log: p.log }, null, 2), 'application/json');
+});
 $('#importLbl').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#importFile').click(); } });
 $('#importFile').addEventListener('change', async (e) => {
   const f = e.target.files[0];
   if (!f) return;
   try {
-    const c = migrate(JSON.parse(await f.text()));
+    const raw = JSON.parse(await f.text());
+    const c = migrate(raw.netplanProject ? raw.cfg : raw);
     if (!c) throw new Error('הקובץ אינו פרויקט נט־פלאן');
-    state.cfg = c;
-    state.rendered.clear();
-    renderForm();
-    recompute();
-    toast('הפרויקט נטען');
+    const p = newProject(c, { name: raw.name || c.site.name, status: raw.status || 'plan' });
+    p.install = raw.install || {};
+    p.log = raw.log || [];
+    logChange(p, `הפרויקט נטען מהקובץ ${f.name}`);
+    projects.list.push(p);
+    switchProject(p.id);
+    toast(`הפרויקט "${p.name}" נטען כפרויקט חדש`);
   } catch (err) { toast(`שגיאה בטעינה: ${err.message}`); }
   e.target.value = '';
 });
 $('#resetBtn').addEventListener('click', () => {
-  if (!confirm('לאפס את כל ההגדרות לברירת המחדל?')) return;
+  if (!confirm('לאפס את כל ההגדרות של הפרויקט הזה לברירת המחדל? גם השינויים הידניים בכתובות יימחקו.')) return;
   state.cfg = defaultConfig();
+  logChange(activeProject(), 'ההגדרות אופסו לברירת המחדל');
   state.rendered.clear();
   renderForm();
   recompute();
@@ -389,7 +400,7 @@ function drawRack() {
     faces.push(`<div class="switch-face"><div class="sf-head"><b>${esc(idf.host)} · מתג ${m}</b><span class="ltr">Gi${m}/0/1–${p.cfg.switchPorts}</span></div><div style="display:flex;align-items:center"><div class="ports">${ports.join('')}</div><div class="uplinks" aria-label="Uplinks">${ups}</div></div></div>`);
   }
   $('#switchFaces').innerHTML = faces.join('');
-  $('#wireTable').innerHTML = `<caption class="sr-only">טבלת חיווט ${esc(idf.id)}</caption><thead><tr><th scope="col">שקע</th><th scope="col">סוג</th><th scope="col">לוח ניתוב</th><th scope="col">פורט במתג</th><th scope="col">VLAN</th><th scope="col">IP</th><th scope="col" class="num">PoE</th></tr></thead><tbody>${idf.outlets.map((o) => `<tr><td class="ip">${esc(o.label)}</td><td><span class="chip"><i class="dot" style="background:${TYPE_META[o.type].color}"></i>${TYPE_META[o.type].he}</span></td><td class="ip">${esc(o.patch)}</td><td class="ip">Gi${o.member}/0/${o.port}</td><td class="ip">${o.vlan}${o.voiceVlan ? ` +${o.voiceVlan}` : ''}</td><td class="ip">${esc(o.ip)}${o.phoneIp ? `<br>${esc(o.phoneIp)}` : ''}</td><td class="num">${o.poeW ? `${o.poeW}W` : '—'}</td></tr>`).join('')}</tbody>`;
+  $('#wireTable').innerHTML = `<caption class="sr-only">טבלת חיווט ${esc(idf.id)}</caption><thead><tr><th scope="col">שקע</th><th scope="col">סוג</th><th scope="col">לוח ניתוב</th><th scope="col">פורט במתג</th><th scope="col">VLAN</th><th scope="col">IP</th><th scope="col" class="num">PoE</th></tr></thead><tbody>${idf.outlets.map((o) => `<tr><td class="ip">${esc(o.label)}${editBtn(o.label)}</td><td><span class="chip"><i class="dot" style="background:${TYPE_META[o.type].color}"></i>${TYPE_META[o.type].he}</span></td><td class="ip">${esc(o.patch)}</td><td class="ip">Gi${o.member}/0/${o.port}</td><td class="ip">${o.vlan}${o.voiceVlan ? ` +${o.voiceVlan}` : ''}</td><td class="ip">${esc(o.ip)}${o.phoneIp ? `<br>${esc(o.phoneIp)}` : ''}</td><td class="num">${o.poeW ? `${o.poeW}W` : '—'}</td></tr>`).join('')}</tbody>`;
 }
 $('#switchFaces').addEventListener('click', (e) => {
   const b = e.target.closest('.port[data-m]');
@@ -458,7 +469,7 @@ $('#roomQ').addEventListener('input', drawRooms);
 
 function roomRows(rooms) {
   return rooms.map((r) => r.outlets.map((o, k) => `<tr>${k === 0 ? `<th scope="row" rowspan="${r.outlets.length}"><button class="btn sm" data-room="${esc(r.id)}" aria-label="כרטיס הגדרות לחדר ${esc(r.no)}">${esc(r.no)}</button><div class="small muted ltr">${esc(r.idf)}</div></th>` : ''}
-    <td class="ip">${esc(o.label)}</td><td>${TYPE_META[o.type].he}${o.hasPhone ? ' + טלפון' : ''}</td><td class="ip">${esc(o.patch)}</td><td class="ip">${esc(o.switch)} Gi${o.member}/0/${o.port}</td><td class="ip">${o.vlan}${o.voiceVlan && o.type !== 'voice' ? `/${o.voiceVlan}` : ''}</td><td class="ip"><b>${esc(o.ip)}</b>${o.phoneIp ? `<br>${esc(o.phoneIp)}` : ''}</td><td class="ip">${esc(o.mask)}</td><td class="ip">${esc(o.gateway)}</td></tr>`).join('')).join('');
+    <td class="ip">${esc(o.label)}${editBtn(o.label)}</td><td>${TYPE_META[o.type].he}${o.hasPhone ? ' + טלפון' : ''}${o.manual ? ' <span class="chip manual">ידני</span>' : ''}</td><td class="ip">${esc(o.patch)}</td><td class="ip">${esc(o.switch)} Gi${o.member}/0/${o.port}</td><td class="ip">${o.vlan}${o.voiceVlan && o.type !== 'voice' ? `/${o.voiceVlan}` : ''}</td><td class="ip"><b>${esc(o.ip)}</b>${o.hostname ? `<br><span class="small muted">${esc(o.hostname)}</span>` : ''}${o.phoneIp ? `<br>${esc(o.phoneIp)}${editBtn(`${o.label}-PH`, 'טלפון')}` : ''}</td><td class="ip">${esc(o.mask)}</td><td class="ip">${esc(o.gateway)}</td></tr>`).join('')).join('');
 }
 const ROOM_HEAD = '<thead><tr><th scope="col">חדר</th><th scope="col">שקע</th><th scope="col">סוג</th><th scope="col">לוח ניתוב</th><th scope="col">מתג ופורט</th><th scope="col">VLAN</th><th scope="col">כתובת IP</th><th scope="col">מסכה</th><th scope="col">Gateway</th></tr></thead>';
 
@@ -471,14 +482,16 @@ function drawRooms() {
   if (q) rooms = b.floors.flatMap((x) => x.rooms).filter((r) => r.no.includes(q));
   const shown = rooms.slice(0, 200);
   $('#roomTable').innerHTML = `<caption>${n(rooms.length)} חדרים${rooms.length > shown.length ? ` · מוצגים ${shown.length}, צמצמו לפי קומה` : ''}</caption>${ROOM_HEAD}<tbody>${roomRows(shown)}</tbody>`;
+  renderOverrides();
 }
 $('#csvRooms').addEventListener('click', () => {
   const p = state.plan;
-  const rows = [['Building', 'Floor', 'Room', 'Cabinet', 'Outlet', 'Type', 'Patch', 'Switch', 'Port', 'VLAN', 'Voice VLAN', 'IP', 'Phone IP', 'Mask', 'Gateway', 'DNS1', 'DNS2']];
+  const rows = [['Building', 'Floor', 'Room', 'Cabinet', 'Outlet', 'Type', 'Patch', 'Switch', 'Port', 'VLAN', 'Voice VLAN', 'IP', 'Phone IP', 'Mask', 'Gateway', 'DNS1', 'DNS2', 'Hostname', 'MAC', 'Manual', 'Note']];
+  const tail = (o) => [o.hostname || '', o.mac || '', o.manual ? 'yes' : '', o.note || ''];
   for (const r of p.rooms) {
-    for (const o of r.outlets) rows.push([r.bCode, p.buildings[r.building].floors[r.floor].label, r.no, r.idf, o.label, o.type, o.patch, o.switch, `Gi${o.member}/0/${o.port}`, o.vlan, o.voiceVlan ?? '', o.ip, o.phoneIp ?? '', o.mask, o.gateway, p.services.dns1, p.services.dns2]);
+    for (const o of r.outlets) rows.push([r.bCode, p.buildings[r.building].floors[r.floor].label, r.no, r.idf, o.label, o.type, o.patch, o.switch, `Gi${o.member}/0/${o.port}`, o.vlan, o.voiceVlan ?? '', o.ip, o.phoneIp ?? '', o.mask, o.gateway, p.services.dns1, p.services.dns2, ...tail(o)]);
   }
-  for (const idf of p.idfs) for (const o of idf.outlets.filter((x) => !x.room)) rows.push([p.buildings[idf.building].code, p.buildings[idf.building].floors[idf.floor].label, '', idf.id, o.label, o.type, o.patch, o.switch, `Gi${o.member}/0/${o.port}`, o.vlan, '', o.ip, '', o.mask, o.gateway, p.services.dns1, p.services.dns2]);
+  for (const idf of p.idfs) for (const o of idf.outlets.filter((x) => !x.room)) rows.push([p.buildings[idf.building].code, p.buildings[idf.building].floors[idf.floor].label, '', idf.id, o.label, o.type, o.patch, o.switch, `Gi${o.member}/0/${o.port}`, o.vlan, '', o.ip, '', o.mask, o.gateway, p.services.dns1, p.services.dns2, ...tail(o)]);
   download(`netplan-${slug(p.cfg.site.code)}-rooms.csv`, csv(rows), 'text/csv;charset=utf-8');
 });
 
@@ -826,7 +839,7 @@ function buildPrint(parts) {
   const s = p.stats;
   const date = new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' });
   const out = [];
-  out.push(`<div class="pr-cover"><div class="eyebrow">נט־פלאן · תכנית תקשורת</div><h1>${esc(p.cfg.site.name)}</h1><p>${esc(date)} · ${s.buildings} מבנים · ${s.floors} קומות · ${n(s.rooms)} חדרים · טווח ${esc(p.cfg.addressing.base)}${p.cfg.addressing.ipv6 ? ` · IPv6 ${esc(p.cfg.addressing.ipv6Effective)}` : ''}</p>
+  out.push(`<div class="pr-cover"><div class="eyebrow">נט־פלאן · תכנית תקשורת</div><h1>${esc(activeProject().name)}</h1><p>${esc(STATUSES[activeProject().status])} · ${esc(p.cfg.site.name)} · ${esc(date)} · ${s.buildings} מבנים · ${s.floors} קומות · ${n(s.rooms)} חדרים · טווח ${esc(p.cfg.addressing.base)}${p.cfg.addressing.ipv6 ? ` · IPv6 ${esc(p.cfg.addressing.ipv6Effective)}` : ''}</p>
     <div class="kpis">${[['חדרים', n(s.rooms)], ['ארונות', n(s.idfs)], ['מתגים', n(s.switches)], ['VLAN', n(s.vlans)], ['רשתות', n(s.subnets)], ['כתובות שמורות', n(s.addresses.reserved)], ['PoE', `${n(s.poeW)}W`], ['נקודות גישה', n(s.endpoints.ap)]].map(([l, v]) => `<div class="kpi"><div class="k-label">${l}</div><div class="k-value">${v}</div></div>`).join('')}</div></div>`);
   const sec = (title, body) => out.push(`<section class="pr-section"><h2>${esc(title)}</h2>${body}</section>`);
   if (parts.includes('summary')) {
@@ -844,15 +857,21 @@ function buildPrint(parts) {
   }
   if (parts.includes('rooms')) {
     for (const b of p.buildings) {
-      for (const f of b.floors) sec(`כתובות לפי חדר · ${b.name} · קומה ${f.label}`, `<table>${ROOM_HEAD.replace(/<button[^>]*>|<\/button>/g, '')}<tbody>${roomRows(f.rooms).replace(/<button[^>]*>|<\/button>/g, '')}</tbody></table>`);
+      for (const f of b.floors) sec(`כתובות לפי חדר · ${b.name} · קומה ${f.label}`, `<table>${ROOM_HEAD.replace(EDIT_RE, '').replace(/<button[^>]*>|<\/button>/g, '')}<tbody>${roomRows(f.rooms).replace(EDIT_RE, '').replace(/<button[^>]*>|<\/button>/g, '')}</tbody></table>`);
     }
   }
   if (parts.includes('racks')) {
     sec('ארון ראשי (MDF)', `<div style="max-width:330px">${resolveSvgVars(rackSvg(p.mdf, 'MDF'))}</div>`);
     for (const idf of p.idfs) {
       sec(`ארון ${idf.id}`, `<div style="display:grid;grid-template-columns:330px 1fr;gap:16px"><div>${resolveSvgVars(rackSvg(idf.rack, idf.id))}</div><div><p>מתגים: ${idf.members}×${p.cfg.switchPorts} · לוחות ניתוב: ${idf.patchPanels} · PoE ${n(idf.poeDrawW)}W · ניהול ${esc(idf.mgmtIp)} · Uplink ${idf.uplinks}×${esc(p.uplink.label)}</p>
-        <table><thead><tr><th>שקע</th><th>לוח</th><th>פורט</th><th>VLAN</th><th>IP</th></tr></thead><tbody>${idf.outlets.map((o) => `<tr><td class="ip">${esc(o.label)}</td><td class="ip">${esc(o.patch)}</td><td class="ip">Gi${o.member}/0/${o.port}</td><td>${o.vlan}</td><td class="ip">${esc(o.ip)}</td></tr>`).join('')}</tbody></table></div></div>`);
+        <table><thead><tr><th>שקע</th><th>לוח</th><th>פורט</th><th>VLAN</th><th>IP</th></tr></thead><tbody>${idf.outlets.map((o) => `<tr><td class="ip">${esc(o.label)}${editBtn(o.label)}</td><td class="ip">${esc(o.patch)}</td><td class="ip">Gi${o.member}/0/${o.port}</td><td>${o.vlan}</td><td class="ip">${esc(o.ip)}</td></tr>`).join('')}</tbody></table></div></div>`);
     }
+  }
+  if (parts.includes('install')) {
+    const pr = installProgress();
+    const mark = (k) => (activeProject().install[k] ? '☑' : '☐');
+    sec('תכנית התקנה ומעקב ביצוע', `<p>בוצעו ${pr.done} מתוך ${pr.total} משימות (${pr.pct}%).</p><h3>משימות כלליות</h3><ul style="list-style:none;padding:0">${GLOBAL_STEPS.map(([k, t]) => `<li>${mark(`g:${k}`)} ${esc(t)}${activeProject().install[`g:${k}`] ? ` <span class="muted">(${esc(fmtDate(activeProject().install[`g:${k}`]))})</span>` : ''}</li>`).join('')}</ul>
+      <h3>משימות לכל ארון</h3><table><thead><tr><th>ארון</th>${IDF_STEPS.map(([, t]) => `<th>${esc(t)}</th>`).join('')}</tr></thead><tbody>${p.idfs.map((idf) => `<tr><td class="ip">${esc(idf.id)}</td>${IDF_STEPS.map(([k]) => `<td style="text-align:center">${mark(`${idf.id}:${k}`)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
   }
   if (parts.includes('configs')) {
     for (const f of ensureFiles()) sec(`הגדרות · ${f.name}`, `<pre class="codebox">${esc(f.text)}</pre>`);
@@ -864,13 +883,552 @@ function printRoom(id) {
   const p = state.plan;
   const r = p.rooms.find((x) => x.id === id);
   $('#printRoot').innerHTML = `<div class="pr-cover"><div class="eyebrow">נט־פלאן · כרטיס חדר</div><h1>חדר ${esc(r.no)} · ${esc(p.buildings[r.building].name)}</h1><p>${esc(p.cfg.site.name)} · ארון ${esc(r.idf)}</p></div>
-    <table>${ROOM_HEAD.replace(/<button[^>]*>|<\/button>/g, '')}<tbody>${roomRows([r]).replace(/<button[^>]*>|<\/button>/g, '')}</tbody></table>
+    <table>${ROOM_HEAD.replace(EDIT_RE, '').replace(/<button[^>]*>|<\/button>/g, '')}<tbody>${roomRows([r]).replace(EDIT_RE, '').replace(/<button[^>]*>|<\/button>/g, '')}</tbody></table>
     <p style="margin-top:12px">DNS: ${esc(p.services.dns1)}, ${esc(p.services.dns2)} · דומיין: ${esc(p.cfg.site.domain)} · NTP: ${esc(p.services.ntp)}</p>`;
   setTimeout(() => window.print(), 60);
 }
 
+// ---------------------------------------------------------------- projects
+function persist() {
+  const p = activeProject();
+  p.cfg = state.cfg;
+  p.updated = new Date().toISOString();
+  const ok = saveProjects(store, projects);
+  $('#saveState').textContent = ok ? 'נשמר בדפדפן ✓' : 'לא ניתן לשמור בדפדפן (מצב פרטי?)';
+}
+function renderProjectSwitcher() {
+  $('#projSel').innerHTML = projects.list.map((p) => `<option value="${esc(p.id)}">${esc(p.name)} · ${esc(STATUSES[p.status] || '')}</option>`).join('');
+  $('#projSel').value = projects.active;
+}
+function renderProjectCard() {
+  const p = activeProject();
+  $('#pj-name').value = p.name;
+  $('#pj-status').innerHTML = Object.entries(STATUSES).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
+  $('#pj-status').value = p.status;
+  $('#pj-dates').textContent = `נוצר ${fmtDate(p.created)} · עודכן ${fmtDate(p.updated)} · ${projects.list.length} פרויקטים בדפדפן`;
+  $('#pj-del').hidden = projects.list.length < 2;
+}
+function switchProject(id) {
+  projects.active = id;
+  state.cfg = migrate(activeProject().cfg) || defaultConfig();
+  state.rendered.clear();
+  renderProjectSwitcher();
+  renderForm();
+  recompute();
+  announce(`עברת לפרויקט ${activeProject().name}`);
+}
+const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: 'numeric' }) : '');
+$('#projSel').addEventListener('change', (e) => switchProject(e.target.value));
+$('#newProjBtn').addEventListener('click', () => openWizard());
+$('#pj-wizard').addEventListener('click', () => openWizard());
+$('#pj-name').addEventListener('input', (e) => { activeProject().name = e.target.value || 'ללא שם'; persist(); renderProjectSwitcher(); });
+$('#pj-status').addEventListener('change', (e) => {
+  const p = activeProject();
+  logChange(p, `מצב הפרויקט שונה ל"${STATUSES[e.target.value]}"`);
+  p.status = e.target.value;
+  persist();
+  renderProjectSwitcher();
+});
+$('#pj-dup').addEventListener('click', () => {
+  const src = activeProject();
+  const p = newProject(JSON.parse(JSON.stringify(state.cfg)), { name: `${src.name} (עותק)`, status: 'plan' });
+  logChange(p, `שוכפל מהפרויקט "${src.name}"`);
+  projects.list.push(p);
+  switchProject(p.id);
+  toast('נוצר עותק. אפשר לשנות אותו בלי לגעת במקור.');
+});
+$('#pj-del').addEventListener('click', () => {
+  const p = activeProject();
+  if (projects.list.length < 2) return;
+  if (!confirm(`למחוק את הפרויקט "${p.name}"? אי אפשר לבטל. מומלץ קודם לשמור קובץ פרויקט.`)) return;
+  projects.list = projects.list.filter((x) => x.id !== p.id);
+  switchProject(projects.list[0].id);
+  toast('הפרויקט נמחק');
+});
+
+// ---------------------------------------------------------------- wizard (new project from requirements)
+const wiz = { step: 0, cfg: null, name: '', status: 'plan', found: [] };
+const WIZ_TITLES = ['פרטי הפרויקט', 'מבנים וקומות', 'מה יש בכל חדר', 'תשתית וכתובות', 'סיכום ויצירה'];
+function openWizard() {
+  wiz.step = 0;
+  wiz.cfg = defaultConfig();
+  wiz.cfg.buildings = [{ name: 'בניין A', code: 'A', floors: 3, firstFloor: 1, roomsPerFloor: 20 }];
+  wiz.name = '';
+  wiz.status = 'plan';
+  wiz.found = [];
+  wiz.desc = '';
+  drawWizard();
+  $('#wizDlg').showModal();
+}
+const wField = (path, label, type = 'number', extra = '') => {
+  const v = getPath(wiz.cfg, path);
+  const id = `w-${path.replace(/\W/g, '-')}`;
+  if (type === 'check') return `<label class="check"><input type="checkbox" data-w="${path}" ${v ? 'checked' : ''}> ${label}</label>`;
+  return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="${type}" data-w="${path}" ${type === 'number' ? 'data-num' : ''} value="${esc(v ?? '')}" ${extra}></div>`;
+};
+const wSelect = (path, label, opts) => {
+  const v = String(getPath(wiz.cfg, path));
+  const id = `w-${path.replace(/\W/g, '-')}`;
+  return `<div class="field"><label for="${id}">${label}</label><select id="${id}" data-w="${path}" ${typeof opts[0]?.[0] === 'number' ? 'data-num' : ''}>${opts.map(([k, t]) => `<option value="${k}" ${String(k) === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></div>`;
+};
+function drawWizard() {
+  const st = wiz.step;
+  $('#wizStepLbl').textContent = `שלב ${st + 1} מתוך ${WIZ_TITLES.length} · ${WIZ_TITLES[st]}`;
+  $('#wizBack').disabled = st === 0;
+  $('#wizNext').textContent = st === WIZ_TITLES.length - 1 ? 'יצירת הפרויקט ✓' : 'הבא ←';
+  $('#wizErr').innerHTML = '';
+  const c = wiz.cfg;
+  let h = '';
+  if (st === 0) {
+    h = `<div class="form-grid">
+        <div class="field"><label for="w-name">שם הפרויקט</label><input id="w-name" type="text" value="${esc(wiz.name)}" placeholder="למשל: מגדל המשרדים — התקנה חדשה"></div>
+        <div class="field"><label for="w-status">מצב</label><select id="w-status">${Object.entries(STATUSES).map(([k, v]) => `<option value="${k}" ${k === wiz.status ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></div>
+        ${wSelect('profile', 'סוג המבנה', Object.entries(PROFILES).map(([k, v]) => [k, v.label]))}
+      </div>
+      <div class="field" style="margin-top:14px"><label for="w-desc">תארו את המבנה במילים (לא חובה)</label>
+        <textarea id="w-desc" rows="4" placeholder="למשל: בניין משרדים של 8 קומות, 35 חדרים בכל קומה, 2 נקודות רשת וטלפון בכל חדר, 4 מצלמות בקומה, אינטרנט 2 גיגה משני ספקים">${esc(wiz.desc || '')}</textarea></div>
+      <button type="button" class="btn sm" id="w-parse" style="margin-top:8px">מילוי אוטומטי מהתיאור</button>
+      <div id="w-found" style="margin-top:10px">${wiz.found.length ? `<div class="alert ok">${icon('ok')}<div><b>זיהיתי:</b> ${wiz.found.map(esc).join(' · ')}. אפשר לבדוק ולתקן בשלבים הבאים.</div></div>` : ''}</div>`;
+  } else if (st === 1) {
+    h = `<div class="table-wrap"><table><thead><tr><th scope="col">שם</th><th scope="col">קוד</th><th scope="col">קומות</th><th scope="col">קומה ראשונה</th><th scope="col">חדרים בקומה</th><th scope="col"><span class="sr-only">מחיקה</span></th></tr></thead><tbody>
+      ${c.buildings.map((b, i) => `<tr>
+        <td><input type="text" aria-label="שם מבנה ${i + 1}" data-wb="${i}" data-k="name" value="${esc(b.name)}"></td>
+        <td><input type="text" aria-label="קוד מבנה ${i + 1}" dir="ltr" maxlength="3" style="width:64px" data-wb="${i}" data-k="code" value="${esc(b.code)}"></td>
+        <td><input type="number" aria-label="קומות" min="1" max="89" data-wb="${i}" data-k="floors" data-num value="${b.floors}"></td>
+        <td><input type="number" aria-label="קומה ראשונה" min="-9" max="89" data-wb="${i}" data-k="firstFloor" data-num value="${b.firstFloor}"></td>
+        <td><input type="number" aria-label="חדרים בקומה" min="1" max="999" data-wb="${i}" data-k="roomsPerFloor" data-num value="${b.roomsPerFloor}"></td>
+        <td>${c.buildings.length > 1 ? `<button type="button" class="btn sm ghost" data-wdel="${i}">מחיקה</button>` : ''}</td></tr>`).join('')}
+      </tbody></table></div>
+      <button type="button" class="btn sm" id="w-addb" style="margin-top:8px">+ מבנה נוסף</button>
+      <p class="small muted" style="margin-top:8px">קומה ראשונה 0 = קרקע, ‎-1 = מרתף. אם יש קומות שונות בגודלן, אפשר להוסיף אותן כמבנה נפרד (למשל "לובי").</p>`;
+  } else if (st === 2) {
+    h = `<div class="form-grid">
+      ${wField('perRoom.data', 'נקודות רשת למחשבים')}${wField('perRoom.voice', 'טלפונים IP')}${wField('perRoom.iptv', 'טלוויזיה / מסך')}${wField('perRoom.iot', 'בקרים / IoT')}
+      ${wField('apPerRooms', 'נקודת גישה לכל … חדרים')}${wField('wifiPerRoom', 'מכשירי Wi-Fi לחדר')}${wField('guestPerRoom', 'מכשירי אורחים לחדר')}
+      ${wField('camerasPerFloor', 'מצלמות בקומה')}${wField('printersPerFloor', 'מדפסות בקומה')}${wField('roomsPerIdf', 'מקסימום חדרים לארון')}
+      ${wSelect('wifiGen', 'דור Wi-Fi', Object.entries(WIFI_GENS).map(([k, v]) => [k, v.label]))}
+    </div>`;
+  } else if (st === 3) {
+    h = `<div class="form-grid">
+      ${wField('wanMbps', 'חבילת אינטרנט (Mbps)')}${wField('isps', 'ספקי אינטרנט')}
+      ${wSelect('uplinkGbps', 'קישור ארון ← ליבה', [[10, '10G'], [25, '25G'], [40, '40G'], [100, '100G']])}
+      ${wField('addressing.base', 'טווח כתובות', 'text', 'dir="ltr"')}
+      ${wSelect('addressing.mode', 'חלוקת רשתות', [['floor', 'רשת לכל קומה'], ['room', 'רשת מבודדת לכל חדר']])}
+      ${wField('growthPct', 'צמיחה בכתובות (%)')}${wField('sparePortsPct', 'פורטים רזרביים (%)')}
+    </div>
+    <div style="display:grid;gap:8px;margin-top:12px">${wField('redundancy', 'שרידות מלאה (ליבה וחומת אש כפולות)', 'check')}${wField('addressing.ipv6', 'גם IPv6', 'check')}${wField('phonePassthrough', 'מחשב מחובר דרך הטלפון', 'check')}</div>`;
+  } else {
+    try {
+      const plan = buildPlan(c);
+      const st2 = plan.stats;
+      const k = (l, v) => `<div class="kpi"><div class="k-label">${l}</div><div class="k-value" style="font-size:1.35rem">${v}</div></div>`;
+      h = `<p>זה מה שייבנה בפרויקט <b>${esc(wiz.name || c.site.name)}</b> (${esc(STATUSES[wiz.status])}):</p>
+        <div class="wiz-summary">${k('חדרים', n(st2.rooms))}${k('ארונות', n(st2.idfs))}${k('מתגים', n(st2.switches))}${k('נקודות', n(st2.outlets))}${k('רשתות', n(st2.subnets))}${k('נקודות גישה', n(st2.endpoints.ap))}</div>
+        ${plan.warnings.length ? `<div class="alert warn" style="margin-top:10px">${icon('warn')}<div><ul>${plan.warnings.slice(0, 5).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div></div>` : `<div class="alert ok" style="margin-top:10px">${icon('ok')}<div>התכנית תקינה.</div></div>`}
+        <p class="small muted">אחרי היצירה אפשר לשנות כל הגדרה, וגם כתובת לכל נקודה. הפרויקט הקיים לא משתנה.</p>`;
+    } catch (e) {
+      h = `<div class="alert bad">${icon('bad')}<div><b>אי אפשר לבנות את התכנית:</b><ul>${(e.list || [e.message]).map((x) => `<li>${esc(x)}</li>`).join('')}</ul>חזרו לשלבים הקודמים ותקנו.</div></div>`;
+    }
+  }
+  $('#wizBody').innerHTML = h;
+  $('#wizBody').querySelector('input,select,textarea')?.focus();
+}
+$('#wizBody').addEventListener('input', (e) => {
+  const el = e.target;
+  if (el.id === 'w-name') { wiz.name = el.value; return; }
+  if (el.id === 'w-status') { wiz.status = el.value; return; }
+  if (el.id === 'w-desc') { wiz.desc = el.value; return; }
+  if (el.dataset.wb != null) {
+    const b = wiz.cfg.buildings[+el.dataset.wb];
+    b[el.dataset.k] = el.dataset.num != null ? Number(el.value) : (el.dataset.k === 'code' ? el.value.toUpperCase() : el.value);
+    return;
+  }
+  if (!el.dataset.w) return;
+  let v = el.type === 'checkbox' ? el.checked : el.value;
+  if (el.dataset.num != null) v = Number(v);
+  if (el.dataset.w === 'profile') { const keep = wiz.cfg.buildings; wiz.cfg = applyProfile(wiz.cfg, v); wiz.cfg.buildings = keep; return; }
+  setPath(wiz.cfg, el.dataset.w, v);
+});
+$('#wizBody').addEventListener('change', (e) => { if (e.target.id === 'w-status') wiz.status = e.target.value; });
+$('#wizBody').addEventListener('click', (e) => {
+  if (e.target.id === 'w-parse') {
+    const { patch, found } = parseDescription($('#w-desc').value);
+    if (!found.length) { $('#w-found').innerHTML = `<div class="alert warn">${icon('warn')}<div>לא זיהיתי נתונים. כתבו למשל: "6 קומות, 35 חדרים בכל קומה, 2 נקודות בכל חדר".</div></div>`; return; }
+    let c = patch.profile ? applyProfile(wiz.cfg, patch.profile) : wiz.cfg;
+    const { perRoom, addressing, profile, ...rest } = patch;
+    void profile;
+    c = { ...c, ...rest, perRoom: { ...c.perRoom, ...(perRoom || {}) }, addressing: { ...c.addressing, ...(addressing || {}) } };
+    wiz.cfg = c;
+    wiz.found = found;
+    if (!wiz.name && patch.buildings) wiz.name = `${PROFILES[c.profile]?.label || 'מבנה'} — ${patch.buildings[0].floors} קומות`;
+    drawWizard();
+    return;
+  }
+  if (e.target.id === 'w-addb') {
+    const used = new Set(wiz.cfg.buildings.map((b) => b.code));
+    const code = 'ABCDEFGHI'.split('').find((x) => !used.has(x)) || 'Z';
+    wiz.cfg.buildings.push({ name: `בניין ${code}`, code, floors: 3, firstFloor: 1, roomsPerFloor: 20 });
+    drawWizard();
+    return;
+  }
+  const d = e.target.closest('[data-wdel]');
+  if (d) { wiz.cfg.buildings.splice(+d.dataset.wdel, 1); drawWizard(); }
+});
+$('#wizBack').addEventListener('click', () => { if (wiz.step > 0) { wiz.step--; drawWizard(); } });
+$('#wizNext').addEventListener('click', () => {
+  if (wiz.step < WIZ_TITLES.length - 1) { wiz.step++; drawWizard(); return; }
+  try { buildPlan(wiz.cfg); } catch (e) { $('#wizErr').innerHTML = `<div class="alert bad">${icon('bad')}<div>${esc((e.list || [e.message]).join(' '))}</div></div>`; return; }
+  const name = wiz.name.trim() || `${wiz.cfg.site.name} — ${fmtDate(new Date().toISOString())}`;
+  wiz.cfg.site = { ...wiz.cfg.site, name };
+  const p = newProject(wiz.cfg, { name, status: wiz.status });
+  logChange(p, `הפרויקט נוצר באשף${wiz.found.length ? ` מתיאור: ${wiz.found.join(', ')}` : ''}`);
+  projects.list.push(p);
+  $('#wizDlg').close();
+  switchProject(p.id);
+  activate('overview', { focus: true });
+  toast(`נוצר הפרויקט "${name}"`);
+});
+
+// ---------------------------------------------------------------- edit a single point
+const EDIT_RE = /<button class="btn sm ghost edit-btn"[^>]*>.*?<\/button>/g;
+function editBtn(key, what = '') {
+  return `<button class="btn sm ghost edit-btn" data-edit="${esc(key)}" aria-label="עריכת ${esc(what ? `${what} ` : '')}${esc(key)}" title="עריכת כתובת">✎</button>`;
+}
+let editing = null;
+function findPoint(key) {
+  const isPhone = key.endsWith('-PH');
+  const label = isPhone ? key.slice(0, -3) : key;
+  for (const idf of state.plan.idfs) for (const o of idf.outlets) if (o.label === label) return { o, idf, isPhone };
+  return null;
+}
+function usedIps(exceptKey) {
+  const m = new Map();
+  for (const idf of state.plan.idfs) {
+    m.set(idf.mgmtIp, idf.host); m.set(idf.upsIp, `${idf.id}-UPS`);
+    for (const o of idf.outlets) {
+      if (o.label !== exceptKey) m.set(o.ip, o.label);
+      if (o.phoneIp && `${o.label}-PH` !== exceptKey) m.set(o.phoneIp, `${o.label}-PH`);
+    }
+  }
+  for (const x of state.plan.subnets) for (const g of [x.gateway, x.gwA, x.gwB]) if (g) m.set(g, `Gateway ${x.name}`);
+  return m;
+}
+function openEdit(key) {
+  const hit = findPoint(key);
+  if (!hit) return;
+  const { o, isPhone } = hit;
+  const cur = isPhone ? o.phoneSubnet : o.subnet;
+  const ov = state.cfg.overrides?.[key] || {};
+  editing = { key, o, isPhone, cur };
+  $('#editTitle').innerHTML = `עריכת נקודה <span class="ltr">${esc(key)}</span>`;
+  $('#editAuto').innerHTML = `${TYPE_META[o.type].he}${isPhone ? ' (טלפון)' : ''}${o.roomNo ? ` · חדר ${esc(o.roomNo)}` : ''} · <span class="ltr">${esc(o.switch)} Gi${o.member}/0/${o.port}</span> · כתובת נוכחית ${ip(isPhone ? o.phoneIp : o.ip)}${o.manual ? ' <span class="chip manual">ידני</span>' : ''}`;
+  const nets = isPhone ? [cur] : subnetsFor(state.plan, o);
+  $('#ed-net').innerHTML = nets.map((x) => `<option value="${esc(x.name)}">VLAN ${x.vlan} · ${esc(x.name)} · ${esc(x.cidr)}</option>`).join('');
+  $('#ed-net').value = cur.name;
+  $('#ed-net').disabled = nets.length < 2;
+  $('#ed-ip').value = ov.ip || '';
+  $('#ed-ip').placeholder = isPhone ? o.phoneIp : o.ip;
+  $('#ed-host').value = ov.hostname || '';
+  $('#ed-mac').value = ov.mac || '';
+  $('#ed-note').value = ov.note || '';
+  for (const id of ['#ed-host', '#ed-mac', '#ed-note']) $(id).closest('.field').hidden = isPhone;
+  $('#edReset').hidden = !state.cfg.overrides?.[key];
+  $('#editErr').innerHTML = '';
+  $('#ed-ip').removeAttribute('aria-invalid');
+  refreshEditNet();
+  $('#editDlg').showModal();
+  $('#ed-ip').focus();
+}
+function refreshEditNet() {
+  const s = state.plan.subnets.find((x) => x.name === $('#ed-net').value);
+  $('#ed-free').innerHTML = freeIps(state.plan, s, 30).map((x) => `<option value="${x}">`).join('');
+  $('#ed-ip-hint').innerHTML = `רשת ${ip(s.cidr)} · Gateway ${ip(s.gateway)} · ריק = כתובת פנויה אוטומטית`;
+}
+$('#ed-net').addEventListener('change', refreshEditNet);
+function validateEdit() {
+  const errs = [];
+  const s = state.plan.subnets.find((x) => x.name === $('#ed-net').value);
+  const ipv = $('#ed-ip').value.trim();
+  if (ipv) {
+    let nIp = null;
+    try { nIp = ipToInt(ipv); } catch { errs.push('כתובת IP לא תקינה. פורמט: 10.1.11.25'); }
+    if (nIp != null) {
+      if (nIp <= s.base || nIp >= s.base + s.size - 1) errs.push(`הכתובת חייבת להיות בתוך הרשת ${s.cidr} (מ-${s.first} עד ${s.last}).`);
+      const owner = usedIps(editing.key).get(ipv);
+      if (owner) errs.push(`הכתובת ${ipv} כבר בשימוש של ${owner}.`);
+    }
+  }
+  const mac = $('#ed-mac').value.trim();
+  if (mac && !/^([0-9a-f]{2}[:-]){5}[0-9a-f]{2}$/i.test(mac) && !/^[0-9a-f]{12}$/i.test(mac)) errs.push('כתובת MAC לא תקינה. פורמט: aa:bb:cc:dd:ee:ff');
+  const host = $('#ed-host').value.trim();
+  if (host && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$/.test(host)) errs.push('שם מכשיר: אותיות באנגלית, ספרות, נקודה, מקף וקו תחתון בלבד.');
+  $('#ed-ip').setAttribute('aria-invalid', String(errs.some((x) => x.includes('IP') || x.includes('כתובת ה') || x.includes('בשימוש') || x.includes('ברשת'))));
+  return errs;
+}
+const normMac = (m) => {
+  const h = m.replace(/[^0-9a-f]/gi, '').toLowerCase();
+  return h.length === 12 ? h.match(/../g).join(':') : m;
+};
+$('#edSave').addEventListener('click', (e) => {
+  e.preventDefault();
+  const errs = validateEdit();
+  if (errs.length) { $('#editErr').innerHTML = `<div class="alert bad">${icon('bad')}<div><ul>${errs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div></div>`; return; }
+  const { key, isPhone, cur, o } = editing;
+  const before = { ip: isPhone ? o.phoneIp : o.ip, vlan: cur.vlan };
+  const prev = state.cfg.overrides?.[key] || {};
+  const ov = {};
+  const net = $('#ed-net').value;
+  if (net !== cur.name || prev.subnet) ov.subnet = net;
+  if ($('#ed-ip').value.trim()) ov.ip = $('#ed-ip').value.trim();
+  if (!isPhone) {
+    if ($('#ed-host').value.trim()) ov.hostname = $('#ed-host').value.trim();
+    if ($('#ed-mac').value.trim()) ov.mac = normMac($('#ed-mac').value.trim());
+    if ($('#ed-note').value.trim()) ov.note = $('#ed-note').value.trim();
+  }
+  state.cfg.overrides = state.cfg.overrides || {};
+  if (Object.keys(ov).length) state.cfg.overrides[key] = ov; else delete state.cfg.overrides[key];
+  $('#editDlg').close();
+  recompute({ save: false });
+  const after = findPoint(key);
+  const nowIp = after ? (after.isPhone ? after.o.phoneIp : after.o.ip) : '';
+  const nowVlan = after ? (after.isPhone ? after.o.phoneSubnet.vlan : after.o.vlan) : '';
+  logChange(activeProject(), `${key}: ${before.ip} (VLAN ${before.vlan}) ← ${nowIp} (VLAN ${nowVlan})${ov.hostname ? ` · ${ov.hostname}` : ''}${ov.mac ? ` · MAC ${ov.mac}` : ''}`);
+  persist();
+  state.rendered.delete(state.tab);
+  renderTab(state.tab);
+  const w = state.plan.warnings.find((x) => x.includes(key));
+  toast(w || `נשמר: ${key} ← ${nowIp}`);
+  document.querySelector(`[data-edit="${CSS.escape(key)}"]`)?.focus();
+});
+$('#edReset').addEventListener('click', (e) => {
+  e.preventDefault();
+  const { key } = editing;
+  delete state.cfg.overrides[key];
+  $('#editDlg').close();
+  recompute({ save: false });
+  const after = findPoint(key);
+  logChange(activeProject(), `${key}: חזרה לכתובת אוטומטית ${after ? (after.isPhone ? after.o.phoneIp : after.o.ip) : ''}`);
+  persist();
+  state.rendered.delete(state.tab);
+  renderTab(state.tab);
+  toast(`${key} חזר לכתובת אוטומטית`);
+});
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-edit]');
+  if (b) { e.preventDefault(); e.stopPropagation(); openEdit(b.dataset.edit); }
+}, true);
+
+function renderOverrides() {
+  const p = state.plan;
+  const rows = p.manual || [];
+  const warn = p.warnings.filter((w) => w.startsWith('שינוי ידני'));
+  $('#ovTable').innerHTML = rows.length
+    ? `<thead><tr><th scope="col">נקודה</th><th scope="col">לפני</th><th scope="col">אחרי</th><th scope="col">שם מכשיר</th><th scope="col">MAC</th><th scope="col">הערה</th><th scope="col"><span class="sr-only">פעולות</span></th></tr></thead><tbody>${rows.map((r) => `<tr><td class="ip">${esc(r.key)}</td><td class="ip small">${esc(r.before.ip)} · VLAN ${r.before.vlan}</td><td class="ip"><b>${esc(r.after.ip)}</b> · VLAN ${r.after.vlan}</td><td class="ip">${esc(r.hostname)}</td><td class="ip">${esc(r.mac)}</td><td>${esc(r.note)}</td><td>${editBtn(r.key)}</td></tr>`).join('')}</tbody>`
+    : '<caption class="muted" style="font-weight:400">עדיין אין שינויים ידניים. כל הכתובות אוטומטיות.</caption>';
+  $('#ovTable').closest('.card').querySelector('.ov-warn')?.remove();
+  if (warn.length) $('#ovTable').closest('.table-wrap').insertAdjacentHTML('beforebegin', `<div class="alert warn ov-warn">${icon('warn')}<div><ul>${warn.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div></div>`);
+  const log = activeProject().log || [];
+  $('#logList').innerHTML = log.length ? log.slice(0, 100).map((l) => `<li><span class="muted">${esc(new Date(l.ts).toLocaleString('he-IL'))}</span> · <span>${esc(l.text)}</span></li>`).join('') : '<li class="muted">אין עדיין שינויים.</li>';
+}
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let q = false;
+  const t = text.replace(/^﻿/, '');
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (q) {
+      if (ch === '"' && t[i + 1] === '"') { cell += '"'; i++; } else if (ch === '"') q = false; else cell += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(cell); cell = ''; } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && t[i + 1] === '\n') i++;
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((c) => c.trim()));
+}
+$('#ovExport').addEventListener('click', () => {
+  const ov = state.cfg.overrides || {};
+  const rows = [['point', 'ip', 'network', 'hostname', 'mac', 'note'], ...Object.entries(ov).map(([k, v]) => [k, v.ip || '', v.subnet || '', v.hostname || '', v.mac || '', v.note || ''])];
+  if (rows.length === 1) {
+    // template with the current points, ready to fill in
+    for (const r of state.plan.rooms.slice(0, 3)) for (const o of r.outlets) rows.push([o.label, '', '', '', '', '']);
+  }
+  download(`netplan-${slug(activeProject().name)}-changes.csv`, csv(rows), 'text/csv;charset=utf-8');
+});
+$('#ovImportLbl').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#ovImport').click(); } });
+$('#ovImport').addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const rows = parseCsv(await f.text());
+  const head = rows[0].map((h) => h.trim().toLowerCase());
+  const col = (names) => head.findIndex((h) => names.includes(h));
+  const ci = { point: col(['point', 'outlet', 'נקודה', 'שקע']), ip: col(['ip', 'כתובת']), net: col(['network', 'vlan', 'רשת']), host: col(['hostname', 'שם']), mac: col(['mac']), note: col(['note', 'הערה']) };
+  if (ci.point < 0) { toast('בקובץ חסרה עמודה point'); e.target.value = ''; return; }
+  state.cfg.overrides = state.cfg.overrides || {};
+  let count = 0;
+  for (const r of rows.slice(1)) {
+    const key = (r[ci.point] || '').trim();
+    if (!key) continue;
+    const ov = {};
+    const g = (i) => (i >= 0 ? (r[i] || '').trim() : '');
+    if (g(ci.ip)) ov.ip = g(ci.ip);
+    if (g(ci.net)) ov.subnet = g(ci.net);
+    if (g(ci.host)) ov.hostname = g(ci.host);
+    if (g(ci.mac)) ov.mac = normMac(g(ci.mac));
+    if (g(ci.note)) ov.note = g(ci.note);
+    if (Object.keys(ov).length) { state.cfg.overrides[key] = ov; count++; }
+  }
+  recompute({ save: false });
+  const bad = state.plan.warnings.filter((w) => w.startsWith('שינוי ידני')).length;
+  logChange(activeProject(), `יובאו ${count} שינויים מהקובץ ${f.name}${bad ? ` (${bad} לא הוחלו)` : ''}`);
+  persist();
+  state.rendered.delete('rooms');
+  renderTab('rooms');
+  toast(`יובאו ${count} שינויים${bad ? `, ${bad} לא הוחלו. הפרטים בטבלה` : ''}`);
+  e.target.value = '';
+});
+
+// ---------------------------------------------------------------- installation plan
+const GLOBAL_STEPS = [
+  ['survey', 'סקר אתר ואישור התכנית'],
+  ['order', 'הזמנת ציוד לפי רשימת הציוד'],
+  ['mdf', 'הקמת הארון הראשי: ארון, הארקה, UPS וחשמל'],
+  ['fiber', 'פריסת סיבים מהארון הראשי לכל הארונות'],
+  ['core', 'התקנת ליבה וחומת אש וטעינת ההגדרות'],
+  ['servers', 'הקמת DNS, ‏DHCP ‏(Kea), ‏NTP, ‏RADIUS ו-Syslog'],
+  ['wan', 'חיבור ספקי האינטרנט ובדיקת מעבר בין קווים'],
+  ['wifi', 'אימוץ נקודות הגישה והגדרת רשתות Wi-Fi'],
+  ['accept', 'בדיקות קבלה כוללות: בידוד, שרידות ומהירות'],
+  ['handover', 'תיעוד, הדפסת התכנית ומסירה'],
+];
+const IDF_STEPS = [
+  ['rack', 'ארון והארקה'], ['cable', 'משיכת כבלים'], ['cert', 'הסמכת כבילה'], ['switch', 'מתגים והגדרות'],
+  ['uplink', 'Uplink לליבה'], ['endpoints', 'חיבור נקודות'], ['test', 'בדיקת קבלה'],
+];
+function installProgress() {
+  const inst = activeProject().install || {};
+  const keys = [...GLOBAL_STEPS.map(([k]) => `g:${k}`), ...state.plan.idfs.flatMap((idf) => IDF_STEPS.map(([k]) => `${idf.id}:${k}`))];
+  const done = keys.filter((k) => inst[k]).length;
+  return { done, total: keys.length, pct: Math.round((done / keys.length) * 100) };
+}
+function drawInstallProgress() {
+  const pr = installProgress();
+  const p = activeProject();
+  $('#installProgress').innerHTML = `<div class="small muted">התקדמות: ${pr.done} מתוך ${pr.total} משימות</div>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pr.pct}" aria-label="התקדמות ההתקנה" style="height:12px;margin:6px 0"><span style="width:${pr.pct}%;background:var(--ok)"></span></div>
+    <b>${pr.pct}%</b>${pr.pct === 100 && p.status !== 'live' ? ' <button class="btn sm primary" id="goLive">סימון כמערכת פעילה</button>' : ''}`;
+  for (const idf of state.plan.idfs) {
+    const d = IDF_STEPS.filter(([k]) => p.install[`${idf.id}:${k}`]).length;
+    const c = document.getElementById(`ip-${idf.id}`);
+    if (c) c.textContent = `${d}/${IDF_STEPS.length}`;
+  }
+}
+function renderInstall() {
+  const p = activeProject();
+  p.install = p.install || {};
+  const inst = p.install;
+  $('#globalSteps').innerHTML = GLOBAL_STEPS.map(([k, t]) => {
+    const key = `g:${k}`;
+    return `<li class="${inst[key] ? 'done' : ''}"><label class="check" style="font-weight:500"><input type="checkbox" data-step="${key}" ${inst[key] ? 'checked' : ''}> ${esc(t)}</label><span class="when">${inst[key] ? `בוצע ${esc(fmtDate(inst[key]))}` : ''}</span></li>`;
+  }).join('');
+  $('#idfSteps').innerHTML = `<caption class="sr-only">משימות לכל ארון</caption><thead><tr><th scope="col">ארון</th>${IDF_STEPS.map(([, t]) => `<th scope="col" style="text-align:center">${esc(t)}</th>`).join('')}<th scope="col" class="num">בוצע</th><th scope="col"><span class="sr-only">סימון הכול</span></th></tr></thead><tbody>${state.plan.idfs.map((idf) => `<tr>
+      <th scope="row"><span class="ip">${esc(idf.id)}</span><div class="small muted">חדרים <span class="ltr">${esc(idf.rooms[0].no)}–${esc(idf.rooms.at(-1).no)}</span> · ${idf.portsUsed} כבלים</div></th>
+      ${IDF_STEPS.map(([k, t]) => { const key = `${idf.id}:${k}`; return `<td style="text-align:center"><span class="cell-check"><input type="checkbox" data-step="${esc(key)}" ${inst[key] ? 'checked' : ''} aria-label="${esc(`${idf.id}: ${t}`)}"><span>${inst[key] ? esc(fmtDate(inst[key])) : '&nbsp;'}</span></span></td>`; }).join('')}
+      <td class="num" id="ip-${esc(idf.id)}"></td>
+      <td><button class="btn sm ghost" data-allidf="${esc(idf.id)}">הכול ✓</button></td></tr>`).join('')}</tbody>`;
+  drawInstallProgress();
+}
+$('#install').addEventListener('change', (e) => {
+  const el = e.target.closest('[data-step]');
+  if (!el) return;
+  const p = activeProject();
+  const key = el.dataset.step;
+  if (el.checked) p.install[key] = new Date().toISOString(); else delete p.install[key];
+  const label = key.startsWith('g:') ? GLOBAL_STEPS.find(([k]) => `g:${k}` === key)?.[1] : `${key.split(':')[0]} · ${IDF_STEPS.find(([k]) => k === key.split(':')[1])?.[1]}`;
+  logChange(p, `התקנה: ${label} ${el.checked ? 'בוצע' : 'סומן כלא בוצע'}`);
+  if (p.status === 'plan' && el.checked) { p.status = 'install'; renderProjectSwitcher(); }
+  persist();
+  const li = el.closest('li');
+  if (li) { li.classList.toggle('done', el.checked); li.querySelector('.when').textContent = el.checked ? `בוצע ${fmtDate(p.install[key])}` : ''; }
+  const cell = el.closest('.cell-check');
+  if (cell) cell.querySelector('span').innerHTML = el.checked ? esc(fmtDate(p.install[key])) : '&nbsp;';
+  drawInstallProgress();
+});
+$('#install').addEventListener('click', (e) => {
+  const all = e.target.closest('[data-allidf]');
+  if (all) {
+    const p = activeProject();
+    const now = new Date().toISOString();
+    for (const [k] of IDF_STEPS) p.install[`${all.dataset.allidf}:${k}`] = p.install[`${all.dataset.allidf}:${k}`] || now;
+    logChange(p, `התקנה: כל המשימות בארון ${all.dataset.allidf} סומנו כבוצעו`);
+    if (p.status === 'plan') { p.status = 'install'; renderProjectSwitcher(); }
+    persist();
+    renderInstall();
+    return;
+  }
+  if (e.target.id === 'goLive') {
+    const p = activeProject();
+    p.status = 'live';
+    logChange(p, 'ההתקנה הושלמה. הפרויקט סומן כמערכת פעילה');
+    persist();
+    renderProjectSwitcher();
+    drawInstallProgress();
+    toast('הפרויקט סומן כמערכת פעילה');
+  }
+});
+
+// ---------------------------------------------------------------- 3D
+let v3 = null;
+let v3loading = null;
+async function render3d() {
+  const p = state.plan;
+  const bs = $('#v3b');
+  const prevB = +bs.value || 0;
+  bs.innerHTML = p.buildings.map((b) => `<option value="${b.index}">${esc(b.name)}</option>`).join('');
+  bs.value = p.buildings[prevB] ? prevB : 0;
+  fill3dFloors();
+  if (v3) { v3.setPlan(p); v3.setBuilding(+bs.value); return; }
+  if (v3loading) return;
+  try {
+    v3loading = import('./view3d.js');
+    const { mount3d } = await v3loading;
+    v3 = mount3d($('#v3stage'), $('#v3side'), state.plan, {
+      onEdit: (key) => openEdit(key),
+      onCard: (id) => openRoom(id),
+    });
+    v3.setBuilding(+bs.value);
+    $('.v3-loading')?.remove();
+  } catch (err) {
+    $('.v3-loading').innerHTML = `<div class="alert bad" style="max-width:520px">${icon('bad')}<div>לא ניתן להציג תלת־ממד בדפדפן הזה (נדרש WebGL). ${esc(err.message)}</div></div>`;
+  } finally { v3loading = null; }
+}
+function fill3dFloors() {
+  const b = state.plan.buildings[+$('#v3b').value] || state.plan.buildings[0];
+  $('#v3f').innerHTML = '<option value="all">כל הקומות</option>' + [...b.floors].reverse().map((f) => `<option value="${f.index}">קומה ${esc(f.label)}</option>`).join('');
+}
+$('#v3b').addEventListener('change', () => { fill3dFloors(); v3?.setBuilding(+$('#v3b').value); });
+$('#v3f').addEventListener('change', (e) => v3?.setFloor(e.target.value));
+$('#v3x').addEventListener('input', (e) => v3?.setExplode(+e.target.value));
+$('#v3cab').addEventListener('change', (e) => v3?.toggle('cables', e.target.checked));
+$('#v3furn').addEventListener('change', (e) => v3?.toggle('furniture', e.target.checked));
+$('#v3over').addEventListener('click', () => v3?.overview());
+$('#v3tour').addEventListener('click', (e) => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', String(on)); v3?.tour(on); });
+$('#v3walk').addEventListener('click', () => v3?.walk());
+$('#v3shot').addEventListener('click', () => {
+  if (!v3) return;
+  const a = document.createElement('a');
+  a.href = v3.screenshot();
+  a.download = `netplan-${slug(activeProject().name)}-3d.png`;
+  a.click();
+});
+$('#v3full').addEventListener('click', () => { const st = $('#v3stage'); if (document.fullscreenElement) document.exitFullscreen(); else st.requestFullscreen?.(); });
+
 // ---------------------------------------------------------------- boot
 applyPrefs();
+renderProjectSwitcher();
 recompute({ save: false });
 renderForm();
 state.rendered.add('plan');

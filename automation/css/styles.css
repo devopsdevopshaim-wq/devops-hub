@@ -570,3 +570,31 @@ footer.site { max-width: 1440px; margin: 0 auto; padding: 20px; color: var(--mut
   a { color: #000; text-decoration: none; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---------- דרייב־פלאן ---------- */
+.proj { display: flex; gap: 6px; align-items: center; }
+.proj select { min-height: 38px; padding: 6px 10px; max-width: 240px; }
+@media (max-width: 640px) { .proj { width: 100%; } .proj select { max-width: none; flex: 1; } }
+.motor-table input, .motor-table select { min-height: 36px; padding: 5px 8px; }
+.vfd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.vfd {
+  border: 1px solid var(--line-strong); border-radius: 14px; padding: 12px 14px; background: var(--surface);
+  display: grid; gap: 6px; position: relative; overflow: hidden;
+}
+.vfd::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: 0; width: 4px; background: var(--muted); }
+.vfd[data-st="ok"]::before { background: var(--ok); }
+.vfd[data-st="warn"]::before { background: var(--warn); }
+.vfd[data-st="bad"]::before { background: var(--bad); }
+.vfd header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.vfd-state { font-size: .8rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line-strong); }
+.vfd[data-st="ok"] .vfd-state { color: var(--ok); border-color: var(--ok); }
+.vfd[data-st="bad"] .vfd-state { color: var(--bad); border-color: var(--bad); }
+.vfd[data-st="warn"] .vfd-state { color: var(--warn); border-color: var(--warn); }
+.vfd-hz { font: 800 2rem/1 var(--mono); direction: ltr; text-align: right; }
+.vfd-hz small { font-size: .9rem; color: var(--muted); margin-inline-start: 4px; }
+.vfd-bar > span { background: linear-gradient(90deg, var(--cyan), var(--gold)); transition: width .2s linear; }
+.vfd-vals { display: flex; justify-content: space-between; gap: 6px; font-family: var(--mono); direction: ltr; }
+.vfd input[type="range"] { accent-color: var(--gold); min-height: 0; padding: 0; }
+.vfd-btns { display: flex; gap: 6px; }
+.vfd-frame { display: block; background: #0a0f1b; color: #7fe3f5; border-radius: 8px; padding: 4px 8px; direction: ltr; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scope canvas#trend { height: 240px; }

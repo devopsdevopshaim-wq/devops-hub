@@ -3,7 +3,7 @@
 // Pure functions only, so it runs both in the browser and under node --test.
 
 import {
-  parseCidr, intToIp, prefixForHosts, subnetInfo, maskOf, usable,
+  ipToInt, parseCidr, intToIp, prefixForHosts, subnetInfo, maskOf, usable,
   ulaFromSeed, parseV6_48, v6Subnet,
 } from './ip.js';
 
@@ -514,6 +514,81 @@ export function buildPlan(rawCfg) {
   }
   site.servers.gateway = intToIp(site.servers.base + 1);
 
+  // ---------- 4b. manual changes per point (cfg.overrides, keyed by outlet label) ----------
+  const overrides = cfg.overrides || {};
+  const manual = [];
+  if (Object.keys(overrides).length) {
+    const used = new Map(); // ip -> owner label
+    const own = (ipStr, who) => { if (ipStr) used.set(ipStr, who); };
+    for (const idf of idfList) {
+      own(idf.mgmtIp, idf.host);
+      own(idf.upsIp, `${idf.id}-UPS`);
+      for (const o of idf.outlets) { own(o.ip, o.label); if (o.phoneIp) own(o.phoneIp, `${o.label}-PH`); }
+    }
+    for (const sn of subnets) for (const g of [sn.gateway, sn.gwA, sn.gwB]) own(g, `Gateway ${sn.name}`);
+    const byName = new Map(subnets.map((sn) => [sn.name, sn]));
+    const outletByLabel = new Map(idfList.flatMap((idf) => idf.outlets.map((o) => [o.label, { o, idf }])));
+    const ipOk = (sn, ipStr) => {
+      let n;
+      try { n = ipToInt(ipStr); } catch { return 'כתובת לא תקינה'; }
+      if (n <= sn.base || n >= sn.base + sn.size - 1) return `הכתובת מחוץ לרשת ${sn.cidr}`;
+      return null;
+    };
+    for (const [key, ov] of Object.entries(overrides)) {
+      if (!ov || typeof ov !== 'object') continue;
+      const isPhone = key.endsWith('-PH');
+      const hit = outletByLabel.get(isPhone ? key.slice(0, -3) : key);
+      if (!hit) { warnings.push(`שינוי ידני לנקודה ${key}: הנקודה לא קיימת יותר בתכנית, והשינוי לא הוחל.`); continue; }
+      const { o } = hit;
+      const ipField = isPhone ? 'phoneIp' : 'ip';
+      const subField = isPhone ? 'phoneSubnet' : 'subnet';
+      if (isPhone && !o.hasPhone) continue;
+      const before = { ip: o[ipField], vlan: o[subField]?.vlan };
+      let target = o[subField];
+      if (ov.subnet && ov.subnet !== target?.name) {
+        const t = byName.get(ov.subnet);
+        if (!t || t.building !== hit.idf.building || (t.key === 'room' && t.room !== o.room) || o.type === 'ap' || isPhone) {
+          warnings.push(`שינוי ידני ל-${key}: הרשת ${ov.subnet} לא זמינה לנקודה הזו, והשינוי לא הוחל.`);
+        } else {
+          target = t;
+        }
+      }
+      const moved = target !== o[subField];
+      let newIp = o[ipField];
+      if (ov.ip) {
+        const err = ipOk(target, ov.ip);
+        const owner = used.get(ov.ip);
+        if (err) warnings.push(`שינוי ידני ל-${key}: ${err}. נשארה כתובת אוטומטית.`);
+        else if (owner && owner !== key) warnings.push(`שינוי ידני ל-${key}: הכתובת ${ov.ip} כבר בשימוש של ${owner}. נשארה כתובת אוטומטית.`);
+        else newIp = ov.ip;
+      }
+      if (moved && (!ov.ip || newIp === o[ipField])) {
+        // next free address in the new subnet, after the infrastructure block
+        newIp = null;
+        for (let off = 10; off <= target.usable; off++) {
+          const cand = intToIp(target.base + off);
+          if (!used.has(cand)) { newIp = cand; break; }
+        }
+        if (!newIp) { warnings.push(`שינוי ידני ל-${key}: אין כתובת פנויה ב-${target.name}.`); continue; }
+      }
+      if (newIp !== o[ipField]) {
+        used.delete(o[ipField]);
+        used.set(newIp, key);
+        const off = ipToInt(newIp) - target.base;
+        target.reserved = Math.max(target.reserved, Math.min(off, target.usable));
+      }
+      o[ipField] = newIp;
+      o[subField] = target;
+      if (!isPhone) {
+        o.hostname = ov.hostname || '';
+        o.mac = ov.mac || '';
+        o.note = ov.note || '';
+      }
+      o.manual = true;
+      manual.push({ key, label: o.label, room: o.room || null, before, after: { ip: newIp, vlan: target.vlan }, hostname: ov.hostname || '', mac: ov.mac || '', note: ov.note || '' });
+    }
+  }
+
   // Fill subnet & VLAN fields on endpoints.
   for (const idf of idfList) {
     for (const o of idf.outlets) {
@@ -671,6 +746,7 @@ export function buildPlan(rawCfg) {
   const recommendation = recommend(cfg, { switches, wifi, up, multiBuilding, idfList, stats, redundancy });
 
   return {
+    manual,
     cfg, mode, redundancy, passthrough, multiBuilding, wifi, uplink: up, uplinkGbps,
     buildings, idfs: idfList, rooms, subnets: allSubnets, blocks, site, services,
     coreNames, fwNames, dist, coreDown, mdf, bom, stats, warnings, notes, recommendation,
@@ -740,6 +816,30 @@ function recommend(cfg, { wifi, up, multiBuilding, idfList, stats, redundancy })
   };
 }
 
+// Subnets an outlet may be moved to: its building's floor/building networks, or its own room network.
+export function subnetsFor(plan, o) {
+  if (o.type === 'ap') return [o.subnet];
+  const idf = plan.idfs.find((x) => x.id === o.idf);
+  return plan.subnets.filter((s) => s.building === idf.building && s.vlan && s.key !== 'mgmt'
+    && (s.key !== 'room' || s.room === o.room));
+}
+
+// Free addresses in a subnet (for the edit dialog), skipping everything already assigned.
+export function freeIps(plan, s, limit = 20) {
+  const used = new Set();
+  for (const idf of plan.idfs) {
+    used.add(idf.mgmtIp); used.add(idf.upsIp);
+    for (const o of idf.outlets) { used.add(o.ip); if (o.phoneIp) used.add(o.phoneIp); }
+  }
+  for (const x of plan.subnets) [x.gateway, x.gwA, x.gwB].forEach((g) => g && used.add(g));
+  const out = [];
+  for (let off = 10; off <= s.usable && out.length < limit; off++) {
+    const c = intToIp(s.base + off);
+    if (!used.has(c)) out.push(c);
+  }
+  return out;
+}
+
 // Finds an IP anywhere in the plan.
 export function lookup(plan, query) {
   const q = String(query).trim().toLowerCase();
@@ -747,7 +847,7 @@ export function lookup(plan, query) {
   const hits = [];
   for (const idf of plan.idfs) {
     for (const o of idf.outlets) {
-      if (o.ip === q || o.phoneIp === q || o.label.toLowerCase().includes(q) || (o.roomNo && (o.roomNo === q || o.room.toLowerCase() === q))) {
+      if (o.ip === q || o.phoneIp === q || o.label.toLowerCase().includes(q) || (o.hostname && o.hostname.toLowerCase().includes(q)) || (o.mac && o.mac.toLowerCase() === q) || (o.roomNo && (o.roomNo === q || o.room.toLowerCase() === q))) {
         hits.push({ kind: 'endpoint', o, idf });
       }
     }
