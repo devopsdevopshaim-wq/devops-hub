@@ -462,5 +462,13 @@
   });
 
   $('client-link').textContent = siteBase() + '?view=client';
+
+  // Admin controls on the public site's cards, for this browser only.
+  var siteAdmin = $('site-admin');
+  try {
+    if (localStorage.getItem('hasadna-admin') === null) localStorage.setItem('hasadna-admin', '1');
+    siteAdmin.checked = localStorage.getItem('hasadna-admin') === '1';
+    siteAdmin.addEventListener('change', function () { localStorage.setItem('hasadna-admin', siteAdmin.checked ? '1' : '0'); });
+  } catch (e) { siteAdmin.parentNode.hidden = true; }
   load();
 })();

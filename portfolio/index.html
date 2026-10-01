@@ -113,6 +113,21 @@
           <input id="q" type="search" placeholder="חיפוש לפי שם…" aria-label="חיפוש פרויקט">
         </label>
       </header>
+      <div class="fbar reveal" id="fbar" role="group" aria-label="סינון ומיון">
+        <label><span>תחום</span><select id="f-cat"></select></label>
+        <label><span>מצב</span><select id="f-live">
+          <option value="all">הכול</option>
+          <option value="live">באוויר עכשיו</option>
+          <option value="featured">נבחרים</option>
+        </select></label>
+        <label><span>מיון</span><select id="f-sort">
+          <option value="default">מומלץ</option>
+          <option value="popular">הכי נפתחים</option>
+          <option value="az">לפי שם</option>
+        </select></label>
+        <button class="g-btn ghost" type="button" id="f-reset" hidden>ניקוי סינון ×</button>
+        <span class="admin-on" id="admin-on" hidden>מצב מנהל · <a href="admin.html">למסך הניהול</a></span>
+      </div>
       <p class="note" id="note" hidden></p>
       <div class="grid" id="grid" aria-live="polite"></div>
     </div>
