@@ -1,0 +1,14 @@
+{
+  "name": "netplan",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "נט־פלאן — תכנון, תיעוד וניטור רשתות תקשורת למבנים",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "start": "python3 -m http.server 8080"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
