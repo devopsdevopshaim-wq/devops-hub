@@ -359,6 +359,33 @@
       '\n\n```json\n' + JSON.stringify({ ops: [{ op: op, id: p.id }] }) + '\n```\n';
     window.open('https://github.com/' + state.data.owner + '/' + COMMENTS_REPO + '/issues/new?title=' +
       encodeURIComponent('ניהול: ' + word + ': ' + p.title) + '&body=' + encodeURIComponent(body), '_blank', 'noopener');
+    takeOff(p, word);
+  }
+
+  // The card leaves the admin's view right away; the site itself follows once
+  // GitHub has run the issue (about two minutes). Remembered for 20 minutes.
+  var REMOVED_KEY = 'hasadna-removed';
+  function removedIds() {
+    try {
+      var m = JSON.parse(localStorage.getItem(REMOVED_KEY) || '{}'), now = Date.now(), out = {};
+      Object.keys(m).forEach(function (id) { if (now - m[id] < 20 * 60 * 1000) out[id] = m[id]; });
+      return out;
+    } catch (e) { return {}; }
+  }
+  function saveRemoved(m) { try { localStorage.setItem(REMOVED_KEY, JSON.stringify(m)); } catch (e) {} }
+  function takeOff(p, word) {
+    var m = removedIds(); m[p.id] = Date.now(); saveRemoved(m);
+    state.data.projects = state.data.projects.filter(function (x) { return x !== p; });
+    render(); renderFeatured();
+    var undo = el('button', { class: 'g-btn ghost', type: 'button', text: 'ביטול' });
+    undo.addEventListener('click', function () {
+      var r = removedIds(); delete r[p.id]; saveRemoved(r);
+      state.data.projects = state.data.allProjects.filter(function (x) { return !x.hidden && !x.pending && !removedIds()[x.id]; });
+      note.hidden = true; render(); renderFeatured();
+    });
+    note.replaceChildren(document.createTextNode('✓ ' + word + ': "' + p.title + '" ירד מהתצוגה שלך. כדי שירד לכולם, לחצו Create בעמוד GitHub שנפתח. '), undo);
+    note.hidden = false;
+    note.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
   function adminStrip(p) {
     var hide = el('button', { type: 'button', text: '◌ הסתרה', title: 'מוריד מהאתר, אפשר להחזיר' });
@@ -726,7 +753,8 @@
       state.shots = res[1];
       // Hidden projects and ones still waiting for approval stay off the public site.
       data.allProjects = data.projects;
-      data.projects = data.projects.filter(function (p) { return !p.hidden && !p.pending; });
+      var gone = state.admin ? removedIds() : {};
+      data.projects = data.projects.filter(function (p) { return !p.hidden && !p.pending && !gone[p.id]; });
       state.data = data;
       fillCatSelect();
       document.getElementById('gh-link').href = 'https://github.com/' + data.owner;
