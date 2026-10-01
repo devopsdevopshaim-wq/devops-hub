@@ -606,3 +606,8 @@ html.detail-open { overflow: hidden; }
 .nav-live { color: var(--mint) !important; }
 .nav-live[hidden] { display: none; }
 .badge.down { color: #ff7a85; }
+
+/* client view: look and open only */
+.client-mode #add, .client-mode .nav-add, .client-mode #how, .client-mode .link.code, .client-mode .foot-admin, .client-mode a[href="#add"], .client-mode a[href="#how"] { display: none !important; }
+.foot .foot-admin { opacity: .55; }
+.foot .foot-admin:hover { opacity: 1; color: var(--brass); }

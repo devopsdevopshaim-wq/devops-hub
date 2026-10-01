@@ -104,7 +104,7 @@ function analyse(p, dir) {
   };
 }
 
-const projects = data.projects.map((p) => {
+const projects = data.projects.filter((p) => !p.hidden && !p.pending).map((p) => {
   const base = { id: p.id, title: p.title, field: data.categories[p.category], desc: p.desc, features: p.features, tech: p.tech, story: p.story, address: p.url || (p.repo && !p.private && !p.localhost ? `https://${data.owner}.github.io/${p.repo}/` : p.localhost || null) };
   const dir = sourceDir(p);
   if (!dir) return base;

@@ -2,6 +2,7 @@
  "owner": "devopsdevopshaim-wq",
  "guideApi": "https://haimkripisn.app.n8n.cloud/webhook/hasadna-guide",
  "statusUrl": "https://haimkripisn.app.n8n.cloud/webhook/hasadna-status",
+ "contributors": [],
  "categories": {
   "web": "אתרים ומערכות",
   "ai": "סוכני AI",

@@ -5,6 +5,17 @@ import fs from 'node:fs';
 
 const file = 'portfolio/projects.json';
 const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+
+// Who may add: the owner (published at once) and the contributors listed in
+// projects.json (held as pending until the owner approves it).
+const author = String(process.env.ISSUE_AUTHOR || '');
+const isOwner = author.toLowerCase() === String(process.env.REPO_OWNER || data.owner).toLowerCase();
+const isContributor = (data.contributors || []).some((c) => c.toLowerCase() === author.toLowerCase());
+if (!isOwner && !isContributor) {
+  fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', 'allowed=false\n');
+  console.log(`${author} is not allowed to add projects`);
+  process.exit(0);
+}
 const body = process.env.ISSUE_BODY || '';
 const m = body.match(/```json\s*([\s\S]*?)```/);
 if (!m) throw new Error('No ```json block in the issue body');
@@ -36,10 +47,11 @@ const taken = new Set(data.projects.map((p) => p.id));
 while (taken.has(id)) id = `${base}-${n++}`;
 entry.id = id;
 const ordered = { id, ...entry };
+if (!isOwner) { ordered.pending = true; ordered.addedBy = author; }
 
 // new projects go after the featured ones so they are easy to spot
 const firstPlain = data.projects.findIndex((p) => !p.featured);
 data.projects.splice(firstPlain < 0 ? data.projects.length : firstPlain, 0, ordered);
 fs.writeFileSync(file, JSON.stringify(data, null, 1) + '\n');
-fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', `id=${id}\ntitle=${title}\n`);
+fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', `allowed=true\nid=${id}\ntitle=${title}\npending=${!isOwner}\n`);
 console.log('added', ordered);
