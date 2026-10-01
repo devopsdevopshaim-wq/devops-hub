@@ -17,6 +17,7 @@ import Anthropic from '@anthropic-ai/sdk';
 const require = createRequire(import.meta.url);
 const FixPrompts = require('./js/prompts.js');
 const Netlist = require('./js/netlist.js');
+const FloorPlan = require('./js/floorplan.js');
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 8790;
@@ -31,7 +32,7 @@ const client = HAS_KEY ? new Anthropic() : null;
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml',
+  '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml',
   '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json'
 };
 
@@ -186,12 +187,51 @@ async function home(req, res) {
   res.end();
 }
 
+// ניתוח שרטוטים אדריכליים: Claude מזהה קומות, דירות וחדרים; האתר בודק חפיפות וחריגות ומבקש תיקון פעם אחת.
+async function floorplan(req, res) {
+  if (!guard(req, res)) return;
+  let messages;
+  try {
+    const body = JSON.parse(await readBody(req));
+    const images = (body.images || []).filter((im) => im && typeof im.data === 'string' && im.data.length > 100).slice(0, 12);
+    if (!images.length) throw new Error('לא צורפו שרטוטים');
+    messages = FixPrompts.floorMessages(images, body.request, body.kind);
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message || 'בקשה לא תקינה' });
+  }
+  res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' });
+  const write = (obj) => { if (!res.writableEnded) res.write(JSON.stringify(obj) + '\n'); };
+  const ctl = new AbortController();
+  res.on('close', () => { if (!res.writableFinished) ctl.abort(); });
+  const spec = { system: FixPrompts.FLOOR_SYSTEM, schema: FixPrompts.FLOOR_SCHEMA, parse: FixPrompts.parseFloor };
+  try {
+    write({ phase: 'analyze' });
+    let out = await ask(messages, (p) => write(p), ctl.signal, spec);
+    let issues = FloorPlan.validate(out.result);
+    let revisions = 0;
+    if (issues.length) {
+      revisions = 1;
+      write({ phase: 'revise', issues });
+      const next = messages.concat(
+        { role: 'assistant', content: [{ type: 'text', text: JSON.stringify(out.result) }] },
+        { role: 'user', content: [{ type: 'text', text: FixPrompts.floorRevision(issues) }] }
+      );
+      out = await ask(next, (p) => write(p), ctl.signal, spec);
+      issues = FloorPlan.validate(out.result);
+    }
+    write({ phase: 'done', result: out.result, issues, revisions, model: out.model, usage: out.usage });
+  } catch (err) {
+    if (!ctl.signal.aborted) write({ error: hebrewError(err) });
+  }
+  res.end();
+}
+
 async function serveStatic(req, res) {
   const url = new URL(req.url, 'http://localhost');
   let rel = decodeURIComponent(url.pathname);
   if (rel.endsWith('/')) rel += 'index.html';
   const file = path.normalize(path.join(ROOT, rel));
-  if (!file.startsWith(ROOT + path.sep) || rel.includes('node_modules') || rel.endsWith('.mjs') || rel.includes('/test/')) {
+  if (!file.startsWith(ROOT + path.sep) || rel.includes('node_modules') || rel === '/server.mjs' || rel.includes('/test/')) {
     res.writeHead(404); return res.end('Not found');
   }
   try {
@@ -211,6 +251,7 @@ http.createServer(async (req, res) => {
     if (req.url === '/api/diagnose' && req.method === 'POST') return await diagnose(req, res);
     if (req.url === '/api/design' && req.method === 'POST') return await design(req, res);
     if (req.url === '/api/home' && req.method === 'POST') return await home(req, res);
+    if (req.url === '/api/floorplan' && req.method === 'POST') return await floorplan(req, res);
     if (req.method === 'GET' || req.method === 'HEAD') return await serveStatic(req, res);
     res.writeHead(405); res.end();
   } catch (err) {

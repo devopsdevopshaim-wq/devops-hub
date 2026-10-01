@@ -25,6 +25,7 @@
       <a href="#diagnose" data-view="diagnose">אבחון תקלה</a>
       <a href="#design" data-view="design">תכנון כרטיס</a>
       <a href="#home" data-view="home">חשמל לבית</a>
+      <a href="#plan" data-view="plan">שרטוט אדריכלי</a>
       <a href="#cases" data-view="cases">התיקים שלי <span class="count" id="caseCount"></span></a>
       <a href="#tools" data-view="tools">מחשבונים</a>
       <a href="#guide" data-view="guide">מקרא ובטיחות</a>
@@ -316,6 +317,70 @@
     </div>
   </section>
 
+
+  <!-- ===== שרטוט אדריכלי ===== -->
+  <section class="view" id="view-plan" data-view="plan" hidden>
+    <div class="wrap wide plan">
+      <div class="home-hero plan-hero">
+        <div>
+          <p class="eyebrow">שרטוט אדריכלי · חשמל לכל חדר · לוח ראשי · בניין · תלת-ממד</p>
+          <h1>מהשרטוט — לתכנון חשמל מלא.</h1>
+          <p class="lede">מעלים שרטוט אדריכלי של הקומה (תמונה או PDF), או כמה שרטוטים של בניין. Claude מזהה קומות, דירות וחדרים עם המידות, והמערכת פורשת על השרטוט את כל נקודות החשמל בכל חדר: שקעים, מאור, מתגים, מזגנים ומעגלים ייעודיים, עם הזרם וההספק. מתקבלים גם לוח החשמל הדירתי, חישוב הבניין, חדר המונים ותצוגת תלת-ממד של הדירה.</p>
+        </div>
+        <div class="plan-upload">
+          <label class="drop plan-drop" id="pDrop" for="pFiles">
+            <input type="file" id="pFiles" multiple accept="image/*,application/pdf">
+            <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M4 4h10l6 6v10H4zM14 4v6h6M8 14h8M8 17h5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <span><b>העלאת שרטוטים</b><br><small>תמונה או PDF. כל עמוד או תמונה הוא קומה. בבניין — שרטוט לכל קומה, או קומה טיפוסית.</small></span>
+          </label>
+          <div class="plan-upload-row">
+            <label>סוג הנכס<select id="pKind"><option value="apartment">דירה</option><option value="house">בית פרטי</option><option value="building">בניין</option></select></label>
+            <button class="btn ghost small" type="button" id="pSample">פתיחת שרטוט לדוגמה</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="pWork" hidden>
+        <div class="home-bar card plan-bar">
+          <label class="hb-name"><span class="sr">שם הפרויקט</span><input id="pName" placeholder="שם הפרויקט" autocomplete="off"></label>
+          <label>חיבור לדירה<select id="pSupply"><option value="3x25">3×25A</option><option value="3x40">3×40A</option><option value="1x40">1×40A</option></select></label>
+          <label>בית חכם<select id="pTech"></select></label>
+          <span class="spacer"></span>
+          <select id="pOpen" aria-label="הפרויקטים שלי"></select>
+          <button class="btn ghost small" type="button" id="pToHome">פתיחה בתכנון לבית</button>
+          <button class="btn ghost small" type="button" id="pPrint">הדפסה</button>
+          <button class="btn primary small" type="button" id="pAnalyze">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z" fill="currentColor"/></svg>
+            ניתוח עם Claude
+          </button>
+        </div>
+        <div id="pAiPanel"></div>
+        <div class="plan-grid">
+          <aside class="plan-side">
+            <section class="card side-sec">
+              <h3>קומות ודירות</h3>
+              <div id="pTree"></div>
+              <div class="ins-actions"><button class="btn ghost small" type="button" id="pAddApt">+ דירה בקומה</button><label class="btn ghost small file-btn">+ שרטוט קומה<input type="file" id="pMore" multiple accept="image/*,application/pdf"></label></div>
+            </section>
+            <section class="card side-sec" id="pInspector"></section>
+          </aside>
+          <div class="plan-main">
+            <div class="kpis" id="pKpis"></div>
+            <div class="seg" role="tablist" aria-label="תצוגות">
+              <button type="button" role="tab" data-ptab="plan" aria-selected="true">שרטוט וחשמל</button>
+              <button type="button" role="tab" data-ptab="rooms" aria-selected="false">פירוט חדרים</button>
+              <button type="button" role="tab" data-ptab="panel" aria-selected="false">לוח דירתי</button>
+              <button type="button" role="tab" data-ptab="building" aria-selected="false">בניין</button>
+              <button type="button" role="tab" data-ptab="3d" aria-selected="false">תלת-ממד</button>
+            </div>
+            <div id="pTab"></div>
+          </div>
+        </div>
+      </div>
+      <p class="disclaimer">הזיהוי מהשרטוט והתכנון הם הצעה ראשונית. בדקו את המידות מול השרטוט. תכנון מחייב וביצוע — על ידי חשמלאי ומתכנן חשמל מוסמכים, לפי חוק החשמל ותקנותיו.</p>
+    </div>
+  </section>
+
   <!-- ===== תיקים ===== -->
   <section class="view" id="view-cases" data-view="cases" hidden>
     <div class="wrap">
@@ -452,6 +517,27 @@
   </form>
 </dialog>
 
+
+<!-- ניתוח שרטוט -->
+<dialog class="modal" id="pAiDlg" aria-labelledby="pAiTitle">
+  <form method="dialog" class="modal-body">
+    <h2 id="pAiTitle">ניתוח השרטוטים עם Claude</h2>
+    <p>Claude יזהה קומות, דירות וחדרים, ימדוד אותם לפי המידות שבשרטוט, ויסמן דלתות, חלונות ומיקום ללוח החשמל. אחרי הניתוח אפשר לתקן כל חדר ביד.</p>
+    <textarea id="pAiReq" rows="3" dir="auto" placeholder="הערות (לא חובה). למשל: קומה טיפוסית 2–7, ארבע דירות בקומה, חדר מונים בקומת הקרקע."></textarea>
+    <div class="manual" id="pAiManual" hidden>
+      <p>אין חיבור ישיר ל-Claude. מעתיקים את ההנחיה ל-<a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a>, מצרפים את השרטוטים באותו סדר, ומדביקים כאן את התשובה (JSON).</p>
+      <div class="manual-step"><b>1</b><button class="btn ghost small" type="button" id="pAiCopy">העתקת ההנחיה</button><button class="btn ghost small" type="button" id="pAiImgs">הורדת השרטוטים המוכנים</button></div>
+      <div class="manual-step"><b>2</b><span>מדביקים את התשובה:</span></div>
+      <textarea id="pAiPaste" rows="6" dir="ltr"></textarea>
+    </div>
+    <p class="error" id="pAiError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn primary" type="button" id="pAiSend">ניתוח</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- מצב העתק-הדבק -->
 <dialog class="modal" id="manualDlg" aria-labelledby="manualTitle">
   <form method="dialog" class="modal-body">
@@ -488,10 +574,13 @@
 <script src="js/parts.js"></script>
 <script src="js/testkit.js"></script>
 <script src="js/homeplan.js"></script>
+<script src="js/floorplan.js"></script>
+<script src="js/plansample.js"></script>
 <script src="js/store.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/app.js"></script>
 <script src="js/design.js"></script>
 <script src="js/home.js"></script>
+<script src="js/floor-ui.js"></script>
 </body>
 </html>

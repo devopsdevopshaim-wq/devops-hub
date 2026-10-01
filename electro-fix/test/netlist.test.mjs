@@ -8,6 +8,8 @@ const FixPrompts = require('../js/prompts.js');
 const FixParts = require('../js/parts.js');
 const TestKit = require('../js/testkit.js');
 const HomePlan = require('../js/homeplan.js');
+const FloorPlan = require('../js/floorplan.js');
+const PlanSample = require('../js/plansample.js');
 
 let n = 0;
 function test(name, fn) { fn(); n++; console.log('✓', name); }
@@ -217,6 +219,55 @@ test('תכנון לבית: מעגלים, פאזות, פחת ולוח', () => {
   assert.equal(HomePlan.advice(one)[0].level, 'error');
   const knx = HomePlan.preset('apt4'); knx.tech = 'knx';
   assert.ok(HomePlan.smart(knx).panel.length >= 3);
+});
+
+test('שרטוט אדריכלי: קנה מידה, נקודות בכל חדר, לוח ובניין', () => {
+  const proj = PlanSample.sampleProject(), f = proj.floors[0], a = f.apartments[0];
+  assert.ok(Math.abs(FloorPlan.scale(f) - 0.01) < 0.0002, 'scale from written dimensions');
+  assert.deepEqual(FloorPlan.validate(proj), []);
+  const P = FloorPlan.placePoints(proj, f, a);
+  for (const r of a.rooms) {
+    const x = P[r.id];
+    for (const p of x.points) assert.ok(p.x >= -0.01 && p.y >= -0.01 && p.x <= x.m.w + 0.01 && p.y <= x.m.h + 0.01, r.name + ' ' + p.kind + ' inside room');
+    const want = HomePlan.ROOMS[r.type].sockets(Math.round(x.m.area * 10) / 10);
+    assert.equal(x.points.filter((p) => p.kind === 'socket').length, want, r.name + ' sockets');
+    if (x.plan.lights) assert.ok(x.points.some((p) => p.kind === 'switch'), r.name + ' has a switch');
+  }
+  const living = a.rooms.find((r) => r.type === 'living');
+  const ac = P[living.id].points.find((p) => p.kind === 'ac');
+  assert.ok(ac && ac.circuit && /C16/.test(ac.circuit.breaker), 'AC on its own C16 circuit');
+  assert.equal(P._panelRoom, a.rooms.find((r) => r.type === 'entrance').id, 'panel by the entrance');
+  // דלת: המתג לא נופל על פתח הדלת
+  const kitchen = a.rooms.find((r) => r.type === 'kitchen');
+  const sw = P[kitchen.id].points.find((p) => p.kind === 'switch'), door = P[kitchen.id].doors[0];
+  assert.ok(door && Math.abs((sw.wall === door.wall ? (door.wall === 'top' || door.wall === 'bottom' ? sw.x : sw.y) : 99) - door.at) > 0.45);
+  const B = FloorPlan.building(proj);
+  assert.equal(B.apartments, 1); assert.equal(B.isBuilding, false); assert.equal(B.units[0].supply, '3x25');
+  // בניין: קומה טיפוסית ×5 עם שתי דירות
+  const b2 = JSON.parse(JSON.stringify(proj));
+  b2.kind = 'building';
+  const half = (r, dx) => ({ ...r, id: r.id + dx, box: { x0: Math.round(r.box.x0 / 2 + dx), x1: Math.round(r.box.x1 / 2 + dx), y0: r.box.y0, y1: r.box.y1 }, width_m: r.width_m / 2 }), ap = b2.floors[0].apartments[0];
+  b2.floors[0].repeat = 5;
+  b2.floors[0].apartments = [{ ...ap, id: 'A', name: 'דירה A', rooms: ap.rooms.map((r) => half(r, 0)) }, { ...ap, id: 'B', name: 'דירה B', rooms: ap.rooms.map((r) => half(r, 500)) }];
+  const BB = FloorPlan.building(b2);
+  assert.equal(BB.apartments, 10);
+  assert.equal(BB.ks, 0.5);
+  assert.ok(BB.common.some((c) => /מעלית/.test(c.name)));
+  assert.ok(BB.main >= BB.amps * 1.2);
+  assert.equal(BB.meters, 12);
+  assert.match(FloorPlan.renderRiser(BB, 't'), /חדר מונים/);
+  assert.match(FloorPlan.renderOverlay(proj, f, { apt: 'a1' }), /class="fp-pt"/);
+  // חפיפה מזוהה
+  const bad = JSON.parse(JSON.stringify(proj));
+  bad.floors[0].apartments[0].rooms.push({ ...a.rooms[0], id: 'dup', name: 'כפול' });
+  assert.ok(FloorPlan.validate(bad).some((x) => /חופפים/.test(x)));
+  // סכמה ל-structured outputs
+  (function walk(s2, path) {
+    if (s2.type === 'object') { assert.equal(s2.additionalProperties, false, path); assert.deepEqual([...s2.required].sort(), Object.keys(s2.properties).sort(), path); for (const [k, v] of Object.entries(s2.properties)) walk(v, path + '.' + k); }
+    if (s2.type === 'array') walk(s2.items, path + '[]');
+  })(FixPrompts.FLOOR_SCHEMA, '$');
+  const m = FixPrompts.floorMessages([{ data: 'A'.repeat(200), name: 'x' }], 'הערה', 'building');
+  assert.equal(m[0].content.filter((c) => c.type === 'image').length, 1);
 });
 
 console.log(`\n${n} בדיקות עברו`);
