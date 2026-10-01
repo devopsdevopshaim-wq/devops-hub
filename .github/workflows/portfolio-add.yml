@@ -1,8 +1,9 @@
 name: Portfolio add project
 
 # The "הוספת פרויקט" form on the portfolio opens an issue titled
-# "הוספת פרויקט: <name>". When the repository owner opens it, this adds the project to projects.json,
-# takes its screenshot, republishes the site and closes the issue.
+# "הוספת פרויקט: <name>". From the repository owner the project is published at
+# once; from a contributor listed in projects.json it waits for approval on the
+# admin screen. Anyone else's request is closed without changes.
 
 on:
   issues:
@@ -14,12 +15,12 @@ permissions:
   actions: write
 
 concurrency:
-  group: portfolio-add
+  group: portfolio-projects
   cancel-in-progress: false
 
 jobs:
   add:
-    if: startsWith(github.event.issue.title, 'הוספת פרויקט:') && github.event.issue.user.login == github.repository_owner
+    if: startsWith(github.event.issue.title, 'הוספת פרויקט:')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +33,17 @@ jobs:
         id: add
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          REPO_OWNER: ${{ github.repository_owner }}
         run: node .github/scripts/portfolio-add.mjs
+      - name: Not allowed
+        if: steps.add.outputs.allowed == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" --comment "רק בעל האתר ותורמים מאושרים יכולים להוסיף פרויקטים. אפשר לבקש ממנו לצרף אתכם כתורמים."
       - name: Commit
+        if: steps.add.outputs.allowed == 'true'
         env:
           TITLE: ${{ steps.add.outputs.title }}
           ISSUE: ${{ github.event.issue.number }}
@@ -45,6 +55,7 @@ jobs:
           git pull -q --rebase origin main
           git push -q origin HEAD:main
       - name: Screenshot and republish
+        if: steps.add.outputs.allowed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ID: ${{ steps.add.outputs.id }}
@@ -52,12 +63,14 @@ jobs:
           gh workflow run vacation-hub-pages.yml --ref main
           gh workflow run portfolio-shots.yml --ref main -f ids="$ID"
       - name: Close the issue
+        if: steps.add.outputs.allowed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ID: ${{ steps.add.outputs.id }}
+          PENDING: ${{ steps.add.outputs.pending }}
           ISSUE: ${{ github.event.issue.number }}
         run: |
-          gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" --comment "נוסף לאתר ✓ בעוד 2–3 דקות הוא יופיע כאן: https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/portfolio/#p/$ID"
+          gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" --comment "$( [ "$PENDING" = true ] && echo 'התקבל ✓ הפרויקט ממתין לאישור המנהל.' || echo "נוסף לאתר ✓ בעוד 2–3 דקות הוא יופיע כאן: https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/portfolio/#p/$ID" )"
       - name: Report a failure on the issue
         if: failure()
         env:

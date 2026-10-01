@@ -1,0 +1,60 @@
+name: Portfolio admin actions
+
+# The admin screen (portfolio/admin.html) opens an issue titled "ניהול: …"
+# with a list of actions (delete, hide, show, feature, approve, edit,
+# contributors). Only the repository owner's issues are carried out.
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: portfolio-projects
+  cancel-in-progress: false
+
+jobs:
+  manage:
+    if: startsWith(github.event.issue.title, 'ניהול:') && github.event.issue.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply the actions
+        id: apply
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: node .github/scripts/portfolio-manage.mjs
+      - name: Commit and republish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A portfolio/projects.json portfolio/shots
+          git commit -q -m "portfolio: admin actions (#$ISSUE)"
+          git pull -q --rebase origin main
+          git push -q origin HEAD:main
+          # pushes made with GITHUB_TOKEN do not start other workflows
+          gh workflow run vacation-hub-pages.yml --ref main
+      - name: Close the issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUMMARY: ${{ steps.apply.outputs.summary }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" --comment "בוצע ✓ $SUMMARY — האתר מתעדכן תוך 2 דקות."
+      - name: Report a failure on the issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body "לא הצלחתי לבצע את הפעולות. פרטים: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

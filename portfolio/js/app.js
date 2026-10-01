@@ -637,6 +637,14 @@
       .catch(function () { /* statuses stay on their defaults */ });
   }
 
+  // Client view (?view=client): look and open only. Remembered for the visit.
+  try {
+    if (/[?&]view=client\b/.test(location.search)) sessionStorage.setItem('view', 'client');
+    if (sessionStorage.getItem('view') === 'client') document.documentElement.classList.add('client-mode');
+  } catch (e) {
+    if (/[?&]view=client\b/.test(location.search)) document.documentElement.classList.add('client-mode');
+  }
+
   q.addEventListener('input', function () { state.query = q.value.trim().toLowerCase(); render(); });
 
   Promise.all([
@@ -646,6 +654,9 @@
     .then(function (res) {
       var data = res[0];
       state.shots = res[1];
+      // Hidden projects and ones still waiting for approval stay off the public site.
+      data.allProjects = data.projects;
+      data.projects = data.projects.filter(function (p) { return !p.hidden && !p.pending; });
       state.data = data;
       document.getElementById('gh-link').href = 'https://github.com/' + data.owner;
       document.getElementById('gh-top').href = 'https://github.com/' + data.owner;

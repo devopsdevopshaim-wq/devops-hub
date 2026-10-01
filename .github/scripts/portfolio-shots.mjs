@@ -14,7 +14,7 @@ const index = fs.existsSync(indexFile) ? JSON.parse(fs.readFileSync(indexFile, '
 const only = process.argv.slice(2).filter(Boolean);
 
 function urlOf(p) {
-  if (p.noshot) return null;
+  if (p.noshot || p.hidden || p.pending) return null;
   if (p.url) return p.url;
   if (p.localhost || p.private || !p.repo) return null;
   return `https://${data.owner}.github.io/${p.repo}/` + (p.start ? encodeURIComponent(p.start) : '');
