@@ -84,3 +84,43 @@ test('configs are generated for every device and Kea JSON parses', () => {
     assert.doesNotMatch(f.text, /undefined|NaN|null/);
   }
 });
+
+test('manual address change per point: valid, outside subnet, duplicate, move to another network', () => {
+  const base = defaultConfig();
+  const plan0 = buildPlan(base);
+  const [a, b] = plan0.idfs[0].outlets;
+  const s = a.subnet;
+  const free = `${s.network.split('.').slice(0, 3).join('.')}.${Number(s.last.split('.')[3]) - 1}`;
+  const cfg = {
+    ...base,
+    overrides: {
+      [a.label]: { ip: free, hostname: 'pc-reception', mac: 'aa:bb:cc:dd:ee:ff' },
+      [b.label]: { ip: '192.168.50.5' },
+    },
+  };
+  let plan = buildPlan(cfg);
+  let oa = plan.idfs[0].outlets[0];
+  assert.equal(oa.ip, free);
+  assert.equal(oa.manual, true);
+  assert.equal(oa.hostname, 'pc-reception');
+  assert.equal(plan.idfs[0].outlets[1].ip, b.ip, 'invalid override keeps the automatic address');
+  assert.ok(plan.warnings.some((w) => w.includes(b.label)));
+
+  // duplicate of another point is refused
+  plan = buildPlan({ ...base, overrides: { [a.label]: { ip: b.ip } } });
+  assert.equal(plan.idfs[0].outlets[0].ip, a.ip);
+  assert.ok(plan.warnings.some((w) => w.includes('כבר בשימוש')));
+
+  // move to the building's printer network: gets a free address there, VLAN follows, config has it
+  const prn = plan0.subnets.find((x) => x.key === 'print');
+  plan = buildPlan({ ...base, overrides: { [a.label]: { subnet: prn.name } } });
+  oa = plan.idfs[0].outlets[0];
+  assert.equal(oa.vlan, prn.vlan);
+  assert.ok(inside(oa.ip, oa.subnet));
+  const ips = plan.idfs.flatMap((i) => i.outlets.map((o) => o.ip));
+  assert.equal(new Set(ips).size, ips.length, 'no duplicates after the move');
+  const sw = allConfigs(plan).find((f) => f.name === `${plan.idfs[0].host}.txt`).text;
+  assert.match(sw, new RegExp(`description ${a.label}[\\s\\S]*?switchport access vlan ${prn.vlan}`));
+  const kea = JSON.parse(allConfigs(buildPlan(cfg)).at(-1).text);
+  assert.ok(kea.Dhcp4.subnet4.some((x) => (x.reservations || []).some((r) => r['hw-address'] === 'aa:bb:cc:dd:ee:ff' && r['ip-address'] === free)));
+});

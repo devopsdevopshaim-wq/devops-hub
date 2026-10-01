@@ -160,7 +160,7 @@ export function accessSwitchConfig(plan, idf) {
   L.push(line(), '! ---- פורטים לנקודות קצה ----');
   for (const o of outlets) {
     L.push(`interface GigabitEthernet${o.member}/0/${o.port}`);
-    L.push(` description ${o.label} ${o.patch}${o.type === 'ap' ? ' AP' : o.type === 'cam' ? ' CAM' : o.type === 'print' ? ' PRINTER' : ''}`);
+    L.push(` description ${o.label} ${o.patch}${o.type === 'ap' ? ' AP' : o.type === 'cam' ? ' CAM' : o.type === 'print' ? ' PRINTER' : ''}${o.hostname ? ` ${o.hostname}` : ''}`.slice(0, 200));
     if (o.type === 'ap') {
       const allowed = [mgmt.vlan, b.wifi?.vlan, b.guest?.vlan].filter(Boolean);
       L.push(' switchport mode trunk',
@@ -264,7 +264,10 @@ export function idfVlans(plan, idf) {
   return plan.subnets
     .filter((s) => s.building === idf.building && s.vlan && (
       (s.scope === 'floor' && s.floor === idf.floor) || s.scope === 'building' || (s.key === 'room' && rooms.has(s.room))))
-    .map((s) => s.vlan);
+    .map((s) => s.vlan)
+    // points moved by hand to another network still need their VLAN on the trunk
+    .concat(idf.outlets.map((o) => o.vlan), idf.outlets.map((o) => o.voiceVlan))
+    .filter((v, i, a) => v != null && a.indexOf(v) === i);
 }
 
 const maskWild = (p) => intToIp(p === 32 ? 0 : 2 ** (32 - p) - 1);
@@ -375,14 +378,16 @@ export function distConfig(plan, d) {
 export function keaConfig(plan) {
   const subnets = [];
   const resBySubnet = new Map();
-  const addRes = (s, id, ip) => {
+  // A reservation has exactly one identifier: the device MAC when one was entered, else the wall outlet.
+  const addRes = (s, id, ip, mac, hostname) => {
     if (!s) return;
     if (!resBySubnet.has(s)) resBySubnet.set(s, []);
-    resBySubnet.get(s).push({ 'circuit-id': `'${id}'`, 'ip-address': ip, hostname: id.toLowerCase() });
+    const r = mac ? { 'hw-address': mac.toLowerCase() } : { 'circuit-id': `'${id}'` };
+    resBySubnet.get(s).push({ ...r, 'ip-address': ip, hostname: (hostname || id).toLowerCase() });
   };
   for (const idf of plan.idfs) {
     for (const o of idf.outlets) {
-      addRes(o.subnet, o.label, o.ip);
+      addRes(o.subnet, o.label, o.ip, o.mac, o.hostname);
       if (o.hasPhone) addRes(o.phoneSubnet, `${o.label}-PH`, o.phoneIp);
     }
   }
@@ -415,7 +420,7 @@ export function keaConfig(plan) {
       'renew-timer': 14400,
       'rebind-timer': 25200,
       'host-reservation-identifiers': ['circuit-id', 'hw-address'],
-      'reservations-out-of-pool': true,
+      'reservations-out-of-pool': false, // manual addresses may sit inside a pool; Kea then skips them for leases
       'high-availability-note': `שרת שני: ${plan.services.dhcp2} עם libdhcp_ha.so במצב hot-standby`,
       subnet4: subnets,
       loggers: [{ name: 'kea-dhcp4', 'output-options': [{ output: '/var/log/kea/dhcp4.log' }], severity: 'INFO' }],
