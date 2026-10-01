@@ -6,7 +6,7 @@
   var q = document.getElementById('q');
   var note = document.getElementById('note');
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var state = { cat: 'all', query: '', data: null, repos: null };
+  var state = { cat: 'all', query: '', live: null, data: null, repos: null, show: 'all', sort: 'default', opens: {} };
 
   function el(tag, attrs, children) {
     var n = document.createElement(tag);
@@ -95,6 +95,7 @@
   }
   function showVisits(id, n) {
     visitCache[id] = Promise.resolve(n);
+    state.opens[id] = n;
     Array.prototype.forEach.call(document.querySelectorAll('[data-visits="' + id + '"]'), function (v) {
       v.querySelector('b').textContent = n.toLocaleString('he-IL');
       v.hidden = false;
@@ -220,8 +221,9 @@
         el('span', { class: 'cat', text: state.data.categories[p.category] || '' }),
         el('h3', {}, [el('a', { class: 'more', href: '#p/' + p.id, text: p.title })])
       ].concat(tabs(c, p, info))),
-      foot(p, s)
-    ].forEach(function (n) { c.appendChild(n); });
+      foot(p, s),
+      state.admin ? adminStrip(p) : null
+    ].forEach(function (n) { if (n) c.appendChild(n); });
     fillAddr(c, s);
     c.addEventListener('pointermove', function (e) {
       var r = c.getBoundingClientRect();
@@ -238,6 +240,8 @@
 
   function matches(p) {
     if (state.cat !== 'all' && p.category !== state.cat) return false;
+    if (state.show === 'live' && status(p).kind !== 'live') return false;
+    if (state.show === 'featured' && !p.featured) return false;
     if (!state.query) return true;
     var hay = (p.title + ' ' + (p.desc || '') + ' ' + (p.repo || '') + ' ' + p.id).toLowerCase();
     return hay.indexOf(state.query) !== -1;
@@ -245,8 +249,11 @@
 
   function render() {
     var list = state.data.projects.filter(matches);
+    if (state.sort === 'az') list.sort(function (a, b) { return a.title.localeCompare(b.title, 'he'); });
+    else if (state.sort === 'popular') list.sort(function (a, b) { return (state.opens[b.id] || 0) - (state.opens[a.id] || 0); });
     grid.replaceChildren.apply(grid, list.map(card));
-    if (!list.length) grid.appendChild(el('p', { class: 'empty', text: 'אין פרויקט בשם הזה. נסו מילה אחרת או בחרו "הכול".' }));
+    if (!list.length) grid.appendChild(el('p', { class: 'empty', text: 'אין פרויקט שמתאים לסינון. נסו לנקות אותו.' }));
+    syncFilters();
     document.getElementById('all-title').textContent = state.cat === 'all' ? 'הכול' : state.data.categories[state.cat];
     document.getElementById('all-eyebrow').textContent = list.length + ' פרויקטים';
     observe(grid.querySelectorAll('.reveal'));
@@ -300,6 +307,69 @@
     Array.prototype.forEach.call(box.querySelectorAll('.fcard'), function (f, i) { fillAddr(f, status(list[i])); });
     observe(box.querySelectorAll('.reveal'));
   }
+
+  // ---------- filter bar ----------
+  var fCat = document.getElementById('f-cat');
+  var fLive = document.getElementById('f-live');
+  var fSort = document.getElementById('f-sort');
+  var fReset = document.getElementById('f-reset');
+
+  function fillCatSelect() {
+    var used = {};
+    state.data.projects.forEach(function (p) { used[p.category] = (used[p.category] || 0) + 1; });
+    fCat.replaceChildren(el('option', { value: 'all', text: 'כל התחומים' }));
+    Object.keys(state.data.categories).forEach(function (k) {
+      if (used[k]) fCat.appendChild(el('option', { value: k, text: state.data.categories[k] + ' (' + used[k] + ')' }));
+    });
+  }
+  function syncFilters() {
+    fCat.value = state.cat;
+    fLive.value = state.show;
+    fSort.value = state.sort;
+    fReset.hidden = state.cat === 'all' && state.show === 'all' && state.sort === 'default' && !state.query;
+  }
+  // "Most opened" needs every count, not only the ones for cards already seen.
+  function loadAllOpens() {
+    return Promise.all(state.data.projects.map(function (p) {
+      if (!visitCache[p.id]) visitCache[p.id] = counter('get', 'open-' + p.id);
+      return visitCache[p.id].then(function (n) { state.opens[p.id] = n; }, function () {});
+    }));
+  }
+  fCat.addEventListener('change', function () { selectCat(fCat.value); });
+  fLive.addEventListener('change', function () { state.show = fLive.value; render(); });
+  fSort.addEventListener('change', function () {
+    state.sort = fSort.value;
+    render();
+    if (state.sort === 'popular') loadAllOpens().then(function () { if (state.sort === 'popular') render(); });
+  });
+  fReset.addEventListener('click', function () {
+    state.show = 'all'; state.sort = 'default'; state.query = ''; q.value = '';
+    selectCat('all');
+  });
+
+  // ---------- admin-only controls ----------
+  // Shown in the browser where the admin screen was opened. They only open a
+  // GitHub issue; the portfolio-manage workflow carries it out only when the
+  // issue comes from the repository owner, so nobody else can delete.
+  try { state.admin = localStorage.getItem('hasadna-admin') === '1' && !/[?&]view=client\b/.test(location.search); } catch (e) { state.admin = false; }
+
+  function adminIssue(op, p) {
+    var word = { delete: 'מחיקה', hide: 'הסתרה' }[op];
+    var body = 'בקשה מהאתר, במצב מנהל. GitHub יבצע אותה רק אם נפתחה מחשבון המנהל.\n\n- ' + word + ': ' + p.title +
+      '\n\n```json\n' + JSON.stringify({ ops: [{ op: op, id: p.id }] }) + '\n```\n';
+    window.open('https://github.com/' + state.data.owner + '/' + COMMENTS_REPO + '/issues/new?title=' +
+      encodeURIComponent('ניהול: ' + word + ': ' + p.title) + '&body=' + encodeURIComponent(body), '_blank', 'noopener');
+  }
+  function adminStrip(p) {
+    var hide = el('button', { type: 'button', text: '◌ הסתרה', title: 'מוריד מהאתר, אפשר להחזיר' });
+    var del = el('button', { type: 'button', class: 'del', text: '🗑 מחיקה מהאתר' });
+    hide.addEventListener('click', function () { adminIssue('hide', p); });
+    del.addEventListener('click', function () {
+      if (confirm('למחוק את "' + p.title + '" מהאתר?\nהמאגר ב־GitHub עצמו לא נמחק.\nבעמוד שייפתח ב־GitHub לחצו Create.')) adminIssue('delete', p);
+    });
+    return el('div', { class: 'admin-strip', 'aria-label': 'פעולות מנהל' }, [hide, del]);
+  }
+  if (state.admin) document.getElementById('admin-on').hidden = false;
 
   function selectCat(k) {
     state.cat = k;
@@ -658,6 +728,7 @@
       data.allProjects = data.projects;
       data.projects = data.projects.filter(function (p) { return !p.hidden && !p.pending; });
       state.data = data;
+      fillCatSelect();
       document.getElementById('gh-link').href = 'https://github.com/' + data.owner;
       document.getElementById('gh-top').href = 'https://github.com/' + data.owner;
       renderOrbit();

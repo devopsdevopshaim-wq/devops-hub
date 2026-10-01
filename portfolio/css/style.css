@@ -611,3 +611,19 @@ html.detail-open { overflow: hidden; }
 .client-mode #add, .client-mode .nav-add, .client-mode #how, .client-mode .link.code, .client-mode .foot-admin, .client-mode a[href="#add"], .client-mode a[href="#how"] { display: none !important; }
 .foot .foot-admin { opacity: .55; }
 .foot .foot-admin:hover { opacity: 1; color: var(--brass); }
+
+/* filter bar */
+.fbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin: -6px 0 22px; }
+.fbar label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--mist); }
+.fbar select { padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(15, 13, 36, .6); color: var(--porcelain); font: inherit; font-size: 15px; min-width: 140px; }
+.fbar select:focus { outline: none; border-color: var(--brass); }
+.fbar .g-btn[hidden], .admin-on[hidden] { display: none; }
+.admin-on { margin-inline-start: auto; font: 500 12px var(--mono); color: var(--night); background: var(--brass); padding: 6px 12px; border-radius: 999px; }
+.admin-on a { color: inherit; text-decoration: underline; }
+/* admin-only card controls */
+.admin-strip { display: flex; gap: 6px; padding: 10px 18px 14px; border-top: 1px dashed rgba(224, 178, 90, .4); }
+.admin-strip button { flex: 1; border: 1px solid var(--line-2); background: none; color: var(--porcelain); border-radius: 8px; padding: 6px 8px; font: 500 13px var(--body); cursor: pointer; }
+.admin-strip button:hover { border-color: var(--brass); color: var(--brass-2); }
+.admin-strip .del:hover { border-color: #e5606d; color: #ff8b95; }
+.client-mode .admin-strip, .client-mode .admin-on { display: none !important; }
+@media (max-width: 640px) { .fbar { gap: 8px; } .fbar label { flex: 1 1 28%; min-width: 0; } .fbar select { padding: 9px 10px; font-size: 14px; } .fbar label select { min-width: 0; width: 100%; } .admin-on { margin: 0; } }
