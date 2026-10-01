@@ -178,12 +178,12 @@
         if (!player) {
           player = new window.YT.Player('mu-yt', {
             width: '100%', height: '100%',
-            playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 },
+            playerVars: v.id ? { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 }
+              : { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, listType: 'playlist', list: v.list },
             videoId: v.id || undefined,
             events: {
               onReady: function (e) {
                 e.target.setVolume(vol);
-                if (!v.id && v.list) e.target.loadPlaylist({ list: v.list, listType: 'playlist' });
                 e.target.playVideo();
               },
               onStateChange: function (e) {

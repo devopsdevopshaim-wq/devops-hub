@@ -1,9 +1,50 @@
 {
  "music": [
-  { "style": "לו־פיי ללמידה", "title": "Lofi Girl · beats to relax/study to", "url": "https://www.youtube.com/watch?v=jfKfPfyJRdk" },
-  { "style": "ג׳אז רגוע", "title": "Lofi Girl · jazz lofi radio", "url": "https://www.youtube.com/watch?v=HuFYqnbVbzY" },
-  { "style": "סינת׳ווייב", "title": "Lofi Girl · synthwave radio", "url": "https://www.youtube.com/watch?v=4xDzrJKXOOY" },
-  { "style": "צ׳יל לערב", "title": "Lofi Girl · beats to sleep/chill to", "url": "https://www.youtube.com/watch?v=rUxyKA_-grg" }
+  {
+   "style": "לו־פיי ללמידה",
+   "title": "Lofi Girl · beats to relax/study to",
+   "url": "https://www.youtube.com/watch?v=jfKfPfyJRdk"
+  },
+  {
+   "style": "ג׳אז רגוע",
+   "title": "Lofi Girl · jazz lofi radio",
+   "url": "https://www.youtube.com/watch?v=HuFYqnbVbzY"
+  },
+  {
+   "style": "סינת׳ווייב",
+   "title": "Lofi Girl · synthwave radio",
+   "url": "https://www.youtube.com/watch?v=4xDzrJKXOOY"
+  },
+  {
+   "style": "צ׳יל לערב",
+   "title": "Lofi Girl · beats to sleep/chill to",
+   "url": "https://www.youtube.com/watch?v=rUxyKA_-grg"
+  },
+  {
+   "style": "קלאסית",
+   "title": "Mozart · Relaxing Concerto for Studying",
+   "url": "https://www.youtube.com/watch?v=vwIUJbIU57s"
+  },
+  {
+   "style": "פסנתר",
+   "title": "Mozart · Relaxing Piano Sonata",
+   "url": "https://www.youtube.com/watch?v=VB6SIKl8Md0"
+  },
+  {
+   "style": "מזרחית",
+   "title": "סט מזרחית 2026 · מתעדכן כל יום",
+   "url": "https://www.youtube.com/playlist?list=PLtppQSDeaM9mXyqoSAgfDrgAirvz3QHfU"
+  },
+  {
+   "style": "מזרחית נוסטלגית",
+   "title": "מוסיקה מזרחית נוסטלגית",
+   "url": "https://www.youtube.com/playlist?list=PLYPNPXYr6adKyxIAQa-NfzeSBz8C05LEV"
+  },
+  {
+   "style": "אמביינט",
+   "title": "Space Ambient Music · LIVE 24/7",
+   "url": "https://www.youtube.com/watch?v=X7X3UDwyyqo"
+  }
  ],
  "videos": []
 }
