@@ -111,3 +111,22 @@ node n8n/build-knowledge.mjs vacation-hub          # api/knowledge.json
 python3 n8n/build-workflow.py --owner devopsdevopshaim-wq --repo devops-hub \
   --brand "מסע" --email devopsdevopshaim@gmail.com  # n8n/masa-vacation-agent.json
 ```
+
+## לידים ומחירון (`hasadna-business.json`)
+
+Workflow נפרד לעסק. אין בו שום חיבור שצריך להגדיר מראש: הכול נשמר בזיכרון של ה־workflow.
+
+| כתובת | מה עושה |
+|---|---|
+| `POST /webhook/hasadna-lead` | דף השירותים שולח לכאן כל ליד, וגם סופר לחיצות על וואטסאפ |
+| `GET /webhook/hasadna-prices` | דף השירותים קורא מכאן את המחירים והמבצעים שקבעת |
+| `POST /webhook/hasadna-admin` | מסך הניהול: לידים, סטטוסים, הערות ושמירת מחירון. דורש סיסמת מנהל |
+
+הפעלה:
+1. ב־n8n: **Workflows ← Import from File ← `n8n/hasadna-business.json`**.
+2. מפעילים את המתג **Active**.
+3. במסך הניהול של האתר (`portfolio/admin.html#biz`) בוחרים סיסמה. מעכשיו רק מי שיודע אותה רואה לידים ומשנה מחירים.
+
+אופציונלי: מייל על כל ליד חדש. מחברים Gmail בצומת **Lead · Email** ומפעילים אותו.
+שכחת את הסיסמה? כותבים סיסמה חדשה ב־`ADMIN_KEY` בצומת **Admin · Handle**.
+לשנות את המבנה: `python3 n8n/build-business-workflow.py`.

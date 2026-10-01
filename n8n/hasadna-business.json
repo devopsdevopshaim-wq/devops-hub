@@ -1,0 +1,374 @@
+{
+  "name": "הסדנה · לידים ומחירון",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## לידים\n`POST /webhook/hasadna-lead` — כל טופס בדף השירותים נשמר כאן (גם לחיצות על וואטסאפ נספרות). רואים ומנהלים את הלידים במסך הניהול של האתר ← \"לידים ומחירון\".\n\nאופציונלי: מייל על כל ליד — מחברים Gmail בצומת \"Lead · Email\" ומפעילים אותו (מקש D).",
+        "height": 240,
+        "width": 440,
+        "color": 6
+      },
+      "id": "daa020a9-77a5-54e5-bf8b-c56d2f519fc8",
+      "name": "Note · Leads",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hasadna-lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f0ca7a0a-ba9f-5fcf-973e-5d952563be96",
+      "name": "Lead · Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "ad936d98-3307-597a-9d06-f52368673c3e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Saves a lead from the services page (or counts a WhatsApp click).\nconst sd = $getWorkflowStaticData('global');\nsd.leads = sd.leads || [];\nsd.clicks = sd.clicks || {};\nconst b = $json.body || {};\nconst line = (v, n) => String(v == null ? '' : v).replace(/[\\u0000-\\u001f\\u007f]+/g, ' ').trim().slice(0, n);\nconst text = (v, n) => String(v == null ? '' : v).replace(/[\\u0000-\\u0009\\u000b-\\u001f\\u007f]+/g, ' ').trim().slice(0, n);\n\nif (b.kind === 'click') {\n  const k = line(b.source, 40) || 'other';\n  sd.clicks[k] = (sd.clicks[k] || 0) + 1;\n  return [{ json: { code: 200, body: { ok: true }, notify: false } }];\n}\n// a hidden field people never fill; bots do\nif (line(b.website, 50)) return [{ json: { code: 200, body: { ok: true }, notify: false } }];\n\nconst lead = {\n  id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),\n  at: new Date().toISOString(),\n  name: line(b.name, 60),\n  phone: line(b.phone, 20),\n  biz: line(b.biz, 80),\n  service: line(b.service, 80),\n  msg: text(b.msg, 800),\n  code: line(b.code, 20),\n  page: line(b.page, 200),\n  status: 'new',\n  note: ''\n};\nif (!lead.name && !lead.phone) return [{ json: { code: 400, body: { ok: false, error: 'empty' }, notify: false } }];\nsd.leads.unshift(lead);\nif (sd.leads.length > 2000) sd.leads.length = 2000;\nreturn [{ json: { code: 200, body: { ok: true, id: lead.id }, notify: true, lead } }];\n"
+      },
+      "id": "3f7e8798-9f07-5e70-8ed6-9079c15e0f2d",
+      "name": "Lead · Save",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.code || 200 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "704c8f91-e4cf-5e95-8d0e-2d2400638821",
+      "name": "Lead · Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "39c18c99-5cb5-54d5-9393-30b6c68b13b6",
+              "leftValue": "={{ $json.notify }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e8a524d8-cb15-5957-a733-a108029bc28b",
+      "name": "New lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "devopsdevopshaim@gmail.com",
+        "subject": "={{ 'ליד חדש: ' + $json.lead.name + ($json.lead.service ? ' · ' + $json.lead.service : '') }}",
+        "emailType": "text",
+        "message": "={{ 'שם: ' + $json.lead.name + '\\nטלפון: ' + $json.lead.phone + '\\nעסק: ' + $json.lead.biz + '\\nשירות: ' + $json.lead.service + ($json.lead.code ? '\\nמבצע: ' + $json.lead.code : '') + '\\n\\n' + $json.lead.msg + '\\n\\nוואטסאפ: https://wa.me/' + String($json.lead.phone).replace(/\\D/g, '').replace(/^0/, '972') }}",
+        "options": {}
+      },
+      "id": "5bc5b767-d216-5814-8786-b22bef5f432f",
+      "name": "Lead · Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        100
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## מחירון\n`GET /webhook/hasadna-prices` — דף השירותים קורא מכאן את המחירים והמבצעים שקבעת במסך הניהול. כל עוד לא שמרת כלום, הדף משתמש במחירים שבקובץ services.json.",
+        "height": 200,
+        "width": 440,
+        "color": 5
+      },
+      "id": "ce081439-54fa-5fea-a6ef-cf9d5c2ec623",
+      "name": "Note · Prices",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "hasadna-prices",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d10eb452-3399-50bc-b87b-a7e21add26a9",
+      "name": "Prices · Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        420
+      ],
+      "webhookId": "2d62f9e3-bb67-5469-a102-7cfd9bd9da45"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Public: the prices and offers the admin set (empty = the page uses services.json).\nconst sd = $getWorkflowStaticData('global');\nreturn [{ json: { code: 200, body: { ok: true, prices: sd.prices || null } } }];\n"
+      },
+      "id": "862e147e-9f51-5c07-8476-7b75a53cbe69",
+      "name": "Prices · Read",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.code || 200 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e8b55cf1-07e4-5d77-b229-313ef5e78aad",
+      "name": "Prices · Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ניהול\n`POST /webhook/hasadna-admin` — מסך הניהול של האתר משתמש בזה: רשימת לידים, שינוי סטטוס והערות, ושמירת מחירון. כל בקשה דורשת את סיסמת המנהל. את הסיסמה קובעים פעם אחת ממסך הניהול. שכחת? כותבים סיסמה חדשה ב־ADMIN_KEY בצומת \"Admin · Handle\".",
+        "height": 230,
+        "width": 440,
+        "color": 3
+      },
+      "id": "f27cbdb3-13af-5a1b-8aa9-744fd5385dd5",
+      "name": "Note · Admin",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        570
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hasadna-admin",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a732d9e6-629d-5b05-9c9b-d25d8af3eebf",
+      "name": "Admin · Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        760
+      ],
+      "webhookId": "822094b5-f655-56f1-891f-bffb4b69a125"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The admin screen's API. Every call carries the admin password.\nconst sd = $getWorkflowStaticData('global');\n// Optional: write a fixed password here; it then replaces the one chosen from the admin screen.\nconst ADMIN_KEY = '';\n\nconst b = $json.body || {};\nconst key = String(b.key || '');\nconst stored = ADMIN_KEY || sd.adminKey || '';\nconst out = (body, code) => [{ json: { code: code || 200, body } }];\nconst line = (v, n) => String(v == null ? '' : v).replace(/[\\u0000-\\u001f\\u007f]+/g, ' ').trim().slice(0, n);\n\nif (b.action === 'setup') {\n  if (stored) return out({ ok: false, error: 'already-set' }, 403);\n  if (key.length < 8) return out({ ok: false, error: 'short' }, 400);\n  sd.adminKey = key;\n  return out({ ok: true, setup: true });\n}\nif (!stored) return out({ ok: false, error: 'no-key' }, 403);\nif (key !== stored) return out({ ok: false, error: 'bad-key' }, 403);\n\nlet p = {};\ntry { p = JSON.parse(b.payload || '{}'); } catch (e) { return out({ ok: false, error: 'bad-payload' }, 400); }\nsd.leads = sd.leads || [];\nconst STATUSES = ['new', 'working', 'quoted', 'won', 'lost'];\n\nswitch (b.action) {\n  case 'list':\n    return out({ ok: true, leads: sd.leads, clicks: sd.clicks || {}, prices: sd.prices || null });\n\n  case 'lead': {\n    const l = sd.leads.find((x) => x.id === p.id);\n    if (!l) return out({ ok: false, error: 'not-found' }, 404);\n    if (STATUSES.includes(p.status)) l.status = p.status;\n    if (p.note !== undefined) l.note = String(p.note).slice(0, 500);\n    l.updatedAt = new Date().toISOString();\n    return out({ ok: true, lead: l });\n  }\n\n  case 'lead-delete':\n    sd.leads = sd.leads.filter((x) => x.id !== p.id);\n    return out({ ok: true });\n\n  case 'prices': {\n    if (p.reset) { delete sd.prices; return out({ ok: true, prices: null }); }\n    const services = {};\n    Object.keys(p.services || {}).slice(0, 40).forEach((id) => {\n      const s = p.services[id] || {};\n      const from = Math.max(0, Math.round(Number(s.from) || 0));\n      services[line(id, 40)] = { title: line(s.title, 80), from, unit: line(s.unit, 30), hidden: !!s.hidden };\n    });\n    const offers = (Array.isArray(p.offers) ? p.offers : []).slice(0, 12).map((o) => ({\n      tag: line(o.tag, 20), title: line(o.title, 100), text: line(o.text, 300),\n      until: /^\\d{4}-\\d{2}-\\d{2}$/.test(o.until || '') ? o.until : '',\n      code: line(o.code, 20).toUpperCase(), active: o.active !== false\n    })).filter((o) => o.title);\n    sd.prices = { services, offers, note: line(p.note, 300), updatedAt: new Date().toISOString() };\n    return out({ ok: true, prices: sd.prices });\n  }\n\n  case 'password': {\n    if (ADMIN_KEY) return out({ ok: false, error: 'fixed-in-n8n' }, 400);\n    const nk = String(p.newKey || '');\n    if (nk.length < 8) return out({ ok: false, error: 'short' }, 400);\n    sd.adminKey = nk;\n    return out({ ok: true });\n  }\n}\nreturn out({ ok: false, error: 'unknown-action' }, 400);\n"
+      },
+      "id": "0bc0213c-9afe-5460-aac9-cfded19142b7",
+      "name": "Admin · Handle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        760
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.code || 200 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "9259f595-2bec-52b9-b62d-3a5d5d278591",
+      "name": "Admin · Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        760
+      ]
+    }
+  ],
+  "connections": {
+    "Lead · Webhook": {
+      "main": [
+        [
+          {
+            "node": "Lead · Save",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead · Save": {
+      "main": [
+        [
+          {
+            "node": "Lead · Respond",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "New lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New lead?": {
+      "main": [
+        [
+          {
+            "node": "Lead · Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prices · Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prices · Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prices · Read": {
+      "main": [
+        [
+          {
+            "node": "Prices · Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admin · Webhook": {
+      "main": [
+        [
+          {
+            "node": "Admin · Handle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admin · Handle": {
+      "main": [
+        [
+          {
+            "node": "Admin · Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
