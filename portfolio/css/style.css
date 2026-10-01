@@ -628,3 +628,10 @@ html.detail-open { overflow: hidden; }
 .admin-strip .del:hover { border-color: #e5606d; color: #ff8b95; }
 .client-mode .admin-strip, .client-mode .admin-on { display: none !important; }
 @media (max-width: 640px) { .fbar { gap: 8px; } .fbar label { flex: 1 1 28%; min-width: 0; } .fbar select { padding: 9px 10px; font-size: 14px; } .fbar label select { min-width: 0; width: 100%; } .admin-on { margin: 0; } }
+
+/* floating WhatsApp */
+.wa-fab { position: fixed; inset-inline-start: 22px; bottom: 22px; z-index: 40; width: 58px; height: 58px; display: grid; place-items: center; border-radius: 50%; background: #25d366; color: #fff; box-shadow: 0 12px 30px -8px rgba(37, 211, 102, .6); transition: transform .2s var(--ease); }
+.wa-fab:hover { transform: scale(1.08); }
+.wa-fab svg { width: 30px; height: 30px; }
+
+.nav-svc { color: var(--brass-2) !important; }
