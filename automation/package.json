@@ -1,0 +1,12 @@
+{
+  "name": "automation",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "דרייב־פלאן — תכנון, הגדרה וניטור של ממירי תדר ומתקנים אוטומטיים",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "start": "python3 -m http.server 8081"
+  },
+  "engines": { "node": ">=18" }
+}
