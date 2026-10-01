@@ -88,6 +88,7 @@
     <button class="tab" role="tab" id="tab-overview" aria-controls="overview" data-tab="overview">סקירה</button>
     <button class="tab" role="tab" id="tab-plan" aria-controls="plan" data-tab="plan">הגדרת המבנה</button>
     <button class="tab" role="tab" id="tab-topology" aria-controls="topology" data-tab="topology">שרטוט הרשת</button>
+    <button class="tab" role="tab" id="tab-view3d" aria-controls="view3d" data-tab="view3d">הדמיה תלת־ממדית</button>
     <button class="tab" role="tab" id="tab-racks" aria-controls="racks" data-tab="racks">ארונות ומתגים</button>
     <button class="tab" role="tab" id="tab-addresses" aria-controls="addresses" data-tab="addresses">רשתות ו-VLAN</button>
     <button class="tab" role="tab" id="tab-rooms" aria-controls="rooms" data-tab="rooms">כתובות לפי חדר</button>
@@ -261,6 +262,35 @@
         <div class="field"><label for="logicIdf">שרטוט לוגי לארון</label><select id="logicIdf"></select></div>
       </div>
       <div class="diagram" id="logic" role="img" aria-label="שרטוט לוגי לארון שנבחר"></div>
+    </div>
+  </section>
+
+  <!-- ============ 3D ============ -->
+  <section class="panel" id="view3d" role="tabpanel" aria-labelledby="tab-view3d" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">הדמיה</span><h2>הדמיה תלת־ממדית של המבנה</h2>
+        <p>כל הקומות והחדרים, ארונות התקשורת, הסיבים והכבלים, וכל נקודת תקשורת במיקום המומלץ שלה. לוחצים על חדר כדי להיכנס אליו. אפשר גם להסתובב בקומה במצב הליכה, או להיכנס עם משקפי VR.</p></div>
+    </div>
+    <div class="toolbar v3-toolbar">
+      <div class="field"><label for="v3b">מבנה</label><select id="v3b"></select></div>
+      <div class="field"><label for="v3f">קומה</label><select id="v3f"></select></div>
+      <div class="field"><label for="v3x">פיצול קומות</label><input id="v3x" type="range" min="1" max="3" step="0.1" value="1"></div>
+      <label class="check"><input type="checkbox" id="v3cab" checked> כבילה</label>
+      <label class="check"><input type="checkbox" id="v3furn" checked> ריהוט</label>
+      <button class="btn sm" id="v3over">מבט על</button>
+      <button class="btn sm" id="v3tour" aria-pressed="false">סיור אוטומטי</button>
+      <button class="btn sm" id="v3walk">מצב הליכה</button>
+      <button class="btn sm" id="v3shot">צילום מסך</button>
+      <button class="btn sm" id="v3full">מסך מלא</button>
+    </div>
+    <div class="v3-wrap">
+      <div class="v3-stage" id="v3stage">
+        <div class="v3-loading" role="status">טוען את ההדמיה…</div>
+        <div class="v3-hint" aria-live="polite">גוררים לסיבוב · גלגלת לזום · לחיצה על חדר כדי להיכנס אליו</div>
+        <div class="v3-tip" hidden></div>
+        <button class="v3-walk" hidden>לחצו כדי להתחיל להלך<br><small>W/A/S/D או החצים לתנועה · העכבר להסתכלות · Shift לריצה · Esc ליציאה</small></button>
+      </div>
+      <aside class="card v3-side" id="v3side" aria-live="polite"></aside>
     </div>
   </section>
 

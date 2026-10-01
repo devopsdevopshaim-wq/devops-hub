@@ -118,6 +118,7 @@ function activate(tab, { focus = false, push = true } = {}) {
   renderTab(tab);
   if (focus) $(`#${tab}`).focus({ preventScroll: false });
   if (tab === 'monitor' || tab === 'stats') ensureMonitor();
+  if (v3) { if (tab === 'view3d') v3.resume(); else v3.pause(); }
 }
 
 function renderTab(tab) {
@@ -125,7 +126,7 @@ function renderTab(tab) {
   state.rendered.add(tab);
   ({
     overview: renderOverview, plan: renderForm, topology: renderTopology, racks: renderRacks,
-    addresses: renderSubnets, rooms: renderRooms, install: renderInstall, configs: renderConfigs, monitor: renderMonitor,
+    addresses: renderSubnets, rooms: renderRooms, install: renderInstall, view3d: render3d, configs: renderConfigs, monitor: renderMonitor,
     stats: renderStats, guide: () => {},
   })[tab]?.();
 }
@@ -1378,6 +1379,52 @@ $('#install').addEventListener('click', (e) => {
     toast('הפרויקט סומן כמערכת פעילה');
   }
 });
+
+// ---------------------------------------------------------------- 3D
+let v3 = null;
+let v3loading = null;
+async function render3d() {
+  const p = state.plan;
+  const bs = $('#v3b');
+  const prevB = +bs.value || 0;
+  bs.innerHTML = p.buildings.map((b) => `<option value="${b.index}">${esc(b.name)}</option>`).join('');
+  bs.value = p.buildings[prevB] ? prevB : 0;
+  fill3dFloors();
+  if (v3) { v3.setPlan(p); v3.setBuilding(+bs.value); return; }
+  if (v3loading) return;
+  try {
+    v3loading = import('./view3d.js');
+    const { mount3d } = await v3loading;
+    v3 = mount3d($('#v3stage'), $('#v3side'), state.plan, {
+      onEdit: (key) => openEdit(key),
+      onCard: (id) => openRoom(id),
+    });
+    v3.setBuilding(+bs.value);
+    $('.v3-loading')?.remove();
+  } catch (err) {
+    $('.v3-loading').innerHTML = `<div class="alert bad" style="max-width:520px">${icon('bad')}<div>לא ניתן להציג תלת־ממד בדפדפן הזה (נדרש WebGL). ${esc(err.message)}</div></div>`;
+  } finally { v3loading = null; }
+}
+function fill3dFloors() {
+  const b = state.plan.buildings[+$('#v3b').value] || state.plan.buildings[0];
+  $('#v3f').innerHTML = '<option value="all">כל הקומות</option>' + [...b.floors].reverse().map((f) => `<option value="${f.index}">קומה ${esc(f.label)}</option>`).join('');
+}
+$('#v3b').addEventListener('change', () => { fill3dFloors(); v3?.setBuilding(+$('#v3b').value); });
+$('#v3f').addEventListener('change', (e) => v3?.setFloor(e.target.value));
+$('#v3x').addEventListener('input', (e) => v3?.setExplode(+e.target.value));
+$('#v3cab').addEventListener('change', (e) => v3?.toggle('cables', e.target.checked));
+$('#v3furn').addEventListener('change', (e) => v3?.toggle('furniture', e.target.checked));
+$('#v3over').addEventListener('click', () => v3?.overview());
+$('#v3tour').addEventListener('click', (e) => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', String(on)); v3?.tour(on); });
+$('#v3walk').addEventListener('click', () => v3?.walk());
+$('#v3shot').addEventListener('click', () => {
+  if (!v3) return;
+  const a = document.createElement('a');
+  a.href = v3.screenshot();
+  a.download = `netplan-${slug(activeProject().name)}-3d.png`;
+  a.click();
+});
+$('#v3full').addEventListener('click', () => { const st = $('#v3stage'); if (document.fullscreenElement) document.exitFullscreen(); else st.requestFullscreen?.(); });
 
 // ---------------------------------------------------------------- boot
 applyPrefs();
