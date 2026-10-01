@@ -389,6 +389,7 @@
   }
 
   window.FixHome = {
+    open: function (p) { mount(); openPlan(p); Store.save(p).then(fillOpen); },
     show: function () {
       mount();
       if (st.plan) { render(); return; }

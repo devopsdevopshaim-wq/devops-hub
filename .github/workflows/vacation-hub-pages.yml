@@ -47,7 +47,7 @@ jobs:
           fi
           if [ -d electro-fix ]; then
             mkdir -p /tmp/site/electro-fix
-            cp -r electro-fix/index.html electro-fix/css electro-fix/js /tmp/site/electro-fix/
+            cp -r electro-fix/index.html electro-fix/css electro-fix/js electro-fix/vendor /tmp/site/electro-fix/
           fi
           if [ -d assembly-studio ]; then
             mkdir -p /tmp/site/assembly-studio

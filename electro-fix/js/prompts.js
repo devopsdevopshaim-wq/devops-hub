@@ -302,7 +302,114 @@
     return r;
   }
 
+
+  /* ---------- ניתוח שרטוט אדריכלי ---------- */
+
+  var ROOM_TYPES = ['living', 'kitchen', 'master', 'bedroom', 'mamad', 'office', 'bath', 'toilet', 'laundry', 'balcony', 'hall', 'entrance', 'storage', 'yard', 'parking'];
+
+  var FLOOR_SYSTEM = [
+    'אתה אדריכל ומהנדס חשמל שקורא תכניות אדריכליות של דירות, בתים ובניינים בישראל.',
+    'אתה מקבל תמונה אחת או יותר של שרטוטי קומה (תמונה לכל קומה, לפי הסדר). עליך לזהות את הקומות, הדירות והחדרים, כדי שהאתר יתכנן עליהם את מערכת החשמל.',
+    '',
+    'קואורדינטות: לכל תמונה בנפרד, מערכת 0–1000. x מ-0 בשמאל התמונה עד 1000 בימין, y מ-0 בראש התמונה עד 1000 בתחתית. כל הקואורדינטות הן מספרים שלמים ביחס לתמונה שבה החדר מופיע (image_index מתחיל ב-0).',
+    '',
+    'לכל חדר:',
+    '- box: מלבן שמקיף את פנים החדר, מקיר לקיר (לא כולל עובי הקירות). כל חדר מלבן נפרד, בלי חפיפה בין חדרים. חדר בצורת L — חלק לשני מלבנים עם אותו שם וסיומת (א), (ב).',
+    '- name: השם כפי שכתוב בשרטוט (סלון, מטבח, חדר שינה, ממ״ד, רחצה, שירותים, מרפסת שמש, מרפסת שירות, מבואה, מסדרון, חדר ארונות...).',
+    '- type: אחד מ: living (סלון/פינת אוכל), kitchen, master (חדר שינה הורים), bedroom, mamad (ממ״ד), office, bath (רחצה/מקלחת), toilet (שירותים), laundry (מרפסת שירות/כביסה), balcony (מרפסת), hall (מסדרון), entrance (מבואה/כניסה), storage (מחסן/חדר ארונות/נישה), yard (חצר/גינה), parking (חניה).',
+    '- width_m ו-length_m: המידות הפנימיות במטרים כפי שכתובות בשרטוט. אם אין מידות כתובות, הערך לפי חדרים אחרים, דלתות (כ-0.9 מ׳) ומיטות. width_m הוא הממד האופקי בתמונה ו-length_m האנכי. area_m2: השטח אם כתוב, אחרת width_m × length_m.',
+    '- doors: מרכז כל פתח דלת של החדר (נקודה על קו הקיר). windows: מרכז כל חלון.',
+    '',
+    'לכל דירה: id קצר, name (למשל "דירה 7" או "דירה A"), rooms, entrance (מרכז דלת הכניסה לדירה), panel (מיקום מוצע ללוח החשמל: על קיר במבואה ליד דלת הכניסה, לא בחדר רטוב ולא מאחורי דלת).',
+    'לכל קומה: image_index, label (כפי שכתוב: "קומה 3", "קומה טיפוסית 2–6", "קומת קרקע"), level (מספר הקומה; קרקע 0, מרתף שלילי), repeat (כמה קומות זהות השרטוט מייצג: "קומה טיפוסית 2–6" = 5; אחרת 1), kind (residential / ground / parking / roof / other), apartments, common (חדר מדרגות, מעלית, לובי, חדר מונים, מחסנים — כמלבנים, בלי דירות).',
+    'project_type: apartment (דירה אחת), house (בית פרטי, אפשר כמה קומות של אותה יחידה), building (בניין עם כמה דירות). בבית פרטי עם כמה קומות — כל קומה מקבלת "דירה" אחת עם אותו name.',
+    '',
+    'דיוק: עדיף פחות חדרים מדויקים מאשר הרבה חדרים מנוחשים. אם החלק לא קריא, כתוב זאת ב-notes והורד את confidence. אל תמציא קומות שאין להן שרטוט.',
+    'summary: פסקה קצרה בעברית: מה זוהה (סוג הנכס, קומות, דירות, חדרים עיקריים, שטח) ומה לא ברור.'
+  ].join('\n');
+
+  function pt() { return obj({ x: { type: 'integer' }, y: { type: 'integer' } }); }
+  function bx() { return obj({ x0: { type: 'integer' }, y0: { type: 'integer' }, x1: { type: 'integer' }, y1: { type: 'integer' } }); }
+
+  var FLOOR_SCHEMA = obj({
+    project_type: { type: 'string', enum: ['apartment', 'house', 'building'] },
+    title: str(),
+    summary: str(),
+    confidence: { type: 'integer' },
+    notes: arr(str()),
+    floors: arr(obj({
+      image_index: { type: 'integer' },
+      label: str(),
+      level: { type: 'integer' },
+      repeat: { type: 'integer' },
+      kind: { type: 'string', enum: ['residential', 'ground', 'parking', 'roof', 'other'] },
+      apartments: arr(obj({
+        id: str(), name: str(), entrance: pt(), panel: pt(),
+        rooms: arr(obj({
+          id: str(), name: str(), type: { type: 'string', enum: ROOM_TYPES }, box: bx(),
+          width_m: { type: 'number' }, length_m: { type: 'number' }, area_m2: { type: 'number' },
+          doors: arr(pt()), windows: arr(pt())
+        }))
+      })),
+      common: arr(obj({ name: str(), box: bx() }))
+    }))
+  });
+
+  function floorText(request, count, kind) {
+    return [
+      'צירפתי ' + count + ' שרטוטי קומה (לפי הסדר: image_index 0' + (count > 1 ? '–' + (count - 1) : '') + ').',
+      kind ? 'לפי המשתמש: ' + ({ apartment: 'דירה אחת', house: 'בית פרטי', building: 'בניין מגורים' }[kind] || kind) + '.' : '',
+      request ? 'הערות המשתמש: ' + String(request).trim() : '',
+      'זהה את הקומות, הדירות והחדרים לפי ההנחיות.'
+    ].filter(Boolean).join('\n');
+  }
+
+  // images: [{data (base64 jpeg), name}]
+  function floorMessages(images, request, kind) {
+    var content = [];
+    images.forEach(function (im, i) {
+      content.push({ type: 'text', text: 'image_index ' + i + (im.name ? ' — ' + im.name : '') + ':' });
+      content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: im.data } });
+    });
+    content.push({ type: 'text', text: floorText(request, images.length, kind) });
+    return [{ role: 'user', content: content }];
+  }
+
+  function floorRevision(issues) {
+    return 'הבדיקה האוטומטית של האתר מצאה בעיות בתוצאה:\n' + issues.map(function (x, i) { return (i + 1) + '. ' + x; }).join('\n') +
+      '\n\nתקן את המלבנים (בלי חפיפות, בתוך 0–1000) והחזר את התשובה המלאה מחדש.';
+  }
+
+  function manualFloorPrompt(request, count, kind) {
+    return [FLOOR_SYSTEM, '', 'החזר JSON בלבד, בלי טקסט לפניו או אחריו ובלי ```, שתואם בדיוק לסכמה הבאה:', JSON.stringify(FLOOR_SCHEMA), '',
+      floorText(request, count, kind), '(צרפו לשיחה את תמונות השרטוטים באותו סדר.)'].join('\n');
+  }
+
+  function parseFloor(text) {
+    var s = String(text || '').trim();
+    var a = s.indexOf('{'), b = s.lastIndexOf('}');
+    if (a < 0 || b < a) throw new Error('לא נמצא JSON בתשובה');
+    var r = JSON.parse(s.slice(a, b + 1));
+    if (!r || !Array.isArray(r.floors)) throw new Error('בתשובה אין קומות (floors)');
+    if (!Array.isArray(r.notes)) r.notes = [];
+    r.floors.forEach(function (f) {
+      f.apartments = Array.isArray(f.apartments) ? f.apartments : [];
+      f.common = Array.isArray(f.common) ? f.common : [];
+      f.apartments.forEach(function (ap) {
+        ap.rooms = Array.isArray(ap.rooms) ? ap.rooms : [];
+        ap.rooms.forEach(function (rm) {
+          rm.doors = Array.isArray(rm.doors) ? rm.doors : [];
+          rm.windows = Array.isArray(rm.windows) ? rm.windows : [];
+          if (ROOM_TYPES.indexOf(rm.type) < 0) rm.type = 'storage';
+        });
+      });
+    });
+    return r;
+  }
+
   return {
+    FLOOR_SYSTEM: FLOOR_SYSTEM, FLOOR_SCHEMA: FLOOR_SCHEMA, floorMessages: floorMessages, floorRevision: floorRevision,
+    manualFloorPrompt: manualFloorPrompt, parseFloor: parseFloor, ROOM_TYPES: ROOM_TYPES,
     HOME_SYSTEM: HOME_SYSTEM, HOME_SCHEMA: HOME_SCHEMA, homeMessages: homeMessages, manualHomePrompt: manualHomePrompt, parseHome: parseHome,
     DESIGN_SYSTEM: DESIGN_SYSTEM, DESIGN_SCHEMA: DESIGN_SCHEMA,
     designMessages: designMessages, manualDesignPrompt: manualDesignPrompt, parseDesign: parseDesign,

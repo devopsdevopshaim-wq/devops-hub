@@ -74,6 +74,7 @@
     if (view === 'cases') renderCases();
     if (view === 'design' && window.FixDesign) window.FixDesign.show();
     if (view === 'home' && window.FixHome) window.FixHome.show();
+    if (view === 'plan' && window.FixPlan) window.FixPlan.show();
     if (m) openCase(m[1]);
     else if (view === 'diagnose' && !state.busy) showIntake();
   }
