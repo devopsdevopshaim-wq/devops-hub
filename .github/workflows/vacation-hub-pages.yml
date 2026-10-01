@@ -73,6 +73,11 @@ jobs:
               if [ ! -d "/tmp/site/$d" ] && [ -d "/tmp/old/$d" ]; then cp -r "/tmp/old/$d" /tmp/site/; fi
             done
           fi
+          # headlines: start from the last published ones, then refresh
+          if [ -d /tmp/site/portfolio ]; then
+            [ -f /tmp/old/portfolio/news.json ] && cp /tmp/old/portfolio/news.json /tmp/site/portfolio/news.json
+            node .github/scripts/portfolio-news.mjs /tmp/site/portfolio/news.json || echo "news refresh failed; keeping the last headlines"
+          fi
           touch /tmp/site/.nojekyll
           cd /tmp/site
           git init -q -b gh-pages

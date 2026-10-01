@@ -17,10 +17,11 @@
   };
   var OP_TEXT = {
     delete: 'מחיקה', hide: 'הסתרה', show: 'הצגה', feature: 'לנבחרים', unfeature: 'הסרה מהנבחרים',
-    approve: 'אישור', edit: 'עריכה', 'add-contributor': 'תורם חדש', 'remove-contributor': 'הסרת תורם'
+    approve: 'אישור', edit: 'עריכה', 'add-contributor': 'תורם חדש', 'remove-contributor': 'הסרת תורם',
+    'music-add': 'תחנה חדשה', 'music-remove': 'הסרת תחנה', 'video-add': 'סרטון חדש', 'video-remove': 'הסרת סרטון'
   };
 
-  var S = { data: null, shots: {}, opens: {}, live: null, checkedAt: null, reco: null, home: null, basket: [], selected: {} };
+  var S = { media: { music: [], videos: [] }, data: null, shots: {}, opens: {}, live: null, checkedAt: null, reco: null, home: null, basket: [], selected: {} };
   var $ = function (id) { return document.getElementById(id); };
   var fmt = function (n) { return Number(n || 0).toLocaleString('he-IL'); };
 
@@ -56,8 +57,10 @@
   function load() {
     return Promise.all([
       getJSON('projects.json'),
-      getJSON('shots/index.json').catch(function () { return {}; })
+      getJSON('shots/index.json').catch(function () { return {}; }),
+      getJSON('media.json').catch(function () { return { music: [], videos: [] }; })
     ]).then(function (res) {
+      S.media = { music: res[2].music || [], videos: res[2].videos || [] };
       S.data = res[0];
       S.data.contributors = S.data.contributors || [];
       S.shots = res[1];
@@ -312,12 +315,65 @@
     renderPending();
     renderRows();
     renderPeople();
+    renderMedia();
     renderBasket();
   }
+
+  // ---------- music & videos (media.json) ----------
+  function ytId(u) { return (String(u).match(/(?:v=|youtu\.be\/|\/live\/|\/shorts\/|\/embed\/)([\w-]{11})/) || [])[1] || null; }
+  function isYouTube(u) { return /youtu\.?be/.test(u); }
+  function renderMedia() {
+    var q = function (op, url) { return S.basket.some(function (b) { return b.op === op && b.url === url; }); };
+    var mu = $('music-list'), vi = $('video-list');
+    mu.innerHTML = ''; vi.innerHTML = '';
+    var music = S.media.music.concat(S.basket.filter(function (b) { return b.op === 'music-add'; }));
+    music.forEach(function (m) {
+      var adding = S.media.music.indexOf(m) < 0, gone = q('music-remove', m.url);
+      mu.appendChild(el('li', { class: gone ? 'gone' : null }, [
+        el('b', { text: m.style }),
+        el('a', { href: m.url, target: '_blank', rel: 'noopener', dir: 'ltr', text: (m.title || m.url) + ' ↗' }),
+        adding ? el('span', { class: 'pill pending', text: 'בסל' }) : gone ? null : el('button', { type: 'button', 'data-unmedia': 'music', 'data-url': m.url, 'aria-label': 'הסרת ' + m.style, text: '×' })
+      ]));
+    });
+    if (!music.length) mu.appendChild(el('li', { class: 'muted', text: 'אין תחנות. בלי תחנות, נגן המוזיקה לא מופיע באתר.' }));
+    var videos = S.media.videos.concat(S.basket.filter(function (b) { return b.op === 'video-add'; }));
+    videos.forEach(function (v) {
+      var adding = S.media.videos.indexOf(v) < 0, gone = q('video-remove', v.url), id = ytId(v.url);
+      vi.appendChild(el('li', { class: gone ? 'gone' : null }, [
+        el('span', { class: 'thumb', style: id ? 'background-image:url(https://i.ytimg.com/vi/' + id + '/mqdefault.jpg)' : null, 'aria-hidden': 'true' }),
+        el('div', {}, [el('b', { text: v.title }), el('small', { class: 'muted', text: (isYouTube(v.url) ? 'יוטיוב · צפייה בלבד' : v.download ? 'קובץ · צפייה והורדה' : 'קובץ · צפייה בלבד') })]),
+        adding ? el('span', { class: 'pill pending', text: 'בסל' }) : gone ? null : el('button', { type: 'button', 'data-unmedia': 'video', 'data-url': v.url, 'aria-label': 'הסרת ' + v.title, text: '×' })
+      ]));
+    });
+    if (!videos.length) vi.appendChild(el('li', { class: 'muted', text: 'אין סרטונים. כשתוסיפו, יופיע באתר החלק "סרטונים".' }));
+  }
+
+  $('music-add').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target.elements, url = f.url.value.trim();
+    if (!f.style.value.trim() || !ytId(url) && !/[?&]list=/.test(url)) { $('music-err').hidden = false; return; }
+    $('music-err').hidden = true;
+    queue({ op: 'music-add', style: f.style.value.trim(), title: f.title.value.trim(), url: url });
+    e.target.reset();
+  });
+  $('video-add').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target.elements, url = f.url.value.trim();
+    if (!f.title.value.trim() || !/^https:\/\//.test(url)) { $('video-err').hidden = false; return; }
+    $('video-err').hidden = true;
+    queue({ op: 'video-add', title: f.title.value.trim(), desc: f.desc.value.trim(), url: url, download: f.download.checked && !isYouTube(url) });
+    e.target.reset();
+  });
+  $('video-add').elements.url.addEventListener('input', function (e) {
+    var yt = isYouTube(e.target.value), d = $('video-add').elements.download;
+    d.disabled = yt; if (yt) d.checked = false;
+    $('dl-note').textContent = yt ? 'סרטוני יוטיוב: צפייה בלבד. יוטיוב לא מתירה הורדה מאתרים אחרים.' : 'הורדה מתאימה לסרטונים שלכם (קובץ mp4).';
+  });
 
   // ---------- basket ----------
   function describe(o) {
     if (o.user) return OP_TEXT[o.op] + ': @' + o.user;
+    if (o.url) return OP_TEXT[o.op] + ': ' + (o.style || o.title || o.url);
     var p = S.data.projects.filter(function (x) { return x.id === o.id; })[0];
     return OP_TEXT[o.op] + ': ' + (p ? p.title : o.id);
   }
@@ -326,6 +382,8 @@
   var CONFLICT = { hide: ['show'], show: ['hide'], feature: ['unfeature'], unfeature: ['feature'] };
   function queue(o) {
     S.basket = S.basket.filter(function (b) {
+      if (o.url) return !(b.url === o.url && b.op.split('-')[0] === o.op.split('-')[0]);
+      if (b.url) return true;
       if (o.user) return !(b.user && b.user.toLowerCase() === o.user.toLowerCase());
       if (b.id !== o.id) return true;
       if (o.op === 'delete') return false;
@@ -423,6 +481,8 @@
       renderRows();
     } else if (t.hasAttribute('data-unperson')) {
       queue({ op: 'remove-contributor', user: t.getAttribute('data-unperson') });
+    } else if (t.hasAttribute('data-unmedia')) {
+      queue({ op: t.getAttribute('data-unmedia') + '-remove', url: t.getAttribute('data-url') });
     } else if (t.hasAttribute('data-unqueue')) {
       S.basket.splice(Number(t.getAttribute('data-unqueue')), 1);
       renderAll();
