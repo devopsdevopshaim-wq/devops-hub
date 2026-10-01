@@ -22,8 +22,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/extras.css">
+<link rel="preload" as="image" href="img/sky.webp" type="image/webp">
 </head>
-<body>
+<body class="has-scene">
 <a class="skip" href="#all">דלג לפרויקטים</a>
 
 <header class="nav">
@@ -93,7 +95,7 @@
     </div>
   </section>
 
-  <section class="section" id="fields">
+  <section class="section topo" id="fields">
     <div class="wrap">
       <header class="sec-head reveal">
         <p class="eyebrow">תחומים</p>
@@ -145,6 +147,16 @@
     </div>
   </section>
 
+  <section class="section" id="videos" hidden>
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">סרטונים</p>
+        <h2>לראות איך זה עובד</h2>
+      </header>
+      <div class="v-grid"></div>
+    </div>
+  </section>
+
   <section class="section" id="add">
     <div class="wrap">
       <header class="sec-head reveal">
@@ -188,7 +200,7 @@
     </div>
   </section>
 
-  <section class="section" id="how">
+  <section class="section topo" id="how">
     <div class="wrap">
       <header class="sec-head reveal">
         <p class="eyebrow">איך זה עובד</p>
@@ -241,6 +253,8 @@
 <script src="js/art.js"></script>
 <script src="js/guide.js"></script>
 <script src="js/app.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="js/extras.js"></script>
 <script src="js/add.js"></script>
 </body>
 </html>

@@ -26,6 +26,7 @@
       <a href="#stats">נתונים</a>
       <a href="#projects">פרויקטים</a>
       <a href="#people">הרשאות</a>
+      <a href="#media">מוזיקה וסרטונים</a>
       <a href="#history">היסטוריה</a>
     </nav>
     <a class="btn btn-ghost btn-sm" href="./">לאתר ←</a>
@@ -196,6 +197,37 @@
       <label class="field"><span>שם משתמש ב־GitHub</span><input id="new-user" type="text" dir="ltr" placeholder="username" autocomplete="off"></label>
       <button class="btn btn-gold btn-sm" type="submit">הוספת תורם</button>
     </form>
+  </section>
+
+  <section id="media" class="a-sec">
+    <header class="sec-head"><p class="eyebrow">מדיה</p><h2>מוזיקה ברקע וסרטונים</h2></header>
+    <div class="media-grid">
+      <div>
+        <h3 class="m-h">♫ תחנות מוזיקה</h3>
+        <p class="hint">המבקרים בוחרים סגנון בנגן שבפינה השמאלית התחתונה. מדביקים קישור ליוטיוב: שיר, שידור חי או פלייליסט.</p>
+        <ul class="m-list" id="music-list"></ul>
+        <form class="m-form" id="music-add" novalidate>
+          <label class="field"><span>סגנון (מה שיופיע על הכפתור)</span><input name="style" maxlength="30" placeholder="למשל: ג׳אז, קלאסי, מזרחית"></label>
+          <label class="field"><span>קישור ליוטיוב</span><input name="url" dir="ltr" placeholder="https://www.youtube.com/watch?v=…"></label>
+          <label class="field"><span>שם <small>(לא חובה)</small></span><input name="title" maxlength="80"></label>
+          <p class="add-error" id="music-err" hidden>צריך סגנון וקישור יוטיוב תקין.</p>
+          <button class="btn btn-gold btn-sm" type="submit">הוספת תחנה לסל</button>
+        </form>
+      </div>
+      <div>
+        <h3 class="m-h">▶ סרטונים</h3>
+        <p class="hint">יופיעו באתר בחלק "סרטונים". סרטון יוטיוב: צפייה בלבד. קובץ וידאו שלכם (קישור ישיר ל־mp4): אפשר לאשר גם הורדה.</p>
+        <ul class="m-list videos" id="video-list"></ul>
+        <form class="m-form" id="video-add" novalidate>
+          <label class="field"><span>כותרת</span><input name="title" maxlength="80"></label>
+          <label class="field"><span>קישור</span><input name="url" dir="ltr" placeholder="https://youtu.be/… או https://…/video.mp4"></label>
+          <label class="field"><span>תיאור קצר <small>(לא חובה)</small></span><input name="desc" maxlength="160"></label>
+          <label class="m-check"><input type="checkbox" name="download"> <span>לאפשר הורדה <small id="dl-note">הורדה מתאימה לסרטונים שלכם (קובץ mp4).</small></span></label>
+          <p class="add-error" id="video-err" hidden>צריך כותרת וקישור שמתחיל ב־https://.</p>
+          <button class="btn btn-gold btn-sm" type="submit">הוספת סרטון לסל</button>
+        </form>
+      </div>
+    </div>
   </section>
 
   <section id="history" class="a-sec">

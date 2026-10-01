@@ -33,6 +33,9 @@ window.Guide = (function () {
         '<path class="m-closed" d="M88 124q12 9 24 0" fill="none" stroke="#9c3d4a" stroke-width="3" stroke-linecap="round"/>' +
         '<g class="m-open" style="display:none"><ellipse class="m-shape" cx="100" cy="126" rx="10" ry="5" fill="#5a1f2a"/><ellipse class="m-tongue" cx="100" cy="129" rx="6" ry="2.5" fill="#e0707f"/></g>' +
       '</g>' +
+      '<g class="g-arm"><path d="M150 190q20-26 12-56" fill="none" stroke="#4b3fa8" stroke-width="15" stroke-linecap="round"/>' +
+        '<ellipse cx="161" cy="124" rx="9.5" ry="10.5" fill="#f2bf9b"/>' +
+        '<path d="M155 115v-8M160 113v-10M165 114v-8M169 118l4-5" stroke="#f2bf9b" stroke-width="4.2" stroke-linecap="round"/></g>' +
     '</svg>';
 
   var history = [];
@@ -91,6 +94,41 @@ window.Guide = (function () {
     clearInterval(talkTimer);
     root.classList.remove('talking');
     mouth(false);
+  }
+
+  // Little human things: a wave, a smile under the cursor, eyes that follow it,
+  // and a nap when nobody is around.
+  function wave() {
+    if (reduce || !root) return;
+    root.classList.add('waving');
+    setTimeout(function () { root.classList.remove('waving'); }, 2600);
+  }
+  var idleTimer = null;
+  function awake() {
+    if (!root) return;
+    if (root.classList.contains('sleepy')) {
+      root.classList.remove('sleepy');
+      root.classList.add('brows-up');
+      setTimeout(function () { root.classList.remove('brows-up'); }, 500);
+    }
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function () {
+      if (!root.classList.contains('talking') && !panel.classList.contains('open')) root.classList.add('sleepy');
+    }, 45000);
+  }
+  var followQueued = false, fx = 0, fy = 0;
+  function follow(e) {
+    fx = e.clientX; fy = e.clientY;
+    if (followQueued || touring || root.classList.contains('talking')) return;
+    followQueued = true;
+    requestAnimationFrame(function () {
+      followQueued = false;
+      var a = faceBtn.getBoundingClientRect();
+      var x = fx - (a.left + a.width / 2), y = fy - (a.top + a.height / 2);
+      var len = Math.sqrt(x * x + y * y) || 1, k = Math.min(1, len / 300);
+      var dx = x / len * 2.6 * k, dy = y / len * 2 * k;
+      Array.prototype.forEach.call(root.querySelectorAll('.pupil'), function (p) { p.setAttribute('transform', 'translate(' + dx.toFixed(1) + ' ' + dy.toFixed(1) + ')'); });
+    });
   }
 
   // Turn the pupils toward whatever is being shown.
@@ -419,6 +457,9 @@ window.Guide = (function () {
 
     faceBtn = h('button', { class: 'g-face', type: 'button', 'aria-label': 'שיחה עם גיא', 'aria-expanded': 'false', html: FACE + '<span class="g-ring" aria-hidden="true"></span>' });
     faceBtn.addEventListener('click', function () { panel.classList.contains('open') ? closePanel() : openPanel(); });
+    faceBtn.appendChild(h('span', { class: 'g-zz', 'aria-hidden': 'true', text: 'z z' }));
+    faceBtn.addEventListener('pointerenter', function () { root.classList.add('happy'); awake(); if (!root.classList.contains('talking')) wave(); });
+    faceBtn.addEventListener('pointerleave', function () { root.classList.remove('happy'); });
 
     root.appendChild(panel);
     root.appendChild(bubble);
@@ -432,10 +473,16 @@ window.Guide = (function () {
     build();
     if (hasTTS) { pickVoice(); speechSynthesis.addEventListener('voiceschanged', pickVoice); }
     updateVoiceBtn();
-    if (!reduce) blink();
+    if (!reduce) {
+      blink();
+      document.addEventListener('pointermove', follow, { passive: true });
+      ['pointermove', 'scroll', 'keydown', 'touchstart'].forEach(function (ev) { window.addEventListener(ev, awake, { passive: true }); });
+      awake();
+    }
     // Browsers only allow speech after a click, so the greeting starts as text.
     setTimeout(function () {
       if (store('guide-seen')) return;
+      wave();
       showBubble('היי, אני גיא 👋 אני מכיר את כל הפרויקטים כאן. רוצה סיור קצר עם קול?', [
         btn('▶ סיור מודרך', function () { store('guide-seen', '1'); startTour(); }),
         btn('דברו איתי', function () { store('guide-seen', '1'); openPanel(); }, 'ghost')

@@ -2,7 +2,7 @@ name: Portfolio admin actions
 
 # The admin screen (portfolio/admin.html) opens an issue titled "ניהול: …"
 # with a list of actions (delete, hide, show, feature, approve, edit,
-# contributors). Only the repository owner's issues are carried out.
+# contributors, music stations, videos). Only the repository owner's issues are carried out.
 
 on:
   issues:
@@ -40,7 +40,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A portfolio/projects.json portfolio/shots
+          git add -A portfolio/projects.json portfolio/media.json portfolio/shots
           git commit -q -m "portfolio: admin actions (#$ISSUE)"
           git pull -q --rebase origin main
           git push -q origin HEAD:main

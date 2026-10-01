@@ -6,6 +6,8 @@
 //   approve {id}     publish a project a contributor added
 //   edit {id, fields: {title, desc, category, url}}
 //   add-contributor / remove-contributor {user}
+//   music-add {style, title, url} / music-remove {url}        (portfolio/media.json)
+//   video-add {title, desc, url, download} / video-remove {url}
 // Writes a Hebrew summary to $GITHUB_OUTPUT (summary=...).
 import fs from 'node:fs';
 
@@ -21,6 +23,18 @@ const find = (id) => data.projects.find((p) => p.id === id);
 data.contributors = Array.isArray(data.contributors) ? data.contributors : [];
 const done = [];
 const removedShots = [];
+const mediaFile = 'portfolio/media.json';
+let media = null;
+const loadMedia = () => {
+  if (!media) {
+    try { media = JSON.parse(fs.readFileSync(mediaFile, 'utf8')); } catch { media = {}; }
+    media.music = Array.isArray(media.music) ? media.music : [];
+    media.videos = Array.isArray(media.videos) ? media.videos : [];
+  }
+  return media;
+};
+const httpsUrl = (u) => /^https:\/\/[^\s"'<>]+$/.test(String(u || '')) ? String(u).slice(0, 500) : null;
+const isYouTube = (u) => /^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\//.test(u);
 
 for (const o of ops.slice(0, 100)) {
   const p = o.id ? find(String(o.id)) : null;
@@ -59,6 +73,39 @@ for (const o of ops.slice(0, 100)) {
       done.push(`נוסף תורם: ${u}`);
       break;
     }
+    case 'music-add': {
+      const url = httpsUrl(o.url);
+      if (!url || !isYouTube(url) || !clean(o.style, 30)) continue;
+      const m = loadMedia();
+      m.music = m.music.filter((x) => x.url !== url);
+      m.music.push({ style: clean(o.style, 30), title: clean(o.title, 80), url });
+      done.push(`תחנה חדשה: ${clean(o.style, 30)}`);
+      break;
+    }
+    case 'music-remove': {
+      const m = loadMedia();
+      const before = m.music.length;
+      m.music = m.music.filter((x) => x.url !== o.url);
+      if (m.music.length !== before) done.push('הוסרה תחנה');
+      break;
+    }
+    case 'video-add': {
+      const url = httpsUrl(o.url);
+      if (!url || !clean(o.title, 80)) continue;
+      const m = loadMedia();
+      m.videos = m.videos.filter((x) => x.url !== url);
+      // YouTube videos are for watching only
+      m.videos.push({ title: clean(o.title, 80), desc: clean(o.desc, 160), url, download: !!o.download && !isYouTube(url) });
+      done.push(`סרטון חדש: ${clean(o.title, 80)}`);
+      break;
+    }
+    case 'video-remove': {
+      const m = loadMedia();
+      const before = m.videos.length;
+      m.videos = m.videos.filter((x) => x.url !== o.url);
+      if (m.videos.length !== before) done.push('הוסר סרטון');
+      break;
+    }
     case 'remove-contributor': {
       const u = clean(o.user, 39).replace(/^@/, '').toLowerCase();
       data.contributors = data.contributors.filter((c) => c.toLowerCase() !== u);
@@ -70,6 +117,7 @@ for (const o of ops.slice(0, 100)) {
 if (!done.length) throw new Error('Nothing to change');
 
 fs.writeFileSync(file, JSON.stringify(data, null, 1) + '\n');
+if (media) fs.writeFileSync(mediaFile, JSON.stringify(media, null, 1) + '\n');
 for (const id of removedShots) {
   for (const f of [`portfolio/shots/${id}.jpg`, `portfolio/shots/${id}-m.jpg`]) if (fs.existsSync(f)) fs.unlinkSync(f);
 }
