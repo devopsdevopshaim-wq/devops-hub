@@ -442,6 +442,10 @@
 
   // ================================================================ start
   var base = (document.currentScript && document.currentScript.src || '').replace(/js\/extras\.js.*$/, '');
+  // installable as an app (and so able to open with the computer)
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', function () { navigator.serviceWorker.register(base + 'sw.js').catch(function () {}); });
+  }
   Promise.all([
     getJSON(base + 'media.json').catch(function () { return {}; }),
     getJSON(base + 'news.json').catch(function () { return null; }),

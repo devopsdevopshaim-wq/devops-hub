@@ -621,6 +621,18 @@
       el('h2', { text: 'בנוי עם' }),
       el('div', { class: 'd-tech' }, p.tech.map(function (t) { return el('span', { class: 'chip-tech big', text: t }); }))
     ]));
+    sections.push(el('section', { class: 'd-sec d-skill' }, [
+      el('h2', { text: 'סקיל ל־Claude' }),
+      el('p', { text: 'קובץ שמלמד את Claude הכול על הפרויקט הזה: מה הוא עושה, איך משתמשים בו, איך הוא בנוי ואיך משנים אותו. אחרי שמוסיפים אותו, אפשר פשוט לשאול את Claude על "' + p.title + '".' }),
+      el('div', { class: 'row' }, [
+        el('a', { class: 'btn btn-gold btn-sm', href: 'skills/' + p.id + '.zip', download: p.id + '.zip', text: '⬇ הורדת הסקיל' }),
+        el('a', { class: 'btn btn-ghost btn-sm', href: 'skills/' + p.id + '/SKILL.md', target: '_blank', rel: 'noopener', text: 'לראות מה כתוב בו' })
+      ]),
+      el('ol', { class: 'd-skill-how' }, [
+        el('li', {}, [document.createTextNode('ב־claude.ai: הגדרות ← Capabilities ← Skills ← Upload skill, ובוחרים את קובץ ה־zip.')]),
+        el('li', {}, [document.createTextNode('ב־Claude Code: פותחים את ה־zip לתוך התיקייה '), el('code', { dir: 'ltr', text: '~/.claude/skills' })])
+      ])
+    ]));
     sections.push(el('section', { class: 'd-sec' }, [
       el('h2', { text: 'המלצות והערות' }),
       el('p', { class: 'reco-hint', text: 'ההמלצות נשמרות ב־GitHub ומוצגות לכולם. כדי לכתוב צריך להתחבר עם חשבון GitHub.' }),

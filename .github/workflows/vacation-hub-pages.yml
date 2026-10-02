@@ -30,6 +30,8 @@ jobs:
         run: node n8n/build-knowledge.mjs vacation-hub
       - name: Build portfolio/knowledge.json (read by Guy's n8n agent)
         run: node .github/scripts/portfolio-knowledge.mjs /tmp/portfolio-clones || echo "knowledge build failed; publishing without it"
+      - name: Build a Claude skill for every project (portfolio/skills)
+        run: node .github/scripts/portfolio-skills.mjs portfolio/skills || echo "skills build failed; publishing without them"
       - name: Publish vacation-hub to gh-pages
         run: |
           set -euo pipefail
