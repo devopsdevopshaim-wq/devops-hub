@@ -1,27 +1,30 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-admin-only>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>מסך ניהול · הסדנה</title>
+<title>מסך ניהול · SPIDER</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0f0d24">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='19' fill='%230f0d24'/%3E%3Ccircle cx='20' cy='20' r='14' fill='none' stroke='%23e0b25a' stroke-width='2'/%3E%3Ccircle cx='20' cy='20' r='5' fill='%23e0b25a'/%3E%3C/svg%3E">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Michroma&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/auth.css">
+<script src="js/auth.js"></script>
 </head>
 <body class="admin">
 <header class="nav">
   <div class="wrap nav-inner">
-    <a class="brand" href="./" aria-label="לאתר הסדנה">
-      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="4.5" fill="currentColor"/><circle cx="35" cy="13" r="2.2" fill="currentColor"/></svg>
-      <span>הסדנה</span>
+    <a class="brand spider-brand" href="./" aria-label="SPIDER">
+      <img src="img/spider.svg" alt="" width="34" height="34"><span class="wordmark">SPIDER</span>
     </a>
     <span class="admin-tag">מסך ניהול</span>
     <nav class="links" aria-label="ניווט בניהול">
+      <a href="#clients">לקוחות</a>
+      <a href="#skills">סקילים</a>
       <a href="#biz">לידים ומחירון</a>
       <a href="#stats">נתונים</a>
       <a href="#projects">פרויקטים</a>
@@ -36,7 +39,7 @@
 <main class="wrap">
   <section class="a-hero">
     <p class="eyebrow">מנהל מערכת</p>
-    <h1>שלום, מנהל הסדנה</h1>
+    <h1>שלום חיים, מנהל SPIDER</h1>
     <p class="lead">כל הפרויקטים, הנתונים וההרשאות במקום אחד. כל שינוי נאסף ל"סל פעולות" ונשלח ל־GitHub בלחיצה אחת. GitHub מבצע אותו רק אם הוא הגיע מהחשבון שלך.</p>
     <p class="hint">סקיל ל־Claude לכל פרויקט נבנה אוטומטית בכל פרסום. <a href="skills/all-skills.zip" download>⬇ כל הסקילים בקובץ אחד (ל־Claude Code)</a> · <a href="skills/index.json" target="_blank" rel="noopener">רשימה</a></p>
     <label class="site-admin"><input type="checkbox" id="site-admin"> <span>להציג כפתורי <b>מחיקה והסתרה</b> גם על הכרטיסים באתר עצמו <small>(רק בדפדפן הזה)</small></span></label>
@@ -61,6 +64,93 @@
       <p>הוספה, עריכה, הסתרה, מחיקה, אישור תורמים ונתונים. זה המסך הזה.</p>
       <div class="role-row"><span class="pill ok">את/ה כאן</span></div>
     </article>
+  </section>
+
+  <section id="clients" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">הרשאות · n8n</p><h2>לקוחות ומנויים</h2></div>
+      <div class="filters"><button class="btn btn-gold btn-sm" type="button" id="cl-new">+ לקוח חדש</button></div>
+    </header>
+    <p class="hint">כל לקוח נכנס עם המייל והטלפון שלו וקוד חד־פעמי, ורואה רק את האתרים שסימנת לו, עד סוף המנוי. כשהמנוי נגמר, הכניסה נחסמת לבד.</p>
+    <p class="add-error" id="cl-err" hidden></p>
+    <dl class="kpis" id="cl-kpis"></dl>
+    <div class="table-wrap">
+      <table class="ptable clients">
+        <thead><tr><th>לקוח</th><th>אתרים</th><th>מנוי</th><th>בתוקף עד</th><th>כניסה אחרונה</th><th>פעולות</th></tr></thead>
+        <tbody id="cl-rows"><tr><td colspan="6" class="muted">טוען…</td></tr></tbody>
+      </table>
+    </div>
+    <details class="cl-log"><summary>יומן כניסות ושינויים</summary><ol class="history" id="cl-log"></ol></details>
+  </section>
+
+  <dialog class="edit" id="pay-dialog">
+    <form method="dialog" id="pay-form">
+      <h2 id="pay-title">רישום תשלום</h2>
+      <div class="field-row">
+        <label class="field"><span>על מה שילם</span><select name="plan">
+          <option value="day">מנוי יומי</option><option value="week">מנוי שבועי</option><option value="month" selected>מנוי חודשי</option>
+          <option value="year">מנוי שנתי</option><option value="other">אחר (בלי הארכה)</option>
+        </select></label>
+        <label class="field"><span>סכום (₪, כולל מע״מ)</span><input name="amount" type="number" min="1" step="1" required></label>
+      </div>
+      <div class="field-row">
+        <label class="field"><span>איך שילם</span><select name="method">
+          <option value="bit">ביט / פייבוקס</option><option value="transfer">העברה בנקאית</option><option value="cash">מזומן</option>
+          <option value="card">כרטיס אשראי</option><option value="paypal">PayPal</option><option value="check">צ׳ק</option><option value="other">אחר</option>
+        </select></label>
+        <label class="field"><span>הארכת המנוי (ימים)</span><input name="days" type="number" min="0" step="1"></label>
+      </div>
+      <label class="field"><span>תיאור במסמך</span><input name="description" maxlength="120"></label>
+      <label class="m-check"><input type="checkbox" name="invoice" checked> <span>להפיק חשבונית / קבלה ולשלוח ללקוח במייל <small>דרך Morning (חשבונית ירוקה). צריך לחבר פעם אחת ב־n8n.</small></span></label>
+      <p class="add-error" id="pay-err" hidden></p>
+      <div class="edit-actions">
+        <button class="g-btn ghost" value="cancel" type="submit" formnovalidate>ביטול</button>
+        <button class="btn btn-gold btn-sm" value="save" type="submit">רישום התשלום</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="edit cl-edit" id="cl-dialog">
+    <form method="dialog" id="cl-form">
+      <h2 id="cl-title">לקוח חדש</h2>
+      <div class="field-row">
+        <label class="field"><span>שם</span><input name="name" maxlength="60" required></label>
+        <label class="field"><span>טלפון</span><input name="phone" type="tel" dir="ltr" required placeholder="050-000-0000"></label>
+      </div>
+      <label class="field"><span>מייל</span><input name="email" type="email" dir="ltr" required></label>
+      <div class="field-row">
+        <label class="field"><span>מנוי</span><select name="plan">
+          <option value="day">יומי</option><option value="week">שבועי</option><option value="month" selected>חודשי</option>
+          <option value="year">שנתי</option><option value="custom">תאריך שאקבע</option><option value="free">ללא הגבלה</option>
+        </select></label>
+        <label class="field"><span>בתוקף עד</span><input name="expires" type="date"></label>
+      </div>
+      <label class="m-check"><input type="checkbox" name="active" checked> <span>גישה פעילה <small>בלי הסימון הלקוח חסום, גם אם המנוי בתוקף</small></span></label>
+      <fieldset class="cl-sites">
+        <legend>אתרים שהלקוח יראה <small id="cl-count"></small></legend>
+        <div class="cl-tools"><input type="search" id="cl-q" placeholder="חיפוש אתר…" aria-label="חיפוש אתר"><button class="g-btn ghost" type="button" data-all="1">הכול</button><button class="g-btn ghost" type="button" data-all="0">כלום</button></div>
+        <div class="cl-list" id="cl-list"></div>
+      </fieldset>
+      <label class="field"><span>הערה לעצמי <small>(לא חובה)</small></span><input name="note" maxlength="200" placeholder="למשל: שילם 290 ₪ בביט"></label>
+      <p class="add-error" id="cl-form-err" hidden></p>
+      <div class="edit-actions">
+        <button class="g-btn ghost" value="cancel" type="submit" formnovalidate>ביטול</button>
+        <button class="btn btn-gold btn-sm" value="save" type="submit">שמירה</button>
+      </div>
+    </form>
+  </dialog>
+
+  <section id="skills" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">Claude</p><h2>סקילים</h2></div>
+      <div class="filters">
+        <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="sk-q" type="search" placeholder="חיפוש סקיל…" aria-label="חיפוש סקיל"></label>
+        <a class="btn btn-gold btn-sm" href="skills/all-skills.zip" download>⬇ כל הסקילים (Claude Code)</a>
+      </div>
+    </header>
+    <p class="hint">לכל פרויקט נבנה סקיל ל־Claude בכל פרסום, מתוך הקוד שלו. ב־claude.ai: הגדרות ← Capabilities ← Skills ← Upload skill, ובוחרים את ה־zip. ב־Claude Code: פותחים את ה־zip לתוך <code dir="ltr">~/.claude/skills</code>.</p>
+    <p class="muted" id="sk-when"></p>
+    <div class="sk-grid" id="sk-grid"><p class="muted">טוען…</p></div>
   </section>
 
   <section id="biz" class="a-sec">
@@ -118,6 +208,17 @@
           <thead><tr><th>שירות</th><th>מחיר התחלתי (₪)</th><th>יחידה</th><th>מוצג</th></tr></thead>
           <tbody id="price-rows"></tbody>
         </table>
+      </div>
+
+      <div class="biz-head"><h3>שירותים שהוספתי</h3><button class="g-btn ghost" type="button" id="extra-add">+ שירות חדש</button></div>
+      <div class="offer-edit" id="extra-rows"></div>
+
+      <div class="biz-head"><h3>מחירי מנוי גישה לאתרים</h3><small class="muted">מופיעים בדף השירותים ובמסך התשלום של הלקוחות. ריק = לא מוצג.</small></div>
+      <div class="plans-edit" id="plans-edit">
+        <label class="field"><span>יומי (₪)</span><input type="number" min="0" step="1" data-plan="day"></label>
+        <label class="field"><span>שבועי (₪)</span><input type="number" min="0" step="1" data-plan="week"></label>
+        <label class="field"><span>חודשי (₪)</span><input type="number" min="0" step="1" data-plan="month"></label>
+        <label class="field"><span>שנתי (₪)</span><input type="number" min="0" step="1" data-plan="year"></label>
       </div>
 
       <div class="biz-head"><h3>מבצעים</h3><button class="g-btn ghost" type="button" id="offer-add">+ מבצע חדש</button></div>
@@ -266,5 +367,7 @@
 
 <script src="js/admin.js"></script>
 <script src="js/admin-biz.js"></script>
+<script src="js/admin-access.js"></script>
+<script src="js/admin-skills.js"></script>
 </body>
 </html>

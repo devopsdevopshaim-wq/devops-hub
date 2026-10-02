@@ -130,7 +130,7 @@
     });
     var talk = null;
     if (p && window.Guide) {
-      talk = el('button', { class: 'link say', type: 'button', html: ICON_TALK + ' ספר לי', title: 'גיא יספר על הפרויקט' });
+      talk = el('button', { class: 'link say', type: 'button', html: ICON_TALK + ' ספרי לי', title: 'מאיה, העוזרת האישית, תספר על הפרויקט' });
       talk.addEventListener('click', function () { window.Guide.present(p); });
     }
     return [
@@ -649,7 +649,7 @@
     fillAddr(sections[0], s);
     detailBody.replaceChildren.apply(detailBody, [nav].concat(sections));
     loadComments(reco, p);
-    document.title = p.title + ' · הסדנה';
+    document.title = p.title + ' · SPIDER';
   }
 
   function openDetail(id) {
@@ -700,6 +700,7 @@
 
   // ---------- extra repos ----------
   function renderExtra(list) {
+    if (document.documentElement.classList.contains('client-mode')) return; // clients see only their own sites
     var known = {};
     state.data.projects.forEach(function (p) { if (p.repo) known[p.repo.toLowerCase()] = true; });
     var extra = list.filter(function (r) { return !known[r.name.toLowerCase()] && !r.fork && !r.private; });
@@ -758,11 +759,20 @@
 
   Promise.all([
     fetch('projects.json').then(function (r) { return r.json(); }),
-    fetch('shots/index.json').then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
+    fetch('shots/index.json').then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }),
+    window.HasadnaAuth ? window.HasadnaAuth.ready : Promise.resolve({ role: 'admin', sites: 'all' })
   ])
     .then(function (res) {
       var data = res[0];
       state.shots = res[1];
+      // a client sees only the sites the admin gave them
+      var who = res[2];
+      if (who && who.role === 'client') {
+        var mine = {};
+        (who.sites || []).forEach(function (id) { mine[id] = true; });
+        data.projects = data.projects.filter(function (p) { return mine[p.id]; });
+        document.documentElement.classList.add('client-mode');
+      }
       // Hidden projects and ones still waiting for approval stay off the public site.
       data.allProjects = data.projects;
       var gone = state.admin ? removedIds() : {};
@@ -784,7 +794,8 @@
         categories: data.categories,
         status: status,
         focusProject: spotlight,
-        guideApi: data.guideApi || '',
+        // Guy's AI knows every project, so a client gets his on-page answers only
+        guideApi: who && who.role === 'client' ? '' : (data.guideApi || ''),
         filter: selectCat
       });
       route();

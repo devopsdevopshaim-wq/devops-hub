@@ -144,7 +144,16 @@ switch (b.action) {
       until: /^\d{4}-\d{2}-\d{2}$/.test(o.until || '') ? o.until : '',
       code: line(o.code, 20).toUpperCase(), active: o.active !== false
     })).filter((o) => o.title);
-    sd.prices = { services, offers, note: line(p.note, 300), updatedAt: new Date().toISOString() };
+    // services added from the admin screen
+    const extra = (Array.isArray(p.extra) ? p.extra : []).slice(0, 20).map((x, i) => ({
+      id: /^x-[a-z0-9-]{1,40}$/.test(x.id || '') ? x.id : 'x-' + Date.now().toString(36) + i,
+      title: line(x.title, 80), pitch: line(x.pitch, 300), unit: line(x.unit, 30),
+      from: Math.max(0, Math.round(Number(x.from) || 0)), icon: line(x.icon, 4) || '✦', hidden: !!x.hidden
+    })).filter((x) => x.title);
+    // subscription prices for access to the sites (used by the payments screen too)
+    const plans = {};
+    ['day', 'week', 'month', 'year'].forEach((k) => { const v = Math.round(Number((p.plans || {})[k]) || 0); if (v > 0) plans[k] = v; });
+    sd.prices = { services, extra, plans, offers, note: line(p.note, 300), updatedAt: new Date().toISOString() };
     return out({ ok: true, prices: sd.prices });
   }
 
@@ -217,7 +226,7 @@ for a, b, out in main:
         outs.append([])
     outs[out].append({'node': b, 'type': 'main', 'index': 0})
 
-wf = {'name': 'הסדנה · לידים ומחירון', 'nodes': nodes, 'connections': connections,
+wf = {'name': 'SPIDER · לידים ומחירון', 'nodes': nodes, 'connections': connections,
       'active': False, 'settings': {'executionOrder': 'v1'}, 'pinData': {},
       'meta': {'templateCredsSetupCompleted': False}, 'tags': []}
 

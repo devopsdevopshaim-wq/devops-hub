@@ -1,5 +1,5 @@
 /* Admin screen · leads & price list. Talks to the n8n workflow
-   "הסדנה · לידים ומחירון" (n8n/hasadna-business.json) through adminApi.
+   "SPIDER · לידים ומחירון" (n8n/hasadna-business.json) through adminApi.
    The admin password stays in this browser only. */
 (function () {
   'use strict';
@@ -173,8 +173,24 @@
       offers: Array.isArray(pr.offers) ? pr.offers : B.cfg.offers.map(function (x) {
         return { tag: x.tag, title: x.title, text: x.text, until: x.until, code: x.code, active: true };
       }),
-      note: pr.note || B.cfg.note || ''
+      note: pr.note || B.cfg.note || '',
+      extra: Array.isArray(pr.extra) ? pr.extra : [],
+      plans: pr.plans || {}
     };
+  }
+
+  function extraRow(x) {
+    var row = el('div', { class: 'extra-row', 'data-id': x.id || '' }, [
+      el('input', { class: 'x-icon', value: x.icon || '✦', maxlength: '4', 'aria-label': 'סמל' }),
+      el('input', { class: 'x-title', value: x.title || '', placeholder: 'שם השירות', maxlength: '80', 'aria-label': 'שם השירות' }),
+      el('input', { class: 'x-from', type: 'number', min: '0', step: '50', value: x.from != null ? String(x.from) : '', placeholder: 'מחיר ₪', 'aria-label': 'מחיר' }),
+      el('input', { class: 'x-unit', value: x.unit || '', placeholder: 'לפרויקט', maxlength: '30', 'aria-label': 'יחידה' }),
+      el('input', { class: 'x-pitch', value: x.pitch || '', placeholder: 'משפט אחד: מה הלקוח מקבל', maxlength: '300', 'aria-label': 'תיאור' }),
+      el('label', {}, [el('input', { type: 'checkbox', class: 'x-shown', checked: x.hidden ? null : '' }), 'מוצג']),
+      el('button', { type: 'button', class: 'del', 'aria-label': 'מחיקת השירות', text: '×' })
+    ]);
+    row.querySelector('.del').addEventListener('click', function () { row.remove(); });
+    return row;
   }
 
   function offerRow(o) {
@@ -206,10 +222,19 @@
     var box = $('offer-rows');
     box.replaceChildren.apply(box, e.offers.map(offerRow));
     $('price-note-in').value = e.note;
+    var xb = $('extra-rows');
+    xb.replaceChildren.apply(xb, e.extra.map(extraRow));
+    Array.prototype.forEach.call(document.querySelectorAll('[data-plan]'), function (i) { var v = e.plans[i.getAttribute('data-plan')]; i.value = v ? String(v) : ''; });
     $('price-when').textContent = B.prices && B.prices.updatedAt
       ? 'נשמר לאחרונה ' + new Date(B.prices.updatedAt).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })
       : 'עדיין מהקובץ services.json';
   }
+
+  $('extra-add').addEventListener('click', function () {
+    var r = extraRow({ icon: '✦' });
+    $('extra-rows').appendChild(r);
+    r.querySelector('.x-title').focus();
+  });
 
   $('offer-add').addEventListener('click', function () {
     var r = offerRow({ tag: 'מבצע', active: true });
@@ -231,9 +256,16 @@
         text: r.querySelector('.o-text').value, until: r.querySelector('.o-until').value, code: r.querySelector('.o-code').value
       };
     }).filter(function (o) { return o.title.trim(); });
+    var extra = Array.prototype.map.call($('extra-rows').querySelectorAll('.extra-row'), function (r) {
+      return { id: r.getAttribute('data-id'), icon: r.querySelector('.x-icon').value, title: r.querySelector('.x-title').value,
+        from: Number(r.querySelector('.x-from').value) || 0, unit: r.querySelector('.x-unit').value, pitch: r.querySelector('.x-pitch').value,
+        hidden: !r.querySelector('.x-shown').checked };
+    }).filter(function (x) { return x.title.trim(); });
+    var plans = {};
+    Array.prototype.forEach.call(document.querySelectorAll('[data-plan]'), function (i) { if (Number(i.value) > 0) plans[i.getAttribute('data-plan')] = Number(i.value); });
     var st = $('price-status');
     st.textContent = 'שומר…';
-    api('prices', { services: services, offers: offers, note: $('price-note-in').value }).then(function (j) {
+    api('prices', { services: services, extra: extra, plans: plans, offers: offers, note: $('price-note-in').value }).then(function (j) {
       if (j.ok) { B.prices = j.prices; renderPrices(); st.textContent = '✓ נשמר. דף השירותים כבר מציג את המחירים החדשים.'; }
       else st.textContent = 'לא נשמר: ' + j.error;
     }).catch(function () { st.textContent = 'n8n לא ענה. נסו שוב.'; });

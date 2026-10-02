@@ -68,3 +68,11 @@
   .s-hero { padding-top: 48px; }
   .lead-form { padding: 18px; }
 }
+
+/* subscription plans */
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 16px; }
+.plan { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 22px; border-radius: var(--radius); background: var(--deep); border: 1px solid var(--line); }
+.plan.best { border-color: rgba(224, 178, 90, .6); background: linear-gradient(160deg, rgba(224, 178, 90, .14), var(--deep) 60%); }
+.plan .tag { font: 600 12px var(--body); color: var(--night); background: var(--brass); padding: 5px 10px; border-radius: 999px; }
+.plan b { font: 400 44px/1 var(--display); color: var(--brass-2); margin-top: 6px; }
+.plan small { color: var(--mist); margin-bottom: 8px; }

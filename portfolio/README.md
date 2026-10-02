@@ -1,4 +1,4 @@
-# Portfolio — הסדנה
+# Portfolio — SPIDER
 
 Live: https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/
 

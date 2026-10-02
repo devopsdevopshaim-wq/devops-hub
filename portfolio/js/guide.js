@@ -1,4 +1,4 @@
-// "גיא", an illustrated guide who talks about the projects.
+// "מאיה", the site's personal assistant: an illustrated avatar who talks about the projects.
 // Speech uses the browser's own Hebrew voice (speechSynthesis) when there is
 // one; otherwise he still moves his mouth and the words appear in the bubble.
 // Listening uses the browser's speech recognition where it exists (Chrome, Edge).
@@ -6,36 +6,45 @@
 window.Guide = (function () {
   'use strict';
 
+  // The assistant's name and role, in one place.
+  var NAME = 'מאיה';
+  var ROLE = 'העוזרת האישית של חיים קריספין';
+  var WA = 'https://wa.me/972544979771?text=' + encodeURIComponent('היי חיים, הגעתי דרך מאיה באתר ואשמח לדבר');
+
   var FACE =
     '<svg class="guy" viewBox="0 0 200 200" aria-hidden="true" focusable="false">' +
+      '<path class="g-hairback" d="M48 176c-12-50-8-112 20-136 18-15 46-15 64 0 28 24 32 86 20 136z" fill="#2a1a2e"/>' +
       '<g class="g-body">' +
-        '<path d="M22 204c4-34 30-48 78-50 48 2 74 16 78 50z" fill="#4b3fa8"/>' +
-        '<path d="M22 204c4-34 30-48 78-50 48 2 74 16 78 50" fill="none" stroke="#6b5ce0" stroke-width="2" opacity=".6"/>' +
-        '<path d="M86 124v30c6 8 22 8 28 0v-30z" fill="#d9987a"/>' +
-        '<path d="M78 156c10 12 34 12 44 0" fill="none" stroke="#e0b25a" stroke-width="3" stroke-linecap="round"/>' +
-        '<circle cx="140" cy="176" r="4" fill="#e0b25a"/>' +
+        '<path d="M16 204c4-34 30-50 84-52 54 2 80 18 84 52z" fill="#2e2a6b"/>' +
+        '<path d="M83 152l17 34 17-34z" fill="#f1eefc"/>' +
+        '<path d="M83 152l-12 46M117 152l12 46" stroke="#4b3fa8" stroke-width="3" stroke-linecap="round"/>' +
+        '<path d="M86 122v28c7 8 21 8 28 0v-28z" fill="#e7a98a"/>' +
+        '<circle cx="134" cy="180" r="4" fill="#e0b25a"/>' +
       '</g>' +
       '<g class="g-head">' +
-        '<ellipse cx="58" cy="96" rx="8" ry="12" fill="#e8ad88"/><ellipse cx="142" cy="96" rx="8" ry="12" fill="#e8ad88"/>' +
-        '<path d="M58 86c0-34 19-50 42-50s42 16 42 50c0 32-17 54-42 56-25-2-42-24-42-56z" fill="#f2bf9b"/>' +
-        '<path d="M55 90c-6-36 12-62 46-62 36-2 52 24 45 60-3-14-9-24-18-29-16 7-40 5-55-3-9 8-15 20-18 34z" fill="#2a1f3d"/>' +
-        '<path d="M86 32c10-10 34-10 44 2-12-3-24-2-44-2z" fill="#3a2c55"/>' +
-        '<g class="g-brows" fill="none" stroke="#2a1f3d" stroke-width="4" stroke-linecap="round">' +
-          '<path d="M71 76q10-6 21-1"/><path d="M108 75q11-5 21 1"/>' +
+        '<path d="M60 88c0-32 18-50 40-50s40 18 40 50c0 30-16 52-40 54-24-2-40-24-40-54z" fill="#f2c4a4"/>' +
+        '<circle cx="61" cy="112" r="3.4" fill="#e0b25a"/><circle cx="139" cy="112" r="3.4" fill="#e0b25a"/>' +
+        '<path d="M57 96c-5-38 15-62 45-62 28 0 46 22 42 54-5-17-17-29-36-33-12 10-31 17-51 41z" fill="#2a1a2e"/>' +
+        '<path d="M98 40c18 2 32 12 38 30" stroke="#4a3350" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>' +
+        '<g class="g-brows" fill="none" stroke="#2a1a2e" stroke-width="3" stroke-linecap="round">' +
+          '<path d="M72 78q9-5 19-1"/><path d="M109 77q10-4 19 1"/>' +
         '</g>' +
         '<g class="g-eyes">' +
-          '<g class="eye"><ellipse cx="82" cy="92" rx="9" ry="6.5" fill="#fff"/><g class="pupil"><circle cx="82" cy="92" r="4.3" fill="#3b2a1f"/><circle cx="82" cy="92" r="2" fill="#120c08"/><circle cx="83.6" cy="90.4" r="1.3" fill="#fff"/></g></g>' +
-          '<g class="eye"><ellipse cx="118" cy="92" rx="9" ry="6.5" fill="#fff"/><g class="pupil"><circle cx="118" cy="92" r="4.3" fill="#3b2a1f"/><circle cx="118" cy="92" r="2" fill="#120c08"/><circle cx="119.6" cy="90.4" r="1.3" fill="#fff"/></g></g>' +
+          '<g class="eye"><ellipse cx="82" cy="92" rx="8.5" ry="6.2" fill="#fff"/><g class="pupil"><circle cx="82" cy="92" r="4.2" fill="#4a2f22"/><circle cx="82" cy="92" r="2" fill="#120c08"/><circle cx="83.6" cy="90.4" r="1.3" fill="#fff"/></g><path d="M72.5 89q9.5-8 19 0M72.5 89l-3-2.5" fill="none" stroke="#1b1020" stroke-width="2.4" stroke-linecap="round"/></g>' +
+          '<g class="eye"><ellipse cx="118" cy="92" rx="8.5" ry="6.2" fill="#fff"/><g class="pupil"><circle cx="118" cy="92" r="4.2" fill="#4a2f22"/><circle cx="118" cy="92" r="2" fill="#120c08"/><circle cx="119.6" cy="90.4" r="1.3" fill="#fff"/></g><path d="M108.5 89q9.5-8 19 0M127.5 89l3-2.5" fill="none" stroke="#1b1020" stroke-width="2.4" stroke-linecap="round"/></g>' +
         '</g>' +
-        '<g fill="none" stroke="#e0b25a" stroke-width="1.8"><rect x="68" y="81" width="28" height="22" rx="9"/><rect x="104" y="81" width="28" height="22" rx="9"/><path d="M96 90q4-3 8 0M68 88l-9-3M132 88l9-3"/></g>' +
-        '<path d="M100 97q-4 13 0 17 4 1 6-2" fill="none" stroke="#c98b6a" stroke-width="2.5" stroke-linecap="round"/>' +
-        '<circle cx="71" cy="113" r="7" fill="#ff8fa3" opacity=".28"/><circle cx="129" cy="113" r="7" fill="#ff8fa3" opacity=".28"/>' +
-        '<path class="m-closed" d="M88 124q12 9 24 0" fill="none" stroke="#9c3d4a" stroke-width="3" stroke-linecap="round"/>' +
-        '<g class="m-open" style="display:none"><ellipse class="m-shape" cx="100" cy="126" rx="10" ry="5" fill="#5a1f2a"/><ellipse class="m-tongue" cx="100" cy="129" rx="6" ry="2.5" fill="#e0707f"/></g>' +
+        '<path d="M100 99q-3 9 0 12 3 1 5-1" fill="none" stroke="#d39a7d" stroke-width="2.2" stroke-linecap="round"/>' +
+        '<circle cx="72" cy="111" r="7" fill="#ff8fa3" opacity=".25"/><circle cx="128" cy="111" r="7" fill="#ff8fa3" opacity=".25"/>' +
+        '<path class="m-closed" d="M89 123q11 8 22 0" fill="none" stroke="#c9566a" stroke-width="3.4" stroke-linecap="round"/>' +
+        '<g class="m-open" style="display:none"><ellipse class="m-shape" cx="100" cy="125" rx="9" ry="4.5" fill="#7a2338"/><ellipse class="m-tongue" cx="100" cy="128" rx="5.5" ry="2.2" fill="#e0707f"/></g>' +
+        '<path d="M58 84C60 40 140 40 142 84" fill="none" stroke="#3a3560" stroke-width="4.5" stroke-linecap="round"/>' +
+        '<rect x="134" y="82" width="13" height="20" rx="6" fill="#3a3560" stroke="#e0b25a" stroke-width="1.6"/>' +
+        '<path d="M140 101c0 14-10 22-24 23" fill="none" stroke="#3a3560" stroke-width="3" stroke-linecap="round"/>' +
+        '<rect x="109" y="120" width="9" height="6" rx="3" fill="#e0b25a"/>' +
       '</g>' +
-      '<g class="g-arm"><path d="M150 190q20-26 12-56" fill="none" stroke="#4b3fa8" stroke-width="15" stroke-linecap="round"/>' +
-        '<ellipse cx="161" cy="124" rx="9.5" ry="10.5" fill="#f2bf9b"/>' +
-        '<path d="M155 115v-8M160 113v-10M165 114v-8M169 118l4-5" stroke="#f2bf9b" stroke-width="4.2" stroke-linecap="round"/></g>' +
+      '<g class="g-arm"><path d="M150 190q20-26 12-56" fill="none" stroke="#2e2a6b" stroke-width="15" stroke-linecap="round"/>' +
+        '<ellipse cx="161" cy="124" rx="9.5" ry="10.5" fill="#f2c4a4"/>' +
+        '<path d="M155 115v-8M160 113v-10M165 114v-8M169 118l4-5" stroke="#f2c4a4" stroke-width="4.2" stroke-linecap="round"/></g>' +
     '</svg>';
 
   var history = [];
@@ -148,7 +157,7 @@ window.Guide = (function () {
   function pickVoice() {
     if (!hasTTS) return;
     var he = speechSynthesis.getVoices().filter(function (v) { return /^he|^iw/i.test(v.lang); });
-    voice = he.filter(function (v) { return /avri|asaf|male|גבר/i.test(v.name); })[0] || he[0] || null;
+    voice = he.filter(function (v) { return /hila|carmit|female|woman|אישה|נשי/i.test(v.name); })[0] || he.filter(function (v) { return !/avri|asaf|male/i.test(v.name); })[0] || he[0] || null;
     updateVoiceBtn();
   }
 
@@ -158,7 +167,7 @@ window.Guide = (function () {
     voiceBtn.hidden = !can;
     voiceBtn.setAttribute('aria-pressed', String(voiceOn));
     voiceBtn.innerHTML = voiceOn ? '🔊' : '🔇';
-    voiceBtn.title = voiceOn ? 'השתק את גיא' : 'הפעל קול';
+    voiceBtn.title = voiceOn ? 'השתקה' : 'הפעלת קול';
   }
 
   function say(text, done) {
@@ -204,11 +213,34 @@ window.Guide = (function () {
     return b;
   }
 
+  function clock() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
   function addMsg(who, text) {
     history.push({ role: who === 'me' ? 'user' : 'assistant', text: text });
     if (history.length > 12) history.shift();
     if (!log) return;
-    log.appendChild(h('div', { class: 'g-msg ' + who, text: text }));
+    typing(false);
+    if (who === 'me') panel.classList.add('chatting');
+    var row = h('div', { class: 'g-row ' + who }, [
+      who === 'bot' ? h('span', { class: 'g-av', html: FACE }) : null,
+      h('div', { class: 'g-msg ' + who }, [h('span', { text: text }), h('time', { text: clock() })])
+    ]);
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+  }
+  var typingEl = null;
+  function typing(on) {
+    if (!log) return;
+    if (on && !typingEl) {
+      typingEl = h('div', { class: 'g-row bot g-typing', 'aria-label': NAME + ' מקלידה' }, [h('span', { class: 'g-av', html: FACE }), h('div', { class: 'g-msg bot' }, [h('i'), h('i'), h('i')])]);
+      log.appendChild(typingEl);
+      log.scrollTop = log.scrollHeight;
+    } else if (!on && typingEl) { typingEl.remove(); typingEl = null; }
+  }
+  function actionsRow(list) {
+    if (!log) return;
+    var row = h('div', { class: 'g-next' });
+    list.forEach(function (x) { row.appendChild(btn(x[0], x[1], 'chip')); });
+    log.appendChild(row);
     log.scrollTop = log.scrollHeight;
   }
 
@@ -216,7 +248,7 @@ window.Guide = (function () {
     bubble.classList.remove('show');
     panel.classList.add('open');
     faceBtn.setAttribute('aria-expanded', 'true');
-    if (!log.children.length) say('היי, אני גיא. אפשר לשאול אותי על כל פרויקט, לבקש סיור, או ללחוץ על אחת ההצעות למטה.');
+    if (!log.querySelector('.g-msg')) say('היי, אני ' + NAME + ', ' + ROLE + '. אפשר לשאול אותי על כל פרויקט, על שירותים ומחירים, או לקבוע שיחה עם חיים.');
     setTimeout(function () { input.focus(); }, 50);
   }
 
@@ -226,7 +258,7 @@ window.Guide = (function () {
   }
 
   // ---------- presenting projects ----------
-  var OPEN = ['הנה', 'תסתכל על זה:', 'והנה עוד אחד:', 'זה אחד שאני אוהב:'];
+  var OPEN = ['הנה', 'תסתכלו על זה:', 'והנה עוד אחד:', 'זה אחד שאני אוהבת במיוחד:'];
   var BLURB = {
     web: 'אתר שנבנה ופורסם ברשת',
     ai: 'פרויקט שמשתמש בבינה מלאכותית',
@@ -316,7 +348,15 @@ window.Guide = (function () {
     }
     // With the n8n agent connected, every real question goes to it.
     if (api.guideApi && !answer.offline) return askServer(raw);
-    if (has(t, ['מי אתה', 'מה אתה', 'מי זה', 'עליך'])) return say('אני גיא, המדריך של הסדנה. אני מכיר את כל ' + api.projects.length + ' הפרויקטים כאן, ויכול להראות לך כל אחד מהם.');
+    if (has(t, ['מי אתה', 'מה אתה', 'מי זה', 'עליך'])) return say('אני ' + NAME + ', ' + ROLE + '. אני מכירה את כל ' + api.projects.length + ' הפרויקטים כאן, יכולה להראות כל אחד מהם, ולתאם לך שיחה עם חיים.');
+    if (has(t, ['מחיר', 'מחירים', 'עולה', 'עלות', 'הצעת מחיר', 'מבצע', 'מבצעים', 'שירות', 'שירותים', 'לעסק'])) {
+      say('חיים בונה לעסקים אוטומציות, סוכני AI, אתרים ומערכות ניהול, במחיר קבוע מראש. את המחירים והמבצעים העדכניים תמצאו בדף השירותים, ושיחת אפיון של 30 דקות היא בחינם.');
+      return actionsRow([['💰 לשירותים ולמחירים', function () { location.href = 'services.html'; }], ['📅 לקבוע שיחה', function () { window.open(WA, '_blank', 'noopener'); }]]);
+    }
+    if (has(t, ['שיחה', 'לדבר', 'טלפון', 'וואטסאפ', 'ווטסאפ', 'חיים', 'פגישה', 'ליצור קשר'])) {
+      say('בשמחה. חיים זמין בוואטסאפ ובטלפון 054-4979771, ובדרך כלל עונה באותו יום.');
+      return actionsRow([['💬 שליחת הודעה לחיים', function () { window.open(WA, '_blank', 'noopener'); }]]);
+    }
     if (has(t, ['המלצה', 'המלצות', 'הערה', 'הערות', 'תגובה'])) return say('בכל כרטיס יש לשונית המלצות. לוחצים עליה, נכנסים עם GitHub, וכותבים. ההמלצות נשמרות ומופיעות לכולם.');
     if (has(t, ['כניסות', 'צפיות', 'ביקורים', 'כמה נכנסו'])) return say('מתחת לכל פרויקט רשום כמה פעמים פתחו אותו מהאתר הזה. בראש העמוד יש גם את מספר הביקורים בסדנה.');
     if (has(t, ['אוטומציה', 'אוטומטי', 'אוטומציות', 'מתעדכן', 'n8n', 'ci', 'pipeline', 'github actions'])) {
@@ -368,6 +408,7 @@ window.Guide = (function () {
   // browser doesn't need a CORS preflight. Any failure falls back to word matching.
   function askServer(raw) {
     root.classList.add('thinking');
+    typing(true);
     var url = /\/webhook(-test)?\/|\/ask$/.test(api.guideApi) ? api.guideApi : api.guideApi.replace(/\/$/, '') + '/ask';
     var page = (/^#p\/(.+)$/.exec(location.hash) || [])[1] || '';
     var ctrl = 'AbortController' in window ? new AbortController() : null;
@@ -389,6 +430,7 @@ window.Guide = (function () {
       })
       .catch(function () {
         root.classList.remove('thinking');
+        typing(false);
         answer.offline = true;
         try { answer(raw); } finally { answer.offline = false; }
       })
@@ -424,8 +466,8 @@ window.Guide = (function () {
     bubble = h('div', { class: 'g-bubble', role: 'status', 'aria-live': 'polite' });
 
     log = h('div', { class: 'g-log', 'aria-live': 'polite' });
-    input = h('input', { type: 'text', placeholder: 'שאלו את גיא…', 'aria-label': 'שאלה לגיא' });
-    micBtn = h('button', { class: 'g-icon', type: 'button', title: 'דברו עם גיא', 'aria-label': 'דברו עם גיא', html: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>' });
+    input = h('input', { type: 'text', placeholder: 'כתבו הודעה…', 'aria-label': 'הודעה ל' + NAME });
+    micBtn = h('button', { class: 'g-icon', type: 'button', title: 'הקלטה קולית', 'aria-label': 'הקלטה קולית', html: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>' });
     micBtn.hidden = !Rec;
     micBtn.addEventListener('click', listen);
     voiceBtn = h('button', { class: 'g-icon', type: 'button' });
@@ -433,29 +475,30 @@ window.Guide = (function () {
     var form = h('form', { class: 'g-form' }, [input, micBtn, h('button', { class: 'g-send', type: 'submit', 'aria-label': 'שליחה', html: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 6l-6 6 6 6"/></svg>' })]);
     form.addEventListener('submit', function (e) { e.preventDefault(); var v = input.value; input.value = ''; answer(v); });
 
-    var chips = h('div', { class: 'g-chips' }, [
-      btn('סיור מודרך', startTour, 'chip'),
-      btn('איך האתר מתעדכן לבד?', function () { answer('איך האתר הזה מתעדכן לבד? תסביר את האוטומציה'); }, 'chip'),
-      btn('אילו פרויקטים משתמשים באוטומציה?', function () { answer('אילו פרויקטים משתמשים באוטומציה, ואיך?'); }, 'chip'),
-      btn('איך JARVIS עובד עם n8n?', function () { answer('איך JARVIS עובד עם n8n?'); }, 'chip'),
-      btn('מה ההבדל בין מערכות המחסן?', function () { answer('מה ההבדל בין מערכות המחסן?'); }, 'chip'),
-      btn('סוכני AI', function () { answer('סוכני AI'); }, 'chip'),
-      btn('תפתיע אותי', function () { answer('תפתיע אותי'); }, 'chip'),
-      btn('כמה פרויקטים יש?', function () { answer('כמה פרויקטים יש?'); }, 'chip'),
-      btn('איך משאירים המלצה?', function () { answer('איך משאירים המלצה?'); }, 'chip')
+    var ask = function (q) { return function () { answer(q); }; };
+    var chips = h('div', { class: 'g-welcome' }, [
+      h('p', { class: 'g-welcome-t', text: 'במה אפשר לעזור?' }),
+      h('div', { class: 'g-grid' }, [
+        btn('💼 מה אפשר לבנות לעסק שלי?', ask('מה אפשר לבנות לעסק שלי? שירותים ומחירים'), 'tile'),
+        btn('🧭 סיור בפרויקטים', startTour, 'tile'),
+        btn('🤖 סוכני AI', ask('סוכני AI'), 'tile'),
+        btn('⚙️ אוטומציות', ask('אילו פרויקטים משתמשים באוטומציה, ואיך?'), 'tile'),
+        btn('💰 שירותים ומחירים', function () { location.href = 'services.html'; }, 'tile'),
+        btn('📅 לקבוע שיחה עם חיים', function () { window.open(WA, '_blank', 'noopener'); }, 'tile')
+      ])
     ]);
 
-    panel = h('section', { class: 'g-panel', 'aria-label': 'שיחה עם גיא' }, [
+    panel = h('section', { class: 'g-panel', 'aria-label': 'שיחה עם ' + NAME }, [
       h('header', {}, [
         h('div', { class: 'g-mini', html: FACE }),
-        h('div', {}, [h('b', { text: 'גיא' }), h('small', { text: 'המדריך של הסדנה' })]),
+        h('div', { class: 'g-who' }, [h('b', {}, [document.createTextNode(NAME + ' '), h('span', { class: 'g-verified', title: 'עוזרת רשמית', text: '✓' })]), h('small', { text: ROLE }), h('span', { class: 'g-online', text: 'מחוברת עכשיו' })]),
         voiceBtn,
         closeX(closePanel)
       ]),
-      log, chips, form
+      log, chips, form, h('p', { class: 'g-foot', text: 'SPIDER · חיים קריספין · 054-4979771' })
     ]);
 
-    faceBtn = h('button', { class: 'g-face', type: 'button', 'aria-label': 'שיחה עם גיא', 'aria-expanded': 'false', html: FACE + '<span class="g-ring" aria-hidden="true"></span>' });
+    faceBtn = h('button', { class: 'g-face', type: 'button', 'aria-label': 'שיחה עם ' + NAME + ', ' + ROLE, 'aria-expanded': 'false', html: FACE + '<span class="g-ring" aria-hidden="true"></span>' });
     faceBtn.addEventListener('click', function () { panel.classList.contains('open') ? closePanel() : openPanel(); });
     faceBtn.appendChild(h('span', { class: 'g-zz', 'aria-hidden': 'true', text: 'z z' }));
     faceBtn.addEventListener('pointerenter', function () { root.classList.add('happy'); awake(); if (!root.classList.contains('talking')) wave(); });
@@ -483,9 +526,9 @@ window.Guide = (function () {
     setTimeout(function () {
       if (store('guide-seen')) return;
       wave();
-      showBubble('היי, אני גיא 👋 אני מכיר את כל הפרויקטים כאן. רוצה סיור קצר עם קול?', [
-        btn('▶ סיור מודרך', function () { store('guide-seen', '1'); startTour(); }),
-        btn('דברו איתי', function () { store('guide-seen', '1'); openPanel(); }, 'ghost')
+      showBubble('היי, אני ' + NAME + ' 👋 ' + ROLE + '. אפשר לעזור לכם למצוא פרויקט, להבין מחירים או לקבוע שיחה.', [
+        btn('💬 שיחה איתי', function () { store('guide-seen', '1'); openPanel(); }),
+        btn('▶ סיור מודרך', function () { store('guide-seen', '1'); startTour(); }, 'ghost')
       ]);
     }, 1600);
   }
