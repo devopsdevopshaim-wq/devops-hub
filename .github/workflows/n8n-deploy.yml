@@ -1,15 +1,15 @@
 name: Deploy agents to n8n Cloud
 
-# Puts n8n/hasadna-multi-agent.json into n8n Cloud through the n8n API, connects
-# Claude, activates it, and points the portfolio at the live agents.
-# Needs repository secrets: N8N_URL, N8N_API_KEY, and ANTHROPIC_API_KEY for the
-# first run (it creates the Claude credential in n8n). See n8n/README.md.
+# Installs SPIDER's three n8n workflows (agents, leads & prices, sign-in) in n8n
+# Cloud through the n8n API, with their credentials, activates them and checks
+# that they answer. Repository secrets: N8N_URL, N8N_API_KEY, GMAIL_APP_PASSWORD,
+# and ANTHROPIC_API_KEY until a Claude credential exists. See n8n/README.md.
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['n8n/hasadna-multi-agent.json']
+    paths: ['n8n/hasadna-*.json', '.github/scripts/n8n-deploy.mjs']
 
 permissions:
   contents: write
@@ -36,6 +36,8 @@ jobs:
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           HAIM_WEB_KEY: ${{ secrets.HAIM_WEB_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
         run: node .github/scripts/n8n-deploy.mjs
       - name: Connect the portfolio
         if: steps.deploy.outputs.changed == 'true'
@@ -45,14 +47,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add portfolio/projects.json
-          git commit -q -m "portfolio: connect Guy and the control center to n8n"
+          git commit -q -m "portfolio: connect Maya and the control center to n8n"
           git pull -q --rebase origin main
           git push -q origin HEAD:main
           # pushes made with GITHUB_TOKEN do not start other workflows
           gh workflow run vacation-hub-pages.yml --ref main
-      - name: Summary
-        if: steps.deploy.outputs.deployed == 'true'
-        run: |
-          echo "### ✅ הסוכנים פעילים ב־n8n" >> "$GITHUB_STEP_SUMMARY"
-          echo "- מרכז הבקרה: ${{ steps.deploy.outputs.status }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- ה־Workflow: ${{ steps.deploy.outputs.workflow }}" >> "$GITHUB_STEP_SUMMARY"

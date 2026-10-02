@@ -155,3 +155,22 @@ Workflow נפרד לעסק. אין בו שום חיבור שצריך להגדי�
 2. ב־n8n, בראש הצומת **Auth · Handle**, ממלאים את `INVOICE`:
    - `clientId` ו־`clientSecret`;
    - `docType`: ‏320 (חשבונית מס/קבלה, עוסק מורשה) או 400 (קבלה, עוסק פטור).
+
+
+## התקנה אוטומטית של הכול מ־GitHub (מומלץ)
+
+‏GitHub Action ‏**Deploy agents to n8n Cloud** מתקין את שלושת ה־workflows, מחבר אותם, מפעיל, ובודק שהם עונים.
+
+סודות ב־GitHub, תחת **Settings ← Secrets and variables ← Actions ← New repository secret**:
+
+| שם | ערך |
+|---|---|
+| `N8N_URL` | `https://haimkripisn.app.n8n.cloud` |
+| `N8N_API_KEY` | מ־n8n: ‏Settings ← n8n API ← Create an API key |
+| `GMAIL_APP_PASSWORD` | מ־Google: ‏myaccount.google.com/apppasswords (צריך אימות דו־שלבי) |
+| `ANTHROPIC_API_KEY` | רק אם אין עדיין חיבור Claude ב־n8n |
+
+אחר כך: **Actions ← Deploy agents to n8n Cloud ← Run workflow**.
+
+הלידים, המחירון והלקוחות שכבר שמורים לא נמחקים בעדכון.
+כדי לבדוק את הכניסה לפני שהיא ננעלת לכולם, נכנסים ל־`admin.html?login=1`.

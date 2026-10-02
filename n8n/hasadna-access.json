@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## כניסה והרשאות\n`POST /webhook/hasadna-auth` — האתר שולח לכאן בקשות כניסה. הקוד החד־פעמי נשלח במייל מצומת **Send · Email**: מחברים אליו את Gmail פעם אחת.\n\nהמנהל מוגדר בראש הצומת **Auth · Handle** (ADMIN_EMAIL, ADMIN_PHONE). חשבוניות: ממלאים שם את INVOICE (פרטי ה־API של Morning / חשבונית ירוקה). את הלקוחות, האתרים והמנויים מנהלים במסך הניהול של האתר.",
+        "content": "## כניסה והרשאות\n`POST /webhook/hasadna-auth` — האתר שולח לכאן בקשות כניסה. הקוד החד־פעמי נשלח במייל מצומת **Send · Email** (SMTP של Gmail, סיסמת אפליקציה; ההתקנה מ־GitHub מחברת אותו לבד).\n\nהמנהל מוגדר בראש הצומת **Auth · Handle** (ADMIN_EMAIL, ADMIN_PHONE). חשבוניות: ממלאים שם את INVOICE (פרטי ה־API של Morning / חשבונית ירוקה). את הלקוחות, האתרים והמנויים מנהלים במסך הניהול של האתר.",
         "height": 230,
         "width": 460,
         "color": 3
@@ -179,17 +179,18 @@
     },
     {
       "parameters": {
-        "sendTo": "={{ $json.mail.to }}",
+        "fromEmail": "SPIDER · חיים קריספין <devopsdevopshaim@gmail.com>",
+        "toEmail": "={{ $json.mail.to }}",
         "subject": "={{ $json.mail.subject }}",
-        "emailType": "text",
-        "message": "={{ $json.mail.text }}",
+        "emailFormat": "text",
+        "text": "={{ $json.mail.text }}",
         "options": {
           "appendAttribution": false
         }
       },
       "id": "3dd8eefd-c5f1-50a0-8678-e7708e00e9d4",
       "name": "Send · Email",
-      "type": "n8n-nodes-base.gmail",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
         900,
