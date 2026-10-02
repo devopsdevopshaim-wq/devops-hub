@@ -11,13 +11,14 @@
 //          GMAIL_APP_PASSWORD (+ optional GMAIL_USER) for the sign-in emails.
 import fs from 'node:fs';
 
-const combined = process.env.HAIM_WEB_KEY || '';
+// all of them can also arrive in one secret (SPIDER or HAIM_WEB_KEY), in any layout: picked out by their shape
+const combined = [process.env.SPIDER, process.env.HAIM_WEB_KEY].filter(Boolean).join('\n');
 const pick = (re) => (combined.match(re) || [])[0] || '';
 const BASE = (process.env.N8N_URL || pick(/https:\/\/[a-z0-9-]+\.app\.n8n\.cloud/i)).trim().replace(/\/+$/, '');
 const KEY = (process.env.N8N_API_KEY || pick(/eyJ[\w-]+\.[\w-]+\.[\w-]+/)).trim();
 const CLAUDE = (process.env.ANTHROPIC_API_KEY || pick(/sk-ant-[\w-]+/)).trim();
 const GMAIL_USER = (process.env.GMAIL_USER || 'devopsdevopshaim@gmail.com').trim();
-const GMAIL_PASS = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
+const GMAIL_PASS = (process.env.GMAIL_APP_PASSWORD || (combined.match(/GMAIL_APP_PASSWORD\W*([a-z]{4}\s?[a-z]{4}\s?[a-z]{4}\s?[a-z]{4})\b/i) || [])[1] || '').replace(/\s+/g, '');
 const out = (k, v) => fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', `${k}=${v}\n`);
 const summary = [];
 const note = (line) => { summary.push(line); console.log(line); };
