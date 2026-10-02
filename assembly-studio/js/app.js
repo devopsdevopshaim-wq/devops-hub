@@ -503,7 +503,16 @@ function askCode() {
 function renderPlan() {
   const p = state.project, plan = p.plan;
   $('#ghWrap').hidden = !state.ai.github;
-  $('#genAi').textContent = state.ai.server ? (plan ? 'תכנית חדשה עם Claude' : 'יצירת תכנית עם Claude') : 'יצירת תכנית עם Claude (העתק-הדבק)';
+  // בלי שרת, התכנית האוטומטית היא הדרך הראשית, ו-Claude.ai הוא תוספת לא חובה
+  const auto = !state.ai.server;
+  $('#genBasic').className = 'btn' + (auto ? '' : ' ghost');
+  $('#genAi').className = 'btn' + (auto ? ' ghost' : '');
+  $('#genBasic').textContent = (plan ? 'תכנית אוטומטית חדשה' : 'יצירת תכנית אוטומטית');
+  $('#genAi').textContent = auto ? 'ניתוח השרטוט עם Claude.ai (לא חובה)' : (plan ? 'תכנית חדשה עם Claude' : 'יצירת תכנית עם Claude');
+  $('#genBasic').parentNode.insertBefore(auto ? $('#genBasic') : $('#genAi'), auto ? $('#genAi') : $('#genBasic'));
+  const hint = $('#planHint');
+  if (!p.parts.length) hint.textContent = 'אין עדיין רשימת חלקים. כדי לקבל תכנית אוטומטית, העלו בשלב 1 את קובץ ה-SLDASM יחד עם כל קבצי ה-SLDPRT שלו.';
+  else hint.textContent = auto ? `התכנית האוטומטית נבנית מהמודל עצמו (${p.parts.length} פריטים), בלי AI ובלי חשבון: הבסיס קודם, אחר כך החלקים מלמטה למעלה, והברגים עם החלק שהם מחברים. אחרי שהיא נוצרת אפשר לערוך כל שלב.` : '';
   $('#planEditor').hidden = !plan;
   if (!plan) return;
   $$('[data-plan]').forEach((el) => { el.value = plan[el.dataset.plan] || ''; });
