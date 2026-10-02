@@ -14,11 +14,14 @@ const UA = 'hasadna-portfolio-radio/1.0 (github.com/devopsdevopshaim-wq/devops-h
 const soma = (id, name) => ({ name: 'SomaFM · ' + name, url: `https://ice2.somafm.com/${id}-128-mp3`, home: 'https://somafm.com/' + id + '/', codec: 'MP3', bitrate: 128, country: 'US' });
 
 // style shown on the button, Radio Browser tags (best first), extra stations
+// talk, news and religious stations are never music styles
+const NOT_MUSIC = /news|talk|prayer|quran|koran|relig|torah|bible|church|sport|podcast|חדשות|תורה|דת|ספורט/;
+
 const STYLES = [
   ['psytrance', 'פסיטראנס', ['psytrance', 'psychedelic trance', 'goa trance', 'goa', 'psy trance'], []],
-  ['trance', 'טראנס', ['trance', 'uplifting trance', 'vocal trance', 'progressive trance'], []],
+  ['trance', 'טראנס', ['uplifting trance', 'vocal trance', 'trance'], [], null, /anime|80s|90s|bass/],
   ['progressive', 'פרוגרסיב', ['progressive house', 'progressive trance', 'progressive'], [soma('thetrip', 'The Trip')]],
-  ['dream', 'דרים', ['dream trance', 'dream house', 'dreamhouse', 'dream'], []],
+  ['dream', 'דרים', ['dream trance', 'dream house', 'dreamhouse', 'dream', 'dreampop', 'dream pop', 'chillwave', 'shoegaze', 'ethereal'], [soma('lush', 'Lush')]],
   ['ambient', 'אמביינט', ['ambient', 'space ambient', 'dark ambient'], [soma('dronezone', 'Drone Zone'), soma('deepspaceone', 'Deep Space One'), soma('spacestation', 'Space Station')]],
   ['chillout', 'צ׳ילאאוט', ['chillout', 'chill out', 'downtempo', 'chill'], [soma('groovesalad', 'Groove Salad'), soma('fluid', 'Fluid')]],
   ['lounge', 'לאונג׳', ['lounge', 'chill lounge', 'bar'], [soma('illstreet', 'Illinois Street Lounge'), soma('secretagent', 'Secret Agent')]],
@@ -28,9 +31,9 @@ const STYLES = [
   ['dnb', 'דראם אנד בייס', ['drum and bass', 'drum & bass', 'dnb', 'jungle'], []],
   ['lofi', 'לו־פיי', ['lofi', 'lo-fi', 'lofi hip hop', 'chillhop'], []],
   ['jazz', 'ג׳אז', ['jazz', 'smooth jazz', 'nu jazz'], [soma('sonicuniverse', 'Sonic Universe')]],
-  ['classical', 'קלאסית', ['classical', 'classical music', 'baroque', 'opera'], []],
+  ['classical', 'קלאסית', ['classical music', 'baroque', 'symphony', 'opera', 'classical'], [], null, /telugu|tamil|hindi|bollywood|indian|turk|arab|pop|hits|carnatic/],
   ['piano', 'פסנתר', ['piano', 'solo piano', 'relaxing piano'], []],
-  ['mizrahi', 'מזרחית', ['mizrahi', 'mizrahit', 'מזרחית', 'oriental'], [], /mizra|מזרח|mediterr|ים תיכונ|oriental|greek|יוונית|arab/],
+  ['mizrahi', 'מזרחית', ['mizrahi', 'mizrahit', 'מזרחית', 'oriental'], [], /mizra|מזרח|mediterr|ים תיכונ|oriental|greek|יוונית/],
   ['israeli', 'ישראלי', ['israeli music', 'hebrew', 'israel'], [], /./],
   ['reggae', 'רגאיי', ['reggae', 'roots reggae', 'dub'], []],
   ['rock', 'רוק', ['rock', 'classic rock', 'alternative rock'], []],
@@ -131,10 +134,11 @@ let old = { genres: [] };
 try { old = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch {}
 const used = new Set(); // a station shows up under one style only
 const genres = [];
-for (const [id, style, tags, extra, ilRe] of STYLES) {
+for (const [id, style, tags, extra, ilRe, not] of STYLES) {
   let list = [...extra];
   if (ilRe) list = list.concat(await israel(ilRe));
   list = list.concat(await candidates(tags));
+  list = list.filter((s) => !NOT_MUSIC.test((s.tags || '') + ' ' + s.name.toLowerCase()) && !(not && not.test((s.tags || '') + ' ' + s.name.toLowerCase())));
   const fresh = list.filter((s) => !used.has(s.url));
   let ok = await pick(fresh.length >= 3 ? fresh : list);
   ok.forEach((s) => used.add(s.url));
