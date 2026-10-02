@@ -1,23 +1,25 @@
-name: Portfolio news
+name: Portfolio radio
 
-# Refreshes the headlines on the portfolio (portfolio/news.json on gh-pages)
-# every two hours, straight on the published branch, so main stays quiet.
+# Finds working internet radio stations for the site's music player and
+# publishes portfolio/radio.json on gh-pages. Every station is played for a
+# moment before it is kept. Runs daily (stations come and go) and on demand.
 
 on:
   schedule:
-    - cron: '17 */2 * * *'
+    - cron: '41 3 * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: portfolio-news
+  group: portfolio-radio
   cancel-in-progress: true
 
 jobs:
-  news:
+  radio:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,16 +27,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Refresh headlines on gh-pages
+      - name: Check stations and publish
         run: |
           set -euo pipefail
           git clone -q --depth 1 -b gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" /tmp/pages
           [ -d /tmp/pages/portfolio ] || { echo "portfolio is not published yet"; exit 0; }
-          node .github/scripts/portfolio-news.mjs /tmp/pages/portfolio/news.json
+          node .github/scripts/portfolio-radio.mjs /tmp/pages/portfolio/radio.json
           cd /tmp/pages
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add portfolio/news.json
+          git add portfolio/radio.json
           if git diff --cached --quiet; then echo "no change"; exit 0; fi
-          git commit -q -m "portfolio: headlines $(date -u +%H:%M)"
+          git commit -q -m "portfolio: radio stations $(date -u +%F)"
           for i in 1 2 3; do git pull -q --rebase origin gh-pages && git push -q origin gh-pages && break || sleep 5; done
