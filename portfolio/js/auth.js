@@ -162,7 +162,8 @@
       .then(function (r) { return r.ok ? r.json() : { enabled: true }; })
       .catch(function () { return { enabled: true }; })
       .then(function (cfg) {
-        if (cfg.enabled === false) { Auth.open = true; root.classList.remove('locked'); resolveReady({ role: 'admin', name: '', sites: 'all', open: true }); return; }
+        // ?login=1 tries the sign-in before it is switched on for everyone
+        if (cfg.enabled === false && !/[?&]login=1\b/.test(location.search)) { Auth.open = true; root.classList.remove('locked'); resolveReady({ role: 'admin', name: '', sites: 'all', open: true }); return; }
         check();
       });
   }

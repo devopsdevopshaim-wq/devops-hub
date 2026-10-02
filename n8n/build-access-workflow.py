@@ -251,7 +251,7 @@ X = 0
 nodes = [
     node('Note · Access', 'n8n-nodes-base.stickyNote', 1, {'content':
         '## כניסה והרשאות\n`POST /webhook/hasadna-auth` — האתר שולח לכאן בקשות כניסה. '
-        'הקוד החד־פעמי נשלח במייל מצומת **Send · Email**: מחברים אליו את Gmail פעם אחת.\n\n'
+        'הקוד החד־פעמי נשלח במייל מצומת **Send · Email** (SMTP של Gmail, סיסמת אפליקציה; ההתקנה מ־GitHub מחברת אותו לבד).\n\n'
         'המנהל מוגדר בראש הצומת **Auth · Handle** (ADMIN_EMAIL, ADMIN_PHONE). '
         'חשבוניות: ממלאים שם את INVOICE (פרטי ה־API של Morning / חשבונית ירוקה). '
         'את הלקוחות, האתרים והמנויים מנהלים במסך הניהול של האתר.',
@@ -283,9 +283,12 @@ nodes = [
                                          'operator': {'type': 'boolean', 'operation': 'true', 'singleValue': True}}],
                          'combinator': 'and'}, 'options': {}},
          [X + 660, 0]),
-    node('Send · Email', 'n8n-nodes-base.gmail', 2.1,
-         {'sendTo': '={{ $json.mail.to }}', 'subject': '={{ $json.mail.subject }}', 'emailType': 'text',
-          'message': '={{ $json.mail.text }}', 'options': {'appendAttribution': False}},
+    # SMTP through Gmail with an app password: the deploy (.github/scripts/n8n-deploy.mjs)
+    # creates the credential from the GMAIL_APP_PASSWORD secret, so nothing is clicked in n8n.
+    node('Send · Email', 'n8n-nodes-base.emailSend', 2.1,
+         {'fromEmail': 'SPIDER · חיים קריספין <' + ADMIN_EMAIL + '>', 'toEmail': '={{ $json.mail.to }}',
+          'subject': '={{ $json.mail.subject }}', 'emailFormat': 'text', 'text': '={{ $json.mail.text }}',
+          'options': {'appendAttribution': False}},
          [X + 900, -100], onError='continueRegularOutput'),
     node('Auth · After mail', 'n8n-nodes-base.code', 2, {'jsCode': AFTER_MAIL}, [X + 1120, -100]),
     node('Auth · Respond', 'n8n-nodes-base.respondToWebhook', 1.1,
