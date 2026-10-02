@@ -142,6 +142,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 .tip summary { cursor: pointer; font-weight: 700; }
 .tip p, .tip ol { color: #c8d2df; font-size: .93rem; }
 
+.sub-title { font-size: 1rem; margin: 18px 0 8px; }
+.ref-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.ref-gallery figure { margin: 0; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.ref-gallery img { display: block; width: 100%; aspect-ratio: 1.414; object-fit: contain; background: #fff; }
+.ref-gallery figcaption { background: var(--bg-2); color: var(--muted); font-size: .78rem; padding: 4px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sw-notes { margin: 10px 0 0; padding-inline-start: 18px; color: var(--warn); font-size: .88rem; }
+.sw-notes:empty { display: none; }
+.tip ul { color: #c8d2df; font-size: .93rem; padding-inline-start: 18px; }
+.tip li { margin: 6px 0; }
+
 /* ---------- תלת-ממד ---------- */
 .viewer-slot { position: relative; width: 100%; aspect-ratio: 16 / 10; background: #10151f; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 #slot-video { aspect-ratio: 16 / 9; }

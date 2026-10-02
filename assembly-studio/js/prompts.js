@@ -35,9 +35,26 @@
   var PLAN_SCHEMA = {
     type: 'object',
     additionalProperties: false,
-    required: ['title', 'summary', 'crew', 'tools', 'safety', 'steps', 'spares', 'maintenance', 'notes'],
+    required: ['title', 'summary', 'crew', 'bom', 'tools', 'safety', 'steps', 'spares', 'maintenance', 'notes'],
     properties: {
       title: { type: 'string' },
+      bom: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['name', 'qty', 'type', 'material', 'size', 'ref', 'notes'],
+          properties: {
+            name: { type: 'string' },
+            qty: { type: 'integer' },
+            type: { type: 'string', enum: ['part', 'fastener', 'purchased', 'sub'] },
+            material: { type: 'string' },
+            size: { type: 'string' },
+            ref: { type: 'string' },
+            notes: { type: 'string' }
+          }
+        }
+      },
       summary: { type: 'string' },
       crew: { type: 'integer' },
       tools: { type: 'array', items: { type: 'string' } },
@@ -95,12 +112,13 @@
     return (p.parts || []).map(function (part, i) {
       var line = '#' + (i + 1) + ' ' + part.name + ' ×' + (part.qty || 1) + ' [' + (TYPE_LABELS[part.type] || 'חלק') + ']';
       if (part.size) line += ' מידות ' + part.size.map(fmt).join('×');
+      else if (part.dims) line += ' מידות ' + part.dims;
       if (part.center) line += ' מרכז (' + part.center.map(fmt).join(', ') + ')';
       if (part.material) line += ' חומר: ' + part.material;
       if (!part.geo) line += ' (ללא גאומטריה, שם מקובץ SolidWorks)';
       if (part.notes) line += ' — ' + part.notes;
       return line;
-    }).join('\n') || '(לא זוהו חלקים. בנו תכנית לפי תיאור המערכת בלבד.)';
+    }).join('\n') || '(אין רשימת חלקים מהמודל. בנה אותה מהשרטוטים, מהתמונות ומהתיאור.)';
   }
 
   function projectCard(p) {
@@ -111,6 +129,7 @@
       p.environment ? 'סביבת עבודה ושימוש: ' + p.environment : '',
       p.crew ? 'צוות ההרכבה: ' + p.crew + ' אנשים' : '',
       'קבצים שהועלו: ' + ((p.files || []).map(function (f) { return f.name; }).join(', ') || 'אין'),
+      p.drawings && p.drawings.length ? 'שרטוטים ותמונות מצורפים: ' + p.drawings.join(', ') : '',
       p.bounds ? 'מידות המכלול הכולל (יחידות המודל, בדרך כלל מ״מ): ' + p.bounds.map(fmt).join(' × ') + ' (רוחב X × גובה Y × עומק Z, ציר Y כלפי מעלה)' : ''
     ].filter(Boolean).join('\n');
   }
@@ -125,12 +144,21 @@
     '- מומנטי הידוק: תן ערך מקובל לפי קוטר הבורג ודרגת החוזק אם אפשר להסיק אותם (למשל M8 8.8 ≈ 25 נ״מ), וציין ״יש לאמת מול המפרט״. אם אין מחברים, כתוב ״—״.',
     '- חלקי חילוף: חלקי בלאי (מיסבים, אטמים, רצועות, מסננים), חלקים קריטיים שהשבתתם עוצרת את המערכת, מתכלים (שמן, גריז, דבק הברגות) ומחברים. part_id הוא מספר השורה ב-BOM, או 0 לפריט שאינו ב-BOM. תן כמות מומלצת למלאי ותדירות החלפה.',
     '- בטיחות: ציוד מגן, הרמה (משקל משוער לחלקים גדולים), ניתוק אנרגיה כשרלוונטי.',
-    '- אל תמציא נתונים שאין להם בסיס. כשאתה מניח הנחה, כתוב אותה ב-notes.'
+    '- אל תמציא נתונים שאין להם בסיס. כשאתה מניח הנחה, כתוב אותה ב-notes.',
+    'ניתוח שרטוטים ותמונות (כשהם מצורפים):',
+    '- קרא את השרטוט כמו מהנדס: טבלת הכותרת (שם, מספר שרטוט, חומר, משקל, קנה מידה), טבלת החלקים (BOM) אם יש, בלונים ממוספרים, מבטים וחתכים, מידות עיקריות, הערות כלליות, סימוני ריתוך, טולרנסים וגימור.',
+    '- הבן מהמבטים אילו חלקים יש, כמה פעמים כל אחד מופיע (גם ברגים, אומים, דיסקיות ופינים), ואיך הם מתחברים.',
+    '- bom הוא רשימת החלקים המלאה: name בעברית או כפי שכתוב בשרטוט, qty, type, material (מהשרטוט או ״לא צוין״), size (מידות עיקריות או מידת בורג, למשל M8×25), ref (מספר הבלון או מספר הפריט בשרטוט, או ריק), notes.',
+    '- אם בקלט כבר יש רשימת חלקים מהמודל: השאר את השורות שלה באותו סדר ובאותם שמות בתחילת bom, ורק הוסף בסופה פריטים שמופיעים בשרטוט ולא במודל. אם אין רשימה, בנה אותה מהשרטוט.',
+    '- part_ids בשלבים וב-spares מתייחסים למספרי השורות ב-bom שלך (מ-1).',
+    '- מה שלא קריא או לא ודאי בשרטוט: כתוב זאת ב-notes של הפריט ובהערות הכלליות, ואל תנחש מספרים.'
   ].join('\n');
 
   function build(p) {
     var cached = '## פרטי הפרויקט\n' + projectCard(p) + '\n\n## רשימת חלקים (BOM)\n' + bomText(p);
-    var instruction = 'כתוב תכנית הרכבה מלאה למערכת: שלבים, כלים, בטיחות, חלקי חילוף ותחזוקה. החזר JSON בלבד לפי המבנה.';
+    if (p.drawingText) cached += '\n\n## טקסט שחולץ מקבצי השרטוט (PDF)\n' + String(p.drawingText).slice(0, 30000);
+    var instruction = (p.drawings && p.drawings.length ? 'נתח את השרטוטים והתמונות המצורפים, בנה מהם רשימת חלקים מלאה (bom), ' : 'בנה רשימת חלקים (bom), ') +
+      'וכתוב תכנית הרכבה מלאה למערכת: שלבים, כלים, בטיחות, חלקי חילוף ותחזוקה. החזר JSON בלבד לפי המבנה.';
     if (p.planNote) instruction += '\nהערה מהמשתמש לגרסה הזו: ' + p.planNote;
     return { system: SYSTEM_PROMPT, cached: cached, instruction: instruction, schema: PLAN_SCHEMA, maxTokens: 16000, effort: 'high' };
   }
@@ -138,7 +166,8 @@
   /* הנחיה מלאה להעתקה ל-Claude.ai (מצב בלי שרת) */
   function copyPrompt(p) {
     var s = build(p);
-    return s.system + '\n\n' + s.cached + '\n\n' + s.instruction +
+    var attach = p.drawings && p.drawings.length ? '\n\n(מצורפות להודעה הזו תמונות השרטוט: ' + p.drawings.join(', ') + ')' : '';
+    return s.system + '\n\n' + s.cached + attach + '\n\n' + s.instruction +
       '\n\nהחזר אובייקט JSON יחיד, בלי טקסט נוסף, במבנה הזה:\n' + JSON.stringify(PLAN_SCHEMA);
   }
 
@@ -222,6 +251,7 @@
   }
 
   function normalize(plan) {
+    plan.bom = Array.isArray(plan.bom) ? plan.bom.filter(function (b) { return b && b.name; }) : null;
     plan.tools = plan.tools || []; plan.safety = plan.safety || []; plan.spares = plan.spares || []; plan.maintenance = plan.maintenance || [];
     plan.steps = plan.steps.map(function (s) {
       return {

@@ -89,7 +89,7 @@
     // 2. BOM
     h.push('<section><h2>2. רשימת חלקים (BOM)</h2><table><thead><tr><th>#</th><th>תיאור</th><th>סוג</th><th>כמות</th><th>מידות (מ״מ)</th><th>חומר</th><th>הערות</th></tr></thead><tbody>');
     bom.forEach(function (b, i) {
-      h.push('<tr><td class="num">' + (i + 1) + '</td><td>' + esc(b.name) + '</td><td>' + esc(P.TYPE_LABELS[b.type] || '') + '</td><td class="num">' + esc(b.qty) + '</td><td class="num">' + mm(b.size) + '</td><td>' + esc(b.material || '') + '</td><td>' + esc(b.notes || '') + '</td></tr>');
+      h.push('<tr><td class="num">' + (i + 1) + '</td><td>' + esc(b.name) + '</td><td>' + esc(P.TYPE_LABELS[b.type] || '') + '</td><td class="num">' + esc(b.qty) + '</td><td class="num">' + (b.size ? mm(b.size) : esc(b.dims || '—')) + '</td><td>' + esc(b.material || '') + '</td><td>' + esc(b.notes || '') + '</td></tr>');
     });
     h.push('</tbody></table></section>');
 
@@ -164,7 +164,7 @@
 
   function bomCsv(bom) {
     return csv([['#', 'שם', 'סוג', 'כמות', 'מידות (מ״מ)', 'חומר', 'הערות']].concat(bom.map(function (b, i) {
-      return [i + 1, b.name, P.TYPE_LABELS[b.type] || '', b.qty, mm(b.size), b.material || '', b.notes || ''];
+      return [i + 1, b.name, P.TYPE_LABELS[b.type] || '', b.qty, b.size ? mm(b.size) : (b.dims || ''), b.material || '', b.notes || ''];
     })));
   }
 
