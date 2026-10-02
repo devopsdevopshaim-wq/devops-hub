@@ -23,7 +23,7 @@ const MODEL = process.env.ASM_MODEL || 'claude-opus-5-5';
 const ACCESS_CODE = process.env.ACCESS_CODE || '';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const GITHUB_REPO = process.env.GITHUB_REPO || '';
-const MAX_BODY = 20 * 1024 * 1024;
+const MAX_BODY = 40 * 1024 * 1024;
 const HAS_KEY = Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
 const client = HAS_KEY ? new Anthropic() : null;
 
@@ -76,10 +76,13 @@ async function runPlan(req, res) {
 
   const spec = AsmPrompts.build(body.project || {});
   const content = [];
-  const img = /^data:image\/(jpeg|png);base64,(.+)$/.exec(String(body.image || ''));
-  if (img) {
-    content.push({ type: 'text', text: 'תצוגה תלת-ממדית של המכלול המלא (ציר Y כלפי מעלה):' });
-    content.push({ type: 'image', source: { type: 'base64', media_type: 'image/' + img[1], data: img[2] } });
+  // שרטוטים, תמונות תצוגה ומבט על המודל — עד 14 תמונות
+  const images = Array.isArray(body.images) ? body.images : body.image ? [{ title: 'מבט תלת-ממדי על המודל', src: body.image }] : [];
+  for (const im of images.slice(0, 14)) {
+    const m = /^data:image\/(jpeg|png|webp);base64,(.+)$/.exec(String(im && im.src || ''));
+    if (!m) continue;
+    content.push({ type: 'text', text: 'תמונה: ' + String(im.title || '').slice(0, 200) });
+    content.push({ type: 'image', source: { type: 'base64', media_type: 'image/' + m[1], data: m[2] } });
   }
   content.push({ type: 'text', text: spec.cached, cache_control: { type: 'ephemeral' } });
   content.push({ type: 'text', text: spec.instruction });

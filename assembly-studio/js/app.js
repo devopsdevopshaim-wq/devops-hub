@@ -6,9 +6,12 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
 const esc = D.esc;
 
-const MODEL_EXT = ['step', 'stp', 'iges', 'igs', 'stl', 'obj', 'glb', 'gltf'];
-const NATIVE_EXT = ['sldprt', 'sldasm', 'slddrw'];
+const MODEL_EXT = ['sldasm', 'sldprt', 'step', 'stp', 'iges', 'igs', 'stl', 'obj', 'glb', 'gltf'];
+const SW_EXT = ['sldasm', 'sldprt'];
+const DRAWING_EXT = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'slddrw'];
 const extOf = (n) => String(n).split('.').pop().toLowerCase();
+/* הסוג נקבע לפי הסיומת, כדי שגם קבצים שהועלו בגרסה קודמת של האתר ייפתחו נכון */
+const kindOf = (n) => { const e = extOf(n); return MODEL_EXT.includes(e) ? 'model' : DRAWING_EXT.includes(e) ? 'drawing' : 'doc'; };
 const baseName = (n) => String(n).replace(/\.[^.]+$/, '');
 
 const state = {
@@ -17,6 +20,9 @@ const state = {
   viewerError: '',
   sheets: [],     // [{ id, title, file, blob, url }]
   videos: [],     // [{ id, name, blob, url }]
+  refs: [],       // עמודי שרטוט ותמונות: [{ id, parentId, title, blob, url, text }]
+  previews: [],   // תמונות תצוגה מקבצי SolidWorks: [{ name, blob, url }]
+  notes: [],      // הערות מקריאת קבצי SolidWorks
   ai: { server: false, needCode: false, github: false, code: sessionStorage.getItem('asm-code') || '' },
   step: 'files'
 };
@@ -110,55 +116,114 @@ async function openProject(id, step) {
   localStorage.setItem('asm-current', id);
   state.sheets.forEach((s) => URL.revokeObjectURL(s.url));
   state.videos.forEach((v) => URL.revokeObjectURL(v.url));
-  state.sheets = []; state.videos = [];
+  state.refs.forEach((r) => URL.revokeObjectURL(r.url));
+  state.sheets = []; state.videos = []; state.refs = [];
   const files = await S.projectFiles(id);
   files.filter((f) => f.kind === 'drawing').sort((a, b) => a.order - b.order).forEach((f) => state.sheets.push({ ...f, url: URL.createObjectURL(f.blob) }));
+  files.filter((f) => f.kind === 'ref').sort((a, b) => a.createdAt - b.createdAt || a.page - b.page).forEach((f) => state.refs.push({ ...f, url: URL.createObjectURL(f.blob) }));
   files.filter((f) => f.kind === 'video').sort((a, b) => a.createdAt - b.createdAt).forEach((f) => state.videos.push({ ...f, url: URL.createObjectURL(f.blob) }));
   if (location.hash !== '#p/' + step) location.hash = '#p/' + step;
   else route();
   await loadModel(files);
+  await ensureRefs();
+}
+
+/* כל קובץ שרטוט (PDF, תמונה, SLDDRW) הופך לתמונות עמוד, פעם אחת, ונשמר */
+async function ensureRefs() {
+  const p = state.project;
+  const files = await S.projectFiles(p.id);
+  const done = new Set(files.filter((f) => f.kind === 'ref').map((f) => f.parentId));
+  const todo = files.filter((f) => kindOf(f.name) === 'drawing' && !done.has(f.id));
+  if (!todo.length) return;
+  for (const f of todo) {
+    const e = extOf(f.name);
+    const add = async (blob, page, title, text) => {
+      const r = { id: S.uid('r'), projectId: p.id, kind: 'ref', parentId: f.id, page, title, name: title, text: text || '', blob, createdAt: Date.now() };
+      await S.saveFile(r);
+      state.refs.push({ ...r, url: URL.createObjectURL(blob) });
+    };
+    try {
+      if (e === 'pdf') {
+        toast('קורא את השרטוט ' + f.name + '…');
+        const { pdfPages } = await import('./pages.js');
+        const { pages, total } = await pdfPages(f.blob);
+        for (const pg of pages) await add(pg.blob, pg.page, f.name + (total > 1 ? ' · עמוד ' + pg.page : ''), pg.text);
+        if (total > pages.length) toast('נקראו ' + pages.length + ' עמודים ראשונים מתוך ' + total);
+      } else if (e === 'slddrw') {
+        const { readSolidWorks } = await import('./solidworks.js');
+        const r = await readSolidWorks(f.name, new Uint8Array(await f.blob.arrayBuffer()));
+        if (r.preview) await add(r.preview, 1, f.name + ' (תמונת תצוגה)');
+        else toast('בשרטוט ' + f.name + ' לא נמצאה תמונת תצוגה. שמרו אותו כ-PDF והעלו.', true);
+      } else await add(f.blob, 1, f.name);
+    } catch (err) { toast('השרטוט ' + f.name + ' לא נקרא: ' + err.message, true); }
+  }
+  if (state.step === 'files') renderRefs();
 }
 
 async function loadModel(files) {
   const p = state.project;
-  const models = (files || await S.projectFiles(p.id)).filter((f) => f.kind === 'model');
+  const all = files || await S.projectFiles(p.id);
+  const models = all.filter((f) => f.kind !== 'ref' && kindOf(f.name) === 'model');
   const v = (models.length || p.demo) ? await viewer() : state.viewer;
   if (v) v.clear();
+  state.previews.forEach((x) => URL.revokeObjectURL(x.url));
+  state.previews = []; state.notes = [];
   let geo = [];
+  const extra = new Map(); // חלקים בלי גאומטריה: שם → כמות
   if (v && p.demo) geo = v.demo();
   else if (v && models.length) {
     $('#modelStats').textContent = 'טוען מודל…';
-    for (const f of models) {
-      try { await v.loadFile(f.name, f.blob); } catch (e) { toast(e.message, true); }
+    const parts = models.filter((f) => extOf(f.name) === 'sldprt');
+    const resolve = async (name) => {
+      const f = parts.find((x) => x.name.toLowerCase() === String(name).toLowerCase());
+      return f ? new Uint8Array(await f.blob.arrayBuffer()) : null;
+    };
+    // קודם המכלולים; חלקים שהמכלול כבר משתמש בהם לא נטענים שוב
+    const ordered = models.slice().sort((x, y) => (extOf(y.name) === 'sldasm') - (extOf(x.name) === 'sldasm'));
+    const used = new Set(), unused = [];
+    for (const f of ordered) {
+      const e = extOf(f.name);
+      try {
+        if (SW_EXT.includes(e)) {
+          if (e === 'sldprt' && used.has(f.name.toLowerCase())) continue;
+          if (e === 'sldprt' && used.size) { unused.push(f.name); continue; }
+          const r = await v.loadSolidWorks(f.name, f.blob, resolve);
+          r.components.forEach((c) => { if (c.file) used.add(c.file.toLowerCase()); });
+          r.noGeo.forEach((k) => extra.set(k, (extra.get(k) || 0) + 1));
+          if (r.preview && (e === 'sldasm' || !ordered.some((x) => extOf(x.name) === 'sldasm'))) state.previews.push({ name: f.name, blob: r.preview, url: URL.createObjectURL(r.preview) });
+          state.notes.push(...r.notes.map((n) => f.name + ': ' + n));
+        } else await v.loadFile(f.name, f.blob);
+      } catch (err) { toast(f.name + ': ' + err.message, true); }
     }
+    if (unused.length) state.notes.push(unused.length + ' קבצי חלקים לא שייכים למכלול ולכן לא הוצגו: ' + unused.join(', '));
     geo = v.finalize();
   }
-  mergeParts(geo);
+  mergeParts(geo, extra);
   if (v && v.hasGeometry()) { p.bounds = v.bounds(); applyPlanToViewer(); }
   await save();
   const slot = { files: 'slot-files', parts: 'slot-parts', video: 'slot-video' }[state.step];
   if (slot) placeViewer(slot);
-  if (state.step === 'files') renderStats();
+  if (state.step === 'files') { renderStats(); renderRefs(); }
   if (state.step === 'parts') renderParts();
 }
 
-/* ממזג את החלקים מהמודל עם העריכות של המשתמש ועם שמות מקבצי SolidWorks */
-function mergeParts(geo) {
+/* ממזג את החלקים מהמודל עם העריכות של המשתמש. extra: רכיבים שאין להם רשת (שם → כמות) */
+function mergeParts(geo, extra) {
   const p = state.project;
   const old = new Map(p.parts.map((x) => [x.key, x]));
-  const out = geo.map((g) => {
+  const keep = (g) => {
     const o = old.get(g.key) || {};
-    return { ...g, name: o.name || g.name, type: o.type || P.guessType(g.name), material: o.material || '', notes: o.notes || '' };
+    return { ...g, name: o.name || g.name, type: o.type || P.guessType(g.name), material: o.material || '', notes: o.notes || '', dims: o.dims || g.dims || '', ref: o.ref || '' };
+  };
+  const out = geo.map(keep);
+  const have = new Map(out.map((x) => [x.key, x]));
+  (extra || new Map()).forEach((qty, key) => {
+    if (have.has(key)) { have.get(key).qty += qty; return; }
+    const x = keep({ key, name: key, qty, geo: false, fromFile: true });
+    out.push(x); have.set(key, x);
   });
-  const have = new Set(out.map((x) => x.key));
-  p.parts.forEach((x) => { if (!x.geo && !have.has(x.key) && !x.fromFile) { out.push(x); have.add(x.key); } });
-  p.files.filter((f) => extOf(f.name) === 'sldprt').forEach((f) => {
-    const key = baseName(f.name);
-    if (have.has(key)) return;
-    const o = old.get(key) || {};
-    out.push({ key, name: o.name || key, qty: o.qty || 1, type: o.type || P.guessType(key), geo: false, fromFile: true, material: o.material || '', notes: o.notes || '' });
-    have.add(key);
-  });
+  // פריטים שנוספו ידנית או מניתוח שרטוט נשארים
+  p.parts.forEach((x) => { if (!x.geo && !x.fromFile && !have.has(x.key)) { out.push(x); have.set(x.key, x); } });
   p.parts = out;
 }
 
@@ -185,8 +250,9 @@ function renderFiles() {
   const list = $('#fileList');
   const kindLabel = (n) => {
     const e = extOf(n);
+    if (SW_EXT.includes(e)) return ['model', e === 'sldasm' ? 'מכלול SolidWorks' : 'חלק SolidWorks'];
     if (MODEL_EXT.includes(e)) return ['model', 'תלת-ממד'];
-    if (NATIVE_EXT.includes(e)) return ['native', 'SolidWorks · שם בלבד'];
+    if (DRAWING_EXT.includes(e)) return ['native', 'שרטוט לניתוח'];
     return ['doc', 'מסמך מצורף'];
   };
   list.innerHTML = p.files.map((file) => {
@@ -195,14 +261,23 @@ function renderFiles() {
   }).join('') || (p.demo ? '<li class="muted">מכלול לדוגמה: יחידת הנעה עם מנוע, מצמד, ציר על שני מיסבים וגלגלת.</li>' : '');
   placeViewer('slot-files');
   renderStats();
+  renderRefs();
+}
+function renderRefs() {
+  const items = state.previews.map((x) => ({ title: x.name + ' (תמונת תצוגה)', url: x.url }))
+    .concat(state.refs.map((r) => ({ title: r.title, url: r.url })));
+  $('#refWrap').hidden = !items.length;
+  $('#refGallery').innerHTML = items.map((x) => `<figure><a href="${x.url}" target="_blank" rel="noopener"><img src="${x.url}" alt="${esc(x.title)}" loading="lazy"></a><figcaption>${esc(x.title)}</figcaption></figure>`).join('');
+  $('#swNotes').innerHTML = state.notes.map((n) => `<li>${esc(n)}</li>`).join('');
 }
 function renderStats() {
   const p = state.project, v = state.viewer;
   const el = $('#modelStats');
   if (v && v.hasGeometry()) {
     const n = v.occ.length;
-    el.textContent = `${p.parts.length} פריטים שונים, ${n} חלקים בסך הכול. מידות כלליות: ${p.bounds.map((x) => Math.round(x)).join(' × ')} מ״מ. גוררים לסיבוב, גלגלת לזום.`;
-  } else el.textContent = p.parts.length ? `${p.parts.length} פריטים משמות קבצים, בלי תלת-ממד. העלו STEP לתצוגה, סרטון ושרטוטים.` : 'עוד לא נטען מודל.';
+    const extra = p.parts.filter((x) => !x.geo).length;
+    el.textContent = `${p.parts.length} פריטים שונים, ${n} חלקים בתלת-ממד${extra ? ` ועוד ${extra} פריטים בלי גאומטריה` : ''}. מידות כלליות: ${p.bounds.map((x) => Math.round(x)).join(' × ')} מ״מ. גוררים לסיבוב, גלגלת לזום.`;
+  } else el.textContent = p.parts.length ? `${p.parts.length} פריטים ברשימה, בלי תלת-ממד.` : state.refs.length ? 'אין מודל תלת-ממד. אפשר לבנות רשימת חלקים ותכנית מהשרטוטים בשלב 3.' : 'עוד לא נטען מודל.';
 }
 
 async function addFiles(fileList) {
@@ -212,7 +287,7 @@ async function addFiles(fileList) {
   let models = 0;
   for (const file of files) {
     const e = extOf(file.name);
-    const kind = MODEL_EXT.includes(e) ? 'model' : NATIVE_EXT.includes(e) ? 'native' : 'doc';
+    const kind = kindOf(file.name);
     if (kind === 'model') models++;
     const id = S.uid('f');
     await S.saveFile({ id, projectId: p.id, kind, name: file.name, blob: file, createdAt: Date.now() });
@@ -223,7 +298,8 @@ async function addFiles(fileList) {
   await save();
   renderFiles();
   toast(models ? 'טוען ' + models + ' קבצי תלת-ממד…' : 'הקבצים נוספו');
-  await loadModel();
+  if (models) await loadModel();
+  await ensureRefs();
   renderFiles();
 }
 
@@ -231,6 +307,8 @@ async function removeFile(id) {
   const p = state.project;
   p.files = p.files.filter((f) => f.id !== id);
   await S.deleteFile(id);
+  for (const r of state.refs.filter((x) => x.parentId === id)) { await S.deleteFile(r.id); URL.revokeObjectURL(r.url); }
+  state.refs = state.refs.filter((x) => x.parentId !== id);
   p.parts = p.parts.filter((x) => !x.fromFile);
   await save();
   await loadModel();
@@ -248,7 +326,7 @@ function renderParts() {
       <td><input data-f="name" value="${esc(x.name)}" aria-label="שם החלק ${i + 1}"></td>
       <td><select data-f="type" aria-label="סוג">${types.map(([k, l]) => `<option value="${k}"${x.type === k ? ' selected' : ''}>${l}</option>`).join('')}</select></td>
       <td>${x.geo ? `<span class="num">${x.qty}</span>` : `<input data-f="qty" type="number" min="1" value="${x.qty || 1}" class="qty" aria-label="כמות">`}</td>
-      <td class="num">${x.size ? x.size.map((n) => Math.round(n)).join('×') : '<span class="muted">—</span>'}</td>
+      <td class="num">${x.size ? x.size.map((n) => Math.round(n)).join('×') : `<input data-f="dims" value="${esc(x.dims || '')}" placeholder="—" aria-label="מידות">`}</td>
       <td><input data-f="material" value="${esc(x.material || '')}" placeholder="למשל: פלדה 37" aria-label="חומר"></td>
       <td><input data-f="notes" value="${esc(x.notes || '')}" aria-label="הערות"></td>
       <td>${x.geo ? '' : `<button type="button" class="icon-btn" data-rmpart="${esc(x.key)}" aria-label="מחיקת פריט">✕</button>`}</td>
@@ -295,12 +373,55 @@ function applyPlanToViewer() {
 
 function projectPayload() {
   const p = state.project;
-  return { name: p.name, system: p.system, crew: p.crew, description: p.description, environment: p.environment, bounds: p.bounds, planNote: $('#planNote').value.trim(), files: p.files.map((f) => ({ name: f.name })), parts: p.parts.map((x) => ({ name: x.name, qty: x.qty, type: x.type, size: x.size, center: x.center, geo: x.geo, material: x.material, notes: x.notes })) };
+  return {
+    name: p.name, system: p.system, crew: p.crew, description: p.description, environment: p.environment, bounds: p.bounds,
+    planNote: $('#planNote').value.trim(), files: p.files.map((f) => ({ name: f.name })),
+    drawings: state.previews.map((x) => x.name + ' (תמונת תצוגה)').concat(state.refs.map((r) => r.title)),
+    drawingText: state.refs.map((r) => r.text ? '[' + r.title + '] ' + r.text : '').filter(Boolean).join('\n\n'),
+    parts: p.parts.map((x) => ({ name: x.name, qty: x.qty, type: x.type, size: x.size, dims: x.dims, center: x.center, geo: x.geo, material: x.material, notes: x.notes }))
+  };
+}
+
+/* תמונות לשליחה ל-Claude: עמודי השרטוט, תמונות התצוגה של SolidWorks ומבט על המודל */
+async function analysisImages() {
+  const { toDataUrl } = await import('./pages.js');
+  const out = [];
+  for (const r of state.refs.slice(0, 10)) out.push({ title: r.title, src: await toDataUrl(r.blob, 1800) });
+  for (const x of state.previews.slice(0, 3)) out.push({ title: x.name + ' (תמונת תצוגה)', src: await toDataUrl(x.blob, 1000) });
+  const v = state.viewer;
+  if (v && v.hasGeometry()) { v.resetPose(); v.home(); out.push({ title: 'מבט תלת-ממדי על המודל', src: v.snapshot(1200, 800) }); }
+  return out;
+}
+
+/* רשימת החלקים ש-Claude בנה: השורות הראשונות הן החלקים שכבר יש, והשאר נוספים */
+function applyBom(bom) {
+  const p = state.project;
+  const used = new Set(p.parts.map((x) => x.key));
+  bom.forEach((b, i) => {
+    const cur = p.parts[i];
+    if (cur && (cur.geo || cur.fromFile)) {
+      if (!cur.material && b.material && !/לא צוין/.test(b.material)) cur.material = b.material;
+      if (!cur.notes && b.notes) cur.notes = b.notes;
+      if (!cur.ref && b.ref) cur.ref = b.ref;
+      if (!cur.size && !cur.dims && b.size) cur.dims = b.size;
+      return;
+    }
+    let key = b.name.trim() || 'פריט ' + (i + 1);
+    while (used.has(key) && !(cur && cur.key === key)) key += '·';
+    used.add(key);
+    const item = { key, name: b.name, qty: Math.max(1, b.qty || 1), type: ['part', 'fastener', 'purchased', 'sub'].includes(b.type) ? b.type : P.guessType(b.name), geo: false, fromDrawing: true, material: /לא צוין/.test(b.material || '') ? '' : (b.material || ''), dims: b.size || '', ref: b.ref || '', notes: b.notes || '' };
+    if (cur) p.parts[i] = item; else p.parts.push(item);
+  });
+  // פריטים ישנים מניתוח קודם שלא חזרו ברשימה החדשה יוצאים
+  p.parts = p.parts.filter((x, i) => i < bom.length || x.geo || x.fromFile || !x.fromDrawing);
 }
 
 async function acceptPlan(raw, source) {
   const p = state.project;
-  const plan = attachKeys(P.normalize(raw));
+  const norm = P.normalize(raw);
+  if (norm.bom && norm.bom.length) applyBom(norm.bom);
+  delete norm.bom;
+  const plan = attachKeys(norm);
   plan.source = source;
   plan.createdAt = Date.now();
   p.plan = plan;
@@ -319,20 +440,19 @@ async function genBasic() {
 
 async function genAi() {
   const p = state.project;
-  if (!p.description.trim() && !p.parts.length) { toast('כתבו תיאור של המערכת או העלו קבצים לפני יצירת תכנית.', true); location.hash = '#p/files'; return; }
+  if (!p.description.trim() && !p.parts.length && !state.refs.length && !state.previews.length) { toast('כתבו תיאור של המערכת או העלו קבצים ושרטוטים לפני יצירת תכנית.', true); location.hash = '#p/files'; return; }
   if (!state.ai.server) { openPaste(); return; }
   if (state.ai.needCode && !state.ai.code) { if (!(await askCode())) return; }
   const prog = $('#planProgress');
   prog.hidden = false; prog.classList.add('busy');
   const label = $('span', prog);
-  label.textContent = 'Claude בונה את התכנית…';
+  label.textContent = state.refs.length ? 'Claude מנתח את השרטוטים ובונה רשימת חלקים ותכנית…' : 'Claude בונה את התכנית…';
   $('#genAi').disabled = true;
   try {
-    const v = state.viewer;
-    const image = v && v.hasGeometry() ? v.snapshot(1200, 800) : null;
+    const images = await analysisImages();
     const headers = { 'content-type': 'application/json' };
     if (state.ai.code) headers['x-access-code'] = state.ai.code;
-    const r = await fetch('api/plan', { method: 'POST', headers, body: JSON.stringify({ project: projectPayload(), image }) });
+    const r = await fetch('api/plan', { method: 'POST', headers, body: JSON.stringify({ project: projectPayload(), images }) });
     if (r.status === 401) { state.ai.code = ''; sessionStorage.removeItem('asm-code'); throw new Error('קוד הגישה שגוי'); }
     if (!r.ok || !r.body) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'שגיאת שרת ' + r.status); }
     const reader = r.body.getReader();
@@ -363,6 +483,10 @@ async function genAi() {
 
 function openPaste() {
   $('#pasteBox').value = ''; $('#pasteErr').textContent = '';
+  const imgs = state.previews.map((x) => ({ name: x.name + '.png', url: x.url })).concat(state.refs.map((r) => ({ name: r.title + '.jpg', url: r.url })));
+  $('#pasteImgs').hidden = !imgs.length;
+  $('#pasteAttach').hidden = !imgs.length;
+  $('#pasteImgList').innerHTML = imgs.map((x) => `<a class="btn ghost small" href="${x.url}" download="${esc(safeName(x.name))}">${esc(x.name)}</a>`).join('');
   $('#pasteDialog').showModal();
 }
 function askCode() {
@@ -736,7 +860,7 @@ function bind() {
   $('#genBasic').onclick = genBasic;
   $('#copyPrompt').onclick = async () => {
     const txt = P.copyPrompt(projectPayload());
-    try { await navigator.clipboard.writeText(txt); toast('ההנחיה הועתקה. הדביקו אותה ב-Claude.ai'); } catch { $('#pasteBox').value = txt; toast('לא הצלחתי להעתיק. ההנחיה הודבקה בתיבה, העתיקו אותה ידנית.'); }
+    try { await navigator.clipboard.writeText(txt); toast('הבקשה הועתקה. הדביקו אותה ב-Claude.ai'); } catch { $('#pasteBox').value = txt; toast('לא הצלחתי להעתיק אוטומטית. הבקשה מופיעה בתיבה: סמנו, העתיקו ונקו את התיבה.'); }
   };
   $('#pasteDialog').addEventListener('close', () => {});
   $('#pasteOk').onclick = async (e) => {
