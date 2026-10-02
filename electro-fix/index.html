@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מעגל סגור — אבחון תקלות חשמל ואלקטרוניקה</title>
+<meta name="description" content="מרכז אבחון ותיקון תקלות לארונות חשמל תעשייתיים, חשמל ביתי, בתים חכמים ואלקטרוניקה ברמת הכרטיס. מתארים את התקלה, מצרפים תמונות, ו-Claude מאבחן, מוביל בבדיקות מדידה, בודק את הפתרון ומשרטט סכימת חיווט תקינה.">
+<meta name="theme-color" content="#0c1424">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314213d'/%3E%3Cpath d='M9 16a7 7 0 1 0 14 0a7 7 0 1 0 -14 0' fill='none' stroke='%23ffb703' stroke-width='2.4'/%3E%3Cpath d='M17.5 9.5l-3 6h4l-3 6' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@300;400;500;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#diagnose" aria-label="מעגל סגור — דף הבית">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M17.5 8.5l-3.5 7h4.5l-3.5 7.5" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      <span class="brand-text"><span class="brand-name">מעגל סגור</span><span class="brand-tag">מרכז אבחון תקלות חשמל ואלקטרוניקה</span></span>
+    </a>
+    <nav class="mainnav" aria-label="ניווט ראשי">
+      <a href="#diagnose" data-view="diagnose">אבחון תקלה</a>
+      <a href="#design" data-view="design">תכנון כרטיס</a>
+      <a href="#home" data-view="home">חשמל לבית</a>
+      <a href="#plan" data-view="plan">שרטוט אדריכלי</a>
+      <a href="#cases" data-view="cases">התיקים שלי <span class="count" id="caseCount"></span></a>
+      <a href="#tools" data-view="tools">מחשבונים</a>
+      <a href="#guide" data-view="guide">מקרא ובטיחות</a>
+    </nav>
+    <span class="ai-badge" id="aiBadge" role="status">בודק חיבור…</span>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- ===== אבחון ===== -->
+  <section class="view" id="view-diagnose" data-view="diagnose">
+    <div class="wrap" id="intake">
+      <div class="hero">
+        <div>
+          <p class="eyebrow">אבחון · בדיקה · תיקון · סכימה</p>
+          <h1>מתארים את התקלה. מקבלים דרך מסודרת לפתור אותה.</h1>
+          <p class="lede">ארונות חשמל תעשייתיים, לוחות ביתיים, בתים חכמים וכרטיסים אלקטרוניים. מתארים מה לא עובד ומצרפים תמונות של החיווט או הכרטיס. Claude מדרג את הסיבות האפשריות, נותן בדיקות מדידה מסודרות עם ערכים צפויים, בודק את הפתרון שלו, ומשרטט סכימת חיווט תקינה שנבדקת אוטומטית.</p>
+        </div>
+        <ol class="flow" aria-label="איך זה עובד">
+          <li><b>1</b><span>תיאור התקלה ותמונות</span></li>
+          <li><b>2</b><span>אבחנה ובדיקות מדידה</span></li>
+          <li><b>3</b><span>מדווחים תוצאות ומדייקים</span></li>
+          <li><b>4</b><span>פתרון, אימות וסכימה</span></li>
+        </ol>
+      </div>
+
+      <div class="examples" aria-label="דוגמאות לתקלות">
+        <span class="examples-label">דוגמאות:</span>
+        <div class="chips" id="examples"></div>
+      </div>
+
+      <form class="card intake" id="intakeForm" autocomplete="off" novalidate>
+        <fieldset class="field span-2">
+          <legend>תחום</legend>
+          <div class="domains" id="domains"></div>
+        </fieldset>
+
+        <div class="field">
+          <label for="f-system">מערכת / ציוד</label>
+          <input id="f-system" name="system" placeholder="למשל: לוח פיקוד למשאבה, לוח דירתי, תריס חשמלי, ספק כוח">
+        </div>
+        <div class="field">
+          <label for="f-model">יצרן ודגם</label>
+          <input id="f-model" name="model" placeholder="למשל: Schneider LC1D09 · Siemens S7-1200 · Shelly 2PM" dir="auto">
+        </div>
+        <div class="field">
+          <label for="f-supply">מתח הזנה</label>
+          <input id="f-supply" name="supply" list="supplies" placeholder="בחרו או כתבו">
+          <datalist id="supplies"></datalist>
+        </div>
+        <div class="field">
+          <label for="f-parts">החלקים שלא מסתדרים</label>
+          <input id="f-parts" name="parts" placeholder="למשל: מגען K1, ממסר תרמי F2, לחצן הפעלה S2" dir="auto">
+        </div>
+
+        <div class="field span-2">
+          <label for="f-symptoms">מה קורה? <span class="req">חובה</span></label>
+          <textarea id="f-symptoms" name="symptoms" rows="4" required placeholder="תארו בדיוק מה קורה: מה עובד, מה לא, רעשים, ריחות, נוריות, קודי שגיאה, מתי זה קורה"></textarea>
+        </div>
+        <div class="field">
+          <label for="f-expected">מה אמור לקרות?</label>
+          <textarea id="f-expected" name="expected" rows="2" placeholder="למשל: בלחיצה על S2 המגען נסגר והמנוע מתחיל לעבוד"></textarea>
+        </div>
+        <div class="field">
+          <label for="f-history">מתי התחיל? מה השתנה?</label>
+          <textarea id="f-history" name="history" rows="2" placeholder="למשל: אחרי סערה, אחרי החלפת רכיב, אחרי שנים של עבודה תקינה"></textarea>
+        </div>
+        <div class="field span-2">
+          <label for="f-measure">מה כבר בדקתם ומדדתם?</label>
+          <textarea id="f-measure" name="measurements" rows="2" dir="auto" placeholder="למשל: בין A1 ל-A2 נמדד 0V כשהלחצן לחוץ. בין L1 ל-N 231V."></textarea>
+        </div>
+
+        <details class="field span-2 more">
+          <summary>חיווט קיים ומכשירי מדידה (מומלץ)</summary>
+          <div class="more-grid">
+            <div class="field">
+              <label for="f-wiring">תיאור החיווט הקיים</label>
+              <textarea id="f-wiring" name="wiring" rows="4" dir="auto" placeholder="חוט-חוט, מהדק להדק. למשל:&#10;Q1.2 → S1.11 (אדום 1 ממ״ר)&#10;S1.12 → K1.A1&#10;K1.A2 → N"></textarea>
+            </div>
+            <div class="field">
+              <label for="f-tools">מכשירי מדידה זמינים</label>
+              <textarea id="f-tools" name="tools" rows="4" placeholder="למשל: מולטימטר CAT III, מלחציים אמפרמטריים, מגר, אוסילוסקופ, בודק לולאה/פחת"></textarea>
+            </div>
+          </div>
+        </details>
+
+        <div class="field span-2">
+          <span class="label">תמונות, שרטוטים ודפי נתונים</span>
+          <label class="drop" id="drop" for="f-files">
+            <input type="file" id="f-files" multiple accept="image/*,application/pdf,.txt,.csv,.md,.st,.scl,.xml,.json">
+            <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>גררו לכאן או לחצו לבחירה</b><br><small>תמונות של החיווט, הלוח או הכרטיס (משני הצדדים), שרטוטים, דפי נתונים PDF, רשימות חיווט או קוד PLC. תמונות מוקטנות אוטומטית.</small></span>
+          </label>
+          <div class="files" id="intakeFiles"></div>
+        </div>
+
+        <div class="span-2 form-foot">
+          <label class="check"><input type="checkbox" name="wantSchematic" id="f-schem" checked> <span>שרטטו לי סכימת חיווט תקינה לחלק הרלוונטי</span></label>
+          <div class="actions">
+            <button type="reset" class="btn ghost">ניקוי</button>
+            <button type="submit" class="btn primary" id="startBtn">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z" fill="currentColor"/></svg>
+              התחילו אבחון
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <p class="disclaimer">עבודה במתח רשת מסוכנת ומותרת בישראל לחשמלאי בעל רישיון מתאים בלבד. האבחון הוא כלי עזר מקצועי ואינו מחליף בדיקה של חשמלאי מוסמך. נתקו מתח ובדקו היעדר מתח לפני כל נגיעה.</p>
+    </div>
+
+    <!-- תיק פעיל -->
+    <div class="wrap case" id="caseView" hidden>
+      <div class="case-head">
+        <div>
+          <button class="btn ghost small" type="button" id="newCaseBtn">+ תקלה חדשה</button>
+          <h2 id="caseTitle">תיק תקלה</h2>
+          <p class="case-meta" id="caseMeta"></p>
+        </div>
+        <div class="case-actions">
+          <button class="btn ghost small" type="button" id="printBtn">הדפסה / PDF</button>
+          <button class="btn ghost small" type="button" id="copyBtn">העתקת דו״ח</button>
+        </div>
+      </div>
+      <div class="timeline" id="timeline"></div>
+
+      <div class="progress card" id="progress" hidden aria-live="polite">
+        <div class="pulse" aria-hidden="true"><span></span></div>
+        <div class="progress-body">
+          <b id="progressTitle">Claude מאבחן את התקלה…</b>
+          <p id="progressText">קורא את התיאור והקבצים</p>
+          <ol class="phases" id="phases">
+            <li data-phase="analyze">אבחון</li>
+            <li data-phase="revise">אימות ותיקון הסכימה</li>
+            <li data-phase="done">סיום</li>
+          </ol>
+          <details class="thinking" id="thinkingBox" hidden><summary>מהלך החשיבה</summary><p id="thinkingText"></p></details>
+        </div>
+        <button class="btn ghost small" type="button" id="stopBtn">עצירה</button>
+      </div>
+
+      <form class="card composer" id="composer" autocomplete="off">
+        <h3>המשך אבחון</h3>
+        <p class="hint">מדדתם? ענו על השאלות או מלאו ערכים בטבלת הבדיקות למעלה. הם יתווספו לכאן אוטומטית.</p>
+        <textarea id="followText" rows="4" dir="auto" placeholder="למשל: בדיקה 2 — בין 95 ל-96 נמדד 0Ω. בדיקה 3 — אין 230V על A1 כשלוחצים על S2."></textarea>
+        <div class="files" id="followFiles"></div>
+        <div class="composer-foot">
+          <label class="btn ghost small file-btn"><input type="file" id="followInput" multiple accept="image/*,application/pdf,.txt,.csv,.md,.st,.scl,.xml,.json">צירוף תמונה / קובץ</label>
+          <label class="check small"><input type="checkbox" id="followSchem"> <span>בקשו סכימה מעודכנת</span></label>
+          <button class="btn primary" type="submit" id="followBtn">שליחה ל-Claude</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+
+  <!-- ===== תכנון כרטיס ===== -->
+  <section class="view" id="view-design" data-view="design" hidden>
+    <div class="wrap wide design">
+      <div class="design-bar">
+        <div class="design-name">
+          <label class="sr" for="dName">שם הכרטיס</label>
+          <input id="dName" placeholder="שם הכרטיס" autocomplete="off">
+          <span class="saved muted" id="dSaved" aria-live="polite"></span>
+        </div>
+        <div class="design-actions">
+          <button class="btn ghost small" type="button" id="dTemplates">תבניות</button>
+          <select id="dOpen" aria-label="העיצובים שלי"></select>
+          <button class="btn ghost small" type="button" id="dUndo" disabled>ביטול פעולה</button>
+          <details class="menu">
+            <summary class="btn ghost small">ייצוא וייבוא</summary>
+            <div class="menu-list">
+              <button type="button" data-exp="svg">שרטוט SVG</button>
+              <button type="button" data-exp="png">שרטוט PNG</button>
+              <button type="button" data-exp="bom">רשימת חלקים CSV</button>
+              <button type="button" data-exp="json">קובץ מעגל JSON</button>
+              <label class="menu-file">ייבוא קובץ JSON<input type="file" id="dImport" accept=".json,application/json"></label>
+              <button type="button" data-exp="delete" class="danger-text">מחיקת העיצוב</button>
+            </div>
+          </details>
+          <button class="btn ghost small" type="button" id="dAiReview">בדיקה של Claude</button>
+          <button class="btn primary small" type="button" id="dAiCreate">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z" fill="currentColor"/></svg>
+            Claude יתכנן לי
+          </button>
+        </div>
+      </div>
+
+      <div class="design-grid">
+        <div class="design-main">
+          <div class="card canvas-card">
+            <div class="canvas-tools">
+              <p class="hint" id="dHint">לחצו על פין ואז על פין אחר כדי לחבר חוט. גררו רכיב כדי להזיז אותו.</p>
+              <button class="btn ghost small probe-btn" type="button" id="dProbe" aria-pressed="false">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14 3l7 7-9 9H5v-7zM3 21l4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+                מדידה וירטואלית
+              </button>
+              <label class="wire-pick">צבע חוט
+                <select id="dWireColor"></select>
+              </label>
+              <div class="zoom">
+                <button class="btn ghost small" type="button" data-dz="-1" aria-label="הקטנה">−</button>
+                <button class="btn ghost small" type="button" data-dz="0">התאמה</button>
+                <button class="btn ghost small" type="button" data-dz="1" aria-label="הגדלה">+</button>
+              </div>
+            </div>
+            <div class="sch-canvas design-canvas" id="dCanvas" tabindex="0" aria-label="עורך המעגל"></div>
+          </div>
+          <section class="card kits-card" id="dKits" aria-labelledby="kitsTitle"></section>
+          <div id="dAiPanel"></div>
+        </div>
+
+        <aside class="design-side">
+          <section class="card side-sec">
+            <h3>הוספת רכיב</h3>
+            <div class="palette" id="palette"></div>
+          </section>
+          <section class="card side-sec" id="dInspector"></section>
+          <section class="card side-sec">
+            <h3>בדיקה אוטומטית <span id="dCheckBadge"></span></h3>
+            <div id="dChecks"></div>
+          </section>
+          <section class="card side-sec">
+            <h3>רשימת חלקים</h3>
+            <div id="dBom"></div>
+          </section>
+          <section class="card side-sec" id="dNotesSec">
+            <h3>הערות תכנון</h3>
+            <textarea id="dNotes" rows="4" placeholder="חישובים, הנחיות לעימוד, דגשים לייצור. שורה לכל הערה."></textarea>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===== תכנון חשמל לבית ===== -->
+  <section class="view" id="view-home" data-view="home" hidden>
+    <div class="wrap wide home">
+      <div class="home-hero">
+        <div>
+          <p class="eyebrow">תכנון חשמל לבית · לוח חשמל · בית חכם</p>
+          <h1>מהחדרים — עד לוח החשמל.</h1>
+          <p class="lede">מגדירים חדרים, שקעים, תאורה ומכשירים. המערכת מחלקת למעגלים, מאזנת פאזות, מחשבת עומס, ומשרטטת את לוח החשמל הדירתי עם מרשם מעגלים מוכן להדבקה על הדלת. מעל זה אפשר להוסיף שכבת בית חכם.</p>
+        </div>
+        <div class="presets">
+          <span class="presets-label">התחלה מהירה</span>
+          <div class="preset-grid" id="hPresets"></div>
+        </div>
+      </div>
+
+      <div class="home-bar card">
+        <label class="hb-name"><span class="sr">שם התכנית</span><input id="hName" placeholder="שם התכנית" autocomplete="off"></label>
+        <label>חיבור חשמל<select id="hSupply"></select></label>
+        <label>בית חכם<select id="hTech"></select></label>
+        <label class="check small"><input type="checkbox" id="hSpd"> <span>מגן ברק</span></label>
+        <label class="check small"><input type="checkbox" id="hShabbat"> <span>מצב שבת</span></label>
+        <span class="spacer"></span>
+        <select id="hOpen" aria-label="התכניות שלי"></select>
+        <button class="btn ghost small" type="button" id="hPrint">הדפסת התכנית</button>
+        <button class="btn primary small" type="button" id="hAiBtn">בדיקה של Claude</button>
+      </div>
+
+      <div class="home-grid">
+        <aside class="home-rooms">
+          <div class="rooms-head">
+            <h2>חדרים <span class="muted" id="hRoomCount"></span></h2>
+            <div class="add-room">
+              <select id="hAddType" aria-label="סוג חדר"></select>
+              <button class="btn ghost small" type="button" id="hAddRoom">+ חדר</button>
+            </div>
+          </div>
+          <div id="hRooms" class="rooms-list"></div>
+        </aside>
+        <div class="home-main">
+          <div class="kpis" id="hKpis"></div>
+          <div class="seg" role="tablist" aria-label="תצוגות">
+            <button type="button" role="tab" data-htab="points" aria-selected="true">תכנית נקודות</button>
+            <button type="button" role="tab" data-htab="panel" aria-selected="false">לוח החשמל</button>
+            <button type="button" role="tab" data-htab="schedule" aria-selected="false">מרשם מעגלים</button>
+            <button type="button" role="tab" data-htab="smart" aria-selected="false">בית חכם</button>
+          </div>
+          <div id="hTab" class="htab"></div>
+          <div id="hAi"></div>
+        </div>
+      </div>
+      <p class="disclaimer">התכנית היא הצעה ראשונית לפי נוהג מקובל. תכנון מחייב, בחירת רכיבים וביצוע — על ידי חשמלאי בעל רישיון מתאים, לפי חוק החשמל ותקנותיו ובאישור חברת החשמל.</p>
+    </div>
+  </section>
+
+
+  <!-- ===== שרטוט אדריכלי ===== -->
+  <section class="view" id="view-plan" data-view="plan" hidden>
+    <div class="wrap wide plan">
+      <div class="home-hero plan-hero">
+        <div>
+          <p class="eyebrow">שרטוט אדריכלי · חשמל לכל חדר · לוח ראשי · בניין · תלת-ממד</p>
+          <h1>מהשרטוט — לתכנון חשמל מלא.</h1>
+          <p class="lede">מעלים שרטוט אדריכלי של הקומה (תמונה או PDF), או כמה שרטוטים של בניין. Claude מזהה קומות, דירות וחדרים עם המידות, והמערכת פורשת על השרטוט את כל נקודות החשמל בכל חדר: שקעים, מאור, מתגים, מזגנים ומעגלים ייעודיים, עם הזרם וההספק. מתקבלים גם לוח החשמל הדירתי, חישוב הבניין, חדר המונים ותצוגת תלת-ממד של הדירה.</p>
+        </div>
+        <div class="plan-upload">
+          <label class="drop plan-drop" id="pDrop" for="pFiles">
+            <input type="file" id="pFiles" multiple accept="image/*,application/pdf">
+            <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M4 4h10l6 6v10H4zM14 4v6h6M8 14h8M8 17h5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <span><b>העלאת שרטוטים</b><br><small>תמונה או PDF. כל עמוד או תמונה הוא קומה. בבניין — שרטוט לכל קומה, או קומה טיפוסית.</small></span>
+          </label>
+          <div class="plan-upload-row">
+            <label>סוג הנכס<select id="pKind"><option value="apartment">דירה</option><option value="house">בית פרטי</option><option value="building">בניין</option></select></label>
+            <button class="btn ghost small" type="button" id="pSample">פתיחת שרטוט לדוגמה</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="pWork" hidden>
+        <div class="home-bar card plan-bar">
+          <label class="hb-name"><span class="sr">שם הפרויקט</span><input id="pName" placeholder="שם הפרויקט" autocomplete="off"></label>
+          <label>חיבור לדירה<select id="pSupply"><option value="3x25">3×25A</option><option value="3x40">3×40A</option><option value="1x40">1×40A</option></select></label>
+          <label>בית חכם<select id="pTech"></select></label>
+          <span class="spacer"></span>
+          <select id="pOpen" aria-label="הפרויקטים שלי"></select>
+          <button class="btn ghost small" type="button" id="pToHome">פתיחה בתכנון לבית</button>
+          <button class="btn ghost small" type="button" id="pPrint">הדפסה</button>
+          <button class="btn primary small" type="button" id="pAnalyze">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z" fill="currentColor"/></svg>
+            ניתוח עם Claude
+          </button>
+        </div>
+        <div id="pAiPanel"></div>
+        <div class="plan-grid">
+          <aside class="plan-side">
+            <section class="card side-sec">
+              <h3>קומות ודירות</h3>
+              <div id="pTree"></div>
+              <div class="ins-actions"><button class="btn ghost small" type="button" id="pAddApt">+ דירה בקומה</button><label class="btn ghost small file-btn">+ שרטוט קומה<input type="file" id="pMore" multiple accept="image/*,application/pdf"></label></div>
+            </section>
+            <section class="card side-sec" id="pInspector"></section>
+          </aside>
+          <div class="plan-main">
+            <div class="kpis" id="pKpis"></div>
+            <div class="seg" role="tablist" aria-label="תצוגות">
+              <button type="button" role="tab" data-ptab="plan" aria-selected="true">שרטוט וחשמל</button>
+              <button type="button" role="tab" data-ptab="rooms" aria-selected="false">פירוט חדרים</button>
+              <button type="button" role="tab" data-ptab="panel" aria-selected="false">לוח דירתי</button>
+              <button type="button" role="tab" data-ptab="building" aria-selected="false">בניין</button>
+              <button type="button" role="tab" data-ptab="3d" aria-selected="false">תלת-ממד</button>
+            </div>
+            <div id="pTab"></div>
+          </div>
+        </div>
+      </div>
+      <p class="disclaimer">הזיהוי מהשרטוט והתכנון הם הצעה ראשונית. בדקו את המידות מול השרטוט. תכנון מחייב וביצוע — על ידי חשמלאי ומתכנן חשמל מוסמכים, לפי חוק החשמל ותקנותיו.</p>
+    </div>
+  </section>
+
+  <!-- ===== תיקים ===== -->
+  <section class="view" id="view-cases" data-view="cases" hidden>
+    <div class="wrap">
+      <div class="section-head">
+        <h1>התיקים שלי</h1>
+        <div class="section-tools">
+          <input type="search" id="caseSearch" placeholder="חיפוש בתיקים" aria-label="חיפוש בתיקים">
+          <select id="caseFilter" aria-label="סינון לפי תחום"><option value="">כל התחומים</option></select>
+        </div>
+      </div>
+      <p class="muted">התיקים נשמרים רק בדפדפן הזה, כולל התמונות.</p>
+      <div class="case-grid" id="caseList"></div>
+    </div>
+  </section>
+
+  <!-- ===== מחשבונים ===== -->
+  <section class="view" id="view-tools" data-view="tools" hidden>
+    <div class="wrap">
+      <div class="section-head"><h1>מחשבונים לשטח</h1></div>
+      <div class="tools-grid" id="tools"></div>
+    </div>
+  </section>
+
+  <!-- ===== מקרא ===== -->
+  <section class="view" id="view-guide" data-view="guide" hidden>
+    <div class="wrap guide">
+      <div class="section-head"><h1>מקרא ובטיחות</h1></div>
+      <div class="guide-grid">
+        <article class="card">
+          <h2>צבעי מוליכים (IEC 60445)</h2>
+          <ul class="legend" id="colorLegend"></ul>
+        </article>
+        <article class="card">
+          <h2>סימוני הדקים נפוצים</h2>
+          <table class="table">
+            <tbody>
+              <tr><th>A1 / A2</th><td>סליל מגען או ממסר</td></tr>
+              <tr><th>1-2, 3-4, 5-6</th><td>מגעי כוח (כניסה אי-זוגי, יציאה זוגי)</td></tr>
+              <tr><th>13-14, 43-44</th><td>מגע עזר פתוח במנוחה (NO)</td></tr>
+              <tr><th>21-22, 31-32</th><td>מגע עזר סגור במנוחה (NC)</td></tr>
+              <tr><th>95-96 / 97-98</th><td>מגעי ממסר תרמי: NC / NO</td></tr>
+              <tr><th>11-12-14</th><td>ממסר מחליף: משותף, NC, NO</td></tr>
+              <tr><th>U V W / U1 V1 W1</th><td>הדקי מנוע תלת-פאזי</td></tr>
+              <tr><th>L+ / M</th><td>‎+24VDC‏ / ‎0V‏ בבקרים (Siemens)</td></tr>
+            </tbody>
+          </table>
+        </article>
+        <article class="card">
+          <h2>סדר בדיקה בטוח</h2>
+          <ol class="steps-list">
+            <li>זיהוי המעגל ומקורות ההזנה, כולל הזנות חוזרות, UPS, קבלים ומנועים שמסתובבים.</li>
+            <li>ניתוק, נעילה ותיוג (LOTO).</li>
+            <li>בדיקת תקינות המכשיר על מקור ידוע, בדיקת היעדר מתח, ושוב בדיקת המכשיר.</li>
+            <li>בדיקות במצב מנותק: רציפות, התנגדות, בידוד.</li>
+            <li>בדיקות חיות רק כשאין ברירה, רק בידי מוסמך, בציוד CAT מתאים ועם ציוד מגן.</li>
+            <li>אחרי התיקון: רציפות הארקה, בידוד, לולאת תקלה, פחת. רק אחר כך מפעילים.</li>
+          </ol>
+        </article>
+        <article class="card">
+          <h2>הבודק האוטומטי של הסכימה</h2>
+          <p>כל סכימה ש-Claude משרטט עוברת בדיקה אוטומטית באתר לפני שהיא מוצגת. אם נמצאו שגיאות, הן נשלחות חזרה ל-Claude לתיקון.</p>
+          <ul class="bullets">
+            <li>קצר: פאזה, אפס, הארקה או פסי DC שונים על אותו צומת</li>
+            <li>אפס והארקה מחוברים יחד אחרי נקודת הפיצול</li>
+            <li>מוליך ירוק-צהוב שאינו הארקה, והארקה בצבע אחר</li>
+            <li>אפס שאינו כחול, ופאזה בכחול</li>
+            <li>הדקים וחוטים שמפנים לרכיב שלא קיים</li>
+            <li>הדקי הזנה לא מחוברים, רכיבים מנותקים</li>
+            <li>מנוע, ממיר, ספק או שקע בלי הארקה</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <span>מעגל סגור · אבחון תקלות בעזרת Claude</span>
+    <span class="muted">עבודה במתח רשת — לחשמלאי מוסמך בלבד</span>
+  </div>
+</footer>
+
+
+<!-- תבניות -->
+<dialog class="modal wide" id="tplDlg" aria-labelledby="tplTitle">
+  <form method="dialog" class="modal-body">
+    <h2 id="tplTitle">תבניות לכרטיסים</h2>
+    <p>כל תבנית היא מעגל שלם ובדוק. בוחרים אחת, ומשם מוסיפים רכיבים, מחברים ובודקים.</p>
+    <div class="tpl-grid" id="tplGrid"></div>
+    <div class="modal-actions"><button class="btn ghost" value="cancel">סגירה</button></div>
+  </form>
+</dialog>
+
+<!-- בקשה ל-Claude בעורך -->
+<dialog class="modal" id="aiDlg" aria-labelledby="aiTitle">
+  <form method="dialog" class="modal-body" id="aiForm">
+    <h2 id="aiTitle">Claude יתכנן לי</h2>
+    <p id="aiIntro"></p>
+    <textarea id="aiRequest" rows="5" dir="auto"></textarea>
+    <div class="chips" id="aiExamples"></div>
+    <div class="manual" id="aiManual" hidden>
+      <p>אין חיבור ישיר ל-Claude. מעתיקים את ההנחיה ל-<a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a> ומדביקים כאן את התשובה (JSON).</p>
+      <div class="manual-step"><b>1</b><button class="btn ghost small" type="button" id="aiCopy">העתקת ההנחיה</button><a class="btn ghost small" href="https://claude.ai/new" target="_blank" rel="noopener">פתיחת claude.ai</a></div>
+      <div class="manual-step"><b>2</b><span>מדביקים את התשובה:</span></div>
+      <textarea id="aiPaste" rows="6" dir="ltr" placeholder='{"title": "...", "schematic": {...}}'></textarea>
+    </div>
+    <p class="error" id="aiError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn primary" type="button" id="aiSend">שליחה</button>
+    </div>
+  </form>
+</dialog>
+
+
+<!-- בדיקת תכנית בית -->
+<dialog class="modal" id="hAiDlg" aria-labelledby="hAiTitle">
+  <form method="dialog" class="modal-body">
+    <h2 id="hAiTitle">בדיקה של Claude לתכנית</h2>
+    <p>Claude יעבור על החדרים, המעגלים, הלוח ושכבת הבית החכם, ויחזיר המלצות ואזהרות.</p>
+    <textarea id="hAiReq" rows="3" dir="auto" placeholder="שאלות או דגשים (לא חובה). למשל: אני רוצה להוסיף משאבת חום ובריכה בעתיד."></textarea>
+    <div class="manual" id="hAiManual" hidden>
+      <p>אין חיבור ישיר ל-Claude. מעתיקים את ההנחיה ל-<a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a> ומדביקים כאן את התשובה (JSON).</p>
+      <div class="manual-step"><b>1</b><button class="btn ghost small" type="button" id="hAiCopy">העתקת ההנחיה</button></div>
+      <div class="manual-step"><b>2</b><span>מדביקים את התשובה:</span></div>
+      <textarea id="hAiPaste" rows="6" dir="ltr"></textarea>
+    </div>
+    <p class="error" id="hAiError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn primary" type="button" id="hAiSend">שליחה</button>
+    </div>
+  </form>
+</dialog>
+
+
+<!-- ניתוח שרטוט -->
+<dialog class="modal" id="pAiDlg" aria-labelledby="pAiTitle">
+  <form method="dialog" class="modal-body">
+    <h2 id="pAiTitle">ניתוח השרטוטים עם Claude</h2>
+    <p>Claude יזהה קומות, דירות וחדרים, ימדוד אותם לפי המידות שבשרטוט, ויסמן דלתות, חלונות ומיקום ללוח החשמל. אחרי הניתוח אפשר לתקן כל חדר ביד.</p>
+    <textarea id="pAiReq" rows="3" dir="auto" placeholder="הערות (לא חובה). למשל: קומה טיפוסית 2–7, ארבע דירות בקומה, חדר מונים בקומת הקרקע."></textarea>
+    <div class="manual" id="pAiManual" hidden>
+      <p>אין חיבור ישיר ל-Claude. מעתיקים את ההנחיה ל-<a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a>, מצרפים את השרטוטים באותו סדר, ומדביקים כאן את התשובה (JSON).</p>
+      <div class="manual-step"><b>1</b><button class="btn ghost small" type="button" id="pAiCopy">העתקת ההנחיה</button><button class="btn ghost small" type="button" id="pAiImgs">הורדת השרטוטים המוכנים</button></div>
+      <div class="manual-step"><b>2</b><span>מדביקים את התשובה:</span></div>
+      <textarea id="pAiPaste" rows="6" dir="ltr"></textarea>
+    </div>
+    <p class="error" id="pAiError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn primary" type="button" id="pAiSend">ניתוח</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- מצב העתק-הדבק -->
+<dialog class="modal" id="manualDlg" aria-labelledby="manualTitle">
+  <form method="dialog" class="modal-body">
+    <h2 id="manualTitle">אין חיבור ישיר ל-Claude</h2>
+    <p>השרת לא מחובר ל-API, אז עובדים בהעתק-הדבק: מעתיקים את ההנחיה ל-<a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a>, מצרפים שם את התמונות, ומדביקים כאן את התשובה (JSON).</p>
+    <div class="manual-step"><b>1</b><button class="btn primary small" type="button" id="copyPrompt">העתקת ההנחיה</button><a class="btn ghost small" href="https://claude.ai/new" target="_blank" rel="noopener">פתיחת claude.ai</a></div>
+    <div class="manual-step"><b>2</b><span>מדביקים את התשובה שקיבלתם:</span></div>
+    <textarea id="manualPaste" rows="8" dir="ltr" placeholder='{"title": "...", "summary": "...", ...}'></textarea>
+    <p class="error" id="manualError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn primary" type="button" id="manualApply">טעינת התשובה</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- קוד גישה -->
+<dialog class="modal" id="codeDlg" aria-labelledby="codeTitle">
+  <form method="dialog" class="modal-body" id="codeForm">
+    <h2 id="codeTitle">קוד גישה</h2>
+    <p>השרת הזה מוגן בקוד גישה. הזינו את הקוד שקיבלתם.</p>
+    <input type="password" id="codeInput" autocomplete="current-password" dir="ltr">
+    <div class="modal-actions">
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn primary" value="ok">שמירה</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/prompts.js"></script>
+<script src="js/netlist.js"></script>
+<script src="js/parts.js"></script>
+<script src="js/testkit.js"></script>
+<script src="js/homeplan.js"></script>
+<script src="js/floorplan.js"></script>
+<script src="js/plansample.js"></script>
+<script src="js/store.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/app.js"></script>
+<script src="js/design.js"></script>
+<script src="js/home.js"></script>
+<script src="js/floor-ui.js"></script>
+</body>
+</html>

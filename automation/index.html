@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>דרייב־פלאן — ממירי תדר ומתקנים אוטומטיים</title>
+<meta name="description" content="תכנון, הגדרה וניטור של ממירי תדר (VFD) שמנוהלים בתקשורת: בחירת ממיר לכל מנוע מכל יצרן, חישובי חשמל, פרמטרים לכל יצרן, כתובות ומפת רגיסטרים ל-Modbus, ‏PROFINET, ‏EtherNet/IP, ‏EtherCAT, ‏CANopen, ‏PROFIBUS ו-BACnet, קוד בקר, לוח בקרה, חיסכון באנרגיה והדפסה.">
+<meta name="theme-color" content="#060a13">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23111a2c'/%3E%3Ccircle cx='20' cy='20' r='11' fill='none' stroke='%23e2c27d' stroke-width='3'/%3E%3Cpath d='M20 9v22M9 20h22' stroke='%235fd4ea' stroke-width='2.4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+<script>
+  try {
+    const p = JSON.parse(localStorage.getItem('driveplan.prefs') || '{}');
+    const r = document.documentElement;
+    if (p.theme) r.dataset.theme = p.theme;
+    if (p.contrast) r.dataset.contrast = p.contrast;
+    if (p.motion) r.dataset.motion = p.motion;
+    if (p.fs) r.style.setProperty('--fs', p.fs + 'px');
+  } catch (e) { /* storage unavailable */ }
+</script>
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן הראשי</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#overview" aria-label="דרייב־פלאן — מסך הסקירה">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2c27d"/><stop offset="1" stop-color="#b8913f"/></linearGradient></defs>
+        <rect width="40" height="40" rx="11" fill="#111a2c" stroke="url(#bm)" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="10.5" fill="none" stroke="url(#bm)" stroke-width="2.6"/>
+        <path d="M20 9.5v21M9.5 20h21M12.6 12.6l14.8 14.8M27.4 12.6L12.6 27.4" stroke="#5fd4ea" stroke-width="1.6"/>
+        <circle cx="20" cy="20" r="3.2" fill="#e2c27d"/>
+      </svg>
+      <span><span class="brand-name">דרייב<b>־</b>פלאן</span><span class="brand-tag">ממירי תדר · תקשורת תעשייתית · אוטומציה</span></span>
+    </a>
+    <div class="tools" style="margin-inline-start:auto">
+      <div class="proj">
+        <label for="projSel" class="sr-only">פרויקט פעיל</label>
+        <select id="projSel"></select>
+        <button class="btn sm" id="newProjBtn">+ מתקן חדש</button>
+      </div>
+      <div class="rel">
+        <button class="btn icon ghost" id="a11yBtn" aria-haspopup="true" aria-expanded="false" aria-controls="a11yMenu" title="נגישות ותצוגה">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2" fill="currentColor"/><path d="M5 8.5l7 1.5 7-1.5M12 10v5m0 0l-3.5 6M12 15l3.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span class="sr-only">תפריט נגישות</span>
+        </button>
+        <div class="menu" id="a11yMenu" hidden role="group" aria-label="הגדרות נגישות ותצוגה">
+          <h4>גודל טקסט</h4>
+          <div class="row"><button class="btn sm" data-fs="-1" aria-label="הקטנת טקסט">א−</button><button class="btn sm" data-fs="0" aria-label="גודל רגיל">א</button><button class="btn sm" data-fs="1" aria-label="הגדלת טקסט">א+</button></div>
+          <h4>ערכת צבעים</h4>
+          <div class="row"><button class="btn sm" data-theme-set="dark">כהה</button><button class="btn sm" data-theme-set="light">בהירה</button><button class="btn sm" data-theme-set="">לפי המערכת</button></div>
+          <div class="row"><button class="btn sm" id="contrastBtn" aria-pressed="false">ניגודיות גבוהה</button><button class="btn sm" id="motionBtn" aria-pressed="false">עצירת אנימציות</button></div>
+        </div>
+      </div>
+      <button class="btn primary" id="printBtn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        הדפסה
+      </button>
+    </div>
+  </div>
+  <nav class="tabbar" role="tablist" aria-label="מסכי המערכת">
+    <button class="tab" role="tab" id="tab-overview" aria-controls="overview" data-tab="overview">סקירה</button>
+    <button class="tab" role="tab" id="tab-plant" aria-controls="plant" data-tab="plant">הגדרת המתקן</button>
+    <button class="tab" role="tab" id="tab-drives" aria-controls="drives" data-tab="drives">ממירים וחשמל</button>
+    <button class="tab" role="tab" id="tab-params" aria-controls="params" data-tab="params">פרמטרים</button>
+    <button class="tab" role="tab" id="tab-comm" aria-controls="comm" data-tab="comm">תקשורת וכתובות</button>
+    <button class="tab" role="tab" id="tab-plc" aria-controls="plc" data-tab="plc">קוד בקר</button>
+    <button class="tab" role="tab" id="tab-control" aria-controls="control" data-tab="control">לוח בקרה וניטור</button>
+    <button class="tab" role="tab" id="tab-energy" aria-controls="energy" data-tab="energy">חיסכון באנרגיה</button>
+    <button class="tab" role="tab" id="tab-guide" aria-controls="guide" data-tab="guide">מדריך הפעלה</button>
+  </nav>
+</header>
+
+<main id="main" tabindex="-1">
+  <div id="globalAlert" role="alert" aria-live="assertive"></div>
+
+  <!-- ===== OVERVIEW ===== -->
+  <section class="panel" id="overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="-1">
+    <div class="hero">
+      <span class="eyebrow">מתקן אוטומטי</span>
+      <h1 id="heroTitle">—</h1>
+      <p id="heroText"></p>
+      <div class="hero-actions">
+        <button class="btn primary" data-goto="plant">הגדרת המתקן</button>
+        <button class="btn" data-goto="params">פרמטרים לממירים</button>
+        <button class="btn" data-goto="control">לוח הבקרה</button>
+      </div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div id="warnings"></div>
+    <div class="grid g2">
+      <div class="card"><h3>הבחירות במתקן</h3><dl class="kv" id="choices"></dl></div>
+      <div class="card"><h3>רשימת ציוד</h3><div class="table-wrap tall"><table id="bomTable"></table></div></div>
+    </div>
+  </section>
+
+  <!-- ===== PLANT ===== -->
+  <section class="panel" id="plant" role="tabpanel" aria-labelledby="tab-plant" tabindex="-1" hidden>
+    <div class="section-head"><div><span class="eyebrow">שלב 1</span><h2>הגדרת המתקן</h2>
+      <p>בוחרים יצרן, פרוטוקול ובקר, ומגדירים את רשימת המנועים. כל שינוי מעדכן מיד את כל המסכים. אפשר להגדיר לכל מנוע יצרן אחר.</p></div></div>
+    <div class="card" style="margin-bottom:16px">
+      <h3>פרויקט</h3>
+      <div class="form-grid">
+        <div class="field"><label for="pj-name">שם הפרויקט</label><input id="pj-name" type="text"></div>
+        <div class="field"><label for="pj-status">מצב</label><select id="pj-status"></select></div>
+        <div class="field"><label for="tplSel">טעינת תבנית מתקן</label><select id="tplSel"></select></div>
+      </div>
+      <div class="toolbar" style="margin:12px 0 0">
+        <button class="btn sm" id="tplLoad">טעינת התבנית לפרויקט הזה</button>
+        <button class="btn sm" id="pj-dup">שכפול כפרויקט חדש</button>
+        <button class="btn sm" id="exportBtn">שמירת קובץ</button>
+        <label class="btn sm" for="importFile" tabindex="0" id="importLbl">טעינת קובץ</label>
+        <input type="file" id="importFile" accept=".json,application/json" class="sr-only">
+        <button class="btn sm ghost" id="pj-del">מחיקת הפרויקט</button>
+      </div>
+    </div>
+    <form id="plantForm" novalidate>
+      <div id="formErrors" role="alert" aria-live="assertive"></div>
+      <fieldset>
+        <legend>יצרן, פרוטוקול ובקר</legend>
+        <div class="form-grid">
+          <div class="field"><label for="f-name">שם המתקן</label><input id="f-name" type="text" data-path="site.name"></div>
+          <div class="field"><label for="f-num">מספר אתר (ל-BACnet)</label><input id="f-num" type="number" min="1" max="4000" data-path="site.number" data-num></div>
+          <div class="field"><label for="f-brand">יצרן ממירים (ברירת מחדל)</label><select id="f-brand" data-path="brand"></select></div>
+          <div class="field"><label for="f-proto">פרוטוקול תקשורת</label><select id="f-proto" data-path="protocol"></select></div>
+          <div class="field"><label for="f-plc">בקר (PLC)</label><select id="f-plc" data-path="plc"></select></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>הזנת חשמל וסביבה</legend>
+        <div class="form-grid">
+          <div class="field"><label for="f-v">מתח הזנה</label><select id="f-v" data-path="supplyV" data-num><option value="230">230 V</option><option value="400">400 V</option><option value="480">480 V</option><option value="690">690 V</option></select></div>
+          <div class="field"><label for="f-hz">תדר רשת</label><select id="f-hz" data-path="hz" data-num><option value="50">50 Hz</option><option value="60">60 Hz</option></select></div>
+          <div class="field"><label for="f-env">סביבת EMC</label><select id="f-env" data-path="environment"><option value="industrial">תעשייתית (סביבה שנייה)</option><option value="commercial">מסחרית / מגורים (סביבה ראשונה)</option></select></div>
+          <div class="field"><label for="f-trafo">שנאי הזנה (kVA)</label><input id="f-trafo" type="number" min="0" max="10000" data-path="transformerKVA" data-num></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>רשת תקשורת</legend>
+        <div class="form-grid">
+          <div class="field"><label for="f-subnet">רשת IP</label><input id="f-subnet" type="text" dir="ltr" data-path="network.subnet"></div>
+          <div class="field"><label for="f-start">כתובת ראשונה לממירים</label><input id="f-start" type="number" min="2" max="250" data-path="network.start" data-num></div>
+          <div class="field"><label for="f-baud">קצב RS-485</label><select id="f-baud" data-path="network.rtuBaud" data-num><option>9600</option><option>19200</option><option>38400</option><option>57600</option><option>115200</option></select></div>
+          <div class="field"><label for="f-fmt">פורמט RS-485</label><select id="f-fmt" data-path="network.rtuFormat"><option>8E1</option><option>8N1</option><option>8N2</option><option>8O1</option></select></div>
+          <div class="field"><label for="f-can">קצב CANopen</label><select id="f-can" data-path="network.canBitrate" data-num><option value="125">125 kbit/s</option><option value="250">250 kbit/s</option><option value="500">500 kbit/s</option><option value="1000">1 Mbit/s</option></select></div>
+        </div>
+        <label class="check" style="margin-top:12px"><input type="checkbox" data-path="redundancy"> רשת שרידה (טבעת MRP / DLR)</label>
+      </fieldset>
+      <fieldset>
+        <legend>אנרגיה</legend>
+        <div class="form-grid">
+          <div class="field"><label for="f-price">מחיר חשמל (₪ ל-kWh)</label><input id="f-price" type="number" step="0.01" min="0" data-path="kwhPrice" data-num></div>
+          <div class="field"><label for="f-hours">שעות עבודה בשנה</label><input id="f-hours" type="number" min="0" max="8760" data-path="hours" data-num></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>מנועים</legend>
+        <div class="table-wrap"><table class="motor-table"><caption class="sr-only">רשימת מנועים</caption>
+          <thead><tr><th scope="col">תג</th><th scope="col">תיאור</th><th scope="col">סוג עומס</th><th scope="col">הספק kW</th><th scope="col">מהירות rpm</th><th scope="col">כבל מנוע (מ׳)</th><th scope="col">יצרן</th><th scope="col"><span class="sr-only">פעולות</span></th></tr></thead>
+          <tbody id="motorRows"></tbody></table></div>
+        <div class="toolbar" style="margin:10px 0 0"><button type="button" class="btn sm" id="addMotor">+ מנוע</button><span class="small muted">מהירות 0 = לפי התדר (1475 / 1775 rpm)</span></div>
+      </fieldset>
+      <div class="sticky-actions">
+        <span class="muted small" id="saveState" role="status" aria-live="polite" style="margin-inline-end:auto;align-self:center"></span>
+        <button type="button" class="btn primary" data-goto="overview">לסקירה ←</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ===== DRIVES ===== -->
+  <section class="panel" id="drives" role="tabpanel" aria-labelledby="tab-drives" tabindex="-1" hidden>
+    <div class="section-head"><div><span class="eyebrow">בחירה וחישוב</span><h2>ממירים, הגנות וכבלים</h2>
+      <p>לכל מנוע: ממיר בגודל ובדירוג מתאימים (עומס רגיל או כבד), ממשק תקשורת, נתיכים, כבלים ואביזרים. בהמשך: סיכום חשמלי, הרמוניות ותרשים חד־קווי.</p></div>
+      <div class="toolbar" style="margin:0"><button class="btn sm" id="csvDrives">ייצוא ל-Excel ‏(CSV)</button></div></div>
+    <div class="table-wrap tall"><table id="driveTable"></table></div>
+    <div class="kpis" id="elecKpis" style="margin-top:16px"></div>
+    <div id="harmBox"></div>
+    <div class="card"><div class="toolbar" style="justify-content:space-between"><h3 style="margin:0">תרשים חד־קווי</h3><button class="btn sm" id="dlSld">הורדת SVG</button></div><div class="diagram" id="sld" role="img" aria-label="תרשים חד־קווי של הזנת הממירים"></div></div>
+    <div class="card">
+      <div class="toolbar"><h3 style="margin:0">השוואת יצרנים למנוע</h3><div class="field"><label for="cmpSel" class="sr-only">מנוע</label><select id="cmpSel"></select></div></div>
+      <div class="table-wrap"><table id="cmpTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ===== PARAMS ===== -->
+  <section class="panel" id="params" role="tabpanel" aria-labelledby="tab-params" tabindex="-1" hidden>
+    <div class="section-head"><div><span class="eyebrow">הזנה בממיר</span><h2>גיליון פרמטרים לכל ממיר</h2>
+      <p>הערכים שצריך להזין בממיר: נתוני מנוע, שיטת בקרה, רמפות, גבולות, מקור הפקודות והגדרות התקשורת. לצד כל ערך מופיע מספר הפרמטר אצל היצרן. אפשר להציג את הגיליון גם לפי יצרן אחר, לצורך השוואה.</p></div>
+      <div class="toolbar" style="margin:0"><button class="btn sm" id="csvParams">ייצוא כל הגיליונות ‏(CSV)</button></div></div>
+    <div class="toolbar">
+      <div class="field"><label for="prmDrive">ממיר</label><select id="prmDrive"></select></div>
+      <div class="field"><label for="prmBrand">הצג לפי יצרן</label><select id="prmBrand"></select></div>
+    </div>
+    <div class="alert info"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><div>מספרי הפרמטרים הם מהדורות הנפוצות של כל סדרה. מספור וערכים יכולים להשתנות בין דגמים וגרסאות קושחה, ולכן יש לאמת מול מדריך הממיר לפני ההזנה. ביצרנים שאין להם מפת פרמטרים במערכת מוצג שם הפונקציה, ואותה מחפשים במדריך.</div></div>
+    <div class="table-wrap"><table id="prmTable"></table></div>
+  </section>
+
+  <!-- ===== COMM ===== -->
+  <section class="panel" id="comm" role="tabpanel" aria-labelledby="tab-comm" tabindex="-1" hidden>
+    <div class="section-head"><div><span class="eyebrow">רשת תעשייתית</span><h2>תקשורת, כתובות ומפת נתונים</h2>
+      <p>כתובת לכל ממיר, ציוד הרשת, זמני מחזור, ומה נכתב ונקרא בכל מחזור (מילת פיקוד, ייחוס, מילת מצב ומהירות בפועל).</p></div>
+      <div class="toolbar" style="margin:0"><button class="btn sm" id="csvComm">ייצוא כתובות ‏(CSV)</button><button class="btn sm" id="dlTopo">הורדת שרטוט</button></div></div>
+    <div class="grid g2">
+      <div class="card"><h3>סיכום הרשת</h3><dl class="kv" id="netSummary"></dl><h4 style="margin-top:14px">כללי התקנה</h4><ul id="netRules" class="small"></ul></div>
+      <div class="card"><h3>ציוד הרשת</h3><div class="table-wrap"><table id="netDevices"></table></div></div>
+    </div>
+    <div class="card"><h3>כתובות הממירים</h3><div class="table-wrap tall"><table id="addrTable"></table></div></div>
+    <div class="card">
+      <div class="toolbar"><h3 style="margin:0">מפת נתונים</h3><div class="field"><label for="dmSel" class="sr-only">ממיר</label><select id="dmSel"></select></div></div>
+      <div id="dataMap"></div>
+    </div>
+    <div class="card"><h3>שרטוט רשת התקשורת</h3><div class="diagram" id="topo" role="img" aria-label="שרטוט טופולוגיית התקשורת"></div></div>
+  </section>
+
+  <!-- ===== PLC ===== -->
+  <section class="panel" id="plc" role="tabpanel" aria-labelledby="tab-plc" tabindex="-1" hidden>
+    <div class="section-head"><div><span class="eyebrow">תכנות</span><h2>קוד בקר ורשימת תגים</h2>
+      <p>בלוק פונקציה מוכן בשפת Structured Text ‏(IEC 61131-3) לפרופיל השליטה של הפרוטוקול, ומופע לכל ממיר. מתאים ל-CODESYS, ‏TwinCAT, ‏Machine Expert, ‏Sysmac ו-Automation Builder, ובהתאמות קלות גם ל-TIA Portal ‏(SCL) ול-Studio 5000.</p></div>
+      <div class="toolbar" style="margin:0"><button class="btn sm" id="copyCode">העתקה</button><button class="btn sm" id="dlCode">הורדת קוד</button><button class="btn sm" id="csvTags">רשימת תגים ‏(CSV)</button></div></div>
+    <div class="alert info" id="plcTips"></div>
+    <pre class="codebox" id="codeView" tabindex="0" aria-label="קוד הבקר"></pre>
+    <div class="card" style="margin-top:16px"><h3>רשימת תגים</h3><div class="table-wrap tall"><table id="tagTable"></table></div></div>
+  </section>
+
+  <!-- ===== CONTROL ===== -->
+  <section class="panel" id="control" role="tabpanel" aria-labelledby="tab-control" tabindex="-1" hidden>
+    <div class="section-head"><div><span class="eyebrow">HMI</span><h2>לוח בקרה וניטור</h2>
+      <p>הפעלה, עצירה ושינוי מהירות לכל ממיר. לכל פקודה מוצגת מסגרת התקשורת שנשלחת (מילת פיקוד וייחוס), ומוצגים זרם, הספק, טמפרטורה ומגמה.</p></div>
+      <span class="badge-sim" role="status"><span class="pulse" aria-hidden="true"></span> הדמיה. אין חיבור לממירים אמיתיים</span></div>
+    <div class="toolbar">
+      <button class="btn sm primary" id="allStart">הפעלת הכול</button>
+      <button class="btn sm" id="allStop">עצירת הכול</button>
+      <button class="btn sm" id="allReset">איפוס תקלות</button>
+      <label class="check"><input type="checkbox" id="faultSim"> הדמיית תקלות אקראיות</label>
+      <span class="small muted" id="plantPower" aria-live="off"></span>
+    </div>
+    <div class="vfd-grid" id="vfdGrid"></div>
+    <div class="card" style="margin-top:16px">
+      <div class="toolbar"><h3 style="margin:0">מגמה</h3><div class="field"><label for="trendSel" class="sr-only">ממיר</label><select id="trendSel"></select></div></div>
+      <div class="scope"><canvas id="trend" role="img" aria-label="מגמת תדר וזרם"></canvas><div class="scope-hud"><span class="hud-title" id="trendTitle"></span><span id="trendVal"></span></div></div>
+      <div class="legend"><span><i class="dot" style="background:#3cf2b4"></i> תדר (Hz)</span><span><i class="dot" style="background:#ffc861"></i> זרם (% מהנקוב)</span></div>
+    </div>
+    <div class="card"><h3>יומן אירועים</h3><ul class="small" id="eventLog" aria-live="polite" style="max-height:220px;overflow:auto"></ul></div>
+  </section>
+
+  <!-- ===== ENERGY ===== -->
+  <section class="panel" id="energy" role="tabpanel" aria-labelledby="tab-energy" tabindex="-1" hidden>
+    <div class="section-head"><div><span class="eyebrow">ROI</span><h2>חיסכון באנרגיה</h2>
+      <p>במשאבות, במפוחים ובמדחסים, ויסות מהירות בממיר חוסך הרבה לעומת ויסות במגוף, בדמפר או בהעמסה/פריקה. הספק של משאבה ומפוח עולה בערך בחזקה שלישית של המהירות. החישוב מניח פרופיל עבודה טיפוסי: 10% מהזמן בספיקה מלאה, 20% ב-90%, ‏30% ב-80%, ‏25% ב-70% ו-15% ב-60%.</p></div></div>
+    <div class="kpis" id="enKpis"></div>
+    <div class="card"><h3>חיסכון שנתי לכל מנוע (kWh)</h3><div class="chart" id="enChart"></div></div>
+    <div class="table-wrap"><table id="enTable"></table></div>
+  </section>
+
+  <!-- ===== GUIDE ===== -->
+  <section class="panel" id="guide" role="tabpanel" aria-labelledby="tab-guide" tabindex="-1" hidden>
+    <div class="section-head"><div><span class="eyebrow">ידע</span><h2>מדריך הפעלה והנחיות</h2><p>סדר העבודה מהתקנה ועד הפעלה, ובחירת פרוטוקול, בטיחות ותקלות נפוצות.</p></div></div>
+    <div class="grid g2">
+      <div class="card prose">
+        <h3 style="margin-top:0">סדר ההפעלה (Commissioning)</h3>
+        <ol class="steps">
+          <li><b>בדיקות לפני מתח:</b> חיווט הזנה, מנוע והארקה, סיכוך הכבל בהארקת 360°, נתיכים ומרווחי אוורור.</li>
+          <li><b>נתוני מנוע:</b> הזנת לוחית המנוע (מתח, זרם, הספק, תדר, מהירות) לפי גיליון הפרמטרים.</li>
+          <li><b>זיהוי מנוע:</b> Auto-tune סטטי, או סיבובי כשהמנוע מנותק מהעומס.</li>
+          <li><b>הפעלה מקומית:</b> בדיקת כיוון סיבוב במהירות נמוכה מלוח הממיר.</li>
+          <li><b>רמפות וגבולות:</b> האצה, האטה, מינימום ומקסימום לפי סוג העומס.</li>
+          <li><b>תקשורת:</b> כתובת, קצב, פורמט ו-IP. בפרופינט מגדירים שם התקן. בודקים נוריות תקשורת תקינות.</li>
+          <li><b>מקור הפקודות:</b> העברת הפקודה והייחוס ל-Fieldbus, והגדרת פעולה באובדן תקשורת.</li>
+          <li><b>בדיקה מהבקר:</b> הפעלה, עצירה, ייחוס, איפוס תקלה, וניתוק כבל התקשורת כדי לוודא שהממיר עוצר.</li>
+          <li><b>בטיחות:</b> בדיקת עצירת החירום ו-STO, ותיעוד בטופס בדיקה.</li>
+          <li><b>גיבוי:</b> שמירת הפרמטרים לקובץ או לפאנל, והדפסת התכנית לתיק המתקן.</li>
+        </ol>
+      </div>
+      <div class="card prose">
+        <h3 style="margin-top:0">איזה פרוטוקול לבחור?</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">פרוטוקול</th><th scope="col">מתאים ל…</th></tr></thead>
+          <tbody>
+            <tr><td>Modbus RTU</td><td>פתרון זול ופשוט, עד 31 ממירים בקו, עדכון של מאות מילישניות. מתאים למשאבות ולמפוחים.</td></tr>
+            <tr><td>Modbus TCP</td><td>פתוח לכל יצרן, על Ethernet רגיל. מתאים ל-SCADA ולמתקני מים.</td></tr>
+            <tr><td>PROFINET</td><td>עם בקרי Siemens. מחזור של 4 ms, טבעת MRP ואבחון מתקדם.</td></tr>
+            <tr><td>EtherNet/IP</td><td>עם בקרי Rockwell ו-Omron, ‏RPI של 10 ms ו-DLR.</td></tr>
+            <tr><td>EtherCAT</td><td>מכונות מהירות ותנועה מתואמת, מחזור של 1 ms ומטה.</td></tr>
+            <tr><td>PROFIBUS DP</td><td>מתקנים קיימים והרחבות. בפרויקט חדש עדיף PROFINET.</td></tr>
+            <tr><td>CANopen</td><td>מכונות קטנות וניידות, חיווט קצר.</td></tr>
+            <tr><td>BACnet</td><td>מבנים ומערכות HVAC עם מערכת BMS.</td></tr>
+          </tbody></table></div>
+        <h3>EMC וחיווט</h3>
+        <ul>
+          <li>כבל מנוע מסוכך וסימטרי, עם סיכוך מהודק ב-360° בשני הקצוות.</li>
+          <li>כבלי תקשורת וכבלי כוח בתעלות נפרדות, ובמרחק של 20 ס״מ לפחות. חצייה רק בזווית ישרה.</li>
+          <li>RS-485: כבל זוג שזור מסוכך, נגד 120Ω בשני הקצוות, ‏Bias במאסטר, וחיווט בשרשרת ולא בכוכב.</li>
+          <li>Ethernet: כבל תעשייתי Cat5e/6 מסוכך, עד 100 מ׳, ומתג מנוהל.</li>
+        </ul>
+        <h3>תקלות נפוצות</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">תקלה</th><th scope="col">סיבות ופתרון</th></tr></thead>
+          <tbody>
+            <tr><td>זרם יתר (OC)</td><td>רמפה קצרה מדי, קצר בכבל או במנוע, נתוני מנוע שגויים. להאריך רמפה, למדוד בידוד, לבצע Auto-tune.</td></tr>
+            <tr><td>מתח יתר ב-DC (OV)</td><td>האטה מהירה עם אינרציה גבוהה. להאריך את זמן ההאטה או להוסיף נגד בלימה.</td></tr>
+            <tr><td>תת־מתח (UV)</td><td>נפילת רשת או פאזה חסרה. לבדוק הזנה ונתיכים.</td></tr>
+            <tr><td>עומס יתר במנוע (OL)</td><td>עומס מכני או זרם נקוב שגוי בפרמטרים. לבדוק את המכני ואת הפרמטר.</td></tr>
+            <tr><td>טמפרטורת ממיר</td><td>אוורור הלוח, מסנן סתום או טמפרטורת סביבה. לבדוק מאוורר וזרימת אוויר.</td></tr>
+            <tr><td>אובדן תקשורת</td><td>כתובת או קצב לא תואמים, נגד סיום, הארקת סיכוך, פסק זמן קצר מדי. לבדוק נוריות וכבל.</td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="printDlg" aria-labelledby="printDlgTitle">
+  <form method="dialog">
+    <div class="dlg-body">
+      <h2 id="printDlgTitle">הדפסת תיק המתקן</h2>
+      <div style="display:grid;gap:8px" id="printOpts">
+        <label class="check"><input type="checkbox" value="summary" checked> סיכום ורשימת ציוד</label>
+        <label class="check"><input type="checkbox" value="drives" checked> ממירים, הגנות וכבלים</label>
+        <label class="check"><input type="checkbox" value="sld" checked> תרשים חד־קווי</label>
+        <label class="check"><input type="checkbox" value="params" checked> גיליונות פרמטרים</label>
+        <label class="check"><input type="checkbox" value="comm" checked> תקשורת, כתובות ומפות נתונים</label>
+        <label class="check"><input type="checkbox" value="energy" checked> חיסכון באנרגיה</label>
+        <label class="check"><input type="checkbox" value="plc"> קוד בקר</label>
+      </div>
+    </div>
+    <div class="dlg-foot"><button class="btn" value="cancel">ביטול</button><button class="btn primary" value="print">הדפסה</button></div>
+  </form>
+</dialog>
+
+<div id="printRoot" aria-hidden="true"></div>
+<div class="tooltip" id="tip" hidden></div>
+<div class="sr-only" id="live" role="status" aria-live="polite"></div>
+<footer class="site">דרייב־פלאן · הנתונים נשמרים בדפדפן בלבד. החישובים הם הערכה הנדסית. לפני ביצוע יש לאמת מול נתוני היצרן והתקנים החלים, ומהנדס חשמל או אוטומציה צריך לאשר אותם.</footer>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

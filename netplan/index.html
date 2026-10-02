@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>נט־פלאן — תכנון וניהול רשתות תקשורת</title>
+<meta name="description" content="מגדירים מבנה, קומות וחדרים, ומקבלים תכנית תקשורת מלאה: כתובת IP, VLAN ו-Gateway לכל שקע, שרטוט ארונות ומתגים, הגדרות מוכנות לציוד, ניטור צריכת נתונים, סטטיסטיקות ותכנית להדפסה.">
+<meta name="theme-color" content="#060a13">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23111a2c'/%3E%3Cpath d='M8 28L20 10l12 18' fill='none' stroke='%23e2c27d' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='20' cy='10' r='3.4' fill='%235fd4ea'/%3E%3Ccircle cx='8' cy='28' r='3.4' fill='%235fd4ea'/%3E%3Ccircle cx='32' cy='28' r='3.4' fill='%235fd4ea'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+<script>
+  // Apply saved display preferences before first paint.
+  try {
+    const p = JSON.parse(localStorage.getItem('netplan.prefs') || '{}');
+    const r = document.documentElement;
+    if (p.theme) r.dataset.theme = p.theme;
+    if (p.contrast) r.dataset.contrast = p.contrast;
+    if (p.motion) r.dataset.motion = p.motion;
+    if (p.fs) r.style.setProperty('--fs', p.fs + 'px');
+  } catch (e) { /* storage unavailable */ }
+</script>
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן הראשי</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#overview" aria-label="נט־פלאן — מסך הסקירה">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2c27d"/><stop offset="1" stop-color="#b8913f"/></linearGradient></defs>
+        <rect width="40" height="40" rx="11" fill="#111a2c" stroke="url(#bm)" stroke-width="1.5"/>
+        <path d="M8 28L20 10l12 18M8 28h24" fill="none" stroke="url(#bm)" stroke-width="2.6" stroke-linejoin="round"/>
+        <circle cx="20" cy="10" r="3.4" fill="#5fd4ea"/><circle cx="8" cy="28" r="3.4" fill="#5fd4ea"/><circle cx="32" cy="28" r="3.4" fill="#5fd4ea"/>
+      </svg>
+      <span><span class="brand-name">נט<b>־</b>פלאן</span><span class="brand-tag">תכנון · תיעוד · ניטור רשתות תקשורת</span></span>
+    </a>
+
+    <div class="search" role="search">
+      <label for="q" class="sr-only">חיפוש כתובת IP, חדר, שקע, מתג או VLAN</label>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="q" type="search" autocomplete="off" placeholder="חיפוש: 10.1.11.20 · חדר 305 · SW-A-03-1 · VLAN 1003"
+        role="combobox" aria-expanded="false" aria-controls="qResults" aria-autocomplete="list">
+      <ul id="qResults" class="search-results" role="listbox" aria-label="תוצאות חיפוש" hidden></ul>
+    </div>
+
+    <div class="tools">
+      <div class="proj">
+        <label for="projSel" class="sr-only">פרויקט פעיל</label>
+        <select id="projSel" title="פרויקט פעיל"></select>
+        <button class="btn sm" id="newProjBtn">+ פרויקט חדש</button>
+      </div>
+      <div class="rel">
+        <button class="btn icon ghost" id="a11yBtn" aria-haspopup="true" aria-expanded="false" aria-controls="a11yMenu" title="נגישות ותצוגה">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2" fill="currentColor"/><path d="M5 8.5l7 1.5 7-1.5M12 10v5m0 0l-3.5 6M12 15l3.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span class="sr-only">תפריט נגישות</span>
+        </button>
+        <div class="menu" id="a11yMenu" hidden role="group" aria-label="הגדרות נגישות ותצוגה">
+          <h4>גודל טקסט</h4>
+          <div class="row">
+            <button class="btn sm" data-fs="-1" aria-label="הקטנת טקסט">א−</button>
+            <button class="btn sm" data-fs="0" aria-label="גודל טקסט רגיל">א</button>
+            <button class="btn sm" data-fs="1" aria-label="הגדלת טקסט">א+</button>
+          </div>
+          <h4>ערכת צבעים</h4>
+          <div class="row">
+            <button class="btn sm" data-theme-set="dark" aria-pressed="false">כהה</button>
+            <button class="btn sm" data-theme-set="light" aria-pressed="false">בהירה</button>
+            <button class="btn sm" data-theme-set="" aria-pressed="false">לפי המערכת</button>
+          </div>
+          <div class="row">
+            <button class="btn sm" id="contrastBtn" aria-pressed="false">ניגודיות גבוהה</button>
+            <button class="btn sm" id="motionBtn" aria-pressed="false">עצירת אנימציות</button>
+          </div>
+          <p class="small muted" style="margin:0">ההעדפות נשמרות בדפדפן הזה.</p>
+        </div>
+      </div>
+      <button class="btn primary" id="printBtn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        הדפסת התכנית
+      </button>
+    </div>
+  </div>
+
+  <nav class="tabbar" role="tablist" aria-label="מסכי המערכת">
+    <button class="tab" role="tab" id="tab-overview" aria-controls="overview" data-tab="overview">סקירה</button>
+    <button class="tab" role="tab" id="tab-plan" aria-controls="plan" data-tab="plan">הגדרת המבנה</button>
+    <button class="tab" role="tab" id="tab-topology" aria-controls="topology" data-tab="topology">שרטוט הרשת</button>
+    <button class="tab" role="tab" id="tab-view3d" aria-controls="view3d" data-tab="view3d">הדמיה תלת־ממדית</button>
+    <button class="tab" role="tab" id="tab-racks" aria-controls="racks" data-tab="racks">ארונות ומתגים</button>
+    <button class="tab" role="tab" id="tab-addresses" aria-controls="addresses" data-tab="addresses">רשתות ו-VLAN</button>
+    <button class="tab" role="tab" id="tab-rooms" aria-controls="rooms" data-tab="rooms">כתובות לפי חדר</button>
+    <button class="tab" role="tab" id="tab-configs" aria-controls="configs" data-tab="configs">הגדרות לציוד</button>
+    <button class="tab" role="tab" id="tab-install" aria-controls="install" data-tab="install">תכנית התקנה</button>
+    <button class="tab" role="tab" id="tab-monitor" aria-controls="monitor" data-tab="monitor">ניטור תעבורה</button>
+    <button class="tab" role="tab" id="tab-stats" aria-controls="stats" data-tab="stats">סטטיסטיקות</button>
+    <button class="tab" role="tab" id="tab-guide" aria-controls="guide" data-tab="guide">מדריך והסברים</button>
+  </nav>
+</header>
+
+<main id="main" tabindex="-1">
+  <div id="globalAlert" role="alert" aria-live="assertive"></div>
+
+  <!-- ============ OVERVIEW ============ -->
+  <section class="panel" id="overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="-1">
+    <div class="hero">
+      <svg class="hero-deco" viewBox="0 0 300 300" aria-hidden="true">
+        <g fill="none" stroke="currentColor" style="color:var(--cyan)" stroke-width="1">
+          <circle cx="150" cy="150" r="60" opacity=".5"/><circle cx="150" cy="150" r="100" opacity=".35"/><circle cx="150" cy="150" r="140" opacity=".2"/>
+          <path d="M150 10v280M10 150h280M50 50l200 200M250 50L50 250" opacity=".15"/>
+        </g>
+        <g style="color:var(--gold)" fill="currentColor"><circle cx="150" cy="90" r="5"/><circle cx="210" cy="150" r="5"/><circle cx="110" cy="220" r="5"/><circle cx="60" cy="130" r="4"/></g>
+      </svg>
+      <span class="eyebrow">תכנית תקשורת</span>
+      <h1 id="heroTitle">תכנית התקשורת של <span class="gold">המבנה שלך</span></h1>
+      <p id="heroText">מגדירים מבנה, קומות וחדרים, והמערכת מתכננת את כל השאר: ארונות תקשורת, מתגים, VLAN-ים, כתובת IP לכל שקע בכל חדר, הגדרות מוכנות לציוד, ניטור ותכנית להדפסה.</p>
+      <div class="hero-actions">
+        <button class="btn primary" data-goto="plan">הגדרת המבנה</button>
+        <button class="btn" data-goto="rooms">כתובות לפי חדר</button>
+        <button class="btn" data-goto="topology">שרטוט הרשת</button>
+      </div>
+    </div>
+    <div class="kpis" id="kpis" aria-label="נתוני מפתח"></div>
+    <div id="warnings"></div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>מה לשים בארון: Hub, מתג או נתב?</h3>
+        <div id="recommend"></div>
+      </div>
+      <div class="card">
+        <h3>רשימת ציוד לרכישה</h3>
+        <div class="table-wrap"><table id="bomTable"><caption class="sr-only">רשימת ציוד</caption></table></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>שירותי ליבה וכתובות קבועות</h3>
+      <div class="table-wrap"><table id="servicesTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ============ PLAN FORM ============ -->
+  <section class="panel" id="plan" role="tabpanel" aria-labelledby="tab-plan" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">שלב 1</span><h2>הגדרת המבנה והדרישות</h2>
+        <p>כל שינוי מעדכן מיד את כל התכנית: כתובות, מתגים, שרטוטים והגדרות. אפשר להתחיל מתבנית מוכנה.</p></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h3>הפרויקט</h3>
+      <div class="form-grid">
+        <div class="field"><label for="pj-name">שם הפרויקט</label><input id="pj-name" type="text"></div>
+        <div class="field"><label for="pj-status">מצב</label><select id="pj-status"></select><span class="hint">תכנון ← בהתקנה ← מערכת פעילה</span></div>
+        <div class="field"><span class="small muted" id="pj-dates" style="margin-top:28px"></span></div>
+      </div>
+      <div class="toolbar" style="margin:12px 0 0">
+        <button type="button" class="btn sm" id="pj-wizard">אשף פרויקט חדש</button>
+        <button type="button" class="btn sm" id="pj-dup">שכפול כפרויקט חדש</button>
+        <button type="button" class="btn sm ghost" id="pj-del">מחיקת הפרויקט</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h3>תבניות מוכנות</h3>
+      <div class="presets" id="presets"></div>
+    </div>
+    <form id="planForm" novalidate>
+      <div id="formErrors" role="alert" aria-live="assertive"></div>
+      <fieldset>
+        <legend>האתר</legend>
+        <div class="form-grid">
+          <div class="field"><label for="f-site-name">שם האתר</label><input id="f-site-name" type="text" data-path="site.name"></div>
+          <div class="field"><label for="f-site-code">קוד אתר (אנגלית)</label><input id="f-site-code" type="text" data-path="site.code" dir="ltr"></div>
+          <div class="field"><label for="f-domain">דומיין פנימי</label><input id="f-domain" type="text" data-path="site.domain" dir="ltr"></div>
+          <div class="field"><label for="f-profile">סוג המבנה</label>
+            <select id="f-profile" data-path="profile"></select>
+            <span class="hint">בחירה טוענת ערכי ברירת מחדל מתאימים</span></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>מבנים, קומות וחדרים</legend>
+        <div class="table-wrap">
+          <table class="bldg-table">
+            <caption class="sr-only">רשימת מבנים</caption>
+            <thead><tr><th scope="col">שם המבנה</th><th scope="col">קוד</th><th scope="col">מספר קומות</th><th scope="col">קומה ראשונה</th><th scope="col">חדרים בקומה</th><th scope="col"><span class="sr-only">פעולות</span></th></tr></thead>
+            <tbody id="bldgRows"></tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:8px">קומה ראשונה 0 = קומת קרקע, ‎-1 = מרתף (B1). מספרי החדרים נבנים מהקומה: קומה 3, חדר 5 ← ‏305.</p>
+        <button type="button" class="btn sm" id="addBldg">+ הוספת מבנה</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>נקודות קצה בכל חדר</legend>
+        <div class="form-grid">
+          <div class="field"><label for="f-data">נקודות רשת למחשבים</label><input id="f-data" type="number" min="0" max="12" data-path="perRoom.data" data-num></div>
+          <div class="field"><label for="f-voice">טלפונים IP</label><input id="f-voice" type="number" min="0" max="12" data-path="perRoom.voice" data-num></div>
+          <div class="field"><label for="f-iptv">טלוויזיה / IPTV / מקרן</label><input id="f-iptv" type="number" min="0" max="12" data-path="perRoom.iptv" data-num></div>
+          <div class="field"><label for="f-iot">בקרים / IoT (מיזוג, כרטיס חדר)</label><input id="f-iot" type="number" min="0" max="12" data-path="perRoom.iot" data-num></div>
+          <div class="field"><label for="f-wifi">מכשירי Wi-Fi ארגוניים לחדר</label><input id="f-wifi" type="number" min="0" max="200" data-path="wifiPerRoom" data-num></div>
+          <div class="field"><label for="f-guest">מכשירי אורחים לחדר</label><input id="f-guest" type="number" min="0" max="200" data-path="guestPerRoom" data-num></div>
+          <div class="field"><label for="f-ap">נקודת גישה אחת לכל … חדרים</label><input id="f-ap" type="number" min="0" max="20" data-path="apPerRooms" data-num><span class="hint">0 = ללא Wi-Fi</span></div>
+          <div class="field"><label for="f-wifigen">דור ה-Wi-Fi</label><select id="f-wifigen" data-path="wifiGen"></select></div>
+          <div class="field"><label for="f-cams">מצלמות בכל קומה</label><input id="f-cams" type="number" min="0" max="100" data-path="camerasPerFloor" data-num></div>
+          <div class="field"><label for="f-prn">מדפסות בכל קומה</label><input id="f-prn" type="number" min="0" max="50" data-path="printersPerFloor" data-num></div>
+        </div>
+        <label class="check" style="margin-top:12px"><input type="checkbox" data-path="phonePassthrough"> המחשב מחובר דרך הטלפון (שקע אחד לשניהם, חוסך פורטים)</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>תשתית וארונות תקשורת</legend>
+        <div class="form-grid">
+          <div class="field"><label for="f-rpi">מקסימום חדרים לארון תקשורת</label><input id="f-rpi" type="number" min="1" max="500" data-path="roomsPerIdf" data-num><span class="hint">כבל נחושת עד 90 מ׳ מהארון (TIA-568)</span></div>
+          <div class="field"><label for="f-ports">גודל מתג</label><select id="f-ports" data-path="switchPorts" data-num><option value="48">48 פורטים</option><option value="24">24 פורטים</option></select></div>
+          <div class="field"><label for="f-spare">פורטים רזרביים (%)</label><input id="f-spare" type="number" min="0" max="200" data-path="sparePortsPct" data-num></div>
+          <div class="field"><label for="f-growth">מקום לצמיחה בכתובות (%)</label><input id="f-growth" type="number" min="0" max="400" data-path="growthPct" data-num></div>
+          <div class="field"><label for="f-uplink">מהירות קישור לליבה</label><select id="f-uplink" data-path="uplinkGbps" data-num><option value="10">10G</option><option value="25">25G</option><option value="40">40G</option><option value="100">100G</option></select></div>
+          <div class="field"><label for="f-cable">אורך כבל ממוצע (מ׳)</label><input id="f-cable" type="number" min="5" max="90" data-path="avgCableM" data-num></div>
+          <div class="field"><label for="f-wan">חבילת אינטרנט (Mbps)</label><input id="f-wan" type="number" min="10" max="400000" data-path="wanMbps" data-num></div>
+          <div class="field"><label for="f-isps">מספר ספקי אינטרנט</label><input id="f-isps" type="number" min="1" max="4" data-path="isps" data-num></div>
+        </div>
+        <label class="check" style="margin-top:12px"><input type="checkbox" data-path="redundancy"> שרידות מלאה: ליבה כפולה, חומת אש כפולה ושני קישורים מכל ארון</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>תכנון כתובות</legend>
+        <div class="form-grid">
+          <div class="field"><label for="f-base">טווח כתובות פרטי</label><input id="f-base" type="text" dir="ltr" data-path="addressing.base"><span class="hint">למשל 10.0.0.0/8 או 172.16.0.0/12</span></div>
+          <div class="field"><label for="f-mode">חלוקת רשתות</label>
+            <select id="f-mode" data-path="addressing.mode"><option value="floor">רשת לכל קומה (משרדים)</option><option value="room">רשת מבודדת לכל חדר (מלון / מגורים)</option></select></div>
+          <div class="field"><label for="f-rprefix">גודל רשת לחדר</label>
+            <select id="f-rprefix" data-path="addressing.roomPrefix" data-num><option value="29">‎/29 · ‏6 מכשירים</option><option value="28">‎/28 · ‏14 מכשירים</option><option value="27">‎/27 · ‏30 מכשירים</option><option value="26">‎/26 · ‏62 מכשירים</option></select></div>
+          <div class="field"><label for="f-v6p">קידומת IPv6 ‏(‎/48)</label><input id="f-v6p" type="text" dir="ltr" data-path="addressing.ipv6Prefix" placeholder="ריק = ULA אוטומטי"></div>
+        </div>
+        <label class="check" style="margin-top:12px"><input type="checkbox" data-path="addressing.ipv6"> Dual-Stack: גם IPv6 ‏(‎/64 לכל VLAN)</label>
+      </fieldset>
+
+      <div class="sticky-actions">
+        <span class="muted small" id="saveState" role="status" aria-live="polite" style="margin-inline-end:auto;align-self:center"></span>
+        <button type="button" class="btn" id="exportBtn">שמירת קובץ פרויקט</button>
+        <label class="btn" for="importFile" tabindex="0" id="importLbl">טעינת פרויקט</label>
+        <input type="file" id="importFile" accept="application/json,.json" class="sr-only">
+        <button type="button" class="btn ghost" id="resetBtn">איפוס</button>
+        <button type="button" class="btn primary" data-goto="overview">לתכנית ←</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ============ TOPOLOGY ============ -->
+  <section class="panel" id="topology" role="tabpanel" aria-labelledby="tab-topology" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">שרטוט</span><h2>שרטוט הרשת</h2>
+        <p>שרטוט פיזי: אנכי לאורך הבניין, עם כל ארון קומה, הסיבים לארון הראשי והחיבור לאינטרנט. מתחתיו שרטוט לוגי מפורט לארון שבוחרים.</p></div>
+      <div class="toolbar" style="margin:0">
+        <button class="btn sm" id="dlTopo">הורדת SVG</button>
+      </div>
+    </div>
+    <div class="diagram" id="riser" role="img" aria-label="שרטוט פיזי של הרשת"></div>
+    <div class="legend" id="riserLegend"></div>
+    <div class="card" style="margin-top:16px">
+      <div class="toolbar">
+        <div class="field"><label for="logicIdf">שרטוט לוגי לארון</label><select id="logicIdf"></select></div>
+      </div>
+      <div class="diagram" id="logic" role="img" aria-label="שרטוט לוגי לארון שנבחר"></div>
+    </div>
+  </section>
+
+  <!-- ============ 3D ============ -->
+  <section class="panel" id="view3d" role="tabpanel" aria-labelledby="tab-view3d" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">הדמיה</span><h2>הדמיה תלת־ממדית של המבנה</h2>
+        <p>כל הקומות והחדרים, ארונות התקשורת, הסיבים והכבלים, וכל נקודת תקשורת במיקום המומלץ שלה. לוחצים על חדר כדי להיכנס אליו. אפשר גם להסתובב בקומה במצב הליכה, או להיכנס עם משקפי VR.</p></div>
+    </div>
+    <div class="toolbar v3-toolbar">
+      <div class="field"><label for="v3b">מבנה</label><select id="v3b"></select></div>
+      <div class="field"><label for="v3f">קומה</label><select id="v3f"></select></div>
+      <div class="field"><label for="v3x">פיצול קומות</label><input id="v3x" type="range" min="1" max="3" step="0.1" value="1"></div>
+      <label class="check"><input type="checkbox" id="v3cab" checked> כבילה</label>
+      <label class="check"><input type="checkbox" id="v3furn" checked> ריהוט</label>
+      <button class="btn sm" id="v3over">מבט על</button>
+      <button class="btn sm" id="v3tour" aria-pressed="false">סיור אוטומטי</button>
+      <button class="btn sm" id="v3walk">מצב הליכה</button>
+      <button class="btn sm" id="v3shot">צילום מסך</button>
+      <button class="btn sm" id="v3full">מסך מלא</button>
+    </div>
+    <div class="v3-wrap">
+      <div class="v3-stage" id="v3stage">
+        <div class="v3-loading" role="status">טוען את ההדמיה…</div>
+        <div class="v3-hint" aria-live="polite">גוררים לסיבוב · גלגלת לזום · לחיצה על חדר כדי להיכנס אליו</div>
+        <div class="v3-tip" hidden></div>
+        <button class="v3-walk" hidden>לחצו כדי להתחיל להלך<br><small>W/A/S/D או החצים לתנועה · העכבר להסתכלות · Shift לריצה · Esc ליציאה</small></button>
+      </div>
+      <aside class="card v3-side" id="v3side" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <!-- ============ RACKS ============ -->
+  <section class="panel" id="racks" role="tabpanel" aria-labelledby="tab-racks" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">ארונות תקשורת</span><h2>ארונות, מתגים ופורטים</h2>
+        <p>שרטוט חזית לכל ארון ומפת פורטים לכל מתג. לחיצה על פורט מציגה איזה שקע, חדר, VLAN וכתובת מחוברים אליו.</p></div>
+      <div class="toolbar" style="margin:0">
+        <div class="field"><label for="rackSel">ארון</label><select id="rackSel"></select></div>
+      </div>
+    </div>
+    <div class="rack-wrap">
+      <div class="card"><h3 id="rackTitle">ארון</h3><div id="rackSvg"></div><dl class="kv" id="rackFacts"></dl></div>
+      <div>
+        <div class="card"><h3>מפת פורטים</h3><div class="legend" id="portLegend"></div><div id="switchFaces"></div>
+          <div id="portInfo" class="alert info" role="status" aria-live="polite" hidden></div></div>
+        <div class="card"><h3>טבלת חיווט</h3><div class="table-wrap tall"><table id="wireTable"></table></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ADDRESSES ============ -->
+  <section class="panel" id="addresses" role="tabpanel" aria-labelledby="tab-addresses" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">IPAM</span><h2>רשתות, VLAN-ים וטווחי DHCP</h2>
+        <p>כל רשת עם VLAN, מסכה, Gateway, טווח DHCP דינמי, כתובות שמורות וקידומת IPv6.</p></div>
+      <div class="toolbar" style="margin:0"><button class="btn sm" id="csvSubnets">ייצוא ל-Excel ‏(CSV)</button></div>
+    </div>
+    <div class="toolbar">
+      <div class="field"><label for="snFilter">סינון</label><input id="snFilter" type="search" placeholder="שם, VLAN, כתובת…"></div>
+      <div class="field"><label for="snType">סוג</label><select id="snType"><option value="">הכול</option></select></div>
+    </div>
+    <div id="blocksInfo" class="small muted" style="margin-bottom:10px"></div>
+    <div class="table-wrap tall"><table id="subnetTable"></table></div>
+  </section>
+
+  <!-- ============ ROOMS ============ -->
+  <section class="panel" id="rooms" role="tabpanel" aria-labelledby="tab-rooms" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">כתובות לכל חדר</span><h2>כתובות לפי חדר ושקע</h2>
+        <p>לכל שקע בקיר: לוח ניתוב, פורט במתג, VLAN, כתובת IP קבועה (שמורה ב-DHCP לפי השקע), מסכה ו-Gateway. לחיצה על חדר פותחת כרטיס הגדרות.</p></div>
+      <div class="toolbar" style="margin:0"><button class="btn sm" id="csvRooms">ייצוא כל החדרים ‏(CSV)</button></div>
+    </div>
+    <div class="toolbar">
+      <div class="field"><label for="roomB">מבנה</label><select id="roomB"></select></div>
+      <div class="field"><label for="roomF">קומה</label><select id="roomF"></select></div>
+      <div class="field"><label for="roomQ">חיפוש חדר</label><input id="roomQ" type="search" placeholder="מספר חדר"></div>
+    </div>
+    <div class="table-wrap tall"><table id="roomTable"></table></div>
+    <div class="card" style="margin-top:16px">
+      <div class="toolbar" style="justify-content:space-between;margin-bottom:8px">
+        <h3 style="margin:0">נקודות ששונו ידנית</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn sm" id="ovExport">ייצוא שינויים ‏(CSV)</button>
+          <label class="btn sm" for="ovImport" tabindex="0" id="ovImportLbl">ייבוא שינויים מ-CSV</label>
+          <input type="file" id="ovImport" accept=".csv,text/csv" class="sr-only">
+        </div>
+      </div>
+      <p class="small muted">כדי לשנות כתובת, VLAN, שם מכשיר או MAC לנקודה מסוימת, לוחצים על ✎ ליד הנקודה בטבלה. קובץ ה-CSV לייבוא כולל את העמודות: <code>point,ip,network,hostname,mac,note</code>.</p>
+      <div class="table-wrap"><table id="ovTable"></table></div>
+      <details style="margin-top:12px"><summary><b>היסטוריית שינויים</b></summary><ul id="logList" class="small" style="margin-top:8px"></ul></details>
+    </div>
+  </section>
+
+  <!-- ============ INSTALL ============ -->
+  <section class="panel" id="install" role="tabpanel" aria-labelledby="tab-install" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">פרויקט התקנה</span><h2>תכנית התקנה ומעקב ביצוע</h2>
+        <p>משימות ההתקנה נבנות אוטומטית מהתכנית: משימות כלליות, ומשימות לכל ארון תקשורת. מסמנים כל משימה שבוצעה, והתאריך נשמר.</p></div>
+      <div id="installProgress" style="min-width:260px"></div>
+    </div>
+    <div class="card"><h3>משימות כלליות</h3><ul class="checklist" id="globalSteps"></ul></div>
+    <div class="card"><h3>משימות לכל ארון</h3><div class="table-wrap tall"><table id="idfSteps"></table></div></div>
+  </section>
+
+  <!-- ============ CONFIGS ============ -->
+  <section class="panel" id="configs" role="tabpanel" aria-labelledby="tab-configs" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">הטמעה</span><h2>הגדרות מוכנות לציוד</h2>
+        <p>קובצי הגדרה מלאים ל-Cisco IOS-XE (ליבה, הפצה ומתגי קומה) ולשרת DHCP מסוג ISC Kea. השרת משייך כתובת קבועה לכל שקע בקיר דרך DHCP Option 82. לפני ההטמעה צריך להחליף כל ערך <code>&lt;CHANGE-ME&gt;</code>.</p></div>
+      <div class="toolbar" style="margin:0"><button class="btn sm" id="dlAll">הורדת כל הקבצים</button></div>
+    </div>
+    <div class="split">
+      <div class="card"><h3>קבצים</h3><ul class="file-list" id="fileList"></ul></div>
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <h3 id="cfgTitle" style="margin:0">—</h3>
+          <div style="display:flex;gap:8px"><button class="btn sm" id="copyCfg">העתקה</button><button class="btn sm" id="dlCfg">הורדה</button></div>
+        </div>
+        <pre class="codebox" id="cfgView" tabindex="0" aria-label="תוכן קובץ ההגדרות"></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MONITOR ============ -->
+  <section class="panel" id="monitor" role="tabpanel" aria-labelledby="tab-monitor" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">סקופ</span><h2>ניטור צריכת נתונים</h2>
+        <p>צריכה בזמן אמת לכל כתובת, חדר, ארון ולקו הראשי: קצב קבלה ושליחה, ממוצע, שיא, אחוזון 95 ונפח מצטבר.</p></div>
+      <span id="srcBadge" class="badge-sim" role="status"><span class="pulse" aria-hidden="true"></span> נתוני הדגמה (סימולציה)</span>
+    </div>
+    <div class="toolbar">
+      <div class="field"><label for="monTarget">מה מודדים</label><select id="monTarget"></select></div>
+      <div class="field"><label for="monIp">או כתובת / חדר</label><input id="monIp" type="search" placeholder="10.1.11.20 או 305" dir="ltr"></div>
+      <div class="field"><label for="monSrc">מקור נתונים</label>
+        <select id="monSrc"><option value="sim">סימולציה (הדגמה)</option><option value="json">חיבור חי: כתובת JSON</option><option value="csv">ייבוא קובץ CSV</option></select></div>
+      <div class="field" id="monUrlField" hidden><label for="monUrl">כתובת JSON</label><input id="monUrl" type="url" dir="ltr" placeholder="https://…/traffic.json"></div>
+      <div class="field" id="monCsvField" hidden><label for="monCsv">קובץ CSV ‏(ip,rx_bps,tx_bps)</label><input id="monCsv" type="file" accept=".csv,text/csv"></div>
+      <button class="btn sm" id="monPause" aria-pressed="false">השהיה</button>
+    </div>
+    <div class="scope">
+      <canvas id="scopeCanvas" aria-label="גרף תעבורה בזמן אמת" role="img"></canvas>
+      <div class="scope-hud"><span class="hud-title" id="hudTitle">—</span><span id="hudScale"></span></div>
+    </div>
+    <div class="legend"><span><i class="dot" style="background:#3cf2b4"></i> הורדה (RX)</span><span><i class="dot" style="background:#ffc861"></i> העלאה (TX)</span><span class="muted small">חלון של 120 שניות</span></div>
+    <div class="readouts" id="readouts" aria-live="off"></div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>הצרכנים הגדולים כרגע</h3><div class="table-wrap"><table id="topTalkers"></table></div></div>
+      <div class="card"><h3>עומס הקישורים מהארונות לליבה</h3><div id="uplinkBars"></div></div>
+    </div>
+    <div class="card">
+      <div class="toolbar"><h3 style="margin:0">מפת חום לפי חדרים</h3>
+        <div class="field"><label for="heatB" class="sr-only">מבנה</label><select id="heatB"></select></div>
+        <div class="field"><label for="heatF" class="sr-only">קומה</label><select id="heatF"></select></div></div>
+      <div class="heat" id="heat"></div>
+      <p class="small muted" style="margin-top:8px">הצבע מבטא קצב נוכחי (Mbps). לחיצה על חדר מציגה אותו בסקופ.</p>
+    </div>
+    <details class="card">
+      <summary><b>איך מחברים נתונים אמיתיים</b></summary>
+      <div class="prose" style="margin-top:10px">
+        <p>הדפדפן לא יכול לדגום מתגים ישירות (SNMP/NetFlow). לכן מחברים אסף נתונים קטן שמפרסם קובץ JSON, למשל Telegraf, ‏n8n, ‏Prometheus עם exporter, או סקריפט Python. המערכת קוראת את הקובץ כל 5 שניות.</p>
+        <pre class="codebox">{
+  "ts": 1767225600,
+  "items": [
+    { "ip": "10.1.11.10", "rx_bps": 18500000, "tx_bps": 2100000 },
+    { "ip": "WAN",        "rx_bps": 912000000, "tx_bps": 210000000 }
+  ]
+}</pre>
+        <p>השרת צריך לאפשר CORS. קובץ CSV מקבל את אותן עמודות: <code>ip,rx_bps,tx_bps</code>.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section class="panel" id="stats" role="tabpanel" aria-labelledby="tab-stats" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">אנליטיקה</span><h2>סטטיסטיקות המערכת</h2>
+        <p>ניצול כתובות, פורטים, הספק PoE, עומסים ונקודות קצה, לכל המערכת ולכל ארון.</p></div>
+    </div>
+    <div class="kpis" id="statKpis"></div>
+    <div class="grid g2">
+      <div class="card"><h3>נקודות קצה לפי סוג</h3><div class="chart" id="chEndpoints"></div></div>
+      <div class="card"><h3>ניצול כתובות לפי סוג רשת</h3><div class="chart" id="chAddr"></div></div>
+      <div class="card"><h3>פורטים בשימוש מול זמינים, לפי ארון</h3><div class="chart" id="chPorts"></div></div>
+      <div class="card"><h3>הספק PoE לפי ארון (W)</h3><div class="chart" id="chPoe"></div></div>
+    </div>
+    <div class="card"><h3>תעבורה משוערת בשעת שיא, לפי ארון (Mbps)</h3><div class="chart" id="chBusy"></div></div>
+    <div class="card"><h3>נתוני תעבורה חיים</h3><div class="kpis" id="liveKpis" style="margin:0"></div></div>
+  </section>
+
+  <!-- ============ GUIDE ============ -->
+  <section class="panel" id="guide" role="tabpanel" aria-labelledby="tab-guide" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">ידע</span><h2>מדריך: איך בונים ומגדירים את הרשת</h2>
+        <p>הסבר על כל רכיב, למה בחרנו בו, ואיך מטמיעים את התכנית צעד אחרי צעד.</p></div>
+    </div>
+    <div class="grid g2">
+      <div class="card prose">
+        <h3 style="margin-top:0">Hub, מתג, נתב או חומת אש?</h3>
+        <div class="table-wrap"><table class="compare">
+          <thead><tr><th scope="col">רכיב</th><th scope="col">מה הוא עושה</th><th scope="col">בתכנית?</th></tr></thead>
+          <tbody>
+            <tr><td>Hub (רכזת)</td><td>משכפל כל חבילה לכל הפורטים, עובד ב-Half Duplex ויוצר התנגשויות. אין VLAN, אין אבטחה, אין ניהול.</td><td><span class="chip">✗ לעולם לא</span></td></tr>
+            <tr><td>מתג לא מנוהל</td><td>מעביר חבילות לפי כתובת MAC, אבל בלי VLAN, בלי PoE מבוקר ובלי ניטור.</td><td><span class="chip">✗ לא בארון</span></td></tr>
+            <tr><td>מתג גישה מנוהל (L2)</td><td>בכל ארון קומה. VLAN לכל שירות, PoE לטלפונים, מצלמות ונקודות גישה, אבטחת פורטים, DHCP Snooping ו-Stack.</td><td><span class="chip">✓ בכל ארון</span></td></tr>
+            <tr><td>מתג ליבה (L3)</td><td>מנתב בין ה-VLAN-ים במהירות קו מלאה ומשמש Gateway לכל הרשתות. בארון הראשי, כזוג לשרידות.</td><td><span class="chip">✓ ארון ראשי</span></td></tr>
+            <tr><td>נתב / חומת אש</td><td>בקצה מול האינטרנט: NAT, ‏VPN, ‏IPS, סינון ובידוד אורחים ומצלמות. לא מנתב תעבורה פנימית.</td><td><span class="chip">✓ בקצה</span></td></tr>
+            <tr><td>בקר Wi-Fi / ענן</td><td>ניהול מרכזי של נקודות הגישה, נדידה חלקה ורשתות אלחוטיות ארגוניות ואורחים.</td><td><span class="chip">✓ שרת/ענן</span></td></tr>
+          </tbody>
+        </table></div>
+        <h3>מבנה הרשת: שלוש שכבות</h3>
+        <ul>
+          <li><b>גישה (Access):</b> ארון בכל קומה, עד 90 מ׳ כבל נחושת מכל שקע. אם הקומה ארוכה יותר, או שיש בה יותר חדרים ממה שארון אחד משרת, המערכת מוסיפה ארון.</li>
+          <li><b>הפצה (Distribution):</b> כשיש כמה מבנים, זוג מתגי L3 בכל מבנה. בבניין יחיד השכבה מתמזגת בליבה (Collapsed Core).</li>
+          <li><b>ליבה (Core):</b> בארון הראשי (MDF), עם חומת האש, נתבי הספקים והשרתים.</li>
+        </ul>
+        <h3>שיטת המספור</h3>
+        <ul>
+          <li><b>כתובות:</b> <code>10.0.x.x</code> לשירותי ליבה, <code>10.1.x.x</code> למבנה הראשון, <code>10.2.x.x</code> לשני וכן הלאה.</li>
+          <li><b>VLAN:</b> ‏<code>1BFF</code> מחשבים, <code>2BFF</code> טלפוניה (B = מבנה, FF = קומה), <code>3B10</code> Wi-Fi, ‏<code>3B20</code> אורחים, <code>3B30</code> מצלמות, <code>3B40</code> IoT, ‏<code>3B50</code> מדפסות, <code>3B99</code> ניהול.</li>
+          <li><b>שקעים:</b> <code>A-305-D1</code> = מבנה A, חדר 305, שקע מחשב ראשון. ‏V = טלפון, T = טלוויזיה, X = בקר.</li>
+          <li><b>Gateway:</b> הכתובת הראשונה בכל רשת (‎.1). ‏‎.2 ו-‎.3 שמורות לליבה, ‏‎.4–‎.9 לציוד קבוע.</li>
+        </ul>
+      </div>
+      <div class="card prose">
+        <h3 style="margin-top:0">דוגמה: ארון אחד שמשרת 40 חדרים</h3>
+        <p>במשרדים (2 מחשבים וטלפון בחדר, נקודת גישה לכל 3 חדרים) יש 40×3 = 120 שקעים, 14 נקודות גישה, 4 מצלמות ו-2 מדפסות, כלומר 140 חיבורים. עם 20% רזרבה צריך 168 פורטים, ולכן ארבעה מתגים של 48 פורטים במחסנית אחת, שישה לוחות ניתוב ושני סיבים של 10G לליבה.</p>
+        <p>כל קומה מקבלת רשת מחשבים ‎/25 ‏(126 כתובות) ורשת טלפוניה ‎/26. בכל חדר, למשל חדר 101:</p>
+        <ul>
+          <li>D1 ← ‏<code>10.1.x.10</code>, ‏D2 ← ‏<code>10.1.x.11</code> ‏(VLAN 1001)</li>
+          <li>V1 ← טלפון ב-VLAN 2001</li>
+          <li>מסכה <code>255.255.255.128</code>, Gateway ‏<code>10.1.x.1</code>, ‏DNS מהשרתים בליבה</li>
+        </ul>
+        <p>לכתובות המדויקות עוברים ל<a href="#rooms" data-goto="rooms">כתובות לפי חדר</a>, אחרי שבוחרים את התבנית "ארון אחד · 40 חדרים".</p>
+        <h3>סדר ההטמעה</h3>
+        <ol class="steps">
+          <li><b>תשתית פיזית:</b> התקנת הארונות, הארקה, UPS, כבלי Cat6A מכל שקע ללוח הניתוב, סיב OS2 מכל ארון לארון הראשי. מדביקים תוויות לפי שמות השקעים בתכנית.</li>
+          <li><b>הסמכת כבילה:</b> בדיקת כל ריצה במכשיר הסמכה (Permanent Link, Cat6A) ושמירת הדוחות.</li>
+          <li><b>שרתי ליבה:</b> הקמת DNS ו-DHCP (קובץ Kea מוכן), NTP, ‏Syslog/NMS ו-RADIUS לפי הכתובות ב"שירותי ליבה".</li>
+          <li><b>ליבה וחומת אש:</b> טעינת קובץ ה-CORE, חיבור לחומת האש ב-VLAN 900 והגדרת NAT ומדיניות אבטחה.</li>
+          <li><b>מתגי קומה:</b> טעינת הקובץ של כל ארון (SW-…), יצירת מפתח SSH, חיבור ה-Uplinks ובדיקת Port-channel.</li>
+          <li><b>נקודות קצה:</b> חיבור לפי טבלת החיווט. כל מכשיר מקבל אוטומטית את הכתובת של השקע שלו.</li>
+          <li><b>Wi-Fi:</b> אימוץ נקודות הגישה בבקר או בענן, ‏SSID ארגוני (WPA3-Enterprise) ו-SSID אורחים מבודד.</li>
+          <li><b>בדיקות קבלה:</b> ping ל-Gateway מכל VLAN, בדיקת בידוד (אורחים ומצלמות לא רואים את הרשת הפנימית), ניתוק קישור אחד לבדיקת שרידות, ובדיקת מהירות.</li>
+          <li><b>תיעוד וניטור:</b> הדפסת התכנית לתיק המבנה, חיבור הניטור והגדרת התראות.</li>
+        </ol>
+        <h3>אבטחה שכבר כלולה בהגדרות</h3>
+        <ul>
+          <li>DHCP Snooping ו-Dynamic ARP Inspection נגד שרתי DHCP מזויפים והתחזות.</li>
+          <li>BPDU Guard, ‏Storm Control ו-Loop Guard נגד לולאות והצפות.</li>
+          <li>פורטים פנויים כבויים ומוצבים ב-VLAN 999.</li>
+          <li>ניהול ב-SSHv2 בלבד, ‏SNMPv3, ‏AAA מול RADIUS ורשימת גישה לניהול.</li>
+          <li>ACL שמבודד אורחים, מצלמות, IoT וחדרי מלון מהרשת הפנימית.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<aside class="drawer" id="drawer" hidden aria-labelledby="drawerTitle" role="dialog" aria-modal="false">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <h2 id="drawerTitle" style="margin:0">—</h2>
+    <button class="btn sm" id="drawerClose">סגירה <span class="sr-only">של כרטיס החדר</span></button>
+  </div>
+  <div id="drawerBody"></div>
+</aside>
+
+<dialog id="printDlg" aria-labelledby="printDlgTitle">
+  <form method="dialog">
+    <div class="dlg-body">
+      <h2 id="printDlgTitle">הדפסת התכנית</h2>
+      <p class="muted">אילו חלקים להדפיס? אפשר גם לשמור כ-PDF מחלון ההדפסה.</p>
+      <div style="display:grid;gap:8px" id="printOpts">
+        <label class="check"><input type="checkbox" value="summary" checked> סיכום, המלצות ורשימת ציוד</label>
+        <label class="check"><input type="checkbox" value="topology" checked> שרטוט הרשת</label>
+        <label class="check"><input type="checkbox" value="subnets" checked> רשתות ו-VLAN-ים</label>
+        <label class="check"><input type="checkbox" value="rooms" checked> כתובות לכל חדר ושקע</label>
+        <label class="check"><input type="checkbox" value="racks" checked> ארונות וחיווט</label>
+        <label class="check"><input type="checkbox" value="install" checked> תכנית התקנה ומעקב ביצוע</label>
+        <label class="check"><input type="checkbox" value="configs"> קובצי הגדרות לציוד (ארוך)</label>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" value="cancel">ביטול</button>
+      <button class="btn primary" value="print" id="doPrint">הדפסה</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="editDlg" aria-labelledby="editTitle">
+  <form method="dialog" id="editForm" novalidate>
+    <div class="dlg-body">
+      <h2 id="editTitle">עריכת נקודה</h2>
+      <p class="muted small" id="editAuto"></p>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="field" style="grid-column:1/-1"><label for="ed-net">רשת / VLAN</label><select id="ed-net"></select></div>
+        <div class="field"><label for="ed-ip">כתובת IP</label><input id="ed-ip" type="text" dir="ltr" list="ed-free" autocomplete="off"><datalist id="ed-free"></datalist><span class="hint" id="ed-ip-hint">ריק = כתובת אוטומטית</span></div>
+        <div class="field"><label for="ed-host">שם מכשיר</label><input id="ed-host" type="text" dir="ltr" placeholder="pc-reception"></div>
+        <div class="field"><label for="ed-mac">כתובת MAC</label><input id="ed-mac" type="text" dir="ltr" placeholder="aa:bb:cc:dd:ee:ff"><span class="hint">אם מוזן MAC, הכתובת שמורה למכשיר ולא לשקע</span></div>
+        <div class="field"><label for="ed-note">הערה</label><input id="ed-note" type="text"></div>
+      </div>
+      <div id="editErr" role="alert" aria-live="assertive" style="margin-top:10px"></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn ghost" value="reset" id="edReset" style="margin-inline-end:auto">חזרה לאוטומטי</button>
+      <button class="btn" value="cancel">ביטול</button>
+      <button class="btn primary" value="save" id="edSave">שמירה</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="wizDlg" aria-labelledby="wizTitle" style="width:min(760px, calc(100vw - 32px))">
+  <form method="dialog" id="wizForm" novalidate>
+    <div class="dlg-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <h2 id="wizTitle" style="margin:0">פרויקט חדש</h2>
+        <span class="chip" id="wizStepLbl" aria-live="polite"></span>
+      </div>
+      <div id="wizBody" style="margin-top:14px"></div>
+      <div id="wizErr" role="alert" aria-live="assertive" style="margin-top:10px"></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn ghost" value="cancel" style="margin-inline-end:auto">ביטול</button>
+      <button class="btn" type="button" id="wizBack">→ הקודם</button>
+      <button class="btn primary" type="button" id="wizNext">הבא ←</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="printRoot" aria-hidden="true"></div>
+<div class="tooltip" id="tip" hidden></div>
+<div class="sr-only" id="live" role="status" aria-live="polite"></div>
+
+<footer class="site">
+  נט־פלאן · התכנית נשמרת בדפדפן בלבד. לפני הטמעה בשטח, מהנדס רשתות צריך לבדוק את הכמויות וההגדרות.
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

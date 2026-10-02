@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPIDER · כל הפרויקטים · חיים קריספין</title>
+<meta name="description" content="כל הפרויקטים שלי במקום אחד: סוכני AI, אתרים, כלים ומערכות ניהול.">
+<meta name="theme-color" content="#0f0d24">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="img/icon-192.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="SPIDER">
+<meta property="og:title" content="כל מה שבניתי, במקום אחד">
+<meta property="og:description" content="37 פרויקטים: סוכני AI, אתרים, כלי DevOps ומערכות ניהול. בואו לסיור עם מאיה, העוזרת האישית.">
+<meta property="og:url" content="https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/">
+<meta property="og:image" content="https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SPIDER · חיים קריספין · 054-4979771">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Michroma&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/extras.css">
+<link rel="stylesheet" href="css/auth.css">
+<script src="js/auth.js"></script>
+<link rel="preload" as="image" href="img/sky.webp" type="image/webp">
+</head>
+<body class="has-scene">
+<a class="skip" href="#all">דלג לפרויקטים</a>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand spider-brand" href="#top" aria-label="SPIDER">
+      <img src="img/spider.svg" alt="" width="34" height="34"><span class="wordmark">SPIDER</span>
+    </a>
+    <nav class="links" aria-label="ניווט">
+      <a href="#featured">נבחרים</a>
+      <a href="#fields">תחומים</a>
+      <a href="#all">כל הפרויקטים</a>
+      <a href="services.html" class="nav-svc">שירותים ומחירים</a>
+      <a href="#how">איך זה עובד</a>
+      <a href="#add" class="nav-add">+ הוספת פרויקט</a>
+      <a id="nav-status" class="nav-live" href="#" target="_blank" rel="noopener" hidden>● מרכז הבקרה</a>
+    </nav>
+    <a class="btn btn-ghost btn-sm" id="gh-top" href="https://github.com/devopsdevopshaim-wq" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0z"/></svg>
+      GitHub
+    </a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow rise" style="--d:0">תיק עבודות · DevOps · AI · Web</p>
+        <h1 class="rise" style="--d:1">כל מה <em class="scribble">שבניתי<svg viewBox="0 0 300 24" preserveAspectRatio="none" aria-hidden="true"><path d="M4 16c40-9 90-12 150-9 50 3 95 1 142-6"/><path d="M30 21c60-5 130-6 220-4"/></svg></em>,<br>במקום אחד.</h1>
+        <p class="lead rise" style="--d:2">סוכני AI, אתרים, כלים יומיומיים ומערכות ניהול. כל פרויקט יושב במאגר GitHub משלו, ואפשר לפתוח אותו מכאן בלחיצה.</p>
+        <div class="cta rise" style="--d:3">
+          <a class="btn btn-gold" href="#all">לכל הפרויקטים <span aria-hidden="true">↓</span></a>
+          <a class="btn btn-ghost" href="#featured">מאיפה להתחיל</a>
+          <a class="btn btn-ghost" href="services.html">רוצים כזה לעסק? ←</a>
+        </div>
+        <dl class="stats rise" style="--d:4" id="stats"></dl>
+      </div>
+
+      <figure class="orbit rise" style="--d:2" id="orbit">
+        <svg id="orbit-svg" viewBox="-265 -160 530 320" role="img" aria-label="מפת כל הפרויקטים">
+          <defs>
+            <radialGradient id="core-fill" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#3a3280"/><stop offset="1" stop-color="#17143a"/></radialGradient>
+            <radialGradient id="core-glow"><stop offset="0" stop-color="#8b7bff" stop-opacity=".45"/><stop offset="1" stop-color="#8b7bff" stop-opacity="0"/></radialGradient>
+          </defs>
+          <g id="orbit-core" aria-hidden="true">
+            <circle r="120" fill="url(#core-glow)"/>
+            <circle r="66" fill="url(#core-fill)" stroke="rgba(224,178,90,.55)" stroke-width="1.2"/>
+            <circle r="76" fill="none" stroke="rgba(139,123,255,.18)" stroke-width="8"/>
+            <text class="core-num" id="core-num" y="10" text-anchor="middle">0</text>
+            <text class="core-label" y="34" text-anchor="middle">פרויקטים</text>
+          </g>
+        </svg>
+        <div class="orbit-tip" id="orbit-tip" hidden></div>
+        <figcaption><span class="hand">כל נקודה היא פרויקט אמיתי</span> רחפו לראות שם, לחצו כדי לקפוץ אליו.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="featured">
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">נבחרים</p>
+        <h2>שלושה פרויקטים שכדאי להתחיל מהם <span class="hand note">← התחילו מכאן</span></h2>
+      </header>
+      <div class="featured" id="featured-list"></div>
+    </div>
+  </section>
+
+  <section class="section topo" id="fields">
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">תחומים</p>
+        <h2>בחרו תחום</h2>
+      </header>
+      <div class="tiles" id="tiles" role="tablist" aria-label="סינון לפי תחום"></div>
+    </div>
+  </section>
+
+  <section class="section" id="all">
+    <div class="wrap">
+      <header class="sec-head sec-row reveal">
+        <div>
+          <p class="eyebrow" id="all-eyebrow">כל הפרויקטים</p>
+          <h2 id="all-title">הכול</h2>
+        </div>
+        <label class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="q" type="search" placeholder="חיפוש לפי שם…" aria-label="חיפוש פרויקט">
+        </label>
+      </header>
+      <div class="fbar reveal" id="fbar" role="group" aria-label="סינון ומיון">
+        <label><span>תחום</span><select id="f-cat"></select></label>
+        <label><span>מצב</span><select id="f-live">
+          <option value="all">הכול</option>
+          <option value="live">באוויר עכשיו</option>
+          <option value="featured">נבחרים</option>
+        </select></label>
+        <label><span>מיון</span><select id="f-sort">
+          <option value="default">מומלץ</option>
+          <option value="popular">הכי נפתחים</option>
+          <option value="az">לפי שם</option>
+        </select></label>
+        <button class="g-btn ghost" type="button" id="f-reset" hidden>ניקוי סינון ×</button>
+        <span class="admin-on" id="admin-on" hidden>מצב מנהל · <a href="admin.html">למסך הניהול</a></span>
+      </div>
+      <p class="note" id="note" hidden></p>
+      <div class="grid" id="grid" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="section" id="extra-wrap" hidden>
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">עוד ב־GitHub</p>
+        <h2>מאגרים נוספים</h2>
+      </header>
+      <div class="grid" id="extra"></div>
+    </div>
+  </section>
+
+  <section class="section" id="videos" hidden>
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">סרטונים</p>
+        <h2>לראות איך זה עובד</h2>
+      </header>
+      <div class="v-grid"></div>
+    </div>
+  </section>
+
+  <section class="section" id="add">
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">הוספת פרויקט</p>
+        <h2>יש פרויקט חדש? <span class="hand note">זה לוקח דקה</span></h2>
+      </header>
+      <div class="add-grid reveal">
+        <form class="add-form" id="add-form" novalidate>
+          <fieldset class="kind">
+            <legend>מה מוסיפים?</legend>
+            <label><input type="radio" name="kind" value="site" checked><span><b>אתר שכבר באוויר</b><small>כתובת של Vercel, Render, GitHub Pages או כל אתר</small></span></label>
+            <label><input type="radio" name="kind" value="repo"><span><b>מאגר GitHub</b><small>קישור למאגר, למשל github.com/…/my-app</small></span></label>
+            <label><input type="radio" name="kind" value="file"><span><b>קובץ HTML מהמחשב</b><small>נעלה אותו קודם ל־GitHub, בארבעה צעדים</small></span></label>
+          </fieldset>
+
+          <ol class="file-steps" id="file-steps" hidden>
+            <li><a href="https://github.com/new" target="_blank" rel="noopener">פתחו מאגר חדש ב־GitHub</a>. תנו לו שם באנגלית, סמנו Public ולחצו Create repository.</li>
+            <li>בעמוד שנפתח לחצו על <b>uploading an existing file</b>, גררו את קובץ ה־HTML (ואת הקבצים שלידו), ולחצו Commit changes. אם הקובץ לא נקרא index.html, שנו את שמו ל־index.html.</li>
+            <li>במאגר: Settings ← Pages ← Branch: <b>main</b> ← Save.</li>
+            <li>העתיקו את כתובת המאגר לשדה למטה, בחרו "מאגר GitHub", ושלחו.</li>
+          </ol>
+
+          <label class="field"><span>כתובת</span><input name="url" type="url" dir="ltr" placeholder="https://" required></label>
+          <label class="field"><span>שם הפרויקט</span><input name="title" type="text" maxlength="80" required></label>
+          <label class="field"><span>משפט אחד: מה הוא עושה?</span><textarea name="desc" rows="2" maxlength="300"></textarea></label>
+          <div class="field-row">
+            <label class="field"><span>תחום</span><select name="category" id="add-cat"></select></label>
+            <label class="field"><span>טכנולוגיות <small>(מופרדות בפסיק)</small></span><input name="tech" type="text" placeholder="JavaScript, Docker"></label>
+          </div>
+          <label class="field"><span>יכולות בולטות <small>(כל אחת בשורה)</small></span><textarea name="features" rows="3"></textarea></label>
+          <label class="field"><span>למה בניתם את זה? <small>(לא חובה)</small></span><textarea name="story" rows="2" maxlength="400"></textarea></label>
+          <p class="add-error" id="add-error" role="alert" hidden></p>
+          <button class="btn btn-gold" type="submit">שליחה ל־GitHub <span aria-hidden="true">↗</span></button>
+          <p class="add-note">נפתח עמוד ב־GitHub עם כל הפרטים. לוחצים שם <b>Create</b>, ותוך 2–3 דקות הפרויקט באתר, עם צילום מסך. רק בעל המאגר יכול להוסיף.</p>
+        </form>
+        <aside class="add-preview" aria-label="תצוגה מקדימה">
+          <p class="hand">ככה זה ייראה</p>
+          <div id="add-preview"></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="section topo" id="how">
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="eyebrow">איך זה עובד</p>
+        <h2>מהמחשב לאוויר, בארבעה צעדים</h2>
+      </header>
+      <ol class="pipe reveal">
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="10" width="36" height="24" rx="3"/><path d="M16 40h16M24 34v6"/><path d="M14 20l4 3-4 3M22 26h8"/></svg>
+          <h3>תיקייה במחשב</h3>
+          <p>הפרויקט נבנה ונבדק מקומית.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="14" cy="12" r="4"/><circle cx="14" cy="36" r="4"/><circle cx="34" cy="20" r="4"/><path d="M14 16v16M34 24c0 6-8 6-16 10"/></svg>
+          <h3>מאגר ב־GitHub</h3>
+          <p>כל פרויקט מקבל מאגר נפרד משלו.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="16"/><path d="M8 24h32M24 8c-6 8-6 24 0 32M24 8c6 8 6 24 0 32"/></svg>
+          <h3>GitHub Pages</h3>
+          <p>האתר מתפרסם בכתובת קבועה משלו.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l4.5 12.5L41 23l-12.5 4.5L24 40l-4.5-12.5L7 23l12.5-4.5z"/></svg>
+          <h3>כאן, בסדנה</h3>
+          <p>העמוד בודק את GitHub ומעדכן סטטוס לבד.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<div class="detail" id="detail" role="dialog" aria-modal="true" aria-labelledby="detail-title" hidden>
+  <div class="wrap detail-inner" id="detail-body"></div>
+</div>
+
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <span class="brand brand-sm spider-brand"><img src="img/spider.svg" alt="" width="26" height="26"><span class="wordmark">SPIDER</span></span>
+    <span class="owner">חיים קריספין · <a href="tel:+972544979771" dir="ltr">054-4979771</a></span>
+    <a id="gh-link" href="https://github.com/devopsdevopshaim-wq" target="_blank" rel="noopener">github.com/devopsdevopshaim-wq</a>
+    <a class="foot-admin" href="admin.html">ניהול</a>
+  </div>
+</footer>
+
+<a class="wa-fab" href="https://wa.me/972544979771?text=%D7%94%D7%99%D7%99%2C%20%D7%94%D7%92%D7%A2%D7%AA%D7%99%20%D7%9E%D7%94%D7%90%D7%AA%D7%A8%20%D7%95%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A9%D7%9E%D7%95%D7%A2%20%D7%A2%D7%9C%20%D7%94%D7%A9%D7%99%D7%A8%D7%95%D7%AA%D7%99%D7%9D" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.1 19.7L3 29l6.5-1.8A13 13 0 1 0 16 3zm0 23.6a10.6 10.6 0 0 1-5.4-1.5l-.4-.2-3.8 1 1-3.7-.2-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2l-1 1.2c-.2.2-.4.2-.7.1a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5 1-1.7.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.4 3.5c.2.2 2.4 3.6 5.8 5 2.2.9 3 1 4.1.8.7-.1 1.9-.8 2.2-1.5.3-.8.3-1.4.2-1.5l-.6-.3z"/></svg>
+</a>
+<script src="js/art.js"></script>
+<script src="js/guide.js"></script>
+<script src="js/app.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/add.js"></script>
+</body>
+</html>

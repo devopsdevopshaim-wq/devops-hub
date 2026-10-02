@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="he" dir="rtl" data-admin-only>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מסך ניהול · SPIDER</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f0d24">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Michroma&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/auth.css">
+<script src="js/auth.js"></script>
+</head>
+<body class="admin">
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand spider-brand" href="./" aria-label="SPIDER">
+      <img src="img/spider.svg" alt="" width="34" height="34"><span class="wordmark">SPIDER</span>
+    </a>
+    <span class="admin-tag">מסך ניהול</span>
+    <nav class="links" aria-label="ניווט בניהול">
+      <a href="#clients">לקוחות</a>
+      <a href="#skills">סקילים</a>
+      <a href="#biz">לידים ומחירון</a>
+      <a href="#stats">נתונים</a>
+      <a href="#projects">פרויקטים</a>
+      <a href="#people">הרשאות</a>
+      <a href="#media">מוזיקה וסרטונים</a>
+      <a href="#history">היסטוריה</a>
+    </nav>
+    <a class="btn btn-ghost btn-sm" href="./">לאתר ←</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="a-hero">
+    <p class="eyebrow">מנהל מערכת</p>
+    <h1>שלום חיים, מנהל SPIDER</h1>
+    <p class="lead">כל הפרויקטים, הנתונים וההרשאות במקום אחד. כל שינוי נאסף ל"סל פעולות" ונשלח ל־GitHub בלחיצה אחת. GitHub מבצע אותו רק אם הוא הגיע מהחשבון שלך.</p>
+    <p class="hint">סקיל ל־Claude לכל פרויקט נבנה אוטומטית בכל פרסום. <a href="skills/all-skills.zip" download>⬇ כל הסקילים בקובץ אחד (ל־Claude Code)</a> · <a href="skills/index.json" target="_blank" rel="noopener">רשימה</a></p>
+    <label class="site-admin"><input type="checkbox" id="site-admin"> <span>להציג כפתורי <b>מחיקה והסתרה</b> גם על הכרטיסים באתר עצמו <small>(רק בדפדפן הזה)</small></span></label>
+  </section>
+
+  <section id="roles" class="roles" aria-label="שלוש רמות גישה">
+    <article class="role">
+      <span class="role-ico" aria-hidden="true">👁</span>
+      <h2>לקוח · צפייה</h2>
+      <p>רואה את האתרים ונכנס אליהם. בלי הוספה, בלי קוד ובלי ניהול.</p>
+      <div class="role-row"><code id="client-link" dir="ltr"></code><button class="g-btn ghost" type="button" data-copy="client-link">העתקה</button></div>
+    </article>
+    <article class="role">
+      <span class="role-ico" aria-hidden="true">✚</span>
+      <h2>תורם · הוספה</h2>
+      <p>מוסיף אתרים דרך הלשונית "הוספת פרויקט". מה שהוא מוסיף ממתין לאישורך כאן.</p>
+      <div class="role-row"><a class="g-btn ghost" href="#people">ניהול תורמים</a></div>
+    </article>
+    <article class="role me">
+      <span class="role-ico" aria-hidden="true">★</span>
+      <h2>מנהל · הכול</h2>
+      <p>הוספה, עריכה, הסתרה, מחיקה, אישור תורמים ונתונים. זה המסך הזה.</p>
+      <div class="role-row"><span class="pill ok">את/ה כאן</span></div>
+    </article>
+  </section>
+
+  <section id="clients" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">הרשאות · n8n</p><h2>לקוחות ומנויים</h2></div>
+      <div class="filters"><button class="btn btn-gold btn-sm" type="button" id="cl-new">+ לקוח חדש</button></div>
+    </header>
+    <p class="hint">כל לקוח נכנס עם המייל והטלפון שלו וקוד חד־פעמי, ורואה רק את האתרים שסימנת לו, עד סוף המנוי. כשהמנוי נגמר, הכניסה נחסמת לבד.</p>
+    <p class="add-error" id="cl-err" hidden></p>
+    <dl class="kpis" id="cl-kpis"></dl>
+    <div class="table-wrap">
+      <table class="ptable clients">
+        <thead><tr><th>לקוח</th><th>אתרים</th><th>מנוי</th><th>בתוקף עד</th><th>כניסה אחרונה</th><th>פעולות</th></tr></thead>
+        <tbody id="cl-rows"><tr><td colspan="6" class="muted">טוען…</td></tr></tbody>
+      </table>
+    </div>
+    <details class="cl-log"><summary>יומן כניסות ושינויים</summary><ol class="history" id="cl-log"></ol></details>
+  </section>
+
+  <dialog class="edit" id="pay-dialog">
+    <form method="dialog" id="pay-form">
+      <h2 id="pay-title">רישום תשלום</h2>
+      <div class="field-row">
+        <label class="field"><span>על מה שילם</span><select name="plan">
+          <option value="day">מנוי יומי</option><option value="week">מנוי שבועי</option><option value="month" selected>מנוי חודשי</option>
+          <option value="year">מנוי שנתי</option><option value="other">אחר (בלי הארכה)</option>
+        </select></label>
+        <label class="field"><span>סכום (₪, כולל מע״מ)</span><input name="amount" type="number" min="1" step="1" required></label>
+      </div>
+      <div class="field-row">
+        <label class="field"><span>איך שילם</span><select name="method">
+          <option value="bit">ביט / פייבוקס</option><option value="transfer">העברה בנקאית</option><option value="cash">מזומן</option>
+          <option value="card">כרטיס אשראי</option><option value="paypal">PayPal</option><option value="check">צ׳ק</option><option value="other">אחר</option>
+        </select></label>
+        <label class="field"><span>הארכת המנוי (ימים)</span><input name="days" type="number" min="0" step="1"></label>
+      </div>
+      <label class="field"><span>תיאור במסמך</span><input name="description" maxlength="120"></label>
+      <label class="m-check"><input type="checkbox" name="invoice" checked> <span>להפיק חשבונית / קבלה ולשלוח ללקוח במייל <small>דרך Morning (חשבונית ירוקה). צריך לחבר פעם אחת ב־n8n.</small></span></label>
+      <p class="add-error" id="pay-err" hidden></p>
+      <div class="edit-actions">
+        <button class="g-btn ghost" value="cancel" type="submit" formnovalidate>ביטול</button>
+        <button class="btn btn-gold btn-sm" value="save" type="submit">רישום התשלום</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="edit cl-edit" id="cl-dialog">
+    <form method="dialog" id="cl-form">
+      <h2 id="cl-title">לקוח חדש</h2>
+      <div class="field-row">
+        <label class="field"><span>שם</span><input name="name" maxlength="60" required></label>
+        <label class="field"><span>טלפון</span><input name="phone" type="tel" dir="ltr" required placeholder="050-000-0000"></label>
+      </div>
+      <label class="field"><span>מייל</span><input name="email" type="email" dir="ltr" required></label>
+      <div class="field-row">
+        <label class="field"><span>מנוי</span><select name="plan">
+          <option value="day">יומי</option><option value="week">שבועי</option><option value="month" selected>חודשי</option>
+          <option value="year">שנתי</option><option value="custom">תאריך שאקבע</option><option value="free">ללא הגבלה</option>
+        </select></label>
+        <label class="field"><span>בתוקף עד</span><input name="expires" type="date"></label>
+      </div>
+      <label class="m-check"><input type="checkbox" name="active" checked> <span>גישה פעילה <small>בלי הסימון הלקוח חסום, גם אם המנוי בתוקף</small></span></label>
+      <fieldset class="cl-sites">
+        <legend>אתרים שהלקוח יראה <small id="cl-count"></small></legend>
+        <div class="cl-tools"><input type="search" id="cl-q" placeholder="חיפוש אתר…" aria-label="חיפוש אתר"><button class="g-btn ghost" type="button" data-all="1">הכול</button><button class="g-btn ghost" type="button" data-all="0">כלום</button></div>
+        <div class="cl-list" id="cl-list"></div>
+      </fieldset>
+      <label class="field"><span>הערה לעצמי <small>(לא חובה)</small></span><input name="note" maxlength="200" placeholder="למשל: שילם 290 ₪ בביט"></label>
+      <p class="add-error" id="cl-form-err" hidden></p>
+      <div class="edit-actions">
+        <button class="g-btn ghost" value="cancel" type="submit" formnovalidate>ביטול</button>
+        <button class="btn btn-gold btn-sm" value="save" type="submit">שמירה</button>
+      </div>
+    </form>
+  </dialog>
+
+  <section id="skills" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">Claude</p><h2>סקילים</h2></div>
+      <div class="filters">
+        <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="sk-q" type="search" placeholder="חיפוש סקיל…" aria-label="חיפוש סקיל"></label>
+        <a class="btn btn-gold btn-sm" href="skills/all-skills.zip" download>⬇ כל הסקילים (Claude Code)</a>
+      </div>
+    </header>
+    <p class="hint">לכל פרויקט נבנה סקיל ל־Claude בכל פרסום, מתוך הקוד שלו. ב־claude.ai: הגדרות ← Capabilities ← Skills ← Upload skill, ובוחרים את ה־zip. ב־Claude Code: פותחים את ה־zip לתוך <code dir="ltr">~/.claude/skills</code>.</p>
+    <p class="muted" id="sk-when"></p>
+    <div class="sk-grid" id="sk-grid"><p class="muted">טוען…</p></div>
+  </section>
+
+  <section id="biz" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">עסקים · n8n</p><h2>לידים ומחירון</h2></div>
+      <div class="filters" id="biz-tools" hidden>
+        <button class="g-btn ghost" type="button" id="biz-refresh">רענון ↻</button>
+        <button class="g-btn ghost" type="button" id="biz-csv">ייצוא לאקסל (CSV)</button>
+        <button class="g-btn ghost" type="button" id="biz-logout">יציאה</button>
+      </div>
+    </header>
+
+    <div class="biz-login" id="biz-login">
+      <p id="biz-login-text">הלידים והמחירון שמורים ב־n8n. כדי לראות אותם, הכניסו את סיסמת המנהל של מרכז העסקים.</p>
+      <form class="people-add" id="biz-login-form">
+        <label class="field"><span>סיסמת מנהל</span><input id="biz-key" type="password" autocomplete="current-password" minlength="8" required></label>
+        <button class="btn btn-gold btn-sm" type="submit" id="biz-login-btn">כניסה</button>
+      </form>
+      <p class="add-error" id="biz-error" role="alert" hidden></p>
+      <details class="biz-help">
+        <summary>פעם ראשונה? 3 צעדים</summary>
+        <ol>
+          <li>ב־n8n: <b>Workflows ← Import from File</b> ובוחרים את הקובץ <a href="https://raw.githubusercontent.com/devopsdevopshaim-wq/devops-hub/main/n8n/hasadna-business.json" target="_blank" rel="noopener">n8n/hasadna-business.json</a> (לחיצה ימנית ← שמירה בשם).</li>
+          <li>מפעילים את ה־workflow (המתג <b>Active</b> למעלה).</li>
+          <li>חוזרים לכאן, כותבים סיסמה חדשה (8 תווים לפחות) ולוחצים <b>קביעת סיסמה</b>. מעכשיו רק מי שיודע אותה רואה לידים ומשנה מחירים.</li>
+        </ol>
+      </details>
+    </div>
+
+    <div id="biz-body" hidden>
+      <dl class="kpis" id="biz-kpis"></dl>
+
+      <div class="biz-head">
+        <h3>לידים</h3>
+        <select id="lead-filter" aria-label="סינון לידים">
+          <option value="all">כל הלידים</option>
+          <option value="new">חדשים</option>
+          <option value="working">בטיפול</option>
+          <option value="quoted">נשלחה הצעה</option>
+          <option value="won">נסגרו</option>
+          <option value="lost">לא רלוונטי</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="ptable leads">
+          <thead><tr><th>מתי</th><th>מי</th><th>מה מעניין</th><th>הודעה</th><th>סטטוס</th><th>הערה שלי</th><th></th></tr></thead>
+          <tbody id="lead-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="biz-head"><h3>מחירון</h3><small class="muted" id="price-when"></small></div>
+      <p class="hint">מה שתשמרו כאן מופיע מיד בדף השירותים. בלי שמירה, הדף מציג את המחירים מהקובץ services.json.</p>
+      <div class="table-wrap">
+        <table class="ptable prices">
+          <thead><tr><th>שירות</th><th>מחיר התחלתי (₪)</th><th>יחידה</th><th>מוצג</th></tr></thead>
+          <tbody id="price-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="biz-head"><h3>שירותים שהוספתי</h3><button class="g-btn ghost" type="button" id="extra-add">+ שירות חדש</button></div>
+      <div class="offer-edit" id="extra-rows"></div>
+
+      <div class="biz-head"><h3>מחירי מנוי גישה לאתרים</h3><small class="muted">מופיעים בדף השירותים ובמסך התשלום של הלקוחות. ריק = לא מוצג.</small></div>
+      <div class="plans-edit" id="plans-edit">
+        <label class="field"><span>יומי (₪)</span><input type="number" min="0" step="1" data-plan="day"></label>
+        <label class="field"><span>שבועי (₪)</span><input type="number" min="0" step="1" data-plan="week"></label>
+        <label class="field"><span>חודשי (₪)</span><input type="number" min="0" step="1" data-plan="month"></label>
+        <label class="field"><span>שנתי (₪)</span><input type="number" min="0" step="1" data-plan="year"></label>
+      </div>
+
+      <div class="biz-head"><h3>מבצעים</h3><button class="g-btn ghost" type="button" id="offer-add">+ מבצע חדש</button></div>
+      <div class="offer-edit" id="offer-rows"></div>
+      <label class="field"><span>הערה מתחת למחירים</span><input id="price-note-in" maxlength="300"></label>
+      <div class="biz-save">
+        <button class="btn btn-gold" type="button" id="price-save">שמירת מחירון ומבצעים</button>
+        <button class="g-btn ghost" type="button" id="price-reset">חזרה למחירון המקורי</button>
+        <a class="g-btn ghost" href="services.html" target="_blank" rel="noopener">לדף השירותים ↗</a>
+        <span class="muted" id="price-status" role="status"></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="stats" class="a-sec">
+    <header class="sec-head"><p class="eyebrow">נתונים</p><h2>מה קורה באתרים</h2></header>
+    <dl class="kpis" id="kpis"></dl>
+    <div class="charts">
+      <figure class="chart">
+        <figcaption><b>הכי נפתחים</b><small>פתיחות מהאתר, 10 המובילים</small></figcaption>
+        <ol class="bars" id="chart-top"></ol>
+      </figure>
+      <figure class="chart">
+        <figcaption><b>פרויקטים לפי תחום</b><small>פרויקטים שמוצגים באתר</small></figcaption>
+        <ol class="bars" id="chart-cats"></ol>
+      </figure>
+      <figure class="chart">
+        <figcaption><b>זמינות עכשיו</b><small id="status-when">מהבדיקה האחרונה של n8n</small></figcaption>
+        <div class="stack" id="chart-status" role="img"></div>
+        <ul class="legend" id="status-legend"></ul>
+      </figure>
+    </div>
+  </section>
+
+  <section id="pending" class="a-sec" hidden>
+    <header class="sec-head"><p class="eyebrow">ממתינים לאישור</p><h2>פרויקטים שתורמים הוסיפו</h2></header>
+    <div class="pending-list" id="pending-list"></div>
+  </section>
+
+  <section id="projects" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow" id="proj-count">פרויקטים</p><h2>כל הפרויקטים</h2></div>
+      <div class="filters">
+        <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="חיפוש…" aria-label="חיפוש פרויקט"></label>
+        <select id="f-state" aria-label="סינון לפי מצב">
+          <option value="all">כל המצבים</option>
+          <option value="public">מוצגים באתר</option>
+          <option value="hidden">מוסתרים</option>
+          <option value="pending">ממתינים</option>
+          <option value="featured">נבחרים</option>
+          <option value="down">לא זמינים עכשיו</option>
+        </select>
+      </div>
+    </header>
+    <div class="bulk" id="bulk" hidden>
+      <span id="bulk-count"></span>
+      <button class="g-btn ghost" type="button" data-bulk="hide">הסתרה</button>
+      <button class="g-btn ghost" type="button" data-bulk="show">הצגה</button>
+      <button class="g-btn ghost" type="button" data-bulk="feature">לנבחרים</button>
+      <button class="g-btn danger" type="button" data-bulk="delete">מחיקה</button>
+    </div>
+    <div class="table-wrap">
+      <table class="ptable">
+        <thead><tr>
+          <th><input type="checkbox" id="check-all" aria-label="סימון הכול"></th>
+          <th>פרויקט</th><th>תחום</th><th>מצב באתר</th><th>זמינות</th><th>פתיחות</th><th>פעולות</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="people" class="a-sec">
+    <header class="sec-head"><p class="eyebrow">הרשאות</p><h2>תורמים שמורשים להוסיף אתרים</h2></header>
+    <p class="hint">תורם מוסיף אתר דרך הלשונית "הוספת פרויקט" עם חשבון ה־GitHub שלו. האתר מחכה כאן לאישורך לפני שהוא מופיע לכולם.</p>
+    <ul class="people" id="people-list"></ul>
+    <form class="people-add" id="people-add">
+      <label class="field"><span>שם משתמש ב־GitHub</span><input id="new-user" type="text" dir="ltr" placeholder="username" autocomplete="off"></label>
+      <button class="btn btn-gold btn-sm" type="submit">הוספת תורם</button>
+    </form>
+  </section>
+
+  <section id="media" class="a-sec">
+    <header class="sec-head"><p class="eyebrow">מדיה</p><h2>מוזיקה ברקע וסרטונים</h2></header>
+    <div class="media-grid">
+      <div>
+        <h3 class="m-h">♫ תחנות מוזיקה</h3>
+        <p class="hint">הנגן מציג תחנות רדיו חיות לפי סגנון (פסיטראנס, טראנס, דרים, אמביינט ועוד), שנבדקות כל יום. כאן מוסיפים בנוסף שירים משלכם מיוטיוב. הם יופיעו תחת "השירים שלי". שימו לב: יש סרטונים שבעליהם חוסמים ניגון מחוץ ליוטיוב.</p>
+        <ul class="m-list" id="music-list"></ul>
+        <form class="m-form" id="music-add" novalidate>
+          <label class="field"><span>סגנון (מה שיופיע על הכפתור)</span><input name="style" maxlength="30" placeholder="למשל: ג׳אז, קלאסי, מזרחית"></label>
+          <label class="field"><span>קישור ליוטיוב</span><input name="url" dir="ltr" placeholder="https://www.youtube.com/watch?v=…"></label>
+          <label class="field"><span>שם <small>(לא חובה)</small></span><input name="title" maxlength="80"></label>
+          <p class="add-error" id="music-err" hidden>צריך סגנון וקישור יוטיוב תקין.</p>
+          <button class="btn btn-gold btn-sm" type="submit">הוספת תחנה לסל</button>
+        </form>
+      </div>
+      <div>
+        <h3 class="m-h">▶ סרטונים</h3>
+        <p class="hint">יופיעו באתר בחלק "סרטונים". סרטון יוטיוב: צפייה בלבד. קובץ וידאו שלכם (קישור ישיר ל־mp4): אפשר לאשר גם הורדה.</p>
+        <ul class="m-list videos" id="video-list"></ul>
+        <form class="m-form" id="video-add" novalidate>
+          <label class="field"><span>כותרת</span><input name="title" maxlength="80"></label>
+          <label class="field"><span>קישור</span><input name="url" dir="ltr" placeholder="https://youtu.be/… או https://…/video.mp4"></label>
+          <label class="field"><span>תיאור קצר <small>(לא חובה)</small></span><input name="desc" maxlength="160"></label>
+          <label class="m-check"><input type="checkbox" name="download"> <span>לאפשר הורדה <small id="dl-note">הורדה מתאימה לסרטונים שלכם (קובץ mp4).</small></span></label>
+          <p class="add-error" id="video-err" hidden>צריך כותרת וקישור שמתחיל ב־https://.</p>
+          <button class="btn btn-gold btn-sm" type="submit">הוספת סרטון לסל</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="history" class="a-sec">
+    <header class="sec-head"><p class="eyebrow">היסטוריה</p><h2>שינויים אחרונים ברשימת הפרויקטים</h2></header>
+    <ol class="history" id="history-list"><li class="muted">טוען…</li></ol>
+  </section>
+</main>
+
+<div class="basket" id="basket" hidden>
+  <div class="wrap basket-inner">
+    <div>
+      <b id="basket-title">סל פעולות</b>
+      <ul id="basket-list"></ul>
+    </div>
+    <div class="basket-actions">
+      <button class="g-btn ghost" type="button" id="basket-clear">ניקוי</button>
+      <button class="btn btn-gold" type="button" id="basket-send">שליחה ל־GitHub ↗</button>
+    </div>
+  </div>
+</div>
+
+<dialog class="edit" id="edit">
+  <form method="dialog" id="edit-form">
+    <h2>עריכת פרויקט</h2>
+    <label class="field"><span>שם</span><input name="title" maxlength="80" required></label>
+    <label class="field"><span>תיאור</span><textarea name="desc" rows="3" maxlength="300"></textarea></label>
+    <label class="field"><span>תחום</span><select name="category" id="edit-cat"></select></label>
+    <label class="field" id="edit-url-wrap"><span>כתובת</span><input name="url" type="url" dir="ltr"></label>
+    <div class="edit-actions">
+      <button class="g-btn ghost" value="cancel" type="submit">ביטול</button>
+      <button class="btn btn-gold btn-sm" value="save" type="submit">הוספה לסל</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="js/admin.js"></script>
+<script src="js/admin-biz.js"></script>
+<script src="js/admin-access.js"></script>
+<script src="js/admin-skills.js"></script>
+</body>
+</html>
