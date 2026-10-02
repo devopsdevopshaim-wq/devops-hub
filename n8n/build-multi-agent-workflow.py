@@ -117,18 +117,20 @@ groups.status = statusText;
 
 const index = K.projects.map(p => `${p.id} · ${p.title} · ${p.field}`).join('\n');
 const team = TEAM.map(t => `- ${t.name}`).join('\n');
-const system = `אתה גיא, המתאם של צוות הסוכנים של "SPIDER" — אתר שמציג את כל הפרויקטים של מפתח DevOps ו־AI.
-התשובות מוקראות בקול באתר: עברית מדוברת, חמה וברורה, בלי Markdown, בלי רשימות ובלי אימוג'י.
+const system = `את מאיה, העוזרת האישית של חיים קריספין, ומתאמת צוות הסוכנים של SPIDER: האתר שמציג את כל הפרויקטים של חיים (DevOps, AI, אוטומציה ומערכות ניהול).
+מדברים עלייך בלשון נקבה, ואת כותבת בגוף ראשון נקבה ("אני מכירה", "בדקתי").
+הסגנון: מקצועי, אדיב וענייני, כמו עוזרת אישית של בעל עסק. התשובות מוקראות בקול באתר: עברית מדוברת וברורה, בלי Markdown, בלי רשימות ובלי אימוג'י.
+כשמישהו מתעניין בשירות לעסק שלו, מחירים או פגישה: הציעי שיחת אפיון חינם עם חיים, בוואטסאפ או בטלפון 054-4979771, ואת דף השירותים באתר.
 
-הצוות שלך (כלים שאתה מפעיל):
+הצוות שלך (כלים שאת מפעילה):
 ${team}
 
 איך לעבוד:
-1. החלט אילו מומחים רלוונטיים לשאלה ושאל אותם — אחד או יותר. בשאלות על אוטומציה, שרתים או פריסה תמיד כלול את סוכן ה־DevOps. בשאלות "האם עובד / זמין" — את סוכן הניטור.
-2. העבר לכל מומחה שאלה ממוקדת ומלאה בעברית (הוא לא רואה את השיחה).
-3. חבר את התשובות לתשובה אחת: שאלה פשוטה — 1–3 משפטים; שאלה מעמיקה — 4–8 משפטים עם פרטים קונקרטיים.
-4. אל תמציא. אם המומחים לא יודעים, אמור זאת והצע לפתוח את הפרויקט.
-5. שאלה שלא קשורה לפרויקטים — משפט אחד שאתה כאן בשביל הפרויקטים, והצעה לפרויקט מתאים.
+1. החליטי אילו מומחים רלוונטיים לשאלה ושאלי אותם — אחד או יותר. בשאלות על אוטומציה, שרתים או פריסה תמיד כלול את סוכן ה־DevOps. בשאלות "האם עובד / זמין" — את סוכן הניטור.
+2. העבירי לכל מומחה שאלה ממוקדת ומלאה בעברית (הוא לא רואה את השיחה).
+3. חברי את התשובות לתשובה אחת: שאלה פשוטה — 1–3 משפטים; שאלה מעמיקה — 4–8 משפטים עם פרטים קונקרטיים.
+4. אל תמציאי. אם המומחים לא יודעים, אמרי זאת והציעי לפתוח את הפרויקט או לדבר עם חיים.
+5. שאלה שלא קשורה לפרויקטים או לשירותים: משפט אחד שאת כאן בשביל הפרויקטים והשירותים של חיים, והצעה מתאימה.
 
 בסוף, בשורות נפרדות:
 PROJECT: <id>   ← רק אם התשובה עוסקת בעיקר בפרויקט אחד
@@ -259,13 +261,13 @@ const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-
 </div></body></html>`;
 return [{ json: { contentType: 'text/html; charset=utf-8', body: html } }];
 """.replace('__CHAT_ID__', CHAT_ID).replace('__SHOTS__', SITE + 'shots/').replace('__SITE__', SITE) \
-   .replace('__TEAM_NAMES__', json.dumps(['גיא · המתאם'] + [n for _, n, _, _ in TEAM], ensure_ascii=False))
+   .replace('__TEAM_NAMES__', json.dumps(['מאיה · המתאמת'] + [n for _, n, _, _ in TEAM], ensure_ascii=False))
 
 # ---------------------------------------------------------------- nodes
 X0, Y_AG, Y_MON, Y_ST = 0, 0, 1000, 1500
 nodes = [
     note('Note · Agents',
-         '## A · צוות הסוכנים\nשאלה מגיעה מגיא באתר (Webhook) או מדף הצ׳אט של n8n (Chat Trigger). '
+         '## A · צוות הסוכנים\nשאלה מגיעה ממאיה באתר (Webhook) או מדף הצ׳אט של n8n (Chat Trigger). '
          'המתאם בוחר מומחים, שואל אותם, ומחבר תשובה אחת. כל מומחה מכיר לעומק את הפרויקטים שלו מתוך '
          '`knowledge.json` (נבנה אוטומטית מהקוד בכל פרסום).',
          [X0 - 460, Y_AG - 260], w=420, h=240, color=5),
@@ -275,14 +277,14 @@ nodes = [
     node('Team chat', '@n8n/n8n-nodes-langchain.chatTrigger', 1.1,
          {'public': True, 'mode': 'hostedChat',
           'options': {'title': 'SPIDER · צוות הסוכנים', 'subtitle': 'שאלו על כל פרויקט, אוטומציה או זמינות',
-                      'initialMessages': 'היי, אני גיא, המתאם של צוות הסוכנים. על מה נדבר?',
+                      'initialMessages': 'היי, אני מאיה, העוזרת האישית של חיים קריספין. איך אפשר לעזור?',
                       'inputPlaceholder': 'למשל: איך האתר מתעדכן לבד?'}},
          [X0, Y_AG + 100], webhookId=CHAT_ID),
     node('Agents · Normalize', 'n8n-nodes-base.code', 2, {'jsCode': NORMALIZE}, [X0 + 220, Y_AG]),
     node('Agents · Load knowledge', 'n8n-nodes-base.httpRequest', 4.2,
          {'url': KNOWLEDGE, 'options': {'timeout': 15000}}, [X0 + 440, Y_AG]),
     node('Agents · Context', 'n8n-nodes-base.code', 2, {'jsCode': CONTEXT}, [X0 + 660, Y_AG]),
-    node('גיא · המתאם', '@n8n/n8n-nodes-langchain.agent', 2.2,
+    node('מאיה · המתאמת', '@n8n/n8n-nodes-langchain.agent', 2.2,
          {'promptType': 'define', 'text': '={{ $json.question }}',
           'options': {'systemMessage': '={{ $json.system }}', 'maxIterations': 8}},
          [X0 + 900, Y_AG], onError='continueRegularOutput'),
@@ -399,8 +401,8 @@ main = [
     ('Team chat', 'Agents · Normalize', 0),
     ('Agents · Normalize', 'Agents · Load knowledge', 0),
     ('Agents · Load knowledge', 'Agents · Context', 0),
-    ('Agents · Context', 'גיא · המתאם', 0),
-    ('גיא · המתאם', 'Agents · Shape answer', 0),
+    ('Agents · Context', 'מאיה · המתאמת', 0),
+    ('מאיה · המתאמת', 'Agents · Shape answer', 0),
     ('Agents · Shape answer', 'From the site?', 0),
     ('From the site?', 'Guy · Respond', 0),
     ('Every 15 minutes', 'Monitor · Load sites', 0),
@@ -429,10 +431,10 @@ def ai(src, dst, kind):
     connections.setdefault(src, {}).setdefault(kind, [[]])[0].append({'node': dst, 'type': kind, 'index': 0})
 
 
-ai('Claude · המתאם', 'גיא · המתאם', 'ai_languageModel')
-ai('Memory · שיחה', 'גיא · המתאם', 'ai_memory')
+ai('Claude · המתאם', 'מאיה · המתאמת', 'ai_languageModel')
+ai('Memory · שיחה', 'מאיה · המתאמת', 'ai_memory')
 for key, name, _, _ in TEAM:
-    ai(name, 'גיא · המתאם', 'ai_tool')
+    ai(name, 'מאיה · המתאמת', 'ai_tool')
     ai(f'Claude · {name}', name, 'ai_languageModel')
 
 wf = {'name': 'הסדנה · מערכת מולטי־אייג׳נט ומרכז בקרה', 'nodes': nodes, 'connections': connections,

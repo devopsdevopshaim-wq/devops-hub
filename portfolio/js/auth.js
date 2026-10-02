@@ -156,7 +156,17 @@
     setTimeout(function () { (f1.elements.email.value ? f1.elements.phone : f1.elements.email).focus(); }, 50);
   }
 
+  // access.json switches sign-in on. Until then the site stays open, as before.
   function start() {
+    fetch('access.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : { enabled: true }; })
+      .catch(function () { return { enabled: true }; })
+      .then(function (cfg) {
+        if (cfg.enabled === false) { Auth.open = true; root.classList.remove('locked'); resolveReady({ role: 'admin', name: '', sites: 'all', open: true }); return; }
+        check();
+      });
+  }
+  function check() {
     if (!token()) { gate(); return; }
     api('me').then(function (s) {
       if (s.ok && (!needAdmin || s.role === 'admin')) enter(s);

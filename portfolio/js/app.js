@@ -130,7 +130,7 @@
     });
     var talk = null;
     if (p && window.Guide) {
-      talk = el('button', { class: 'link say', type: 'button', html: ICON_TALK + ' ספר לי', title: 'גיא יספר על הפרויקט' });
+      talk = el('button', { class: 'link say', type: 'button', html: ICON_TALK + ' ספרי לי', title: 'מאיה, העוזרת האישית, תספר על הפרויקט' });
       talk.addEventListener('click', function () { window.Guide.present(p); });
     }
     return [
