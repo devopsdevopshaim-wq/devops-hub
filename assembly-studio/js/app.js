@@ -485,6 +485,7 @@ function openPaste() {
   $('#pasteBox').value = ''; $('#pasteErr').textContent = '';
   const imgs = state.previews.map((x) => ({ name: x.name + '.png', url: x.url })).concat(state.refs.map((r) => ({ name: r.title + '.jpg', url: r.url })));
   $('#pasteImgs').hidden = !imgs.length;
+  $('#pasteAttach').hidden = !imgs.length;
   $('#pasteImgList').innerHTML = imgs.map((x) => `<a class="btn ghost small" href="${x.url}" download="${esc(safeName(x.name))}">${esc(x.name)}</a>`).join('');
   $('#pasteDialog').showModal();
 }
@@ -859,7 +860,7 @@ function bind() {
   $('#genBasic').onclick = genBasic;
   $('#copyPrompt').onclick = async () => {
     const txt = P.copyPrompt(projectPayload());
-    try { await navigator.clipboard.writeText(txt); toast('ההנחיה הועתקה. הדביקו אותה ב-Claude.ai'); } catch { $('#pasteBox').value = txt; toast('לא הצלחתי להעתיק. ההנחיה הודבקה בתיבה, העתיקו אותה ידנית.'); }
+    try { await navigator.clipboard.writeText(txt); toast('הבקשה הועתקה. הדביקו אותה ב-Claude.ai'); } catch { $('#pasteBox').value = txt; toast('לא הצלחתי להעתיק אוטומטית. הבקשה מופיעה בתיבה: סמנו, העתיקו ונקו את התיבה.'); }
   };
   $('#pasteDialog').addEventListener('close', () => {});
   $('#pasteOk').onclick = async (e) => {

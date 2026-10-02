@@ -323,13 +323,15 @@
 <dialog id="pasteDialog">
   <form method="dialog" class="dlg">
     <h2>יצירת תכנית דרך Claude.ai</h2>
-    <p class="muted">האתר לא מחובר לשרת עם מפתח API. מעתיקים את ההנחיה ל-<a href="https://claude.ai" target="_blank" rel="noopener">Claude.ai</a>, ומדביקים כאן את התשובה (JSON).</p>
-    <div class="btn-row"><button class="btn small" type="button" id="copyPrompt">העתקת ההנחיה</button></div>
-    <div id="pasteImgs" hidden>
-      <p class="muted small">צרפו להודעה ב-Claude.ai גם את תמונות השרטוט, כדי ש-Claude ינתח אותן:</p>
-      <div class="btn-row tight" id="pasteImgList"></div>
-    </div>
-    <textarea id="pasteBox" rows="10" placeholder="הדביקו כאן את התשובה של Claude"></textarea>
+    <p class="muted">האתר עוד לא מחובר ישירות ל-Claude, אז מעבירים את הבקשה ידנית. זה לוקח דקה:</p>
+    <ol class="how">
+      <li><b>מעתיקים את הבקשה:</b> <button class="btn small" type="button" id="copyPrompt">העתקת הבקשה</button></li>
+      <li id="pasteImgs" hidden><b>מורידים את תמונות השרטוט</b> (לוחצים על כל אחת):
+        <div class="btn-row tight" id="pasteImgList"></div></li>
+      <li><b>פותחים את <a href="https://claude.ai/new" target="_blank" rel="noopener">Claude.ai</a></b>, מדביקים את הבקשה<span id="pasteAttach">, מצרפים את התמונות</span> ושולחים.</li>
+      <li><b>מעתיקים את כל התשובה של Claude</b> (כפתור ההעתקה שמתחת לתשובה) ומדביקים אותה כאן:</li>
+    </ol>
+    <textarea id="pasteBox" rows="9" placeholder="מדביקים כאן את התשובה של Claude, כמו שהיא. היא כתובה בעברית רגילה, עם טבלת חלקים ושלבי הרכבה."></textarea>
     <p class="error" id="pasteErr" role="alert"></p>
     <div class="btn-row">
       <button class="btn" value="ok" id="pasteOk">יצירת התכנית</button>
