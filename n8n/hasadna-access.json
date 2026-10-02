@@ -1,0 +1,219 @@
+{
+  "name": "הסדנה · כניסה והרשאות",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## כניסה והרשאות\n`POST /webhook/hasadna-auth` — האתר שולח לכאן בקשות כניסה. הקוד החד־פעמי נשלח במייל מצומת **Send · Email**: מחברים אליו את Gmail פעם אחת.\n\nהמנהל מוגדר בראש הצומת **Auth · Handle** (ADMIN_EMAIL, ADMIN_PHONE). את הלקוחות, האתרים והמנויים מנהלים במסך הניהול של האתר.",
+        "height": 230,
+        "width": 460,
+        "color": 3
+      },
+      "id": "75b8b042-339b-5f9a-aacd-0147740232d4",
+      "name": "Note · Access",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hasadna-auth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ec9a1931-6e24-5979-9805-0146af79c1b4",
+      "name": "Auth · Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "13c3e14f-57db-5550-a88d-f19976fa2e6e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sign-in and access control for the portfolio.\nconst ADMIN_EMAIL = 'devopsdevopshaim@gmail.com';\nconst ADMIN_PHONE = '0544979771';\nconst RENEW = 'https://wa.me/972544979771';\nconst CLIENT_SESSION_DAYS = 7;   // capped by the end of the subscription\nconst ADMIN_SESSION_DAYS = 30;\n\nconst sd = $getWorkflowStaticData('global');\nsd.clients = sd.clients || {};\nsd.otp = sd.otp || {};\nsd.sessions = sd.sessions || {};\nsd.log = sd.log || [];\nconst b = $json.body || {};\nconst now = Date.now();\nconst DAY = 86400000;\n\nconst out = (body, code, mail) => [{ json: { code: code || 200, body, mail: mail || null } }];\nconst email = (e) => String(e || '').trim().toLowerCase().slice(0, 120);\nconst phone = (p) => { let d = String(p || '').replace(/\\D/g, ''); if (d.startsWith('972')) d = '0' + d.slice(3); return d.slice(0, 15); };\nconst line = (v, n) => String(v == null ? '' : v).replace(/[\\u0000-\\u001f\\u007f]+/g, ' ').trim().slice(0, n);\nfunction rnd(n) {\n  try { return require('crypto').randomBytes(n).toString('hex'); } catch (e) {}\n  try { const a = new Uint8Array(n); globalThis.crypto.getRandomValues(a); return Array.from(a, (x) => x.toString(16).padStart(2, '0')).join(''); } catch (e) {}\n  let s = ''; for (let i = 0; i < n * 2; i++) s += Math.floor(Math.random() * 16).toString(16); return s;\n}\nconst code6 = () => String(parseInt(rnd(4), 16) % 1000000).padStart(6, '0');\nconst log = (what, who) => { sd.log.unshift({ at: new Date(now).toISOString(), what, who }); if (sd.log.length > 300) sd.log.length = 300; };\n\n// tidy up\nfor (const [t, s] of Object.entries(sd.sessions)) if (s.exp < now) delete sd.sessions[t];\nfor (const [e, o] of Object.entries(sd.otp)) if ((o.exp || 0) < now - 3600000 && !(o.sent || []).some((t) => now - t < 3600000)) delete sd.otp[e];\n\nconst isAdmin = (e, p) => e === ADMIN_EMAIL && p === phone(ADMIN_PHONE);\nconst active = (c) => !!c && c.active !== false && (!c.expiresAt || Date.parse(c.expiresAt) > now);\nconst session = () => { const s = sd.sessions[String(b.token || '')]; return s && s.exp > now ? s : null; };\nconst admin = () => { const s = session(); return s && s.role === 'admin' ? s : null; };\nconst view = (c) => ({ ...c, activeNow: active(c), daysLeft: c.expiresAt ? Math.ceil((Date.parse(c.expiresAt) - now) / DAY) : null });\n\nswitch (b.action) {\n  case 'request': {\n    const e = email(b.email), p = phone(b.phone);\n    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(e) || p.length < 9) return out({ ok: false, error: 'bad-input' }, 400);\n    const o = sd.otp[e] || {};\n    const sent = (o.sent || []).filter((t) => now - t < 3600000);\n    if (sent.length >= 5) return out({ ok: false, error: 'too-many' }, 429);\n    const ok = { ok: true, sent: true };\n    const c = sd.clients[e];\n    const known = isAdmin(e, p) || (c && phone(c.phone) === p);\n    // unknown details get the same answer, so nobody can probe who is a client\n    if (!known) { log('ניסיון כניסה לא מוכר', e); return out(ok); }\n    sent.push(now);\n    if (!isAdmin(e, p) && !active(c)) {\n      sd.otp[e] = { sent };\n      log('ניסיון כניסה, מנוי לא פעיל', e);\n      return out(ok, 200, { to: e, subject: 'הסדנה: הגישה שלך לא פעילה',\n        text: `שלום ${c.name || ''},\\n\\nהגישה שלך להסדנה ${c.active === false ? 'מושהית' : 'הסתיימה' + (c.expiresAt ? ' ב־' + new Date(c.expiresAt).toLocaleDateString('he-IL') : '')}.\\nלחידוש המנוי: ${RENEW}\\n` });\n    }\n    const code = code6();\n    sd.otp[e] = { code, phone: p, exp: now + 10 * 60000, tries: 0, sent };\n    return out(ok, 200, { to: e, subject: `הקוד שלך להסדנה: ${code}`,\n      text: `הקוד שלך: ${code}\\n\\nהוא תקף ל־10 דקות.\\nאם לא ביקשת להיכנס, אפשר להתעלם מהמייל הזה.\\n` });\n  }\n\n  case 'verify': {\n    const e = email(b.email), p = phone(b.phone), o = sd.otp[e];\n    if (!o || !o.code || o.exp < now) return out({ ok: false, error: 'expired' }, 400);\n    if (o.phone !== p) return out({ ok: false, error: 'wrong' }, 400);\n    o.tries = (o.tries || 0) + 1;\n    if (o.tries > 5) { delete o.code; return out({ ok: false, error: 'too-many' }, 429); }\n    if (String(b.code || '').replace(/\\D/g, '') !== o.code) return out({ ok: false, error: 'wrong', left: 5 - o.tries }, 400);\n    delete o.code;\n    const role = isAdmin(e, p) ? 'admin' : 'client';\n    const c = sd.clients[e];\n    if (role === 'client' && !active(c)) return out({ ok: false, error: 'inactive' }, 403);\n    let exp = now + (role === 'admin' ? ADMIN_SESSION_DAYS : CLIENT_SESSION_DAYS) * DAY;\n    if (role === 'client' && c.expiresAt) exp = Math.min(exp, Date.parse(c.expiresAt));\n    const token = rnd(24);\n    sd.sessions[token] = { email: e, role, exp, at: now };\n    if (c) c.lastLogin = new Date(now).toISOString();\n    log(role === 'admin' ? 'כניסת מנהל' : 'כניסת לקוח', e);\n    return out({ ok: true, token, role, name: role === 'admin' ? 'מנהל' : (c.name || ''), exp: new Date(exp).toISOString() });\n  }\n\n  case 'me': {\n    const s = session();\n    if (!s) return out({ ok: false, error: 'signed-out' }, 401);\n    if (s.role === 'admin') return out({ ok: true, role: 'admin', name: 'מנהל', email: s.email, sites: 'all' });\n    const c = sd.clients[s.email];\n    if (!active(c)) { delete sd.sessions[String(b.token)]; return out({ ok: false, error: 'inactive' }, 403); }\n    return out({ ok: true, role: 'client', name: c.name || '', email: s.email, sites: c.sites || [], expiresAt: c.expiresAt || null, plan: c.plan || '' });\n  }\n\n  case 'logout':\n    delete sd.sessions[String(b.token || '')];\n    return out({ ok: true });\n\n  // ------------------------------------------------------------- admin only\n  case 'clients':\n    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);\n    return out({ ok: true, clients: Object.values(sd.clients).map(view) });\n\n  case 'client-save': {\n    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);\n    let p = {}; try { p = JSON.parse(b.payload || '{}'); } catch (x) {}\n    const e = email(p.email);\n    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(e) || phone(p.phone).length < 9) return out({ ok: false, error: 'bad-input' }, 400);\n    if (p.oldEmail && email(p.oldEmail) !== e) delete sd.clients[email(p.oldEmail)];\n    const prev = sd.clients[e] || { createdAt: new Date(now).toISOString() };\n    sd.clients[e] = {\n      ...prev,\n      email: e, phone: phone(p.phone), name: line(p.name, 60), note: line(p.note, 200),\n      sites: (Array.isArray(p.sites) ? p.sites : []).map((x) => line(x, 64)).filter(Boolean).slice(0, 200),\n      plan: ['day', 'week', 'month', 'year', 'custom', 'free'].includes(p.plan) ? p.plan : 'custom',\n      expiresAt: p.expiresAt && !isNaN(Date.parse(p.expiresAt)) ? new Date(p.expiresAt).toISOString() : null,\n      active: p.active !== false\n    };\n    // a change in access applies at once: close the client's open sessions if they lost it\n    if (!active(sd.clients[e])) for (const [t, s] of Object.entries(sd.sessions)) if (s.email === e) delete sd.sessions[t];\n    log('עדכון לקוח', e);\n    return out({ ok: true, client: view(sd.clients[e]) });\n  }\n\n  case 'client-extend': {\n    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);\n    const e = email(b.email), c = sd.clients[e], days = Math.max(1, Math.min(3660, Number(b.days) || 0));\n    if (!c) return out({ ok: false, error: 'not-found' }, 404);\n    const from = Math.max(now, c.expiresAt ? Date.parse(c.expiresAt) : now);\n    c.expiresAt = new Date(from + days * DAY).toISOString();\n    c.active = true;\n    log(`הארכה ב־${days} ימים`, e);\n    return out({ ok: true, client: view(c) });\n  }\n\n  case 'client-delete': {\n    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);\n    const e = email(b.email);\n    delete sd.clients[e];\n    for (const [t, s] of Object.entries(sd.sessions)) if (s.email === e) delete sd.sessions[t];\n    log('מחיקת לקוח', e);\n    return out({ ok: true });\n  }\n\n  case 'log':\n    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);\n    return out({ ok: true, log: sd.log.slice(0, 100) });\n}\nreturn out({ ok: false, error: 'unknown-action' }, 400);\n"
+      },
+      "id": "7012e590-1099-564a-8c1c-373a93f75dcf",
+      "name": "Auth · Handle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1878393c-6fe0-51d3-b64c-0bdf348728ad",
+              "leftValue": "={{ !!$json.mail }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8cba14b3-4a39-5164-aac8-0b5bd2f8d3e3",
+      "name": "Send an email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.mail.to }}",
+        "subject": "={{ $json.mail.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.mail.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "3dd8eefd-c5f1-50a0-8678-e7708e00e9d4",
+      "name": "Send · Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        -100
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The answer to the browser, once the email was (or was not) sent.\nconst h = $('Auth · Handle').first().json;\nif ($json.error) return [{ json: { code: 502, body: { ok: false, error: 'mail-failed' } } }];\nreturn [{ json: { code: h.code, body: h.body } }];\n"
+      },
+      "id": "3644dc14-86ba-57be-b584-c8e031a1fd66",
+      "name": "Auth · After mail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.code || 200 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "dc9b7e51-bd41-5fe2-86b1-30ce7694d579",
+      "name": "Auth · Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Auth · Webhook": {
+      "main": [
+        [
+          {
+            "node": "Auth · Handle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth · Handle": {
+      "main": [
+        [
+          {
+            "node": "Send an email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an email?": {
+      "main": [
+        [
+          {
+            "node": "Send · Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth · Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send · Email": {
+      "main": [
+        [
+          {
+            "node": "Auth · After mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth · After mail": {
+      "main": [
+        [
+          {
+            "node": "Auth · Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

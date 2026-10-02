@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-admin-only>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,6 +12,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/auth.css">
+<script src="js/auth.js"></script>
 </head>
 <body class="admin">
 <header class="nav">
@@ -22,6 +24,7 @@
     </a>
     <span class="admin-tag">מסך ניהול</span>
     <nav class="links" aria-label="ניווט בניהול">
+      <a href="#clients">לקוחות</a>
       <a href="#biz">לידים ומחירון</a>
       <a href="#stats">נתונים</a>
       <a href="#projects">פרויקטים</a>
@@ -62,6 +65,53 @@
       <div class="role-row"><span class="pill ok">את/ה כאן</span></div>
     </article>
   </section>
+
+  <section id="clients" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">הרשאות · n8n</p><h2>לקוחות ומנויים</h2></div>
+      <div class="filters"><button class="btn btn-gold btn-sm" type="button" id="cl-new">+ לקוח חדש</button></div>
+    </header>
+    <p class="hint">כל לקוח נכנס עם המייל והטלפון שלו וקוד חד־פעמי, ורואה רק את האתרים שסימנת לו, עד סוף המנוי. כשהמנוי נגמר, הכניסה נחסמת לבד.</p>
+    <p class="add-error" id="cl-err" hidden></p>
+    <dl class="kpis" id="cl-kpis"></dl>
+    <div class="table-wrap">
+      <table class="ptable clients">
+        <thead><tr><th>לקוח</th><th>אתרים</th><th>מנוי</th><th>בתוקף עד</th><th>כניסה אחרונה</th><th>פעולות</th></tr></thead>
+        <tbody id="cl-rows"><tr><td colspan="6" class="muted">טוען…</td></tr></tbody>
+      </table>
+    </div>
+    <details class="cl-log"><summary>יומן כניסות ושינויים</summary><ol class="history" id="cl-log"></ol></details>
+  </section>
+
+  <dialog class="edit cl-edit" id="cl-dialog">
+    <form method="dialog" id="cl-form">
+      <h2 id="cl-title">לקוח חדש</h2>
+      <div class="field-row">
+        <label class="field"><span>שם</span><input name="name" maxlength="60" required></label>
+        <label class="field"><span>טלפון</span><input name="phone" type="tel" dir="ltr" required placeholder="050-000-0000"></label>
+      </div>
+      <label class="field"><span>מייל</span><input name="email" type="email" dir="ltr" required></label>
+      <div class="field-row">
+        <label class="field"><span>מנוי</span><select name="plan">
+          <option value="day">יומי</option><option value="week">שבועי</option><option value="month" selected>חודשי</option>
+          <option value="year">שנתי</option><option value="custom">תאריך שאקבע</option><option value="free">ללא הגבלה</option>
+        </select></label>
+        <label class="field"><span>בתוקף עד</span><input name="expires" type="date"></label>
+      </div>
+      <label class="m-check"><input type="checkbox" name="active" checked> <span>גישה פעילה <small>בלי הסימון הלקוח חסום, גם אם המנוי בתוקף</small></span></label>
+      <fieldset class="cl-sites">
+        <legend>אתרים שהלקוח יראה <small id="cl-count"></small></legend>
+        <div class="cl-tools"><input type="search" id="cl-q" placeholder="חיפוש אתר…" aria-label="חיפוש אתר"><button class="g-btn ghost" type="button" data-all="1">הכול</button><button class="g-btn ghost" type="button" data-all="0">כלום</button></div>
+        <div class="cl-list" id="cl-list"></div>
+      </fieldset>
+      <label class="field"><span>הערה לעצמי <small>(לא חובה)</small></span><input name="note" maxlength="200" placeholder="למשל: שילם 290 ₪ בביט"></label>
+      <p class="add-error" id="cl-form-err" hidden></p>
+      <div class="edit-actions">
+        <button class="g-btn ghost" value="cancel" type="submit" formnovalidate>ביטול</button>
+        <button class="btn btn-gold btn-sm" value="save" type="submit">שמירה</button>
+      </div>
+    </form>
+  </dialog>
 
   <section id="biz" class="a-sec">
     <header class="sec-head sec-row">
@@ -266,5 +316,6 @@
 
 <script src="js/admin.js"></script>
 <script src="js/admin-biz.js"></script>
+<script src="js/admin-access.js"></script>
 </body>
 </html>
