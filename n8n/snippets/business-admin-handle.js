@@ -1,4 +1,4 @@
-// Paste into the "Admin · Handle" node of "הסדנה · לידים ומחירון" (replaces its code).
+// Paste into the "Admin · Handle" node of the leads & prices workflow (replaces its code).
 // The admin screen's API. Every call carries the admin password.
 const sd = $getWorkflowStaticData('global');
 // Optional: write a fixed password here; it then replaces the one chosen from the admin screen.

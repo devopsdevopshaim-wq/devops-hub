@@ -1,4 +1,4 @@
-/* Admin screen · clients and subscriptions. Talks to "הסדנה · כניסה והרשאות"
+/* Admin screen · clients and subscriptions. Talks to "SPIDER · כניסה והרשאות"
    in n8n through HasadnaAuth.api, with the admin's own session. */
 (function () {
   'use strict';
@@ -30,7 +30,7 @@
       fail('');
       C.clients = j.clients.sort(function (a, b) { return (a.name || a.email).localeCompare(b.name || b.email, 'he'); });
       render();
-    }).catch(function () { fail('n8n לא ענה. בדקו שה־workflow "הסדנה · כניסה והרשאות" פעיל.'); });
+    }).catch(function () { fail('n8n לא ענה. בדקו שה־workflow "SPIDER · כניסה והרשאות" פעיל.'); });
   }
 
   function render() {
@@ -51,7 +51,7 @@
       var state = !c.activeNow ? (c.active === false ? ['down', '✕ מושהה'] : ['down', '✕ הסתיים']) : days != null && days <= 3 ? ['waking', '⏳ עוד ' + days + ' ימים'] : ['ok', '✓ פעיל'];
       var sites = c.sites || [];
       var b = function (txt, fn, cls) { var x = el('button', { type: 'button', class: cls || null, text: txt }); x.addEventListener('click', fn); return x; };
-      var invite = 'שלום ' + (c.name || '') + ', נפתחה לך גישה להסדנה' + (c.expiresAt ? ' עד ' + date(c.expiresAt) : '') + '.\n' +
+      var invite = 'שלום ' + (c.name || '') + ', נפתחה לך גישה ל־SPIDER' + (c.expiresAt ? ' עד ' + date(c.expiresAt) : '') + '.\n' +
         'כניסה: ' + SITE + '\nנכנסים עם המייל ' + c.email + ' ועם מספר הטלפון הזה, ומקבלים קוד חד־פעמי במייל.';
       tb.appendChild(el('tr', { class: c.activeNow ? null : 'off' }, [
         el('td', { class: 'who' }, [el('b', { text: c.name || '—' }), el('small', { dir: 'ltr', text: c.email }), el('small', { dir: 'ltr', text: c.phone }), c.note ? el('small', { text: c.note }) : null]),

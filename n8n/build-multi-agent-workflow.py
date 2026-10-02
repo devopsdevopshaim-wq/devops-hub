@@ -117,7 +117,7 @@ groups.status = statusText;
 
 const index = K.projects.map(p => `${p.id} · ${p.title} · ${p.field}`).join('\n');
 const team = TEAM.map(t => `- ${t.name}`).join('\n');
-const system = `אתה גיא, המתאם של צוות הסוכנים של "הסדנה" — אתר שמציג את כל הפרויקטים של מפתח DevOps ו־AI.
+const system = `אתה גיא, המתאם של צוות הסוכנים של "SPIDER" — אתר שמציג את כל הפרויקטים של מפתח DevOps ו־AI.
 התשובות מוקראות בקול באתר: עברית מדוברת, חמה וברורה, בלי Markdown, בלי רשימות ובלי אימוג'י.
 
 הצוות שלך (כלים שאתה מפעיל):
@@ -223,7 +223,7 @@ const cards = s.results.slice().sort((a, b) => ORDER[a.state] - ORDER[b.state]).
   </a>`).join('');
 const team = TEAM.map((t, i) => `<li style="--i:${i}"><span></span>${esc(t)}</li>`).join('');
 const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="refresh" content="300"><title>מרכז הבקרה · הסדנה</title>
+<meta http-equiv="refresh" content="300"><title>מרכז הבקרה · SPIDER</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=JetBrains+Mono:wght@400&display=swap">
 <style>
 :root{--bg:#0f0d24;--deep:#17143a;--line:rgba(241,238,252,.12);--txt:#f1eefc;--mist:#a9a4cc;--gold:#e0b25a;--ok:#62dcb8;--wake:#e0b25a;--lock:#b39ae6;--down:#ff7a85}
@@ -248,12 +248,12 @@ const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-
 .http{font-family:'JetBrains Mono',monospace}
 @keyframes p{0%{box-shadow:0 0 0 0 currentColor}70%,100%{box-shadow:0 0 0 8px transparent}}
 </style></head><body><div class="wrap">
-<h1>מרכז הבקרה של הסדנה</h1>
+<h1>מרכז הבקרה של SPIDER</h1>
 <p class="sub">כל האתרים נבדקים אוטומטית ב־n8n כל 15 דקות · בדיקה אחרונה: ${esc(when)}</p>
 <div class="stats"><div class="stat ok"><b>${s.counts.ok}</b><small>עובדים</small></div><div class="stat waking"><b>${s.counts.waking}</b><small>מתעוררים</small></div>
 <div class="stat locked"><b>${s.counts.locked}</b><small>נעולים</small></div><div class="stat down"><b>${s.counts.down}</b><small>לא זמינים</small></div></div>
 <div class="row">${chatUrl ? `<a class="btn" href="${chatUrl}" target="_blank" rel="noopener">שיחה עם צוות הסוכנים</a>` : ''}
-<a class="btn ghost" href="?run=1">בדיקה עכשיו</a><a class="btn ghost" href="__SITE__" target="_blank" rel="noopener">לאתר הסדנה</a></div>
+<a class="btn ghost" href="?run=1">בדיקה עכשיו</a><a class="btn ghost" href="__SITE__" target="_blank" rel="noopener">לאתר SPIDER</a></div>
 <ul class="team">${team}</ul>
 <div class="grid">${cards || '<p>הבדיקה הראשונה עוד לא רצה. לחצו "בדיקה עכשיו".</p>'}</div>
 </div></body></html>`;
@@ -274,7 +274,7 @@ nodes = [
          [X0, Y_AG - 80], webhookId=uid('guide-webhook')),
     node('Team chat', '@n8n/n8n-nodes-langchain.chatTrigger', 1.1,
          {'public': True, 'mode': 'hostedChat',
-          'options': {'title': 'הסדנה · צוות הסוכנים', 'subtitle': 'שאלו על כל פרויקט, אוטומציה או זמינות',
+          'options': {'title': 'SPIDER · צוות הסוכנים', 'subtitle': 'שאלו על כל פרויקט, אוטומציה או זמינות',
                       'initialMessages': 'היי, אני גיא, המתאם של צוות הסוכנים. על מה נדבר?',
                       'inputPlaceholder': 'למשל: איך האתר מתעדכן לבד?'}},
          [X0, Y_AG + 100], webhookId=CHAT_ID),
@@ -310,15 +310,15 @@ for i, (key, name, fields, desc) in enumerate(TEAM):
     y = Y_AG + 420
     if key == 'monitor':
         knowledge = "' + $('Agents · Context').first().json.groups.status + '"
-        role = 'אתה סוכן הניטור של הסדנה. זה מצב האתרים מהבדיקה האוטומטית האחרונה:\\n'
+        role = 'אתה סוכן הניטור של SPIDER. זה מצב האתרים מהבדיקה האוטומטית האחרונה:\\n'
         extra = '\\nהסבר מה המצב אומר: "נעול" = דורש התחברות (למשל Vercel Deployment Protection), "מתעורר" = שרת חינמי שנרדם ומתעורר, "לא זמין" = אין תשובה או שגיאה.'
     elif key == 'devops':
         knowledge = "' + $('Agents · Context').first().json.groups.devops + '\\n\\nאיך האתר עצמו אוטומטי:\\n' + $('Agents · Context').first().json.groups.pipeline + '"
-        role = f'אתה {name} של הסדנה. הידע שלך (JSON, כולל ניתוח קוד):\\n'
+        role = f'אתה {name} של SPIDER. הידע שלך (JSON, כולל ניתוח קוד):\\n'
         extra = '\\nבשאלות על אוטומציה: הסבר מה מפעיל את התהליך, מה קורה צעד אחר צעד, מה יוצא, ואיך אפשר להרחיב (n8n, GitHub Actions, Docker, Webhook, תזמון).'
     else:
         knowledge = f"' + $('Agents · Context').first().json.groups.{key} + '"
-        role = f'אתה {name} של הסדנה. הידע שלך על הפרויקטים (JSON, כולל ניתוח קוד):\\n'
+        role = f'אתה {name} של SPIDER. הידע שלך על הפרויקטים (JSON, כולל ניתוח קוד):\\n'
         extra = '\\nכשמשווים גרסאות או פרויקטים, הסבר מה שונה בפועל (מסכים, יכולות, ספריות, אחסון).'
     system = ("={{ '" + role + knowledge +
               "\\n\\nענה בעברית, ענייני ומפורט, רק מהידע הזה. ציין שמות פרויקטים ו־id. אם אין לך מידע — אמור זאת." + extra + "' }}")
@@ -360,7 +360,7 @@ nodes += [
          [X0 + 1540, Y_MON + 140]),
     node('Alert · Email (optional)', 'n8n-nodes-base.gmail', 2.1,
          {'sendTo': 'devopsdevopshaim@gmail.com',
-          'subject': "={{ 'הסדנה: ' + $json.newlyDown.length + ' אתרים הפסיקו לעבוד' }}",
+          'subject': "={{ 'SPIDER: ' + $json.newlyDown.length + ' אתרים הפסיקו לעבוד' }}",
           'emailType': 'text',
           'message': "={{ $json.newlyDown.map(r => r.title + ' — ' + r.url + ' (' + (r.code ? 'HTTP ' + r.code : (r.error || 'אין תשובה')) + ')').join('\\n') }}",
           'options': {}},

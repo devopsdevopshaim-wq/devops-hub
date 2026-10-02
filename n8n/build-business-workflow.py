@@ -226,7 +226,7 @@ for a, b, out in main:
         outs.append([])
     outs[out].append({'node': b, 'type': 'main', 'index': 0})
 
-wf = {'name': 'הסדנה · לידים ומחירון', 'nodes': nodes, 'connections': connections,
+wf = {'name': 'SPIDER · לידים ומחירון', 'nodes': nodes, 'connections': connections,
       'active': False, 'settings': {'executionOrder': 'v1'}, 'pinData': {},
       'meta': {'templateCredsSetupCompleted': False}, 'tags': []}
 

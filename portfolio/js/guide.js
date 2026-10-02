@@ -316,7 +316,7 @@ window.Guide = (function () {
     }
     // With the n8n agent connected, every real question goes to it.
     if (api.guideApi && !answer.offline) return askServer(raw);
-    if (has(t, ['מי אתה', 'מה אתה', 'מי זה', 'עליך'])) return say('אני גיא, המדריך של הסדנה. אני מכיר את כל ' + api.projects.length + ' הפרויקטים כאן, ויכול להראות לך כל אחד מהם.');
+    if (has(t, ['מי אתה', 'מה אתה', 'מי זה', 'עליך'])) return say('אני גיא, המדריך של SPIDER. אני מכיר את כל ' + api.projects.length + ' הפרויקטים כאן, ויכול להראות לך כל אחד מהם.');
     if (has(t, ['המלצה', 'המלצות', 'הערה', 'הערות', 'תגובה'])) return say('בכל כרטיס יש לשונית המלצות. לוחצים עליה, נכנסים עם GitHub, וכותבים. ההמלצות נשמרות ומופיעות לכולם.');
     if (has(t, ['כניסות', 'צפיות', 'ביקורים', 'כמה נכנסו'])) return say('מתחת לכל פרויקט רשום כמה פעמים פתחו אותו מהאתר הזה. בראש העמוד יש גם את מספר הביקורים בסדנה.');
     if (has(t, ['אוטומציה', 'אוטומטי', 'אוטומציות', 'מתעדכן', 'n8n', 'ci', 'pipeline', 'github actions'])) {
@@ -448,7 +448,7 @@ window.Guide = (function () {
     panel = h('section', { class: 'g-panel', 'aria-label': 'שיחה עם גיא' }, [
       h('header', {}, [
         h('div', { class: 'g-mini', html: FACE }),
-        h('div', {}, [h('b', { text: 'גיא' }), h('small', { text: 'המדריך של הסדנה' })]),
+        h('div', {}, [h('b', { text: 'גיא' }), h('small', { text: 'המדריך של SPIDER' })]),
         voiceBtn,
         closeX(closePanel)
       ]),

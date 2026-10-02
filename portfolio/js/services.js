@@ -140,7 +140,7 @@
         return el('article', { class: 'plan' + (n[0] === 'month' ? ' best' : '') }, [
           el('span', { class: 'tag', text: n[0] === 'month' ? 'הכי משתלם' : 'מנוי ל' + n[1] }),
           el('b', { text: shekel(P[n[0]]) }), el('small', { text: 'ל' + n[1] }),
-          el('a', { class: 'btn btn-gold btn-sm wa-link', 'data-src': 'plan-' + n[0], 'data-wa': 'היי, אשמח למנוי ל' + n[1] + ' בהסדנה (' + shekel(P[n[0]]) + ')', href: '#contact', text: 'להצטרפות ↗' })
+          el('a', { class: 'btn btn-gold btn-sm wa-link', 'data-src': 'plan-' + n[0], 'data-wa': 'היי, אשמח למנוי ל' + n[1] + ' ב־SPIDER (' + shekel(P[n[0]]) + ')', href: '#contact', text: 'להצטרפות ↗' })
         ]);
       }))
     ])]);

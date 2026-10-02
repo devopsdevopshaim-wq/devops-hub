@@ -91,13 +91,13 @@ switch (b.action) {
     if (!isAdmin(e, p) && !active(c)) {
       sd.otp[e] = { sent };
       log('ניסיון כניסה, מנוי לא פעיל', e);
-      return out(ok, 200, { to: e, subject: 'הסדנה: הגישה שלך לא פעילה',
-        text: `שלום ${c.name || ''},\n\nהגישה שלך להסדנה ${c.active === false ? 'מושהית' : 'הסתיימה' + (c.expiresAt ? ' ב־' + new Date(c.expiresAt).toLocaleDateString('he-IL') : '')}.\nלחידוש המנוי: ${RENEW}\n` });
+      return out(ok, 200, { to: e, subject: 'SPIDER: הגישה שלך לא פעילה',
+        text: `שלום ${c.name || ''},\n\nהגישה שלך ל־SPIDER ${c.active === false ? 'מושהית' : 'הסתיימה' + (c.expiresAt ? ' ב־' + new Date(c.expiresAt).toLocaleDateString('he-IL') : '')}.\nלחידוש המנוי: ${RENEW}\n` });
     }
     const code = code6();
     sd.otp[e] = { code, phone: p, exp: now + 10 * 60000, tries: 0, sent };
-    return out(ok, 200, { to: e, subject: `הקוד שלך להסדנה: ${code}`,
-      text: `הקוד שלך: ${code}\n\nהוא תקף ל־10 דקות.\nאם לא ביקשת להיכנס, אפשר להתעלם מהמייל הזה.\n` });
+    return out(ok, 200, { to: e, subject: `הקוד שלך ל־SPIDER: ${code}`,
+      text: `הקוד שלך: ${code}\n\nהוא תקף ל־10 דקות.\nאם לא ביקשת להיכנס, אפשר להתעלם מהמייל הזה.\n\nSPIDER · חיים קריספין · 054-4979771\n` });
   }
 
   case 'verify': {
@@ -316,7 +316,7 @@ for a, b, o in main:
         outs.append([])
     outs[o].append({'node': b, 'type': 'main', 'index': 0})
 
-wf = {'name': 'הסדנה · כניסה והרשאות', 'nodes': nodes, 'connections': connections,
+wf = {'name': 'SPIDER · כניסה והרשאות', 'nodes': nodes, 'connections': connections,
       'active': False, 'settings': {'executionOrder': 'v1'}, 'pinData': {},
       'meta': {'templateCredsSetupCompleted': False}, 'tags': []}
 names = [n['name'] for n in nodes]

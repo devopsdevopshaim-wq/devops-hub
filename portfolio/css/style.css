@@ -635,3 +635,21 @@ html.detail-open { overflow: hidden; }
 .wa-fab svg { width: 30px; height: 30px; }
 
 .nav-svc { color: var(--brass-2) !important; }
+
+/* ---------- SPIDER brand ---------- */
+.spider-brand { gap: 10px; direction: ltr; }
+.spider-brand img { width: 34px; height: 34px; filter: drop-shadow(0 4px 12px rgba(139, 123, 255, .35)); transition: transform .4s var(--ease); }
+.spider-brand:hover img { transform: rotate(-8deg) scale(1.06); }
+.brand .wordmark { font: 400 20px/1 'Michroma', var(--mono); letter-spacing: .18em; color: var(--brass);
+  background: linear-gradient(135deg, #f6dc9a, #e0b25a 55%, #b9842f); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-sm .wordmark { font-size: 15px; }
+.brand-sm img { width: 26px; height: 26px; }
+.foot .owner { color: var(--mist); font-size: 14px; }
+.foot .owner a { color: var(--brass-2); font: 14px var(--mono); }
+.gate-owner { margin: 16px 0 0; text-align: center; color: var(--mist); font-size: 13px; }
+.gate-owner a { color: var(--brass-2); }
+.gate-card .spider-brand img { width: 40px; height: 40px; }
+.gate-card .wordmark { font-size: 24px; }
+.links a { white-space: nowrap; }
+@media (max-width: 1320px) { .links { gap: 16px; } .links a[href="#how"], .links a[href="#fields"] { display: none; } }
+@media (max-width: 1120px) { .links a[href="#featured"], #gh-top { display: none; } }

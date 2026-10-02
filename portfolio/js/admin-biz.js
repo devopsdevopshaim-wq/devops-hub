@@ -1,5 +1,5 @@
 /* Admin screen · leads & price list. Talks to the n8n workflow
-   "הסדנה · לידים ומחירון" (n8n/hasadna-business.json) through adminApi.
+   "SPIDER · לידים ומחירון" (n8n/hasadna-business.json) through adminApi.
    The admin password stays in this browser only. */
 (function () {
   'use strict';

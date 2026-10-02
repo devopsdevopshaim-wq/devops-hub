@@ -5,19 +5,20 @@
 #
 # It puts a shortcut in your Startup folder (and one on the Desktop). The site
 # opens in its own app window (Edge or Chrome), or in your default browser.
-# To stop it: delete "Hasadna.lnk" from the Startup folder, or run
-#   $env:HASADNA_REMOVE=1; irm https://raw.githubusercontent.com/devopsdevopshaim-wq/devops-hub/main/tools/windows/start-with-windows.ps1 | iex
+# To stop it: delete "SPIDER.lnk" from the Startup folder, or run
+#   $env:SPIDER_REMOVE=1; irm https://raw.githubusercontent.com/devopsdevopshaim-wq/devops-hub/main/tools/windows/start-with-windows.ps1 | iex
 
 $ErrorActionPreference = 'Stop'
 $Url = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/'
-$Name = 'Hasadna'
+$Name = 'SPIDER'
 $Startup = [Environment]::GetFolderPath('Startup')
 $Desktop = [Environment]::GetFolderPath('Desktop')
-$targets = @((Join-Path $Startup "$Name.lnk"), (Join-Path $Startup "$Name.url"))
+# the old name (Hasadna) is cleaned up too
+$targets = @('SPIDER.lnk', 'SPIDER.url', 'Hasadna.lnk', 'Hasadna.url') | ForEach-Object { Join-Path $Startup $_ }
 
-if ($env:HASADNA_REMOVE -eq '1') {
+if ($env:SPIDER_REMOVE -eq '1') {
     $targets | Where-Object { Test-Path $_ } | ForEach-Object { Remove-Item $_ -Force; Write-Host "Removed $_" }
-    Remove-Item Env:\HASADNA_REMOVE
+    Remove-Item Env:\SPIDER_REMOVE
     Write-Host 'Done. The site will no longer open when Windows starts.' -ForegroundColor Green
     return
 }
@@ -42,7 +43,7 @@ function New-Shortcut($path) {
         # --app opens a clean window without tabs or an address bar
         $lnk.Arguments = "--app=$Url --start-maximized"
         $lnk.IconLocation = "$browser,0"
-        $lnk.Description = 'Hasadna - all my projects'
+        $lnk.Description = 'SPIDER - Haim Krispin'
         $lnk.Save()
     } else {
         $path = [IO.Path]::ChangeExtension($path, '.url')

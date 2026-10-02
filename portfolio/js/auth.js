@@ -10,7 +10,7 @@
 
   var API = 'https://haimkripisn.app.n8n.cloud/webhook/hasadna-auth';
   var KEY = 'hasadna-session';
-  var WA = 'https://wa.me/972544979771?text=' + encodeURIComponent('היי, אשמח לקבל גישה להסדנה');
+  var WA = 'https://wa.me/972544979771?text=' + encodeURIComponent('היי, אשמח לקבל גישה ל־SPIDER');
   var needAdmin = document.documentElement.hasAttribute('data-admin-only');
   var root = document.documentElement;
   root.classList.add('locked');
@@ -77,7 +77,7 @@
     g.setAttribute('aria-labelledby', 'gate-title');
     g.innerHTML =
       '<div class="gate-card">' +
-        '<a class="brand" href="services.html" aria-label="הסדנה"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="4.5" fill="currentColor"/><circle cx="35" cy="13" r="2.2" fill="currentColor"/></svg><span>הסדנה</span></a>' +
+        '<a class="brand spider-brand" href="services.html" aria-label="SPIDER"><img src="img/spider.svg" alt="" width="40" height="40"><span class="wordmark">SPIDER</span></a>' +
         '<h1 id="gate-title">' + (needAdmin ? 'כניסת מנהל' : 'כניסה') + '</h1>' +
         '<p class="gate-lead">' + (needAdmin ? 'המסך הזה פתוח רק למנהל המערכת.' : 'האתרים פתוחים ללקוחות עם גישה פעילה. נכנסים עם המייל והטלפון שנרשמו, ומקבלים קוד חד־פעמי.') + '</p>' +
         '<form class="gate-form" id="gate-1" novalidate>' +
@@ -92,6 +92,7 @@
           '<div class="gate-row"><button class="g-btn ghost" type="button" id="gate-back">→ חזרה</button><button class="g-btn ghost" type="button" id="gate-again" disabled>שליחה מחדש</button></div>' +
         '</form>' +
         '<p class="add-error" id="gate-err" role="alert"' + (msg ? '' : ' hidden') + '>' + (msg || '') + '</p>' +
+        '<p class="gate-owner">חיים קריספין · <a href="tel:+972544979771" dir="ltr">054-4979771</a></p>' +
         '<p class="gate-foot">אין לך גישה עדיין? <a href="' + WA + '" target="_blank" rel="noopener">דברו איתי בוואטסאפ</a> · <a href="services.html">שירותים ומחירים</a></p>' +
       '</div>';
     document.body.appendChild(g);

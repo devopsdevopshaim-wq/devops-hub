@@ -649,7 +649,7 @@
     fillAddr(sections[0], s);
     detailBody.replaceChildren.apply(detailBody, [nav].concat(sections));
     loadComments(reco, p);
-    document.title = p.title + ' · הסדנה';
+    document.title = p.title + ' · SPIDER';
   }
 
   function openDetail(id) {
