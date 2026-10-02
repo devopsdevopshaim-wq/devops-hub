@@ -93,7 +93,10 @@ if (!claude && CLAUDE) {
   claude = { id: made.id, name: made.name };
   note('- נוצר חיבור Claude');
 }
-let smtp = credFrom(existingFull, 'smtp');
+// use our own Gmail connection, not some other SMTP credential found in another workflow
+let smtp = null;
+for (const w of existingFull) for (const n of (w && w.nodes) || []) if (n.credentials && n.credentials.smtp && n.credentials.smtp.name === 'SPIDER · Gmail') smtp = n.credentials.smtp;
+if (!smtp && !GMAIL_PASS) smtp = credFrom(existingFull, 'smtp');
 if (GMAIL_PASS && !smtp) {
   // to change the password later: delete "SPIDER · Gmail" in n8n and run this again
   const made = await api('POST', '/credentials', { name: 'SPIDER · Gmail', type: 'smtp',
@@ -126,6 +129,15 @@ const checks = {
   'hasadna-prices': await probe('hasadna-prices'),
   'hasadna-auth': await probe('hasadna-auth', form({ action: 'me', token: 'probe' })) // 401 = alive and refusing
 };
+// a real sign-in code to the admin's own inbox proves the email path end to end
+if (smtp) {
+  try {
+    const r = await fetch(`${BASE}/webhook/hasadna-auth`, form({ action: 'request', email: GMAIL_USER, phone: '0544979771' }));
+    const j = await r.json().catch(() => ({}));
+    checks['test-email'] = r.status;
+    note(`- מייל בדיקה עם קוד כניסה אל ${GMAIL_USER}: ${r.ok && j.ok ? '✅ נשלח' : '❌ ' + r.status + ' ' + (j.error || '')}`);
+  } catch (e) { note('- ❌ מייל בדיקה: ' + e.message); }
+}
 for (const [k, v] of Object.entries(checks)) note(`- /webhook/${k}: ${v === 200 || (k === 'hasadna-auth' && v === 401) ? '✅ עונה' : '❌ ' + v}`);
 if (!smtp) note('- ⚠️ אין חיבור לשליחת מיילים: הוסיפו את הסוד GMAIL_APP_PASSWORD והריצו שוב. עד אז קודי הכניסה לא יישלחו.');
 if (!claude) note('- ⚠️ אין חיבור Claude: הוסיפו את הסוד ANTHROPIC_API_KEY והריצו שוב.');
@@ -137,7 +149,7 @@ const guideApi = `${BASE}/webhook/hasadna-guide`, statusUrl = `${BASE}/webhook/h
 const changed = data.guideApi !== guideApi || data.statusUrl !== statusUrl;
 if (changed) { data.guideApi = guideApi; data.statusUrl = statusUrl; fs.writeFileSync(pj, JSON.stringify(data, null, 1) + '\n'); }
 
-const ok = checks['hasadna-auth'] === 401 && !!smtp;
+const ok = checks['hasadna-auth'] === 401 && checks['test-email'] === 200;
 out('deployed', 'true');
 out('changed', String(changed));
 out('access_ready', String(ok));
