@@ -30,8 +30,8 @@ const STYLES = [
   ['jazz', 'ג׳אז', ['jazz', 'smooth jazz', 'nu jazz'], [soma('sonicuniverse', 'Sonic Universe')]],
   ['classical', 'קלאסית', ['classical', 'classical music', 'baroque', 'opera'], []],
   ['piano', 'פסנתר', ['piano', 'solo piano', 'relaxing piano'], []],
-  ['mizrahi', 'מזרחית', ['mizrahi', 'mizrahit', 'מזרחית', 'oriental', 'greek'], []],
-  ['israeli', 'ישראלי', ['israeli music', 'israel', 'hebrew', 'עברית'], []],
+  ['mizrahi', 'מזרחית', ['mizrahi', 'mizrahit', 'מזרחית', 'oriental'], [], /mizra|מזרח|mediterr|ים תיכונ|oriental|greek|יוונית|arab/],
+  ['israeli', 'ישראלי', ['israeli music', 'hebrew', 'israel'], [], /./],
   ['reggae', 'רגאיי', ['reggae', 'roots reggae', 'dub'], []],
   ['rock', 'רוק', ['rock', 'classic rock', 'alternative rock'], []],
   ['80s', 'שנות ה־80', ['80s', '80er', 'eighties'], [soma('u80s', 'Underground 80s')]],
@@ -54,23 +54,40 @@ async function rb(path) {
   return [];
 }
 
-async function candidates(tags, israel) {
+function shape(s) {
+  // the listed address is the stable one; the "resolved" one can carry a token that expires
+  const url = /^https:\/\//.test(s.url) && !/\.(pls|m3u8?|asx)(\?|$)/i.test(s.url) ? s.url : s.url_resolved;
+  if (!/^https:\/\//.test(url || '') || /[?&](zt|zs|token|exp)=/.test(url)) return null;
+  if (s.codec && !/^(MP3|AAC|AAC\+|OGG|OPUS)$/i.test(s.codec)) return null; // HLS and others play poorly in <audio>
+  return { name: s.name.trim().replace(/\s+/g, ' ').slice(0, 60), url, home: s.homepage || '', codec: s.codec || '', bitrate: s.bitrate || 0, country: s.countrycode || '', tags: (s.tags || '').toLowerCase() };
+}
+
+async function candidates(tags) {
   const seen = new Set();
   const out = [];
   for (const tag of tags) {
-    const q = new URLSearchParams({ tag, tagExact: 'false', hidebroken: 'true', is_https: 'true', order: 'clickcount', reverse: 'true', limit: '40' });
-    if (israel) q.set('countrycode', 'IL');
-    const list = await rb('/json/stations/search?' + q);
-    for (const s of list) {
-      const url = s.url_resolved || s.url;
-      if (!/^https:\/\//.test(url) || seen.has(url)) continue;
-      if (s.codec && !/^(MP3|AAC|AAC\+|OGG|OPUS)$/i.test(s.codec)) continue; // HLS and others play poorly in <audio>
-      seen.add(url);
-      out.push({ name: s.name.trim().replace(/\s+/g, ' ').slice(0, 60), url, home: s.homepage || '', codec: s.codec || '', bitrate: s.bitrate || 0, country: s.countrycode || '', uuid: s.stationuuid });
+    // exact tags only: a loose match turns "trance" into every dance chart station
+    const q = new URLSearchParams({ tag, tagExact: 'true', hidebroken: 'true', is_https: 'true', order: 'clickcount', reverse: 'true', limit: '40' });
+    for (const s of await rb('/json/stations/search?' + q)) {
+      const st = shape(s);
+      if (!st || seen.has(st.url)) continue;
+      seen.add(st.url);
+      out.push(st);
     }
     if (out.length >= TRY * 2) break;
   }
   return out;
+}
+
+// Israeli stations, picked by what their tags say
+let israeli = null;
+async function israel(re) {
+  if (!israeli) {
+    const q = new URLSearchParams({ countrycode: 'IL', hidebroken: 'true', is_https: 'true', order: 'clickcount', reverse: 'true', limit: '300' });
+    israeli = (await rb('/json/stations/search?' + q)).map(shape).filter(Boolean);
+    console.log(`  Israel: ${israeli.length} HTTPS stations in the directory`);
+  }
+  return israeli.filter((s) => re.test(s.tags + ' ' + s.name.toLowerCase()));
 }
 
 // Plays the stream for a moment: it must answer 200 with audio and send real bytes.
@@ -112,16 +129,19 @@ async function pick(list) {
 
 let old = { genres: [] };
 try { old = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch {}
+const used = new Set(); // a station shows up under one style only
 const genres = [];
-for (const [id, style, tags, extra] of STYLES) {
-  const il = id === 'mizrahi' || id === 'israeli';
-  let list = [...extra, ...(await candidates(tags, il))];
-  if (il && list.length < 4) list = list.concat(await candidates(tags, false));
-  const ok = await pick(list);
+for (const [id, style, tags, extra, ilRe] of STYLES) {
+  let list = [...extra];
+  if (ilRe) list = list.concat(await israel(ilRe));
+  list = list.concat(await candidates(tags));
+  const fresh = list.filter((s) => !used.has(s.url));
+  let ok = await pick(fresh.length >= 3 ? fresh : list);
+  ok.forEach((s) => used.add(s.url));
   const prev = (old.genres || []).find((g) => g.id === id);
   const stations = ok.length ? ok : (prev ? prev.stations : []);
-  console.log(`${style} (${id}): ${ok.length} working of ${Math.min(list.length, TRY)} checked${ok.length ? '' : prev ? ' — kept yesterday\'s' : ''}`);
-  if (stations.length) genres.push({ id, style, stations: stations.map(({ uuid, ...s }) => s) });
+  console.log(`${style} (${id}): ${ok.length} working of ${Math.min(list.length, TRY)} checked${ok.length ? '' : prev ? " — kept yesterday's" : ''}: ${ok.map((s) => s.name).join(' | ')}`);
+  if (stations.length) genres.push({ id, style, stations: stations.map(({ tags, ...s }) => s) });
 }
 if (!genres.length) { console.log('::warning::no working stations at all; keeping the old file'); process.exit(0); }
 fs.writeFileSync(OUT, JSON.stringify({ updatedAt: new Date().toISOString(), source: 'radio-browser.info + SomaFM', genres }, null, 1) + '\n');
