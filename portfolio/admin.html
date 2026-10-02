@@ -25,6 +25,7 @@
     <span class="admin-tag">מסך ניהול</span>
     <nav class="links" aria-label="ניווט בניהול">
       <a href="#clients">לקוחות</a>
+      <a href="#skills">סקילים</a>
       <a href="#biz">לידים ומחירון</a>
       <a href="#stats">נתונים</a>
       <a href="#projects">פרויקטים</a>
@@ -41,7 +42,6 @@
     <p class="eyebrow">מנהל מערכת</p>
     <h1>שלום, מנהל הסדנה</h1>
     <p class="lead">כל הפרויקטים, הנתונים וההרשאות במקום אחד. כל שינוי נאסף ל"סל פעולות" ונשלח ל־GitHub בלחיצה אחת. GitHub מבצע אותו רק אם הוא הגיע מהחשבון שלך.</p>
-    <p class="hint">סקיל ל־Claude לכל פרויקט נבנה אוטומטית בכל פרסום. <a href="skills/all-skills.zip" download>⬇ כל הסקילים בקובץ אחד (ל־Claude Code)</a> · <a href="skills/index.json" target="_blank" rel="noopener">רשימה</a></p>
     <label class="site-admin"><input type="checkbox" id="site-admin"> <span>להציג כפתורי <b>מחיקה והסתרה</b> גם על הכרטיסים באתר עצמו <small>(רק בדפדפן הזה)</small></span></label>
   </section>
 
@@ -83,6 +83,33 @@
     <details class="cl-log"><summary>יומן כניסות ושינויים</summary><ol class="history" id="cl-log"></ol></details>
   </section>
 
+  <dialog class="edit" id="pay-dialog">
+    <form method="dialog" id="pay-form">
+      <h2 id="pay-title">רישום תשלום</h2>
+      <div class="field-row">
+        <label class="field"><span>על מה שילם</span><select name="plan">
+          <option value="day">מנוי יומי</option><option value="week">מנוי שבועי</option><option value="month" selected>מנוי חודשי</option>
+          <option value="year">מנוי שנתי</option><option value="other">אחר (בלי הארכה)</option>
+        </select></label>
+        <label class="field"><span>סכום (₪, כולל מע״מ)</span><input name="amount" type="number" min="1" step="1" required></label>
+      </div>
+      <div class="field-row">
+        <label class="field"><span>איך שילם</span><select name="method">
+          <option value="bit">ביט / פייבוקס</option><option value="transfer">העברה בנקאית</option><option value="cash">מזומן</option>
+          <option value="card">כרטיס אשראי</option><option value="paypal">PayPal</option><option value="check">צ׳ק</option><option value="other">אחר</option>
+        </select></label>
+        <label class="field"><span>הארכת המנוי (ימים)</span><input name="days" type="number" min="0" step="1"></label>
+      </div>
+      <label class="field"><span>תיאור במסמך</span><input name="description" maxlength="120"></label>
+      <label class="m-check"><input type="checkbox" name="invoice" checked> <span>להפיק חשבונית / קבלה ולשלוח ללקוח במייל <small>דרך Morning (חשבונית ירוקה). צריך לחבר פעם אחת ב־n8n.</small></span></label>
+      <p class="add-error" id="pay-err" hidden></p>
+      <div class="edit-actions">
+        <button class="g-btn ghost" value="cancel" type="submit" formnovalidate>ביטול</button>
+        <button class="btn btn-gold btn-sm" value="save" type="submit">רישום התשלום</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog class="edit cl-edit" id="cl-dialog">
     <form method="dialog" id="cl-form">
       <h2 id="cl-title">לקוח חדש</h2>
@@ -112,6 +139,19 @@
       </div>
     </form>
   </dialog>
+
+  <section id="skills" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">Claude</p><h2>סקילים</h2></div>
+      <div class="filters">
+        <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="sk-q" type="search" placeholder="חיפוש סקיל…" aria-label="חיפוש סקיל"></label>
+        <a class="btn btn-gold btn-sm" href="skills/all-skills.zip" download>⬇ כל הסקילים (Claude Code)</a>
+      </div>
+    </header>
+    <p class="hint">לכל פרויקט נבנה סקיל ל־Claude בכל פרסום, מתוך הקוד שלו. ב־claude.ai: הגדרות ← Capabilities ← Skills ← Upload skill, ובוחרים את ה־zip. ב־Claude Code: פותחים את ה־zip לתוך <code dir="ltr">~/.claude/skills</code>.</p>
+    <p class="muted" id="sk-when"></p>
+    <div class="sk-grid" id="sk-grid"><p class="muted">טוען…</p></div>
+  </section>
 
   <section id="biz" class="a-sec">
     <header class="sec-head sec-row">
@@ -168,6 +208,17 @@
           <thead><tr><th>שירות</th><th>מחיר התחלתי (₪)</th><th>יחידה</th><th>מוצג</th></tr></thead>
           <tbody id="price-rows"></tbody>
         </table>
+      </div>
+
+      <div class="biz-head"><h3>שירותים שהוספתי</h3><button class="g-btn ghost" type="button" id="extra-add">+ שירות חדש</button></div>
+      <div class="offer-edit" id="extra-rows"></div>
+
+      <div class="biz-head"><h3>מחירי מנוי גישה לאתרים</h3><small class="muted">מופיעים בדף השירותים ובמסך התשלום של הלקוחות. ריק = לא מוצג.</small></div>
+      <div class="plans-edit" id="plans-edit">
+        <label class="field"><span>יומי (₪)</span><input type="number" min="0" step="1" data-plan="day"></label>
+        <label class="field"><span>שבועי (₪)</span><input type="number" min="0" step="1" data-plan="week"></label>
+        <label class="field"><span>חודשי (₪)</span><input type="number" min="0" step="1" data-plan="month"></label>
+        <label class="field"><span>שנתי (₪)</span><input type="number" min="0" step="1" data-plan="year"></label>
       </div>
 
       <div class="biz-head"><h3>מבצעים</h3><button class="g-btn ghost" type="button" id="offer-add">+ מבצע חדש</button></div>
@@ -317,5 +368,6 @@
 <script src="js/admin.js"></script>
 <script src="js/admin-biz.js"></script>
 <script src="js/admin-access.js"></script>
+<script src="js/admin-skills.js"></script>
 </body>
 </html>

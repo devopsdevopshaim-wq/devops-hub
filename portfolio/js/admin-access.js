@@ -7,7 +7,7 @@
   var DAY = 86400000;
   var PLAN = { day: ['יומי', 1], week: ['שבועי', 7], month: ['חודשי', 30], year: ['שנתי', 365], custom: ['תאריך קבוע', 0], free: ['ללא הגבלה', 0] };
   var SITE = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/';
-  var C = { clients: [], projects: [], cats: {}, editing: null };
+  var C = { clients: [], projects: [], cats: {}, editing: null, plans: {}, paying: null };
 
   function el(tag, attrs, kids) {
     var n = document.createElement(tag);
@@ -38,7 +38,9 @@
     var soon = act.filter(function (c) { return c.daysLeft != null && c.daysLeft <= 3; });
     var dl = $('cl-kpis');
     dl.replaceChildren();
-    [['לקוחות', C.clients.length], ['פעילים עכשיו', act.length], ['נגמר בעוד 3 ימים', soon.length], ['לא פעילים', C.clients.length - act.length]].forEach(function (k) {
+    var month = new Date().toISOString().slice(0, 7), income = 0;
+    C.clients.forEach(function (c) { (c.payments || []).forEach(function (p) { if (p.at.slice(0, 7) === month) income += p.amount; }); });
+    [['לקוחות', C.clients.length], ['פעילים עכשיו', act.length], ['נגמר בעוד 3 ימים', soon.length], ['לא פעילים', C.clients.length - act.length], ['הכנסות החודש', income.toLocaleString('he-IL') + ' ₪']].forEach(function (k) {
       dl.appendChild(el('div', {}, [el('dt', { text: k[0] }), el('dd', { text: String(k[1]) })]));
     });
 
@@ -55,9 +57,10 @@
         el('td', { class: 'who' }, [el('b', { text: c.name || '—' }), el('small', { dir: 'ltr', text: c.email }), el('small', { dir: 'ltr', text: c.phone }), c.note ? el('small', { text: c.note }) : null]),
         el('td', {}, [el('div', { class: 'cl-chips' }, sites.slice(0, 4).map(function (id) { return el('span', { text: title(id) }); }).concat(sites.length > 4 ? [el('span', { text: '+' + (sites.length - 4) })] : sites.length ? [] : [el('span', { text: 'אין אתרים' })]))]),
         el('td', { text: (PLAN[c.plan] || ['—'])[0] }),
-        el('td', {}, [el('span', { class: 'pill ' + state[0], text: state[1] }), el('div', { class: 'muted', text: c.expiresAt ? date(c.expiresAt) : 'ללא הגבלה' })]),
+        el('td', {}, [el('span', { class: 'pill ' + state[0], text: state[1] }), el('div', { class: 'muted', text: c.expiresAt ? date(c.expiresAt) : 'ללא הגבלה' }), lastPay(c)]),
         el('td', { class: 'num', text: c.lastLogin ? date(c.lastLogin) : 'עוד לא' }),
         el('td', {}, [el('div', { class: 'acts' }, [
+          b('💳 תשלום', function () { pay(c); }),
           b('עריכה', function () { edit(c); }),
           b('+יום', function () { extend(c, 1); }),
           b('+חודש', function () { extend(c, 30); }),
@@ -75,6 +78,57 @@
       }));
     });
   }
+
+  function lastPay(c) {
+    var p = (c.payments || [])[0];
+    if (!p) return null;
+    var inv = p.invoice;
+    return el('div', { class: 'cl-pay' }, [
+      document.createTextNode('שולם ' + p.amount.toLocaleString('he-IL') + ' ₪ · ' + date(p.at) + ' '),
+      inv && inv.url ? el('a', { href: inv.url, target: '_blank', rel: 'noopener', text: 'מסמך ' + inv.number + ' ↗' })
+        : inv && inv.error ? el('span', { class: 'muted', title: inv.error, text: inv.error === 'not-configured' ? '(בלי חשבונית)' : '(החשבונית נכשלה)' }) : null
+    ]);
+  }
+
+  // ---------- payment
+  var DAYS = { day: 1, week: 7, month: 30, year: 365, other: 0 };
+  var NAMES = { day: 'מנוי יומי', week: 'מנוי שבועי', month: 'מנוי חודשי', year: 'מנוי שנתי', other: 'שירות' };
+  function fillPay() {
+    var f = $('pay-form').elements, k = f.plan.value;
+    f.days.value = DAYS[k];
+    if (C.plans[k]) f.amount.value = C.plans[k];
+    f.description.value = (k === 'other' ? '' : NAMES[k] + ' ל־SPIDER');
+  }
+  $('pay-form').elements.plan.addEventListener('change', fillPay);
+  function pay(c) {
+    C.paying = c;
+    var f = $('pay-form').elements;
+    $('pay-title').textContent = 'תשלום · ' + (c.name || c.email);
+    f.plan.value = DAYS[c.plan] ? c.plan : 'month';
+    f.amount.value = '';
+    fillPay();
+    $('pay-err').hidden = true;
+    $('pay-dialog').showModal();
+  }
+  $('pay-form').addEventListener('submit', function (e) {
+    if (e.submitter && e.submitter.value === 'cancel') return;
+    e.preventDefault();
+    var f = e.target.elements, err = $('pay-err');
+    if (!(Number(f.amount.value) > 0)) { err.textContent = 'כמה שולם?'; err.hidden = false; return; }
+    var btn = e.submitter; btn.disabled = true;
+    api('payment', { payload: JSON.stringify({ email: C.paying.email, amount: Number(f.amount.value), method: f.method.value,
+      plan: f.plan.value === 'other' ? '' : f.plan.value, days: Number(f.days.value) || 0, description: f.description.value, invoice: f.invoice.checked }) })
+      .then(function (j) {
+        btn.disabled = false;
+        if (!j.ok) { err.textContent = 'לא נרשם: ' + j.error; err.hidden = false; return; }
+        $('pay-dialog').close();
+        var inv = j.invoice;
+        if (inv && inv.url) alert('✓ התשלום נרשם, המנוי הוארך, ומסמך ' + inv.number + ' נשלח ללקוח במייל.');
+        else if (inv && inv.error === 'not-configured') alert('✓ התשלום נרשם והמנוי הוארך.\nחשבונית לא הופקה: עוד לא חיברת את Morning ב־n8n (INVOICE בצומת Auth · Handle).');
+        else if (inv && inv.error) alert('✓ התשלום נרשם והמנוי הוארך.\nהחשבונית נכשלה: ' + inv.error + '\nאפשר להפיק אותה ידנית ב־Morning.');
+        load();
+      }).catch(function () { btn.disabled = false; err.textContent = 'n8n לא ענה.'; err.hidden = false; });
+  });
 
   function extend(c, days) {
     api('client-extend', { email: c.email, days: String(days) }).then(function (j) { if (!j.ok) alert('לא עודכן: ' + j.error); load(); });
@@ -165,6 +219,9 @@
   // start once the admin is signed in
   window.HasadnaAuth.ready.then(function (s) {
     if (s.role !== 'admin') return;
+    fetch('services.json').then(function (r) { return r.json(); }).then(function (cfg) {
+      return cfg.pricesApi ? fetch(cfg.pricesApi, { cache: 'no-store' }).then(function (r) { return r.json(); }) : null;
+    }).then(function (j) { C.plans = (j && j.prices && j.prices.plans) || {}; }).catch(function () {});
     fetch('projects.json').then(function (r) { return r.json(); }).then(function (d) {
       C.projects = d.projects.filter(function (p) { return !p.pending; });
       C.cats = d.categories;
