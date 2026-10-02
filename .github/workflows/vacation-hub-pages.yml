@@ -76,6 +76,8 @@ jobs:
           # headlines: start from the last published ones, then refresh
           if [ -d /tmp/site/portfolio ]; then
             [ -f /tmp/old/portfolio/news.json ] && cp /tmp/old/portfolio/news.json /tmp/site/portfolio/news.json
+            # radio stations are checked by portfolio-radio.yml; keep the last good list
+            [ -f /tmp/old/portfolio/radio.json ] && cp /tmp/old/portfolio/radio.json /tmp/site/portfolio/radio.json
             node .github/scripts/portfolio-news.mjs /tmp/site/portfolio/news.json || echo "news refresh failed; keeping the last headlines"
           fi
           touch /tmp/site/.nojekyll

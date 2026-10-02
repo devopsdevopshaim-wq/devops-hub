@@ -118,104 +118,186 @@
   }
 
   // ================================================================ music (bottom-left)
-  function music(stations) {
-    stations = (stations || []).filter(function (s) { return ytParse(s.url); });
-    if (!stations.length) return;
-    var player = null, current = -1, playing = false;
-    var vol = Number(store('music-vol') || 40);
+  // Internet radio by style (radio.json, checked daily by a GitHub Action), plus
+  // the admin's own YouTube picks (media.json). Radio plays in a plain <audio>,
+  // so nothing depends on a video owner allowing embeds. If a station does not
+  // answer, the next one in the same style takes over.
+  var SOMA = function (id, name) { return { name: 'SomaFM · ' + name, url: 'https://ice2.somafm.com/' + id + '-128-mp3', home: 'https://somafm.com/' + id + '/' }; };
+  var FALLBACK = [
+    { id: 'progressive', style: 'פרוגרסיב', stations: [SOMA('thetrip', 'The Trip')] },
+    { id: 'ambient', style: 'אמביינט', stations: [SOMA('dronezone', 'Drone Zone'), SOMA('deepspaceone', 'Deep Space One'), SOMA('spacestation', 'Space Station')] },
+    { id: 'chillout', style: 'צ׳ילאאוט', stations: [SOMA('groovesalad', 'Groove Salad'), SOMA('fluid', 'Fluid')] },
+    { id: 'deephouse', style: 'דיפ האוס', stations: [SOMA('beatblender', 'Beat Blender')] },
+    { id: 'lounge', style: 'לאונג׳', stations: [SOMA('illstreet', 'Illinois Street Lounge'), SOMA('secretagent', 'Secret Agent')] },
+    { id: 'jazz', style: 'ג׳אז', stations: [SOMA('sonicuniverse', 'Sonic Universe')] },
+    { id: '80s', style: 'שנות ה־80', stations: [SOMA('u80s', 'Underground 80s')] }
+  ];
+
+  function music(radio, yt) {
+    var genres = (radio && radio.genres && radio.genres.length ? radio.genres : FALLBACK).filter(function (g) { return g.stations && g.stations.length; });
+    var picks = (yt || []).filter(function (s) { return ytParse(s.url); });
+    if (!genres.length && !picks.length) return;
+    var vol = Number(store('music-vol') || 50);
+    var audio = new Audio();
+    audio.preload = 'none';
+    audio.volume = vol / 100;
+    var mode = null, gi = -1, si = 0, tried = 0, watchdog = null, ytPlayer = null, yi = -1, playing = false;
 
     var pill = el('button', { class: 'mu-pill', type: 'button', 'aria-expanded': 'false', 'aria-controls': 'mu-panel' }, [
       el('span', { class: 'eq', 'aria-hidden': 'true' }, [el('i'), el('i'), el('i'), el('i')]),
       el('span', { class: 'mu-label', text: 'מוזיקה' })
     ]);
-    var chips = el('div', { class: 'mu-styles', role: 'group', 'aria-label': 'סגנון מוזיקה' });
-    var status = el('p', { class: 'mu-now', role: 'status', text: 'בחרו סגנון, והמוזיקה תתחיל.' });
+    var chips = el('div', { class: 'mu-styles', role: 'group', 'aria-label': 'סגנון' });
+    var ytChips = el('div', { class: 'mu-styles mu-yt', role: 'group', 'aria-label': 'מיוטיוב' });
+    var now = el('div', { class: 'mu-now', role: 'status' }, [el('b', { text: 'בחרו סגנון, והמוזיקה תתחיל.' }), el('small')]);
     var playBtn = el('button', { class: 'mu-btn', type: 'button', 'aria-label': 'נגינה', text: '▶' });
-    var nextBtn = el('button', { class: 'mu-btn', type: 'button', 'aria-label': 'התחנה הבאה', text: '⏭' });
+    var nextBtn = el('button', { class: 'mu-btn', type: 'button', 'aria-label': 'תחנה אחרת באותו סגנון', title: 'תחנה אחרת באותו סגנון', text: '⏭' });
     var volIn = el('input', { type: 'range', min: '0', max: '100', value: String(vol), 'aria-label': 'עוצמה' });
-    var frame = el('div', { class: 'mu-frame' }, [el('div', { id: 'mu-yt' })]);
+    var frame = el('div', { class: 'mu-frame', hidden: '' }, [el('div', { id: 'mu-yt' })]);
     var panel = el('div', { class: 'mu-panel', id: 'mu-panel', role: 'dialog', 'aria-label': 'מוזיקה ברקע' }, [
-      el('header', {}, [el('b', { text: '♫ מוזיקה ברקע' }), el('button', { class: 'x', type: 'button', 'aria-label': 'סגירה', text: '×' })]),
-      chips, frame, status,
+      el('header', {}, [el('b', { text: '♫ רדיו ומוזיקה' }), el('button', { class: 'x', type: 'button', 'aria-label': 'סגירה', text: '×' })]),
+      chips,
+      picks.length ? el('p', { class: 'mu-sub', text: 'השירים שלי מיוטיוב' }) : null,
+      picks.length ? ytChips : null,
+      frame, now,
       el('div', { class: 'mu-ctrl' }, [playBtn, nextBtn, el('span', { class: 'vol', 'aria-hidden': 'true', text: '🔈' }), volIn]),
-      el('p', { class: 'mu-note', text: 'המוזיקה מנוגנת מיוטיוב. אפשר לסגור את החלון והיא ממשיכה.' })
+      el('p', { class: 'mu-note', text: 'תחנות רדיו חיות מכל העולם, נבדקות כל יום. אפשר לסגור את החלון והמוזיקה ממשיכה.' })
     ]);
+    panel.setAttribute('data-lenis-prevent', '');
     var box = el('div', { class: 'music' }, [panel, pill]);
     document.body.appendChild(box);
 
-    stations.forEach(function (s, i) {
-      var c = el('button', { class: 'chip', type: 'button', 'data-i': String(i), text: s.style, title: s.title || s.style });
-      c.addEventListener('click', function () { play(i); });
+    genres.forEach(function (g, i) {
+      var c = el('button', { class: 'chip', type: 'button', text: g.style, 'aria-pressed': 'false' });
+      c.addEventListener('click', function () { playGenre(i); });
       chips.appendChild(c);
     });
+    picks.forEach(function (s, i) {
+      var c = el('button', { class: 'chip', type: 'button', text: s.style, title: s.title || s.style, 'aria-pressed': 'false' });
+      c.addEventListener('click', function () { playYT(i); });
+      ytChips.appendChild(c);
+    });
 
-    function open(on) {
-      box.classList.toggle('open', on);
-      pill.setAttribute('aria-expanded', String(on));
-    }
+    function open(on) { box.classList.toggle('open', on); pill.setAttribute('aria-expanded', String(on)); }
     pill.addEventListener('click', function () { open(!box.classList.contains('open')); });
     $('.x', panel).addEventListener('click', function () { open(false); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') open(false); });
 
+    function say(main, sub) { $('b', now).textContent = main; $('small', now).textContent = sub || ''; }
+    function mark() {
+      Array.prototype.forEach.call(chips.children, function (c, i) { c.setAttribute('aria-pressed', String(mode === 'radio' && i === gi)); });
+      Array.prototype.forEach.call(ytChips.children, function (c, i) { c.setAttribute('aria-pressed', String(mode === 'yt' && i === yi)); });
+    }
     function setPlaying(on) {
       playing = on;
       box.classList.toggle('playing', on);
       playBtn.textContent = on ? '⏸' : '▶';
       playBtn.setAttribute('aria-label', on ? 'השהיה' : 'נגינה');
-      $('.mu-label', pill).textContent = current >= 0 ? stations[current].style : 'מוזיקה';
-    }
-    function mark() {
-      Array.prototype.forEach.call(chips.children, function (c, i) { c.setAttribute('aria-pressed', String(i === current)); });
+      $('.mu-label', pill).textContent = mode === 'radio' && gi >= 0 ? genres[gi].style : mode === 'yt' && yi >= 0 ? picks[yi].style : 'מוזיקה';
     }
 
-    function play(i) {
-      current = (i + stations.length) % stations.length;
-      store('music-last', String(current));
+    // ----- radio
+    function station() { return genres[gi].stations[si % genres[gi].stations.length]; }
+    function tune() {
+      clearTimeout(watchdog);
+      var g = genres[gi], st = station();
+      say('מתחבר: ' + st.name + '…', g.style);
+      audio.src = st.url;
+      var p = audio.play();
+      if (p && p.catch) p.catch(function (e) { if (e && e.name === 'NotAllowedError') { setPlaying(false); say('לחצו ▶ כדי להתחיל', g.style); } });
+      // a station that has not started within 10 seconds is skipped
+      watchdog = setTimeout(function () { if (audio.paused || audio.readyState < 3) skip(); }, 10000);
+    }
+    function skip() {
+      clearTimeout(watchdog);
+      if (mode !== 'radio') return;
+      tried++;
+      if (tried >= genres[gi].stations.length) {
+        audio.removeAttribute('src'); audio.load();
+        setPlaying(false);
+        say('אף תחנה ב"' + genres[gi].style + '" לא עונה כרגע', 'נסו סגנון אחר');
+        return;
+      }
+      si++;
+      tune();
+    }
+    function playGenre(i) {
+      stopYT();
+      mode = 'radio'; gi = i; tried = 0;
+      si = Math.floor(Math.random() * genres[i].stations.length); // spread listeners over the stations
+      store('music-last', 'r:' + genres[i].id);
       mark();
-      var s = stations[current], v = ytParse(s.url);
-      status.textContent = 'טוען: ' + (s.title || s.style) + '…';
+      tune();
+    }
+    audio.addEventListener('playing', function () {
+      clearTimeout(watchdog);
+      if (mode !== 'radio') return;
+      tried = 0;
+      setPlaying(true);
+      var st = station();
+      say('♪ ' + st.name, genres[gi].style + (st.country ? ' · ' + st.country : '') + (st.bitrate ? ' · ' + st.bitrate + 'kbps' : ''));
+    });
+    audio.addEventListener('pause', function () { if (mode === 'radio') setPlaying(false); });
+    audio.addEventListener('error', function () { if (mode === 'radio' && audio.getAttribute('src')) skip(); });
+
+    // ----- YouTube picks
+    function stopYT() { if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo(); frame.hidden = true; }
+    function playYT(i) {
+      clearTimeout(watchdog);
+      audio.pause();
+      mode = 'yt'; yi = i;
+      store('music-last', 'y:' + i);
+      mark();
+      frame.hidden = false;
+      var s = picks[i], v = ytParse(s.url);
+      say('טוען מיוטיוב: ' + (s.title || s.style) + '…', s.style);
       loadYT().then(function () {
-        if (!player) {
-          player = new window.YT.Player('mu-yt', {
+        if (!ytPlayer) {
+          ytPlayer = new window.YT.Player('mu-yt', {
             width: '100%', height: '100%',
-            playerVars: v.id ? { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 }
-              : { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, listType: 'playlist', list: v.list },
+            playerVars: v.id ? { autoplay: 1, playsinline: 1, rel: 0 } : { autoplay: 1, playsinline: 1, rel: 0, listType: 'playlist', list: v.list },
             videoId: v.id || undefined,
             events: {
-              onReady: function (e) {
-                e.target.setVolume(vol);
-                e.target.playVideo();
-              },
+              onReady: function (e) { e.target.setVolume(vol); e.target.playVideo(); },
               onStateChange: function (e) {
-                if (e.data === 1) { setPlaying(true); status.textContent = '♪ ' + (stations[current].title || stations[current].style); }
+                if (mode !== 'yt') return;
+                if (e.data === 1) { setPlaying(true); say('♪ ' + (picks[yi].title || picks[yi].style), 'יוטיוב'); }
                 else if (e.data === 2 || e.data === 0) setPlaying(false);
               },
               onError: function () {
                 setPlaying(false);
-                status.textContent = 'התחנה "' + stations[current].style + '" לא זמינה כרגע. נסו סגנון אחר.';
+                say('הסרטון הזה חסום לניגון מחוץ ליוטיוב', 'בעל הסרטון לא מתיר הטמעה. נסו סגנון רדיו.');
               }
             }
           });
-        } else if (v.id) player.loadVideoById(v.id);
-        else player.loadPlaylist({ list: v.list, listType: 'playlist' });
+        } else if (v.id) ytPlayer.loadVideoById(v.id);
+        else ytPlayer.loadPlaylist({ list: v.list, listType: 'playlist' });
       });
     }
 
+    // ----- controls
     playBtn.addEventListener('click', function () {
-      if (!player) { play(current >= 0 ? current : Number(store('music-last') || 0)); return; }
-      playing ? player.pauseVideo() : player.playVideo();
+      if (mode === 'yt' && ytPlayer && ytPlayer.getPlayerState) { playing ? ytPlayer.pauseVideo() : ytPlayer.playVideo(); return; }
+      if (mode === 'radio') { if (playing) audio.pause(); else tune(); return; }
+      var last = store('music-last') || '';
+      var r = last.indexOf('r:') === 0 ? genres.map(function (g) { return g.id; }).indexOf(last.slice(2)) : -1;
+      if (last.indexOf('y:') === 0 && picks[Number(last.slice(2))]) playYT(Number(last.slice(2)));
+      else playGenre(r >= 0 ? r : 0);
     });
-    nextBtn.addEventListener('click', function () { play(current + 1); });
+    nextBtn.addEventListener('click', function () {
+      if (mode === 'yt') { playYT((yi + 1) % picks.length); return; }
+      if (mode !== 'radio') { playGenre(0); return; }
+      tried = 0; si++; tune();
+    });
     volIn.addEventListener('input', function () {
       vol = Number(volIn.value); store('music-vol', String(vol));
-      if (player && player.setVolume) player.setVolume(vol);
+      audio.volume = vol / 100;
+      if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(vol);
     });
 
-    var last = Number(store('music-last'));
-    if (store('music-last') !== null && stations[last]) {
-      current = -1;
-      status.textContent = 'בפעם הקודמת הקשבתם ל"' + stations[last].style + '". לחצו ▶ כדי להמשיך.';
-    }
+    var last = store('music-last') || '';
+    var lg = last.indexOf('r:') === 0 ? genres.filter(function (g) { return g.id === last.slice(2); })[0] : null;
+    if (lg) say('בפעם הקודמת: ' + lg.style, 'לחצו ▶ כדי להמשיך');
   }
 
   // ================================================================ news + riddles (bottom-right)
@@ -363,9 +445,10 @@
   Promise.all([
     getJSON(base + 'media.json').catch(function () { return {}; }),
     getJSON(base + 'news.json').catch(function () { return null; }),
-    getJSON(base + 'riddles.json').catch(function () { return null; })
+    getJSON(base + 'riddles.json').catch(function () { return null; }),
+    getJSON(base + 'radio.json').catch(function () { return null; })
   ]).then(function (r) {
-    try { music(r[0].music); } catch (e) { console.warn('music', e); }
+    try { music(r[3], r[0].music); } catch (e) { console.warn('music', e); }
     try { if (!document.body.classList.contains('no-dock')) dock(r[1], r[2]); } catch (e) { console.warn('dock', e); }
     try { videos(r[0].videos); } catch (e) { console.warn('videos', e); }
   });
