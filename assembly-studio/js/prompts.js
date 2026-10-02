@@ -164,11 +164,48 @@
   }
 
   /* הנחיה מלאה להעתקה ל-Claude.ai (מצב בלי שרת) */
+  /* פורמט התשובה הקריא שמבקשים מ-Claude.ai. האתר קורא אותו בעצמו (parseText). */
+  var TEXT_FORMAT = [
+    'כתוב את התשובה בעברית, כטקסט רגיל, בדיוק במבנה הזה (כותרות, טבלאות ורשימות). בלי JSON ובלי קוד:',
+    '',
+    '# <שם התכנית>',
+    '## תקציר',
+    '<2–4 משפטים>',
+    'צוות: <מספר אנשים>',
+    '## רשימת חלקים',
+    '| # | שם | כמות | סוג | חומר | מידות | בלון | הערות |',
+    '|---|---|---|---|---|---|---|---|',
+    '| 1 | <שם> | <כמות> | <חלק מיוצר / מחבר / פריט קנוי / תת-מכלול> | <חומר> | <מידות> | <מספר בלון בשרטוט> | <הערות> |',
+    '## כלים',
+    '- <כלי>',
+    '## בטיחות',
+    '- <הנחיה>',
+    '## שלבי הרכבה',
+    '### שלב 1: <כותרת השלב>',
+    'חלקים: <מספרי השורות מרשימת החלקים, מופרדים בפסיקים>',
+    '1. <הוראה>',
+    '2. <הוראה>',
+    'מחברים: <ברגים ואומים בשלב>',
+    'מומנט: <ערך או —>',
+    'בדיקה: <מה בודקים בסוף השלב>',
+    'זהירות: <אם יש>',
+    'זמן: <דקות>',
+    '## חלקי חילוף',
+    '| # | פריט | קטגוריה | כמות למלאי | תדירות | סיבה |',
+    '|---|---|---|---|---|---|',
+    '| <מספר שורה ברשימת החלקים או 0> | <שם> | <בלאי / קריטי / מתכלה / מחברים> | <כמות> | <תדירות> | <סיבה> |',
+    '## תחזוקה',
+    '| פעולה | תדירות |',
+    '|---|---|',
+    '## הערות',
+    '<הנחות ודברים שלא היו ברורים בשרטוט>'
+  ].join('\n');
+
   function copyPrompt(p) {
     var s = build(p);
     var attach = p.drawings && p.drawings.length ? '\n\n(מצורפות להודעה הזו תמונות השרטוט: ' + p.drawings.join(', ') + ')' : '';
-    return s.system + '\n\n' + s.cached + attach + '\n\n' + s.instruction +
-      '\n\nהחזר אובייקט JSON יחיד, בלי טקסט נוסף, במבנה הזה:\n' + JSON.stringify(PLAN_SCHEMA);
+    var instruction = s.instruction.replace('החזר JSON בלבד לפי המבנה.', '').trim();
+    return s.system + '\n\n' + s.cached + attach + '\n\n' + instruction + '\n\n' + TEXT_FORMAT;
   }
 
   /* ---------- תכנית בסיסית בלי AI ---------- */
@@ -241,13 +278,129 @@
   }
 
   /* ניקוי JSON שהודבק ידנית */
+  /* קורא את התשובה של Claude: JSON אם יש, אחרת הטקסט הקריא (כותרות, טבלאות ושלבים) */
   function parsePlan(text) {
     var s = String(text || '').trim();
+    if (!s) throw new Error('התיבה ריקה. העתיקו את כל התשובה של Claude והדביקו אותה כאן.');
     var a = s.indexOf('{'), b = s.lastIndexOf('}');
-    if (a < 0 || b < a) throw new Error('לא נמצא JSON בתשובה');
-    var plan = JSON.parse(s.slice(a, b + 1));
-    if (!plan || !Array.isArray(plan.steps)) throw new Error('בתשובה חסרים שלבים (steps)');
-    return normalize(plan);
+    if (a >= 0 && b > a && /"steps"\s*:/.test(s)) {
+      try {
+        var plan = JSON.parse(s.slice(a, b + 1));
+        if (plan && Array.isArray(plan.steps)) return normalize(plan);
+      } catch (e) { /* ננסה כטקסט */ }
+    }
+    return normalize(parseText(s));
+  }
+
+  var TYPE_WORDS = [[/מחבר|בורג|ברג|אום|דיסקי|פין|מסמרת|fastener|bolt|screw|nut|washer/i, 'fastener'], [/קנוי|רכש|purchased|buy/i, 'purchased'], [/תת[- ]?מכלול|sub/i, 'sub']];
+  var CAT_WORDS = [[/בלאי|wear/i, 'wear'], [/קריטי|critical/i, 'critical'], [/מתכל|consum/i, 'consumable'], [/מחבר|בורג|fastener/i, 'fastener']];
+  function pick(words, s, dflt) { for (var i = 0; i < words.length; i++) if (words[i][0].test(s || '')) return words[i][1]; return dflt; }
+  function clean(s) { return String(s || '').replace(/\*\*|__|`/g, '').trim().replace(/^[-–—]$/, ''); }
+  function num(s) { var m = String(s || '').match(/\d+/); return m ? Number(m[0]) : 0; }
+
+  function tableRows(lines) {
+    var rows = [];
+    lines.forEach(function (l) {
+      if (!/^\s*\|/.test(l)) return;
+      var cells = l.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(clean);
+      if (cells.every(function (c) { return /^:?-{2,}:?$/.test(c) || !c; })) return;
+      rows.push(cells);
+    });
+    return rows;
+  }
+  /* ממפה עמודות לפי מילים בכותרת הטבלה */
+  function columns(head, map) {
+    var out = {};
+    head.forEach(function (h, i) {
+      Object.keys(map).forEach(function (k) { if (out[k] == null && map[k].test(h)) out[k] = i; });
+    });
+    return out;
+  }
+  function listItems(lines) {
+    return lines.map(function (l) { var m = l.match(/^\s*(?:[-*•]|\d+[.)])\s+(.+)$/); return m ? clean(m[1]) : ''; }).filter(Boolean);
+  }
+
+  function parseText(text) {
+    var lines = String(text).replace(/\r/g, '').split('\n');
+    var plan = { title: '', summary: '', crew: 0, bom: [], tools: [], safety: [], steps: [], spares: [], maintenance: [], notes: '' };
+    var sections = [], cur = { name: '', lines: [] };
+    var STEP = /^\s*(?:#{1,4}\s*)?(?:\*\*)?\s*שלב\s*(\d+)\s*[:：.\-–—)]?\s*(.*?)(?:\*\*)?\s*$/;
+    lines.forEach(function (l) {
+      var h = l.match(/^\s*(#{1,4})\s*(.+?)\s*#*\s*$/);
+      if (STEP.test(l)) { sections.push(cur); cur = { name: 'step', head: l, lines: [] }; return; }
+      if (h) {
+        if (h[1] === '#' && !plan.title) plan.title = clean(h[2]);
+        sections.push(cur); cur = { name: clean(h[2]), lines: [] }; return;
+      }
+      cur.lines.push(l);
+    });
+    sections.push(cur);
+
+    sections.forEach(function (sec) {
+      var n = sec.name, body = sec.lines;
+      var text = body.join('\n').replace(/\*\*/g, '').trim();
+      var crew = text.match(/צוות\s*[:：]?\s*(\d+)/);
+      if (crew && !plan.crew) plan.crew = Number(crew[1]);
+      if (n === 'step') {
+        var m = sec.head.match(STEP);
+        var st = { title: clean(m[2]) || 'שלב ' + m[1], part_ids: [], instructions: [], fasteners: '', torque: '—', check: '', caution: '', minutes: 0 };
+        body.forEach(function (l) {
+          var kv = l.replace(/\*\*/g, '').match(/^\s*[-*•]?\s*(חלקים|מחברים|מומנט(?: הידוק)?|בדיקה|זהירות|זמן(?: משוער)?)\s*[:：]\s*(.*)$/);
+          if (kv) {
+            var k = kv[1], v = clean(kv[2]);
+            if (k === 'חלקים') st.part_ids = (v.match(/\d+/g) || []).map(Number);
+            else if (k === 'מחברים') st.fasteners = v;
+            else if (/^מומנט/.test(k)) st.torque = v || '—';
+            else if (k === 'בדיקה') st.check = v;
+            else if (k === 'זהירות') st.caution = v;
+            else st.minutes = num(v);
+            return;
+          }
+          var it = l.match(/^\s*(?:[-*•]|\d+[.)])\s+(.+)$/);
+          if (it) st.instructions.push(clean(it[1]));
+          else if (clean(l) && !/^\s*\|/.test(l)) st.instructions.push(clean(l));
+        });
+        plan.steps.push(st);
+      } else if (/רשימת חלקים|BOM|חלקים ופריטים/i.test(n)) {
+        var rows = tableRows(body);
+        if (!rows.length) return;
+        var c = columns(rows[0], { id: /^#|^מס|^מספר$/, name: /שם|תיאור|פריט|part/i, qty: /כמות|qty/i, type: /סוג|type/i, material: /חומר|material/i, size: /מידות|מידה|size|dim/i, ref: /בלון|ref|פריט בשרטוט/i, notes: /הערות|notes/i });
+        if (c.ref === c.name) delete c.ref;
+        rows.slice(1).forEach(function (r) {
+          var name = r[c.name] || '';
+          if (!name) return;
+          plan.bom.push({ name: name, qty: num(r[c.qty]) || 1, type: pick(TYPE_WORDS, (r[c.type] || '') + ' ' + name, 'part'), material: r[c.material] || '', size: r[c.size] || '', ref: c.ref != null ? r[c.ref] || '' : '', notes: r[c.notes] || '' });
+        });
+      } else if (/חלקי חילוף|spare/i.test(n)) {
+        var srows = tableRows(body);
+        if (srows.length) {
+          var sc = columns(srows[0], { id: /^#|^מס/, name: /פריט|שם|תיאור/, cat: /קטגוריה|סוג/, qty: /כמות/, interval: /תדירות|החלפה/, reason: /סיבה|הערות/ });
+          srows.slice(1).forEach(function (r) {
+            var name = r[sc.name] || '';
+            if (!name) return;
+            plan.spares.push({ part_id: num(r[sc.id]), name: name, qty: num(r[sc.qty]) || 1, category: pick(CAT_WORDS, r[sc.cat] + ' ' + name, 'wear'), reason: r[sc.reason] || '', interval: r[sc.interval] || '' });
+          });
+        } else listItems(body).forEach(function (t) { plan.spares.push({ part_id: 0, name: t, qty: 1, category: pick(CAT_WORDS, t, 'wear'), reason: '', interval: '' }); });
+      } else if (/תחזוקה|maint/i.test(n)) {
+        var mrows = tableRows(body);
+        if (mrows.length) mrows.slice(1).forEach(function (r) { if (r[0]) plan.maintenance.push({ task: r[0], interval: r[1] || '' }); });
+        else listItems(body).forEach(function (t) { var x = t.split(/\s[–—-]\s|:\s/); plan.maintenance.push({ task: x[0], interval: x[1] || '' }); });
+      } else if (/כלים|ציוד/.test(n)) plan.tools = plan.tools.concat(listItems(body));
+      else if (/בטיחות/.test(n)) plan.safety = plan.safety.concat(listItems(body));
+      else if (/תקציר|סיכום|תיאור/.test(n)) plan.summary = text.replace(/^\s*צוות.*$/m, '').trim();
+      else if (/הערות|הנחות/.test(n)) plan.notes = text;
+    });
+    // חלקי חילוף בלי מספר שורה: מחפשים לפי השם ברשימת החלקים
+    plan.spares.forEach(function (sp) {
+      if (sp.part_id || !plan.bom.length) return;
+      var i = plan.bom.findIndex(function (b) { return b.name === sp.name; });
+      if (i >= 0) sp.part_id = i + 1;
+    });
+    if (!plan.steps.length && !plan.bom.length) {
+      throw new Error('לא מצאתי בתשובה שלבי הרכבה או רשימת חלקים. ודאו שהעתקתם את כל התשובה של Claude, מההתחלה ועד הסוף.');
+    }
+    if (!plan.title) plan.title = 'תכנית הרכבה';
+    return plan;
   }
 
   function normalize(plan) {
@@ -265,6 +418,6 @@
 
   return {
     SYSTEMS: SYSTEMS, TYPE_LABELS: TYPE_LABELS, SPARE_LABELS: SPARE_LABELS, PLAN_SCHEMA: PLAN_SCHEMA,
-    guessType: guessType, build: build, copyPrompt: copyPrompt, basicPlan: basicPlan, parsePlan: parsePlan, normalize: normalize, bomText: bomText
+    guessType: guessType, build: build, copyPrompt: copyPrompt, basicPlan: basicPlan, parsePlan: parsePlan, parseText: parseText, normalize: normalize, bomText: bomText
   };
 });
