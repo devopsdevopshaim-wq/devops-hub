@@ -132,21 +132,25 @@
           <div class="card">
             <h2 class="card-title">קבצי המודל</h2>
             <label class="drop" id="drop" for="fileInput">
-              <input id="fileInput" type="file" multiple accept=".sldprt,.sldasm,.slddrw,.step,.stp,.iges,.igs,.stl,.obj,.glb,.gltf,.pdf,.png,.jpg,.jpeg">
+              <input id="fileInput" type="file" multiple accept=".sldprt,.sldasm,.slddrw,.step,.stp,.iges,.igs,.stl,.obj,.glb,.gltf,.pdf,.png,.jpg,.jpeg,.webp">
               <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M12 16V4m0 0l-4.5 4.5M12 4l4.5 4.5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               <b>גוררים לכאן קבצים או לוחצים לבחירה</b>
-              <span>STEP · IGES · STL · OBJ · GLB · SLDASM · SLDPRT · PDF</span>
+              <span>SLDASM · SLDPRT · SLDDRW · STEP · STL · OBJ · GLB · PDF · PNG · JPG</span>
             </label>
             <ul class="file-list" id="fileList"></ul>
+            <div class="ref-wrap" id="refWrap" hidden>
+              <h3 class="sub-title">שרטוטים ותמונות</h3>
+              <div class="ref-gallery" id="refGallery"></div>
+            </div>
+            <ul class="sw-notes" id="swNotes"></ul>
             <details class="tip">
-              <summary>איך מייצאים מ-SolidWorks כדי לקבל תלת-ממד מלא?</summary>
-              <p>קבצי SLDASM ו-SLDPRT הם פורמט סגור, ולכן האתר קורא מהם רק את שם החלק. כדי לקבל תלת-ממד, סרטון ושרטוטים:</p>
-              <ol>
-                <li>פותחים את המכלול ב-SolidWorks.</li>
-                <li><b>File ← Save As</b>, ובוחרים <b>STEP AP214 (*.step)</b>.</li>
-                <li>מעלים לכאן את קובץ ה-STEP. שמות החלקים והכמויות נקראים ממנו אוטומטית.</li>
-              </ol>
-              <p>אפשר גם לשמור כ-STL, כל חלק בקובץ נפרד: ב-Options מסמנים ״Save all components of an assembly in a single file״ כבוי ו-״Do not translate STL output data to positive space״ מסומן, כדי שהחלקים יישארו במקומם.</p>
+              <summary>אילו קבצים להעלות?</summary>
+              <ul>
+                <li><b>מכלול SolidWorks (SLDASM):</b> מעלים אותו <b>יחד עם כל קבצי ה-SLDPRT</b> של החלקים. האתר קורא את עץ הרכיבים, הכמויות והמיקום של כל חלק, ומציג את המכלול בתלת-ממד.</li>
+                <li><b>חלק בודד (SLDPRT):</b> נפתח בתלת-ממד עם המידות שלו.</li>
+                <li><b>שרטוט (PDF, SLDDRW או תמונה):</b> מוצג כאן, ובשלב 3 Claude מנתח אותו: קורא את טבלת החלקים, הבלונים, המידות וההערות, ובונה רשימת חלקים ותכנית הרכבה גם בלי מודל.</li>
+                <li>קבצי SolidWorks ישנים (לפני 2015) נפתחים חלקית. אם משהו חסר, שמרו את המכלול כ-STEP (File ← Save As ← STEP AP214) והעלו גם אותו.</li>
+              </ul>
             </details>
           </div>
         </div>
@@ -191,7 +195,7 @@
       <div class="row-head">
         <div>
           <h1 class="h1-sm">תכנית הרכבה</h1>
-          <p class="muted">Claude בונה סדר הרכבה לפי מיקום החלקים במודל ולפי התיאור שלכם. כל תכנית חדשה פותחת משימה בלוח המשימות, עם תת-משימה לכל שלב.</p>
+          <p class="muted">Claude מנתח את השרטוטים והמודל, משלים את רשימת החלקים, ובונה סדר הרכבה לפי מיקום החלקים ולפי התיאור שלכם. כל תכנית חדשה פותחת משימה בלוח המשימות, עם תת-משימה לכל שלב.</p>
         </div>
       </div>
       <div class="card gen-card">
@@ -321,6 +325,10 @@
     <h2>יצירת תכנית דרך Claude.ai</h2>
     <p class="muted">האתר לא מחובר לשרת עם מפתח API. מעתיקים את ההנחיה ל-<a href="https://claude.ai" target="_blank" rel="noopener">Claude.ai</a>, ומדביקים כאן את התשובה (JSON).</p>
     <div class="btn-row"><button class="btn small" type="button" id="copyPrompt">העתקת ההנחיה</button></div>
+    <div id="pasteImgs" hidden>
+      <p class="muted small">צרפו להודעה ב-Claude.ai גם את תמונות השרטוט, כדי ש-Claude ינתח אותן:</p>
+      <div class="btn-row tight" id="pasteImgList"></div>
+    </div>
     <textarea id="pasteBox" rows="10" placeholder="הדביקו כאן את התשובה של Claude"></textarea>
     <p class="error" id="pasteErr" role="alert"></p>
     <div class="btn-row">

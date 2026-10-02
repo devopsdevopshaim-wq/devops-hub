@@ -7,8 +7,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const OCCT_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
 
-export const MODEL_EXT = ['step', 'stp', 'iges', 'igs', 'stl', 'obj', 'glb', 'gltf'];
-export const NATIVE_EXT = ['sldprt', 'sldasm', 'slddrw'];
+export const MODEL_EXT = ['sldasm', 'sldprt', 'step', 'stp', 'iges', 'igs', 'stl', 'obj', 'glb', 'gltf'];
 
 const PALETTE = [0x8fa3b8, 0xc9a86a, 0x6f8fa6, 0xb4b9bf, 0x7fa38a, 0xa67f6f, 0x9a8fb8, 0xd0c7b0, 0x6f7f96, 0xb89a6f];
 const ACCENT = 0xf2711c;
@@ -178,6 +177,22 @@ export class Studio3D {
     } else {
       throw new Error('סוג קובץ לא נתמך לתלת-ממד: ' + ext);
     }
+  }
+
+  /* קובץ SolidWorks מקורי. resolve(שם קובץ) מחזיר בתים של SLDPRT שהועלה יחד עם המכלול. */
+  async loadSolidWorks(name, blob, resolve) {
+    const { readSolidWorks } = await import('./solidworks.js');
+    const r = await readSolidWorks(name, new Uint8Array(await blob.arrayBuffer()), resolve);
+    const noGeo = [];
+    r.components.forEach((c) => {
+      if (c.positions && c.positions.length && !c.hidden) {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(c.positions, 3));
+        geo.computeVertexNormals();
+        this._addOccurrence(c.instance, [new THREE.Mesh(geo)]);
+      } else noGeo.push(partKey(c.instance));
+    });
+    return { ...r, noGeo };
   }
 
   /* מכלול לדוגמה: יחידת הנעה על פלטת בסיס */
