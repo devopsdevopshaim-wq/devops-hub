@@ -162,3 +162,10 @@ html.lenis { scroll-behavior: auto; }
   .scene .stars, .playing .eq i { animation: none; }
 }
 .svc .music { inset-inline-end: 20px; }
+
+/* Claude skill on the project page */
+.d-skill p { color: var(--mist); max-width: 46em; }
+.d-skill .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+.d-skill-how { margin: 0; padding-inline-start: 20px; color: var(--mist); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.client-mode .d-skill { display: none; }
+.d-skill-how code { font: 13px var(--mono); color: var(--porcelain); background: rgba(241,238,252,.06); padding: 1px 6px; border-radius: 5px; }
