@@ -1,189 +1,213 @@
 {
- "updatedAt": "2026-10-03T05:22:56.507Z",
+ "updatedAt": "2026-10-03T11:43:18.306Z",
  "feeds": {
   "main": [
    {
-    "title": "המהנדסת שהפכה לבכירה באנבידיה: \"בטכניון קיבלתי 20 במבחן\"",
-    "link": "https://news.google.com/rss/articles/CBMiaEFVX3lxTFBNWk1LOHRYcDJJd1dxRXEzTmNBRnBZdnNRWDNJenVYZ3hnZDAzWHZZVzVYcDVXNy0tSG9jZC14TzFzbFF5VkhUb1htQ0tneW1jRE13dFN6TUwyanFEbXRCUmN1SlhvdFNx?oc=5",
-    "source": "גלובס",
-    "at": "2026-10-03T04:56:08.000Z"
-   },
-   {
-    "title": "היערכות אחרונה לקראת חידוש המלחמה באיראן? מפגש הפסגה של ממשל דונלד טראמפ",
-    "link": "https://www.maariv.co.il/news/world/article-1373064",
-    "source": "מעריב",
-    "at": "2026-10-03T04:33:17.000Z"
-   },
-   {
-    "title": "נחשפה זהות הטייס-המחבל, בן לאם סורית: \"צילם מטוסי אל על אחרי 7/10, רצה לרסק את המטוס בישראל\"",
-    "link": "https://www.ynet.co.il/news/article/hkigaer9fg",
+    "title": "המורדים בורחים ממעוזם באתיופיה: \"ביזה במתקני הממשלה, נוטשים עמדות\"",
+    "link": "https://www.ynet.co.il/news/article/skmm008cqfl",
     "source": "ynet",
-    "at": "2026-10-03T04:31:25.000Z"
+    "at": "2026-10-03T11:37:08.000Z"
    },
    {
-    "title": "הקבינט הביטחוני של טראמפ דן בהמשך המלחמה באיראן ובעימות בין סעודיה לחות'ים",
-    "link": "https://news.google.com/rss/articles/CBMifEFVX3lxTE50VFNNb2RYc0JUQWdOR3Y0ZEs2bnhQMDhIZDdfeE9mV1BoRXotRWJzNW1rWFdlQUIybkl6NmpGbUMzZlkzb0IxVThZQmhlOURQVlFfUElDZmRoNXNiZGltZl8xbDZZS1hBczRPNnlKZWt5MzRmcWhsck5WRXU?oc=5",
+    "title": "אובדן המשילות באיו\"ש: המתנחלים הכו באלות, צה\"ל הגיע אחרי שעות",
+    "link": "https://www.maariv.co.il/news/military/article-1373119",
+    "source": "מעריב",
+    "at": "2026-10-03T11:32:32.000Z"
+   },
+   {
+    "title": "\"היא אמרה 'אמא, יורים', ולא הבנתי. ניסיתי להרגיע אותה בכעס\"",
+    "link": "https://www.ynet.co.il/news/article/hyz4e655zl",
+    "source": "ynet",
+    "at": "2026-10-03T11:25:24.000Z"
+   },
+   {
+    "title": "המחדל שמתחדד - והחשד שנבדק: הטייס המחבל ש\"עבר הקצנה בסוריה\" כבר טס לישראל",
+    "link": "https://www.ynet.co.il/news/article/sknijvaqze",
+    "source": "ynet",
+    "at": "2026-10-03T11:23:42.000Z"
+   },
+   {
+    "title": "בנימין נתניהו בריאיון סוער עם העיתונאית הבריטית: \"ברית אסלאמית־שמאלית\"",
+    "link": "https://www.maariv.co.il/news/world/article-1373113",
+    "source": "מעריב",
+    "at": "2026-10-03T10:56:26.000Z"
+   },
+   {
+    "title": "יהודים על הכוונת: דרמת הענק בבריטניה שטרם סופרה",
+    "link": "https://www.maariv.co.il/news/world/article-1373110",
+    "source": "מעריב",
+    "at": "2026-10-03T10:29:53.000Z"
+   },
+   {
+    "title": "איש אמונו של סינוואר - שהפך את הארגון על פיו ברגע שחוסל",
+    "link": "https://www.maariv.co.il/news/military/article-1373108",
+    "source": "מעריב",
+    "at": "2026-10-03T09:57:45.000Z"
+   },
+   {
+    "title": "נתניהו טען שישראל הזהירה את בריטניה מפגיעה בבסיס - ותקף: \"מדינה סוררת\"",
+    "link": "https://www.ynet.co.il/news/article/s17mthccfe",
+    "source": "ynet",
+    "at": "2026-10-03T09:44:56.000Z"
+   },
+   {
+    "title": "\"מתנחלים תקפו עם אלות - ונמלטו\": פלסטיני בן 50 תועד מדמם במסיק הזיתים",
+    "link": "https://www.ynet.co.il/news/article/hjxywsccze",
+    "source": "ynet",
+    "at": "2026-10-03T09:38:40.000Z"
+   },
+   {
+    "title": "טאקר קרלסון הגן על אדולף היטלר בשידור - המרואיין נשאר כמעט בלי מילים",
+    "link": "https://www.maariv.co.il/news/world/article-1373103",
+    "source": "מעריב",
+    "at": "2026-10-03T09:28:36.000Z"
+   },
+   {
+    "title": "טאקר קרלסון הגן בשידור על אדלוף היטלר: \"מניח שאני פשוט נאצי בסתר\"",
+    "link": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE1uT1h4cmhLSjhFWUdNaUJYS18yR0JwcmZ5VHNySnp6SmNsTVhDMXk5eEFCRlMybWRmbEhZc0w2Tm8tRDNlc3JkRUFXdzRpeGZ1UFl0V3B5bGdRZlg1VWNMcQ?oc=5",
+    "source": "מעריב",
+    "at": "2026-10-03T09:28:36.000Z"
+   },
+   {
+    "title": "\"בדיעבד, אתה מבין כמה הרגע הזה היה מטורף\": פרויקט ההונאה של חמאס נחשף",
+    "link": "https://www.ynet.co.il/news/article/yokra14911339",
+    "source": "ynet",
+    "at": "2026-10-03T09:17:46.000Z"
+   },
+   {
+    "title": "מתנחלים רעולי פנים תקפו שני כפרים באזור שכם; צה\"ל מנע מסיק באזור",
+    "link": "https://news.google.com/rss/articles/CBMinwFBVV95cUxNTHRBWTdCcWZ2cGF3ZU04SnZTNjFxSy1mRkpoWUw1cDVTQWQwVTlJaFk0aWFPNDNvTFVncVVkbjBZQkdmU19fWEZKU3Bkd1NxNGd2V3pDMHdLR3A2ZkZFRjVFbG45VU1iT01FRHJ1WXl6WTFISHYxREVKYU1iTnNWX0JyRTdzdjJ2clN4Y0xSaW1JVm5TQXJYMDZtX2tsdkE?oc=5",
+    "source": "haaretz.co.il",
+    "at": "2026-10-03T09:02:00.000Z"
+   },
+   {
+    "title": "הורי הלוחמים מזועזעים: \"לא למדו את הלקח מטבח 7 באוקטובר\"",
+    "link": "https://www.maariv.co.il/news/military/article-1373099",
+    "source": "מעריב",
+    "at": "2026-10-03T08:55:21.000Z"
+   },
+   {
+    "title": "סרט בדיוני: כולם דיברו על חמשת המופלאים - עכשיו מגיעה עדות חדשה על הנס שקרה אחרי נטרול הטייס",
+    "link": "https://www.maariv.co.il/news/world/article-1373096",
+    "source": "מעריב",
+    "at": "2026-10-03T08:22:07.000Z"
+   },
+   {
+    "title": "עוד אמירה סהרורית של טאקר קרלסון: \"למה בריטניה נכנסה למלחמת העולם?\"",
+    "link": "https://www.ynet.co.il/news/article/rynmj40cze",
+    "source": "ynet",
+    "at": "2026-10-03T08:07:52.000Z"
+   },
+   {
+    "title": "דיווח: סעודיה נערכת למתקפה בתימן; איראן מציעה לקדם הידברות",
+    "link": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE1BS19KQVh5M20tanRlV2sxaE1pVFQzd0ZZN3BuTTZiNm1tX0ppMUFNU1pEc3NNNGZEUTJMUERfeW01QU8waTdzd0o3QVJGQVVqTzUwcklxNThwb0FQSWxReHpR?oc=5",
+    "source": "רשת 13",
+    "at": "2026-10-03T08:01:33.000Z"
+   },
+   {
+    "title": "\"יניב, אני מעריץ שלך!\": טראמפ הודה לגיבור טיסת פליי דובאי בסרטון מיוחד",
+    "link": "https://www.ynet.co.il/news/article/s1z1nvaqgl",
+    "source": "ynet",
+    "at": "2026-10-03T07:58:05.000Z"
+   },
+   {
+    "title": "ניסה להשפיל את ישראל שוב ושוב, והסתבך: ראש ממשלת ספרד בבעיה",
+    "link": "https://www.maariv.co.il/news/world/article-1373092",
+    "source": "מעריב",
+    "at": "2026-10-03T07:50:12.000Z"
+   },
+   {
+    "title": "\"הישראלים קנו את קפריסין\": הבכיר האמריקאי לשעבר בטוח שהסתבכנו",
+    "link": "https://www.maariv.co.il/news/world/article-1373086",
+    "source": "מעריב",
+    "at": "2026-10-03T07:24:33.000Z"
+   },
+   {
+    "title": "ניסיון חיסול משמעותי בעזה: היורש של סינוואר על הכוונת של צה\"ל",
+    "link": "https://www.maariv.co.il/news/military/article-1373085",
+    "source": "מעריב",
+    "at": "2026-10-03T07:23:25.000Z"
+   },
+   {
+    "title": "דיווחים בעזה: צה\"ל ניסה לחסל את \"היורש של סינוואר\"",
+    "link": "https://www.ynet.co.il/news/article/b1zklq0cfg",
+    "source": "ynet",
+    "at": "2026-10-03T07:19:40.000Z"
+   },
+   {
+    "title": "המשבר הכפול של מקרון: הפגנות סוערות - במקביל לניסיונות לקצץ בתקציב",
+    "link": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE44cTgxTzZ2WEpDWENIUi1ZSjhyZlh2UWtnYUJuSDNka3hfUVRETlE5ajU4UHFRNWVFZ1RQcHJWQVJ2UDhKWHJGX0d0TC1YelFQUV9HYkZ1RHJvT3VvV0puZDFGMDZCVmI4?oc=5",
+    "source": "calcalist",
+    "at": "2026-10-03T07:11:00.000Z"
+   },
+   {
+    "title": "לא מרגיש טוב? הבקשה החריגה של שי ג'ינפינג בביקור בארה\"ב",
+    "link": "https://www.maariv.co.il/news/world/article-1373080",
+    "source": "מעריב",
+    "at": "2026-10-03T06:55:21.000Z"
+   },
+   {
+    "title": "מכה פוליטית לרה\"מ האנטי-ישראלי: ספרד בדרך לבחירות בזק?",
+    "link": "https://www.ynet.co.il/news/article/hklby705gx",
+    "source": "ynet",
+    "at": "2026-10-03T06:42:24.000Z"
+   },
+   {
+    "title": "צה\"ל ניסה לחסל את עלי אל-עאמודי - מחליפו של סינוואר",
+    "link": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQbDd2THh2M0Z1SEV1a3VGdUVoczlYYTVrZ1FDbTZDM0NGbVBZNGRqMVpOcUIzM09TWkI5dk5FMkZRam1aSUhKSDZkczVVVDVXanhhLWxMZFA5OWtPOXFNdFZLaVNTcjM0YldKYTVjNFlfWHlqMlVjNzhZTUpDOTZUdA?oc=5",
     "source": "mako",
-    "at": "2026-10-03T03:34:00.000Z"
+    "at": "2026-10-03T06:39:00.000Z"
    },
    {
-    "title": "טראמפ: המלחמה עם איראן עשויה להסתיים אחרי הבחירות מאת Investing.com",
-    "link": "https://news.google.com/rss/articles/CBMiaEFVX3lxTFBuMHdqUFF3ZUp2ZnA3WjFNNDNsWFo0WjczU2FJMndWYlhqb1pjZW9ZemtQV0plVDkzNUc1SE5nMHd2eXpMM1ZueW11UGNudkZqMWxJeU1KbW1XRFdFZTlRdzgtRzZwcnN0?oc=5",
-    "source": "Investing.com",
-    "at": "2026-10-03T03:26:38.000Z"
+    "title": "איחוד האמירויות: טייס פליי דובאי תקף את עמיתו עם גרזן החירום, חקירתו נמשכת",
+    "link": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE96VFlGM3VSZDVBQm9Jb19yUGwwd0tkUDAwUldUNVlfN2ZrWTl3SFlTck9tb2dSNS1HU3BhYy1VMllOamRibl9EUXBxd0NGTVo2MW5qa2JuZEhkdw?oc=5",
+    "source": "YNET",
+    "at": "2026-10-03T06:37:18.000Z"
    },
    {
-    "title": "שבת לטיול? לא בדיוק: התחזית המלאה והגשם שחוזר",
-    "link": "https://www.maariv.co.il/news/weather/article-1373022",
+    "title": "אחרי שכריסטה שרדה את שתי הזריקות - בטנסי מחפשים אשמים ומוציאים שלדים מהארון",
+    "link": "https://www.maariv.co.il/news/world/article-1373076",
     "source": "מעריב",
-    "at": "2026-10-03T03:00:49.000Z"
+    "at": "2026-10-03T06:16:12.000Z"
    },
    {
-    "title": "הזאב שהפסיק לצוד: חייו החדשים של מי שהיה המלך של העולם התחתון",
-    "link": "https://www.maariv.co.il/news/law/article-1372999",
-    "source": "מעריב",
-    "at": "2026-10-03T03:00:49.000Z"
+    "title": "ארקיע הוציאה טיסת השבה ראשונה מדובאי לישראל",
+    "link": "https://news.google.com/rss/articles/CBMipgFBVV95cUxQZU4wSGpNM0NFejE1cGstQTFOWGJHU1FTTTktYW1QakdHSENMZkpRQ0RYY1gyNEQtNUJVZDZJT0l4N1ZzM2JMeEVfdjFRWWN3TnRMOHU2R04zbS10ZHJDTlItX2szaktFd1AtWWZRZllzQldiVi12RkVwNE1FMUtjR0VIT2RmVXJkTVRIeThOc3NwSVNJQzNCeUFSb0Z5VV9MMnhtNXJR?oc=5",
+    "source": "TheMarker",
+    "at": "2026-10-03T05:14:00.000Z"
    },
    {
-    "title": "האישה שגורמת למחבלים בעזה לחשוב פעמיים: \"הם יודעים שאנחנו אחריהם - מהאוויר והיבשה\"",
-    "link": "https://www.maariv.co.il/news/military/article-1372987",
-    "source": "מעריב",
-    "at": "2026-10-03T03:00:49.000Z"
-   },
-   {
-    "title": "גשמים בצפון ובמישור החוף | התחזית המלאה לשמחת תורה",
-    "link": "https://www.ynet.co.il/news/article/xwvjbv41b",
-    "source": "ynet",
-    "at": "2026-10-03T02:06:51.000Z"
-   },
-   {
-    "title": "יותר מ-1.7 מיליון הועברו לחמאס: אזרחי ארה\"ב גייסו כספים \"למשפחות בעזה\"",
-    "link": "https://www.ynet.co.il/news/article/r1wunda9me",
-    "source": "ynet",
-    "at": "2026-10-02T22:45:20.000Z"
-   },
-   {
-    "title": "הוסרו המכשולים: טיסה ראשונה להשבת ישראלים מדובאי נחתה בנתב\"ג | תיעוד",
-    "link": "https://www.ynet.co.il/news/article/b1azbdpqze",
-    "source": "ynet",
-    "at": "2026-10-02T22:24:10.000Z"
-   },
-   {
-    "title": "\"הסיפור לא נגמר אחרי שהטייס נוטרל\": המתח אחרי ייצוב המטוס - והעדות החדשה",
-    "link": "https://www.ynet.co.il/news/article/h1cmdu69zl",
-    "source": "ynet",
-    "at": "2026-10-02T21:15:40.000Z"
-   },
-   {
-    "title": "דיווח: עומאן אסרה בעבר על טייס המשנה לטוס בגלל שעבר \"רדיקליזציה איסלאמית\"",
-    "link": "https://www.ynet.co.il/news/article/hjv2tt6cfe",
-    "source": "ynet",
-    "at": "2026-10-02T21:11:59.000Z"
-   },
-   {
-    "title": "דיווח דרמטי: טייס המשנה מפליי דובאי במסר שלא משאיר מקום לספק",
-    "link": "https://www.maariv.co.il/news/world/article-1373031",
-    "source": "מעריב",
-    "at": "2026-10-02T20:20:07.000Z"
-   },
-   {
-    "title": "ניצן אלון: \"החברה הישראלית זקוקה להנהגה אחרת, לא לסיסמאות כמו 'ניצחון מוחלט'\"",
-    "link": "https://www.ynet.co.il/news/article/hjofgy6qzl",
-    "source": "ynet",
-    "at": "2026-10-02T19:37:23.000Z"
-   },
-   {
-    "title": "דיווח: התוכנית הצבאית של סעודיה נגד החות'ים",
-    "link": "https://news.google.com/rss/articles/CBMifEFVX3lxTE05M3Via1hkN1pxbDl6eklsNW9EWFNaMGx2MzNhcmNwa25SVTZuUXdtNnZRd21ZTzAtYzRBYXI4Y19tVzlrVUd0aHhWLWRxSjFDaTFFQW1waTlMM2RmZS12WkRHejJLdmdxeHZDYjBUZmhyVHRxQ2NaTFZwZE8?oc=5",
-    "source": "mako",
-    "at": "2026-10-02T19:28:00.000Z"
-   },
-   {
-    "title": "עובדים, מגדלים ילדים - וצורכים סמים עד \"שהלב מתפוצץ\" | תופעת \"הנרקומנים המתפקדים\"",
-    "link": "https://www.ynet.co.il/news/article/h1rgghecze",
-    "source": "ynet",
-    "at": "2026-10-02T18:30:26.000Z"
-   },
-   {
-    "title": "רשות התעופה האזרחית באמירויות: \"משבחים את אומץ ליבו של הקברניט והצוות\"",
-    "link": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE5oWnN5eWhLX04yUzNXMVZoNFcwc2dZYnNtbnd5NUh1UmU4bWZYTlhxUksxanJBOGxhNUh3bEhzMTZMdmQ3dy1YcXA1Q01UcXlqaGMyNWtSalZpZw?oc=5",
-    "source": "ynet.co.il",
-    "at": "2026-10-02T18:15:11.000Z"
-   },
-   {
-    "title": "נשיאים, שופטים וסרט הוליוודי: הסקנדל שעשוי להכריע את הבחירות במדינת הענק",
-    "link": "https://www.ynet.co.il/news/article/h1nlcdlcmx",
-    "source": "ynet",
-    "at": "2026-10-02T18:10:06.000Z"
-   },
-   {
-    "title": "סלקציה פוליטית: ישראלי סורב לקורס הולנדית משום שלא הכיר ב\"רצח עם\" בעזה",
-    "link": "https://www.maariv.co.il/news/world/article-1373009",
-    "source": "מעריב",
-    "at": "2026-10-02T18:06:45.000Z"
-   },
-   {
-    "title": "איך אזרח עומאני שובץ לטיסה לישראל - ומי יחקור את המחדל? השאלות הפתוחות",
-    "link": "https://www.ynet.co.il/news/article/rk2002uaqfe",
-    "source": "ynet",
-    "at": "2026-10-02T18:06:07.000Z"
-   },
-   {
-    "title": "מהומות אלימות במחאת התלמידים ברחבי צרפת: מאות נעצרו, עשרות נפצעו",
-    "link": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE5GXzhUek1xMW5jOEZyS1pJTlRRZm5zbTFLVU9MVHFsbktaVmxJdHl1VV9tU3U4Nm1ieGtSMmhGMTc5dGRPRzR3OWNJbW92RXVDbEg5VXAyNXl0ZVdLUjJ5RkRsZDVLdw?oc=5",
-    "source": "כאן 11",
-    "at": "2026-10-02T18:03:51.000Z"
-   },
-   {
-    "title": "המאבק על מנוף הלחץ: סעודיה מתכננת מבצע ענק לשחרור מצר באב אל מנדב",
-    "link": "https://www.maariv.co.il/news/world/article-1373006",
-    "source": "מעריב",
-    "at": "2026-10-02T18:00:23.000Z"
-   },
-   {
-    "title": "הקונספציה הצרפתית בוערת: זו לא שביתה - אלא מתקפה על הרפובליקה | עמית יגור",
-    "link": "https://www.maariv.co.il/news/opinions/article-1372978",
-    "source": "מעריב",
-    "at": "2026-10-02T17:45:29.000Z"
-   },
-   {
-    "title": "הברית שלא הגנה על סעודיה \"תצרף מדינות חדשות\", דיווח: \"היערכות למבצע בים האדום\"",
-    "link": "https://www.ynet.co.il/news/article/r1kflhaqgg",
-    "source": "ynet",
-    "at": "2026-10-02T17:43:05.000Z"
-   },
-   {
-    "title": "הנערים בצרפת שורפים בתי ספר - והשמאל הקיצוני מלבה את האש",
-    "link": "https://www.maariv.co.il/news/world/article-1372998",
-    "source": "מעריב",
-    "at": "2026-10-02T16:36:07.000Z"
-   },
-   {
-    "title": "\"הדמוקרטיה המתגוננת\" הדואלית: 7 באוקטובר שינה את כללי הפסילה לבחירות | משה כהן-אליה",
-    "link": "https://www.maariv.co.il/news/opinions/article-1372997",
-    "source": "מעריב",
-    "at": "2026-10-02T16:29:35.000Z"
-   },
-   {
-    "title": "אחות ראש השב\"כ שרצה לכנסת הצטלמה עם מרדכי דוד: \"חוסמים את אחמד טיבי\"",
-    "link": "https://www.ynet.co.il/news/elections2026/article/bkvo3bp9ze",
-    "source": "ynet",
-    "at": "2026-10-02T16:27:41.000Z"
-   },
-   {
-    "title": "עדי אשכנזי תנווט אתכן לבדיקה: Waze ועיריות ישראל במבצע מודעות לסרטן השד",
-    "link": "https://www.maariv.co.il/news/israel/article-1372995",
-    "source": "מעריב",
-    "at": "2026-10-02T16:19:11.000Z"
-   },
-   {
-    "title": "באמירויות כעסו על \"טיסות החילוץ\" - עכשיו הגיעה ההבהרה של גורם ישראלי",
-    "link": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE5wdmdPTmM5RWJCX3VwdXZqRFR3Z3d3MWx2SzlGeVBpTTVZUXU5eTJEYWNaRmNWdkVBWm1KZURUWDM5eWhHTzV3Vm9zSTNleU5Hc3AxYXpSQ0RYakRxbUZMd1dmZnE?oc=5",
-    "source": "מעריב",
-    "at": "2026-10-02T15:15:44.000Z"
+    "title": "שלוש שנים לשבת השחורה: מהאסון של 7 באוקטובר אל האסון שנמנע בשמי סעודיה",
+    "link": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE5JYVFZRDIxcnc2UUhFQy1adFFSMzNvOHBoNHdMVjBUTGxNeW96WWpZQUlINXNhdnFWVi1BZXVPclRxSjg2NTRLMV9DSG0zMk1fNjBB?oc=5",
+    "source": "PassportNews",
+    "at": "2026-10-03T05:07:00.000Z"
    }
   ],
   "tech": [
+   {
+    "title": "בהשראת חתן פרס הנובל הישראלי: המודל החדש של יוצר ChatGPT הפך לוויראלי",
+    "link": "https://www.geektime.co.il/jev-is-the-new-ai-buzzword/",
+    "source": "גיקטיים",
+    "at": "2026-10-03T10:00:05.000Z"
+   },
+   {
+    "title": "וואטסאפ עומדת לשנות את חלון הצ'אטים שלנו",
+    "link": "https://news.google.com/rss/articles/CBMic0FVX3lxTE0xSWpCZHpYS2NUTVctZHN2N0ZMMWQ5RnlZd1RCYTFTSVpKak5hdERmOUdZeVhnY21QR0s0dTFxa29oZUhLOVRRQjVGNWlFQ3NmcTFwMGV6d3NycnUya1pBS0hVVF8tZkY5SHRvem4zTmNqQkk?oc=5",
+    "source": "גיקטיים",
+    "at": "2026-10-03T09:43:53.000Z"
+   },
+   {
+    "title": "מגייסת טוענת: מועמדים לא מתקבלים לעבודה בגלל האייס קפה שלהם",
+    "link": "https://www.geektime.co.il/ice-coffee-job-interview-debate/",
+    "source": "גיקטיים",
+    "at": "2026-10-03T08:29:40.000Z"
+   },
+   {
+    "title": "לראשונה: מודלי AI מנצחים בני אדם בחיזוי אירועים בעולם",
+    "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQcVRrYzRudVo0TmlQMXV0Q2lvcl8td0dpbW05VG9wZlN5TWtmS2k4S2lDN3ZhYnRhN1dnNGtLYzFGUHliNVBrZ2FQMFh3SVhQYTdicFpZQzZYTnl5Zmo0VkdtbFF0N2Y0YXVTQmV3Q2FyR0pMVzBTa1JGVmhfODVvdUh0YkVjMlNqXzVUajJqU1R1UmNzb21JNExBTUg1MVRqWS1oWDEtSQ?oc=5",
+    "source": "TheMarker",
+    "at": "2026-10-03T07:31:00.000Z"
+   },
    {
     "title": "המהנדסת שהפכה לבכירה באנבידיה: \"בטכניון קיבלתי 20 במבחן\"",
     "link": "https://news.google.com/rss/articles/CBMiaEFVX3lxTFBNWk1LOHRYcDJJd1dxRXEzTmNBRnBZdnNRWDNJenVYZ3hnZDAzWHZZVzVYcDVXNy0tSG9jZC14TzFzbFF5VkhUb1htQ0tneW1jRE13dFN6TUwyanFEbXRCUmN1SlhvdFNx?oc=5",
@@ -197,16 +221,16 @@
     "at": "2026-10-02T14:08:15.000Z"
    },
    {
-    "title": "ניצחון ברוח ובטכנולוגיה: ישראל הופכת מאומת סטארט־אפ למעצמת R&D מובילה | ד\"ר איתן לסרי",
-    "link": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE5pNHY5WEFvVWUyNXdPRWduZjNaVUk4R2RKaDJ1MDFJbXRlNDltbG9iVkJiUTh6aGdkdG1YUTRVZjVqejhBRC1HTXBERmE1OFVjUkcydVhMbTZUdDROUi1ha2VGYTc?oc=5",
-    "source": "מעריב",
-    "at": "2026-10-02T12:20:16.000Z"
+    "title": "הקוונטים יוצאים מהמעבדה: הנפקות, תרופות ומענק של 2 מיליארד דולר מוושינגטון",
+    "link": "https://news.google.com/rss/articles/CBMicEFVX3lxTE5vaGJkT3prUTh0ei04N1E0Vjcwb1RaLVVYeEp0MVd3TGlqVUhWS2Y2YUJIaG53QTNCUW1mNTU3bl9MbnlJWnJQUlFmSHRvak0yZW84S0NZbERxWkY1UEF0NjFMeHFSVnljUnMyQXZRNFY?oc=5",
+    "source": "ביזפורטל",
+    "at": "2026-10-02T11:58:00.000Z"
    },
    {
     "title": "אפל חיסלה את המוצר עוד לפני שהושק. המייקר הפך אותו לשולחן הכי חכם שראיתם",
-    "link": "https://www.geektime.co.il/airdesk-is-the-cooler-airpower/",
+    "link": "https://news.google.com/rss/articles/CBMiakFVX3lxTFBPcG1fbHlnSG5MTi14MEZ5OEUyRFJ5NV9pY0cyc3pWMDM0Wm5UOWRTYWgyYXVINHRpZHA0M1V4LWpVaTlRZDgzWGw4LTR2MGZiYldsd2xHRkUyaWxFZWRYQkIxb0hCZVd2QWc?oc=5",
     "source": "גיקטיים",
-    "at": "2026-10-02T10:29:24.000Z"
+    "at": "2026-10-02T11:20:25.000Z"
    },
    {
     "title": "סוכני ה-AI של enso גייסו 15 מיליון דולר כי כל מה שידענו על חיפושים בגוגל כבר לא תופס",
@@ -227,28 +251,10 @@
     "at": "2026-10-02T06:59:05.000Z"
    },
    {
-    "title": "וואטסאפ עומדת לשנות את חלון הצ'אטים שלנו",
-    "link": "https://news.google.com/rss/articles/CBMic0FVX3lxTE0xSWpCZHpYS2NUTVctZHN2N0ZMMWQ5RnlZd1RCYTFTSVpKak5hdERmOUdZeVhnY21QR0s0dTFxa29oZUhLOVRRQjVGNWlFQ3NmcTFwMGV6d3NycnUya1pBS0hVVF8tZkY5SHRvem4zTmNqQkk?oc=5",
-    "source": "גיקטיים",
-    "at": "2026-10-02T06:16:25.000Z"
-   },
-   {
     "title": "\"קלוד לא יודע לספק את זה\": מייסדי איירון סורס חוזרים עם סטארטאפ חדש",
     "link": "https://news.google.com/rss/articles/CBMiX0FVX3lxTFBxMzJvbTd2TUt3VjlGeFZ4WUtOODBvRHVxYURqaGJpLVNtM1hUUm1hQkFzS2gyY05oMi01M0pVMHFjdml1d1hTTDNxVHpaSDVWT3liRF9CTUgtc2xTWllB?oc=5",
-    "source": "ynet.co.il",
-    "at": "2026-10-02T05:03:54.000Z"
-   },
-   {
-    "title": "כדאי להיות נחמד ל-AI",
-    "link": "https://news.google.com/rss/articles/CBMiXEFVX3lxTFA2c3lTenFzQlRCNENiR3VVNHh5bklLV2xxRkJfMkRjR09yQkRLSktBem1ZWHFQUUVtdTNZdW5PVW4zTE5MWlNjc0RoaHlyRDF3OVliRXRiUnV0NnFR?oc=5",
-    "source": "ynet.co.il",
-    "at": "2026-10-02T02:38:00.000Z"
-   },
-   {
-    "title": "זיני התריע, נתניהו הודה ב\"פרצה\": מי היה אמור לפקח על פליי דובאי?",
-    "link": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1RSFVNT2djTVIteVRHZmZvR3UtZzJYOEJXSGZqREFoTEl6b21uNjVlbjdvbF9VZkZSQmlkblRsMWFmb2NCS0M1bmttcjBWcW92MnR4S19JUndkdw?oc=5",
-    "source": "ynet.co.il",
-    "at": "2026-10-01T16:57:39.000Z"
+    "source": "YNET",
+    "at": "2026-10-01T19:03:00.000Z"
    },
    {
     "title": "ביקורת iPhone 18 Pro: מצדיק את התואר, אבל לא בהכרח את השדרוג",
@@ -269,6 +275,12 @@
     "at": "2026-10-01T13:31:13.000Z"
    },
    {
+    "title": "הן בנות 12, מגיעות עם הדמיה מה-AI ודורשות מהרופא אף חדש",
+    "link": "https://news.google.com/rss/articles/CBMirgFBVV95cUxQRTNYRVNqdXFsQ3RZX0FDRHpKX1U0eGlyRk03Q01NSzRpM1VYZXZBWXdFd3BxZkE0MkVFRnBJNTNqU3BYNURsdjRCMXp6aFg4Y2x5cFJLYmVPLTNyYkNjS0tLVm9iZTcxR3RoZVFGZUJJUTByNjZCR2MwRVlKOVpneUgwdHJnR3RnTE1nQW94dk42NFFpcnR0ZnhLbFp5RUQzY1hfTlFmMzZNVmYtR0E?oc=5",
+    "source": "haaretz.co.il",
+    "at": "2026-10-01T12:25:00.000Z"
+   },
+   {
     "title": "הפכו להזדמנות: התופעה החדשה בקרב מפוטרי ההייטק",
     "link": "https://news.google.com/rss/articles/CBMic0FVX3lxTE1xdC1SQUtFR25hMWYtRUNPSDFELTdBbzVMTEptZUpqVm5oblBtb0RzR2ZkS1MwNUxVNmFiUzVBNnlNYmFPUjIwa2s1S3lTUlB3eS00bXBYSHhRbS15aDgzRVEwRm82MmtvUGYwaXU1WmFIcXc?oc=5",
     "source": "mako",
@@ -279,12 +291,6 @@
     "link": "https://news.google.com/rss/articles/CBMifEFVX3lxTE1ncEZLQ1RBN0ptWWpBVmJKS0NVT1ZZb3BPWHFBN084YzNKM0J1amh6TUJYLUtnMGg5aVlhZjFqbWJTeW1OLWdRb08wSEg3NUFUMVl5VEg3T0NUMGFscEVFNTZpenZWaGkxWlQ3WnU0V003eUx1eXk4UmM2OWE?oc=5",
     "source": "גיקטיים",
     "at": "2026-10-01T12:00:02.000Z"
-   },
-   {
-    "title": "סרוניק החלה בהקמת מספנת ענק חדשה בטקסס",
-    "link": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1BbjZDMmdzTmZYbDR1RVZUMWh0TmptX3V2OUt2N1JBbTVObEhTVXhHS0VOVzRTQ2ZjR2luQk1RcUlxZFpGM0dQZDc2UUFwUXh5NVloSw?oc=5",
-    "source": "israeldefense.co.il",
-    "at": "2026-10-01T12:00:00.000Z"
    },
    {
     "title": "פרצת אבטחה מסוכנת: מודלי AI סיניים לימדו חוקרים לייצר נשק ביולוגי",
@@ -303,6 +309,12 @@
     "link": "https://www.ynet.co.il/digital/technews/article/sj21ryjqzx",
     "source": "ynet מחשבים",
     "at": "2026-10-01T08:19:30.000Z"
+   },
+   {
+    "title": "מערכות AI כבר עוקפות את המתמטיקאים, אבל גם מעניקות להם מתנה",
+    "link": "https://news.google.com/rss/articles/CBMiswFBVV95cUxPMmtubkx6dWk4dm5aYjBFY0tvZ1dfVmlfNWs5VV9rQ1VEaHBCZ2VTMEgxbmZKLVB2QUpaQURZaXh2N3h1b3FMSHJOTEhoZHV1TmRreWFmd1RRV09GekZFY2lKRk9qWUhza3ZPWWlBYjRlYzdIZF9FUlpmTUdWWVEzd0RXWWMzeVRwbEJXbUY0aVJzdnVMYU9wTV81MldrVkFRZm5vanlUaDlpTzV4YmdaVzkzYw?oc=5",
+    "source": "haaretz.co.il",
+    "at": "2026-10-01T07:38:00.000Z"
    },
    {
     "title": "גוגל חושפת את Gemini 4 Argon, אבל אם אתם לא עובדים ב-Wiz לא תוכלו להשתמש בו עדיין",
@@ -329,34 +341,10 @@
     "at": "2026-10-01T03:10:00.000Z"
    },
    {
-    "title": "נחשף הנציג הראשון של OpenAI בישראל",
-    "link": "https://www.geektime.co.il/openai-israel-moti-hadas-gtm-manager/",
-    "source": "גיקטיים",
-    "at": "2026-09-30T14:16:19.000Z"
-   },
-   {
-    "title": "סמסונג חושפת את SmartTag 3, תגית האיתור שתומכת לראשונה באייפון",
-    "link": "https://www.geektime.co.il/samsung-galaxy-smarttag-3-ios-support-no-keyring/",
-    "source": "גיקטיים",
-    "at": "2026-09-30T12:14:10.000Z"
-   },
-   {
     "title": "בלי חוקים ובלי קנסות: טראמפ נותן לענקיות ה-AI לפקח על עצמן",
     "link": "https://www.ynet.co.il/digital/technews/article/r1ftmiccze",
     "source": "ynet מחשבים",
     "at": "2026-09-30T11:49:43.000Z"
-   },
-   {
-    "title": "OpenAI עולה שלב במרוץ סוכני ה-AI: הכירו את Dots",
-    "link": "https://www.ynet.co.il/digital/technews/article/hkyarb5qze",
-    "source": "ynet מחשבים",
-    "at": "2026-09-30T08:51:07.000Z"
-   },
-   {
-    "title": "מחשש לחטיפה לחשד לפיגוע: הרשת בטירוף אחרי הדרמה בשמיים",
-    "link": "https://www.ynet.co.il/digital/internet/article/by1qd4c9gx",
-    "source": "ynet מחשבים",
-    "at": "2026-09-30T07:34:27.000Z"
    }
   ]
  }
