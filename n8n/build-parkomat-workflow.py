@@ -200,7 +200,7 @@ return [{ json: { ...n.json, summary }, binary: n.binary }];
 FILES_RESULT = r"""
 const r = $('Files · Route').first().json;
 const out = $json || {};
-const delivered = !out.error;
+const delivered = !out.error && !!(out.id || out.permalink || out.file || out.webViewLink);
 const link = out.webViewLink || out.permalink || (out.file && out.file.permalink) || (out.id && r.destination === 'drive' ? `https://drive.google.com/file/d/${out.id}/view` : '');
 const where = r.destination === 'slack' ? 'Slack' : 'Google Drive';
 return [{ json: {
@@ -214,13 +214,16 @@ FILES_SYSTEM = ('אתה הבודק של Parkomat. מקבל קובץ שהועלה
                 'כתוב בעברית, עד 5 שורות: מה הקובץ (לפי השם, הסוג והתוכן אם יש), למה הוא כנראה נשלח, '
                 'האם יש בו משהו דחוף או חריג, ומה הצעד הבא המומלץ למחלקה. לא ממציאים תוכן שלא ראית.')
 
+# n8n Cloud refuses to publish a workflow whose enabled nodes lack credentials, so the Drive and Slack
+# nodes ship disabled; n8n-deploy enables them once an account is attached to them in n8n.
+ENABLE_NOTE = 'כבוי עד שמחברים חשבון. אחרי החיבור מפעילים את הצומת (או מריצים את Deploy agents to n8n Cloud).'
 FX, FY = 0, 900
 files_nodes = [
     note('Note · Parkomat files',
          '## Parkomat · העלאת קבצים\nהגרסה בענן של הטופס המקומי (`localhost:5679/webhook/parking-agents`).\n\n'
          'Claude קורא את הקובץ וכותב סיכום, הקובץ עובר ל-Google Drive או ל-Slack, ועותק עם הסיכום תמיד מגיע למייל.\n\n'
-         '**חד-פעמי:** לחבר חשבון Google Drive בצומת `Drive · Upload` וחשבון Slack + ערוץ בצומת `Slack · Upload`. '
-         'עד אז הקבצים מגיעים במייל בלבד.',
+         '**חד-פעמי:** לחבר חשבון Google Drive בצומת `Drive · Upload` וחשבון Slack + ערוץ בצומת `Slack · Upload`, '
+         'ולהפעיל אותם (או להריץ את Deploy agents to n8n Cloud, שמפעיל לבד צומת שיש לו חשבון). עד אז הקבצים מגיעים במייל בלבד.',
          [FX - 480, FY - 300], h=300, color=6),
     node('Files · Webhook', 'n8n-nodes-base.webhook', 2,
          {'httpMethod': 'POST', 'path': 'parking-agents', 'responseMode': 'responseNode',
@@ -255,13 +258,13 @@ files_nodes = [
          {'resource': 'file', 'binaryData': True, 'binaryPropertyName': 'file',
           'options': {'fileName': '={{ $json.fileName }}', 'title': '={{ $json.original }}',
                       'initialComment': "={{ 'Parkomat · ' + $json.department + '\\n' + ($json.message ? $json.message + '\\n\\n' : '') + $json.summary }}"}},
-         [FX + 1420, FY - 160], onError='continueRegularOutput'),
+         [FX + 1420, FY - 160], onError='continueRegularOutput', disabled=True, notes=ENABLE_NOTE),
     node('Drive · Upload', 'n8n-nodes-base.googleDrive', 3,
          {'name': '={{ $json.fileName }}',
           'driveId': {'__rl': True, 'mode': 'list', 'value': 'My Drive'},
           'folderId': {'__rl': True, 'mode': 'list', 'value': 'root', 'cachedResultName': '/ (Root folder)'},
           'inputDataFieldName': 'file', 'options': {}},
-         [FX + 1420, FY + 40], onError='continueRegularOutput'),
+         [FX + 1420, FY + 40], onError='continueRegularOutput', disabled=True, notes=ENABLE_NOTE),
     node('Files · Result', 'n8n-nodes-base.code', 2, {'jsCode': FILES_RESULT}, [FX + 1660, FY - 60]),
     node('Files · Respond', 'n8n-nodes-base.respondToWebhook', 1.1,
          {'respondWith': 'json', 'responseBody': '={{ $json }}',
