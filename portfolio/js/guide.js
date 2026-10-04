@@ -51,6 +51,7 @@ window.Guide = (function () {
   var api, root, bubble, panel, log, input, faceBtn, micBtn, voiceBtn;
   var voice = null, voiceOn = true, talkTimer = null, blinkTimer = null, touring = false, tourStops = [], tourAt = 0;
   var hasTTS = 'speechSynthesis' in window;
+  var natural = false, sayId = 0;
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -157,7 +158,17 @@ window.Guide = (function () {
   function pickVoice() {
     if (!hasTTS) return;
     var he = speechSynthesis.getVoices().filter(function (v) { return /^he|^iw/i.test(v.lang); });
-    voice = he.filter(function (v) { return /hila|carmit|female|woman|אישה|נשי/i.test(v.name); })[0] || he.filter(function (v) { return !/avri|asaf|male/i.test(v.name); })[0] || he[0] || null;
+    // best first: Edge's neural "Hila Online (Natural)" sounds like a real person
+    var rank = [
+      function (v) { return /hila/i.test(v.name) && /natural|online|neural/i.test(v.name); },
+      function (v) { return /natural|online|neural/i.test(v.name) && !/avri|asaf|male/i.test(v.name); },
+      function (v) { return /hila|carmit|female|woman|אישה|נשי/i.test(v.name); },
+      function (v) { return !/avri|asaf|male/i.test(v.name); },
+      function () { return true; }
+    ];
+    voice = null;
+    for (var r = 0; r < rank.length && !voice; r++) voice = he.filter(rank[r])[0] || null;
+    natural = !!voice && /natural|online|neural/i.test(voice.name);
     updateVoiceBtn();
   }
 
@@ -170,21 +181,34 @@ window.Guide = (function () {
     voiceBtn.title = voiceOn ? 'השתקה' : 'הפעלת קול';
   }
 
+  // Speaks like a person: in the chat she "types" for a moment, then the words
+  // appear as she says them.
   function say(text, done) {
     if (hasTTS) speechSynthesis.cancel();
     stopTalking();
+    var id = ++sayId;
+    var chat = panel && panel.classList.contains('open');
+    if (chat && !reduce) {
+      typing(true);
+      setTimeout(function () { if (id === sayId) speak(text, done, id, true); }, Math.min(1500, 450 + text.length * 9));
+    } else speak(text, done, id, false);
+  }
+
+  function speak(text, done, id, reveal) {
     showBubble(text);
-    addMsg('bot', text);
+    var msg = addMsg('bot', text, reveal);
     startTalking();
     var finished = false;
-    function end() { if (finished) return; finished = true; stopTalking(); if (done) done(); }
+    function end() { if (finished) return; finished = true; if (msg && msg.finish) msg.finish(); stopTalking(); if (done) done(); }
     if (hasTTS && voice && voiceOn) {
       var u = new SpeechSynthesisUtterance(text);
-      u.voice = voice; u.lang = voice.lang; u.rate = 1.02; u.pitch = 1;
+      u.voice = voice; u.lang = voice.lang;
+      u.rate = natural ? 1 : 0.98; u.pitch = natural ? 1 : 1.08;
       u.onend = end; u.onerror = end;
+      // the words appear in step with her voice
+      u.onboundary = function (e) { if (msg && msg.upTo && id === sayId) msg.upTo(e.charIndex); };
       speechSynthesis.speak(u);
-      // some browsers never fire onend; don't get stuck
-      setTimeout(end, 2500 + text.length * 120);
+      setTimeout(end, 2500 + text.length * 120); // some browsers never fire onend
     } else {
       setTimeout(end, 900 + text.length * 55);
     }
@@ -214,18 +238,29 @@ window.Guide = (function () {
   }
 
   function clock() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
-  function addMsg(who, text) {
+  function addMsg(who, text, reveal) {
     history.push({ role: who === 'me' ? 'user' : 'assistant', text: text });
     if (history.length > 12) history.shift();
     if (!log) return;
     typing(false);
     if (who === 'me') panel.classList.add('chatting');
+    var span = h('span', { text: reveal ? '' : text });
     var row = h('div', { class: 'g-row ' + who }, [
       who === 'bot' ? h('span', { class: 'g-av', html: FACE }) : null,
-      h('div', { class: 'g-msg ' + who }, [h('span', { text: text }), h('time', { text: clock() })])
+      h('div', { class: 'g-msg ' + who }, [span, h('time', { text: clock() })])
     ]);
     log.appendChild(row);
     log.scrollTop = log.scrollHeight;
+    if (!reveal) return null;
+    // word by word: follows the voice when it reports its position, otherwise a steady pace
+    var shown = 0, timer = null;
+    function show(n) { if (n <= shown) return; shown = Math.min(n, text.length); span.textContent = text.slice(0, shown); log.scrollTop = log.scrollHeight; }
+    function nextWord() { var i = text.indexOf(' ', shown + 1); return i < 0 ? text.length : i; }
+    timer = setInterval(function () { show(nextWord()); if (shown >= text.length) clearInterval(timer); }, voiceOn && voice ? 260 : 55);
+    return {
+      upTo: function (i) { var j = text.indexOf(' ', i + 1); show(j < 0 ? text.length : j); },
+      finish: function () { clearInterval(timer); show(text.length); }
+    };
   }
   var typingEl = null;
   function typing(on) {
@@ -244,11 +279,18 @@ window.Guide = (function () {
     log.scrollTop = log.scrollHeight;
   }
 
+  function visitor() { return store('maya-name') || ''; }
+  function greet() {
+    var hr = new Date().getHours();
+    var g = hr < 5 ? 'לילה טוב' : hr < 12 ? 'בוקר טוב' : hr < 17 ? 'צהריים טובים' : hr < 21 ? 'ערב טוב' : 'לילה טוב';
+    return g + (visitor() ? ', ' + visitor() : '');
+  }
+
   function openPanel() {
     bubble.classList.remove('show');
     panel.classList.add('open');
     faceBtn.setAttribute('aria-expanded', 'true');
-    if (!log.querySelector('.g-msg')) say('היי, אני ' + NAME + ', ' + ROLE + '. אפשר לשאול אותי על כל פרויקט, על שירותים ומחירים, או לקבוע שיחה עם חיים.');
+    if (!log.querySelector('.g-msg')) say(greet() + '! אני ' + NAME + ', ' + ROLE + '. ' + (visitor() ? 'טוב שחזרת. ' : '') + 'במה אוכל לעזור היום? אפשר לשאול אותי על כל פרויקט, על שירותים ומחירים, או לקבוע שיחה עם חיים.');
     setTimeout(function () { input.focus(); }, 50);
   }
 
@@ -349,6 +391,8 @@ window.Guide = (function () {
     // With the n8n agent connected, every real question goes to it.
     if (api.guideApi && !answer.offline) return askServer(raw);
     if (has(t, ['מי אתה', 'מה אתה', 'מי זה', 'עליך'])) return say('אני ' + NAME + ', ' + ROLE + '. אני מכירה את כל ' + api.projects.length + ' הפרויקטים כאן, יכולה להראות כל אחד מהם, ולתאם לך שיחה עם חיים.');
+    var nm = /^(?:קוראים לי|שמי|השם שלי)\s+([\u0590-\u05FFa-z]{2,14})$/i.exec(t);
+    if (nm) { store('maya-name', nm[1]); return say('נעים מאוד, ' + nm[1] + '! שמחה להכיר. איך אוכל לעזור לך?'); }
     if (has(t, ['מחיר', 'מחירים', 'עולה', 'עלות', 'הצעת מחיר', 'מבצע', 'מבצעים', 'שירות', 'שירותים', 'לעסק'])) {
       say('חיים בונה לעסקים אוטומציות, סוכני AI, אתרים ומערכות ניהול, במחיר קבוע מראש. את המחירים והמבצעים העדכניים תמצאו בדף השירותים, ושיחת אפיון של 30 דקות היא בחינם.');
       return actionsRow([['💰 לשירותים ולמחירים', function () { location.href = 'services.html'; }], ['📅 לקבוע שיחה', function () { window.open(WA, '_blank', 'noopener'); }]]);
@@ -510,10 +554,26 @@ window.Guide = (function () {
     document.body.appendChild(root);
   }
 
+  // A real photo of the assistant replaces the drawing as soon as img/maya.jpg exists.
+  var PHOTO = 'img/maya.jpg';
+  function usePhoto() {
+    var img = new Image();
+    img.onload = function () {
+      var tag = '<img class="g-photo" src="' + PHOTO + '" alt="">';
+      FACE = tag;
+      root.classList.add('photo');
+      faceBtn.querySelector('.guy').outerHTML = tag;
+      faceBtn.appendChild(h('span', { class: 'g-wave', 'aria-hidden': 'true' }, [h('i'), h('i'), h('i'), h('i'), h('i')]));
+      Array.prototype.forEach.call(document.querySelectorAll('.g-mini, .g-av'), function (n) { n.innerHTML = tag; });
+    };
+    img.src = PHOTO;
+  }
+
   function init(a) {
     api = a;
     voiceOn = store('guide-voice') !== '0';
     build();
+    usePhoto();
     if (hasTTS) { pickVoice(); speechSynthesis.addEventListener('voiceschanged', pickVoice); }
     updateVoiceBtn();
     if (!reduce) {
@@ -526,7 +586,7 @@ window.Guide = (function () {
     setTimeout(function () {
       if (store('guide-seen')) return;
       wave();
-      showBubble('היי, אני ' + NAME + ' 👋 ' + ROLE + '. אפשר לעזור לכם למצוא פרויקט, להבין מחירים או לקבוע שיחה.', [
+      showBubble(greet() + '! אני ' + NAME + ' 👋 ' + ROLE + '. אפשר לעזור לכם למצוא פרויקט, להבין מחירים או לקבוע שיחה.', [
         btn('💬 שיחה איתי', function () { store('guide-seen', '1'); openPanel(); }),
         btn('▶ סיור מודרך', function () { store('guide-seen', '1'); startTour(); }, 'ghost')
       ]);
