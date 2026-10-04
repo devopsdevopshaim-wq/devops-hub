@@ -28,6 +28,11 @@ const VOICE = {
   __AZURE_SPEECH_REGION__: label('AZURE_SPEECH_REGION', '[a-z0-9]{4,30}'),
   __ELEVENLABS_API_KEY__: label('ELEVENLABS_API_KEY', '(?:sk_)?[A-Za-z0-9]{32,80}') || pick(/\bsk_[a-f0-9]{40,}\b/)
 };
+const TOTP = (process.env.ADMIN_TOTP_SECRET || ((combined.match(/ADMIN_TOTP_SECRET\W*((?:[A-Za-z2-7]{4}\s?){4,16})/) || [])[1] || '')).replace(/\s+/g, '').toUpperCase();
+const MORNING_ID = label('MORNING_CLIENT_ID', '[\\w-]{8,100}');
+const MORNING_SECRET = label('MORNING_CLIENT_SECRET', '[\\w-]{8,120}');
+// nothing secret may ever show in the Actions log (the repository is public)
+for (const v of [KEY, CLAUDE, GMAIL_PASS, TOTP, MORNING_ID, MORNING_SECRET, ...Object.values(VOICE)]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 const out = (k, v) => fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', `${k}=${v}\n`);
 const summary = [];
 const note = (line) => { summary.push(line); console.log(line); };
@@ -69,14 +74,18 @@ function credFrom(workflows, type) {
 async function install(file, names, { creds = {}, fill = {} } = {}) {
   let raw = fs.readFileSync(file, 'utf8');
   // keys go straight from the secret into n8n, never into the repository
-  for (const [k, v] of Object.entries(fill)) if (/^[\w-]+$/.test(v)) raw = raw.split(k).join(v);
+  for (const [k, v] of Object.entries(fill)) {
+    if (!v) continue;
+    if (/^[\w\-.:\/]+$/.test(v)) raw = raw.split(k).join(v);
+    else note(`- ⚠️ הערך של ${k.replace(/_/g, ' ').trim()} מכיל תווים לא נתמכים ולא הוכנס. השתמשו באותיות, ספרות, מקף וקו תחתון בלבד.`);
+  }
   const wf = JSON.parse(raw);
   for (const n of wf.nodes) for (const [type, match] of Object.entries(creds)) if (match.types.includes(n.type) && match.cred) n.credentials = { [type]: match.cred };
   // n8n Cloud will not publish an enabled node without its account: with no Gmail connection yet,
   // email nodes go in disabled (and come back on at the next deploy that has one)
   for (const n of wf.nodes) if (n.type === 'n8n-nodes-base.emailSend' && !n.credentials) n.disabled = true;
   const existing = findByName([wf.name, ...names]);
-  const body = { name: wf.name, nodes: wf.nodes, connections: wf.connections, settings: { executionOrder: 'v1' } };
+  const body = { name: wf.name, nodes: wf.nodes, connections: wf.connections, settings: wf.settings || { executionOrder: 'v1' } };
   let id;
   if (existing) {
     const full = await api('GET', `/workflows/${existing.id}`);
@@ -163,11 +172,13 @@ try {
 } catch (e) { note(`- ⚠️ הסוכנים: ${e.message.slice(0, 200)}`); }
 try {
   results.business = await install('n8n/hasadna-business.json', ['הסדנה · לידים ומחירון'],
-    { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } } });
+    { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } },
+      fill: { __ADMIN_TOTP_SECRET__: TOTP, __MORNING_CLIENT_ID__: MORNING_ID, __MORNING_CLIENT_SECRET__: MORNING_SECRET } });
 } catch (e) { note(`- ⚠️ לידים ומחירון: ${e.message.slice(0, 200)}`); }
 try {
   results.access = await install('n8n/hasadna-access.json', ['הסדנה · כניסה והרשאות'],
-    { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } } });
+    { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } },
+      fill: { __ADMIN_TOTP_SECRET__: TOTP, __MORNING_CLIENT_ID__: MORNING_ID, __MORNING_CLIENT_SECRET__: MORNING_SECRET } });
 } catch (e) { note(`- ⚠️ כניסה והרשאות: ${e.message.slice(0, 200)}`); }
 try {
   results.parkomat = await install('n8n/hasadna-parkomat.json', [],
@@ -206,6 +217,45 @@ try {
   checks['hasadna-voice'] = r.status;
   note(`- הקול של מאיה: ${j.ok ? '✅ מדברת (' + Math.round(j.audio.length * 0.75 / 1024) + 'KB)' : hasVoice ? '❌ ' + r.status + ' ' + (j.error || '') + ' ' + (j.detail || '') : '⚠️ אין עדיין מפתח קול (AZURE_SPEECH_KEY + AZURE_SPEECH_REGION או ELEVENLABS_API_KEY בסוד SPIDER)'}`);
 } catch (e) { note('- ❌ הקול של מאיה: ' + e.message); }
+// ---- security: prove the doors are locked (from outside, the way an attacker would knock)
+const EVIL = 'https://evil.example';
+const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
+const post = async (path, fields, origin) => {
+  try {
+    const r = await fetch(`${BASE}/webhook/${path}`, { method: 'POST', headers: origin ? { Origin: origin } : {}, body: new URLSearchParams(fields) });
+    return { status: r.status, json: await r.json().catch(() => ({})) };
+  } catch (e) { return { status: 0, json: {} }; }
+};
+const chatId = (JSON.parse(fs.readFileSync('n8n/hasadna-multi-agent.json', 'utf8')).nodes.find((n) => n.name === 'Team chat') || {}).webhookId;
+const sec = [];
+const expect = (name, ok, got) => { sec.push(ok); note(`- ${ok ? '✅' : '❌'} ${name}${ok ? '' : ' (קיבלנו: ' + got + ')'}`); };
+note('\n**בדיקות אבטחה**');
+let r1 = await post('hasadna-auth', { action: 'me', token: 'x' }, EVIL);
+expect('כניסה: בקשה מאתר זר נחסמת', r1.status === 403, r1.status);
+r1 = await post('hasadna-auth', { action: 'clients' });
+expect('כניסה: רשימת הלקוחות סגורה בלי מנהל', r1.status === 403, r1.status);
+r1 = await post('hasadna-admin', { action: 'setup', key: 'attacker-password' }, SITE_ORIGIN);
+expect('לידים ומחירון: אי אפשר לקבוע סיסמה מבחוץ', r1.status === 403, r1.status);
+r1 = await post('hasadna-admin', { action: 'list', token: 'a'.repeat(48) }, SITE_ORIGIN);
+expect('לידים ומחירון: טוקן לא מוכר נדחה דרך מערכת הכניסה', r1.status === 403 && r1.json.error === 'admin-only', `${r1.status} ${r1.json.error || ''}`);
+r1 = await post('hasadna-lead', { name: 'x', phone: '0500000000' }, EVIL);
+expect('לידים: טופס מאתר זר נחסם', r1.status === 403, r1.status);
+try {
+  const g = await fetch(`${BASE}/webhook/hasadna-guide`, { method: 'POST', headers: { Origin: EVIL, 'Content-Type': 'application/json' }, body: JSON.stringify({ question: 'בדיקה', sessionId: 'probe' }) });
+  const gj = await g.json().catch(() => ({}));
+  expect('מאיה: שאלה מאתר זר לא מגיעה ל־Claude', /אי אפשר לפנות/.test(gj.answer || ''), g.status);
+} catch (e) { expect('מאיה: שאלה מאתר זר לא מגיעה ל־Claude', false, e.message); }
+r1 = await post('hasadna-voice', { text: 'בדיקה' });
+expect('קול: בקשה בלי Origin נחסמת', r1.status === 403, r1.status);
+if (chatId) {
+  let cs = 0; try { cs = (await fetch(`${BASE}/webhook/${chatId}/chat`)).status; } catch {}
+  expect('צ׳אט n8n הציבורי כבוי', cs === 404 || cs === 403, cs);
+}
+const totpOn = !!TOTP;
+note(`- ${totpOn ? '✅' : '⚠️'} אימות דו־שלבי למנהל (אפליקציה): ${totpOn ? 'פעיל' : 'לא הוגדר. הכניסה כמנהל מוגנת רק בקוד מהמייל. הגדרה: portfolio/admin-2fa.html'}`);
+const secure = sec.every(Boolean);
+if (!secure) console.log('::warning::חלק מבדיקות האבטחה נכשלו, ראו את הסיכום.');
+
 for (const [k, v] of Object.entries(checks)) note(`- /webhook/${k}: ${v === 200 || (k === 'hasadna-auth' && v === 401) || (k === 'parking-agents' && v === 400) || (k === 'hasadna-voice' && v === 503) ? '✅ עונה' : '❌ ' + v}`);
 if (!smtp) note('- ⚠️ אין חיבור לשליחת מיילים: הוסיפו את הסוד GMAIL_APP_PASSWORD והריצו שוב. עד אז קודי הכניסה לא יישלחו.');
 if (!claude) note('- ⚠️ אין חיבור Claude: הוסיפו את הסוד ANTHROPIC_API_KEY והריצו שוב.');
@@ -221,4 +271,5 @@ const ok = checks['hasadna-auth'] === 401 && checks['test-email'] === 200;
 out('deployed', 'true');
 out('changed', String(changed));
 out('access_ready', String(ok));
+out('secure', String(secure));
 fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY || '/dev/null', `### SPIDER ב־n8n\n${summary.join('\n')}\n\n${ok ? '✅ מערכת הכניסה מוכנה. אפשר להפעיל את הנעילה (portfolio/access.json).' : ''}\n`);

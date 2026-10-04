@@ -1,13 +1,13 @@
 /* Admin screen · leads & price list. Talks to the n8n workflow
    "SPIDER · לידים ומחירון" (n8n/hasadna-business.json) through adminApi.
-   The admin password stays in this browser only. */
+   Access: only the admin who signed in on the main sign-in (auth.js); every call carries that session token,
+   and n8n checks it again. There is no separate password. */
 (function () {
   'use strict';
 
   var $ = function (id) { return document.getElementById(id); };
-  var KEY_STORE = 'hasadna-biz-key';
   var STATUS = [['new', 'חדש'], ['working', 'בטיפול'], ['quoted', 'נשלחה הצעה'], ['won', 'נסגר ✓'], ['lost', 'לא רלוונטי']];
-  var B = { cfg: null, key: '', leads: [], clicks: {}, prices: null, needsSetup: false };
+  var B = { cfg: null, leads: [], clicks: {}, prices: null };
 
   function el(tag, attrs, kids) {
     var n = document.createElement(tag);
@@ -18,58 +18,36 @@
     (kids || []).forEach(function (c) { if (c) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
     return n;
   }
-  function store(v) { try { if (v) localStorage.setItem(KEY_STORE, v); else localStorage.removeItem(KEY_STORE); } catch (e) {} }
-  function stored() { try { return localStorage.getItem(KEY_STORE) || ''; } catch (e) { return ''; } }
   function waNum(phone) { return String(phone || '').replace(/\D/g, '').replace(/^0/, '972'); }
 
-  function api(action, payload, key) {
-    var body = new URLSearchParams({ action: action, key: key || B.key, payload: JSON.stringify(payload || {}) });
+  function api(action, payload) {
+    var token = window.HasadnaAuth && window.HasadnaAuth.token ? window.HasadnaAuth.token() : '';
+    if (!token) return Promise.resolve({ ok: false, error: 'admin-only' });
+    var body = new URLSearchParams({ action: action, token: token, payload: JSON.stringify(payload || {}) });
     return fetch(B.cfg.adminApi, { method: 'POST', body: body })
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'bad-response' }; }); });
   }
 
-  // ---------- login ----------
+  // ---------- sign-in is the main one ----------
   function showError(t) { var e = $('biz-error'); e.textContent = t; e.hidden = !t; }
-  function setSetupMode(on) {
-    B.needsSetup = on;
-    $('biz-login-btn').textContent = on ? 'קביעת סיסמה' : 'כניסה';
-    $('biz-key').autocomplete = on ? 'new-password' : 'current-password';
-    $('biz-login-text').textContent = on
-      ? 'מרכז העסקים ב־n8n עובד, ועדיין אין לו סיסמה. בחרו סיסמה (8 תווים לפחות). רק מי שיודע אותה יראה לידים וישנה מחירים.'
-      : 'הלידים והמחירון שמורים ב־n8n. כדי לראות אותם, הכניסו את סיסמת המנהל של מרכז העסקים.';
-  }
 
-  function connect(key, quiet) {
+  function connect(quiet) {
     showError('');
-    return api('list', {}, key).then(function (j) {
-      if (j.ok) { B.key = key; store(key); onData(j); return; }
-      if (j.error === 'no-key') { setSetupMode(true); return; }
-      store('');
-      if (!quiet) showError(j.error === 'bad-key' ? 'הסיסמה לא נכונה.' : 'n8n החזיר שגיאה: ' + j.error);
+    return api('list', {}).then(function (j) {
+      if (j.ok) { onData(j); return; }
+      if (!quiet) {
+        showError(j.error === 'admin-only' ? 'צריך להיכנס כמנהל: לחצו "כניסה כמנהל" והקלידו את הקוד.'
+          : j.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.'
+          : j.error === 'auth-unreachable' || j.error === 'auth-error' ? 'מערכת הכניסה ב־n8n לא ענתה. נסו שוב בעוד רגע.'
+          : 'n8n החזיר שגיאה: ' + j.error);
+      }
     }).catch(function () {
-      if (!quiet) showError('n8n לא ענה. בדקו שייבאתם את הקובץ ושה־workflow במצב Active (פירוט ב"פעם ראשונה?").');
+      if (!quiet) showError('n8n לא ענה. בדקו שה־workflow "SPIDER · לידים ומחירון" במצב Active.');
     });
   }
 
-  $('biz-login-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var key = $('biz-key').value;
-    if (key.length < 8) { showError('הסיסמה צריכה 8 תווים לפחות.'); return; }
-    if (B.needsSetup) {
-      api('setup', {}, key).then(function (j) {
-        if (j.ok) connect(key);
-        else showError(j.error === 'already-set' ? 'כבר נקבעה סיסמה. הכניסו אותה.' : 'לא הצלחתי לקבוע סיסמה: ' + j.error);
-        if (j.error === 'already-set') setSetupMode(false);
-      }).catch(function () { showError('n8n לא ענה.'); });
-    } else connect(key);
-  });
-
-  $('biz-logout').addEventListener('click', function () {
-    store(''); B.key = '';
-    $('biz-body').hidden = true; $('biz-tools').hidden = true; $('biz-login').hidden = false;
-    $('biz-key').value = '';
-  });
-  $('biz-refresh').addEventListener('click', function () { connect(B.key); });
+  $('biz-logout').addEventListener('click', function () { if (window.HasadnaAuth) window.HasadnaAuth.logout(); });
+  $('biz-refresh').addEventListener('click', function () { connect(); });
 
   function onData(j) {
     B.leads = j.leads || [];
@@ -282,11 +260,7 @@
   fetch('services.json').then(function (r) { return r.json(); }).then(function (cfg) {
     B.cfg = cfg;
     if (!cfg.adminApi) { $('biz-login-text').textContent = 'אין כתובת adminApi בקובץ services.json.'; return; }
-    var k = stored();
-    if (k) { $('biz-key').value = k; connect(k, true); }
-    else {
-      // find out whether a password was set already, to show the right button
-      api('list', {}, '').then(function (j) { if (j.error === 'no-key') setSetupMode(true); }).catch(function () {});
-    }
+    // once the admin is signed in (the gate resolves this), load the leads
+    (window.HasadnaAuth ? window.HasadnaAuth.ready : Promise.resolve()).then(function () { connect(true); });
   });
 })();

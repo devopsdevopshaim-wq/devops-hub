@@ -33,7 +33,7 @@
 
   var resolveReady;
   var ready = new Promise(function (res) { resolveReady = res; });
-  var Auth = window.HasadnaAuth = { ready: ready, session: null, api: api, logout: logout };
+  var Auth = window.HasadnaAuth = { ready: ready, session: null, api: api, logout: logout, token: token };
 
   function enter(s) {
     Auth.session = s;
@@ -88,6 +88,7 @@
         '<form class="gate-form" id="gate-2" novalidate hidden>' +
           '<p class="gate-sent" id="gate-sent"></p>' +
           '<label class="field"><span>הקוד</span><input name="code" class="gate-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required></label>' +
+          '<label class="field" id="gate-totp-wrap" hidden><span>קוד מאפליקציית האימות</span><input name="totp" class="gate-code" inputmode="numeric" autocomplete="off" maxlength="6" dir="ltr"></label>' +
           '<button class="btn btn-gold" type="submit">כניסה</button>' +
           '<div class="gate-row"><button class="g-btn ghost" type="button" id="gate-back">→ חזרה</button><button class="g-btn ghost" type="button" id="gate-again" disabled>שליחה מחדש</button></div>' +
         '</form>' +
@@ -110,6 +111,10 @@
       'wrong': 'הקוד לא נכון.',
       'inactive': 'הגישה שלך לא פעילה כרגע. כדי לחדש, דברו איתי בוואטסאפ.',
       'mail-failed': 'לא הצלחתי לשלוח את המייל כרגע. נסו שוב בעוד דקה.',
+      'rate-limited': 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.',
+      'wait': 'כבר שלחתי קוד. אפשר לבקש חדש בעוד חצי דקה.',
+      'forbidden': 'הכניסה אפשרית רק מתוך האתר.',
+      'wrong-totp': 'קוד האפליקציה לא נכון, או שכבר נעשה בו שימוש. חכו לקוד הבא.',
       'not-ready': 'מערכת הכניסה עוד לא הופעלה ב־n8n. (למנהל: לייבא את n8n/hasadna-access.json, לחבר Gmail ולהפעיל.)'
     };
 
@@ -138,20 +143,32 @@
     f2.addEventListener('submit', function (e) {
       e.preventDefault();
       var code = f2.elements.code.value.replace(/\D/g, '');
+      var totp = f2.elements.totp.value.replace(/\D/g, '');
       if (code.length !== 6) { fail('הקוד בן 6 ספרות.'); return; }
       fail(''); busy(f2, true);
-      api('verify', { email: who.email, phone: who.phone, code: code }).then(function (j) {
+      api('verify', { email: who.email, phone: who.phone, code: code, totp: totp }).then(function (j) {
         busy(f2, false);
+        if (!j.ok && j.error === 'totp-needed') {
+          // the admin: the emailed code was right, now the authenticator app
+          g.querySelector('#gate-totp-wrap').hidden = false; f2.elements.totp.focus();
+          fail(totp ? '' : 'עוד צעד אחד: הקלידו את הקוד מאפליקציית האימות.');
+          return;
+        }
         if (!j.ok) { fail((ERR[j.error] || 'משהו השתבש.') + (j.left != null ? ' נשארו ' + j.left + ' ניסיונות.' : '')); return; }
         store(j.token);
         if (needAdmin && j.role !== 'admin') { fail('המסך הזה פתוח רק למנהל.'); return; }
         api('me').then(function (s) { if (s.ok) enter(s); else fail('לא הצלחתי להיכנס. נסו שוב.'); });
       }).catch(function () { busy(f2, false); fail('מערכת הכניסה לא עונה כרגע.'); });
     });
-    f2.elements.code.addEventListener('input', function () {
-      if (f2.elements.code.value.replace(/\D/g, '').length === 6) f2.requestSubmit ? f2.requestSubmit() : f2.dispatchEvent(new Event('submit'));
-    });
-    g.querySelector('#gate-back').addEventListener('click', function () { f2.hidden = true; f1.hidden = false; fail(''); });
+    function autoSend() {
+      var needTotp = !g.querySelector('#gate-totp-wrap').hidden;
+      if (f2.elements.code.value.replace(/\D/g, '').length !== 6) return;
+      if (needTotp && f2.elements.totp.value.replace(/\D/g, '').length !== 6) return;
+      f2.requestSubmit ? f2.requestSubmit() : f2.dispatchEvent(new Event('submit'));
+    }
+    f2.elements.code.addEventListener('input', autoSend);
+    f2.elements.totp.addEventListener('input', autoSend);
+    g.querySelector('#gate-back').addEventListener('click', function () { f2.hidden = true; f1.hidden = false; g.querySelector('#gate-totp-wrap').hidden = true; f2.elements.totp.value = ''; fail(''); });
     again.addEventListener('click', send);
     setTimeout(function () { (f1.elements.email.value ? f1.elements.phone : f1.elements.email).focus(); }, 50);
   }
@@ -172,8 +189,9 @@
     api('me').then(function (s) {
       if (s.ok && (!needAdmin || s.role === 'admin')) enter(s);
       else {
-        if (!s.ok) store('');
-        gate(s.error === 'not-ready' ? 'מערכת הכניסה עוד לא הופעלה ב־n8n.' : s.error === 'inactive' ? 'הגישה שלך הסתיימה. כדי לחדש, דברו איתי בוואטסאפ.' : needAdmin && s.ok ? 'המסך הזה פתוח רק למנהל.' : 'הכניסה הקודמת הסתיימה. היכנסו שוב.');
+        // only a definite "no" signs the browser out; a busy or unreachable server must not
+        if (!s.ok && (s.error === 'signed-out' || s.error === 'inactive')) store('');
+        gate(s.error === 'not-ready' ? 'מערכת הכניסה עוד לא הופעלה ב־n8n.' : s.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.' : s.error === 'inactive' ? 'הגישה שלך הסתיימה. כדי לחדש, דברו איתי בוואטסאפ.' : needAdmin && s.ok ? 'המסך הזה פתוח רק למנהל.' : 'הכניסה הקודמת הסתיימה. היכנסו שוב.');
       }
     }).catch(function () { gate('מערכת הכניסה לא עונה כרגע. נסו לרענן בעוד רגע.'); });
   }

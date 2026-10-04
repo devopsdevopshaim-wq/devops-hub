@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['n8n/hasadna-*.json', '.github/scripts/n8n-deploy.mjs', '.github/workflows/n8n-deploy.yml']
+    paths: ['n8n/hasadna-*.json', 'n8n/snippets/**', 'n8n/test/**', '.github/scripts/n8n-deploy.mjs', '.github/workflows/n8n-deploy.yml']
 
 permissions:
   contents: write
@@ -29,6 +29,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Security tests (a failure stops the install)
+        run: |
+          node n8n/test/run-all.mjs
+          # the committed workflow files must be exactly what the builders produce
+          python3 n8n/build-access-workflow.py && python3 n8n/build-business-workflow.py && python3 n8n/build-multi-agent-workflow.py && python3 n8n/build-voice-workflow.py
+          git diff --exit-code -- n8n/*.json || { echo '::error::n8n/*.json is out of date with its builder. Run the build-*.py scripts and commit.'; exit 1; }
       - name: Install in n8n Cloud
         id: deploy
         env:
@@ -42,6 +48,9 @@ jobs:
           AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
           AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ADMIN_TOTP_SECRET: ${{ secrets.ADMIN_TOTP_SECRET }}
+          MORNING_CLIENT_ID: ${{ secrets.MORNING_CLIENT_ID }}
+          MORNING_CLIENT_SECRET: ${{ secrets.MORNING_CLIENT_SECRET }}
         run: node .github/scripts/n8n-deploy.mjs
       - name: Connect the portfolio
         if: steps.deploy.outputs.changed == 'true'

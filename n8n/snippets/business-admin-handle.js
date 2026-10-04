@@ -1,23 +1,41 @@
-// Paste into the "Admin · Handle" node of the leads & prices workflow (replaces its code).
-// The admin screen's API. Every call carries the admin password.
-const sd = $getWorkflowStaticData('global');
-// Optional: write a fixed password here; it then replaces the one chosen from the admin screen.
-const ADMIN_KEY = '';
+// The admin screen's API for leads and prices. (Built into "Admin · Handle" by build-business-workflow.py.)
+// Who may call it: only the admin who signed in on the main sign-in (hasadna-auth). There is no separate
+// password any more; every call carries the session token and is checked against that workflow.
+__SEC__
 
-const b = $json.body || {};
-const key = String(b.key || '');
-const stored = ADMIN_KEY || sd.adminKey || '';
+const AUTH_URL = '__N8N_URL__/webhook/hasadna-auth';
+const sd = $getWorkflowStaticData('global');
+const now = Date.now();
+delete sd.adminKey;   // the old shared password is gone for good
+
 const out = (body, code) => [{ json: { code: code || 200, body } }];
 const line = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n);
+sweep();
 
-if (b.action === 'setup') {
-  if (stored) return out({ ok: false, error: 'already-set' }, 403);
-  if (key.length < 8) return out({ ok: false, error: 'short' }, 400);
-  sd.adminKey = key;
-  return out({ ok: true, setup: true });
+if (!ORIGIN_OK) return out({ ok: false, error: 'forbidden' }, 403);
+const b = $json.body || {};
+if (JSON.stringify(b).length > 60000) return out({ ok: false, error: 'too-big' }, 413);
+if (!hit('adm-ip', ipKey(), 120, 10 * 60000)) return out({ ok: false, error: 'rate-limited' }, 429);
+
+const token = String(b.token || '');
+if (!/^[a-f0-9]{48}$/.test(token)) return out({ ok: false, error: 'admin-only' }, 403);
+sd.okTok = sd.okTok || {};
+for (const [k, t] of Object.entries(sd.okTok)) if (t < now) delete sd.okTok[k];
+const th = sha256hex(token);
+if (!(sd.okTok[th] > now)) {
+  // ask the sign-in workflow who this is (answers are remembered for one minute)
+  let r;
+  try {
+    r = await this.helpers.httpRequest({ method: 'POST', url: AUTH_URL, headers: { Origin: SITE_ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'action=me&token=' + token, json: true, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 15000 });
+  } catch (e) { return out({ ok: false, error: 'auth-unreachable' }, 502); }
+  const j = r && r.body;
+  if (r.statusCode === 200 && j && j.ok) {
+    if (j.role !== 'admin') return out({ ok: false, error: 'admin-only' }, 403);   // a client is not the admin
+    sd.okTok[th] = now + 60000;
+  } else if (r.statusCode === 401 || r.statusCode === 403) return out({ ok: false, error: 'admin-only' }, 403);
+  else return out({ ok: false, error: 'auth-error', detail: r.statusCode }, 502);
 }
-if (!stored) return out({ ok: false, error: 'no-key' }, 403);
-if (key !== stored) return out({ ok: false, error: 'bad-key' }, 403);
 
 let p = {};
 try { p = JSON.parse(b.payload || '{}'); } catch (e) { return out({ ok: false, error: 'bad-payload' }, 400); }
@@ -67,12 +85,5 @@ switch (b.action) {
     return out({ ok: true, prices: sd.prices });
   }
 
-  case 'password': {
-    if (ADMIN_KEY) return out({ ok: false, error: 'fixed-in-n8n' }, 400);
-    const nk = String(p.newKey || '');
-    if (nk.length < 8) return out({ ok: false, error: 'short' }, 400);
-    sd.adminKey = nk;
-    return out({ ok: true });
-  }
 }
 return out({ ok: false, error: 'unknown-action' }, 400);
