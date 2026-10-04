@@ -351,11 +351,12 @@ html{scroll-behavior:smooth}
   <div class="lsec-in">
     <p class="eyebrow">שאלונים · סוכני Parkomat</p>
     <h2 class="lh2">ממלאים שאלון, מקבלים תשובה</h2>
-    <p class="lp">תשובה מיידית מחושבת כאן מהמודל של החניון, ואחריה ניתוח מלא מסוכני Parkomat ב‑n8n: תכנון וקיבולת, חשמל ובטיחות, יזמות ורישוי. מי שמשאיר פרטים מקבל חזרה טלפונית.</p>
+    <p class="lp">תשובה מיידית מחושבת כאן מהמודל של החניון, ואחריה ניתוח מלא מסוכני Parkomat ב‑n8n: תכנון וקיבולת, חשמל ובטיחות, יזמות ורישוי. מי שמשאיר פרטים מקבל חזרה טלפונית. אפשר גם להעלות קובץ ל‑Parkomat.</p>
     <div class="ask-kinds" role="tablist" aria-label="סוג שאלון">
       <button type="button" role="tab" data-ask="developer" aria-selected="true">שאלון יזם</button>
       <button type="button" role="tab" data-ask="technical" aria-selected="false">שאלון טכני</button>
       <button type="button" role="tab" data-ask="question" aria-selected="false">שאלה חופשית</button>
+      <button type="button" role="tab" data-ask="file" aria-selected="false">קובץ ל‑Parkomat</button>
     </div>
     <div class="ask-grid">
       <form class="ask-form" id="askForm" novalidate>
@@ -385,6 +386,13 @@ html{scroll-behavior:smooth}
         </div>
         <div class="ask-fields" data-for="question" hidden>
           <label class="f full">השאלה שלכם<textarea id="f_q" rows="5" maxlength="2000" placeholder="למשל: כמה זמן לוקח לשלוף רכב בשעת שיא, ומה קורה בהפסקת חשמל?"></textarea></label>
+        </div>
+        <div class="ask-fields" data-for="file" hidden>
+          <p class="ask-hint full">מעלים תוכנית, דוח תקלה, צילום או קובץ PLC. סוכן Parkomat קורא אותו וכותב סיכום, הקובץ עובר ל‑Google Drive או ל‑Slack של המחלקה, ועותק מגיע אלינו במייל.</p>
+          <label class="f">מחלקה<input id="p_dep" type="text" maxlength="40" placeholder="לדוגמה: תפעול, שירות, מכירות"></label>
+          <label class="f">יעד<select id="p_dest"><option value="drive">Google Drive</option><option value="slack">Slack</option></select></label>
+          <label class="f full">קובץ (עד 15MB)<input id="p_file" type="file"></label>
+          <label class="f full">הודעה (לא חובה)<textarea id="p_msg" rows="2" maxlength="1500" placeholder="למשל: תקלה F07801 במעלית 2 מאתמול בערב"></textarea></label>
         </div>
         <fieldset class="ask-contact">
           <legend>פרטי קשר (לא חובה)</legend>
@@ -3616,6 +3624,24 @@ async function ghPublish(x){
 /* ---------- questionnaires → instant answer + Parkomat agents (n8n) ---------- */
 const PARKOMAT_DEFAULT="https://haimkripisn.app.n8n.cloud/webhook/parkomat-agents";
 const parkomatUrl=()=>{try{return localStorage.getItem("rp-parkomat-url")||PARKOMAT_DEFAULT}catch(e){return PARKOMAT_DEFAULT}};
+const parkingUrl=()=>{try{return localStorage.getItem("rp-parking-url")||parkomatUrl().replace(/parkomat-agents$/,"parking-agents")}catch(e){return PARKOMAT_DEFAULT.replace(/parkomat-agents$/,"parking-agents")}};
+async function sendFile(out){
+  const f=document.getElementById("p_file").files[0];
+  if(!f){out.innerHTML=`<p class="ask-warn">בחרו קובץ.</p>`;return}
+  if(f.size>15*1048576){out.innerHTML=`<p class="ask-warn">הקובץ גדול מ‑15MB.</p>`;return}
+  const dest=val("p_dest"),dep=val("p_dep")||"כללי";
+  out.innerHTML=`<h3>הקובץ נשלח</h3><p>${esc(f.name)} · ${fx(Math.max(1,f.size/1024),0)}KB · ${esc(dep)} → ${dest==="slack"?"Slack":"Google Drive"}</p><div class="ask-ai" id="askAi"><div class="ask-wait"><i></i><i></i><i></i> Parkomat קורא את הקובץ…</div></div>`;
+  const ai=document.getElementById("askAi"),btn=document.getElementById("askGo");btn.disabled=true;
+  try{const fd=new FormData();fd.append("message",val("p_msg"));fd.append("destination",dest);fd.append("department",dep);fd.append("file",f,f.name);
+    const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),120000);
+    const r=await fetch(parkingUrl(),{method:"POST",body:fd,signal:ctl.signal});clearTimeout(to);
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.ok)throw new Error(j.message||String(r.status));
+    ai.innerHTML=`<span class="tag">Parkomat · n8n</span><p><b>${esc(j.message||"הקובץ התקבל.")}</b>${j.link?` <a href="${esc(j.link)}" target="_blank" rel="noopener">פתיחה</a>`:""}</p>`+mdLite(j.summary||"");
+    document.getElementById("p_file").value=""}
+  catch(err){ai.innerHTML=`<p class="ask-warn">${err&&err.message&&!/^\d+$|abort|fetch/i.test(err.message)?esc(err.message):"Parkomat לא זמין כרגע"+(inFrame?" בתצוגה הזאת (אפשר באתר הציבורי)":"")+". נסו שוב בעוד דקה."}</p>`}
+  finally{btn.disabled=false}
+}
 const ASK={kind:"developer",session:"pp-"+Math.random().toString(36).slice(2,10),lastPreset:null};
 const val=id=>{const el=document.getElementById(id);return el?String(el.value||"").trim():""};
 function mdLite(t){const out=[];let inList=false;
@@ -3651,9 +3677,10 @@ function cfgSummary(){return {"קומות":M.F,"תאים לצד":M.n,"צדדים
 function askInit(){
   const out=document.getElementById("askOut");if(!out)return;
   document.getElementById("askCfg").textContent=`${M.F} קומות, ${M.cells} מקומות, ${M.L} מעליות`;
-  document.querySelectorAll("[data-ask]").forEach(b=>b.onclick=()=>{ASK.kind=b.dataset.ask;document.querySelectorAll("[data-ask]").forEach(x=>x.setAttribute("aria-selected",x===b));document.querySelectorAll(".ask-fields").forEach(f=>f.hidden=f.dataset.for!==ASK.kind)});
+  document.querySelectorAll("[data-ask]").forEach(b=>b.onclick=()=>{ASK.kind=b.dataset.ask;document.querySelectorAll("[data-ask]").forEach(x=>x.setAttribute("aria-selected",x===b));document.querySelectorAll(".ask-fields").forEach(f=>f.hidden=f.dataset.for!==ASK.kind);document.querySelector(".ask-contact").hidden=ASK.kind==="file";document.getElementById("askGo").textContent=ASK.kind==="file"?"שליחת הקובץ":"קבלת תשובה"});
   document.getElementById("askForm").onsubmit=async e=>{e.preventDefault();
     const kind=ASK.kind;let local=null,html="",answers={},question="";
+    if(kind==="file")return sendFile(out);
     if(kind==="developer"){
       const a={spaces:+val("q_spaces")||0,len:+val("q_len")||0,wid:+val("q_wid")||0,hmax:+val("q_hmax")||0,peak:+val("q_peak")||0,suv:val("q_suv"),ev:val("q_ev"),where:val("q_where")};
       if(a.spaces<4||a.len<8||a.wid<6){out.innerHTML=`<p class="ask-warn">כדי לחשב צריך מספר מקומות (לפחות 4) ומידות מגרש באורך ורוחב.</p>`;return}

@@ -9,6 +9,11 @@ carries contact details, the owner gets the lead by email.
 
     POST /webhook/parkomat-agents   JSON {kind, answers, config, local, question, contact, sessionId}
                                     -> {answer, kind}
+    POST /webhook/parking-agents    multipart {message, destination: drive|slack, department, file}
+                                    -> {ok, destination, delivered, link, summary}
+
+The second endpoint replaces the local Parkomat upload form: Claude reads the file and writes a short
+summary, the file goes to Google Drive or Slack, and a copy always reaches the owner's inbox.
 
     python3 n8n/build-parkomat-workflow.py [--model ...] [--email ...]
 """
@@ -157,12 +162,143 @@ for i, (key, name, desc, how) in enumerate(TEAM):
                        'options': {'systemMessage': system, 'maxIterations': 3}}, [x, y]))
     nodes.append(claude(f'Claude · {name}', [x, y + 220], 1400))
 
+FILES_NORMALIZE = r"""
+const item = $input.first();
+const b = item.json.body || {};
+const clip = (s, n) => String(s == null ? '' : s).replace(/[\u0000-\u001f]+/g, ' ').trim().slice(0, n);
+const bin = item.binary || {};
+const key = Object.keys(bin)[0];
+const destination = b.destination === 'slack' ? 'slack' : 'drive';
+const department = clip(b.department, 40).replace(/[^\p{L}\p{N} _-]/gu, '') || 'general';
+const message = clip(b.message, 1500);
+if (!key) return [{ json: { error: 'לא התקבל קובץ. בחרו קובץ ונסו שוב.' } }];
+const f = bin[key];
+const size = Number(f.fileSize ? String(f.fileSize).replace(/[^\d.]/g, '') * (/MB/i.test(f.fileSize) ? 1048576 : /kB/i.test(f.fileSize) ? 1024 : 1) : 0);
+if (size > 15 * 1048576) return [{ json: { error: 'הקובץ גדול מ־15MB.' } }];
+const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+const fileName = `${department}_${stamp}_${clip(f.fileName || 'file', 120).replace(/[\\/:*?"<>|]+/g, '_')}`;
+let preview = '';
+if (/^text\/|json|csv|xml|yaml|javascript/i.test(f.mimeType || '') && size < 300000) {
+  try { preview = (await this.helpers.getBinaryDataBuffer(0, key)).toString('utf8').slice(0, 6000); } catch {}
+}
+const prompt = [
+  `מחלקה: ${department}`, `יעד: ${destination === 'slack' ? 'Slack' : 'Google Drive'}`,
+  `קובץ: ${clip(f.fileName, 160)} (${clip(f.mimeType, 80)}, ${clip(f.fileSize, 20)})`,
+  message ? `הודעה מהשולח:\n${message}` : 'בלי הודעה.',
+  preview ? `תחילת התוכן:\n${preview}` : 'התוכן לא טקסטואלי, אז מסתמכים על שם הקובץ וההודעה.'
+].join('\n\n');
+return [{ json: { destination, department, message, fileName, original: clip(f.fileName, 160), mimeType: f.mimeType || '', fileSize: f.fileSize || '', prompt },
+          binary: { file: { ...f, fileName } } }];
+"""
+
+FILES_ROUTE = r"""
+const n = $('Files · Normalize').first();
+const summary = ($json.text || $json.output || '').toString().trim() || 'לא נוצר סיכום (הסוכן לא זמין). הקובץ הועבר כרגיל.';
+return [{ json: { ...n.json, summary }, binary: n.binary }];
+"""
+
+FILES_RESULT = r"""
+const r = $('Files · Route').first().json;
+const out = $json || {};
+const delivered = !out.error;
+const link = out.webViewLink || out.permalink || (out.file && out.file.permalink) || (out.id && r.destination === 'drive' ? `https://drive.google.com/file/d/${out.id}/view` : '');
+const where = r.destination === 'slack' ? 'Slack' : 'Google Drive';
+return [{ json: {
+  ok: true, destination: r.destination, delivered, link, summary: r.summary, file: r.fileName,
+  message: delivered ? `הקובץ הועבר ל־${where} ונשלח עותק במייל.`
+                     : `הקובץ נשלח במייל. ${where} עוד לא מחובר ב־n8n, ולכן ההעברה לשם לא בוצעה.`
+} }];
+"""
+
+FILES_SYSTEM = ('אתה הבודק של Parkomat. מקבל קובץ שהועלה לחברה, את המחלקה ואת ההודעה של השולח. '
+                'כתוב בעברית, עד 5 שורות: מה הקובץ (לפי השם, הסוג והתוכן אם יש), למה הוא כנראה נשלח, '
+                'האם יש בו משהו דחוף או חריג, ומה הצעד הבא המומלץ למחלקה. לא ממציאים תוכן שלא ראית.')
+
+FX, FY = 0, 900
+files_nodes = [
+    note('Note · Parkomat files',
+         '## Parkomat · העלאת קבצים\nהגרסה בענן של הטופס המקומי (`localhost:5679/webhook/parking-agents`).\n\n'
+         'Claude קורא את הקובץ וכותב סיכום, הקובץ עובר ל-Google Drive או ל-Slack, ועותק עם הסיכום תמיד מגיע למייל.\n\n'
+         '**חד-פעמי:** לחבר חשבון Google Drive בצומת `Drive · Upload` וחשבון Slack + ערוץ בצומת `Slack · Upload`. '
+         'עד אז הקבצים מגיעים במייל בלבד.',
+         [FX - 480, FY - 300], h=300, color=6),
+    node('Files · Webhook', 'n8n-nodes-base.webhook', 2,
+         {'httpMethod': 'POST', 'path': 'parking-agents', 'responseMode': 'responseNode',
+          'options': {'binaryPropertyName': 'file', 'allowedOrigins': '*'}},
+         [FX, FY], webhookId=uid('files-webhook')),
+    node('Files · Normalize', 'n8n-nodes-base.code', 2, {'jsCode': FILES_NORMALIZE}, [FX + 220, FY]),
+    node('File OK?', 'n8n-nodes-base.if', 2.2,
+         {'conditions': {'options': {'caseSensitive': True, 'typeValidation': 'loose', 'version': 2},
+                         'conditions': [{'id': uid('if-file'), 'leftValue': '={{ !$json.error }}', 'rightValue': True,
+                                         'operator': {'type': 'boolean', 'operation': 'true', 'singleValue': True}}],
+                         'combinator': 'and'}, 'options': {}},
+         [FX + 440, FY]),
+    node('Files · בודק', '@n8n/n8n-nodes-langchain.chainLlm', 1.7,
+         {'promptType': 'define', 'text': '={{ $json.prompt }}',
+          'messages': {'messageValues': [{'message': FILES_SYSTEM}]}},
+         [FX + 680, FY - 100], onError='continueRegularOutput'),
+    claude('Claude · בודק', [FX + 680, FY + 120], 700),
+    node('Files · Route', 'n8n-nodes-base.code', 2, {'jsCode': FILES_ROUTE}, [FX + 940, FY - 100]),
+    node('Files · Email', 'n8n-nodes-base.emailSend', 2.1,
+         {'fromEmail': 'Parkomat <' + args.email + '>', 'toEmail': args.email,
+          'subject': "={{ 'Parkomat · ' + $json.department + ' · ' + $json.original }}", 'emailFormat': 'text',
+          'text': "={{ 'קובץ חדש הועלה ל-Parkomat\\n\\nמחלקה: ' + $json.department + '\\nיעד: ' + $json.destination + '\\nקובץ: ' + $json.original + ' (' + $json.fileSize + ')\\n\\nהודעה:\\n' + ($json.message || '—') + '\\n\\n— סיכום הבודק —\\n' + $json.summary }}",
+          'options': {'attachments': 'file', 'appendAttribution': False}},
+         [FX + 1180, FY - 300], onError='continueRegularOutput'),
+    node('To Slack?', 'n8n-nodes-base.if', 2.2,
+         {'conditions': {'options': {'caseSensitive': True, 'typeValidation': 'loose', 'version': 2},
+                         'conditions': [{'id': uid('if-slack'), 'leftValue': '={{ $json.destination }}', 'rightValue': 'slack',
+                                         'operator': {'type': 'string', 'operation': 'equals'}}],
+                         'combinator': 'and'}, 'options': {}},
+         [FX + 1180, FY - 60]),
+    node('Slack · Upload', 'n8n-nodes-base.slack', 2.3,
+         {'resource': 'file', 'binaryData': True, 'binaryPropertyName': 'file',
+          'options': {'fileName': '={{ $json.fileName }}', 'title': '={{ $json.original }}',
+                      'initialComment': "={{ 'Parkomat · ' + $json.department + '\\n' + ($json.message ? $json.message + '\\n\\n' : '') + $json.summary }}"}},
+         [FX + 1420, FY - 160], onError='continueRegularOutput'),
+    node('Drive · Upload', 'n8n-nodes-base.googleDrive', 3,
+         {'name': '={{ $json.fileName }}',
+          'driveId': {'__rl': True, 'mode': 'list', 'value': 'My Drive'},
+          'folderId': {'__rl': True, 'mode': 'list', 'value': 'root', 'cachedResultName': '/ (Root folder)'},
+          'inputDataFieldName': 'file', 'options': {}},
+         [FX + 1420, FY + 40], onError='continueRegularOutput'),
+    node('Files · Result', 'n8n-nodes-base.code', 2, {'jsCode': FILES_RESULT}, [FX + 1660, FY - 60]),
+    node('Files · Respond', 'n8n-nodes-base.respondToWebhook', 1.1,
+         {'respondWith': 'json', 'responseBody': '={{ $json }}',
+          'options': {'responseHeaders': {'entries': [
+              {'name': 'Access-Control-Allow-Origin', 'value': '*'},
+              {'name': 'Cache-Control', 'value': 'no-store'}]}}},
+         [FX + 1900, FY - 60]),
+    node('Files · Respond error', 'n8n-nodes-base.respondToWebhook', 1.1,
+         {'respondWith': 'json', 'responseBody': '={{ { ok: false, message: $json.error } }}',
+          'options': {'responseCode': 400, 'responseHeaders': {'entries': [
+              {'name': 'Access-Control-Allow-Origin', 'value': '*'}]}}},
+         [FX + 680, FY + 300]),
+]
+nodes += files_nodes
+
 main = [('Parkomat · Webhook', 'Parkomat · Normalize'), ('Parkomat · Normalize', 'Parkomat · מתאם'),
         ('Parkomat · מתאם', 'Parkomat · Shape'), ('Parkomat · Shape', 'Parkomat · Respond'),
         ('Parkomat · Shape', 'Lead to email?'), ('Lead to email?', 'Lead · Email')]
 connections = {}
+
+
+def conn(a, b, out=0):
+    lists = connections.setdefault(a, {}).setdefault('main', [])
+    while len(lists) <= out:
+        lists.append([])
+    lists[out].append({'node': b, 'type': 'main', 'index': 0})
+
+
 for a, b in main:
-    connections.setdefault(a, {}).setdefault('main', [[]])[0].append({'node': b, 'type': 'main', 'index': 0})
+    conn(a, b)
+for a, b, o in [('Files · Webhook', 'Files · Normalize', 0), ('Files · Normalize', 'File OK?', 0),
+                ('File OK?', 'Files · בודק', 0), ('File OK?', 'Files · Respond error', 1),
+                ('Files · בודק', 'Files · Route', 0), ('Files · Route', 'Files · Email', 0),
+                ('Files · Route', 'To Slack?', 0), ('To Slack?', 'Slack · Upload', 0),
+                ('To Slack?', 'Drive · Upload', 1), ('Slack · Upload', 'Files · Result', 0),
+                ('Drive · Upload', 'Files · Result', 0), ('Files · Result', 'Files · Respond', 0)]:
+    conn(a, b, o)
 
 
 def ai(src, dst, kind):
@@ -171,6 +307,7 @@ def ai(src, dst, kind):
 
 ai('Claude · מתאם', 'Parkomat · מתאם', 'ai_languageModel')
 ai('Memory · שיחה', 'Parkomat · מתאם', 'ai_memory')
+ai('Claude · בודק', 'Files · בודק', 'ai_languageModel')
 for _, name, _, _ in TEAM:
     ai(name, 'Parkomat · מתאם', 'ai_tool')
     ai(f'Claude · {name}', name, 'ai_languageModel')
