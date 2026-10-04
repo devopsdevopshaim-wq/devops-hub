@@ -223,8 +223,10 @@ const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
 const post = async (path, fields, origin) => {
   try {
     const r = await fetch(`${BASE}/webhook/${path}`, { method: 'POST', headers: origin ? { Origin: origin } : {}, body: new URLSearchParams(fields) });
-    return { status: r.status, json: await r.json().catch(() => ({})) };
-  } catch (e) { return { status: 0, json: {} }; }
+    const text = await r.text();
+    let json = {}; try { json = JSON.parse(text); } catch {}
+    return { status: r.status, json, text: text.slice(0, 300) };
+  } catch (e) { return { status: 0, json: {}, text: String(e.message || e) }; }
 };
 const chatId = (JSON.parse(fs.readFileSync('n8n/hasadna-multi-agent.json', 'utf8')).nodes.find((n) => n.name === 'Team chat') || {}).webhookId;
 const sec = [];
@@ -237,7 +239,7 @@ expect('כניסה: רשימת הלקוחות סגורה בלי מנהל', r1.st
 r1 = await post('hasadna-admin', { action: 'setup', key: 'attacker-password' }, SITE_ORIGIN);
 expect('לידים ומחירון: אי אפשר לקבוע סיסמה מבחוץ', r1.status === 403, r1.status);
 r1 = await post('hasadna-admin', { action: 'list', token: 'a'.repeat(48) }, SITE_ORIGIN);
-expect('לידים ומחירון: טוקן לא מוכר נדחה דרך מערכת הכניסה', r1.status === 403 && r1.json.error === 'admin-only', `${r1.status} ${r1.json.error || ''}`);
+expect('לידים ומחירון: טוקן לא מוכר נדחה דרך מערכת הכניסה', r1.status === 403 && r1.json.error === 'admin-only', `${r1.status} ${r1.text}`);
 r1 = await post('hasadna-lead', { name: 'x', phone: '0500000000' }, EVIL);
 expect('לידים: טופס מאתר זר נחסם', r1.status === 403, r1.status);
 try {
