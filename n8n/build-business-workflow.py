@@ -7,7 +7,7 @@ there is nothing to connect before it works:
   GET  /webhook/hasadna-prices  the services page reads the prices and offers set by the admin
   POST /webhook/hasadna-admin   the admin screen: list leads, change status, edit prices.
                                 Needs the admin password, chosen once from the admin screen.
-Optional: an email for every new lead (connect Gmail, then enable the node).
+Every new lead is also emailed through the SPIDER · Gmail SMTP connection.
 
     python3 n8n/build-business-workflow.py
 """
@@ -173,7 +173,7 @@ nodes = [
     note('Note · Leads',
          '## לידים\n`POST /webhook/hasadna-lead` — כל טופס בדף השירותים נשמר כאן (גם לחיצות על וואטסאפ נספרות). '
          'רואים ומנהלים את הלידים במסך הניהול של האתר ← "לידים ומחירון".\n\n'
-         'אופציונלי: מייל על כל ליד — מחברים Gmail בצומת "Lead · Email" ומפעילים אותו (מקש D).',
+         'כל ליד חדש נשלח גם במייל (צומת "Lead · Email", חיבור SPIDER · Gmail).',
          [X - 480, Y_L - 200], h=240, color=6),
     webhook('Lead · Webhook', 'POST', 'hasadna-lead', [X, Y_L]),
     node('Lead · Save', 'n8n-nodes-base.code', 2, {'jsCode': SAVE_LEAD}, [X + 240, Y_L]),
@@ -184,13 +184,13 @@ nodes = [
                                          'operator': {'type': 'boolean', 'operation': 'true', 'singleValue': True}}],
                          'combinator': 'and'}, 'options': {}},
          [X + 480, Y_L + 100]),
-    node('Lead · Email', 'n8n-nodes-base.gmail', 2.1,
-         {'sendTo': EMAIL,
+    node('Lead · Email', 'n8n-nodes-base.emailSend', 2.1,
+         {'fromEmail': 'SPIDER · לידים <' + EMAIL + '>', 'toEmail': EMAIL,
           'subject': "={{ 'ליד חדש: ' + $json.lead.name + ($json.lead.service ? ' · ' + $json.lead.service : '') }}",
-          'emailType': 'text',
-          'message': "={{ 'שם: ' + $json.lead.name + '\\nטלפון: ' + $json.lead.phone + '\\nעסק: ' + $json.lead.biz + '\\nשירות: ' + $json.lead.service + ($json.lead.code ? '\\nמבצע: ' + $json.lead.code : '') + '\\n\\n' + $json.lead.msg + '\\n\\nוואטסאפ: https://wa.me/' + String($json.lead.phone).replace(/\\D/g, '').replace(/^0/, '972') }}",
-          'options': {}},
-         [X + 720, Y_L + 100], disabled=True),
+          'emailFormat': 'text',
+          'text': "={{ 'שם: ' + $json.lead.name + '\\nטלפון: ' + $json.lead.phone + '\\nעסק: ' + $json.lead.biz + '\\nשירות: ' + $json.lead.service + ($json.lead.code ? '\\nמבצע: ' + $json.lead.code : '') + '\\n\\n' + $json.lead.msg + '\\n\\nוואטסאפ: https://wa.me/' + String($json.lead.phone).replace(/\\D/g, '').replace(/^0/, '972') }}",
+          'options': {'appendAttribution': False}},
+         [X + 720, Y_L + 100], onError='continueRegularOutput'),
 
     note('Note · Prices',
          '## מחירון\n`GET /webhook/hasadna-prices` — דף השירותים קורא מכאן את המחירים והמבצעים שקבעת במסך הניהול. '
