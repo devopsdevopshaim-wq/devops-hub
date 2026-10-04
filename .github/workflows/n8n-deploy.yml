@@ -1,6 +1,6 @@
 name: Deploy agents to n8n Cloud
 
-# Installs SPIDER's three n8n workflows (agents, leads & prices, sign-in) in n8n
+# Installs SPIDER's n8n workflows (agents, leads & prices, sign-in, Maya's voice) in n8n
 # Cloud through the n8n API, with their credentials, activates them and checks
 # that they answer. Repository secrets: N8N_URL, N8N_API_KEY, GMAIL_APP_PASSWORD,
 # and ANTHROPIC_API_KEY until a Claude credential exists. See n8n/README.md.
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['n8n/hasadna-*.json', '.github/scripts/n8n-deploy.mjs']
+    paths: ['n8n/hasadna-*.json', '.github/scripts/n8n-deploy.mjs', '.github/workflows/n8n-deploy.yml']
 
 permissions:
   contents: write
@@ -39,6 +39,9 @@ jobs:
           SPIDER: ${{ secrets.SPIDER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
+          AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         run: node .github/scripts/n8n-deploy.mjs
       - name: Connect the portfolio
         if: steps.deploy.outputs.changed == 'true'

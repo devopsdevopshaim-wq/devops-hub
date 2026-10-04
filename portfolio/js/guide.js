@@ -1,6 +1,6 @@
 // "מאיה", the site's personal assistant: an illustrated avatar who talks about the projects.
-// Speech uses the browser's own Hebrew voice (speechSynthesis) when there is
-// one; otherwise he still moves his mouth and the words appear in the bubble.
+// Speech: a woman's neural Hebrew voice, from the browser (Edge) or from the
+// server (n8n hasadna-voice); never a male voice. Without one, the words appear on screen.
 // Listening uses the browser's speech recognition where it exists (Chrome, Edge).
 // Answers come from matching words against projects.json, not from an AI model.
 window.Guide = (function () {
@@ -51,6 +51,7 @@ window.Guide = (function () {
   var api, root, bubble, panel, log, input, faceBtn, micBtn, voiceBtn;
   var voice = null, voiceOn = true, talkTimer = null, blinkTimer = null, touring = false, tourStops = [], tourAt = 0;
   var hasTTS = 'speechSynthesis' in window;
+  var natural = false, sayId = 0;
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -154,43 +155,131 @@ window.Guide = (function () {
   }
 
   // ---------- speech ----------
+  // Maya speaks only in a woman's voice. Best: Edge's neural "Hila" right in the
+  // browser. Next: the same neural voice from the server (n8n hasadna-voice), for
+  // browsers that only have the male system voice (Chrome on Windows has "Asaf").
+  // Then another female browser voice (Safari's Carmit, Android). Never a male
+  // voice: silence with the words on screen is better than the wrong voice.
+  var MALE = /asaf|avri|\bmale\b|\bman\b|גבר/i;
+  var cloud = null, clip = null, meter = null;
+
   function pickVoice() {
     if (!hasTTS) return;
-    var he = speechSynthesis.getVoices().filter(function (v) { return /^he|^iw/i.test(v.lang); });
-    voice = he.filter(function (v) { return /hila|carmit|female|woman|אישה|נשי/i.test(v.name); })[0] || he.filter(function (v) { return !/avri|asaf|male/i.test(v.name); })[0] || he[0] || null;
+    var he = speechSynthesis.getVoices().filter(function (v) { return /^he|^iw/i.test(v.lang) && !MALE.test(v.name); });
+    var rank = [
+      function (v) { return /hila/i.test(v.name) && /natural|online|neural/i.test(v.name); },
+      function (v) { return /natural|online|neural/i.test(v.name); },
+      function (v) { return /hila|carmit|female|woman|אישה|נשי/i.test(v.name); },
+      function () { return true; }
+    ];
+    voice = null;
+    for (var r = 0; r < rank.length && !voice; r++) voice = he.filter(rank[r])[0] || null;
+    natural = !!voice && /natural|online|neural/i.test(voice.name);
     updateVoiceBtn();
+  }
+
+  // the server voice: an mp3 for this text, or null (no server voice, quota, offline)
+  function fetchClip(text) {
+    var ctl = window.AbortController ? new AbortController() : null;
+    var t = setTimeout(function () { if (ctl) ctl.abort(); }, 9000);
+    var body = new URLSearchParams({ text: text });
+    return fetch(cloud, { method: 'POST', body: body, signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        clearTimeout(t);
+        if (!j.ok) { if (j.error === 'no-voice') { cloud = null; updateVoiceBtn(); } return null; }
+        var bin = atob(j.audio), a = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+        return URL.createObjectURL(new Blob([a], { type: j.mime || 'audio/mpeg' }));
+      })
+      .catch(function () { clearTimeout(t); return null; });
+  }
+
+  // her voice moves the sound bars and the glow around her photo
+  function level(el) {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try {
+      meter = meter || { ctx: new AC() };
+      var src = meter.ctx.createMediaElementSource(el), an = meter.ctx.createAnalyser();
+      an.fftSize = 64; src.connect(an); an.connect(meter.ctx.destination);
+      if (meter.ctx.state === 'suspended') meter.ctx.resume();
+      var bins = new Uint8Array(an.frequencyBinCount), bars = root.querySelectorAll('.g-wave i');
+      function frame() {
+        if (el.paused || el.ended) { root.classList.remove('live'); root.style.removeProperty('--lvl'); return; }
+        an.getByteFrequencyData(bins);
+        var sum = 0;
+        for (var i = 0; i < bars.length; i++) { var v = bins[2 + (i % 5) * 3] / 255; sum += v; bars[i].style.height = Math.round(20 + v * 80) + '%'; }
+        root.style.setProperty('--lvl', (sum / bars.length).toFixed(2));
+        requestAnimationFrame(frame);
+      }
+      el.addEventListener('playing', function () { root.classList.add('live'); frame(); });
+    } catch (e) {}
   }
 
   function updateVoiceBtn() {
     if (!voiceBtn) return;
-    var can = hasTTS && voice;
+    var can = (hasTTS && voice) || cloud;
     voiceBtn.hidden = !can;
     voiceBtn.setAttribute('aria-pressed', String(voiceOn));
     voiceBtn.innerHTML = voiceOn ? '🔊' : '🔇';
     voiceBtn.title = voiceOn ? 'השתקה' : 'הפעלת קול';
   }
 
+  // Speaks like a person: in the chat she "types" for a moment, then the words
+  // appear as she says them.
   function say(text, done) {
-    if (hasTTS) speechSynthesis.cancel();
-    stopTalking();
+    hush();
+    var id = ++sayId;
+    var chat = panel && panel.classList.contains('open');
+    var wait = chat && !reduce ? Math.min(1500, 450 + text.length * 9) : 0;
+    // the server voice is fetched while she "types", so the words and the sound start together
+    var pending = voiceOn && cloud && !natural ? fetchClip(text) : null;
+    var t0 = Date.now();
+    function go(url) { if (id === sayId) speak(text, done, id, !!wait, url); else if (url) URL.revokeObjectURL(url); }
+    if (wait) typing(true);
+    if (pending) pending.then(function (url) { setTimeout(function () { go(url); }, Math.max(0, wait - (Date.now() - t0))); });
+    else if (wait) setTimeout(go, wait);
+    else go();
+  }
+
+  function speak(text, done, id, reveal, url) {
     showBubble(text);
-    addMsg('bot', text);
+    var msg = addMsg('bot', text, reveal);
     startTalking();
     var finished = false;
-    function end() { if (finished) return; finished = true; stopTalking(); if (done) done(); }
-    if (hasTTS && voice && voiceOn) {
+    function end() {
+      if (finished) return; finished = true;
+      if (msg && msg.finish) msg.finish();
+      stopTalking();
+      if (url) URL.revokeObjectURL(url);
+      if (done) done();
+    }
+    if (url) {
+      var a = clip = new Audio(url);
+      a.onended = end; a.onerror = end;
+      // the words appear in step with her voice
+      a.ontimeupdate = function () { if (msg && msg.upTo && a.duration && id === sayId) msg.upTo(Math.floor(text.length * a.currentTime / a.duration)); };
+      level(a);
+      var p = a.play();
+      if (p && p.catch) p.catch(function () { setTimeout(end, 900 + text.length * 55); }); // autoplay blocked: words only
+      setTimeout(end, 4000 + text.length * 150);
+    } else if (hasTTS && voice && voiceOn && (natural || !cloud)) {
       var u = new SpeechSynthesisUtterance(text);
-      u.voice = voice; u.lang = voice.lang; u.rate = 1.02; u.pitch = 1;
+      u.voice = voice; u.lang = voice.lang;
+      u.rate = natural ? 1 : 0.98; u.pitch = natural ? 1 : 1.08;
       u.onend = end; u.onerror = end;
+      u.onboundary = function (e) { if (msg && msg.upTo && id === sayId) msg.upTo(e.charIndex); };
       speechSynthesis.speak(u);
-      // some browsers never fire onend; don't get stuck
-      setTimeout(end, 2500 + text.length * 120);
+      setTimeout(end, 2500 + text.length * 120); // some browsers never fire onend
     } else {
+      // no voice: the photo does not pretend to talk, the words just appear
+      if (root.classList.contains('photo')) stopTalking();
       setTimeout(end, 900 + text.length * 55);
     }
   }
 
-  function hush() { if (hasTTS) speechSynthesis.cancel(); stopTalking(); }
+  function hush() { if (hasTTS) speechSynthesis.cancel(); if (clip) { clip.pause(); clip = null; } stopTalking(); }
 
   // ---------- UI ----------
   function showBubble(text, buttons) {
@@ -214,18 +303,29 @@ window.Guide = (function () {
   }
 
   function clock() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
-  function addMsg(who, text) {
+  function addMsg(who, text, reveal) {
     history.push({ role: who === 'me' ? 'user' : 'assistant', text: text });
     if (history.length > 12) history.shift();
     if (!log) return;
     typing(false);
     if (who === 'me') panel.classList.add('chatting');
+    var span = h('span', { text: reveal ? '' : text });
     var row = h('div', { class: 'g-row ' + who }, [
       who === 'bot' ? h('span', { class: 'g-av', html: FACE }) : null,
-      h('div', { class: 'g-msg ' + who }, [h('span', { text: text }), h('time', { text: clock() })])
+      h('div', { class: 'g-msg ' + who }, [span, h('time', { text: clock() })])
     ]);
     log.appendChild(row);
     log.scrollTop = log.scrollHeight;
+    if (!reveal) return null;
+    // word by word: follows the voice when it reports its position, otherwise a steady pace
+    var shown = 0, timer = null;
+    function show(n) { if (n <= shown) return; shown = Math.min(n, text.length); span.textContent = text.slice(0, shown); log.scrollTop = log.scrollHeight; }
+    function nextWord() { var i = text.indexOf(' ', shown + 1); return i < 0 ? text.length : i; }
+    timer = setInterval(function () { show(nextWord()); if (shown >= text.length) clearInterval(timer); }, voiceOn && (voice || cloud) ? 260 : 55);
+    return {
+      upTo: function (i) { var j = text.indexOf(' ', i + 1); show(j < 0 ? text.length : j); },
+      finish: function () { clearInterval(timer); show(text.length); }
+    };
   }
   var typingEl = null;
   function typing(on) {
@@ -244,16 +344,25 @@ window.Guide = (function () {
     log.scrollTop = log.scrollHeight;
   }
 
+  function visitor() { return store('maya-name') || ''; }
+  function greet() {
+    var hr = new Date().getHours();
+    var g = hr < 5 ? 'לילה טוב' : hr < 12 ? 'בוקר טוב' : hr < 17 ? 'צהריים טובים' : hr < 21 ? 'ערב טוב' : 'לילה טוב';
+    return g + (visitor() ? ', ' + visitor() : '');
+  }
+
   function openPanel() {
     bubble.classList.remove('show');
     panel.classList.add('open');
+    root.classList.add('chat-open');
     faceBtn.setAttribute('aria-expanded', 'true');
-    if (!log.querySelector('.g-msg')) say('היי, אני ' + NAME + ', ' + ROLE + '. אפשר לשאול אותי על כל פרויקט, על שירותים ומחירים, או לקבוע שיחה עם חיים.');
+    if (!log.querySelector('.g-msg')) say(greet() + '! אני ' + NAME + ', ' + ROLE + '. ' + (visitor() ? 'טוב שחזרת. ' : '') + 'במה אוכל לעזור היום? אפשר לשאול אותי על כל פרויקט, על שירותים ומחירים, או לקבוע שיחה עם חיים.');
     setTimeout(function () { input.focus(); }, 50);
   }
 
   function closePanel() {
     panel.classList.remove('open');
+    root.classList.remove('chat-open');
     faceBtn.setAttribute('aria-expanded', 'false');
   }
 
@@ -349,6 +458,8 @@ window.Guide = (function () {
     // With the n8n agent connected, every real question goes to it.
     if (api.guideApi && !answer.offline) return askServer(raw);
     if (has(t, ['מי אתה', 'מה אתה', 'מי זה', 'עליך'])) return say('אני ' + NAME + ', ' + ROLE + '. אני מכירה את כל ' + api.projects.length + ' הפרויקטים כאן, יכולה להראות כל אחד מהם, ולתאם לך שיחה עם חיים.');
+    var nm = /^(?:קוראים לי|שמי|השם שלי)\s+([\u0590-\u05FFa-z]{2,14})$/i.exec(t);
+    if (nm) { store('maya-name', nm[1]); return say('נעים מאוד, ' + nm[1] + '! שמחה להכיר. איך אוכל לעזור לך?'); }
     if (has(t, ['מחיר', 'מחירים', 'עולה', 'עלות', 'הצעת מחיר', 'מבצע', 'מבצעים', 'שירות', 'שירותים', 'לעסק'])) {
       say('חיים בונה לעסקים אוטומציות, סוכני AI, אתרים ומערכות ניהול, במחיר קבוע מראש. את המחירים והמבצעים העדכניים תמצאו בדף השירותים, ושיחת אפיון של 30 דקות היא בחינם.');
       return actionsRow([['💰 לשירותים ולמחירים', function () { location.href = 'services.html'; }], ['📅 לקבוע שיחה', function () { window.open(WA, '_blank', 'noopener'); }]]);
@@ -510,10 +621,45 @@ window.Guide = (function () {
     document.body.appendChild(root);
   }
 
+  // A real photo of the assistant replaces the drawing as soon as img/maya.jpg exists.
+  var PHOTO = 'img/maya.jpg';
+  function usePhoto() {
+    var img = new Image();
+    img.onload = function () {
+      var tag = '<img class="g-photo" src="' + PHOTO + '" alt="">';
+      FACE = tag;
+      root.classList.add('photo');
+      faceBtn.querySelector('.guy').outerHTML = tag;
+      faceBtn.appendChild(h('span', { class: 'g-wave', 'aria-hidden': 'true' }, [h('i'), h('i'), h('i'), h('i'), h('i')]));
+      Array.prototype.forEach.call(document.querySelectorAll('.g-mini, .g-av'), function (n) { n.innerHTML = tag; });
+    };
+    img.src = PHOTO;
+  }
+
+  // Maya standing, like a video call next to the chat (wide screens only)
+  var FULL = 'img/maya-full.jpg';
+  function useStage() {
+    var img = new Image();
+    img.onload = function () {
+      img.className = 'g-stage-photo'; img.alt = '';
+      root.appendChild(h('div', { class: 'g-stage', 'aria-hidden': 'true' }, [
+        img,
+        h('span', { class: 'g-wave' }, [h('i'), h('i'), h('i'), h('i'), h('i')]),
+        h('span', { class: 'g-tag', text: NAME + ' · ' + ROLE })
+      ]));
+      root.classList.add('staged');
+    };
+    img.src = FULL;
+  }
+
   function init(a) {
     api = a;
+    // the server voice lives next to the n8n agents
+    if (api.guideApi && /\/webhook\/hasadna-guide/.test(api.guideApi)) cloud = api.guideApi.replace(/hasadna-guide.*$/, 'hasadna-voice');
     voiceOn = store('guide-voice') !== '0';
     build();
+    usePhoto();
+    useStage();
     if (hasTTS) { pickVoice(); speechSynthesis.addEventListener('voiceschanged', pickVoice); }
     updateVoiceBtn();
     if (!reduce) {
@@ -526,7 +672,7 @@ window.Guide = (function () {
     setTimeout(function () {
       if (store('guide-seen')) return;
       wave();
-      showBubble('היי, אני ' + NAME + ' 👋 ' + ROLE + '. אפשר לעזור לכם למצוא פרויקט, להבין מחירים או לקבוע שיחה.', [
+      showBubble(greet() + '! אני ' + NAME + ' 👋 ' + ROLE + '. אפשר לעזור לכם למצוא פרויקט, להבין מחירים או לקבוע שיחה.', [
         btn('💬 שיחה איתי', function () { store('guide-seen', '1'); openPanel(); }),
         btn('▶ סיור מודרך', function () { store('guide-seen', '1'); startTour(); }, 'ghost')
       ]);
