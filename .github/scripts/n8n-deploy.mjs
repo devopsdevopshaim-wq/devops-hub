@@ -5,10 +5,12 @@
 //   n8n/hasadna-multi-agent.json  Maya and the agent team, monitor, control center (Claude)
 //   n8n/hasadna-business.json     leads and the price list (keeps its stored leads on update)
 //   n8n/hasadna-access.json       sign-in codes, clients, payments (Gmail SMTP)
+//   n8n/hasadna-voice.json        Maya's female voice for browsers without one (Azure Speech or ElevenLabs)
 //
 // Secrets: N8N_URL, N8N_API_KEY (or both inside HAIM_WEB_KEY),
 //          ANTHROPIC_API_KEY (only until a Claude credential exists in n8n),
-//          GMAIL_APP_PASSWORD (+ optional GMAIL_USER) for the sign-in emails.
+//          GMAIL_APP_PASSWORD (+ optional GMAIL_USER) for the sign-in emails,
+//          AZURE_SPEECH_KEY + AZURE_SPEECH_REGION (or ELEVENLABS_API_KEY) for Maya's voice.
 import fs from 'node:fs';
 
 // all of them can also arrive in one secret (SPIDER or HAIM_WEB_KEY), in any layout: picked out by their shape
@@ -19,6 +21,12 @@ const KEY = (process.env.N8N_API_KEY || pick(/eyJ[\w-]+\.[\w-]+\.[\w-]+/)).trim(
 const CLAUDE = (process.env.ANTHROPIC_API_KEY || pick(/sk-ant-[\w-]+/)).trim();
 const GMAIL_USER = (process.env.GMAIL_USER || 'devopsdevopshaim@gmail.com').trim();
 const GMAIL_PASS = (process.env.GMAIL_APP_PASSWORD || (combined.match(/GMAIL_APP_PASSWORD\W*([a-z]{4}\s?[a-z]{4}\s?[a-z]{4}\s?[a-z]{4})\b/i) || [])[1] || '').replace(/\s+/g, '');
+const label = (name, re) => (process.env[name] || (combined.match(new RegExp(name + '\\W*(' + re + ')')) || [])[1] || '').trim();
+const VOICE = {
+  __AZURE_SPEECH_KEY__: label('AZURE_SPEECH_KEY', '[A-Za-z0-9]{32,100}'),
+  __AZURE_SPEECH_REGION__: label('AZURE_SPEECH_REGION', '[a-z0-9]{4,30}'),
+  __ELEVENLABS_API_KEY__: label('ELEVENLABS_API_KEY', '(?:sk_)?[A-Za-z0-9]{32,80}') || pick(/\bsk_[a-f0-9]{40,}\b/)
+};
 const out = (k, v) => fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', `${k}=${v}\n`);
 const summary = [];
 const note = (line) => { summary.push(line); console.log(line); };
@@ -57,8 +65,11 @@ function credFrom(workflows, type) {
   return null;
 }
 
-async function install(file, names, { creds = {} } = {}) {
-  const wf = JSON.parse(fs.readFileSync(file, 'utf8'));
+async function install(file, names, { creds = {}, fill = {} } = {}) {
+  let raw = fs.readFileSync(file, 'utf8');
+  // keys go straight from the secret into n8n, never into the repository
+  for (const [k, v] of Object.entries(fill)) if (/^[\w-]+$/.test(v)) raw = raw.split(k).join(v);
+  const wf = JSON.parse(raw);
   for (const n of wf.nodes) for (const [type, match] of Object.entries(creds)) if (match.types.includes(n.type) && match.cred) n.credentials = { [type]: match.cred };
   const existing = findByName([wf.name, ...names]);
   const body = { name: wf.name, nodes: wf.nodes, connections: wf.connections, settings: { executionOrder: 'v1' } };
@@ -118,6 +129,10 @@ try {
   results.access = await install('n8n/hasadna-access.json', ['הסדנה · כניסה והרשאות'],
     { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } } });
 } catch (e) { note(`- ⚠️ כניסה והרשאות: ${e.message.slice(0, 200)}`); }
+try {
+  results.voice = await install('n8n/hasadna-voice.json', [], { fill: VOICE });
+} catch (e) { note(`- ⚠️ הקול של מאיה: ${e.message.slice(0, 200)}`); }
+const hasVoice = !!(VOICE.__AZURE_SPEECH_KEY__ || VOICE.__ELEVENLABS_API_KEY__);
 
 // ---- do they answer?
 async function probe(path, init) {
@@ -138,7 +153,14 @@ if (smtp) {
     note(`- מייל בדיקה עם קוד כניסה אל ${GMAIL_USER}: ${r.ok && j.ok ? '✅ נשלח' : '❌ ' + r.status + ' ' + (j.error || '')}`);
   } catch (e) { note('- ❌ מייל בדיקה: ' + e.message); }
 }
-for (const [k, v] of Object.entries(checks)) note(`- /webhook/${k}: ${v === 200 || (k === 'hasadna-auth' && v === 401) ? '✅ עונה' : '❌ ' + v}`);
+// Maya's voice: a real sentence, as the site asks for it
+try {
+  const r = await fetch(`${BASE}/webhook/hasadna-voice`, { method: 'POST', headers: { Origin: 'https://devopsdevopshaim-wq.github.io' }, body: new URLSearchParams({ text: 'שלום, אני מאיה.' }) });
+  const j = await r.json().catch(() => ({}));
+  checks['hasadna-voice'] = r.status;
+  note(`- הקול של מאיה: ${j.ok ? '✅ מדברת (' + Math.round(j.audio.length * 0.75 / 1024) + 'KB)' : hasVoice ? '❌ ' + r.status + ' ' + (j.error || '') + ' ' + (j.detail || '') : '⚠️ אין עדיין מפתח קול (AZURE_SPEECH_KEY + AZURE_SPEECH_REGION או ELEVENLABS_API_KEY בסוד SPIDER)'}`);
+} catch (e) { note('- ❌ הקול של מאיה: ' + e.message); }
+for (const [k, v] of Object.entries(checks)) note(`- /webhook/${k}: ${v === 200 || (k === 'hasadna-auth' && v === 401) || (k === 'hasadna-voice' && v === 503) ? '✅ עונה' : '❌ ' + v}`);
 if (!smtp) note('- ⚠️ אין חיבור לשליחת מיילים: הוסיפו את הסוד GMAIL_APP_PASSWORD והריצו שוב. עד אז קודי הכניסה לא יישלחו.');
 if (!claude) note('- ⚠️ אין חיבור Claude: הוסיפו את הסוד ANTHROPIC_API_KEY והריצו שוב.');
 
