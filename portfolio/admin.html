@@ -164,20 +164,9 @@
     </header>
 
     <div class="biz-login" id="biz-login">
-      <p id="biz-login-text">הלידים והמחירון שמורים ב־n8n. כדי לראות אותם, הכניסו את סיסמת המנהל של מרכז העסקים.</p>
-      <form class="people-add" id="biz-login-form">
-        <label class="field"><span>סיסמת מנהל</span><input id="biz-key" type="password" autocomplete="current-password" minlength="8" required></label>
-        <button class="btn btn-gold btn-sm" type="submit" id="biz-login-btn">כניסה</button>
-      </form>
+      <p id="biz-login-text">הלידים והמחירון שמורים ב־n8n ונפתחים רק למנהל שנכנס למערכת. אין סיסמה נפרדת: נכנסים עם המייל, הטלפון והקוד (ועם אפליקציית האימות, אם הופעלה).</p>
+      <a class="btn btn-gold btn-sm" id="biz-login-btn" href="?login=1">כניסה כמנהל</a>
       <p class="add-error" id="biz-error" role="alert" hidden></p>
-      <details class="biz-help">
-        <summary>פעם ראשונה? 3 צעדים</summary>
-        <ol>
-          <li>ב־n8n: <b>Workflows ← Import from File</b> ובוחרים את הקובץ <a href="https://raw.githubusercontent.com/devopsdevopshaim-wq/devops-hub/main/n8n/hasadna-business.json" target="_blank" rel="noopener">n8n/hasadna-business.json</a> (לחיצה ימנית ← שמירה בשם).</li>
-          <li>מפעילים את ה־workflow (המתג <b>Active</b> למעלה).</li>
-          <li>חוזרים לכאן, כותבים סיסמה חדשה (8 תווים לפחות) ולוחצים <b>קביעת סיסמה</b>. מעכשיו רק מי שיודע אותה רואה לידים ומשנה מחירים.</li>
-        </ol>
-      </details>
     </div>
 
     <div id="biz-body" hidden>

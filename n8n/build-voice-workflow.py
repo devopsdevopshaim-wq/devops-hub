@@ -17,7 +17,12 @@ import json
 import uuid
 from pathlib import Path
 
+# n8n keeps every execution's input and output. Codes, tokens, leads and audio must not stay there.
+QUIET = {'executionOrder': 'v1', 'saveDataSuccessExecution': 'none', 'saveDataErrorExecution': 'none', 'saveManualExecutions': False, 'executionTimeout': 60}
 NS = 'hasadna-voice/'
+SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io'
+SNIP = Path(__file__).with_name('snippets')
+SEC = (SNIP / 'security.js').read_text(encoding='utf-8')
 
 
 def uid(name):
@@ -31,6 +36,11 @@ def node(name, type_, version, params, pos, **extra):
 
 
 SPEAK = r"""// Turns Maya's text into speech: an mp3, as base64.
+__SEC__
+
+const sd = $getWorkflowStaticData('global');
+const now = Date.now();
+sweep();
 const AZURE_KEY = '__AZURE_SPEECH_KEY__';
 const AZURE_REGION = '__AZURE_SPEECH_REGION__';
 const ELEVEN_KEY = '__ELEVENLABS_API_KEY__';
@@ -38,19 +48,17 @@ const ELEVEN_VOICE = 'EXAVITQu4vr4xnSDxMaL'; // "Sarah", a warm female voice
 const set = (k) => k && !/^__/.test(k);
 // stay inside the free tiers (characters a month)
 const CAP = set(AZURE_KEY) ? 480000 : 9500;
-const SITES = /^https:\/\/devopsdevopshaim-wq\.github\.io$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 const out = (body, code = 200) => [{ json: { code, body } }];
-const h = $json.headers || {};
-const from = h.origin || String(h.referer || '').replace(/^(https?:\/\/[^/]+).*$/, '$1');
-if (!SITES.test(from)) return out({ ok: false, error: 'forbidden' }, 403);
+// browsers only: the call must come from the site's own pages
+if (!ORIGIN || !ORIGIN_OK) return out({ ok: false, error: 'forbidden' }, 403);
+if (!hit('voice-ip', ipKey(), 40, 3600000) || !hit('voice-all', 'all', 600, 86400000)) return out({ ok: false, error: 'rate-limited' }, 429);
 if (!set(AZURE_KEY) && !set(ELEVEN_KEY)) return out({ ok: false, error: 'no-voice' }, 503);
 
 const b = $json.body || {};
 const text = String(b.text || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 900);
 if (!text) return out({ ok: false, error: 'empty' }, 400);
 
-const sd = $getWorkflowStaticData('global');
 const month = new Date().toISOString().slice(0, 7);
 if (sd.month !== month) { sd.month = month; sd.used = 0; sd.calls = 0; }
 if (sd.used + text.length > CAP) return out({ ok: false, error: 'quota' }, 429);
@@ -101,12 +109,14 @@ nodes = [
     node('Voice · Webhook', 'n8n-nodes-base.webhook', 2,
          {'httpMethod': 'POST', 'path': 'hasadna-voice', 'responseMode': 'responseNode', 'options': {}},
          [X, Y], webhookId=uid('hasadna-voice')),
-    node('Voice · Speak', 'n8n-nodes-base.code', 2, {'jsCode': SPEAK}, [X + 240, Y]),
+    node('Voice · Speak', 'n8n-nodes-base.code', 2, {'jsCode': SPEAK.replace('__SEC__', SEC)}, [X + 240, Y]),
     node('Voice · Respond', 'n8n-nodes-base.respondToWebhook', 1.1,
          {'respondWith': 'json', 'responseBody': '={{ JSON.stringify($json.body) }}',
           'options': {'responseCode': '={{ $json.code || 200 }}',
                       'responseHeaders': {'entries': [
-                          {'name': 'Access-Control-Allow-Origin', 'value': '*'},
+                          {'name': 'Access-Control-Allow-Origin', 'value': SITE_ORIGIN},
+                          {'name': 'Vary', 'value': 'Origin'},
+                          {'name': 'X-Content-Type-Options', 'value': 'nosniff'},
                           {'name': 'Cache-Control', 'value': 'no-store'}]}}},
          [X + 480, Y]),
 ]
@@ -117,7 +127,7 @@ connections = {
 }
 
 wf = {'name': 'SPIDER · הקול של מאיה', 'nodes': nodes, 'connections': connections,
-      'active': False, 'settings': {'executionOrder': 'v1'}, 'pinData': {},
+      'active': False, 'settings': QUIET, 'pinData': {},
       'meta': {'templateCredsSetupCompleted': False}, 'tags': []}
 
 out = Path(__file__).with_name('hasadna-voice.json')

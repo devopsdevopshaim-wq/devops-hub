@@ -15,7 +15,12 @@ import json
 import uuid
 from pathlib import Path
 
+# n8n keeps every execution's input and output. Codes, tokens, leads and audio must not stay there.
+QUIET = {'executionOrder': 'v1', 'saveDataSuccessExecution': 'none', 'saveDataErrorExecution': 'none', 'saveManualExecutions': False, 'executionTimeout': 60}
 NS = 'hasadna-business/'
+SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io'
+SNIP = Path(__file__).with_name('snippets')
+SEC = (SNIP / 'security.js').read_text(encoding='utf-8')
 EMAIL = 'devopsdevopshaim@gmail.com'
 
 
@@ -44,24 +49,39 @@ def respond(name, pos):
                 {'respondWith': 'json', 'responseBody': '={{ JSON.stringify($json.body) }}',
                  'options': {'responseCode': '={{ $json.code || 200 }}',
                              'responseHeaders': {'entries': [
-                                 {'name': 'Access-Control-Allow-Origin', 'value': '*'},
+                                 {'name': 'Access-Control-Allow-Origin', 'value': SITE_ORIGIN},
+                                 {'name': 'Vary', 'value': 'Origin'},
+                                 {'name': 'X-Content-Type-Options', 'value': 'nosniff'},
+                                 {'name': 'Referrer-Policy', 'value': 'no-referrer'},
                                  {'name': 'Cache-Control', 'value': 'no-store'}]}}},
                 pos)
 
 
 SAVE_LEAD = r"""// Saves a lead from the services page (or counts a WhatsApp click).
+__SEC__
+
 const sd = $getWorkflowStaticData('global');
+const now = Date.now();
+const HOUR = 3600000, DAY = 86400000;
 sd.leads = sd.leads || [];
 sd.clicks = sd.clicks || {};
+sweep();
 const b = $json.body || {};
+const hold = (code, error) => [{ json: { code, body: { ok: false, error }, notify: false } }];
+if (!ORIGIN_OK) return hold(403, 'forbidden');
+if (JSON.stringify(b).length > 6000) return hold(413, 'too-big');
 const line = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n);
 const text = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0009\u000b-\u001f\u007f]+/g, ' ').trim().slice(0, n);
 
 if (b.kind === 'click') {
-  const k = line(b.source, 40) || 'other';
+  if (!hit('click', ipKey(), 60, HOUR)) return hold(429, 'rate-limited');
+  let k = line(b.source, 40) || 'other';
+  if (!(k in sd.clicks) && Object.keys(sd.clicks).length >= 30) k = 'other';   // the list of sources cannot grow without end
   sd.clicks[k] = (sd.clicks[k] || 0) + 1;
   return [{ json: { code: 200, body: { ok: true }, notify: false } }];
 }
+// a few leads an hour per address and a daily cap, so the inbox and the email cannot be flooded
+if (!hit('lead-ip', ipKey(), 5, HOUR) || !hit('lead-all', 'all', 150, DAY)) return hold(429, 'rate-limited');
 // a hidden field people never fill; bots do
 if (line(b.website, 50)) return [{ json: { code: 200, body: { ok: true }, notify: false } }];
 
@@ -85,88 +105,16 @@ return [{ json: { code: 200, body: { ok: true, id: lead.id }, notify: true, lead
 """
 
 PRICES = r"""// Public: the prices and offers the admin set (empty = the page uses services.json).
+__SEC__
+
 const sd = $getWorkflowStaticData('global');
+const now = Date.now();
+if (!ORIGIN_OK) return [{ json: { code: 403, body: { ok: false, error: 'forbidden' } } }];
+if (!hit('prices', ipKey(), 120, 600000)) return [{ json: { code: 429, body: { ok: false, error: 'rate-limited' } } }];
 return [{ json: { code: 200, body: { ok: true, prices: sd.prices || null } } }];
 """
 
-ADMIN = r"""// The admin screen's API. Every call carries the admin password.
-const sd = $getWorkflowStaticData('global');
-// Optional: write a fixed password here; it then replaces the one chosen from the admin screen.
-const ADMIN_KEY = '';
-
-const b = $json.body || {};
-const key = String(b.key || '');
-const stored = ADMIN_KEY || sd.adminKey || '';
-const out = (body, code) => [{ json: { code: code || 200, body } }];
-const line = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n);
-
-if (b.action === 'setup') {
-  if (stored) return out({ ok: false, error: 'already-set' }, 403);
-  if (key.length < 8) return out({ ok: false, error: 'short' }, 400);
-  sd.adminKey = key;
-  return out({ ok: true, setup: true });
-}
-if (!stored) return out({ ok: false, error: 'no-key' }, 403);
-if (key !== stored) return out({ ok: false, error: 'bad-key' }, 403);
-
-let p = {};
-try { p = JSON.parse(b.payload || '{}'); } catch (e) { return out({ ok: false, error: 'bad-payload' }, 400); }
-sd.leads = sd.leads || [];
-const STATUSES = ['new', 'working', 'quoted', 'won', 'lost'];
-
-switch (b.action) {
-  case 'list':
-    return out({ ok: true, leads: sd.leads, clicks: sd.clicks || {}, prices: sd.prices || null });
-
-  case 'lead': {
-    const l = sd.leads.find((x) => x.id === p.id);
-    if (!l) return out({ ok: false, error: 'not-found' }, 404);
-    if (STATUSES.includes(p.status)) l.status = p.status;
-    if (p.note !== undefined) l.note = String(p.note).slice(0, 500);
-    l.updatedAt = new Date().toISOString();
-    return out({ ok: true, lead: l });
-  }
-
-  case 'lead-delete':
-    sd.leads = sd.leads.filter((x) => x.id !== p.id);
-    return out({ ok: true });
-
-  case 'prices': {
-    if (p.reset) { delete sd.prices; return out({ ok: true, prices: null }); }
-    const services = {};
-    Object.keys(p.services || {}).slice(0, 40).forEach((id) => {
-      const s = p.services[id] || {};
-      const from = Math.max(0, Math.round(Number(s.from) || 0));
-      services[line(id, 40)] = { title: line(s.title, 80), from, unit: line(s.unit, 30), hidden: !!s.hidden };
-    });
-    const offers = (Array.isArray(p.offers) ? p.offers : []).slice(0, 12).map((o) => ({
-      tag: line(o.tag, 20), title: line(o.title, 100), text: line(o.text, 300),
-      until: /^\d{4}-\d{2}-\d{2}$/.test(o.until || '') ? o.until : '',
-      code: line(o.code, 20).toUpperCase(), active: o.active !== false
-    })).filter((o) => o.title);
-    // services added from the admin screen
-    const extra = (Array.isArray(p.extra) ? p.extra : []).slice(0, 20).map((x, i) => ({
-      id: /^x-[a-z0-9-]{1,40}$/.test(x.id || '') ? x.id : 'x-' + Date.now().toString(36) + i,
-      title: line(x.title, 80), pitch: line(x.pitch, 300), unit: line(x.unit, 30),
-      from: Math.max(0, Math.round(Number(x.from) || 0)), icon: line(x.icon, 4) || '✦', hidden: !!x.hidden
-    })).filter((x) => x.title);
-    // subscription prices for access to the sites (used by the payments screen too)
-    const plans = {};
-    ['day', 'week', 'month', 'year'].forEach((k) => { const v = Math.round(Number((p.plans || {})[k]) || 0); if (v > 0) plans[k] = v; });
-    sd.prices = { services, extra, plans, offers, note: line(p.note, 300), updatedAt: new Date().toISOString() };
-    return out({ ok: true, prices: sd.prices });
-  }
-
-  case 'password': {
-    if (ADMIN_KEY) return out({ ok: false, error: 'fixed-in-n8n' }, 400);
-    const nk = String(p.newKey || '');
-    if (nk.length < 8) return out({ ok: false, error: 'short' }, 400);
-    sd.adminKey = nk;
-    return out({ ok: true });
-  }
-}
-return out({ ok: false, error: 'unknown-action' }, 400);
-"""
+ADMIN = (SNIP / 'business-admin-handle.js').read_text(encoding='utf-8')
 
 X, Y_L, Y_P, Y_A = 0, 0, 420, 760
 nodes = [
@@ -176,7 +124,7 @@ nodes = [
          'כל ליד חדש נשלח גם במייל (צומת "Lead · Email", חיבור SPIDER · Gmail).',
          [X - 480, Y_L - 200], h=240, color=6),
     webhook('Lead · Webhook', 'POST', 'hasadna-lead', [X, Y_L]),
-    node('Lead · Save', 'n8n-nodes-base.code', 2, {'jsCode': SAVE_LEAD}, [X + 240, Y_L]),
+    node('Lead · Save', 'n8n-nodes-base.code', 2, {'jsCode': SAVE_LEAD.replace('__SEC__', SEC)}, [X + 240, Y_L]),
     respond('Lead · Respond', [X + 480, Y_L - 80]),
     node('New lead?', 'n8n-nodes-base.if', 2.2,
          {'conditions': {'options': {'caseSensitive': True, 'typeValidation': 'loose', 'version': 2},
@@ -197,15 +145,15 @@ nodes = [
          'כל עוד לא שמרת כלום, הדף משתמש במחירים שבקובץ services.json.',
          [X - 480, Y_P - 170], h=200, color=5),
     webhook('Prices · Webhook', 'GET', 'hasadna-prices', [X, Y_P]),
-    node('Prices · Read', 'n8n-nodes-base.code', 2, {'jsCode': PRICES}, [X + 240, Y_P]),
+    node('Prices · Read', 'n8n-nodes-base.code', 2, {'jsCode': PRICES.replace('__SEC__', SEC)}, [X + 240, Y_P]),
     respond('Prices · Respond', [X + 480, Y_P]),
 
     note('Note · Admin',
          '## ניהול\n`POST /webhook/hasadna-admin` — מסך הניהול של האתר משתמש בזה: רשימת לידים, שינוי סטטוס והערות, ושמירת מחירון. '
-         'כל בקשה דורשת את סיסמת המנהל. את הסיסמה קובעים פעם אחת ממסך הניהול. שכחת? כותבים סיסמה חדשה ב־ADMIN_KEY בצומת "Admin · Handle".',
+         'אין יותר סיסמה נפרדת: כל בקשה נבדקת מול הכניסה הראשית (hasadna-auth), ורק מנהל שנכנס עם קוד (ואימות דו־שלבי, אם הופעל) מורשה.',
          [X - 480, Y_A - 190], h=230, color=3),
     webhook('Admin · Webhook', 'POST', 'hasadna-admin', [X, Y_A]),
-    node('Admin · Handle', 'n8n-nodes-base.code', 2, {'jsCode': ADMIN}, [X + 240, Y_A]),
+    node('Admin · Handle', 'n8n-nodes-base.code', 2, {'jsCode': ADMIN.replace('__SEC__', SEC)}, [X + 240, Y_A]),
     respond('Admin · Respond', [X + 480, Y_A]),
 ]
 
@@ -227,7 +175,7 @@ for a, b, out in main:
     outs[out].append({'node': b, 'type': 'main', 'index': 0})
 
 wf = {'name': 'SPIDER · לידים ומחירון', 'nodes': nodes, 'connections': connections,
-      'active': False, 'settings': {'executionOrder': 'v1'}, 'pinData': {},
+      'active': False, 'settings': QUIET, 'pinData': {},
       'meta': {'templateCredsSetupCompleted': False}, 'tags': []}
 
 names = [n['name'] for n in nodes]
