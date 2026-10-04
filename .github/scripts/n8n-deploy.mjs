@@ -6,6 +6,7 @@
 //   n8n/hasadna-business.json     leads and the price list (keeps its stored leads on update)
 //   n8n/hasadna-access.json       sign-in codes, clients, payments (Gmail SMTP)
 //   n8n/hasadna-voice.json        Maya's female voice for browsers without one (Azure Speech or ElevenLabs)
+//   n8n/hasadna-parkomat.json     Parkomat's robotic-parking agents: questionnaires from פארק־פלאן (Claude + lead email)
 //
 // Secrets: N8N_URL, N8N_API_KEY (or both inside HAIM_WEB_KEY),
 //          ANTHROPIC_API_KEY (only until a Claude credential exists in n8n),
@@ -129,6 +130,11 @@ try {
   results.access = await install('n8n/hasadna-access.json', ['הסדנה · כניסה והרשאות'],
     { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } } });
 } catch (e) { note(`- ⚠️ כניסה והרשאות: ${e.message.slice(0, 200)}`); }
+try {
+  results.parkomat = await install('n8n/hasadna-parkomat.json', [],
+    { creds: { anthropicApi: { types: ['@n8n/n8n-nodes-langchain.lmChatAnthropic'], cred: claude },
+               smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } } });
+} catch (e) { note(`- ⚠️ Parkomat: ${e.message.slice(0, 200)}`); }
 try {
   results.voice = await install('n8n/hasadna-voice.json', [], { fill: VOICE });
 } catch (e) { note(`- ⚠️ הקול של מאיה: ${e.message.slice(0, 200)}`); }

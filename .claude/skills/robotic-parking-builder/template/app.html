@@ -236,6 +236,41 @@ html{scroll-behavior:smooth}
 .planner-anchor{scroll-margin-top:70px}
 .lfoot{background:#080b0d;color:var(--l-mute);font-size:13px}
 .lfoot div{max-width:1500px;margin-inline:auto;padding-inline:16px;padding-block:22px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+.ask-kinds{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 18px}
+.ask-kinds button{font:600 14.5px var(--f-body);background:transparent;color:var(--l-mute);border:1px solid var(--l-line);padding:9px 16px;border-radius:3px;cursor:pointer}
+.ask-kinds button[aria-selected="true"]{background:var(--l-acc);color:#14191b;border-color:var(--l-acc)}
+.ask-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:960px){.ask-grid{grid-template-columns:minmax(0,1fr)}}
+.ask-form{display:grid;gap:14px}
+.ask-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+@media (max-width:520px){.ask-fields{grid-template-columns:minmax(0,1fr)}}
+.ask-fields .full{grid-column:1/-1}
+.ask-form label.f{color:var(--l-mute)}
+.ask-form input,.ask-form select,.ask-form textarea{background:#0c1115!important;color:var(--l-ink)!important;border:1px solid var(--l-line)!important;font:15px var(--f-body)!important;padding:8px 10px!important;border-radius:3px;text-align:right}
+.ask-form textarea{resize:vertical}
+.ask-contact{border:1px solid var(--l-line);padding:10px 12px 12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;margin:0}
+.ask-contact legend{color:var(--l-mute);font-size:13px;padding:0 6px}
+@media (max-width:520px){.ask-contact{grid-template-columns:minmax(0,1fr)}}
+.ask-hint{color:var(--l-mute);font-size:13.5px;margin:0}
+.ask-out{background:var(--l-bg2);border:1px solid var(--l-line);padding:18px;min-height:240px;min-width:0}
+.ask-empty{color:var(--l-mute)}
+.ask-out h3{font-family:var(--f-display);font-weight:400;font-size:22px;margin:0 0 10px}
+.ask-out h4{font-size:16px;margin:16px 0 6px;color:var(--l-acc)}
+.ask-out p,.ask-out li{color:#d3dcdf;font-size:14.5px}
+.ask-out ul{padding-inline-start:18px;margin:4px 0}
+.ask-kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;margin:8px 0 12px}
+@media (max-width:520px){.ask-kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ask-kv div{background:rgba(255,255,255,.04);padding:10px}
+.ask-kv b{display:block;font-family:var(--f-mono);font-size:20px;font-variant-numeric:tabular-nums}
+.ask-kv span{font-size:12px;color:var(--l-mute)}
+.ask-ai{margin-top:16px;border-top:1px solid var(--l-line);padding-top:12px}
+.ask-ai .tag{display:inline-block;font-family:var(--f-mono);font-size:12px;color:#14191b;background:var(--l-teal);padding:1px 8px;border-radius:10px;margin-bottom:6px}
+.ask-wait{display:flex;gap:8px;align-items:center;color:var(--l-mute)}
+.ask-wait i{width:8px;height:8px;border-radius:50%;background:var(--l-acc);animation:askp 1s infinite alternate}
+.ask-wait i:nth-child(2){animation-delay:.2s}.ask-wait i:nth-child(3){animation-delay:.4s}
+@keyframes askp{from{opacity:.2}to{opacity:1}}
+.ask-warn{color:#f0c27a;font-size:13.5px}
+
 /* cabinet 3D tab */
 .c3-wrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
 @media (max-width:900px){.c3-wrap{grid-template-columns:minmax(0,1fr)}}
@@ -264,7 +299,7 @@ html{scroll-behavior:smooth}
   <div class="lnav-in">
     <a class="brand-mark" href="#top" aria-label="פארק־פלאן – לראש הדף"><span class="pm">P</span><span>פארק־פלאן</span></a>
     <div class="lnav-links">
-      <a href="#system">המערכת</a><a href="#examples">דוגמאות</a><a href="#gallery">פרויקטים</a><a href="#planner">המתכנן</a><a href="#contact">צור קשר</a>
+      <a href="#system">המערכת</a><a href="#examples">דוגמאות</a><a href="#ask">שאלונים</a><a href="#gallery">פרויקטים</a><a href="#planner">המתכנן</a><a href="#contact">צור קשר</a>
     </div>
     <a class="lbtn lbtn-pri" href="#planner">פתיחת המתכנן</a>
   </div>
@@ -312,6 +347,61 @@ html{scroll-behavior:smooth}
     <div class="ex-grid" id="exGrid"></div>
   </div>
 </section>
+<section class="lsec" id="ask">
+  <div class="lsec-in">
+    <p class="eyebrow">שאלונים · סוכני Parkomat</p>
+    <h2 class="lh2">ממלאים שאלון, מקבלים תשובה</h2>
+    <p class="lp">תשובה מיידית מחושבת כאן מהמודל של החניון, ואחריה ניתוח מלא מסוכני Parkomat ב‑n8n: תכנון וקיבולת, חשמל ובטיחות, יזמות ורישוי. מי שמשאיר פרטים מקבל חזרה טלפונית.</p>
+    <div class="ask-kinds" role="tablist" aria-label="סוג שאלון">
+      <button type="button" role="tab" data-ask="developer" aria-selected="true">שאלון יזם</button>
+      <button type="button" role="tab" data-ask="technical" aria-selected="false">שאלון טכני</button>
+      <button type="button" role="tab" data-ask="question" aria-selected="false">שאלה חופשית</button>
+    </div>
+    <div class="ask-grid">
+      <form class="ask-form" id="askForm" novalidate>
+        <div class="ask-fields" data-for="developer">
+          <label class="f">סוג פרויקט<select id="q_type"><option>מגורים</option><option>משרדים</option><option>מסחר וקניון</option><option>בית חולים</option><option>מלון</option><option>חניון ציבורי</option><option>אחר</option></select></label>
+          <label class="f">עיר / אזור<input id="q_city" type="text" maxlength="60" placeholder="תל אביב"></label>
+          <label class="f">מקומות חניה נדרשים<input id="q_spaces" type="number" min="4" max="2000" value="120"></label>
+          <label class="f">מיקום<select id="q_where"><option value="above">מעל הקרקע</option><option value="under">תת־קרקעי</option><option value="mixed">משולב</option></select></label>
+          <label class="f">אורך המגרש (מטר)<input id="q_len" type="number" min="8" max="300" value="45"></label>
+          <label class="f">רוחב המגרש (מטר)<input id="q_wid" type="number" min="6" max="200" value="20"></label>
+          <label class="f">גובה מותר (מטר, אם יש)<input id="q_hmax" type="number" min="0" max="200" placeholder="ללא הגבלה"></label>
+          <label class="f">כניסות + יציאות בשעת שיא<input id="q_peak" type="number" min="0" max="2000" value="60"></label>
+          <label class="f">רכבים גבוהים (SUV ומסחריים)<select id="q_suv"><option value="low">עד 20%</option><option value="mid" selected>20%–40%</option><option value="high">מעל 40%</option></select></label>
+          <label class="f">טעינת רכב חשמלי<select id="q_ev"><option value="none">לא</option><option value="some" selected>בחלק מהתאים</option><option value="all">בכל התאים</option></select></label>
+          <label class="f">לוח זמנים<select id="q_time"><option>עד שנה</option><option selected>שנה עד שנתיים</option><option>יותר משנתיים</option></select></label>
+          <label class="f full">הערות<textarea id="q_notes" rows="2" maxlength="600" placeholder="למשל: כניסה מרחוב צר, מגבלת רעש בלילה"></textarea></label>
+        </div>
+        <div class="ask-fields" data-for="technical" hidden>
+          <p class="ask-hint full">השאלון הטכני שולח גם את התצורה שכרגע במתכנן (<span id="askCfg"></span>).</p>
+          <label class="f">חיבור חשמל זמין (A)<input id="t_amps" type="number" min="0" max="5000" placeholder="למשל 250"></label>
+          <label class="f">בקר מועדף<select id="t_plc"><option>Siemens S7-1500 (ברירת המחדל)</option><option>Rockwell / Allen-Bradley</option><option>Beckhoff</option><option>לא משנה</option></select></label>
+          <label class="f">כיבוי אש<select id="t_fire"><option>ספרינקלרים</option><option>גז / ערפל מים</option><option>עוד לא ידוע</option></select></label>
+          <label class="f">אוורור<select id="t_vent"><option>טבעי</option><option>מכני</option><option>עוד לא ידוע</option></select></label>
+          <label class="f">ניטור ושירות מרחוק<select id="t_remote"><option>כן</option><option>לא</option></select></label>
+          <label class="f">חיישנים או דרישות מיוחדות<input id="t_special" type="text" maxlength="160" placeholder="למשל: זיהוי לוחיות, שקילה"></label>
+          <label class="f full">שאלות טכניות<textarea id="t_q" rows="3" maxlength="1200" placeholder="מה הספק הכולל? איזה חיבור חשמל צריך? איך מתחזקים?"></textarea></label>
+        </div>
+        <div class="ask-fields" data-for="question" hidden>
+          <label class="f full">השאלה שלכם<textarea id="f_q" rows="5" maxlength="2000" placeholder="למשל: כמה זמן לוקח לשלוף רכב בשעת שיא, ומה קורה בהפסקת חשמל?"></textarea></label>
+        </div>
+        <fieldset class="ask-contact">
+          <legend>פרטי קשר (לא חובה)</legend>
+          <label class="f">שם<input id="c_name" type="text" maxlength="80" autocomplete="name"></label>
+          <label class="f">חברה<input id="c_company" type="text" maxlength="80" autocomplete="organization"></label>
+          <label class="f">טלפון<input id="c_phone" type="tel" maxlength="30" autocomplete="tel" style="direction:ltr"></label>
+          <label class="f">מייל<input id="c_email" type="email" maxlength="120" autocomplete="email" style="direction:ltr"></label>
+        </fieldset>
+        <button class="lbtn lbtn-pri" type="submit" id="askGo">קבלת תשובה</button>
+      </form>
+      <div class="ask-out" id="askOut" aria-live="polite">
+        <div class="ask-empty">התשובה תופיע כאן: קודם החישוב המיידי, ואז ניתוח הסוכנים.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="lsec lsec-alt" id="gallery">
   <div class="lsec-in">
     <p class="eyebrow">פרויקטים וגלריה</p>
@@ -3523,6 +3613,81 @@ async function ghPublish(x){
   catch(e){btn.disabled=false;btn.textContent="פרסום באתר";toast(e.message==="401"||e.message==="403"?"המפתח לא תקף או בלי הרשאת כתיבה למאגר":"הפרסום נכשל ("+e.message+")")}
 }
 
+/* ---------- questionnaires → instant answer + Parkomat agents (n8n) ---------- */
+const PARKOMAT_DEFAULT="https://haimkripisn.app.n8n.cloud/webhook/parkomat-agents";
+const parkomatUrl=()=>{try{return localStorage.getItem("rp-parkomat-url")||PARKOMAT_DEFAULT}catch(e){return PARKOMAT_DEFAULT}};
+const ASK={kind:"developer",session:"pp-"+Math.random().toString(36).slice(2,10),lastPreset:null};
+const val=id=>{const el=document.getElementById(id);return el?String(el.value||"").trim():""};
+function mdLite(t){const out=[];let inList=false;
+  esc(t).split(/\n/).forEach(l=>{const s=l.trim();if(!s){if(inList){out.push("</ul>");inList=false}return}
+    const b=s.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
+    if(/^#{1,4}\s/.test(s)){if(inList){out.push("</ul>");inList=false}out.push("<h4>"+b.replace(/^#{1,4}\s*/,"")+"</h4>")}
+    else if(/^[-*•]\s/.test(s)){if(!inList){out.push("<ul>");inList=true}out.push("<li>"+b.replace(/^[-*•]\s*/,"")+"</li>")}
+    else{if(inList){out.push("</ul>");inList=false}out.push("<p>"+b+"</p>")}});
+  if(inList)out.push("</ul>");return out.join("")}
+function recommend(a){
+  const p=S.cellPitch/1000,cellD=(M.palletL+400)/1000,aisle=(M.palletW+900)/1000;
+  const notes=[];
+  let sides=a.wid>=2*cellD+aisle+1.2?2:a.wid>=cellD+aisle+1.2?1:0;
+  if(!sides)return {fit:false,reason:`רוחב ${a.wid} מ' קטן מהמינימום לשורת תאים אחת עם שביל (${fx(cellD+aisle+1.2,1)} מ').`};
+  const build=(lifts)=>{const cps=Math.max(1,Math.min(40,Math.floor((a.len-1.2)/p)-1-(lifts===2?1:0)));let floors=Math.ceil(a.spaces/(cps*sides));
+    let hcap=null;if(a.hmax>0){hcap=Math.max(1,Math.floor((a.hmax-2.9)/(2.15+0.32)));if(floors>hcap){floors=hcap;notes.push(`מגבלת הגובה מאפשרת עד ${hcap} קומות, ולכן הקיבולת נמוכה מהנדרש.`)}}
+    floors=Math.max(1,Math.min(30,floors));
+    const pr={floors,cellsPerSide:cps,sides,lifts,turntable:true};
+    const r=withPreset(pr,m=>({cells:m.cells,t:m.tRetrAvg,ts:m.tStoreAvg,thr:m.throughput,kW:m.axes.reduce((s,x)=>s+x.kW,0),fp:footprint(m),H:m.totalH,cabs:m.cabs.length}));
+    return {pr,r}};
+  let o=build(1);
+  if(a.peak>o.r.thr&&o.pr.cellsPerSide>2){const o2=build(2);notes.push(`בשעת שיא ${a.peak} תנועות, ומעלית אחת נותנת כ‑${fx(o.r.thr,0)} בשעה, ולכן מומלצות שתי מעליות.`);o=o2}
+  if(a.peak>o.r.thr)notes.push(`גם עם ${o.pr.lifts} מעליות התפוקה (כ‑${fx(o.r.thr,0)} בשעה) נמוכה משעת השיא. כדאי לפצל לשני מתקנים או להוסיף לובי.`);
+  if(a.suv==="high")notes.push("הרבה רכבים גבוהים: כדאי שרוב הקומות יהיו בגובה נקי של 2.15 מ' ומעלה.");
+  if(a.ev!=="none")notes.push(a.ev==="all"?"טעינה בכל התאים מוסיפה הספק משמעותי (בדרך כלל 7–11 kW לעמדה, עם ניהול עומסים) וכבילה לכל מגש או תא.":"טעינה בחלק מהתאים: מקצים קומה או שורה עם שקעי טעינה ומנהלים עומסים.");
+  if(a.where!=="above")notes.push("תת־קרקעי: צריך לבדוק מי תהום, איטום, אוורור מכני וכיבוי אש מוקדם בתכנון.");
+  if(o.r.cells<a.spaces)notes.push(`הקיבולת שיצאה (${o.r.cells}) קטנה מהנדרש (${a.spaces}).`);
+  return {fit:true,...o,notes};
+}
+function devAnswers(){return {"סוג פרויקט":val("q_type"),"עיר":val("q_city"),"מקומות נדרשים":val("q_spaces"),"מיקום":document.getElementById("q_where").selectedOptions[0].text,"אורך מגרש מ'":val("q_len"),"רוחב מגרש מ'":val("q_wid"),"גובה מותר מ'":val("q_hmax")||"ללא","תנועות בשעת שיא":val("q_peak"),"רכבים גבוהים":document.getElementById("q_suv").selectedOptions[0].text,"טעינת רכב חשמלי":document.getElementById("q_ev").selectedOptions[0].text,"לוח זמנים":val("q_time"),"הערות":val("q_notes")}}
+function techAnswers(){return {"חיבור חשמל זמין A":val("t_amps"),"בקר מועדף":val("t_plc"),"כיבוי אש":val("t_fire"),"אוורור":val("t_vent"),"ניטור מרחוק":val("t_remote"),"דרישות מיוחדות":val("t_special"),"שאלות":val("t_q")}}
+function cfgSummary(){return {"קומות":M.F,"תאים לצד":M.n,"צדדים":M.sides,"מעליות":M.L,"מקומות":M.cells,"שליפה ממוצעת ש'":fx(M.tRetrAvg,0),"הספק מותקן kW":fx(M.axes.reduce((a,x)=>a+x.kW,0),1),"הזנה ראשית A":M.cabs[0].feed,"ארונות":M.cabs.length,"נקודות IO":M.io.filter(s=>s.kind!=="NET").length,"התקני רשת":M.net.length}}
+function askInit(){
+  const out=document.getElementById("askOut");if(!out)return;
+  document.getElementById("askCfg").textContent=`${M.F} קומות, ${M.cells} מקומות, ${M.L} מעליות`;
+  document.querySelectorAll("[data-ask]").forEach(b=>b.onclick=()=>{ASK.kind=b.dataset.ask;document.querySelectorAll("[data-ask]").forEach(x=>x.setAttribute("aria-selected",x===b));document.querySelectorAll(".ask-fields").forEach(f=>f.hidden=f.dataset.for!==ASK.kind)});
+  document.getElementById("askForm").onsubmit=async e=>{e.preventDefault();
+    const kind=ASK.kind;let local=null,html="",answers={},question="";
+    if(kind==="developer"){
+      const a={spaces:+val("q_spaces")||0,len:+val("q_len")||0,wid:+val("q_wid")||0,hmax:+val("q_hmax")||0,peak:+val("q_peak")||0,suv:val("q_suv"),ev:val("q_ev"),where:val("q_where")};
+      if(a.spaces<4||a.len<8||a.wid<6){out.innerHTML=`<p class="ask-warn">כדי לחשב צריך מספר מקומות (לפחות 4) ומידות מגרש באורך ורוחב.</p>`;return}
+      answers=devAnswers();const r=recommend(a);
+      if(!r.fit){html=`<h3>המגרש צר מדי</h3><p>${esc(r.reason)}</p>`;local={"התאמה":"לא נכנס"}}
+      else{ASK.lastPreset={...r.pr,underground:a.where==="under"};
+        local={"קומות":r.pr.floors,"תאים לצד":r.pr.cellsPerSide,"צדדים":r.pr.sides,"מעליות":r.pr.lifts,"מקומות":r.r.cells,"שליפה ממוצעת ש'":fx(r.r.t,0),"תנועות לשעה":fx(r.r.thr,0),"שטח מגרש מ\"ר":fx(r.r.fp.area,0),"גובה מבנה מ'":fx(r.r.H/1000,1)};
+        html=`<h3>ההמלצה המיידית</h3><div class="ask-kv">${[[r.r.cells,"מקומות"],[r.pr.floors,"קומות"],[r.pr.lifts,"מעליות"],[fx(r.r.t,0)+"″","שליפה ממוצעת"],[fx(r.r.thr,0),"תנועות בשעה"],[fx(r.r.fp.len,0)+"×"+fx(r.r.fp.dep,0)+" מ'","טביעת רגל"]].map(([b,s])=>`<div><b>${b}</b><span>${s}</span></div>`).join("")}</div>
+          <p>${r.pr.sides===2?"שתי שורות תאים":"שורת תאים אחת"} של ${r.pr.cellsPerSide} תאים לאורך שביל השאטל, בכל קומה. הספק מותקן כ‑${fx(r.r.kW,0)} kW, ${r.r.cabs} ארונות פיקוד.</p>
+          ${r.notes.length?`<ul>${r.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:""}
+          <div class="row" style="margin-top:10px"><button class="lbtn lbtn-ghost" type="button" id="askLoad">טעינה למתכנן</button></div>`}
+    }else if(kind==="technical"){answers=techAnswers();local=cfgSummary();
+      const amps=+val("t_amps")||0,need=M.cabs[0].feed;
+      html=`<h3>מה התצורה הנוכחית צריכה</h3><div class="ask-kv">${[[fx(M.axes.reduce((a,x)=>a+x.kW,0),0)+" kW","הספק מותקן"],[need+" A","הזנה ראשית"],[M.cabs.length,"ארונות"],[M.axes.length,"דרייברים"],[M.io.filter(s=>s.kind!=="NET").length,"נקודות IO"],[M.net.length,"התקני PROFINET"]].map(([b,s])=>`<div><b>${b}</b><span>${s}</span></div>`).join("")}</div>
+        ${amps?`<p>${amps>=need?`החיבור הזמין (${amps}A) מספיק להזנה המחושבת (${need}A, כולל מקדם בו‑זמניות 0.7).`:`<span class="ask-warn">החיבור הזמין (${amps}A) קטן מההזנה המחושבת (${need}A). צריך הגדלת חיבור או הגבלת תנועות בו‑זמניות.</span>`}</p>`:""}
+        <ul><li>פירוט כל ארון, הדרייברים והחיווט נמצא בלשוניות "ארונות פיקוד" ו"ארון – חיווט מלא".</li>${val("t_plc").startsWith("Siemens")||val("t_plc")==="לא משנה"?"":"<li>המתכנן מייצר קוד ופרמטרים ל‑Siemens. עבור בקר אחר המבנה זהה, אבל הקוד והפרמטרים צריכים התאמה.</li>"}${val("t_fire")==="עוד לא ידוע"?"<li>כיבוי אש: כדאי להחליט מוקדם, כי זה משפיע על גובה קומה, ניקוז ודרגת ההגנה של הציוד.</li>":""}</ul>`}
+    else{question=val("f_q");if(question.length<4){out.innerHTML=`<p class="ask-warn">כתבו שאלה.</p>`;return}html=`<h3>השאלה נשלחה</h3><p>${esc(question)}</p>`}
+    const contact={name:val("c_name"),company:val("c_company"),phone:val("c_phone"),email:val("c_email")};
+    if(contact.email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email)){out.innerHTML=`<p class="ask-warn">כתובת המייל לא תקינה.</p>`;return}
+    out.innerHTML=html+`<div class="ask-ai" id="askAi"><div class="ask-wait"><i></i><i></i><i></i> סוכני Parkomat מנתחים…</div></div>`;
+    const ld=document.getElementById("askLoad");if(ld)ld.onclick=()=>{const pr=ASK.lastPreset;Object.assign(S,{floors:pr.floors,cellsPerSide:pr.cellsPerSide,sides:pr.sides,lifts:pr.lifts,turntable:true});S.floorClear=null;S.disabledCells="";ensureFloors();fillInputs();simState=null;save();cur="overview";render();document.getElementById("planner").scrollIntoView({behavior:"smooth"});toast("התצורה נטענה למתכנן")};
+    const btn=document.getElementById("askGo");btn.disabled=true;
+    const ai=document.getElementById("askAi");
+    try{const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),120000);
+      const r=await fetch(parkomatUrl(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},signal:ctl.signal,
+        body:JSON.stringify({kind,answers,config:kind==="developer"?null:cfgSummary(),local,question,contact:(contact.phone||contact.email)?contact:null,sessionId:ASK.session,source:"park-plan"})});
+      clearTimeout(to);
+      if(!r.ok)throw new Error(String(r.status));
+      const j=await r.json();ai.innerHTML=`<span class="tag">סוכני Parkomat · n8n</span>`+mdLite(j.answer||"");
+      if(contact.phone||contact.email)ai.insertAdjacentHTML("beforeend",`<p class="ask-hint">הפרטים נשלחו. נחזור אליכם.</p>`)}
+    catch(err){ai.innerHTML=`<p class="ask-warn">סוכני Parkomat לא זמינים כרגע${inFrame?" בתצוגה הזאת (אפשר באתר הציבורי)":""}. ההמלצה המיידית למעלה מחושבת מהמודל ועומדת בפני עצמה.${(contact.phone||contact.email)?" כדי שנחזור אליכם, שלחו הודעה בוואטסאפ בכפתור למטה.":""}</p>`}
+    finally{btn.disabled=false}};
+}
+
 /* ---- per-tab mounts that need DOM ---- */
 const _render=render;
 render=function(){if(c3&&cur!=="cab3d"){c3.V.dispose();c3=null}_render();renderLanding();
@@ -3541,6 +3706,7 @@ ensureFloors();fillInputs();
 render();
 document.getElementById("g3Start").onclick=startGarage3D;
 galInit();
+askInit();
 window.RP={skyEnv,loadThree,View3D,buildGarage,buildCabinet3D,cabinetBuild,withPreset,PRESETS,getM:()=>M,getS:()=>S};
 })();
 </script>
