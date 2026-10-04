@@ -1,0 +1,113 @@
+{
+  "name": "SPIDER · הקול של מאיה",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## הקול של מאיה\n`POST /webhook/hasadna-voice` — מקבל טקסט ומחזיר הקלטה בקול נשי טבעי (Hila של Microsoft, או ElevenLabs). האתר משתמש בזה רק בדפדפנים שאין בהם קול נשי בעברית (כמו Chrome ב־Windows).\n\nהמפתחות נכנסים אוטומטית מהסוד SPIDER ב־GitHub (AZURE_SPEECH_KEY + AZURE_SPEECH_REGION, או ELEVENLABS_API_KEY). יש תקרה חודשית כדי להישאר בחינם.",
+        "height": 260,
+        "width": 460,
+        "color": 6
+      },
+      "id": "0f45552c-7360-5f47-a0ec-2e5fd6045332",
+      "name": "Note · Voice",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hasadna-voice",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ff69e3ef-d24a-55e9-8955-cb0972b21963",
+      "name": "Voice · Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "5db86cec-101b-51a4-b2c7-73bd7f61cd69"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns Maya's text into speech: an mp3, as base64.\nconst AZURE_KEY = '__AZURE_SPEECH_KEY__';\nconst AZURE_REGION = '__AZURE_SPEECH_REGION__';\nconst ELEVEN_KEY = '__ELEVENLABS_API_KEY__';\nconst ELEVEN_VOICE = 'EXAVITQu4vr4xnSDxMaL'; // \"Sarah\", a warm female voice\nconst set = (k) => k && !/^__/.test(k);\n// stay inside the free tiers (characters a month)\nconst CAP = set(AZURE_KEY) ? 480000 : 9500;\nconst SITES = /^https:\\/\\/devopsdevopshaim-wq\\.github\\.io$|^http:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/;\n\nconst out = (body, code = 200) => [{ json: { code, body } }];\nconst h = $json.headers || {};\nconst from = h.origin || String(h.referer || '').replace(/^(https?:\\/\\/[^/]+).*$/, '$1');\nif (!SITES.test(from)) return out({ ok: false, error: 'forbidden' }, 403);\nif (!set(AZURE_KEY) && !set(ELEVEN_KEY)) return out({ ok: false, error: 'no-voice' }, 503);\n\nconst b = $json.body || {};\nconst text = String(b.text || '').replace(/[\\u0000-\\u001f\\u007f]+/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, 900);\nif (!text) return out({ ok: false, error: 'empty' }, 400);\n\nconst sd = $getWorkflowStaticData('global');\nconst month = new Date().toISOString().slice(0, 7);\nif (sd.month !== month) { sd.month = month; sd.used = 0; sd.calls = 0; }\nif (sd.used + text.length > CAP) return out({ ok: false, error: 'quota' }, 429);\n\nconst esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\nlet audio;\ntry {\n  if (set(AZURE_KEY)) {\n    audio = await this.helpers.httpRequest({\n      method: 'POST',\n      url: `https://${set(AZURE_REGION) ? AZURE_REGION : 'westeurope'}.tts.speech.microsoft.com/cognitiveservices/v1`,\n      headers: {\n        'Ocp-Apim-Subscription-Key': AZURE_KEY,\n        'Content-Type': 'application/ssml+xml',\n        'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',\n        'User-Agent': 'spider-maya'\n      },\n      body: `<speak version=\"1.0\" xml:lang=\"he-IL\"><voice name=\"he-IL-HilaNeural\"><prosody rate=\"-4%\">${esc(text)}</prosody></voice></speak>`,\n      encoding: 'arraybuffer',\n      json: false\n    });\n  } else {\n    audio = await this.helpers.httpRequest({\n      method: 'POST',\n      url: `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}?output_format=mp3_44100_64`,\n      headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },\n      body: JSON.stringify({ text, model_id: 'eleven_v3', language_code: 'he' }),\n      encoding: 'arraybuffer',\n      json: false\n    });\n  }\n} catch (e) {\n  return out({ ok: false, error: 'tts-failed', detail: String(e.message || e).slice(0, 160) }, 502);\n}\nsd.used += text.length;\nsd.calls = (sd.calls || 0) + 1;\nreturn out({ ok: true, mime: 'audio/mpeg', audio: Buffer.from(audio).toString('base64') });\n"
+      },
+      "id": "4dbd5e26-8610-5807-a84c-5dec95f7c988",
+      "name": "Voice · Speak",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.code || 200 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c9e30d82-515f-50b8-a65f-187a7fad126e",
+      "name": "Voice · Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Voice · Webhook": {
+      "main": [
+        [
+          {
+            "node": "Voice · Speak",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice · Speak": {
+      "main": [
+        [
+          {
+            "node": "Voice · Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
