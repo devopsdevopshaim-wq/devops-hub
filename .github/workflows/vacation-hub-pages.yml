@@ -67,6 +67,7 @@ jobs:
           if [ -d robotic-parking ]; then
             mkdir -p /tmp/site/robotic-parking
             cp robotic-parking/index.html /tmp/site/robotic-parking/
+            cp -r robotic-parking/img robotic-parking/gallery /tmp/site/robotic-parking/ 2>/dev/null || true
           fi
           if [ -d portfolio ]; then
             mkdir -p /tmp/site/portfolio

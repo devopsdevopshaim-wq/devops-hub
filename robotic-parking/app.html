@@ -133,6 +133,124 @@ textarea.out{width:100%;min-height:260px;font-family:var(--f-mono);font-size:12.
 .cw-svg .cw-t.sel{r:4;fill:#e8341c}.cw-svg .cw-wn.sel{opacity:1;fill:#e8341c;font-weight:700}
 .cw-svg .cw-c.sel>rect{stroke:#e8341c;stroke-width:2.5}
 .cw-svg .wh:hover+*{}
+/* ===== presentation (deliberate dark showroom look in both themes) ===== */
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+:root{--l-bg:#0c1115;--l-bg2:#121a20;--l-ink:#eef2f3;--l-mute:#a8b4b9;--l-line:#25313a;--l-acc:#f2b705;--l-teal:#4fb4c1}
+.lnav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:rgba(12,17,21,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--l-line)}
+.lnav-in{max-width:1500px;margin-inline:auto;padding-inline:16px;height:58px;display:flex;align-items:center;gap:18px}
+.brand-mark{display:flex;align-items:center;gap:10px;color:var(--l-ink);text-decoration:none;font-family:var(--f-display);font-size:20px;white-space:nowrap}
+.brand-mark .pm{display:grid;place-items:center;width:32px;height:32px;background:var(--l-acc);color:#14191b;font-family:var(--f-mono);font-weight:600;font-size:18px;border-radius:3px}
+.lnav-links{display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none}
+.lnav-links a{color:var(--l-mute);text-decoration:none;padding:6px 10px;border-radius:3px;white-space:nowrap;font-size:14.5px}
+.lnav-links a:hover{color:var(--l-ink);background:rgba(255,255,255,.06)}
+.lbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:600 15px var(--f-body);padding:11px 20px;border-radius:3px;text-decoration:none;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.lbtn-pri{background:var(--l-acc);color:#14191b}
+.lbtn-pri:hover{background:#ffc928}
+.lbtn-ghost{background:rgba(255,255,255,.06);color:var(--l-ink);border-color:rgba(255,255,255,.22)}
+.lbtn-ghost:hover{background:rgba(255,255,255,.12)}
+.lnav .lbtn{padding:8px 14px;font-size:14px}
+@media (max-width:640px){.lnav .lbtn{display:none}}
+.hero{position:relative;min-height:min(86vh,820px);display:flex;align-items:flex-end;color:var(--l-ink);background:var(--l-bg);overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:url(img/hero.jpg) center/cover no-repeat;transform:scale(1.03);animation:heroZoom 24s ease-out both}
+@keyframes heroZoom{from{transform:scale(1.1)}to{transform:scale(1.02)}}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(8,12,15,.96) 6%,rgba(8,12,15,.55) 45%,rgba(8,12,15,.15) 75%),linear-gradient(to left,rgba(8,12,15,.75),rgba(8,12,15,0) 60%)}
+.hero-in{position:relative;z-index:1;max-width:1500px;width:100%;margin-inline:auto;padding-inline:16px;padding-block:120px 56px}
+.eyebrow{font-family:var(--f-mono);font-size:13px;letter-spacing:.08em;color:var(--l-acc);margin:0 0 12px;text-transform:uppercase}
+.hero-h{font-family:var(--f-display);font-weight:400;font-size:clamp(38px,6.4vw,80px);line-height:1.02;margin:0;max-width:14ch;text-wrap:balance}
+.hero-p{font-size:clamp(16px,1.6vw,19px);color:#d3dcdf;max-width:56ch;margin:18px 0 26px;line-height:1.6}
+.hero-cta{display:flex;flex-wrap:wrap;gap:10px}
+.hero-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:44px;border-top:1px solid rgba(255,255,255,.18);max-width:900px}
+.hero-stats div{padding:16px 0 0;padding-inline-end:16px}
+.hero-stats b{display:block;font-family:var(--f-mono);font-size:clamp(22px,3vw,34px);font-weight:600;font-variant-numeric:tabular-nums}
+.hero-stats span{font-size:13px;color:var(--l-mute)}
+@media (max-width:640px){.hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hero-cap{position:absolute;z-index:1;bottom:12px;inset-inline-start:16px;margin:0;font-size:11.5px;color:rgba(255,255,255,.45)}
+.lsec{background:var(--l-bg);color:var(--l-ink)}
+.lsec-alt{background:var(--l-bg2)}
+.lsec-in{max-width:1500px;margin-inline:auto;padding-inline:16px;padding-block:80px}
+.lh2{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,3.8vw,46px);line-height:1.1;margin:0 0 18px;text-wrap:balance;max-width:22ch}
+.lp{color:var(--l-mute);max-width:64ch;font-size:16.5px;margin:0 0 28px}
+.flow{list-style:none;padding:0;margin:8px 0 36px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;counter-reset:fl}
+.flow li{counter-increment:fl;background:rgba(255,255,255,.04);padding:22px 20px;border-top:2px solid var(--l-acc)}
+.flow li::before{content:counter(fl,decimal-leading-zero);font-family:var(--f-mono);color:var(--l-acc);font-size:13px;display:block;margin-bottom:10px}
+.flow b{display:block;font-size:19px;margin-bottom:6px}.flow span{color:var(--l-mute);font-size:14.5px}
+@media (max-width:860px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.flow{grid-template-columns:minmax(0,1fr)}}
+.viewer3d{position:relative;height:min(72vh,680px);min-height:380px;background:#0f1418;border:1px solid var(--l-line);overflow:hidden}
+.v3-poster{position:absolute;inset:0;display:grid;place-items:center}
+.v3-poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9}
+.v3-poster .lbtn{position:relative;font-size:17px;padding:14px 26px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.v3-tools{position:absolute;top:12px;inset-inline-start:12px;display:flex;gap:6px;z-index:2}
+.v3-tools .lbtn{padding:7px 12px;font-size:13.5px}
+.v3-hint{position:absolute;bottom:8px;inset-inline-end:12px;margin:0;font-size:12px;color:rgba(255,255,255,.5);z-index:2;pointer-events:none}
+.vals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px}
+@media (max-width:900px){.vals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.vals{grid-template-columns:minmax(0,1fr)}}
+.val{background:rgba(255,255,255,.04);padding:26px 22px}
+.val b{display:block;font-family:var(--f-mono);font-size:clamp(28px,3.4vw,40px);color:var(--l-acc);font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.val h3{font-size:18px;margin:10px 0 6px}.val p{margin:0;color:var(--l-mute);font-size:14.5px}
+.ex-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+@media (max-width:1100px){.ex-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.ex-grid{grid-template-columns:minmax(0,1fr)}}
+.ex{background:var(--l-bg2);border:1px solid var(--l-line);display:flex;flex-direction:column;min-width:0}
+.ex-img{aspect-ratio:3/2;background:#1a2229 center/cover no-repeat;max-width:100%}
+.ex-b{padding:16px 16px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ex h3{margin:0;font-size:19px}.ex p{margin:0;color:var(--l-mute);font-size:14px;flex:1}
+.ex dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0 4px}
+.ex dt{font-size:11.5px;color:var(--l-mute)}.ex dd{margin:0;font-family:var(--f-mono);font-size:16px;font-variant-numeric:tabular-nums}
+.ex .lbtn{align-self:flex-start;padding:8px 14px;font-size:14px}
+.gal-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.gal-filter{display:flex;flex-wrap:wrap;gap:6px}
+.gal-filter button{font:500 13.5px var(--f-body);background:transparent;color:var(--l-mute);border:1px solid var(--l-line);padding:6px 12px;border-radius:20px;cursor:pointer}
+.gal-filter button[aria-pressed="true"]{background:var(--l-ink);color:#111;border-color:var(--l-ink)}
+.gal-drop{border:1px dashed rgba(255,255,255,.22);color:var(--l-mute);text-align:center;padding:14px;font-size:14px;margin-bottom:16px}
+.gal-drop.on{border-color:var(--l-acc);color:var(--l-ink);background:rgba(242,183,5,.08)}
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.gal-it{position:relative;margin:0;background:#1a2229;cursor:pointer;overflow:hidden;aspect-ratio:4/3;border:0;padding:0;color:inherit;text-align:right;font:inherit}
+.gal-it img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s}
+.gal-it:hover img{transform:scale(1.04)}
+.gal-it .gc{position:absolute;inset-inline:0;bottom:0;padding:28px 12px 10px;background:linear-gradient(to top,rgba(0,0,0,.85),rgba(0,0,0,0))}
+.gal-it .gc b{display:block;font-size:15px}.gal-it .gc span{font-size:12.5px;color:#cfd8db}
+.gal-it .gk{position:absolute;top:8px;inset-inline-start:8px;font-size:11.5px;background:rgba(12,17,21,.8);padding:2px 8px;border-radius:10px}
+.gal-it .gk.loc{background:var(--l-acc);color:#14191b}
+.gal-empty{grid-column:1/-1;border:1px solid var(--l-line);padding:28px;color:var(--l-mute);text-align:center}
+.gal-note{color:var(--l-mute);font-size:13px;margin:12px 0 0}
+.gal-note a{color:var(--l-teal)}
+.cta-band{background:linear-gradient(120deg,#11303a,#0c1115 60%)}
+.cta-in{display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between}
+.cta-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.cta-num{font-family:var(--f-mono);color:var(--l-ink);direction:ltr;user-select:all}
+.lightbox{position:fixed;inset:0;z-index:100;background:rgba(5,8,10,.92);display:flex;align-items:center;justify-content:center;padding:16px;padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+.lightbox figure{margin:0;max-width:min(1200px,100%);max-height:100%;display:flex;flex-direction:column;gap:10px;color:var(--l-ink)}
+.lightbox img{max-width:100%;max-height:78vh;object-fit:contain}
+.lightbox figcaption{font-size:14.5px;color:#d3dcdf;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.lb-x{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));inset-inline-end:14px;background:none;border:0;color:#fff;font-size:34px;cursor:pointer}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.08);border:0;color:#fff;font-size:34px;width:48px;height:64px;cursor:pointer}
+.lb-prev{inset-inline-start:10px}.lb-next{inset-inline-end:10px}
+.gal-form{background:var(--l-bg2);color:var(--l-ink);padding:22px;width:min(460px,100%);display:grid;gap:10px;border:1px solid var(--l-line);max-height:100%;overflow:auto}
+.gal-form h3{margin:0;font-size:20px}
+.gal-form label.f{color:var(--l-mute)}
+.gal-form input,.gal-form select{background:#0c1115!important;color:var(--l-ink)!important;border-color:var(--l-line)!important;font-family:var(--f-body)!important;direction:rtl!important}
+.gal-prev{display:flex;gap:6px;flex-wrap:wrap}.gal-prev img{width:84px;height:64px;object-fit:cover}
+.planner-anchor{scroll-margin-top:70px}
+.lfoot{background:#080b0d;color:var(--l-mute);font-size:13px}
+.lfoot div{max-width:1500px;margin-inline:auto;padding-inline:16px;padding-block:22px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+/* cabinet 3D tab */
+.c3-wrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+@media (max-width:900px){.c3-wrap{grid-template-columns:minmax(0,1fr)}}
+.c3-view{position:relative;height:min(70vh,700px);min-height:400px;background:#e7eae8;border:1px solid var(--line);overflow:hidden}
+.c3-bar{position:absolute;bottom:10px;inset-inline:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;z-index:2}
+.c3-bar .btn{background:rgba(255,255,255,.92);color:#1b2326;border-color:#1b2326}
+.c3-prog{flex:1;min-width:120px;height:6px;background:rgba(0,0,0,.15);border-radius:3px;overflow:hidden}
+.c3-prog i{display:block;height:100%;background:#f2b705;transition:width .4s}
+.c3-msg{position:absolute;inset:0;display:grid;place-items:center;color:#1b2326;font-size:15px;text-align:center;padding:20px}
+.c3-steps{list-style:none;padding:0;margin:0;display:grid;gap:4px;counter-reset:cs}
+.c3-steps li{counter-increment:cs;display:grid;grid-template-columns:26px 1fr;gap:6px;padding:7px 8px;border:1px solid var(--line);cursor:pointer;background:var(--bg);font-size:13.5px}
+.c3-steps li::before{content:counter(cs);font-family:var(--f-mono);color:var(--muted)}
+.c3-steps li.on{border-color:var(--hazard);background:var(--steel-soft);font-weight:600}
+.c3-steps li.done{color:var(--muted)}
+
 @media print{
   aside.cfg,.tabs,.noprint,.toast{display:none!important}
   .layout{display:block}
@@ -142,11 +260,113 @@ textarea.out{width:100%;min-height:260px;font-family:var(--f-mono);font-size:12.
 }
 </style>
 
+<nav class="lnav" aria-label="ניווט ראשי">
+  <div class="lnav-in">
+    <a class="brand-mark" href="#top" aria-label="פארק־פלאן – לראש הדף"><span class="pm">P</span><span>פארק־פלאן</span></a>
+    <div class="lnav-links">
+      <a href="#system">המערכת</a><a href="#examples">דוגמאות</a><a href="#gallery">פרויקטים</a><a href="#planner">המתכנן</a><a href="#contact">צור קשר</a>
+    </div>
+    <a class="lbtn lbtn-pri" href="#planner">פתיחת המתכנן</a>
+  </div>
+</nav>
+<header class="hero" id="top">
+  <div class="hero-bg" role="img" aria-label="הדמיה של חניון רובוטי רב־קומות בשעת ערב"></div>
+  <div class="hero-in">
+    <p class="eyebrow">חניה רובוטית · תכנון הנדסי מקצה לקצה</p>
+    <h1 class="hero-h">חניון רובוטי, מתוכנן<br>עד הבורג האחרון</h1>
+    <p class="hero-p">פי שניים רכבים באותו נפח, בלי רמפות ובלי נהגים שמסתובבים בין קומות. מגדירים מבנה, ומקבלים תכנית מלאה: מכניקה, חשמל, בקרה, תוכנה והדמיה.</p>
+    <div class="hero-cta"><a class="lbtn lbtn-pri" href="#planner">לתכנון החניון שלכם</a><a class="lbtn lbtn-ghost" href="#system">צפייה בהדמיה תלת־ממדית</a></div>
+    <div class="hero-stats" id="heroStats"></div>
+  </div>
+  <p class="hero-cap">הדמיה ממוחשבת של התצורה שבמתכנן</p>
+</header>
+<section class="lsec" id="system">
+  <div class="lsec-in">
+    <p class="eyebrow">איך זה עובד</p>
+    <h2 class="lh2">הנהג יוצא בלובי. המערכת עושה את השאר.</h2>
+    <ol class="flow">
+      <li><b>לובי</b><span>הנהג נכנס, נעצר לפי השלטים ויוצא. חיישנים בודקים מידות, גובה ושאין אף אחד בפנים.</span></li>
+      <li><b>מעלית</b><span>הרכב, על מגש, עולה לקומה שמתאימה לגובה שלו.</span></li>
+      <li><b>שאטל</b><span>רובוט בכל קומה מוביל את המגש לתא פנוי ודוחף אותו פנימה.</span></li>
+      <li><b>שליפה</b><span>בבקשה מהקיוסק או מהאפליקציה הרכב חוזר ללובי, מסובב עם החזית ליציאה.</span></li>
+    </ol>
+    <div class="viewer3d" id="g3View">
+      <div class="v3-poster" id="g3Poster"><img src="img/cutaway.jpg" alt="חתך תלת־ממדי של החניון: קומות, מעלית, שאטלים ורכבים" loading="lazy"><button class="lbtn lbtn-pri" type="button" id="g3Start">הפעלת הדמיה תלת־ממדית</button></div>
+      <div class="v3-tools" id="g3Tools" hidden><button class="lbtn lbtn-ghost" type="button" data-g3="cut">חתך</button><button class="lbtn lbtn-ghost" type="button" data-g3="spin">סיבוב</button><button class="lbtn lbtn-ghost" type="button" data-g3="reset">מבט התחלתי</button></div>
+      <p class="v3-hint">גרירה מסובבת · גלגלת מקרבת · Shift+גרירה מזיזה</p>
+    </div>
+  </div>
+</section>
+<section class="lsec lsec-alt">
+  <div class="lsec-in">
+    <p class="eyebrow">למה זה משתלם ליזם</p>
+    <h2 class="lh2">יותר מקומות, פחות בטון</h2>
+    <div class="vals" id="valGrid"></div>
+  </div>
+</section>
+<section class="lsec" id="examples">
+  <div class="lsec-in">
+    <p class="eyebrow">דוגמאות תצורה</p>
+    <h2 class="lh2">ארבעה סוגי חניונים, אותה מערכת</h2>
+    <p class="lp">כל דוגמה היא תצורה מלאה במתכנן. לוחצים "טעינה למתכנן" ומקבלים את כל התכנון שלה: ארונות, חיווט, PLC ושרטוטים.</p>
+    <div class="ex-grid" id="exGrid"></div>
+  </div>
+</section>
+<section class="lsec lsec-alt" id="gallery">
+  <div class="lsec-in">
+    <p class="eyebrow">פרויקטים וגלריה</p>
+    <h2 class="lh2">חניונים, התקנות והדמיות</h2>
+    <p class="lp" id="galLead">תמונות מפרויקטים, מאתרי התקנה ומהדמיות. מעלים תמונה, נותנים לה כותרת ומיקום, והיא נכנסת לגלריה.</p>
+    <div class="gal-bar">
+      <label class="lbtn lbtn-pri gal-up" id="galUpL"><input type="file" id="galFile" accept="image/*" multiple hidden>העלאת תמונות</label>
+      <div class="gal-filter" id="galFilter" role="group" aria-label="סינון"></div>
+      <button class="lbtn lbtn-ghost" type="button" id="galSettings" hidden>הגדרות פרסום</button>
+    </div>
+    <div class="gal-drop" id="galDrop">אפשר גם לגרור תמונות לכאן</div>
+    <div class="gal-grid" id="galGrid"></div>
+    <p class="gal-note" id="galNote"></p>
+  </div>
+</section>
+<section class="lsec cta-band" id="contact">
+  <div class="lsec-in cta-in">
+    <div><h2 class="lh2">רוצים לבדוק חניון רובוטי לפרויקט שלכם?</h2><p class="lp">שלחו מידות מגרש ומספר מקומות, ונחזור עם תצורה ראשונית, זמני שליפה ותכנון ארונות.</p></div>
+    <div class="cta-actions"><a class="lbtn lbtn-pri" href="https://wa.me/972544979771?text=%D7%94%D7%99%D7%99%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A9%D7%9E%D7%95%D7%A2%20%D7%A2%D7%9C%20%D7%97%D7%A0%D7%99%D7%95%D7%9F%20%D7%A8%D7%95%D7%91%D7%95%D7%98%D7%99" target="_blank" rel="noopener">שיחה בוואטסאפ</a><span class="cta-num">054‑497‑9771</span><a class="lbtn lbtn-ghost" href="#planner">פתיחת המתכנן</a></div>
+  </div>
+</section>
+<div class="lightbox" id="lb" hidden role="dialog" aria-modal="true" aria-label="תצוגת תמונה">
+  <button class="lb-x" type="button" id="lbX" aria-label="סגירה">×</button>
+  <button class="lb-nav lb-prev" type="button" id="lbPrev" aria-label="הקודמת">›</button>
+  <figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure>
+  <button class="lb-nav lb-next" type="button" id="lbNext" aria-label="הבאה">‹</button>
+</div>
+<div class="lightbox" id="galForm" hidden role="dialog" aria-modal="true" aria-label="פרטי תמונה">
+  <form class="gal-form" id="galFormEl">
+    <h3>פרטי התמונה</h3>
+    <div class="gal-prev" id="galPrev"></div>
+    <label class="f">כותרת<input id="gfTitle" type="text" required maxlength="80" placeholder="חניון רובוטי – מגדל משרדים"></label>
+    <label class="f">מיקום<input id="gfLoc" type="text" maxlength="60" placeholder="תל אביב"></label>
+    <label class="f">סוג<select id="gfKind"><option>פרויקט</option><option>חניון קיים</option><option>התקנה</option><option>הדמיה</option><option>ציוד וארונות</option></select></label>
+    <label class="f">תיאור קצר<input id="gfDesc" type="text" maxlength="160" placeholder="6 קומות, 144 מקומות, 2 מעליות"></label>
+    <div class="row"><button class="lbtn lbtn-pri" type="submit" id="gfSave">שמירה בגלריה</button><button class="lbtn lbtn-ghost" type="button" id="gfCancel">ביטול</button></div>
+    <p class="gal-note" id="gfNote"></p>
+  </form>
+</div>
+<div class="lightbox" id="ghForm" hidden role="dialog" aria-modal="true" aria-label="הגדרות פרסום">
+  <form class="gal-form" id="ghFormEl">
+    <h3>פרסום לאתר הציבורי</h3>
+    <p class="gal-note" style="text-align:right">תמונה שמעלים נשמרת קודם בדפדפן הזה בלבד. כדי שכולם יראו אותה, האתר שומר אותה במאגר ה‑GitHub שלכם, והאתר מתעדכן לבד תוך כ‑2 דקות. לזה צריך מפתח גישה (Fine‑grained token) עם הרשאת Contents: Read and write למאגר devops-hub בלבד. המפתח נשמר רק בדפדפן הזה.</p>
+    <label class="f">GitHub token<input id="ghTok" type="password" autocomplete="off" placeholder="github_pat_…" style="direction:ltr"></label>
+    <div class="row"><button class="lbtn lbtn-pri" type="submit">שמירה</button><button class="lbtn lbtn-ghost" type="button" id="ghClear">מחיקת המפתח</button><button class="lbtn lbtn-ghost" type="button" id="ghCancel">סגירה</button></div>
+    <p class="gal-note"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">יצירת מפתח ב‑GitHub</a></p>
+  </form>
+</div>
+<div id="planner" class="planner-anchor"></div>
+
 <div class="wrap">
   <header class="top">
     <div class="brand">
       <h1 id="projTitle">מתכנן חניון רובוטי</h1>
-      <p>תכנון מעשי: קומות, מעליות, שאטלים, מסובבת ותאים · ארונות, דרייברים, IP, PLC, חיווט ושרטוטים</p>
+      <p><span class="mono" style="color:var(--muted);font-size:12.5px;letter-spacing:.06em">המתכנן ההנדסי</span> · קומות, מעליות, שאטלים, מסובבת ותאים · ארונות, דרייברים, IP, PLC, חיווט ושרטוטים</p>
     </div>
     <div class="kpis" id="kpis"></div>
   </header>
@@ -222,6 +442,7 @@ textarea.out{width:100%;min-height:260px;font-family:var(--f-mono);font-size:12.
     </main>
   </div>
 </div>
+<footer class="lfoot"><div><span>פארק־פלאן · תכנון חניונים רובוטיים: מכניקה, חשמל, בקרה ותוכנה</span><span>תכנון ראשוני. לפני ביצוע נדרש אישור מהנדס חשמל ובודק בטיחות.</span></div></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -521,7 +742,7 @@ function floorsForClass(k,H){const hi=classRange(k,H)[1];if(hi===Infinity)return
 
 /* ---------- tabs ---------- */
 const TABS=[
- ["overview","סקירה"],["floors","קומות ותאים"],["equip","מעליות · שאטלים · מסובבת"],["cabinets","ארונות פיקוד"],["cabwire","ארון – חיווט מלא"],
+ ["overview","סקירה"],["floors","קומות ותאים"],["equip","מעליות · שאטלים · מסובבת"],["cabinets","ארונות פיקוד"],["cabwire","ארון – חיווט מלא"],["cab3d","ארון – הדמיה 3D"],
  ["ip","רשת ו‑IP"],["params","פרמטרי דרייברים"],["sensors","חיישנים ו‑IO"],["lobby","לובי ובדיקות"],
  ["plc","תוכנת PLC"],["tpl","תבניות PLC"],["wiring","הרכבה וחיווט"],["drawings","שרטוטים"],["sim","הדמיה"],["report","דוח · מייל · הדפסה"]];
 let cur="overview"; try{const t=localStorage.getItem("rp-tab");if(t&&TABS.some(x=>x[0]===t))cur=t}catch(e){}
@@ -2829,14 +3050,417 @@ function cwMount(){
   if(cwSel){if(cwSel.w!=null&&B.wires[cwSel.w])selWire(cwSel.w);else if(cwSel.cb!=null&&B.cables[cwSel.cb])selCable(cwSel.cb)}
 }
 
+/* ---------- 3D (three.js r128, loaded on demand) ---------- */
+const THREE_URL="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+let threeP=null;
+function loadThree(){if(window.THREE)return Promise.resolve(window.THREE);if(threeP)return threeP;
+  threeP=new Promise((res,rej)=>{const s=document.createElement("script");s.src=THREE_URL;s.onload=()=>res(window.THREE);s.onerror=()=>{threeP=null;rej(new Error("three"))};document.head.appendChild(s)});return threeP}
+function View3D(el,o={}){
+  const T3=window.THREE;
+  const R=new T3.WebGLRenderer({antialias:true,preserveDrawingBuffer:!!o.keep,alpha:false});
+  R.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+  R.outputEncoding=T3.sRGBEncoding;R.toneMapping=T3.ACESFilmicToneMapping;R.toneMappingExposure=o.exposure||1.05;
+  R.shadowMap.enabled=true;R.shadowMap.type=T3.PCFSoftShadowMap;
+  el.appendChild(R.domElement);R.domElement.style.display="block";R.domElement.style.touchAction="none";
+  const scene=new T3.Scene();scene.background=new T3.Color(o.bg||0x0f1418);
+  const cam=new T3.PerspectiveCamera(o.fov||40,1,0.05,2000);
+  const st={target:new T3.Vector3(0,0,0),r:o.r||20,th:o.th??-0.8,ph:o.ph??1.05,auto:!!o.auto};
+  const place=()=>{const s=Math.sin(st.ph);cam.position.set(st.target.x+st.r*s*Math.sin(st.th),st.target.y+st.r*Math.cos(st.ph),st.target.z+st.r*s*Math.cos(st.th));cam.lookAt(st.target)};
+  const size=()=>{const w=el.clientWidth||800,h=el.clientHeight||500;R.setSize(w,h,false);R.domElement.style.width="100%";R.domElement.style.height="100%";cam.aspect=w/h;cam.updateProjectionMatrix()};
+  size();place();
+  const ro=window.ResizeObserver?new ResizeObserver(size):null;ro&&ro.observe(el);
+  // orbit / pan / zoom
+  const pts=new Map();let last=null,pinch=null;
+  const dom=R.domElement;
+  dom.addEventListener("pointerdown",e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button,sh:e.shiftKey});dom.setPointerCapture(e.pointerId);st.auto=false;
+    if(pts.size===2){const [a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),r:st.r,mx:(a.x+b.x)/2,my:(a.y+b.y)/2}}});
+  dom.addEventListener("pointermove",e=>{const p=pts.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+    if(pts.size===2&&pinch){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);st.r=Math.max(o.minR||0.5,Math.min(o.maxR||400,pinch.r*pinch.d/Math.max(d,1)));const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;pan(mx-pinch.mx,my-pinch.my);pinch.mx=mx;pinch.my=my;place();return}
+    if(p.b===2||p.sh)pan(dx,dy);else{st.th-=dx*0.006;st.ph=Math.max(0.12,Math.min(1.52,st.ph-dy*0.005))}place()});
+  const up=e=>{pts.delete(e.pointerId);if(pts.size<2)pinch=null};dom.addEventListener("pointerup",up);dom.addEventListener("pointercancel",up);
+  dom.addEventListener("contextmenu",e=>e.preventDefault());
+  dom.addEventListener("wheel",e=>{e.preventDefault();st.r=Math.max(o.minR||0.5,Math.min(o.maxR||400,st.r*(e.deltaY>0?1.12:1/1.12)));place()},{passive:false});
+  function pan(dx,dy){const k=st.r*0.0016;const right=new T3.Vector3().subVectors(cam.position,st.target).cross(cam.up).normalize();st.target.addScaledVector(right,dx*k);st.target.y+=dy*k;}
+  // lights
+  const hemi=new T3.HemisphereLight(0xdfe9ff,0x3a3328,0.55);scene.add(hemi);
+  const sun=new T3.DirectionalLight(0xfff1dc,o.sun||1.35);sun.position.set(30,45,25);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  const sc=o.shadowBox||40;Object.assign(sun.shadow.camera,{left:-sc,right:sc,top:sc,bottom:-sc,near:1,far:200});sun.shadow.bias=-0.0004;scene.add(sun);scene.add(sun.target);
+  const fill=new T3.DirectionalLight(0x9fc3ff,0.35);fill.position.set(-30,20,-20);scene.add(fill);
+  const ticks=[];let raf=0,alive=true,t0=performance.now();
+  const loop=()=>{if(!alive)return;const t=(performance.now()-t0)/1000;if(st.auto){st.th+=0.0018;place()}ticks.forEach(f=>f(t));R.render(scene,cam);raf=requestAnimationFrame(loop)};
+  if(!o.still)raf=requestAnimationFrame(loop);
+  return {T3,R,scene,cam,st,sun,hemi,place,size,ticks,
+    focus(x,y,z,r,th,ph){st.target.set(x,y,z);if(r)st.r=r;if(th!=null)st.th=th;if(ph!=null)st.ph=ph;place()},
+    render(){R.render(scene,cam)},
+    shot(type="image/jpeg",q=0.9){R.render(scene,cam);return R.domElement.toDataURL(type,q)},
+    dispose(){alive=false;cancelAnimationFrame(raf);ro&&ro.disconnect();scene.traverse(x=>{x.geometry&&x.geometry.dispose();if(x.material){(Array.isArray(x.material)?x.material:[x.material]).forEach(m=>{m.map&&m.map.dispose();m.dispose()})}});R.dispose();dom.remove()}};
+}
+const MAT={};
+function mat(T3,key,opt){if(MAT[key])return MAT[key];return MAT[key]=new T3.MeshStandardMaterial(opt)}
+function labelTex(T3,lines,w=256,h=96,bg="#2b2f33",fg="#ffffff",accent){const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.fillStyle=bg;x.fillRect(0,0,w,h);if(accent){x.fillStyle=accent;x.fillRect(0,0,w,Math.max(6,h*0.08))}
+  x.fillStyle=fg;x.textBaseline="middle";lines.forEach((l,i)=>{x.font=(i?"500 ":"700 ")+Math.round(h*(i?0.2:0.28))+"px Arial";x.fillText(l,w*0.07,h*(0.36+i*0.32))});const t=new T3.CanvasTexture(c);t.encoding=T3.sRGBEncoding;t.anisotropy=4;return t}
+function box(T3,w,h,d,m){const g=new T3.Mesh(new T3.BoxGeometry(w,h,d),m);g.castShadow=true;g.receiveShadow=true;return g}
+/* ---------- car ---------- */
+const CAR_COLORS=[0xf2f2f0,0x1d1f22,0x9aa3ab,0x7d1d1d,0x23395d,0x5b6e5d,0xc9c4b8,0x3b3f45,0xb12a2a,0x2f5d8a];
+function makeCar(T3,len,wid,hgt,ci){
+  const g=new T3.Group();const L=len/1000,W=wid/1000*0.92,H=Math.min(hgt,1600)/1000;
+  const paint=new T3.MeshStandardMaterial({color:CAR_COLORS[ci%CAR_COLORS.length],metalness:0.6,roughness:0.32});
+  const glass=mat(T3,"glass",{color:0x1a2530,metalness:0.4,roughness:0.08,transparent:true,opacity:0.88});
+  const tyre=mat(T3,"tyre",{color:0x111111,roughness:0.9});
+  const body=box(T3,L,H*0.42,W,paint);body.position.y=0.18+H*0.21;g.add(body);
+  const cab=box(T3,L*0.5,H*0.36,W*0.86,glass);cab.position.set(-L*0.04,0.18+H*0.42+H*0.18,0);g.add(cab);
+  const roof=box(T3,L*0.44,0.04,W*0.84,paint);roof.position.set(-L*0.05,0.18+H*0.78,0);g.add(roof);
+  const wg=new T3.CylinderGeometry(0.31,0.31,0.22,18);wg.rotateX(Math.PI/2);
+  [[L*0.33,W/2-0.08],[L*0.33,-W/2+0.08],[-L*0.33,W/2-0.08],[-L*0.33,-W/2+0.08]].forEach(([x,z])=>{const w=new T3.Mesh(wg,tyre);w.position.set(x,0.31,z);w.castShadow=true;g.add(w)});
+  return g;
+}
+/* ---------- garage scene ---------- */
+function buildGarage(V,opt={}){
+  const T3=V.T3,S3=V.scene,G=new T3.Group();S3.add(G);
+  const F=M.F,n=M.n,sides=M.sides,p=S.cellPitch/1000,cellD=(M.palletL+400)/1000,aisle=(M.palletW+900)/1000;
+  const len=(n+1+(M.L===2?1:0))*p, zA=-(aisle/2+cellD/2), zB=aisle/2+cellD/2, top=M.levelZ[F]/1000+S.floorClear[F-1]/1000+0.35;
+  const steel=mat(T3,"steel",{color:0x4a5258,metalness:0.55,roughness:0.5}),beam=mat(T3,"beam",{color:0xf2b705,metalness:0.3,roughness:0.5});
+  const pallet=mat(T3,"pallet",{color:0xa7adb0,metalness:0.7,roughness:0.35}),slab=mat(T3,"slab",{color:0x8d8f8c,roughness:0.85});
+  const rail=mat(T3,"rail",{color:0x606a70,metalness:0.8,roughness:0.3}),hz=mat(T3,"hz",{color:0xf2b705,metalness:0.2,roughness:0.5});
+  const glassF=new T3.MeshStandardMaterial({color:0x7fa6bd,metalness:0.3,roughness:0.05,transparent:true,opacity:0.22});
+  const cladM=mat(T3,"clad",{color:0x2a3138,metalness:0.4,roughness:0.6});
+  const yOff=opt.underground?-top:0;G.position.y=yOff;
+  const x0=-len/2;
+  // ground / site
+  const groundM=mat(T3,"ground",{color:0x24282c,roughness:0.92});
+  if(!opt.underground){const gr=new T3.Mesh(new T3.PlaneGeometry(len+60,60),groundM);gr.rotation.x=-Math.PI/2;gr.receiveShadow=true;S3.add(gr);
+    const walk=box(T3,len+60,0.12,4,mat(T3,"walk",{color:0x8a8a84,roughness:0.9}));walk.position.set(0,0.06,zB+cellD/2+5);S3.add(walk);
+    for(let i=0;i<5;i++){const t=new T3.Group();const tr=box(T3,0.25,2.4,0.25,mat(T3,"trunk",{color:0x4b3a2a}));tr.position.y=1.2;t.add(tr);const cr=new T3.Mesh(new T3.SphereGeometry(1.5,12,10),mat(T3,"leaf",{color:0x3f6b3a,roughness:0.9}));cr.position.y=3.2;cr.castShadow=true;t.add(cr);t.position.set(x0-4+i*(len+8)/4,0,zB+cellD/2+8.5);S3.add(t)}}
+  else{const earth=mat(T3,"earth",{color:0x5a4a3a,roughness:1});const surf=new T3.Mesh(new T3.PlaneGeometry(len+60,60),groundM);surf.rotation.x=-Math.PI/2;surf.position.y=0.01;surf.receiveShadow=true;
+    // cut opening on top: show ground ring around via four boxes
+    const W2=len+2,D2=zB-zA+cellD+2;[[0,-(D2/2+15)],[0,D2/2+15]].forEach(([x,z])=>{const b=box(T3,len+60,0.4,30,groundM);b.position.set(x,-0.2,z);S3.add(b)});
+    [[-(W2/2+15)],[W2/2+15]].forEach(([x])=>{const b=box(T3,30,0.4,D2,groundM);b.position.set(x,-0.2,(zA+zB)/2);S3.add(b)});
+    const wall=box(T3,len+2,top+0.6,0.4,earth);wall.position.set(0,-top/2-0.3,zA-cellD/2-0.4);S3.add(wall);
+    const wall2=box(T3,0.4,top+0.6,D2,earth);wall2.position.set(-W2/2,-top/2-0.3,(zA+zB)/2);S3.add(wall2)}
+  // slabs per level (floor plates under cells, open aisle)
+  for(let f=0;f<=F;f++){const y=M.levelZ[f]/1000;
+    [zA,...(sides===2?[zB]:[])].forEach(z=>{const s=box(T3,len,0.12,cellD,f===0?slab:steel);s.position.set(0,y-0.06,z);G.add(s)});
+    if(f>0){const r1=box(T3,len,0.08,0.12,rail);r1.position.set(0,y,-aisle/2+0.5);G.add(r1);const r2=r1.clone();r2.position.z=aisle/2-0.5;G.add(r2)}
+    const cb=box(T3,len,0.18,0.12,beam);cb.position.set(0,y+0.02,-aisle/2);G.add(cb);if(sides===2){const cb2=cb.clone();cb2.position.z=aisle/2;G.add(cb2)}}
+  // aisle floor at ground
+  const af=box(T3,len,0.1,aisle,slab);af.position.set(0,-0.05,0);G.add(af);
+  // columns
+  for(let c=0;c<=n+1+(M.L===2?1:0);c++){const x=x0+c*p;[zA-cellD/2,-aisle/2,...(sides===2?[aisle/2,zB+cellD/2]:[])].forEach(z=>{const col=box(T3,0.22,top,0.22,steel);col.position.set(x,top/2,z);G.add(col)})}
+  // roof + back cladding
+  const roof=box(T3,len+0.4,0.25,zB-zA+cellD+0.4,cladM);roof.position.set(0,top+0.12,(zA+(sides===2?zB:aisle/2))/2);if(!opt.cut&&!opt.underground)G.add(roof);
+  const back=box(T3,len,top,0.1,cladM);back.position.set(0,top/2,zA-cellD/2-0.06);G.add(back);
+  if(!opt.underground){const front=new T3.Mesh(new T3.BoxGeometry(len,top,0.04),glassF);front.position.set(0,top/2,(sides===2?zB+cellD/2:aisle/2)+0.06);G.add(front);
+    for(let k=0;k<=Math.floor(len/3);k++){const fin=box(T3,0.07,top,0.16,cladM);fin.position.set(x0+k*3,top/2,(sides===2?zB+cellD/2:aisle/2)+0.12);G.add(fin)}
+    const zF=(sides===2?zB+cellD/2:aisle/2)+0.14;
+    const plinth=box(T3,len+0.2,M.levelZ[1]/1000-0.3,0.2,mat(T3,"plinthF",{color:0x23282d,roughness:0.7}));plinth.position.set(0,(M.levelZ[1]/1000-0.3)/2,zF);G.add(plinth);
+    const par=box(T3,len+0.4,0.6,0.25,cladM);par.position.set(0,top+0.3,zF);G.add(par);
+    const nameTex=labelTex(T3,["PARK·PLAN","חניון רובוטי"],1024,220,"#23282d","#f2f2ee","#f2b705");const nm=new T3.Mesh(new T3.PlaneGeometry(Math.min(8,len*0.35),1.7),new T3.MeshBasicMaterial({map:nameTex}));nm.position.set(len*0.22,M.levelZ[1]/1000*0.55,zF+0.11);G.add(nm)}
+  // cells: pallets + cars
+  let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  for(let f=1;f<=F;f++){const y=M.levelZ[f]/1000;
+    for(const [si,sd] of (sides===2?[[0,"A"],[1,"B"]]:[[0,"A"]])){const z=si?zB:zA;
+      for(let c=1;c<=n;c++){if(M.dis.has(`${f}${sd}${c}`))continue;const x=x0+c*p+p/2;
+        const pl=box(T3,(M.palletW)/1000,0.08,(M.palletL)/1000,pallet);pl.position.set(x,y+0.04,z);G.add(pl);
+        if(rnd()<(opt.fill??0.72)){const car=makeCar(T3,S.carL,S.carW,S.floorClear[f-1]-120,Math.floor(rnd()*99));car.rotation.y=Math.PI/2;car.position.set(x,y+0.08,z);G.add(car)}}}}
+  // lift(s) at column 0 side A (and end)
+  const lifts=[];
+  for(let l=0;l<M.L;l++){const x=x0+(l===0?0:(n+1))*p+p/2;
+    const shaft=new T3.Mesh(new T3.BoxGeometry(p*0.98,top,cellD*0.98),new T3.MeshStandardMaterial({color:0xf2b705,transparent:true,opacity:0.08}));shaft.position.set(x,top/2,zA);G.add(shaft);
+    [-1,1].forEach(sx=>[-1,1].forEach(sz=>{const g=box(T3,0.1,top,0.1,hz);g.position.set(x+sx*p*0.46,top/2,zA+sz*cellD*0.46);G.add(g)}));
+    const plat=new T3.Group();const pb=box(T3,p*0.92,0.12,cellD*0.92,hz);plat.add(pb);const pp=box(T3,M.palletW/1000,0.08,M.palletL/1000,pallet);pp.position.y=0.1;plat.add(pp);
+    const car=makeCar(T3,S.carL,S.carW,1500,3+l);car.rotation.y=Math.PI/2;car.position.y=0.14;plat.add(car);plat.position.set(x,0,zA);G.add(plat);
+    const cw=box(T3,0.4,1.2,0.3,steel);cw.position.set(x+p*0.4,top-1,zA-cellD*0.42);G.add(cw);
+    lifts.push({plat,cw,top});
+    if(!opt.underground&&l===0){ // lobby: door frame + turntable glow at ground in front of lift
+      const lob=new T3.Group();const door=box(T3,p*0.9,2.4,0.06,new T3.MeshStandardMaterial({color:0xd8dde0,metalness:0.6,roughness:0.3,transparent:true,opacity:0.55}));door.position.set(0,1.2,-cellD/2+0.02);
+      const sign=new T3.Mesh(new T3.PlaneGeometry(1.6,0.45),new T3.MeshBasicMaterial({map:labelTex(T3,["ENTRY  כניסה"],512,140,"#0e6a76","#ffffff")}));sign.position.set(0,2.85,-cellD/2-0.02);sign.rotation.y=Math.PI;
+      lob.add(door,sign);lob.position.set(x,0,zA);G.add(lob)}
+  }
+  // interior light strips (+ optional point lights for stills)
+  const lampM=new T3.MeshBasicMaterial({color:0xfff1d0});
+  for(let f=0;f<=F;f++){const y=M.levelZ[f]/1000+(f===0?M.lobbyClear:S.floorClear[f-1])/1000-0.08;
+    [-aisle/4,aisle/4].forEach(z=>{const l=new T3.Mesh(new T3.BoxGeometry(len*0.96,0.03,0.08),lampM);l.position.set(0,y,z);G.add(l)});
+    if(opt.lights&&f>0){const pl=new T3.PointLight(0xffe2b0,0.45,len*0.6,2);pl.position.set(0,y-0.3,0);G.add(pl)}}
+  // shuttles
+  const shut=[];
+  for(let f=1;f<=F;f++){const y=M.levelZ[f]/1000;const s=new T3.Group();const sb=box(T3,M.palletW/1000+0.3,0.22,aisle-0.8,hz);sb.position.y=0.15;s.add(sb);
+    const lamp=new T3.Mesh(new T3.SphereGeometry(0.07,10,8),new T3.MeshBasicMaterial({color:0xff7a00}));lamp.position.set(0,0.34,0);s.add(lamp);
+    s.position.set(x0+p*(1+((f*3)%Math.max(1,n))),y,0);G.add(s);shut.push({s,y,f})}
+  // animation
+  V.ticks.push(t=>{shut.forEach((o,i)=>{const k=0.5+0.5*Math.sin(t*0.35+i*1.7);o.s.position.x=x0+p*0.5+k*(n)*p});
+    lifts.forEach((o,i)=>{const k=0.5+0.5*Math.sin(t*0.22+i*2);const yy=k*(M.levelZ[F]/1000);o.plat.position.y=yy;o.cw.position.y=o.top-1-yy*0.9})});
+  const H=top;return {G,len,top:H,zA,zB,center:new T3.Vector3(0,H/2+yOff,(zA+zB)/2)};
+}
+/* ---------- cabinet 3D with assembly steps ---------- */
+const STEPS=[
+ {t:"גוף הארון ובסיס",d:"מציבים את הארון על בסיס 100 מ\"מ, מפלסים ומעגנים לרצפה. מורידים דלת ופלטה לעבודה נוחה.",tools:"פלס, מקדחה, ברגי עיגון M10"},
+ {t:"פלטת הרכבה",d:"מסמנים את פריסת הרכיבים לפי טבלת המיקומים (X/Y במ\"מ), קודחים ומבריגים חורים, ומחזירים את הפלטה לארון עם חיבור הארקה לגוף.",tools:"מברז M5, סרגל, טוש"},
+ {t:"תעלות ופסי DIN",d:"תעלות 40×60 בצדדים ובין השורות, פסי DIN TS35 עם בורג כל 100 מ\"מ. משאירים 40–50 מ\"מ בין תעלה לרכיבים.",tools:"מסור לתעלות, מברגה"},
+ {t:"הגנות וספק",d:"מפסק ראשי, מאמ\"תים לכל דרייבר, מאמ\"ת לספק, וספק 24V. בודקים התאמה לטבלת הרכיבים (זרם, קטבים).",tools:"מברג, מפתח מומנט"},
+ {t:"דרייברים",d:"מתקינים את הדרייברים על הפלטה ישירות (לא על DIN) עם מרווח אוורור 100 מ\"מ מעל ומתחת. נגד בלימה מחוץ לארון.",tools:"מפתח אלן, ברגי M5"},
+ {t:"בקרה ותקשורת",d:"ET 200SP: IM ואחריו הכרטיסים לפי הסדר, ומודול שרת בסוף. מתג PROFINET ו‑WLAN אם יש. מכוונים DIP של כתובות PROFIsafe.",tools:"מברג קטן"},
+ {t:"מהדקים ופס הארקה",d:"פסי מהדקים X1–X4 עם מחיצות וסימון, גשרים ב‑X3 ל‑+24V ול‑0V, ופס PE מחובר לגוף הארון.",tools:"מכשיר סימון, גשרים"},
+ {t:"חיווט כוח והארקה",d:"מהמפסק הראשי למאמ\"תים, מהם לדרייברים, ומהדרייברים ל‑X4. כל גיד גמיש עם שרוול (פרול), הידוק לפי היצרן.",tools:"לוחץ פרולים, מפתח מומנט"},
+ {t:"חיווט בקרה",d:"24V לפיצול, אותות מהכרטיסים ל‑X3, בטיחות בכתום, וכבלי PROFINET ירוקים. סימון מספר חוט בשני הקצוות.",tools:"מקלף, שרוולי סימון"},
+ {t:"כבלי שטח",d:"כבלים נכנסים דרך גלנדים מהפלטה התחתונה, מסך 360° בגלנד EMC, ונחיתה במהדקים לפי טבלת הכבלים.",tools:"גלנדים, מפתח גלנד"},
+ {t:"סגירה ובדיקות",d:"מכסים לתעלות, שלטים, תוכנית חשמלית בכיס הדלת. בדיקת רציפות PE, מגר 500V, בדיקת מתחים, ואז הפעלה.",tools:"מגר, רב‑מודד"}];
+function buildCabinet3D(V,B){
+  const T3=V.T3,S3=V.scene,c=B.c,mm=1/1000;
+  const W=Math.max(c.W,B.plateW+100)*mm,H=Math.max(c.H,B.plateH+150)*mm,D=c.D*mm;
+  const G=new T3.Group();S3.add(G);const parts=STEPS.map(()=>[]);const add=(o,step)=>{G.add(o);parts[step].push(o);o.userData.step=step;o.userData.home=o.position.clone();return o};
+  const ral=mat(T3,"ral7035",{color:0xd6d7d2,metalness:0.25,roughness:0.55}),plinthM=mat(T3,"plinth",{color:0x3a3d40,roughness:0.6});
+  const galv=mat(T3,"galv",{color:0xbdb6a6,metalness:0.75,roughness:0.35}),ductM=mat(T3,"duct",{color:0x9ea4a1,roughness:0.7}),railM=mat(T3,"railm",{color:0xc8ccce,metalness:0.9,roughness:0.25});
+  const floor=new T3.Mesh(new T3.PlaneGeometry(12,12),mat(T3,"shopfloor",{color:0x55595c,roughness:0.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;S3.add(floor);
+  // enclosure
+  const t=0.02,yb=0.1;
+  add(box(T3,W,0.1,D,plinthM),0).position.set(0,0.05,0);
+  [[W,t,D,0,yb+H-t/2,0],[W,t,D,0,yb+t/2,0],[t,H,D,-W/2+t/2,yb+H/2,0],[t,H,D,W/2-t/2,yb+H/2,0],[W,H,t,0,yb+H/2,-D/2+t/2]].forEach(a=>{const b=box(T3,a[0],a[1],a[2],ral);b.position.set(a[3],a[4],a[5]);add(b,0)});
+  // door (hinged left)
+  const door=new T3.Group();const dp=box(T3,W,H,0.025,ral);dp.position.set(W/2,0,0);door.add(dp);
+  const handle=box(T3,0.03,0.18,0.04,plinthM);handle.position.set(W-0.06,0,0.03);door.add(handle);
+  const qh=new T3.Mesh(new T3.CylinderGeometry(0.045,0.045,0.03,24),mat(T3,"qh",{color:0xf2b705}));qh.rotation.x=Math.PI/2;qh.position.set(W*0.8,H*0.28,0.03);door.add(qh);
+  const qr=box(T3,0.018,0.09,0.03,mat(T3,"qr",{color:0xc0221b}));qr.position.set(W*0.8,H*0.28,0.05);door.add(qr);
+  [[0xc0221b,0.62],[0x2e8b3a,0.7],[0xf2f2f2,0.78]].forEach(([col,k],i)=>{const l=new T3.Mesh(new T3.CylinderGeometry(0.016,0.016,0.02,18),new T3.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.25}));l.rotation.x=Math.PI/2;l.position.set(W*k,H*0.4,0.025);door.add(l)});
+  if(c.main){const hmi=box(T3,0.33,0.22,0.03,mat(T3,"hmi",{color:0x111417}));hmi.position.set(W*0.5,H*0.18,0.02);door.add(hmi);const sc=new T3.Mesh(new T3.PlaneGeometry(0.29,0.18),new T3.MeshBasicMaterial({map:labelTex(T3,["פארק־פלאן","HMI · מצב: אוטומטי"],512,320,"#0e3a40","#e6f6f8","#f2b705")}));sc.position.set(W*0.5,H*0.18,0.037);door.add(sc)}
+  const plate1=new T3.Mesh(new T3.PlaneGeometry(0.26,0.07),new T3.MeshBasicMaterial({map:labelTex(T3,[c.id,c.name],512,140,"#ffffff","#1b2326")}));plate1.position.set(W*0.5,H*0.42,0.014);door.add(plate1);
+  door.position.set(-W/2,yb+H/2,D/2);door.rotation.y=-1.95;add(door,10);door.userData.open=-1.95;
+  // mounting plate
+  const pz=-D/2+0.03,PX=x=>-W/2+0.05+x*mm,PY=y=>yb+H-0.08-y*mm;
+  const plate=box(T3,B.plateW*mm,B.plateH*mm,0.003,galv);plate.position.set(PX(B.plateW/2),PY(B.plateH/2),pz);add(plate,1);
+  // ducts & rails
+  const dz=pz+0.03;
+  [[B.MARG,B.MARG,B.DUCT,B.plateH-2*B.MARG],[B.plateW-B.MARG-B.DUCT,B.MARG,B.DUCT,B.plateH-2*B.MARG],...B.ducts.map(d=>[B.MARG,d.y,B.plateW-2*B.MARG,d.h])].forEach(([x,y,w,h])=>{const d=box(T3,w*mm,h*mm,0.06,ductM);d.position.set(PX(x+w/2),PY(y+h/2),dz);add(d,2);
+    const cv=box(T3,w*mm,h*mm,0.004,mat(T3,"ductcov",{color:0xb4b9b6,roughness:0.6}));cv.position.set(PX(x+w/2),PY(y+h/2),dz+0.032);add(cv,10)});
+  B.lines.forEach(l=>{const r=box(T3,(B.plateW-2*B.MARG-2*B.DUCT-8)*mm,0.035,0.0075,railM);r.position.set(PX(B.plateW/2),PY(l.y+Math.min(l.h,120)/2),pz+0.006);add(r,2)});
+  // components
+  const depth={Q:0.11,F:0.075,T:0.12,U:0.2,A:0.075,M:0.075,N:0.07,X:0.05,X3:0.06,PE:0.02};
+  const stepOf=o=>o.kind==="Q"||o.kind==="F"||o.kind==="T"?3:o.kind==="U"?4:o.kind==="A"||o.kind==="M"||o.kind==="N"?5:6;
+  const cmat=o=>{if(o.kind==="Q")return mat(T3,"cq",{color:0xf2b705,roughness:0.5});if(o.kind==="F")return mat(T3,"cf",{color:0xf4f4f1,roughness:0.6});if(o.kind==="T")return mat(T3,"ct",{color:0x9aa1a6,metalness:0.4,roughness:0.5});
+    if(o.kind==="U")return mat(T3,"cu",{color:0x2b2f33,metalness:0.3,roughness:0.55});if(o.kind==="X"||o.kind==="X3")return mat(T3,"cx",{color:0x8f9592,roughness:0.6});if(o.kind==="PE")return mat(T3,"cpe",{color:0x3f8f3a,metalness:0.5,roughness:0.4});
+    if(o.kind==="M")return mat(T3,"cm"+(o.mt||""),{color:o.mt&&o.mt.startsWith("F")?0xf2c200:0x34383c,roughness:0.55});return mat(T3,"ca",{color:0x34383c,roughness:0.55})};
+  B.comps.forEach(o=>{const dd=depth[o.kind]||0.07;const b=box(T3,o.w*mm,o.h*mm,dd,cmat(o));b.position.set(PX(o.x+o.w/2),PY(o.y+o.h/2),pz+dd/2+0.008);add(b,stepOf(o));
+    if(["U","T","A","N","Q"].includes(o.kind)||(o.kind==="M"&&o.mt!=="SRV")){
+      const lw=o.w*mm*0.92,lh=Math.min(o.h*mm*0.3,0.07);
+      const tex=o.kind==="U"?labelTex(T3,["SINAMICS",o.id+"  "+o.ref.kW+" kW"],512,200,"#2b2f33","#ffffff","#2fb4c1"):o.kind==="M"?labelTex(T3,[o.mt||""],128,256,o.mt&&o.mt.startsWith("F")?"#f2c200":"#34383c",o.mt&&o.mt.startsWith("F")?"#1b1b1b":"#ffffff"):labelTex(T3,[o.id,o.name.slice(0,24)],512,160,o.kind==="Q"?"#f2b705":"#34383c",o.kind==="Q"?"#1b1b1b":"#ffffff");
+      const pl=new T3.Mesh(new T3.PlaneGeometry(lw,o.kind==="M"?o.h*mm*0.5:lh),new T3.MeshBasicMaterial({map:tex}));pl.position.set(PX(o.x+o.w/2),PY(o.y+o.h*(o.kind==="M"?0.4:0.22)),pz+dd+0.0095);add(pl,stepOf(o))}
+    if(o.kind==="F"||o.kind==="Q"){const tg=box(T3,0.012,0.02,0.02,mat(T3,"tog",{color:o.kind==="Q"?0xc0221b:0x2b2f33}));tg.position.set(PX(o.x+o.w/2),PY(o.y+o.h/2),pz+dd+0.018);add(tg,3)}
+    if(o.kind==="N"||o.kind==="A"||o.kind==="M"){for(let i=0;i<(o.kind==="M"?4:3);i++){const led=new T3.Mesh(new T3.SphereGeometry(0.0022,8,6),new T3.MeshBasicMaterial({color:i%3===0?0x3ad06b:0xf2b705}));led.position.set(PX(o.x+4+i*3),PY(o.y+8),pz+dd+0.01);add(led,stepOf(o))}}
+  });
+  // wires as tubes
+  const wcol={pow:0x1b1b1b,mot:0x1b1b1b,pe:0x3f9f3a,dcp:0x1d3fae,dc0:0x5c78d0,sig:0x6c3fb0,fsig:0xe07800,net:0x1f9d55};
+  const wireStep=w=>w.type==="pow"||w.type==="mot"||w.type==="pe"?7:8;
+  const wm={};
+  B.wires.forEach((w,k)=>{const pts=w.d.slice(1).split(" L").map(s=>s.split(" ").map(Number));const zz=(i,n)=>i===0||i===n-1?pz+0.07:dz+0.005+((k%7)*0.004);
+    const path=new T3.CurvePath();for(let i=0;i<pts.length-1;i++){path.add(new T3.LineCurve3(new T3.Vector3(PX(pts[i][0]),PY(pts[i][1]),zz(i,pts.length)),new T3.Vector3(PX(pts[i+1][0]),PY(pts[i+1][1]),zz(i+1,pts.length))))}
+    const r=w.type==="pow"||w.type==="mot"||w.type==="pe"?0.0022:w.type==="net"?0.0028:0.0012;
+    const m=wm[w.type]||(wm[w.type]=new T3.MeshStandardMaterial({color:wcol[w.type],roughness:0.45}));
+    const tube=new T3.Mesh(new T3.TubeGeometry(path,pts.length*6,r,5,false),m);add(tube,wireStep(w))});
+  // field cables down through glands
+  const cabM=mat(T3,"cable",{color:0x4f5458,roughness:0.6}),cabN=mat(T3,"cablen",{color:0x1f9d55,roughness:0.5}),glandM=mat(T3,"gland",{color:0x2b2f33});
+  B.cables.forEach((cb,k)=>{const t=cb.cores.length?B.T[cb.cores[0].t]:B.T[cb.direct];if(!t)return;
+    const x=PX(t.x),y1=PY(t.y),gx=PX(cb.gx||t.x),zc=dz+0.02-(k%5)*0.006;
+    const path=new T3.CurvePath();const a=new T3.Vector3(x,y1,zc),b=new T3.Vector3(x,yb+0.06,zc),c2=new T3.Vector3(gx,yb-0.0,zc),d=new T3.Vector3(gx+(k%9-4)*0.03,-0.0+0.02,zc+0.25+(k%4)*0.08);
+    path.add(new T3.LineCurve3(a,b));path.add(new T3.LineCurve3(b,c2));path.add(new T3.QuadraticBezierCurve3(c2,new T3.Vector3(gx,-0.02,zc),d));
+    add(new T3.Mesh(new T3.TubeGeometry(path,24,cb.net?0.003:0.004,6,false),cb.net?cabN:cabM),9);
+    const gl=new T3.Mesh(new T3.CylinderGeometry(0.009,0.009,0.02,12),glandM);gl.position.set(gx,yb+0.01,zc);add(gl,9)});
+  // camera framing
+  const center=new T3.Vector3(0,yb+H/2,0);
+  return {G,parts,door,W,H,D,center,yb,pz};
+}
+
+/* ---------- presentation: examples, values, 3D viewer ---------- */
+const PRESETS=[
+  {id:"tower",img:"img/type-tower.jpg",t:"מגדל חניה",d:"מעלית אחת במרכז ותא מכל צד בכל קומה. מתאים למגרש צר בעיר, בשטח של שני מקומות חניה רגילים.",p:{floors:12,cellsPerSide:1,sides:2,lifts:1,turntable:true}},
+  {id:"shuttle",img:"img/type-shuttle.jpg",t:"חניון שאטל רב־קומות",d:"שאטל בכל קומה ומעלית בקצה. התצורה הנפוצה למגורים ולמשרדים.",p:{floors:5,cellsPerSide:16,sides:2,lifts:1,turntable:true}},
+  {id:"twin",img:"img/type-twin.jpg",t:"שתי מעליות, תפוקה גבוהה",d:"מעלית ולובי בכל קצה של השביל. לקניונים, בתי חולים ומשרדים עם שעות שיא.",p:{floors:6,cellsPerSide:20,sides:2,lifts:2,turntable:true}},
+  {id:"under",img:"img/type-under.jpg",t:"חניון תת־קרקעי",d:"כל המערכת מתחת לפני הקרקע, ולמעלה נשאר גן או רחבה. רק הלובי נראה מבחוץ.",p:{floors:3,cellsPerSide:12,sides:2,lifts:1,turntable:true},under:true}];
+function withPreset(p,fn){const keep=structuredClone(S),keepM=M;try{Object.assign(S,p);S.floorClear=null;S.disabledCells="";ensureFloors();M=model();return fn(M)}finally{S=keep;M=keepM}}
+function footprint(m){const p=S.cellPitch/1000,cellD=(m.palletL+400)/1000,aisle=(m.palletW+900)/1000;const len=(m.n+1+(m.L===2?1:0))*p+0.6;const dep=m.sides*cellD+aisle+0.6;return {len,dep,area:len*dep}}
+function renderLanding(){
+  const fp=footprint(M),perCar=fp.area/(M.n*M.sides);
+  const hs=document.getElementById("heroStats");if(!hs)return;
+  hs.innerHTML=[[M.cells,"מקומות חניה"],[M.F,"קומות"],[fx(M.tRetrAvg,0)+"″","זמן שליפה ממוצע"],[fx(perCar,1)+" מ\"ר","שטח רצפה לרכב בקומה"]].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join("");
+  const conv=27, ratio=conv/perCar;
+  document.getElementById("valGrid").innerHTML=[
+    [`×${fx(ratio,1)}`,"צפיפות","בתצורה הנוכחית: "+fx(perCar,1)+" מ\"ר לרכב בכל קומה, לעומת כ‑25–30 מ\"ר בחניון רמפות רגיל (כולל רמפות ומעברים)."],
+    [fx(M.tRetrAvg,0)+" ש'","זמן שליפה","ממוצע מחושב לפי מהירויות המעלית והשאטל. "+fx(M.throughput,0)+" תנועות בשעה בתצורה הזאת."],
+    ["0","אנשים בתוך החניון","אף אחד לא נכנס לקומות. אין חיפוש חניה, אין שריטות, ואין צורך בתאורה ואוורור מלאים בקומות."],
+    [M.H.length+"","קרני גובה בלובי","כל רכב נבדק לפני כניסה: מידות, גובה וסריקת אנשים. רכב גבוה נשלח רק לקומות שמתאימות לו."],
+    ["PLC","רכיבים סטנדרטיים","Siemens S7‑1500F, SINAMICS ו‑PROFINET. טכנאים, חלפים ותמיכה בכל מקום בארץ."],
+    ["100%","תיעוד מלא","שרטוטים, חיווט כל ארון, רשימות IO ו‑IP, פרמטרים ותוכנת PLC מוכנה, נבנים אוטומטית מהתצורה."]
+  ].map(([b,h,p])=>`<div class="val"><b>${b}</b><h3>${h}</h3><p>${p}</p></div>`).join("");
+  document.getElementById("exGrid").innerHTML=PRESETS.map(ex=>{const r=withPreset(ex.p,m=>({cells:m.cells,F:m.F,t:m.tRetrAvg,fp:footprint(m)}));
+    return `<article class="ex"><div class="ex-img" role="img" aria-label="הדמיה: ${esc(ex.t)}" style="background-image:url(${ex.img})"></div><div class="ex-b"><h3>${ex.t}</h3><p>${ex.d}</p>
+    <dl><div><dt>מקומות</dt><dd>${r.cells}</dd></div><div><dt>קומות</dt><dd>${r.F}</dd></div><div><dt>שטח מגרש</dt><dd>${fx(r.fp.area,0)} מ"ר</dd></div></dl>
+    <button class="lbtn lbtn-ghost" type="button" data-preset="${ex.id}">טעינה למתכנן</button></div></article>`}).join("");
+  document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{const ex=PRESETS.find(x=>x.id===b.dataset.preset);Object.assign(S,ex.p);S.floorClear=null;S.disabledCells="";ensureFloors();fillInputs();simState=null;save();cur="overview";render();document.getElementById("planner").scrollIntoView({behavior:"smooth"});toast("נטענה התצורה: "+ex.t)});
+}
+let g3=null;
+function startGarage3D(){
+  const el=document.getElementById("g3View"),poster=document.getElementById("g3Poster");
+  poster.querySelector("button").textContent="טוען…";
+  loadThree().then(()=>{
+    if(g3){g3.V.dispose();g3=null}
+    const V=View3D(el,{bg:0x15202a,auto:true,shadowBox:60,maxR:300});
+    V.scene.fog=new V.T3.Fog(0x15202a,80,220);
+    const G=buildGarage(V,{});poster.hidden=true;document.getElementById("g3Tools").hidden=false;
+    const r=Math.max(G.len,G.top*1.8)*1.25;V.focus(G.center.x,G.center.y,G.center.z,r,-0.75,1.08);
+    g3={V,G,r,cut:false};
+    document.querySelectorAll("[data-g3]").forEach(b=>b.onclick=()=>{const k=b.dataset.g3;
+      if(k==="spin")V.st.auto=!V.st.auto;
+      if(k==="reset")V.focus(G.center.x,G.center.y,G.center.z,r,-0.75,1.08);
+      if(k==="cut"){g3.cut=!g3.cut;G.G.children.forEach(o=>{if(o.material&&o.material.transparent&&o.material.opacity<0.3&&o.geometry.parameters&&o.geometry.parameters.depth<0.1)o.visible=!g3.cut})}});
+  }).catch(()=>{poster.querySelector("button").textContent="ההדמיה לא נטענה – אין חיבור לשרת הספריות";});
+}
+/* ---------- cabinet 3D tab ---------- */
+let c3=null,c3Cab=null;
+R.cab3d=()=>{
+  const def=c3Cab&&M.cabs.some(c=>c.id===c3Cab)?c3Cab:(M.cabs.find(c=>c.id.startsWith("LFC"))||M.cabs[0]).id;c3Cab=def;
+  return `<h2>ארון – הדמיה תלת־ממדית והרכבה</h2>
+  <p class="lead">הארון כפי שהוא אמור להיראות, נבנה מאותו תכנון של לשונית החיווט: אותם רכיבים, מיקומים, חוטים וכבלים. עוברים שלב אחרי שלב, ובכל שלב נכנסים לארון הרכיבים של אותו שלב, עם הוראות ביצוע.</p>
+  <div class="row noprint" style="margin-bottom:8px"><label class="f" style="min-width:260px">ארון<select id="c3Cab">${M.cabs.map(x=>`<option value="${x.id}" ${x.id===def?"selected":""}>${x.id} – ${esc(x.name)}</option>`).join("")}</select></label></div>
+  <div class="c3-wrap">
+    <div class="c3-view" id="c3View"><div class="c3-msg" id="c3Msg">טוען הדמיה…</div>
+      <div class="c3-bar noprint"><button class="btn" type="button" id="c3Prev" aria-label="שלב קודם">‹ הקודם</button><button class="btn pri" type="button" id="c3Play">▶ הרכבה אוטומטית</button><button class="btn" type="button" id="c3Next" aria-label="שלב הבא">הבא ›</button><div class="c3-prog"><i id="c3Prog" style="width:0"></i></div><button class="btn" type="button" id="c3Door">דלת</button><button class="btn" type="button" id="c3Shot">צילום</button></div>
+    </div>
+    <aside class="card" id="c3Info" style="position:sticky;top:8px"><h4 id="c3T"></h4><p id="c3D" style="margin:0 0 8px"></p><p class="muted" style="margin:0 0 8px;font-size:13px" id="c3Tools"></p><div id="c3Parts" style="font-size:13px;max-height:180px;overflow:auto"></div>
+      <h4 style="margin-top:12px">שלבי ההרכבה</h4><ol class="c3-steps" id="c3Steps">${STEPS.map((s,i)=>`<li data-c3s="${i}">${s.t}</li>`).join("")}</ol></aside>
+  </div>
+  <p class="muted" style="font-size:13px">גרירה מסובבת · גלגלת או שתי אצבעות מקרבות · Shift+גרירה או מקש ימני מזיזים. ההדמיה משתמשת במידות האמיתיות של הרכיבים מהתכנון.</p>`;
+};
+function c3Mount(){
+  const el=document.getElementById("c3View"),msg=document.getElementById("c3Msg");
+  const c=M.cabs.find(x=>x.id===c3Cab),B=cabinetBuild(c);
+  document.getElementById("c3Cab").onchange=e=>{c3Cab=e.target.value;render()};
+  loadThree().then(()=>{
+    if(!document.getElementById("c3View"))return;
+    if(c3){c3.V.dispose();clearInterval(c3.play);c3=null}
+    const V=View3D(el,{bg:0xe7eae8,shadowBox:3,minR:0.3,maxR:12,exposure:1.0});
+    V.scene.fog=new V.T3.Fog(0xe7eae8,8,20);
+    const C=buildCabinet3D(V,B);msg.remove();
+    const st={k:0,doorOpen:true,play:null,anim:[]};c3={V,C,B,st};
+    V.focus(C.center.x,C.center.y,C.center.z,Math.max(C.W,C.H)*1.3,-0.5,1.3);
+    const comps=k=>{if(k===3||k===4||k===5||k===6){const want={3:["Q","F","T"],4:["U"],5:["A","M","N"],6:["X","X3","PE"]}[k];return B.comps.filter(o=>want.includes(o.kind)).map(o=>`<div><span class="mono">${o.id}</span> ${esc(o.name)}</div>`).join("")}
+      if(k===7)return `${B.wires.filter(w=>["pow","mot","pe"].includes(w.type)).length} חוטי כוח והארקה`;if(k===8)return `${B.wires.filter(w=>!["pow","mot","pe"].includes(w.type)).length} חוטי בקרה ותקשורת`;if(k===9)return `${B.cables.length} כבלי שטח · ראו טבלת כבלים בלשונית החיווט`;return ""};
+    const set=(k,animate=true)=>{st.k=Math.max(0,Math.min(STEPS.length-1,k));const now=performance.now();st.anim=[];
+      C.parts.forEach((arr,s)=>arr.forEach(o=>{if(s<st.k){o.visible=true;o.position.copy(o.userData.home)}else if(s===st.k){o.visible=true;if(animate&&s!==10){o.position.set(o.userData.home.x,o.userData.home.y+0.02,o.userData.home.z+0.45);st.anim.push(o)}else o.position.copy(o.userData.home)}else o.visible=false}));
+      st.t0=now;
+      document.getElementById("c3T").textContent=`שלב ${st.k+1} מתוך ${STEPS.length}: ${STEPS[st.k].t}`;
+      document.getElementById("c3D").textContent=STEPS[st.k].d;document.getElementById("c3Tools").textContent="כלים: "+STEPS[st.k].tools;
+      document.getElementById("c3Parts").innerHTML=comps(st.k);
+      document.getElementById("c3Prog").style.width=((st.k+1)/STEPS.length*100)+"%";
+      document.querySelectorAll("[data-c3s]").forEach(li=>{const i=+li.dataset.c3s;li.classList.toggle("on",i===st.k);li.classList.toggle("done",i<st.k)});
+      C.door.rotation.y=st.k===10?(st.doorOpen?-1.95:0):-1.95;
+    };
+    V.ticks.push(()=>{if(!st.anim.length)return;const u=Math.min(1,(performance.now()-st.t0)/900),e=1-Math.pow(1-u,3);st.anim.forEach(o=>{const h=o.userData.home;o.position.set(h.x,h.y+0.02*(1-e),h.z+0.45*(1-e))});if(u>=1)st.anim=[]});
+    set(0,false);
+    document.getElementById("c3Prev").onclick=()=>{stop();set(st.k-1)};document.getElementById("c3Next").onclick=()=>{stop();set(st.k+1)};
+    document.querySelectorAll("[data-c3s]").forEach(li=>li.onclick=()=>{stop();set(+li.dataset.c3s)});
+    const stop=()=>{if(st.play){clearInterval(st.play);st.play=null;document.getElementById("c3Play").textContent="▶ הרכבה אוטומטית"}};
+    document.getElementById("c3Play").onclick=()=>{if(st.play)return stop();if(st.k>=STEPS.length-1)set(0);document.getElementById("c3Play").textContent="❚❚ עצירה";st.play=setInterval(()=>{if(st.k>=STEPS.length-1)return stop();set(st.k+1)},2600)};
+    document.getElementById("c3Door").onclick=()=>{st.doorOpen=!st.doorOpen;if(st.k<10)set(10,false);else C.door.rotation.y=st.doorOpen?-1.95:0};
+    document.getElementById("c3Shot").onclick=()=>{V.R.render(V.scene,V.cam);V.R.domElement.toBlob(b=>b&&saveFile(`${c.id}_3d.png`,b),"image/png")};
+  }).catch(()=>{msg.textContent="ההדמיה לא נטענה: אין חיבור לשרת הספריות (cdnjs). נסו שוב או פתחו את האתר הציבורי."});
+}
+/* ---------- gallery ---------- */
+const GAL={items:[],filter:"הכל",mode:"web",assets:null,db:null,unsub:null,repo:"devopsdevopshaim-wq/devops-hub",dir:"robotic-parking/gallery/"};
+const idb=(()=>{let p;const open=()=>p||(p=new Promise((res,rej)=>{try{const r=indexedDB.open("rp-gallery",1);r.onupgradeneeded=()=>r.result.createObjectStore("img",{keyPath:"id"});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}));
+  const tx=(m,f)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction("img",m),s=t.objectStore("img");const r=f(s);t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)}));
+  return {all:()=>tx("readonly",s=>s.getAll()),put:v=>tx("readwrite",s=>s.put(v)),del:id=>tx("readwrite",s=>s.delete(id))}})();
+function resizeImage(file,max=1920){return new Promise((res,rej)=>{const url=URL.createObjectURL(file);const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(url);c.toBlob(b=>b?res(b):rej(new Error("encode")),"image/jpeg",0.86)};im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("decode"))};im.src=url})}
+async function galInit(){
+  try{if(window.claude&&window.claude.use){const [a,d]=await Promise.all([window.claude.use("assets"),window.claude.use("db")]);GAL.assets=a;GAL.db=d;if(d)GAL.mode="artifact"}}catch(e){}
+  if(GAL.mode!=="artifact"&&inFrame){GAL.mode="frame"}
+  document.getElementById("galSettings").hidden=GAL.mode!=="web";
+  const pub=await fetch("gallery/gallery.json",{cache:"no-store"}).then(r=>r.ok?r.json():[]).catch(()=>[]);
+  GAL.pub=(Array.isArray(pub)?pub:[]).map(x=>({...x,id:"pub:"+x.file,src:x.url||("gallery/"+x.file),source:"pub"}));
+  if(GAL.mode==="artifact"){GAL.unsub=GAL.db.collection("gallery").orderBy("createdAt","desc").onSnapshot(s=>{GAL.mine=s.docs.map(d=>{const v=d.data()||{};return {...v,id:"db:"+d.id,docId:d.id,src:"/_blob/"+v.assetId,source:"db"}});galRender()},()=>{GAL.mine=[];galRender()});if(!GAL.assets){document.getElementById("galUpL").hidden=true}}
+  else if(GAL.mode==="web"){try{const loc=await idb.all();GAL.mine=(loc||[]).sort((a,b)=>b.createdAt-a.createdAt).map(x=>({...x,src:URL.createObjectURL(x.blob),source:"local"}))}catch(e){GAL.mine=[]}}
+  else GAL.mine=[];
+  galRender();galBind();
+}
+function galItems(){const all=[...(GAL.mine||[]),...(GAL.pub||[])];return GAL.filter==="הכל"?all:all.filter(x=>x.kind===GAL.filter)}
+function galRender(){
+  const kinds=["הכל",...new Set([...(GAL.mine||[]),...(GAL.pub||[])].map(x=>x.kind).filter(Boolean))];
+  document.getElementById("galFilter").innerHTML=kinds.map(k=>`<button type="button" data-gk="${esc(k)}" aria-pressed="${k===GAL.filter}">${esc(k)}</button>`).join("");
+  document.querySelectorAll("[data-gk]").forEach(b=>b.onclick=()=>{GAL.filter=b.dataset.gk;galRender()});
+  const it=galItems();
+  document.getElementById("galGrid").innerHTML=it.length?it.map((x,i)=>`<button type="button" class="gal-it" data-gi="${i}"><img src="${esc(x.src)}" alt="${esc(x.title||"")}" loading="lazy"><span class="gk${x.source==="local"?" loc":""}">${x.source==="local"?"ממתין לפרסום":esc(x.kind||"")}</span><span class="gc"><b>${esc(x.title||"")}</b><span>${esc([x.loc,x.desc].filter(Boolean).join(" · "))}</span></span></button>`).join("")
+    :`<div class="gal-empty">עוד אין תמונות. העלו תמונות של חניונים, התקנות ופרויקטים, והן יופיעו כאן.</div>`;
+  document.querySelectorAll("[data-gi]").forEach(b=>b.onclick=()=>lbOpen(+b.dataset.gi));
+  const note=document.getElementById("galNote");
+  note.innerHTML=GAL.mode==="web"?`תמונות חדשות נשמרות בדפדפן הזה ומסומנות "ממתין לפרסום". בתצוגת תמונה כזו יש כפתור "פרסום באתר" שמעלה אותה לאתר הציבורי (צריך מפתח GitHub בהגדרות הפרסום).`
+    :GAL.mode==="artifact"?(GAL.assets?"התמונות נשמרות בקישור הזה ומופיעות לכל מי שיש לו גישה אליו.":"אפשר לצפות בגלריה. להעלאה צריך הרשאת עריכה."):"העלאת תמונות זמינה באתר הציבורי.";
+  if(GAL.mode==="frame")document.getElementById("galUpL").hidden=true;
+}
+let lbI=0;
+function lbOpen(i){const it=galItems();if(!it.length)return;lbI=(i+it.length)%it.length;const x=it[lbI];const lb=document.getElementById("lb");
+  document.getElementById("lbImg").src=x.src;document.getElementById("lbImg").alt=x.title||"";
+  const canDel=x.source==="local"||(x.source==="db"&&GAL.assets);
+  document.getElementById("lbCap").innerHTML=`<b>${esc(x.title||"")}</b><span>${esc([x.kind,x.loc,x.desc].filter(Boolean).join(" · "))}</span>${x.source==="local"?`<button class="lbtn lbtn-pri" type="button" id="lbPub">פרסום באתר</button>`:""}${canDel?`<button class="lbtn lbtn-ghost" type="button" id="lbDel">מחיקה</button>`:""}`;
+  lb.hidden=false;document.getElementById("lbX").focus();
+  const pb=document.getElementById("lbPub");if(pb)pb.onclick=()=>ghPublish(x);
+  const db=document.getElementById("lbDel");if(db)db.onclick=async()=>{if(db.dataset.sure!=="1"){db.dataset.sure="1";db.textContent="למחוק? לחצו שוב";return}
+    try{if(x.source==="local"){await idb.del(x.id);GAL.mine=GAL.mine.filter(y=>y.id!==x.id)}else{await GAL.db.collection("gallery").doc(x.docId).delete();await GAL.assets.delete(x.assetId).catch(()=>{})}lbClose();galRender();toast("התמונה נמחקה")}catch(e){toast("המחיקה נכשלה")}};
+}
+function lbClose(){document.getElementById("lb").hidden=true}
+let pending=[];
+function galBind(){
+  const fileIn=document.getElementById("galFile"),drop=document.getElementById("galDrop");
+  const take=files=>{pending=[...files].filter(f=>/^image\//.test(f.type)).slice(0,12);if(!pending.length){toast("בחרו קובצי תמונה (JPG, PNG, WEBP)");return}
+    document.getElementById("galPrev").innerHTML=pending.map(f=>`<img alt="" src="${URL.createObjectURL(f)}">`).join("");document.getElementById("gfNote").textContent=pending.length>1?`${pending.length} תמונות יקבלו את אותם פרטים.`:"";
+    document.getElementById("galForm").hidden=false;document.getElementById("gfTitle").focus()};
+  fileIn.onchange=()=>{take(fileIn.files);fileIn.value=""};
+  if(GAL.mode==="frame"){drop.hidden=true}
+  ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("on")}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("on")}));
+  drop.addEventListener("drop",e=>{if(GAL.mode!=="frame")take(e.dataTransfer.files)});
+  document.getElementById("gfCancel").onclick=()=>{document.getElementById("galForm").hidden=true;pending=[]};
+  document.getElementById("galFormEl").onsubmit=async e=>{e.preventDefault();const meta={title:document.getElementById("gfTitle").value.trim(),loc:document.getElementById("gfLoc").value.trim(),kind:document.getElementById("gfKind").value,desc:document.getElementById("gfDesc").value.trim()};
+    const btn=document.getElementById("gfSave");btn.disabled=true;btn.textContent="שומר…";
+    try{for(const f of pending){const blob=await resizeImage(f);const createdAt=Date.now();
+        if(GAL.mode==="artifact"){const up=await GAL.assets.upload(blob,{type:"image/jpeg"});await GAL.db.collection("gallery").doc().set({...meta,assetId:up.id,createdAt})}
+        else{const id="loc-"+createdAt+"-"+Math.random().toString(36).slice(2,7);await idb.put({id,...meta,blob,createdAt});GAL.mine.unshift({id,...meta,blob,createdAt,src:URL.createObjectURL(blob),source:"local"})}}
+      document.getElementById("galForm").hidden=true;pending=[];document.getElementById("galFormEl").reset();galRender();toast(GAL.mode==="artifact"?"נשמר בגלריה":"נשמר. לפרסום באתר: פתחו את התמונה ולחצו \"פרסום באתר\"")}
+    catch(err){document.getElementById("gfNote").textContent="השמירה נכשלה"+(err&&err.code?` (${err.code})`:"")+". נסו תמונה קטנה יותר או נסו שוב."}
+    finally{btn.disabled=false;btn.textContent="שמירה בגלריה"}};
+  document.getElementById("lbX").onclick=lbClose;document.getElementById("lbPrev").onclick=()=>lbOpen(lbI-1);document.getElementById("lbNext").onclick=()=>lbOpen(lbI+1);
+  document.addEventListener("keydown",e=>{if(document.getElementById("lb").hidden)return;if(e.key==="Escape")lbClose();if(e.key==="ArrowLeft")lbOpen(lbI+1);if(e.key==="ArrowRight")lbOpen(lbI-1)});
+  document.getElementById("lb").addEventListener("click",e=>{if(e.target.id==="lb")lbClose()});
+  const gh=document.getElementById("ghForm");
+  document.getElementById("galSettings").onclick=()=>{try{document.getElementById("ghTok").value=localStorage.getItem("rp-gh-token")||""}catch(e){}gh.hidden=false};
+  document.getElementById("ghCancel").onclick=()=>gh.hidden=true;
+  document.getElementById("ghClear").onclick=()=>{try{localStorage.removeItem("rp-gh-token")}catch(e){}document.getElementById("ghTok").value="";toast("המפתח נמחק מהדפדפן")};
+  document.getElementById("ghFormEl").onsubmit=e=>{e.preventDefault();try{localStorage.setItem("rp-gh-token",document.getElementById("ghTok").value.trim())}catch(err){}gh.hidden=true;toast("נשמר")};
+}
+const b64utf8=s=>btoa(unescape(encodeURIComponent(s))),utf8b64=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,""))));
+const blob64=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(String(f.result).split(",")[1]);f.readAsDataURL(b)});
+async function ghPublish(x){
+  let tok="";try{tok=localStorage.getItem("rp-gh-token")||""}catch(e){}
+  if(!tok){document.getElementById("ghForm").hidden=false;toast("קודם שומרים מפתח GitHub");return}
+  const btn=document.getElementById("lbPub");btn.disabled=true;btn.textContent="מפרסם…";
+  const H={Authorization:"Bearer "+tok,Accept:"application/vnd.github+json","Content-Type":"application/json"};
+  const api=(p,o={})=>fetch(`https://api.github.com/repos/${GAL.repo}/contents/${p}`,{...o,headers:H}).then(async r=>{if(!r.ok&&!(o.allow404&&r.status===404))throw new Error(r.status+"");return r.status===404?null:r.json()});
+  try{const file=`${x.createdAt}-${(x.title||"img").replace(/[^\w֐-׿-]+/g,"-").slice(0,40)}.jpg`;
+    await api(GAL.dir+file,{method:"PUT",body:JSON.stringify({message:`gallery: ${x.title||file}`,branch:"main",content:await blob64(x.blob)})});
+    const cur=await api(GAL.dir+"gallery.json?ref=main",{allow404:true});
+    const list=cur?JSON.parse(utf8b64(cur.content)):[];
+    list.unshift({file,title:x.title,loc:x.loc,kind:x.kind,desc:x.desc,date:new Date(x.createdAt).toISOString().slice(0,10)});
+    await api(GAL.dir+"gallery.json",{method:"PUT",body:JSON.stringify({message:`gallery: list ${file}`,branch:"main",content:b64utf8(JSON.stringify(list,null,1)+"\n"),...(cur?{sha:cur.sha}:{})})});
+    await idb.del(x.id);GAL.mine=GAL.mine.filter(y=>y.id!==x.id);GAL.pub.unshift({...x,file,id:"pub:"+file,source:"pub"});lbClose();galRender();
+    toast("פורסם. האתר הציבורי מתעדכן תוך כ‑2 דקות")}
+  catch(e){btn.disabled=false;btn.textContent="פרסום באתר";toast(e.message==="401"||e.message==="403"?"המפתח לא תקף או בלי הרשאת כתיבה למאגר":"הפרסום נכשל ("+e.message+")")}
+}
+
 /* ---- per-tab mounts that need DOM ---- */
 const _render=render;
-render=function(){_render();
+render=function(){if(c3&&cur!=="cab3d"){c3.V.dispose();c3=null}_render();renderLanding();
   if(cur==="ip")document.getElementById("cpIP").onclick=()=>copyText(ipCSV(),"טבלת IP הועתקה");
   if(cur==="plc")document.getElementById("cpSCL").onclick=()=>copyText(document.querySelectorAll("#s-plc pre.code")[1].textContent,"קוד ה‑SCL הועתק");
   if(cur==="lobby")document.getElementById("lobbyCad").innerHTML=lobbySVG(1);
   if(cur==="tpl")tplMount();
   if(cur==="cabwire")cwMount();
+  if(cur==="cab3d")c3Mount();
   if(cur==="wiring"){const s=document.getElementById("wCab");const o=document.getElementById("wOut");const def=M.cabs.find(c=>c.id.startsWith("FLC"))||M.cabs[0];s.value=wCab&&M.cabs.some(c=>c.id===wCab)?wCab:def.id;o.innerHTML=wiringOut(s.value);s.onchange=()=>{wCab=s.value;o.innerHTML=wiringOut(s.value)}}
 };
 let wCab=null;
@@ -2844,5 +3468,8 @@ let wCab=null;
 ensureFloors();fillInputs();
 {const st=document.createElement("style");st.textContent=CW_CSS;document.head.appendChild(st)}
 render();
+document.getElementById("g3Start").onclick=startGarage3D;
+galInit();
+window.RP={loadThree,View3D,buildGarage,buildCabinet3D,cabinetBuild,withPreset,PRESETS,getM:()=>M,getS:()=>S};
 })();
 </script>
