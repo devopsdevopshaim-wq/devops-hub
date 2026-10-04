@@ -28,7 +28,7 @@ if (!(sd.okTok[th] > now)) {
   try {
     r = await this.helpers.httpRequest({ method: 'POST', url: AUTH_URL, headers: { Origin: SITE_ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded' },
       body: 'action=me&token=' + token, json: true, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 15000 });
-  } catch (e) { return out({ ok: false, error: 'auth-unreachable' }, 502); }
+  } catch (e) { return out({ ok: false, error: 'auth-unreachable', detail: String((e && e.message) || e).slice(0, 160) }, 502); }
   const j = r && r.body;
   if (r.statusCode === 200 && j && j.ok) {
     if (j.role !== 'admin') return out({ ok: false, error: 'admin-only' }, 403);   // a client is not the admin
