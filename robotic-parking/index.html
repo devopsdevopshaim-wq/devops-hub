@@ -1592,9 +1592,11 @@ const ioCSV=()=>csv([["tag","description","type","address","terminal","cabinet",
 const ipCSV=()=>csv([["ip","device_name","device","role","cabinet","telegram"],...M.net.map(n=>[n.ip,n.name,n.dev,n.role,n.cab,n.tel||""])]);
 const axCSV=()=>csv([["axis","name","kW","In_A","drive","cabinet","mcb_A","cable_mm2"],...M.axes.map(a=>[a.id,a.name,a.kW,fx(a.In,1),a.drive,a.cab,a.mcb,a.cable])]);
 R.report=()=>`<h2>דוח, מייל והדפסה</h2>
-  <p class="lead">כל התכנון כטקסט אחד ושלוש טבלאות CSV (IO, IP, צירים) שנפתחות באקסל. מעתיקים ומדביקים במייל, או מדפיסים את כל הלשוניות כמסמך אחד.</p>
+  <p class="lead">חבילת ZIP אחת עם כל התכנון: קבצי PLC, כל השרטוטים ב‑SVG, טבלאות CSV לאקסל והדוח. מצרפים אותה למייל או פותחים במחשב להדפסה. אפשר גם להעתיק כל חלק בנפרד.</p>
   <div class="row noprint">
-    <button class="btn pri" type="button" id="cpRep">העתקת הדוח</button>
+    <button class="btn pri" type="button" id="zipAll">הורדת חבילת הפרויקט (ZIP)</button>
+    <button class="btn" type="button" id="dlIO">הורדת IO (CSV)</button>
+    <button class="btn" type="button" id="cpRep">העתקת הדוח</button>
     <button class="btn" type="button" id="cpIO">העתקת IO כ‑CSV</button>
     <button class="btn" type="button" id="cpIP2">העתקת IP כ‑CSV</button>
     <button class="btn" type="button" id="cpAX">העתקת צירים כ‑CSV</button>
@@ -1605,11 +1607,13 @@ R.report=()=>`<h2>דוח, מייל והדפסה</h2>
     <label class="f" style="min-width:260px">כתובת הנמען<input id="mailTo" type="email" placeholder="name@company.co.il" style="direction:ltr"></label>
     <a class="btn" id="mailA" href="#" style="align-self:flex-end;text-decoration:none" rel="noopener">פתיחת טיוטה בתוכנת המייל</a>
   </div>
-  <p class="muted" style="font-size:13px">הקישור פותח טיוטה עם תקציר בתוכנת המייל שלכם, אם הדפדפן מאפשר זאת. הוא לא שולח בעצמו. כדי לצרף את הכל, העתיקו את הדוח ואת קבצי ה‑CSV והדביקו אותם בהודעה.</p>
+  <p class="muted" style="font-size:13px">הקישור פותח טיוטה עם תקציר בתוכנת המייל שלכם, אם הדפדפן מאפשר זאת. הוא לא שולח בעצמו. כדי לשלוח הכל: מורידים את חבילת ה‑ZIP ומצרפים אותה למייל.</p>
   ${inFrame?'<p class="muted" style="font-size:13px">להדפסה: פתחו את הקובץ <span class="mono">robotic-parking/index.html</span> מהמאגר בדפדפן, ושם יופיע כפתור "הדפסת כל התכנון". אפשר גם להדביק את הדוח במסמך ולהדפיס.</p>':""}
   <textarea class="out" id="repTxt" readonly aria-label="טקסט הדוח"></textarea>`;
 function reportMount(){
   const ta=document.getElementById("repTxt");ta.value=reportText();
+  document.getElementById("zipAll").onclick=()=>{const z=projectZip();saveFile(z.name,z.data)};
+  document.getElementById("dlIO").onclick=()=>saveFile(safeName(S.project)+"_io_list.csv","\uFEFF"+ioCSV());
   document.getElementById("cpRep").onclick=()=>copyText(ta.value,"הדוח הועתק",ta);
   document.getElementById("cpIO").onclick=()=>copyText(ioCSV(),"טבלת IO הועתקה");
   document.getElementById("cpIP2").onclick=()=>copyText(ipCSV(),"טבלת IP הועתקה");
@@ -2403,7 +2407,7 @@ END_DATA_BLOCK
   add("13_PLC_Tags.csv","טבלת תגיות לייבוא","כל נקודות ה-IO עם כתובת והערה. פותחים באקסל, שומרים כ-xlsx בגיליון PLC Tags, ומייבאים ב-PLC tags → Import.",csv(tagRows));
   return files;
 }
-function dl(name,text){try{const b=new Blob([text],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}catch(e){toast("ההורדה נחסמה – העתיקו את הטקסט")}}
+function dl(name,text){try{const b=new Blob([text],{type:typeof text==="string"?"text/plain;charset=utf-8":"application/zip"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}catch(e){toast("ההורדה נחסמה – העתיקו את הטקסט")}}
 R.tpl=()=>{
   const files=plcFiles();
   const ctl=(k,lbl,min,max)=>`<div class="card" style="padding:8px 10px"><div class="muted" style="font-size:12.5px">${lbl}</div><div class="row" style="gap:6px;margin-top:4px"><button class="btn" type="button" data-step="${k}" data-d="-1" aria-label="הפחתה">−</button><b class="mono" style="min-width:32px;text-align:center;font-size:18px">${S[k]}</b><button class="btn" type="button" data-step="${k}" data-d="1" aria-label="הוספה">+</button></div></div>`;
@@ -2441,9 +2445,9 @@ R.tpl=()=>{
     <li>טבלת התגיות (13) היא אופציונלית: נותנת שמות לכתובות לצורך צפייה ותחזוקה. <em>PLC tags → Import</em></li>
   </ol>
   <div class="row noprint" style="margin:12px 0">
-    <button class="btn pri" type="button" id="tplCopyAll">העתקת כל הקבצים</button>
-    ${inFrame?"":'<button class="btn" type="button" id="tplDlAll">הורדת כל הקבצים</button>'}
-    <span class="muted" style="font-size:13px">${inFrame?"להורדה כקבצים: פותחים את robotic-parking/index.html מהמאגר.":""}</span>
+    <button class="btn pri" type="button" id="tplZip">הורדת חבילת הפרויקט (ZIP)</button>
+    <button class="btn" type="button" id="tplCopyAll">העתקת כל הקבצים</button>
+    <span class="muted" style="font-size:13px">ה‑ZIP כולל את כל קבצי ה‑PLC עם הסיומות הנכונות, כל השרטוטים, טבלאות CSV והדוח.</span>
   </div>
   ${files.map((f,i)=>`<details class="card" style="margin-bottom:8px" ${i===0?"":""}><summary style="cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline"><b class="mono">${f.name}</b><span>${esc(f.title)}</span><span class="muted" style="font-size:12.5px">${f.code.split("\n").length} שורות</span></summary>
     <p class="muted" style="margin:6px 0">${esc(f.desc)}</p>
@@ -2460,7 +2464,50 @@ function tplMount(){
   document.querySelectorAll("[data-cp]").forEach(b=>b.onclick=()=>copyText(files[+b.dataset.cp].code,`${files[+b.dataset.cp].name} הועתק`,b.closest("details").querySelector("pre")));
   document.querySelectorAll("[data-dl]").forEach(b=>b.onclick=()=>dl(files[+b.dataset.dl].name,files[+b.dataset.dl].code));
   document.getElementById("tplCopyAll").onclick=()=>copyText(files.map(f=>`// ======================= ${f.name} =======================\n${f.code}`).join("\n\n"),"כל הקבצים הועתקו");
-  const da=document.getElementById("tplDlAll");if(da)da.onclick=()=>files.forEach((f,i)=>setTimeout(()=>dl(f.name,f.code),i*250));
+  document.getElementById("tplZip").onclick=()=>{const z=projectZip();saveFile(z.name,z.data)};
+}
+
+/* ---------- file export: ZIP (store) + downloads capability ---------- */
+let DLcap=null;(async()=>{try{if(window.claude&&window.claude.use)DLcap=await window.claude.use("downloads")}catch(e){DLcap=null}})();
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC_T[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function makeZip(entries){
+  const enc=new TextEncoder(),parts=[],central=[];let off=0;
+  const d=new Date(),dt=((d.getFullYear()-1980)<<9|(d.getMonth()+1)<<5|d.getDate()),tm=(d.getHours()<<11|d.getMinutes()<<5|(d.getSeconds()>>1));
+  for(const e of entries){
+    const name=enc.encode(e.name),data=typeof e.data==="string"?enc.encode(e.data):e.data,crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,tm,true);h.setUint16(12,dt,true);
+    h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),name,data);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,tm,true);c.setUint16(14,dt,true);
+    c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer),name);
+    off+=30+name.length+data.length;
+  }
+  const cSize=central.reduce((a,x)=>a+x.length,0),end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true);end.setUint16(8,entries.length,true);end.setUint16(10,entries.length,true);end.setUint32(12,cSize,true);end.setUint32(16,off,true);
+  const all=[...parts,...central,new Uint8Array(end.buffer)],out=new Uint8Array(all.reduce((a,x)=>a+x.length,0));let p=0;for(const x of all){out.set(x,p);p+=x.length}
+  return out;
+}
+async function saveFile(filename,data){
+  if(DLcap){try{await DLcap.save({filename,data});toast("נשמר: "+filename)}catch(e){toast(e&&e.code==="declined"?"ההורדה בוטלה":"ההורדה לא זמינה כאן ("+(e&&e.code||"שגיאה")+")")}return}
+  if(!inFrame){dl(filename,data);return}
+  toast("ההורדה לא זמינה בתצוגה הזאת. פתחו את index.html מהמאגר.");
+}
+function safeName(s){return String(s||"parking").replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_").slice(0,60)}
+function projectZip(){
+  const e=[],bom="﻿",slug=safeName(S.project);
+  plcFiles().forEach(f=>e.push({name:`PLC/${f.name}`,data:f.name.endsWith(".csv")?bom+f.code:f.code}));
+  const keep={type:dwType,sub:dwSub};
+  Object.keys(DRAW).forEach(k=>{const subs=k==="plan"?Array.from({length:M.F},(_,i)=>String(i+1)):k==="cabinet"?M.cabs.map(c=>c.id):k==="lobbyPlan"?Array.from({length:M.L},(_,i)=>String(i+1)):["-"];
+    subs.forEach(x=>{const r=DRAW[k](x);const tmp=document.createElement("div");tmp.innerHTML=r.svg;const svg=tmp.querySelector("svg");if(svg)e.push({name:`Drawings/${k}${x==="-"?"":"_"+x}.svg`,data:standaloneSVG(svg)})})});
+  dwType=keep.type;dwSub=keep.sub;
+  e.push({name:"Tables/io_list.csv",data:bom+ioCSV()},{name:"Tables/ip_list.csv",data:bom+ipCSV()},{name:"Tables/axes.csv",data:bom+axCSV()});
+  e.push({name:"report.txt",data:reportText()});
+  e.push({name:"README.txt",data:`${S.project}\nנוצר ע"י מתכנן חניון רובוטי ${new Date().toISOString().slice(0,10)}\n\nPLC/        קבצי מקור ל-TIA Portal – לייבא לפי סדר המספרים 01..12\nDrawings/   שרטוטים SVG – נפתחים בדפדפן, Inkscape או AutoCAD (ייבוא)\nTables/     רשימות IO, IP וצירים (CSV לאקסל)\nreport.txt  סיכום התכנון\n`});
+  return {name:`${slug}_project.zip`,data:makeZip(e),count:e.length};
 }
 
 /* ---- per-tab mounts that need DOM ---- */
