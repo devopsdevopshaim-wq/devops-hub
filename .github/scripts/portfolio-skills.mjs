@@ -103,8 +103,13 @@ fs.mkdirSync(OUT, { recursive: true });
 const projects = data.projects.filter((p) => !p.hidden && !p.pending && /^[a-z0-9-]{1,64}$/.test(p.id));
 const index = [];
 for (const p of projects) {
-  fs.mkdirSync(path.join(OUT, p.id), { recursive: true });
-  fs.writeFileSync(path.join(OUT, p.id, 'SKILL.md'), skill(p));
+  // A project that ships its own hand-written skill (p.skill) is published as is.
+  const own = p.skill && fs.existsSync(path.join(ROOT, p.skill, 'SKILL.md')) ? path.join(ROOT, p.skill) : null;
+  if (own) fs.cpSync(own, path.join(OUT, p.id), { recursive: true });
+  else {
+    fs.mkdirSync(path.join(OUT, p.id), { recursive: true });
+    fs.writeFileSync(path.join(OUT, p.id, 'SKILL.md'), skill(p));
+  }
   index.push({ id: p.id, title: p.title, zip: p.id + '.zip' });
 }
 let zipped = false;
