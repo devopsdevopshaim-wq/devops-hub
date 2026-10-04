@@ -90,6 +90,7 @@ async function install(file, names, { creds = {}, fill = {} } = {}) {
       const old = (full.nodes || []).find((o) => o.name === n.name && o.type === n.type);
       if (old && old.credentials) n.parameters = { ...n.parameters, ...old.parameters };
       if (n.credentials) delete n.disabled;
+      note(`  · ${n.name}: ${n.disabled ? 'כבוי, עוד אין חשבון מחובר' : 'מחובר ופעיל'}`);
     }
     // the update leaves the workflow's stored data (leads, prices, clients) as it is
     id = existing.id;
