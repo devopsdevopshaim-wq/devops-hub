@@ -72,6 +72,9 @@ async function install(file, names, { creds = {}, fill = {} } = {}) {
   for (const [k, v] of Object.entries(fill)) if (/^[\w-]+$/.test(v)) raw = raw.split(k).join(v);
   const wf = JSON.parse(raw);
   for (const n of wf.nodes) for (const [type, match] of Object.entries(creds)) if (match.types.includes(n.type) && match.cred) n.credentials = { [type]: match.cred };
+  // n8n Cloud will not publish an enabled node without its account: with no Gmail connection yet,
+  // email nodes go in disabled (and come back on at the next deploy that has one)
+  for (const n of wf.nodes) if (n.type === 'n8n-nodes-base.emailSend' && !n.credentials) n.disabled = true;
   const existing = findByName([wf.name, ...names]);
   const body = { name: wf.name, nodes: wf.nodes, connections: wf.connections, settings: { executionOrder: 'v1' } };
   let id;
@@ -88,7 +91,7 @@ async function install(file, names, { creds = {}, fill = {} } = {}) {
     for (const n of body.nodes) {
       if (!n.disabled) continue;
       const old = (full.nodes || []).find((o) => o.name === n.name && o.type === n.type);
-      if (old && old.credentials) n.parameters = { ...n.parameters, ...old.parameters };
+      if (old && old.credentials && n.type !== 'n8n-nodes-base.emailSend') n.parameters = { ...n.parameters, ...old.parameters };
       // no account on the node yet: use one the user already created in n8n (Drive, Slack)
       if (!n.credentials && ACCOUNT[n.type]) {
         const { cred, type, auth } = ACCOUNT[n.type];
@@ -155,10 +158,12 @@ if (GMAIL_PASS && !smtp) {
 const results = {};
 try {
   results.agents = await install('n8n/hasadna-multi-agent.json', ['הסדנה · מערכת מולטי־אייג׳נט ומרכז בקרה', 'SPIDER · מערכת מולטי־אייג׳נט ומרכז בקרה'],
-    { creds: { anthropicApi: { types: ['@n8n/n8n-nodes-langchain.lmChatAnthropic'], cred: claude } } });
+    { creds: { anthropicApi: { types: ['@n8n/n8n-nodes-langchain.lmChatAnthropic'], cred: claude },
+               smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } } });
 } catch (e) { note(`- ⚠️ הסוכנים: ${e.message.slice(0, 200)}`); }
 try {
-  results.business = await install('n8n/hasadna-business.json', ['הסדנה · לידים ומחירון'], {});
+  results.business = await install('n8n/hasadna-business.json', ['הסדנה · לידים ומחירון'],
+    { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } } });
 } catch (e) { note(`- ⚠️ לידים ומחירון: ${e.message.slice(0, 200)}`); }
 try {
   results.access = await install('n8n/hasadna-access.json', ['הסדנה · כניסה והרשאות'],

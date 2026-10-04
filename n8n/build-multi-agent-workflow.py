@@ -342,7 +342,7 @@ nodes += [
     note('Note · Monitor',
          '## B · ניטור האתרים\nכל 15 דקות: טוען את רשימת האתרים, בודק את כולם במקביל, מסווג (עובד / מתעורר / נעול / לא זמין), '
          'ושומר בזיכרון של ה־workflow. הבדיקה גם מעירה אתרים חינמיים ב־Render כך שהם נשארים ערים.\n\n'
-         'אופציונלי: מייל כשאתר נופל — מחברים Gmail ומפעילים את הצומת (מקש D).',
+         'כשאתר נופל נשלח מייל (צומת "Alert · Email (optional)", חיבור SPIDER · Gmail).',
          [X0 - 460, Y_MON - 240], w=420, h=260, color=6),
     node('Every 15 minutes', 'n8n-nodes-base.scheduleTrigger', 1.2,
          {'rule': {'interval': [{'field': 'minutes', 'minutesInterval': 15}]}}, [X0, Y_MON]),
@@ -367,13 +367,13 @@ nodes += [
                                          'operator': {'type': 'number', 'operation': 'gt'}}],
                          'combinator': 'and'}, 'options': {}},
          [X0 + 1540, Y_MON + 140]),
-    node('Alert · Email (optional)', 'n8n-nodes-base.gmail', 2.1,
-         {'sendTo': 'devopsdevopshaim@gmail.com',
+    node('Alert · Email (optional)', 'n8n-nodes-base.emailSend', 2.1,
+         {'fromEmail': 'SPIDER · מרכז הבקרה <devopsdevopshaim@gmail.com>', 'toEmail': 'devopsdevopshaim@gmail.com',
           'subject': "={{ 'SPIDER: ' + $json.newlyDown.length + ' אתרים הפסיקו לעבוד' }}",
-          'emailType': 'text',
-          'message': "={{ $json.newlyDown.map(r => r.title + ' — ' + r.url + ' (' + (r.code ? 'HTTP ' + r.code : (r.error || 'אין תשובה')) + ')').join('\\n') }}",
-          'options': {}},
-         [X0 + 1760, Y_MON + 140], disabled=True),
+          'emailFormat': 'text',
+          'text': "={{ $json.newlyDown.map(r => r.title + ' — ' + r.url + ' (' + (r.code ? 'HTTP ' + r.code : (r.error || 'אין תשובה')) + ')').join('\\n') }}",
+          'options': {'appendAttribution': False}},
+         [X0 + 1760, Y_MON + 140], onError='continueRegularOutput'),
     note('Note · Control',
          '## C · מרכז הבקרה\n`GET /webhook/hasadna-status` — דף חי עם כל האתרים והסטטוס שלהם, צוות הסוכנים וקישור לצ׳אט. '
          '`?run=1` מריץ בדיקה עכשיו, `?format=json` מחזיר נתונים (האתר משתמש בזה).',

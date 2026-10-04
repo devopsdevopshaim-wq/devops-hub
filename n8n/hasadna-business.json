@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## לידים\n`POST /webhook/hasadna-lead` — כל טופס בדף השירותים נשמר כאן (גם לחיצות על וואטסאפ נספרות). רואים ומנהלים את הלידים במסך הניהול של האתר ← \"לידים ומחירון\".\n\nאופציונלי: מייל על כל ליד — מחברים Gmail בצומת \"Lead · Email\" ומפעילים אותו (מקש D).",
+        "content": "## לידים\n`POST /webhook/hasadna-lead` — כל טופס בדף השירותים נשמר כאן (גם לחיצות על וואטסאפ נספרות). רואים ומנהלים את הלידים במסך הניהול של האתר ← \"לידים ומחירון\".\n\nכל ליד חדש נשלח גם במייל (צומת \"Lead · Email\", חיבור SPIDER · Gmail).",
         "height": 240,
         "width": 440,
         "color": 6
@@ -111,21 +111,24 @@
     },
     {
       "parameters": {
-        "sendTo": "devopsdevopshaim@gmail.com",
+        "fromEmail": "SPIDER · לידים <devopsdevopshaim@gmail.com>",
+        "toEmail": "devopsdevopshaim@gmail.com",
         "subject": "={{ 'ליד חדש: ' + $json.lead.name + ($json.lead.service ? ' · ' + $json.lead.service : '') }}",
-        "emailType": "text",
-        "message": "={{ 'שם: ' + $json.lead.name + '\\nטלפון: ' + $json.lead.phone + '\\nעסק: ' + $json.lead.biz + '\\nשירות: ' + $json.lead.service + ($json.lead.code ? '\\nמבצע: ' + $json.lead.code : '') + '\\n\\n' + $json.lead.msg + '\\n\\nוואטסאפ: https://wa.me/' + String($json.lead.phone).replace(/\\D/g, '').replace(/^0/, '972') }}",
-        "options": {}
+        "emailFormat": "text",
+        "text": "={{ 'שם: ' + $json.lead.name + '\\nטלפון: ' + $json.lead.phone + '\\nעסק: ' + $json.lead.biz + '\\nשירות: ' + $json.lead.service + ($json.lead.code ? '\\nמבצע: ' + $json.lead.code : '') + '\\n\\n' + $json.lead.msg + '\\n\\nוואטסאפ: https://wa.me/' + String($json.lead.phone).replace(/\\D/g, '').replace(/^0/, '972') }}",
+        "options": {
+          "appendAttribution": false
+        }
       },
       "id": "5bc5b767-d216-5814-8786-b22bef5f432f",
       "name": "Lead · Email",
-      "type": "n8n-nodes-base.gmail",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
         720,
         100
       ],
-      "disabled": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {

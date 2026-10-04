@@ -450,7 +450,7 @@
     },
     {
       "parameters": {
-        "content": "## B · ניטור האתרים\nכל 15 דקות: טוען את רשימת האתרים, בודק את כולם במקביל, מסווג (עובד / מתעורר / נעול / לא זמין), ושומר בזיכרון של ה־workflow. הבדיקה גם מעירה אתרים חינמיים ב־Render כך שהם נשארים ערים.\n\nאופציונלי: מייל כשאתר נופל — מחברים Gmail ומפעילים את הצומת (מקש D).",
+        "content": "## B · ניטור האתרים\nכל 15 דקות: טוען את רשימת האתרים, בודק את כולם במקביל, מסווג (עובד / מתעורר / נעול / לא זמין), ושומר בזיכרון של ה־workflow. הבדיקה גם מעירה אתרים חינמיים ב־Render כך שהם נשארים ערים.\n\nכשאתר נופל נשלח מייל (צומת \"Alert · Email (optional)\", חיבור SPIDER · Gmail).",
         "height": 260,
         "width": 420,
         "color": 6
@@ -619,21 +619,24 @@
     },
     {
       "parameters": {
-        "sendTo": "devopsdevopshaim@gmail.com",
+        "fromEmail": "SPIDER · מרכז הבקרה <devopsdevopshaim@gmail.com>",
+        "toEmail": "devopsdevopshaim@gmail.com",
         "subject": "={{ 'SPIDER: ' + $json.newlyDown.length + ' אתרים הפסיקו לעבוד' }}",
-        "emailType": "text",
-        "message": "={{ $json.newlyDown.map(r => r.title + ' — ' + r.url + ' (' + (r.code ? 'HTTP ' + r.code : (r.error || 'אין תשובה')) + ')').join('\\n') }}",
-        "options": {}
+        "emailFormat": "text",
+        "text": "={{ $json.newlyDown.map(r => r.title + ' — ' + r.url + ' (' + (r.code ? 'HTTP ' + r.code : (r.error || 'אין תשובה')) + ')').join('\\n') }}",
+        "options": {
+          "appendAttribution": false
+        }
       },
       "id": "0e380d72-62f1-5560-a3e6-65467ee179b6",
       "name": "Alert · Email (optional)",
-      "type": "n8n-nodes-base.gmail",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
         1760,
         1140
       ],
-      "disabled": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
