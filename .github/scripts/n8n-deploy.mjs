@@ -89,6 +89,12 @@ async function install(file, names, { creds = {}, fill = {} } = {}) {
       if (!n.disabled) continue;
       const old = (full.nodes || []).find((o) => o.name === n.name && o.type === n.type);
       if (old && old.credentials) n.parameters = { ...n.parameters, ...old.parameters };
+      // no account on the node yet: use one the user already created in n8n (Drive, Slack)
+      if (!n.credentials && ACCOUNT[n.type]) {
+        const { cred, type, auth } = ACCOUNT[n.type];
+        n.credentials = { [type]: cred };
+        if (auth) n.parameters.authentication = auth;
+      }
       if (n.credentials) delete n.disabled;
       note(`  · ${n.name}: ${n.disabled ? 'כבוי, עוד אין חשבון מחובר' : 'מחובר ופעיל'}`);
     }
@@ -108,6 +114,25 @@ async function install(file, names, { creds = {}, fill = {} } = {}) {
 // ---- credentials
 const existingFull = [];
 for (const w of all) { try { existingFull.push(await api('GET', `/workflows/${w.id}`)); } catch {} }
+// accounts created in n8n by hand (OAuth cannot be set up through the API): from the credential
+// list when the API offers it, otherwise from any workflow node that already uses one
+let credList = [];
+try { credList = (await api('GET', '/credentials?limit=250')).data || []; } catch {}
+const account = (types) => {
+  for (const t of types) {
+    const c = credList.find((x) => x.type === t) || null;
+    if (c) return { cred: { id: c.id, name: c.name }, type: t };
+    const used = credFrom(existingFull, t);
+    if (used) return { cred: used, type: t };
+  }
+  return null;
+};
+const ACCOUNT = {};
+const drive = account(['googleDriveOAuth2Api', 'googleApi']);
+if (drive) ACCOUNT['n8n-nodes-base.googleDrive'] = { ...drive, auth: drive.type === 'googleApi' ? 'serviceAccount' : 'oAuth2' };
+const slack = account(['slackOAuth2Api', 'slackApi']);
+if (slack) ACCOUNT['n8n-nodes-base.slack'] = { ...slack, auth: slack.type === 'slackOAuth2Api' ? 'oAuth2' : 'accessToken' };
+note(`- חשבונות שנמצאו ב־n8n: Google Drive ${drive ? '✅ ' + drive.cred.name : '❌'} · Slack ${slack ? '✅ ' + slack.cred.name : '❌'}`);
 let claude = credFrom(existingFull, 'anthropicApi');
 if (!claude && CLAUDE) {
   const made = await api('POST', '/credentials', { name: 'Claude · SPIDER', type: 'anthropicApi', data: { apiKey: CLAUDE } });
