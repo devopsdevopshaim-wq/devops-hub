@@ -4,14 +4,15 @@ name: Deploy vacation-hub to GitHub Pages
 # Every change to vacation-hub/ on main is copied there automatically.
 # book-studio/ is published under /book-studio/, interior-hub/ under /interior/,
 # electro-fix/ under /electro-fix/, assembly-studio/ under /assembly-studio/
-# netplan/ under /netplan/, automation/ under /automation/ and portfolio/ under /portfolio/.
+# netplan/ under /netplan/, automation/ under /automation/, robotic-parking/ under /robotic-parking/
+# and portfolio/ under /portfolio/.
 # Sub-sites already on gh-pages are kept when this run's checkout does not have
 # them, so a run from one branch does not wipe a site published from another.
 
 on:
   push:
     branches: [main]
-    paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**', 'book-studio/**', 'electro-fix/**', 'assembly-studio/**', 'netplan/**', 'automation/**', 'portfolio/**']
+    paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**', 'book-studio/**', 'electro-fix/**', 'assembly-studio/**', 'netplan/**', 'automation/**', 'robotic-parking/**', 'portfolio/**']
   workflow_dispatch:
 
 permissions:
@@ -63,6 +64,10 @@ jobs:
             mkdir -p /tmp/site/automation
             cp -r automation/index.html automation/css automation/js /tmp/site/automation/
           fi
+          if [ -d robotic-parking ]; then
+            mkdir -p /tmp/site/robotic-parking
+            cp robotic-parking/index.html /tmp/site/robotic-parking/
+          fi
           if [ -d portfolio ]; then
             mkdir -p /tmp/site/portfolio
             cp -r portfolio/. /tmp/site/portfolio/
@@ -71,7 +76,7 @@ jobs:
           fi
           # keep sub-sites published earlier that this checkout does not contain
           if git clone -q --depth 1 -b gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" /tmp/old 2>/dev/null; then
-            for d in interior book-studio electro-fix assembly-studio netplan automation portfolio; do
+            for d in interior book-studio electro-fix assembly-studio netplan automation robotic-parking portfolio; do
               if [ ! -d "/tmp/site/$d" ] && [ -d "/tmp/old/$d" ]; then cp -r "/tmp/old/$d" /tmp/site/; fi
             done
           fi

@@ -1,0 +1,2528 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
+<title>מתכנן חניון רובוטי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=Secular+One&display=swap">
+<style>
+/* Layout: control-room tool. Settings rail on the right (RTL), tabbed engineering sheets on the left; drawings in their own scroll boxes. */
+:root{
+  --bg:#EEF0EE; --surface:#FFFFFF; --sunk:#E3E7E5; --ink:#1B2326; --muted:#5A6569; --line:#CDD4D2;
+  --hazard:#F2B705; --hazard-ink:#1B2326; --steel:#0E6A76; --steel-soft:#D5ECEE;
+  --ok:#23804F; --warn:#B76B00; --crit:#B83227;
+  --cad-bg:#FBFCFB; --cad-line:#22313A; --cad-dim:#6C7A80; --cad-fill:#E4EAEA; --cad-accent:#0E6A76; --cad-sensor:#B83227; --cad-beam:#D49A00;
+  --f-display:"Secular One","IBM Plex Sans Hebrew",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Hebrew",system-ui,"Segoe UI",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111618; --surface:#192024; --sunk:#0D1113; --ink:#E4E9E9; --muted:#97A3A7; --line:#2D383C;
+  --hazard:#F2B705; --hazard-ink:#14191B; --steel:#4FB4C1; --steel-soft:#173A40;
+  --ok:#4CC083; --warn:#E3A13B; --crit:#EE6A5E;
+  --cad-bg:#141B1E; --cad-line:#D3DCDE; --cad-dim:#8796A0; --cad-fill:#22303A; --cad-accent:#4FB4C1; --cad-sensor:#EE6A5E; --cad-beam:#F2B705;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111618; --surface:#192024; --sunk:#0D1113; --ink:#E4E9E9; --muted:#97A3A7; --line:#2D383C;
+  --hazard:#F2B705; --hazard-ink:#14191B; --steel:#4FB4C1; --steel-soft:#173A40;
+  --ok:#4CC083; --warn:#E3A13B; --crit:#EE6A5E;
+  --cad-bg:#141B1E; --cad-line:#D3DCDE; --cad-dim:#8796A0; --cad-fill:#22303A; --cad-accent:#4FB4C1; --cad-sensor:#EE6A5E; --cad-beam:#F2B705;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;direction:rtl;margin:0}
+.wrap{padding-inline:16px;padding-block:0 48px;max-width:1500px;margin-inline:auto}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding-block:20px 14px;border-bottom:3px solid var(--ink);position:relative}
+header.top::after{content:"";position:absolute;inset-inline:0;bottom:-11px;height:8px;background:repeating-linear-gradient(-45deg,var(--hazard) 0 12px,var(--ink) 12px 24px);opacity:.9}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,4vw,38px);line-height:1.05;margin:0;text-wrap:balance}
+.brand p{margin:4px 0 0;color:var(--muted)}
+.kpis{display:flex;flex-wrap:wrap;gap:8px}
+.kpi{background:var(--surface);border:1px solid var(--line);padding:6px 12px;min-width:92px}
+.kpi b{display:block;font-family:var(--f-mono);font-size:20px;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi span{font-size:12px;color:var(--muted)}
+.note{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-inline-start:6px solid var(--hazard);padding:10px 14px;font-size:13.5px}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;margin-top:18px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}}
+aside.cfg{background:var(--surface);border:1px solid var(--line);position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);max-height:calc(100vh - 16px);overflow:auto}
+@media (max-width:980px){aside.cfg{position:static;max-height:none}}
+aside.cfg details{border-bottom:1px solid var(--line)}
+aside.cfg summary{cursor:pointer;padding:10px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+aside.cfg summary::after{content:"+";font-family:var(--f-mono);color:var(--muted)}
+aside.cfg details[open] summary::after{content:"−"}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px 10px;padding:0 14px 14px}
+.fields .full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+label.f input,label.f select{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:6px 8px;border-radius:2px;font-family:var(--f-mono);direction:ltr;text-align:right;width:100%}
+label.f select{font-family:var(--f-body);direction:rtl}
+label.chk{display:flex;gap:8px;align-items:center;font-size:13.5px}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.tabs{display:flex;flex-wrap:wrap;gap:2px;border-bottom:2px solid var(--ink)}
+.tabs button{font:inherit;font-size:14px;background:transparent;color:var(--muted);border:0;padding:8px 12px;cursor:pointer;border-radius:2px 2px 0 0}
+.tabs button:hover{color:var(--ink);background:var(--sunk)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);font-weight:600}
+section.sheet{background:var(--surface);border:1px solid var(--line);border-top:0;padding:18px 18px 22px;min-width:0}
+section.sheet h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0 0 4px;text-wrap:balance}
+section.sheet h3{font-size:16px;margin:22px 0 8px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+section.sheet h3 .tag{font-family:var(--f-mono);font-size:12px;background:var(--hazard);color:var(--hazard-ink);padding:1px 6px}
+.lead{color:var(--muted);margin:0 0 12px;max-width:75ch}
+.tbl{overflow-x:auto;border:1px solid var(--line);margin-block:6px 4px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+th{background:var(--sunk);font-weight:600;white-space:nowrap;position:sticky;top:0}
+td.n,th.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap;direction:ltr;text-align:left}
+td.m{font-family:var(--f-mono);font-size:12.5px;direction:ltr;text-align:left;white-space:nowrap}
+tr.grp td{background:var(--steel-soft);font-weight:600}
+.pill{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:9px;border:1px solid currentColor;white-space:nowrap}
+.pill.ok{color:var(--ok)}.pill.warn{color:var(--warn)}.pill.crit{color:var(--crit)}.pill.st{color:var(--steel)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.card{border:1px solid var(--line);padding:12px 14px;background:var(--bg);min-width:0}
+.card h4{margin:0 0 6px;font-size:15px}
+.card ul{margin:0;padding-inline-start:18px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button.btn{font:inherit;font-size:14px;border:1px solid var(--ink);background:var(--surface);color:var(--ink);padding:7px 14px;cursor:pointer;border-radius:2px}
+button.btn:hover{background:var(--sunk)}
+button.btn.pri{background:var(--hazard);color:var(--hazard-ink);border-color:var(--hazard);font-weight:600}
+button.btn:disabled{opacity:.5;cursor:default}
+.cad{overflow:auto;border:1px solid var(--line);background:var(--cad-bg);margin-block:8px}
+.cad svg{display:block;min-width:640px;width:100%;height:auto;direction:ltr}
+.cad svg text{font-family:var(--f-body);fill:var(--cad-line)}
+.cad svg .mono{font-family:var(--f-mono)}
+.c-line{stroke:var(--cad-line);fill:none}
+.c-fill{fill:var(--cad-fill);stroke:var(--cad-line)}
+.c-acc{fill:var(--cad-accent);stroke:var(--cad-line)}
+.c-dim{stroke:var(--cad-dim);fill:none;stroke-dasharray:4 3}
+.c-sens{fill:var(--cad-sensor);stroke:none}
+.c-beam{stroke:var(--cad-beam);fill:none;stroke-width:2;stroke-dasharray:7 4}
+.c-hz{fill:var(--hazard);stroke:var(--cad-line)}
+.c-bg{fill:var(--cad-bg);stroke:none}
+.c-muted{fill:var(--cad-dim)}
+pre.code{background:var(--sunk);border:1px solid var(--line);padding:12px;overflow:auto;font-family:var(--f-mono);font-size:12.5px;line-height:1.5;direction:ltr;text-align:left;max-height:520px;margin:6px 0}
+.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:baseline;padding:6px 8px;border:1px solid var(--line);background:var(--bg)}
+.steps li::before{content:counter(s);font-family:var(--f-mono);font-weight:600;color:var(--muted)}
+.steps li.on{border-color:var(--hazard);background:var(--steel-soft)}
+.steps li.done{opacity:.6}
+.steps li em{font-style:normal;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.occ{display:grid;gap:3px;direction:ltr}
+.occ .c{height:22px;border:1px solid var(--line);font-family:var(--f-mono);font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg);color:var(--muted)}
+.occ .c.full{background:var(--steel);color:var(--bg);border-color:var(--steel)}
+.occ .c.no{background:repeating-linear-gradient(45deg,var(--sunk) 0 4px,var(--bg) 4px 8px);cursor:not-allowed}
+.occ .lbl{font-family:var(--f-mono);font-size:11px;color:var(--muted);display:flex;align-items:center}
+textarea.out{width:100%;min-height:260px;font-family:var(--f-mono);font-size:12.5px;background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:10px;direction:rtl}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));inset-inline-start:16px;background:var(--ink);color:var(--bg);padding:8px 14px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono)}
+.spacer{height:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  aside.cfg,.tabs,.noprint,.toast{display:none!important}
+  .layout{display:block}
+  section.sheet{display:block!important;border:0;page-break-after:always;padding:0}
+  .cad{overflow:visible}.cad svg{min-width:0}
+  body{background:#fff;color:#000}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1 id="projTitle">מתכנן חניון רובוטי</h1>
+      <p>תכנון מעשי: קומות, מעליות, שאטלים, מסובבת ותאים · ארונות, דרייברים, IP, PLC, חיווט ושרטוטים</p>
+    </div>
+    <div class="kpis" id="kpis"></div>
+  </header>
+
+  <div class="note"><b>תכנון ראשוני להנדסה ולביצוע.</b> המספרים מחושבים מההגדרות שלך לפי נוסחאות סטנדרטיות. לפני רכש והתקנה צריך אישור של מהנדס חשמל ובודק בטיחות: EN&nbsp;14010 (חניונים ממוכנים), EN&nbsp;ISO&nbsp;13849‑1, EN&nbsp;60204‑1, EN&nbsp;81‑20 (למעלית) והתקנים המקומיים.</div>
+
+  <div class="layout">
+    <aside class="cfg" aria-label="הגדרות פרויקט">
+      <details open><summary>פרויקט ומבנה</summary>
+        <div class="fields">
+          <label class="f full">שם הפרויקט<input id="project" type="text"></label>
+          <label class="f">קומות אחסון<input id="floors" type="number" min="1" max="14"></label>
+          <label class="f">תאים לכל צד בקומה<input id="cellsPerSide" type="number" min="2" max="40"></label>
+          <label class="f">צדדים לשביל השאטל<select id="sides"><option value="2">2 (משני הצדדים)</option><option value="1">1 (צד אחד)</option></select></label>
+          <label class="f">מעליות (לכל אחת לובי)<select id="lifts"><option value="1">1</option><option value="2">2</option></select></label>
+          <label class="f">רוחב תא (פסיעה) מ"מ<input id="cellPitch" type="number" min="2300" max="3500" step="50"></label>
+          <label class="f">עובי רצפה ומגש מ"מ<input id="slab" type="number" min="150" max="600" step="10"></label>
+          <label class="chk full"><input id="turntable" type="checkbox"> מסובבת בלובי (הרכב יוצא בנסיעה קדימה)</label>
+        </div>
+      </details>
+      <details open><summary>רכב ומשקלים</summary>
+        <div class="fields">
+          <label class="f">אורך רכב מקס' מ"מ<input id="carL" type="number" step="50"></label>
+          <label class="f">רוחב רכב מקס' מ"מ<input id="carW" type="number" step="50"></label>
+          <label class="f">משקל רכב מקס' ק"ג<input id="carMass" type="number" step="50"></label>
+          <label class="f">משקל מגש ק"ג<input id="palletMass" type="number" step="10"></label>
+          <label class="f">משקל שאטל ק"ג<input id="shuttleMass" type="number" step="50"></label>
+          <label class="f">משקל פלטפורמת מעלית ק"ג<input id="liftMass" type="number" step="50"></label>
+        </div>
+      </details>
+      <details open><summary>חיישני גובה בלובי</summary>
+        <div class="fields">
+          <label class="f">כמה חיישנים<input id="hCount" type="number" min="1" max="12"></label>
+          <label class="f">&nbsp;<button class="btn" id="hSpread" type="button">פריסה אחידה</button></label>
+          <label class="f full">גבהי הקרניים מ"מ (מופרדים בפסיק)<input id="hLevels" type="text"></label>
+          <p class="full muted" style="margin:0;font-size:12.5px">הקרן הגבוהה ביותר היא גובה הרכב המקסימלי שהמערכת מקבלת. רכב שחוסם אותה נדחה בלובי.</p>
+        </div>
+      </details>
+      <details><summary>מהירויות ותאוצות</summary>
+        <div class="fields">
+          <label class="f">שאטל מ'/ש'<input id="vShuttle" type="number" step="0.1"></label>
+          <label class="f">תאוצת שאטל מ'/ש²<input id="aShuttle" type="number" step="0.05"></label>
+          <label class="f">מעלית מ'/ש'<input id="vLift" type="number" step="0.1"></label>
+          <label class="f">תאוצת מעלית מ'/ש²<input id="aLift" type="number" step="0.05"></label>
+          <label class="f">העברת מגש מ'/ש'<input id="vTransfer" type="number" step="0.05"></label>
+          <label class="f">זמן סיבוב 180° ש'<input id="turnTime" type="number" step="1"></label>
+        </div>
+      </details>
+      <details open><summary>חיישני גלישה ותאים</summary>
+        <div class="fields">
+          <label class="f full">דגם חיישן גלישה<select id="ovhModel"><option value="sick34">SICK WS/WE34 – עד 60 מ', אור אדום</option><option value="banner">Banner QS30E/QS30R – עד 60 מ', IR</option><option value="leuze">Leuze LS46C/LE46C – עד 120 מ'</option></select></label>
+          <label class="f full">תאים מבוטלים (עמוד, פתח, מדרגות)<input id="disabledCells" type="text" placeholder="F01A12, F03B01"></label>
+          <p class="full muted" style="margin:0;font-size:12.5px">תא מבוטל יוצא מהחיישנים, מה‑IO, מההדמיה ומתוכנת ה‑PLC. כותבים קומה, צד ומספר, כמו F02B05.</p>
+        </div>
+      </details>
+      <details><summary>בקרה ורשת</summary>
+        <div class="fields">
+          <label class="f full">מיקום דרייברי השאטל<select id="drivesOnShuttle"><option value="1">על השאטל (ארון נייד + פס צבירה)</option><option value="0">בארון הקומה (שרשרת כבלים)</option></select></label>
+          <label class="f">רשת PROFINET<input id="subnet" type="text"></label>
+          <label class="f">מסיכה<input id="mask" type="text" disabled value="255.255.255.0"></label>
+          <label class="f">מתח רשת<select id="mains"><option value="400">3×400V 50Hz</option></select></label>
+          <label class="f">שמורה בכרטיסי IO %<input id="spare" type="number" min="0" max="50"></label>
+        </div>
+      </details>
+      <div class="fields" style="padding-top:12px">
+        <button class="btn full" id="reset" type="button">חזרה לערכי דוגמה</button>
+      </div>
+    </aside>
+
+    <main style="min-width:0">
+      <nav class="tabs noprint" role="tablist" id="tabs"></nav>
+      <div id="sheets"></div>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- defaults & state ---------- */
+const DEF={project:"חניון רובוטי – פרויקט לדוגמה",floors:6,cellsPerSide:12,sides:2,lifts:1,cellPitch:2700,slab:320,turntable:true,
+  carL:5300,carW:2100,carMass:2500,palletMass:650,shuttleMass:2200,liftMass:1800,
+  hCount:4,hLevels:"1550,1700,1850,2050",
+  vShuttle:1.5,aShuttle:0.5,vLift:1.0,aLift:0.5,vTransfer:0.45,turnTime:12,
+  drivesOnShuttle:1,subnet:"192.168.10",spare:20,ovhModel:"sick34",disabledCells:"",
+  floorClear:null};
+let S=load()||structuredClone(DEF);
+function load(){try{const t=localStorage.getItem("rp-cfg-v1");return t?Object.assign(structuredClone(DEF),JSON.parse(t)):null}catch(e){return null}}
+function save(){try{localStorage.setItem("rp-cfg-v1",JSON.stringify(S))}catch(e){}}
+function ensureFloors(){
+  const F=S.floors; if(!Array.isArray(S.floorClear))S.floorClear=[];
+  for(let f=0;f<F;f++){ if(!S.floorClear[f]) S.floorClear[f]= f>=F-2&&F>3?1750:2150 }
+  S.floorClear.length=F;
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fx=(v,d=1)=>Number(v).toLocaleString("en-US",{maximumFractionDigits:d,minimumFractionDigits:0});
+const STD_KW=[0.37,0.55,0.75,1.1,1.5,2.2,3,4,5.5,7.5,11,15,18.5,22,30,37,45,55,75,90];
+const STD_A=[6,10,13,16,20,25,32,40,50,63,80,100,125,160,200,250,315,400];
+const pickKW=p=>STD_KW.find(k=>k>=p)||STD_KW[STD_KW.length-1];
+const pickA=a=>STD_A.find(k=>k>=a)||STD_A[STD_A.length-1];
+const In400=kW=>kW*1000/(Math.sqrt(3)*400*0.84*0.87);
+const cableFor=A=>A<=16?"2.5":A<=25?"4":A<=32?"6":A<=40?"10":A<=63?"16":A<=80?"25":A<=100?"35":A<=125?"50":A<=160?"70":A<=200?"95":"120";
+const trap=(d,v,a)=>d<=0?0:(d<=v*v/a?2*Math.sqrt(d/a):d/v+v/a);
+const pad=(n,l=2)=>String(n).padStart(l,"0");
+
+/* ---------- sensor catalog ---------- */
+const OVH={
+  sick34:{name:"SICK WS34 (משדר) + WE34 (מקלט), גרסת M12 V540",short:"SICK WS/WE34‑V540",range:60,light:"אדום נראה 660nm",conn:"M12 5‑פין",out:"PNP/NPN, Light/Dark בבורר",note:"כוונון רגישות בפוטנציומטר, האור הנראה מקל על היישור לאורך שביל ארוך.",url:"https://www.motionworld.com/products/218097/sick-w34-series-photoelectric-sensor"},
+  banner:{name:"Banner QS30E (משדר) + QS30R (מקלט), גרסת מחבר QD",short:"Banner QS30E/QS30R",range:60,light:"אינפרא‑אדום 875nm",conn:"M12 (QD)",out:"NPN/PNP דו‑קוטבי",note:"קרן אפקטיבית 18 מ\"מ, זמן תגובה 5 מ\"ש, IP67. גוף M30 שנוח לתושבת מתכווננת.",url:"https://walkerindustrial.com/QS30E-Banner-Engineering-WORLD-BEAM-QS30-Series-p/qs30e.htm"},
+  leuze:{name:"Leuze LS46C (משדר) + LE46C (מקלט), גרסת M12",short:"Leuze LS46C/LE46C",range:120,light:"אדום 630nm",conn:"M12",out:"PNP",note:"טווח מובטח 0.5–120 מ'. לשבילים ארוכים מ‑50 מ'.",url:"https://www.leuze.com/en-us/ls46c-m12/50127042"}};
+const CELL_SENSOR="אינדוקטיבי M18, Sn 8 מ\"מ, PNP NO, M12 (למשל SICK IME18‑08BPSZC0S)";
+function disabledSet(){const set=new Set();String(S.disabledCells||"").toUpperCase().split(/[,\s]+/).forEach(x=>{const m=x.match(/^F(\d+)([AB])(\d+)$/);if(m)set.add(`${+m[1]}${m[2]}${+m[3]}`)});return set}
+
+/* ---------- engineering model ---------- */
+function model(){
+  ensureFloors();
+  const F=+S.floors,n=+S.cellsPerSide,sides=+S.sides,L=+S.lifts,load=+S.carMass+ +S.palletMass;
+  const sideNames=sides===2?["A","B"]:["A"];
+  const dis=new Set([...disabledSet()].filter(id=>{const m=id.match(/^(\d+)([AB])(\d+)$/);return +m[1]<=F&&sideNames.includes(m[2])&&+m[3]<=n}));
+  const ovh=OVH[S.ovhModel]||OVH.sick34;
+  const H=parseLevels();
+  const levelZ=[0]; // floor level (top of slab) for lobby(0) and storage floors 1..F, mm
+  let z=0; const lobbyClear=Math.max(2300,H[H.length-1]+250);
+  z+=lobbyClear+ +S.slab; levelZ.push(z);
+  for(let f=1;f<F;f++){ z+= +S.floorClear[f-1]+ +S.slab; levelZ.push(z)}
+  const totalH=z+ +S.floorClear[F-1]+400;
+  const aisleLen=(n+1)*S.cellPitch+ (L===2?S.cellPitch:0)+1200;
+  const palletL=+S.carL+300, palletW=+S.carW+250;
+  // ---- motor sizing
+  const mu=0.015,g=9.81;
+  const mSh=+S.shuttleMass+load;
+  const pShTravel=mSh*(+S.aShuttle+g*mu)*S.vShuttle/0.85/1000*1.2;
+  const aT=0.3, pTransfer=load*(aT+g*0.03)*S.vTransfer/0.8/1000*1.3;
+  const cw=+S.liftMass+ +S.palletMass+0.5*S.carMass, unbal=0.5*S.carMass, moving=+S.liftMass+load+cw;
+  const pHoist=(unbal*g+moving*S.aLift)*S.vLift/0.85/1000*1.1;
+  const t180=+S.turnTime, w=Math.PI/(0.75*t180), alpha=w/(t180/4);
+  const Iz=(load+1500)*((palletL/1000)**2+(palletW/1000)**2)/12;
+  const Tturn=Iz*alpha+0.01*(load+1500)*g*0.6;
+  const pTurn=Tturn*w/0.8/1000*1.5;
+  const axes=[];
+  const ax=(o)=>{o.kW=pickKW(o.pCalc);o.In=In400(o.kW);axes.push(o);return o};
+  const wheelD=250, drumD=400, sprD=160, turnD=0;
+  // lobbies + lifts
+  for(let l=1;l<=L;l++){
+    if(S.turntable) ax({id:`LB${l}-M1`,unit:`LB${l}`,unitName:`לובי ${l}`,role:"turn",name:"מסובבת – סיבוב",pCalc:pTurn,pos:true,v:w,unitV:"rad/s",ramp:t180/4,gearD:0,cab:`LBC-${l}`,brake:true});
+    ax({id:`LB${l}-M2`,unit:`LB${l}`,unitName:`לובי ${l}`,role:"door",name:"דלת גלילה לובי",pCalc:0.6,pos:false,v:0.5,unitV:"m/s",ramp:1,gearD:0,cab:`LBC-${l}`,brake:true});
+    ax({id:`LF${l}-M1`,unit:`LF${l}`,unitName:`מעלית ${l}`,role:"hoist",name:"מעלית – הרמה",pCalc:pHoist,pos:true,v:+S.vLift,unitV:"m/s",ramp:S.vLift/S.aLift,gearD:drumD,cab:`LFC-${l}`,brake:true});
+    ax({id:`LF${l}-M2`,unit:`LF${l}`,unitName:`מעלית ${l}`,role:"transfer",name:"מעלית – העברת מגש",pCalc:pTransfer,pos:false,v:+S.vTransfer,unitV:"m/s",ramp:S.vTransfer/aT,gearD:sprD,cab:`LFC-${l}`,brake:true});
+  }
+  for(let f=1;f<=F;f++){
+    const cab=S.drivesOnShuttle==1?`SHC-${pad(f)}`:`FLC-${pad(f)}`;
+    ax({id:`SH${pad(f)}-M1`,unit:`SH${pad(f)}`,unitName:`שאטל קומה ${f}`,floor:f,role:"travel",name:"שאטל – נסיעה",pCalc:pShTravel,pos:true,v:+S.vShuttle,unitV:"m/s",ramp:S.vShuttle/S.aShuttle,gearD:wheelD,cab,brake:true});
+    ax({id:`SH${pad(f)}-M2`,unit:`SH${pad(f)}`,unitName:`שאטל קומה ${f}`,floor:f,role:"transfer",name:"שאטל – העברת מגש",pCalc:pTransfer,pos:false,v:+S.vTransfer,unitV:"m/s",ramp:S.vTransfer/aT,gearD:sprD,cab,brake:true});
+  }
+  axes.forEach(a=>{
+    a.drive=a.pos?"SINAMICS G120 · CU250S‑2 PN + PM240‑2":"SINAMICS G120C PN";
+    a.tel=a.pos?111:1;
+    a.ctrl=a.role==="hoist"||a.role==="travel"?21:20;
+    a.enc=a.pos?"מקודד HTL 1024 על המנוע":"—";
+    a.br=a.role==="hoist"?"נגד בלימה חיצוני (חובה)":a.kW>=3?"נגד בלימה מומלץ":"—";
+    a.mcb=pickA(a.In*1.25); a.cable=cableFor(a.mcb);
+    a.nMot=1450;
+    if(a.gearD){const nLoad=a.v*60/(Math.PI*a.gearD/1000); a.ratio=a.nMot/nLoad}
+    else if(a.role==="turn"){a.ratio=a.nMot/(a.v*60/(2*Math.PI))} else a.ratio=0;
+  });
+  // ---- sensors / IO
+  const io=[]; // {tag, desc, kind DI/DQ/FDI/FDQ/NET, model, cab, loc, unit}
+  const S_=(o)=>io.push(o);
+  S_({tag:"ES_MAIN",desc:"לחצן חירום – חדר בקרה",kind:"FDI",ch:2,model:"לחצן חירום 2NC",cab:"MCP-00",loc:"דלת ארון ראשי"});
+  S_({tag:"KS_MODE_AUTO",desc:"מתג מפתח – אוטומטי",kind:"DI",model:"מתג מפתח 3 מצבים",cab:"MCP-00",loc:"דלת ארון ראשי"});
+  S_({tag:"KS_MODE_MAN",desc:"מתג מפתח – ידני/תחזוקה",kind:"DI",model:"מתג מפתח 3 מצבים",cab:"MCP-00",loc:"דלת ארון ראשי"});
+  S_({tag:"PB_RESET",desc:"לחצן איפוס בטיחות",kind:"DI",model:"לחצן מואר כחול",cab:"MCP-00",loc:"דלת ארון ראשי"});
+  S_({tag:"PSU_OK",desc:"ספק 24V תקין / UPS במצב סוללה",kind:"DI",ch:1,model:"מגע SITOP",cab:"MCP-00",loc:"בארון"});
+  S_({tag:"HL_FAULT",desc:"נורת תקלה כללית",kind:"DQ",model:"נורית LED אדומה",cab:"MCP-00",loc:"דלת ארון ראשי"});
+  for(let l=1;l<=L;l++){
+    const c=`LBC-${l}`,u=`LB${l}`;
+    S_({unit:u,tag:`${u}_DOOR_OPEN`,desc:"דלת לובי פתוחה (גבול עליון)",kind:"DI",model:"מפסק גבול",cab:c,loc:"מסילת הדלת"});
+    S_({unit:u,tag:`${u}_DOOR_CLOSED`,desc:"דלת לובי סגורה (גבול תחתון)",kind:"DI",model:"מפסק גבול",cab:c,loc:"מסילת הדלת"});
+    S_({unit:u,tag:`${u}_DOOR_EDGE`,desc:"קצה בטיחות תחתון בדלת",kind:"FDI",ch:2,model:"פס לחץ אופטי 8.2kΩ + ממסר",cab:c,loc:"תחתית הדלת"});
+    S_({unit:u,tag:`${u}_LC_ENTRY`,desc:"מסך אור כניסה (מעבר אנשים)",kind:"FDI",ch:2,model:"מסך אור Type 4, גובה 1800",cab:c,loc:"קו הדלת, צד פנימי"});
+    S_({unit:u,tag:`${u}_SCN`,desc:"סורק לייזר בטיחות – כל שטח הלובי",kind:"NET",model:"סורק PROFIsafe (למשל SICK microScan3 PROFINET)",cab:c,loc:"פינת הלובי בגובה 200 מ\"מ"});
+    S_({unit:u,tag:`${u}_RADAR`,desc:"גלאי נוכחות בתוך הרכב/לובי",kind:"DI",model:"רדאר נוכחות 60GHz",cab:c,loc:"תקרת הלובי מעל הרכב"});
+    S_({unit:u,tag:`${u}_POS_STOP`,desc:"רכב בעמדה – קרן עצירה קדמית",kind:"DI",model:"חיישן אופטי Through‑beam",cab:c,loc:"קצה מגש קדמי, גובה 300"});
+    S_({unit:u,tag:`${u}_LEN_FRONT`,desc:"חריגת אורך קדימה",kind:"DI",model:"Through‑beam",cab:c,loc:"150 מ\"מ אחרי קצה המגש, גובה 400"});
+    S_({unit:u,tag:`${u}_LEN_REAR`,desc:"חריגת אורך אחורה",kind:"DI",model:"Through‑beam",cab:c,loc:"150 מ\"מ לפני קצה המגש, גובה 400"});
+    S_({unit:u,tag:`${u}_WID_L`,desc:"חריגת רוחב שמאל",kind:"DI",model:"Through‑beam לאורך",cab:c,loc:"צד שמאל, 100 מ\"מ מחוץ למגש"});
+    S_({unit:u,tag:`${u}_WID_R`,desc:"חריגת רוחב ימין",kind:"DI",model:"Through‑beam לאורך",cab:c,loc:"צד ימין, 100 מ\"מ מחוץ למגש"});
+    H.forEach((h,i)=>S_({unit:u,tag:`${u}_HGT_${pad(i+1)}`,desc:`חיישן גובה ${i+1} – ${h} מ"מ`,kind:"DI",model:"Through‑beam רוחבי",cab:c,loc:`עמוד צד, גובה ${h} מ"מ מעל המגש`}));
+    S_({unit:u,tag:`${u}_WHEEL_FL`,desc:"גלגל קדמי בשקע מכוון",kind:"DI",model:"אינדוקטיבי M30",cab:c,loc:"מוביל גלגל קדמי שמאל"});
+    S_({unit:u,tag:`${u}_WHEEL_FR`,desc:"גלגל קדמי בשקע מכוון",kind:"DI",model:"אינדוקטיבי M30",cab:c,loc:"מוביל גלגל קדמי ימין"});
+    S_({unit:u,tag:`${u}_PAL_IN`,desc:"מגש בעמדת הלובי",kind:"DI",model:"אינדוקטיבי M18",cab:c,loc:"מתחת למגש"});
+    if(S.turntable){
+      S_({unit:u,tag:`${u}_TT_0`,desc:"מסובבת ב‑0°",kind:"DI",model:"אינדוקטיבי M18",cab:c,loc:"טבעת המסובבת"});
+      S_({unit:u,tag:`${u}_TT_180`,desc:"מסובבת ב‑180°",kind:"DI",model:"אינדוקטיבי M18",cab:c,loc:"טבעת המסובבת"});
+      S_({unit:u,tag:`${u}_TT_LOCK`,desc:"פין נעילת מסובבת נעול",kind:"DI",model:"אינדוקטיבי M12",cab:c,loc:"מנגנון הנעילה"});
+    }
+    S_({unit:u,tag:`${u}_ES`,desc:"לחצן חירום לובי",kind:"FDI",ch:2,model:"לחצן חירום 2NC",cab:c,loc:"קיר הלובי ליד הקיוסק"});
+    S_({unit:u,tag:`${u}_PB_EXIT`,desc:"לחצן \"יצאתי מהלובי\" (אישור נהג)",kind:"DI",model:"לחצן מואר",cab:c,loc:"מחוץ לדלת"});
+    S_({unit:u,tag:`${u}_TL_RED`,desc:"רמזור אדום",kind:"DQ",model:"רמזור LED 24V",cab:c,loc:"מעל הדלת"});
+    S_({unit:u,tag:`${u}_TL_GRN`,desc:"רמזור ירוק",kind:"DQ",model:"רמזור LED 24V",cab:c,loc:"מעל הדלת"});
+    S_({unit:u,tag:`${u}_GUIDE_FWD`,desc:"שלט הכוונה \"קדימה\"",kind:"DQ",model:"שלט LED",cab:c,loc:"קיר קדמי"});
+    S_({unit:u,tag:`${u}_GUIDE_STOP`,desc:"שלט הכוונה \"עצור\"",kind:"DQ",model:"שלט LED",cab:c,loc:"קיר קדמי"});
+    S_({unit:u,tag:`${u}_GUIDE_BACK`,desc:"שלט הכוונה \"אחורה\"",kind:"DQ",model:"שלט LED",cab:c,loc:"קיר קדמי"});
+    S_({unit:u,tag:`${u}_LAMP`,desc:"תאורת לובי",kind:"DQ",model:"ממסר תאורה",cab:c,loc:"—"});
+    if(S.turntable) S_({unit:u,tag:`${u}_TT_LOCK_Y`,desc:"שסתום/סולנואיד שחרור נעילת מסובבת",kind:"DQ",model:"סולנואיד 24V",cab:c,loc:"מנגנון הנעילה"});
+    S_({unit:u,tag:`${u}_HMI`,desc:"קיוסק / מסך הכוונה לנהג",kind:"NET",model:"מסך מגע 10\" PROFINET",cab:c,loc:"קיר הלובי"});
+    const d=`LFC-${l}`,v=`LF${l}`;
+    S_({unit:v,tag:`${v}_LASER`,desc:"מד מרחק לייזר – מיקום אבסולוטי של הפלטפורמה",kind:"NET",model:"מד מרחק PROFINET (למשל SICK DL100)",cab:d,loc:"תחתית הפיר, מחזיר על הפלטפורמה"});
+    S_({unit:v,tag:`${v}_LVL_UP`,desc:"יישור קומה – חלון עליון",kind:"DI",model:"אינדוקטיבי M18",cab:d,loc:"פלטפורמה מול דגל בכל קומה"});
+    S_({unit:v,tag:`${v}_LVL_DN`,desc:"יישור קומה – חלון תחתון",kind:"DI",model:"אינדוקטיבי M18",cab:d,loc:"פלטפורמה מול דגל בכל קומה"});
+    S_({unit:v,tag:`${v}_PRE_TOP`,desc:"גבול מוקדם עליון (האטה)",kind:"DI",model:"מפסק גבול",cab:d,loc:"ראש הפיר"});
+    S_({unit:v,tag:`${v}_PRE_BOT`,desc:"גבול מוקדם תחתון (האטה)",kind:"DI",model:"מפסק גבול",cab:d,loc:"בור הפיר"});
+    S_({unit:v,tag:`${v}_FIN_TOP`,desc:"גבול סופי עליון",kind:"FDI",ch:2,model:"מפסק גבול בטיחותי 2NC",cab:d,loc:"ראש הפיר"});
+    S_({unit:v,tag:`${v}_FIN_BOT`,desc:"גבול סופי תחתון",kind:"FDI",ch:2,model:"מפסק גבול בטיחותי 2NC",cab:d,loc:"בור הפיר"});
+    S_({unit:v,tag:`${v}_SLACK`,desc:"רפיון כבל/שרשרת",kind:"FDI",ch:2,model:"מפסק רפיון",cab:d,loc:"נקודת עיגון"});
+    S_({unit:v,tag:`${v}_OVSPD`,desc:"מגביל מהירות (גאברנור)",kind:"FDI",ch:2,model:"מגע הגאברנור",cab:d,loc:"ראש הפיר"});
+    S_({unit:v,tag:`${v}_PAL_F`,desc:"מגש על הפלטפורמה – קדמי",kind:"DI",model:"אינדוקטיבי M18",cab:d,loc:"פלטפורמה"});
+    S_({unit:v,tag:`${v}_PAL_R`,desc:"מגש על הפלטפורמה – אחורי",kind:"DI",model:"אינדוקטיבי M18",cab:d,loc:"פלטפורמה"});
+    S_({unit:v,tag:`${v}_OVH_1`,desc:"חיישן גלישה – קצה פלטפורמה לכיוון השאטל",kind:"DI",model:ovh.short,cab:d,loc:"לאורך קצה הפלטפורמה"});
+    S_({unit:v,tag:`${v}_OVH_2`,desc:"חיישן גלישה – קצה פלטפורמה לכיוון הלובי",kind:"DI",model:ovh.short,cab:d,loc:"לאורך קצה הפלטפורמה"});
+    S_({unit:v,tag:`${v}_TR_HOME`,desc:"מנגנון העברה בבית",kind:"DI",model:"אינדוקטיבי M12",cab:d,loc:"מנגנון העברה"});
+    S_({unit:v,tag:`${v}_TR_END1`,desc:"מנגנון העברה – קצה לכיוון השאטל",kind:"DI",model:"אינדוקטיבי M12",cab:d,loc:"מנגנון העברה"});
+    S_({unit:v,tag:`${v}_TR_END2`,desc:"מנגנון העברה – קצה לכיוון הלובי",kind:"DI",model:"אינדוקטיבי M12",cab:d,loc:"מנגנון העברה"});
+    S_({unit:v,tag:`${v}_BRK_FB`,desc:"משוב בלם פתוח – מנוע הרמה",kind:"DI",model:"מיקרו‑סוויץ' בבלם",cab:d,loc:"מנוע הרמה"});
+    S_({unit:v,tag:`${v}_SHAFT_DOOR`,desc:"דלת תחזוקה בפיר סגורה",kind:"FDI",ch:2,model:"מפסק בטיחות עם מפתח",cab:d,loc:"דלתות הפיר"});
+    S_({unit:v,tag:`${v}_STO`,desc:"STO לדרייבר ההרמה",kind:"FDQ",ch:1,model:"PROFIsafe / F‑DQ לדרייבר",cab:d,loc:"דרייבר הרמה"});
+  }
+  for(let f=1;f<=F;f++){
+    const c=`FLC-${pad(f)}`,sc=S.drivesOnShuttle==1?`SHC-${pad(f)}`:c,u=`F${pad(f)}`,sh=`SH${pad(f)}`;
+    for(const sd of sideNames){
+      for(let k=1;k<=n;k++){
+        if(dis.has(`${f}${sd}${k}`))continue;
+        S_({unit:u,group:"cells",tag:`${u}${sd}${pad(k)}_PAL`,desc:`תא ${sd}${pad(k)} – מגש בתא (נוכחות)`,kind:"DI",model:CELL_SENSOR,cab:c,loc:`תא ${sd}${pad(k)}, מתחת לקצה המגש הפנימי`});
+        S_({unit:u,group:"cells",tag:`${u}${sd}${pad(k)}_SEAT`,desc:`תא ${sd}${pad(k)} – מגש יושב במעצור (לא גלש)`,kind:"DI",model:CELL_SENSOR,cab:c,loc:`תא ${sd}${pad(k)}, במעצור האחורי`});
+      }
+      S_({unit:u,tag:`${u}_OVH_${sd}_LO`,desc:`חיישן גלישה צד ${sd} – קרן נמוכה לכל אורך השביל`,kind:"DI",model:ovh.short+` (עד ${ovh.range} מ')`,cab:c,loc:`קו קצה התאים בצד ${sd}, 40 מ"מ מעל המסילה`});
+      S_({unit:u,tag:`${u}_OVH_${sd}_HI`,desc:`חיישן גלישה צד ${sd} – קרן גבוהה (צמיג/פגוש)`,kind:"DI",model:ovh.short+` (עד ${ovh.range} מ')`,cab:c,loc:`קו קצה התאים בצד ${sd}, 450 מ"מ מעל המגש`});
+    }
+    S_({unit:u,tag:`${sh}_PRE_1`,desc:"שאטל – גבול מוקדם צד מעלית",kind:"DI",model:"אינדוקטיבי M30",cab:c,loc:"קצה המסילה"});
+    S_({unit:u,tag:`${sh}_PRE_2`,desc:"שאטל – גבול מוקדם צד רחוק",kind:"DI",model:"אינדוקטיבי M30",cab:c,loc:"קצה המסילה"});
+    S_({unit:u,tag:`${sh}_FIN_1`,desc:"שאטל – גבול סופי צד מעלית",kind:"FDI",ch:2,model:"מפסק גבול בטיחותי",cab:c,loc:"לפני הבולם"});
+    S_({unit:u,tag:`${sh}_FIN_2`,desc:"שאטל – גבול סופי צד רחוק",kind:"FDI",ch:2,model:"מפסק גבול בטיחותי",cab:c,loc:"לפני הבולם"});
+    S_({unit:u,tag:`${u}_MAINT_DOOR`,desc:`דלת תחזוקה קומה ${f}`,kind:"FDI",ch:2,model:"מפסק בטיחות עם מפתח",cab:c,loc:"כניסה לקומה"});
+    S_({unit:u,tag:`${u}_ES`,desc:`לחצן חירום קומה ${f}`,kind:"FDI",ch:2,model:"לחצן חירום 2NC",cab:c,loc:"ליד דלת התחזוקה"});
+    S_({unit:sh,tag:`${sh}_POS`,desc:"מיקום אבסולוטי של השאטל (סרט ברקוד)",kind:"NET",model:"BPS ברקוד PROFINET",cab:sc,loc:"על השאטל מול סרט לאורך המסילה"});
+    S_({unit:sh,tag:`${sh}_TR_HOME`,desc:"מנגנון העברה בבית",kind:"DI",model:"אינדוקטיבי M12",cab:sc,loc:"שאטל"});
+    S_({unit:sh,tag:`${sh}_TR_A`,desc:"מנגנון העברה בקצה צד A",kind:"DI",model:"אינדוקטיבי M12",cab:sc,loc:"שאטל"});
+    if(sides===2) S_({unit:sh,tag:`${sh}_TR_B`,desc:"מנגנון העברה בקצה צד B",kind:"DI",model:"אינדוקטיבי M12",cab:sc,loc:"שאטל"});
+    S_({unit:sh,tag:`${sh}_PAL_F`,desc:"מגש על השאטל – קדמי",kind:"DI",model:"אינדוקטיבי M18",cab:sc,loc:"שאטל"});
+    S_({unit:sh,tag:`${sh}_PAL_R`,desc:"מגש על השאטל – אחורי",kind:"DI",model:"אינדוקטיבי M18",cab:sc,loc:"שאטל"});
+    S_({unit:sh,tag:`${sh}_OVH_A`,desc:"חיישן גלישה על השאטל – צד A",kind:"DI",model:ovh.short,cab:sc,loc:"קצה השאטל צד A"});
+    if(sides===2) S_({unit:sh,tag:`${sh}_OVH_B`,desc:"חיישן גלישה על השאטל – צד B",kind:"DI",model:ovh.short,cab:sc,loc:"קצה השאטל צד B"});
+    S_({unit:sh,tag:`${sh}_ALIGN`,desc:"שאטל מיושר מול תא/מעלית (דגל)",kind:"DI",model:"אינדוקטיבי M18",cab:sc,loc:"שאטל, מול דגל בכל תא"});
+    S_({unit:sh,tag:`${sh}_BUMPER`,desc:"פגוש מגע / בולם",kind:"FDI",ch:2,model:"פגוש מגע 8.2kΩ",cab:sc,loc:"חזית ואחור השאטל"});
+    S_({unit:sh,tag:`${sh}_BRK_FB`,desc:"משוב בלם – מנוע נסיעה",kind:"DI",model:"מיקרו‑סוויץ' בבלם",cab:sc,loc:"מנוע נסיעה"});
+    S_({unit:sh,tag:`${sh}_BEACON`,desc:"מהבהב וזמזם תנועה",kind:"DQ",model:"מהבהב LED + זמזם",cab:sc,loc:"גג השאטל"});
+    S_({unit:sh,tag:`${sh}_STO`,desc:"STO לדרייברי השאטל",kind:"FDQ",ch:1,model:"F‑DQ",cab:sc,loc:"דרייברים"});
+  }
+  // ---- cabinets
+  const cabs=[];
+  const C=(o)=>{o.drives=axes.filter(a=>a.cab===o.id);o.io=io.filter(s=>s.cab===o.id);cabs.push(o);return o};
+  C({id:"MCP-00",name:"ארון ראשי",loc:"חדר בקרה, קומת לובי",controls:"CPU בטיחותי, HMI ראשי, מתג ליבה, הזנות לכל הארונות",main:true});
+  for(let l=1;l<=L;l++){
+    C({id:`LBC-${l}`,name:`ארון לובי ${l}`,loc:`קיר טכני ליד לובי ${l}`,controls:(S.turntable?"מסובבת, ":"")+"דלת, חיישני מידות וגובה, סורק לובי, רמזורים, קיוסק"});
+    C({id:`LFC-${l}`,name:`ארון מעלית ${l}`,loc:`חדר מכונות / ראש פיר מעלית ${l}`,controls:"הרמה, העברת מגש בפלטפורמה, לייזר מיקום, גבולות פיר"});
+  }
+  for(let f=1;f<=F;f++){
+    C({id:`FLC-${pad(f)}`,name:`ארון קומה ${f}`,loc:`קומה ${f}, קצה השביל ליד המעלית`,controls:`חיישני ${n*sides} תאים, חיישני גלישה לאורך השביל, גבולות מסילה, דלת תחזוקה`+(S.drivesOnShuttle==1?", הזנת פס צבירה ונקודת WLAN לשאטל":", דרייברי השאטל (נסיעה+העברה)"),floor:f});
+    if(S.drivesOnShuttle==1) C({id:`SHC-${pad(f)}`,name:`ארון נייד שאטל ${f}`,loc:`על שאטל קומה ${f}`,controls:"נסיעה, העברת מגש, מיקום ברקוד, חיישני גלישה ונוכחות על השאטל",floor:f,mobile:true});
+  }
+  const spareK=1+(+S.spare)/100;
+  cabs.forEach(c=>{
+    const cnt=k=>c.io.filter(s=>s.kind===k).reduce((a,s)=>a+(s.ch||1),0);
+    c.nDI=cnt("DI");c.nDQ=cnt("DQ");c.nFDI=cnt("FDI");c.nFDQ=cnt("FDQ");
+    c.mDI=Math.ceil(c.nDI*spareK/16);c.mDQ=Math.ceil(c.nDQ*spareK/16);c.mFDI=Math.ceil(c.nFDI*spareK/8);c.mFDQ=Math.ceil(c.nFDQ*spareK/4);
+    c.mods=c.mDI+c.mDQ+c.mFDI+c.mFDQ;
+    c.kW=c.drives.reduce((a,d)=>a+d.kW,0);
+    c.Isum=c.drives.reduce((a,d)=>a+d.In,0)+3;
+    c.feed=pickA(c.main?0:c.Isum*1.15); c.feedCable=cableFor(c.feed);
+    c.psu=c.main?20:c.drives.length?10:5;
+    c.hasIM=c.mods>0;
+  });
+  const main=cabs[0];
+  const sumI=cabs.slice(1).reduce((a,c)=>a+c.Isum,0);
+  main.feed=pickA(sumI*0.7+10); main.feedCable=cableFor(main.feed);
+  // cabinet size
+  cabs.forEach(c=>{
+    const dW=c.drives.reduce((a,d)=>a+frameW(d.kW)+20,0);
+    const ioW=c.hasIM?50+c.mods*15+30:0;
+    const rowIO=ioW+(c.main?120+60+70:0)+(c.psu?60:0)+60;
+    const brW=(c.drives.length+3)*18+90;
+    const need=Math.max(dW,rowIO,brW)+120;
+    const widths=c.mobile?[600,800,1000]:[600,800,1000,1200,1600];
+    c.W=widths.find(w=>w>=need)||widths[widths.length-1];
+    c.H=c.mobile?1000:c.drives.some(d=>d.kW>=11)?2000:c.drives.length?1800:1200;
+    c.D=c.mobile?300:c.drives.length?500:300;
+    c.cols=Math.max(1,Math.ceil(need/(c.W-80)));
+  });
+  // ---- network
+  const net=[]; const base=S.subnet;
+  const N=(o)=>net.push(o);
+  N({ip:`${base}.1`,name:"plc-main",dev:"CPU 1516F‑3 PN/DP",cab:"MCP-00",role:"בקר ראשי + בטיחות"});
+  N({ip:`${base}.2`,name:"hmi-main",dev:"פאנל HMI 12\"",cab:"MCP-00",role:"מסך מפעיל"});
+  N({ip:`${base}.3`,name:"sw-core",dev:"מתג מנוהל 8 פורטים",cab:"MCP-00",role:"מתג ליבה"});
+  N({ip:`${base}.4`,name:"pg-eng",dev:"מחשב הנדסה (TIA Portal)",cab:"—",role:"תכנות ושירות"});
+  for(let l=1;l<=L;l++){
+    const b=10+(l-1)*10;
+    N({ip:`${base}.${b}`,name:`lb${l}-io`,dev:"ET 200SP IM155‑6 PN HF",cab:`LBC-${l}`,role:"IO לובי"});
+    if(S.turntable)N({ip:`${base}.${b+1}`,name:`lb${l}-turn`,dev:"G120 CU250S‑2 PN",cab:`LBC-${l}`,role:"מסובבת",tel:111});
+    N({ip:`${base}.${b+2}`,name:`lb${l}-door`,dev:"G120C PN",cab:`LBC-${l}`,role:"דלת",tel:1});
+    N({ip:`${base}.${b+3}`,name:`lb${l}-scan`,dev:"סורק בטיחות PROFIsafe",cab:`LBC-${l}`,role:"שטח לובי"});
+    N({ip:`${base}.${b+4}`,name:`lb${l}-kiosk`,dev:"מסך קיוסק",cab:`LBC-${l}`,role:"הכוונת נהג"});
+    N({ip:`${base}.${b+5}`,name:`lb${l}-sw`,dev:"מתג 8 פורטים",cab:`LBC-${l}`,role:"מתג לובי"});
+    const c=30+(l-1)*10;
+    N({ip:`${base}.${c}`,name:`lf${l}-io`,dev:"ET 200SP IM155‑6 PN HF",cab:`LFC-${l}`,role:"IO מעלית"});
+    N({ip:`${base}.${c+1}`,name:`lf${l}-hoist`,dev:"G120 CU250S‑2 PN",cab:`LFC-${l}`,role:"הרמה",tel:111});
+    N({ip:`${base}.${c+2}`,name:`lf${l}-transfer`,dev:"G120C PN",cab:`LFC-${l}`,role:"העברה",tel:1});
+    N({ip:`${base}.${c+3}`,name:`lf${l}-laser`,dev:"מד מרחק לייזר PN",cab:`LFC-${l}`,role:"מיקום פלטפורמה"});
+    N({ip:`${base}.${c+4}`,name:`lf${l}-sw`,dev:"מתג 8 פורטים",cab:`LFC-${l}`,role:"מתג מעלית"});
+  }
+  for(let f=1;f<=F;f++){
+    const b=100+(f-1)*10,fc=`FLC-${pad(f)}`,sc=S.drivesOnShuttle==1?`SHC-${pad(f)}`:fc;
+    N({ip:`${base}.${b}`,name:`f${pad(f)}-io`,dev:"ET 200SP IM155‑6 PN HF",cab:fc,role:"IO קומה"});
+    N({ip:`${base}.${b+1}`,name:`f${pad(f)}-sw`,dev:"מתג 8 פורטים",cab:fc,role:"מתג קומה"});
+    if(S.drivesOnShuttle==1)N({ip:`${base}.${b+2}`,name:`f${pad(f)}-ap`,dev:"WLAN Access Point (iPCF)",cab:fc,role:"קישור אלחוטי לשאטל"});
+    N({ip:`${base}.${b+3}`,name:`sh${pad(f)}-io`,dev:"ET 200SP IM155‑6 PN HF",cab:sc,role:"IO שאטל"});
+    N({ip:`${base}.${b+4}`,name:`sh${pad(f)}-travel`,dev:"G120 CU250S‑2 PN",cab:sc,role:"נסיעת שאטל",tel:111});
+    N({ip:`${base}.${b+5}`,name:`sh${pad(f)}-transfer`,dev:"G120C PN",cab:sc,role:"העברת מגש",tel:1});
+    N({ip:`${base}.${b+6}`,name:`sh${pad(f)}-bps`,dev:"BPS ברקוד PN",cab:sc,role:"מיקום שאטל"});
+    if(S.drivesOnShuttle==1)N({ip:`${base}.${b+7}`,name:`sh${pad(f)}-wcl`,dev:"WLAN Client (iPCF)",cab:sc,role:"לקוח אלחוטי על השאטל"});
+  }
+  // ---- IO addresses
+  let fdest=100;
+  cabs.forEach((c,ci)=>{
+    let bI=ci*20,bQ=ci*20,bit=0,qbit=0;
+    c.io.forEach(s=>{
+      if(s.kind==="DI"){s.addr=`%I${bI+Math.floor(bit/8)}.${bit%8}`;bit++}
+      else if(s.kind==="DQ"){s.addr=`%Q${bQ+Math.floor(qbit/8)}.${qbit%8}`;qbit++}
+    });
+    let fb=0,fq=0;
+    c.io.forEach(s=>{
+      if(s.kind==="FDI"){s.addr=`%I${1000+ci*10+Math.floor(fb/8)}.${fb%8}`;fb+=1}
+      else if(s.kind==="FDQ"){s.addr=`%Q${1000+ci*10+Math.floor(fq/8)}.${fq%8}`;fq++}
+      else if(s.kind==="NET"){s.addr="PROFINET"}
+    });
+    c.fdest=[];for(let i=0;i<c.mFDI+c.mFDQ;i++)c.fdest.push(fdest++);
+  });
+  // terminals
+  cabs.forEach(c=>{let t=1;c.io.forEach(s=>{if(s.kind==="NET"){s.term="—";return}const k=s.ch===2?2:1;s.term=`X3:${t}`+(k===2?`…${t+3}`:`…${t+2}`);t+=k===2?4:3})});
+  // ---- cycle time
+  const tLift=f=>trap((levelZ[f]-levelZ[0])/1000,+S.vLift,+S.aLift);
+  const tShut=k=>trap((k*S.cellPitch+S.cellPitch*0.5)/1000,+S.vShuttle,+S.aShuttle);
+  const tTr=(palletW/1000+0.3)/S.vTransfer+2;
+  const tStoreMax=20+tTr+tLift(F)+3+tTr+tShut(n)+3+tTr+2;
+  const tStoreAvg=20+tTr+tLift(Math.ceil(F/2))+3+tTr+tShut(Math.ceil(n/2))+3+tTr+2;
+  const tRetrAvg=tStoreAvg-20+(S.turntable?t180:0)+10;
+  const cells=F*n*sides-dis.size;
+  const throughput=L*3600/(tStoreAvg+tRetrAvg)*2;
+  return {dis,ovh,F,n,sides,sideNames,L,H,levelZ,totalH,aisleLen,palletL,palletW,axes,io,cabs,net,cells,tLift,tShut,tTr,tStoreMax,tStoreAvg,tRetrAvg,throughput,lobbyClear,pHoist,pShTravel,pTransfer,pTurn,cw};
+}
+function frameW(kW){return kW<=0.75?73:kW<=4?100:kW<=7.5?140:kW<=18.5?200:kW<=30?275:350}
+function frameH(kW){return kW<=4?200:kW<=7.5?260:kW<=18.5?330:kW<=30?420:540}
+function parseLevels(){
+  let a=String(S.hLevels).split(/[,\s]+/).map(Number).filter(x=>x>500&&x<3500);
+  a=[...new Set(a)].sort((x,y)=>x-y); if(!a.length)a=[2000]; return a;
+}
+function classOf(h,H){ // height class index: number of beams blocked
+  let k=0; for(const lv of H){ if(h>=lv)k++ } return k; }
+function classRange(k,H){const lo=k===0?0:H[k-1],hi=k<H.length?H[k]:Infinity;return [lo,hi]}
+function floorsForClass(k,H){const hi=classRange(k,H)[1];if(hi===Infinity)return[];return S.floorClear.map((c,i)=>c>=hi+50?i+1:0).filter(Boolean)}
+
+/* ---------- tabs ---------- */
+const TABS=[
+ ["overview","סקירה"],["floors","קומות ותאים"],["equip","מעליות · שאטלים · מסובבת"],["cabinets","ארונות פיקוד"],
+ ["ip","רשת ו‑IP"],["params","פרמטרי דרייברים"],["sensors","חיישנים ו‑IO"],["lobby","לובי ובדיקות"],
+ ["plc","תוכנת PLC"],["tpl","תבניות PLC"],["wiring","הרכבה וחיווט"],["drawings","שרטוטים"],["sim","הדמיה"],["report","דוח · מייל · הדפסה"]];
+let cur="overview"; try{const t=localStorage.getItem("rp-tab");if(t&&TABS.some(x=>x[0]===t))cur=t}catch(e){}
+const h0=location.hash.replace("#","");if(TABS.some(x=>x[0]===h0))cur=h0;
+const tabsEl=document.getElementById("tabs"),sheetsEl=document.getElementById("sheets");
+TABS.forEach(([id,label])=>{
+  const b=document.createElement("button");b.type="button";b.setAttribute("role","tab");b.id="t-"+id;b.textContent=label;b.setAttribute("aria-controls","s-"+id);
+  b.onclick=()=>{cur=id;try{localStorage.setItem("rp-tab",id)}catch(e){}render()};tabsEl.appendChild(b);
+  const s=document.createElement("section");s.className="sheet";s.id="s-"+id;s.setAttribute("role","tabpanel");sheetsEl.appendChild(s);
+});
+
+/* ---------- inputs ---------- */
+const NUM=["floors","cellsPerSide","sides","lifts","cellPitch","slab","carL","carW","carMass","palletMass","shuttleMass","liftMass","hCount","vShuttle","aShuttle","vLift","aLift","vTransfer","turnTime","spare","drivesOnShuttle"];
+const TXT=["project","hLevels","subnet","ovhModel","disabledCells"];
+function fillInputs(){
+  NUM.concat(TXT).forEach(k=>{const el=document.getElementById(k);if(el)el.value=S[k]});
+  document.getElementById("turntable").checked=!!S.turntable;
+}
+function clampNum(k,v){
+  const el=document.getElementById(k);let x=Number(v);if(!isFinite(x))return S[k];
+  const mn=el.getAttribute("min"),mx=el.getAttribute("max");
+  if(mn!==null)x=Math.max(+mn,x);if(mx!==null)x=Math.min(+mx,x);return x;
+}
+NUM.forEach(k=>document.getElementById(k).addEventListener("change",e=>{
+  S[k]=clampNum(k,e.target.value);e.target.value=S[k];
+  if(k==="hCount")spreadLevels();
+  if(k==="floors")ensureFloors();
+  save();render();}));
+TXT.forEach(k=>document.getElementById(k).addEventListener("change",e=>{
+  let v=e.target.value.trim();
+  if(k==="subnet"&&!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(v)){toast("כתובת רשת צריכה להיות בפורמט 192.168.10");e.target.value=S.subnet;return}
+  if(k==="hLevels"){const a=v.split(/[,\s]+/).map(Number).filter(x=>x>500&&x<3500);if(!a.length){toast("לא נמצאו גבהים תקינים (500–3500 מ\"מ)");e.target.value=S.hLevels;return}a.sort((x,y)=>x-y);v=a.join(",");S.hCount=a.length;document.getElementById("hCount").value=a.length;e.target.value=v}
+  if(k==="disabledCells"){const ids=v.toUpperCase().split(/[,\s]+/).filter(Boolean);const bad=ids.filter(x=>!/^F\d{1,2}[AB]\d{1,2}$/.test(x));if(bad.length){toast("פורמט לא תקין: "+bad.join(", ")+". דוגמה: F02B05");e.target.value=S.disabledCells;return}v=ids.map(x=>{const m=x.match(/^F(\d+)([AB])(\d+)$/);return `F${pad(+m[1])}${m[2]}${pad(+m[3])}`}).join(", ");e.target.value=v;simState=null}
+  S[k]=v;save();render();}));
+document.getElementById("turntable").addEventListener("change",e=>{S.turntable=e.target.checked;save();render()});
+document.getElementById("hSpread").addEventListener("click",()=>{spreadLevels();save();render()});
+document.getElementById("reset").addEventListener("click",()=>{S=structuredClone(DEF);ensureFloors();fillInputs();save();simState=null;render();toast("הוחזרו ערכי הדוגמה")});
+function spreadLevels(){
+  const n=Math.max(1,Math.min(12,+S.hCount)),lo=1500,hi=2050;
+  const a=n===1?[hi]:Array.from({length:n},(_,i)=>Math.round((lo+(hi-lo)*i/(n-1))/10)*10);
+  S.hLevels=a.join(",");document.getElementById("hLevels").value=S.hLevels;
+}
+
+/* ---------- toast & copy ---------- */
+let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2400)}
+function copyText(txt,okMsg,fallbackEl){
+  const done=()=>toast(okMsg||"הועתק");
+  const fail=()=>{if(fallbackEl){fallbackEl.focus();fallbackEl.select&&fallbackEl.select()}toast("ההעתקה נחסמה – הטקסט סומן, העתיקו ידנית (Ctrl+C)")};
+  try{navigator.clipboard.writeText(txt).then(done,fail)}catch(e){fail()}
+}
+const inFrame=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+
+/* ---------- helpers for tables ---------- */
+function table(head,rows,cls){
+  return `<div class="tbl"><table${cls?` class="${cls}"`:""}><thead><tr>${head.map(h=>`<th${h[1]?` class="${h[1]}"`:""}>${h[0]}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+}
+const td=(v,c)=>`<td${c?` class="${c}"`:""}>${v}</td>`;
+
+/* ---------- render ---------- */
+let M;
+function render(){
+  M=model();
+  document.getElementById("projTitle").textContent=S.project||"מתכנן חניון רובוטי";
+  const k=[[M.cells,"מקומות חניה"],[M.F,"קומות"],[M.axes.length,"צירים / דרייברים"],[M.cabs.length,"ארונות"],[M.net.length,"כתובות IP"],[M.io.reduce((a,s)=>a+(s.kind==="NET"?0:1),0),"נקודות IO"],[fx(M.tStoreAvg,0)+"″","זמן אחסון ממוצע"]];
+  document.getElementById("kpis").innerHTML=k.map(([v,l])=>`<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
+  TABS.forEach(([id])=>{
+    const on=id===cur;document.getElementById("t-"+id).setAttribute("aria-selected",on);
+    const s=document.getElementById("s-"+id);s.hidden=!on&&!printing;
+  });
+  const fn=R[cur];document.getElementById("s-"+cur).innerHTML=fn();
+  if(cur==="sim")simMount();
+  if(cur==="drawings")drawMount();
+  if(cur==="floors")floorsMount();
+  if(cur==="report")reportMount();
+}
+let printing=false;
+const R={};
+
+/* ---- overview ---- */
+R.overview=()=>{
+  const H=M.H;
+  return `<h2>סקירת המערכת</h2>
+  <p class="lead">${esc(S.project)}: ${M.F} קומות אחסון מעל לובי, ${M.n*M.sides} תאים בקומה, ${M.L} ${M.L>1?"מעליות":"מעלית"} עם לובי לכל אחת. בקרה אחת מרכזית מסוג Siemens S7‑1500F ב‑TIA Portal, תקשורת PROFINET ו‑PROFIsafe, ודרייברי SINAMICS G120. זו הפלטפורמה הנפוצה ביותר בארץ, עם הכי הרבה טכנאים, חלפים ודוגמאות קוד.</p>
+  <div class="grid2">
+    <div class="card"><h4>מבנה</h4><ul>
+      <li>${M.cells} מקומות: ${M.F} קומות × ${M.n} תאים × ${M.sides} צדדים</li>
+      <li>אורך שביל שאטל ≈ ${fx(M.aisleLen/1000,1)} מ'</li>
+      <li>גובה מבנה ≈ ${fx(M.totalH/1000,2)} מ' (לובי ${fx(M.lobbyClear)} מ"מ נטו)</li>
+      <li>מגש ${fx(M.palletL)}×${fx(M.palletW)} מ"מ</li></ul></div>
+    <div class="card"><h4>ציוד מכני</h4><ul>
+      <li>${M.F} שאטלים (אחד לקומה): נסיעה ${M.axes.find(a=>a.role==="travel").kW} kW + העברה ${M.axes.find(a=>a.id.startsWith("SH")&&a.role==="transfer").kW} kW</li>
+      <li>${M.L} מעליות: הרמה ${M.axes.find(a=>a.role==="hoist").kW} kW עם משקל נגד ${fx(M.cw)} ק"ג</li>
+      <li>${S.turntable?`${M.L} מסובבות: ${M.axes.find(a=>a.role==="turn").kW} kW, 180° ב‑${S.turnTime} ש'`:"ללא מסובבת"}</li>
+      <li>${M.L} דלתות לובי</li></ul></div>
+    <div class="card"><h4>חשמל ובקרה</h4><ul>
+      <li>${M.axes.length} דרייברים, סה"כ ${fx(M.axes.reduce((a,x)=>a+x.kW,0),1)} kW מותקן</li>
+      <li>הזנה ראשית: ${M.cabs[0].feed}A, כבל ${M.cabs[0].feedCable} ממ"ר</li>
+      <li>${M.cabs.length} ארונות, ${M.cabs.reduce((a,c)=>a+c.mods,0)} כרטיסי ET 200SP</li>
+      <li>${M.net.length} התקני PROFINET ב‑${esc(S.subnet)}.0/24</li></ul></div>
+    <div class="card"><h4>ביצועים (הערכה)</h4><ul>
+      <li>אחסון ממוצע ${fx(M.tStoreAvg,0)} ש', הגרוע ביותר ${fx(M.tStoreMax,0)} ש'</li>
+      <li>שליפה ממוצעת ${fx(M.tRetrAvg,0)} ש'</li>
+      <li>קיבולת ≈ ${fx(M.throughput,0)} תנועות לשעה</li>
+      <li>${H.length} חיישני גובה: ${H.join(" / ")} מ"מ</li></ul></div>
+  </div>
+  <h3>זרימת רכב באחסון</h3>
+  <ol class="steps">
+    <li>הנהג נכנס ללובי, נעצר לפי השלטים ויוצא. <em>לובי</em></li>
+    <li>בדיקת מידות, גובה וסריקת אנשים. הדלת נסגרת. <em>לובי</em></li>
+    <li>מנגנון ההעברה במעלית מושך את המגש מהלובי לפלטפורמה. <em>LF‑M2</em></li>
+    <li>המעלית עולה לקומה שמתאימה לגובה הרכב. <em>LF‑M1</em></li>
+    <li>השאטל מושך את המגש מהמעלית. <em>SH‑M2</em></li>
+    <li>השאטל נוסע לתא הפנוי. <em>SH‑M1</em></li>
+    <li>השאטל דוחף את המגש לתא, וחיישן הישיבה והגלישה מאשרים. <em>SH‑M2</em></li>
+  </ol>
+  <h3>איך משתמשים באתר</h3>
+  <p class="lead" style="margin:0">משנים הגדרות בעמודה הימנית וכל הלשוניות מתעדכנות מיד. ההגדרות נשמרות בדפדפן. בלשונית "דוח · מייל · הדפסה" אפשר להעתיק את כל התכנון כטקסט וכטבלאות CSV.</p>`;
+};
+
+/* ---- floors ---- */
+R.floors=()=>{
+  const H=M.H;
+  const rows=[];
+  for(let f=M.F;f>=1;f--){
+    const clr=S.floorClear[f-1];const z=M.levelZ[f];
+    const maxCar=clr-50;
+    const cls=H.map((_,k)=>k).concat([H.length]).filter(k=>floorsForClass(k,H).includes(f));
+    rows.push(`<tr>${td(`<b>קומה ${f}</b>`)}${td(fx(z),"n")}${td(`<label class="f" style="flex-direction:row;align-items:center;gap:6px"><input data-fc="${f-1}" type="number" min="1500" max="3000" step="10" value="${clr}" style="width:96px" aria-label="גובה נקי קומה ${f}"></label>`)}${td(fx(maxCar),"n")}${td(cls.length?cls.map(k=>{const r=classRange(k,H);return `<span class="pill st">${r[0]?r[0]+"–":"עד "}${r[1]}</span>`}).join(" "):'<span class="pill warn">אין</span>')}${td(M.n*M.sides,"n")}${td(`FLC-${pad(f)}`,"m")}</tr>`);
+  }
+  rows.push(`<tr class="grp">${td("לובי (קומה 0)")}${td("0","n")}${td(fx(M.lobbyClear))}${td(fx(H[H.length-1]),"n")}${td("קבלת רכבים")}${td("—","n")}${td(Array.from({length:M.L},(_,i)=>`LBC-${i+1}`).join(" "),"m")}</tr>`);
+  return `<h2>הגדרת קומות ותאים</h2>
+  <p class="lead">לכל קומה יש גובה נקי משלה. הלובי מסווג כל רכב לפי חיישני הגובה ושולח אותו רק לקומות שהגובה הנקי בהן גדול לפחות ב‑50 מ"מ מהגבול העליון של הסיווג. אפשר לשנות כאן את הגובה של כל קומה.</p>
+  ${table([["קומה"],["מפלס רצפה מ\"מ","n"],["גובה נקי מ\"מ"],["רכב מקס' מ\"מ","n"],["סיווגי גובה שמותרים"],["תאים","n"],["ארון"]],rows)}
+  <h3>מספור תאים <span class="tag">F{קומה}{צד}{מס'}</span></h3>
+  <p class="lead">לדוגמה F03B07 הוא קומה 3, צד B, תא 7. תא 01 הוא הקרוב למעלית 1. בתפוסה למטה: לחיצה על תא מסמנת אותו כתפוס או פנוי (משמש את ההדמיה).</p>
+  <div id="occWrap"></div>`;
+};
+function floorsMount(){
+  document.querySelectorAll("[data-fc]").forEach(el=>el.addEventListener("change",e=>{
+    const i=+e.target.dataset.fc;S.floorClear[i]=Math.max(1500,Math.min(3000,+e.target.value||S.floorClear[i]));save();render();}));
+  drawOcc(document.getElementById("occWrap"));
+}
+
+/* ---- equipment ---- */
+R.equip=()=>{
+  const groups=[["lift","מעליות",a=>a.unit.startsWith("LF")],["shuttle","שאטלים",a=>a.unit.startsWith("SH")],["lobby","מסובבת ודלת לובי",a=>a.unit.startsWith("LB")]];
+  const rowsFor=f=>M.axes.filter(f).map(a=>`<tr>${td(a.id,"m")}${td(a.name)}${td(fx(a.pCalc,2),"n")}${td(`<b>${a.kW}</b>`,"n")}${td(fx(a.In,1),"n")}${td(a.v+" "+a.unitV,"n")}${td(fx(a.ramp,2),"n")}${td(a.ratio?fx(a.ratio,1):"—","n")}${td(a.drive)}${td(a.cab,"m")}</tr>`);
+  const sh=M.axes.find(a=>a.role==="travel"),ho=M.axes.find(a=>a.role==="hoist");
+  return `<h2>מעליות, שאטלים, מסובבת ותאים</h2>
+  <p class="lead">כל ציר מחושב מהמסות והמהירויות שבהגדרות, עם מקדם ביטחון, ומעוגל לגודל המנוע הסטנדרטי הבא. יחס התמסורת מניח מנוע 4 קטבים (1450 סל"ד) ותוף/גלגל בקוטר שמופיע בהערות.</p>
+  ${groups.map(([k,t,f])=>`<h3>${t}</h3>${table([["ציר"],["תפקיד"],["הספק מחושב kW","n"],["מנוע kW","n"],["זרם נומינלי A","n"],["מהירות","n"],["רמפה ש'","n"],["יחס תמסורת","n"],["דרייבר"],["ארון"]],rowsFor(f))}`).join("")}
+  <h3>הנחות החישוב</h3>
+  <div class="grid2">
+    <div class="card"><h4>שאטל – נסיעה</h4><p class="muted" style="margin:0">מסה נעה ${fx(+S.shuttleMass+ +S.carMass+ +S.palletMass)} ק"ג, תאוצה ${S.aShuttle} מ'/ש², התנגדות גלגול 1.5%, נצילות 85%, מקדם 1.2. גלגל Ø250 מ"מ. מיקום אבסולוטי מסרט ברקוד ובקרת מיקום EPos בדרייבר.</p></div>
+    <div class="card"><h4>מעלית – הרמה</h4><p class="muted" style="margin:0">משקל נגד ${fx(M.cw)} ק"ג (פלטפורמה + מגש + חצי רכב), ולכן העומס הלא מאוזן המקסימלי הוא ${fx(S.carMass/2)} ק"ג. תוף Ø400 מ"מ, בלם חשמלי כפול, נגד בלימה, מגביל מהירות ובולמים בבור. הספק מחושב ${fx(ho.pCalc,1)} kW.</p></div>
+    <div class="card"><h4>העברת מגש</h4><p class="muted" style="margin:0">שרשרת עם וו משיכה שנכנס לפין במגש ומושך/דוחף ${fx(+S.carMass+ +S.palletMass)} ק"ג. מהירות ${S.vTransfer} מ'/ש', חיכוך גלגלונים 3%, גלגל שיניים Ø160. העצירה לפי חיישני קצה עם האטה.</p></div>
+    <div class="card"><h4>תא (מקום חניה)</h4><p class="muted" style="margin:0">שתי מסילות גלגלונים, מעצור אחורי עם חיישן ישיבה, חיישן נוכחות קדמי, ובליטת נעילה (מצבט) שנכנסת לחריץ במגש בסוף הדחיפה ומונעת גלישה לכיוון השביל. רוחב תא ${fx(S.cellPitch)} מ"מ.</p></div>
+  </div>`;
+};
+
+/* ---- cabinets ---- */
+R.cabinets=()=>{
+  const rows=M.cabs.map(c=>`<tr>${td(`<b>${c.id}</b>`,"m")}${td(c.name+`<div class="muted" style="font-size:12px">${esc(c.loc)}</div>`)}${td(c.drives.length,"n")}${td(c.drives.length,"n")}${td(fx(c.kW,1),"n")}${td(`${c.mDI}/${c.mDQ}/${c.mFDI}/${c.mFDQ}`,"n")}${td(`${c.W}×${c.H}×${c.D}`,"n")}${td(c.main?c.feed+"A":c.feed+"A","n")}${td(esc(c.controls))}</tr>`);
+  const detail=M.cabs.map(c=>{
+    const dr=c.drives.map(d=>`<tr>${td(d.id,"m")}${td(d.name)}${td(d.kW,"n")}${td(d.drive)}${td(`MCB ${d.mcb}A · ${d.cable} ממ"ר`,"n")}</tr>`);
+    const bom=[];
+    bom.push(["מפסק ראשי",c.main?`מפסק עומס ${c.feed}A 4P עם ידית בדלת`:`מנתק ${c.feed}A 3P + PE`]);
+    if(c.main){bom.push(["בקר","CPU 1516F‑3 PN/DP + כרטיס זיכרון 24MB"]);bom.push(["HMI","פאנל 12\" PROFINET"]);bom.push(["מתג ליבה","מתג מנוהל 8×RJ45"]);bom.push(["UPS","מודול UPS 24V 20A + סוללה 7Ah"]);
+      M.cabs.slice(1).forEach(x=>bom.push([`הזנה ל‑${x.id}`,`MCCB ${x.feed}A, כבל ${x.feedCable} ממ"ר`]));}
+    if(c.drives.length)bom.push(["דרייברים",c.drives.map(d=>`${d.id} ${d.kW}kW`).join(", ")]);
+    if(c.drives.some(d=>d.role==="hoist"))bom.push(["נגד בלימה","נגד בלימה חיצוני להרמה, בקופסה מאווררת על גג הארון"]);
+    if(c.drives.length)bom.push(["משנק/מסנן","מסנן EMC Class A מובנה, כבל מנוע מסוכך עד 50 מ'"]);
+    if(c.hasIM)bom.push(["ET 200SP",`IM155‑6 PN HF + BusAdapter 2×RJ45 · DI16 ×${c.mDI} · DQ16 ×${c.mDQ} · F‑DI8 ×${c.mFDI} · F‑DQ4 ×${c.mFDQ} · מודול שרת`]);
+    bom.push(["ספק 24V",`${c.psu}A`+(c.main?"":" עם מודול סלקטיבי 4 ערוצים")]);
+    if(!c.main&&!c.mobile)bom.push(["מתג","מתג 8 פורטים לא מנוהל, תעשייתי"]);
+    if(c.id.startsWith("FLC")&&S.drivesOnShuttle==1)bom.push(["לשאטל","מפסק לפס צבירה 4P + Access Point WLAN עם אנטנה מכוונת לאורך השביל"]);
+    if(c.mobile)bom.push(["תקשורת","WLAN Client + אנטנה; הזנה מפס צבירה 400V 4 קטבים + PE"]);
+    bom.push(["מהדקים",`X1 כוח, X2 24V, X3 חיישנים (${c.io.filter(s=>s.kind!=="NET").length} נקודות), X4 מנועים`]);
+    bom.push(["אוורור",c.kW>10?"מאוורר מסנן 2× + תרמוסטט":c.kW>0?"מאוורר מסנן + תרמוסטט":"טבעי"]);
+    return `<h3>${c.id} <span class="tag">${c.W}×${c.H}×${c.D}</span> ${esc(c.name)}</h3>
+    <p class="lead" style="margin:0 0 6px">שולט על: ${esc(c.controls)}. ${c.drives.length?`<b>${c.drives.length} דרייברים, ${c.drives.length} מנועים</b>.`:"אין בו דרייברים."}</p>
+    ${c.drives.length?table([["ציר"],["מנוע"],["kW","n"],["דרייבר"],["הגנה וכבל","n"]],dr):""}
+    ${table([["רכיב"],["פירוט"]],bom.map(b=>`<tr>${td(b[0])}${td(esc(b[1]))}</tr>`))}`;
+  }).join("");
+  return `<h2>ארונות פיקוד</h2>
+  <p class="lead">ארון ראשי אחד, ארון לכל לובי ולכל מעלית, וארון לכל קומה. ${S.drivesOnShuttle==1?"דרייברי השאטל יושבים בארון נייד על השאטל ומקבלים כוח מפס צבירה ותקשורת ב‑WLAN. ככה אין כבלים נגררים לאורך השביל.":"דרייברי השאטל יושבים בארון הקומה ומחוברים לשאטל בשרשרת כבלים. זה פשוט יותר לשירות, אבל מתאים רק לשביל קצר (עד כ‑40 מ')."} סימון הכרטיסים: DI/DQ/F‑DI/F‑DQ, כולל ${S.spare}% שמורה.</p>
+  ${table([["ארון"],["שם ומיקום"],["דרייברים","n"],["מנועים","n"],["kW","n"],["כרטיסי IO","n"],["רוחב×גובה×עומק","n"],["הזנה","n"],["שולט על"]],rows)}
+  ${detail}`;
+};
+
+/* ---- IP ---- */
+R.ip=()=>{
+  const rows=M.net.map(d=>`<tr>${td(d.ip,"n")}${td(d.name,"m")}${td(esc(d.dev))}${td(esc(d.role))}${td(d.cab,"m")}${td(d.tel?`Telegram ${d.tel}`:"—","n")}${td(d.tel?"4 ms":d.dev.includes("ET 200SP")?"4 ms":d.dev.includes("לייזר")||d.dev.includes("BPS")?"2 ms":"—","n")}</tr>`);
+  return `<h2>רשת PROFINET וכתובות IP</h2>
+  <p class="lead">רשת אחת ${esc(S.subnet)}.0/24, מסיכה 255.255.255.0, בלי שער (רשת בקרה סגורה). שם ההתקן (Device name) הוא מה שהבקר מזהה. ה‑IP נקבע מהבקר אוטומטית לפי השם. כל קבוצה מקבלת טווח קבוע: 1–9 ראשי, 10–29 לובי, 30–49 מעליות, 100+ קומות (10 כתובות לקומה).</p>
+  ${table([["IP","n"],["Device name"],["התקן"],["תפקיד"],["ארון"],["טלגרם","n"],["זמן עדכון","n"]],rows)}
+  <h3>טופולוגיה</h3>
+  <div class="grid2">
+    <div class="card"><h4>קווי</h4><p class="muted" style="margin:0">מתג הליבה בארון הראשי מחובר בכוכב לכל ארון לובי, מעלית וקומה בכבל PROFINET ירוק (Cat5e תעשייתי, 4 גידים). בתוך ארון ההתקנים מחוברים בשרשרת דרך שני הפורטים של כל התקן. כבל ארוך מ‑100 מ' עובר בסיב אופטי.</p></div>
+    <div class="card"><h4>${S.drivesOnShuttle==1?"אלחוטי לשאטל":"שרשרת כבלים לשאטל"}</h4><p class="muted" style="margin:0">${S.drivesOnShuttle==1?"Access Point בכל קומה ו‑Client על השאטל, במצב iPCF (מעבר מהיר) וב‑5GHz, עם ערוץ שונה לכל קומה. זמן עדכון 4–8 מ\"ש, PROFIsafe watchdog של 150 מ\"ש לפחות.":"כבל PROFINET עמיד לכיפוף בתוך שרשרת הכבלים, לצד כבל המנועים המסוכך."}</p></div>
+    <div class="card"><h4>בטיחות (PROFIsafe)</h4><p class="muted" style="margin:0">כרטיסי F‑DI/F‑DQ מקבלים כתובת F‑destination ייחודית (מתג DIP בכרטיס): ${M.cabs.filter(c=>c.fdest.length).map(c=>`${c.id}: ${c.fdest[0]}${c.fdest.length>1?"–"+c.fdest[c.fdest.length-1]:""}`).join(" · ")}.</p></div>
+  </div>
+  <div class="row noprint" style="margin-top:12px"><button class="btn" type="button" id="cpIP">העתקת טבלת IP כ‑CSV</button></div>`;
+};
+
+/* ---- params ---- */
+function axisDevName(a){
+  const key=a.role==="turn"?"turn":a.role==="door"?"door":a.role==="hoist"?"hoist":a.role==="travel"?"travel":"transfer";
+  const pre=a.unit.startsWith("SH")?`sh${a.unit.slice(2)}`:a.unit.startsWith("LF")?`lf${a.unit.slice(2)}`:`lb${a.unit.slice(2)}`;
+  return `${pre}-${key}`;
+}
+function axisCalc(a){
+  const luPerRev=a.role==="turn"?36000:Math.round(Math.PI*a.gearD*100);
+  const vLU=a.role==="turn"?a.v*60/(2*Math.PI)*36000/1000:a.v*60*100;
+  const acc=a.role==="hoist"?+S.aLift:a.role==="travel"?+S.aShuttle:(a.v/(a.ramp||1));
+  const aLU=a.role==="turn"?acc*180/Math.PI*100/1000:acc*100000/1000;
+  return {luPerRev,vLU,aLU};
+}
+function paramsFor(a){
+  const P=[];let grp="";const G=t=>grp=t;const p=(n,v,d)=>P.push([n,v,d,grp]);
+  const {luPerRev,vLU,aLU}=axisCalc(a);
+  const hoist=a.role==="hoist",heavy=hoist||a.role==="travel";
+  const fd=M.cabs.find(c=>c.id===a.cab);
+  G("1. התחלה ונתוני מנוע (לפי לוחית המנוע)");
+  p("p0010","1","Quick commissioning – התחלה");
+  p("p0100","0","IEC, 50 Hz, kW");
+  p("p0205",heavy?"0":"1",heavy?"High overload – עומס כבד/מיקום":"Low overload");
+  p("p0300","1","מנוע אסינכרוני");
+  p("p0304","400 V","מתח נומינלי (חיבור כוכב/משולש לפי הלוחית)");
+  p("p0305",fx(a.In,1)+" A","זרם נומינלי");
+  p("p0307",a.kW+" kW","הספק נומינלי");
+  p("p0308","0.84","cos φ");
+  p("p0309","88 %","נצילות");
+  p("p0310","50 Hz","תדר נומינלי");
+  p("p0311",a.nMot+" rpm","מהירות נומינלית");
+  p("p0335","0","קירור עצמי");
+  p("p0601","1","חיישן טמפרטורה במנוע: PTC (מהדקים 14/15)");
+  G("2. גבולות ורמפות");
+  p("p0640",fx(a.In*(hoist?1.8:1.5),1)+" A","גבול זרם");
+  p("p1080","0 rpm","מהירות מינימלית");
+  p("p1082",a.nMot+" rpm","מהירות מקסימלית");
+  p("p1120",fx(a.ramp,2)+" s","זמן האצה 0→p1082");
+  p("p1121",fx(a.ramp,2)+" s","זמן האטה");
+  p("p1130",heavy?"0.30 s":"0.10 s","עיגול התחלת רמפה (Jerk)");
+  p("p1136",heavy?"0.30 s":"0.10 s","עיגול סוף רמפה");
+  p("p1135",fx(Math.max(0.5,a.ramp*0.6),2)+" s","רמפת OFF3 (עצירה מהירה)");
+  G("3. בקרה ומקודד");
+  p("p1300",String(a.ctrl),a.ctrl===21?"וקטור עם מקודד":"וקטור בלי מקודד");
+  if(a.ctrl===21){p("p0400","HTL 1024 A/B","סוג מקודד – בוחרים מהרשימה");p("p0408","1024","פולסים לסיבוב");p("p0410","0","היפוך כיוון מקודד – לשנות רק אם המיקום הפוך")}
+  p("p1900","2","זיהוי מנוע בעמידה (רץ בהפעלה הראשונה)");
+  p("p1960",hoist?"0":"1",hoist?"אין מדידה בסיבוב במעלית עם עומס":"אופטימיזציית בקר מהירות – רק כשהמנוע מנותק מהעומס");
+  p("p1460","אוטומטי","הגבר בקר מהירות – אחרי p1960, ואז כיוונון עדין");
+  p("p1462","אוטומטי","זמן אינטגרציה בקר מהירות");
+  G("4. בלם");
+  p("p1215",a.brake?"1":"0",a.brake?"בלם מנוע לפי Sequence control":"ללא בלם");
+  if(a.brake){
+    p("p1216",hoist?"0.30 s":"0.10 s","זמן פתיחת בלם");
+    p("p1217",hoist?"0.20 s":"0.10 s","זמן סגירת בלם");
+    p("p1226","20 rpm","סף זיהוי עמידה לסגירת בלם");
+  }
+  G("5. בלימה דינמית");
+  p("p1240",hoist||a.kW>=3?"0":"1",hoist||a.kW>=3?"בקר Vdc max כבוי (יש נגד בלימה)":"בקר Vdc max פעיל");
+  if(!a.pos&&a.kW>=3)p("p0219",fx(a.kW*0.5,1)+" kW","הספק נגד בלימה (G120C)");
+  if(hoist)p("—",`נגד ≥ ${fx(a.kW*0.6,1)} kW`,"נגד בלימה חיצוני על PM240‑2, מהדקים R1/R2, עם תרמוסטט לכניסת DI");
+  G("6. תקשורת PROFINET");
+  p("p0922",String(a.tel),a.tel===111?"טלגרם 111 – EPos (SINA_POS)":"טלגרם 1 – מהירות (SINA_SPEED)");
+  p("p2000","1500 rpm","מהירות ייחוס");
+  p("p2040",a.unit.startsWith("SH")&&S.drivesOnShuttle==1?"200 ms":"100 ms","זמן ניטור תקשורת");
+  const nd=M.net.find(n=>n.name===axisDevName(a));
+  p("p8920",axisDevName(a),"שם התקן PROFINET");
+  p("p8921",nd?nd.ip:"—","כתובת IP");
+  p("p8923","255.255.255.0","מסיכה");
+  p("p8925","2","שמירה והפעלה של הגדרות הרשת");
+  if(a.pos){
+    G("7. מיקום EPos");
+    p("p2504",fx(a.ratio,3),"סיבובי מנוע (יחס תמסורת)");
+    p("p2505","1","סיבובי עומס");
+    p("p2506",String(luPerRev),a.role==="turn"?"LU לסיבוב (1 LU = 0.01°)":"LU לסיבוב (1 LU = 0.01 מ\"מ)");
+    p("p2571",fx(vLU,0),"מהירות מקסימלית [1000 LU/min]");
+    p("p2572",fx(aLU,0),"תאוצה מקסימלית [1000 LU/s²]");
+    p("p2573",fx(aLU,0),"האטה מקסימלית [1000 LU/s²]");
+    p("p2574",fx(aLU*4,0),"הגבלת Jerk [1000 LU/s³]");
+    p("p2575","1","הפעלת הגבלת Jerk");
+    p("p2544",a.role==="turn"?"20":hoist?"100":"200",a.role==="turn"?"חלון מיקום 0.2°":hoist?"חלון מיקום 1 מ\"מ":"חלון מיקום 2 מ\"מ");
+    p("p2545","1.0 s","זמן ניטור הגעה למיקום");
+    p("p2546",a.role==="turn"?"500":"2000","סטיית מעקב דינמית מותרת [LU]");
+    if(a.role==="travel"){p("p2580","-500","גבול תוכנה מינוס [LU]");p("p2581",String(Math.round((M.aisleLen-600)*100)),"גבול תוכנה פלוס [LU]");p("p2582","1","גבולות תוכנה פעילים")}
+    if(hoist){p("p2580","-1000","גבול תוכנה מינוס [LU]");p("p2581",String(Math.round(M.levelZ[M.F]*100+2000)),"גבול תוכנה פלוס [LU]");p("p2582","1","גבולות תוכנה פעילים")}
+    p("p2599","0","קואורדינטת נקודת ייחוס. הבקר כותב מיקום אבסולוטי (ברקוד/לייזר) עם ModePos 5 בכל הפעלה");
+  }
+  G("8. בטיחות (Safety Integrated)");
+  p("p9601","אשף Safety",a.pos?"STO + SS1"+(hoist?" + SBC":"")+" דרך PROFIsafe":"STO דרך PROFIsafe / מהדקי F‑DI");
+  p("p9610",fd&&fd.fdest.length?String(fd.fdest[fd.fdest.length-1]+50+M.axes.indexOf(a)):"—","כתובת PROFIsafe של הדרייבר (ייחודית)");
+  p("p9761","סיסמה","סיסמת Safety – לשמור בתיק הפרויקט");
+  G("9. סיום");
+  p("p3900","3","סיום Quick commissioning (חישוב נתוני בקרה)");
+  p("p0971","1","שמירת פרמטרים לכרטיס");
+  return P;
+}
+function blockCfg(a){
+  const {vLU,aLU}=axisCalc(a);
+  return a.pos?[
+    ["בלוק","SINA_POS (DriveLib)"],["ModePos","2 = מוחלט · 5 = קביעת ייחוס · 7 = Jog"],["Position (DINT)","מ‑cfg.diX / diLevel (LU)"],
+    ["Velocity (DINT)",fx(vLU,0)+" [1000 LU/min]"],["OverV / OverAcc / OverDec","100.0 / 100.0 / 100.0 %"],
+    ["CancelTraversing / IntermediateStop","TRUE / TRUE בזמן תנועה (FALSE = עצירה)"],["ConfigEPos","16#0000_0003 (OFF2, OFF3 פעילים)"],
+    ["HWIDSTW / HWIDZSW",`"${axisDevName(a)}~…Telegram_111" מטבלת System constants`]]
+   :[["בלוק","SINA_SPEED (DriveLib)"],["SpeedSp (REAL)",`±${a.nMot}.0 rpm`],["RefSpeed","1500.0 (כמו p2000)"],["ConfigAxis","16#003F"],["HWIDSTW / HWIDZSW",`"${axisDevName(a)}~…Telegram_1"`]];
+}
+R.params=()=>{
+  const shown=M.axes.filter((a,i,arr)=>arr.findIndex(b=>b.role===a.role&&b.unit.slice(0,2)===a.unit.slice(0,2))===i);
+  return `<h2>פרמטרי דרייברים</h2>
+  <p class="lead">רשימה מלאה לכל סוג ציר, בסדר העבודה בהפעלה: נתוני מנוע, רמפות, בקרה, בלם, תקשורת, מיקום, בטיחות ושמירה. הערכים מחושבים מההגדרות. את נתוני המנוע מתקנים לפי הלוחית. צירים מאותו סוג בקומות אחרות מקבלים אותם ערכים, ורק שם ה‑PROFINET וה‑IP משתנים (ראו לשונית רשת).</p>
+  ${shown.map(a=>{const rows=[];let last="";paramsFor(a).forEach(r=>{if(r[3]!==last){rows.push(`<tr class="grp"><td colspan="3">${esc(r[3])}</td></tr>`);last=r[3]}rows.push(`<tr>${td(r[0],"n")}${td(esc(r[1]),"n")}${td(esc(r[2]))}</tr>`)});
+    return `<h3>${a.name} <span class="tag">${a.id}</span> ${a.kW} kW · ${a.drive}</h3>${table([["פרמטר","n"],["ערך","n"],["משמעות"]],rows)}
+    <p class="muted" style="margin:8px 0 2px;font-size:13px">הגדרות הבלוק בבקר:</p>${table([["כניסה"],["ערך"]],blockCfg(a).map(r=>`<tr>${td(esc(r[0]),"m")}${td(esc(r[1]))}</tr>`))}`}).join("")}
+  <h3>סדר הפעלה לכל דרייבר</h3>
+  <ol class="steps">
+    <li>מתן שם PROFINET ו‑IP מ‑TIA (Online → Assign name).</li>
+    <li>Startdrive: אשף הפעלה עם הפרמטרים בקבוצות 1–5, ואז p3900=3.</li>
+    <li>זיהוי מנוע p1900=2. המנוע מזמזם בעמידה, ואחר כך שומרים.</li>
+    <li>Jog במהירות נמוכה מהלוח של Startdrive ובדיקת כיוון. אם הכיוון הפוך: p1821=1 (היפוך כיוון).</li>
+    <li>מיקום: יחס תמסורת, גבולות, ואז ייחוס (ModePos 5) ובדיקת מרחק אמיתי מול סרט מדידה.</li>
+    <li>Safety: אשף, כתובת PROFIsafe, בדיקת STO מכל לחצן חירום, ו‑Acceptance test מתועד.</li>
+    <li>p0971=1, גיבוי הפרויקט וקובץ הפרמטרים.</li>
+  </ol>
+  <h3>פונקציות בטיחות בדרייבר</h3>
+  <div class="grid2">
+    <div class="card"><h4>STO – Safe Torque Off</h4><p class="muted" style="margin:0">בכל הדרייברים. נכנס לפעולה בחירום, בפתיחת דלת תחזוקה ובגבול סופי.</p></div>
+    <div class="card"><h4>SS1 / SBC במעלית</h4><p class="muted" style="margin:0">SS1 עוצר מבוקר ואז STO. SBC שולט בבלם בצורה בטוחה. בדיקת בלם יומית אוטומטית בתחילת היום.</p></div>
+    <div class="card"><h4>SLS בתחזוקה</h4><p class="muted" style="margin:0">במצב ידני: מהירות מוגבלת בטוחה של 0.25 מ'/ש' לשאטל ולמעלית.</p></div>
+  </div>`;
+};
+
+/* ---- sensors ---- */
+R.sensors=()=>{
+  const sum={};M.io.forEach(s=>{const k=s.model;sum[k]=(sum[k]||0)+1});
+  const top=Object.entries(sum).sort((a,b)=>b[1]-a[1]);
+  const byCab=M.cabs.map(c=>{
+    const list=c.io;
+    const cells=list.filter(s=>s.group==="cells");const other=list.filter(s=>s.group!=="cells");
+    const rows=other.map(s=>`<tr>${td(s.tag,"m")}${td(esc(s.desc))}${td(`<span class="pill ${s.kind.startsWith("F")?"crit":s.kind==="NET"?"st":"ok"}">${s.kind}</span>`)}${td(s.addr,"m")}${td(s.term,"m")}${td(esc(s.model))}${td(esc(s.loc))}</tr>`);
+    if(cells.length){rows.unshift(`<tr class="grp">${td(`${cells.length} חיישני תאים (2 לכל תא)`,"")}${td("נוכחות מגש + מגש יושב במעצור")}${td('<span class="pill ok">DI</span>')}${td(`${cells[0].addr} … ${cells[cells.length-1].addr}`,"m")}${td(`${cells[0].term.split("…")[0]} …`,"m")}${td("אינדוקטיבי M18, PNP NO")}${td("ראו טבלת תאים בדוח")}</tr>`)}
+    return `<h3>${c.id} <span class="tag">DI ${c.nDI} · DQ ${c.nDQ} · F‑DI ${c.nFDI} ערוצים · F‑DQ ${c.nFDQ}</span></h3>${table([["תג"],["תיאור"],["סוג"],["כתובת","n"],["מהדק","n"],["דגם/סוג"],["מיקום התקנה"]],rows)}`;
+  }).join("");
+  return `<h2>חיישנים ונקודות IO</h2>
+  <p class="lead">כל חיישן מקבל תג, כתובת בבקר ומהדק בארון. חיישני בטיחות (F‑DI) מחווטים דו‑ערוצית. חיישנים רגילים הם PNP NO, 24V, עם מחבר M12 4‑פינים.</p>
+  <h3>חיישני גלישה – מניעת נפילת מגש לכיוון השאטל</h3>
+  ${ovhModelBlock()}
+  <div class="grid2">
+    <div class="card"><h4>1. קרן לאורך כל השביל</h4><p class="muted" style="margin:0">בכל צד של כל קומה שתי קרני Through‑beam (משדר בקצה אחד ומקלט בקצה השני). הקרן הנמוכה עוברת 40 מ"מ מעל המסילה, והגבוהה 450 מ"מ מעל המגש וקולטת צמיג או פגוש בולט. הקרן עוברת 30 מ"מ לפני קו קצה התאים. אם מגש או רכב זזו לכיוון השביל, הקרן נחסמת והשאטל נעצר.</p></div>
+    <div class="card"><h4>2. מגש יושב במעצור</h4><p class="muted" style="margin:0">חיישן אינדוקטיבי במעצור האחורי של כל תא. הבקר מצפה לשניהם, נוכחות וישיבה. נוכחות בלי ישיבה פירושה שהמגש לא נכנס עד הסוף או גלש, וזו תקלה שחוסמת את התא.</p></div>
+    <div class="card"><h4>3. על השאטל ובמעלית</h4><p class="muted" style="margin:0">קרני גלישה בשני קצוות השאטל ובקצוות פלטפורמת המעלית. תנועה מותרת רק כשהמגש במרכז, שני חיישני הנוכחות דולקים והקרניים פנויות.</p></div>
+    <div class="card"><h4>4. מצבט / נעילה מכנית</h4><p class="muted" style="margin:0">בליטה קפיצית בתא שנכנסת לחריץ במגש בסוף הדחיפה. השאטל משחרר אותה עם הוו לפני משיכה. זו הגנה מכנית שעובדת גם בלי חשמל.</p></div>
+  </div>
+  <h3>סיכום לפי סוג חיישן (לרכש)</h3>
+  ${table([["סוג"],["כמות","n"]],top.map(([k,v])=>`<tr>${td(esc(k))}${td(v,"n")}</tr>`))}
+  ${byCab}`;
+};
+
+function ovhModelBlock(){
+  const o=M.ovh, beamLen=M.aisleLen/1000, warn=beamLen>o.range*0.8;
+  const qty=M.F*M.sides*2, qtyUnit=M.F*M.sides+M.L*2;
+  const alt=Object.entries(OVH).map(([k,v])=>`<tr${k===S.ovhModel?' class="grp"':""}>${td(`<a href="${v.url}" target="_blank" rel="noopener">${esc(v.short)}</a>`)}${td(v.range+" מ'","n")}${td(esc(v.light))}${td(esc(v.out))}${td(esc(v.conn))}${td(esc(v.note))}</tr>`);
+  return `<p class="lead" style="margin:0 0 6px"><b>הדגם שנבחר: ${esc(o.name)}.</b> אורך הקרן בשביל ≈ ${fx(beamLen,1)} מ', ${warn?`<span class="pill crit">מעל 80% מטווח הדגם – בחרו Leuze LS46C או חלקו את הקרן לשניים</span>`:`<span class="pill ok">בתוך הטווח עם רזרבה</span>`}</p>
+  ${table([["דגם (זוג משדר+מקלט)"],["טווח","n"],["אור"],["יציאה"],["מחבר"],["הערה"]],alt)}
+  ${table([["שימוש"],["כמות זוגות","n"],["התקנה"]],[
+    `<tr>${td("קרני שביל – נמוכה וגבוהה בכל צד")}${td(qty,"n")}${td("משדר בקצה המעלית, מקלט בקצה הרחוק. תושבת זווית מתכווננת בשני צירים, ±5°")}</tr>`,
+    `<tr>${td("קצוות שאטל ופלטפורמת מעלית")}${td(qtyUnit,"n")}${td("אותו דגם, טווח קצר. אפשר גם חיישן Through‑beam קטן M18 לטווח עד 5 מ'")}</tr>`])}
+  <p class="muted" style="font-size:13px;margin:4px 0 10px">הגדרת המקלט: Light‑on, כלומר יציאה דולקת כשהקרן פנויה. חוט קרוע או חיישן תקול נותנים "חסום", וזה הכיוון הבטוח. בזמן העברת מגש לתא מסוים הקרן נחסמת בכוונה, ולכן הבקר בודק אותה רק לפני נסיעה ובמהלכה (Muting בזמן העברה). אחרי ההעברה הקרן חייבת להיות פנויה לפני שהשאטל זז. מקור הנתונים: דפי היצרן והמפיצים בקישורים.</p>`;
+}
+/* ---- lobby ---- */
+R.lobby=()=>{
+  const H=M.H;
+  const cls=H.map((_,k)=>k).concat([H.length]);
+  const rows=cls.map(k=>{const r=classRange(k,H);const fl=floorsForClass(k,H);const reject=k===H.length;
+    return `<tr>${td(k===0?"כל הקרניים פנויות":`נחסמות ${k} הראשונות (עד ${H[k-1]})`)}${td(reject?`> ${H[H.length-1]}`:`${r[0]}–${r[1]}`,"n")}${td(reject?'<span class="pill crit">רכב נדחה – גבוה מדי</span>':fl.length?fl.map(f=>`<span class="pill st">${f}</span>`).join(" "):'<span class="pill warn">אין קומה מתאימה</span>')}</tr>`});
+  return `<h2>לובי כניסה ובדיקת רכב</h2>
+  <p class="lead">הלובי בודק כל רכב לפני שהמערכת לוקחת אותו: מיקום, אורך, רוחב, גובה, ושאין אנשים או בעלי חיים בכל מרחב הלובי. רק אחרי שכל הבדיקות עוברות הדלת נסגרת והמשימה נוצרת.</p>
+  <h3>סיווג גובה <span class="tag">${H.length} חיישנים</span></h3>
+  ${table([["מצב הקרניים"],["גובה רכב מ\"מ","n"],["קומות מותרות"]],rows)}
+  <h3>רצף הבדיקה</h3>
+  <ol class="steps">
+    <li>מצב מוכן: מגש ריק בעמדה, ${S.turntable?"מסובבת ב‑0° ונעולה, ":""}דלת פתוחה, רמזור ירוק. <em>${M.L>1?"LB1/LB2":"LB1"}_TL_GRN</em></li>
+    <li>כניסה: שני חיישני הגלגלים הקדמיים ונעצרים בקרן העצירה. השלטים מכוונים קדימה, עצור או אחורה. <em>WHEEL_FL/FR, POS_STOP</em></li>
+    <li>מידות: קרני חריגת האורך והרוחב פנויות. אם אחת חסומה, השלט מבקש להזיז את הרכב, ואחרי 3 ניסיונות הרכב נדחה. <em>LEN_*, WID_*</em></li>
+    <li>גובה: קוראים את ${H.length} קרני הגובה, קובעים סיווג ובודקים שיש תא פנוי בקומה מתאימה. <em>HGT_01…${pad(H.length)}</em></li>
+    <li>הנהג יוצא, מאשר בקיוסק שאין אנשים או בעלי חיים ברכב, יוצא מהלובי ולוחץ "יצאתי". <em>PB_EXIT</em></li>
+    <li>סריקת היקף: סורק הבטיחות מוודא ששדה הלובי ריק למשך 5 ש' רצופות, מסך הכניסה פנוי וגלאי הנוכחות לא מזהה תנועה. <em>SCN, LC_ENTRY, RADAR</em></li>
+    <li>סגירה: הדלת יורדת עם קצה בטיחות, ואחרי הסגירה יש סריקה חוזרת של 3 ש'. <em>DOOR_EDGE, DOOR_CLOSED</em></li>
+    <li>משימה: נבחר תא פנוי בקומה המותרת עם זמן הגעה הקצר ביותר, והמעלית מושכת את המגש. <em>FB_Dispatcher</em></li>
+  </ol>
+  <h3>מרחב הלובי – מיקום חיישנים</h3>
+  <div class="grid2">
+    <div class="card"><h4>סורק בטיחות</h4><p class="muted" style="margin:0">מותקן בפינה בגובה 200 מ"מ מהרצפה, שדה 270°. שדה הגנה מכסה את כל רצפת הלובי פחות 100 מ"מ מהקירות. ${S.turntable?"שדה נוסף לשטח המסובבת.":""}</p></div>
+    <div class="card"><h4>מידות</h4><p class="muted" style="margin:0">קרני אורך 150 מ"מ מעבר לקצוות המגש, בגובה 400. קרני רוחב לאורך שני הצדדים, 100 מ"מ מחוץ למגש, בגובה 300 (ראי צד מעל, צמיג מתחת).</p></div>
+    <div class="card"><h4>גובה</h4><p class="muted" style="margin:0">${H.length} קרניים רוחביות על שני עמודים משני צדי המגש, בגבהים ${H.join(", ")} מ"מ מעל פני המגש. מוסיפים או משנים קרניים בהגדרות בצד ימין.</p></div>
+    <div class="card"><h4>מידות חדר הלובי</h4><p class="muted" style="margin:0">${S.turntable?`עם מסובבת החדר צריך להיות רחב מאלכסון המגש: לפחות ${fx(Math.hypot(M.palletL,M.palletW)+1150,0)} × ${fx(Math.max(M.palletL+2570,Math.hypot(M.palletL,M.palletW)+1150),0)} מ"מ נטו.`:`לפחות ${fx(M.palletL+2570,0)} × ${fx(M.palletW+2570,0)} מ"מ נטו.`} גובה נקי ${fx(M.lobbyClear)} מ"מ.</p></div>
+    <div class="card"><h4>אופציונלי</h4><p class="muted" style="margin:0">תאי עומס מתחת למגש (בדיקת משקל), מצלמת LPR לזיהוי לוחית, ומצלמה לתיעוד מצב הרכב בכניסה.</p></div>
+  </div>
+  <div class="cad" id="lobbyCad"></div>`;
+};
+
+/* ---- PLC ---- */
+R.plc=()=>{
+  const code=`// ===== FB_StoreSequence (SCL) – אחסון רכב מהלובי לתא =====
+FUNCTION_BLOCK "FB_StoreSequence"
+VAR_INPUT
+  xStart     : Bool;      // משימה מה-Dispatcher
+  iLobby     : Int;       // 1..${M.L}
+  iFloor     : Int;       // 1..${M.F}
+  iSide      : Int;       // 1=A 2=B
+  iCell      : Int;       // 1..${M.n}
+  xAllSafe   : Bool;      // מה-F-program: אין חירום, דלתות סגורות
+END_VAR
+VAR_OUTPUT
+  xBusy, xDone, xError : Bool;
+  iStep      : Int;
+  wErrCode   : Word;
+END_VAR
+VAR
+  tonStep    : TON;       // watchdog לכל שלב
+END_VAR
+BEGIN
+  IF NOT #xAllSafe AND #iStep > 0 THEN
+    #iStep := 900; #wErrCode := 16#0001;          // עצירה בטוחה
+  END_IF;
+  #tonStep(IN := (#iStep > 0) AND (#iStep < 900), PT := T#90S);
+  IF #tonStep.Q THEN #iStep := 900; #wErrCode := 16#0100 + INT_TO_WORD(#iStep); END_IF;
+
+  CASE #iStep OF
+    0:   IF #xStart THEN #xBusy := TRUE; #xDone := FALSE; #iStep := 10; END_IF;
+    10:  // מעלית לקומת לובי
+         "Lift"[#iLobby].rTargetPos := "Levels".rZ[0];
+         "Lift"[#iLobby].xGo := TRUE;
+         IF "Lift"[#iLobby].xInPos AND "Lift"[#iLobby].xLevelOK THEN #iStep := 20; END_IF;
+    20:  // העברת מגש לובי -> מעלית
+         "LiftTr"[#iLobby].iCmd := 2;              // משיכה מכיוון הלובי
+         IF "LiftTr"[#iLobby].xDone AND "LF_PAL_F"[#iLobby] AND "LF_PAL_R"[#iLobby]
+            AND NOT "LF_OVH_1"[#iLobby] AND NOT "LF_OVH_2"[#iLobby] THEN #iStep := 30; END_IF;
+    30:  // שאטל מגיע למעלית במקביל לעליית המעלית
+         "Shuttle"[#iFloor].rTargetPos := "Cells".rX[0];
+         "Shuttle"[#iFloor].xGo := TRUE;
+         "Lift"[#iLobby].rTargetPos := "Levels".rZ[#iFloor];
+         IF "Lift"[#iLobby].xInPos AND "Lift"[#iLobby].xLevelOK
+            AND "Shuttle"[#iFloor].xInPos AND "Shuttle"[#iFloor].xAligned THEN #iStep := 40; END_IF;
+    40:  // העברת מגש מעלית -> שאטל
+         "ShTr"[#iFloor].iCmd := 3;
+         IF "ShTr"[#iFloor].xDone AND "Shuttle"[#iFloor].xPalletCentered THEN #iStep := 50; END_IF;
+    50:  // בדיקת קרני גלישה לפני נסיעה
+         IF NOT "FloorOvh"[#iFloor].xAnyBlocked THEN #iStep := 60;
+         ELSE #wErrCode := 16#0200; #iStep := 900; END_IF;
+    60:  // נסיעה לתא
+         "Shuttle"[#iFloor].rTargetPos := "Cells".rX[#iCell];
+         IF "Shuttle"[#iFloor].xInPos AND "Shuttle"[#iFloor].xAligned THEN #iStep := 70; END_IF;
+    70:  // דחיפת מגש לתא
+         "ShTr"[#iFloor].iCmd := #iSide;           // 1=A 2=B
+         IF "ShTr"[#iFloor].xDone THEN #iStep := 80; END_IF;
+    80:  // אימות: נוכחות + ישיבה במעצור + קרן גלישה פנויה
+         IF "CellPal"[#iFloor, #iSide, #iCell] AND "CellSeat"[#iFloor, #iSide, #iCell]
+            AND NOT "FloorOvh"[#iFloor].xAnyBlocked THEN
+           "CellDB".aCell[#iFloor, #iSide, #iCell].xOccupied := TRUE;
+           #iStep := 100;
+         ELSIF #tonStep.ET > T#10S THEN #wErrCode := 16#0300; #iStep := 900; END_IF;
+    100: #xDone := TRUE; #xBusy := FALSE; #iStep := 0;
+    900: // תקלה: עצירת כל הצירים במשימה, דיווח ל-HMI, המתנה לאיפוס
+         #xError := TRUE; #xBusy := FALSE;
+         "Shuttle"[#iFloor].xGo := FALSE; "Lift"[#iLobby].xGo := FALSE;
+         IF "PB_RESET" AND #xAllSafe THEN #xError := FALSE; #iStep := 0; END_IF;
+  END_CASE;
+END_FUNCTION_BLOCK`;
+  const udt=`TYPE "UDT_Cell" :
+STRUCT
+  xOccupied   : Bool;     // יש מגש עם רכב
+  xBlocked    : Bool;     // תא חסום (תקלה/תחזוקה)
+  xPalletOnly : Bool;     // מגש ריק בתא
+  iHeightCls  : Int;      // סיווג הגובה המקסימלי שמותר בקומה
+  sPlate      : String[12];  // לוחית רישוי
+  dtStored    : DTL;      // זמן הכנסה
+  udTicket    : UDInt;    // מספר כרטיס
+END_STRUCT;
+END_TYPE
+
+DATA_BLOCK "CellDB"   // ${M.F} קומות × ${M.sides} צדדים × ${M.n} תאים
+  aCell : Array[1..${M.F}, 1..${M.sides}, 1..${M.n}] of "UDT_Cell";
+END_DATA_BLOCK`;
+  const blocks=[
+    ["OB1","Main cycle","קריאה ל‑Dispatcher, למכונות המצבים של כל יחידה ולעדכון HMI"],
+    ["OB30","Cyclic 10 ms","FB_Axis לכל ציר (SINA_POS / SINA_SPEED מספריית DriveLib)"],
+    ["OB82/OB86/OB83","Diagnostics","תקלת התקן PROFINET, מודול שנשלף או חזר"],
+    ["OB123 (F)","Safety main","F‑program: חירום, דלתות, גבולות סופיים, סורקים, STO/SS1/SBC"],
+    ["FB_Axis","Axis wrapper","הפעלה, אפס, Jog, Move absolute, תקלות, טלגרם 111/1"],
+    ["FB_Lift","Lift unit","מצבים: Idle → Move → Level → Transfer; יישור קומה עם לייזר + דגל"],
+    ["FB_Shuttle","Shuttle unit","נסיעה לפי מיקום ברקוד, נעילה לתא, בדיקת קרני גלישה לפני תנועה"],
+    ["FB_Transfer","Pallet transfer","משיכה/דחיפה לצד A/B/מעלית, חיישני קצה, זמן מקסימום"],
+    ["FB_Lobby","Lobby checks","רצף בדיקות: מידות, גובה, סריקה, דלת, שלטי הכוונה"],
+    ["FB_Turntable","Turntable","סיבוב 0°↔180° בשליפה, נעילת פין"],
+    ["FB_Dispatcher","Job manager","תור משימות, בחירת תא לפי גובה וזמן, שליפה מוקדמת"],
+    ["FB_StoreSequence","Store","רצף אחסון (קוד למטה)"],
+    ["FB_RetrieveSequence","Retrieve","רצף שליפה, הפוך מהאחסון + מסובבת"],
+    ["FB_OvhMonitor","Overhang","ניטור קרני גלישה לכל קומה, השהיית סינון 50 מ\"ש"],
+    ["DB CellDB","Cell table","מצב כל התאים (UDT_Cell)"],
+    ["DB Levels / Cells","Geometry","מפלסי קומות ומיקום כל תא לאורך השביל (LU)"],
+    ["FC_Alarms","Alarms","ProDiag / הודעות HMI בעברית"]];
+  return `<h2>תוכנת PLC</h2>
+  <p class="lead">Siemens S7‑1500F ב‑TIA Portal (V18 ומעלה). כל יחידה (מעלית, שאטל, לובי) היא FB עם מכונת מצבים ומופע לכל יחידה. כך מוסיפים קומה או מעלית בהוספת מופע, בלי לכתוב קוד חדש. הבטיחות רצה בתוכנית F נפרדת ונעולה.</p>
+  <h3>חומרה בפרויקט TIA</h3>
+  ${table([["התקן"],["כמות","n"],["הערה"]],[
+    ["CPU 1516F‑3 PN/DP",1,"בקר ראשי + בטיחות"],["ET 200SP IM155‑6 PN HF",M.cabs.filter(c=>c.hasIM).length,"אחד לכל ארון עם IO"],
+    ["SINAMICS G120 CU250S‑2 PN (EPos)",M.axes.filter(a=>a.pos).length,"צירי מיקום: נסיעה, הרמה, מסובבת"],["SINAMICS G120C PN",M.axes.filter(a=>!a.pos).length,"העברה, דלתות"],
+    ["כרטיסי DI16 / DQ16",`${M.cabs.reduce((a,c)=>a+c.mDI,0)} / ${M.cabs.reduce((a,c)=>a+c.mDQ,0)}`,""],["כרטיסי F‑DI8 / F‑DQ4",`${M.cabs.reduce((a,c)=>a+c.mFDI,0)} / ${M.cabs.reduce((a,c)=>a+c.mFDQ,0)}`,"PROFIsafe"],
+    ["HMI",1+M.L,"ראשי + קיוסק לכל לובי"]].map(r=>`<tr>${td(r[0])}${td(r[1],"n")}${td(r[2])}</tr>`))}
+  <h3>מבנה התוכנה</h3>
+  ${table([["בלוק","n"],["שם"],["תפקיד"]],blocks.map(b=>`<tr>${td(b[0],"m")}${td(b[1])}${td(esc(b[2]))}</tr>`))}
+  <h3>טבלת תאים</h3>
+  <pre class="code">${esc(udt)}</pre>
+  <h3>רצף אחסון <span class="tag">SCL</span></h3>
+  <pre class="code">${esc(code)}</pre>
+  <h3>מסכי HMI</h3>
+  <div class="grid2">
+    <div class="card"><h4>מפעיל</h4><ul><li>מבט על: חתך החניון ומצב כל תא</li><li>תור משימות וזמנים</li><li>התראות פעילות והיסטוריה</li></ul></div>
+    <div class="card"><h4>שירות</h4><ul><li>Jog לכל ציר (מצב ידני + מפתח)</li><li>מצב כל חיישן לפי ארון</li><li>כיול מפלסים ותאים (Teach)</li></ul></div>
+  </div>
+  <div class="row noprint" style="margin-top:12px"><button class="btn" type="button" id="cpSCL">העתקת קוד ה‑SCL</button></div>`;
+};
+
+/* ---- wiring & assembly ---- */
+R.wiring=()=>{
+  const c0=M.cabs.find(c=>c.id.startsWith("FLC"));
+  const cabSel=M.cabs.map(c=>`<option value="${c.id}">${c.id} – ${esc(c.name)}</option>`).join("");
+  return `<h2>הרכבה וחיווט</h2>
+  <p class="lead">סדר עבודה לבנייה מקומית: קודם מכניקה, אחר כך ארונות על שולחן העבודה, ואז חיווט בשטח ובדיקות. בוחרים ארון ומקבלים את תוכנית המהדקים שלו.</p>
+  <h3>סדר ההרכבה באתר</h3>
+  <ol class="steps">
+    <li>סימון צירים ומפלסים בלייזר. מפלס כל קומה לפי טבלת הקומות, סטייה של ±2 מ"מ לכל היותר.</li>
+    <li>פיר המעלית: מסילות מובילות אנכיות, אנכיות 1 מ"מ לכל 5 מ'. משקל נגד, תוף, בולמים בבור.</li>
+    <li>מסילות שאטל בכל קומה, מקבילות ±1 מ"מ ומפלס ±1 מ"מ על כל האורך. בולמים בשני הקצוות.</li>
+    <li>מסילות תאים, מעצורים אחוריים ונעילת מצבט בכל תא. בדיקה עם מגש דמה.</li>
+    <li>סרט ברקוד לאורך מסילת השאטל ודגלי יישור בכל תא ובמעלית.</li>
+    <li>${S.drivesOnShuttle==1?"פס צבירה 4 קטבים לאורך השביל, עם הזנה מארון הקומה.":"מוביל לשרשרת הכבלים לאורך השביל."}</li>
+    <li>לובי: ${S.turntable?"מסובבת ועוגני הרצפה, ":""}עמודי חיישנים, דלת, סורק, קיוסק.</li>
+    <li>הצבת הארונות, הזנות ראשיות, הארקה (פס PE ראשי, התנגדות מתחת ל‑1Ω).</li>
+    <li>חיווט שטח לפי טבלת המהדקים: כבלי מנוע מסוככים, ומסך מחובר 360° בשני הצדדים.</li>
+    <li>בדיקות: בידוד (מגר), רציפות PE, פאזות, כיוון סיבוב בכל מנוע בזמן Jog.</li>
+    <li>תקשורת: מתן שמות PROFINET, טעינת הפרויקט, בדיקת כל חיישן מהשטח לבקר (טבלת Loop check).</li>
+    <li>כיול: Teach למפלסים ולתאים, בדיקת בלמים, בדיקות בטיחות (Validation) ותיעוד.</li>
+  </ol>
+  <h3>תוכנית מהדקים לפי ארון</h3>
+  <div class="row noprint"><label class="f" style="min-width:260px">ארון<select id="wCab">${cabSel}</select></label></div>
+  <div id="wOut"></div>
+  <h3>כבלים וחיבורים</h3>
+  ${table([["חיבור"],["כבל"],["הערה"]],[
+    ["מנוע עד 4 kW",'4G1.5 מסוכך + 2×1 לבלם',"גלנד EMC, מסך 360°"],["מנוע 5.5–11 kW",'4G2.5–4G6 מסוכך + 2×1',"לפי טבלת הדרייברים"],
+    ["מנוע הרמה",`4G${M.axes.find(a=>a.role==="hoist").cable} מסוכך + 2×1.5 בלם`,"בלם 2 ערוצים"],
+    ["מקודד HTL",'4×2×0.25 מסוכך',"נפרד מכבלי כוח, 200 מ\"מ לפחות"],
+    ["חיישן PNP","M12 4‑פין, PUR 4×0.34","1=+24V חום, 3=0V כחול, 4=אות שחור"],
+    ["חיישן בטיחות","M12 8‑פין או 5‑פין","שני ערוצים לכרטיס F‑DI, פולסי בדיקה מהכרטיס"],
+    ["PROFINET","Cat5e PN ירוק, 4 גידים, RJ45 Push‑Pull","עד 100 מ', אחרת סיב"],
+    ["פס צבירה","4 קטבים 80A + PE","רק בשאטל על ארון נייד"]].map(r=>`<tr>${td(r[0])}${td(r[1],"m")}${td(r[2])}</tr>`))}`;
+};
+function wiringOut(id){
+  const c=M.cabs.find(x=>x.id===id)||M.cabs[0];
+  const rows=[];
+  rows.push(`<tr class="grp">${td("X1 – כוח")}${td("")}${td("")}${td("")}${td("")}</tr>`);
+  rows.push(`<tr>${td("X1:L1/L2/L3/PE","m")}${td("הזנה ראשית")}${td(`${c.feed}A`,"n")}${td(`${c.feedCable} ממ"ר`,"n")}${td(c.main?"מלוח החשמל של המבנה":"מ‑MCP-00")}</tr>`);
+  c.drives.forEach((d,i)=>rows.push(`<tr>${td(`X4:${i*6+1}…${i*6+6}`,"m")}${td(`${d.id} U/V/W/PE + בלם`)}${td(`${d.mcb}A`,"n")}${td(`4G${d.cable} מסוכך`,"n")}${td(esc(d.name))}</tr>`));
+  rows.push(`<tr class="grp">${td("X2 – 24V")}${td("")}${td("")}${td("")}${td("")}</tr>`);
+  rows.push(`<tr>${td("X2:1…20 / X2:21…40","m")}${td("+24V / 0V מפוצלים לחיישנים")}${td(`${c.psu}A`,"n")}${td("1.5 ממ\"ר","n")}${td("ערוץ מוגן לכל קבוצה")}</tr>`);
+  rows.push(`<tr class="grp">${td("X3 – חיישנים")}${td("")}${td("")}${td("")}${td("")}</tr>`);
+  c.io.filter(s=>s.kind!=="NET").forEach(s=>rows.push(`<tr>${td(s.term,"m")}${td(`${s.tag}<div class="muted" style="font-size:12px">${esc(s.desc)}</div>`)}${td(s.addr,"m")}${td(s.kind.startsWith("F")?"M12 5‑פין":"M12 4‑פין","n")}${td(esc(s.loc))}</tr>`));
+  return table([["מהדק","n"],["חיבור"],["כתובת / הגנה","n"],["כבל","n"],["הערה"]],rows);
+}
+
+/* ---- drawings ---- */
+R.drawings=()=>{
+  const opts=[["plan","תוכנית קומה (מבט על) + חיישנים"],["section","חתך אורך – קומות, מעלית ולובי"],["overhang","פרט התקנה – חיישן גלישה"],["cabinet","חזית ארון – פריסת רכיבים"],["sld","תרשים חד‑קווי – חשמל"],["network","תרשים רשת PROFINET"],["lobbyPlan","לובי – תוכנית וחיישני גובה"],["shuttle","שאטל – מנועים וחיישנים"],["lift","מעלית – פיר, הנעה וחיישנים"],["turntable","מסובבת – הנעה ונעילה"],["cell","תא חניה – פרט"],["wireSensor","חיווט חיישנים (DI / Through‑beam / F‑DI)"],["wireMotor","מעגל הנעה – מנוע ודרייבר"]];
+  return `<h2>שרטוטים</h2>
+  <p class="lead">השרטוטים נבנים מההגדרות ומתעדכנים עם כל שינוי. מידות במ"מ, קנה מידה סכמטי. אפשר להעתיק כל שרטוט כ‑SVG ולפתוח אותו בכל תוכנת שרטוט או בדפדפן.</p>
+  <div class="row noprint">
+    <label class="f" style="min-width:280px">שרטוט<select id="dwType">${opts.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join("")}</select></label>
+    <label class="f" style="min-width:200px" id="dwSubL">פריט<select id="dwSub"></select></label>
+    <button class="btn" type="button" id="cpSVG" style="align-self:flex-end">העתקת SVG</button>
+  </div>
+  <div class="cad" id="dwOut"></div>
+  <p class="muted" id="dwNote" style="margin:0"></p>`;
+};
+let dwType="plan",dwSub="1";
+function drawMount(){
+  const t=document.getElementById("dwType"),s=document.getElementById("dwSub");
+  t.value=dwType;
+  const subs=()=>{
+    let o=[];
+    if(dwType==="plan")o=Array.from({length:M.F},(_,i)=>[String(i+1),`קומה ${i+1}`]);
+    else if(dwType==="cabinet")o=M.cabs.map(c=>[c.id,c.id]);
+    else if(dwType==="lobbyPlan")o=Array.from({length:M.L},(_,i)=>[String(i+1),`לובי ${i+1}`]);
+    else o=[["-","—"]];
+    s.innerHTML=o.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join("");
+    if(!o.some(x=>x[0]===dwSub))dwSub=o[0][0];s.value=dwSub;
+    document.getElementById("dwSubL").hidden=o.length===1&&o[0][0]==="-";
+  };
+  const paint=()=>{const r=DRAW[dwType](dwSub);document.getElementById("dwOut").innerHTML=r.svg;document.getElementById("dwNote").textContent=r.note||""};
+  subs();paint();
+  t.onchange=()=>{dwType=t.value;subs();paint()};
+  s.onchange=()=>{dwSub=s.value;paint()};
+  document.getElementById("cpSVG").onclick=()=>copyText(standaloneSVG(document.querySelector("#dwOut svg")),"ה‑SVG הועתק");
+}
+function standaloneSVG(svg){
+  const css=`text{font-family:Arial,sans-serif;fill:#22313A}.mono{font-family:Consolas,monospace}.c-line{stroke:#22313A;fill:none}.c-fill{fill:#E4EAEA;stroke:#22313A}.c-acc{fill:#0E6A76;stroke:#22313A}.c-dim{stroke:#6C7A80;fill:none;stroke-dasharray:4 3}.c-sens{fill:#B83227}.c-beam{stroke:#D49A00;fill:none;stroke-width:2;stroke-dasharray:7 4}.c-hz{fill:#F2B705;stroke:#22313A}.c-bg{fill:#FBFCFB}.c-muted{fill:#6C7A80}`;
+  const s=svg.outerHTML.replace(/^<svg /,`<svg xmlns="http://www.w3.org/2000/svg" `).replace(/>/,`><style>${css}</style><rect class="c-bg" width="100%" height="100%"/>`);
+  return s;
+}
+const T=(x,y,s,o={})=>`<text x="${x}" y="${y}" font-size="${o.fs||12}" text-anchor="${o.a||"middle"}"${o.cls?` class="${o.cls}"`:""}${o.w?` font-weight="${o.w}"`:""}${o.rot?` transform="rotate(${o.rot} ${x} ${y})"`:""}>${esc(s)}</text>`;
+const titleBlock=(W,Hh,t,sub)=>`<g><rect class="c-line" x="${W-330}" y="${Hh-58}" width="320" height="48" stroke-width="1"/><line class="c-line" x1="${W-330}" y1="${Hh-34}" x2="${W-10}" y2="${Hh-34}"/>${T(W-170,Hh-41,t,{fs:13,w:600})}${T(W-170,Hh-17,`${S.project} · ${sub} · ${new Date().toISOString().slice(0,10)}`,{fs:10.5})}</g>`;
+const DRAW={
+  plan(sub){
+    const f=+sub||1,n=M.n,sides=M.sides,p=+S.cellPitch;
+    const sc=0.034, cellD=M.palletL+300, aisleW=M.palletW+700;
+    const L=M.aisleLen, W=Math.max(900,L*sc+170), x0=110;
+    const yA=60, yAisle=yA+(sides===2?cellD*sc:0), yB=yAisle+aisleW*sc, Hh=yB+(sides===2?cellD*sc:0)+150;
+    let g="";
+    // aisle
+    g+=`<rect class="c-fill" x="${x0}" y="${yAisle}" width="${L*sc}" height="${aisleW*sc}" opacity=".5"/>`;
+    g+=T(x0+L*sc/2,yAisle+aisleW*sc/2+4,`שביל שאטל – ${fx(L/1000,1)} מ'`,{fs:12,cls:"c-muted"});
+    const liftW=p*sc;
+    const lift=(xx,i)=>`<rect class="c-hz" x="${xx+4}" y="${yA}" width="${liftW-8}" height="${cellD*sc}" opacity=".9"/>${T(xx+liftW/2,yA+cellD*sc/2-8,`מעלית ${i}`,{fs:12,w:600})}${T(xx+liftW/2,yA+cellD*sc/2+10,`LF${i} · לובי מתחת`,{fs:10,cls:"mono"})}`;
+    g+=lift(x0,1); if(M.L===2)g+=lift(x0+liftW+n*p*sc+10,2);
+    // cells
+    const cell=(sd,k,yy,up)=>{const x=x0+liftW+(k-1)*p*sc+10;const w=p*sc-6,h=cellD*sc;
+      let s=`<rect class="c-line" x="${x}" y="${yy}" width="${w}" height="${h}" stroke-width="1"/>`;
+      if(M.dis.has(`${f}${sd}${k}`))return s+`<path class="c-line" d="M${x} ${yy}L${x+w} ${yy+h}M${x+w} ${yy}L${x} ${yy+h}" stroke-width="1"/>`+T(x+w/2,yy+h/2+4,"מבוטל",{fs:11});
+      s+=T(x+w/2,yy+h/2,`${sd}${pad(k)}`,{fs:13,cls:"mono",w:600});
+      const ys=up?yy+h-8:yy+8, yb=up?yy+10:yy+h-10;
+      s+=`<circle class="c-sens" cx="${x+w/2-8}" cy="${ys}" r="3"/><rect class="c-sens" x="${x+w/2+5}" y="${yb-3}" width="6" height="6"/>`;
+      return s;};
+    for(let k=1;k<=n;k++){ g+=cell("A",k,yA,true); if(sides===2)g+=cell("B",k,yB,false); }
+    // overhang beams
+    const bx1=x0+liftW+4,bx2=x0+liftW+n*p*sc+14;
+    const beam=(yy,lbl)=>`<line class="c-beam" x1="${bx1}" y1="${yy}" x2="${bx2}" y2="${yy}"/><rect class="c-sens" x="${bx1-8}" y="${yy-5}" width="8" height="10"/><rect class="c-sens" x="${bx2}" y="${yy-5}" width="8" height="10"/>${T(bx2+12,yy+4,lbl,{a:"start",fs:10.5,cls:"mono"})}`;
+    g+=beam(yAisle-6,`OVH_A`); if(sides===2)g+=beam(yB+6,`OVH_B`);
+    // shuttle
+    const shx=x0+liftW+2.5*p*sc;
+    g+=`<rect class="c-acc" x="${shx}" y="${yAisle+6}" width="${p*sc*0.9}" height="${aisleW*sc-12}" opacity=".9"/>`+T(shx+p*sc*0.45,yAisle+aisleW*sc/2+4,`SH${pad(f)}`,{fs:11,w:600,cls:"mono"});
+    // cabinet
+    g+=`<rect class="c-line" x="${x0-80}" y="${yAisle}" width="56" height="34" stroke-width="1.5"/>`+T(x0-52,yAisle+21,`FLC-${pad(f)}`,{fs:9.5,cls:"mono"});
+    // dims
+    const yd=Hh-110;
+    g+=`<line class="c-dim" x1="${x0+liftW+10}" y1="${yd}" x2="${x0+liftW+10+p*sc}" y2="${yd}"/>`+T(x0+liftW+10+p*sc/2,yd-5,`${fx(p)}`,{fs:10,cls:"mono"});
+    g+=`<line class="c-dim" x1="${x0}" y1="${yd+22}" x2="${x0+L*sc}" y2="${yd+22}"/>`+T(x0+L*sc/2,yd+17,`${fx(L)}`,{fs:10,cls:"mono"});
+    if(sides===2){g+=`<line class="c-dim" x1="${x0-12}" y1="${yAisle}" x2="${x0-12}" y2="${yB}"/>`;}
+    // legend
+    const ly=Hh-62;
+    g+=`<circle class="c-sens" cx="${x0}" cy="${ly}" r="4"/>`+T(x0+10,ly+4,"נוכחות מגש",{a:"start",fs:11});
+    g+=`<rect class="c-sens" x="${x0+110}" y="${ly-4}" width="8" height="8"/>`+T(x0+124,ly+4,"מגש יושב במעצור",{a:"start",fs:11});
+    g+=`<line class="c-beam" x1="${x0+250}" y1="${ly}" x2="${x0+290}" y2="${ly}"/>`+T(x0+296,ly+4,"קרן גלישה",{a:"start",fs:11});
+    g+=titleBlock(W,Hh,`תוכנית קומה ${f} – תאים, שביל וחיישנים`,`DWG-PL-${pad(f)}`);
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="תוכנית קומה ${f}">${g}</svg>`,note:`קומה ${f}: ${n*sides} תאים, ${n*sides*2} חיישני תא, ${sides*2} קרני גלישה. מידות במ"מ.`};
+  },
+  section(){
+    const sc=0.035, p=+S.cellPitch, n=M.n, F=M.F;
+    const W=Math.max(900,(n+2)*p*sc+260), x0=120, topH=M.totalH*sc, Hh=topH+160, yG=topH+60;
+    let g="";
+    g+=`<line class="c-line" x1="40" y1="${yG}" x2="${W-40}" y2="${yG}" stroke-width="2"/>`;
+    const liftW=p*sc;
+    g+=`<rect class="c-hz" x="${x0}" y="${yG-topH}" width="${liftW}" height="${topH}" opacity=".25"/>`+T(x0+liftW/2,yG-topH-8,"פיר מעלית",{fs:11,w:600});
+    for(let f=0;f<=F;f++){
+      const z=M.levelZ[f]*sc, y=yG-z, clr=f===0?M.lobbyClear:S.floorClear[f-1];
+      g+=`<line class="c-line" x1="${x0}" y1="${y}" x2="${x0+liftW+n*p*sc+20}" y2="${y}" stroke-width="${f===0?2:1.4}"/>`;
+      g+=T(x0-10,y-4,f===0?"לובי":`קומה ${f}`,{a:"end",fs:11,w:600});
+      g+=T(x0-10,y+10,`+${fx(M.levelZ[f])}`,{a:"end",fs:9.5,cls:"mono"});
+      if(f>0){for(let k=1;k<=n;k++){const x=x0+liftW+(k-1)*p*sc+10;g+=`<rect class="c-fill" x="${x+4}" y="${y-8}" width="${p*sc-14}" height="6"/>`;if((k+f)%3!==0){const ch=Math.min(clr-120,1500)*sc;g+=`<rect class="c-line" x="${x+10}" y="${y-8-ch}" width="${p*sc-26}" height="${ch}" rx="4" stroke-width="1"/>`}}}
+      g+=`<line class="c-dim" x1="${x0+liftW+n*p*sc+40}" y1="${y}" x2="${x0+liftW+n*p*sc+40}" y2="${y-clr*sc}"/>`+T(x0+liftW+n*p*sc+46,y-clr*sc/2+4,`${fx(clr)}`,{a:"start",fs:10,cls:"mono"});
+    }
+    g+=`<rect class="c-acc" x="${x0+4}" y="${yG-M.levelZ[Math.ceil(F/2)]*sc-10}" width="${liftW-8}" height="10"/>`;
+    g+=T(x0+liftW/2,yG+18,"LF1",{fs:10,cls:"mono"});
+    g+=`<line class="c-dim" x1="${W-70}" y1="${yG}" x2="${W-70}" y2="${yG-topH}"/>`+T(W-60,yG-topH/2,`${fx(M.totalH)}`,{a:"start",fs:10.5,cls:"mono",rot:-90});
+    g+=titleBlock(W,Hh+0,`חתך אורך – ${F} קומות, מפלסים וגבהים נקיים`,"DWG-SE-01");
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="חתך">${g}</svg>`,note:`גובה כולל ≈ ${fx(M.totalH)} מ"מ. מפלסים מעל רצפת הלובי.`};
+  },
+  overhang(){
+    const W=900,Hh=520;let g="";
+    // cell rail at left, aisle at right
+    g+=`<rect class="c-fill" x="80" y="300" width="420" height="40"/>`+T(290,326,"מסילת תא (גלגלונים)",{fs:11});
+    g+=`<rect class="c-fill" x="560" y="330" width="260" height="30"/>`+T(690,350,"מסילת שאטל",{fs:11});
+    g+=`<rect class="c-acc" x="120" y="270" width="360" height="30" opacity=".85"/>`+T(300,290,"מגש",{fs:12,w:600});
+    g+=`<rect class="c-line" x="140" y="150" width="320" height="110" rx="18" stroke-width="1.4"/>`+T(300,210,"רכב",{fs:12});
+    g+=`<rect class="c-hz" x="90" y="230" width="22" height="70"/>`+T(101,224,"מעצור",{fs:10});
+    g+=`<circle class="c-sens" cx="110" cy="318" r="6"/>`+T(110,370,"SEAT",{fs:10,cls:"mono"});
+    g+=`<circle class="c-sens" cx="460" cy="318" r="6"/>`+T(460,370,"PAL",{fs:10,cls:"mono"});
+    g+=`<line class="c-line" x1="500" y1="120" x2="500" y2="420" stroke-width="1"/>`+T(500,112,"קו קצה תא",{fs:10.5});
+    g+=`<circle class="c-beam" cx="530" cy="262" r="7"/><circle class="c-sens" cx="530" cy="262" r="3"/>`+T(560,258,"OVH_LO – 40 מ\"מ מעל המסילה",{a:"start",fs:11});
+    g+=`<circle class="c-beam" cx="530" cy="160" r="7"/><circle class="c-sens" cx="530" cy="160" r="3"/>`+T(560,156,"OVH_HI – 450 מ\"מ מעל המגש",{a:"start",fs:11});
+    g+=`<line class="c-dim" x1="500" y1="440" x2="530" y2="440"/>`+T(515,458,"30",{fs:10,cls:"mono"});
+    g+=`<rect class="c-hz" x="476" y="300" width="14" height="22"/>`+T(483,400,"נעילת מצבט",{fs:10});
+    g+=T(450,60,"הקרן עוברת לאורך כל השביל, ניצב לדף. כל בליטה מעבר לקו קצה התא חוסמת אותה.",{fs:11.5});
+    g+=titleBlock(W,Hh,"פרט התקנה – חיישני גלישה ומעצור","DWG-DT-01");
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="פרט חיישן גלישה">${g}</svg>`,note:"משדר בקצה אחד של השביל ומקלט בקצה השני, על תושבת מתכווננת. יישור עם נורית העוצמה במקלט."};
+  },
+  cabinet(id){
+    const c=M.cabs.find(x=>x.id===id)||M.cabs[0];
+    const sc=0.38, Wc=c.W*sc, Hc=c.H*sc, x0=60, y0=50, W=Math.max(700,Wc+340), Hh=Hc+150;
+    let g=`<rect class="c-line" x="${x0}" y="${y0}" width="${Wc}" height="${Hc}" stroke-width="2"/>`;
+    g+=`<rect class="c-line" x="${x0+12}" y="${y0+12}" width="${Wc-24}" height="${Hc-24}" stroke-width=".8"/>`;
+    const rails=[];const rail=(yy,label)=>{rails.push(yy);g+=`<line class="c-line" x1="${x0+20}" y1="${yy}" x2="${x0+Wc-20}" y2="${yy}" stroke-width="2"/>`};
+    let y=y0+80;
+    // row 1 breakers
+    rail(y);let x=x0+26;
+    const box=(w,h,label,cls="c-fill")=>{const r=`<rect class="${cls}" x="${x}" y="${y-h/2}" width="${w}" height="${h}"/>`+T(x+w/2,y+3,label,{fs:8.5,cls:"mono"});x+=w+3;return r};
+    g+=box(36*sc*2,70*sc*2,"Q0","c-hz");
+    c.drives.forEach(d=>g+=box(18*sc*2,60*sc*2,`F${d.id.slice(-2)}`));
+    g+=box(18*sc*2,60*sc*2,"F24");g+=box(18*sc*2,60*sc*2,"FL");
+    // row 2 drives
+    y+=Math.max(...c.drives.map(d=>frameH(d.kW)),180)*sc+40; rail(y); x=x0+26;
+    c.drives.forEach(d=>{const w=frameW(d.kW)*sc,hgt=frameH(d.kW)*sc;g+=`<rect class="c-acc" x="${x}" y="${y-hgt+20}" width="${w}" height="${hgt}" opacity=".85"/>`+T(x+w/2,y-hgt/2+20,d.id.split("-")[1],{fs:9,cls:"mono"})+T(x+w/2,y-hgt/2+32,d.kW+"kW",{fs:8.5,cls:"mono"});x+=w+20*sc+4});
+    if(!c.drives.length)g+=T(x0+Wc/2,y-30,"ללא דרייברים",{fs:10,cls:"c-muted"});
+    // row 3 PLC / IO / PSU
+    y+=150*sc+40; rail(y); x=x0+26;
+    g+=box(60*sc*2,120*sc,"PSU");
+    if(c.main){g+=box(70*sc*2,140*sc,"CPU");g+=box(40*sc*2,120*sc,"SW")}
+    if(c.hasIM){g+=box(50*sc,120*sc,"IM");for(let i=0;i<c.mods;i++)g+=`<rect class="c-fill" x="${x}" y="${y-60*sc}" width="${15*sc}" height="${120*sc}"/>`,x+=15*sc+0.5;x+=4}
+    if(!c.main&&!c.mobile)g+=box(40*sc*2,100*sc,"SW");
+    // row 4 terminals
+    y=y0+Hc-60; g+=`<line class="c-line" x1="${x0+20}" y1="${y}" x2="${x0+Wc-20}" y2="${y}" stroke-width="2"/>`;
+    const nt=Math.min(80,c.io.length*3+c.drives.length*6+10);for(let i=0;i<nt;i++){const xx=x0+26+i*((Wc-52)/nt);g+=`<rect class="c-fill" x="${xx}" y="${y-14}" width="${(Wc-52)/nt-1}" height="28"/>`}
+    g+=T(x0+Wc/2,y+30,"X1 · X2 · X3 · X4",{fs:10,cls:"mono"});
+    // dims
+    g+=`<line class="c-dim" x1="${x0}" y1="${y0-18}" x2="${x0+Wc}" y2="${y0-18}"/>`+T(x0+Wc/2,y0-22,String(c.W),{fs:10.5,cls:"mono"});
+    g+=`<line class="c-dim" x1="${x0+Wc+18}" y1="${y0}" x2="${x0+Wc+18}" y2="${y0+Hc}"/>`+T(x0+Wc+24,y0+Hc/2,String(c.H),{fs:10.5,cls:"mono",a:"start"});
+    // legend list
+    let ly=y0+10;const lx=x0+Wc+70;
+    const L=[[`${c.id} – ${c.name}`,1],[`מידות ${c.W}×${c.H}×${c.D}`,0],["Q0 מפסק ראשי · F מאמ\"תים",0],...c.drives.map(d=>[`${d.id}: ${d.kW}kW · MCB ${d.mcb}A`,0]),[c.hasIM?`ET 200SP: ${c.mDI} DI16 · ${c.mDQ} DQ16 · ${c.mFDI} F‑DI · ${c.mFDQ} F‑DQ`:"ללא IO",0],[`ספק 24V ${c.psu}A`,0]];
+    L.forEach(([t,b])=>{g+=T(lx,ly,t,{a:"start",fs:11,w:b?600:400});ly+=17});
+    g+=titleBlock(W,Hh,`חזית ארון ${c.id}`,`DWG-CB-${c.id}`);
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="ארון ${c.id}">${g}</svg>`,note:"פריסה עקרונית: שורה 1 הגנות, שורה 2 דרייברים, שורה 3 בקרה, שורה 4 מהדקים. השאירו 100 מ\"מ מעל ומתחת לדרייברים לאוורור ו‑30% מקום פנוי בתעלות."};
+  },
+  sld(){
+    const cabs=M.cabs.slice(1), W=Math.max(900,cabs.length*120+200), Hh=440; let g="";
+    g+=T(W/2,40,`הזנה 3×400V+N+PE · ${M.cabs[0].feed}A · ${M.cabs[0].feedCable} ממ"ר`,{fs:12,w:600});
+    g+=`<line class="c-line" x1="${W/2}" y1="50" x2="${W/2}" y2="90" stroke-width="2"/><rect class="c-hz" x="${W/2-16}" y="90" width="32" height="24"/>`+T(W/2+24,106,"Q0 MCP-00",{a:"start",fs:10,cls:"mono"});
+    g+=`<line class="c-line" x1="80" y1="140" x2="${W-80}" y2="140" stroke-width="3"/><line class="c-line" x1="${W/2}" y1="114" x2="${W/2}" y2="140" stroke-width="2"/>`;
+    const step=(W-160)/Math.max(1,cabs.length);
+    cabs.forEach((c,i)=>{const x=80+step*(i+.5);
+      g+=`<line class="c-line" x1="${x}" y1="140" x2="${x}" y2="180"/><rect class="c-fill" x="${x-12}" y="180" width="24" height="18"/>`+T(x,212,`${c.feed}A`,{fs:9.5,cls:"mono"})+T(x,224,`${c.feedCable}mm²`,{fs:9,cls:"mono"});
+      g+=`<line class="c-line" x1="${x}" y1="198" x2="${x}" y2="250"/><rect class="c-line" x="${x-44}" y="250" width="88" height="34" stroke-width="1.3"/>`+T(x,271,c.id,{fs:10,w:600,cls:"mono"});
+      c.drives.forEach((d,j)=>{const yy=300+j*36;g+=`<line class="c-line" x1="${x}" y1="${284+j*36}" x2="${x}" y2="${yy+6}"/><circle class="c-line" cx="${x}" cy="${yy+18}" r="12" stroke-width="1.2"/>`+T(x,yy+22,"M",{fs:10,w:600})+T(x+16,yy+22,`${d.kW}`,{a:"start",fs:9,cls:"mono"})});
+    });
+    const hh=Math.max(Hh,300+Math.max(...cabs.map(c=>c.drives.length))*36+90);
+    g+=titleBlock(W,hh,"תרשים חד‑קווי – הזנות וארונות","DWG-EL-01");
+    return {svg:`<svg viewBox="0 0 ${W} ${hh}" role="img" aria-label="חד קווי">${g}</svg>`,note:`סה"כ מותקן ${fx(M.axes.reduce((a,x)=>a+x.kW,0),1)} kW. מקדם בו‑זמניות 0.7 בחישוב ההזנה הראשית.`};
+  },
+  network(){
+    const groups=M.cabs.map(c=>({c,devs:M.net.filter(n=>n.cab===c.id)}));
+    const W=Math.max(900,groups.length*110+120);let g="";
+    g+=`<rect class="c-hz" x="${W/2-60}" y="30" width="120" height="34"/>`+T(W/2,52,"plc-main · sw-core",{fs:10.5,cls:"mono",w:600});
+    const step=(W-80)/groups.length;let maxH=0;
+    groups.slice(1).forEach((gr,i)=>{const x=40+step*(i+1.5)-step/2;
+      const wifi=gr.c.mobile;
+      g+=`<path class="c-line" d="M${W/2} 64 V100 H${x} V130" ${wifi?'stroke-dasharray="3 3"':""}/>`;
+      g+=`<rect class="c-fill" x="${x-48}" y="130" width="96" height="26"/>`+T(x,147,gr.c.id,{fs:9.5,cls:"mono",w:600});
+      gr.devs.forEach((d,j)=>{const yy=172+j*30;g+=`<line class="c-line" x1="${x}" y1="${yy-16}" x2="${x}" y2="${yy}"/><rect class="c-line" x="${x-50}" y="${yy}" width="100" height="22" stroke-width="1"/>`+T(x,yy+11,d.name,{fs:8.5,cls:"mono"})+T(x,yy+20,d.ip.split(".").slice(-1)[0],{fs:7.5,cls:"mono c-muted"});maxH=Math.max(maxH,yy+30)});
+    });
+    const Hh=Math.max(260,maxH+80);
+    g+=titleBlock(W,Hh,`רשת PROFINET ${S.subnet}.0/24`,"DWG-NW-01");
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="רשת">${g}</svg>`,note:S.drivesOnShuttle==1?"קו מקווקו = קישור WLAN בין ארון הקומה לשאטל.":""};
+  },
+  lobbyPlan(sub){return {svg:lobbySVG(+sub||1),note:"משמאל תוכנית (מבט על), מימין חזית עם קרני הגובה."}}
+};
+function lobbySVG(l){
+  const H=M.H,sc=0.07,pl=M.palletL*sc,pw=M.palletW*sc,diag=Math.hypot(pl,pw);let g="";
+  const x0=60,y0=70,LW=S.turntable?Math.max(pl+180,diag+80):pl+180,LH=S.turntable?diag+80:pw+180;
+  const W=x0+LW+460,Hh=Math.max(560,y0+LH+120);
+  g+=`<rect class="c-line" x="${x0}" y="${y0}" width="${LW}" height="${LH}" stroke-width="2"/>`;
+  g+=`<line class="c-hz" x1="${x0}" y1="${y0+30}" x2="${x0}" y2="${y0+LH-30}" stroke-width="8"/>`+T(x0-8,y0+LH/2,"דלת",{fs:11,rot:-90});
+  const px=x0+(LW-pl)/2,py=y0+(LH-pw)/2;
+  if(S.turntable)g+=`<circle class="c-line" cx="${px+pl/2}" cy="${py+pw/2}" r="${Math.hypot(pl,pw)/2+6}" stroke-dasharray="6 4"/>`;
+  g+=`<rect class="c-fill" x="${px}" y="${py}" width="${pl}" height="${pw}"/>`+T(px+pl/2,py+pw/2+4,"מגש + רכב",{fs:12});
+  g+=`<line class="c-beam" x1="${px+pl+150*sc}" y1="${y0+12}" x2="${px+pl+150*sc}" y2="${y0+LH-12}"/>`+T(px+pl+150*sc+6,y0+24,"LEN_FRONT",{a:"start",fs:9.5,cls:"mono"});
+  g+=`<line class="c-beam" x1="${px-150*sc}" y1="${y0+12}" x2="${px-150*sc}" y2="${y0+LH-12}"/>`+T(px-150*sc-6,y0+24,"LEN_REAR",{a:"end",fs:9.5,cls:"mono"});
+  g+=`<line class="c-beam" x1="${x0+12}" y1="${py-100*sc}" x2="${x0+LW-12}" y2="${py-100*sc}"/>`+T(x0+LW-14,py-100*sc-5,"WID_L",{a:"end",fs:9.5,cls:"mono"});
+  g+=`<line class="c-beam" x1="${x0+12}" y1="${py+pw+100*sc}" x2="${x0+LW-12}" y2="${py+pw+100*sc}"/>`+T(x0+LW-14,py+pw+100*sc+13,"WID_R",{a:"end",fs:9.5,cls:"mono"});
+  g+=`<line class="c-beam" x1="${px+pl-20}" y1="${py-6}" x2="${px+pl-20}" y2="${py+pw+6}" style="stroke-dasharray:2 2"/>`+T(px+pl-24,py+pw-6,"POS_STOP",{a:"end",fs:9,cls:"mono"});
+  g+=`<path class="c-line" d="M${x0+LW-6} ${y0+LH-6} L${x0+LW-6-120} ${y0+LH-6} A120 120 0 0 1 ${x0+LW-6} ${y0+LH-126} Z" stroke-dasharray="3 3"/><circle class="c-sens" cx="${x0+LW-10}" cy="${y0+LH-10}" r="6"/>`+T(x0+LW-60,y0+LH+18,"סורק בטיחות",{fs:10});
+  g+=`<circle class="c-sens" cx="${px+pl/2}" cy="${py+pw/2-24}" r="5"/>`+T(px+pl/2,py+pw/2-34,"RADAR",{fs:9,cls:"mono"});
+  [[px+pl-60,py+18],[px+pl-60,py+pw-18]].forEach(([a,b])=>g+=`<rect class="c-sens" x="${a-5}" y="${b-5}" width="10" height="10"/>`);
+  g+=T(x0+LW/2,y0-14,`לובי ${l} – תוכנית`,{fs:13,w:600});
+  g+=`<line class="c-dim" x1="${x0}" y1="${y0+LH+34}" x2="${x0+LW}" y2="${y0+LH+34}"/>`+T(x0+LW/2,y0+LH+50,`${fx(LW/sc,0)} מ"מ`,{fs:10.5,cls:"mono"});
+  g+=`<line class="c-dim" x1="${x0-44}" y1="${y0}" x2="${x0-44}" y2="${y0+LH}"/>`+T(x0-50,y0+LH/2,`${fx(LH/sc,0)}`,{fs:10.5,cls:"mono",rot:-90});
+  // elevation
+  const ex=x0+LW+80,ey=y0+Math.min(LH,420),esc_=0.15,ew=M.palletW*0.09;
+  g+=`<line class="c-line" x1="${ex-30}" y1="${ey}" x2="${ex+ew+150}" y2="${ey}" stroke-width="2"/>`;
+  g+=`<rect class="c-fill" x="${ex+40}" y="${ey-10}" width="${ew}" height="10"/>`;
+  g+=`<rect class="c-line" x="${ex+40}" y="${ey-10-H[H.length-1]*esc_+4}" width="10" height="${H[H.length-1]*esc_+40}" stroke-width="1"/><rect class="c-line" x="${ex+40+ew-10}" y="${ey-10-H[H.length-1]*esc_+4}" width="10" height="${H[H.length-1]*esc_+40}" stroke-width="1"/>`;
+  g+=`<path class="c-line" d="M${ex+60} ${ey-10} V${ey-10-1450*esc_+30} Q${ex+60} ${ey-10-1450*esc_} ${ex+90} ${ey-10-1450*esc_} H${ex+ew-10} Q${ex+ew+20} ${ey-10-1450*esc_} ${ex+ew+20} ${ey-10-1450*esc_+30} V${ey-10}" stroke-width="1.2"/>`;
+  H.forEach((h,i)=>{const yy=ey-10-h*esc_;g+=`<line class="c-beam" x1="${ex+48}" y1="${yy}" x2="${ex+40+ew-8}" y2="${yy}"/>`+T(ex+ew+60,yy+4,`HGT_${pad(i+1)} · ${h}`,{a:"start",fs:10,cls:"mono"})});
+  g+=T(ex+ew/2+40,y0-14,"חזית – קרני גובה",{fs:13,w:600});
+  g+=titleBlock(W,Hh,`לובי ${l} – חיישני היקף, מידות וגובה`,`DWG-LB-${l}`);
+  return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="לובי">${g}</svg>`;
+}
+
+/* ---- detailed unit & wiring drawings ---- */
+const tagT=(x,y,t,a="start")=>T(x,y,t,{a,fs:10.5,cls:"mono"});
+const sens=(x,y)=>`<circle class="c-sens" cx="${x}" cy="${y}" r="5"/>`;
+const leader=(x1,y1,x2,y2)=>`<line class="c-dim" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke-dasharray:none"/>`;
+const motor=(x,y,lbl,kw)=>`<rect class="c-acc" x="${x-22}" y="${y-14}" width="44" height="28" rx="4"/>`+T(x,y+4,lbl,{fs:10,w:600})+(kw?T(x,y+28,kw,{fs:9.5,cls:"mono"}):"");
+Object.assign(DRAW,{
+  shuttle(){
+    const W=1100,Hh=640,sc=0.11,pl=M.palletW*sc+40,pw=M.palletL*sc*0.42; // shuttle carries pallet crosswise: drawn compact
+    const sh=M.axes.find(a=>a.role==="travel"),tr=M.axes.find(a=>a.id.startsWith("SH")&&a.role==="transfer");
+    let g="";const x0=90,y0=90,SW=420,SL=300;
+    g+=T(x0+SW/2,y0-40,"מבט על",{fs:13,w:600});
+    g+=`<rect class="c-line" x="${x0}" y="${y0}" width="${SW}" height="${SL}" stroke-width="2"/>`;
+    // wheels
+    [[x0+20,y0-8],[x0+SW-60,y0-8],[x0+20,y0+SL-8],[x0+SW-60,y0+SL-8]].forEach(([x,y])=>g+=`<rect class="c-fill" x="${x}" y="${y}" width="40" height="16"/>`);
+    // rails
+    g+=`<line class="c-line" x1="20" y1="${y0}" x2="${x0+SW+70}" y2="${y0}" stroke-width="3" opacity=".4"/><line class="c-line" x1="20" y1="${y0+SL}" x2="${x0+SW+70}" y2="${y0+SL}" stroke-width="3" opacity=".4"/>`;
+    // transfer chains
+    g+=`<rect class="c-fill" x="${x0+70}" y="${y0+30}" width="16" height="${SL-60}"/><rect class="c-fill" x="${x0+SW-86}" y="${y0+30}" width="16" height="${SL-60}"/>`;
+    g+=`<rect class="c-hz" x="${x0+66}" y="${y0+SL/2-10}" width="24" height="20"/>`+T(x0+78,y0+SL/2+30,"וו",{fs:10});
+    // pallet ghost
+    g+=`<rect class="c-line" x="${x0+40}" y="${y0+20}" width="${SW-80}" height="${SL-40}" stroke-dasharray="6 4" stroke-width="1"/>`+T(x0+SW/2,y0+SL/2-4,"מגש (מוצג במקווקו)",{fs:11});
+    // motors
+    g+=motor(x0+SW/2,y0+SL-40,"M1",sh.kW+" kW");g+=leader(x0+SW/2+22,y0+SL-40,x0+SW+90,y0+SL-40)+tagT(x0+SW+95,y0+SL-36,`${sh.id.replace(/\d+/,"xx")} נסיעה · תמסורת 1:${fx(sh.ratio,1)}`);
+    g+=motor(x0+SW/2,y0+60,"M2",tr.kW+" kW");g+=leader(x0+SW/2+22,y0+60,x0+SW+90,y0+60)+tagT(x0+SW+95,y0+64,"M2 העברה – ציר שרשראות משותף");
+    // sensors
+    const ss=[[x0+SW/2-60,y0+SL/2,"PAL_F / PAL_R – נוכחות מגש"],[x0+30,y0+SL/2,"TR_HOME / TR_A / TR_B – מנגנון העברה"],[x0+SW-10,y0+18,"OVH_A – גלישה צד A (לאורך הקצה)"],[x0+SW-10,y0+SL-18,"OVH_B – גלישה צד B"],[x0+SW/2+60,y0+SL+14,"ALIGN – דגל יישור מול תא"],[x0+SW/2-100,y0+SL+14,"BPS – קורא ברקוד מול סרט"]];
+    ss.forEach(([x,y,t],i)=>{g+=sens(x,y)+leader(x,y,x0+SW+90,y0+120+i*22)+tagT(x0+SW+95,y0+124+i*22,t)});
+    g+=`<line class="c-beam" x1="${x0+30}" y1="${y0+18}" x2="${x0+SW-10}" y2="${y0+18}"/><line class="c-beam" x1="${x0+30}" y1="${y0+SL-18}" x2="${x0+SW-10}" y2="${y0+SL-18}"/>`;
+    g+=`<rect class="c-hz" x="${x0-18}" y="${y0+40}" width="14" height="${SL-80}"/><rect class="c-hz" x="${x0+SW+4}" y="${y0+40}" width="14" height="${SL-80}"/>`+T(x0-26,y0+SL/2,"פגוש BUMPER",{fs:10,rot:-90});
+    // cabinet / collector
+    g+=`<rect class="c-line" x="${x0+SW/2+50}" y="${y0+SL/2-30}" width="70" height="60" stroke-width="1.5"/>`+T(x0+SW/2+85,y0+SL/2+4,S.drivesOnShuttle==1?"SHC":"תיבת חיבורים",{fs:10,cls:"mono"});
+    // side view
+    const sy=y0+SL+120;g+=T(x0+SW/2,sy-30,"מבט צד",{fs:13,w:600});
+    g+=`<rect class="c-fill" x="${x0}" y="${sy}" width="${SW}" height="60"/><circle class="c-line" cx="${x0+40}" cy="${sy+72}" r="14"/><circle class="c-line" cx="${x0+SW-40}" cy="${sy+72}" r="14"/>`;
+    g+=`<line class="c-line" x1="20" y1="${sy+86}" x2="${x0+SW+70}" y2="${sy+86}" stroke-width="3"/>`+T(x0+SW+60,sy+102,"מסילה",{fs:10});
+    if(S.drivesOnShuttle==1){g+=`<line class="c-hz" x1="20" y1="${sy+40}" x2="${x0}" y2="${sy+40}" stroke-width="6"/>`+T(26,sy+30,"פס צבירה + קולט",{a:"start",fs:10})}
+    g+=`<rect class="c-hz" x="${x0+SW-70}" y="${sy-18}" width="16" height="18"/>`+T(x0+SW-62,sy-24,"BEACON",{fs:9,cls:"mono"});
+    g+=`<line class="c-dim" x1="${x0}" y1="${sy+120}" x2="${x0+SW}" y2="${sy+120}"/>`+T(x0+SW/2,sy+114,`${fx(M.palletW+500)} מ"מ`,{fs:10.5,cls:"mono"});
+    g+=titleBlock(W,Hh,"שאטל – מבט על וצד, מנועים וחיישנים","DWG-SH-01");
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="שאטל">${g}</svg>`,note:`שאטל אחד לכל קומה. מסה ${fx(S.shuttleMass)} ק"ג, מהירות ${S.vShuttle} מ'/ש'. בשרטוט xx = מספר הקומה.`};
+  },
+  lift(){
+    const W=1000,Hh=Math.max(620,M.F*48+240);let g="";
+    const x0=160,top=70,bot=Hh-110,SW=220;
+    g+=`<rect class="c-line" x="${x0}" y="${top}" width="${SW}" height="${bot-top}" stroke-width="2"/>`+T(x0+SW/2,top-14,"פיר מעלית – חתך",{fs:13,w:600});
+    const lvY=f=>bot-(M.levelZ[f]/M.levelZ[M.F])*(bot-top-90);
+    for(let f=0;f<=M.F;f++){const y=lvY(f);g+=`<line class="c-line" x1="${x0-60}" y1="${y}" x2="${x0}" y2="${y}"/>`+T(x0-66,y+4,f?`קומה ${f} · +${fx(M.levelZ[f])}`:"לובי ±0",{a:"end",fs:10,cls:"mono"})+`<rect class="c-hz" x="${x0+2}" y="${y-6}" width="8" height="12"/>`}
+    const py=lvY(Math.ceil(M.F/2));
+    g+=`<rect class="c-acc" x="${x0+20}" y="${py-12}" width="${SW-80}" height="12"/>`+T(x0+SW/2-20,py+16,"פלטפורמה + שרשרת העברה (M2)",{fs:10});
+    g+=sens(x0+14,py-6)+leader(x0+14,py-6,x0+SW+60,py-40)+tagT(x0+SW+66,py-36,"LVL_UP / LVL_DN – יישור מול דגל קומה");
+    g+=sens(x0+SW-70,py-16)+leader(x0+SW-70,py-16,x0+SW+60,py-16)+tagT(x0+SW+66,py-12,"PAL_F / PAL_R · OVH_1 / OVH_2");
+    // counterweight & ropes
+    g+=`<rect class="c-fill" x="${x0+SW-40}" y="${py-200<top+90?top+100:py-200}" width="26" height="70"/>`+T(x0+SW-27,(py-200<top+90?top+100:py-200)-6,"משקל נגד",{fs:9.5});
+    g+=`<line class="c-line" x1="${x0+SW/2-20}" y1="${top+20}" x2="${x0+SW/2-20}" y2="${py-12}"/><line class="c-line" x1="${x0+SW-27}" y1="${top+20}" x2="${x0+SW-27}" y2="${py-200<top+90?top+100:py-200}"/>`;
+    // hoist
+    g+=`<circle class="c-line" cx="${x0+SW/2+20}" cy="${top+20}" r="26" stroke-width="2"/>`+motor(x0+SW/2+80,top+20,"M1",M.axes.find(a=>a.role==="hoist").kW+" kW");
+    g+=leader(x0+SW/2+100,top+20,x0+SW+60,top+20)+tagT(x0+SW+66,top+24,`תוף Ø400, בלם כפול, BRK_FB, גאברנור OVSPD`);
+    // limits
+    g+=sens(x0+SW-6,top+50)+leader(x0+SW-6,top+50,x0+SW+60,top+56)+tagT(x0+SW+66,top+60,"PRE_TOP (האטה) · FIN_TOP (סופי, F‑DI)");
+    g+=sens(x0+SW-6,bot-30)+leader(x0+SW-6,bot-30,x0+SW+60,bot-30)+tagT(x0+SW+66,bot-26,"PRE_BOT · FIN_BOT · SLACK");
+    // laser
+    g+=`<rect class="c-sens" x="${x0+40}" y="${bot-14}" width="18" height="12"/><line class="c-beam" x1="${x0+49}" y1="${bot-14}" x2="${x0+49}" y2="${py}"/>`;
+    g+=leader(x0+58,bot-8,x0+SW+60,bot-60)+tagT(x0+SW+66,bot-56,"LASER – מד מרחק בבור, מחזיר מתחת לפלטפורמה");
+    g+=`<rect class="c-fill" x="${x0+30}" y="${bot-6}" width="40" height="6"/><rect class="c-fill" x="${x0+SW-70}" y="${bot-6}" width="40" height="6"/>`+T(x0+SW/2,bot+18,"בולמים בבור",{fs:10});
+    g+=`<line class="c-dim" x1="${x0+SW+30}" y1="${lvY(0)}" x2="${x0+SW+30}" y2="${lvY(M.F)}"/>`+T(x0+SW+36,(lvY(0)+lvY(M.F))/2,`מהלך ${fx(M.levelZ[M.F])} מ"מ`,{a:"start",fs:10.5,cls:"mono"});
+    g+=titleBlock(W,Hh,"מעלית – חתך פיר, הנעה וחיישנים","DWG-LF-01");
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="מעלית">${g}</svg>`,note:`משקל נגד ${fx(M.cw)} ק"ג. מהירות ${S.vLift} מ'/ש'. המיקום נמדד בלייזר ומתוקן מול דגל בכל קומה.`};
+  },
+  turntable(){
+    if(!S.turntable)return {svg:`<svg viewBox="0 0 600 120">${T(300,60,"אין מסובבת בהגדרות",{fs:14})}</svg>`,note:""};
+    const W=1000,Hh=580,cx=340,cy=290,R=Math.min(220,Math.hypot(M.palletL,M.palletW)*0.04);let g="";
+    const tt=M.axes.find(a=>a.role==="turn");
+    g+=`<circle class="c-line" cx="${cx}" cy="${cy}" r="${R+12}" stroke-width="2"/><circle class="c-fill" cx="${cx}" cy="${cy}" r="${R}" opacity=".5"/>`;
+    const pl=M.palletL*0.04,pw=M.palletW*0.04;
+    g+=`<rect class="c-line" x="${cx-pl/2}" y="${cy-pw/2}" width="${pl}" height="${pw}" stroke-width="1.4"/>`+T(cx,cy+4,"מגש",{fs:12});
+    g+=`<circle class="c-line" cx="${cx}" cy="${cy}" r="40" stroke-dasharray="4 3"/>`+T(cx,cy+56,"מסב סיבוב (Slewing ring)",{fs:10});
+    g+=motor(cx+R+60,cy,"M1",tt.kW+" kW")+`<circle class="c-line" cx="${cx+R+12}" cy="${cy}" r="10"/>`+T(cx+R+60,cy+46,`פיניון · 1:${fx(tt.ratio,0)}`,{fs:10,cls:"mono"});
+    g+=sens(cx,cy-R-22)+T(cx,cy-R-32,"TT_0",{fs:10.5,cls:"mono"});
+    g+=sens(cx,cy+R+22)+T(cx,cy+R+40,"TT_180",{fs:10.5,cls:"mono"});
+    g+=`<rect class="c-hz" x="${cx-R-36}" y="${cy-8}" width="24" height="16"/>`+sens(cx-R-46,cy)+T(cx-R-50,cy-14,"TT_LOCK + פין",{a:"end",fs:10.5});
+    const lx=700;[["M1","מנוע סיבוב "+tt.kW+" kW, G120 CU250S‑2 (EPos, 0.01°)"],["TT_0 / TT_180","חיישן אינדוקטיבי M18 מול דגל בטבעת"],["TT_LOCK","פין נעילה + חיישן M12, סולנואיד TT_LOCK_Y לשחרור"],["סיבוב 180°",`${S.turnTime} ש', רמפה ${fx(S.turnTime/4,1)} ש'`],["רצף","שחרור פין → סיבוב → בדיקת חיישן → נעילה"]].forEach(([a,b],i)=>{g+=T(lx,110+i*40,a,{a:"start",fs:12,w:600})+T(lx,128+i*40,b,{a:"start",fs:10.5})});
+    g+=titleBlock(W,Hh,"מסובבת לובי – מבט על","DWG-TT-01");
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="מסובבת">${g}</svg>`,note:"המסובבת מסתובבת רק כשאין אף אחד בלובי והדלת סגורה."};
+  },
+  cell(){
+    const sc=0.07,cw=+S.cellPitch*sc,cd=(M.palletL+300)*sc,x0=120,y0=80,W=1000,Hh=y0+cd+330;let g="";
+    g+=`<rect class="c-line" x="${x0}" y="${y0}" width="${cw}" height="${cd}" stroke-width="1.5"/>`;
+    g+=`<rect class="c-fill" x="${x0+cw*0.18}" y="${y0+10}" width="14" height="${cd-20}"/><rect class="c-fill" x="${x0+cw*0.82-14}" y="${y0+10}" width="14" height="${cd-20}"/>`;
+    g+=`<rect class="c-line" x="${x0+(cw-M.palletW*sc)/2}" y="${y0+20}" width="${M.palletW*sc}" height="${M.palletL*sc}" stroke-dasharray="6 4"/>`;
+    g+=`<rect class="c-hz" x="${x0+cw/2-20}" y="${y0+2}" width="40" height="12"/>`+T(x0+cw/2,y0-6,"מעצור אחורי",{fs:10});
+    g+=sens(x0+cw/2+30,y0+10)+leader(x0+cw/2+30,y0+10,x0+cw+80,y0+20)+tagT(x0+cw+86,y0+24,"SEAT – מגש יושב במעצור");
+    g+=sens(x0+cw/2,y0+cd-26)+leader(x0+cw/2,y0+cd-26,x0+cw+80,y0+cd-40)+tagT(x0+cw+86,y0+cd-36,"PAL – נוכחות מגש");
+    g+=`<rect class="c-hz" x="${x0+cw*0.82-30}" y="${y0+cd-16}" width="14" height="14"/>`+leader(x0+cw*0.82-23,y0+cd-9,x0+cw+80,y0+cd-10)+tagT(x0+cw+86,y0+cd-6,"נעילת מצבט קפיצית");
+    g+=`<line class="c-beam" x1="${x0-40}" y1="${y0+cd+8}" x2="${x0+cw+40}" y2="${y0+cd+8}"/><line class="c-beam" x1="${x0-40}" y1="${y0+cd+16}" x2="${x0+cw+40}" y2="${y0+cd+16}"/>`+tagT(x0+cw+86,y0+cd+20,`OVH LO/HI – ${M.ovh.short}`);
+    g+=T(x0+cw/2,y0+cd+44,"← שביל השאטל →",{fs:11,cls:"c-muted"});
+    g+=`<line class="c-dim" x1="${x0}" y1="${y0+cd+70}" x2="${x0+cw}" y2="${y0+cd+70}"/>`+T(x0+cw/2,y0+cd+64,fx(S.cellPitch),{fs:10.5,cls:"mono"});
+    g+=`<line class="c-dim" x1="${x0-20}" y1="${y0}" x2="${x0-20}" y2="${y0+cd}"/>`+T(x0-26,y0+cd/2,fx(M.palletL+300),{fs:10.5,cls:"mono",rot:-90});
+    const lx=x0+cw+86;[["מסילות","2 מסילות גלגלונים, מפלס ±1 מ\"מ"],["חיישנים","2 אינדוקטיביים לכל תא: "+CELL_SENSOR],["כבל","M12 4‑פין לקופסת פיצול 8 ערוצים לכל 4 תאים"],["כמות בקומה",`${M.n*M.sides} תאים · ${M.n*M.sides*2} חיישנים`]].forEach(([a,b],i)=>{g+=T(x0,y0+cd+110+i*34,a,{a:"start",fs:12,w:600})+T(x0+110,y0+cd+110+i*34,b,{a:"start",fs:11})});
+    g+=titleBlock(W,Hh,"תא חניה – מבט על, חיישנים ונעילה","DWG-CL-01");
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="תא">${g}</svg>`,note:"תבנית אחת לכל התאים. התא חוזר על עצמו לפי מספר התאים בהגדרות."};
+  },
+  wireSensor(){
+    const W=1100,Hh=560;let g="";
+    const box=(x,y,w,h,t)=>`<rect class="c-line" x="${x}" y="${y}" width="${w}" height="${h}" stroke-width="1.5"/>`+T(x+w/2,y-8,t,{fs:12,w:600});
+    const term=(x,y,t)=>`<rect class="c-fill" x="${x-9}" y="${y-9}" width="18" height="18"/>`+T(x+16,y+4,t,{a:"start",fs:10,cls:"mono"});
+    const wire=(x1,y1,x2,y2,c)=>`<path class="c-line" d="M${x1} ${y1} H${(x1+x2)/2} V${y2} H${x2}" stroke-width="1.6"${c?` style="stroke:${c}"`:""}/>`;
+    // A: PNP sensor to DI16
+    g+=box(60,80,150,110,"חיישן PNP (M12)");g+=term(200,110,"1 BN");g+=term(200,140,"4 BK");g+=term(200,170,"3 BU");
+    g+=box(340,80,170,110,"ET 200SP DI16 + BaseUnit");g+=term(350,110,"24V (P1)");g+=term(350,140,"DIn");g+=term(350,170,"M (P2)");
+    g+=wire(209,110,341,110);g+=wire(209,140,341,140);g+=wire(209,170,341,170);
+    g+=T(285,215,"חיישן נוכחות / גבול / Through‑beam מקלט",{fs:10.5});
+    // B: through-beam pair
+    g+=box(60,280,150,90,"משדר (WS/QS30E/LS)");g+=term(200,310,"1 +24V");g+=term(200,340,"3 0V");
+    g+=box(60,420,150,100,"מקלט (WE/QS30R/LE)");g+=term(200,450,"1 +24V");g+=term(200,475,"4 OUT");g+=term(200,500,"3 0V");
+    g+=box(340,300,170,130,"DI16 – ערוץ גלישה");g+=term(350,330,"24V");g+=term(350,370,"DIn");g+=term(350,410,"M");
+    g+=wire(209,310,341,330);g+=wire(209,450,341,330);g+=wire(209,475,341,370);g+=wire(209,340,341,410);g+=wire(209,500,341,410);
+    g+=T(285,545,"מקלט ב‑Light‑on: 1 = קרן פנויה",{fs:10.5});
+    // C: 2-channel F-DI
+    g+=box(640,80,170,150,"לחצן חירום 2NC / מפסק בטיחות");g+=term(800,115,"11");g+=term(800,140,"12");g+=term(800,185,"21");g+=term(800,210,"22");
+    g+=box(920,80,150,170,"F‑DI 8x24VDC HF");g+=term(930,115,"VS0");g+=term(930,140,"DI0");g+=term(930,185,"VS4");g+=term(930,210,"DI4");
+    g+=wire(809,115,921,115);g+=wire(809,140,921,140);g+=wire(809,185,921,185);g+=wire(809,210,921,210);
+    g+=T(855,275,"הערכה 1oo2 בזוג ערוצים DI0/DI4, פולסי בדיקה מ‑VS",{fs:10.5});
+    g+=box(640,330,430,150,"הערות חיווט");
+    ["כל החיישנים PNP NO מחוברים ל‑24V מוגן בנתיך 2A לכל 8 ערוצים.","כבלי חיישנים בתעלה נפרדת מכבלי מנוע, מרחק ≥ 200 מ\"מ.","חיישני בטיחות בכבל משלהם, צבע מעטה צהוב.","זוגות ערוצים ב‑F‑DI לפי מדריך הכרטיס, כאן לדוגמה 0/4."].forEach((t,i)=>g+=T(660,365+i*28,"• "+t,{a:"start",fs:11}));
+    g+=titleBlock(W,Hh,"חיווט חיישנים – DI, Through‑beam, F‑DI","DWG-EL-02");
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="חיווט חיישנים">${g}</svg>`,note:"צבעי גידים לפי תקן M12: 1 חום, 2 לבן, 3 כחול, 4 שחור."};
+  },
+  wireMotor(){
+    const a=M.axes.find(x=>x.role==="hoist"),W=1100,Hh=560;let g="";
+    const term=(x,y,t,an="start")=>`<rect class="c-fill" x="${x-8}" y="${y-8}" width="16" height="16"/>`+T(an==="start"?x+14:x-14,y+4,t,{a:an,fs:10,cls:"mono"});
+    g+=T(70,60,`3×400V+PE`,{a:"start",fs:12,w:600});
+    ["L1","L2","L3"].forEach((l,i)=>{g+=`<line class="c-line" x1="60" y1="${80+i*18}" x2="200" y2="${80+i*18}"/>`+T(52,84+i*18,l,{a:"end",fs:10,cls:"mono"})});
+    g+=`<rect class="c-hz" x="200" y="70" width="60" height="56"/>`+T(230,140,`MCB ${a.mcb}A`,{fs:10,cls:"mono"})+T(230,102,"Q",{fs:12,w:600});
+    g+=`<rect class="c-line" x="360" y="60" width="240" height="320" stroke-width="2"/>`+T(480,50,`${a.drive}`,{fs:11.5,w:600});
+    ["L1","L2","L3"].forEach((l,i)=>{g+=`<line class="c-line" x1="260" y1="${80+i*18}" x2="360" y2="${80+i*18}"/>`+term(372,80+i*18,l)});
+    ["U2","V2","W2"].forEach((l,i)=>{g+=term(588,80+i*18,l,"end")+`<line class="c-line" x1="596" y1="${80+i*18}" x2="760" y2="${80+i*18}"/>`});
+    g+=term(588,150,"R1","end")+term(588,170,"R2","end")+`<path class="c-line" d="M596 150 H660 V200 M596 170 H640 V200"/><rect class="c-fill" x="630" y="200" width="40" height="70"/>`+T(650,288,"נגד בלימה",{fs:10});
+    g+=term(372,180,"14 T1+")+term(372,200,"15 T1−")+`<path class="c-line" d="M364 180 H330 V420 H780 V170 M364 200 H340 V410 H770 V170"/>`+T(560,404,"PTC מהמנוע",{fs:10});
+    g+=term(372,250,"X150 P1")+term(372,270,"X150 P2")+T(300,262,"PROFINET",{a:"end",fs:10.5});
+    g+=term(372,310,"STO via PROFIsafe")+term(588,250,"Brake relay","end")+`<path class="c-line" d="M596 250 H720 V200 H790"/>`;
+    g+=`<circle class="c-line" cx="820" cy="110" r="46" stroke-width="2"/>`+T(820,116,"M",{fs:18,w:700})+T(820,174,`${a.kW} kW`,{fs:11,cls:"mono"});
+    g+=`<rect class="c-hz" x="800" y="190" width="40" height="22"/>`+T(820,230,"בלם 2×",{fs:10});
+    g+=`<rect class="c-acc" x="880" y="96" width="34" height="28"/>`+T(897,140,"מקודד",{fs:10})+`<path class="c-line" d="M914 110 H960 V320 H600"/>`+T(780,334,"HTL → כניסת המקודד ב‑CU250S‑2",{fs:10});
+    g+=`<line class="c-line" x1="600" y1="74" x2="770" y2="74" style="stroke-dasharray:2 3"/>`+T(680,64,`כבל מסוכך 4G${a.cable}`,{fs:10,cls:"mono"});
+    g+=T(70,470,"• מסך כבל המנוע מחובר 360° בגלנד EMC בשני הצדדים.  • PE של המנוע לפס ההארקה בארון.  • נגד הבלימה עם תרמוסטט לכניסת DI.",{a:"start",fs:11});
+    g+=titleBlock(W,Hh,`מעגל הנעה – ${a.name}`,"DWG-EL-03");
+    return {svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="מעגל מנוע">${g}</svg>`,note:"אותו מעגל לכל הצירים, בלי נגד הבלימה בצירים הקטנים. שמות המהדקים לפי הדרייבר: לבדוק מול מדריך ההתקנה."};
+  }
+});
+
+/* ---- occupancy & simulation ---- */
+let simState=null;
+function initOcc(){
+  if(simState&&simState.F===M.F&&simState.n===M.n&&simState.sides===M.sides&&simState.dis===S.disabledCells)return;
+  const occ={};let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  for(let f=1;f<=M.F;f++)for(const sd of M.sideNames)for(let k=1;k<=M.n;k++)occ[`${f}${sd}${k}`]=!M.dis.has(`${f}${sd}${k}`)&&rnd()<0.4;
+  simState={F:M.F,n:M.n,sides:M.sides,dis:S.disabledCells,occ};
+}
+function drawOcc(el){
+  initOcc();if(!el)return;
+  let html=`<div class="occ" style="grid-template-columns:52px repeat(${M.n},minmax(18px,1fr))">`;
+  for(let f=M.F;f>=1;f--)for(const sd of M.sideNames){
+    html+=`<div class="lbl">F${pad(f)}${sd}</div>`;
+    for(let k=1;k<=M.n;k++){const id=`${f}${sd}${k}`;if(M.dis.has(id)){html+=`<span class="c no" title="F${pad(f)}${sd}${pad(k)} מבוטל" aria-label="תא מבוטל">×</span>`;continue}html+=`<button type="button" class="c ${simState.occ[id]?"full":""}" data-cell="${id}" title="F${pad(f)}${sd}${pad(k)}" aria-label="תא F${pad(f)}${sd}${pad(k)} ${simState.occ[id]?"תפוס":"פנוי"}">${k}</button>`}
+  }
+  html+=`</div><p class="muted" style="font-size:12.5px;margin:6px 0 0">${Object.values(simState.occ).filter(Boolean).length} מתוך ${M.cells} תאים תפוסים.</p>`;
+  el.innerHTML=`<div class="tbl" style="padding:8px">${html}</div>`;
+  el.querySelectorAll("[data-cell]").forEach(b=>b.onclick=()=>{const id=b.dataset.cell;simState.occ[id]=!simState.occ[id];drawOcc(el)});
+}
+R.sim=()=>{
+  const H=M.H;
+  return `<h2>הדמיה</h2>
+  <p class="lead">חתך לאורך השביל: המעלית משמאל והתאים של צד A מימינה. בוחרים גובה רכב ומריצים אחסון, או שולפים רכב. ההדמיה משתמשת במהירויות ובתאוצות מההגדרות ובוחרת תא מותר עם זמן ההגעה הקצר ביותר.</p>
+  <div class="row noprint">
+    <label class="f" style="min-width:200px">גובה הרכב הנכנס מ"מ<input id="simH" type="number" value="${Math.max(1400,H[0]-100)}" step="10"></label>
+    <label class="f" style="min-width:120px">מהירות הדמיה<select id="simX"><option value="4">×4</option><option value="8" selected>×8</option><option value="1">×1 זמן אמת</option><option value="16">×16</option></select></label>
+    <button class="btn pri" type="button" id="simStore" style="align-self:flex-end">אחסון רכב</button>
+    <button class="btn" type="button" id="simRetr" style="align-self:flex-end">שליפת רכב אקראי</button>
+  </div>
+  <p id="simMsg" class="muted" style="margin:8px 0" role="status"></p>
+  <div class="cad"><svg id="simSvg" role="img" aria-label="הדמיית אחסון"></svg></div>
+  <ol class="steps" id="simSteps"></ol>
+  <h3>תפוסה</h3><div id="occSim"></div>`;
+};
+let anim=null;
+function simMount(){
+  initOcc();drawOcc(document.getElementById("occSim"));drawSimScene(null);
+  document.getElementById("simStore").onclick=()=>{
+    const h=+document.getElementById("simH").value;const k=classOf(h,M.H);
+    if(k>=M.H.length){msg(`רכב בגובה ${h} מ"מ חוסם את הקרן העליונה (${M.H[M.H.length-1]}). הלובי דוחה אותו.`);return}
+    const floors=floorsForClass(k,M.H);
+    let best=null;
+    for(const f of floors)for(let c=1;c<=M.n;c++)for(const sd of M.sideNames){if(simState.occ[`${f}${sd}${c}`]||M.dis.has(`${f}${sd}${c}`))continue;const t=Math.max(M.tLift(f),M.tShut(0))+M.tShut(c);if(!best||t<best.t)best={f,c,sd,t}}
+    if(!best){msg(floors.length?"אין תא פנוי בקומות שמתאימות לגובה הזה.":"אין קומה עם גובה נקי מתאים לרכב הזה.");return}
+    run("store",best);
+  };
+  document.getElementById("simRetr").onclick=()=>{
+    const full=Object.keys(simState.occ).filter(k=>simState.occ[k]);
+    if(!full.length){msg("אין רכבים במערכת.");return}
+    const id=full[Math.floor(Math.random()*full.length)];const m=id.match(/^(\d+)([AB])(\d+)$/);
+    run("retr",{f:+m[1],sd:m[2],c:+m[3]});
+  };
+}
+function msg(t){const e=document.getElementById("simMsg");if(e)e.textContent=t}
+function geo(){
+  const p=+S.cellPitch,sc=0.034,x0=60,liftW=p*sc,topH=M.levelZ[M.F]*sc+90,yG=topH+60;
+  return {p,sc,x0,liftW,yG,W:x0+liftW+M.n*p*sc+60,H:yG+40,
+    xCell:c=>x0+liftW+(c-1)*p*sc+10+p*sc/2, xLift:x0+liftW/2, yFloor:f=>yG-M.levelZ[f]*sc};
+}
+function drawSimScene(st){
+  const svg=document.getElementById("simSvg");if(!svg)return;const G=geo();
+  svg.setAttribute("viewBox",`0 0 ${G.W} ${G.H}`);
+  let g=`<rect class="c-hz" x="${G.x0}" y="${G.yFloor(M.F)-80}" width="${G.liftW}" height="${G.yG-G.yFloor(M.F)+80}" opacity=".18"/>`;
+  for(let f=0;f<=M.F;f++){const y=G.yFloor(f);g+=`<line class="c-line" x1="${G.x0}" y1="${y}" x2="${G.W-40}" y2="${y}" stroke-width="${f?1.2:2}"/>`+T(G.x0-6,y-4,f?`${f}`:"L",{a:"end",fs:10,cls:"mono"});
+    if(f)for(let c=1;c<=M.n;c++){if(M.dis.has(`${f}A${c}`))continue;const full=simState.occ[`${f}A${c}`];const x=G.xCell(c);if(full&&!(st&&st.hide===`${f}A${c}`))g+=`<rect class="c-acc" x="${x-G.p*G.sc/2+6}" y="${y-22}" width="${G.p*G.sc-12}" height="16" rx="3" opacity=".7"/>`;g+=`<rect class="c-fill" x="${x-G.p*G.sc/2+4}" y="${y-5}" width="${G.p*G.sc-8}" height="4"/>`}}
+  const lz=st?st.lz:0, shx=st?st.shx:G.xCell(1)-G.p*G.sc, shf=st?st.shf:1;
+  g+=`<rect class="c-line" x="${G.x0+3}" y="${G.yFloor(0)-lz*G.sc-8}" width="${G.liftW-6}" height="8" stroke-width="1.5"/>`;
+  for(let f=1;f<=M.F;f++){const x=(st&&f===shf)?shx:G.x0+G.liftW+6;g+=`<rect class="c-line" x="${x}" y="${G.yFloor(f)-4}" width="${G.p*G.sc*0.8}" height="4" stroke-width="1.5"/>`}
+  if(st&&st.px!=null)g+=`<rect class="c-hz" x="${st.px-G.p*G.sc/2+6}" y="${st.py-24}" width="${G.p*G.sc-12}" height="16" rx="3"/>`;
+  svg.innerHTML=g;
+}
+function run(kind,t){
+  if(anim)cancelAnimationFrame(anim.raf);
+  const G=geo(),x=+document.getElementById("simX").value||8,red=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const zF=M.levelZ[t.f],cellX=G.xCell(t.c),liftX=G.xLift,shHome=G.x0+G.liftW+6;
+  const tL=M.tLift(t.f),tS=M.tShut(t.c),tT=M.tTr;
+  // keyframes: {d: seconds, name, apply(u)->state}
+  const S0={lz:0,shx:shHome,shf:t.f,px:liftX,py:G.yFloor(0),hide:null};
+  const K=[];const P=(name,d,fn)=>K.push({name,d,fn});
+  const lerp=(a,b,u)=>a+(b-a)*u, ease=u=>u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+  const tag=`${t.f}${t.sd}${t.c}`;
+  if(kind==="store"){
+    P("בדיקות לובי וסגירת דלת",20,u=>({...S0,px:liftX-60,py:G.yFloor(0)}));
+    P("העברת מגש מהלובי למעלית",tT,u=>({...S0,px:lerp(liftX-60,liftX,ease(u))}));
+    P(`המעלית עולה לקומה ${t.f}`,tL,u=>({...S0,lz:zF*ease(u),py:G.yFloor(0)-zF*G.sc*ease(u)}));
+    P("השאטל מושך את המגש מהמעלית",tT,u=>({...S0,lz:zF,px:lerp(liftX,shHome+G.p*G.sc*0.4,ease(u)),py:G.yFloor(t.f)}));
+    P(`נסיעה לתא ${t.sd}${pad(t.c)}`,tS,u=>({...S0,lz:zF,shx:lerp(shHome,cellX-G.p*G.sc*0.4,ease(u)),px:lerp(shHome+G.p*G.sc*0.4,cellX,ease(u)),py:G.yFloor(t.f)}));
+    P("דחיפה לתא ואימות ישיבה וגלישה",tT+2,u=>({...S0,lz:zF,shx:cellX-G.p*G.sc*0.4,px:cellX,py:G.yFloor(t.f)}));
+  }else{
+    P(`נסיעה לתא ${t.sd}${pad(t.c)} והמעלית עולה`,Math.max(tS,tL),u=>({...S0,hide:null,px:null,lz:zF*ease(Math.min(1,u*Math.max(tS,tL)/tL)),shx:lerp(shHome,cellX-G.p*G.sc*0.4,ease(Math.min(1,u*Math.max(tS,tL)/tS)))}));
+    P("משיכת המגש לשאטל",tT,u=>({...S0,hide:tag,lz:zF,shx:cellX-G.p*G.sc*0.4,px:cellX,py:G.yFloor(t.f)}));
+    P("נסיעה חזרה למעלית",tS,u=>({...S0,hide:tag,lz:zF,shx:lerp(cellX-G.p*G.sc*0.4,shHome,ease(u)),px:lerp(cellX,shHome+G.p*G.sc*0.4,ease(u)),py:G.yFloor(t.f)}));
+    P("העברה למעלית",tT,u=>({...S0,hide:tag,lz:zF,px:lerp(shHome+G.p*G.sc*0.4,liftX,ease(u)),py:G.yFloor(t.f)}));
+    P("המעלית יורדת ללובי",tL,u=>({...S0,hide:tag,lz:zF*(1-ease(u)),px:liftX,py:G.yFloor(0)-zF*G.sc*(1-ease(u))}));
+    P("העברה ללובי"+(S.turntable?" וסיבוב 180°":""),tT+(S.turntable?+S.turnTime:0),u=>({...S0,hide:tag,px:lerp(liftX,liftX-60,ease(u)),py:G.yFloor(0)}));
+  }
+  const total=K.reduce((a,k)=>a+k.d,0);
+  const stepsEl=document.getElementById("simSteps");
+  stepsEl.innerHTML=K.map(k=>`<li>${esc(k.name)} <em>${fx(k.d,1)} ש'</em></li>`).join("")+`<li><b>סה"כ</b> <em>${fx(total,0)} ש'</em></li>`;
+  msg(kind==="store"?`רכב → קומה ${t.f}, תא ${t.sd}${pad(t.c)}. זמן מחזור משוער ${fx(total,0)} ש'.`:`שליפה מקומה ${t.f}, תא ${t.sd}${pad(t.c)}. זמן משוער ${fx(total,0)} ש'.`);
+  if(kind==="store")simState.occ[tag]=false;
+  const finish=()=>{simState.occ[tag]=kind==="store";anim=null;drawSimScene(null);drawOcc(document.getElementById("occSim"));[...stepsEl.children].forEach(li=>li.classList.add("done"))};
+  if(red){finish();return}
+  const t0=performance.now();anim={};
+  const frame=now=>{
+    if(!document.getElementById("simSvg")){anim=null;return}
+    let s=(now-t0)/1000*x,i=0;while(i<K.length&&s>K[i].d){s-=K[i].d;i++}
+    if(i>=K.length){finish();return}
+    const st=K[i].fn(Math.min(1,s/K[i].d));
+    drawSimScene(st);
+    [...stepsEl.children].forEach((li,j)=>{li.classList.toggle("on",j===i);li.classList.toggle("done",j<i)});
+    anim.raf=requestAnimationFrame(frame);
+  };
+  anim.raf=requestAnimationFrame(frame);
+}
+
+/* ---- report ---- */
+function reportText(){
+  const L=[];const ln=s=>L.push(s);
+  ln(`${S.project}`);ln(`תכנון חניון רובוטי · ${new Date().toISOString().slice(0,10)}`);ln("");
+  ln(`מבנה: ${M.F} קומות × ${M.n} תאים × ${M.sides} צדדים = ${M.cells} מקומות. ${M.L} מעליות ולובי לכל אחת.`);
+  ln(`גובה מבנה ≈ ${fx(M.totalH)} מ"מ, אורך שביל ≈ ${fx(M.aisleLen)} מ"מ, מגש ${fx(M.palletL)}×${fx(M.palletW)}.`);
+  ln(`חיישני גובה בלובי: ${M.H.join(", ")} מ"מ.`);
+  ln(`זמנים: אחסון ממוצע ${fx(M.tStoreAvg,0)} ש', מקסימלי ${fx(M.tStoreMax,0)} ש', שליפה ממוצעת ${fx(M.tRetrAvg,0)} ש'.`);ln("");
+  ln("קומות:");for(let f=1;f<=M.F;f++)ln(`  קומה ${f}: מפלס +${fx(M.levelZ[f])}, גובה נקי ${S.floorClear[f-1]}`);ln("");
+  ln("צירים ודרייברים:");M.axes.forEach(a=>ln(`  ${a.id}  ${a.name}  ${a.kW}kW  ${a.drive}  ${a.cab}  MCB ${a.mcb}A`));ln("");
+  ln("ארונות:");M.cabs.forEach(c=>ln(`  ${c.id}  ${c.name}  ${c.W}×${c.H}×${c.D}  דרייברים ${c.drives.length}  IO: DI16×${c.mDI} DQ16×${c.mDQ} F-DI8×${c.mFDI} F-DQ4×${c.mFDQ}  הזנה ${c.feed}A — שולט על: ${c.controls}`));ln("");
+  ln("רשת:");M.net.forEach(n=>ln(`  ${n.ip}  ${n.name}  ${n.dev}  ${n.cab}`));ln("");
+  ln("הערה: תכנון ראשוני. נדרש אישור מהנדס חשמל ובודק בטיחות (EN 14010, EN ISO 13849-1, EN 60204-1).");
+  return L.join("\n");
+}
+const csv=rows=>rows.map(r=>r.map(v=>{v=String(v??"");return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}).join(",")).join("\n");
+const ioCSV=()=>csv([["tag","description","type","address","terminal","cabinet","model","location"],...M.io.map(s=>[s.tag,s.desc,s.kind,s.addr,s.term,s.cab,s.model,s.loc])]);
+const ipCSV=()=>csv([["ip","device_name","device","role","cabinet","telegram"],...M.net.map(n=>[n.ip,n.name,n.dev,n.role,n.cab,n.tel||""])]);
+const axCSV=()=>csv([["axis","name","kW","In_A","drive","cabinet","mcb_A","cable_mm2"],...M.axes.map(a=>[a.id,a.name,a.kW,fx(a.In,1),a.drive,a.cab,a.mcb,a.cable])]);
+R.report=()=>`<h2>דוח, מייל והדפסה</h2>
+  <p class="lead">חבילת ZIP אחת עם כל התכנון: קבצי PLC, כל השרטוטים ב‑SVG, טבלאות CSV לאקסל והדוח. מצרפים אותה למייל או פותחים במחשב להדפסה. אפשר גם להעתיק כל חלק בנפרד.</p>
+  <div class="row noprint">
+    <button class="btn pri" type="button" id="zipAll">הורדת חבילת הפרויקט (ZIP)</button>
+    <button class="btn" type="button" id="dlIO">הורדת IO (CSV)</button>
+    <button class="btn" type="button" id="cpRep">העתקת הדוח</button>
+    <button class="btn" type="button" id="cpIO">העתקת IO כ‑CSV</button>
+    <button class="btn" type="button" id="cpIP2">העתקת IP כ‑CSV</button>
+    <button class="btn" type="button" id="cpAX">העתקת צירים כ‑CSV</button>
+    ${inFrame?"":'<button class="btn" type="button" id="prAll">הדפסת כל התכנון / PDF</button>'}
+  </div>
+  <h3>שליחה במייל</h3>
+  <div class="row noprint">
+    <label class="f" style="min-width:260px">כתובת הנמען<input id="mailTo" type="email" placeholder="name@company.co.il" style="direction:ltr"></label>
+    <a class="btn" id="mailA" href="#" style="align-self:flex-end;text-decoration:none" rel="noopener">פתיחת טיוטה בתוכנת המייל</a>
+  </div>
+  <p class="muted" style="font-size:13px">הקישור פותח טיוטה עם תקציר בתוכנת המייל שלכם, אם הדפדפן מאפשר זאת. הוא לא שולח בעצמו. כדי לשלוח הכל: מורידים את חבילת ה‑ZIP ומצרפים אותה למייל.</p>
+  ${inFrame?'<p class="muted" style="font-size:13px">להדפסה: פתחו את הקובץ <span class="mono">robotic-parking/index.html</span> מהמאגר בדפדפן, ושם יופיע כפתור "הדפסת כל התכנון". אפשר גם להדביק את הדוח במסמך ולהדפיס.</p>':""}
+  <textarea class="out" id="repTxt" readonly aria-label="טקסט הדוח"></textarea>`;
+function reportMount(){
+  const ta=document.getElementById("repTxt");ta.value=reportText();
+  document.getElementById("zipAll").onclick=()=>{const z=projectZip();saveFile(z.name,z.data)};
+  document.getElementById("dlIO").onclick=()=>saveFile(safeName(S.project)+"_io_list.csv","\uFEFF"+ioCSV());
+  document.getElementById("cpRep").onclick=()=>copyText(ta.value,"הדוח הועתק",ta);
+  document.getElementById("cpIO").onclick=()=>copyText(ioCSV(),"טבלת IO הועתקה");
+  document.getElementById("cpIP2").onclick=()=>copyText(ipCSV(),"טבלת IP הועתקה");
+  document.getElementById("cpAX").onclick=()=>copyText(axCSV(),"טבלת הצירים הועתקה");
+  const a=document.getElementById("mailA"),to=document.getElementById("mailTo");
+  const upd=()=>{const body=reportText().slice(0,1800);a.href=`mailto:${encodeURIComponent(to.value.trim())}?subject=${encodeURIComponent("תכנון חניון רובוטי – "+S.project)}&body=${encodeURIComponent(body)}`};
+  to.oninput=upd;upd();
+  const pr=document.getElementById("prAll");if(pr)pr.onclick=printAll;
+}
+function printAll(){
+  printing=true;
+  const keep=cur;
+  TABS.forEach(([id])=>{const s=document.getElementById("s-"+id);cur=id;s.innerHTML=R[id]();s.hidden=false;
+    if(id==="drawings"){const out=s.querySelector("#dwOut");s.querySelector(".row")?.remove();out.innerHTML=Object.keys(DRAW).map(k=>{const subs=k==="plan"?Array.from({length:M.F},(_,i)=>String(i+1)):k==="cabinet"?M.cabs.map(c=>c.id):k==="lobbyPlan"?Array.from({length:M.L},(_,i)=>String(i+1)):["-"];return subs.map(x=>DRAW[k](x).svg).join("")}).join("")}
+    if(id==="report")s.querySelector("#repTxt").value=reportText();
+    if(id==="wiring")s.querySelector("#wOut").innerHTML=M.cabs.map(c=>`<h3>${c.id}</h3>`+wiringOut(c.id)).join("");
+    if(id==="lobby")s.querySelector("#lobbyCad").innerHTML=Array.from({length:M.L},(_,i)=>lobbySVG(i+1)).join("");
+  });
+  cur=keep;
+  setTimeout(()=>{window.print();printing=false;render()},100);
+}
+
+/* ---------- PLC templates (TIA Portal external sources) ---------- */
+const camel=r=>r.split("_").map(p=>p.charAt(0)+p.slice(1).toLowerCase()).join("");
+const isOut=s=>s.kind==="DQ"||s.kind==="FDQ";
+function ioPath(s){
+  let m;const sideIx=x=>x==="A"?1:2;
+  if((m=s.tag.match(/^F(\d+)([AB])(\d+)_(PAL|SEAT)$/)))return `"Plant".Cell[${+m[1]},${sideIx(m[2])},${+m[3]}].x${m[4]==="PAL"?"Pal":"Seat"}`;
+  if((m=s.tag.match(/^F(\d+)_OVH_([AB])_(LO|HI)$/)))return `"Plant".Fl[${+m[1]}].xOvh${m[3]==="LO"?"Lo":"Hi"}[${sideIx(m[2])}]`;
+  if((m=s.tag.match(/^SH(\d+)_(PRE|FIN)_(\d)$/)))return `"Plant".Fl[${+m[1]}].xSh${camel(m[2])}${m[3]}`;
+  if((m=s.tag.match(/^F(\d+)_(.+)$/)))return `"Plant".Fl[${+m[1]}].x${camel(m[2])}`;
+  if((m=s.tag.match(/^SH(\d+)_(.+)$/)))return `"Plant".Sh[${+m[1]}].io.${isOut(s)?"y":"x"}${camel(m[2])}`;
+  if((m=s.tag.match(/^LF(\d+)_(.+)$/)))return `"Plant".Lf[${+m[1]}].io.${isOut(s)?"y":"x"}${camel(m[2])}`;
+  if((m=s.tag.match(/^LB(\d+)_HGT_(\d+)$/)))return `"Plant".Lb[${+m[1]}].io.xHgt[${+m[2]}]`;
+  if((m=s.tag.match(/^LB(\d+)_(.+)$/)))return `"Plant".Lb[${+m[1]}].io.${isOut(s)?"y":"x"}${camel(m[2])}`;
+  return `"Plant".Main.${isOut(s)?"y":"x"}${camel(s.tag)}`;
+}
+const fieldName=p=>p.split(".").pop().replace(/\[.*$/,"");
+function unitFields(unit,skip){
+  const seen=new Set(),out=[];
+  M.io.filter(s=>s.unit===unit&&s.kind!=="NET"&&s.kind!=="FDQ"&&!(skip&&skip.test(s.tag))).forEach(s=>{const f=fieldName(ioPath(s));if(!seen.has(f)){seen.add(f);out.push({f,c:s.desc,k:s.kind})}});
+  return out;
+}
+const fl=(arr,ind)=>arr.map(x=>`${ind}${x.f} : Bool;   // ${x.k} – ${x.c}`).join("\n");
+function plcFiles(){
+  const F=M.F,N=M.n,SD=M.sides,L=M.L,HN=M.H.length,TT=!!S.turntable,p=+S.cellPitch;
+  const hdr=t=>`// ${t}\n// נוצר אוטומטית ע"י מתכנן חניון רובוטי – ${S.project}\n// ${F} קומות · ${N} תאים לצד · ${SD} צדדים · ${L} מעליות · ${HN} חיישני גובה · ${new Date().toISOString().slice(0,10)}\n// כדי לשנות כמויות: משנים באתר ומייבאים מחדש.\n`;
+  const shF=unitFields("SH01"), lfF=unitFields("LF1"), lbF=unitFields("LB1",/_HGT_/);
+  const flF=M.io.filter(s=>s.unit==="F01"&&!s.group&&!/_OVH_/.test(s.tag)&&s.kind!=="NET").map(s=>({f:fieldName(ioPath(s)),c:s.desc,k:s.kind}));
+  const mainF=M.io.filter(s=>!s.unit).map(s=>({f:fieldName(ioPath(s)),c:s.desc,k:s.kind}));
+  const files=[];
+  const add=(name,title,desc,code)=>files.push({name,title,desc,code});
+  // ---------- types
+  add("01_Types.udt","טיפוסי נתונים (UDT)","תבנית התא, השאטל, המעלית, המסובבת והלובי. השדות נוצרים מרשימת החיישנים.",hdr("UDT – יש לייבא ראשון")+`
+TYPE "UDT_AxisCfg"
+VERSION : 0.1
+   STRUCT
+      hwId : HW_IO;          // קבוע מערכת של הטלגרם (System constants)
+      diVelo : DInt;         // מהירות [1000 LU/min]
+      diMin : DInt;          // גבול מינימום [LU]
+      diMax : DInt;          // גבול מקסימום [LU]
+      xEnable : Bool := TRUE;
+   END_STRUCT;
+END_TYPE
+
+TYPE "UDT_UnitCmd"
+VERSION : 0.1
+   STRUCT
+      iCmd : Int;            // 0 אין · 1 נסיעה/תנועה · 2 העברת מגש
+      iTarget : Int;         // שאטל: מספר תא (0 = מעלית 1, ${N+1} = מעלית 2) · מעלית: קומה (0 = לובי) · מסובבת: 1=0° 2=180°
+      iTransfer : Int;       // 1 משיכה מ+ · 2 משיכה מ- · 3 דחיפה ל+ · 4 דחיפה ל-
+      xManual : Bool;        // מצב ידני (Jog)
+      xJogPlus : Bool;
+      xJogMinus : Bool;
+      rOverride : Real := 100.0;
+   END_STRUCT;
+END_TYPE
+
+TYPE "UDT_UnitSts"
+VERSION : 0.1
+   STRUCT
+      xBusy : Bool;
+      xDone : Bool;
+      xError : Bool;
+      xInPos : Bool;
+      xHasPallet : Bool;
+      wErr : Word;
+      iStep : Int;
+      diActPos : DInt;
+   END_STRUCT;
+END_TYPE
+
+TYPE "UDT_Cell"
+VERSION : 0.1
+   STRUCT
+      xPal : Bool;           // DI – מגש בתא
+      xSeat : Bool;          // DI – מגש יושב במעצור
+      xDisabled : Bool;      // תא מבוטל (מ-FC_Config)
+      xOccupied : Bool;      // יש רכב
+      xReserved : Bool;      // שמור למשימה
+      xFaultSlip : Bool;     // נוכחות בלי ישיבה = גלישה
+      xFaultSensor : Bool;   // ישיבה בלי נוכחות = תקלת חיישן
+      iHeightCls : Int;      // סיווג הגובה של הרכב שבתא
+      sPlate : String[12];   // לוחית רישוי
+      udTicket : UDInt;      // מספר כרטיס
+   END_STRUCT;
+END_TYPE
+
+TYPE "UDT_Floor"
+VERSION : 0.1
+   STRUCT
+      xOvhLo : Array[1..${SD}] of Bool;   // קרן גלישה נמוכה לכל צד – TRUE = פנויה
+      xOvhHi : Array[1..${SD}] of Bool;   // קרן גלישה גבוהה לכל צד – TRUE = פנויה
+${fl(flF,"      ")}
+      xAnyOvh : Bool;        // לפחות קרן אחת חסומה
+      iMaxHeightCls : Int;   // סיווג הגובה המקסימלי שמותר בקומה
+      iFree : Int;           // תאים פנויים
+      iFaults : Int;         // תאים בתקלה
+   END_STRUCT;
+END_TYPE
+
+TYPE "UDT_Shuttle"
+VERSION : 0.1
+   STRUCT
+      cmd : "UDT_UnitCmd";
+      sts : "UDT_UnitSts";
+      io : Struct
+${fl(shF,"         ")}
+      END_STRUCT;
+      cfg : Struct
+         travel : "UDT_AxisCfg";
+         hwTransfer : HW_IO;
+         diX : Array[0..${N+1}] of DInt;   // מיקום כל תא לאורך השביל [LU = 0.01 מ"מ]
+      END_STRUCT;
+   END_STRUCT;
+END_TYPE
+
+TYPE "UDT_Lift"
+VERSION : 0.1
+   STRUCT
+      cmd : "UDT_UnitCmd";
+      sts : "UDT_UnitSts";
+      io : Struct
+${fl(lfF,"         ")}
+      END_STRUCT;
+      cfg : Struct
+         hoist : "UDT_AxisCfg";
+         hwTransfer : HW_IO;
+         diLevel : Array[0..${F}] of DInt;  // מפלס כל קומה [LU]
+      END_STRUCT;
+   END_STRUCT;
+END_TYPE
+
+TYPE "UDT_Lobby"
+VERSION : 0.1
+   STRUCT
+      cmd : Struct
+         xAccepted : Bool;   // המשימה לקחה את המגש
+         xOpenForExit : Bool;// שליפה: פתיחת דלת ליציאה
+      END_STRUCT;
+      sts : Struct
+         iStep : Int;
+         iHeightCls : Int;
+         xCarOk : Bool;
+         xReject : Bool;
+         wReason : Word;
+      END_STRUCT;
+      io : Struct
+${fl(lbF,"         ")}
+         xHgt : Array[1..${HN}] of Bool;   // קרני גובה ${M.H.join(", ")} מ"מ – TRUE = פנויה
+      END_STRUCT;
+      xSafeFieldFree : Bool; // מהתוכנית הבטיחותית: שדה הסורק ריק
+      cfg : Struct
+         hwDoor : HW_IO;
+         rDoorRpm : Real := 900.0;
+      END_STRUCT;
+   END_STRUCT;
+END_TYPE
+${TT?`
+TYPE "UDT_Turntable"
+VERSION : 0.1
+   STRUCT
+      cmd : "UDT_UnitCmd";
+      sts : "UDT_UnitSts";
+      cfg : Struct
+         axis : "UDT_AxisCfg";
+         di180 : DInt := 18000;   // 180° ב-LU של 0.01°
+      END_STRUCT;
+   END_STRUCT;
+END_TYPE
+`:""}`);
+  // ---------- plant DB
+  add("02_Plant.db","בלוק נתונים מרכזי \"Plant\"",`מערך תאים [${F}×${SD}×${N}], ${F} שאטלים, ${L} מעליות. התאים נשמרים בזיכרון קבוע (RETAIN).`,hdr("DB מרכזי")+`
+DATA_BLOCK "Plant"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR RETAIN
+      Cell : Array[1..${F}, 1..${SD}, 1..${N}] of "UDT_Cell";   // [קומה, צד, תא]
+   END_VAR
+   VAR
+      Fl : Array[1..${F}] of "UDT_Floor";
+      Sh : Array[1..${F}] of "UDT_Shuttle";
+      Lf : Array[1..${L}] of "UDT_Lift";
+      Lb : Array[1..${L}] of "UDT_Lobby";
+${TT?`      Tt : Array[1..${L}] of "UDT_Turntable";\n`:""}      JobReq : Array[1..${L}] of Struct
+         xStore : Bool;
+         xRetrieve : Bool;
+         iFloor : Int;
+         iSide : Int;
+         iCell : Int;
+         xBusy : Bool;
+         xDone : Bool;
+         wErr : Word;
+      END_STRUCT;
+      Main : Struct
+${fl(mainF,"         ")}
+         xSafeOk : Bool;     // מהתוכנית הבטיחותית: אין חירום, דלתות סגורות, גבולות תקינים
+         xAck : Bool;        // פולס איפוס
+      END_STRUCT;
+   END_VAR
+BEGIN
+END_DATA_BLOCK
+`);
+  // ---------- FB_Transfer
+  add("03_FB_Transfer.scl","תבנית העברת מגש","שרשרת עם וו: משיכה או דחיפה לצד + או -. משמשת את השאטל ואת המעלית.",hdr("FB_Transfer – SINA_SPEED")+`
+FUNCTION_BLOCK "FB_Transfer"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT
+      xExec : Bool;          // עלייה = התחלה
+      iMode : Int;           // 1 משיכה · 2 דחיפה
+      iSide : Int;           // +1 / -1
+      xEndPlus : Bool;
+      xEndMinus : Bool;
+      xHome : Bool;
+      xPalletIn : Bool;      // מגש ממורכז על היחידה
+      rSpeedRpm : Real := 1450.0;
+      hwId : HW_IO;
+      xAck : Bool;
+      tTimeout : Time := T#30S;
+   END_VAR
+   VAR_OUTPUT
+      xBusy : Bool;
+      xDone : Bool;
+      xError : Bool;
+      wErr : Word;
+      iStep : Int;
+   END_VAR
+   VAR
+      instSpd : "SINA_SPEED";
+      rtExec : R_TRIG;
+      tonStep : TON;
+      tonWait : TON;
+      rSp : Real;
+      xEn : Bool;
+   END_VAR
+BEGIN
+   #rtExec(CLK := #xExec);
+   #tonStep(IN := (#iStep > 0) AND (#iStep < 900), PT := #tTimeout);
+   #tonWait(IN := #iStep = 20, PT := T#500MS);
+   IF #tonStep.Q THEN #wErr := 16#0101; #iStep := 900; END_IF;
+
+   CASE #iStep OF
+      0:  #rSp := 0.0; #xEn := FALSE;
+          IF #rtExec.Q THEN
+             #xDone := FALSE; #xError := FALSE; #wErr := 0;
+             IF NOT #xHome THEN #wErr := 16#0102; #iStep := 900; ELSE #iStep := 10; END_IF;
+          END_IF;
+      10: // יציאה לקצה (משיכה: וו ריק · דחיפה: עם המגש)
+          #xEn := TRUE; #rSp := INT_TO_REAL(#iSide) * #rSpeedRpm;
+          IF (#iSide > 0 AND #xEndPlus) OR (#iSide < 0 AND #xEndMinus) THEN #rSp := 0.0; #iStep := 20; END_IF;
+      20: // נעילת/שחרור הוו
+          IF #tonWait.Q THEN #iStep := 30; END_IF;
+      30: // חזרה לבית
+          #rSp := -INT_TO_REAL(#iSide) * #rSpeedRpm;
+          IF #xHome THEN #rSp := 0.0; #iStep := 40; END_IF;
+      40: // אימות
+          IF (#iMode = 1 AND #xPalletIn) OR (#iMode = 2 AND NOT #xPalletIn) THEN
+             #xDone := TRUE; #xEn := FALSE; #iStep := 0;
+          ELSE
+             #wErr := 16#0103; #iStep := 900;
+          END_IF;
+      900: #rSp := 0.0; #xEn := FALSE; #xError := TRUE;
+          IF #xAck THEN #xError := FALSE; #iStep := 0; END_IF;
+   END_CASE;
+
+   #instSpd(EnableAxis := #xEn,
+            AckError := #xAck,
+            SpeedSp := #rSp,
+            RefSpeed := 1500.0,
+            ConfigAxis := 16#003F,
+            HWIDSTW := #hwId,
+            HWIDZSW := #hwId);
+   IF #instSpd.Error AND (#iStep > 0) AND (#iStep < 900) THEN #wErr := 16#0104; #iStep := 900; END_IF;
+   #xBusy := (#iStep > 0) AND (#iStep < 900);
+END_FUNCTION_BLOCK
+`);
+  // ---------- generic positioning unit
+  const posUnit=(o)=>`
+FUNCTION_BLOCK "${o.fb}"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT
+${o.inputs}
+      xSafeOk : Bool;        // מה-F program
+      xAck : Bool;
+   END_VAR${o.outputs?`
+   VAR_OUTPUT
+${o.outputs}
+   END_VAR`:""}
+   VAR_IN_OUT
+      Unit : "${o.udt}";
+   END_VAR
+   VAR
+      instPos : "SINA_POS";
+${o.hasTr?`      instTr : "FB_Transfer";\n`:""}      tonStep : TON;
+      diTarget : DInt;
+      iModePos : Int := 2;
+      xExecPos : Bool;
+      xTrExec : Bool;
+      iTrMode : Int;
+      iTrSide : Int;
+      xCentered : Bool;
+   END_VAR
+BEGIN
+${o.pre}
+   #tonStep(IN := (#Unit.sts.iStep > 0) AND (#Unit.sts.iStep < 900), PT := T#90S);
+   IF (#Unit.sts.iStep > 0) AND (#Unit.sts.iStep < 900) THEN
+      IF NOT #xSafeOk${o.extraSafe} THEN #Unit.sts.wErr := 16#0001; #Unit.sts.iStep := 900;
+      ELSIF #tonStep.Q THEN #Unit.sts.wErr := 16#0002; #Unit.sts.iStep := 900;
+      END_IF;
+   END_IF;
+
+   CASE #Unit.sts.iStep OF
+      0:  #xExecPos := FALSE; #xTrExec := FALSE;
+          IF #Unit.cmd.iCmd = 1 THEN                       // ---- תנועה
+             #Unit.sts.xDone := FALSE; #Unit.cmd.iCmd := 0;
+${o.moveCheck}
+          ELSIF #Unit.cmd.iCmd = 2 THEN                    // ---- העברת מגש
+             #Unit.sts.xDone := FALSE; #Unit.cmd.iCmd := 0;
+${o.trCheck}
+          END_IF;
+      10: #xExecPos := TRUE; #Unit.sts.iStep := 11;
+      11: ${o.moveAbort||"IF "}#instPos.AxisPosOk AND (ABS(#instPos.ActPosition - #diTarget) <= ${o.win})${o.posExtra} THEN
+             #xExecPos := FALSE; #Unit.sts.iStep := 100;
+          END_IF;
+${o.hasTr?`      20: // Muting – קרני הקומה לא נבדקות בזמן העברה
+          IF #Unit.cmd.iTransfer <= 2 THEN #iTrMode := 1; ELSE #iTrMode := 2; END_IF;
+          IF (#Unit.cmd.iTransfer = 1) OR (#Unit.cmd.iTransfer = 3) THEN #iTrSide := 1; ELSE #iTrSide := -1; END_IF;
+          #xTrExec := TRUE; #Unit.sts.iStep := 21;
+      21: IF #instTr.xDone THEN #xTrExec := FALSE; #Unit.sts.iStep := 30;
+          ELSIF #instTr.xError THEN #Unit.sts.wErr := #instTr.wErr; #Unit.sts.iStep := 900;
+          END_IF;
+      30: IF ((#iTrMode = 1) AND #xCentered) OR ((#iTrMode = 2) AND NOT #Unit.sts.xHasPallet) THEN #Unit.sts.iStep := 100;
+          ELSE #Unit.sts.wErr := 16#0013; #Unit.sts.iStep := 900;
+          END_IF;
+`:""}${o.extraSteps||""}      100: #Unit.sts.xDone := TRUE; #Unit.sts.iStep := 0;
+      900: #xExecPos := FALSE; #xTrExec := FALSE; #Unit.sts.xError := TRUE;
+          IF #xAck THEN #Unit.sts.xError := FALSE; #Unit.sts.wErr := 0; #Unit.sts.iStep := 0; END_IF;
+   END_CASE;
+
+   IF #Unit.cmd.xManual THEN #iModePos := 7; ELSE #iModePos := 2; END_IF;
+   #instPos(ModePos := #iModePos,
+            EnableAxis := #Unit.cfg.${o.axis}.xEnable AND #xSafeOk,
+            CancelTraversing := TRUE,
+            IntermediateStop := ${o.istop},
+            Positive := FALSE,
+            Negative := FALSE,
+            Jog1 := #Unit.cmd.xManual AND #Unit.cmd.xJogPlus,
+            Jog2 := #Unit.cmd.xManual AND #Unit.cmd.xJogMinus,
+            FlyRef := FALSE,
+            AckError := #xAck,
+            ExecuteMode := #xExecPos,
+            Position := #diTarget,
+            Velocity := #Unit.cfg.${o.axis}.diVelo,
+            OverV := #Unit.cmd.rOverride,
+            OverAcc := 100.0,
+            OverDec := 100.0,
+            ConfigEPos := 16#0003,
+            HWIDSTW := #Unit.cfg.${o.axis}.hwId,
+            HWIDZSW := #Unit.cfg.${o.axis}.hwId);
+   #Unit.sts.diActPos := #instPos.ActPosition;
+   #Unit.sts.xInPos := #instPos.AxisPosOk;
+   IF #instPos.AxisError AND (#Unit.sts.iStep > 0) AND (#Unit.sts.iStep < 900) THEN #Unit.sts.wErr := 16#0020; #Unit.sts.iStep := 900; END_IF;
+${o.hasTr?`   #instTr(xExec := #xTrExec, iMode := #iTrMode, iSide := #iTrSide,
+           xEndPlus := ${o.endP}, xEndMinus := ${o.endM}, xHome := ${o.home},
+           xPalletIn := #xCentered, hwId := #Unit.cfg.hwTransfer, xAck := #xAck);
+`:""}   #Unit.sts.xBusy := (#Unit.sts.iStep > 0) AND (#Unit.sts.iStep < 900);
+${o.post||""}END_FUNCTION_BLOCK
+`;
+  const shOvh=SD===2?"#Unit.io.xOvhA AND #Unit.io.xOvhB":"#Unit.io.xOvhA";
+  add("04_FB_Shuttle.scl","תבנית שאטל",`מופע אחד לכל קומה (${F} מופעים). נסיעה עם SINA_POS לפי מיקום התא, העברה עם FB_Transfer.`,hdr("FB_Shuttle – SINA_POS + FB_Transfer")+posUnit({fb:"FB_Shuttle",udt:"UDT_Shuttle",axis:"travel",hasTr:true,win:300,
+    inputs:`      xAnyOvh : Bool;        // קרן גלישה חסומה בקומה`,
+    pre:`   // מגש ממורכז: שני חיישני נוכחות + קרני גלישה של השאטל פנויות (TRUE = פנוי)
+   #xCentered := #Unit.io.xPalF AND #Unit.io.xPalR AND ${shOvh};
+   #Unit.sts.xHasPallet := #Unit.io.xPalF OR #Unit.io.xPalR;`,
+    extraSafe:` OR NOT #Unit.io.xBumper`,
+    moveCheck:`             IF #Unit.sts.xHasPallet AND NOT #xCentered THEN #Unit.sts.wErr := 16#0010; #Unit.sts.iStep := 900;
+             ELSIF #xAnyOvh THEN #Unit.sts.wErr := 16#0011; #Unit.sts.iStep := 900;
+             ELSIF (#Unit.cmd.iTarget < 0) OR (#Unit.cmd.iTarget > ${N+1}) THEN #Unit.sts.wErr := 16#0014; #Unit.sts.iStep := 900;
+             ELSE #diTarget := #Unit.cfg.diX[#Unit.cmd.iTarget]; #Unit.sts.iStep := 10;
+             END_IF;`,
+    trCheck:`             IF NOT #Unit.io.xAlign THEN #Unit.sts.wErr := 16#0012; #Unit.sts.iStep := 900; ELSE #Unit.sts.iStep := 20; END_IF;`,
+    moveAbort:`IF #xAnyOvh THEN #Unit.sts.wErr := 16#0011; #Unit.sts.iStep := 900;
+          ELSIF `,posExtra:` AND #Unit.io.xAlign`,
+    istop:`NOT #xAnyOvh OR #Unit.cmd.xManual`,
+    endP:`#Unit.io.xTrA`,endM:SD===2?`#Unit.io.xTrB`:`FALSE`,home:`#Unit.io.xTrHome`,
+    post:`   #Unit.io.yBeacon := #Unit.sts.xBusy;\n`}).replace("      11: IF #xAnyOvh","      11: IF #xAnyOvh"));
+  add("05_FB_Lift.scl","תבנית מעלית",`מופע לכל מעלית (${L}). הרמה עם SINA_POS לפי מפלס הקומה ויישור מול דגל, העברה לכיוון השאטל (+) או הלובי (-).`,hdr("FB_Lift – SINA_POS + FB_Transfer")+posUnit({fb:"FB_Lift",udt:"UDT_Lift",axis:"hoist",hasTr:true,win:200,
+    inputs:`      xLobbyDoorClosed : Bool;  // אין תנועה כשדלת הלובי פתוחה והפלטפורמה לא בלובי`,
+    pre:`   #xCentered := #Unit.io.xPalF AND #Unit.io.xPalR AND #Unit.io.xOvh1 AND #Unit.io.xOvh2;
+   #Unit.sts.xHasPallet := #Unit.io.xPalF OR #Unit.io.xPalR;`,
+    extraSafe:``,
+    moveCheck:`             IF #Unit.sts.xHasPallet AND NOT #xCentered THEN #Unit.sts.wErr := 16#0010; #Unit.sts.iStep := 900;
+             ELSIF NOT #xLobbyDoorClosed THEN #Unit.sts.wErr := 16#0015; #Unit.sts.iStep := 900;
+             ELSIF (#Unit.cmd.iTarget < 0) OR (#Unit.cmd.iTarget > ${F}) THEN #Unit.sts.wErr := 16#0014; #Unit.sts.iStep := 900;
+             ELSE #diTarget := #Unit.cfg.diLevel[#Unit.cmd.iTarget]; #Unit.sts.iStep := 10;
+             END_IF;`,
+    trCheck:`             IF NOT (#Unit.io.xLvlUp AND #Unit.io.xLvlDn) THEN #Unit.sts.wErr := 16#0012; #Unit.sts.iStep := 900; ELSE #Unit.sts.iStep := 20; END_IF;`,
+    moveAbort:``,posExtra:` AND #Unit.io.xLvlUp AND #Unit.io.xLvlDn`,
+    istop:`TRUE`,
+    endP:`#Unit.io.xTrEnd1`,endM:`#Unit.io.xTrEnd2`,home:`#Unit.io.xTrHome`}));
+  if(TT)add("06_FB_Turntable.scl","תבנית מסובבת",`מופע לכל לובי (${L}). שחרור פין, סיבוב ל-0° או 180°, אימות בחיישן ונעילה.`,hdr("FB_Turntable – SINA_POS")+posUnit({fb:"FB_Turntable",udt:"UDT_Turntable",axis:"axis",hasTr:false,win:50,
+    inputs:`      xAt0 : Bool;
+      xAt180 : Bool;
+      xLocked : Bool;
+      xLobbyClear : Bool;    // דלת סגורה + שדה סורק ריק`,
+    outputs:`      yUnlock : Bool;        // סולנואיד שחרור פין`,
+    pre:`   #yUnlock := (#Unit.sts.iStep >= 5) AND (#Unit.sts.iStep < 30);`,
+    extraSafe:` OR NOT #xLobbyClear`,
+    moveCheck:`             IF #Unit.cmd.iTarget = 2 THEN #diTarget := #Unit.cfg.di180; ELSE #diTarget := 0; END_IF;
+             #Unit.sts.iStep := 5;`,
+    trCheck:`             #Unit.sts.iStep := 100;   // אין העברה במסובבת`,
+    moveAbort:``,posExtra:` AND ((#diTarget = 0 AND #xAt0) OR (#diTarget <> 0 AND #xAt180))`,
+    extraSteps:`      5:  // שחרור פין נעילה
+          IF NOT #xLocked THEN #Unit.sts.iStep := 10; END_IF;
+      30: // נעילה
+          IF #xLocked THEN #Unit.sts.iStep := 100; END_IF;
+`,
+    istop:`TRUE`}).replace("#xExecPos := FALSE; #Unit.sts.iStep := 100;\n          END_IF;\n","#xExecPos := FALSE; #Unit.sts.iStep := 30;\n          END_IF;\n").replace("      10: #xExecPos := TRUE; #Unit.sts.iStep := 11;","      10: #xExecPos := TRUE; #Unit.sts.iStep := 11;   // הפין משוחרר בשלבים 5–29"));
+  // ---------- lobby
+  add("07_FB_Lobby.scl","תבנית לובי",`מופע לכל לובי (${L}). רצף בדיקת רכב: מיקום, אורך, רוחב, ${HN} חיישני גובה, סריקה, דלת.`,hdr("FB_Lobby – SINA_SPEED לדלת")+`
+FUNCTION_BLOCK "FB_Lobby"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT
+      xSafeOk : Bool;
+      xAck : Bool;
+   END_VAR
+   VAR_IN_OUT
+      Lb : "UDT_Lobby";
+   END_VAR
+   VAR
+      instDoor : "SINA_SPEED";
+      tonPos : TON;
+      tonFree : TON;
+      tonLeave : TON;
+      rtExit : R_TRIG;
+      rDoor : Real;
+      i : Int;
+      iBlocked : Int;
+      iTries : Int;
+      xPosOk : Bool;
+      xFree : Bool;
+   END_VAR
+BEGIN
+   // כל הקרניים במצב Light-on: TRUE = פנויה
+   #xPosOk := #Lb.io.xWheelFl AND #Lb.io.xWheelFr AND NOT #Lb.io.xPosStop
+              AND #Lb.io.xLenFront AND #Lb.io.xLenRear AND #Lb.io.xWidL AND #Lb.io.xWidR;
+   #xFree := #Lb.xSafeFieldFree AND #Lb.io.xLcEntry AND NOT #Lb.io.xRadar;
+   #tonPos(IN := #xPosOk AND (#Lb.sts.iStep = 10), PT := T#2S);
+   #tonFree(IN := #xFree AND ((#Lb.sts.iStep = 40) OR (#Lb.sts.iStep = 60)), PT := T#5S);
+   #tonLeave(IN := NOT #Lb.io.xWheelFl AND NOT #Lb.io.xWheelFr AND #xFree AND (#Lb.sts.iStep = 800), PT := T#3S);
+   #rtExit(CLK := #Lb.io.xPbExit);
+   #rDoor := 0.0;
+
+   CASE #Lb.sts.iStep OF
+      0:  // מוכן: מגש ריק בעמדה
+          #Lb.sts.xCarOk := FALSE; #Lb.sts.xReject := FALSE; #iTries := 0;
+          IF #Lb.io.xPalIn AND #xSafeOk THEN #Lb.sts.iStep := 5; END_IF;
+      5:  // פתיחת דלת
+          IF #Lb.io.xDoorOpen THEN #Lb.sts.iStep := 10; ELSE #rDoor := #Lb.cfg.rDoorRpm; END_IF;
+      10: // כניסת רכב והכוונה
+          IF #tonPos.Q THEN #Lb.sts.iStep := 20; END_IF;
+      20: // סיווג גובה
+          #iBlocked := 0;
+          FOR #i := 1 TO ${HN} DO
+             IF NOT #Lb.io.xHgt[#i] THEN #iBlocked := #iBlocked + 1; END_IF;
+          END_FOR;
+          IF #iBlocked >= ${HN} THEN
+             #Lb.sts.wReason := 16#0001; #Lb.sts.iStep := 800;    // גבוה מדי
+          ELSE
+             #Lb.sts.iHeightCls := #iBlocked; #Lb.sts.iStep := 30;
+          END_IF;
+      30: // הנהג יוצא ולוחץ "יצאתי"
+          IF #rtExit.Q THEN #Lb.sts.iStep := 40; END_IF;
+          IF NOT #xPosOk THEN #Lb.sts.iStep := 10; END_IF;
+      40: // סריקת היקף 5 ש'
+          IF #tonFree.Q THEN #Lb.sts.iStep := 50; END_IF;
+      50: // סגירת דלת עם קצה בטיחות
+          IF NOT #Lb.io.xDoorEdge OR NOT #xFree THEN
+             #iTries := #iTries + 1; #Lb.sts.iStep := 5;
+          ELSIF #Lb.io.xDoorClosed THEN #Lb.sts.iStep := 60;
+          ELSE #rDoor := -#Lb.cfg.rDoorRpm;
+          END_IF;
+      60: // סריקה חוזרת אחרי סגירה
+          IF #tonFree.Q THEN #Lb.sts.xCarOk := TRUE; #Lb.sts.iStep := 70; END_IF;
+      70: // ממתין שהמשימה תיקח את המגש
+          IF #Lb.cmd.xAccepted AND NOT #Lb.io.xPalIn THEN
+             #Lb.cmd.xAccepted := FALSE; #Lb.sts.xCarOk := FALSE; #Lb.sts.iStep := 0;
+          END_IF;
+      800: // דחייה: פתיחת דלת ויציאת הרכב
+          #Lb.sts.xReject := TRUE;
+          IF NOT #Lb.io.xDoorOpen THEN #rDoor := #Lb.cfg.rDoorRpm; END_IF;
+          IF #tonLeave.Q THEN #Lb.sts.iStep := 0; END_IF;
+   END_CASE;
+   IF #Lb.cmd.xOpenForExit AND NOT #Lb.io.xDoorOpen AND #Lb.sts.iStep = 0 THEN #rDoor := #Lb.cfg.rDoorRpm; END_IF;
+
+   // הכוונה ורמזור
+   #Lb.io.yGuideFwd := (#Lb.sts.iStep = 10) AND #Lb.io.xPosStop;
+   #Lb.io.yGuideBack := (#Lb.sts.iStep = 10) AND NOT #Lb.io.xLenFront;
+   #Lb.io.yGuideStop := (#Lb.sts.iStep >= 10) AND (#Lb.sts.iStep < 70) AND NOT #Lb.io.yGuideFwd AND NOT #Lb.io.yGuideBack;
+   #Lb.io.yTlGrn := (#Lb.sts.iStep = 10);
+   #Lb.io.yTlRed := NOT #Lb.io.yTlGrn;
+   #Lb.io.yLamp := TRUE;
+
+   #instDoor(EnableAxis := #xSafeOk AND (#rDoor <> 0.0),
+             AckError := #xAck,
+             SpeedSp := #rDoor,
+             RefSpeed := 1500.0,
+             ConfigAxis := 16#003F,
+             HWIDSTW := #Lb.cfg.hwDoor,
+             HWIDZSW := #Lb.cfg.hwDoor);
+END_FUNCTION_BLOCK
+`);
+  // ---------- FC_Cells
+  add("08_FC_Cells.scl","תבנית תאים (לולאה על כל התאים)",`רץ על ${F}×${SD}×${N} = ${F*SD*N} תאים: גלישה, תקלת חיישן, ספירת פנויים וקרני גלישה בכל קומה.`,hdr("FC_Cells")+`
+FUNCTION "FC_Cells" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP
+      f : Int;
+      s : Int;
+      c : Int;
+      iFree : Int;
+      iFault : Int;
+      xOvh : Bool;
+   END_VAR
+BEGIN
+   FOR #f := 1 TO ${F} DO
+      #iFree := 0; #iFault := 0; #xOvh := FALSE;
+      FOR #s := 1 TO ${SD} DO
+         // קרן חסומה = FALSE
+         IF NOT "Plant".Fl[#f].xOvhLo[#s] OR NOT "Plant".Fl[#f].xOvhHi[#s] THEN #xOvh := TRUE; END_IF;
+         FOR #c := 1 TO ${N} DO
+            IF NOT "Plant".Cell[#f, #s, #c].xDisabled THEN
+               "Plant".Cell[#f, #s, #c].xFaultSlip := "Plant".Cell[#f, #s, #c].xPal AND NOT "Plant".Cell[#f, #s, #c].xSeat;
+               "Plant".Cell[#f, #s, #c].xFaultSensor := NOT "Plant".Cell[#f, #s, #c].xPal AND "Plant".Cell[#f, #s, #c].xSeat;
+               IF "Plant".Cell[#f, #s, #c].xFaultSlip OR "Plant".Cell[#f, #s, #c].xFaultSensor THEN
+                  #iFault := #iFault + 1;
+               ELSIF NOT "Plant".Cell[#f, #s, #c].xOccupied AND NOT "Plant".Cell[#f, #s, #c].xReserved THEN
+                  #iFree := #iFree + 1;
+               END_IF;
+            END_IF;
+         END_FOR;
+      END_FOR;
+      "Plant".Fl[#f].xAnyOvh := #xOvh;
+      "Plant".Fl[#f].iFree := #iFree;
+      "Plant".Fl[#f].iFaults := #iFault;
+   END_FOR;
+END_FUNCTION
+`);
+  // ---------- FC_Config
+  const shAx=M.axes.find(a=>a.role==="travel"),hoAx=M.axes.find(a=>a.role==="hoist"),ttAx=M.axes.find(a=>a.role==="turn");
+  const cal=a=>axisCalc(a);
+  const maxCls=f=>{let k=-1;for(let i=0;i<=HN;i++)if(floorsForClass(i,M.H).includes(f))k=i;return k};
+  const disLines=[...M.dis].map(id=>{const m=id.match(/^(\d+)([AB])(\d+)$/);return `   "Plant".Cell[${m[1]}, ${m[2]==="A"?1:2}, ${m[3]}].xDisabled := TRUE;   // F${pad(+m[1])}${m[2]}${pad(+m[3])}`}).join("\n");
+  const hw=(path,dev,tel)=>`   ${path} := 0;   // ← להחליף בקבוע המערכת של "${dev}" (${tel}) מטבלת System constants`;
+  let cfg=`
+FUNCTION "FC_Config" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP
+      f : Int;
+      s : Int;
+      c : Int;
+   END_VAR
+BEGIN
+   // ---- תאים: ברירת מחדל פעילים, ואז ביטול תאים לפי הרשימה באתר
+   FOR #f := 1 TO ${F} DO
+      FOR #s := 1 TO ${SD} DO
+         FOR #c := 1 TO ${N} DO
+            "Plant".Cell[#f, #s, #c].xDisabled := FALSE;
+         END_FOR;
+      END_FOR;
+   END_FOR;
+${disLines||"   // אין תאים מבוטלים"}
+
+   // ---- קומות: סיווג גובה מקסימלי (-1 = אין רכב מותר)
+${Array.from({length:F},(_,i)=>`   "Plant".Fl[${i+1}].iMaxHeightCls := ${maxCls(i+1)};   // גובה נקי ${S.floorClear[i]} מ"מ`).join("\n")}
+
+   // ---- שאטלים: מיקום תאים לאורך השביל. פסיעה ${p} מ"מ = ${p*100} LU
+   FOR #f := 1 TO ${F} DO
+      FOR #c := 0 TO ${N+1} DO
+         "Plant".Sh[#f].cfg.diX[#c] := INT_TO_DINT(#c) * ${p*100} + ${Math.round(p/2)*100};
+      END_FOR;
+      "Plant".Sh[#f].cfg.travel.diVelo := ${Math.round(cal(shAx).vLU)};
+      "Plant".Sh[#f].cfg.travel.diMin := -500;
+      "Plant".Sh[#f].cfg.travel.diMax := ${Math.round((M.aisleLen-600)*100)};
+      "Plant".Sh[#f].cmd.rOverride := 100.0;
+   END_FOR;
+${Array.from({length:F},(_,i)=>hw(`"Plant".Sh[${i+1}].cfg.travel.hwId`,`sh${pad(i+1)}-travel`,"Telegram 111")+"\n"+hw(`"Plant".Sh[${i+1}].cfg.hwTransfer`,`sh${pad(i+1)}-transfer`,"Telegram 1")).join("\n")}
+
+   // ---- מעליות: מפלסים [LU]
+${Array.from({length:L},(_,l)=>Array.from({length:F+1},(_,f)=>`   "Plant".Lf[${l+1}].cfg.diLevel[${f}] := ${Math.round(M.levelZ[f]*100)};   // ${f?`קומה ${f}`:"לובי"} +${M.levelZ[f]} מ"מ`).join("\n")+`
+   "Plant".Lf[${l+1}].cfg.hoist.diVelo := ${Math.round(cal(hoAx).vLU)};
+   "Plant".Lf[${l+1}].cfg.hoist.diMin := -1000;
+   "Plant".Lf[${l+1}].cfg.hoist.diMax := ${Math.round(M.levelZ[F]*100+2000)};
+   "Plant".Lf[${l+1}].cmd.rOverride := 100.0;
+${hw(`"Plant".Lf[${l+1}].cfg.hoist.hwId`,`lf${l+1}-hoist`,"Telegram 111")}
+${hw(`"Plant".Lf[${l+1}].cfg.hwTransfer`,`lf${l+1}-transfer`,"Telegram 1")}
+${hw(`"Plant".Lb[${l+1}].cfg.hwDoor`,`lb${l+1}-door`,"Telegram 1")}
+   "Plant".Lb[${l+1}].cfg.rDoorRpm := 900.0;`).join("\n")}
+${TT?Array.from({length:L},(_,l)=>`   "Plant".Tt[${l+1}].cfg.di180 := 18000;
+   "Plant".Tt[${l+1}].cfg.axis.diVelo := ${Math.round(cal(ttAx).vLU)};
+   "Plant".Tt[${l+1}].cmd.rOverride := 100.0;
+${hw(`"Plant".Tt[${l+1}].cfg.axis.hwId`,`lb${l+1}-turn`,"Telegram 111")}`).join("\n"):""}
+END_FUNCTION
+`;
+  add("09_FC_Config.scl","הגדרות (נקרא מ-OB100)",`מיקומי ${N+2} עמדות לאורך השביל, ${F+1} מפלסים, סיווגי גובה, תאים מבוטלים (${M.dis.size}) וקבועי חומרה.`,hdr("FC_Config – לקרוא ב-Startup OB100")+cfg);
+  // ---------- IO mapping
+  const ins=M.io.filter(s=>s.kind==="DI"||s.kind==="FDI"),outs=M.io.filter(s=>s.kind==="DQ");
+  add("10_FC_MapIO.scl","מיפוי כניסות/יציאות",`${ins.length} כניסות ו-${outs.length} יציאות מנותבות לשדות ב-"Plant". נוצר מרשימת החיישנים, ולכן כל תא חדש נכנס אוטומטית.`,hdr("FC_MapInputs / FC_MapOutputs")+`
+FUNCTION "FC_MapInputs" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+BEGIN
+${M.cabs.map(c=>{const l=c.io.filter(s=>s.kind==="DI"||s.kind==="FDI");if(!l.length)return"";return `   // ===== ${c.id} – ${c.name}\n`+l.map(s=>`   ${ioPath(s)} := ${s.addr};${s.kind==="FDI"?"   // F-DI: קריאה בלבד, הלוגיקה ב-F program":""}`).join("\n")}).filter(Boolean).join("\n")}
+END_FUNCTION
+
+FUNCTION "FC_MapOutputs" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+BEGIN
+${outs.map(s=>`   ${s.addr} := ${ioPath(s)};   // ${s.cab}`).join("\n")}
+END_FUNCTION
+`);
+  // ---------- jobs
+  const liftX=l=>l===1?0:N+1;
+  add("11_FB_Job.scl","תבנית משימה – אחסון ושליפה",`מופע לכל מעלית (${L}). מקבל קומה/צד/תא מ-"Plant".JobReq ומפעיל את היחידות לפי הסדר.`,hdr("FB_Job")+`
+FUNCTION_BLOCK "FB_Job"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT
+      iLift : Int;
+   END_VAR
+   VAR
+      iStep : Int;
+      iF : Int;
+      iS : Int;
+      iC : Int;
+      iLiftX : Int;
+      xRetr : Bool;
+      tonStep : TON;
+   END_VAR
+BEGIN
+   IF #iLift = 1 THEN #iLiftX := 0; ELSE #iLiftX := ${N+1}; END_IF;   // מיקום המעלית בשביל
+   #tonStep(IN := (#iStep > 0) AND (#iStep < 900), PT := T#180S);
+   IF #tonStep.Q OR (#iStep > 0 AND #iStep < 900 AND
+      ("Plant".Lf[#iLift].sts.xError OR ((#iF >= 1) AND (#iF <= ${F}) AND "Plant".Sh[#iF].sts.xError))) THEN
+      "Plant".JobReq[#iLift].wErr := INT_TO_WORD(#iStep); #iStep := 900;
+   END_IF;
+
+   CASE #iStep OF
+      0:  IF "Plant".JobReq[#iLift].xStore OR "Plant".JobReq[#iLift].xRetrieve THEN
+             #iF := "Plant".JobReq[#iLift].iFloor; #iS := "Plant".JobReq[#iLift].iSide; #iC := "Plant".JobReq[#iLift].iCell;
+             #xRetr := "Plant".JobReq[#iLift].xRetrieve;
+             "Plant".JobReq[#iLift].xStore := FALSE; "Plant".JobReq[#iLift].xRetrieve := FALSE;
+             "Plant".JobReq[#iLift].xDone := FALSE; "Plant".JobReq[#iLift].xBusy := TRUE;
+             IF (#iF < 1) OR (#iF > ${F}) OR (#iS < 1) OR (#iS > ${SD}) OR (#iC < 1) OR (#iC > ${N}) THEN #iStep := 900;
+             ELSIF "Plant".Cell[#iF, #iS, #iC].xDisabled THEN #iStep := 900;
+             ELSIF #xRetr THEN #iStep := 200;
+             ELSIF NOT "Plant".Lb[#iLift].sts.xCarOk THEN #iStep := 900;
+             ELSE "Plant".Cell[#iF, #iS, #iC].xReserved := TRUE; #iStep := 10;
+             END_IF;
+          END_IF;
+      // ================= אחסון =================
+      10: "Plant".Lf[#iLift].cmd.iTarget := 0; "Plant".Lf[#iLift].cmd.iCmd := 1; #iStep := 11;
+      11: IF ("Plant".Lf[#iLift].cmd.iCmd = 0) AND "Plant".Lf[#iLift].sts.xDone THEN #iStep := 20; END_IF;
+      20: "Plant".Lf[#iLift].cmd.iTransfer := 2; "Plant".Lf[#iLift].cmd.iCmd := 2; #iStep := 21;   // משיכה מהלובי
+      21: IF ("Plant".Lf[#iLift].cmd.iCmd = 0) AND "Plant".Lf[#iLift].sts.xDone THEN "Plant".Lb[#iLift].cmd.xAccepted := TRUE; #iStep := 30; END_IF;
+      30: "Plant".Lf[#iLift].cmd.iTarget := #iF; "Plant".Lf[#iLift].cmd.iCmd := 1;
+          "Plant".Sh[#iF].cmd.iTarget := #iLiftX; "Plant".Sh[#iF].cmd.iCmd := 1; #iStep := 31;
+      31: IF ("Plant".Lf[#iLift].cmd.iCmd = 0) AND "Plant".Lf[#iLift].sts.xDone
+             AND ("Plant".Sh[#iF].cmd.iCmd = 0) AND "Plant".Sh[#iF].sts.xDone THEN #iStep := 40; END_IF;
+      40: "Plant".Sh[#iF].cmd.iTransfer := 1; "Plant".Sh[#iF].cmd.iCmd := 2; #iStep := 41;          // השאטל מושך מהמעלית (צד A)
+      41: IF ("Plant".Sh[#iF].cmd.iCmd = 0) AND "Plant".Sh[#iF].sts.xDone THEN #iStep := 50; END_IF;
+      50: "Plant".Sh[#iF].cmd.iTarget := #iC; "Plant".Sh[#iF].cmd.iCmd := 1; #iStep := 51;
+      51: IF ("Plant".Sh[#iF].cmd.iCmd = 0) AND "Plant".Sh[#iF].sts.xDone THEN #iStep := 60; END_IF;
+      60: "Plant".Sh[#iF].cmd.iTransfer := 2 + #iS; "Plant".Sh[#iF].cmd.iCmd := 2; #iStep := 61;      // 3 = דחיפה ל-A · 4 = דחיפה ל-B
+      61: IF ("Plant".Sh[#iF].cmd.iCmd = 0) AND "Plant".Sh[#iF].sts.xDone THEN #iStep := 70; END_IF;
+      70: IF "Plant".Cell[#iF, #iS, #iC].xPal AND "Plant".Cell[#iF, #iS, #iC].xSeat AND NOT "Plant".Fl[#iF].xAnyOvh THEN
+             "Plant".Cell[#iF, #iS, #iC].xOccupied := TRUE; "Plant".Cell[#iF, #iS, #iC].xReserved := FALSE;
+             "Plant".Cell[#iF, #iS, #iC].iHeightCls := "Plant".Lb[#iLift].sts.iHeightCls;
+             #iStep := 100;
+          ELSIF #tonStep.ET > T#20S THEN #iStep := 900;
+          END_IF;
+      // ================= שליפה =================
+      200: "Plant".Sh[#iF].cmd.iTarget := #iC; "Plant".Sh[#iF].cmd.iCmd := 1;
+           "Plant".Lf[#iLift].cmd.iTarget := #iF; "Plant".Lf[#iLift].cmd.iCmd := 1; #iStep := 201;
+      201: IF ("Plant".Sh[#iF].cmd.iCmd = 0) AND "Plant".Sh[#iF].sts.xDone
+              AND ("Plant".Lf[#iLift].cmd.iCmd = 0) AND "Plant".Lf[#iLift].sts.xDone THEN #iStep := 210; END_IF;
+      210: "Plant".Sh[#iF].cmd.iTransfer := #iS; "Plant".Sh[#iF].cmd.iCmd := 2; #iStep := 211;       // 1 = משיכה מ-A · 2 = משיכה מ-B
+      211: IF ("Plant".Sh[#iF].cmd.iCmd = 0) AND "Plant".Sh[#iF].sts.xDone THEN
+              "Plant".Cell[#iF, #iS, #iC].xOccupied := FALSE; #iStep := 220; END_IF;
+      220: "Plant".Sh[#iF].cmd.iTarget := #iLiftX; "Plant".Sh[#iF].cmd.iCmd := 1; #iStep := 221;
+      221: IF ("Plant".Sh[#iF].cmd.iCmd = 0) AND "Plant".Sh[#iF].sts.xDone THEN #iStep := 230; END_IF;
+      230: "Plant".Lf[#iLift].cmd.iTransfer := 1; "Plant".Lf[#iLift].cmd.iCmd := 2; #iStep := 231;   // המעלית מושכת מהשאטל
+      231: IF ("Plant".Lf[#iLift].cmd.iCmd = 0) AND "Plant".Lf[#iLift].sts.xDone THEN #iStep := 240; END_IF;
+      240: "Plant".Lf[#iLift].cmd.iTarget := 0; "Plant".Lf[#iLift].cmd.iCmd := 1; #iStep := 241;
+      241: IF ("Plant".Lf[#iLift].cmd.iCmd = 0) AND "Plant".Lf[#iLift].sts.xDone THEN #iStep := 250; END_IF;
+      250: "Plant".Lf[#iLift].cmd.iTransfer := 4; "Plant".Lf[#iLift].cmd.iCmd := 2; #iStep := 251;   // דחיפה ללובי
+      251: IF ("Plant".Lf[#iLift].cmd.iCmd = 0) AND "Plant".Lf[#iLift].sts.xDone THEN #iStep := ${TT?260:270}; END_IF;
+${TT?`      260: "Plant".Tt[#iLift].cmd.iTarget := 2; "Plant".Tt[#iLift].cmd.iCmd := 1; #iStep := 261;       // סיבוב 180° ליציאה קדימה
+      261: IF ("Plant".Tt[#iLift].cmd.iCmd = 0) AND "Plant".Tt[#iLift].sts.xDone THEN #iStep := 270; END_IF;
+`:""}      270: "Plant".Lb[#iLift].cmd.xOpenForExit := TRUE; #iStep := 100;
+      100: "Plant".JobReq[#iLift].xBusy := FALSE; "Plant".JobReq[#iLift].xDone := TRUE; #iStep := 0;
+      900: "Plant".JobReq[#iLift].xBusy := FALSE;
+           IF (#iF >= 1) AND (#iF <= ${F}) AND (#iS >= 1) AND (#iS <= ${SD}) AND (#iC >= 1) AND (#iC <= ${N}) THEN
+              "Plant".Cell[#iF, #iS, #iC].xReserved := FALSE;
+           END_IF;
+           IF "Plant".Main.xAck THEN "Plant".JobReq[#iLift].wErr := 0; #iStep := 0; END_IF;
+   END_CASE;
+END_FUNCTION_BLOCK
+`);
+  // ---------- FB_Plant + instance
+  add("12_FB_Plant.scl","בלוק ראשי – משכפל את כל היחידות",`מערכי מופעים: ${F} שאטלים, ${L} מעליות, ${L} לובים${TT?`, ${L} מסובבות`:""}, ${L} משימות. לולאת FOR קוראת לכל מופע.`,hdr("FB_Plant – לקרוא מ-Main [OB1]: \"iPlant\"();")+`
+FUNCTION_BLOCK "FB_Plant"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR
+      Sh : Array[1..${F}] of "FB_Shuttle";
+      Lf : Array[1..${L}] of "FB_Lift";
+      Lb : Array[1..${L}] of "FB_Lobby";
+${TT?`      Tt : Array[1..${L}] of "FB_Turntable";\n`:""}      Job : Array[1..${L}] of "FB_Job";
+      rtAck : R_TRIG;
+      i : Int;
+   END_VAR
+BEGIN
+   "FC_MapInputs"();
+   #rtAck(CLK := "Plant".Main.xPbReset);
+   "Plant".Main.xAck := #rtAck.Q;
+   "FC_Cells"();
+
+   FOR #i := 1 TO ${L} DO
+      #Job[#i](iLift := #i);
+      #Lb[#i](xSafeOk := "Plant".Main.xSafeOk, xAck := "Plant".Main.xAck, Lb := "Plant".Lb[#i]);
+      #Lf[#i](xLobbyDoorClosed := "Plant".Lb[#i].io.xDoorClosed OR ("Plant".Lf[#i].sts.diActPos < 500),
+              xSafeOk := "Plant".Main.xSafeOk, xAck := "Plant".Main.xAck, Unit := "Plant".Lf[#i]);
+${TT?`      #Tt[#i](xAt0 := "Plant".Lb[#i].io.xTt0, xAt180 := "Plant".Lb[#i].io.xTt180, xLocked := "Plant".Lb[#i].io.xTtLock,
+              xLobbyClear := "Plant".Lb[#i].io.xDoorClosed AND "Plant".Lb[#i].xSafeFieldFree,
+              xSafeOk := "Plant".Main.xSafeOk, xAck := "Plant".Main.xAck, Unit := "Plant".Tt[#i],
+              yUnlock => "Plant".Lb[#i].io.yTtLockY);
+`:""}   END_FOR;
+
+   FOR #i := 1 TO ${F} DO
+      #Sh[#i](xAnyOvh := "Plant".Fl[#i].xAnyOvh, xSafeOk := "Plant".Main.xSafeOk, xAck := "Plant".Main.xAck, Unit := "Plant".Sh[#i]);
+   END_FOR;
+
+   "Plant".Main.yHlFault := FALSE;
+   FOR #i := 1 TO ${F} DO
+      IF "Plant".Sh[#i].sts.xError OR ("Plant".Fl[#i].iFaults > 0) THEN "Plant".Main.yHlFault := TRUE; END_IF;
+   END_FOR;
+   FOR #i := 1 TO ${L} DO
+      IF "Plant".Lf[#i].sts.xError THEN "Plant".Main.yHlFault := TRUE; END_IF;
+   END_FOR;
+   "FC_MapOutputs"();
+END_FUNCTION_BLOCK
+
+DATA_BLOCK "iPlant"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+"FB_Plant"
+BEGIN
+END_DATA_BLOCK
+`);
+  // ---------- tag table
+  const tagRows=[["Name","Path","Data Type","Logical Address","Comment","Hmi Visible","Hmi Accessible","Hmi Writeable","Typeobject ID","Version ID"]];
+  M.io.filter(s=>s.kind!=="NET").forEach(s=>tagRows.push([s.tag,"Parking\\"+s.cab,"Bool",s.addr,s.desc,"True","True","False","",""]));
+  add("13_PLC_Tags.csv","טבלת תגיות לייבוא","כל נקודות ה-IO עם כתובת והערה. פותחים באקסל, שומרים כ-xlsx בגיליון PLC Tags, ומייבאים ב-PLC tags → Import.",csv(tagRows));
+  return files;
+}
+function dl(name,text){try{const b=new Blob([text],{type:typeof text==="string"?"text/plain;charset=utf-8":"application/zip"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}catch(e){toast("ההורדה נחסמה – העתיקו את הטקסט")}}
+R.tpl=()=>{
+  const files=plcFiles();
+  const ctl=(k,lbl,min,max)=>`<div class="card" style="padding:8px 10px"><div class="muted" style="font-size:12.5px">${lbl}</div><div class="row" style="gap:6px;margin-top:4px"><button class="btn" type="button" data-step="${k}" data-d="-1" aria-label="הפחתה">−</button><b class="mono" style="min-width:32px;text-align:center;font-size:18px">${S[k]}</b><button class="btn" type="button" data-step="${k}" data-d="1" aria-label="הוספה">+</button></div></div>`;
+  const tplRows=[
+    ["תא","UDT_Cell + FC_Cells",`${M.cells} תאים פעילים (${M.F}×${M.sides}×${M.n}${M.dis.size?` − ${M.dis.size} מבוטלים`:""})`,"מערך התאים, מיפוי החיישנים, מיקום כל תא לאורך השביל"],
+    ["שאטל","UDT_Shuttle + FB_Shuttle",`${M.F} מופעים`,"מופע לכל קומה, IP וקבועי חומרה"],
+    ["מעלית","UDT_Lift + FB_Lift",`${M.L} מופעים`,`טבלת ${M.F+1} מפלסים`],
+    ...(S.turntable?[["מסובבת","UDT_Turntable + FB_Turntable",`${M.L} מופעים`,"מופע לכל לובי"]]:[]),
+    ["לובי","UDT_Lobby + FB_Lobby",`${M.L} מופעים`,`${M.H.length} קרני גובה במערך`],
+    ["העברת מגש","FB_Transfer",`${M.F+M.L} מופעים`,"אחד בכל שאטל ובכל מעלית"],
+    ["משימה","FB_Job",`${M.L} מופעים`,"אחסון ושליפה לכל מעלית"],
+    ["קומה","UDT_Floor",`${M.F} מופעים`,"קרני גלישה, סיווג גובה, ספירת פנויים"]];
+  return `<h2>תבניות PLC מוכנות</h2>
+  <p class="lead">קבצי מקור מוכנים ל‑TIA Portal (S7‑1500). כל יחידה כתובה פעם אחת כתבנית (UDT + FB), והתוכנה משכפלת אותה לפי הכמויות. משנים כמות כאן או בהגדרות, וכל הקבצים נבנים מחדש: מערכים, לולאות, מיפוי IO, מיקומי תאים ומפלסים.</p>
+  <h3>כמויות</h3>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+    ${ctl("floors","קומות",1,14)}${ctl("cellsPerSide","תאים לכל צד",2,40)}${ctl("sides","צדדים",1,2)}${ctl("lifts","מעליות",1,2)}${ctl("hCount","חיישני גובה",1,12)}
+  </div>
+  <div class="row" style="margin-top:10px">
+    <label class="chk"><input type="checkbox" id="tplTT" ${S.turntable?"checked":""}> מסובבת בלובי</label>
+    <label class="f" style="min-width:260px;flex:1">תאים למחיקה (מבוטלים)<input id="tplDis" type="text" value="${esc(S.disabledCells)}" placeholder="F01A12, F03B01"></label>
+  </div>
+  <h3>התבניות</h3>
+  ${table([["תבנית"],["בלוקים"],["כמות"],["מה משתכפל"]],tplRows.map(r=>`<tr>${td(`<b>${r[0]}</b>`)}${td(r[1],"m")}${td(r[2])}${td(r[3])}</tr>`))}
+  <h3>ייבוא ל‑TIA Portal</h3>
+  <ol class="steps">
+    <li>מוסיפים לפרויקט את ספריית DriveLib של Siemens (בה SINA_POS ו‑SINA_SPEED) ומעתיקים את שני הבלוקים לתוכנית. <em>Libraries</em></li>
+    <li>מגדירים את החומרה לפי לשונית "רשת ו‑IP", כולל טלגרמים 111/1 לדרייברים. <em>Devices &amp; networks</em></li>
+    <li>External source files → Add new external file: מוסיפים את הקבצים לפי סדר המספרים, 01 עד 12. <em>Project tree</em></li>
+    <li>על כל קובץ: לחצן ימני → Generate blocks from source, לפי הסדר. <em>01 → 12</em></li>
+    <li>בהגדרות החומרה קובעים לכל כרטיס ET 200SP כתובת התחלה כמו בלשונית "חיישנים ו‑IO", כדי שהמיפוי ב‑10_FC_MapIO יתאים. <em>Properties → I/O addresses</em></li>
+    <li>ב‑FC_Config מחליפים כל ‎:= 0‎ של hwId בקבוע המערכת של הטלגרם (מופיע בהערה ליד כל שורה). <em>System constants</em></li>
+    <li>ב‑Main [OB1] כותבים ‎"iPlant"();‎ וב‑Startup [OB100] כותבים ‎"FC_Config"();‎. <em>OB1 / OB100</em></li>
+    <li>את ‎"Plant".Main.xSafeOk‎, ‎xSafeFieldFree‎ ו‑STO כותבים מהתוכנית הבטיחותית (F‑program), שנבנית ונבדקת בנפרד. <em>Safety Administration</em></li>
+    <li>טבלת התגיות (13) היא אופציונלית: נותנת שמות לכתובות לצורך צפייה ותחזוקה. <em>PLC tags → Import</em></li>
+  </ol>
+  <div class="row noprint" style="margin:12px 0">
+    <button class="btn pri" type="button" id="tplZip">הורדת חבילת הפרויקט (ZIP)</button>
+    <button class="btn" type="button" id="tplCopyAll">העתקת כל הקבצים</button>
+    <span class="muted" style="font-size:13px">ה‑ZIP כולל את כל קבצי ה‑PLC עם הסיומות הנכונות, כל השרטוטים, טבלאות CSV והדוח.</span>
+  </div>
+  ${files.map((f,i)=>`<details class="card" style="margin-bottom:8px" ${i===0?"":""}><summary style="cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline"><b class="mono">${f.name}</b><span>${esc(f.title)}</span><span class="muted" style="font-size:12.5px">${f.code.split("\n").length} שורות</span></summary>
+    <p class="muted" style="margin:6px 0">${esc(f.desc)}</p>
+    <div class="row noprint"><button class="btn" type="button" data-cp="${i}">העתקה</button>${inFrame?"":`<button class="btn" type="button" data-dl="${i}">הורדה</button>`}</div>
+    <pre class="code">${esc(f.code)}</pre></details>`).join("")}`;
+};
+function tplMount(){
+  const files=plcFiles();
+  const lim={floors:[1,14],cellsPerSide:[2,40],sides:[1,2],lifts:[1,2],hCount:[1,12]};
+  document.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{const k=b.dataset.step,[mn,mx]=lim[k];const v=Math.max(mn,Math.min(mx,+S[k]+ +b.dataset.d));if(v===+S[k])return;S[k]=v;
+    if(k==="hCount")spreadLevels();if(k==="floors")ensureFloors();fillInputs();simState=null;save();render();toast("התבניות נבנו מחדש")});
+  document.getElementById("tplTT").onchange=e=>{S.turntable=e.target.checked;fillInputs();save();render()};
+  document.getElementById("tplDis").onchange=e=>{const el=document.getElementById("disabledCells");el.value=e.target.value;el.dispatchEvent(new Event("change"))};
+  document.querySelectorAll("[data-cp]").forEach(b=>b.onclick=()=>copyText(files[+b.dataset.cp].code,`${files[+b.dataset.cp].name} הועתק`,b.closest("details").querySelector("pre")));
+  document.querySelectorAll("[data-dl]").forEach(b=>b.onclick=()=>dl(files[+b.dataset.dl].name,files[+b.dataset.dl].code));
+  document.getElementById("tplCopyAll").onclick=()=>copyText(files.map(f=>`// ======================= ${f.name} =======================\n${f.code}`).join("\n\n"),"כל הקבצים הועתקו");
+  document.getElementById("tplZip").onclick=()=>{const z=projectZip();saveFile(z.name,z.data)};
+}
+
+/* ---------- file export: ZIP (store) + downloads capability ---------- */
+let DLcap=null;(async()=>{try{if(window.claude&&window.claude.use)DLcap=await window.claude.use("downloads")}catch(e){DLcap=null}})();
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC_T[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function makeZip(entries){
+  const enc=new TextEncoder(),parts=[],central=[];let off=0;
+  const d=new Date(),dt=((d.getFullYear()-1980)<<9|(d.getMonth()+1)<<5|d.getDate()),tm=(d.getHours()<<11|d.getMinutes()<<5|(d.getSeconds()>>1));
+  for(const e of entries){
+    const name=enc.encode(e.name),data=typeof e.data==="string"?enc.encode(e.data):e.data,crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,tm,true);h.setUint16(12,dt,true);
+    h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),name,data);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,tm,true);c.setUint16(14,dt,true);
+    c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer),name);
+    off+=30+name.length+data.length;
+  }
+  const cSize=central.reduce((a,x)=>a+x.length,0),end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true);end.setUint16(8,entries.length,true);end.setUint16(10,entries.length,true);end.setUint32(12,cSize,true);end.setUint32(16,off,true);
+  const all=[...parts,...central,new Uint8Array(end.buffer)],out=new Uint8Array(all.reduce((a,x)=>a+x.length,0));let p=0;for(const x of all){out.set(x,p);p+=x.length}
+  return out;
+}
+async function saveFile(filename,data){
+  if(DLcap){try{await DLcap.save({filename,data});toast("נשמר: "+filename)}catch(e){toast(e&&e.code==="declined"?"ההורדה בוטלה":"ההורדה לא זמינה כאן ("+(e&&e.code||"שגיאה")+")")}return}
+  if(!inFrame){dl(filename,data);return}
+  toast("ההורדה לא זמינה בתצוגה הזאת. פתחו את index.html מהמאגר.");
+}
+function safeName(s){return String(s||"parking").replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_").slice(0,60)}
+function projectZip(){
+  const e=[],bom="﻿",slug=safeName(S.project);
+  plcFiles().forEach(f=>e.push({name:`PLC/${f.name}`,data:f.name.endsWith(".csv")?bom+f.code:f.code}));
+  const keep={type:dwType,sub:dwSub};
+  Object.keys(DRAW).forEach(k=>{const subs=k==="plan"?Array.from({length:M.F},(_,i)=>String(i+1)):k==="cabinet"?M.cabs.map(c=>c.id):k==="lobbyPlan"?Array.from({length:M.L},(_,i)=>String(i+1)):["-"];
+    subs.forEach(x=>{const r=DRAW[k](x);const tmp=document.createElement("div");tmp.innerHTML=r.svg;const svg=tmp.querySelector("svg");if(svg)e.push({name:`Drawings/${k}${x==="-"?"":"_"+x}.svg`,data:standaloneSVG(svg)})})});
+  dwType=keep.type;dwSub=keep.sub;
+  e.push({name:"Tables/io_list.csv",data:bom+ioCSV()},{name:"Tables/ip_list.csv",data:bom+ipCSV()},{name:"Tables/axes.csv",data:bom+axCSV()});
+  e.push({name:"report.txt",data:reportText()});
+  e.push({name:"README.txt",data:`${S.project}\nנוצר ע"י מתכנן חניון רובוטי ${new Date().toISOString().slice(0,10)}\n\nPLC/        קבצי מקור ל-TIA Portal – לייבא לפי סדר המספרים 01..12\nDrawings/   שרטוטים SVG – נפתחים בדפדפן, Inkscape או AutoCAD (ייבוא)\nTables/     רשימות IO, IP וצירים (CSV לאקסל)\nreport.txt  סיכום התכנון\n`});
+  return {name:`${slug}_project.zip`,data:makeZip(e),count:e.length};
+}
+
+/* ---- per-tab mounts that need DOM ---- */
+const _render=render;
+render=function(){_render();
+  if(cur==="ip")document.getElementById("cpIP").onclick=()=>copyText(ipCSV(),"טבלת IP הועתקה");
+  if(cur==="plc")document.getElementById("cpSCL").onclick=()=>copyText(document.querySelectorAll("#s-plc pre.code")[1].textContent,"קוד ה‑SCL הועתק");
+  if(cur==="lobby")document.getElementById("lobbyCad").innerHTML=lobbySVG(1);
+  if(cur==="tpl")tplMount();
+  if(cur==="wiring"){const s=document.getElementById("wCab");const o=document.getElementById("wOut");const def=M.cabs.find(c=>c.id.startsWith("FLC"))||M.cabs[0];s.value=wCab&&M.cabs.some(c=>c.id===wCab)?wCab:def.id;o.innerHTML=wiringOut(s.value);s.onchange=()=>{wCab=s.value;o.innerHTML=wiringOut(s.value)}}
+};
+let wCab=null;
+
+ensureFloors();fillInputs();render();
+})();
+</script>
+</body>
+</html>
