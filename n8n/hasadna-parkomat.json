@@ -309,6 +309,311 @@
         1180,
         640
       ]
+    },
+    {
+      "parameters": {
+        "content": "## Parkomat · העלאת קבצים\nהגרסה בענן של הטופס המקומי (`localhost:5679/webhook/parking-agents`).\n\nClaude קורא את הקובץ וכותב סיכום, הקובץ עובר ל-Google Drive או ל-Slack, ועותק עם הסיכום תמיד מגיע למייל.\n\n**חד-פעמי:** לחבר חשבון Google Drive בצומת `Drive · Upload` וחשבון Slack + ערוץ בצומת `Slack · Upload`. עד אז הקבצים מגיעים במייל בלבד.",
+        "height": 300,
+        "width": 440,
+        "color": 6
+      },
+      "id": "99ff43cc-9c2c-525a-a7b8-aee525c8b2e6",
+      "name": "Note · Parkomat files",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "parking-agents",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryPropertyName": "file",
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "249b42fc-533c-5437-b7a9-35a82883ce7d",
+      "name": "Files · Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        900
+      ],
+      "webhookId": "85cfd37b-e4fd-5319-b1b3-d48a60ebc717"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first();\nconst b = item.json.body || {};\nconst clip = (s, n) => String(s == null ? '' : s).replace(/[\\u0000-\\u001f]+/g, ' ').trim().slice(0, n);\nconst bin = item.binary || {};\nconst key = Object.keys(bin)[0];\nconst destination = b.destination === 'slack' ? 'slack' : 'drive';\nconst department = clip(b.department, 40).replace(/[^\\p{L}\\p{N} _-]/gu, '') || 'general';\nconst message = clip(b.message, 1500);\nif (!key) return [{ json: { error: 'לא התקבל קובץ. בחרו קובץ ונסו שוב.' } }];\nconst f = bin[key];\nconst size = Number(f.fileSize ? String(f.fileSize).replace(/[^\\d.]/g, '') * (/MB/i.test(f.fileSize) ? 1048576 : /kB/i.test(f.fileSize) ? 1024 : 1) : 0);\nif (size > 15 * 1048576) return [{ json: { error: 'הקובץ גדול מ־15MB.' } }];\nconst stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');\nconst fileName = `${department}_${stamp}_${clip(f.fileName || 'file', 120).replace(/[\\\\/:*?\"<>|]+/g, '_')}`;\nlet preview = '';\nif (/^text\\/|json|csv|xml|yaml|javascript/i.test(f.mimeType || '') && size < 300000) {\n  try { preview = (await this.helpers.getBinaryDataBuffer(0, key)).toString('utf8').slice(0, 6000); } catch {}\n}\nconst prompt = [\n  `מחלקה: ${department}`, `יעד: ${destination === 'slack' ? 'Slack' : 'Google Drive'}`,\n  `קובץ: ${clip(f.fileName, 160)} (${clip(f.mimeType, 80)}, ${clip(f.fileSize, 20)})`,\n  message ? `הודעה מהשולח:\\n${message}` : 'בלי הודעה.',\n  preview ? `תחילת התוכן:\\n${preview}` : 'התוכן לא טקסטואלי, אז מסתמכים על שם הקובץ וההודעה.'\n].join('\\n\\n');\nreturn [{ json: { destination, department, message, fileName, original: clip(f.fileName, 160), mimeType: f.mimeType || '', fileSize: f.fileSize || '', prompt },\n          binary: { file: { ...f, fileName } } }];\n"
+      },
+      "id": "3c0ffa9b-2bdd-58f5-b0f8-afff99167aac",
+      "name": "Files · Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d7935cb7-289b-5f0b-bc49-b816c6146235",
+              "leftValue": "={{ !$json.error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "32b4a73c-04af-5ee9-a91f-2e0229715ca7",
+      "name": "File OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "אתה הבודק של Parkomat. מקבל קובץ שהועלה לחברה, את המחלקה ואת ההודעה של השולח. כתוב בעברית, עד 5 שורות: מה הקובץ (לפי השם, הסוג והתוכן אם יש), למה הוא כנראה נשלח, האם יש בו משהו דחוף או חריג, ומה הצעד הבא המומלץ למחלקה. לא ממציאים תוכן שלא ראית."
+            }
+          ]
+        }
+      },
+      "id": "61e229fc-bdce-50ea-b227-16d1b768e4cf",
+      "name": "Files · בודק",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        680,
+        800
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 700
+        }
+      },
+      "id": "0cebb4d2-92fb-5a5b-89fb-437da25edd6b",
+      "name": "Claude · בודק",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        680,
+        1020
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst n = $('Files · Normalize').first();\nconst summary = ($json.text || $json.output || '').toString().trim() || 'לא נוצר סיכום (הסוכן לא זמין). הקובץ הועבר כרגיל.';\nreturn [{ json: { ...n.json, summary }, binary: n.binary }];\n"
+      },
+      "id": "bc8085bc-8fd9-563e-b514-fefa4ca8208a",
+      "name": "Files · Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Parkomat <devopsdevopshaim@gmail.com>",
+        "toEmail": "devopsdevopshaim@gmail.com",
+        "subject": "={{ 'Parkomat · ' + $json.department + ' · ' + $json.original }}",
+        "emailFormat": "text",
+        "text": "={{ 'קובץ חדש הועלה ל-Parkomat\\n\\nמחלקה: ' + $json.department + '\\nיעד: ' + $json.destination + '\\nקובץ: ' + $json.original + ' (' + $json.fileSize + ')\\n\\nהודעה:\\n' + ($json.message || '—') + '\\n\\n— סיכום הבודק —\\n' + $json.summary }}",
+        "options": {
+          "attachments": "file",
+          "appendAttribution": false
+        }
+      },
+      "id": "399f8212-f4a7-5643-964f-3f700f4cb03b",
+      "name": "Files · Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1180,
+        600
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1784f17e-7bcb-5905-b59e-92714416c8ef",
+              "leftValue": "={{ $json.destination }}",
+              "rightValue": "slack",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3ae3eb9e-286a-52a0-a519-17919adc74c3",
+      "name": "To Slack?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1180,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "binaryData": true,
+        "binaryPropertyName": "file",
+        "options": {
+          "fileName": "={{ $json.fileName }}",
+          "title": "={{ $json.original }}",
+          "initialComment": "={{ 'Parkomat · ' + $json.department + '\\n' + ($json.message ? $json.message + '\\n\\n' : '') + $json.summary }}"
+        }
+      },
+      "id": "a43d8ae6-1e5e-5a3e-98bc-0658aba8bef2",
+      "name": "Slack · Upload",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1420,
+        740
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "inputDataFieldName": "file",
+        "options": {}
+      },
+      "id": "93a596d3-5d87-5a7c-b11a-ef431086f8cb",
+      "name": "Drive · Upload",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1420,
+        940
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst r = $('Files · Route').first().json;\nconst out = $json || {};\nconst delivered = !out.error;\nconst link = out.webViewLink || out.permalink || (out.file && out.file.permalink) || (out.id && r.destination === 'drive' ? `https://drive.google.com/file/d/${out.id}/view` : '');\nconst where = r.destination === 'slack' ? 'Slack' : 'Google Drive';\nreturn [{ json: {\n  ok: true, destination: r.destination, delivered, link, summary: r.summary, file: r.fileName,\n  message: delivered ? `הקובץ הועבר ל־${where} ונשלח עותק במייל.`\n                     : `הקובץ נשלח במייל. ${where} עוד לא מחובר ב־n8n, ולכן ההעברה לשם לא בוצעה.`\n} }];\n"
+      },
+      "id": "8d81211f-fcce-59cb-9c89-d0c863388f57",
+      "name": "Files · Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1660,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e803609c-30a9-5197-89ee-3e1dbd88bed1",
+      "name": "Files · Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1900,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, message: $json.error } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "eb9d215d-2312-5ea0-b0b1-389751cf5d2e",
+      "name": "Files · Respond error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        1200
+      ]
     }
   ],
   "connections": {
@@ -372,6 +677,124 @@
         ]
       ]
     },
+    "Files · Webhook": {
+      "main": [
+        [
+          {
+            "node": "Files · Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files · Normalize": {
+      "main": [
+        [
+          {
+            "node": "File OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File OK?": {
+      "main": [
+        [
+          {
+            "node": "Files · בודק",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Files · Respond error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files · בודק": {
+      "main": [
+        [
+          {
+            "node": "Files · Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files · Route": {
+      "main": [
+        [
+          {
+            "node": "Files · Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "To Slack?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "To Slack?": {
+      "main": [
+        [
+          {
+            "node": "Slack · Upload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Drive · Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack · Upload": {
+      "main": [
+        [
+          {
+            "node": "Files · Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive · Upload": {
+      "main": [
+        [
+          {
+            "node": "Files · Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files · Result": {
+      "main": [
+        [
+          {
+            "node": "Files · Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Claude · מתאם": {
       "ai_languageModel": [
         [
@@ -389,6 +812,17 @@
           {
             "node": "Parkomat · מתאם",
             "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude · בודק": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Files · בודק",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]

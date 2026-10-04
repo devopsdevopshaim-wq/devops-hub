@@ -148,7 +148,8 @@ const form = (o) => ({ method: 'POST', body: new URLSearchParams(o) });
 const checks = {
   'hasadna-status': await probe('hasadna-status?format=json'),
   'hasadna-prices': await probe('hasadna-prices'),
-  'hasadna-auth': await probe('hasadna-auth', form({ action: 'me', token: 'probe' })) // 401 = alive and refusing
+  'hasadna-auth': await probe('hasadna-auth', form({ action: 'me', token: 'probe' })), // 401 = alive and refusing
+  'parking-agents': await probe('parking-agents', form({ department: 'probe' })) // 400 = alive, no file sent
 };
 // a real sign-in code to the admin's own inbox proves the email path end to end
 if (smtp) {
@@ -166,7 +167,7 @@ try {
   checks['hasadna-voice'] = r.status;
   note(`- הקול של מאיה: ${j.ok ? '✅ מדברת (' + Math.round(j.audio.length * 0.75 / 1024) + 'KB)' : hasVoice ? '❌ ' + r.status + ' ' + (j.error || '') + ' ' + (j.detail || '') : '⚠️ אין עדיין מפתח קול (AZURE_SPEECH_KEY + AZURE_SPEECH_REGION או ELEVENLABS_API_KEY בסוד SPIDER)'}`);
 } catch (e) { note('- ❌ הקול של מאיה: ' + e.message); }
-for (const [k, v] of Object.entries(checks)) note(`- /webhook/${k}: ${v === 200 || (k === 'hasadna-auth' && v === 401) || (k === 'hasadna-voice' && v === 503) ? '✅ עונה' : '❌ ' + v}`);
+for (const [k, v] of Object.entries(checks)) note(`- /webhook/${k}: ${v === 200 || (k === 'hasadna-auth' && v === 401) || (k === 'parking-agents' && v === 400) || (k === 'hasadna-voice' && v === 503) ? '✅ עונה' : '❌ ' + v}`);
 if (!smtp) note('- ⚠️ אין חיבור לשליחת מיילים: הוסיפו את הסוד GMAIL_APP_PASSWORD והריצו שוב. עד אז קודי הכניסה לא יישלחו.');
 if (!claude) note('- ⚠️ אין חיבור Claude: הוסיפו את הסוד ANTHROPIC_API_KEY והריצו שוב.');
 
