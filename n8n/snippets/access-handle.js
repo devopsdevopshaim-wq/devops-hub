@@ -10,6 +10,10 @@ const ADMIN_TOTP = '__ADMIN_TOTP_SECRET__';   // authenticator-app key of the ad
 // Invoices through Morning (חשבונית ירוקה): MORNING_CLIENT_ID / MORNING_CLIENT_SECRET in the secret.
 //   docType 320 = חשבונית מס/קבלה (עוסק מורשה), 400 = קבלה (עוסק פטור)
 const INVOICE = { clientId: '__MORNING_CLIENT_ID__', clientSecret: '__MORNING_CLIENT_SECRET__', docType: 320, sandbox: false };
+// Shared by the sign-in and the leads & prices workflows (derived at install time, never in the repository).
+// The sign-in hands the signed-in admin a proof that lasts 30 minutes; the other workflow checks the signature.
+const SHARED = '__SHARED_KEY__';
+const bizProof = () => { if (!set(SHARED)) return ''; const e = Date.now() + 30 * 60000; return e + '.' + hmacSha256Hex(SHARED, 'biz|' + e); };
 const CLIENT_SESSION_DAYS = 7;   // capped by the end of the subscription
 const ADMIN_SESSION_DAYS = 0.5;  // the admin signs in again every 12 hours
 const MAX_CLIENTS = 500;
@@ -127,7 +131,7 @@ switch (b.action) {
   case 'me': {
     const s = session();
     if (!s) return out({ ok: false, error: 'signed-out' }, 401);
-    if (s.role === 'admin') return out({ ok: true, role: 'admin', name: 'מנהל', email: s.email, sites: 'all' });
+    if (s.role === 'admin') return out({ ok: true, role: 'admin', name: 'מנהל', email: s.email, sites: 'all', biz: bizProof() });
     const c = sd.clients[s.email];
     if (!active(c)) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'inactive' }, 403); }
     return out({ ok: true, role: 'client', name: c.name || '', email: s.email, sites: c.sites || [], expiresAt: c.expiresAt || null, plan: c.plan || '' });

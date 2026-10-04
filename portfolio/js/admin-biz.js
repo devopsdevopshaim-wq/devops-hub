@@ -1,7 +1,7 @@
 /* Admin screen · leads & price list. Talks to the n8n workflow
    "SPIDER · לידים ומחירון" (n8n/hasadna-business.json) through adminApi.
-   Access: only the admin who signed in on the main sign-in (auth.js); every call carries that session token,
-   and n8n checks it again. There is no separate password. */
+   Access: only the admin who signed in on the main sign-in (auth.js); every call carries a short-lived signed
+   proof from that sign-in, which n8n checks. There is no separate password. */
 (function () {
   'use strict';
 
@@ -20,12 +20,23 @@
   }
   function waNum(phone) { return String(phone || '').replace(/\D/g, '').replace(/^0/, '972'); }
 
+  // A short-lived signed proof from the main sign-in (30 minutes), renewed before it runs out.
+  var proof = { v: '', at: 0 };
+  function getProof() {
+    if (proof.v && Date.now() - proof.at < 20 * 60000) return Promise.resolve(proof.v);
+    if (!window.HasadnaAuth || !window.HasadnaAuth.token()) return Promise.resolve('');
+    return window.HasadnaAuth.api('me').then(function (j) {
+      if (j && j.ok && j.biz) { proof = { v: j.biz, at: Date.now() }; return proof.v; }
+      return '';
+    }).catch(function () { return ''; });
+  }
   function api(action, payload) {
-    var token = window.HasadnaAuth && window.HasadnaAuth.token ? window.HasadnaAuth.token() : '';
-    if (!token) return Promise.resolve({ ok: false, error: 'admin-only' });
-    var body = new URLSearchParams({ action: action, token: token, payload: JSON.stringify(payload || {}) });
-    return fetch(B.cfg.adminApi, { method: 'POST', body: body })
-      .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'bad-response' }; }); });
+    return getProof().then(function (token) {
+      if (!token) return { ok: false, error: 'admin-only' };
+      var body = new URLSearchParams({ action: action, token: token, payload: JSON.stringify(payload || {}) });
+      return fetch(B.cfg.adminApi, { method: 'POST', body: body })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'bad-response' }; }); });
+    });
   }
 
   // ---------- sign-in is the main one ----------
@@ -38,7 +49,6 @@
       if (!quiet) {
         showError(j.error === 'admin-only' ? 'צריך להיכנס כמנהל: לחצו "כניסה כמנהל" והקלידו את הקוד.'
           : j.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.'
-          : j.error === 'auth-unreachable' || j.error === 'auth-error' ? 'מערכת הכניסה ב־n8n לא ענתה. נסו שוב בעוד רגע.'
           : 'n8n החזיר שגיאה: ' + j.error);
       }
     }).catch(function () {

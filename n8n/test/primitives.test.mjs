@@ -7,7 +7,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const SEC = fs.readFileSync(path.join(here, '..', 'snippets', 'security.js'), 'utf8');
 const probe = SEC + `
 const sd = {}, now = 1700000000000;
-return [{ json: { sha: sha256hex(String($json.s)), hm: toHex(hmacSha1(utf8($json.k), utf8($json.m))),
+return [{ json: { sha: sha256hex(String($json.s)), hm: toHex(hmacSha1(utf8($json.k), utf8($json.m))), h2: hmacSha256Hex($json.k, $json.m),
   t: totpAt($json.secret, $json.step), step: totpStep($json.secret, $json.code, $json.at), same1: same('abc', 'abc'), same2: same('abc', 'abd'), same3: same('abc', 'ab'),
   r: rnd(16).length } }];`;
 
@@ -20,6 +20,7 @@ for (const noCrypto of [false, true]) {
   for (const [k, m] of [['key', 'The quick brown fox'], ['k'.repeat(100), 'm'], ['', '']]) {
     const r = (await run(probe, { json: { s: '', k, m, secret: 'JBSWY3DPEHPK3PXP', step: 1, code: '000000', at: 0 }, noCrypto }))[0].json;
     check(tag + 'hmac-sha1 ' + k.length, r.hm === crypto.createHmac('sha1', k).update(m).digest('hex'));
+    check(tag + 'hmac-sha256 ' + k.length, r.h2 === crypto.createHmac('sha256', k).update(m).digest('hex'));
   }
   // RFC 6238 test vector: secret "12345678901234567890", T=59s -> 94287082 (8 digits) so 6 digits = 287082
   const b32 = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';

@@ -13,6 +13,7 @@
 //          GMAIL_APP_PASSWORD (+ optional GMAIL_USER) for the sign-in emails,
 //          AZURE_SPEECH_KEY + AZURE_SPEECH_REGION (or ELEVENLABS_API_KEY) for Maya's voice.
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 
 // all of them can also arrive in one secret (SPIDER or HAIM_WEB_KEY), in any layout: picked out by their shape
 const combined = [process.env.SPIDER, process.env.HAIM_WEB_KEY].filter(Boolean).join('\n');
@@ -31,8 +32,11 @@ const VOICE = {
 const TOTP = (process.env.ADMIN_TOTP_SECRET || ((combined.match(/ADMIN_TOTP_SECRET\W*((?:[A-Za-z2-7]{4}\s?){4,16})/) || [])[1] || '')).replace(/\s+/g, '').toUpperCase();
 const MORNING_ID = label('MORNING_CLIENT_ID', '[\\w-]{8,100}');
 const MORNING_SECRET = label('MORNING_CLIENT_SECRET', '[\\w-]{8,120}');
+// the key the sign-in and the leads & prices workflows share (the admin's short-lived proof is signed with it).
+// Derived from the n8n API key, so it is never stored in the repository and stays the same between installs.
+const SHARED = KEY ? crypto.createHmac('sha256', KEY).update('spider-shared-v1').digest('hex') : '';
 // nothing secret may ever show in the Actions log (the repository is public)
-for (const v of [KEY, CLAUDE, GMAIL_PASS, TOTP, MORNING_ID, MORNING_SECRET, ...Object.values(VOICE)]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [KEY, SHARED, CLAUDE, GMAIL_PASS, TOTP, MORNING_ID, MORNING_SECRET, ...Object.values(VOICE)]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 const out = (k, v) => fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', `${k}=${v}\n`);
 const summary = [];
 const note = (line) => { summary.push(line); console.log(line); };
@@ -173,12 +177,12 @@ try {
 try {
   results.business = await install('n8n/hasadna-business.json', ['הסדנה · לידים ומחירון'],
     { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } },
-      fill: { __ADMIN_TOTP_SECRET__: TOTP, __MORNING_CLIENT_ID__: MORNING_ID, __MORNING_CLIENT_SECRET__: MORNING_SECRET } });
+      fill: { __SHARED_KEY__: SHARED, __ADMIN_TOTP_SECRET__: TOTP, __MORNING_CLIENT_ID__: MORNING_ID, __MORNING_CLIENT_SECRET__: MORNING_SECRET } });
 } catch (e) { note(`- ⚠️ לידים ומחירון: ${e.message.slice(0, 200)}`); }
 try {
   results.access = await install('n8n/hasadna-access.json', ['הסדנה · כניסה והרשאות'],
     { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } },
-      fill: { __ADMIN_TOTP_SECRET__: TOTP, __MORNING_CLIENT_ID__: MORNING_ID, __MORNING_CLIENT_SECRET__: MORNING_SECRET } });
+      fill: { __SHARED_KEY__: SHARED, __ADMIN_TOTP_SECRET__: TOTP, __MORNING_CLIENT_ID__: MORNING_ID, __MORNING_CLIENT_SECRET__: MORNING_SECRET } });
 } catch (e) { note(`- ⚠️ כניסה והרשאות: ${e.message.slice(0, 200)}`); }
 try {
   results.parkomat = await install('n8n/hasadna-parkomat.json', [],
@@ -238,8 +242,18 @@ r1 = await post('hasadna-auth', { action: 'clients' });
 expect('כניסה: רשימת הלקוחות סגורה בלי מנהל', r1.status === 403, r1.status);
 r1 = await post('hasadna-admin', { action: 'setup', key: 'attacker-password' }, SITE_ORIGIN);
 expect('לידים ומחירון: אי אפשר לקבוע סיסמה מבחוץ', r1.status === 403, r1.status);
-r1 = await post('hasadna-admin', { action: 'list', token: 'a'.repeat(48) }, SITE_ORIGIN);
-expect('לידים ומחירון: טוקן לא מוכר נדחה דרך מערכת הכניסה', r1.status === 403 && r1.json.error === 'admin-only', `${r1.status} ${r1.text}`);
+r1 = await post('hasadna-admin', { action: 'list', token: '1' + '0'.repeat(12) + '.' + 'a'.repeat(64) }, SITE_ORIGIN);
+expect('לידים ומחירון: הוכחת מנהל מזויפת נדחית', r1.status === 403 && r1.json.error === 'admin-only', `${r1.status} ${r1.text}`);
+{
+  // the real thing: a proof signed the way the sign-in signs it must open the door (the answer itself is not printed)
+  const e = Date.now() + 5 * 60000;
+  const proof = e + '.' + crypto.createHmac('sha256', SHARED).update('biz|' + e).digest('hex');
+  r1 = await post('hasadna-admin', { action: 'list', token: proof, payload: '{}' }, SITE_ORIGIN);
+  expect('לידים ומחירון: הוכחה תקפה מהכניסה פותחת את המסך', r1.status === 200 && r1.json.ok === true, `${r1.status} ${r1.text.slice(0, 120)}`);
+  const old = Date.now() - 1000;
+  r1 = await post('hasadna-admin', { action: 'list', token: old + '.' + crypto.createHmac('sha256', SHARED).update('biz|' + old).digest('hex') }, SITE_ORIGIN);
+  expect('לידים ומחירון: הוכחה שפגה נדחית', r1.status === 403, r1.status);
+}
 r1 = await post('hasadna-lead', { name: 'x', phone: '0500000000' }, EVIL);
 expect('לידים: טופס מאתר זר נחסם', r1.status === 403, r1.status);
 try {
