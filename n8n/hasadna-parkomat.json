@@ -312,7 +312,7 @@
     },
     {
       "parameters": {
-        "content": "## Parkomat · העלאת קבצים\nהגרסה בענן של הטופס המקומי (`localhost:5679/webhook/parking-agents`).\n\nClaude קורא את הקובץ וכותב סיכום, הקובץ עובר ל-Google Drive או ל-Slack, ועותק עם הסיכום תמיד מגיע למייל.\n\n**חד-פעמי:** לחבר חשבון Google Drive בצומת `Drive · Upload` וחשבון Slack + ערוץ בצומת `Slack · Upload`. עד אז הקבצים מגיעים במייל בלבד.",
+        "content": "## Parkomat · העלאת קבצים\nהגרסה בענן של הטופס המקומי (`localhost:5679/webhook/parking-agents`).\n\nClaude קורא את הקובץ וכותב סיכום, הקובץ עובר ל-Google Drive או ל-Slack, ועותק עם הסיכום תמיד מגיע למייל.\n\n**חד-פעמי:** לחבר חשבון Google Drive בצומת `Drive · Upload` וחשבון Slack + ערוץ בצומת `Slack · Upload`, ולהפעיל אותם (או להריץ את Deploy agents to n8n Cloud, שמפעיל לבד צומת שיש לו חשבון). עד אז הקבצים מגיעים במייל בלבד.",
         "height": 300,
         "width": 440,
         "color": 6
@@ -520,7 +520,9 @@
         1420,
         740
       ],
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "disabled": true,
+      "notes": "כבוי עד שמחברים חשבון. אחרי החיבור מפעילים את הצומת (או מריצים את Deploy agents to n8n Cloud)."
     },
     {
       "parameters": {
@@ -547,11 +549,13 @@
         1420,
         940
       ],
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "disabled": true,
+      "notes": "כבוי עד שמחברים חשבון. אחרי החיבור מפעילים את הצומת (או מריצים את Deploy agents to n8n Cloud)."
     },
     {
       "parameters": {
-        "jsCode": "\nconst r = $('Files · Route').first().json;\nconst out = $json || {};\nconst delivered = !out.error;\nconst link = out.webViewLink || out.permalink || (out.file && out.file.permalink) || (out.id && r.destination === 'drive' ? `https://drive.google.com/file/d/${out.id}/view` : '');\nconst where = r.destination === 'slack' ? 'Slack' : 'Google Drive';\nreturn [{ json: {\n  ok: true, destination: r.destination, delivered, link, summary: r.summary, file: r.fileName,\n  message: delivered ? `הקובץ הועבר ל־${where} ונשלח עותק במייל.`\n                     : `הקובץ נשלח במייל. ${where} עוד לא מחובר ב־n8n, ולכן ההעברה לשם לא בוצעה.`\n} }];\n"
+        "jsCode": "\nconst r = $('Files · Route').first().json;\nconst out = $json || {};\nconst delivered = !out.error && !!(out.id || out.permalink || out.file || out.webViewLink);\nconst link = out.webViewLink || out.permalink || (out.file && out.file.permalink) || (out.id && r.destination === 'drive' ? `https://drive.google.com/file/d/${out.id}/view` : '');\nconst where = r.destination === 'slack' ? 'Slack' : 'Google Drive';\nreturn [{ json: {\n  ok: true, destination: r.destination, delivered, link, summary: r.summary, file: r.fileName,\n  message: delivered ? `הקובץ הועבר ל־${where} ונשלח עותק במייל.`\n                     : `הקובץ נשלח במייל. ${where} עוד לא מחובר ב־n8n, ולכן ההעברה לשם לא בוצעה.`\n} }];\n"
       },
       "id": "8d81211f-fcce-59cb-9c89-d0c863388f57",
       "name": "Files · Result",

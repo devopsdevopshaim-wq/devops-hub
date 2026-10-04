@@ -83,6 +83,8 @@ async function install(file, names, { creds = {}, fill = {} } = {}) {
       const old = (full.nodes || []).find((o) => o.name === n.name && o.type === n.type && o.credentials);
       if (old) n.credentials = old.credentials;
     }
+    // nodes shipped disabled until an account is attached (Drive, Slack) switch on once it is
+    for (const n of body.nodes) if (n.disabled && n.credentials) delete n.disabled;
     // the update leaves the workflow's stored data (leads, prices, clients) as it is
     id = existing.id;
     try { await api('PUT', `/workflows/${id}`, body); note(`- ${wf.name}: עודכן`); }
