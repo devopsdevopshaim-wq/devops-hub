@@ -1,12 +1,15 @@
 // The admin screen's API for leads and prices. (Built into "Admin · Handle" by build-business-workflow.py.)
 // Who may call it: only the admin who signed in on the main sign-in (hasadna-auth). There is no separate
-// password any more; every call carries the session token and is checked against that workflow.
+// password any more; every call carries a short-lived signed proof from that sign-in.
 __SEC__
 
-const AUTH_URL = '__N8N_URL__/webhook/hasadna-auth';
+// Shared with the sign-in workflow (derived at install time, never in the repository).
+const SHARED = '__SHARED_KEY__';
+const set = (v) => !!v && !/^__/.test(v);
 const sd = $getWorkflowStaticData('global');
 const now = Date.now();
 delete sd.adminKey;   // the old shared password is gone for good
+delete sd.okTok;
 
 const out = (body, code) => [{ json: { code: code || 200, body } }];
 const line = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n);
@@ -17,25 +20,12 @@ const b = $json.body || {};
 if (JSON.stringify(b).length > 60000) return out({ ok: false, error: 'too-big' }, 413);
 if (!hit('adm-ip', ipKey(), 120, 10 * 60000)) return out({ ok: false, error: 'rate-limited' }, 429);
 
-const token = String(b.token || '');
-if (!/^[a-f0-9]{48}$/.test(token)) return out({ ok: false, error: 'admin-only' }, 403);
-sd.okTok = sd.okTok || {};
-for (const [k, t] of Object.entries(sd.okTok)) if (t < now) delete sd.okTok[k];
-const th = sha256hex(token);
-if (!(sd.okTok[th] > now)) {
-  // ask the sign-in workflow who this is (answers are remembered for one minute)
-  let r;
-  try {
-    r = await this.helpers.httpRequest({ method: 'POST', url: AUTH_URL, headers: { Origin: SITE_ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'action=me&token=' + token, json: true, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 15000 });
-  } catch (e) { return out({ ok: false, error: 'auth-unreachable', detail: String((e && e.message) || e).slice(0, 160) }, 502); }
-  const j = r && r.body;
-  if (r.statusCode === 200 && j && j.ok) {
-    if (j.role !== 'admin') return out({ ok: false, error: 'admin-only' }, 403);   // a client is not the admin
-    sd.okTok[th] = now + 60000;
-  } else if (r.statusCode === 401 || r.statusCode === 403) return out({ ok: false, error: 'admin-only' }, 403);
-  else return out({ ok: false, error: 'auth-error', detail: r.statusCode }, 502);
-}
+// Only an admin who signed in on the main sign-in has a proof: "<expiry ms>.<HMAC>" signed with the shared key.
+// It is checked by arithmetic alone, so nothing depends on the network, and it expires within 30 minutes.
+const m = /^(\d{13})\.([a-f0-9]{64})$/.exec(String(b.token || ''));
+if (!m || !set(SHARED)) return out({ ok: false, error: 'admin-only' }, 403);
+const exp = Number(m[1]);
+if (exp < now || exp > now + 31 * 60000 || !same(m[2], hmacSha256Hex(SHARED, 'biz|' + exp))) return out({ ok: false, error: 'admin-only' }, 403);
 
 let p = {};
 try { p = JSON.parse(b.payload || '{}'); } catch (e) { return out({ ok: false, error: 'bad-payload' }, 400); }

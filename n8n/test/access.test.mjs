@@ -12,7 +12,7 @@ import { crypto as _crypto } from './harness.mjs';
 const require_h = (code, e) => _crypto.createHash('sha256').update(code + ':' + e).digest('hex');
 
 async function scenario(tag, { totp = false, noCrypto = false } = {}) {
-  const code = totp ? BASE_CODE.replace('__ADMIN_TOTP_SECRET__', SECRET) : BASE_CODE;
+  const code = (totp ? BASE_CODE.replace('__ADMIN_TOTP_SECRET__', SECRET) : BASE_CODE).replace('__SHARED_KEY__', 'shared-test-key');
   const sd = {};
   let n = 0;
   const call = async (body, { origin = SITE, ip = '1.1.1.' + (++n % 250) } = {}) => {
@@ -81,6 +81,8 @@ async function scenario(tag, { totp = false, noCrypto = false } = {}) {
 
   r = await call({ action: 'me', token });
   check(T0 + 'me works with the token', r.body.ok && r.body.role === 'admin');
+  check(T0 + 'the admin gets a 30-minute signed proof', /^\d{13}\.[a-f0-9]{64}$/.test(r.body.biz || '') && Math.abs(Number(r.body.biz.split('.')[0]) - Date.now() - 30 * 60000) < 2000);
+  check(T0 + 'the proof is signed with the shared key', r.body.biz.split('.')[1] === _crypto.createHmac('sha256', 'shared-test-key').update('biz|' + r.body.biz.split('.')[0]).digest('hex'));
   r = await call({ action: 'me', token: token.slice(0, 47) + (token.endsWith('a') ? 'b' : 'a') });
   check(T0 + 'a changed token fails', r.code === 401);
   r = await call({ action: 'me', token: '__proto__' });
@@ -104,6 +106,8 @@ async function scenario(tag, { totp = false, noCrypto = false } = {}) {
   check(T0 + 'client sees only their sites', r.body.ok && r.body.sites.length === 2);
   r = await call({ action: 'clients', token: ct });
   check(T0 + 'a client cannot use admin actions', r.code === 403);
+  r = await call({ action: 'me', token: ct });
+  check(T0 + 'a client gets no admin proof', !r.body.biz);
   r = await call({ action: 'client-extend', token: ct, email: 'dana@example.com', days: 999 });
   check(T0 + 'a client cannot extend their own subscription', r.code === 403);
   T += 40000;

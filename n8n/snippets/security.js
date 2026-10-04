@@ -84,6 +84,11 @@ function hmacSha1(key, msg) {
   let k = key.slice(); if (k.length > 64) k = sha1js(k); while (k.length < 64) k.push(0);
   return sha1js(k.map((x) => x ^ 0x5c).concat(sha1js(k.map((x) => x ^ 0x36).concat(msg))));
 }
+function hmacSha256Hex(key, msg) {
+  if (_c && _c.createHmac) return _c.createHmac('sha256', String(key)).update(String(msg)).digest('hex');
+  let k = utf8(key); if (k.length > 64) k = sha256js(k); while (k.length < 64) k.push(0);
+  return toHex(sha256js(k.map((x) => x ^ 0x5c).concat(sha256js(k.map((x) => x ^ 0x36).concat(utf8(msg))))));
+}
 // constant-time comparison of two strings
 function same(a, b) {
   a = String(a); b = String(b);
