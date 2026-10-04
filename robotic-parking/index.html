@@ -118,6 +118,27 @@ textarea.out{width:100%;min-height:260px;font-family:var(--f-mono);font-size:12.
 .mono{font-family:var(--f-mono)}
 .spacer{height:8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* cabinet wiring viewer */
+.cw-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;align-items:start}
+@media (max-width:900px){.cw-wrap{grid-template-columns:minmax(0,1fr)}}
+.cw-view{position:relative;border:1px solid var(--line);background:#f7f8f6;color-scheme:light;height:min(72vh,720px);min-height:420px;overflow:hidden;touch-action:none}
+.cw-view svg{width:100%;height:100%;display:block;cursor:grab;direction:ltr}
+.cw-view svg:active{cursor:grabbing}
+.cw-tools{position:absolute;top:8px;left:8px;display:flex;gap:4px;z-index:2}
+.cw-tools .btn{padding:4px 10px;background:var(--surface)}
+.cw-info{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);max-height:72vh;overflow:auto;font-size:13.5px}
+.cw-info ul{padding-inline-start:18px;margin:4px 0}
+.cw-kv{width:100%;font-size:13px}.cw-kv th{background:none;width:70px;color:var(--muted);font-weight:500;padding:3px 6px}.cw-kv td{padding:3px 6px}.cw-kv td.m{direction:ltr;text-align:left;font-family:var(--f-mono);font-size:12px}
+.cw-key{display:inline-block;width:18px;height:4px;vertical-align:middle;margin-inline-end:4px;border-radius:2px}
+.cw-key-pow{background:#1b1b1b}.cw-key-pe{background:repeating-linear-gradient(90deg,#2e8b3a 0 4px,#e8c400 4px 8px)}.cw-key-dcp{background:#1d3fae}.cw-key-sig{background:#6c3fb0}.cw-key-fsig{background:#e07800}.cw-key-net{background:#1f9d55}.cw-key-cable{background:#5a6569}
+.cw-svg .cw-wn,.cw-svg .cw-tn{opacity:0}.cw-svg.zoomed .cw-wn,.cw-svg.zoomed .cw-tn{opacity:1}
+.cw-svg.cw-hasSel .wg,.cw-svg.cw-hasSel .cg{opacity:.12}
+.cw-svg.cw-hasSel .wg.sel,.cw-svg.cw-hasSel .cg.sel{opacity:1}
+.cw-svg .wg.sel .w{stroke-width:3}.cw-svg .cg.sel .cbl{stroke-width:4;opacity:1}
+.cw-svg .cw-t.sel{r:4;fill:#e8341c}.cw-svg .cw-wn.sel{opacity:1;fill:#e8341c;font-weight:700}
+.cw-svg .cw-c.sel>rect{stroke:#e8341c;stroke-width:2.5}
+.cw-svg .wh:hover+*{}
 @media print{
   aside.cfg,.tabs,.noprint,.toast{display:none!important}
   .layout{display:block}
@@ -508,7 +529,7 @@ function floorsForClass(k,H){const hi=classRange(k,H)[1];if(hi===Infinity)return
 
 /* ---------- tabs ---------- */
 const TABS=[
- ["overview","סקירה"],["floors","קומות ותאים"],["equip","מעליות · שאטלים · מסובבת"],["cabinets","ארונות פיקוד"],
+ ["overview","סקירה"],["floors","קומות ותאים"],["equip","מעליות · שאטלים · מסובבת"],["cabinets","ארונות פיקוד"],["cabwire","ארון – חיווט מלא"],
  ["ip","רשת ו‑IP"],["params","פרמטרי דרייברים"],["sensors","חיישנים ו‑IO"],["lobby","לובי ובדיקות"],
  ["plc","תוכנת PLC"],["tpl","תבניות PLC"],["wiring","הרכבה וחיווט"],["drawings","שרטוטים"],["sim","הדמיה"],["report","דוח · מייל · הדפסה"]];
 let cur="overview"; try{const t=localStorage.getItem("rp-tab");if(t&&TABS.some(x=>x[0]===t))cur=t}catch(e){}
@@ -2504,10 +2525,316 @@ function projectZip(){
   Object.keys(DRAW).forEach(k=>{const subs=k==="plan"?Array.from({length:M.F},(_,i)=>String(i+1)):k==="cabinet"?M.cabs.map(c=>c.id):k==="lobbyPlan"?Array.from({length:M.L},(_,i)=>String(i+1)):["-"];
     subs.forEach(x=>{const r=DRAW[k](x);const tmp=document.createElement("div");tmp.innerHTML=r.svg;const svg=tmp.querySelector("svg");if(svg)e.push({name:`Drawings/${k}${x==="-"?"":"_"+x}.svg`,data:standaloneSVG(svg)})})});
   dwType=keep.type;dwSub=keep.sub;
+  M.cabs.forEach(c=>{const B=cabinetBuild(c);e.push({name:`Cabinets/${c.id}_wiring.svg`,data:cabinetSVGStandalone(B)},{name:`Cabinets/${c.id}_wires.csv`,data:bom+wiresCSV(B)})});
   e.push({name:"Tables/io_list.csv",data:bom+ioCSV()},{name:"Tables/ip_list.csv",data:bom+ipCSV()},{name:"Tables/axes.csv",data:bom+axCSV()});
   e.push({name:"report.txt",data:reportText()});
   e.push({name:"README.txt",data:`${S.project}\nנוצר ע"י מתכנן חניון רובוטי ${new Date().toISOString().slice(0,10)}\n\nPLC/        קבצי מקור ל-TIA Portal – לייבא לפי סדר המספרים 01..12\nDrawings/   שרטוטים SVG – נפתחים בדפדפן, Inkscape או AutoCAD (ייבוא)\nTables/     רשימות IO, IP וצירים (CSV לאקסל)\nreport.txt  סיכום התכנון\n`});
   return {name:`${slug}_project.zip`,data:makeZip(e),count:e.length};
+}
+
+/* ---------- cabinet wiring: full layout, wires, field cables ---------- */
+const WTYPE={
+  pow:{he:"כוח AC",cls:"w-pow",col:"שחור (BK)"},
+  pe:{he:"הארקה PE",cls:"w-pe",col:"ירוק/צהוב (GNYE)"},
+  dcp:{he:"‎+24V DC",cls:"w-dcp",col:"כחול כהה (DBU)"},
+  dc0:{he:"0V DC",cls:"w-dc0",col:"כחול כהה/לבן (DBU/WH)"},
+  sig:{he:"אות כניסה/יציאה",cls:"w-sig",col:"כחול כהה (DBU) – סימון לפי שרוול"},
+  fsig:{he:"אות בטיחות",cls:"w-fsig",col:"כתום (OG) – מעגל בטיחות"},
+  net:{he:"PROFINET",cls:"w-net",col:"כבל ירוק Cat5e PN"},
+  mot:{he:"מנוע",cls:"w-pow",col:"שחור (BK)"}
+};
+function cabinetBuild(c){
+  const comps=[],wires=[],cables=[],T={},MARG=25,DUCT=40,GAP=22;
+  const DRV=c.drives;
+  const plateW=Math.max(c.W-100,520);
+  const C=(o)=>{o.terms=[];comps.push(o);return o};
+  const tp=(o,n,dx,dy,side)=>{const t={c:o.id,n,x:o.x+dx,y:o.y+dy,side};o.terms.push(t);T[o.id+":"+n]=t;return t};
+  // ---------- component specs (placed later)
+  const rowA=[],rowB=[],rowC=[],rowD=[];
+  const feeders=c.main?M.cabs.slice(1):[];
+  rowA.push({id:"-Q0",name:c.main?`מפסק ראשי ${c.feed}A`:`מנתק ${c.feed}A`,kind:"Q",w:90,h:105,mk:o=>{["L1","L2","L3"].forEach((n,i)=>tp(o,n,15+i*30,0,"top"));["T1","T2","T3"].forEach((n,i)=>tp(o,n,15+i*30,o.h,"bot"))}});
+  feeders.forEach((f,i)=>rowA.push({id:`-F${i+1}`,name:`MCCB ${f.feed}A → ${f.id}`,kind:"F",w:54,h:90,ref:f,mk:o=>{["1","3","5"].forEach((n,j)=>tp(o,n,9+j*18,0,"top"));["2","4","6"].forEach((n,j)=>tp(o,n,9+j*18,o.h,"bot"))}}));
+  DRV.forEach((d,i)=>rowA.push({id:`-F${i+1}`,name:`MCB ${d.mcb}A – ${d.id}`,kind:"F",w:54,h:90,ref:d,mk:o=>{["1","3","5"].forEach((n,j)=>tp(o,n,9+j*18,0,"top"));["2","4","6"].forEach((n,j)=>tp(o,n,9+j*18,o.h,"bot"))}}));
+  rowA.push({id:"-F24",name:"MCB 6A – ספק 24V",kind:"F",w:54,h:90,mk:o=>{["1","3","5"].forEach((n,j)=>tp(o,n,9+j*18,0,"top"));["2","4","6"].forEach((n,j)=>tp(o,n,9+j*18,o.h,"bot"))}});
+  rowA.push({id:"-T1",name:`ספק 24V DC ${c.psu}A (3 פאזות)`,kind:"T",w:c.psu>=20?90:70,h:125,mk:o=>{["L1","L2","L3","PE"].forEach((n,j)=>tp(o,n,10+j*(o.w-20)/3,0,"top"));["+1","+2","-1","-2"].forEach((n,j)=>tp(o,n,10+j*(o.w-20)/3,o.h,"bot"))}});
+  if(c.main)rowA.push({id:"-G1",name:"UPS 24V + סוללה",kind:"T",w:60,h:125,mk:o=>{["IN+","IN-"].forEach((n,j)=>tp(o,n,15+j*30,0,"top"));["OUT+","OUT-"].forEach((n,j)=>tp(o,n,15+j*30,o.h,"bot"))}});
+  DRV.forEach((d,i)=>{const hasR=d.role==="hoist"||(!d.pos&&d.kW>=3);
+    const bot=["U2","V2","W2","PE2",...(hasR?["R1","R2"]:[]),"B+","B-","14","15","P1","P2"];
+    rowB.push({id:`-U${i+1}`,name:`${d.drive} ${d.kW}kW – ${d.name}`,kind:"U",w:Math.max(frameW(d.kW),bot.length*9+10),h:frameH(d.kW),ref:d,hasR,
+      mk:o=>{["L1","L2","L3","PE"].forEach((n,j)=>tp(o,n,10+j*(o.w-20)/3,0,"top"));bot.forEach((n,j)=>tp(o,n,6+j*(o.w-12)/(bot.length-1),o.h,"bot"))}})});
+  if(c.main)rowB.push({id:"-A0",name:"CPU 1516F‑3 PN/DP",kind:"A",w:175,h:147,mk:o=>{tp(o,"L+",20,0,"top");tp(o,"M",40,0,"top");tp(o,"P1",120,o.h,"bot");tp(o,"P2",140,o.h,"bot")}});
+  const nPorts=8;
+  if(!c.mobile||true)rowB.push({id:"-A9",name:c.main?"מתג ליבה מנוהל 8 פורטים":"מתג תעשייתי 8 פורטים",kind:"N",w:80,h:100,mk:o=>{tp(o,"L+",20,0,"top");tp(o,"M",40,0,"top");for(let p=1;p<=nPorts;p++)tp(o,"P"+p,6+(p-1)*(68/7),o.h,"bot")}});
+  const hasAP=c.id.startsWith("FLC")&&S.drivesOnShuttle==1, hasWC=c.mobile;
+  if(hasAP||hasWC)rowB.push({id:"-A11",name:hasAP?"WLAN Access Point":"WLAN Client",kind:"N",w:60,h:80,mk:o=>{tp(o,"L+",15,0,"top");tp(o,"M",35,0,"top");tp(o,"P1",30,o.h,"bot")}});
+  // ET200SP
+  const mods=[];
+  for(let i=0;i<c.mDI;i++)mods.push({t:"DI16",ch:16});
+  for(let i=0;i<c.mDQ;i++)mods.push({t:"DQ16",ch:16});
+  for(let i=0;i<c.mFDI;i++)mods.push({t:"F-DI8",ch:16});
+  for(let i=0;i<c.mFDQ;i++)mods.push({t:"F-DQ4",ch:8});
+  if(c.hasIM){
+    rowC.push({id:"-A1",name:"ET 200SP IM155‑6 PN HF",kind:"A",w:50,h:120,mk:o=>{tp(o,"L+",15,0,"top");tp(o,"M",35,0,"top");tp(o,"P1",15,o.h,"bot");tp(o,"P2",35,o.h,"bot")}});
+    mods.forEach((m,i)=>rowC.push({id:`-A${i+2}`,name:`${m.t==="F-DI8"?"F‑DI 8x24VDC HF":m.t==="F-DQ4"?"F‑DQ 4x24VDC PM HF":m.t==="DI16"?"DI 16x24VDC ST":"DQ 16x24VDC/0.5A ST"}`,kind:"M",mt:m.t,w:15,h:120,
+      mk:o=>{const names=m.t==="F-DI8"?["DI0","DI1","DI2","DI3","DI4","DI5","DI6","DI7","VS0","VS1","VS2","VS3","VS4","VS5","VS6","VS7"]:m.t==="F-DQ4"?["DQ0P","DQ0M","DQ1P","DQ1M","DQ2P","DQ2M","DQ3P","DQ3M"]:Array.from({length:16},(_,k)=>(m.t==="DI16"?"DI":"DQ")+k);
+        names.forEach((n,k)=>tp(o,n,k%2?11:4,18+Math.floor(k/2)*12,"front"))}}));
+    rowC.push({id:`-A${mods.length+2}`,name:"מודול שרת",kind:"M",mt:"SRV",w:15,h:120,mk:()=>{}});
+  }
+  // ---------- terminal strips
+  const x3=[];  // sensor blocks
+  c.io.forEach(s=>{if(s.kind==="NET")return;
+    if(s.kind==="FDI"){x3.push({s,part:"a",inner:["VS","DI"],field:["VS","DI"]});x3.push({s,part:"b",inner:["VS","DI"],field:["VS","DI"]})}
+    else if(s.kind==="FDQ"){x3.push({s,part:"",inner:["P","M"],field:["P","M"]})}
+    else if(s.kind==="DQ")x3.push({s,part:"",inner:["Q"],field:["Q","0V"]});
+    else x3.push({s,part:"",inner:["I"],field:["+","I","0V"]});
+  });
+  const x1n=c.main?3+1+feeders.length*4:4;
+  rowD.push({id:"-X1",name:c.main?"מהדקי הזנה ויציאות לארונות":"מהדקי הזנה",kind:"X",w:x1n*10,h:60,mk:o=>{let k=0;const ad=(n)=>{tp(o,n,5+k*10,0,"top");tp(o,n+"f",5+k*10,o.h,"bot");k++};["L1","L2","L3","PE"].forEach(ad);feeders.forEach((f,i)=>["L1","L2","L3","PE"].forEach(n=>ad(`${i+1}.${n}`)))}});
+  rowD.push({id:"-X2",name:"פיצול 24V",kind:"X",w:8*7,h:60,mk:o=>{["+1","+2","+3","+4","01","02","03","04"].forEach((n,k)=>tp(o,n,4+k*7,0,"top"))}});
+  if(DRV.length)rowD.push({id:"-X4",name:"מהדקי מנועים",kind:"X",w:DRV.reduce((a,d,i)=>a+(rowB[i].hasR?10:8)*8,0),h:60,mk:o=>{let k=0;DRV.forEach((d,i)=>{const L=["U","V","W","PE","B+","B-","T1","T2",...(rowB[i].hasR?["R1","R2"]:[])];L.forEach(n=>{tp(o,`${i+1}.${n}`,4+k*8,0,"top");tp(o,`${i+1}.${n}f`,4+k*8,o.h,"bot");k++})})}});
+  if(x3.length)rowD.push({id:"-X3",name:"מהדקי חיישנים (3 קומות)",kind:"X3",w:x3.length*6.2+4,h:70,mk:o=>{x3.forEach((b,k)=>{b.k=k+1;b.inner.forEach((n,j)=>tp(o,`${k+1}.${n}`,2.5+k*6.2+j*2.4,0,"top"));b.field.forEach((n,j)=>tp(o,`${k+1}.${n}f`,1.8+k*6.2+j*1.8,o.h,"bot"))})}});
+  rowD.push({id:"-PE",name:"פס הארקה PE",kind:"PE",w:Math.max(120,(DRV.length*2+6)*10),h:18,mk:o=>{for(let k=1;k<=DRV.length*2+6;k++)tp(o,"PE"+k,5+(k-1)*10,0,"top")}});
+  // ---------- place rows with wrapping
+  const lines=[];let y=MARG+DUCT+GAP;
+  const placeRow=(items)=>{if(!items.length)return;let x=MARG+DUCT+12,lineH=0,line={y,items:[]};lines.push(line);
+    items.forEach(it=>{if(x+it.w>plateW-MARG-DUCT-12&&line.items.length){y+=lineH+DUCT+GAP*2;x=MARG+DUCT+12;lineH=0;line={y,items:[]};lines.push(line)}
+      it.x=x;it.y=y;line.items.push(it);x+=it.w+(it.kind==="M"?0:8);lineH=Math.max(lineH,it.h)});
+    line.h=lineH;y+=lineH+DUCT+GAP*2;};
+  [rowA,rowB,rowC,rowD].forEach(placeRow);
+  lines.forEach(l=>{l.h=Math.max(...l.items.map(i=>i.h))});
+  const plateH=y-GAP;
+  // ducts: one above every line + one below last line
+  const ducts=lines.map(l=>({y:l.y-GAP-DUCT,h:DUCT}));
+  const last=lines[lines.length-1];ducts.push({y:last.y+last.h+GAP,h:DUCT});
+  const dyC=d=>d.y+d.h/2;
+  const comps2=[rowA,rowB,rowC,rowD].flat();comps2.forEach(o=>{C(o);o.mk(o)});
+  const ductFor=(t)=>{const up=t.side==="top";const cand=ducts.map(dyC).filter(v=>up?v<t.y:v>t.y);return up?Math.max(...cand):Math.min(...cand)};
+  // ---------- wires
+  let wn=0;
+  const W=(a,b,type,mm2,desc,s)=>{const A=T[a],B=T[b];if(!A||!B)return;wires.push({n:++wn,a:A,b:B,type,mm2,desc,s})};
+  const fn=(o)=>o.id;
+  const drvMm=d=>d.cable;
+  // feed
+  ["L1","L2","L3"].forEach(n=>W(`-X1:${n}`,`-Q0:${n}`,"pow",c.feedCable,"הזנה ראשית"));
+  W("-X1:PE","-PE:PE1","pe",c.feedCable,"הארקת הזנה");
+  // Q0 → breakers
+  const brk=comps.filter(o=>o.kind==="F");
+  brk.forEach(b=>["1","3","5"].forEach((n,j)=>W(`-Q0:T${j+1}`,`${b.id}:${n}`,"pow",b.ref?(b.ref.cable||b.ref.feedCable||"2.5"):"1.5",`הזנה ל‑${b.id}`)));
+  // feeders out
+  feeders.forEach((f,i)=>{["L1","L2","L3"].forEach((n,j)=>W(`-F${i+1}:${["2","4","6"][j]}`,`-X1:${i+1}.${n}`,"pow",f.feedCable,`יציאה ל‑${f.id}`));W(`-PE:PE${i+2}`,`-X1:${i+1}.PE`,"pe",f.feedCable,`PE ל‑${f.id}`)});
+  // drives
+  DRV.forEach((d,i)=>{const u=`-U${i+1}`,f=`-F${i+1}`;
+    ["L1","L2","L3"].forEach((n,j)=>W(`${f}:${["2","4","6"][j]}`,`${u}:${n}`,"pow",d.cable,`הזנת ${d.id}`));
+    W(`-PE:PE${i*2+2}`,`${u}:PE`,"pe",d.cable,`PE ${d.id}`);
+    [["U2","U"],["V2","V"],["W2","W"]].forEach(([a,b])=>W(`${u}:${a}`,`-X4:${i+1}.${b}`,"mot",d.cable,`מנוע ${d.id} פאזה ${b}`));
+    W(`${u}:PE2`,`-X4:${i+1}.PE`,"pe",d.cable,`PE מנוע ${d.id}`);
+    W(`${u}:B+`,`-X4:${i+1}.B+`,"dcp","1.5",`בלם ${d.id} +`);W(`${u}:B-`,`-X4:${i+1}.B-`,"dc0","1.5",`בלם ${d.id} −`);
+    W(`${u}:14`,`-X4:${i+1}.T1`,"sig","0.75",`PTC ${d.id}`);W(`${u}:15`,`-X4:${i+1}.T2`,"sig","0.75",`PTC ${d.id}`);
+    if(rowB[i].hasR){W(`${u}:R1`,`-X4:${i+1}.R1`,"pow",d.cable,`נגד בלימה ${d.id}`);W(`${u}:R2`,`-X4:${i+1}.R2`,"pow",d.cable,`נגד בלימה ${d.id}`)}
+  });
+  // PSU
+  ["L1","L2","L3"].forEach((n,j)=>W(`-F24:${["2","4","6"][j]}`,`-T1:${n}`,"pow","1.5","הזנת ספק 24V"));
+  W(`-PE:PE${DRV.length*2+2}`,"-T1:PE","pe","1.5","PE ספק");
+  W("-T1:+1","-X2:+1","dcp","2.5","+24V לפיצול");W("-T1:-1","-X2:01","dc0","2.5","0V לפיצול");
+  if(c.main){W("-T1:+2","-G1:IN+","dcp","2.5","טעינת UPS");W("-T1:-2","-G1:IN-","dc0","2.5","טעינת UPS");W("-G1:OUT+","-A0:L+","dcp","1.5","24V מגובה ל‑CPU");W("-G1:OUT-","-A0:M","dc0","1.5","0V CPU")}
+  W("-X2:+2","-A9:L+","dcp","1.5","24V למתג");W("-X2:02","-A9:M","dc0","1.5","0V למתג");
+  if(T["-A11:L+"]){W("-X2:+3","-A11:L+","dcp","1.5","24V ל‑WLAN");W("-X2:03","-A11:M","dc0","1.5","0V ל‑WLAN")}
+  if(c.hasIM){W("-X2:+4","-A1:L+","dcp","1.5","24V ל‑ET 200SP (מוזן לכרטיסים דרך ה‑BaseUnit)");W("-X2:04","-A1:M","dc0","1.5","0V ל‑ET 200SP")}
+  // network
+  let port=1;const pn=(a,desc)=>{if(port>nPorts)return;W(a,`-A9:P${port}`,"net","Cat5e",desc);port++};
+  if(c.main)pn("-A0:P1","CPU ↔ מתג ליבה");
+  if(c.hasIM)pn("-A1:P1","ET 200SP ↔ מתג");
+  DRV.forEach((d,i)=>pn(`-U${i+1}:P1`,`${d.id} ↔ מתג`));
+  if(T["-A11:P1"])pn("-A11:P1",hasAP?"Access Point ↔ מתג":"WLAN Client ↔ מתג");
+  // IO channels
+  const modOf=t=>comps.filter(o=>o.mt===t);
+  const cnt={DI:0,DQ:0,FDI:0,FDQ:0};
+  x3.forEach(b=>{const s=b.s,k=b.k;
+    if(s.kind==="DI"){const i=cnt.DI++;const m=modOf("DI16")[Math.floor(i/16)];b.mod=m&&m.id;b.ch="DI"+(i%16);if(m)W(`${m.id}:DI${i%16}`,`-X3:${k}.I`,"sig","0.5",s.desc,s)}
+    else if(s.kind==="DQ"){const i=cnt.DQ++;const m=modOf("DQ16")[Math.floor(i/16)];b.mod=m&&m.id;b.ch="DQ"+(i%16);if(m)W(`${m.id}:DQ${i%16}`,`-X3:${k}.Q`,"sig","0.5",s.desc,s)}
+    else if(s.kind==="FDI"){if(b.part==="a"){b.i=cnt.FDI++}else b.i=cnt.FDI-1;const m=modOf("F-DI8")[Math.floor(b.i/4)];const ch=(b.i%4)+(b.part==="b"?4:0);b.mod=m&&m.id;b.ch=`DI${ch}/VS${ch}`;
+      if(m){W(`${m.id}:VS${ch}`,`-X3:${k}.VS`,"fsig","0.5",`${s.desc} – ערוץ ${b.part.toUpperCase()} הזנת בדיקה`,s);W(`${m.id}:DI${ch}`,`-X3:${k}.DI`,"fsig","0.5",`${s.desc} – ערוץ ${b.part.toUpperCase()}`,s)}}
+    else if(s.kind==="FDQ"){const i=cnt.FDQ++;const m=modOf("F-DQ4")[Math.floor(i/4)];b.mod=m&&m.id;b.ch=`DQ${i%4}`;if(m){W(`${m.id}:DQ${i%4}P`,`-X3:${k}.P`,"fsig","0.75",s.desc,s);W(`${m.id}:DQ${i%4}M`,`-X3:${k}.M`,"fsig","0.75",s.desc+" (M)",s)}}
+  });
+  // bridges feed for X3 levels
+  const hasDI=x3.some(b=>b.field.includes("+"));
+  // ---------- field cables + devices
+  const devs=[];
+  const len=(s)=>{let m=s.tag.match(/^F(\d+)[AB](\d+)_/);if(m)return Math.round(+m[2]*S.cellPitch/1000+6);if(/^SH/.test(s.tag))return c.mobile?3:Math.round(M.aisleLen/1000+8);if(/^LF/.test(s.tag))return Math.round(M.levelZ[M.F]/1000+10);if(/^LB/.test(s.tag))return 15;return 10};
+  let cn=0;const cid=()=>`-W${pad(++cn,3)}`;
+  if(!c.main)cables.push({id:cid(),from:"-X1",to:c.mobile?"פס צבירה + קולט":"MCP-00",dev:c.mobile?"פס צבירה":"MCP-00",type:c.mobile?`קולט זרם 4P → 4G${c.feedCable}`:`NYY‑J 5G${c.feedCable}`,cores:["L1","L2","L3","PE"].map((n,j)=>({core:["BK","BN","GY","GNYE"][j],t:`-X1:${n}f`})),len:c.mobile?2:25,desc:"הזנה לארון"});
+  feeders.forEach((f,i)=>cables.push({id:cid(),from:"-X1",dev:f.id,type:`NYY‑J 5G${f.feedCable}`,cores:["L1","L2","L3","PE"].map((n,j)=>({core:["BK","BN","GY","GNYE"][j],t:`-X1:${i+1}.${n}f`})),len:25,desc:`הזנה ל‑${f.name}`}));
+  DRV.forEach((d,i)=>{const L=["U","V","W","PE","B+","B-","T1","T2",...(rowB[i].hasR?[]:[])];
+    cables.push({id:cid(),from:"-X4",dev:`M ${d.id}`,type:`כבל מנוע מסוכך 4G${d.cable}+(2×1.5)+(2×0.75)`,cores:L.map((n,j)=>({core:["1","2","3","GNYE","5","6","7","8"][j],t:`-X4:${i+1}.${n}f`})),len:d.unit.startsWith("SH")&&!c.mobile?Math.round(M.aisleLen/1000+8):d.unit.startsWith("LF")?12:8,desc:`${d.name} ${d.kW}kW`,drive:d});
+    if(rowB[i].hasR)cables.push({id:cid(),from:"-X4",dev:`R ${d.id}`,type:`סיליקון 2×${d.cable}`,cores:["R1","R2"].map((n,j)=>({core:String(j+1),t:`-X4:${i+1}.${n}f`})),len:3,desc:"נגד בלימה על גג הארון"});
+    if(d.pos)cables.push({id:cid(),from:`-U${i+1}`,dev:`ENC ${d.id}`,type:"כבל מקודד 4×2×0.25 מסוכך",cores:[],len:12,desc:"ישירות למחבר המקודד בדרייבר",direct:`-U${i+1}:P2`});
+  });
+  x3.forEach(b=>{if(b.part==="b")return;const s=b.s;const blocks=x3.filter(z=>z.s===s);
+    const cores=[];blocks.forEach(z=>z.field.forEach((n,j)=>cores.push({core:s.kind==="FDI"?["BN","WH","BK","GY"][cores.length]||"":{"+":"BN","I":"BK","0V":"BU","Q":"BK","P":"BN","M":"BU"}[n]||"",t:`-X3:${z.k}.${n}f`})));
+    cables.push({id:cid(),from:"-X3",dev:s.tag,type:s.kind==="FDI"?"PUR 5×0.34 M12 צהוב":s.kind==="DQ"||s.kind==="FDQ"?"PUR 3×0.75":"PUR 4×0.34 M12",cores,len:len(s),desc:s.desc,s,loc:s.loc});
+  });
+  c.io.filter(s=>s.kind==="NET").forEach(s=>{if(port>nPorts)return;const p=`-A9:P${port++}`;cables.push({id:cid(),from:"-A9",dev:s.tag,type:"PROFINET Cat5e ירוק, M12/RJ45",cores:[{core:"PN",t:p}],len:len(s),desc:s.desc,s,loc:s.loc,net:true})});
+  if(!c.main&&port<=nPorts){const p=`-A9:P${port++}`;cables.push({id:cid(),from:"-A9",dev:c.mobile?"WLAN":"MCP-00 מתג ליבה",type:"PROFINET Cat5e ירוק"+(c.mobile?"":", עד 100 מ' – אחרת סיב"),cores:[{core:"PN",t:p}],len:c.mobile?0:30,desc:"קישור לארון הראשי",net:true})}
+  if(c.main)M.cabs.slice(1).forEach(f=>{if(port>nPorts)return;const p=`-A9:P${port++}`;cables.push({id:cid(),from:"-A9",dev:f.id+" (מתג)",type:"PROFINET Cat5e ירוק",cores:[{core:"PN",t:p}],len:30,desc:"קישור PROFINET",net:true})});
+  // device boxes
+  const dW=96,dH=46,areaW=Math.max(plateW,1100),cols=Math.max(6,Math.floor((areaW-20)/(dW+8)));
+  cables.forEach((cb,i)=>{cb.dx=14+(i%cols)*(dW+8);cb.dy=plateH+120+Math.floor(i/cols)*(dH+40)});
+  const totalH=plateH+120+Math.ceil(cables.length/cols)*(dH+40)+40;
+  // routing
+  const side=[MARG+DUCT/2,plateW-MARG-DUCT/2];
+  wires.forEach((w,k)=>{const a=w.a,b=w.b,off=((k*7)%30)-15;
+    const da=ductFor(a)+off*0.8,db=ductFor(b)+off*0.8;
+    let pts;
+    if(Math.abs(ductFor(a)-ductFor(b))<1)pts=[[a.x,a.y],[a.x,da],[b.x,da],[b.x,b.y]];
+    else{const sx=((a.x+b.x)/2<plateW/2?side[0]:side[1])+off*0.6;pts=[[a.x,a.y],[a.x,da],[sx,da],[sx,db],[b.x,db],[b.x,b.y]]}
+    w.d="M"+pts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L");
+    w.via=pts.length===4?"תעלה אופקית אחת":`תעלה אופקית → תעלה צדדית ${(a.x+b.x)/2<plateW/2?"שמאל":"ימין"} → תעלה אופקית`;
+  });
+  cables.forEach((cb,k)=>{const t0=cb.cores.length?T[cb.cores[0].t]:T[cb.direct]||null;if(!t0){cb.d="";return}
+    const gx=Math.min(Math.max(t0.x,MARG+10),plateW-MARG-10);
+    const tx=cb.dx+dW/2,ty=cb.dy;
+    cb.gx=gx;cb.d=`M${t0.x} ${t0.y} L${t0.x} ${plateH-6} L${gx} ${plateH+6} L${gx} ${plateH+40+(k%6)*8} L${tx} ${plateH+40+(k%6)*8} L${tx} ${ty}`;
+  });
+  return {c,comps,wires,cables,ducts,lines,plateW,plateH,totalH,areaW,x3,hasDI,T,MARG,DUCT,dW,dH};
+}
+function cabinetSVG(B,interactive){
+  const {c,comps,wires,cables,ducts,plateW,plateH,totalH,MARG,DUCT,dW,dH}=B;
+  let g=`<rect class="cw-plate" x="0" y="0" width="${plateW}" height="${plateH}"/>`;
+  g+=`<rect class="cw-duct" x="${MARG}" y="${MARG}" width="${DUCT}" height="${plateH-2*MARG}"/><rect class="cw-duct" x="${plateW-MARG-DUCT}" y="${MARG}" width="${DUCT}" height="${plateH-2*MARG}"/>`;
+  ducts.forEach((d,i)=>g+=`<rect class="cw-duct" x="${MARG}" y="${d.y}" width="${plateW-2*MARG}" height="${d.h}"/><text class="cw-small" x="${MARG+DUCT+4}" y="${d.y+d.h-4}">תעלה ${i+1} · 40×60</text>`);
+  B.lines.forEach(l=>g+=`<rect class="cw-rail" x="${MARG+DUCT+4}" y="${l.y+Math.min(l.h,120)/2-17.5}" width="${plateW-2*MARG-2*DUCT-8}" height="35"/>`);
+  // components
+  comps.forEach(o=>{
+    const cls=o.kind==="U"?"cw-drv":o.kind==="Q"?"cw-q":o.kind==="X"||o.kind==="X3"?"cw-term":o.kind==="PE"?"cw-pe":o.kind==="M"?(o.mt&&o.mt.startsWith("F")?"cw-fmod":"cw-mod"):"cw-comp";
+    g+=`<g data-c="${o.id}" class="cw-c"><rect class="${cls}" x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" rx="2"/>`;
+    if(o.kind==="M"){g+=`<text class="cw-small" transform="rotate(-90 ${o.x+o.w/2+3} ${o.y+o.h-6})" x="${o.x+o.w/2+3}" y="${o.y+o.h-6}">${esc(o.id+" "+(o.mt||""))}</text>`}
+    else if(o.kind==="X3"){/* terminals drawn below */}
+    else g+=`<text class="cw-lbl${o.kind==="U"?" cw-ondark":""}" x="${o.x+o.w/2}" y="${o.y+o.h/2-2}" text-anchor="middle">${esc(o.id)}</text><text class="cw-small${o.kind==="U"?" cw-ondark":""}" x="${o.x+o.w/2}" y="${o.y+o.h/2+10}" text-anchor="middle">${esc(o.kind==="U"?o.ref.kW+"kW":o.kind==="F"?(o.name.split(" ")[1]||""):"")}</text>`;
+    if(o.kind==="X"||o.kind==="X3"){const step=o.kind==="X3"?6.2:o.id==="-X2"?7:o.id==="-X1"?10:8;const n=Math.round((o.w-(o.kind==="X3"?4:0))/step);for(let k=0;k<n;k++)g+=`<line class="cw-tsep" x1="${o.x+k*step+(o.kind==="X3"?1:0)}" y1="${o.y}" x2="${o.x+k*step+(o.kind==="X3"?1:0)}" y2="${o.y+o.h}"/>`;
+      g+=`<text class="cw-lbl" x="${o.x}" y="${o.y-4}">${esc(o.id)} · ${esc(o.name)}</text>`;
+      if(o.kind==="X3"){g+=`<line class="cw-bridge" x1="${o.x}" y1="${o.y+o.h*0.38}" x2="${o.x+o.w}" y2="${o.y+o.h*0.38}"/><line class="cw-bridge0" x1="${o.x}" y1="${o.y+o.h*0.7}" x2="${o.x+o.w}" y2="${o.y+o.h*0.7}"/><text class="cw-small" x="${o.x+o.w+3}" y="${o.y+o.h*0.38+3}">גשר +24V</text><text class="cw-small" x="${o.x+o.w+3}" y="${o.y+o.h*0.7+3}">גשר 0V</text>`}}
+    o.terms.forEach(t=>{const lx=t.side==="front"?t.x+2.4:t.x+1.2,ly=t.side==="top"?t.y+5:t.side==="front"?t.y+1.3:t.y-2.2;g+=`<text class="cw-tn${o.kind==="U"?" cw-ondark":""}" x="${lx}" y="${ly}"${t.side==="front"?"":` transform="rotate(-90 ${lx} ${ly})"`}>${esc(t.n.replace(/^\d+\./,""))}</text>`});
+    o.terms.forEach(t=>g+=`<circle class="cw-t" data-t="${o.id}:${t.n}" cx="${t.x}" cy="${t.y}" r="${o.kind==="M"?1.8:2.2}"/>`);
+    g+=`</g>`;
+  });
+  // X3 bridge feeds
+  if(B.T["-X3:1.I"]||B.T["-X3:1.VS"]){const x3=comps.find(o=>o.id==="-X3"),x2=comps.find(o=>o.id==="-X2");if(x3&&x2){g+=`<path class="w w-dcp" d="M${x2.x+3*7+4} ${x2.y+x2.h} V${x3.y+x3.h*0.38} H${x3.x}"/><path class="w w-dc0" d="M${x2.x+7*7+4} ${x2.y+x2.h} V${x3.y+x3.h*0.7} H${x3.x}"/>`}}
+  // wires
+  wires.forEach((w,i)=>{const t=WTYPE[w.type];g+=`<g class="wg" data-w="${i}" data-type="${w.type}"><path class="w ${t.cls}" d="${w.d}"/>${w.type==="pe"?`<path class="w w-pe2" d="${w.d}"/>`:""}${w.type==="dc0"?`<path class="w w-dc02" d="${w.d}"/>`:""}<path class="wh" d="${w.d}"/></g>`});
+  // wire number tags at ends
+  wires.forEach((w,i)=>{g+=`<text class="cw-wn" data-wn="${i}" x="${w.a.x+2}" y="${w.a.y+(w.a.side==="top"?-3:7)}">${w.n}</text><text class="cw-wn" data-wn="${i}" x="${w.b.x+2}" y="${w.b.y+(w.b.side==="top"?-3:7)}">${w.n}</text>`});
+  // gland plate + cables + devices
+  g+=`<rect class="cw-gland" x="0" y="${plateH}" width="${plateW}" height="16"/><text class="cw-small" x="6" y="${plateH+12}">פלטת כניסת כבלים (גלנדים) – חזית הארון למטה</text>`;
+  cables.forEach((cb,i)=>{if(!cb.d)return;g+=`<g class="cg" data-cb="${i}" data-type="${cb.net?"net":"cable"}"><path class="cbl${cb.net?" cbl-net":""}" d="${cb.d}"/><path class="wh" d="${cb.d}"/><circle class="cw-glandc" cx="${cb.gx}" cy="${plateH+8}" r="4"/><rect class="cw-dev" x="${cb.dx}" y="${cb.dy}" width="${dW}" height="${dH}" rx="4"/><text class="cw-small cw-devid" x="${cb.dx+4}" y="${cb.dy+11}">${esc(cb.id)}</text><text class="cw-lbl" x="${cb.dx+4}" y="${cb.dy+25}">${esc(String(cb.dev).slice(0,16))}</text><text class="cw-small" x="${cb.dx+4}" y="${cb.dy+38}">${cb.len?`≈${cb.len} מ'`:""}</text></g>`});
+  g+=`<text class="cw-lbl" x="0" y="${plateH+100}">ציוד בשטח – כל כבל ממוספר ויוצא דרך גלנד</text>`;
+  return `<svg class="cw-svg" viewBox="-20 -40 ${B.areaW+60} ${totalH+60}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="חיווט ארון ${c.id}">${g}</svg>`;
+}
+const CW_CSS=`.cw-plate{fill:#eef1ee;stroke:#22313a;stroke-width:2}.cw-duct{fill:#cfd6d4;stroke:#9aa6a3;stroke-width:.6}.cw-rail{fill:#b9c1c4;stroke:none;opacity:.6}.cw-comp,.cw-q{fill:#fff;stroke:#22313a;stroke-width:1}.cw-q{fill:#f2b705}.cw-drv{fill:#0e6a76;stroke:#22313a}.cw-mod{fill:#ffffff;stroke:#22313a;stroke-width:.6}.cw-fmod{fill:#f6d58a;stroke:#22313a;stroke-width:.6}.cw-term{fill:#f8f8f6;stroke:#22313a;stroke-width:.8}.cw-pe{fill:#7fb069;stroke:#22313a}.cw-tsep{stroke:#9aa6a3;stroke-width:.4}.cw-t{fill:#22313a}.cw-lbl{font:600 9px Arial,sans-serif;fill:#22313a}.cw-small{font:6px Arial,sans-serif;fill:#4a575c}.cw-wn{font:4px Consolas,monospace;fill:#4a575c}.cw-tn{font:3.4px Consolas,monospace;fill:#22313a}.cw-ondark{fill:#ffffff}.w{fill:none;stroke-width:1.3;stroke-linejoin:round}.w-pow{stroke:#1b1b1b}.w-pe{stroke:#2e8b3a}.w-pe2{stroke:#e8c400;stroke-dasharray:4 4}.w-dcp{stroke:#1d3fae}.w-dc0{stroke:#1d3fae}.w-dc02{stroke:#ffffff;stroke-dasharray:3 3;stroke-width:.7}.w-sig{stroke:#6c3fb0}.w-fsig{stroke:#e07800}.w-net{stroke:#1f9d55;stroke-width:1.8}.wh{fill:none;stroke:transparent;stroke-width:7;cursor:pointer}.cbl{fill:none;stroke:#5a6569;stroke-width:2.2;opacity:.75}.cbl-net{stroke:#1f9d55}.cw-dev{fill:#fff;stroke:#5a6569}.cw-gland{fill:#9aa6a3}.cw-glandc{fill:#22313a}.cw-bridge{stroke:#1d3fae;stroke-width:1.6}.cw-bridge0{stroke:#1d3fae;stroke-width:1.6;stroke-dasharray:3 2}`;
+function cabinetSVGStandalone(B){const s=cabinetSVG(B,false);return s.replace(">",`><style>${CW_CSS}</style>`)}
+function wiresCSV(B){return csv([["wire","from","to","type","mm2","color","description","tag","address"],...B.wires.map(w=>[`W${w.n}`,`${w.a.c}:${w.a.n}`,`${w.b.c}:${w.b.n}`,WTYPE[w.type].he,w.mm2,WTYPE[w.type].col,w.desc,w.s?w.s.tag:"",w.s?w.s.addr:""]),[],["cable","from","device","type","cores","length_m","description","location"],...B.cables.map(cb=>[cb.id,cb.from,cb.dev,cb.type,cb.cores.map(x=>`${x.core}→${x.t}`).join(" | "),cb.len||"",cb.desc,cb.loc||""])])}
+
+let cwCab=null,cwB=null,cwSel=null,cwVB=null;
+R.cabwire=()=>{
+  const def=cwCab&&M.cabs.some(c=>c.id===cwCab)?cwCab:(M.cabs.find(c=>c.id.startsWith("FLC"))||M.cabs[0]).id;cwCab=def;
+  cwB=cabinetBuild(M.cabs.find(c=>c.id===def));
+  const B=cwB,c=B.c,fit=B.plateW+60;
+  const typeCnt=t=>B.wires.filter(w=>w.type===t||(t==="pow"&&w.type==="mot")).length;
+  return `<h2>ארון – חיווט והרכבה מלאים</h2>
+  <p class="lead">שרטוט פנים הארון בקנה מידה (1 יחידה = 1 מ"מ): פלטה, פסי DIN, תעלות, כל רכיב וכל מהדק, כל חוט עם מספר, וכל כבל שטח עד הציוד. גלגלת או +/− מקרבת ומרחיקה, גרירה מזיזה. לחיצה על חוט, מהדק, רכיב או כבל מראה מאיפה ולאן.</p>
+  <div class="row noprint" style="margin-bottom:8px">
+    <label class="f" style="min-width:240px">ארון<select id="cwCab">${M.cabs.map(x=>`<option value="${x.id}" ${x.id===def?"selected":""}>${x.id} – ${esc(x.name)}</option>`).join("")}</select></label>
+    <label class="f" style="min-width:220px;flex:1">חיפוש (תג, חוט, מהדק, כבל)<input id="cwFind" type="search" placeholder="F01A03_PAL · W57 · X3:12 · -W014"></label>
+  </div>
+  <div class="row noprint" style="margin-bottom:8px;gap:12px">
+    ${[["pow","כוח"],["pe","PE"],["dcp","24V"],["sig","אותות"],["fsig","בטיחות"],["net","PROFINET"],["cable","כבלי שטח"]].map(([k,l])=>`<label class="chk"><input type="checkbox" data-cwf="${k}" checked> <span class="cw-key cw-key-${k}"></span>${l}${k==="cable"?` (${B.cables.length})`:k==="dcp"?` (${typeCnt("dcp")+typeCnt("dc0")})`:` (${typeCnt(k)})`}</label>`).join("")}
+  </div>
+  <div class="cw-wrap">
+    <div class="cw-view" id="cwView">
+      <div class="cw-tools noprint"><button class="btn" type="button" id="cwIn" aria-label="קרב">+</button><button class="btn" type="button" id="cwOut" aria-label="הרחק">−</button><button class="btn" type="button" id="cwFit">התאמה לארון</button><button class="btn" type="button" id="cwAll">הכל</button><button class="btn" type="button" id="cwClr">ניקוי בחירה</button></div>
+      ${cabinetSVG(B,true)}
+    </div>
+    <aside class="cw-info card" id="cwInfo" aria-live="polite"><h4>${c.id} – ${esc(c.name)}</h4><p class="muted" style="margin:0 0 6px">${esc(c.loc)}</p>
+      <ul><li>ארון ${c.W}×${c.H}×${c.D} מ"מ · פלטה ${Math.round(B.plateW)}×${Math.round(B.plateH)} מ"מ${B.plateH>c.H-150?` <span class="pill warn">התוכן גבוה מהארון – לשקול ארון ${c.H+400} או שני ארונות</span>`:""}</li><li>${B.comps.length} רכיבים · ${B.wires.length} חוטים · ${B.cables.length} כבלי שטח</li><li>שולט על: ${esc(c.controls)}</li></ul>
+      <p class="muted" style="font-size:13px;margin-top:8px">לחצו על חוט או רכיב כדי לראות כאן את הפרטים.</p></aside>
+  </div>
+  <div class="row noprint" style="margin-top:10px">
+    <button class="btn" type="button" id="cwSvg">העתקת השרטוט (SVG)</button>
+    <button class="btn" type="button" id="cwCsv">העתקת רשימת חוטים וכבלים (CSV)</button>
+    <button class="btn" type="button" id="cwDl">הורדת רשימת חוטים (CSV)</button>
+  </div>
+  <h3>פריסת הרכבה <span class="tag">${c.id}</span></h3>
+  <p class="lead" style="margin:0 0 6px">מיקום כל רכיב על הפלטה, מהפינה השמאלית העליונה, במ"מ. סדר ההרכבה: תעלות ופסי DIN, הגנות, דרייברים, בקרה, מהדקים, ואז חיווט לפי מספרי החוטים.</p>
+  ${table([["רכיב"],["תיאור"],["X מ\"מ","n"],["Y מ\"מ","n"],["רוחב×גובה","n"],["מהדקים","n"]],B.comps.map(o=>`<tr data-cwrow-c="${o.id}" style="cursor:pointer">${td(o.id,"m")}${td(esc(o.name))}${td(Math.round(o.x),"n")}${td(Math.round(o.y),"n")}${td(`${Math.round(o.w)}×${o.h}`,"n")}${td(o.terms.length,"n")}</tr>`))}
+  <h3>רשימת חוטים</h3>
+  <details class="card"><summary style="cursor:pointer">${B.wires.length} חוטים – לחיצה על שורה מסמנת את החוט בשרטוט</summary>
+  ${table([["חוט","n"],["מ‑","n"],["אל","n"],["סוג"],["חתך ממ\"ר","n"],["צבע"],["תיאור"]],B.wires.map((w,i)=>`<tr data-cwrow="${i}" style="cursor:pointer">${td("W"+w.n,"n")}${td(`${w.a.c}:${w.a.n}`,"m")}${td(`${w.b.c}:${w.b.n}`,"m")}${td(WTYPE[w.type].he)}${td(w.mm2,"n")}${td(WTYPE[w.type].col)}${td(esc(w.desc))}</tr>`))}</details>
+  <h3>כבלי שטח</h3>
+  ${table([["כבל","n"],["ממהדק","n"],["אל ציוד"],["סוג כבל"],["גידים → מהדק"],["אורך","n"]],B.cables.map((cb,i)=>`<tr data-cwrow-cb="${i}" style="cursor:pointer">${td(cb.id,"n")}${td(cb.from,"m")}${td(esc(cb.dev)+(cb.loc?`<div class="muted" style="font-size:12px">${esc(cb.loc)}</div>`:""))}${td(esc(cb.type))}${td(cb.cores.map(x=>`${x.core}→${x.t.replace(/f$/,"")}`).join(" · ")||"מחבר ישיר","m")}${td(cb.len?`≈${cb.len} מ'`:"—","n")}</tr>`))}`;
+};
+function cwMount(){
+  const view=document.getElementById("cwView"),svg=view.querySelector("svg"),info=document.getElementById("cwInfo"),B=cwB;
+  const vb0=svg.viewBox.baseVal;const full={x:vb0.x,y:vb0.y,w:vb0.width,h:vb0.height};
+  const plateFit=()=>{const r=svg.getBoundingClientRect(),asp=r.width/Math.max(r.height,1);let h=B.plateH+90,w=Math.max(B.plateW+60,h*asp);h=w/asp;return {x:-20-(w-B.plateW-60)/2,y:-40,w,h}};
+  let vb=cwVB&&cwVB.cab===B.c.id?{...cwVB}:plateFit();
+  const apply=()=>{svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);cwVB={...vb,cab:B.c.id};svg.classList.toggle("zoomed",vb.w/Math.max(svg.getBoundingClientRect().width,1)<0.42)};
+  const toSvg=(cx,cy)=>{const r=svg.getBoundingClientRect();const s=Math.max(vb.w/r.width,vb.h/r.height);const ox=(r.width*s-vb.w)/2,oy=(r.height*s-vb.h)/2;return {x:vb.x+(cx-r.left)*s-ox,y:vb.y+(cy-r.top)*s-oy,s}};
+  const zoom=(f,cx,cy)=>{const r=svg.getBoundingClientRect();if(cx==null){cx=r.left+r.width/2;cy=r.top+r.height/2}const p=toSvg(cx,cy);const nw=Math.min(full.w*1.5,Math.max(40,vb.w*f)),k=nw/vb.w;vb={x:p.x-(p.x-vb.x)*k,y:p.y-(p.y-vb.y)*k,w:nw,h:vb.h*k};apply()};
+  const focus=(x,y,w)=>{const ww=Math.max(w||160,120),hh=ww*full.h/full.w;vb={x:x-ww/2,y:y-hh/2,w:ww,h:hh};apply()};
+  apply();
+  svg.addEventListener("wheel",e=>{e.preventDefault();zoom(e.deltaY>0?1.2:1/1.2,e.clientX,e.clientY)},{passive:false});
+  const pts=new Map();let drag=null,moved=false,pinch0=null;
+  svg.addEventListener("pointerdown",e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});svg.setPointerCapture(e.pointerId);moved=false;
+    if(pts.size===1)drag={x:e.clientX,y:e.clientY,vb:{...vb}};
+    if(pts.size===2){const [a,b]=[...pts.values()];pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),vb:{...vb}}}});
+  svg.addEventListener("pointermove",e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2&&pinch0){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);if(d>0){vb={...pinch0.vb};zoom(pinch0.d/d,(a.x+b.x)/2,(a.y+b.y)/2);moved=true}return}
+    if(drag){const r=svg.getBoundingClientRect(),s=Math.max(drag.vb.w/r.width,drag.vb.h/r.height);const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4)moved=true;vb={...drag.vb,x:drag.vb.x-dx*s,y:drag.vb.y-dy*s};apply()}});
+  const up=e=>{pts.delete(e.pointerId);if(pts.size<2)pinch0=null;if(!pts.size)drag=null};
+  svg.addEventListener("pointerup",up);svg.addEventListener("pointercancel",up);
+  svg.addEventListener("click",e=>{if(moved)return;const w=e.target.closest("[data-w]"),cb=e.target.closest("[data-cb]"),t=e.target.closest("[data-t]"),c=e.target.closest("[data-c]");
+    if(w)selWire(+w.dataset.w);else if(cb)selCable(+cb.dataset.cb);else if(t)selTerm(t.dataset.t);else if(c)selComp(c.dataset.c);else clearSel()});
+  document.getElementById("cwIn").onclick=()=>zoom(1/1.4);document.getElementById("cwOut").onclick=()=>zoom(1.4);
+  document.getElementById("cwFit").onclick=()=>{vb=plateFit();apply()};document.getElementById("cwClr").onclick=clearSel;document.getElementById("cwAll").onclick=()=>{vb={...full};apply()};
+  document.getElementById("cwCab").onchange=e=>{cwCab=e.target.value;cwSel=null;cwVB=null;render()};
+  document.querySelectorAll("[data-cwf]").forEach(cb=>cb.onchange=()=>{const k=cb.dataset.cwf,on=cb.checked;
+    svg.querySelectorAll(k==="cable"?'[data-type="cable"],[data-type="net"].cg':k==="dcp"?'.wg[data-type="dcp"],.wg[data-type="dc0"]':k==="pow"?'.wg[data-type="pow"],.wg[data-type="mot"]':k==="net"?'.wg[data-type="net"],.cg[data-type="net"]':`.wg[data-type="${k}"]`).forEach(x=>x.style.display=on?"":"none")});
+  const nameOf=id=>{const o=B.comps.find(x=>x.id===id);return o?o.name:id};
+  const cableOfTerm=(tk)=>B.cables.find(cb=>cb.cores.some(x=>x.t===tk||x.t===tk+"f"||x.t.replace(/f$/,"")===tk));
+  function mark(cls){svg.classList.add("cw-hasSel");svg.querySelectorAll(".sel").forEach(x=>x.classList.remove("sel"));cls.forEach(el=>el&&el.classList.add("sel"))}
+  function clearSel(){svg.classList.remove("cw-hasSel");svg.querySelectorAll(".sel").forEach(x=>x.classList.remove("sel"));cwSel=null}
+  function selWire(i,zoomTo){const w=B.wires[i];cwSel={w:i};mark([svg.querySelector(`[data-w="${i}"]`),...svg.querySelectorAll(`[data-wn="${i}"]`),svg.querySelector(`[data-t="${w.a.c}:${w.a.n}"]`),svg.querySelector(`[data-t="${w.b.c}:${w.b.n}"]`)]);
+    const fc=w.s?B.cables.find(cb=>cb.s===w.s):cableOfTerm(`${w.b.c}:${w.b.n}`)||cableOfTerm(`${w.a.c}:${w.a.n}`);
+    if(fc)svg.querySelector(`[data-cb="${B.cables.indexOf(fc)}"]`)?.classList.add("sel");
+    info.innerHTML=`<h4>חוט W${w.n}</h4><table class="cw-kv"><tr><th>מ‑</th><td class="m">${w.a.c}:${w.a.n}</td></tr><tr><th></th><td>${esc(nameOf(w.a.c))}</td></tr><tr><th>אל</th><td class="m">${w.b.c}:${w.b.n}</td></tr><tr><th></th><td>${esc(nameOf(w.b.c))}</td></tr><tr><th>סוג</th><td>${WTYPE[w.type].he}</td></tr><tr><th>חתך</th><td>${w.mm2}${w.type==="net"?"":" ממ\"ר"}</td></tr><tr><th>צבע</th><td>${WTYPE[w.type].col}</td></tr><tr><th>שרוולים</th><td class="m">${w.a.c}:${w.a.n} / ${w.b.c}:${w.b.n}</td></tr><tr><th>תוואי</th><td>${w.via}</td></tr><tr><th>תפקיד</th><td>${esc(w.desc)}</td></tr>${w.s?`<tr><th>תג</th><td class="m">${w.s.tag}</td></tr><tr><th>כתובת</th><td class="m">${w.s.addr}</td></tr>`:""}</table>
+    ${fc?`<h4 style="margin-top:10px">ממשיך בכבל שטח ${fc.id}</h4><p style="margin:0">${esc(fc.type)} → <b>${esc(fc.dev)}</b>${fc.loc?`<br><span class="muted">${esc(fc.loc)}</span>`:""}${fc.len?`<br>אורך ≈ ${fc.len} מ'`:""}</p>`:""}`;
+    if(zoomTo)focus((w.a.x+w.b.x)/2,(w.a.y+w.b.y)/2,Math.max(Math.abs(w.a.x-w.b.x),Math.abs(w.a.y-w.b.y))*1.4)}
+  function selCable(i,zoomTo){const cb=B.cables[i];cwSel={cb:i};const ws=B.wires.map((w,k)=>({w,k})).filter(({w})=>cb.cores.some(x=>{const tk=x.t.replace(/f$/,"");return `${w.a.c}:${w.a.n}`===tk||`${w.b.c}:${w.b.n}`===tk||(cb.s&&w.s===cb.s)}));
+    mark([svg.querySelector(`[data-cb="${i}"]`),...ws.map(({k})=>svg.querySelector(`[data-w="${k}"]`)),...cb.cores.map(x=>svg.querySelector(`[data-t="${x.t}"]`))]);
+    info.innerHTML=`<h4>כבל ${cb.id}</h4><table class="cw-kv"><tr><th>ממהדק</th><td class="m">${cb.from}</td></tr><tr><th>אל</th><td><b>${esc(cb.dev)}</b></td></tr>${cb.loc?`<tr><th>מיקום</th><td>${esc(cb.loc)}</td></tr>`:""}<tr><th>סוג</th><td>${esc(cb.type)}</td></tr><tr><th>אורך</th><td>${cb.len?`≈ ${cb.len} מ' + 10% רזרבה`:"—"}</td></tr><tr><th>תפקיד</th><td>${esc(cb.desc)}</td></tr></table>
+    <h4 style="margin-top:10px">גידים</h4><table class="cw-kv">${cb.cores.map(x=>`<tr><th class="m">${x.core}</th><td class="m">${x.t.replace(/f$/," (צד שטח)")}</td></tr>`).join("")||"<tr><td>מחבר ישיר לדרייבר</td></tr>"}</table>${ws.length?`<p class="muted" style="margin:6px 0 0">בתוך הארון: ${ws.map(({w})=>"W"+w.n).join(", ")}</p>`:""}`;
+    if(zoomTo){const t=B.T[cb.cores[0]?.t];if(t)focus(t.x,(t.y+cb.dy)/2,Math.abs(cb.dy-t.y)*1.6)}}
+  function selTerm(tk){const ws=B.wires.map((w,k)=>({w,k})).filter(({w})=>`${w.a.c}:${w.a.n}`===tk||`${w.b.c}:${w.b.n}`===tk);const cb=cableOfTerm(tk);
+    mark([svg.querySelector(`[data-t="${tk}"]`),...ws.map(({k})=>svg.querySelector(`[data-w="${k}"]`)),cb&&svg.querySelector(`[data-cb="${B.cables.indexOf(cb)}"]`)]);
+    info.innerHTML=`<h4>מהדק ${tk.replace(/f$/," (צד שטח)")}</h4><p class="muted" style="margin:0 0 6px">${esc(nameOf(tk.split(":")[0]))}</p><ul>${ws.map(({w})=>`<li><a href="#" data-gow="${B.wires.indexOf(w)}">W${w.n}</a> → ${`${w.a.c}:${w.a.n}`===tk?`${w.b.c}:${w.b.n}`:`${w.a.c}:${w.a.n}`} · ${esc(w.desc)}</li>`).join("")}${cb?`<li>כבל <a href="#" data-gocb="${B.cables.indexOf(cb)}">${cb.id}</a> → ${esc(cb.dev)}</li>`:""}</ul>`;bindGo()}
+  function selComp(id,zoomTo){const o=B.comps.find(x=>x.id===id);const ws=B.wires.map((w,k)=>({w,k})).filter(({w})=>w.a.c===id||w.b.c===id);
+    mark([svg.querySelector(`[data-c="${id}"]`),...ws.map(({k})=>svg.querySelector(`[data-w="${k}"]`))]);
+    info.innerHTML=`<h4>${id}</h4><p style="margin:0 0 6px">${esc(o.name)}</p><table class="cw-kv"><tr><th>מיקום</th><td class="m">X ${Math.round(o.x)} · Y ${Math.round(o.y)} מ"מ</td></tr><tr><th>מידות</th><td class="m">${Math.round(o.w)}×${o.h} מ"מ</td></tr><tr><th>מהדקים</th><td>${o.terms.length}</td></tr><tr><th>חוטים</th><td>${ws.length}</td></tr></table><ul style="margin-top:6px;max-height:220px;overflow:auto">${ws.slice(0,60).map(({w})=>`<li><a href="#" data-gow="${B.wires.indexOf(w)}">W${w.n}</a> ${w.a.c===id?w.a.n:w.b.n} → ${w.a.c===id?`${w.b.c}:${w.b.n}`:`${w.a.c}:${w.a.n}`}</li>`).join("")}</ul>`;bindGo();
+    if(zoomTo)focus(o.x+o.w/2,o.y+o.h/2,Math.max(o.w,o.h)*2.2)}
+  function bindGo(){info.querySelectorAll("[data-gow]").forEach(a=>a.onclick=ev=>{ev.preventDefault();selWire(+a.dataset.gow,true)});info.querySelectorAll("[data-gocb]").forEach(a=>a.onclick=ev=>{ev.preventDefault();selCable(+a.dataset.gocb,true)})}
+  document.querySelectorAll("[data-cwrow]").forEach(r=>r.onclick=()=>{selWire(+r.dataset.cwrow,true);view.scrollIntoView({block:"start",behavior:"smooth"})});
+  document.querySelectorAll("[data-cwrow-cb]").forEach(r=>r.onclick=()=>{selCable(+r.dataset.cwrowCb,true);view.scrollIntoView({block:"start",behavior:"smooth"})});
+  document.querySelectorAll("[data-cwrow-c]").forEach(r=>r.onclick=()=>{selComp(r.dataset.cwrowC,true);view.scrollIntoView({block:"start",behavior:"smooth"})});
+  document.getElementById("cwFind").onchange=e=>{const q=e.target.value.trim().toUpperCase().replace(/^-?/,"");if(!q)return;
+    let m;if((m=q.match(/^W(\d+)$/))){const i=B.wires.findIndex(w=>w.n===+m[1]);if(i>=0)return selWire(i,true)}
+    let i=B.cables.findIndex(cb=>cb.id.replace("-","")===q||String(cb.dev).toUpperCase()===q);if(i>=0)return selCable(i,true);
+    i=B.wires.findIndex(w=>w.s&&w.s.tag===q);if(i>=0)return selWire(i,true);
+    const tk=Object.keys(B.T).find(k=>k.replace(/^-/,"").toUpperCase()===q||k.replace(/^-/,"").toUpperCase()===q.replace(/(\d+)$/,"$1.I"));if(tk)return selTerm(tk);
+    const c=B.comps.find(o=>o.id.replace("-","")===q);if(c)return selComp(c.id,true);
+    toast("לא נמצא: "+e.target.value)};
+  document.getElementById("cwSvg").onclick=()=>copyText(cabinetSVGStandalone(B),"השרטוט הועתק כ‑SVG");
+  document.getElementById("cwCsv").onclick=()=>copyText(wiresCSV(B),"רשימת החוטים הועתקה");
+  document.getElementById("cwDl").onclick=()=>saveFile(`${B.c.id}_wiring.csv`,"﻿"+wiresCSV(B));
+  if(cwSel){if(cwSel.w!=null&&B.wires[cwSel.w])selWire(cwSel.w);else if(cwSel.cb!=null&&B.cables[cwSel.cb])selCable(cwSel.cb)}
 }
 
 /* ---- per-tab mounts that need DOM ---- */
@@ -2517,11 +2844,14 @@ render=function(){_render();
   if(cur==="plc")document.getElementById("cpSCL").onclick=()=>copyText(document.querySelectorAll("#s-plc pre.code")[1].textContent,"קוד ה‑SCL הועתק");
   if(cur==="lobby")document.getElementById("lobbyCad").innerHTML=lobbySVG(1);
   if(cur==="tpl")tplMount();
+  if(cur==="cabwire")cwMount();
   if(cur==="wiring"){const s=document.getElementById("wCab");const o=document.getElementById("wOut");const def=M.cabs.find(c=>c.id.startsWith("FLC"))||M.cabs[0];s.value=wCab&&M.cabs.some(c=>c.id===wCab)?wCab:def.id;o.innerHTML=wiringOut(s.value);s.onchange=()=>{wCab=s.value;o.innerHTML=wiringOut(s.value)}}
 };
 let wCab=null;
 
-ensureFloors();fillInputs();render();
+ensureFloors();fillInputs();
+{const st=document.createElement("style");st.textContent=CW_CSS;document.head.appendChild(st)}
+render();
 })();
 </script>
 </body>
