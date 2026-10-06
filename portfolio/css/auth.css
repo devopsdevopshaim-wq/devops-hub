@@ -28,3 +28,6 @@
 .is-client .foot-admin, .is-client .nav-add, .is-client #add, .is-client .admin-strip, .is-client .admin-on,
 .is-client #gh-top, .is-client #gh-link, .is-client #nav-status, .is-client #extra-wrap { display: none !important; }
 @media (max-width: 640px) { .user-chip span { display: none; } }
+
+/* "hidden" must win over .field { display: flex } */
+.gate [hidden] { display: none !important; }

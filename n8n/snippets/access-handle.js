@@ -1,4 +1,11 @@
 // Sign-in and access control for the portfolio. (Built into "Auth · Handle" by build-access-workflow.py.)
+//
+//  The admin   signs in from anywhere with email + password (and the authenticator code, if one is set up).
+//  A client    signs in with email + the password the admin gave them, from a device the admin approved.
+//              The first device is accepted and the admin is told; every other new device waits for the admin.
+//              A device is told apart by a random id kept in its browser; its IP address is recorded with it.
+//              Clients with "IP lock" must also come from an approved address.
+//  Until ADMIN_PASSWORD is set in the SPIDER secret, the admin keeps the older way in (email, phone, emailed code).
 __SEC__
 
 const ADMIN_EMAIL = '__ADMIN_EMAIL__';
@@ -6,7 +13,9 @@ const ADMIN_PHONE = '__ADMIN_PHONE__';
 const RENEW = '__RENEW__';
 // Filled in by the deploy from the SPIDER secret; never written in the repository.
 const set = (v) => !!v && !/^__/.test(v);
-const ADMIN_TOTP = '__ADMIN_TOTP_SECRET__';   // authenticator-app key of the admin; empty = email code only
+const ADMIN_PW = '__ADMIN_PASSWORD_HASH__';   // "p1$iterations$salt$hash" made from ADMIN_PASSWORD; only the hash is here
+const PASSWORDS = set(ADMIN_PW);
+const ADMIN_TOTP = '__ADMIN_TOTP_SECRET__';   // authenticator-app key of the admin; empty = no second step
 // Invoices through Morning (חשבונית ירוקה): MORNING_CLIENT_ID / MORNING_CLIENT_SECRET in the secret.
 //   docType 320 = חשבונית מס/קבלה (עוסק מורשה), 400 = קבלה (עוסק פטור)
 const INVOICE = { clientId: '__MORNING_CLIENT_ID__', clientSecret: '__MORNING_CLIENT_SECRET__', docType: 320, sandbox: false };
@@ -17,6 +26,7 @@ const bizProof = () => { if (!set(SHARED)) return ''; const e = Date.now() + 30 
 const CLIENT_SESSION_DAYS = 7;   // capped by the end of the subscription
 const ADMIN_SESSION_DAYS = 0.5;  // the admin signs in again every 12 hours
 const MAX_CLIENTS = 500;
+const DEFAULT_MAX_DEVICES = 3;
 
 const sd = $getWorkflowStaticData('global');
 sd.clients = sd.clients || {};
@@ -35,7 +45,11 @@ const email = (e) => String(e || '').replace(/[\u0000-\u001f\u007f\s]+/g, '').to
 const phone = (p) => { let d = String(p || '').replace(/\D/g, ''); if (d.startsWith('972')) d = '0' + d.slice(3); return d.slice(0, 15); };
 const code6 = () => String(parseInt(rnd(4), 16) % 1000000).padStart(6, '0');
 const log = (what, who) => { sd.log.unshift({ at: new Date(now).toISOString(), what, who, ip: IPK.slice(0, 6) }); if (sd.log.length > 300) sd.log.length = 300; };
-const alert = (subject, text) => ({ to: ADMIN_EMAIL, subject: 'SPIDER · ' + subject, text: text + `\n\nזמן: ${new Date(now).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' })}\nכתובת: ${IP}\n`, alert: true });
+const when = () => new Date(now).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' });
+const alert = (subject, text) => ({ to: ADMIN_EMAIL, subject: 'SPIDER · ' + subject, text: text + `\n\nזמן: ${when()}\nכתובת: ${IP}\n`, alert: true });
+// 84.229.12.7 -> 84.229.x.x : enough to recognise a network, not enough to expose a person
+const maskIp = (ip) => /^\d+\.\d+\.\d+\.\d+$/.test(ip) ? ip.split('.').slice(0, 2).join('.') + '.x.x' : /:/.test(ip) ? ip.split(':').slice(0, 3).join(':') + '::' : 'לא ידוע';
+const UA = line(HDR['user-agent'], 110);
 
 // tidy up: expired sessions and codes, locks, counters, and anything left by the older (plain) format
 for (const [t, s] of Object.entries(sd.sessions)) if (t.length !== 64 || s.exp < now) delete sd.sessions[t];
@@ -54,34 +68,126 @@ const active = (c) => !!c && c.active !== false && (!c.expiresAt || Date.parse(c
 const tokenHash = () => { const t = String(b.token || ''); return /^[a-f0-9]{48}$/.test(t) ? sha256hex(t) : ''; };
 const session = () => { const h = tokenHash(); const s = h && sd.sessions[h]; return s && s.exp > now ? s : null; };
 const admin = () => { const s = session(); return s && s.role === 'admin' ? s : null; };
-const view = (c) => ({ ...c, activeNow: active(c), daysLeft: c.expiresAt ? Math.ceil((Date.parse(c.expiresAt) - now) / DAY) : null });
+const view = (c) => { const { pw, ...rest } = c; return { ...rest, hasPassword: !!pw, activeNow: active(c), daysLeft: c.expiresAt ? Math.ceil((Date.parse(c.expiresAt) - now) / DAY) : null }; };
+const newSession = (e, role, exp, extra) => { const token = rnd(24); sd.sessions[sha256hex(token)] = { email: e, role, exp, at: now, ...(extra || {}) }; return token; };
+
+// ---- devices. A device is a random id kept in the browser (only its hash is stored here) plus the addresses it came from.
+//   ok      the device is approved, and (for clients with IP lock) so is the address
+//   pending waits for the admin
+function checkDevice(c, devHash, register) {
+  c.devices = c.devices || [];
+  const iso = new Date(now).toISOString();
+  let d = c.devices.find((x) => x.id === devHash);
+  let news = '';
+  if (!d) {
+    if (register !== true) return { status: 'pending', news };   // only a login may add a device; a page load may not
+    const first = c.devices.length === 0;   // the first device is trusted: the admin gave the password to its owner
+    d = { id: devHash, ua: UA, first: iso, last: iso, approved: first, ips: [] };
+    c.devices.push(d);
+    if (c.devices.length > 20) { const i = c.devices.findIndex((x) => !x.approved); c.devices.splice(i >= 0 ? i : 0, 1); }
+    news = first ? 'first-device' : 'new-device';
+  }
+  let r = d.ips.find((x) => x.k === IPK);
+  if (!r && register) {
+    // an address the device was not seen at before: free for ordinary clients (the admin is told), approved by hand with IP lock
+    r = { k: IPK, ip: maskIp(IP), first: iso, last: iso, approved: !c.ipLock || (news === 'first-device') };
+    d.ips.push(r);
+    if (d.ips.length > 20) d.ips.shift();
+    if (!news && d.approved) news = r.approved ? 'new-ip' : 'blocked-ip';
+  }
+  if (register) { d.last = iso; d.ua = UA || d.ua; if (r) r.last = iso; }
+  const ok = d.approved && (!c.ipLock || (r && r.approved));
+  return { status: ok ? 'ok' : 'pending', news, d };
+}
+function deviceMail(c, news) {
+  const who = `${c.name || c.email} (${c.email})`;
+  const where = `מכשיר: ${UA || 'לא ידוע'}`;   // the address itself is added below
+  const manage = '\n\nלאישור או לחסימה: מסך הניהול ← לקוחות ← עריכה ← מכשירים.';
+  if (news === 'first-device') return alert('לקוח נכנס בפעם הראשונה', `${who} נכנס בפעם הראשונה מהמכשיר הזה, והוא נרשם כמכשיר המאושר שלו.\n${where}`);
+  if (news === 'new-device') return alert('מכשיר חדש מחכה לאישור', `${who} ניסה להיכנס ממכשיר חדש. הוא לא ייכנס עד שתאשר.\n${where}${manage}`);
+  if (news === 'blocked-ip') return alert('כתובת חדשה מחכה לאישור', `${who} ניסה להיכנס מכתובת חדשה, ויש לו נעילת כתובת. הוא לא ייכנס עד שתאשר.\n${where}${manage}`);
+  if (news === 'new-ip' && hit('ip-alert', c.email, 1, 6 * HOUR)) return alert('כתובת חדשה ללקוח', `${who} נכנס ממכשיר מוכר אבל מכתובת חדשה.\n${where}`);
+  return null;
+}
 
 switch (b.action) {
+  // ---------------------------------------------------------------- public
+  case 'info':
+    return out({ ok: true, password: PASSWORDS });
+
+  case 'health':
+    // what the install checks: which kind of cryptography this n8n has, and which address it sees for the caller
+    return out({ ok: true, crypto: PW_FAST ? 'node' : 'js', ip: IP });
+
+  case 'login': {
+    const e = email(b.email), pw = String(b.password == null ? '' : b.password).slice(0, 200);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || !pw) return out({ ok: false, error: 'bad-input' }, 400);
+    const dev = String(b.device || '');
+    if (!hit('login-ip', IPK, 20, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const lk = e + '|' + IPK;                       // one address cannot lock the real owner out from another
+    if (sd.lock[lk] > now || sd.lock[e] > now) return out({ ok: false, error: 'too-many' }, 429);
+    const adm = e === ADMIN_EMAIL;
+    const c = sd.clients[e];
+    const stored = adm ? (PASSWORDS ? ADMIN_PW : '') : (c && c.pw) || '';
+    const good = stored ? pwCheck(pw, stored) : pwDummy(pw);
+    const fail = (why) => {
+      const f1 = (sd.fails[lk] = (sd.fails[lk] || []).filter((t) => now - t < HOUR).concat(now));
+      const f2 = (sd.fails[e] = (sd.fails[e] || []).filter((t) => now - t < HOUR).concat(now));
+      let mail = null, code = 401, error = 'bad-login';
+      if (f1.length >= 8) { sd.lock[lk] = now + HOUR; error = 'too-many'; code = 429; if (adm || c) mail = alert('נחסמה כניסה אחרי ניסיונות כושלים', `8 סיסמאות שגויות עבור ${e} מהכתובת הזו. הכניסה משם נחסמה לשעה.`); }
+      else if (f2.length >= 60) { sd.lock[e] = now + 10 * 60000; error = 'too-many'; code = 429; }   // many addresses at once: a short pause for everyone
+      log('כניסה נכשלה' + (why ? ' · ' + why : ''), e);
+      return out({ ok: false, error, left: Math.max(0, 8 - f1.length) }, code, mail);
+    };
+    if (!good) return fail('');
+
+    if (adm) {
+      if (set(ADMIN_TOTP)) {
+        const t = String(b.totp || '').replace(/\D/g, '');
+        if (t.length !== 6) return out({ ok: false, error: 'totp-needed' }, 401);   // the password was right; the session waits for the app code
+        const step = totpStep(ADMIN_TOTP, t, now);
+        if (!step || step <= (sd.totpLast || 0)) return fail('קוד אפליקציה');
+        sd.totpLast = step;
+      }
+      sd.fails[lk] = [];
+      const token = newSession(e, 'admin', now + ADMIN_SESSION_DAYS * DAY);
+      log('כניסת מנהל', e);
+      return out({ ok: true, token, role: 'admin', name: 'מנהל' }, 200, alert('כניסת מנהל', 'נכנסת למערכת SPIDER כמנהל. אם זה לא אתה, החלף מיד את ADMIN_PASSWORD בסוד SPIDER והרץ את ההתקנה.'));
+    }
+
+    // a client: right password, now the subscription and the device
+    if (!active(c)) { log('כניסה, מנוי לא פעיל', e); return out({ ok: false, error: 'inactive' }, 403); }
+    if (!/^[a-f0-9]{32}$/.test(dev)) return out({ ok: false, error: 'bad-device' }, 400);
+    const dh = sha256hex('dev:' + dev);
+    const r = checkDevice(c, dh, true);
+    const mail = r.news ? deviceMail(c, r.news) : null;
+    if (r.news) log(r.news === 'first-device' ? 'מכשיר ראשון' : r.news === 'new-device' ? 'מכשיר חדש ממתין' : r.news === 'blocked-ip' ? 'כתובת חדשה ממתינה' : 'כתובת חדשה', e);
+    if (r.status !== 'ok') return out({ ok: false, error: 'pending', renew: RENEW }, 403, mail);
+    sd.fails[lk] = [];
+    let exp = now + CLIENT_SESSION_DAYS * DAY;
+    if (c.expiresAt) exp = Math.min(exp, Date.parse(c.expiresAt));
+    const token = newSession(e, 'client', exp, { dev: dh });
+    c.lastLogin = new Date(now).toISOString();
+    log('כניסת לקוח', e);
+    return out({ ok: true, token, role: 'client', name: line(c.name, 60), exp: new Date(exp).toISOString() }, 200, mail);
+  }
+
+  // ---------------------------------------------------------------- the older way in, for the admin only, until a password exists
   case 'request': {
     const e = email(b.email), p = phone(b.phone);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || p.length < 9) return out({ ok: false, error: 'bad-input' }, 400);
-    // the same limits for everyone, known or not, so they reveal nothing
-    if (!hit('req-ip', IPK, 8, HOUR) || !hit('req-all', 'all', 40, HOUR) || !hit('req-mail', e, 5, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    if (!hit('req-ip', IPK, 8, HOUR) || !hit('req-mail', e, 5, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
     if (!hit('req-wait', e, 1, 30000)) return out({ ok: false, error: 'wait' }, 429);
     const ok = { ok: true, sent: true };
-    const c = sd.clients[e];
-    const known = isAdmin(e, p) || (c && phone(c.phone) === p);
-    // unknown details get the same answer, so nobody can probe who is a client
-    if (!known) {
+    if (PASSWORDS || !isAdmin(e, p)) {   // once a password exists this door is shut; everyone else just gets the same answer
       log('ניסיון כניסה לא מוכר', e);
-      // many strangers in an hour: tell the admin, once an hour
       if (!hit('unknown', 'all', 9, HOUR) && hit('unknown-alert', 'all', 1, HOUR)) return out(ok, 200, alert('ניסיונות כניסה חשודים', 'היו 10 ניסיונות כניסה עם פרטים לא מוכרים בשעה האחרונה.'));
       return out(ok);
     }
-    if (sd.lock[e] > now) return out(ok);   // locked after too many wrong codes: no new code until it ends
+    if (sd.lock[e] > now) return out(ok);
     // a code that was sent in the last 2 minutes stays: someone else's request must not cancel the code the owner is waiting for
     const pend = sd.otp[e];
     if (pend && pend.h && pend.exp - 8 * 60000 > now) return out(ok);
-    if (!isAdmin(e, p) && !active(c)) {
-      log('ניסיון כניסה, מנוי לא פעיל', e);
-      return out(ok, 200, { to: e, subject: 'SPIDER: הגישה שלך לא פעילה',
-        text: `שלום ${line(c.name, 60)},\n\nהגישה שלך ל־SPIDER ${c.active === false ? 'מושהית' : 'הסתיימה' + (c.expiresAt ? ' ב־' + new Date(c.expiresAt).toLocaleDateString('he-IL') : '')}.\nלחידוש המנוי: ${RENEW}\n` });
-    }
     const code = code6();
     sd.otp[e] = { h: sha256hex(code + ':' + e), phone: p, exp: now + 10 * 60000, tries: 0 };
     return out(ok, 200, { to: e, subject: `הקוד שלך ל־SPIDER: ${code}`,
@@ -91,7 +197,7 @@ switch (b.action) {
   case 'verify': {
     const e = email(b.email), p = phone(b.phone);
     if (!hit('ver-ip', IPK, 30, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
-    if (sd.lock[e] > now) return out({ ok: false, error: 'too-many' }, 429);
+    if (PASSWORDS || sd.lock[e] > now) return out({ ok: false, error: PASSWORDS ? 'expired' : 'too-many' }, PASSWORDS ? 400 : 429);
     const o = sd.otp[e];
     if (!o || !o.h || o.exp < now) return out({ ok: false, error: 'expired' }, 400);
     // every wrong guess counts: 5 per code, 10 per hour per address, then a one-hour lock and a warning to the admin
@@ -106,11 +212,8 @@ switch (b.action) {
     const codeOk = same(sha256hex(String(b.code || '').replace(/\D/g, '') + ':' + e), o.h);
     const phoneOk = same(o.phone, p);
     if (!codeOk || !phoneOk) return bad('wrong');
-    const role = isAdmin(e, p) ? 'admin' : 'client';
-    const c = sd.clients[e];
-    if (role === 'client' && !active(c)) { delete o.h; return out({ ok: false, error: 'inactive' }, 403); }
-    // the admin also needs the authenticator-app code, once the key is set (SPIDER secret: ADMIN_TOTP_SECRET)
-    if (role === 'admin' && set(ADMIN_TOTP)) {
+    if (!isAdmin(e, p)) return bad('wrong');
+    if (set(ADMIN_TOTP)) {
       const t = String(b.totp || '').replace(/\D/g, '');
       if (t.length !== 6) return out({ ok: false, error: 'totp-needed' }, 401);   // the emailed code stays valid
       const step = totpStep(ADMIN_TOTP, t, now);
@@ -118,23 +221,26 @@ switch (b.action) {
       sd.totpLast = step;
     }
     delete o.h;
-    let exp = now + (role === 'admin' ? ADMIN_SESSION_DAYS : CLIENT_SESSION_DAYS) * DAY;
-    if (role === 'client' && c.expiresAt) exp = Math.min(exp, Date.parse(c.expiresAt));
-    const token = rnd(24);
-    sd.sessions[sha256hex(token)] = { email: e, role, exp, at: now };   // only the hash is kept
-    if (c) c.lastLogin = new Date(now).toISOString();
-    log(role === 'admin' ? 'כניסת מנהל' : 'כניסת לקוח', e);
-    return out({ ok: true, token, role, name: role === 'admin' ? 'מנהל' : line(c.name, 60), exp: new Date(exp).toISOString() }, 200,
-      role === 'admin' ? alert('כניסת מנהל', 'נכנסת למערכת SPIDER כמנהל. אם זה לא אתה, חסום עכשיו את הגישה (שנה את ADMIN_EMAIL ב־n8n).') : null);
+    const token = newSession(e, 'admin', now + ADMIN_SESSION_DAYS * DAY);
+    log('כניסת מנהל', e);
+    return out({ ok: true, token, role: 'admin', name: 'מנהל', exp: new Date(now + ADMIN_SESSION_DAYS * DAY).toISOString() }, 200,
+      alert('כניסת מנהל', 'נכנסת למערכת SPIDER כמנהל. אם זה לא אתה, קבע סיסמה (ADMIN_PASSWORD בסוד SPIDER) והרץ את ההתקנה.'));
   }
 
+  // ---------------------------------------------------------------- signed in
   case 'me': {
     const s = session();
     if (!s) return out({ ok: false, error: 'signed-out' }, 401);
     if (s.role === 'admin') return out({ ok: true, role: 'admin', name: 'מנהל', email: s.email, sites: 'all', biz: bizProof() });
     const c = sd.clients[s.email];
     if (!active(c)) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'inactive' }, 403); }
-    return out({ ok: true, role: 'client', name: c.name || '', email: s.email, sites: c.sites || [], expiresAt: c.expiresAt || null, plan: c.plan || '' });
+    // the device may have been removed, and a client with IP lock must still be at an approved address
+    const r = checkDevice(c, s.dev, 'ip');
+    if (r.status !== 'ok') {
+      // the session stays: it works again on an approved address, and a removed device lost its sessions already
+      return out({ ok: false, error: r.d && r.d.approved ? 'ip-blocked' : 'device-revoked', renew: RENEW }, 403, r.news ? deviceMail(c, r.news) : null);
+    }
+    return out({ ok: true, role: 'client', name: c.name || '', email: s.email, sites: c.sites || [], expiresAt: c.expiresAt || null, plan: c.plan || '' }, 200, r.news ? deviceMail(c, r.news) : null);
   }
 
   case 'logout': {
@@ -152,22 +258,49 @@ switch (b.action) {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     let p = {}; try { p = JSON.parse(b.payload || '{}'); } catch (x) {}
     const e = email(p.email);
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || phone(p.phone).length < 9) return out({ ok: false, error: 'bad-input' }, 400);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return out({ ok: false, error: 'bad-input' }, 400);
     if (!sd.clients[e] && Object.keys(sd.clients).length >= MAX_CLIENTS) return out({ ok: false, error: 'too-many-clients' }, 400);
-    if (p.oldEmail && email(p.oldEmail) !== e) delete sd.clients[email(p.oldEmail)];
-    const prev = sd.clients[e] || { createdAt: new Date(now).toISOString() };
+    const newPw = String(p.password == null ? '' : p.password);
+    if (newPw && (newPw.length < 10 || newPw.length > 100)) return out({ ok: false, error: 'weak-password' }, 400);
+    const old = p.oldEmail && email(p.oldEmail) !== e ? sd.clients[email(p.oldEmail)] : null;
+    if (old) delete sd.clients[email(p.oldEmail)];
+    const prev = sd.clients[e] || old || { createdAt: new Date(now).toISOString() };
     sd.clients[e] = {
       ...prev,
       email: e, phone: phone(p.phone), name: line(p.name, 60), note: line(p.note, 200),
       sites: (Array.isArray(p.sites) ? p.sites : []).map((x) => line(x, 64)).filter(Boolean).slice(0, 200),
       plan: ['day', 'week', 'month', 'year', 'custom', 'free'].includes(p.plan) ? p.plan : 'custom',
       expiresAt: p.expiresAt && !isNaN(Date.parse(p.expiresAt)) ? new Date(p.expiresAt).toISOString() : null,
-      active: p.active !== false
+      active: p.active !== false,
+      ipLock: p.ipLock === true,
+      maxDevices: Math.max(1, Math.min(10, Math.round(Number(p.maxDevices) || prev.maxDevices || DEFAULT_MAX_DEVICES)))
     };
-    // a change in access applies at once: close the client's open sessions if they lost it
-    if (!active(sd.clients[e])) for (const [t, s] of Object.entries(sd.sessions)) if (s.email === e) delete sd.sessions[t];
-    log('עדכון לקוח', e);
+    if (newPw) { sd.clients[e].pw = pwHash(newPw); sd.clients[e].pwAt = new Date(now).toISOString(); }
+    // a change in access applies at once: close the client's open sessions if they lost it, or got a new password
+    if (!active(sd.clients[e]) || newPw) for (const [t, s] of Object.entries(sd.sessions)) if (s.email === e) delete sd.sessions[t];
+    log(newPw ? 'עדכון לקוח וסיסמה' : 'עדכון לקוח', e);
     return out({ ok: true, client: view(sd.clients[e]) });
+  }
+
+  // approve or remove a device (or, with "ip", one address of it)
+  case 'device-approve':
+  case 'device-remove': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    const c = sd.clients[email(b.email)];
+    const d = c && (c.devices || []).find((x) => x.id === String(b.id || ''));
+    if (!d) return out({ ok: false, error: 'not-found' }, 404);
+    if (b.action === 'device-remove') {
+      c.devices = c.devices.filter((x) => x !== d);
+      for (const [t, s] of Object.entries(sd.sessions)) if (s.email === c.email && s.dev === d.id) delete sd.sessions[t];
+      log('מכשיר הוסר', c.email);
+    } else {
+      if (!d.approved && c.devices.filter((x) => x.approved).length >= (c.maxDevices || DEFAULT_MAX_DEVICES)) return out({ ok: false, error: 'too-many-devices' }, 400);
+      d.approved = true;
+      if (b.ip) { const r = d.ips.find((x) => x.k === String(b.ip)); if (r) r.approved = true; }
+      else d.ips.forEach((r) => { r.approved = true; });
+      log('מכשיר אושר', c.email);
+    }
+    return out({ ok: true, client: view(c) });
   }
 
   case 'client-extend': {
@@ -232,6 +365,6 @@ switch (b.action) {
 
   case 'log':
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
-    return out({ ok: true, log: sd.log.slice(0, 100), twoFactor: set(ADMIN_TOTP) });
+    return out({ ok: true, log: sd.log.slice(0, 100), twoFactor: set(ADMIN_TOTP), password: PASSWORDS });
 }
 return out({ ok: false, error: 'unknown-action' }, 400);

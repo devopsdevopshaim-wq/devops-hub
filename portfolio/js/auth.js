@@ -79,8 +79,14 @@
       '<div class="gate-card">' +
         '<a class="brand spider-brand" href="services.html" aria-label="SPIDER"><img src="img/spider.svg" alt="" width="40" height="40"><span class="wordmark">SPIDER</span></a>' +
         '<h1 id="gate-title">' + (needAdmin ? 'כניסת מנהל' : 'כניסה') + '</h1>' +
-        '<p class="gate-lead">' + (needAdmin ? 'המסך הזה פתוח רק למנהל המערכת.' : 'האתרים פתוחים ללקוחות עם גישה פעילה. נכנסים עם המייל והטלפון שנרשמו, ומקבלים קוד חד־פעמי.') + '</p>' +
-        '<form class="gate-form" id="gate-1" novalidate>' +
+        '<p class="gate-lead" id="gate-lead">' + (needAdmin ? 'המסך הזה פתוח רק למנהל המערכת.' : 'האתרים פתוחים ללקוחות עם גישה פעילה. נכנסים עם המייל והסיסמה שקיבלתם. ממכשיר חדש הכניסה מחכה לאישור המנהל.') + '</p>' +
+        '<form class="gate-form" id="gate-pw" novalidate>' +
+          '<label class="field"><span>מייל</span><input name="email" type="email" dir="ltr" autocomplete="username" required></label>' +
+          '<label class="field"><span>סיסמה</span><input name="password" type="password" dir="ltr" autocomplete="current-password" required></label>' +
+          '<label class="field" id="gate-pw-totp" hidden><span>קוד מאפליקציית האימות</span><input name="totp" class="gate-code" inputmode="numeric" autocomplete="off" maxlength="6" dir="ltr"></label>' +
+          '<button class="btn btn-gold" type="submit">כניסה</button>' +
+        '</form>' +
+        '<form class="gate-form" id="gate-1" novalidate hidden>' +
           '<label class="field"><span>מייל</span><input name="email" type="email" dir="ltr" autocomplete="email" required></label>' +
           '<label class="field"><span>טלפון</span><input name="phone" type="tel" dir="ltr" autocomplete="tel" inputmode="tel" placeholder="050-000-0000" required></label>' +
           '<button class="btn btn-gold" type="submit">שלחו לי קוד</button>' +
@@ -98,7 +104,7 @@
       '</div>';
     document.body.appendChild(g);
 
-    var f1 = g.querySelector('#gate-1'), f2 = g.querySelector('#gate-2'), err = g.querySelector('#gate-err');
+    var f1 = g.querySelector('#gate-1'), f2 = g.querySelector('#gate-2'), err = g.querySelector('#gate-err'), fpw = g.querySelector('#gate-pw');
     var again = g.querySelector('#gate-again');
     var who = { email: '', phone: '' }, timer = null;
     try { var last = JSON.parse(localStorage.getItem('hasadna-who') || '{}'); f1.elements.email.value = last.email || ''; f1.elements.phone.value = last.phone || ''; } catch (e) {}
@@ -112,11 +118,62 @@
       'inactive': 'הגישה שלך לא פעילה כרגע. כדי לחדש, דברו איתי בוואטסאפ.',
       'mail-failed': 'לא הצלחתי לשלוח את המייל כרגע. נסו שוב בעוד דקה.',
       'rate-limited': 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.',
+      'bad-login': 'המייל או הסיסמה לא נכונים.',
+      'bad-device': 'הדפדפן הזה לא מאפשר לשמור מזהה מכשיר. פתחו חלון רגיל (לא פרטי) ונסו שוב.',
+      'pending': 'המכשיר הזה חדש, והכניסה ממנו מחכה לאישור המנהל. שלחתי לו הודעה. אפשר גם לפנות אליו בוואטסאפ.',
+      'ip-blocked': 'הכתובת (IP) שממנה אתם מתחברים לא מאושרת. פנו למנהל.',
+      'device-revoked': 'המכשיר הזה הוסר. היכנסו שוב.',
       'wait': 'כבר שלחתי קוד. אפשר לבקש חדש בעוד חצי דקה.',
       'forbidden': 'הכניסה אפשרית רק מתוך האתר.',
       'wrong-totp': 'קוד האפליקציה לא נכון, או שכבר נעשה בו שימוש. חכו לקוד הבא.',
       'not-ready': 'מערכת הכניסה עוד לא הופעלה ב־n8n. (למנהל: לייבא את n8n/hasadna-access.json, לחבר Gmail ולהפעיל.)'
     };
+
+    // ---- the way in: email + password. The device id is a random number kept in this browser, so the admin can tell devices apart.
+    function deviceId() {
+      try {
+        var d = localStorage.getItem('spider-device');
+        if (d && /^[a-f0-9]{32}$/.test(d)) return d;
+        var a = new Uint8Array(16); crypto.getRandomValues(a);
+        d = Array.prototype.map.call(a, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+        localStorage.setItem('spider-device', d);
+        return d;
+      } catch (e) { return ''; }
+    }
+    try { var lastMail = localStorage.getItem('spider-mail'); if (lastMail) fpw.elements.email.value = lastMail; } catch (e) {}
+    fpw.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var mail = fpw.elements.email.value.trim(), pass = fpw.elements.password.value, totp = fpw.elements.totp.value.replace(/\D/g, '');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { fail('בדקו את כתובת המייל.'); fpw.elements.email.focus(); return; }
+      if (!pass) { fail('הקלידו את הסיסמה.'); fpw.elements.password.focus(); return; }
+      try { localStorage.setItem('spider-mail', mail); } catch (x) {}
+      fail(''); busy(fpw, true);
+      api('login', { email: mail, password: pass, device: deviceId(), totp: totp }).then(function (j) {
+        busy(fpw, false);
+        if (j.ok) {
+          store(j.token);
+          if (needAdmin && j.role !== 'admin') { fail('המסך הזה פתוח רק למנהל.'); return; }
+          fpw.elements.password.value = '';
+          api('me').then(function (s) { if (s.ok) enter(s); else fail(ERR[s.error] || 'לא הצלחתי להיכנס. נסו שוב.'); });
+          return;
+        }
+        if (j.error === 'totp-needed') {
+          g.querySelector('#gate-pw-totp').hidden = false; fpw.elements.totp.focus();
+          fail('עוד צעד אחד: הקלידו את הקוד מאפליקציית האימות.');
+          return;
+        }
+        if (j.error === 'bad-login' || j.error === 'wrong-totp') fpw.elements.password.value = '';
+        fail((ERR[j.error] || 'משהו השתבש: ' + j.error) + (j.error === 'bad-login' && j.left != null && j.left <= 3 ? ' נשארו ' + j.left + ' ניסיונות.' : ''));
+      }).catch(function () { busy(fpw, false); fail('מערכת הכניסה לא עונה כרגע. נסו שוב בעוד רגע.'); });
+    });
+    fpw.elements.totp.addEventListener('input', function () { if (fpw.elements.totp.value.replace(/\D/g, '').length === 6) fpw.requestSubmit ? fpw.requestSubmit() : fpw.dispatchEvent(new Event('submit')); });
+    // before the admin has a password, the older way in (email, phone, emailed code) is the one that works
+    api('info').then(function (j) {
+      if (j && j.ok && j.password === false) {
+        fpw.hidden = true; f1.hidden = false;
+        g.querySelector('#gate-lead').textContent = needAdmin ? 'המסך הזה פתוח רק למנהל המערכת.' : 'נכנסים עם המייל והטלפון שנרשמו, ומקבלים קוד חד־פעמי.';
+      }
+    }).catch(function () {});
 
     function send() {
       fail('');
@@ -170,7 +227,7 @@
     f2.elements.totp.addEventListener('input', autoSend);
     g.querySelector('#gate-back').addEventListener('click', function () { f2.hidden = true; f1.hidden = false; g.querySelector('#gate-totp-wrap').hidden = true; f2.elements.totp.value = ''; fail(''); });
     again.addEventListener('click', send);
-    setTimeout(function () { (f1.elements.email.value ? f1.elements.phone : f1.elements.email).focus(); }, 50);
+    setTimeout(function () { (fpw.elements.email.value ? fpw.elements.password : fpw.elements.email).focus(); }, 50);
   }
 
   // access.json switches sign-in on. Until then the site stays open, as before.
@@ -190,8 +247,8 @@
       if (s.ok && (!needAdmin || s.role === 'admin')) enter(s);
       else {
         // only a definite "no" signs the browser out; a busy or unreachable server must not
-        if (!s.ok && (s.error === 'signed-out' || s.error === 'inactive')) store('');
-        gate(s.error === 'not-ready' ? 'מערכת הכניסה עוד לא הופעלה ב־n8n.' : s.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.' : s.error === 'inactive' ? 'הגישה שלך הסתיימה. כדי לחדש, דברו איתי בוואטסאפ.' : needAdmin && s.ok ? 'המסך הזה פתוח רק למנהל.' : 'הכניסה הקודמת הסתיימה. היכנסו שוב.');
+        if (!s.ok && (s.error === 'signed-out' || s.error === 'inactive' || s.error === 'device-revoked')) store('');
+        gate(s.error === 'not-ready' ? 'מערכת הכניסה עוד לא הופעלה ב־n8n.' : s.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.' : s.error === 'ip-blocked' ? 'הכתובת (IP) שממנה אתם מתחברים לא מאושרת. פנו למנהל.' : s.error === 'device-revoked' ? 'המכשיר הזה הוסר. היכנסו שוב.' : s.error === 'inactive' ? 'הגישה שלך הסתיימה. כדי לחדש, דברו איתי בוואטסאפ.' : needAdmin && s.ok ? 'המסך הזה פתוח רק למנהל.' : 'הכניסה הקודמת הסתיימה. היכנסו שוב.');
       }
     }).catch(function () { gate('מערכת הכניסה לא עונה כרגע. נסו לרענן בעוד רגע.'); });
   }

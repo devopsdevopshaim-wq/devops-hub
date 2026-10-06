@@ -49,6 +49,7 @@ jobs:
           AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ADMIN_TOTP_SECRET: ${{ secrets.ADMIN_TOTP_SECRET }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           MORNING_CLIENT_ID: ${{ secrets.MORNING_CLIENT_ID }}
           MORNING_CLIENT_SECRET: ${{ secrets.MORNING_CLIENT_SECRET }}
         run: node .github/scripts/n8n-deploy.mjs

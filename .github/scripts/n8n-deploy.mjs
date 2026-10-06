@@ -30,13 +30,15 @@ const VOICE = {
   __ELEVENLABS_API_KEY__: label('ELEVENLABS_API_KEY', '(?:sk_)?[A-Za-z0-9]{32,80}') || pick(/\bsk_[a-f0-9]{40,}\b/)
 };
 const TOTP = (process.env.ADMIN_TOTP_SECRET || ((combined.match(/ADMIN_TOTP_SECRET\W*((?:[A-Za-z2-7]{4}\s?){4,16})/) || [])[1] || '')).replace(/\s+/g, '').toUpperCase();
+// the admin's password: any characters, to the end of its line. Only its salted PBKDF2 hash goes to n8n.
+const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || (combined.match(/^[ \t]*ADMIN_PASSWORD[ \t]*[=:][ \t]*(.+?)[ \t]*$/m) || [])[1] || '').replace(/^(["'])(.*)\1$/, '$2');
 const MORNING_ID = label('MORNING_CLIENT_ID', '[\\w-]{8,100}');
 const MORNING_SECRET = label('MORNING_CLIENT_SECRET', '[\\w-]{8,120}');
 // the key the sign-in and the leads & prices workflows share (the admin's short-lived proof is signed with it).
 // Derived from the n8n API key, so it is never stored in the repository and stays the same between installs.
 const SHARED = KEY ? crypto.createHmac('sha256', KEY).update('spider-shared-v1').digest('hex') : '';
 // nothing secret may ever show in the Actions log (the repository is public)
-for (const v of [KEY, SHARED, CLAUDE, GMAIL_PASS, TOTP, MORNING_ID, MORNING_SECRET, ...Object.values(VOICE)]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [KEY, SHARED, ADMIN_PASSWORD, CLAUDE, GMAIL_PASS, TOTP, MORNING_ID, MORNING_SECRET, ...Object.values(VOICE)]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 const out = (k, v) => fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', `${k}=${v}\n`);
 const summary = [];
 const note = (line) => { summary.push(line); console.log(line); };
@@ -80,7 +82,7 @@ async function install(file, names, { creds = {}, fill = {} } = {}) {
   // keys go straight from the secret into n8n, never into the repository
   for (const [k, v] of Object.entries(fill)) {
     if (!v) continue;
-    if (/^[\w\-.:\/]+$/.test(v)) raw = raw.split(k).join(v);
+    if (/^[\w\-.:\/$]+$/.test(v)) raw = raw.split(k).join(v);
     else note(`- ⚠️ הערך של ${k.replace(/_/g, ' ').trim()} מכיל תווים לא נתמכים ולא הוכנס. השתמשו באותיות, ספרות, מקף וקו תחתון בלבד.`);
   }
   const wf = JSON.parse(raw);
@@ -176,13 +178,35 @@ try {
 } catch (e) { note(`- ⚠️ הסוכנים: ${e.message.slice(0, 200)}`); }
 try {
   results.business = await install('n8n/hasadna-business.json', ['הסדנה · לידים ומחירון'],
-    { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } },
-      fill: { __SHARED_KEY__: SHARED, __ADMIN_TOTP_SECRET__: TOTP, __MORNING_CLIENT_ID__: MORNING_ID, __MORNING_CLIENT_SECRET__: MORNING_SECRET } });
+    { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } }, fill: { __SHARED_KEY__: SHARED } });
 } catch (e) { note(`- ⚠️ לידים ומחירון: ${e.message.slice(0, 200)}`); }
+const accessFill = { __SHARED_KEY__: SHARED, __ADMIN_TOTP_SECRET__: TOTP, __MORNING_CLIENT_ID__: MORNING_ID, __MORNING_CLIENT_SECRET__: MORNING_SECRET };
+const installAccess = (extra) => install('n8n/hasadna-access.json', ['הסדנה · כניסה והרשאות'],
+  { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } }, fill: { ...accessFill, ...(extra || {}) } });
+const post = async (path, fields, origin, extraHeaders) => {
+  try {
+    const r = await fetch(`${BASE}/webhook/${path}`, { method: 'POST', headers: { ...(origin ? { Origin: origin } : {}), ...(extraHeaders || {}) }, body: new URLSearchParams(fields) });
+    const text = await r.text();
+    let json = {}; try { json = JSON.parse(text); } catch {}
+    return { status: r.status, json, text: text.slice(0, 300) };
+  } catch (e) { return { status: 0, json: {}, text: String(e.message || e) }; }
+};
+let passwordOn = false;
 try {
-  results.access = await install('n8n/hasadna-access.json', ['הסדנה · כניסה והרשאות'],
-    { creds: { smtp: { types: ['n8n-nodes-base.emailSend'], cred: smtp } },
-      fill: { __SHARED_KEY__: SHARED, __ADMIN_TOTP_SECRET__: TOTP, __MORNING_CLIENT_ID__: MORNING_ID, __MORNING_CLIENT_SECRET__: MORNING_SECRET } });
+  results.access = await installAccess();
+  // the admin's password: hashed here with the strength this n8n can compute, then installed as a hash only
+  if (ADMIN_PASSWORD) {
+    if (ADMIN_PASSWORD.length < 12) note('- ⚠️ ADMIN_PASSWORD קצרה מ־12 תווים ולכן לא הופעלה. בחרו סיסמה ארוכה יותר.');
+    else {
+      const hh = await post('hasadna-auth', { action: 'health' });
+      const iter = hh.json.crypto === 'js' ? 20000 : 210000;
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = `p1$${iter}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), iter, 32, 'sha256').toString('hex');
+      await installAccess({ __ADMIN_PASSWORD_HASH__: hash });
+      passwordOn = true;
+      note(`- ✅ סיסמת מנהל הופעלה (${iter} סבבי PBKDF2, n8n עם ${hh.json.crypto === 'js' ? 'הצפנה בקוד' : 'crypto מובנה'})`);
+    }
+  } else note('- ⚠️ אין ADMIN_PASSWORD בסוד SPIDER, ולכן המנהל עדיין נכנס עם קוד במייל. הוסיפו שורה ADMIN_PASSWORD=סיסמה ארוכה והריצו שוב.');
 } catch (e) { note(`- ⚠️ כניסה והרשאות: ${e.message.slice(0, 200)}`); }
 try {
   results.parkomat = await install('n8n/hasadna-parkomat.json', [],
@@ -205,8 +229,16 @@ const checks = {
   'hasadna-auth': await probe('hasadna-auth', form({ action: 'me', token: 'probe' })), // 401 = alive and refusing
   'parking-agents': await probe('parking-agents', form({ department: 'probe' })) // 400 = alive, no file sent
 };
+// the real thing, as the admin does it: email + password. (This sends the admin one "you signed in" alert.)
+if (passwordOn) {
+  const lg = await post('hasadna-auth', { action: 'login', email: GMAIL_USER, password: ADMIN_PASSWORD });
+  const good = lg.json.ok === true || lg.json.error === 'totp-needed';
+  checks['test-email'] = good ? 200 : lg.status;
+  note(`- כניסת מנהל עם מייל וסיסמה: ${good ? (lg.json.error === 'totp-needed' ? '✅ הסיסמה נכונה, והמערכת מבקשת את קוד האפליקציה' : '✅ עובדת') : '❌ ' + lg.status + ' ' + (lg.json.error || lg.text)}`);
+  if (lg.json.token) await post('hasadna-auth', { action: 'logout', token: lg.json.token });
+}
 // a real sign-in code to the admin's own inbox proves the email path end to end
-if (smtp) {
+if (smtp && !passwordOn) {
   try {
     const r = await fetch(`${BASE}/webhook/hasadna-auth`, form({ action: 'request', email: GMAIL_USER, phone: '0544979771' }));
     const j = await r.json().catch(() => ({}));
@@ -224,20 +256,29 @@ try {
 // ---- security: prove the doors are locked (from outside, the way an attacker would knock)
 const EVIL = 'https://evil.example';
 const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
-const post = async (path, fields, origin) => {
-  try {
-    const r = await fetch(`${BASE}/webhook/${path}`, { method: 'POST', headers: origin ? { Origin: origin } : {}, body: new URLSearchParams(fields) });
-    const text = await r.text();
-    let json = {}; try { json = JSON.parse(text); } catch {}
-    return { status: r.status, json, text: text.slice(0, 300) };
-  } catch (e) { return { status: 0, json: {}, text: String(e.message || e) }; }
-};
 const chatId = (JSON.parse(fs.readFileSync('n8n/hasadna-multi-agent.json', 'utf8')).nodes.find((n) => n.name === 'Team chat') || {}).webhookId;
 const sec = [];
 const expect = (name, ok, got) => { sec.push(ok); note(`- ${ok ? '✅' : '❌'} ${name}${ok ? '' : ' (קיבלנו: ' + got + ')'}`); };
 note('\n**בדיקות אבטחה**');
 let r1 = await post('hasadna-auth', { action: 'me', token: 'x' }, EVIL);
 expect('כניסה: בקשה מאתר זר נחסמת', r1.status === 403, r1.status);
+r1 = await post('hasadna-auth', { action: 'login', email: GMAIL_USER, password: 'definitely-not-the-password' }, SITE_ORIGIN);
+expect('כניסה: סיסמה שגויה למנהל נדחית', r1.status === 401 && r1.json.error === 'bad-login', `${r1.status} ${r1.text}`);
+const unk = await post('hasadna-auth', { action: 'login', email: 'nobody-' + Date.now() + '@example.com', password: 'definitely-not-the-password' }, SITE_ORIGIN);
+expect('כניסה: כתובת לא מוכרת מקבלת בדיוק את אותה תשובה', unk.status === 401 && unk.json.error === 'bad-login', `${unk.status} ${unk.text}`);
+r1 = await post('hasadna-auth', { action: 'login', email: 'nobody@example.com', password: 'x', device: 'a'.repeat(32) }, EVIL);
+expect('כניסה: ניסיון סיסמה מאתר זר נחסם', r1.status === 403, r1.status);
+if (passwordOn) {
+  r1 = await post('hasadna-auth', { action: 'request', email: GMAIL_USER, phone: '0544979771' }, SITE_ORIGIN);
+  expect('כניסה: הכניסה הישנה עם קוד במייל נסגרה למנהל', r1.status === 200 && r1.json.ok === true && r1.text.indexOf('sent') >= 0, r1.status);
+}
+// which address does n8n see for a caller? Rate limits and device records depend on it, and a header the caller writes must not win.
+{
+  const a1 = await post('hasadna-auth', { action: 'health' });
+  const a2 = await post('hasadna-auth', { action: 'health' }, null, { 'X-Forwarded-For': '9.9.9.9' });
+  expect('כתובת ה־IP של הפונה נראית ל־n8n', !!a1.json.ip && a1.json.ip !== 'unknown', a1.text);
+  expect('אי אפשר לזייף כתובת IP בכותרת X-Forwarded-For', !!a2.json.ip && a2.json.ip !== '9.9.9.9', a2.text);
+}
 r1 = await post('hasadna-auth', { action: 'clients' });
 expect('כניסה: רשימת הלקוחות סגורה בלי מנהל', r1.status === 403, r1.status);
 r1 = await post('hasadna-admin', { action: 'setup', key: 'attacker-password' }, SITE_ORIGIN);
@@ -268,7 +309,7 @@ if (chatId) {
   expect('צ׳אט n8n הציבורי כבוי', cs === 404 || cs === 403, cs);
 }
 const totpOn = !!TOTP;
-note(`- ${totpOn ? '✅' : '⚠️'} אימות דו־שלבי למנהל (אפליקציה): ${totpOn ? 'פעיל' : 'לא הוגדר. הכניסה כמנהל מוגנת רק בקוד מהמייל. הגדרה: portfolio/admin-2fa.html'}`);
+note(`- ${totpOn ? '✅' : '⚠️'} אימות דו־שלבי למנהל (אפליקציה): ${totpOn ? 'פעיל' : 'לא הוגדר. הכניסה כמנהל מוגנת רק בסיסמה. הגדרה: portfolio/admin-2fa.html'}`);
 const secure = sec.every(Boolean);
 if (!secure) console.log('::warning::חלק מבדיקות האבטחה נכשלו, ראו את הסיכום.');
 

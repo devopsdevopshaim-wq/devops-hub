@@ -71,7 +71,7 @@
       <div><p class="eyebrow">הרשאות · n8n</p><h2>לקוחות ומנויים</h2></div>
       <div class="filters"><button class="btn btn-gold btn-sm" type="button" id="cl-new">+ לקוח חדש</button></div>
     </header>
-    <p class="hint">כל לקוח נכנס עם המייל והטלפון שלו וקוד חד־פעמי, ורואה רק את האתרים שסימנת לו, עד סוף המנוי. כשהמנוי נגמר, הכניסה נחסמת לבד.</p>
+    <p class="hint">כל לקוח נכנס עם המייל והסיסמה שנתת לו, ורואה רק את האתרים שסימנת לו, עד סוף המנוי. המכשיר הראשון שלו מאושר לבד ואתה מקבל מייל. כל מכשיר חדש מחכה לאישור שלך כאן, ואפשר גם לנעול לקוח לכתובות IP מאושרות. כשהמנוי נגמר, הכניסה נחסמת לבד.</p>
     <p class="add-error" id="cl-err" hidden></p>
     <dl class="kpis" id="cl-kpis"></dl>
     <div class="table-wrap">
@@ -115,7 +115,7 @@
       <h2 id="cl-title">לקוח חדש</h2>
       <div class="field-row">
         <label class="field"><span>שם</span><input name="name" maxlength="60" required></label>
-        <label class="field"><span>טלפון</span><input name="phone" type="tel" dir="ltr" required placeholder="050-000-0000"></label>
+        <label class="field"><span>טלפון <small>(לוואטסאפ)</small></span><input name="phone" type="tel" dir="ltr" placeholder="050-000-0000"></label>
       </div>
       <label class="field"><span>מייל</span><input name="email" type="email" dir="ltr" required></label>
       <div class="field-row">
@@ -126,6 +126,19 @@
         <label class="field"><span>בתוקף עד</span><input name="expires" type="date"></label>
       </div>
       <label class="m-check"><input type="checkbox" name="active" checked> <span>גישה פעילה <small>בלי הסימון הלקוח חסום, גם אם המנוי בתוקף</small></span></label>
+      <fieldset class="cl-sec">
+        <legend>כניסה ואבטחה</legend>
+        <div class="field-row">
+          <label class="field"><span id="cl-pw-label">סיסמה</span><input name="password" dir="ltr" autocomplete="off" minlength="10" maxlength="100" placeholder="10 תווים לפחות"></label>
+          <button class="g-btn ghost" type="button" id="cl-pw-gen">יצירת סיסמה</button>
+        </div>
+        <p class="muted" id="cl-pw-note"></p>
+        <div class="field-row">
+          <label class="m-check"><input type="checkbox" name="ipLock"> <span>נעילה לכתובות IP <small>כתובת חדשה תחכה לאישור שלך. לא מומלץ ללקוח בנייד, כי הכתובת שלו משתנה.</small></span></label>
+          <label class="field"><span>מכשירים מאושרים (מקסימום)</span><select name="maxDevices"><option>1</option><option>2</option><option selected>3</option><option>5</option><option>10</option></select></label>
+        </div>
+        <div class="cl-devices" id="cl-devices"></div>
+      </fieldset>
       <fieldset class="cl-sites">
         <legend>אתרים שהלקוח יראה <small id="cl-count"></small></legend>
         <div class="cl-tools"><input type="search" id="cl-q" placeholder="חיפוש אתר…" aria-label="חיפוש אתר"><button class="g-btn ghost" type="button" data-all="1">הכול</button><button class="g-btn ghost" type="button" data-all="0">כלום</button></div>
