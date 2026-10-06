@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var FX = window.ComicFX, PG = window.ComicPage, AI = window.ComicAI, DB = window.ComicStore;
+  var FX = window.ComicFX, PG = window.ComicPage, AI = window.ComicAI, DB = window.ComicStore, NN = window.ComicNeural, MO = window.ComicMotion;
   var MAX_IMAGES = 100;
   var STORE_MAX = 2000;     /* הצד הארוך של צילום שנשמר */
   var EXPORT_MAX = 2000;    /* רזולוציית העיבוד בייצוא */
@@ -17,7 +17,7 @@
     filter: 'all',
     view: 'library',
     labId: null,
-    labStyle: 'classic',
+    labStyle: 'nn-comic',
     labParams: {},
     aiStyle: 'ai-comic',
     project: null,
@@ -154,7 +154,7 @@
     if (fxCache.has(key)) return Promise.resolve(fxCache.get(key));
     if (fxPending.has(key)) return fxPending.get(key);
     var p = queue = queue.catch(function () {}).then(function () {
-      return loadImg(ref.img).then(function (im) { return FX.renderAsync(im, ref.style || 'original', ref.params, max); });
+      return loadImg(ref.img).then(function (im) { return styleRender(im, ref.style || 'original', ref.params, max); });
     }).then(function (c) {
       fxCache.set(key, c);
       fxPending.delete(key);
@@ -163,6 +163,30 @@
     }, function (e) { fxPending.delete(key); throw e; });
     fxPending.set(key, p);
     return p;
+  }
+
+  /* רשתות נוירוניות או פילטר, לפי הסגנון. בהורדה הראשונה של מודל מציגים התקדמות */
+  function styleRender(src, style, params, max) {
+    if (!NN.isNeural(style)) return FX.renderAsync(src, style, params, max);
+    var first = !NN.loaded(style), name = FX.byId[style].name;
+    if (first) setBusy('מוריד את מודל ה-AI (' + NN.sizeOf(style) + 'MB)…');
+    else setBusy('הרשת מציירת…');
+    return NN.render(src, style, params, max, function (f) {
+      if (f < 1) setBusy('מוריד את מודל ה-AI · ' + Math.round(f * 100) + '%');
+      else setBusy('הרשת מציירת…');
+    }).then(function (c) {
+      if (first) toast('המודל של ״' + name + '״ נטען ונשמר בדפדפן. בפעם הבאה זה מיידי.');
+      return c;
+    }, function (e) {
+      console.error(e);
+      throw new Error('לא הצלחתי להפעיל את מודל ה-AI. בדקו את החיבור לאינטרנט ונסו שוב.');
+    });
+  }
+
+  function setBusy(text) {
+    var b = $('stage-busy');
+    if (b) b.textContent = text;
+    if (state.view !== 'lab') toast(text, 4000);
   }
 
   /* לציור חי: מחזיר מיד מה שיש, ומבקש ציור מחדש כשמוכן */
@@ -176,6 +200,7 @@
 
   /* ---------- ניווט ---------- */
   function show(view) {
+    if (view !== state.view) stopMotion();
     state.view = view;
     ['library', 'lab', 'page'].forEach(function (v) {
       $('view-' + v).hidden = v !== view;
@@ -310,6 +335,7 @@
     if (!state.labId || !imageById(state.labId)) state.labId = ids[0] || null;
     renderPickList();
     renderAiChips();
+    renderMotionChips();
     $('stage-empty').hidden = !!state.labId;
     $('stage-inner').hidden = !state.labId;
     if (state.labId) { renderStyleThumbs(); renderLab(); }
@@ -357,7 +383,13 @@
         b.dataset.style = s.id;
         b.setAttribute('aria-pressed', String(s.id === state.labStyle));
         var f = el('span', 'sframe');
-        f.appendChild(el('span', 'spin'));
+        if (NN.isNeural(s.id) && !NN.loaded(s.id)) {
+          var badge = el('span', 'ai-badge');
+          badge.appendChild(el('b', '', 'AI'));
+          badge.appendChild(el('span', '', 'לחיצה להפעלה · ' + NN.sizeOf(s.id) + 'MB'));
+          f.appendChild(badge);
+          f.classList.add('lazy');
+        } else f.appendChild(el('span', 'spin'));
         b.appendChild(f);
         b.appendChild(el('span', 'sname', s.name));
         b.addEventListener('click', function () {
@@ -367,7 +399,7 @@
           renderLab();
         });
         row.appendChild(b);
-        cells.push({ s: s, f: f });
+        if (!(NN.isNeural(s.id) && !NN.loaded(s.id))) cells.push({ s: s, f: f });
       });
       sec.appendChild(row);
       box.appendChild(sec);
@@ -406,8 +438,9 @@
       lab.appendChild(r);
       box.appendChild(lab);
     });
-    if (!compact && st.knobs.indexOf('warp') >= 0) box.appendChild(el('p', 'muted small knob-note', 'לוחצים על הפנים בתמונה כדי למרכז את ההגזמה.'));
+    if (!compact && centerable(styleId)) box.appendChild(el('p', 'muted small knob-note', st.center ? 'לוחצים על התמונה כדי לקבוע את מרכז הפעולה.' : 'לוחצים על הפנים בתמונה כדי למרכז את ההגזמה.'));
   }
+  function centerable(id) { var st = FX.byId[id]; return Boolean(st && (st.center || (st.knobs || []).indexOf('warp') >= 0)); }
   function fmt(k, v) { return k === 'rad' ? Math.round(v * 100) + '%' : String(v); }
 
   function renderLab() {
@@ -431,8 +464,9 @@
   function drawStage() {
     var job = ++stageJob, id = state.labId, style = state.labStyle, params = labParams(style);
     $('stage-busy').hidden = false;
+    $('stage-busy').textContent = NN.isNeural(style) ? 'הרשת מציירת…' : 'מצייר…';
     var p = FX.paramsFor(style, params), cross = $('cross');
-    cross.hidden = FX.byId[style].knobs.indexOf('warp') < 0;
+    cross.hidden = !centerable(style);
     cross.style.left = (p.cx * 100) + '%';
     cross.style.top = (p.cy * 100) + '%';
     processNow({ img: id, style: style, params: params }, 1100).then(function (c) {
@@ -442,6 +476,15 @@
       out.getContext('2d').drawImage(c, 0, 0);
       $('stage-inner').style.aspectRatio = c.width + ' / ' + c.height;
       $('stage-busy').hidden = true;
+      if (motionFx) startMotion(motionFx);
+      /* כרטיס הסגנון מקבל את התוצאה כתצוגה מקדימה */
+      var card = document.querySelector('.scard[data-style="' + style + '"] .sframe');
+      if (card && card.classList.contains('lazy')) {
+        card.classList.remove('lazy');
+        card.textContent = '';
+        var t = el('img'); t.alt = ''; t.src = out.toDataURL('image/jpeg', 0.8);
+        card.appendChild(t);
+      }
     }).catch(function (e) { $('stage-busy').hidden = true; toast(e.message); });
   }
 
@@ -461,14 +504,14 @@
   function safeName(s) { return String(s || 'comic').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 60); }
 
   function renderFull(id, style, params) {
-    return loadImg(id).then(function (im) { return FX.renderAsync(im, style, params, EXPORT_MAX); });
+    return loadImg(id).then(function (im) { return styleRender(im, style, params, EXPORT_MAX); });
   }
 
   function bindLab() {
     $('compare').addEventListener('input', function () { setCompare($('compare').value); });
     setCompare(100);
     $('stage-inner').addEventListener('click', function (e) {
-      if (e.target.id === 'compare' || FX.byId[state.labStyle].knobs.indexOf('warp') < 0) return;
+      if (e.target.id === 'compare' || !centerable(state.labStyle)) return;
       var r = $('stage-out').getBoundingClientRect();
       var p = labParams(state.labStyle);
       p.cx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
@@ -545,7 +588,7 @@
     (function next(i) {
       if (i >= ids.length) { toast('הסתיים: ' + ids.length + ' תמונות.'); return; }
       var m = imageById(ids[i]);
-      loadImg(ids[i]).then(function (im) { return FX.renderAsync(im, st.id, params, 1600); }).then(function (c) {
+      loadImg(ids[i]).then(function (im) { return styleRender(im, st.id, params, 1600); }).then(function (c) {
         var item = { c: c, name: m.name + ' · ' + st.name, origin: m.id };
         state.batch.push(item);
         var f = cells[i];
@@ -798,7 +841,7 @@
     fillSelect($('pg-title-font'), fonts);
     fillSelect($('it-font'), fonts);
     fillSelect($('auto-style'), FX.STYLES.map(function (s) { return [s.id, s.name]; }));
-    $('auto-style').value = $('auto-style').dataset.v || 'classic';
+    $('auto-style').value = $('auto-style').dataset.v || 'nn-comic';
     $('pg-format').value = pg.format;
     $('pg-title-show').checked = !!pg.title.show;
     $('pg-title').value = pg.title.text;
@@ -1073,6 +1116,112 @@
     toast('נוצרו ' + pages.length + (pages.length === 1 ? ' עמוד' : ' עמודים') + ' בסגנון ' + FX.byId[style].name + '. הציור לוקח כמה שניות.', 5000);
   }
 
+  /* ---------- הנפשה ---------- */
+  var motionPlayer = null, motionFx = null, videoPlayer = null, videoCanvas = null;
+
+  function renderMotionChips() {
+    var box = $('motion-chips');
+    if (box.childElementCount) return;
+    MO.EFFECTS.forEach(function (e) {
+      var b = el('button', 'chip', e.name);
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.dataset.motion = e.id;
+      b.setAttribute('aria-checked', 'false');
+      b.addEventListener('click', function () { startMotion(e.id); });
+      box.appendChild(b);
+    });
+  }
+
+  function startMotion(id) {
+    var out = $('stage-out');
+    if (!state.labId || !out.width || out.width < 4) { toast('בוחרים תמונה וסגנון, ואז אפקט הנפשה.'); return; }
+    motionFx = id;
+    document.querySelectorAll('[data-motion]').forEach(function (x) { x.setAttribute('aria-checked', String(x.dataset.motion === id)); });
+    $('motion-desc').textContent = MO.byId[id].desc;
+    $('motion-state').textContent = 'מכין את ההנפשה…';
+    var art = document.createElement('canvas');
+    art.width = out.width; art.height = out.height;
+    art.getContext('2d').drawImage(out, 0, 0);
+    loadImg(state.labId).then(function (photo) {
+      setTimeout(function () {
+        if (motionFx !== id) return;
+        var scene = MO.setup(id, { art: art, photo: photo }, MO.videoSize(art.width, art.height, 900));
+        if (!motionPlayer) motionPlayer = new MO.Player($('motion-canvas'));
+        motionPlayer.load(scene);
+        $('motion-empty').hidden = true;
+        $('motion-rec').disabled = false;
+        $('motion-stop').disabled = false;
+        $('motion-state').textContent = 'לולאה של ' + scene.dur + ' שניות.';
+      }, 30);
+    });
+  }
+
+  function stopMotion() {
+    if (motionPlayer) motionPlayer.stop();
+    if (videoPlayer) videoPlayer.stop();
+  }
+
+  function recordWith(player, stateEl, name, btn) {
+    btn.disabled = true;
+    btn.classList.add('loading');
+    stateEl.textContent = 'מקליט… 0%';
+    return player.record(1, function (f) { stateEl.textContent = 'מקליט… ' + Math.round(f * 100) + '%'; })
+      .then(function (r) {
+        download(r.blob, safeName(name) + '.' + r.ext);
+        stateEl.textContent = 'נשמר כקובץ ' + r.ext.toUpperCase() + '.';
+        toast('הווידאו ירד למחשב.');
+      })
+      .catch(function (e) { stateEl.textContent = e.message; toast(e.message, 6000); })
+      .then(function () { btn.disabled = false; btn.classList.remove('loading'); });
+  }
+
+  var VIDEO_SIZES = { story: [1080, 1920], post: [1080, 1350], wide: [1920, 1080] };
+
+  function openPageVideo() {
+    var pg = curPage();
+    toast('מכין את הסרטון…', 60000);
+    document.fonts.ready.then(function () { return renderPageCanvas(pg, 1); }).then(function (c) {
+      videoCanvas = c;
+      buildPageVideo();
+      $('video-dialog').showModal();
+      toast('הסרטון מוכן לצפייה.');
+    }).catch(function (e) { toast('לא הצלחתי להכין סרטון: ' + e.message, 6000); });
+  }
+
+  function buildPageVideo() {
+    var pg = curPage();
+    var rects = PG.computePanels(pg).map(PG.bbox);
+    var scene = MO.pageScene(videoCanvas, rects, { size: VIDEO_SIZES[$('video-fmt').value], perPanel: Number($('video-per').value) });
+    if (!videoPlayer) videoPlayer = new MO.Player($('video-canvas'));
+    videoPlayer.load(scene);
+    $('video-state').textContent = rects.length + ' פאנלים · ' + Math.round(scene.dur) + ' שניות';
+  }
+
+  function bindMotion() {
+    $('motion-stop').addEventListener('click', function () {
+      if (motionPlayer) motionPlayer.stop();
+      motionFx = null;
+      document.querySelectorAll('[data-motion]').forEach(function (x) { x.setAttribute('aria-checked', 'false'); });
+      $('motion-state').textContent = 'ההנפשה נעצרה.';
+      $('motion-rec').disabled = true;
+      $('motion-stop').disabled = true;
+    });
+    $('motion-rec').addEventListener('click', function () {
+      if (!motionPlayer || !motionFx) return;
+      var m = imageById(state.labId);
+      recordWith(motionPlayer, $('motion-state'), m.name + ' - ' + MO.byId[motionFx].name, $('motion-rec'));
+    });
+    $('exp-video').addEventListener('click', openPageVideo);
+    $('video-per').addEventListener('change', buildPageVideo);
+    $('video-fmt').addEventListener('change', buildPageVideo);
+    $('video-rec').addEventListener('click', function () {
+      if (!videoPlayer) return;
+      recordWith(videoPlayer, $('video-state'), (curPage().title.text || 'comic') + ' - סרטון', $('video-rec'));
+    });
+    $('video-dialog').addEventListener('close', function () { if (videoPlayer) videoPlayer.stop(); });
+  }
+
   /* ---------- ייצוא ---------- */
   function renderPageCanvas(pg, scale) {
     var refs = pg.panels.filter(function (p) { return p.img && imageById(p.img); })
@@ -1151,6 +1300,7 @@
     bindAiDialog();
     bindPageControls();
     bindInspector();
+    bindMotion();
     updateAiState();
 
     Promise.all([DB.all('images'), DB.get('meta', 'state'), DB.get('projects', 'current')]).then(function (r) {
