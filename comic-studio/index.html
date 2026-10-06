@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>פאנל — סטודיו קומיקס מצילומים</title>
+<meta name="description" content="מעלים עד 100 צילומים, בוחרים את הטובים, הופכים אותם לקומיקס, מנגה, קריקטורה, פופ-ארט ועוד, ומרכיבים עמוד קומיקס עם בועות דיבור. הכול בדפדפן.">
+<meta name="theme-color" content="#2f5d50">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='6' fill='%23ffd60a' stroke='%2315161b' stroke-width='5'/%3E%3Cpath d='M32 4v56M4 30h28' stroke='%2315161b' stroke-width='5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Frank+Ruhl+Libre:wght@700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=Karantina:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&family=Rubik:wght@500;700;900&family=Secular+One&family=Suez+One&family=Varela+Round&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/studio.css">
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן</a>
+
+<header class="bar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="brand-name" data-text="פאנל">פאנל</span>
+    <span class="brand-sub">סטודיו קומיקס מצילומים</span>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="שלבי העבודה">
+    <button role="tab" id="tab-library" aria-controls="view-library" aria-selected="true" data-view="library">
+      <b>ספרייה</b><small id="tab-count">0 / 100</small>
+    </button>
+    <button role="tab" id="tab-lab" aria-controls="view-lab" aria-selected="false" data-view="lab">
+      <b>מעבדת סגנונות</b><small id="tab-selcount">לא נבחרו תמונות</small>
+    </button>
+    <button role="tab" id="tab-page" aria-controls="view-page" aria-selected="false" data-view="page">
+      <b>עמוד קומיקס</b><small id="tab-pages">עמוד 1</small>
+    </button>
+  </nav>
+  <button class="btn ghost ai-btn" id="ai-settings" type="button"><span class="dot" id="ai-dot"></span>מצב AI</button>
+</header>
+
+<main id="main">
+
+  <!-- ספרייה -->
+  <section class="view" id="view-library" role="tabpanel" aria-labelledby="tab-library">
+    <div class="lib-hero" id="lib-hero">
+      <div class="hero-copy">
+        <h1>מהצילום שלכם<br><span class="mis" data-text="לעמוד קומיקס.">לעמוד קומיקס.</span></h1>
+        <p>מעלים עד 100 תמונות, מסמנים את אלה שנכנסות לסיפור, ומלבישים עליהן 20 סגנונות ציור: קומיקס, מנגה, קריקטורה, פופ-ארט, צבעי מים ועוד. אחר כך מרכיבים עמוד עם פאנלים ובועות דיבור ומורידים PNG או PDF.</p>
+        <ul class="hero-facts">
+          <li><b>20</b> סגנונות שרצים בדפדפן</li>
+          <li><b>12</b> סגנונות AI עם מפתח Gemini</li>
+          <li><b>18</b> תבניות עמוד, כולל חיתוכים באלכסון</li>
+        </ul>
+      </div>
+      <label class="drop" id="drop">
+        <input type="file" id="file-input" accept="image/*" multiple hidden>
+        <span class="drop-art" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <strong>גררו לכאן תמונות</strong>
+        <span>או לחצו לבחירה מהמחשב או מהטלפון · JPG, PNG, WEBP, HEIC בדפדפנים שתומכים</span>
+        <span class="drop-count" id="drop-count">אפשר להוסיף עוד 100 תמונות</span>
+      </label>
+    </div>
+
+    <div class="lib-tools" id="lib-tools">
+      <div class="seg" role="radiogroup" aria-label="סינון">
+        <button type="button" data-filter="all" aria-pressed="true">הכול</button>
+        <button type="button" data-filter="selected" aria-pressed="false">נבחרות</button>
+        <button type="button" data-filter="made" aria-pressed="false">יצירות מהמעבדה</button>
+      </div>
+      <div class="lib-actions">
+        <button class="btn" type="button" id="btn-upload">הוספת תמונות</button>
+        <button class="btn ghost" type="button" id="btn-select-all">בחירת הכול</button>
+        <button class="btn ghost" type="button" id="btn-select-none">ניקוי בחירה</button>
+        <button class="btn ghost danger" type="button" id="btn-delete">מחיקת הנבחרות</button>
+      </div>
+      <div class="lib-next">
+        <button class="btn primary" type="button" id="btn-to-lab">למעבדת הסגנונות</button>
+        <button class="btn" type="button" id="btn-auto">הרכבת עמוד אוטומטית</button>
+      </div>
+    </div>
+    <p class="hint" id="lib-hint">לוחצים על תמונה כדי לבחור אותה. Shift ולחיצה בוחרים טווח. המספר בפינה הוא סדר הופעה בעמוד.</p>
+    <div class="grid" id="grid" aria-live="polite"></div>
+  </section>
+
+  <!-- מעבדה -->
+  <section class="view" id="view-lab" role="tabpanel" aria-labelledby="tab-lab" hidden>
+    <div class="lab">
+      <aside class="lab-pick card">
+        <h2>התמונות שלכם</h2>
+        <p class="muted small">הנבחרות מופיעות ראשונות. לוחצים כדי לעבוד על תמונה.</p>
+        <div class="pick-list" id="pick-list"></div>
+      </aside>
+
+      <div class="lab-main">
+        <div class="stage mat" id="stage">
+          <div class="stage-inner" id="stage-inner">
+            <canvas id="stage-out" aria-label="התוצאה"></canvas>
+            <img id="stage-orig" alt="הצילום המקורי">
+            <span class="cross" id="cross" hidden></span>
+            <input type="range" id="compare" min="0" max="100" value="100" aria-label="השוואה לפני ואחרי">
+            <span class="tag before">לפני</span><span class="tag after">אחרי</span>
+          </div>
+          <div class="stage-empty" id="stage-empty">
+            <strong>אין עדיין תמונות</strong>
+            <span>מעלים תמונות בספרייה וחוזרים לכאן.</span>
+          </div>
+          <div class="stage-busy" id="stage-busy" hidden>מצייר…</div>
+        </div>
+
+        <div class="stage-bar card">
+          <div class="now">
+            <span class="eyebrow">סגנון</span>
+            <strong id="lab-style-name">קומיקס קלאסי</strong>
+            <span class="muted small" id="lab-style-desc"></span>
+          </div>
+          <div class="knobs" id="lab-knobs"></div>
+          <div class="stage-actions">
+            <button class="btn ghost" type="button" id="lab-reset">איפוס</button>
+            <button class="btn" type="button" id="lab-save">שמירה לספרייה</button>
+            <button class="btn" type="button" id="lab-download">הורדה</button>
+            <button class="btn" type="button" id="lab-batch">החלה על כל הנבחרות</button>
+            <button class="btn primary" type="button" id="lab-to-page">לעמוד הקומיקס</button>
+          </div>
+        </div>
+
+        <div class="styles card">
+          <div class="styles-head">
+            <h2>20 סגנונות לאותה תמונה</h2>
+            <p class="muted small">התצוגות נוצרות בדפדפן, אחת אחרי השנייה.</p>
+          </div>
+          <div id="style-groups"></div>
+        </div>
+
+        <div class="ai card" id="ai-card">
+          <div class="styles-head">
+            <h2>ציור מחדש עם AI</h2>
+            <p class="muted small" id="ai-state">דורש מפתח Gemini אישי. התמונה נשלחת ל-Google רק כשלוחצים.</p>
+          </div>
+          <div class="chips" id="ai-chips" role="radiogroup" aria-label="סגנון AI"></div>
+          <div class="ai-row">
+            <label class="field grow"><span>הנחיה נוספת (לא חובה)</span>
+              <input type="text" id="ai-extra" placeholder="למשל: גיבור עם גלימה אדומה, רקע של ירושלים בלילה"></label>
+            <button class="btn primary" type="button" id="ai-go">ציור התמונה הזו</button>
+          </div>
+          <div class="ai-row">
+            <label class="field grow"><span>שילוב כמה אנשים לסצנה אחת: מסמנים 2–3 תמונות בספרייה ומתארים את הסצנה</span>
+              <input type="text" id="ai-scene" placeholder="למשל: שלושתנו טסים מעל העיר כגיבורי-על"></label>
+            <button class="btn" type="button" id="ai-scene-go">שילוב הנבחרות</button>
+          </div>
+        </div>
+
+        <div class="batch card" id="batch" hidden>
+          <div class="styles-head">
+            <h2 id="batch-title">תוצאות</h2>
+            <div class="row">
+              <button class="btn" type="button" id="batch-save">שמירת כולן לספרייה</button>
+              <button class="btn" type="button" id="batch-zip">הורדה כ-ZIP</button>
+            </div>
+          </div>
+          <div class="batch-grid" id="batch-grid"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- עמוד -->
+  <section class="view" id="view-page" role="tabpanel" aria-labelledby="tab-page" hidden>
+    <div class="composer">
+      <aside class="side card" aria-label="הגדרות העמוד">
+        <div class="pages-row" id="pages-row"></div>
+
+        <h3>תבנית</h3>
+        <div class="layouts" id="layouts"></div>
+
+        <h3>גודל</h3>
+        <select id="pg-format" aria-label="גודל העמוד"></select>
+
+        <h3>כותרת</h3>
+        <label class="check"><input type="checkbox" id="pg-title-show"> כותרת בראש העמוד</label>
+        <input type="text" id="pg-title" aria-label="טקסט הכותרת">
+        <div class="two">
+          <select id="pg-title-font" aria-label="גופן הכותרת"></select>
+          <input type="color" id="pg-title-color" aria-label="צבע הכותרת">
+        </div>
+
+        <h3>מסגרות</h3>
+        <label class="field"><span>רווח בין פאנלים</span><input type="range" id="pg-gutter" min="0" max="80"></label>
+        <label class="field"><span>עובי קו</span><input type="range" id="pg-border" min="0" max="24"></label>
+        <label class="field"><span>שוליים</span><input type="range" id="pg-margin" min="0" max="140"></label>
+        <div class="two">
+          <label class="field"><span>רקע</span><input type="color" id="pg-bg"></label>
+          <label class="field"><span>קווים</span><input type="color" id="pg-borderColor"></label>
+        </div>
+
+        <h3>הרכבה אוטומטית</h3>
+        <p class="muted small">יוצר עמודים מהתמונות הנבחרות, לפי הסדר, בסגנון אחד.</p>
+        <div class="two">
+          <select id="auto-style" aria-label="סגנון להרכבה"></select>
+          <button class="btn" type="button" id="auto-go">הרכבה</button>
+        </div>
+      </aside>
+
+      <div class="desk">
+        <div class="addbar card" role="toolbar" aria-label="הוספה לעמוד">
+          <span class="eyebrow">הוספה</span>
+          <button type="button" class="add" data-add="speech"><svg viewBox="0 0 40 32" aria-hidden="true"><ellipse cx="20" cy="13" rx="17" ry="11"/><path d="M12 22 8 30l11-7"/></svg>דיבור</button>
+          <button type="button" class="add" data-add="thought"><svg viewBox="0 0 40 32" aria-hidden="true"><path d="M8 18a6 6 0 0 1 2-11 8 8 0 0 1 14-3 7 7 0 0 1 10 6 6 6 0 0 1-3 11 7 7 0 0 1-11 1 8 8 0 0 1-12-4z"/><circle cx="9" cy="26" r="2.5"/><circle cx="5" cy="30" r="1.5"/></svg>מחשבה</button>
+          <button type="button" class="add" data-add="shout"><svg viewBox="0 0 40 32" aria-hidden="true"><path d="M20 1l4 7 8-4-2 8 9 2-8 5 6 7-9-1-1 7-6-6-6 6-1-7-9 1 6-7-8-5 9-2-2-8 8 4z"/></svg>צעקה</button>
+          <button type="button" class="add" data-add="whisper"><svg viewBox="0 0 40 32" aria-hidden="true"><ellipse cx="20" cy="13" rx="17" ry="11" stroke-dasharray="4 3"/></svg>לחישה</button>
+          <button type="button" class="add" data-add="caption"><svg viewBox="0 0 40 32" aria-hidden="true"><rect x="3" y="8" width="34" height="16"/></svg>כיתוב</button>
+          <button type="button" class="add" data-add="sfx"><svg viewBox="0 0 40 32" aria-hidden="true" class="burst"><path d="M20 2l3 8 8-5-3 9 10 1-8 5 6 8-10-3-1 7-5-6-5 6-1-7-10 3 6-8-8-5 10-1-3-9 8 5z"/></svg>אפקט קול</button>
+          <button type="button" class="add" data-add="photo"><svg viewBox="0 0 40 32" aria-hidden="true"><circle cx="20" cy="16" r="12"/><circle cx="20" cy="13" r="4"/><path d="M12 25c2-5 14-5 16 0"/></svg>תמונה צפה</button>
+          <span class="grow"></span>
+          <button class="btn" type="button" id="exp-png">PNG</button>
+          <button class="btn" type="button" id="exp-jpg">JPG</button>
+          <button class="btn primary" type="button" id="exp-pdf">PDF של כל העמודים</button>
+        </div>
+
+        <div class="mat canvas-wrap" id="canvas-wrap">
+          <canvas id="page-canvas" tabindex="0" aria-label="עמוד הקומיקס. לוחצים על פאנל כדי לבחור אותו, גוררים כדי להזיז את התמונה, גלגלת לזום."></canvas>
+        </div>
+
+        <div class="tray card">
+          <div class="tray-head">
+            <span class="eyebrow">התמונות</span>
+            <span class="muted small">גוררים תמונה לפאנל, או בוחרים פאנל ולוחצים על תמונה.</span>
+          </div>
+          <div class="tray-list" id="tray"></div>
+        </div>
+      </div>
+
+      <aside class="inspector card" id="inspector" aria-label="מאפייני הבחירה">
+        <div id="insp-none">
+          <h3>שום דבר לא נבחר</h3>
+          <p class="muted small">לוחצים על פאנל כדי לבחור לו סגנון וזום, או על בועה כדי לערוך טקסט. לחיצה כפולה על בועה פותחת עריכת טקסט.</p>
+          <ul class="keys">
+            <li><kbd>גרירה</kbd> הזזת התמונה בתוך הפאנל</li>
+            <li><kbd>גלגלת</kbd> זום בפאנל</li>
+            <li><kbd>Delete</kbd> מחיקת בועה</li>
+            <li><kbd>Ctrl D</kbd> שכפול בועה</li>
+            <li><kbd>חצים</kbd> הזזה עדינה</li>
+          </ul>
+        </div>
+        <div id="insp-panel" hidden>
+          <h3 id="insp-panel-title">פאנל</h3>
+          <div class="style-pick" id="insp-styles"></div>
+          <div class="knobs col" id="insp-knobs"></div>
+          <label class="field"><span>זום</span><input type="range" id="insp-zoom" min="1" max="5" step="0.01"></label>
+          <label class="field"><span>רקע לפאנל ריק</span><input type="color" id="insp-bg"></label>
+          <div class="row wrap">
+            <button class="btn ghost" type="button" id="insp-center">מרכוז</button>
+            <button class="btn ghost" type="button" id="insp-style-all">אותו סגנון לכל הפאנלים</button>
+            <button class="btn ghost danger" type="button" id="insp-clear">הוצאת התמונה</button>
+          </div>
+        </div>
+        <div id="insp-item" hidden>
+          <h3 id="insp-item-title">בועה</h3>
+          <label class="field" id="f-text"><span>טקסט</span><textarea id="it-text" rows="3"></textarea></label>
+          <label class="field" id="f-font"><span>גופן</span><select id="it-font"></select></label>
+          <label class="field" id="f-size"><span>גודל אות</span><input type="range" id="it-size" min="12" max="140"></label>
+          <div class="two" id="f-colors">
+            <label class="field"><span id="l-fill">רקע</span><input type="color" id="it-fill"></label>
+            <label class="field"><span>טקסט</span><input type="color" id="it-color"></label>
+          </div>
+          <div class="two" id="f-colors2">
+            <label class="field"><span>קו מתאר</span><input type="color" id="it-stroke"></label>
+            <label class="field" id="f-fill2"><span>צבע תחתון</span><input type="color" id="it-fill2"></label>
+          </div>
+          <label class="field" id="f-rot"><span>סיבוב</span><input type="range" id="it-rot" min="-45" max="45"></label>
+          <div id="f-photo">
+            <div class="seg small-seg" role="radiogroup" aria-label="צורה">
+              <button type="button" data-shape="circle" aria-pressed="true">עיגול</button>
+              <button type="button" data-shape="rect" aria-pressed="false">מלבן</button>
+            </div>
+            <div class="style-pick" id="it-styles"></div>
+            <label class="field"><span>זום</span><input type="range" id="it-zoom" min="1" max="5" step="0.01"></label>
+            <p class="muted small">לוחצים על תמונה במגש למטה כדי להחליף את התמונה הצפה.</p>
+          </div>
+          <div class="row wrap">
+            <button class="btn ghost" type="button" id="it-up">קדימה</button>
+            <button class="btn ghost" type="button" id="it-down">אחורה</button>
+            <button class="btn ghost" type="button" id="it-dup">שכפול</button>
+            <button class="btn ghost danger" type="button" id="it-del">מחיקה</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<dialog id="ai-dialog" class="dlg">
+  <form method="dialog">
+    <h2>מצב AI</h2>
+    <p>הסגנונות הרגילים רצים בדפדפן ולא צריכים כלום. מצב AI מצייר את התמונה מחדש במודל התמונות של Google Gemini, ולכן התוצאה קרובה יותר לאיור אמיתי.</p>
+    <ol class="steps">
+      <li>נכנסים ל-<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> ויוצרים מפתח API.</li>
+      <li>מדביקים אותו כאן. הוא נשמר רק בדפדפן הזה.</li>
+      <li>כל ציור נשלח ל-Google ונספר במכסה של המפתח שלכם.</li>
+    </ol>
+    <label class="field"><span>מפתח API</span><input type="password" id="ai-key" autocomplete="off" spellcheck="false" dir="ltr" placeholder="AIza..."></label>
+    <label class="field"><span>מודל</span><input type="text" id="ai-model" dir="ltr" spellcheck="false"></label>
+    <div class="row end">
+      <button class="btn ghost danger" value="clear" id="ai-clear">מחיקת המפתח</button>
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn primary" value="save" id="ai-save">שמירה</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/store.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/page.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
