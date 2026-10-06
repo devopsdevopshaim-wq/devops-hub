@@ -40,3 +40,27 @@ Object.defineProperty(globalThis, 'crypto', { value: undefined, configurable: tr
 const t = (await run(nr, { json: {}, noCrypto: true }))[0].json;
 if (savedCrypto) Object.defineProperty(globalThis, 'crypto', savedCrypto);
 check('rnd refuses without a secure source', t.threw === true);
+
+// ---- passwords
+const PWPROBE = SEC + `
+const sd = {}, now = 1;
+const stored = pwHash($json.pw);
+return [{ json: { stored, ok: pwCheck($json.pw, stored), bad: pwCheck($json.pw + 'x', stored), fast: PW_FAST, iter: PW_ITER,
+  fixed: pwCheck($json.pw, $json.fixed), junk: pwCheck($json.pw, 'nonsense'), huge: pwCheck($json.pw, 'p1$999999$' + '0'.repeat(32) + '$' + '0'.repeat(64)) } }];`;
+{
+  // a hash made by node's pbkdf2 (what the deploy script makes) must verify in the workflow, in both modes
+  const salt = 'ab'.repeat(16);
+  const fixed = 'p1$20000$' + salt + '$' + crypto.pbkdf2Sync('Correct Horse 42!', Buffer.from(salt, 'hex'), 20000, 32, 'sha256').toString('hex');
+  for (const noCrypto of [false, true]) {
+    const tag = noCrypto ? '[pure JS] ' : '[node crypto] ';
+    const t0 = Date.now();
+    const r = (await run(PWPROBE, { json: { pw: 'Correct Horse 42!', fixed }, noCrypto }))[0].json;
+    const ms = Date.now() - t0;
+    check(tag + 'password hash verifies', r.ok === true && r.bad === false);
+    check(tag + 'iterations match the mode', r.iter === (noCrypto ? 20000 : 210000) && r.fast === !noCrypto);
+    check(tag + 'a hash made by the deploy script (node pbkdf2) verifies', r.fixed === true);
+    check(tag + 'garbage and absurd iteration counts are refused', r.junk === false && r.huge === false);
+    check(tag + 'hash then check is fast enough (' + ms + ' ms)', ms < (noCrypto ? 8000 : 2000), ms);
+    check(tag + 'format', /^p1\$\d+\$[a-f0-9]{32}\$[a-f0-9]{64}$/.test(r.stored));
+  }
+}

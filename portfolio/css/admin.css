@@ -222,3 +222,16 @@
 
 .cl-pay { margin-top: 4px; font-size: 12px; color: var(--mist); }
 .cl-pay a { color: #5fd3ad; }
+
+/* clients: sign-in and devices */
+.cl-sec { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 12px 0; display: flex; flex-direction: column; gap: 10px; }
+.cl-sec legend { padding: 0 8px; font-weight: 700; color: var(--brass-2, var(--gold, #e0b25a)); }
+.cl-sec .field-row { align-items: end; }
+.cl-devices { display: flex; flex-direction: column; gap: 8px; }
+.cl-dev { display: flex; gap: 10px; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); }
+.cl-dev.wait { border-color: rgba(224, 178, 90, .6); background: rgba(224, 178, 90, .08); }
+.cl-dev small { display: block; color: var(--mist); }
+.cl-dev .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.cl-dev .acts button { font: 600 13px/1 var(--body, inherit); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-2, var(--line)); background: transparent; color: inherit; cursor: pointer; }
+.cl-dev .acts .del { color: #ff7a85; }
+@media (max-width: 560px) { .cl-dev { flex-direction: column; align-items: stretch; } }

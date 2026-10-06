@@ -89,6 +89,30 @@ function hmacSha256Hex(key, msg) {
   let k = utf8(key); if (k.length > 64) k = sha256js(k); while (k.length < 64) k.push(0);
   return toHex(sha256js(k.map((x) => x ^ 0x5c).concat(sha256js(k.map((x) => x ^ 0x36).concat(utf8(msg))))));
 }
+// ---- passwords: salted PBKDF2-SHA256. The hash text carries its own iteration count, "p1$<iterations>$<salt>$<hash>".
+// With Node's crypto it is 210,000 rounds (~0.1 s). Without it the pure-JS path is ~50x slower, so it uses 20,000.
+function hmacSha256Bytes(key, msg) {
+  let k = key.slice(); if (k.length > 64) k = sha256js(k); while (k.length < 64) k.push(0);
+  return sha256js(k.map((x) => x ^ 0x5c).concat(sha256js(k.map((x) => x ^ 0x36).concat(msg))));
+}
+const PW_FAST = !!(_c && _c.pbkdf2Sync);
+const PW_ITER = PW_FAST ? 210000 : 20000;
+function pbkdf2Hex(pw, saltHex, iter) {
+  if (PW_FAST) return _c.pbkdf2Sync(String(pw), Buffer.from(saltHex, 'hex'), iter, 32, 'sha256').toString('hex');
+  const key = utf8(pw), salt = []; for (let i = 0; i < saltHex.length; i += 2) salt.push(parseInt(saltHex.substr(i, 2), 16));
+  let u = hmacSha256Bytes(key, salt.concat([0, 0, 0, 1])); const t = u.slice();
+  for (let i = 1; i < iter; i++) { u = hmacSha256Bytes(key, u); for (let j = 0; j < 32; j++) t[j] ^= u[j]; }
+  return toHex(t);
+}
+function pwHash(pw) { const salt = rnd(16); return 'p1$' + PW_ITER + '$' + salt + '$' + pbkdf2Hex(pw, salt, PW_ITER); }
+function pwCheck(pw, stored) {
+  const m = /^p1\$(\d{4,7})\$([a-f0-9]{32})\$([a-f0-9]{64})$/.exec(String(stored || ''));
+  if (!m || Number(m[1]) > 400000) return false;
+  return same(pbkdf2Hex(String(pw).slice(0, 200), m[2], Number(m[1])), m[3]);
+}
+// the same work for an address that does not exist, so the answer time does not reveal who is a client
+function pwDummy(pw) { pbkdf2Hex(String(pw).slice(0, 200), '00000000000000000000000000000000', PW_ITER); return false; }
+
 // constant-time comparison of two strings
 function same(a, b) {
   a = String(a); b = String(b);

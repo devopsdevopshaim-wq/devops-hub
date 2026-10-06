@@ -51,10 +51,9 @@
       var state = !c.activeNow ? (c.active === false ? ['down', '✕ מושהה'] : ['down', '✕ הסתיים']) : days != null && days <= 3 ? ['waking', '⏳ עוד ' + days + ' ימים'] : ['ok', '✓ פעיל'];
       var sites = c.sites || [];
       var b = function (txt, fn, cls) { var x = el('button', { type: 'button', class: cls || null, text: txt }); x.addEventListener('click', fn); return x; };
-      var invite = 'שלום ' + (c.name || '') + ', נפתחה לך גישה ל־SPIDER' + (c.expiresAt ? ' עד ' + date(c.expiresAt) : '') + '.\n' +
-        'כניסה: ' + SITE + '\nנכנסים עם המייל ' + c.email + ' ועם מספר הטלפון הזה, ומקבלים קוד חד־פעמי במייל.';
+      var pend = (c.devices || []).filter(function (d) { return !d.approved || (d.ips || []).some(function (i) { return !i.approved; }); }).length;
       tb.appendChild(el('tr', { class: c.activeNow ? null : 'off' }, [
-        el('td', { class: 'who' }, [el('b', { text: c.name || '—' }), el('small', { dir: 'ltr', text: c.email }), el('small', { dir: 'ltr', text: c.phone }), c.note ? el('small', { text: c.note }) : null]),
+        el('td', { class: 'who' }, [el('b', { text: c.name || '—' }), el('small', { dir: 'ltr', text: c.email }), el('small', { dir: 'ltr', text: c.phone || '' }), c.hasPassword ? null : el('small', { class: 'muted', text: 'אין סיסמה, עוד לא יכול להיכנס' }), pend ? el('small', { class: 'pill waking', text: '⏳ ' + pend + ' מחכים לאישור' }) : null, c.note ? el('small', { text: c.note }) : null]),
         el('td', {}, [el('div', { class: 'cl-chips' }, sites.slice(0, 4).map(function (id) { return el('span', { text: title(id) }); }).concat(sites.length > 4 ? [el('span', { text: '+' + (sites.length - 4) })] : sites.length ? [] : [el('span', { text: 'אין אתרים' })]))]),
         el('td', { text: (PLAN[c.plan] || ['—'])[0] }),
         el('td', {}, [el('span', { class: 'pill ' + state[0], text: state[1] }), el('div', { class: 'muted', text: c.expiresAt ? date(c.expiresAt) : 'ללא הגבלה' }), lastPay(c)]),
@@ -65,7 +64,7 @@
           b('+יום', function () { extend(c, 1); }),
           b('+חודש', function () { extend(c, 30); }),
           b(c.active === false ? 'הפעלה' : 'השהיה', function () { save(Object.assign({}, c, { active: c.active === false })); }),
-          el('a', { href: 'https://wa.me/' + waNum(c.phone) + '?text=' + encodeURIComponent(invite), target: '_blank', rel: 'noopener', text: 'הזמנה בוואטסאפ ↗' }),
+          b('🔑 סיסמה חדשה ושליחה', function () { sendPassword(c); }),
           b('מחיקה', function () { if (confirm('למחוק את ' + (c.name || c.email) + '? הגישה שלו תיחסם מיד.')) api('client-delete', { email: c.email }).then(load); }, 'del')
         ])])
       ]));
@@ -130,6 +129,29 @@
       }).catch(function () { btn.disabled = false; err.textContent = 'n8n לא ענה.'; err.hidden = false; });
   });
 
+  // ---------- passwords
+  function makePassword() {
+    var A = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', out = '', r = new Uint32Array(14);
+    crypto.getRandomValues(r);
+    for (var i = 0; i < r.length; i++) out += A[r[i] % A.length];
+    return out.slice(0, 4) + '-' + out.slice(4, 9) + '-' + out.slice(9);
+  }
+  // a new password, saved, and opened in WhatsApp for the client. It is shown only now; n8n keeps just its hash.
+  function sendPassword(c) {
+    if (!confirm('ליצור סיסמה חדשה ל־' + (c.name || c.email) + '? הסיסמה הקודמת וכל החיבורים הפתוחים שלו ייסגרו.')) return;
+    var pw = makePassword();
+    api('client-save', { payload: JSON.stringify(Object.assign({}, c, { oldEmail: null, password: pw })) }).then(function (j) {
+      if (!j.ok) { alert('לא נשמר: ' + j.error); return; }
+      var msg = 'שלום ' + (c.name || '') + ', נפתחה לך גישה ל־SPIDER' + (c.expiresAt ? ' עד ' + date(c.expiresAt) : '') + '.\n' +
+        'כניסה: ' + SITE + '\nמייל: ' + c.email + '\nסיסמה: ' + pw + '\n' +
+        'המכשיר הראשון שנכנס נרשם אוטומטית. מכשיר נוסף יחכה לאישור שלי.';
+      load();
+      var url = 'https://wa.me/' + waNum(c.phone) + '?text=' + encodeURIComponent(msg);
+      if (waNum(c.phone).length < 9) { prompt('אין טלפון ללקוח. העתק ושלח לו:', msg); return; }
+      window.open(url, '_blank', 'noopener');
+    });
+  }
+
   function extend(c, days) {
     api('client-extend', { email: c.email, days: String(days) }).then(function (j) { if (!j.ok) alert('לא עודכן: ' + j.error); load(); });
   }
@@ -174,6 +196,36 @@
     });
   });
 
+  function devicesList(c) {
+    var box = $('cl-devices');
+    box.replaceChildren();
+    if (!c) { box.appendChild(el('p', { class: 'muted', text: 'המכשיר הראשון שייכנס יאושר אוטומטית. כל מכשיר נוסף יחכה לכאן.' })); return; }
+    var ds = c.devices || [];
+    if (!ds.length) { box.appendChild(el('p', { class: 'muted', text: 'עוד לא נכנס משום מכשיר.' })); return; }
+    ds.forEach(function (d) {
+      var row = el('div', { class: 'cl-dev' + (d.approved ? '' : ' wait') }, [
+        el('div', {}, [
+          el('b', { text: (d.approved ? '✓ ' : '⏳ ') + (d.ua || 'מכשיר') }),
+          el('small', { text: 'נראה לראשונה ' + date(d.first) + ' · לאחרונה ' + date(d.last) }),
+          el('small', { dir: 'ltr', text: (d.ips || []).map(function (i) { return i.ip + (i.approved ? '' : ' (ממתינה)'); }).join('  ·  ') })
+        ])
+      ]);
+      var act = el('div', { class: 'acts' });
+      var needsOk = !d.approved || (d.ips || []).some(function (i) { return !i.approved; });
+      if (needsOk) {
+        var ok = el('button', { type: 'button', text: 'אישור' });
+        ok.addEventListener('click', function () { api('device-approve', { email: c.email, id: d.id }).then(function (j) { if (!j.ok) { alert(j.error === 'too-many-devices' ? 'יש כבר המקסימום של מכשירים מאושרים. הגדל את המקסימום או הסר מכשיר.' : 'לא עודכן: ' + j.error); return; } refreshEditing(j.client); }); });
+        act.appendChild(ok);
+      }
+      var rm = el('button', { type: 'button', class: 'del', text: 'הסרה' });
+      rm.addEventListener('click', function () { if (confirm('להסיר את המכשיר? החיבור שלו ייסגר והוא יחכה שוב לאישור.')) api('device-remove', { email: c.email, id: d.id }).then(function (j) { if (j.ok) refreshEditing(j.client); }); });
+      act.appendChild(rm);
+      row.appendChild(act);
+      box.appendChild(row);
+    });
+  }
+  function refreshEditing(c) { C.editing = c; devicesList(c); load(); }
+
   function setExpiry() {
     var f = $('cl-form').elements, d = PLAN[f.plan.value][1];
     f.expires.disabled = f.plan.value === 'free';
@@ -188,7 +240,13 @@
     $('cl-title').textContent = c ? 'עריכת ' + (c.name || c.email) : 'לקוח חדש';
     f.name.value = c ? c.name || '' : '';
     f.email.value = c ? c.email : '';
-    f.phone.value = c ? c.phone : '';
+    f.phone.value = c ? c.phone || '' : '';
+    f.password.value = '';
+    f.ipLock.checked = !!(c && c.ipLock);
+    f.maxDevices.value = String((c && c.maxDevices) || 3);
+    $('cl-pw-label').textContent = c && c.hasPassword ? 'סיסמה חדשה' : 'סיסמה';
+    $('cl-pw-note').textContent = c && c.hasPassword ? 'יש ללקוח סיסמה. השאר ריק כדי לא לשנות; סיסמה חדשה סוגרת את כל החיבורים הפתוחים שלו.' : 'בלי סיסמה הלקוח לא יוכל להיכנס. אפשר להשאיר ריק וליצור אחר כך עם "סיסמה חדשה ושליחה".';
+    devicesList(c);
     f.note.value = c ? c.note || '' : '';
     f.plan.value = c ? c.plan || 'custom' : 'month';
     f.active.checked = c ? c.active !== false : true;
@@ -199,20 +257,23 @@
     $('cl-dialog').showModal();
   }
   $('cl-new').addEventListener('click', function () { edit(null); });
+  $('cl-pw-gen').addEventListener('click', function () { var pw = makePassword(); $('cl-form').elements.password.value = pw; $('cl-pw-note').textContent = 'הסיסמה: ' + pw + ' · היא תישמר בשמירה, ואחר כך אי אפשר לראות אותה שוב. העתק אותה עכשיו.'; });
 
   $('cl-form').addEventListener('submit', function (e) {
     var f = e.target.elements;
     if (e.submitter && e.submitter.value === 'cancel') return;
     e.preventDefault();
     var err = $('cl-form-err');
-    var email = f.email.value.trim(), phone = f.phone.value.trim();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || phone.replace(/\D/g, '').length < 9) { err.textContent = 'צריך מייל וטלפון תקינים.'; err.hidden = false; return; }
+    var email = f.email.value.trim(), phone = f.phone.value.trim(), password = f.password.value;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'צריך כתובת מייל תקינה.'; err.hidden = false; return; }
+    if (password && password.length < 10) { err.textContent = 'סיסמה: 10 תווים לפחות.'; err.hidden = false; return; }
     var sites = Array.prototype.map.call($('cl-list').querySelectorAll('input:checked'), function (i) { return i.value; });
     var exp = f.plan.value === 'free' || !f.expires.value ? null : new Date(f.expires.value + 'T23:59:59').toISOString();
     // a day pass is 24 hours from now, when its date was left as suggested
     if (f.plan.value === 'day' && f.expires.value === new Date(Date.now() + DAY).toISOString().slice(0, 10)) exp = new Date(Date.now() + DAY).toISOString();
     var c = { oldEmail: C.editing ? C.editing.email : null, name: f.name.value.trim(), email: email, phone: phone, note: f.note.value.trim(),
-      plan: f.plan.value, expiresAt: exp, active: f.active.checked, sites: sites };
+      plan: f.plan.value, expiresAt: exp, active: f.active.checked, sites: sites,
+      password: password, ipLock: f.ipLock.checked, maxDevices: Number(f.maxDevices.value) };
     save(c).then(function (ok) { if (ok) $('cl-dialog').close(); });
   });
 
