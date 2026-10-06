@@ -201,13 +201,15 @@ try {
       if (ADMIN_PASSWORD.length < 12) note('- ⚠️ ADMIN_PASSWORD קצרה מ־12 תווים. היא הופעלה, אבל סיסמה קצרה קל לנחש. מומלץ להוסיף אימות באפליקציה (portfolio/admin-2fa.html).');
       const hh = await post('hasadna-auth', { action: 'health' });
       const iter = hh.json.crypto === 'js' ? 20000 : 210000;
-      const salt = crypto.randomBytes(16).toString('hex');
+      // the same secret always gives the same hash (the salt comes from this n8n's address), so the workflow can tell
+      // "the secret was changed" (reset the admin password to it) from "nothing changed" (keep the password chosen in the app)
+      const salt = crypto.createHash('sha256').update('spider-admin-seed:' + BASE).digest('hex').slice(0, 32);
       const hash = `p1$${iter}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), iter, 32, 'sha256').toString('hex');
       await installAccess({ __ADMIN_PASSWORD_HASH__: hash });
       passwordOn = true;
-      note(`- ✅ סיסמת מנהל הופעלה (${iter} סבבי PBKDF2, n8n עם ${hh.json.crypto === 'js' ? 'הצפנה בקוד' : 'crypto מובנה'})`);
+      note(`- ✅ הסוד ADMIN_PASSWORD הוגדר כסיסמת המנהל כשהוא משתנה (${iter} סבבי PBKDF2). סיסמה שהמנהל בחר באפליקציה נשארת כל עוד הסוד לא שונה.`);
     }
-  } else note('- ⚠️ אין ADMIN_PASSWORD בסוד SPIDER, ולכן המנהל עדיין נכנס עם קוד במייל. הוסיפו שורה ADMIN_PASSWORD=סיסמה ארוכה והריצו שוב.');
+  } else note('- ℹ️ אין סוד ADMIN_PASSWORD. זה בסדר: בעמוד הכניסה לוחצים "קבלת סיסמה ראשונית למייל", נכנסים איתה ובוחרים סיסמה. הסוד נותן רק דרך חזרה בלי מייל.');
 } catch (e) { note(`- ⚠️ כניסה והרשאות: ${e.message.slice(0, 200)}`); }
 try {
   results.parkomat = await install('n8n/hasadna-parkomat.json', [],
@@ -230,22 +232,18 @@ const checks = {
   'hasadna-auth': await probe('hasadna-auth', form({ action: 'me', token: 'probe' })), // 401 = alive and refusing
   'parking-agents': await probe('parking-agents', form({ department: 'probe' })) // 400 = alive, no file sent
 };
-// the real thing, as the admin does it: email + password. (This sends the admin one "you signed in" alert.)
-if (passwordOn) {
-  const lg = await post('hasadna-auth', { action: 'login', email: GMAIL_USER, password: ADMIN_PASSWORD });
-  const good = lg.json.ok === true || lg.json.error === 'totp-needed';
-  checks['test-email'] = good ? 200 : lg.status;
-  note(`- כניסת מנהל עם מייל וסיסמה: ${good ? (lg.json.error === 'totp-needed' ? '✅ הסיסמה נכונה, והמערכת מבקשת את קוד האפליקציה' : '✅ עובדת') : '❌ ' + lg.status + ' ' + (lg.json.error || lg.text)}`);
-  if (lg.json.token) await post('hasadna-auth', { action: 'logout', token: lg.json.token });
-}
-// a real sign-in code to the admin's own inbox proves the email path end to end
-if (smtp && !passwordOn) {
-  try {
-    const r = await fetch(`${BASE}/webhook/hasadna-auth`, form({ action: 'request', email: GMAIL_USER, phone: '0544979771' }));
-    const j = await r.json().catch(() => ({}));
-    checks['test-email'] = r.status;
-    note(`- מייל בדיקה עם קוד כניסה אל ${GMAIL_USER}: ${r.ok && j.ok ? '✅ נשלח' : '❌ ' + r.status + ' ' + (j.error || '')}`);
-  } catch (e) { note('- ❌ מייל בדיקה: ' + e.message); }
+// the sign-in answers, and (if the secret's password is still the admin's) it opens
+{
+  const inf = await post('hasadna-auth', { action: 'info' });
+  checks['test-email'] = inf.json.ok ? 200 : inf.status;
+  note(`- מערכת הכניסה עם מייל וסיסמה: ${inf.json.ok ? '✅ פעילה' : '❌ ' + inf.status}`);
+  if (passwordOn) {
+    const lg = await post('hasadna-auth', { action: 'login', email: GMAIL_USER, password: ADMIN_PASSWORD });
+    if (lg.json.ok === true || lg.json.error === 'totp-needed') note(`- כניסת מנהל עם הסיסמה שבסוד: ✅ ${lg.json.error === 'totp-needed' ? 'נכונה, והמערכת מבקשת את קוד האפליקציה' : 'עובדת'} (נשלח אליך מייל "כניסת מנהל")`);
+    else if (lg.json.error === 'bad-login') note('- ℹ️ הסיסמה שבסוד כבר לא הסיסמה של המנהל: הוא בחר סיסמה משלו באפליקציה. זה תקין.');
+    else note(`- ❌ כניסת מנהל: ${lg.status} ${lg.json.error || lg.text}`);
+    if (lg.json.token) await post('hasadna-auth', { action: 'logout', token: lg.json.token });
+  }
 }
 // Maya's voice: a real sentence, as the site asks for it
 try {
@@ -269,10 +267,12 @@ const unk = await post('hasadna-auth', { action: 'login', email: 'nobody-' + Dat
 expect('כניסה: כתובת לא מוכרת מקבלת בדיוק את אותה תשובה', unk.status === 401 && unk.json.error === 'bad-login', `${unk.status} ${unk.text}`);
 r1 = await post('hasadna-auth', { action: 'login', email: 'nobody@example.com', password: 'x', device: 'a'.repeat(32) }, EVIL);
 expect('כניסה: ניסיון סיסמה מאתר זר נחסם', r1.status === 403, r1.status);
-if (passwordOn) {
-  r1 = await post('hasadna-auth', { action: 'request', email: GMAIL_USER, phone: '0544979771' }, SITE_ORIGIN);
-  expect('כניסה: הכניסה הישנה עם קוד במייל נסגרה למנהל', r1.status === 200 && r1.json.ok === true && r1.text.indexOf('sent') >= 0, r1.status);
-}
+r1 = await post('hasadna-auth', { action: 'request', email: GMAIL_USER, phone: '0544979771' }, SITE_ORIGIN);
+expect('כניסה: הכניסה הישנה עם קוד במייל הוסרה', r1.status === 400 && r1.json.error === 'unknown-action', `${r1.status} ${r1.text}`);
+r1 = await post('hasadna-auth', { action: 'forgot', email: 'nobody-' + Date.now() + '@example.com' }, SITE_ORIGIN);
+expect('כניסה: בקשת סיסמה ראשונית לכתובת לא רשומה נראית כמו כל בקשה, ולא נשלח מייל', r1.status === 200 && r1.json.ok === true && r1.json.sent === true, `${r1.status} ${r1.text}`);
+r1 = await post('hasadna-auth', { action: 'change-password', token: 'a'.repeat(48), password: 'Whatever-123' }, SITE_ORIGIN);
+expect('כניסה: אי אפשר להחליף סיסמה בלי להיות מחובר', r1.status === 401, r1.status);
 // which address does n8n see for a caller? Rate limits and device records depend on it, and a header the caller writes must not win.
 {
   const a1 = await post('hasadna-auth', { action: 'health' });

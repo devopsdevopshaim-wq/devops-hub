@@ -26,6 +26,12 @@
 .cp-card p { margin: 0; color: var(--mist, #a9a4cc); font-size: 15px; line-height: 1.5; flex: 1; }
 .cp-card span.go { font-weight: 700; color: var(--brass-2, #e0b25a); }
 .cp-empty { padding: 22px; border-radius: 18px; border: 1px dashed var(--line, rgba(241, 238, 252, .2)); }
+.cp-pw { margin-top: 30px; border: 1px solid var(--line, rgba(241, 238, 252, .12)); border-radius: 16px; padding: 12px 16px; max-width: 420px; }
+.cp-pw summary { cursor: pointer; font-weight: 700; }
+.cp-form { display: grid; gap: 10px; margin-top: 12px; }
+.cp-form label { display: grid; gap: 4px; font-size: 14px; color: var(--mist, #a9a4cc); }
+.cp-form input { padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line-2, rgba(241, 238, 252, .25)); background: rgba(241, 238, 252, .05); color: inherit; font: inherit; }
+.cp-form p { margin: 0; }
 .cp-foot { margin-top: 40px; color: var(--mist, #a9a4cc); font-size: 15px; display: flex; gap: 10px 20px; flex-wrap: wrap; align-items: center; }
 .cp-foot a { color: var(--brass-2, #e0b25a); }
 </style>
@@ -40,6 +46,16 @@
   <h1 id="hello">שלום</h1>
   <p class="lead" id="lead"></p>
   <div class="cp-grid" id="sites" aria-live="polite"></div>
+  <details class="cp-pw" id="pw-box">
+    <summary>החלפת סיסמה</summary>
+    <form id="pw-form" class="cp-form" novalidate>
+      <label>הסיסמה הנוכחית<input name="current" type="password" dir="ltr" autocomplete="current-password" required></label>
+      <label>סיסמה חדשה (8 תווים לפחות)<input name="password" type="password" dir="ltr" autocomplete="new-password" minlength="8" required></label>
+      <label>עוד פעם, לוודא<input name="again" type="password" dir="ltr" autocomplete="new-password" minlength="8" required></label>
+      <button class="btn btn-gold btn-sm" type="submit">שמירה</button>
+      <p id="pw-msg" role="status" hidden></p>
+    </form>
+  </details>
   <div class="cp-foot">
     <span>חיים קריספין · <a href="tel:+972544979771" dir="ltr">054-4979771</a></span>
     <a href="https://wa.me/972544979771?text=%D7%94%D7%99%D7%99%2C%20%D7%90%D7%A0%D7%99%20%D7%9C%D7%A7%D7%95%D7%97%20%D7%91%D7%A1%D7%A4%D7%99%D7%99%D7%93%D7%A8" target="_blank" rel="noopener">שאלה? וואטסאפ</a>
@@ -55,6 +71,18 @@
     (kids || []).forEach(function (c) { n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
     return n;
   }
+  $('pw-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target.elements, msg = $('pw-msg');
+    function say(t, bad) { msg.textContent = t; msg.hidden = !t; msg.style.color = bad ? '#ff7a85' : '#62dcb8'; }
+    if (f.password.value.length < 8) { say('הסיסמה החדשה: 8 תווים לפחות.', true); return; }
+    if (f.password.value !== f.again.value) { say('שתי הסיסמאות לא זהות.', true); return; }
+    window.HasadnaAuth.api('change-password', { current: f.current.value, password: f.password.value }).then(function (j) {
+      if (!j.ok) { say(j.error === 'bad-login' ? 'הסיסמה הנוכחית לא נכונה.' : j.error === 'rate-limited' || j.error === 'too-many' ? 'יותר מדי ניסיונות. נסו שוב מאוחר יותר.' : 'לא הוחלפה: ' + j.error, true); return; }
+      f.current.value = f.password.value = f.again.value = '';
+      say('✓ הסיסמה הוחלפה. חיבורים אחרים שלכם נסגרו.');
+    }).catch(function () { say('מערכת הכניסה לא עונה. נסו שוב בעוד רגע.', true); });
+  });
   window.HasadnaAuth.ready.then(function (s) {
     var admin = s.role === 'admin';
     $('hello').textContent = admin ? 'תצוגת מנהל' : 'שלום' + (s.name ? ' ' + s.name : '');

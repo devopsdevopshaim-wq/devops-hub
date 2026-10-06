@@ -31,3 +31,6 @@
 
 /* "hidden" must win over .field { display: flex } */
 .gate [hidden] { display: none !important; }
+
+#gate-forgot { width: 100%; margin-top: 4px; }
+.gate-sent { margin: 0; padding: 10px 14px; border-radius: 12px; background: rgba(98, 220, 184, .1); border: 1px solid rgba(98, 220, 184, .3); }

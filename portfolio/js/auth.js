@@ -66,7 +66,10 @@
   }
 
   // ---------------------------------------------------------------- the gate
-  function gate(msg) {
+  // email + password. The first time (or after "forgot"), the password is an initial one that arrived by email, and the next
+  // step is choosing one's own. opts.change opens straight at that step (the page was reloaded in the middle of it).
+  function gate(msg, opts) {
+    opts = opts || {};
     var old = document.getElementById('gate');
     if (old) old.remove();
     var g = document.createElement('div');
@@ -79,57 +82,48 @@
       '<div class="gate-card">' +
         '<a class="brand spider-brand" href="services.html" aria-label="SPIDER"><img src="img/spider.svg" alt="" width="40" height="40"><span class="wordmark">SPIDER</span></a>' +
         '<h1 id="gate-title">' + (needAdmin ? 'כניסת מנהל' : 'כניסה') + '</h1>' +
-        '<p class="gate-lead" id="gate-lead">' + (needAdmin ? 'המסך הזה פתוח רק למנהל המערכת.' : 'האתרים פתוחים ללקוחות עם גישה פעילה. נכנסים עם המייל והסיסמה שקיבלתם. ממכשיר חדש הכניסה מחכה לאישור המנהל.') + '</p>' +
+        '<p class="gate-lead" id="gate-lead">' + (needAdmin ? 'המסך הזה פתוח רק למנהל המערכת.' : 'נכנסים עם המייל והסיסמה שלכם. עוד אין סיסמה, או שכחתם? אפשר לקבל סיסמה ראשונית למייל. ממכשיר חדש הכניסה מחכה לאישור המנהל.') + '</p>' +
         '<form class="gate-form" id="gate-pw" novalidate>' +
           '<label class="field"><span>מייל</span><input name="email" type="email" dir="ltr" autocomplete="username" required></label>' +
           '<label class="field"><span>סיסמה</span><input name="password" type="password" dir="ltr" autocomplete="current-password" required></label>' +
           '<label class="field" id="gate-pw-totp" hidden><span>קוד מאפליקציית האימות</span><input name="totp" class="gate-code" inputmode="numeric" autocomplete="off" maxlength="6" dir="ltr"></label>' +
           '<button class="btn btn-gold" type="submit">כניסה</button>' +
+          '<button class="g-btn ghost" type="button" id="gate-forgot">קבלת סיסמה ראשונית למייל</button>' +
         '</form>' +
-        '<form class="gate-form" id="gate-1" novalidate hidden>' +
-          '<label class="field"><span>מייל</span><input name="email" type="email" dir="ltr" autocomplete="email" required></label>' +
-          '<label class="field"><span>טלפון</span><input name="phone" type="tel" dir="ltr" autocomplete="tel" inputmode="tel" placeholder="050-000-0000" required></label>' +
-          '<button class="btn btn-gold" type="submit">שלחו לי קוד</button>' +
+        '<form class="gate-form" id="gate-chg" novalidate hidden>' +
+          '<label class="field"><span>סיסמה חדשה <small>(8 תווים לפחות)</small></span><input name="password" type="password" dir="ltr" autocomplete="new-password" minlength="8" required></label>' +
+          '<label class="field"><span>עוד פעם, לוודא</span><input name="again" type="password" dir="ltr" autocomplete="new-password" minlength="8" required></label>' +
+          '<button class="btn btn-gold" type="submit">שמירה וכניסה</button>' +
         '</form>' +
-        '<form class="gate-form" id="gate-2" novalidate hidden>' +
-          '<p class="gate-sent" id="gate-sent"></p>' +
-          '<label class="field"><span>הקוד</span><input name="code" class="gate-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required></label>' +
-          '<label class="field" id="gate-totp-wrap" hidden><span>קוד מאפליקציית האימות</span><input name="totp" class="gate-code" inputmode="numeric" autocomplete="off" maxlength="6" dir="ltr"></label>' +
-          '<button class="btn btn-gold" type="submit">כניסה</button>' +
-          '<div class="gate-row"><button class="g-btn ghost" type="button" id="gate-back">→ חזרה</button><button class="g-btn ghost" type="button" id="gate-again" disabled>שליחה מחדש</button></div>' +
-        '</form>' +
+        '<p class="gate-sent" id="gate-info" role="status" hidden></p>' +
         '<p class="add-error" id="gate-err" role="alert"' + (msg ? '' : ' hidden') + '>' + (msg || '') + '</p>' +
         '<p class="gate-owner">חיים קריספין · <a href="tel:+972544979771" dir="ltr">054-4979771</a></p>' +
         '<p class="gate-foot">אין לך גישה עדיין? <a href="' + WA + '" target="_blank" rel="noopener">דברו איתי בוואטסאפ</a> · <a href="services.html">שירותים ומחירים</a></p>' +
       '</div>';
     document.body.appendChild(g);
 
-    var f1 = g.querySelector('#gate-1'), f2 = g.querySelector('#gate-2'), err = g.querySelector('#gate-err'), fpw = g.querySelector('#gate-pw');
-    var again = g.querySelector('#gate-again');
-    var who = { email: '', phone: '' }, timer = null;
-    try { var last = JSON.parse(localStorage.getItem('hasadna-who') || '{}'); f1.elements.email.value = last.email || ''; f1.elements.phone.value = last.phone || ''; } catch (e) {}
-    function fail(t) { err.textContent = t; err.hidden = !t; }
+    var err = g.querySelector('#gate-err'), info = g.querySelector('#gate-info'), fpw = g.querySelector('#gate-pw'), fchg = g.querySelector('#gate-chg');
+    function fail(t) { err.textContent = t; err.hidden = !t; if (t) info.hidden = true; }
+    function note(t) { info.textContent = t; info.hidden = !t; if (t) err.hidden = true; }
     function busy(f, on) { var b = f.querySelector('button[type=submit]'); b.disabled = on; b.classList.toggle('busy', on); }
     var ERR = {
-      'bad-input': 'בדקו את המייל ואת מספר הטלפון.',
+      'bad-input': 'בדקו את המייל ואת הסיסמה.',
       'too-many': 'יותר מדי ניסיונות. נסו שוב בעוד שעה.',
-      'expired': 'הקוד פג. בקשו קוד חדש.',
-      'wrong': 'הקוד לא נכון.',
       'inactive': 'הגישה שלך לא פעילה כרגע. כדי לחדש, דברו איתי בוואטסאפ.',
-      'mail-failed': 'לא הצלחתי לשלוח את המייל כרגע. נסו שוב בעוד דקה.',
       'rate-limited': 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.',
       'bad-login': 'המייל או הסיסמה לא נכונים.',
       'bad-device': 'הדפדפן הזה לא מאפשר לשמור מזהה מכשיר. פתחו חלון רגיל (לא פרטי) ונסו שוב.',
       'pending': 'המכשיר הזה חדש, והכניסה ממנו מחכה לאישור המנהל. שלחתי לו הודעה. אפשר גם לפנות אליו בוואטסאפ.',
       'ip-blocked': 'הכתובת (IP) שממנה אתם מתחברים לא מאושרת. פנו למנהל.',
       'device-revoked': 'המכשיר הזה הוסר. היכנסו שוב.',
-      'wait': 'כבר שלחתי קוד. אפשר לבקש חדש בעוד חצי דקה.',
       'forbidden': 'הכניסה אפשרית רק מתוך האתר.',
+      'weak-password': 'הסיסמה צריכה להיות באורך 8 תווים לפחות.',
+      'signed-out': 'הכניסה פגה. היכנסו שוב עם הסיסמה הראשונית.',
       'wrong-totp': 'קוד האפליקציה לא נכון, או שכבר נעשה בו שימוש. חכו לקוד הבא.',
-      'not-ready': 'מערכת הכניסה עוד לא הופעלה ב־n8n. (למנהל: לייבא את n8n/hasadna-access.json, לחבר Gmail ולהפעיל.)'
+      'not-ready': 'מערכת הכניסה עוד לא הופעלה ב־n8n.'
     };
 
-    // ---- the way in: email + password. The device id is a random number kept in this browser, so the admin can tell devices apart.
+    // The device id is a random number kept in this browser, so the admin can tell devices apart.
     function deviceId() {
       try {
         var d = localStorage.getItem('spider-device');
@@ -141,11 +135,25 @@
       } catch (e) { return ''; }
     }
     try { var lastMail = localStorage.getItem('spider-mail'); if (lastMail) fpw.elements.email.value = lastMail; } catch (e) {}
+
+    function showChange() {
+      fpw.hidden = true; fchg.hidden = false; fail(''); note('');
+      g.querySelector('#gate-lead').textContent = 'נכנסתם עם סיסמה ראשונית. בחרו עכשיו סיסמה משלכם, ומעכשיו תיכנסו איתה.';
+      setTimeout(function () { fchg.elements.password.focus(); }, 30);
+    }
+    function finish() {
+      api('me').then(function (s) {
+        if (s.ok && !s.mustChange) enter(s);
+        else if (s.ok && s.mustChange) showChange();
+        else fail(ERR[s.error] || 'לא הצלחתי להיכנס. נסו שוב.');
+      }).catch(function () { fail('מערכת הכניסה לא עונה כרגע. נסו שוב בעוד רגע.'); });
+    }
+
     fpw.addEventListener('submit', function (e) {
       e.preventDefault();
       var mail = fpw.elements.email.value.trim(), pass = fpw.elements.password.value, totp = fpw.elements.totp.value.replace(/\D/g, '');
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { fail('בדקו את כתובת המייל.'); fpw.elements.email.focus(); return; }
-      if (!pass) { fail('הקלידו את הסיסמה.'); fpw.elements.password.focus(); return; }
+      if (!pass) { fail('הקלידו את הסיסמה, או בקשו סיסמה ראשונית למייל.'); fpw.elements.password.focus(); return; }
       try { localStorage.setItem('spider-mail', mail); } catch (x) {}
       fail(''); busy(fpw, true);
       api('login', { email: mail, password: pass, device: deviceId(), totp: totp }).then(function (j) {
@@ -154,7 +162,7 @@
           store(j.token);
           if (needAdmin && j.role !== 'admin') { fail('המסך הזה פתוח רק למנהל.'); return; }
           fpw.elements.password.value = '';
-          api('me').then(function (s) { if (s.ok) enter(s); else fail(ERR[s.error] || 'לא הצלחתי להיכנס. נסו שוב.'); });
+          if (j.mustChange) showChange(); else finish();
           return;
         }
         if (j.error === 'totp-needed') {
@@ -167,67 +175,39 @@
       }).catch(function () { busy(fpw, false); fail('מערכת הכניסה לא עונה כרגע. נסו שוב בעוד רגע.'); });
     });
     fpw.elements.totp.addEventListener('input', function () { if (fpw.elements.totp.value.replace(/\D/g, '').length === 6) fpw.requestSubmit ? fpw.requestSubmit() : fpw.dispatchEvent(new Event('submit')); });
-    // before the admin has a password, the older way in (email, phone, emailed code) is the one that works
-    api('info').then(function (j) {
-      if (j && j.ok && j.password === false) {
-        fpw.hidden = true; f1.hidden = false;
-        g.querySelector('#gate-lead').textContent = needAdmin ? 'המסך הזה פתוח רק למנהל המערכת.' : 'נכנסים עם המייל והטלפון שנרשמו, ומקבלים קוד חד־פעמי.';
-      }
-    }).catch(function () {});
 
-    function send() {
-      fail('');
-      busy(f1, true);
-      return api('request', who).then(function (j) {
-        busy(f1, false);
-        if (!j.ok) { fail(ERR[j.error] || 'משהו השתבש: ' + j.error); return; }
-        f1.hidden = true; f2.hidden = false;
-        g.querySelector('#gate-sent').textContent = 'אם הפרטים מורשים, שלחתי קוד בן 6 ספרות אל ' + who.email + '. כדאי לבדוק גם בקידומי מכירות או בספאם.';
-        f2.elements.code.value = ''; f2.elements.code.focus();
-        again.disabled = true;
-        clearTimeout(timer); timer = setTimeout(function () { again.disabled = false; }, 30000);
-      }).catch(function () { busy(f1, false); fail('מערכת הכניסה לא עונה כרגע. נסו שוב בעוד רגע.'); });
-    }
+    // an initial password by email, to the address typed above
+    var forgot = g.querySelector('#gate-forgot');
+    forgot.addEventListener('click', function () {
+      var mail = fpw.elements.email.value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { fail('הקלידו קודם את כתובת המייל שלכם.'); fpw.elements.email.focus(); return; }
+      forgot.disabled = true;
+      api('forgot', { email: mail }).then(function (j) {
+        if (!j.ok) { forgot.disabled = false; fail(ERR[j.error] || 'משהו השתבש: ' + j.error); return; }
+        try { localStorage.setItem('spider-mail', mail); } catch (x) {}
+        note('אם הכתובת רשומה, שלחתי אליה סיסמה ראשונית. כדאי לבדוק גם בספאם. מקלידים אותה כאן בשדה הסיסמה, ובוחרים סיסמה משלכם.');
+        fpw.elements.password.value = ''; fpw.elements.password.focus();
+        setTimeout(function () { forgot.disabled = false; }, 30000);
+      }).catch(function () { forgot.disabled = false; fail('מערכת הכניסה לא עונה כרגע. נסו שוב בעוד רגע.'); });
+    });
 
-    f1.addEventListener('submit', function (e) {
+    // choosing one's own password
+    fchg.addEventListener('submit', function (e) {
       e.preventDefault();
-      who = { email: f1.elements.email.value.trim(), phone: f1.elements.phone.value.trim() };
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(who.email)) { fail('בדקו את כתובת המייל.'); f1.elements.email.focus(); return; }
-      if (who.phone.replace(/\D/g, '').length < 9) { fail('בדקו את מספר הטלפון.'); f1.elements.phone.focus(); return; }
-      try { localStorage.setItem('hasadna-who', JSON.stringify(who)); } catch (x) {}
-      send();
+      var p1 = fchg.elements.password.value, p2 = fchg.elements.again.value;
+      if (p1.length < 8) { fail(ERR['weak-password']); return; }
+      if (p1 !== p2) { fail('שתי הסיסמאות לא זהות.'); fchg.elements.again.focus(); return; }
+      fail(''); busy(fchg, true);
+      api('change-password', { password: p1 }).then(function (j) {
+        busy(fchg, false);
+        if (!j.ok) { fail(ERR[j.error] || 'משהו השתבש: ' + j.error); if (j.error === 'signed-out') { store(''); location.reload(); } return; }
+        fchg.elements.password.value = ''; fchg.elements.again.value = '';
+        finish();
+      }).catch(function () { busy(fchg, false); fail('מערכת הכניסה לא עונה כרגע.'); });
     });
-    f2.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var code = f2.elements.code.value.replace(/\D/g, '');
-      var totp = f2.elements.totp.value.replace(/\D/g, '');
-      if (code.length !== 6) { fail('הקוד בן 6 ספרות.'); return; }
-      fail(''); busy(f2, true);
-      api('verify', { email: who.email, phone: who.phone, code: code, totp: totp }).then(function (j) {
-        busy(f2, false);
-        if (!j.ok && j.error === 'totp-needed') {
-          // the admin: the emailed code was right, now the authenticator app
-          g.querySelector('#gate-totp-wrap').hidden = false; f2.elements.totp.focus();
-          fail(totp ? '' : 'עוד צעד אחד: הקלידו את הקוד מאפליקציית האימות.');
-          return;
-        }
-        if (!j.ok) { fail((ERR[j.error] || 'משהו השתבש.') + (j.left != null ? ' נשארו ' + j.left + ' ניסיונות.' : '')); return; }
-        store(j.token);
-        if (needAdmin && j.role !== 'admin') { fail('המסך הזה פתוח רק למנהל.'); return; }
-        api('me').then(function (s) { if (s.ok) enter(s); else fail('לא הצלחתי להיכנס. נסו שוב.'); });
-      }).catch(function () { busy(f2, false); fail('מערכת הכניסה לא עונה כרגע.'); });
-    });
-    function autoSend() {
-      var needTotp = !g.querySelector('#gate-totp-wrap').hidden;
-      if (f2.elements.code.value.replace(/\D/g, '').length !== 6) return;
-      if (needTotp && f2.elements.totp.value.replace(/\D/g, '').length !== 6) return;
-      f2.requestSubmit ? f2.requestSubmit() : f2.dispatchEvent(new Event('submit'));
-    }
-    f2.elements.code.addEventListener('input', autoSend);
-    f2.elements.totp.addEventListener('input', autoSend);
-    g.querySelector('#gate-back').addEventListener('click', function () { f2.hidden = true; f1.hidden = false; g.querySelector('#gate-totp-wrap').hidden = true; f2.elements.totp.value = ''; fail(''); });
-    again.addEventListener('click', send);
-    setTimeout(function () { (fpw.elements.email.value ? fpw.elements.password : fpw.elements.email).focus(); }, 50);
+
+    if (opts.change) showChange();
+    else setTimeout(function () { (fpw.elements.email.value ? fpw.elements.password : fpw.elements.email).focus(); }, 50);
   }
 
   // access.json switches sign-in on. Until then the site stays open, as before.
@@ -245,6 +225,7 @@
   function check() {
     if (!token()) { gate(); return; }
     api('me').then(function (s) {
+      if (s.ok && s.mustChange) { gate('', { change: true }); return; }   // signed in with an initial password: the next step is choosing one
       if (s.ok && (!needAdmin || s.role === 'admin')) enter(s);
       else {
         // only a definite "no" signs the browser out; a busy or unreachable server must not

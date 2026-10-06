@@ -521,7 +521,7 @@
     if (S.basket.length && $('basket-title').textContent.indexOf('נפתח') < 0) { e.preventDefault(); e.returnValue = ''; }
   });
 
-  $('client-link').textContent = siteBase() + '?view=client';
+  $('client-link').textContent = siteBase() + 'client.html';
 
   // Admin controls on the public site's cards, for this browser only.
   var siteAdmin = $('site-admin');
