@@ -59,10 +59,65 @@
       var d = Math.ceil((Date.parse(s.expiresAt) - Date.now()) / 86400000);
       left = d <= 3 ? ' · נשארו ' + d + ' ימים' : '';
     }
-    chip.innerHTML = '<span></span><button type="button">יציאה</button>';
+    chip.innerHTML = '<span></span><button type="button" class="chip-pw">סיסמה</button><button type="button" class="chip-out">יציאה</button>';
     chip.querySelector('span').textContent = (s.role === 'admin' ? '★ מנהל' : '👤 ' + (s.name || 'לקוח')) + left;
-    chip.querySelector('button').addEventListener('click', logout);
+    chip.querySelector('.chip-out').addEventListener('click', logout);
+    chip.querySelector('.chip-pw').addEventListener('click', changePassword);
     nav.appendChild(chip);
+    if (s.role === 'client') welcome(s);
+  }
+
+  // a line under the menu, so the client sees whose site this is and until when
+  function welcome(s) {
+    var nav = document.querySelector('.nav');
+    if (!nav || document.getElementById('welcome')) return;
+    var w = document.createElement('div');
+    w.id = 'welcome';
+    w.className = 'welcome';
+    var n = Array.isArray(s.sites) ? s.sites.length : 0;
+    var until = s.expiresAt ? ' · הגישה שלך בתוקף עד ' + new Date(s.expiresAt).toLocaleDateString('he-IL') : '';
+    w.textContent = 'שלום ' + (s.name || '') + ' · נפתחו לך ' + n + ' אתרים' + until;
+    nav.parentNode.insertBefore(w, nav.nextSibling);
+  }
+
+  // choosing a new password, from any page, with the current one
+  function changePassword() {
+    var old = document.getElementById('pw-dialog');
+    if (old) { old.remove(); return; }
+    var d = document.createElement('div');
+    d.id = 'pw-dialog';
+    d.className = 'gate pw-dialog';
+    d.setAttribute('role', 'dialog');
+    d.setAttribute('aria-modal', 'true');
+    d.innerHTML =
+      '<div class="gate-card">' +
+        '<h1>החלפת סיסמה</h1>' +
+        '<form class="gate-form" novalidate>' +
+          '<label class="field"><span>הסיסמה הנוכחית</span><input name="current" type="password" dir="ltr" autocomplete="current-password" required></label>' +
+          '<label class="field"><span>סיסמה חדשה <small>(8 תווים לפחות)</small></span><input name="password" type="password" dir="ltr" autocomplete="new-password" minlength="8" required></label>' +
+          '<label class="field"><span>עוד פעם, לוודא</span><input name="again" type="password" dir="ltr" autocomplete="new-password" minlength="8" required></label>' +
+          '<button class="btn btn-gold" type="submit">שמירה</button>' +
+          '<button class="g-btn ghost" type="button" data-close>ביטול</button>' +
+        '</form>' +
+        '<p class="gate-sent" id="pw-ok" hidden>✓ הסיסמה הוחלפה. חיבורים אחרים שלכם נסגרו.</p>' +
+        '<p class="add-error" id="pw-err" role="alert" hidden></p>' +
+      '</div>';
+    document.body.appendChild(d);
+    var f = d.querySelector('form'), err = d.querySelector('#pw-err'), ok = d.querySelector('#pw-ok');
+    function say(t) { err.textContent = t; err.hidden = !t; }
+    d.querySelector('[data-close]').addEventListener('click', function () { d.remove(); });
+    d.addEventListener('keydown', function (e) { if (e.key === 'Escape') d.remove(); });
+    f.elements.current.focus();
+    f.addEventListener('submit', function (e) {
+      e.preventDefault(); ok.hidden = true;
+      if (f.elements.password.value.length < 8) { say('הסיסמה החדשה: 8 תווים לפחות.'); return; }
+      if (f.elements.password.value !== f.elements.again.value) { say('שתי הסיסמאות לא זהות.'); return; }
+      say('');
+      api('change-password', { current: f.elements.current.value, password: f.elements.password.value }).then(function (j) {
+        if (!j.ok) { say(j.error === 'bad-login' ? 'הסיסמה הנוכחית לא נכונה.' : j.error === 'rate-limited' || j.error === 'too-many' ? 'יותר מדי ניסיונות. נסו שוב מאוחר יותר.' : 'לא הוחלפה: ' + j.error); return; }
+        f.reset(); ok.hidden = false; setTimeout(function () { d.remove(); }, 2200);
+      }).catch(function () { say('מערכת הכניסה לא עונה. נסו שוב בעוד רגע.'); });
+    });
   }
 
   // ---------------------------------------------------------------- the gate
