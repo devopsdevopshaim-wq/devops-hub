@@ -196,8 +196,9 @@ try {
   results.access = await installAccess();
   // the admin's password: hashed here with the strength this n8n can compute, then installed as a hash only
   if (ADMIN_PASSWORD) {
-    if (ADMIN_PASSWORD.length < 12) note('- ⚠️ ADMIN_PASSWORD קצרה מ־12 תווים ולכן לא הופעלה. בחרו סיסמה ארוכה יותר.');
+    if (ADMIN_PASSWORD.length < 8) note('- ⚠️ ADMIN_PASSWORD קצרה מ־8 תווים ולכן לא הופעלה. בחרו סיסמה ארוכה יותר.');
     else {
+      if (ADMIN_PASSWORD.length < 12) note('- ⚠️ ADMIN_PASSWORD קצרה מ־12 תווים. היא הופעלה, אבל סיסמה קצרה קל לנחש. מומלץ להוסיף אימות באפליקציה (portfolio/admin-2fa.html).');
       const hh = await post('hasadna-auth', { action: 'health' });
       const iter = hh.json.crypto === 'js' ? 20000 : 210000;
       const salt = crypto.randomBytes(16).toString('hex');

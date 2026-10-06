@@ -128,6 +128,11 @@ switch (b.action) {
     if (sd.lock[lk] > now || sd.lock[e] > now) return out({ ok: false, error: 'too-many' }, 429);
     const adm = e === ADMIN_EMAIL;
     const c = sd.clients[e];
+    // The admin's own devices (ones that already signed in as admin) are never held back. Guessing from any other device gets
+    // 10 tries an hour in total, however many addresses it comes from, so a short, memorable password is not easy to brute-force.
+    sd.adminDevices = sd.adminDevices || [];
+    const trusted = adm && /^[a-f0-9]{32}$/.test(dev) && sd.adminDevices.includes(sha256hex('dev:' + dev));
+    if (adm && !trusted && sd.lock['admin-guess'] > now) return out({ ok: false, error: 'too-many' }, 429);
     const stored = adm ? (PASSWORDS ? ADMIN_PW : '') : (c && c.pw) || '';
     const good = stored ? pwCheck(pw, stored) : pwDummy(pw);
     const fail = (why) => {
@@ -136,6 +141,10 @@ switch (b.action) {
       let mail = null, code = 401, error = 'bad-login';
       if (f1.length >= 8) { sd.lock[lk] = now + HOUR; error = 'too-many'; code = 429; if (adm || c) mail = alert('נחסמה כניסה אחרי ניסיונות כושלים', `8 סיסמאות שגויות עבור ${e} מהכתובת הזו. הכניסה משם נחסמה לשעה.`); }
       else if (f2.length >= 60) { sd.lock[e] = now + 10 * 60000; error = 'too-many'; code = 429; }   // many addresses at once: a short pause for everyone
+      if (adm && !trusted) {
+        const f3 = (sd.fails['admin-guess'] = (sd.fails['admin-guess'] || []).filter((t) => now - t < HOUR).concat(now));
+        if (f3.length >= 10) { sd.lock['admin-guess'] = now + HOUR; error = 'too-many'; code = 429; mail = alert('ניחושי סיסמה למנהל', '10 סיסמאות שגויות בשעה האחרונה ממכשירים לא מוכרים. כניסה ממכשירים לא מוכרים נחסמה לשעה. המכשירים שנכנסת מהם בעבר ממשיכים לעבוד.'); }
+      }
       log('כניסה נכשלה' + (why ? ' · ' + why : ''), e);
       return out({ ok: false, error, left: Math.max(0, 8 - f1.length) }, code, mail);
     };
@@ -150,6 +159,7 @@ switch (b.action) {
         sd.totpLast = step;
       }
       sd.fails[lk] = [];
+      if (/^[a-f0-9]{32}$/.test(dev) && !trusted) { sd.adminDevices.unshift(sha256hex('dev:' + dev)); sd.adminDevices.length = Math.min(sd.adminDevices.length, 10); }
       const token = newSession(e, 'admin', now + ADMIN_SESSION_DAYS * DAY);
       log('כניסת מנהל', e);
       return out({ ok: true, token, role: 'admin', name: 'מנהל' }, 200, alert('כניסת מנהל', 'נכנסת למערכת SPIDER כמנהל. אם זה לא אתה, החלף מיד את ADMIN_PASSWORD בסוד SPIDER והרץ את ההתקנה.'));

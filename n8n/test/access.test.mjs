@@ -83,6 +83,7 @@ async function main(tag, { noCrypto = false, totp = false, full = true } = {}) {
   if (!full) return;
 
   // ---- an attacker cannot lock the real admin out
+  T += 3700000;   // earlier wrong tries have aged out of the hourly guess budget
   for (let i = 0; i < 8; i++) { T += 1000; r = await call({ action: 'login', email: ADMIN.email, password: 'guess' + i }, { ip: '66.6.6.6' }); }
   check(t + 'eight wrong passwords lock that address and warn the admin', r.code === 429 && r.body.error === 'too-many' && r.mail && r.mail.alert, r.body);
   r = await call({ action: 'login', email: ADMIN.email, password: ADMIN.password }, { ip: '66.6.6.6' });
@@ -92,6 +93,22 @@ async function main(tag, { noCrypto = false, totp = false, full = true } = {}) {
   T += 3700000;
   r = await call({ action: 'login', email: ADMIN.email, password: ADMIN.password }, { ip: '66.6.6.6' });
   check(t + 'the lock ends after an hour', r.body.ok === true || (totp && r.body.error === 'totp-needed'));
+  // guessing from devices that never signed in as admin: 10 tries an hour in total, from any number of addresses
+  if (!totp) {
+    const home = dev();
+    r = await call({ action: 'login', email: ADMIN.email, password: ADMIN.password, device: home }, { ip: '15.1.1.1' });
+    check(t + 'the admin signs in from a device of their own (it is remembered as trusted)', r.body.ok === true);
+    T += 3700000;
+    let r2; for (let i = 0; i < 10; i++) { T += 500; r2 = await call({ action: 'login', email: ADMIN.email, password: 'guess-' + i, device: dev() }, { ip: '120.0.0.' + i }); }
+    check(t + 'ten wrong guesses from ten addresses lock out unknown devices and warn the admin', r2.code === 429 && r2.mail && /ניחושי סיסמה/.test(r2.mail.subject), r2.body);
+    r2 = await call({ action: 'login', email: ADMIN.email, password: ADMIN.password, device: dev() }, { ip: '130.0.0.1' });
+    check(t + '... even the right password from an unknown device waits', r2.code === 429);
+    r2 = await call({ action: 'login', email: ADMIN.email, password: ADMIN.password, device: home }, { ip: '140.0.0.1' });
+    check(t + '... while the admin\'s own device still gets in, from any address', r2.body.ok === true);
+    T += 3700000;
+    r2 = await call({ action: 'login', email: ADMIN.email, password: ADMIN.password, device: dev() }, { ip: '150.0.0.1' });
+    check(t + 'an hour later an unknown device can sign in again', r2.body.ok === true);
+  }
   let lim = 0; for (let i = 0; i < 24; i++) { T += 100; const x = await call({ action: 'login', email: 'a' + i + '@b.co', password: 'x' }, { ip: '55.5.5.5' }); if (x.body.error === 'rate-limited' || x.body.error === 'too-many') lim++; }
   check(t + 'one address is limited to 20 sign-in tries an hour', lim >= 4, lim);
 
