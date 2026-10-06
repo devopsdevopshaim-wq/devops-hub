@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>סיסמת מנהל · SPIDER</title>
+<style>
+:root { --bg: #0f0d24; --deep: #17143a; --line: rgba(241, 238, 252, .14); --txt: #f1eefc; --mist: #a9a4cc; --gold: #e0b25a; --ok: #62dcb8; --bad: #ff7a85; }
+@media (prefers-color-scheme: light) { :root { --bg: #f6f4ff; --deep: #fff; --line: rgba(20, 17, 50, .16); --txt: #17143a; --mist: #4d4a78; --gold: #8a5d00; --ok: #0a7a5a; --bad: #b3261e; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 16px/1.6 system-ui, "Assistant", Arial, sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding: 28px 16px 60px; }
+h1 { font-size: 28px; margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+.card { background: var(--deep); border: 1px solid var(--line); border-radius: 18px; padding: 20px; margin: 18px 0; }
+ol { padding-inline-start: 22px; margin: 0; } li { margin: 0 0 10px; }
+button { font: 700 16px/1 inherit; padding: 12px 18px; border-radius: 999px; border: 0; background: var(--gold); color: #1b1405; cursor: pointer; }
+button.ghost { background: transparent; color: var(--txt); border: 1px solid var(--line); }
+code, .key { direction: ltr; unicode-bidi: plaintext; display: block; font: 600 20px/1.5 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .06em; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line); word-break: break-all; user-select: all; text-align: left; }
+input { font: 700 22px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .3em; width: 9em; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--txt); direction: ltr; text-align: center; }
+.ok { color: var(--ok); font-weight: 700; } .bad { color: var(--bad); font-weight: 700; }
+code.inline { display: inline; padding: 2px 8px; font-size: 15px; word-break: normal; white-space: nowrap; }
+small, .muted { color: var(--mist); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+@media (prefers-color-scheme: light) { button { color: #fff; } button.ghost { color: var(--txt); } }
+</style>
+</head>
+<body>
+<main>
+  <h1>סיסמת מנהל</h1>
+  <p class="muted">עם הסיסמה הזו אתה נכנס כמנהל מכל מחשב או טלפון, יחד עם המייל שלך. אין צורך בקוד ואין הגבלה למכשיר או לכתובת. לכן הסיסמה צריכה להיות ארוכה ואקראית.</p>
+
+  <div class="card">
+    <p><b>הסיסמה נוצרת כאן, בדפדפן שלך בלבד.</b> היא לא נשלחת לשום מקום ולא נשמרת. אף אחד אחר לא רואה אותה, גם לא אני.</p>
+    <div class="row"><button id="gen" type="button">יצירת סיסמה</button></div>
+    <div id="out" hidden>
+      <p style="margin-top:16px">הסיסמה שלך:</p>
+      <span class="key" id="key"></span>
+      <div class="row" style="margin-top:10px"><button class="ghost" id="copy" type="button">העתקה</button><span id="copied" class="ok"></span></div>
+    </div>
+  </div>
+
+  <div class="card" id="steps" hidden>
+    <ol>
+      <li><b>שמרו אותה עכשיו</b> במנהל סיסמאות או במקום בטוח. אחרי שתסגרו את העמוד אי אפשר לראות אותה שוב, ובשרת נשמרת רק גרסה מוצפנת שלה.</li>
+      <li>פתחו את <a id="gh" target="_blank" rel="noopener" href="https://github.com/devopsdevopshaim-wq/devops-hub/settings/secrets/actions/new">יצירת סוד חדש ב־GitHub</a> (פותח בלשונית חדשה).</li>
+      <li>בשדה <b>Name</b> כתבו בדיוק: <code class="inline">ADMIN_PASSWORD</code></li>
+      <li>בשדה <b>Secret</b> הדביקו את הסיסמה, ולחצו <b>Add secret</b>. (סוד נפרד: לא נוגעים בסוד SPIDER הקיים.)</li>
+      <li>חזרו אליי ותכתבו "הוספתי". אני מריץ את ההתקנה ובודק שהכניסה עובדת.</li>
+    </ol>
+    <p class="muted" style="margin-top:14px"><small>לשינוי הסיסמה בעתיד: יוצרים סיסמה חדשה כאן, מחליפים את הערך של הסוד <code class="inline">ADMIN_PASSWORD</code> ומריצים שוב את ההתקנה.</small></p>
+  </div>
+</main>
+<script>
+(function () {
+  var A = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', pw = '';
+  var $ = function (id) { return document.getElementById(id); };
+  $('gen').addEventListener('click', function () {
+    if (pw && !confirm('ליצור סיסמה חדשה? הקודמת תיעלם מהמסך.')) return;
+    var r = new Uint32Array(20); crypto.getRandomValues(r);
+    var out = ''; for (var i = 0; i < r.length; i++) out += A[r[i] % A.length];
+    pw = out.slice(0, 5) + '-' + out.slice(5, 10) + '-' + out.slice(10, 15) + '-' + out.slice(15);
+    $('key').textContent = pw; $('out').hidden = false; $('steps').hidden = false; $('copied').textContent = '';
+    $('gen').textContent = 'יצירת סיסמה אחרת';
+  });
+  $('copy').addEventListener('click', function () {
+    var done = function () { $('copied').textContent = '✓ הועתק'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(pw).then(done, function () { $('copied').textContent = 'סמנו והעתיקו ידנית'; });
+    else $('copied').textContent = 'סמנו והעתיקו ידנית';
+  });
+})();
+</script>
+</body>
+</html>
