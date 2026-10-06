@@ -10,26 +10,26 @@
 
   /* כל סגנון: שם, משפחה, תיאור קצר, אילו מחוונים רלוונטיים ועקיפת ברירות מחדל */
   var STYLES = [
-    { id: 'original', name: 'מקורי', group: 'בסיס', desc: 'הצילום כמו שהוא, רק עם בהירות וניגודיות.', knobs: ['bright', 'contrast', 'sat'], def: { sat: 100, contrast: 0 } },
-    { id: 'classic', name: 'קומיקס קלאסי', group: 'קומיקס', desc: 'קווי דיו, צבעים שטוחים ונקודות הדפסה בצללים.', knobs: ['lines', 'levels', 'dots', 'sat', 'smooth'] },
-    { id: 'graphic', name: 'גרפיק נובל', group: 'קומיקס', desc: 'צבעים עמומים, שחורים עמוקים ותאורה דרמטית.', knobs: ['lines', 'levels', 'sat', 'smooth'], def: { sat: 60, lines: 70, levels: 6, contrast: 25 } },
-    { id: 'vintage', name: 'קומיקס וינטג׳', group: 'קומיקס', desc: 'נייר מצהיב, הדפסה מוזזת ונקודות צבע של שנות ה-50.', knobs: ['lines', 'levels', 'dots', 'sat'], def: { sat: 85, dots: 5 } },
-    { id: 'manga', name: 'מנגה', group: 'קומיקס', desc: 'שחור-לבן עם רשתות גוון יפניות.', knobs: ['lines', 'dots', 'smooth', 'contrast'], def: { dots: 5, contrast: 15 } },
-    { id: 'noir', name: 'נואר', group: 'קומיקס', desc: 'שחור ולבן חדים, רק האדום נשאר.', knobs: ['lines', 'contrast', 'smooth', 'sat'], def: { contrast: 30, sat: 140 } },
-    { id: 'caricature', name: 'קריקטורה', group: 'קריקטורה', desc: 'ראש מוגדל וקווים עבים. לוחצים על הפנים כדי למרכז.', knobs: ['warp', 'rad', 'lines', 'levels', 'sat'], def: { lines: 72, sat: 135, levels: 6 } },
-    { id: 'bighead', name: 'בובת ראש', group: 'קריקטורה', desc: 'הגזמה קיצונית של הפנים, בסגנון אנימציה.', knobs: ['warp', 'rad', 'lines', 'sat'], def: { warp: 85, rad: 0.36, lines: 55, sat: 140 } },
-    { id: 'cel', name: 'אנימציה', group: 'קריקטורה', desc: 'צביעה חלקה בשכבות, כמו פריים מסרט מצויר.', knobs: ['lines', 'levels', 'sat', 'smooth'], def: { levels: 4, sat: 135, lines: 45, smooth: 4 } },
-    { id: 'popart', name: 'פופ-ארט', group: 'פופ', desc: 'צהוב, אדום וכחול עם נקודות בן-דיי.', knobs: ['lines', 'dots', 'contrast'], def: { dots: 7, lines: 70 } },
-    { id: 'warhol', name: 'ארבעה צבעים', group: 'פופ', desc: 'ארבעה עותקים בפלטות שונות, כמו פוסטר משי.', knobs: ['levels', 'contrast', 'smooth'], def: { levels: 4, contrast: 20 } },
-    { id: 'riso', name: 'ריזוגרף', group: 'פופ', desc: 'שני צבעי דיו, גרעין והזזת הדפסה.', knobs: ['contrast', 'dots', 'bright'], def: { dots: 4 } },
-    { id: 'neon', name: 'ניאון', group: 'פופ', desc: 'קווי אור זוהרים על רקע לילה.', knobs: ['lines', 'sat', 'smooth'], def: { lines: 65, sat: 160 } },
-    { id: 'pencil', name: 'רישום עיפרון', group: 'יד', desc: 'עיפרון רך על נייר שרטוט.', knobs: ['lines', 'contrast', 'bright'], def: { contrast: 0 } },
-    { id: 'colorsketch', name: 'סקיצה צבעונית', group: 'יד', desc: 'קווי עיפרון עם שטיפת צבע עדינה.', knobs: ['lines', 'sat', 'smooth'], def: { sat: 95 } },
-    { id: 'ink', name: 'עט ודיו', group: 'יד', desc: 'קווקווים צולבים בעט, כמו באיור עיתון.', knobs: ['lines', 'dots', 'contrast'], def: { dots: 5, contrast: 15 } },
-    { id: 'watercolor', name: 'צבעי מים', group: 'יד', desc: 'כתמי צבע רכים, שוליים כהים ונייר מחוספס.', knobs: ['sat', 'smooth', 'lines'], def: { smooth: 4, lines: 30, sat: 110 } },
-    { id: 'linocut', name: 'חיתוך לינו', group: 'יד', desc: 'הדפס חיתוך בצבע אחד עם סימני מפסלת.', knobs: ['contrast', 'dots', 'bright'], def: { dots: 6, contrast: 20 } },
-    { id: 'pixel', name: 'פיקסל-ארט', group: 'דיגיטלי', desc: 'פיקסלים גדולים ופלטה מוגבלת, כמו משחק ישן.', knobs: ['dots', 'levels', 'sat'], def: { dots: 9, levels: 4, sat: 125 } },
-    { id: 'blueprint', name: 'שרטוט', group: 'דיגיטלי', desc: 'קווים לבנים על נייר שרטוט כחול.', knobs: ['lines', 'smooth'], def: { lines: 55 } }
+    { id: 'original', name: 'מקורי', group: 'פילטרים · בסיס', desc: 'הצילום כמו שהוא, רק עם בהירות וניגודיות.', knobs: ['bright', 'contrast', 'sat'], def: { sat: 100, contrast: 0 } },
+    { id: 'classic', name: 'קומיקס קלאסי', group: 'פילטרים · קומיקס', desc: 'קווי דיו, צבעים שטוחים ונקודות הדפסה בצללים.', knobs: ['lines', 'levels', 'dots', 'sat', 'smooth'] },
+    { id: 'graphic', name: 'גרפיק נובל', group: 'פילטרים · קומיקס', desc: 'צבעים עמומים, שחורים עמוקים ותאורה דרמטית.', knobs: ['lines', 'levels', 'sat', 'smooth'], def: { sat: 60, lines: 70, levels: 6, contrast: 25 } },
+    { id: 'vintage', name: 'קומיקס וינטג׳', group: 'פילטרים · קומיקס', desc: 'נייר מצהיב, הדפסה מוזזת ונקודות צבע של שנות ה-50.', knobs: ['lines', 'levels', 'dots', 'sat'], def: { sat: 85, dots: 5 } },
+    { id: 'manga', name: 'מנגה', group: 'פילטרים · קומיקס', desc: 'שחור-לבן עם רשתות גוון יפניות.', knobs: ['lines', 'dots', 'smooth', 'contrast'], def: { dots: 5, contrast: 15 } },
+    { id: 'noir', name: 'נואר', group: 'פילטרים · קומיקס', desc: 'שחור ולבן חדים, רק האדום נשאר.', knobs: ['lines', 'contrast', 'smooth', 'sat'], def: { contrast: 30, sat: 140 } },
+    { id: 'caricature', name: 'קריקטורה', group: 'פילטרים · קריקטורה', desc: 'ראש מוגדל וקווים עבים. לוחצים על הפנים כדי למרכז.', knobs: ['warp', 'rad', 'lines', 'levels', 'sat'], def: { lines: 72, sat: 135, levels: 6 } },
+    { id: 'bighead', name: 'בובת ראש', group: 'פילטרים · קריקטורה', desc: 'הגזמה קיצונית של הפנים, בסגנון אנימציה.', knobs: ['warp', 'rad', 'lines', 'sat'], def: { warp: 85, rad: 0.36, lines: 55, sat: 140 } },
+    { id: 'cel', name: 'אנימציה', group: 'פילטרים · קריקטורה', desc: 'צביעה חלקה בשכבות, כמו פריים מסרט מצויר.', knobs: ['lines', 'levels', 'sat', 'smooth'], def: { levels: 4, sat: 135, lines: 45, smooth: 4 } },
+    { id: 'popart', name: 'פופ-ארט', group: 'פילטרים · פופ', desc: 'צהוב, אדום וכחול עם נקודות בן-דיי.', knobs: ['lines', 'dots', 'contrast'], def: { dots: 7, lines: 70 } },
+    { id: 'warhol', name: 'ארבעה צבעים', group: 'פילטרים · פופ', desc: 'ארבעה עותקים בפלטות שונות, כמו פוסטר משי.', knobs: ['levels', 'contrast', 'smooth'], def: { levels: 4, contrast: 20 } },
+    { id: 'riso', name: 'ריזוגרף', group: 'פילטרים · פופ', desc: 'שני צבעי דיו, גרעין והזזת הדפסה.', knobs: ['contrast', 'dots', 'bright'], def: { dots: 4 } },
+    { id: 'neon', name: 'ניאון', group: 'פילטרים · פופ', desc: 'קווי אור זוהרים על רקע לילה.', knobs: ['lines', 'sat', 'smooth'], def: { lines: 65, sat: 160 } },
+    { id: 'pencil', name: 'רישום עיפרון', group: 'פילטרים · ציור יד', desc: 'עיפרון רך על נייר שרטוט.', knobs: ['lines', 'contrast', 'bright'], def: { contrast: 0 } },
+    { id: 'colorsketch', name: 'סקיצה צבעונית', group: 'פילטרים · ציור יד', desc: 'קווי עיפרון עם שטיפת צבע עדינה.', knobs: ['lines', 'sat', 'smooth'], def: { sat: 95 } },
+    { id: 'ink', name: 'עט ודיו', group: 'פילטרים · ציור יד', desc: 'קווקווים צולבים בעט, כמו באיור עיתון.', knobs: ['lines', 'dots', 'contrast'], def: { dots: 5, contrast: 15 } },
+    { id: 'watercolor', name: 'צבעי מים', group: 'פילטרים · ציור יד', desc: 'כתמי צבע רכים, שוליים כהים ונייר מחוספס.', knobs: ['sat', 'smooth', 'lines'], def: { smooth: 4, lines: 30, sat: 110 } },
+    { id: 'linocut', name: 'חיתוך לינו', group: 'פילטרים · ציור יד', desc: 'הדפס חיתוך בצבע אחד עם סימני מפסלת.', knobs: ['contrast', 'dots', 'bright'], def: { dots: 6, contrast: 20 } },
+    { id: 'pixel', name: 'פיקסל-ארט', group: 'פילטרים · דיגיטלי', desc: 'פיקסלים גדולים ופלטה מוגבלת, כמו משחק ישן.', knobs: ['dots', 'levels', 'sat'], def: { dots: 9, levels: 4, sat: 125 } },
+    { id: 'blueprint', name: 'שרטוט', group: 'פילטרים · דיגיטלי', desc: 'קווים לבנים על נייר שרטוט כחול.', knobs: ['lines', 'smooth'], def: { lines: 55 } }
   ];
 
   var BY_ID = {};
@@ -707,8 +707,22 @@
     });
   }
 
+  /* הגזמת קריקטורה על תמונה, לפני שהיא נכנסת למודל */
+  function warp(src, params, max) {
+    var c = fromSource(src, max || BASE);
+    var p = paramsFor('caricature', params);
+    return toCanvas(bulge(planes(c), p.cx, p.cy, p.rad, p.warp));
+  }
+
+  /* סגנונות נוספים (הרשתות הנוירוניות) נרשמים מבחוץ */
+  function register(style, atStart) {
+    if (BY_ID[style.id]) return;
+    BY_ID[style.id] = style;
+    if (atStart) STYLES.splice(atStart === true ? 0 : atStart, 0, style); else STYLES.push(style);
+  }
+
   window.ComicFX = {
     STYLES: STYLES, KNOBS: KNOBS, DEFAULTS: DEFAULTS, byId: BY_ID,
-    paramsFor: paramsFor, render: render, renderAsync: renderAsync
+    paramsFor: paramsFor, render: render, renderAsync: renderAsync, warp: warp, register: register
   };
 })();

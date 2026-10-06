@@ -610,7 +610,7 @@
       tx: x + w * 0.25, ty: y + h * 1.45,
       text: d.text, font: d.font, size: Math.round(page.w * (type === 'caption' ? 0.024 : 0.034)),
       color: d.color, fill: d.fill, fill2: '#ff3d2e', stroke: '#111114', rot: type === 'sfx' ? -8 : 0,
-      shape: 'circle', style: 'classic', params: {}, zoom: 1, ox: 0, oy: 0, keep: type === 'photo'
+      shape: 'circle', style: 'nn-portrait', params: {}, zoom: 1, ox: 0, oy: 0, keep: type === 'photo'
     };
   }
 
@@ -629,7 +629,7 @@
     };
   }
 
-  function newPanel() { return { img: null, style: 'classic', params: {}, zoom: 1, ox: 0, oy: 0, bg: '#ffffff' }; }
+  function newPanel() { return { img: null, style: 'nn-comic', params: {}, zoom: 1, ox: 0, oy: 0, bg: '#ffffff' }; }
 
   function setLayout(page, layoutId) {
     var L = LAYOUT_BY_ID[layoutId];

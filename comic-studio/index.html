@@ -42,10 +42,11 @@
     <div class="lib-hero" id="lib-hero">
       <div class="hero-copy">
         <h1>מהצילום שלכם<br><span class="mis" data-text="לעמוד קומיקס.">לעמוד קומיקס.</span></h1>
-        <p>מעלים עד 100 תמונות, מסמנים את אלה שנכנסות לסיפור, ומלבישים עליהן 20 סגנונות ציור: קומיקס, מנגה, קריקטורה, פופ-ארט, צבעי מים ועוד. אחר כך מרכיבים עמוד עם פאנלים ובועות דיבור ומורידים PNG או PDF.</p>
+        <p>מעלים עד 100 תמונות, מסמנים את אלה שנכנסות לסיפור, ומציירים אותן מחדש ברשתות נוירוניות שאומנו על ציורי קומיקס, אנימה וקריקטורה, או ב-20 פילטרים מהירים. אחר כך מרכיבים עמוד עם פאנלים ובועות דיבור ומורידים PNG או PDF.</p>
         <ul class="hero-facts">
-          <li><b>20</b> סגנונות שרצים בדפדפן</li>
-          <li><b>12</b> סגנונות AI עם מפתח Gemini</li>
+          <li><b>10</b> סגנונות AI שרצים במחשב שלכם</li>
+          <li><b>20</b> פילטרים מהירים</li>
+          <li><b>12</b> סגנונות נוספים עם Gemini</li>
           <li><b>18</b> תבניות עמוד, כולל חיתוכים באלכסון</li>
         </ul>
       </div>
@@ -124,15 +125,15 @@
 
         <div class="styles card">
           <div class="styles-head">
-            <h2>20 סגנונות לאותה תמונה</h2>
-            <p class="muted small">התצוגות נוצרות בדפדפן, אחת אחרי השנייה.</p>
+            <h2>כל הסגנונות לאותה תמונה</h2>
+            <p class="muted small">סגנונות ה-AI מורידים מודל בפעם הראשונה (9–11MB) ונשמרים בדפדפן. התמונות לא יוצאות מהמחשב.</p>
           </div>
           <div id="style-groups"></div>
         </div>
 
         <div class="ai card" id="ai-card">
           <div class="styles-head">
-            <h2>ציור מחדש עם AI</h2>
+            <h2>ציור מחדש עם Gemini</h2>
             <p class="muted small" id="ai-state">דורש מפתח Gemini אישי. התמונה נשלחת ל-Google רק כשלוחצים.</p>
           </div>
           <div class="chips" id="ai-chips" role="radiogroup" aria-label="סגנון AI"></div>
@@ -310,6 +311,7 @@
 
 <script src="js/store.js"></script>
 <script src="js/fx.js"></script>
+<script src="js/neural.js"></script>
 <script src="js/page.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/app.js"></script>
