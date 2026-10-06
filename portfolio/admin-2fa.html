@@ -49,11 +49,10 @@ small, .muted { color: var(--mist); }
       <li>בדיקה שהכול תקין: הקלידו כאן את הקוד שהאפליקציה מציגה.
         <div class="row" style="margin-top:10px"><input id="code" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="000000"><span id="res"></span></div>
       </li>
-      <li>ב־GitHub: <b>Settings ← Secrets and variables ← Actions ← הסוד SPIDER</b>, מוסיפים שורה חדשה (במקום XXXX המפתח עצמו):
-        <code style="font-size:15px">ADMIN_TOTP_SECRET=XXXX</code></li>
-      <li>מריצים שוב את ההתקנה (Actions ← Deploy agents to n8n Cloud ← Run workflow). מעכשיו הכניסה כמנהל דורשת גם קוד מהאפליקציה.</li>
+      <li>ב־GitHub, <a target="_blank" rel="noopener" href="https://github.com/devopsdevopshaim-wq/devops-hub/settings/secrets/actions/new">יצירת סוד חדש</a>: בשדה <b>Name</b> כתבו <code class="inline">ADMIN_TOTP_SECRET</code>, ובשדה <b>Secret</b> הדביקו את המפתח (בלי רווחים). זה סוד נפרד, לא נוגעים בסוד SPIDER.</li>
+      <li>חזרו אליי ותכתבו "הוספתי". אני מריץ את ההתקנה, ומעכשיו הכניסה כמנהל דורשת גם קוד מהאפליקציה.</li>
     </ol>
-    <p class="muted" style="margin-top:14px"><small>חשוב: שמרו את המפתח גם במקום בטוח אחר (למשל מנהל סיסמאות), למקרה שהטלפון ילך לאיבוד. אם ננעלתם בחוץ, מוחקים את השורה מהסוד ומריצים את ההתקנה שוב.</small></p>
+    <p class="muted" style="margin-top:14px"><small>חשוב: שמרו את המפתח גם במקום בטוח אחר (למשל מנהל סיסמאות), למקרה שהטלפון ילך לאיבוד. אם ננעלתם בחוץ, מוחקים את הסוד ADMIN_TOTP_SECRET ומריצים את ההתקנה שוב.</small></p>
   </div>
 </main>
 <script>
