@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="he" dir="rtl" data-require-login>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>כניסה ללקוחות · SPIDER</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f0d24">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="img/icon-192.png">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=Assistant:wght@400;500;600;700&family=Bellefair&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/auth.css">
+<style>
+.cp { max-width: 980px; margin: 0 auto; padding: 28px 18px 60px; }
+.cp h1 { font: 400 clamp(34px, 6vw, 56px)/1.05 var(--display, Bellefair, serif); margin: 8px 0 6px; }
+.cp .lead { color: var(--mist, #a9a4cc); margin: 0 0 26px; }
+.cp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.cp-card { display: flex; flex-direction: column; gap: 8px; padding: 18px; border-radius: 18px; background: var(--deep, #17143a); border: 1px solid var(--line, rgba(241, 238, 252, .12)); color: inherit; text-decoration: none; transition: transform .2s, border-color .2s; }
+.cp-card:hover, .cp-card:focus-visible { transform: translateY(-3px); border-color: var(--brass, #e0b25a); }
+.cp-card .ic { font-size: 30px; line-height: 1; }
+.cp-card b { font-size: 19px; }
+.cp-card p { margin: 0; color: var(--mist, #a9a4cc); font-size: 15px; line-height: 1.5; flex: 1; }
+.cp-card span.go { font-weight: 700; color: var(--brass-2, #e0b25a); }
+.cp-empty { padding: 22px; border-radius: 18px; border: 1px dashed var(--line, rgba(241, 238, 252, .2)); }
+.cp-foot { margin-top: 40px; color: var(--mist, #a9a4cc); font-size: 15px; display: flex; gap: 10px 20px; flex-wrap: wrap; align-items: center; }
+.cp-foot a { color: var(--brass-2, #e0b25a); }
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand spider-brand" href="client.html" aria-label="SPIDER"><img src="img/spider.svg" alt="" width="34" height="34"><span class="wordmark">SPIDER</span></a>
+  </div>
+</header>
+<main class="cp">
+  <h1 id="hello">שלום</h1>
+  <p class="lead" id="lead"></p>
+  <div class="cp-grid" id="sites" aria-live="polite"></div>
+  <div class="cp-foot">
+    <span>חיים קריספין · <a href="tel:+972544979771" dir="ltr">054-4979771</a></span>
+    <a href="https://wa.me/972544979771?text=%D7%94%D7%99%D7%99%2C%20%D7%90%D7%A0%D7%99%20%D7%9C%D7%A7%D7%95%D7%97%20%D7%91%D7%A1%D7%A4%D7%99%D7%99%D7%93%D7%A8" target="_blank" rel="noopener">שאלה? וואטסאפ</a>
+  </div>
+</main>
+<script src="js/auth.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) { if (k === 'text') n.textContent = attrs[k]; else if (attrs[k] != null) n.setAttribute(k, attrs[k]); });
+    (kids || []).forEach(function (c) { n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return n;
+  }
+  window.HasadnaAuth.ready.then(function (s) {
+    var admin = s.role === 'admin';
+    $('hello').textContent = admin ? 'תצוגת מנהל' : 'שלום' + (s.name ? ' ' + s.name : '');
+    var until = s.expiresAt ? 'הגישה שלך בתוקף עד ' + new Date(s.expiresAt).toLocaleDateString('he-IL') + '.' : '';
+    $('lead').textContent = admin ? 'כך הדף נראה ללקוחות. כאן מוצגים כל האתרים.' : 'האתרים שנפתחו עבורך. ' + until;
+    fetch('projects.json').then(function (r) { return r.json(); }).then(function (d) {
+      var mine = d.projects.filter(function (p) { return !p.pending && p.url && (s.sites === 'all' || (s.sites || []).indexOf(p.id) >= 0); });
+      var box = $('sites');
+      if (!mine.length) { box.className = 'cp-empty'; box.textContent = 'עוד לא נפתחו לך אתרים. כתבו לי בוואטסאפ ואסדר את זה.'; return; }
+      mine.forEach(function (p) {
+        box.appendChild(el('a', { class: 'cp-card', href: p.url, target: '_blank', rel: 'noopener' }, [
+          el('span', { class: 'ic', 'aria-hidden': 'true', text: p.icon || '✦' }),
+          el('b', { text: p.title }),
+          el('p', { text: (p.desc || '').length > 140 ? p.desc.slice(0, 137) + '…' : p.desc || '' }),
+          el('span', { class: 'go', text: 'פתיחה ←' })
+        ]));
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

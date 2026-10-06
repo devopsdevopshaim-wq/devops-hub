@@ -143,7 +143,7 @@
     api('client-save', { payload: JSON.stringify(Object.assign({}, c, { oldEmail: null, password: pw })) }).then(function (j) {
       if (!j.ok) { alert('לא נשמר: ' + j.error); return; }
       var msg = 'שלום ' + (c.name || '') + ', נפתחה לך גישה ל־SPIDER' + (c.expiresAt ? ' עד ' + date(c.expiresAt) : '') + '.\n' +
-        'כניסה: ' + SITE + '\nמייל: ' + c.email + '\nסיסמה: ' + pw + '\n' +
+        'כניסה: ' + SITE + 'client.html\nמייל: ' + c.email + '\nסיסמה: ' + pw + '\n' +
         'המכשיר הראשון שנכנס נרשם אוטומטית. מכשיר נוסף יחכה לאישור שלי.';
       load();
       var url = 'https://wa.me/' + waNum(c.phone) + '?text=' + encodeURIComponent(msg);

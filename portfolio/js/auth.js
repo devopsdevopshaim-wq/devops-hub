@@ -237,7 +237,8 @@
       .catch(function () { return { enabled: true }; })
       .then(function (cfg) {
         // ?login=1 tries the sign-in before it is switched on for everyone
-        if (cfg.enabled === false && !/[?&]login=1\b/.test(location.search)) { Auth.open = true; root.classList.remove('locked'); resolveReady({ role: 'admin', name: '', sites: 'all', open: true }); return; }
+        // a page marked data-require-login (the clients' page) always asks for sign-in, whatever the switch says
+        if (cfg.enabled === false && !root.hasAttribute('data-require-login') && !/[?&]login=1\b/.test(location.search)) { Auth.open = true; root.classList.remove('locked'); resolveReady({ role: 'admin', name: '', sites: 'all', open: true }); return; }
         check();
       });
   }
