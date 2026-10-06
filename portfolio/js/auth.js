@@ -82,7 +82,7 @@
       '<div class="gate-card">' +
         '<a class="brand spider-brand" href="services.html" aria-label="SPIDER"><img src="img/spider.svg" alt="" width="40" height="40"><span class="wordmark">SPIDER</span></a>' +
         '<h1 id="gate-title">' + (needAdmin ? 'כניסת מנהל' : 'כניסה') + '</h1>' +
-        '<p class="gate-lead" id="gate-lead">' + (needAdmin ? 'המסך הזה פתוח רק למנהל המערכת.' : 'נכנסים עם המייל והסיסמה שלכם. עוד אין סיסמה, או שכחתם? אפשר לקבל סיסמה ראשונית למייל. ממכשיר חדש הכניסה מחכה לאישור המנהל.') + '</p>' +
+        '<p class="gate-lead" id="gate-lead">' + (needAdmin ? 'המסך הזה פתוח רק למנהל המערכת.' : 'נכנסים עם המייל והסיסמה שלכם. עוד אין סיסמה, או שכחתם? אפשר לקבל סיסמה ראשונית למייל. ממכשיר חדש נשלחת אליכם סיסמה זמנית למייל.') + '</p>' +
         '<form class="gate-form" id="gate-pw" novalidate>' +
           '<label class="field"><span>מייל</span><input name="email" type="email" dir="ltr" autocomplete="username" required></label>' +
           '<label class="field"><span>סיסמה</span><input name="password" type="password" dir="ltr" autocomplete="current-password" required></label>' +
@@ -113,7 +113,8 @@
       'rate-limited': 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.',
       'bad-login': 'המייל או הסיסמה לא נכונים.',
       'bad-device': 'הדפדפן הזה לא מאפשר לשמור מזהה מכשיר. פתחו חלון רגיל (לא פרטי) ונסו שוב.',
-      'pending': 'המכשיר הזה חדש, והכניסה ממנו מחכה לאישור המנהל. שלחתי לו הודעה. אפשר גם לפנות אליו בוואטסאפ.',
+      'pending': 'המכשיר הזה חדש, והכניסה ממנו מחכה לאישור המנהל. אפשר גם לפנות אליו בוואטסאפ.',
+      'verify-device': 'זה מכשיר חדש. שלחנו למייל שלכם סיסמה זמנית. הקלידו אותה כאן בשדה הסיסמה, ובחרו אחר כך סיסמה חדשה. כך המכשיר הזה מאושר, בלי שאף אחד צריך לאשר.',
       'ip-blocked': 'הכתובת (IP) שממנה אתם מתחברים לא מאושרת. פנו למנהל.',
       'device-revoked': 'המכשיר הזה הוסר. היכנסו שוב.',
       'forbidden': 'הכניסה אפשרית רק מתוך האתר.',
@@ -168,6 +169,11 @@
         if (j.error === 'totp-needed') {
           g.querySelector('#gate-pw-totp').hidden = false; fpw.elements.totp.focus();
           fail('עוד צעד אחד: הקלידו את הקוד מאפליקציית האימות.');
+          return;
+        }
+        if (j.error === 'verify-device') {
+          fpw.elements.password.value = ''; fpw.elements.password.focus();
+          note(ERR['verify-device'] + (j.sent === false ? ' (אם לא הגיע מייל, נסו שוב בעוד שעה.)' : ' כדאי לבדוק גם בספאם.'));
           return;
         }
         if (j.error === 'bad-login' || j.error === 'wrong-totp') fpw.elements.password.value = '';

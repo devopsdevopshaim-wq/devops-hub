@@ -71,7 +71,7 @@
       <div><p class="eyebrow">הרשאות · n8n</p><h2>משתמשים ומנויים</h2></div>
       <div class="filters"><button class="btn btn-gold btn-sm" type="button" id="cl-new">+ לקוח חדש</button></div>
     </header>
-    <p class="hint">כל לקוח מקבל סיסמה ראשונית במייל, בוחר בכניסה הראשונה סיסמה משלו, ורואה רק את האתרים שסימנת לו, עד סוף המנוי. הסיסמה שהוא בחר לא נשמרת בצורה שאפשר לקרוא, ולכן אי אפשר לראות אותה: אפשר לבדוק סיסמה, או ליצור לו סיסמה ראשונית חדשה. המכשיר הראשון שלו מאושר לבד ואתה מקבל מייל. כל מכשיר חדש מחכה לאישור שלך כאן, ואפשר גם לנעול לקוח לכתובות IP מאושרות. כשהמנוי נגמר, הכניסה נחסמת לבד.</p>
+    <p class="hint">כל לקוח מקבל סיסמה ראשונית במייל, בוחר בכניסה הראשונה סיסמה משלו, ורואה רק את האתרים שסימנת לו, עד סוף המנוי. הסיסמה שהוא בחר לא נשמרת בצורה שאפשר לקרוא, ולכן אי אפשר לראות אותה: אפשר לבדוק סיסמה, או ליצור לו סיסמה ראשונית חדשה. המכשיר הראשון שלו נרשם לבד ואתה מקבל מייל. מכשיר חדש לא מחכה לך: הלקוח מקבל סיסמה זמנית ישירות למייל שלו, מאשר את עצמו ובוחר סיסמה חדשה, ואתה רק רואה את זה כאן. אפשר גם לנעול לקוח לכתובות IP. כשהמנוי נגמר, הכניסה נחסמת לבד.</p>
     <p class="add-error" id="cl-err" hidden></p>
     <dl class="kpis" id="cl-kpis"></dl>
     <div class="table-wrap">
@@ -134,7 +134,7 @@
         </div>
         <p class="muted" id="cl-pw-note"></p>
         <div class="field-row">
-          <label class="m-check"><input type="checkbox" name="ipLock"> <span>נעילה לכתובות IP <small>כתובת חדשה תחכה לאישור שלך. לא מומלץ ללקוח בנייד, כי הכתובת שלו משתנה.</small></span></label>
+          <label class="m-check"><input type="checkbox" name="ipLock"> <span>נעילה לכתובות IP <small>כתובת חדשה תדרוש אימות במייל של הלקוח. לא מומלץ ללקוח בנייד, כי הכתובת שלו משתנה.</small></span></label>
           <label class="field"><span>מכשירים מאושרים (מקסימום)</span><select name="maxDevices"><option>1</option><option>2</option><option selected>3</option><option>5</option><option>10</option></select></label>
         </div>
         <div class="cl-devices" id="cl-devices"></div>

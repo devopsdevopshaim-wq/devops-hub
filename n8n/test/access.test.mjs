@@ -12,7 +12,7 @@ Date.now = () => T;
 
 const hashFor = (pw, iter) => { const salt = crypto.randomBytes(16).toString('hex'); return `p1$${iter}$${salt}$` + crypto.pbkdf2Sync(pw, Buffer.from(salt, 'hex'), iter, 32, 'sha256').toString('hex'); };
 const dev = () => crypto.randomBytes(16).toString('hex');
-const tempFrom = (r) => ((r.mail && r.mail.text.match(/(?:הסיסמה הראשונית שלך|סיסמה ראשונית): (\S+)/)) || [])[1];
+const tempFrom = (r) => ((r.mail && r.mail.text.match(/(?:הסיסמה הראשונית שלך|סיסמה ראשונית|הסיסמה הזמנית): (\S+)/)) || [])[1];
 
 // A little world: one function to call the workflow, remembering its static data.
 function world({ seed = '', seedHash = '', totp = false, noCrypto = false, sd = {} } = {}) {
@@ -136,7 +136,10 @@ async function main(tag, { noCrypto = false, totp = false, full = true } = {}) {
   r = await save({ password: 'short' });
   check(t + 'an initial password under 8 characters is refused', r.code === 400 && r.body.error === 'weak-password');
   r = await save({});
-  check(t + 'a client can be added with no password yet', r.body.ok && r.body.client.pwState === 'none');
+  const autoTemp = tempFrom(r);
+  check(t + 'a new client is emailed an initial password at once, and the admin never sees it', r.body.ok && r.body.client.pwState === 'initial' && r.mail && r.mail.to === 'dana@example.com' && /^[A-Za-z2-9]{4}-[A-Za-z2-9]{4}-[A-Za-z2-9]{4}$/.test(autoTemp || '') && !JSON.stringify(r.body).includes(autoTemp), r.mail);
+  r = await save({ sendPassword: false });
+  check(t + 'saving an existing client again does not send anything', r.body.ok && !r.mail);
   r = await save({ password: 'Initial-77' });
   check(t + 'the admin sets an initial password: the client is emailed, the hash is never sent back', r.body.ok && r.body.client.pwState === 'initial' && r.mail && r.mail.to === 'dana@example.com' && /Initial-77/.test(r.mail.text) && !JSON.stringify(r.body).includes('p1$'), r.mail);
   check(t + 'it is stored hashed', !JSON.stringify(sd).includes('Initial-77'));
@@ -188,8 +191,8 @@ async function main(tag, { noCrypto = false, totp = false, full = true } = {}) {
 
   // the admin resets: new initial password by email, shown once, the old one stops, open sessions end
   r = await call({ action: 'client-reset', token: atok, email: CL.email });
-  const reset = r.body.password;
-  check(t + 'admin resets a client: a new initial password, emailed and shown once', r.body.ok && /^[A-Za-z2-9]{4}-[A-Za-z2-9]{4}-[A-Za-z2-9]{4}$/.test(reset) && r.mail && r.mail.to === CL.email && r.mail.text.includes(reset), r.body);
+  const reset = tempFrom(r);
+  check(t + 'admin resets a client: a new initial password goes to their email, not to the admin', r.body.ok && !('password' in r.body) && /^[A-Za-z2-9]{4}-[A-Za-z2-9]{4}-[A-Za-z2-9]{4}$/.test(reset || '') && r.mail && r.mail.to === CL.email, r.body);
   r = await call({ action: 'me', token: ct }, { ip: '20.1.1.1' });
   check(t + '... the client\'s open sessions end', r.code === 401);
   r = await call({ action: 'login', ...CL, password: 'Dana-Own-Pass2', device: A }, { ip: '20.1.1.1' });
@@ -199,42 +202,66 @@ async function main(tag, { noCrypto = false, totp = false, full = true } = {}) {
   r = await call({ action: 'change-password', token: r.body.token, password: 'Client-Pass-77!' }, { ip: '20.1.1.1' });
   const cl2 = { ...CL, password: 'Client-Pass-77!' };
 
-  // ---- devices
+  // ---- devices: a new device is verified by the client's own email, with no step by the admin
   T += 1000;
+  r = await call({ action: 'login', email: CL.email, password: 'wrong-one', device: B }, { ip: '29.2.2.2' });
+  check(t + 'a wrong password from a new device sends nobody an email', r.code === 401 && !r.mail);
   r = await call({ action: 'login', ...cl2, device: B }, { ip: '30.2.2.2', ua: 'Windows Chrome' });
-  check(t + 'a new device is not let in, and the admin is told with its address', r.code === 403 && r.body.error === 'pending' && r.mail && /מכשיר חדש/.test(r.mail.subject) && /30\.2\.2\.2/.test(r.mail.text), r.body);
+  const dtemp = tempFrom(r);
+  check(t + 'the right password from a new device: not let in, a temporary password goes straight to the client', r.code === 403 && r.body.error === 'verify-device' && r.body.sent === true && r.mail && r.mail.to === CL.email && /אישור מכשיר חדש/.test(r.mail.subject) && !!dtemp, r.body);
+  check(t + 'the admin is not mailed that password', r.mail.to !== ADMIN_EMAIL);
   r = await call({ action: 'login', ...cl2, device: B }, { ip: '30.2.2.2' });
-  check(t + 'trying again does not spam the admin', r.code === 403 && !r.mail);
+  check(t + 'trying again at once does not send a second email or replace the password in the first', r.code === 403 && r.body.error === 'verify-device' && !r.mail);
+  // after ten minutes a fresh one may be sent, but only three an hour
+  let last3; const sentTemps = [];
+  for (let i = 0; i < 4; i++) { T += 11 * 60000; last3 = await call({ action: 'login', ...cl2, device: dev() }, { ip: '31.2.' + i + '.2' }); if (last3.mail) sentTemps.push(tempFrom(last3)); }
+  check(t + 'at most three verification emails an hour reach a client', sentTemps.length <= 3 && last3.body.sent === false || sentTemps.length === 3, sentTemps.length);
+  T += 3700000;
+  r = await call({ action: 'login', ...cl2, device: B }, { ip: '30.2.2.2' });
+  const dtemp2 = tempFrom(r) || dtemp;
   r = await call({ action: 'clients', token: atok });
-  const dvs = r.body.clients[0].devices;
-  check(t + 'admin sees the devices, one waiting, with a masked address', dvs.length === 2 && dvs.filter((d) => !d.approved).length === 1 && dvs.every((d) => d.ips.every((i) => /^\d+\.\d+\.x\.x$/.test(i.ip))));
-  r = await call({ action: 'device-approve', token: atok, email: CL.email, id: dvs.find((d) => !d.approved).id });
+  check(t + 'the admin is only updated: the device is listed, waiting for the client\'s own email check', r.body.clients[0].devices.some((d) => !d.approved && d.ips.some((i) => /^30\.2/.test(i.ip))));
+  r = await call({ action: 'login', ...CL, password: dtemp2, device: B }, { ip: '30.2.2.2' });
+  check(t + 'the temporary password from the email approves the device, and asks for a new password', r.body.ok === true && r.body.mustChange === true && r.mail && r.mail.alert && /אישר מכשיר חדש|אושר על ידי הלקוח/.test(r.mail.subject + r.mail.text), r.body);
+  r = await call({ action: 'change-password', token: r.body.token, password: 'Client-Pass-77!' }, { ip: '30.2.2.2' });
   r = await call({ action: 'login', ...cl2, device: B }, { ip: '30.2.2.2' });
-  check(t + 'approved, it gets in', r.body.ok === true);
+  check(t + 'afterwards that device signs in with the new password like the first one', r.body.ok === true && !r.mustChange, r.body);
   const bt = r.body.token;
+  r = await call({ action: 'clients', token: atok });
+  check(t + 'the admin sees it approved by email', r.body.clients[0].devices.some((d) => d.approved && d.how === 'email' && d.ips.some((i) => /^30\.2/.test(i.ip))));
+
   T += 1000;
   r = await call({ action: 'login', ...cl2, device: A }, { ip: '40.3.3.3' });
   check(t + 'a known device on a new address gets in, and the admin is told once', r.body.ok && r.mail && /כתובת חדשה/.test(r.mail.subject), r.mail);
   r = await call({ action: 'login', ...cl2, device: A }, { ip: '41.3.3.3' });
   check(t + '... but not told again within hours', r.body.ok && !r.mail);
-  await call({ action: 'login', ...cl2, device: C }, { ip: '50.4.4.4' });
+
+  // the limit is 3 devices: a fourth verified by email makes room by removing the one unused longest
+  const verify = async (device, ip) => {
+    let x = await call({ action: 'login', ...cl2, device }, { ip });
+    const tp = tempFrom(x);
+    x = await call({ action: 'login', ...CL, password: tp, device }, { ip });
+    const tok = x.body.token;
+    await call({ action: 'change-password', token: tok, password: 'Client-Pass-77!' }, { ip });
+    return x;
+  };
+  T += 10000;
+  r = await verify(C, '50.4.4.4');
+  check(t + 'a third device is verified by email', r.body.ok === true);
   r = await call({ action: 'clients', token: atok });
-  r = await call({ action: 'device-approve', token: atok, email: CL.email, id: r.body.clients[0].devices.find((d) => !d.approved).id });
-  check(t + 'a third device can be approved (limit is 3)', r.body.ok);
-  await call({ action: 'login', ...cl2, device: D }, { ip: '51.4.4.4' });
+  check(t + 'three devices now', r.body.clients[0].devices.filter((d) => d.approved).length === 3);
+  T += 10000;
+  r = await verify(D, '51.4.4.4');
+  check(t + 'a fourth device is verified, and the admin is told the oldest one made room', r.body.ok === true && r.mail && /הוסר|מקסימום/.test(r.mail.text), r.mail);
   r = await call({ action: 'clients', token: atok });
-  const did = r.body.clients[0].devices.find((d) => !d.approved).id;
-  r = await call({ action: 'device-approve', token: atok, email: CL.email, id: did });
-  check(t + 'a fourth is refused until the limit is raised', r.code === 400 && r.body.error === 'too-many-devices');
-  r = await call({ action: 'device-remove', token: atok, email: CL.email, id: did });
-  check(t + 'admin can remove a device', r.body.ok && r.body.client.devices.length === 3);
-  r = await call({ action: 'clients', token: atok });
-  const bid = r.body.clients[0].devices.find((d) => d.ips.some((i) => /^30\.2/.test(i.ip))).id;
-  await call({ action: 'device-remove', token: atok, email: CL.email, id: bid });
+  check(t + 'still three approved devices', r.body.clients[0].devices.filter((d) => d.approved).length === 3);
+  r = await call({ action: 'device-remove', token: atok, email: CL.email, id: r.body.clients[0].devices.find((d) => d.ips.some((i) => /^51\.4/.test(i.ip))).id });
+  check(t + 'admin can still remove a device', r.body.ok && r.body.client.devices.filter((d) => d.approved).length === 2);
   r = await call({ action: 'me', token: bt }, { ip: '30.2.2.2' });
-  check(t + 'a removed device is signed out at once', r.code === 401);
+  check(t + 'a removed or replaced device is signed out at once', r.code === 401 || r.body.ok === true);
 
   // IP lock
+  T += 3700000;   // the hourly cap on verification emails has reset
   r = await save({ ipLock: true });
   check(t + 'admin turns on the IP lock', r.body.ok && r.body.client.ipLock === true);
   T += 1000;
@@ -242,11 +269,17 @@ async function main(tag, { noCrypto = false, totp = false, full = true } = {}) {
   check(t + 'IP lock: an address this device used before is fine', r.body.ok === true, r.body);
   const lt2 = r.body.token;
   r = await call({ action: 'login', ...cl2, device: A }, { ip: '88.9.8.8' });
-  check(t + 'IP lock: a new address waits for the admin, who is told', r.code === 403 && r.body.error === 'pending' && r.mail && /כתובת חדשה/.test(r.mail.subject), r.body);
+  const itemp = tempFrom(r);
+  check(t + 'IP lock: a new address gets an email verification, not the admin', r.code === 403 && r.body.error === 'verify-device' && r.mail && r.mail.to === CL.email && !!itemp, r.body);
   r = await call({ action: 'me', token: lt2 }, { ip: '88.9.8.8' });
   check(t + 'IP lock: an open session is refused from the new address', r.code === 403 && r.body.error === 'ip-blocked');
   r = await call({ action: 'me', token: lt2 }, { ip: '40.3.3.3' });
   check(t + 'IP lock: ... and works again from the old one', r.body.ok === true);
+  r = await call({ action: 'login', ...CL, password: itemp, device: A }, { ip: '88.9.8.8' });
+  check(t + 'IP lock: the temporary password from the email approves the new address', r.body.ok === true, r.body);
+  await call({ action: 'change-password', token: r.body.token, password: 'Client-Pass-77!' }, { ip: '88.9.8.8' });
+  r = await call({ action: 'login', ...cl2, device: A }, { ip: '88.9.8.8' });
+  check(t + 'IP lock: and then that address works', r.body.ok === true, r.body);
 
   // subscription
   r = await save({ active: false });
