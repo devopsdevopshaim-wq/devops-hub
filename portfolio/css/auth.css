@@ -34,3 +34,9 @@
 
 #gate-forgot { width: 100%; margin-top: 4px; }
 .gate-sent { margin: 0; padding: 10px 14px; border-radius: 12px; background: rgba(98, 220, 184, .1); border: 1px solid rgba(98, 220, 184, .3); }
+
+/* clients: a welcome line under the menu, and the small password button in the user chip */
+.welcome { padding: 10px 18px; text-align: center; font-size: 15px; color: var(--porcelain, #f1eefc); background: linear-gradient(90deg, rgba(139, 123, 255, .16), rgba(224, 178, 90, .12)); border-bottom: 1px solid var(--line, rgba(241, 238, 252, .12)); }
+.user-chip .chip-pw { opacity: .85; }
+.pw-dialog { z-index: 90; }
+.user-chip .chip-pw:hover { background: rgba(139, 123, 255, .28); }
