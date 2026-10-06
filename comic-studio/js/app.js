@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var FX = window.ComicFX, PG = window.ComicPage, AI = window.ComicAI, DB = window.ComicStore, NN = window.ComicNeural;
+  var FX = window.ComicFX, PG = window.ComicPage, AI = window.ComicAI, DB = window.ComicStore, NN = window.ComicNeural, MO = window.ComicMotion;
   var MAX_IMAGES = 100;
   var STORE_MAX = 2000;     /* הצד הארוך של צילום שנשמר */
   var EXPORT_MAX = 2000;    /* רזולוציית העיבוד בייצוא */
@@ -200,6 +200,7 @@
 
   /* ---------- ניווט ---------- */
   function show(view) {
+    if (view !== state.view) stopMotion();
     state.view = view;
     ['library', 'lab', 'page'].forEach(function (v) {
       $('view-' + v).hidden = v !== view;
@@ -334,6 +335,7 @@
     if (!state.labId || !imageById(state.labId)) state.labId = ids[0] || null;
     renderPickList();
     renderAiChips();
+    renderMotionChips();
     $('stage-empty').hidden = !!state.labId;
     $('stage-inner').hidden = !state.labId;
     if (state.labId) { renderStyleThumbs(); renderLab(); }
@@ -436,8 +438,9 @@
       lab.appendChild(r);
       box.appendChild(lab);
     });
-    if (!compact && st.knobs.indexOf('warp') >= 0) box.appendChild(el('p', 'muted small knob-note', 'לוחצים על הפנים בתמונה כדי למרכז את ההגזמה.'));
+    if (!compact && centerable(styleId)) box.appendChild(el('p', 'muted small knob-note', st.center ? 'לוחצים על התמונה כדי לקבוע את מרכז הפעולה.' : 'לוחצים על הפנים בתמונה כדי למרכז את ההגזמה.'));
   }
+  function centerable(id) { var st = FX.byId[id]; return Boolean(st && (st.center || (st.knobs || []).indexOf('warp') >= 0)); }
   function fmt(k, v) { return k === 'rad' ? Math.round(v * 100) + '%' : String(v); }
 
   function renderLab() {
@@ -463,7 +466,7 @@
     $('stage-busy').hidden = false;
     $('stage-busy').textContent = NN.isNeural(style) ? 'הרשת מציירת…' : 'מצייר…';
     var p = FX.paramsFor(style, params), cross = $('cross');
-    cross.hidden = FX.byId[style].knobs.indexOf('warp') < 0;
+    cross.hidden = !centerable(style);
     cross.style.left = (p.cx * 100) + '%';
     cross.style.top = (p.cy * 100) + '%';
     processNow({ img: id, style: style, params: params }, 1100).then(function (c) {
@@ -473,6 +476,7 @@
       out.getContext('2d').drawImage(c, 0, 0);
       $('stage-inner').style.aspectRatio = c.width + ' / ' + c.height;
       $('stage-busy').hidden = true;
+      if (motionFx) startMotion(motionFx);
       /* כרטיס הסגנון מקבל את התוצאה כתצוגה מקדימה */
       var card = document.querySelector('.scard[data-style="' + style + '"] .sframe');
       if (card && card.classList.contains('lazy')) {
@@ -507,7 +511,7 @@
     $('compare').addEventListener('input', function () { setCompare($('compare').value); });
     setCompare(100);
     $('stage-inner').addEventListener('click', function (e) {
-      if (e.target.id === 'compare' || FX.byId[state.labStyle].knobs.indexOf('warp') < 0) return;
+      if (e.target.id === 'compare' || !centerable(state.labStyle)) return;
       var r = $('stage-out').getBoundingClientRect();
       var p = labParams(state.labStyle);
       p.cx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
@@ -1112,6 +1116,112 @@
     toast('נוצרו ' + pages.length + (pages.length === 1 ? ' עמוד' : ' עמודים') + ' בסגנון ' + FX.byId[style].name + '. הציור לוקח כמה שניות.', 5000);
   }
 
+  /* ---------- הנפשה ---------- */
+  var motionPlayer = null, motionFx = null, videoPlayer = null, videoCanvas = null;
+
+  function renderMotionChips() {
+    var box = $('motion-chips');
+    if (box.childElementCount) return;
+    MO.EFFECTS.forEach(function (e) {
+      var b = el('button', 'chip', e.name);
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.dataset.motion = e.id;
+      b.setAttribute('aria-checked', 'false');
+      b.addEventListener('click', function () { startMotion(e.id); });
+      box.appendChild(b);
+    });
+  }
+
+  function startMotion(id) {
+    var out = $('stage-out');
+    if (!state.labId || !out.width || out.width < 4) { toast('בוחרים תמונה וסגנון, ואז אפקט הנפשה.'); return; }
+    motionFx = id;
+    document.querySelectorAll('[data-motion]').forEach(function (x) { x.setAttribute('aria-checked', String(x.dataset.motion === id)); });
+    $('motion-desc').textContent = MO.byId[id].desc;
+    $('motion-state').textContent = 'מכין את ההנפשה…';
+    var art = document.createElement('canvas');
+    art.width = out.width; art.height = out.height;
+    art.getContext('2d').drawImage(out, 0, 0);
+    loadImg(state.labId).then(function (photo) {
+      setTimeout(function () {
+        if (motionFx !== id) return;
+        var scene = MO.setup(id, { art: art, photo: photo }, MO.videoSize(art.width, art.height, 900));
+        if (!motionPlayer) motionPlayer = new MO.Player($('motion-canvas'));
+        motionPlayer.load(scene);
+        $('motion-empty').hidden = true;
+        $('motion-rec').disabled = false;
+        $('motion-stop').disabled = false;
+        $('motion-state').textContent = 'לולאה של ' + scene.dur + ' שניות.';
+      }, 30);
+    });
+  }
+
+  function stopMotion() {
+    if (motionPlayer) motionPlayer.stop();
+    if (videoPlayer) videoPlayer.stop();
+  }
+
+  function recordWith(player, stateEl, name, btn) {
+    btn.disabled = true;
+    btn.classList.add('loading');
+    stateEl.textContent = 'מקליט… 0%';
+    return player.record(1, function (f) { stateEl.textContent = 'מקליט… ' + Math.round(f * 100) + '%'; })
+      .then(function (r) {
+        download(r.blob, safeName(name) + '.' + r.ext);
+        stateEl.textContent = 'נשמר כקובץ ' + r.ext.toUpperCase() + '.';
+        toast('הווידאו ירד למחשב.');
+      })
+      .catch(function (e) { stateEl.textContent = e.message; toast(e.message, 6000); })
+      .then(function () { btn.disabled = false; btn.classList.remove('loading'); });
+  }
+
+  var VIDEO_SIZES = { story: [1080, 1920], post: [1080, 1350], wide: [1920, 1080] };
+
+  function openPageVideo() {
+    var pg = curPage();
+    toast('מכין את הסרטון…', 60000);
+    document.fonts.ready.then(function () { return renderPageCanvas(pg, 1); }).then(function (c) {
+      videoCanvas = c;
+      buildPageVideo();
+      $('video-dialog').showModal();
+      toast('הסרטון מוכן לצפייה.');
+    }).catch(function (e) { toast('לא הצלחתי להכין סרטון: ' + e.message, 6000); });
+  }
+
+  function buildPageVideo() {
+    var pg = curPage();
+    var rects = PG.computePanels(pg).map(PG.bbox);
+    var scene = MO.pageScene(videoCanvas, rects, { size: VIDEO_SIZES[$('video-fmt').value], perPanel: Number($('video-per').value) });
+    if (!videoPlayer) videoPlayer = new MO.Player($('video-canvas'));
+    videoPlayer.load(scene);
+    $('video-state').textContent = rects.length + ' פאנלים · ' + Math.round(scene.dur) + ' שניות';
+  }
+
+  function bindMotion() {
+    $('motion-stop').addEventListener('click', function () {
+      if (motionPlayer) motionPlayer.stop();
+      motionFx = null;
+      document.querySelectorAll('[data-motion]').forEach(function (x) { x.setAttribute('aria-checked', 'false'); });
+      $('motion-state').textContent = 'ההנפשה נעצרה.';
+      $('motion-rec').disabled = true;
+      $('motion-stop').disabled = true;
+    });
+    $('motion-rec').addEventListener('click', function () {
+      if (!motionPlayer || !motionFx) return;
+      var m = imageById(state.labId);
+      recordWith(motionPlayer, $('motion-state'), m.name + ' - ' + MO.byId[motionFx].name, $('motion-rec'));
+    });
+    $('exp-video').addEventListener('click', openPageVideo);
+    $('video-per').addEventListener('change', buildPageVideo);
+    $('video-fmt').addEventListener('change', buildPageVideo);
+    $('video-rec').addEventListener('click', function () {
+      if (!videoPlayer) return;
+      recordWith(videoPlayer, $('video-state'), (curPage().title.text || 'comic') + ' - סרטון', $('video-rec'));
+    });
+    $('video-dialog').addEventListener('close', function () { if (videoPlayer) videoPlayer.stop(); });
+  }
+
   /* ---------- ייצוא ---------- */
   function renderPageCanvas(pg, scale) {
     var refs = pg.panels.filter(function (p) { return p.img && imageById(p.img); })
@@ -1190,6 +1300,7 @@
     bindAiDialog();
     bindPageControls();
     bindInspector();
+    bindMotion();
     updateAiState();
 
     Promise.all([DB.all('images'), DB.get('meta', 'state'), DB.get('projects', 'current')]).then(function (r) {

@@ -5,7 +5,8 @@
 
   var DEFAULTS = {
     lines: 60, levels: 5, dots: 6, sat: 120, smooth: 3,
-    bright: 0, contrast: 10, warp: 55, cx: 0.5, cy: 0.36, rad: 0.42
+    bright: 0, contrast: 10, warp: 55, cx: 0.5, cy: 0.36, rad: 0.42,
+    brush: 8, texture: 55, drips: 45, amount: 60
   };
 
   /* כל סגנון: שם, משפחה, תיאור קצר, אילו מחוונים רלוונטיים ועקיפת ברירות מחדל */
@@ -44,7 +45,11 @@
     bright: { label: 'בהירות', min: -50, max: 50, step: 1 },
     contrast: { label: 'ניגודיות', min: -40, max: 60, step: 1 },
     warp: { label: 'הגזמה', min: 0, max: 100, step: 1 },
-    rad: { label: 'גודל אזור', min: 0.15, max: 0.7, step: 0.01 }
+    rad: { label: 'גודל אזור', min: 0.15, max: 0.7, step: 0.01 },
+    brush: { label: 'גודל מכחול', min: 2, max: 24, step: 1 },
+    texture: { label: 'מרקם', min: 0, max: 100, step: 1 },
+    drips: { label: 'טפטופים', min: 0, max: 100, step: 1 },
+    amount: { label: 'עוצמת אפקט', min: 0, max: 100, step: 1 }
   };
 
   function paramsFor(styleId, p) {
@@ -715,7 +720,8 @@
   }
 
   /* סגנונות נוספים (הרשתות הנוירוניות) נרשמים מבחוץ */
-  function register(style, atStart) {
+  function register(style, atStart, fn) {
+    if (fn) R[style.id] = fn;
     if (BY_ID[style.id]) return;
     BY_ID[style.id] = style;
     if (atStart) STYLES.splice(atStart === true ? 0 : atStart, 0, style); else STYLES.push(style);
@@ -723,6 +729,13 @@
 
   window.ComicFX = {
     STYLES: STYLES, KNOBS: KNOBS, DEFAULTS: DEFAULTS, byId: BY_ID,
-    paramsFor: paramsFor, render: render, renderAsync: renderAsync, warp: warp, register: register
+    paramsFor: paramsFor, render: render, renderAsync: renderAsync, warp: warp, register: register,
+    /* כלים לקבצי אפקטים נוספים */
+    util: {
+      canvasOf: canvasOf, ctx2d: ctx2d, rng: rng, clamp01: clamp01, clamp255: clamp255, smoothstep: smoothstep,
+      blur: blur, boxBlur: boxBlur, dilate: dilate, planes: planes, lumOf: lumOf, toCanvas: toCanvas, grayCanvas: grayCanvas,
+      rgb2hsv: rgb2hsv, hsv2rgb: hsv2rgb, hex: hex, kuwahara: kuwahara, inkLines: inkLines, multiplyInk: multiplyInk,
+      halftone: halftone, grain: grain, paperTex: paperTex, satAdjust: satAdjust, posterHSV: posterHSV, bulge: bulge, R: R
+    }
   };
 })();
