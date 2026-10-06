@@ -86,7 +86,7 @@ const nSessions = (e) => Object.values(sd.sessions).filter((s) => s.email === e)
 const view = (c) => { const { pw, tmp, ...rest } = c; return { ...rest, hasPassword: !!pw || tempOk(c), pwState: pwState(c), tmpExp: tempOk(c) ? new Date(c.tmp.exp).toISOString() : null, sessions: nSessions(c.email), failed: (sd.fails[c.email] || []).filter((t) => now - t < HOUR).length, activeNow: active(c), daysLeft: c.expiresAt ? Math.ceil((Date.parse(c.expiresAt) - now) / DAY) : null }; };
 const adminView = () => ({ email: ADMIN_EMAIL, pwState: pwState(sd.admin), pwAt: sd.admin.pwAt || null, lastLogin: sd.admin.lastLogin || null, devices: (sd.adminDevices || []).length, sessions: nSessions(ADMIN_EMAIL), tmpExp: tempOk(sd.admin) ? new Date(sd.admin.tmp.exp).toISOString() : null });
 // an initial password (replaces the old one when `revoke`): returns it in clear once, keeps only its hash
-const giveTemp = (a, plain, ms, by, revoke) => { a.tmp = { h: pwHash(plain), exp: now + ms }; a.pwBy = a.pwBy || by; if (revoke) { a.pw = null; a.pwBy = by; } a.pwAt = new Date(now).toISOString(); };
+const giveTemp = (a, plain, ms, by, revoke) => { a.tmp = { h: pwHash(plain), exp: now + ms, at: now }; a.pwBy = a.pwBy || by; if (revoke) { a.pw = null; a.pwBy = by; } a.pwAt = new Date(now).toISOString(); };
 const closeSessions = (e, except) => { for (const [t, s] of Object.entries(sd.sessions)) if (s.email === e && t !== except) delete sd.sessions[t]; };
 const newSession = (e, role, exp, extra) => { const token = rnd(24); sd.sessions[sha256hex(token)] = { email: e, role, exp, at: now, ...(extra || {}) }; return token; };
 
@@ -101,7 +101,7 @@ function checkDevice(c, devHash, register) {
   if (!d) {
     if (register !== true) return { status: 'pending', news };   // only a login may add a device; a page load may not
     const first = c.devices.length === 0;   // the first device is trusted: the admin gave the password to its owner
-    d = { id: devHash, ua: UA, first: iso, last: iso, approved: first, ips: [] };
+    d = { id: devHash, ua: UA, first: iso, last: iso, approved: first, how: first ? 'first' : '', ips: [] };
     c.devices.push(d);
     if (c.devices.length > 20) { const i = c.devices.findIndex((x) => !x.approved); c.devices.splice(i >= 0 ? i : 0, 1); }
     news = first ? 'first-device' : 'new-device';
@@ -117,6 +117,22 @@ function checkDevice(c, devHash, register) {
   if (register) { d.last = iso; d.ua = UA || d.ua; if (r) r.last = iso; }
   const ok = d.approved && (!c.ipLock || (r && r.approved));
   return { status: ok ? 'ok' : 'pending', news, d };
+}
+// The emailed temporary password reaches only the owner's mailbox, so signing in with it approves this device (and address)
+// with no step by the admin. If the client is over their device limit, the device unused the longest makes room (its sessions end).
+function approveByMail(c, d) {
+  const others = c.devices.filter((x) => x.approved && x !== d);
+  let evicted = null;
+  if (!d.approved && others.length >= (c.maxDevices || DEFAULT_MAX_DEVICES)) {
+    others.sort((x, y) => Date.parse(x.last) - Date.parse(y.last));
+    evicted = others[0];
+    c.devices = c.devices.filter((x) => x !== evicted);
+    for (const [t, s] of Object.entries(sd.sessions)) if (s.email === c.email && s.dev === evicted.id) delete sd.sessions[t];
+  }
+  if (!d.approved) { d.approved = true; d.how = 'email'; }
+  const r = d.ips.find((x) => x.k === IPK);
+  if (r) r.approved = true;
+  return evicted;
 }
 function deviceMail(c, news) {
   const who = `${c.name || c.email} (${c.email})`;
@@ -193,10 +209,29 @@ switch (b.action) {
     if (!active(c)) { log('כניסה, מנוי לא פעיל', e); return out({ ok: false, error: 'inactive' }, 403); }
     if (!/^[a-f0-9]{32}$/.test(dev)) return out({ ok: false, error: 'bad-device' }, 400);
     const dh = sha256hex('dev:' + dev);
-    const r = checkDevice(c, dh, true);
-    const mail = r.news ? deviceMail(c, r.news) : null;
-    if (r.news) log(r.news === 'first-device' ? 'מכשיר ראשון' : r.news === 'new-device' ? 'מכשיר חדש ממתין' : r.news === 'blocked-ip' ? 'כתובת חדשה ממתינה' : 'כתובת חדשה', e);
-    if (r.status !== 'ok') return out({ ok: false, error: 'pending', renew: RENEW }, 403, mail);
+    let r = checkDevice(c, dh, true);
+    let mail = r.news ? deviceMail(c, r.news) : null;
+    let verified = null;
+    if (r.status !== 'ok' && viaTemp) {
+      // a new device (or address) reached with the emailed temporary password: the owner proved their mailbox, nobody else needs to approve
+      verified = { evicted: approveByMail(c, r.d) };
+      r = { status: 'ok', news: '', d: r.d };
+      mail = alert('מכשיר חדש אושר על ידי הלקוח', `${c.name || c.email} (${c.email}) אישר מכשיר חדש בעצמו, עם סיסמה זמנית שנשלחה למייל שלו.\nמכשיר: ${UA || 'לא ידוע'}${verified.evicted ? '\n(המכשיר שלא היה בשימוש הכי הרבה זמן הוסר, כי הגיעו למקסימום ' + (c.maxDevices || DEFAULT_MAX_DEVICES) + ' מכשירים)' : ''}`);
+      log('מכשיר אושר במייל' + (verified.evicted ? ' (מכשיר ישן הוסר)' : ''), e);
+    } else if (r.news) log(r.news === 'first-device' ? 'מכשיר ראשון' : r.news === 'new-device' ? 'מכשיר חדש, נשלח אימות למייל' : r.news === 'blocked-ip' ? 'כתובת חדשה, נשלח אימות למייל' : 'כתובת חדשה', e);
+    if (r.status !== 'ok') {
+      // the right password from somewhere new: a temporary password goes straight to the client's email (the admin is only updated in the system)
+      // one that was sent in the last 10 minutes is still good: trying again must not replace the password the owner is about to type
+      const already = tempOk(c) && c.tmp.at && now - c.tmp.at < 10 * 60000 && c.pwBy !== undefined;
+      let sent = already;
+      if (!already && hit('devmail', e, 3, HOUR)) {
+        const temp = rndPassword();
+        giveTemp(c, temp, DAY, 'verify', false);
+        sent = true;
+        mail = mailTo(e, 'SPIDER · אישור מכשיר חדש', `שלום ${c.name || ''},\n\nמישהו (כנראה אתה) נכנס ל־SPIDER ממכשיר חדש.\nכדי לאשר אותו, היכנס שוב מהמכשיר הזה והקלד כסיסמה את הסיסמה הזמנית: ${temp}\nאחרי הכניסה תבחר סיסמה חדשה משלך. הסיסמה הזמנית תקפה ליום אחד.\n\nאם זה לא אתה, אפשר להתעלם: בלי הסיסמה הזמנית אף אחד לא ייכנס, והסיסמה הקיימת שלך ממשיכה לעבוד.\n\nכניסה: ${LOGIN_URL}\n\nSPIDER · חיים קריספין · 054-4979771\n`);
+      } else mail = null;
+      return out({ ok: false, error: 'verify-device', sent }, 403, mail);
+    }
     sd.fails[lk] = [];
     if (!viaTemp) c.tmp = null;
     let exp = now + CLIENT_SESSION_DAYS * DAY;
@@ -283,6 +318,7 @@ switch (b.action) {
     if (!sd.clients[e] && Object.keys(sd.clients).length >= MAX_CLIENTS) return out({ ok: false, error: 'too-many-clients' }, 400);
     const newPw = String(p.password == null ? '' : p.password);
     if (newPw && (newPw.length < MIN_PASSWORD || newPw.length > 100)) return out({ ok: false, error: 'weak-password' }, 400);
+    const isNew = !sd.clients[e] && !(p.oldEmail && sd.clients[email(p.oldEmail)]);
     const old = p.oldEmail && email(p.oldEmail) !== e ? sd.clients[email(p.oldEmail)] : null;
     if (old) delete sd.clients[email(p.oldEmail)];
     const prev = sd.clients[e] || old || { createdAt: new Date(now).toISOString() };
@@ -300,9 +336,12 @@ switch (b.action) {
     if (newPw) giveTemp(sd.clients[e], newPw, TEMP_CLIENT_DAYS * DAY, 'admin', true);
     // a change in access applies at once: close the client's open sessions if they lost it, or got a new password
     if (!active(sd.clients[e]) || newPw) closeSessions(e);
-    log(newPw ? 'עדכון לקוח וסיסמה ראשונית' : 'עדכון לקוח', e);
-    const sent = newPw && p.notify !== false ? mailTo(e, 'SPIDER · הסיסמה הראשונית שלך',
-      `שלום ${line(p.name, 60)},\n\nנפתחה לך גישה ל־SPIDER.\nכניסה: ${LOGIN_URL}\nמייל: ${e}\nסיסמה ראשונית: ${newPw}\n\nבכניסה הראשונה תבחר סיסמה משלך. הסיסמה הראשונית תקפה ל־${TEMP_CLIENT_DAYS} ימים.\n\nSPIDER · חיים קריספין · 054-4979771\n`) : null;
+    log(newPw ? 'עדכון לקוח וסיסמה ראשונית' : isNew ? 'לקוח חדש, סיסמה ראשונית נשלחה למייל' : 'עדכון לקוח', e);
+    // a new client gets an initial password by email straight away, made here: it never passes through the admin
+    const plain = newPw || (isNew && p.sendPassword !== false ? rndPassword() : '');
+    if (plain && !newPw) giveTemp(sd.clients[e], plain, TEMP_CLIENT_DAYS * DAY, 'admin', true);
+    const sent = plain && p.notify !== false ? mailTo(e, 'SPIDER · הסיסמה הראשונית שלך',
+      `שלום ${line(p.name, 60)},\n\nנפתחה לך גישה ל־SPIDER.\nכניסה: ${LOGIN_URL}\nמייל: ${e}\nסיסמה ראשונית: ${plain}\n\nבכניסה הראשונה תבחר סיסמה משלך. הסיסמה הראשונית תקפה ל־${TEMP_CLIENT_DAYS} ימים.\n\nSPIDER · חיים קריספין · 054-4979771\n`) : null;
     return out({ ok: true, client: view(sd.clients[e]) }, 200, sent);
   }
 
@@ -319,7 +358,7 @@ switch (b.action) {
       log('מכשיר הוסר', c.email);
     } else {
       if (!d.approved && c.devices.filter((x) => x.approved).length >= (c.maxDevices || DEFAULT_MAX_DEVICES)) return out({ ok: false, error: 'too-many-devices' }, 400);
-      d.approved = true;
+      d.approved = true; d.how = 'admin';
       if (b.ip) { const r = d.ips.find((x) => x.k === String(b.ip)); if (r) r.approved = true; }
       else d.ips.forEach((r) => { r.approved = true; });
       log('מכשיר אושר', c.email);
@@ -327,7 +366,7 @@ switch (b.action) {
     return out({ ok: true, client: view(c) });
   }
 
-  // a new initial password, made here, sent to the client's email, and shown once to the admin (to pass on by WhatsApp too)
+  // a new initial password, made here and sent straight to the client's email (the admin is updated in the system, and never sees it)
   case 'client-reset': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     const e = email(b.email), c = sd.clients[e];
@@ -336,7 +375,7 @@ switch (b.action) {
     giveTemp(c, temp, TEMP_CLIENT_DAYS * DAY, 'admin', true);
     closeSessions(e);
     log('סיסמה ראשונית חדשה', e);
-    return out({ ok: true, password: temp, client: view(c) }, 200, mailTo(e, 'SPIDER · הסיסמה הראשונית שלך',
+    return out({ ok: true, client: view(c) }, 200, mailTo(e, 'SPIDER · הסיסמה הראשונית שלך',
       `שלום ${c.name || ''},\n\nנפתחה לך גישה ל־SPIDER.\nכניסה: ${LOGIN_URL}\nמייל: ${e}\nסיסמה ראשונית: ${temp}\n\nבכניסה הראשונה תבחר סיסמה משלך. הסיסמה הראשונית תקפה ל־${TEMP_CLIENT_DAYS} ימים.\n\nSPIDER · חיים קריספין · 054-4979771\n`));
   }
 

@@ -150,20 +150,14 @@
     for (var i = 0; i < r.length; i++) out += A[r[i] % A.length];
     return out.slice(0, 4) + '-' + out.slice(4, 9) + '-' + out.slice(9);
   }
-  // A new initial password: made by n8n, emailed to the client, and shown to you once (to pass on by WhatsApp too).
-  // The client must choose their own at the first sign-in. A password they chose is never shown, only tested or replaced.
+  // A new initial password: made by n8n and sent straight to the client's email. It never passes through you.
+  // The client chooses their own at the first sign-in; a password they chose is never shown, only tested or replaced.
   function sendPassword(c) {
-    if (!confirm('ליצור סיסמה ראשונית חדשה ל־' + (c.name || c.email) + ' ולשלוח אותה למייל שלו?\nהסיסמה הקודמת שלו תפסיק לעבוד, וכל החיבורים הפתוחים שלו ייסגרו.')) return;
+    if (!confirm('לשלוח ל־' + (c.name || c.email) + ' סיסמה ראשונית חדשה במייל?\nהסיסמה הקודמת שלו תפסיק לעבוד, וכל החיבורים הפתוחים שלו ייסגרו. הוא יבחר סיסמה משלו בכניסה.')) return;
     api('client-reset', { email: c.email }).then(function (j) {
-      if (!j.ok) { alert('לא נוצרה: ' + j.error); return; }
+      if (!j.ok) { alert('לא נשלחה: ' + j.error); return; }
       load();
-      var msg = 'שלום ' + (c.name || '') + ', נפתחה לך גישה ל־SPIDER' + (c.expiresAt ? ' עד ' + date(c.expiresAt) : '') + '.\n' +
-        'כניסה: ' + SITE + 'client.html\nמייל: ' + c.email + '\nסיסמה ראשונית: ' + j.password + '\n' +
-        'בכניסה הראשונה תבחר סיסמה משלך. המכשיר הראשון נרשם אוטומטית, מכשיר נוסף מחכה לאישור שלי.';
-      if (confirm('✓ נשלחה למייל של הלקוח.\nהסיסמה הראשונית: ' + j.password + '\n\nלשלוח אותה גם בוואטסאפ?')) {
-        if (waNum(c.phone).length >= 9) window.open('https://wa.me/' + waNum(c.phone) + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
-        else prompt('אין טלפון ללקוח. העתק ושלח לו:', msg);
-      }
+      alert('✓ נשלחה סיסמה ראשונית למייל של ' + (c.name || c.email) + '.\nהוא יחליף אותה בעצמו, ואתה תראה כאן שהוא בחר סיסמה.\nאם המייל לא הגיע, הוא יכול ללחוץ "קבלת סיסמה ראשונית למייל" בעמוד הכניסה.');
     });
   }
   // does a password open this account? (for when a client says "it does not work")
@@ -236,13 +230,13 @@
   function devicesList(c) {
     var box = $('cl-devices');
     box.replaceChildren();
-    if (!c) { box.appendChild(el('p', { class: 'muted', text: 'המכשיר הראשון שייכנס יאושר אוטומטית. כל מכשיר נוסף יחכה לכאן.' })); return; }
+    if (!c) { box.appendChild(el('p', { class: 'muted', text: 'המכשיר הראשון שייכנס יאושר אוטומטית. מכשיר חדש מקבל סיסמה זמנית למייל של הלקוח ומאשר את עצמו, ואתה רק רואה אותו כאן.' })); return; }
     var ds = c.devices || [];
     if (!ds.length) { box.appendChild(el('p', { class: 'muted', text: 'עוד לא נכנס משום מכשיר.' })); return; }
     ds.forEach(function (d) {
       var row = el('div', { class: 'cl-dev' + (d.approved ? '' : ' wait') }, [
         el('div', {}, [
-          el('b', { text: (d.approved ? '✓ ' : '⏳ ') + (d.ua || 'מכשיר') }),
+          el('b', { text: (d.approved ? '✓ ' : '⏳ ') + (d.ua || 'מכשיר') + (d.approved ? (d.how === 'first' ? ' · המכשיר הראשון' : d.how === 'email' ? ' · אושר במייל על ידי הלקוח' : d.how === 'admin' ? ' · אושר על ידך' : '') : ' · ממתין לאימות במייל מהלקוח') }),
           el('small', { text: 'נראה לראשונה ' + date(d.first) + ' · לאחרונה ' + date(d.last) }),
           el('small', { dir: 'ltr', text: (d.ips || []).map(function (i) { return i.ip + (i.approved ? '' : ' (ממתינה)'); }).join('  ·  ') })
         ])
@@ -282,7 +276,7 @@
     f.ipLock.checked = !!(c && c.ipLock);
     f.maxDevices.value = String((c && c.maxDevices) || 3);
     $('cl-pw-label').textContent = 'סיסמה ראשונית';
-    $('cl-pw-note').textContent = (c ? 'מצב: ' + (PW[c.pwState] || '') + '. ' : '') + 'השאר ריק כדי לא לשנות. סיסמה כאן היא ראשונית: היא נשלחת ללקוח במייל, הסיסמה הקודמת שלו מפסיקה לעבוד, והוא בוחר סיסמה משלו בכניסה הראשונה. את הסיסמה שהוא בחר אי אפשר לראות, רק לבדוק או להחליף.';
+    $('cl-pw-note').textContent = (c ? 'מצב: ' + (PW[c.pwState] || '') + '. השאר ריק כדי לא לשנות. ' : 'השאר ריק: הלקוח יקבל סיסמה ראשונית אוטומטית למייל שלו, בלי שתראה אותה. ') + 'אם כותבים כאן סיסמה, היא נשלחת ללקוח במייל, הסיסמה הקודמת שלו מפסיקה לעבוד, והוא בוחר סיסמה משלו בכניסה הראשונה. את הסיסמה שהוא בחר אי אפשר לראות, רק לבדוק או להחליף.';
     devicesList(c);
     f.note.value = c ? c.note || '' : '';
     f.plan.value = c ? c.plan || 'custom' : 'month';
@@ -294,7 +288,7 @@
     $('cl-dialog').showModal();
   }
   $('cl-new').addEventListener('click', function () { edit(null); });
-  $('cl-pw-gen').addEventListener('click', function () { var pw = makePassword(); $('cl-form').elements.password.value = pw; $('cl-pw-note').textContent = 'הסיסמה הראשונית: ' + pw + ' · תישלח ללקוח במייל בשמירה. העתק אותה אם תרצה לשלוח גם בוואטסאפ.'; });
+  $('cl-pw-gen').addEventListener('click', function () { var pw = makePassword(); $('cl-form').elements.password.value = pw; $('cl-pw-note').textContent = 'הסיסמה הראשונית: ' + pw + ' · תישלח ללקוח במייל בשמירה.'; });
 
   $('cl-form').addEventListener('submit', function (e) {
     var f = e.target.elements;
