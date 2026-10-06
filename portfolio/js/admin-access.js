@@ -7,7 +7,8 @@
   var DAY = 86400000;
   var PLAN = { day: ['יומי', 1], week: ['שבועי', 7], month: ['חודשי', 30], year: ['שנתי', 365], custom: ['תאריך קבוע', 0], free: ['ללא הגבלה', 0] };
   var SITE = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/';
-  var C = { clients: [], projects: [], cats: {}, editing: null, plans: {}, paying: null };
+  var C = { clients: [], admin: null, projects: [], cats: {}, editing: null, plans: {}, paying: null };
+  var PW = { none: 'אין סיסמה', initial: 'סיסמה ראשונית נשלחה', reset: 'ביקש סיסמה ראשונית', chosen: 'בחר סיסמה בעצמו', 'admin-set': 'הסיסמה הוגדרה על ידך' };
 
   function el(tag, attrs, kids) {
     var n = document.createElement(tag);
@@ -28,6 +29,7 @@
     return api('clients').then(function (j) {
       if (!j.ok) { fail('לא הצלחתי לטעון לקוחות: ' + j.error); return; }
       fail('');
+      C.admin = j.admin || null;
       C.clients = j.clients.sort(function (a, b) { return (a.name || a.email).localeCompare(b.name || b.email, 'he'); });
       render();
     }).catch(function () { fail('n8n לא ענה. בדקו שה־workflow "SPIDER · כניסה והרשאות" פעיל.'); });
@@ -46,6 +48,17 @@
 
     var tb = $('cl-rows');
     tb.replaceChildren();
+    if (C.admin) {
+      var a = C.admin, ab = function (txt, fn, cls) { var x = el('button', { type: 'button', class: cls || null, text: txt }); x.addEventListener('click', fn); return x; };
+      tb.appendChild(el('tr', { class: 'admin-row' }, [
+        el('td', { class: 'who' }, [el('b', { text: 'מנהל · אני' }), el('small', { dir: 'ltr', text: a.email }), el('small', { class: 'muted', text: (PW[a.pwState] || '') + (a.pwAt ? ' · ' + date(a.pwAt) : '') })]),
+        el('td', {}, [el('div', { class: 'cl-chips' }, [el('span', { text: 'כל האתרים' })])]),
+        el('td', { text: '—' }),
+        el('td', {}, [el('span', { class: 'pill ok', text: '✓ מנהל' }), el('div', { class: 'muted', text: a.devices + ' מכשירים מוכרים' })]),
+        el('td', { class: 'num', text: a.lastLogin ? date(a.lastLogin) : '—' }),
+        el('td', {}, [el('div', { class: 'acts' }, [ab('🔑 שינוי הסיסמה שלי', changeMine)])])
+      ]));
+    }
     C.clients.forEach(function (c) {
       var days = c.daysLeft;
       var state = !c.activeNow ? (c.active === false ? ['down', '✕ מושהה'] : ['down', '✕ הסתיים']) : days != null && days <= 3 ? ['waking', '⏳ עוד ' + days + ' ימים'] : ['ok', '✓ פעיל'];
@@ -53,7 +66,7 @@
       var b = function (txt, fn, cls) { var x = el('button', { type: 'button', class: cls || null, text: txt }); x.addEventListener('click', fn); return x; };
       var pend = (c.devices || []).filter(function (d) { return !d.approved || (d.ips || []).some(function (i) { return !i.approved; }); }).length;
       tb.appendChild(el('tr', { class: c.activeNow ? null : 'off' }, [
-        el('td', { class: 'who' }, [el('b', { text: c.name || '—' }), el('small', { dir: 'ltr', text: c.email }), el('small', { dir: 'ltr', text: c.phone || '' }), c.hasPassword ? null : el('small', { class: 'muted', text: 'אין סיסמה, עוד לא יכול להיכנס' }), pend ? el('small', { class: 'pill waking', text: '⏳ ' + pend + ' מחכים לאישור' }) : null, c.note ? el('small', { text: c.note }) : null]),
+        el('td', { class: 'who' }, [el('b', { text: c.name || '—' }), el('small', { dir: 'ltr', text: c.email }), el('small', { dir: 'ltr', text: c.phone || '' }), el('small', { class: 'muted', text: (PW[c.pwState] || '') + (c.pwAt ? ' · ' + date(c.pwAt) : '') + (c.tmpExp ? ' · ראשונית תקפה עד ' + date(c.tmpExp) : '') }), c.failed ? el('small', { class: 'pill down', text: c.failed + ' ניסיונות כושלים בשעה' }) : null, pend ? el('small', { class: 'pill waking', text: '⏳ ' + pend + ' מחכים לאישור' }) : null, c.note ? el('small', { text: c.note }) : null]),
         el('td', {}, [el('div', { class: 'cl-chips' }, sites.slice(0, 4).map(function (id) { return el('span', { text: title(id) }); }).concat(sites.length > 4 ? [el('span', { text: '+' + (sites.length - 4) })] : sites.length ? [] : [el('span', { text: 'אין אתרים' })]))]),
         el('td', { text: (PLAN[c.plan] || ['—'])[0] }),
         el('td', {}, [el('span', { class: 'pill ' + state[0], text: state[1] }), el('div', { class: 'muted', text: c.expiresAt ? date(c.expiresAt) : 'ללא הגבלה' }), lastPay(c)]),
@@ -64,7 +77,8 @@
           b('+יום', function () { extend(c, 1); }),
           b('+חודש', function () { extend(c, 30); }),
           b(c.active === false ? 'הפעלה' : 'השהיה', function () { save(Object.assign({}, c, { active: c.active === false })); }),
-          b('🔑 סיסמה חדשה ושליחה', function () { sendPassword(c); }),
+          b('🔑 סיסמה ראשונית', function () { sendPassword(c); }),
+          b('🔍 בדיקת סיסמה', function () { checkPassword(c); }),
           b('מחיקה', function () { if (confirm('למחוק את ' + (c.name || c.email) + '? הגישה שלו תיחסם מיד.')) api('client-delete', { email: c.email }).then(load); }, 'del')
         ])])
       ]));
@@ -136,19 +150,42 @@
     for (var i = 0; i < r.length; i++) out += A[r[i] % A.length];
     return out.slice(0, 4) + '-' + out.slice(4, 9) + '-' + out.slice(9);
   }
-  // a new password, saved, and opened in WhatsApp for the client. It is shown only now; n8n keeps just its hash.
+  // A new initial password: made by n8n, emailed to the client, and shown to you once (to pass on by WhatsApp too).
+  // The client must choose their own at the first sign-in. A password they chose is never shown, only tested or replaced.
   function sendPassword(c) {
-    if (!confirm('ליצור סיסמה חדשה ל־' + (c.name || c.email) + '? הסיסמה הקודמת וכל החיבורים הפתוחים שלו ייסגרו.')) return;
-    var pw = makePassword();
-    api('client-save', { payload: JSON.stringify(Object.assign({}, c, { oldEmail: null, password: pw })) }).then(function (j) {
-      if (!j.ok) { alert('לא נשמר: ' + j.error); return; }
-      var msg = 'שלום ' + (c.name || '') + ', נפתחה לך גישה ל־SPIDER' + (c.expiresAt ? ' עד ' + date(c.expiresAt) : '') + '.\n' +
-        'כניסה: ' + SITE + 'client.html\nמייל: ' + c.email + '\nסיסמה: ' + pw + '\n' +
-        'המכשיר הראשון שנכנס נרשם אוטומטית. מכשיר נוסף יחכה לאישור שלי.';
+    if (!confirm('ליצור סיסמה ראשונית חדשה ל־' + (c.name || c.email) + ' ולשלוח אותה למייל שלו?\nהסיסמה הקודמת שלו תפסיק לעבוד, וכל החיבורים הפתוחים שלו ייסגרו.')) return;
+    api('client-reset', { email: c.email }).then(function (j) {
+      if (!j.ok) { alert('לא נוצרה: ' + j.error); return; }
       load();
-      var url = 'https://wa.me/' + waNum(c.phone) + '?text=' + encodeURIComponent(msg);
-      if (waNum(c.phone).length < 9) { prompt('אין טלפון ללקוח. העתק ושלח לו:', msg); return; }
-      window.open(url, '_blank', 'noopener');
+      var msg = 'שלום ' + (c.name || '') + ', נפתחה לך גישה ל־SPIDER' + (c.expiresAt ? ' עד ' + date(c.expiresAt) : '') + '.\n' +
+        'כניסה: ' + SITE + 'client.html\nמייל: ' + c.email + '\nסיסמה ראשונית: ' + j.password + '\n' +
+        'בכניסה הראשונה תבחר סיסמה משלך. המכשיר הראשון נרשם אוטומטית, מכשיר נוסף מחכה לאישור שלי.';
+      if (confirm('✓ נשלחה למייל של הלקוח.\nהסיסמה הראשונית: ' + j.password + '\n\nלשלוח אותה גם בוואטסאפ?')) {
+        if (waNum(c.phone).length >= 9) window.open('https://wa.me/' + waNum(c.phone) + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+        else prompt('אין טלפון ללקוח. העתק ושלח לו:', msg);
+      }
+    });
+  }
+  // does a password open this account? (for when a client says "it does not work")
+  function checkPassword(c) {
+    var pw = prompt('הקלד סיסמה לבדיקה עבור ' + (c.name || c.email) + '.\nהיא לא נשמרת, והבדיקה נרשמת ביומן.');
+    if (!pw) return;
+    api('client-check-password', { email: c.email, password: pw }).then(function (j) {
+      if (!j.ok) { alert('לא נבדקה: ' + j.error); return; }
+      alert(j.match ? '✓ הסיסמה נכונה (' + (j.kind === 'initial' ? 'סיסמה ראשונית' : 'הסיסמה שהלקוח בחר') + ').' : '✗ הסיסמה לא נכונה.');
+    });
+  }
+  // the admin's own password
+  function changeMine() {
+    var cur = prompt('הסיסמה הנוכחית שלך:');
+    if (!cur) return;
+    var np = prompt('סיסמה חדשה (8 תווים לפחות):');
+    if (!np) return;
+    if (np.length < 8) { alert('הסיסמה צריכה להיות באורך 8 תווים לפחות.'); return; }
+    api('change-password', { current: cur, password: np }).then(function (j) {
+      if (!j.ok) { alert(j.error === 'bad-login' ? 'הסיסמה הנוכחית לא נכונה.' : 'לא הוחלפה: ' + j.error); return; }
+      alert('✓ הסיסמה שלך הוחלפה. חיבורים אחרים שלך נסגרו.');
+      load();
     });
   }
 
@@ -244,8 +281,8 @@
     f.password.value = '';
     f.ipLock.checked = !!(c && c.ipLock);
     f.maxDevices.value = String((c && c.maxDevices) || 3);
-    $('cl-pw-label').textContent = c && c.hasPassword ? 'סיסמה חדשה' : 'סיסמה';
-    $('cl-pw-note').textContent = c && c.hasPassword ? 'יש ללקוח סיסמה. השאר ריק כדי לא לשנות; סיסמה חדשה סוגרת את כל החיבורים הפתוחים שלו.' : 'בלי סיסמה הלקוח לא יוכל להיכנס. אפשר להשאיר ריק וליצור אחר כך עם "סיסמה חדשה ושליחה".';
+    $('cl-pw-label').textContent = 'סיסמה ראשונית';
+    $('cl-pw-note').textContent = (c ? 'מצב: ' + (PW[c.pwState] || '') + '. ' : '') + 'השאר ריק כדי לא לשנות. סיסמה כאן היא ראשונית: היא נשלחת ללקוח במייל, הסיסמה הקודמת שלו מפסיקה לעבוד, והוא בוחר סיסמה משלו בכניסה הראשונה. את הסיסמה שהוא בחר אי אפשר לראות, רק לבדוק או להחליף.';
     devicesList(c);
     f.note.value = c ? c.note || '' : '';
     f.plan.value = c ? c.plan || 'custom' : 'month';
@@ -257,7 +294,7 @@
     $('cl-dialog').showModal();
   }
   $('cl-new').addEventListener('click', function () { edit(null); });
-  $('cl-pw-gen').addEventListener('click', function () { var pw = makePassword(); $('cl-form').elements.password.value = pw; $('cl-pw-note').textContent = 'הסיסמה: ' + pw + ' · היא תישמר בשמירה, ואחר כך אי אפשר לראות אותה שוב. העתק אותה עכשיו.'; });
+  $('cl-pw-gen').addEventListener('click', function () { var pw = makePassword(); $('cl-form').elements.password.value = pw; $('cl-pw-note').textContent = 'הסיסמה הראשונית: ' + pw + ' · תישלח ללקוח במייל בשמירה. העתק אותה אם תרצה לשלוח גם בוואטסאפ.'; });
 
   $('cl-form').addEventListener('submit', function (e) {
     var f = e.target.elements;
@@ -266,7 +303,7 @@
     var err = $('cl-form-err');
     var email = f.email.value.trim(), phone = f.phone.value.trim(), password = f.password.value;
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'צריך כתובת מייל תקינה.'; err.hidden = false; return; }
-    if (password && password.length < 10) { err.textContent = 'סיסמה: 10 תווים לפחות.'; err.hidden = false; return; }
+    if (password && password.length < 8) { err.textContent = 'סיסמה: 8 תווים לפחות.'; err.hidden = false; return; }
     var sites = Array.prototype.map.call($('cl-list').querySelectorAll('input:checked'), function (i) { return i.value; });
     var exp = f.plan.value === 'free' || !f.expires.value ? null : new Date(f.expires.value + 'T23:59:59').toISOString();
     // a day pass is 24 hours from now, when its date was left as suggested

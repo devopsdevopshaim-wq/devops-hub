@@ -23,7 +23,7 @@
     </a>
     <span class="admin-tag">מסך ניהול</span>
     <nav class="links" aria-label="ניווט בניהול">
-      <a href="#clients">לקוחות</a>
+      <a href="#clients">משתמשים</a>
       <a href="#skills">סקילים</a>
       <a href="#biz">לידים ומחירון</a>
       <a href="#stats">נתונים</a>
@@ -68,10 +68,10 @@
 
   <section id="clients" class="a-sec">
     <header class="sec-head sec-row">
-      <div><p class="eyebrow">הרשאות · n8n</p><h2>לקוחות ומנויים</h2></div>
+      <div><p class="eyebrow">הרשאות · n8n</p><h2>משתמשים ומנויים</h2></div>
       <div class="filters"><button class="btn btn-gold btn-sm" type="button" id="cl-new">+ לקוח חדש</button></div>
     </header>
-    <p class="hint">כל לקוח נכנס עם המייל והסיסמה שנתת לו, ורואה רק את האתרים שסימנת לו, עד סוף המנוי. המכשיר הראשון שלו מאושר לבד ואתה מקבל מייל. כל מכשיר חדש מחכה לאישור שלך כאן, ואפשר גם לנעול לקוח לכתובות IP מאושרות. כשהמנוי נגמר, הכניסה נחסמת לבד.</p>
+    <p class="hint">כל לקוח מקבל סיסמה ראשונית במייל, בוחר בכניסה הראשונה סיסמה משלו, ורואה רק את האתרים שסימנת לו, עד סוף המנוי. הסיסמה שהוא בחר לא נשמרת בצורה שאפשר לקרוא, ולכן אי אפשר לראות אותה: אפשר לבדוק סיסמה, או ליצור לו סיסמה ראשונית חדשה. המכשיר הראשון שלו מאושר לבד ואתה מקבל מייל. כל מכשיר חדש מחכה לאישור שלך כאן, ואפשר גם לנעול לקוח לכתובות IP מאושרות. כשהמנוי נגמר, הכניסה נחסמת לבד.</p>
     <p class="add-error" id="cl-err" hidden></p>
     <dl class="kpis" id="cl-kpis"></dl>
     <div class="table-wrap">
@@ -129,7 +129,7 @@
       <fieldset class="cl-sec">
         <legend>כניסה ואבטחה</legend>
         <div class="field-row">
-          <label class="field"><span id="cl-pw-label">סיסמה</span><input name="password" dir="ltr" autocomplete="off" minlength="10" maxlength="100" placeholder="10 תווים לפחות"></label>
+          <label class="field"><span id="cl-pw-label">סיסמה</span><input name="password" dir="ltr" autocomplete="off" minlength="8" maxlength="100" placeholder="8 תווים לפחות"></label>
           <button class="g-btn ghost" type="button" id="cl-pw-gen">יצירת סיסמה</button>
         </div>
         <p class="muted" id="cl-pw-note"></p>

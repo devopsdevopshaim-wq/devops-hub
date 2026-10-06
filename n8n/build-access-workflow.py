@@ -40,7 +40,7 @@ SNIP = Path(__file__).with_name('snippets')
 SEC = (SNIP / 'security.js').read_text(encoding='utf-8')
 SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io'
 HANDLE = (SNIP / 'access-handle.js').read_text(encoding='utf-8') \
-    .replace('__SEC__', SEC).replace('__ADMIN_EMAIL__', ADMIN_EMAIL).replace('__ADMIN_PHONE__', ADMIN_PHONE).replace('__RENEW__', RENEW)
+    .replace('__SEC__', SEC).replace('__ADMIN_EMAIL__', ADMIN_EMAIL).replace('__RENEW__', RENEW)
 
 INVOICE_SAVE = r"""// Keeps the invoice number and link on the payment, and emails it to the client.
 const h = $('Auth · Handle').first().json, job = h.invoice;
@@ -61,8 +61,8 @@ return [{ json: { code: 200, body, mail } }];
 AFTER_MAIL = r"""// The answer to the browser, once the email was (or was not) sent.
 const h = $('Send an email?').first().json;
 if ($json.error) {
-  // a security alert that could not be sent must never block the sign-in itself
-  if (h.mail && h.mail.alert) return [{ json: { code: h.code, body: h.body } }];
+  // a security alert or an initial password that could not be sent must never block the answer itself
+  if (h.mail && (h.mail.alert || h.mail.soft)) return [{ json: { code: h.code, body: h.body } }];
   return [{ json: { code: 502, body: { ok: false, error: 'mail-failed' } } }];
 }
 return [{ json: { code: h.code, body: h.body } }];

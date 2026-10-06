@@ -1,20 +1,22 @@
 // Sign-in and access control for the portfolio. (Built into "Auth · Handle" by build-access-workflow.py.)
 //
-//  The admin   signs in from anywhere with email + password (and the authenticator code, if one is set up).
-//  A client    signs in with email + the password the admin gave them, from a device the admin approved.
-//              The first device is accepted and the admin is told; every other new device waits for the admin.
-//              A device is told apart by a random id kept in its browser; its IP address is recorded with it.
-//              Clients with "IP lock" must also come from an approved address.
-//  Until ADMIN_PASSWORD is set in the SPIDER secret, the admin keeps the older way in (email, phone, emailed code).
+//  Everyone (the admin and every client) signs in with email + password.
+//  Passwords: an INITIAL password arrives by email (the person asks for it on the sign-in page, or the admin sends one); signing
+//             in with it forces choosing one's own. Only salted hashes are kept, so nobody, the admin included, can read a password
+//             someone chose; the admin can reset it, set a new initial one, or test a password.
+//  The admin  signs in from anywhere (no device or address limit; an hourly guess budget protects unknown devices).
+//  A client   must come from a device the admin approved. The first device is accepted and the admin is told; every other new
+//             device waits for the admin. A device is a random id kept in its browser; its IP address is recorded with it.
+//             Clients with "IP lock" must also come from an approved address.
+//  The secret ADMIN_PASSWORD (optional) sets the admin password whenever it is changed: a way back in that needs no email.
 __SEC__
 
 const ADMIN_EMAIL = '__ADMIN_EMAIL__';
-const ADMIN_PHONE = '__ADMIN_PHONE__';
 const RENEW = '__RENEW__';
 // Filled in by the deploy from the SPIDER secret; never written in the repository.
 const set = (v) => !!v && !/^__/.test(v);
 const ADMIN_PW = '__ADMIN_PASSWORD_HASH__';   // "p1$iterations$salt$hash" made from ADMIN_PASSWORD; only the hash is here
-const PASSWORDS = set(ADMIN_PW);
+const LOGIN_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/client.html';
 const ADMIN_TOTP = '__ADMIN_TOTP_SECRET__';   // authenticator-app key of the admin; empty = no second step
 // Invoices through Morning (חשבונית ירוקה): MORNING_CLIENT_ID / MORNING_CLIENT_SECRET in the secret.
 //   docType 320 = חשבונית מס/קבלה (עוסק מורשה), 400 = קבלה (עוסק פטור)
@@ -27,10 +29,12 @@ const CLIENT_SESSION_DAYS = 7;   // capped by the end of the subscription
 const ADMIN_SESSION_DAYS = 0.5;  // the admin signs in again every 12 hours
 const MAX_CLIENTS = 500;
 const DEFAULT_MAX_DEVICES = 3;
+const MIN_PASSWORD = 8;
+const TEMP_ADMIN_MIN = 60, TEMP_CLIENT_DAYS = 14;   // how long an emailed initial password works
 
 const sd = $getWorkflowStaticData('global');
 sd.clients = sd.clients || {};
-sd.otp = sd.otp || {};
+sd.admin = sd.admin || {};
 sd.sessions = sd.sessions || {};
 sd.lock = sd.lock || {};
 sd.fails = sd.fails || {};
@@ -43,7 +47,10 @@ const out = (body, code, mail) => [{ json: { code: code || 200, body, mail: mail
 const line = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n);
 const email = (e) => String(e || '').replace(/[\u0000-\u001f\u007f\s]+/g, '').toLowerCase().slice(0, 120);
 const phone = (p) => { let d = String(p || '').replace(/\D/g, ''); if (d.startsWith('972')) d = '0' + d.slice(3); return d.slice(0, 15); };
-const code6 = () => String(parseInt(rnd(4), 16) % 1000000).padStart(6, '0');
+// an initial password: 12 characters without look-alikes (about 68 bits)
+const PW_CHARS = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const rndPassword = () => { const h = rnd(12); let o = ''; for (let i = 0; i < 12; i++) o += PW_CHARS[parseInt(h.substr(i * 2, 2), 16) % PW_CHARS.length]; return o.slice(0, 4) + '-' + o.slice(4, 8) + '-' + o.slice(8); };
+const mailTo = (to, subject, text) => ({ to, subject, text, soft: true });   // soft: a failed send never blocks the answer
 const log = (what, who) => { sd.log.unshift({ at: new Date(now).toISOString(), what, who, ip: IPK.slice(0, 6) }); if (sd.log.length > 300) sd.log.length = 300; };
 const when = () => new Date(now).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' });
 const alert = (subject, text) => ({ to: ADMIN_EMAIL, subject: 'SPIDER · ' + subject, text: text + `\n\nזמן: ${when()}\nכתובת: ${IP}\n`, alert: true });
@@ -53,7 +60,7 @@ const UA = line(HDR['user-agent'], 110);
 
 // tidy up: expired sessions and codes, locks, counters, and anything left by the older (plain) format
 for (const [t, s] of Object.entries(sd.sessions)) if (t.length !== 64 || s.exp < now) delete sd.sessions[t];
-for (const [e, o] of Object.entries(sd.otp)) if (o.code || (o.exp || 0) < now - HOUR) delete sd.otp[e];
+delete sd.otp;   // the emailed sign-in code was retired
 for (const [e, t] of Object.entries(sd.lock)) if (t < now) delete sd.lock[e];
 for (const [e, a] of Object.entries(sd.fails)) if (!a.some((t) => now - t < HOUR)) delete sd.fails[e];
 sweep();
@@ -63,12 +70,24 @@ const b = $json.body || {};
 if (JSON.stringify(b).length > 30000) return out({ ok: false, error: 'too-big' }, 413);
 if (!hit('all', IPK, 240, 10 * 60000)) return out({ ok: false, error: 'rate-limited' }, 429);
 
-const isAdmin = (e, p) => e === ADMIN_EMAIL && p === phone(ADMIN_PHONE);
+// the optional ADMIN_PASSWORD secret: when its value changes, it becomes the admin password (and signs the admin out everywhere)
+if (set(ADMIN_PW) && sd.admin.seedHash !== ADMIN_PW) {
+  sd.admin = { ...sd.admin, pw: ADMIN_PW, seedHash: ADMIN_PW, pwAt: new Date(now).toISOString(), pwBy: 'secret', tmp: null };
+  for (const [t, s] of Object.entries(sd.sessions)) if (s.role === 'admin') delete sd.sessions[t];
+}
+const acct = (e) => (e === ADMIN_EMAIL ? sd.admin : sd.clients[e]);
+const tempOk = (a) => !!(a && a.tmp && a.tmp.exp > now);
+const pwState = (a) => (tempOk(a) ? (a.pw ? 'reset' : 'initial') : a && a.pw ? (a.pwBy === 'client' ? 'chosen' : 'admin-set') : 'none');
 const active = (c) => !!c && c.active !== false && (!c.expiresAt || Date.parse(c.expiresAt) > now);
 const tokenHash = () => { const t = String(b.token || ''); return /^[a-f0-9]{48}$/.test(t) ? sha256hex(t) : ''; };
 const session = () => { const h = tokenHash(); const s = h && sd.sessions[h]; return s && s.exp > now ? s : null; };
-const admin = () => { const s = session(); return s && s.role === 'admin' ? s : null; };
-const view = (c) => { const { pw, ...rest } = c; return { ...rest, hasPassword: !!pw, activeNow: active(c), daysLeft: c.expiresAt ? Math.ceil((Date.parse(c.expiresAt) - now) / DAY) : null }; };
+const admin = () => { const s = session(); return s && s.role === 'admin' && !s.mc ? s : null; };   // a session that still has to choose a password is not an admin yet
+const nSessions = (e) => Object.values(sd.sessions).filter((s) => s.email === e).length;
+const view = (c) => { const { pw, tmp, ...rest } = c; return { ...rest, hasPassword: !!pw || tempOk(c), pwState: pwState(c), tmpExp: tempOk(c) ? new Date(c.tmp.exp).toISOString() : null, sessions: nSessions(c.email), failed: (sd.fails[c.email] || []).filter((t) => now - t < HOUR).length, activeNow: active(c), daysLeft: c.expiresAt ? Math.ceil((Date.parse(c.expiresAt) - now) / DAY) : null }; };
+const adminView = () => ({ email: ADMIN_EMAIL, pwState: pwState(sd.admin), pwAt: sd.admin.pwAt || null, lastLogin: sd.admin.lastLogin || null, devices: (sd.adminDevices || []).length, sessions: nSessions(ADMIN_EMAIL), tmpExp: tempOk(sd.admin) ? new Date(sd.admin.tmp.exp).toISOString() : null });
+// an initial password (replaces the old one when `revoke`): returns it in clear once, keeps only its hash
+const giveTemp = (a, plain, ms, by, revoke) => { a.tmp = { h: pwHash(plain), exp: now + ms }; a.pwBy = a.pwBy || by; if (revoke) { a.pw = null; a.pwBy = by; } a.pwAt = new Date(now).toISOString(); };
+const closeSessions = (e, except) => { for (const [t, s] of Object.entries(sd.sessions)) if (s.email === e && t !== except) delete sd.sessions[t]; };
 const newSession = (e, role, exp, extra) => { const token = rnd(24); sd.sessions[sha256hex(token)] = { email: e, role, exp, at: now, ...(extra || {}) }; return token; };
 
 // ---- devices. A device is a random id kept in the browser (only its hash is stored here) plus the addresses it came from.
@@ -113,7 +132,7 @@ function deviceMail(c, news) {
 switch (b.action) {
   // ---------------------------------------------------------------- public
   case 'info':
-    return out({ ok: true, password: PASSWORDS });
+    return out({ ok: true, password: true });
 
   case 'health':
     // what the install checks: which kind of cryptography this n8n has, and which address it sees for the caller
@@ -128,13 +147,16 @@ switch (b.action) {
     if (sd.lock[lk] > now || sd.lock[e] > now) return out({ ok: false, error: 'too-many' }, 429);
     const adm = e === ADMIN_EMAIL;
     const c = sd.clients[e];
+    const acc = adm ? sd.admin : c;
     // The admin's own devices (ones that already signed in as admin) are never held back. Guessing from any other device gets
     // 10 tries an hour in total, however many addresses it comes from, so a short, memorable password is not easy to brute-force.
     sd.adminDevices = sd.adminDevices || [];
     const trusted = adm && /^[a-f0-9]{32}$/.test(dev) && sd.adminDevices.includes(sha256hex('dev:' + dev));
     if (adm && !trusted && sd.lock['admin-guess'] > now) return out({ ok: false, error: 'too-many' }, 429);
-    const stored = adm ? (PASSWORDS ? ADMIN_PW : '') : (c && c.pw) || '';
-    const good = stored ? pwCheck(pw, stored) : pwDummy(pw);
+    // two checks every time (the chosen password and an emailed initial one), real or dummy, so the time reveals nothing
+    const okMain = acc && acc.pw ? pwCheck(pw, acc.pw) : pwDummy(pw);
+    const okTemp = tempOk(acc) ? pwCheck(pw, acc.tmp.h) : pwDummy(pw);
+    const good = okMain || okTemp, viaTemp = !okMain && okTemp;
     const fail = (why) => {
       const f1 = (sd.fails[lk] = (sd.fails[lk] || []).filter((t) => now - t < HOUR).concat(now));
       const f2 = (sd.fails[e] = (sd.fails[e] || []).filter((t) => now - t < HOUR).concat(now));
@@ -160,9 +182,11 @@ switch (b.action) {
       }
       sd.fails[lk] = [];
       if (/^[a-f0-9]{32}$/.test(dev) && !trusted) { sd.adminDevices.unshift(sha256hex('dev:' + dev)); sd.adminDevices.length = Math.min(sd.adminDevices.length, 10); }
-      const token = newSession(e, 'admin', now + ADMIN_SESSION_DAYS * DAY);
-      log('כניסת מנהל', e);
-      return out({ ok: true, token, role: 'admin', name: 'מנהל' }, 200, alert('כניסת מנהל', 'נכנסת למערכת SPIDER כמנהל. אם זה לא אתה, החלף מיד את ADMIN_PASSWORD בסוד SPIDER והרץ את ההתקנה.'));
+      if (!viaTemp) sd.admin.tmp = null;
+      sd.admin.lastLogin = new Date(now).toISOString();
+      const token = newSession(e, 'admin', now + ADMIN_SESSION_DAYS * DAY, viaTemp ? { mc: true } : {});
+      log('כניסת מנהל' + (viaTemp ? ' עם סיסמה ראשונית' : ''), e);
+      return out({ ok: true, token, role: 'admin', name: 'מנהל', mustChange: viaTemp }, 200, alert('כניסת מנהל', 'נכנסת למערכת SPIDER כמנהל. אם זה לא אתה, בקש סיסמה ראשונית חדשה בעמוד הכניסה ובחר סיסמה חדשה, או החלף את ADMIN_PASSWORD בסוד SPIDER והרץ את ההתקנה.'));
     }
 
     // a client: right password, now the subscription and the device
@@ -174,73 +198,60 @@ switch (b.action) {
     if (r.news) log(r.news === 'first-device' ? 'מכשיר ראשון' : r.news === 'new-device' ? 'מכשיר חדש ממתין' : r.news === 'blocked-ip' ? 'כתובת חדשה ממתינה' : 'כתובת חדשה', e);
     if (r.status !== 'ok') return out({ ok: false, error: 'pending', renew: RENEW }, 403, mail);
     sd.fails[lk] = [];
+    if (!viaTemp) c.tmp = null;
     let exp = now + CLIENT_SESSION_DAYS * DAY;
     if (c.expiresAt) exp = Math.min(exp, Date.parse(c.expiresAt));
-    const token = newSession(e, 'client', exp, { dev: dh });
+    const token = newSession(e, 'client', exp, { dev: dh, ...(viaTemp ? { mc: true } : {}) });
     c.lastLogin = new Date(now).toISOString();
-    log('כניסת לקוח', e);
-    return out({ ok: true, token, role: 'client', name: line(c.name, 60), exp: new Date(exp).toISOString() }, 200, mail);
+    log('כניסת לקוח' + (viaTemp ? ' עם סיסמה ראשונית' : ''), e);
+    return out({ ok: true, token, role: 'client', name: line(c.name, 60), mustChange: viaTemp, exp: new Date(exp).toISOString() }, 200, mail);
   }
 
-  // ---------------------------------------------------------------- the older way in, for the admin only, until a password exists
-  case 'request': {
-    const e = email(b.email), p = phone(b.phone);
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || p.length < 9) return out({ ok: false, error: 'bad-input' }, 400);
-    if (!hit('req-ip', IPK, 8, HOUR) || !hit('req-mail', e, 5, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
-    if (!hit('req-wait', e, 1, 30000)) return out({ ok: false, error: 'wait' }, 429);
+  // An initial password to the registered email (the admin's, or a client's). The answer is the same for any address.
+  // It is a second way in, valid for a while; the current password keeps working, so a stranger asking cannot lock anyone out.
+  case 'forgot': {
+    const e = email(b.email);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return out({ ok: false, error: 'bad-input' }, 400);
+    if (!hit('fg-ip', IPK, 5, HOUR) || !hit('fg-all', 'all', 30, HOUR) || !hit('fg-mail', e, 3, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
     const ok = { ok: true, sent: true };
-    if (PASSWORDS || !isAdmin(e, p)) {   // once a password exists this door is shut; everyone else just gets the same answer
-      log('ניסיון כניסה לא מוכר', e);
-      if (!hit('unknown', 'all', 9, HOUR) && hit('unknown-alert', 'all', 1, HOUR)) return out(ok, 200, alert('ניסיונות כניסה חשודים', 'היו 10 ניסיונות כניסה עם פרטים לא מוכרים בשעה האחרונה.'));
-      return out(ok);
-    }
-    if (sd.lock[e] > now) return out(ok);
-    // a code that was sent in the last 2 minutes stays: someone else's request must not cancel the code the owner is waiting for
-    const pend = sd.otp[e];
-    if (pend && pend.h && pend.exp - 8 * 60000 > now) return out(ok);
-    const code = code6();
-    sd.otp[e] = { h: sha256hex(code + ':' + e), phone: p, exp: now + 10 * 60000, tries: 0 };
-    return out(ok, 200, { to: e, subject: `הקוד שלך ל־SPIDER: ${code}`,
-      text: `הקוד שלך: ${code}\n\nהוא תקף ל־10 דקות.\nאם לא ביקשת להיכנס, אפשר להתעלם מהמייל הזה.\n\nSPIDER · חיים קריספין · 054-4979771\n` });
+    const adm = e === ADMIN_EMAIL, a = acct(e);
+    if (!a) { pwDummy('x'); log('בקשת סיסמה לכתובת לא מוכרת', e); return out(ok); }
+    const temp = rndPassword();
+    const keep = a.pwAt;
+    giveTemp(a, temp, adm ? TEMP_ADMIN_MIN * 60000 : TEMP_CLIENT_DAYS * DAY, 'reset', false);
+    a.pwAt = keep;   // the date of the chosen password does not change
+    log('סיסמה ראשונית נשלחה למייל', e);
+    return out(ok, 200, mailTo(e, 'SPIDER · הסיסמה הראשונית שלך',
+      `שלום${a.name ? ' ' + a.name : ''},\n\nהסיסמה הראשונית שלך: ${temp}\n\nהיא תקפה ${adm ? 'לשעה' : 'ל־' + TEMP_CLIENT_DAYS + ' ימים'}. נכנסים בעמוד ${LOGIN_URL} עם המייל הזה, ובכניסה הראשונה בוחרים סיסמה משלך.\nאם לא ביקשת, אפשר להתעלם מהמייל: הסיסמה הקיימת שלך ממשיכה לעבוד.\n\nSPIDER · חיים קריספין · 054-4979771\n`));
   }
 
-  case 'verify': {
-    const e = email(b.email), p = phone(b.phone);
-    if (!hit('ver-ip', IPK, 30, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
-    if (PASSWORDS || sd.lock[e] > now) return out({ ok: false, error: PASSWORDS ? 'expired' : 'too-many' }, PASSWORDS ? 400 : 429);
-    const o = sd.otp[e];
-    if (!o || !o.h || o.exp < now) return out({ ok: false, error: 'expired' }, 400);
-    // every wrong guess counts: 5 per code, 10 per hour per address, then a one-hour lock and a warning to the admin
-    const bad = (error) => {
-      o.tries = (o.tries || 0) + 1;
-      const fails = (sd.fails[e] = (sd.fails[e] || []).filter((t) => now - t < HOUR).concat(now));
-      let mail = null;
-      if (fails.length >= 10) { sd.lock[e] = now + HOUR; delete o.h; mail = alert('נחסמה כניסה אחרי ניסיונות כושלים', `10 קודים שגויים עבור ${e}. הכניסה לכתובת הזו נחסמה לשעה.`); log('חסימה זמנית אחרי ניסיונות כושלים', e); }
-      if (o.tries >= 5) delete o.h;
-      return out({ ok: false, error: o.h ? error : 'too-many', left: o.h ? 5 - o.tries : 0 }, o.h ? 400 : 429, mail);
-    };
-    const codeOk = same(sha256hex(String(b.code || '').replace(/\D/g, '') + ':' + e), o.h);
-    const phoneOk = same(o.phone, p);
-    if (!codeOk || !phoneOk) return bad('wrong');
-    if (!isAdmin(e, p)) return bad('wrong');
-    if (set(ADMIN_TOTP)) {
-      const t = String(b.totp || '').replace(/\D/g, '');
-      if (t.length !== 6) return out({ ok: false, error: 'totp-needed' }, 401);   // the emailed code stays valid
-      const step = totpStep(ADMIN_TOTP, t, now);
-      if (!step || step <= (sd.totpLast || 0)) return bad('wrong-totp');
-      sd.totpLast = step;
+  // choose one's own password: after an initial one (no need for the old), or from the account with the current password
+  case 'change-password': {
+    const s = session();
+    if (!s) return out({ ok: false, error: 'signed-out' }, 401);
+    if (!hit('chg-ip', IPK, 10, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const np = String(b.password == null ? '' : b.password);
+    if (np.length < MIN_PASSWORD || np.length > 100) return out({ ok: false, error: 'weak-password' }, 400);
+    const a = acct(s.email);
+    if (!a) return out({ ok: false, error: 'signed-out' }, 401);
+    if (!s.mc) {
+      if (!hit('chg-try', s.email, 10, HOUR)) return out({ ok: false, error: 'too-many' }, 429);
+      if (!a.pw || !pwCheck(String(b.current || '').slice(0, 200), a.pw)) { log('החלפת סיסמה נכשלה', s.email); return out({ ok: false, error: 'bad-login' }, 403); }
     }
-    delete o.h;
-    const token = newSession(e, 'admin', now + ADMIN_SESSION_DAYS * DAY);
-    log('כניסת מנהל', e);
-    return out({ ok: true, token, role: 'admin', name: 'מנהל', exp: new Date(now + ADMIN_SESSION_DAYS * DAY).toISOString() }, 200,
-      alert('כניסת מנהל', 'נכנסת למערכת SPIDER כמנהל. אם זה לא אתה, קבע סיסמה (ADMIN_PASSWORD בסוד SPIDER) והרץ את ההתקנה.'));
+    a.pw = pwHash(np); a.tmp = null; a.pwBy = 'client'; a.pwAt = new Date(now).toISOString();
+    const cur = tokenHash();
+    closeSessions(s.email, cur);                      // every other open session ends; this one stays
+    sd.sessions[cur].mc = false;
+    log('הסיסמה הוחלפה', s.email);
+    return out({ ok: true }, 200, s.role === 'admin' ? alert('סיסמת המנהל הוחלפה', 'סיסמת המנהל של SPIDER הוחלפה. אם זה לא אתה, בקש סיסמה ראשונית חדשה בעמוד הכניסה.') : null);
   }
 
   // ---------------------------------------------------------------- signed in
   case 'me': {
     const s = session();
     if (!s) return out({ ok: false, error: 'signed-out' }, 401);
+    // signed in with an initial password: nothing else opens until a password of their own is chosen
+    if (s.mc) return out({ ok: true, mustChange: true, role: s.role, name: s.role === 'admin' ? 'מנהל' : (sd.clients[s.email] || {}).name || '', email: s.email });
     if (s.role === 'admin') return out({ ok: true, role: 'admin', name: 'מנהל', email: s.email, sites: 'all', biz: bizProof() });
     const c = sd.clients[s.email];
     if (!active(c)) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'inactive' }, 403); }
@@ -262,7 +273,7 @@ switch (b.action) {
   // ------------------------------------------------------------- admin only
   case 'clients':
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
-    return out({ ok: true, clients: Object.values(sd.clients).map(view) });
+    return out({ ok: true, clients: Object.values(sd.clients).map(view), admin: adminView() });
 
   case 'client-save': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
@@ -271,7 +282,7 @@ switch (b.action) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return out({ ok: false, error: 'bad-input' }, 400);
     if (!sd.clients[e] && Object.keys(sd.clients).length >= MAX_CLIENTS) return out({ ok: false, error: 'too-many-clients' }, 400);
     const newPw = String(p.password == null ? '' : p.password);
-    if (newPw && (newPw.length < 10 || newPw.length > 100)) return out({ ok: false, error: 'weak-password' }, 400);
+    if (newPw && (newPw.length < MIN_PASSWORD || newPw.length > 100)) return out({ ok: false, error: 'weak-password' }, 400);
     const old = p.oldEmail && email(p.oldEmail) !== e ? sd.clients[email(p.oldEmail)] : null;
     if (old) delete sd.clients[email(p.oldEmail)];
     const prev = sd.clients[e] || old || { createdAt: new Date(now).toISOString() };
@@ -285,11 +296,14 @@ switch (b.action) {
       ipLock: p.ipLock === true,
       maxDevices: Math.max(1, Math.min(10, Math.round(Number(p.maxDevices) || prev.maxDevices || DEFAULT_MAX_DEVICES)))
     };
-    if (newPw) { sd.clients[e].pw = pwHash(newPw); sd.clients[e].pwAt = new Date(now).toISOString(); }
+    // a password typed by the admin is an initial one: the old password stops working, the client must choose their own
+    if (newPw) giveTemp(sd.clients[e], newPw, TEMP_CLIENT_DAYS * DAY, 'admin', true);
     // a change in access applies at once: close the client's open sessions if they lost it, or got a new password
-    if (!active(sd.clients[e]) || newPw) for (const [t, s] of Object.entries(sd.sessions)) if (s.email === e) delete sd.sessions[t];
-    log(newPw ? 'עדכון לקוח וסיסמה' : 'עדכון לקוח', e);
-    return out({ ok: true, client: view(sd.clients[e]) });
+    if (!active(sd.clients[e]) || newPw) closeSessions(e);
+    log(newPw ? 'עדכון לקוח וסיסמה ראשונית' : 'עדכון לקוח', e);
+    const sent = newPw && p.notify !== false ? mailTo(e, 'SPIDER · הסיסמה הראשונית שלך',
+      `שלום ${line(p.name, 60)},\n\nנפתחה לך גישה ל־SPIDER.\nכניסה: ${LOGIN_URL}\nמייל: ${e}\nסיסמה ראשונית: ${newPw}\n\nבכניסה הראשונה תבחר סיסמה משלך. הסיסמה הראשונית תקפה ל־${TEMP_CLIENT_DAYS} ימים.\n\nSPIDER · חיים קריספין · 054-4979771\n`) : null;
+    return out({ ok: true, client: view(sd.clients[e]) }, 200, sent);
   }
 
   // approve or remove a device (or, with "ip", one address of it)
@@ -311,6 +325,30 @@ switch (b.action) {
       log('מכשיר אושר', c.email);
     }
     return out({ ok: true, client: view(c) });
+  }
+
+  // a new initial password, made here, sent to the client's email, and shown once to the admin (to pass on by WhatsApp too)
+  case 'client-reset': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    const e = email(b.email), c = sd.clients[e];
+    if (!c) return out({ ok: false, error: 'not-found' }, 404);
+    const temp = rndPassword();
+    giveTemp(c, temp, TEMP_CLIENT_DAYS * DAY, 'admin', true);
+    closeSessions(e);
+    log('סיסמה ראשונית חדשה', e);
+    return out({ ok: true, password: temp, client: view(c) }, 200, mailTo(e, 'SPIDER · הסיסמה הראשונית שלך',
+      `שלום ${c.name || ''},\n\nנפתחה לך גישה ל־SPIDER.\nכניסה: ${LOGIN_URL}\nמייל: ${e}\nסיסמה ראשונית: ${temp}\n\nבכניסה הראשונה תבחר סיסמה משלך. הסיסמה הראשונית תקפה ל־${TEMP_CLIENT_DAYS} ימים.\n\nSPIDER · חיים קריספין · 054-4979771\n`));
+  }
+
+  // does this password open that account? (a password a client chose is never shown, but it can be tested)
+  case 'client-check-password': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    if (!hit('chk', IPK, 30, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const e = email(b.email), a = acct(e), pw = String(b.password == null ? '' : b.password).slice(0, 200);
+    if (!a || !pw) return out({ ok: false, error: 'not-found' }, 404);
+    const main = a.pw ? pwCheck(pw, a.pw) : pwDummy(pw), temp = tempOk(a) ? pwCheck(pw, a.tmp.h) : pwDummy(pw);
+    log('בדיקת סיסמה', e);
+    return out({ ok: true, match: main || temp, kind: main ? 'chosen' : temp ? 'initial' : null });
   }
 
   case 'client-extend': {
@@ -375,6 +413,6 @@ switch (b.action) {
 
   case 'log':
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
-    return out({ ok: true, log: sd.log.slice(0, 100), twoFactor: set(ADMIN_TOTP), password: PASSWORDS });
+    return out({ ok: true, log: sd.log.slice(0, 100), twoFactor: set(ADMIN_TOTP), password: true });
 }
 return out({ ok: false, error: 'unknown-action' }, 400);
