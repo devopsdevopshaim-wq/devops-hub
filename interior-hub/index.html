@@ -42,6 +42,41 @@
 <main id="main">
   <!-- ============ PLAN ============ -->
   <section class="view" id="view-plan" data-view="plan">
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="hero" aria-labelledby="hero-title">
+    <div class="hero-media" aria-hidden="true">
+      <img id="hero-img" src="assets/renders/scandi-living.jpg" alt="" fetchpriority="high" decoding="async">
+      <img id="hero-img-next" src="" alt="" decoding="async" hidden>
+    </div>
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <p class="hero-eyebrow">תכנון פנים · הדמיה · קניות בישראל</p>
+        <h1 id="hero-title">הבית שלכם, מרוהט<br>עוד לפני הרהיט הראשון</h1>
+        <p class="hero-lede">כותבים את גודל הבית ומספר החדרים. מקבלים תוכנית מרוהטת לפי כללי מעצבים, הליכה בתלת-ממד ורשימת קניות עם הטלפון והכתובת של החנות הקרובה.</p>
+      </div>
+      <form class="hero-brief" id="hero-brief" autocomplete="off" novalidate aria-label="פרטי הבית">
+        <div class="hb-field">
+          <label for="h-area">שטח הבית</label>
+          <div class="num-input"><input type="number" id="h-area" min="30" max="400" step="1" value="100" inputmode="numeric"><span class="unit">מ״ר</span></div>
+        </div>
+        <div class="hb-field">
+          <label for="h-rooms">חדרים</label>
+          <div class="stepper"><button type="button" data-hstep="-1" aria-label="פחות חדרים">−</button><input type="number" id="h-rooms" min="2" max="8" value="4" inputmode="numeric"><button type="button" data-hstep="1" aria-label="יותר חדרים">+</button></div>
+        </div>
+        <div class="hb-field">
+          <span class="hb-label" id="hl-home">סוג</span>
+          <div class="seg" role="radiogroup" aria-labelledby="hl-home">
+            <label><input type="radio" name="h-home" value="apartment" id="h-home-apartment" checked><span>דירה</span></label>
+            <label><input type="radio" name="h-home" value="house" id="h-home-house"><span>בית עם חצר</span></label>
+          </div>
+        </div>
+        <button type="submit" class="btn hero-cta">תכננו לי את הבית</button>
+        <div class="hb-styles" role="radiogroup" aria-label="סגנון" id="h-styles"></div>
+      </form>
+      <ul class="hero-thumbs" id="hero-thumbs" aria-label="הדמיות לדוגמה"></ul>
+    </div>
+  </section>
+
     <div class="layout">
       <aside class="brief" aria-labelledby="brief-title">
         <details class="brief-box" id="brief-details" open>
@@ -230,7 +265,7 @@
         <section class="renders" id="renders" aria-labelledby="renders-title" hidden>
           <div class="section-head">
             <h2 id="renders-title">הדמיות</h2>
-            <p>הדמיות מציאותיות של החדרים בסגנון שבחרתם. התמונות נוצרו בבינה מלאכותית לפי התכנון, ואינן צילום של מוצר מסוים.</p>
+            <p>הדמיות לדוגמה בסגנון שבחרתם, מחושבות במנוע התלת-ממד של האתר עם הרהיטים האמיתיים. לתמונה של הבית שלכם לחצו ״צילום מציאותי״ בסיור.</p>
           </div>
           <div class="render-grid" id="render-grid"></div>
         </section>
@@ -340,7 +375,7 @@
 
 <footer class="foot">
   <p>מתאר · תכנון ריהוט לבית. המחירים הם הערכה בלבד; את הטלפונים והכתובות כדאי לוודא מול הרשת לפני הגעה.</p>
-  <p class="credits">דגמי תלת-ממד: Glam Velvet Sofa ו-Damask Chair © Wayfair, Wood &amp; Leather Sofa ו-Plant © Darmstadt Graphics Group (CC BY 4.0), Sheen Chair © Wayfair ו-Glass Vase (CC0), מתוך Khronos glTF Sample Assets. תאורת HDR: Poly Haven (CC0). פרקט: three.js (MIT). צילום מציאותי: three-gpu-pathtracer ו-three-mesh-bvh של Garrett Johnson (MIT). IKEA ושמות המוצרים שייכים לבעליהם; הקישורים מובילים לאתרי הרשתות.</p>
+  <p class="credits">דגמי תלת-ממד: Glam Velvet Sofa ו-Damask Chair © Wayfair, Wood &amp; Leather Sofa ו-Plant © Darmstadt Graphics Group (CC BY 4.0), Sheen Chair © Wayfair ו-Glass Vase (CC0), מתוך Khronos glTF Sample Assets. תאורת HDR: Poly Haven (CC0). פרקט: three.js (MIT). רהיטים מסצנות של Benedikt Bitterli ו-Blendswap: SlykDrako ו-Mareck (CC0), Wig42, Jay-Artist ו-MaTTeSr (CC BY 3.0); פירוט ב-assets/CREDITS.md. צילום מציאותי: three-gpu-pathtracer ו-three-mesh-bvh של Garrett Johnson (MIT). IKEA ושמות המוצרים שייכים לבעליהם; הקישורים מובילים לאתרי הרשתות.</p>
 </footer>
 <dialog class="print-dlg" id="print-dlg" aria-labelledby="print-title">
   <form method="dialog" id="print-form">

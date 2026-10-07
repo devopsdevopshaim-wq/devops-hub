@@ -108,12 +108,79 @@
     $('#f-gstyle').value = state.gardenStyle;
     ['pool', 'water', 'pergola', 'grill'].forEach((k) => { $('#f-' + k).checked = state[k]; });
     syncHomeFields();
+    syncHero();
   }
   function syncHomeFields() {
     const house = state.home === 'house';
     $('#garden-fields').hidden = !house;
     $('#c-balcony').hidden = house;
   }
+  /* ---------- hero: size, rooms, kind of home and style, with the style's rooms behind ---------- */
+  const HERO_ROOMS = [['living', 'סלון'], ['kitchen', 'מטבח ופינת אוכל'], ['master', 'חדר שינה']];
+  let heroRoom = 'living';
+  function initHero() {
+    $('#h-styles').innerHTML = Object.entries(IH.STYLES).map(([k, st]) => `<button type="button" class="hb-style" role="radio" data-hstyle="${k}" aria-checked="false"><i aria-hidden="true"><b style="background:${st.floor}"></b><b style="background:${st.fabric2}"></b><b style="background:${st.wall}"></b><b style="background:${st.accent}"></b></i>${esc(st.name)}</button>`).join('');
+    const form = $('#hero-brief');
+    form.addEventListener('click', (e) => {
+      const st = e.target.closest('[data-hstyle]');
+      if (st) { applyHero(Object.assign(readHero(), { style: st.dataset.hstyle })); return; }
+      const step = e.target.closest('[data-hstep]');
+      if (step) {
+        const inp = $('#h-rooms');
+        inp.value = Math.max(2, Math.min(8, (+inp.value || 4) + +step.dataset.hstep));
+      }
+    });
+    $('#hero-thumbs').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-hroom]');
+      if (!b) return;
+      heroRoom = b.dataset.hroom;
+      showHeroImage();
+    });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      applyHero(readHero());
+      document.querySelector('.layout').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+  // what the hero form says right now (typed numbers are tidied into range)
+  function readHero() {
+    const area = Math.max(30, Math.min(400, Math.round(+$('#h-area').value) || state.area));
+    const rooms = Math.max(2, Math.min(8, Math.round(+$('#h-rooms').value) || state.rooms));
+    const home = ($('[name="h-home"]:checked') || {}).value || state.home;
+    return { area, rooms, home, custom: rooms !== state.rooms ? false : state.custom };
+  }
+  function applyHero(patch) {
+    Object.assign(state, patch);
+    if (patch.home === 'house' && state.yard < 40) state.yard = 250;
+    userEdited = true;
+    save();
+    writeForm();
+    run();
+  }
+  function syncHero() {
+    if (!$('#hero')) return;
+    $('#h-area').value = state.area;
+    $('#h-rooms').value = state.rooms;
+    const h = $(`#h-home-${state.home}`); if (h) h.checked = true;
+    $$('[data-hstyle]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.hstyle === state.style)));
+    $('#hero-thumbs').innerHTML = HERO_ROOMS.map(([k, n]) => `<li><button type="button" data-hroom="${k}" aria-pressed="${k === heroRoom}"><img src="assets/renders/${state.style}-${k}.jpg" alt="" loading="lazy" decoding="async"><span>${esc(n)}</span></button></li>`).join('');
+    showHeroImage();
+  }
+  // cross-fade to the chosen style and room; a missing render keeps the current picture
+  function showHeroImage() {
+    const cur = $('#hero-img'), next = $('#hero-img-next');
+    const src = `assets/renders/${state.style}-${heroRoom}.jpg`;
+    $$('[data-hroom]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.hroom === heroRoom)));
+    if (cur.getAttribute('src') === src) return;
+    next.onload = () => {
+      next.hidden = false;
+      requestAnimationFrame(() => next.classList.add('is-in'));
+      setTimeout(() => { cur.src = src; next.classList.remove('is-in'); next.hidden = true; }, 750);
+    };
+    next.onerror = () => { next.hidden = true; };
+    next.src = src;
+  }
+
   /* ---------- the user's own rooms: type and size for each ---------- */
   const ROOM_KIND_NAMES = { master: 'חדר שינה הורים', kid: 'חדר ילדים', adult: 'חדר שינה', office: 'חדר עבודה', guest: 'חדר אורחים' };
   function defaultRoomList() {
@@ -187,6 +254,7 @@
     };
     $('#o-yard').textContent = state.yard;
     if (custom) $('#f-rooms').value = state.rooms;
+    syncHero();
     $('#f-rooms').disabled = custom;
     $('#roomlist-body').hidden = !custom;
     updateRoomNote();
@@ -1014,6 +1082,7 @@
   };
 
   load();
+  initHero();
   buildForm();
   bindEvents();
   renderRules();
