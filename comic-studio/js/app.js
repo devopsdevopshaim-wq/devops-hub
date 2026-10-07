@@ -229,10 +229,10 @@
   }
 
   /* בלי מטמון (ייצוא, תצוגות מקדימות). מחזיר { id, promise }; מי שמקבל את התוצאה סוגר אותה */
-  function processOnce(ref, max) {
+  function processOnce(ref, max, preview) {
     var src = srcOf(ref.img), style = ref.style || 'original';
     if (!src) return { id: null, promise: Promise.reject(new Error('התמונה לא נמצאה')) };
-    var job = EN.render(src, style, ref.params, max, { onProgress: progressFor(style) });
+    var job = EN.render(src, style, ref.params, max, { onProgress: preview ? null : progressFor(style), preview: preview });
     return { id: job.id, promise: job.promise.catch(function (e) { throw friendly(e, style); }) };
   }
 
@@ -250,11 +250,30 @@
   }
 
   /* לציור חי בעמוד: מחזיר מיד מה שיש, ומבקש ציור מחדש כשמוכן */
+  var failedAt = {}, failCanvas = null;
+  function failTile() {
+    if (failCanvas) return failCanvas;
+    var c = document.createElement('canvas');
+    c.width = 480; c.height = 360;
+    var x = c.getContext('2d');
+    x.fillStyle = '#2a2f3d'; x.fillRect(0, 0, 480, 360);
+    x.fillStyle = '#ffd23f'; x.textAlign = 'center'; x.direction = 'rtl';
+    x.font = '600 28px "IBM Plex Sans Hebrew", sans-serif';
+    x.fillText('הציור לא הצליח', 240, 165);
+    x.fillStyle = '#a9b0c0'; x.font = '22px "IBM Plex Sans Hebrew", sans-serif';
+    x.fillText('בחרו סגנון אחר או נסו שוב בעוד רגע', 240, 205);
+    failCanvas = c;
+    return c;
+  }
+
   function getProcessed(ref, max) {
     var key = refKey(ref, max), hit = cacheGet(key);
     if (hit) return hit;
     if (!imageById(ref.img)) return null;
-    if (!inflight.has(key)) processNow(ref, max).then(function () { if (editor) editor.draw(); }).catch(function () {});
+    /* פאנל שנכשל לא מנסה שוב בלולאה: מראה הודעה, ומנסה שוב רק אחרי 30 שניות */
+    if (failedAt[key] && Date.now() - failedAt[key] < 30000) return failTile();
+    if (!inflight.has(key)) processNow(ref, max).then(function () { delete failedAt[key]; if (editor) editor.draw(); })
+      .catch(function (e) { if (e && e.canceled) return; failedAt[key] = Date.now(); if (editor) editor.draw(); });
     return null;
   }
 
@@ -476,7 +495,8 @@
     var make = function (cell) {
       if (cell.started || job !== thumbJob) return;
       cell.started = true;
-      var r = processOnce({ img: id, style: cell.s.id, params: labParams(cell.s.id) }, SZ.thumb);
+      if (!EN.background()) { cell.f.textContent = ''; cell.f.appendChild(el('span', 'nopreview', cell.s.name)); return; }
+      var r = processOnce({ img: id, style: cell.s.id, params: labParams(cell.s.id) }, SZ.thumb, true);
       if (r.id) thumbJobs.push(r.id);
       r.promise.then(function (b) {
         if (job !== thumbJob) { closeImg(b); return; }
@@ -484,7 +504,11 @@
         closeImg(b);
         cell.f.textContent = '';
         cell.f.appendChild(c);
-      }).catch(function () { if (job === thumbJob) cell.f.textContent = ''; });
+      }).catch(function () {
+        if (job !== thumbJob) return;
+        cell.f.textContent = '';
+        cell.f.appendChild(el('span', 'nopreview', cell.s.name));
+      });
     };
     if ('IntersectionObserver' in window) {
       thumbObserver = new IntersectionObserver(function (entries) {

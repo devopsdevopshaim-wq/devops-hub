@@ -35,7 +35,7 @@
   }
 
   function server(body, ms) {
-    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body), signal: timeout(ms || 90000) })
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body), signal: timeout(ms || 35000) })
       .then(function (r) { return r.json().catch(function () { return {}; }); })
       .then(function (j) { if (!j.ok) throw new Error(j.error || 'server'); return j; });
   }
@@ -43,7 +43,7 @@
   /* שירות הטקסט החינמי של Pollinations (תואם OpenAI) */
   function polText(content, json) {
     return fetch(POL_TEXT, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: timeout(90000),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: timeout(40000),
       body: JSON.stringify({ model: 'openai', messages: [{ role: 'user', content: content }], response_format: json ? { type: 'json_object' } : undefined, private: true })
     }).then(function (r) { if (!r.ok) throw new Error('pol ' + r.status); return r.json(); })
       .then(function (j) {
@@ -100,16 +100,31 @@
   function paint(prompt, w, h, seed) {
     var d = dims(w, h);
     var url = function (s) {
-      return POL_IMG + encodeURIComponent(prompt.slice(0, 1400)) + '?width=' + d[0] + '&height=' + d[1] + '&nologo=true&private=true&model=flux&seed=' + s;
+      return POL_IMG + encodeURIComponent(prompt.slice(0, 1400)) + '?width=' + d[0] + '&height=' + d[1] + '&nologo=true&private=true&enhance=true&model=flux&seed=' + s;
     };
     var once = function (s) {
-      return fetch(url(s), { signal: timeout(150000) }).then(function (r) {
+      if (cancelled) return Promise.reject(stopErr());
+      /* שירות חינמי: לא מחכים לו יותר מדקה לניסיון. "עצירה" מנתקת את הבקשה מיד */
+      var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var t = ctl ? setTimeout(function () { ctl.abort(); }, 70000) : 0;
+      current = ctl;
+      return fetch(url(s), { signal: ctl ? ctl.signal : undefined }).then(function (r) {
+        clearTimeout(t);
         if (!r.ok) throw new Error('paint ' + r.status);
         return r.blob();
-      }).then(function (b) { if (!/^image\//.test(b.type)) throw new Error('not image'); return b; });
+      }).then(function (b) { if (!/^image\//.test(b.type)) throw new Error('not image'); return b; })
+        .catch(function (e) { clearTimeout(t); if (cancelled) throw stopErr(); throw e; });
     };
-    return once(seed).catch(function () { return once(seed + 101); });
+    /* ניסיון שני רק אם הראשון נכשל מהר (שגיאה); אם השירות פשוט לא ענה דקה, לא מחכים עוד דקה */
+    return once(seed).catch(function (e) {
+      if (e && (e.stopped || e.name === 'AbortError')) throw e;
+      return once(seed + 101);
+    });
   }
+
+  var cancelled = false, current = null;
+  function stopErr() { return Object.assign(new Error('הציור נעצר.'), { stopped: true }); }
+  function cancel() { cancelled = true; if (current) { try { current.abort(); } catch (e) { /* כבר נעצר */ } } }
 
   function prompt(style, scene, people) {
     return LOOK[style] + '. ' + scene + (people.length ? '. Characters: ' + people.join(' | ') : '') +
@@ -133,6 +148,7 @@
 
   /* opts: { mode, ids, style, story, title, panels, aspect }. status(text) */
   function run(opts, status) {
+    cancelled = false;
     var style = LOOK[opts.style] ? opts.style : 'superhero';
     var seed = Math.floor(Math.random() * 1e8);
     status('מתאר את הדמויות בתמונות…');
@@ -177,10 +193,13 @@
       var pg = PG.newPage(opts.aspect === 'square' ? 'square' : opts.aspect === 'landscape' ? 'landscape' : opts.aspect === 'tall' ? 'story' : 'a4', LAYOUT[panels.length] || 'grid-6');
       pg.title.text = sc.title || 'הקומיקס שלי';
       pg.title.show = Boolean(pg.title.text);
-      var polys = PG.computePanels(pg), made = [];
+      var polys = PG.computePanels(pg), made = [], failed = 0;
       return panels.reduce(function (p, panel, i) {
         return p.then(function () {
-          status('מצייר פאנל ' + (i + 1) + ' מתוך ' + panels.length + '…');
+          if (cancelled) throw stopErr();
+          /* אם שני הפאנלים הראשונים נכשלו, השירות לא זמין: עוצרים במקום לחכות דקות */
+          if (!made.length && failed >= 1) throw new Error('שירות הציור החינמי לא מגיב כרגע. נסו שוב בעוד כמה דקות, או לחצו על "בדיקת מערכת".');
+          status('מצייר פאנל ' + (i + 1) + ' מתוך ' + panels.length + '… (עד דקה לפאנל)');
           var b = PG.bbox(polys[i]);
           return paint(prompt(style, panel.scene || '', people), b.w, b.h, seed + i).then(function (blob) {
             return save(blob, (pg.title.text || 'קומיקס') + ' · פאנל ' + (i + 1), opts.ids[0]).then(function (m) {
@@ -189,7 +208,10 @@
               pg.panels[i].params = { sat: 100, contrast: 0 };
               made.push({ meta: m, blob: blob });
             });
-          }, function () { /* פאנל שנכשל נשאר ריק, ואפשר לגרור אליו תמונה */ });
+          }, function (e) {
+            if (e && e.stopped) throw e;
+            failed++; /* פאנל שנכשל נשאר ריק, ואפשר לגרור אליו תמונה */
+          });
         });
       }, Promise.resolve()).then(function () {
         if (!made.length) throw new Error('שירות הציור החינמי לא הגיב. נסו שוב בעוד דקה.');
@@ -224,5 +246,14 @@
     });
   }
 
-  window.ComicFree = { run: run };
+  /* בדיקת מערכת: האם שירות הציור החינמי עונה מהמכשיר הזה (תמונה זעירה) */
+  function ping() {
+    var t0 = Date.now();
+    return fetch(POL_IMG + encodeURIComponent('a red circle') + '?width=64&height=64&nologo=true&seed=1', { signal: timeout(45000) })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+      .then(function (b) { if (!/^image\//.test(b.type)) throw new Error('לא תמונה'); return { ok: true, ms: Date.now() - t0 }; })
+      .catch(function (e) { return { ok: false, why: e.name === 'AbortError' ? 'לא ענה תוך 45 שניות' : e.message }; });
+  }
+
+  window.ComicFree = { run: run, cancel: cancel, ping: ping };
 })();

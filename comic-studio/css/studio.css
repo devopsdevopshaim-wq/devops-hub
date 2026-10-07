@@ -514,3 +514,22 @@ kbd { display: inline-block; min-width: 64px; margin-inline-end: 8px; padding: 2
 .low .card, .low .tile:hover, .low .scard:hover .sframe { box-shadow: none; }
 .low .stage-inner, .low #page-canvas, .low .motion-stage canvas { box-shadow: 0 8px 20px rgba(0, 0, 0, .5); }
 .low .lib-hero::before { display: none; }
+
+.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.checks li { display: grid; grid-template-columns: 26px 1fr; gap: 4px 10px; align-items: start; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 14px; }
+.checks li b { font-size: 16px; line-height: 1.3; }
+.checks li small { grid-column: 2; color: var(--text-2); font-size: 12.5px; direction: auto; }
+.nopreview { padding: 10px; text-align: center; font: 700 22px/1.05 var(--display); color: var(--text-2); }
+
+/* רשת לא מתרחבת לפי התוכן שבתוכה: בלי זה, ציור גדול במעבדה הרחיב את כל הדף פי שלושה בטלפון,
+   הדף הוקטן והלחיצות נחתו במקום הלא נכון */
+.lab, .create, .composer, .lib-hero, .motion-body, .stage-bar { min-width: 0; }
+.lab > *, .create > *, .create-form > *, .composer > *, .lab-main > *, .motion-body > *, .stage-bar > *, .lib-hero > * { min-width: 0; }
+.stage-inner, .motion-stage canvas, #page-canvas, .video-stage canvas { max-width: 100%; }
+html, body { overflow-x: hidden; }
+main { overflow-x: clip; }
+@media (max-width: 960px) {
+  .lab, .create, .composer, .motion-body, .stage-bar, .lib-hero, .lib-hero.compact { grid-template-columns: minmax(0, 1fr); }
+  .stage { display: block; }
+  .stage-inner { width: 100%; height: auto; }
+}
