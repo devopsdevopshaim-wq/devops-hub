@@ -14,6 +14,8 @@ on:
   push:
     branches: [main]
     paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**', 'book-studio/**', 'electro-fix/**', 'assembly-studio/**', 'netplan/**', 'automation/**', 'robotic-parking/**', 'comic-studio/**', 'portfolio/**']
+  schedule:
+    - cron: '17 3 * * *'   # daily: skills and knowledge are rebuilt from the projects as they are now
   workflow_dispatch:
 
 permissions:

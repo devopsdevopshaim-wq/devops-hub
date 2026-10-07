@@ -64,7 +64,29 @@
     chip.querySelector('.chip-out').addEventListener('click', logout);
     chip.querySelector('.chip-pw').addEventListener('click', changePassword);
     nav.appendChild(chip);
+    if (s.role === 'admin') adminMenu(nav);
     if (s.role === 'client') welcome(s);
+  }
+
+  // the admin's way in to the management screens, one tap from the main screen
+  function adminMenu(nav) {
+    if (document.getElementById('admin-fab')) return;
+    var base = (document.currentScript && document.currentScript.src || '').replace(/js\/auth\.js.*$/, '');
+    if (!base) { var sc = document.querySelector('script[src*="auth.js"]'); base = sc ? sc.src.replace(/js\/auth\.js.*$/, '') : './'; }
+    var box = document.createElement('div');
+    box.id = 'admin-fab';
+    box.className = 'admin-fab';
+    box.innerHTML = '<button type="button" class="af-btn" aria-haspopup="true" aria-expanded="false">⚙ ניהול</button>' +
+      '<div class="af-menu" hidden>' +
+      '<a href="' + base + 'admin.html">מרכז הבקרה</a>' +
+      '<a href="' + base + 'admin.html#clients">לקוחות והרשאות</a>' +
+      '<a href="' + base + 'admin.html#biz">לידים ועסקים</a>' +
+      '<a href="' + base + 'admin.html#skills">סקילים</a>' +
+      '<a href="' + base + 'admin.html#media">מוזיקה וסרטונים</a></div>';
+    var btn = box.querySelector('.af-btn'), menu = box.querySelector('.af-menu');
+    btn.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); });
+    document.addEventListener('click', function () { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); });
+    document.body.appendChild(box);
   }
 
   // a line under the menu, so the client sees whose site this is and until when

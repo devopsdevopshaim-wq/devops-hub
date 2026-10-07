@@ -40,3 +40,12 @@
 .user-chip .chip-pw { opacity: .85; }
 .pw-dialog { z-index: 90; }
 .user-chip .chip-pw:hover { background: rgba(139, 123, 255, .28); }
+
+/* admin quick access: always one tap away */
+.admin-fab { position: fixed; top: 74px; inset-inline-start: 14px; z-index: 60; font-family: var(--body, system-ui); }
+.af-btn { height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--brass, #e0b25a); background: linear-gradient(135deg, #e0b25a, #c98f2f); color: #17143a; font: 700 14px var(--body, system-ui); cursor: pointer; box-shadow: 0 10px 26px -10px rgba(0,0,0,.8); }
+.af-menu { margin-top: 8px; min-width: 190px; padding: 6px; border-radius: 14px; background: rgba(23,20,58,.98); border: 1px solid rgba(224,178,90,.4); box-shadow: 0 24px 50px -16px #000; }
+.af-menu[hidden] { display: none; }
+.af-menu a { display: block; padding: 10px 12px; border-radius: 10px; color: #f1eefc; text-decoration: none; font-size: 14px; }
+.af-menu a:hover { background: rgba(224,178,90,.16); }
+@media (max-width: 640px) { .admin-fab { top: auto; bottom: 92px; inset-inline-start: 12px; } .af-menu { position: absolute; bottom: 48px; } }
