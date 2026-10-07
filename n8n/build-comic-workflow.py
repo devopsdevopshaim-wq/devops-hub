@@ -9,7 +9,7 @@ and a real image model draws the comic:
      style, images: [{mime, data(base64)}], story, panels, title, text, aspect}
                                                        -> {ok, provider, mime, image(base64)}
 
-Gemini (gemini-2.5-flash-image) draws by default and keeps faces recognizable;
+Gemini (Gemini 3 Pro Image for full pages, 3.1 Flash Image otherwise, 2.5 Flash Image as fallback) draws by default and keeps faces recognizable;
 OpenAI (gpt-image-1, images/edits) is the alternative, and 'auto' falls back to it
 when Gemini fails. The keys never live in the repository:
 .github/scripts/n8n-deploy.mjs fills them in from the GEMINI_API_KEY and
@@ -49,7 +49,9 @@ const now = Date.now();
 sweep();
 const GEMINI_KEY = '__GEMINI_API_KEY__';
 const OPENAI_KEY = '__OPENAI_API_KEY__';
-const GEMINI_MODEL = 'gemini-2.5-flash-image';
+/* full pages need the strongest model (layout and Hebrew lettering); single drawings use the fast one.
+   If a model is not available to the key, the next one in the list is tried. */
+const GEMINI_MODELS = { page: ['gemini-3-pro-image', 'gemini-3-pro-image-preview', 'gemini-2.5-flash-image'], other: ['gemini-3.1-flash-image', 'gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'] };
 const OPENAI_MODEL = 'gpt-image-1';
 const set = (k) => k && !/^__/.test(k);
 // the image bill: drawings a day for everyone together, and per address an hour
@@ -123,9 +125,23 @@ const aspect = ASPECTS[b.aspect] || (mode === 'page' ? ASPECTS.portrait : ASPECT
 
 async function gemini() {
   const parts = [{ text: prompt }].concat(images.map((x) => ({ inline_data: { mime_type: x.mime, data: x.data } })));
+  const models = GEMINI_MODELS[mode === 'page' ? 'page' : 'other'];
+  let last;
+  for (const m of models) {
+    try { return await geminiOne.call(this, m, parts); } catch (e) {
+      last = e;
+      const code = e && (e.httpCode || (e.response && e.response.status) || e.statusCode);
+      /* only "this model is not available" moves to the next model; a real refusal stops here */
+      if (!(String(code) === '404' || /not found|not supported|is not available|permission/i.test(String(e.message || e.description || '')))) throw e;
+    }
+  }
+  throw last;
+}
+
+async function geminiOne(model, parts) {
   const r = await this.helpers.httpRequest({
     method: 'POST',
-    url: `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+    url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     headers: { 'x-goog-api-key': GEMINI_KEY, 'Content-Type': 'application/json' },
     body: { contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE', 'TEXT'], imageConfig: { aspectRatio: aspect[0] } } },
     json: true,
@@ -135,7 +151,7 @@ async function gemini() {
   const part = cand && cand.content && (cand.content.parts || []).find((p) => p.inlineData || p.inline_data);
   if (!part) throw new Error('gemini returned no image' + (cand && cand.finishReason ? ' (' + cand.finishReason + ')' : ''));
   const d = part.inlineData || part.inline_data;
-  return { mime: d.mimeType || d.mime_type || 'image/png', image: d.data };
+  return { mime: d.mimeType || d.mime_type || 'image/png', image: d.data, model };
 }
 
 async function openai() {
@@ -183,7 +199,7 @@ for (const p of order) {
   try {
     const r = await (p === 'gemini' ? gemini : openai).call(this);
     sd.drawn = (sd.drawn || 0) + 1;
-    return out({ ok: true, provider: p, mime: r.mime, image: r.image, left: Math.max(0, DAY_CAP - sd.drawn) });
+    return out({ ok: true, provider: p, model: r.model || (p === 'openai' ? OPENAI_MODEL : ''), mime: r.mime, image: r.image, left: Math.max(0, DAY_CAP - sd.drawn) });
   } catch (e) {
     errors.push(p + ': ' + why(e));
   }
