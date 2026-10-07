@@ -26,7 +26,9 @@
 
   function lane(name) {
     if (lanes[name]) return lanes[name];
-    var w = new Worker('js/worker.js');
+    /* אותה גרסה כמו הדף (?v=...), כדי שטלפון לא יריץ עובד ישן מהמטמון */
+    var ver = ((document.querySelector('script[src*="engine.js"]') || {}).src || '').split('?')[1] || '';
+    var w = new Worker('js/worker.js' + (ver ? '?' + ver : ''));
     var L = { name: name, w: w, jobs: {} };
     w.onmessage = function (e) {
       var m = e.data, job = L.jobs[m.id];

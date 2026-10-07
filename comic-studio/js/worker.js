@@ -2,7 +2,8 @@
    מקבל קובץ תמונה (Blob), מפענח אותו בגודל הדרוש בלבד, ומחזיר ImageBitmap. */
 'use strict';
 self.window = self;
-importScripts('fx.js', 'fx-art.js', 'neural.js');
+var Q = self.location.search || '';
+importScripts('fx.js' + Q, 'fx-art.js' + Q, 'neural.js' + Q);
 
 var FX = self.ComicFX, NN = self.ComicNeural;
 var queue = [], busy = false, canceled = {};

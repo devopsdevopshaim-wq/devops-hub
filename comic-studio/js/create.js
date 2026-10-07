@@ -8,7 +8,7 @@
   var API = 'https://haimkripisn.app.n8n.cloud/webhook/comic-draw';
   var SEND_MAX = 1024;          /* הצד הארוך של תמונה שנשלחת לציור */
   var TIMEOUT = 180000;
-  var KEY = 'comic-create-v1';
+  var KEY = 'comic-create-v2';
 
   var STYLES = [
     { id: 'superhero', name: 'גיבורי-על', desc: 'קומיקס אמריקאי מודרני, דיו נועז וצבעים חזקים', c: ['#1d4ed8', '#ef4444', '#facc15'] },
@@ -33,7 +33,7 @@
   var busy = false;
 
   function load() {
-    var d = { mode: 'page', style: 'superhero', provider: 'auto', aspect: 'portrait', panels: '5', text: 'he' };
+    var d = { mode: 'page', style: 'superhero', provider: 'free', aspect: 'portrait', panels: '5', text: 'he' };
     try { var s = JSON.parse(localStorage.getItem(KEY) || '{}'); for (var k in s) d[k] = s[k]; } catch (e) { /* פרטי */ }
     return d;
   }
@@ -79,12 +79,12 @@
       if (j.ok) {
         server = j;
         var on = [j.gemini && 'Gemini', j.openai && 'OpenAI'].filter(Boolean);
-        box.className = 'server ' + (on.length ? 'ok' : 'warn');
-        box.textContent = on.length ? 'שרת הציור מחובר · ' + on.join(' + ') + ' · נותרו היום ' + j.left : 'השרת פעיל, אבל עוד לא חובר מפתח של Gemini או OpenAI';
+        box.className = 'server ok';
+        box.textContent = 'מצב חינמי פעיל' + (on.length ? ' · מחובר גם ' + on.join(' + ') + ' (בתשלום)' : '');
       } else {
         server = null;
-        box.className = 'server warn';
-        box.textContent = j.status === 404 ? 'שרת הציור עוד לא הותקן ב-n8n' : 'שרת הציור לא זמין כרגע';
+        box.className = 'server ok';
+        box.textContent = 'מצב חינמי פעיל';
       }
       updateGo();
     });
@@ -253,7 +253,9 @@
     /* בטלפון התוצאות נמצאות מתחת לטופס: גוללים אליהן כדי לראות את ההתקדמות */
     if (window.matchMedia('(max-width: 960px)').matches) setTimeout(function () { $('c-progress').scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
     var jobs;
-    if (st.mode === 'character') {
+    if ($('c-provider').value === 'free') {
+      jobs = freeRun(ids);
+    } else if (st.mode === 'character') {
       /* כל תמונה לבד, אחת אחרי השנייה */
       var done = 0, failed = 0, lastErr = null;
       jobs = ids.reduce(function (p, id, i) {
@@ -279,6 +281,21 @@
       });
   }
 
+  /* מצב חינמי: תסריט במודל טקסט חינמי וציור בשירות חינמי, ובניית עמוד עם בועות בעברית */
+  function freeRun(ids) {
+    progress(true, 'מתחיל…');
+    return window.ComicFree.run({
+      mode: st.mode, ids: ids, style: st.style, story: $('c-story').value.trim(), title: $('c-title').value.trim(),
+      panels: $('c-panels').value, aspect: $('c-aspect').value
+    }, function (text) { $('c-progress-text').textContent = text; }).then(function (r) {
+      r.items.forEach(function (x) { addResult(x.meta, x.blob, 'free', ids); });
+      if (r.kind === 'page') {
+        A.addPage(r.page);
+        A.toast('העמוד מוכן, עם בועות בעברית. אפשר לערוך כל בועה ולייצא.' + (r.failed ? ' ' + r.failed + ' פאנלים לא צוירו; אפשר לגרור אליהם תמונה.' : ''), 7000);
+      } else A.toast(r.items.length === 1 ? 'הציור מוכן ונשמר בספרייה.' : r.items.length + ' ציורים מוכנים ונשמרו בספרייה.');
+    });
+  }
+
   function showError(text) {
     var box = $('c-results');
     var d = el('div', 'cerror', text);
@@ -295,7 +312,7 @@
     f.appendChild(im);
     var cap = el('figcaption');
     cap.appendChild(el('b', '', meta.name));
-    cap.appendChild(el('span', 'muted small', provider === 'openai' ? 'צויר ב-OpenAI' : 'צויר ב-Gemini'));
+    cap.appendChild(el('span', 'muted small', provider === 'free' ? 'צויר במצב החינמי' : provider === 'openai' ? 'צויר ב-OpenAI' : 'צויר ב-Gemini'));
     var row = el('div', 'row wrap');
     var mode = st.mode;
     var bt = function (text, cls, fn) { var b = el('button', 'btn ' + cls, text); b.type = 'button'; b.addEventListener('click', fn); row.appendChild(b); };

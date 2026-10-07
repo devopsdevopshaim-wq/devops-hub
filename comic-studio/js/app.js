@@ -1434,7 +1434,15 @@
   window.ComicApp = {
     state: state, imageById: imageById, loadBitmap: loadBitmap, scaled: scaled, closeImg: closeImg,
     canvasToBlob: canvasToBlob, addAiResult: addAiResult, toast: toast, show: show, download: download,
-    safeName: safeName, saveMeta: saveMeta, renderLibrary: renderLibrary, el: el, openInPage: openInPage
+    safeName: safeName, saveMeta: saveMeta, renderLibrary: renderLibrary, el: el, openInPage: openInPage,
+    addPage: function (pg) {
+      var pr = ensureProject();
+      if (pr.pages.length === 1 && !pr.pages[0].panels.some(function (p) { return p.img; }) && !pr.pages[0].items.length) pr.pages = [pg];
+      else pr.pages.push(pg);
+      state.pageIdx = pr.pages.indexOf(pg);
+      saveProject();
+      show('page');
+    }
   };
 
   /* ---------- התחלה ---------- */
@@ -1468,6 +1476,9 @@
 
   function boot() {
     if (EN.LOW) document.documentElement.classList.add('low');
+    /* בטלפון: סגנונות ה-AI שרצים בתוך המכשיר (מודלים של 10MB) כבדים מדי ותוקעים אותו.
+       במקומם יש את מסך "יצירת קומיקס", שמצייר בשרת */
+    if (EN.LOW) for (var si = FX.STYLES.length - 1; si >= 0; si--) if (NN.isNeural(FX.STYLES[si].id)) FX.STYLES.splice(si, 1);
     document.querySelectorAll('[role="tab"]').forEach(function (t) {
       t.addEventListener('click', function () { show(t.dataset.view); });
       t.addEventListener('keydown', function (e) {
