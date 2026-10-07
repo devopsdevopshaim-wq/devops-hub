@@ -407,7 +407,59 @@
     return r;
   }
 
+
+  /* ---------- הדרכה ללקוח בלי רקע טכני ---------- */
+
+  // מפתחות האיורים שבאתר (js/illustrations.js) והמדריכים המוכנים (js/guides.js)
+  var GUIDE_IMAGES = ['panel-location', 'panel-open', 'panel-mcb-down', 'panel-rcd-down', 'panel-main-down', 'panel-all-up', 'all-mcb-down', 'one-by-one-up', 'lever-up', 'unplug', 'plug-one-by-one', 'light-switch-off', 'danger-smoke', 'dry-hands', 'neighbors', 'phone-call', 'call-electrician', 'test-button', 'bulb', 'heater-switch', 'socket-test', 'router-reset', 'appliance-cord', 'fire-ext', 'app-check', 'success'];
+  var GUIDE_IDS = ['none', 'short', 'rcd', 'outage', 'outlet', 'light', 'heater', 'burning', 'shock', 'smart', 'rcd-test'];
+
+  var GUIDE_SYSTEM = [
+    'אתה חשמלאי ותיק וסבלני שמדריך בטלפון אנשים בלי שום רקע טכני (מבוגרים, דיירים, הורים) לטפל בתקלת חשמל פשוטה בבית — בבטחה.',
+    'המשתמש מתאר במילים שלו מה קרה. עליך להחזיר הדרכה קצרה, צעד אחר צעד.',
+    '',
+    'כללי בטיחות — אסור לחרוג מהם:',
+    '1. מותר רק: להסתכל ולהריח, לנתק תקעים, לכבות ולהדליק מתגים, להוריד ולהרים מפסקים בלוח, להחליף נורה רגילה (אחרי כיבוי וקירור), לאתחל נתב או מכשיר, ללחוץ על כפתור T של ממסר הפחת, לכוון שעון דוד.',
+    '2. אסור: לפתוח שקעים, מתגים, גופי תאורה סגורים, מכסה דוד, לוח מעבר לדלת שלו או חדר מונים; לגעת בחוטים; להשתמש בכלים (מברג, בודק מתח); לעקוף או לחבר ישירות ממסר פחת או מפסק; להרים מפסק יותר מפעמיים כשהוא קופץ מיד.',
+    '3. אם יש ריח שרוף, עשן, ניצוצות, שקע או תקע חם או שחור, מים על חשמל, מישהו קיבל מכה, או חוט חשוף — stop_now=true. השלבים הם רק: להפסיק, לנתק במפסק אם זה בטוח, להתרחק, ולהתקשר (102 בשריפה, 101 לנפגע, 103 לחברת החשמל, או חשמלאי).',
+    '4. בסוף כל הדרכה כתוב ב-call_pro_when מתי לעצור ולהזמין חשמלאי מוסמך.',
+    '',
+    'סגנון: עברית פשוטה ויומיומית, בגוף שני רבים ("לכו", "בדקו"). משפטים קצרים. בלי מונחים מקצועיים; אם חייבים, הסבירו במילים פשוטות (למשל "ממסר הפחת — המפסק עם הכפתור הקטן T").',
+    'steps: 3 עד 9 שלבים. לכל שלב title קצר (עד 6 מילים), text של משפט עד שלושה, image מתוך הרשימה (הכי מתאים לפעולה), ו-warning קצר רק כשיש סיכון בשלב (אחרת מחרוזת ריקה).',
+    'related_guide: אם אחד המדריכים המוכנים באתר מתאים (short=קצר/מפסק קפץ, rcd=פחת קופץ, outage=אין חשמל בכל הבית, outlet=שקע לא עובד, light=מנורה, heater=דוד, burning=ריח שרוף/שקע חם, shock=עקצוץ/מכה, smart=בית חכם, rcd-test=בדיקת פחת), ציין אותו; אחרת none.'
+  ].join('\n');
+
+  var GUIDE_SCHEMA = obj({
+    title: str(),
+    summary: str(),
+    stop_now: { type: 'boolean' },
+    stop_reason: str(),
+    steps: arr(obj({ title: str(), text: str(), image: { type: 'string', enum: GUIDE_IMAGES }, warning: str() })),
+    call_pro_when: arr(str()),
+    related_guide: { type: 'string', enum: GUIDE_IDS }
+  });
+
+  function guideText(problem) { return 'מה קרה אצלי בבית, במילים שלי:\n' + String(problem || '').trim(); }
+  function guideMessages(problem) { return [{ role: 'user', content: [{ type: 'text', text: guideText(problem) }] }]; }
+  function manualGuidePrompt(problem) {
+    return [GUIDE_SYSTEM, '', 'החזר JSON בלבד, בלי טקסט לפניו או אחריו ובלי ```, שתואם בדיוק לסכמה הבאה:', JSON.stringify(GUIDE_SCHEMA), '', guideText(problem)].join('\n');
+  }
+  function parseGuide(text) {
+    var s = String(text || '').trim();
+    var a = s.indexOf('{'), b = s.lastIndexOf('}');
+    if (a < 0 || b < a) throw new Error('לא נמצא JSON בתשובה');
+    var r = JSON.parse(s.slice(a, b + 1));
+    if (!r || !Array.isArray(r.steps) || !r.steps.length) throw new Error('בתשובה אין שלבים');
+    if (!Array.isArray(r.call_pro_when)) r.call_pro_when = [];
+    r.steps.forEach(function (st) { if (GUIDE_IMAGES.indexOf(st.image) < 0) st.image = 'panel-open'; st.warning = st.warning || ''; });
+    if (GUIDE_IDS.indexOf(r.related_guide) < 0) r.related_guide = 'none';
+    r.stop_now = !!r.stop_now;
+    return r;
+  }
+
   return {
+    GUIDE_SYSTEM: GUIDE_SYSTEM, GUIDE_SCHEMA: GUIDE_SCHEMA, GUIDE_IMAGES: GUIDE_IMAGES, GUIDE_IDS: GUIDE_IDS,
+    guideMessages: guideMessages, manualGuidePrompt: manualGuidePrompt, parseGuide: parseGuide,
     FLOOR_SYSTEM: FLOOR_SYSTEM, FLOOR_SCHEMA: FLOOR_SCHEMA, floorMessages: floorMessages, floorRevision: floorRevision,
     manualFloorPrompt: manualFloorPrompt, parseFloor: parseFloor, ROOM_TYPES: ROOM_TYPES,
     HOME_SYSTEM: HOME_SYSTEM, HOME_SCHEMA: HOME_SCHEMA, homeMessages: homeMessages, manualHomePrompt: manualHomePrompt, parseHome: parseHome,

@@ -226,6 +226,32 @@ async function floorplan(req, res) {
   res.end();
 }
 
+// הדרכה פשוטה ללקוח: תיאור במילים פשוטות → שלבים בטוחים עם איורים
+async function guide(req, res) {
+  if (!guard(req, res)) return;
+  let messages;
+  try {
+    const body = JSON.parse(await readBody(req));
+    const problem = String(body.problem || '').trim();
+    if (problem.length < 4) throw new Error('תארו במשפט מה קרה');
+    messages = FixPrompts.guideMessages(problem.slice(0, 2000));
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message || 'בקשה לא תקינה' });
+  }
+  res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' });
+  const write = (obj) => { if (!res.writableEnded) res.write(JSON.stringify(obj) + '\n'); };
+  const ctl = new AbortController();
+  res.on('close', () => { if (!res.writableFinished) ctl.abort(); });
+  try {
+    write({ phase: 'analyze' });
+    const out = await ask(messages, (p) => write(p), ctl.signal, { system: FixPrompts.GUIDE_SYSTEM, schema: FixPrompts.GUIDE_SCHEMA, parse: FixPrompts.parseGuide });
+    write({ phase: 'done', result: out.result, model: out.model, usage: out.usage });
+  } catch (err) {
+    if (!ctl.signal.aborted) write({ error: hebrewError(err) });
+  }
+  res.end();
+}
+
 async function serveStatic(req, res) {
   const url = new URL(req.url, 'http://localhost');
   let rel = decodeURIComponent(url.pathname);
@@ -252,6 +278,7 @@ http.createServer(async (req, res) => {
     if (req.url === '/api/design' && req.method === 'POST') return await design(req, res);
     if (req.url === '/api/home' && req.method === 'POST') return await home(req, res);
     if (req.url === '/api/floorplan' && req.method === 'POST') return await floorplan(req, res);
+    if (req.url === '/api/guide' && req.method === 'POST') return await guide(req, res);
     if (req.method === 'GET' || req.method === 'HEAD') return await serveStatic(req, res);
     res.writeHead(405); res.end();
   } catch (err) {
