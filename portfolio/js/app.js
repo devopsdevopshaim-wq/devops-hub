@@ -767,6 +767,12 @@
       state.shots = res[1];
       // a client sees only the sites the admin gave them
       var who = res[2];
+      // the clients' link never shows the lotto sites or the insurance analysis (projects.json: clientHide)
+      var hideC = {};
+      (data.clientHide || []).forEach(function (id) { hideC[id] = true; });
+      if ((who && who.role === 'client') || /[?&]view=client\b/.test(location.search)) {
+        data.projects = data.projects.filter(function (p) { return !hideC[p.id]; });
+      }
       if (who && who.role === 'client') {
         var mine = {};
         (who.sites || []).forEach(function (id) { mine[id] = true; });

@@ -1,4 +1,5 @@
 {
+  "clientHide": ["insurance-analysis", "lotto", "lotto-new", "lotto-series", "lotto-series-pro"],
  "owner": "devopsdevopshaim-wq",
  "guideApi": "https://haimkripisn.app.n8n.cloud/webhook/hasadna-guide",
  "statusUrl": "https://haimkripisn.app.n8n.cloud/webhook/hasadna-status",
