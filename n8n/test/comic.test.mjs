@@ -61,6 +61,7 @@ const call = async (ctx, body, { origin = SITE, ip = '1.2.3.4', asString = true 
   check('comic: the page prompt carries style, story, title and panels', /manga/i.test(text) && text.includes('הרפתקה') && text.includes('ההרפתקאות של ארי') && text.includes('5 panels'));
   check('comic: both photos go to the model', g.body.contents[0].parts.filter((p) => p.inline_data).length === 2);
   check('comic: a page is portrait', g.body.generationConfig.imageConfig.aspectRatio === '3:4');
+  check('comic: a full page uses the strongest model', /gemini-3-pro-image:generateContent/.test(g.url));
 }
 
 {
@@ -69,6 +70,18 @@ const call = async (ctx, body, { origin = SITE, ip = '1.2.3.4', asString = true 
   check('comic: auto falls back to OpenAI when Gemini fails', r.code === 200 && r.body.provider === 'openai' && r.body.image === 'T1BFTkFJ');
   const o = c.sent.find((x) => x.url.includes('openai'));
   check('comic: OpenAI gets a multipart edit with the photo', o && /multipart\/form-data; boundary=/.test(o.headers['Content-Type']) && o.body.includes(Buffer.from('fake-jpeg')));
+}
+
+{
+  /* the newest model is not open to this key: the next one draws */
+  const c = setup();
+  const orig = c.helpers.httpRequest;
+  c.helpers.httpRequest = async (req) => {
+    if (/gemini-3\.1-flash-image(-preview)?:/.test(req.url)) { c.sent.push(req); const e = new Error('models/x is not found'); e.httpCode = 404; throw e; }
+    return orig(req);
+  };
+  const r = await call(c, { mode: 'character', provider: 'gemini', images: [PHOTO] });
+  check('comic: an unavailable model falls back to the next one', r.code === 200 && /gemini-2\.5-flash-image/.test(c.sent[c.sent.length - 1].url) && r.body.model === 'gemini-2.5-flash-image');
 }
 
 {

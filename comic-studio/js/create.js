@@ -63,7 +63,12 @@
       case 'too-big': return 'אחת התמונות גדולה מדי. נסו תמונה אחרת.';
       case 'timeout': return 'הציור לקח יותר מדי זמן. נסו שוב, או בחרו פחות פאנלים.';
       case 'network': return 'אין חיבור לשרת הציור. בדקו את האינטרנט ונסו שוב.';
-      case 'draw-failed': return 'המודל לא הצליח לצייר את זה' + (/SAFETY|PROHIBITED|safety|moderation/i.test(j.detail || '') ? ' (חסימת תוכן של המודל)' : '') + '. נסו ניסוח אחר, תמונה אחרת או מודל אחר.';
+      case 'draw-failed':
+        if (/billing|quota|exceeded|insufficient_quota|billing_hard_limit/i.test(j.detail || '')) {
+          var who = /openai/i.test(j.detail || '') && !/gemini/i.test(j.detail || '') ? 'OpenAI' : /gemini/i.test(j.detail || '') && !/openai/i.test(j.detail || '') ? 'Gemini' : 'Gemini / OpenAI';
+          return 'המפתח של ' + who + ' תקין, אבל אין בו חיוב פעיל או שנגמרה המכסה. ציור תמונות לא כלול בשכבה החינמית: צריך להפעיל חיוב (Billing) בחשבון של המפתח.';
+        }
+        return 'המודל לא הצליח לצייר את זה' + (/SAFETY|PROHIBITED|safety|moderation/i.test(j.detail || '') ? ' (חסימת תוכן של המודל)' : '') + '. נסו ניסוח אחר, תמונה אחרת או מודל אחר.';
       default: return 'הציור נכשל (' + (j.status || '') + '). נסו שוב.';
     }
   }
