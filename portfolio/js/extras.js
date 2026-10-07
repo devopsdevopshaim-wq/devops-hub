@@ -98,6 +98,8 @@
     window.addEventListener('scroll', function () { cue.classList.toggle('gone', window.scrollY > 80); }, { passive: true });
   }
 
+  var base = (document.currentScript && document.currentScript.src || '').replace(/js\/extras\.js.*$/, '');
+
   // ================================================================ YouTube
   var ytReady = null;
   function loadYT() {
@@ -117,51 +119,180 @@
     return id || list ? { id: id, list: list } : null;
   }
 
+  // ================================================================ built-in music (no network, always works)
+  // A small generative engine on WebAudio: ambient, trance (140 BPM, rolling bass, arpeggio) and chill. It is the
+  // fallback when no radio station answers, and the one source whose sound the page can always draw and record.
+  var GEN_STYLES = [
+    { id: 'trance', style: 'טראנס מובנה', bpm: 140 },
+    { id: 'ambient', style: 'אמביינט מובנה', bpm: 56 },
+    { id: 'chill', style: 'צ׳יל מובנה', bpm: 82 }
+  ];
+  function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function Gen(ctx, out) {
+    var master = ctx.createGain(), dry = ctx.createGain(), send = ctx.createGain(), verb = ctx.createConvolver(), verbG = ctx.createGain();
+    master.gain.value = 0.9; master.connect(out);
+    dry.connect(master);
+    // a small room: decaying noise as the impulse response
+    var len = Math.floor(ctx.sampleRate * 2.6), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (var c = 0; c < 2; c++) { var d = ir.getChannelData(c); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+    verb.buffer = ir; verbG.gain.value = 0.42; send.connect(verb); verb.connect(verbG); verbG.connect(master);
+    var nb = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate), nd = nb.getChannelData(0);
+    for (var n = 0; n < nd.length; n++) nd[n] = Math.random() * 2 - 1;
+
+    function tone(type, f, t, o) {
+      var osc = ctx.createOscillator(), flt = ctx.createBiquadFilter(), g = ctx.createGain();
+      var atk = o.atk || 0.01, hold = o.hold || 0.1, rel = o.rel || 0.2;
+      osc.type = type; osc.frequency.setValueAtTime(f, t);
+      if (o.detune) osc.detune.value = o.detune;
+      flt.type = 'lowpass'; flt.frequency.setValueAtTime(o.lp || 2000, t);
+      if (o.lpEnd) flt.frequency.exponentialRampToValueAtTime(Math.max(40, o.lpEnd), t + atk + hold + rel);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(o.vol || 0.1, t + atk);
+      g.gain.setTargetAtTime(0.0001, t + atk + hold, rel / 3);
+      osc.connect(flt); flt.connect(g); g.connect(dry);
+      if (o.send) { var s = ctx.createGain(); s.gain.value = o.send; g.connect(s); s.connect(send); }
+      osc.start(t); osc.stop(t + atk + hold + rel + 0.1);
+    }
+    function kick(t, v) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(165, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+      o.connect(g); g.connect(dry); o.start(t); o.stop(t + 0.4);
+    }
+    function hiss(t, len, hp, bp, v) {
+      var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      s.buffer = nb; f.type = bp ? 'bandpass' : 'highpass'; f.frequency.value = hp; if (bp) f.Q.value = 0.8;
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
+      s.connect(f); f.connect(g); g.connect(dry); s.start(t); s.stop(t + len + 0.02);
+    }
+    var PROG = [45, 41, 48, 43];            // A F C G, the bass notes
+    var ARP = [0, 7, 12, 15, 12, 7, 3, 7];  // A minor
+    var PENTA = [0, 3, 5, 7, 10];
+    function pad(root, t, atk, hold, rel, v) {
+      [0, 7, 12, 15].forEach(function (iv, k) {
+        tone('sawtooth', mtof(root + 12 + iv), t, { atk: atk, hold: hold, rel: rel, vol: v, lp: 700, lpEnd: 380, detune: k % 2 ? 7 : -7, send: 0.9 });
+      });
+    }
+    var P = null, step = 0, nextT = 0, timer = null, style = null;
+    var voices = {
+      trance: function (s, t, spb) {
+        var bar = Math.floor(s / 16), q = s % 16, root = PROG[bar % 4], sweep = (Math.sin(s / 96 * Math.PI) + 1) / 2;
+        if (q % 4 === 0) kick(t, 1);
+        if (q % 4 === 2) hiss(t, 0.09, 7500, false, 0.16);
+        if (q % 2 === 1) hiss(t, 0.03, 9000, false, 0.05);
+        if (q % 4 !== 0) tone('sawtooth', mtof(root + (q % 8 >= 4 ? 12 : 0)), t, { atk: 0.004, hold: spb * 0.4, rel: spb * 0.5, vol: 0.2, lp: 350 + sweep * 1100, lpEnd: 120 });
+        if (q % 2 === 0 || bar % 2) tone('square', mtof(root + 24 + ARP[s % 8]), t, { atk: 0.004, hold: 0.04, rel: 0.22, vol: 0.045, lp: 1400 + sweep * 3200, send: 0.5 });
+        if (q === 0) pad(root, t, 0.9, 2.2, 1.6, 0.04);
+      },
+      ambient: function (s, t, spb) {
+        var q = s % 32, bar = Math.floor(s / 32), root = PROG[bar % 4];
+        if (q === 0) { pad(root, t, 4, 7, 6, 0.05); tone('sine', mtof(root - 12), t, { atk: 3, hold: 8, rel: 5, vol: 0.16, lp: 300 }); }
+        if (Math.random() < 0.1) tone('sine', mtof(root + 36 + PENTA[Math.floor(Math.random() * 5)]), t, { atk: 0.01, hold: 0.1, rel: 3.2, vol: 0.05, send: 1.2, lp: 4000 });
+      },
+      chill: function (s, t, spb) {
+        var bar = Math.floor(s / 16), q = s % 16, root = PROG[bar % 4];
+        if (q === 0 || q === 8) kick(t, 0.7);
+        if (q === 4 || q === 12) hiss(t, 0.16, 2400, true, 0.2);
+        if (q % 2 === 0) hiss(t, 0.04, 8500, false, 0.06);
+        if (q === 0 || q === 6 || q === 10) tone('sine', mtof(root), t, { atk: 0.01, hold: spb * 2, rel: spb * 3, vol: 0.3, lp: 400 });
+        if (q === 0 || q === 10) [0, 3, 7, 10].forEach(function (iv) { tone('triangle', mtof(root + 24 + iv), t, { atk: 0.01, hold: 0.1, rel: 1.4, vol: 0.05, lp: 2400, send: 0.8 }); });
+      }
+    };
+    function schedule() {
+      while (nextT < ctx.currentTime + 0.18) { var spb = 60 / P.bpm / 4; voices[P.id](step, nextT, spb); nextT += spb; step++; }
+    }
+    return {
+      start: function (id) {
+        this.stop();
+        P = GEN_STYLES.filter(function (x) { return x.id === id; })[0] || GEN_STYLES[0];
+        style = P.id; step = 0; nextT = ctx.currentTime + 0.08;
+        timer = setInterval(schedule, 25);
+      },
+      stop: function () { clearInterval(timer); timer = null; style = null; },
+      style: function () { return style; },
+      volume: function (v) { master.gain.value = v; }
+    };
+  }
+
   // ================================================================ music (bottom-left)
-  // Internet radio by style (radio.json, checked daily by a GitHub Action), plus
-  // the admin's own YouTube picks (media.json). Radio plays in a plain <audio>,
-  // so nothing depends on a video owner allowing embeds. If a station does not
-  // answer, the next one in the same style takes over.
+  // Internet radio by style (radio.json, checked daily by a GitHub Action), plus the admin's own YouTube picks (media.json),
+  // plus the built-in music. Radio plays in a plain <audio>. A station that does not answer is replaced by the next one in
+  // the same style, and when none does, the built-in music takes over. The picture (a "music video" drawn live) can go full
+  // screen and be recorded to a file.
   var SOMA = function (id, name) { return { name: 'SomaFM · ' + name, url: 'https://ice2.somafm.com/' + id + '-128-mp3', home: 'https://somafm.com/' + id + '/' }; };
   var FALLBACK = [
-    { id: 'progressive', style: 'פרוגרסיב', stations: [SOMA('thetrip', 'The Trip')] },
-    { id: 'ambient', style: 'אמביינט', stations: [SOMA('dronezone', 'Drone Zone'), SOMA('deepspaceone', 'Deep Space One'), SOMA('spacestation', 'Space Station')] },
-    { id: 'chillout', style: 'צ׳ילאאוט', stations: [SOMA('groovesalad', 'Groove Salad'), SOMA('fluid', 'Fluid')] },
-    { id: 'deephouse', style: 'דיפ האוס', stations: [SOMA('beatblender', 'Beat Blender')] },
-    { id: 'lounge', style: 'לאונג׳', stations: [SOMA('illstreet', 'Illinois Street Lounge'), SOMA('secretagent', 'Secret Agent')] },
-    { id: 'jazz', style: 'ג׳אז', stations: [SOMA('sonicuniverse', 'Sonic Universe')] },
-    { id: '80s', style: 'שנות ה־80', stations: [SOMA('u80s', 'Underground 80s')] }
+    { id: 'progressive', style: 'פרוגרסיב', stations: [SOMA('thetrip', 'The Trip')], gen: 'trance' },
+    { id: 'ambient', style: 'אמביינט', stations: [SOMA('dronezone', 'Drone Zone'), SOMA('deepspaceone', 'Deep Space One'), SOMA('spacestation', 'Space Station')], gen: 'ambient' },
+    { id: 'chillout', style: 'צ׳ילאאוט', stations: [SOMA('groovesalad', 'Groove Salad'), SOMA('fluid', 'Fluid')], gen: 'chill' },
+    { id: 'deephouse', style: 'דיפ האוס', stations: [SOMA('beatblender', 'Beat Blender')], gen: 'trance' },
+    { id: 'lounge', style: 'לאונג׳', stations: [SOMA('illstreet', 'Illinois Street Lounge'), SOMA('secretagent', 'Secret Agent')], gen: 'chill' },
+    { id: 'jazz', style: 'ג׳אז', stations: [SOMA('sonicuniverse', 'Sonic Universe')], gen: 'chill' },
+    { id: '80s', style: 'שנות ה־80', stations: [SOMA('u80s', 'Underground 80s')], gen: 'trance' }
   ];
+  // which built-in music stands in for a radio style when its stations do not answer
+  function genFor(g) {
+    if (g.gen) return g.gen;
+    var t = (g.id + ' ' + g.style).toLowerCase();
+    return /trance|psy|goa|techno|house|dance|edm|progressive|טראנס|פסי|האוס|טכנו/.test(t) ? 'trance' : /ambient|dream|drone|space|new age|meditat|אמביינט|דרים/.test(t) ? 'ambient' : 'chill';
+  }
 
   function music(radio, yt) {
     var genres = (radio && radio.genres && radio.genres.length ? radio.genres : FALLBACK).filter(function (g) { return g.stations && g.stations.length; });
     var picks = (yt || []).filter(function (s) { return ytParse(s.url); });
-    if (!genres.length && !picks.length) return;
     var vol = Number(store('music-vol') || 50);
-    var audio = new Audio();
-    audio.preload = 'none';
-    audio.volume = vol / 100;
-    var mode = null, gi = -1, si = 0, tried = 0, watchdog = null, ytPlayer = null, yi = -1, playing = false;
+    // two players: one asks the station for permission to be analysed (so the picture follows the sound and can be recorded),
+    // the other is plain, for stations that do not give it
+    var audioC = new Audio(), audioP = new Audio();
+    audioC.crossOrigin = 'anonymous';
+    [audioC, audioP].forEach(function (a) { a.preload = 'none'; a.volume = vol / 100; });
+    var noCors = {};
+    try { noCors = JSON.parse(store('music-nocors') || '{}') || {}; } catch (e) { noCors = {}; }
+    var mode = null, gi = -1, si = 0, tried = 0, watchdog = null, ytPlayer = null, yi = -1, playing = false, active = null, genId = null, label = '';
+
+    // ----- sound graph (made on the first click, as browsers require)
+    var AC = window.AudioContext || window.webkitAudioContext;
+    var actx = null, bus = null, analyser = null, recDest = null, corsSrc = null, gen = null, bins = null;
+    function graph() {
+      if (actx || !AC) return !!actx;
+      try {
+        actx = new AC();
+        bus = actx.createGain(); analyser = actx.createAnalyser(); analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.82;
+        bins = new Uint8Array(analyser.frequencyBinCount);
+        bus.connect(analyser); analyser.connect(actx.destination);
+        try { recDest = actx.createMediaStreamDestination(); bus.connect(recDest); } catch (e) { recDest = null; }
+        gen = Gen(actx, bus);
+        gen.volume(vol / 100);
+      } catch (e) { actx = null; return false; }
+      return true;
+    }
 
     var pill = el('button', { class: 'mu-pill', type: 'button', 'aria-expanded': 'false', 'aria-controls': 'mu-panel' }, [
       el('span', { class: 'eq', 'aria-hidden': 'true' }, [el('i'), el('i'), el('i'), el('i')]),
       el('span', { class: 'mu-label', text: 'מוזיקה' })
     ]);
+    var canvas = el('canvas', { class: 'mu-canvas', width: '640', height: '360', 'aria-label': 'סרטון המוזיקה' });
+    var recBtn = el('button', { class: 'mu-vbtn', type: 'button', title: 'הקלטת סרטון עם הקול והורדה לקובץ', text: '⏺ הקלטה' });
+    var fullBtn = el('button', { class: 'mu-vbtn', type: 'button', title: 'מסך מלא', 'aria-label': 'מסך מלא', text: '⛶ מסך מלא' });
+    var vtitle = el('div', { class: 'mu-vtitle' });
+    var vis = el('div', { class: 'mu-vis' }, [canvas, vtitle, el('div', { class: 'mu-vbar' }, [recBtn, fullBtn])]);
     var chips = el('div', { class: 'mu-styles', role: 'group', 'aria-label': 'סגנון' });
+    var genChips = el('div', { class: 'mu-styles mu-gen', role: 'group', 'aria-label': 'מוזיקה מובנית' });
     var ytChips = el('div', { class: 'mu-styles mu-yt', role: 'group', 'aria-label': 'מיוטיוב' });
     var now = el('div', { class: 'mu-now', role: 'status' }, [el('b', { text: 'בחרו סגנון, והמוזיקה תתחיל.' }), el('small')]);
     var playBtn = el('button', { class: 'mu-btn', type: 'button', 'aria-label': 'נגינה', text: '▶' });
     var nextBtn = el('button', { class: 'mu-btn', type: 'button', 'aria-label': 'תחנה אחרת באותו סגנון', title: 'תחנה אחרת באותו סגנון', text: '⏭' });
     var volIn = el('input', { type: 'range', min: '0', max: '100', value: String(vol), 'aria-label': 'עוצמה' });
+    var ytFull = el('button', { class: 'mu-vbtn', type: 'button', text: '⛶ מסך מלא' });
     var frame = el('div', { class: 'mu-frame', hidden: '' }, [el('div', { id: 'mu-yt' })]);
     var panel = el('div', { class: 'mu-panel', id: 'mu-panel', role: 'dialog', 'aria-label': 'מוזיקה ברקע' }, [
       el('header', {}, [el('b', { text: '♫ רדיו ומוזיקה' }), el('button', { class: 'x', type: 'button', 'aria-label': 'סגירה', text: '×' })]),
-      chips,
+      vis,
+      el('p', { class: 'mu-sub', text: 'רדיו לפי סגנון' }), chips,
+      el('p', { class: 'mu-sub', text: 'מוזיקה מובנית (תמיד עובדת)' }), genChips,
       picks.length ? el('p', { class: 'mu-sub', text: 'השירים שלי מיוטיוב' }) : null,
       picks.length ? ytChips : null,
-      frame, now,
+      frame, picks.length ? el('div', { class: 'mu-ytbar' }, [ytFull]) : null, now,
       el('div', { class: 'mu-ctrl' }, [playBtn, nextBtn, el('span', { class: 'vol', 'aria-hidden': 'true', text: '🔈' }), volIn]),
-      el('p', { class: 'mu-note', text: 'תחנות רדיו חיות מכל העולם, נבדקות כל יום. אפשר לסגור את החלון והמוזיקה ממשיכה.' })
+      el('p', { class: 'mu-note', text: 'תחנות רדיו חיות מכל העולם, נבדקות כל יום. אם תחנה לא עונה, עוברים לבאה אחריה או למוזיקה מובנית. אפשר לסגור את החלון והמוזיקה ממשיכה.' })
     ]);
     panel.setAttribute('data-lenis-prevent', '');
     var box = el('div', { class: 'music' }, [panel, pill]);
@@ -172,20 +303,26 @@
       c.addEventListener('click', function () { playGenre(i); });
       chips.appendChild(c);
     });
+    GEN_STYLES.forEach(function (g) {
+      var c = el('button', { class: 'chip', type: 'button', text: g.style, 'aria-pressed': 'false' });
+      c.addEventListener('click', function () { playGen(g.id, false); });
+      genChips.appendChild(c);
+    });
     picks.forEach(function (s, i) {
       var c = el('button', { class: 'chip', type: 'button', text: s.style, title: s.title || s.style, 'aria-pressed': 'false' });
       c.addEventListener('click', function () { playYT(i); });
       ytChips.appendChild(c);
     });
 
-    function open(on) { box.classList.toggle('open', on); pill.setAttribute('aria-expanded', String(on)); }
+    function open(on) { box.classList.toggle('open', on); pill.setAttribute('aria-expanded', String(on)); if (on) startDraw(); }
     pill.addEventListener('click', function () { open(!box.classList.contains('open')); });
     $('.x', panel).addEventListener('click', function () { open(false); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') open(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !document.fullscreenElement) open(false); });
 
-    function say(main, sub) { $('b', now).textContent = main; $('small', now).textContent = sub || ''; }
+    function say(main, sub) { $('b', now).textContent = main; $('small', now).textContent = sub || ''; vtitle.textContent = main.replace(/^♪ /, ''); }
     function mark() {
       Array.prototype.forEach.call(chips.children, function (c, i) { c.setAttribute('aria-pressed', String(mode === 'radio' && i === gi)); });
+      Array.prototype.forEach.call(genChips.children, function (c, i) { c.setAttribute('aria-pressed', String(mode === 'gen' && GEN_STYLES[i].id === genId)); });
       Array.prototype.forEach.call(ytChips.children, function (c, i) { c.setAttribute('aria-pressed', String(mode === 'yt' && i === yi)); });
     }
     function setPlaying(on) {
@@ -193,7 +330,22 @@
       box.classList.toggle('playing', on);
       playBtn.textContent = on ? '⏸' : '▶';
       playBtn.setAttribute('aria-label', on ? 'השהיה' : 'נגינה');
-      $('.mu-label', pill).textContent = mode === 'radio' && gi >= 0 ? genres[gi].style : mode === 'yt' && yi >= 0 ? picks[yi].style : 'מוזיקה';
+      $('.mu-label', pill).textContent = mode === 'radio' && gi >= 0 ? genres[gi].style : mode === 'gen' ? GEN_STYLES.filter(function (g) { return g.id === genId; })[0].style : mode === 'yt' && yi >= 0 ? picks[yi].style : 'מוזיקה';
+    }
+    function quiet() { clearTimeout(watchdog); [audioC, audioP].forEach(function (a) { a.pause(); a.removeAttribute('src'); a.load(); }); active = null; if (gen) gen.stop(); }
+
+    // ----- built-in music
+    function playGen(id, fallback) {
+      if (!graph()) { say('הדפדפן הזה לא מאפשר מוזיקה מובנית', ''); return; }
+      stopYT(); quiet();
+      mode = 'gen'; genId = id; mark();
+      if (actx.state === 'suspended') actx.resume();
+      gen.volume(vol / 100); gen.start(id);
+      setPlaying(true);
+      var g = GEN_STYLES.filter(function (x) { return x.id === id; })[0];
+      store('music-last', 'g:' + id);
+      say('♪ ' + g.style, fallback ? 'תחנות הרדיו לא ענו, אז מנגנים מוזיקה מובנית' : 'נוצרת בדפדפן, בלי חיבור');
+      startDraw();
     }
 
     // ----- radio
@@ -202,20 +354,32 @@
       clearTimeout(watchdog);
       var g = genres[gi], st = station();
       say('מתחבר: ' + st.name + '…', g.style);
-      audio.src = st.url;
-      var p = audio.play();
+      quiet();
+      var cors = graph() && !noCors[st.url];
+      if (cors && !corsSrc) { try { corsSrc = actx.createMediaElementSource(audioC); corsSrc.connect(bus); } catch (e) { cors = false; } }
+      if (actx && actx.state === 'suspended') actx.resume();
+      active = cors ? audioC : audioP;
+      active.src = st.url;
+      var p = active.play();
       if (p && p.catch) p.catch(function (e) { if (e && e.name === 'NotAllowedError') { setPlaying(false); say('לחצו ▶ כדי להתחיל', g.style); } });
-      // a station that has not started within 10 seconds is skipped
-      watchdog = setTimeout(function () { if (audio.paused || audio.readyState < 3) skip(); }, 10000);
+      // a station that has not started within 10 seconds is replaced
+      watchdog = setTimeout(function () { if (active && (active.paused || active.readyState < 3)) trouble(); }, cors ? 8000 : 10000);
+    }
+    // the station did not start: first without asking for analysis (some stations refuse), then the next one
+    function trouble() {
+      clearTimeout(watchdog);
+      if (mode !== 'radio' || !active) return;
+      if (active === audioC) { noCors[station().url] = 1; store('music-nocors', JSON.stringify(noCors)); tune(); return; }
+      skip();
     }
     function skip() {
       clearTimeout(watchdog);
       if (mode !== 'radio') return;
       tried++;
       if (tried >= genres[gi].stations.length) {
-        audio.removeAttribute('src'); audio.load();
-        setPlaying(false);
-        say('אף תחנה ב"' + genres[gi].style + '" לא עונה כרגע', 'נסו סגנון אחר');
+        // nobody answers: the built-in music takes over, so there is always something to listen to
+        var id = genFor(genres[gi]);
+        playGen(id, true);
         return;
       }
       si++;
@@ -229,22 +393,25 @@
       mark();
       tune();
     }
-    audio.addEventListener('playing', function () {
-      clearTimeout(watchdog);
-      if (mode !== 'radio') return;
-      tried = 0;
-      setPlaying(true);
-      var st = station();
-      say('♪ ' + st.name, genres[gi].style + (st.country ? ' · ' + st.country : '') + (st.bitrate ? ' · ' + st.bitrate + 'kbps' : ''));
+    [audioC, audioP].forEach(function (a) {
+      a.addEventListener('playing', function () {
+        if (a !== active) return;
+        clearTimeout(watchdog);
+        if (mode !== 'radio') return;
+        tried = 0;
+        setPlaying(true);
+        var st = station();
+        say('♪ ' + st.name, genres[gi].style + (st.country ? ' · ' + st.country : '') + (st.bitrate ? ' · ' + st.bitrate + 'kbps' : '') + (a === audioC ? '' : ' · התמונה בלי קשר לצליל'));
+        startDraw();
+      });
+      a.addEventListener('pause', function () { if (a === active && mode === 'radio') setPlaying(false); });
+      a.addEventListener('error', function () { if (a === active && mode === 'radio' && a.getAttribute('src')) trouble(); });
     });
-    audio.addEventListener('pause', function () { if (mode === 'radio') setPlaying(false); });
-    audio.addEventListener('error', function () { if (mode === 'radio' && audio.getAttribute('src')) skip(); });
 
     // ----- YouTube picks
     function stopYT() { if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo(); frame.hidden = true; }
     function playYT(i) {
-      clearTimeout(watchdog);
-      audio.pause();
+      quiet();
       mode = 'yt'; yi = i;
       store('music-last', 'y:' + i);
       mark();
@@ -255,7 +422,7 @@
         if (!ytPlayer) {
           ytPlayer = new window.YT.Player('mu-yt', {
             width: '100%', height: '100%',
-            playerVars: v.id ? { autoplay: 1, playsinline: 1, rel: 0 } : { autoplay: 1, playsinline: 1, rel: 0, listType: 'playlist', list: v.list },
+            playerVars: v.id ? { autoplay: 1, playsinline: 1, rel: 0, fs: 1 } : { autoplay: 1, playsinline: 1, rel: 0, fs: 1, listType: 'playlist', list: v.list },
             videoId: v.id || undefined,
             events: {
               onReady: function (e) { e.target.setVolume(vol); e.target.playVideo(); },
@@ -266,7 +433,7 @@
               },
               onError: function () {
                 setPlaying(false);
-                say('הסרטון הזה חסום לניגון מחוץ ליוטיוב', 'בעל הסרטון לא מתיר הטמעה. נסו סגנון רדיו.');
+                say('הסרטון הזה חסום לניגון מחוץ ליוטיוב', 'בעל הסרטון לא מתיר הטמעה. נסו רדיו או מוזיקה מובנית.');
               }
             }
           });
@@ -274,30 +441,140 @@
         else ytPlayer.loadPlaylist({ list: v.list, listType: 'playlist' });
       });
     }
+    ytFull.addEventListener('click', function () { fullscreen(frame); });
 
     // ----- controls
     playBtn.addEventListener('click', function () {
       if (mode === 'yt' && ytPlayer && ytPlayer.getPlayerState) { playing ? ytPlayer.pauseVideo() : ytPlayer.playVideo(); return; }
-      if (mode === 'radio') { if (playing) audio.pause(); else tune(); return; }
+      if (mode === 'gen') { if (playing) { gen.stop(); setPlaying(false); } else playGen(genId, false); return; }
+      if (mode === 'radio') { if (playing) active && active.pause(); else tune(); return; }
       var last = store('music-last') || '';
       var r = last.indexOf('r:') === 0 ? genres.map(function (g) { return g.id; }).indexOf(last.slice(2)) : -1;
       if (last.indexOf('y:') === 0 && picks[Number(last.slice(2))]) playYT(Number(last.slice(2)));
+      else if (last.indexOf('g:') === 0) playGen(last.slice(2), false);
       else playGenre(r >= 0 ? r : 0);
     });
     nextBtn.addEventListener('click', function () {
       if (mode === 'yt') { playYT((yi + 1) % picks.length); return; }
+      if (mode === 'gen') { var k = GEN_STYLES.map(function (g) { return g.id; }).indexOf(genId); playGen(GEN_STYLES[(k + 1) % GEN_STYLES.length].id, false); return; }
       if (mode !== 'radio') { playGenre(0); return; }
       tried = 0; si++; tune();
     });
     volIn.addEventListener('input', function () {
       vol = Number(volIn.value); store('music-vol', String(vol));
-      audio.volume = vol / 100;
+      [audioC, audioP].forEach(function (a) { a.volume = vol / 100; });
+      if (gen) gen.volume(vol / 100);
       if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(vol);
+    });
+
+    // ----- the picture: a "music video" drawn live from the sound (or from a gentle motion when the sound cannot be read)
+    var logo = new Image(); logo.src = base + 'img/spider.svg';
+    var raf = 0, t0 = Date.now(), parts = [];
+    for (var pi = 0; pi < 60; pi++) parts.push({ a: Math.random() * 6.283, r: 0.2 + Math.random() * 0.8, s: 0.05 + Math.random() * 0.25, z: 0.6 + Math.random() * 1.8 });
+    function level() {
+      // the real spectrum when this sound is analysable, a soft synthetic one otherwise
+      var live = actx && analyser && playing && (mode === 'gen' || (mode === 'radio' && active === audioC));
+      var out = new Array(64);
+      if (live) {
+        analyser.getByteFrequencyData(bins);
+        for (var i = 0; i < 64; i++) out[i] = bins[Math.min(bins.length - 1, Math.floor(i * 0.9))] / 255;
+      } else {
+        var t = (Date.now() - t0) / 1000, on = playing ? 1 : 0.25;
+        for (var j = 0; j < 64; j++) out[j] = on * (0.25 + 0.2 * Math.sin(t * 2 + j * 0.35) + 0.15 * Math.sin(t * 3.3 - j * 0.2)) * (1 - j / 110);
+      }
+      return out;
+    }
+    function draw() {
+      raf = 0;
+      var wanted = box.classList.contains('open') || document.fullscreenElement || vis.classList.contains('mu-pseudo') || recorder;
+      if (!wanted) return;
+      var dpr = Math.min(2, window.devicePixelRatio || 1), w = Math.max(320, Math.round(canvas.clientWidth * dpr)), h = Math.max(180, Math.round(canvas.clientHeight * dpr));
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      var c = canvas.getContext('2d'), L = level(), t = (Date.now() - t0) / 1000;
+      var bass = (L[1] + L[2] + L[3] + L[4]) / 4, cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.2 * (1 + bass * 0.35);
+      var g = c.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.7);
+      g.addColorStop(0, 'hsl(' + (255 + bass * 40) + ',60%,' + (18 + bass * 14) + '%)'); g.addColorStop(1, '#0a0919');
+      c.fillStyle = g; c.fillRect(0, 0, w, h);
+      // drifting lights
+      parts.forEach(function (p) {
+        p.a += p.s * 0.01 * (1 + bass * 3);
+        var rr = p.r * Math.max(w, h) * 0.55, x = cx + Math.cos(p.a) * rr, y = cy + Math.sin(p.a) * rr * 0.6;
+        c.fillStyle = 'rgba(' + (p.z > 1.4 ? '224,178,90' : '139,123,255') + ',' + (0.12 + bass * 0.35) + ')';
+        c.beginPath(); c.arc(x, y, p.z * (1 + bass * 2.2) * dpr, 0, 6.283); c.fill();
+      });
+      // the ring of the spectrum
+      var n = 64;
+      c.lineCap = 'round';
+      for (var i = 0; i < n; i++) {
+        var a = (i / n) * 6.283 - 1.5708 + t * 0.12, v = L[i], len = R * (0.15 + v * 1.25);
+        c.strokeStyle = 'hsl(' + (250 + (i / n) * 110 + bass * 30) + ',80%,' + (58 + v * 25) + '%)';
+        c.lineWidth = Math.max(2, (w / 220)) * (0.7 + v);
+        c.beginPath(); c.moveTo(cx + Math.cos(a) * R * 1.08, cy + Math.sin(a) * R * 1.08); c.lineTo(cx + Math.cos(a) * (R * 1.08 + len), cy + Math.sin(a) * (R * 1.08 + len)); c.stroke();
+      }
+      // the centre: the logo breathing with the bass
+      c.save(); c.shadowColor = 'rgba(224,178,90,.8)'; c.shadowBlur = 24 * dpr * (0.4 + bass);
+      c.fillStyle = 'rgba(23,20,58,.92)'; c.beginPath(); c.arc(cx, cy, R, 0, 6.283); c.fill();
+      c.lineWidth = 3 * dpr; c.strokeStyle = 'rgba(224,178,90,.9)'; c.stroke(); c.restore();
+      if (logo.complete && logo.naturalWidth) { var s = R * 1.15; c.drawImage(logo, cx - s / 2, cy - s / 2, s, s); }
+      // a line of the waveform under it
+      c.beginPath(); c.lineWidth = 2 * dpr; c.strokeStyle = 'rgba(241,238,252,.55)';
+      for (var k = 0; k < n; k++) { var x2 = (k / (n - 1)) * w, y2 = h * 0.9 - L[k] * h * 0.12; k ? c.lineTo(x2, y2) : c.moveTo(x2, y2); }
+      c.stroke();
+      raf = requestAnimationFrame(draw);
+    }
+    function startDraw() { if (!raf) raf = requestAnimationFrame(draw); }
+
+    // ----- full screen (a CSS version where the browser has none, e.g. on iPhone)
+    function fullscreen(node) {
+      if (document.fullscreenElement) { document.exitFullscreen(); return; }
+      if (node.requestFullscreen) node.requestFullscreen().catch(function () { node.classList.toggle('mu-pseudo'); startDraw(); });
+      else if (node.webkitRequestFullscreen) node.webkitRequestFullscreen();
+      else { node.classList.toggle('mu-pseudo'); startDraw(); }
+    }
+    fullBtn.addEventListener('click', function () { fullscreen(vis); });
+    canvas.addEventListener('dblclick', function () { fullscreen(vis); });
+    document.addEventListener('fullscreenchange', function () { fullBtn.textContent = document.fullscreenElement ? '✕ יציאה' : '⛶ מסך מלא'; startDraw(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && vis.classList.contains('mu-pseudo')) vis.classList.remove('mu-pseudo'); });
+
+    // ----- recording the picture and the sound to a file
+    var recorder = null, recChunks = [], recTimer = null, recStart = 0;
+    function stopRec() { if (recorder && recorder.state !== 'inactive') recorder.stop(); }
+    recBtn.addEventListener('click', function () {
+      if (recorder) { stopRec(); return; }
+      if (!window.MediaRecorder || !canvas.captureStream) { say('הדפדפן הזה לא יודע להקליט סרטון', 'נסו Chrome, Edge או Firefox'); return; }
+      graph();
+      var stream = canvas.captureStream(30), sound = false;
+      if (recDest && playing && (mode === 'gen' || (mode === 'radio' && active === audioC))) { recDest.stream.getAudioTracks().forEach(function (tr) { stream.addTrack(tr); }); sound = true; }
+      var mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0];
+      try { recorder = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 3000000 } : undefined); } catch (e) { say('ההקלטה לא התחילה', String(e.message || e)); recorder = null; return; }
+      recChunks = [];
+      recorder.ondataavailable = function (e) { if (e.data && e.data.size) recChunks.push(e.data); };
+      recorder.onstop = function () {
+        clearInterval(recTimer);
+        var type = recorder.mimeType || 'video/webm', blob = new Blob(recChunks, { type: type });
+        recorder = null; recBtn.textContent = '⏺ הקלטה'; recBtn.classList.remove('rec');
+        if (blob.size < 2000) { say('ההקלטה ריקה', 'נסו שוב כשהמוזיקה מנגנת'); return; }
+        var d = new Date(), name = 'spider-music-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '-' + ('0' + d.getHours()).slice(-2) + ('0' + d.getMinutes()).slice(-2) + (/mp4/.test(type) ? '.mp4' : '.webm');
+        var a = el('a', { href: URL.createObjectURL(blob), download: name });
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 20000);
+        say('✓ הסרטון ירד: ' + name, Math.round(blob.size / 1024) + 'KB' + (sound ? '' : ' · בלי קול: התחנה הזו לא מאפשרת הקלטת צליל'));
+      };
+      recorder.start(1000);
+      recStart = Date.now(); recBtn.classList.add('rec');
+      recTimer = setInterval(function () {
+        var s = Math.floor((Date.now() - recStart) / 1000);
+        recBtn.textContent = '⏹ עצירה והורדה · ' + Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+        if (s >= 600) stopRec();
+      }, 500);
+      startDraw();
+      if (!sound) say('מקליט תמונה בלי קול', 'מוזיקה מובנית או תחנה שמאפשרת יתנו גם קול');
     });
 
     var last = store('music-last') || '';
     var lg = last.indexOf('r:') === 0 ? genres.filter(function (g) { return g.id === last.slice(2); })[0] : null;
     if (lg) say('בפעם הקודמת: ' + lg.style, 'לחצו ▶ כדי להמשיך');
+    window.SpiderMusic = { playGen: playGen, state: function () { return { mode: mode, playing: playing, recording: !!recorder }; } };
   }
 
   // ================================================================ news + riddles (bottom-right)
@@ -426,13 +703,26 @@
       } else {
         media = el('video', { class: 'v-frame', src: v.url, controls: '', preload: 'metadata', playsinline: '' });
       }
-      var canDownload = v.download && !(yt && /youtu/.test(v.url));
+      var isYT = !!(yt && /youtu/.test(v.url));
+      var actions = [];
+      if (isYT) {
+        actions.push(el('a', { class: 'g-btn ghost v-dl', href: v.url, target: '_blank', rel: 'noopener', text: '↗ פתיחה ביוטיוב' }));
+        actions.push(el('span', { class: 'v-hint', text: 'סרטוני יוטיוב לא ניתנים להורדה מכאן' }));
+      } else {
+        var fs = el('button', { class: 'g-btn ghost v-dl', type: 'button', text: '⛶ מסך מלא' });
+        fs.addEventListener('click', function () {
+          var f = media; var rq = f.requestFullscreen || f.webkitRequestFullscreen || f.webkitEnterFullscreen;
+          if (rq) { try { rq.call(f); } catch (e) {} }
+        });
+        actions.push(fs);
+        actions.push(el('a', { class: 'g-btn ghost v-dl', href: v.url, download: '', text: '⬇ הורדה' }));
+      }
       grid.appendChild(el('article', { class: 'v-card reveal' }, [
         el('div', { class: 'v-media' }, [media]),
         el('div', { class: 'v-body' }, [
           el('h3', { text: v.title }),
           v.desc ? el('p', { text: v.desc }) : null,
-          canDownload ? el('a', { class: 'g-btn ghost v-dl', href: v.url, download: '', text: '⬇ הורדה' }) : null
+          el('div', { class: 'v-actions' }, actions)
         ])
       ]));
     });
@@ -441,7 +731,6 @@
   }
 
   // ================================================================ start
-  var base = (document.currentScript && document.currentScript.src || '').replace(/js\/extras\.js.*$/, '');
   // installable as an app (and so able to open with the computer)
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', function () { navigator.serviceWorker.register(base + 'sw.js').catch(function () {}); });
