@@ -239,6 +239,47 @@ main { padding: 24px; max-width: 1720px; margin: 0 auto; }
   border: 1px solid var(--line); border-radius: var(--r);
 }
 
+/* ---------- יצירת קומיקס ---------- */
+.create { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.create-form { display: grid; gap: 16px; min-width: 0; }
+.create-results { position: sticky; top: 92px; min-width: 0; }
+.cblock { padding: 18px; }
+.chead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; margin-bottom: 14px; }
+.chead h2 { font: 700 30px/1 var(--display); color: #fff; }
+.server { font-size: 12.5px; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.server.ok { background: rgba(52, 211, 153, .12); color: #34d399; }
+.server.warn { background: rgba(255, 122, 156, .12); color: #ff9fb7; }
+.modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.mode { display: grid; gap: 4px; text-align: start; padding: 14px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.mode b { font-size: 15.5px; }
+.mode span { font-size: 12.5px; color: var(--text-2); line-height: 1.4; }
+.mode[aria-checked="true"] { background: rgba(255, 210, 63, .1); border-color: var(--yellow); box-shadow: 0 0 0 1px var(--yellow) inset; }
+.cphotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; max-height: 260px; overflow: auto; scrollbar-width: thin; }
+.cphoto { position: relative; padding: 0; aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
+.cphoto img { width: 100%; height: 100%; object-fit: cover; opacity: .55; transition: opacity .15s; }
+.cphoto[aria-pressed="true"] { box-shadow: var(--ring); border-color: transparent; }
+.cphoto[aria-pressed="true"] img { opacity: 1; }
+.cstyles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.cstyle { display: grid; gap: 4px; text-align: start; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.cstyle .swatch { height: 46px; border-radius: 8px; margin-bottom: 4px; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; }
+.cstyle b { font-size: 14px; }
+.cstyle span.small { font-size: 12px; line-height: 1.35; }
+.cstyle[aria-checked="true"] { border-color: var(--cyan); box-shadow: var(--ring); }
+.cfields { display: grid; gap: 12px; }
+.cgo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.btn.big { min-height: 50px; padding: 10px 28px; font-size: 16px; border-radius: 12px; }
+.cprogress { display: grid; gap: 6px; padding: 14px; margin-bottom: 14px; border-radius: 12px; background: rgba(255, 210, 63, .08); border: 1px solid rgba(255, 210, 63, .3); }
+.cprogress b { color: var(--yellow); }
+.bar-anim { height: 4px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.bar-anim i { display: block; width: 35%; height: 100%; background: var(--yellow); border-radius: 4px; animation: slide 1.4s ease-in-out infinite; }
+@keyframes slide { 0% { transform: translateX(110%); } 100% { transform: translateX(-310%); } }
+.cresults { display: grid; gap: 14px; }
+.cempty { padding: 30px 0; text-align: center; }
+.cresult { margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); }
+.cresult img { width: 100%; cursor: zoom-in; background: #fff; }
+.cresult figcaption { display: grid; gap: 6px; padding: 12px; }
+.cerror { padding: 12px 14px; border-radius: 12px; background: rgba(255, 61, 154, .1); border: 1px solid rgba(255, 61, 154, .35); color: #ffc2da; font-size: 14px; }
+
 /* ---------- מעבדה ---------- */
 .lab { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
 .lab-pick { padding: 14px; position: sticky; top: 92px; max-height: calc(100vh - 112px); display: flex; flex-direction: column; }
@@ -427,6 +468,8 @@ kbd { display: inline-block; min-width: 64px; margin-inline-end: 8px; padding: 2
   .brand-sub { display: none; }
   .tabs { order: 3; width: 100%; margin: 0; }
   .tabs [role="tab"] { flex: 1; min-width: 0; padding: 5px 8px; }
+  .tabs [role="tab"] small { display: none; }
+  .tabs [role="tab"] b { font-size: 13.5px; white-space: nowrap; }
   .ai-btn { margin-inline-start: auto; }
   main { padding: 16px; }
   .lib-hero, .lib-hero.compact { grid-template-columns: 1fr; padding: 22px 18px; }
@@ -434,6 +477,10 @@ kbd { display: inline-block; min-width: 64px; margin-inline-end: 8px; padding: 2
   .lib-tools { position: static; }
   .lib-next { margin-inline-start: 0; }
   .lab { grid-template-columns: 1fr; }
+  .create { grid-template-columns: 1fr; }
+  .create-results { position: static; }
+  .modes { grid-template-columns: 1fr; }
+  .cstyles { grid-template-columns: repeat(2, 1fr); }
   .lab-pick { position: static; max-height: none; }
   .pick-list { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 72px; overflow-x: auto; }
   .stage { padding: 16px 16px 40px; min-height: 0; }
@@ -458,3 +505,11 @@ kbd { display: inline-block; min-width: 64px; margin-inline-end: 8px; padding: 2
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* מכשירים חלשים: בלי טשטוש רקע ובלי צללים כבדים, כי הם מאטים גלילה בטלפונים */
+.low .bar, .low .lib-tools, .low .tag, .low .dlg::backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.low .bar { background: #0c0e13; }
+.low .lib-tools { background: var(--surface); }
+.low .card, .low .tile:hover, .low .scard:hover .sframe { box-shadow: none; }
+.low .stage-inner, .low #page-canvas, .low .motion-stage canvas { box-shadow: 0 8px 20px rgba(0, 0, 0, .5); }
+.low .lib-hero::before { display: none; }

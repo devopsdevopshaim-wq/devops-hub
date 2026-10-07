@@ -279,12 +279,31 @@
     this.t0 = performance.now();
     var loop = function (now) {
       if (!self.scene) return;
-      self.scene.draw(self.ctx, (now - self.t0) / 1000);
+      /* חותמת הזמן של הפריים הראשון יכולה להיות מעט לפני t0, ואז הזמן שלילי */
+      self.scene.draw(self.ctx, Math.max(0, (now - self.t0) / 1000));
       self.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
   };
-  Player.prototype.stop = function () { cancelAnimationFrame(this.raf); this.raf = 0; };
+  Player.prototype.stop = function () { cancelAnimationFrame(this.raf); this.raf = 0; this.paused = false; };
+
+  /* עוצר את הלולאה כשהנגן לא על המסך או כשהלשונית ברקע, וממשיך כשהוא חוזר. לא חוסם הקלטה */
+  Player.prototype.autoPause = function () {
+    var self = this;
+    if (this._auto) return;
+    this._auto = true;
+    var visible = true;
+    var sync = function () {
+      var should = visible && !document.hidden;
+      if (self.recording || !self.scene) return;
+      if (!should && self.raf) { cancelAnimationFrame(self.raf); self.raf = 0; self.paused = true; }
+      else if (should && self.paused) { self.paused = false; self.play(); }
+    };
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (en) { visible = en[0].isIntersecting; sync(); }).observe(this.canvas);
+    }
+    document.addEventListener('visibilitychange', sync);
+  };
 
   function pickMime() {
     var list = ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
@@ -304,9 +323,11 @@
       rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
       rec.onerror = function (e) { reject(e.error || new Error('ההקלטה נכשלה')); };
       rec.onstop = function () {
+        self.recording = false;
         var type = (rec.mimeType || mime || 'video/webm').split(';')[0];
         resolve({ blob: new Blob(chunks, { type: type }), ext: type.indexOf('mp4') >= 0 ? 'mp4' : 'webm' });
       };
+      self.recording = true;
       self.play();
       rec.start(250);
       var start = performance.now();

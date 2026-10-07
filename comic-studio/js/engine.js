@@ -17,8 +17,8 @@
     (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)));
 
   var SIZES = LOW
-    ? { thumb: 220, stage: 900, panel: 900, export: 1600, motion: 640, budget: 14e6 }
-    : { thumb: 260, stage: 1100, panel: 1200, export: 2000, motion: 900, budget: 36e6 };
+    ? { thumb: 220, stage: 900, panel: 900, export: 1600, motion: 480, budget: 14e6, pageScale: 1.5 }
+    : { thumb: 260, stage: 1100, panel: 1200, export: 2000, motion: 900, budget: 36e6, pageScale: 2 };
 
   var lanes = {}, seq = 0, pending = {}, active = 0, listeners = [];
 

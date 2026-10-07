@@ -7,11 +7,13 @@
 //   n8n/hasadna-access.json       sign-in codes, clients, payments (Gmail SMTP)
 //   n8n/hasadna-voice.json        Maya's female voice for browsers without one (Azure Speech or ElevenLabs)
 //   n8n/hasadna-parkomat.json     Parkomat's robotic-parking agents: questionnaires from פארק־פלאן (Claude + lead email)
+//   n8n/hasadna-comic.json        the comic studio's drawing server (Gemini and/or OpenAI image models)
 //
 // Secrets: N8N_URL, N8N_API_KEY (or both inside HAIM_WEB_KEY),
 //          ANTHROPIC_API_KEY (only until a Claude credential exists in n8n),
 //          GMAIL_APP_PASSWORD (+ optional GMAIL_USER) for the sign-in emails,
-//          AZURE_SPEECH_KEY + AZURE_SPEECH_REGION (or ELEVENLABS_API_KEY) for Maya's voice.
+//          AZURE_SPEECH_KEY + AZURE_SPEECH_REGION (or ELEVENLABS_API_KEY) for Maya's voice,
+//          GEMINI_API_KEY and/or OPENAI_API_KEY for the comic studio's drawings.
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 
@@ -32,13 +34,18 @@ const VOICE = {
 const TOTP = (process.env.ADMIN_TOTP_SECRET || ((combined.match(/ADMIN_TOTP_SECRET\W*((?:[A-Za-z2-7]{4}\s?){4,16})/) || [])[1] || '')).replace(/\s+/g, '').toUpperCase();
 // the admin's password: any characters, to the end of its line. Only its salted PBKDF2 hash goes to n8n.
 const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || (combined.match(/^[ \t]*ADMIN_PASSWORD[ \t]*[=:][ \t]*(.+?)[ \t]*$/m) || [])[1] || '').replace(/^(["'])(.*)\1$/, '$2');
+// the comic studio's image models. An OpenAI key is any sk- key that is not Anthropic's sk-ant-
+const COMIC = {
+  __GEMINI_API_KEY__: label('GEMINI_API_KEY', 'AIza[\\w-]{30,45}') || pick(/\bAIza[\w-]{35}\b/),
+  __OPENAI_API_KEY__: label('OPENAI_API_KEY', 'sk-[\\w-]{20,200}') || pick(/\bsk-(?!ant-)(?:proj-|svcacct-)?[\w-]{30,200}\b/)
+};
 const MORNING_ID = label('MORNING_CLIENT_ID', '[\\w-]{8,100}');
 const MORNING_SECRET = label('MORNING_CLIENT_SECRET', '[\\w-]{8,120}');
 // the key the sign-in and the leads & prices workflows share (the admin's short-lived proof is signed with it).
 // Derived from the n8n API key, so it is never stored in the repository and stays the same between installs.
 const SHARED = KEY ? crypto.createHmac('sha256', KEY).update('spider-shared-v1').digest('hex') : '';
 // nothing secret may ever show in the Actions log (the repository is public)
-for (const v of [KEY, SHARED, ADMIN_PASSWORD, CLAUDE, GMAIL_PASS, TOTP, MORNING_ID, MORNING_SECRET, ...Object.values(VOICE)]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [KEY, SHARED, ADMIN_PASSWORD, CLAUDE, GMAIL_PASS, TOTP, MORNING_ID, MORNING_SECRET, ...Object.values(VOICE), ...Object.values(COMIC)]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 const out = (k, v) => fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', `${k}=${v}\n`);
 const summary = [];
 const note = (line) => { summary.push(line); console.log(line); };
@@ -220,6 +227,9 @@ try {
   results.voice = await install('n8n/hasadna-voice.json', [], { fill: VOICE });
 } catch (e) { note(`- ⚠️ הקול של מאיה: ${e.message.slice(0, 200)}`); }
 const hasVoice = !!(VOICE.__AZURE_SPEECH_KEY__ || VOICE.__ELEVENLABS_API_KEY__);
+try {
+  results.comic = await install('n8n/hasadna-comic.json', [], { fill: COMIC });
+} catch (e) { note(`- ⚠️ סטודיו קומיקס: ${e.message.slice(0, 200)}`); }
 
 // ---- do they answer?
 async function probe(path, init) {
@@ -232,6 +242,16 @@ const checks = {
   'hasadna-auth': await probe('hasadna-auth', form({ action: 'me', token: 'probe' })), // 401 = alive and refusing
   'parking-agents': await probe('parking-agents', form({ department: 'probe' })) // 400 = alive, no file sent
 };
+// the comic server: which image models it has (a status call draws nothing and costs nothing)
+{
+  let j = {}, st = 0;
+  try {
+    const r = await fetch(`${BASE}/webhook/comic-draw`, { method: 'POST', headers: { Origin: 'https://devopsdevopshaim-wq.github.io', 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ mode: 'status' }) });
+    st = r.status; j = await r.json().catch(() => ({}));
+  } catch {}
+  checks['comic-draw'] = st;
+  note(`- סטודיו קומיקס: ${st === 200 ? `✅ עונה · Gemini ${j.gemini ? '✅' : '❌ (חסר GEMINI_API_KEY)'} · OpenAI ${j.openai ? '✅' : '❌ (חסר OPENAI_API_KEY)'}` : '❌ ' + st}`);
+}
 // the sign-in answers, and (if the secret's password is still the admin's) it opens
 {
   const inf = await post('hasadna-auth', { action: 'info' });

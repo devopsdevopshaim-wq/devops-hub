@@ -2,7 +2,8 @@ name: Deploy agents to n8n Cloud
 
 # Installs SPIDER's n8n workflows (agents, leads & prices, sign-in, Maya's voice) in n8n
 # Cloud through the n8n API, with their credentials, activates them and checks
-# that they answer. Repository secrets: N8N_URL, N8N_API_KEY, GMAIL_APP_PASSWORD,
+# that they answer (and the comic studio's drawing server). Repository secrets: N8N_URL, N8N_API_KEY, GMAIL_APP_PASSWORD,
+# GEMINI_API_KEY / OPENAI_API_KEY for the comic drawings,
 # and ANTHROPIC_API_KEY until a Claude credential exists. See n8n/README.md.
 
 on:
@@ -33,7 +34,7 @@ jobs:
         run: |
           node n8n/test/run-all.mjs
           # the committed workflow files must be exactly what the builders produce
-          python3 n8n/build-access-workflow.py && python3 n8n/build-business-workflow.py && python3 n8n/build-multi-agent-workflow.py && python3 n8n/build-voice-workflow.py
+          python3 n8n/build-access-workflow.py && python3 n8n/build-business-workflow.py && python3 n8n/build-multi-agent-workflow.py && python3 n8n/build-voice-workflow.py && python3 n8n/build-comic-workflow.py
           git diff --exit-code -- n8n/*.json || { echo '::error::n8n/*.json is out of date with its builder. Run the build-*.py scripts and commit.'; exit 1; }
       - name: Install in n8n Cloud
         id: deploy
@@ -52,6 +53,8 @@ jobs:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           MORNING_CLIENT_ID: ${{ secrets.MORNING_CLIENT_ID }}
           MORNING_CLIENT_SECRET: ${{ secrets.MORNING_CLIENT_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: node .github/scripts/n8n-deploy.mjs
       - name: Connect the portfolio
         if: steps.deploy.outputs.changed == 'true'

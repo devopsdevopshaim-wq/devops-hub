@@ -262,12 +262,13 @@
   function show(view) {
     if (view !== state.view) stopMotion();
     state.view = view;
-    ['library', 'lab', 'page'].forEach(function (v) {
+    ['library', 'create', 'lab', 'page'].forEach(function (v) {
       $('view-' + v).hidden = v !== view;
       $('tab-' + v).setAttribute('aria-selected', String(v === view));
     });
     if (view === 'lab') enterLab();
     if (view === 'page') enterPage();
+    if (view === 'create' && window.ComicCreate) window.ComicCreate.enter();
     window.scrollTo({ top: 0 });
   }
 
@@ -378,6 +379,7 @@
       toast('נמחקו ' + n + ' תמונות.');
     });
     $('btn-to-lab').addEventListener('click', function () { show('lab'); });
+    $('btn-to-create').addEventListener('click', function () { show('create'); });
     $('btn-auto').addEventListener('click', function () { show('page'); autoBuild(); });
   }
 
@@ -1250,7 +1252,7 @@
           return;
         }
         closeImg(photo);
-        if (!motionPlayer) motionPlayer = new MO.Player($('motion-canvas'));
+        if (!motionPlayer) { motionPlayer = new MO.Player($('motion-canvas')); motionPlayer.autoPause(); }
         motionPlayer.load(scene);
         $('motion-empty').hidden = true;
         $('motion-rec').disabled = false;
@@ -1296,7 +1298,7 @@
     var pg = curPage();
     var rects = PG.computePanels(pg).map(PG.bbox);
     var scene = MO.pageScene(videoCanvas, rects, { size: VIDEO_SIZES[$('video-fmt').value], perPanel: Number($('video-per').value) });
-    if (!videoPlayer) videoPlayer = new MO.Player($('video-canvas'));
+    if (!videoPlayer) { videoPlayer = new MO.Player($('video-canvas')); videoPlayer.autoPause(); }
     videoPlayer.load(scene);
     $('video-state').textContent = rects.length + ' פאנלים · ' + Math.round(scene.dur) + ' שניות';
   }
@@ -1359,7 +1361,7 @@
   function exportPage(kind) {
     var pg = curPage();
     toast('מכין קובץ בגודל מלא…', 60000);
-    document.fonts.ready.then(function () { return renderPageCanvas(pg, 2); }).then(function (c) {
+    document.fonts.ready.then(function () { return renderPageCanvas(pg, SZ.pageScale); }).then(function (c) {
       return canvasToBlob(c, kind === 'jpg' ? 'image/jpeg' : 'image/png', 0.93);
     }).then(function (b) {
       download(b, safeName((pg.title.text || 'comic') + ' - עמוד ' + (state.pageIdx + 1)) + '.' + kind);
@@ -1375,12 +1377,18 @@
     }).then(function () {
       var JsPDF = window.jspdf.jsPDF, doc = null;
       return pr.pages.reduce(function (p, pg, i) {
-        return p.then(function () { return renderPageCanvas(pg, 1.6); }).then(function (c) {
-          var orient = pg.w > pg.h ? 'l' : 'p', size = [pg.w * 0.75, pg.h * 0.75];
-          if (!doc) doc = new JsPDF({ orientation: orient, unit: 'pt', format: size });
-          else doc.addPage(size, orient);
-          doc.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, size[0], size[1]);
-          toast('עמוד ' + (i + 1) + ' מתוך ' + pr.pages.length + '…', 120000);
+        return p.then(function () { return renderPageCanvas(pg, EN.LOW ? 1.3 : 1.6); }).then(function (c) {
+          /* דחיסה ברקע (toBlob) ולא toDataURL שחוסם את המסך */
+          return canvasToBlob(c, 'image/jpeg', 0.9).then(function (blob) {
+            c.width = c.height = 1;
+            return blob.arrayBuffer();
+          }).then(function (buf) {
+            var orient = pg.w > pg.h ? 'l' : 'p', size = [pg.w * 0.75, pg.h * 0.75];
+            if (!doc) doc = new JsPDF({ orientation: orient, unit: 'pt', format: size });
+            else doc.addPage(size, orient);
+            doc.addImage(new Uint8Array(buf), 'JPEG', 0, 0, size[0], size[1]);
+            toast('עמוד ' + (i + 1) + ' מתוך ' + pr.pages.length + '…', 120000);
+          });
         });
       }, Promise.resolve()).then(function () { return doc.output('blob'); });
     }).then(function (b) {
@@ -1400,6 +1408,34 @@
     });
     return scripts[src];
   }
+
+  /* תמונה מהספרייה לעמוד הקומיקס. עמוד קומיקס שלם (מה-AI) נכנס כעמוד חדש בפאנל אחד, בלי מסגרת,
+     כדי שאפשר יהיה להוסיף עליו בועות ולייצא */
+  function openInPage(imgId, fullPage) {
+    ensureProject();
+    var m = imageById(imgId);
+    if (fullPage && m) {
+      var fmt = m.w > m.h * 1.15 ? 'landscape' : Math.abs(m.w - m.h) < m.w * 0.1 ? 'square' : 'a4';
+      var pg = PG.newPage(fmt, 'one');
+      pg.title.show = false; pg.margin = 0; pg.gutter = 0; pg.border = 0;
+      pg.panels[0].img = imgId; pg.panels[0].style = 'original'; pg.panels[0].params = { sat: 100, contrast: 0 };
+      var pr = state.project;
+      if (pr.pages.length === 1 && !pr.pages[0].panels.some(function (p) { return p.img; }) && !pr.pages[0].items.length) pr.pages = [pg];
+      else pr.pages.push(pg);
+      state.pageIdx = pr.pages.indexOf(pg);
+      saveProject();
+      show('page');
+      return;
+    }
+    show('page');
+    placeInPage({ img: imgId, style: 'original', params: { sat: 100, contrast: 0 } });
+  }
+
+  window.ComicApp = {
+    state: state, imageById: imageById, loadBitmap: loadBitmap, scaled: scaled, closeImg: closeImg,
+    canvasToBlob: canvasToBlob, addAiResult: addAiResult, toast: toast, show: show, download: download,
+    safeName: safeName, saveMeta: saveMeta, renderLibrary: renderLibrary, el: el, openInPage: openInPage
+  };
 
   /* ---------- התחלה ---------- */
   /* שגיאה לא צפויה לא מפילה את הדף: מציגים הודעה וממשיכים */
@@ -1431,6 +1467,7 @@
   });
 
   function boot() {
+    if (EN.LOW) document.documentElement.classList.add('low');
     document.querySelectorAll('[role="tab"]').forEach(function (t) {
       t.addEventListener('click', function () { show(t.dataset.view); });
       t.addEventListener('keydown', function (e) {
