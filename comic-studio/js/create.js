@@ -30,7 +30,7 @@
   var st = load();
   var picked = [];        /* התמונות שנכללות ביצירה */
   var server = null;      /* { gemini, openai, left } */
-  var busy = false;
+  var busy = false, inflight = null;
 
   function load() {
     var d = { mode: 'page', style: 'superhero', provider: 'free', aspect: 'portrait', panels: '5', text: 'he' };
@@ -43,6 +43,7 @@
 
   function post(body, ms) {
     var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    if (ctl && body.mode !== 'status') inflight = ctl;
     var timer = ctl ? setTimeout(function () { ctl.abort(); }, ms || TIMEOUT) : 0;
     /* text/plain: בקשה פשוטה, בלי בקשת בדיקה מקדימה של הדפדפן */
     return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
@@ -272,7 +273,10 @@
         A.toast(st.mode === 'page' ? 'העמוד מוכן ונשמר בספרייה.' : 'הסצנה מוכנה ונשמרה בספרייה.');
       });
     }
-    jobs.catch(function (e) { A.toast(e.message, 9000); showError(e.message); })
+    jobs.catch(function (e) {
+      if (e && e.stopped) { A.toast('הציור נעצר.'); return; }
+      A.toast(e.message, 9000); showError(e.message);
+    })
       .then(function () {
         busy = false;
         progress(false);
@@ -324,6 +328,44 @@
     box.insertBefore(f, box.firstChild);
   }
 
+  /* ---------- בדיקת מערכת ---------- */
+  function selfTest() {
+    var d = $('selftest'), list = $('selftest-list');
+    if (!d.open) d.showModal();
+    list.textContent = '';
+    var row = function (title) {
+      var li = el('li');
+      var mark = el('b', '', '⏳');
+      li.appendChild(mark);
+      li.appendChild(el('span', '', title));
+      var note = el('small', '', 'בודק…');
+      li.appendChild(note);
+      list.appendChild(li);
+      return function (ok, text) { mark.textContent = ok === null ? 'ℹ️' : ok ? '✅' : '❌'; note.textContent = text; };
+    };
+    var EN = window.ComicEngine;
+    var dev = row('המכשיר והדפדפן');
+    var ua = navigator.userAgent;
+    var br = (ua.match(/SamsungBrowser\/[\d.]+|Chrome\/[\d]+|Firefox\/[\d]+|Version\/[\d.]+ Mobile.*Safari/) || ['דפדפן לא מזוהה'])[0];
+    dev(null, br + ' · ' + (/Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : 'מחשב') + (navigator.deviceMemory ? ' · זיכרון ' + navigator.deviceMemory + 'GB' : '') + (EN.LOW ? ' · מצב חסכוני' : ''));
+    var w = row('עיבוד ברקע (אפקטים מהירים)');
+    EN.selfTest().then(function (r) {
+      w(r.ok, r.ok ? 'עובד (' + r.ms + ' אלפיות שנייה)' + (r.broken ? ' · במצב גיבוי בדף' : '') : 'לא עובד: ' + (r.why || '') + ' · האתר עובר אוטומטית לעיבוד בדף');
+    });
+    var sv = row('שרת הציור של האתר');
+    post({ mode: 'status' }, 15000).then(function (j) {
+      sv(j.ok, j.ok ? 'עונה' + (j.gemini ? ' · Gemini מחובר' : ' · בלי מפתח Gemini (המצב החינמי משתמש בשירות חלופי)') : 'לא עונה (' + (j.status || j.error) + ') · המצב החינמי ממשיך בלי השרת');
+    });
+    var pol = row('שירות הציור החינמי');
+    window.ComicFree.ping().then(function (r) {
+      pol(r.ok, r.ok ? 'עונה (' + Math.round(r.ms / 1000) + ' שניות)' : 'לא עונה: ' + r.why + ' · בלעדיו המצב החינמי לא יכול לצייר');
+    });
+    var st = row('שמירה בדפדפן');
+    (navigator.storage && navigator.storage.estimate ? navigator.storage.estimate() : Promise.resolve(null)).then(function (e) {
+      st(true, e ? 'בשימוש ' + Math.round(e.usage / 1048576) + 'MB מתוך ' + Math.round(e.quota / 1048576) + 'MB' : 'פעילה');
+    }).catch(function () { st(false, 'הדפדפן חוסם שמירה'); });
+  }
+
   /* ---------- התחלה ---------- */
 
   var bound = false;
@@ -342,6 +384,13 @@
     $('c-aspect').value = st.aspect;
     $('c-aspect').addEventListener('change', function () { st.aspect = $('c-aspect').value; st.aspectTouched = true; save(); });
     $('c-go').addEventListener('click', go);
+    $('c-stop').addEventListener('click', function () {
+      if (window.ComicFree) window.ComicFree.cancel();
+      if (inflight) { try { inflight.abort(); } catch (e) { /* כבר נעצר */ } }
+      $('c-progress-text').textContent = 'עוצר…';
+    });
+    $('selftest-btn').addEventListener('click', selfTest);
+    $('selftest-again').addEventListener('click', selfTest);
   }
 
   function enter() {

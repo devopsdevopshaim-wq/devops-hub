@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Frank+Ruhl+Libre:wght@700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=Karantina:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&family=Rubik:wght@500;700;900&family=Secular+One&family=Suez+One&family=Varela+Round&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/studio.css?v=20261007b">
+<link rel="stylesheet" href="css/studio.css?v=20261007c">
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>
@@ -95,7 +95,8 @@
         <div class="card cblock">
           <div class="chead">
             <h2>מה יוצרים?</h2>
-            <span class="server" id="server-state">בודק את שרת הציור…</span>
+            <span class="row wrap"><span class="server" id="server-state">בודק את שרת הציור…</span>
+              <button class="btn tiny ghost" type="button" id="selftest-btn">בדיקת מערכת</button></span>
           </div>
           <div class="modes" role="radiogroup" aria-label="סוג היצירה">
             <button type="button" class="mode" data-mode="page" aria-checked="true" role="radio">
@@ -156,7 +157,8 @@
           <div class="cprogress" id="c-progress" hidden>
             <div class="bar-anim"><i></i></div>
             <b id="c-progress-text">שולח לשרת…</b>
-            <span class="muted small" id="c-progress-time"></span>
+            <span class="row wrap"><span class="muted small grow" id="c-progress-time"></span>
+              <button class="btn tiny ghost danger" type="button" id="c-stop">עצירה</button></span>
           </div>
           <div class="cresults" id="c-results">
             <p class="muted small cempty" id="c-empty">כאן יופיעו הקומיקסים שתיצרו. ציור לוקח בדרך כלל 15–60 שניות.</p>
@@ -433,18 +435,30 @@
   </form>
 </dialog>
 
+<dialog id="selftest" class="dlg">
+  <form method="dialog">
+    <h2>בדיקת מערכת</h2>
+    <p>בודקים כל חלק באתר מהמכשיר שלכם. אם משהו לא עובד, צלמו את המסך הזה ושלחו.</p>
+    <ul class="checks" id="selftest-list"></ul>
+    <div class="row end">
+      <button class="btn ghost" type="button" id="selftest-again">בדיקה שוב</button>
+      <button class="btn primary" value="close">סגירה</button>
+    </div>
+  </form>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/store.js?v=20261007b"></script>
-<script src="js/fx.js?v=20261007b"></script>
-<script src="js/fx-art.js?v=20261007b"></script>
-<script src="js/neural.js?v=20261007b"></script>
-<script src="js/page.js?v=20261007b"></script>
-<script src="js/engine.js?v=20261007b"></script>
-<script src="js/motion.js?v=20261007b"></script>
-<script src="js/ai.js?v=20261007b"></script>
-<script src="js/app.js?v=20261007b"></script>
-<script src="js/free.js?v=20261007b"></script>
-<script src="js/create.js?v=20261007b"></script>
+<script src="js/store.js?v=20261007c"></script>
+<script src="js/fx.js?v=20261007c"></script>
+<script src="js/fx-art.js?v=20261007c"></script>
+<script src="js/neural.js?v=20261007c"></script>
+<script src="js/page.js?v=20261007c"></script>
+<script src="js/engine.js?v=20261007c"></script>
+<script src="js/motion.js?v=20261007c"></script>
+<script src="js/ai.js?v=20261007c"></script>
+<script src="js/app.js?v=20261007c"></script>
+<script src="js/free.js?v=20261007c"></script>
+<script src="js/create.js?v=20261007c"></script>
 </body>
 </html>
