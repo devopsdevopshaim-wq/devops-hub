@@ -201,7 +201,20 @@
           <div class="stage-bar" role="tablist" aria-label="תצוגה">
             <button role="tab" id="tab-3d" aria-selected="true" aria-controls="panel-3d" data-stage="3d">סיור 360°</button>
             <button role="tab" id="tab-2d" aria-selected="false" aria-controls="panel-2d" data-stage="2d">תוכנית קומה</button>
+            <button type="button" class="edit-toggle" id="btn-edit" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              עיצוב בעצמי
+            </button>
             <span class="stage-hint" id="stage-hint">גררו כדי להסתכל מסביב · חיצים או WASD כדי ללכת · לחיצה על רהיט מציגה איפה קונים</span>
+          </div>
+          <div class="edit-bar" id="edit-bar" hidden>
+            <button type="button" class="btn btn-small" id="ed-add">+ הוספת פריט מהקטלוג</button>
+            <span class="edit-n" id="ed-n"></span>
+            <span class="edit-hint">לחיצה על רהיט פותחת החלפה, הזזה, סיבוב ומחיקה · בתוכנית הקומה אפשר לגרור</span>
+            <span class="edit-acts">
+              <button type="button" class="link-btn" id="ed-undo" disabled>ביטול שינוי</button>
+              <button type="button" class="link-btn" id="ed-reset" disabled>חזרה לעיצוב של האתר</button>
+            </span>
           </div>
           <div class="panel panel-3d" id="panel-3d" role="tabpanel" aria-labelledby="tab-3d">
             <div class="tour" id="tour">
@@ -377,6 +390,21 @@
   <p>מתאר · תכנון ריהוט לבית. המחירים הם הערכה בלבד; את הטלפונים והכתובות כדאי לוודא מול הרשת לפני הגעה.</p>
   <p class="credits">דגמי תלת-ממד: Glam Velvet Sofa ו-Damask Chair © Wayfair, Wood &amp; Leather Sofa ו-Plant © Darmstadt Graphics Group (CC BY 4.0), Sheen Chair © Wayfair ו-Glass Vase (CC0), מתוך Khronos glTF Sample Assets. תאורת HDR: Poly Haven (CC0). פרקט: three.js (MIT). רהיטים מסצנות של Benedikt Bitterli ו-Blendswap: SlykDrako ו-Mareck (CC0), Wig42, Jay-Artist ו-MaTTeSr (CC BY 3.0); פירוט ב-assets/CREDITS.md. צילום מציאותי: three-gpu-pathtracer ו-three-mesh-bvh של Garrett Johnson (MIT). IKEA ושמות המוצרים שייכים לבעליהם; הקישורים מובילים לאתרי הרשתות.</p>
 </footer>
+<dialog class="catalog-dlg" id="catalog-dlg" aria-labelledby="cat-title">
+  <div class="cat-head">
+    <div><h2 id="cat-title">קטלוג</h2><p class="muted" id="cat-sub"></p></div>
+    <form method="dialog"><button class="ic-close" aria-label="סגירת הקטלוג">×</button></form>
+  </div>
+  <div class="cat-tabs" id="cat-tabs" role="tablist" aria-label="קטגוריות"></div>
+  <div class="cat-filters">
+    <label id="cat-room-row">לחדר <select id="cat-room"></select></label>
+    <label>חנות <select id="cat-store"></select></label>
+    <label>סדר <select id="cat-sort"><option value="price">מחיר, מהזול</option><option value="style">מתאים לסגנון קודם</option></select></label>
+    <span class="muted" id="cat-count"></span>
+  </div>
+  <ul class="cat-list" id="cat-list"></ul>
+  <p class="cat-note muted">מחירים מאתרי החנויות ומהשוואות מחירים, אוקטובר 2026. מחירים ומבצעים משתנים; המחיר הסופי בחנות.</p>
+</dialog>
 <dialog class="print-dlg" id="print-dlg" aria-labelledby="print-title">
   <form method="dialog" id="print-form">
     <h2 id="print-title">הדפסה ושמירה כ-PDF</h2>
@@ -406,9 +434,11 @@
 
 <script src="js/stores.js"></script>
 <script src="js/catalog.js"></script>
+<script src="js/products.js"></script>
 <script src="js/planner.js"></script>
 <script src="js/garden.js"></script>
 <script src="js/plan2d.js"></script>
+<script src="js/editor.js"></script>
 <script src="js/app.js"></script>
 <script src="js/photos.js"></script>
 <script src="js/print.js"></script>

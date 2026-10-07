@@ -274,12 +274,14 @@
       $('#plan-lede').textContent = p.error;
       return;
     }
+    if (IH.editor) IH.editor.apply(p);
     plan = p;
     selected = null;
     // each part draws on its own: a failure in one (say, the 3D view) never blanks the rest
     [renderHead, renderPlan, renderTour, renderNotes, renderRenders, renderGarden, renderRooms, renderBudget, renderItemCard].forEach((fn) => {
       try { fn(); } catch (err) { reportError(fn.name, err); }
     });
+    if (IH.editor) IH.editor.renderBar();
     window.dispatchEvent(new Event('ih-plan'));
   }
 
@@ -332,7 +334,14 @@
   }
 
   function renderPlan() {
-    IH.renderPlan($('#plan-svg'), plan, { selected, onSelect: select });
+    const editing = !!(IH.editor && IH.editor.editing);
+    IH.renderPlan($('#plan-svg'), plan, { selected, onSelect: select, editable: editing, onDragEnd: (id, dx, dy) => IH.editor.move(id, dx, dy) });
+  }
+  // the product the user picked for a piece: name, store and price line
+  function productLine(it) {
+    const p = productOf(it);
+    if (!p) return `<p class="prod-line is-estimate">מחיר משוער לפי תקציב ${esc(IH.TIERS[state.budget])}. בחרו דגם אמיתי כדי לראות מחיר של חנות.</p>`;
+    return `<p class="prod-line"><span class="pill">בתכנון</span> <a href="${esc(p.url)}" target="_blank" rel="noopener">${rich(p.name)}</a> · ${esc(sellerName(p.seller))}${p.price ? ` · <b class="num">${p.from ? 'החל מ-' : ''}${money(p.price)}</b>` : ''}</p>`;
   }
 
   function renderTour() {
@@ -451,11 +460,18 @@
   const roomName = (id) => { const r = plan.rooms.find((x) => x.id === id); return r ? r.name : ''; };
 
   /* ---------- prices and stores ---------- */
+  const productOf = (it) => (it.product && IH.PRODUCT_BY_ID && IH.PRODUCT_BY_ID[it.product]) || null;
   function price(it) {
     const c = IH.CATALOG[it.type];
     if (!c) return 0;
+    const prod = productOf(it);
+    if (prod && prod.price) return prod.price;
     const p = c.price[IH.TIER_INDEX[state.budget]];
     return Math.round((p * qty(it)) / 10) * 10;
+  }
+  function estimate(it) {
+    const c = IH.CATALOG[it.type];
+    return c ? Math.round((c.price[IH.TIER_INDEX[state.budget]] * qty(it)) / 10) * 10 : 0;
   }
   function qty(it) {
     const c = IH.CATALOG[it.type];
@@ -469,7 +485,8 @@
   function storesFor(it) {
     const c = IH.CATALOG[it.type];
     if (!c) return [];
-    const all = c.stores[state.budget] || [];
+    const prod = productOf(it);
+    const all = (prod && IH.STORES[prod.seller] ? [prod.seller] : []).concat((c.stores[state.budget] || []).filter((x) => !prod || x !== prod.seller));
     // local shops (nurseries) only for buyers in their region; online and national chains always
     const out = all.filter((id) => { const s = IH.STORES[id]; return s && (!s.local || s.branches.some((b) => b.region === state.region)); });
     return out.length ? out : all.slice(0, 1);
@@ -512,6 +529,22 @@
   function modelRows(it) {
     const c = IH.CATALOG[it.type];
     const rows = [];
+    // catalog products of this piece first, each with a button that puts it in the plan
+    if (IH.PRODUCT_DB) {
+      const prods = IH.PRODUCT_DB.filter((p) => p.type === it.type);
+      prods.sort((a, b) => (a.id === it.product ? -1 : b.id === it.product ? 1 : (a.price || 1e9) - (b.price || 1e9)));
+      prods.forEach((p) => rows.push({ seller: sellerName(p.seller), name: p.name, price: modelPrice(p), url: p.url, found: !!p.price, pid: p.id, chosen: p.id === it.product }));
+      if (prods.length) {
+        const listed = new Set(rows.map((r) => r.seller));
+        storesFor(it).forEach((sid) => {
+          const st = IH.STORES[sid];
+          if (!st || listed.has(st.name)) return;
+          const u = IH.storeSearchUrl(sid, c.name);
+          if (u) rows.push({ seller: st.name, name: `${c.name} בקטלוג`, price: `כ-${money(estimate(it))}`, url: u, est: true });
+        });
+        return rows;
+      }
+    }
     (IH.MODELS[it.type] || []).forEach((m) => rows.push({ seller: sellerName(m.seller), name: m.name, price: modelPrice(m), url: m.url, found: !!m.price }));
     (IH.PRODUCTS[it.type] || []).forEach((p) => rows.push({ seller: 'איקאה', name: p.name, price: 'המחיר באתר', url: p.url, found: false }));
     const listed = new Set(rows.map((r) => r.seller));
@@ -525,11 +558,12 @@
   }
   function modelsBlock(it, limit) {
     const rows = modelRows(it).slice(0, limit || 99);
+    const itemId = it.id;
     if (!rows.length) return '';
     return `<div class="models"><h4>דגמים ומחירים מכמה חנויות</h4>
       <div class="models-scroll"><table class="models-table">
-        <thead><tr><th scope="col">חנות</th><th scope="col">דגם</th><th scope="col">מחיר</th></tr></thead>
-        <tbody>${rows.map((r) => `<tr${r.found ? ' class="is-found"' : ''}><td>${esc(r.seller)}</td><td><a href="${esc(r.url)}" target="_blank" rel="noopener">${rich(r.name)}</a></td><td class="num">${esc(r.price)}${r.est ? '<span class="muted"> הערכה</span>' : ''}</td></tr>`).join('')}</tbody>
+        <thead><tr><th scope="col">חנות</th><th scope="col">דגם</th><th scope="col">מחיר</th><th scope="col"><span class="sr">בחירה</span></th></tr></thead>
+        <tbody>${rows.map((r) => `<tr class="${r.found ? 'is-found' : ''}${r.chosen ? ' is-chosen' : ''}"><td>${esc(r.seller)}</td><td><a href="${esc(r.url)}" target="_blank" rel="noopener">${rich(r.name)}</a></td><td class="num">${esc(r.price)}${r.est ? '<span class="muted"> הערכה</span>' : ''}</td><td class="pick">${r.chosen ? '<span class="pill">בתכנון</span>' : r.pid && itemId ? `<button type="button" class="link-btn" data-choose="${r.pid}" data-item="${itemId}">בחירה</button>` : ''}</td></tr>`).join('')}</tbody>
       </table></div>
       <p class="models-note">מחירים מודגשים פורסמו באתר המוכר (בדיקה: ${IH.STORES_CHECKED}). מחירים משתנים ומבצעים מתחלפים; המחיר הסופי רק מול החנות.</p>
     </div>`;
@@ -558,7 +592,9 @@
         <div><p class="eyebrow">${esc(roomName(it.room))}</p><h3>${esc(c.name)}${it.note ? ` <span class="ic-note">${rich(it.note)}</span>` : ''}</h3></div>
         <button type="button" class="ic-close" data-tc-close aria-label="סגירה">×</button>
       </div>
-      <p class="tc-meta"><span class="num"><bdi dir="ltr">${dims(it)}</bdi></span> · הערכה ${esc(IH.TIERS[state.budget])}: <b class="num">${money(price(it))}</b></p>
+      <p class="tc-meta"><span class="num"><bdi dir="ltr">${dims(it)}</bdi></span> · ${productOf(it) ? 'מחיר' : 'הערכה ' + esc(IH.TIERS[state.budget])}: <b class="num">${money(price(it))}</b></p>
+      ${productLine(it)}
+      ${IH.editor ? IH.editor.actionsHtml(it) : ''}
       ${modelsBlock(it, 5)}
       <button type="button" class="btn btn-small" data-tc-more>כל הפרטים, הטלפונים והכתובות</button>`;
   }
@@ -579,8 +615,10 @@
       </div>
       <dl class="ic-facts">
         <div><dt>מידות (ס״מ)</dt><dd class="num"><bdi dir="ltr">${dims(it)}</bdi></dd></div>
-        <div><dt>מחיר משוער · ${IH.TIERS[state.budget]}</dt><dd class="num">${money(price(it))}</dd></div>
+        <div><dt>${productOf(it) ? 'מחיר המוצר שנבחר' : 'מחיר משוער · ' + IH.TIERS[state.budget]}</dt><dd class="num">${money(price(it))}</dd></div>
       </dl>
+      ${productLine(it)}
+      ${IH.editor ? IH.editor.actionsHtml(it) : ''}
       <p class="ic-rule"><b>למה כאן:</b> ${rich(c.rule)}</p>
       ${productsBlock(it)}
       <h4>איפה קונים · ${esc(IH.REGIONS[state.region])}</h4>
@@ -638,7 +676,7 @@
   function groupItems(list) {
     const groups = [];
     list.forEach((it) => {
-      const key = it.type + '|' + dims(it) + '|' + (it.note || '');
+      const key = it.type + '|' + dims(it) + '|' + (it.note || '') + '|' + (it.product || '');
       const g = groups.find((x) => x.key === key);
       if (g) { g.n++; g.total += price(it); g.ids.push(it.id); } else groups.push({ key, it, n: 1, total: price(it), ids: [it.id] });
     });
@@ -652,13 +690,15 @@
     return `<li class="item-row${g.ids.includes(selected) ? ' is-selected' : ''}" data-id="${it.id}">
       <details>
         <summary>
-          <span class="ir-name">${esc(c.name)}${g.n > 1 ? ` <span class="ir-n">×${g.n}</span>` : ''}${it.note ? ` <span class="ir-note">${rich(it.note)}</span>` : ''}</span>
+          <span class="ir-name">${esc(c.name)}${g.n > 1 ? ` <span class="ir-n">×${g.n}</span>` : ''}${it.note ? ` <span class="ir-note">${rich(it.note)}</span>` : ''}${productOf(it) ? `<span class="ir-prod">${rich(productOf(it).name)}</span>` : ''}</span>
           <span class="ir-dims num"><bdi dir="ltr">${dims(it)}</bdi> ס״מ</span>
           <span class="ir-price num">${money(g.total)}</span>
           <span class="ir-where">${stores.map((s) => esc(IH.STORES[s].name)).join(' · ')}</span>
         </summary>
         <div class="ir-body">
           <p class="ic-rule"><b>למה כאן:</b> ${rich(c.rule)}</p>
+          ${productLine(it)}
+          ${IH.editor ? IH.editor.actionsHtml(it) : ''}
           ${productsBlock(it)}
           <div class="ic-stores">${stores.map((s) => storeBlock(s, true)).join('')}</div>
           <button type="button" class="link-btn" data-show="${it.id}">הצגה בתוכנית ובסיור</button>
@@ -1070,6 +1110,15 @@
     get plan() { return plan; },
     get state() { return state; },
     get tour() { return tour; },
+    select,
+    get selected() { return selected; },
+    productOf,
+    // plan again (the user's edits replay on it) and keep a piece selected
+    rerun(keepId) {
+      run();
+      if (keepId && plan.items.some((x) => x.id === keepId)) select(keepId, true);
+    },
+    rerender() { renderPlan(); renderItemCard(); renderTourCard(!!selected); },
     price, qty, dims, storesFor, modelRows, roomName, totalBudget, groupItems, storeCard, rulesHtml,
     RULES, GARDEN_RULES, esc, rich, money,
     show(id) {

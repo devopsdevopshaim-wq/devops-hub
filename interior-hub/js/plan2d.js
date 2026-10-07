@@ -109,10 +109,46 @@
     const st = el('text', { x: -0.1, y: f(plan.D + 0.65), 'font-size': 0.15, 'text-anchor': 'middle' }, sb);
     st.textContent = '1 מ׳';
 
+    let draggedAt = 0;
     svg.onclick = (e) => {
+      if (Date.now() - draggedAt < 350) return;
       const g = e.target.closest && e.target.closest('.fp-item');
       if (g && opts.onSelect) opts.onSelect(g.getAttribute('data-id'));
     };
+    // editing: drag a piece across the plan; the move is reported in meters, snapped to 5 cm
+    svg.onpointerdown = null;
+    if (opts.editable) {
+      svg.classList.add('is-editable');
+      const toPlan = (e) => { const m = svg.getScreenCTM(); const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(m.inverse()); };
+      svg.onpointerdown = (e) => {
+        const g = e.target.closest && e.target.closest('.fp-item');
+        if (!g || e.button > 0) return;
+        e.preventDefault();
+        const start = toPlan(e);
+        let dx = 0, dy = 0;
+        svg.setPointerCapture(e.pointerId);
+        g.classList.add('is-dragging');
+        const move = (ev) => {
+          const p = toPlan(ev);
+          dx = Math.round((p.x - start.x) / 0.05) * 0.05;
+          dy = Math.round((p.y - start.y) / 0.05) * 0.05;
+          g.setAttribute('transform', `translate(${f(dx)} ${f(dy)})`);
+        };
+        const up = () => {
+          svg.removeEventListener('pointermove', move);
+          svg.removeEventListener('pointerup', up);
+          svg.removeEventListener('pointercancel', up);
+          g.classList.remove('is-dragging');
+          if (Math.abs(dx) + Math.abs(dy) >= 0.05) {
+            draggedAt = Date.now();
+            if (opts.onDragEnd) opts.onDragEnd(g.getAttribute('data-id'), dx, dy);
+          }
+        };
+        svg.addEventListener('pointermove', move);
+        svg.addEventListener('pointerup', up);
+        svg.addEventListener('pointercancel', up);
+      };
+    } else svg.classList.remove('is-editable');
     svg.onkeydown = (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
       const g = e.target.closest && e.target.closest('.fp-item');

@@ -46,6 +46,8 @@ const MODELS = {
 };
 // which real model stands in for a planned piece, by style and size (null keeps the generated one)
 function modelFor(it, styleKey) {
+  const prod = productOf(it);
+  if (prod) return (prod.look && prod.look.model) || null;
   const t = it.type, s = styleKey;
   const W = Math.max(it.w, it.d);
   const odd = (it.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 2;
@@ -76,6 +78,17 @@ const WOOD_TONE = {
   scandi: [0.35, '#f4ead9'], japandi: [0.45, '#e2d2bd'], modern: [0.25, '#e6e0d8'],
   industrial: [0.55, '#8f6c52'], classic: [0.8, '#c39468'], boho: [0.65, '#dcb68e']
 };
+// a product's finish on wood parts: [saturation, multiply colour]
+const FINISH = {
+  white: [0, '#f4f2ee'], oak: [0.45, '#f2e3cc'], walnut: [0.6, '#8b664d'], black: [0, '#3a3a3b'],
+  grey: [0.1, '#a3a29d'], natural: [0.8, '#ecd6b8']
+};
+const FINISH_HEX = { white: '#f1efea', oak: '#cdb08a', walnut: '#6e4f3a', black: '#2a2a2b', grey: '#9c9b96', natural: '#c9a37a' };
+// the product chosen for a planned piece (products.js), or null
+function productOf(it) {
+  const db = window.IH && window.IH.PRODUCT_BY_ID;
+  return (it.product && db && db[it.product]) || null;
+}
 // how a real model is fitted to the planned footprint: [width k, depth k, height] (height null = keep proportions)
 const REAL_FIT = {
   coffeeTable: [1, 1, null], sideTable: [1, 1, null], diningTable: [1, 1, 0.76], chair: [1, 1, null],
@@ -919,11 +932,11 @@ export class Tour {
   }
 
   // a copy of a model's wood material with its texture toned to the style (kept per style)
-  woodTone(mat, styleKey) {
-    const tone = WOOD_TONE[styleKey];
+  woodTone(mat, styleKey, toneIn) {
+    const tone = toneIn || WOOD_TONE[styleKey];
     const img = mat.map && mat.map.image;
     if (!tone || !img || !img.width) return mat;
-    const key = 'tone:' + mat.uuid + ':' + styleKey;
+    const key = 'tone:' + mat.uuid + ':' + styleKey + ':' + (toneIn ? toneIn.join() : '');
     if (this.mats[key]) return this.mats[key];
     const c = document.createElement('canvas');
     c.width = img.width; c.height = img.height;
@@ -962,7 +975,13 @@ export class Tour {
   }
 
   buildItem(it) {
-    const st = this.st;
+    const prod = productOf(it);
+    const look = (prod && prod.look) || {};
+    // a chosen product brings its own fabric colour and finish
+    const st = Object.assign({}, this.st);
+    if (look.color) { st.fabric = look.color; st.fabric2 = hsl(look.color, -0.1); }
+    if (look.finish) st.wood = FINISH_HEX[look.finish];
+    if (look.finish === 'white') st.floorKind = 'wood';
     const g = new THREE.Group();
     const faceRot = { S: 0, N: Math.PI, E: Math.PI / 2, W: -Math.PI / 2 }[it.face || 'S'];
     const side = it.face === 'E' || it.face === 'W';
@@ -1011,7 +1030,17 @@ export class Tour {
       const src = key && this.models[key];
       if (!src) return false;
       const m = this.fitModel(src, w, d, h);
-      m.traverse((o) => { if (o.isMesh && o.material && /wood|tabletop/i.test(o.material.name)) o.material = this.woodTone(o.material, st.key); });
+      const ftone = look.finish && FINISH[look.finish];
+      m.traverse((o) => {
+        if (!o.isMesh || !o.material) return;
+        const n = o.material.name || '';
+        if (/wood|tabletop/i.test(n)) o.material = this.woodTone(o.material, st.key, ftone);
+        else if (look.color && /fabric|palette|cushion|bedsheet/i.test(n)) {
+          const k = 'tint:' + o.material.uuid + look.color;
+          if (!this.mats[k]) { const c = o.material.clone(); c.color.set(look.color); this.mats[k] = c; }
+          o.material = this.mats[k];
+        }
+      });
       const want = VARIANT[key] && VARIANT[key][st.key];
       const vmat = want && this.variants[key] && this.variants[key][want];
       if (vmat) m.traverse((o) => { if (o.isMesh && /fabric/i.test(o.material.name)) o.material = vmat; });
