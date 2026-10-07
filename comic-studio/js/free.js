@@ -147,15 +147,33 @@
   }
 
   /* opts: { mode, ids, style, story, title, panels, aspect }. status(text) */
+  /* תיאור כל התמונות, בקבוצות של 4 (כמה שהמודל מקבל בבקשה אחת), באותו סדר */
+  function describeAll(ids, status) {
+    var groups = [];
+    for (var i = 0; i < ids.length; i += 4) groups.push(ids.slice(i, i + 4));
+    var out = [];
+    return groups.reduce(function (p, g, k) {
+      return p.then(function () {
+        if (cancelled) throw stopErr();
+        status(ids.length > 4 ? 'מתאר את התמונות… ' + Math.min(ids.length, (k + 1) * 4) + ' מתוך ' + ids.length : 'מתאר את הדמויות בתמונות…');
+        return Promise.all(g.map(prepare)).then(describe).then(function (people) {
+          g.forEach(function (id, n) { out.push(people[n] || ''); });
+        });
+      });
+    }, Promise.resolve()).then(function () { return out; });
+  }
+
   function run(opts, status) {
     cancelled = false;
     var style = LOOK[opts.style] ? opts.style : 'superhero';
     var seed = Math.floor(Math.random() * 1e8);
-    status('מתאר את הדמויות בתמונות…');
-    return Promise.all(opts.ids.slice(0, 4).map(prepare)).then(describe).then(function (people) {
-      if (opts.mode === 'character') return characters(opts, people, style, seed, status);
-      if (opts.mode === 'scene') return scene(opts, people, style, seed, status);
-      return page(opts, people, style, seed, status);
+    var ids = opts.mode === 'scene' ? opts.ids.slice(0, 8) : opts.ids.slice();
+    return describeAll(ids, status).then(function (people) {
+      if (opts.mode === 'character') return characters(opts, ids, people, style, seed, status);
+      if (opts.mode === 'scene') return scene(opts, ids, people.filter(Boolean), style, seed, status);
+      /* עד 4 תמונות: עמוד אחד לפי הסיפור. יותר: ספר קומיקס, כל תמונה פאנל, 6 פאנלים בעמוד */
+      if (ids.length <= 4) return page(opts, ids, people.filter(Boolean), style, seed, status);
+      return book(opts, ids, people, style, seed, status);
     });
   }
 
@@ -163,61 +181,118 @@
     return A.addAiResult(blob, name, origin).then(function (m) { A.saveMeta(); return m; });
   }
 
-  function characters(opts, people, style, seed, status) {
-    var ids = opts.ids.slice(0, 4), made = [];
+  function characters(opts, ids, people, style, seed, status) {
+    var made = [], failed = 0;
     return ids.reduce(function (p, id, i) {
       return p.then(function () {
+        if (cancelled) throw stopErr();
+        if (!made.length && failed >= 1) throw new Error('שירות הציור החינמי לא מגיב כרגע. נסו שוב בעוד כמה דקות, או לחצו על "בדיקת מערכת".');
         status('מצייר דמות ' + (i + 1) + ' מתוך ' + ids.length + '…');
         var who = people[i] ? [people[i]] : [];
         var sc = 'portrait of the character in a heroic, expressive pose' + (opts.story ? ', ' + opts.story : '');
         return paint(prompt(style, sc, who), 768, 1024, seed + i).then(function (b) {
           return save(b, ((A.imageById(id) || {}).name || 'דמות') + ' · חינמי', id).then(function (m) { made.push({ meta: m, blob: b }); });
-        });
+        }, function (e) { if (e && e.stopped) throw e; failed++; });
       });
-    }, Promise.resolve()).then(function () { return { kind: 'images', items: made }; });
-  }
-
-  function scene(opts, people, style, seed, status) {
-    status('מצייר את הסצנה…');
-    var sc = (opts.story || 'the characters together, smiling, in a dynamic heroic pose');
-    return paint(prompt(style, sc, people), 1024, 768, seed).then(function (b) {
-      return save(b, 'סצנה משולבת · חינמי', opts.ids[0]).then(function (m) { return { kind: 'images', items: [{ meta: m, blob: b }] }; });
+    }, Promise.resolve()).then(function () {
+      if (!made.length) throw new Error('שירות הציור החינמי לא הגיב. נסו שוב בעוד דקה.');
+      return { kind: 'images', items: made, failed: failed };
     });
   }
 
-  function page(opts, people, style, seed, status) {
+  function scene(opts, ids, people, style, seed, status) {
+    if (cancelled) return Promise.reject(stopErr());
+    status('מצייר את הסצנה…');
+    var sc = (opts.story || 'the characters together, smiling, in a dynamic heroic pose');
+    return paint(prompt(style, sc, people), 1024, 768, seed).then(function (b) {
+      return save(b, 'סצנה משולבת · חינמי', ids[0]).then(function (m) { return { kind: 'images', items: [{ meta: m, blob: b }] }; });
+    });
+  }
+
+  function newPage(opts, count) {
+    return PG.newPage(opts.aspect === 'square' ? 'square' : opts.aspect === 'landscape' ? 'landscape' : opts.aspect === 'tall' ? 'story' : 'a4', LAYOUT[count] || 'grid-6');
+  }
+
+  /* מצייר את הפאנלים של עמוד אחד. who(i) מחזיר את התיאורים לפאנל i */
+  function fill(pg, panels, who, style, seed, origin, status, label) {
+    var polys = PG.computePanels(pg), made = [], failed = 0;
+    return panels.reduce(function (p, panel, i) {
+      return p.then(function () {
+        if (cancelled) throw stopErr();
+        /* אם הפאנל הראשון נכשל, השירות לא זמין: עוצרים במקום לחכות דקות */
+        if (!made.length && failed >= 1) throw new Error('שירות הציור החינמי לא מגיב כרגע. נסו שוב בעוד כמה דקות, או לחצו על "בדיקת מערכת".');
+        status(label + 'מצייר פאנל ' + (i + 1) + ' מתוך ' + panels.length + '… (עד דקה לפאנל)');
+        var b = PG.bbox(polys[i]);
+        return paint(prompt(style, panel.scene || '', who(i)), b.w, b.h, seed + i).then(function (blob) {
+          return save(blob, (pg.title.text || 'קומיקס') + ' · פאנל ' + (i + 1), origin).then(function (m) {
+            pg.panels[i].img = m.id;
+            pg.panels[i].style = 'original';
+            pg.panels[i].params = { sat: 100, contrast: 0 };
+            made.push({ meta: m, blob: blob });
+          });
+        }, function (e) {
+          if (e && e.stopped) throw e;
+          failed++; /* פאנל שנכשל נשאר ריק, ואפשר לגרור אליו תמונה */
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      addText(pg, polys, panels);
+      return { made: made, failed: failed };
+    });
+  }
+
+  function page(opts, ids, people, style, seed, status) {
     var n = Math.min(6, Math.max(1, parseInt(opts.panels, 10) || 5));
     status('כותב תסריט לעמוד…');
     return script(people, opts.story, opts.title, n).then(function (sc) {
       var panels = sc.panels.slice(0, n);
-      var pg = PG.newPage(opts.aspect === 'square' ? 'square' : opts.aspect === 'landscape' ? 'landscape' : opts.aspect === 'tall' ? 'story' : 'a4', LAYOUT[panels.length] || 'grid-6');
+      var pg = newPage(opts, panels.length);
       pg.title.text = sc.title || 'הקומיקס שלי';
       pg.title.show = Boolean(pg.title.text);
-      var polys = PG.computePanels(pg), made = [], failed = 0;
-      return panels.reduce(function (p, panel, i) {
-        return p.then(function () {
-          if (cancelled) throw stopErr();
-          /* אם שני הפאנלים הראשונים נכשלו, השירות לא זמין: עוצרים במקום לחכות דקות */
-          if (!made.length && failed >= 1) throw new Error('שירות הציור החינמי לא מגיב כרגע. נסו שוב בעוד כמה דקות, או לחצו על "בדיקת מערכת".');
-          status('מצייר פאנל ' + (i + 1) + ' מתוך ' + panels.length + '… (עד דקה לפאנל)');
-          var b = PG.bbox(polys[i]);
-          return paint(prompt(style, panel.scene || '', people), b.w, b.h, seed + i).then(function (blob) {
-            return save(blob, (pg.title.text || 'קומיקס') + ' · פאנל ' + (i + 1), opts.ids[0]).then(function (m) {
-              pg.panels[i].img = m.id;
-              pg.panels[i].style = 'original';
-              pg.panels[i].params = { sat: 100, contrast: 0 };
-              made.push({ meta: m, blob: blob });
-            });
-          }, function (e) {
-            if (e && e.stopped) throw e;
-            failed++; /* פאנל שנכשל נשאר ריק, ואפשר לגרור אליו תמונה */
+      return fill(pg, panels, function () { return people; }, style, seed, ids[0], status, '').then(function (r) {
+        if (!r.made.length) throw new Error('שירות הציור החינמי לא הגיב. נסו שוב בעוד דקה.');
+        return { kind: 'pages', pages: [pg], items: r.made, failed: r.failed };
+      });
+    });
+  }
+
+  /* ספר קומיקס: כל תמונה הופכת לפאנל עם האדם והמקום שבה, 6 פאנלים בעמוד, כמה עמודים שצריך */
+  function book(opts, ids, people, style, seed, status) {
+    var chunks = [];
+    for (var i = 0; i < ids.length; i += 6) chunks.push({ ids: ids.slice(i, i + 6), people: people.slice(i, i + 6) });
+    /* לא משאירים עמוד אחרון עם פאנל בודד */
+    var last = chunks[chunks.length - 1];
+    if (chunks.length > 1 && last.ids.length === 1) {
+      var prev = chunks[chunks.length - 2];
+      last.ids.unshift(prev.ids.pop()); last.people.unshift(prev.people.pop());
+    }
+    var pages = [], items = [], failed = 0;
+    return chunks.reduce(function (p, ch, k) {
+      return p.then(function () {
+        if (cancelled) throw stopErr();
+        var label = 'עמוד ' + (k + 1) + ' מתוך ' + chunks.length + ' · ';
+        status(label + 'כותב תסריט…');
+        var guide = 'Each panel shows the matching photo in order: panel N is the person and scene of photo N. ' + (opts.story ? 'Story: ' + opts.story : '');
+        return script(ch.people.map(function (x, n) { return 'photo ' + (n + 1) + ': ' + (x || 'a person'); }), guide, k === 0 ? opts.title : '', ch.ids.length).then(function (sc) {
+          var panels = sc.panels.slice(0, ch.ids.length);
+          while (panels.length < ch.ids.length) panels.push({ scene: ch.people[panels.length] || '', speech: '', caption: '' });
+          var pg = newPage(opts, panels.length);
+          pg.title.text = k === 0 ? (sc.title || opts.title || 'הקומיקס שלי') : '';
+          pg.title.show = k === 0 && Boolean(pg.title.text);
+          return fill(pg, panels, function (n) { return ch.people[n] ? [ch.people[n]] : []; }, style, seed + k * 10, ch.ids[0], status, label).then(function (r) {
+            pages.push(pg);
+            items = items.concat(r.made);
+            failed += r.failed;
           });
         });
-      }, Promise.resolve()).then(function () {
-        if (!made.length) throw new Error('שירות הציור החינמי לא הגיב. נסו שוב בעוד דקה.');
-        addText(pg, polys, panels);
-        return { kind: 'page', page: pg, items: made, failed: panels.length - made.length };
       });
+    }, Promise.resolve()).catch(function (e) {
+      /* עצירה או תקלה באמצע: מה שכבר צויר נשמר */
+      if (pages.length) return;
+      throw e;
+    }).then(function () {
+      if (!items.length) throw new Error('שירות הציור החינמי לא הגיב. נסו שוב בעוד דקה.');
+      return { kind: 'pages', pages: pages, items: items, failed: failed };
     });
   }
 

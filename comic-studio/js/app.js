@@ -4,7 +4,7 @@
 
   var FX = window.ComicFX, PG = window.ComicPage, AI = window.ComicAI, DB = window.ComicStore, NN = window.ComicNeural, MO = window.ComicMotion;
   var EN = window.ComicEngine, SZ = EN.SIZES;
-  var MAX_IMAGES = 100;
+  var MAX_IMAGES = 300;
   var STORE_MAX = 2000;       /* הצד הארוך של צילום שנשמר */
   var EXPORT_MAX = SZ.export; /* רזולוציית העיבוד בייצוא, קטנה יותר בטלפון */
 
@@ -92,7 +92,7 @@
 
   /* מוסיף תמונה לספרייה ממקור canvas או תמונה */
   function addImage(src, name, kind, origin) {
-    if (state.images.length >= MAX_IMAGES) return Promise.reject(new Error('הספרייה מלאה: 100 תמונות. מחקו כמה כדי להוסיף.'));
+    if (state.images.length >= MAX_IMAGES) return Promise.reject(new Error('הספרייה מלאה: ' + MAX_IMAGES + ' תמונות. מחקו כמה כדי להוסיף.'));
     var c = scaled(src, STORE_MAX);
     return canvasToBlob(c, 'image/jpeg', 0.92).then(function (blob) {
       var meta = { id: uid('im'), name: name, w: c.width, h: c.height, thumb: thumbOf(c), blob: blob, kind: kind || 'photo', origin: origin || null, added: Date.now() };
@@ -106,7 +106,7 @@
     var files = Array.prototype.filter.call(list, function (f) { return /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp|gif|bmp|avif)$/i.test(f.name); });
     if (!files.length) { toast('לא נמצאו קבצי תמונה.'); return Promise.resolve([]); }
     var room = MAX_IMAGES - state.images.length;
-    if (room <= 0) { toast('הספרייה מלאה: 100 תמונות. מחקו כמה כדי להוסיף.'); return Promise.resolve([]); }
+    if (room <= 0) { toast('הספרייה מלאה: ' + MAX_IMAGES + ' תמונות. מחקו כמה כדי להוסיף.'); return Promise.resolve([]); }
     var skipped = Math.max(0, files.length - room);
     files = files.slice(0, room);
     var added = [], i = 0, errors = 0;
@@ -125,11 +125,12 @@
       }).catch(function () { errors++; }).then(next);
     }
     return next().then(function () {
-      if (!state.sel.length) added.slice(0, 9).forEach(function (m) { state.sel.push(m.id); });
+      /* אין בחירה קודמת: כל מה שהועלה עכשיו נבחר */
+      if (!state.sel.length) added.forEach(function (m) { state.sel.push(m.id); });
       saveMeta();
       renderLibrary();
       var msg = 'נוספו ' + added.length + ' תמונות.';
-      if (skipped) msg += ' ' + skipped + ' לא נכנסו כי הגעתם ל-100.';
+      if (skipped) msg += ' ' + skipped + ' לא נכנסו כי הגעתם ל-' + MAX_IMAGES + '.';
       if (errors) msg += ' ' + errors + ' קבצים לא נפתחו (נסו להמיר ל-JPG).';
       toast(msg, 5000);
       return added;
@@ -1459,6 +1460,14 @@
     state: state, imageById: imageById, loadBitmap: loadBitmap, scaled: scaled, closeImg: closeImg,
     canvasToBlob: canvasToBlob, addAiResult: addAiResult, toast: toast, show: show, download: download,
     safeName: safeName, saveMeta: saveMeta, renderLibrary: renderLibrary, el: el, openInPage: openInPage,
+    addPages: function (pages) {
+      var pr = ensureProject();
+      if (pr.pages.length === 1 && !pr.pages[0].panels.some(function (p) { return p.img; }) && !pr.pages[0].items.length) pr.pages = [];
+      pages.forEach(function (pg) { pr.pages.push(pg); });
+      state.pageIdx = pr.pages.indexOf(pages[0]);
+      saveProject();
+      show('page');
+    },
     addPage: function (pg) {
       var pr = ensureProject();
       if (pr.pages.length === 1 && !pr.pages[0].panels.some(function (p) { return p.img; }) && !pr.pages[0].items.length) pr.pages = [pg];

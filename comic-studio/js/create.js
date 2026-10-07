@@ -30,7 +30,7 @@
   var st = load();
   var picked = [];        /* התמונות שנכללות ביצירה */
   var server = null;      /* { gemini, openai, left } */
-  var busy = false, inflight = null;
+  var busy = false, inflight = null, cleared = false;
 
   function load() {
     var d = { mode: 'page', style: 'superhero', provider: 'free', aspect: 'portrait', panels: '5', text: 'he' };
@@ -110,7 +110,9 @@
     }).then(toBase64).then(function (data) { return { mime: 'image/jpeg', data: data }; });
   }
 
-  function limit() { return st.mode === 'character' ? 10 : 4; }
+  /* כמה תמונות אפשר לבחור: דמויות וספר קומיקס בלי הגבלה מעשית; בסצנה אחת המודלים מאבדים פנים מעבר ל-6–8 אנשים */
+  function free() { return $('c-provider').value === 'free'; }
+  function limit() { return st.mode === 'scene' ? (free() ? 8 : 6) : 300; }
 
   function renderPhotos() {
     var box = $('create-photos'), S = A.state;
@@ -118,7 +120,10 @@
     var ids = S.sel.slice();
     S.images.forEach(function (m) { if (ids.indexOf(m.id) < 0) ids.push(m.id); });
     picked = picked.filter(function (id) { return A.imageById(id); });
-    if (!picked.length) picked = S.sel.slice(0, limit());
+    if (!picked.length && !cleared) picked = S.sel.slice(0, limit());
+    cleared = false;
+    $('create-photos-hint').textContent = picked.length + ' נבחרו · ' + (st.mode === 'page' ? (picked.length > 4 ? 'ספר קומיקס: כל תמונה פאנל, 6 בעמוד' : 'עד 4 תמונות: עמוד אחד לפי הסיפור; יותר: ספר קומיקס')
+      : st.mode === 'scene' ? 'עד ' + limit() + ' אנשים בסצנה' : 'כל תמונה תצויר כדמות');
     if (!ids.length) {
       var p = el('p', 'muted small', 'אין עדיין תמונות. ');
       var a = el('button', 'btn tiny', 'להעלאת תמונות');
@@ -140,7 +145,7 @@
       b.addEventListener('click', function () {
         var k = picked.indexOf(id);
         if (k >= 0) picked.splice(k, 1);
-        else if (picked.length >= limit()) { A.toast(st.mode === 'character' ? 'אפשר עד 10 תמונות בבת אחת.' : 'אפשר עד 4 אנשים בציור אחד.'); return; }
+        else if (picked.length >= limit()) { A.toast('בסצנה אחת אפשר עד ' + limit() + ' אנשים. לעוד אנשים בחרו "עמוד קומיקס" (ספר קומיקס).'); return; }
         else picked.push(id);
         renderPhotos();
       });
@@ -192,7 +197,7 @@
     var need = st.mode === 'scene' ? 2 : 1;
     var n = picked.length;
     b.disabled = busy || n < need;
-    b.textContent = busy ? 'מצייר…' : st.mode === 'page' ? 'ציור עמוד הקומיקס' : st.mode === 'scene' ? 'ציור הסצנה' : (n > 1 ? 'ציור ' + n + ' דמויות' : 'ציור הדמות');
+    b.textContent = busy ? 'מצייר…' : st.mode === 'page' ? (n > 4 ? 'ציור ספר הקומיקס (' + n + ' פאנלים)' : 'ציור עמוד הקומיקס') : st.mode === 'scene' ? 'ציור הסצנה' : (n > 1 ? 'ציור ' + n + ' דמויות' : 'ציור הדמות');
     note.textContent = n < need ? (st.mode === 'scene' ? 'בחרו לפחות 2 תמונות של אנשים.' : 'בחרו לפחות תמונה אחת.') : '';
   }
 
@@ -268,6 +273,12 @@
         if (failed) A.toast(done + ' ציורים מוכנים, ' + failed + ' נכשלו: ' + lastErr.message, 7000);
         else A.toast(done === 1 ? 'הדמות מוכנה ונשמרה בספרייה.' : done + ' דמויות מוכנות ונשמרו בספרייה.');
       });
+    } else if (st.mode === 'page' && ids.length > 6) {
+      var groups = [];
+      for (var g = 0; g < ids.length; g += 6) groups.push(ids.slice(g, g + 6));
+      jobs = groups.reduce(function (p, grp, k) {
+        return p.then(function () { return draw(grp, 'מצייר עמוד ' + (k + 1) + ' מתוך ' + groups.length + '…'); });
+      }, Promise.resolve()).then(function () { A.toast(groups.length + ' עמודים מוכנים ונשמרו בספרייה.'); });
     } else {
       jobs = draw(ids, st.mode === 'page' ? 'מצייר עמוד קומיקס…' : 'מצייר את הסצנה…').then(function () {
         A.toast(st.mode === 'page' ? 'העמוד מוכן ונשמר בספרייה.' : 'הסצנה מוכנה ונשמרה בספרייה.');
@@ -293,10 +304,10 @@
       panels: $('c-panels').value, aspect: $('c-aspect').value
     }, function (text) { $('c-progress-text').textContent = text; }).then(function (r) {
       r.items.forEach(function (x) { addResult(x.meta, x.blob, 'free', ids); });
-      if (r.kind === 'page') {
-        A.addPage(r.page);
-        A.toast('העמוד מוכן, עם בועות בעברית. אפשר לערוך כל בועה ולייצא.' + (r.failed ? ' ' + r.failed + ' פאנלים לא צוירו; אפשר לגרור אליהם תמונה.' : ''), 7000);
-      } else A.toast(r.items.length === 1 ? 'הציור מוכן ונשמר בספרייה.' : r.items.length + ' ציורים מוכנים ונשמרו בספרייה.');
+      if (r.kind === 'pages') {
+        A.addPages(r.pages);
+        A.toast((r.pages.length > 1 ? 'ספר קומיקס של ' + r.pages.length + ' עמודים מוכן' : 'העמוד מוכן') + ', עם בועות בעברית. אפשר לערוך כל בועה ולייצא PDF.' + (r.failed ? ' ' + r.failed + ' פאנלים לא צוירו; אפשר לגרור אליהם תמונה.' : ''), 8000);
+      } else A.toast((r.items.length === 1 ? 'הציור מוכן ונשמר בספרייה.' : r.items.length + ' ציורים מוכנים ונשמרו בספרייה.') + (r.failed ? ' ' + r.failed + ' לא צוירו.' : ''), 6000);
     });
   }
 
@@ -390,6 +401,14 @@
       $('c-progress-text').textContent = 'עוצר…';
     });
     $('selftest-btn').addEventListener('click', selfTest);
+    $('c-all').addEventListener('click', function () {
+      var S = A.state, ids = S.sel.slice();
+      S.images.forEach(function (m) { if (ids.indexOf(m.id) < 0) ids.push(m.id); });
+      picked = ids.slice(0, limit());
+      renderPhotos();
+    });
+    $('c-none').addEventListener('click', function () { picked = []; cleared = true; renderPhotos(); });
+    $('c-provider').addEventListener('change', function () { picked = picked.slice(0, limit()); renderPhotos(); });
     $('selftest-again').addEventListener('click', selfTest);
   }
 
