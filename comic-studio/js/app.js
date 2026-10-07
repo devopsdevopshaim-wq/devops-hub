@@ -334,6 +334,20 @@
     });
   }
 
+  function markLibrary() {
+    updateCounts();
+    var pos = {};
+    state.sel.forEach(function (x, i) { pos[x] = i + 1; });
+    document.querySelectorAll('#grid .tile').forEach(function (b) {
+      var n = pos[b.dataset.id] || 0, m = imageById(b.dataset.id);
+      b.setAttribute('aria-pressed', String(n > 0));
+      if (m) b.setAttribute('aria-label', m.name + (n ? ', נבחרה, מקום ' + n : ''));
+      var num = b.querySelector('.num');
+      if (n && !num) { num = el('span', 'num'); b.insertBefore(num, b.children[1] || null); }
+      if (num) { if (n) num.textContent = String(n); else num.remove(); }
+    });
+  }
+
   function toggleSel(id, range) {
     if (range && lastClicked) {
       var ids = state.images.map(function (m) { return m.id; });
@@ -347,7 +361,8 @@
     }
     lastClicked = id;
     saveMeta();
-    renderLibrary();
+    /* עם מאות תמונות לא בונים את כל הרשת מחדש בכל לחיצה: רק מעדכנים סימונים */
+    if (state.filter === 'selected') renderLibrary(); else markLibrary();
     var t = document.querySelector('.tile[data-id="' + id + '"]');
     if (t) t.focus();
   }
