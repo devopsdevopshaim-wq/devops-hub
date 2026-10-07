@@ -501,7 +501,7 @@ window.Guide = (function () {
     }
     if (hits.length) return say('מצאתי כמה: ' + hits.slice(0, 4).map(function (x) { return x.p.title; }).join(', ') + '. על איזה מהם לספר?');
     if (has(t, ['שלום', 'היי', 'הי', 'בוקר', 'ערב', 'מה נשמע', 'מה קורה'])) return say('היי! טוב לראות אותך. רוצה סיור, או לשאול על פרויקט מסוים?');
-    say('לא הבנתי את זה. אפשר לשאול למשל על לוטו, על סוכני AI, על ניהול מחסן, או לבקש סיור.');
+    say('לא הבנתי את זה. אפשר לשאול למשל על סוכני AI, על ניהול מחסן, או לבקש סיור.');
   }
 
   // Ask the AI server (portfolio/guide-server). On any failure fall back to
