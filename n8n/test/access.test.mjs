@@ -327,6 +327,38 @@ async function seeded(tag) {
   check(t + '... replacing the chosen one', r.code === 401);
 }
 
+async function signup(tag) {
+  const w = world(), { call, sd } = w, t = tag + ' ';
+  let r = await call({ action: 'info' });
+  check(t + 'info says sign-up is open', r.body.signup === true);
+  r = await call({ action: 'signup', email: 'bad', name: 'x' });
+  check(t + 'bad input refused', r.code === 400);
+  r = await call({ action: 'signup', email: ADMIN_EMAIL, name: 'Haim' });
+  check(t + 'the admin address cannot be registered', r.code === 400);
+  r = await call({ action: 'signup', email: 'New@Example.com', name: 'נועה' }, { ip: '7.7.7.7' });
+  const temp = tempFrom(r);
+  check(t + 'a new person gets an account and an initial password by email, no approval', r.body.ok && r.mail && r.mail.to === 'new@example.com' && !!temp, r);
+  const c = sd.clients['new@example.com'];
+  check(t + 'the account sees every open site for 30 days and is marked self-registered', c && c.sites[0] === '*' && c.selfSignup && Math.round((Date.parse(c.expiresAt) - T) / 86400000) === 30, c);
+  const d = dev();
+  r = await call({ action: 'login', email: 'new@example.com', password: temp, device: d }, { ip: '7.7.7.7' });
+  check(t + 'signing in with it works at once and asks for their own password', r.body.ok && r.body.mustChange, r.body);
+  r = await call({ action: 'change-password', token: r.body.token, password: 'My-Own-Pass-1' }, { ip: '7.7.7.7' });
+  r = await call({ action: 'me', token: r.body.token || undefined }, { ip: '7.7.7.7' });
+  r = await call({ action: 'signup', email: 'new@example.com', name: 'נועה' }, { ip: '7.7.7.8' });
+  check(t + 'signing up again only sends a new initial password (the account is not reset)', r.body.ok && sd.clients['new@example.com'].pw, r.body);
+  for (let i = 0; i < 3; i++) r = await call({ action: 'signup', email: `x${i}@example.com`, name: 'אבי' }, { ip: '9.9.9.9' });
+  r = await call({ action: 'signup', email: 'x9@example.com', name: 'אבי' }, { ip: '9.9.9.9' });
+  check(t + 'an address is limited to a few sign-ups an hour', r.code === 429, r.body);
+  const a = await adminIn(call, t);
+  r = await call({ action: 'signup-set', token: a.token, open: 'false' });
+  check(t + 'the admin can close sign-up', r.body.ok && r.body.signup === false);
+  r = await call({ action: 'signup', email: 'late@example.com', name: 'לילי' }, { ip: '8.8.8.8' });
+  check(t + '... and then it is refused', r.code === 403 && r.body.error === 'signup-closed');
+  r = await call({ action: 'signup-set', token: 'a'.repeat(48), open: 'true' });
+  check(t + 'only the admin can switch it', r.code === 403);
+}
+await signup('[signup]');
 await main('[password]');
 await main('[password + authenticator]', { totp: true });
 await seeded('[secret]');

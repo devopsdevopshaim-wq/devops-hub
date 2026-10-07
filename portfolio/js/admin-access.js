@@ -25,11 +25,17 @@
   function title(id) { var p = C.projects.filter(function (x) { return x.id === id; })[0]; return p ? p.title : id; }
   function waNum(p) { return String(p || '').replace(/\D/g, '').replace(/^0/, '972'); }
 
+  (function () {
+    var su = document.getElementById('cl-signup');
+    if (su) su.addEventListener('click', function () { api('signup-set', { open: su.dataset.open === '1' ? 'false' : 'true' }).then(function () { load(); }); });
+  })();
   function load() {
     return api('clients').then(function (j) {
       if (!j.ok) { fail('לא הצלחתי לטעון לקוחות: ' + j.error); return; }
       fail('');
       C.admin = j.admin || null;
+      var su = document.getElementById('cl-signup');
+      if (su) { su.dataset.open = j.signup === false ? '0' : '1'; su.textContent = 'הרשמה עצמית: ' + (j.signup === false ? 'סגורה (לחצו לפתיחה)' : 'פתוחה (לחצו לסגירה)'); }
       C.clients = j.clients.sort(function (a, b) { return (a.name || a.email).localeCompare(b.name || b.email, 'he'); });
       render();
     }).catch(function () { fail('n8n לא ענה. בדקו שה־workflow "SPIDER · כניסה והרשאות" פעיל.'); });

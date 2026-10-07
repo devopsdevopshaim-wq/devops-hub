@@ -776,7 +776,7 @@
       if (who && who.role === 'client') {
         var mine = {};
         (who.sites || []).forEach(function (id) { mine[id] = true; });
-        data.projects = data.projects.filter(function (p) { return mine[p.id]; });
+        data.projects = data.projects.filter(function (p) { return mine['*'] || mine[p.id]; });
         document.documentElement.classList.add('client-mode');
       }
       // Hidden projects and ones still waiting for approval stay off the public site.
