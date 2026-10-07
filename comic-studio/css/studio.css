@@ -469,7 +469,8 @@ kbd { display: inline-block; min-width: 64px; margin-inline-end: 8px; padding: 2
   .tabs { order: 3; width: 100%; margin: 0; }
   .tabs [role="tab"] { flex: 1; min-width: 0; padding: 5px 8px; }
   .tabs [role="tab"] small { display: none; }
-  .tabs [role="tab"] b { font-size: 13.5px; white-space: nowrap; }
+  .tabs [role="tab"] { padding: 6px 4px; }
+  .tabs [role="tab"] b { font-size: 12.5px; white-space: nowrap; }
   .ai-btn { margin-inline-start: auto; }
   main { padding: 16px; }
   .lib-hero, .lib-hero.compact { grid-template-columns: 1fr; padding: 22px 18px; }

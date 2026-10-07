@@ -119,3 +119,33 @@ const call = async (ctx, body, { origin = SITE, ip = '1.2.3.4', asString = true 
   check('comic: CORS is only for the site', acao.value === SITE);
   check('comic: no key in the workflow file', !/AIza[\w-]{30}|sk-(proj-)?[\w-]{30}/.test(JSON.stringify(wf)));
 }
+
+{
+  /* free mode: describe and script use the free text models only */
+  const c = setup();
+  c.helpers.httpRequest = async (req) => {
+    c.sent.push(req);
+    const isScript = /Write a comic page script/.test(JSON.stringify(req.body));
+    const t = isScript
+      ? JSON.stringify({ title: 'ההרפתקאות', panels: [{ scene: 'man smiles near a tomb', speech: 'ביקור מיוחד!', caption: '' }, { scene: 'glow', speech: '', caption: 'אמונה חזקה' }] })
+      : JSON.stringify({ people: ['a bearded man with a white kippah'] });
+    return { candidates: [{ content: { parts: [{ text: t }] } }] };
+  };
+  let r = await call(c, { mode: 'describe', images: [PHOTO] }, { ip: '6.6.6.1' });
+  check('free: describe returns people', r.code === 200 && r.body.people[0].includes('kippah'));
+  check('free: describe uses a text model, not an image model', /gemini-3\.5-flash:generateContent/.test(c.sent[0].url) && !/image/.test(c.sent[0].url));
+  r = await call(c, { mode: 'script', people: ['a bearded man'], story: 'פאנל 1: ביקור', panels: 2 }, { ip: '6.6.6.1' });
+  check('free: script returns panels with Hebrew text', r.code === 200 && r.body.panels.length === 2 && r.body.panels[0].speech === 'ביקור מיוחד!');
+  check('free: script asks for no text inside the drawing', /WITHOUT any text/.test(JSON.stringify(c.sent[1].body)));
+  const before = c.sd.drawn || 0;
+  check('free: free calls do not count toward the image cap', (c.sd.drawn || 0) === before);
+  r = await call(c, { mode: 'script', story: 'x' }, { origin: 'https://evil.example' });
+  check('free: a foreign Origin is refused', r.code === 403);
+  const n = setup({ gemini: false });
+  r = await call(n, { mode: 'script', story: 'x' }, { ip: '6.6.6.2' });
+  check('free: no key -> 503 so the site falls back', r.code === 503 && r.body.error === 'no-key');
+  const q = setup();
+  q.helpers.httpRequest = async () => { const e = new Error('429 RESOURCE_EXHAUSTED quota'); e.httpCode = 429; throw e; };
+  r = await call(q, { mode: 'script', story: 'x' }, { ip: '6.6.6.3' });
+  check('free: a quota error is reported as quota', r.code === 502 && r.body.error === 'quota');
+}

@@ -66,7 +66,64 @@ const day = new Date(now).toISOString().slice(0, 10);
 if (sd.day !== day) { sd.day = day; sd.drawn = 0; }
 const left = Math.max(0, DAY_CAP - (sd.drawn || 0));
 
-if (b.mode === 'status') return out({ ok: true, gemini: set(GEMINI_KEY), openai: set(OPENAI_KEY), left });
+if (b.mode === 'status') return out({ ok: true, gemini: set(GEMINI_KEY), openai: set(OPENAI_KEY), left, free: set(GEMINI_KEY) });
+
+// ---- free mode: Gemini's text models (free tier) describe the people and write the script;
+// a free drawing service in the browser draws the panels. Nothing here touches the paid image models.
+const TEXT_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+const cleanText = (s, n) => String(s || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+async function geminiText(parts, schema) {
+  let last;
+  for (const m of TEXT_MODELS) {
+    try {
+      const r = await this.helpers.httpRequest({
+        method: 'POST',
+        url: `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,
+        headers: { 'x-goog-api-key': GEMINI_KEY, 'Content-Type': 'application/json' },
+        body: { contents: [{ role: 'user', parts }], generationConfig: { responseMimeType: 'application/json', responseSchema: schema, temperature: 0.8 } },
+        json: true,
+        timeout: 60000
+      });
+      const t = r && r.candidates && r.candidates[0] && r.candidates[0].content && (r.candidates[0].content.parts || []).map((p) => p.text || '').join('');
+      return JSON.parse(t);
+    } catch (e) { last = e; }
+  }
+  throw last;
+}
+if (b.mode === 'describe' || b.mode === 'script') {
+  if (!hit('comic-free-ip', ipKey(), 60, 3600000) || !hit('comic-free-all', 'all', 1500, 86400000)) return out({ ok: false, error: 'rate-limited' }, 429);
+  if (!set(GEMINI_KEY)) return out({ ok: false, error: 'no-key' }, 503);
+  const pics = (Array.isArray(b.images) ? b.images : []).slice(0, 4).filter((x) => x && /^image\/(jpeg|png|webp)$/.test(x.mime) && typeof x.data === 'string' && x.data.length < 3500000);
+  try {
+    if (b.mode === 'describe') {
+      if (!pics.length) return out({ ok: false, error: 'no-image' }, 400);
+      const j = await geminiText.call(this, [{ text: 'For each photo, describe the main person for a comic artist so they can be drawn recognizably: apparent age, gender, face shape, hair, beard, head covering (such as a kippah), skin tone, glasses, typical expression, clothing with colors. One short English paragraph per photo, no names, no opinions about appearance.' }]
+        .concat(pics.map((x) => ({ inline_data: { mime_type: x.mime, data: x.data } }))),
+        { type: 'OBJECT', properties: { people: { type: 'ARRAY', items: { type: 'STRING' } } }, required: ['people'] });
+      return out({ ok: true, people: (j.people || []).slice(0, 4).map((x) => cleanText(x, 600)) });
+    }
+    const panelsN = Math.min(8, Math.max(1, parseInt(b.panels, 10) || 5));
+    const people = (Array.isArray(b.people) ? b.people : []).slice(0, 4).map((x) => cleanText(x, 600));
+    const ask = `Write a comic page script in ${panelsN} panels.\n` +
+      `Characters (from photos): ${people.map((x, i) => `[${i + 1}] ${x}`).join(' ') || 'one friendly main character'}\n` +
+      `Story idea from the user (Hebrew or English): ${cleanText(b.story, 1200) || 'a short uplifting adventure with a clear beginning, a dramatic moment and a happy ending'}\n` +
+      `Title: ${cleanText(b.title, 80) || 'make up a short Hebrew title'}\n` +
+      'For each panel give: "scene" = a vivid English description of what to draw (camera angle, setting, action, which characters, their expression), WITHOUT any text, letters or speech bubbles in the image; ' +
+      '"speech" = what a character says, in natural Hebrew (empty string if nobody speaks); "caption" = a short Hebrew narration box (empty string if none). Keep Hebrew lines short (up to 8 words). ' +
+      'Follow the user\'s panel-by-panel story exactly when they give one, including their wording for speech and captions.';
+    const j = await geminiText.call(this, [{ text: ask }], {
+      type: 'OBJECT',
+      properties: { title: { type: 'STRING' }, panels: { type: 'ARRAY', items: { type: 'OBJECT', properties: { scene: { type: 'STRING' }, speech: { type: 'STRING' }, caption: { type: 'STRING' } }, required: ['scene'] } } },
+      required: ['panels']
+    });
+    const panels = (j.panels || []).slice(0, panelsN).map((p) => ({ scene: cleanText(p.scene, 700), speech: cleanText(p.speech, 140), caption: cleanText(p.caption, 140) }));
+    if (!panels.length) throw new Error('empty script');
+    return out({ ok: true, title: cleanText(b.title || j.title, 80), panels });
+  } catch (e) {
+    const s = String((e && (e.description || e.message)) || e).slice(0, 200);
+    return out({ ok: false, error: /quota|exhausted|429/i.test(s) ? 'quota' : 'text-failed', detail: s }, 502);
+  }
+}
 if (!hit('comic-ip', ipKey(), IP_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
 if (!set(GEMINI_KEY) && !set(OPENAI_KEY)) return out({ ok: false, error: 'no-key' }, 503);
 if (!left) return out({ ok: false, error: 'quota' }, 429);
