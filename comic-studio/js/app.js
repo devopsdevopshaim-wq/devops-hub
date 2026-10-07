@@ -3,9 +3,10 @@
   'use strict';
 
   var FX = window.ComicFX, PG = window.ComicPage, AI = window.ComicAI, DB = window.ComicStore, NN = window.ComicNeural, MO = window.ComicMotion;
+  var EN = window.ComicEngine, SZ = EN.SIZES;
   var MAX_IMAGES = 100;
-  var STORE_MAX = 2000;     /* הצד הארוך של צילום שנשמר */
-  var EXPORT_MAX = 2000;    /* רזולוציית העיבוד בייצוא */
+  var STORE_MAX = 2000;       /* הצד הארוך של צילום שנשמר */
+  var EXPORT_MAX = SZ.export; /* רזולוציית העיבוד בייצוא, קטנה יותר בטלפון */
 
   var $ = function (id) { return document.getElementById(id); };
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -17,7 +18,7 @@
     filter: 'all',
     view: 'library',
     labId: null,
-    labStyle: 'nn-comic',
+    labStyle: 'gouache',
     labParams: {},
     aiStyle: 'ai-comic',
     project: null,
@@ -36,34 +37,33 @@
   }
 
   /* ---------- תמונות ---------- */
-  var imgCache = new Map();
   function imageById(id) { return state.images.find(function (i) { return i.id === id; }); }
+  function srcOf(id) { var m = imageById(id); return m ? { id: m.id, blob: m.blob, w: m.w, h: m.h } : null; }
+  function closeImg(b) { try { if (b && b.close) b.close(); } catch (e) { /* כבר נסגר */ } }
 
-  function loadImg(id) {
-    if (imgCache.has(id)) return imgCache.get(id);
-    var meta = imageById(id);
-    if (!meta) return Promise.reject(new Error('התמונה לא נמצאה'));
-    var p = new Promise(function (resolve, reject) {
-      var im = new Image();
-      im.onload = function () { resolve(im); };
-      im.onerror = function () { reject(new Error('לא הצלחתי לפתוח את התמונה')); };
-      im.src = URL.createObjectURL(meta.blob);
-    });
-    imgCache.set(id, p);
-    return p;
+  /* תמונה מפוענחת בגודל מוגבל לשימוש חד-פעמי (AI, הנפשה). מי שמקבל אותה סוגר אותה בסוף */
+  function loadBitmap(id, max) {
+    var m = imageById(id);
+    if (!m) return Promise.reject(new Error('התמונה לא נמצאה'));
+    return EN.decode(m.blob, max, m.w, m.h);
   }
 
   function canvasToBlob(c, type, q) {
     return new Promise(function (resolve) { c.toBlob(resolve, type || 'image/png', q); });
   }
 
+  /* פענוח קובץ שהועלה. נסגר מיד אחרי שמקטינים אותו, כדי שתמונות של 12 מגה-פיקסל לא יישארו בזיכרון */
   function decodeFile(file) {
-    return new Promise(function (resolve, reject) {
-      var url = URL.createObjectURL(file), im = new Image();
-      im.onload = function () { resolve(im); };
-      im.onerror = function () { URL.revokeObjectURL(url); reject(new Error(file.name + ': הדפדפן לא מצליח לפתוח את הקובץ')); };
-      im.src = url;
-    });
+    var legacy = function () {
+      return new Promise(function (resolve, reject) {
+        var url = URL.createObjectURL(file), im = new Image();
+        im.onload = function () { resolve(im); };
+        im.onerror = function () { URL.revokeObjectURL(url); reject(new Error(file.name + ': הדפדפן לא מצליח לפתוח את הקובץ')); };
+        im.src = url;
+      });
+    };
+    if (typeof createImageBitmap === 'undefined') return legacy();
+    return createImageBitmap(file).catch(legacy);
   }
 
   function scaled(src, max) {
@@ -83,12 +83,20 @@
     return c.toDataURL('image/jpeg', 0.82);
   }
 
+  function bitmapToCanvas(b) {
+    var c = document.createElement('canvas');
+    c.width = b.width; c.height = b.height;
+    c.getContext('2d').drawImage(b, 0, 0);
+    return c;
+  }
+
   /* מוסיף תמונה לספרייה ממקור canvas או תמונה */
   function addImage(src, name, kind, origin) {
     if (state.images.length >= MAX_IMAGES) return Promise.reject(new Error('הספרייה מלאה: 100 תמונות. מחקו כמה כדי להוסיף.'));
     var c = scaled(src, STORE_MAX);
     return canvasToBlob(c, 'image/jpeg', 0.92).then(function (blob) {
       var meta = { id: uid('im'), name: name, w: c.width, h: c.height, thumb: thumbOf(c), blob: blob, kind: kind || 'photo', origin: origin || null, added: Date.now() };
+      c.width = c.height = 1;
       state.images.push(meta);
       return DB.put('images', meta).then(function () { return meta; });
     });
@@ -107,7 +115,13 @@
       var f = files[i++];
       toast('מוסיף ' + i + ' מתוך ' + files.length + '…', 60000);
       return decodeFile(f).then(function (im) {
-        return addImage(im, f.name.replace(/\.[^.]+$/, ''), 'photo').then(function (m) { URL.revokeObjectURL(im.src); added.push(m); });
+        return addImage(im, f.name.replace(/\.[^.]+$/, ''), 'photo').then(function (m) {
+          closeImg(im);
+          if (im.src) URL.revokeObjectURL(im.src);
+          added.push(m);
+          /* מרעננים את הספרייה כל כמה תמונות, כדי שיהיה רואים התקדמות */
+          if (added.length % 6 === 0) renderLibrary();
+        });
       }).catch(function () { errors++; }).then(next);
     }
     return next().then(function () {
@@ -126,9 +140,8 @@
     ids.forEach(function (id) {
       state.images = state.images.filter(function (m) { return m.id !== id; });
       state.sel = state.sel.filter(function (s) { return s !== id; });
-      var p = imgCache.get(id);
-      if (p) p.then(function (im) { URL.revokeObjectURL(im.src); }).catch(function () {});
-      imgCache.delete(id);
+      dropCacheFor(id);
+      EN.forget(id);
       DB.del('images', id);
     });
     if (state.project) state.project.pages.forEach(function (pg) {
@@ -144,43 +157,90 @@
     updateCounts();
   }
 
-  /* ---------- עיבוד עם מטמון ---------- */
-  var fxCache = new Map(), fxPending = new Map(), queue = Promise.resolve();
+  /* ---------- עיבוד ----------
+     כל הציור רץ בעובדי רקע (engine.js). התוצאות נשמרות במטמון עם תקציב פיקסלים קבוע:
+     כשעוברים אותו, התוצאות הישנות נסגרות ומשחררות זיכרון. */
+  var cache = new Map(), inflight = new Map(), cachePx = 0;
 
   function refKey(ref, max) { return ref.img + '|' + ref.style + '|' + JSON.stringify(ref.params || {}) + '|' + max; }
 
+  function cacheGet(key) {
+    if (!cache.has(key)) return null;
+    var b = cache.get(key);
+    cache.delete(key); cache.set(key, b);
+    return b;
+  }
+  function cachePut(key, b) {
+    cache.set(key, b);
+    cachePx += b.width * b.height;
+    while (cachePx > SZ.budget && cache.size > 1) {
+      var k = cache.keys().next().value;
+      if (k === key) break;
+      var old = cache.get(k);
+      cache.delete(k);
+      cachePx -= old.width * old.height;
+      closeImg(old);
+    }
+  }
+  function dropCacheFor(imgId) {
+    Array.from(cache.keys()).forEach(function (k) {
+      if (k.indexOf(imgId + '|') !== 0) return;
+      var b = cache.get(k);
+      cache.delete(k);
+      cachePx -= b.width * b.height;
+      closeImg(b);
+    });
+  }
+
+  function hebrew(s) { return /[֐-׿]/.test(s || ''); }
+  function friendly(e, style) {
+    if (e && e.canceled) return e;
+    console.error(e);
+    if (e && hebrew(e.message)) return e;
+    if (NN.isNeural(style)) return new Error('לא הצלחתי להפעיל את מודל ה-AI. בדקו את החיבור לאינטרנט ונסו שוב.');
+    return new Error('העיבוד נכשל. נסו שוב או בחרו סגנון אחר.');
+  }
+
+  /* התקדמות הורדה של מודל AI, בפעם הראשונה */
+  function progressFor(style) {
+    if (!NN.isNeural(style)) return null;
+    var first = !NN.loaded(style);
+    setBusy(first ? 'מוריד את מודל ה-AI (' + NN.sizeOf(style) + 'MB)…' : 'הרשת מציירת…');
+    return function (f) { setBusy(f < 1 ? 'מוריד את מודל ה-AI · ' + Math.round(f * 100) + '%' : 'הרשת מציירת…'); };
+  }
+
+  /* עם מטמון. התוצאה שייכת למטמון: מציירים אותה מיד ולא סוגרים אותה */
   function processNow(ref, max) {
-    var key = refKey(ref, max);
-    if (fxCache.has(key)) return Promise.resolve(fxCache.get(key));
-    if (fxPending.has(key)) return fxPending.get(key);
-    var p = queue = queue.catch(function () {}).then(function () {
-      return loadImg(ref.img).then(function (im) { return styleRender(im, ref.style || 'original', ref.params, max); });
-    }).then(function (c) {
-      fxCache.set(key, c);
-      fxPending.delete(key);
-      if (fxCache.size > 48) fxCache.delete(fxCache.keys().next().value);
-      return c;
-    }, function (e) { fxPending.delete(key); throw e; });
-    fxPending.set(key, p);
+    var key = refKey(ref, max), hit = cacheGet(key);
+    if (hit) return Promise.resolve(hit);
+    if (inflight.has(key)) return inflight.get(key).promise;
+    var src = srcOf(ref.img);
+    if (!src) return Promise.reject(new Error('התמונה לא נמצאה'));
+    var style = ref.style || 'original', first = NN.isNeural(style) && !NN.loaded(style);
+    var job = EN.render(src, style, ref.params, max, { onProgress: progressFor(style) });
+    var p = job.promise.then(function (b) {
+      inflight.delete(key);
+      cachePut(key, b);
+      if (first) toast('המודל של ״' + FX.byId[style].name + '״ נטען ונשמר בדפדפן. בפעם הבאה זה מהיר יותר.');
+      return b;
+    }, function (e) { inflight.delete(key); throw friendly(e, style); });
+    inflight.set(key, { promise: p, id: job.id });
     return p;
   }
 
-  /* רשתות נוירוניות או פילטר, לפי הסגנון. בהורדה הראשונה של מודל מציגים התקדמות */
-  function styleRender(src, style, params, max) {
-    if (!NN.isNeural(style)) return FX.renderAsync(src, style, params, max);
-    var first = !NN.loaded(style), name = FX.byId[style].name;
-    if (first) setBusy('מוריד את מודל ה-AI (' + NN.sizeOf(style) + 'MB)…');
-    else setBusy('הרשת מציירת…');
-    return NN.render(src, style, params, max, function (f) {
-      if (f < 1) setBusy('מוריד את מודל ה-AI · ' + Math.round(f * 100) + '%');
-      else setBusy('הרשת מציירת…');
-    }).then(function (c) {
-      if (first) toast('המודל של ״' + name + '״ נטען ונשמר בדפדפן. בפעם הבאה זה מיידי.');
-      return c;
-    }, function (e) {
-      console.error(e);
-      throw new Error('לא הצלחתי להפעיל את מודל ה-AI. בדקו את החיבור לאינטרנט ונסו שוב.');
-    });
+  /* בלי מטמון (ייצוא, תצוגות מקדימות). מחזיר { id, promise }; מי שמקבל את התוצאה סוגר אותה */
+  function processOnce(ref, max) {
+    var src = srcOf(ref.img), style = ref.style || 'original';
+    if (!src) return { id: null, promise: Promise.reject(new Error('התמונה לא נמצאה')) };
+    var job = EN.render(src, style, ref.params, max, { onProgress: progressFor(style) });
+    return { id: job.id, promise: job.promise.catch(function (e) { throw friendly(e, style); }) };
+  }
+
+  function cancelKey(key) {
+    var f = inflight.get(key);
+    if (!f) return;
+    inflight.delete(key);
+    EN.cancel([f.id]);
   }
 
   function setBusy(text) {
@@ -189,12 +249,12 @@
     if (state.view !== 'lab') toast(text, 4000);
   }
 
-  /* לציור חי: מחזיר מיד מה שיש, ומבקש ציור מחדש כשמוכן */
+  /* לציור חי בעמוד: מחזיר מיד מה שיש, ומבקש ציור מחדש כשמוכן */
   function getProcessed(ref, max) {
-    var key = refKey(ref, max);
-    if (fxCache.has(key)) return fxCache.get(key);
+    var key = refKey(ref, max), hit = cacheGet(key);
+    if (hit) return hit;
     if (!imageById(ref.img)) return null;
-    if (!fxPending.has(key)) processNow(ref, max).then(function () { editor && editor.draw(); }).catch(function () {});
+    if (!inflight.has(key)) processNow(ref, max).then(function () { if (editor) editor.draw(); }).catch(function () {});
     return null;
   }
 
@@ -367,6 +427,8 @@
 
   function labParams(style) { return state.labParams[style] || (state.labParams[style] = {}); }
 
+  var thumbObserver = null, thumbJobs = [];
+
   function renderStyleThumbs() {
     var job = ++thumbJob, box = $('style-groups');
     box.textContent = '';
@@ -404,17 +466,34 @@
       sec.appendChild(row);
       box.appendChild(sec);
     });
+    /* תצוגות מקדימות רק לכרטיסים שנראים על המסך, אחת-אחת ברקע, בגודל קטן */
     var id = state.labId;
-    (function next(i) {
-      if (i >= cells.length || job !== thumbJob) return;
-      processNow({ img: id, style: cells[i].s.id, params: labParams(cells[i].s.id) }, 340).then(function (c) {
-        if (job !== thumbJob) return;
-        var im = el('img'); im.src = c.toDataURL('image/jpeg', 0.85); im.alt = '';
-        cells[i].f.textContent = '';
-        cells[i].f.appendChild(im);
-        next(i + 1);
-      }).catch(function () { next(i + 1); });
-    })(0);
+    if (thumbObserver) thumbObserver.disconnect();
+    EN.cancel(thumbJobs);
+    thumbJobs = [];
+    var make = function (cell) {
+      if (cell.started || job !== thumbJob) return;
+      cell.started = true;
+      var r = processOnce({ img: id, style: cell.s.id, params: labParams(cell.s.id) }, SZ.thumb);
+      if (r.id) thumbJobs.push(r.id);
+      r.promise.then(function (b) {
+        if (job !== thumbJob) { closeImg(b); return; }
+        var c = bitmapToCanvas(b);
+        closeImg(b);
+        cell.f.textContent = '';
+        cell.f.appendChild(c);
+      }).catch(function () { if (job === thumbJob) cell.f.textContent = ''; });
+    };
+    if ('IntersectionObserver' in window) {
+      thumbObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!en.isIntersecting) return;
+          thumbObserver.unobserve(en.target);
+          make(en.target._cell);
+        });
+      }, { rootMargin: '200px 0px' });
+      cells.forEach(function (c) { c.f._cell = c; thumbObserver.observe(c.f); });
+    } else cells.forEach(make);
   }
 
   function renderKnobs(box, styleId, params, onChange, compact) {
@@ -455,12 +534,13 @@
       labTimer = setTimeout(function () { drawStage(); saveMeta(); }, 220);
     });
     var meta = imageById(id);
-    $('stage-orig').src = meta.thumb;
-    loadImg(id).then(function (im) { if (state.labId === id) $('stage-orig').src = im.src; });
+    if (stageOrigUrl) URL.revokeObjectURL(stageOrigUrl);
+    stageOrigUrl = URL.createObjectURL(meta.blob);
+    $('stage-orig').src = stageOrigUrl;
     drawStage();
   }
 
-  var stageJob = 0;
+  var stageJob = 0, stageKey = null, stageOrigUrl = null;
   function drawStage() {
     var job = ++stageJob, id = state.labId, style = state.labStyle, params = labParams(style);
     $('stage-busy').hidden = false;
@@ -469,23 +549,30 @@
     cross.hidden = !centerable(style);
     cross.style.left = (p.cx * 100) + '%';
     cross.style.top = (p.cy * 100) + '%';
-    processNow({ img: id, style: style, params: params }, 1100).then(function (c) {
+    /* בקשה קודמת שעוד לא הסתיימה כבר לא רלוונטית */
+    var ref = { img: id, style: style, params: params }, key = refKey(ref, SZ.stage);
+    if (stageKey && stageKey !== key) cancelKey(stageKey);
+    stageKey = key;
+    processNow(ref, SZ.stage).then(function (c) {
       if (job !== stageJob) return;
       var out = $('stage-out');
       out.width = c.width; out.height = c.height;
       out.getContext('2d').drawImage(c, 0, 0);
       $('stage-inner').style.aspectRatio = c.width + ' / ' + c.height;
       $('stage-busy').hidden = true;
-      if (motionFx) startMotion(motionFx);
+      if (motionFx) { clearTimeout(motionTimer); motionTimer = setTimeout(function () { if (motionFx) startMotion(motionFx); }, 600); }
       /* כרטיס הסגנון מקבל את התוצאה כתצוגה מקדימה */
       var card = document.querySelector('.scard[data-style="' + style + '"] .sframe');
       if (card && card.classList.contains('lazy')) {
         card.classList.remove('lazy');
         card.textContent = '';
-        var t = el('img'); t.alt = ''; t.src = out.toDataURL('image/jpeg', 0.8);
-        card.appendChild(t);
+        card.appendChild(scaled(out, SZ.thumb));
       }
-    }).catch(function (e) { $('stage-busy').hidden = true; toast(e.message); });
+    }).catch(function (e) {
+      if (e && e.canceled) return;
+      if (job === stageJob) $('stage-busy').hidden = true;
+      toast(e.message, 6000);
+    });
   }
 
   function setCompare(v) {
@@ -503,8 +590,13 @@
 
   function safeName(s) { return String(s || 'comic').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 60); }
 
+  /* תוצאה בגודל מלא כ-canvas */
   function renderFull(id, style, params) {
-    return loadImg(id).then(function (im) { return styleRender(im, style, params, EXPORT_MAX); });
+    return processOnce({ img: id, style: style, params: params }, EXPORT_MAX).promise.then(function (b) {
+      var c = bitmapToCanvas(b);
+      closeImg(b);
+      return c;
+    });
   }
 
   function bindLab() {
@@ -551,7 +643,9 @@
       var items = state.batch.slice(), saved = 0;
       (function next(i) {
         if (i >= items.length) { saveMeta(); toast('נשמרו ' + saved + ' תמונות בספרייה.'); return; }
-        addImage(items[i].c, items[i].name, 'lab', items[i].origin).then(function () { saved++; next(i + 1); })
+        decodeFile(items[i].blob).then(function (im) {
+          return addImage(im, items[i].name, 'lab', items[i].origin).then(function () { closeImg(im); if (im.src) URL.revokeObjectURL(im.src); });
+        }).then(function () { saved++; next(i + 1); })
           .catch(function (e) { toast(e.message, 5000); saveMeta(); });
       })(0);
     });
@@ -560,7 +654,7 @@
       loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js').then(function () {
         var zip = new window.JSZip();
         return Promise.all(state.batch.map(function (b, i) {
-          return canvasToBlob(b.c, 'image/png').then(function (bl) { zip.file(String(i + 1).padStart(2, '0') + ' ' + safeName(b.name) + '.png', bl); });
+          zip.file(String(i + 1).padStart(2, '0') + ' ' + safeName(b.name) + '.jpg', b.blob);
         })).then(function () { return zip.generateAsync({ type: 'blob' }); });
       }).then(function (z) { download(z, 'comic-batch.zip'); toast('ההורדה התחילה.'); })
         .catch(function () { toast('לא הצלחתי לטעון את ספריית ה-ZIP. בדקו את החיבור לאינטרנט.', 5000); });
@@ -588,17 +682,23 @@
     (function next(i) {
       if (i >= ids.length) { toast('הסתיים: ' + ids.length + ' תמונות.'); return; }
       var m = imageById(ids[i]);
-      loadImg(ids[i]).then(function (im) { return styleRender(im, st.id, params, 1600); }).then(function (c) {
-        var item = { c: c, name: m.name + ' · ' + st.name, origin: m.id };
+      /* כל תוצאה נשמרת כקובץ דחוס ולא כתמונה פתוחה בזיכרון */
+      var preview;
+      processOnce({ img: ids[i], style: st.id, params: params }, EN.LOW ? 1200 : 1600).promise.then(function (b) {
+        var c = bitmapToCanvas(b);
+        closeImg(b);
+        preview = scaled(c, 360);
+        return canvasToBlob(c, 'image/jpeg', 0.93).then(function (blob) { c.width = c.height = 1; return blob; });
+      }).then(function (blob) {
+        var item = { blob: blob, name: m.name + ' · ' + st.name, origin: m.id };
         state.batch.push(item);
         var f = cells[i];
         f.textContent = '';
-        var im = el('img'); im.src = c.toDataURL('image/jpeg', 0.85); im.alt = m.name;
-        f.appendChild(im);
+        f.appendChild(preview);
         var cap = el('figcaption');
         var dl = el('button', 'btn ghost tiny', 'הורדה');
         dl.type = 'button';
-        dl.addEventListener('click', function () { canvasToBlob(c, 'image/png').then(function (b) { download(b, safeName(item.name) + '.png'); }); });
+        dl.addEventListener('click', function () { download(item.blob, safeName(item.name) + '.jpg'); });
         cap.appendChild(el('span', '', m.name));
         cap.appendChild(dl);
         f.appendChild(cap);
@@ -639,14 +739,8 @@
   }
 
   function addAiResult(blob, name, origin) {
-    var url = URL.createObjectURL(blob);
-    return new Promise(function (resolve, reject) {
-      var im = new Image();
-      im.onload = function () { resolve(im); };
-      im.onerror = function () { reject(new Error('התמונה שהתקבלה פגומה.')); };
-      im.src = url;
-    }).then(function (im) {
-      return addImage(im, name, 'ai', origin).then(function (m) { URL.revokeObjectURL(url); return m; });
+    return decodeFile(blob).catch(function () { throw new Error('התמונה שהתקבלה פגומה.'); }).then(function (im) {
+      return addImage(im, name, 'ai', origin).then(function (m) { closeImg(im); if (im.src) URL.revokeObjectURL(im.src); return m; });
     });
   }
 
@@ -656,7 +750,7 @@
     var m = imageById(state.labId), st = AI.byId[state.aiStyle], btn = $('ai-go');
     aiBusy(btn, true);
     toast('Gemini מצייר את התמונה… זה לוקח בדרך כלל 10–30 שניות.', 60000);
-    loadImg(state.labId).then(function (im) { return canvasToBlob(scaled(im, 1400), 'image/jpeg', 0.9); })
+    loadBitmap(state.labId, 1400).then(function (im) { var c = scaled(im, 1400); closeImg(im); return canvasToBlob(c, 'image/jpeg', 0.9); })
       .then(function (b) { return AI.generate([b], AI.stylePrompt(state.aiStyle, $('ai-extra').value.trim())); })
       .then(function (blob) { return addAiResult(blob, m.name + ' · ' + st.name, m.id); })
       .then(function (n) {
@@ -678,7 +772,7 @@
     var btn = $('ai-scene-go');
     aiBusy(btn, true);
     toast('Gemini משלב ' + ids.length + ' תמונות לסצנה אחת…', 90000);
-    Promise.all(ids.map(function (id) { return loadImg(id).then(function (im) { return canvasToBlob(scaled(im, 1100), 'image/jpeg', 0.88); }); }))
+    Promise.all(ids.map(function (id) { return loadBitmap(id, 1100).then(function (im) { var c = scaled(im, 1100); closeImg(im); return canvasToBlob(c, 'image/jpeg', 0.88); }); }))
       .then(function (blobs) { return AI.generate(blobs, AI.scenePrompt(ids.length, $('ai-scene').value.trim(), state.aiStyle)); })
       .then(function (blob) { return addAiResult(blob, 'סצנה משולבת · ' + AI.byId[state.aiStyle].name, ids[0]); })
       .then(function (n) {
@@ -734,7 +828,7 @@
     ensureProject();
     if (!editor) {
       editor = new PG.Editor($('page-canvas'), {
-        getImage: getProcessed,
+        getImage: function (ref, max) { return getProcessed(ref, Math.min(max, SZ.panel)); },
         onSelect: renderInspector,
         onChange: function () { saveProject(); renderPagesRow(); },
         onEditText: function () { setTimeout(function () { $('it-text').focus(); $('it-text').select(); }, 0); },
@@ -841,7 +935,7 @@
     fillSelect($('pg-title-font'), fonts);
     fillSelect($('it-font'), fonts);
     fillSelect($('auto-style'), FX.STYLES.map(function (s) { return [s.id, s.name]; }));
-    $('auto-style').value = $('auto-style').dataset.v || 'nn-comic';
+    $('auto-style').value = $('auto-style').dataset.v || 'gouache';
     $('pg-format').value = pg.format;
     $('pg-title-show').checked = !!pg.title.show;
     $('pg-title').value = pg.title.text;
@@ -1117,7 +1211,7 @@
   }
 
   /* ---------- הנפשה ---------- */
-  var motionPlayer = null, motionFx = null, videoPlayer = null, videoCanvas = null;
+  var motionPlayer = null, motionFx = null, videoPlayer = null, videoCanvas = null, motionTimer = 0;
 
   function renderMotionChips() {
     var box = $('motion-chips');
@@ -1143,10 +1237,19 @@
     var art = document.createElement('canvas');
     art.width = out.width; art.height = out.height;
     art.getContext('2d').drawImage(out, 0, 0);
-    loadImg(state.labId).then(function (photo) {
+    if (motionPlayer) motionPlayer.stop();
+    loadBitmap(state.labId, SZ.motion).then(function (photo) {
       setTimeout(function () {
-        if (motionFx !== id) return;
-        var scene = MO.setup(id, { art: art, photo: photo }, MO.videoSize(art.width, art.height, 900));
+        if (motionFx !== id) { closeImg(photo); return; }
+        var scene;
+        try {
+          scene = MO.setup(id, { art: art, photo: photo }, MO.videoSize(art.width, art.height, SZ.motion));
+        } catch (e) {
+          closeImg(photo);
+          $('motion-state').textContent = 'לא הצלחתי להכין את ההנפשה. נסו אפקט אחר.';
+          return;
+        }
+        closeImg(photo);
         if (!motionPlayer) motionPlayer = new MO.Player($('motion-canvas'));
         motionPlayer.load(scene);
         $('motion-empty').hidden = true;
@@ -1154,7 +1257,7 @@
         $('motion-stop').disabled = false;
         $('motion-state').textContent = 'לולאה של ' + scene.dur + ' שניות.';
       }, 30);
-    });
+    }).catch(function (e) { $('motion-state').textContent = e.message; });
   }
 
   function stopMotion() {
@@ -1223,20 +1326,34 @@
   }
 
   /* ---------- ייצוא ---------- */
+  /* כל פאנל מצויר בגודל שבו הוא באמת מופיע בעמוד, ולא יותר. התוצאות נסגרות מיד אחרי הציור */
   function renderPageCanvas(pg, scale) {
-    var refs = pg.panels.filter(function (p) { return p.img && imageById(p.img); })
-      .concat(pg.items.filter(function (i) { return i.type === 'photo' && i.img && imageById(i.img); }));
-    var local = new Map();
-    return Promise.all(refs.map(function (r) {
-      return processNow(r, EXPORT_MAX).then(function (c) { local.set(refKey(r, EXPORT_MAX), c); });
-    })).then(function () {
+    var polys = PG.computePanels(pg), refs = [];
+    polys.forEach(function (poly, i) {
+      var pn = pg.panels[i];
+      if (!pn || !pn.img || !imageById(pn.img)) return;
+      var b = PG.bbox(poly);
+      refs.push({ ref: pn, need: Math.max(b.w, b.h) * scale * (pn.zoom || 1) * 1.15 });
+    });
+    pg.items.forEach(function (it) {
+      if (it.type === 'photo' && it.img && imageById(it.img)) refs.push({ ref: it, need: Math.max(it.w, it.h) * scale * (it.zoom || 1) * 1.15 });
+    });
+    var local = new Map(), list = [];
+    /* אחד אחרי השני, כדי שלא יהיו כמה תמונות גדולות בזיכרון בבת אחת בזמן העיבוד */
+    return refs.reduce(function (p, r) {
+      return p.then(function () {
+        var max = Math.max(256, Math.min(EXPORT_MAX, Math.ceil(r.need)));
+        return processOnce(r.ref, max).promise.then(function (b) { local.set(r.ref, b); list.push(b); });
+      });
+    }, Promise.resolve()).then(function () {
       var c = document.createElement('canvas');
       c.width = Math.round(pg.w * scale); c.height = Math.round(pg.h * scale);
       var x = c.getContext('2d');
       x.scale(scale, scale);
-      PG.drawPage(x, pg, { getImage: function (r) { return local.get(refKey(r, EXPORT_MAX)) || null; } });
+      PG.drawPage(x, pg, { getImage: function (r) { return local.get(r) || null; } });
+      list.forEach(closeImg);
       return c;
-    });
+    }, function (e) { list.forEach(closeImg); throw e; });
   }
 
   function exportPage(kind) {
@@ -1285,6 +1402,34 @@
   }
 
   /* ---------- התחלה ---------- */
+  /* שגיאה לא צפויה לא מפילה את הדף: מציגים הודעה וממשיכים */
+  var lastErr = 0;
+  function guard(msg) {
+    if (Date.now() - lastErr < 4000) return;
+    lastErr = Date.now();
+    toast(msg || 'משהו השתבש, אבל העבודה שלכם שמורה. אפשר להמשיך.', 5000);
+  }
+  window.addEventListener('error', function (e) {
+    if (e && e.message && /ResizeObserver/.test(e.message)) return;
+    console.error(e.error || e.message);
+    guard();
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason;
+    if (r && r.canceled) { e.preventDefault(); return; }
+    console.error(r);
+    e.preventDefault();
+    guard(r && hebrew(r.message) ? r.message : null);
+  });
+
+  /* מחוון עבודה ברקע בסרגל העליון */
+  EN.onActivity(function (n) {
+    var j = $('jobs');
+    if (!j) return;
+    j.hidden = n === 0;
+    $('jobs-text').textContent = n === 1 ? 'מצייר ברקע' : 'מצייר ברקע · ' + n;
+  });
+
   function boot() {
     document.querySelectorAll('[role="tab"]').forEach(function (t) {
       t.addEventListener('click', function () { show(t.dataset.view); });
@@ -1303,11 +1448,17 @@
     bindMotion();
     updateAiState();
 
+    /* מבקשים מהדפדפן לא למחוק את הספרייה כשנגמר מקום */
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+    NN.checkDownloaded();
+
     Promise.all([DB.all('images'), DB.get('meta', 'state'), DB.get('projects', 'current')]).then(function (r) {
       state.images = (r[0] || []).sort(function (a, b) { return a.added - b.added; });
       var meta = r[1] || {};
       state.sel = (meta.sel || []).filter(function (id) { return imageById(id); });
       if (meta.labStyle && FX.byId[meta.labStyle]) state.labStyle = meta.labStyle;
+      /* בטלפון לא מפעילים מודל AI אוטומטית בכניסה למעבדה */
+      if (EN.LOW && NN.isNeural(state.labStyle)) state.labStyle = 'gouache';
       state.labParams = meta.labParams || {};
       if (meta.aiStyle && AI.byId[meta.aiStyle]) state.aiStyle = meta.aiStyle;
       if (r[2] && r[2].pages && r[2].pages.length) state.project = r[2];

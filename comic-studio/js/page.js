@@ -300,9 +300,11 @@
 
   function coverDraw(ctx, img, b, zoom, ox, oy) {
     var iw = img.width, ih = img.height;
+    if (!iw || !ih) return;
     var s = Math.max(b.w / iw, b.h / ih) * (zoom || 1);
     var dw = iw * s, dh = ih * s;
-    ctx.drawImage(img, b.x + (b.w - dw) / 2 + (ox || 0) * b.w, b.y + (b.h - dh) / 2 + (oy || 0) * b.h, dw, dh);
+    /* תמונה שהמטמון כבר שחרר: מדלגים, והיא תצויר שוב כשתגיע */
+    try { ctx.drawImage(img, b.x + (b.w - dw) / 2 + (ox || 0) * b.w, b.y + (b.h - dh) / 2 + (oy || 0) * b.h, dw, dh); } catch (e) { /* שוחררה */ }
   }
 
   function drawPhotoItem(ctx, it, src) {
@@ -610,7 +612,7 @@
       tx: x + w * 0.25, ty: y + h * 1.45,
       text: d.text, font: d.font, size: Math.round(page.w * (type === 'caption' ? 0.024 : 0.034)),
       color: d.color, fill: d.fill, fill2: '#ff3d2e', stroke: '#111114', rot: type === 'sfx' ? -8 : 0,
-      shape: 'circle', style: 'nn-portrait', params: {}, zoom: 1, ox: 0, oy: 0, keep: type === 'photo'
+      shape: 'circle', style: 'gouache', params: {}, zoom: 1, ox: 0, oy: 0, keep: type === 'photo'
     };
   }
 
@@ -629,7 +631,7 @@
     };
   }
 
-  function newPanel() { return { img: null, style: 'nn-comic', params: {}, zoom: 1, ox: 0, oy: 0, bg: '#ffffff' }; }
+  function newPanel() { return { img: null, style: 'gouache', params: {}, zoom: 1, ox: 0, oy: 0, bg: '#ffffff' }; }
 
   function setLayout(page, layoutId) {
     var L = LAYOUT_BY_ID[layoutId];

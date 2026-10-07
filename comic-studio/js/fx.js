@@ -64,7 +64,10 @@
 
   /* ---------- כלי עזר ---------- */
 
+  /* בעובד רקע אין document, ולכן משתמשים ב-OffscreenCanvas */
+  var HAS_DOM = typeof document !== 'undefined';
   function canvasOf(w, h) {
+    if (!HAS_DOM) return new OffscreenCanvas(Math.max(1, w), Math.max(1, h));
     var c = document.createElement('canvas');
     c.width = w; c.height = h;
     return c;
