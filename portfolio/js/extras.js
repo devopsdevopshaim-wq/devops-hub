@@ -519,11 +519,7 @@
     }
     function connect() {
       var cid = (mediaCfg && mediaCfg.youtubeClientId) || store('yt-client-id');
-      if (!cid) {
-        cid = (window.prompt('להתחברות ליוטיוב צריך Client ID של Google (פעם אחת, בחינם).\nהדביקו אותו כאן. איך מקבלים: console.cloud.google.com ← APIs ← YouTube Data API v3 ← Credentials ← OAuth client ID (Web), Authorized JavaScript origin: ' + location.origin) || '').trim();
-        if (!/\.apps\.googleusercontent\.com$/.test(cid)) return msg('ה־Client ID נראה לא תקין. הוא נגמר ב־.apps.googleusercontent.com');
-        store('yt-client-id', cid);
-      }
+      if (!cid) return drawSetup();
       msg('מתחבר לגוגל…');
       gsi().then(function () {
         var tc = google.accounts.oauth2.initTokenClient({
@@ -533,6 +529,21 @@
         });
         tc.requestAccessToken();
       }).catch(function () { msg('אי אפשר לטעון את התחברות גוגל כרגע'); acct.appendChild(connectBtn()); });
+    }
+    // a visible place to paste the Google Client ID (kept in this browser only)
+    function drawSetup() {
+      acct.innerHTML = '';
+      var inp = el('input', { class: 'mu-link', type: 'text', placeholder: 'הדביקו כאן את ה־Client ID (נגמר ב־.apps.googleusercontent.com)', dir: 'ltr' });
+      var ok = el('button', { class: 'mu-vbtn', type: 'button', text: 'שמירה והתחברות' });
+      function save() {
+        var v = inp.value.trim();
+        if (!/\.apps\.googleusercontent\.com$/.test(v)) return say('ה־Client ID לא נראה תקין', 'הוא נגמר ב־.apps.googleusercontent.com');
+        store('yt-client-id', v); connect();
+      }
+      ok.addEventListener('click', save); inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') save(); });
+      acct.appendChild(el('p', { class: 'mu-note', text: 'שלב אחרון: הדביקו את ה־Client ID שיצרתם בגוגל.' }));
+      acct.appendChild(el('div', { class: 'mu-linkrow' }, [inp, ok]));
+      setTimeout(function () { inp.focus(); }, 50);
     }
     function connectBtn() { var b = el('button', { class: 'mu-vbtn', type: 'button', text: '🔗 חיבור לחשבון היוטיוב שלי' }); b.addEventListener('click', connect); return b; }
     function drawGuest() {
