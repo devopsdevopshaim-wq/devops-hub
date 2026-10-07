@@ -235,6 +235,7 @@
     return /trance|psy|goa|techno|house|dance|edm|progressive|טראנס|פסי|האוס|טכנו/.test(t) ? 'trance' : /ambient|dream|drone|space|new age|meditat|אמביינט|דרים/.test(t) ? 'ambient' : 'chill';
   }
 
+  var mediaCfg = null;
   function music(radio, yt) {
     var genres = (radio && radio.genres && radio.genres.length ? radio.genres : FALLBACK).filter(function (g) { return g.stations && g.stations.length; });
     var picks = (yt || []).filter(function (s) { return ytParse(s.url); });
@@ -283,14 +284,14 @@
     var volIn = el('input', { type: 'range', min: '0', max: '100', value: String(vol), 'aria-label': 'עוצמה' });
     var ytFull = el('button', { class: 'mu-vbtn', type: 'button', text: '⛶ מסך מלא' });
     var frame = el('div', { class: 'mu-frame', hidden: '' }, [el('div', { id: 'mu-yt' })]);
+    var acct = el('div', { class: 'mu-acct' });
     var panel = el('div', { class: 'mu-panel', id: 'mu-panel', role: 'dialog', 'aria-label': 'מוזיקה ברקע' }, [
       el('header', {}, [el('b', { text: '♫ רדיו ומוזיקה' }), el('button', { class: 'x', type: 'button', 'aria-label': 'סגירה', text: '×' })]),
       vis,
       el('p', { class: 'mu-sub', text: 'רדיו לפי סגנון' }), chips,
       el('p', { class: 'mu-sub', text: 'מוזיקה מובנית (תמיד עובדת)' }), genChips,
-      picks.length ? el('p', { class: 'mu-sub', text: 'השירים שלי מיוטיוב' }) : null,
-      picks.length ? ytChips : null,
-      frame, picks.length ? el('div', { class: 'mu-ytbar' }, [ytFull]) : null, now,
+      el('p', { class: 'mu-sub', text: 'יוטיוב' }), ytChips, acct,
+      frame, el('div', { class: 'mu-ytbar' }, [ytFull]), now,
       el('div', { class: 'mu-ctrl' }, [playBtn, nextBtn, el('span', { class: 'vol', 'aria-hidden': 'true', text: '🔈' }), volIn]),
       el('p', { class: 'mu-note', text: 'תחנות רדיו חיות מכל העולם, נבדקות כל יום. אם תחנה לא עונה, עוברים לבאה אחריה או למוזיקה מובנית. אפשר לסגור את החלון והמוזיקה ממשיכה.' })
     ]);
@@ -442,6 +443,109 @@
       });
     }
     ytFull.addEventListener('click', function () { fullscreen(frame); });
+
+    // ----- my own YouTube: paste a link, or sign in with Google to get my playlists, my subscriptions and every style
+    function addPick(title, url, style) {
+      for (var k = 0; k < picks.length; k++) if (picks[k].url === url) return k;
+      picks.push({ title: title, url: url, style: style || title });
+      return picks.length - 1;
+    }
+    var STYLES = ['טראנס', 'פסיכדלי טראנס', 'אמביינט', 'צ׳יל', 'לאונג׳', 'דיפ האוס', 'טכנו', 'אלקטרוני', 'היפ הופ', 'ג׳אז', 'קלאסית', 'רוק', 'פופ', 'מזרחית', 'ים תיכוני', 'חסידית', 'נשמה ופולק', 'לופי', 'שנות ה־80', 'שנות ה־90'];
+    var token = null, GSI = null;
+    function gsi() {
+      if (GSI) return GSI;
+      GSI = new Promise(function (ok, no) {
+        if (window.google && window.google.accounts) return ok();
+        var sc = el('script', { src: 'https://accounts.google.com/gsi/client', async: '' });
+        sc.onload = function () { ok(); }; sc.onerror = function () { GSI = null; no(new Error('gsi')); };
+        document.head.appendChild(sc);
+      });
+      return GSI;
+    }
+    function yapi(path, qs) {
+      var u = 'https://www.googleapis.com/youtube/v3/' + path + '?' + Object.keys(qs).map(function (k) { return k + '=' + encodeURIComponent(qs[k]); }).join('&');
+      return fetch(u, { headers: { Authorization: 'Bearer ' + token } }).then(function (r) {
+        if (r.status === 401) { token = null; throw new Error('expired'); }
+        if (!r.ok) return r.json().then(function (j) { throw new Error((j.error && j.error.message) || r.status); });
+        return r.json();
+      });
+    }
+    function pages(path, qs, max) {
+      var out = [];
+      function next(tok, n) {
+        var q = Object.assign({}, qs); if (tok) q.pageToken = tok;
+        return yapi(path, q).then(function (j) { out = out.concat(j.items || []); return j.nextPageToken && n < max ? next(j.nextPageToken, n + 1) : out; });
+      }
+      return next(null, 1);
+    }
+    function chip(txt, title, fn) { var c = el('button', { class: 'chip', type: 'button', text: txt, title: title || txt, 'aria-pressed': 'false' }); c.addEventListener('click', fn); return c; }
+    function playItem(title, url, style) { var i = addPick(title, url, style); playYT(i); }
+    function group(title, kids) {
+      var box = el('div', { class: 'mu-styles' }, kids);
+      return [el('p', { class: 'mu-sub', text: title }), box];
+    }
+    function msg(t) { acct.innerHTML = ''; acct.appendChild(el('p', { class: 'mu-note', text: t })); }
+    function drawAccount() {
+      acct.innerHTML = '';
+      Promise.all([
+        pages('playlists', { part: 'snippet', mine: 'true', maxResults: 50 }, 3),
+        pages('subscriptions', { part: 'snippet', mine: 'true', maxResults: 50, order: 'alphabetical' }, 4)
+      ]).then(function (r) {
+        var pl = [chip('♥ אהבתי (מוזיקה)', 'הפלייליסט "אהבתי" של יוטיוב מיוזיק', function () { playItem('אהבתי', 'https://www.youtube.com/playlist?list=LM', 'אהבתי'); })]
+          .concat(r[0].map(function (p) { return chip(p.snippet.title, p.snippet.title, function () { playItem(p.snippet.title, 'https://www.youtube.com/playlist?list=' + p.id, p.snippet.title); }); }));
+        var subs = r[1].map(function (sb) {
+          var id = sb.snippet.resourceId.channelId, t = sb.snippet.title;
+          return chip(t, 'כל הסרטונים של הערוץ ' + t, function () { playItem(t, 'https://www.youtube.com/playlist?list=UU' + id.slice(2), t); });
+        });
+        var styles = STYLES.map(function (st) {
+          return chip(st, 'חיפוש ביוטיוב: ' + st, function () {
+            say('מחפש ' + st + '…', 'יוטיוב');
+            yapi('search', { part: 'snippet', q: st + ' music mix', type: 'playlist', maxResults: 8 }).then(function (j) {
+              var it = (j.items || [])[Math.floor(Math.random() * Math.min(4, (j.items || []).length))];
+              if (!it) return say('לא נמצא ' + st, 'נסו סגנון אחר');
+              playItem(it.snippet.title, 'https://www.youtube.com/playlist?list=' + it.id.playlistId, st);
+            }).catch(function (e) { say('החיפוש נכשל', String(e.message || e)); });
+          });
+        });
+        [group('כל הסגנונות (חיפוש ביוטיוב)', styles), group('הפלייליסטים שלי', pl), group('המנויים שלי (' + subs.length + ')', subs)].forEach(function (g) { g.forEach(function (n) { acct.appendChild(n); }); });
+        var out = el('button', { class: 'mu-vbtn', type: 'button', text: 'התנתקות מיוטיוב' });
+        out.addEventListener('click', function () { try { google.accounts.oauth2.revoke(token, function () {}); } catch (e) {} token = null; drawGuest(); });
+        acct.appendChild(out);
+      }).catch(function (e) {
+        if (String(e.message) === 'expired') return drawGuest();
+        msg('לא הצלחתי לקרוא את החשבון: ' + (e.message || e) + '. בדקו ש־YouTube Data API v3 מופעל בפרויקט, ושהמייל שלכם מוגדר כמשתמש בדיקה.');
+        acct.appendChild(connectBtn());
+      });
+    }
+    function connect() {
+      var cid = (mediaCfg && mediaCfg.youtubeClientId) || store('yt-client-id');
+      if (!cid) {
+        cid = (window.prompt('להתחברות ליוטיוב צריך Client ID של Google (פעם אחת, בחינם).\nהדביקו אותו כאן. איך מקבלים: console.cloud.google.com ← APIs ← YouTube Data API v3 ← Credentials ← OAuth client ID (Web), Authorized JavaScript origin: ' + location.origin) || '').trim();
+        if (!/\.apps\.googleusercontent\.com$/.test(cid)) return msg('ה־Client ID נראה לא תקין. הוא נגמר ב־.apps.googleusercontent.com');
+        store('yt-client-id', cid);
+      }
+      msg('מתחבר לגוגל…');
+      gsi().then(function () {
+        var tc = google.accounts.oauth2.initTokenClient({
+          client_id: cid, scope: 'https://www.googleapis.com/auth/youtube.readonly',
+          callback: function (r) { if (r.access_token) { token = r.access_token; drawAccount(); } else { msg('ההתחברות בוטלה'); acct.appendChild(connectBtn()); } },
+          error_callback: function () { msg('ההתחברות נכשלה או נחסמה (חלון קופץ?)'); acct.appendChild(connectBtn()); }
+        });
+        tc.requestAccessToken();
+      }).catch(function () { msg('אי אפשר לטעון את התחברות גוגל כרגע'); acct.appendChild(connectBtn()); });
+    }
+    function connectBtn() { var b = el('button', { class: 'mu-vbtn', type: 'button', text: '🔗 חיבור לחשבון היוטיוב שלי' }); b.addEventListener('click', connect); return b; }
+    function drawGuest() {
+      acct.innerHTML = '';
+      var inp = el('input', { class: 'mu-link', type: 'url', placeholder: 'הדביקו קישור ליוטיוב: שיר או פלייליסט', dir: 'ltr' });
+      var go = el('button', { class: 'mu-vbtn', type: 'button', text: '▶ ניגון' });
+      function run() { var v = ytParse(inp.value); if (!v) return say('הקישור לא נראה כמו יוטיוב', 'שיר או פלייליסט'); playItem('הקישור שלי', inp.value.trim(), 'הקישור שלי'); store('yt-last-link', inp.value.trim()); }
+      go.addEventListener('click', run); inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+      acct.appendChild(el('div', { class: 'mu-linkrow' }, [inp, go]));
+      acct.appendChild(connectBtn());
+      acct.appendChild(el('p', { class: 'mu-note', text: 'אחרי החיבור תקבלו את כל הסגנונות, הפלייליסטים והמנויים שלכם. הגישה היא לקריאה בלבד, ולא נשמרת באתר.' }));
+    }
+    drawGuest();
 
     // ----- controls
     playBtn.addEventListener('click', function () {
@@ -741,6 +845,7 @@
     getJSON(base + 'riddles.json').catch(function () { return null; }),
     getJSON(base + 'radio.json').catch(function () { return null; })
   ]).then(function (r) {
+    mediaCfg = r[0];
     try { music(r[3], r[0].music); } catch (e) { console.warn('music', e); }
     try { if (!document.body.classList.contains('no-dock')) dock(r[1], r[2]); } catch (e) { console.warn('dock', e); }
     try { videos(r[0].videos); } catch (e) { console.warn('videos', e); }
