@@ -44,8 +44,20 @@
   /* ---------- טעינה ---------- */
 
   var scripts = {};
+  var IN_WORKER = typeof document === 'undefined';
   function loadScript(path) {
     if (scripts[path]) return scripts[path];
+    if (IN_WORKER) {
+      /* בעובד רקע טוענים ספריות עם importScripts */
+      scripts[path] = new Promise(function (resolve, reject) {
+        for (var i = 0; i < CDNS.length; i++) {
+          try { self.importScripts(CDNS[i] + path); resolve(CDNS[i]); return; } catch (e) { /* ננסה את השרת הבא */ }
+        }
+        reject(new Error('load ' + path));
+      });
+      scripts[path].catch(function () { delete scripts[path]; });
+      return scripts[path];
+    }
     scripts[path] = CDNS.reduce(function (p, base) {
       return p.catch(function () {
         return new Promise(function (resolve, reject) {
@@ -140,8 +152,22 @@
   }
 
   var sessions = {};
+
+  /* רק מודל אחד בזיכרון: מודל של 10MB תופס בהרצה מאות MB, ובטלפון זה מה שמפיל את הדף */
+  function releaseOthers(keep) {
+    Object.keys(sessions).forEach(function (k) {
+      if (k === keep) return;
+      var p = sessions[k];
+      delete sessions[k];
+      p.then(function (m) {
+        try { if (m.release) m.release(); else if (m.dispose) m.dispose(); } catch (e) { /* כבר שוחרר */ }
+      }).catch(function () {});
+    });
+  }
+
   function getModel(key, onProgress) {
     if (sessions[key]) return sessions[key];
+    releaseOthers(key);
     var m = MODELS[key];
     var p;
     if (m.kind === 'onnx') {
@@ -179,7 +205,10 @@
 
   /* ---------- הרצה ---------- */
 
-  function canvasOf(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  function canvasOf(w, h) {
+    if (IN_WORKER) return new OffscreenCanvas(Math.max(1, w), Math.max(1, h));
+    var c = document.createElement('canvas'); c.width = w; c.height = h; return c;
+  }
 
   function fitTo(src, max, mult) {
     var sw = src.naturalWidth || src.width, sh = src.naturalHeight || src.height;
@@ -210,14 +239,21 @@
     });
   }
 
+  /* עובדים עם ImageData ולא עם canvas, כדי שזה ירוץ גם בעובד רקע */
   function runTf(model, c) {
-    var tf = window.tf;
+    var tf = window.tf, W = c.width, H = c.height;
+    var img = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H);
     var y = tf.tidy(function () {
-      var x = tf.browser.fromPixels(c).toFloat().div(127.5).sub(1).expandDims(0);
+      var x = tf.browser.fromPixels(img).toFloat().div(127.5).sub(1).expandDims(0);
       return model.predict(x).squeeze().add(1).div(2).clipByValue(0, 1);
     });
-    var oc = canvasOf(c.width, c.height);
-    return tf.browser.toPixels(y, oc).then(function () { y.dispose(); return oc; });
+    return tf.browser.toPixels(y).then(function (px) {
+      y.dispose();
+      var oc = canvasOf(W, H), x2 = oc.getContext('2d'), im = x2.createImageData(W, H);
+      im.data.set(px);
+      x2.putImageData(im, 0, 0);
+      return oc;
+    });
   }
 
   /* פורטרט: המודל מקבל ריבוע 512. ממלאים את השוליים בהעתק מטושטש, ואחר כך גוזרים בחזרה */
@@ -267,11 +303,26 @@
     return job;
   }
 
+  /* האם המודל כבר הורד (נמצא במטמון הדפדפן) */
+  var downloaded = {};
+  function checkDownloaded() {
+    if (!window.caches) return Promise.resolve();
+    return caches.open(CACHE).then(function (c) {
+      return Promise.all(Object.keys(MODELS).map(function (k) {
+        var path = MODELS[k].kind === 'tf' ? MODELS[k].path.replace(/model\.json$/, 'group1-shard3of3') : MODELS[k].path;
+        return Promise.all(CDNS.map(function (b) { return c.match(b + path); })).then(function (r) {
+          if (r.some(Boolean)) downloaded[k] = true;
+        });
+      }));
+    }).catch(function () {});
+  }
+  function markDownloaded(styleId) { var s = FX.byId[styleId]; if (s && s.model) downloaded[s.model] = true; }
+
   function isNeural(styleId) { var s = FX.byId[styleId]; return Boolean(s && s.model); }
-  function loaded(styleId) { var s = FX.byId[styleId]; return Boolean(s && s.model && sessions[s.model]); }
+  function loaded(styleId) { var s = FX.byId[styleId]; return Boolean(s && s.model && (downloaded[s.model] || sessions[s.model])); }
   function sizeOf(styleId) { var s = FX.byId[styleId]; return s && s.model ? MODELS[s.model].mb : 0; }
 
   STYLES.slice().reverse().forEach(function (s) { FX.register(s, true); });
 
-  window.ComicNeural = { STYLES: STYLES, MODELS: MODELS, render: render, isNeural: isNeural, loaded: loaded, sizeOf: sizeOf };
+  window.ComicNeural = { STYLES: STYLES, MODELS: MODELS, render: render, isNeural: isNeural, loaded: loaded, sizeOf: sizeOf, checkDownloaded: checkDownloaded, markDownloaded: markDownloaded, releaseAll: function () { releaseOthers(null); } };
 })();
