@@ -10,6 +10,8 @@ const TestKit = require('../js/testkit.js');
 const HomePlan = require('../js/homeplan.js');
 const FloorPlan = require('../js/floorplan.js');
 const PlanSample = require('../js/plansample.js');
+const Guides = require('../js/guides.js');
+const Illus = require('../js/illustrations.js');
 
 let n = 0;
 function test(name, fn) { fn(); n++; console.log('✓', name); }
@@ -268,6 +270,45 @@ test('שרטוט אדריכלי: קנה מידה, נקודות בכל חדר, ל
   })(FixPrompts.FLOOR_SCHEMA, '$');
   const m = FixPrompts.floorMessages([{ data: 'A'.repeat(200), name: 'x' }], 'הערה', 'building');
   assert.equal(m[0].content.filter((c) => c.type === 'image').length, 1);
+});
+
+test('מדריכים ללקוחות: כל שלב מגיע לסיום, כל איור קיים, ואין הוראות מסוכנות', () => {
+  for (const g of Guides.GUIDES) {
+    const S = g.steps, seen = new Set(), q = [g.start];
+    assert.ok(S[g.start], g.id + ' start');
+    while (q.length) {
+      const k = q.shift();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const st = S[k];
+      assert.ok(st, g.id + ' missing step ' + k);
+      assert.ok(Illus.has(st.img), g.id + '/' + k + ' image ' + st.img);
+      const next = (st.options || []).map((o) => o.next).concat(st.next ? [st.next] : []);
+      if (!next.length) assert.ok(['done', 'stop', 'link'].includes(st.kind), g.id + '/' + k + ' dead end');
+      if (st.kind === 'link') assert.ok(Guides.byId(st.guide), g.id + '/' + k + ' link');
+      next.forEach((n) => q.push(n));
+    }
+    assert.deepEqual(Object.keys(S).filter((k) => !seen.has(k)), [], g.id + ' unreachable steps');
+    assert.ok(Object.values(S).some((x) => x.kind === 'stop'), g.id + ' has a stop-and-call screen');
+    const text = JSON.stringify(g);
+    assert.doesNotMatch(text, /מברג|בודק מתח|לפרק את השקע|לגעת בחוט/, g.id + ' no tool or wire instructions');
+  }
+  // קצר: המסלול "קפץ שוב גם בלי מכשירים" מסתיים בחשמלאי, אחרי שני ניסיונות לכל היותר
+  const sh = Guides.byId('short').steps;
+  assert.equal(sh.up.options[1].next, 'up-again');
+  assert.equal(sh['up-again'].options[1].next, 'call-fixed');
+  assert.equal(sh['call-fixed'].kind, 'stop');
+  assert.deepEqual(Guides.search('הפחת קופץ בגשם').map((g) => g.id)[0], 'rcd');
+  for (const k of Illus.KEYS) assert.match(Illus.render(k), /^<svg[^>]+role="img"/);
+  assert.deepEqual([...FixPrompts.GUIDE_IMAGES].sort(), [...Illus.KEYS].sort());
+  assert.deepEqual(FixPrompts.GUIDE_IDS.filter((x) => x !== 'none').sort(), Guides.GUIDES.map((g) => g.id).sort());
+  (function walk(s2, path) {
+    if (s2.type === 'object') { assert.equal(s2.additionalProperties, false, path); assert.deepEqual([...s2.required].sort(), Object.keys(s2.properties).sort(), path); for (const [k, v] of Object.entries(s2.properties)) walk(v, path + '.' + k); }
+    if (s2.type === 'array') walk(s2.items, path + '[]');
+  })(FixPrompts.GUIDE_SCHEMA, '$');
+  const r = FixPrompts.parseGuide(JSON.stringify({ title: 't', summary: 's', stop_now: false, stop_reason: '', steps: [{ title: 'a', text: 'b', image: 'nope', warning: '' }], call_pro_when: [], related_guide: 'x' }));
+  assert.equal(r.steps[0].image, 'panel-open');
+  assert.equal(r.related_guide, 'none');
 });
 
 console.log(`\n${n} בדיקות עברו`);

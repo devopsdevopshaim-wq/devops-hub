@@ -66,7 +66,7 @@
   function route() {
     var h = location.hash.replace('#', '') || 'diagnose';
     var m = h.match(/^case\/(.+)$/);
-    var view = m ? 'diagnose' : h;
+    var view = m ? 'diagnose' : h.split('/')[0];
     if (!$('#view-' + view)) view = 'diagnose';
     $$('.view').forEach(function (v) { v.hidden = v.dataset.view !== view; });
     $$('.mainnav a').forEach(function (a) { a.classList.toggle('active', a.dataset.view === view); a.setAttribute('aria-current', a.dataset.view === view ? 'page' : 'false'); });
@@ -75,6 +75,7 @@
     if (view === 'design' && window.FixDesign) window.FixDesign.show();
     if (view === 'home' && window.FixHome) window.FixHome.show();
     if (view === 'plan' && window.FixPlan) window.FixPlan.show();
+    if (view === 'help' && window.FixGuides) window.FixGuides.show();
     if (m) openCase(m[1]);
     else if (view === 'diagnose' && !state.busy) showIntake();
   }
