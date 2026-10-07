@@ -357,6 +357,7 @@ textarea { resize: vertical; line-height: 1.45; }
 .lay[aria-pressed="true"] canvas { filter: none; }
 
 .desk { display: grid; gap: 14px; min-width: 0; }
+.desk > * { min-width: 0; }
 .addbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px 10px; }
 .addbar .eyebrow { margin-inline-end: 6px; }
 .add {
@@ -446,6 +447,12 @@ kbd { display: inline-block; min-width: 64px; margin-inline-end: 8px; padding: 2
   .layouts { grid-template-columns: repeat(6, 1fr); }
   .grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
   .motion-stage canvas { max-height: none; width: 100%; }
+  /* בטלפון כל משפחת סגנונות היא שורה שגוללים הצידה, במקום רשימה ארוכה */
+  .srow { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 112px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; scrollbar-width: none; }
+  .srow::-webkit-scrollbar { display: none; }
+  .scard { scroll-snap-align: start; }
+  .sgroup + .sgroup { margin-top: 16px; }
+  .styles, .ai, .batch, .motion { padding: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
