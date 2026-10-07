@@ -28,6 +28,7 @@ const bizProof = () => { if (!set(SHARED)) return ''; const e = Date.now() + 30 
 const CLIENT_SESSION_DAYS = 7;   // capped by the end of the subscription
 const ADMIN_SESSION_DAYS = 0.5;  // the admin signs in again every 12 hours
 const MAX_CLIENTS = 500;
+const SIGNUP_DAYS = 30;   // how long a self-registered client has access, until the admin extends or closes it
 const DEFAULT_MAX_DEVICES = 3;
 const MIN_PASSWORD = 8;
 const TEMP_ADMIN_MIN = 60, TEMP_CLIENT_DAYS = 14;   // how long an emailed initial password works
@@ -148,7 +149,33 @@ function deviceMail(c, news) {
 switch (b.action) {
   // ---------------------------------------------------------------- public
   case 'info':
-    return out({ ok: true, password: true });
+    return out({ ok: true, password: true, signup: !sd.signupClosed });
+
+  // Anyone may open an account: the first (initial) password arrives by email, no step by the admin; the admin sees it in the list (and is told at the first
+  // sign-in) and controls what the client sees afterwards (sites, days, suspension). New accounts see every open site (never the hidden ones)
+  // for SIGNUP_DAYS days. Someone who already has an account just gets an initial password, as with "forgot".
+  case 'signup': {
+    const e = email(b.email), nm = line(b.name, 60);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2) return out({ ok: false, error: 'bad-input' }, 400);
+    if (sd.signupClosed) return out({ ok: false, error: 'signup-closed' }, 403);
+    if (e === ADMIN_EMAIL) return out({ ok: false, error: 'bad-input' }, 400);
+    if (!hit('su-ip', IPK, 3, HOUR) || !hit('su-all', 'all', 60, DAY) || !hit('su-mail', e, 3, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const reply = { ok: true, sent: true };
+    const temp = rndPassword();
+    if (sd.clients[e]) {
+      const a = sd.clients[e], keep = a.pwAt;
+      giveTemp(a, temp, TEMP_CLIENT_DAYS * DAY, 'reset', false); a.pwAt = keep;
+      log('הרשמה של כתובת שכבר רשומה: סיסמה ראשונית נשלחה', e);
+    } else {
+      if (Object.keys(sd.clients).length >= MAX_CLIENTS) return out({ ok: false, error: 'too-many-clients' }, 400);
+      sd.clients[e] = { email: e, name: nm, phone: phone(b.phone), note: 'נרשם בעצמו', sites: ['*'], plan: 'free', createdAt: new Date(now).toISOString(),
+        expiresAt: new Date(now + SIGNUP_DAYS * DAY).toISOString(), active: true, ipLock: false, maxDevices: DEFAULT_MAX_DEVICES, selfSignup: true };
+      giveTemp(sd.clients[e], temp, TEMP_CLIENT_DAYS * DAY, 'admin', true);
+      log('לקוח חדש נרשם בעצמו', e);
+    }
+    return out(reply, 200, mailTo(e, 'SPIDER · ברוכים הבאים, הסיסמה הראשונית שלך',
+      `שלום ${nm},\n\nתודה שנרשמת ל־SPIDER.\nכניסה: ${LOGIN_URL}\nמייל: ${e}\nסיסמה ראשונית: ${temp}\n\nבכניסה הראשונה תבחר סיסמה משלך. הסיסמה הראשונית תקפה ל־${TEMP_CLIENT_DAYS} ימים.\n\nSPIDER · חיים קריספין · 054-4979771\n`));
+  }
 
   case 'health':
     // what the install checks: which kind of cryptography this n8n has, and which address it sees for the caller
@@ -308,7 +335,13 @@ switch (b.action) {
   // ------------------------------------------------------------- admin only
   case 'clients':
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
-    return out({ ok: true, clients: Object.values(sd.clients).map(view), admin: adminView() });
+    return out({ ok: true, clients: Object.values(sd.clients).map(view), admin: adminView(), signup: !sd.signupClosed });
+
+  case 'signup-set':
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    sd.signupClosed = b.open === 'false' || b.open === false;
+    log(sd.signupClosed ? 'הרשמה עצמית נסגרה' : 'הרשמה עצמית נפתחה', ADMIN_EMAIL);
+    return out({ ok: true, signup: !sd.signupClosed });
 
   case 'client-save': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);

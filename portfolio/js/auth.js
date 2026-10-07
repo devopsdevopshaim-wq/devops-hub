@@ -166,6 +166,8 @@
           '<label class="field" id="gate-pw-totp" hidden><span>קוד מאפליקציית האימות</span><input name="totp" class="gate-code" inputmode="numeric" autocomplete="off" maxlength="6" dir="ltr"></label>' +
           '<button class="btn btn-gold" type="submit">כניסה</button>' +
           '<button class="g-btn ghost" type="button" id="gate-forgot">קבלת סיסמה ראשונית למייל</button>' +
+          '<label class="field" id="gate-name" hidden><span>איך קוראים לכם?</span><input name="name" autocomplete="name" maxlength="60"></label>' +
+          '<button class="g-btn ghost" type="button" id="gate-signup" hidden>אין לי חשבון: הרשמה (בלי אישור, הסיסמה מגיעה למייל)</button>' +
         '</form>' +
         '<form class="gate-form" id="gate-chg" novalidate hidden>' +
           '<label class="field"><span>סיסמה חדשה <small>(8 תווים לפחות)</small></span><input name="password" type="password" dir="ltr" autocomplete="new-password" minlength="8" required></label>' +
@@ -272,6 +274,23 @@
         fpw.elements.password.value = ''; fpw.elements.password.focus();
         setTimeout(function () { forgot.disabled = false; }, 30000);
       }).catch(function () { forgot.disabled = false; fail('מערכת הכניסה לא עונה כרגע. נסו שוב בעוד רגע.'); });
+    });
+
+    // opening an account by oneself: name + email, the initial password arrives by email at once
+    var sup = g.querySelector('#gate-signup'), nameF = g.querySelector('#gate-name');
+    if (!needAdmin) api('info').then(function (j) { if (j && j.signup) { sup.hidden = false; } }).catch(function () {});
+    sup.addEventListener('click', function () {
+      if (nameF.hidden) { nameF.hidden = false; fpw.elements.name.focus(); sup.textContent = 'שליחת הרשמה'; return; }
+      var mail = fpw.elements.email.value.trim(), nm = fpw.elements.name.value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { fail('הקלידו את כתובת המייל שלכם.'); fpw.elements.email.focus(); return; }
+      if (nm.length < 2) { fail('הקלידו את השם שלכם.'); fpw.elements.name.focus(); return; }
+      sup.disabled = true;
+      api('signup', { email: mail, name: nm }).then(function (j) {
+        if (!j.ok) { sup.disabled = false; fail(j.error === 'signup-closed' ? 'ההרשמה סגורה כרגע. דברו איתי בוואטסאפ.' : (ERR[j.error] || 'משהו השתבש: ' + j.error)); return; }
+        try { localStorage.setItem('spider-mail', mail); } catch (x) {}
+        note('נרשמתם! שלחתי למייל סיסמה ראשונית. מקלידים אותה בשדה הסיסמה, ובוחרים סיסמה משלכם. כדאי לבדוק גם בספאם.');
+        nameF.hidden = true; sup.hidden = true; fpw.elements.password.value = ''; fpw.elements.password.focus();
+      }).catch(function () { sup.disabled = false; fail('מערכת הכניסה לא עונה כרגע. נסו שוב בעוד רגע.'); });
     });
 
     // choosing one's own password
