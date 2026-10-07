@@ -22,14 +22,66 @@ const MODELS = {
   armchair: 'models/SheenChair.glb',
   damaskChair: 'models/ChairDamaskPurplegold.glb',
   plant: 'models/DiffuseTransmissionPlant.glb',
-  vase: 'models/GlassVaseFlowers.glb'
+  vase: 'models/GlassVaseFlowers.glb',
+  // pieces cut from Benedikt Bitterli's rendering scenes and a Blendswap dining room (credits in assets/CREDITS.md)
+  linenSofa: 'models/sofa_linen.glb',
+  leatherArmchair: 'models/armchair_leather.glb',
+  coffeeTable: 'models/coffee_table.glb',
+  roundTable: 'models/table_round.glb',
+  oakTable: 'models/table_rustic.glb',
+  glassTable: 'models/table_slab.glb',
+  ladderChair: 'models/chair_ladder.glb',
+  shellChair: 'models/chair_shell.glb',
+  tubChair: 'models/chair_tub.glb',
+  bed: 'models/bed_double.glb',
+  nightstand: 'models/nightstand_lamp.glb',
+  wardrobe: 'models/wardrobe.glb',
+  dresser: 'models/dresser_mirror.glb',
+  bookcase: 'models/bookcase_low.glb',
+  floorLamp: 'models/floor_lamp.glb',
+  chandelier: 'models/pendant_dome.glb',
+  fern: 'models/plant_pot.glb',
+  clawTub: 'models/bathtub.glb',
+  doubleVanity: 'models/vanity_double.glb'
 };
-function modelFor(type, styleKey) {
-  if (type === 'sofa3' || type === 'sofa2') return ['industrial', 'classic'].includes(styleKey) ? 'leatherSofa' : 'velvetSofa';
-  if (type === 'armchair') return ['classic', 'boho'].includes(styleKey) ? 'damaskChair' : 'armchair';
-  if (type === 'plant') return 'plant';
-  return null;
+// which real model stands in for a planned piece, by style and size (null keeps the generated one)
+function modelFor(it, styleKey) {
+  const t = it.type, s = styleKey;
+  const W = Math.max(it.w, it.d);
+  const odd = (it.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 2;
+  switch (t) {
+    case 'sofa3': case 'sofa2':
+      return s === 'industrial' || s === 'classic' ? 'leatherSofa' : s === 'boho' ? 'velvetSofa' : 'linenSofa';
+    case 'armchair':
+      return s === 'classic' || s === 'boho' ? 'damaskChair' : s === 'industrial' ? 'leatherArmchair' : 'armchair';
+    case 'plant': return odd ? 'fern' : 'plant';
+    case 'coffeeTable': return W / Math.min(it.w, it.d) < 1.35 ? 'roundTable' : 'coffeeTable';
+    case 'sideTable': return 'roundTable';
+    case 'diningTable': return s === 'modern' || s === 'industrial' ? 'glassTable' : 'oakTable';
+    case 'chair': return s === 'modern' || s === 'industrial' ? 'tubChair' : s === 'classic' || s === 'boho' ? 'ladderChair' : 'shellChair';
+    case 'bedDouble': case 'bedSingle': return 'bed';
+    case 'nightstand': return 'nightstand';
+    case 'wardrobe': return 'wardrobe';
+    case 'dresser': return 'dresser';
+    case 'bookshelf': return it.h <= 1.5 ? 'bookcase' : null;
+    case 'floorLamp': return 'floorLamp';
+    case 'pendant': return s === 'classic' || s === 'boho' ? 'chandelier' : null;
+    case 'bathtub': return W >= 1.5 && (s === 'classic' || s === 'boho' || s === 'japandi') ? 'clawTub' : null;
+    case 'vanity': return W >= 1.5 && !it.small ? 'doubleVanity' : null;
+    default: return null;
+  }
 }
+// wood of the real models recoloured to the style's wood: [saturation, multiply colour]
+const WOOD_TONE = {
+  scandi: [0.35, '#f4ead9'], japandi: [0.45, '#e2d2bd'], modern: [0.25, '#e6e0d8'],
+  industrial: [0.55, '#8f6c52'], classic: [0.8, '#c39468'], boho: [0.65, '#dcb68e']
+};
+// how a real model is fitted to the planned footprint: [width k, depth k, height] (height null = keep proportions)
+const REAL_FIT = {
+  coffeeTable: [1, 1, null], sideTable: [1, 1, null], diningTable: [1, 1, 0.76], chair: [1, 1, null],
+  bedDouble: [1, 1, 0.78], bedSingle: [1, 1, 0.7], nightstand: [1, 1, null], wardrobe: [1, 1, 'h'],
+  dresser: [1, 1, null], bookshelf: [1, 1, 'h'], floorLamp: [1, 1, 1.55], bathtub: [1, 1, 0.62], vanity: [1, 1, null]
+};
 
 const VARIANT = {
   velvetSofa: { scandi: 'GlamVelvetSofa_fabric_gray', japandi: 'GlamVelvetSofa_fabric_champagne', boho: 'GlamVelvetSofa_fabric_champagne', modern: 'GlamVelvetSofa_fabric_navy' },
@@ -854,7 +906,7 @@ export class Tour {
   refreshModels(force) {
     if (!this.plan) return;
     this.plan.items.forEach((it) => {
-      const key = modelFor(it.type, this.st.key);
+      const key = modelFor(it, this.st.key);
       const decor = ['diningTable', 'coffeeTable', 'island'].includes(it.type);
       if (!(key && this.models[key]) && !(decor && this.models.vase)) return;
       const old = this.itemGroups[it.id];
@@ -864,6 +916,33 @@ export class Tour {
     });
     this.collectPickables();
     if (this.selectedItem) this.highlight(this.selectedItem);
+  }
+
+  // a copy of a model's wood material with its texture toned to the style (kept per style)
+  woodTone(mat, styleKey) {
+    const tone = WOOD_TONE[styleKey];
+    const img = mat.map && mat.map.image;
+    if (!tone || !img || !img.width) return mat;
+    const key = 'tone:' + mat.uuid + ':' + styleKey;
+    if (this.mats[key]) return this.mats[key];
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const x = c.getContext('2d');
+    x.filter = `saturate(${tone[0]})`;
+    x.drawImage(img, 0, 0);
+    x.filter = 'none';
+    x.globalCompositeOperation = 'multiply';
+    x.fillStyle = tone[1];
+    x.fillRect(0, 0, c.width, c.height);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = mat.map.wrapS; t.wrapT = mat.map.wrapT;
+    t.flipY = mat.map.flipY; t.repeat.copy(mat.map.repeat); t.offset.copy(mat.map.offset); t.channel = mat.map.channel;
+    t.anisotropy = 4;
+    const m = mat.clone();
+    m.map = t;
+    this.mats[key] = m;
+    return m;
   }
 
   /* ---------- furniture ---------- */
@@ -932,6 +1011,7 @@ export class Tour {
       const src = key && this.models[key];
       if (!src) return false;
       const m = this.fitModel(src, w, d, h);
+      m.traverse((o) => { if (o.isMesh && o.material && /wood|tabletop/i.test(o.material.name)) o.material = this.woodTone(o.material, st.key); });
       const want = VARIANT[key] && VARIANT[key][st.key];
       const vmat = want && this.variants[key] && this.variants[key][want];
       if (vmat) m.traverse((o) => { if (o.isMesh && /fabric/i.test(o.material.name)) o.material = vmat; });
@@ -956,15 +1036,23 @@ export class Tour {
       });
     };
 
-    switch (it.type) {
+    // a real model where one fits the piece, otherwise the generated one below
+    let done = false;
+    const fitK = REAL_FIT[it.type];
+    if (fitK) {
+      const hh = fitK[2] === 'h' ? H : fitK[2];
+      done = real(modelFor(it, st.key), W * fitK[0], D * fitK[1], hh);
+      if (done && it.type === 'diningTable') this.decorOn(g, 0.77, W, D, true);
+    }
+    if (!done) switch (it.type) {
       case 'sofa2': case 'sofa3':
-        if (!real(modelFor(it.type, st.key), W, D + 0.05, 0.84)) sofa(W, D);
+        if (!real(modelFor(it, st.key), W, D + 0.05, 0.84)) sofa(W, D);
         break;
       case 'sofaL': case 'sofaBed':
         sofa(W, D);
         break;
       case 'armchair':
-        if (!real(modelFor(it.type, st.key), W, D - 0.1, 0.8)) sofa(W, D);
+        if (!real(modelFor(it, st.key), W, D - 0.1, 0.8)) sofa(W, D);
         break;
       case 'chair': {
         const frameMat = st.key === 'industrial' || st.key === 'modern' ? metal : wood;
@@ -1038,6 +1126,7 @@ export class Tour {
         break;
       case 'pendant': {
         cyl(0.004, 0.004, this.plan.wallH - it.z - H, 0, H, 0, black, 6);
+        if (real(modelFor(it, st.key), 0.62, 0.62, H)) break;
         const shadeMat = this.mat('pendant' + st.key, () => new THREE.MeshStandardMaterial({ color: st.metal, roughness: 0.35, metalness: st.key === 'classic' ? 0.9 : 0.2, side: THREE.DoubleSide }));
         const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.28, H, 40, 1, true), shadeMat);
         shade.position.y = H / 2;
@@ -1048,7 +1137,7 @@ export class Tour {
         break;
       }
       case 'plant':
-        if (!real('plant', W * 1.25, D * 1.25, Math.max(0.7, H * 0.75))) {
+        if (!real(modelFor(it, st.key), W * 1.25, D * 1.25, Math.max(0.7, H * 0.75))) {
           cyl(W * 0.38, W * 0.3, 0.38, 0, 0, 0, this.plain('#b9744a', 0.8));
           const leaf = this.plain('#4d6b3c', 0.7);
           for (let i = 0; i < 7; i++) {

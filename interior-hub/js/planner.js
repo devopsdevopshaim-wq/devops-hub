@@ -35,9 +35,11 @@
 
   function normalize(q) {
     const n = (v, d) => (Number.isFinite(+v) && v !== '' ? +v : d);
+    const list = cleanRooms(q.roomList);
     return {
-      area: clamp(n(q.area, 100), 35, 260),
-      rooms: clamp(Math.round(n(q.rooms, 4)), 2, 7),
+      area: clamp(n(q.area, 100), 30, 400),
+      rooms: list ? list.length + 1 : clamp(Math.round(n(q.rooms, 4)), 2, 8),
+      roomList: list,
       adults: clamp(Math.round(n(q.adults, 2)), 1, 6),
       kids: clamp(Math.round(n(q.kids, 2)), 0, 8),
       style: STYLES[q.style] ? q.style : 'scandi',
@@ -58,8 +60,31 @@
     };
   }
 
+  // rooms the user listed one by one: [{ kind, area, mamad }]; living and kitchen take the rest
+  const ROOM_KINDS = ['master', 'kid', 'adult', 'office', 'guest'];
+  function cleanRooms(list) {
+    if (!Array.isArray(list)) return null;
+    const out = list.filter((r) => r && ROOM_KINDS.includes(r.kind)).slice(0, 7).map((r) => ({
+      kind: r.kind,
+      area: Number.isFinite(+r.area) && +r.area > 0 ? clamp(+r.area, 6, 45) : null,
+      mamad: !!r.mamad
+    }));
+    if (!out.length) return null;
+    if (!out.some((r) => r.kind === 'master')) out[0].kind = 'master';
+    let seen = false;
+    out.forEach((r) => { if (r.mamad) { if (seen) r.mamad = false; seen = true; } });
+    return out;
+  }
+  // a room's width along the bedroom strip for a given strip depth: from its target area when the user set one
+  function unitW(u, Dr, prog) {
+    if (u.kind === 'masterUnit') return unitW(prog.master, Dr, prog) + (prog.ensuite ? prog.ensuite.w : 0);
+    if (u.area) return clamp(u.area / Dr, 2.3, 8);
+    return u.w;
+  }
+
   /* ---------- program: which rooms the household needs ---------- */
   function program(q) {
+    if (q.roomList) return programFromList(q);
     const bedrooms = Math.max(1, q.rooms - 1);
     const notes = [];
     const units = [];
@@ -100,6 +125,40 @@
     return { master, ensuite, others, bath, wc, officeCorner: q.office && !officeDone, notes };
   }
 
+  function programFromList(q) {
+    const list = q.roomList;
+    const notes = [];
+    const queue = [];
+    for (let i = 0; i < Math.max(0, q.adults - 2); i++) queue.push('adult');
+    for (let i = 0; i < q.kids; i++) queue.push('kid');
+    const mi = list.findIndex((r) => r.kind === 'master');
+    const m = list[mi];
+    const master = { kind: 'master', w: 3.5, area: m.area, sleepers: Math.min(2, q.adults), mamad: m.mamad };
+    const totalRooms = list.reduce((a, r) => a + (r.area || 11), 0);
+    const ensuite = list.length >= 3 && q.area >= 90 ? { kind: 'ensuite', w: 1.9 } : null;
+    const others = [];
+    list.forEach((r, i) => {
+      if (i === mi) return;
+      const u = { kind: r.kind, w: r.kind === 'office' || r.kind === 'guest' ? 2.9 : 3.1, area: r.area, mamad: r.mamad };
+      if (r.kind === 'kid' || r.kind === 'adult') {
+        const want = r.kind;
+        const take = [];
+        for (let k = queue.length - 1; k >= 0 && take.length < 2; k--) if (queue[k] === want) take.push(queue.splice(k, 1)[0]);
+        if (!take.length && queue.length) take.push(queue.shift());
+        u.sleepers = Math.max(1, take.length);
+      }
+      others.push(u);
+    });
+    if (queue.length) notes.push('ברשימת החדרים אין מקום שינה לכולם (עד 2 בחדר). הוסיפו חדר או ספה נפתחת.');
+    if (q.mamad && !list.some((r) => r.mamad) && others.length) others[others.length - 1].mamad = true;
+    const left = q.area - totalRooms;
+    if (left < q.area * 0.32) notes.push(`החדרים שהגדרתם תופסים ${Math.round(totalRooms)} מ״ר, ונשאר מעט שטח לסלון ולמטבח. אם אפשר, הקטינו חדר אחד.`);
+    const bath = { kind: 'bath', w: 2.3 };
+    const wc = list.length >= 4 || q.area >= 125 ? { kind: 'wc', w: 1.4 } : null;
+    const officeCorner = q.office && !list.some((r) => r.kind === 'office');
+    return { master, ensuite, others, bath, wc, officeCorner, notes, custom: true };
+  }
+
   /* ---------- footprint search ----------
      Rooms line the corridor on its far side (the "bottom" strip). Rooms that do not
      fit there go into a block on the near side of the corridor, next to the living
@@ -126,7 +185,8 @@
     const Drs = q.area < 60 ? [Dr0, 3.0, 3.6] : [Dr0, 3.3, 3.6, 3.9, 3.1];
     corrs.forEach((corr) => Drs.forEach((Dr, di) => {
       if (di > 0 && Dr === Dr0) return;
-      for (let W = 5.5; W <= 26; W += 0.1) {
+      units.forEach((u) => { u.w = unitW(u, Dr, prog); });
+      for (let W = 5.5; W <= 28; W += 0.1) {
         const D = q.area / W;
         const Dp = D - Dr - corr;
         if (Dp < 3.4) continue;
@@ -137,7 +197,7 @@
           if (used + w <= W + 1e-6) { bottom.push(u); used += w; } else top.push(u);
         });
         if (!bottom.includes(prog.bath)) continue;
-        const topW = top.map((u) => Math.max(2.7, (u.w * Dr) / Dp, u.mamad ? 9.2 / Dp : 0));
+        const topW = top.map((u) => Math.max(u.area ? 2.3 : 2.7, (u.w * Dr) / Dp, u.mamad ? 9.2 / Dp : 0));
         const colW = topW.reduce((a, b) => a + b, 0);
         const Wp = W - colW;
         if (Wp < 5.4) continue;
@@ -145,13 +205,18 @@
         if (!pm) continue;
         const leftover = W - used;
         const publicArea = Wp * Dp;
-        let score = Math.abs(W / D - 1.45) * 0.8 + (leftover / W) * 5 + top.length * 0.25 + pm.cost + (di > 0 ? 0.4 : 0) + (corr ? 0 : 1.2);
+        let score = Math.abs(W / D - 1.45) * 0.8 + (leftover / W) * (prog.custom ? 16 : 5) + top.length * 0.25 + pm.cost + (di > 0 ? 0.4 : 0) + (corr ? 0 : 1.2);
         if (Dp < 4.4) score += (4.4 - Dp) * 1.2;
+        // rooms the user sized: every square metre beyond the request counts against the layout
+        if (prog.custom) top.forEach((u, i) => { if (u.area) score += Math.max(0, topW[i] * Dp - u.area) / 3; });
         if (publicArea < q.area * 0.3) score += (q.area * 0.3 - publicArea) / 8;
         if (Wp < 7.5) score += (7.5 - Wp) * 0.3;
         if (!best || score < best.score) best = { W, D, Dp, Dr, corr, bottom, top, topW, colW, Wp, used, score, mode: pm.mode };
       }
     }));
+    // leave the units sized for the chosen strip depth
+    if (best) units.forEach((u) => { u.w = unitW(u, best.Dr, prog); });
+    if (best) prog.master.w = unitW(prog.master, best.Dr, prog);
     return best;
   }
 
@@ -190,10 +255,24 @@
   /* ---------- main ---------- */
   function planHome(input) {
     const q = normalize(input || {});
-    const prog = program(q);
-    const fp = footprint(q, prog);
+    let prog = program(q);
+    let fp = footprint(q, prog);
+    // rooms the user sized that don't fit: shrink them a little at a time, then say so
+    if (!fp && prog.custom) {
+      const sized = [prog.master].concat(prog.others).filter((u) => u.area);
+      const orig = sized.map((u) => u.area);
+      for (let k = 0.92; !fp && k >= 0.6; k -= 0.08) {
+        sized.forEach((u, i) => { u.area = Math.max(6, orig[i] * k); });
+        fp = footprint(q, prog);
+        if (fp) prog.notes.push(`החדרים שהגדרתם לא נכנסו בשטח הזה, ולכן הוקטנו בכ-${Math.round((1 - k) * 100)}%. כדי לשמור על הגודל המלא, הגדילו את שטח הבית.`);
+      }
+      if (!fp && prog.ensuite) { prog.ensuite = null; fp = footprint(q, prog); if (fp) prog.notes.push('לא נשאר מקום למקלחת הורים, ולכן היא לא תוכננה.'); }
+    }
     if (!fp) {
-      return { error: 'השטח קטן מדי למספר החדרים שנבחר. הגדילו את השטח או הורידו חדר.' , q };
+      const msg = prog.custom
+        ? 'הבית קטן מדי לחדרים שהגדרתם. הגדילו את השטח, הקטינו חדרים או הורידו חדר.'
+        : 'השטח קטן מדי למספר החדרים שנבחר. הגדילו את השטח או הורידו חדר.';
+      return { error: msg, q };
     }
     const { W, D, Dp, Dr, Wp } = fp;
     const corr = fp.corr;
@@ -237,7 +316,10 @@
       const bi = expand.findIndex((u) => u.kind === 'bath');
       expand.splice(bi + 1, 0, utility);
     }
-    const flexible = expand.filter((u) => ['master', 'kid', 'adult', 'office', 'guest'].includes(u.kind));
+    // leftover strip width goes to rooms the user didn't size, so sized rooms stay as asked
+    const bedKinds = ['master', 'kid', 'adult', 'office', 'guest'];
+    const unsized = expand.filter((u) => bedKinds.includes(u.kind) && !u.area);
+    const flexible = unsized.length ? unsized : expand.filter((u) => bedKinds.includes(u.kind));
     const flexSum = flexible.reduce((a, u) => a + u.w, 0) || 1;
     const widths = expand.map((u) => u.w + (flexible.includes(u) ? extra * (u.w / flexSum) : 0));
     if (!flexible.length) widths[widths.length - 1] += extra;

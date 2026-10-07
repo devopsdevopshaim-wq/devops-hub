@@ -54,21 +54,25 @@
                 <label><input type="radio" name="home" value="house" id="f-home-house"><span>בית פרטי עם חצר</span></label>
               </div>
             </div>
-            <div class="field">
-              <label for="f-area">שטח הבית <output id="o-area" for="f-area">100</output> מ״ר</label>
-              <input type="range" id="f-area" name="area" min="35" max="260" step="1" value="100">
-            </div>
-            <div class="field">
-              <span class="label" id="l-rooms">מספר חדרים (כולל סלון)</span>
-              <div class="seg" role="radiogroup" aria-labelledby="l-rooms" id="f-rooms">
-                <label><input type="radio" name="rooms" value="2" id="f-rooms-2"><span>2</span></label>
-                <label><input type="radio" name="rooms" value="3" id="f-rooms-3"><span>3</span></label>
-                <label><input type="radio" name="rooms" value="4" id="f-rooms-4" checked><span>4</span></label>
-                <label><input type="radio" name="rooms" value="5" id="f-rooms-5"><span>5</span></label>
-                <label><input type="radio" name="rooms" value="6" id="f-rooms-6"><span>6</span></label>
-                <label><input type="radio" name="rooms" value="7" id="f-rooms-7"><span>7</span></label>
+            <div class="field-row">
+              <div class="field">
+                <label for="f-area">שטח הבית</label>
+                <div class="num-input"><input type="number" id="f-area" name="area" min="30" max="400" step="1" value="100" inputmode="numeric"><span class="unit">מ״ר</span></div>
+              </div>
+              <div class="field">
+                <label for="f-rooms">חדרים (כולל סלון)</label>
+                <div class="stepper"><button type="button" data-step="-1" aria-label="פחות חדרים">−</button><input type="number" id="f-rooms" name="rooms" min="2" max="8" value="4" inputmode="numeric"><button type="button" data-step="1" aria-label="יותר חדרים">+</button></div>
               </div>
             </div>
+            <p class="field-hint">כותבים כל גודל: מ-30 עד 400 מ״ר, ו-2 עד 8 חדרים.</p>
+            <fieldset class="roomlist" id="roomlist-box">
+              <label class="check roomlist-toggle"><input type="checkbox" id="f-custom"><span>אני רוצה לקבוע כל חדר וגודל</span></label>
+              <div id="roomlist-body" hidden>
+                <ol class="roomlist-rows" id="f-roomlist"></ol>
+                <button type="button" class="link-btn" id="f-room-add">+ הוספת חדר</button>
+                <p class="field-hint" id="roomlist-note"></p>
+              </div>
+            </fieldset>
             <div class="field-row">
               <div class="field">
                 <label for="f-adults">מבוגרים</label>

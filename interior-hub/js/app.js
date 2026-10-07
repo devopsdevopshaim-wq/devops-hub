@@ -11,7 +11,7 @@
   const cm = (m) => Math.round(m * 100);
   const STORE_KEY = 'matar.brief.v1';
 
-  const DEFAULTS = { home: 'apartment', area: 100, rooms: 4, adults: 2, kids: 2, style: 'scandi', budget: 'mid', region: 'center', seats: 'auto', kitchen: 'auto', mamad: true, balcony: true, office: false, yard: 250, gardenStyle: 'med', pool: true, water: true, pergola: true, grill: true };
+  const DEFAULTS = { home: 'apartment', area: 100, rooms: 4, custom: false, roomList: null, adults: 2, kids: 2, style: 'scandi', budget: 'mid', region: 'center', seats: 'auto', kitchen: 'auto', mamad: true, balcony: true, office: false, yard: 250, gardenStyle: 'med', pool: true, water: true, pergola: true, grill: true };
   let state = Object.assign({}, DEFAULTS);
   let plan = null;
   let tour = null;
@@ -45,11 +45,42 @@
     writeForm();
 
     const form = $('#brief');
+    $('#f-custom').addEventListener('change', (e) => {
+      if (e.target.checked && !state.roomList) state.roomList = defaultRoomList();
+      state.custom = e.target.checked;
+      renderRoomRows();
+    });
+    $('#f-room-add').addEventListener('click', () => {
+      const list = readRoomRows();
+      if (list.length >= 7) return;
+      list.push({ kind: list.some((r) => r.kind === 'kid') ? 'kid' : 'adult', area: null, mamad: false });
+      state.roomList = list;
+      renderRoomRows();
+      onForm();
+      const rows = $$('#f-roomlist .room-row');
+      rows[rows.length - 1].querySelector('select').focus();
+    });
+    $('#f-roomlist').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-remove]');
+      if (!b) return;
+      const list = readRoomRows();
+      list.splice(+b.dataset.remove, 1);
+      state.roomList = list;
+      renderRoomRows();
+      onForm();
+    });
+    // typed numbers are tidied when the field is left, not while typing
+    ['#f-area', '#f-rooms'].forEach((sel) => $(sel).addEventListener('change', (e) => {
+      const el = e.target, v = Math.round(+el.value);
+      if (!Number.isFinite(v) || el.value === '') el.value = sel === '#f-area' ? state.area : state.rooms;
+      else el.value = Math.max(+el.min, Math.min(+el.max, v));
+    }));
     form.addEventListener('input', onForm);
     form.addEventListener('change', onForm);
     form.addEventListener('submit', (e) => e.preventDefault());
     $$('.stepper button', form).forEach((b) => b.addEventListener('click', () => {
       const inp = b.parentElement.querySelector('input');
+      if (inp.disabled) return;
       const v = Math.max(+inp.min, Math.min(+inp.max, (+inp.value || 0) + +b.dataset.step));
       inp.value = v;
       onForm();
@@ -57,8 +88,9 @@
   }
   function writeForm() {
     $('#f-area').value = state.area;
-    $('#o-area').textContent = state.area;
-    const r = $(`#f-rooms-${state.rooms}`); if (r) r.checked = true;
+    $('#f-rooms').value = state.custom && state.roomList ? state.roomList.length + 1 : state.rooms;
+    $('#f-custom').checked = !!state.custom;
+    renderRoomRows();
     $('#f-adults').value = state.adults;
     $('#f-kids').value = state.kids;
     const s = $(`#f-style-${state.style}`); if (s) s.checked = true;
@@ -82,13 +114,59 @@
     $('#garden-fields').hidden = !house;
     $('#c-balcony').hidden = house;
   }
+  /* ---------- the user's own rooms: type and size for each ---------- */
+  const ROOM_KIND_NAMES = { master: 'חדר שינה הורים', kid: 'חדר ילדים', adult: 'חדר שינה', office: 'חדר עבודה', guest: 'חדר אורחים' };
+  function defaultRoomList() {
+    // start from the rooms the current plan already has, with their sizes
+    const list = [];
+    if (plan) plan.rooms.filter((r) => ROOM_KIND_NAMES[r.kind]).forEach((r) => list.push({ kind: r.kind, area: Math.round(r.w * r.d), mamad: !!r.mamad }));
+    if (!list.length) { list.push({ kind: 'master', area: 13 }); for (let i = 1; i < state.rooms - 1; i++) list.push({ kind: 'kid', area: 10 }); }
+    list.sort((a, b) => (a.kind === 'master' ? -1 : b.kind === 'master' ? 1 : 0));
+    return list;
+  }
+  function renderRoomRows() {
+    const list = state.roomList || [];
+    $('#roomlist-body').hidden = !state.custom;
+    $('#f-rooms').disabled = !!state.custom;
+    $('#f-roomlist').innerHTML = list.map((r, i) => `<li class="room-row" data-i="${i}">
+        <select data-k="kind" aria-label="סוג החדר">${Object.entries(ROOM_KIND_NAMES).map(([k, n]) => `<option value="${k}"${k === r.kind ? ' selected' : ''}>${n}</option>`).join('')}</select>
+        <div class="num-input sm"><input type="number" data-k="area" min="6" max="45" step="0.5" inputmode="decimal" placeholder="אוטו׳" value="${r.area || ''}" aria-label="גודל החדר במ״ר"><span class="unit">מ״ר</span></div>
+        <label class="check sm"><input type="checkbox" data-k="mamad"${r.mamad ? ' checked' : ''}><span>ממ״ד</span></label>
+        <button type="button" class="row-x" data-remove="${i}" aria-label="הסרת ${esc(ROOM_KIND_NAMES[r.kind])}"${list.length <= 1 ? ' disabled' : ''}>×</button>
+      </li>`).join('');
+    $('#f-room-add').disabled = list.length >= 7;
+    updateRoomNote();
+  }
+  function readRoomRows() {
+    return $$('#f-roomlist .room-row').map((li) => ({
+      kind: li.querySelector('[data-k=kind]').value,
+      area: li.querySelector('[data-k=area]').value === '' ? null : +li.querySelector('[data-k=area]').value,
+      mamad: li.querySelector('[data-k=mamad]').checked
+    }));
+  }
+  function updateRoomNote() {
+    const note = $('#roomlist-note');
+    if (!note) return;
+    if (!state.custom || !state.roomList) { note.textContent = ''; return; }
+    const sized = state.roomList.filter((r) => r.area);
+    const sum = sized.reduce((a, r) => a + r.area, 0);
+    const rest = state.area - sum;
+    note.textContent = sized.length
+      ? `החדרים שקבעתם: ${Math.round(sum)} מ״ר. לסלון, מטבח, רחצה ומסדרון נשארים כ-${Math.max(0, Math.round(rest))} מ״ר${rest < state.area * 0.4 ? ' (צפוף; כדאי להקטין חדר)' : ''}.`
+      : 'חדר בלי גודל מקבל גודל מומלץ אוטומטית.';
+  }
+
   let timer = null;
   function onForm() {
     const f = $('#brief');
     const val = (n) => { const el = f.querySelector(`[name="${n}"]:checked`); return el ? el.value : null; };
+    const custom = $('#f-custom').checked;
+    const roomList = custom ? readRoomRows() : state.roomList;
     state = {
-      area: +$('#f-area').value,
-      rooms: +val('rooms'),
+      area: Math.max(30, Math.min(400, +$('#f-area').value || state.area)),
+      rooms: custom && roomList ? roomList.length + 1 : Math.max(2, Math.min(8, Math.round(+$('#f-rooms').value) || state.rooms)),
+      custom,
+      roomList,
       adults: Math.max(1, Math.min(6, +$('#f-adults').value || 1)),
       kids: Math.max(0, Math.min(8, +$('#f-kids').value || 0)),
       style: val('style') || 'scandi',
@@ -107,8 +185,11 @@
       pergola: $('#f-pergola').checked,
       grill: $('#f-grill').checked
     };
-    $('#o-area').textContent = state.area;
     $('#o-yard').textContent = state.yard;
+    if (custom) $('#f-rooms').value = state.rooms;
+    $('#f-rooms').disabled = custom;
+    $('#roomlist-body').hidden = !custom;
+    updateRoomNote();
     syncHomeFields();
     $('#s-region').value = state.region;
     userEdited = true;
@@ -119,7 +200,7 @@
 
   /* ---------- run the planner ---------- */
   function run() {
-    const p = IH.planHome(state);
+    const p = IH.planHome(Object.assign({}, state, { roomList: state.custom ? state.roomList : null }));
     if (p.error) {
       $('#plan-title').textContent = 'צריך עוד קצת שטח';
       $('#plan-lede').textContent = p.error;

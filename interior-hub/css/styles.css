@@ -739,3 +739,23 @@ body.tour-full { overflow: hidden; }
 .tour.is-look .tour-canvas { cursor: pointer; }
 .tour-fallback .btn { margin-inline-start: 8px; }
 .err-bar { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-weight: 600; }
+
+/* ---------- typed sizes and the user's own rooms ---------- */
+.num-input { display: flex; align-items: center; border: 1px solid var(--line); border-radius: var(--radius); background: var(--raised); overflow: hidden; }
+.num-input:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+.num-input input { border: 0; outline: 0; min-width: 0; width: 100%; font: 500 1.15rem var(--mono); padding: 7px 10px; background: transparent; -moz-appearance: textfield; text-align: center; }
+.num-input input::-webkit-inner-spin-button, .num-input input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.num-input .unit { padding-inline: 10px; color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+.num-input.sm input { font-size: 0.95rem; padding: 5px 6px; }
+.stepper input:disabled { color: var(--muted); }
+.field-hint { font-size: 0.8rem; color: var(--muted); margin-top: -6px; }
+.roomlist { border: 1px dashed var(--line); border-radius: var(--radius); padding: 10px 12px; margin: 0; display: grid; gap: 10px; }
+.roomlist-toggle { font-weight: 600; }
+.roomlist-rows { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 6px; counter-reset: room; }
+.room-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto auto; gap: 6px; align-items: center; }
+.room-row select { min-height: 36px; padding: 5px 8px; font-size: 0.9rem; }
+.check.sm { font-size: 0.82rem; gap: 4px; }
+.check.sm input { width: 15px; height: 15px; }
+.row-x { border: 0; background: none; color: var(--muted); font-size: 1.25rem; line-height: 1; padding: 4px 6px; border-radius: 4px; }
+.row-x:hover:not(:disabled) { color: var(--warn); background: var(--warn-soft); }
+.row-x:disabled { opacity: 0.3; }
