@@ -106,7 +106,7 @@
       if (cancelled) return Promise.reject(stopErr());
       /* שירות חינמי: לא מחכים לו יותר מדקה לניסיון. "עצירה" מנתקת את הבקשה מיד */
       var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      var t = ctl ? setTimeout(function () { ctl.abort(); }, 70000) : 0;
+      var t = ctl ? setTimeout(function () { ctl.abort(); }, 55000) : 0;
       current = ctl;
       return fetch(url(s), { signal: ctl ? ctl.signal : undefined }).then(function (r) {
         clearTimeout(t);
@@ -122,7 +122,7 @@
     });
   }
 
-  var cancelled = false, current = null;
+  var cancelled = false, current = null, total = { at: 0, of: 0, made: 0 };
   function stopErr() { return Object.assign(new Error('הציור נעצר.'), { stopped: true }); }
   function cancel() { cancelled = true; if (current) { try { current.abort(); } catch (e) { /* כבר נעצר */ } } }
 
@@ -165,6 +165,7 @@
 
   function run(opts, status) {
     cancelled = false;
+    onItem = opts.onItem || null;
     var style = LOOK[opts.style] ? opts.style : 'superhero';
     var seed = Math.floor(Math.random() * 1e8);
     var ids = opts.mode === 'scene' ? opts.ids.slice(0, 8) : opts.ids.slice();
@@ -177,8 +178,13 @@
     });
   }
 
+  var onItem = null;
   function save(blob, name, origin) {
-    return A.addAiResult(blob, name, origin).then(function (m) { A.saveMeta(); return m; });
+    return A.addAiResult(blob, name, origin).then(function (m) {
+      A.saveMeta();
+      if (onItem) { try { onItem(m, blob); } catch (e) { /* תצוגה בלבד */ } }
+      return m;
+    });
   }
 
   function characters(opts, ids, people, style, seed, status) {
@@ -186,7 +192,7 @@
     return ids.reduce(function (p, id, i) {
       return p.then(function () {
         if (cancelled) throw stopErr();
-        if (!made.length && failed >= 1) throw new Error('שירות הציור החינמי לא מגיב כרגע. נסו שוב בעוד כמה דקות, או לחצו על "בדיקת מערכת".');
+        if (!made.length && failed >= 2) throw new Error('שירות הציור החינמי לא מגיב כרגע. נסו שוב בעוד כמה דקות, או לחצו על "בדיקת מערכת".');
         status('מצייר דמות ' + (i + 1) + ' מתוך ' + ids.length + '…');
         var who = people[i] ? [people[i]] : [];
         var sc = 'portrait of the character in a heroic, expressive pose' + (opts.story ? ', ' + opts.story : '');
@@ -220,11 +226,13 @@
       return p.then(function () {
         if (cancelled) throw stopErr();
         /* אם הפאנל הראשון נכשל, השירות לא זמין: עוצרים במקום לחכות דקות */
-        if (!made.length && failed >= 1) throw new Error('שירות הציור החינמי לא מגיב כרגע. נסו שוב בעוד כמה דקות, או לחצו על "בדיקת מערכת".');
-        status(label + 'מצייר פאנל ' + (i + 1) + ' מתוך ' + panels.length + '… (עד דקה לפאנל)');
+        if (!made.length && failed >= 2 && !total.made) throw new Error('שירות הציור החינמי לא מגיב כרגע. נסו שוב בעוד כמה דקות, או לחצו על "בדיקת מערכת".');
+        total.at++;
+        status(label + 'מצייר פאנל ' + total.at + ' מתוך ' + total.of + '…');
         var b = PG.bbox(polys[i]);
         return paint(prompt(style, panel.scene || '', who(i)), b.w, b.h, seed + i).then(function (blob) {
-          return save(blob, (pg.title.text || 'קומיקס') + ' · פאנל ' + (i + 1), origin).then(function (m) {
+          total.made++;
+          return save(blob, (pg.title.text || 'קומיקס') + ' · פאנל ' + total.at, origin).then(function (m) {
             pg.panels[i].img = m.id;
             pg.panels[i].style = 'original';
             pg.panels[i].params = { sat: 100, contrast: 0 };
@@ -243,6 +251,7 @@
 
   function page(opts, ids, people, style, seed, status) {
     var n = Math.min(6, Math.max(1, parseInt(opts.panels, 10) || 5));
+    total = { at: 0, of: n, made: 0 };
     status('כותב תסריט לעמוד…');
     return script(people, opts.story, opts.title, n).then(function (sc) {
       var panels = sc.panels.slice(0, n);
@@ -267,6 +276,7 @@
       last.ids.unshift(prev.ids.pop()); last.people.unshift(prev.people.pop());
     }
     var pages = [], items = [], failed = 0;
+    total = { at: 0, of: ids.length, made: 0 };
     return chunks.reduce(function (p, ch, k) {
       return p.then(function () {
         if (cancelled) throw stopErr();

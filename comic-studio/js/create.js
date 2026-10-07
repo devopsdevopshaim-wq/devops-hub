@@ -8,7 +8,7 @@
   var API = 'https://haimkripisn.app.n8n.cloud/webhook/comic-draw';
   var SEND_MAX = 1024;          /* הצד הארוך של תמונה שנשלחת לציור */
   var TIMEOUT = 180000;
-  var KEY = 'comic-create-v2';
+  var KEY = 'comic-create-v3';
 
   var STYLES = [
     { id: 'superhero', name: 'גיבורי-על', desc: 'קומיקס אמריקאי מודרני, דיו נועז וצבעים חזקים', c: ['#1d4ed8', '#ef4444', '#facc15'] },
@@ -30,11 +30,17 @@
   var st = load();
   var picked = [];        /* התמונות שנכללות ביצירה */
   var server = null;      /* { gemini, openai, left } */
-  var busy = false, inflight = null, cleared = false;
+  var busy = false, inflight = null, cleared = false, runDrawn = 0;
 
   function load() {
-    var d = { mode: 'page', style: 'superhero', provider: 'free', aspect: 'portrait', panels: '5', text: 'he' };
-    try { var s = JSON.parse(localStorage.getItem(KEY) || '{}'); for (var k in s) d[k] = s[k]; } catch (e) { /* פרטי */ }
+    var d = { mode: 'page', style: 'superhero', provider: 'best', aspect: 'portrait', panels: '5', text: 'he' };
+    try {
+      /* גרסה קודמת שמרה "חינמי" כברירת מחדל: שומרים את שאר הבחירות, והמודל עובר ל"הכי טוב שזמין" */
+      var old = localStorage.getItem(KEY) ? null : JSON.parse(localStorage.getItem('comic-create-v2') || 'null');
+      if (old) delete old.provider;
+      var s = old || JSON.parse(localStorage.getItem(KEY) || '{}');
+      for (var k in s) d[k] = s[k];
+    } catch (e) { /* פרטי */ }
     return d;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* פרטי */ } }
@@ -81,7 +87,7 @@
         server = j;
         var on = [j.gemini && 'Gemini', j.openai && 'OpenAI'].filter(Boolean);
         box.className = 'server ok';
-        box.textContent = 'מצב חינמי פעיל' + (on.length ? ' · מחובר גם ' + on.join(' + ') + ' (בתשלום)' : '');
+        box.textContent = on.length ? on.join(' + ') + ' מחובר: ציור מקצועי מהתמונות' : 'מצב חינמי פעיל · Gemini עוד לא מחובר (צריך מפתח עם חיוב)';
       } else {
         server = null;
         box.className = 'server ok';
@@ -111,7 +117,14 @@
   }
 
   /* כמה תמונות אפשר לבחור: דמויות וספר קומיקס בלי הגבלה מעשית; בסצנה אחת המודלים מאבדים פנים מעבר ל-6–8 אנשים */
-  function free() { return $('c-provider').value === 'free'; }
+  /* "הכי טוב שזמין": Gemini או OpenAI כשהשרת מחובר אליהם, אחרת המצב החינמי */
+  function paidReady() { return Boolean(server && (server.gemini || server.openai)); }
+  function provider() {
+    var v = $('c-provider').value;
+    if (v === 'best') return paidReady() ? 'auto' : 'free';
+    return v;
+  }
+  function free() { return provider() === 'free'; }
   function limit() { return st.mode === 'scene' ? (free() ? 8 : 6) : 300; }
 
   function renderPhotos() {
@@ -122,8 +135,7 @@
     picked = picked.filter(function (id) { return A.imageById(id); });
     if (!picked.length && !cleared) picked = S.sel.slice(0, limit());
     cleared = false;
-    $('create-photos-hint').textContent = picked.length + ' נבחרו · ' + (st.mode === 'page' ? (picked.length > 4 ? 'ספר קומיקס: כל תמונה פאנל, 6 בעמוד' : 'עד 4 תמונות: עמוד אחד לפי הסיפור; יותר: ספר קומיקס')
-      : st.mode === 'scene' ? 'עד ' + limit() + ' אנשים בסצנה' : 'כל תמונה תצויר כדמות');
+    hint();
     if (!ids.length) {
       var p = el('p', 'muted small', 'אין עדיין תמונות. ');
       var a = el('button', 'btn tiny', 'להעלאת תמונות');
@@ -136,6 +148,7 @@
       var m = A.imageById(id);
       var b = el('button', 'cphoto');
       b.type = 'button';
+      b.dataset.id = id;
       var i = picked.indexOf(id);
       b.setAttribute('aria-pressed', String(i >= 0));
       b.setAttribute('aria-label', m.name);
@@ -147,11 +160,28 @@
         if (k >= 0) picked.splice(k, 1);
         else if (picked.length >= limit()) { A.toast('בסצנה אחת אפשר עד ' + limit() + ' אנשים. לעוד אנשים בחרו "עמוד קומיקס" (ספר קומיקס).'); return; }
         else picked.push(id);
-        renderPhotos();
+        markPhotos();
       });
       box.appendChild(b);
     });
     updateGo();
+  }
+
+  /* עדכון סימונים בלבד, בלי לבנות מחדש מאות תמונות */
+  function markPhotos() {
+    document.querySelectorAll('#create-photos .cphoto').forEach(function (b) {
+      var i = picked.indexOf(b.dataset.id), num = b.querySelector('.num');
+      b.setAttribute('aria-pressed', String(i >= 0));
+      if (i >= 0 && !num) { num = el('span', 'num'); b.appendChild(num); }
+      if (num) { if (i >= 0) num.textContent = String(i + 1); else num.remove(); }
+    });
+    hint();
+    updateGo();
+  }
+
+  function hint() {
+    $('create-photos-hint').textContent = picked.length + ' נבחרו · ' + (st.mode === 'page' ? (picked.length > 4 ? 'ספר קומיקס: כל תמונה פאנל, 6 בעמוד' : 'עד 4 תמונות: עמוד אחד לפי הסיפור; יותר: ספר קומיקס')
+      : st.mode === 'scene' ? 'עד ' + limit() + ' אנשים בסצנה' : 'כל תמונה תצויר כדמות');
   }
 
   /* ---------- טופס ---------- */
@@ -222,7 +252,7 @@
   function request(ids) {
     return Promise.all(ids.map(prepare)).then(function (images) {
       return {
-        mode: st.mode, provider: $('c-provider').value, style: st.style, images: images,
+        mode: st.mode, provider: provider(), style: st.style, images: images,
         story: $('c-story').value.trim(), title: $('c-title').value.trim(), prompt: $('c-extra').value.trim(),
         panels: $('c-panels').value, text: $('c-text').value, aspect: $('c-aspect').value
       };
@@ -244,6 +274,7 @@
       var name = (st.mode === 'page' ? (r.body.title || 'עמוד קומיקס') : st.mode === 'scene' ? 'סצנה משולבת' : (A.imageById(ids[0]) || {}).name || 'דמות') + ' · ' + style.name;
       return A.addAiResult(blob, name, ids[0]).then(function (m) {
         A.saveMeta();
+        runDrawn++;
         addResult(m, blob, j.provider, ids);
         return m;
       });
@@ -254,12 +285,16 @@
     if (busy) return;
     var ids = picked.slice();
     busy = true;
+    runDrawn = 0;
     updateGo();
     $('c-empty').hidden = true;
     /* בטלפון התוצאות נמצאות מתחת לטופס: גוללים אליהן כדי לראות את ההתקדמות */
     if (window.matchMedia('(max-width: 960px)').matches) setTimeout(function () { $('c-progress').scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
     var jobs;
-    if ($('c-provider').value === 'free') {
+    var best = $('c-provider').value === 'best';
+    /* בציור בתשלום סצנה אחת מקבלת עד 6 אנשים */
+    if (!free() && st.mode === 'scene') ids = ids.slice(0, 6);
+    if (free()) {
       jobs = freeRun(ids);
     } else if (st.mode === 'character') {
       /* כל תמונה לבד, אחת אחרי השנייה */
@@ -284,6 +319,17 @@
         A.toast(st.mode === 'page' ? 'העמוד מוכן ונשמר בספרייה.' : 'הסצנה מוכנה ונשמרה בספרייה.');
       });
     }
+    if (best && !free()) {
+      /* Gemini לא צייר (חיוב, מכסה, תקלה): ממשיכים במצב החינמי במקום לעצור */
+      jobs = jobs.catch(function (e) {
+        if (e && e.stopped) throw e;
+        if (!runDrawn) {
+          A.toast('Gemini לא צייר הפעם (' + e.message + '). ממשיך במצב החינמי…', 7000);
+          return freeRun(ids);
+        }
+        throw e;
+      });
+    }
     jobs.catch(function (e) {
       if (e && e.stopped) { A.toast('הציור נעצר.'); return; }
       A.toast(e.message, 9000); showError(e.message);
@@ -301,9 +347,10 @@
     progress(true, 'מתחיל…');
     return window.ComicFree.run({
       mode: st.mode, ids: ids, style: st.style, story: $('c-story').value.trim(), title: $('c-title').value.trim(),
-      panels: $('c-panels').value, aspect: $('c-aspect').value
+      panels: $('c-panels').value, aspect: $('c-aspect').value,
+      /* כל ציור מופיע מיד כשהוא מוכן, לא רק בסוף */
+      onItem: function (meta, blob) { runDrawn++; addResult(meta, blob, 'free', ids); }
     }, function (text) { $('c-progress-text').textContent = text; }).then(function (r) {
-      r.items.forEach(function (x) { addResult(x.meta, x.blob, 'free', ids); });
       if (r.kind === 'pages') {
         A.addPages(r.pages);
         A.toast((r.pages.length > 1 ? 'ספר קומיקס של ' + r.pages.length + ' עמודים מוכן' : 'העמוד מוכן') + ', עם בועות בעברית. אפשר לערוך כל בועה ולייצא PDF.' + (r.failed ? ' ' + r.failed + ' פאנלים לא צוירו; אפשר לגרור אליהם תמונה.' : ''), 8000);
@@ -405,9 +452,9 @@
       var S = A.state, ids = S.sel.slice();
       S.images.forEach(function (m) { if (ids.indexOf(m.id) < 0) ids.push(m.id); });
       picked = ids.slice(0, limit());
-      renderPhotos();
+      markPhotos();
     });
-    $('c-none').addEventListener('click', function () { picked = []; cleared = true; renderPhotos(); });
+    $('c-none').addEventListener('click', function () { picked = []; cleared = true; markPhotos(); });
     $('c-provider').addEventListener('change', function () { picked = picked.slice(0, limit()); renderPhotos(); });
     $('selftest-again').addEventListener('click', selfTest);
   }
