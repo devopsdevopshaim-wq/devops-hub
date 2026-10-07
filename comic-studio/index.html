@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>פאנל — סטודיו קומיקס מצילומים</title>
-<meta name="description" content="מעלים עד 100 צילומים, בוחרים את הטובים, הופכים אותם לקומיקס, מנגה, קריקטורה, פופ-ארט ועוד, ומרכיבים עמוד קומיקס עם בועות דיבור. הכול בדפדפן.">
+<meta name="description" content="מעלים עד 300 צילומים, בוחרים את הטובים, הופכים אותם לקומיקס, מנגה, קריקטורה, פופ-ארט ועוד, ומרכיבים עמוד קומיקס עם בועות דיבור. הכול בדפדפן.">
 <meta name="theme-color" content="#0c0e13">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='6' fill='%23ffd60a' stroke='%2315161b' stroke-width='5'/%3E%3Cpath d='M32 4v56M4 30h28' stroke='%2315161b' stroke-width='5'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Frank+Ruhl+Libre:wght@700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=Karantina:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&family=Rubik:wght@500;700;900&family=Secular+One&family=Suez+One&family=Varela+Round&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/studio.css?v=20261007c">
+<link rel="stylesheet" href="css/studio.css?v=20261007d">
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>
@@ -23,7 +23,7 @@
   </div>
   <nav class="tabs" role="tablist" aria-label="שלבי העבודה">
     <button role="tab" id="tab-library" aria-controls="view-library" aria-selected="true" data-view="library">
-      <b>ספרייה</b><small id="tab-count">0 / 100</small>
+      <b>ספרייה</b><small id="tab-count">0 / 300</small>
     </button>
     <button role="tab" id="tab-create" aria-controls="view-create" aria-selected="false" data-view="create">
       <b>יצירת קומיקס</b><small id="tab-create-sub">ציור אמיתי ב-AI</small>
@@ -46,7 +46,7 @@
     <div class="lib-hero" id="lib-hero">
       <div class="hero-copy">
         <h1>מהצילום שלכם<br><span class="mis" data-text="לעמוד קומיקס.">לעמוד קומיקס.</span></h1>
-        <p>מעלים עד 100 תמונות, בוחרים את אלה שנכנסות לסיפור, ומציירים אותן מחדש: רשתות נוירוניות של קומיקס ואנימה, ציור שמן במשיכות מכחול, גרפיטי על קיר, מנגה עם קווי פעולה ועוד. אחר כך מרכיבים עמוד עם בועות דיבור, ומוציאים PNG, PDF או סרטון.</p>
+        <p>מעלים עד 300 תמונות, בוחרים את אלה שנכנסות לסיפור, ומציירים אותן מחדש: רשתות נוירוניות של קומיקס ואנימה, ציור שמן במשיכות מכחול, גרפיטי על קיר, מנגה עם קווי פעולה ועוד. אחר כך מרכיבים עמוד עם בועות דיבור, ומוציאים PNG, PDF או סרטון.</p>
         <ul class="hero-facts">
           <li><b>10</b> סגנונות AI במחשב שלכם</li>
           <li><b>36</b> אפקטים של ציור, קומיקס, גרפיטי ומנגה</li>
@@ -62,7 +62,7 @@
         </span>
         <strong>גררו לכאן תמונות</strong>
         <span>או לחצו לבחירה מהמחשב או מהטלפון · JPG, PNG, WEBP, HEIC בדפדפנים שתומכים</span>
-        <span class="drop-count" id="drop-count">אפשר להוסיף עוד 100 תמונות</span>
+        <span class="drop-count" id="drop-count">אפשר להוסיף עוד 300 תמונות</span>
       </label>
     </div>
 
@@ -100,13 +100,13 @@
           </div>
           <div class="modes" role="radiogroup" aria-label="סוג היצירה">
             <button type="button" class="mode" data-mode="page" aria-checked="true" role="radio">
-              <b>עמוד קומיקס שלם</b><span>כמה פאנלים, סיפור, בועות דיבור וכותרת. כמו בדוגמה שלכם.</span>
+              <b>עמוד או ספר קומיקס</b><span>סיפור עם פאנלים ובועות. יותר מ-4 תמונות: ספר קומיקס, כל תמונה פאנל.</span>
             </button>
             <button type="button" class="mode" data-mode="character" aria-checked="false" role="radio">
-              <b>דמות קומיקס</b><span>כל תמונה נבחרת מצוירת מחדש כאיור. אפשר כמה בבת אחת.</span>
+              <b>דמות קומיקס</b><span>כל תמונה נבחרת מצוירת מחדש כאיור. כמה תמונות שרוצים.</span>
             </button>
             <button type="button" class="mode" data-mode="scene" aria-checked="false" role="radio">
-              <b>סצנה משולבת</b><span>2–4 אנשים מתמונות שונות, יחד בציור אחד.</span>
+              <b>סצנה משולבת</b><span>עד 8 אנשים מתמונות שונות, יחד בציור אחד.</span>
             </button>
           </div>
         </div>
@@ -114,7 +114,9 @@
         <div class="card cblock">
           <div class="chead">
             <h2>התמונות</h2>
-            <span class="muted small" id="create-photos-hint">לוחצים על תמונה כדי לכלול אותה</span>
+            <span class="row wrap"><span class="muted small" id="create-photos-hint">לוחצים על תמונה כדי לכלול אותה</span>
+              <button class="btn tiny" type="button" id="c-all">בחירת הכול</button>
+              <button class="btn tiny ghost" type="button" id="c-none">ניקוי</button></span>
           </div>
           <div class="cphotos" id="create-photos"></div>
         </div>
@@ -449,16 +451,16 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/store.js?v=20261007c"></script>
-<script src="js/fx.js?v=20261007c"></script>
-<script src="js/fx-art.js?v=20261007c"></script>
-<script src="js/neural.js?v=20261007c"></script>
-<script src="js/page.js?v=20261007c"></script>
-<script src="js/engine.js?v=20261007c"></script>
-<script src="js/motion.js?v=20261007c"></script>
-<script src="js/ai.js?v=20261007c"></script>
-<script src="js/app.js?v=20261007c"></script>
-<script src="js/free.js?v=20261007c"></script>
-<script src="js/create.js?v=20261007c"></script>
+<script src="js/store.js?v=20261007d"></script>
+<script src="js/fx.js?v=20261007d"></script>
+<script src="js/fx-art.js?v=20261007d"></script>
+<script src="js/neural.js?v=20261007d"></script>
+<script src="js/page.js?v=20261007d"></script>
+<script src="js/engine.js?v=20261007d"></script>
+<script src="js/motion.js?v=20261007d"></script>
+<script src="js/ai.js?v=20261007d"></script>
+<script src="js/app.js?v=20261007d"></script>
+<script src="js/free.js?v=20261007d"></script>
+<script src="js/create.js?v=20261007d"></script>
 </body>
 </html>

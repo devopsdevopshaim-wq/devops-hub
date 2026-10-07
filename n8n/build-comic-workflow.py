@@ -97,13 +97,13 @@ if (b.mode === 'describe' || b.mode === 'script') {
   try {
     if (b.mode === 'describe') {
       if (!pics.length) return out({ ok: false, error: 'no-image' }, 400);
-      const j = await geminiText.call(this, [{ text: 'For each photo, describe the main person for a comic artist so they can be drawn recognizably: apparent age, gender, face shape, hair, beard, head covering (such as a kippah), skin tone, glasses, typical expression, clothing with colors. One short English paragraph per photo, no names, no opinions about appearance.' }]
+      const j = await geminiText.call(this, [{ text: 'For each photo, describe the main person for a comic artist so they can be drawn recognizably: apparent age, gender, face shape, hair, beard, head covering (such as a kippah), skin tone, glasses, typical expression, clothing with colors, and in one more sentence what is happening in the photo and its setting (place, light, background). One short English paragraph per photo, in the same order as the photos, no names, no opinions about appearance.' }]
         .concat(pics.map((x) => ({ inline_data: { mime_type: x.mime, data: x.data } }))),
         { type: 'OBJECT', properties: { people: { type: 'ARRAY', items: { type: 'STRING' } } }, required: ['people'] });
       return out({ ok: true, people: (j.people || []).slice(0, 4).map((x) => cleanText(x, 600)) });
     }
     const panelsN = Math.min(8, Math.max(1, parseInt(b.panels, 10) || 5));
-    const people = (Array.isArray(b.people) ? b.people : []).slice(0, 4).map((x) => cleanText(x, 600));
+    const people = (Array.isArray(b.people) ? b.people : []).slice(0, 8).map((x) => cleanText(x, 600));
     const ask = `Write a comic page script in ${panelsN} panels.\n` +
       `Characters (from photos): ${people.map((x, i) => `[${i + 1}] ${x}`).join(' ') || 'one friendly main character'}\n` +
       `Story idea from the user (Hebrew or English): ${cleanText(b.story, 1200) || 'a short uplifting adventure with a clear beginning, a dramatic moment and a happy ending'}\n` +
@@ -132,7 +132,7 @@ if (!left) return out({ ok: false, error: 'quota' }, 429);
 const MODES = ['character', 'scene', 'page'];
 const mode = MODES.includes(b.mode) ? b.mode : 'character';
 const clean = (s, n) => String(s || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
-const images = (Array.isArray(b.images) ? b.images : []).slice(0, 4).filter((x) => x && /^image\/(jpeg|png|webp)$/.test(x.mime) && typeof x.data === 'string' && /^[A-Za-z0-9+/=]+$/.test(x.data.slice(0, 200)));
+const images = (Array.isArray(b.images) ? b.images : []).slice(0, 6).filter((x) => x && /^image\/(jpeg|png|webp)$/.test(x.mime) && typeof x.data === 'string' && /^[A-Za-z0-9+/=]+$/.test(x.data.slice(0, 200)));
 if (!images.length) return out({ ok: false, error: 'no-image' }, 400);
 if (images.some((x) => x.data.length > 3500000)) return out({ ok: false, error: 'too-big' }, 413);
 
