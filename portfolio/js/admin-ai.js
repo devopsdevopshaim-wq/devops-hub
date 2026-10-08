@@ -17,10 +17,12 @@
     { id: 'ollama', name: 'Ollama', local: true, kind: 'ollama', base: 'http://localhost:11434', key: false, model: '', suggest: [] },
     { id: 'openwebui', name: 'Open WebUI', local: true, kind: 'openai', base: 'http://localhost:3000', path: '/api', key: true, model: '', suggest: [] },
     { id: 'openclaw', name: 'OpenClaw', local: true, kind: 'openai', base: 'http://127.0.0.1:18789', path: '/v1', key: true, model: 'openclaw', suggest: ['openclaw'] },
-    { id: 'gemini', name: 'Gemini', kind: 'gemini', base: 'https://generativelanguage.googleapis.com', key: true, model: 'gemini-flash-latest', suggest: ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'] },
-    { id: 'openai', name: 'ChatGPT (OpenAI)', kind: 'openai', base: 'https://api.openai.com', path: '/v1', key: true, model: 'gpt-5', suggest: ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4o-mini'] },
-    { id: 'deepseek', name: 'DeepSeek', kind: 'openai', base: 'https://api.deepseek.com', path: '', key: true, model: 'deepseek-chat', suggest: ['deepseek-chat', 'deepseek-reasoner'] },
-    { id: 'claude', name: 'Claude (Anthropic)', kind: 'claude', base: 'https://api.anthropic.com', key: true, model: 'claude-sonnet-5-5', suggest: ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1', 'claude-haiku-4-5-20251001'] }
+    { id: 'gemini', name: 'Gemini', kind: 'gemini', base: 'https://generativelanguage.googleapis.com', key: true, model: 'gemini-flash-latest', suggest: ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'], free: true, keyUrl: 'https://aistudio.google.com/apikey', chat: 'https://gemini.google.com/app' },
+    { id: 'openai', name: 'ChatGPT (OpenAI)', kind: 'openai', base: 'https://api.openai.com', path: '/v1', key: true, model: 'gpt-5', suggest: ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4o-mini'], paid: true, chat: 'https://chatgpt.com/', keyUrl: 'https://platform.openai.com/api-keys' },
+    { id: 'deepseek', name: 'DeepSeek', kind: 'openai', base: 'https://api.deepseek.com', path: '', key: true, model: 'deepseek-chat', suggest: ['deepseek-chat', 'deepseek-reasoner'], paid: true, chat: 'https://chat.deepseek.com/', keyUrl: 'https://platform.deepseek.com/api_keys' },
+    { id: 'openrouter', name: 'OpenRouter (דגמים חינמיים)', kind: 'openai', base: 'https://openrouter.ai/api', path: '/v1', key: true, model: 'deepseek/deepseek-chat-v3.1:free', suggest: ['deepseek/deepseek-chat-v3.1:free', 'deepseek/deepseek-r1:free', 'meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.0-flash-exp:free'], free: true, keyUrl: 'https://openrouter.ai/keys' },
+    { id: 'groq', name: 'Groq (חינם, מהיר)', kind: 'openai', base: 'https://api.groq.com/openai', path: '/v1', key: true, model: 'llama-3.3-70b-versatile', suggest: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'deepseek-r1-distill-llama-70b'], free: true, keyUrl: 'https://console.groq.com/keys' },
+    { id: 'claude', name: 'Claude (Anthropic)', kind: 'claude', base: 'https://api.anthropic.com', key: true, model: 'claude-sonnet-5-5', suggest: ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1', 'claude-haiku-4-5-20251001'], paid: true, chat: 'https://claude.ai/new', keyUrl: 'https://console.anthropic.com/settings/keys' }
   ];
   var byId = {}; P.forEach(function (p) { byId[p.id] = p; });
 
@@ -52,7 +54,7 @@
       clearTimeout(t);
       return r.text().then(function (txt) {
         var j = null; try { j = JSON.parse(txt); } catch (e) {}
-        if (!r.ok) { var m = (j && (j.error && (j.error.message || j.error) || j.message || j.detail)) || txt.slice(0, 200) || r.status; throw new Error(r.status + ' · ' + (typeof m === 'string' ? m : JSON.stringify(m))); }
+        if (!r.ok) { if (r.status === 402 || /insufficient balance|no credits|credit balance|billing|quota exceeded|exceeded your current quota/i.test(txt)) throw new Error('אין יתרה או מכסה ב־API. חשבון ה־API משולם בנפרד מהצ׳אט החינמי באתר (גם כשהצ׳אט עובד). אפשר: להטעין יתרה, להשתמש בדגם חינמי (Gemini, OpenRouter, Groq), או לפתוח את הצ׳אט החינמי בכפתור. · ' + r.status); var m = (j && (j.error && (j.error.message || j.error) || j.message || j.detail)) || txt.slice(0, 200) || r.status; throw new Error(r.status + ' · ' + (typeof m === 'string' ? m : JSON.stringify(m))); }
         return j == null ? txt : j;
       });
     }, function (e) {
@@ -69,7 +71,11 @@
       return (j.models || []).filter(function (m) { return (m.supportedGenerationMethods || []).indexOf('generateContent') > -1; }).map(function (m) { return m.name.replace(/^models\//, ''); });
     });
     if (p.kind === 'claude') return http(c.base + '/v1/models?limit=100', { headers: { 'x-api-key': c.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' } }, 10000).then(function (j) { return (j.data || []).map(function (m) { return m.id; }); });
-    return http(c.base + p.path + '/models', { headers: bearer(c) }, 10000).then(function (j) { return (j.data || j.models || []).map(function (m) { return m.id || m.name; }); });
+    return http(c.base + p.path + '/models', { headers: bearer(c) }, 10000).then(function (j) {
+      var l = j.data || j.models || [];
+      if (id === 'openrouter') l = l.filter(function (m) { return /:free$/.test(m.id) || (m.pricing && Number(m.pricing.prompt) === 0 && Number(m.pricing.completion) === 0); });
+      return l.map(function (m) { return m.id || m.name; });
+    });
   }
 
   function ask(id, prompt, system) {
@@ -141,6 +147,12 @@
     f.model = el('input', { type: 'text', value: c.model, dir: 'ltr', list: 'ai-list-' + p.id, spellcheck: 'false', placeholder: 'דגם' });
     fields.push(el('label', null, [el('span', { text: 'דגם' }), f.model, f.list]));
     p.suggest.forEach(function (m) { f.list.appendChild(el('option', { value: m })); });
+    var links = [];
+    if (p.keyUrl) links.push(el('a', { href: p.keyUrl, target: '_blank', rel: 'noopener', text: p.free ? 'מפתח חינמי ↗' : 'מפתח API (בתשלום) ↗' }));
+    if (p.chat) links.push(el('a', { href: p.chat, target: '_blank', rel: 'noopener', text: 'הצ׳אט החינמי באתר ↗' }));
+    if (p.paid) fields.push(el('p', { class: 'ai-note', text: 'ה־API כאן בתשלום לפי שימוש, והוא נפרד מהצ׳אט החינמי. בלי יתרה תקבל שגיאה גם כשהצ׳אט באתר עובד.' }));
+    if (p.free) fields.push(el('p', { class: 'ai-note ok', text: 'יש מכסה חינמית. מפתח אחד, בלי כרטיס אשראי.' }));
+    if (links.length) fields.push(el('div', { class: 'ai-links' }, links));
     var test = el('button', { type: 'button', text: 'בדיקה וטעינת דגמים' }), saveB = el('button', { type: 'button', text: 'שמירה' });
     test.addEventListener('click', function () { check(p.id); });
     saveB.addEventListener('click', function () { readFields(p.id); setMsg(p.id, 'נשמר בדפדפן הזה', 'ok'); });
@@ -223,6 +235,15 @@
     refreshPicks();
     probeBridge().then(function (j) { setBridge(j); });
     $('ai-send').addEventListener('click', send);
+    var chats = $('ai-chats');
+    P.filter(function (p) { return p.chat; }).forEach(function (p) {
+      var b = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: 'להעתיק ולפתוח ' + p.name.replace(/ \(.*\)/, '') });
+      b.addEventListener('click', function () {
+        var q = $('ai-prompt').value.trim();
+        (navigator.clipboard && q ? navigator.clipboard.writeText(q) : Promise.resolve()).catch(function () {}).then(function () { window.open(p.chat, '_blank', 'noopener'); $('ai-state').textContent = q ? 'השאלה הועתקה. מדביקים בצ׳אט (Ctrl+V).' : ''; });
+      });
+      chats.appendChild(b);
+    });
     $('ai-test-all').addEventListener('click', function () { P.forEach(function (p) { var c = conf(p.id); if (p.local || c.key) check(p.id); }); });
     $('ai-export').addEventListener('click', function () {
       var a = document.createElement('a');
