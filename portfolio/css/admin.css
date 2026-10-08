@@ -274,3 +274,10 @@
 .ai-links { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; } .ai-links a { color: #8fd0ff; }
 .ai-note.ok { color: #5fd3ad; }
 .ai-chats-box { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.ai-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.ai-tab { font: 600 14px/1 inherit; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; color: inherit; cursor: pointer; }
+.ai-tab.on { background: var(--brass); color: #17143a; border-color: var(--brass); }
+.ai-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.ai-panel[hidden] { display: none; }
+.ai-regtbl a { color: #8fd0ff; }
+.ai-res-acts { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }

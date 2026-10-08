@@ -14,15 +14,15 @@
 
   // kind: how the provider speaks. local: runs on this computer (no key needed unless set).
   var P = [
-    { id: 'ollama', name: 'Ollama', local: true, kind: 'ollama', base: 'http://localhost:11434', key: false, model: '', suggest: [] },
-    { id: 'openwebui', name: 'Open WebUI', local: true, kind: 'openai', base: 'http://localhost:3000', path: '/api', key: true, model: '', suggest: [] },
+    { id: 'ollama', name: 'Ollama', local: true, signup: 'https://ollama.com/download', kind: 'ollama', base: 'http://localhost:11434', key: false, model: '', suggest: [] },
+    { id: 'openwebui', name: 'Open WebUI', local: true, signup: 'https://docs.openwebui.com/getting-started/', kind: 'openai', base: 'http://localhost:3000', path: '/api', key: true, model: '', suggest: [] },
     { id: 'openclaw', name: 'OpenClaw', local: true, kind: 'openai', base: 'http://127.0.0.1:18789', path: '/v1', key: true, model: 'openclaw', suggest: ['openclaw'] },
-    { id: 'gemini', name: 'Gemini', kind: 'gemini', base: 'https://generativelanguage.googleapis.com', key: true, model: 'gemini-flash-latest', suggest: ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'], free: true, keyUrl: 'https://aistudio.google.com/apikey', chat: 'https://gemini.google.com/app' },
-    { id: 'openai', name: 'ChatGPT (OpenAI)', kind: 'openai', base: 'https://api.openai.com', path: '/v1', key: true, model: 'gpt-5', suggest: ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4o-mini'], paid: true, chat: 'https://chatgpt.com/', keyUrl: 'https://platform.openai.com/api-keys' },
-    { id: 'deepseek', name: 'DeepSeek', kind: 'openai', base: 'https://api.deepseek.com', path: '', key: true, model: 'deepseek-chat', suggest: ['deepseek-chat', 'deepseek-reasoner'], paid: true, chat: 'https://chat.deepseek.com/', keyUrl: 'https://platform.deepseek.com/api_keys' },
-    { id: 'openrouter', name: 'OpenRouter (דגמים חינמיים)', kind: 'openai', base: 'https://openrouter.ai/api', path: '/v1', key: true, model: 'deepseek/deepseek-chat-v3.1:free', suggest: ['deepseek/deepseek-chat-v3.1:free', 'deepseek/deepseek-r1:free', 'meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.0-flash-exp:free'], free: true, keyUrl: 'https://openrouter.ai/keys' },
-    { id: 'groq', name: 'Groq (חינם, מהיר)', kind: 'openai', base: 'https://api.groq.com/openai', path: '/v1', key: true, model: 'llama-3.3-70b-versatile', suggest: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'deepseek-r1-distill-llama-70b'], free: true, keyUrl: 'https://console.groq.com/keys' },
-    { id: 'claude', name: 'Claude (Anthropic)', kind: 'claude', base: 'https://api.anthropic.com', key: true, model: 'claude-sonnet-5-5', suggest: ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1', 'claude-haiku-4-5-20251001'], paid: true, chat: 'https://claude.ai/new', keyUrl: 'https://console.anthropic.com/settings/keys' }
+    { id: 'gemini', name: 'Gemini', signup: 'https://aistudio.google.com/', kind: 'gemini', base: 'https://generativelanguage.googleapis.com', key: true, model: 'gemini-flash-latest', suggest: ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'], free: true, keyUrl: 'https://aistudio.google.com/apikey', chat: 'https://gemini.google.com/app' },
+    { id: 'openai', name: 'ChatGPT (OpenAI)', signup: 'https://platform.openai.com/signup', kind: 'openai', base: 'https://api.openai.com', path: '/v1', key: true, model: 'gpt-5', suggest: ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4o-mini'], paid: true, chat: 'https://chatgpt.com/', keyUrl: 'https://platform.openai.com/api-keys' },
+    { id: 'deepseek', name: 'DeepSeek', signup: 'https://platform.deepseek.com/sign_up', kind: 'openai', base: 'https://api.deepseek.com', path: '', key: true, model: 'deepseek-chat', suggest: ['deepseek-chat', 'deepseek-reasoner'], paid: true, chat: 'https://chat.deepseek.com/', keyUrl: 'https://platform.deepseek.com/api_keys' },
+    { id: 'openrouter', name: 'OpenRouter (דגמים חינמיים)', signup: 'https://openrouter.ai/', kind: 'openai', base: 'https://openrouter.ai/api', path: '/v1', key: true, model: 'deepseek/deepseek-chat-v3.1:free', suggest: ['deepseek/deepseek-chat-v3.1:free', 'deepseek/deepseek-r1:free', 'meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.0-flash-exp:free'], free: true, keyUrl: 'https://openrouter.ai/keys' },
+    { id: 'groq', name: 'Groq (חינם, מהיר)', signup: 'https://console.groq.com/', kind: 'openai', base: 'https://api.groq.com/openai', path: '/v1', key: true, model: 'llama-3.3-70b-versatile', suggest: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'deepseek-r1-distill-llama-70b'], free: true, keyUrl: 'https://console.groq.com/keys' },
+    { id: 'claude', name: 'Claude (Anthropic)', signup: 'https://console.anthropic.com/', kind: 'claude', base: 'https://api.anthropic.com', key: true, model: 'claude-sonnet-5-5', suggest: ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1', 'claude-haiku-4-5-20251001'], paid: true, chat: 'https://claude.ai/new', keyUrl: 'https://console.anthropic.com/settings/keys' }
   ];
   var byId = {}; P.forEach(function (p) { byId[p.id] = p; });
 
@@ -184,30 +184,59 @@
   }
 
   // ---- the lab
+  function ready(p) { var c = conf(p.id); return p.local ? !!c.model : (!!c.key && !!c.model); }
   function refreshPicks() {
-    var host = $('ai-picks'), keep = {};
-    Array.prototype.forEach.call(host.querySelectorAll('input'), function (i) { keep[i.value] = i.checked; });
-    host.replaceChildren();
-    P.forEach(function (p) {
-      var c = conf(p.id), ready = p.local ? !!c.model : (!!c.key && !!c.model);
-      var cb = el('input', { type: 'checkbox', value: p.id }); if (keep[p.id]) cb.checked = true; if (!ready) cb.disabled = true;
-      host.appendChild(el('label', { title: ready ? '' : 'חסר דגם' + (p.key && !p.local ? ' או מפתח' : '') }, [cb, el('span', { text: p.name })]));
-    });
+    var n = P.filter(ready).length, st = $('ai-status');
+    if (st) st.textContent = 'מוגדרים ' + n + ' מתוך ' + P.length;
   }
   function result(p, r, bad) {
-    return el('article', { class: 'ai-res' + (bad ? ' bad' : '') }, [el('header', null, [el('b', { text: p.name }), el('span', { dir: 'ltr', text: (conf(p.id).model || '') + (r.ms ? ' · ' + (r.ms / 1000).toFixed(1) + 's' : '') })]), el('pre', { text: r.text })]);
+    var kids = [el('header', null, [el('b', { text: p.name }), el('span', { dir: 'ltr', text: (conf(p.id).model || '') + (r.ms ? ' · ' + (r.ms / 1000).toFixed(1) + 's' : '') })]), el('pre', { text: r.text })];
+    if (bad) {
+      var acts = [];
+      var set = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: '⚙ להגדרות' });
+      set.addEventListener('click', function () { tab('settings'); });
+      acts.push(set);
+      if (p.chat) {
+        var ch = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: 'צ׳אט חינמי (השאלה תועתק) ↗' });
+        ch.addEventListener('click', function () {
+          var q = $('ai-prompt').value.trim();
+          (navigator.clipboard && q ? navigator.clipboard.writeText(q) : Promise.resolve()).catch(function () {}).then(function () { window.open(p.chat, '_blank', 'noopener'); });
+        });
+        acts.push(ch);
+      }
+      kids.push(el('div', { class: 'acts ai-res-acts' }, acts));
+    }
+    return el('article', { class: 'ai-res' + (bad ? ' bad' : '') }, kids);
   }
+  function tab(name) {
+    Array.prototype.forEach.call(document.querySelectorAll('.ai-tab'), function (b) { var on = b.getAttribute('data-tab') === name; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+    $('ai-panel-ask').hidden = name !== 'ask'; $('ai-panel-settings').hidden = name !== 'settings';
+    try { history.replaceState(null, '', name === 'settings' ? '#settings' : location.pathname); } catch (e) {}
+  }
+  // a local tool that does not answer directly is tried again through the bridge
+  function askSmart(id, prompt, sys) {
+    var p = byId[id];
+    return ask(id, prompt, sys).catch(function (e) {
+      if (!p.local || !/אין חיבור/.test(e.message) || /127\.0\.0\.1:8765/.test(conf(id).base)) throw e;
+      return probeBridge().then(function () {
+        if (!bridgeUp) throw e;
+        var c = cfg[id] = cfg[id] || {}, prev = c.base;
+        c.base = BRIDGE + '/' + id;
+        return ask(id, prompt, sys).then(function (r) { save(cfg); if (cards[id]) cards[id].base.value = c.base; return r; }, function (e2) { c.base = prev || ''; throw e2; });
+      });
+    });
+  }
+  // every model gets the question; whoever cannot answer says why
   function send() {
     var prompt = $('ai-prompt').value.trim(), sys = $('ai-sys').value.trim();
-    var ids = Array.prototype.map.call($('ai-picks').querySelectorAll('input:checked'), function (i) { return i.value; });
     if (!prompt) { $('ai-state').textContent = 'כתוב שאלה'; return; }
-    if (!ids.length) { $('ai-state').textContent = 'בחר לפחות מודל אחד'; return; }
-    $('ai-state').textContent = 'שולח ל־' + ids.length + '…'; $('ai-send').disabled = true;
+    $('ai-state').textContent = 'שולח לכולם…'; $('ai-send').disabled = true;
     var out = $('ai-results'); out.replaceChildren();
-    Promise.all(ids.map(function (id) {
-      var p = byId[id], holder = el('article', { class: 'ai-res' }, [el('header', null, [el('b', { text: p.name })]), el('pre', { text: 'חושב…' })]);
+    Promise.all(P.map(function (p) {
+      var holder = el('article', { class: 'ai-res' }, [el('header', null, [el('b', { text: p.name })]), el('pre', { text: 'חושב…' })]);
       out.appendChild(holder);
-      return ask(id, prompt, sys).then(function (r) { holder.replaceWith(result(p, r)); }, function (e) { holder.replaceWith(result(p, { text: e.message }, true)); });
+      if (!ready(p)) { holder.replaceWith(result(p, { text: p.local ? 'לא מחובר. הפעל את ' + p.name + ' (או את הגשר המקומי) ובדוק חיבור בלשונית הגדרות.' : 'חסר מפתח. נרשמים ומדביקים מפתח בלשונית הגדרות.' }, true)); return null; }
+      return askSmart(p.id, prompt, sys).then(function (r) { holder.replaceWith(result(p, r)); }, function (e) { holder.replaceWith(result(p, { text: e.message }, true)); });
     })).then(function () { $('ai-state').textContent = ''; $('ai-send').disabled = false; });
   }
 
@@ -235,15 +264,17 @@
     refreshPicks();
     probeBridge().then(function (j) { setBridge(j); });
     $('ai-send').addEventListener('click', send);
-    var chats = $('ai-chats');
-    P.filter(function (p) { return p.chat; }).forEach(function (p) {
-      var b = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: 'להעתיק ולפתוח ' + p.name.replace(/ \(.*\)/, '') });
-      b.addEventListener('click', function () {
-        var q = $('ai-prompt').value.trim();
-        (navigator.clipboard && q ? navigator.clipboard.writeText(q) : Promise.resolve()).catch(function () {}).then(function () { window.open(p.chat, '_blank', 'noopener'); $('ai-state').textContent = q ? 'השאלה הועתקה. מדביקים בצ׳אט (Ctrl+V).' : ''; });
-      });
-      chats.appendChild(b);
+    Array.prototype.forEach.call(document.querySelectorAll('.ai-tab'), function (b) { b.addEventListener('click', function () { tab(b.getAttribute('data-tab')); }); });
+    var reg = $('ai-reg');
+    var tbl = el('table', { class: 'ptable ai-regtbl' }, [el('thead', null, [el('tr', null, ['שירות', 'סוג', 'הרשמה', 'מפתח', 'צ׳אט חינמי'].map(function (h) { return el('th', { text: h }); }))])]);
+    var tb = el('tbody');
+    P.forEach(function (p) {
+      var a = function (u, t) { return u ? el('a', { href: u, target: '_blank', rel: 'noopener', text: t + ' ↗' }) : el('span', { class: 'muted', text: '—' }); };
+      tb.appendChild(el('tr', null, [el('td', { text: p.name }), el('td', { text: p.local ? 'במחשב שלך (חינם)' : p.free ? 'חינמי (מפתח אחד)' : 'API בתשלום' }),
+        el('td', null, [a(p.signup, 'הרשמה')]), el('td', null, [p.local ? el('span', { class: 'muted', text: 'לא צריך' }) : a(p.keyUrl, 'הפקת מפתח')]), el('td', null, [a(p.chat, 'לצ׳אט')])]));
     });
+    tbl.appendChild(tb); reg.appendChild(el('div', { class: 'table-wrap' }, [tbl]));
+    if (location.hash === '#settings') tab('settings');
     $('ai-test-all').addEventListener('click', function () { P.forEach(function (p) { var c = conf(p.id); if (p.local || c.key) check(p.id); }); });
     $('ai-export').addEventListener('click', function () {
       var a = document.createElement('a');
