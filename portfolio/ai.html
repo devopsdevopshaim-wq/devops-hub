@@ -30,25 +30,35 @@
   <section id="ai" class="a-sec">
     <header class="sec-head sec-row">
       <div><p class="eyebrow">AI · מנהל בלבד</p><h2>מודלי AI</h2></div>
-      <div class="filters">
+      <div class="ai-tabs" role="tablist" aria-label="לשוניות">
+        <button type="button" class="ai-tab on" role="tab" data-tab="ask" aria-selected="true">שאלה לכולם</button>
+        <button type="button" class="ai-tab" role="tab" data-tab="settings" aria-selected="false">⚙ הגדרות והרשמה</button>
+      </div>
+    </header>
+
+    <div class="ai-panel" id="ai-panel-ask">
+      <p class="hint">כותבים שאלה אחת, והיא נשלחת לכל המודלים בבת אחת: המקומיים שלך והענן. כל מודל מחזיר תשובה, או הסבר למה לא (חסר מפתח, אין יתרה, הכלי לא רץ), עם כפתור שפותח את הצ׳אט החינמי שלו. מפתחות, הרשמה וחיבור מקומי נמצאים בלשונית <b>הגדרות</b>.</p>
+      <div class="ai-lab">
+        <label class="field"><span>הנחיית מערכת (לא חובה)</span><input id="ai-sys" type="text" placeholder="למשל: ענה בעברית ובקצרה"></label>
+        <label class="field"><span>השאלה</span><textarea id="ai-prompt" rows="3" placeholder="כתוב כאן שאלה"></textarea></label>
+        <div class="ai-go"><button class="btn btn-gold btn-sm" type="button" id="ai-send">שליחה לכולם</button><span class="muted" id="ai-state"></span><span class="muted" id="ai-status"></span></div>
+        <div class="ai-results" id="ai-results"></div>
+      </div>
+    </div>
+
+    <div class="ai-panel" id="ai-panel-settings" hidden>
+      <div class="ai-toolbar">
         <button class="btn btn-ghost btn-sm" type="button" id="ai-test-all">בדיקת חיבור לכולם</button>
         <button class="btn btn-ghost btn-sm" type="button" id="ai-export">⬇ גיבוי הגדרות</button>
         <label class="btn btn-ghost btn-sm" style="cursor:pointer">⬆ שחזור מגיבוי<input type="file" id="ai-import" accept="application/json" hidden></label>
         <button class="btn btn-ghost btn-sm" type="button" id="ai-wipe">ניקוי כל המפתחות</button>
       </div>
-    </header>
-    <p class="hint">כל המודלים שיש לך במקום אחד, רק במסך הזה: המקומיים שרצים אצלך במחשב (Ollama, Open WebUI, OpenClaw) והענן (Gemini, ChatGPT, DeepSeek, Claude). אפשר לבדוק חיבור, לטעון את רשימת המודלים, לשלוח שאלה לאחד, או לשלוח אותה לכמה ולהשוות. חשוב: הצ׳אט החינמי באתרים של ChatGPT, Claude ו־DeepSeek הוא לא ה־API. הם שני שירותים נפרדים: ה־API (שהמסך הזה קורא לו) בתשלום לפי שימוש, ובלי יתרה הוא מחזיר שגיאה. בחינם עובדים כאן Gemini, OpenRouter ו־Groq, והמקומיים שלך. לשאר יש כפתורים שפותחים את הצ׳אט החינמי. המפתחות נשמרים בדפדפן ובכספת פרטית ב־n8n שלך (נגישה רק למנהל מחובר), לא בגיטהאב, ויוצאים רק אל הספק עצמו. הם לא נמחקים אלא אם תלחץ "ניקוי".</p>
-    <p class="ai-msg" id="ai-vault"></p>
-    <div class="ai-grid" id="ai-grid"><p class="muted">טוען…</p></div>
-    <h3 class="ai-h">מעבדת בדיקות</h3>
-    <div class="ai-lab">
-      <label class="field"><span>הנחיית מערכת (לא חובה)</span><input id="ai-sys" type="text" placeholder="למשל: ענה בעברית ובקצרה"></label>
-      <label class="field"><span>השאלה</span><textarea id="ai-prompt" rows="3" placeholder="כתוב כאן שאלה, ובחר למטה לאילו מודלים לשלוח"></textarea></label>
-      <div class="ai-picks" id="ai-picks" role="group" aria-label="לאילו מודלים לשלוח"></div>
-      <div class="ai-go"><button class="btn btn-gold btn-sm" type="button" id="ai-send">שליחה לנבחרים</button><span class="muted" id="ai-state"></span></div>
-      <div class="ai-chats-box"><span class="muted">הצ׳אטים החינמיים באתרים (בלי API ובלי תשלום): הקלד שאלה, לחץ, והיא תועתק:</span><div class="ai-picks" id="ai-chats"></div></div>
-      <div class="ai-results" id="ai-results"></div>
-    </div>
+      <p class="ai-msg" id="ai-vault"></p>
+      <h3 class="ai-h">הרשמה ומפתחות</h3>
+      <p class="hint">לכל שירות: נרשמים בקישור, מפיקים מפתח, ומדביקים אותו בכרטיס למטה. ה־API והצ׳אט החינמי הם שני שירותים נפרדים: ה־API בתשלום לפי שימוש (חוץ מהחינמיים), ובלי יתרה הוא מחזיר שגיאה. המפתחות נשמרים בדפדפן ובכספת פרטית ב־n8n שלך (נגישה רק למנהל מחובר), לא בגיטהאב, ולא נמחקים אלא אם תלחץ "ניקוי".</p>
+      <div class="ai-reg" id="ai-reg"></div>
+      <h3 class="ai-h">חיבור וכרטיסים</h3>
+      <div class="ai-grid" id="ai-grid"><p class="muted">טוען…</p></div>
     <details class="ai-help"><summary>איך מחברים את המודלים שבמחשב</summary>
       <p><b>הדרך הקלה: הגשר המקומי</b> (הכרטיס הירוק למעלה). מורידים, מפעילים, וכל שלושת הכלים מתחברים בלי לשנות בהם כלום. הפסקאות הבאות הן לחיבור ישיר בלי גשר.</p>
       <p>הדפדפן פונה למודל המקומי ישירות מהמחשב שלך, ולכן צריך לאפשר לאתר הזה לפנות אליו (CORS), ובכרום לאשר "גישה לרשת המקומית" כשהוא שואל.</p>
@@ -57,6 +67,7 @@
       <p><b>OpenClaw</b> (ברירת מחדל <code dir="ltr">http://127.0.0.1:18789</code>): צריך שה־gateway יחשוף נקודת קצה תואמת OpenAI (<code dir="ltr">/v1/chat/completions</code>) ויאפשר את האתר ב־CORS; הטוקן נכנס לשדה המפתח. אם אצלך הכתובת או הנתיב שונים, משנים בכרטיס.</p>
       <p>בסאפארי ודפדפנים שחוסמים פנייה מ־https אל http מקומי זה לא יעבוד. משתמשים בכרום, אדג' או פיירפוקס.</p>
     </details>
+    </div>
   </section>
 
 </main>
