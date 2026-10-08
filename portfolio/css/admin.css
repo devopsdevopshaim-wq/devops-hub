@@ -281,3 +281,5 @@
 .ai-panel[hidden] { display: none; }
 .ai-regtbl a { color: #8fd0ff; }
 .ai-res-acts { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+.ai-pull { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--line-2); }
+.ai-pull button { align-self: flex-start; font: 600 13px/1 inherit; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; color: inherit; cursor: pointer; }

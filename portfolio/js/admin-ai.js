@@ -22,6 +22,7 @@
     { id: 'deepseek', name: 'DeepSeek', signup: 'https://platform.deepseek.com/sign_up', kind: 'openai', base: 'https://api.deepseek.com', path: '', key: true, model: 'deepseek-chat', suggest: ['deepseek-chat', 'deepseek-reasoner'], paid: true, chat: 'https://chat.deepseek.com/', keyUrl: 'https://platform.deepseek.com/api_keys' },
     { id: 'openrouter', name: 'OpenRouter (דגמים חינמיים)', signup: 'https://openrouter.ai/', kind: 'openai', base: 'https://openrouter.ai/api', path: '/v1', key: true, model: 'deepseek/deepseek-chat-v3.1:free', suggest: ['deepseek/deepseek-chat-v3.1:free', 'deepseek/deepseek-r1:free', 'meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.0-flash-exp:free'], free: true, keyUrl: 'https://openrouter.ai/keys' },
     { id: 'groq', name: 'Groq (חינם, מהיר)', signup: 'https://console.groq.com/', kind: 'openai', base: 'https://api.groq.com/openai', path: '/v1', key: true, model: 'llama-3.3-70b-versatile', suggest: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'deepseek-r1-distill-llama-70b'], free: true, keyUrl: 'https://console.groq.com/keys' },
+    { id: 'github', name: 'ChatGPT ו־DeepSeek בחינם (GitHub Models)', kind: 'openai', base: 'https://models.github.ai', path: '/inference', key: true, model: 'openai/gpt-4.1-mini', suggest: ['openai/gpt-4.1-mini', 'openai/gpt-4.1', 'openai/gpt-4o', 'deepseek/DeepSeek-V3-0324', 'deepseek/DeepSeek-R1', 'meta/Llama-3.3-70B-Instruct'], free: true, bridgeable: true, signup: 'https://github.com/marketplace/models', keyUrl: 'https://github.com/settings/personal-access-tokens/new', note: 'חינם עם חשבון GitHub: מפיקים טוקן עם הרשאת Models (קריאה). דגמי ChatGPT ו־DeepSeek רצים כאן בתוך האתר שלך, בלי לעבור לאתר שלהם. יש מגבלת קצב. אם הדפדפן חוסם, הגשר המקומי מעביר.' },
     { id: 'claude', name: 'Claude (Anthropic)', signup: 'https://console.anthropic.com/', kind: 'claude', base: 'https://api.anthropic.com', key: true, model: 'claude-sonnet-5-5', suggest: ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1', 'claude-haiku-4-5-20251001'], paid: true, chat: 'https://claude.ai/new', keyUrl: 'https://console.anthropic.com/settings/keys' }
   ];
   var byId = {}; P.forEach(function (p) { byId[p.id] = p; });
@@ -71,6 +72,7 @@
       return (j.models || []).filter(function (m) { return (m.supportedGenerationMethods || []).indexOf('generateContent') > -1; }).map(function (m) { return m.name.replace(/^models\//, ''); });
     });
     if (p.kind === 'claude') return http(c.base + '/v1/models?limit=100', { headers: { 'x-api-key': c.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' } }, 10000).then(function (j) { return (j.data || []).map(function (m) { return m.id; }); });
+    if (id === 'github') return http(c.base + '/catalog/models', { headers: Object.assign({ Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, bearer(c)) }, 10000).then(function (j) { return (Array.isArray(j) ? j : j.models || []).map(function (m) { return m.id; }); });
     return http(c.base + p.path + '/models', { headers: bearer(c) }, 10000).then(function (j) {
       var l = j.data || j.models || [];
       if (id === 'openrouter') l = l.filter(function (m) { return /:free$/.test(m.id) || (m.pricing && Number(m.pricing.prompt) === 0 && Number(m.pricing.completion) === 0); });
@@ -105,7 +107,7 @@
       .then(function (j) { var cand = j.candidates && j.candidates[0]; return done(cand && cand.content && (cand.content.parts || []).map(function (x) { return x.text || ''; }).join('')); });
     if (p.kind === 'claude') return http(c.base + '/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': c.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify(Object.assign({ model: c.model, max_tokens: 2048, messages: [{ role: 'user', content: prompt }] }, system ? { system: system } : {})) })
       .then(function (j) { return done((j.content || []).map(function (x) { return x.text || ''; }).join('')); });
-    return http(c.base + p.path + '/chat/completions', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, bearer(c)), body: JSON.stringify({ model: c.model, messages: msgs }) })
+    return http(c.base + p.path + '/chat/completions', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, id === 'github' ? { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } : {}, bearer(c)), body: JSON.stringify({ model: c.model, messages: msgs }) })
       .then(function (j) { return done(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content); });
   }
 
@@ -142,7 +144,7 @@
     if (p.key && !conf(id).key && !p.local) { setDot(id, 'bad'); setMsg(id, 'חסר מפתח API', 'bad'); return Promise.resolve(false); }
     var ok = function (list, via) { useModels(id, list); setDot(id, 'ok'); setMsg(id, 'מחובר' + (via ? ' דרך הגשר' : '') + ' · ' + list.length + ' דגמים', 'ok'); return true; };
     return models(id).then(function (list) { return ok(list, /127\.0\.0\.1:8765/.test(conf(id).base)); }, function (e) {
-      if (!p.local) { setDot(id, 'bad'); setMsg(id, e.message, 'bad'); return false; }
+      if (!p.local && !p.bridgeable) { setDot(id, 'bad'); setMsg(id, e.message, 'bad'); return false; }
       // a local tool that did not answer directly: try through the bridge
       return probeBridge().then(function () {
         if (!bridgeUp) return diagnose(id, e).then(function (t) { setDot(id, 'bad'); setMsg(id, t, 'bad'); return false; });
@@ -168,14 +170,35 @@
     if (p.keyUrl) links.push(el('a', { href: p.keyUrl, target: '_blank', rel: 'noopener', text: p.free ? 'מפתח חינמי ↗' : 'מפתח API (בתשלום) ↗' }));
     if (p.chat) links.push(el('a', { href: p.chat, target: '_blank', rel: 'noopener', text: 'הצ׳אט החינמי באתר ↗' }));
     if (p.paid) fields.push(el('p', { class: 'ai-note', text: 'ה־API כאן בתשלום לפי שימוש, והוא נפרד מהצ׳אט החינמי. בלי יתרה תקבל שגיאה גם כשהצ׳אט באתר עובד.' }));
-    if (p.free) fields.push(el('p', { class: 'ai-note ok', text: 'יש מכסה חינמית. מפתח אחד, בלי כרטיס אשראי.' }));
+    if (p.free) fields.push(el('p', { class: 'ai-note ok', text: p.note || 'יש מכסה חינמית. מפתח אחד, בלי כרטיס אשראי.' }));
     if (links.length) fields.push(el('div', { class: 'ai-links' }, links));
     var test = el('button', { type: 'button', text: 'בדיקה וטעינת דגמים' }), saveB = el('button', { type: 'button', text: 'שמירה' });
     test.addEventListener('click', function () { check(p.id); });
     saveB.addEventListener('click', function () { readFields(p.id); setMsg(p.id, 'נשמר בדפדפן הזה', 'ok'); });
     [f.base, f.key, f.model].forEach(function (i) { if (i) i.addEventListener('input', function () { readFields(p.id); }); });
     cards[p.id] = f;
-    return el('article', { class: 'ai-card' }, [el('header', null, [f.dot, el('b', { text: p.name }), el('span', { class: 'ai-kind' + (p.local ? ' local' : ''), text: p.local ? 'במחשב שלך' : 'ענן' })])].concat(fields, [el('div', { class: 'acts' }, [test, saveB]), f.msg]));
+    if (p.id === 'ollama') {
+      var pull = el('input', { type: 'text', dir: 'ltr', list: 'ai-pull-list', placeholder: 'שם דגם להתקנה, למשל deepseek-r1:8b', spellcheck: 'false' });
+      var pl = el('datalist', { id: 'ai-pull-list' }); ['deepseek-r1:8b', 'gpt-oss:20b', 'llama3.2', 'qwen2.5:7b', 'gemma3:4b', 'mistral'].forEach(function (m) { pl.appendChild(el('option', { value: m })); });
+      var pb = el('button', { type: 'button', text: 'התקנת דגם ב־Ollama' }), pm = el('div', { class: 'ai-msg' });
+      pb.addEventListener('click', function () {
+        var name = pull.value.trim(); if (!name) { pm.textContent = 'כתוב שם דגם (למשל deepseek-r1:8b: DeepSeek, או gpt-oss:20b: דגם של OpenAI)'; return; }
+        pm.className = 'ai-msg'; pm.textContent = 'מתחיל…'; pb.disabled = true;
+        var base = conf('ollama').base;
+        fetch(base + '/api/pull', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, stream: true }) }).then(function (r) {
+          if (!r.ok || !r.body) throw new Error(r.status);
+          var rd = r.body.getReader(), dec = new TextDecoder(), buf = '';
+          function pump() { return rd.read().then(function (x) {
+            if (x.done) return;
+            buf += dec.decode(x.value, { stream: true }); var lines = buf.split('\n'); buf = lines.pop();
+            lines.forEach(function (l) { try { var j = JSON.parse(l); pm.textContent = (j.status || '') + (j.total ? ' · ' + Math.round(100 * (j.completed || 0) / j.total) + '%' : ''); } catch (e) {} });
+            return pump(); }); }
+          return pump();
+        }).then(function () { pm.className = 'ai-msg ok'; pm.textContent = 'הדגם ' + name + ' מותקן. לוחצים "בדיקה וטעינת דגמים".'; }, function () { pm.className = 'ai-msg bad'; pm.textContent = 'לא הצליח להתחבר ל־Ollama. הפעל את הגשר ואת Ollama ונסה שוב.'; }).then(function () { pb.disabled = false; });
+      });
+      f.pull = el('div', { class: 'ai-pull' }, [pull, pl, pb, pm]);
+    }
+    return el('article', { class: 'ai-card' }, [el('header', null, [f.dot, el('b', { text: p.name }), el('span', { class: 'ai-kind' + (p.local ? ' local' : ''), text: p.local ? 'במחשב שלך' : 'ענן' })])].concat(fields, [el('div', { class: 'acts' }, [test, saveB]), f.msg, f.pull]));
   }
 
   // ---- the local bridge
@@ -234,7 +257,7 @@
   function askSmart(id, prompt, sys) {
     var p = byId[id];
     return ask(id, prompt, sys).catch(function (e) {
-      if (!p.local || !/אין חיבור/.test(e.message) || /127\.0\.0\.1:8765/.test(conf(id).base)) throw e;
+      if (!(p.local || p.bridgeable) || !/אין חיבור/.test(e.message) || /127\.0\.0\.1:8765/.test(conf(id).base)) throw e;
       return probeBridge().then(function () {
         if (!bridgeUp) throw e;
         var c = cfg[id] = cfg[id] || {}, prev = c.base;
