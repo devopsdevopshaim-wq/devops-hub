@@ -25,6 +25,7 @@
     <nav class="links" aria-label="ניווט בניהול">
       <a href="#clients">משתמשים</a>
       <a href="ai.html">🤖 מודלי AI</a>
+      <a href="plan.html">📋 תכנית עסקית</a>
       <a href="#skills">סקילים</a>
       <a href="#biz">לידים ומחירון</a>
       <a href="#stats">נתונים</a>
@@ -44,7 +45,7 @@
     <h1>שלום חיים, מנהל SPIDER</h1>
     <p class="lead">כל הפרויקטים, הנתונים וההרשאות במקום אחד. כל שינוי נאסף ל"סל פעולות" ונשלח ל־GitHub בלחיצה אחת. GitHub מבצע אותו רק אם הוא הגיע מהחשבון שלך.</p>
     <p class="hint">סקיל ל־Claude לכל פרויקט נבנה אוטומטית בכל פרסום. <a href="skills/all-skills.zip" download>⬇ כל הסקילים בקובץ אחד (ל־Claude Code)</a> · <a href="skills/index.json" target="_blank" rel="noopener">רשימה</a></p>
-    <p><a class="btn btn-gold btn-sm" href="ai.html">🤖 מודלי AI: Ollama, Open WebUI, OpenClaw, Gemini, ChatGPT, DeepSeek, Claude</a></p>
+    <p><a class="btn btn-gold btn-sm" href="plan.html">📋 תכנית עסקית: שירותים, תחזית 12 חודשים ומפת דרכים</a> <a class="btn btn-gold btn-sm" href="ai.html">🤖 מודלי AI: Ollama, Open WebUI, OpenClaw, Gemini, ChatGPT, DeepSeek, Claude</a></p>
     <label class="site-admin"><input type="checkbox" id="site-admin"> <span>להציג כפתורי <b>מחיקה והסתרה</b> גם על הכרטיסים באתר עצמו <small>(רק בדפדפן הזה)</small></span></label>
   </section>
 
@@ -268,22 +269,63 @@
 
   <section id="usage" class="a-sec">
     <header class="sec-head sec-row">
-      <div><p class="eyebrow">שימוש באתר</p><h2>מי נכנס ולאילו אתרים</h2></div>
-      <div class="filters"><select id="u-days" aria-label="טווח זמן"><option value="7">7 ימים</option><option value="30" selected>30 יום</option><option value="60">60 יום</option></select>
-      <button class="g-btn ghost" type="button" id="u-refresh">רענון</button></div>
+      <div><p class="eyebrow">שימוש באתר</p><h2>מי נכנס, לאן, מתי ובאיזה מכשיר</h2></div>
+      <div class="filters">
+        <select id="u-days" aria-label="טווח זמן"><option value="1">היום</option><option value="7">7 ימים</option><option value="14">14 יום</option><option value="30" selected>30 יום</option><option value="60">60 יום</option><option value="120">120 יום</option></select>
+        <select id="u-metric" aria-label="מדד בגרף"><option value="v">צפיות</option><option value="uv">מבקרים</option><option value="nv">מבקרים חדשים</option><option value="o">פתיחות אתרים</option></select>
+        <select id="u-grain" aria-label="פירוט"><option value="d">לפי יום</option><option value="w">לפי שבוע</option></select>
+        <label class="search"><input id="u-q" type="search" placeholder="חיפוש אתר, דף או לקוח…" aria-label="חיפוש"></label>
+        <button class="g-btn ghost" type="button" id="u-refresh">רענון ↻</button>
+        <button class="g-btn ghost" type="button" id="u-csv">ייצוא CSV</button>
+      </div>
     </header>
     <p class="muted" id="u-note">טוען…</p>
-    <dl class="kpis" id="u-kpis"></dl>
-    <figure class="chart u-wide"><figcaption><b>כניסות ביום</b><small>צפיות בדפים · מבקרים ייחודיים · פתיחת אתרים</small></figcaption><div class="u-days" id="u-chart" role="img" aria-label="גרף כניסות לפי יום"></div></figure>
-    <div class="charts u-grid">
-      <figure class="chart"><figcaption><b>באילו אתרים ואפליקציות נכנסו</b><small>לחיצות פתיחה</small></figcaption><ol class="bars" id="u-apps"></ol></figure>
-      <figure class="chart"><figcaption><b>הדפים הנצפים ביותר</b><small>צפיות</small></figcaption><ol class="bars" id="u-pages"></ol></figure>
-      <figure class="chart"><figcaption><b>מכשירים</b><small>סוג, מערכת ודפדפן</small></figcaption><ol class="bars" id="u-dev"></ol></figure>
-      <figure class="chart"><figcaption><b>שעות פעילות</b><small>שעון ישראל</small></figcaption><div class="u-hours" id="u-hours"></div></figure>
-      <figure class="chart"><figcaption><b>מאיפה הגיעו</b><small>אתר מפנה</small></figcaption><ol class="bars" id="u-ref"></ol></figure>
+    <div class="u-tabs" role="tablist" id="u-tabs">
+      <button type="button" role="tab" data-t="over" aria-selected="true">סקירה</button>
+      <button type="button" role="tab" data-t="apps">אתרים ואפליקציות</button>
+      <button type="button" role="tab" data-t="pages">דפים</button>
+      <button type="button" role="tab" data-t="aud">קהל ומכשירים</button>
+      <button type="button" role="tab" data-t="time">זמנים</button>
+      <button type="button" role="tab" data-t="cli">לקוחות</button>
+      <button type="button" role="tab" data-t="log">יומן יומי</button>
     </div>
-    <h3 class="u-h">שימוש לפי לקוח</h3>
-    <div class="table-wrap"><table class="ptable"><thead><tr><th>לקוח</th><th>צפיות</th><th>האתרים שפתח</th></tr></thead><tbody id="u-clients"></tbody></table></div>
+    <div class="u-pane" data-p="over">
+      <dl class="kpis" id="u-kpis"></dl>
+      <ul class="u-insights" id="u-insights"></ul>
+      <figure class="chart u-wide"><figcaption><b id="u-chart-t">כניסות</b><small>העבר עכבר על עמודה לפרטים · הקו המקווקו הוא התקופה הקודמת</small></figcaption><div class="u-days" id="u-chart" role="img" aria-label="גרף"></div></figure>
+    </div>
+    <div class="u-pane" data-p="apps" hidden>
+      <div class="charts u-grid">
+        <figure class="chart"><figcaption><b>באילו אתרים ואפליקציות נכנסו</b><small>לחיצה על שורה מציגה את המגמה שלה</small></figcaption><ol class="bars u-click" id="u-apps"></ol></figure>
+        <figure class="chart"><figcaption><b id="u-trend-t">מגמה</b><small>פתיחות ביום</small></figcaption><div class="u-days" id="u-trend"></div><p class="muted" id="u-trend-n"></p></figure>
+      </div>
+      <h3 class="u-h">שינוי מול התקופה הקודמת</h3>
+      <div class="table-wrap"><table class="ptable"><thead><tr><th>אתר</th><th>פתיחות</th><th>קודם</th><th>שינוי</th><th>חלק מהפתיחות</th></tr></thead><tbody id="u-appt"></tbody></table></div>
+    </div>
+    <div class="u-pane" data-p="pages" hidden>
+      <div class="table-wrap"><table class="ptable"><thead><tr><th>דף</th><th>צפיות</th><th>קודם</th><th>שינוי</th><th>חלק מהכלל</th></tr></thead><tbody id="u-paget"></tbody></table></div>
+    </div>
+    <div class="u-pane" data-p="aud" hidden>
+      <div class="charts u-grid">
+        <figure class="chart"><figcaption><b>חדשים מול חוזרים</b><small>לפי מזהה דפדפן אקראי</small></figcaption><div class="stack" id="u-nr"></div><ul class="legend" id="u-nr-l"></ul></figure>
+        <figure class="chart"><figcaption><b>סוג מכשיר</b></figcaption><ol class="bars" id="u-dv"></ol></figure>
+        <figure class="chart"><figcaption><b>מערכת הפעלה</b></figcaption><ol class="bars" id="u-os"></ol></figure>
+        <figure class="chart"><figcaption><b>דפדפן</b></figcaption><ol class="bars" id="u-br"></ol></figure>
+        <figure class="chart"><figcaption><b>מאיפה הגיעו</b><small>אתר מפנה</small></figcaption><ol class="bars" id="u-ref"></ol></figure>
+      </div>
+    </div>
+    <div class="u-pane" data-p="time" hidden>
+      <div class="charts u-grid">
+        <figure class="chart"><figcaption><b>שעות פעילות</b><small>שעון ישראל</small></figcaption><div class="u-hours" id="u-hours"></div><div class="u-hl"><span>0</span><span>6</span><span>12</span><span>18</span><span>23</span></div></figure>
+        <figure class="chart"><figcaption><b>ימות השבוע</b><small>צפיות מצטברות</small></figcaption><ol class="bars" id="u-wd"></ol></figure>
+      </div>
+    </div>
+    <div class="u-pane" data-p="cli" hidden>
+      <div class="table-wrap"><table class="ptable"><thead><tr><th>לקוח</th><th>צפיות</th><th>האתרים שפתח</th></tr></thead><tbody id="u-clients"></tbody></table></div>
+    </div>
+    <div class="u-pane" data-p="log" hidden>
+      <div class="table-wrap"><table class="ptable"><thead><tr><th>יום</th><th>צפיות</th><th>מבקרים</th><th>חדשים</th><th>פתיחות</th><th>האתר המוביל</th><th>הדף המוביל</th></tr></thead><tbody id="u-log"></tbody></table></div>
+    </div>
   </section>
 
   <section id="pending" class="a-sec" hidden>
