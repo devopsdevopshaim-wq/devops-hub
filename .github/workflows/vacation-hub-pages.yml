@@ -84,26 +84,26 @@ jobs:
             # tooling and docs stay in the repo only
             rm -rf /tmp/site/portfolio/README.md /tmp/site/portfolio/upload-projects.ps1 /tmp/site/portfolio/guide-server
           fi
-          # magnet-studio standalone sites — HTML only, no local css/js (loaded live via <base href>)
+          # the standalone sites carry their own css, js, data and runtime (tools/build-hubs.mjs); nothing is loaded from another server
           if [ -d finance-hub ]; then
             mkdir -p /tmp/site/finance-hub
-            cp finance-hub/index.html /tmp/site/finance-hub/
+            cp -r finance-hub/. /tmp/site/finance-hub/
           fi
           if [ -d marketing-hub ]; then
             mkdir -p /tmp/site/marketing-hub
-            cp marketing-hub/index.html /tmp/site/marketing-hub/
+            cp -r marketing-hub/. /tmp/site/marketing-hub/
           fi
           if [ -d aia-studio ]; then
             mkdir -p /tmp/site/aia-studio
-            cp aia-studio/index.html /tmp/site/aia-studio/
+            cp -r aia-studio/. /tmp/site/aia-studio/
           fi
           if [ -d wellness-hub ]; then
             mkdir -p /tmp/site/wellness-hub
-            cp wellness-hub/index.html wellness-hub/fitness.html /tmp/site/wellness-hub/
+            cp -r wellness-hub/. /tmp/site/wellness-hub/
           fi
           if [ -d torah-hub ]; then
             mkdir -p /tmp/site/torah-hub
-            cp torah-hub/index.html torah-hub/holidays.html torah-hub/library.html /tmp/site/torah-hub/
+            cp -r torah-hub/. /tmp/site/torah-hub/
           fi
           # keep sub-sites published earlier that this checkout does not contain
           if git clone -q --depth 1 -b gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" /tmp/old 2>/dev/null; then

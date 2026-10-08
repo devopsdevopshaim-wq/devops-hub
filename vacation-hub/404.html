@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>העמוד לא נמצא · SPIDER</title>
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f0d24;color:#f1eefc;font:16px/1.6 system-ui,'Segoe UI',Arial,sans-serif;padding:24px}
+  main{max-width:560px;text-align:center}
+  h1{font-size:22px;margin:0 0 6px}
+  p{color:#b9b4d8;margin:0 0 18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  a{display:block;padding:12px 14px;border-radius:12px;border:1px solid rgba(224,178,90,.35);color:#f1eefc;text-decoration:none;background:rgba(255,255,255,.04)}
+  a:hover{border-color:#e0b25a}
+  a.main{background:#e0b25a;color:#17143a;font-weight:700;border-color:#e0b25a;margin-bottom:12px}
+</style>
+</head>
+<body>
+<main>
+  <h1>הכתובת הזו לא קיימת (עוד)</h1>
+  <p>אם הגעת מקישור שקיבלת, ייתכן שהאתר מתעדכן ברגעים אלה. נסו שוב בעוד דקה, או בחרו אתר:</p>
+  <a class="main" href="portfolio/">כל האתרים שלי · SPIDER</a>
+  <div class="grid">
+    <a href="finance-hub/">🧭 מצפן פיננסי</a>
+    <a href="marketing-hub/">📣 פרסום ושיווק</a>
+    <a href="aia-studio/">🎬 עיצוב AIA</a>
+    <a href="wellness-hub/">🩺 מצפן בריאות</a>
+    <a href="torah-hub/">📖 ספריית קודש</a>
+    <a href="comic-studio/">💥 סטודיו קומיקס</a>
+  </div>
+</main>
+<script>
+  // a link to one of the sites with a missing page inside it goes to that site's front page
+  (function () {
+    var m = location.pathname.match(/\/devops-hub\/([\w-]+)(\/|$)/);
+    var known = ['finance-hub', 'marketing-hub', 'aia-studio', 'wellness-hub', 'torah-hub', 'comic-studio', 'portfolio'];
+    var root = m ? '/devops-hub/' + m[1] : '';
+    // never redirect to the page we are already on (that would loop when a site's own front page is the one missing)
+    if (m && known.indexOf(m[1]) > -1 && location.pathname.replace(/\/+$/, '') !== root) location.replace(root + '/');
+  })();
+</script>
+</body>
+</html>

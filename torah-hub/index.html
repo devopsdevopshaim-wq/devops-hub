@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="hub/runtime.js"></script>
 <title>ספריית קודש</title>
-<base href="https://hapinkas-hayomi.onrender.com/">
 <script>
   (function () {
     var nativeFetch = window.fetch;
@@ -21,10 +21,10 @@
     if (href && href.length > 1) { e.preventDefault(); location.hash = href; }
   }, true);
 </script>
-<link rel="stylesheet" href="/css/style.css" />
-<link rel="stylesheet" href="/library/reader.css" />
-<link rel="stylesheet" href="/css/torah.css" />
-<link rel="stylesheet" href="/css/torah-theme.css" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="library/reader.css" />
+<link rel="stylesheet" href="css/torah.css" />
+<link rel="stylesheet" href="css/torah-theme.css" />
 <style>
   .standalone-bar {
     display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
@@ -39,7 +39,7 @@
 <body>
 <div class="standalone-bar">
   <span class="local-nav">יהדות · <a href="index.html" class="on">ספריית קודש</a><a href="holidays.html">הלכות חגים</a><a href="library.html">אוצר לחג</a></span>
-  <a href="https://hapinkas-hayomi.onrender.com/" target="_blank" rel="noopener">למערכת המלאה ←</a>
+  <a href="../portfolio/">כל האתרים שלי ←</a>
 </div>
 <div class="shell">
 
@@ -67,7 +67,7 @@
 
 </div>
 <div class="toast" id="toast"></div>
-<script src="/js/pnks-core.js"></script>
-<script src="/js/torah.js"></script>
+<script src="js/pnks-core.js"></script>
+<script src="js/torah.js"></script>
 </body>
 </html>

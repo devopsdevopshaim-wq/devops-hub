@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="hub/runtime.js"></script>
 <title>עיצוב AIA</title>
-<base href="https://hapinkas-hayomi.onrender.com/">
 <script>
   (function () {
     var nativeFetch = window.fetch;
@@ -21,9 +21,9 @@
     if (href && href.length > 1) { e.preventDefault(); location.hash = href; }
   }, true);
 </script>
-<link rel="stylesheet" href="/css/style.css" />
-<link rel="stylesheet" href="/css/tab-themes.css" />
-<link rel="stylesheet" href="/css/aia.css" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/tab-themes.css" />
+<link rel="stylesheet" href="css/aia.css" />
 <style>
   .standalone-bar {
     display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
@@ -36,8 +36,8 @@
 </head>
 <body class="theme-studio">
 <div class="standalone-bar">
-  <span>עיצוב AIA · חלק ממערכת HKDAILY</span>
-  <a href="https://hapinkas-hayomi.onrender.com/" target="_blank" rel="noopener">למערכת המלאה ←</a>
+  <span>עיצוב AIA </span>
+  <a href="../portfolio/">כל האתרים שלי ←</a>
 </div>
 <div class="aia-wrap">
 
@@ -143,6 +143,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="/js/aia.js"></script>
+<script src="js/aia.js"></script>
 </body>
 </html>
