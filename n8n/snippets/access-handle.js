@@ -337,6 +337,20 @@ switch (b.action) {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     return out({ ok: true, clients: Object.values(sd.clients).map(view), admin: adminView(), signup: !sd.signupClosed });
 
+  // the admin's AI keys and addresses, kept so they survive another browser or a cleared one. Only the signed-in admin can read or
+  // write it; the content is whatever the admin screen sends (up to 20 KB) and is never logged or mailed.
+  case 'ai-vault-get':
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    return out({ ok: true, blob: sd.aiVault ? sd.aiVault.blob : '', at: sd.aiVault ? sd.aiVault.at : null });
+  case 'ai-vault-set': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    const blob = String(b.blob == null ? '' : b.blob);
+    if (blob.length > 20000) return out({ ok: false, error: 'too-big' }, 413);
+    sd.aiVault = blob ? { blob, at: new Date(now).toISOString() } : null;
+    log(blob ? 'מפתחות AI נשמרו בכספת' : 'כספת מפתחות AI נוקתה', ADMIN_EMAIL);
+    return out({ ok: true, at: sd.aiVault ? sd.aiVault.at : null });
+  }
+
   case 'signup-set':
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     sd.signupClosed = b.open === 'false' || b.open === false;
