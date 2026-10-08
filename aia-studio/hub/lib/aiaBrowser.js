@@ -225,7 +225,7 @@ async function clearStage(stageId) {
   for (const k of await kvKeys('stage:' + stageId + ':')) await kvDel(k);
 }
 
-async function create(brief, askAI) {
+async function create(brief, askAI, localAia) {
   const id = 'aia-' + Date.now().toString(36) + Math.random().toString(16).slice(2, 6);
   const assets = [];
   const add = async (blob, ext, note) => {
@@ -248,19 +248,24 @@ async function create(brief, askAI) {
     if (d) await add(d.blob, d.ext, f.note);
   }
 
-  const c = await askAI(conceptPrompt(brief, assets));
-  const concept = c.text.trim();
-  const e = await askAI(expandPrompt(brief, assets, concept));
-  const pkg = parsePackage(e.text, Number(brief.duration) || 8);
-  pkg.concept = concept;
-  let title = brief.title || '';
-  try { const t = await askAI(titlePrompt(concept)); title = cleanTitle(t.text) || title; } catch (x) { /* the title of the brief stays */ }
+  let concept, pkg, title = brief.title || '', source;
+  try {
+    const c = await askAI(conceptPrompt(brief, assets));
+    concept = c.text.trim(); source = c.source;
+    const e = await askAI(expandPrompt(brief, assets, concept));
+    pkg = parsePackage(e.text, Number(brief.duration) || 8);
+    pkg.concept = concept;
+    try { const t = await askAI(titlePrompt(concept)); title = cleanTitle(t.text) || title; } catch (x) { /* the title of the brief stays */ }
+  } catch (err) {
+    // no AI right now: the package is built from the brief itself
+    pkg = localAia(brief, assets); source = 'תבנית מקומית (בלי AI)'; title = pkg.title;
+  }
   pkg.title = title || pkg.title;
 
   const project = {
     id, createdAt: new Date().toISOString(),
     brief: { type: brief.type, title: brief.title, style: brief.style, mood: brief.mood, aspect: brief.aspect, duration: brief.duration, text: brief.text || '' },
-    assets, package: pkg, aiSource: c.source
+    assets, package: pkg, aiSource: source
   };
   await kvSet('p:' + id, project);
   const idx = ((await kvGet('index')) || []);

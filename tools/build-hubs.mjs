@@ -48,6 +48,7 @@ const HUBS = {
   }
 };
 // where a link to another page of the full system goes now
+const LUX = { 'finance-hub': 'finance', 'marketing-hub': 'marketing', 'aia-studio': 'aia', 'wellness-hub': 'wellness', 'torah-hub': 'torah' };
 const LINKS = {
   '/aia.html': '../aia-studio/', '/finance.html': '../finance-hub/', '/marketing.html': '../marketing-hub/',
   '/health.html': '../wellness-hub/', '/fitness.html': '../wellness-hub/fitness.html', '/torah.html': '../torah-hub/',
@@ -82,6 +83,14 @@ function page(file, hub) {
   s = s.replace(/<script src="\/?js\/pnks-offline\.js"><\/script>\s*/g, '');
   // the runtime goes first, so it is there before any script calls the server
   if (!/hub\/runtime\.js/.test(s)) s = s.replace(/(<meta name="viewport"[^>]*>)/, '$1\n<script src="hub/runtime.js"></script>');
+  // the luxury layer: tokens on the body, the stylesheet, the hero script
+  s = s.replace(/<body([^>]*)>/, (m, attrs) => {
+    if (/data-hub=/.test(attrs)) return m;
+    const cls = ` lux lux-${LUX[hub]}`;
+    return /class="/.test(attrs) ? `<body${attrs.replace(/class="([^"]*)"/, (mm, c) => `class="${c}${cls}"`)} data-hub="${hub}">` : `<body class="${cls.trim()}"${attrs} data-hub="${hub}">`;
+  });
+  if (!/premium\.css/.test(s)) s = s.replace('</head>', '<link rel="stylesheet" href="css/premium.css" />\n</head>');
+  if (!/premium\.js/.test(s)) s = s.replace('</body>', '<script src="js/premium.js"></script>\n</body>');
   // the bar at the top: this is a site of its own now
   s = s.replace(/ · חלק ממערכת HKDAILY/g, '');
   s = s.replace(/<a href="https:\/\/hapinkas-hayomi\.onrender\.com\/?"[^>]*>למערכת המלאה ←<\/a>/g, '<a href="../portfolio/">כל האתרים שלי ←</a>');
@@ -99,6 +108,8 @@ function build(hub, cfg) {
   for (const f of cfg.css) put(path.join(out, 'css', f), read(path.join(src, 'public', 'css', f)));
   for (const f of cfg.js) {
     let s = rel(links(read(path.join(src, 'public', 'js', f)), hub));
+    if (f === 'finance.js') s = s.replace('<p>${fmtMd(r.plan)}</p>', '<div>${window.HUBMD ? HUBMD(r.plan) : fmtMd(r.plan)}</div>');
+    if (f === 'health.js') s = s.replace('out.textContent = res.text;', 'out.innerHTML = (window.HUBMD ? HUBMD(res.text) : ""); if (!window.HUBMD) out.textContent = res.text;');
     s = s.replace('$("hol-sync").addEventListener(', '($("hol-sync") || { addEventListener() {} }).addEventListener(');
     if (f === 'pnks-core.js') s = s.replace(/setTimeout\(function \(\) \{\s*if \(!window\.PNKS\.__offline[\s\S]*?\}, 0\);/, '');   // the offline engine belongs to the full system
     put(path.join(out, 'js', f), s);
@@ -127,7 +138,10 @@ function build(hub, cfg) {
       .replace('/*__FROM_SERVER__*/', a.slice(from, to)).replace('/*__MARKDOWN__*/', a.slice(md, mdEnd));
     put(path.join(out, 'hub', 'lib', 'aiaBrowser.js'), t);
   }
+  copy(path.join(here, 'hubs', 'local.js'), path.join(out, 'hub', 'lib', 'local.js'));
   if (cfg.hebcal) copy(HEBCAL, path.join(out, 'hub', 'hebcal-core.mjs'));
+  copy(path.join(here, 'hubs', 'premium.css'), path.join(out, 'css', 'premium.css'));
+  copy(path.join(here, 'hubs', 'premium.js'), path.join(out, 'js', 'premium.js'));
   put(path.join(out, 'hub', 'manifest.json'), JSON.stringify(manifest));
   copy(path.join(here, 'hubs', 'runtime.js'), path.join(out, 'hub', 'runtime.js'));
   console.log(hub, '→', cfg.pages.length, 'pages,', cfg.css.length, 'css,', cfg.js.length, 'js,', cfg.libs.length + (cfg.aia ? 1 : 0), 'modules');
