@@ -1,6 +1,6 @@
 ---
 name: robotic-parking-builder
-description: Build or update a Hebrew (RTL) robotic / automated car-park website in the "פארק־פלאן" format. It is a developer showcase (realistic 3D renders of the configured garage, live three.js garage viewer, value figures, example configurations, project gallery with photo upload and GitHub publishing, developer/technical questionnaires answered instantly and by the Parkomat n8n agents, file upload to Parkomat (Drive/Slack + Claude summary), contact) on top of a full engineering planner: floors and cells, lifts, shuttles and turntable with motor sizing, control cabinets per floor with drives and IO, PROFINET IP plan, SINAMICS G120 parameters, sensor/IO lists with overhang sensor models and lobby height checks, ready TIA Portal (S7-1500) PLC templates that replicate by cell count, full cabinet wiring with click-to-trace, a 3D cabinet assembly walkthrough, SVG drawings, simulation and a project ZIP. Use when the user wants a site, planner, presentation or tool for a robotic parking garage, automated car park, parking tower, shuttle/lift parking system, "חניון רובוטי", "חניון אוטומטי", "מגדל חניה", "אתר כמו פארק־פלאן", "תכנון חניון רובוטי", or wants to change, re-brand, re-render or redeploy a site built from this template.
+description: Build or update a Hebrew (RTL) robotic / automated car-park website in the "פארק־פלאן" format. It is a developer showcase (realistic 3D renders of the configured garage, live three.js garage viewer, value figures, example configurations, project gallery with photo upload and GitHub publishing, developer/technical questionnaires answered instantly and by the Parkomat n8n agents, file upload to Parkomat (Drive/Slack + Claude summary), a WhatsApp service desk (faults, service, orders, installs, software, parts) with agent first-checks, social links and sharing (site.json), contact) on top of a full engineering planner: floors and cells, X/Y handling (regular pallet without fin, pallet with fin, or palletless dolly with clamp arms), lifts, shuttles and turntable with motor sizing, top views of the shuttle floor and of the lift + turntable with every sensor numbered, its purpose and wiring, lift floor sensors and safety (chain break per chain, extra travel, terminal limits), control cabinets per floor with drives and IO, PROFINET IP plan, SINAMICS G120 parameters, sensor/IO lists with overhang sensor models and lobby height checks, ready TIA Portal (S7-1500) PLC templates that replicate by cell count, full cabinet wiring with click-to-trace, a 3D cabinet assembly walkthrough, SVG drawings, simulation and a project ZIP. Use when the user wants a site, planner, presentation or tool for a robotic parking garage, automated car park, parking tower, shuttle/lift parking system, "חניון רובוטי", "חניון אוטומטי", "מגדל חניה", "אתר כמו פארק־פלאן", "תכנון חניון רובוטי", or wants to change, re-brand, re-render or redeploy a site built from this template.
 ---
 
 # Robotic Parking Builder (פארק־פלאן)
@@ -17,6 +17,7 @@ description: Build or update a Hebrew (RTL) robotic / automated car-park website
 | `app.html` → `GAL.repo` / `GAL.dir` | GitHub repo and folder the gallery publishes photos to | Always (via `new-site.py`) |
 | `img/*.jpg` | Hero, cutaway, example and cabinet renders | After config changes (`render-images.sh`) |
 | `app.html` → `PARKOMAT_DEFAULT` | n8n webhook that answers the questionnaires; the file tab uses the sibling `parking-agents` (`n8n/build-parkomat-workflow.py` builds both) | When the agents live elsewhere |
+| `site.json` | WhatsApp number, phone, email and social links (Instagram, LinkedIn, Facebook, YouTube, TikTok, X). Editable from the site with the gallery's GitHub token | Always |
 | `gallery/gallery.json` | Published gallery items (`file` in `gallery/` or `url` to `img/`) | Grows from the site's upload button |
 | `build.sh` | Builds `index.html` from `app.html` | Never |
 
@@ -53,8 +54,8 @@ Fix every `ERROR`. Then open the page once in Playwright at 1440 and 390 px: no 
 
 ### 5. Deliver
 Details in [references/deploy.md](references/deploy.md).
-- **GitHub Pages**: copy `index.html`, `img/`, `gallery/` to the site path; add the path to the Pages workflow. Gallery publishing then works with the owner's fine-grained token (Contents: read & write on that repo only).
-- **Claude artifact**: publish `app.html` with `files` = every `img/*.jpg` + `gallery/gallery.json`, and `capabilities: {downloads: true, assets: {}, db: {}}` (ZIP export, gallery uploads stored in the artifact).
+- **GitHub Pages**: copy `index.html`, `site.json`, `img/`, `gallery/` to the site path; add the path to the Pages workflow. Gallery publishing then works with the owner's fine-grained token (Contents: read & write on that repo only).
+- **Claude artifact**: publish `app.html` with `files` = every `img/*.jpg` + `gallery/gallery.json` + `site.json`, and `capabilities: {downloads: true, assets: {}, db: {}}` (ZIP export, gallery uploads stored in the artifact).
 - **ZIP**: `<skill>/scripts/make-zip.sh <target-dir>`.
 
 ### 6. Report honestly
