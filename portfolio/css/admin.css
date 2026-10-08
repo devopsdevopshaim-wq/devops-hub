@@ -283,3 +283,16 @@
 .ai-res-acts { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
 .ai-pull { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--line-2); }
 .ai-pull button { align-self: flex-start; font: 600 13px/1 inherit; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; color: inherit; cursor: pointer; }
+
+/* usage statistics */
+.u-wide { margin: 0 0 14px; }
+.u-days { display: flex; align-items: flex-end; gap: 3px; height: 150px; direction: ltr; }
+.u-days .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; height: 100%; min-width: 0; position: relative; }
+.u-days .col i { display: block; background: var(--bar); border-radius: 3px 3px 0 0; min-height: 1px; }
+.u-days .col i.uv { background: rgba(241, 238, 252, .35); margin-top: 2px; }
+.u-days .col:hover i, .u-days .col:focus i { filter: brightness(1.2); }
+.u-hours { display: grid; grid-template-columns: repeat(24, 1fr); gap: 3px; align-items: end; height: 110px; direction: ltr; }
+.u-hours i { display: block; background: var(--bar); border-radius: 3px 3px 0 0; min-height: 2px; }
+.u-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 18px; }
+.u-h { margin: 22px 0 10px; font-size: 16px; }
+.u-legend { display: flex; gap: 14px; font-size: 12px; color: var(--mist); margin-top: 8px; }
