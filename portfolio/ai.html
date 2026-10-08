@@ -37,7 +37,7 @@
         <button class="btn btn-ghost btn-sm" type="button" id="ai-wipe">ניקוי כל המפתחות</button>
       </div>
     </header>
-    <p class="hint">כל המודלים שיש לך במקום אחד, רק במסך הזה: המקומיים שרצים אצלך במחשב (Ollama, Open WebUI, OpenClaw) והענן (Gemini, ChatGPT, DeepSeek, Claude). אפשר לבדוק חיבור, לטעון את רשימת המודלים, לשלוח שאלה לאחד, או לשלוח אותה לכמה ולהשוות. המפתחות נשמרים בדפדפן ובכספת פרטית ב־n8n שלך (נגישה רק למנהל מחובר), לא בגיטהאב, ויוצאים רק אל הספק עצמו. הם לא נמחקים אלא אם תלחץ "ניקוי".</p>
+    <p class="hint">כל המודלים שיש לך במקום אחד, רק במסך הזה: המקומיים שרצים אצלך במחשב (Ollama, Open WebUI, OpenClaw) והענן (Gemini, ChatGPT, DeepSeek, Claude). אפשר לבדוק חיבור, לטעון את רשימת המודלים, לשלוח שאלה לאחד, או לשלוח אותה לכמה ולהשוות. חשוב: הצ׳אט החינמי באתרים של ChatGPT, Claude ו־DeepSeek הוא לא ה־API. הם שני שירותים נפרדים: ה־API (שהמסך הזה קורא לו) בתשלום לפי שימוש, ובלי יתרה הוא מחזיר שגיאה. בחינם עובדים כאן Gemini, OpenRouter ו־Groq, והמקומיים שלך. לשאר יש כפתורים שפותחים את הצ׳אט החינמי. המפתחות נשמרים בדפדפן ובכספת פרטית ב־n8n שלך (נגישה רק למנהל מחובר), לא בגיטהאב, ויוצאים רק אל הספק עצמו. הם לא נמחקים אלא אם תלחץ "ניקוי".</p>
     <p class="ai-msg" id="ai-vault"></p>
     <div class="ai-grid" id="ai-grid"><p class="muted">טוען…</p></div>
     <h3 class="ai-h">מעבדת בדיקות</h3>
@@ -46,6 +46,7 @@
       <label class="field"><span>השאלה</span><textarea id="ai-prompt" rows="3" placeholder="כתוב כאן שאלה, ובחר למטה לאילו מודלים לשלוח"></textarea></label>
       <div class="ai-picks" id="ai-picks" role="group" aria-label="לאילו מודלים לשלוח"></div>
       <div class="ai-go"><button class="btn btn-gold btn-sm" type="button" id="ai-send">שליחה לנבחרים</button><span class="muted" id="ai-state"></span></div>
+      <div class="ai-chats-box"><span class="muted">הצ׳אטים החינמיים באתרים (בלי API ובלי תשלום): הקלד שאלה, לחץ, והיא תועתק:</span><div class="ai-picks" id="ai-chats"></div></div>
       <div class="ai-results" id="ai-results"></div>
     </div>
     <details class="ai-help"><summary>איך מחברים את המודלים שבמחשב</summary>

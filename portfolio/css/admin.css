@@ -271,3 +271,6 @@
 .ai-note { margin: 0; font-size: 13px; line-height: 1.7; color: var(--mist); }
 .ai-bridge { grid-column: 1 / -1; border-color: rgba(95, 211, 173, .45); }
 .ai-card .acts a { text-decoration: none; }
+.ai-links { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; } .ai-links a { color: #8fd0ff; }
+.ai-note.ok { color: #5fd3ad; }
+.ai-chats-box { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
