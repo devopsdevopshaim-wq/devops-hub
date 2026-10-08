@@ -24,6 +24,7 @@
     <span class="admin-tag">מסך ניהול</span>
     <nav class="links" aria-label="ניווט בניהול">
       <a href="#clients">משתמשים</a>
+      <a href="#ai">מודלי AI</a>
       <a href="#skills">סקילים</a>
       <a href="#biz">לידים ומחירון</a>
       <a href="#stats">נתונים</a>
@@ -152,6 +153,33 @@
       </div>
     </form>
   </dialog>
+
+  <section id="ai" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">AI · מנהל בלבד</p><h2>מודלי AI</h2></div>
+      <div class="filters">
+        <button class="btn btn-ghost btn-sm" type="button" id="ai-test-all">בדיקת חיבור לכולם</button>
+        <button class="btn btn-ghost btn-sm" type="button" id="ai-wipe">ניקוי כל המפתחות</button>
+      </div>
+    </header>
+    <p class="hint">כל המודלים שיש לך במקום אחד, רק במסך הזה: המקומיים שרצים אצלך במחשב (Ollama, Open WebUI, OpenClaw) והענן (Gemini, ChatGPT, DeepSeek, Claude). אפשר לבדוק חיבור, לטעון את רשימת המודלים, לשלוח שאלה לאחד, או לשלוח אותה לכמה ולהשוות. המפתחות נשמרים רק בדפדפן הזה (localStorage), לא בשרת ולא בגיטהאב, ויוצאים רק אל הספק עצמו.</p>
+    <div class="ai-grid" id="ai-grid"><p class="muted">טוען…</p></div>
+    <h3 class="ai-h">מעבדת בדיקות</h3>
+    <div class="ai-lab">
+      <label class="field"><span>הנחיית מערכת (לא חובה)</span><input id="ai-sys" type="text" placeholder="למשל: ענה בעברית ובקצרה"></label>
+      <label class="field"><span>השאלה</span><textarea id="ai-prompt" rows="3" placeholder="כתוב כאן שאלה, ובחר למטה לאילו מודלים לשלוח"></textarea></label>
+      <div class="ai-picks" id="ai-picks" role="group" aria-label="לאילו מודלים לשלוח"></div>
+      <div class="ai-go"><button class="btn btn-gold btn-sm" type="button" id="ai-send">שליחה לנבחרים</button><span class="muted" id="ai-state"></span></div>
+      <div class="ai-results" id="ai-results"></div>
+    </div>
+    <details class="ai-help"><summary>איך מחברים את המודלים שבמחשב</summary>
+      <p>הדפדפן פונה למודל המקומי ישירות מהמחשב שלך, ולכן צריך לאפשר לאתר הזה לפנות אליו (CORS), ובכרום לאשר "גישה לרשת המקומית" כשהוא שואל.</p>
+      <p><b>Ollama</b> (ברירת מחדל <code dir="ltr">http://localhost:11434</code>): מפעילים אותו עם <code dir="ltr">OLLAMA_ORIGINS=https://devopsdevopshaim-wq.github.io</code>. ב־Windows: הגדרת משתנה סביבה ואז הפעלה מחדש של Ollama. ב־Docker: <code dir="ltr">-e OLLAMA_ORIGINS=https://devopsdevopshaim-wq.github.io</code>.</p>
+      <p><b>Open WebUI</b> (<code dir="ltr">http://localhost:3000</code>): משתנה <code dir="ltr">CORS_ALLOW_ORIGIN=https://devopsdevopshaim-wq.github.io</code>, ומפתח API מתוך: הגדרות ← חשבון ← מפתחות API.</p>
+      <p><b>OpenClaw</b> (ברירת מחדל <code dir="ltr">http://127.0.0.1:18789</code>): צריך שה־gateway יחשוף נקודת קצה תואמת OpenAI (<code dir="ltr">/v1/chat/completions</code>) ויאפשר את האתר ב־CORS; הטוקן נכנס לשדה המפתח. אם אצלך הכתובת או הנתיב שונים, משנים בכרטיס.</p>
+      <p>בסאפארי ודפדפנים שחוסמים פנייה מ־https אל http מקומי זה לא יעבוד. משתמשים בכרום, אדג' או פיירפוקס.</p>
+    </details>
+  </section>
 
   <section id="skills" class="a-sec">
     <header class="sec-head sec-row">
@@ -371,5 +399,6 @@
 <script src="js/admin-biz.js"></script>
 <script src="js/admin-access.js"></script>
 <script src="js/admin-skills.js"></script>
+<script src="js/admin-ai.js"></script>
 </body>
 </html>
