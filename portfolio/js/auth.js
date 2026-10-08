@@ -78,10 +78,10 @@
     box.className = 'admin-fab';
     box.innerHTML = '<button type="button" class="af-btn" aria-haspopup="true" aria-expanded="false">⚙ ניהול</button>' +
       '<div class="af-menu" hidden>' +
+      '<a href="' + base + 'ai.html">🤖 מודלי AI</a>' +
       '<a href="' + base + 'admin.html">מרכז הבקרה</a>' +
       '<a href="' + base + 'admin.html#clients">לקוחות והרשאות</a>' +
       '<a href="' + base + 'admin.html#biz">לידים ועסקים</a>' +
-      '<a href="' + base + 'admin.html#ai">מודלי AI</a>' +
       '<a href="' + base + 'admin.html#skills">סקילים</a>' +
       '<a href="' + base + 'admin.html#media">מוזיקה וסרטונים</a></div>';
     var btn = box.querySelector('.af-btn'), menu = box.querySelector('.af-menu');
