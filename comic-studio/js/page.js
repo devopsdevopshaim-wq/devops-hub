@@ -380,14 +380,19 @@
     }
 
     (page.items || []).forEach(function (it) {
-      if (it.type === 'sfx') drawSfx(ctx, it);
-      else if (it.type === 'photo') drawPhotoItem(ctx, it, it.img && opts.getImage ? opts.getImage(it, 900) : null);
-      else drawBubble(ctx, it);
+      if (opts.itemFilter && !opts.itemFilter(it)) return;
+      drawItem(ctx, it, opts.getImage);
     });
 
     if (opts.editing && opts.sel) drawSelection(ctx, page, polys, opts.sel);
     ctx.restore();
     return polys;
+  }
+
+  function drawItem(ctx, it, getImage) {
+    if (it.type === 'sfx') drawSfx(ctx, it);
+    else if (it.type === 'photo') drawPhotoItem(ctx, it, it.img && getImage ? getImage(it, 900) : null);
+    else drawBubble(ctx, it);
   }
 
   function empty(ctx, b, n) {
@@ -667,7 +672,7 @@
 
   window.ComicPage = {
     LAYOUTS: LAYOUTS, layoutById: LAYOUT_BY_ID, FORMATS: FORMATS, FONTS: FONTS, ITEM_TYPES: ITEM_TYPES,
-    drawPage: drawPage, computePanels: computePanels, bbox: bbox, Editor: Editor,
+    drawPage: drawPage, drawItem: drawItem, inPoly: inPoly, computePanels: computePanels, bbox: bbox, Editor: Editor,
     newPage: newPage, newItem: newItem, newPanel: newPanel, setLayout: setLayout, setFormat: setFormat, layoutThumb: layoutThumb
   };
 })();

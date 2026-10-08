@@ -285,7 +285,22 @@
     };
     this.raf = requestAnimationFrame(loop);
   };
-  Player.prototype.stop = function () { cancelAnimationFrame(this.raf); this.raf = 0; this.paused = false; };
+  Player.prototype.stop = function () { cancelAnimationFrame(this.raf); this.raf = 0; this.paused = false; this.mute(); };
+
+  /* פסקול: סצנה עם sound(ac, outs, at) מתנגנת מהתחלה עם הקול */
+  function audioCtx() { var AC = window.AudioContext || window.webkitAudioContext; return AC ? new AC() : null; }
+  Player.prototype.mute = function () {
+    if (this.snd) { try { this.snd.stop(); } catch (e) { /* כבר נעצר */ } this.snd = null; }
+    if (this.ac) { try { this.ac.close(); } catch (e) { /* כבר נסגר */ } this.ac = null; }
+  };
+  Player.prototype.playWithSound = function () {
+    this.mute();
+    if (this.scene && this.scene.sound) {
+      this.ac = audioCtx();
+      if (this.ac) this.snd = this.scene.sound(this.ac, [this.ac.destination], this.ac.currentTime + 0.05);
+    }
+    this.play();
+  };
 
   /* עוצר את הלולאה כשהנגן לא על המסך או כשהלשונית ברקע, וממשיך כשהוא חוזר. לא חוסם הקלטה */
   Player.prototype.autoPause = function () {
@@ -305,8 +320,9 @@
     document.addEventListener('visibilitychange', sync);
   };
 
-  function pickMime() {
-    var list = ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  function pickMime(audio) {
+    var list = (audio ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus'] : [])
+      .concat(['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']);
     if (!window.MediaRecorder) return null;
     for (var i = 0; i < list.length; i++) if (MediaRecorder.isTypeSupported(list[i])) return list[i];
     return '';
@@ -314,9 +330,19 @@
 
   /* מקליט לולאות מלאות של הסצנה. onProgress(0..1) */
   Player.prototype.record = function (loops, onProgress) {
-    var self = this, mime = pickMime();
+    var self = this, withSound = Boolean(this.scene.sound && (window.AudioContext || window.webkitAudioContext)), mime = pickMime(withSound);
     if (mime === null || !this.canvas.captureStream) return Promise.reject(new Error('הדפדפן הזה לא תומך בהקלטת וידאו. נסו Chrome, Edge או Safari עדכני.'));
     var stream = this.canvas.captureStream(30);
+    this.mute();
+    if (withSound) {
+      /* הפסקול נכנס לקובץ, ונשמע גם ברמקול בזמן ההקלטה */
+      try {
+        this.ac = audioCtx();
+        var dest = this.ac.createMediaStreamDestination();
+        this.snd = this.scene.sound(this.ac, [dest, this.ac.destination], this.ac.currentTime + 0.05);
+        if (this.snd) dest.stream.getAudioTracks().forEach(function (t) { stream.addTrack(t); });
+      } catch (e) { this.mute(); }
+    }
     var rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : { videoBitsPerSecond: 8e6 });
     var chunks = [], total = this.scene.dur * (loops || 1) * 1000;
     return new Promise(function (resolve, reject) {
@@ -324,6 +350,7 @@
       rec.onerror = function (e) { reject(e.error || new Error('ההקלטה נכשלה')); };
       rec.onstop = function () {
         self.recording = false;
+        self.mute();
         var type = (rec.mimeType || mime || 'video/webm').split(';')[0];
         resolve({ blob: new Blob(chunks, { type: type }), ext: type.indexOf('mp4') >= 0 ? 'mp4' : 'webm' });
       };

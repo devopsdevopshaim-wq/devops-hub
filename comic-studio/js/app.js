@@ -1253,7 +1253,7 @@
   }
 
   /* ---------- הנפשה ---------- */
-  var motionPlayer = null, motionFx = null, videoPlayer = null, videoCanvas = null, motionTimer = 0;
+  var motionPlayer = null, motionFx = null, videoPlayer = null, motionTimer = 0;
 
   function renderMotionChips() {
     var box = $('motion-chips');
@@ -1323,24 +1323,72 @@
 
   var VIDEO_SIZES = { story: [1080, 1920], post: [1080, 1350], wide: [1920, 1080] };
 
-  function openPageVideo() {
-    var pg = curPage();
-    toast('מכין את הסרטון…', 60000);
-    document.fonts.ready.then(function () { return renderPageCanvas(pg, 1); }).then(function (c) {
-      videoCanvas = c;
-      buildPageVideo();
-      $('video-dialog').showModal();
-      toast('הסרטון מוכן לצפייה.');
-    }).catch(function (e) { toast('לא הצלחתי להכין סרטון: ' + e.message, 6000); });
+  /* ---------- סרט קומיקס ---------- */
+  var movie = { key: '', data: null, look: 'blockbuster', busy: false };
+  try { movie.look = localStorage.getItem('comic-movie-look') || movie.look; } catch (e) { /* פרטי */ }
+
+  function movieLooks() {
+    var box = $('movie-looks');
+    if (box.childElementCount) return;
+    window.ComicCinema.LOOKS.forEach(function (l) {
+      var b = el('button', 'look');
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.dataset.look = l.id;
+      b.appendChild(el('b', '', l.name));
+      b.appendChild(el('span', 'muted small', l.desc));
+      b.addEventListener('click', function () {
+        movie.look = l.id;
+        try { localStorage.setItem('comic-movie-look', l.id); } catch (e) { /* פרטי */ }
+        buildMovie();
+      });
+      box.appendChild(b);
+    });
+    var mu = $('movie-music');
+    window.ComicCinema.MUSIC.forEach(function (m) { var o = el('option', '', m.name); o.value = m.id; mu.appendChild(o); });
   }
 
-  function buildPageVideo() {
-    var pg = curPage();
-    var rects = PG.computePanels(pg).map(PG.bbox);
-    var scene = MO.pageScene(videoCanvas, rects, { size: VIDEO_SIZES[$('video-fmt').value], perPanel: Number($('video-per').value) });
+  function openPageVideo() {
+    movieLooks();
+    if (!$('video-dialog').open) $('video-dialog').showModal();
+    prepareMovie();
+  }
+
+  /* הכנת החומרים פעם אחת לכל תוכן; החלפת סגנון, פורמט או מוזיקה רק בונה מחדש את הסרט */
+  function prepareMovie() {
+    var pr = ensureProject();
+    var pages = $('movie-scope').value === 'page' ? [curPage()] : pr.pages;
+    var key = JSON.stringify(pages.map(function (pg) { return [pg.id, pg.layout, pg.w, pg.title, pg.panels.map(function (p) { return [p.img, p.style, p.zoom, p.ox, p.oy]; }), pg.items]; }));
+    if (movie.key === key && movie.data) { buildMovie(); return; }
+    if (movie.busy) return;
+    movie.busy = true;
+    if (videoPlayer) videoPlayer.stop();
+    $('video-rec').disabled = $('movie-play').disabled = true;
+    $('video-state').textContent = 'מכין את הסרט…';
+    document.fonts.ready.then(function () {
+      return window.ComicCinema.prepare(pages, renderPageCanvas, {
+        scale: EN.LOW ? 1.25 : 1.6, fullMax: EN.LOW ? 1100 : 1500,
+        onProgress: function (f) { $('video-state').textContent = 'מכין את הסרט… ' + Math.round(f * 100) + '%'; }
+      });
+    }).then(function (data) {
+      movie.data = data; movie.key = key;
+      if (!data.pages.some(function (p) { return p.shots.length; })) throw new Error('אין עדיין ציורים בעמודים. הוסיפו תמונות לפאנלים, או ציירו ספר ב"יצירת קומיקס".');
+      buildMovie();
+    }).catch(function (e) {
+      $('video-state').textContent = 'לא הצלחתי להכין סרט: ' + e.message;
+    }).then(function () { movie.busy = false; });
+  }
+
+  function buildMovie() {
+    if (!movie.data) return;
+    document.querySelectorAll('#movie-looks .look').forEach(function (b) { b.setAttribute('aria-checked', String(b.dataset.look === movie.look)); });
+    var size = MO.videoSize(VIDEO_SIZES[$('video-fmt').value][0], VIDEO_SIZES[$('video-fmt').value][1], EN.LOW ? 720 : 1080);
+    var scene = window.ComicCinema.build(movie.data, { look: movie.look, size: size, music: $('movie-music').value });
     if (!videoPlayer) { videoPlayer = new MO.Player($('video-canvas')); videoPlayer.autoPause(); }
+    videoPlayer.stop();
     videoPlayer.load(scene);
-    $('video-state').textContent = rects.length + ' פאנלים · ' + Math.round(scene.dur) + ' שניות';
+    $('video-rec').disabled = $('movie-play').disabled = false;
+    $('video-state').textContent = scene.shots + ' שוטים · ' + Math.round(scene.dur) + ' שניות · ' + scene.look.name;
   }
 
   function bindMotion() {
@@ -1358,18 +1406,20 @@
       recordWith(motionPlayer, $('motion-state'), m.name + ' - ' + MO.byId[motionFx].name, $('motion-rec'));
     });
     $('exp-video').addEventListener('click', openPageVideo);
-    $('video-per').addEventListener('change', buildPageVideo);
-    $('video-fmt').addEventListener('change', buildPageVideo);
+    $('video-fmt').addEventListener('change', buildMovie);
+    $('movie-music').addEventListener('change', buildMovie);
+    $('movie-scope').addEventListener('change', prepareMovie);
+    $('movie-play').addEventListener('click', function () { if (videoPlayer && videoPlayer.scene) videoPlayer.playWithSound(); });
     $('video-rec').addEventListener('click', function () {
-      if (!videoPlayer) return;
-      recordWith(videoPlayer, $('video-state'), (curPage().title.text || 'comic') + ' - סרטון', $('video-rec'));
+      if (!videoPlayer || !videoPlayer.scene) return;
+      recordWith(videoPlayer, $('video-state'), ((movie.data && movie.data.title) || curPage().title.text || 'comic') + ' - סרט קומיקס', $('video-rec'));
     });
     $('video-dialog').addEventListener('close', function () { if (videoPlayer) videoPlayer.stop(); });
   }
 
   /* ---------- ייצוא ---------- */
   /* כל פאנל מצויר בגודל שבו הוא באמת מופיע בעמוד, ולא יותר. התוצאות נסגרות מיד אחרי הציור */
-  function renderPageCanvas(pg, scale) {
+  function renderPageCanvas(pg, scale, itemFilter) {
     var polys = PG.computePanels(pg), refs = [];
     polys.forEach(function (poly, i) {
       var pn = pg.panels[i];
@@ -1392,7 +1442,7 @@
       c.width = Math.round(pg.w * scale); c.height = Math.round(pg.h * scale);
       var x = c.getContext('2d');
       x.scale(scale, scale);
-      PG.drawPage(x, pg, { getImage: function (r) { return local.get(r) || null; } });
+      PG.drawPage(x, pg, { getImage: function (r) { return local.get(r) || null; }, itemFilter: itemFilter });
       list.forEach(closeImg);
       return c;
     }, function (e) { list.forEach(closeImg); throw e; });
@@ -1475,6 +1525,7 @@
     state: state, imageById: imageById, loadBitmap: loadBitmap, scaled: scaled, closeImg: closeImg,
     canvasToBlob: canvasToBlob, addAiResult: addAiResult, toast: toast, show: show, download: download,
     safeName: safeName, saveMeta: saveMeta, renderLibrary: renderLibrary, el: el, openInPage: openInPage,
+    openMovie: openPageVideo,
     addPages: function (pages) {
       var pr = ensureProject();
       if (pr.pages.length === 1 && !pr.pages[0].panels.some(function (p) { return p.img; }) && !pr.pages[0].items.length) pr.pages = [];

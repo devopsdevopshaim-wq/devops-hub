@@ -22,6 +22,15 @@
     { id: 'cartoon-3d', name: 'אנימציה תלת-ממדית', desc: 'כמו סרט אנימציה משפחתי', c: ['#38bdf8', '#fbbf24', '#f9a8d4'] },
     { id: 'storybook', name: 'ספר ילדים', desc: 'צבעי מים וגואש רכים', c: ['#fde68a', '#86efac', '#fca5a5'] },
     { id: 'street-art', name: 'גרפיטי', desc: 'ציור קיר בספריי על לבנים', c: ['#22d3ee', '#e11d48', '#a3e635'] },
+    { id: 'cinematic', name: 'קולנועי', desc: 'סטיל מסרט הוליוודי, אור דרמטי ועומק', c: ['#0e7490', '#f97316', '#111'] },
+    { id: 'multiverse', name: 'מולטיוורס', desc: 'אנימציה גרפית עם נקודות דפוס והיסטי צבע', c: ['#ec4899', '#22d3ee', '#facc15'] },
+    { id: 'painterly', name: 'ציור שמן מונפש', desc: 'משיכות מכחול על דמויות תלת-ממד', c: ['#7c3aed', '#f59e0b', '#1f2937'] },
+    { id: 'hand-anime', name: 'אנימה מצוירת ביד', desc: 'רקעים בצבעי מים ואור טבעי רך', c: ['#86efac', '#7dd3fc', '#fde68a'] },
+    { id: 'cyberpunk', name: 'סייברפאנק ניאון', desc: 'עיר לילה גשומה, אורות ניאון', c: ['#d946ef', '#06b6d4', '#0f172a'] },
+    { id: 'dark-fantasy', name: 'פנטזיה אפלה', desc: 'אפי, ערפל, קסם וגלימות', c: ['#1e1b4b', '#a78bfa', '#f59e0b'] },
+    { id: 'pop-art', name: 'פופ-ארט', desc: 'צבעי יסוד, נקודות ענק וקווים עבים', c: ['#ef4444', '#facc15', '#2563eb'] },
+    { id: 'movie-poster', name: 'פוסטר קולנוע', desc: 'כרזה מצוירת, זווית גיבור נמוכה', c: ['#b45309', '#fde68a', '#7f1d1d'] },
+    { id: 'sumi-e', name: 'דיו יפני', desc: 'משיכות מכחול דיו ונגיעת אדום', c: ['#f5f5f4', '#111', '#dc2626'] },
     { id: 'noir', name: 'נואר', desc: 'שחור-לבן דרמטי עם נגיעה אדומה', c: ['#111', '#e5e5e5', '#dc2626'] }
   ];
 
@@ -353,9 +362,22 @@
     }, function (text) { $('c-progress-text').textContent = text; }).then(function (r) {
       if (r.kind === 'pages') {
         A.addPages(r.pages);
+        movieCard();
         A.toast((r.pages.length > 1 ? 'ספר קומיקס של ' + r.pages.length + ' עמודים מוכן' : 'העמוד מוכן') + ', עם בועות בעברית. אפשר לערוך כל בועה ולייצא PDF.' + (r.failed ? ' ' + r.failed + ' פאנלים לא צוירו; אפשר לגרור אליהם תמונה.' : ''), 8000);
       } else A.toast((r.items.length === 1 ? 'הציור מוכן ונשמר בספרייה.' : r.items.length + ' ציורים מוכנים ונשמרו בספרייה.') + (r.failed ? ' ' + r.failed + ' לא צוירו.' : ''), 6000);
     });
+  }
+
+  /* אחרי ספר: כרטיס שפותח סרט קולנועי ממנו */
+  function movieCard() {
+    var box = $('c-results'), f = el('div', 'cmovie');
+    f.appendChild(el('b', '', 'הספר מוכן. רוצים אותו כסרט?'));
+    f.appendChild(el('span', 'muted small', 'מצלמה קולנועית, בועות קופצות, מעברים ומוזיקה.'));
+    var b = el('button', 'btn primary', '🎬 סרט קומיקס מהספר');
+    b.type = 'button';
+    b.addEventListener('click', function () { A.openMovie(); });
+    f.appendChild(b);
+    box.insertBefore(f, box.firstChild);
   }
 
   function showError(text) {
