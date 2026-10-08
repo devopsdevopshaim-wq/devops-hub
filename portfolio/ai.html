@@ -32,10 +32,13 @@
       <div><p class="eyebrow">AI · מנהל בלבד</p><h2>מודלי AI</h2></div>
       <div class="filters">
         <button class="btn btn-ghost btn-sm" type="button" id="ai-test-all">בדיקת חיבור לכולם</button>
+        <button class="btn btn-ghost btn-sm" type="button" id="ai-export">⬇ גיבוי הגדרות</button>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer">⬆ שחזור מגיבוי<input type="file" id="ai-import" accept="application/json" hidden></label>
         <button class="btn btn-ghost btn-sm" type="button" id="ai-wipe">ניקוי כל המפתחות</button>
       </div>
     </header>
-    <p class="hint">כל המודלים שיש לך במקום אחד, רק במסך הזה: המקומיים שרצים אצלך במחשב (Ollama, Open WebUI, OpenClaw) והענן (Gemini, ChatGPT, DeepSeek, Claude). אפשר לבדוק חיבור, לטעון את רשימת המודלים, לשלוח שאלה לאחד, או לשלוח אותה לכמה ולהשוות. המפתחות נשמרים רק בדפדפן הזה (localStorage), לא בשרת ולא בגיטהאב, ויוצאים רק אל הספק עצמו.</p>
+    <p class="hint">כל המודלים שיש לך במקום אחד, רק במסך הזה: המקומיים שרצים אצלך במחשב (Ollama, Open WebUI, OpenClaw) והענן (Gemini, ChatGPT, DeepSeek, Claude). אפשר לבדוק חיבור, לטעון את רשימת המודלים, לשלוח שאלה לאחד, או לשלוח אותה לכמה ולהשוות. המפתחות נשמרים בדפדפן ובכספת פרטית ב־n8n שלך (נגישה רק למנהל מחובר), לא בגיטהאב, ויוצאים רק אל הספק עצמו. הם לא נמחקים אלא אם תלחץ "ניקוי".</p>
+    <p class="ai-msg" id="ai-vault"></p>
     <div class="ai-grid" id="ai-grid"><p class="muted">טוען…</p></div>
     <h3 class="ai-h">מעבדת בדיקות</h3>
     <div class="ai-lab">
@@ -46,6 +49,7 @@
       <div class="ai-results" id="ai-results"></div>
     </div>
     <details class="ai-help"><summary>איך מחברים את המודלים שבמחשב</summary>
+      <p><b>הדרך הקלה: הגשר המקומי</b> (הכרטיס הירוק למעלה). מורידים, מפעילים, וכל שלושת הכלים מתחברים בלי לשנות בהם כלום. הפסקאות הבאות הן לחיבור ישיר בלי גשר.</p>
       <p>הדפדפן פונה למודל המקומי ישירות מהמחשב שלך, ולכן צריך לאפשר לאתר הזה לפנות אליו (CORS), ובכרום לאשר "גישה לרשת המקומית" כשהוא שואל.</p>
       <p><b>Ollama</b> (ברירת מחדל <code dir="ltr">http://localhost:11434</code>): מפעילים אותו עם <code dir="ltr">OLLAMA_ORIGINS=https://devopsdevopshaim-wq.github.io</code>. ב־Windows: הגדרת משתנה סביבה ואז הפעלה מחדש של Ollama. ב־Docker: <code dir="ltr">-e OLLAMA_ORIGINS=https://devopsdevopshaim-wq.github.io</code>.</p>
       <p><b>Open WebUI</b> (<code dir="ltr">http://localhost:3000</code>): משתנה <code dir="ltr">CORS_ALLOW_ORIGIN=https://devopsdevopshaim-wq.github.io</code>, ומפתח API מתוך: הגדרות ← חשבון ← מפתחות API.</p>

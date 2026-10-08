@@ -358,6 +358,26 @@ async function signup(tag) {
   r = await call({ action: 'signup-set', token: 'a'.repeat(48), open: 'true' });
   check(t + 'only the admin can switch it', r.code === 403);
 }
+async function vault(tag) {
+  const w = world(), { call } = w, t = tag + ' ';
+  let r = await call({ action: 'ai-vault-get', token: 'a'.repeat(48) });
+  check(t + 'the vault is closed to anyone but the admin', r.code === 403);
+  r = await call({ action: 'ai-vault-set', token: 'a'.repeat(48), blob: 'x' });
+  check(t + '... for writing too', r.code === 403);
+  const a = await adminIn(call, t);
+  r = await call({ action: 'ai-vault-get', token: a.token });
+  check(t + 'it starts empty', r.body.ok && r.body.blob === '');
+  const blob = JSON.stringify({ gemini: { key: 'AIza-secret' } });
+  r = await call({ action: 'ai-vault-set', token: a.token, blob });
+  check(t + 'the admin saves keys', r.body.ok === true);
+  r = await call({ action: 'ai-vault-get', token: a.token });
+  check(t + '... and gets them back', r.body.blob === blob);
+  r = await call({ action: 'ai-vault-set', token: a.token, blob: 'x'.repeat(20001) });
+  check(t + 'a huge blob is refused', r.code === 413);
+  r = await call({ action: 'log', token: a.token });
+  check(t + 'the log never contains the keys', !JSON.stringify(r.body).includes('AIza-secret'));
+}
+await vault('[vault]');
 await signup('[signup]');
 await main('[password]');
 await main('[password + authenticator]', { totp: true });
