@@ -3,30 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="hub/runtime.js"></script>
 <title>מצפן פיננסי</title>
-<base href="https://hapinkas-hayomi.onrender.com/">
-<script>
-  // שולח את עוגיית ההתחברות של המערכת הראשית גם בבקשות חוצות-origin (אם כבר מחוברים שם
-  // באותו דפדפן) — בלי זה, כל fetch() היה נחסם כאילו לא מחוברים בכלל.
-  (function () {
-    var nativeFetch = window.fetch;
-    window.fetch = function (input, init) {
-      init = init || {};
-      if (init.credentials === undefined) init.credentials = "include";
-      return nativeFetch(input, init);
-    };
-  })();
-  // קישורי עוגן פנימיים (#...) לא אמורים להתנווט דרך ה-base — רק לשנות hash באותו עמוד.
-  document.addEventListener("click", function (e) {
-    var a = e.target.closest && e.target.closest('a[href^="#"]');
-    if (!a) return;
-    var href = a.getAttribute("href");
-    if (href && href.length > 1) { e.preventDefault(); location.hash = href; }
-  }, true);
-</script>
-<link rel="stylesheet" href="/css/style.css" />
-<link rel="stylesheet" href="/css/tab-themes.css" />
-<link rel="stylesheet" href="/css/finance.css" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/tab-themes.css" />
+<link rel="stylesheet" href="css/finance.css" />
 <style>
   .standalone-bar {
     display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
@@ -39,8 +20,8 @@
 </head>
 <body class="theme-ledger">
 <div class="standalone-bar">
-  <span>מצפן פיננסי · חלק ממערכת HKDAILY</span>
-  <a href="https://hapinkas-hayomi.onrender.com/" target="_blank" rel="noopener">למערכת המלאה ←</a>
+  <span>מצפן פיננסי </span>
+  <a href="../portfolio/">כל האתרים שלי ←</a>
 </div>
 <div class="fin-wrap">
 
@@ -149,8 +130,8 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="/js/pnks-core.js"></script>
-<script src="/js/finance.js"></script>
+<script src="js/pnks-core.js"></script>
+<script src="js/finance.js"></script>
 </body>
 </html>
 <!-- v1 -->

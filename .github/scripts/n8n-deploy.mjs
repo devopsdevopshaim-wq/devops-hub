@@ -231,6 +231,10 @@ try {
   results.comic = await install('n8n/hasadna-comic.json', [], { fill: COMIC });
 } catch (e) { note(`- ⚠️ סטודיו קומיקס: ${e.message.slice(0, 200)}`); }
 
+try {
+  results.hubs = await install('n8n/hasadna-hubs.json', [], { fill: COMIC });
+} catch (e) { note(`- ⚠️ השרת של האתרים העצמאיים: ${e.message.slice(0, 200)}`); }
+
 // ---- do they answer?
 async function probe(path, init) {
   try { const r = await fetch(`${BASE}/webhook/${path}`, init); return r.status; } catch { return 0; }
@@ -251,6 +255,16 @@ const checks = {
   } catch {}
   checks['comic-draw'] = st;
   note(`- סטודיו קומיקס: ${st === 200 ? `✅ עונה · Gemini ${j.gemini ? '✅' : '❌ (חסר GEMINI_API_KEY)'} · OpenAI ${j.openai ? '✅' : '❌ (חסר OPENAI_API_KEY)'}` : '❌ ' + st}`);
+}
+// the standalone sites' server: is the AI on
+{
+  let j = {}, st = 0;
+  try {
+    const r = await fetch(`${BASE}/webhook/hasadna-hubs`, { method: 'POST', headers: { Origin: 'https://devopsdevopshaim-wq.github.io', 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ action: 'status' }) });
+    st = r.status; j = await r.json().catch(() => ({}));
+  } catch {}
+  checks['hasadna-hubs'] = st;
+  note(`- האתרים העצמאיים (פיננסים, שיווק, AIA, בריאות, יהדות): ${st === 200 ? `✅ עונה · AI ${j.ai ? '✅' : '❌ (חסר GEMINI_API_KEY)'}` : '❌ ' + st}`);
 }
 // the sign-in answers, and (if the secret's password is still the admin's) it opens
 {

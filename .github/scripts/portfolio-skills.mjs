@@ -17,7 +17,7 @@ const byId = {};
 (know ? know.projects : []).forEach((k) => { byId[k.id] = k; });
 
 // Sites that live inside this repository rather than in their own.
-const LOCAL = { 'vacation-hub': 'vacation-hub/', 'book-studio': 'book-studio/', 'electro-fix': 'electro-fix/', interior: 'interior-hub/', 'assembly-studio': 'assembly-studio/', netplan: 'netplan/', automation: 'automation/', 'robotic-parking': 'robotic-parking/' };
+const LOCAL = { 'vacation-hub': 'vacation-hub/', 'book-studio': 'book-studio/', 'electro-fix': 'electro-fix/', interior: 'interior-hub/', 'assembly-studio': 'assembly-studio/', netplan: 'netplan/', automation: 'automation/', 'robotic-parking': 'robotic-parking/', 'finance-hub': 'finance-hub/', 'marketing-hub': 'marketing-hub/', 'aia-studio': 'aia-studio/', 'wellness-hub': 'wellness-hub/', 'torah-hub': 'torah-hub/' };
 
 const owner = data.owner;
 const one = (s, n) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, n);
