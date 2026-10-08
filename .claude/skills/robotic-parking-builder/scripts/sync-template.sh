@@ -7,4 +7,5 @@ SITE="${1:-$ROOT/robotic-parking}"; OUT="${2:-$ROOT/robotic-parking-builder-skil
 rm -rf "$SK/template"; mkdir -p "$SK/template"
 cp "$SITE/app.html" "$SITE/build.sh" "$SITE/index.html" "$SITE/README.md" "$SK/template/"
 cp -r "$SITE/img" "$SITE/gallery" "$SK/template/"
+if [ -f "$SITE/site.json" ]; then cp "$SITE/site.json" "$SK/template/"; fi
 rm -f "$OUT"; ( cd "$(dirname "$SK")" && zip -rq "$OUT" "$(basename "$SK")" ); echo "Template synced; skill zip: $OUT"
