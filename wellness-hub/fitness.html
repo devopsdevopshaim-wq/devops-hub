@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>כושר יומי</title>
+<base href="https://hapinkas-hayomi.onrender.com/">
+<script>
+  (function () {
+    var nativeFetch = window.fetch;
+    window.fetch = function (input, init) {
+      init = init || {};
+      if (init.credentials === undefined) init.credentials = "include";
+      return nativeFetch(input, init);
+    };
+  })();
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var href = a.getAttribute("href");
+    if (href && href.length > 1) { e.preventDefault(); location.hash = href; }
+  }, true);
+</script>
+<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="/css/tab-themes.css" />
+<link rel="stylesheet" href="/css/fitness.css" />
+<style>
+  .standalone-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    padding: 9px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line);
+    font-family: var(--font-body); font-size: 0.78rem; color: var(--cream-dim);
+  }
+  .standalone-bar a { color: var(--brass-soft); text-decoration: none; margin-inline-start: 14px; }
+  .standalone-bar a:hover { text-decoration: underline; }
+  .standalone-bar .local-nav a.on { color: var(--cream); font-weight: 600; }
+</style>
+</head>
+<body class="theme-energy">
+<div class="standalone-bar">
+  <span class="local-nav">בריאות וכושר · <a href="index.html">בריאות</a><a href="fitness.html" class="on">כושר</a></span>
+  <a href="https://hapinkas-hayomi.onrender.com/" target="_blank" rel="noopener">למערכת המלאה ←</a>
+</div>
+<div class="ft-wrap">
+
+  <header class="top-header">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="24,4 41,14 41,34 24,44 7,34 7,14" stroke="currentColor" stroke-width="2.5"/>
+        <path d="M14 24h20M17 20v8M31 20v8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>כושר יומי</h1>
+        <div class="tagline">תוכנית שבועית מאוזנת · דחיפה, משיכה, רגליים ו-core · מעקב סטים אמיתי</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="ft-hero">
+    <div class="kicker">תנועה · לפי הנחיות ACSM / AHA</div>
+    <h1>תרגול קצר כל יום — בעיקר משקל-גוף, ציוד קל אופציונלי</h1>
+    <p class="lead">
+      היעד לפי ההנחיות: 150–300 דקות אירובי מתון בשבוע + יומיים של כוח לכל קבוצות השריר —
+      כולל דחיפה, משיכה, רגליים ו-core (לא רק דחיפה, כדי לשמור על איזון שרירי אמיתי).
+      כאן זה מפורק לתרגול יומי קצר של 10–20 דקות, עם סימון סטים בפועל לכל תרגיל כדי לעקוב
+      אחרי נפח אימון אמיתי — לא רק "בוצע/לא בוצע". פרטים מלאים בלשונית
+      <a href="index.html" style="color:var(--brass-soft)">מצפן בריאות</a>.
+    </p>
+  </div>
+
+  <section class="ft-section" id="today">
+    <div class="ft-head"><h2>אימון היום</h2><span class="sub" id="ft-date"></span></div>
+    <div class="ft-card ft-today" id="ft-today-card">
+      <div class="ft-empty">טוען…</div>
+    </div>
+  </section>
+
+  <section class="ft-section" id="week">
+    <div class="ft-head"><h2>מחזור השבוע</h2><span class="sub">7 ימים · מנוחה בשבת</span></div>
+    <div class="ft-week" id="ft-week"></div>
+  </section>
+
+  <section class="ft-section" id="library">
+    <div class="ft-head"><h2>ספריית התרגילים</h2><span class="sub" id="ft-lib-count"></span></div>
+    <div class="ft-lib" id="ft-lib"></div>
+  </section>
+
+  <footer class="ft-foot" id="ft-foot"></footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/js/exercise-figures.js"></script>
+<script src="/js/fitness.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>הלכות חגים</title>
+<base href="https://hapinkas-hayomi.onrender.com/">
+<script>
+  (function () {
+    var nativeFetch = window.fetch;
+    window.fetch = function (input, init) {
+      init = init || {};
+      if (init.credentials === undefined) init.credentials = "include";
+      return nativeFetch(input, init);
+    };
+  })();
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var href = a.getAttribute("href");
+    if (href && href.length > 1) { e.preventDefault(); location.hash = href; }
+  }, true);
+</script>
+<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="/css/tab-themes.css" />
+<link rel="stylesheet" href="/css/holidays.css" />
+<style>
+  .standalone-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    padding: 9px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line);
+    font-family: var(--font-body); font-size: 0.78rem; color: var(--cream-dim);
+  }
+  .standalone-bar a { color: var(--brass-soft); text-decoration: none; margin-inline-start: 14px; }
+  .standalone-bar a:hover { text-decoration: underline; }
+  .standalone-bar .local-nav a.on { color: var(--cream); font-weight: 600; }
+</style>
+</head>
+<body class="theme-scripture-light">
+<div class="standalone-bar">
+  <span class="local-nav">יהדות · <a href="index.html">ספריית קודש</a><a href="holidays.html" class="on">הלכות חגים</a><a href="library.html">אוצר לחג</a></span>
+  <a href="https://hapinkas-hayomi.onrender.com/" target="_blank" rel="noopener">למערכת המלאה ←</a>
+</div>
+<div class="shell" style="max-width:1180px;">
+
+  <header class="top-header">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="24,4 41,14 41,34 24,44 7,34 7,14" stroke="currentColor" stroke-width="2.5"/>
+        <path d="M24 12v10M24 22l-6 4M24 22l6 4M18 26v6M30 26v6M15 22c0-5 4-9 9-9s9 4 9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <h1 data-name>הִלְכוֹת חַגִּים</h1>
+        <div class="tagline">מנהגים · הלכות · ברכות ופרושים — תורה, הלכה וקבלה, לכל חג</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="hol-toolbar">
+    <div class="hol-note">כל תאריך וזמן כניסה/יציאה מחושב בזמן אמת לפי המיקום שלכם. זהו סיכום לימודי — לשאלות מעשיות אישיות פנו לרב מורה הוראה.</div>
+    <button class="btn ghost" id="hol-sync">📅 סנכרון ליומן העסקי</button>
+  </div>
+
+  <div class="hol-grid" id="hol-grid"><div class="hol-loading">טוען חגים…</div></div>
+
+  <div class="hol-detail" id="hol-detail" hidden></div>
+
+</div>
+<div class="toast" id="toast"></div>
+<script src="/js/holidays.js"></script>
+</body>
+</html>

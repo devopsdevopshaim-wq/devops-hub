@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ספריית קודש</title>
+<base href="https://hapinkas-hayomi.onrender.com/">
+<script>
+  (function () {
+    var nativeFetch = window.fetch;
+    window.fetch = function (input, init) {
+      init = init || {};
+      if (init.credentials === undefined) init.credentials = "include";
+      return nativeFetch(input, init);
+    };
+  })();
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var href = a.getAttribute("href");
+    if (href && href.length > 1) { e.preventDefault(); location.hash = href; }
+  }, true);
+</script>
+<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="/library/reader.css" />
+<link rel="stylesheet" href="/css/torah.css" />
+<link rel="stylesheet" href="/css/torah-theme.css" />
+<style>
+  .standalone-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    padding: 9px 18px; background: var(--surface-2, #241d16); border-bottom: 1px solid var(--line, rgba(198,154,99,.2));
+    font-family: var(--font-body); font-size: 0.78rem; color: var(--cream-dim, #a3927a);
+  }
+  .standalone-bar a { color: var(--brass-soft, #e0b04a); text-decoration: none; margin-inline-start: 14px; }
+  .standalone-bar a:hover { text-decoration: underline; }
+  .standalone-bar .local-nav a.on { color: var(--cream, #f0e6d8); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="standalone-bar">
+  <span class="local-nav">יהדות · <a href="index.html" class="on">ספריית קודש</a><a href="holidays.html">הלכות חגים</a><a href="library.html">אוצר לחג</a></span>
+  <a href="https://hapinkas-hayomi.onrender.com/" target="_blank" rel="noopener">למערכת המלאה ←</a>
+</div>
+<div class="shell">
+
+  <header class="top-header">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="24,4 41,14 41,34 24,44 7,34 7,14" stroke="currentColor" stroke-width="2.5"/>
+        <path d="M24 10v22M15 17c3-2 6-2 9 0s6 2 9 0M15 25c3-2 6-2 9 0s6 2 9 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>ספריית קודש</h1>
+        <div class="tagline">תנ״ך · סידור תפילה וחגים · רש״י ורמב״ם ואור החיים · תלמוד בבלי</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tr-tabbar" id="tr-tabbar">
+    <button class="tr-tab active" data-mode="tanakh">תנ״ך</button>
+    <button class="tr-tab" data-mode="siddur">סידור וחגים</button>
+    <button class="tr-tab" data-mode="rambam">רמב״ם</button>
+    <button class="tr-tab" data-mode="talmud">תלמוד בבלי</button>
+  </div>
+
+  <main id="tr-main" class="tr-main"></main>
+
+</div>
+<div class="toast" id="toast"></div>
+<script src="/js/pnks-core.js"></script>
+<script src="/js/torah.js"></script>
+</body>
+</html>
