@@ -358,6 +358,18 @@ async function signup(tag) {
   r = await call({ action: 'signup-set', token: 'a'.repeat(48), open: 'true' });
   check(t + 'only the admin can switch it', r.code === 403);
 }
+async function planDoc(tag) {
+  const { call } = world(), t = tag + ' ';
+  let r = await call({ action: 'plan-get', token: 'a'.repeat(48) });
+  check(t + 'the plan is closed to anyone but the admin', r.code === 403);
+  const a = await adminIn(call, t);
+  r = await call({ action: 'plan-set', token: a.token, blob: '{"x":1}' });
+  check(t + 'the admin saves it', r.body.ok === true);
+  r = await call({ action: 'plan-get', token: a.token });
+  check(t + '... and reads it back', r.body.blob === '{"x":1}');
+  r = await call({ action: 'plan-set', token: a.token, blob: 'x'.repeat(40001) });
+  check(t + 'a huge plan is refused', r.code === 413);
+}
 async function vault(tag) {
   const w = world(), { call } = w, t = tag + ' ';
   let r = await call({ action: 'ai-vault-get', token: 'a'.repeat(48) });
@@ -398,6 +410,7 @@ async function usage(tag) {
   check(t + 'no address or raw visitor id is exposed', !JSON.stringify(r.body).includes('abcdefgh1234'));
 }
 await usage('[usage]');
+await planDoc('[plan]');
 await vault('[vault]');
 await signup('[signup]');
 await main('[password]');

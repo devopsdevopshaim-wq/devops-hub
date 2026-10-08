@@ -79,6 +79,7 @@
     box.innerHTML = '<button type="button" class="af-btn" aria-haspopup="true" aria-expanded="false">⚙ ניהול</button>' +
       '<div class="af-menu" hidden>' +
       '<a href="' + base + 'ai.html">🤖 מודלי AI</a>' +
+      '<a href="' + base + 'plan.html">📋 תכנית עסקית</a>' +
       '<a href="' + base + 'admin.html#usage">📈 שימוש באתר</a>' +
       '<a href="' + base + 'admin.html">מרכז הבקרה</a>' +
       '<a href="' + base + 'admin.html#clients">לקוחות והרשאות</a>' +

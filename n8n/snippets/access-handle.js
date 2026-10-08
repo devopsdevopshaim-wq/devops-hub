@@ -29,7 +29,7 @@ const CLIENT_SESSION_DAYS = 7;   // capped by the end of the subscription
 const ADMIN_SESSION_DAYS = 0.5;  // the admin signs in again every 12 hours
 const MAX_CLIENTS = 500;
 const SIGNUP_DAYS = 30;   // how long a self-registered client has access, until the admin extends or closes it
-const USAGE_DAYS = 60;   // how long the daily usage counters are kept
+const USAGE_DAYS = 120;   // how long the daily usage counters are kept
 const DEFAULT_MAX_DEVICES = 3;
 const MIN_PASSWORD = 8;
 const TEMP_ADMIN_MIN = 60, TEMP_CLIENT_DAYS = 14;   // how long an emailed initial password works
@@ -69,7 +69,7 @@ sweep();
 
 if (!ORIGIN_OK) return out({ ok: false, error: 'forbidden' }, 403);
 const b = $json.body || {};
-if (JSON.stringify(b).length > 30000) return out({ ok: false, error: 'too-big' }, 413);
+if (JSON.stringify(b).length > (b.action === 'plan-set' ? 45000 : 30000)) return out({ ok: false, error: 'too-big' }, 413);
 if (!hit('all', IPK, 240, 10 * 60000)) return out({ ok: false, error: 'rate-limited' }, 429);
 
 // the optional ADMIN_PASSWORD secret: when its value changes, it becomes the admin password (and signs the admin out everywhere)
@@ -166,7 +166,7 @@ switch (b.action) {
     const day = new Date(now + 3 * HOUR).toISOString().slice(0, 10);
     sd.usage = sd.usage || {};
     for (const d of Object.keys(sd.usage)) if (now - Date.parse(d) > USAGE_DAYS * DAY) delete sd.usage[d];
-    const u = sd.usage[day] = sd.usage[day] || { v: 0, o: 0, vis: {}, uv: 0, p: {}, a: {}, br: {}, os: {}, dv: {}, ref: {}, h: new Array(24).fill(0), c: {} };
+    const u = sd.usage[day] = sd.usage[day] || { v: 0, o: 0, vis: {}, uv: 0, nv: 0, p: {}, a: {}, br: {}, os: {}, dv: {}, ref: {}, h: new Array(24).fill(0), c: {} };
     const add = (m, k, cap) => { if (!k) return; if (m[k] == null && Object.keys(m).length >= (cap || 60)) k = 'אחר'; m[k] = (m[k] || 0) + 1; };
     const vid = /^[a-zA-Z0-9]{8,40}$/.test(String(b.vid || '')) ? sha256hex('vis|' + b.vid).slice(0, 10) : '';
     const who = s0 && s0.email ? s0.email : '';
@@ -184,7 +184,12 @@ switch (b.action) {
       u.h[Math.floor(((now + 3 * HOUR) % DAY) / HOUR)]++;
       if (who) { u.c[who] = u.c[who] || { v: 0, a: {} }; u.c[who].v++; }
     }
-    if (vid && !u.vis[vid] && Object.keys(u.vis).length < 800) { u.vis[vid] = 1; u.uv++; }
+    if (vid && !u.vis[vid] && Object.keys(u.vis).length < 800) {
+      u.vis[vid] = 1; u.uv++;
+      // new or returning: the first day a visitor id was seen (hashes only, the oldest forgotten past 4000)
+      sd.usageSeen = sd.usageSeen || {};
+      if (!sd.usageSeen[vid]) { sd.usageSeen[vid] = day; u.nv++; const ks = Object.keys(sd.usageSeen); if (ks.length > 4000) for (const k of ks.slice(0, ks.length - 4000)) delete sd.usageSeen[k]; }
+    }
     return out({ ok: true });
   }
 
@@ -372,16 +377,19 @@ switch (b.action) {
   // ------------------------------------------------------------- admin only
   case 'stats-get': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
-    const days = Math.min(USAGE_DAYS, Math.max(1, parseInt(b.days, 10) || 30));
+    const days = Math.min(USAGE_DAYS, Math.max(1, parseInt(b.days, 10) || 30));   // the page asks for twice the range to compare with the period before
+    const range = Math.min(days, Math.max(1, parseInt(b.range, 10) || days));   // the breakdowns below cover the last `range` days
     const list = [];
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(now + 3 * HOUR - i * DAY).toISOString().slice(0, 10);
       const u = (sd.usage || {})[d];
-      list.push({ d, v: u ? u.v : 0, o: u ? u.o : 0, uv: u ? u.uv : 0 });
+      const top = (m) => Object.entries(m || {}).sort((a, c) => c[1] - a[1]).slice(0, 15);
+      list.push({ d, v: u ? u.v : 0, o: u ? u.o : 0, uv: u ? u.uv : 0, nv: u ? u.nv || 0 : 0, h: u ? u.h : null, p: u ? top(u.p) : [], a: u ? top(u.a) : [], dv: u ? top(u.dv) : [] });
     }
-    const sum = (k) => { const m = {}; for (const d of list) { const u = (sd.usage || {})[d.d]; if (u) for (const [x, n] of Object.entries(u[k] || {})) m[x] = (m[x] || 0) + n; } return Object.entries(m).sort((a, c) => c[1] - a[1]).slice(0, 25); };
+    const cur = list.slice(-range);
+    const sum = (k) => { const m = {}; for (const d of cur) { const u = (sd.usage || {})[d.d]; if (u) for (const [x, n] of Object.entries(u[k] || {})) m[x] = (m[x] || 0) + n; } return Object.entries(m).sort((a, c) => c[1] - a[1]).slice(0, 25); };
     const hours = new Array(24).fill(0), clients = {};
-    for (const d of list) {
+    for (const d of cur) {
       const u = (sd.usage || {})[d.d]; if (!u) continue;
       u.h.forEach((n, i) => { hours[i] += n; });
       for (const [e, c] of Object.entries(u.c || {})) {
@@ -410,6 +418,18 @@ switch (b.action) {
     sd.aiVault = blob ? { blob, at: new Date(now).toISOString() } : null;
     log(blob ? 'מפתחות AI נשמרו בכספת' : 'כספת מפתחות AI נוקתה', ADMIN_EMAIL);
     return out({ ok: true, at: sd.aiVault ? sd.aiVault.at : null });
+  }
+
+  // The business plan the admin writes on plan.html: one document (up to 40 KB), readable and writable by the admin only.
+  case 'plan-get':
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    return out({ ok: true, blob: sd.plan ? sd.plan.blob : '', at: sd.plan ? sd.plan.at : null });
+  case 'plan-set': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    const blob = String(b.blob == null ? '' : b.blob);
+    if (blob.length > 40000) return out({ ok: false, error: 'too-big' }, 413);
+    sd.plan = blob ? { blob, at: new Date(now).toISOString() } : null;
+    return out({ ok: true, at: sd.plan ? sd.plan.at : null });
   }
 
   case 'signup-set':
