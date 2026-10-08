@@ -148,6 +148,15 @@ const STYLES = {
   'cartoon-3d': 'high-end 3D animated family movie still: stylized proportions, large expressive eyes, soft subsurface skin, cinematic lighting',
   'storybook': 'children\'s storybook illustration: soft watercolor and gouache textures, warm light, gentle rounded shapes',
   'street-art': 'street art graffiti mural on a brick wall: bold spray paint colors, thick double outlines, drips, stencil accents',
+  'cinematic': 'cinematic movie still: anamorphic widescreen composition, volumetric god rays, teal and orange color grade, shallow depth of field, subtle film grain, epic dramatic lighting, highly detailed digital painting',
+  'multiverse': 'stylized mixed-media animated film look: bold comic halftone dots, chromatic misregistration offsets, graphic cross-hatching, vibrant neon colors, dynamic tilted camera angles, motion smears',
+  'painterly': 'painterly animated series style: visible oil brush strokes painted over 3D forms, hand-painted textures, dramatic rim lighting, rich jewel tones, moody atmosphere',
+  'hand-anime': 'hand-painted Japanese animated film: lush watercolor backgrounds, soft natural sunlight, gentle character design, fluffy clouds, whimsical warm atmosphere',
+  'cyberpunk': 'cyberpunk comic art: neon magenta and cyan lights, rain-soaked night city, holographic signs, glossy reflections, high contrast ink and glow',
+  'dark-fantasy': 'epic dark fantasy illustration: dramatic chiaroscuro, misty ancient castles, glowing magic particles, ornate armor and flowing cloaks, painterly detail',
+  'pop-art': 'pop art: bold flat primary colors, heavy black outlines, oversized Ben-Day dots, graphic poster composition, punchy contrast',
+  'movie-poster': 'illustrated vintage movie poster: painted heroic composition, dramatic low camera angle, glowing sunset sky, rich gouache texture, larger than life',
+  'sumi-e': 'Japanese sumi-e ink wash painting: expressive flowing brush strokes, splattered ink, a single red accent, rice paper texture, elegant negative space',
   'noir': 'black and white film noir comic: stark chiaroscuro, rain, deep shadows, a single red accent color'
 };
 const style = STYLES[b.style] ? b.style : 'superhero';
