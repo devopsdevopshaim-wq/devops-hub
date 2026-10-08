@@ -84,7 +84,7 @@
       if (!r.ok || !r.plan) throw new Error(r.error || "לא התקבלה תוכנית — ודא ש-Ollama פועל או שמוגדר מפתח ספק ענן.");
       renderMetrics(r.metrics);
       $("fin-plan").className = "fin-plan";
-      $("fin-plan").innerHTML = `<p>${fmtMd(r.plan)}</p>${r.source ? `<div class="fin-src">נכתב ע"י ${esc(r.source)}</div>` : ""}
+      $("fin-plan").innerHTML = `<div>${window.HUBMD ? HUBMD(r.plan) : fmtMd(r.plan)}</div>${r.source ? `<div class="fin-src">נכתב ע"י ${esc(r.source)}</div>` : ""}
         <button class="btn ghost" id="fin-dl">⤓ שמור כטקסט</button>`;
       $("fin-dl").addEventListener("click", () => {
         const blob = new Blob(["תוכנית התנהלות פיננסית\n\n" + r.plan], { type: "text/plain;charset=utf-8" });

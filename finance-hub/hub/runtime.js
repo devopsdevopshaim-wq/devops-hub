@@ -154,7 +154,14 @@
 
   route('POST', /^\/api\/finance\/metrics$/, wrap(function (c) { return lib('financeAdvisor').then(function (m) { return json({ metrics: m.computeMetrics(c.body || {}) }); }); }));
   route('POST', /^\/api\/finance\/analyze$/, function (c) {
-    return lib('financeAdvisor').then(function (m) { return m.analyze(c.body || {}); }).then(function (r) { return json(r); }, function (e) { return json({ ok: false, error: e.message }, 502); });
+    // the AI writes the plan; with no AI the same sections are computed from the numbers
+    return Promise.all([lib('financeAdvisor'), lib('local')]).then(function (ms) {
+      return ms[0].analyze(c.body || {}).catch(function (e) { return { ok: false, error: e.message, metrics: ms[0].computeMetrics(c.body || {}) }; }).then(function (r) {
+        if (r && r.ok && r.plan) return json(r);
+        var l = ms[1].finance(c.body || {}, r.metrics || ms[0].computeMetrics(c.body || {}));
+        return json({ ok: true, metrics: r.metrics, plan: l.plan, source: l.source, generatedAt: new Date().toISOString() });
+      });
+    }).catch(function (e) { return json({ ok: false, error: e.message }, 502); });
   });
   ['market', 'market/news', 'market/outlook'].forEach(function (p) {
     route('GET', new RegExp('^/api/' + p + '$'), function () {
@@ -167,11 +174,22 @@
     return lib('marketData').then(function (m) { return m.lookupTicker(c.query.get('symbol') || ''); }).then(function (r) { return json(r); }, function (e) { return json({ error: e.message }, 400); });
   });
   route('POST', /^\/api\/health\/analyze$/, function (c) {
-    return lib('healthAdvisor').then(function (m) { return m.analyze(c.body && typeof c.body === 'object' ? c.body : {}); })
-      .then(function (r) { return json(r, r.ok ? 200 : 503); }, function (e) { return json({ ok: false, error: e.message }, 500); });
+    var data = c.body && typeof c.body === 'object' ? c.body : {};
+    return Promise.all([lib('healthAdvisor'), lib('local')]).then(function (ms) {
+      return ms[0].analyze(data).catch(function () { return { ok: false }; }).then(function (r) { return json(r && r.ok ? r : ms[1].health(data)); });
+    }).catch(function (e) { return json({ ok: false, error: e.message }, 500); });
   });
   route('POST', /^\/api\/marketing\/generate$/, function (c) {
-    return lib('adStudio').then(function (m) { return m.generate(c.body || {}); }).then(function (r) { return json(r); }, function (e) { return json({ error: e.message }, 400); });
+    var b = c.body || {};
+    if (!b.business) return json({ error: 'צריך שם עסק' }, 400);
+    if (!b.offer) return json({ error: 'צריך תיאור מוצר/הצעה' }, 400);
+    return Promise.all([lib('adStudio'), lib('local')]).then(function (ms) {
+      return ms[0].generate(b).catch(function () {
+        var r = ms[1].marketing(b);
+        r.business = b.business; r.platform = ms[0].PLATFORM_LABELS[b.platform] || b.platform;
+        return r;
+      });
+    }).then(function (r) { return json(r); }, function (e) { return json({ error: e.message }, 400); });
   });
   route('GET', /^\/api\/marketing\/options$/, function () {
     return lib('adStudio').then(function (m) { return json({ platforms: m.PLATFORM_LABELS, goals: m.GOAL_LABELS }); });
@@ -224,7 +242,7 @@
   route('POST', /^\/api\/aia\/generate$/, function (c) {
     var b = c.body || {};
     if (!b.text && !(b.files || []).length && !b.title && !b.stageId) return json({ error: 'צריך לפחות כותרת, תיאור טקסטואלי, או תמונת ייחוס' }, 400);
-    return aia().then(function (A) { return A.create(b, askAI); }).then(function (p) { return json(p); }, function (e) { return json({ error: e.message }, 502); });
+    return Promise.all([aia(), lib('local')]).then(function (ms) { return ms[0].create(b, askAI, ms[1].aia); }).then(function (p) { return json(p); }, function (e) { return json({ error: e.message }, 502); });
   });
   route('GET', /^\/api\/aia\/project\/([\w-]+)\/markdown$/, function (c) {
     return aia().then(function (A) { return A.markdown(c.m[1]); }).then(function (md) {
@@ -275,6 +293,24 @@
     }
     if (/^\/(library|data|icons|js|css|vendor|img)\//.test(raw)) return nativeFetch(BASE + raw.slice(1), init);
     return nativeFetch(input, init);
+  };
+  // a small Markdown reader for the reports: **bold**, lists, paragraphs
+  function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  window.HUBMD = function (md) {
+    var out = [], list = null;
+    function close() { if (list) { out.push('</ul>'); list = null; } }
+    String(md || '').split(/\r?\n/).forEach(function (raw) {
+      var line = raw.trim();
+      if (!line) { close(); return; }
+      var h = /^\*\*(.+?)\*\*$/.exec(line);
+      if (h) { close(); out.push('<h4 class="hub-md-h">' + esc(h[1]) + '</h4>'); return; }
+      var inl = function (t) { return esc(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); };
+      var li = /^(?:[-•]|\d+\.)\s+(.*)$/.exec(line);
+      if (li) { if (!list) { out.push('<ul class="hub-md-ul">'); list = true; } out.push('<li>' + inl(li[1]) + '</li>'); return; }
+      close(); out.push('<p>' + inl(line) + '</p>');
+    });
+    close();
+    return out.join('');
   };
   window.HUB = { base: BASE, ask: askAI, lib: lib };
 })();

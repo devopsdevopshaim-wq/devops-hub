@@ -169,7 +169,7 @@
         lastReport = res.text;
         lastSource = res.source || "";
         out.className = "hc-analysis";
-        out.textContent = res.text;
+        out.innerHTML = (window.HUBMD ? HUBMD(res.text) : ""); if (!window.HUBMD) out.textContent = res.text;
         if (lastSource) {
           var s = document.createElement("span");
           s.className = "src";
