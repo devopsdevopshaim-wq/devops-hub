@@ -377,6 +377,27 @@ async function vault(tag) {
   r = await call({ action: 'log', token: a.token });
   check(t + 'the log never contains the keys', !JSON.stringify(r.body).includes('AIza-secret'));
 }
+async function usage(tag) {
+  const w = world(), { call } = w, t = tag + ' ';
+  let r = await call({ action: 'stats-get', token: 'a'.repeat(48) });
+  check(t + 'statistics are for the admin only', r.code === 403);
+  await call({ action: 'track', ev: 'view', page: '/devops-hub/portfolio/?x=1', vid: 'abcdefgh1234', ref: 'https://www.google.com/search' });
+  await call({ action: 'track', ev: 'view', page: '/portfolio/', vid: 'abcdefgh1234' });
+  await call({ action: 'track', ev: 'view', page: '/portfolio/', vid: 'zzzzzzzz9999' });
+  await call({ action: 'track', ev: 'open', app: 'finance-hub', vid: 'abcdefgh1234' });
+  await call({ action: 'track', ev: 'open', vid: 'abcdefgh1234' });
+  const a = await adminIn(call, t);
+  await call({ action: 'track', ev: 'view', page: '/admin', token: a.token });
+  r = await call({ action: 'stats-get', token: a.token, days: '7' });
+  const sum = (k) => r.body.days.reduce((x, d) => x + d[k], 0);
+  check(t + 'views are counted, the admin\'s own are not', r.body.ok && sum('v') === 3);
+  check(t + 'visitors are counted once each', sum('uv') === 2);
+  check(t + 'an open needs an app name', sum('o') === 1 && r.body.apps[0][0] === 'finance-hub');
+  check(t + 'the query string is dropped from pages', r.body.pages.some((p) => p[0] === '/portfolio/' || p[0].endsWith('/portfolio/')) && !JSON.stringify(r.body.pages).includes('x=1'));
+  check(t + 'the referrer is kept as a host only', JSON.stringify(r.body.refs) === '[["www_google_com",1]]' || r.body.refs.length === 1);
+  check(t + 'no address or raw visitor id is exposed', !JSON.stringify(r.body).includes('abcdefgh1234'));
+}
+await usage('[usage]');
 await vault('[vault]');
 await signup('[signup]');
 await main('[password]');

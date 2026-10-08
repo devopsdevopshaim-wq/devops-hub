@@ -28,6 +28,7 @@
       <a href="#skills">סקילים</a>
       <a href="#biz">לידים ומחירון</a>
       <a href="#stats">נתונים</a>
+      <a href="#usage">שימוש</a>
       <a href="#projects">פרויקטים</a>
       <a href="#people">הרשאות</a>
       <a href="#media">מוזיקה וסרטונים</a>
@@ -265,6 +266,26 @@
     </div>
   </section>
 
+  <section id="usage" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">שימוש באתר</p><h2>מי נכנס ולאילו אתרים</h2></div>
+      <div class="filters"><select id="u-days" aria-label="טווח זמן"><option value="7">7 ימים</option><option value="30" selected>30 יום</option><option value="60">60 יום</option></select>
+      <button class="g-btn ghost" type="button" id="u-refresh">רענון</button></div>
+    </header>
+    <p class="muted" id="u-note">טוען…</p>
+    <dl class="kpis" id="u-kpis"></dl>
+    <figure class="chart u-wide"><figcaption><b>כניסות ביום</b><small>צפיות בדפים · מבקרים ייחודיים · פתיחת אתרים</small></figcaption><div class="u-days" id="u-chart" role="img" aria-label="גרף כניסות לפי יום"></div></figure>
+    <div class="charts u-grid">
+      <figure class="chart"><figcaption><b>באילו אתרים ואפליקציות נכנסו</b><small>לחיצות פתיחה</small></figcaption><ol class="bars" id="u-apps"></ol></figure>
+      <figure class="chart"><figcaption><b>הדפים הנצפים ביותר</b><small>צפיות</small></figcaption><ol class="bars" id="u-pages"></ol></figure>
+      <figure class="chart"><figcaption><b>מכשירים</b><small>סוג, מערכת ודפדפן</small></figcaption><ol class="bars" id="u-dev"></ol></figure>
+      <figure class="chart"><figcaption><b>שעות פעילות</b><small>שעון ישראל</small></figcaption><div class="u-hours" id="u-hours"></div></figure>
+      <figure class="chart"><figcaption><b>מאיפה הגיעו</b><small>אתר מפנה</small></figcaption><ol class="bars" id="u-ref"></ol></figure>
+    </div>
+    <h3 class="u-h">שימוש לפי לקוח</h3>
+    <div class="table-wrap"><table class="ptable"><thead><tr><th>לקוח</th><th>צפיות</th><th>האתרים שפתח</th></tr></thead><tbody id="u-clients"></tbody></table></div>
+  </section>
+
   <section id="pending" class="a-sec" hidden>
     <header class="sec-head"><p class="eyebrow">ממתינים לאישור</p><h2>פרויקטים שתורמים הוסיפו</h2></header>
     <div class="pending-list" id="pending-list"></div>
@@ -381,5 +402,6 @@
 <script src="js/admin-biz.js"></script>
 <script src="js/admin-access.js"></script>
 <script src="js/admin-skills.js"></script>
+<script src="js/admin-usage.js"></script>
 </body>
 </html>

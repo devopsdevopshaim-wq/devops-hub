@@ -29,6 +29,7 @@ const CLIENT_SESSION_DAYS = 7;   // capped by the end of the subscription
 const ADMIN_SESSION_DAYS = 0.5;  // the admin signs in again every 12 hours
 const MAX_CLIENTS = 500;
 const SIGNUP_DAYS = 30;   // how long a self-registered client has access, until the admin extends or closes it
+const USAGE_DAYS = 60;   // how long the daily usage counters are kept
 const DEFAULT_MAX_DEVICES = 3;
 const MIN_PASSWORD = 8;
 const TEMP_ADMIN_MIN = 60, TEMP_CLIENT_DAYS = 14;   // how long an emailed initial password works
@@ -150,6 +151,42 @@ switch (b.action) {
   // ---------------------------------------------------------------- public
   case 'info':
     return out({ ok: true, password: true, signup: !sd.signupClosed });
+
+  // Usage statistics (first party). A page sends a small "view" or "open" note; only counters are kept, per day, for USAGE_DAYS days.
+  // A visitor is a random id from the browser, kept as a short hash; no address, no cookie, nothing that names a person. The admin's own
+  // visits are not counted, and a client's visits are counted under the client's email so the admin can see who uses what.
+  case 'track': {
+    if (!hit('track', IPK, 90, 10 * 60000)) return out({ ok: true });
+    const s0 = session();
+    if (s0 && s0.role === 'admin') return out({ ok: true });
+    const ev = b.ev === 'open' ? 'open' : 'view';
+    const key = (v) => line(v, 70).replace(/[?#].*$/, '').replace(/^https?:\/\/[^/]+/, '').replace(/[.$]/g, '_');
+    const page = key(b.page) || '/', app = key(b.app);
+    if (ev === 'open' && !app) return out({ ok: true });
+    const day = new Date(now + 3 * HOUR).toISOString().slice(0, 10);
+    sd.usage = sd.usage || {};
+    for (const d of Object.keys(sd.usage)) if (now - Date.parse(d) > USAGE_DAYS * DAY) delete sd.usage[d];
+    const u = sd.usage[day] = sd.usage[day] || { v: 0, o: 0, vis: {}, uv: 0, p: {}, a: {}, br: {}, os: {}, dv: {}, ref: {}, h: new Array(24).fill(0), c: {} };
+    const add = (m, k, cap) => { if (!k) return; if (m[k] == null && Object.keys(m).length >= (cap || 60)) k = 'אחר'; m[k] = (m[k] || 0) + 1; };
+    const vid = /^[a-zA-Z0-9]{8,40}$/.test(String(b.vid || '')) ? sha256hex('vis|' + b.vid).slice(0, 10) : '';
+    const who = s0 && s0.email ? s0.email : '';
+    if (ev === 'open') {
+      u.o++; add(u.a, app);
+      if (who) { u.c[who] = u.c[who] || { v: 0, a: {} }; add(u.c[who].a, app, 25); }
+    } else {
+      u.v++; add(u.p, page);
+      const ua = String(HDR['user-agent'] || '');
+      add(u.br, /Edg\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\/|CriOS/.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'אחר', 12);
+      add(u.os, /Android/.test(ua) ? 'Android' : /iPhone|iPad|iPod/.test(ua) ? 'iOS' : /Windows/.test(ua) ? 'Windows' : /Mac OS/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : 'אחר', 12);
+      add(u.dv, /Mobi|Android|iPhone/.test(ua) ? 'נייד' : /iPad|Tablet/.test(ua) ? 'טאבלט' : 'מחשב', 4);
+      const rh = line(b.ref, 120).replace(/^https?:\/\//, '').split('/')[0].replace(/[.$]/g, '_');
+      if (rh && !/github\.io$/.test(rh)) add(u.ref, rh, 30);
+      u.h[Math.floor(((now + 3 * HOUR) % DAY) / HOUR)]++;
+      if (who) { u.c[who] = u.c[who] || { v: 0, a: {} }; u.c[who].v++; }
+    }
+    if (vid && !u.vis[vid] && Object.keys(u.vis).length < 800) { u.vis[vid] = 1; u.uv++; }
+    return out({ ok: true });
+  }
 
   // Anyone may open an account: the first (initial) password arrives by email, no step by the admin; the admin sees it in the list (and is told at the first
   // sign-in) and controls what the client sees afterwards (sites, days, suspension). New accounts see every open site (never the hidden ones)
@@ -333,6 +370,30 @@ switch (b.action) {
   }
 
   // ------------------------------------------------------------- admin only
+  case 'stats-get': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    const days = Math.min(USAGE_DAYS, Math.max(1, parseInt(b.days, 10) || 30));
+    const list = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now + 3 * HOUR - i * DAY).toISOString().slice(0, 10);
+      const u = (sd.usage || {})[d];
+      list.push({ d, v: u ? u.v : 0, o: u ? u.o : 0, uv: u ? u.uv : 0 });
+    }
+    const sum = (k) => { const m = {}; for (const d of list) { const u = (sd.usage || {})[d.d]; if (u) for (const [x, n] of Object.entries(u[k] || {})) m[x] = (m[x] || 0) + n; } return Object.entries(m).sort((a, c) => c[1] - a[1]).slice(0, 25); };
+    const hours = new Array(24).fill(0), clients = {};
+    for (const d of list) {
+      const u = (sd.usage || {})[d.d]; if (!u) continue;
+      u.h.forEach((n, i) => { hours[i] += n; });
+      for (const [e, c] of Object.entries(u.c || {})) {
+        const t = clients[e] = clients[e] || { v: 0, a: {} };
+        t.v += c.v; for (const [x, n] of Object.entries(c.a || {})) t.a[x] = (t.a[x] || 0) + n;
+      }
+    }
+    return out({ ok: true, days: list, pages: sum('p'), apps: sum('a'), browsers: sum('br'), os: sum('os'), devices: sum('dv'), refs: sum('ref'), hours,
+      clients: Object.entries(clients).map(([e, c]) => ({ email: e, name: (sd.clients[e] || {}).name || '', views: c.v, apps: Object.entries(c.a).sort((a, x) => x[1] - a[1]).slice(0, 6) })).sort((a, c) => c.views - a.views).slice(0, 60),
+      note: 'ניצול האתר בלבד: בלי כתובות IP ובלי הכניסות שלך כמנהל' });
+  }
+
   case 'clients':
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     return out({ ok: true, clients: Object.values(sd.clients).map(view), admin: adminView(), signup: !sd.signupClosed });

@@ -89,6 +89,7 @@ function page(file, hub) {
     const cls = ` lux lux-${LUX[hub]}`;
     return /class="/.test(attrs) ? `<body${attrs.replace(/class="([^"]*)"/, (mm, c) => `class="${c}${cls}"`)} data-hub="${hub}">` : `<body class="${cls.trim()}"${attrs} data-hub="${hub}">`;
   });
+  if (!/track\.js/.test(s)) s = s.replace('</head>', '<script src="../portfolio/js/track.js" defer></script>\n</head>');   // first-party usage counters
   if (!/premium\.css/.test(s)) s = s.replace('</head>', '<link rel="stylesheet" href="css/premium.css" />\n</head>');
   if (!/premium\.js/.test(s)) s = s.replace('</body>', '<script src="js/premium.js"></script>\n</body>');
   // the bar at the top: this is a site of its own now

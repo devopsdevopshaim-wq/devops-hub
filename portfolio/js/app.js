@@ -126,6 +126,7 @@
   function actions(s, p) {
     var open = s.open ? el('a', { class: 'link open', href: s.open, target: '_blank', rel: 'noopener', html: 'פתיחה ' + ICON_OUT }) : null;
     if (open && p) open.addEventListener('click', function () {
+      if (window.SpiderTrack) window.SpiderTrack.open(p.id);
       counter('hit', 'open-' + p.id).then(function (n) { showVisits(p.id, n); }, function () {});
     });
     var talk = null;
