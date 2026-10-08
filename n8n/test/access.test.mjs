@@ -15,13 +15,13 @@ const dev = () => crypto.randomBytes(16).toString('hex');
 const tempFrom = (r) => ((r.mail && r.mail.text.match(/(?:הסיסמה הראשונית שלך|סיסמה ראשונית|הסיסמה הזמנית): (\S+)/)) || [])[1];
 
 // A little world: one function to call the workflow, remembering its static data.
-function world({ seed = '', seedHash = '', totp = false, noCrypto = false, sd = {} } = {}) {
+function world({ seed = '', seedHash = '', totp = false, noCrypto = false, sd = {}, helpers = {} } = {}) {
   let code = BASE_CODE.replace('__SHARED_KEY__', 'shared-test-key');
   if (seed || seedHash) code = code.replace('__ADMIN_PASSWORD_HASH__', seedHash || hashFor(seed, noCrypto ? 20000 : 210000));
   if (totp) code = code.replace('__ADMIN_TOTP_SECRET__', TOTP);
   const call = async (body, { origin = SITE, ip = '10.0.0.1', ua = 'Mozilla/5.0 (Test)' } = {}) => {
     const json = { body, headers: { 'x-forwarded-for': 'spoofed, ' + ip, 'user-agent': ua, ...(origin === null ? {} : { origin }) } };
-    return (await run(code, { json, sd, noCrypto }))[0].json;
+    return (await run(code, { json, sd, noCrypto, helpers }))[0].json;
   };
   return { sd, call, code };
 }
@@ -370,6 +370,30 @@ async function planDoc(tag) {
   r = await call({ action: 'plan-set', token: a.token, blob: 'x'.repeat(40001) });
   check(t + 'a huge plan is refused', r.code === 413);
 }
+async function relay(tag) {
+  const seen = [];
+  const helpers = { httpRequest: async (q) => { seen.push(q); if (/generativelanguage/.test(q.url) && q.method === 'GET') return { statusCode: 200, body: JSON.stringify({ models: [{ name: 'models/gem-a' }] }) };
+    if (/api\.openai\.com/.test(q.url)) return { statusCode: 429, body: '{"error":"no credits"}' };
+    if (/generativelanguage/.test(q.url)) return { statusCode: 200, body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'שלום' }] } }] }) };
+    return { statusCode: 200, body: JSON.stringify({ choices: [{ message: { content: 'hi' } }] }) }; } };
+  const { call } = world({ helpers }), t = tag + ' ';
+  let r = await call({ action: 'ai-relay', token: 'a'.repeat(48), provider: 'gemini', model: 'm', prompt: 'x', key: 'k'.repeat(20) });
+  check(t + 'only the admin may use the relay', r.code === 403 && !seen.length);
+  const a = await adminIn(call, t);
+  r = await call({ action: 'ai-relay', token: a.token, provider: 'gemini', model: 'gem-a', prompt: 'hi', key: 'AIza' + 'k'.repeat(30) });
+  check(t + 'gemini answers through the server', r.body.ok2 === true && r.body.text === 'שלום' && /x-goog-api-key/.test(JSON.stringify(seen[0].headers)));
+  r = await call({ action: 'ai-relay', token: a.token, provider: 'gemini', op: 'models', key: 'AIza' + 'k'.repeat(30) });
+  check(t + 'models are listed', r.body.models && r.body.models[0] === 'gem-a');
+  r = await call({ action: 'ai-relay', token: a.token, provider: 'openai', model: 'gpt', prompt: 'hi', key: 'sk-' + 'k'.repeat(30) });
+  check(t + 'a vendor error is passed on with its status', r.body.ok2 === false && r.body.status === 429);
+  r = await call({ action: 'ai-relay', token: a.token, provider: 'groq', model: 'llama', prompt: 'hi', key: 'short' });
+  check(t + 'a missing key is explained', r.body.ok2 === false && /מפתח/.test(r.body.error));
+  r = await call({ action: 'ai-relay', token: a.token, provider: 'evil.com', model: 'm', prompt: 'hi', key: 'k'.repeat(30) });
+  check(t + 'an unknown vendor is refused', r.code === 400);
+  await call({ action: 'ai-vault-set', token: a.token, blob: JSON.stringify({ groq: { key: 'gsk_' + 'v'.repeat(30) } }) });
+  r = await call({ action: 'ai-relay', token: a.token, provider: 'groq', model: 'llama', prompt: 'hi' });
+  check(t + 'the key can come from the private vault', r.body.text === 'hi' && /gsk_v/.test(seen[seen.length - 1].headers.Authorization));
+}
 async function vault(tag) {
   const w = world(), { call } = w, t = tag + ' ';
   let r = await call({ action: 'ai-vault-get', token: 'a'.repeat(48) });
@@ -411,6 +435,7 @@ async function usage(tag) {
 }
 await usage('[usage]');
 await planDoc('[plan]');
+await relay('[relay]');
 await vault('[vault]');
 await signup('[signup]');
 await main('[password]');

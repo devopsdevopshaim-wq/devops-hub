@@ -55,7 +55,7 @@
       clearTimeout(t);
       return r.text().then(function (txt) {
         var j = null; try { j = JSON.parse(txt); } catch (e) {}
-        if (!r.ok) { if (r.status === 402 || /insufficient balance|no credits|credit balance|billing|quota exceeded|exceeded your current quota/i.test(txt)) throw new Error('אין יתרה או מכסה ב־API. חשבון ה־API משולם בנפרד מהצ׳אט החינמי באתר (גם כשהצ׳אט עובד). אפשר: להטעין יתרה, להשתמש בדגם חינמי (Gemini, OpenRouter, Groq), או לפתוח את הצ׳אט החינמי בכפתור. · ' + r.status); var m = (j && (j.error && (j.error.message || j.error) || j.message || j.detail)) || txt.slice(0, 200) || r.status; throw new Error(r.status + ' · ' + (typeof m === 'string' ? m : JSON.stringify(m))); }
+        if (!r.ok) throw vendorErr(r.status, txt, j);
         return j == null ? txt : j;
       });
     }, function (e) {
@@ -63,9 +63,33 @@
       throw new Error(e && e.name === 'AbortError' ? 'לא ענה בזמן' : 'אין חיבור (השרת לא רץ, או שהוא לא מאפשר לאתר הזה לפנות אליו)');
     });
   }
+  // the message for a vendor's HTTP error (shared by the direct call and the server relay)
+  function vendorErr(status, txt, j) {
+    if (status === 402 || /insufficient balance|no credits|credit balance|billing|quota exceeded|exceeded your current quota/i.test(txt)) return new Error('אין יתרה או מכסה ב־API. חשבון ה־API משולם בנפרד מהצ׳אט החינמי באתר (גם כשהצ׳אט עובד). אפשר: להטעין יתרה, להשתמש בדגם חינמי (Gemini, OpenRouter, Groq), או לפתוח את הצ׳אט החינמי בכפתור. · ' + status);
+    if (status === 401 || status === 403) return new Error(status + ' · המפתח נדחה (שגוי, פג תוקף או בלי הרשאה). הדבק מפתח חדש בהגדרות. ' + String(txt || '').slice(0, 120));
+    var m = (j && (j.error && (j.error.message || j.error) || j.message || j.detail)) || String(txt || '').slice(0, 200) || status;
+    return new Error(status + ' · ' + (typeof m === 'string' ? m : JSON.stringify(m)));
+  }
+  // the cloud vendors can also be called from the n8n server, when this browser cannot reach them (CORS, an extension, a network block)
+  var NETERR = /^אין חיבור/;
+  function relay(id, op, prompt, system, model) {
+    var c = conf(id);
+    return window.HasadnaAuth.api('ai-relay', { provider: id, op: op, model: model || c.model, prompt: prompt || '', system: system || '', key: c.key }).then(function (j) {
+      if (!j || !j.ok) throw new Error(j && j.error === 'not-ready' ? 'אין חיבור ישיר, והשרת ב־n8n עוד לא מעודכן (פריסה אחרונה חסרה).' : j && j.error === 'admin-only' ? 'צריך להיכנס מחדש כמנהל.' : 'שרת n8n לא ענה (' + ((j && j.error) || 'שגיאה') + ')');
+      if (!j.ok2) { var txt = String(j.error || ''), jj = null; try { jj = JSON.parse(txt); } catch (e) {} throw j.status ? vendorErr(j.status, txt, jj) : new Error(txt); }
+      return j;
+    });
+  }
+  function viaRelay(id, direct, op, prompt, system, model) {
+    return direct().catch(function (e) {
+      if (!NETERR.test(e.message) || byId[id].local || id === 'openwebui') throw e;
+      return relay(id, op, prompt, system, model).then(function (j) { j.viaServer = true; return j; }, function (e2) { throw new Error(e2.message + ' · (גם ישירות מהדפדפן: ' + e.message + ')'); });
+    });
+  }
+
   function bearer(c) { return c.key ? { Authorization: 'Bearer ' + c.key } : {}; }
 
-  function models(id) {
+  function modelsDirect(id) {
     var p = byId[id], c = conf(id);
     if (p.kind === 'ollama') return http(c.base + '/api/tags', {}, 8000).then(function (j) { return (j.models || []).map(function (m) { return m.name; }); });
     if (p.kind === 'gemini') return http(c.base + '/v1beta/models?pageSize=100&key=' + encodeURIComponent(c.key), {}, 10000).then(function (j) {
@@ -77,6 +101,17 @@
       var l = j.data || j.models || [];
       if (id === 'openrouter') l = l.filter(function (m) { return /:free$/.test(m.id) || (m.pricing && Number(m.pricing.prompt) === 0 && Number(m.pricing.completion) === 0); });
       return l.map(function (m) { return m.id || m.name; });
+    });
+  }
+
+  function models(id) {
+    return viaRelay(id, function () { return modelsDirect(id); }, 'models').then(function (r) { return Array.isArray(r) ? r : (r.models || []).filter(function (m) { return id !== 'openrouter' || /:free$/.test(m); }); });
+  }
+  function ask1(id, prompt, system, modelOverride) {
+    var t0 = Date.now();
+    return viaRelay(id, function () { return ask1Direct(id, prompt, system, modelOverride); }, 'ask', prompt, system, modelOverride).then(function (r) {
+      if (r && r.viaServer) return { text: String(r.text || '').trim() || '(תשובה ריקה)', ms: Date.now() - t0, via: 'server' };
+      return r;
     });
   }
 
@@ -96,7 +131,7 @@
     }
     return next();
   }
-  function ask1(id, prompt, system, modelOverride) {
+  function ask1Direct(id, prompt, system, modelOverride) {
     var p = byId[id], c = conf(id), t0 = Date.now();
     if (modelOverride) c.model = modelOverride;
     if (!c.model) return Promise.reject(new Error('בחר דגם (כפתור "טעינת דגמים")'));
@@ -230,7 +265,7 @@
     if (st) st.textContent = 'מוגדרים ' + n + ' מתוך ' + P.length;
   }
   function result(p, r, bad) {
-    var kids = [el('header', null, [el('b', { text: p.name }), el('span', { dir: 'ltr', text: (conf(p.id).model || '') + (r.ms ? ' · ' + (r.ms / 1000).toFixed(1) + 's' : '') })]), el('pre', { text: r.text })];
+    var kids = [el('header', null, [el('b', { text: p.name }), el('span', { dir: 'ltr', text: (conf(p.id).model || '') + (r.ms ? ' · ' + (r.ms / 1000).toFixed(1) + 's' : '') + (r.via === 'server' ? ' · דרך שרת n8n' : '') })]), el('pre', { text: r.text })];
     if (bad) {
       var acts = [];
       var set = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: '⚙ להגדרות' });

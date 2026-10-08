@@ -432,6 +432,51 @@ switch (b.action) {
     return out({ ok: true, at: sd.plan ? sd.plan.at : null });
   }
 
+  // The admin's AI relay: the page asks, this flow calls the vendor from the server. It works when the browser cannot reach the vendor itself
+  // (CORS, an extension, a network block). Admin only, a fixed list of vendors, the key comes from the page or from the private vault and is never logged.
+  case 'ai-relay': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    if (!hit('ai-relay', IPK, 60, 10 * 60000)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const pv = String(b.provider || '');
+    let key = String(b.key || '').trim();
+    if (!key && sd.aiVault) { try { const v = JSON.parse(sd.aiVault.blob || '{}'); key = String((v[pv] && v[pv].key) || '').trim(); } catch (x) {} }
+    if (!/^[\x21-\x7e]{8,300}$/.test(key)) return out({ ok: true, ok2: false, status: 0, error: 'חסר מפתח (או שהוא לא תקין)' });
+    const model = String(b.model || '');
+    if (b.op !== 'models' && !/^[\w.:\-\/]{1,90}$/.test(model)) return out({ ok: true, ok2: false, status: 0, error: 'שם דגם לא תקין' });
+    const prompt = String(b.prompt || '').slice(0, 12000), sys = String(b.system || '').slice(0, 3000);
+    const msgs = (sys ? [{ role: 'system', content: sys }] : []).concat([{ role: 'user', content: prompt }]);
+    const bearer = { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' };
+    let req;
+    if (pv === 'gemini') req = b.op === 'models' ? { method: 'GET', url: 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=100', headers: { 'x-goog-api-key': key } }
+      : { method: 'POST', url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }, sys ? { systemInstruction: { parts: [{ text: sys }] } } : {})) };
+    else if (pv === 'claude') req = b.op === 'models' ? { method: 'GET', url: 'https://api.anthropic.com/v1/models?limit=100', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' } }
+      : { method: 'POST', url: 'https://api.anthropic.com/v1/messages', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ model, max_tokens: 2048, messages: [{ role: 'user', content: prompt }] }, sys ? { system: sys } : {})) };
+    else {
+      const base = { openai: 'https://api.openai.com/v1', deepseek: 'https://api.deepseek.com', openrouter: 'https://openrouter.ai/api/v1', groq: 'https://api.groq.com/openai/v1', github: 'https://models.github.ai/inference' }[pv];
+      if (!base) return out({ ok: false, error: 'bad-input' }, 400);
+      const gh = pv === 'github' ? { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } : {};
+      req = b.op === 'models' ? { method: 'GET', url: pv === 'github' ? 'https://models.github.ai/catalog/models' : base + '/models', headers: Object.assign({}, bearer, gh) }
+        : { method: 'POST', url: base + '/chat/completions', headers: Object.assign({}, bearer, gh), body: JSON.stringify({ model, messages: msgs }) };
+    }
+    let r;
+    try { r = await this.helpers.httpRequest(Object.assign({ json: false, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 90000 }, req)); }
+    catch (x) { return out({ ok: true, ok2: false, status: 0, error: 'השרת לא הצליח להגיע ל־' + pv + ': ' + String((x && x.message) || x).slice(0, 120) }); }
+    const raw = typeof r.body === 'string' ? r.body : JSON.stringify(r.body || '');
+    let j = null; try { j = JSON.parse(raw); } catch (x) {}
+    if (r.statusCode < 200 || r.statusCode >= 300) return out({ ok: true, ok2: false, status: r.statusCode, error: raw.slice(0, 400) });
+    if (b.op === 'models') {
+      const l = Array.isArray(j) ? j : (j && (j.data || j.models)) || [];
+      return out({ ok: true, ok2: true, models: l.map((m) => String(m.id || m.name || '').replace(/^models\//, '')).filter(Boolean).slice(0, 300) });
+    }
+    let text = '';
+    if (j) {
+      if (pv === 'gemini') { const c = j.candidates && j.candidates[0]; text = c && c.content ? (c.content.parts || []).map((x) => x.text || '').join('') : ''; }
+      else if (pv === 'claude') text = (j.content || []).map((x) => x.text || '').join('');
+      else text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+    }
+    return out({ ok: true, ok2: true, text: String(text).slice(0, 20000) });
+  }
+
   case 'signup-set':
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     sd.signupClosed = b.open === 'false' || b.open === false;
