@@ -78,8 +78,25 @@
     });
   }
 
+  // Gemini is sometimes overloaded (503) or busy (429): try again, then another model, before giving up
+  var GEMINI_FALLBACK = ['gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-pro-latest'];
   function ask(id, prompt, system) {
+    if (id !== 'gemini') return ask1(id, prompt, system);
+    var first = conf('gemini').model, order = [first].concat(GEMINI_FALLBACK.filter(function (m) { return m !== first; })), i = 0, last;
+    function next() {
+      if (i >= order.length) return Promise.reject(last);
+      var m = order[i++];
+      return ask1('gemini', prompt, system, m).then(function (r) { if (m !== first) r.text += '\n\n(' + first + ' היה עמוס, נענה ע״י ' + m + ')'; return r; }, function (e) {
+        last = e;
+        if (/ 50\d | 429 |overload|high demand|unavailable|busy/i.test(e.message + ' ')) return new Promise(function (ok) { setTimeout(ok, 900); }).then(next);
+        throw e;
+      });
+    }
+    return next();
+  }
+  function ask1(id, prompt, system, modelOverride) {
     var p = byId[id], c = conf(id), t0 = Date.now();
+    if (modelOverride) c.model = modelOverride;
     if (!c.model) return Promise.reject(new Error('בחר דגם (כפתור "טעינת דגמים")'));
     var done = function (text) { return { text: String(text || '').trim() || '(תשובה ריקה)', ms: Date.now() - t0 }; };
     var msgs = (system ? [{ role: 'system', content: system }] : []).concat([{ role: 'user', content: prompt }]);
