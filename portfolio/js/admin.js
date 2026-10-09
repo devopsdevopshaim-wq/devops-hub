@@ -190,7 +190,7 @@
     stack.innerHTML = ''; legend.innerHTML = '';
     if (!S.live) {
       $('status-when').textContent = S.data.statusUrl ? 'מרכז הבקרה של n8n לא ענה כרגע' : 'אין כתובת למרכז הבקרה';
-      legend.appendChild(el('li', { class: 'muted', text: 'הבדיקה רצה ב־n8n כל 15 דקות.' }));
+      legend.appendChild(el('li', { class: 'muted', text: 'הבדיקה רצה ב־n8n כל שעתיים.' }));
       return;
     }
     var counts = { ok: 0, waking: 0, locked: 0, down: 0 }, total = 0;
