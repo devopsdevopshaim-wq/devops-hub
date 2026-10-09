@@ -1,12 +1,12 @@
-// Renders the site's 3D scenes in headless Chromium. Env: SITE, WORK, THREE_JS.
+// Renders the site's 3D scenes in headless Chromium. Env: SITE, WORK, THREE_BUILD (a local three/build directory).
 const {chromium}=require('playwright');const fs=require('fs');
-const THREE_LOCAL=process.env.THREE_JS;const OUT=process.env.WORK;
+const THREE_BUILD=process.env.THREE_BUILD;const OUT=process.env.WORK;
 const EXE=fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined;
 (async()=>{
  const b=await chromium.launch({executablePath:EXE,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
  const p=await b.newPage({viewport:{width:1400,height:900}});
  p.on('pageerror',e=>console.log('PAGEERR',e.message));p.on('console',m=>{if(m.type()==='error')console.log('CONSOLE',m.text())});
- await p.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/three/,r=>r.fulfill({path:THREE_LOCAL,contentType:'application/javascript'}));
+ await p.route(/cdn\.jsdelivr\.net\/npm\/three@[^/]+\/build\//,r=>r.fulfill({path:THREE_BUILD+'/'+r.request().url().split('/').pop().split('?')[0],contentType:'application/javascript'}));
  await p.route(/fonts\.(googleapis|gstatic)/,r=>r.abort());
  await p.goto('file://'+process.env.SITE+'/index.html');await p.evaluate(()=>localStorage.clear());await p.reload();
  await p.evaluate(()=>window.RP.loadThree());
@@ -29,7 +29,7 @@ const EXE=fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium'
       V.sun.shadow.mapSize.set(4096,4096);
       if(sh.sky)RP.skyEnv(V,sh.sky,new T3.Vector3(...(sh.sunPos||[30,45,25])));
       if(sh.fog)V.scene.fog=new T3.Fog(sh.fog[0],sh.fog[1],sh.fog[2]);
-      if(sh.sunPos)V.sun.position.set(...sh.sunPos);if(sh.sunCol)V.sun.color.setHex(sh.sunCol);if(sh.hemi)V.hemi.intensity=sh.hemi;
+      if(sh.sunPos)V.sun.position.set(...sh.sunPos);if(sh.sunCol)V.sun.color.setHex(sh.sunCol);if(sh.hemi)V.hemi.intensity=sh.hemi*Math.PI;
       let ctr,R;
       if(sh.kind==='cab'){const S=RP.getS();const M=RP.getM();const c=M.cabs.find(x=>x.id===sh.cab);const B=RP.cabinetBuild(c);const C=RP.buildCabinet3D(V,B);C.door.rotation.y=sh.door??-1.95;C.parts.forEach(a=>a.forEach(o=>o.visible=true));ctr=C.center;R=Math.max(C.W,C.H)*(sh.rk||2)}
       else{const G=RP.buildGarage(V,{underground:sh.under,lights:true,fill:sh.fill,cut:sh.cut,lit:sh.lit});ctr=G.center;R=Math.max(G.len,G.top*1.8)*(sh.rk||1.1)}

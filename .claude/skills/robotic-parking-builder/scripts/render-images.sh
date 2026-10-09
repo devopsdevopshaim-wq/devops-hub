@@ -4,12 +4,12 @@
 set -euo pipefail
 SITE="$(cd "${1:?site dir}" && pwd)"; HERE="$(cd "$(dirname "$0")" && pwd)"
 WORK="${TMPDIR:-/tmp}/rp-render"; mkdir -p "$WORK"
-if [ -z "${THREE_JS:-}" ]; then
-  if [ ! -f "$WORK/node_modules/three/build/three.min.js" ]; then (cd "$WORK" && npm init -y >/dev/null && npm install --no-audit --no-fund three@0.128.0 >/dev/null); fi
-  THREE_JS="$WORK/node_modules/three/build/three.min.js"
+if [ -z "${THREE_BUILD:-}" ]; then
+  if [ ! -f "$WORK/node_modules/three/build/three.module.js" ] || ! grep -q '"version": "0.186.1"' "$WORK/node_modules/three/package.json"; then (cd "$WORK" && npm init -y >/dev/null && npm install --no-audit --no-fund three@0.186.1 >/dev/null); fi
+  THREE_BUILD="$WORK/node_modules/three/build"
 fi
 sh "$SITE/build.sh" >/dev/null
-SITE="$SITE" WORK="$WORK" THREE_JS="$THREE_JS" node "$HERE/render-images.js"
+SITE="$SITE" WORK="$WORK" THREE_BUILD="$THREE_BUILD" node "$HERE/render-images.js"
 post(){ # in out W H mood
   case $5 in dusk) G="-modulate 100,108,100 -fill #ff9d4d -colorize 4%"; B=55;; day) G="-modulate 102,104,100 -fill #ffe2b0 -colorize 3%"; B=30;; *) G="-modulate 101,100,100"; B=08;; esac
   convert "$1" -filter Lanczos -resize "${3}x${4}!" \( +clone -level 72%,100% -blur 0x$(( $3 / 90 )) -evaluate multiply 0.$B \) -compose screen -composite \

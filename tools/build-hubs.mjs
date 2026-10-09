@@ -95,6 +95,8 @@ function page(file, hub) {
   // the bar at the top: this is a site of its own now
   s = s.replace(/ · חלק ממערכת HKDAILY/g, '');
   s = s.replace(/<a href="https:\/\/hapinkas-hayomi\.onrender\.com\/?"[^>]*>למערכת המלאה ←<\/a>/g, '<a href="../portfolio/">כל האתרים שלי ←</a>');
+  // the finance compass and the bills site are one shelf in the portfolio (בית ותשלומים): each links to the other
+  if (hub === 'finance-hub' && !/\.\.\/bills-hub\//.test(s)) s = s.replace('<a href="../portfolio/">כל האתרים שלי ←</a>', '<span class="bar-links"><a href="../bills-hub/">🧾 תשלומים לבית</a> · <a href="../portfolio/">כל האתרים שלי ←</a></span>');
   // the sync to the business calendar belongs to the full system
   s = s.replace(/\s*<button class="btn ghost" id="hol-sync">[^<]*<\/button>/, '');
   return s;

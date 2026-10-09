@@ -20,7 +20,7 @@ Publish `app.html` (not `index.html`) with
 files: { "img/hero.jpg": ".../img/hero.jpg", …every img…, "gallery/gallery.json": ".../gallery/gallery.json" }
 capabilities: { downloads: true, assets: {}, db: {} }
 ```
-Inside the artifact: three.js loads from cdnjs (allowed), ZIP/CSV downloads go through the `downloads` capability, gallery uploads go to the artifact's asset store with metadata in the `gallery` db collection, printing is unavailable (use the standalone `index.html`).
+Inside the artifact: three.js loads from jsDelivr (allowed), ZIP/CSV downloads go through the `downloads` capability, gallery uploads go to the artifact's asset store with metadata in the `gallery` db collection, printing is unavailable (use the standalone `index.html`).
 
 ## Portfolio entry
 If the user keeps a portfolio `projects.json`, add an entry with `id`, `title`, `desc`, `category`, `url`, `features`, `tech`, `story`, plus desktop/mobile screenshots (1280×800 and 390×844 JPEG q72).

@@ -21,7 +21,7 @@ One HTML file, one IIFE script, no build step. State lives in `S` (persisted to 
 overview, floors, equip, cabinets, cabwire, cab3d, ip, params, sensors, lobby, plc, tpl, wiring, drawings, sim, report.
 
 ## Front page
-`renderLanding()` fills hero stats, value cards and example cards from `M` and `PRESETS` (`withPreset` computes a preset's model without touching `S`). `startGarage3D()` lazy-loads three.js r128 from cdnjs.
+`renderLanding()` fills hero stats, value cards and example cards from `M` and `PRESETS` (`withPreset` computes a preset's model without touching `S`). `startGarage3D()` lazy-loads three.js 0.186.1 (ES module) from jsDelivr; light intensities are multiplied by `LI` (π) and `ColorManagement` is off so the scenes keep their original r128 look.
 
 ## Gallery
 `galInit()` picks a backend: artifact (`assets` + `db` capabilities, collection `gallery`), web (IndexedDB drafts + `ghPublish` via the GitHub contents API into `GAL.dir`, updating `gallery.json`), or read-only in a frame.
