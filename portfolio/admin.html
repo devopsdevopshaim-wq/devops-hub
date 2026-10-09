@@ -45,8 +45,18 @@
     <h1>שלום חיים, מנהל SPIDER</h1>
     <p class="lead">כל הפרויקטים, הנתונים וההרשאות במקום אחד. כל שינוי נאסף ל"סל פעולות" ונשלח ל־GitHub בלחיצה אחת. GitHub מבצע אותו רק אם הוא הגיע מהחשבון שלך.</p>
     <p class="hint">סקיל ל־Claude לכל פרויקט נבנה אוטומטית בכל פרסום. <a href="skills/all-skills.zip" download>⬇ כל הסקילים בקובץ אחד (ל־Claude Code)</a> · <a href="skills/index.json" target="_blank" rel="noopener">רשימה</a></p>
-    <p><a class="btn btn-gold btn-sm" href="plan.html">📋 תכנית עסקית: שירותים, תחזית 12 חודשים ומפת דרכים</a> <a class="btn btn-gold btn-sm" href="ai.html">🤖 מודלי AI: Ollama, Open WebUI, OpenClaw, Gemini, ChatGPT, DeepSeek, Claude</a></p>
+    <p class="hero-btns"><a class="btn btn-gold btn-sm" href="plan.html">📋 תכנית עסקית</a> <a class="btn btn-gold btn-sm" href="ai.html">🤖 מודלי AI</a> <a class="btn btn-gold btn-sm" href="#usage">📈 שימוש באתר</a> <a class="btn btn-gold btn-sm" href="../bills-hub/">🏠 תשלומים לבית</a></p>
     <label class="site-admin"><input type="checkbox" id="site-admin"> <span>להציג כפתורי <b>מחיקה והסתרה</b> גם על הכרטיסים באתר עצמו <small>(רק בדפדפן הזה)</small></span></label>
+  </section>
+
+  <section class="presence" id="presence" aria-label="מי מחובר עכשיו">
+    <div class="pr-cubes">
+      <button type="button" class="pr-cube on" data-f="online" aria-label="מחוברים עכשיו"><span class="pr-3d"><i class="f fr"></i><i class="f bk"></i><i class="f lf"></i><i class="f rt"></i><i class="f tp"></i><i class="f bt"></i><b id="pr-online">–</b></span><em>ONLINE</em><small>מחוברים עכשיו</small></button>
+      <button type="button" class="pr-cube off" data-f="offline" aria-label="לא מחוברים"><span class="pr-3d"><i class="f fr"></i><i class="f bk"></i><i class="f lf"></i><i class="f rt"></i><i class="f tp"></i><i class="f bt"></i><b id="pr-offline">–</b></span><em>OFFLINE</em><small>לא מחוברים</small></button>
+      <button type="button" class="pr-cube all" data-f="all" aria-label="כל החברים"><span class="pr-3d"><i class="f fr"></i><i class="f bk"></i><i class="f lf"></i><i class="f rt"></i><i class="f tp"></i><i class="f bt"></i><b id="pr-members">–</b></span><em>MEMBERS</em><small>חברים רשומים</small></button>
+    </div>
+    <p class="muted" id="pr-note">טוען…</p>
+    <div class="table-wrap" id="pr-list" hidden><table class="ptable"><thead><tr><th>חבר</th><th>מצב</th><th>נראה לאחרונה</th></tr></thead><tbody id="pr-body"></tbody></table></div>
   </section>
 
   <section id="roles" class="roles" aria-label="שלוש רמות גישה">
@@ -445,5 +455,6 @@
 <script src="js/admin-access.js"></script>
 <script src="js/admin-skills.js"></script>
 <script src="js/admin-usage.js"></script>
+<script src="js/admin-presence.js"></script>
 </body>
 </html>
