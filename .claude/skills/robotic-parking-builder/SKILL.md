@@ -50,7 +50,7 @@ Renders the hero, cutaway, the four examples and a cabinet from the site's own t
 ```bash
 node <skill>/scripts/validate.mjs <target-dir>
 ```
-Fix every `ERROR`. Then open the page once in Playwright at 1440 and 390 px: no `pageerror`, `scrollWidth` equals the viewport, every tab renders, the 3D viewer starts (route `cdnjs…/three.js/r128/three.min.js` to a local copy when the sandbox blocks the CDN).
+Fix every `ERROR`. Then open the page once in Playwright at 1440 and 390 px: no `pageerror`, `scrollWidth` equals the viewport, every tab renders, the 3D viewer starts (route `cdn.jsdelivr.net/npm/three@0.186.1/build/*` — `three.module.js` and `three.core.js` — to a local copy when the sandbox blocks the CDN).
 
 ### 5. Deliver
 Details in [references/deploy.md](references/deploy.md).

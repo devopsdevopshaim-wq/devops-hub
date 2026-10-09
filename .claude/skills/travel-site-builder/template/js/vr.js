@@ -3,7 +3,7 @@
    הדמיה ממוחשבת של סוגי לינה: צימר עם ג׳קוזי וגינה, חדר מלון עם מרפסת לים,
    דירת נופש בעיר, בקתה במדבר. הליכה בגוף ראשון, יום/שקיעה/לילה,
    מצב VR (WebXR) ותצוגת תמונות 360° שהמשתמש מעלה.
-   נטען רק כשנכנסים לעמוד (vendor/three/three.min.js).
+   נטען רק כשנכנסים לעמוד (vendor/three/three.module.min.js, three.js 0.186.1).
    =========================================================== */
 (function () {
   'use strict';
@@ -34,7 +34,7 @@
     renderer.toneMapping = T.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = T.PCFSoftShadowMap;
+    renderer.shadowMap.type = T.PCFShadowMap;
     renderer.xr.enabled = true;
     container.appendChild(renderer.domElement);
     renderer.domElement.className = 'vr-canvas';
@@ -513,8 +513,9 @@
     function startTour() { stopTour(); let i = 0; goStop(0); tourTimer = setInterval(() => { i = (i + 1) % stops.length; goStop(i); }, 4500); if (opts.onTour) opts.onTour(true); }
 
     /* ---------- לולאה ---------- */
-    const clock = new T.Clock();
-    function frame() {
+    const clock = new T.Timer();
+    function frame(time) {
+      clock.update(time);
       const dt = Math.min(.05, clock.getDelta());
       if (state.target) {
         const tg = state.target; tg.t = Math.min(1, (performance.now() - tg.t0) / 1600);
