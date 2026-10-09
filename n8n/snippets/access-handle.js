@@ -510,6 +510,32 @@ switch (b.action) {
     log(sd.signupClosed ? 'הרשמה עצמית נסגרה' : 'הרשמה עצמית נפתחה', ADMIN_EMAIL);
     return out({ ok: true, signup: !sd.signupClosed });
 
+  // Moving to another server (n8n -> Cloudflare): the admin loads the clients exported from the old one. Accounts come over without passwords
+  // (each client asks for an initial password on the sign-in page); an account that already exists here is left as it is.
+  case 'clients-import': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    let list = []; try { list = JSON.parse(b.payload || '[]'); } catch (x) {}
+    if (!Array.isArray(list)) return out({ ok: false, error: 'bad-input' }, 400);
+    let added = 0, skipped = 0;
+    for (const p of list.slice(0, MAX_CLIENTS)) {
+      const e = email(p && p.email);
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || e === ADMIN_EMAIL || sd.clients[e]) { skipped++; continue; }
+      if (Object.keys(sd.clients).length >= MAX_CLIENTS) { skipped++; continue; }
+      sd.clients[e] = {
+        email: e, phone: phone(p.phone), name: line(p.name, 60), note: line(p.note, 200),
+        sites: (Array.isArray(p.sites) ? p.sites : []).map((x) => line(x, 64)).filter(Boolean).slice(0, 200),
+        plan: ['day', 'week', 'month', 'year', 'custom', 'free'].includes(p.plan) ? p.plan : 'custom',
+        expiresAt: p.expiresAt && !isNaN(Date.parse(p.expiresAt)) ? new Date(p.expiresAt).toISOString() : null,
+        active: p.active !== false, ipLock: p.ipLock === true,
+        maxDevices: Math.max(1, Math.min(10, Math.round(Number(p.maxDevices) || DEFAULT_MAX_DEVICES))),
+        createdAt: p.createdAt && !isNaN(Date.parse(p.createdAt)) ? new Date(p.createdAt).toISOString() : new Date(now).toISOString(), devices: []
+      };
+      added++;
+    }
+    log('ייבוא לקוחות משרת אחר: ' + added, ADMIN_EMAIL);
+    return out({ ok: true, added, skipped });
+  }
+
   case 'client-save': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     let p = {}; try { p = JSON.parse(b.payload || '{}'); } catch (x) {}

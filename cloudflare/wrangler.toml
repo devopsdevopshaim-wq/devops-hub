@@ -1,0 +1,20 @@
+# SPIDER sign-in server on Cloudflare Workers (free plan, no monthly execution cap).
+# Deployed by .github/workflows/cloudflare-deploy.yml. The generated code in src/gen/ comes from n8n/snippets (node build.mjs).
+name = "spider-auth"
+main = "src/worker.mjs"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "STATE"
+class_name = "State"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["State"]
+
+[vars]
+# PBKDF2 rounds for new passwords. The free plan allows about 10 ms of CPU per request, so keep this low there;
+# on the paid plan raise it (210000 is what the n8n version used).
+PBKDF2_ITER = "10000"

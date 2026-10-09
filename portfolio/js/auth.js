@@ -18,12 +18,15 @@
   function store(v) { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {} }
   function token() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
 
+  // api.json (written by the Cloudflare deploy) names the sign-in server. Without it the n8n address above is used.
+  var apiReady = fetch('api.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && /^https:\/\//.test(j.auth || '')) API = j.auth; }).catch(function () {});
+
   function api(action, data) {
     var body = new URLSearchParams(data || {});
     body.set('action', action);
     if (!body.has('token') && token()) body.set('token', token());
     // form-encoded: a "simple" request, no CORS preflight
-    return fetch(API, { method: 'POST', body: body })
+    return apiReady.then(function () { return fetch(API, { method: 'POST', body: body }); })
       .then(function (r) {
         // n8n answers 404 while the workflow is not imported or not active
         if (r.status === 404) return { ok: false, error: 'not-ready' };
@@ -111,6 +114,7 @@
     box.innerHTML = '<button type="button" class="af-btn" aria-haspopup="true" aria-expanded="false">⚙ ניהול</button>' +
       '<div class="af-menu" hidden>' +
       '<a href="' + base + 'ai.html">🤖 מודלי AI</a>' +
+      '<a href="' + base + 'migrate.html">🚚 העברת לקוחות לשרת חדש</a>' +
       '<a href="' + base + 'plan.html">📋 תכנית עסקית</a>' +
       '<a href="' + base + 'admin.html#usage">📈 שימוש באתר</a>' +
       '<a href="' + base + 'admin.html">מרכז הבקרה</a>' +

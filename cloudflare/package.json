@@ -1,0 +1,7 @@
+{
+  "name": "spider-auth-worker",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node build.mjs", "dev": "node build.mjs && wrangler dev --local", "test": "node test/worker.test.mjs" },
+  "devDependencies": { "wrangler": "^4.0.0" }
+}
