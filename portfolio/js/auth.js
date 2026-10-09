@@ -27,6 +27,7 @@
       .then(function (r) {
         // n8n answers 404 while the workflow is not imported or not active
         if (r.status === 404) return { ok: false, error: 'not-ready' };
+        if (r.status >= 500) return { ok: false, error: 'server-down' };
         return r.json().catch(function () { return { ok: false, error: 'bad-response' }; });
       });
   }
@@ -46,13 +47,12 @@
     resolveReady(s);
   }
 
-  // presence: the admin's screen counts who has a page open (a ping every minute, only while the tab is visible)
+  // presence: the admin's screen counts who has a page open (a ping every 4 minutes, only while the tab is visible)
   var beat = 0;
   function heartbeat() {
     if (beat) return;
     var ping = function () { if (!document.hidden) api('ping').catch(function () {}); };
-    beat = setInterval(ping, 60000);
-    document.addEventListener('visibilitychange', ping);
+    beat = setInterval(ping, 240000);   // every 4 minutes: each call is one n8n execution, so it stays rare
   }
 
   function logout() {
@@ -213,6 +213,7 @@
       'weak-password': 'הסיסמה צריכה להיות באורך 8 תווים לפחות.',
       'signed-out': 'הכניסה פגה. היכנסו שוב עם הסיסמה הראשונית.',
       'wrong-totp': 'קוד האפליקציה לא נכון, או שכבר נעשה בו שימוש. חכו לקוד הבא.',
+      'server-down': 'שרת הכניסה ב־n8n לא עונה כרגע (שגיאת שרת). זו לא הסיסמה. בדוק ב־n8n Cloud אם נגמרה מכסת ההרצות, ונסה שוב אחר כך.',
       'not-ready': 'מערכת הכניסה עוד לא הופעלה ב־n8n.'
     };
 
@@ -345,7 +346,7 @@
       else {
         // only a definite "no" signs the browser out; a busy or unreachable server must not
         if (!s.ok && (s.error === 'signed-out' || s.error === 'inactive' || s.error === 'device-revoked')) store('');
-        gate(s.error === 'not-ready' ? 'מערכת הכניסה עוד לא הופעלה ב־n8n.' : s.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.' : s.error === 'ip-blocked' ? 'הכתובת (IP) שממנה אתם מתחברים לא מאושרת. פנו למנהל.' : s.error === 'device-revoked' ? 'המכשיר הזה הוסר. היכנסו שוב.' : s.error === 'inactive' ? 'הגישה שלך הסתיימה. כדי לחדש, דברו איתי בוואטסאפ.' : needAdmin && s.ok ? 'המסך הזה פתוח רק למנהל.' : 'הכניסה הקודמת הסתיימה. היכנסו שוב.');
+        gate(s.error === 'not-ready' ? 'מערכת הכניסה עוד לא הופעלה ב־n8n.' : s.error === 'server-down' ? 'שרת הכניסה ב־n8n לא עונה כרגע. נסו שוב מאוחר יותר.' : s.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.' : s.error === 'ip-blocked' ? 'הכתובת (IP) שממנה אתם מתחברים לא מאושרת. פנו למנהל.' : s.error === 'device-revoked' ? 'המכשיר הזה הוסר. היכנסו שוב.' : s.error === 'inactive' ? 'הגישה שלך הסתיימה. כדי לחדש, דברו איתי בוואטסאפ.' : needAdmin && s.ok ? 'המסך הזה פתוח רק למנהל.' : 'הכניסה הקודמת הסתיימה. היכנסו שוב.');
       }
     }).catch(function () { gate('מערכת הכניסה לא עונה כרגע. נסו לרענן בעוד רגע.'); });
   }

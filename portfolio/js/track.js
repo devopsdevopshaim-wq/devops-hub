@@ -27,7 +27,12 @@
   }
   var page = location.pathname.replace(/^\/devops-hub\//, '/').replace(/\/index\.html$/, '/') || '/';
   var sent = false;
-  function view() { if (sent) return; sent = true; send('view', { page: page, ref: document.referrer || '' }); }
+  // one view per page per browser session (each note is one n8n execution)
+  function view() {
+    if (sent) return; sent = true;
+    try { if (sessionStorage.getItem('spider-v:' + page)) return; sessionStorage.setItem('spider-v:' + page, '1'); } catch (e) {}
+    send('view', { page: page, ref: document.referrer || '' });
+  }
   if (document.visibilityState === 'prerender') document.addEventListener('visibilitychange', view); else view();
   // "open": a link or button that leaves for another site/app, or any element marked data-track="name"
   document.addEventListener('click', function (e) {

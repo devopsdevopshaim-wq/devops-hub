@@ -32,7 +32,7 @@
       if (!d || !d.ok) { $('pr-note').textContent = d && d.error === 'not-ready' ? 'השרת עוד לא מעודכן: הפעל את פריסת n8n.' : 'לא ניתן לטעון (' + ((d && d.error) || 'שגיאה') + ')'; return; }
       D = d;
       $('pr-online').textContent = d.online; $('pr-offline').textContent = d.offline; $('pr-members').textContent = d.members;
-      $('pr-note').textContent = 'מחובר = עמוד פתוח בדקות האחרונות (' + d.minutes + '). מתעדכן כל חצי דקה.' + (d.admin ? ' אתה מחובר כמנהל.' : '');
+      $('pr-note').textContent = 'מחובר = עמוד פתוח בדקות האחרונות (' + d.minutes + '). מתעדכן כל דקה.' + (d.admin ? ' אתה מחובר כמנהל.' : '');
       list();
     }, function () { $('pr-note').textContent = 'אין חיבור לשרת'; });
   }
@@ -45,6 +45,6 @@
         list();
       });
     });
-    load(); setInterval(function () { if (!document.hidden) load(); }, 30000);
+    load(); setInterval(function () { if (!document.hidden) load(); }, 60000);
   });
 })();
