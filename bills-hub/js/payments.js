@@ -168,6 +168,7 @@
     $('#due-unit').closest('.fld').hidden = props.length < 2;
 
     if (!props.length || !props.some(function (p) { return (p.services || []).length; })) {
+      heroStatus(null);
       $('#due-tiles').innerHTML = '';
       $('#due-list').innerHTML = '<div class="card empty-state">' +
         '<div class="empty-big">🧾</div><h2>עוד אין תשלומים למעקב</h2>' +
@@ -192,6 +193,7 @@
       }
     });
     groups.paid.sort(function (a, b) { return (b.paidAt || b.date) < (a.paidAt || a.date) ? -1 : 1; });
+    heroStatus(groups);
     function sum(list) { return list.reduce(function (t, x) { return t + (x.amount || 0); }, 0); }
     function unknown(list) { return list.some(function (x) { return x.amount === null; }); }
     function tile(cls, title, list, note) {
@@ -216,6 +218,26 @@
       section('בהמשך', groups.later, '') +
       section('יורד אוטומטית', groups.auto, '') +
       section('שולם', groups.paid, 'paid');
+  }
+
+  // the summary in the top panel, and which utilities the 3D scene marks as late
+  function heroStatus(groups) {
+    var box = $('#hero-stats');
+    var late = [], status = { late: late };
+    if (groups) groups.late.forEach(function (x) { if (late.indexOf(x.s.type) < 0) late.push(x.s.type); });
+    window.__billsStatus = status;
+    window.dispatchEvent(new CustomEvent('bills:status', { detail: status }));
+    if (!box) return;
+    if (!groups) {
+      box.innerHTML = '<span class="stat"><b>מתחילים</b><small>צלמו חשבון או הוסיפו נכס</small></span>';
+      return;
+    }
+    function sum(l) { return l.reduce(function (t, x) { return t + (x.amount || 0); }, 0); }
+    var open = groups.late.concat(groups.soon);
+    box.innerHTML =
+      '<span class="stat"><b>' + money(sum(open)) + '</b><small>לתשלום עכשיו ובקרוב</small></span>' +
+      '<span class="stat' + (groups.late.length ? ' bad' : '') + '"><b>' + groups.late.length + '</b><small>' + (groups.late.length === 1 ? 'חשבון באיחור' : 'חשבונות באיחור') + '</small></span>' +
+      '<span class="stat"><b>' + money(sum(groups.auto)) + '</b><small>יורד אוטומטית</small></span>';
   }
 
   function row(x) {
@@ -475,6 +497,11 @@
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   }
   $('#scan-open').addEventListener('click', openScan);
+  $('#hero-scan').addEventListener('click', openScan);
+  $('#hero-bill').addEventListener('click', function () {
+    B.showTab('bill');
+    document.querySelector('.tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   function prepFile(f) {
     return new Promise(function (res, rej) {
