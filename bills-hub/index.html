@@ -3,29 +3,57 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="theme-color" content="#0f5c55" />
-<title>תשלומים חודשיים</title>
+<meta name="theme-color" content="#0b2b2a" />
+<meta name="description" content="תשלומים לבית: מה לשלם עכשיו, קריאות מונים לחשמל, מים וגז, קריאת חשבון מצילום, תזכורות וקובץ Excel לשליחה בוואטסאפ." />
+<title>תשלומים לבית</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" />
 <link rel="stylesheet" href="css/bills.css" />
 <script src="../portfolio/js/track.js" defer></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+} }
+</script>
 </head>
 <body>
 <div class="standalone-bar">
-  <span>תשלומים חודשיים · חשמל, מים, גז ועוד</span>
-  <a href="../portfolio/">כל האתרים שלי ←</a>
+  <span class="shelf">🏠 בית ותשלומים</span>
+  <nav class="shelf-links" aria-label="בית ותשלומים">
+    <a href="./" aria-current="page">🧾 תשלומים לבית</a>
+    <a href="../finance-hub/">🧭 מצפן פיננסי</a>
+    <a href="../portfolio/">כל האתרים שלי ←</a>
+  </nav>
 </div>
 
-<div class="wrap">
-  <header class="top">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">₪</span>
-      <div>
-        <h1>תשלומים חודשיים</h1>
-        <p class="tag">מה לשלם עכשיו · קריאות מונים · קריאת חשבון מצילום · Excel אחד לשליחה בוואטסאפ</p>
+<header class="hero">
+  <canvas id="hero3d" aria-hidden="true"></canvas>
+  <svg class="hero-fallback" viewBox="0 0 320 240" aria-hidden="true">
+    <ellipse cx="160" cy="200" rx="130" ry="26" fill="#15403d" stroke="#e9b949" stroke-width="2"/>
+    <rect x="102" y="112" width="116" height="80" rx="4" fill="#f3ede2"/>
+    <path d="M90 116 160 62l70 54z" fill="#c4573f"/>
+    <rect x="120" y="148" width="22" height="44" rx="2" fill="#0f5c55"/>
+    <rect x="166" y="136" width="30" height="24" rx="2" fill="#ffd88a"/>
+    <circle cx="60" cy="96" r="14" fill="#ffd23f"/><circle cx="262" cy="120" r="12" fill="#5cc8ff"/><circle cx="246" cy="64" r="10" fill="#ff8a3d"/>
+  </svg>
+  <div class="hero-in">
+    <div class="hero-copy">
+      <span class="eyebrow">בית ותשלומים</span>
+      <h1>תשלומים לבית</h1>
+      <p class="tag">חשמל, מים, גז, ארנונה וכל השאר במקום אחד: מה לשלם עכשיו, קריאות מונים, קריאת חשבון מצילום,
+        תזכורות ליומן וקובץ Excel אחד לשליחה בוואטסאפ.</p>
+      <div class="hero-stats" id="hero-stats" aria-live="polite"></div>
+      <div class="hero-cta">
+        <button type="button" class="btn gold" id="hero-scan">📷 קרא חשבון מצילום</button>
+        <button type="button" class="btn glass" id="hero-bill">⚡ קריאות מונים לחודש</button>
       </div>
     </div>
-  </header>
+  </div>
+  <p class="hero-hint" aria-hidden="true">גררו כדי לסובב</p>
+</header>
+
+<div class="wrap">
 
   <nav class="tabs" role="tablist">
     <button class="tab active" data-tab="due" role="tab">לתשלום</button>
@@ -162,6 +190,17 @@
     </div>
   </section>
 
+  <section class="shelf-card" aria-label="עוד בבית ותשלומים">
+    <a class="shelf-item" href="../finance-hub/">
+      <span class="shelf-ic">🧭</span>
+      <span><b>מצפן פיננסי</b><small>בדיקת מצב, תקציב 50/30/20, קרן חירום ותוכנית התנהלות</small></span>
+    </a>
+    <a class="shelf-item" href="../portfolio/">
+      <span class="shelf-ic">✦</span>
+      <span><b>כל האתרים שלי</b><small>כל הכלים והאתרים במקום אחד, לפי תחומים</small></span>
+    </a>
+  </section>
+
   <footer class="foot">
     התעריפים שמוצעים כברירת מחדל הם הערכה בלבד. עדכנו אותם לפי החשבון שקיבלתם מחברת החשמל, תאגיד המים או ספק הגז.
     סכומים שמסומנים "משוער" מחושבים מהקריאות שלכם או מהסכום שהזנתם, והחשבון של הספק הוא הקובע.
@@ -198,5 +237,11 @@
 <script src="js/xlsx.js"></script>
 <script src="js/bills.js"></script>
 <script src="js/payments.js"></script>
+<script type="module" src="js/hero3d.js" onerror="document.querySelector('.hero').classList.add('no3d')"></script>
+<script>
+  // three.js did not arrive (offline, blocked): the drawn picture stays
+  setTimeout(function () { var h = document.querySelector('.hero'); if (h && !/\b(ready|no3d)\b/.test(h.className)) h.classList.add('no3d'); }, 9000);
+</script>
+<script nomodule>document.querySelector('.hero').classList.add('no3d');</script>
 </body>
 </html>

@@ -29,6 +29,12 @@ window.PORTFOLIO_ART = (function () {
       '<circle cx="112" cy="50" r="16" ' + g + '/>' +
       '<path d="M112 26v6M112 68v6M88 50h6M130 50h6M95 33l4 4M125 63l4 4M95 67l4-4M125 37l4-4" ' + g + '/>' +
       '<circle cx="112" cy="50" r="5" ' + s + '/>',
+    home:
+      '<path d="M22 50L62 20l40 30" ' + s + '/><path d="M32 44v40h60V44" ' + s + '/>' +
+      '<rect x="54" y="62" width="16" height="22" rx="2" ' + s + '/>' +
+      '<path d="M40 52h10v8H40z" ' + g + '/>' +
+      '<rect x="104" y="40" width="38" height="46" rx="5" ' + g + '/><path d="M112 52h22M112 62h16M112 72h20" ' + s + ' opacity=".6"/>' +
+      '<circle cx="132" cy="28" r="10" ' + g + '/><path d="M132 23v10M129 26c0-2 6-2 6 0s-6 2-6 4 6 2 6 0" ' + g + ' stroke-width="1.6"/>' + dot(118, 30, 2.4, '--c'),
     data:
       '<path d="M20 84h120M28 84V22M132 84V22M28 44h104M28 64h104" ' + s + '/>' +
       '<rect x="38" y="28" width="18" height="16" rx="2" ' + g + '/><rect x="60" y="32" width="14" height="12" rx="2" ' + s + '/>' +

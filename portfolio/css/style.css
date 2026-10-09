@@ -14,6 +14,7 @@
   --cat-web: #8b7bff;
   --cat-ai: #62dcb8;
   --cat-tools: #e0b25a;
+  --cat-home: #5fd39a;
   --cat-data: #6cb6ff;
   --cat-lotto: #ff8fa3;
   --cat-study: #f0c27a;
@@ -196,6 +197,7 @@ h1 em {
 .cat-web { --c: var(--cat-web); }
 .cat-ai { --c: var(--cat-ai); }
 .cat-tools { --c: var(--cat-tools); }
+.cat-home { --c: var(--cat-home); }
 .cat-data { --c: var(--cat-data); }
 .cat-lotto { --c: var(--cat-lotto); }
 .cat-study { --c: var(--cat-study); }
