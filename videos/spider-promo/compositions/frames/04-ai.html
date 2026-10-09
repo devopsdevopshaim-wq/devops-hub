@@ -1,0 +1,333 @@
+<template>
+<style>
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKerUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcbUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfrUC_2fi-Q.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N9vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-Po3huR_DQ.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPgzpTn5_PDb9no.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPg9pTn5_PDb.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;color:#f1eefc;font-family:'Assistant',sans-serif}
+.f04-ai-bg{position:absolute;inset:0;background:radial-gradient(120% 95% at 68% -5%,#2a2366 0%,#17143a 40%,#0f0d24 78%)}
+.f04-ai-skyimg{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;opacity:.42}
+.f04-ai-st{position:absolute;border-radius:50%;background:#fff}
+.f04-ai-ov{position:absolute;left:0;top:0;width:1920px;height:1080px}
+.f04-ai-tx{position:absolute;direction:rtl;text-align:right}
+.f04-ai-h1{font-family:'Bellefair',serif;font-weight:400;font-size:118px;line-height:1.08}
+.f04-ai-h2{font-family:'Bellefair',serif;font-weight:400;font-size:76px;line-height:1.1}
+.f04-ai-h3{font-family:'Bellefair',serif;font-weight:400;font-size:40px;line-height:1.1}
+.f04-ai-lede{font-family:'Assistant',sans-serif;font-weight:400;font-size:38px;color:#a9a4cc;margin-top:22px}
+.f04-ai-acc{color:#e0b25a}.f04-ai-mint{color:#62dcb8}
+.f04-ai-w{display:inline-block;white-space:pre}
+.f04-ai-shot{position:absolute;border-radius:16px;overflow:hidden;border:1px solid rgba(241,238,252,.22);box-shadow:0 26px 70px rgba(0,0,0,.55);background:#17143a}
+.f04-ai-shot img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.f04-ai-shot.f04-ai-focal{border:2px solid #e0b25a;box-shadow:0 0 0 8px rgba(224,178,90,.12),0 30px 90px rgba(0,0,0,.65)}
+.f04-ai-chip{position:absolute;right:14px;bottom:14px;direction:rtl;font-family:'Assistant',sans-serif;font-weight:600;font-size:24px;color:#f1eefc;background:rgba(15,13,36,.86);padding:6px 14px;border-radius:10px}
+.f04-ai-focal .f04-ai-chip{color:#f3d596;font-size:30px}
+.f04-ai-silk{stroke:#e0b25a;stroke-width:3;fill:none;stroke-linecap:round}
+
+#f04-ai-world{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+</style>
+<div data-hf-id="hf-k48s" id="root" data-composition-id="04-ai" data-width="1920" data-height="1080" data-duration="11">
+<div data-hf-id="hf-ptqw" id="f04-ai-bgclip" class="clip f04-ai-bg" data-start="0" data-duration="11" data-track-index="0"><img data-hf-id="hf-ycb7" class="f04-ai-skyimg" id="f04-ai-sky" src="assets/sky.webp" alt=""><div data-hf-id="hf-itl8" id="f04-ai-stars"><i data-hf-id="hf-qsj9" class="f04-ai-st" style="left:453px;top:96px;width:2.5px;height:2.5px;opacity:0.34"></i><i data-hf-id="hf-6wef" class="f04-ai-st" style="left:128px;top:373px;width:4.2px;height:4.2px;opacity:0.73"></i><i data-hf-id="hf-4kd7" class="f04-ai-st" style="left:1469px;top:206px;width:3.0px;height:3.0px;opacity:0.42"></i><i data-hf-id="hf-ntsc" class="f04-ai-st" style="left:332px;top:99px;width:1.9px;height:1.9px;opacity:0.81"></i><i data-hf-id="hf-p4c6" class="f04-ai-st" style="left:1592px;top:749px;width:3.8px;height:3.8px;opacity:0.37"></i><i data-hf-id="hf-56fa" class="f04-ai-st" style="left:595px;top:582px;width:3.6px;height:3.6px;opacity:0.76"></i><i data-hf-id="hf-9k8d" class="f04-ai-st" style="left:1690px;top:81px;width:3.2px;height:3.2px;opacity:0.65"></i><i data-hf-id="hf-noht" class="f04-ai-st" style="left:971px;top:165px;width:2.8px;height:2.8px;opacity:0.30"></i><i data-hf-id="hf-2sl5" class="f04-ai-st" style="left:1794px;top:804px;width:3.0px;height:3.0px;opacity:0.43"></i><i data-hf-id="hf-z2ul" class="f04-ai-st" style="left:1745px;top:532px;width:4.1px;height:4.1px;opacity:0.76"></i><i data-hf-id="hf-pppm" class="f04-ai-st" style="left:976px;top:384px;width:3.2px;height:3.2px;opacity:0.51"></i><i data-hf-id="hf-3qis" class="f04-ai-st" style="left:310px;top:283px;width:3.9px;height:3.9px;opacity:0.28"></i><i data-hf-id="hf-l1ib" class="f04-ai-st" style="left:89px;top:582px;width:2.1px;height:2.1px;opacity:0.57"></i><i data-hf-id="hf-0dbr" class="f04-ai-st" style="left:905px;top:318px;width:4.5px;height:4.5px;opacity:0.37"></i><i data-hf-id="hf-1907" class="f04-ai-st" style="left:793px;top:188px;width:3.3px;height:3.3px;opacity:0.42"></i><i data-hf-id="hf-at3r" class="f04-ai-st" style="left:683px;top:694px;width:2.3px;height:2.3px;opacity:0.59"></i><i data-hf-id="hf-f4en" class="f04-ai-st" style="left:1736px;top:94px;width:1.4px;height:1.4px;opacity:0.39"></i><i data-hf-id="hf-9hl4" class="f04-ai-st" style="left:1469px;top:572px;width:2.0px;height:2.0px;opacity:0.45"></i><i data-hf-id="hf-8d3o" class="f04-ai-st" style="left:341px;top:426px;width:1.3px;height:1.3px;opacity:0.67"></i><i data-hf-id="hf-zg53" class="f04-ai-st" style="left:1720px;top:887px;width:3.6px;height:3.6px;opacity:0.83"></i><i data-hf-id="hf-imn4" class="f04-ai-st" style="left:35px;top:268px;width:4.4px;height:4.4px;opacity:0.72"></i><i data-hf-id="hf-ad20" class="f04-ai-st" style="left:788px;top:876px;width:3.2px;height:3.2px;opacity:0.74"></i><i data-hf-id="hf-mn4r" class="f04-ai-st" style="left:563px;top:178px;width:2.7px;height:2.7px;opacity:0.33"></i><i data-hf-id="hf-kxh8" class="f04-ai-st" style="left:733px;top:893px;width:2.3px;height:2.3px;opacity:0.26"></i><i data-hf-id="hf-mqf1" class="f04-ai-st" style="left:86px;top:157px;width:3.8px;height:3.8px;opacity:0.47"></i><i data-hf-id="hf-7wkw" class="f04-ai-st" style="left:557px;top:90px;width:4.4px;height:4.4px;opacity:0.50"></i><i data-hf-id="hf-h2lw" class="f04-ai-st" style="left:399px;top:55px;width:1.4px;height:1.4px;opacity:0.35"></i><i data-hf-id="hf-cup5" class="f04-ai-st" style="left:1300px;top:139px;width:1.3px;height:1.3px;opacity:0.54"></i><i data-hf-id="hf-ck9k" class="f04-ai-st" style="left:478px;top:927px;width:1.6px;height:1.6px;opacity:0.57"></i><i data-hf-id="hf-4tng" class="f04-ai-st" style="left:1486px;top:380px;width:4.5px;height:4.5px;opacity:0.54"></i><i data-hf-id="hf-62pg" class="f04-ai-st" style="left:464px;top:381px;width:1.3px;height:1.3px;opacity:0.50"></i><i data-hf-id="hf-pxgv" class="f04-ai-st" style="left:477px;top:826px;width:3.9px;height:3.9px;opacity:0.55"></i><i data-hf-id="hf-s9hz" class="f04-ai-st" style="left:61px;top:236px;width:2.0px;height:2.0px;opacity:0.37"></i><i data-hf-id="hf-ppj9" class="f04-ai-st" style="left:444px;top:808px;width:1.7px;height:1.7px;opacity:0.28"></i><i data-hf-id="hf-xzv4" class="f04-ai-st" style="left:1782px;top:525px;width:4.5px;height:4.5px;opacity:0.49"></i><i data-hf-id="hf-fw70" class="f04-ai-st" style="left:1730px;top:607px;width:3.8px;height:3.8px;opacity:0.70"></i><i data-hf-id="hf-qjon" class="f04-ai-st" style="left:949px;top:86px;width:1.9px;height:1.9px;opacity:0.77"></i><i data-hf-id="hf-l9cv" class="f04-ai-st" style="left:1728px;top:859px;width:2.3px;height:2.3px;opacity:0.64"></i><i data-hf-id="hf-41zw" class="f04-ai-st" style="left:1535px;top:597px;width:3.9px;height:3.9px;opacity:0.57"></i><i data-hf-id="hf-vyfo" class="f04-ai-st" style="left:1257px;top:637px;width:2.1px;height:2.1px;opacity:0.80"></i><i data-hf-id="hf-z6i3" class="f04-ai-st" style="left:1836px;top:69px;width:4.4px;height:4.4px;opacity:0.83"></i><i data-hf-id="hf-mdpm" class="f04-ai-st" style="left:1283px;top:41px;width:4.2px;height:4.2px;opacity:0.33"></i><i data-hf-id="hf-25rk" class="f04-ai-st" style="left:1860px;top:620px;width:1.4px;height:1.4px;opacity:0.35"></i><i data-hf-id="hf-qe4f" class="f04-ai-st" style="left:1220px;top:529px;width:3.7px;height:3.7px;opacity:0.81"></i><i data-hf-id="hf-gg76" class="f04-ai-st" style="left:420px;top:3px;width:4.2px;height:4.2px;opacity:0.26"></i><i data-hf-id="hf-38cf" class="f04-ai-st" style="left:1683px;top:108px;width:3.9px;height:3.9px;opacity:0.72"></i><i data-hf-id="hf-07dz" class="f04-ai-st" style="left:1686px;top:511px;width:4.1px;height:4.1px;opacity:0.37"></i><i data-hf-id="hf-fk9t" class="f04-ai-st" style="left:1289px;top:307px;width:4.1px;height:4.1px;opacity:0.71"></i><i data-hf-id="hf-vvrv" class="f04-ai-st" style="left:905px;top:489px;width:1.3px;height:1.3px;opacity:0.27"></i><i data-hf-id="hf-knj2" class="f04-ai-st" style="left:1141px;top:454px;width:4.1px;height:4.1px;opacity:0.61"></i><i data-hf-id="hf-qo69" class="f04-ai-st" style="left:266px;top:337px;width:3.7px;height:3.7px;opacity:0.56"></i><i data-hf-id="hf-x06e" class="f04-ai-st" style="left:20px;top:778px;width:3.9px;height:3.9px;opacity:0.30"></i><i data-hf-id="hf-3g49" class="f04-ai-st" style="left:1043px;top:354px;width:3.8px;height:3.8px;opacity:0.44"></i><i data-hf-id="hf-t36n" class="f04-ai-st" style="left:449px;top:452px;width:4.4px;height:4.4px;opacity:0.31"></i><i data-hf-id="hf-sqhn" class="f04-ai-st" style="left:220px;top:577px;width:4.1px;height:4.1px;opacity:0.56"></i><i data-hf-id="hf-90xv" class="f04-ai-st" style="left:833px;top:797px;width:3.8px;height:3.8px;opacity:0.29"></i><i data-hf-id="hf-6ubo" class="f04-ai-st" style="left:1692px;top:182px;width:2.2px;height:2.2px;opacity:0.75"></i><i data-hf-id="hf-fqoc" class="f04-ai-st" style="left:811px;top:742px;width:1.8px;height:1.8px;opacity:0.77"></i><i data-hf-id="hf-neo4" class="f04-ai-st" style="left:339px;top:139px;width:2.8px;height:2.8px;opacity:0.45"></i><i data-hf-id="hf-eej7" class="f04-ai-st" style="left:1040px;top:840px;width:3.5px;height:3.5px;opacity:0.25"></i><i data-hf-id="hf-r54p" class="f04-ai-st" style="left:599px;top:506px;width:2.8px;height:2.8px;opacity:0.68"></i><i data-hf-id="hf-lhdd" class="f04-ai-st" style="left:930px;top:70px;width:2.0px;height:2.0px;opacity:0.76"></i><i data-hf-id="hf-e2vh" class="f04-ai-st" style="left:685px;top:712px;width:4.5px;height:4.5px;opacity:0.63"></i><i data-hf-id="hf-w835" class="f04-ai-st" style="left:1299px;top:566px;width:2.2px;height:2.2px;opacity:0.80"></i><i data-hf-id="hf-qmcq" class="f04-ai-st" style="left:897px;top:847px;width:2.2px;height:2.2px;opacity:0.77"></i><i data-hf-id="hf-yom5" class="f04-ai-st" style="left:1511px;top:569px;width:2.7px;height:2.7px;opacity:0.33"></i><i data-hf-id="hf-pyq8" class="f04-ai-st" style="left:1480px;top:336px;width:3.4px;height:3.4px;opacity:0.33"></i><i data-hf-id="hf-p14j" class="f04-ai-st" style="left:159px;top:134px;width:3.9px;height:3.9px;opacity:0.36"></i><i data-hf-id="hf-pnfr" class="f04-ai-st" style="left:1732px;top:346px;width:3.1px;height:3.1px;opacity:0.46"></i><i data-hf-id="hf-d912" class="f04-ai-st" style="left:1192px;top:87px;width:2.5px;height:2.5px;opacity:0.81"></i></div></div>
+<div data-hf-id="hf-jgc3" class="clip" data-start="0" data-duration="11" data-track-index="1" id="f04-ai-stage">
+
+<div data-hf-id="hf-l5c2" id="f04-ai-world" data-layout-allow-overflow="">
+<svg data-hf-id="hf-xixd" class="f04-ai-ov" viewBox="0 0 1920 1080" data-layout-allow-overflow=""><path data-hf-id="hf-cxeg" id="f04-ai-silk" d="M1960 120 L1220 460 L560 760 L-40 1000" class="f04-ai-silk" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1" /><circle data-hf-id="hf-i1ye" id="f04-ai-n1" cx="1220" cy="460" r="11" fill="#f3d596" /><circle data-hf-id="hf-bhyy" id="f04-ai-n2" cx="560" cy="760" r="11" fill="#f3d596" /></svg>
+<div data-hf-id="hf-fe08" id="f04-ai-c3" class="f04-ai-shot" style="left:1270px;top:500px;width:500px;height:312px"><img data-hf-id="hf-h769" src="assets/aia-studio.jpg" alt=""><span data-hf-id="hf-kizb" class="f04-ai-chip">עיצוב AIA</span></div>
+<div data-hf-id="hf-o80y" id="f04-ai-c2" class="f04-ai-shot" style="left:1010px;top:230px;width:470px;height:294px"><img data-hf-id="hf-lf4s" src="assets/smart-office-assistant.jpg" alt=""><span data-hf-id="hf-vbex" class="f04-ai-chip">עוזר משרד חכם</span></div>
+<div data-hf-id="hf-8nxu" id="f04-ai-c1" class="f04-ai-shot f04-ai-focal" style="left:90px;top:170px;width:880px;height:550px"><img data-hf-id="hf-krml" src="assets/jarvis-web.jpg" alt=""><span data-hf-id="hf-jc2t" class="f04-ai-chip">JARVIS — עוזר רב־סוכנים</span></div>
+</div>
+<div data-hf-id="hf-j1s9" class="f04-ai-tx" style="top:70px;right:110px"><div data-hf-id="hf-hst1" class="f04-ai-h2" id="f04-ai-l1"><span data-hf-id="hf-l40k" class="f04-ai-w">סוכני </span><span data-hf-id="hf-pmka" class="f04-ai-w">AI</span></div><div data-hf-id="hf-p2ok" class="f04-ai-lede" id="f04-ai-l2"><span data-hf-id="hf-fipg" class="f04-ai-w">שעובדים </span><span data-hf-id="hf-8sz6" class="f04-ai-w">בשבילך</span></div></div>
+</div>
+</div>
+<script src="assets/vendor/gsap.min.js"></script>
+<script>
+(function(){
+const tl = gsap.timeline({ paused: true });
+const Q = s => document.querySelector(s);
+const QA = s => Array.from(document.querySelectorAll(s));
+const rise = (sel, at, opt) => tl.fromTo(sel, { y: 34, opacity: 0, filter: 'blur(6px)' }, Object.assign({ y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.9, ease: 'power3.out', stagger: 0.16 }, opt || {}), at);
+const card = (sel, at, opt) => tl.fromTo(sel, { opacity: 0, scale: 0.94, y: 40, filter: 'blur(8px)' }, Object.assign({ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', duration: 1.1, ease: 'power3.out' }, opt || {}), at);
+const draw = (sel, at, d, ease) => tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d || 1.6, ease: ease || 'power2.inOut' }, at);
+tl.fromTo('#f04-ai-stars', { x: 0 }, { x: -40, duration: 11, ease: 'none' }, 0);
+tl.fromTo('#f04-ai-sky', { scale: 1.0 }, { scale: 1.05, duration: 11, ease: 'none' }, 0);
+draw('#f04-ai-silk', 0.0, 2.2, 'power2.out');
+rise('#f04-ai-l1 .f04-ai-w', 0.2, { stagger: 0.2 }); rise('#f04-ai-l2 .f04-ai-w', 0.8, { stagger: 0.14 });
+tl.fromTo('#f04-ai-world', { x: -260, y: 120, scale: 1.12 }, { x: -120, y: 40, scale: 1.06, duration: 4.2, ease: 'power2.inOut' }, 0.4);
+tl.fromTo(['#f04-ai-n1', '#f04-ai-n2'], { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.6, ease: 'back.out(2)', stagger: 1.6 }, 1.0);
+card('#f04-ai-c3', 1.8);
+tl.to('#f04-ai-world', { x: 0, y: 0, scale: 1, duration: 4.2, ease: 'expo.out' }, 4.65);
+card('#f04-ai-c2', 4.4);
+card('#f04-ai-c1', 6.8, { duration: 1.4 });
+tl.fromTo('#f04-ai-c1 img', { scale: 1.08 }, { scale: 1, duration: 4.0, ease: 'power2.out' }, 6.8);
+window.__timelines["04-ai"] = tl;
+})();
+</script>
+</template>

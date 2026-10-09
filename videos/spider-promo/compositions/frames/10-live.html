@@ -1,0 +1,327 @@
+<template>
+<style>
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKerUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcbUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfrUC_2fi-Q.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N9vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-Po3huR_DQ.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPgzpTn5_PDb9no.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPg9pTn5_PDb.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;color:#f1eefc;font-family:'Assistant',sans-serif}
+.f10-live-bg{position:absolute;inset:0;background:radial-gradient(120% 95% at 68% -5%,#2a2366 0%,#17143a 40%,#0f0d24 78%)}
+.f10-live-skyimg{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;opacity:.42}
+.f10-live-st{position:absolute;border-radius:50%;background:#fff}
+.f10-live-ov{position:absolute;left:0;top:0;width:1920px;height:1080px}
+.f10-live-tx{position:absolute;direction:rtl;text-align:right}
+.f10-live-h1{font-family:'Bellefair',serif;font-weight:400;font-size:118px;line-height:1.08}
+.f10-live-h2{font-family:'Bellefair',serif;font-weight:400;font-size:76px;line-height:1.1}
+.f10-live-h3{font-family:'Bellefair',serif;font-weight:400;font-size:40px;line-height:1.1}
+.f10-live-lede{font-family:'Assistant',sans-serif;font-weight:400;font-size:38px;color:#a9a4cc;margin-top:22px}
+.f10-live-acc{color:#e0b25a}.f10-live-mint{color:#62dcb8}
+.f10-live-w{display:inline-block;white-space:pre}
+.f10-live-shot{position:absolute;border-radius:16px;overflow:hidden;border:1px solid rgba(241,238,252,.22);box-shadow:0 26px 70px rgba(0,0,0,.55);background:#17143a}
+.f10-live-shot img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.f10-live-shot.f10-live-focal{border:2px solid #e0b25a;box-shadow:0 0 0 8px rgba(224,178,90,.12),0 30px 90px rgba(0,0,0,.65)}
+.f10-live-chip{position:absolute;right:14px;bottom:14px;direction:rtl;font-family:'Assistant',sans-serif;font-weight:600;font-size:24px;color:#f1eefc;background:rgba(15,13,36,.86);padding:6px 14px;border-radius:10px}
+.f10-live-focal .f10-live-chip{color:#f3d596;font-size:30px}
+.f10-live-silk{stroke:#e0b25a;stroke-width:3;fill:none;stroke-linecap:round}
+
+.f10-live-rows{position:absolute;left:150px;top:180px;width:760px;direction:rtl}
+.f10-live-row{display:flex;align-items:center;gap:26px;font-family:'Assistant',sans-serif;font-size:38px;padding:20px 26px;border-bottom:1px solid rgba(241,238,252,.12)}
+.f10-live-nm{flex:1}.f10-live-live{font-family:'JetBrains Mono',monospace;font-size:22px;color:#62dcb8;letter-spacing:.12em}
+.f10-live-led{width:20px;height:20px;border-radius:50%;background:#62dcb8;box-shadow:0 0 18px #62dcb8}
+</style>
+<div data-hf-id="hf-805h" id="root" data-composition-id="10-live" data-width="1920" data-height="1080" data-duration="8">
+<div data-hf-id="hf-mbde" id="f10-live-bgclip" class="clip f10-live-bg" data-start="0" data-duration="8" data-track-index="0"><img data-hf-id="hf-e3v5" class="f10-live-skyimg" id="f10-live-sky" src="assets/sky.webp" alt=""><div data-hf-id="hf-33p1" id="f10-live-stars"><i data-hf-id="hf-cio5" class="f10-live-st" style="left:1097px;top:398px;width:3.1px;height:3.1px;opacity:0.37"></i><i data-hf-id="hf-pigg" class="f10-live-st" style="left:1562px;top:765px;width:3.4px;height:3.4px;opacity:0.35"></i><i data-hf-id="hf-8tbi" class="f10-live-st" style="left:1000px;top:304px;width:2.0px;height:2.0px;opacity:0.82"></i><i data-hf-id="hf-26vi" class="f10-live-st" style="left:1913px;top:41px;width:4.0px;height:4.0px;opacity:0.61"></i><i data-hf-id="hf-6qb7" class="f10-live-st" style="left:733px;top:263px;width:3.4px;height:3.4px;opacity:0.52"></i><i data-hf-id="hf-wfqa" class="f10-live-st" style="left:1317px;top:615px;width:1.6px;height:1.6px;opacity:0.71"></i><i data-hf-id="hf-kqpo" class="f10-live-st" style="left:1886px;top:900px;width:3.2px;height:3.2px;opacity:0.28"></i><i data-hf-id="hf-7alw" class="f10-live-st" style="left:8px;top:124px;width:4.3px;height:4.3px;opacity:0.43"></i><i data-hf-id="hf-m9d8" class="f10-live-st" style="left:703px;top:834px;width:2.2px;height:2.2px;opacity:0.58"></i><i data-hf-id="hf-19fb" class="f10-live-st" style="left:837px;top:60px;width:3.1px;height:3.1px;opacity:0.76"></i><i data-hf-id="hf-bcsm" class="f10-live-st" style="left:300px;top:208px;width:2.6px;height:2.6px;opacity:0.27"></i><i data-hf-id="hf-zosk" class="f10-live-st" style="left:953px;top:760px;width:3.4px;height:3.4px;opacity:0.57"></i><i data-hf-id="hf-s2q9" class="f10-live-st" style="left:1642px;top:139px;width:3.1px;height:3.1px;opacity:0.47"></i><i data-hf-id="hf-s2wq" class="f10-live-st" style="left:1155px;top:105px;width:3.8px;height:3.8px;opacity:0.31"></i><i data-hf-id="hf-79f3" class="f10-live-st" style="left:319px;top:750px;width:4.3px;height:4.3px;opacity:0.51"></i><i data-hf-id="hf-nqsh" class="f10-live-st" style="left:795px;top:228px;width:2.1px;height:2.1px;opacity:0.62"></i><i data-hf-id="hf-q1aj" class="f10-live-st" style="left:343px;top:111px;width:2.7px;height:2.7px;opacity:0.35"></i><i data-hf-id="hf-ldis" class="f10-live-st" style="left:1246px;top:763px;width:3.8px;height:3.8px;opacity:0.54"></i><i data-hf-id="hf-zcgt" class="f10-live-st" style="left:667px;top:404px;width:1.2px;height:1.2px;opacity:0.68"></i><i data-hf-id="hf-u2wl" class="f10-live-st" style="left:637px;top:297px;width:1.5px;height:1.5px;opacity:0.52"></i><i data-hf-id="hf-5u2j" class="f10-live-st" style="left:1119px;top:363px;width:4.1px;height:4.1px;opacity:0.65"></i><i data-hf-id="hf-v1qd" class="f10-live-st" style="left:464px;top:488px;width:4.2px;height:4.2px;opacity:0.56"></i><i data-hf-id="hf-abos" class="f10-live-st" style="left:1156px;top:58px;width:2.8px;height:2.8px;opacity:0.53"></i><i data-hf-id="hf-xzb5" class="f10-live-st" style="left:770px;top:391px;width:3.1px;height:3.1px;opacity:0.57"></i><i data-hf-id="hf-zj3d" class="f10-live-st" style="left:941px;top:154px;width:2.7px;height:2.7px;opacity:0.83"></i><i data-hf-id="hf-urnh" class="f10-live-st" style="left:797px;top:33px;width:1.2px;height:1.2px;opacity:0.57"></i><i data-hf-id="hf-opon" class="f10-live-st" style="left:97px;top:86px;width:1.6px;height:1.6px;opacity:0.52"></i><i data-hf-id="hf-yjhq" class="f10-live-st" style="left:1906px;top:451px;width:2.7px;height:2.7px;opacity:0.51"></i><i data-hf-id="hf-grmz" class="f10-live-st" style="left:962px;top:415px;width:3.6px;height:3.6px;opacity:0.79"></i><i data-hf-id="hf-5spj" class="f10-live-st" style="left:1340px;top:393px;width:3.3px;height:3.3px;opacity:0.80"></i><i data-hf-id="hf-u7fc" class="f10-live-st" style="left:295px;top:220px;width:3.2px;height:3.2px;opacity:0.66"></i><i data-hf-id="hf-oksx" class="f10-live-st" style="left:1234px;top:547px;width:3.9px;height:3.9px;opacity:0.54"></i><i data-hf-id="hf-bij9" class="f10-live-st" style="left:1551px;top:894px;width:2.6px;height:2.6px;opacity:0.77"></i><i data-hf-id="hf-zy8t" class="f10-live-st" style="left:1379px;top:825px;width:1.4px;height:1.4px;opacity:0.80"></i><i data-hf-id="hf-nidt" class="f10-live-st" style="left:1472px;top:894px;width:4.4px;height:4.4px;opacity:0.42"></i><i data-hf-id="hf-fwoc" class="f10-live-st" style="left:1286px;top:131px;width:3.2px;height:3.2px;opacity:0.80"></i><i data-hf-id="hf-nmps" class="f10-live-st" style="left:369px;top:325px;width:1.5px;height:1.5px;opacity:0.37"></i><i data-hf-id="hf-9pex" class="f10-live-st" style="left:399px;top:89px;width:4.5px;height:4.5px;opacity:0.78"></i><i data-hf-id="hf-kyig" class="f10-live-st" style="left:890px;top:691px;width:3.5px;height:3.5px;opacity:0.56"></i><i data-hf-id="hf-s2hv" class="f10-live-st" style="left:813px;top:617px;width:3.0px;height:3.0px;opacity:0.41"></i><i data-hf-id="hf-33ie" class="f10-live-st" style="left:700px;top:583px;width:3.3px;height:3.3px;opacity:0.38"></i><i data-hf-id="hf-snui" class="f10-live-st" style="left:1171px;top:813px;width:4.1px;height:4.1px;opacity:0.64"></i><i data-hf-id="hf-035a" class="f10-live-st" style="left:135px;top:393px;width:1.5px;height:1.5px;opacity:0.28"></i><i data-hf-id="hf-nrpc" class="f10-live-st" style="left:489px;top:424px;width:3.7px;height:3.7px;opacity:0.63"></i><i data-hf-id="hf-3d55" class="f10-live-st" style="left:542px;top:646px;width:2.9px;height:2.9px;opacity:0.55"></i><i data-hf-id="hf-fdp7" class="f10-live-st" style="left:506px;top:410px;width:2.3px;height:2.3px;opacity:0.69"></i><i data-hf-id="hf-town" class="f10-live-st" style="left:927px;top:415px;width:2.8px;height:2.8px;opacity:0.54"></i><i data-hf-id="hf-2l5k" class="f10-live-st" style="left:1324px;top:669px;width:3.8px;height:3.8px;opacity:0.49"></i><i data-hf-id="hf-p3xp" class="f10-live-st" style="left:1524px;top:896px;width:4.5px;height:4.5px;opacity:0.68"></i><i data-hf-id="hf-o1dr" class="f10-live-st" style="left:126px;top:787px;width:4.0px;height:4.0px;opacity:0.26"></i><i data-hf-id="hf-24h9" class="f10-live-st" style="left:629px;top:299px;width:3.6px;height:3.6px;opacity:0.62"></i><i data-hf-id="hf-ji34" class="f10-live-st" style="left:542px;top:173px;width:1.8px;height:1.8px;opacity:0.31"></i><i data-hf-id="hf-crv3" class="f10-live-st" style="left:1518px;top:869px;width:1.9px;height:1.9px;opacity:0.70"></i><i data-hf-id="hf-lvn5" class="f10-live-st" style="left:1826px;top:178px;width:3.1px;height:3.1px;opacity:0.51"></i><i data-hf-id="hf-7u5a" class="f10-live-st" style="left:1872px;top:808px;width:1.3px;height:1.3px;opacity:0.37"></i><i data-hf-id="hf-awtj" class="f10-live-st" style="left:1628px;top:533px;width:2.9px;height:2.9px;opacity:0.74"></i><i data-hf-id="hf-6m6l" class="f10-live-st" style="left:1467px;top:887px;width:2.3px;height:2.3px;opacity:0.28"></i><i data-hf-id="hf-nrra" class="f10-live-st" style="left:1329px;top:47px;width:3.1px;height:3.1px;opacity:0.77"></i><i data-hf-id="hf-u4vk" class="f10-live-st" style="left:762px;top:558px;width:1.8px;height:1.8px;opacity:0.34"></i><i data-hf-id="hf-h24s" class="f10-live-st" style="left:1164px;top:803px;width:4.5px;height:4.5px;opacity:0.27"></i><i data-hf-id="hf-d993" class="f10-live-st" style="left:1768px;top:475px;width:2.4px;height:2.4px;opacity:0.49"></i><i data-hf-id="hf-8cnh" class="f10-live-st" style="left:1110px;top:323px;width:1.7px;height:1.7px;opacity:0.77"></i><i data-hf-id="hf-v0we" class="f10-live-st" style="left:1356px;top:566px;width:3.6px;height:3.6px;opacity:0.84"></i><i data-hf-id="hf-nhbk" class="f10-live-st" style="left:336px;top:765px;width:3.9px;height:3.9px;opacity:0.46"></i><i data-hf-id="hf-m5o1" class="f10-live-st" style="left:1073px;top:426px;width:1.8px;height:1.8px;opacity:0.51"></i><i data-hf-id="hf-o9xv" class="f10-live-st" style="left:293px;top:866px;width:1.8px;height:1.8px;opacity:0.63"></i><i data-hf-id="hf-bj99" class="f10-live-st" style="left:1094px;top:905px;width:3.8px;height:3.8px;opacity:0.47"></i><i data-hf-id="hf-3xp1" class="f10-live-st" style="left:722px;top:46px;width:1.4px;height:1.4px;opacity:0.44"></i><i data-hf-id="hf-fe60" class="f10-live-st" style="left:1824px;top:46px;width:1.8px;height:1.8px;opacity:0.63"></i><i data-hf-id="hf-8i3r" class="f10-live-st" style="left:692px;top:172px;width:4.3px;height:4.3px;opacity:0.28"></i></div></div>
+<div data-hf-id="hf-ikf4" class="clip" data-start="0" data-duration="8" data-track-index="1" id="f10-live-stage">
+
+<div data-hf-id="hf-j7di" class="f10-live-rows"><div data-hf-id="hf-3ds8" class="f10-live-row" id="f10-live-r0"><i data-hf-id="hf-t6f2" class="f10-live-led" id="f10-live-led0"></i><span data-hf-id="hf-e0me" class="f10-live-nm">מסע — ניהול חופשות</span><span data-hf-id="hf-2r32" class="f10-live-live">LIVE</span></div><div data-hf-id="hf-45g1" class="f10-live-row" id="f10-live-r1"><i data-hf-id="hf-zc4v" class="f10-live-led" id="f10-live-led1"></i><span data-hf-id="hf-bou5" class="f10-live-nm">פארק־פלאן — חניון רובוטי</span><span data-hf-id="hf-cade" class="f10-live-live">LIVE</span></div><div data-hf-id="hf-83k2" class="f10-live-row" id="f10-live-r2"><i data-hf-id="hf-ogn8" class="f10-live-led" id="f10-live-led2"></i><span data-hf-id="hf-t4lp" class="f10-live-nm">מצפן פיננסי</span><span data-hf-id="hf-coof" class="f10-live-live">LIVE</span></div><div data-hf-id="hf-c1o3" class="f10-live-row" id="f10-live-r3"><i data-hf-id="hf-p8b1" class="f10-live-led" id="f10-live-led3"></i><span data-hf-id="hf-px2r" class="f10-live-nm">נט־פלאן — רשתות תקשורת</span><span data-hf-id="hf-d2zg" class="f10-live-live">LIVE</span></div><div data-hf-id="hf-ok6k" class="f10-live-row" id="f10-live-r4"><i data-hf-id="hf-800q" class="f10-live-led" id="f10-live-led4"></i><span data-hf-id="hf-4lsk" class="f10-live-nm">ספריית קודש</span><span data-hf-id="hf-dhah" class="f10-live-live">LIVE</span></div><div data-hf-id="hf-pbud" class="f10-live-row" id="f10-live-r5"><i data-hf-id="hf-by4r" class="f10-live-led" id="f10-live-led5"></i><span data-hf-id="hf-vqaw" class="f10-live-nm">תשלומים חודשיים</span><span data-hf-id="hf-dvli" class="f10-live-live">LIVE</span></div></div>
+<div data-hf-id="hf-ryop" class="f10-live-tx" style="top:330px;right:150px;width:760px"><div data-hf-id="hf-38zc" class="f10-live-h1" id="f10-live-l1">באוויר <span data-hf-id="hf-mem0" class="f10-live-mint">עכשיו.</span></div><div data-hf-id="hf-sou0" class="f10-live-lede" id="f10-live-l2">העמוד בודק את GitHub ומעדכן סטטוס לבד.</div></div>
+</div>
+</div>
+<script src="assets/vendor/gsap.min.js"></script>
+<script>
+(function(){
+const tl = gsap.timeline({ paused: true });
+const Q = s => document.querySelector(s);
+const QA = s => Array.from(document.querySelectorAll(s));
+const rise = (sel, at, opt) => tl.fromTo(sel, { y: 34, opacity: 0, filter: 'blur(6px)' }, Object.assign({ y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.9, ease: 'power3.out', stagger: 0.16 }, opt || {}), at);
+const card = (sel, at, opt) => tl.fromTo(sel, { opacity: 0, scale: 0.94, y: 40, filter: 'blur(8px)' }, Object.assign({ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', duration: 1.1, ease: 'power3.out' }, opt || {}), at);
+const draw = (sel, at, d, ease) => tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d || 1.6, ease: ease || 'power2.inOut' }, at);
+tl.fromTo('#f10-live-stars', { x: 0 }, { x: -40, duration: 8, ease: 'none' }, 0);
+tl.fromTo('#f10-live-sky', { scale: 1.0 }, { scale: 1.05, duration: 8, ease: 'none' }, 0);
+QA('.f10-live-row').forEach((r, i) => { const at = 0.2 + i * 0.42;
+  tl.fromTo(r, { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' }, at);
+  tl.fromTo('#f10-live-led' + i, { opacity: 0.15, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(3)' }, at + 0.35); });
+tl.fromTo('#f10-live-l1', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' }, 3.0);
+tl.fromTo('#f10-live-l2', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 1.0, ease: 'power3.out' }, 5.0);
+window.__timelines["10-live"] = tl;
+})();
+</script>
+</template>
