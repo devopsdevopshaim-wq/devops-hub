@@ -42,7 +42,17 @@
     var g = document.getElementById('gate');
     if (g) g.remove();
     addUserChip(s);
+    heartbeat();
     resolveReady(s);
+  }
+
+  // presence: the admin's screen counts who has a page open (a ping every minute, only while the tab is visible)
+  var beat = 0;
+  function heartbeat() {
+    if (beat) return;
+    var ping = function () { if (!document.hidden) api('ping').catch(function () {}); };
+    beat = setInterval(ping, 60000);
+    document.addEventListener('visibilitychange', ping);
   }
 
   function logout() {

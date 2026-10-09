@@ -370,6 +370,22 @@ async function planDoc(tag) {
   r = await call({ action: 'plan-set', token: a.token, blob: 'x'.repeat(40001) });
   check(t + 'a huge plan is refused', r.code === 413);
 }
+async function presence(tag) {
+  const { call, sd } = world(), t = tag + ' ';
+  let r = await call({ action: 'presence', token: 'a'.repeat(48) });
+  check(t + 'presence is for the admin only', r.code === 403);
+  const a = await adminIn(call, t);
+  sd.clients['a@x.co'] = { email: 'a@x.co', name: 'א', active: true, devices: [] };
+  sd.clients['b@x.co'] = { email: 'b@x.co', name: 'ב', active: true, devices: [] };
+  sd.sessions['f'.repeat(64)] = { email: 'a@x.co', role: 'client', exp: Date.now() + 1e7, at: Date.now(), seen: Date.now() - 60000 };
+  sd.sessions['e'.repeat(64)] = { email: 'b@x.co', role: 'client', exp: Date.now() + 1e7, at: Date.now(), seen: Date.now() - 20 * 60000 };
+  await call({ action: 'ping', token: a.token });
+  r = await call({ action: 'presence', token: a.token });
+  check(t + 'members, online and offline are counted', r.body.members === 2 && r.body.online === 1 && r.body.offline === 1 && r.body.admin === true);
+  check(t + 'the online one is listed first', r.body.rows[0].email === 'a@x.co' && r.body.rows[0].online);
+  r = await call({ action: 'ping', token: 'z'.repeat(48) });
+  check(t + 'a ping needs a session', r.code === 401);
+}
 async function relay(tag) {
   const seen = [];
   const helpers = { httpRequest: async (q) => { seen.push(q); if (/generativelanguage/.test(q.url) && q.method === 'GET') return { statusCode: 200, body: JSON.stringify({ models: [{ name: 'models/gem-a' }] }) };
@@ -436,6 +452,7 @@ async function usage(tag) {
 await usage('[usage]');
 await planDoc('[plan]');
 await relay('[relay]');
+await presence('[presence]');
 await vault('[vault]');
 await signup('[signup]');
 await main('[password]');

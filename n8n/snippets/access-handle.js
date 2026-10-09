@@ -84,6 +84,9 @@ const active = (c) => !!c && c.active !== false && (!c.expiresAt || Date.parse(c
 const tokenHash = () => { const t = String(b.token || ''); return /^[a-f0-9]{48}$/.test(t) ? sha256hex(t) : ''; };
 const session = () => { const h = tokenHash(); const s = h && sd.sessions[h]; return s && s.exp > now ? s : null; };
 const admin = () => { const s = session(); return s && s.role === 'admin' && !s.mc ? s : null; };   // a session that still has to choose a password is not an admin yet
+// presence: a signed-in page pings every minute; "online" = pinged in the last ONLINE_MIN minutes
+const ONLINE_MIN = 3;
+const seen = (s) => { s.seen = now; const c = s.role === 'client' && sd.clients[s.email]; if (c) c.lastSeen = new Date(now).toISOString(); };
 const nSessions = (e) => Object.values(sd.sessions).filter((s) => s.email === e).length;
 const view = (c) => { const { pw, tmp, ...rest } = c; return { ...rest, hasPassword: !!pw || tempOk(c), pwState: pwState(c), tmpExp: tempOk(c) ? new Date(c.tmp.exp).toISOString() : null, sessions: nSessions(c.email), failed: (sd.fails[c.email] || []).filter((t) => now - t < HOUR).length, activeNow: active(c), daysLeft: c.expiresAt ? Math.ceil((Date.parse(c.expiresAt) - now) / DAY) : null }; };
 const adminView = () => ({ email: ADMIN_EMAIL, pwState: pwState(sd.admin), pwAt: sd.admin.pwAt || null, lastLogin: sd.admin.lastLogin || null, devices: (sd.adminDevices || []).length, sessions: nSessions(ADMIN_EMAIL), tmpExp: tempOk(sd.admin) ? new Date(sd.admin.tmp.exp).toISOString() : null });
@@ -151,6 +154,13 @@ switch (b.action) {
   // ---------------------------------------------------------------- public
   case 'info':
     return out({ ok: true, password: true, signup: !sd.signupClosed });
+
+  case 'ping': {
+    const s = session();
+    if (!s || s.mc) return out({ ok: false, error: 'signed-out' }, 401);
+    seen(s);
+    return out({ ok: true });
+  }
 
   // Usage statistics (first party). A page sends a small "view" or "open" note; only counters are kept, per day, for USAGE_DAYS days.
   // A visitor is a random id from the browser, kept as a short hash; no address, no cookie, nothing that names a person. The admin's own
@@ -354,6 +364,7 @@ switch (b.action) {
   case 'me': {
     const s = session();
     if (!s) return out({ ok: false, error: 'signed-out' }, 401);
+    seen(s);
     // signed in with an initial password: nothing else opens until a password of their own is chosen
     if (s.mc) return out({ ok: true, mustChange: true, role: s.role, name: s.role === 'admin' ? 'מנהל' : (sd.clients[s.email] || {}).name || '', email: s.email });
     if (s.role === 'admin') return out({ ok: true, role: 'admin', name: 'מנהל', email: s.email, sites: 'all', biz: bizProof() });
@@ -375,6 +386,16 @@ switch (b.action) {
   }
 
   // ------------------------------------------------------------- admin only
+  // who is on the site right now: the clients (members) split into online and offline, from the pings of their open pages
+  case 'presence': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    const last = {};
+    for (const x of Object.values(sd.sessions)) if (x.role === 'client' && !x.mc && x.seen && now - x.seen < ONLINE_MIN * 60000) last[x.email] = Math.max(last[x.email] || 0, x.seen);
+    const rows = Object.values(sd.clients).map((c) => ({ email: c.email, name: c.name || '', active: active(c), online: !!last[c.email] && active(c), last: c.lastSeen || null, plan: c.plan || '' }));
+    const adminOn = Object.values(sd.sessions).some((x) => x.role === 'admin' && x.seen && now - x.seen < ONLINE_MIN * 60000);
+    return out({ ok: true, members: rows.length, online: rows.filter((r) => r.online).length, offline: rows.filter((r) => !r.online).length, admin: adminOn, rows: rows.sort((a, c) => (c.online - a.online) || String(c.last || '').localeCompare(String(a.last || ''))).slice(0, 200), minutes: ONLINE_MIN });
+  }
+
   case 'stats-get': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     const days = Math.min(USAGE_DAYS, Math.max(1, parseInt(b.days, 10) || 30));   // the page asks for twice the range to compare with the period before
