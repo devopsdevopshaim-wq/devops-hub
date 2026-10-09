@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "preferences": {
+    "destination": {
+      "value": "linkedin",
+      "confirmed_in": [
+        "spider-promo"
+      ],
+      "updated_at": "2026-10-09T11:21:27.472Z"
+    },
+    "aspect": {
+      "value": "1920x1080",
+      "confirmed_in": [
+        "spider-promo"
+      ],
+      "updated_at": "2026-10-09T11:21:27.531Z"
+    },
+    "language": {
+      "value": "he",
+      "confirmed_in": [
+        "spider-promo"
+      ],
+      "updated_at": "2026-10-09T11:21:27.625Z"
+    },
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "spider-promo"
+      ],
+      "updated_at": "2026-10-09T11:21:27.681Z"
+    },
+    "storyboard": {
+      "value": "yes",
+      "confirmed_in": [
+        "spider-promo"
+      ],
+      "updated_at": "2026-10-09T11:21:27.755Z"
+    },
+    "style_preset.product-launch-video": {
+      "value": "biennale-yellow",
+      "confirmed_in": [
+        "spider-promo"
+      ],
+      "updated_at": "2026-10-09T11:28:03.431Z"
+    }
+  },
+  "sightings": {}
+}
