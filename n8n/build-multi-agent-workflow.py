@@ -4,7 +4,7 @@
 Three parts in one workflow:
   A. Agents   — a coordinator agent with six specialist agents as tools. Questions
                 arrive from Guy on the site (webhook) or from n8n's own chat page.
-  B. Monitor  — every 15 minutes checks every site, remembers the result, and keeps
+  B. Monitor  — every 2 hours checks every site, remembers the result, and keeps
                 sleeping Render apps awake. Optional email when a site goes down.
   C. Control  — GET /webhook/hasadna-status shows a live page of all sites and the
                 agent team (?format=json for the portfolio).
@@ -381,8 +381,8 @@ nodes += [
          'ושומר בזיכרון של ה־workflow. הבדיקה גם מעירה אתרים חינמיים ב־Render כך שהם נשארים ערים.\n\n'
          'כשאתר נופל נשלח מייל (צומת "Alert · Email (optional)", חיבור SPIDER · Gmail).',
          [X0 - 460, Y_MON - 240], w=420, h=260, color=6),
-    node('Every 15 minutes', 'n8n-nodes-base.scheduleTrigger', 1.2,
-         {'rule': {'interval': [{'field': 'minutes', 'minutesInterval': 15}]}}, [X0, Y_MON]),
+    node('Every 2 hours', 'n8n-nodes-base.scheduleTrigger', 1.2,
+         {'rule': {'interval': [{'field': 'hours', 'hoursInterval': 2}]}}, [X0, Y_MON]),
     node('Monitor · Load sites', 'n8n-nodes-base.httpRequest', 4.2,
          {'url': KNOWLEDGE, 'options': {'timeout': 15000}}, [X0 + 440, Y_MON]),
     node('Monitor · Targets', 'n8n-nodes-base.code', 2, {'jsCode': TARGETS}, [X0 + 660, Y_MON]),
@@ -456,7 +456,7 @@ main = [
     ('מאיה · המתאמת', 'Agents · Shape answer', 0),
     ('Agents · Shape answer', 'From the site?', 0),
     ('From the site?', 'Guy · Respond', 0),
-    ('Every 15 minutes', 'Monitor · Load sites', 0),
+    ('Every 2 hours', 'Monitor · Load sites', 0),
     ('Monitor · Load sites', 'Monitor · Targets', 0),
     ('Monitor · Targets', 'Monitor · Check sites', 0),
     ('Monitor · Check sites', 'Monitor · Summarize', 0),

@@ -17,14 +17,20 @@
     }
     return v;
   }
-  function send(ev, extra) {
+  // notes are collected and sent in one call when the visitor leaves the page (each call is one n8n execution)
+  var queue = [], flushed = false;
+  function flush() {
+    if (!queue.length) return;
     try {
-      var b = new URLSearchParams(extra || {});
-      b.set('action', 'track'); b.set('ev', ev); b.set('vid', vid());
+      var b = new URLSearchParams();
+      b.set('action', 'track'); b.set('vid', vid()); b.set('events', JSON.stringify(queue.splice(0, 20)));
       var t = get('hasadna-session'); if (t) b.set('token', t);
       fetch(API, { method: 'POST', body: b, keepalive: true }).catch(function () {});
     } catch (e) {}
   }
+  function send(ev, extra) { var o = { ev: ev }; for (var k in (extra || {})) o[k] = extra[k]; queue.push(o); if (queue.length >= 20) flush(); }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
+  addEventListener('pagehide', flush);
   var page = location.pathname.replace(/^\/devops-hub\//, '/').replace(/\/index\.html$/, '/') || '/';
   var sent = false;
   // one view per page per browser session (each note is one n8n execution)

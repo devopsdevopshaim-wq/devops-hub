@@ -36,13 +36,27 @@
   var ready = new Promise(function (res) { resolveReady = res; });
   var Auth = window.HasadnaAuth = { ready: ready, session: null, api: api, logout: logout, token: token };
 
+  // the last good session is kept for a week: if the n8n server is down, the site still opens (a limited mode) instead of locking everyone out
+  var LAST = 'hasadna-last', GRACE = 7 * 86400000;
+  function remember(s) { try { localStorage.setItem(LAST, JSON.stringify({ s: s, at: Date.now() })); } catch (e) {} }
+  function grace() {
+    try {
+      var l = JSON.parse(localStorage.getItem(LAST) || 'null');
+      if (!l || !l.s || Date.now() - l.at > GRACE || !token()) return null;
+      if (needAdmin && l.s.role !== 'admin') return null;
+      return Object.assign({}, l.s, { offline: true });
+    } catch (e) { return null; }
+  }
+
   function enter(s) {
     Auth.session = s;
+    if (!s.offline) remember(s);
     root.classList.remove('locked');
     root.classList.add(s.role === 'admin' ? 'is-admin' : 'is-client');
     var g = document.getElementById('gate');
     if (g) g.remove();
     addUserChip(s);
+    if (s.offline) offlineBar();
     heartbeat();
     resolveReady(s);
   }
@@ -53,6 +67,14 @@
     if (beat) return;
     var ping = function () { if (!document.hidden) api('ping').catch(function () {}); };
     beat = setInterval(ping, 240000);   // every 4 minutes: each call is one n8n execution, so it stays rare
+  }
+
+  function offlineBar() {
+    var b = document.createElement('div');
+    b.setAttribute('role', 'status');
+    b.style.cssText = 'position:sticky;top:0;z-index:99;padding:8px 14px;text-align:center;background:#3b2f10;color:#ffd98a;font:14px Assistant,sans-serif';
+    b.textContent = 'שרת הכניסה לא זמין כרגע, האתר פתוח במצב מוגבל. פעולות ניהול ושמירה יחזרו לעבוד כשהשרת יחזור.';
+    document.body.insertBefore(b, document.body.firstChild);
   }
 
   function logout() {
@@ -346,9 +368,11 @@
       else {
         // only a definite "no" signs the browser out; a busy or unreachable server must not
         if (!s.ok && (s.error === 'signed-out' || s.error === 'inactive' || s.error === 'device-revoked')) store('');
+        var g = (s.error === 'server-down' || s.error === 'not-ready') ? grace() : null;
+        if (g) { enter(g); return; }
         gate(s.error === 'not-ready' ? 'מערכת הכניסה עוד לא הופעלה ב־n8n.' : s.error === 'server-down' ? 'שרת הכניסה ב־n8n לא עונה כרגע. נסו שוב מאוחר יותר.' : s.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.' : s.error === 'ip-blocked' ? 'הכתובת (IP) שממנה אתם מתחברים לא מאושרת. פנו למנהל.' : s.error === 'device-revoked' ? 'המכשיר הזה הוסר. היכנסו שוב.' : s.error === 'inactive' ? 'הגישה שלך הסתיימה. כדי לחדש, דברו איתי בוואטסאפ.' : needAdmin && s.ok ? 'המסך הזה פתוח רק למנהל.' : 'הכניסה הקודמת הסתיימה. היכנסו שוב.');
       }
-    }).catch(function () { gate('מערכת הכניסה לא עונה כרגע. נסו לרענן בעוד רגע.'); });
+    }).catch(function () { var g = grace(); if (g) { enter(g); return; } gate('מערכת הכניסה לא עונה כרגע. נסו לרענן בעוד רגע.'); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();

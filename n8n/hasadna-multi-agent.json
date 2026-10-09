@@ -527,14 +527,14 @@
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 15
+              "field": "hours",
+              "hoursInterval": 2
             }
           ]
         }
       },
-      "id": "16b27191-18f4-5ada-bec7-e0ebfc99964e",
-      "name": "Every 15 minutes",
+      "id": "7be0eff7-844e-54f0-998b-22b27801a0cb",
+      "name": "Every 2 hours",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -955,7 +955,7 @@
         ]
       ]
     },
-    "Every 15 minutes": {
+    "Every 2 hours": {
       "main": [
         [
           {

@@ -169,36 +169,42 @@ switch (b.action) {
     if (!hit('track', IPK, 90, 10 * 60000)) return out({ ok: true });
     const s0 = session();
     if (s0 && s0.role === 'admin') return out({ ok: true });
-    const ev = b.ev === 'open' ? 'open' : 'view';
-    const key = (v) => line(v, 70).replace(/[?#].*$/, '').replace(/^https?:\/\/[^/]+/, '').replace(/[.$]/g, '_');
-    const page = key(b.page) || '/', app = key(b.app);
-    if (ev === 'open' && !app) return out({ ok: true });
-    const day = new Date(now + 3 * HOUR).toISOString().slice(0, 10);
-    sd.usage = sd.usage || {};
-    for (const d of Object.keys(sd.usage)) if (now - Date.parse(d) > USAGE_DAYS * DAY) delete sd.usage[d];
-    const u = sd.usage[day] = sd.usage[day] || { v: 0, o: 0, vis: {}, uv: 0, nv: 0, p: {}, a: {}, br: {}, os: {}, dv: {}, ref: {}, h: new Array(24).fill(0), c: {} };
-    const add = (m, k, cap) => { if (!k) return; if (m[k] == null && Object.keys(m).length >= (cap || 60)) k = 'אחר'; m[k] = (m[k] || 0) + 1; };
-    const vid = /^[a-zA-Z0-9]{8,40}$/.test(String(b.vid || '')) ? sha256hex('vis|' + b.vid).slice(0, 10) : '';
-    const who = s0 && s0.email ? s0.email : '';
-    if (ev === 'open') {
-      u.o++; add(u.a, app);
-      if (who) { u.c[who] = u.c[who] || { v: 0, a: {} }; add(u.c[who].a, app, 25); }
-    } else {
-      u.v++; add(u.p, page);
-      const ua = String(HDR['user-agent'] || '');
-      add(u.br, /Edg\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\/|CriOS/.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'אחר', 12);
-      add(u.os, /Android/.test(ua) ? 'Android' : /iPhone|iPad|iPod/.test(ua) ? 'iOS' : /Windows/.test(ua) ? 'Windows' : /Mac OS/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : 'אחר', 12);
-      add(u.dv, /Mobi|Android|iPhone/.test(ua) ? 'נייד' : /iPad|Tablet/.test(ua) ? 'טאבלט' : 'מחשב', 4);
-      const rh = line(b.ref, 120).replace(/^https?:\/\//, '').split('/')[0].replace(/[.$]/g, '_');
-      if (rh && !/github\.io$/.test(rh)) add(u.ref, rh, 30);
-      u.h[Math.floor(((now + 3 * HOUR) % DAY) / HOUR)]++;
-      if (who) { u.c[who] = u.c[who] || { v: 0, a: {} }; u.c[who].v++; }
-    }
-    if (vid && !u.vis[vid] && Object.keys(u.vis).length < 800) {
-      u.vis[vid] = 1; u.uv++;
-      // new or returning: the first day a visitor id was seen (hashes only, the oldest forgotten past 4000)
-      sd.usageSeen = sd.usageSeen || {};
-      if (!sd.usageSeen[vid]) { sd.usageSeen[vid] = day; u.nv++; const ks = Object.keys(sd.usageSeen); if (ks.length > 4000) for (const k of ks.slice(0, ks.length - 4000)) delete sd.usageSeen[k]; }
+    // one note, or a batch of up to 20 collected by the page (a single n8n call per visit)
+    let evs = [{ ev: b.ev, page: b.page, app: b.app, ref: b.ref }];
+    if (b.events) { try { const j = JSON.parse(b.events); if (Array.isArray(j)) evs = j.slice(0, 20); } catch (x) {} }
+    for (const e1 of evs) {
+      if (!e1 || typeof e1 !== 'object') continue;
+      const ev = e1.ev === 'open' ? 'open' : 'view';
+      const key = (v) => line(v, 70).replace(/[?#].*$/, '').replace(/^https?:\/\/[^/]+/, '').replace(/[.$]/g, '_');
+      const page = key(e1.page) || '/', app = key(e1.app);
+      if (ev === 'open' && !app) continue;
+      const day = new Date(now + 3 * HOUR).toISOString().slice(0, 10);
+      sd.usage = sd.usage || {};
+      for (const d of Object.keys(sd.usage)) if (now - Date.parse(d) > USAGE_DAYS * DAY) delete sd.usage[d];
+      const u = sd.usage[day] = sd.usage[day] || { v: 0, o: 0, vis: {}, uv: 0, nv: 0, p: {}, a: {}, br: {}, os: {}, dv: {}, ref: {}, h: new Array(24).fill(0), c: {} };
+      const add = (m, k, cap) => { if (!k) return; if (m[k] == null && Object.keys(m).length >= (cap || 60)) k = 'אחר'; m[k] = (m[k] || 0) + 1; };
+      const vid = /^[a-zA-Z0-9]{8,40}$/.test(String(b.vid || '')) ? sha256hex('vis|' + b.vid).slice(0, 10) : '';
+      const who = s0 && s0.email ? s0.email : '';
+      if (ev === 'open') {
+        u.o++; add(u.a, app);
+        if (who) { u.c[who] = u.c[who] || { v: 0, a: {} }; add(u.c[who].a, app, 25); }
+      } else {
+        u.v++; add(u.p, page);
+        const ua = String(HDR['user-agent'] || '');
+        add(u.br, /Edg\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\/|CriOS/.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'אחר', 12);
+        add(u.os, /Android/.test(ua) ? 'Android' : /iPhone|iPad|iPod/.test(ua) ? 'iOS' : /Windows/.test(ua) ? 'Windows' : /Mac OS/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : 'אחר', 12);
+        add(u.dv, /Mobi|Android|iPhone/.test(ua) ? 'נייד' : /iPad|Tablet/.test(ua) ? 'טאבלט' : 'מחשב', 4);
+        const rh = line(e1.ref, 120).replace(/^https?:\/\//, '').split('/')[0].replace(/[.$]/g, '_');
+        if (rh && !/github\.io$/.test(rh)) add(u.ref, rh, 30);
+        u.h[Math.floor(((now + 3 * HOUR) % DAY) / HOUR)]++;
+        if (who) { u.c[who] = u.c[who] || { v: 0, a: {} }; u.c[who].v++; }
+      }
+      if (vid && !u.vis[vid] && Object.keys(u.vis).length < 800) {
+        u.vis[vid] = 1; u.uv++;
+        // new or returning: the first day a visitor id was seen (hashes only, the oldest forgotten past 4000)
+        sd.usageSeen = sd.usageSeen || {};
+        if (!sd.usageSeen[vid]) { sd.usageSeen[vid] = day; u.nv++; const ks = Object.keys(sd.usageSeen); if (ks.length > 4000) for (const k of ks.slice(0, ks.length - 4000)) delete sd.usageSeen[k]; }
+      }
     }
     return out({ ok: true });
   }
