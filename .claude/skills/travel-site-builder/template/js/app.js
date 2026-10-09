@@ -1458,6 +1458,9 @@
   const loadScript = (src) => scriptCache[src] || (scriptCache[src] = new Promise((ok, bad) => {
     const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => { delete scriptCache[src]; bad(new Error('load ' + src)); }; document.head.appendChild(s);
   }));
+  /* three.js 0.186.1 is an ES module; vr.js reads it from window.THREE */
+  let threeP = null;
+  const loadThree = () => threeP || (threeP = import('../vendor/three/three.module.min.js').then(m => { window.THREE = m; }, err => { threeP = null; throw err; }));
   const VR_PRESETS = [['zimmer', 'צימר וגינה'], ['hotel', 'מלון מול הים'], ['apartment', 'דירה בעיר'], ['desert', 'בקתה במדבר']];
   const VR_TIMES = [['day', 'יום'], ['sunset', 'שקיעה'], ['night', 'לילה']];
   /* איזו הדמיה מתאימה לכל סוג לינה */
@@ -1533,7 +1536,7 @@
     };
     const showPano = (on) => { $('#vrDrop').hidden = !on || !!vrState.pano; $('#vrPad').hidden = on; $('#vrTour').hidden = on; };
     if (vrCtl) { vrCtl.dispose(); vrCtl = null; }
-    loadScript('vendor/three/three.min.js').then(() => loadScript('js/vr.js')).then(() => {
+    loadThree().then(() => loadScript('js/vr.js')).then(() => {
       if ($('#view-vr').hidden || !stage.isConnected) return;
       try {
         vrCtl = window.MasaVR.start(stage, {

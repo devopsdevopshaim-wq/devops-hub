@@ -3310,17 +3310,19 @@ function cwMount(){
   if(cwSel){if(cwSel.w!=null&&B.wires[cwSel.w])selWire(cwSel.w);else if(cwSel.cb!=null&&B.cables[cwSel.cb])selCable(cwSel.cb)}
 }
 
-/* ---------- 3D (three.js r128, loaded on demand) ---------- */
-const THREE_URL="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+/* ---------- 3D (three.js r186, ES module loaded on demand) ---------- */
+const THREE_URL="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js";
+// Scenes were tuned under r128 legacy lighting: light intensities are scaled by LI and colour management stays off to keep that look.
+const LI=Math.PI;
 let threeP=null;
 function loadThree(){if(window.THREE)return Promise.resolve(window.THREE);if(threeP)return threeP;
-  threeP=new Promise((res,rej)=>{const s=document.createElement("script");s.src=THREE_URL;s.onload=()=>res(window.THREE);s.onerror=()=>{threeP=null;rej(new Error("three"))};document.head.appendChild(s)});return threeP}
+  threeP=import(THREE_URL).then(m=>{m.ColorManagement.enabled=false;return window.THREE=m},()=>{threeP=null;throw new Error("three")});return threeP}
 function View3D(el,o={}){
   const T3=window.THREE;
   const R=new T3.WebGLRenderer({antialias:true,preserveDrawingBuffer:!!o.keep,alpha:false});
   R.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
-  R.outputEncoding=T3.sRGBEncoding;R.toneMapping=T3.ACESFilmicToneMapping;R.toneMappingExposure=o.exposure||1.05;
-  R.shadowMap.enabled=true;R.shadowMap.type=T3.PCFSoftShadowMap;
+  R.outputColorSpace=T3.SRGBColorSpace;R.toneMapping=T3.ACESFilmicToneMapping;R.toneMappingExposure=o.exposure||1.05;
+  R.shadowMap.enabled=true;R.shadowMap.type=T3.PCFShadowMap;
   el.appendChild(R.domElement);R.domElement.style.display="block";R.domElement.style.touchAction="none";
   const scene=new T3.Scene();scene.background=new T3.Color(o.bg||0x0f1418);
   const cam=new T3.PerspectiveCamera(o.fov||40,1,0.05,2000);
@@ -3342,10 +3344,10 @@ function View3D(el,o={}){
   dom.addEventListener("wheel",e=>{e.preventDefault();st.r=Math.max(o.minR||0.5,Math.min(o.maxR||400,st.r*(e.deltaY>0?1.12:1/1.12)));place()},{passive:false});
   function pan(dx,dy){const k=st.r*0.0016;const right=new T3.Vector3().subVectors(cam.position,st.target).cross(cam.up).normalize();st.target.addScaledVector(right,dx*k);st.target.y+=dy*k;}
   // lights
-  const hemi=new T3.HemisphereLight(0xdfe9ff,0x3a3328,0.55);scene.add(hemi);
-  const sun=new T3.DirectionalLight(0xfff1dc,o.sun||1.35);sun.position.set(30,45,25);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  const hemi=new T3.HemisphereLight(0xdfe9ff,0x3a3328,0.55*LI);scene.add(hemi);
+  const sun=new T3.DirectionalLight(0xfff1dc,(o.sun||1.35)*LI);sun.position.set(30,45,25);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
   const sc=o.shadowBox||40;Object.assign(sun.shadow.camera,{left:-sc,right:sc,top:sc,bottom:-sc,near:1,far:200});sun.shadow.bias=-0.0004;scene.add(sun);scene.add(sun.target);
-  const fill=new T3.DirectionalLight(0x9fc3ff,0.35);fill.position.set(-30,20,-20);scene.add(fill);
+  const fill=new T3.DirectionalLight(0x9fc3ff,0.35*LI);fill.position.set(-30,20,-20);scene.add(fill);
   const ticks=[];let raf=0,alive=true,t0=performance.now();
   const loop=()=>{if(!alive)return;const t=(performance.now()-t0)/1000;if(st.auto){st.th+=0.0018;place()}ticks.forEach(f=>f(t));R.render(scene,cam);raf=requestAnimationFrame(loop)};
   if(!o.still)raf=requestAnimationFrame(loop);
@@ -3358,12 +3360,12 @@ function View3D(el,o={}){
 const MAT={};
 function mat(T3,key,opt){if(MAT[key])return MAT[key];return MAT[key]=new T3.MeshStandardMaterial(opt)}
 function labelTex(T3,lines,w=256,h=96,bg="#2b2f33",fg="#ffffff",accent){const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.fillStyle=bg;x.fillRect(0,0,w,h);if(accent){x.fillStyle=accent;x.fillRect(0,0,w,Math.max(6,h*0.08))}
-  x.fillStyle=fg;x.textBaseline="middle";lines.forEach((l,i)=>{x.font=(i?"500 ":"700 ")+Math.round(h*(i?0.2:0.28))+"px Arial";x.fillText(l,w*0.07,h*(0.36+i*0.32))});const t=new T3.CanvasTexture(c);t.encoding=T3.sRGBEncoding;t.anisotropy=4;return t}
+  x.fillStyle=fg;x.textBaseline="middle";lines.forEach((l,i)=>{x.font=(i?"500 ":"700 ")+Math.round(h*(i?0.2:0.28))+"px Arial";x.fillText(l,w*0.07,h*(0.36+i*0.32))});const t=new T3.CanvasTexture(c);t.colorSpace=T3.SRGBColorSpace;t.anisotropy=4;return t}
 function box(T3,w,h,d,m){const g=new T3.Mesh(new T3.BoxGeometry(w,h,d),m);g.castShadow=true;g.receiveShadow=true;return g}
 /* ---------- car ---------- */
 /* ---------- realism helpers: procedural textures, sky/env, cars ---------- */
 const TEXC={};
-function canvasTex(T3,key,w,h,draw,rep){if(TEXC[key])return TEXC[key];const c=document.createElement("canvas");c.width=w;c.height=h;draw(c.getContext("2d"),w,h);const t=new T3.CanvasTexture(c);t.encoding=T3.sRGBEncoding;t.anisotropy=8;if(rep){t.wrapS=t.wrapT=T3.RepeatWrapping;t.repeat.set(rep[0],rep[1])}return TEXC[key]=t}
+function canvasTex(T3,key,w,h,draw,rep){if(TEXC[key])return TEXC[key];const c=document.createElement("canvas");c.width=w;c.height=h;draw(c.getContext("2d"),w,h);const t=new T3.CanvasTexture(c);t.colorSpace=T3.SRGBColorSpace;t.anisotropy=8;if(rep){t.wrapS=t.wrapT=T3.RepeatWrapping;t.repeat.set(rep[0],rep[1])}return TEXC[key]=t}
 function noise(x,w,h,base,amp,n,spot){x.fillStyle=base;x.fillRect(0,0,w,h);let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
   for(let i=0;i<n;i++){const v=Math.floor((r()-0.5)*amp);x.fillStyle=`rgba(${v>0?255:0},${v>0?255:0},${v>0?255:0},${Math.abs(v)/255})`;x.fillRect(r()*w,r()*h,1+r()*2,1+r()*2)}
   if(spot)for(let i=0;i<spot;i++){const g=x.createRadialGradient(0,0,0,0,0,30+r()*60);g.addColorStop(0,"rgba(0,0,0,.10)");g.addColorStop(1,"rgba(0,0,0,0)");x.save();x.translate(r()*w,r()*h);x.fillStyle=g;x.fillRect(-90,-90,180,180);x.restore()}}
@@ -3380,7 +3382,7 @@ const TX={
 function skyEnv(V,stops,sunDir){
   const T3=V.T3;
   const c=document.createElement("canvas");c.width=8;c.height=512;const x=c.getContext("2d");const g=x.createLinearGradient(0,0,0,512);stops.forEach(([k,col])=>g.addColorStop(k,col));x.fillStyle=g;x.fillRect(0,0,8,512);
-  const t=new T3.CanvasTexture(c);t.encoding=T3.sRGBEncoding;V.scene.background=t;
+  const t=new T3.CanvasTexture(c);t.colorSpace=T3.SRGBColorSpace;V.scene.background=t;
   // environment for reflections: sky dome + horizon glow + dark ground
   const es=new T3.Scene();const dome=new T3.Mesh(new T3.SphereGeometry(50,32,16),new T3.MeshBasicMaterial({map:t,side:T3.BackSide}));es.add(dome);
   const gnd=new T3.Mesh(new T3.CircleGeometry(50,24),new T3.MeshBasicMaterial({color:0x2a2c2e}));gnd.rotation.x=-Math.PI/2;gnd.position.y=-1;es.add(gnd);
@@ -3448,7 +3450,7 @@ function buildGarage(V,opt={}){
     // street lamps
     const poleM=mat(T3,"pole",{color:0x2a2e31,metalness:0.7,roughness:0.4}),lampH=mat(T3,"lamphead",{color:0xfff3d6,emissive:0xffe7b0,emissiveIntensity:1.6});
     for(let xl=x0-6;xl<=x0+len+6;xl+=14){const pl=box(T3,0.12,6,0.12,poleM);pl.position.set(xl,3,zF0+4.1);S3.add(pl);const arm=box(T3,0.08,0.08,1.2,poleM);arm.position.set(xl,5.95,zF0+4.65);S3.add(arm);const hd=box(T3,0.5,0.1,0.25,lampH);hd.position.set(xl,5.88,zF0+5.2);S3.add(hd);
-      if(opt.lights){const l=new T3.PointLight(0xffd9a0,0.9,16,2);l.position.set(xl,5.6,zF0+5.2);S3.add(l)}}
+      if(opt.lights){const l=new T3.PointLight(0xffd9a0,2.7*LI,16,1);l.position.set(xl,5.6,zF0+5.2);S3.add(l)}}
     // trees
     const trunkM=mat(T3,"trunk2",{color:0x4a3a2c,roughness:0.9}),leafA=mat(T3,"leafA",{color:0x2c4a24,roughness:0.95,envMapIntensity:0.25}),leafB=mat(T3,"leafB",{color:0x3b5c2a,roughness:0.95,envMapIntensity:0.25});
     for(let xt=x0-3;xt<=x0+len+3;xt+=9){const t=new T3.Group();const tr=box(T3,0.22,2.6,0.22,trunkM);tr.position.y=1.3;t.add(tr);
@@ -3509,7 +3511,7 @@ function buildGarage(V,opt={}){
   const lampM=new T3.MeshBasicMaterial({color:0xfff1d0});
   for(let f=0;f<=F;f++){const y=M.levelZ[f]/1000+(f===0?M.lobbyClear:S.floorClear[f-1])/1000-0.08;
     [-aisle/4,aisle/4].forEach(z=>{const l=new T3.Mesh(new T3.BoxGeometry(len*0.96,0.03,0.08),lampM);l.position.set(0,y,z);G.add(l)});
-    if(opt.lights&&f>0){const pl=new T3.PointLight(0xffe2b0,0.45,len*0.6,2);pl.position.set(0,y-0.3,0);G.add(pl)}}
+    if(opt.lights&&f>0){const pl=new T3.PointLight(0xffe2b0,1.35*LI,len*0.6,1);pl.position.set(0,y-0.3,0);G.add(pl)}}
   // shuttles
   const shut=[];
   for(let f=1;f<=F;f++){const y=M.levelZ[f]/1000;const s=new T3.Group();const sb=box(T3,M.palletW/1000+0.3,0.22,aisle-0.8,hz);sb.position.y=0.15;s.add(sb);

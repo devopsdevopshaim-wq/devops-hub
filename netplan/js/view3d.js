@@ -75,7 +75,7 @@ export function mount3d(stage, side, plan, opts = {}) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.xr.enabled = true;
   renderer.domElement.setAttribute('role', 'img');
   renderer.domElement.setAttribute('aria-label', 'הדמיה תלת־ממדית של המבנה');
@@ -719,9 +719,10 @@ export function mount3d(stage, side, plan, opts = {}) {
   });
 
   // ---------- loop
-  const clock = new THREE.Clock();
+  const clock = new THREE.Timer();
   let tourT = 0;
-  function frame() {
+  function frame(time) {
+    clock.update(time);
     const raw = clock.getDelta();
     const dt = Math.min(0.05, raw);
     if (state.fly) {
