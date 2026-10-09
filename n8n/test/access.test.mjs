@@ -370,6 +370,18 @@ async function planDoc(tag) {
   r = await call({ action: 'plan-set', token: a.token, blob: 'x'.repeat(40001) });
   check(t + 'a huge plan is refused', r.code === 413);
 }
+async function importing(tag) {
+  const { call, sd } = world(), t = tag + ' ';
+  let r = await call({ action: 'clients-import', token: 'a'.repeat(48), payload: '[]' });
+  check(t + 'importing is admin only', r.code === 403);
+  const a = await adminIn(call, t);
+  sd.clients['old@x.co'] = { email: 'old@x.co', name: 'קיים', active: true, devices: [] };
+  r = await call({ action: 'clients-import', token: a.token, payload: JSON.stringify([{ email: 'New@X.co', name: 'חדש', sites: ['a', 'b'], plan: 'month', expiresAt: '2030-01-01' }, { email: 'old@x.co', name: 'אחר' }, { email: 'bad' }, { email: ADMIN_EMAIL }]) });
+  check(t + 'new accounts come over, existing and bad ones are skipped', r.body.added === 1 && r.body.skipped === 3, r.body);
+  check(t + 'the existing account is untouched', sd.clients['old@x.co'].name === 'קיים' && sd.clients['new@x.co'].sites.length === 2 && !sd.clients['new@x.co'].pw);
+  r = await call({ action: 'forgot', email: 'new@x.co' }, { ip: '10.9.9.9' });
+  check(t + 'an imported client can ask for an initial password', r.body.ok === true && !!r.mail);
+}
 async function presence(tag) {
   const { call, sd } = world(), t = tag + ' ';
   let r = await call({ action: 'presence', token: 'a'.repeat(48) });
@@ -454,6 +466,7 @@ await usage('[usage]');
 await planDoc('[plan]');
 await relay('[relay]');
 await presence('[presence]');
+await importing('[import]');
 await vault('[vault]');
 await signup('[signup]');
 await main('[password]');

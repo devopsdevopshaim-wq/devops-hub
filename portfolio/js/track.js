@@ -4,6 +4,9 @@
 (function () {
   'use strict';
   var API = 'https://haimkripisn.app.n8n.cloud/webhook/hasadna-auth';
+  var cs = document.currentScript;   // api.json sits next to the portfolio pages: ../api.json from js/track.js
+  var cfg = cs && cs.src ? cs.src.replace(/js\/track\.js.*$/, 'api.json') : '';
+  var ready = cfg ? fetch(cfg).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && /^https:\/\//.test(j.auth || '')) API = j.auth; }).catch(function () {}) : Promise.resolve();
   if (navigator.doNotTrack === '1' || window.doNotTrack === '1') return;
   function get(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function vid() {
@@ -25,7 +28,7 @@
       var b = new URLSearchParams();
       b.set('action', 'track'); b.set('vid', vid()); b.set('events', JSON.stringify(queue.splice(0, 20)));
       var t = get('hasadna-session'); if (t) b.set('token', t);
-      fetch(API, { method: 'POST', body: b, keepalive: true }).catch(function () {});
+      ready.then(function () { return fetch(API, { method: 'POST', body: b, keepalive: true }); }).catch(function () {});
     } catch (e) {}
   }
   function send(ev, extra) { var o = { ev: ev }; for (var k in (extra || {})) o[k] = extra[k]; queue.push(o); if (queue.length >= 20) flush(); }
