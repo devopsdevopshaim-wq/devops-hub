@@ -85,7 +85,7 @@ const tokenHash = () => { const t = String(b.token || ''); return /^[a-f0-9]{48}
 const session = () => { const h = tokenHash(); const s = h && sd.sessions[h]; return s && s.exp > now ? s : null; };
 const admin = () => { const s = session(); return s && s.role === 'admin' && !s.mc ? s : null; };   // a session that still has to choose a password is not an admin yet
 // presence: a signed-in page pings every minute; "online" = pinged in the last ONLINE_MIN minutes
-const ONLINE_MIN = 3;
+const ONLINE_MIN = 6;
 const seen = (s) => { s.seen = now; const c = s.role === 'client' && sd.clients[s.email]; if (c) c.lastSeen = new Date(now).toISOString(); };
 const nSessions = (e) => Object.values(sd.sessions).filter((s) => s.email === e).length;
 const view = (c) => { const { pw, tmp, ...rest } = c; return { ...rest, hasPassword: !!pw || tempOk(c), pwState: pwState(c), tmpExp: tempOk(c) ? new Date(c.tmp.exp).toISOString() : null, sessions: nSessions(c.email), failed: (sd.fails[c.email] || []).filter((t) => now - t < HOUR).length, activeNow: active(c), daysLeft: c.expiresAt ? Math.ceil((Date.parse(c.expiresAt) - now) / DAY) : null }; };
