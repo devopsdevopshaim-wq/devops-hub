@@ -22,19 +22,46 @@
       <span class="logo" aria-hidden="true">₪</span>
       <div>
         <h1>תשלומים חודשיים</h1>
-        <p class="tag">מזינים קריאת מונה קודמת ונוכחית · הכל נשמר · קובץ Excel אחד לשליחה בוואטסאפ</p>
+        <p class="tag">מה לשלם עכשיו · קריאות מונים · קריאת חשבון מצילום · Excel אחד לשליחה בוואטסאפ</p>
       </div>
     </div>
   </header>
 
   <nav class="tabs" role="tablist">
-    <button class="tab active" data-tab="bill" role="tab">חשבון החודש</button>
+    <button class="tab active" data-tab="due" role="tab">לתשלום</button>
+    <button class="tab" data-tab="bill" role="tab">חשבון החודש</button>
     <button class="tab" data-tab="history" role="tab">היסטוריה</button>
-    <button class="tab" data-tab="settings" role="tab">הגדרות וגיבוי</button>
+    <button class="tab" data-tab="props" role="tab">נכסים ומונים</button>
+    <button class="tab" data-tab="settings" role="tab">הגדרות</button>
   </nav>
 
+  <!-- לתשלום עכשיו -->
+  <section class="panel active" id="panel-due">
+    <div class="tiles" id="due-tiles"></div>
+    <div class="actions top-actions">
+      <button type="button" class="btn primary" id="scan-open">📷 קרא חשבון מצילום או PDF</button>
+      <button type="button" class="btn" id="ics">📅 תזכורות ליומן</button>
+      <button type="button" class="btn wa" id="due-wa">שלח רשימה בוואטסאפ</button>
+      <label class="fld due-filter"><span class="sr">נכס</span><select id="due-unit" aria-label="נכס"></select></label>
+    </div>
+    <div id="due-list"></div>
+    <details class="card explain">
+      <summary>אפשר למשוך את הנתונים מהרשת לפי מספר מונה וכתובת?</summary>
+      <p>לא ישירות. לחברת החשמל, לתאגידי המים ולחברות הגז אין שירות פתוח שמחזיר חשבון לפי מספר מונה:
+        הנתונים שלכם נמצאים מאחורי כניסה לאזור האישי (תעודת זהות וקוד חד־פעמי), ובצדק, כדי שאף אחד אחר לא יוכל לראות אותם.</p>
+      <p>מה האתר כן עושה:</p>
+      <ul>
+        <li><b>קורא את החשבון בשבילכם.</b> מצלמים את החשבון או מעלים את קובץ ה-PDF שהגיע במייל, והאתר מוציא ממנו
+          את הספק, מספר המונה ומספר הלקוח, הקריאות, הסכום ותאריך התשלום, ומכניס אותם למקום.</li>
+        <li><b>שומר לכל נכס</b> את הכתובת, מספרי המונים ומספרי הלקוח, ומחשב מתי כל תשלום צפוי ובכמה.</li>
+        <li><b>קישור לתשלום</b> ליד כל חשבון: לאתר הספק, או לחיפוש של תאגיד המים והעירייה לפי העיר שלכם.</li>
+        <li><b>תזכורות ליומן</b> בטלפון, יומיים לפני כל תאריך תשלום.</li>
+      </ul>
+    </details>
+  </section>
+
   <!-- חשבון החודש -->
-  <section class="panel active" id="panel-bill">
+  <section class="panel" id="panel-bill">
     <div class="card head-card">
       <label class="fld">
         <span>חודש</span>
@@ -97,6 +124,14 @@
     <p class="empty" id="hist-empty">עוד לא נשמר אף חודש. מלאו את "חשבון החודש" ולחצו שמור.</p>
   </section>
 
+  <!-- נכסים ומונים -->
+  <section class="panel" id="panel-props">
+    <p class="hint lead">לכל נכס: כתובת, ולכל שירות את הספק, מספר המונה, מספר הלקוח, כל כמה זמן מגיע חשבון ובאיזה יום משלמים.
+      מזה נבנית רשימת "לתשלום". את רוב השדות אפשר למלא לבד מחשבון מצולם (📷 בלשונית לתשלום).</p>
+    <div id="props"></div>
+    <button type="button" class="btn ghost" id="add-prop">+ הוסף נכס</button>
+  </section>
+
   <!-- הגדרות -->
   <section class="panel" id="panel-settings">
     <div class="card">
@@ -129,12 +164,39 @@
 
   <footer class="foot">
     התעריפים שמוצעים כברירת מחדל הם הערכה בלבד. עדכנו אותם לפי החשבון שקיבלתם מחברת החשמל, תאגיד המים או ספק הגז.
+    סכומים שמסומנים "משוער" מחושבים מהקריאות שלכם או מהסכום שהזנתם, והחשבון של הספק הוא הקובע.
   </footer>
 </div>
+
+<dialog id="scan" class="sheet" aria-labelledby="scan-title">
+  <form method="dialog" class="sheet-in" id="scan-form">
+    <div class="sheet-head">
+      <h2 id="scan-title">קריאת חשבון מצילום או PDF</h2>
+      <button type="submit" value="cancel" class="icon-btn" aria-label="סגור">✕</button>
+    </div>
+    <label class="fld">
+      <span>לאיזה נכס החשבון?</span>
+      <select id="scan-prop"></select>
+    </label>
+    <label class="drop" id="scan-drop">
+      <input type="file" id="scan-file" accept="image/*,application/pdf" />
+      <span class="drop-big">📄</span>
+      <span>צלמו את החשבון או בחרו תמונה / PDF</span>
+      <small>בטלפון אפשר לצלם ישירות. התמונה נשלחת לקריאה אוטומטית ואינה נשמרת בשרת.</small>
+    </label>
+    <div class="scan-status" id="scan-status" role="status"></div>
+    <div id="scan-result" hidden></div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="scan-apply" hidden>✓ שמור את הנתונים</button>
+      <button type="submit" value="cancel" class="btn">סגור</button>
+    </div>
+  </form>
+</dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/xlsx.js"></script>
 <script src="js/bills.js"></script>
+<script src="js/payments.js"></script>
 </body>
 </html>

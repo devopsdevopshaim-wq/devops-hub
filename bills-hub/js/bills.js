@@ -38,10 +38,12 @@
       var s = JSON.parse(localStorage.getItem(KEY));
       if (s && Array.isArray(s.records)) {
         s.settings = Object.assign({ phone: '', vat: 18, lastUnit: '' }, s.settings || {});
+        if (!Array.isArray(s.properties)) s.properties = [];
+        if (!s.dues || typeof s.dues !== 'object') s.dues = {};
         return s;
       }
     } catch (e) {}
-    return { settings: { phone: '', vat: 18, lastUnit: '' }, records: [] };
+    return { settings: { phone: '', vat: 18, lastUnit: '' }, records: [], properties: [], dues: {} };
   }
   var db = load();
   function persist() {
@@ -59,6 +61,7 @@
   function units() {
     var u = {};
     db.records.forEach(function (r) { u[r.unit || ''] = 1; });
+    db.properties.forEach(function (p) { if ((p.name || '').trim()) u[p.name.trim()] = 1; });
     return Object.keys(u).sort();
   }
 
@@ -114,6 +117,9 @@
           if (inp.type === 'checkbox') inp.checked = !!m.vat; else inp.value = m[inp.dataset.k] === undefined ? '' : m[inp.dataset.k];
         });
         mBoxes[i].querySelector('.meter-icon').textContent = m.icon || '🔢';
+        var info = mBoxes[i].querySelector('.meter-info'), html = meterInfo(m);
+        if (info) info.remove();
+        if (html) mBoxes[i].querySelector('.meter-head').insertAdjacentHTML('afterend', html);
       });
       cur.fixed.forEach(function (f, i) {
         fRows[i].querySelectorAll('[data-k]').forEach(function (inp) { inp.value = f[inp.dataset.k] === undefined ? '' : f[inp.dataset.k]; });
@@ -136,6 +142,7 @@
           '<input class="uom" data-k="uom" value="' + esc(m.uom) + '" aria-label="יחידת מידה" />' +
           '<button type="button" class="icon-btn" data-del-meter="' + i + '" title="הסר מונה" aria-label="הסר מונה">✕</button>' +
         '</div>' +
+        meterInfo(m) +
         '<div class="meter-grid">' +
           field('קריאה קודמת', 'prev', m.prev, 'reading') +
           field('קריאה נוכחית', 'curr', m.curr, 'reading') +
@@ -155,6 +162,13 @@
         '<input type="number" inputmode="decimal" step="any" data-k="' + k + '" value="' + esc(v) + '" /></label>';
     }
     cur._prevRec = prevRec;
+  }
+
+  // the meter number and provider from the property page, when the bill's property has them
+  function meterInfo(m) {
+    var P = window.BillsPayments;
+    var t = P && P.meterInfo(cur.unit, m.name);
+    return t ? '<div class="meter-info">' + esc(t) + '</div>' : '';
   }
 
   function renderFixed() {
@@ -278,7 +292,7 @@
       return a.month === b.month ? (a.unit || '').localeCompare(b.unit || '', 'he') : a.month < b.month ? -1 : 1;
     });
   }
-  function workbook(list) {
+  function workbook(list, withTracking) {
     list = sorted(list);
     // sheet 1: one row per month, one column per item
     var meterNames = [], fixedNames = [];
@@ -340,16 +354,19 @@
       det.push([{ v: monthName(r.month), s: 'bold' }, { v: r.unit || '', s: 'bold' }, { v: 'סה"כ', s: 'bold' },
         null, null, null, null, null, null, null, null, { v: totals(r).total, s: 'total' }, null]);
     });
-    return MiniXLSX.build([
+    var sheets = [
       { name: 'סיכום חודשי', cols: sumCols, rows: sum },
       { name: 'פירוט מלא', cols: [16, 18, 8, 16, 13, 13, 10, 9, 10, 13, 7, 13, 30], rows: det }
-    ]);
+    ];
+    var P = window.BillsPayments, track = withTracking && P && P.sheet();
+    if (track) sheets.push(track);
+    return MiniXLSX.build(sheets);
   }
   function xlsxFile() {
     var all = $('#scope-all').checked;
     var list = all ? db.records : db.records.filter(function (r) { return r.id === cur.id; });
     var name = all ? 'תשלומים-חודשיים-' + thisMonth() + '.xlsx' : 'חשבון-' + cur.month + (cur.unit ? '-' + cur.unit.replace(/[\\\/:*?"<>|]/g, '') : '') + '.xlsx';
-    return new File([workbook(list)], name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    return new File([workbook(list, all)], name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
   // ---------- the bill picture ----------
@@ -548,8 +565,8 @@
     }
   });
   $('#hist-xlsx').addEventListener('click', function () {
-    if (!db.records.length) { toast('אין עדיין נתונים'); return; }
-    download(new File([workbook(db.records)], 'תשלומים-חודשיים-' + thisMonth() + '.xlsx'));
+    if (!db.records.length && !db.properties.length) { toast('אין עדיין נתונים'); return; }
+    download(new File([workbook(db.records, true)], 'תשלומים-חודשיים-' + thisMonth() + '.xlsx'));
   });
 
   // ---------- settings and backup ----------
@@ -570,6 +587,12 @@
     f.text().then(function (t) {
       var s = JSON.parse(t);
       if (!s || !Array.isArray(s.records)) throw new Error('bad');
+      (Array.isArray(s.properties) ? s.properties : []).forEach(function (p) {
+        if (!p || !p.id || !Array.isArray(p.services)) return;
+        var i = db.properties.findIndex(function (x) { return x.id === p.id; });
+        if (i >= 0) db.properties[i] = p; else db.properties.push(p);
+      });
+      if (s.dues && typeof s.dues === 'object') Object.keys(s.dues).forEach(function (k) { db.dues[k] = s.dues[k]; });
       var add = 0;
       s.records.forEach(function (r) {
         if (!r || !/^\d{4}-\d{2}$/.test(r.month) || !Array.isArray(r.meters) || !Array.isArray(r.fixed)) return;
@@ -579,13 +602,17 @@
         add++;
       });
       persist(); refreshUnits(); renderHistory(); open(cur.month, cur.unit);
-      toast('נטענו ' + add + ' חודשים מהגיבוי');
+      if (window.BillsPayments) BillsPayments.render();
+      toast('נטענו ' + add + ' חודשים ו-' + db.properties.length + ' נכסים מהגיבוי');
     }).catch(function () { toast('הקובץ אינו גיבוי תקין של האתר'); });
     e.target.value = '';
   });
   $('#wipe').addEventListener('click', function () {
-    if (!confirm('למחוק את כל החודשים שנשמרו בדפדפן הזה? מומלץ להוריד גיבוי קודם.')) return;
+    if (!confirm('למחוק את כל הנתונים (חודשים, נכסים ותשלומים) שנשמרו בדפדפן הזה? מומלץ להוריד גיבוי קודם.')) return;
     db.records = [];
+    db.properties = [];
+    db.dues = {};
+    if (window.BillsPayments) BillsPayments.render();
     persist(); refreshUnits(); renderHistory(); open(thisMonth(), '');
     toast('כל הנתונים נמחקו');
   });
@@ -595,6 +622,8 @@
     document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('active', t.dataset.tab === name); });
     document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + name); });
     try { sessionStorage.setItem('bills-tab', name); } catch (e) {}
+    if (window.BillsPayments && (name === 'due' || name === 'props')) BillsPayments.render();
+    if (name === 'bill' && cur) { renderMeters(); renderFixed(); recalc(); }
   }
   document.querySelectorAll('.tab').forEach(function (t) { t.addEventListener('click', function () { showTab(t.dataset.tab); }); });
   var tt;
@@ -603,6 +632,25 @@
     el.textContent = msg; el.classList.add('show');
     clearTimeout(tt); tt = setTimeout(function () { el.classList.remove('show'); }, 3800);
   }
+
+  // what js/payments.js (properties, due payments, reading a bill) uses
+  window.Bills = {
+    db: function () { return db; }, persist: persist, toast: toast, showTab: showTab, download: download,
+    num: num, has: has, r2: r2, money: money, plain: plain, esc: esc, monthName: monthName, thisMonth: thisMonth,
+    calcMeter: calcMeter, totals: totals, meterUsed: meterUsed, find: find, freshRecord: freshRecord, waPhone: waPhone,
+    // writes a whole month record (from a read bill) and refreshes what shows it
+    storeRecord: function (rec) {
+      rec.id = idOf(rec.month, rec.unit);
+      delete rec._prevRec;
+      rec.savedAt = new Date().toISOString();
+      var i = db.records.findIndex(function (r) { return r.id === rec.id; });
+      if (i >= 0) db.records[i] = rec; else db.records.push(rec);
+      persist(); refreshUnits(); renderHistory();
+      if (cur && cur.id === rec.id) open(rec.month, rec.unit);
+    },
+    openBill: function (month, unit) { open(month, unit); showTab('bill'); window.scrollTo(0, 0); },
+    refreshUnits: refreshUnits
+  };
 
   refreshUnits();
   open(thisMonth(), db.settings.lastUnit || '');
