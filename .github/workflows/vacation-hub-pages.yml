@@ -6,7 +6,7 @@ name: Deploy vacation-hub to GitHub Pages
 # electro-fix/ under /electro-fix/, assembly-studio/ under /assembly-studio/
 # netplan/ under /netplan/, automation/ under /automation/, robotic-parking/ under /robotic-parking/,
 # comic-studio/ under /comic-studio/, portfolio/ under /portfolio/, and finance-hub/, marketing-hub/,
-# aia-studio/, wellness-hub/, torah-hub/ each under their own matching path (magnet-studio
+# aia-studio/, wellness-hub/, torah-hub/, bills-hub/ each under their own matching path (magnet-studio
 # standalone sites — HTML only, CSS/JS loaded live from hapinkas-hayomi.onrender.com).
 # Sub-sites already on gh-pages are kept when this run's checkout does not have
 # them, so a run from one branch does not wipe a site published from another.
@@ -14,7 +14,7 @@ name: Deploy vacation-hub to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**', 'book-studio/**', 'electro-fix/**', 'assembly-studio/**', 'netplan/**', 'automation/**', 'robotic-parking/**', 'comic-studio/**', 'portfolio/**', 'finance-hub/**', 'marketing-hub/**', 'aia-studio/**', 'wellness-hub/**', 'torah-hub/**']
+    paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**', 'book-studio/**', 'electro-fix/**', 'assembly-studio/**', 'netplan/**', 'automation/**', 'robotic-parking/**', 'comic-studio/**', 'portfolio/**', 'finance-hub/**', 'marketing-hub/**', 'aia-studio/**', 'wellness-hub/**', 'torah-hub/**', 'bills-hub/**']
   schedule:
     - cron: '17 3 * * *'   # daily: skills and knowledge are rebuilt from the projects as they are now
   workflow_dispatch:
@@ -105,9 +105,13 @@ jobs:
             mkdir -p /tmp/site/torah-hub
             cp -r torah-hub/. /tmp/site/torah-hub/
           fi
+          if [ -d bills-hub ]; then
+            mkdir -p /tmp/site/bills-hub
+            cp -r bills-hub/. /tmp/site/bills-hub/
+          fi
           # keep sub-sites published earlier that this checkout does not contain
           if git clone -q --depth 1 -b gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" /tmp/old 2>/dev/null; then
-            for d in interior book-studio electro-fix assembly-studio netplan automation robotic-parking comic-studio portfolio finance-hub marketing-hub aia-studio wellness-hub torah-hub; do
+            for d in interior book-studio electro-fix assembly-studio netplan automation robotic-parking comic-studio portfolio finance-hub marketing-hub aia-studio wellness-hub torah-hub bills-hub; do
               if [ ! -d "/tmp/site/$d" ] && [ -d "/tmp/old/$d" ]; then cp -r "/tmp/old/$d" /tmp/site/; fi
             done
           fi

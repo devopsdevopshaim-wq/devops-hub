@@ -30,6 +30,18 @@ function world({ key = true, ai = null, http = null } = {}) {
   check('hubs: an empty prompt is refused', r.code === 400);
   r = await call({ action: 'ai', prompt: 'x'.repeat(24001) });
   check('hubs: a huge prompt is refused', r.code === 413);
+  r = await call({ action: 'ai', prompt: 'קרא את החשבון', image: 'data:image/jpeg;base64,' + 'QUJD'.repeat(50), mime: 'image/jpeg' });
+  const parts = sent.at(-1).body.contents[0].parts;
+  check('hubs: a picture goes to Gemini with the prompt', r.code === 200 && parts.length === 2 && parts[0].inline_data.mime_type === 'image/jpeg' && parts[0].inline_data.data === 'QUJD'.repeat(50) && parts[1].text === 'קרא את החשבון');
+  r = await call({ action: 'ai', prompt: 'x', image: 'JVBERi0x', mime: 'application/pdf' });
+  check('hubs: a PDF bill is accepted', r.code === 200 && sent.at(-1).body.contents[0].parts[0].inline_data.mime_type === 'application/pdf');
+  let n = sent.length;
+  r = await call({ action: 'ai', prompt: 'x', image: 'QUJD', mime: 'text/html' });
+  check('hubs: a non-image type is refused', r.code === 400 && sent.length === n);
+  r = await call({ action: 'ai', prompt: 'x', image: '<script>', mime: 'image/png' });
+  check('hubs: a non-base64 picture is refused', r.code === 400 && sent.length === n);
+  r = await call({ action: 'ai', prompt: 'x', image: 'A'.repeat(5600004), mime: 'image/png' });
+  check('hubs: a huge picture is refused', r.code === 413 && sent.length === n);
   r = await call({ action: 'nope' });
   check('hubs: an unknown action is refused', r.code === 400);
 }

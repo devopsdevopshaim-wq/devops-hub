@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f5c55" />
+<title>תשלומים חודשיים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" />
+<link rel="stylesheet" href="css/bills.css" />
+<script src="../portfolio/js/track.js" defer></script>
+</head>
+<body>
+<div class="standalone-bar">
+  <span>תשלומים חודשיים · חשמל, מים, גז ועוד</span>
+  <a href="../portfolio/">כל האתרים שלי ←</a>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">₪</span>
+      <div>
+        <h1>תשלומים חודשיים</h1>
+        <p class="tag">מה לשלם עכשיו · קריאות מונים · קריאת חשבון מצילום · Excel אחד לשליחה בוואטסאפ</p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="due" role="tab">לתשלום</button>
+    <button class="tab" data-tab="bill" role="tab">חשבון החודש</button>
+    <button class="tab" data-tab="history" role="tab">היסטוריה</button>
+    <button class="tab" data-tab="props" role="tab">נכסים ומונים</button>
+    <button class="tab" data-tab="settings" role="tab">הגדרות</button>
+  </nav>
+
+  <!-- לתשלום עכשיו -->
+  <section class="panel active" id="panel-due">
+    <div class="tiles" id="due-tiles"></div>
+    <div class="actions top-actions">
+      <button type="button" class="btn primary" id="scan-open">📷 קרא חשבון מצילום או PDF</button>
+      <button type="button" class="btn" id="ics">📅 תזכורות ליומן</button>
+      <button type="button" class="btn wa" id="due-wa">שלח רשימה בוואטסאפ</button>
+      <label class="fld due-filter"><span class="sr">נכס</span><select id="due-unit" aria-label="נכס"></select></label>
+    </div>
+    <div id="due-list"></div>
+    <details class="card explain">
+      <summary>אפשר למשוך את הנתונים מהרשת לפי מספר מונה וכתובת?</summary>
+      <p>לא ישירות. לחברת החשמל, לתאגידי המים ולחברות הגז אין שירות פתוח שמחזיר חשבון לפי מספר מונה:
+        הנתונים שלכם נמצאים מאחורי כניסה לאזור האישי (תעודת זהות וקוד חד־פעמי), ובצדק, כדי שאף אחד אחר לא יוכל לראות אותם.</p>
+      <p>מה האתר כן עושה:</p>
+      <ul>
+        <li><b>קורא את החשבון בשבילכם.</b> מצלמים את החשבון או מעלים את קובץ ה-PDF שהגיע במייל, והאתר מוציא ממנו
+          את הספק, מספר המונה ומספר הלקוח, הקריאות, הסכום ותאריך התשלום, ומכניס אותם למקום.</li>
+        <li><b>שומר לכל נכס</b> את הכתובת, מספרי המונים ומספרי הלקוח, ומחשב מתי כל תשלום צפוי ובכמה.</li>
+        <li><b>קישור לתשלום</b> ליד כל חשבון: לאתר הספק, או לחיפוש של תאגיד המים והעירייה לפי העיר שלכם.</li>
+        <li><b>תזכורות ליומן</b> בטלפון, יומיים לפני כל תאריך תשלום.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- חשבון החודש -->
+  <section class="panel" id="panel-bill">
+    <div class="card head-card">
+      <label class="fld">
+        <span>חודש</span>
+        <input type="month" id="month" required />
+      </label>
+      <label class="fld">
+        <span>נכס / דירה / שוכר <small>(לא חובה)</small></span>
+        <input type="text" id="unit" list="units" placeholder="למשל: דירה 3, משפחת כהן" autocomplete="off" />
+        <datalist id="units"></datalist>
+      </label>
+      <div class="status" id="status"></div>
+    </div>
+
+    <h2 class="sec">מונים <small>צריכה = נוכחי − קודם</small></h2>
+    <div id="meters" class="meters"></div>
+    <button type="button" class="btn ghost" id="add-meter">+ הוסף מונה</button>
+
+    <h2 class="sec">תשלומים חודשיים קבועים</h2>
+    <div class="card">
+      <div id="fixed" class="fixed"></div>
+      <button type="button" class="btn ghost" id="add-fixed">+ הוסף תשלום</button>
+    </div>
+
+    <label class="fld notes">
+      <span>הערות</span>
+      <textarea id="notes" rows="2" placeholder="למשל: הוחלף מונה מים, שולם בהעברה בנקאית"></textarea>
+    </label>
+
+    <div class="total-bar">
+      <div>
+        <div class="total-label">סה"כ לתשלום</div>
+        <div class="total" id="total">0.00 ₪</div>
+      </div>
+      <div class="total-split" id="total-split"></div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn primary" id="save">💾 שמור את החודש</button>
+      <button type="button" class="btn wa" id="share">שלח בוואטסאפ</button>
+      <button type="button" class="btn" id="dl-xlsx">📊 הורד קובץ Excel</button>
+      <button type="button" class="btn" id="dl-png">🖼️ הורד תמונת חשבון</button>
+    </div>
+    <label class="check scope">
+      <input type="checkbox" id="scope-all" checked />
+      <span>קובץ ה-Excel יכלול את כל החודשים והנכסים (לא רק החודש הזה)</span>
+    </label>
+  </section>
+
+  <!-- היסטוריה -->
+  <section class="panel" id="panel-history">
+    <div class="card hist-tools">
+      <label class="fld">
+        <span>נכס</span>
+        <select id="hist-unit"></select>
+      </label>
+      <button type="button" class="btn" id="hist-xlsx">📊 הורד את הכל ל-Excel</button>
+    </div>
+    <div id="chart" class="chart"></div>
+    <div class="table-wrap"><table class="hist" id="hist"></table></div>
+    <p class="empty" id="hist-empty">עוד לא נשמר אף חודש. מלאו את "חשבון החודש" ולחצו שמור.</p>
+  </section>
+
+  <!-- נכסים ומונים -->
+  <section class="panel" id="panel-props">
+    <p class="hint lead">לכל נכס: כתובת, ולכל שירות את הספק, מספר המונה, מספר הלקוח, כל כמה זמן מגיע חשבון ובאיזה יום משלמים.
+      מזה נבנית רשימת "לתשלום". את רוב השדות אפשר למלא לבד מחשבון מצולם (📷 בלשונית לתשלום).</p>
+    <div id="props"></div>
+    <button type="button" class="btn ghost" id="add-prop">+ הוסף נכס</button>
+  </section>
+
+  <!-- הגדרות -->
+  <section class="panel" id="panel-settings">
+    <div class="card">
+      <h2 class="sec">וואטסאפ</h2>
+      <label class="fld">
+        <span>מספר טלפון לשליחה <small>(לא חובה. בלי מספר, וואטסאפ ישאל למי לשלוח)</small></span>
+        <input type="tel" id="phone" inputmode="tel" placeholder="050-1234567" />
+      </label>
+      <p class="hint">בטלפון, "שלח בוואטסאפ" מצרף את קובץ ה-Excel ותמונת החשבון ישירות לשיחה.
+        במחשב הקבצים יורדים, וחלון וואטסאפ נפתח עם סיכום; צרפו את הקובץ שירד (📎).</p>
+    </div>
+    <div class="card">
+      <h2 class="sec">מע"מ</h2>
+      <label class="fld short">
+        <span>שיעור מע"מ (%) <small>נוסף רק למונים שסומן בהם "+ מע"מ"</small></span>
+        <input type="number" id="vat" min="0" max="100" step="0.1" />
+      </label>
+    </div>
+    <div class="card">
+      <h2 class="sec">גיבוי</h2>
+      <p class="hint">הנתונים נשמרים בדפדפן הזה בלבד. כדי להעביר למכשיר אחר או לשמור עותק, הורידו גיבוי וטענו אותו שם.</p>
+      <div class="actions">
+        <button type="button" class="btn" id="backup">⬇️ הורד גיבוי (JSON)</button>
+        <label class="btn" for="restore">⬆️ טען גיבוי</label>
+        <input type="file" id="restore" accept=".json,application/json" hidden />
+        <button type="button" class="btn danger" id="wipe">🗑️ מחק את כל הנתונים</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    התעריפים שמוצעים כברירת מחדל הם הערכה בלבד. עדכנו אותם לפי החשבון שקיבלתם מחברת החשמל, תאגיד המים או ספק הגז.
+    סכומים שמסומנים "משוער" מחושבים מהקריאות שלכם או מהסכום שהזנתם, והחשבון של הספק הוא הקובע.
+  </footer>
+</div>
+
+<dialog id="scan" class="sheet" aria-labelledby="scan-title">
+  <form method="dialog" class="sheet-in" id="scan-form">
+    <div class="sheet-head">
+      <h2 id="scan-title">קריאת חשבון מצילום או PDF</h2>
+      <button type="submit" value="cancel" class="icon-btn" aria-label="סגור">✕</button>
+    </div>
+    <label class="fld">
+      <span>לאיזה נכס החשבון?</span>
+      <select id="scan-prop"></select>
+    </label>
+    <label class="drop" id="scan-drop">
+      <input type="file" id="scan-file" accept="image/*,application/pdf" />
+      <span class="drop-big">📄</span>
+      <span>צלמו את החשבון או בחרו תמונה / PDF</span>
+      <small>בטלפון אפשר לצלם ישירות. התמונה נשלחת לקריאה אוטומטית ואינה נשמרת בשרת.</small>
+    </label>
+    <div class="scan-status" id="scan-status" role="status"></div>
+    <div id="scan-result" hidden></div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="scan-apply" hidden>✓ שמור את הנתונים</button>
+      <button type="submit" value="cancel" class="btn">סגור</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/xlsx.js"></script>
+<script src="js/bills.js"></script>
+<script src="js/payments.js"></script>
+</body>
+</html>

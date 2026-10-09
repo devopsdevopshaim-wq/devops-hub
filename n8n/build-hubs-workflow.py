@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Builds n8n/hasadna-hubs.json: the server side of the five standalone sites
-(finance, marketing, AIA studio, wellness, torah).
+"""Builds n8n/hasadna-hubs.json: the server side of the standalone sites
+(finance, marketing, AIA studio, wellness, torah, bills).
 
 The sites run in the browser by themselves. Two things a browser cannot do are done here:
   POST /webhook/hasadna-hubs   (text/plain JSON)
     {action: 'status'}                    -> {ok, ai}
     {action: 'ai', prompt, tag}           -> {ok, text, source}     a text answer from Gemini (free tier)
+    {action: 'ai', prompt, image, mime}   -> {ok, text, source}     the same about one picture or PDF (base64, up to ~4MB;
+                                                                     the bills site reads a photographed or emailed bill)
     {action: 'fetch', url}                -> {ok, status, body}     a GET of an allowed host (market quotes and headlines,
                                                                      which browsers may not read directly)
 The Gemini key never lives in the repository: .github/scripts/n8n-deploy.mjs fills it in from the GEMINI_API_KEY secret.
@@ -34,7 +36,7 @@ def node(name, type_, version, params, pos, **extra):
     return n
 
 
-SERVE = r"""// The server side of the standalone sites: text answers from Gemini, and reads of a few market hosts.
+SERVE = r"""// The server side of the standalone sites: answers from Gemini (text, or about one picture/PDF), and reads of a few market hosts.
 __SEC__
 
 const sd = $getWorkflowStaticData('global');
@@ -75,6 +77,15 @@ if (b.action === 'ai') {
   const prompt = String(b.prompt || '').replace(/\u0000/g, ' ').trim();
   if (!prompt) return out({ ok: false, error: 'empty' }, 400);
   if (prompt.length > 24000) return out({ ok: false, error: 'too-big' }, 413);
+  let media = null;
+  if (b.image) {
+    const mime = String(b.mime || 'image/jpeg').toLowerCase();
+    const data = String(b.image).replace(/^data:[^,]{0,80},/, '').replace(/\s+/g, '');
+    if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(mime)) return out({ ok: false, error: 'bad-image' }, 400);
+    if (data.length > 5600000) return out({ ok: false, error: 'too-big' }, 413);
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return out({ ok: false, error: 'bad-image' }, 400);
+    media = { inline_data: { mime_type: mime, data } };
+  }
   sd.asked = (sd.asked || 0) + 1;
   let last;
   for (const m of TEXT_MODELS) {
@@ -83,7 +94,7 @@ if (b.action === 'ai') {
         method: 'POST',
         url: `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,
         headers: { 'x-goog-api-key': GEMINI_KEY, 'Content-Type': 'application/json' },
-        body: { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } },
+        body: { contents: [{ role: 'user', parts: media ? [media, { text: prompt }] : [{ text: prompt }] }], generationConfig: { temperature: media ? 0.1 : 0.7, maxOutputTokens: 4096 } },
         json: true,
         timeout: 90000
       });
