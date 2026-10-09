@@ -18,21 +18,32 @@
   function store(v) { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {} }
   function token() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
 
-  // api.json (written by the Cloudflare deploy) names the sign-in server. Without it the n8n address above is used.
-  var apiReady = fetch('api.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && /^https:\/\//.test(j.auth || '')) API = j.auth; }).catch(function () {});
+  // Two sign-in servers: the one named in api.json (Cloudflare, no monthly cap) and the n8n one above. A sign-in tries them in order, so one
+  // being down never keeps the admin out. A session belongs to the server that issued it, so it is kept with its address ("hasadna-ep").
+  var N8N = API, EPS = [N8N], EP = 'hasadna-ep';
+  var apiReady = fetch('api.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && /^https:\/\//.test(j.auth || '')) EPS = [j.auth, N8N]; }).catch(function () {});
+  function pinned() { try { var e = localStorage.getItem(EP); if (e) return e; } catch (x) {} return token() ? N8N : ''; }   // sessions made before api.json existed are n8n's
+  function pin(u) { try { localStorage.setItem(EP, u); } catch (x) {} }
 
   function api(action, data) {
     var body = new URLSearchParams(data || {});
     body.set('action', action);
     if (!body.has('token') && token()) body.set('token', token());
     // form-encoded: a "simple" request, no CORS preflight
-    return apiReady.then(function () { return fetch(API, { method: 'POST', body: body }); })
-      .then(function (r) {
-        // n8n answers 404 while the workflow is not imported or not active
-        if (r.status === 404) return { ok: false, error: 'not-ready' };
-        if (r.status >= 500) return { ok: false, error: 'server-down' };
-        return r.json().catch(function () { return { ok: false, error: 'bad-response' }; });
-      });
+    return apiReady.then(function () {
+      var list = (token() && pinned()) ? [pinned()] : EPS, i = 0, last = { ok: false, error: 'server-down' }, netErr = null;
+      function next() {
+        if (i >= list.length) { if (netErr && !last.status) throw netErr; return last; }
+        var u = list[i++];
+        return fetch(u, { method: 'POST', body: body }).then(function (r) {
+          // 404 = workflow not active, 5xx = the server is failing: try the next server
+          if (r.status === 404) { last = { ok: false, error: 'not-ready', status: 404 }; return next(); }
+          if (r.status >= 500) { last = { ok: false, error: 'server-down', status: r.status }; return next(); }
+          return r.json().catch(function () { return { ok: false, error: 'bad-response' }; }).then(function (j) { if (j && (j.token || (action === 'me' && j.ok))) pin(u); return j; });
+        }, function (e) { netErr = e; return next(); });
+      }
+      return next();
+    });
   }
 
   var resolveReady;
@@ -40,12 +51,12 @@
   var Auth = window.HasadnaAuth = { ready: ready, session: null, api: api, logout: logout, token: token };
 
   // the last good session is kept for a week: if the n8n server is down, the site still opens (a limited mode) instead of locking everyone out
-  var LAST = 'hasadna-last', GRACE = 7 * 86400000;
+  var LAST = 'hasadna-last', GRACE = 7 * 86400000, GRACE_ADMIN = 30 * 86400000;
   function remember(s) { try { localStorage.setItem(LAST, JSON.stringify({ s: s, at: Date.now() })); } catch (e) {} }
   function grace() {
     try {
       var l = JSON.parse(localStorage.getItem(LAST) || 'null');
-      if (!l || !l.s || Date.now() - l.at > GRACE || !token()) return null;
+      if (!l || !l.s || Date.now() - l.at > (l.s.role === 'admin' ? GRACE_ADMIN : GRACE) || !token()) return null;
       if (needAdmin && l.s.role !== 'admin') return null;
       return Object.assign({}, l.s, { offline: true });
     } catch (e) { return null; }
@@ -76,7 +87,10 @@
     var b = document.createElement('div');
     b.setAttribute('role', 'status');
     b.style.cssText = 'position:sticky;top:0;z-index:99;padding:8px 14px;text-align:center;background:#3b2f10;color:#ffd98a;font:14px Assistant,sans-serif';
-    b.textContent = 'שרת הכניסה לא זמין כרגע, האתר פתוח במצב מוגבל. פעולות ניהול ושמירה יחזרו לעבוד כשהשרת יחזור.';
+    b.textContent = (Auth.session && Auth.session.emergency ? 'מצב חירום: כלים מקומיים בלבד (מודלי AI, תכנית עסקית). ' : 'שרת הכניסה לא זמין כרגע, האתר פתוח במצב מוגבל. ') + 'פעולות ניהול ושמירה יחזרו כשהשרת יחזור. ';
+    var re = document.createElement('a'); re.href = '#'; re.textContent = 'כניסה מחדש'; re.style.cssText = 'color:#ffe9b0;text-decoration:underline';
+    re.addEventListener('click', function (e) { e.preventDefault(); store(''); try { localStorage.removeItem(EP); localStorage.removeItem(LAST); } catch (x) {} location.reload(); });
+    b.appendChild(re);
     document.body.insertBefore(b, document.body.firstChild);
   }
 
@@ -296,6 +310,7 @@
           return;
         }
         if (j.error === 'bad-login' || j.error === 'wrong-totp') fpw.elements.password.value = '';
+        if (j.error === 'server-down' || j.error === 'not-ready') emergency();
         fail((ERR[j.error] || 'משהו השתבש: ' + j.error) + (j.error === 'bad-login' && j.left != null && j.left <= 3 ? ' נשארו ' + j.left + ' ניסיונות.' : ''));
       }).catch(function () { busy(fpw, false); fail('מערכת הכניסה לא עונה כרגע. נסו שוב בעוד רגע.'); });
     });
@@ -364,6 +379,15 @@
         check();
       });
   }
+  // an admin page while no sign-in server answers: a way in to the tools that work without one (the pages themselves are public files)
+  function emergency() {
+    var g = document.getElementById('gate'); if (!g || !needAdmin || g.querySelector('.gate-emerg')) return;
+    var card = g.querySelector('.gate-card'); if (!card) return;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'gate-emerg g-btn ghost'; b.style.marginTop = '14px';
+    b.textContent = 'כניסת חירום: כלים מקומיים בלי שרת';
+    b.addEventListener('click', function () { enter({ ok: true, role: 'admin', name: 'מנהל', sites: 'all', offline: true, emergency: true }); });
+    card.appendChild(b);
+  }
   function check() {
     if (!token()) { gate(); return; }
     api('me').then(function (s) {
@@ -374,9 +398,11 @@
         if (!s.ok && (s.error === 'signed-out' || s.error === 'inactive' || s.error === 'device-revoked')) store('');
         var g = (s.error === 'server-down' || s.error === 'not-ready') ? grace() : null;
         if (g) { enter(g); return; }
-        gate(s.error === 'not-ready' ? 'מערכת הכניסה עוד לא הופעלה ב־n8n.' : s.error === 'server-down' ? 'שרת הכניסה ב־n8n לא עונה כרגע. נסו שוב מאוחר יותר.' : s.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.' : s.error === 'ip-blocked' ? 'הכתובת (IP) שממנה אתם מתחברים לא מאושרת. פנו למנהל.' : s.error === 'device-revoked' ? 'המכשיר הזה הוסר. היכנסו שוב.' : s.error === 'inactive' ? 'הגישה שלך הסתיימה. כדי לחדש, דברו איתי בוואטסאפ.' : needAdmin && s.ok ? 'המסך הזה פתוח רק למנהל.' : 'הכניסה הקודמת הסתיימה. היכנסו שוב.');
+        var downMsg = (s.error === 'server-down' || s.error === 'not-ready');
+        var gm = (s.error === 'not-ready' ? 'מערכת הכניסה עוד לא הופעלה ב־n8n.' : s.error === 'server-down' ? 'שרת הכניסה ב־n8n לא עונה כרגע. נסו שוב מאוחר יותר.' : s.error === 'rate-limited' ? 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.' : s.error === 'ip-blocked' ? 'הכתובת (IP) שממנה אתם מתחברים לא מאושרת. פנו למנהל.' : s.error === 'device-revoked' ? 'המכשיר הזה הוסר. היכנסו שוב.' : s.error === 'inactive' ? 'הגישה שלך הסתיימה. כדי לחדש, דברו איתי בוואטסאפ.' : needAdmin && s.ok ? 'המסך הזה פתוח רק למנהל.' : 'הכניסה הקודמת הסתיימה. היכנסו שוב.');
+        gate(gm); if (s.error === 'server-down' || s.error === 'not-ready') emergency();
       }
-    }).catch(function () { var g = grace(); if (g) { enter(g); return; } gate('מערכת הכניסה לא עונה כרגע. נסו לרענן בעוד רגע.'); });
+    }).catch(function () { var g = grace(); if (g) { enter(g); return; } gate('מערכת הכניסה לא עונה כרגע. נסו לרענן בעוד רגע.'); emergency(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
