@@ -64,8 +64,9 @@ const post = async (b, origin = ORIGIN) => {
 };
 let ok = true;
 await new Promise((r) => setTimeout(r, 4000));   // the new version spreads in a few seconds
+// a brand-new workers.dev address can take a couple of minutes to resolve the first time
 let info = await post({ action: 'info' }).catch(() => ({ status: 0 }));
-for (let i = 0; i < 5 && info.status !== 200; i++) { await new Promise((r) => setTimeout(r, 3000)); info = await post({ action: 'info' }).catch(() => ({ status: 0 })); }
+for (let i = 0; i < 16 && info.status !== 200; i++) { await new Promise((r) => setTimeout(r, 10000)); info = await post({ action: 'info' }).catch(() => ({ status: 0 })); }
 if (info.status === 200) note('- ✅ השרת עונה'); else { note('- ❌ השרת לא עונה (' + info.status + ')'); ok = false; }
 const evil = await post({ action: 'info' }, 'https://evil.example').catch(() => ({ status: 0 }));
 note(evil.status === 403 ? '- ✅ בקשה מאתר זר נחסמת' : '- ❌ בקשה מאתר זר לא נחסמה (' + evil.status + ')'); if (evil.status !== 403) ok = false;
