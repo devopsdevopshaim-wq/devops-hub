@@ -1,0 +1,29 @@
+name: Move the clients from n8n to Cloudflare
+
+# Run by hand. Reads the clients from the n8n sign-in flow through the n8n API (works even when the execution quota is used up) and imports them
+# into the Cloudflare server as the admin. Each gets an initial password that only the admin can read afterwards, in portfolio/migrate.html.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only count the clients, do not import'
+        type: boolean
+        default: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Move
+        env:
+          N8N_URL: ${{ secrets.N8N_URL }}
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+          SPIDER: ${{ secrets.SPIDER }}
+          HAIM_WEB_KEY: ${{ secrets.HAIM_WEB_KEY }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: node .github/scripts/migrate-clients.mjs
