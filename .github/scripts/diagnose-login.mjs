@@ -40,6 +40,10 @@ try {
   pg.on('request', (q) => {
     if (q.method() === 'POST' && /workers\.dev/.test(q.url())) {
       const f = new URLSearchParams(q.postData() || '');
+      if (f.get('action') === 'login') {
+        const sent = f.get('password') || '';
+        say(`  password same as the secret: ${sent === PW}; secret has: ${[/\n/.test(PW) && 'newline', /\r/.test(PW) && 'CR', /[^\x20-\x7e]/.test(PW) && 'non-ASCII', /^\s|\s$/.test(PW) && 'edge-space', /\s/.test(PW) && 'inner-space'].filter(Boolean).join(',') || 'plain printable ASCII'}; sent has: ${[/\n/.test(sent) && 'newline', /[^\x20-\x7e]/.test(sent) && 'non-ASCII'].filter(Boolean).join(',') || 'plain'}`);
+      }
       say(`  sent action=${f.get('action')} email=${f.get('email') || ''} password.length=${(f.get('password') || '').length} (expected ${PW.length}) device.length=${(f.get('device') || '').length} totp=${JSON.stringify(f.get('totp'))}`);
     }
   });
