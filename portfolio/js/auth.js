@@ -183,7 +183,7 @@
     w.className = 'welcome';
     var n = Array.isArray(s.sites) ? s.sites.length : 0;
     var until = s.expiresAt ? ' · הגישה שלך בתוקף עד ' + new Date(s.expiresAt).toLocaleDateString('he-IL') : '';
-    w.textContent = 'שלום ' + (s.name || '') + ' · נפתחו לך ' + n + ' אתרים' + until;
+    w.textContent = 'שלום ' + (s.name || '') + ' · ' + (n === 1 ? 'נפתח לך אתר אחד' : n === 2 ? 'נפתחו לך שני אתרים' : 'נפתחו לך ' + n + ' אתרים') + until;
     nav.parentNode.insertBefore(w, nav.nextSibling);
   }
 
