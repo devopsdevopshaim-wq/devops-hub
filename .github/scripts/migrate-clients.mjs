@@ -41,6 +41,20 @@ const clients = Object.values(sd.clients).map((c) => ({ email: c.email, name: c.
 say(`- נמצאו ב־n8n ${clients.length} לקוחות` + (sd.signupClosed ? ' (ההרשמה העצמית סגורה שם)' : ''));
 if (DRY) { say('- 🧪 הרצת ניסיון: לא נשלח כלום לשרת החדש'); done(0); }
 
+// the leads and prices of the leads flow
+let biz = null;
+try {
+  const list2 = await get('/workflows?limit=250');
+  const m2 = (list2.data || []).find((w) => /לידים ומחירון/.test(w.name));
+  if (m2) {
+    const f2 = await get('/workflows/' + m2.id);
+    let s2 = f2.staticData; if (typeof s2 === 'string') { try { s2 = JSON.parse(s2); } catch (e) { s2 = null; } }
+    s2 = s2 && (s2.global || s2);
+    if (s2) biz = { leads: s2.leads || [], clicks: s2.clicks || {}, prices: s2.prices || null };
+  }
+} catch (e) { say('- ⚠️ קריאת הלידים והמחירון מ־n8n נכשלה: ' + e.message); }
+say(biz ? `- נמצאו ב־n8n ${biz.leads.length} לידים${biz.prices ? ' ומחירון מותאם' : ''}` : '- לא נמצאו נתוני לידים ב־n8n');
+
 // 2. into the Worker, as the admin
 const post = async (b) => { const r = await fetch(WORKER, { method: 'POST', headers: { Origin: ORIGIN }, body: new URLSearchParams(b) }); return { status: r.status, json: await r.json().catch(() => null) }; };
 const lg = await post({ action: 'login', email: 'devopsdevopshaim@gmail.com', password: ADMIN_PASSWORD, device: crypto.randomBytes(16).toString('hex') });
@@ -51,6 +65,18 @@ if (!imp.json || !imp.json.ok) { say('- ❌ הייבוא נכשל (' + imp.statu
 say(`- ✅ יובאו ${imp.json.added} לקוחות; דולגו ${imp.json.skipped} (כבר קיימים או לא תקינים); נוצרו ${imp.json.passwords} סיסמאות ראשוניות`);
 if (sd.signupClosed) { await post({ action: 'signup-set', token, open: 'false' }); say('- ההרשמה העצמית נסגרה גם בשרת החדש (כמו בישן)'); }
 if (sd.aiVault && sd.aiVault.blob) { const v = await post({ action: 'ai-vault-set', token, blob: sd.aiVault.blob }); say(v.json && v.json.ok ? '- ✅ כספת מפתחות ה־AI הועברה' : '- ⚠️ כספת ה־AI לא הועברה'); }
+if (biz && (biz.leads.length || biz.prices || Object.keys(biz.clicks).length)) {
+  // the leads screen takes the short-lived proof the sign-in hands the admin
+  const me = await post({ action: 'me', token });
+  const proof = me.json && me.json.biz;
+  if (!proof) say('- ⚠️ אין הוכחת מנהל ללידים (חסר SHARED_KEY בשרת); הלידים לא הועברו');
+  else {
+    const base = WORKER.replace(/\/hasadna-auth$/, '');
+    const r = await fetch(base + '/hasadna-admin', { method: 'POST', headers: { Origin: ORIGIN }, body: new URLSearchParams({ action: 'import', token: proof, payload: JSON.stringify(biz) }) });
+    const j = await r.json().catch(() => null);
+    say(j && j.ok ? `- ✅ הועברו ${j.leads} לידים${j.prices ? ' והמחירון' : ''}` : `- ❌ העברת הלידים נכשלה (${r.status} ${JSON.stringify(j)})`);
+  }
+}
 await post({ action: 'logout', token });
 say('- ➡️ הסיסמאות הראשוניות נמצאות בעמוד portfolio/migrate.html (כפתור "הצגת הרשימה"), עם כפתור שליחה בוואטסאפ לכל לקוח.');
 done(0);

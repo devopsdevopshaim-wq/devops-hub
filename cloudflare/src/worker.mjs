@@ -29,7 +29,7 @@ const ROUTES = {
   'hasadna-auth': { svc: 'main', max: 64000 },
   'hasadna-lead': { svc: 'business', fn: leadSave, max: 70000, lead: true },
   'hasadna-prices': { svc: 'business', fn: pricesRead, max: 70000 },
-  'hasadna-admin': { svc: 'business', fn: adminHandle, max: 70000 },
+  'hasadna-admin': { svc: 'business', fn: adminHandle, max: 1600000 },
   'hasadna-hubs': { svc: 'hubs', fn: hubsServe, max: 6000000, free: true },
   'comic-draw': { svc: 'comic', fn: comicDraw, max: 12000000, free: true },
   'hasadna-voice': { svc: 'voice', fn: voiceSpeak, max: 200000, free: true },

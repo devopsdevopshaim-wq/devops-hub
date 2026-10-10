@@ -17,7 +17,7 @@ sweep();
 
 if (!ORIGIN_OK) return out({ ok: false, error: 'forbidden' }, 403);
 const b = $json.body || {};
-if (JSON.stringify(b).length > 60000) return out({ ok: false, error: 'too-big' }, 413);
+if (JSON.stringify(b).length > (b.action === 'import' ? 1500000 : 60000)) return out({ ok: false, error: 'too-big' }, 413);
 if (!hit('adm-ip', ipKey(), 120, 10 * 60000)) return out({ ok: false, error: 'rate-limited' }, 429);
 
 // Only an admin who signed in on the main sign-in has a proof: "<expiry ms>.<HMAC>" signed with the shared key.
@@ -43,6 +43,27 @@ switch (b.action) {
     if (p.note !== undefined) l.note = String(p.note).slice(0, 500);
     l.updatedAt = new Date().toISOString();
     return out({ ok: true, lead: l });
+  }
+
+  // Moving to another server: the leads, the click counts and the price list of the old one (a lead already here, by id, is kept as it is)
+  case 'import': {
+    const text = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0009\u000b-\u001f\u007f]+/g, ' ').trim().slice(0, n);
+    const have = new Set(sd.leads.map((x) => x.id));
+    let added = 0;
+    for (const l of (Array.isArray(p.leads) ? p.leads : []).slice(0, 2000)) {
+      if (!l || !/^[\w-]{4,40}$/.test(String(l.id || '')) || have.has(l.id)) continue;
+      have.add(l.id);
+      sd.leads.push({ id: l.id, at: Date.parse(l.at) ? new Date(l.at).toISOString() : new Date(now).toISOString(), name: line(l.name, 60), phone: line(l.phone, 20), biz: line(l.biz, 80), service: line(l.service, 80),
+        msg: text(l.msg, 800), code: line(l.code, 20), page: line(l.page, 200), status: STATUSES.includes(l.status) ? l.status : 'new', note: text(l.note, 500) });
+      added++;
+    }
+    sd.leads.sort((a, c) => String(c.at).localeCompare(String(a.at)));
+    if (sd.leads.length > 2000) sd.leads.length = 2000;
+    sd.clicks = sd.clicks || {};
+    if (p.clicks && typeof p.clicks === 'object') for (const k of Object.keys(p.clicks).slice(0, 30)) { const n = Math.max(0, Math.round(Number(p.clicks[k]) || 0)); if (n && (k in sd.clicks || Object.keys(sd.clicks).length < 30)) sd.clicks[line(k, 40)] = (sd.clicks[line(k, 40)] || 0) + n; }
+    let prices = false;
+    if (p.prices && typeof p.prices === 'object' && !sd.prices) { sd.prices = JSON.parse(JSON.stringify(p.prices).slice(0, 40000)); prices = true; }
+    return out({ ok: true, leads: added, prices });
   }
 
   case 'lead-delete':
