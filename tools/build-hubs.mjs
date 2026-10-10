@@ -82,7 +82,7 @@ function page(file, hub) {
   s = links(s, hub);
   s = s.replace(/<script src="\/?js\/pnks-offline\.js"><\/script>\s*/g, '');
   // the runtime goes first, so it is there before any script calls the server
-  if (!/hub\/runtime\.js/.test(s)) s = s.replace(/(<meta name="viewport"[^>]*>)/, '$1\n<script src="hub/runtime.js"></script>');
+  if (!/hub\/runtime\.js/.test(s)) s = s.replace(/(<meta name="viewport"[^>]*>)/, '$1\n<script src="../portfolio/js/failover.js"></script>\n<script src="hub/runtime.js"></script>');
   // the luxury layer: tokens on the body, the stylesheet, the hero script
   s = s.replace(/<body([^>]*)>/, (m, attrs) => {
     if (/data-hub=/.test(attrs)) return m;

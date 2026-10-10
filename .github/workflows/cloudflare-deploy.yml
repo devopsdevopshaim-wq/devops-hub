@@ -43,7 +43,7 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           node build.mjs
-          echo "ADMIN_PASSWORD_HASH=$(node test/hash.mjs 'Test-Passw0rd-xyz')" > .dev.vars
+          printf 'ADMIN_PASSWORD_HASH=%s\nSHARED_KEY=test-shared-key\n' "$(node test/hash.mjs 'Test-Passw0rd-xyz')" > .dev.vars
           (npx wrangler dev --local --port 8787 > /tmp/wrangler-dev.log 2>&1 &)
           for i in $(seq 1 40); do curl -s localhost:8787/ >/dev/null && break; sleep 1; done
           WORKER_URL=http://localhost:8787 node test/worker.test.mjs
@@ -58,6 +58,11 @@ jobs:
           ADMIN_TOTP_SECRET: ${{ secrets.ADMIN_TOTP_SECRET }}
           MORNING_CLIENT_ID: ${{ secrets.MORNING_CLIENT_ID }}
           MORNING_CLIENT_SECRET: ${{ secrets.MORNING_CLIENT_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
+          AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}

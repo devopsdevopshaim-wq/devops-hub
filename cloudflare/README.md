@@ -22,3 +22,10 @@ echo "ADMIN_PASSWORD_HASH=$(node test/hash.mjs 'Test-Passw0rd-xyz')" > .dev.vars
 npx wrangler dev --local --port 8787 &
 node test/worker.test.mjs
 ```
+
+## מה עוד רץ שם (גיבוי מלא ל־n8n)
+אותו Worker מגיש גם את שאר נקודות הקצה שהיו ב־n8n, מאותו קוד: `hasadna-lead` / `hasadna-prices` / `hasadna-admin` (לידים ומחירון), `hasadna-hubs` (ה־AI ונתוני השוק של האתרים העצמאיים), `comic-draw` (סטודיו הקומיקס) ו־`hasadna-voice` (הקול של מאיה). לכל שירות מצב משלו.
+האתר קורא קודם ל־Cloudflare ואם אין תשובה (שגיאה, 404, 5xx) עובר אוטומטית ל־n8n (`portfolio/js/failover.js`, והכניסה ב־`auth.js`). אפשר לכבות כל אחד מהשרתים והאתר ממשיך.
+סודות נוספים שהפריסה מעבירה אם קיימים: `GEMINI_API_KEY`, `OPENAI_API_KEY`, `AZURE_SPEECH_KEY` + `AZURE_SPEECH_REGION`, `ELEVENLABS_API_KEY`.
+שים לב: הלידים והלקוחות נשמרים בכל שרת בנפרד. מה שנכנס כשהאתר עבד מול שרת אחד נשאר בו.
+לא עברו עדיין: מאיה (הצ'אט עם הסוכנים), סוכני Parkomat ובדיקת הזמינות; הם נשארים ב־n8n.

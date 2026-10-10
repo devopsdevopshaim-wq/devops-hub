@@ -21,9 +21,25 @@ function toModule(name, js, extra = []) {
     `  return await (async function () {\n${js}\n  }).call({ helpers });\n}\n`;
 }
 
+const nodeOf = (file, name) => {
+  const w = JSON.parse(fs.readFileSync(path.join(here, '..', 'n8n', file), 'utf8'));
+  const n = w.nodes.find((x) => x.name === name); if (!n) throw new Error(`missing node ${name} in ${file}`);
+  return n.parameters.jsCode;
+};
 const out = path.join(here, 'src', 'gen');
+fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
-fs.writeFileSync(path.join(out, 'handle.mjs'), toModule('Auth · Handle', code('Auth · Handle')));
-fs.writeFileSync(path.join(out, 'invoice-save.mjs'), toModule('Invoice · Save', code('Invoice · Save')));
-fs.writeFileSync(path.join(out, 'after-mail.mjs'), toModule('Auth · After mail', code('Auth · After mail')));
-console.log('built', fs.readdirSync(out).join(', '));
+const W = {
+  'handle.mjs': ['Auth · Handle', code('Auth · Handle')],
+  'invoice-save.mjs': ['Invoice · Save', code('Invoice · Save')],
+  'after-mail.mjs': ['Auth · After mail', code('Auth · After mail')],
+  // the other workflows, one Code node each
+  'lead.mjs': ['Lead · Save', nodeOf('hasadna-business.json', 'Lead · Save')],
+  'prices.mjs': ['Prices · Read', nodeOf('hasadna-business.json', 'Prices · Read')],
+  'admin.mjs': ['Admin · Handle', nodeOf('hasadna-business.json', 'Admin · Handle')],
+  'hubs.mjs': ['Hubs · Serve', nodeOf('hasadna-hubs.json', 'Hubs · Serve')],
+  'comic.mjs': ['Comic · Draw', nodeOf('hasadna-comic.json', 'Comic · Draw')],
+  'voice.mjs': ['Voice · Speak', nodeOf('hasadna-voice.json', 'Voice · Speak')]
+};
+for (const [f, [name, js]] of Object.entries(W)) fs.writeFileSync(path.join(out, f), toModule(name, js));
+console.log('built', Object.keys(W).join(', '));
