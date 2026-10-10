@@ -1,0 +1,24 @@
+name: Diagnose the sign-in (live)
+
+# Run by hand. It opens the live clients' page in a headless browser, signs in as the admin with the ADMIN_PASSWORD secret, and prints every request.
+on: workflow_dispatch
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install a browser
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm install playwright --no-audit --no-fund >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Diagnose
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          NODE_PATH: /tmp/pw/node_modules
+        run: |
+          cp .github/scripts/diagnose-login.mjs /tmp/pw/diagnose-login.mjs
+          cd /tmp/pw && node diagnose-login.mjs
