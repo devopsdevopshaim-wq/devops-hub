@@ -1,0 +1,5 @@
+{
+ "base": "https://spider-auth.devopsdevopshaim.workers.dev",
+ "auth": "https://spider-auth.devopsdevopshaim.workers.dev/hasadna-auth",
+ "where": "cloudflare"
+}
