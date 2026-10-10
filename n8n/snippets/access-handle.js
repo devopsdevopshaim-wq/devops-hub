@@ -520,6 +520,7 @@ switch (b.action) {
     let list = []; try { list = JSON.parse(b.payload || '[]'); } catch (x) {}
     if (!Array.isArray(list)) return out({ ok: false, error: 'bad-input' }, 400);
     let added = 0, skipped = 0;
+    const handover = [];
     for (const p of list.slice(0, MAX_CLIENTS)) {
       const e = email(p && p.email);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || e === ADMIN_EMAIL || sd.clients[e]) { skipped++; continue; }
@@ -531,12 +532,30 @@ switch (b.action) {
         expiresAt: p.expiresAt && !isNaN(Date.parse(p.expiresAt)) ? new Date(p.expiresAt).toISOString() : null,
         active: p.active !== false, ipLock: p.ipLock === true,
         maxDevices: Math.max(1, Math.min(10, Math.round(Number(p.maxDevices) || DEFAULT_MAX_DEVICES))),
-        createdAt: p.createdAt && !isNaN(Date.parse(p.createdAt)) ? new Date(p.createdAt).toISOString() : new Date(now).toISOString(), devices: []
+        createdAt: p.createdAt && !isNaN(Date.parse(p.createdAt)) ? new Date(p.createdAt).toISOString() : new Date(now).toISOString(), devices: [],
+        ...(Array.isArray(p.payments) ? { payments: p.payments.slice(0, 200) } : {})
       };
+      // an initial password for each, kept for the admin to hand over (WhatsApp); it works for 30 days and the client then chooses their own
+      if (b.temp === '1' || b.temp === true) {
+        const plain = rndPassword();
+        giveTemp(sd.clients[e], plain, 30 * DAY, 'admin', true);
+        handover.push({ email: e, name: sd.clients[e].name, phone: sd.clients[e].phone, password: plain });
+      }
       added++;
     }
+    if (handover.length) sd.handover = { at: new Date(now).toISOString(), list: handover.concat((sd.handover && sd.handover.list) || []).slice(0, MAX_CLIENTS) };
     log('ייבוא לקוחות משרת אחר: ' + added, ADMIN_EMAIL);
-    return out({ ok: true, added, skipped });
+    return out({ ok: true, added, skipped, passwords: handover.length });
+  }
+
+  // The initial passwords made by the import, for the admin to pass on (shown once; they expire from here after 7 days)
+  case 'import-passwords': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    const h = sd.handover && now - Date.parse(sd.handover.at) < 7 * DAY ? sd.handover : null;
+    if (!h) { delete sd.handover; return out({ ok: true, list: [], at: null }); }
+    const res = out({ ok: true, list: h.list, at: h.at });
+    if (b.clear === '1') delete sd.handover;
+    return res;
   }
 
   case 'client-save': {

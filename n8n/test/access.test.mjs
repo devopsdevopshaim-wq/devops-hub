@@ -380,6 +380,15 @@ async function importing(tag) {
   r = await call({ action: 'clients-import', token: a.token, payload: JSON.stringify([{ email: 'New@X.co', name: 'חדש', sites: ['a', 'b'], plan: 'month', expiresAt: '2030-01-01' }, { email: 'old@x.co', name: 'אחר' }, { email: 'bad' }, { email: ADMIN_EMAIL }]) });
   check(t + 'new accounts come over, existing and bad ones are skipped', r.body.added === 1 && r.body.skipped === 3, r.body);
   check(t + 'the existing account is untouched', sd.clients['old@x.co'].name === 'קיים' && sd.clients['new@x.co'].sites.length === 2 && !sd.clients['new@x.co'].pw);
+  r = await call({ action: 'clients-import', token: a.token, temp: '1', payload: JSON.stringify([{ email: 'with@x.co', name: 'עם סיסמה', phone: '0501112222', payments: [{ id: 'p1' }] }]) });
+  check(t + 'an import can give each new client an initial password', r.body.added === 1 && r.body.passwords === 1, r.body);
+  r = await call({ action: 'import-passwords', token: a.token });
+  const pw0 = r.body.list[0] && r.body.list[0].password;
+  check(t + '... which only the admin can read', r.body.ok && r.body.list.length === 1 && /^[\w]{4}-[\w]{4}-[\w]{4}$/.test(pw0));
+  r = await call({ action: 'import-passwords', token: 'b'.repeat(48) });
+  check(t + '... and nobody else', r.code === 403);
+  r = await call({ action: 'login', email: 'with@x.co', password: pw0, device: dev() }, { ip: '10.8.8.8' });
+  check(t + 'the client signs in with it and must choose their own', r.body.ok === true && r.body.mustChange === true, r.body);
   r = await call({ action: 'forgot', email: 'new@x.co' }, { ip: '10.9.9.9' });
   check(t + 'an imported client can ask for an initial password', r.body.ok === true && !!r.mail);
 }
