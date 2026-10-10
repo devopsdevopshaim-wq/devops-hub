@@ -58,11 +58,24 @@
           // 404 = workflow not active, 5xx = the server is failing: try the next server
           if (r.status === 404) { last = { ok: false, error: 'not-ready', status: 404 }; return next(); }
           if (r.status >= 500) { last = { ok: false, error: 'server-down', status: r.status }; return next(); }
-          return r.json().catch(function () { return { ok: false, error: 'bad-response' }; }).then(function (j) { if (j && (j.token || (action === 'me' && j.ok))) pin(u); return j; });
+          return r.json().catch(function () { return { ok: false, error: 'bad-response' }; }).then(function (j) {
+            if (j && (j.token || (action === 'me' && j.ok))) pin(u);
+            // the server no longer knows this session (it expired, or the password was replaced): tell the person and sign in again, instead of a bare "admin-only"
+            if (j && !j.ok && action !== 'me' && action !== 'logout' && (j.error === 'signed-out' || j.error === 'admin-only') && Auth.session && !Auth.session.offline && token()) expired();
+            return j;
+          });
         }, function (e) { netErr = e; return next(); });
       }
       return next();
     });
+  }
+
+  var expiredOnce = false;
+  function expired() {
+    if (expiredOnce) return; expiredOnce = true;
+    store(''); try { localStorage.removeItem(EP); localStorage.removeItem('hasadna-last'); } catch (x) {}
+    alert('ההתחברות פגה (נכנסים מחדש). לא נשמר כלום.');
+    location.reload();
   }
 
   var resolveReady;

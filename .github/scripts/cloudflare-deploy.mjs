@@ -30,7 +30,8 @@ const secrets = {
   BREVO_API_KEY: (process.env.BREVO_API_KEY || '').trim(), RESEND_API_KEY: (process.env.RESEND_API_KEY || '').trim(), MAIL_FROM: (process.env.MAIL_FROM || '').trim()
 };
 if (ADMIN_PASSWORD.length >= 8) {
-  const salt = crypto.randomBytes(16).toString('hex');
+  // the same secret gives the same hash on every deploy, so a deploy does not look like a new password (which would sign the admin out everywhere)
+  const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-v1').digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
 for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.MORNING_CLIENT_SECRET]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
