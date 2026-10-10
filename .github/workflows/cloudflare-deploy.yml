@@ -67,10 +67,10 @@ jobs:
       - name: Point the site at the Worker
         if: steps.have.outputs.go == 'true'
         run: |
-          if git diff --quiet -- portfolio/api.json; then echo "api.json unchanged"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add portfolio/api.json
+          if git diff --cached --quiet -- portfolio/api.json; then echo "api.json unchanged"; exit 0; fi
           git commit -q -m "portfolio: the sign-in server is now on Cloudflare"
           git pull -q --rebase origin main
           git push -q origin HEAD:main
