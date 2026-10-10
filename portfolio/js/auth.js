@@ -33,7 +33,7 @@
     return apiReady.then(function () {
       var list = (token() && pinned()) ? [pinned()] : EPS, i = 0, last = { ok: false, error: 'server-down' }, netErr = null;
       function next() {
-        if (i >= list.length) { if (netErr && !last.status) throw netErr; return last; }
+        if (i >= list.length) { if (netErr && !last.status) throw netErr; if (netErr) last.net = true; return last; }   // net: at least one server could not even be reached from this browser
         var u = list[i++];
         return fetch(u, { method: 'POST', body: body }).then(function (r) {
           // 404 = workflow not active, 5xx = the server is failing: try the next server
@@ -253,7 +253,7 @@
       'weak-password': 'הסיסמה צריכה להיות באורך 8 תווים לפחות.',
       'signed-out': 'הכניסה פגה. היכנסו שוב עם הסיסמה הראשונית.',
       'wrong-totp': 'קוד האפליקציה לא נכון, או שכבר נעשה בו שימוש. חכו לקוד הבא.',
-      'server-down': 'שרת הכניסה ב־n8n לא עונה כרגע (שגיאת שרת). זו לא הסיסמה. בדוק ב־n8n Cloud אם נגמרה מכסת ההרצות, ונסה שוב אחר כך.',
+      'server-down': 'שרת הכניסה לא עונה כרגע. זו לא הסיסמה. (אם הכתובת spider-auth…workers.dev לא נפתחת בדפדפן הזה, ייתכן שהרשת או הסינון חוסמים אותה: נסו רשת אחרת, כמו נתוני הנייד.)',
       'not-ready': 'מערכת הכניסה עוד לא הופעלה ב־n8n.'
     };
 
