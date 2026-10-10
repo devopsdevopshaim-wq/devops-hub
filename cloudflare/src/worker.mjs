@@ -12,6 +12,14 @@ import adminHandle from './gen/admin.mjs';
 import hubsServe from './gen/hubs.mjs';
 import comicDraw from './gen/comic.mjs';
 import voiceSpeak from './gen/voice.mjs';
+import guideNormalize from './gen/guide-normalize.mjs';
+import guideBlocked from './gen/guide-blocked.mjs';
+import guideContext from './gen/guide-context.mjs';
+import guideShape from './gen/guide-shape.mjs';
+import monitorTargets from './gen/monitor-targets.mjs';
+import monitorSummarize from './gen/monitor-summarize.mjs';
+import statusFresh from './gen/status-fresh.mjs';
+import statusRender from './gen/status-render.mjs';
 
 const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
 const FROM_NAME = 'SPIDER · חיים קריספין';
@@ -24,14 +32,21 @@ const ROUTES = {
   'hasadna-admin': { svc: 'business', fn: adminHandle, max: 70000 },
   'hasadna-hubs': { svc: 'hubs', fn: hubsServe, max: 6000000, free: true },
   'comic-draw': { svc: 'comic', fn: comicDraw, max: 12000000, free: true },
-  'hasadna-voice': { svc: 'voice', fn: voiceSpeak, max: 200000, free: true }
+  'hasadna-voice': { svc: 'voice', fn: voiceSpeak, max: 200000, free: true },
+  'hasadna-guide': { svc: 'agents', kind: 'guide', max: 20000, free: true },
+  'hasadna-status': { svc: 'agents', kind: 'status', max: 1000, free: true, method: 'GET' }
 };
+const KNOWLEDGE = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/knowledge.json';
 const routeOf = (pathname) => ROUTES[pathname.replace(/^\/(webhook\/)?/, '')];
 const CORS = { 'Access-Control-Allow-Origin': SITE_ORIGIN, Vary: 'Origin', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' };
 
 const reply = (body, code = 200, extra = {}) => new Response(JSON.stringify(body), { status: code, headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', ...extra } });
 
 export default {
+  // every 2 hours: check the sites (the n8n flow did this every 15 minutes, at a cost in executions)
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(env.STATE.get(env.STATE.idFromName('agents')).runMonitor(true));
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...CORS, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' } });
@@ -39,7 +54,7 @@ export default {
     const rt = routeOf(url.pathname);
     if (!rt) return reply({ ok: false, error: 'not-found' }, 404);
     // the price list is read with GET; everything else is POST
-    const want = rt.fn === pricesRead ? 'GET' : 'POST';
+    const want = rt.method || (rt.fn === pricesRead ? 'GET' : 'POST');
     if (request.method !== want) return request.method === 'GET' ? reply({ ok: true, service: 'spider', where: 'cloudflare' }) : reply({ ok: false, error: 'bad-method' }, 405);
     const id = env.STATE.idFromName(rt.svc);
     return env.STATE.get(id).fetch(request);
@@ -84,7 +99,7 @@ async function n8nHttp(o) {
 }
 
 const requireShim = (m) => { if (m === 'crypto') return nodeCrypto; throw new Error('module not allowed: ' + m); };
-const first = (n, j) => ({ first: () => ({ json: j[n] || {} }) });
+const first = (n, j) => { const v = j[n]; return Array.isArray(v) ? { first: () => v[0] || { json: {} }, all: () => v } : { first: () => ({ json: v || {} }), all: () => [{ json: v || {} }] }; };
 
 export class State extends DurableObject {
   constructor(ctx, env) { super(ctx, env); this.q = Promise.resolve(); }
@@ -113,6 +128,29 @@ export class State extends DurableObject {
     for (const k of Object.keys(orig)) if (!(k in sd)) await this.ctx.storage.delete(k);
   }
 
+  // ---- the availability monitor: every public address in knowledge.json is fetched; the result is kept for the status page and Maya
+  async runMonitor(notify) {
+    const env = this.env, st = await this.load();
+    const mk = (json, nodes = {}, input) => ({ $json: json, $getWorkflowStaticData: () => st.sd, require: requireShim, $: (n) => first(n, nodes), ENV: env, helpers: { httpRequest: n8nHttp }, ...(input ? { $input: input } : {}) });
+    const K = await n8nHttp({ method: 'GET', url: KNOWLEDGE, json: true, timeout: 15000 });
+    const targets = await monitorTargets(mk({}, {}, { first: () => ({ json: K }), all: () => [{ json: K }] }));
+    const checks = new Array(targets.length);
+    let next = 0;
+    await Promise.all(Array.from({ length: 6 }, async () => {
+      while (next < targets.length) {
+        const i = next++;
+        try { const r = await n8nHttp({ method: 'GET', url: targets[i].json.url, returnFullResponse: true, ignoreHttpStatusErrors: true, json: false, timeout: 20000 }); checks[i] = { json: { statusCode: r.statusCode, body: typeof r.body === 'string' ? r.body : '' } }; }
+        catch (e) { checks[i] = { json: { error: { message: String(e.message || e) } } }; }
+      }
+    }));
+    const sum = (await monitorSummarize(mk({}, { 'Monitor · Targets': targets }, { first: () => checks[0], all: () => checks })))[0].json;
+    await this.save(st);
+    if (notify && sum.newlyDown && sum.newlyDown.length) {
+      await sendMail(env, { to: ADMIN_EMAIL, subject: 'SPIDER: ' + sum.newlyDown.length + ' אתרים הפסיקו לעבוד', text: sum.newlyDown.map((r) => r.title + ' — ' + r.url + ' (' + (r.code ? 'HTTP ' + r.code : (r.error || 'אין תשובה')) + ')').join('\n'), alert: true });
+    }
+    return sum;
+  }
+
   async handle(request, rt) {
     const env = this.env;
     const raw = request.method === 'GET' ? '' : await request.text();
@@ -134,6 +172,34 @@ export class State extends DurableObject {
     const ctx = (json, nodes = {}) => ({ $json: json, $getWorkflowStaticData, require: requireShim, $: (n) => first(n, nodes), ENV: env, helpers });
     let h;
     try {
+      if (rt.kind === 'status') {
+        const q = Object.fromEntries(new URL(request.url).searchParams);
+        const fresh = (await statusFresh(ctx({ query: q })))[0].json.fresh;
+        if (!fresh) { await this.save(st); try { await this.runMonitor(false); } catch (e) { /* the page shows the last known state */ } const again = await this.load(); st.sd = again.sd; st.orig = again.orig; }
+        const r = (await statusRender(ctx({}, { 'Status · Webhook': { query: q } })))[0].json;
+        return new Response(r.body, { status: 200, headers: { ...CORS, 'Content-Type': r.contentType || 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src https://devopsdevopshaim-wq.github.io data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" } });
+      }
+      if (rt.kind === 'guide') {
+        const norm = (await guideNormalize(ctx({ body, headers })))[0].json;
+        if (norm.blocked) { const r = (await guideBlocked(ctx(norm)))[0].json; await this.save(st); return reply({ answer: r.answer, project: r.project, next: r.next }); }
+        let output = '';
+        try {
+          const K = await n8nHttp({ method: 'GET', url: KNOWLEDGE, json: true, timeout: 15000 });
+          const c = (await guideContext(ctx(norm, { 'Agents · Load knowledge': K, 'Agents · Normalize': norm })))[0].json;
+          if (env.ANTHROPIC_API_KEY) {
+            const g = c.groups || {}, cut = (x) => String(x || '').slice(0, 14000);
+            const system = c.system + '\n\nהמידע שלך על הפרויקטים, לפי תחום (השתמשי בו, אל תמציאי):\n' +
+              ['devops', 'ai', 'data', 'tools', 'web'].map((k) => '### ' + k + '\n' + cut(g[k])).join('\n') + '\n### תהליך\n' + cut(g.pipeline) + '\n### זמינות האתרים\n' + cut(g.status);
+            const r = await n8nHttp({ method: 'POST', url: 'https://api.anthropic.com/v1/messages', json: true, timeout: 90000,
+              headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+              body: { model: env.CLAUDE_MODEL || 'claude-sonnet-5-5', max_tokens: 1500, system, messages: [{ role: 'user', content: c.question }] } });
+            output = ((r && r.content) || []).map((x) => x.text || '').join('');
+          }
+        } catch (e) { output = ''; }
+        const r = (await guideShape(ctx({ output }, { 'Agents · Normalize': norm })))[0].json;
+        await this.save(st);
+        return reply({ answer: r.answer, project: r.project, next: r.next });
+      }
       if (rt.fn) {
         // a one-node flow: run it, keep the state, answer (a new lead also sends an email to the admin)
         const r = (await rt.fn(ctx({ body, headers })))[0].json;
