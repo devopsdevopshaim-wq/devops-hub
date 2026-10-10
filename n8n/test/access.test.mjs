@@ -318,11 +318,12 @@ async function seeded(tag) {
   r = await w.call({ action: 'login', email: ADMIN_EMAIL, password: MINE, device: dev() }, { ip: '3.3.3.3' });
   check(t + 'running the install again does not undo the chosen password', r.body.ok === true, r.body);
   const tok = r.body.token;
+  sd.lock['admin-guess'] = Date.now() + 3600000; sd.lock[ADMIN_EMAIL + '|x'] = Date.now() + 3600000;   // a lock-out left by earlier guesses
   w = world({ seedHash: H2, sd });   // the secret was changed: a way back in with no email
   r = await w.call({ action: 'me', token: tok }, { ip: '3.3.3.3' });
   check(t + 'changing the secret signs the admin out everywhere', r.code === 401);
   r = await w.call({ action: 'login', email: ADMIN_EMAIL, password: 'A-New-Secret-9876', device: dev() }, { ip: '4.4.4.4' });
-  check(t + '... and the new secret works as the password', r.body.ok === true);
+  check(t + '... and the new secret works as the password, even after a lock-out', r.body.ok === true, r.body);
   r = await w.call({ action: 'login', email: ADMIN_EMAIL, password: MINE, device: dev() }, { ip: '5.5.5.5' });
   check(t + '... replacing the chosen one', r.code === 401);
 }

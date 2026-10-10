@@ -76,6 +76,9 @@ if (!hit('all', IPK, 240, 10 * 60000)) return out({ ok: false, error: 'rate-limi
 if (set(ADMIN_PW) && sd.admin.seedHash !== ADMIN_PW) {
   sd.admin = { ...sd.admin, pw: ADMIN_PW, seedHash: ADMIN_PW, pwAt: new Date(now).toISOString(), pwBy: 'secret', tmp: null };
   for (const [t, s] of Object.entries(sd.sessions)) if (s.role === 'admin') delete sd.sessions[t];
+  // whoever sets the secret owns the system: a new admin password also lifts any lock-out left by earlier failed guesses
+  for (const k of Object.keys(sd.lock)) if (k === 'admin-guess' || k.startsWith(ADMIN_EMAIL)) delete sd.lock[k];
+  for (const k of Object.keys(sd.fails)) if (k === 'admin-guess' || k.startsWith(ADMIN_EMAIL)) delete sd.fails[k];
 }
 const acct = (e) => (e === ADMIN_EMAIL ? sd.admin : sd.clients[e]);
 const tempOk = (a) => !!(a && a.tmp && a.tmp.exp > now);
