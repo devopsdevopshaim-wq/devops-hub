@@ -37,6 +37,12 @@ try {
   const pg = await b.newPage();
   pg.on('console', (m) => { if (m.type() === 'error') say('  console error: ' + m.text().slice(0, 200)); });
   pg.on('requestfailed', (q) => { if (/workers\.dev|n8n\.cloud|api\.json/.test(q.url())) say(`  FAILED ${q.method()} ${q.url().slice(0, 90)}: ${q.failure() && q.failure().errorText}`); });
+  pg.on('request', (q) => {
+    if (q.method() === 'POST' && /workers\.dev/.test(q.url())) {
+      const f = new URLSearchParams(q.postData() || '');
+      say(`  sent action=${f.get('action')} email=${f.get('email') || ''} password.length=${(f.get('password') || '').length} (expected ${PW.length}) device.length=${(f.get('device') || '').length} totp=${JSON.stringify(f.get('totp'))}`);
+    }
+  });
   pg.on('response', (r) => { if (/workers\.dev|n8n\.cloud|api\.json/.test(r.url())) say(`  ${r.status()} ${r.request().method()} ${r.url().slice(0, 90)}`); });
   await pg.goto(PAGE, { waitUntil: 'load' });
   await pg.waitForTimeout(2500);
