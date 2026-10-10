@@ -33,7 +33,8 @@ const VOICE = {
 };
 const TOTP = (process.env.ADMIN_TOTP_SECRET || ((combined.match(/ADMIN_TOTP_SECRET\W*((?:[A-Za-z2-7]{4}\s?){4,16})/) || [])[1] || '')).replace(/\s+/g, '').toUpperCase();
 // the admin's password: any characters, to the end of its line. Only its salted PBKDF2 hash goes to n8n.
-const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || (combined.match(/^[ \t]*ADMIN_PASSWORD[ \t]*[=:][ \t]*(.+?)[ \t]*$/m) || [])[1] || '').replace(/^(["'])(.*)\1$/, '$2');
+// a secret pasted with a trailing Enter must not become part of the password: nobody can type that into the sign-in box
+const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || (combined.match(/^[ \t]*ADMIN_PASSWORD[ \t]*[=:][ \t]*(.+?)[ \t]*$/m) || [])[1] || '').replace(/[\r\n]+$/, '').replace(/^(["'])(.*)\1$/, '$2');
 // the comic studio's image models. An OpenAI key is any sk- key that is not Anthropic's sk-ant-
 const COMIC = {
   __GEMINI_API_KEY__: label('GEMINI_API_KEY', 'AIza[\\w-]{30,45}') || pick(/\bAIza[\w-]{35}\b/),

@@ -3,7 +3,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 const SITE = 'https://devopsdevopshaim-wq.github.io', PAGE = SITE + '/devops-hub/portfolio/client.html';
-const EMAIL = 'devopsdevopshaim@gmail.com', PW = process.env.ADMIN_PASSWORD || '';
+const EMAIL = 'devopsdevopshaim@gmail.com', PW = (process.env.ADMIN_PASSWORD || '').replace(/[\r\n]+$/, '');
+if (/[\r\n]$/.test(process.env.ADMIN_PASSWORD || '')) console.log('NOTE: the ADMIN_PASSWORD secret ends with a line break (the deploy now strips it)');
 if (PW) console.log(`::add-mask::${PW}`);
 const lines = [];
 const say = (s) => { lines.push(s); console.log(s); };
