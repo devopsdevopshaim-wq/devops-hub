@@ -42,7 +42,7 @@ DevOps & Automation Engineer | AI Agents · n8n · Cloudflare Workers · GitHub 
 
 **B — ממוקד משרה:**
 ```
-Junior DevOps Engineer | CI/CD with GitHub Actions · Cloudflare · Docker · Linux | AI & workflow automation (n8n, LLM APIs) | 15+ live projects in production
+Junior DevOps Engineer | CI/CD with GitHub Actions · Cloudflare · Docker · Linux | AI & workflow automation (n8n, LLM APIs) | 20+ live projects in production
 ```
 
 **C — ממוקד לקוחות:**
@@ -55,7 +55,7 @@ I build websites, AI assistants and automations for small businesses | n8n · AI
 מהנדס DevOps ואוטומציה | סוכני AI · n8n · Cloudflare · GitHub Actions | בונה מערכות אינטרנט שמתפרסות, מנוטרות ומתקנות את עצמן | פתוח למשרות ולפרויקטים
 ```
 
-> בדוק לפני שמפרסם: אם יש פחות מ־15 פרויקטים חיים, שנה את המספר בגרסה B.
+> בדוק לפני שמפרסם: אם יש פחות מ־20 פרויקטים חיים, שנה את המספר בגרסה B.
 
 ---
 
@@ -112,7 +112,7 @@ Looking for: a DevOps / Automation / AI-integration role where I can grow fast, 
 ## 4. Featured — ארבעה פריטים, בסדר הזה
 
 1. **SPIDER — הפורטפוליו** (Link) → `https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/`
-   כותרת: *SPIDER — 15+ live projects, one platform*
+   כותרת: *SPIDER — 20+ live projects, one platform*
 2. **פוסט "איך העברתי שירות התחברות ל־Cloudflare"** — לכתוב (ראה סעיף 9). פוסט טכני מקובע = הוכחת יכולת.
 3. **מתכנן חניון רובוטי** (Link) — הפרויקט הכי "וואו" לתעשייה.
 4. **דף השירותים** (Link) → `https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/services.html` — ללקוחות.
@@ -129,7 +129,7 @@ Looking for: a DevOps / Automation / AI-integration role where I can grow fast, 
 ```
 Independent studio building and operating web products, AI assistants and automations end to end.
 
-• Built and run 15+ live web applications on GitHub Pages and Cloudflare, deployed through 10+ GitHub Actions workflows (deploy, screenshots, health monitoring, issue-driven publishing).
+• Built and run 20+ live web applications on GitHub Pages and Cloudflare, deployed through 10+ GitHub Actions workflows (deploy, screenshots, health monitoring, issue-driven publishing).
 • Migrated the client authentication service from n8n to Cloudflare Workers + Durable Objects, adding automatic failover, a 30-day admin grace path and an emergency local entry — removing the monthly execution cap.
 • Designed multi-agent n8n workflows (guide, business, voice, comic, access) and an AI-model lab connecting Claude, Gemini, OpenRouter, Groq and local Ollama with automatic fallback.
 • Implemented admin 2FA, first-party usage analytics (views, devices, hours, CSV export) and per-visitor rate limiting.
@@ -203,7 +203,7 @@ GitHub Actions · Cloudflare Workers · n8n · Node.js · JavaScript · Linux ·
 
 **חמישה פוסטים ראשונים — כבר יש לך את החומר:**
 1. *"השרת שלי נפל ואף לקוח לא שם לב"* — סיפור ה־failover בין n8n ל־Cloudflare. (טכני, מראה בגרות)
-2. *"בניתי 15 אתרים בשנה בלי שרת אחד"* — GitHub Pages + Actions + Workers. צילום מסך של רשימת ה־workflows.
+2. *"בניתי 20 אתרים בשנה בלי שרת אחד"* — GitHub Pages + Actions + Workers. צילום מסך של רשימת ה־workflows.
 3. *"שאלה אחת, שבעה מודלי AI"* — מעבדת המודלים, מה עבד ומה לא, איזה מודל חינמי הכי טוב.
 4. *"מחשמלאי ל־DevOps"* `[התאם לסיפור שלך]` — סיפור ההסבה. פוסטים אישיים מקבלים פי 3 חשיפה.
 5. *"תכננתי חניון רובוטי בדפדפן"* — וידאו קצר של מציג התלת־ממד.
@@ -229,7 +229,7 @@ GitHub Actions · Cloudflare Workers · n8n · Node.js · JavaScript · Linux ·
 
 **למגייס/ת:**
 ```
-Hi [Name], I'm a junior DevOps & automation engineer with 15+ live projects (CI/CD, Cloudflare Workers, AI agents). I'd love to connect and hear about relevant roles at [Company].
+Hi [Name], I'm a junior DevOps & automation engineer with 20+ live projects (CI/CD, Cloudflare Workers, AI agents). I'd love to connect and hear about relevant roles at [Company].
 ```
 
 ---
