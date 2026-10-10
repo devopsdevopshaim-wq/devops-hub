@@ -19,24 +19,21 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
-      - name: Check the secrets
-        id: have
-        run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set; nothing to deploy"
-            echo "go=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "go=true" >> "$GITHUB_OUTPUT"
-          fi
       - uses: actions/setup-node@v4
-        if: steps.have.outputs.go == 'true'
         with:
           node-version: 20
+      - name: Find the Cloudflare token
+        id: have
+        env:
+          CLOUDFLARE: ${{ secrets.CLOUDFLARE }}
+          SPIDER: ${{ secrets.SPIDER }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node .github/scripts/cloudflare-secrets.mjs
+          if [ "$(grep -c '^go=true' "$GITHUB_OUTPUT")" = "0" ]; then echo "::notice::No Cloudflare token (CLOUDFLARE_API_TOKEN, or a CLOUDFLARE secret); nothing to deploy"; fi
       - name: Build and test (a failure stops the deploy)
         if: steps.have.outputs.go == 'true'
         working-directory: cloudflare
