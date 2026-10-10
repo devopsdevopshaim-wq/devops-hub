@@ -12,7 +12,8 @@ import { spawnSync } from 'node:child_process';
 const combined = [process.env.SPIDER, process.env.HAIM_WEB_KEY].filter(Boolean).join('\n');
 const pick = (re) => (combined.match(re) || [])[0] || '';
 const label = (name, re) => (process.env[name] || (combined.match(new RegExp(name + '\\W*(' + re + ')')) || [])[1] || '').trim();
-const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || (combined.match(/^[ \t]*ADMIN_PASSWORD[ \t]*[=:][ \t]*(.+?)[ \t]*$/m) || [])[1] || '').replace(/^(["'])(.*)\1$/, '$2');
+// a secret pasted with a trailing Enter must not become part of the password: nobody can type that into the sign-in box
+const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || (combined.match(/^[ \t]*ADMIN_PASSWORD[ \t]*[=:][ \t]*(.+?)[ \t]*$/m) || [])[1] || '').replace(/[\r\n]+$/, '').replace(/^(["'])(.*)\1$/, '$2');
 const TOTP = (process.env.ADMIN_TOTP_SECRET || ((combined.match(/ADMIN_TOTP_SECRET\W*((?:[A-Za-z2-7]{4}\s?){4,16})/) || [])[1] || '')).replace(/\s+/g, '').toUpperCase();
 const KEY = (process.env.N8N_API_KEY || pick(/eyJ[\w-]+\.[\w-]+\.[\w-]+/)).trim();
 const SHARED = KEY ? crypto.createHmac('sha256', KEY).update('spider-shared-v1').digest('hex') : '';
