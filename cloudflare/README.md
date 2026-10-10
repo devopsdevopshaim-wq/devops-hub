@@ -28,4 +28,5 @@ node test/worker.test.mjs
 האתר קורא קודם ל־Cloudflare ואם אין תשובה (שגיאה, 404, 5xx) עובר אוטומטית ל־n8n (`portfolio/js/failover.js`, והכניסה ב־`auth.js`). אפשר לכבות כל אחד מהשרתים והאתר ממשיך.
 סודות נוספים שהפריסה מעבירה אם קיימים: `GEMINI_API_KEY`, `OPENAI_API_KEY`, `AZURE_SPEECH_KEY` + `AZURE_SPEECH_REGION`, `ELEVENLABS_API_KEY`.
 שים לב: הלידים והלקוחות נשמרים בכל שרת בנפרד. מה שנכנס כשהאתר עבד מול שרת אחד נשאר בו.
-לא עברו עדיין: מאיה (הצ'אט עם הסוכנים), סוכני Parkomat ובדיקת הזמינות; הם נשארים ב־n8n.
+מאיה (`hasadna-guide`) עונה בשיחה אחת עם Claude (במקום צוות הסוכנים של n8n) ומקבלת את כל המידע על הפרויקטים; הצריך סוד `ANTHROPIC_API_KEY`. בדיקת הזמינות (`hasadna-status`) רצה כל שעתיים (Cron Trigger), שומרת את התוצאה ומגישה את עמוד הבקרה.
+לא עברו: סוכני Parkomat (כלים של Claude, קבצים ל־Drive/Slack); הם נשארים ב־n8n.

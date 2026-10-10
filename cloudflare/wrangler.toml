@@ -14,6 +14,9 @@ class_name = "State"
 tag = "v1"
 new_sqlite_classes = ["State"]
 
+[triggers]
+crons = ["0 */2 * * *"]
+
 [vars]
 # PBKDF2 rounds for new passwords. The free plan allows about 10 ms of CPU per request, so keep this low there;
 # on the paid plan raise it (210000 is what the n8n version used).

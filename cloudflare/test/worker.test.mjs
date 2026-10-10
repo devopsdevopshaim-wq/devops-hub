@@ -70,6 +70,17 @@ check('the voice server answers (no key here, so it says so)', typeof j.ok === '
 r = await fetch(URL_ + '/comic-draw', { method: 'POST', headers: { Origin: SITE, 'Content-Type': 'text/plain' }, body: JSON.stringify({ mode: 'status' }) });
 j = await r.json();
 check('the comic server answers', typeof j.ok === 'boolean', j);
+r = await fetch(URL_ + '/hasadna-guide', { method: 'POST', headers: { Origin: SITE, 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ question: 'שלום מאיה', sessionId: 't1', page: '' }) });
+j = await r.json();
+check('Maya answers (a fallback text when there is no Claude key)', typeof j.answer === 'string' && j.answer.length > 5 && Array.isArray(j.next), j);
+r = await fetch(URL_ + '/hasadna-guide', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ question: 'x' }) });
+j = await r.json();
+check('Maya answers with no Origin only through the limit rules', typeof j.answer === 'string', j);
+r = await fetch(URL_ + '/hasadna-status?format=json', { headers: { Origin: SITE } });
+j = await r.json();
+check('the status data is served', r.status === 200 && j.counts && Array.isArray(j.results), j);
+r = await fetch(URL_ + '/hasadna-status', { headers: { Origin: SITE } });
+check('the status page is HTML with a locked-down policy', r.status === 200 && /text\/html/.test(r.headers.get('content-type')) && /default-src 'none'/.test(r.headers.get('content-security-policy') || ''));
 r = await call({ action: 'logout', token });
 r = await call({ action: 'me', token });
 check('after logout the token is dead', r.code === 401);

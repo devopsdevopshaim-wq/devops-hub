@@ -7,7 +7,7 @@
   if (window.__spiderFailover) return;
   window.__spiderFailover = true;
   var N8N = 'https://haimkripisn.app.n8n.cloud/webhook/';
-  var NAMES = { 'hasadna-lead': 1, 'hasadna-prices': 1, 'hasadna-admin': 1, 'hasadna-hubs': 1, 'comic-draw': 1, 'hasadna-voice': 1 };
+  var NAMES = { 'hasadna-lead': 1, 'hasadna-prices': 1, 'hasadna-admin': 1, 'hasadna-hubs': 1, 'comic-draw': 1, 'hasadna-voice': 1, 'hasadna-guide': 1, 'hasadna-status': 1 };
   var native = window.fetch.bind(window);
   var cs = document.currentScript;
   var cfg = cs && cs.src ? cs.src.replace(/js\/failover\.js.*$/, 'api.json') : '';
