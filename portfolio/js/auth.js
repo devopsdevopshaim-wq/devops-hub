@@ -25,15 +25,34 @@
   function pinned() { try { var e = localStorage.getItem(EP); if (e) return e; } catch (x) {} return token() ? N8N : ''; }   // sessions made before api.json existed are n8n's
   function pin(u) { try { localStorage.setItem(EP, u); } catch (x) {} }
 
+  // Actions that need no session always try the servers in order (a stale session from before the Cloudflare server existed must not pin a new sign-in to the old one).
+  var FREE = /^(login|forgot|signup|info|request|verify)$/;
   function api(action, data) {
+    var free = FREE.test(action);
     var body = new URLSearchParams(data || {});
     body.set('action', action);
-    if (!body.has('token') && token()) body.set('token', token());
+    if (!free && !body.has('token') && token()) body.set('token', token());
     // form-encoded: a "simple" request, no CORS preflight
     return apiReady.then(function () {
-      var list = (token() && pinned()) ? [pinned()] : EPS, i = 0, last = { ok: false, error: 'server-down' }, netErr = null;
+      var sess = !free && token() && pinned();
+      var list = sess ? [pinned()] : EPS, i = 0, last = { ok: false, error: 'server-down' }, netErr = null;
+      function finish() {
+        // the server this session belongs to is down while another one answers: the session cannot be used there, so sign in again
+        if (sess && EPS.length > 1) {
+          var others = EPS.filter(function (u) { return u !== pinned(); });
+          return Promise.all(others.map(function (u) { return fetch(u, { method: 'POST', body: new URLSearchParams({ action: 'info' }) }).then(function (r) { return r.ok; }, function () { return false; }); })).then(function (oks) {
+            if (oks.some(Boolean)) return { ok: false, error: 'signed-out', moved: true };
+            if (netErr && !last.status) throw netErr;
+            if (netErr) last.net = true;
+            return last;
+          });
+        }
+        if (netErr && !last.status) throw netErr;
+        if (netErr) last.net = true;   // net: at least one server could not even be reached from this browser
+        return last;
+      }
       function next() {
-        if (i >= list.length) { if (netErr && !last.status) throw netErr; if (netErr) last.net = true; return last; }   // net: at least one server could not even be reached from this browser
+        if (i >= list.length) return finish();
         var u = list[i++];
         return fetch(u, { method: 'POST', body: body }).then(function (r) {
           // 404 = workflow not active, 5xx = the server is failing: try the next server
