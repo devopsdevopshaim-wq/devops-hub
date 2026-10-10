@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="../portfolio/js/failover.js"></script>
+<script src="hub/runtime.js"></script>
+<title>אוצר לחג</title>
+<script>
+  (function () {
+    var nativeFetch = window.fetch;
+    window.fetch = function (input, init) {
+      init = init || {};
+      if (init.credentials === undefined) init.credentials = "include";
+      return nativeFetch(input, init);
+    };
+  })();
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var href = a.getAttribute("href");
+    if (href && href.length > 1) { e.preventDefault(); location.hash = href; }
+  }, true);
+</script>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/tab-themes.css" />
+<link rel="stylesheet" href="css/library.css" />
+<style>
+  .standalone-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    padding: 9px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line);
+    font-family: var(--font-body); font-size: 0.78rem; color: var(--cream-dim);
+  }
+  .standalone-bar a { color: var(--brass-soft); text-decoration: none; margin-inline-start: 14px; }
+  .standalone-bar a:hover { text-decoration: underline; }
+  .standalone-bar .local-nav a.on { color: var(--cream); font-weight: 600; }
+</style>
+<link rel="stylesheet" href="css/premium.css" />
+<script src="../portfolio/js/track.js" defer></script>
+</head>
+<body class="theme-scripture-light lux lux-torah" data-hub="torah-hub">
+<div class="standalone-bar">
+  <span class="local-nav">יהדות · <a href="index.html">ספריית קודש</a><a href="holidays.html">הלכות חגים</a><a href="library.html" class="on">אוצר לחג</a></span>
+  <a href="../portfolio/">כל האתרים שלי ←</a>
+</div>
+<div class="lib-wrap">
+
+  <header class="top-header">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="24,4 41,14 41,34 24,44 7,34 7,14" stroke="currentColor" stroke-width="2.5"/>
+        <path d="M17 15h14v18l-7-4-7 4z" fill="currentColor" opacity="0.9"/>
+      </svg>
+      <div>
+        <h1>אוצר לחג</h1>
+        <div class="tagline">הגדות, ברכות וקבצים — צצים במענה היומי לפי התאריך והחג</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="lib-note">
+    כל קובץ כאן משויך ל<b>אירוע</b> — חג, שבת, או "כל השנה". כשהאירוע מתקרב, הקובץ מופיע אוטומטית
+    בכרטיס "אוצר לחג" במענה היומי, עם ספירה לאחור.
+  </div>
+
+  <main id="lib-main">
+    <div class="lib-loading" id="lib-loading">טוען…</div>
+  </main>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/pnks-core.js"></script>
+<script src="js/library.js"></script>
+<script src="js/premium.js"></script>
+</body>
+</html>

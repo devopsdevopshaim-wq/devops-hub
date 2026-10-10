@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>אימות דו־שלבי · SPIDER</title>
+<style>
+:root { --bg: #0f0d24; --deep: #17143a; --line: rgba(241, 238, 252, .14); --txt: #f1eefc; --mist: #a9a4cc; --gold: #e0b25a; --ok: #62dcb8; --bad: #ff7a85; }
+@media (prefers-color-scheme: light) { :root { --bg: #f6f4ff; --deep: #fff; --line: rgba(20, 17, 50, .16); --txt: #17143a; --mist: #4d4a78; --gold: #8a5d00; --ok: #0a7a5a; --bad: #b3261e; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 16px/1.6 system-ui, "Assistant", Arial, sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding: 28px 16px 60px; }
+h1 { font-size: 28px; margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+.card { background: var(--deep); border: 1px solid var(--line); border-radius: 18px; padding: 20px; margin: 18px 0; }
+ol { padding-inline-start: 22px; margin: 0; } li { margin: 0 0 10px; }
+button { font: 700 16px/1 inherit; padding: 12px 18px; border-radius: 999px; border: 0; background: var(--gold); color: #1b1405; cursor: pointer; }
+button.ghost { background: transparent; color: var(--txt); border: 1px solid var(--line); }
+code, .key { direction: ltr; unicode-bidi: plaintext; display: block; font: 600 20px/1.5 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .06em; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line); word-break: break-all; user-select: all; text-align: left; }
+input { font: 700 22px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .3em; width: 9em; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--txt); direction: ltr; text-align: center; }
+.ok { color: var(--ok); font-weight: 700; } .bad { color: var(--bad); font-weight: 700; }
+code.inline { display: inline; padding: 2px 8px; font-size: 15px; word-break: normal; white-space: nowrap; }
+small, .muted { color: var(--mist); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+@media (prefers-color-scheme: light) { button { color: #fff; } button.ghost { color: var(--txt); } }
+</style>
+</head>
+<body>
+<main>
+  <h1>אימות דו־שלבי למנהל</h1>
+  <p class="muted">כך הכניסה שלך כמנהל נעשית בטוחה באמת: בנוסף לקוד שמגיע למייל, צריך גם קוד שמשתנה כל 30 שניות באפליקציה בטלפון שלך. מי שיפרוץ את המייל עדיין לא יוכל להיכנס.</p>
+
+  <div class="card">
+    <p><b>המפתח נוצר כאן, בדפדפן שלך בלבד.</b> הוא לא נשלח לשום מקום ולא נשמר, ואף אחד אחר לא רואה אותו (גם לא אני). לכן לא מומלץ לצלם אותו או לשלוח אותו בצ׳אט.</p>
+    <div class="row"><button id="gen" type="button">יצירת מפתח חדש</button></div>
+    <div id="out" hidden>
+      <p style="margin-top:16px">המפתח שלך:</p>
+      <span class="key" id="key"></span>
+      <p class="muted" style="margin-top:8px"><small>האותיות A–Z והספרות 2–7, בלי רווחים.</small></p>
+    </div>
+  </div>
+
+  <div class="card" id="steps" hidden>
+    <ol>
+      <li>באפליקציית האימות בטלפון (Google Authenticator, Microsoft Authenticator או Authy): <b>הוספת חשבון ← הזנת מפתח ידנית</b>. שם: <code class="inline">SPIDER</code>, מפתח: המפתח שלמעלה, סוג: מבוסס זמן.</li>
+      <li>בדיקה שהכול תקין: הקלידו כאן את הקוד שהאפליקציה מציגה.
+        <div class="row" style="margin-top:10px"><input id="code" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="000000"><span id="res"></span></div>
+      </li>
+      <li>ב־GitHub, <a target="_blank" rel="noopener" href="https://github.com/devopsdevopshaim-wq/devops-hub/settings/secrets/actions/new">יצירת סוד חדש</a>: בשדה <b>Name</b> כתבו <code class="inline">ADMIN_TOTP_SECRET</code>, ובשדה <b>Secret</b> הדביקו את המפתח (בלי רווחים). זה סוד נפרד, לא נוגעים בסוד SPIDER.</li>
+      <li>חזרו אליי ותכתבו "הוספתי". אני מריץ את ההתקנה, ומעכשיו הכניסה כמנהל דורשת גם קוד מהאפליקציה.</li>
+    </ol>
+    <p class="muted" style="margin-top:14px"><small>חשוב: שמרו את המפתח גם במקום בטוח אחר (למשל מנהל סיסמאות), למקרה שהטלפון ילך לאיבוד. אם ננעלתם בחוץ, מוחקים את הסוד ADMIN_TOTP_SECRET ומריצים את ההתקנה שוב.</small></p>
+  </div>
+</main>
+<script>
+(function () {
+  var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', secret = '';
+  var $ = function (id) { return document.getElementById(id); };
+  function b32(bytes) { var bits = '', out = ''; bytes.forEach(function (b) { bits += b.toString(2).padStart(8, '0'); }); for (var i = 0; i + 5 <= bits.length; i += 5) out += A[parseInt(bits.substr(i, 5), 2)]; return out; }
+  function unb32(s) { var bits = '', out = []; s.split('').forEach(function (c) { bits += A.indexOf(c).toString(2).padStart(5, '0'); }); for (var i = 0; i + 8 <= bits.length; i += 8) out.push(parseInt(bits.substr(i, 8), 2)); return new Uint8Array(out); }
+  function totp(sec, step) {
+    var msg = new Uint8Array(8), v = step; for (var i = 7; i >= 0; i--) { msg[i] = v & 255; v = Math.floor(v / 256); }
+    return crypto.subtle.importKey('raw', unb32(sec), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']).then(function (k) { return crypto.subtle.sign('HMAC', k, msg); }).then(function (sig) {
+      var h = new Uint8Array(sig), o = h[19] & 15, n = ((h[o] & 127) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3];
+      return String(n % 1000000).padStart(6, '0');
+    });
+  }
+  $('gen').addEventListener('click', function () {
+    if (secret && !confirm('ליצור מפתח חדש? המפתח הקודם לא יעבוד.')) return;
+    var r = new Uint8Array(20); crypto.getRandomValues(r);
+    secret = b32(Array.prototype.slice.call(r));      // 160 bits = 32 letters
+    $('key').textContent = secret.replace(/(.{4})/g, '$1 ').trim();
+    $('out').hidden = false; $('steps').hidden = false; $('code').value = ''; $('res').textContent = '';
+    $('gen').textContent = 'יצירת מפתח חדש';
+  });
+  $('code').addEventListener('input', function () {
+    var v = $('code').value.replace(/\D/g, ''); $('code').value = v;
+    if (v.length !== 6 || !secret) { $('res').textContent = ''; return; }
+    var now = Math.floor(Date.now() / 30000);
+    Promise.all([-1, 0, 1].map(function (d) { return totp(secret, now + d); })).then(function (c) {
+      var ok = c.indexOf(v) >= 0;
+      $('res').className = ok ? 'ok' : 'bad';
+      $('res').textContent = ok ? '✓ מתאים. אפשר להמשיך לצעד הבא.' : 'לא מתאים. בדקו שהמפתח הוקלד נכון ושהשעה בטלפון אוטומטית.';
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="js/failover.js"></script>
+<title>שירותים ומחירים · SPIDER</title>
+<meta name="description" content="אוטומציות n8n, סוכני AI, אתרים ומערכות ניהול לעסקים. מחירים שקופים, מבצעי השקה ושיחת אפיון חינם.">
+<meta name="theme-color" content="#0f0d24">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="img/icon-192.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="SPIDER">
+<meta property="og:title" content="שירותים ומחירים · SPIDER">
+<meta property="og:description" content="אוטומציות, סוכני AI, אתרים ומערכות ניהול לעסקים. שיחת אפיון של 30 דקות בחינם.">
+<meta property="og:url" content="https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/services.html">
+<meta property="og:image" content="https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Michroma&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/services.css">
+<link rel="stylesheet" href="css/extras.css">
+<script src="js/track.js" defer></script>
+</head>
+<body class="svc has-scene no-dock">
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand spider-brand" href="./" aria-label="SPIDER">
+      <img src="img/spider.svg" alt="" width="34" height="34"><span class="wordmark">SPIDER</span>
+    </a>
+    <nav class="links" aria-label="ניווט">
+      <a href="#offers">מבצעים</a>
+      <a href="#services">שירותים</a>
+      <a href="#how">איך עובדים</a>
+      <a href="#contact">צור קשר</a>
+      <a href="./">תיק עבודות</a>
+    </nav>
+    <a class="btn btn-gold btn-sm wa-link" data-src="nav" data-wa="היי, הגעתי מהאתר ואשמח לשמוע על השירותים" href="#contact">וואטסאפ</a>
+  </div>
+</header>
+
+<main>
+  <section class="s-hero">
+    <div class="wrap">
+      <p class="eyebrow rise" style="--d:0">שירותים לעסקים · אוטומציה · AI · אתרים</p>
+      <h1 class="rise" style="--d:1">פחות עבודה ידנית,<br><em class="scribble">יותר לקוחות<svg viewBox="0 0 300 24" preserveAspectRatio="none" aria-hidden="true"><path d="M4 16c40-9 90-12 150-9 50 3 95 1 142-6"/><path d="M30 21c60-5 130-6 220-4"/></svg></em>.</h1>
+      <p class="lead rise" style="--d:2">אני בונה לעסקים אוטומציות, סוכני AI, אתרים ומערכות ניהול, כמו הפרויקטים שבתיק העבודות. מחיר קבוע מראש, גרסה ראשונה תוך שבוע, והכול נשאר שלכם.</p>
+      <div class="cta rise" style="--d:3">
+        <a class="btn btn-gold wa-link" data-src="hero" data-wa="היי, אשמח לשיחת אפיון חינם של 30 דקות" href="#contact">שיחת אפיון חינם בוואטסאפ</a>
+        <a class="btn btn-ghost" href="#services">לשירותים ולמחירים ↓</a>
+      </div>
+      <ul class="trust rise" style="--d:4">
+        <li><b id="t-projects">40</b> פרויקטים שבניתי</li>
+        <li><b>1</b> שבוע לאב טיפוס</li>
+        <li><b>100%</b> הקוד עובר אליכם</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="offers">
+    <div class="wrap">
+      <header class="sec-head"><p class="eyebrow">מבצעים</p><h2>מבצעים פעילים <span class="hand note">לזמן מוגבל</span></h2></header>
+      <div class="offers" id="offers-list"></div>
+    </div>
+  </section>
+
+  <section class="section" id="services">
+    <div class="wrap">
+      <header class="sec-head"><p class="eyebrow">שירותים</p><h2>מה אני יכול לבנות לכם</h2></header>
+      <div class="services" id="services-list"></div>
+      <p class="price-note" id="price-note"></p>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="wrap">
+      <header class="sec-head"><p class="eyebrow">איך עובדים</p><h2>ארבעה צעדים, בלי הפתעות</h2></header>
+      <ol class="steps" id="steps"></ol>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <div class="wrap contact">
+      <div>
+        <header class="sec-head"><p class="eyebrow">צור קשר</p><h2>ספרו לי מה אתם צריכים</h2></header>
+        <p class="lead">ממלאים, לוחצים, וההודעה נפתחת אצלכם בוואטסאפ מוכנה לשליחה. אני עונה בדרך כלל באותו יום.</p>
+        <a class="call-num" id="phone" href="tel:+972544979771" dir="ltr">054-497-9771</a>
+      </div>
+      <form class="lead-form" id="lead-form" novalidate>
+        <label class="field"><span>שם</span><input name="name" autocomplete="name" required maxlength="60"></label>
+        <label class="field"><span>טלפון</span><input name="phone" type="tel" dir="ltr" autocomplete="tel" inputmode="tel" required maxlength="20" placeholder="050-000-0000"></label>
+        <label class="hp" aria-hidden="true">אתר <input name="website" tabindex="-1" autocomplete="off"></label>
+        <label class="field"><span>שם העסק <small>(לא חובה)</small></span><input name="biz" autocomplete="organization" maxlength="80"></label>
+        <label class="field"><span>מה מעניין אתכם?</span><select name="service" id="lead-service"></select></label>
+        <label class="field"><span>ספרו בקצרה</span><textarea name="msg" rows="3" maxlength="600" placeholder="למשל: כל ליד מהפייסבוק אני מעתיק ידנית לאקסל…"></textarea></label>
+        <p class="offer-picked" id="offer-picked" hidden></p>
+        <input type="hidden" name="code" id="lead-code">
+        <p class="add-error" id="lead-error" role="alert" hidden></p>
+        <button class="btn btn-gold" type="submit">שליחה <span aria-hidden="true">↗</span></button>
+        <p class="add-note" id="lead-done" role="status" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="wrap">
+      <header class="sec-head"><p class="eyebrow">שאלות</p><h2>שאלות שחוזרות</h2></header>
+      <div class="faq" id="faq-list"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <span class="brand brand-sm spider-brand"><img src="img/spider.svg" alt="" width="26" height="26"><span class="wordmark">SPIDER</span></span>
+    <span class="owner">חיים קריספין · <a href="tel:+972544979771" dir="ltr">054-4979771</a></span>
+    <a href="./">תיק העבודות</a>
+    <a href="tel:+972544979771" dir="ltr">054-497-9771</a>
+  </div>
+</footer>
+
+<a class="wa-fab wa-link" data-src="fab" data-wa="היי, הגעתי מהאתר ואשמח לשמוע על השירותים" href="#contact" aria-label="שליחת הודעה בוואטסאפ">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.1 19.7L3 29l6.5-1.8A13 13 0 1 0 16 3zm0 23.6a10.6 10.6 0 0 1-5.4-1.5l-.4-.2-3.8 1 1-3.7-.2-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2l-1 1.2c-.2.2-.4.2-.7.1a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5 1-1.7.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.4 3.5c.2.2 2.4 3.6 5.8 5 2.2.9 3 1 4.1.8.7-.1 1.9-.8 2.2-1.5.3-.8.3-1.4.2-1.5l-.6-.3z"/></svg>
+</a>
+
+<script src="js/services.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="js/extras.js"></script>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מתאר · תכנון פנים</title>
+<meta name="description" content="מערכת לתכנון ריהוט הבית לפי גודל הדירה וההרכב המשפחתי: תוכנית קומה עם מידות, סיור תלת-ממדי 360°, והיכן לקנות כל רהיט בישראל עם טלפון וכתובת.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<!--APP-START-->
+<a class="skip" href="#main">דלג לתוכן</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#plan" data-nav="plan" aria-label="מתאר, תכנון פנים">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="3" y="3" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <path d="M3 17h11V3M14 17v12M20 29V21h9" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <path d="M14 11a6 6 0 0 1 6 6" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      </svg>
+      <span class="brand-name">מתאר</span>
+      <span class="brand-sub">תכנון פנים לבית</span>
+    </a>
+    <nav class="mainnav" aria-label="ניווט ראשי">
+      <a href="#plan" data-nav="plan">התכנון שלי</a>
+      <a href="#stores" data-nav="stores">חנויות בישראל</a>
+      <a href="#photos" data-nav="photos">צילומי החדרים</a>
+      <a href="#garden" data-nav="garden">עיצוב החצר</a>
+      <a href="#rules" data-nav="rules">עקרונות התכנון</a>
+    </nav>
+    <button type="button" class="print-btn" id="btn-print" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <span>הדפסה</span>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+  <!-- ============ PLAN ============ -->
+  <section class="view" id="view-plan" data-view="plan">
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="hero" aria-labelledby="hero-title">
+    <div class="hero-media" aria-hidden="true">
+      <img id="hero-img" src="assets/renders/scandi-living.jpg" alt="" fetchpriority="high" decoding="async">
+      <img id="hero-img-next" src="" alt="" decoding="async" hidden>
+    </div>
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <p class="hero-eyebrow">תכנון פנים · הדמיה · קניות בישראל</p>
+        <h1 id="hero-title">הבית שלכם, מרוהט<br>עוד לפני הרהיט הראשון</h1>
+        <p class="hero-lede">כותבים את גודל הבית ומספר החדרים. מקבלים תוכנית מרוהטת לפי כללי מעצבים, הליכה בתלת-ממד ורשימת קניות עם הטלפון והכתובת של החנות הקרובה.</p>
+      </div>
+      <form class="hero-brief" id="hero-brief" autocomplete="off" novalidate aria-label="פרטי הבית">
+        <div class="hb-field">
+          <label for="h-area">שטח הבית</label>
+          <div class="num-input"><input type="number" id="h-area" min="30" max="400" step="1" value="100" inputmode="numeric"><span class="unit">מ״ר</span></div>
+        </div>
+        <div class="hb-field">
+          <label for="h-rooms">חדרים</label>
+          <div class="stepper"><button type="button" data-hstep="-1" aria-label="פחות חדרים">−</button><input type="number" id="h-rooms" min="2" max="8" value="4" inputmode="numeric"><button type="button" data-hstep="1" aria-label="יותר חדרים">+</button></div>
+        </div>
+        <div class="hb-field">
+          <span class="hb-label" id="hl-home">סוג</span>
+          <div class="seg" role="radiogroup" aria-labelledby="hl-home">
+            <label><input type="radio" name="h-home" value="apartment" id="h-home-apartment" checked><span>דירה</span></label>
+            <label><input type="radio" name="h-home" value="house" id="h-home-house"><span>בית עם חצר</span></label>
+          </div>
+        </div>
+        <button type="submit" class="btn hero-cta">תכננו לי את הבית</button>
+        <div class="hb-styles" role="radiogroup" aria-label="סגנון" id="h-styles"></div>
+      </form>
+      <ul class="hero-thumbs" id="hero-thumbs" aria-label="הדמיות לדוגמה"></ul>
+    </div>
+  </section>
+
+    <div class="layout">
+      <aside class="brief" aria-labelledby="brief-title">
+        <details class="brief-box" id="brief-details" open>
+          <summary><h2 id="brief-title">הדרישות שלכם</h2><span class="brief-summary" id="brief-summary"></span></summary>
+          <form id="brief" autocomplete="off" novalidate>
+            <div class="field">
+              <span class="label" id="l-home">סוג הנכס</span>
+              <div class="seg" role="radiogroup" aria-labelledby="l-home">
+                <label><input type="radio" name="home" value="apartment" id="f-home-apartment" checked><span>דירה</span></label>
+                <label><input type="radio" name="home" value="house" id="f-home-house"><span>בית פרטי עם חצר</span></label>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="f-area">שטח הבית</label>
+                <div class="num-input"><input type="number" id="f-area" name="area" min="30" max="400" step="1" value="100" inputmode="numeric"><span class="unit">מ״ר</span></div>
+              </div>
+              <div class="field">
+                <label for="f-rooms">חדרים (כולל סלון)</label>
+                <div class="stepper"><button type="button" data-step="-1" aria-label="פחות חדרים">−</button><input type="number" id="f-rooms" name="rooms" min="2" max="8" value="4" inputmode="numeric"><button type="button" data-step="1" aria-label="יותר חדרים">+</button></div>
+              </div>
+            </div>
+            <p class="field-hint">כותבים כל גודל: מ-30 עד 400 מ״ר, ו-2 עד 8 חדרים.</p>
+            <fieldset class="roomlist" id="roomlist-box">
+              <label class="check roomlist-toggle"><input type="checkbox" id="f-custom"><span>אני רוצה לקבוע כל חדר וגודל</span></label>
+              <div id="roomlist-body" hidden>
+                <ol class="roomlist-rows" id="f-roomlist"></ol>
+                <button type="button" class="link-btn" id="f-room-add">+ הוספת חדר</button>
+                <p class="field-hint" id="roomlist-note"></p>
+              </div>
+            </fieldset>
+            <div class="field-row">
+              <div class="field">
+                <label for="f-adults">מבוגרים</label>
+                <div class="stepper"><button type="button" data-step="-1" aria-label="פחות מבוגרים">−</button><input type="number" id="f-adults" name="adults" min="1" max="6" value="2" inputmode="numeric"><button type="button" data-step="1" aria-label="יותר מבוגרים">+</button></div>
+              </div>
+              <div class="field">
+                <label for="f-kids">ילדים</label>
+                <div class="stepper"><button type="button" data-step="-1" aria-label="פחות ילדים">−</button><input type="number" id="f-kids" name="kids" min="0" max="8" value="2" inputmode="numeric"><button type="button" data-step="1" aria-label="יותר ילדים">+</button></div>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label" id="l-style">סגנון עיצוב</span>
+              <div class="styles" role="radiogroup" aria-labelledby="l-style" id="f-style"></div>
+            </div>
+            <div class="field">
+              <span class="label" id="l-budget">תקציב ריהוט</span>
+              <div class="seg" role="radiogroup" aria-labelledby="l-budget">
+                <label><input type="radio" name="budget" value="eco" id="f-budget-eco"><span>חסכוני</span></label>
+                <label><input type="radio" name="budget" value="mid" id="f-budget-mid" checked><span>בינוני</span></label>
+                <label><input type="radio" name="budget" value="prem" id="f-budget-prem"><span>פרימיום</span></label>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="f-region">אזור מגורים</label>
+                <select id="f-region" name="region"></select>
+              </div>
+              <div class="field">
+                <label for="f-seats">סועדים</label>
+                <select id="f-seats" name="seats">
+                  <option value="auto">לפי המשפחה</option>
+                  <option value="4">4</option><option value="6">6</option><option value="8">8</option><option value="10">10</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-kitchen">צורת מטבח</label>
+              <select id="f-kitchen" name="kitchen">
+                <option value="auto">הכי מתאים לחלל</option>
+                <option value="linear">ישר (קיר אחד)</option>
+                <option value="L">צורת L</option>
+                <option value="parallel">מקביל עם דלפק</option>
+                <option value="island">L עם אי</option>
+              </select>
+            </div>
+            <fieldset class="checks">
+              <legend class="label">מה עוד יש או צריך</legend>
+              <label class="check"><input type="checkbox" id="f-mamad" name="mamad" checked><span>יש ממ״ד</span></label>
+              <label class="check" id="c-balcony"><input type="checkbox" id="f-balcony" name="balcony" checked><span>מרפסת שמש</span></label>
+              <label class="check"><input type="checkbox" id="f-office" name="office"><span>עבודה מהבית</span></label>
+            </fieldset>
+            <fieldset class="garden-fields" id="garden-fields" hidden>
+              <legend class="label">החצר</legend>
+              <div class="field">
+                <label for="f-yard">שטח החצר <output id="o-yard" for="f-yard">250</output> מ״ר</label>
+                <input type="range" id="f-yard" name="yard" min="40" max="800" step="10" value="250">
+              </div>
+              <div class="field">
+                <label for="f-gstyle">סגנון הגינה</label>
+                <select id="f-gstyle" name="gardenStyle">
+                  <option value="med">ים-תיכוני</option>
+                  <option value="modern">מודרני</option>
+                  <option value="tropical">טרופי</option>
+                  <option value="dry">חסכוני במים</option>
+                </select>
+              </div>
+              <div class="checks">
+                <label class="check"><input type="checkbox" id="f-pool" name="pool" checked><span>בריכה</span></label>
+                <label class="check"><input type="checkbox" id="f-water" name="water" checked><span>מפל / מזרקה</span></label>
+                <label class="check"><input type="checkbox" id="f-pergola" name="pergola" checked><span>פרגולה</span></label>
+                <label class="check"><input type="checkbox" id="f-grill" name="grill" checked><span>גריל</span></label>
+              </div>
+            </fieldset>
+            <p class="brief-note">התכנון מתעדכן מיד. הנתונים נשמרים רק בדפדפן שלכם.</p>
+          </form>
+        </details>
+      </aside>
+
+      <div class="work">
+        <div class="headline">
+          <div>
+            <p class="eyebrow" id="plan-eyebrow">תכנון לדוגמה</p>
+            <h1 id="plan-title">דירת 4 חדרים, 100 מ״ר</h1>
+            <div class="dimline" id="plan-dim" aria-hidden="true"><span></span></div>
+            <p class="lede" id="plan-lede"></p>
+          </div>
+          <dl class="facts" id="facts"></dl>
+        </div>
+
+        <div class="stage">
+          <div class="stage-bar" role="tablist" aria-label="תצוגה">
+            <button role="tab" id="tab-3d" aria-selected="true" aria-controls="panel-3d" data-stage="3d">סיור 360°</button>
+            <button role="tab" id="tab-2d" aria-selected="false" aria-controls="panel-2d" data-stage="2d">תוכנית קומה</button>
+            <button type="button" class="edit-toggle" id="btn-edit" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              עיצוב בעצמי
+            </button>
+            <span class="stage-hint" id="stage-hint">גררו כדי להסתכל מסביב · חיצים או WASD כדי ללכת · לחיצה על רהיט מציגה איפה קונים</span>
+          </div>
+          <div class="edit-bar" id="edit-bar" hidden>
+            <button type="button" class="btn btn-small" id="ed-add">+ הוספת פריט מהקטלוג</button>
+            <span class="edit-n" id="ed-n"></span>
+            <span class="edit-hint">לחיצה על רהיט פותחת החלפה, הזזה, סיבוב ומחיקה · בתוכנית הקומה אפשר לגרור</span>
+            <span class="edit-acts">
+              <button type="button" class="link-btn" id="ed-undo" disabled>ביטול שינוי</button>
+              <button type="button" class="link-btn" id="ed-reset" disabled>חזרה לעיצוב של האתר</button>
+            </span>
+          </div>
+          <div class="panel panel-3d" id="panel-3d" role="tabpanel" aria-labelledby="tab-3d">
+            <div class="tour" id="tour">
+              <div class="tour-top">
+                <div class="tour-modes" role="group" aria-label="מצב צפייה">
+                  <button type="button" data-mode="walk" aria-pressed="true">הליכה</button>
+                  <button type="button" data-mode="doll" aria-pressed="false">מבט על</button>
+                </div>
+                <button type="button" class="tour-btn" id="btn-spin">סיבוב 360°</button>
+                <button type="button" class="tour-btn tour-btn-photo" id="btn-photo" title="חישוב אור אמיתי של המבט הנוכחי">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+                  צילום מציאותי
+                </button>
+                <button type="button" class="tour-btn" id="btn-quality" aria-pressed="true" title="צללים רכים בפינות ובמגע בין משטחים">איכות גבוהה</button>
+                <button type="button" class="tour-btn tour-btn-vr" id="btn-vr" aria-haspopup="true" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h13A2.5 2.5 0 0 1 21 8.5v6a2.5 2.5 0 0 1-2.5 2.5h-3.2l-2.1-2.6a1.5 1.5 0 0 0-2.4 0L8.7 17H5.5A2.5 2.5 0 0 1 3 14.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="8" cy="11.5" r="1.6" fill="currentColor"/><circle cx="16" cy="11.5" r="1.6" fill="currentColor"/></svg>
+                  מציאות מדומה
+                </button>
+              </div>
+              <div class="vr-menu" id="vr-menu" hidden>
+                <p class="vr-menu-title">איך רוצים להסתובב בבית?</p>
+                <button type="button" data-vr="look"><b>מחשב: הליכה במסך מלא</b><span>מזיזים את העכבר כדי להסתכל, בלי ללחוץ. חיצים או WASD הולכים, לחיצה על רהיט מציגה מחיר ואיפה קונים. Esc או ״יציאה״ חוזרים לעמוד.</span></button>
+                <button type="button" data-vr="gyro"><b>טלפון: מסתכלים סביב עם הטלפון</b><span>מסך מלא. מזיזים את הטלפון כדי להסתכל, ולחיצה ארוכה על המסך הולכת קדימה.</span></button>
+                <button type="button" data-vr="stereo"><b>טלפון במשקפי קרטון</b><span>תצוגה כפולה לשתי העיניים, לטלפון בתוך משקפי VR פשוטות (Cardboard). לחיצה על המסך הולכת קדימה.</span></button>
+              </div>
+              <p class="look-hint" id="look-hint" hidden></p>
+              <button type="button" class="vr-exit" id="vr-exit" hidden>יציאה</button>
+              <div class="pt-panel" id="pt-panel" hidden role="status" aria-live="polite">
+                <div class="pt-meter"><span id="pt-bar"></span></div>
+                <p id="pt-text">מכין את הסצנה…</p>
+                <div class="pt-actions">
+                  <button type="button" class="btn btn-small" id="pt-save" disabled>שמירת התמונה</button>
+                  <button type="button" class="btn btn-small btn-ghost pt-back" id="pt-close">חזרה לסיור</button>
+                </div>
+              </div>
+              <div class="tour-rooms" id="tour-rooms" aria-label="קפיצה לחדר"></div>
+              <div class="tour-pad" aria-label="הליכה">
+                <button type="button" data-hold="fwd" aria-label="קדימה">▲</button>
+                <button type="button" data-hold="left" aria-label="פנייה שמאלה">◀</button>
+                <button type="button" data-hold="back" aria-label="אחורה">▼</button>
+                <button type="button" data-hold="right" aria-label="פנייה ימינה">▶</button>
+              </div>
+              <svg class="tour-mini" id="tour-mini" aria-hidden="true"></svg>
+              <div class="tour-tip" id="tour-tip" hidden></div>
+              <aside class="tour-card" id="tour-card" hidden aria-live="polite"></aside>
+              <p class="tour-fallback" id="tour-fallback" hidden>הדפדפן לא תומך בתלת-ממד (WebGL). התוכנית הדו-ממדית ורשימת הרהיטים זמינות למטה.</p>
+            </div>
+          </div>
+          <div class="panel panel-2d" id="panel-2d" role="tabpanel" aria-labelledby="tab-2d" hidden>
+            <div class="plan-wrap"><svg id="plan-svg" class="plan"></svg></div>
+            <div class="legend" aria-label="מקרא">
+              <span><i class="sw sw-seat"></i>ישיבה</span><span><i class="sw sw-bed"></i>שינה</span><span><i class="sw sw-table"></i>שולחנות ועבודה</span>
+              <span><i class="sw sw-store"></i>אחסון</span><span><i class="sw sw-kitchen"></i>מטבח</span><span><i class="sw sw-bath"></i>רחצה</span>
+              <span><i class="sw sw-upper"></i>ארונות עליונים</span><span><i class="sw sw-tri"></i>משולש עבודה</span>
+            </div>
+          </div>
+        </div>
+
+        <article class="item-card" id="item-card" hidden aria-live="polite"></article>
+
+        <section class="renders" id="renders" aria-labelledby="renders-title" hidden>
+          <div class="section-head">
+            <h2 id="renders-title">הדמיות</h2>
+            <p>הדמיות לדוגמה בסגנון שבחרתם, מחושבות במנוע התלת-ממד של האתר עם הרהיטים האמיתיים. לתמונה של הבית שלכם לחצו ״צילום מציאותי״ בסיור.</p>
+          </div>
+          <div class="render-grid" id="render-grid"></div>
+        </section>
+
+        <section class="notes" id="notes" aria-label="הערות מקצועיות"></section>
+
+        <section class="rooms" aria-labelledby="rooms-title">
+          <div class="section-head">
+            <h2 id="rooms-title">הריהוט חדר אחר חדר</h2>
+            <p>לכל פריט: מידות, למה הוא ממוקם כך, מחיר משוער לפי התקציב שבחרתם, ואיפה לקנות אותו בסניף הקרוב אליכם.</p>
+          </div>
+          <div id="room-list"></div>
+        </section>
+
+        <section class="budget" aria-labelledby="budget-title">
+          <div class="section-head">
+            <h2 id="budget-title">הערכת תקציב</h2>
+            <p>מחירים משוערים לפי שוק הריהוט בישראל (ספטמבר 2026), לפני מבצעים והובלה. מחיר סופי רק מול החנות.</p>
+          </div>
+          <div id="budget"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STORES ============ -->
+  <section class="view" id="view-stores" data-view="stores" hidden>
+    <div class="page">
+      <div class="section-head">
+        <p class="eyebrow">רק רשתות ישראליות</p>
+        <h1>איפה קונים</h1>
+        <p>טלפונים וכתובות נאספו מאתרי הרשתות וממדריכי עסקים בספטמבר 2026. סניפים עוברים ושעות משתנות, לכן כדאי להתקשר לפני שנוסעים. לכל רשת יש קישור לעמוד הסניפים שלה.</p>
+      </div>
+      <div class="store-filter">
+        <label for="s-region">הסניף הקרוב באזור</label>
+        <select id="s-region"></select>
+      </div>
+      <div class="store-grid" id="store-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ ROOM PHOTOS ============ -->
+  <section class="view" id="view-photos" data-view="photos" hidden>
+    <div class="page">
+      <div class="section-head">
+        <p class="eyebrow">הריהוט החדש על החדר שלכם</p>
+        <h1>צילומי החדרים</h1>
+        <p>מעלים לכל חדר ארבעה קירות ורצפה, או סרטון. מוחקים מהתמונה את הרהיטים הישנים, והמערכת מציבה עליה את הרהיטים המומלצים מהתכנון, באותה זווית ובאותן מידות. אפשר להוריד כל תמונה, להכין סרטון לפני/אחרי ולהדפיס.</p>
+      </div>
+      <details class="ph-tips">
+        <summary>איך מצלמים כדי שההתאמה תצא מדויקת</summary>
+        <ol>
+          <li>עומדים באמצע הקיר שמול הקיר שמצלמים, עם הגב לקיר.</li>
+          <li>הטלפון לרוחב, בגובה החזה (כ-1.45 מ׳), ישר ולא מוטה למעלה או למטה. אם יש עדשה רחבה (0.5×), משתמשים בה.</li>
+          <li>רצפה: עומדים באמצע החדר ומצלמים ישר למטה.</li>
+          <li>סרטון: מסתובבים לאט 360° מאמצע החדר, או עוברים בכל הדירה. מהסרטון בוחרים פריים לכל קיר.</li>
+          <li>התמונות והסרטונים נשמרים רק בדפדפן שלכם ולא עולים לשום שרת.</li>
+        </ol>
+      </details>
+      <section class="ph-home" id="ph-home"></section>
+      <nav class="ph-rooms" id="ph-rooms" aria-label="בחירת חדר"></nav>
+      <section class="ph-room" id="ph-room"></section>
+      <section class="ph-editor" id="ph-editor" hidden aria-label="עריכת תמונה"></section>
+    </div>
+  </section>
+
+  <!-- ============ GARDEN ============ -->
+  <section class="view" id="view-garden" data-view="garden" hidden>
+    <div class="page">
+      <div class="garden-hero">
+        <div class="section-head">
+          <p class="eyebrow">בית פרטי</p>
+          <h1>עיצוב החצר</h1>
+          <p id="garden-lede">דק, פרגולה, בריכה ומפל, עצים וצמחים: תכנון מקצועי של החצר סביב הבית, עם דגמים, מחירים ואיפה קונים.</p>
+        </div>
+        <div class="garden-actions" id="garden-actions"></div>
+      </div>
+      <div class="garden-empty" id="garden-empty" hidden>
+        <p>התכנון הנוכחי הוא לדירה. כדי לתכנן חצר, עברו לבית פרטי.</p>
+        <button type="button" class="btn" id="btn-to-house">תכנון בית פרטי עם חצר</button>
+      </div>
+      <div id="garden-body">
+        <dl class="facts garden-facts" id="garden-facts"></dl>
+        <div class="stage garden-stage"><div class="plan-wrap"><svg id="garden-svg" class="plan"></svg></div></div>
+        <section class="notes" id="garden-notes"></section>
+        <section class="rooms"><div id="garden-list"></div></section>
+        <section class="rules garden-rules" id="garden-rules"></section>
+        <section>
+          <div class="section-head"><h2>משתלות, בריכות וריהוט גן</h2><p>חנויות וקבלנים לגינה. טלפונים וכתובות מספטמבר 2026; כדאי לוודא לפני הגעה.</p></div>
+          <div class="store-cards" id="garden-stores"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-rules" data-view="rules" hidden>
+    <div class="page">
+      <div class="section-head">
+        <p class="eyebrow">איך המערכת מחליטה</p>
+        <h1>עקרונות התכנון</h1>
+        <p>כל מיקום בתוכנית נגזר מכללים שמעצבי פנים ואדריכלים עובדים לפיהם. אלה המקורות והמספרים.</p>
+      </div>
+      <div class="rules" id="rules"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>מתאר · תכנון ריהוט לבית. המחירים הם הערכה בלבד; את הטלפונים והכתובות כדאי לוודא מול הרשת לפני הגעה.</p>
+  <p class="credits">דגמי תלת-ממד: Glam Velvet Sofa ו-Damask Chair © Wayfair, Wood &amp; Leather Sofa ו-Plant © Darmstadt Graphics Group (CC BY 4.0), Sheen Chair © Wayfair ו-Glass Vase (CC0), מתוך Khronos glTF Sample Assets. תאורת HDR: Poly Haven (CC0). פרקט: three.js (MIT). רהיטים מסצנות של Benedikt Bitterli ו-Blendswap: SlykDrako ו-Mareck (CC0), Wig42, Jay-Artist ו-MaTTeSr (CC BY 3.0); פירוט ב-assets/CREDITS.md. צילום מציאותי: three-gpu-pathtracer ו-three-mesh-bvh של Garrett Johnson (MIT). IKEA ושמות המוצרים שייכים לבעליהם; הקישורים מובילים לאתרי הרשתות.</p>
+</footer>
+<dialog class="catalog-dlg" id="catalog-dlg" aria-labelledby="cat-title">
+  <div class="cat-head">
+    <div><h2 id="cat-title">קטלוג</h2><p class="muted" id="cat-sub"></p></div>
+    <form method="dialog"><button class="ic-close" aria-label="סגירת הקטלוג">×</button></form>
+  </div>
+  <div class="cat-tabs" id="cat-tabs" role="tablist" aria-label="קטגוריות"></div>
+  <div class="cat-filters">
+    <label id="cat-room-row">לחדר <select id="cat-room"></select></label>
+    <label>חנות <select id="cat-store"></select></label>
+    <label>סדר <select id="cat-sort"><option value="price">מחיר, מהזול</option><option value="style">מתאים לסגנון קודם</option></select></label>
+    <span class="muted" id="cat-count"></span>
+  </div>
+  <ul class="cat-list" id="cat-list"></ul>
+  <p class="cat-note muted">מחירים מאתרי החנויות ומהשוואות מחירים, אוקטובר 2026. מחירים ומבצעים משתנים; המחיר הסופי בחנות.</p>
+</dialog>
+<dialog class="print-dlg" id="print-dlg" aria-labelledby="print-title">
+  <form method="dialog" id="print-form">
+    <h2 id="print-title">הדפסה ושמירה כ-PDF</h2>
+    <p class="muted">בוחרים מה להדפיס. בחלון ההדפסה אפשר לבחור ״שמירה כ-PDF״.</p>
+    <fieldset>
+      <legend>מה נכלל</legend>
+      <label><input type="checkbox" name="cover" checked> עמוד פתיחה: הדרישות והנתונים</label>
+      <label><input type="checkbox" name="plan" checked> תוכנית קומה עם מידות</label>
+      <label><input type="checkbox" name="views" checked> הדמיות תלת-ממד של כל חדר</label>
+      <label><input type="checkbox" name="photos" checked> צילומי החדרים לפני ואחרי</label>
+      <label><input type="checkbox" name="list" checked> רשימת קניות לפי חדר, עם מחירים</label>
+      <label><input type="checkbox" name="stores" checked> חנויות, טלפונים וכתובות</label>
+      <label><input type="checkbox" name="budget" checked> הערכת תקציב</label>
+      <label><input type="checkbox" name="garden" checked> תכנון החצר (בבית פרטי)</label>
+      <label><input type="checkbox" name="rules"> עקרונות התכנון</label>
+    </fieldset>
+    <p class="print-status" id="print-status" aria-live="polite"></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" id="print-go">הדפסה / PDF</button>
+      <button type="button" class="btn btn-ghost" id="print-file">הורדת הדוח כקובץ</button>
+      <button type="submit" class="btn btn-ghost" value="cancel">סגירה</button>
+    </div>
+  </form>
+</dialog>
+<div id="print-root" class="print-root"></div>
+<!--APP-END-->
+
+<script src="js/stores.js"></script>
+<script src="js/catalog.js"></script>
+<script src="js/products.js"></script>
+<script src="js/planner.js"></script>
+<script src="js/garden.js"></script>
+<script src="js/plan2d.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/app.js"></script>
+<script src="js/photos.js"></script>
+<script src="js/print.js"></script>
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/jsm/", "three/examples/jsm/": "./vendor/three/jsm/", "three-mesh-bvh": "./vendor/three-mesh-bvh.module.js", "three-gpu-pathtracer": "./vendor/three-gpu-pathtracer.module.js" } }</script>
+<script type="module" src="js/tour3d.js"></script>
+</body>
+</html>

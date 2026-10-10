@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="he" dir="rtl" data-admin-only>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מודלי AI · SPIDER</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f0d24">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Michroma&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/auth.css">
+<script src="js/auth.js"></script>
+</head>
+<body class="admin">
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand spider-brand" href="./" aria-label="SPIDER">
+      <img src="img/spider.svg" alt="" width="34" height="34"><span class="wordmark">SPIDER</span>
+    </a>
+    <span class="admin-tag">מודלי AI · מנהל בלבד · גרסה 165848</span>
+    <a class="btn btn-ghost btn-sm" href="admin.html">← למסך הניהול</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="ai" class="a-sec">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">AI · מנהל בלבד</p><h2>מודלי AI</h2></div>
+      <div class="ai-tabs" role="tablist" aria-label="לשוניות">
+        <button type="button" class="ai-tab on" role="tab" data-tab="ask" aria-selected="true">שאלה לכולם</button>
+        <button type="button" class="ai-tab" role="tab" data-tab="settings" aria-selected="false">⚙ הגדרות והרשמה</button>
+      </div>
+    </header>
+
+    <div class="ai-panel" id="ai-panel-ask">
+      <p class="hint"><b>איך מקבלים ChatGPT, DeepSeek ו־Claude בתוך האתר בלי לשלם:</b> הצ׳אט של האתרים שלהם הוא שירות סגור ואי אפשר להפעיל אותו מכאן. הדרך החינמית לקבל את אותם דגמים בתוך האתר שלך: <b>GitHub Models</b> (ChatGPT ו־DeepSeek עם טוקן של GitHub), <b>Groq / OpenRouter</b> (דגמי DeepSeek ו־gpt-oss), ו־<b>Ollama</b> אצלך (התקנת deepseek-r1 או gpt-oss בלחיצה). Claude זמין רק כ־API בתשלום. הכול בלשונית הגדרות.</p>
+      <p class="hint">כותבים שאלה אחת, והיא נשלחת לכל המודלים בבת אחת: המקומיים שלך והענן. כל מודל מחזיר תשובה, או הסבר למה לא (חסר מפתח, אין יתרה, הכלי לא רץ), עם כפתור שפותח את הצ׳אט החינמי שלו. מפתחות, הרשמה וחיבור מקומי נמצאים בלשונית <b>הגדרות</b>.</p>
+      <div class="ai-lab">
+        <label class="field"><span>הנחיית מערכת (לא חובה)</span><input id="ai-sys" type="text" placeholder="למשל: ענה בעברית ובקצרה"></label>
+        <label class="field"><span>השאלה</span><textarea id="ai-prompt" rows="3" placeholder="כתוב כאן שאלה"></textarea></label>
+        <div class="ai-go"><button class="btn btn-gold btn-sm" type="button" id="ai-send">שליחה לכולם</button><span class="muted" id="ai-state"></span><span class="muted" id="ai-status"></span></div>
+        <div class="ai-results" id="ai-results"></div>
+      </div>
+    </div>
+
+    <div class="ai-panel" id="ai-panel-settings" hidden>
+      <div class="ai-toolbar">
+        <button class="btn btn-ghost btn-sm" type="button" id="ai-test-all">בדיקת חיבור לכולם</button>
+        <button class="btn btn-ghost btn-sm" type="button" id="ai-export">⬇ גיבוי הגדרות</button>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer">⬆ שחזור מגיבוי<input type="file" id="ai-import" accept="application/json" hidden></label>
+        <button class="btn btn-ghost btn-sm" type="button" id="ai-wipe">ניקוי כל המפתחות</button>
+      </div>
+      <p class="ai-msg" id="ai-vault"></p>
+      <h3 class="ai-h">הרשמה ומפתחות</h3>
+      <p class="hint">לכל שירות: נרשמים בקישור, מפיקים מפתח, ומדביקים אותו בכרטיס למטה. ה־API והצ׳אט החינמי הם שני שירותים נפרדים: ה־API בתשלום לפי שימוש (חוץ מהחינמיים), ובלי יתרה הוא מחזיר שגיאה. המפתחות נשמרים בדפדפן ובכספת פרטית ב־n8n שלך (נגישה רק למנהל מחובר), לא בגיטהאב, ולא נמחקים אלא אם תלחץ "ניקוי".</p>
+      <div class="ai-reg" id="ai-reg"></div>
+      <h3 class="ai-h">חיבור וכרטיסים</h3>
+      <div class="ai-grid" id="ai-grid"><p class="muted">טוען…</p></div>
+    <details class="ai-help"><summary>איך מחברים את המודלים שבמחשב</summary>
+      <p><b>הדרך הקלה: הגשר המקומי</b> (הכרטיס הירוק למעלה). מורידים, מפעילים, וכל שלושת הכלים מתחברים בלי לשנות בהם כלום. הפסקאות הבאות הן לחיבור ישיר בלי גשר.</p>
+      <p>הדפדפן פונה למודל המקומי ישירות מהמחשב שלך, ולכן צריך לאפשר לאתר הזה לפנות אליו (CORS), ובכרום לאשר "גישה לרשת המקומית" כשהוא שואל.</p>
+      <p><b>Ollama</b> (ברירת מחדל <code dir="ltr">http://localhost:11434</code>): מפעילים אותו עם <code dir="ltr">OLLAMA_ORIGINS=https://devopsdevopshaim-wq.github.io</code>. ב־Windows: הגדרת משתנה סביבה ואז הפעלה מחדש של Ollama. ב־Docker: <code dir="ltr">-e OLLAMA_ORIGINS=https://devopsdevopshaim-wq.github.io</code>.</p>
+      <p><b>Open WebUI</b> (<code dir="ltr">http://localhost:3000</code>): משתנה <code dir="ltr">CORS_ALLOW_ORIGIN=https://devopsdevopshaim-wq.github.io</code>, ומפתח API מתוך: הגדרות ← חשבון ← מפתחות API.</p>
+      <p><b>OpenClaw</b> (ברירת מחדל <code dir="ltr">http://127.0.0.1:18789</code>): צריך שה־gateway יחשוף נקודת קצה תואמת OpenAI (<code dir="ltr">/v1/chat/completions</code>) ויאפשר את האתר ב־CORS; הטוקן נכנס לשדה המפתח. אם אצלך הכתובת או הנתיב שונים, משנים בכרטיס.</p>
+      <p>בסאפארי ודפדפנים שחוסמים פנייה מ־https אל http מקומי זה לא יעבוד. משתמשים בכרום, אדג' או פיירפוקס.</p>
+    </details>
+    </div>
+  </section>
+
+</main>
+
+<script src="js/admin-ai.js?v=165848"></script>
+</body>
+</html>

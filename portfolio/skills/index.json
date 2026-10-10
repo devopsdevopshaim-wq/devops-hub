@@ -1,0 +1,246 @@
+{
+ "builtAt": "2026-10-10T17:06:56.535Z",
+ "zipped": true,
+ "skills": [
+  {
+   "id": "vacation-hub",
+   "title": "מסע — ניהול חופשות",
+   "zip": "vacation-hub.zip"
+  },
+  {
+   "id": "book-studio",
+   "title": "סטודיו ספרים",
+   "zip": "book-studio.zip"
+  },
+  {
+   "id": "comic-studio",
+   "title": "פאנל — סטודיו קומיקס",
+   "zip": "comic-studio.zip"
+  },
+  {
+   "id": "electro-fix",
+   "title": "מעגל סגור — אבחון תקלות חשמל",
+   "zip": "electro-fix.zip"
+  },
+  {
+   "id": "netplan",
+   "title": "נט־פלאן — תכנון רשתות תקשורת",
+   "zip": "netplan.zip"
+  },
+  {
+   "id": "automation",
+   "title": "דרייב־פלאן — ממירי תדר ואוטומציה",
+   "zip": "automation.zip"
+  },
+  {
+   "id": "robotic-parking",
+   "title": "פארק־פלאן — תכנון חניון רובוטי",
+   "zip": "robotic-parking.zip"
+  },
+  {
+   "id": "assembly-studio",
+   "title": "מכלול — סטודיו הרכבה",
+   "zip": "assembly-studio.zip"
+  },
+  {
+   "id": "interior",
+   "title": "מתאר — תכנון פנים",
+   "zip": "interior.zip"
+  },
+  {
+   "id": "devops-hubnew",
+   "title": "DevOps Hub",
+   "zip": "devops-hubnew.zip"
+  },
+  {
+   "id": "dist-web",
+   "title": "Dist Web",
+   "zip": "dist-web.zip"
+  },
+  {
+   "id": "hapinkas-hayomi",
+   "title": "הפנקס היומי",
+   "zip": "hapinkas-hayomi.zip"
+  },
+  {
+   "id": "smart-office-assistant",
+   "title": "עוזר משרד חכם",
+   "zip": "smart-office-assistant.zip"
+  },
+  {
+   "id": "rork-app",
+   "title": "אפליקציית Rork",
+   "zip": "rork-app.zip"
+  },
+  {
+   "id": "gamma-deck",
+   "title": "מצגת Gamma",
+   "zip": "gamma-deck.zip"
+  },
+  {
+   "id": "devops-course-he",
+   "title": "My Academy — DevOps ו־AI",
+   "zip": "devops-course-he.zip"
+  },
+  {
+   "id": "health-compass",
+   "title": "מצפן בריאות",
+   "zip": "health-compass.zip"
+  },
+  {
+   "id": "astrology-decoder",
+   "title": "פענוח אסטרולוגי",
+   "zip": "astrology-decoder.zip"
+  },
+  {
+   "id": "jarvis-web",
+   "title": "JARVIS — עוזר רב־סוכנים",
+   "zip": "jarvis-web.zip"
+  },
+  {
+   "id": "housing-system",
+   "title": "DiraFinder — חיפוש דירות",
+   "zip": "housing-system.zip"
+  },
+  {
+   "id": "project-2026-01-03-new",
+   "title": "PRO Network Host",
+   "zip": "project-2026-01-03-new.zip"
+  },
+  {
+   "id": "project-2026-01-03-new2",
+   "title": "ProDev Host",
+   "zip": "project-2026-01-03-new2.zip"
+  },
+  {
+   "id": "files-management",
+   "title": "מערכת אירוח קבצי HTML",
+   "zip": "files-management.zip"
+  },
+  {
+   "id": "manage-files",
+   "title": "Archivum Pro",
+   "zip": "manage-files.zip"
+  },
+  {
+   "id": "project-2026-01-19",
+   "title": "הורדת קבצי וידאו",
+   "zip": "project-2026-01-19.zip"
+  },
+  {
+   "id": "data-management",
+   "title": "ProDev Host מורחב",
+   "zip": "data-management.zip"
+  },
+  {
+   "id": "warehouse-management",
+   "title": "WMS חכם — ניהול מחסן",
+   "zip": "warehouse-management.zip"
+  },
+  {
+   "id": "warehouse-management-v2",
+   "title": "ניהול מלאי וחלפים",
+   "zip": "warehouse-management-v2.zip"
+  },
+  {
+   "id": "warehouse-management-v1",
+   "title": "Mantis WMS",
+   "zip": "warehouse-management-v1.zip"
+  },
+  {
+   "id": "recipe-calculator",
+   "title": "ספר המתכונים",
+   "zip": "recipe-calculator.zip"
+  },
+  {
+   "id": "translate-dub",
+   "title": "VocalizePro — תרגום ודיבוב",
+   "zip": "translate-dub.zip"
+  },
+  {
+   "id": "hebrew-calendar",
+   "title": "לוח שנה עברי תשפ״ו",
+   "zip": "hebrew-calendar.zip"
+  },
+  {
+   "id": "israel-holidays",
+   "title": "דפדפן חגי ישראל",
+   "zip": "israel-holidays.zip"
+  },
+  {
+   "id": "insurance-analysis",
+   "title": "ניתוח ביטוחים",
+   "zip": "insurance-analysis.zip"
+  },
+  {
+   "id": "lotto",
+   "title": "Lotto Predictor",
+   "zip": "lotto.zip"
+  },
+  {
+   "id": "lotto-new",
+   "title": "לוטו — מערכת חכמה",
+   "zip": "lotto-new.zip"
+  },
+  {
+   "id": "lotto-series",
+   "title": "חיזוי סדרות לוטו",
+   "zip": "lotto-series.zip"
+  },
+  {
+   "id": "lotto-series-pro",
+   "title": "Lotto Pro — הסתברויות",
+   "zip": "lotto-series-pro.zip"
+  },
+  {
+   "id": "zohar",
+   "title": "לוח שנה עם פירושי הפרשות",
+   "zip": "zohar.zip"
+  },
+  {
+   "id": "zohar-v1",
+   "title": "פירושי הזוהר והקבלה",
+   "zip": "zohar-v1.zip"
+  },
+  {
+   "id": "graphology",
+   "title": "מעבדת גרפולוגיה",
+   "zip": "graphology.zip"
+  },
+  {
+   "id": "parkomat",
+   "title": "Parkomat",
+   "zip": "parkomat.zip"
+  },
+  {
+   "id": "finance-hub",
+   "title": "מצפן פיננסי — בדיקת מצב ותוכנית",
+   "zip": "finance-hub.zip"
+  },
+  {
+   "id": "bills-hub",
+   "title": "תשלומים לבית — חשמל, מים, גז ועוד",
+   "zip": "bills-hub.zip"
+  },
+  {
+   "id": "marketing-hub",
+   "title": "פרסום ושיווק — בונה קמפיין",
+   "zip": "marketing-hub.zip"
+  },
+  {
+   "id": "aia-studio",
+   "title": "עיצוב AIA — בריף לחבילת הפקה",
+   "zip": "aia-studio.zip"
+  },
+  {
+   "id": "wellness-hub",
+   "title": "מצפן בריאות — ומרכז כושר יומי",
+   "zip": "wellness-hub.zip"
+  },
+  {
+   "id": "torah-hub",
+   "title": "ספריית קודש — תנ״ך, הלכות חגים ואוצר לחג",
+   "zip": "torah-hub.zip"
+  }
+ ]
+}

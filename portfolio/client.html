@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="he" dir="rtl" data-require-login>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>כניסה ללקוחות · SPIDER</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f0d24">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="img/icon-192.png">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=Assistant:wght@400;500;600;700&family=Bellefair&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/auth.css">
+<script src="js/track.js" defer></script>
+</head>
+<body>
+<!-- The clients' link. It asks for the sign-in, then opens the same SPIDER site as the admin sees, showing only the
+     sites that were opened for this client. -->
+<noscript><p style="padding:30px;text-align:center">צריך להפעיל JavaScript כדי להיכנס.</p></noscript>
+<script src="js/auth.js"></script>
+<script>
+  window.HasadnaAuth.ready.then(function () { location.replace('./'); });
+</script>
+</body>
+</html>

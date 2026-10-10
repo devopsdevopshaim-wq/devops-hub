@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="he" dir="rtl" data-admin-only>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>תכנית עסקית · SPIDER</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f0d24">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Michroma&family=Assistant:wght@400;500;600;700&family=Bellefair&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/auth.css">
+<link rel="stylesheet" href="css/plan.css">
+<script src="js/auth.js"></script>
+</head>
+<body class="admin">
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand spider-brand" href="./" aria-label="SPIDER"><img src="img/spider.svg" alt="" width="34" height="34"><span class="wordmark">SPIDER</span></a>
+    <span class="admin-tag">תכנית עסקית · מנהל בלבד</span>
+    <a class="btn btn-ghost btn-sm" href="admin.html">← למסך הניהול</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="a-sec" id="plan">
+    <header class="sec-head sec-row">
+      <div><p class="eyebrow">תכנית עסקית</p><h2>עסק האוטומציה וה־AI שלי</h2></div>
+      <div class="filters">
+        <button class="g-btn ghost" type="button" id="p-md">הורדה (Markdown)</button>
+        <button class="g-btn ghost" type="button" id="p-print">הדפסה / PDF</button>
+        <button class="g-btn ghost" type="button" id="p-reset">חזרה לברירת מחדל</button>
+      </div>
+    </header>
+    <p class="muted" id="p-status" role="status">טוען…</p>
+    <div class="u-tabs" role="tablist" id="p-tabs"></div>
+    <div id="p-body"></div>
+  </section>
+</main>
+<script src="js/admin-plan.js"></script>
+</body>
+</html>

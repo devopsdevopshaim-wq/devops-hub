@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מכלול — סטודיו הרכבה</title>
+<meta name="description" content="מעלים קבצי SolidWorks ומתארים את המערכת, ומקבלים תכנית הרכבה, סרטוני הרכבה, שרטוטים ותיק הרכבה עם חלקי חילוף. כל תכנית פותחת משימה.">
+<meta name="theme-color" content="#0e131c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e131c'/%3E%3Cpath d='M16 5l9 5v12l-9 5-9-5V10z' fill='none' stroke='%23f2711c' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='M7 10l9 5 9-5M16 15v12' fill='none' stroke='%23f2711c' stroke-width='2.2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#home" aria-label="מכלול — לדף הבית">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4l10 5.6v12.8L16 28 6 22.4V9.6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M6 9.6l10 5.6 10-5.6M16 15.2V28" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span class="brand-name">מכלול</span>
+      <span class="brand-tag">סטודיו הרכבה מ-SolidWorks</span>
+    </a>
+    <div class="top-actions">
+      <span class="ai-badge" id="aiBadge" role="status">בודק חיבור…</span>
+      <a class="btn ghost small" href="#tasks" id="tasksLink">משימות <span class="count" id="taskCount">0</span></a>
+      <a class="btn ghost small" href="#home">הפרויקטים</a>
+      <button class="btn small" type="button" id="newProjectTop">פרויקט חדש</button>
+    </div>
+  </div>
+  <nav class="steps" id="stepsNav" aria-label="שלבי העבודה" hidden>
+    <div class="steps-inner">
+      <strong class="proj-title" id="projTitle"></strong>
+      <ol>
+        <li><a href="#p/files" data-step="files"><span class="num">1</span>קבצים ותיאור</a></li>
+        <li><a href="#p/parts" data-step="parts"><span class="num">2</span>רשימת חלקים</a></li>
+        <li><a href="#p/plan" data-step="plan"><span class="num">3</span>תכנית הרכבה</a></li>
+        <li><a href="#p/video" data-step="video"><span class="num">4</span>סרטונים</a></li>
+        <li><a href="#p/drawings" data-step="drawings"><span class="num">5</span>שרטוטים</a></li>
+        <li><a href="#p/doc" data-step="doc"><span class="num">6</span>תיק הרכבה</a></li>
+      </ol>
+    </div>
+  </nav>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- דף הבית -->
+  <section class="view" id="view-home">
+    <div class="wrap">
+      <div class="hero">
+        <p class="eyebrow">מהמודל לרצפת הייצור</p>
+        <h1>מעלים את קבצי ה-SolidWorks, ומקבלים את כל מה שצריך כדי להרכיב.</h1>
+        <p class="lede">מתארים איזו מערכת בונים, והאתר מכין תכנית הרכבה שלב אחרי שלב, סרטון הרכבה מונפש, שרטוטים עם בלונים ומידות, ותיק הרכבה מלא עם רשימת חלקים וחלקי חילוף. כל תכנית פותחת משימה בלוח המשימות.</p>
+        <div class="hero-actions">
+          <button class="btn big" type="button" id="newProjectHero">פרויקט חדש</button>
+          <button class="btn ghost big" type="button" id="demoBtn">נסו על מכלול לדוגמה</button>
+        </div>
+        <ol class="flow" aria-label="מה מקבלים">
+          <li><b>קבצים</b><span>STEP, STL, OBJ, GLB ושמות מקבצי SolidWorks</span></li>
+          <li><b>תכנית</b><span>סדר הרכבה, כלים, מומנטים ובדיקות</span></li>
+          <li><b>סרטון</b><span>אנימציה עם כתוביות, להורדה</span></li>
+          <li><b>שרטוטים</b><span>מבטים, מבט מפוצץ וגיליון לכל שלב</span></li>
+          <li><b>תיק הרכבה</b><span>PDF עם חלקי חילוף ותחזוקה</span></li>
+        </ol>
+      </div>
+      <h2 class="section-title">הפרויקטים שלי</h2>
+      <div class="project-grid" id="projectGrid"></div>
+      <p class="muted empty" id="noProjects" hidden>עוד אין פרויקטים. התחילו פרויקט חדש או נסו את המכלול לדוגמה.</p>
+    </div>
+  </section>
+
+  <!-- לוח משימות -->
+  <section class="view" id="view-tasks" hidden>
+    <div class="wrap">
+      <div class="row-head">
+        <div>
+          <p class="eyebrow">לוח משימות</p>
+          <h1 class="h1-sm">משימות הרכבה</h1>
+          <p class="muted">כל תכנית הרכבה פותחת משימה חדשה, ולכל שלב בתכנית יש תת-משימה. מסמנים שלבים שבוצעו ומזיזים משימות בין העמודות.</p>
+        </div>
+        <div class="row-actions">
+          <button class="btn ghost small" type="button" id="exportTasks">ייצוא ל-CSV</button>
+        </div>
+      </div>
+      <div class="kanban" id="kanban">
+        <div class="col" data-status="todo"><h2>לביצוע <span class="count"></span></h2><div class="cards"></div></div>
+        <div class="col" data-status="doing"><h2>בביצוע <span class="count"></span></h2><div class="cards"></div></div>
+        <div class="col" data-status="done"><h2>הושלם <span class="count"></span></h2><div class="cards"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- פרויקט -->
+  <section class="view" id="view-project" hidden>
+
+    <!-- 1. קבצים ותיאור -->
+    <div class="panel wrap" id="panel-files">
+      <div class="split">
+        <div class="stack">
+          <form class="card form-grid" id="projectForm" autocomplete="off">
+            <h2 class="card-title span-2">מה בונים?</h2>
+            <div class="field span-2">
+              <label for="f-name">שם הפרויקט</label>
+              <input id="f-name" name="name" required placeholder="למשל: יחידת הנעה למסוע קו 3">
+            </div>
+            <div class="field">
+              <label for="f-system">סוג המערכת</label>
+              <select id="f-system" name="system"></select>
+            </div>
+            <div class="field">
+              <label for="f-crew">צוות הרכבה</label>
+              <input id="f-crew" name="crew" type="number" min="1" max="30" value="2">
+            </div>
+            <div class="field span-2">
+              <label for="f-desc">תיאור המערכת שרוצים לבנות</label>
+              <textarea id="f-desc" name="description" rows="5" placeholder="מה המערכת עושה, איפה היא תותקן, מה חשוב בהרכבה (דיוק יישור, אטימות, משקל), ומה כבר קיים באתר."></textarea>
+            </div>
+            <div class="field span-2">
+              <label for="f-env">סביבת עבודה ושימוש <span class="opt">(לא חובה)</span></label>
+              <input id="f-env" name="environment" placeholder="למשל: מפעל מזון, שטיפה יומית, 16 שעות ביום">
+            </div>
+          </form>
+
+          <div class="card">
+            <h2 class="card-title">קבצי המודל</h2>
+            <label class="drop" id="drop" for="fileInput">
+              <input id="fileInput" type="file" multiple accept=".sldprt,.sldasm,.slddrw,.step,.stp,.iges,.igs,.stl,.obj,.glb,.gltf,.pdf,.png,.jpg,.jpeg,.webp">
+              <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M12 16V4m0 0l-4.5 4.5M12 4l4.5 4.5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <b>גוררים לכאן קבצים או לוחצים לבחירה</b>
+              <span>SLDASM · SLDPRT · SLDDRW · STEP · STL · OBJ · GLB · PDF · PNG · JPG</span>
+            </label>
+            <ul class="file-list" id="fileList"></ul>
+            <div class="ref-wrap" id="refWrap" hidden>
+              <h3 class="sub-title">שרטוטים ותמונות</h3>
+              <div class="ref-gallery" id="refGallery"></div>
+            </div>
+            <ul class="sw-notes" id="swNotes"></ul>
+            <details class="tip">
+              <summary>אילו קבצים להעלות?</summary>
+              <ul>
+                <li><b>מכלול SolidWorks (SLDASM):</b> מעלים אותו <b>יחד עם כל קבצי ה-SLDPRT</b> של החלקים. האתר קורא את עץ הרכיבים, הכמויות והמיקום של כל חלק, ומציג את המכלול בתלת-ממד.</li>
+                <li><b>חלק בודד (SLDPRT):</b> נפתח בתלת-ממד עם המידות שלו.</li>
+                <li><b>שרטוט (PDF, SLDDRW או תמונה):</b> מוצג כאן, ובשלב 3 Claude מנתח אותו: קורא את טבלת החלקים, הבלונים, המידות וההערות, ובונה רשימת חלקים ותכנית הרכבה גם בלי מודל.</li>
+                <li>קבצי SolidWorks ישנים (לפני 2015) נפתחים חלקית. אם משהו חסר, שמרו את המכלול כ-STEP (File ← Save As ← STEP AP214) והעלו גם אותו.</li>
+              </ul>
+            </details>
+          </div>
+        </div>
+        <div class="stack sticky">
+          <div class="viewer-slot" id="slot-files"></div>
+          <p class="muted small" id="modelStats">עוד לא נטען מודל.</p>
+          <div class="btn-row">
+            <button class="btn" type="button" data-go="parts">המשך לרשימת החלקים ←</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. רשימת חלקים -->
+    <div class="panel wrap" id="panel-parts" hidden>
+      <div class="row-head">
+        <div>
+          <h1 class="h1-sm">רשימת חלקים (BOM)</h1>
+          <p class="muted">החלקים והכמויות נקראו מהמודל. אפשר לתקן שמות, סוג, חומר והערות. לחיצה על שורה מדגישה את החלק בתלת-ממד.</p>
+        </div>
+        <div class="row-actions">
+          <button class="btn ghost small" type="button" id="addPart">הוספת פריט</button>
+          <button class="btn ghost small" type="button" id="bomCsv">BOM ל-CSV</button>
+        </div>
+      </div>
+      <div class="split wide-left">
+        <div class="card table-card">
+          <table class="grid-table" id="bomTable">
+            <thead><tr><th>#</th><th>שם החלק</th><th>סוג</th><th>כמות</th><th>מידות (מ״מ)</th><th>חומר</th><th>הערות</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="stack sticky">
+          <div class="viewer-slot" id="slot-parts"></div>
+          <div class="btn-row"><button class="btn" type="button" data-go="plan">המשך לתכנית ההרכבה ←</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. תכנית הרכבה -->
+    <div class="panel wrap" id="panel-plan" hidden>
+      <div class="row-head">
+        <div>
+          <h1 class="h1-sm">תכנית הרכבה</h1>
+          <p class="muted">Claude מנתח את השרטוטים והמודל, משלים את רשימת החלקים, ובונה סדר הרכבה לפי מיקום החלקים ולפי התיאור שלכם. כל תכנית חדשה פותחת משימה בלוח המשימות, עם תת-משימה לכל שלב.</p>
+        </div>
+      </div>
+      <div class="card gen-card">
+        <div class="field">
+          <label for="planNote">הנחיה נוספת לתכנית <span class="opt">(לא חובה)</span></label>
+          <input id="planNote" placeholder="למשל: ההרכבה נעשית באתר הלקוח בלי עגורן; לחלק ל-2 משמרות">
+        </div>
+        <div class="btn-row">
+          <button class="btn" type="button" id="genAi">יצירת תכנית עם Claude</button>
+          <button class="btn ghost" type="button" id="genBasic">תכנית בסיסית אוטומטית</button>
+          <label class="check" id="ghWrap" hidden><input type="checkbox" id="ghIssue"> לפתוח גם Issue ב-GitHub</label>
+        </div>
+        <p class="muted small" id="planHint"></p>
+        <div class="progress" id="planProgress" hidden><div class="bar"></div><span></span></div>
+      </div>
+
+      <div id="planEditor" hidden>
+        <div class="card">
+          <div class="form-grid">
+            <div class="field span-2"><label for="pl-title">כותרת</label><input id="pl-title" data-plan="title"></div>
+            <div class="field span-2"><label for="pl-summary">תקציר</label><textarea id="pl-summary" rows="3" data-plan="summary"></textarea></div>
+            <div class="field"><label for="pl-tools">כלים וציוד (שורה לכל פריט)</label><textarea id="pl-tools" rows="5" data-plan-list="tools"></textarea></div>
+            <div class="field"><label for="pl-safety">בטיחות (שורה לכל פריט)</label><textarea id="pl-safety" rows="5" data-plan-list="safety"></textarea></div>
+          </div>
+          <p class="muted small" id="planMeta"></p>
+        </div>
+        <h2 class="section-title">שלבי ההרכבה</h2>
+        <ol class="steps-list" id="stepsList"></ol>
+        <div class="btn-row"><button class="btn ghost" type="button" id="addStep">הוספת שלב</button></div>
+
+        <h2 class="section-title">חלקי חילוף</h2>
+        <div class="card table-card">
+          <table class="grid-table" id="sparesTable">
+            <thead><tr><th>פריט</th><th>קטגוריה</th><th>כמות למלאי</th><th>תדירות החלפה</th><th>סיבה</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="btn-row"><button class="btn ghost small" type="button" id="addSpare">הוספת חלק חילוף</button></div>
+        </div>
+
+        <h2 class="section-title">תחזוקה מונעת והערות</h2>
+        <div class="card form-grid">
+          <div class="field"><label for="pl-maint">תחזוקה (בכל שורה: פעולה | תדירות)</label><textarea id="pl-maint" rows="5"></textarea></div>
+          <div class="field"><label for="pl-notes">הערות והנחות</label><textarea id="pl-notes" rows="5" data-plan="notes"></textarea></div>
+        </div>
+        <div class="btn-row"><button class="btn" type="button" data-go="video">המשך לסרטונים ←</button></div>
+      </div>
+    </div>
+
+    <!-- 4. סרטונים -->
+    <div class="panel wrap" id="panel-video" hidden>
+      <div class="row-head">
+        <div>
+          <h1 class="h1-sm">סרטוני הרכבה</h1>
+          <p class="muted">אנימציה של סדר ההרכבה לפי התכנית: כל חלק נכנס למקומו ומודגש, עם כתובית לכל שלב. מקליטים סרטון מלא או סרטון קצר לכל שלב, ומורידים.</p>
+        </div>
+      </div>
+      <div class="split wide-right">
+        <div class="stack">
+          <div class="card">
+            <div class="field"><label for="vidStep">מה להציג</label><select id="vidStep"></select></div>
+            <div class="field"><label for="vidSpeed">קצב</label>
+              <select id="vidSpeed"><option value="4.6">איטי</option><option value="3.4" selected>רגיל</option><option value="2.4">מהיר</option></select></div>
+            <div class="btn-row">
+              <button class="btn" type="button" id="playBtn">▶ הפעלה</button>
+              <button class="btn ghost" type="button" id="stopBtn">■ עצירה</button>
+            </div>
+            <hr>
+            <div class="btn-row">
+              <button class="btn" type="button" id="recAll">הקלטת סרטון מלא</button>
+              <button class="btn ghost" type="button" id="recSteps">סרטון לכל שלב</button>
+            </div>
+            <div class="progress" id="recProgress" hidden><div class="bar"></div><span></span></div>
+            <p class="muted small">ההקלטה רצה בזמן אמת בדפדפן (Chrome או Edge), והקובץ נשמר בפורמט WebM.</p>
+          </div>
+          <div class="card">
+            <h2 class="card-title">סרטונים שהוקלטו</h2>
+            <ul class="video-list" id="videoList"></ul>
+          </div>
+        </div>
+        <div class="stack sticky">
+          <div class="viewer-slot" id="slot-video"><div class="caption" id="caption" hidden><small></small><b></b><span></span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. שרטוטים -->
+    <div class="panel wrap" id="panel-drawings" hidden>
+      <div class="row-head">
+        <div>
+          <h1 class="h1-sm">שרטוטים</h1>
+          <p class="muted">גיליונות בגודל A3 עם טבלת כותרת: מבטי חזית, צד, על ואיזומטרי עם מידות כלליות, מבט מפוצץ עם בלונים ורשימת חלקים, וגיליון לכל שלב הרכבה עם חץ הכנסה.</p>
+        </div>
+        <div class="row-actions">
+          <button class="btn" type="button" id="genDrawings">יצירת שרטוטים</button>
+        </div>
+      </div>
+      <div class="sheet-grid" id="sheetGrid"></div>
+      <div class="btn-row"><button class="btn" type="button" data-go="doc">המשך לתיק ההרכבה ←</button></div>
+    </div>
+
+    <!-- 6. תיק הרכבה -->
+    <div class="panel wrap" id="panel-doc" hidden>
+      <div class="row-head">
+        <div>
+          <h1 class="h1-sm">תיק הרכבה</h1>
+          <p class="muted">מסמך מלא: תיאור, רשימת חלקים, שרטוטים, כלים ובטיחות, שלבי הרכבה עם טבלת אישור, חלקי חילוף ותחזוקה.</p>
+        </div>
+        <div class="row-actions">
+          <button class="btn" type="button" id="docPrint">הדפסה / PDF</button>
+          <button class="btn ghost small" type="button" id="docHtml">הורדת HTML</button>
+          <button class="btn ghost small" type="button" id="docWord">Word</button>
+          <button class="btn ghost small" type="button" id="sparesCsv">חלקי חילוף ל-CSV</button>
+        </div>
+      </div>
+      <div class="field inline">
+        <label for="docRev">מהדורה</label><input id="docRev" value="A" maxlength="4">
+        <label for="docBy">הוכן על ידי</label><input id="docBy" placeholder="שם">
+      </div>
+      <iframe class="doc-frame" id="docFrame" title="תצוגה מקדימה של תיק ההרכבה"></iframe>
+    </div>
+  </section>
+</main>
+
+<div class="viewer-home" id="viewerHome" hidden></div>
+
+<dialog id="pasteDialog">
+  <form method="dialog" class="dlg">
+    <h2>יצירת תכנית דרך Claude.ai</h2>
+    <p class="muted">האתר עוד לא מחובר ישירות ל-Claude, אז מעבירים את הבקשה ידנית. זה לוקח דקה:</p>
+    <ol class="how">
+      <li><b>מעתיקים את הבקשה:</b> <button class="btn small" type="button" id="copyPrompt">העתקת הבקשה</button></li>
+      <li id="pasteImgs" hidden><b>מורידים את תמונות השרטוט</b> (לוחצים על כל אחת):
+        <div class="btn-row tight" id="pasteImgList"></div></li>
+      <li><b>פותחים את <a href="https://claude.ai/new" target="_blank" rel="noopener">Claude.ai</a></b>, מדביקים את הבקשה<span id="pasteAttach">, מצרפים את התמונות</span> ושולחים.</li>
+      <li><b>מעתיקים את כל התשובה של Claude</b> (כפתור ההעתקה שמתחת לתשובה) ומדביקים אותה כאן:</li>
+    </ol>
+    <textarea id="pasteBox" rows="9" placeholder="מדביקים כאן את התשובה של Claude, כמו שהיא. היא כתובה בעברית רגילה, עם טבלת חלקים ושלבי הרכבה."></textarea>
+    <p class="error" id="pasteErr" role="alert"></p>
+    <div class="btn-row">
+      <button class="btn" value="ok" id="pasteOk">יצירת התכנית</button>
+      <button class="btn ghost" value="cancel" formnovalidate>ביטול</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="codeDialog">
+  <form method="dialog" class="dlg">
+    <h2>קוד גישה</h2>
+    <p class="muted">השרת מוגן בקוד גישה.</p>
+    <input id="codeInput" type="password" autocomplete="off">
+    <div class="btn-row"><button class="btn" value="ok">אישור</button><button class="btn ghost" value="cancel">ביטול</button></div>
+  </form>
+</dialog>
+
+<dialog id="taskDialog">
+  <div class="dlg">
+    <h2 id="tdTitle"></h2>
+    <p class="muted" id="tdMeta"></p>
+    <ul class="subtasks" id="tdSubs"></ul>
+    <div class="btn-row">
+      <a class="btn small" id="tdOpen" href="#">לפרויקט</a>
+      <a class="btn ghost small" id="tdGh" target="_blank" rel="noopener" hidden>Issue ב-GitHub</a>
+      <button class="btn ghost small danger" type="button" id="tdDelete">מחיקת המשימה</button>
+      <button class="btn ghost small" type="button" id="tdClose">סגירה</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/prompts.js"></script>
+<script src="js/store.js"></script>
+<script src="js/doc.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

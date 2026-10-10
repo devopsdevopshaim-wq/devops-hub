@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="he" dir="rtl" data-admin-only>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>העברת לקוחות לשרת החדש · SPIDER</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f0d24">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/auth.css">
+<script src="js/auth.js"></script>
+</head>
+<body class="admin">
+<header class="nav"><div class="wrap nav-inner"><a class="brand spider-brand" href="./"><img src="img/spider.svg" alt="" width="34" height="34"><span class="wordmark">SPIDER</span></a><span class="admin-tag">העברת לקוחות · מנהל בלבד</span><a class="btn btn-ghost btn-sm" href="admin.html">← למסך הניהול</a></div></header>
+<main class="wrap">
+  <section class="a-sec">
+    <header class="sec-head"><p class="eyebrow">מעבר ל־Cloudflare</p><h2>העברת הלקוחות מהשרת הישן</h2></header>
+    <p class="lead">השרת החדש מתחיל ריק. כאן מעבירים אליו את חשבונות הלקוחות (שם, אתרים, תוקף) מהשרת הישן ב־n8n. הסיסמאות לא עוברות: כל לקוח ילחץ "קבלת סיסמה ראשונית למייל" וייכנס.</p>
+    <div class="p-card" style="padding:18px;border:1px solid var(--line);border-radius:16px;margin:0 0 14px">
+      <h3>שלב 1 · ייצוא מהשרת הישן (n8n)</h3>
+      <p class="muted">צריך שה־n8n יענה (המכסה מתאפסת בתחילת החודש). הכניסה היא ישירות לשרת הישן ולא נשמרת.</p>
+      <p><label>מייל מנהל <input id="o-mail" type="email" value="devopsdevopshaim@gmail.com" dir="ltr"></label> <label>סיסמה בשרת הישן <input id="o-pw" type="password" autocomplete="off"></label> <button class="g-btn ghost" id="o-go" type="button">ייצוא</button></p>
+      <p class="muted" id="o-note"></p>
+    </div>
+    <div class="p-card" style="padding:18px;border:1px solid var(--line);border-radius:16px">
+      <h3>שלב 2 · ייבוא לשרת החדש</h3>
+      <p><input type="file" id="i-file" accept="application/json"> <button class="g-btn ghost" id="i-go" type="button">ייבוא</button></p>
+      <p class="muted" id="i-note"></p>
+    </div>
+    <div class="p-card" style="padding:18px;border:1px solid var(--line);border-radius:16px;margin-top:14px">
+      <h3>סיסמאות ראשוניות ללקוחות שהועברו</h3>
+      <p class="muted">אחרי ההעברה לכל לקוח נוצרה סיסמה ראשונית (תקפה 30 יום; בכניסה הראשונה הוא בוחר סיסמה משלו). כאן שולחים לכל אחד בוואטסאפ. הרשימה נשמרת בשרת עד 7 ימים.</p>
+      <p><button class="g-btn ghost" id="h-load" type="button">הצגת הרשימה</button> <button class="g-btn ghost" id="h-csv" type="button" hidden>הורדה (CSV)</button> <button class="g-btn ghost" id="h-clear" type="button" hidden>מחיקת הרשימה מהשרת</button></p>
+      <p class="muted" id="h-note"></p>
+      <div class="table-wrap"><table class="ptable" id="h-table" hidden><thead><tr><th>לקוח</th><th>טלפון</th><th>סיסמה ראשונית</th><th>שליחה</th></tr></thead><tbody id="h-body"></tbody></table></div>
+    </div>
+  </section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var OLD = 'https://haimkripisn.app.n8n.cloud/webhook/hasadna-auth', data = null;
+  var $ = function (id) { return document.getElementById(id); };
+  function old(b) { return fetch(OLD, { method: 'POST', body: new URLSearchParams(b) }).then(function (r) { return r.json().catch(function () { return { ok: false, error: 'http-' + r.status }; }); }); }
+  HasadnaAuth.ready.then(function () {
+    var LOGIN = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/client.html', list = [];
+    function wa(c) {
+      var d = String(c.phone || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '972' + d.slice(1);
+      var msg = 'שלום ' + (c.name || '') + ',\nהאתר של SPIDER עבר לשרת חדש ויציב יותר.\nכניסה: ' + LOGIN + '\nמייל: ' + c.email + '\nסיסמה ראשונית: ' + c.password + '\nבכניסה הראשונה תבחר סיסמה משלך.\nחיים קריספין';
+      return 'https://wa.me/' + d + '?text=' + encodeURIComponent(msg);
+    }
+    function showList() {
+      var tb = $('h-body'); tb.innerHTML = '';
+      list.forEach(function (c) {
+        var tr = document.createElement('tr');
+        [(c.name ? c.name + ' · ' : '') + c.email, c.phone || '—', c.password].forEach(function (v, i) { var td = document.createElement('td'); td.textContent = v; if (i === 2) td.style.fontFamily = 'monospace'; tr.appendChild(td); });
+        var td = document.createElement('td');
+        if (c.phone) { var a = document.createElement('a'); a.href = wa(c); a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'וואטסאפ ↗'; td.appendChild(a); } else td.textContent = 'אין טלפון: לשלוח במייל';
+        tr.appendChild(td); tb.appendChild(tr);
+      });
+      $('h-table').hidden = !list.length; $('h-csv').hidden = !list.length; $('h-clear').hidden = !list.length;
+    }
+    $('h-load').addEventListener('click', function () {
+      HasadnaAuth.api('import-passwords').then(function (r) {
+        if (!r || !r.ok) { $('h-note').textContent = 'לא ניתן לטעון (' + ((r && r.error) || 'שגיאה') + ')'; return; }
+        list = r.list || []; $('h-note').textContent = list.length ? list.length + ' לקוחות. נוצר ב־' + new Date(r.at).toLocaleString('he-IL') : 'אין רשימה כרגע (עוד לא הועברו לקוחות, או שחלפו 7 ימים).'; showList();
+      });
+    });
+    $('h-csv').addEventListener('click', function () {
+      var rows = ['שם,מייל,טלפון,סיסמה ראשונית'].concat(list.map(function (c) { return ['"' + String(c.name || '').replace(/"/g, '""') + '"', c.email, c.phone || '', c.password].join(','); }));
+      var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'spider-initial-passwords.csv'; document.body.appendChild(a); a.click(); a.remove();
+    });
+    $('h-clear').addEventListener('click', function () {
+      if (!confirm('למחוק את הסיסמאות הראשוניות מהשרת? אי אפשר לשחזר את הרשימה.')) return;
+      HasadnaAuth.api('import-passwords', { clear: '1' }).then(function () { list = []; showList(); $('h-note').textContent = 'הרשימה נמחקה מהשרת.'; });
+    });
+
+    $('o-go').addEventListener('click', function () {
+      $('o-note').textContent = 'מתחבר לשרת הישן…';
+      var dev = ''; for (var i = 0; i < 32; i++) dev += Math.floor(Math.random() * 16).toString(16);
+      old({ action: 'login', email: $('o-mail').value.trim(), password: $('o-pw').value, device: dev }).then(function (l) {
+        if (!l.token) { $('o-note').textContent = 'הכניסה לשרת הישן נכשלה (' + (l.error || 'שגיאה') + ')'; return; }
+        return old({ action: 'clients', token: l.token }).then(function (c) {
+          old({ action: 'logout', token: l.token });
+          if (!c.ok) { $('o-note').textContent = 'לא התקבלה רשימה (' + (c.error || 'שגיאה') + ')'; return; }
+          data = c.clients;
+          var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' })); a.download = 'spider-clients.json'; document.body.appendChild(a); a.click(); a.remove();
+          $('o-note').textContent = 'יוצאו ' + data.length + ' לקוחות. הקובץ ירד למחשב; אפשר לייבא אותו בשלב 2.';
+        });
+      }, function () { $('o-note').textContent = 'אין חיבור לשרת הישן'; });
+    });
+    $('i-go').addEventListener('click', function () {
+      var f = $('i-file').files[0], send = function (txt) {
+        HasadnaAuth.api('clients-import', { payload: txt, temp: '1' }).then(function (r) { $('i-note').textContent = r && r.ok ? 'יובאו ' + r.added + ' לקוחות, דולגו ' + r.skipped + ' (קיימים או לא תקינים). הסיסמאות הראשוניות מופיעות למטה.' : 'הייבוא נכשל (' + ((r && r.error) || 'שגיאה') + ')'; });
+      };
+      if (f) { var rd = new FileReader(); rd.onload = function () { send(String(rd.result)); }; rd.readAsText(f); }
+      else if (data) send(JSON.stringify(data));
+      else $('i-note').textContent = 'בחר קובץ שיוצא בשלב 1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

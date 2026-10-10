@@ -1,0 +1,51 @@
+/* Sign-in gate. Until someone is signed in, the page shows only the gate. */
+.locked main, .locked .foot, .locked .links, .locked #gh-top, .locked .guide, .locked .music, .locked .dock,
+.locked .wa-fab, .locked .basket, .locked .scroll-bar, .locked .detail { display: none !important; }
+.locked body { overflow: hidden; }
+.gate { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 20px; overflow-y: auto;
+  background: radial-gradient(800px 500px at 70% 0%, rgba(139, 123, 255, .25), transparent 60%), rgba(12, 10, 30, .55); }
+.gate-card { width: min(440px, 100%); padding: 30px 28px 24px; border-radius: 24px; background: rgba(23, 20, 58, .92);
+  border: 1px solid rgba(224, 178, 90, .35); box-shadow: 0 40px 90px -30px rgba(0, 0, 0, .95);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: pop .4s var(--ease); }
+.gate-card .brand { margin-bottom: 18px; }
+.gate-card h1 { margin: 0 0 6px; font: 400 44px/1.05 var(--display); }
+.gate-lead { margin: 0 0 20px; color: var(--mist); font-size: 15px; }
+.gate-form { display: flex; flex-direction: column; gap: 14px; }
+.gate-form[hidden] { display: none; }
+.gate-form .btn { justify-content: center; }
+.gate-form .btn.busy { opacity: .6; pointer-events: none; }
+.gate-sent { margin: 0; padding: 12px 14px; border-radius: 12px; background: rgba(98, 220, 184, .1); border: 1px solid rgba(98, 220, 184, .35); color: #9ff0d6; font-size: 14px; }
+.gate-code { font: 500 30px/1 var(--mono) !important; letter-spacing: .4em; text-align: center; }
+.gate-row { display: flex; justify-content: space-between; gap: 8px; }
+.gate-row .g-btn:disabled { opacity: .45; cursor: default; }
+#gate-err { margin: 14px 0 0; }
+.gate-foot { margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--line); color: var(--mist); font-size: 13px; }
+/* who is signed in */
+.user-chip { display: inline-flex; align-items: center; gap: 8px; margin-inline-start: 12px; padding: 4px 4px 4px 12px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 13px; color: var(--mist); white-space: nowrap; }
+.user-chip button { border: 0; border-radius: 999px; padding: 5px 10px; background: rgba(241, 238, 252, .08); color: var(--porcelain); font: 600 12px var(--body); cursor: pointer; }
+.user-chip button:hover { background: rgba(229, 96, 109, .2); }
+/* clients never see the tools meant for the admin */
+.is-client .foot-admin, .is-client .nav-add, .is-client #add, .is-client .admin-strip, .is-client .admin-on,
+.is-client #gh-top, .is-client #gh-link, .is-client #nav-status, .is-client #extra-wrap { display: none !important; }
+@media (max-width: 640px) { .user-chip span { display: none; } }
+
+/* "hidden" must win over .field { display: flex } */
+.gate [hidden] { display: none !important; }
+
+#gate-forgot { width: 100%; margin-top: 4px; }
+.gate-sent { margin: 0; padding: 10px 14px; border-radius: 12px; background: rgba(98, 220, 184, .1); border: 1px solid rgba(98, 220, 184, .3); }
+
+/* clients: a welcome line under the menu, and the small password button in the user chip */
+.welcome { padding: 10px 18px; text-align: center; font-size: 15px; color: var(--porcelain, #f1eefc); background: linear-gradient(90deg, rgba(139, 123, 255, .16), rgba(224, 178, 90, .12)); border-bottom: 1px solid var(--line, rgba(241, 238, 252, .12)); }
+.user-chip .chip-pw { opacity: .85; }
+.pw-dialog { z-index: 90; }
+.user-chip .chip-pw:hover { background: rgba(139, 123, 255, .28); }
+
+/* admin quick access: always one tap away */
+.admin-fab { position: fixed; top: 74px; inset-inline-start: 14px; z-index: 60; font-family: var(--body, system-ui); }
+.af-btn { height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--brass, #e0b25a); background: linear-gradient(135deg, #e0b25a, #c98f2f); color: #17143a; font: 700 14px var(--body, system-ui); cursor: pointer; box-shadow: 0 10px 26px -10px rgba(0,0,0,.8); }
+.af-menu { margin-top: 8px; min-width: 190px; padding: 6px; border-radius: 14px; background: rgba(23,20,58,.98); border: 1px solid rgba(224,178,90,.4); box-shadow: 0 24px 50px -16px #000; }
+.af-menu[hidden] { display: none; }
+.af-menu a { display: block; padding: 10px 12px; border-radius: 10px; color: #f1eefc; text-decoration: none; font-size: 14px; }
+.af-menu a:hover { background: rgba(224,178,90,.16); }
+@media (max-width: 640px) { .admin-fab { top: auto; bottom: 92px; inset-inline-start: 12px; } .af-menu { position: absolute; bottom: 48px; } }
