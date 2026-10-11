@@ -76,8 +76,8 @@
           ${act ? `<div class="lib-badge">רלוונטי עכשיו${act.label ? " · " + esc(act.label) : ""}</div>` : ""}
           ${missing ? `<div class="lib-badge miss">הקובץ חסר בתיקייה</div>` : `
           <div class="lib-card-actions">
-            <a class="btn ghost" href="${esc(r.file)}" target="_blank" rel="noopener">פתח</a>
-            <a class="btn ghost" href="${esc(r.file)}" download>הורד${r.sizeKB ? " · " + sizeStr(r.sizeKB) : ""}</a>
+            <a class="btn ghost" href="${esc(String(r.file).replace(/^\//, ""))}" target="_blank" rel="noopener">פתח</a>
+            <a class="btn ghost" href="${esc(String(r.file).replace(/^\//, ""))}" download>הורד${r.sizeKB ? " · " + sizeStr(r.sizeKB) : ""}</a>
           </div>`}
         </div>`;
     };
