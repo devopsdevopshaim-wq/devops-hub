@@ -492,48 +492,6 @@ tl.fromTo('#§-fade', { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'power2
     frame(11, css, body, js, push=1.025, seed=12)
 
 
-US_DUR = 13.6
-def f_us():
-    """Personal outro (Hebrew cuts): Haim and his wife on camera, their own voices."""
-    IDS.append('11b-us'); DUR.append(US_DUR)
-    idx = len(IDS) - 1
-    if TALL:
-        vw, vh, vx, vy = 500, 891, 290, 210
-        pos = 'top:70px;left:60px;right:60px;text-align:center'
-        txt = f'<div class="§-h2" id="§-l1" style="font-size:64px">{words("האנשים","§-a")} <span class="§-acc">{words("שמאחורי הרשת","§-b")}</span></div>'
-    else:
-        vw, vh, vx, vy = 452, 806, 330, 70
-        pos = txpos(300, 170, 820)
-        txt = (f'<span class="§-eyehe" id="§-eye">מאחורי SPIDER</span>'
-               f'<div class="§-h1" id="§-l1">{words("האנשים","§-a")} <span class="§-acc">{words("שמאחורי הרשת.","§-b")}</span></div>'
-               f'<span class="§-ul" id="§-ul" style="width:340px;margin-right:0;margin-left:auto"></span>'
-               f'<div class="§-lede" id="§-l2">חיים קריספין</div>')
-    cx, cy = vx + vw / 2, vy + vh / 2
-    corners = [(vx, vy), (vx + vw, vy), (vx, vy + vh), (vx + vw, vy + vh)]
-    far = [(-60, -60), (W + 60, -60), (-60, H + 60), (W + 60, H + 60)]
-    threads = ''.join(f'<line class="§-th" x1="{a[0]}" y1="{a[1]}" x2="{b[0]}" y2="{b[1]}" {PL}/>' for a, b in zip(far, corners))
-    knots = ''.join(f'<circle class="§-kn" cx="{a[0]}" cy="{a[1]}" r="7"/>' for a in corners)
-    css = (f'#§-vwrap{{position:absolute;left:{vx}px;top:{vy}px;width:{vw}px;height:{vh}px;border-radius:22px;overflow:hidden;'
-           f'border:2px solid #e0b25a;box-shadow:0 0 0 10px rgba(224,178,90,.10),0 40px 120px rgba(0,0,0,.7);background:#0f0d24}}\n'
-           f'#§-vid{{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}}\n'
-           f'.§-th{{stroke:rgba(224,178,90,.55);stroke-width:2;fill:none}}.§-kn{{fill:#f3d596}}\n'
-           f'#§-glow{{position:absolute;left:{cx-500:.0f}px;top:{cy-500:.0f}px;width:1000px;height:1000px;'
-           f'background:radial-gradient(closest-side,rgba(224,178,90,.16),rgba(224,178,90,0))}}')
-    body = (f'<div id="§-glow"></div><svg class="§-ov" viewBox="0 0 {W} {H}">{threads}{knots}</svg>\n'
-            f'<div class="§-tx" style="{pos}">{txt}</div>')
-    js = (f"tl.fromTo('#§-glow', {{ opacity: 0, scale: 0.7 }}, {{ opacity: 1, scale: 1, duration: 2.0, ease: 'power2.out' }}, 0.0);\n"
-          f"draw(QA('.§-th'), 0.0, 1.2, 'power3.out');\n"
-          f"tl.fromTo(QA('.§-kn'), {{ scale: 0, transformOrigin: '50% 50%' }}, {{ scale: 1, duration: 0.5, ease: 'back.out(2.4)', stagger: 0.08 }}, 0.9);\n"
-          f"tl.fromTo('#§-vwrap', {{ opacity: 0, scale: 0.92, y: 30 }}, {{ opacity: 1, scale: 1, y: 0, duration: 1.0, ease: 'power3.out' }}, 0.05);\n"
-          f"tl.to('#§-vwrap', {{ scale: 1.025, duration: {US_DUR - 1.2:.1f}, ease: 'none' }}, 1.1);\n"
-          + ("" if TALL else "fadeUp('#§-eye', 0.6, { duration: 0.8 });\n")
-          + "rise('#§-l1 .§-a', 0.9, { stagger: 0.16 }); rise('#§-l1 .§-b', 1.4, { stagger: 0.14 });\n"
-          + ("" if TALL else "ul('#§-ul', 2.2); fadeUp('#§-l2', 2.6);\n"))
-    # the video sits outside the timed stage clip (lint: video_nested_in_timed_element)
-    video = ('<div id="§-vwrap"><video id="§-vid" src="assets/us.mp4" data-start="0" data-duration="13.2" '
-             'data-track-index="3" data-has-audio="true" playsinline></video></div>')
-    frame(idx, css, body, js, push=1.02, seed=13, extra_root=video)
 
 for f in (f01, f02, f03, f04, f05, f06, f07, f08, f09, f10, f11, f12): f()
-if RTL: f_us()
 print(f'frames written: {FMT} {LANG} -> {PROJ}')
