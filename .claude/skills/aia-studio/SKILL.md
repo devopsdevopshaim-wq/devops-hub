@@ -1,11 +1,11 @@
 ---
 name: aia-studio
-description: "Work on the standalone site 'עיצוב AIA' (aia-studio/ in devops-hub, live at https://devopsdevopshaim-wq.github.io/devops-hub/aia-studio/): explain it, use it, change its pages, fix it or extend it. Use when the user mentions חבילת הפקה, סטוריבורד, פרומפטים לתמונה, פרומפטים לוידאו, Seedance, Runway, Kling, בריף ליצירת סרטון, AIA studio or aia-studio."
+description: "Work on the standalone site 'עיצוב AIA' (aia-studio/ in devops-hub, live at https://devopsdevopshaim-wq.github.io/devops-hub/aia-studio/): explain it, use it, change its pages, fix it or extend it. Use when the user mentions חבילת הפקה, סטוריבורד, פרומפטים לתמונה, פרומפטים לוידאו, Seedance, Runway, Kling, Veo 3, בריף ליצירת סרטון, AIA studio or aia-studio."
 ---
 
 # עיצוב AIA (aia-studio)
 
-A production-package studio: a brief (type, title, style, mood, aspect, duration, description, reference images) becomes a concept, image prompts, a shot-by-shot storyboard, video prompts for Seedance / Runway / Kling and style notes; projects are kept in the visitor's browser and exported as Markdown.
+A production-package studio: a brief (type, title, style, mood, aspect, duration, description, reference images) becomes a concept, image prompts, a shot-by-shot storyboard, video prompts for Seedance / Runway / Kling / Veo 3 and style notes; projects are kept in the visitor's browser and exported as Markdown.
 
 Live: https://devopsdevopshaim-wq.github.io/devops-hub/aia-studio/ · Code: `aia-studio/` in https://github.com/devopsdevopshaim-wq/devops-hub
 
