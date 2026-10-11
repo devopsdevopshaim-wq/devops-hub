@@ -3,3 +3,5 @@ chapters/
 snapshots/
 node_modules/
 .hyperframes/
+film/clips/
+film/chapters/
