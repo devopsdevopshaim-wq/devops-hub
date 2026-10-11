@@ -30,3 +30,19 @@ node test/worker.test.mjs
 שים לב: הלידים והלקוחות נשמרים בכל שרת בנפרד. מה שנכנס כשהאתר עבד מול שרת אחד נשאר בו.
 מאיה (`hasadna-guide`) עונה בשיחה אחת עם Claude (במקום צוות הסוכנים של n8n) ומקבלת את כל המידע על הפרויקטים; הצריך סוד `ANTHROPIC_API_KEY`. בדיקת הזמינות (`hasadna-status`) רצה כל שעתיים (Cron Trigger), שומרת את התוצאה ומגישה את עמוד הבקרה.
 לא עברו: סוכני Parkomat (כלים של Claude, קבצים ל־Drive/Slack); הם נשארים ב־n8n.
+
+## Clients' mailboxes (Gmail)
+
+`src/mail.mjs` gives every signed-in client a mailbox panel on the portfolio home page: a pill shows the unread count, the panel filters
+(personal, bills & receipts, promotions, social, updates, attachments, unread, starred, own folders), and the client deletes (Gmail trash,
+recoverable for 30 days), keeps, marks read, or moves messages to folders of their own (Gmail labels `SPIDER/<name>`), and writes rules
+that sort what arrives. Nothing is sent and nothing is deleted for good. Refresh tokens are kept AES-GCM encrypted in the Durable Object.
+
+One-time setup (the secrets GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, optional MAIL_KEY, go in the repository secrets; the deploy sets them):
+1. Google Cloud Console → a project → APIs & Services → enable **Gmail API**.
+2. OAuth consent screen: User type External; add the scopes `gmail.modify` and `userinfo.email`; while the app is in *Testing* add each client's Gmail
+   address under Test users (up to 100; Google expires the permission every 7 days in this mode, so a client reconnects weekly). To remove both
+   limits publish the app: Google reviews restricted scopes like `gmail.modify` (a security assessment).
+3. Credentials → Create OAuth client ID → Web application → Authorized redirect URI:
+   `https://spider-auth.devopsdevopshaim.workers.dev/hasadna-mail-callback`
+4. Copy the client id and secret into the repository secrets, then run the "Cloudflare deploy" workflow.

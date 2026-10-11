@@ -27,14 +27,16 @@ const secrets = {
   OPENAI_API_KEY: label('OPENAI_API_KEY', 'sk-[\\w-]{20,200}') || pick(/\bsk-(?!ant-)(?:proj-|svcacct-)?[\w-]{30,200}\b/),
   AZURE_SPEECH_KEY: label('AZURE_SPEECH_KEY', '[A-Za-z0-9]{32,100}'), AZURE_SPEECH_REGION: label('AZURE_SPEECH_REGION', '[a-z0-9]{4,30}'),
   ELEVENLABS_API_KEY: label('ELEVENLABS_API_KEY', '(?:sk_)?[A-Za-z0-9]{32,80}') || pick(/\bsk_[a-f0-9]{40,}\b/),
-  BREVO_API_KEY: (process.env.BREVO_API_KEY || '').trim(), RESEND_API_KEY: (process.env.RESEND_API_KEY || '').trim(), MAIL_FROM: (process.env.MAIL_FROM || '').trim()
+  BREVO_API_KEY: (process.env.BREVO_API_KEY || '').trim(), RESEND_API_KEY: (process.env.RESEND_API_KEY || '').trim(), MAIL_FROM: (process.env.MAIL_FROM || '').trim(),
+  // the clients' mailboxes (Gmail): a Google OAuth client; MAIL_KEY encrypts the stored tokens (derived from the Google secret when absent)
+  GOOGLE_CLIENT_ID: label('GOOGLE_CLIENT_ID', '[\\w.-]+\\.apps\\.googleusercontent\\.com') || (process.env.GOOGLE_CLIENT_ID || '').trim(), GOOGLE_CLIENT_SECRET: (process.env.GOOGLE_CLIENT_SECRET || label('GOOGLE_CLIENT_SECRET', 'GOCSPX-[\\w-]{20,60}')).trim(), MAIL_KEY: (process.env.MAIL_KEY || '').trim()
 };
 if (ADMIN_PASSWORD.length >= 8) {
   // the same secret gives the same hash on every deploy, so a deploy does not look like a new password (which would sign the admin out everywhere)
   const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-v1').digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
-for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.MORNING_CLIENT_SECRET]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 
 const notes = [];
 const note = (s) => { notes.push(s); console.log(s); };
@@ -59,6 +61,7 @@ if (Object.keys(bulk).length) {
 if (!secrets.ADMIN_PASSWORD_HASH) note('- ⚠️ אין ADMIN_PASSWORD (לפחות 8 תווים): כניסת המנהל תהיה רק דרך סיסמה ראשונית במייל');
 if (!secrets.ANTHROPIC_API_KEY) note('- ℹ️ אין ANTHROPIC_API_KEY: מאיה תענה רק בהודעה כללית (היא צריכה מפתח Claude עם יתרה)');
 if (!secrets.GEMINI_API_KEY) note('- ℹ️ אין GEMINI_API_KEY: ה־AI של האתרים והקומיקס יעבדו במצב המקומי בלבד');
+if (!secrets.GOOGLE_CLIENT_ID || !secrets.GOOGLE_CLIENT_SECRET) note('- ℹ️ אין GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET: חיבור תיבות המייל של הלקוחות (Gmail) עוד לא פעיל');
 if (!secrets.BREVO_API_KEY && !secrets.RESEND_API_KEY) note('- ⚠️ אין BREVO_API_KEY או RESEND_API_KEY: מיילים (סיסמה ראשונית, התראות) לא יישלחו');
 
 const ORIGIN = 'https://devopsdevopshaim-wq.github.io';
