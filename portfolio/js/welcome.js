@@ -64,7 +64,7 @@
     var data = res[0], who = res[1] || {};
     if (who.role === 'admin' && !who.open && !preview) return;   // the admin keeps the working view
     var hide = {}; (data.clientHide || []).forEach(function (id) { hide[id] = true; });
-    var mine = {}; (who.sites || []).forEach(function (id) { mine[id] = true; });
+    var mine = {}; (Array.isArray(who.sites) ? who.sites : who.sites === 'all' ? ['*'] : []).forEach(function (id) { mine[id] = true; });
     var list = data.projects.filter(function (p) { return !hide[p.id] && !p.hidden && !p.pending && (who.role !== 'client' || mine['*'] || mine[p.id]); });
     var byId = {}; list.forEach(function (p) { byId[p.id] = p; });
     var quick = QUICK.filter(function (q) { return byId[q.id]; }).slice(0, 8);

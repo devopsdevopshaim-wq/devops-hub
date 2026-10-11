@@ -20,6 +20,7 @@ import monitorTargets from './gen/monitor-targets.mjs';
 import monitorSummarize from './gen/monitor-summarize.mjs';
 import statusFresh from './gen/status-fresh.mjs';
 import statusRender from './gen/status-render.mjs';
+import { mailHandle, mailCallback } from './mail.mjs';
 
 const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
 const FROM_NAME = 'SPIDER · חיים קריספין';
@@ -34,7 +35,10 @@ const ROUTES = {
   'comic-draw': { svc: 'comic', fn: comicDraw, max: 12000000, free: true },
   'hasadna-voice': { svc: 'voice', fn: voiceSpeak, max: 200000, free: true },
   'hasadna-guide': { svc: 'agents', kind: 'guide', max: 20000, free: true },
-  'hasadna-status': { svc: 'agents', kind: 'status', max: 1000, free: true, method: 'GET' }
+  'hasadna-status': { svc: 'agents', kind: 'status', max: 1000, free: true, method: 'GET' },
+  // the clients' own mailboxes (Gmail); the callback is where Google sends the person back after they agree
+  'hasadna-mail': { svc: 'main', kind: 'mail', max: 20000, free: true },
+  'hasadna-mail-callback': { svc: 'main', kind: 'mailcb', max: 1000, free: true, method: 'GET' }
 };
 const KNOWLEDGE = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/knowledge.json';
 const routeOf = (pathname) => ROUTES[pathname.replace(/^\/(webhook\/)?/, '')];
@@ -178,6 +182,17 @@ export class State extends DurableObject {
         if (!fresh) { await this.save(st); try { await this.runMonitor(false); } catch (e) { /* the page shows the last known state */ } const again = await this.load(); st.sd = again.sd; st.orig = again.orig; }
         const r = (await statusRender(ctx({}, { 'Status · Webhook': { query: q } })))[0].json;
         return new Response(r.body, { status: 200, headers: { ...CORS, 'Content-Type': r.contentType || 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src https://devopsdevopshaim-wq.github.io data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" } });
+      }
+      if (rt.kind === 'mail' || rt.kind === 'mailcb') {
+        const origin = new URL(request.url).origin;
+        if (rt.kind === 'mailcb') {
+          const r = await mailCallback(env, st, new URL(request.url), origin);
+          await this.save(st);
+          return new Response(null, { status: 302, headers: { Location: r.redirect, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } });
+        }
+        const r = await mailHandle(env, st, body, origin);
+        await this.save(st);
+        return reply(r.body, r.code);
       }
       if (rt.kind === 'guide') {
         const norm = (await guideNormalize(ctx({ body, headers })))[0].json;
