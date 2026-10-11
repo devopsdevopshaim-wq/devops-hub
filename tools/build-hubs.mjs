@@ -94,6 +94,7 @@ function page(file, hub) {
   if (!/premium\.js/.test(s)) s = s.replace('</body>', '<script src="js/premium.js"></script>\n</body>');
   // the bar at the top: this is a site of its own now
   s = s.replace(/ · חלק ממערכת HKDAILY/g, '');
+  s = s.replace('Seedance / Runway / Kling.', 'Seedance / Runway / Kling / Veo 3.');
   s = s.replace(/<a href="https:\/\/hapinkas-hayomi\.onrender\.com\/?"[^>]*>למערכת המלאה ←<\/a>/g, '<a href="../portfolio/">כל האתרים שלי ←</a>');
   // the finance compass and the bills site are one shelf in the portfolio (בית ותשלומים): each links to the other
   if (hub === 'finance-hub' && !/\.\.\/bills-hub\//.test(s)) s = s.replace('<a href="../portfolio/">כל האתרים שלי ←</a>', '<span class="bar-links"><a href="../bills-hub/">🧾 תשלומים לבית</a> · <a href="../portfolio/">כל האתרים שלי ←</a></span>');
@@ -138,7 +139,9 @@ function build(hub, cfg) {
     const md = a.indexOf('  // המרת חבילה ל-Markdown להורדה'), mdEnd = a.indexOf('  return {\n    createProject');
     if (from < 0 || to < 0 || md < 0 || mdEnd < 0) throw new Error('aiaStudio.js changed: update tools/build-hubs.mjs');
     const t = read(path.join(here, 'hubs', 'aiaBrowser.template.js'))
-      .replace('/*__FROM_SERVER__*/', a.slice(from, to)).replace('/*__MARKDOWN__*/', a.slice(md, mdEnd));
+      .replace('/*__FROM_SERVER__*/', a.slice(from, to)).replace('/*__MARKDOWN__*/', a.slice(md, mdEnd))
+      // Veo 3 joins the server's engine list (it also writes the soundtrack)
+      .replace('      "Kling: ...",\n', '      "Kling: ...",\n      "Veo 3: ... (Veo 3 מפיק גם סאונד: הוסף בסוף Audio: צלילי סביבה, מוזיקה, ודיאלוג במירכאות אם יש)",\n');
     put(path.join(out, 'hub', 'lib', 'aiaBrowser.js'), t);
   }
   copy(path.join(here, 'hubs', 'local.js'), path.join(out, 'hub', 'lib', 'local.js'));

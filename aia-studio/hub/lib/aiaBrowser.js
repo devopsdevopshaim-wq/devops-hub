@@ -73,6 +73,7 @@ const MAX_IMAGES = 120;
       "Seedance: ...",
       "Runway Gen-3: ...",
       "Kling: ...",
+      "Veo 3: ... (Veo 3 מפיק גם סאונד: הוסף בסוף Audio: צלילי סביבה, מוזיקה, ודיאלוג במירכאות אם יש)",
       "",
       "### STYLE",
       "palette: #hex, #hex, #hex, #hex",
