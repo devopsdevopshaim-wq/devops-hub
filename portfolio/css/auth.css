@@ -49,3 +49,11 @@
 .af-menu a { display: block; padding: 10px 12px; border-radius: 10px; color: #f1eefc; text-decoration: none; font-size: 14px; }
 .af-menu a:hover { background: rgba(224,178,90,.16); }
 @media (max-width: 640px) { .admin-fab { top: auto; bottom: 92px; inset-inline-start: 12px; } .af-menu { position: absolute; bottom: 48px; } }
+
+/* the promo video, playable on the gate before signing in */
+.gate-promo { margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.gate-promo-title { margin: 0 0 10px; color: var(--mist); font-size: 14px; }
+.gate-promo-btns { display: flex; gap: 8px; }
+.gate-promo-btns .g-btn { flex: 1; }
+.gate-promo-btns .g-btn.on { border-color: rgba(224, 178, 90, .7); color: #f3d596; }
+#gate-video { display: block; width: 100%; aspect-ratio: 16 / 9; margin-top: 12px; border-radius: 14px; background: #0f0d24; border: 1px solid rgba(224, 178, 90, .35); }

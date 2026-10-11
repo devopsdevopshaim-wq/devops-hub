@@ -179,10 +179,30 @@
         '</form>' +
         '<p class="gate-sent" id="gate-info" role="status" hidden></p>' +
         '<p class="add-error" id="gate-err" role="alert"' + (msg ? '' : ' hidden') + '>' + (msg || '') + '</p>' +
+        '<div class="gate-promo">' +
+          '<p class="gate-promo-title">סרטון התדמית · 1:58</p>' +
+          '<div class="gate-promo-btns">' +
+            '<button class="g-btn ghost" type="button" data-promo="he">▶ עברית</button>' +
+            '<button class="g-btn ghost" type="button" data-promo="en" lang="en" dir="ltr">▶ English</button>' +
+          '</div>' +
+          '<video id="gate-video" controls playsinline preload="none" hidden></video>' +
+        '</div>' +
         '<p class="gate-owner">חיים קריספין · <a href="tel:+972544979771" dir="ltr">054-4979771</a></p>' +
         '<p class="gate-foot">אין לך גישה עדיין? <a href="' + WA + '" target="_blank" rel="noopener">דברו איתי בוואטסאפ</a> · <a href="services.html">שירותים ומחירים</a></p>' +
       '</div>';
     document.body.appendChild(g);
+    // the promo video plays right on the gate, without signing in
+    var vid = g.querySelector('#gate-video');
+    g.querySelectorAll('[data-promo]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var l = b.getAttribute('data-promo');
+        g.querySelectorAll('[data-promo]').forEach(function (x) { x.classList.toggle('on', x === b); });
+        vid.poster = 'videos/spider-promo-' + l + '.jpg';
+        vid.src = 'videos/spider-promo-' + l + '.mp4';
+        vid.hidden = false;
+        var p = vid.play(); if (p && p.catch) p.catch(function () {});
+      });
+    });
 
     var err = g.querySelector('#gate-err'), info = g.querySelector('#gate-info'), fpw = g.querySelector('#gate-pw'), fchg = g.querySelector('#gate-chg');
     function fail(t) { err.textContent = t; err.hidden = !t; if (t) info.hidden = true; }
