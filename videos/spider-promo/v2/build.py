@@ -15,6 +15,10 @@ IDS = ['01-thread', '02-thesis', '03-count', '04-ai', '05-engineering', '06-ever
        '09-pipeline', '10-live', '11-cta', '12-brand']
 STARTS = [0, 8, 17, 26, 37, 49, 59, 69, 81, 92, 100, 109]; TOTAL = 118
 TRANS = ['cut', 'crossfade', 'zoom', 'crossfade', 'push', 'crossfade', 'crossfade', 'zoom', 'push', 'crossfade', 'zoom', 'crossfade']
+if LANG == 'he':   # personal outro: Haim and his wife on camera, before the brand lockup
+    IDS = IDS[:11] + ['11b-us'] + IDS[11:]
+    STARTS = STARTS[:11] + [109, 122.6]; TOTAL = 131.6
+    TRANS = TRANS[:11] + ['crossfade', 'crossfade']
 
 if PROJ != MAIN:
     os.makedirs(PROJ, exist_ok=True)
@@ -98,7 +102,7 @@ for i in range(1, len(IDS)):
         d = -W if LANG == 'he' else W
         tjs += (f'tl.to("{a}", {{ x: {d}, duration: 0.5, ease: "power3.inOut" }}, {t});\n'
                 f'tl.fromTo("{b}", {{ x: {-d}, opacity: 1 }}, {{ x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }}, {t});\n')
-audio = 'assets/bgm/score-v2-en-mix.m4a' if EN else 'assets/bgm/score-v2-he.m4a'
+audio = 'assets/bgm/score-v2-en-mix.m4a' if EN else 'assets/bgm/score-v2-he-us.m4a'
 index = f'''<!DOCTYPE html>
 <html lang="{LANG}">
   <head>

@@ -12,7 +12,7 @@
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="118" data-width="1920" data-height="1080">
+    <div id="root" data-composition-id="main" data-start="0" data-duration="131.6" data-width="1920" data-height="1080">
       <div id="el-01-thread" class="scene" data-composition-id="01-thread" data-composition-src="compositions/frames/01-thread.html" data-start="0" data-duration="8.5" data-track-index="0"></div>
       <div id="el-02-thesis" class="scene" data-composition-id="02-thesis" data-composition-src="compositions/frames/02-thesis.html" data-start="8" data-duration="9.4" data-track-index="1"></div>
       <div id="el-03-count" class="scene" data-composition-id="03-count" data-composition-src="compositions/frames/03-count.html" data-start="17" data-duration="9.5" data-track-index="0"></div>
@@ -24,8 +24,9 @@
       <div id="el-09-pipeline" class="scene" data-composition-id="09-pipeline" data-composition-src="compositions/frames/09-pipeline.html" data-start="81" data-duration="11.5" data-track-index="0"></div>
       <div id="el-10-live" class="scene" data-composition-id="10-live" data-composition-src="compositions/frames/10-live.html" data-start="92" data-duration="8.4" data-track-index="1"></div>
       <div id="el-11-cta" class="scene" data-composition-id="11-cta" data-composition-src="compositions/frames/11-cta.html" data-start="100" data-duration="9.5" data-track-index="0"></div>
-      <div id="el-12-brand" class="scene" data-composition-id="12-brand" data-composition-src="compositions/frames/12-brand.html" data-start="109" data-duration="9" data-track-index="1"></div>
-      <audio id="el-bgm" src="assets/bgm/score-v2-he.m4a" data-start="0" data-duration="118" data-track-index="11" data-volume="1"></audio>
+      <div id="el-11b-us" class="scene" data-composition-id="11b-us" data-composition-src="compositions/frames/11b-us.html" data-start="109" data-duration="14.1" data-track-index="1"></div>
+      <div id="el-12-brand" class="scene" data-composition-id="12-brand" data-composition-src="compositions/frames/12-brand.html" data-start="122.6" data-duration="9.0" data-track-index="0"></div>
+      <audio id="el-bgm" src="assets/bgm/score-v2-he-us.m4a" data-start="0" data-duration="131.6" data-track-index="11" data-volume="1"></audio>
     </div>
     <script>
       (function () {
@@ -51,8 +52,10 @@ tl.fromTo("#el-10-live", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "pow
 tl.to("#el-10-live", { scale: 2.5, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power3.in" }, 100);
 tl.fromTo("#el-11-cta", { scale: 0.5, opacity: 0, filter: "blur(8px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 100);
 tl.to("#el-11-cta", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 109);
-tl.fromTo("#el-12-brand", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 109);
-        tl.to({}, { duration: 118 }, 0);
+tl.fromTo("#el-11b-us", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 109);
+tl.to("#el-11b-us", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 122.6);
+tl.fromTo("#el-12-brand", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 122.6);
+        tl.to({}, { duration: 131.6 }, 0);
         window.__timelines["main"] = tl;
       })();
     </script>
