@@ -1,0 +1,360 @@
+<template>
+<style>
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKerUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcbUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfrUC_2fi-Q.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N9vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-Po3huR_DQ.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPgzpTn5_PDb9no.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPg9pTn5_PDb.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;color:#f1eefc;font-family:'Assistant',sans-serif}
+.f07-creative-bg{position:absolute;inset:0;background:radial-gradient(120% 95% at 68% -5%,#2a2366 0%,#17143a 40%,#0f0d24 78%)}
+.f07-creative-skyimg{position:absolute;left:-4%;top:-4%;width:108%;height:108%;object-fit:cover;opacity:.42}
+.f07-creative-st{position:absolute;border-radius:50%;background:#fff}
+.f07-creative-grain{position:absolute;left:-256px;top:-256px;width:2432px;height:1592px;background:url(assets/grain.png);opacity:.07;mix-blend-mode:overlay}
+.f07-creative-vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 55%,rgba(5,4,16,.55) 100%)}
+.f07-creative-ov{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:visible}
+.f07-creative-tx{position:absolute;direction:rtl;text-align:right}
+.f07-creative-eye{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:24px;letter-spacing:.22em;color:#e0b25a;text-transform:uppercase;margin-bottom:22px;direction:ltr;display:block}
+.f07-creative-eyehe{font-family:'Assistant',sans-serif;font-weight:600;font-size:30px;letter-spacing:.06em;color:#e0b25a;margin-bottom:18px;display:block}
+.f07-creative-h1{font-family:'Bellefair',serif;font-weight:400;font-size:118px;line-height:1.08}
+.f07-creative-h2{font-family:'Bellefair',serif;font-weight:400;font-size:76px;line-height:1.12}
+.f07-creative-h3{font-family:'Bellefair',serif;font-weight:400;font-size:40px;line-height:1.1}
+.f07-creative-lede{font-family:'Assistant',sans-serif;font-weight:400;font-size:38px;color:#a9a4cc;margin-top:22px;line-height:1.35}
+.f07-creative-acc{color:#e0b25a}.f07-creative-mint{color:#62dcb8}
+.f07-creative-m{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .12em}
+.f07-creative-w{display:inline-block;white-space:pre}
+.f07-creative-ul{display:block;height:3px;background:linear-gradient(90deg,rgba(224,178,90,0),#e0b25a 30%,#f3d596);margin-top:14px;transform-origin:100% 50%}
+.f07-creative-shot{position:absolute;border-radius:16px;overflow:hidden;border:1px solid rgba(241,238,252,.22);box-shadow:0 26px 70px rgba(0,0,0,.55);background:#17143a}
+.f07-creative-shot img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.f07-creative-shine{position:absolute;top:-10%;left:0;width:38%;height:120%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.28),rgba(255,255,255,0));pointer-events:none}
+.f07-creative-shot.f07-creative-focal{border:2px solid #e0b25a;box-shadow:0 0 0 8px rgba(224,178,90,.12),0 30px 90px rgba(0,0,0,.65)}
+.f07-creative-chip{position:absolute;right:14px;bottom:14px;direction:rtl;font-family:'Assistant',sans-serif;font-weight:600;font-size:24px;color:#f1eefc;background:rgba(15,13,36,.86);padding:6px 14px;border-radius:10px;white-space:nowrap}
+.f07-creative-focal .f07-creative-chip{color:#f3d596;font-size:30px}
+.f07-creative-silk{stroke:#e0b25a;stroke-width:3;fill:none;stroke-linecap:round}
+.f07-creative-mote{fill:#f6dc9a}
+
+#f07-creative-win{position:absolute;left:150px;top:150px;width:1020px;height:640px;border-radius:18px;overflow:hidden;border:2px solid #e0b25a;box-shadow:0 0 0 8px rgba(224,178,90,.12),0 40px 110px rgba(0,0,0,.7);background:#17143a}
+#f07-creative-persp{position:absolute;inset:0;perspective:1600px}
+.f07-creative-scr{position:absolute;inset:0}.f07-creative-scr img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.f07-creative-list{list-style:none;margin-top:30px;font-family:'Assistant',sans-serif;font-size:44px;color:#a9a4cc;}.f07-creative-list li{padding:12px 0;border-bottom:1px solid rgba(241,238,252,.12)}
+</style>
+<div id="root" data-composition-id="07-creative" data-width="1920" data-height="1080" data-duration="10">
+<div id="f07-creative-bgclip" class="clip f07-creative-bg" data-start="0" data-duration="10" data-track-index="0"><img class="f07-creative-skyimg" id="f07-creative-sky" src="assets/sky.webp" alt=""><div id="f07-creative-stars"><i class="f07-creative-st f07-creative-tw" style="left:622px;top:140px;width:3.3px;height:3.3px;opacity:0.29"></i><i class="f07-creative-st" style="left:1029px;top:340px;width:1.4px;height:1.4px;opacity:0.55"></i><i class="f07-creative-st" style="left:72px;top:403px;width:1.4px;height:1.4px;opacity:0.30"></i><i class="f07-creative-st" style="left:815px;top:768px;width:1.6px;height:1.6px;opacity:0.38"></i><i class="f07-creative-st" style="left:1205px;top:880px;width:3.1px;height:3.1px;opacity:0.49"></i><i class="f07-creative-st" style="left:1874px;top:43px;width:4.0px;height:4.0px;opacity:0.42"></i><i class="f07-creative-st" style="left:277px;top:109px;width:2.2px;height:2.2px;opacity:0.74"></i><i class="f07-creative-st" style="left:347px;top:540px;width:3.3px;height:3.3px;opacity:0.47"></i><i class="f07-creative-st" style="left:1052px;top:58px;width:1.4px;height:1.4px;opacity:0.37"></i><i class="f07-creative-st f07-creative-tw" style="left:1306px;top:397px;width:2.2px;height:2.2px;opacity:0.60"></i><i class="f07-creative-st" style="left:870px;top:278px;width:3.8px;height:3.8px;opacity:0.67"></i><i class="f07-creative-st" style="left:469px;top:534px;width:2.9px;height:2.9px;opacity:0.78"></i><i class="f07-creative-st" style="left:1401px;top:267px;width:4.4px;height:4.4px;opacity:0.32"></i><i class="f07-creative-st" style="left:803px;top:703px;width:1.7px;height:1.7px;opacity:0.54"></i><i class="f07-creative-st" style="left:75px;top:621px;width:3.7px;height:3.7px;opacity:0.59"></i><i class="f07-creative-st" style="left:1681px;top:291px;width:3.5px;height:3.5px;opacity:0.61"></i><i class="f07-creative-st" style="left:1113px;top:424px;width:4.0px;height:4.0px;opacity:0.82"></i><i class="f07-creative-st" style="left:910px;top:617px;width:1.4px;height:1.4px;opacity:0.67"></i><i class="f07-creative-st f07-creative-tw" style="left:1242px;top:922px;width:3.9px;height:3.9px;opacity:0.42"></i><i class="f07-creative-st" style="left:741px;top:621px;width:1.3px;height:1.3px;opacity:0.53"></i><i class="f07-creative-st" style="left:323px;top:109px;width:1.4px;height:1.4px;opacity:0.71"></i><i class="f07-creative-st" style="left:248px;top:230px;width:2.5px;height:2.5px;opacity:0.77"></i><i class="f07-creative-st" style="left:155px;top:417px;width:3.0px;height:3.0px;opacity:0.78"></i><i class="f07-creative-st" style="left:1573px;top:802px;width:2.1px;height:2.1px;opacity:0.50"></i><i class="f07-creative-st" style="left:689px;top:821px;width:4.4px;height:4.4px;opacity:0.34"></i><i class="f07-creative-st" style="left:338px;top:215px;width:2.0px;height:2.0px;opacity:0.54"></i><i class="f07-creative-st" style="left:1131px;top:244px;width:1.2px;height:1.2px;opacity:0.50"></i><i class="f07-creative-st f07-creative-tw" style="left:709px;top:526px;width:4.3px;height:4.3px;opacity:0.66"></i><i class="f07-creative-st" style="left:990px;top:574px;width:3.4px;height:3.4px;opacity:0.28"></i><i class="f07-creative-st" style="left:1727px;top:724px;width:4.1px;height:4.1px;opacity:0.73"></i><i class="f07-creative-st" style="left:753px;top:371px;width:1.5px;height:1.5px;opacity:0.63"></i><i class="f07-creative-st" style="left:120px;top:63px;width:1.9px;height:1.9px;opacity:0.35"></i><i class="f07-creative-st" style="left:653px;top:49px;width:1.2px;height:1.2px;opacity:0.34"></i><i class="f07-creative-st" style="left:195px;top:338px;width:1.3px;height:1.3px;opacity:0.77"></i><i class="f07-creative-st" style="left:1179px;top:138px;width:2.0px;height:2.0px;opacity:0.46"></i><i class="f07-creative-st" style="left:699px;top:114px;width:4.0px;height:4.0px;opacity:0.85"></i><i class="f07-creative-st f07-creative-tw" style="left:895px;top:449px;width:1.5px;height:1.5px;opacity:0.31"></i><i class="f07-creative-st" style="left:658px;top:246px;width:3.9px;height:3.9px;opacity:0.35"></i><i class="f07-creative-st" style="left:44px;top:883px;width:2.9px;height:2.9px;opacity:0.34"></i><i class="f07-creative-st" style="left:1043px;top:25px;width:2.9px;height:2.9px;opacity:0.84"></i><i class="f07-creative-st" style="left:1658px;top:647px;width:2.1px;height:2.1px;opacity:0.47"></i><i class="f07-creative-st" style="left:321px;top:717px;width:3.0px;height:3.0px;opacity:0.72"></i><i class="f07-creative-st" style="left:633px;top:207px;width:3.9px;height:3.9px;opacity:0.84"></i><i class="f07-creative-st" style="left:1637px;top:749px;width:3.9px;height:3.9px;opacity:0.69"></i><i class="f07-creative-st" style="left:435px;top:481px;width:2.4px;height:2.4px;opacity:0.27"></i><i class="f07-creative-st f07-creative-tw" style="left:54px;top:260px;width:2.1px;height:2.1px;opacity:0.67"></i><i class="f07-creative-st" style="left:1837px;top:415px;width:4.3px;height:4.3px;opacity:0.84"></i><i class="f07-creative-st" style="left:1834px;top:339px;width:1.9px;height:1.9px;opacity:0.39"></i><i class="f07-creative-st" style="left:378px;top:190px;width:3.3px;height:3.3px;opacity:0.79"></i><i class="f07-creative-st" style="left:1614px;top:445px;width:3.4px;height:3.4px;opacity:0.73"></i><i class="f07-creative-st" style="left:163px;top:614px;width:4.2px;height:4.2px;opacity:0.72"></i><i class="f07-creative-st" style="left:1440px;top:444px;width:1.8px;height:1.8px;opacity:0.72"></i><i class="f07-creative-st" style="left:638px;top:744px;width:4.4px;height:4.4px;opacity:0.49"></i><i class="f07-creative-st" style="left:771px;top:879px;width:3.6px;height:3.6px;opacity:0.35"></i><i class="f07-creative-st f07-creative-tw" style="left:244px;top:140px;width:4.2px;height:4.2px;opacity:0.73"></i><i class="f07-creative-st" style="left:281px;top:768px;width:4.4px;height:4.4px;opacity:0.64"></i><i class="f07-creative-st" style="left:673px;top:510px;width:1.6px;height:1.6px;opacity:0.26"></i><i class="f07-creative-st" style="left:1864px;top:603px;width:2.9px;height:2.9px;opacity:0.81"></i><i class="f07-creative-st" style="left:833px;top:810px;width:3.9px;height:3.9px;opacity:0.38"></i><i class="f07-creative-st" style="left:484px;top:272px;width:2.0px;height:2.0px;opacity:0.60"></i></div><div id="f07-creative-stars2"><i class="f07-creative-st f07-creative-tw" style="left:82px;top:548px;width:1.3px;height:1.3px;opacity:0.56"></i><i class="f07-creative-st" style="left:1875px;top:270px;width:5.9px;height:5.9px;opacity:0.63"></i><i class="f07-creative-st" style="left:1697px;top:18px;width:4.7px;height:4.7px;opacity:0.56"></i><i class="f07-creative-st" style="left:1160px;top:351px;width:5.9px;height:5.9px;opacity:0.64"></i><i class="f07-creative-st" style="left:1393px;top:635px;width:3.8px;height:3.8px;opacity:0.74"></i><i class="f07-creative-st" style="left:1183px;top:525px;width:1.9px;height:1.9px;opacity:0.58"></i><i class="f07-creative-st" style="left:297px;top:545px;width:3.2px;height:3.2px;opacity:0.71"></i><i class="f07-creative-st" style="left:1132px;top:339px;width:3.7px;height:3.7px;opacity:0.38"></i><i class="f07-creative-st" style="left:1885px;top:794px;width:3.1px;height:3.1px;opacity:0.38"></i><i class="f07-creative-st f07-creative-tw" style="left:857px;top:593px;width:3.3px;height:3.3px;opacity:0.81"></i><i class="f07-creative-st" style="left:97px;top:317px;width:3.7px;height:3.7px;opacity:0.28"></i><i class="f07-creative-st" style="left:895px;top:532px;width:2.7px;height:2.7px;opacity:0.85"></i><i class="f07-creative-st" style="left:671px;top:342px;width:4.1px;height:4.1px;opacity:0.41"></i><i class="f07-creative-st" style="left:905px;top:145px;width:1.5px;height:1.5px;opacity:0.66"></i><i class="f07-creative-st" style="left:534px;top:149px;width:2.4px;height:2.4px;opacity:0.50"></i><i class="f07-creative-st" style="left:282px;top:646px;width:4.7px;height:4.7px;opacity:0.83"></i><i class="f07-creative-st" style="left:82px;top:293px;width:4.4px;height:4.4px;opacity:0.76"></i><i class="f07-creative-st" style="left:475px;top:805px;width:1.4px;height:1.4px;opacity:0.58"></i></div></div>
+<div class="clip" data-start="0" data-duration="10" data-track-index="1" id="f07-creative-stage" data-layout-allow-overflow><div id="f07-creative-push" style="position:absolute;inset:0">
+<div id="f07-creative-persp"><div id="f07-creative-win"><div class="f07-creative-scr" id="f07-creative-s0" data-layout-allow-overlap><img src="assets/book-studio.jpg" alt=""><span class="f07-creative-chip" id="f07-creative-ch0" data-layout-allow-overlap>סטודיו ספרים</span></div><div class="f07-creative-scr" id="f07-creative-s1" data-layout-allow-overlap><img src="assets/comic-studio.jpg" alt=""><span class="f07-creative-chip" id="f07-creative-ch1" data-layout-allow-overlap>פאנל — קומיקס</span></div><div class="f07-creative-scr" id="f07-creative-s2" data-layout-allow-overlap><img src="assets/torah-hub.jpg" alt=""><span class="f07-creative-chip" id="f07-creative-ch2" data-layout-allow-overlap>ספריית קודש</span></div><div class="f07-creative-scr" id="f07-creative-s3" data-layout-allow-overlap><img src="assets/hebrew-calendar.jpg" alt=""><span class="f07-creative-chip" id="f07-creative-ch3" data-layout-allow-overlap>לוח שנה עברי</span></div></div></div>
+<div class="f07-creative-tx" style="top:170px;right:120px;width:560px;"><div class="f07-creative-h2" id="f07-creative-l1"><span class="f07-creative-m"><span class="f07-creative-w f07-creative-a">סטודיו</span></span> <span class="f07-creative-m"><span class="f07-creative-w f07-creative-a">ליצירה</span></span> <span class="f07-creative-acc"><span class="f07-creative-m"><span class="f07-creative-w f07-creative-b">ומורשת</span></span></span></div><ul class="f07-creative-list"><li id="f07-creative-li0">ספרים</li><li id="f07-creative-li1">קומיקס</li><li id="f07-creative-li2">ספריית קודש</li><li id="f07-creative-li3">לוח שנה עברי</li></ul></div>
+</div></div>
+
+<div id="f07-creative-fx" class="clip" data-start="0" data-duration="10" data-track-index="2" data-layout-allow-overflow><div class="f07-creative-vig"></div><div class="f07-creative-grain" id="f07-creative-grain"></div></div>
+</div>
+<script src="assets/vendor/gsap.min.js"></script>
+<script>
+(function(){
+
+const tl = gsap.timeline({ paused: true });
+const Q = s => document.querySelector(s);
+const QA = s => Array.from(document.querySelectorAll(s));
+const RTL = true;
+const rise = (sel, at, opt) => tl.fromTo(sel, { yPercent: 110, opacity: 0 }, Object.assign({ yPercent: 0, opacity: 1, duration: 0.9, ease: 'power4.out', stagger: 0.12 }, opt || {}), at);
+const fadeUp = (sel, at, opt) => tl.fromTo(sel, { y: 24, opacity: 0, filter: 'blur(6px)' }, Object.assign({ y: 0, opacity: 1, filter: 'blur(0px)', duration: 1.0, ease: 'power3.out' }, opt || {}), at);
+const ul = (sel, at) => tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: 'expo.out' }, at);
+const card = (id, at, opt) => {
+  const side = (opt && opt.side) || (RTL ? 1 : -1);
+  tl.fromTo('#f07-creative-' + id, { opacity: 0, scale: 0.9, y: 50, rotationY: 28 * side, transformPerspective: 1400, filter: 'blur(10px)' },
+    Object.assign({ opacity: 1, scale: 1, y: 0, rotationY: 0, filter: 'blur(0px)', duration: 1.2, ease: 'power3.out' }, opt || {}), at);
+  tl.fromTo('#f07-creative-' + id + '-sh', { xPercent: -120 }, { xPercent: 320, duration: 1.1, ease: 'power2.inOut' }, at + 0.55);
+};
+const draw = (sel, at, d, ease) => tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d || 1.6, ease: ease || 'power2.inOut' }, at);
+const motes = (sel, x1, y1, x2, y2, at, d, n) => QA(sel).forEach((m, i) => tl.fromTo(m, { attr: { cx: x1, cy: y1 }, opacity: 0 },
+  { attr: { cx: x2, cy: y2 }, opacity: 1, duration: d, ease: 'sine.inOut' }, at + i * (d / (n || 3))));
+// ambient: parallax stars, twinkle, grain, slow push
+tl.fromTo('#f07-creative-stars', { x: 0 }, { x: RTL ? -40 : 40, duration: 10, ease: 'none' }, 0);
+tl.fromTo('#f07-creative-stars2', { x: 0 }, { x: RTL ? -90 : 90, duration: 10, ease: 'none' }, 0);
+QA('.f07-creative-tw').forEach((s, i) => tl.fromTo(s, { opacity: 0.25 }, { opacity: 1, duration: 0.9, yoyo: true, repeat: Math.max(0, Math.floor(10 / 1.8) - 1), ease: 'sine.inOut' }, (i % 5) * 0.37));
+tl.fromTo('#f07-creative-grain', { x: 0, y: 0 }, { x: -192, y: 128, duration: 10, ease: 'steps(' + Math.round(10 * 12) + ')' }, 0);
+tl.fromTo('#f07-creative-sky', { scale: 1.0 }, { scale: 1.06, duration: 10, ease: 'none' }, 0);
+tl.fromTo('#f07-creative-push', { scale: 1.0 }, { scale: 1.02, duration: 10, ease: 'none', transformOrigin: '50% 45%' }, 0);
+tl.fromTo('#f07-creative-win', { opacity: 0, rotationY: 18, rotationX: 6, z: -260, x: -80 }, { opacity: 1, rotationY: 7, rotationX: 2, z: 0, x: 0, duration: 2.0, ease: 'power3.out' }, 0.0);
+tl.to('#f07-creative-win', { rotationY: 2, rotationX: 0.5, duration: 8.0, ease: 'none' }, 2.0);
+rise('#f07-creative-l1 .f07-creative-a', 0.3, { stagger: 0.16 }); rise('#f07-creative-l1 .f07-creative-b', 0.8999999999999999);
+fadeUp(QA('.f07-creative-list li'), 1.2, { stagger: 0.12, duration: 0.7 });
+tl.fromTo('#f07-creative-li0', { color: '#a9a4cc' }, { color: '#f3d596', duration: 0.4 }, 2.0);
+[1, 2, 3].forEach((i, k) => {
+  const at = [2.0,4.0,6.0][k];
+  tl.fromTo('#f07-creative-s' + i, { clipPath: 'inset(0% 0% 0% 100%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.9, ease: 'power3.inOut' }, at);
+  tl.fromTo('#f07-creative-s' + i + ' img', { scale: 1.08 }, { scale: 1, duration: 1.6, ease: 'power2.out' }, at);
+  tl.to('#f07-creative-li' + (i - 1), { color: '#a9a4cc', duration: 0.4 }, at);
+  tl.to('#f07-creative-ch' + (i - 1), { opacity: 0, duration: 0.5 }, at + 0.3);
+  tl.fromTo('#f07-creative-li' + i, { color: '#a9a4cc' }, { color: '#f3d596', duration: 0.4 }, at + 0.3);
+});
+window.__timelines["07-creative"] = tl;
+})();
+</script>
+</template>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="orbit-svg" viewBox="-265 -160 530 320" role="img" aria-label="מפת כל הפרויקטים">
+          <defs>
+            <radialGradient id="core-fill" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#3a3280"></stop><stop offset="1" stop-color="#17143a"></stop></radialGradient>
+            <radialGradient id="core-glow"><stop offset="0" stop-color="#8b7bff" stop-opacity=".45"></stop><stop offset="1" stop-color="#8b7bff" stop-opacity="0"></stop></radialGradient>
+          </defs>
+          <g id="orbit-core" aria-hidden="true">
+            <circle r="120" fill="url(#core-glow)"></circle>
+            <circle r="66" fill="url(#core-fill)" stroke="rgba(224,178,90,.55)" stroke-width="1.2"></circle>
+            <circle r="76" fill="none" stroke="rgba(139,123,255,.18)" stroke-width="8"></circle>
+            <text class="core-num" id="core-num" y="10" text-anchor="middle">0</text>
+            <text class="core-label" y="34" text-anchor="middle">פרויקטים</text>
+          </g>
+        </svg>

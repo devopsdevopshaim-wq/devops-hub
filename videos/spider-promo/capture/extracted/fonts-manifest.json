@@ -1,0 +1,326 @@
+{
+  "files": [
+    {
+      "file": "2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2",
+      "family": "Assistant",
+      "rawFamily": "Assistant ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Assistant-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2",
+      "family": "Assistant",
+      "rawFamily": "Assistant ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Assistant-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2",
+      "family": "Assistant",
+      "rawFamily": "Assistant ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Assistant-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "PN_zRfy9qWD8fEagAPg9pTn5_PDb.woff2",
+      "family": "Michroma",
+      "rawFamily": "Michroma",
+      "subfamily": "Regular",
+      "postscript": "Michroma-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "PN_zRfy9qWD8fEagAPgzpTn5_PDb9no.woff2",
+      "family": "Michroma",
+      "rawFamily": "Michroma",
+      "subfamily": "Regular",
+      "postscript": "Michroma-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "TUZ3zwprpvBS1izr_vOMscGKcLUC_2fi-Vl4.woff2",
+      "family": "Amatic SC",
+      "rawFamily": "Amatic SC",
+      "subfamily": "Bold",
+      "postscript": "AmaticSC-Bold",
+      "weight": 700,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "TUZ3zwprpvBS1izr_vOMscGKcbUC_2fi-Vl4.woff2",
+      "family": "Amatic SC",
+      "rawFamily": "Amatic SC",
+      "subfamily": "Bold",
+      "postscript": "AmaticSC-Bold",
+      "weight": 700,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "TUZ3zwprpvBS1izr_vOMscGKerUC_2fi-Vl4.woff2",
+      "family": "Amatic SC",
+      "rawFamily": "Amatic SC",
+      "subfamily": "Bold",
+      "postscript": "AmaticSC-Bold",
+      "weight": 700,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "TUZ3zwprpvBS1izr_vOMscGKfLUC_2fi-Vl4.woff2",
+      "family": "Amatic SC",
+      "rawFamily": "Amatic SC",
+      "subfamily": "Bold",
+      "postscript": "AmaticSC-Bold",
+      "weight": 700,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "TUZ3zwprpvBS1izr_vOMscGKfrUC_2fi-Q.woff2",
+      "family": "Amatic SC",
+      "rawFamily": "Amatic SC",
+      "subfamily": "Bold",
+      "postscript": "AmaticSC-Bold",
+      "weight": 700,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "kJExBuYY6AAuhiXUxG1N-Po3huR_DQ.woff2",
+      "family": "Bellefair",
+      "rawFamily": "Bellefair",
+      "subfamily": "Regular",
+      "postscript": "Bellefair-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "kJExBuYY6AAuhiXUxG1N-vo3huR_DaS8.woff2",
+      "family": "Bellefair",
+      "rawFamily": "Bellefair",
+      "subfamily": "Regular",
+      "postscript": "Bellefair-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "kJExBuYY6AAuhiXUxG1N9vo3huR_DaS8.woff2",
+      "family": "Bellefair",
+      "rawFamily": "Bellefair",
+      "subfamily": "Regular",
+      "postscript": "Bellefair-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    }
+  ],
+  "families": [
+    {
+      "family": "Amatic SC",
+      "weights": [
+        700
+      ],
+      "variable": false,
+      "fileCount": 5,
+      "files": [
+        "TUZ3zwprpvBS1izr_vOMscGKcLUC_2fi-Vl4.woff2",
+        "TUZ3zwprpvBS1izr_vOMscGKcbUC_2fi-Vl4.woff2",
+        "TUZ3zwprpvBS1izr_vOMscGKerUC_2fi-Vl4.woff2",
+        "TUZ3zwprpvBS1izr_vOMscGKfLUC_2fi-Vl4.woff2",
+        "TUZ3zwprpvBS1izr_vOMscGKfrUC_2fi-Q.woff2"
+      ]
+    },
+    {
+      "family": "Assistant",
+      "weights": [
+        200
+      ],
+      "variable": true,
+      "fileCount": 3,
+      "files": [
+        "2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2",
+        "2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2",
+        "2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2"
+      ]
+    },
+    {
+      "family": "Bellefair",
+      "weights": [
+        400
+      ],
+      "variable": false,
+      "fileCount": 3,
+      "files": [
+        "kJExBuYY6AAuhiXUxG1N-Po3huR_DQ.woff2",
+        "kJExBuYY6AAuhiXUxG1N-vo3huR_DaS8.woff2",
+        "kJExBuYY6AAuhiXUxG1N9vo3huR_DaS8.woff2"
+      ]
+    },
+    {
+      "family": "JetBrains Mono",
+      "weights": [
+        400
+      ],
+      "variable": true,
+      "fileCount": 6,
+      "files": [
+        "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2",
+        "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2",
+        "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+        "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2",
+        "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2",
+        "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2"
+      ]
+    },
+    {
+      "family": "Michroma",
+      "weights": [
+        400
+      ],
+      "variable": false,
+      "fileCount": 2,
+      "files": [
+        "PN_zRfy9qWD8fEagAPg9pTn5_PDb.woff2",
+        "PN_zRfy9qWD8fEagAPgzpTn5_PDb9no.woff2"
+      ]
+    }
+  ],
+  "unidentified": [],
+  "meta": {
+    "generatedAt": "2026-10-09T11:25:40.525Z",
+    "tool": "fontkit"
+  }
+}

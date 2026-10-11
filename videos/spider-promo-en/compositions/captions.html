@@ -1,0 +1,335 @@
+<template>
+<style>
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKerUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcbUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfrUC_2fi-Q.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N9vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-Po3huR_DQ.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPgzpTn5_PDb9no.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPg9pTn5_PDb.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden}
+.cap{position:absolute;left:0;right:0;top:915px;text-align:center;opacity:0}
+.cap span{display:inline-block;font-family:'Assistant',sans-serif;font-weight:600;font-size:40px;line-height:1.25;color:#f1eefc;background:rgba(15,13,36,.78);border:1px solid rgba(224,178,90,.35);padding:10px 26px;border-radius:14px}
+</style>
+<div id="root" data-composition-id="captions" data-width="1920" data-height="1080" data-duration="118">
+<div class="clip" id="cap-layer" data-start="0" data-duration="118" data-track-index="0"><div class="cap" id="cap-0" data-layout-allow-overlap><span>Every system begins with a</span></div><div class="cap" id="cap-1" data-layout-allow-overlap><span>single thread.</span></div><div class="cap" id="cap-2" data-layout-allow-overlap><span>I'm Haim Krispin.</span></div><div class="cap" id="cap-3" data-layout-allow-overlap><span>And I build all of them.</span></div><div class="cap" id="cap-4" data-layout-allow-overlap><span>Everything I've made,</span></div><div class="cap" id="cap-5" data-layout-allow-overlap><span>in one place.</span></div><div class="cap" id="cap-6" data-layout-allow-overlap><span>Forty-eight projects.</span></div><div class="cap" id="cap-7" data-layout-allow-overlap><span>Every point is a real,</span></div><div class="cap" id="cap-8" data-layout-allow-overlap><span>working product.</span></div><div class="cap" id="cap-9" data-layout-allow-overlap><span>AI agents that actually work</span></div><div class="cap" id="cap-10" data-layout-allow-overlap><span>for you.</span></div><div class="cap" id="cap-11" data-layout-allow-overlap><span>JARVIS,</span></div><div class="cap" id="cap-12" data-layout-allow-overlap><span>a smart office assistant,</span></div><div class="cap" id="cap-13" data-layout-allow-overlap><span>and an AI production studio.</span></div><div class="cap" id="cap-14" data-layout-allow-overlap><span>Real engineering,</span></div><div class="cap" id="cap-15" data-layout-allow-overlap><span>too.</span></div><div class="cap" id="cap-16" data-layout-allow-overlap><span>From a robotic parking garage,</span></div><div class="cap" id="cap-17" data-layout-allow-overlap><span>to a home's electrical panel.</span></div><div class="cap" id="cap-18" data-layout-allow-overlap><span>Tools for everyday life.</span></div><div class="cap" id="cap-19" data-layout-allow-overlap><span>Travel,</span></div><div class="cap" id="cap-20" data-layout-allow-overlap><span>money,</span></div><div class="cap" id="cap-21" data-layout-allow-overlap><span>health,</span></div><div class="cap" id="cap-22" data-layout-allow-overlap><span>and marketing.</span></div><div class="cap" id="cap-23" data-layout-allow-overlap><span>Studios for creativity,</span></div><div class="cap" id="cap-24" data-layout-allow-overlap><span>and heritage.</span></div><div class="cap" id="cap-25" data-layout-allow-overlap><span>Books,</span></div><div class="cap" id="cap-26" data-layout-allow-overlap><span>comics,</span></div><div class="cap" id="cap-27" data-layout-allow-overlap><span>and a library of sacred texts.</span></div><div class="cap" id="cap-28" data-layout-allow-overlap><span>And every thread connects to</span></div><div class="cap" id="cap-29" data-layout-allow-overlap><span>all the others.</span></div><div class="cap" id="cap-30" data-layout-allow-overlap><span>From my computer to the world,</span></div><div class="cap" id="cap-31" data-layout-allow-overlap><span>in four steps.</span></div><div class="cap" id="cap-32" data-layout-allow-overlap><span>Build it.</span></div><div class="cap" id="cap-33" data-layout-allow-overlap><span>Push it to GitHub.</span></div><div class="cap" id="cap-34" data-layout-allow-overlap><span>Publish it.</span></div><div class="cap" id="cap-35" data-layout-allow-overlap><span>Live.</span></div><div class="cap" id="cap-36" data-layout-allow-overlap><span>Live,</span></div><div class="cap" id="cap-37" data-layout-allow-overlap><span>right now.</span></div><div class="cap" id="cap-38" data-layout-allow-overlap><span>And it keeps itself up</span></div><div class="cap" id="cap-39" data-layout-allow-overlap><span>to date.</span></div><div class="cap" id="cap-40" data-layout-allow-overlap><span>Want one like this for</span></div><div class="cap" id="cap-41" data-layout-allow-overlap><span>your business?</span></div><div class="cap" id="cap-42" data-layout-allow-overlap><span>Let's spin your next thread.</span></div><div class="cap" id="cap-43" data-layout-allow-overlap><span>SPIDER.</span></div><div class="cap" id="cap-44" data-layout-allow-overlap><span>Built by Haim Krispin.</span></div></div>
+</div>
+<script src="assets/vendor/gsap.min.js"></script>
+<script>
+(function(){
+const tl = gsap.timeline({ paused: true });
+tl.fromTo('#cap-0', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 1.6);tl.to('#cap-0', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 3.127);
+tl.fromTo('#cap-1', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 3.147);tl.to('#cap-1', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 4.100);
+tl.fromTo('#cap-2', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 9.2);tl.to('#cap-2', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 10.398);
+tl.fromTo('#cap-3', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 11.0);tl.to('#cap-3', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 12.350);
+tl.fromTo('#cap-4', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 12.37);tl.to('#cap-4', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 13.548);
+tl.fromTo('#cap-5', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 13.568);tl.to('#cap-5', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 14.430);
+tl.fromTo('#cap-6', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 18.0);tl.to('#cap-6', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 19.372);
+tl.fromTo('#cap-7', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 20.6);tl.to('#cap-7', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 21.998);
+tl.fromTo('#cap-8', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 22.018);tl.to('#cap-8', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 23.170);
+tl.fromTo('#cap-9', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 26.8);tl.to('#cap-9', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 28.521);
+tl.fromTo('#cap-10', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 28.541);tl.to('#cap-10', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 29.159);
+tl.fromTo('#cap-11', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 30.4);tl.to('#cap-11', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 30.848);
+tl.fromTo('#cap-12', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 30.868);tl.to('#cap-12', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 32.521);
+tl.fromTo('#cap-13', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 32.541);tl.to('#cap-13', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 34.535);
+tl.fromTo('#cap-14', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 38.0);tl.to('#cap-14', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 39.048);
+tl.fromTo('#cap-15', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 39.068);tl.to('#cap-15', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 39.439);
+tl.fromTo('#cap-16', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 40.4);tl.to('#cap-16', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 42.188);
+tl.fromTo('#cap-17', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 42.208);tl.to('#cap-17', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 44.076);
+tl.fromTo('#cap-18', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 49.8);tl.to('#cap-18', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 51.385);
+tl.fromTo('#cap-19', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 52.4);tl.to('#cap-19', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 52.801);
+tl.fromTo('#cap-20', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 52.821);tl.to('#cap-20', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 53.161);
+tl.fromTo('#cap-21', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 53.181);tl.to('#cap-21', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 53.582);
+tl.fromTo('#cap-22', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 53.602);tl.to('#cap-22', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 54.563);
+tl.fromTo('#cap-23', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 59.8);tl.to('#cap-23', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 61.237);
+tl.fromTo('#cap-24', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 61.257);tl.to('#cap-24', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 62.201);
+tl.fromTo('#cap-25', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 63.0);tl.to('#cap-25', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 63.382);
+tl.fromTo('#cap-26', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 63.402);tl.to('#cap-26', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 63.851);
+tl.fromTo('#cap-27', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 63.871);tl.to('#cap-27', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 66.001);
+tl.fromTo('#cap-28', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 73.2);tl.to('#cap-28', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 74.593);
+tl.fromTo('#cap-29', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 74.613);tl.to('#cap-29', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 75.490);
+tl.fromTo('#cap-30', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 81.6);tl.to('#cap-30', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 83.225);
+tl.fromTo('#cap-31', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 83.245);tl.to('#cap-31', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 84.132);
+tl.fromTo('#cap-32', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 85.6);tl.to('#cap-32', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 86.152);
+tl.fromTo('#cap-33', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 86.172);tl.to('#cap-33', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 87.297);
+tl.fromTo('#cap-34', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 87.317);tl.to('#cap-34', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 87.996);
+tl.fromTo('#cap-35', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 88.016);tl.to('#cap-35', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 88.454);
+tl.fromTo('#cap-36', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 93.0);tl.to('#cap-36', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 93.312);
+tl.fromTo('#cap-37', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 93.332);tl.to('#cap-37', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 94.115);
+tl.fromTo('#cap-38', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 95.4);tl.to('#cap-38', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 96.517);
+tl.fromTo('#cap-39', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 96.537);tl.to('#cap-39', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 97.070);
+tl.fromTo('#cap-40', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 101.8);tl.to('#cap-40', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 102.776);
+tl.fromTo('#cap-41', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 102.796);tl.to('#cap-41', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 103.549);
+tl.fromTo('#cap-42', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 104.6);tl.to('#cap-42', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 106.007);
+tl.fromTo('#cap-43', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 111.8);tl.to('#cap-43', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 112.243);
+tl.fromTo('#cap-44', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: 'power2.out' }, 112.263);tl.to('#cap-44', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 113.837);
+tl.to({}, { duration: 118 }, 0);
+window.__timelines["captions"] = tl;
+})();
+</script>
+</template>

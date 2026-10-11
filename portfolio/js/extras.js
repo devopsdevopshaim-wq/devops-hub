@@ -816,7 +816,7 @@
           media.replaceWith(el('iframe', { class: 'v-frame', src: src, title: v.title, allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: '' }));
         });
       } else {
-        media = el('video', { class: 'v-frame', src: v.url, controls: '', preload: 'metadata', playsinline: '' });
+        media = el('video', { class: 'v-frame', src: v.url, poster: v.poster || null, controls: '', preload: 'metadata', playsinline: '' });
       }
       var isYT = !!(yt && /youtu/.test(v.url));
       var actions = [];
@@ -835,8 +835,8 @@
       grid.appendChild(el('article', { class: 'v-card reveal' }, [
         el('div', { class: 'v-media' }, [media]),
         el('div', { class: 'v-body' }, [
-          el('h3', { text: v.title }),
-          v.desc ? el('p', { text: v.desc }) : null,
+          el('h3', { text: v.title, dir: 'auto' }),
+          v.desc ? el('p', { text: v.desc, dir: 'auto' }) : null,
           el('div', { class: 'v-actions' }, actions)
         ])
       ]));

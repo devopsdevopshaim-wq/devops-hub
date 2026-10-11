@@ -1,0 +1,59 @@
+{
+  "summary": {
+    "webAnimations": 1,
+    "cssDeclarations": 64,
+    "scrollTargets": 10,
+    "cdpAnimations": 2,
+    "canvases": 1
+  },
+  "namedAnimations": [
+    "twinkle",
+    "rise",
+    "draw",
+    "wheel",
+    "pageIn",
+    "pop"
+  ],
+  "scrollTriggeredElements": 10,
+  "representativeAnimations": [
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "twinkle",
+      "targetSelector": "div.sc.stars",
+      "targetRect": {
+        "x": -40,
+        "y": -40,
+        "width": 2000,
+        "height": 1336,
+        "top": -40,
+        "right": 1960,
+        "bottom": 1296,
+        "left": -40
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "ease-in-out",
+          "composite": "auto",
+          "opacity": "0.35",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "ease-in-out",
+          "composite": "auto",
+          "opacity": "0.9",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 5000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "alternate"
+      }
+    }
+  ]
+}

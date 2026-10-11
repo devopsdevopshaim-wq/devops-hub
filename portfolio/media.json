@@ -1,4 +1,17 @@
 {
  "music": [],
- "videos": []
+ "videos": [
+  {
+   "title": "סרטון תדמית — SPIDER",
+   "url": "videos/spider-promo-he.mp4",
+   "poster": "videos/spider-promo-he.jpg",
+   "desc": "הרשת: 48 פרויקטים, סוכני AI, הנדסה וכלים ליומיום. ‏1:58."
+  },
+  {
+   "title": "SPIDER — Promo video (English)",
+   "url": "videos/spider-promo-en.mp4",
+   "poster": "videos/spider-promo-en.jpg",
+   "desc": "The web: 48 real projects, from AI agents to engineering. English narration and captions. 1:58."
+  }
+ ]
 }

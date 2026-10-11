@@ -1,0 +1,147 @@
+{
+  "typography": [
+    {
+      "role": "display",
+      "fontFamily": "Bellefair",
+      "fontSize": "44px",
+      "fontWeight": "400",
+      "lineHeight": "46.2px",
+      "letterSpacing": "-0.44px",
+      "color": "#F1EEFC",
+      "sampleText": "כניסה"
+    },
+    {
+      "role": "link",
+      "fontFamily": "Bellefair",
+      "fontSize": "26px",
+      "fontWeight": "400",
+      "lineHeight": "41.6px",
+      "letterSpacing": "0.52px",
+      "color": "#E0B25A",
+      "sampleText": "SPIDER"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      8,
+      10,
+      14,
+      20,
+      24
+    ],
+    "baseUnit": 8
+  },
+  "radius": [
+    "12px",
+    "999px"
+  ],
+  "shadows": [
+    {
+      "value": "rgba(0, 0, 0, 0.95) 0px 40px 90px -30px",
+      "count": 1
+    },
+    {
+      "value": "rgba(224, 178, 90, 0.7) 0px 8px 28px -10px, rgba(255, 255, 255, 0.5) 0px 1px 0px 0px inset",
+      "count": 1
+    }
+  ],
+  "buttons": [
+    {
+      "label": "כניסה",
+      "background": "transparent",
+      "backgroundImage": "linear-gradient(135deg, rgb(243, 213, 150), rgb(224, 178, 90) 55%, rgb(196, 145, 58))",
+      "backdropFilter": "",
+      "color": "#1B1405",
+      "padding": "12px 22px",
+      "borderRadius": "999px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "rgba(224, 178, 90, 0.7) 0px 8px 28px -10px, rgba(255, 255, 255, 0.5) 0px 1px 0px 0px inset",
+      "fontSize": "16px",
+      "fontWeight": "600",
+      "height": "42px"
+    },
+    {
+      "label": "קבלת סיסמה ראשונית למייל",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#F1EEFC",
+      "padding": "9px 14px",
+      "borderRadius": "999px",
+      "border": "1px solid rgba(241, 238, 252, 0.16)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "height": "34px"
+    }
+  ],
+  "cards": [
+    {
+      "label": "card",
+      "background": "#17143A",
+      "backgroundImage": "",
+      "backdropFilter": "blur(14px)",
+      "color": "#F1EEFC",
+      "padding": "30px 28px 24px",
+      "borderRadius": "24px",
+      "border": "1px solid rgba(224, 178, 90, 0.35)",
+      "boxShadow": "rgba(0, 0, 0, 0.95) 0px 40px 90px -30px",
+      "fontSize": "17px",
+      "fontWeight": "400",
+      "height": "629.969px"
+    }
+  ],
+  "nav": {
+    "label": "navigation",
+    "background": "#0F0D24",
+    "backgroundImage": "",
+    "backdropFilter": "blur(14px) saturate(1.4)",
+    "color": "#F1EEFC",
+    "padding": "0px",
+    "borderRadius": "0px",
+    "border": "",
+    "boxShadow": "none",
+    "fontSize": "17px",
+    "fontWeight": "400",
+    "height": "67px"
+  },
+  "chips": [],
+  "statCells": [],
+  "tabs": [],
+  "backgrounds": [
+    {
+      "value": "radial-gradient(800px 500px at 70% 0%, rgba(139, 123, 255, 0.25), rgba(0, 0, 0, 0) 60%), none",
+      "area": 2073600
+    },
+    {
+      "value": "radial-gradient(1.5px 1.5px at 12% 18%, rgb(255, 255, 255), rgba(0, 0, 0, 0)), radial-gradient(1px 1px at 32% 8%, rgb(255, 255, 255), rgba(0, 0, 0, 0)), radial-gradient(1.5px 1.5px at 58% 22%, rgb(255, 255, 255), rgba(0, 0, 0, 0)), radial-gradient(1px 1px at 78% 12%, rgb(255, 255, 255), rgba(0, 0, 0, 0)), radial-gradient(1.2px 1.2px at 88% 30%, rgb(255, 255, 255), rgba(0, 0, 0, 0)), radial-gradient(1px 1px at 44% 34%, rgb(255, 255, 255), rgba(0, 0, 0, 0))",
+      "area": 2672000
+    },
+    {
+      "value": "linear-gradient(to top, rgb(15, 13, 36) 18%, rgba(15, 13, 36, 0.55) 55%, rgba(0, 0, 0, 0))",
+      "area": 1244160
+    },
+    {
+      "value": "linear-gradient(rgba(241, 238, 252, 0.09) 1px, rgba(0, 0, 0, 0) 1px), linear-gradient(90deg, rgba(241, 238, 252, 0.09) 1px, rgba(0, 0, 0, 0) 1px)",
+      "area": 128640
+    }
+  ],
+  "glass": [
+    {
+      "backdropFilter": "blur(14px)",
+      "background": "rgba(23, 20, 58, 0.92)",
+      "border": "1px solid rgba(224, 178, 90, 0.35)",
+      "borderRadius": "24px",
+      "boxShadow": "rgba(0, 0, 0, 0.95) 0px 40px 90px -30px",
+      "area": 277186
+    },
+    {
+      "backdropFilter": "blur(14px) saturate(1.4)",
+      "background": "rgba(15, 13, 36, 0.62)",
+      "border": "",
+      "borderRadius": "0px",
+      "boxShadow": "",
+      "area": 128640
+    }
+  ]
+}

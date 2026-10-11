@@ -1,0 +1,352 @@
+<template>
+<style>
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKerUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcbUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfrUC_2fi-Q.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N9vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-Po3huR_DQ.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPgzpTn5_PDb9no.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPg9pTn5_PDb.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;color:#f1eefc;font-family:'Assistant',sans-serif}
+.f10-live-bg{position:absolute;inset:0;background:radial-gradient(120% 95% at 68% -5%,#2a2366 0%,#17143a 40%,#0f0d24 78%)}
+.f10-live-skyimg{position:absolute;left:-4%;top:-4%;width:108%;height:108%;object-fit:cover;opacity:.42}
+.f10-live-st{position:absolute;border-radius:50%;background:#fff}
+.f10-live-grain{position:absolute;left:-256px;top:-256px;width:2432px;height:1592px;background:url(assets/grain.png);opacity:.07;mix-blend-mode:overlay}
+.f10-live-vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 55%,rgba(5,4,16,.55) 100%)}
+.f10-live-ov{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:visible}
+.f10-live-tx{position:absolute;direction:ltr;text-align:left}
+.f10-live-eye{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:24px;letter-spacing:.22em;color:#e0b25a;text-transform:uppercase;margin-bottom:22px;direction:ltr;display:block}
+.f10-live-eyehe{font-family:'Assistant',sans-serif;font-weight:600;font-size:30px;letter-spacing:.06em;color:#e0b25a;margin-bottom:18px;display:block}
+.f10-live-h1{font-family:'Bellefair',serif;font-weight:400;font-size:118px;line-height:1.08}
+.f10-live-h2{font-family:'Bellefair',serif;font-weight:400;font-size:76px;line-height:1.12}
+.f10-live-h3{font-family:'Bellefair',serif;font-weight:400;font-size:40px;line-height:1.1}
+.f10-live-lede{font-family:'Assistant',sans-serif;font-weight:400;font-size:38px;color:#a9a4cc;margin-top:22px;line-height:1.35}
+.f10-live-acc{color:#e0b25a}.f10-live-mint{color:#62dcb8}
+.f10-live-m{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .12em}
+.f10-live-w{display:inline-block;white-space:pre}
+.f10-live-ul{display:block;height:3px;background:linear-gradient(90deg,rgba(224,178,90,0),#e0b25a 30%,#f3d596);margin-top:14px;transform-origin:0% 50%}
+.f10-live-shot{position:absolute;border-radius:16px;overflow:hidden;border:1px solid rgba(241,238,252,.22);box-shadow:0 26px 70px rgba(0,0,0,.55);background:#17143a}
+.f10-live-shot img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.f10-live-shine{position:absolute;top:-10%;left:0;width:38%;height:120%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.28),rgba(255,255,255,0));pointer-events:none}
+.f10-live-shot.f10-live-focal{border:2px solid #e0b25a;box-shadow:0 0 0 8px rgba(224,178,90,.12),0 30px 90px rgba(0,0,0,.65)}
+.f10-live-chip{position:absolute;left:14px;bottom:14px;direction:ltr;font-family:'Assistant',sans-serif;font-weight:600;font-size:24px;color:#f1eefc;background:rgba(15,13,36,.86);padding:6px 14px;border-radius:10px;white-space:nowrap}
+.f10-live-focal .f10-live-chip{color:#f3d596;font-size:30px}
+.f10-live-silk{stroke:#e0b25a;stroke-width:3;fill:none;stroke-linecap:round}
+.f10-live-mote{fill:#f6dc9a}
+
+.f10-live-rows{position:absolute;left:1010px;top:180px;width:760px;direction:ltr}
+.f10-live-row{display:flex;align-items:center;gap:26px;font-family:'Assistant',sans-serif;font-size:38px;padding:20px 26px;border-bottom:1px solid rgba(241,238,252,.12)}
+.f10-live-nm{flex:1}.f10-live-live{font-family:'JetBrains Mono',monospace;font-size:22px;color:#62dcb8;letter-spacing:.12em}
+.f10-live-led{width:20px;height:20px;border-radius:50%;background:#62dcb8;box-shadow:0 0 18px #62dcb8}
+</style>
+<div id="root" data-composition-id="10-live" data-width="1920" data-height="1080" data-duration="8">
+<div id="f10-live-bgclip" class="clip f10-live-bg" data-start="0" data-duration="8" data-track-index="0"><img class="f10-live-skyimg" id="f10-live-sky" src="assets/sky.webp" alt=""><div id="f10-live-stars"><i class="f10-live-st f10-live-tw" style="left:1097px;top:398px;width:3.1px;height:3.1px;opacity:0.37"></i><i class="f10-live-st" style="left:1562px;top:765px;width:3.4px;height:3.4px;opacity:0.35"></i><i class="f10-live-st" style="left:1000px;top:304px;width:2.0px;height:2.0px;opacity:0.82"></i><i class="f10-live-st" style="left:1913px;top:41px;width:4.0px;height:4.0px;opacity:0.61"></i><i class="f10-live-st" style="left:733px;top:263px;width:3.4px;height:3.4px;opacity:0.52"></i><i class="f10-live-st" style="left:1317px;top:615px;width:1.6px;height:1.6px;opacity:0.71"></i><i class="f10-live-st" style="left:1886px;top:900px;width:3.2px;height:3.2px;opacity:0.28"></i><i class="f10-live-st" style="left:8px;top:124px;width:4.3px;height:4.3px;opacity:0.43"></i><i class="f10-live-st" style="left:703px;top:834px;width:2.2px;height:2.2px;opacity:0.58"></i><i class="f10-live-st f10-live-tw" style="left:837px;top:60px;width:3.1px;height:3.1px;opacity:0.76"></i><i class="f10-live-st" style="left:300px;top:208px;width:2.6px;height:2.6px;opacity:0.27"></i><i class="f10-live-st" style="left:953px;top:760px;width:3.4px;height:3.4px;opacity:0.57"></i><i class="f10-live-st" style="left:1642px;top:139px;width:3.1px;height:3.1px;opacity:0.47"></i><i class="f10-live-st" style="left:1155px;top:105px;width:3.8px;height:3.8px;opacity:0.31"></i><i class="f10-live-st" style="left:319px;top:750px;width:4.3px;height:4.3px;opacity:0.51"></i><i class="f10-live-st" style="left:795px;top:228px;width:2.1px;height:2.1px;opacity:0.62"></i><i class="f10-live-st" style="left:343px;top:111px;width:2.7px;height:2.7px;opacity:0.35"></i><i class="f10-live-st" style="left:1246px;top:763px;width:3.8px;height:3.8px;opacity:0.54"></i><i class="f10-live-st f10-live-tw" style="left:667px;top:404px;width:1.2px;height:1.2px;opacity:0.68"></i><i class="f10-live-st" style="left:637px;top:297px;width:1.5px;height:1.5px;opacity:0.52"></i><i class="f10-live-st" style="left:1119px;top:363px;width:4.1px;height:4.1px;opacity:0.65"></i><i class="f10-live-st" style="left:464px;top:488px;width:4.2px;height:4.2px;opacity:0.56"></i><i class="f10-live-st" style="left:1156px;top:58px;width:2.8px;height:2.8px;opacity:0.53"></i><i class="f10-live-st" style="left:770px;top:391px;width:3.1px;height:3.1px;opacity:0.57"></i><i class="f10-live-st" style="left:941px;top:154px;width:2.7px;height:2.7px;opacity:0.83"></i><i class="f10-live-st" style="left:797px;top:33px;width:1.2px;height:1.2px;opacity:0.57"></i><i class="f10-live-st" style="left:97px;top:86px;width:1.6px;height:1.6px;opacity:0.52"></i><i class="f10-live-st f10-live-tw" style="left:1906px;top:451px;width:2.7px;height:2.7px;opacity:0.51"></i><i class="f10-live-st" style="left:962px;top:415px;width:3.6px;height:3.6px;opacity:0.79"></i><i class="f10-live-st" style="left:1340px;top:393px;width:3.3px;height:3.3px;opacity:0.80"></i><i class="f10-live-st" style="left:295px;top:220px;width:3.2px;height:3.2px;opacity:0.66"></i><i class="f10-live-st" style="left:1234px;top:547px;width:3.9px;height:3.9px;opacity:0.54"></i><i class="f10-live-st" style="left:1551px;top:894px;width:2.6px;height:2.6px;opacity:0.77"></i><i class="f10-live-st" style="left:1379px;top:825px;width:1.4px;height:1.4px;opacity:0.80"></i><i class="f10-live-st" style="left:1472px;top:894px;width:4.4px;height:4.4px;opacity:0.42"></i><i class="f10-live-st" style="left:1286px;top:131px;width:3.2px;height:3.2px;opacity:0.80"></i><i class="f10-live-st f10-live-tw" style="left:369px;top:325px;width:1.5px;height:1.5px;opacity:0.37"></i><i class="f10-live-st" style="left:399px;top:89px;width:4.5px;height:4.5px;opacity:0.78"></i><i class="f10-live-st" style="left:890px;top:691px;width:3.5px;height:3.5px;opacity:0.56"></i><i class="f10-live-st" style="left:813px;top:617px;width:3.0px;height:3.0px;opacity:0.41"></i><i class="f10-live-st" style="left:700px;top:583px;width:3.3px;height:3.3px;opacity:0.38"></i><i class="f10-live-st" style="left:1171px;top:813px;width:4.1px;height:4.1px;opacity:0.64"></i><i class="f10-live-st" style="left:135px;top:393px;width:1.5px;height:1.5px;opacity:0.28"></i><i class="f10-live-st" style="left:489px;top:424px;width:3.7px;height:3.7px;opacity:0.63"></i><i class="f10-live-st" style="left:542px;top:646px;width:2.9px;height:2.9px;opacity:0.55"></i><i class="f10-live-st f10-live-tw" style="left:506px;top:410px;width:2.3px;height:2.3px;opacity:0.69"></i><i class="f10-live-st" style="left:927px;top:415px;width:2.8px;height:2.8px;opacity:0.54"></i><i class="f10-live-st" style="left:1324px;top:669px;width:3.8px;height:3.8px;opacity:0.49"></i><i class="f10-live-st" style="left:1524px;top:896px;width:4.5px;height:4.5px;opacity:0.68"></i><i class="f10-live-st" style="left:126px;top:787px;width:4.0px;height:4.0px;opacity:0.26"></i><i class="f10-live-st" style="left:629px;top:299px;width:3.6px;height:3.6px;opacity:0.62"></i><i class="f10-live-st" style="left:542px;top:173px;width:1.8px;height:1.8px;opacity:0.31"></i><i class="f10-live-st" style="left:1518px;top:869px;width:1.9px;height:1.9px;opacity:0.70"></i><i class="f10-live-st" style="left:1826px;top:178px;width:3.1px;height:3.1px;opacity:0.51"></i><i class="f10-live-st f10-live-tw" style="left:1872px;top:808px;width:1.3px;height:1.3px;opacity:0.37"></i><i class="f10-live-st" style="left:1628px;top:533px;width:2.9px;height:2.9px;opacity:0.74"></i><i class="f10-live-st" style="left:1467px;top:887px;width:2.3px;height:2.3px;opacity:0.28"></i><i class="f10-live-st" style="left:1329px;top:47px;width:3.1px;height:3.1px;opacity:0.77"></i><i class="f10-live-st" style="left:762px;top:558px;width:1.8px;height:1.8px;opacity:0.34"></i><i class="f10-live-st" style="left:1164px;top:803px;width:4.5px;height:4.5px;opacity:0.27"></i></div><div id="f10-live-stars2"><i class="f10-live-st f10-live-tw" style="left:591px;top:537px;width:2.5px;height:2.5px;opacity:0.73"></i><i class="f10-live-st" style="left:897px;top:309px;width:5.5px;height:5.5px;opacity:0.73"></i><i class="f10-live-st" style="left:1650px;top:618px;width:2.1px;height:2.1px;opacity:0.48"></i><i class="f10-live-st" style="left:460px;top:737px;width:1.2px;height:1.2px;opacity:0.72"></i><i class="f10-live-st" style="left:320px;top:284px;width:4.2px;height:4.2px;opacity:0.65"></i><i class="f10-live-st" style="left:984px;top:517px;width:4.0px;height:4.0px;opacity:0.61"></i><i class="f10-live-st" style="left:208px;top:280px;width:1.3px;height:1.3px;opacity:0.59"></i><i class="f10-live-st" style="left:565px;top:225px;width:2.5px;height:2.5px;opacity:0.81"></i><i class="f10-live-st" style="left:246px;top:838px;width:5.5px;height:5.5px;opacity:0.37"></i><i class="f10-live-st f10-live-tw" style="left:1593px;top:182px;width:4.3px;height:4.3px;opacity:0.32"></i><i class="f10-live-st" style="left:611px;top:459px;width:3.0px;height:3.0px;opacity:0.75"></i><i class="f10-live-st" style="left:1241px;top:31px;width:3.9px;height:3.9px;opacity:0.30"></i><i class="f10-live-st" style="left:336px;top:362px;width:2.7px;height:2.7px;opacity:0.58"></i><i class="f10-live-st" style="left:1888px;top:724px;width:3.8px;height:3.8px;opacity:0.75"></i><i class="f10-live-st" style="left:324px;top:665px;width:5.9px;height:5.9px;opacity:0.82"></i><i class="f10-live-st" style="left:980px;top:551px;width:3.0px;height:3.0px;opacity:0.51"></i><i class="f10-live-st" style="left:1899px;top:124px;width:5.3px;height:5.3px;opacity:0.38"></i><i class="f10-live-st" style="left:1067px;top:509px;width:1.4px;height:1.4px;opacity:0.54"></i></div></div>
+<div class="clip" data-start="0" data-duration="8" data-track-index="1" id="f10-live-stage" data-layout-allow-overflow><div id="f10-live-push" style="position:absolute;inset:0">
+<div class="f10-live-rows"><div class="f10-live-row" id="f10-live-r0"><i class="f10-live-led" id="f10-live-led0"></i><span class="f10-live-nm">Masa — vacation planner</span><span class="f10-live-live">LIVE</span></div><div class="f10-live-row" id="f10-live-r1"><i class="f10-live-led" id="f10-live-led1"></i><span class="f10-live-nm">ParkPlan — robotic parking</span><span class="f10-live-live">LIVE</span></div><div class="f10-live-row" id="f10-live-r2"><i class="f10-live-led" id="f10-live-led2"></i><span class="f10-live-nm">Finance Compass</span><span class="f10-live-live">LIVE</span></div><div class="f10-live-row" id="f10-live-r3"><i class="f10-live-led" id="f10-live-led3"></i><span class="f10-live-nm">NetPlan — network design</span><span class="f10-live-live">LIVE</span></div><div class="f10-live-row" id="f10-live-r4"><i class="f10-live-led" id="f10-live-led4"></i><span class="f10-live-nm">Sacred Library</span><span class="f10-live-live">LIVE</span></div><div class="f10-live-row" id="f10-live-r5"><i class="f10-live-led" id="f10-live-led5"></i><span class="f10-live-nm">Monthly Bills</span><span class="f10-live-live">LIVE</span></div></div>
+<div class="f10-live-tx" style="top:330px;left:150px;width:760px;"><div class="f10-live-h1" id="f10-live-l1">Live <span class="f10-live-mint">now.</span></div><div class="f10-live-lede" id="f10-live-l2">The page checks GitHub and updates its status on its own.</div></div>
+</div></div>
+<div id="f10-live-fx" class="clip" data-start="0" data-duration="8" data-track-index="2" data-layout-allow-overflow><div class="f10-live-vig"></div><div class="f10-live-grain" id="f10-live-grain"></div></div>
+</div>
+<script src="assets/vendor/gsap.min.js"></script>
+<script>
+(function(){
+
+const tl = gsap.timeline({ paused: true });
+const Q = s => document.querySelector(s);
+const QA = s => Array.from(document.querySelectorAll(s));
+const RTL = false;
+const rise = (sel, at, opt) => tl.fromTo(sel, { yPercent: 110, opacity: 0 }, Object.assign({ yPercent: 0, opacity: 1, duration: 0.9, ease: 'power4.out', stagger: 0.12 }, opt || {}), at);
+const fadeUp = (sel, at, opt) => tl.fromTo(sel, { y: 24, opacity: 0, filter: 'blur(6px)' }, Object.assign({ y: 0, opacity: 1, filter: 'blur(0px)', duration: 1.0, ease: 'power3.out' }, opt || {}), at);
+const ul = (sel, at) => tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: 'expo.out' }, at);
+const card = (id, at, opt) => {
+  const side = (opt && opt.side) || (RTL ? 1 : -1);
+  tl.fromTo('#f10-live-' + id, { opacity: 0, scale: 0.9, y: 50, rotationY: 28 * side, transformPerspective: 1400, filter: 'blur(10px)' },
+    Object.assign({ opacity: 1, scale: 1, y: 0, rotationY: 0, filter: 'blur(0px)', duration: 1.2, ease: 'power3.out' }, opt || {}), at);
+  tl.fromTo('#f10-live-' + id + '-sh', { xPercent: -120 }, { xPercent: 320, duration: 1.1, ease: 'power2.inOut' }, at + 0.55);
+};
+const draw = (sel, at, d, ease) => tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d || 1.6, ease: ease || 'power2.inOut' }, at);
+const motes = (sel, x1, y1, x2, y2, at, d, n) => QA(sel).forEach((m, i) => tl.fromTo(m, { attr: { cx: x1, cy: y1 }, opacity: 0 },
+  { attr: { cx: x2, cy: y2 }, opacity: 1, duration: d, ease: 'sine.inOut' }, at + i * (d / (n || 3))));
+// ambient: parallax stars, twinkle, grain, slow push
+tl.fromTo('#f10-live-stars', { x: 0 }, { x: RTL ? -40 : 40, duration: 8, ease: 'none' }, 0);
+tl.fromTo('#f10-live-stars2', { x: 0 }, { x: RTL ? -90 : 90, duration: 8, ease: 'none' }, 0);
+QA('.f10-live-tw').forEach((s, i) => tl.fromTo(s, { opacity: 0.25 }, { opacity: 1, duration: 0.9, yoyo: true, repeat: Math.max(0, Math.floor(8 / 1.8) - 1), ease: 'sine.inOut' }, (i % 5) * 0.37));
+tl.fromTo('#f10-live-grain', { x: 0, y: 0 }, { x: -192, y: 128, duration: 8, ease: 'steps(' + Math.round(8 * 12) + ')' }, 0);
+tl.fromTo('#f10-live-sky', { scale: 1.0 }, { scale: 1.06, duration: 8, ease: 'none' }, 0);
+tl.fromTo('#f10-live-push', { scale: 1.0 }, { scale: 1.03, duration: 8, ease: 'none', transformOrigin: '50% 45%' }, 0);
+QA('.f10-live-row').forEach((r, i) => { const at = 0.2 + i * 0.42;
+  tl.fromTo(r, { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' }, at);
+  tl.fromTo('#f10-live-led' + i, { opacity: 0.15, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(3)' }, at + 0.35);
+  tl.to('#f10-live-led' + i, { opacity: 0.55, duration: 0.6, yoyo: true, repeat: 3, ease: 'sine.inOut' }, at + 1.2 + (i % 3) * 0.2); });
+tl.fromTo('#f10-live-l1', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' }, 1.0);
+fadeUp('#f10-live-l2', 3.4);
+window.__timelines["10-live"] = tl;
+})();
+</script>
+</template>
