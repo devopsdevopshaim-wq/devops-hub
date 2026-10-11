@@ -4,6 +4,7 @@
 // The clips' own ambient sound plays under the reading (audio/chapter-N.wav + timing, when there is one).
 //   node film/edit.mjs [N]      then   npx hyperframes render film/chapters/chapter-N -o renders/film-N.mp4
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { chapters, timeline, clipPath, project, INTRO, CLIP } from './common.mjs';
 
@@ -12,6 +13,8 @@ const HEB = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח'];
 const NUM = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב', 'יג', 'יד', 'טו', 'טז', 'יז'];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const r2 = (x) => Math.round(x * 100) / 100;
+// Veo clips carry their own ambient sound, Wan clips are silent
+const hasAudio = (f) => { const r = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'a', '-show_entries', 'stream=index', '-of', 'csv=p=0', f]); return r.status !== 0 || String(r.stdout).trim() !== ''; };
 const fontSize = (he) => { const n = he.length; return n < 80 ? 54 : n < 150 ? 48 : n < 220 ? 42 : 38; };
 
 function build(ch, dir) {
@@ -25,7 +28,7 @@ function build(ch, dir) {
     const part = s.dur / s.takes;
     for (let k = 0; k < s.takes; k++) {
       const start = s.start + k * part;
-      shots.push({ file: path.basename(clipPath(n, s.i, k)), start, end: start + part });
+      shots.push({ file: path.basename(clipPath(n, s.i, k)), audio: hasAudio(clipPath(n, s.i, k)), start, end: start + part });
     }
   }
   shots.forEach((sh, j) => {
@@ -38,8 +41,8 @@ function build(ch, dir) {
   const videos = shots.map((sh, j) => `
       <div class="shot" id="s${j}"><div class="inner" id="s${j}-in" data-layout-allow-overflow>
         <video id="s${j}-v" src="clips/${sh.file}" data-start="${sh.start}" data-duration="${sh.dur}" data-playback-rate="${sh.rate}" data-track-index="${j % 2}"
-          data-volume="${ambient}" data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":${FADE},"v":1},{"t":${r2(sh.dur - FADE)},"v":1},{"t":${sh.dur},"v":0}]}]}'
-          playsinline data-has-audio="true"></video>
+          ${sh.audio ? `data-volume="${ambient}" data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":${FADE},"v":1},{"t":${r2(sh.dur - FADE)},"v":1},{"t":${sh.dur},"v":0}]}]}'
+          playsinline data-has-audio="true"` : 'playsinline muted'}></video>
       </div></div>`).join('');
 
   const verses = slots.map((s) => `

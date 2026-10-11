@@ -30,10 +30,10 @@ const veo = path.join(project, '..', '..', '.claude', 'skills', 'veo3', 'scripts
 let done = 0;
 for (const j of todo.slice(0, args.limit ? Number(args.limit) : undefined)) {
   fs.mkdirSync(path.dirname(j.file), { recursive: true });
-  console.log(`chapter ${j.n} verse ${j.i + 1}${'ab'[j.k]} …`);
+  console.log(`chapter ${j.n} verse ${j.i + 1}${'abcd'[j.k]} …`);
   const r = spawnSync('node', [veo, '--prompt', takePrompt(j.n, j.i, j.k), '--aspect', '16:9', '--resolution', '1080p', '--negative', NEGATIVE,
     ...(args.model ? ['--model', args.model] : []), '--out', j.file], { stdio: 'inherit' });
-  if (r.status !== 0) { console.error(`failed: chapter ${j.n} verse ${j.i + 1}${'ab'[j.k]}, stopping (run again to continue)`); process.exit(1); }
+  if (r.status !== 0) { console.error(`failed: chapter ${j.n} verse ${j.i + 1}${'abcd'[j.k]}, stopping (run again to continue)`); process.exit(1); }
   done++;
 }
 console.log(`made ${done} clips`);
