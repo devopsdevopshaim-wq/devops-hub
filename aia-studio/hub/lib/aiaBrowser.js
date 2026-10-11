@@ -74,6 +74,7 @@ const MAX_IMAGES = 120;
       "Runway Gen-3: ...",
       "Kling: ...",
       "Veo 3: ... (Veo 3 מפיק גם סאונד: הוסף בסוף Audio: צלילי סביבה, מוזיקה, ודיאלוג במירכאות אם יש)",
+      "Hailuo: ... (פקודות מצלמה בסוגריים מרובעים, למשל [Push in], [Pan left], [Tracking shot])",
       "",
       "### STYLE",
       "palette: #hex, #hex, #hex, #hex",

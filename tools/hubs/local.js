@@ -222,7 +222,7 @@ function aia(brief, assets) {
   const vp = `A ${style} ${TYPE === 'סרטון קצר' ? 'short film' : 'animated sequence'} of ${en}, ${mood} mood, slow smooth camera push-in, cinematic lighting, ${aspect}, ${dur} seconds, high detail, natural motion`;
   return {
     title, concept, imagePrompts, storyboard,
-    videoPrompts: [{ engine: 'Seedance', prompt: vp }, { engine: 'Runway Gen-3', prompt: vp + ', consistent subject, stable camera' }, { engine: 'Kling', prompt: vp + ', realistic physics' }, { engine: 'Veo 3', prompt: vp + `, natural ambient sound matching the scene, no on-screen text. Audio: soft ${mood} music bed` }],
+    videoPrompts: [{ engine: 'Seedance', prompt: vp }, { engine: 'Runway Gen-3', prompt: vp + ', consistent subject, stable camera' }, { engine: 'Kling', prompt: vp + ', realistic physics' }, { engine: 'Veo 3', prompt: vp + `, natural ambient sound matching the scene, no on-screen text. Audio: soft ${mood} music bed` }, { engine: 'Hailuo', prompt: vp + ', [Push in], expressive subject motion, stable identity' }],
     styleNotes: { palette, lighting: 'אור רך מכוון מהצד עם תאורת קצה עדינה', keywords: [style, mood, 'קולנועי', 'פירוט גבוה'], negative: 'טקסט על המסך, סימני מים, ידיים מעוותות, פנים מעוותות' },
     durationSec: dur
   };
