@@ -105,6 +105,15 @@ function page(file, hub) {
 
 function stripNotUsed(s) { return s; }
 
+// a reader page in library/ sits one folder down: its css, script and json are next to it or one level up.
+// Pages that read /api/ (tehillim) need the full system and stay as they are.
+function readerPage(s) {
+  if (!/RD_SOURCE = "library\//.test(s)) return s;
+  return s.replace(/href="css\//g, 'href="../css/').replace(/(href|src)="library\//g, '$1="')
+    .replace(/<script src="js\/(pnks-core|pnks-offline|dockbar)\.js"( defer)?><\/script>\n/g, '')
+    .replace('RD_SOURCE = "library/', 'RD_SOURCE = "').replace('href="library.html"', 'href="../library.html"');
+}
+
 function build(hub, cfg) {
   const out = path.join(repo, hub);
   const site = path.join(repo, hub);                       // the existing pages (the shells) are the starting point
@@ -114,6 +123,7 @@ function build(hub, cfg) {
     let s = rel(links(read(path.join(src, 'public', 'js', f)), hub));
     if (f === 'finance.js') s = s.replace('<p>${fmtMd(r.plan)}</p>', '<div>${window.HUBMD ? HUBMD(r.plan) : fmtMd(r.plan)}</div>');
     if (f === 'health.js') s = s.replace('out.textContent = res.text;', 'out.innerHTML = (window.HUBMD ? HUBMD(res.text) : ""); if (!window.HUBMD) out.textContent = res.text;');
+    if (f === 'library.js') s = s.split('href="${esc(r.file)}"').join('href="${esc(String(r.file).replace(/^\\//, ""))}"');   // files of this site, not of the domain root
     s = s.replace('$("hol-sync").addEventListener(', '($("hol-sync") || { addEventListener() {} }).addEventListener(');
     if (f === 'pnks-core.js') s = s.replace(/setTimeout\(function \(\) \{\s*if \(!window\.PNKS\.__offline[\s\S]*?\}, 0\);/, '');   // the offline engine belongs to the full system
     put(path.join(out, 'js', f), s);
@@ -125,10 +135,22 @@ function build(hub, cfg) {
     for (const f of fs.readdirSync(dir)) {
       let b = fs.readFileSync(path.join(dir, f));
       if (/\.(html|js|css)$/.test(f)) b = Buffer.from(rel(links(b.toString('utf8'), hub)));
+      if (/\.html$/.test(f)) b = Buffer.from(readerPage(b.toString('utf8')));
       fs.mkdirSync(path.join(out, 'library'), { recursive: true });
       fs.writeFileSync(path.join(out, 'library', f), b);
       manifest.library[f] = b.length;
     }
+    // texts that exist only in the standalone site (shir hashirim): the files and their entries in the treasury
+    const extra = path.join(here, 'hubs', 'torah-library');
+    for (const f of fs.readdirSync(extra).filter((x) => x !== 'resources.json')) {
+      const b = fs.readFileSync(path.join(extra, f));
+      fs.writeFileSync(path.join(out, 'library', f), b);
+      manifest.library[f] = b.length;
+    }
+    const resFile = path.join(out, 'data', 'holiday-resources.json');
+    const res = JSON.parse(read(resFile)), add = JSON.parse(read(path.join(extra, 'resources.json')));
+    res.resources = res.resources.filter((r) => !add.some((a) => a.id === r.id)).concat(add);
+    put(resFile, JSON.stringify(res, null, 2) + '\n');
   }
   // the server modules, unchanged
   fs.rmSync(path.join(out, 'hub'), { recursive: true, force: true });

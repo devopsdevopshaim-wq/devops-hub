@@ -5,7 +5,7 @@ description: "Work on the standalone site 'ספריית קודש, הלכות ח�
 
 # ספריית קודש, הלכות חגים ואוצר לחג (torah-hub)
 
-Three pages. The sacred library reads Tanakh, the siddur, Rashi/Rambam/Or HaChaim and the Babylonian Talmud live from Sefaria. Holiday halacha shows customs, laws and blessings for every holiday with real dates and candle-lighting/havdalah times (Jerusalem). The treasury lists haggadah, megillah, tehillim and other files that surface by date, with a countdown.
+Three pages. The sacred library reads Tanakh, the siddur, Rashi/Rambam/Or HaChaim and the Babylonian Talmud live from Sefaria. Holiday halacha shows customs, laws and blessings for every holiday with real dates and candle-lighting/havdalah times (Jerusalem). The treasury lists haggadah, megillah, Shir HaShirim (for Friday, before Kabbalat Shabbat), tehillim and other files that surface by date, with a countdown.
 
 Live: https://devopsdevopshaim-wq.github.io/devops-hub/torah-hub/ · Code: `torah-hub/` in https://github.com/devopsdevopshaim-wq/devops-hub
 
@@ -23,7 +23,7 @@ The site is self-contained on GitHub Pages. It was written for a server (calls t
 | `hub/lib/holidayResources.js, holidayStories.js, shabbatClient.js` | files by occasion, stories, candle lighting |
 | `hub/hebcal-core.mjs` | the Hebrew calendar library, bundled (no CDN) |
 | `data/holiday-resources.json` | which file belongs to which occasion |
-| `library/` | haggadah, megillah, tehillim, reader.js |
+| `library/` | haggadah, megillah, shir-hashirim, tehillim, reader.js (shir-hashirim and its treasury entry come from `tools/hubs/torah-library/`) |
 | `hub/runtime.js` | the fetch hook, the module loader, the routes, `window.HUBMD` |
 | `css/premium.css`, `js/premium.js`, `img/` | the luxury layer: tokens per site, the hero, illustration (`img/hero.svg`), background (`img/bg.webp`) |
 
