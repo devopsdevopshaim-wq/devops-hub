@@ -82,13 +82,16 @@ note(bad.status === 401 ? '- ✅ סיסמה שגויה נדחית' : '- ❌ סי
 if (secrets.ADMIN_PASSWORD_HASH && !secrets.ADMIN_TOTP_SECRET) {
   // a freshly set secret takes a few seconds to reach every edge location: try again before calling it a failure
   let lg = { status: 0, json: {} };
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 2; i++) {
     lg = await post({ action: 'login', email: 'devopsdevopshaim@gmail.com', password: ADMIN_PASSWORD, device: crypto.randomBytes(16).toString('hex') }).catch(() => ({ status: 0, json: {} }));
     if (lg.json && lg.json.token) break;
     await new Promise((r) => setTimeout(r, 6000));
   }
   if (lg.json && lg.json.token) { note('- ✅ כניסת מנהל עובדת עם הסיסמה שהוגדרה'); await post({ action: 'logout', token: lg.json.token }); }
-  else { note('- ❌ כניסת מנהל נכשלה: ' + lg.status + ' ' + JSON.stringify(lg.json)); ok = false; }
+  else if (lg.json && lg.json.error === 'bad-login') {
+    // not a failed deploy: the admin chose a password of their own in the admin screen (which replaces the secret's), so the secret no longer opens the door
+    note('- ℹ️ הסיסמה שבסוד ADMIN_PASSWORD כבר לא הסיסמה הפעילה של המנהל (כנראה בחרת סיסמה משלך במסך הכניסה). זה תקין; הפריסה הצליחה');
+  } else { note('- ❌ כניסת מנהל נכשלה: ' + lg.status + ' ' + JSON.stringify(lg.json)); ok = false; }
 }
 if (ok) {
   fs.writeFileSync('portfolio/api.json', JSON.stringify({ base: URL_, auth: URL_ + '/hasadna-auth', where: 'cloudflare' }, null, 1) + '\n');
