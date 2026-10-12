@@ -1,0 +1,32 @@
+// JARVIS's answer chain: the first AI key that answers wins; an empty account is skipped; no key at all gives a helpful message.
+import { jarvisAsk, jarvisInput, allowed } from '../src/jarvis.mjs';
+let bad = 0;
+const check = (n, ok, x) => { if (!ok) { bad++; console.error('FAIL', n, x === undefined ? '' : JSON.stringify(x)); } else console.log('ok  ', n); };
+const calls = [];
+let plan = {};
+globalThis.fetch = async (url) => {
+  url = String(url); const k = /generativelanguage/.test(url) ? 'gemini' : /anthropic/.test(url) ? 'claude' : 'openai'; calls.push(k);
+  const p = plan[k] || { status: 500, body: {} };
+  return new Response(JSON.stringify(p.body), { status: p.status });
+};
+const G = { status: 200, body: { candidates: [{ content: { parts: [{ text: 'שלום מג׳מיני' }] } }] } };
+const C = { status: 200, body: { content: [{ text: 'שלום מקלוד' }] } };
+const hist = [{ role: 'user', text: 'היי' }];
+plan = { gemini: G, claude: C }; calls.length = 0;
+let r = await jarvisAsk({ GEMINI_API_KEY: 'g', ANTHROPIC_API_KEY: 'c' }, hist);
+check('Gemini first when it answers', r.text === 'שלום מג׳מיני' && r.by === 'gemini' && calls.join() === 'gemini', r);
+plan = { gemini: { status: 429, body: {} }, claude: C }; calls.length = 0;
+r = await jarvisAsk({ GEMINI_API_KEY: 'g', ANTHROPIC_API_KEY: 'c' }, hist);
+check('an empty Gemini account falls through to Claude', r.by === 'claude' && calls.join() === 'gemini,claude', r);
+plan = { claude: { status: 400, body: { error: 'credit balance too low' } }, openai: { status: 200, body: { choices: [{ message: { content: 'שלום מ־OpenAI' } }] } } };
+r = await jarvisAsk({ ANTHROPIC_API_KEY: 'c', OPENAI_API_KEY: 'o' }, hist);
+check('then OpenAI', r.by === 'openai', r);
+plan = {};
+r = await jarvisAsk({ GEMINI_API_KEY: 'g' }, hist);
+check('nothing answers: empty text and what was tried', r.text === '' && r.tried.length === 1, r);
+r = await jarvisAsk({}, hist);
+check('no keys at all', r.text === '' && r.tried.length === 0);
+check('input is trimmed and the session id cleaned', jarvisInput({ chatInput: '  שלום  ', sessionId: 'a b/../c' }).sid === 'abc' && jarvisInput({ chatInput: ' שלום ' }).text === 'שלום');
+let ok = 0; for (let i = 0; i < 45; i++) if (allowed('1.2.3.4')) ok++;
+check('an address is capped at 40 questions per 10 minutes', ok === 40, ok);
+process.exit(bad ? 1 : 0);
