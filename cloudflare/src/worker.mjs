@@ -21,6 +21,7 @@ import monitorSummarize from './gen/monitor-summarize.mjs';
 import statusFresh from './gen/status-fresh.mjs';
 import statusRender from './gen/status-render.mjs';
 import { mailHandle, mailCallback } from './mail.mjs';
+import { jarvisAsk, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
 
 const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
 const FROM_NAME = 'SPIDER · חיים קריספין';
@@ -36,6 +37,8 @@ const ROUTES = {
   'hasadna-voice': { svc: 'voice', fn: voiceSpeak, max: 200000, free: true },
   'hasadna-guide': { svc: 'agents', kind: 'guide', max: 20000, free: true },
   'hasadna-status': { svc: 'agents', kind: 'status', max: 1000, free: true, method: 'GET' },
+  // JARVIS, the personal assistant with the talking face (jarvis-web): the first AI key that answers
+  'hasadna-jarvis': { svc: 'agents', kind: 'jarvis', max: 12000, free: true },
   // the clients' own mailboxes (Gmail); the callback is where Google sends the person back after they agree
   'hasadna-mail': { svc: 'main', kind: 'mail', max: 20000, free: true },
   'hasadna-mail-callback': { svc: 'main', kind: 'mailcb', max: 1000, free: true, method: 'GET' }
@@ -182,6 +185,23 @@ export class State extends DurableObject {
         if (!fresh) { await this.save(st); try { await this.runMonitor(false); } catch (e) { /* the page shows the last known state */ } const again = await this.load(); st.sd = again.sd; st.orig = again.orig; }
         const r = (await statusRender(ctx({}, { 'Status · Webhook': { query: q } })))[0].json;
         return new Response(r.body, { status: 200, headers: { ...CORS, 'Content-Type': r.contentType || 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src https://devopsdevopshaim-wq.github.io data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" } });
+      }
+      if (rt.kind === 'jarvis') {
+        const { sid, text } = jarvisInput(body);
+        if (!text) return reply({ output: 'אני כאן. מה תרצה לשאול?' });
+        if (!jarvisAllowed(headers['x-forwarded-for'])) return reply({ output: 'שאלת הרבה בזמן קצר. אפשר לנסות שוב בעוד כמה דקות.' });
+        this.chats = this.chats || new Map();
+        const hist = this.chats.get(sid) || [];
+        hist.push({ role: 'user', text });
+        // keys from the deploy's secrets, else the ones the admin saved in the vault on the AI page
+        let vault = {}; try { vault = JSON.parse((st.sd.aiVault && st.sd.aiVault.blob) || '{}') || {}; } catch (e) { vault = {}; }
+        const vk = (n) => String((vault[n] && vault[n].key) || '').trim();
+        const a = await jarvisAsk({ ...env, GEMINI_API_KEY: env.GEMINI_API_KEY || vk('gemini'), ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY || vk('claude'), OPENAI_API_KEY: env.OPENAI_API_KEY || vk('openai') }, hist);
+        if (!a.text) { hist.pop(); return reply({ output: NO_ANSWER, tried: a.tried }); }
+        hist.push({ role: 'assistant', text: a.text });
+        this.chats.set(sid, hist.slice(-16));
+        if (this.chats.size > 300) this.chats.delete(this.chats.keys().next().value);
+        return reply({ output: a.text, by: a.by });
       }
       if (rt.kind === 'mail' || rt.kind === 'mailcb') {
         const origin = new URL(request.url).origin;

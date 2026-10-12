@@ -2,6 +2,6 @@
   "name": "spider-auth-worker",
   "private": true,
   "type": "module",
-  "scripts": { "build": "node build.mjs", "dev": "node build.mjs && wrangler dev --local", "test": "node test/mail.test.mjs && node test/worker.test.mjs", "test:mail": "node test/mail.test.mjs" },
+  "scripts": { "build": "node build.mjs", "dev": "node build.mjs && wrangler dev --local", "test": "node test/mail.test.mjs && node test/jarvis.test.mjs && node test/worker.test.mjs", "test:mail": "node test/mail.test.mjs && node test/jarvis.test.mjs" },
   "devDependencies": { "wrangler": "^4.0.0" }
 }
