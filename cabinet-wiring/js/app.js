@@ -49,12 +49,12 @@ function toast(msg, ms = 3800) {
 }
 
 /* ---------- שמירה ---------- */
-function save() {
-  if (!raw) return;
-  raw.updated = Date.now();
-  const i = state.projects.findIndex((p) => p.id === raw.id);
-  if (i >= 0) state.projects[i] = raw; else state.projects.unshift(raw);
-  state.current = raw.id;
+function save() { if (raw) saveProject(raw); }
+function saveProject(p) {
+  p.updated = Date.now();
+  const i = state.projects.findIndex((x) => x.id === p.id);
+  if (i >= 0) state.projects[i] = p; else state.projects.unshift(p);
+  if (p === raw) state.current = p.id;
   if (!saveAll(state)) toast('האחסון בדפדפן מלא. כדאי לייצא את הפרויקט ל-JSON.');
 }
 
@@ -167,14 +167,18 @@ const baseName = (n) => String(n || '').replace(/\.[^.]+$/, '');
 
 /* קריאה של כמה קבצי PDF לפרויקט אחד: העמודים מתווספים ברצף (עמוד 1 של הקובץ השני ממשיך אחרי האחרון של הראשון) */
 async function readPdfsInto(p, list, { replace, status }) {
-  if (replace) { await files.delPrefix(p.id + ':'); p.pdf = null; p.aiPages = {}; pageCache.delete(p.id); }
+  if (replace) {
+    await files.delPrefix(p.id + ':'); p.pdf = null; p.aiPages = {}; pageCache.delete(p.id);
+    /* תכנית חדשה: הקריאה של הקובץ הקודם כבר לא שייכת אליה */
+    p.wires = []; p.components = []; p.done = {}; p.stepsDone = {}; p.notes = []; p.meta = {}; p.source = 'manual';
+  }
   const mem = pageCache.get(p.id) || [];
   let off = p.pdf ? p.pdf.pages : 0;
   const parts = p.pdf && p.pdf.files ? p.pdf.files.slice() : p.pdf ? [{ name: p.pdf.name, pages: p.pdf.pages, from: 1, size: p.pdf.size }] : [];
   const added = [];
   for (let k = 0; k < list.length; k++) {
     const f = list[k];
-    const res = await readPdf(f, { onPage: (i, n) => status && status(`קורא את ${f.name}${list.length > 1 ? ` (${k + 1}/${list.length})` : ''}: עמוד ${i} מתוך ${n}…`) });
+    const res = await readPdf(f, { onPage: (i, n) => status && status(`קורא את ${f.name}${list.length > 1 ? ` (${k + 1}/${list.length})` : ''}: עמוד ${i} מתוך ${n}…`, (k + i / n) / list.length) });
     await files.put(`${p.id}:pdf${parts.length ? parts.length + 1 : ''}`, f);
     for (const pg of res.pages) {
       const rec = { ...pg, page: pg.page + off, file: f.name };
@@ -197,13 +201,13 @@ function detectContent(p, allPages) {
   if (lib && !p.wires.length) {
     const lp = lib.project();
     p.settings = { ...lp.settings, ...(p.settings || {}) };
-    applyResult({ components: lp.components, wires: lp.wires, meta: lp.meta, notes: lp.notes }, 'library', true);
+    applyResult({ components: lp.components, wires: lp.wires, meta: lp.meta, notes: lp.notes }, 'library', true, p);
     if (!p.name || p.pdf && p.name === baseName(p.pdf.files[0].name)) p.name = lp.name;
     return { kind: 'library', msg: `זוהתה ${lib.title}: נטענה קריאה מלאה של כל השרטוטים (${lp.wires.length} חוטים, ${lp.components.length} רכיבים) עם חתכים וצבעים לפי התקנות.` };
   }
   const ex = E.extractFromText(allPages);
   if (ex.wires.length >= 3 && !p.wires.length) {
-    applyResult({ components: ex.components, wires: ex.wires, meta: {}, notes: [] }, 'text', true);
+    applyResult({ components: ex.components, wires: ex.wires, meta: {}, notes: [] }, 'text', true, p);
     return { kind: 'text', msg: `נמצאו ${ex.wires.length} חוטים בטקסט של ה-PDF. בדקו אותם ברשימת החוטים.` };
   }
   if (p.wires.length) return { kind: 'kept', msg: 'החוטים הקיימים נשמרו.' };
@@ -211,13 +215,29 @@ function detectContent(p, allPages) {
 }
 
 /* קבצים שנבחרו או נגררו: אחד → תכנית; כמה PDF → אתר חדש שבו כל קובץ הוא ארון */
-async function handleFiles(list, { into = false, append = false } = {}) {
+/* פס התקדמות קבוע מתחת לכותרת: רואים שהקובץ נקרא גם כשהמסך במקום אחר (במיוחד בטלפון) */
+function busy(text, frac) {
+  const b = $('#busyBar');
+  if (!text) { b.hidden = true; return; }
+  b.hidden = false;
+  $('#busyText').textContent = text;
+  $('#busyFill').style.width = frac == null ? '' : Math.round(Math.max(0.03, Math.min(1, frac)) * 100) + '%';
+  b.classList.toggle('indet', frac == null);
+}
+
+async function handleFiles(list, { into = false, append = false, ask = false } = {}) {
   const arr = [...(list || [])];
   if (!arr.length) return;
   const json = arr.find(isJson);
   if (json && arr.length === 1) return importJson(json);
   const pdfs = arr.filter(isPdf);
   if (!pdfs.length) { toast('צריך קובץ PDF של תכנית (או JSON שיוצא מהאתר). לשמירת קבצים אחרים פתחו אתר התקנה.'); return; }
+  /* קובץ שנגרר לתוך ארון פתוח: שואלים אם זה עוד דפים של אותה תכנית או ארון חדש */
+  if (ask && raw) {
+    const c = await askChoice(`${pdfs.length === 1 ? `"${pdfs[0].name}"` : `${pdfs.length} קבצים`}: להוסיף לתכנית של "${raw.name}", או לפתוח ${pdfs.length > 1 ? 'אתר חדש' : 'ארון חדש'}?`, 'להוסיף לתכנית הזו', pdfs.length > 1 ? 'אתר חדש' : 'ארון חדש');
+    if (!c) return;
+    if (c === 'alt') { into = false; append = false; } else { append = true; }
+  }
   if (!into && !append && pdfs.length > 1) {
     const s = { id: newId('s'), name: 'אתר ' + new Date().toLocaleDateString('he-IL'), address: '', created: Date.now(), cabinets: [], files: [], layout: {}, room: null, trayH: 2.6, links: [], ignored: [], stepsDone: {} };
     state.sites.unshift(s); saveAll(state);
@@ -226,37 +246,53 @@ async function handleFiles(list, { into = false, append = false } = {}) {
     setTimeout(() => siteIngest(arr), 60);
     return;
   }
+  if (into && raw && raw.wires.length && !(await askConfirm(`להחליף את התכנית של "${raw.name}" בקובץ החדש? ${raw.wires.length} החוטים שנקראו מהתכנית הקודמת יימחקו, והתכנית החדשה תיקרא מההתחלה.`, { ok: 'להחליף את התכנית', danger: true }))) return;
   return handleFile(pdfs, { into, append });
 }
 
-async function handleFile(pdfs, { into = false, append = false } = {}) {
+/* קבצים נקראים אחד אחרי השני, וכל קריאה כותבת לפרויקט שלה גם אם בינתיים עברו לארון אחר */
+let readQueue = Promise.resolve();
+function handleFile(pdfs, opts) { const job = readQueue.then(() => readJob(pdfs, opts)); readQueue = job.catch(() => {}); return job; }
+
+async function readJob(pdfs, { into = false, append = false } = {}) {
   if (!Array.isArray(pdfs)) pdfs = [pdfs];
-  if (!(into || append) || !raw) {
-    raw = newProject(baseName(pdfs[0].name));
-    save(); derive(); await loadPages(); selected = null; closeDrawer();
+  let p = raw;
+  if (!(into || append) || !p) {
+    p = newProject(baseName(pdfs[0].name));
+    raw = p; save(); derive(); await loadPages(); selected = null; closeDrawer();
     if (cabView) cabView.vb = null;
   }
+  if (!append && p.pdf) {
+    const old = baseName(p.pdf.files ? p.pdf.files[0].name : p.pdf.name);
+    if (p.name === old) p.name = baseName(pdfs[0].name);
+  }
   location.hash = '#p/plan';
-  const st = (t) => { $('#planStatus').textContent = t; };
-  st('קורא את ה-PDF…');
+  const st = (t, frac) => { p.status = t; busy(t, frac); if (p === raw && tab === 'plan') $('#planStatus').textContent = t; };
+  st('קורא את ה-PDF…', 0.02);
   try {
-    const { all, parts } = await readPdfsInto(raw, pdfs, { replace: !append, status: st });
-    save();
-    await loadPages();
+    const { all, parts } = await readPdfsInto(p, pdfs, { replace: !append, status: st });
+    saveProject(p);
+    if (p === raw) await loadPages();
     const n = parts.reduce((a, x) => a + x.pages, 0);
     let msg = (append ? `נוספו ${pdfs.length} קבצים לתכנית. ` : '') + `בתכנית ${n} עמודים${parts.length > 1 ? ` מ-${parts.length} קבצים` : ''}.`;
     if (parts.some((x) => x.total > x.pages)) msg += ' (מכל קובץ נשמרים עד 40 עמודים.)';
-    const d = detectContent(raw, all);
+    st('מזהה את התוכן…', 0.98);
+    const d = detectContent(p, all);
     msg += ' ' + d.msg;
-    raw.status = msg; save(); derive();
-    if (!pages.length) toast('הקבצים נקראו, אבל הדפדפן לא מאפשר לשמור אותם (גלישה בסתר או דפדפן מובנה). התכנית תוצג עד שתסגרו את הדף.', 8000);
+    p.status = msg; saveProject(p);
+    busy(null);
     toast(msg, 7000);
+    if (p !== raw) return;
+    derive();
+    if (!pages.length) toast('הקבצים נקראו, אבל הדפדפן לא מאפשר לשמור אותם (גלישה בסתר או דפדפן מובנה). התכנית תוצג עד שתסגרו את הדף.', 8000);
     if (d.kind === 'library') { location.hash = '#p/three'; return; }
     rerender();
     if (d.kind === 'graphic' && aiReady()) runAuto();
   } catch (e) {
-    st('שגיאה: ' + e.message);
-    toast('לא הצלחתי לקרוא את ה-PDF: ' + e.message, 7000);
+    busy(null);
+    p.status = 'שגיאה בקריאת ה-PDF: ' + e.message; saveProject(p);
+    if (p === raw && tab === 'plan') $('#planStatus').textContent = p.status;
+    toast('לא הצלחתי לקרוא את ה-PDF: ' + e.message, 9000);
   }
 }
 
@@ -283,22 +319,23 @@ async function applyAsk(res, source) {
   return applyResult(res, source);
 }
 
-function applyResult(res, source, silent) {
+function applyResult(res, source, silent, p = raw) {
   const key = (w) => [E.normTag(w.from.tag), E.normTerm(w.from.term), E.normTag(w.to.tag), E.normTerm(w.to.term)].join('|');
-  const oldDone = new Set(raw.wires.filter((w) => raw.done[w.id]).map(key));
-  raw.components = res.components || [];
-  raw.wires = (res.wires || []).map((w) => ({ ...w, id: newId() }));
-  raw.done = {};
-  raw.wires.forEach((w) => { if (oldDone.has(key(w))) raw.done[w.id] = 1; });
+  const oldDone = new Set(p.wires.filter((w) => p.done[w.id]).map(key));
+  p.components = res.components || [];
+  p.wires = (res.wires || []).map((w) => ({ ...w, id: newId() }));
+  p.done = {};
+  p.wires.forEach((w) => { if (oldDone.has(key(w))) p.done[w.id] = 1; });
   const meta = {};
   Object.entries(res.meta || {}).forEach(([k, v]) => { if (v) meta[k] = v; });
-  raw.meta = { ...(raw.meta || {}), ...meta };
-  if (meta.title && (/^פרויקט חדש$|\.pdf$/i.test(raw.name) || (raw.pdf && raw.name === raw.pdf.name.replace(/\.pdf$/i, '')))) raw.name = meta.title;
-  raw.notes = res.notes || [];
-  raw.source = source;
-  raw.status = `נטענו ${raw.wires.length} חוטים ו-${raw.components.length} רכיבים (${({ claude: 'Claude', paste: 'Claude.ai', text: 'שליפה מהטקסט', json: 'JSON', gemini: 'קריאה אוטומטית', library: 'קריאה מלאה של התכנית' })[source] || source}).`;
-  save(); derive();
-  if (!silent) { toast(raw.status); rerender(); }
+  p.meta = { ...(p.meta || {}), ...meta };
+  if (meta.title && (/^פרויקט חדש$|\.pdf$/i.test(p.name) || (p.pdf && p.name === baseName(p.pdf.name)) || (p.pdf && p.pdf.files && p.name === baseName(p.pdf.files[0].name)))) p.name = meta.title;
+  p.notes = res.notes || [];
+  p.source = source;
+  p.status = `נטענו ${p.wires.length} חוטים ו-${p.components.length} רכיבים (${({ claude: 'Claude', paste: 'Claude.ai', text: 'שליפה מהטקסט', json: 'JSON', gemini: 'קריאה אוטומטית', library: 'קריאה מלאה של התכנית' })[source] || source}).`;
+  saveProject(p);
+  if (p === raw) derive();
+  if (!silent && p === raw) { toast(p.status); rerender(); }
   return true;
 }
 
@@ -1213,15 +1250,17 @@ function askConfirm(msg, { ok = 'אישור', danger = false } = {}) {
   return askDialog(msg, { ok, danger });
 }
 function askText(msg, value = '') { return askDialog(msg, { input: true, value }); }
-function askDialog(msg, { ok = 'אישור', danger = false, input = false, value = '' } = {}) {
+function askChoice(msg, ok, alt) { return askDialog(msg, { ok, alt }); }
+function askDialog(msg, { ok = 'אישור', danger = false, input = false, value = '', alt = '' } = {}) {
   const d = $('#askDialog');
   $('#askMsg').textContent = msg;
   const inp = $('#askInput');
   inp.hidden = !input; inp.value = value;
   const okB = $('#askOk');
   okB.textContent = ok; okB.classList.toggle('danger-solid', danger);
+  const altB = $('#askAlt'); altB.hidden = !alt; altB.textContent = alt;
   return new Promise((resolve) => {
-    const done = () => { d.removeEventListener('close', done); resolve(d.returnValue === 'ok' ? (input ? inp.value.trim() : true) : (input ? null : false)); };
+    const done = () => { d.removeEventListener('close', done); resolve(alt ? (d.returnValue === 'ok' ? 'ok' : d.returnValue === 'alt' ? 'alt' : null) : d.returnValue === 'ok' ? (input ? inp.value.trim() : true) : (input ? null : false)); };
     d.addEventListener('close', done);
     d.returnValue = '';
     d.showModal();
@@ -1287,7 +1326,7 @@ function bind() {
     if (e.target.closest('#drop, #siteDrop')) return;
     e.preventDefault();
     if (tab === 'site' && site) { if (e.dataTransfer.files.length) siteIngest(e.dataTransfer.files); return; }
-    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, tab !== 'home' && raw ? { append: true } : {});
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, tab !== 'home' && raw ? { ask: true } : {});
   });
   bindSite();
   bindComp();
@@ -1864,14 +1903,13 @@ function siteIngest(list) {
   const ol = $('#siteImport');
   const rows = arr.map((f) => { const li = document.createElement('li'); li.innerHTML = `<span class="mono">${esc(f.name)}</span><span class="st">ממתין…</span>`; ol.appendChild(li); return li; });
   ingesting = ingesting.then(async () => {
-    const keepRaw = raw, keepCur = state.current;
     let cabs = 0, other = 0;
     for (let i = 0; i < arr.length; i++) {
       const f = arr[i], st = rows[i].querySelector('.st');
       rows[i].className = 'busy';
       try {
         if (s.files.some((x) => x.name === f.name && x.size === f.size)) { st.textContent = 'כבר קיים באתר, דילגתי'; rows[i].className = 'skip'; continue; }
-        if (/pdf/i.test(f.type) || /\.pdf$/i.test(f.name)) { st.textContent = 'קורא…'; st.textContent = await ingestPdf(s, f, (t) => { st.textContent = t; }); cabs++; }
+        if (/pdf/i.test(f.type) || /\.pdf$/i.test(f.name)) { st.textContent = 'קורא…'; st.textContent = await ingestPdf(s, f, (t, frac) => { st.textContent = t; busy(`קובץ ${i + 1} מתוך ${arr.length}: ${t}`, (i + (frac || 0)) / arr.length); }); cabs++; }
         else {
           const fid = newId('f');
           await files.put(`site:${s.id}:f:${fid}`, f);
@@ -1882,8 +1920,7 @@ function siteIngest(list) {
       } catch (e) { st.textContent = 'שגיאה: ' + e.message; rows[i].className = 'err'; }
       saveAll(state);
     }
-    raw = keepRaw; state.current = keepCur;
-    if (raw) derive();
+    busy(null);
     saveAll(state);
     if (site === s && tab === 'site') renderSite();
     toast(`נקלטו ${cabs} תכניות (ארונות) ו-${other} קבצים נוספים.`, 5000);
@@ -1891,16 +1928,15 @@ function siteIngest(list) {
 }
 
 async function ingestPdf(s, f, onPage) {
-  raw = newProject(baseName(f.name), { siteId: s.id });
-  save();
-  const p = raw;
-  const { all } = await readPdfsInto(p, [f], { replace: true, status: (t) => onPage(t) });
+  const p = newProject(baseName(f.name), { siteId: s.id });
+  saveProject(p);
+  const { all } = await readPdfsInto(p, [f], { replace: true, status: (t, frac) => onPage(t, frac) });
   s.cabinets.push(p.id);
   s.files.push({ id: newId('f'), name: f.name, type: 'application/pdf', size: f.size, added: Date.now(), pid: p.id });
   const d = detectContent(p, all);
   const msg = d.kind === 'library' ? `${p.name}: ${p.wires.length} חוטים, ${p.components.length} רכיבים` : d.kind === 'text' ? `${p.wires.length} חוטים מהטקסט` : `${p.pdf.pages} עמודים · תכנית גרפית, לקריאה עם Claude`;
   p.status = 'חלק מהאתר "' + s.name + '". ' + d.msg;
-  save();
+  saveProject(p);
   return 'ארון חדש · ' + msg;
 }
 
