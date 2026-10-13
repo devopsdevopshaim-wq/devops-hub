@@ -561,3 +561,33 @@ dialog::backdrop { background: rgba(28, 33, 38, .45); backdrop-filter: blur(2px)
 @media (prefers-reduced-motion: reduce) { .import-list li.busy .st::before { animation: none; } }
 .site-actions .btn.ghost { background: transparent; }
 .site-actions .btn.ghost:hover { background: rgba(255, 255, 255, .08); color: #fff; border-color: rgba(255, 255, 255, .4); }
+
+/* ---------- כרטיס רכיב ---------- */
+.ep-link { font: 600 .86rem var(--mono); direction: ltr; unicode-bidi: isolate; white-space: nowrap; color: var(--copper); background: #fff; border: 1px solid var(--line-2); border-radius: 4px; padding: 1px 7px; cursor: pointer; transition: border-color .12s, background-color .12s; }
+.ep-link:hover { border-color: var(--copper); background: var(--copper-soft); color: var(--ink); }
+.end .ep.ep-link { cursor: pointer; color: var(--ink); }
+.end .ep.ep-link:hover { border-color: var(--copper); background: var(--copper-soft); }
+.comp-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.comp-head b { font-size: 1.05rem; font-weight: 600; }
+.ctag { flex: none; background: var(--anthracite); color: #fff; font-weight: 600; font-size: .95rem; padding: 6px 10px; border-radius: 4px; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .25); direction: ltr; }
+.comp-purpose { margin: 0 0 12px; padding: 10px 12px; background: var(--copper-soft); border-inline-start: 3px solid var(--copper); border-radius: 0 var(--radius) var(--radius) 0; font-size: .92rem; }
+.comp-h { margin: 14px 0 8px; font-size: .95rem; }
+.comp-tbl { font-size: .84rem; }
+.comp-tbl td { vertical-align: top; padding: 7px 6px; }
+.comp-tbl th { position: static; }
+.comp-tbl .sw { width: 22px; height: 9px; margin-inline-end: 5px; }
+.wno { font: 600 .9rem var(--mono); background: var(--anthracite); color: #fff; border: 0; border-radius: 3px; padding: 2px 8px; cursor: pointer; }
+.wno:hover { background: var(--copper); }
+.via { margin-top: 4px; display: grid; gap: 3px; font-size: .8rem; color: var(--ink-2); }
+.via > span { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.comp-group-h { margin: 14px 0 6px; font-size: .9rem; }
+.comp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.comp-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 5px 9px; background: #fff; border: 1px solid var(--line); border-inline-start: 3px solid var(--line-2); border-radius: var(--radius); font: inherit; font-size: .82rem; color: var(--ink); cursor: pointer; transition: border-color .12s, box-shadow .12s; }
+.comp-chip:hover { border-color: var(--copper); box-shadow: var(--shadow-1); }
+.comp-chip b { font-size: .8rem; direction: ltr; }
+.comp-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.comp-chip i { font-style: normal; font-size: .72rem; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 0 6px; }
+.comp-chip.z-field { border-inline-start-color: var(--copper); }
+.comp-chip.z-door { border-inline-start-color: #c4161c; }
+.drawer-head #dBack { flex: none; }
+.drawer-head strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

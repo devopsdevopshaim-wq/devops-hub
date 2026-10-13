@@ -513,7 +513,7 @@ function renderParts() {
       <td><input data-k="maker" value="${esc(c.maker || '')}" size="9" aria-label="יצרן"></td>
       <td><input class="mono" data-k="partNo" value="${esc(c.partNo || '')}" size="12" aria-label="מק&quot;ט"></td>
       <td><button class="btn ghost small" type="button" data-hl="${esc(c.tag)}" title="הצגת החוטים בציור">${count[c.tag] || 0}</button></td>
-      <td><button class="icon-btn" type="button" data-del="${esc(c.tag)}" aria-label="מחיקת ${esc(c.tag)}">✕</button></td></tr>`;
+      <td class="row gap"><button class="btn ghost small" type="button" data-comp="${esc(c.tag)}">כרטיס</button><button class="icon-btn" type="button" data-del="${esc(c.tag)}" aria-label="מחיקת ${esc(c.tag)}">✕</button></td></tr>`;
     }).join('') + '</tbody>';
 }
 
@@ -600,7 +600,7 @@ function ensureCab() {
     cabView = new CabinetView($('#cabHost'), {
       onHover: (id, ev) => showTip(id, ev),
       onSelect: (id) => select(id, 'cab'),
-      onComp: (tag) => highlightComp(tag)
+      onComp: (tag) => openComp(tag)
     });
   }
 }
@@ -633,15 +633,18 @@ async function renderThree() {
   }
   funcChips($('#t3Chips'), cabFuncs, () => view3d.highlightIds(cabFuncs.size ? P.wires.filter((w) => cabFuncs.has(w.func)).map((w) => w.id) : null));
   renderEncCard();
-  if (built3d === ver) return;
-  try {
-    await view3d.build(P, L, E, C);
-    built3d = ver;
-    $('#threeWait').hidden = true;
-  } catch (e) {
-    $('#threeWait').hidden = false;
-    $('#threeWait').textContent = 'התלת־ממד לא נטען (' + e.message + '). בדקו חיבור לאינטרנט או נסו דפדפן אחר.';
+  if (built3d !== ver) {
+    try {
+      await view3d.build(P, L, E, C);
+      built3d = ver;
+      $('#threeWait').hidden = true;
+    } catch (e) {
+      $('#threeWait').hidden = false;
+      $('#threeWait').textContent = 'התלת־ממד לא נטען (' + e.message + '). בדקו חיבור לאינטרנט או נסו דפדפן אחר.';
+      return;
+    }
   }
+  if (pending3d) { const t = pending3d; pending3d = null; openComp(t); view3d.focusComp(t); }
 }
 
 function renderEncCard() {
@@ -669,38 +672,7 @@ function renderEncCard() {
 }
 
 function showComp3d(tag) {
-  const c = compBy()[tag];
-  if (!c) return;
-  const ws = P.wires.filter((w) => w.from.tag === tag || w.to.tag === tag);
-  view3d.selected = null;
-  view3d.highlightIds(ws.map((w) => w.id));
-  const b = L.comps[tag] || {};
-  const rail = b.rail != null && b.zone === 'cabinet' ? L.rails[b.rail] : null;
-  const terms = {};
-  ws.forEach((w) => [w.from, w.to].forEach((e) => { if (e.tag === tag) (terms[e.term] = terms[e.term] || []).push(w.no); }));
-  const card = $('#compCard');
-  card.hidden = false;
-  card.innerHTML = `<div class="card-head"><h2><span class="mono">${esc(tag)}</span> · ${esc(c.name || E.typeInfo(c.type).he)}</h2><button class="icon-btn" type="button" id="compClose" aria-label="סגירת פרטי הרכיב">✕</button></div>
-    <dl class="kv">
-      <dt>סוג</dt><dd>${esc(E.typeInfo(c.type).he)}</dd>
-      ${c.desc ? `<dt>תיאור</dt><dd>${esc(c.desc)}</dd>` : ''}
-      ${c.maker || c.partNo ? `<dt>יצרן / מק"ט</dt><dd>${esc([c.maker, c.partNo].filter(Boolean).join(' · '))}</dd>` : ''}
-      <dt>מיקום</dt><dd>${esc(C.ZONES[c.zone] || '')}${rail ? ` · מסילה ${b.rail + 1} (${esc(C.ROWS[rail.row])}), ${Math.round(b.x)} מ"מ משמאל הפלטה` : ''}</dd>
-      ${b.w ? `<dt>מידות</dt><dd class="mono">${Math.round(b.w)}×${Math.round(b.h)}×${E.depthOf(c.type)}</dd>` : ''}
-      <dt>חוטים</dt><dd>${ws.length}</dd>
-    </dl>
-    <ul class="term-list">${Object.keys(terms).sort(E.natCmp).map((t) => `<li translate="no">${esc(t)} → ${terms[t].map(esc).join(', ')}</li>`).join('')}</ul>
-    <div class="row gap" style="margin-top:12px"><button class="btn ghost small" type="button" id="compFocus">התקרבות לרכיב</button></div>`;
-  $('#compClose').onclick = () => { card.hidden = true; view3d.highlightIds(null); };
-  $('#compFocus').onclick = () => view3d.focusComp(tag);
-}
-
-function highlightComp(tag) {
-  const ids = P.wires.filter((w) => w.from.tag === tag || w.to.tag === tag).map((w) => w.id);
-  const c = compBy()[tag] || {};
-  if (cabView) cabView.highlight(cabView.hlTag === tag ? null : ids);
-  cabView.hlTag = cabView.hlTag === tag ? null : tag;
-  if (cabView.hlTag) toast(`${tag} — ${c.name || ''}: ${ids.length} חוטים מודגשים. לחיצה נוספת מבטלת.`);
+  openComp(tag);
 }
 
 function showTip(id, ev) {
@@ -733,7 +705,7 @@ function select(id, from) {
 }
 
 function endBlock(lbl, e, comp, role) {
-  return `<div class="end"><div class="lbl">${lbl}</div><div class="ep" translate="no">${esc(e.tag)}:${esc(e.term)}</div>
+  return `<div class="end"><div class="lbl">${lbl}</div><button type="button" class="ep ep-link" data-comp="${esc(e.tag)}" translate="no" title="כרטיס הרכיב ${esc(e.tag)}">${esc(e.tag)}:${esc(e.term)}</button>
     <div class="small">${esc(comp ? (comp.name || E.typeInfo(comp.type).he) : '')} · ${esc(C.ZONES[comp && comp.zone] || '')}</div>
     <div class="small muted">${esc(role.role)}</div></div>`;
 }
@@ -772,13 +744,18 @@ function wireDetailHtml(w, opts = {}) {
 function openDrawer(id) {
   const w = wireById(id);
   if (!w) { closeDrawer(); return; }
-  $('#dTitle').textContent = `חוט ${w.no} · ${C.FUNCS[w.func].he}`;
-  $('#dBody').innerHTML = wireDetailHtml(w);
+  drawerMode = { kind: 'wire', id };
+  setDrawer(`חוט ${w.no} · ${C.FUNCS[w.func].he}`, wireDetailHtml(w), 'wire');
   $('#dDone').textContent = raw.done[w.id] ? 'ביטול סימון' : 'סימון כמחווט ✓';
   $('#dShowPdf').disabled = !pages.length;
-  $('#drawer').hidden = false;
 }
-function closeDrawer() { $('#drawer').hidden = true; }
+function closeDrawer() {
+  if (drawerMode && drawerMode.kind === 'comp' && !drawerMode.site && !$('#drawer').hidden) {
+    if (cabView && cabView.hlTag) { cabView.highlight(null); cabView.hlTag = null; }
+    if (view3d && view3d.hlSet) view3d.highlightIds(cabFuncs.size && P ? P.wires.filter((w) => cabFuncs.has(w.func)).map((w) => w.id) : null);
+  }
+  $('#drawer').hidden = true;
+}
 
 function toggleDone(id, v) {
   raw.done[id] = v === undefined ? !raw.done[id] : v;
@@ -806,6 +783,13 @@ function wiringList() {
     const d = g.wires.filter((w) => raw.done[w.id]).length;
     return `<option value="${g.group.id}" ${wiring.group === g.group.id ? 'selected' : ''}>${esc(g.group.he)} (${d}/${g.wires.length})</option>`;
   }).join('');
+  if (/^comp:/.test(wiring.group)) {
+    const t = wiring.group.slice(5);
+    const ws = groups.flatMap((g) => g.wires).filter((w) => w.from.tag === t || w.to.tag === t);
+    const c = compBy()[t] || {};
+    sel.insertAdjacentHTML('afterbegin', `<option value="${esc(wiring.group)}" selected>הרכיב ${esc(t)} ${esc(c.name || '')} (${ws.filter((w) => raw.done[w.id]).length}/${ws.length})</option>`);
+    return ws;
+  }
   return (wiring.group === 'all' ? groups : groups.filter((g) => g.group.id === wiring.group)).flatMap((g) => g.wires);
 }
 
@@ -1079,6 +1063,7 @@ function bind() {
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0], tab !== 'home');
   });
   bindSite();
+  bindComp();
 
   $('#openDemo').onclick = () => {
     raw = newProject('דוגמה: לוח משאבה עם בקר', Demo.project());
@@ -1135,7 +1120,7 @@ function bind() {
       save(); derive(); renderParts(); return;
     }
     const hl = e.target.closest('[data-hl]');
-    if (hl) { location.hash = '#p/cabinet'; setTimeout(() => highlightComp(hl.dataset.hl), 50); }
+    if (hl) { location.hash = '#p/cabinet'; setTimeout(() => openComp(hl.dataset.hl), 80); }
   });
   $('#addPart').onclick = () => {
     const tag = E.normTag(prompt('תג הרכיב (למשל ‎-K5):') || '');
@@ -1162,7 +1147,7 @@ function bind() {
   $('#cabSearch').addEventListener('change', (e) => {
     const q = e.target.value.trim(); if (!q) return;
     const tag = E.normTag(q);
-    if (compBy()[tag]) { cabView.hlTag = null; highlightComp(tag); const b = L.comps[tag]; if (b) { cabView.vb = { x: b.x - 150, y: b.y - 150, w: b.w + 300, h: b.h + 300 }; cabView.apply(); } return; }
+    if (compBy()[tag]) { openComp(tag); const b = L.comps[tag]; if (b) { cabView.vb = { x: b.x - 150, y: b.y - 150, w: b.w + 300, h: b.h + 300 }; cabView.apply(); } return; }
     const w = P.wires.find((x) => x.no === q || x.no.toUpperCase() === q.toUpperCase());
     if (w) { select(w.id); cabView.focusWire(w.id); } else toast('לא נמצא רכיב או חוט בשם הזה.');
   });
@@ -1272,6 +1257,147 @@ function bind() {
     raw.wires = raw.wires.filter((w) => w.id !== id); delete raw.done[id];
     $('#wireDialog').close(); select(null); save(); derive(); rerender();
   };
+}
+
+/* ---------- כרטיס רכיב: לוחצים על כל רכיב (בציור, בתלת־ממד, ברשימה, באתר) ומקבלים מה הוא עושה ואת כל החיווט שלו ---------- */
+let drawerMode = null, navInDrawer = false, pending3d = null;
+const drawerHist = [];
+
+function compHtml(cP, cL, tag, done) {
+  const info = E.compWiring(cP, tag);
+  if (!info) return null;
+  const c = info.comp, t = E.typeInfo(c.type);
+  const by = Object.fromEntries(cP.components.map((x) => [x.tag, x]));
+  const b = cL.comps[tag] || {};
+  const rail = b.rail != null && b.zone === 'cabinet' ? cL.rails[b.rail] : null;
+  const nDone = info.rows.filter((r) => done[r.wire.id]).length;
+  const ep = (e) => `<button type="button" class="ep-link" data-comp="${esc(e.tag)}" translate="no">${esc(e.tag)}:${esc(e.term)}</button>`;
+  const nm = (tg) => { const x = by[tg]; return x ? (x.name || E.typeInfo(x.type).he) : ''; };
+  const rows = info.rows.map((r) => {
+    const w = r.wire, col = C.COLORS[w.color] || C.COLORS.BK;
+    const via = r.via.map((lvl) => `<div class="via">${lvl.map((e) => `<span>← חוט <b class="mono">${esc(e.wire.no)}</b> ${ep(e.at)} <span class="muted">${esc(nm(e.at.tag)).slice(0, 34)}</span></span>`).join('')}</div>`).join('');
+    return `<tr class="${done[w.id] ? 'done' : ''}">
+      <td class="st"></td>
+      <td><b class="mono" translate="no">${esc(r.term)}</b><div class="small muted">${esc(r.role.role)}</div></td>
+      <td><button type="button" class="wno" data-wire="${esc(w.id)}" translate="no">${esc(w.no)}</button><div class="small muted">${esc(C.FUNCS[w.func].short)}</div></td>
+      <td><span class="sw" style="${swStyle(col)}"></span>${esc(col.he)}<div class="small muted">${esc(C.fmtSection(w.section))} ממ"ר</div></td>
+      <td>${ep(r.other)}<div class="small muted">${esc(nm(r.other.tag))}</div>${via}</td></tr>`;
+  }).join('');
+  return `<div class="comp-head"><span class="ctag mono" translate="no">${esc(tag)}</span><div><b>${esc(c.name || t.he)}</b><div class="small muted">${esc(t.he)} · ${esc(C.ZONES[c.zone] || '')}</div></div></div>
+    <p class="comp-purpose">${esc(info.purpose)}</p>
+    <dl class="kv">
+      ${c.desc ? `<dt>תיאור</dt><dd>${esc(c.desc)}</dd>` : ''}
+      ${c.maker || c.partNo ? `<dt>יצרן / מק"ט</dt><dd>${esc([c.maker, c.partNo].filter(Boolean).join(' · '))}</dd>` : ''}
+      ${rail ? `<dt>מיקום</dt><dd>מסילה ${b.rail + 1} (${esc(C.ROWS[rail.row])}), ${Math.round(b.x)} מ"מ משמאל הפלטה</dd>` : ''}
+      ${b.w && c.zone === 'cabinet' ? `<dt>מידות</dt><dd class="mono">${Math.round(b.w)}×${Math.round(b.h)}×${E.depthOf(c.type)} מ"מ</dd>` : ''}
+      ${info.strips.length ? `<dt>דרך המהדקים</dt><dd class="mono">${esc(info.strips.join(', '))}</dd>` : ''}
+      ${info.cable ? `<dt>כבל לשטח</dt><dd class="mono">${esc(info.cable)}</dd>` : ''}
+      <dt>חוטים</dt><dd>${info.rows.length}${info.rows.length ? ` · ${nDone} חוברו` : ''}</dd>
+    </dl>
+    <h3 class="comp-h">${c.zone === 'field' ? 'החיווט מהמכשיר אל הלוח' : 'החיווט של הרכיב'}</h3>
+    ${info.rows.length ? `<div class="table-wrap"><table class="tbl comp-tbl"><thead><tr><th></th><th>הדק</th><th>חוט</th><th>צבע וחתך</th><th>מחובר אל</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="small muted">לחיצה על מספר חוט פותחת את כל הפרטים שלו. לחיצה על הדק עוברת לרכיב שבצד השני.</p>` : '<p class="muted">לרכיב הזה אין חוטים ברשימה.</p>'}`;
+}
+
+function setDrawer(title, html, kind) {
+  if (!navInDrawer) drawerHist.length = 0;
+  navInDrawer = false;
+  $('#dTitle').textContent = title;
+  $('#dBody').innerHTML = html;
+  $('#dBody').scrollTop = 0;
+  $('#cActions').hidden = kind !== 'comp';
+  $('#dActions').hidden = kind !== 'wire';
+  $('#dBack').hidden = !drawerHist.length;
+  $('#drawer').setAttribute('aria-label', kind === 'comp' ? 'פרטי הרכיב' : 'פרטי החוט');
+  $('#drawer').hidden = false;
+}
+
+const compWireIds = (cP, tag) => cP.wires.filter((w) => w.from.tag === tag || w.to.tag === tag).map((w) => w.id);
+
+function openComp(tag) {
+  if (!P) return;
+  const html = compHtml(P, L, tag, raw.done || {});
+  if (!html) { toast(`הרכיב ${tag} לא נמצא בפרויקט.`); return; }
+  const c = compBy()[tag];
+  drawerMode = { kind: 'comp', id: tag };
+  setDrawer(`${tag} · ${c.name || E.typeInfo(c.type).he}`, html, 'comp');
+  ['#cWire', '#cShowCab', '#cShow3d', '#cShowPdf'].forEach((s) => { $(s).hidden = false; });
+  $('#cOpen').hidden = true;
+  const ids = compWireIds(P, tag);
+  $('#cWire').disabled = !ids.length;
+  $('#cShowPdf').disabled = !pages.length || !P.wires.some((w) => ids.includes(w.id) && w.page);
+  if (tab === 'cabinet' && cabView) { cabView.highlight(ids.length ? ids : null); cabView.hlTag = tag; }
+  if (tab === 'three' && view3d) { view3d.selected = null; view3d.highlightIds(ids); }
+}
+
+function openSiteComp(pid, tag) {
+  const c = siteData && siteData.cabs.find((x) => x.id === pid);
+  if (!c) return;
+  const html = compHtml(c.P, c.L, tag, c.raw.done || {});
+  if (!html) return;
+  const comp = c.P.components.find((x) => x.tag === tag);
+  drawerMode = { kind: 'comp', id: tag, site: pid };
+  setDrawer(`${tag} · ${comp.name || E.typeInfo(comp.type).he} · ${c.name}`, html, 'comp');
+  ['#cWire', '#cShowCab', '#cShow3d', '#cShowPdf'].forEach((s) => { $(s).hidden = true; });
+  $('#cOpen').hidden = false;
+}
+
+function compPdfWire(tag) { return P.wires.find((w) => (w.from.tag === tag || w.to.tag === tag) && w.page); }
+
+function bindComp() {
+  $('#dBody').addEventListener('click', async (e) => {
+    const wb = e.target.closest('[data-wire]'), cb = e.target.closest('[data-comp]');
+    if (!wb && !cb) return;
+    e.preventDefault(); e.stopPropagation();
+    if (drawerMode && drawerMode.site) {
+      const pid = drawerMode.site;
+      if (cb) { drawerHist.push(drawerMode); navInDrawer = true; openSiteComp(pid, cb.dataset.comp); return; }
+      await openProject(pid, 'wires');
+      setTimeout(() => select(wb.dataset.wire), 120);
+      return;
+    }
+    if (drawerMode) drawerHist.push(drawerMode);
+    navInDrawer = true;
+    if (wb) select(wb.dataset.wire, 'drawer'); else openComp(cb.dataset.comp);
+  });
+  $('#dBack').onclick = () => {
+    const m = drawerHist.pop();
+    if (!m) return;
+    navInDrawer = true;
+    if (m.site) openSiteComp(m.site, m.id);
+    else if (m.kind === 'wire') select(m.id, 'drawer');
+    else openComp(m.id);
+  };
+  const tagNow = () => drawerMode && drawerMode.kind === 'comp' ? drawerMode.id : null;
+  $('#cWire').onclick = () => { const t = tagNow(); if (!t) return; wiring.group = 'comp:' + t; wiring.idx = 0; selected = null; closeDrawer(); location.hash = '#p/wiring'; };
+  $('#cShowCab').onclick = () => {
+    const t = tagNow(); if (!t) return;
+    location.hash = '#p/cabinet';
+    setTimeout(() => {
+      if (!cabView) return;
+      cabView.highlight(compWireIds(P, t)); cabView.hlTag = t;
+      const b = L.comps[t]; if (b) { cabView.vb = { x: b.x - 220, y: b.y - 180, w: b.w + 440, h: b.h + 360 }; cabView.apply(); }
+      openComp(t);
+    }, 80);
+  };
+  $('#cShow3d').onclick = () => {
+    const t = tagNow(); if (!t) return;
+    if (tab === 'three' && view3d && built3d === ver) { view3d.highlightIds(compWireIds(P, t)); view3d.focusComp(t); return; }
+    pending3d = t; location.hash = '#p/three';
+  };
+  $('#cShowPdf').onclick = () => { const t = tagNow(); const w = t && compPdfWire(t); if (w) showWireInPdf(w.id); };
+  $('#cOpen').onclick = async () => {
+    const m = drawerMode; if (!m || !m.site) return;
+    pending3d = m.id;
+    await openProject(m.site, 'three');
+  };
+  /* תג רכיב בכל מקום בממשק של הפרויקט (רשימת רכיבים, קצוות של חוט) */
+  document.addEventListener('click', (e) => {
+    const cb = e.target.closest('[data-comp]');
+    if (!cb || !cb.isConnected || cb.closest('#dBody') || tab === 'site' || tab === 'home') return;
+    e.preventDefault();
+    openComp(cb.dataset.comp);
+  });
 }
 
 /* ---------- אתרי התקנה: כמה ארונות, הכבלים ביניהם, הקבצים ומערך ההתקנה ---------- */
@@ -1414,10 +1540,25 @@ function renderSiteSel() {
     const ext = S.externals(c.P), L1 = site.layout[c.id] || {};
     box.innerHTML = `<div class="card-head"><h2>${esc(c.name)}</h2><div class="row gap"><a class="btn small" href="#" data-open-cab="${esc(c.id)}">פתיחת הארון</a><button class="btn ghost small" type="button" data-close-sel>סגירה</button></div></div>
       <dl class="kv-row"><div><dt>מעטפת</dt><dd>${esc(c.enc.text)}</dd></div><div><dt>מיקום</dt><dd class="num">${(L1.x || 0).toFixed(2)} / ${(L1.z || 0).toFixed(2)} מ'</dd></div><div><dt>הזנה</dt><dd>${esc(c.P.meta.supply || '—')}</dd></div><div><dt>חוטים</dt><dd class="num">${c.done}/${c.P.wires.length}</dd></div></dl>
-      <h3>יציאות לשטח ולארונות אחרים</h3>
-      ${ext.length ? `<ul class="ext-list">${ext.map((g) => `<li><span class="ep">${esc(g.device)}</span> ${esc(g.name)} <span class="muted">· ${g.cores.length} גידים · מהדקים <span class="ep">${esc(g.strips.join(', '))}</span></span></li>`).join('')}</ul>` : '<p class="muted">לא נמצאו בתכנית מכשירי שטח שמחוברים דרך פסי מהדקים.</p>'}`;
+      ${compGroups(c, ext)}
+      <p class="muted small">לחיצה על רכיב פותחת את הכרטיס שלו: מה הוא עושה, כל ההדקים, החוטים, הצבעים ולאן כל חוט מגיע.</p>`;
   }
   box.hidden = false;
+}
+
+function compGroups(c, ext) {
+  const cnt = {};
+  c.P.wires.forEach((w) => { cnt[w.from.tag] = (cnt[w.from.tag] || 0) + 1; cnt[w.to.tag] = (cnt[w.to.tag] || 0) + 1; });
+  const extBy = Object.fromEntries(ext.map((g) => [g.device, g]));
+  const zones = [['field', 'ציוד בשטח'], ['door', 'בדלת הארון'], ['cabinet', 'בתוך הארון']];
+  return zones.map(([z, he]) => {
+    const list = c.P.components.filter((x) => x.zone === z).sort((a, b) => E.natCmp(a.tag, b.tag));
+    if (!list.length) return '';
+    return `<h3 class="comp-group-h">${he} <span class="muted">(${list.length})</span></h3><div class="comp-chips">${list.map((x) => {
+      const g = extBy[x.tag];
+      return `<button type="button" class="comp-chip z-${z}" data-scomp="${esc(x.tag)}" title="${esc(E.typeInfo(x.type).he)}${g ? ' · ' + g.cores.length + ' גידים דרך ' + esc(g.strips.join(', ')) : ''}"><b class="mono" translate="no">${esc(x.tag)}</b><span>${esc((x.name || E.typeInfo(x.type).he).slice(0, 26))}</span><i class="num">${cnt[x.tag] || 0}</i></button>`;
+    }).join('')}</div>`;
+  }).join('');
 }
 
 function renderLinks() {
@@ -1595,6 +1736,8 @@ function bindSite() {
     const show = t.closest('[data-show-link]');
     if (show) { siteSelect(null, show.dataset.showLink); $('#siteSel').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     if (t.closest('[data-close-sel]')) { siteSelect(null, null); return; }
+    const sc = t.closest('[data-scomp]');
+    if (sc && siteSel && siteSel.pid) { openSiteComp(siteSel.pid, sc.dataset.scomp); return; }
     const fget = t.closest('[data-fget]');
     if (fget) {
       e.preventDefault();

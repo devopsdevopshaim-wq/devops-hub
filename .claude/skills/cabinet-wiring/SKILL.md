@@ -15,7 +15,7 @@ Static files, no build step. `server.mjs` (Node, `@anthropic-ai/sdk`) is optiona
 | File | Role |
 | --- | --- |
 | `js/catalog.js` | colors + aliases (`colorCode`), FUNCS (power, neutral, ctrl_ac, ctrl_dc, dc0, foreign, signal, comm, pe), component TYPES with sizes/rows/zones, ferrules, wire types, torque |
-| `js/engine.js` | `extractFromText` (wire lists in PDF text), `enrich` (type inference by name/IEC 81346 prefix/terminals, nets via union-find through terminals and closed protection devices, func/color/section defaults, explanation per wire), `layout` (plate, ducts, DIN rails by row, door, field), routing in ducts, `wireOrder`, `assemblySteps`, CSV, `cutList` |
+| `js/engine.js` | `extractFromText` (wire lists in PDF text), `enrich` (type inference by name/IEC 81346 prefix/terminals, nets via union-find through terminals and closed protection devices, func/color/section defaults, explanation per wire), `layout` (plate, ducts, DIN rails by row, door, field), routing in ducts, `wireOrder`, `assemblySteps`, CSV, `cutList`, `compWiring` (component card: terminals, wires, trace through terminal strips, field cable) |
 | `js/prompts.js` | Claude system prompt, rules, JSON Schema, `copyPrompt`, `parse`/`fromJson` |
 | `js/view.js` | `CabinetView`: SVG drawing, hover/select, zoom/pinch; styles embedded (`SVG_STYLE`) so print/SVG export match |
 | `js/app.js` | UI: home, tabs plan/parts/wires/cabinet/wiring/assembly/export, drawer, dialogs |
