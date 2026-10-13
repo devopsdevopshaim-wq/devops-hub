@@ -162,6 +162,23 @@ async function loadPages() {
 }
 
 const isPdf = (f) => /pdf/i.test(f.type) || /\.pdf$/i.test(f.name);
+const isImage = (f) => /^image\/(jpe?g|png|webp|gif|bmp|heic|heif)/i.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(f.name);
+const isPlan = (f) => isPdf(f) || isImage(f);
+
+/* תכנית שצולמה או נסרקה לתמונה: עמוד אחד */
+async function readImage(f) {
+  let bmp;
+  try { bmp = await createImageBitmap(f); }
+  catch { throw new Error(`הדפדפן לא מצליח לפתוח את התמונה ${f.name}${/heic|heif/i.test(f.type + f.name) ? ' (HEIC: שמרו אותה כ-JPG)' : ''}.`); }
+  const k = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(bmp, 0, 0, c.width, c.height);
+  const img = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.9));
+  return { pages: [{ page: 1, w: c.width, h: c.height, items: [], img }], total: 1 };
+}
 const isJson = (f) => /\.json$/i.test(f.name) || f.type === 'application/json';
 const baseName = (n) => String(n || '').replace(/\.[^.]+$/, '');
 
@@ -178,7 +195,7 @@ async function readPdfsInto(p, list, { replace, status }) {
   const added = [];
   for (let k = 0; k < list.length; k++) {
     const f = list[k];
-    const res = await readPdf(f, { onPage: (i, n) => status && status(`קורא את ${f.name}${list.length > 1 ? ` (${k + 1}/${list.length})` : ''}: עמוד ${i} מתוך ${n}…`, (k + i / n) / list.length) });
+    const res = isImage(f) && !isPdf(f) ? await readImage(f) : await readPdf(f, { onPage: (i, n) => status && status(`קורא את ${f.name}${list.length > 1 ? ` (${k + 1}/${list.length})` : ''}: עמוד ${i} מתוך ${n}…`, (k + i / n) / list.length) });
     await files.put(`${p.id}:pdf${parts.length ? parts.length + 1 : ''}`, f);
     for (const pg of res.pages) {
       const rec = { ...pg, page: pg.page + off, file: f.name };
@@ -230,8 +247,16 @@ async function handleFiles(list, { into = false, append = false, ask = false } =
   if (!arr.length) return;
   const json = arr.find(isJson);
   if (json && arr.length === 1) return importJson(json);
-  const pdfs = arr.filter(isPdf);
-  if (!pdfs.length) { toast('צריך קובץ PDF של תכנית (או JSON שיוצא מהאתר). לשמירת קבצים אחרים פתחו אתר התקנה.'); return; }
+  const pdfs = arr.filter(isPlan);
+  if (!pdfs.length) { toast('צריך קובץ PDF או תמונה של התכנית (או JSON שיוצא מהאתר). לשמירת קבצים מסוג אחר פתחו אתר התקנה.'); return; }
+  const skipped = arr.filter((f) => !isPlan(f) && !isJson(f));
+  if (skipped.length) toast(`${skipped.length} קבצים שאינם PDF או תמונה לא נפתחו כתכנית (${skipped.slice(0, 3).map((f) => f.name).join(', ')}). אפשר לשמור אותם באתר התקנה.`, 7000);
+  /* כמה קבצים: כל קובץ ארון נפרד (אתר התקנה), או כולם תכנית אחת */
+  if (!into && !append && !ask && pdfs.length > 1) {
+    const c = await askChoice(`נבחרו ${pdfs.length} קבצים:\n${pdfs.slice(0, 8).map((f) => '• ' + f.name).join('\n')}${pdfs.length > 8 ? '\n…' : ''}\n\nאיך לפתוח אותם?`, 'כל קובץ = ארון נפרד (אתר התקנה)', 'כל הקבצים = תכנית אחת');
+    if (!c) return;
+    if (c === 'alt') return handleFile(pdfs, {});
+  }
   /* קובץ שנגרר לתוך ארון פתוח: שואלים אם זה עוד דפים של אותה תכנית או ארון חדש */
   if (ask && raw) {
     const c = await askChoice(`${pdfs.length === 1 ? `"${pdfs[0].name}"` : `${pdfs.length} קבצים`}: להוסיף לתכנית של "${raw.name}", או לפתוח ${pdfs.length > 1 ? 'אתר חדש' : 'ארון חדש'}?`, 'להוסיף לתכנית הזו', pdfs.length > 1 ? 'אתר חדש' : 'ארון חדש');
@@ -485,72 +510,123 @@ const SAMPLE_ERR = {
   images_unavailable: 'הדף הזה לא יכול לשלוח תמונות ל-Claude.'
 };
 
-async function runSample() {
-  if (!pages.length) { toast('אין עמודים בפרויקט. העלו PDF.'); return; }
-  raw.hint = $('#hint').value.trim(); save();
-  const prog = $('#aiProgress'), txt = $('#aiText'), bar = $('#aiBar');
-  prog.hidden = false; bar.style.width = '3%';
-  $('#runClaude').disabled = true;
-  aiAbort = new AbortController();
-  const signal = aiAbort.signal;
-  /* עמודים שכבר נקראו בהצלחה בריצה קודמת לא נשלחים שוב */
-  raw.aiPages = raw.aiPages || {};
-  const queue = pages.map((p) => p.page).filter((n) => !raw.aiPages[n]);
-  const total = pages.length;
-  const results = Object.values(raw.aiPages);
+/* עמודי התכנית של כל פרויקט (לא רק הפתוח): מהאחסון בדפדפן, או מהזיכרון אם האחסון חסום */
+async function pagesOf(p) {
+  if (!p.pdf) return [];
+  const mem = pageCache.get(p.id) || [];
+  const out = [];
+  for (let i = 1; i <= p.pdf.pages; i++) {
+    const rec = (await files.get(`${p.id}:p${i}`)) || mem.find((x) => x.page === i);
+    if (rec) out.push(rec);
+  }
+  return out;
+}
+const needsReading = (p) => Boolean(p.pdf) && !p.wires.length;
+
+/* קריאה עם Claude של פרויקט אחד. עמודים שכבר נקראו לא נשלחים שוב; התוצאה נשמרת בפרויקט */
+async function claudeRead(p, pgs, { signal, onProgress = () => {} } = {}) {
+  p.aiPages = p.aiPages || {};
+  const queue = pgs.map((x) => x.page).filter((n) => !p.aiPages[n]);
+  const total = pgs.length;
+  const results = Object.values(p.aiPages);
   const failed = [];
-  let fatal = null;
+  let fatal = null, running = 0;
   const tiles = claudeAi.maxImages >= 5 ? TILES : claudeAi.maxImages >= 3 ? [[0, 0, 0.56, 1], [0.44, 0, 0.56, 1]] : [];
-  const wiresSoFar = () => results.reduce((n, r) => n + r.wires.length, 0);
-  const show = (extra) => { txt.textContent = `Claude קורא את השרטוטים: ${total - queue.length - running} מתוך ${total} עמודים נקראו · ${wiresSoFar()} חוטים עד עכשיו${extra ? ' · ' + extra : ''}`; bar.style.width = Math.round(4 + 92 * (total - queue.length - running) / total) + '%'; };
-  let running = 0;
+  const report = (extra) => onProgress({ done: total - queue.length - running, total, wires: results.reduce((n, r) => n + r.wires.length, 0), extra });
   const one = async (n) => {
-    const pg = pages.find((x) => x.page === n);
+    const pg = pgs.find((x) => x.page === n);
     const imgs = [await pageCrop(pg.img, 0, 0, 1, 1)];
     for (const t of tiles) imgs.push(await pageCrop(pg.img, ...t));
     const known = Pr.merge(results).components.map((c) => c.tag);
     const text = E.textLines([pg]).map((l) => l.text).join('\n');
-    const prompt = Pr.chunkPrompt({ pages: [n], known, hint: raw.hint, text })
+    const prompt = Pr.chunkPrompt({ pages: [n], known, hint: p.hint, text })
       + `\n\nהתמונה הראשונה היא עמוד ${n} כולו. ${imgs.length > 1 ? `אחריה ${imgs.length - 1} הגדלות של חלקי אותו עמוד (עם חפיפה), כדי לקרוא מספרי הדקים וחוטים קטנים. אל תכפיל חוט שמופיע בשתי הגדלות.` : ''} החזר JSON אחד בלבד.`;
     const r = await claudeAi.fn(prompt, { images: imgs, modelTier: 'complex', signal });
     const parsed = Pr.parse(r.text);
     parsed.wires.forEach((w) => { if (!w.page) w.page = n; });
-    raw.aiPages[n] = parsed;
+    p.aiPages[n] = parsed;
     results.push(parsed);
-    save();
+    saveProject(p);
   };
   const worker = async () => {
-    while (queue.length && !fatal && !signal.aborted) {
+    while (queue.length && !fatal && !(signal && signal.aborted)) {
       const n = queue.shift();
-      running++; show(`עמוד ${n}`);
+      running++; report(`עמוד ${n}`);
       try { await one(n); }
       catch (e) {
-        if (e && e.code === 'cancelled') { queue.unshift(n); }
+        if (e && e.code === 'cancelled') queue.unshift(n);
         else if (e && SAMPLE_ERR[e.code]) { fatal = SAMPLE_ERR[e.code]; queue.unshift(n); }
         else failed.push(n);
-      } finally { running--; show(); }
+      } finally { running--; report(); }
     }
   };
+  report();
+  await Promise.all([worker(), worker()]);
+  const res = Pr.merge(results);
+  if (failed.length) res.notes.unshift(`עמודים ${failed.join(', ')} לא נקראו. לחצו שוב "קריאה אוטומטית" כדי לנסות רק אותם.`);
+  if (res.wires.length || res.components.length) applyResult(res, 'claude', true, p);
+  return { res, failed, fatal, aborted: Boolean(signal && signal.aborted), total };
+}
+
+async function runSample() {
+  if (!pages.length) { toast('אין עמודים בפרויקט. העלו PDF.'); return; }
+  raw.hint = $('#hint').value.trim(); save();
+  const p = raw;
+  const prog = $('#aiProgress'), txt = $('#aiText'), bar = $('#aiBar');
+  prog.hidden = false; bar.style.width = '3%';
+  $('#runClaude').disabled = true;
+  aiAbort = new AbortController();
+  let out = null;
   try {
-    show();
-    await Promise.all([worker(), worker()]);
-    if (signal.aborted) { txt.textContent = `נעצר. ${Object.keys(raw.aiPages).length} עמודים נקראו ונשמרו; "קריאה אוטומטית" ממשיכה מאיפה שעצרנו.`; }
-    const res = Pr.merge(results);
-    if (failed.length) res.notes.unshift(`עמודים ${failed.join(', ')} לא נקראו. לחצו שוב "קריאה אוטומטית" כדי לנסות רק אותם.`);
+    out = await claudeRead(p, pages.slice(), { signal: aiAbort.signal, onProgress: ({ done, total, wires, extra }) => {
+      const t = `Claude קורא את השרטוטים: ${done} מתוך ${total} עמודים נקראו · ${wires} חוטים עד עכשיו${extra ? ' · ' + extra : ''}`;
+      txt.textContent = t; bar.style.width = Math.round(4 + 92 * done / total) + '%'; busy(t, done / total);
+    } });
+    const { res, fatal, aborted, total } = out;
+    if (aborted) txt.textContent = `נעצר. ${Object.keys(p.aiPages).length} עמודים נקראו ונשמרו; "קריאה אוטומטית" ממשיכה מאיפה שעצרנו.`;
     if (fatal) { txt.textContent = fatal; toast(fatal, 9000); }
     if (res.wires.length || res.components.length) {
       bar.style.width = '100%';
-      if (applyResult(res, 'claude', true)) {
-        derive();
-        if (!fatal && !signal.aborted) txt.textContent = `הסתיים: ${res.wires.length} חוטים ו-${res.components.length} רכיבים מ-${total} עמודים.`;
-        toast(`נקראו ${res.wires.length} חוטים ו-${res.components.length} רכיבים. עברו ל"ארון בתלת־ממד" או ל"רשימת חוטים".`, 7000);
-        rerender();
-      }
-    } else if (!fatal && !signal.aborted) txt.textContent = 'לא נמצאו רכיבים או חוטים בשרטוטים. אם זו סריקה מטושטשת, נסו קובץ חד יותר.';
+      if (!fatal && !aborted) txt.textContent = `הסתיים: ${res.wires.length} חוטים ו-${res.components.length} רכיבים מ-${total} עמודים.`;
+      toast(`נקראו ${res.wires.length} חוטים ו-${res.components.length} רכיבים. עברו ל"ארון בתלת־ממד" או ל"רשימת חוטים".`, 7000);
+      if (p === raw) rerender();
+    } else if (!fatal && !aborted) txt.textContent = 'לא נמצאו רכיבים או חוטים בשרטוטים. אם זו סריקה מטושטשת, נסו קובץ חד יותר.';
   } finally {
+    busy(null);
     aiAbort = null;
     $('#runClaude').disabled = !aiReady();
-    if (!fatal) setTimeout(() => { prog.hidden = true; }, 8000);
+    if (!(out && out.fatal)) setTimeout(() => { prog.hidden = true; }, 8000);
+  }
+}
+
+/* כל הארונות באתר שעוד לא נקראו — אחד אחרי השני */
+let siteReading = null;
+async function readSiteCabinets(s) {
+  if (!claudeAi || siteReading) return;
+  const todo = s.cabinets.map((pid) => state.projects.find((x) => x.id === pid)).filter((p) => p && needsReading(p));
+  if (!todo.length) { toast('כל הארונות באתר כבר נקראו.'); return; }
+  siteReading = new AbortController();
+  const signal = siteReading.signal;
+  let okN = 0, fatal = null;
+  try {
+    for (let k = 0; k < todo.length && !signal.aborted && !fatal; k++) {
+      const p = todo[k];
+      const pgs = await pagesOf(p);
+      if (!pgs.length) continue;
+      const out = await claudeRead(p, pgs, { signal, onProgress: ({ done, total, wires }) => {
+        busy(`Claude קורא ארון ${k + 1} מתוך ${todo.length} — ${p.name}: עמוד ${done}/${total} · ${wires} חוטים`, (k + done / total) / todo.length);
+        const card = $(`#siteCabs .cab-card[data-pid="${CSS.escape(p.id)}"] .cc-warn`);
+        if (card) card.textContent = `Claude קורא… ${done}/${total} עמודים · ${wires} חוטים`;
+      } });
+      fatal = out.fatal;
+      if (out.res.wires.length) okN++;
+      if (site === s && tab === 'site') renderSite();
+    }
+  } finally {
+    busy(null); siteReading = null;
+    if (fatal) toast(fatal, 9000);
+    else if (!signal.aborted) toast(`הסתיים: ${okN} מתוך ${todo.length} ארונות נקראו.`, 7000);
+    if (site === s && tab === 'site') renderSite();
   }
 }
 
@@ -1330,6 +1406,7 @@ function bind() {
   });
   bindSite();
   bindComp();
+  if (CLAUDE_APP) { $('#homeClaude').hidden = false; $('#homeClaude').href = CLAUDE_APP; }
   $('#bookPrint').onclick = () => { try { $('#bookFrame').contentWindow.print(); } catch { toast('ההדפסה לא זמינה כאן. פתחו את האתר בדפדפן רגיל כדי להדפיס.'); } };
   $('#bookPrint').hidden = Boolean(window.claude);
 
@@ -1717,6 +1794,15 @@ function renderSite() {
   const meters = links.reduce((s, l) => s + (l.length || 0), 0);
   $('#siteStats').innerHTML = [['ארונות', cabs.length], ['חוטים בארונות', wires], ['חוברו', wires ? Math.round(done / wires * 100) + '%' : '—'], ['כבלים בין ארונות', links.length], ['מטר כבל', Math.round(meters)], ['קבצים', site.files.length]]
     .map(([k, v]) => `<div><dt>${k}</dt><dd class="num">${v}</dd></div>`).join('');
+  /* ארונות שעוד צריך לקרוא את השרטוטים שלהם */
+  const unread = cabs.filter((c) => needsReading(c.raw));
+  const sr = $('#siteRead');
+  sr.hidden = !unread.length;
+  if (unread.length) {
+    sr.innerHTML = claudeAi
+      ? `<div><b>${unread.length} ${unread.length === 1 ? 'ארון מחכה' : 'ארונות מחכים'} לקריאת השרטוטים</b><span>${unread.map((c) => esc(c.name)).join(' · ')}</span></div>${siteReading ? '<button class="btn ghost small" type="button" data-site-stop>עצירה</button>' : '<button class="btn small" type="button" data-site-read>קריאת כל הארונות עם Claude</button>'}`
+      : `<div><b>${unread.length} ${unread.length === 1 ? 'ארון' : 'ארונות'} עם שרטוטים שעוד לא נקראו</b><span>${unread.map((c) => esc(c.name)).join(' · ')}. התכניות נשמרו ואפשר לדפדף בהן, אבל את החוטים מהשרטוטים קורא Claude — בגרסת Claude של האתר. שם מעלים את אותם קבצים, וכל הארונות נקראים אחד אחרי השני.</span></div>${CLAUDE_APP ? `<a class="btn small" href="${esc(CLAUDE_APP)}" target="_blank" rel="noopener">פתיחה בגרסת Claude ↗</a>` : ''}`;
+  }
   /* כרטיסי ארונות */
   $('#siteCabs').innerHTML = cabs.length ? cabs.map((c, i) => {
     const pct = c.P.wires.length ? Math.round(c.done / c.P.wires.length * 100) : 0;
@@ -1924,6 +2010,8 @@ function siteIngest(list) {
     saveAll(state);
     if (site === s && tab === 'site') renderSite();
     toast(`נקלטו ${cabs} תכניות (ארונות) ו-${other} קבצים נוספים.`, 5000);
+    /* בגרסת Claude: מיד קוראים את השרטוטים של כל הארונות החדשים */
+    if (claudeAi && s.cabinets.some((pid) => { const p = state.projects.find((x) => x.id === pid); return p && needsReading(p); })) readSiteCabinets(s);
   });
 }
 
@@ -1988,6 +2076,8 @@ function bindSite() {
     const show = t.closest('[data-show-link]');
     if (show) { siteSelect(null, show.dataset.showLink); $('#siteSel').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     if (t.closest('[data-close-sel]')) { siteSelect(null, null); return; }
+    if (t.closest('[data-site-read]')) { readSiteCabinets(site).then(() => {}); setTimeout(renderSite, 50); return; }
+    if (t.closest('[data-site-stop]')) { if (siteReading) siteReading.abort(); return; }
     const sc = t.closest('[data-scomp]');
     if (sc && siteSel && siteSel.pid) { openSiteComp(siteSel.pid, sc.dataset.scomp); return; }
     const fget = t.closest('[data-fget]');

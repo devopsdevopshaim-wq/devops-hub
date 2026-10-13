@@ -636,3 +636,13 @@ body:has(.voice-card.speaking) .speak-btn { color: #fff; background: var(--coppe
 @keyframes indet { from { inset-inline-start: 0; } to { inset-inline-start: 70%; } }
 #busyText { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .busy-bar.indet #busyFill { animation: none; } }
+
+/* ---------- ארונות שמחכים לקריאה ---------- */
+.site-read { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; border-radius: var(--radius-lg); background: var(--copper-soft); border: 1px solid rgba(168, 90, 38, .3); border-inline-start: 4px solid var(--copper); }
+.site-read[hidden] { display: none; }
+.site-read > div { display: grid; gap: 3px; min-width: 0; }
+.site-read b { font-weight: 600; }
+.site-read span { font-size: .86rem; color: var(--ink-2); }
+.site-read .btn { flex: none; }
+@media (max-width: 640px) { .site-read { flex-direction: column; align-items: stretch; } }
+.home-claude { display: inline-block; font-size: .88rem; color: var(--copper); }
