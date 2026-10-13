@@ -15,6 +15,12 @@
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="../portfolio/css/future.css">
 <script src="../portfolio/js/future.js" defer></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+} }
+</script>
 <script src="js/catalog.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/prompts.js"></script>
@@ -49,9 +55,10 @@
         <li><a href="#p/parts" data-tab="parts"><span class="num">2</span><span class="t">רכיבים</span></a></li>
         <li><a href="#p/wires" data-tab="wires"><span class="num">3</span><span class="t">רשימת חוטים</span></a></li>
         <li><a href="#p/cabinet" data-tab="cabinet"><span class="num">4</span><span class="t">פריסת ארון</span></a></li>
-        <li><a href="#p/wiring" data-tab="wiring"><span class="num">5</span><span class="t">חיווט שלב אחר שלב</span></a></li>
-        <li><a href="#p/assembly" data-tab="assembly"><span class="num">6</span><span class="t">הרכבה ובדיקות</span></a></li>
-        <li><a href="#p/export" data-tab="export"><span class="num">7</span><span class="t">הדפסה והגדרות</span></a></li>
+        <li><a href="#p/three" data-tab="three"><span class="num">5</span><span class="t">ארון בתלת־ממד</span></a></li>
+        <li><a href="#p/wiring" data-tab="wiring"><span class="num">6</span><span class="t">חיווט שלב אחר שלב</span></a></li>
+        <li><a href="#p/assembly" data-tab="assembly"><span class="num">7</span><span class="t">הרכבה ובדיקות</span></a></li>
+        <li><a href="#p/export" data-tab="export"><span class="num">8</span><span class="t">הדפסה והגדרות</span></a></li>
       </ol>
       <span class="progress-pill" id="progressPill" title="חוטים שסומנו כמחוברים"></span>
     </div>
@@ -169,7 +176,7 @@
             <textarea id="hint" rows="3" placeholder="למשל: עמודים 3–7 הם הסכמה, עמוד 8 תכנית מהדקים. מתח פיקוד 24VDC. לא לכלול את עמוד הכריכה…"></textarea>
           </label>
           <div class="stack">
-            <button class="btn" type="button" id="runClaude">קריאה עם Claude</button>
+            <button class="btn" type="button" id="runClaude">קריאה אוטומטית של התכנית</button>
             <button class="btn ghost" type="button" id="runPaste">Claude.ai בהעתק-הדבק</button>
             <button class="btn ghost" type="button" id="runLocal">שליפה מהטקסט (בלי AI)</button>
             <label class="btn ghost" for="jsonInput">ייבוא JSON</label>
@@ -180,7 +187,7 @@
             <p class="small" id="aiText">שולח…</p>
             <button class="btn ghost small" type="button" id="aiStop">עצירה</button>
           </div>
-          <p class="muted small">שליפה מהטקסט מתאימה לרשימת חוטים או לתכנית מהדקים שיוצאו מ-EPLAN ודומיו (‎-X1:3 → ‎-K1:A1 בשורה). שרטוט סכמטי צריך Claude.</p>
+          <p class="muted small">קריאה אוטומטית: כל עמודי השרטוט נשלחים לבינה מלאכותית (Claude בשרת משלכם, או Gemini דרך השרת של האתר), כמה עמודים בכל פעם, והתוצאה מתאחדת לרשימה אחת. שליפה מהטקסט מתאימה לרשימת חוטים שיוצאה מ-EPLAN.</p>
         </div>
         <div class="card" id="metaCard">
           <h2>פרטי התכנית</h2>
@@ -250,7 +257,32 @@
     <div class="legend" id="legend"></div>
   </section>
 
-  <!-- ===== 5. חיווט שלב אחר שלב ===== -->
+  <!-- ===== 5. תלת־ממד ===== -->
+  <section class="view" id="v-three" data-view="three" hidden>
+    <div class="cab-toolbar">
+      <div class="row gap flexwrap" role="group" aria-label="תצוגת הארון">
+        <button class="btn ghost small" type="button" id="t3Door" aria-pressed="true">לסגור את הדלת</button>
+        <button class="btn ghost small" type="button" id="t3Covers" aria-pressed="false">מכסי תעלות</button>
+        <button class="btn ghost small" type="button" data-view3="home">מבט כללי</button>
+        <button class="btn ghost small" type="button" data-view3="front">חזית</button>
+        <button class="btn ghost small" type="button" data-view3="inside">פנים הארון</button>
+      </div>
+      <div class="row gap">
+        <div class="chips" id="t3Chips" role="group" aria-label="הצגה לפי תפקיד"></div>
+        <button class="btn small" type="button" id="t3Png">תמונה להורדה</button>
+      </div>
+    </div>
+    <div class="grid-three">
+      <div class="three-host" id="threeHost"><p class="three-wait" id="threeWait">טוען תלת־ממד…</p></div>
+      <aside class="side-col">
+        <div class="card spec-card" id="encCard"></div>
+        <div class="card" id="compCard" hidden></div>
+      </aside>
+    </div>
+    <p class="muted small cab-help">גוררים לסיבוב, גלגלת או צביטה לזום, קליק ימני או שתי אצבעות להזזה. עומדים על חוט כדי לראות מה הוא עושה; לחיצה על רכיב מציגה את פרטיו ומדגישה את החוטים שלו.</p>
+  </section>
+
+  <!-- ===== 6. חיווט שלב אחר שלב ===== -->
   <section class="view" id="v-wiring" data-view="wiring" hidden>
     <div class="wiring-top">
       <div class="prog"><div class="bar"><span id="wProgBar"></span></div><span id="wProgText"></span></div>

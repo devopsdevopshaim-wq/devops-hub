@@ -108,6 +108,51 @@
     ].join('\n');
   }
 
+  /* בקשה לקטע של כמה עמודים (נשלח עם תמונות העמודים דרך השרת של האתר). עד 24,000 תווים. */
+  function chunkPrompt(opts) {
+    opts = opts || {};
+    var pages = opts.pages || [];
+    var known = (opts.known || []).slice(0, 120);
+    var parts = [
+      SYSTEM, '', RULES, '',
+      'מצורפים ' + pages.length + ' עמודים מתוך התכנית: עמודים ' + pages.join(', ') + ' ב-PDF, בסדר הזה. page = מספר העמוד ב-PDF.',
+      'אם עמוד הוא כריכה, תוכן עניינים או רשימת חלקים בלי חוטים, החזר ממנו רק רכיבים.',
+      'קו שממשיך לעמוד אחר (חץ עם הפניה כמו /5.3): חבר אותו לתג וההדק שמופיעים בהפניה אם הם ידועים.',
+      known.length ? 'רכיבים שכבר זוהו בעמודים קודמים (השתמש באותם תגים): ' + known.join(', ') : '',
+      opts.hint ? 'הערות המשתמש: ' + String(opts.hint).slice(0, 1500) : '',
+      opts.text ? 'טקסט שנשלף מהעמודים האלה (לעזרה בקריאת מספרים קטנים):\n' + String(opts.text).slice(0, 7000) : '',
+      '',
+      'החזר JSON בלבד במבנה:',
+      '{"meta":{"title":"","drawingNo":"","revision":"","supply":"","control":"","notes":""},"components":[{"tag":"-K1","type":"contactor","name":"","desc":"","maker":"","partNo":"","location":"cabinet","page":1}],"wires":[{"no":"","fromTag":"-X1","fromTerm":"1","toTag":"-Q1","toTerm":"1","color":"BK","colorSource":"drawing","section":2.5,"wireType":"H07V-K","func":"power","potential":"L1","desc":"","explain":"","page":1}],"notes":[]}'
+    ];
+    return parts.filter(function (x) { return x !== ''; }).join('\n').slice(0, 23800);
+  }
+
+  /* איחוד התשובות של כמה קטעים לתוצאה אחת: רכיבים לפי תג, חוטים לפי שני הקצוות */
+  function merge(list) {
+    var meta = {}, comps = {}, order = [], wires = [], seen = {}, notes = [];
+    var nt = function (t) { t = String(t || '').trim().toUpperCase().replace(/\s+/g, ''); return t && /^[A-Z0-9]/.test(t) ? '-' + t : t; };
+    (list || []).forEach(function (r) {
+      if (!r) return;
+      Object.keys(r.meta || {}).forEach(function (k) { if (r.meta[k] && !meta[k]) meta[k] = r.meta[k]; });
+      (r.components || []).forEach(function (c) {
+        var k = nt(c.tag);
+        if (!k) return;
+        if (!comps[k]) { comps[k] = Object.assign({}, c, { tag: k }); order.push(k); }
+        else Object.keys(c).forEach(function (f) { if (c[f] && !comps[k][f]) comps[k][f] = c[f]; });
+      });
+      (r.wires || []).forEach(function (w) {
+        var a = nt(w.from.tag) + ':' + String(w.from.term).trim(), b = nt(w.to.tag) + ':' + String(w.to.term).trim();
+        var key = a < b ? a + '|' + b : b + '|' + a;
+        if (seen[key]) return;
+        seen[key] = 1;
+        wires.push(w);
+      });
+      (r.notes || []).forEach(function (n) { if (notes.indexOf(n) < 0) notes.push(n); });
+    });
+    return { meta: meta, components: order.map(function (k) { return comps[k]; }), wires: wires, notes: notes };
+  }
+
   /* תשובה (מהשרת או מהדבקה) → פרויקט חלקי */
   function parse(text) {
     var s = String(text || '').trim();
@@ -137,5 +182,5 @@
     return { meta: j.meta || {}, components: components, wires: wires, notes: Array.isArray(j.notes) ? j.notes : [] };
   }
 
-  return { SCHEMA: SCHEMA, build: build, copyPrompt: copyPrompt, parse: parse, fromJson: fromJson };
+  return { SCHEMA: SCHEMA, build: build, copyPrompt: copyPrompt, chunkPrompt: chunkPrompt, merge: merge, parse: parse, fromJson: fromJson };
 });
