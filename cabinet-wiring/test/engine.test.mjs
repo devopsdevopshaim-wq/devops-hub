@@ -159,4 +159,25 @@ test('מעטפת הארון: מידות סטנדרטיות שמכילות את �
   assert.ok(enc.wireM > 10 && enc.rails === L.rails.length);
 });
 
+test('תכנית 208-B: מזוהה לפי הטקסט, כל חוט מנותב, לא יותר משני חוטים בהדק', () => {
+  const B = require('../js/library/plan-208b.js');
+  assert.ok(B.matches('… DRAWING No: 208-B … TITLE: B CABINET … FOR: Hagdod Haivri 53'));
+  assert.ok(!B.matches('208-A CABINET'));
+  const p = E.enrich(B.project());
+  const L = E.layout(p);
+  assert.ok(p.wires.length > 500 && p.components.length > 100);
+  assert.equal(p.components.filter((c) => c.auto).length, 0, 'כל רכיב מוגדר');
+  assert.equal(p.wires.filter((w) => !L.routes[w.id]).length, 0);
+  const per = {};
+  p.wires.filter((w) => !/גשר מסרק|גשר בסיסי/.test(w.wireType)).forEach((w) => [w.from, w.to].forEach((e) => { const k = e.tag + ':' + e.term; per[k] = (per[k] || 0) + 1; }));
+  assert.deepEqual(Object.entries(per).filter((x) => x[1] > 2), []);
+  const by = (no) => p.wires.filter((w) => w.no === no);
+  assert.equal(by('411')[0].to.tag, '-KSFT');
+  assert.equal(by('PLT12')[0].func, 'foreign');
+  assert.ok(p.wires.filter((w) => w.func === 'power').every((w) => w.section >= 1.5));
+  assert.ok(p.wires.filter((w) => w.func === 'pe').every((w) => w.color === 'GNYE'));
+  const enc = E.enclosure(p, L);
+  assert.equal(enc.w, 1200);
+});
+
 console.log(`\n${n} בדיקות עברו`);

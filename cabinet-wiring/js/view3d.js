@@ -392,7 +392,7 @@ export class Cabinet3D {
       } else if (prev.distanceTo(p) > 1e-5) path.add(new THREE.LineCurve3(prev, p.clone()));
     }
     const len = path.getLength();
-    const geo = new THREE.TubeGeometry(path, Math.max(16, Math.round(len * 900)), rad, 8, false);
+    const geo = new THREE.TubeGeometry(path, Math.min(360, Math.max(12, Math.round(len * 170))), rad, 6, false);
     let map = null;
     if (col.stripe) {
       map = canvasTex(THREE, 64, 8, (g, w, h) => { g.fillStyle = col.hex; g.fillRect(0, 0, w, h); g.fillStyle = col.stripe; g.fillRect(0, 0, w / 2, h); });

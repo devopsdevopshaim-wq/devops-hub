@@ -59,6 +59,7 @@ export function bookHtml({ P, L, svg, done, C, E, steps }) {
     <p class="small muted">צבע / חתך / סוג חוט שמסומנים ב-* לא היו כתובים בתכנית והושלמו לפי IEC 60204-1. יש לאמת מול התכנית המאושרת ודפי היצרן.</p></div>`);
   /* ציור */
   h.push(`<h2>פריסת הארון</h2><div class="drawing">${svg}</div>`);
+  if (P.notes && P.notes.length) h.push(`<h2>הערות תכנון ותקנות</h2><ul>${P.notes.map((n) => '<li>' + esc(n) + '</li>').join('')}</ul>`);
   /* רכיבים */
   h.push(`<h2 class="page-break">רשימת רכיבים</h2><table><thead><tr><th>תג</th><th>סוג</th><th>שם</th><th>יצרן / מק"ט</th><th>מיקום</th><th>✓</th></tr></thead><tbody>`);
   P.components.slice().sort((a, b) => E.natCmp(a.tag, b.tag)).forEach((c) => {
@@ -83,6 +84,30 @@ export function bookHtml({ P, L, svg, done, C, E, steps }) {
     });
     h.push('</tbody></table>');
   });
+  /* תכנית מהדקים: לכל פס, לכל מהדק — החוט מבפנים ומבחוץ */
+  const strips = P.components.filter((c) => c.type === 'terminal' && P.wires.some((w) => w.from.tag === c.tag || w.to.tag === c.tag)).sort((a, b) => E.natCmp(a.tag, b.tag));
+  if (strips.length) {
+    h.push(`<h2 class="page-break">תכנית מהדקים</h2><p class="small muted">לכל מהדק: החוטים שמחוברים אליו מצד הארון ומצד השטח. גשר מסרק מסומן "גשר".</p>`);
+    const zoneOf = (tag) => (P.components.find((c) => c.tag === tag) || {}).zone;
+    strips.forEach((st) => {
+      const terms = [];
+      P.wires.forEach((w) => [[w.from, w.to], [w.to, w.from]].forEach(([a, b]) => { if (a.tag === st.tag && !terms.includes(a.term)) terms.push(a.term); }));
+      terms.sort(E.natCmp);
+      h.push(`<h3><span class="ep">${esc(st.tag)}</span> · ${esc(st.name)} (${terms.length} מהדקים)</h3><table><thead><tr><th>מהדק</th><th>צד הארון</th><th>צד השטח</th><th>גשר</th></tr></thead><tbody>`);
+      terms.forEach((t) => {
+        const ins = [], outs = [], br = [];
+        P.wires.forEach((w) => [[w.from, w.to], [w.to, w.from]].forEach(([a, b]) => {
+          if (a.tag !== st.tag || a.term !== t) return;
+          const cell = `<span class="ep">${esc(w.no)}</span> → <span class="ep">${esc(b.tag + ':' + b.term)}</span> ${swatch(C, w.color)}${esc(C.fmtSection(w.section))}`;
+          if (b.tag === st.tag) br.push(`<span class="ep">${esc(b.term)}</span>`);
+          else if (zoneOf(b.tag) === 'field' || zoneOf(b.tag) === 'door') outs.push(cell);
+          else ins.push(cell);
+        }));
+        h.push(`<tr><td class="ep"><b>${esc(t)}</b></td><td>${ins.join('<br>')}</td><td>${outs.join('<br>')}</td><td>${br.join(', ')}</td></tr>`);
+      });
+      h.push('</tbody></table>');
+    });
+  }
   /* חיתוך */
   h.push(`<h2 class="page-break">רשימת חיתוך וקנייה</h2><table><thead><tr><th>סוג</th><th>חתך</th><th>צבע</th><th>חוטים</th><th>אורך פנימי משוער</th><th>לשטח</th></tr></thead><tbody>`);
   cut.forEach((c) => h.push(`<tr><td>${esc(c.wireType)}</td><td>${esc(C.fmtSection(c.section))}</td><td>${swatch(C, c.color)}${esc((C.COLORS[c.color] || {}).he || c.color)}</td><td>${c.count}</td><td>${c.mm ? (c.mm / 1000).toFixed(1) + ' מ\'' : '—'}</td><td>${c.ext || ''}</td></tr>`));
