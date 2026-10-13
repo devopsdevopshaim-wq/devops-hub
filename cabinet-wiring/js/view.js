@@ -6,8 +6,8 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 /* העיצוב של השרטוט בתוך ה-SVG עצמו, כדי שגם ההדפסה והייצוא ייראו אותו דבר */
 export const SVG_STYLE = `
   svg, text { direction: ltr; }
-  text { font-family: Heebo, Arial, sans-serif; unicode-bidi: plaintext; }
-  .t-cap { font-size: 16px; fill: #9aa8bb; }
+  text { font-family: 'IBM Plex Sans Hebrew', Arial, sans-serif; unicode-bidi: plaintext; }
+  .t-cap { font-size: 15px; fill: #a4adb4; font-family: 'IBM Plex Mono', monospace; }
   .t-rail { font-size: 12px; fill: #56606c; font-weight: 700; }
   .t-zone { font-size: 16px; fill: #c9d2dc; font-weight: 700; }
   .t-tag { font-size: 10px; fill: #20252c; font-weight: 700; }
@@ -24,11 +24,11 @@ export const SVG_STYLE = `
   .w { transition: opacity .15s; }
   .has-hl .w:not(.hl) { opacity: .12; }
   .has-sel .w:not(.sel) { opacity: .16; }
-  .w.sel .case { stroke: #ffd166; opacity: 1; stroke-width: 7px; }
+  .w.sel .case { stroke: #e0904f; opacity: 1; stroke-width: 7px; }
   .w.done .core { stroke-dasharray: none; }
-  .w:hover .case { stroke: #ffd166; opacity: .9; }
+  .w:hover .case { stroke: #e0904f; opacity: .9; }
   .comp { cursor: pointer; }
-  .comp.end > rect:first-of-type, .comp.end > circle:first-of-type { stroke: #ffd166; stroke-width: 3px; }
+  .comp.end > rect:first-of-type, .comp.end > circle:first-of-type { stroke: #e0904f; stroke-width: 3px; }
 `;
 
 function lampColor(name) {

@@ -4,9 +4,9 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 const BASE_CSS = `
   @page { size: A4; margin: 12mm; }
   * { box-sizing: border-box; }
-  body { font-family: Heebo, Arial, sans-serif; color: #111; margin: 0; font-size: 10.5pt; line-height: 1.45; }
+  body { font-family: 'IBM Plex Sans Hebrew', Arial, sans-serif; color: #1c2126; margin: 0; font-size: 10.5pt; line-height: 1.45; }
   h1 { font-size: 22pt; margin: 0 0 6mm; }
-  h2 { font-size: 14pt; margin: 8mm 0 3mm; border-bottom: 2px solid #f2c21b; padding-bottom: 1mm; break-after: avoid; }
+  h2 { font-size: 14pt; margin: 8mm 0 3mm; border-bottom: 2px solid #a85a26; padding-bottom: 1mm; break-after: avoid; }
   h3 { font-size: 11pt; margin: 4mm 0 2mm; break-after: avoid; }
   table { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
   th, td { border: 1px solid #bbb; padding: 1.2mm 1.6mm; text-align: start; vertical-align: top; }
@@ -20,7 +20,7 @@ const BASE_CSS = `
   .kv dt { color: #555; }
   .kv dd { margin: 0; font-weight: 700; }
   .page-break { break-before: page; }
-  .drawing { background: #262e39; padding: 3mm; border-radius: 2mm; break-inside: avoid; }
+  .drawing { background: #2b3035; padding: 3mm; border-radius: 2mm; break-inside: avoid; }
   .drawing svg { width: 100%; height: auto; max-height: 245mm; display: block; }
   .sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; margin-top: 6mm; }
   .sign div { border-top: 1px solid #333; padding-top: 1mm; font-size: 9pt; color: #444; }
@@ -45,7 +45,7 @@ export function bookHtml({ P, L, svg, done, C, E, steps }) {
   const zoneHe = (c) => C.ZONES[c.zone] || '';
   const h = [];
   h.push(`<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>תיק חיווט — ${esc(m.title || P.name)}</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
     <style>${BASE_CSS}</style></head><body>`);
   h.push(`<div class="noprint"><button onclick="print()">הדפסה / שמירה כ-PDF</button></div>`);
   h.push(`<div class="cover"><h1>תיק חיווט והרכבה</h1><dl class="kv">
@@ -62,7 +62,7 @@ export function bookHtml({ P, L, svg, done, C, E, steps }) {
   /* רכיבים */
   h.push(`<h2 class="page-break">רשימת רכיבים</h2><table><thead><tr><th>תג</th><th>סוג</th><th>שם</th><th>יצרן / מק"ט</th><th>מיקום</th><th>✓</th></tr></thead><tbody>`);
   P.components.slice().sort((a, b) => E.natCmp(a.tag, b.tag)).forEach((c) => {
-    h.push(`<tr><td class="ep">${esc(c.tag)}</td><td>${esc((C.TYPES[c.type] || {}).he || '')}</td><td>${esc(c.name)}${c.desc ? '<div class="small muted">' + esc(c.desc) + '</div>' : ''}</td><td>${esc([c.maker, c.partNo].filter(Boolean).join(' · '))}</td><td>${esc(zoneHe(c))}</td><td><span class="box"></span></td></tr>`);
+    h.push(`<tr><td class="ep" translate="no">${esc(c.tag)}</td><td>${esc((C.TYPES[c.type] || {}).he || '')}</td><td>${esc(c.name)}${c.desc ? '<div class="small muted">' + esc(c.desc) + '</div>' : ''}</td><td>${esc([c.maker, c.partNo].filter(Boolean).join(' · '))}</td><td>${esc(zoneHe(c))}</td><td><span class="box"></span></td></tr>`);
   });
   h.push('</tbody></table>');
   /* שלבי הרכבה */
@@ -77,7 +77,7 @@ export function bookHtml({ P, L, svg, done, C, E, steps }) {
       const r = L.routes[w.id];
       const len = r && r.len ? Math.round(r.len / 10) + ' ס"מ' : 'שטח';
       const fer = w.auto.ferrule;
-      h.push(`<tr><td>${done.has(w.id) ? '✓' : '<span class="box"></span>'}</td><td class="ep">${esc(w.no)}</td><td class="ep">${esc(w.from.tag + ':' + w.from.term)}</td><td class="ep">${esc(w.to.tag + ':' + w.to.term)}</td>
+      h.push(`<tr><td>${done.has(w.id) ? '✓' : '<span class="box"></span>'}</td><td class="ep" translate="no">${esc(w.no)}</td><td class="ep" translate="no">${esc(w.from.tag + ':' + w.from.term)}</td><td class="ep" translate="no">${esc(w.to.tag + ':' + w.to.term)}</td>
         <td>${swatch(C, w.color)}${esc((C.COLORS[w.color] || {}).he || w.color)}${w.colorSource === 'standard' ? '*' : ''}</td><td>${esc(C.fmtSection(w.section))}${w.sectionInferred ? '*' : ''}</td><td>${esc(w.wireType)}${w.wireTypeInferred ? '*' : ''}</td><td>${len}</td>
         <td class="small">${esc(C.COLORS[fer.color].he)} ${fer.size}${w.twinFrom || w.twinTo ? ' / TWIN' : ''}</td><td class="small">${esc(w.explain || w.auto.purpose)}</td></tr>`);
     });
