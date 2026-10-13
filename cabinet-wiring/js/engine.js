@@ -857,6 +857,32 @@
     return steps;
   }
 
+  /* ---------- מעטפת הארון: מידות סטנדרטיות לפי הפלטה ועומק הרכיבים ---------- */
+  var DEPTH = { main_switch: 75, mcb: 70, rcd: 70, fuse: 70, psu: 115, transformer: 100, socket: 60, meter: 65, plc: 75, io: 75, relay: 65, timer: 65,
+    thermostat: 40, other: 60, contactor: 90, overload: 80, mpcb: 85, vfd: 180, softstarter: 140, terminal: 45, pe_bar: 25 };
+  var ENC_W = [300, 400, 500, 600, 800, 1000, 1200], ENC_H = [300, 400, 500, 600, 700, 800, 1000, 1200, 1400, 1600, 1800, 2000], ENC_D = [150, 200, 250, 300, 400, 500];
+
+  function enclosure(p, L) {
+    var deepest = 0;
+    (p.components || []).forEach(function (c) { if (L.comps[c.tag] && c.zone === 'cabinet') deepest = Math.max(deepest, DEPTH[c.type] || 60); });
+    var w = roundUp(L.plate.w + 50, ENC_W), h = roundUp(L.plate.h + 50, ENC_H), d = roundUp(deepest + 90, ENC_D);
+    var hd = L.ducts.filter(function (x) { return x.kind === 'h'; }), vd = L.ducts.filter(function (x) { return x.kind === 'v'; });
+    var ductM = (hd.reduce(function (s, x) { return s + x.w; }, 0) + vd.reduce(function (s, x) { return s + x.h; }, 0)) / 1000;
+    var railM = L.rails.reduce(function (s, r) { return s + (r.x2 - r.x1); }, 0) / 1000;
+    var wireM = 0;
+    (p.wires || []).forEach(function (w) { var r = L.routes[w.id]; if (r && r.len) wireM += r.len / 1000; });
+    var door = (p.components || []).filter(function (c) { return c.zone === 'door'; }).length;
+    return {
+      w: w, h: h, d: d, deepest: deepest, plinth: h >= 1400 ? 100 : 0, door: door,
+      text: w + '×' + h + '×' + d + ' מ"מ (רוחב×גובה×עומק)',
+      material: 'פלדה צבועה RAL 7035, דלת אחת עם ידית ומנעול, פלטת הרכבה מגולוונת',
+      ip: 'IP54 לפחות (IP55 במקום עם אבק או התזות מים)',
+      ductM: Math.round(ductM * 10) / 10, railM: Math.round(railM * 10) / 10, wireM: Math.round(wireM * 10) / 10,
+      ducts: hd.length + vd.length, rails: L.rails.length
+    };
+  }
+  function depthOf(type) { return DEPTH[type] || 60; }
+
   /* ---------- CSV ---------- */
   function csv(rows) {
     return '﻿' + rows.map(function (r) {
@@ -898,6 +924,6 @@
     inferType: inferType, typeInfo: typeInfo, termRole: termRole, extractFromText: extractFromText, textLines: textLines,
     enrich: enrich, settingsOf: settingsOf, DEFAULT_SETTINGS: DEFAULT_SETTINGS, explainWire: explainWire,
     layout: layout, wireOrder: wireOrder, assemblySteps: assemblySteps, GROUPS: GROUPS,
-    wireListCsv: wireListCsv, bomCsv: bomCsv, cutList: cutList
+    wireListCsv: wireListCsv, bomCsv: bomCsv, cutList: cutList, enclosure: enclosure, depthOf: depthOf
   };
 });

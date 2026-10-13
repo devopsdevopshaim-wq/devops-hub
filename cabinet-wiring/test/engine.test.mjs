@@ -137,4 +137,26 @@ test('CSV ורשימת חיתוך', () => {
   assert.equal(cut.reduce((s, c) => s + c.count, 0), 57);
 });
 
+test('איחוד קטעי עמודים: רכיבים לפי תג, חוט כפול נספר פעם אחת', () => {
+  const a = { meta: { title: 'T' }, components: [{ tag: 'K1', name: '' }], wires: [{ from: { tag: '-X1', term: '1' }, to: { tag: '-K1', term: 'A1' } }], notes: ['n1'] };
+  const b = { meta: { title: 'X', supply: '400V' }, components: [{ tag: '-K1', name: 'מגען' }, { tag: '-Q1' }], wires: [{ from: { tag: 'K1', term: 'A1' }, to: { tag: 'X1', term: '1' } }, { from: { tag: '-Q1', term: '2' }, to: { tag: '-K1', term: '1' } }], notes: ['n1', 'n2'] };
+  const m = Pr.merge([a, null, b]);
+  assert.equal(m.components.length, 2);
+  assert.equal(m.components[0].name, 'מגען');
+  assert.equal(m.wires.length, 2);
+  assert.deepEqual(m.meta, { title: 'T', supply: '400V' });
+  assert.deepEqual(m.notes, ['n1', 'n2']);
+  const pr = Pr.chunkPrompt({ pages: [4, 5, 6], known: ['-K1'], text: 'x'.repeat(50000) });
+  assert.ok(pr.length <= 23800 && /4, 5, 6/.test(pr) && /-K1/.test(pr));
+});
+
+test('מעטפת הארון: מידות סטנדרטיות שמכילות את הפלטה', () => {
+  const p = E.enrich(D.project());
+  const L = E.layout(p);
+  const enc = E.enclosure(p, L);
+  assert.ok(enc.w >= L.plate.w + 50 && enc.h >= L.plate.h + 50);
+  assert.ok([150, 200, 250, 300, 400, 500].includes(enc.d) && enc.d >= enc.deepest + 90);
+  assert.ok(enc.wireM > 10 && enc.rails === L.rails.length);
+});
+
 console.log(`\n${n} בדיקות עברו`);

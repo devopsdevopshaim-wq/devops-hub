@@ -8,6 +8,9 @@ The sites run in the browser by themselves. Two things a browser cannot do are d
     {action: 'ai', prompt, tag}           -> {ok, text, source}     a text answer from Gemini (free tier)
     {action: 'ai', prompt, image, mime}   -> {ok, text, source}     the same about one picture or PDF (base64, up to ~4MB;
                                                                      the bills site reads a photographed or emailed bill)
+    {action: 'ai', tag: 'wiring', prompt, images: [{data, mime}]}
+                                          -> {ok, text, source}     a long JSON answer about up to 6 drawing pages
+                                                                     (the cabinet-wiring site reads a wiring diagram page by page)
     {action: 'fetch', url}                -> {ok, status, body}     a GET of an allowed host (market quotes and headlines,
                                                                      which browsers may not read directly)
 The Gemini key never lives in the repository: .github/scripts/n8n-deploy.mjs fills it in from the GEMINI_API_KEY secret.
@@ -77,26 +80,37 @@ if (b.action === 'ai') {
   const prompt = String(b.prompt || '').replace(/\u0000/g, ' ').trim();
   if (!prompt) return out({ ok: false, error: 'empty' }, 400);
   if (prompt.length > 24000) return out({ ok: false, error: 'too-big' }, 413);
-  let media = null;
-  if (b.image) {
-    const mime = String(b.mime || 'image/jpeg').toLowerCase();
-    const data = String(b.image).replace(/^data:[^,]{0,80},/, '').replace(/\s+/g, '');
+  // one picture/PDF (image + mime), or a few drawing pages (images: [{data, mime}]) for the wiring site
+  const list = Array.isArray(b.images) ? b.images : b.image ? [{ data: b.image, mime: b.mime }] : [];
+  if (list.length > 6) return out({ ok: false, error: 'too-many' }, 413);
+  const media = [];
+  let total = 0;
+  for (const im of list) {
+    const mime = String((im && im.mime) || 'image/jpeg').toLowerCase();
+    const data = String((im && im.data) || '').replace(/^data:[^,]{0,80},/, '').replace(/\s+/g, '');
     if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(mime)) return out({ ok: false, error: 'bad-image' }, 400);
-    if (data.length > 5600000) return out({ ok: false, error: 'too-big' }, 413);
+    total += data.length;
+    if (data.length > 5600000 || total > 5600000) return out({ ok: false, error: 'too-big' }, 413);
     if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return out({ ok: false, error: 'bad-image' }, 400);
-    media = { inline_data: { mime_type: mime, data } };
+    media.push({ inline_data: { mime_type: mime, data } });
   }
+  // a wiring diagram answers with a long JSON wire list
+  const wiring = b.tag === 'wiring';
+  const gen = wiring ? { temperature: 0.1, maxOutputTokens: 32768, responseMimeType: 'application/json' } : { temperature: media.length ? 0.1 : 0.7, maxOutputTokens: 4096 };
   sd.asked = (sd.asked || 0) + 1;
   let last;
   for (const m of TEXT_MODELS) {
+    // the whole run must end inside n8n's 120 s limit
+    const left = 112000 - (Date.now() - now);
+    if (left < 15000) break;
     try {
       const r = await this.helpers.httpRequest({
         method: 'POST',
         url: `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,
         headers: { 'x-goog-api-key': GEMINI_KEY, 'Content-Type': 'application/json' },
-        body: { contents: [{ role: 'user', parts: media ? [media, { text: prompt }] : [{ text: prompt }] }], generationConfig: { temperature: media ? 0.1 : 0.7, maxOutputTokens: 4096 } },
+        body: { contents: [{ role: 'user', parts: [...media, { text: prompt }] }], generationConfig: gen },
         json: true,
-        timeout: 90000
+        timeout: Math.min(wiring ? 105000 : 90000, left)
       });
       const t = r && r.candidates && r.candidates[0] && r.candidates[0].content && (r.candidates[0].content.parts || []).map((p) => p.text || '').join('');
       if (t && t.trim()) return out({ ok: true, text: t.trim(), source: 'Gemini' });
@@ -112,7 +126,7 @@ return out({ ok: false, error: 'unknown-action' }, 400);
 X, Y = 0, 0
 nodes = [
     node('Note · Hubs', 'n8n-nodes-base.stickyNote', 1, {
-        'content': '## השרת של חמשת האתרים העצמאיים\n`POST /webhook/hasadna-hubs` — עונה בטקסט מ־Gemini (חינם) וקורא נתוני שוק מכמה אתרים מותרים.\n\n'
+        'content': '## השרת של חמשת האתרים העצמאיים\n`POST /webhook/hasadna-hubs` — עונה בטקסט מ־Gemini (חינם), קורא תכניות חיווט לארון־פלאן, וקורא נתוני שוק מכמה אתרים מותרים.\n\n'
                    'המפתח נכנס אוטומטית מהסוד GEMINI_API_KEY ב־GitHub. יש תקרה יומית ומגבלה לכל כתובת.',
         'height': 220, 'width': 460, 'color': 6}, [X - 500, Y - 180]),
     node('Hubs · Webhook', 'n8n-nodes-base.webhook', 2,

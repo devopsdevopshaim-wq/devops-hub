@@ -2,6 +2,7 @@
 import { loadAll, saveAll, files } from './store.js';
 import { readPdf, blobToBase64 } from './pdf.js';
 import { CabinetView } from './view.js';
+import { Cabinet3D } from './view3d.js';
 import { bookHtml, labelsHtml } from './book.js';
 
 const C = window.WCat, E = window.WEngine, Pr = window.WPrompts, Demo = window.WDemo;
@@ -19,6 +20,10 @@ let selected = null;
 let tab = 'plan';
 let cabView = null, miniView = null;
 let server = { ai: false, needCode: false, checked: false };
+/* השרת של האתרים העצמאיים (n8n): קורא את עמודי התכנית עם Gemini כשאין שרת Claude משלכם */
+const HUB = window.HUB_SERVER || 'https://haimkripisn.app.n8n.cloud/webhook/hasadna-hubs';
+let hub = { ai: false, checked: false };
+let view3d = null, built3d = 0, ver = 0;
 const wf = { funcs: new Set(), search: '', color: '', state: '' };
 const cabFuncs = new Set();
 let wiring = { group: 'all', idx: 0 };
@@ -52,6 +57,7 @@ function derive() {
   P.meta = raw.meta || {};
   P.name = raw.name;
   L = E.layout(P);
+  ver++;
 }
 
 const doneSet = () => new Set(Object.keys((raw && raw.done) || {}).filter((k) => raw.done[k]));
@@ -92,7 +98,7 @@ function showView(v) {
   if (v === 'wiring') closeDrawer();
   $('#projTitle').textContent = raw.name;
   updatePill();
-  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, wiring: renderWiring, assembly: renderAssembly, export: renderExport }[v] || renderPlan)();
+  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, three: renderThree, wiring: renderWiring, assembly: renderAssembly, export: renderExport }[v] || renderPlan)();
 }
 
 function rerender() { if (tab !== 'home') showView(tab); if (selected && !$('#drawer').hidden) openDrawer(selected); }
@@ -152,11 +158,12 @@ async function handleFile(file, intoCurrent = false) {
       applyResult({ components: ex.components, wires: ex.wires, meta: {}, notes: [] }, 'text', true);
       msg += ` נמצאו ${ex.wires.length} חוטים בטקסט של ה-PDF. בדקו אותם ברשימת החוטים.`;
     } else if (!raw.wires.length) {
-      msg += ' לא נמצאה בטקסט רשימת חוטים. זו כנראה תכנית גרפית: לחצו "קריאה עם Claude".';
+      msg += aiReady() ? ' אין בטקסט רשימת חוטים, אז השרטוטים נקראים עכשיו אוטומטית, עמוד אחרי עמוד.' : ' לא נמצאה בטקסט רשימת חוטים. זו תכנית גרפית: לחצו "Claude.ai בהעתק-הדבק".';
     }
     raw.status = msg;
     save(); derive(); rerender();
     toast(msg, 6000);
+    if (!raw.wires.length && aiReady()) runAuto();
   } catch (e) {
     $('#planStatus').textContent = 'שגיאה: ' + e.message;
     toast('לא הצלחתי לקרוא את ה-PDF: ' + e.message, 7000);
@@ -191,10 +198,10 @@ function applyResult(res, source, silent) {
   const meta = {};
   Object.entries(res.meta || {}).forEach(([k, v]) => { if (v) meta[k] = v; });
   raw.meta = { ...(raw.meta || {}), ...meta };
-  if (meta.title && /^פרויקט חדש$|\.pdf$/i.test(raw.name)) raw.name = meta.title;
+  if (meta.title && (/^פרויקט חדש$|\.pdf$/i.test(raw.name) || (raw.pdf && raw.name === raw.pdf.name.replace(/\.pdf$/i, '')))) raw.name = meta.title;
   raw.notes = res.notes || [];
   raw.source = source;
-  raw.status = `נטענו ${raw.wires.length} חוטים ו-${raw.components.length} רכיבים (${({ claude: 'Claude', paste: 'Claude.ai', text: 'שליפה מהטקסט', json: 'JSON' })[source] || source}).`;
+  raw.status = `נטענו ${raw.wires.length} חוטים ו-${raw.components.length} רכיבים (${({ claude: 'Claude', paste: 'Claude.ai', text: 'שליפה מהטקסט', json: 'JSON', gemini: 'קריאה אוטומטית' })[source] || source}).`;
   save(); derive();
   if (!silent) { toast(raw.status); rerender(); }
   return true;
@@ -208,8 +215,8 @@ function renderPlan() {
   $('#planStatus').textContent = raw.status || (raw.wires.length ? `${raw.wires.length} חוטים בפרויקט.` : 'העלו PDF או הוסיפו חוטים ידנית.');
   $('#hint').value = raw.hint || '';
   const ai = $('#runClaude');
-  ai.disabled = !server.ai || !raw.pdf;
-  ai.title = !server.ai ? 'אין שרת עם מפתח Claude. השתמשו ב-Claude.ai בהעתק-הדבק, או הריצו את השרת (README).' : !raw.pdf ? 'צריך PDF' : '';
+  ai.disabled = !aiReady() || !raw.pdf || Boolean(aiAbort);
+  ai.title = !aiReady() ? 'השרת לקריאה אוטומטית לא זמין כרגע. השתמשו ב-Claude.ai בהעתק-הדבק.' : !raw.pdf ? 'צריך PDF' : '';
   $('#runLocal').disabled = !has;
   const m = raw.meta || {};
   $('#mTitle').value = m.title || ''; $('#mDrawing').value = m.drawingNo || ''; $('#mRev').value = m.revision || '';
@@ -280,7 +287,99 @@ async function checkServer() {
     b.className = 'ai-badge warn';
     b.title = 'האתר פתוח בלי השרת. הקריאה עם Claude עובדת בהעתק-הדבק ל-Claude.ai.';
   }
+  try {
+    const j = await hubCall({ action: 'status' }, 12000);
+    hub = { ai: Boolean(j && j.ok && j.ai), checked: true };
+  } catch { hub = { ai: false, checked: true }; }
+  if (!server.ai && hub.ai) { b.textContent = 'קריאה אוטומטית פעילה'; b.className = 'ai-badge ok'; b.title = 'השרטוטים נקראים אוטומטית (Gemini דרך השרת של האתר).'; }
   if (raw && tab === 'plan') renderPlan();
+}
+
+const aiReady = () => server.ai || hub.ai;
+const runAuto = () => (server.ai ? runClaude() : runHub());
+
+async function hubCall(payload, ms = 115000, signal) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  if (signal) signal.addEventListener('abort', () => ctl.abort());
+  try {
+    const r = await fetch(HUB, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(payload), signal: ctl.signal });
+    return await r.json().catch(() => ({ ok: false, error: r.status === 413 ? 'too-big' : 'bad-response' }));
+  } finally { clearTimeout(t); }
+}
+
+/* עמוד מוקטן ל-JPEG בבסיס 64 (בערך 250–450KB) */
+async function pageJpeg(blob, max = 1700) {
+  const bmp = await createImageBitmap(blob);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(bmp, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.8).split(',')[1];
+}
+
+const HUB_ERR = {
+  quota: 'המכסה היומית של הקריאה האוטומטית נגמרה. נסו מחר, או השתמשו ב-Claude.ai בהעתק-הדבק.',
+  'rate-limited': 'יותר מדי בקשות בשעה האחרונה. חכו כמה דקות ולחצו שוב "קריאה אוטומטית".',
+  'no-key': 'הקריאה האוטומטית לא מוגדרת בשרת. השתמשו ב-Claude.ai בהעתק-הדבק.',
+  'too-big': 'העמודים גדולים מדי לשליחה. המערכת תנסה פחות עמודים בכל פעם.',
+  offline: 'אין חיבור לשרת. בדקו את האינטרנט ונסו שוב.',
+  forbidden: 'השרת מקבל בקשות רק מהאתר עצמו (github.io).'
+};
+
+/* קריאה אוטומטית דרך השרת של האתר: כמה עמודים בכל בקשה, ואיחוד לרשימה אחת */
+async function runHub() {
+  if (!pages.length) { toast('אין עמודים בפרויקט. העלו PDF.'); return; }
+  raw.hint = $('#hint').value.trim(); save();
+  const prog = $('#aiProgress'), txt = $('#aiText'), bar = $('#aiBar');
+  prog.hidden = false; bar.style.width = '3%';
+  $('#runClaude').disabled = true;
+  aiAbort = new AbortController();
+  const results = [], failed = [];
+  let per = 3;
+  const queue = pages.map((p) => p.page);
+  const total = queue.length;
+  let done = 0;
+  try {
+    while (queue.length) {
+      if (aiAbort.signal.aborted) throw Object.assign(new Error('stop'), { name: 'AbortError' });
+      const batch = queue.splice(0, per);
+      txt.textContent = `קורא את השרטוטים: עמודים ${batch[0]}–${batch[batch.length - 1]} מתוך ${total}… (${results.reduce((n, r) => n + r.wires.length, 0)} חוטים עד עכשיו)`;
+      const imgs = [];
+      for (const n of batch) { const pg = pages.find((x) => x.page === n); imgs.push({ data: await pageJpeg(pg.img), mime: 'image/jpeg' }); }
+      const known = Pr.merge(results).components.map((c) => c.tag);
+      const text = batch.map((n) => { const pg = pages.find((x) => x.page === n); return `--- עמוד ${n} ---\n` + E.textLines([pg]).map((l) => l.text).join('\n'); }).join('\n');
+      const j = await hubCall({ action: 'ai', tag: 'wiring', prompt: Pr.chunkPrompt({ pages: batch, known, hint: raw.hint, text }), images: imgs }, 118000, aiAbort.signal);
+      if (!j || !j.ok) {
+        const err = (j && j.error) || 'ai-failed';
+        if (err === 'too-big' && batch.length > 1) { queue.unshift(...batch); per = Math.max(1, Math.floor(batch.length / 2)); continue; }
+        if (['quota', 'rate-limited', 'no-key', 'forbidden', 'offline'].includes(err)) throw new Error(HUB_ERR[err]);
+        failed.push(...batch);
+      } else {
+        try { const r = Pr.parse(j.text); r.wires.forEach((w) => { if (!w.page) w.page = batch[0]; }); results.push(r); }
+        catch { failed.push(...batch); }
+      }
+      done += batch.length;
+      bar.style.width = Math.round(4 + 92 * done / total) + '%';
+    }
+    const res = Pr.merge(results);
+    if (failed.length) res.notes.unshift(`עמודים ${failed.join(', ')} לא נקראו (שגיאה בשרת או תשובה לא תקינה). אפשר ללחוץ שוב "קריאה אוטומטית", או להוסיף את החוטים שלהם ידנית.`);
+    if (!res.wires.length && !res.components.length) throw new Error('לא נמצאו רכיבים או חוטים בשרטוטים. אם זה סריקה מטושטשת, נסו קובץ חד יותר או Claude.ai בהעתק-הדבק.');
+    bar.style.width = '100%';
+    if (applyResult(res, 'gemini')) {
+      txt.textContent = `הסתיים: ${res.wires.length} חוטים ו-${res.components.length} רכיבים מ-${total} עמודים.`;
+      toast(`נקראו ${res.wires.length} חוטים ו-${res.components.length} רכיבים. עברו ל"ארון בתלת־ממד" או ל"רשימת חוטים".`, 7000);
+    }
+  } catch (e) {
+    if (e.name === 'AbortError') txt.textContent = 'נעצר.';
+    else { txt.textContent = e.message; toast(e.message, 8000); }
+  } finally {
+    aiAbort = null;
+    $('#runClaude').disabled = !aiReady();
+    setTimeout(() => { prog.hidden = true; }, 6000);
+  }
 }
 
 function pagesText() {
@@ -486,6 +585,79 @@ function renderCabinet() {
 function applyCabFilter() {
   if (!cabView) return;
   cabView.filter(cabFuncs.size ? new Set(P.wires.filter((w) => cabFuncs.has(w.func)).map((w) => w.id)) : null);
+}
+
+/* ---------- 5. תלת־ממד ---------- */
+async function renderThree() {
+  if (!view3d) {
+    view3d = new Cabinet3D($('#threeHost'), {
+      onHover: (id, ev) => showTip(id, ev),
+      onSelect: (id) => { if (id) { selected = id; openDrawer(id); } else { selected = null; closeDrawer(); } },
+      onComp: (tag) => showComp3d(tag)
+    });
+  }
+  funcChips($('#t3Chips'), cabFuncs, () => view3d.highlightIds(cabFuncs.size ? P.wires.filter((w) => cabFuncs.has(w.func)).map((w) => w.id) : null));
+  renderEncCard();
+  if (built3d === ver) return;
+  try {
+    await view3d.build(P, L, E, C);
+    built3d = ver;
+    $('#threeWait').hidden = true;
+  } catch (e) {
+    $('#threeWait').hidden = false;
+    $('#threeWait').textContent = 'התלת־ממד לא נטען (' + e.message + '). בדקו חיבור לאינטרנט או נסו דפדפן אחר.';
+  }
+}
+
+function renderEncCard() {
+  const enc = E.enclosure(P, L);
+  const m = raw.meta || {};
+  const byFunc = Object.entries(P.stats.byFunc).sort((a, b) => b[1] - a[1]);
+  const max = Math.max(1, ...byFunc.map((x) => x[1]));
+  const zones = (z) => P.components.filter((c) => c.zone === z).length;
+  $('#encCard').innerHTML = `<h2>כרטיס הארון</h2>
+    <p class="big">${enc.w}×${enc.h}×${enc.d}</p>
+    <p class="small muted" style="margin:0 0 12px">רוחב × גובה × עומק במ"מ, לפי הפלטה והרכיב העמוק ביותר (${enc.deepest} מ"מ)</p>
+    <dl>
+      <dt>מעטפת</dt><dd>${esc(enc.material)}</dd>
+      <dt>הגנה</dt><dd>${esc(enc.ip)}</dd>
+      <dt>הזנה</dt><dd>${esc(m.supply || '—')}</dd>
+      <dt>פיקוד</dt><dd>${esc(m.control || ({ dc24: '24V DC', ac230: '230V AC', ac24: '24V AC' })[E.settingsOf(raw).control])}</dd>
+      <dt>פלטה</dt><dd class="mono">${L.plate.w}×${L.plate.h}</dd>
+      <dt>מסילות DIN</dt><dd>${enc.rails} · ${enc.railM} מ' TS35</dd>
+      <dt>תעלות</dt><dd>${enc.ducts} · ${enc.ductM} מ'</dd>
+      <dt>רכיבים</dt><dd>${zones('cabinet')} בארון · ${zones('door')} בדלת · ${zones('field')} בשטח</dd>
+      <dt>חוטים</dt><dd>${P.wires.length} · כ-${enc.wireM} מ' בתוך הארון</dd>
+    </dl>
+    <h3>חוטים לפי תפקיד</h3>
+    <div class="bars">${byFunc.map(([f, n]) => `<div><span>${esc(C.FUNCS[f].short)}</span><i style="width:${Math.round(100 * n / max)}%;background:${C.COLORS[C.FUNCS[f].color].hex === '#f4f4f4' ? '#9aa3ab' : C.COLORS[C.FUNCS[f].color].hex}"></i><span>${n}</span></div>`).join('')}</div>`;
+}
+
+function showComp3d(tag) {
+  const c = compBy()[tag];
+  if (!c) return;
+  const ws = P.wires.filter((w) => w.from.tag === tag || w.to.tag === tag);
+  view3d.selected = null;
+  view3d.highlightIds(ws.map((w) => w.id));
+  const b = L.comps[tag] || {};
+  const rail = b.rail != null && b.zone === 'cabinet' ? L.rails[b.rail] : null;
+  const terms = {};
+  ws.forEach((w) => [w.from, w.to].forEach((e) => { if (e.tag === tag) (terms[e.term] = terms[e.term] || []).push(w.no); }));
+  const card = $('#compCard');
+  card.hidden = false;
+  card.innerHTML = `<div class="card-head"><h2><span class="mono">${esc(tag)}</span> · ${esc(c.name || E.typeInfo(c.type).he)}</h2><button class="icon-btn" type="button" id="compClose" aria-label="סגירת פרטי הרכיב">✕</button></div>
+    <dl class="kv">
+      <dt>סוג</dt><dd>${esc(E.typeInfo(c.type).he)}</dd>
+      ${c.desc ? `<dt>תיאור</dt><dd>${esc(c.desc)}</dd>` : ''}
+      ${c.maker || c.partNo ? `<dt>יצרן / מק"ט</dt><dd>${esc([c.maker, c.partNo].filter(Boolean).join(' · '))}</dd>` : ''}
+      <dt>מיקום</dt><dd>${esc(C.ZONES[c.zone] || '')}${rail ? ` · מסילה ${b.rail + 1} (${esc(C.ROWS[rail.row])}), ${Math.round(b.x)} מ"מ משמאל הפלטה` : ''}</dd>
+      ${b.w ? `<dt>מידות</dt><dd class="mono">${Math.round(b.w)}×${Math.round(b.h)}×${E.depthOf(c.type)}</dd>` : ''}
+      <dt>חוטים</dt><dd>${ws.length}</dd>
+    </dl>
+    <ul class="term-list">${Object.keys(terms).sort(E.natCmp).map((t) => `<li translate="no">${esc(t)} → ${terms[t].map(esc).join(', ')}</li>`).join('')}</ul>
+    <div class="row gap" style="margin-top:12px"><button class="btn ghost small" type="button" id="compFocus">התקרבות לרכיב</button></div>`;
+  $('#compClose').onclick = () => { card.hidden = true; view3d.highlightIds(null); };
+  $('#compFocus').onclick = () => view3d.focusComp(tag);
 }
 
 function highlightComp(tag) {
@@ -781,7 +953,7 @@ function bind() {
   /* תכנית */
   $('#thumbs').addEventListener('click', (e) => { const b = e.target.closest('[data-page]'); if (b) { curPage = Number(b.dataset.page); renderPages(); } });
   $('#pageZoom').onclick = (e) => { const on = $('#page').classList.toggle('zoom'); e.target.setAttribute('aria-pressed', on); e.target.textContent = on ? 'הקטנה' : 'הגדלה'; };
-  $('#runClaude').onclick = runClaude;
+  $('#runClaude').onclick = runAuto;
   $('#aiStop').onclick = () => aiAbort && aiAbort.abort();
   $('#runPaste').onclick = openPaste;
   $('#runLocal').onclick = () => {
@@ -853,6 +1025,16 @@ function bind() {
     const w = P.wires.find((x) => x.no === q || x.no.toUpperCase() === q.toUpperCase());
     if (w) { select(w.id); cabView.focusWire(w.id); } else toast('לא נמצא רכיב או חוט בשם הזה.');
   });
+
+  /* תלת־ממד */
+  $('#t3Door').onclick = (e) => { if (!view3d) return; const open = !view3d.doorOpen; view3d.setDoor(open); e.currentTarget.textContent = open ? 'לסגור את הדלת' : 'לפתוח את הדלת'; e.currentTarget.setAttribute('aria-pressed', open); };
+  $('#t3Covers').onclick = (e) => { if (!view3d) return; const on = !view3d.coversOn; view3d.setCovers(on); e.currentTarget.setAttribute('aria-pressed', on); e.currentTarget.classList.toggle('on', on); };
+  $$('[data-view3]').forEach((b) => { b.onclick = () => view3d && view3d.view(b.dataset.view3); });
+  $('#t3Png').onclick = () => {
+    if (!view3d || !view3d.renderer) return;
+    const a = document.createElement('a'); a.href = view3d.png(); a.download = fileBase() + '-3d.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
 
   /* מגירה */
   $('#dClose').onclick = () => select(null);
