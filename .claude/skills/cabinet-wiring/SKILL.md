@@ -19,9 +19,10 @@ Static files, no build step. `server.mjs` (Node, `@anthropic-ai/sdk`) is optiona
 | `js/prompts.js` | Claude system prompt, rules, JSON Schema, `copyPrompt`, `parse`/`fromJson` |
 | `js/view.js` | `CabinetView`: SVG drawing, hover/select, zoom/pinch; styles embedded (`SVG_STYLE`) so print/SVG export match |
 | `js/app.js` | UI: home, tabs plan/parts/wires/cabinet/wiring/assembly/export, drawer, dialogs |
+| `js/site.js` (UMD `WSite`), `js/siteplan.js`, `js/site3d.js` | installation sites: several cabinets per site (`state.sites[]`: cabinets, files, layout, room, trayH, links, stepsDone); `externals`, `suggest` (shared signal names on outgoing terminal strips, "לוח X" supply), `cableFor`, `linkLength`, `autoLayout`, `installSteps`; top-view plan with drag; 3D room with tray and cables. Route `#site/<id>`; files in IDB `site:<sid>:f:<fid>` |
 | `js/pdf.js`, `js/store.js`, `js/book.js`, `js/demo.js` | pdf.js reading (page image + positioned text), localStorage/IndexedDB, print book and wire labels, demo project (57 wires) |
 
-catalog/engine/prompts/demo are UMD (browser globals `WCat`, `WEngine`, `WPrompts`, `WDemo`, and `require` in node). Raw project in localStorage key `cabinet-wiring-v1`; PDF and pages in IndexedDB `cabinet-wiring` (`<pid>:pdf`, `<pid>:p<n>`).
+catalog/engine/prompts/demo are UMD (browser globals `WCat`, `WEngine`, `WPrompts`, `WDemo`, and `require` in node). State (projects + sites) in IndexedDB key `__state__` and localStorage key `cabinet-wiring-v1`; PDF and pages in IndexedDB `cabinet-wiring` (`<pid>:pdf`, `<pid>:p<n>`).
 
 ## Checking it
 `cd cabinet-wiring && npm test` (engine tests). In a browser: serve the repo root (`python3 -m http.server`), open `/cabinet-wiring/`, click `#openDemo`, hover `.w .hit` in `#cabHost` (tooltip `#tip`), click it (drawer `#drawer`), use `#wDone` in the wiring tab, `#printBook` in export. pdf.js loads from cdn.jsdelivr.net; in a sandbox without it, route that URL to a local `pdfjs-dist@4.10.38/build`.

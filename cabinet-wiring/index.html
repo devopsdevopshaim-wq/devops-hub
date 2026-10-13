@@ -26,6 +26,7 @@
 <script src="js/prompts.js"></script>
 <script src="js/demo.js"></script>
 <script src="js/library/plan-208b.js"></script>
+<script src="js/site.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>
@@ -50,6 +51,7 @@
   </div>
   <nav class="tabs" id="tabs" aria-label="שלבי העבודה" hidden>
     <div class="tabs-inner">
+      <a class="site-back" id="siteBack" href="#home" hidden></a>
       <strong class="proj-title" id="projTitle"></strong>
       <ol class="strip">
         <li><a href="#p/plan" data-tab="plan"><span class="num">1</span><span class="t">תכנית</span></a></li>
@@ -138,13 +140,98 @@
         <li><span class="num">4</span><div><strong>מרכיבים ומחווטים</strong><p>ציור הארון, חיווט חוט אחר חוט עם סימון התקדמות, בדיקות ותיק להדפסה.</p></div></li>
       </ol>
     </section>
+    <section class="projects sites" aria-labelledby="sitesH">
+      <div class="sec-head">
+        <h2 id="sitesH">אתרי התקנה</h2>
+        <div class="row gap">
+          <p class="muted small">אתר = כמה ארונות במקום אחד, עם הכבלים ביניהם, כל הקבצים ומערך ההתקנה.</p>
+          <button class="btn small" type="button" id="newSite">אתר חדש</button>
+        </div>
+      </div>
+      <ul class="proj-list" id="siteList"></ul>
+    </section>
     <section class="projects" aria-labelledby="projTitleH">
       <div class="sec-head">
-        <h2 id="projTitleH">הפרויקטים שלי</h2>
+        <h2 id="projTitleH">ארונות</h2>
         <p class="muted small">נשמרים בדפדפן הזה בלבד. לגיבוי: הדפסה והגדרות ← ייצוא JSON.</p>
       </div>
       <ul class="proj-list" id="projList"></ul>
     </section>
+  </section>
+
+  <!-- ===== אתר התקנה ===== -->
+  <section class="view" id="v-site" data-view="site" hidden>
+    <div class="site-head">
+      <div class="site-id">
+        <p class="eyebrow">אתר התקנה</p>
+        <input class="site-name" id="siteName" aria-label="שם האתר">
+        <input class="site-addr" id="siteAddr" aria-label="כתובת" placeholder="כתובת או תיאור המקום…">
+      </div>
+      <dl class="station-stats" id="siteStats"></dl>
+      <div class="site-actions">
+        <label class="btn" for="siteFiles">הוספת קבצים</label>
+        <input type="file" id="siteFiles" multiple hidden>
+        <select id="siteAddCab" aria-label="הוספת ארון קיים לאתר"><option value="">הוספת ארון קיים…</option></select>
+        <button class="btn ghost small" type="button" id="sitePrint">הדפסת מערך ההתקנה</button>
+        <button class="btn ghost small danger" type="button" id="siteDelete">מחיקת האתר</button>
+      </div>
+    </div>
+    <div class="drop site-drop" id="siteDrop" tabindex="0" role="button" aria-label="הוספת קבצים לאתר">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 6h14l10 10v26H14z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M28 6v10h10M26 36V22m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="drop-text"><strong>גררו לכאן את כל הקבצים של הפרויקט</strong><span>כל PDF של תכנית חיווט הופך לארון. תמונות, מסמכים, DWG וכל קובץ אחר נשמרים בקבצי האתר.</span></span>
+    </div>
+    <ol class="import-list" id="siteImport" aria-live="polite"></ol>
+
+    <h2 class="sec-title">הארונות באתר</h2>
+    <div class="cab-cards" id="siteCabs"></div>
+
+    <div class="grid-site">
+      <div class="card">
+        <div class="card-head"><h2>תכנית ההתקנה · מבט על</h2>
+          <div class="row gap flexwrap">
+            <label class="mini-field">חדר <input type="number" id="roomW" min="2" max="60" step="0.5" aria-label="רוחב החדר במטרים"> × <input type="number" id="roomD" min="2" max="60" step="0.5" aria-label="עומק החדר במטרים"> מ'</label>
+            <label class="mini-field">מגש <input type="number" id="trayH" min="1.5" max="6" step="0.1" aria-label="גובה מגש הכבלים במטרים"> מ'</label>
+          </div>
+        </div>
+        <div class="plan-host" id="planHost"></div>
+        <p class="muted small">גוררים ארון כדי להזיז אותו (הצמדה ל-5 ס"מ). הקו המקווקו הוא קשת פתיחת הדלת. האורכים של הכבלים מתעדכנים לפי המיקום.</p>
+      </div>
+      <div class="card three-card">
+        <div class="card-head"><h2>האתר בתלת־ממד</h2><div class="row gap"><button class="btn ghost small" type="button" id="site3dHome">מבט כללי</button><button class="btn small" type="button" id="site3dPng">תמונה להורדה</button></div></div>
+        <div class="three-host site3d" id="site3dHost"><p class="three-wait" id="site3dWait">טוען תלת־ממד…</p></div>
+        <p class="muted small">עומדים על כבל כדי לראות מה עובר בו. לחיצה על ארון: פרטים; לחיצה כפולה: פתיחת הארון.</p>
+      </div>
+    </div>
+
+    <div class="card" id="siteSel" hidden></div>
+
+    <div class="card">
+      <div class="card-head"><h2>כבלים בין ארונות</h2><span class="muted small" id="linkCount"></span></div>
+      <div id="linkSuggest"></div>
+      <div class="table-wrap"><table class="tbl" id="linkTable"></table></div>
+      <details class="link-add">
+        <summary>הוספת כבל בין ארונות ידנית</summary>
+        <div class="row gap flexwrap">
+          <label class="field"><span>מארון</span><select id="laCab"></select></label>
+          <label class="field"><span>קבוצת גידים (מכשיר בשטח)</span><select id="laDev"></select></label>
+          <label class="field"><span>לארון</span><select id="lbCab"></select></label>
+          <label class="field"><span>קבוצת גידים</span><select id="lbDev"></select></label>
+          <button class="btn small" type="button" id="linkAdd">הוספת הכבל</button>
+        </div>
+        <p class="muted small">גידים בשם זהה מתחברים זה לזה, השאר לפי הסדר. אפשר לבדוק ולתקן בטבלה.</p>
+      </details>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2>מערך ההתקנה</h2>
+        <ol class="steps-list" id="siteSteps"></ol>
+      </div>
+      <div class="card">
+        <h2>קבצי האתר</h2>
+        <ul class="file-list" id="siteFileList"></ul>
+      </div>
+    </div>
   </section>
 
   <!-- ===== 1. תכנית ===== -->

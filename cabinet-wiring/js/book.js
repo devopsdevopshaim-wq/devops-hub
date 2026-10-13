@@ -147,3 +147,40 @@ export function labelsHtml({ P, C }) {
   h.push('</div></body></html>');
   return h.join('');
 }
+
+/* תיק אתר: תכנית ההתקנה, תמונת תלת־ממד, רשימת ארונות, טבלת כבלים עם כל הגידים ומערך ההתקנה */
+export function siteBookHtml({ site, cabs, links, steps, plan, img, C }) {
+  const h = [];
+  const name = (pid) => { const c = cabs.find((x) => x.id === pid); return c ? c.name : '?'; };
+  const meters = links.reduce((s, l) => s + (l.length || 0), 0);
+  h.push(`<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>מערך התקנה — ${esc(site.name)}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>${BASE_CSS}
+      .plan svg { width: 100%; height: auto; max-height: 150mm; display: block; border: 1px solid #bbb; }
+      .shot img { width: 100%; border: 1px solid #bbb; border-radius: 2mm; }
+      .spare td { color: #666; font-style: italic; }
+    </style></head><body>`);
+  h.push(`<div class="noprint"><button onclick="print()">הדפסה / שמירה כ-PDF</button></div>`);
+  h.push(`<div class="cover"><h1>מערך התקנה — ${esc(site.name)}</h1><dl class="kv">
+    ${site.address ? `<dt>מקום</dt><dd>${esc(site.address)}</dd>` : ''}
+    <dt>ארונות</dt><dd>${cabs.length}</dd><dt>כבלים בין ארונות</dt><dd>${links.length} (כ-${Math.round(meters)} מ')</dd>
+    <dt>חדר</dt><dd>${site.room.w}×${site.room.d} מ', מגש בגובה ${site.trayH || 2.6} מ'</dd>
+    <dt>תאריך</dt><dd>${new Date().toLocaleDateString('he-IL')}</dd></dl>
+    <p class="muted small">צבעים, חתכים וסוגי כבלים שהמערכת השלימה הם ברירות מחדל לפי התקן. ההתקנה, הבדיקות והחיבור לרשת — בידי חשמלאי מוסמך בלבד.</p></div>`);
+  if (plan) h.push(`<h2>תכנית ההתקנה · מבט על</h2><div class="plan">${plan.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')}</div>`);
+  if (img) h.push(`<h2>האתר בתלת־ממד</h2><div class="shot"><img src="${img}" alt="האתר בתלת־ממד"></div>`);
+  h.push(`<h2 class="page-break">ארונות</h2><table><thead><tr><th>#</th><th>ארון</th><th>שרטוט</th><th>מעטפת</th><th>מיקום (x / z)</th><th>הזנה</th><th>חוטים</th></tr></thead><tbody>
+    ${cabs.map((c, i) => { const l = site.layout[c.id] || {}; return `<tr><td>${i + 1}</td><td>${esc(c.name)}</td><td class="ep">${esc(c.P.meta.drawingNo || '')}</td><td>${esc(c.enc.text)}</td><td class="ep">${(l.x || 0).toFixed(2)} / ${(l.z || 0).toFixed(2)} מ'</td><td>${esc(c.P.meta.supply || '')}</td><td>${c.P.wires.length}</td></tr>`; }).join('')}</tbody></table>`);
+  h.push(`<h2>טבלת כבלים</h2><table><thead><tr><th>כבל</th><th>מארון</th><th>לארון</th><th>סוג</th><th>גידים</th><th>אורך</th><th>הערה</th></tr></thead><tbody>
+    ${links.map((l, i) => `<tr><td class="ep">W${i + 1}</td><td>${esc(name(l.a.pid))} <span class="ep">${esc(l.a.device || '')}</span></td><td>${esc(name(l.b.pid))} <span class="ep">${esc(l.b.device || '')}</span></td><td class="ep">${esc(l.cable.type)}</td><td>${l.cores.length}/${l.cable.cores}</td><td>${l.length || '?'} מ'</td><td>${esc(l.cable.why)}</td></tr>`).join('') || '<tr><td colspan="7">אין כבלים בין ארונות.</td></tr>'}</tbody></table>`);
+  links.forEach((l, i) => {
+    h.push(`<h3>W${i + 1}: ${esc(name(l.a.pid))} ← ${esc(name(l.b.pid))} · <span class="ep">${esc(l.cable.type)}</span> · ${l.length || '?'} מ'</h3>
+      <table><thead><tr><th>גיד</th><th>${esc(name(l.a.pid))}</th><th>${esc(name(l.b.pid))}</th><th>אות</th><th>תפקיד</th><th>✓ רציפות</th><th>בידוד MΩ</th></tr></thead><tbody>
+      ${l.cores.map((k, j) => `<tr><td>${j + 1}</td><td class="ep">${esc(k.a)}</td><td class="ep">${esc(k.b)}</td><td class="ep">${esc(k.label)}</td><td>${esc((C.FUNCS[k.func] || {}).he || '')}</td><td><span class="box"></span></td><td></td></tr>`).join('')}
+      ${l.cable.cores > l.cores.length ? `<tr class="spare"><td colspan="7">${l.cable.cores - l.cores.length} גידים רזרביים — מבודדים ומסומנים "רזרבה".</td></tr>` : ''}</tbody></table>`);
+  });
+  h.push(`<h2 class="page-break">מערך ההתקנה</h2><ol class="steps">${steps.map((s) => `<li><strong>${esc(s.title)}</strong> <span class="box"></span><ul>${s.body.map((b) => `<li>${esc(b)}</li>`).join('')}</ul></li>`).join('')}</ol>`);
+  h.push(`<div class="sign"><div>מתקין</div><div>חשמלאי בודק</div><div>תאריך</div></div>`);
+  h.push('</body></html>');
+  return h.join('\n');
+}
