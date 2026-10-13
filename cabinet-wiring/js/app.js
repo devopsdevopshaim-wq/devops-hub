@@ -91,7 +91,8 @@ async function openProject(id, toTab) {
   derive();
   await loadPages();
   if (cabView) cabView.vb = null;
-  if (toTab) location.hash = '#p/' + toTab; else route();
+  /* אותו לשונית בארון אחר: ה-hash לא משתנה, אז מציירים ישירות */
+  if (toTab && location.hash !== '#p/' + toTab) location.hash = '#p/' + toTab; else route();
 }
 
 /* ---------- ניווט ---------- */
@@ -115,8 +116,9 @@ function showView(v) {
   const ps = raw.siteId && state.sites.find((x) => x.id === raw.siteId);
   $('#siteBack').hidden = !ps;
   if (ps) { $('#siteBack').href = '#site/' + ps.id; $('#siteBack').textContent = '→ ' + ps.name; }
+  updateCabSwitch();
   updatePill();
-  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, three: renderThree, wiring: renderWiring, assembly: renderAssembly, export: renderExport }[v] || renderPlan)();
+  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, conn: renderConn, three: renderThree, wiring: renderWiring, assembly: renderAssembly, export: renderExport }[v] || renderPlan)();
 }
 
 function rerender() { if (tab !== 'home') showView(tab); if (selected && !$('#drawer').hidden) openDrawer(selected); }
@@ -1406,6 +1408,7 @@ function bind() {
   });
   bindSite();
   bindComp();
+  bindConn();
   if (CLAUDE_APP) { $('#homeClaude').hidden = false; $('#homeClaude').href = CLAUDE_APP; }
   $('#bookPrint').onclick = () => { try { $('#bookFrame').contentWindow.print(); } catch { toast('ההדפסה לא זמינה כאן. פתחו את האתר בדפדפן רגיל כדי להדפיס.'); } };
   $('#bookPrint').hidden = Boolean(window.claude);
@@ -1488,6 +1491,9 @@ function bind() {
   /* ארון */
   $('#zoomIn').onclick = () => cabView && cabView.zoom(1 / 1.3);
   $('#zoomOut').onclick = () => cabView && cabView.zoom(1.3);
+  const setLay = (on) => { if (cabView) cabView.setLayout(on); $('#cabLay').setAttribute('aria-pressed', on); $('#cabAll').setAttribute('aria-pressed', !on); };
+  $('#cabLay').onclick = () => setLay(true);
+  $('#cabAll').onclick = () => setLay(false);
   $('#zoomFit').onclick = () => { if (cabView) { cabView.fit(); cabView.highlight(null); cabView.hlTag = null; } };
   $('#cabSearch').addEventListener('change', (e) => {
     const q = e.target.value.trim(); if (!q) return;
@@ -1635,6 +1641,7 @@ function compHtml(cP, cL, tag, done) {
       ${c.desc ? `<dt>תיאור</dt><dd>${esc(c.desc)}</dd>` : ''}
       ${c.maker || c.partNo ? `<dt>יצרן / מק"ט</dt><dd>${esc([c.maker, c.partNo].filter(Boolean).join(' · '))}</dd>` : ''}
       ${rail ? `<dt>מיקום</dt><dd>מסילה ${b.rail + 1} (${esc(C.ROWS[rail.row])}), ${Math.round(b.x)} מ"מ משמאל הפלטה</dd>` : ''}
+      ${b.w && cL === L && cabView && cabView.grid ? `<dt>אזור בשרטוט</dt><dd class="mono">${esc(cabView.zoneOf(b.x + b.w / 2, b.y + b.h / 2))}</dd>` : ''}
       ${b.w && c.zone === 'cabinet' ? `<dt>מידות</dt><dd class="mono">${Math.round(b.w)}×${Math.round(b.h)}×${E.depthOf(c.type)} מ"מ</dd>` : ''}
       ${info.strips.length ? `<dt>דרך המהדקים</dt><dd class="mono">${esc(info.strips.join(', '))}</dd>` : ''}
       ${info.cable ? `<dt>כבל לשטח</dt><dd class="mono">${esc(info.cable)}</dd>` : ''}
@@ -1744,6 +1751,110 @@ function bindComp() {
     e.preventDefault();
     openComp(cb.dataset.comp);
   });
+}
+
+/* ---------- חיבורים ומהדקים: לכל פס מהדקים — פנימה, החוצה, ולארונות אחרים באתר ---------- */
+let pendingConn = null;
+const siteOf = (p) => p && p.siteId ? state.sites.find((x) => x.id === p.siteId) : null;
+const projName = (pid) => { const p = state.projects.find((x) => x.id === pid); return p ? p.name : '?'; };
+
+function renderConn() {
+  const by = compBy();
+  const strips = P.components.filter((c) => c.type === 'terminal').sort((a, b) => E.natCmp(a.tag, b.tag));
+  const st = siteOf(raw);
+  const xr = st ? S.crossRefs(st, raw.id) : {};
+  const nm = (tg) => { const c = by[tg]; return c ? (c.name || E.typeInfo(c.type).he) : ''; };
+  const sw = (w) => `<span class="sw" style="${swStyle(C.COLORS[w.color] || C.COLORS.BK)}"></span>`;
+  let nTerm = 0, nExt = 0, nX = 0;
+  const html = strips.map((sc) => {
+    const tag = sc.tag;
+    const rows = {};
+    const row = (t) => rows[E.normTerm(t)] || (rows[E.normTerm(t)] = { term: t, inn: [], ext: [], x: [] });
+    Object.keys(L.pins).filter((k) => k.startsWith(tag + ':')).forEach((k) => row(k.slice(tag.length + 1)));
+    P.wires.forEach((w) => {
+      [[w.from, w.to], [w.to, w.from]].forEach(([a, b]) => {
+        if (a.tag !== tag) return;
+        const oc = by[b.tag];
+        const side = b.tag === tag ? 'inn' : oc && oc.zone !== 'cabinet' ? 'ext' : 'inn';
+        row(a.term)[side].push({ w, b, bridge: b.tag === tag });
+      });
+    });
+    Object.keys(xr).forEach((k) => { if (k.startsWith(tag.toUpperCase() + ':')) row(k.slice(tag.length + 1)).x.push(...xr[k]); });
+    const list = Object.values(rows).sort((a, b) => E.natCmp(String(a.term), String(b.term)));
+    nTerm += list.length;
+    const ent = (e) => `<div class="cx"><button type="button" class="wno" data-wire="${esc(e.w.id)}" translate="no">${esc(e.w.no)}</button>${sw(e.w)}<button type="button" class="ep-link" data-comp="${esc(e.b.tag)}" translate="no">${esc(e.b.tag)}:${esc(e.b.term)}</button><span class="cx-n">${e.bridge ? 'גשר בין הדקים' : esc(nm(e.b.tag)).slice(0, 40)}</span></div>`;
+    const xent = (x) => { const ok = S.refKey(x.peerRef); return `<div class="cx cx-x"><button type="button" class="xcab" data-xcab="${esc(x.peer)}" data-xref="${esc(ok ? x.peerRef : '')}"><span class="xcab-arrow" aria-hidden="true">⇄</span><b>${esc(projName(x.peer))}</b><span class="mono" translate="no">${ok ? esc(x.peerRef) : 'הדק לא הוגדר'}</span></button><span class="cx-n">כבל W${x.no} · גיד ${x.core}${x.label ? ' · ' + esc(x.label) : ''}</span></div>`; };
+    const body = list.map((r) => {
+      nExt += r.ext.length; nX += r.x.length;
+      const pe = /^PE/i.test(r.term);
+      return `<div class="tr${r.x.length ? ' has-x' : ''}" data-row="${esc(S.refKey(tag + ':' + r.term))}">
+        <div class="tc tc-in">${r.inn.map(ent).join('') || '<span class="cx-empty">—</span>'}</div>
+        <div class="tc tc-t"><span class="tblk${pe ? ' pe' : ''}" translate="no">${esc(r.term)}</span></div>
+        <div class="tc tc-out">${r.ext.map(ent).join('')}${r.x.map(xent).join('')}${!r.ext.length && !r.x.length ? '<span class="cx-empty">—</span>' : ''}</div>
+      </div>`;
+    }).join('');
+    const ext = S.externals(P).filter((g) => g.strips.includes(tag));
+    return `<section class="card ts" id="ts-${esc(tag.replace(/[^\w-]/g, '_'))}" data-strip="${esc(tag)}">
+      <div class="ts-head"><span class="ctag mono" translate="no">${esc(tag)}</span><div><b>${esc(sc.name || 'פס מהדקים')}</b><div class="small muted">${list.length} הדקים${ext.length ? ' · לשטח: ' + ext.map((g) => esc(g.device)).join(', ') : ''}</div></div>
+        <button type="button" class="btn ghost small" data-comp="${esc(tag)}">כרטיס הפס</button></div>
+      <div class="ts-cols"><span>בתוך הארון</span><span>הדק</span><span>החוצה: שטח וארונות אחרים</span></div>
+      <div class="ts-body">${body}</div>
+    </section>`;
+  }).join('');
+  $('#connStrips').innerHTML = html || '<div class="card"><p class="muted">אין בפרויקט פסי מהדקים. כשהתכנית תיקרא, יופיעו כאן כל ההדקים והחיבורים שלהם.</p></div>';
+  $('#connStats').innerHTML = [['פסי מהדקים', strips.length], ['הדקים', nTerm], ['חיבורים לשטח', nExt], ['גידים לארונות אחרים', nX]].map(([k, v]) => `<div><dt>${k}</dt><dd class="num">${v}</dd></div>`).join('');
+  $('#connNav').innerHTML = strips.map((sc) => `<button type="button" class="chip" data-goto="${esc(sc.tag)}" translate="no">${esc(sc.tag)}</button>`).join('');
+  /* כבלים לארונות אחרים */
+  const box = $('#connX');
+  const links = st ? st.links.map((l, i) => ({ l, no: i + 1 })).filter(({ l }) => l.a.pid === raw.id || l.b.pid === raw.id) : [];
+  box.hidden = !st;
+  if (st) {
+    box.innerHTML = `<div class="card-head"><h2>כבלים לארונות אחרים באתר "${esc(st.name)}"</h2><a class="btn ghost small" href="#site/${esc(st.id)}">לאתר</a></div>
+      ${links.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>כבל</th><th>לארון</th><th>סוג</th><th>גידים</th><th>מהדקים כאן</th><th></th></tr></thead><tbody>${links.map(({ l, no }) => {
+        const mineA = l.a.pid === raw.id, peer = mineA ? l.b.pid : l.a.pid;
+        const here = [...new Set(l.cores.map((k) => (mineA ? k.a : k.b).split(':')[0]).filter(Boolean))].join(', ');
+        const first = l.cores.find((k) => /:/.test(mineA ? k.b : k.a));
+        return `<tr><td class="mono">W${no}</td><td>${esc(projName(peer))}</td><td class="mono">${esc(S.cableFor(l).type)}</td><td class="num">${l.cores.length}</td><td class="mono">${esc(here)}</td>
+          <td><button type="button" class="btn small" data-xcab="${esc(peer)}" data-xref="${esc(first ? (mineA ? first.b : first.a) : '')}">פתיחת החיבורים בארון השני</button></td></tr>`;
+      }).join('')}</tbody></table></div>` : `<p class="muted">עוד לא הוגדרו כבלים בין הארון הזה לארונות אחרים. במסך האתר יש הצעות לכבלים לפי שמות האותות, ואפשר להוסיף ידנית.</p>`}`;
+  }
+  if (pendingConn) { const r = pendingConn; pendingConn = null; setTimeout(() => flashConn(r), 60); }
+}
+
+function flashConn(ref) {
+  const key = S.refKey(ref);
+  const el = key && $(`#connStrips [data-row="${CSS.escape(key)}"]`);
+  if (!el) { toast(`ההדק ${ref} לא נמצא בפסי המהדקים של הארון הזה.`); return; }
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+
+function bindConn() {
+  $('#v-conn').addEventListener('click', async (e) => {
+    const w = e.target.closest('[data-wire]');
+    if (w) { select(w.dataset.wire); return; }
+    const g = e.target.closest('[data-goto]');
+    if (g) { const sec = $(`#connStrips [data-strip="${CSS.escape(g.dataset.goto)}"]`); if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    const x = e.target.closest('[data-xcab]');
+    if (x) {
+      if (!state.projects.some((p) => p.id === x.dataset.xcab)) { toast('הארון השני כבר לא קיים.'); return; }
+      pendingConn = x.dataset.xref || null;
+      if (!pendingConn) toast('לגיד הזה עוד לא הוגדר הדק בארון השני. אפשר להשלים אותו בטבלת הכבלים במסך האתר.', 6000);
+      await openProject(x.dataset.xcab, 'conn');
+      if (tab === 'conn' && pendingConn) renderConn();
+    }
+  });
+  $('#cabSwitch').addEventListener('change', (e) => { const pid = e.target.value; if (pid && pid !== raw.id) openProject(pid, tab === 'home' || tab === 'site' ? 'plan' : tab); });
+}
+
+function updateCabSwitch() {
+  const sel = $('#cabSwitch');
+  const st = siteOf(raw);
+  const list = st ? st.cabinets.map((pid) => state.projects.find((x) => x.id === pid)).filter(Boolean) : [];
+  sel.hidden = list.length < 2;
+  $('#projTitle').hidden = !sel.hidden;
+  if (sel.hidden) return;
+  sel.innerHTML = list.map((p) => `<option value="${esc(p.id)}" ${p.id === raw.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
 }
 
 /* ---------- אתרי התקנה: כמה ארונות, הכבלים ביניהם, הקבצים ומערך ההתקנה ---------- */
@@ -1872,6 +1983,7 @@ function siteSelect(pid, lid, from3d) {
   if (sitePlan) sitePlan.render(site, siteData.cabs, siteData.links, siteSel);
   $$('#siteCabs .cab-card').forEach((c) => c.classList.toggle('on', c.dataset.pid === pid));
   $$('#linkTable tr[data-lid]').forEach((r) => r.classList.toggle('sel', r.dataset.lid === lid));
+  $$('#linkDiagram .ic-l').forEach((g) => g.classList.toggle('on', g.dataset.lid === lid));
   renderSiteSel();
 }
 
@@ -1918,6 +2030,7 @@ function compGroups(c, ext) {
 
 function renderLinks() {
   const { links } = siteData;
+  $('#linkDiagram').innerHTML = linkDiagram(siteData.cabs, links);
   $('#linkCount').textContent = links.length ? `${links.length} כבלים · כ-${Math.round(links.reduce((s, l) => s + (l.length || 0), 0))} מ'` : '';
   $('#linkSuggest').innerHTML = siteSugg.map((l) => `<div class="sugg"><div><b>הצעה:</b> ${esc(cabName(l.a.pid))}${l.a.device ? ' · <span class="ep">' + esc(l.a.device) + '</span>' : ''} ← ${esc(cabName(l.b.pid))}${l.b.device ? ' · <span class="ep">' + esc(l.b.device) + '</span>' : ''} <span class="muted">(${l.cores.length} גידים)</span><div class="muted small">${esc(l.reason)}</div></div>
     <div class="row gap"><button class="btn small" type="button" data-acc="${esc(l.id)}">הוספה</button><button class="btn ghost small" type="button" data-ign="${esc(l.id)}">התעלמות</button></div></div>`).join('');
@@ -1933,6 +2046,38 @@ function renderLinks() {
   const opts = siteData.cabs.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
   ['#laCab', '#lbCab'].forEach((s, i) => { const el = $(s); const v = el.value; el.innerHTML = opts; if (v && siteData.cabs.some((c) => c.id === v)) el.value = v; else if (siteData.cabs[i]) el.value = siteData.cabs[i].id; });
   fillDevs('#laCab', '#laDev'); fillDevs('#lbCab', '#lbDev');
+}
+
+/* תכנית חיבורים בין ארונות: כל ארון עמודה, כל כבל קו עם מספר, סוג, אורך ומספר גידים */
+function linkDiagram(cabs, links) {
+  if (cabs.length < 2) return '';
+  const order = cabs.slice().sort((a, b) => ((site.layout[a.id] || {}).x || 0) - ((site.layout[b.id] || {}).x || 0));
+  const W = 168, G = 96, top = 18, boxH = 74, lane = 40;
+  const xOf = {}; order.forEach((c, i) => { xOf[c.id] = 24 + i * (W + G) + W / 2; });
+  const width = 48 + order.length * W + (order.length - 1) * G;
+  const height = top + boxH + 30 + Math.max(1, links.length) * lane + 10;
+  const o = [];
+  o.push(`<style>.ic-box rect{fill:#2b3035}.ic-box .n{font:600 14px 'IBM Plex Sans Hebrew',sans-serif;fill:#fff}.ic-box .s{font:500 11px 'IBM Plex Mono',monospace;fill:#a4adb4}.ic-box{cursor:pointer}.ic-box:hover rect{fill:#a85a26}
+    .ic-l path{fill:none;stroke-width:3.5;stroke-linejoin:round}.ic-l.power path{stroke:#1c1c1c}.ic-l.control path{stroke:#7d868e}.ic-l.comm path{stroke:#8e44ad}.ic-l{cursor:pointer}.ic-l:hover path,.ic-l.on path{stroke:#c4743a;stroke-width:5}
+    .ic-l text{font:600 12px 'IBM Plex Mono',monospace;fill:#1c2126;paint-order:stroke;stroke:#f8f8f6;stroke-width:4px}.ic-l .sub{font:500 11px 'IBM Plex Sans Hebrew',sans-serif;fill:#5f6870}.ic-dot{fill:#c4743a}</style>`);
+  order.forEach((c) => {
+    const x = xOf[c.id] - W / 2;
+    const strips = [...new Set(links.flatMap((l) => l.a.pid === c.id ? l.a.strips || [] : l.b.pid === c.id ? l.b.strips || [] : []))].slice(0, 4).join(' ');
+    o.push(`<g class="ic-box" data-open-cab="${esc(c.id)}" data-to="conn"><title>פתיחת החיבורים של ${esc(c.name)}</title><rect x="${x}" y="${top}" width="${W}" height="${boxH}" rx="6"/>
+      <text class="n" x="${x + W / 2}" y="${top + 30}" text-anchor="middle" style="direction:ltr;unicode-bidi:plaintext">${esc(String(c.name).slice(0, 20))}</text>
+      <text class="s" x="${x + W / 2}" y="${top + 54}" text-anchor="middle">${esc(strips || (c.P.meta.drawingNo || ''))}</text></g>`);
+  });
+  links.forEach((l, i) => {
+    const xa = xOf[l.a.pid], xb = xOf[l.b.pid];
+    if (xa == null || xb == null) return;
+    const y = top + boxH + 30 + i * lane, off = ((i % 5) - 2) * 10;
+    const d = `M${xa + off} ${top + boxH} V${y} H${xb + off} V${top + boxH}`;
+    o.push(`<g class="ic-l ${esc(l.kind)}${siteSel && siteSel.lid === l.id ? ' on' : ''}" data-lid="${esc(l.id)}"><title>W${i + 1}: ${esc(cabName(l.a.pid))} ← ${esc(cabName(l.b.pid))}</title><path d="${d}"/>
+      <circle class="ic-dot" cx="${xa + off}" cy="${top + boxH}" r="4"/><circle class="ic-dot" cx="${xb + off}" cy="${top + boxH}" r="4"/>
+      <text x="${(xa + xb) / 2}" y="${y - 6}" text-anchor="middle">W${i + 1} · ${esc(l.cable.type)} · ${l.length || '?'} מ'</text>
+      <text class="sub" x="${(xa + xb) / 2}" y="${y + 15}" text-anchor="middle">${l.cores.length} גידים</text></g>`);
+  });
+  return `<svg class="ic-svg" viewBox="0 0 ${width} ${height}" style="max-width:${width}px;min-width:${Math.min(width, 560)}px" role="img" aria-label="תכנית חיבורים בין הארונות">${o.join('')}</svg>`;
 }
 
 function fillDevs(cabSel, devSel) {
@@ -2099,6 +2244,7 @@ function bindSite() {
     const card = t.closest('.cab-card');
     if (card && !t.closest('button, a')) siteSelect(card.dataset.pid, null);
   });
+  $('#linkDiagram').addEventListener('click', (e) => { const g = e.target.closest('.ic-l'); if (g) siteSelect(null, g.dataset.lid); });
   $('#linkTable').addEventListener('click', (e) => { const tr = e.target.closest('tr[data-lid]'); if (tr && !e.target.closest('button')) siteSelect(null, tr.dataset.lid); });
   $('#linkTable').addEventListener('keydown', (e) => { const tr = e.target.closest('tr[data-lid]'); if (tr && e.key === 'Enter') siteSelect(null, tr.dataset.lid); });
   $('#siteSteps').addEventListener('change', (e) => {
