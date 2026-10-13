@@ -2089,15 +2089,15 @@
   },
   "renders": {
     "latest": {
-      "id": "7523e918-20cf-4782-a884-8a5fdf28e187",
-      "completedAt": 1791918989692,
+      "id": "0ebf1da2-fde3-49dc-ad93-37ff14b4b173",
+      "completedAt": 1791920313853,
       "output": "/home/user/devops-hub/videos/spider-luxe/renders/video.mp4",
       "status": "completed",
-      "revision": "af612957-510b-4fab-88f2-719f39f41fcd"
+      "revision": "a6e6c24b-142e-4d1c-b9f8-273c0c9972d0"
     },
     "retainedRevisions": [
-      "af612957-510b-4fab-88f2-719f39f41fcd",
-      "fe66fadc-7f1c-40a0-ae4d-e198c38b79c5"
+      "a6e6c24b-142e-4d1c-b9f8-273c0c9972d0",
+      "af612957-510b-4fab-88f2-719f39f41fcd"
     ]
   },
   "pendingArtifactCleanup": []
