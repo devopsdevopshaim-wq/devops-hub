@@ -156,9 +156,10 @@ async function loadPages() {
   pages = [];
   curPage = 1;
   if (!raw || !raw.pdf) return;
-  const mem = pageCache.get(raw.id) || [];
+  const src = raw.pdfFrom || raw.id;
+  const mem = pageCache.get(src) || [];
   for (let i = 1; i <= raw.pdf.pages; i++) {
-    const rec = (await files.get(`${raw.id}:p${i}`)) || mem.find((x) => x.page === i);
+    const rec = (await files.get(`${src}:p${i}`)) || mem.find((x) => x.page === i);
     if (rec) pages.push({ ...rec, url: URL.createObjectURL(rec.img) });
   }
 }
@@ -515,10 +516,11 @@ const SAMPLE_ERR = {
 /* עמודי התכנית של כל פרויקט (לא רק הפתוח): מהאחסון בדפדפן, או מהזיכרון אם האחסון חסום */
 async function pagesOf(p) {
   if (!p.pdf) return [];
-  const mem = pageCache.get(p.id) || [];
+  const src = p.pdfFrom || p.id;
+  const mem = pageCache.get(src) || [];
   const out = [];
   for (let i = 1; i <= p.pdf.pages; i++) {
-    const rec = (await files.get(`${p.id}:p${i}`)) || mem.find((x) => x.page === i);
+    const rec = (await files.get(`${src}:p${i}`)) || mem.find((x) => x.page === i);
     if (rec) out.push(rec);
   }
   return out;
@@ -803,6 +805,7 @@ function renderParts() {
       <td><button class="btn ghost small" type="button" data-hl="${esc(c.tag)}" title="הצגת החוטים בציור">${count[c.tag] || 0}</button></td>
       <td class="row gap"><button class="btn ghost small" type="button" data-comp="${esc(c.tag)}">כרטיס</button><button class="icon-btn" type="button" data-del="${esc(c.tag)}" aria-label="מחיקת ${esc(c.tag)}">✕</button></td></tr>`;
     }).join('') + '</tbody>';
+  renderRealParts();
 }
 
 function updateComp(tag, k, v) {
@@ -903,6 +906,7 @@ function renderCabinet() {
   P.wires.forEach((w) => { const k = w.color; used[k] = (used[k] || 0) + 1; });
   $('#legend').innerHTML = Object.entries(used).map(([k, n]) => `<span><span class="sw" style="${swStyle(C.COLORS[k])}"></span>${esc(C.COLORS[k].he)} · ${n}</span>`).join('') +
     `<span>פלטה ${L.plate.w}×${L.plate.h} מ"מ · ${L.rails.length} מסילות</span>`;
+  renderSplitCard();
 }
 
 function applyCabFilter() {
@@ -1409,6 +1413,7 @@ function bind() {
   bindSite();
   bindComp();
   bindConn();
+  bindRealParts();
   if (CLAUDE_APP) { $('#homeClaude').hidden = false; $('#homeClaude').href = CLAUDE_APP; }
   $('#bookPrint').onclick = () => { try { $('#bookFrame').contentWindow.print(); } catch { toast('ההדפסה לא זמינה כאן. פתחו את האתר בדפדפן רגיל כדי להדפיס.'); } };
   $('#bookPrint').hidden = Boolean(window.claude);
@@ -1592,7 +1597,8 @@ function bind() {
   $('#resetDone').onclick = async () => { if (await askConfirm('לאפס את כל סימוני החיווט?', { ok: 'לאפס', danger: true })) { raw.done = {}; raw.stepsDone = {}; save(); updatePill(); toast('הסימונים אופסו.'); } };
   $('#delProject').onclick = async () => {
     if (!(await askConfirm(`למחוק את "${raw.name}" מהדפדפן?`, { ok: 'למחוק', danger: true }))) return;
-    await files.delPrefix(raw.id + ':');
+    /* ארונות שפוצלו מהארון הזה משתמשים בעמודי התכנית שלו — לא מוחקים אותם */
+    if (!state.projects.some((p) => p.pdfFrom === raw.id)) await files.delPrefix(raw.id + ':');
     state.projects = state.projects.filter((p) => p.id !== raw.id);
     state.sites.forEach((st) => { st.cabinets = st.cabinets.filter((x) => x !== raw.id); st.files = st.files.filter((f) => f.pid !== raw.id); st.links = st.links.filter((l) => l.a.pid !== raw.id && l.b.pid !== raw.id); });
     raw = null; P = L = null; state.current = null; saveAll(state);
@@ -1855,6 +1861,135 @@ function updateCabSwitch() {
   $('#projTitle').hidden = !sel.hidden;
   if (sel.hidden) return;
   sel.innerHTML = list.map((p) => `<option value="${esc(p.id)}" ${p.id === raw.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+}
+
+/* ---------- חלקים אמיתיים ---------- */
+const WP = window.WParts, WS = window.WSplit;
+function partOpts() {
+  const s = (raw.settings && raw.settings.parts) || {};
+  return { brand: s.brand || 'schneider', terminals: s.terminals || 'phoenix', psu: s.psu || 'main', relay: s.relay || 'main', coil: s.coil || 'dc24', overwrite: Boolean(s.overwrite) };
+}
+function renderRealParts() {
+  const o = partOpts();
+  const opt = (obj, v) => Object.entries(obj).map(([k, he]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${esc(he)}</option>`).join('');
+  $('#rpBrand').innerHTML = opt(WP.BRANDS, o.brand);
+  $('#rpTerm').innerHTML = opt(WP.TERM_BRANDS, o.terminals);
+  $('#rpPsu').innerHTML = opt(WP.PSU_BRANDS, o.psu);
+  $('#rpRelay').innerHTML = opt(WP.RELAY_BRANDS, o.relay);
+  $('#rpCoil').value = o.coil;
+  $('#rpOver').checked = o.overwrite;
+  const cab = P.components.filter((c) => c.zone !== 'field');
+  const withPn = cab.filter((c) => c.partNo).length;
+  $('#rpSummary').textContent = `${withPn} מתוך ${cab.length} רכיבים עם מק"ט`;
+  const rows = WP.orderList(P, L, o);
+  const enc = WP.enclosureFor(E.enclosure(P, L), o.brand);
+  $('#rpOrder').innerHTML = `<h3 class="comp-h">רשימת הזמנה</h3><div class="table-wrap"><table class="tbl"><thead><tr><th>יצרן</th><th>מק"ט</th><th>תיאור</th><th>כמות</th><th>תגים</th></tr></thead><tbody>
+    <tr class="enc-row"><td>${esc(enc.maker)}</td><td class="mono">${esc(enc.partNo)} <span class="tag-auto">סדרה</span></td><td>${esc(enc.desc)}</td><td class="num">1</td><td class="muted small">מעטפת</td></tr>
+    ${rows.map((r) => `<tr class="${r.partNo === 'חסר מק"ט' ? 'missing' : ''}"><td>${esc(r.maker)}</td><td class="mono">${esc(r.partNo)}</td><td>${esc(r.desc)}</td><td class="num">${r.qty}</td><td class="mono small">${esc(r.tags.slice(0, 8).join(' '))}${r.tags.length > 8 ? '…' : ''}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function saveRpOpts() {
+  raw.settings = raw.settings || {};
+  raw.settings.parts = { brand: $('#rpBrand').value, terminals: $('#rpTerm').value, psu: $('#rpPsu').value, relay: $('#rpRelay').value, coil: $('#rpCoil').value, overwrite: $('#rpOver').checked };
+  save();
+}
+function applyRealParts() {
+  saveRpOpts();
+  const o = partOpts();
+  const list = WP.assign(P, L, o);
+  let n = 0, series = 0;
+  list.forEach((r) => {
+    let c = raw.components.find((x) => E.normTag(x.tag) === r.tag);
+    if (!c) { const d = P.components.find((x) => x.tag === r.tag) || { tag: r.tag }; c = { tag: r.tag, name: d.name, type: d.type }; raw.components.push(c); }
+    c.maker = r.maker; c.partNo = r.partNo; c.partSeries = r.series; c.partExact = r.exact; c.partDesc = r.desc;
+    if (!c.desc || c.partAuto) { c.desc = r.desc; c.partAuto = true; }
+    n++; if (!r.exact) series++;
+  });
+  save(); derive(); renderParts(); renderRealParts();
+  if (cabView) cabView.vb = null;
+  toast(n ? `שובצו ${n} מק"טים (${series} מהם לפי סדרה בלבד). החלקים מופיעים בשרטוט, בתלת־ממד ובכרטיס של כל רכיב.` : 'לכל הרכיבים כבר יש מק"ט מהתכנית. כדי להחליף, סמנו "להחליף גם מק"טים שכבר כתובים".', 7000);
+}
+function bindRealParts() {
+  ['#rpBrand', '#rpTerm', '#rpPsu', '#rpRelay', '#rpCoil', '#rpOver'].forEach((s) => $(s).addEventListener('change', () => { saveRpOpts(); renderRealParts(); }));
+  $('#rpApply').onclick = applyRealParts;
+  $('#rpCsv').onclick = () => {
+    const rows = WP.orderList(P, L, partOpts());
+    const enc = WP.enclosureFor(E.enclosure(P, L), partOpts().brand);
+    const csv = '﻿' + [['יצרן', 'מק"ט', 'תיאור', 'כמות', 'תגים'], [enc.maker, enc.partNo, enc.desc, 1, 'מעטפת'], ...rows.map((r) => [r.maker, r.partNo, r.desc, r.qty, r.tags.join(' ')])]
+      .map((r) => r.map((v) => { const t = String(v == null ? '' : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(',')).join('\r\n');
+    download(fileBase() + '-order.csv', csv, 'text/csv;charset=utf-8');
+  };
+}
+
+/* ---------- פיצול לכמה ארונות ---------- */
+function renderSplitCard() {
+  const box = $('#splitCard');
+  if (!P.components.length) { box.hidden = true; return; }
+  box.hidden = false;
+  const adv = WS.advise(P, L);
+  const n = adv.need ? adv.count : 2;
+  box.innerHTML = `<div class="card-head"><h2>פיצול לכמה ארונות</h2>${adv.need ? '<span class="pill-warn">מומלץ לפצל</span>' : ''}</div>
+    <p>${esc(adv.reason)}</p>
+    <div class="row gap flexwrap split-form">
+      <label class="field"><span>מספר ארונות</span><select id="spN">${[2, 3, 4, 5, 6].map((k) => `<option value="${k}" ${k === n ? 'selected' : ''}>${k}${adv.need && k === adv.count ? ' (מומלץ)' : ''}</option>`).join('')}</select></label>
+      <label class="field"><span>איך לחלק</span><select id="spMode"><option value="auto">אוטומטי: כוח והגנות / פיקוד, או לפי שורות</option><option value="power-control">ארון כוח וארון פיקוד</option><option value="sequential">לפי סדר המסילות, בגודל שווה</option></select></label>
+      <button class="btn ghost small" type="button" id="spPreview">תצוגה מקדימה</button>
+    </div>
+    <div id="spOut"></div>`;
+  $('#spPreview').onclick = () => previewSplit();
+  $('#spN').onchange = () => { $('#spOut').innerHTML = ''; };
+  $('#spMode').onchange = () => { $('#spOut').innerHTML = ''; };
+}
+function splitSettings() {
+  const s = { ...(raw.settings || {}) };
+  s.plateWidth = !s.plateWidth || s.plateWidth === 'auto' ? 1100 : Math.min(1100, Number(s.plateWidth) || 1100);
+  return s;
+}
+function previewSplit() {
+  const n = Number($('#spN').value), mode = $('#spMode').value;
+  const r = WS.split(P, L, n, { mode });
+  const st = splitSettings();
+  const rows = r.cabinets.map((c) => {
+    const P2 = E.enrich({ components: c.components, wires: c.wires, settings: st });
+    const enc = E.enclosure(P2, E.layout(P2));
+    return `<tr><td>ארון ${c.index + 1}</td><td>${esc(c.role)}</td><td class="num">${c.components.filter((x) => x.zone !== 'field').length}</td><td class="num">${c.wires.length}</td><td class="mono">${esc(enc.text)}</td></tr>`;
+  }).join('');
+  const lk = r.links.map((l) => `<li>ארון ${l.a + 1} ↔ ארון ${l.b + 1}: ${l.cores.length} גידים (${l.kind === 'power' ? 'כולל כוח' : 'פיקוד'}) דרך המהדקים <span class="mono">-XC${l.b + 1}</span> / <span class="mono">-XC${l.a + 1}</span></li>`).join('');
+  $('#spOut').innerHTML = `<div class="table-wrap"><table class="tbl"><thead><tr><th>ארון</th><th>תפקיד</th><th>רכיבים</th><th>חוטים</th><th>מעטפת</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <ul class="small">${lk || '<li>אין חוטים שעוברים בין הארונות.</li>'}</ul>
+    <p class="muted small">חוט שעובר בין שני ארונות הופך לשני חוטים: עד מהדק ממשק בכל ארון, וגיד אחד בכבל ביניהם (גיד אחד לכל רשת). הארון המקורי נשמר כמו שהוא.</p>
+    <button class="btn" type="button" id="spGo">יצירת ${n} הארונות ואתר ההתקנה</button>`;
+  $('#spGo').onclick = () => doSplit(n, mode);
+}
+async function doSplit(n, mode) {
+  if (!(await askConfirm(`לפצל את "${raw.name}" ל-${n} ארונות? נוצרים ${n} ארונות חדשים עם החיווט שלהם ואתר התקנה עם הכבלים ביניהם. הארון המקורי נשאר.`, { ok: 'לפצל' }))) return;
+  const r = WS.split(P, L, n, { mode });
+  const orig = raw;
+  let st = siteOf(orig);
+  if (!st) {
+    st = { id: newId('s'), name: orig.name + ' — אתר', address: '', created: Date.now(), cabinets: [], files: [], layout: {}, room: null, trayH: 2.6, links: [], ignored: [], stepsDone: {} };
+    state.sites.unshift(st);
+  }
+  const settings = splitSettings();
+  const ids = r.cabinets.map((c) => {
+    const p = newProject(`${orig.name} · ארון ${c.index + 1} (${c.role})`, {
+      siteId: st.id, source: 'split', settings: { ...settings },
+      meta: { ...(orig.meta || {}), drawingNo: ((orig.meta && orig.meta.drawingNo) || '') + '/' + (c.index + 1) },
+      components: c.components.map((x) => { const y = { ...x }; if (y.zone) y.location = y.zone; return y; }),
+      wires: c.wires.map((w) => ({ ...w, id: newId() })),
+      notes: [`פוצל מהארון "${orig.name}": ארון ${c.index + 1} מתוך ${n} (${c.role}). חוטים שעוברים לארונות האחרים מחוברים למהדקי הממשק ‎-XC.`],
+      pdf: orig.pdf, pdfFrom: orig.pdfFrom || orig.id, hint: orig.hint || ''
+    });
+    p.status = `ארון ${c.index + 1} מתוך ${n} שפוצלו מ"${orig.name}".`;
+    saveProject(p);
+    return p.id;
+  });
+  st.cabinets = st.cabinets.filter((x) => x !== orig.id).concat(ids);
+  r.links.forEach((l, i) => st.links.push({ id: 'split-' + Date.now().toString(36) + '-' + i, auto: false, kind: l.kind, reason: `פיצול "${orig.name}": חוטים שעוברים בין ארון ${l.a + 1} לארון ${l.b + 1}`,
+    a: { pid: ids[l.a], device: '', strips: ['-XC' + (l.b + 1)] }, b: { pid: ids[l.b], device: '', strips: ['-XC' + (l.a + 1)] }, cores: l.cores }));
+  orig.splitInto = st.id;
+  saveProject(orig); saveAll(state);
+  toast(`נוצרו ${n} ארונות ו-${r.links.length} כבלים ביניהם באתר "${st.name}".`, 7000);
+  location.hash = '#site/' + st.id;
 }
 
 /* ---------- אתרי התקנה: כמה ארונות, הכבלים ביניהם, הקבצים ומערך ההתקנה ---------- */

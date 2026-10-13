@@ -24,6 +24,8 @@
 </script>
 <script src="js/catalog.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/parts.js"></script>
+<script src="js/split.js"></script>
 <script src="js/prompts.js"></script>
 <script src="js/demo.js"></script>
 <script src="js/library/plan-208b.js"></script>
@@ -307,6 +309,23 @@
 
   <!-- ===== 2. רכיבים ===== -->
   <section class="view" id="v-parts" data-view="parts" hidden>
+    <div class="card real-parts" id="realParts">
+      <div class="card-head"><h2>חלקים אמיתיים מיצרנים</h2><span class="muted small" id="rpSummary"></span></div>
+      <div class="rp-form">
+        <label class="field"><span>מותג ראשי (מפסקים, מגענים, מגיני מנוע, לחצנים)</span><select id="rpBrand"></select></label>
+        <label class="field"><span>מהדקים</span><select id="rpTerm"></select></label>
+        <label class="field"><span>ספקי כוח</span><select id="rpPsu"></select></label>
+        <label class="field"><span>ממסרים</span><select id="rpRelay"></select></label>
+        <label class="field"><span>סליל מגענים וממסרים (כשלא כתוב בתכנית)</span><select id="rpCoil"><option value="dc24">24V DC</option><option value="ac230">230V AC</option></select></label>
+        <label class="check rp-ow"><input type="checkbox" id="rpOver"> להחליף גם מק"טים שכבר כתובים בתכנית</label>
+      </div>
+      <div class="row gap flexwrap">
+        <button class="btn" type="button" id="rpApply">שיבוץ מק"טים לכל הלוח</button>
+        <button class="btn ghost small" type="button" id="rpCsv">רשימת הזמנה CSV</button>
+      </div>
+      <p class="muted small">המק"ט נבחר לפי סוג הרכיב והדירוג שבתכנית (זרם, קטבים, הספק, מתח סליל, חתך החוטים במהדקים). מק"ט מסומן "סדרה" הוא דגם בלבד — לבחור את המק"ט הסופי בקטלוג. לפני הזמנה מאמתים כל מק"ט מול קטלוג היצרן.</p>
+      <div id="rpOrder"></div>
+    </div>
     <div class="card">
       <div class="card-head">
         <h2>רכיבים <span class="muted small" id="partsCount"></span></h2>
@@ -370,6 +389,7 @@
     <div class="cab-host" id="cabHost"></div>
     <p class="muted small cab-help">שרטוט הרכבה: פלטה, תעלות, מסילות ורכיבים עם תגים ומידות, ברשת אזורים (A1, B3…) כמו בגיליון הנדסי. לחיצה על רכיב מציגה רק את החוטים שלו ואת הכרטיס שלו; בחירת תפקיד למעלה מציגה רק את החוטים של התפקיד. "כל החוטים" מציג את כולם. גלגלת או צביטה לזום, גרירה להזזה.</p>
     <div class="legend" id="legend"></div>
+    <div class="card split-card" id="splitCard"></div>
   </section>
 
   <!-- ===== 5. תלת־ממד ===== -->

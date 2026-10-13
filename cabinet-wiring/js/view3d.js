@@ -194,6 +194,12 @@ export class Cabinet3D {
       wrapText(g, c.name || info.he, w / 2, h * 0.5, w * 0.86, Math.min(h * 0.09, 28));
       g.fillStyle = 'rgba(0,0,0,.35)';
       for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(w * (0.2 + i * 0.2), h * 0.9, Math.min(w, h) * 0.04, 0, Math.PI * 2); g.fill(); }
+      /* היצרן והמק"ט, כמו על הרכיב האמיתי */
+      if (c.maker) {
+        g.direction = 'ltr'; g.fillStyle = 'rgba(255,255,255,.8)'; g.font = `700 ${Math.min(h * 0.06, w * 0.1, 20)}px Arial, sans-serif`;
+        g.fillText(String(c.maker).replace(/ Electric$/, '').toUpperCase().slice(0, 16), w / 2, h * 0.75);
+        if (c.partNo) { g.font = `500 ${Math.min(h * 0.05, w * 0.085, 17)}px "IBM Plex Mono", monospace`; g.fillText(String(c.partNo).split(/\s[+(]/)[0].slice(0, 18), w / 2, h * 0.82); }
+      }
     });
     Object.values(L.comps).forEach((b) => {
       const c = compBy[b.tag];
