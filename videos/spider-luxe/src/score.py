@@ -3,7 +3,7 @@
 import sys, json, wave, numpy as np
 from scipy.signal import butter, sosfilt
 OUT, LANG = sys.argv[1], sys.argv[2]
-SR = 48000; T = 81.6; N = int(SR * T)
+SR = 48000; T = 93.6; N = int(SR * T)
 L = np.zeros(N); R = np.zeros(N)
 rng = np.random.default_rng(23)
 B = 0.6; BAR = 2.4
@@ -123,20 +123,20 @@ for i in range(8): tick(15.0 + i * B, .08, i % 2 == 0)
 strings(14.4, 4.6, [48, 55, 60, 63], .22)
 riser(19.2, 2.4, .22); whoosh(18.7, .6, .2)
 
-# ---------- 19.2–28.8  tunnel: the pulse builds ----------
-for k in range(16):
+# ---------- 19.2–26.4  the wall: the pulse builds while the count climbs ----------
+for k in range(12):
     t = 19.2 + k * B
     kick(t, .38 if k % 2 == 0 else .0); hat(t + B / 2, .045 + .002 * k)
-    if k >= 8: taiko(t, .25, 58)
-ostinato(19.2, 28.8, PROG, .1, 1400)
-for k, ch in enumerate(PROG): strings(19.2 + k * BAR, BAR, [c + 12 for c in ch], .2); bass(19.2 + k * BAR, BAR, ch[0] - 12, .24)
+    if k >= 6: taiko(t, .25, 58)
+ostinato(19.2, 26.4, PROG, .1, 1400)
+for k, ch in enumerate(PROG[:3]): strings(19.2 + k * BAR, BAR, [c + 12 for c in ch], .2); bass(19.2 + k * BAR, BAR, ch[0] - 12, .24)
 boom(23.2, .35); shimmer(23.2, 87, .05)
-for t in (27.6, 27.9, 28.2, 28.35, 28.5, 28.65): snare(t, .22)
-riser(28.8, 3.2, .26)
+for t in (25.2, 25.5, 25.8, 25.95, 26.1, 26.25): snare(t, .22)
+riser(26.4, 3.0, .26)
 
-# ---------- 28.8–67.2  chapters: half-time trailer groove ----------
+# ---------- 26.4–64.8  chapters: half-time trailer groove, a hit on every page ----------
 for c in range(4):
-    c0 = 28.8 + c * 9.6
+    c0 = 26.4 + c * 9.6
     boom(c0, .5); braam(c0, 2.0, 36 if c % 2 == 0 else 34, .35)
     for k in range(16):
         t = c0 + k * B
@@ -148,25 +148,32 @@ for c in range(4):
     for k, ch in enumerate(PROG):
         strings(c0 + k * BAR, BAR, [x + 12 for x in ch] + [ch[0] + 24], .22)
         bass(c0 + k * BAR, BAR - .1, ch[0] - 12, .26)
-    whoosh(c0 + 4.6, .5, .14)                    # the page swap
+        if k: whoosh(c0 + k * BAR - .35, .5, .12); taiko(c0 + k * BAR, .3, 60)
     for t in (c0 + 8.4, c0 + 8.7, c0 + 9.0, c0 + 9.15, c0 + 9.3, c0 + 9.45): taiko(t, .3, 62)
     piano(c0 + .3, [72, 75, 79, 77][c], .12, .2)
-riser(67.2, 2.4, .24)
+riser(64.8, 2.4, .24)
 
-# ---------- 67.2–72  recap: accelerating cuts ----------
-for k in range(16):
-    t = 67.2 + k * .3
-    taiko(t, .3 + .015 * k, 60); tick(t, .07, k % 2 == 0)
-    if k >= 8: snare(t + .15, .2 + .01 * k)
-ostinato(67.2, 71.7, [Cm, Ab], .13, 3200)
-riser(71.85, 3.0, .32)
+# ---------- 64.8–84.0  the gallery: one project per beat, building to the end ----------
+boom(64.8, .5); braam(64.8, 2.4, 36, .4)
+for k in range(32):
+    t = 64.8 + k * B
+    taiko(t, .32 + .006 * k, 60 if k % 2 else 56); tick(t + B / 2, .06, k % 2 == 0)
+    if k % 4 == 0: kick(t, .5)
+    if k % 4 == 2: snare(t, .3 + .004 * k)
+    hat(t + B / 2, .05)
+ostinato(64.8, 84.0, PROG, .12, 2400)
+for k in range(8):
+    ch = PROG[k % 4]; t0 = 64.8 + k * BAR
+    strings(t0, BAR, [x + 12 for x in ch] + [ch[0] + 24], .24); bass(t0, BAR - .1, ch[0] - 12, .27)
+for t in (81.6, 82.2, 82.8, 83.1, 83.4, 83.55, 83.7): snare(t, .28)
+riser(84.0, 3.4, .32)
 
-# ---------- 72–81.6  finale ----------
-braam(72.0, 6.5, 36, .75); boom(72.0, .8); shimmer(72.05, 84, .08)
-strings(72.0, 8.0, [48, 55, 60, 63, 67], .26, att=.2, rel=3.0); bass(72.0, 6.0, 24, .3)
-for i, m in enumerate([75, 70, 67, 63]): piano(73.6 + i * .6, m, .16, .15)
-piano(76.0, 60, .2); piano(76.0, 72, .14)
-for i in range(10): tick(76.8 + i * B * (1 + i * .12), .07, i % 2 == 0)
+# ---------- 84.0–93.6  finale ----------
+braam(84.0, 6.5, 36, .75); boom(84.0, .8); shimmer(84.05, 84, .08)
+strings(84.0, 8.0, [48, 55, 60, 63, 67], .26, att=.2, rel=3.0); bass(84.0, 6.0, 24, .3)
+for i, m in enumerate([75, 70, 67, 63]): piano(85.6 + i * .6, m, .16, .15)
+piano(88.0, 60, .2); piano(88.0, 72, .14)
+for i in range(10): tick(88.8 + i * B * (1 + i * .12), .07, i % 2 == 0)
 
 # ---------- master: hall reverb, VO duck, glue ----------
 irn = int(2.6 * SR); ti = np.arange(irn) / SR

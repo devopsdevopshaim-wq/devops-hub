@@ -1,4 +1,4 @@
-# SPIDER v2 — cinematic, beat-cut brand film. One generator for both cuts (English and Hebrew), 1920x1080.
+# SPIDER v3 — full-screen, beat-cut brand film showing every project. One generator for both cuts (English and Hebrew), 1920x1080.
 # usage: python3 gen.py <project_dir> <en|he>
 # Tempo: 100 BPM, beat 0.6s, bar 2.4s. Every scene starts on a bar line.
 import sys, os, math, random, glob
@@ -12,10 +12,10 @@ MAIN = os.path.dirname(HERE)
 FONTS = open(os.path.join(HERE, 'fonts.css')).read()
 BEAT, BAR = 0.6, 2.4
 SC = [  # id, start, length (s)
-    ('01-open', 0.0, 7.2), ('02-montage', 7.2, 7.2), ('03-slam', 14.4, 4.8), ('04-tunnel', 19.2, 9.6),
-    ('05-ch-intelligence', 28.8, 9.6), ('06-ch-engineering', 38.4, 9.6), ('07-ch-life', 48.0, 9.6),
-    ('08-ch-heritage', 57.6, 9.6), ('09-recap', 67.2, 4.8), ('10-finale', 72.0, 9.6)]
-TOTAL = 81.6
+    ('01-open', 0.0, 7.2), ('02-montage', 7.2, 7.2), ('03-slam', 14.4, 4.8), ('04-wall', 19.2, 7.2),
+    ('05-ch-intelligence', 26.4, 9.6), ('06-ch-engineering', 36.0, 9.6), ('07-ch-life', 45.6, 9.6),
+    ('08-ch-heritage', 55.2, 9.6), ('09-gallery', 64.8, 19.2), ('10-finale', 84.0, 9.6)]
+TOTAL = 93.6
 PROJECTS = 51
 
 def T(en, he): return he if HE else en
@@ -177,23 +177,83 @@ rise('#§-l2 .§-w', 4.8, {{ duration: 1.0 }});
 tl.to('#§-l2', {{ scale: 1.06, duration: 2.4, ease: 'none' }}, 4.8);'''
     frame(0, css, body, js, seed=3, ndust=50)
 
+# ---------- data: every project, its name in both languages and its address ----------
+import json as _json
+_PJ = {p['id']: p for p in _json.load(open(os.path.join(MAIN, '..', '..', 'portfolio', 'projects.json')))['projects']}
+EN_NAMES = {
+ 'vacation-hub': 'Masa · Vacation planner', 'book-studio': 'Book Studio', 'comic-studio': 'Panel · Comic Studio',
+ 'electro-fix': 'Closed Circuit · Electrical faults', 'netplan': 'NetPlan · Network design', 'automation': 'DrivePlan · VFD & automation',
+ 'robotic-parking': 'ParkPlan · Robotic parking', 'assembly-studio': 'Assembly Studio', 'cabinet-wiring': 'CabinetPlan · Panel wiring',
+ 'interior': 'Mitar · Interior design', 'devops-hubnew': 'DevOps Hub', 'hapinkas-hayomi': 'The Daily Notebook',
+ 'smart-office-assistant': 'Smart Office Assistant', 'rork-app': 'Rork App', 'devops-course-he': 'My Academy · DevOps & AI',
+ 'health-compass': 'Health Compass', 'astrology-decoder': 'Astrology Decoder', 'jarvis-web': 'JARVIS · Multi-agent assistant',
+ 'housing-system': 'DiraFinder · Apartment search', 'project-2026-01-03-new': 'PRO Network Host', 'project-2026-01-03-new2': 'ProDev Host',
+ 'files-management': 'HTML File Hosting', 'manage-files': 'Archivum Pro', 'project-2026-01-19': 'Video Downloader',
+ 'data-management': 'ProDev Host Extended', 'warehouse-management': 'Smart WMS · Warehouse', 'warehouse-management-v2': 'Stock & Spare Parts',
+ 'warehouse-management-v1': 'Mantis WMS', 'recipe-calculator': 'The Recipe Book', 'translate-dub': 'VocalizePro · Translate & dub',
+ 'hebrew-calendar': 'Hebrew Calendar 5786', 'israel-holidays': 'Israel Holidays Browser', 'lotto': 'Lotto Predictor',
+ 'lotto-new': 'Lotto · Smart system', 'lotto-series': 'Lotto Series Forecast', 'lotto-series-pro': 'Lotto Pro · Probabilities',
+ 'zohar': 'Parasha Calendar', 'zohar-v1': 'Zohar & Kabbalah', 'graphology': 'Graphology Lab', 'parkomat': 'Parkomat',
+ 'finance-hub': 'Finance Compass', 'bills-hub': 'Home Bills', 'marketing-hub': 'Campaign Builder', 'aia-studio': 'AIA Design Studio',
+ 'wellness-hub': 'Health & Fitness Compass', 'torah-hub': 'Sacred Library', 'dreams-hub': 'Pesher · Dream interpretation',
+ 'ayin-hara': 'Evil Eye & Dreams', 'services': 'SPIDER · Services'}
+def pname(pid):
+    if HE:
+        return _PJ[pid]['title'] if pid in _PJ else 'SPIDER · שירותים ומחירים'
+    return EN_NAMES.get(pid, pid)
+def paddr(pid):
+    if pid == 'services': return 'devopsdevopshaim-wq.github.io/devops-hub/portfolio/services.html'
+    p = _PJ.get(pid, {}); u = p.get('url') or ''
+    if u: return u.replace('https://', '').split('#')[0].split('?')[0].rstrip('/')
+    return 'github.com/devopsdevopshaim-wq/' + (p.get('repo') or pid)
+
+FULL_CSS = f'''
+.§-full{{position:absolute;inset:0;overflow:hidden;background:#0c0b0d}}
+.§-full img{{position:absolute;left:0;top:0;width:{W}px;display:block;transform-origin:50% 0%}}
+.§-shade{{position:absolute;left:0;right:0;bottom:0;height:330px;background:linear-gradient(rgba(7,6,8,0),rgba(7,6,8,.88) 70%)}}
+.§-lab{{position:absolute;bottom:64px;{SIDE}:90px;direction:{DIR};text-align:{ALIGN}}}
+.§-lab .§-ln{{display:block;width:70px;height:2px;background:{GOLD};margin-bottom:18px;{'margin-left:auto' if HE else ''}}}
+.§-lab .§-nm{{font-family:'Bellefair',serif;font-size:{58 if HE else 54}px;line-height:1.05;color:{IVORY};text-shadow:0 4px 30px rgba(0,0,0,.7)}}
+.§-lab .§-ad{{margin-top:12px;direction:ltr;font-family:'JetBrains Mono',monospace;font-size:20px;color:{GOLD_HI};opacity:.85}}
+.§-tag{{position:absolute;top:56px;{SIDE}:90px;direction:{DIR};font-family:{"'Assistant',sans-serif;font-weight:600;font-size:26px;letter-spacing:.1em" if HE else "'Michroma',sans-serif;font-size:15px;letter-spacing:.38em"};color:{GOLD};text-transform:uppercase;text-shadow:0 2px 20px rgba(0,0,0,.9)}}
+.§-topshade{{position:absolute;left:0;right:0;top:0;height:200px;background:linear-gradient(rgba(7,6,8,.75),rgba(7,6,8,0))}}
+'''
+
+def full_html(fid, kind, src):
+    path = f'assets/sites/{src}.jpg' if kind == 'site' else f'assets/shots/{src}.jpg'
+    return f'<div class="§-full" id="§-{fid}" style="opacity:0"><img id="§-{fid}-i" src="{path}" alt=""></div>'
+
+def full_js(fid, kind, src, t0, d, frac=0.75, fade=0.0):
+    """show one full-screen page from t0 for d seconds: a scroll for captured sites, a slow push for screenshots"""
+    js = f"tl.set('#§-{fid}', {{ opacity: 1 }}, {t0}); tl.set('#§-{fid}', {{ opacity: 0 }}, {round(t0 + d, 3)});\n"
+    if kind == 'site':
+        hh = site_h(src) * W; travel = min(max(0.0, hh - H) * frac, 2400)
+        js += f"tl.fromTo('#§-{fid}-i', {{ y: 0, scale: 1.06 }}, {{ y: -{travel:.0f}, scale: 1.0, duration: {d}, ease: 'power2.inOut' }}, {t0});\n"
+    else:   # a 1280x800 screenshot shown 1920 wide: push in and drift down its upper part
+        js += f"tl.fromTo('#§-{fid}-i', {{ y: 0, scale: 1.0 }}, {{ y: -110, scale: 1.08, duration: {d}, ease: 'sine.inOut' }}, {t0});\n"
+    return js
+
+def label_html(lid, pid):
+    return (f'<div class="§-lab" id="§-{lid}" style="opacity:0"><span class="§-ln"></span>'
+            f'<div class="§-nm">{pname(pid)}</div><div class="§-ad">{paddr(pid)}</div></div>')
+
+def label_js(lid, t0, d, quick=False):
+    a = .25 if quick else .5
+    return (f"tl.set('#§-{lid}', {{ opacity: 0 }}, {t0}); tl.fromTo('#§-{lid}', {{ opacity: 0, y: 18 }}, {{ opacity: 1, y: 0, duration: {a}, ease: 'expo.out' }}, {round(t0 + (0.05 if quick else 0.25), 3)});\n"
+            f"tl.set('#§-{lid}', {{ opacity: 0 }}, {round(t0 + d, 3)});\n")
+
 MONTAGE = ['robotic-parking', 'vacation-hub', 'finance-hub', 'aia-studio', 'dreams-hub', 'wellness-hub',
-           'cabinet-wiring', 'marketing-hub', 'torah-hub', 'comic-studio', 'netplan', 'services']
+           'cabinet-wiring', 'marketing-hub', 'torah-hub', 'services', 'netplan', 'ayin-hara']
 
 def s02_montage():
-    ww, wh = 1500, 900
     body = ''; js = ''
-    r = random.Random(9)
     for k, s in enumerate(MONTAGE):
         t0 = round(k * BEAT, 2)
-        body += browser(f'm{k}', [s], (W - ww) // 2, (H - wh) // 2 + 20, ww, wh, 'opacity:0')
-        ry = (-1) ** k * r.uniform(8, 16); rx = r.uniform(-4, 4)
-        js += f"tl.set('#§-m{k}', {{ opacity: 1 }}, {t0}); tl.set('#§-m{k}', {{ opacity: 0 }}, {round(t0 + BEAT, 2)});\n"
-        js += (f"tl.fromTo('#§-m{k}', {{ scale: 1.1, rotationY: {ry:.1f}, rotationX: {rx:.1f}, transformPerspective: 1600 }}, "
-               f"{{ scale: 0.98, rotationY: {ry*0.4:.1f}, rotationX: 0, duration: {BEAT}, ease: 'power3.out' }}, {t0});\n")
-        js += scroll_js(f'm{k}', 0, s, ww, wh, t0, BEAT, 0.25 + 0.05 * (k % 4), 'power2.out')
-    css = f'''#§-dim{{position:absolute;inset:0;background:rgba(7,6,8,.55)}}
-.§-kw{{position:absolute;left:0;right:0;top:{H/2-90}px;text-align:center;direction:{DIR};font-family:'Bellefair',serif;font-size:{170 if HE else 160}px;line-height:1;color:{IVORY};text-shadow:0 10px 60px rgba(0,0,0,.8)}}'''
+        body += full_html(f'm{k}', 'site', s)
+        js += full_js(f'm{k}', 'site', s, t0, BEAT, 0.3)
+        js += f"tl.fromTo('#§-m{k}', {{ scale: 1.12 }}, {{ scale: 1.0, duration: {BEAT}, ease: 'power3.out' }}, {t0});\n"
+    css = FULL_CSS + f'''#§-dim{{position:absolute;inset:0;background:radial-gradient(60% 60% at 50% 50%,rgba(7,6,8,.78),rgba(7,6,8,.45))}}
+.§-kw{{position:absolute;left:0;right:0;top:{H/2-95}px;text-align:center;direction:{DIR};font-family:'Bellefair',serif;font-size:{190 if HE else 180}px;line-height:1;color:{IVORY};text-shadow:0 10px 60px rgba(0,0,0,.9)}}'''
     kws = [T('Designed.', 'מעוצב.'), T('Engineered.', 'מהונדס.'), T('Live.', 'באוויר.')]
     body += '<div id="§-dim"></div>' + ''.join(f'<div class="§-kw" id="§-k{i}">{words(t)}</div>' for i, t in enumerate(kws))
     for i in range(3):
@@ -201,7 +261,109 @@ def s02_montage():
         js += f"rise('#§-k{i} .§-w', {a + 0.05}, {{ duration: 0.6 }}); tl.fromTo('#§-k{i}', {{ scale: 1.08 }}, {{ scale: 1, duration: {BAR - 0.45}, ease: 'power2.out' }}, {a});\n"
         if i < 2: js += f"tl.to('#§-k{i}', {{ opacity: 0, duration: 0.2 }}, {a + BAR - 0.2});\n"
     js += "tl.to('#§-k2', { opacity: 0, scale: 1.3, filter: 'blur(10px)', duration: 0.4, ease: 'power2.in' }, 6.8);\n"
-    frame(1, css, body, js, seed=5, ndust=10)
+    frame(1, css, body, js, seed=5, ndust=0)
+
+def s04_wall():
+    """pull back from one tile to a full-screen wall of every project, counting to 51"""
+    cols, rows = 8, 7; tw, th = W // cols, 1050 // rows
+    tiles_src = [('shots', s) for s in SHOTS if s not in ('gamma-deck',)] + [('sites', 'services'), ('sites', 'ayin-hara'), ('sites', 'cabinet-wiring'), ('sites', 'dreams-hub')]
+    r = random.Random(12); r.shuffle(tiles_src)
+    while len(tiles_src) < cols * rows: tiles_src.append(tiles_src[len(tiles_src) % 40])
+    tiles = ''
+    for k in range(cols * rows):
+        c, rr = k % cols, k // cols; kind, s = tiles_src[k]
+        tiles += (f'<div class="§-tile" style="left:{c*tw}px;top:{15 + rr*th}px;width:{tw}px;height:{th}px">'
+                  f'<img src="assets/{kind}/{s}.jpg" alt=""></div>')
+    css = f'''#§-wall{{position:absolute;left:0;top:0;width:{W}px;height:{H}px;transform-origin:50% 50%}}
+.§-tile{{position:absolute;overflow:hidden;border:1px solid rgba(7,6,8,1);box-shadow:inset 0 0 0 1px rgba(214,180,110,.35)}}
+.§-tile img{{width:100%;height:100%;object-fit:cover;object-position:top;display:block}}
+#§-plate{{position:absolute;left:{W/2-520}px;top:{H/2-300}px;width:1040px;height:600px;background:radial-gradient(closest-side,rgba(7,6,8,.96) 55%,rgba(7,6,8,0))}}
+#§-num{{position:absolute;left:0;right:0;top:300px;text-align:center;font-family:'Bellefair',serif;font-size:330px;line-height:1;color:{GOLD_HI};text-shadow:0 0 90px rgba(214,180,110,.4)}}
+#§-cap{{position:absolute;left:0;right:0;top:650px;text-align:center;direction:{DIR};font-family:'Bellefair',serif;font-size:{60 if HE else 56}px;color:{IVORY}}}'''
+    body = (f'<div id="§-wall">{tiles}</div><div id="§-plate"></div><div id="§-num">0</div>'
+            f'<div id="§-cap">{words(T("Live systems. Built from scratch.", "מערכות חיות. נבנו מאפס."))}</div>')
+    js = f'''tl.fromTo('#§-wall', {{ scale: 7.5 }}, {{ scale: 1.0, duration: 4.2, ease: 'expo.inOut' }}, 0);
+tl.to('#§-wall', {{ scale: 1.06, duration: 3.0, ease: 'none' }}, 4.2);
+const tl_tiles = QA('.§-tile'); tl_tiles.forEach((t, i) => tl.fromTo(t, {{ opacity: 0.15 }}, {{ opacity: 1, duration: 0.25, ease: 'power2.out' }}, 0.6 + ((i * 37) % 56) * 0.055));
+tl.fromTo('#§-plate', {{ opacity: 0 }}, {{ opacity: 1, duration: 0.8 }}, 2.6);
+const cnt = {{ v: 0 }};
+tl.to(cnt, {{ v: {PROJECTS}, duration: 3.4, ease: 'power3.out', onUpdate: () => {{ Q('#§-num').textContent = Math.round(cnt.v); }} }}, 0.6);
+tl.fromTo('#§-num', {{ opacity: 0, scale: 0.85 }}, {{ opacity: 1, scale: 1, duration: 1.0, ease: 'expo.out' }}, 2.6);
+tl.to('#§-num', {{ scale: 1.08, duration: 0.25, yoyo: true, repeat: 1, ease: 'power2.out' }}, 4.0);
+rise('#§-cap .§-w', 4.2);
+tl.to(['#§-num', '#§-cap', '#§-plate'], {{ opacity: 0, duration: 0.4, ease: 'power2.in' }}, 6.8);'''
+    frame(3, css, body, js, seed=11, ndust=0)
+
+CHAPTERS = [
+ ('01', T('Intelligence & studios', 'בינה וסטודיו'), T('Intelligence that creates.', 'בינה שיוצרת.'),
+  [('site', 'aia-studio'), ('site', 'comic-studio'), ('site', 'book-studio'), ('site', 'marketing-hub')]),
+ ('02', T('Engineering', 'הנדסה'), T('Down to the last wire.', 'עד החוט האחרון.'),
+  [('site', 'robotic-parking'), ('site', 'cabinet-wiring'), ('site', 'automation'), ('site', 'electro-fix')]),
+ ('03', T('Life', 'חיים'), T('Tools that run a life.', 'כלים שמנהלים חיים.'),
+  [('site', 'vacation-hub'), ('site', 'wellness-hub'), ('site', 'finance-hub'), ('site', 'bills-hub')]),
+ ('04', T('Heritage', 'מורשת'), T('A library for the soul.', 'ספרייה לנשמה.'),
+  [('site', 'torah-hub'), ('site', 'dreams-hub'), ('site', 'ayin-hara'), ('shot', 'hebrew-calendar')]),
+]
+
+def chapter(idx, ci, seed):
+    num, eye, title, pages = CHAPTERS[ci]
+    d = SC[idx][2]; seg = d / len(pages)
+    body = ''; js = ''
+    for k, (kind, src) in enumerate(pages):
+        t0 = round(k * seg, 3)
+        body += full_html(f'p{k}', kind, src)
+        js += full_js(f'p{k}', kind, src, t0, seg, 0.45)
+    body += '<div class="§-topshade"></div><div class="§-shade"></div>'
+    for k, (kind, src) in enumerate(pages):
+        body += label_html(f'l{k}', src)
+        js += label_js(f'l{k}', round(k * seg + (1.9 if k == 0 else 0), 3), seg - (1.9 if k == 0 else 0))
+    css = FULL_CSS + f'''#§-card{{position:absolute;inset:0;background:linear-gradient({'270deg' if HE else '90deg'},rgba(7,6,8,.94) 30%,rgba(7,6,8,.35) 75%,rgba(7,6,8,.1))}}
+#§-tb{{position:absolute;top:330px;{SIDE}:120px;width:900px;direction:{DIR};text-align:{ALIGN}}}
+#§-num{{font-family:'Bellefair',serif;font-size:190px;line-height:.9;color:transparent;-webkit-text-stroke:1.6px {GOLD}}}
+#§-eye{{display:block;margin-top:24px;font-family:{"'Assistant',sans-serif;font-weight:600;font-size:30px;letter-spacing:.14em" if HE else "'Michroma',sans-serif;font-size:19px;letter-spacing:.42em"};color:{GOLD};text-transform:uppercase}}
+#§-title{{margin-top:20px;font-family:'Bellefair',serif;font-size:{100 if HE else 94}px;line-height:1.04;color:{IVORY}}}'''
+    body += (f'<div class="§-tag" id="§-tagc">{num} · {eye}</div>'
+             f'<div id="§-card"></div><div id="§-tb"><div id="§-num">{num}</div><span id="§-eye">{eye}</span><div id="§-title">{words(title)}</div></div>')
+    sgn = -1 if HE else 1
+    js += f'''tl.fromTo('#§-num', {{ opacity: 0, x: {-60*sgn} }}, {{ opacity: 1, x: 0, duration: 0.9, ease: 'expo.out' }}, 0.0);
+tl.fromTo('#§-eye', {{ opacity: 0 }}, {{ opacity: 1, duration: 0.6 }}, 0.2);
+rise('#§-title .§-w', 0.25);
+tl.to('#§-tb', {{ opacity: 0, x: {-60*sgn}, filter: 'blur(8px)', duration: 0.45, ease: 'power3.in' }}, 1.75);
+tl.fromTo('#§-card', {{ opacity: 1 }}, {{ opacity: 0, duration: 0.6, ease: 'power2.inOut' }}, 1.8);
+tl.fromTo('#§-tagc', {{ opacity: 0 }}, {{ opacity: 1, duration: 0.6 }}, 2.0);
+'''
+    frame(idx, css, body, js, seed=seed, ndust=0)
+
+def s05(): chapter(4, 0, 13)
+def s06(): chapter(5, 1, 17)
+def s07(): chapter(6, 2, 19)
+def s08(): chapter(7, 3, 23)
+
+GALLERY = ['jarvis-web', 'devops-hubnew', 'smart-office-assistant', 'interior', 'netplan', 'assembly-studio', 'rork-app',
+           'hapinkas-hayomi', 'devops-course-he', 'health-compass', 'astrology-decoder', 'housing-system', 'translate-dub',
+           'warehouse-management', 'warehouse-management-v2', 'warehouse-management-v1', 'parkomat', 'project-2026-01-03-new',
+           'project-2026-01-03-new2', 'data-management', 'files-management', 'manage-files', 'project-2026-01-19',
+           'recipe-calculator', 'israel-holidays', 'zohar', 'zohar-v1', 'graphology', 'lotto-new', 'lotto-series-pro',
+           'lotto-series', 'lotto']
+
+def s09_gallery():
+    """every remaining project, full screen, one per beat, with its name and address"""
+    d = SC[8][2]; seg = BEAT
+    body = ''; js = ''
+    for k, pid in enumerate(GALLERY):
+        t0 = round(k * seg, 3)
+        kind = 'site' if pid in ('netplan', 'assembly-studio') else 'shot'
+        body += full_html(f'g{k}', kind, pid)
+        js += full_js(f'g{k}', kind, pid, t0, seg, 0.3)
+        js += f"tl.fromTo('#§-g{k}', {{ scale: 1.1 }}, {{ scale: 1.0, duration: {seg}, ease: 'power3.out' }}, {t0});\n"
+    body += '<div class="§-topshade"></div><div class="§-shade"></div>'
+    for k, pid in enumerate(GALLERY):
+        body += label_html(f'l{k}', pid)
+        js += label_js(f'l{k}', round(k * seg, 3), seg, quick=True)
+    css = FULL_CSS + f'''#§-cnt{{position:absolute;top:44px;{'left' if HE else 'right'}:90px;font-family:'Bellefair',serif;font-size:64px;color:{GOLD_HI};direction:ltr;text-shadow:0 2px 24px rgba(0,0,0,.9)}}
+#§-cnt small{{font-size:30px;color:{MUTED}}}'''
+    body += f'<div class="§-tag">{T("And so much more", "ועוד הרבה")}</div>'
+    frame(8, css, body, js, seed=29, ndust=0)
 
 def s03_slam():
     cx, cy = W / 2, 330
@@ -224,107 +386,6 @@ shake('#§-cam', 0.0, 14);
 tl.fromTo('#§-cam', {{ scale: 1.0 }}, {{ scale: 1.05, duration: 4.0, ease: 'none' }}, 0.3);
 tl.to('#§-cam', {{ scale: 3.5, opacity: 0, filter: 'blur(12px)', duration: 0.5, ease: 'power3.in' }}, 4.3);'''
     frame(2, css, body, js, seed=7, ndust=30)
-
-def s04_tunnel():
-    """camera flies through a corridor lined with every project's screenshot; the count climbs to 51"""
-    tw, th = 640, 400
-    tiles = ''; r = random.Random(4); shots = SHOTS[:]; r.shuffle(shots)
-    k = 0
-    for depth in range(12):
-        z = -depth * 820
-        for side in (-1, 1):
-            for row in (-1, 1):
-                s = shots[k % len(shots)]
-                x = side * 760; y = row * 230
-                tr = f'translate3d({x - tw/2:.0f}px,{y - th/2:.0f}px,{z}px) rotateY({-side*72}deg)'
-                tiles += f'<div class="§-tile" data-z="{z}" style="transform:{tr}"><img src="assets/shots/{s}.jpg" alt=""></div>'
-                k += 1
-    css = f'''#§-world{{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}}
-#§-persp{{position:absolute;inset:0;perspective:900px;perspective-origin:50% 50%}}
-.§-tile{{position:absolute;left:0;top:0;width:{tw}px;height:{th}px;border-radius:8px;overflow:hidden;border:1px solid rgba(214,180,110,.5);background:#111;backface-visibility:hidden}}
-.§-tile img{{width:100%;height:100%;object-fit:cover;object-position:top;display:block}}
-#§-fog{{position:absolute;inset:0;background:radial-gradient(36% 44% at 50% 55%,rgba(7,6,8,.97) 35%,rgba(7,6,8,.0) 100%)}}
-#§-num{{position:absolute;left:0;right:0;top:330px;text-align:center;font-family:'Bellefair',serif;font-size:300px;line-height:1;color:{GOLD_HI};text-shadow:0 0 80px rgba(214,180,110,.35)}}
-#§-cap{{position:absolute;left:0;right:0;top:660px;text-align:center;direction:{DIR};font-family:'Bellefair',serif;font-size:{58 if HE else 54}px;color:{IVORY}}}
-#§-cap2{{position:absolute;left:0;right:0;top:745px;text-align:center;direction:{DIR};font-family:{"'Assistant',sans-serif;font-size:30px;letter-spacing:.06em" if HE else "'Michroma',sans-serif;font-size:18px;letter-spacing:.36em"};color:{GOLD}}}'''
-    body = (f'<div id="§-persp"><div id="§-world">{tiles}</div></div><div id="§-fog"></div>'
-            f'<div id="§-num">0</div><div id="§-cap">{words(T("Live systems. Built from scratch.", "מערכות חיות. נבנו מאפס."))}</div>'
-            f'<div id="§-cap2">{T("AI · ENGINEERING · LIFE · HERITAGE", "בינה · הנדסה · חיים · מורשת")}</div>')
-    js = f'''const cam = {{ z: -300 }};
-const tiles = QA('.§-tile');
-const place = () => {{ Q('#§-world').style.transform = 'translateZ(' + (-cam.z) + 'px)';
-  tiles.forEach(t => {{ const dz = +t.dataset.z + cam.z; const a = dz > 300 ? 0 : Math.max(0, Math.min(1, 1 - (-dz - 1500) / 6000)); t.style.opacity = a.toFixed(3); }}); }};
-tl.fromTo(cam, {{ z: -300 }}, {{ z: 8200, duration: 9.6, ease: 'power1.inOut', onUpdate: place }}, 0);
-tl.call(place, null, 0);
-const cnt = {{ v: 0 }};
-tl.to(cnt, {{ v: {PROJECTS}, duration: 3.6, ease: 'power3.out', onUpdate: () => {{ Q('#§-num').textContent = Math.round(cnt.v); }} }}, 0.4);
-tl.fromTo('#§-num', {{ opacity: 0, scale: 0.8, filter: 'blur(12px)' }}, {{ opacity: 1, scale: 1, filter: 'blur(0px)', duration: 1.2, ease: 'expo.out' }}, 0.3);
-tl.to('#§-num', {{ scale: 1.08, duration: 0.25, yoyo: true, repeat: 1, ease: 'power2.out' }}, 4.0);
-rise('#§-cap .§-w', 1.2);
-fadeUp('#§-cap2', 5.0);
-tl.to(['#§-num', '#§-cap', '#§-cap2'], {{ opacity: 0, y: -30, filter: 'blur(10px)', duration: 0.5, ease: 'power2.in' }}, 8.9);'''
-    frame(3, css, body, js, seed=11, ndust=20)
-
-def chapter(idx, num, eye, title, lede, main_sites, back, seed):
-    """a slow 3D orbit around a live browser; the main window swaps site on the half-way bar"""
-    d = SC[idx][2]
-    mw, mh = 1180, 740
-    mx_ = 640 if not HE else W - 640 - mw
-    body = f'<div id="§-persp" style="position:absolute;inset:0;perspective:2000px"><div id="§-rig" style="position:absolute;inset:0;transform-style:preserve-3d">'
-    bpos = [(mx_ + (380 if not HE else -380), 90, 760, 476, -700), (mx_ + (-120 if not HE else 540), 560, 700, 438, -900)]
-    js = ''
-    for k, (s, (x, y, w, h, z)) in enumerate(zip(back, bpos)):
-        body += browser(f'b{k}', [s], x, y, w, h, f'transform:translateZ({z}px);opacity:.42')
-        js += scroll_js(f'b{k}', 0, s, w, h, 0, d, 0.6, 'none')
-    body += browser('mw', main_sites, mx_, 170, mw, mh)
-    body += '</div></div>'
-    css = f'''#§-tb{{position:absolute;top:300px;{SIDE}:120px;width:440px;direction:{DIR};text-align:{ALIGN}}}
-#§-num{{font-family:'Bellefair',serif;font-size:150px;line-height:.9;color:transparent;-webkit-text-stroke:1.4px {GOLD}}}
-#§-eye{{display:block;margin-top:26px;font-family:{"'Assistant',sans-serif;font-weight:600;font-size:28px;letter-spacing:.14em" if HE else "'Michroma',sans-serif;font-size:17px;letter-spacing:.4em"};color:{GOLD};text-transform:uppercase}}
-#§-title{{margin-top:22px;font-family:'Bellefair',serif;font-size:{78 if HE else 72}px;line-height:1.06;color:{IVORY}}}
-#§-rule{{display:block;width:110px;height:1px;background:{GOLD};margin-top:30px;transform-origin:{'100%' if HE else '0%'} 50%}}
-#§-lede{{margin-top:26px;font-size:{32 if HE else 28}px;line-height:1.45;color:{MUTED}}}
-#§-plate{{position:absolute;top:0;bottom:0;{SIDE}:0;width:760px;background:linear-gradient({'270deg' if HE else '90deg'},rgba(7,6,8,.92) 40%,rgba(7,6,8,0))}}'''
-    body += (f'<div id="§-plate"></div><div id="§-tb"><div id="§-num">{num}</div><span id="§-eye">{eye}</span>'
-             f'<div id="§-title">{words(title)}</div><span id="§-rule"></span><div id="§-lede">{lede}</div></div>')
-    sgn = -1 if HE else 1
-    js += f'''tl.fromTo('#§-rig', {{ rotationY: {-24*sgn}, rotationX: 6, z: -260, transformOrigin: '{'70%' if not HE else '30%'} 50%' }}, {{ rotationY: {-8*sgn}, rotationX: 2, z: 40, duration: {d}, ease: 'power1.inOut' }}, 0);
-tl.fromTo('#§-mw', {{ opacity: 0, x: {200*sgn}, filter: 'blur(16px) brightness(.4)' }}, {{ opacity: 1, x: 0, filter: 'blur(0px) brightness(1)', duration: 1.1, ease: 'expo.out' }}, 0.0);
-sheen('mw', 0.7); sheen('mw', {BAR*2 + 0.5});
-tl.fromTo('#§-num', {{ opacity: 0, x: {-40*sgn} }}, {{ opacity: 1, x: 0, duration: 1.2, ease: 'expo.out' }}, 0.1);
-tl.fromTo('#§-eye', {{ opacity: 0 }}, {{ opacity: 1, duration: 0.8 }}, 0.4);
-rise('#§-title .§-w', 0.5);
-tl.fromTo('#§-rule', {{ scaleX: 0 }}, {{ scaleX: 1, duration: 1.0, ease: 'expo.inOut' }}, 1.1);
-fadeUp('#§-lede', {BAR*1.5});
-'''
-    js += scroll_js('mw', 0, main_sites[0], mw, mh, 0.3, BAR * 2 - 0.3, 0.9)
-    js += f"swap('mw', 0, 1, {BAR*2 - 0.15});\n"
-    js += scroll_js('mw', 1, main_sites[1], mw, mh, BAR * 2 + 0.2, d - BAR * 2 - 0.2, 0.9)
-    frame(idx, css, body, js, seed=seed, ndust=26)
-
-def s05(): chapter(4, '01', T('Intelligence & studios', 'בינה וסטודיו'), T('Intelligence that creates.', 'בינה שיוצרת.'),
-                   T('Design, comics, books and campaigns.', 'עיצוב, קומיקס, ספרים וקמפיינים.'), ['aia-studio', 'comic-studio'], ['book-studio', 'marketing-hub'], 13)
-def s06(): chapter(5, '02', T('Engineering', 'הנדסה'), T('Down to the last wire.', 'עד החוט האחרון.'),
-                   T('Robotic parking, control cabinets, networks.', 'חניון רובוטי, ארונות פיקוד, רשתות.'), ['robotic-parking', 'cabinet-wiring'], ['netplan', 'electro-fix'], 17)
-def s07(): chapter(6, '03', T('Life', 'חיים'), T('Tools that run a life.', 'כלים שמנהלים חיים.'),
-                   T('Travel, health, money and home.', 'חופשות, בריאות, כסף ובית.'), ['vacation-hub', 'wellness-hub'], ['finance-hub', 'bills-hub'], 19)
-def s08(): chapter(7, '04', T('Heritage', 'מורשת'), T('A library for the soul.', 'ספרייה לנשמה.'),
-                   T('Sacred texts, holidays and the meaning of dreams.', 'כתבי קודש, חגים ופשר החלומות.'), ['torah-hub', 'dreams-hub'], ['services', 'automation'], 23)
-
-def s09_recap():
-    """sixteen eighth-note cuts of real screenshots, accelerating into the finale"""
-    picks = ['finance-hub', 'robotic-parking', 'torah-hub', 'aia-studio', 'marketing-hub', 'vacation-hub', 'wellness-hub', 'comic-studio',
-             'jarvis-web', 'dreams-hub', 'interior', 'devops-hubnew', 'book-studio', 'rork-app', 'cabinet-wiring', 'astrology-decoder']
-    css = '''.§-cut{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;object-position:top;opacity:0}
-#§-tint{position:absolute;inset:0;background:linear-gradient(rgba(7,6,8,.35),rgba(7,6,8,.15) 50%,rgba(7,6,8,.6))}'''
-    body = ''; js = ''
-    for i in range(16):
-        t0 = round(i * 0.3, 2)
-        body += f'<img class="§-cut" id="§-c{i}" src="assets/shots/{picks[i]}.jpg" alt="">'
-        js += f"tl.set('#§-c{i}', {{ opacity: 1 }}, {t0}); tl.set('#§-c{i}', {{ opacity: 0 }}, {round(t0 + 0.3, 2)});\n"
-        js += f"tl.fromTo('#§-c{i}', {{ scale: 1.18, x: {(-1)**i * 40} }}, {{ scale: 1.04, x: 0, duration: 0.3, ease: 'power2.out' }}, {t0});\n"
-    body += '<div id="§-tint"></div>'
-    frame(8, css, body, js, seed=29, ndust=0)
 
 def s10_finale():
     cx, cy = W / 2, 300
@@ -351,5 +412,5 @@ fadeUp('#§-who', 3.8); fadeUp('#§-url', 4.3);
 tl.fromTo('#§-out', {{ opacity: 0 }}, {{ opacity: 1, duration: 1.4, ease: 'power2.in' }}, 8.2);'''
     frame(9, css, body, js, seed=37, ndust=40)
 
-for f in (s01_open, s02_montage, s03_slam, s04_tunnel, s05, s06, s07, s08, s09_recap, s10_finale): f()
+for f in (s01_open, s02_montage, s03_slam, s04_wall, s05, s06, s07, s08, s09_gallery, s10_finale): f()
 print('frames written:', LANG, '->', PROJ)

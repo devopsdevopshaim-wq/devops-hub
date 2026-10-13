@@ -1,29 +1,31 @@
-# English narration for SPIDER v2: local Kokoro voice, placed on the beat grid, then voiced like a trailer read
+# English narration for SPIDER v3: local Kokoro voice, placed on the beat grid, then voiced like a trailer read
 # (warmth, presence, compression and a short room).  usage: python3 vo.py <out_dir>
 import sys, os, json, subprocess, numpy as np, soundfile as sf
 from kokoro_onnx import Kokoro
 OUT = sys.argv[1]
 KD = os.path.expanduser('~/.cache/hyperframes/tts')
 VOICE, SPEED = 'af_heart', 0.93
-TOTAL = 81.6
+TOTAL = 93.6
 LINES = [  # absolute start (s), line
  (1.2, "Fifty-one systems."),
  (4.85, "One mind."),
  (7.3, "Designed."), (9.7, "Engineered."), (12.1, "Live."),
  (14.7, "This is SPIDER."),
  (16.3, "The digital atelier of Haim Krispin."),
- (20.0, "Fifty-one live systems, built from scratch."),
- (24.3, "A.I., engineering, everyday life, and heritage."),
- (29.3, "Intelligence that creates."),
- (31.7, "Studios for design, comics, books and campaigns."),
- (38.9, "Engineering, down to the last wire."),
- (41.9, "Robotic parking. Control cabinets. Networks."),
- (48.5, "Tools that run a life."),
- (50.9, "Travel, health, money and home."),
- (58.1, "And a library for the soul."),
- (60.6, "Sacred texts, holidays, and the meaning of dreams."),
- (72.7, "SPIDER."),
- (74.4, "Your next system. Crafted by Haim Krispin."),
+ (19.7, "Fifty-one live systems."),
+ (22.0, "Every one of them, built from scratch."),
+ (26.6, "Intelligence that creates."),
+ (29.2, "Design, comics, books and campaigns."),
+ (36.2, "Engineering, down to the last wire."),
+ (39.0, "Robotic parking, control cabinets, automation."),
+ (45.8, "Tools that run a life."),
+ (48.4, "Travel, health, money and home."),
+ (55.4, "And a library for the soul."),
+ (58.0, "Sacred texts, dreams, and the Hebrew calendar."),
+ (65.0, "And so much more."),
+ (67.4, "AI agents. Warehouses. Networks. Apps."),
+ (84.7, "SPIDER."),
+ (86.4, "Your next system. Crafted by Haim Krispin."),
 ]
 k = Kokoro(f'{KD}/models/kokoro-v1.0.onnx', f'{KD}/voices/voices-v1.0.bin')
 SR = 24000

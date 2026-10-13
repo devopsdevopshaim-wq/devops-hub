@@ -1,4 +1,4 @@
-# Build one cut of SPIDER v2 as a HyperFrames project: frames (gen.py) + overlay (letterbox, flashes) + index.html + audio.
+# Build one cut of SPIDER v3 as a HyperFrames project: frames (gen.py) + overlay (letterbox, flashes) + index.html + audio.
 # usage: python3 build.py <en|he>      en -> videos/spider-luxe, he -> videos/spider-luxe-he
 import sys, os, json, shutil, subprocess
 
@@ -8,14 +8,15 @@ MAIN = os.path.dirname(HERE)
 PROJ = MAIN if LANG == 'en' else os.path.join(os.path.dirname(MAIN), 'spider-luxe-he')
 NAME = os.path.basename(PROJ)
 W, H = 1920, 1080
-SC = [('01-open', 0.0, 7.2), ('02-montage', 7.2, 7.2), ('03-slam', 14.4, 4.8), ('04-tunnel', 19.2, 9.6),
-      ('05-ch-intelligence', 28.8, 9.6), ('06-ch-engineering', 38.4, 9.6), ('07-ch-life', 48.0, 9.6),
-      ('08-ch-heritage', 57.6, 9.6), ('09-recap', 67.2, 4.8), ('10-finale', 72.0, 9.6)]
-TOTAL = 81.6
-BIG = [7.2, 14.4, 19.2, 28.8, 72.0]
-MID = [38.4, 48.0, 57.6, 67.2]
-SMALL = [round(7.2 + 0.6 * k, 2) for k in range(1, 12)] + [round(67.2 + 0.6 * k, 2) for k in range(1, 8)]
-LB = 96   # letterbox bar height: a 2.2:1 picture inside 16:9
+SC = [('01-open', 0.0, 7.2), ('02-montage', 7.2, 7.2), ('03-slam', 14.4, 4.8), ('04-wall', 19.2, 7.2),
+      ('05-ch-intelligence', 26.4, 9.6), ('06-ch-engineering', 36.0, 9.6), ('07-ch-life', 45.6, 9.6),
+      ('08-ch-heritage', 55.2, 9.6), ('09-gallery', 64.8, 19.2), ('10-finale', 84.0, 9.6)]
+TOTAL = 93.6
+BIG = [7.2, 14.4, 19.2, 26.4, 84.0]
+MID = [36.0, 45.6, 55.2, 64.8]
+SMALL = ([round(7.2 + 0.6 * k, 2) for k in range(1, 12)] + [round(c + 2.4 * k, 2) for c in (26.4, 36.0, 45.6, 55.2) for k in (1, 2, 3)]
+         + [round(64.8 + 0.6 * k, 2) for k in range(1, 32)])
+LB = 0    # full-screen picture: no letterbox
 
 if PROJ != MAIN:
     os.makedirs(PROJ, exist_ok=True)
@@ -35,10 +36,10 @@ if PROJ != MAIN:
 shutil.rmtree(os.path.join(PROJ, 'compositions', 'frames'), ignore_errors=True)
 subprocess.run([sys.executable, os.path.join(HERE, 'gen.py'), PROJ, LANG], check=True)
 
-# ---- overlay: anamorphic letterbox and light flashes on the cuts ----
+# ---- overlay: light flashes on the cuts ----
 fl = ''
 for i, t in enumerate(BIG + MID + SMALL):
-    peak = .85 if t in BIG else .5 if t in MID else .16
+    peak = .85 if t in BIG else .5 if t in MID else .12
     dd = .5 if t in BIG else .35 if t in MID else .18
     fl += (f"tl.fromTo('#flash', {{ opacity: {peak} }}, {{ opacity: 0, duration: {dd}, ease: 'power2.out', immediateRender: false }}, {t});\n")
 overlay = f'''<template>
@@ -49,15 +50,13 @@ overlay = f'''<template>
 </style>
 <div id="root" data-composition-id="overlay" data-width="{W}" data-height="{H}" data-duration="{TOTAL}">
 <div class="clip" id="ov" data-start="0" data-duration="{TOTAL}" data-track-index="0" data-layout-allow-overflow data-layout-allow-occlusion>
-<div id="flash"></div><div class="lb" id="lbt" style="top:0"></div><div class="lb" id="lbb" style="bottom:0"></div>
+<div id="flash"></div>
 </div>
 </div>
 <script src="assets/vendor/gsap.min.js"></script>
 <script>
 (function(){{
 const tl = gsap.timeline({{ paused: true }});
-tl.fromTo('#lbt', {{ yPercent: -100 }}, {{ yPercent: 0, duration: 1.6, ease: 'expo.out' }}, 0.2);
-tl.fromTo('#lbb', {{ yPercent: 100 }}, {{ yPercent: 0, duration: 1.6, ease: 'expo.out' }}, 0.2);
 {fl}tl.to({{}}, {{ duration: {TOTAL} }}, 0);
 window.__timelines["overlay"] = tl;
 }})();
