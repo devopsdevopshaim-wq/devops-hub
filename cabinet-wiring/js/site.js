@@ -192,5 +192,28 @@
     return steps;
   }
 
-  return { externals: externals, suggest: suggest, manualLink: manualLink, cableFor: cableFor, linkLength: linkLength, autoLayout: autoLayout, installSteps: installSteps, powerSection: powerSection };
+  /* לכל הדק בארון: לאילו ארונות אחרים הוא ממשיך, באיזה כבל וגיד. מפתח: "-X2:5" */
+  function refKey(ref) {
+    var m = /^(.+?):(.+)$/.exec(String(ref || ''));
+    if (!m) return '';
+    var tag = m[1].trim().toUpperCase().replace(/\s+/g, '');
+    if (/^[A-Z0-9]/.test(tag)) tag = '-' + tag;
+    return tag + ':' + m[2].trim().toUpperCase().replace(/\s+/g, '');
+  }
+  function crossRefs(site, pid) {
+    var out = {};
+    (site && site.links || []).forEach(function (l, i) {
+      var mineA = l.a.pid === pid, mineB = l.b.pid === pid;
+      if (!mineA && !mineB) return;
+      (l.cores || []).forEach(function (k, ci) {
+        var mine = mineA ? k.a : k.b, other = mineA ? k.b : k.a;
+        var key = refKey(mine);
+        if (!key) return;
+        (out[key] = out[key] || []).push({ lid: l.id, no: i + 1, core: ci + 1, peer: mineA ? l.b.pid : l.a.pid, peerRef: other, label: k.label, func: k.func, kind: l.kind });
+      });
+    });
+    return out;
+  }
+
+  return { refKey: refKey, crossRefs: crossRefs, externals: externals, suggest: suggest, manualLink: manualLink, cableFor: cableFor, linkLength: linkLength, autoLayout: autoLayout, installSteps: installSteps, powerSection: powerSection };
 });

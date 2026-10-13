@@ -36,6 +36,16 @@ export const SVG_STYLE = `
   .w.done .core { stroke-dasharray: none; }
   .w:hover .case { stroke: #e0904f; opacity: .9; }
   .comp { cursor: pointer; }
+  /* שרטוט הרכבה: החוטים מוסתרים, ומופיעים רק כשבוחרים רכיב, חוט או תפקיד */
+  svg.has-flt:not(.lay) .w:not(.flt) { display: none; }
+  svg.lay .w { opacity: 0; pointer-events: none; }
+  svg.lay.has-flt .w.flt, svg.lay .w.hl, svg.lay .w.sel { opacity: 1; pointer-events: auto; }
+  svg.lay.has-hl .w:not(.hl) { opacity: 0; }
+  .frm { fill: none; stroke: #8d959f; }
+  .frm-o { stroke-width: 2.2; }
+  .frm-i { stroke-width: .9; }
+  .frm-t { stroke: #8d959f; stroke-width: .9; }
+  .t-frm { font-size: 13px; fill: #a4adb4; font-family: 'IBM Plex Mono', monospace; font-weight: 600; dominant-baseline: middle; }
   .comp.end > rect:first-of-type, .comp.end > circle:first-of-type { stroke: #e0904f; stroke-width: 3px; }
 `;
 
@@ -56,6 +66,7 @@ export class CabinetView {
     this.onSelect = onSelect || (() => {});
     this.onComp = onComp || (() => {});
     this.mini = mini;
+    this.layoutMode = !mini;
     this.svg = document.createElementNS(NS, 'svg');
     this.svg.setAttribute('class', 'cab-svg' + (mini ? ' mini' : ''));
     this.svg.setAttribute('role', 'img');
@@ -200,8 +211,29 @@ export class CabinetView {
       </g>`);
       extraH = th + 40;
     }
+    /* מסגרת שרטוט עם רשת אזורים (עמודות 1..n, שורות A..), כמו בגיליון הנדסי */
+    const bx = this.mini ? -30 : -80, by = this.mini ? -30 : -70, bw = L.bounds.w + (this.mini ? 60 : 110), bh = L.bounds.h + (this.mini ? 60 : 100) + extraH;
+    this.grid = null;
+    if (!this.mini) {
+      const ox = bx - 30, oy = by - 30, ow = bw + 60, oh = bh + 60, ix = bx - 10, iy = by - 10, iw = bw + 20, ih = bh + 20;
+      const cols = Math.max(6, Math.min(12, Math.round(iw / 170))), rows = Math.max(4, Math.min(10, Math.round(ih / 170)));
+      const f = [`<rect x="${ox}" y="${oy}" width="${ow}" height="${oh}" class="frm frm-o"/>`, `<rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" class="frm frm-i"/>`];
+      for (let i = 0; i < cols; i++) {
+        const x = ix + (i * iw) / cols, xm = ix + ((i + 0.5) * iw) / cols;
+        if (i) f.push(`<line x1="${x}" y1="${oy}" x2="${x}" y2="${iy}" class="frm-t"/><line x1="${x}" y1="${iy + ih}" x2="${x}" y2="${oy + oh}" class="frm-t"/>`);
+        f.push(`<text x="${xm}" y="${(oy + iy) / 2}" class="t-frm" text-anchor="middle">${i + 1}</text><text x="${xm}" y="${(iy + ih + oy + oh) / 2}" class="t-frm" text-anchor="middle">${i + 1}</text>`);
+      }
+      for (let j = 0; j < rows; j++) {
+        const y = iy + (j * ih) / rows, ym = iy + ((j + 0.5) * ih) / rows, ch = String.fromCharCode(65 + j);
+        if (j) f.push(`<line x1="${ox}" y1="${y}" x2="${ix}" y2="${y}" class="frm-t"/><line x1="${ix + iw}" y1="${y}" x2="${ox + ow}" y2="${y}" class="frm-t"/>`);
+        f.push(`<text x="${(ox + ix) / 2}" y="${ym}" class="t-frm" text-anchor="middle">${ch}</text><text x="${(ix + iw + ox + ow) / 2}" y="${ym}" class="t-frm" text-anchor="middle">${ch}</text>`);
+      }
+      out.push(`<g class="frame">${f.join('')}</g>`);
+      this.grid = { ix, iy, iw, ih, cols, rows };
+    }
     this.svg.innerHTML = out.join('');
-    this.bounds = { x: this.mini ? -30 : -80, y: this.mini ? -30 : -70, w: L.bounds.w + (this.mini ? 60 : 110), h: L.bounds.h + (this.mini ? 60 : 100) + extraH };
+    this.svg.classList.toggle('lay', Boolean(this.layoutMode) && !this.mini);
+    this.bounds = this.mini ? { x: bx, y: by, w: bw, h: bh } : { x: bx - 36, y: by - 36, w: bw + 72, h: bh + 72 };
     if (!this.vb) this.fit(); else this.apply();
     if (this.selected) this.select(this.selected, false);
   }
@@ -257,7 +289,17 @@ export class CabinetView {
     this.svg.querySelectorAll('.w').forEach((g) => g.classList.toggle('done', doneSet.has(g.dataset.id)));
   }
   filter(visibleSet) {
-    this.svg.querySelectorAll('.w').forEach((g) => { g.style.display = !visibleSet || visibleSet.has(g.dataset.id) ? '' : 'none'; });
+    this.svg.classList.toggle('has-flt', Boolean(visibleSet));
+    this.svg.querySelectorAll('.w').forEach((g) => g.classList.toggle('flt', Boolean(visibleSet && visibleSet.has(g.dataset.id))));
+  }
+  /* שרטוט הרכבה (בלי חוטים) או תצוגה עם כל החוטים */
+  setLayout(on) { this.layoutMode = on; this.svg.classList.toggle('lay', Boolean(on) && !this.mini); }
+  /* אזור בשרטוט (למשל C4) של נקודה */
+  zoneOf(x, y) {
+    const g = this.grid; if (!g) return '';
+    const c = Math.min(g.cols, Math.max(1, Math.floor((x - g.ix) / (g.iw / g.cols)) + 1));
+    const r = Math.min(g.rows, Math.max(1, Math.floor((y - g.iy) / (g.ih / g.rows)) + 1));
+    return String.fromCharCode(64 + r) + c;
   }
 
   bind() {

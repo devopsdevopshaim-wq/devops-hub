@@ -53,16 +53,18 @@
   <nav class="tabs" id="tabs" aria-label="שלבי העבודה" hidden>
     <div class="tabs-inner">
       <a class="site-back" id="siteBack" href="#home" hidden></a>
+      <select class="cab-switch" id="cabSwitch" aria-label="מעבר לארון אחר באתר" hidden></select>
       <strong class="proj-title" id="projTitle"></strong>
       <ol class="strip">
         <li><a href="#p/plan" data-tab="plan"><span class="num">1</span><span class="t">תכנית</span></a></li>
         <li><a href="#p/parts" data-tab="parts"><span class="num">2</span><span class="t">רכיבים</span></a></li>
         <li><a href="#p/wires" data-tab="wires"><span class="num">3</span><span class="t">רשימת חוטים</span></a></li>
         <li><a href="#p/cabinet" data-tab="cabinet"><span class="num">4</span><span class="t">פריסת ארון</span></a></li>
-        <li><a href="#p/three" data-tab="three"><span class="num">5</span><span class="t">ארון בתלת־ממד</span></a></li>
-        <li><a href="#p/wiring" data-tab="wiring"><span class="num">6</span><span class="t">חיווט שלב אחר שלב</span></a></li>
-        <li><a href="#p/assembly" data-tab="assembly"><span class="num">7</span><span class="t">הרכבה ובדיקות</span></a></li>
-        <li><a href="#p/export" data-tab="export"><span class="num">8</span><span class="t">הדפסה והגדרות</span></a></li>
+        <li><a href="#p/conn" data-tab="conn"><span class="num">5</span><span class="t">חיבורים ומהדקים</span></a></li>
+        <li><a href="#p/three" data-tab="three"><span class="num">6</span><span class="t">ארון בתלת־ממד</span></a></li>
+        <li><a href="#p/wiring" data-tab="wiring"><span class="num">7</span><span class="t">חיווט שלב אחר שלב</span></a></li>
+        <li><a href="#p/assembly" data-tab="assembly"><span class="num">8</span><span class="t">הרכבה ובדיקות</span></a></li>
+        <li><a href="#p/export" data-tab="export"><span class="num">9</span><span class="t">הדפסה והגדרות</span></a></li>
       </ol>
       <span class="progress-pill" id="progressPill" title="חוטים שסומנו כמחוברים"></span>
     </div>
@@ -213,6 +215,7 @@
 
     <div class="card">
       <div class="card-head"><h2>כבלים בין ארונות</h2><span class="muted small" id="linkCount"></span></div>
+      <div class="ic-host" id="linkDiagram"></div>
       <div id="linkSuggest"></div>
       <div class="table-wrap"><table class="tbl" id="linkTable"></table></div>
       <details class="link-add">
@@ -338,11 +341,26 @@
     </div>
   </section>
 
+  <!-- ===== 5. חיבורים ומהדקים ===== -->
+  <section class="view" id="v-conn" data-view="conn" hidden>
+    <div class="card conn-head">
+      <div class="card-head"><h2>חיבורים ומהדקים</h2><dl class="conn-stats" id="connStats"></dl></div>
+      <p class="muted small">לכל פס מהדקים: מה מחובר לכל הדק מבפנים (בתוך הארון), ומה יוצא ממנו החוצה — לשטח או לארון אחר באתר. לחיצה על מספר חוט פותחת את הפרטים שלו, על רכיב את הכרטיס שלו, ועל ארון אחר — את ההדק התואם שם.</p>
+      <div class="conn-nav" id="connNav"></div>
+    </div>
+    <div class="card" id="connX" hidden></div>
+    <div id="connStrips"></div>
+  </section>
+
   <!-- ===== 4. פריסת ארון ===== -->
   <section class="view" id="v-cabinet" data-view="cabinet" hidden>
     <div class="cab-toolbar">
       <div class="chips" id="cabChips" role="group" aria-label="הצגה לפי תפקיד"></div>
       <div class="row gap">
+        <div class="seg" role="group" aria-label="סוג השרטוט">
+          <button type="button" id="cabLay" aria-pressed="true">שרטוט הרכבה</button>
+          <button type="button" id="cabAll" aria-pressed="false">כל החוטים</button>
+        </div>
         <input type="search" id="cabSearch" placeholder="‎-K1 או מספר חוט…" aria-label="איתור רכיב או חוט">
         <button class="btn ghost small" type="button" id="zoomIn" aria-label="הגדלה">+</button>
         <button class="btn ghost small" type="button" id="zoomOut" aria-label="הקטנה">−</button>
@@ -350,7 +368,7 @@
       </div>
     </div>
     <div class="cab-host" id="cabHost"></div>
-    <p class="muted small cab-help">עומדים עם העכבר על חוט כדי לראות מה הוא ולמה הוא שם. לחיצה על חוט בוחרת אותו, לחיצה על רכיב מדגישה את כל החוטים שלו. גלגלת או צביטה לזום, גרירה להזזה. הפריסה אוטומטית: מסילה 1 הזנה והגנות, 2 בקרה, 3 מיתוג כוח, 4 מהדקים.</p>
+    <p class="muted small cab-help">שרטוט הרכבה: פלטה, תעלות, מסילות ורכיבים עם תגים ומידות, ברשת אזורים (A1, B3…) כמו בגיליון הנדסי. לחיצה על רכיב מציגה רק את החוטים שלו ואת הכרטיס שלו; בחירת תפקיד למעלה מציגה רק את החוטים של התפקיד. "כל החוטים" מציג את כולם. גלגלת או צביטה לזום, גרירה להזזה.</p>
     <div class="legend" id="legend"></div>
   </section>
 

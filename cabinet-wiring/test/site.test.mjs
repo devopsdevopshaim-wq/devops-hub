@@ -78,4 +78,15 @@ test('כרטיס רכיב: חיווט מכשיר בשטח דרך פס המהדק
   assert.equal(E.compWiring(A.P, '-NOPE'), null);
 });
 
+test('הפניות בין ארונות: כל הדק יודע לאיזה ארון, כבל וגיד הוא ממשיך', () => {
+  const link = S.manualLink(A, '-W1', B, '-W1');
+  const site = { links: [link] };
+  const ra = S.crossRefs(site, 'a'), rb = S.crossRefs(site, 'b');
+  assert.equal(Object.keys(ra).length, 3);
+  assert.deepEqual(ra['-X2:RUN'].map((x) => [x.peer, x.peerRef, x.no, x.core]), [['b', '-X2:RUN', 1, 1]]);
+  assert.equal(rb['-X2:FAULT'][0].peer, 'a');
+  assert.equal(S.refKey('x2 : 5'), '-X2:5');
+  assert.equal(S.refKey('L1'), '');
+});
+
 console.log(`\n${n} בדיקות עברו`);
