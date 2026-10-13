@@ -44,12 +44,32 @@ export const files = {
   }
 };
 
+function fromLocal() {
+  try { const j = JSON.parse(localStorage.getItem(KEY) || '{}'); return Array.isArray(j.projects) ? j : null; }
+  catch { return null; }
+}
+
 export function loadAll() {
-  try { const j = JSON.parse(localStorage.getItem(KEY) || '{}'); return Array.isArray(j.projects) ? j : { projects: [] }; }
-  catch { return { projects: [] }; }
+  const j = fromLocal() || { projects: [] };
+  j.sites = j.sites || [];
+  return j;
+}
+
+/* אתרים עם כמה ארונות גדולים מהמקום ב-localStorage, ולכן המקור הראשי הוא IndexedDB */
+export async function loadAllAsync() {
+  const local = fromLocal();
+  const idb = await files.get('__state__');
+  let j = local;
+  if (idb && Array.isArray(idb.projects) && (!local || (idb.saved || 0) >= (local.saved || 0))) j = idb;
+  j = j || { projects: [] };
+  j.sites = j.sites || [];
+  return j;
 }
 
 export function saveAll(state) {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); return true; }
-  catch { return false; }
+  state.saved = Date.now();
+  files.put('__state__', JSON.parse(JSON.stringify(state)));
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch { try { localStorage.removeItem(KEY); } catch { /* אין גישה */ } }
+  return true;
 }

@@ -1,13 +1,15 @@
 /* ארון־פלאן — ממשק המשתמש */
-import { loadAll, saveAll, files } from './store.js';
+import { loadAll, loadAllAsync, saveAll, files } from './store.js';
 import { readPdf, blobToBase64 } from './pdf.js';
 import { CabinetView } from './view.js';
 import { Cabinet3D } from './view3d.js';
 import { englishSteps, Speaker, sfx } from './voice.js';
 import { wireSvg } from './wirerender.js';
-import { bookHtml, labelsHtml } from './book.js';
+import { bookHtml, labelsHtml, siteBookHtml } from './book.js';
+import { Site3D } from './site3d.js';
+import { SitePlan } from './siteplan.js';
 
-const C = window.WCat, E = window.WEngine, Pr = window.WPrompts, Demo = window.WDemo;
+const C = window.WCat, E = window.WEngine, Pr = window.WPrompts, Demo = window.WDemo, S = window.WSite;
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -32,6 +34,9 @@ const wf = { funcs: new Set(), search: '', color: '', state: '' };
 const cabFuncs = new Set();
 let wiring = { group: 'all', idx: 0 };
 let aiAbort = null;
+let site = null, siteSel = null, sitePlan = null, site3d = null, siteSugg = [], siteData = null;
+const cabCache = new Map();
+const siteName = (sid) => { const x = sid && state.sites.find((st) => st.id === sid); return x ? x.name : ''; };
 
 /* ---------- הודעות ---------- */
 let toastT = 0;
@@ -91,17 +96,23 @@ async function openProject(id, toTab) {
 function route() {
   const h = location.hash.replace(/^#/, '');
   const m = /^p\/(\w+)/.exec(h);
+  const ms = /^site\/([\w-]+)/.exec(h);
+  if (ms) { site = state.sites.find((x) => x.id === ms[1]) || null; if (site) { tab = 'site'; siteSel = null; showView('site'); return; } location.hash = '#home'; return; }
   if (m && raw) { tab = m[1]; showView(tab); }
   else { tab = 'home'; showView('home'); }
 }
 
 function showView(v) {
   $$('.view').forEach((s) => { s.hidden = s.dataset.view !== v; });
-  $('#tabs').hidden = v === 'home';
+  $('#tabs').hidden = v === 'home' || v === 'site';
   $$('#tabs a').forEach((a) => a.setAttribute('aria-current', a.dataset.tab === v ? 'page' : 'false'));
   if (v === 'home') { renderHome(); closeDrawer(); return; }
+  if (v === 'site') { closeDrawer(); speaker.stop(); renderSite(); return; }
   if (v === 'wiring') closeDrawer();
   $('#projTitle').textContent = raw.name;
+  const ps = raw.siteId && state.sites.find((x) => x.id === raw.siteId);
+  $('#siteBack').hidden = !ps;
+  if (ps) { $('#siteBack').href = '#site/' + ps.id; $('#siteBack').textContent = '→ ' + ps.name; }
   updatePill();
   ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, three: renderThree, wiring: renderWiring, assembly: renderAssembly, export: renderExport }[v] || renderPlan)();
 }
@@ -116,12 +127,19 @@ function updatePill() {
 
 /* ---------- דף הבית ---------- */
 function renderHome() {
+  const sl = $('#siteList');
+  sl.innerHTML = state.sites.length ? state.sites.map((s) => {
+    const n = s.cabinets.filter((pid) => state.projects.some((p) => p.id === pid)).length;
+    return `<li><div><a href="#site/${esc(s.id)}">${esc(s.name)}</a>
+      <div class="meta">${n} ארונות · ${s.links.length} כבלים · ${s.files.length} קבצים${s.address ? ' · ' + esc(s.address) : ''}</div></div>
+      <a class="btn ghost small" href="#site/${esc(s.id)}">פתיחה</a></li>`;
+  }).join('') : '<li class="muted">אין עדיין אתרים. לחצו "אתר חדש" וגררו אליו את כל קבצי התכניות של הפרויקט.</li>';
   const ul = $('#projList');
   if (!state.projects.length) { ul.innerHTML = '<li class="muted">אין עדיין פרויקטים. העלו PDF או פתחו את הדוגמה.</li>'; return; }
   ul.innerHTML = state.projects.map((p) => {
     const d = Object.values(p.done || {}).filter(Boolean).length;
     return `<li><div><a href="#" data-open="${esc(p.id)}">${esc(p.name)}</a>
-      <div class="meta">${p.wires.length} חוטים · ${d} חוברו · ${new Date(p.updated).toLocaleDateString('he-IL')}${p.pdf ? ' · PDF' : ''}</div></div>
+      <div class="meta">${p.wires.length} חוטים · ${d} חוברו · ${new Date(p.updated).toLocaleDateString('he-IL')}${p.pdf ? ' · PDF' : ''}${siteName(p.siteId) ? ' · אתר: ' + esc(siteName(p.siteId)) : ''}</div></div>
       <button class="btn ghost small" type="button" data-open="${esc(p.id)}">פתיחה</button></li>`;
   }).join('');
 }
@@ -976,7 +994,7 @@ function download(name, data, type) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
-const fileBase = () => (raw.name || 'cabinet').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60);
+const fileBase = () => ((raw && raw.name) || (site && site.name) || 'cabinet').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60);
 
 function drawingSvg() {
   const host = document.createElement('div');
@@ -1054,7 +1072,13 @@ function bind() {
   ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0], false));
   document.addEventListener('dragover', (e) => e.preventDefault());
-  document.addEventListener('drop', (e) => { if (!e.target.closest('#drop')) { e.preventDefault(); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0], tab !== 'home'); } });
+  document.addEventListener('drop', (e) => {
+    if (e.target.closest('#drop, #siteDrop')) return;
+    e.preventDefault();
+    if (tab === 'site' && site) { if (e.dataTransfer.files.length) siteIngest(e.dataTransfer.files); return; }
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0], tab !== 'home');
+  });
+  bindSite();
 
   $('#openDemo').onclick = () => {
     raw = newProject('דוגמה: לוח משאבה עם בקר', Demo.project());
@@ -1233,6 +1257,7 @@ function bind() {
     if (!confirm(`למחוק את "${raw.name}" מהדפדפן?`)) return;
     await files.delPrefix(raw.id + ':');
     state.projects = state.projects.filter((p) => p.id !== raw.id);
+    state.sites.forEach((st) => { st.cabinets = st.cabinets.filter((x) => x !== raw.id); st.files = st.files.filter((f) => f.pid !== raw.id); st.links = st.links.filter((l) => l.a.pid !== raw.id && l.b.pid !== raw.id); });
     raw = null; P = L = null; state.current = null; saveAll(state);
     location.hash = '#home';
   };
@@ -1249,8 +1274,379 @@ function bind() {
   };
 }
 
+/* ---------- אתרי התקנה: כמה ארונות, הכבלים ביניהם, הקבצים ומערך ההתקנה ---------- */
+function newSite() {
+  const s = { id: newId('s'), name: 'אתר חדש', address: '', created: Date.now(), cabinets: [], files: [], layout: {}, room: null, trayH: 2.6, links: [], ignored: [], stepsDone: {} };
+  state.sites.unshift(s);
+  saveAll(state);
+  location.hash = '#site/' + s.id;
+  setTimeout(() => { const n = $('#siteName'); if (n) { n.focus(); n.select(); } }, 80);
+}
+
+/* כל ארון באתר: השלמה, פריסה ומעטפת (נשמר בזיכרון לפי זמן העדכון) */
+function siteCab(r) {
+  const k = r.id + ':' + r.updated;
+  if (cabCache.has(k)) return cabCache.get(k);
+  const P1 = E.enrich(r);
+  P1.meta = r.meta || {}; P1.name = r.name;
+  const L1 = E.layout(P1);
+  const enc = E.enclosure(P1, L1);
+  const c = { id: r.id, name: r.name, raw: r, P: P1, L: L1, enc, done: P1.wires.filter((w) => r.done && r.done[w.id]).length };
+  cabCache.set(k, c);
+  return c;
+}
+
+function computeSite() {
+  const cabs = site.cabinets.map((pid) => state.projects.find((p) => p.id === pid)).filter(Boolean).map(siteCab);
+  const dims = {};
+  cabs.forEach((c) => { dims[c.id] = { w: c.enc.w / 1000, h: (c.enc.h + (c.enc.plinth || 60)) / 1000, d: c.enc.d / 1000 }; });
+  S.autoLayout(site, cabs, dims);
+  const ids = new Set(cabs.map((c) => c.id));
+  const links = site.links.filter((l) => ids.has(l.a.pid) && ids.has(l.b.pid)).map((l) => ({ ...l, cable: S.cableFor(l), length: S.linkLength(site, l, dims) }));
+  const taken = new Set([...site.links.map((l) => l.id), ...(site.ignored || [])]);
+  siteSugg = cabs.length > 1 ? S.suggest(cabs).filter((l) => !taken.has(l.id)) : [];
+  const steps = S.installSteps(site, cabs, links, dims);
+  return (siteData = { cabs, dims, links, steps });
+}
+const cabName = (pid) => { const c = siteData && siteData.cabs.find((x) => x.id === pid); return c ? c.name : '?'; };
+const linkNo = (lid) => siteData.links.findIndex((l) => l.id === lid) + 1;
+const fmtSize = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+
+function renderSite() {
+  if (!site) return;
+  const { cabs, links, steps } = computeSite();
+  if (document.activeElement !== $('#siteName')) $('#siteName').value = site.name;
+  if (document.activeElement !== $('#siteAddr')) $('#siteAddr').value = site.address || '';
+  $('#roomW').value = site.room.w; $('#roomD').value = site.room.d; $('#trayH').value = site.trayH || 2.6;
+  const wires = cabs.reduce((s, c) => s + c.P.wires.length, 0), done = cabs.reduce((s, c) => s + c.done, 0);
+  const meters = links.reduce((s, l) => s + (l.length || 0), 0);
+  $('#siteStats').innerHTML = [['ארונות', cabs.length], ['חוטים בארונות', wires], ['חוברו', wires ? Math.round(done / wires * 100) + '%' : '—'], ['כבלים בין ארונות', links.length], ['מטר כבל', Math.round(meters)], ['קבצים', site.files.length]]
+    .map(([k, v]) => `<div><dt>${k}</dt><dd class="num">${v}</dd></div>`).join('');
+  /* כרטיסי ארונות */
+  $('#siteCabs').innerHTML = cabs.length ? cabs.map((c, i) => {
+    const pct = c.P.wires.length ? Math.round(c.done / c.P.wires.length * 100) : 0;
+    const ext = S.externals(c.P);
+    const lk = links.filter((l) => l.a.pid === c.id || l.b.pid === c.id).length;
+    return `<article class="cab-card${siteSel && siteSel.pid === c.id ? ' on' : ''}" data-pid="${esc(c.id)}">
+      <header><span class="cc-no num">${i + 1}</span><h3 title="${esc(c.name)}">${esc(c.name)}</h3></header>
+      <p class="cc-meta"><span class="mono">${esc(c.P.meta.drawingNo || '')}</span> ${esc(c.enc.text)}</p>
+      <div class="cc-bar" role="img" aria-label="${pct}% חוברו"><i style="width:${pct}%"></i></div>
+      <p class="cc-nums num">${c.P.wires.length} חוטים · ${c.P.components.length} רכיבים · ${ext.length} מכשירי שטח · ${lk} כבלים</p>
+      ${c.P.wires.length ? '' : '<p class="cc-warn">עוד לא נקראו השרטוטים של הארון הזה. פתחו אותו ולחצו "קריאת השרטוטים".</p>'}
+      <div class="row gap flexwrap"><a class="btn small" href="#" data-open-cab="${esc(c.id)}">פתיחת הארון</a>
+        <button class="btn ghost small" type="button" data-rot="${esc(c.id)}" title="סיבוב הארון ב-90°">סיבוב</button>
+        <button class="btn ghost small" type="button" data-unlink="${esc(c.id)}">הוצאה מהאתר</button></div>
+    </article>`;
+  }).join('') : '<p class="muted empty-note">אין עדיין ארונות. גררו לכאן את קבצי ה-PDF של תכניות החיווט: כל קובץ הופך לארון.</p>';
+  /* ארונות קיימים שאפשר להוסיף */
+  const free = state.projects.filter((p) => !site.cabinets.includes(p.id));
+  $('#siteAddCab').innerHTML = '<option value="">הוספת ארון קיים…</option>' + free.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}${p.siteId ? ' (' + esc(siteName(p.siteId)) + ')' : ''}</option>`).join('');
+  $('#siteAddCab').hidden = !free.length;
+  /* תכנית ו-3D */
+  if (!sitePlan) sitePlan = new SitePlan($('#planHost'), { onChange: () => { saveAll(state); renderSite(); }, onPick: (pid, lid) => siteSelect(pid, lid) });
+  sitePlan.render(site, cabs, links, siteSel);
+  buildSite3d(cabs, links);
+  renderLinks();
+  renderSiteSteps(steps);
+  renderSiteFiles();
+  renderSiteSel();
+}
+
+async function buildSite3d(cabs, links) {
+  if (!site3d) {
+    site3d = new Site3D($('#site3dHost'), {
+      onHover: (lid, ev) => siteTip(lid, ev),
+      onPick: (pid, lid) => siteSelect(pid, lid, true),
+      onOpen: (pid) => openProject(pid, 'three')
+    });
+  }
+  try {
+    await site3d.build(site, cabs, links);
+    $('#site3dWait').hidden = true;
+    if (siteSel) { if (siteSel.pid) site3d.select(siteSel.pid); if (siteSel.lid) site3d.highlightLink(siteSel.lid); }
+  } catch (e) {
+    $('#site3dWait').hidden = false;
+    $('#site3dWait').textContent = 'התלת־ממד לא נטען (' + e.message + '). בדקו חיבור לאינטרנט או נסו דפדפן אחר.';
+  }
+}
+
+function siteTip(lid, ev) {
+  const tip = $('#tip');
+  const l = lid && siteData.links.find((x) => x.id === lid);
+  if (!l) { tip.hidden = true; return; }
+  tip.innerHTML = `<b>כבל W${linkNo(l.id)}</b> · ${esc(l.cable.type)}<br>${esc(cabName(l.a.pid))} ← ${esc(cabName(l.b.pid))}<br>
+    כ-${l.length || '?'} מ' · ${l.cores.length} גידים בשימוש<p>${esc(l.cable.why)}</p><p class="muted">${esc(l.reason)}</p>`;
+  tip.hidden = false;
+  const pad = 14, rect = tip.getBoundingClientRect();
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + rect.width > innerWidth - 8) x = ev.clientX - rect.width - pad;
+  if (y + rect.height > innerHeight - 8) y = ev.clientY - rect.height - pad;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+
+function siteSelect(pid, lid, from3d) {
+  siteSel = pid || lid ? { pid, lid } : null;
+  $('#tip').hidden = true;
+  if (site3d && !from3d) { site3d.select(pid); site3d.highlightLink(lid); }
+  if (sitePlan) sitePlan.render(site, siteData.cabs, siteData.links, siteSel);
+  $$('#siteCabs .cab-card').forEach((c) => c.classList.toggle('on', c.dataset.pid === pid));
+  $$('#linkTable tr[data-lid]').forEach((r) => r.classList.toggle('sel', r.dataset.lid === lid));
+  renderSiteSel();
+}
+
+function renderSiteSel() {
+  const box = $('#siteSel');
+  if (!siteSel || !siteData) { box.hidden = true; return; }
+  if (siteSel.lid) {
+    const l = siteData.links.find((x) => x.id === siteSel.lid);
+    if (!l) { box.hidden = true; return; }
+    box.innerHTML = `<div class="card-head"><h2>כבל W${linkNo(l.id)}: ${esc(cabName(l.a.pid))} ← ${esc(cabName(l.b.pid))}</h2><button class="btn ghost small" type="button" data-close-sel>סגירה</button></div>
+      <dl class="kv-row"><div><dt>סוג כבל</dt><dd class="mono">${esc(l.cable.type)}</dd></div><div><dt>אורך לחיתוך</dt><dd class="num">${l.length || '?'} מ'</dd></div><div><dt>גידים בשימוש</dt><dd class="num">${l.cores.length} מתוך ${l.cable.cores}</dd></div><div><dt>מקור</dt><dd>${l.auto ? 'זוהה אוטומטית' : 'ידני'}</dd></div></dl>
+      <p>${esc(l.cable.why)} ${esc(l.reason)}</p>
+      <p class="muted small">האורך: עלייה מראש הארון למגש בגובה ${site.trayH || 2.6} מ', לאורך המגש, ירידה לארון השני, חצי מטר בכל ארון עד המהדק ועוד 10% רזרבה.</p>
+      <div class="table-wrap"><table class="tbl"><thead><tr><th>גיד</th><th>ב${esc(cabName(l.a.pid))}</th><th>ב${esc(cabName(l.b.pid))}</th><th>אות</th><th>תפקיד</th><th>חתך</th></tr></thead><tbody>
+      ${l.cores.map((k, i) => `<tr><td class="num">${i + 1}</td><td><span class="ep">${esc(k.a)}</span></td><td><span class="ep">${esc(k.b)}</span></td><td class="mono">${esc(k.label)}</td><td>${esc((C.FUNCS[k.func] || {}).he || '')}</td><td class="num">${esc(k.section || '')}</td></tr>`).join('')}
+      ${l.cable.cores > l.cores.length ? `<tr class="spare"><td colspan="6" class="muted">${l.cable.cores - l.cores.length} גידים רזרביים: מקפלים, מבודדים ומסמנים "רזרבה" בשני הקצוות.</td></tr>` : ''}
+      </tbody></table></div>`;
+  } else {
+    const c = siteData.cabs.find((x) => x.id === siteSel.pid);
+    if (!c) { box.hidden = true; return; }
+    const ext = S.externals(c.P), L1 = site.layout[c.id] || {};
+    box.innerHTML = `<div class="card-head"><h2>${esc(c.name)}</h2><div class="row gap"><a class="btn small" href="#" data-open-cab="${esc(c.id)}">פתיחת הארון</a><button class="btn ghost small" type="button" data-close-sel>סגירה</button></div></div>
+      <dl class="kv-row"><div><dt>מעטפת</dt><dd>${esc(c.enc.text)}</dd></div><div><dt>מיקום</dt><dd class="num">${(L1.x || 0).toFixed(2)} / ${(L1.z || 0).toFixed(2)} מ'</dd></div><div><dt>הזנה</dt><dd>${esc(c.P.meta.supply || '—')}</dd></div><div><dt>חוטים</dt><dd class="num">${c.done}/${c.P.wires.length}</dd></div></dl>
+      <h3>יציאות לשטח ולארונות אחרים</h3>
+      ${ext.length ? `<ul class="ext-list">${ext.map((g) => `<li><span class="ep">${esc(g.device)}</span> ${esc(g.name)} <span class="muted">· ${g.cores.length} גידים · מהדקים <span class="ep">${esc(g.strips.join(', '))}</span></span></li>`).join('')}</ul>` : '<p class="muted">לא נמצאו בתכנית מכשירי שטח שמחוברים דרך פסי מהדקים.</p>'}`;
+  }
+  box.hidden = false;
+}
+
+function renderLinks() {
+  const { links } = siteData;
+  $('#linkCount').textContent = links.length ? `${links.length} כבלים · כ-${Math.round(links.reduce((s, l) => s + (l.length || 0), 0))} מ'` : '';
+  $('#linkSuggest').innerHTML = siteSugg.map((l) => `<div class="sugg"><div><b>הצעה:</b> ${esc(cabName(l.a.pid))}${l.a.device ? ' · <span class="ep">' + esc(l.a.device) + '</span>' : ''} ← ${esc(cabName(l.b.pid))}${l.b.device ? ' · <span class="ep">' + esc(l.b.device) + '</span>' : ''} <span class="muted">(${l.cores.length} גידים)</span><div class="muted small">${esc(l.reason)}</div></div>
+    <div class="row gap"><button class="btn small" type="button" data-acc="${esc(l.id)}">הוספה</button><button class="btn ghost small" type="button" data-ign="${esc(l.id)}">התעלמות</button></div></div>`).join('');
+  $('#linkTable').innerHTML = links.length ? `<thead><tr><th>כבל</th><th>מארון</th><th>לארון</th><th>סוג כבל</th><th>גידים</th><th>אורך</th><th>למה</th><th></th></tr></thead><tbody>${links.map((l, i) => `<tr data-lid="${esc(l.id)}" class="${siteSel && siteSel.lid === l.id ? 'sel' : ''}" tabindex="0">
+      <td class="mono"><span class="kind-dot ${esc(l.kind)}"></span>W${i + 1}</td>
+      <td>${esc(cabName(l.a.pid))}<div class="muted small ep">${esc([l.a.device, ...(l.a.strips || [])].filter(Boolean).join(' · '))}</div></td>
+      <td>${esc(cabName(l.b.pid))}<div class="muted small ep">${esc([l.b.device, ...(l.b.strips || [])].filter(Boolean).join(' · '))}</div></td>
+      <td class="mono">${esc(l.cable.type)}</td><td class="num">${l.cores.length}/${l.cable.cores}</td><td class="num">${l.length || '?'} מ'</td>
+      <td class="desc small">${esc(l.reason)}</td>
+      <td><button class="btn ghost small danger" type="button" data-del-link="${esc(l.id)}" aria-label="מחיקת הכבל W${i + 1}">מחיקה</button></td></tr>`).join('')}</tbody>`
+    : `<tbody><tr><td class="muted">${siteData.cabs.length > 1 ? 'אין עדיין כבלים. הוסיפו מההצעות למעלה או ידנית למטה.' : 'כשיהיו באתר שני ארונות או יותר, יופיעו כאן הכבלים ביניהם.'}</td></tr></tbody>`;
+  /* הוספה ידנית */
+  const opts = siteData.cabs.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  ['#laCab', '#lbCab'].forEach((s, i) => { const el = $(s); const v = el.value; el.innerHTML = opts; if (v && siteData.cabs.some((c) => c.id === v)) el.value = v; else if (siteData.cabs[i]) el.value = siteData.cabs[i].id; });
+  fillDevs('#laCab', '#laDev'); fillDevs('#lbCab', '#lbDev');
+}
+
+function fillDevs(cabSel, devSel) {
+  const c = siteData.cabs.find((x) => x.id === $(cabSel).value);
+  const ext = c ? S.externals(c.P) : [];
+  $(devSel).innerHTML = '<option value="__pwr">הזנת כוח (L1 L2 L3 N PE)</option>' + ext.map((g) => `<option value="${esc(g.device)}">${esc(g.device)} ${esc(g.name)} (${g.cores.length} גידים)</option>`).join('');
+}
+
+function addManualLink() {
+  const ca = siteData.cabs.find((x) => x.id === $('#laCab').value), cb = siteData.cabs.find((x) => x.id === $('#lbCab').value);
+  if (!ca || !cb || ca === cb) { toast('בחרו שני ארונות שונים.'); return; }
+  const da = $('#laDev').value, db = $('#lbDev').value;
+  let l;
+  if (da === '__pwr' || db === '__pwr') {
+    const sec = S.powerSection(Number((/(\d+)\s*A\b/.exec(ca.P.meta.supply || cb.P.meta.supply || '') || [])[1]) || 16);
+    l = { id: 'm-' + Date.now().toString(36), auto: false, kind: 'power', reason: 'הזנת כוח, הוגדרה ידנית',
+      a: { pid: ca.id, device: '', strips: [] }, b: { pid: cb.id, device: '', strips: ['הזנה'] },
+      cores: ['L1', 'L2', 'L3', 'N', 'PE'].map((t) => ({ a: t, b: t, label: t, func: t === 'PE' ? 'pe' : t === 'N' ? 'neutral' : 'power', section: sec })) };
+  } else l = S.manualLink(ca, da, cb, db);
+  if (!l) { toast('לא נמצאו גידים בקבוצות שנבחרו.'); return; }
+  site.links.push(l); saveAll(state);
+  siteSel = { lid: l.id };
+  renderSite();
+  toast(`נוסף כבל W${site.links.length} עם ${l.cores.length} גידים.`);
+}
+
+function renderSiteSteps(steps) {
+  site.stepsDone = site.stepsDone || {};
+  const d = steps.filter((s) => site.stepsDone[s.id]).length;
+  $('#siteSteps').innerHTML = steps.map((s) => `<li class="${site.stepsDone[s.id] ? 'done' : ''}">
+    <div class="st-head"><strong>${esc(s.title)}</strong><label class="check"><input type="checkbox" data-sstep="${esc(s.id)}" ${site.stepsDone[s.id] ? 'checked' : ''}> בוצע</label></div>
+    <ul>${s.body.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
+    ${s.pid || s.link ? `<div class="st-actions">${s.pid ? `<a class="btn ghost small" href="#" data-open-cab="${esc(s.pid)}" data-to="assembly">להרכבה ולבדיקות של הארון</a>` : ''}${s.link ? `<button class="btn ghost small" type="button" data-show-link="${esc(s.link)}">טבלת הגידים</button>` : ''}</div>` : ''}
+  </li>`).join('');
+  $('#siteSteps').dataset.progress = `${d}/${steps.length}`;
+}
+
+function renderSiteFiles() {
+  const ul = $('#siteFileList');
+  if (!site.files.length) { ul.innerHTML = '<li class="muted">אין עדיין קבצים. כל קובץ שגוררים לאתר נשמר כאן, בנפרד לכל אתר.</li>'; return; }
+  const icon = (f) => /pdf/i.test(f.type) || /\.pdf$/i.test(f.name) ? 'PDF' : /^image\//.test(f.type) ? 'IMG' : /\.dwg$|\.dxf$/i.test(f.name) ? 'CAD' : /sheet|excel|csv|\.xlsx?$/i.test(f.type + f.name) ? 'XLS' : /word|\.docx?$/i.test(f.type + f.name) ? 'DOC' : 'FILE';
+  ul.innerHTML = site.files.map((f) => `<li><span class="f-ic">${icon(f)}</span><div class="f-main"><a href="#" data-fget="${esc(f.id)}">${esc(f.name)}</a>
+    <div class="muted small">${fmtSize(f.size || 0)} · ${new Date(f.added).toLocaleDateString('he-IL')}${f.pid ? ' · ארון: ' + esc(cabName(f.pid)) : ''}</div></div>
+    ${f.pid ? `<a class="btn ghost small" href="#" data-open-cab="${esc(f.pid)}" data-to="plan">התכנית</a>` : `<button class="btn ghost small danger" type="button" data-fdel="${esc(f.id)}" aria-label="מחיקת ${esc(f.name)}">מחיקה</button>`}</li>`).join('');
+}
+
+async function siteFileBlob(f) { return files.get(f.pid ? `${f.pid}:pdf` : `site:${site.id}:f:${f.id}`); }
+
+/* קליטת קבצים לאתר: כל PDF הופך לארון (עם קריאת השרטוטים), כל קובץ אחר נשמר בקבצי האתר */
+let ingesting = Promise.resolve();
+function siteIngest(list) {
+  const s = site, arr = [...list];
+  if (!s || !arr.length) return;
+  const ol = $('#siteImport');
+  const rows = arr.map((f) => { const li = document.createElement('li'); li.innerHTML = `<span class="mono">${esc(f.name)}</span><span class="st">ממתין…</span>`; ol.appendChild(li); return li; });
+  ingesting = ingesting.then(async () => {
+    const keepRaw = raw, keepCur = state.current;
+    let cabs = 0, other = 0;
+    for (let i = 0; i < arr.length; i++) {
+      const f = arr[i], st = rows[i].querySelector('.st');
+      rows[i].className = 'busy';
+      try {
+        if (s.files.some((x) => x.name === f.name && x.size === f.size)) { st.textContent = 'כבר קיים באתר, דילגתי'; rows[i].className = 'skip'; continue; }
+        if (/pdf/i.test(f.type) || /\.pdf$/i.test(f.name)) { st.textContent = 'קורא…'; st.textContent = await ingestPdf(s, f, (a, b) => { st.textContent = `קורא עמוד ${a} מתוך ${b}…`; }); cabs++; }
+        else {
+          const fid = newId('f');
+          await files.put(`site:${s.id}:f:${fid}`, f);
+          s.files.push({ id: fid, name: f.name, type: f.type, size: f.size, added: Date.now() });
+          st.textContent = 'נשמר בקבצי האתר'; other++;
+        }
+        rows[i].className = 'ok';
+      } catch (e) { st.textContent = 'שגיאה: ' + e.message; rows[i].className = 'err'; }
+      saveAll(state);
+    }
+    raw = keepRaw; state.current = keepCur;
+    if (raw) derive();
+    saveAll(state);
+    if (site === s && tab === 'site') renderSite();
+    toast(`נקלטו ${cabs} תכניות (ארונות) ו-${other} קבצים נוספים.`, 5000);
+  });
+}
+
+async function ingestPdf(s, f, onPage) {
+  raw = newProject(f.name.replace(/\.pdf$/i, ''), { siteId: s.id });
+  save();
+  const p = raw;
+  const res = await readPdf(f, { onPage });
+  await files.put(`${p.id}:pdf`, f);
+  for (const pg of res.pages) await files.put(`${p.id}:p${pg.page}`, pg);
+  p.pdf = { name: f.name, pages: res.pages.length, total: res.total, size: f.size };
+  s.cabinets.push(p.id);
+  s.files.push({ id: newId('f'), name: f.name, type: 'application/pdf', size: f.size, added: Date.now(), pid: p.id });
+  const allText = res.pages.map((pg) => pg.items.map((it) => it.s).join(' ')).join('\n');
+  const lib = LIBRARY.find((l) => l.matches(allText));
+  let msg;
+  if (lib) {
+    const lp = lib.project();
+    p.settings = { ...lp.settings, ...(p.settings || {}) };
+    applyResult({ components: lp.components, wires: lp.wires, meta: lp.meta, notes: lp.notes }, 'library', true);
+    p.name = lp.name;
+    msg = `${lib.title}: ${lp.wires.length} חוטים, ${lp.components.length} רכיבים`;
+  } else {
+    const ex = E.extractFromText(res.pages);
+    if (ex.wires.length >= 3) { applyResult({ components: ex.components, wires: ex.wires, meta: {}, notes: [] }, 'text', true); msg = `${ex.wires.length} חוטים מהטקסט`; }
+    else msg = `${res.pages.length} עמודים נשמרו. תכנית גרפית: פתחו את הארון לקריאת השרטוטים`;
+  }
+  p.status = 'חלק מהאתר "' + s.name + '". ' + msg + '.';
+  save();
+  return 'ארון חדש · ' + msg;
+}
+
+function bindSite() {
+  $('#newSite').onclick = newSite;
+  $('#siteName').addEventListener('change', (e) => { site.name = e.target.value.trim() || site.name; saveAll(state); });
+  $('#siteAddr').addEventListener('change', (e) => { site.address = e.target.value.trim(); saveAll(state); });
+  const num = (sel, fn) => $(sel).addEventListener('change', (e) => { const v = Number(e.target.value); if (v > 0) { fn(v); saveAll(state); renderSite(); } });
+  num('#roomW', (v) => { site.room.w = Math.max(2, Math.min(60, v)); });
+  num('#roomD', (v) => { site.room.d = Math.max(2, Math.min(60, v)); });
+  num('#trayH', (v) => { site.trayH = Math.max(1.5, Math.min(6, v)); });
+  $('#siteFiles').addEventListener('change', (e) => { siteIngest(e.target.files); e.target.value = ''; });
+  const drop = $('#siteDrop');
+  drop.addEventListener('click', () => $('#siteFiles').click());
+  drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#siteFiles').click(); } });
+  ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => siteIngest(e.dataTransfer.files));
+  $('#siteAddCab').addEventListener('change', (e) => {
+    const p = state.projects.find((x) => x.id === e.target.value); if (!p) return;
+    state.sites.forEach((st) => { if (st !== site) st.cabinets = st.cabinets.filter((x) => x !== p.id); });
+    p.siteId = site.id; site.cabinets.push(p.id); saveAll(state); renderSite();
+    toast(`"${p.name}" נוסף לאתר.`);
+  });
+  $('#v-site').addEventListener('click', async (e) => {
+    const t = e.target;
+    const open = t.closest('[data-open-cab]');
+    if (open) { e.preventDefault(); openProject(open.dataset.openCab, open.dataset.to || 'plan'); return; }
+    const rot = t.closest('[data-rot]');
+    if (rot) { const l = site.layout[rot.dataset.rot]; if (l) { l.rot = ((l.rot || 0) + 90) % 360; saveAll(state); renderSite(); } return; }
+    const un = t.closest('[data-unlink]');
+    if (un) {
+      const pid = un.dataset.unlink;
+      if (!confirm(`להוציא את "${cabName(pid)}" מהאתר? הארון עצמו נשאר ברשימת הארונות.`)) return;
+      site.cabinets = site.cabinets.filter((x) => x !== pid); delete site.layout[pid];
+      site.links = site.links.filter((l) => l.a.pid !== pid && l.b.pid !== pid);
+      site.files = site.files.filter((f) => f.pid !== pid);
+      const p = state.projects.find((x) => x.id === pid); if (p) delete p.siteId;
+      if (siteSel && siteSel.pid === pid) siteSel = null;
+      saveAll(state); renderSite(); return;
+    }
+    const acc = t.closest('[data-acc]');
+    if (acc) { const l = siteSugg.find((x) => x.id === acc.dataset.acc); if (l) { site.links.push(l); saveAll(state); renderSite(); toast(`נוסף כבל W${site.links.length}.`); } return; }
+    const ign = t.closest('[data-ign]');
+    if (ign) { site.ignored = [...(site.ignored || []), ign.dataset.ign]; saveAll(state); renderSite(); return; }
+    const del = t.closest('[data-del-link]');
+    if (del) { if (!confirm('למחוק את הכבל מהאתר?')) return; site.links = site.links.filter((l) => l.id !== del.dataset.delLink); if (site.links.length === 0 || (siteSel && siteSel.lid === del.dataset.delLink)) siteSel = null; saveAll(state); renderSite(); return; }
+    const show = t.closest('[data-show-link]');
+    if (show) { siteSelect(null, show.dataset.showLink); $('#siteSel').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if (t.closest('[data-close-sel]')) { siteSelect(null, null); return; }
+    const fget = t.closest('[data-fget]');
+    if (fget) {
+      e.preventDefault();
+      const f = site.files.find((x) => x.id === fget.dataset.fget); if (!f) return;
+      const b = await siteFileBlob(f);
+      if (!b) { toast('הקובץ לא נמצא בדפדפן הזה.'); return; }
+      if (/^image\/|pdf/.test(f.type || b.type)) { const u = URL.createObjectURL(b); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); }
+      else download(f.name, b, f.type);
+      return;
+    }
+    const fdel = t.closest('[data-fdel]');
+    if (fdel) {
+      const f = site.files.find((x) => x.id === fdel.dataset.fdel); if (!f || !confirm(`למחוק את "${f.name}" מקבצי האתר?`)) return;
+      await files.delPrefix(`site:${site.id}:f:${f.id}`);
+      site.files = site.files.filter((x) => x !== f); saveAll(state); renderSiteFiles(); return;
+    }
+    const card = t.closest('.cab-card');
+    if (card && !t.closest('button, a')) siteSelect(card.dataset.pid, null);
+  });
+  $('#linkTable').addEventListener('click', (e) => { const tr = e.target.closest('tr[data-lid]'); if (tr && !e.target.closest('button')) siteSelect(null, tr.dataset.lid); });
+  $('#linkTable').addEventListener('keydown', (e) => { const tr = e.target.closest('tr[data-lid]'); if (tr && e.key === 'Enter') siteSelect(null, tr.dataset.lid); });
+  $('#siteSteps').addEventListener('change', (e) => {
+    const cb = e.target.closest('[data-sstep]'); if (!cb) return;
+    site.stepsDone[cb.dataset.sstep] = cb.checked; saveAll(state);
+    cb.closest('li').classList.toggle('done', cb.checked);
+  });
+  $('#laCab').addEventListener('change', () => fillDevs('#laCab', '#laDev'));
+  $('#lbCab').addEventListener('change', () => fillDevs('#lbCab', '#lbDev'));
+  $('#linkAdd').onclick = addManualLink;
+  $('#site3dHome').onclick = () => site3d && site3d.home();
+  $('#site3dPng').onclick = () => {
+    if (!site3d || !site3d.renderer) return;
+    const a = document.createElement('a'); a.href = site3d.png(); a.download = site.name.replace(/[\\/:*?"<>|]+/g, '_') + '-3d.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  $('#sitePrint').onclick = () => {
+    const d = siteData || computeSite();
+    openPrint(siteBookHtml({ site, cabs: d.cabs, links: d.links, steps: d.steps, plan: sitePlan ? sitePlan.svg.outerHTML : '', img: site3d && site3d.renderer ? site3d.png() : '', C, S }));
+  };
+  $('#siteDelete').onclick = async () => {
+    if (!confirm(`למחוק את האתר "${site.name}"? הארונות שלו יישארו ברשימת הארונות, וקבצי האתר שאינם תכניות יימחקו.`)) return;
+    await files.delPrefix(`site:${site.id}:`);
+    state.projects.forEach((p) => { if (p.siteId === site.id) delete p.siteId; });
+    state.sites = state.sites.filter((x) => x !== site);
+    site = null; saveAll(state);
+    location.hash = '#home';
+  };
+}
+
 /* ---------- התחלה ---------- */
 async function start() {
+  try { state = await loadAllAsync(); } catch { /* נשארים עם localStorage */ }
   bind();
   /* פסי הלבן-כחול בחוטי ‎0V של קטע הפתיחה מופיעים אחרי שהחוטים נמתחו */
   setTimeout(() => { const r = $('.run'); if (r) r.classList.add('drawn'); }, 2300);
