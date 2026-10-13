@@ -3,7 +3,7 @@ name: Deploy vacation-hub to GitHub Pages
 # GitHub Pages is served from the gh-pages branch.
 # Every change to vacation-hub/ on main is copied there automatically.
 # book-studio/ is published under /book-studio/, interior-hub/ under /interior/,
-# electro-fix/ under /electro-fix/, assembly-studio/ under /assembly-studio/
+# electro-fix/ under /electro-fix/, assembly-studio/ under /assembly-studio/, cabinet-wiring/ under /cabinet-wiring/
 # netplan/ under /netplan/, automation/ under /automation/, robotic-parking/ under /robotic-parking/,
 # comic-studio/ under /comic-studio/, portfolio/ under /portfolio/, and finance-hub/, marketing-hub/,
 # aia-studio/, wellness-hub/, torah-hub/, bills-hub/ each under their own matching path (magnet-studio
@@ -14,7 +14,7 @@ name: Deploy vacation-hub to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**', 'book-studio/**', 'electro-fix/**', 'assembly-studio/**', 'netplan/**', 'automation/**', 'robotic-parking/**', 'comic-studio/**', 'portfolio/**', 'finance-hub/**', 'marketing-hub/**', 'aia-studio/**', 'wellness-hub/**', 'torah-hub/**', 'bills-hub/**', 'dreams-hub/**']
+    paths: ['vacation-hub/**', 'interior-hub/**', 'n8n/**', 'book-studio/**', 'electro-fix/**', 'assembly-studio/**', 'netplan/**', 'automation/**', 'robotic-parking/**', 'comic-studio/**', 'portfolio/**', 'finance-hub/**', 'marketing-hub/**', 'aia-studio/**', 'wellness-hub/**', 'torah-hub/**', 'bills-hub/**', 'dreams-hub/**', 'cabinet-wiring/**']
   schedule:
     - cron: '17 3 * * *'   # daily: skills and knowledge are rebuilt from the projects as they are now
   workflow_dispatch:
@@ -59,6 +59,10 @@ jobs:
           if [ -d assembly-studio ]; then
             mkdir -p /tmp/site/assembly-studio
             cp -r assembly-studio/index.html assembly-studio/css assembly-studio/js /tmp/site/assembly-studio/
+          fi
+          if [ -d cabinet-wiring ]; then
+            mkdir -p /tmp/site/cabinet-wiring
+            cp -r cabinet-wiring/index.html cabinet-wiring/css cabinet-wiring/js /tmp/site/cabinet-wiring/
           fi
           if [ -d netplan ]; then
             mkdir -p /tmp/site/netplan
@@ -115,7 +119,7 @@ jobs:
           fi
           # keep sub-sites published earlier that this checkout does not contain
           if git clone -q --depth 1 -b gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" /tmp/old 2>/dev/null; then
-            for d in interior book-studio electro-fix assembly-studio netplan automation robotic-parking comic-studio portfolio finance-hub marketing-hub aia-studio wellness-hub torah-hub bills-hub dreams-hub; do
+            for d in interior book-studio electro-fix assembly-studio cabinet-wiring netplan automation robotic-parking comic-studio portfolio finance-hub marketing-hub aia-studio wellness-hub torah-hub bills-hub dreams-hub; do
               if [ ! -d "/tmp/site/$d" ] && [ -d "/tmp/old/$d" ]; then cp -r "/tmp/old/$d" /tmp/site/; fi
             done
           fi
