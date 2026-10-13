@@ -357,13 +357,101 @@ export class Cabinet3D {
         if (m2) { door.add(m2); this.wireMeshes.push(m2); this.byId[w.id].push(m2); }
       }
     });
+    /* ציוד בשטח: ליד הארון על הרצפה, כל מכשיר עם הכבל שלו מתחתית הארון. לחיצה → כרטיס הרכיב */
+    this.fieldBox = null;
+    const field = P.components.filter((c) => c.zone === 'field');
+    if (field.length) {
+      const fg = new THREE.Group();
+      root.add(fg);
+      const fbox = new THREE.Box3();
+      const colsF = Math.min(6, Math.max(2, Math.ceil(Math.sqrt(field.length * 1.4))));
+      const sp = 0.46;
+      const x0 = W / 2 + T + 0.5, zF = zb + D / 2;
+      const dark = new THREE.MeshStandardMaterial({ color: 0x23282d, roughness: 0.5, metalness: 0.3 });
+      const postMat = new THREE.MeshStandardMaterial({ color: 0x7d868e, roughness: 0.4, metalness: 0.6 });
+      const ral = new THREE.MeshStandardMaterial({ color: 0xc6cbc7, roughness: 0.55, metalness: 0.1 });
+      const yel = new THREE.MeshStandardMaterial({ color: 0xf2c21b, roughness: 0.45 });
+      const red = new THREE.MeshStandardMaterial({ color: 0xc4161c, roughness: 0.35 });
+      const cyl = (r, h, mat, x, y, z, par) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 24), mat); m.position.set(x, y, z); m.castShadow = true; par.add(m); return m; };
+      const lens = (hex, x, y, z, par) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.02, 24), new THREE.MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: 0.5, roughness: 0.2 })); m.rotation.x = Math.PI / 2; m.position.set(x, y, z); par.add(m); return m; };
+      const cableMat = new THREE.MeshStandardMaterial({ color: 0x3b434b, roughness: 0.6 });
+      field.forEach((c, i) => {
+        const col = i % colsF, row = Math.floor(i / colsF);
+        const x = x0 + col * sp, z = zF + row * sp;
+        const g = new THREE.Group();
+        g.position.set(x, 0, z);
+        fg.add(g);
+        const parts = [];
+        const n = `${c.name || ''} ${c.desc || ''}`;
+        let top;
+        if (/רמזור|מגדל אור|traffic|stack ?light/i.test(n) || c.type === 'lamp') {
+          parts.push(cyl(0.018, 1.25, postMat, 0, 0.625, 0, g));
+          parts.push(box(0.13, 0.38, 0.1, dark, 0, 1.43, 0, g));
+          [[0xd62828, 0.12], [0xf2a20c, 0], [0x2f9e44, -0.12]].forEach(([hex, dy]) => parts.push(lens(hex, 0, 1.43 + dy, 0.055, g)));
+          top = 1.68;
+        } else if (c.type === 'estop') {
+          parts.push(cyl(0.015, 0.95, postMat, 0, 0.475, 0, g));
+          parts.push(box(0.09, 0.09, 0.07, yel, 0, 0.99, 0, g));
+          const mush = new THREE.Mesh(new THREE.SphereGeometry(0.03, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), red);
+          mush.rotation.x = Math.PI / 2; mush.position.set(0, 0.99, 0.04); g.add(mush); parts.push(mush);
+          top = 1.1;
+        } else if (c.type === 'sensor' || /סורק|scanner|חיישן|TIM\d/i.test(n)) {
+          parts.push(cyl(0.015, 0.85, postMat, 0, 0.425, 0, g));
+          parts.push(cyl(0.05, 0.08, yel, 0, 0.9, 0, g));
+          parts.push(cyl(0.045, 0.05, dark, 0, 0.965, 0, g));
+          top = 1.06;
+        } else if (c.type === 'motor') {
+          const m = cyl(0.11, 0.32, new THREE.MeshStandardMaterial({ color: 0x3b5b7a, roughness: 0.5, metalness: 0.3 }), 0, 0.13, 0, g);
+          m.rotation.z = Math.PI / 2; parts.push(m);
+          parts.push(box(0.09, 0.06, 0.09, dark, 0, 0.27, 0, g));
+          top = 0.42;
+        } else if (c.type === 'fan' || c.type === 'heater' || c.type === 'valve') {
+          parts.push(box(0.2, 0.2, 0.1, c.type === 'fan' ? dark : ral, 0, 0.6, 0, g));
+          parts.push(cyl(0.015, 0.5, postMat, 0, 0.25, 0, g));
+          top = 0.8;
+        } else {
+          parts.push(cyl(0.018, 0.7, postMat, 0, 0.35, 0, g));
+          const face = new THREE.MeshStandardMaterial({ roughness: 0.5, map: canvasTex(THREE, 256, 320, (x2, w, h) => {
+            x2.fillStyle = '#c6cbc7'; x2.fillRect(0, 0, w, h);
+            x2.fillStyle = '#2b3035'; x2.fillRect(0, 0, w, 64);
+            x2.fillStyle = '#fff'; x2.textAlign = 'center'; x2.textBaseline = 'middle'; x2.font = '600 34px "IBM Plex Mono", monospace'; x2.fillText(c.tag, w / 2, 34);
+            x2.fillStyle = '#1c2126'; x2.font = '500 26px "IBM Plex Sans Hebrew", Arial'; x2.direction = 'rtl';
+            wrapText(x2, c.name || '', w / 2, h * 0.55, w * 0.86, 32);
+          }) });
+          const b = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.12), [ral, ral, ral, ral, face, ral]);
+          b.position.set(0, 0.84, 0); b.castShadow = true; g.add(b); parts.push(b);
+          top = 1.04;
+        }
+        /* שלט */
+        const lbl = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(THREE, 512, 112, (x2, w, h) => {
+          x2.fillStyle = 'rgba(43,48,53,.9)'; x2.beginPath(); x2.roundRect(4, 4, w - 8, h - 8, 16); x2.fill();
+          x2.fillStyle = '#f0a46b'; x2.textAlign = 'center'; x2.textBaseline = 'middle'; x2.font = '600 34px "IBM Plex Mono", monospace'; x2.fillText(c.tag, w / 2, 34);
+          x2.fillStyle = '#fff'; x2.font = '500 28px "IBM Plex Sans Hebrew", Arial'; x2.direction = /^[֐-׿]/.test(c.name || '') ? 'rtl' : 'ltr'; x2.fillText(String(c.name || '').slice(0, 24), w / 2, 78);
+        }) }));
+        lbl.scale.set(0.36, 0.079, 1); lbl.position.set(0, top + 0.08, 0);
+        g.add(lbl); parts.push(lbl);
+        parts.forEach((o) => { o.userData.tag = c.tag; });
+        this.compMeshes.push(...parts);
+        /* הכבל: מתחתית הארון על הרצפה ועד המכשיר */
+        const lane = (i % 9) * 0.012;
+        const pts = [new THREE.Vector3(W / 2 - 0.06 - lane * 0.5, base, zb + D * 0.45), new THREE.Vector3(W / 2 - 0.06 - lane * 0.5, 0.012 + lane * 0.2, zb + D * 0.45),
+          new THREE.Vector3(x - 0.06, 0.012 + lane * 0.2, zb + D * 0.45), new THREE.Vector3(x - 0.06, 0.012 + lane * 0.2, z + 0.02), new THREE.Vector3(x - 0.02, 0.05, z + 0.02)];
+        const path = new THREE.CurvePath();
+        for (let k = 1; k < pts.length; k++) if (pts[k - 1].distanceTo(pts[k]) > 0.001) path.add(new THREE.LineCurve3(pts[k - 1], pts[k]));
+        const cab = new THREE.Mesh(new THREE.TubeGeometry(path, 60, 0.0055, 8, false), cableMat);
+        cab.castShadow = true; cab.userData.tag = c.tag;
+        fg.add(cab); this.compMeshes.push(cab);
+        fbox.expandByPoint(new THREE.Vector3(x - 0.2, 0, z - 0.2)); fbox.expandByPoint(new THREE.Vector3(x + 0.2, top + 0.2, z + 0.2));
+      });
+      this.fieldBox = fbox;
+    }
     this.setDoor(this.doorOpen, true);
     this.setCovers(this.coversOn);
     const fx = Math.max(W, 0.5);
     const far = Math.max(W * 1.6, H) * 2.7;
     this.home = { pos: new THREE.Vector3(-far * 0.42, base + H * 0.72, far), target: new THREE.Vector3(W * 0.22, base + H * 0.48, 0.05) };
     this.view('home');
-    this.sun.shadow.camera.left = -2; this.sun.shadow.camera.right = 2; this.sun.shadow.camera.top = 3; this.sun.shadow.camera.bottom = -1;
+    this.sun.shadow.camera.left = -2; this.sun.shadow.camera.right = this.fieldBox ? Math.max(2, this.fieldBox.max.x + 1) : 2; this.sun.shadow.camera.top = this.fieldBox ? Math.max(3, this.fieldBox.max.z + 1) : 3; this.sun.shadow.camera.bottom = -1;
     this.sun.shadow.camera.updateProjectionMatrix();
     if (this.selected) this.select(this.selected, false);
     this.request();
@@ -433,7 +521,12 @@ export class Cabinet3D {
     const t = this.home.target.clone();
     let pos;
     if (name === 'front') { t.x = 0; pos = new THREE.Vector3(0, t.y, this.enc.d * MM + Math.max(this.enc.w * 1.4, this.enc.h) * MM * 2.7); }
-    else if (name === 'inside') { t.x = 0; pos = new THREE.Vector3(-0.12 * this.enc.w * MM, t.y + 0.05, this.enc.d * MM + Math.max(this.enc.w, this.enc.h) * MM * 1.05); }
+    else if (name === 'field' && this.fieldBox) {
+      const c = this.fieldBox.getCenter(new THREE.Vector3()), sz = this.fieldBox.getSize(new THREE.Vector3());
+      t.copy(c); t.y = 0.8;
+      const d = Math.max(sz.x, sz.z, 1.5) * 1.5;
+      pos = new THREE.Vector3(c.x - d * 0.25, 1.4 + d * 0.35, c.z + d);
+    } else if (name === 'inside') { t.x = 0; pos = new THREE.Vector3(-0.12 * this.enc.w * MM, t.y + 0.05, this.enc.d * MM + Math.max(this.enc.w, this.enc.h) * MM * 1.05); }
     else pos = this.home.pos.clone();
     this.camera.position.copy(pos);
     this.controls.target.copy(t);
@@ -444,8 +537,22 @@ export class Cabinet3D {
     const m = this.compMeshes && this.compMeshes.find((x) => x.userData.tag === tag);
     if (!m) return;
     const p = new this.THREE.Vector3(); m.getWorldPosition(p);
+    if (this.fieldBox && this.fieldBox.containsPoint(p)) {
+      /* מכשיר בשטח: ממסגרים את כל המכשיר, מלפנים ומעט מלמעלה */
+      const box = new this.THREE.Box3();
+      this.compMeshes.filter((x) => x.userData.tag === tag && !x.isSprite && x.geometry && x.geometry.type !== 'TubeGeometry').forEach((x) => box.expandByObject(x));
+      const c = box.getCenter(new this.THREE.Vector3()), sz = box.getSize(new this.THREE.Vector3());
+      /* מסתכלים על ראש המכשיר (הפנסים, הלחצן, החיישן), לא על העמוד */
+      c.y = Math.max(0.3, box.max.y - Math.min(0.3, sz.y * 0.25));
+      const d = 1.1 + Math.min(sz.y, 1.5) * 0.4;
+      this.controls.target.copy(c);
+      this.camera.position.set(c.x - d * 0.3, c.y + d * 0.12, c.z + d);
+      this.controls.update(); this.request();
+      return;
+    }
+    const far = 0.42;
     this.controls.target.copy(p);
-    this.camera.position.set(p.x + 0.12, p.y + 0.08, p.z + 0.42);
+    this.camera.position.set(p.x + far * 0.3, p.y + far * 0.2, p.z + far);
     this.controls.update(); this.request();
   }
 

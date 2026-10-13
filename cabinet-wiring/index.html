@@ -354,6 +354,7 @@
         <button class="btn ghost small" type="button" data-view3="home">מבט כללי</button>
         <button class="btn ghost small" type="button" data-view3="front">חזית</button>
         <button class="btn ghost small" type="button" data-view3="inside">פנים הארון</button>
+        <button class="btn ghost small" type="button" data-view3="field">ציוד בשטח</button>
       </div>
       <div class="row gap">
         <div class="chips" id="t3Chips" role="group" aria-label="הצגה לפי תפקיד"></div>
@@ -364,7 +365,6 @@
       <div class="three-host" id="threeHost"><p class="three-wait" id="threeWait">טוען תלת־ממד…</p></div>
       <aside class="side-col">
         <div class="card spec-card" id="encCard"></div>
-        <div class="card" id="compCard" hidden></div>
       </aside>
     </div>
     <p class="muted small cab-help">גוררים לסיבוב, גלגלת או צביטה לזום, קליק ימני או שתי אצבעות להזזה. עומדים על חוט כדי לראות מה הוא עושה; לחיצה על רכיב מציגה את פרטיו ומדגישה את החוטים שלו.</p>
@@ -482,13 +482,21 @@
 </main>
 
 <!-- פרטי חוט -->
-<aside class="drawer" id="drawer" hidden aria-label="פרטי החוט">
+<aside class="drawer" id="drawer" hidden aria-label="פרטים">
   <div class="drawer-head">
+    <button class="icon-btn" type="button" id="dBack" aria-label="חזרה" hidden>→</button>
     <strong id="dTitle"></strong>
     <button class="icon-btn" type="button" id="dClose" aria-label="סגירה">✕</button>
   </div>
   <div class="drawer-body" id="dBody"></div>
-  <div class="drawer-actions">
+  <div class="drawer-actions" id="cActions" hidden>
+    <button class="btn small" type="button" id="cWire">חיווט הרכיב שלב אחר שלב</button>
+    <button class="btn ghost small" type="button" id="cShowCab">בציור</button>
+    <button class="btn ghost small" type="button" id="cShow3d">בתלת־ממד</button>
+    <button class="btn ghost small" type="button" id="cShowPdf">בתכנית</button>
+    <button class="btn small" type="button" id="cOpen" hidden>פתיחה בארון</button>
+  </div>
+  <div class="drawer-actions" id="dActions">
     <button class="btn small" type="button" id="dDone">סימון כמחווט</button>
     <button class="btn ghost small" type="button" id="dShowCab">בציור</button>
     <button class="btn ghost small" type="button" id="dShowPdf">בתכנית</button>

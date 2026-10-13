@@ -923,6 +923,103 @@
   }
   function depthOf(type) { return DEPTH[type] || 60; }
 
+
+  /* ---------- כרטיס רכיב: מה הוא עושה וכל החיווט שלו, כולל המשך דרך פסי המהדקים ---------- */
+  var PURPOSE = {
+    main_switch: 'מפסק ראשי: מנתק את כל הזנת הארון. פותחים ונועלים אותו לפני כל עבודה בלוח.',
+    mcb: 'מאמ"ת: מגן על המעגל מפני עומס יתר וקצר. כל מאמ"ת מזין קבוצת צרכנים אחת.',
+    rcd: 'מפסק פחת: מנתק כשיש זליגה לאדמה, להגנה מפני חשמול.',
+    fuse: 'נתיך: מגן על המעגל, נשרף בזרם יתר ומנתק אותו.',
+    psu: 'ספק כוח: ממיר 230V AC ל-‎24V DC לפיקוד, לבקר ולחיישנים.',
+    transformer: 'שנאי פיקוד: מוריד מתח לפיקוד AC.',
+    socket: 'שקע שירות לכלי עבודה ולמחשב בתוך הלוח.',
+    meter: 'מונה / מד: מודד מתח, זרם או אנרגיה.',
+    plc: 'הבקר: קורא את הכניסות (לחצנים, חיישנים, מגעים) ומפעיל את היציאות לפי התכנה.',
+    io: 'כרטיס כניסות/יציאות של הבקר: כל ערוץ מחובר לאות אחד בשטח או בלוח.',
+    relay: 'ממסר: אות פיקוד קטן בסליל (A1-A2) מפעיל מגעים שמעבירים אות או עומס.',
+    timer: 'ממסר זמן: מפעיל או מפסיק את המגעים אחרי השהיה.',
+    thermostat: 'תרמוסטט: מפעיל מאוורר או חימום לפי הטמפרטורה בלוח.',
+    contactor: 'מגען: מתג כוח שמופעל מסליל, מפעיל מנוע או עומס גדול.',
+    overload: 'ממסר תרמי: מגן על המנוע מעומס יתר ופותח את מעגל הפיקוד.',
+    mpcb: 'מפסק מגן מנוע: הגנת קצר ועומס יתר למנוע.',
+    vfd: 'ממיר תדר: שולט במהירות המנוע.',
+    softstarter: 'מתנע רך: מעלה את מתח המנוע בהדרגה בהתנעה.',
+    terminal: 'פס מהדקים: נקודת החיבור בין החיווט הפנימי לכבלים שיוצאים לשטח ולארונות אחרים.',
+    pe_bar: 'פס הארקה: מרכז את כל חוטי ההארקה של הלוח ומחובר להארקת המבנה.',
+    button: 'לחצן: נותן פקודה לבקר או למעגל הפיקוד.',
+    selector: 'בורר: בוחר מצב עבודה (ידני / אוטומטי וכו\').',
+    estop: 'לחצן חירום: מגע NC בשרשרת הבטיחות. לחיצה פותחת את המגע ומנתקת את מעגל הבטיחות.',
+    lamp: 'נורית סימון: מראה מצב (פעולה, תקלה, מתח).',
+    door_meter: 'מד בדלת הלוח.',
+    motor: 'מנוע בשטח, מוזן מהלוח בכבל כוח.',
+    sensor: 'חיישן בשטח: שולח אות לכניסה של הבקר.',
+    valve: 'שסתום / סולנואיד: מופעל מיציאה של הבקר.',
+    fan: 'מאוורר / מסנן לאוורור הלוח.',
+    heater: 'גוף חימום נגד עיבוי בלוח.',
+    field: 'מכשיר בשטח שמחובר ללוח בכבל דרך פסי המהדקים.',
+    other: 'רכיב בלוח.'
+  };
+
+  function compPurpose(c) {
+    var n = (c.name || '') + ' ' + (c.desc || '');
+    if (/רמזור|מגדל אור|traffic|signal tower|stack ?light/i.test(n)) return 'מגדל אור (רמזור): כל צבע נדלק מיציאה נפרדת של הבקר או ממגע של ממסר, דרך פס המהדקים. החזרה (0V / אפס) משותפת לכל הצבעים.';
+    if (/סורק|scanner|lidar|TIM\d/i.test(n)) return 'סורק לייזר: מזהה עצמים באזור ומדווח לבקר ביציאות מיתוג (ולפעמים בתקשורת).';
+    if (/שער|gate/i.test(n)) return 'בקר השער: מקבל פקודות מהלוח (פתיחה / סגירה / עצירה) ומחזיר מצבים (פתוח, סגור, תקלה).';
+    if (/דלת|door/i.test(n) && c.zone === 'field') return 'דלת: מגעי מצב שמדווחים לבקר אם הדלת פתוחה או סגורה, ולפעמים פקודת פתיחה.';
+    if (/פאנל|panel|HMI/i.test(n) && c.zone === 'field') return 'פאנל בשטח: לחצנים ונוריות שמחוברים לכניסות וליציאות של הלוח.';
+    return PURPOSE[c.type] || PURPOSE.other;
+  }
+
+  function compWiring(p, tag) {
+    var by = {};
+    (p.components || []).forEach(function (c) { by[c.tag] = c; });
+    var c = by[tag];
+    if (!c) return null;
+    var same = function (e, tg, tm) { return e.tag === tg && normTerm(e.term) === normTerm(tm); };
+    var rows = (p.wires || []).filter(function (w) { return w.from.tag === tag || w.to.tag === tag; }).map(function (w) {
+      var mineFrom = w.from.tag === tag;
+      var mine = mineFrom ? w.from : w.to, other = mineFrom ? w.to : w.from;
+      var via = [], seen = {}, cur = other;
+      seen[w.id] = 1;
+      /* ממשיכים דרך פסי מהדקים: מה מחובר לאותו מהדק מהצד השני */
+      for (var hop = 0; hop < 4; hop++) {
+        var oc = by[cur.tag];
+        if (!oc || oc.type !== 'terminal' || cur.tag === tag) break;
+        var nxt = (p.wires || []).filter(function (x) { return !seen[x.id] && (same(x.from, cur.tag, cur.term) || same(x.to, cur.tag, cur.term)); });
+        if (!nxt.length) break;
+        var ends = nxt.map(function (x) { seen[x.id] = 1; return { wire: x, at: same(x.from, cur.tag, cur.term) ? x.to : x.from }; });
+        via.push(ends);
+        /* פס ‎0V / אפס / הארקה מתפצל לכל הלוח: מספיק הצעד הראשון */
+        if (/^(dc0|neutral|pe)$/.test(w.func)) break;
+        var cont = ends.filter(function (e) { return by[e.at.tag] && by[e.at.tag].type === 'terminal'; })[0];
+        if (!cont) break;
+        cur = cont.at;
+      }
+      return { term: mine.term, role: termRole(c.type, mine.term), wire: w, other: other, otherComp: by[other.tag] || null, via: via };
+    });
+    rows.sort(function (a, b) { return natCmp(String(a.term), String(b.term)) || natCmp(String(a.wire.no), String(b.wire.no)); });
+    var strips = {};
+    rows.forEach(function (r) { if (r.otherComp && r.otherComp.type === 'terminal') strips[r.other.tag] = 1; });
+    var cable = null;
+    if (c.zone === 'field') {
+      var cores = {};
+      rows.forEach(function (r) { cores[normTerm(r.term)] = r.wire; });
+      var n = Object.keys(cores).length;
+      var ws = Object.keys(cores).map(function (k) { return cores[k]; });
+      if (ws.some(function (w) { return w.func === 'power'; })) {
+        var s = Math.max.apply(null, ws.map(function (w) { return Number(w.section) || 1.5; }));
+        cable = 'NYY-J ' + n + '×' + s + ' (כבל כוח, גיד לכל הדק כולל PE)';
+      } else {
+        var CORES = [2, 3, 4, 5, 7, 12, 18, 25, 34, 50];
+        var need = Math.ceil(n * 1.2) + (n > 3 ? 1 : 0);
+        var k = CORES.filter(function (x) { return x >= need; })[0] || need;
+        var shield = ws.some(function (w) { return w.func === 'signal' || w.func === 'comm'; });
+        cable = (shield ? 'LiYCY ' : 'LiYY ') + k + '×0.75 (' + n + ' גידים בשימוש ועוד רזרבה' + (shield ? ', מסוכך' : '') + ')';
+      }
+    }
+    return { comp: c, rows: rows, purpose: compPurpose(c), strips: Object.keys(strips), cable: cable };
+  }
+
   /* ---------- CSV ---------- */
   function csv(rows) {
     return '﻿' + rows.map(function (r) {
@@ -960,7 +1057,7 @@
   }
 
   return {
-    natCmp: natCmp, normTag: normTag, normTerm: normTerm, tagBody: tagBody, pinKey: pinKey, uid: uid,
+    natCmp: natCmp, compWiring: compWiring, compPurpose: compPurpose, normTag: normTag, normTerm: normTerm, tagBody: tagBody, pinKey: pinKey, uid: uid,
     inferType: inferType, typeInfo: typeInfo, termRole: termRole, extractFromText: extractFromText, textLines: textLines,
     enrich: enrich, settingsOf: settingsOf, DEFAULT_SETTINGS: DEFAULT_SETTINGS, explainWire: explainWire,
     layout: layout, wireOrder: wireOrder, assemblySteps: assemblySteps, GROUPS: GROUPS,

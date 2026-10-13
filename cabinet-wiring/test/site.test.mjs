@@ -68,4 +68,14 @@ test('סידור, אורך כבל ומערך התקנה', () => {
   assert.ok(steps.some((s) => s.id === 'place-a') && steps.some((s) => s.id === 'cable-' + link.id) && steps.at(-1).id === 'handover');
 });
 
+test('כרטיס רכיב: חיווט מכשיר בשטח דרך פס המהדקים עד הרכיב בארון', () => {
+  const r = E.compWiring(A.P, '-W1');
+  assert.equal(r.rows.length, 3);
+  assert.equal(r.rows[0].other.tag, '-X2');
+  assert.equal(r.rows[0].via[0][0].at.tag, '-K1');
+  assert.deepEqual(r.strips, ['-X2']);
+  assert.match(r.cable, /^LiY/);
+  assert.equal(E.compWiring(A.P, '-NOPE'), null);
+});
+
 console.log(`\n${n} בדיקות עברו`);
