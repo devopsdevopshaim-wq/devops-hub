@@ -7,7 +7,9 @@ description: "Work on the standalone site 'ארון־פלאן' (cabinet-wiring/ 
 
 A Hebrew (RTL) site that turns a control-cabinet wiring diagram PDF into a full point-to-point wire list and an assembly/wiring guide. Every wire gets: number, from tag:terminal, to tag:terminal, circuit function, color, cross-section, wire type, estimated length, end ferrule (DIN 46228-4 color, TWIN when two wires share a terminal), strip length, torque, and an explanation of what it does — shown as a tooltip when hovering the wire in the cabinet drawing.
 
-Live: https://devopsdevopshaim-wq.github.io/devops-hub/cabinet-wiring/ · Code: `cabinet-wiring/`
+Live: https://devopsdevopshaim-wq.github.io/devops-hub/cabinet-wiring/ · Claude version (reads any drawing with Claude via the Artifact `sample` capability, images; built by `cabinet-wiring/tools/build-claude-app.py`, republish to https://claude.ai/artifact/JxrsPNHAUZsM9C2kBNHNwk after changes): `window.CLAUDE_APP` · Code: `cabinet-wiring/`
+
+In the claude.ai frame `confirm`/`prompt`/`window.open`/`<a download>` don't work: use `askConfirm`/`askText`, `openPrint` (in-page book dialog) and `download()` (uses the `downloads` capability). Storage calls have timeouts and pages are also cached in memory, so the site works where IndexedDB is blocked.
 
 ## How it is built
 Static files, no build step. `server.mjs` (Node, `@anthropic-ai/sdk`) is optional: it serves the site and `POST /api/analyze` sends the PDF as a document block to Claude with structured output (schema in `js/prompts.js`), streamed back as NDJSON. Without the server, Claude works by copy-paste to Claude.ai.

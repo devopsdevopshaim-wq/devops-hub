@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="../portfolio/css/future.css">
 <script src="../portfolio/js/future.js" defer></script>
+<script>window.CLAUDE_APP = 'https://claude.ai/artifact/JxrsPNHAUZsM9C2kBNHNwk';</script>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
@@ -46,7 +47,7 @@
       <span class="ai-badge" id="aiBadge" role="status">בודק חיבור…</span>
       <a class="btn on-dark ghost small" href="#home">הפרויקטים</a>
       <label class="btn small" for="pdfInputTop">תכנית PDF חדשה</label>
-      <input type="file" id="pdfInputTop" accept="application/pdf,.pdf,.json" hidden>
+      <input type="file" id="pdfInputTop" multiple accept="application/pdf,.pdf,.json" hidden>
     </div>
   </div>
   <nav class="tabs" id="tabs" aria-label="שלבי העבודה" hidden>
@@ -81,10 +82,10 @@
           <div><dt>צבע · חתך · שרוול</dt><dd>מהתכנית, או לפי התקן ומסומן</dd></div>
           <div><dt>למה הוא שם</dt><dd>הסבר שמופיע כשעומדים על החוט</dd></div>
         </dl>
-        <div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת קובץ PDF של תכנית החיווט">
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת קבצי PDF של תכניות החיווט">
           <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 6h14l10 10v26H14z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M28 6v10h10M26 36V22m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="drop-text"><strong>גררו לכאן את ה-PDF של התכנית</strong><span>או לחצו לבחירת קובץ · גם JSON מגיבוי</span></span>
-          <input type="file" id="pdfInput" accept="application/pdf,.pdf,.json" hidden>
+          <span class="drop-text"><strong>גררו לכאן את ה-PDF של התכנית — אחד או כמה ביחד</strong><span>קובץ אחד = ארון. כמה קבצים = אתר התקנה שבו כל קובץ הוא ארון · גם JSON מגיבוי</span></span>
+          <input type="file" id="pdfInput" multiple accept="application/pdf,.pdf,.json" hidden>
         </div>
         <div class="home-actions">
           <button class="btn ghost" type="button" id="openDemo">לפתוח את הדוגמה: לוח משאבה עם בקר</button>
@@ -171,6 +172,8 @@
       <div class="site-actions">
         <label class="btn" for="siteFiles">הוספת קבצים</label>
         <input type="file" id="siteFiles" multiple hidden>
+        <label class="btn ghost small" for="siteFolder">תיקייה שלמה</label>
+        <input type="file" id="siteFolder" webkitdirectory multiple hidden>
         <select id="siteAddCab" aria-label="הוספת ארון קיים לאתר"><option value="">הוספת ארון קיים…</option></select>
         <button class="btn ghost small" type="button" id="sitePrint">הדפסת מערך ההתקנה</button>
         <button class="btn ghost small danger" type="button" id="siteDelete">מחיקת האתר</button>
@@ -241,8 +244,10 @@
         <div class="card-head">
           <h2>התכנית</h2>
           <div class="row gap">
+            <label class="btn ghost small" for="pdfAddPlan">הוספת קבצים לתכנית</label>
+            <input type="file" id="pdfAddPlan" accept="application/pdf,.pdf" multiple hidden>
             <label class="btn ghost small" for="pdfInputPlan">החלפת PDF</label>
-            <input type="file" id="pdfInputPlan" accept="application/pdf,.pdf" hidden>
+            <input type="file" id="pdfInputPlan" accept="application/pdf,.pdf" multiple hidden>
             <button class="btn ghost small" type="button" id="pageZoom" aria-pressed="false">הגדלה</button>
           </div>
         </div>
@@ -270,12 +275,13 @@
             <label class="btn ghost" for="jsonInput">ייבוא JSON</label>
             <input type="file" id="jsonInput" accept=".json,application/json" hidden>
           </div>
+          <p class="ai-alt" id="aiAlt" hidden><b>קריאה אוטומטית של כל תכנית:</b> פתחו את האתר בגרסת Claude — שם Claude קורא את השרטוטים עמוד אחרי עמוד, על החשבון שלכם. <a class="btn small" href="#" target="_blank" rel="noopener">פתיחה בגרסת Claude ↗</a></p>
           <div class="ai-progress" id="aiProgress" hidden>
             <div class="bar"><span id="aiBar"></span></div>
             <p class="small" id="aiText">שולח…</p>
             <button class="btn ghost small" type="button" id="aiStop">עצירה</button>
           </div>
-          <p class="muted small">קריאה אוטומטית: כל עמודי השרטוט נשלחים לבינה מלאכותית (Claude בשרת משלכם, או Gemini דרך השרת של האתר), כמה עמודים בכל פעם, והתוצאה מתאחדת לרשימה אחת. שליפה מהטקסט מתאימה לרשימת חוטים שיוצאה מ-EPLAN.</p>
+          <p class="muted small">קריאה אוטומטית: כל עמוד נשלח ל-Claude כתמונה מלאה ועוד הגדלות של החלקים שלו, כדי שמספרי הדקים קטנים ייקראו נכון. התוצאות מתאחדות לרשימה אחת, ועמוד שכבר נקרא לא נשלח שוב. שליפה מהטקסט מתאימה לרשימת חוטים שיוצאה מ-EPLAN.</p>
         </div>
         <div class="card" id="metaCard">
           <h2>פרטי התכנית</h2>
@@ -408,6 +414,7 @@
             <label class="field"><span>מהירות הקריאה</span><input type="range" id="vRate" min="0.7" max="1.3" step="0.05" value="0.95"></label>
             <label class="field"><span>קול</span><select id="vVoice"></select></label>
           </div>
+          <p class="v-warn" id="vWarn" dir="rtl" lang="he" role="alert" hidden></p>
           <p class="small muted" id="vNote" dir="rtl" lang="he"></p>
         </div>
         <div class="card mini-card"><div class="cab-host mini" id="miniHost"></div></div>
@@ -417,6 +424,7 @@
       <button class="btn ghost" type="button" id="wPrev">→ הקודם</button>
       <button class="btn big" type="button" id="wDone">חוברו שני הקצוות ✓</button>
       <button class="btn ghost" type="button" id="wNext">הבא ←</button>
+      <button class="btn ghost speak-btn" type="button" id="wSpeak" aria-label="הקראה באנגלית של החוט הזה" title="הקראה (R)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       <p class="kbd-hint"><kbd>Enter</kbd> חוברו · <kbd>←</kbd> הבא · <kbd>→</kbd> הקודם · <kbd>R</kbd> הקראה · <kbd>1</kbd>–<kbd>6</kbd> שלבים</p>
     </div>
   </section>
@@ -506,6 +514,30 @@
 </aside>
 
 <div class="tip" id="tip" role="tooltip" hidden></div>
+
+<!-- אישור / שאלה -->
+<dialog id="askDialog" class="ask-dialog" aria-labelledby="askMsg">
+  <form method="dialog" class="dlg">
+    <p id="askMsg" class="ask-msg"></p>
+    <input id="askInput" type="text" dir="auto" autocomplete="off" hidden>
+    <div class="row gap dlg-actions">
+      <button class="btn" type="submit" value="ok" id="askOk">אישור</button>
+      <button class="btn ghost" type="submit" value="cancel">ביטול</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- תיק להדפסה בתוך הדף -->
+<dialog id="bookDialog" class="book-dialog" aria-label="תיק להדפסה">
+  <form method="dialog" class="book-bar">
+    <strong>תיק להדפסה</strong>
+    <div class="row gap">
+      <button class="btn small" type="button" id="bookPrint">הדפסה</button>
+      <button class="btn ghost small" type="submit" value="close">סגירה</button>
+    </div>
+  </form>
+  <iframe id="bookFrame" title="תיק להדפסה"></iframe>
+</dialog>
 
 <!-- העתק-הדבק -->
 <dialog id="pasteDialog" aria-labelledby="pasteTitle">
