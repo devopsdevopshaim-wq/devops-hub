@@ -295,5 +295,21 @@
     return { maker: 'Rittal', partNo: (enc.h >= 1400 ? 'VX25 ' : 'AX ') + size, exact: false, desc: 'ארון פלדה RAL 7035 עם פלטת הרכבה' };
   }
 
-  return { BRANDS: BRANDS, TERM_BRANDS: TERM_BRANDS, PSU_BRANDS: PSU_BRANDS, RELAY_BRANDS: RELAY_BRANDS, pick: pick, assign: assign, orderList: orderList, enclosureFor: enclosureFor, amps: amps, poles: poles };
+  /* קישורים לחלק האמיתי: דף המוצר אצל היצרן (תמונות, נתונים, דף נתונים), חיפוש תמונות וחיפוש דף נתונים */
+  function productLinks(maker, partNo) {
+    if (!partNo) return null;
+    var code = (/\((\d{7}|\d{10}|[0-9A-Z]{4,}R\d{4,})\)/.exec(partNo) || [])[1];
+    var first = String(partNo).split(/\s[+(]|\s·/)[0].replace(/^\d+×\s*/, '').trim();
+    var m = String(maker || '').toLowerCase(), ref = encodeURIComponent(first), url = null;
+    if (/schneider/.test(m)) url = 'https://www.se.com/il/he/product/' + ref + '/';
+    else if (/^abb/.test(m)) url = code ? 'https://new.abb.com/products/' + code : 'https://new.abb.com/search/en/results?QueryText=' + ref;
+    else if (/siemens/.test(m)) url = 'https://sieportal.siemens.com/en-ww/products-services/detail/' + ref;
+    else if (/phoenix/.test(m)) url = code && /^\d{7}$/.test(code) ? 'https://www.phoenixcontact.com/en-pc/products/' + code : 'https://www.phoenixcontact.com/en-pc/search?q=' + ref;
+    else if (/weidm/.test(m)) url = 'https://catalog.weidmueller.com/catalog/Start.do?localeId=en&ObjectID=' + encodeURIComponent(code || first);
+    else if (/mean ?well/.test(m)) url = 'https://www.meanwell.com/webapp/product/search.aspx?prod=' + ref;
+    var q = encodeURIComponent(((maker || '') + ' ' + first).trim());
+    return { ref: first, product: url, images: 'https://www.google.com/search?tbm=isch&q=' + q, datasheet: 'https://www.google.com/search?q=' + q + '+datasheet+pdf' };
+  }
+
+  return { productLinks: productLinks, BRANDS: BRANDS, TERM_BRANDS: TERM_BRANDS, PSU_BRANDS: PSU_BRANDS, RELAY_BRANDS: RELAY_BRANDS, pick: pick, assign: assign, orderList: orderList, enclosureFor: enclosureFor, amps: amps, poles: poles };
 });
