@@ -450,7 +450,7 @@ function renderWireRows() {
       const col = C.COLORS[w.color];
       return `<tr data-id="${esc(w.id)}" class="${raw.done[w.id] ? 'done' : ''} ${selected === w.id ? 'sel' : ''}" tabindex="0">
         <td class="st"></td><td class="mono">${esc(w.no)}${w.noInferred ? '<span class="inf">*</span>' : ''}</td>
-        <td class="ep">${esc(w.from.tag)}:${esc(w.from.term)}</td><td class="ep">${esc(w.to.tag)}:${esc(w.to.term)}</td>
+        <td class="ep" translate="no">${esc(w.from.tag)}:${esc(w.from.term)}</td><td class="ep" translate="no">${esc(w.to.tag)}:${esc(w.to.term)}</td>
         <td style="white-space:nowrap"><span class="sw" style="${swStyle(col)}"></span>${esc(col.he)}${w.colorSource === 'standard' ? '<span class="inf">*</span>' : ''}</td>
         <td>${esc(C.fmtSection(w.section))}${w.sectionInferred ? '<span class="inf">*</span>' : ''}</td>
         <td class="mono">${esc(w.wireType)}${w.wireTypeInferred ? '<span class="inf">*</span>' : ''}</td>
@@ -505,7 +505,7 @@ function showTip(id, ev) {
   const r = L.routes[w.id];
   tip.innerHTML = `<b>חוט ${esc(w.no)}</b> · ${esc(C.FUNCS[w.func].he)}<br>
     <span class="sw" style="${swStyle(col)}"></span>${esc(col.he)} · ${esc(C.fmtSection(w.section))} ממ"ר · ${esc(w.wireType)}${r && r.len ? ' · כ-' + Math.round(r.len / 10) + ' ס"מ' : ''}<br>
-    <span class="ep">${esc(w.from.tag)}:${esc(w.from.term)}</span> ← <span class="ep">${esc(w.to.tag)}:${esc(w.to.term)}</span>
+    <span class="ep" translate="no">${esc(w.from.tag)}:${esc(w.from.term)}</span> ← <span class="ep" translate="no">${esc(w.to.tag)}:${esc(w.to.term)}</span>
     <p>${esc(w.explain || w.auto.purpose)}</p>${raw.done[w.id] ? '<p class="done-flag">✓ חובר</p>' : ''}`;
   tip.hidden = false;
   const pad = 14, rect = tip.getBoundingClientRect();
@@ -526,7 +526,7 @@ function select(id, from) {
 }
 
 function endBlock(lbl, e, comp, role) {
-  return `<div class="end"><div class="lbl">${lbl}</div><div class="ep">${esc(e.tag)}:${esc(e.term)}</div>
+  return `<div class="end"><div class="lbl">${lbl}</div><div class="ep" translate="no">${esc(e.tag)}:${esc(e.term)}</div>
     <div class="small">${esc(comp ? (comp.name || E.typeInfo(comp.type).he) : '')} · ${esc(C.ZONES[comp && comp.zone] || '')}</div>
     <div class="small muted">${esc(role.role)}</div></div>`;
 }
@@ -929,6 +929,8 @@ function bind() {
 /* ---------- התחלה ---------- */
 async function start() {
   bind();
+  /* פסי הלבן-כחול בחוטי ‎0V של קטע הפתיחה מופיעים אחרי שהחוטים נמתחו */
+  setTimeout(() => { const r = $('.run'); if (r) r.classList.add('drawn'); }, 2300);
   const cur = state.current && state.projects.find((p) => p.id === state.current);
   if (cur) { raw = cur; derive(); await loadPages(); }
   if (!raw && /^#p\//.test(location.hash)) location.hash = '#home';
