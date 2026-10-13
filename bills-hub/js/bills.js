@@ -40,10 +40,11 @@
         s.settings = Object.assign({ phone: '', vat: 18, lastUnit: '' }, s.settings || {});
         if (!Array.isArray(s.properties)) s.properties = [];
         if (!s.dues || typeof s.dues !== 'object') s.dues = {};
+        if (!Array.isArray(s.docs)) s.docs = [];
         return s;
       }
     } catch (e) {}
-    return { settings: { phone: '', vat: 18, lastUnit: '' }, records: [], properties: [], dues: {} };
+    return { settings: { phone: '', vat: 18, lastUnit: '' }, records: [], properties: [], dues: {}, docs: [] };
   }
   var db = load();
   function persist() {
@@ -360,6 +361,8 @@
     ];
     var P = window.BillsPayments, track = withTracking && P && P.sheet();
     if (track) sheets.push(track);
+    var A = window.BillsArchive;
+    if (withTracking && A) A.sheets().forEach(function (sh) { sheets.push(sh); });
     return MiniXLSX.build(sheets);
   }
   function xlsxFile() {
@@ -579,6 +582,13 @@
     if (!find(cur.month, cur.unit)) { cur.vatPct = db.settings.vat; recalc(); }
   });
   $('#backup').addEventListener('click', function () {
+    var A = window.BillsArchive;
+    if (A && $('#backup-files').checked && db.docs.length) {
+      A.filesForBackup().then(function (files) {
+        download(new File([JSON.stringify(Object.assign({}, db, { files: files }))], 'גיבוי-תשלומים-ומסמכים-' + new Date().toISOString().slice(0, 10) + '.json', { type: 'application/json' }));
+      });
+      return;
+    }
     download(new File([JSON.stringify(db, null, 1)], 'גיבוי-תשלומים-' + new Date().toISOString().slice(0, 10) + '.json', { type: 'application/json' }));
   });
   $('#restore').addEventListener('change', function (e) {
@@ -593,6 +603,11 @@
         if (i >= 0) db.properties[i] = p; else db.properties.push(p);
       });
       if (s.dues && typeof s.dues === 'object') Object.keys(s.dues).forEach(function (k) { db.dues[k] = s.dues[k]; });
+      (Array.isArray(s.docs) ? s.docs : []).forEach(function (d) {
+        if (!d || !d.id) return;
+        var i = db.docs.findIndex(function (x) { return x.id === d.id; });
+        if (i >= 0) db.docs[i] = d; else db.docs.push(d);
+      });
       var add = 0;
       s.records.forEach(function (r) {
         if (!r || !/^\d{4}-\d{2}$/.test(r.month) || !Array.isArray(r.meters) || !Array.isArray(r.fixed)) return;
@@ -603,15 +618,18 @@
       });
       persist(); refreshUnits(); renderHistory(); open(cur.month, cur.unit);
       if (window.BillsPayments) BillsPayments.render();
+      if (window.BillsArchive) BillsArchive.restoreFiles(s.files).then(BillsArchive.render);
       toast('נטענו ' + add + ' חודשים ו-' + db.properties.length + ' נכסים מהגיבוי');
     }).catch(function () { toast('הקובץ אינו גיבוי תקין של האתר'); });
     e.target.value = '';
   });
   $('#wipe').addEventListener('click', function () {
-    if (!confirm('למחוק את כל הנתונים (חודשים, נכסים ותשלומים) שנשמרו בדפדפן הזה? מומלץ להוריד גיבוי קודם.')) return;
+    if (!confirm('למחוק את כל הנתונים (חודשים, נכסים, תשלומים ומסמכים) שנשמרו בדפדפן הזה? מומלץ להוריד גיבוי קודם.')) return;
     db.records = [];
     db.properties = [];
     db.dues = {};
+    db.docs = [];
+    if (window.BillsArchive) BillsArchive.wipe();
     if (window.BillsPayments) BillsPayments.render();
     persist(); refreshUnits(); renderHistory(); open(thisMonth(), '');
     toast('כל הנתונים נמחקו');
@@ -623,6 +641,7 @@
     document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + name); });
     try { sessionStorage.setItem('bills-tab', name); } catch (e) {}
     if (window.BillsPayments && (name === 'due' || name === 'props')) BillsPayments.render();
+    if (window.BillsArchive && (name === 'docs' || name === 'analysis')) BillsArchive.render(name);
     if (name === 'bill' && cur) { renderMeters(); renderFixed(); recalc(); }
   }
   document.querySelectorAll('.tab').forEach(function (t) { t.addEventListener('click', function () { showTab(t.dataset.tab); }); });

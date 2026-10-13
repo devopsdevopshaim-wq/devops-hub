@@ -20,6 +20,9 @@
     phone:     { name: 'טלפון', icon: '📱', cycle: 1, providers: ['פרטנר', 'סלקום', 'פלאפון', 'בזק'] },
     insurance: { name: 'ביטוח', icon: '🛡️', cycle: 1 },
     rent:      { name: 'שכירות / משכנתא', icon: '🏠', cycle: 1 },
+    bank:      { name: 'בנק', icon: '🏦', cycle: 1, providers: ['בנק לאומי', 'בנק הפועלים', 'בנק דיסקונט', 'מזרחי טפחות', 'הבינלאומי', 'בנק ירושלים', 'וואן זירו'] },
+    credit:    { name: 'כרטיס אשראי', icon: '💳', cycle: 1, providers: ['ישראכרט', 'כאל', 'מקס'] },
+    health:    { name: 'קופת חולים', icon: '🩺', cycle: 1, providers: ['כללית', 'מכבי', 'מאוחדת', 'לאומית'] },
     other:     { name: 'אחר', icon: '🧾', cycle: 1 }
   };
   var QUICK = ['elec', 'water', 'gas', 'arnona', 'vaad', 'internet'];
@@ -32,9 +35,18 @@
     'HOT': 'https://www.hot.net.il/',
     'yes': 'https://www.yes.co.il/',
     'פרטנר': 'https://www.partner.co.il/',
-    'סלקום': 'https://www.cellcom.co.il/'
+    'סלקום': 'https://www.cellcom.co.il/',
+    'בנק לאומי': 'https://www.leumi.co.il/',
+    'בנק הפועלים': 'https://www.bankhapoalim.co.il/',
+    'בנק דיסקונט': 'https://www.discountbank.co.il/',
+    'מזרחי טפחות': 'https://www.mizrahi-tefahot.co.il/',
+    'הבינלאומי': 'https://www.fibi.co.il/',
+    'ישראכרט': 'https://www.isracard.co.il/',
+    'כאל': 'https://www.cal-online.co.il/',
+    'מקס': 'https://www.max.co.il/'
   };
   var CYCLES = [[1, 'כל חודש'], [2, 'כל חודשיים'], [3, 'כל 3 חודשים'], [6, 'כל חצי שנה'], [12, 'פעם בשנה']];
+  var KINDS = [['bill', 'חשבון לתשלום'], ['receipt', 'קבלה / אישור תשלום'], ['statement', 'דף חשבון (בנק / אשראי)']];
   var METHODS = [['manual', 'משלם בעצמי'], ['standing', 'הוראת קבע'], ['card', 'חיוב קבוע באשראי']];
 
   function db() { return B.db(); }
@@ -366,7 +378,7 @@
           '<label class="fld"><span>עיר / יישוב <small>(לקישורי תאגיד המים והארנונה)</small></span><input data-pk="city" value="' + esc(p.city) + '" placeholder="למשל: חיפה" autocomplete="address-level2" /></label>' +
         '</div>' +
         '<div class="svcs">' + (p.services || []).map(function (s) { return svcHtml(p, s); }).join('') + '</div>' +
-        '<div class="quick"><span>הוסף:</span>' + QUICK.concat(['tv', 'phone', 'insurance', 'rent', 'other']).map(function (t) {
+        '<div class="quick"><span>הוסף:</span>' + QUICK.concat(['tv', 'phone', 'insurance', 'rent', 'bank', 'credit', 'health', 'other']).map(function (t) {
           return '<button type="button" class="chip" data-add="' + t + '">' + TYPES[t].icon + ' ' + TYPES[t].name + '</button>';
         }).join('') + '</div>' +
       '</div>';
@@ -463,12 +475,14 @@
 
   // ---------- reading a bill from a picture or PDF ----------
   var PROMPT = [
-    'זהו חשבון ישראלי (חשמל, מים, גז, ארנונה, ועד בית, אינטרנט, טלוויזיה, טלפון או אחר). קרא אותו והחזר JSON בלבד, בלי שום טקסט נוסף ובלי ```, במבנה הזה:',
-    '{"type":"elec|water|gas|arnona|vaad|internet|tv|phone|insurance|other","provider":"","customer_number":"","contract_number":"","meter_number":"",',
-    '"address":"","city":"","period_from":"YYYY-MM-DD","period_to":"YYYY-MM-DD","prev_reading":null,"curr_reading":null,"consumption":null,"unit":"",',
-    '"amount_due":null,"due_date":"YYYY-MM-DD","standing_order":false,"billing_months":null}',
-    'כללים: מספרים כמספרים בלי פסיקים ובלי ₪. amount_due הוא הסכום הכולל לתשלום בחשבון הזה. standing_order=true אם כתוב שהחשבון ייגבה בהוראת קבע או באשראי.',
-    'billing_months הוא אורך תקופת החיוב בחודשים (1 או 2 בדרך כלל). מספרי לקוח, חוזה ומונה כטקסט בדיוק כפי שמופיעים. שדה שאינו מופיע: null. אם אין חשבון בתמונה החזר {"error":"not-a-bill"}.'
+    'זהו חשבון, קבלה או דף חשבון ישראלי (חשמל, מים, גז, ארנונה, ועד בית, אינטרנט, טלוויזיה, טלפון, ביטוח, בנק, כרטיס אשראי, קופת חולים או אחר). קרא אותו והחזר JSON בלבד, בלי שום טקסט נוסף ובלי ```, במבנה הזה:',
+    '{"doc_kind":"bill|receipt|statement","type":"elec|water|gas|arnona|vaad|internet|tv|phone|insurance|rent|bank|credit|health|other","provider":"","customer_number":"","contract_number":"","meter_number":"",',
+    '"address":"","city":"","doc_date":"YYYY-MM-DD","period_from":"YYYY-MM-DD","period_to":"YYYY-MM-DD","prev_reading":null,"curr_reading":null,"consumption":null,"unit":"",',
+    '"amount_due":null,"amount_paid":null,"paid_date":"YYYY-MM-DD","fees":null,"due_date":"YYYY-MM-DD","standing_order":false,"billing_months":null}',
+    'כללים: מספרים כמספרים בלי פסיקים ובלי ₪. doc_kind: bill לחשבון לתשלום, receipt לקבלה / אישור תשלום, statement לדף חשבון של בנק או כרטיס אשראי.',
+    'amount_due הוא הסכום הכולל לתשלום בחשבון הזה (בדף חשבון: סך החיובים בתקופה). amount_paid ו-paid_date בקבלה. fees: סך העמלות והריביות בדף חשבון בנק או אשראי.',
+    'standing_order=true אם כתוב שהחשבון ייגבה בהוראת קבע או באשראי. consumption: הצריכה בתקופה (קוט"ש, מ"ק) ו-unit יחידת המידה.',
+    'billing_months הוא אורך תקופת החיוב בחודשים (1 או 2 בדרך כלל). מספרי לקוח, חוזה ומונה כטקסט בדיוק כפי שמופיעים. שדה שאינו מופיע: null. אם אין חשבון, קבלה או דף חשבון בתמונה החזר {"error":"not-a-bill"}.'
   ].join('\n');
   var AI_ERR = {
     quota: 'המכסה היומית של קריאת החשבונות נגמרה. נסו שוב מחר, או מלאו ידנית.',
@@ -493,6 +507,7 @@
     $('#scan-apply').hidden = true;
     $('#scan-drop').hidden = false;
     scanned = null;
+    scannedFile = null;
     var dlg = $('#scan');
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   }
@@ -549,38 +564,55 @@
   }
   function cleanDate(v) { return validDate(v) ? v : ''; }
 
-  $('#scan-file').addEventListener('change', function (e) {
-    var f = e.target.files[0];
-    if (!f) return;
-    var st = $('#scan-status');
-    st.className = 'scan-status busy';
-    st.textContent = 'קורא את החשבון… (עד חצי דקה)';
-    $('#scan-result').hidden = true;
-    $('#scan-apply').hidden = true;
-    prepFile(f).then(function (file) {
+  // a picture or PDF → the fields of the bill, receipt or statement in it
+  function readFile(f) {
+    return prepFile(f).then(function (file) {
       return askServer({ action: 'ai', tag: 'bills', prompt: PROMPT, image: file.data, mime: file.mime });
     }).then(function (j) {
       if (!j || !j.ok) throw new Error((j && j.error) || 'ai-failed');
       var d = parseJson(j.text);
       if (!d) throw new Error('unreadable');
       if (d.error) throw new Error('not-a-bill');
-      scanned = {
-        type: TYPES[d.type] ? d.type : 'other', provider: String(d.provider || '').trim(),
+      var kind = ['bill', 'receipt', 'statement'].indexOf(d.doc_kind) >= 0 ? d.doc_kind : 'bill';
+      var amount = cleanNum(d.amount_due);
+      if (amount === '' && kind === 'receipt') amount = cleanNum(d.amount_paid);
+      return {
+        kind: kind, type: TYPES[d.type] ? d.type : 'other', provider: String(d.provider || '').trim(),
         customerNo: String(d.customer_number || d.contract_number || '').trim(), meterNo: String(d.meter_number || '').trim(),
         address: String(d.address || '').trim(), city: String(d.city || '').trim(),
+        date: cleanDate(d.doc_date) || cleanDate(d.paid_date),
         from: cleanDate(d.period_from), to: cleanDate(d.period_to), prev: cleanNum(d.prev_reading), curr: cleanNum(d.curr_reading),
-        amount: cleanNum(d.amount_due), due: cleanDate(d.due_date), standing: d.standing_order === true,
+        consumption: cleanNum(d.consumption), uom: String(d.unit || '').trim(),
+        amount: amount, paidAmount: cleanNum(d.amount_paid), paidDate: cleanDate(d.paid_date), fees: cleanNum(d.fees),
+        due: cleanDate(d.due_date), standing: d.standing_order === true,
         months: [1, 2, 3, 6, 12].indexOf(+d.billing_months) >= 0 ? +d.billing_months : ''
       };
+    });
+  }
+  function readError(code) {
+    return AI_ERR[code] || (code === 'not-a-bill' ? 'לא זיהיתי חשבון או קבלה בקובץ. נסו צילום ישר וברור יותר של עמוד הסיכום.'
+      : code === 'unreadable' ? 'לא הצלחתי לקרוא את המסמך. נסו צילום חד יותר, או את קובץ ה-PDF המקורי.'
+      : 'הקריאה לא הצליחה כרגע. נסו שוב בעוד רגע.');
+  }
+
+  var scannedFile = null;
+  $('#scan-file').addEventListener('change', function (e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    scannedFile = f;
+    var st = $('#scan-status');
+    st.className = 'scan-status busy';
+    st.textContent = 'קורא את המסמך… (עד חצי דקה)';
+    $('#scan-result').hidden = true;
+    $('#scan-apply').hidden = true;
+    readFile(f).then(function (r) {
+      scanned = r;
       st.className = 'scan-status ok';
       st.textContent = 'נקרא. בדקו שהפרטים נכונים, תקנו אם צריך ושמרו.';
       showScanned();
     }).catch(function (err) {
-      var code = err && err.message;
       st.className = 'scan-status err';
-      st.textContent = AI_ERR[code] || (code === 'not-a-bill' ? 'לא זיהיתי חשבון בקובץ. נסו צילום ישר וברור יותר של עמוד הסיכום.'
-        : code === 'unreadable' ? 'לא הצלחתי לקרוא את החשבון. נסו צילום חד יותר, או את קובץ ה-PDF המקורי.'
-        : 'הקריאה לא הצליחה כרגע. נסו שוב בעוד רגע.');
+      st.textContent = readError(err && err.message);
     });
   });
 
@@ -595,7 +627,8 @@
       }).join('') + '</select></div>' +
       '<div class="svc-grid">' +
         f('provider', 'ספק', s.provider) + f('customerNo', 'מספר לקוח / חוזה', s.customerNo) + f('meterNo', 'מספר מונה', s.meterNo) +
-        f('amount', 'סכום לתשלום (₪)', s.amount, 'number') + f('due', 'לתשלום עד', s.due, 'date') +
+        '<label class="fld"><span>סוג מסמך</span><select data-r="kind">' + opt(KINDS, s.kind) + '</select></label>' +
+        f('amount', s.kind === 'receipt' ? 'סכום ששולם (₪)' : 'סכום לתשלום (₪)', s.amount, 'number') + f('due', 'לתשלום עד', s.due, 'date') +
         f('prev', 'קריאה קודמת', s.prev, 'number') + f('curr', 'קריאה נוכחית', s.curr, 'number') +
         f('from', 'תקופה מ-', s.from, 'date') + f('to', 'עד', s.to, 'date') +
         f('address', 'כתובת בחשבון', s.address) + f('city', 'עיר', s.city) +
@@ -610,7 +643,7 @@
     scanned[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
   });
   $('#scan-result').addEventListener('change', function (e) {
-    if (e.target.dataset.r === 'type' && scanned) { scanned.type = e.target.value; showScanned(); }
+    if ((e.target.dataset.r === 'type' || e.target.dataset.r === 'kind') && scanned) { scanned[e.target.dataset.r] = e.target.value; showScanned(); }
     if (e.target.type === 'checkbox' && scanned) scanned.standing = e.target.checked;
   });
 
@@ -618,11 +651,26 @@
     var s = scanned;
     if (!s) return;
     if (!validDate(s.due) && !B.has(s.amount) && !(B.has(s.prev) && B.has(s.curr))) { B.toast('חסרים סכום, תאריך או קריאות. השלימו לפחות אחד מהם.'); return; }
-    var pid = $('#scan-prop').value, p = db().properties.find(function (x) { return x.id === pid; });
+    var res = applyScanned(s, $('#scan-prop').value);
+    var A = window.BillsArchive;
+    if (A && $('#scan-keep').checked && scannedFile) A.add(scannedFile, s, res);
+    B.persist();
+    B.refreshUnits();
+    var dlg = $('#scan');
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+    B.toast('נשמר: ' + (res.svc ? label(res.svc) : TYPES[s.type].name) + ' — ' + propName(res.p));
+    B.showTab('due');
+  });
+
+  // puts what was read from a bill, receipt or statement into the property, its service, the due and the month readings
+  function applyScanned(s, pid) {
+    var p = db().properties.find(function (x) { return x.id === pid; });
     if (!p) p = addProperty({ name: s.address || (s.city ? 'נכס ב' + s.city : 'הבית'), address: s.address, city: s.city });
     if (!(p.name || '').trim()) p.name = s.address || (p.address || '').trim() || (s.city ? 'נכס ב' + s.city : 'הבית');
     if (!(p.address || '').trim() && s.address) p.address = s.address;
     if (!(p.city || '').trim() && s.city) p.city = s.city;
+    // a bank or card statement is kept in the archive and analysed, it is not a bill to pay
+    if (s.kind === 'statement') return { p: p, svc: null, key: '' };
 
     // the service: same type, and the same meter or customer number when both sides have one
     var svc = p.services.find(function (x) {
@@ -644,9 +692,18 @@
     if (s.standing && svc.method === 'manual') svc.method = 'standing';
     if (B.has(s.amount)) svc.amount = num(s.amount);
 
+    if (!validDate(s.due) && s.kind === 'receipt' && validDate(s.paidDate || s.date)) dueMonth = (s.paidDate || s.date).slice(0, 7);
     var key = svc.id + '|' + dueMonth;
     var period = s.from && s.to ? fmtDate(s.from) + '–' + fmtDate(s.to) : '';
-    setDue(key, { amount: B.has(s.amount) ? num(s.amount) : undefined, date: validDate(s.due) ? s.due : undefined, period: period || undefined, source: 'bill', auto: s.standing || undefined });
+    var patch = { amount: B.has(s.amount) ? num(s.amount) : undefined, date: validDate(s.due) ? s.due : undefined, period: period || undefined, source: 'bill', auto: s.standing || undefined };
+    if (s.kind === 'receipt') {
+      // a receipt closes the payment: paid on its date, the paid sum
+      var paidOn = validDate(s.paidDate) ? s.paidDate : validDate(s.date) ? s.date : isoDate(today());
+      patch.paidAt = paidOn + 'T12:00:00.000Z';
+      patch.paidAmount = B.has(s.paidAmount) ? num(s.paidAmount) : B.has(s.amount) ? num(s.amount) : undefined;
+      if (db().dues[key] && B.has(db().dues[key].amount)) patch.amount = undefined;
+    }
+    setDue(key, patch);
 
     // the readings go to the month the period ends in, so the monthly bill and the history show them
     if (type(svc).meter && B.has(s.prev) && B.has(s.curr)) {
@@ -663,13 +720,8 @@
       if (B.has(s.amount) && cons > 0) { m.rate = Math.round(num(s.amount) / cons * 1e6) / 1e6; m.fixed = ''; m.vat = false; }
       B.storeRecord(rec);
     }
-    B.persist();
-    B.refreshUnits();
-    var dlg = $('#scan');
-    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
-    B.toast('נשמר: ' + label(svc) + ' — ' + propName(p));
-    B.showTab('due');
-  });
+    return { p: p, svc: svc, key: key };
+  }
 
   // ---------- for the bill page and the Excel file ----------
   function meterInfo(unit, meterName) {
@@ -695,7 +747,11 @@
   }
   function render() { renderDue(); renderProps(); }
 
-  window.BillsPayments = { render: render, meterInfo: meterInfo, sheet: sheet, instances: instances };
+  window.BillsPayments = {
+    render: render, meterInfo: meterInfo, sheet: sheet, instances: instances,
+    TYPES: TYPES, KINDS: KINDS, readFile: readFile, readError: readError, applyScanned: applyScanned, openScan: openScan,
+    askServer: askServer, propName: propName, payLink: payLink, findService: findService
+  };
   renderDue();
   renderProps();
   try { var tab = sessionStorage.getItem('bills-tab'); if (tab) B.showTab(tab); } catch (e) {}

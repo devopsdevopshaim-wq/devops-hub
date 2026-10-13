@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="../portfolio/js/failover.js"></script>
 <meta name="theme-color" content="#0b2b2a" />
-<meta name="description" content="תשלומים לבית: מה לשלם עכשיו, קריאות מונים לחשמל, מים וגז, קריאת חשבון מצילום, תזכורות וקובץ Excel לשליחה בוואטסאפ." />
+<meta name="description" content="תשלומים לבית: מה לשלם עכשיו, ארכיון חשבונות וקבלות, ניתוח צריכה לכל גוף, קריאות מונים לחשמל, מים וגז, קריאת חשבון מצילום, תזכורות וקובץ Excel לשליחה בוואטסאפ." />
 <title>תשלומים לבית</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" />
@@ -43,8 +43,8 @@
     <div class="hero-copy">
       <span class="eyebrow">בית ותשלומים</span>
       <h1>תשלומים לבית</h1>
-      <p class="tag">חשמל, מים, גז, ארנונה וכל השאר במקום אחד: מה לשלם עכשיו, קריאות מונים, קריאת חשבון מצילום,
-        תזכורות ליומן וקובץ Excel אחד לשליחה בוואטסאפ.</p>
+      <p class="tag">חשמל, מים, גז, ארנונה, בנקים וכל השאר במקום אחד: מה לשלם עכשיו, ארכיון חשבונות וקבלות,
+        ניתוח צריכה ומגמות לכל גוף, קריאות מונים, תזכורות ליומן וקובץ Excel אחד לשליחה בוואטסאפ.</p>
       <div class="hero-stats" id="hero-stats" aria-live="polite"></div>
       <div class="hero-cta">
         <button type="button" class="btn gold" id="hero-scan">📷 קרא חשבון מצילום</button>
@@ -60,6 +60,8 @@
   <nav class="tabs" role="tablist">
     <button class="tab active" data-tab="due" role="tab">לתשלום</button>
     <button class="tab" data-tab="bill" role="tab">חשבון החודש</button>
+    <button class="tab" data-tab="docs" role="tab">מסמכים</button>
+    <button class="tab" data-tab="analysis" role="tab">ניתוח צריכה</button>
     <button class="tab" data-tab="history" role="tab">היסטוריה</button>
     <button class="tab" data-tab="props" role="tab">נכסים ומונים</button>
     <button class="tab" data-tab="settings" role="tab">הגדרות</button>
@@ -140,6 +142,48 @@
     </label>
   </section>
 
+  <!-- ארכיון מסמכים -->
+  <section class="panel" id="panel-docs">
+    <div class="tiles" id="doc-tiles"></div>
+    <div class="card doc-upload">
+      <h2 class="sec">הוספת חשבונות וקבלות <small>תמונה או PDF · חשמל, מים, גז, ארנונה, בנקים, אשראי ועוד</small></h2>
+      <div class="actions">
+        <button type="button" class="btn primary" id="doc-scan">📷 מסמך אחד (עם בדיקה)</button>
+        <label class="btn" for="doc-files">📥 העלה כמה מסמכים</label>
+        <input type="file" id="doc-files" accept="image/*,application/pdf" multiple hidden />
+      </div>
+      <label class="check"><input type="checkbox" id="doc-auto" checked /> <span>קרא כל מסמך אוטומטית (גוף, סכום, תקופה, צריכה)</span></label><br />
+      <label class="check"><input type="checkbox" id="doc-apply" checked /> <span>עדכן גם את רשימת התשלומים ואת קריאות המונים</span></label>
+      <div class="scan-status" id="doc-status" role="status"></div>
+      <p class="hint">הקבצים נשמרים בדפדפן הזה בלבד. לקריאה האוטומטית הקובץ נשלח לשרת הקריאה ואינו נשמר שם.
+        לגיבוי עם הקבצים: הגדרות ← הורד גיבוי.</p>
+    </div>
+    <div class="card doc-filters">
+      <label class="fld"><span>חיפוש</span><input type="search" id="doc-q" placeholder="ספק, מספר לקוח, הערה…" /></label>
+      <label class="fld"><span>גוף</span><select id="doc-type"></select></label>
+      <label class="fld"><span>סוג</span><select id="doc-kind"></select></label>
+      <label class="fld"><span>שנה</span><select id="doc-year"></select></label>
+      <label class="fld"><span>נכס</span><select id="doc-prop"></select></label>
+    </div>
+    <div id="doc-list"></div>
+  </section>
+
+  <!-- ניתוח צריכה -->
+  <section class="panel" id="panel-analysis">
+    <div class="card hist-tools">
+      <label class="fld"><span>נכס</span><select id="an-prop"></select></label>
+      <label class="fld"><span>תקופה</span>
+        <select id="an-range"><option value="6">6 חודשים</option><option value="12" selected>12 חודשים</option><option value="24">24 חודשים</option><option value="36">36 חודשים</option></select>
+      </label>
+      <button type="button" class="btn" id="an-ai">🤖 ניתוח חכם</button>
+      <button type="button" class="btn wa" id="an-wa">שלח סיכום</button>
+      <button type="button" class="btn" id="an-xlsx">📊 Excel</button>
+    </div>
+    <div class="tiles" id="an-tiles"></div>
+    <div id="an-ai-out" hidden></div>
+    <div id="an-body"></div>
+  </section>
+
   <!-- היסטוריה -->
   <section class="panel" id="panel-history">
     <div class="card hist-tools">
@@ -183,6 +227,7 @@
     <div class="card">
       <h2 class="sec">גיבוי</h2>
       <p class="hint">הנתונים נשמרים בדפדפן הזה בלבד. כדי להעביר למכשיר אחר או לשמור עותק, הורידו גיבוי וטענו אותו שם.</p>
+      <label class="check"><input type="checkbox" id="backup-files" checked /> <span>כולל קבצי המסמכים (הקובץ יהיה גדול יותר)</span></label>
       <div class="actions">
         <button type="button" class="btn" id="backup">⬇️ הורד גיבוי (JSON)</button>
         <label class="btn" for="restore">⬆️ טען גיבוי</label>
@@ -212,7 +257,7 @@
 <dialog id="scan" class="sheet" aria-labelledby="scan-title">
   <form method="dialog" class="sheet-in" id="scan-form">
     <div class="sheet-head">
-      <h2 id="scan-title">קריאת חשבון מצילום או PDF</h2>
+      <h2 id="scan-title">קריאת חשבון או קבלה מצילום או PDF</h2>
       <button type="submit" value="cancel" class="icon-btn" aria-label="סגור">✕</button>
     </div>
     <label class="fld">
@@ -222,9 +267,10 @@
     <label class="drop" id="scan-drop">
       <input type="file" id="scan-file" accept="image/*,application/pdf" />
       <span class="drop-big">📄</span>
-      <span>צלמו את החשבון או בחרו תמונה / PDF</span>
+      <span>צלמו את החשבון, הקבלה או דף החשבון, או בחרו תמונה / PDF</span>
       <small>בטלפון אפשר לצלם ישירות. התמונה נשלחת לקריאה אוטומטית ואינה נשמרת בשרת.</small>
     </label>
+    <label class="check"><input type="checkbox" id="scan-keep" checked /> <span>שמור עותק של המסמך בארכיון (בדפדפן הזה)</span></label>
     <div class="scan-status" id="scan-status" role="status"></div>
     <div id="scan-result" hidden></div>
     <div class="actions">
@@ -234,11 +280,26 @@
   </form>
 </dialog>
 
+<dialog id="doc-dlg" class="sheet" aria-labelledby="doc-dlg-title">
+  <form method="dialog" class="sheet-in">
+    <div class="sheet-head">
+      <h2 id="doc-dlg-title">פרטי המסמך</h2>
+      <button type="submit" value="cancel" class="icon-btn" aria-label="סגור">✕</button>
+    </div>
+    <div id="doc-form"></div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="doc-save">✓ שמור</button>
+      <button type="submit" value="cancel" class="btn">ביטול</button>
+    </div>
+  </form>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/xlsx.js"></script>
 <script src="js/bills.js"></script>
 <script src="js/payments.js"></script>
+<script src="js/archive.js"></script>
 <script type="module" src="js/hero3d.js" onerror="document.querySelector('.hero').classList.add('no3d')"></script>
 <script>
   // three.js did not arrive (offline, blocked): the drawn picture stays
