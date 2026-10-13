@@ -39,17 +39,17 @@
     <div class="moon" aria-hidden="true"></div>
     <p class="eyebrow">״חֶלְמָא דְּלָא מְפַשַּׁר — כְּאִגַּרְתָּא דְּלָא מְקַרְיָא״</p>
     <h1>כל חלום<br /><em>הולך אחר הפה</em></h1>
-    <p class="lead">ספרו את החלום, וקבלו פתרון שנשען על מסכת ברכות, על חלומות התורה, על הזוהר ועל ספרות הקבלה —
-      לכל סמל מקורו, פסוק להקדים, ודרך מעשית להפוך את החלום לטובה.</p>
+    <p class="lead">ספרו את החלום וקבלו פתרון מלא וכתוב: לב החלום, המסר, המימד הפנימי לפי הקבלה,
+      פירוש כל פרט לפי מסכת ברכות, התורה והזוהר — ותוכנית טיפול מעשית מהבוקר ועד הלילה.</p>
     <div class="hero-cta">
       <a class="btn gold" href="#interpret">לפתרון החלום</a>
       <a class="btn ghost" href="#hatava">סדר הטבת חלום</a>
     </div>
     <ul class="pillars">
       <li><b id="countSymbols">—</b><span>סמלים עם מקור</span></li>
+      <li><b>9 נושאים</b><span>פרנסה · משפחה · בריאות · נשמה…</span></li>
       <li><b>ברכות נה–נז</b><span>סוגיית החלומות</span></li>
-      <li><b>זוהר · מקץ</b><span>סוד השינה והנשמה</span></li>
-      <li><b>שו״ע או״ח רכ</b><span>הלכות הטבת חלום</span></li>
+      <li><b>תוכנית טיפול</b><span>בוקר · יום · לילה · שבוע</span></li>
     </ul>
   </section>
 
@@ -57,7 +57,7 @@
   <section id="interpret" class="panel">
     <div class="sec-head">
       <span class="num">א</span>
-      <div><h2>ספרו את החלום</h2><p>כתבו בחופשיות, בעברית. ככל שתפרטו — סמלים, צבעים, אנשים, מה הרגשתם — הפתרון יהיה מדויק יותר.</p></div>
+      <div><h2>ספרו את החלום</h2><p>כתבו בחופשיות, בעברית, כמה שיותר פרטים: מי היה שם, איפה, מה קרה, צבעים, חפצים, ומה הרגשתם. המערכת תזהה את הסמלים והנושא, תשאל שאלות הבהרה כשהגמרא מבחינה בין מצבים, ותכתוב פתרון מלא.</p></div>
     </div>
 
     <form id="dreamForm" class="dream-form" autocomplete="off">
@@ -96,7 +96,7 @@
 
       <div class="form-actions full">
         <button class="btn gold" type="submit">פתרו את החלום</button>
-        <button class="btn ghost" type="button" id="sampleBtn">דוגמה</button>
+        <button class="btn ghost" type="button" id="sampleBtn">דוגמה לחלום</button>
       </div>
     </form>
 
@@ -123,6 +123,12 @@
       <div><h2>מקורות ועקרונות</h2><p>היסודות שעליהם נבנה כל פתרון במערכת. כל מקור מקושר לטקסט המלא בספריא.</p></div>
     </div>
     <div id="principles" class="principles"></div>
+
+    <div class="gem-tool">
+      <h3>מחשבון גימטריה</h3>
+      <p class="small">כתבו מילה מן החלום — המחשבון יחשב את המניין, ויציג שוויון מוכר מן המקורות אם יש (למשל נחש, יין, סולם).</p>
+      <div class="gem-row"><input id="gemInput" type="search" placeholder="מילה מן החלום…" /><div id="gemOut" class="gem-out"></div></div>
+    </div>
 
     <div class="library">
       <h3>הספרייה</h3>
@@ -204,6 +210,7 @@
 </footer>
 
 <script src="js/symbols.js"></script>
+<script src="js/knowledge.js"></script>
 <script src="js/dreams.js"></script>
 </body>
 </html>
