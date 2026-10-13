@@ -24,6 +24,8 @@ let server = { ai: false, needCode: false, checked: false };
 const HUB = window.HUB_SERVER || 'https://haimkripisn.app.n8n.cloud/webhook/hasadna-hubs';
 let hub = { ai: false, checked: false };
 let view3d = null, built3d = 0, ver = 0;
+/* תכניות שכבר נקראו במלואן: מזוהות לפי הטקסט של ה-PDF */
+const LIBRARY = [window.WPlan208B].filter(Boolean);
 const wf = { funcs: new Set(), search: '', color: '', state: '' };
 const cabFuncs = new Set();
 let wiring = { group: 'all', idx: 0 };
@@ -55,6 +57,7 @@ function derive() {
   const withLen = { ...raw, wires: raw.wires.map((w) => ({ ...w, length: (L1.routes[w.id] || {}).len || null })) };
   P = E.enrich(withLen);
   P.meta = raw.meta || {};
+  P.notes = raw.notes || [];
   P.name = raw.name;
   L = E.layout(P);
   ver++;
@@ -154,6 +157,18 @@ async function handleFile(file, intoCurrent = false) {
     await loadPages();
     let msg = `נקראו ${res.pages.length} עמודים` + (res.total > res.pages.length ? ` (מתוך ${res.total}; נשמרים עד 40)` : '') + '.';
     const ex = E.extractFromText(res.pages);
+    const allText = res.pages.map((pg) => pg.items.map((it) => it.s).join(' ')).join('\n');
+    const lib = LIBRARY.find((l) => l.matches(allText));
+    if (lib && !raw.wires.length) {
+      const lp = lib.project();
+      raw.settings = { ...lp.settings, ...(raw.settings || {}) };
+      applyResult({ components: lp.components, wires: lp.wires, meta: lp.meta, notes: lp.notes }, 'library', true);
+      if (raw.name === file.name.replace(/\.pdf$/i, '')) raw.name = lp.name;
+      msg += ` זוהתה ${lib.title}: נטענה קריאה מלאה של כל השרטוטים (${lp.wires.length} חוטים, ${lp.components.length} רכיבים) עם חתכים וצבעים לפי התקנות.`;
+      raw.status = msg; save(); derive(); toast(msg, 8000);
+      location.hash = '#p/three';
+      return;
+    }
     if (ex.wires.length >= 3 && !raw.wires.length) {
       applyResult({ components: ex.components, wires: ex.wires, meta: {}, notes: [] }, 'text', true);
       msg += ` נמצאו ${ex.wires.length} חוטים בטקסט של ה-PDF. בדקו אותם ברשימת החוטים.`;
@@ -201,7 +216,7 @@ function applyResult(res, source, silent) {
   if (meta.title && (/^פרויקט חדש$|\.pdf$/i.test(raw.name) || (raw.pdf && raw.name === raw.pdf.name.replace(/\.pdf$/i, '')))) raw.name = meta.title;
   raw.notes = res.notes || [];
   raw.source = source;
-  raw.status = `נטענו ${raw.wires.length} חוטים ו-${raw.components.length} רכיבים (${({ claude: 'Claude', paste: 'Claude.ai', text: 'שליפה מהטקסט', json: 'JSON', gemini: 'קריאה אוטומטית' })[source] || source}).`;
+  raw.status = `נטענו ${raw.wires.length} חוטים ו-${raw.components.length} רכיבים (${({ claude: 'Claude', paste: 'Claude.ai', text: 'שליפה מהטקסט', json: 'JSON', gemini: 'קריאה אוטומטית', library: 'קריאה מלאה של התכנית' })[source] || source}).`;
   save(); derive();
   if (!silent) { toast(raw.status); rerender(); }
   return true;

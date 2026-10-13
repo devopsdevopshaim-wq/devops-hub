@@ -163,6 +163,7 @@
     if (t === 'PE' || t === 'GNYE' || t === '⏚') return { side: 'any', role: 'הדק הארקה (PE)', kind: 'pe' };
     if (t === 'N' || t === 'N1' || t === 'N2') return { side: type === 'psu' ? 'top' : (t === 'N2' ? 'bottom' : 'top'), role: 'אפס (N)', kind: 'neutral' };
     if (type === 'terminal' || type === 'pe_bar') return { side: 'any', role: 'מהדק ' + term, kind: '' };
+    if (type === 'io' && /^\d+$/.test(t)) return { side: n <= 8 ? 'top' : 'bottom', role: 'ערוץ ' + t, kind: 'io' };
     if (/^A1$/.test(t)) return { side: 'top', role: 'הדק סליל A1 (כניסת מתח ההפעלה)', kind: 'coil' };
     if (/^A2$/.test(t)) return { side: 'bottom', role: 'הדק סליל A2 (חזרה / 0V)', kind: 'coil0' };
     if (/^L[123]$/.test(t)) return { side: 'top', role: 'כניסת פאזה ' + t, kind: 'power' };
@@ -181,6 +182,13 @@
     if (/^(96)$/.test(t)) return { side: 'bottom', role: 'מגע עזר NC של הממסר התרמי (95-96)', kind: 'nc' };
     if (/^(97)$/.test(t)) return { side: 'top', role: 'מגע התראה NO של הממסר התרמי (97-98)', kind: 'no' };
     if (/^(98)$/.test(t)) return { side: 'bottom', role: 'מגע התראה NO של הממסר התרמי (97-98)', kind: 'no' };
+    if (!isNaN(n) && (type === 'relay' || type === 'timer') && n >= 11 && n <= 99) {
+      var ld = n % 10;
+      if (ld === 1) return { side: 'top', role: 'מגע משותף COM (' + t + ')', kind: 'com' };
+      if (ld === 2) return { side: 'bottom', role: 'מגע סגור NC (' + (n - 1) + '-' + t + ')', kind: 'nc' };
+      if (ld === 4) return { side: 'bottom', role: 'מגע פתוח NO, יציאה (' + t + ')', kind: 'no' };
+      if (ld === 3) return { side: 'top', role: 'מגע פתוח NO, כניסה (' + t + '-' + (n + 1) + ')', kind: 'no' };
+    }
     if (!isNaN(n)) {
       if (n <= 8 && type !== 'button' && type !== 'selector' && type !== 'estop' && type !== 'relay' && type !== 'timer' && type !== 'sensor') {
         return n % 2 ? { side: 'top', role: 'מגע כוח, כניסה ' + t, kind: 'pole' } : { side: 'bottom', role: 'מגע כוח, יציאה ' + t, kind: 'pole' };
@@ -267,7 +275,7 @@
       else if (r.kind === 'dc0' || /^0V$|^M$/.test(pot)) votes.push(['dc0', 6]);
       else if (r.kind === 'analog') votes.push(['signal', 5]);
       else if (r.kind === 'comm') votes.push(['comm', 5]);
-      else if (r.kind === 'input' || r.kind === 'output' || r.kind === 'sig' || r.kind === 'coil' || r.kind === 'no' || r.kind === 'nc' || r.kind === 'load+' || r.kind === 'com' || r.kind === 'co') {
+      else if (r.kind === 'input' || r.kind === 'output' || r.kind === 'sig' || r.kind === 'io' || r.kind === 'coil' || r.kind === 'no' || r.kind === 'nc' || r.kind === 'load+' || r.kind === 'com' || r.kind === 'co') {
         votes.push([settings.control === 'dc24' ? 'ctrl_dc' : 'ctrl_ac', 3]);
       } else if (r.kind === 'coil0' || r.kind === 'load0') votes.push([settings.control === 'dc24' ? 'dc0' : 'neutral', 3]);
     });
@@ -378,7 +386,9 @@
     });
     /* כמה חוטים על אותו הדק → שרוול כפול */
     var perPin = {};
-    p.wires.forEach(function (w) { [w.from, w.to].forEach(function (e) { var k = pinKey(e.tag, e.term); perPin[k] = (perPin[k] || 0) + 1; }); });
+    /* גשר מסרק יושב בתעלת הגשר של המהדק, לא בהדק עצמו — לא נספר כחוט נוסף בהדק */
+    var isComb = function (w) { return /גשר מסרק|גשר בסיסי/.test(String(w.wireType || '')); };
+    p.wires.forEach(function (w) { if (isComb(w)) return; [w.from, w.to].forEach(function (e) { var k = pinKey(e.tag, e.term); perPin[k] = (perPin[k] || 0) + 1; }); });
     var netPins = {};
     p.wires.forEach(function (w) {
       [w.from, w.to].forEach(function (e) {
@@ -410,6 +420,9 @@
   function endText(e, comp) {
     var info = typeInfo(comp.type);
     var role = termRole(comp.type, e.term);
+    if (comp.type === 'io' && comp.io && role.kind === 'io') {
+      role = comp.io === 'out' ? { side: role.side, role: 'יציאה דיגיטלית ' + e.term + ' של ' + comp.tag, kind: 'output' } : { side: role.side, role: 'כניסה דיגיטלית ' + e.term + ' של ' + comp.tag, kind: 'input' };
+    }
     return { label: '\u2066' + e.tag + ':' + e.term + '\u2069', comp: comp, info: info, role: role, line: e.tag + ' (' + (comp.name || info.he) + ') — ' + role.role };
   }
 
@@ -468,10 +481,10 @@
     if ((p = pair(isT('motor'), any))) return 'מוליך כוח למנוע ' + p[0].comp.tag + ' (' + p[0].role.role + '). מגיע מ' + p[1].label + '. סדר הפאזות קובע את כיוון הסיבוב.';
     if (w.func === 'power') return 'מוליך כוח (' + (w.potential || 'פאזה') + ') מ' + A.label + ' אל ' + B.label + '. נושא את זרם העומס, ולכן החתך שלו נקבע לפי ההגנה שלפניו.';
     if (w.func === 'neutral') return 'מוליך אפס (N) מ' + A.label + ' אל ' + B.label + '. מחזיר את הזרם של הצרכן החד-פאזי.';
-    if (w.func === 'ctrl_dc') return 'מתח פיקוד ‎+24V מ' + A.label + ' אל ' + B.label + '. ' + (A.role.kind === 'no' || B.role.kind === 'no' ? 'עובר דרך מגע פתוח (NO): המתח ממשיך רק כשהמגע נסגר.' : A.role.kind === 'nc' || B.role.kind === 'nc' ? 'עובר דרך מגע סגור (NC): המתח נקטע כשהמגע נפתח (למשל בלחיצת עצור או חירום).' : 'מחלק את מתח הפיקוד לרכיב הבא.');
+    if (w.func === 'ctrl_dc') return 'מתח פיקוד ' + (w.potential && !/^\+?24V?$/i.test(w.potential) ? w.potential : '‎+24V') + ' מ' + A.label + ' אל ' + B.label + '. ' + (A.role.kind === 'no' || B.role.kind === 'no' ? 'עובר דרך מגע פתוח (NO): המתח ממשיך רק כשהמגע נסגר.' : A.role.kind === 'nc' || B.role.kind === 'nc' ? 'עובר דרך מגע סגור (NC): המתח נקטע כשהמגע נפתח (למשל בלחיצת עצור או חירום).' : 'מחלק את מתח הפיקוד לרכיב הבא.');
     if (w.func === 'dc0') return 'קו ‎0V של הפיקוד מ' + A.label + ' אל ' + B.label + '. סוגר את המעגל של מתח הפיקוד.';
     if (w.func === 'ctrl_ac') return 'מעגל פיקוד AC מ' + A.label + ' אל ' + B.label + '.';
-    if (w.func === 'foreign') return 'מעגל שמקבל מתח ממקור חיצוני ונשאר חי גם כשהמפסק הראשי מנותק. זהירות בעבודה.';
+    if (w.func === 'foreign') return 'מגע יבש בין ' + A.label + ' ל-' + B.label + '. המתח בחוט מגיע מהציוד בשטח (בקר השער או הדלת), ולכן הוא נשאר חי גם כשהמפסק הראשי של הארון מנותק. חוט כתום, וזהירות בעבודה.';
     if (w.func === 'signal') return 'אות אנלוגי / מדידה מ' + A.label + ' אל ' + B.label + '. להרחיק מכבלי כוח ולחבר סיכוך בצד אחד.';
     if (w.func === 'comm') return 'קו תקשורת מ' + A.label + ' אל ' + B.label + '.';
     return 'חיבור מ' + A.label + ' אל ' + B.label + '.';
