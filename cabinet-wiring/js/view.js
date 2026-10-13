@@ -13,6 +13,8 @@ export const SVG_STYLE = `
   .t-tag { font-size: 10px; fill: #20252c; font-weight: 700; }
   .t-tag.in, .t-tag.out { fill: #fff; }
   .t-name { font-size: 9px; fill: #e8edf4; }
+  .t-mk { font-size: 6.5px; fill: rgba(255,255,255,.72); font-weight: 700; letter-spacing: .02em; font-family: Arial, sans-serif; }
+  .t-pn { font-size: 5.6px; fill: rgba(255,255,255,.85); font-family: 'IBM Plex Mono', monospace; }
   .t-name.dim { fill: #b9c3cf; }
   .t-motor { font-size: 34px; fill: #e8edf4; font-weight: 800; }
   .t-term { font-size: 4.2px; fill: #20252c; dominant-baseline: middle; }
@@ -48,6 +50,16 @@ export const SVG_STYLE = `
   .t-frm { font-size: 13px; fill: #a4adb4; font-family: 'IBM Plex Mono', monospace; font-weight: 600; dominant-baseline: middle; }
   .comp.end > rect:first-of-type, .comp.end > circle:first-of-type { stroke: #e0904f; stroke-width: 3px; }
 `;
+
+/* קיצור שם היצרן לתווית על הרכיב */
+export function makerShort(m) {
+  const t = String(m || '');
+  if (/schneider/i.test(t)) return 'Schneider';
+  if (/phoenix/i.test(t)) return 'PHOENIX';
+  if (/weidm/i.test(t)) return 'Weidmüller';
+  if (/mean\s*well/i.test(t)) return 'MEAN WELL';
+  return t.split(/\s+/)[0].slice(0, 12);
+}
 
 function lampColor(name) {
   const n = String(name || '');
@@ -164,6 +176,10 @@ export class CabinetView {
         out.push(`<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="3" fill="${info.fill}" stroke="#20252c"/>`);
         out.push(`<rect x="${b.x + 2}" y="${b.y + b.h * 0.38}" width="${b.w - 4}" height="${b.h * 0.24}" rx="2" fill="rgba(255,255,255,.1)"/>`);
         out.push(`<text x="${b.x + b.w / 2}" y="${b.y + b.h / 2 + 3}" class="t-tag in" text-anchor="middle">${esc(b.tag)}</text>`);
+        if (c.maker && b.zone === 'cabinet' && b.h > 40 && !this.mini) {
+          out.push(`<text x="${b.x + b.w / 2}" y="${b.y + 11}" class="t-mk" text-anchor="middle">${esc(makerShort(c.maker))}</text>`);
+          if (c.partNo && b.w >= 30) out.push(`<text x="${b.x + b.w / 2}" y="${b.y + b.h - 6}" class="t-pn" text-anchor="middle">${esc(String(c.partNo).split(/\s[+(]/)[0].slice(0, Math.max(6, Math.floor(b.w / 4.2))))}</text>`);
+        }
         if (b.zone === 'field') out.push(`<text x="${b.x + b.w / 2}" y="${b.y + b.h + 14}" class="t-name dim" text-anchor="middle">${name}</text>`);
       }
       out.push('</g>');
