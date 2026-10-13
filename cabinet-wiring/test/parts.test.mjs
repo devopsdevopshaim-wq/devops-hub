@@ -60,4 +60,29 @@ test('פיצול: כל חוט נשמר, חוטים בין ארונות עובר�
   assert.ok(SP.advise(P, L).count >= 1);
 });
 
+test('כל מוליך הוא חוט: "1/3/5" ו-L1-L3 מתפרקים לחוט לכל פאזה; הדק "0V/2" לא', () => {
+  const comps = [{ tag: '-Q0', type: 'main_switch' }, { tag: '-F1', type: 'mpcb' }, { tag: '-K1', type: 'contactor' }, { tag: '-X1', type: 'terminal' }, { tag: '-M1', type: 'motor' }];
+  const w = (no, a, at, b, bt, extra = {}) => ({ no, from: { tag: a, term: at }, to: { tag: b, term: bt }, func: 'power', ...extra });
+  const r = E.expandMultiCore(comps, [w('1', '-Q0', '2', '-F1', '1', { potential: 'L1-L3' }), w('2', '-F1', '2/4/6', '-K1', '1/3/5'), w('4', '-X1', '1-2-3', '-M1', 'U1/V1/W1'), w('9', '-X1', '0V/2', '-K1', 'A2', { func: 'dc0' })]);
+  assert.equal(r.added, 6);
+  assert.deepEqual(r.wires.filter((x) => x.from.tag === '-Q0').map((x) => x.from.term + '>' + x.to.term + ':' + x.potential), ['2>1:L1', '4>3:L2', '6>5:L3']);
+  assert.deepEqual(r.wires.filter((x) => x.to.tag === '-M1').map((x) => x.to.term), ['U1', 'V1', 'W1']);
+  assert.ok(r.wires.some((x) => x.from.term === '0V/2'));
+});
+
+test('בדיקת שלמות: קוטב חסר, סליל בלי A2, מנוע בלי PE — ובלי התראות שווא על התכניות', () => {
+  const P = E.enrich({ components: [{ tag: '-K1', type: 'contactor' }, { tag: '-M1', type: 'motor', location: 'field' }],
+    wires: [{ from: { tag: '-K1', term: '2' }, to: { tag: '-M1', term: 'U1' } }, { from: { tag: '-K1', term: 'A1' }, to: { tag: '-M1', term: 'V1' } }] });
+  const k = E.checkWiring(P).map((i) => i.kind).sort();
+  assert.ok(k.includes('pole') && k.includes('coil') && k.includes('pe'));
+  assert.equal(E.checkWiring(E.enrich(lib.project())).length, 0);
+  assert.equal(E.checkWiring(E.enrich(D.project())).length, 0);
+});
+
+test('קישורים לחלק האמיתי', () => {
+  assert.equal(W.productLinks('Schneider Electric', 'A9F74316').product, 'https://www.se.com/il/he/product/A9F74316/');
+  assert.equal(W.productLinks('ABB', 'S203-C16 (2CDS253001R0164)').product, 'https://new.abb.com/products/2CDS253001R0164');
+  assert.equal(W.productLinks('Phoenix Contact', '12× UT 2,5 (3044076) + D-UT').product, 'https://www.phoenixcontact.com/en-pc/products/3044076');
+});
+
 console.log(`\n${n} בדיקות עברו`);

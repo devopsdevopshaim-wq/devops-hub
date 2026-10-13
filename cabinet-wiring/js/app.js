@@ -8,6 +8,7 @@ import { wireSvg } from './wirerender.js';
 import { bookHtml, labelsHtml, siteBookHtml } from './book.js';
 import { Site3D } from './site3d.js';
 import { SitePlan } from './siteplan.js';
+import { partSvg } from './partart.js';
 
 const C = window.WCat, E = window.WEngine, Pr = window.WPrompts, Demo = window.WDemo, S = window.WSite;
 const $ = (s, el = document) => el.querySelector(s);
@@ -348,6 +349,9 @@ async function applyAsk(res, source) {
 }
 
 function applyResult(res, source, silent, p = raw) {
+  /* כל מוליך הוא חוט: חוט "תלת־פאזי" אחד מתפרק לחוט לכל פאזה */
+  const exp = E.expandMultiCore(res.components || [], res.wires || []);
+  if (exp.added) res = { ...res, wires: exp.wires, notes: [`${exp.added} חוטים נוספו כשחוטים שאיחדו כמה מוליכים (למשל 1/3/5 או L1-L3) פורקו לחוט לכל מוליך.`, ...(res.notes || [])] };
   const key = (w) => [E.normTag(w.from.tag), E.normTerm(w.from.term), E.normTag(w.to.tag), E.normTerm(w.to.term)].join('|');
   const oldDone = new Set(p.wires.filter((w) => p.done[w.id]).map(key));
   p.components = res.components || [];
@@ -858,7 +862,27 @@ function swStyle(col) {
   return col.stripe ? `background:repeating-linear-gradient(90deg,${col.hex} 0 5px,${col.stripe} 5px 10px)` : `background:${col.hex}`;
 }
 
+function renderWireCheck() {
+  const box = $('#wireCheck');
+  const issues = E.checkWiring(P);
+  box.hidden = !issues.length;
+  if (!issues.length) return;
+  const multi = issues.filter((i) => i.kind === 'multi').length;
+  box.innerHTML = `<div class="card-head"><h2>בדיקת שלמות החיווט · ${issues.length} ${issues.length === 1 ? 'ממצא' : 'ממצאים'}</h2>${multi ? '<button class="btn small" type="button" id="wcFix">פירוק אוטומטי לחוט לכל מוליך</button>' : ''}</div>
+    <ul class="wc-list">${issues.slice(0, 60).map((i) => `<li class="wc-${esc(i.kind)}"><button type="button" class="ep-link" data-comp="${esc(i.tag)}" translate="no">${esc(i.tag)}</button> ${esc(i.msg.replace(i.tag + ': ', ''))}</li>`).join('')}</ul>
+    <p class="muted small">הבדיקה: לכל רכיב רב־קטבי (מפסק ראשי, מאמ"ת 3P, מגען, מגן מנוע) — חוט לכל קוטב בכניסה וביציאה; מנוע — U, V, W ו-PE; סליל — A1 ו-A2; ספק — L ו-N. ממצא הוא דבר לבדוק מול התכנית, לא בהכרח טעות.</p>`;
+  const fx = $('#wcFix');
+  if (fx) fx.onclick = () => {
+    const r = E.expandMultiCore(raw.components, raw.wires);
+    raw.wires = r.wires.map((w) => ({ ...w, id: w.id && !raw.wires.some((x) => x !== w && x.id === w.id) ? w.id : newId() }));
+    const seen = new Set(); raw.wires.forEach((w) => { if (seen.has(w.id)) w.id = newId(); seen.add(w.id); });
+    save(); derive(); renderWires();
+    toast(r.added ? `נוספו ${r.added} חוטים: כל מוליך הוא עכשיו חוט נפרד.` : 'לא נמצאו חוטים לפירוק אוטומטי.', 6000);
+  };
+}
+
 function renderWires() {
+  renderWireCheck();
   funcChips($('#funcChips'), wf.funcs, renderWireRows);
   const sel = $('#wireColor');
   const used = [...new Set(P.wires.map((w) => w.color))];
@@ -1643,6 +1667,7 @@ function compHtml(cP, cL, tag, done) {
   }).join('');
   return `<div class="comp-head"><span class="ctag mono" translate="no">${esc(tag)}</span><div><b>${esc(c.name || t.he)}</b><div class="small muted">${esc(t.he)} · ${esc(C.ZONES[c.zone] || '')}</div></div></div>
     <p class="comp-purpose">${esc(info.purpose)}</p>
+    ${partBlock(c)}
     <dl class="kv">
       ${c.desc ? `<dt>תיאור</dt><dd>${esc(c.desc)}</dd>` : ''}
       ${c.maker || c.partNo ? `<dt>יצרן / מק"ט</dt><dd>${esc([c.maker, c.partNo].filter(Boolean).join(' · '))}</dd>` : ''}
@@ -1656,6 +1681,21 @@ function compHtml(cP, cL, tag, done) {
     <h3 class="comp-h">${c.zone === 'field' ? 'החיווט מהמכשיר אל הלוח' : 'החיווט של הרכיב'}</h3>
     ${info.rows.length ? `<div class="table-wrap"><table class="tbl comp-tbl"><thead><tr><th></th><th>הדק</th><th>חוט</th><th>צבע וחתך</th><th>מחובר אל</th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="small muted">לחיצה על מספר חוט פותחת את כל הפרטים שלו. לחיצה על הדק עוברת לרכיב שבצד השני.</p>` : '<p class="muted">לרכיב הזה אין חוטים ברשימה.</p>'}`;
+}
+
+/* החלק עצמו: ציור, יצרן ומק"ט, וקישורים לדף המוצר ולתמונות אמיתיות */
+function partBlock(c) {
+  if (c.zone === 'field' && !c.partNo) return '';
+  const links = c.partNo ? window.WParts.productLinks(c.maker, c.partNo) : null;
+  return `<div class="part-box">
+    <div class="part-pic">${partSvg(c)}</div>
+    <div class="part-info">
+      ${c.partNo ? `<div class="part-mk">${esc(c.maker || '')}</div><div class="part-pn mono" translate="no">${esc(c.partNo)}</div>${c.partExact === false ? '<div class="small warn-t">סדרה בלבד — לבחור מק"ט בקטלוג</div>' : ''}${c.partDesc ? `<div class="small muted">${esc(c.partDesc)}</div>` : ''}`
+        : '<div class="small muted">עוד אין מק"ט. בלשונית "רכיבים" ← "חלקים אמיתיים" אפשר לשבץ מק"ט של Schneider, ABB או Siemens לכל הלוח.</div>'}
+      ${links ? `<div class="part-links">${links.product ? `<a class="btn small" href="${esc(links.product)}" target="_blank" rel="noopener">דף המוצר אצל היצרן ↗</a>` : ''}<a class="btn ghost small" href="${esc(links.images)}" target="_blank" rel="noopener">תמונות אמיתיות ↗</a><a class="btn ghost small" href="${esc(links.datasheet)}" target="_blank" rel="noopener">דף נתונים ↗</a></div>` : ''}
+      <p class="small muted part-note">הציור מראה את סוג החלק. התמונה האמיתית, המידות ודף הנתונים — בדף המוצר אצל היצרן.</p>
+    </div>
+  </div>`;
 }
 
 function setDrawer(title, html, kind) {
@@ -1885,7 +1925,7 @@ function renderRealParts() {
   const enc = WP.enclosureFor(E.enclosure(P, L), o.brand);
   $('#rpOrder').innerHTML = `<h3 class="comp-h">רשימת הזמנה</h3><div class="table-wrap"><table class="tbl"><thead><tr><th>יצרן</th><th>מק"ט</th><th>תיאור</th><th>כמות</th><th>תגים</th></tr></thead><tbody>
     <tr class="enc-row"><td>${esc(enc.maker)}</td><td class="mono">${esc(enc.partNo)} <span class="tag-auto">סדרה</span></td><td>${esc(enc.desc)}</td><td class="num">1</td><td class="muted small">מעטפת</td></tr>
-    ${rows.map((r) => `<tr class="${r.partNo === 'חסר מק"ט' ? 'missing' : ''}"><td>${esc(r.maker)}</td><td class="mono">${esc(r.partNo)}</td><td>${esc(r.desc)}</td><td class="num">${r.qty}</td><td class="mono small">${esc(r.tags.slice(0, 8).join(' '))}${r.tags.length > 8 ? '…' : ''}</td></tr>`).join('')}</tbody></table></div>`;
+    ${rows.map((r) => { const lk = r.partNo !== 'חסר מק"ט' ? WP.productLinks(r.maker, r.partNo) : null; return `<tr class="${r.partNo === 'חסר מק"ט' ? 'missing' : ''}"><td>${esc(r.maker)}</td><td class="mono">${lk && (lk.product || lk.images) ? `<a href="${esc(lk.product || lk.images)}" target="_blank" rel="noopener" title="דף המוצר / תמונות">${esc(r.partNo)} ↗</a>` : esc(r.partNo)}</td><td>${esc(r.desc)}</td><td class="num">${r.qty}</td><td class="mono small">${esc(r.tags.slice(0, 8).join(' '))}${r.tags.length > 8 ? '…' : ''}</td></tr>`; }).join('')}</tbody></table></div>`;
 }
 function saveRpOpts() {
   raw.settings = raw.settings || {};

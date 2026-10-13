@@ -1020,6 +1020,116 @@
     return { comp: c, rows: rows, purpose: compPurpose(c), strips: Object.keys(strips), cable: cable };
   }
 
+
+  /* ---------- כל מוליך הוא חוט: פירוק של חוט "תלת־פאזי" אחד לחוט לכל פאזה ---------- */
+  var POLE_NEXT = [
+    ['1', '3', '5', '7'], ['2', '4', '6', '8'], ['L1', 'L2', 'L3', 'N'], ['T1', 'T2', 'T3'], ['U1', 'V1', 'W1'], ['U', 'V', 'W'], ['U2', 'V2', 'W2'], ['R', 'S', 'T']
+  ];
+  var PHASES = ['L1', 'L2', 'L3', 'N'];
+  /* "1/3/5", "2-4-6", "L1/L2/L3", "U1,V1,W1" — רק כשכל החלקים הם הדקי קטבים מוכרים */
+  var POLE_TOKEN = /^([1-8]|L[1-3]|N|PE|T[1-3]|[UVW][12]?|[RST])$/i;
+  function termList(t) {
+    var s = String(t == null ? '' : t).trim();
+    if (!/[\/,;-]/.test(s)) return null;
+    var parts = s.split(/\s*[\/,;]\s*|\s*-\s*/).filter(Boolean);
+    if (parts.length < 3 || parts.length > 5) return null;
+    return parts.every(function (x) { return POLE_TOKEN.test(x); }) ? parts : null;
+  }
+  function polesOfType(type) { return { main_switch: 3, rcd: 4, contactor: 3, mpcb: 3, overload: 3, motor: 3, vfd: 3, softstarter: 3 }[type] || 0; }
+  function seriesFrom(term, n) {
+    var T = String(term).toUpperCase();
+    for (var i = 0; i < POLE_NEXT.length; i++) {
+      var k = POLE_NEXT[i].indexOf(T);
+      if (k === 0) return POLE_NEXT[i].slice(0, n);
+    }
+    return null;
+  }
+  function multiPole(c) {
+    if (!c) return 0;
+    var n = polesOfType(c.type);
+    var m = /\b([234])\s*[×xP]|\b([234])\s*קטב|3\s*~|תלת/.exec((c.name || '') + ' ' + (c.desc || ''));
+    if (m) n = Number(m[1] || m[2]) || 3;
+    if (c.type === 'mcb' || c.type === 'fuse') n = m ? n : 0;
+    else if (!polesOfType(c.type)) n = 0;
+    return n;
+  }
+  /* comps: רכיבים גולמיים (tag, type, name); wires: חוטים גולמיים. מחזיר רשימה חדשה ומספר החוטים שנוספו */
+  function expandMultiCore(comps, wires) {
+    var by = {};
+    (comps || []).forEach(function (c) { by[normTag(c.tag)] = Object.assign({}, c, { type: c.type || inferType(c.tag, c.name, []) }); });
+    var out = [], added = 0;
+    var linked = {};
+    (wires || []).forEach(function (w) { linked[normTag(w.from.tag) + '|' + normTag(w.to.tag)] = (linked[normTag(w.from.tag) + '|' + normTag(w.to.tag)] || 0) + 1; });
+    (wires || []).forEach(function (w) {
+      var fa = termList(w.from.term), ta = termList(w.to.term);
+      var pot = String(w.potential || '');
+      /* 1) הדקים כתובים כרשימה: "1/3/5" ← "2/4/6" */
+      if (fa || ta) {
+        var n = Math.max(fa ? fa.length : 0, ta ? ta.length : 0);
+        var fl = fa || (/^\d+$/.test(String(w.from.term)) ? Array.from({ length: n }, function (_, i) { return String(Number(w.from.term) + i); }) : null);
+        var tl = ta || (/^\d+$/.test(String(w.to.term)) ? Array.from({ length: n }, function (_, i) { return String(Number(w.to.term) + i); }) : null);
+        if (fl && tl && fl.length === tl.length) {
+          fl.forEach(function (ft, i) {
+            out.push(Object.assign({}, w, { no: w.no ? w.no + '.' + (i + 1) : '', from: { tag: w.from.tag, term: ft }, to: { tag: w.to.tag, term: tl[i] }, potential: n <= 4 && /L|~|3/.test(pot + (w.func || '')) ? PHASES[i] : (w.potential || '') }));
+          });
+          added += fl.length - 1;
+          return;
+        }
+      }
+      /* 2) חוט אחד בין שני רכיבים תלת־פאזיים, בהדק של הקוטב הראשון, ובלי חוטים לשאר הקטבים */
+      var A = by[normTag(w.from.tag)], B = by[normTag(w.to.tag)];
+      var nA = multiPole(A), nB = multiPole(B);
+      var threeP = /L1\s*[-–\/]\s*L3|L1\s*,\s*L2|3\s*~|3P|תלת/i.test(pot + ' ' + (w.desc || ''));
+      if ((w.func === 'power' || threeP) && nA >= 3 && nB >= 3 && (linked[normTag(w.from.tag) + '|' + normTag(w.to.tag)] || 0) + (linked[normTag(w.to.tag) + '|' + normTag(w.from.tag)] || 0) === 1) {
+        var n2 = Math.min(nA, nB, 3);
+        var fs = seriesFrom(w.from.term, n2), ts = seriesFrom(w.to.term, n2);
+        if (fs && ts) {
+          fs.forEach(function (ft, i) {
+            out.push(Object.assign({}, w, { no: w.no ? (i ? w.no + '.' + (i + 1) : w.no) : '', from: { tag: w.from.tag, term: ft }, to: { tag: w.to.tag, term: ts[i] }, potential: PHASES[i] }));
+          });
+          added += n2 - 1;
+          return;
+        }
+      }
+      out.push(w);
+    });
+    return { wires: out, added: added };
+  }
+
+  /* ---------- בדיקת שלמות החיווט ---------- */
+  function checkWiring(p) {
+    var issues = [];
+    var termsOf = {};
+    (p.wires || []).forEach(function (w) {
+      [w.from, w.to].forEach(function (e) { (termsOf[e.tag] = termsOf[e.tag] || {})[String(e.term).toUpperCase()] = 1; });
+    });
+    (p.components || []).forEach(function (c) {
+      var t = termsOf[c.tag] || {};
+      var has = function (x) { return Boolean(t[x]); };
+      var n = multiPole(c);
+      if (n >= 3 && c.zone !== 'field' && c.type !== 'motor') {
+        var ins = ['1', '3', '5'], outs = ['2', '4', '6'];
+        var anyIn = ins.some(has), anyOut = outs.some(has);
+        var missIn = ins.filter(function (x) { return !has(x); }), missOut = outs.filter(function (x) { return !has(x); });
+        if (anyIn && missIn.length) issues.push({ tag: c.tag, kind: 'pole', msg: c.tag + ': רכיב ' + n + ' קטבים, אבל בכניסה חסרים חוטים להדקים ' + missIn.join(', ') + '.' });
+        if (anyOut && missOut.length) issues.push({ tag: c.tag, kind: 'pole', msg: c.tag + ': רכיב ' + n + ' קטבים, אבל ביציאה חסרים חוטים להדקים ' + missOut.join(', ') + '.' });
+      }
+      if (c.type === 'motor') {
+        var ph = ['U', 'V', 'W'].filter(function (x) { return has(x) || has(x + '1'); });
+        if (ph.length && ph.length < 3) issues.push({ tag: c.tag, kind: 'pole', msg: c.tag + ': מנוע תלת־פאזי עם ' + ph.length + ' פאזות מחוברות בלבד (' + ph.join(', ') + ').' });
+        if (ph.length && !has('PE')) issues.push({ tag: c.tag, kind: 'pe', msg: c.tag + ': למנוע אין חוט הארקה (PE).' });
+      }
+      if ((c.type === 'contactor' || c.type === 'relay' || c.type === 'timer') && (has('A1') !== has('A2'))) {
+        issues.push({ tag: c.tag, kind: 'coil', msg: c.tag + ': לסליל מחובר רק ' + (has('A1') ? 'A1' : 'A2') + ' — חסר חוט ל-' + (has('A1') ? 'A2 (חזרה)' : 'A1 (פיקוד)') + '.' });
+      }
+      if (c.type === 'psu' && (has('L') || has('N')) && !(has('L') && has('N'))) issues.push({ tag: c.tag, kind: 'psu', msg: c.tag + ': לכניסת הספק מחובר רק ' + (has('L') ? 'L' : 'N') + '.' });
+    });
+    (p.wires || []).forEach(function (w) {
+      if (termList(w.from.term) || termList(w.to.term)) issues.push({ tag: w.from.tag, kind: 'multi', wire: w.id, msg: 'חוט ' + (w.no || '') + ' (' + w.from.tag + ':' + w.from.term + ' ← ' + w.to.tag + ':' + w.to.term + ') מאחד כמה מוליכים בחוט אחד — צריך לפרק לחוט לכל מוליך.' });
+    });
+    return issues;
+  }
+
   /* ---------- CSV ---------- */
   function csv(rows) {
     return '﻿' + rows.map(function (r) {
@@ -1057,7 +1167,7 @@
   }
 
   return {
-    natCmp: natCmp, compWiring: compWiring, compPurpose: compPurpose, normTag: normTag, normTerm: normTerm, tagBody: tagBody, pinKey: pinKey, uid: uid,
+    natCmp: natCmp, expandMultiCore: expandMultiCore, checkWiring: checkWiring, compWiring: compWiring, compPurpose: compPurpose, normTag: normTag, normTerm: normTerm, tagBody: tagBody, pinKey: pinKey, uid: uid,
     inferType: inferType, typeInfo: typeInfo, termRole: termRole, extractFromText: extractFromText, textLines: textLines,
     enrich: enrich, settingsOf: settingsOf, DEFAULT_SETTINGS: DEFAULT_SETTINGS, explainWire: explainWire,
     layout: layout, wireOrder: wireOrder, assemblySteps: assemblySteps, GROUPS: GROUPS,

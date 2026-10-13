@@ -723,3 +723,21 @@ body:has(.voice-card.speaking) .speak-btn { color: #fff; background: var(--coppe
 .split-form { align-items: end; }
 .split-form .field { margin: 0; min-width: 160px; }
 .pill-warn { font-size: .78rem; font-weight: 600; color: var(--warn); background: var(--warn-soft); border-radius: 999px; padding: 3px 10px; }
+
+/* ---------- בדיקת שלמות החיווט ---------- */
+#v-wires { display: grid; gap: 16px; }
+#v-wires[hidden] { display: none; }
+.wire-check { border-inline-start: 4px solid var(--warn); }
+.wc-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-height: 320px; overflow-y: auto; }
+.wc-list li { font-size: .88rem; padding: 6px 10px; background: var(--warn-soft); border-radius: var(--radius); }
+.wc-list li .ep-link { margin-inline-end: 6px; }
+
+/* ---------- החלק בכרטיס הרכיב ---------- */
+.part-box { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; align-items: start; margin: 0 0 12px; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(#fff, var(--surface-2)); }
+.part-pic { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 4px; }
+.part-art { display: block; width: 100%; height: auto; }
+.part-mk { font-weight: 700; font-size: .9rem; }
+.part-pn { font-size: .86rem; word-break: break-word; margin: 2px 0 4px; }
+.part-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.part-note { margin: 8px 0 0; font-size: .74rem; }
+.warn-t { color: var(--warn); }
