@@ -659,5 +659,18 @@
         "attribution": "unversioned"
       }
     ]
-  }
+  },
+  "renders": {
+    "latest": {
+      "id": "7d28e7e4-517c-4dd4-bc23-c3cafca0480d",
+      "completedAt": 1791914759037,
+      "output": "/home/user/devops-hub/videos/spider-luxe-he/renders/video.mp4",
+      "status": "completed",
+      "revision": "6e14c260-4168-4e7e-924e-46483ff49c62"
+    },
+    "retainedRevisions": [
+      "6e14c260-4168-4e7e-924e-46483ff49c62"
+    ]
+  },
+  "pendingArtifactCleanup": []
 }
