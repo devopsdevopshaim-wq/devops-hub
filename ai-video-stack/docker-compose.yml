@@ -1,0 +1,64 @@
+# Local AI video stack: ComfyUI (GPU) + HunyuanVideo + Seedance bridge + gateway for n8n.
+#   docker compose up -d                      -> ComfyUI + gateway (local only)
+#   docker compose --profile tunnel up -d     -> + Cloudflare tunnel so n8n Cloud can reach the gateway
+#   docker compose --profile n8n up -d        -> + self-hosted n8n (alternative to n8n Cloud)
+name: ai-video-stack
+
+services:
+  comfyui:
+    build: ./comfyui
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${COMFYUI_PORT:-8188}:8188"
+    environment:
+      - COMFYUI_ARGS=${COMFYUI_ARGS:-}
+    volumes:
+      - ./data/models:/opt/ComfyUI/models
+      - ./data/output:/opt/ComfyUI/output
+      - ./data/input:/opt/ComfyUI/input
+      - ./data/custom_nodes:/opt/ComfyUI/custom_nodes
+      - ./data/user:/opt/ComfyUI/user
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  gateway:
+    build: ./gateway
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - COMFYUI_URL=http://comfyui:8188
+      - DATA_DIR=/data
+    ports:
+      - "127.0.0.1:${GATEWAY_PORT:-8000}:8000"
+    volumes:
+      - ./data/gateway:/data
+    depends_on:
+      - comfyui
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.9.3
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - gateway
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    profiles: ["n8n"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      - GATEWAY_URL=http://gateway:8000
+      - N8N_SECURE_COOKIE=false
+      - GENERIC_TIMEZONE=${TZ:-Asia/Jerusalem}
+    volumes:
+      - ./data/n8n:/home/node/.n8n

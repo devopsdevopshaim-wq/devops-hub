@@ -42,6 +42,16 @@ function world({ key = true, ai = null, http = null } = {}) {
   check('hubs: a non-base64 picture is refused', r.code === 400 && sent.length === n);
   r = await call({ action: 'ai', prompt: 'x', image: 'A'.repeat(5600004), mime: 'image/png' });
   check('hubs: a huge picture is refused', r.code === 413 && sent.length === n);
+  r = await call({ action: 'ai', tag: 'wiring', prompt: 'קרא את התכנית', images: [{ data: 'QUJD', mime: 'image/jpeg' }, { data: 'REVG', mime: 'image/jpeg' }] });
+  const wb = sent.at(-1).body;
+  check('hubs: wiring pages go to Gemini together, with a long JSON answer', r.code === 200 && wb.contents[0].parts.length === 3 && wb.contents[0].parts[1].inline_data.data === 'REVG' && wb.generationConfig.responseMimeType === 'application/json' && wb.generationConfig.maxOutputTokens >= 32768);
+  n = sent.length;
+  r = await call({ action: 'ai', tag: 'wiring', prompt: 'x', images: Array.from({ length: 7 }, () => ({ data: 'QUJD', mime: 'image/jpeg' })) });
+  check('hubs: more than 6 pages are refused', r.code === 413 && sent.length === n);
+  r = await call({ action: 'ai', tag: 'wiring', prompt: 'x', images: [{ data: 'A'.repeat(3000000), mime: 'image/jpeg' }, { data: 'A'.repeat(3000000), mime: 'image/jpeg' }] });
+  check('hubs: pages over the total size are refused', r.code === 413 && sent.length === n);
+  r = await call({ action: 'ai', tag: 'wiring', prompt: 'x', images: [{ data: 'QUJD', mime: 'text/html' }] });
+  check('hubs: a non-image page is refused', r.code === 400 && sent.length === n);
   r = await call({ action: 'nope' });
   check('hubs: an unknown action is refused', r.code === 400);
 }

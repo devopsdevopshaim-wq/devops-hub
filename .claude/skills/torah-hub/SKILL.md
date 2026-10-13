@@ -5,7 +5,7 @@ description: "Work on the standalone site 'ספריית קודש, הלכות ח�
 
 # ספריית קודש, הלכות חגים ואוצר לחג (torah-hub)
 
-Three pages. The sacred library reads Tanakh, the siddur, Rashi/Rambam/Or HaChaim and the Babylonian Talmud live from Sefaria. Holiday halacha shows customs, laws and blessings for every holiday with real dates and candle-lighting/havdalah times (Jerusalem). The treasury lists haggadah, megillah, Shir HaShirim (for Friday, before Kabbalat Shabbat), tehillim and other files that surface by date, with a countdown.
+Four pages. The sacred library reads Tanakh, the siddur, Rashi/Rambam/Or HaChaim and the Babylonian Talmud live from Sefaria. Holiday halacha shows customs, laws and blessings for every holiday with real dates and candle-lighting/havdalah times (Jerusalem). The treasury lists haggadah, megillah, Shir HaShirim (for Friday, before Kabbalat Shabbat), tehillim and other files that surface by date, with a countdown.
 
 Live: https://devopsdevopshaim-wq.github.io/devops-hub/torah-hub/ · Code: `torah-hub/` in https://github.com/devopsdevopshaim-wq/devops-hub
 
@@ -17,6 +17,7 @@ The site is self-contained on GitHub Pages. It was written for a server (calls t
 | `index.html` | the library |
 | `holidays.html` | holiday halacha |
 | `library.html` | the treasury |
+| `ayin-hara.html`, `js/ayin-hara.js`, `css/ayin-hara.css` | evil eye and dreams: sources (open from Sefaria), a removal/protection checklist with the Berakhot 55b formula, a dream solver over Berakhot 56b–57b (AI optional), hatavat chalom. Hand-written: not produced by `tools/build-hubs.mjs`, which leaves these files alone |
 | `js/torah.js, js/holidays.js, js/library.js` | page logic |
 | `hub/lib/sefariaLibrary.js` | Sefaria reader and the catalog of books |
 | `hub/lib/holidayHalacha.js` | the content registry and the date computation |
