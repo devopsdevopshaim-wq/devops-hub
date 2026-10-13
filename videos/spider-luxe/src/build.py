@@ -1,4 +1,4 @@
-# Build one cut of SPIDER "The Atelier" as a HyperFrames project: frames (gen.py) + index.html + audio.
+# Build one cut of SPIDER v2 as a HyperFrames project: frames (gen.py) + overlay (letterbox, flashes) + index.html + audio.
 # usage: python3 build.py <en|he>      en -> videos/spider-luxe, he -> videos/spider-luxe-he
 import sys, os, json, shutil, subprocess
 
@@ -8,10 +8,14 @@ MAIN = os.path.dirname(HERE)
 PROJ = MAIN if LANG == 'en' else os.path.join(os.path.dirname(MAIN), 'spider-luxe-he')
 NAME = os.path.basename(PROJ)
 W, H = 1920, 1080
-STARTS = [0, 6, 12.5, 20, 29, 38, 47, 55, 63]; TOTAL = 73; XF = 0.8
-IDS = ['01-line', '02-name', '03-count', '04-intelligence', '05-engineering', '06-living', '07-heritage', '08-wall', '09-signature']
-# how each scene enters: a slow dissolve, or a dissolve through soft blur and scale (the "lens" cut)
-TRANS = [None, 'dissolve', 'lens', 'lens', 'dissolve', 'dissolve', 'dissolve', 'lens', 'dissolve']
+SC = [('01-open', 0.0, 7.2), ('02-montage', 7.2, 7.2), ('03-slam', 14.4, 4.8), ('04-tunnel', 19.2, 9.6),
+      ('05-ch-intelligence', 28.8, 9.6), ('06-ch-engineering', 38.4, 9.6), ('07-ch-life', 48.0, 9.6),
+      ('08-ch-heritage', 57.6, 9.6), ('09-recap', 67.2, 4.8), ('10-finale', 72.0, 9.6)]
+TOTAL = 81.6
+BIG = [7.2, 14.4, 19.2, 28.8, 72.0]
+MID = [38.4, 48.0, 57.6, 67.2]
+SMALL = [round(7.2 + 0.6 * k, 2) for k in range(1, 12)] + [round(67.2 + 0.6 * k, 2) for k in range(1, 8)]
+LB = 96   # letterbox bar height: a 2.2:1 picture inside 16:9
 
 if PROJ != MAIN:
     os.makedirs(PROJ, exist_ok=True)
@@ -20,28 +24,54 @@ if PROJ != MAIN:
     json.dump({'id': NAME, 'name': NAME}, open(os.path.join(PROJ, 'meta.json'), 'w'), indent=2)
     pj = open(os.path.join(MAIN, 'package.json')).read().replace('"spider-luxe"', f'"{NAME}"')
     open(os.path.join(PROJ, 'package.json'), 'w').write(pj)
-    for d in ('shots', 'fonts', 'vendor'):
+    for d in ('shots', 'sites', 'fonts', 'vendor'):
         shutil.rmtree(os.path.join(PROJ, 'assets', d), ignore_errors=True)
         shutil.copytree(os.path.join(MAIN, 'assets', d), os.path.join(PROJ, 'assets', d))
     shutil.copy(os.path.join(MAIN, 'assets', 'grain.png'), os.path.join(PROJ, 'assets', 'grain.png'))
+    shutil.rmtree(os.path.join(PROJ, 'assets', 'audio'), ignore_errors=True)
     os.makedirs(os.path.join(PROJ, 'assets', 'audio'), exist_ok=True)
     shutil.copy(os.path.join(MAIN, 'assets', 'audio', 'score-he.m4a'), os.path.join(PROJ, 'assets', 'audio', 'score-he.m4a'))
 
+shutil.rmtree(os.path.join(PROJ, 'compositions', 'frames'), ignore_errors=True)
 subprocess.run([sys.executable, os.path.join(HERE, 'gen.py'), PROJ, LANG], check=True)
 
-hosts = ''; tjs = ''
-for i, fid in enumerate(IDS):
-    end = STARTS[i + 1] + XF if i + 1 < len(IDS) else TOTAL
+# ---- overlay: anamorphic letterbox and light flashes on the cuts ----
+fl = ''
+for i, t in enumerate(BIG + MID + SMALL):
+    peak = .85 if t in BIG else .5 if t in MID else .16
+    dd = .5 if t in BIG else .35 if t in MID else .18
+    fl += (f"tl.fromTo('#flash', {{ opacity: {peak} }}, {{ opacity: 0, duration: {dd}, ease: 'power2.out', immediateRender: false }}, {t});\n")
+overlay = f'''<template>
+<style>
+#root{{position:absolute;inset:0;width:100%;height:100%;overflow:hidden}}
+.lb{{position:absolute;left:0;right:0;height:{LB}px;background:#000}}
+#flash{{position:absolute;inset:0;background:radial-gradient(70% 70% at 50% 50%,rgba(255,244,220,1),rgba(242,222,172,.6));opacity:0;mix-blend-mode:screen}}
+</style>
+<div id="root" data-composition-id="overlay" data-width="{W}" data-height="{H}" data-duration="{TOTAL}">
+<div class="clip" id="ov" data-start="0" data-duration="{TOTAL}" data-track-index="0" data-layout-allow-overflow data-layout-allow-occlusion>
+<div id="flash"></div><div class="lb" id="lbt" style="top:0"></div><div class="lb" id="lbb" style="bottom:0"></div>
+</div>
+</div>
+<script src="assets/vendor/gsap.min.js"></script>
+<script>
+(function(){{
+const tl = gsap.timeline({{ paused: true }});
+tl.fromTo('#lbt', {{ yPercent: -100 }}, {{ yPercent: 0, duration: 1.6, ease: 'expo.out' }}, 0.2);
+tl.fromTo('#lbb', {{ yPercent: 100 }}, {{ yPercent: 0, duration: 1.6, ease: 'expo.out' }}, 0.2);
+{fl}tl.to({{}}, {{ duration: {TOTAL} }}, 0);
+window.__timelines["overlay"] = tl;
+}})();
+</script>
+</template>
+'''
+open(os.path.join(PROJ, 'compositions', 'overlay.html'), 'w', encoding='utf-8').write(overlay)
+
+hosts = ''
+for i, (fid, st, d) in enumerate(SC):
     hosts += (f'      <div id="el-{fid}" class="scene" data-composition-id="{fid}" data-composition-src="compositions/frames/{fid}.html" '
-              f'data-start="{STARTS[i]}" data-duration="{round(end - STARTS[i], 2)}" data-track-index="{i % 2}"></div>\n')
-for i in range(1, len(IDS)):
-    a, b, t = f'#el-{IDS[i-1]}', f'#el-{IDS[i]}', STARTS[i]
-    if TRANS[i] == 'dissolve':
-        tjs += (f'        tl.to("{a}", {{ opacity: 0, duration: {XF}, ease: "sine.inOut" }}, {t});\n'
-                f'        tl.fromTo("{b}", {{ opacity: 0 }}, {{ opacity: 1, duration: {XF}, ease: "sine.inOut" }}, {t});\n')
-    else:
-        tjs += (f'        tl.to("{a}", {{ opacity: 0, scale: 1.08, filter: "blur(12px)", duration: {XF}, ease: "power2.in" }}, {t});\n'
-                f'        tl.fromTo("{b}", {{ opacity: 0, scale: 0.94, filter: "blur(12px)" }}, {{ opacity: 1, scale: 1, filter: "blur(0px)", duration: {XF + 0.4}, ease: "power3.out" }}, {t});\n')
+              f'data-start="{st}" data-duration="{d}" data-track-index="{i % 2}"></div>\n')
+hosts += (f'      <div id="el-overlay" class="scene" data-composition-id="overlay" data-composition-src="compositions/overlay.html" '
+          f'data-start="0" data-duration="{TOTAL}" data-track-index="3"></div>\n')
 audio = 'assets/audio/mix-en.m4a' if LANG == 'en' else 'assets/audio/score-he.m4a'
 index = f'''<!DOCTYPE html>
 <html lang="{LANG}">
@@ -52,7 +82,7 @@ index = f'''<!DOCTYPE html>
     <style>
       * {{ margin: 0; padding: 0; box-sizing: border-box; }}
       html, body {{ width: {W}px; height: {H}px; overflow: hidden; background: #000; }}
-      #root {{ position: relative; width: {W}px; height: {H}px; overflow: hidden; background: #09080A; }}
+      #root {{ position: relative; width: {W}px; height: {H}px; overflow: hidden; background: #070608; }}
       .scene {{ position: absolute; inset: 0; width: 100%; height: 100%; }}
     </style>
   </head>
@@ -64,7 +94,7 @@ index = f'''<!DOCTYPE html>
       (function () {{
         window.__timelines = window.__timelines || {{}};
         const tl = gsap.timeline({{ paused: true }});
-{tjs}        tl.to({{}}, {{ duration: {TOTAL} }}, 0);
+        tl.to({{}}, {{ duration: {TOTAL} }}, 0);
         window.__timelines["main"] = tl;
       }})();
     </script>

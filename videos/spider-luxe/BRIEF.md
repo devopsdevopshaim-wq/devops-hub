@@ -2,13 +2,13 @@
 workflow: product-launch-video
 flow: automation
 storyboard: no
-message: "SPIDER is a digital atelier: one craftsman, 48 bespoke systems, each one real and live"
+message: "Fifty-one live systems. One mind. SPIDER, the digital atelier of Haim Krispin"
 destination: website, youtube
 aspect: 1920x1080
 language: en, he
 audience: premium clients and partners visiting the SPIDER site
-length: 73s
-angle: luxury-atelier
+length: 82s
+angle: cinematic-trailer
 ---
 
 ## Intent
@@ -34,3 +34,12 @@ slow camera, light sweeps across real screenshots floating as glass panels. A si
 
 - 16:9 only, for the website and YouTube.
 - Sources: src/gen.py (frames), src/vo.py (English narration), src/score.py (music), src/build.py (assembles both cuts).
+
+## Revision 2
+
+The user found v1 too slow and wanted more quality, and corrected the count: the site has 51 projects (not 48).
+They asked for more pace and energy, cinematic depth, the sites shown alive, and better voice and music,
+in a "cinematic luxury" style. v2: 100 BPM trailer score with every cut on the beat grid; anamorphic letterbox;
+light beams, flashes and a logo slam; a 3D flight through a corridor of all the project screenshots counting to 51;
+four chapters that orbit live browser windows scrolling the real sites (captured locally with Playwright from this
+repo into assets/sites/); a 16-cut recap; narration with trailer processing (src/vo.py) and src/audio.sh for the mix.

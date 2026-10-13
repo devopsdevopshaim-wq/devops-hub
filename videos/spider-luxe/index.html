@@ -7,44 +7,30 @@
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
-      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #09080A; }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #070608; }
       .scene { position: absolute; inset: 0; width: 100%; height: 100%; }
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="73" data-width="1920" data-height="1080">
-      <div id="el-01-line" class="scene" data-composition-id="01-line" data-composition-src="compositions/frames/01-line.html" data-start="0" data-duration="6.8" data-track-index="0"></div>
-      <div id="el-02-name" class="scene" data-composition-id="02-name" data-composition-src="compositions/frames/02-name.html" data-start="6" data-duration="7.3" data-track-index="1"></div>
-      <div id="el-03-count" class="scene" data-composition-id="03-count" data-composition-src="compositions/frames/03-count.html" data-start="12.5" data-duration="8.3" data-track-index="0"></div>
-      <div id="el-04-intelligence" class="scene" data-composition-id="04-intelligence" data-composition-src="compositions/frames/04-intelligence.html" data-start="20" data-duration="9.8" data-track-index="1"></div>
-      <div id="el-05-engineering" class="scene" data-composition-id="05-engineering" data-composition-src="compositions/frames/05-engineering.html" data-start="29" data-duration="9.8" data-track-index="0"></div>
-      <div id="el-06-living" class="scene" data-composition-id="06-living" data-composition-src="compositions/frames/06-living.html" data-start="38" data-duration="9.8" data-track-index="1"></div>
-      <div id="el-07-heritage" class="scene" data-composition-id="07-heritage" data-composition-src="compositions/frames/07-heritage.html" data-start="47" data-duration="8.8" data-track-index="0"></div>
-      <div id="el-08-wall" class="scene" data-composition-id="08-wall" data-composition-src="compositions/frames/08-wall.html" data-start="55" data-duration="8.8" data-track-index="1"></div>
-      <div id="el-09-signature" class="scene" data-composition-id="09-signature" data-composition-src="compositions/frames/09-signature.html" data-start="63" data-duration="10" data-track-index="0"></div>
-      <audio id="el-audio" src="assets/audio/mix-en.m4a" data-start="0" data-duration="73" data-track-index="10" data-volume="1"></audio>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="81.6" data-width="1920" data-height="1080">
+      <div id="el-01-open" class="scene" data-composition-id="01-open" data-composition-src="compositions/frames/01-open.html" data-start="0.0" data-duration="7.2" data-track-index="0"></div>
+      <div id="el-02-montage" class="scene" data-composition-id="02-montage" data-composition-src="compositions/frames/02-montage.html" data-start="7.2" data-duration="7.2" data-track-index="1"></div>
+      <div id="el-03-slam" class="scene" data-composition-id="03-slam" data-composition-src="compositions/frames/03-slam.html" data-start="14.4" data-duration="4.8" data-track-index="0"></div>
+      <div id="el-04-tunnel" class="scene" data-composition-id="04-tunnel" data-composition-src="compositions/frames/04-tunnel.html" data-start="19.2" data-duration="9.6" data-track-index="1"></div>
+      <div id="el-05-ch-intelligence" class="scene" data-composition-id="05-ch-intelligence" data-composition-src="compositions/frames/05-ch-intelligence.html" data-start="28.8" data-duration="9.6" data-track-index="0"></div>
+      <div id="el-06-ch-engineering" class="scene" data-composition-id="06-ch-engineering" data-composition-src="compositions/frames/06-ch-engineering.html" data-start="38.4" data-duration="9.6" data-track-index="1"></div>
+      <div id="el-07-ch-life" class="scene" data-composition-id="07-ch-life" data-composition-src="compositions/frames/07-ch-life.html" data-start="48.0" data-duration="9.6" data-track-index="0"></div>
+      <div id="el-08-ch-heritage" class="scene" data-composition-id="08-ch-heritage" data-composition-src="compositions/frames/08-ch-heritage.html" data-start="57.6" data-duration="9.6" data-track-index="1"></div>
+      <div id="el-09-recap" class="scene" data-composition-id="09-recap" data-composition-src="compositions/frames/09-recap.html" data-start="67.2" data-duration="4.8" data-track-index="0"></div>
+      <div id="el-10-finale" class="scene" data-composition-id="10-finale" data-composition-src="compositions/frames/10-finale.html" data-start="72.0" data-duration="9.6" data-track-index="1"></div>
+      <div id="el-overlay" class="scene" data-composition-id="overlay" data-composition-src="compositions/overlay.html" data-start="0" data-duration="81.6" data-track-index="3"></div>
+      <audio id="el-audio" src="assets/audio/mix-en.m4a" data-start="0" data-duration="81.6" data-track-index="10" data-volume="1"></audio>
     </div>
     <script>
       (function () {
         window.__timelines = window.__timelines || {};
         const tl = gsap.timeline({ paused: true });
-        tl.to("#el-01-line", { opacity: 0, duration: 0.8, ease: "sine.inOut" }, 6);
-        tl.fromTo("#el-02-name", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "sine.inOut" }, 6);
-        tl.to("#el-02-name", { opacity: 0, scale: 1.08, filter: "blur(12px)", duration: 0.8, ease: "power2.in" }, 12.5);
-        tl.fromTo("#el-03-count", { opacity: 0, scale: 0.94, filter: "blur(12px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.2000000000000002, ease: "power3.out" }, 12.5);
-        tl.to("#el-03-count", { opacity: 0, scale: 1.08, filter: "blur(12px)", duration: 0.8, ease: "power2.in" }, 20);
-        tl.fromTo("#el-04-intelligence", { opacity: 0, scale: 0.94, filter: "blur(12px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.2000000000000002, ease: "power3.out" }, 20);
-        tl.to("#el-04-intelligence", { opacity: 0, duration: 0.8, ease: "sine.inOut" }, 29);
-        tl.fromTo("#el-05-engineering", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "sine.inOut" }, 29);
-        tl.to("#el-05-engineering", { opacity: 0, duration: 0.8, ease: "sine.inOut" }, 38);
-        tl.fromTo("#el-06-living", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "sine.inOut" }, 38);
-        tl.to("#el-06-living", { opacity: 0, duration: 0.8, ease: "sine.inOut" }, 47);
-        tl.fromTo("#el-07-heritage", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "sine.inOut" }, 47);
-        tl.to("#el-07-heritage", { opacity: 0, scale: 1.08, filter: "blur(12px)", duration: 0.8, ease: "power2.in" }, 55);
-        tl.fromTo("#el-08-wall", { opacity: 0, scale: 0.94, filter: "blur(12px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.2000000000000002, ease: "power3.out" }, 55);
-        tl.to("#el-08-wall", { opacity: 0, duration: 0.8, ease: "sine.inOut" }, 63);
-        tl.fromTo("#el-09-signature", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "sine.inOut" }, 63);
-        tl.to({}, { duration: 73 }, 0);
+        tl.to({}, { duration: 81.6 }, 0);
         window.__timelines["main"] = tl;
       })();
     </script>

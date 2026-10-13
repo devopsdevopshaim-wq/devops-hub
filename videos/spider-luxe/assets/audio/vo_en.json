@@ -1,104 +1,97 @@
 [
  {
-  "scene": 1,
-  "start": 1.6,
-  "end": 4.155,
-  "text": "Every masterpiece begins with a single line."
+  "start": 1.2,
+  "end": 2.47,
+  "text": "Fifty-one systems."
  },
  {
-  "scene": 2,
-  "start": 6.9,
-  "end": 7.863,
+  "start": 4.85,
+  "end": 5.664,
+  "text": "One mind."
+ },
+ {
+  "start": 7.3,
+  "end": 8.038,
+  "text": "Designed."
+ },
+ {
+  "start": 9.7,
+  "end": 10.486,
+  "text": "Engineered."
+ },
+ {
+  "start": 12.1,
+  "end": 12.758,
+  "text": "Live."
+ },
+ {
+  "start": 14.7,
+  "end": 15.655,
   "text": "This is SPIDER."
  },
  {
-  "scene": 2,
-  "start": 8.6,
-  "end": 10.656,
+  "start": 16.3,
+  "end": 18.388,
   "text": "The digital atelier of Haim Krispin."
  },
  {
-  "scene": 3,
-  "start": 13.3,
-  "end": 14.997,
-  "text": "Forty-eight bespoke systems."
+  "start": 20.0,
+  "end": 22.552,
+  "text": "Fifty-one live systems, built from scratch."
  },
  {
-  "scene": 3,
-  "start": 16.1,
-  "end": 18.287,
-  "text": "Each one real. Each one live."
+  "start": 24.3,
+  "end": 27.472,
+  "text": "A.I., engineering, everyday life, and heritage."
  },
  {
-  "scene": 4,
-  "start": 20.8,
-  "end": 24.081,
-  "text": "Artificial intelligence, tailored to the way you work."
+  "start": 29.3,
+  "end": 30.816,
+  "text": "Intelligence that creates."
  },
  {
-  "scene": 4,
-  "start": 24.8,
-  "end": 27.992,
-  "text": "Agents, assistants and studios that think with you."
+  "start": 31.7,
+  "end": 34.875,
+  "text": "Studios for design, comics, books and campaigns."
  },
  {
-  "scene": 5,
-  "start": 29.8,
-  "end": 32.163,
-  "text": "Engineering, with absolute precision."
+  "start": 38.9,
+  "end": 41.062,
+  "text": "Engineering, down to the last wire."
  },
  {
-  "scene": 5,
-  "start": 33.0,
-  "end": 35.913,
-  "text": "From robotic parking, to the electrical panel."
+  "start": 41.9,
+  "end": 45.072,
+  "text": "Robotic parking. Control cabinets. Networks."
  },
  {
-  "scene": 6,
-  "start": 38.8,
-  "end": 40.913,
-  "text": "Refined tools for everyday life."
+  "start": 48.5,
+  "end": 49.833,
+  "text": "Tools that run a life."
  },
  {
-  "scene": 6,
-  "start": 41.8,
-  "end": 44.084,
-  "text": "Travel, finance, health and growth."
+  "start": 50.9,
+  "end": 52.611,
+  "text": "Travel, health, money and home."
  },
  {
-  "scene": 7,
-  "start": 47.8,
-  "end": 50.447,
-  "text": "Studios for creation, and for heritage."
+  "start": 58.1,
+  "end": 59.595,
+  "text": "And a library for the soul."
  },
  {
-  "scene": 7,
-  "start": 51.0,
-  "end": 54.213,
-  "text": "Books, comics, and a library of sacred texts."
+  "start": 60.6,
+  "end": 63.579,
+  "text": "Sacred texts, holidays, and the meaning of dreams."
  },
  {
-  "scene": 8,
-  "start": 56.0,
-  "end": 58.146,
-  "text": "One craftsman. Every detail."
- },
- {
-  "scene": 8,
-  "start": 59.2,
-  "end": 60.952,
-  "text": "From the first line, to live."
- },
- {
-  "scene": 9,
-  "start": 65.4,
-  "end": 66.069,
+  "start": 72.7,
+  "end": 73.397,
   "text": "SPIDER."
  },
  {
-  "scene": 9,
-  "start": 66.8,
-  "end": 69.552,
-  "text": "Your next system, crafted by Haim Krispin."
+  "start": 74.4,
+  "end": 77.109,
+  "text": "Your next system. Crafted by Haim Krispin."
  }
 ]

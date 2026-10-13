@@ -1,0 +1,49 @@
+<template>
+<style>
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden}
+.lb{position:absolute;left:0;right:0;height:96px;background:#000}
+#flash{position:absolute;inset:0;background:radial-gradient(70% 70% at 50% 50%,rgba(255,244,220,1),rgba(242,222,172,.6));opacity:0;mix-blend-mode:screen}
+</style>
+<div id="root" data-composition-id="overlay" data-width="1920" data-height="1080" data-duration="81.6">
+<div class="clip" id="ov" data-start="0" data-duration="81.6" data-track-index="0" data-layout-allow-overflow data-layout-allow-occlusion>
+<div id="flash"></div><div class="lb" id="lbt" style="top:0"></div><div class="lb" id="lbb" style="bottom:0"></div>
+</div>
+</div>
+<script src="assets/vendor/gsap.min.js"></script>
+<script>
+(function(){
+const tl = gsap.timeline({ paused: true });
+tl.fromTo('#lbt', { yPercent: -100 }, { yPercent: 0, duration: 1.6, ease: 'expo.out' }, 0.2);
+tl.fromTo('#lbb', { yPercent: 100 }, { yPercent: 0, duration: 1.6, ease: 'expo.out' }, 0.2);
+tl.fromTo('#flash', { opacity: 0.85 }, { opacity: 0, duration: 0.5, ease: 'power2.out', immediateRender: false }, 7.2);
+tl.fromTo('#flash', { opacity: 0.85 }, { opacity: 0, duration: 0.5, ease: 'power2.out', immediateRender: false }, 14.4);
+tl.fromTo('#flash', { opacity: 0.85 }, { opacity: 0, duration: 0.5, ease: 'power2.out', immediateRender: false }, 19.2);
+tl.fromTo('#flash', { opacity: 0.85 }, { opacity: 0, duration: 0.5, ease: 'power2.out', immediateRender: false }, 28.8);
+tl.fromTo('#flash', { opacity: 0.85 }, { opacity: 0, duration: 0.5, ease: 'power2.out', immediateRender: false }, 72.0);
+tl.fromTo('#flash', { opacity: 0.5 }, { opacity: 0, duration: 0.35, ease: 'power2.out', immediateRender: false }, 38.4);
+tl.fromTo('#flash', { opacity: 0.5 }, { opacity: 0, duration: 0.35, ease: 'power2.out', immediateRender: false }, 48.0);
+tl.fromTo('#flash', { opacity: 0.5 }, { opacity: 0, duration: 0.35, ease: 'power2.out', immediateRender: false }, 57.6);
+tl.fromTo('#flash', { opacity: 0.5 }, { opacity: 0, duration: 0.35, ease: 'power2.out', immediateRender: false }, 67.2);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 7.8);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 8.4);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 9.0);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 9.6);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 10.2);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 10.8);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 11.4);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 12.0);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 12.6);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 13.2);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 13.8);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 67.8);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 68.4);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 69.0);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 69.6);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 70.2);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 70.8);
+tl.fromTo('#flash', { opacity: 0.16 }, { opacity: 0, duration: 0.18, ease: 'power2.out', immediateRender: false }, 71.4);
+tl.to({}, { duration: 81.6 }, 0);
+window.__timelines["overlay"] = tl;
+})();
+</script>
+</template>
