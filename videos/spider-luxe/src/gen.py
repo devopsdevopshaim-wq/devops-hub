@@ -238,7 +238,7 @@ def label_html(lid, pid):
             f'<div class="§-nm">{pname(pid)}</div><div class="§-ad">{paddr(pid)}</div></div>')
 
 def label_js(lid, t0, d, quick=False):
-    a = .25 if quick else .5
+    a = min(.25 if quick else .5, max(.1, d - .4))
     return (f"tl.set('#§-{lid}', {{ opacity: 0 }}, {t0}); tl.fromTo('#§-{lid}', {{ opacity: 0, y: 18 }}, {{ opacity: 1, y: 0, duration: {a}, ease: 'expo.out' }}, {round(t0 + (0.05 if quick else 0.25), 3)});\n"
             f"tl.set('#§-{lid}', {{ opacity: 0 }}, {round(t0 + d, 3)});\n")
 
@@ -316,7 +316,7 @@ def chapter(idx, ci, seed):
     body += '<div class="§-topshade"></div><div class="§-shade"></div>'
     for k, (kind, src) in enumerate(pages):
         body += label_html(f'l{k}', src)
-        js += label_js(f'l{k}', round(k * seg + (1.9 if k == 0 else 0), 3), seg - (1.9 if k == 0 else 0))
+        js += label_js(f'l{k}', round(k * seg + (1.5 if k == 0 else 0), 3), round(seg - (1.5 if k == 0 else 0), 3))
     css = FULL_CSS + f'''#§-card{{position:absolute;inset:0;background:linear-gradient({'270deg' if HE else '90deg'},rgba(7,6,8,.94) 30%,rgba(7,6,8,.35) 75%,rgba(7,6,8,.1))}}
 #§-tb{{position:absolute;top:330px;{SIDE}:120px;width:900px;direction:{DIR};text-align:{ALIGN}}}
 #§-num{{font-family:'Bellefair',serif;font-size:190px;line-height:.9;color:transparent;-webkit-text-stroke:1.6px {GOLD}}}
