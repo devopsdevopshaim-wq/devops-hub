@@ -1,0 +1,345 @@
+<template>
+<style>
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKerUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcbUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKcLUC_2fi-Vl4.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-TUZ3zwprpvBS1izr_vOMscGKfrUC_2fi-Q.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzamW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzZmW5Kb8VZBHR.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/fonts/captured-2sDcZGJYnIjSi6H75xkzaGW5Kb8VZA.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N9vo3huR_DaS8.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-kJExBuYY6AAuhiXUxG1N-Po3huR_DQ.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwgknk-6nFg.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/captured-tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPgzpTn5_PDb9no.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face{
+  font-family: 'Michroma';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/captured-PN_zRfy9qWD8fEagAPg9pTn5_PDb.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;color:#f3ede2;font-family:'Assistant',sans-serif}
+.f02-bg{position:absolute;inset:0;background:radial-gradient(90% 80% at 50% 38%,#1a1610 0%,#0e0c0a 45%,#09080a 100%)}
+.f02-dust{position:absolute;border-radius:50%;background:#f2deac}
+.f02-grain{position:absolute;left:-256px;top:-256px;width:2432px;height:1592px;background:url(assets/grain.png);opacity:.06;mix-blend-mode:overlay}
+.f02-vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 46%,rgba(0,0,0,0) 50%,rgba(0,0,0,.72) 100%)}
+.f02-ov{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:visible}
+.f02-tx{position:absolute;direction:ltr;text-align:left}
+.f02-eye{display:block;font-family:'Michroma',sans-serif;font-size:19px;letter-spacing:.42em;color:#d6b46e;text-transform:uppercase;margin-bottom:30px}
+.f02-h1{font-family:'Bellefair',serif;font-weight:400;font-size:96px;line-height:1.08;letter-spacing:-.005em}
+.f02-h2{font-family:'Bellefair',serif;font-weight:400;font-size:74px;line-height:1.1}
+.f02-lede{font-family:'Assistant',sans-serif;font-weight:400;font-size:32px;color:#8f887b;margin-top:30px;line-height:1.45;letter-spacing:.01em}
+.f02-gold{color:#f2deac}
+.f02-m{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .14em}
+.f02-w{display:inline-block;white-space:pre}
+.f02-rule{display:block;width:120px;height:1px;background:#d6b46e;margin-top:36px;transform-origin:0% 50%}
+.f02-panel{position:absolute;overflow:visible}
+.f02-glass{position:absolute;inset:0;border-radius:10px;overflow:hidden;border:1px solid rgba(214,180,110,.55);box-shadow:0 40px 90px rgba(0,0,0,.75),0 0 0 1px rgba(0,0,0,.6);background:#111;-webkit-box-reflect:below 14px linear-gradient(transparent 72%,rgba(255,255,255,.13))}
+.f02-glass img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.f02-sheen{position:absolute;top:-20%;left:0;width:34%;height:140%;background:linear-gradient(100deg,rgba(255,240,210,0),rgba(255,240,210,.22),rgba(255,240,210,0));pointer-events:none}
+.f02-cap{position:absolute;top:calc(100% + 22px);left:0;direction:ltr;font-family:'Michroma',sans-serif;font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:#8f887b;white-space:nowrap}
+.f02-hair{stroke:#d6b46e;stroke-width:1.2;fill:none}
+
+#f02-word{position:absolute;left:0;right:0;top:520px;text-align:center;font-family:'Michroma',sans-serif;font-size:112px;color:#f3ede2;letter-spacing:.38em;padding-left:.38em;direction:ltr}
+#f02-sub{position:absolute;left:0;right:0;top:700px;text-align:center;direction:ltr;font-family:'Bellefair',serif;font-size:46px;color:#f2deac}
+#f02-r1,#f02-r2{position:absolute;top:735px;width:160px;height:1px;background:#d6b46e}
+#f02-glow{position:absolute;left:580.0px;top:-50px;width:760px;height:760px;background:radial-gradient(closest-side,rgba(214,180,110,.16),rgba(214,180,110,0))}
+#f02-shine{position:absolute;left:0;top:470px;width:520px;height:230px;background:radial-gradient(closest-side,rgba(255,236,190,.16),rgba(255,236,190,0));mix-blend-mode:screen}
+</style>
+<div id="root" data-composition-id="02-name" data-width="1920" data-height="1080" data-duration="7.3">
+<div id="f02-bgclip" class="clip f02-bg" data-start="0" data-duration="7.3" data-track-index="0"><div id="f02-dustl"><i class="f02-dust" data-dy="-154" data-dx="19" style="left:1196px;top:801px;width:2.9px;height:2.9px;opacity:0.57"></i><i class="f02-dust" data-dy="-125" data-dx="32" style="left:56px;top:503px;width:3.3px;height:3.3px;opacity:0.20"></i><i class="f02-dust" data-dy="-117" data-dx="-39" style="left:901px;top:266px;width:2.3px;height:2.3px;opacity:0.25"></i><i class="f02-dust" data-dy="-76" data-dx="24" style="left:537px;top:990px;width:2.8px;height:2.8px;opacity:0.21"></i><i class="f02-dust" data-dy="-147" data-dx="-23" style="left:1186px;top:137px;width:1.0px;height:1.0px;opacity:0.25"></i><i class="f02-dust" data-dy="-156" data-dx="3" style="left:1886px;top:942px;width:1.7px;height:1.7px;opacity:0.46"></i><i class="f02-dust" data-dy="-157" data-dx="31" style="left:393px;top:1016px;width:2.7px;height:2.7px;opacity:0.28"></i><i class="f02-dust" data-dy="-67" data-dx="-16" style="left:693px;top:179px;width:1.3px;height:1.3px;opacity:0.42"></i><i class="f02-dust" data-dy="-91" data-dx="25" style="left:6px;top:732px;width:1.8px;height:1.8px;opacity:0.37"></i><i class="f02-dust" data-dy="-66" data-dx="38" style="left:606px;top:520px;width:2.7px;height:2.7px;opacity:0.16"></i><i class="f02-dust" data-dy="-139" data-dx="-11" style="left:1440px;top:912px;width:1.0px;height:1.0px;opacity:0.41"></i><i class="f02-dust" data-dy="-156" data-dx="-24" style="left:17px;top:50px;width:1.4px;height:1.4px;opacity:0.49"></i><i class="f02-dust" data-dy="-95" data-dx="2" style="left:1785px;top:1017px;width:1.8px;height:1.8px;opacity:0.50"></i><i class="f02-dust" data-dy="-146" data-dx="-37" style="left:207px;top:808px;width:2.9px;height:2.9px;opacity:0.58"></i><i class="f02-dust" data-dy="-152" data-dx="-13" style="left:175px;top:368px;width:2.5px;height:2.5px;opacity:0.57"></i><i class="f02-dust" data-dy="-78" data-dx="-34" style="left:1047px;top:337px;width:1.8px;height:1.8px;opacity:0.22"></i><i class="f02-dust" data-dy="-65" data-dx="39" style="left:1323px;top:1076px;width:1.4px;height:1.4px;opacity:0.39"></i><i class="f02-dust" data-dy="-143" data-dx="-4" style="left:779px;top:256px;width:2.4px;height:2.4px;opacity:0.34"></i><i class="f02-dust" data-dy="-109" data-dx="27" style="left:107px;top:989px;width:1.1px;height:1.1px;opacity:0.21"></i><i class="f02-dust" data-dy="-139" data-dx="-31" style="left:1405px;top:1026px;width:2.5px;height:2.5px;opacity:0.35"></i><i class="f02-dust" data-dy="-105" data-dx="40" style="left:287px;top:912px;width:1.7px;height:1.7px;opacity:0.53"></i><i class="f02-dust" data-dy="-133" data-dx="-2" style="left:1874px;top:490px;width:2.2px;height:2.2px;opacity:0.28"></i><i class="f02-dust" data-dy="-159" data-dx="37" style="left:775px;top:158px;width:1.9px;height:1.9px;opacity:0.43"></i><i class="f02-dust" data-dy="-87" data-dx="23" style="left:959px;top:366px;width:1.2px;height:1.2px;opacity:0.54"></i><i class="f02-dust" data-dy="-129" data-dx="13" style="left:694px;top:849px;width:2.9px;height:2.9px;opacity:0.49"></i><i class="f02-dust" data-dy="-109" data-dx="22" style="left:698px;top:761px;width:1.7px;height:1.7px;opacity:0.46"></i><i class="f02-dust" data-dy="-118" data-dx="-39" style="left:564px;top:1021px;width:2.6px;height:2.6px;opacity:0.40"></i><i class="f02-dust" data-dy="-142" data-dx="12" style="left:481px;top:725px;width:2.1px;height:2.1px;opacity:0.51"></i><i class="f02-dust" data-dy="-143" data-dx="-12" style="left:668px;top:696px;width:2.8px;height:2.8px;opacity:0.53"></i><i class="f02-dust" data-dy="-156" data-dx="1" style="left:1670px;top:743px;width:3.3px;height:3.3px;opacity:0.39"></i><i class="f02-dust" data-dy="-108" data-dx="15" style="left:319px;top:904px;width:3.2px;height:3.2px;opacity:0.47"></i><i class="f02-dust" data-dy="-118" data-dx="13" style="left:1402px;top:186px;width:2.9px;height:2.9px;opacity:0.34"></i><i class="f02-dust" data-dy="-132" data-dx="-38" style="left:1198px;top:837px;width:2.5px;height:2.5px;opacity:0.22"></i><i class="f02-dust" data-dy="-129" data-dx="10" style="left:847px;top:702px;width:1.5px;height:1.5px;opacity:0.17"></i><i class="f02-dust" data-dy="-73" data-dx="-15" style="left:905px;top:244px;width:1.1px;height:1.1px;opacity:0.23"></i><i class="f02-dust" data-dy="-98" data-dx="9" style="left:371px;top:39px;width:2.1px;height:2.1px;opacity:0.42"></i><i class="f02-dust" data-dy="-101" data-dx="-18" style="left:457px;top:975px;width:1.0px;height:1.0px;opacity:0.33"></i><i class="f02-dust" data-dy="-64" data-dx="9" style="left:221px;top:898px;width:1.9px;height:1.9px;opacity:0.19"></i><i class="f02-dust" data-dy="-156" data-dx="25" style="left:1047px;top:367px;width:2.4px;height:2.4px;opacity:0.34"></i><i class="f02-dust" data-dy="-74" data-dx="8" style="left:1561px;top:694px;width:1.9px;height:1.9px;opacity:0.40"></i><i class="f02-dust" data-dy="-95" data-dx="31" style="left:1838px;top:1045px;width:2.5px;height:2.5px;opacity:0.15"></i><i class="f02-dust" data-dy="-74" data-dx="10" style="left:207px;top:611px;width:2.5px;height:2.5px;opacity:0.55"></i><i class="f02-dust" data-dy="-89" data-dx="38" style="left:722px;top:466px;width:1.5px;height:1.5px;opacity:0.32"></i><i class="f02-dust" data-dy="-86" data-dx="38" style="left:1845px;top:987px;width:2.4px;height:2.4px;opacity:0.37"></i><i class="f02-dust" data-dy="-109" data-dx="-17" style="left:798px;top:345px;width:3.4px;height:3.4px;opacity:0.36"></i><i class="f02-dust" data-dy="-89" data-dx="23" style="left:234px;top:671px;width:2.1px;height:2.1px;opacity:0.52"></i></div></div>
+<div class="clip" data-start="0" data-duration="7.3" data-track-index="1" id="f02-stage" data-layout-allow-overflow><div id="f02-push" style="position:absolute;inset:0">
+<div id="f02-glow"></div><svg class="f02-ov" viewBox="0 0 1920 1080"><g id="f02-web"><line class="f02-hair f02-sp" x1="960.0" y1="330" x2="1063.9" y2="390.0" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><line class="f02-hair f02-sp" x1="960.0" y1="330" x2="960.0" y2="450.0" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><line class="f02-hair f02-sp" x1="960.0" y1="330" x2="856.1" y2="390.0" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><line class="f02-hair f02-sp" x1="960.0" y1="330" x2="856.1" y2="270.0" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><line class="f02-hair f02-sp" x1="960.0" y1="330" x2="960.0" y2="210.0" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><line class="f02-hair f02-sp" x1="960.0" y1="330" x2="1063.9" y2="270.0" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><polyline class="f02-hair f02-rg" points="997.4,351.6 960.0,373.2 922.6,351.6 922.6,308.4 960.0,286.8 997.4,308.4 997.4,351.6" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><polyline class="f02-hair f02-rg" points="1028.6,369.6 960.0,409.2 891.4,369.6 891.4,290.4 960.0,250.8 1028.6,290.4 1028.6,369.6" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><polyline class="f02-hair f02-rg" points="1059.8,387.6 960.0,445.2 860.2,387.6 860.2,272.4 960.0,214.8 1059.8,272.4 1059.8,387.6" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><circle id="f02-core" cx="960.0" cy="330" r="5" fill="#f2deac"/></g></svg><div id="f02-word"><span class="f02-ch" style="display:inline-block">S</span><span class="f02-ch" style="display:inline-block">P</span><span class="f02-ch" style="display:inline-block">I</span><span class="f02-ch" style="display:inline-block">D</span><span class="f02-ch" style="display:inline-block">E</span><span class="f02-ch" style="display:inline-block">R</span></div><div id="f02-shine"></div><div id="f02-sub">The digital atelier of Haim Krispin</div>
+</div></div>
+<div id="f02-fx" class="clip" data-start="0" data-duration="7.3" data-track-index="2" data-layout-allow-overflow><div class="f02-vig"></div><div class="f02-grain" id="f02-grain"></div></div>
+</div>
+<script src="assets/vendor/gsap.min.js"></script>
+<script>
+(function(){
+
+const tl = gsap.timeline({ paused: true });
+const Q = s => document.querySelector(s);
+const QA = s => Array.from(document.querySelectorAll(s));
+const HE = false, D = 7.3;
+const rise = (sel, at, opt) => tl.fromTo(sel, { yPercent: 115, opacity: 0 }, Object.assign({ yPercent: 0, opacity: 1, duration: 1.3, ease: 'expo.out', stagger: 0.09 }, opt || {}), at);
+const fadeUp = (sel, at, opt) => tl.fromTo(sel, { y: 18, opacity: 0, filter: 'blur(8px)' }, Object.assign({ y: 0, opacity: 1, filter: 'blur(0px)', duration: 1.4, ease: 'power3.out' }, opt || {}), at);
+const rule = (sel, at) => tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: 1.4, ease: 'expo.inOut' }, at);
+const draw = (sel, at, d, ease) => tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d || 1.6, ease: ease || 'power2.inOut' }, at);
+const panelIn = (id, at, opt) => {
+  const o = opt || {}; const side = o.side || (HE ? -1 : 1);
+  tl.fromTo('#f02-' + id, { opacity: 0, x: 80 * side, rotationY: -22 * side, z: -260, transformPerspective: 1800, filter: 'blur(14px) brightness(.4)' },
+    { opacity: 1, x: 0, rotationY: o.ry || 0, z: 0, filter: 'blur(0px) brightness(1)', duration: o.d || 1.8, ease: 'expo.out' }, at);
+  tl.fromTo('#f02-' + id + '-sh', { xPercent: -140 }, { xPercent: 360, duration: 1.8, ease: 'power2.inOut' }, at + (o.sh || 0.9));
+};
+// ambient: rising gold dust, grain, slow camera push
+QA('.f02-dust').forEach(p => tl.fromTo(p, { x: 0, y: 0 }, { x: +p.dataset.dx, y: +p.dataset.dy, duration: D, ease: 'none' }, 0));
+tl.fromTo('#f02-grain', { x: 0, y: 0 }, { x: -192, y: 128, duration: D, ease: 'steps(' + Math.round(D * 12) + ')' }, 0);
+tl.fromTo('#f02-push', { scale: 1.0 }, { scale: 1.035, duration: D, ease: 'none', transformOrigin: '50% 48%' }, 0);
+tl.fromTo('#f02-glow', { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 2.6, ease: 'power2.out' }, 0.0);
+draw(QA('.f02-sp'), 0.1, 1.2, 'power3.out');
+QA('.f02-rg').forEach((g, i) => draw(g, 0.6 + i * 0.25, 1.4, 'power2.inOut'));
+tl.fromTo('#f02-core', { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.8, ease: 'back.out(3)' }, 0.2);
+tl.to('#f02-web', { rotation: 12, svgOrigin: '960.0 330', duration: 7.3, ease: 'none' }, 0);
+QA('.f02-ch').forEach((c, i) => tl.fromTo(c, { opacity: 0, filter: 'blur(14px)', y: 26, x: (i - 2.5) * 46 }, { opacity: 1, filter: 'blur(0px)', y: 0, x: 0, duration: 3.0, ease: 'expo.out' }, 0.9 + Math.abs(i - 2.5) * 0.12));
+tl.fromTo('#f02-shine', { x: -300 }, { x: 2020, duration: 1.8, ease: 'power2.inOut' }, 2.6);
+fadeUp('#f02-sub', 2.4);
+tl.to({}, { duration: 7.3 }, 0);
+window.__timelines["02-name"] = tl;
+})();
+</script>
+</template>
