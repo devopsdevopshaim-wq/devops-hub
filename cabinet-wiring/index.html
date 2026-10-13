@@ -67,6 +67,7 @@
       <span class="progress-pill" id="progressPill" title="חוטים שסומנו כמחוברים"></span>
     </div>
   </nav>
+  <div class="busy-bar" id="busyBar" role="status" aria-live="polite" hidden><div class="busy-track"><span id="busyFill"></span></div><span id="busyText"></span></div>
 </header>
 
 <main id="main">
@@ -522,6 +523,7 @@
     <input id="askInput" type="text" dir="auto" autocomplete="off" hidden>
     <div class="row gap dlg-actions">
       <button class="btn" type="submit" value="ok" id="askOk">אישור</button>
+      <button class="btn ghost" type="submit" value="alt" id="askAlt" hidden></button>
       <button class="btn ghost" type="submit" value="cancel">ביטול</button>
     </div>
   </form>
