@@ -3,6 +3,8 @@ import { loadAll, saveAll, files } from './store.js';
 import { readPdf, blobToBase64 } from './pdf.js';
 import { CabinetView } from './view.js';
 import { Cabinet3D } from './view3d.js';
+import { englishSteps, Speaker, sfx } from './voice.js';
+import { wireSvg } from './wirerender.js';
 import { bookHtml, labelsHtml } from './book.js';
 
 const C = window.WCat, E = window.WEngine, Pr = window.WPrompts, Demo = window.WDemo;
@@ -769,9 +771,18 @@ function toggleDone(id, v) {
   if (selected === id && !$('#drawer').hidden) openDrawer(id);
 }
 
-/* ---------- 5. חיווט שלב אחר שלב ---------- */
+/* ---------- 6. חיווט שלב אחר שלב: עמדת החיווט ---------- */
+const STEPS = ['חיתוך', 'קילוף ושרוול', 'שרוולי סימון', 'חיבור מאיפה', 'חיבור לאן', 'בדיקת משיכה'];
+const session = { marks: [], streak: 0, checks: {}, milestones: {} };
+const speaker = new Speaker();
+const vpref = (() => { try { return JSON.parse(localStorage.getItem('cabinet-wiring-voice') || '{}'); } catch { return {}; } })();
+const saveV = () => { try { localStorage.setItem('cabinet-wiring-voice', JSON.stringify(vpref)); } catch { /* פרטי */ } };
+speaker.rate = Number(vpref.rate) || 0.95;
+speaker.voiceName = vpref.voice || '';
+
+function wiringGroups() { return E.wireOrder(P, L); }
 function wiringList() {
-  const groups = E.wireOrder(P, L);
+  const groups = wiringGroups();
   const sel = $('#wGroup');
   sel.innerHTML = `<option value="all">כל החוטים בסדר החיווט (${P.wires.length})</option>` + groups.map((g) => {
     const d = g.wires.filter((w) => raw.done[w.id]).length;
@@ -780,28 +791,118 @@ function wiringList() {
   return (wiring.group === 'all' ? groups : groups.filter((g) => g.group.id === wiring.group)).flatMap((g) => g.wires);
 }
 
+function stationStats() {
+  const total = P.wires.length, d = P.wires.filter((w) => raw.done[w.id]).length;
+  const pct = total ? Math.round(100 * d / total) : 0;
+  $('#wRing').style.strokeDasharray = `${pct} 100`;
+  $('#wPct').textContent = pct + '%';
+  $('#stDone').textContent = d;
+  $('#stLeft').textContent = total - d;
+  $('#stStreak').textContent = session.streak;
+  /* זמן לסיום: לפי הקצב של החוטים האחרונים בסשן הזה */
+  const m = session.marks.slice(-12);
+  let eta = '—';
+  if (m.length >= 3 && total - d > 0) {
+    const per = (m[m.length - 1] - m[0]) / (m.length - 1);
+    const min = Math.round(per * (total - d) / 60000);
+    eta = min < 60 ? `${min} דק'` : `${Math.floor(min / 60)} ש' ${min % 60} דק'`;
+  }
+  $('#stEta').textContent = eta;
+  $('#wProgText').textContent = `${d} מתוך ${total} חוברו`;
+  $('#wGroups').innerHTML = wiringGroups().map((g) => {
+    const gd = g.wires.filter((w) => raw.done[w.id]).length;
+    const col = C.COLORS[C.FUNCS[g.group.funcs[0]].color];
+    return `<button type="button" class="gpill${wiring.group === g.group.id ? ' on' : ''}${gd === g.wires.length ? ' full' : ''}" data-g="${g.group.id}">
+      <span class="sw" style="${swStyle(col)}"></span><span class="gp-name">${esc(g.group.he)}</span><span class="gp-n">${gd}/${g.wires.length}</span>
+      <i style="width:${Math.round(100 * gd / g.wires.length)}%"></i></button>`;
+  }).join('');
+}
+
 function renderWiring() {
+  stationStats();
   const list = wiringList();
   const card = $('#wireCard');
-  const d = P.wires.filter((w) => raw.done[w.id]).length;
-  $('#wProgBar').style.width = (P.wires.length ? (100 * d / P.wires.length) : 0) + '%';
-  $('#wProgText').textContent = `${d} מתוך ${P.wires.length} חוברו`;
   if (!list.length) { card.innerHTML = '<p class="muted">אין חוטים בפרויקט. העלו תכנית או הוסיפו חוטים ברשימת החוטים.</p>'; return; }
   if (selected && list.some((w) => w.id === selected)) wiring.idx = list.findIndex((w) => w.id === selected);
   wiring.idx = Math.max(0, Math.min(list.length - 1, wiring.idx));
   const w = list[wiring.idx];
-  const col = C.COLORS[w.color];
-  card.innerHTML = `<div class="head"><div><div class="big-no">${esc(w.no)}</div><div class="small muted">חוט ${wiring.idx + 1} מתוך ${list.length} · ${esc(C.FUNCS[w.func].he)}</div></div>
-    <div style="min-width:120px;text-align:center"><div class="sw big" style="${swStyle(col)}"></div><div class="small">${esc(col.he)} · ${esc(C.fmtSection(w.section))} ממ"ר</div></div></div>
-    ${raw.done[w.id] ? '<p class="done-flag">✓ החוט הזה כבר סומן כמחובר</p>' : ''}
-    ${wireDetailHtml(w, { big: true })}`;
+  const cb = compBy();
+  const A = cb[w.from.tag] || {}, B = cb[w.to.tag] || {};
+  const r = L.routes[w.id];
+  const route = E.routeHe(L, w.id);
+  const checks = session.checks[w.id] || (session.checks[w.id] = raw.done[w.id] ? STEPS.map(() => true) : STEPS.map(() => false));
+  card.innerHTML = `<div class="head">
+      <div><div class="big-no" translate="no">${esc(w.no)}</div>
+        <div class="small muted">חוט ${wiring.idx + 1} מתוך ${list.length} · ${esc(C.FUNCS[w.func].he)}${w.page ? ` · עמוד ${w.page} בתכנית` : ''}</div></div>
+      <span class="fbadge big">${esc(C.FUNCS[w.func].short)}</span>
+    </div>
+    <div class="wr-wrap">${wireSvg(w, { C, len: r && r.len ? Math.round(r.len / 10) : 0, done: raw.done[w.id],
+      fromLabel: [w.from.tag + ':' + w.from.term, (A.name || '').slice(0, 30)], toLabel: [w.to.tag + ':' + w.to.term, (B.name || '').slice(0, 30)] })}</div>
+    ${route.length ? `<p class="route"><b>מסלול:</b> ${route.map((x) => `<span>${esc(x)}</span>`).join('<i>←</i>')}</p>` : ''}
+    <ol class="chk" aria-label="שלבי החיווט של החוט">${STEPS.map((t, i) => `<li><button type="button" data-chk="${i}" aria-pressed="${checks[i]}"><span class="n">${i + 1}</span>${esc(t)}</button></li>`).join('')}</ol>
+    ${wireDetailHtml(w, { big: true })}
+    <div class="confetti" aria-hidden="true"></div>`;
   $('#wDone').textContent = raw.done[w.id] ? 'ביטול הסימון' : 'חוברו שני הקצוות ✓';
+  $('#wDone').classList.toggle('is-done', Boolean(raw.done[w.id]));
   if (!miniView) miniView = new CabinetView($('#miniHost'), { mini: true, onHover: (id, ev) => showTip(id, ev), onSelect: () => {} });
-  miniView.render(P, L, { C });
+  if (miniView.ver !== ver) { miniView.render(P, L, { C }); miniView.ver = ver; }
   miniView.setDone(doneSet());
   miniView.select(w.id, false);
   miniView.focusWire(w.id);
   selected = w.id;
+  /* כתוביות באנגלית */
+  const en = englishSteps(w, P, L, C, E);
+  $('#vSubs').innerHTML = en.map((t, i) => `<li data-i="${i}">${esc(t)}</li>`).join('');
+  wiring.en = en;
+  if (vpref.auto && wiring.lastSpoken !== w.id) { wiring.lastSpoken = w.id; speak(); }
+}
+
+function speak() {
+  if (!speaker.ok) { toast('הדפדפן לא תומך בהקראה. נסו Chrome, Edge או Safari.'); return; }
+  speaker.onSentence = (i) => { $$('#vSubs li').forEach((li) => li.classList.toggle('on', Number(li.dataset.i) === i)); const li = $(`#vSubs li[data-i="${i}"]`); if (li) li.scrollIntoView({ block: 'nearest' }); };
+  speaker.onEnd = () => $$('#vSubs li').forEach((li) => li.classList.remove('on'));
+  speaker.speak(wiring.en || []);
+}
+
+function fillVoices() {
+  const sel = $('#vVoice');
+  const vs = speaker.voices;
+  const best = speaker.pick();
+  sel.innerHTML = vs.length ? vs.map((v) => `<option value="${esc(v.name)}" ${best && best.name === v.name ? 'selected' : ''}>${esc(v.name)}${speaker.isFemale(v) ? ' ♀' : ''} (${esc(v.lang)})</option>`).join('') : '<option>אין קולות באנגלית במכשיר</option>';
+  $('#vNote').textContent = !speaker.ok ? 'הדפדפן לא תומך בהקראה.' : best && speaker.isFemale(best) ? `קול נשי: ${best.name}. הקולות מגיעים ממערכת ההפעלה; ב-Chrome ו-Edge יש קולות איכותיים במיוחד.` : 'לא נמצא במכשיר קול נשי באנגלית, אז הקול מוגבה מעט. אפשר להוסיף קול (למשל Microsoft Jenny / Aria ב-Windows, Samantha ב-Mac/iPhone) ולבחור אותו כאן.';
+}
+
+function celebrate(card) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const box = card.querySelector('.confetti');
+  if (!box) return;
+  const cols = ['#c4743a', '#a85a26', '#1f4fd1', '#2f9e44', '#f2c21b', '#2b3035'];
+  box.innerHTML = Array.from({ length: 22 }, (_, i) => `<i style="--x:${Math.round((Math.random() - 0.5) * 360)}px;--y:${Math.round(-60 - Math.random() * 160)}px;--r:${Math.round(Math.random() * 540)}deg;background:${cols[i % cols.length]};animation-delay:${Math.random() * 80}ms"></i>`).join('');
+  setTimeout(() => { box.innerHTML = ''; }, 1100);
+}
+
+function markCurrent() {
+  const list = wiringList(); const w = list[wiring.idx]; if (!w) return;
+  const was = raw.done[w.id];
+  toggleDone(w.id);
+  if (was) { session.streak = 0; session.checks[w.id] = STEPS.map(() => false); renderWiring(); return; }
+  session.marks.push(Date.now()); session.streak++;
+  session.checks[w.id] = STEPS.map(() => true);
+  if (vpref.sfx !== false) sfx('click');
+  const card = $('#wireCard');
+  card.querySelector('.wire-render') && card.querySelector('.wire-render').classList.add('is-done');
+  celebrate(card);
+  /* אבני דרך: רבע, חצי, שלושה רבעים, הכל */
+  const d = P.wires.filter((x) => raw.done[x.id]).length, pct = Math.floor(100 * d / P.wires.length);
+  const ms = [25, 50, 75, 100].filter((m) => pct >= m && !session.milestones[m]).pop();
+  if (ms) {
+    [25, 50, 75, 100].forEach((m) => { if (m <= ms) session.milestones[m] = true; });
+    if (vpref.sfx !== false) setTimeout(() => sfx('milestone'), 150);
+    toast(ms === 100 ? 'כל החוטים חוברו! עכשיו לבדיקות: "הרכבה ובדיקות".' : `${ms}% מהחוטים חוברו. ממשיכים!`, 5000);
+    if (vpref.auto && speaker.ok) speaker.say(ms === 100 ? 'Excellent. All wires are connected. Proceed to inspection and testing.' : `Great work. ${ms} percent complete.`);
+  }
+  if (P.wires.every((x) => raw.done[x.id])) { setTimeout(renderWiring, 700); return; }
+  setTimeout(() => wiringStep(1), 650);
 }
 
 function wiringStep(dir) {
@@ -814,6 +915,7 @@ function wiringStep(dir) {
     if (!skip || !raw.done[list[i].id]) break;
   }
   wiring.idx = i; selected = list[i].id;
+  if (vpref.sfx !== false) sfx('step');
   renderWiring();
 }
 
@@ -880,7 +982,7 @@ function drawingSvg() {
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-9999px;top:0;width:1200px;height:900px';
   document.body.appendChild(host);
-  const v = new CabinetView(host, { mini: true });
+  const v = new CabinetView(host, {});
   v.render(P, L, { C });
   v.setDone(doneSet());
   const b = v.bounds;
@@ -1065,17 +1167,41 @@ function bind() {
   /* חיווט */
   $('#wPrev').onclick = () => wiringStep(-1);
   $('#wNext').onclick = () => wiringStep(1);
-  $('#wDone').onclick = () => {
-    const list = wiringList(); const w = list[wiring.idx]; if (!w) return;
-    const was = raw.done[w.id];
-    toggleDone(w.id);
-    if (!was) {
-      if (P.wires.every((x) => raw.done[x.id])) { toast('כל החוטים חוברו. עכשיו לבדיקות: "הרכבה ובדיקות".', 6000); renderWiring(); return; }
-      wiringStep(1);
-    } else renderWiring();
-  };
+  $('#wDone').onclick = markCurrent;
   $('#wGroup').addEventListener('change', (e) => { wiring.group = e.target.value; wiring.idx = 0; selected = null; renderWiring(); });
+  $('#wGroups').addEventListener('click', (e) => { const b = e.target.closest('[data-g]'); if (!b) return; wiring.group = wiring.group === b.dataset.g ? 'all' : b.dataset.g; wiring.idx = 0; selected = null; renderWiring(); });
   $('#wSkipDone').addEventListener('change', renderWiring);
+  $('#wireCard').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-chk]'); if (!b) return;
+    const list = wiringList(); const w = list[wiring.idx]; if (!w) return;
+    const c = session.checks[w.id]; const i = Number(b.dataset.chk);
+    c[i] = !c[i];
+    b.setAttribute('aria-pressed', c[i]);
+    if (c[i] && vpref.sfx !== false) sfx('step');
+    if (c.every(Boolean) && !raw.done[w.id]) markCurrent();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (tab !== 'wiring' || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
+    if (e.target.closest('input, select, textarea, [contenteditable]')) return;
+    if (e.key === 'Enter' || e.key === ' ') { if (e.target.closest('button') && e.key === ' ') return; e.preventDefault(); markCurrent(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); wiringStep(1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); wiringStep(-1); }
+    else if (e.key === 'r' || e.key === 'R' || e.key === 'ר') speak();
+    else if (/^[1-6]$/.test(e.key)) { const b = $(`#wireCard [data-chk="${Number(e.key) - 1}"]`); if (b) b.click(); }
+  });
+  /* קול */
+  $('#vPlay').onclick = speak;
+  $('#vStop').onclick = () => speaker.stop();
+  $('#vAuto').checked = Boolean(vpref.auto);
+  $('#vSfx').checked = vpref.sfx !== false;
+  $('#vRate').value = speaker.rate;
+  $('#vAuto').onchange = (e) => { vpref.auto = e.target.checked; saveV(); if (e.target.checked) { wiring.lastSpoken = null; speak(); } else speaker.stop(); };
+  $('#vSfx').onchange = (e) => { vpref.sfx = e.target.checked; saveV(); };
+  $('#vRate').oninput = (e) => { speaker.rate = Number(e.target.value); vpref.rate = speaker.rate; saveV(); };
+  $('#vVoice').onchange = (e) => { speaker.voiceName = e.target.value; vpref.voice = e.target.value; saveV(); fillVoices(); speak(); };
+  speaker.onVoices = fillVoices;
+  fillVoices();
+  window.addEventListener('hashchange', () => { if (!/wiring/.test(location.hash)) speaker.stop(); });
 
   /* הרכבה */
   $('#stepsList').addEventListener('change', (e) => {

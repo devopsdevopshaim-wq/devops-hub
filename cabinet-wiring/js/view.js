@@ -17,6 +17,14 @@ export const SVG_STYLE = `
   .t-motor { font-size: 34px; fill: #e8edf4; font-weight: 800; }
   .t-term { font-size: 4.2px; fill: #20252c; dominant-baseline: middle; }
   .t-pin { font-size: 5px; fill: #20252c; font-weight: 700; paint-order: stroke; stroke: #e7ebef; stroke-width: 1.4px; }
+  .dim { stroke: #a4adb4; stroke-width: 1.2; }
+  .dim-ext { stroke: #7d8894; stroke-width: .8; }
+  .t-dim { font-size: 9px; fill: #a4adb4; font-family: 'IBM Plex Mono', monospace; }
+  .t-dimb { font-size: 12px; fill: #e9ebe8; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+  .tb-cell { fill: #f4f5f3; stroke: #2b3035; stroke-width: 1.2; }
+  .tb-l { font-size: 8.5px; fill: #5f6870; }
+  .tb-v { font-size: 12px; fill: #1c2126; font-weight: 600; }
+  .tb-v.big { font-size: 16px; }
   .pin { fill: #f2c21b; stroke: #6b5200; stroke-width: .5; }
   .w polyline { fill: none; stroke-linejoin: round; stroke-linecap: round; }
   .w .case { stroke: #0b0d10; opacity: .55; }
@@ -65,6 +73,7 @@ export class CabinetView {
     const out = [];
     out.push(`<style>${SVG_STYLE}</style>`);
     out.push(`<defs>
+      <marker id="arr" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="#a4adb4"/></marker>
       <pattern id="duct-slots" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#8f98a3"/><rect x="1" y="0" width="3" height="10" fill="#7c858f"/></pattern>
       <pattern id="duct-slots-v" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#8f98a3"/><rect x="0" y="1" width="10" height="3" fill="#7c858f"/></pattern>
     </defs>`);
@@ -83,8 +92,21 @@ export class CabinetView {
     L.rails.forEach((r, i) => {
       out.push(`<rect x="${r.x1}" y="${r.y - 17.5}" width="${r.x2 - r.x1}" height="35" fill="#b9c0c8" stroke="#8d959f"/>`);
       out.push(`<text x="${r.x1 - 4}" y="${r.y + 3}" class="t-rail" text-anchor="end">${i + 1}</text>`);
+      if (!this.mini) out.push(`<text x="${r.x2 + 4}" y="${r.y + 3}" class="t-dim">TS35 · ${Math.round(r.x2 - r.x1)}</text>`);
     });
     out.push('</g>');
+    /* מידות: רוחב וגובה הפלטה, ומיקום כל מסילה מראש הפלטה */
+    if (!this.mini) {
+      const tick = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="dim-ext"/>`;
+      out.push(`<g class="dims">${tick(0, -14, 0, -46)}${tick(P.w, -14, P.w, -46)}
+        <line x1="0" y1="-36" x2="${P.w}" y2="-36" class="dim" marker-start="url(#arr)" marker-end="url(#arr)"/>
+        <rect x="${P.w / 2 - 34}" y="-46" width="68" height="18" fill="#262e39"/><text x="${P.w / 2}" y="-33" class="t-dimb" text-anchor="middle">${P.w}</text>
+        ${tick(-14, 0, -46, 0)}${tick(-14, P.h, -46, P.h)}
+        <line x1="-36" y1="0" x2="-36" y2="${P.h}" class="dim" marker-start="url(#arr)" marker-end="url(#arr)"/>
+        <g transform="translate(-36 ${P.h / 2}) rotate(-90)"><rect x="-34" y="-10" width="68" height="18" fill="#262e39"/><text x="0" y="3" class="t-dimb" text-anchor="middle">${P.h}</text></g>
+        ${L.rails.map((r) => `<line x1="-14" y1="${r.y}" x2="-6" y2="${r.y}" class="dim-ext"/><text x="-16" y="${r.y + 3}" class="t-dim" text-anchor="end">${Math.round(r.y)}</text>`).join('')}
+      </g>`);
+    }
     /* דלת ושטח */
     if (L.door) {
       const d = L.door;
@@ -164,8 +186,22 @@ export class CabinetView {
       });
       out.push('</g>');
     }
+    /* טבלת כותרת כמו בשרטוט אמיתי */
+    let extraH = 0;
+    if (!this.mini) {
+      const m = project.meta || {};
+      const tw = 420, th = 104, tx = Math.max(P.w, L.bounds.w) - tw, ty = L.bounds.h + 30;
+      const date = new Intl.DateTimeFormat('he-IL').format(new Date());
+      const cell = (x, y, w, h, lbl, val, cls = '') => `<rect x="${tx + x}" y="${ty + y}" width="${w}" height="${h}" class="tb-cell"/><text x="${tx + x + w - 6}" y="${ty + y + 12}" class="tb-l" text-anchor="end">${esc(lbl)}</text><text x="${tx + x + w - 6}" y="${ty + y + h - 8}" class="tb-v ${cls}" text-anchor="end">${esc(val)}</text>`;
+      out.push(`<g class="tblock">
+        ${cell(0, 0, tw, 40, 'פרויקט', m.title || project.name || '', 'big')}
+        ${cell(0, 40, 140, 32, 'גיליון', 'פריסת ארון — מבט חזית')}${cell(140, 40, 140, 32, 'מס׳ שרטוט', m.drawingNo || '—')}${cell(280, 40, 140, 32, 'גרסה', String(m.revision || '—').slice(0, 18))}
+        ${cell(0, 72, 105, 32, 'מידות', 'מ"מ')}${cell(105, 72, 105, 32, 'רכיבים', String(project.components.length))}${cell(210, 72, 105, 32, 'חוטים', String(project.wires.length))}${cell(315, 72, 105, 32, 'תאריך', date)}
+      </g>`);
+      extraH = th + 40;
+    }
     this.svg.innerHTML = out.join('');
-    this.bounds = { x: -30, y: -30, w: L.bounds.w + 60, h: L.bounds.h + 60 };
+    this.bounds = { x: this.mini ? -30 : -80, y: this.mini ? -30 : -70, w: L.bounds.w + (this.mini ? 60 : 110), h: L.bounds.h + (this.mini ? 60 : 100) + extraH };
     if (!this.vb) this.fit(); else this.apply();
     if (this.selected) this.select(this.selected, false);
   }

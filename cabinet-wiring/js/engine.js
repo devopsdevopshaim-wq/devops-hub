@@ -792,6 +792,33 @@
     return [[A.x, A.y], [A.x, yA], [sx, yA], [sx, yB], [B.x, yB], [B.x, B.y]];
   }
 
+  /* באילו תעלות עובר החוט, לפי הסדר: לתיאור המסלול בעברית ובאנגלית */
+  function routeDucts(L, id) {
+    var r = L && L.routes[id];
+    if (!r) return [];
+    var hd = L.ducts.filter(function (d) { return d.kind === 'h'; }), vd = L.ducts.filter(function (d) { return d.kind === 'v'; });
+    var out = [];
+    var add = function (x) { var l = out[out.length - 1]; if (!l || l.kind !== x.kind || l.n !== x.n || l.side !== x.side) out.push(x); };
+    for (var i = 1; i < r.pts.length; i++) {
+      var a = r.pts[i - 1], b = r.pts[i];
+      if (a[0] > L.plate.w || b[0] > L.plate.w) { add({ kind: 'door' }); continue; }
+      if (a[1] > L.plate.h || b[1] > L.plate.h) { add({ kind: 'field' }); continue; }
+      if (Math.abs(a[1] - b[1]) < 0.5 && Math.abs(a[0] - b[0]) > 1) {
+        var h = hd.find(function (d) { return a[1] >= d.y - 1 && a[1] <= d.y + d.h + 1; });
+        if (h) add({ kind: 'h', n: h.idx + 1 });
+      } else if (Math.abs(a[0] - b[0]) < 0.5 && Math.abs(a[1] - b[1]) > 1) {
+        var v = vd.find(function (d) { return a[0] >= d.x - 1 && a[0] <= d.x + d.w + 1; });
+        if (v) add({ kind: 'v', side: v.side });
+      }
+    }
+    return out;
+  }
+  function routeHe(L, id) {
+    return routeDucts(L, id).map(function (d) {
+      return d.kind === 'h' ? 'תעלה אופקית ' + d.n : d.kind === 'v' ? 'תעלה אנכית ' + (d.side === 'L' ? 'שמאלית' : 'ימנית') : d.kind === 'door' ? 'לולאת הציר לדלת' : 'יציאה מתחתית הארון לשטח';
+    });
+  }
+
   /* ---------- סדר החיווט ושלבי ההרכבה ---------- */
   var GROUPS = [
     { id: 'power', he: 'מעגלי כוח', funcs: ['power'], why: 'מתחילים מהחוטים העבים: קשה לכופף אותם אחר כך כשהתעלות מלאות.' },
@@ -937,6 +964,6 @@
     inferType: inferType, typeInfo: typeInfo, termRole: termRole, extractFromText: extractFromText, textLines: textLines,
     enrich: enrich, settingsOf: settingsOf, DEFAULT_SETTINGS: DEFAULT_SETTINGS, explainWire: explainWire,
     layout: layout, wireOrder: wireOrder, assemblySteps: assemblySteps, GROUPS: GROUPS,
-    wireListCsv: wireListCsv, bomCsv: bomCsv, cutList: cutList, enclosure: enclosure, depthOf: depthOf
+    wireListCsv: wireListCsv, bomCsv: bomCsv, cutList: cutList, enclosure: enclosure, depthOf: depthOf, routeDucts: routeDucts, routeHe: routeHe
   };
 });
