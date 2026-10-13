@@ -109,44 +109,71 @@ function purposeEn(w, A, B, role) {
 /* ---------- קול ---------- */
 const FEMALE = ['Google UK English Female', 'Microsoft Libby', 'Microsoft Sonia', 'Microsoft Jenny', 'Microsoft Aria', 'Microsoft Zira', 'Samantha', 'Serena', 'Kate', 'Karen', 'Moira', 'Tessa', 'Fiona', 'Victoria', 'Allison', 'Ava', 'Susan', 'Hazel', 'Emma', 'Female'];
 
+/* דפדפן מובנה של אפליקציה (וואטסאפ, פייסבוק, אינסטגרם...) — בדרך כלל בלי מנוע דיבור */
+export const inAppBrowser = () => typeof navigator !== 'undefined' && /FBAN|FBAV|FB_IAB|Instagram|Line\/|WhatsApp|Snapchat|TikTok|; wv\)/i.test(navigator.userAgent);
+
 export class Speaker {
   constructor() {
-    this.ok = typeof window !== 'undefined' && 'speechSynthesis' in window;
+    this.ok = typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
     this.rate = 0.95;
     this.voiceName = '';
     this.voices = [];
+    this.all = [];
     this.onSentence = () => {};
     this.onEnd = () => {};
+    this.onFail = () => {};
+    this.onStart = () => {};
+    this.token = 0;
     if (this.ok) {
-      const load = () => { this.voices = speechSynthesis.getVoices().filter((v) => /^en/i.test(v.lang)); if (this.onVoices) this.onVoices(this.voices); };
+      const load = () => {
+        this.all = speechSynthesis.getVoices() || [];
+        this.voices = this.all.filter((v) => /^en[-_]/i.test(v.lang) || /^en$/i.test(v.lang));
+        if (this.onVoices) this.onVoices(this.voices);
+        return this.all.length;
+      };
       load();
-      speechSynthesis.addEventListener('voiceschanged', load);
+      if (speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', load);
+      else speechSynthesis.onvoiceschanged = load;
+      /* יש דפדפנים שלא שולחים voiceschanged: בודקים שוב כמה פעמים */
+      let tries = 0;
+      const poll = setInterval(() => { if (load() || ++tries > 12) clearInterval(poll); }, 400);
     }
   }
   /* הקול הנשי הכי טוב שיש במכשיר */
   pick() {
     if (this.voiceName) { const v = this.voices.find((x) => x.name === this.voiceName); if (v) return v; }
     for (const n of FEMALE) { const v = this.voices.find((x) => x.name.includes(n) && !/male\b/i.test(x.name.replace(/female/i, ''))); if (v) return v; }
-    return this.voices.find((v) => /en-GB/i.test(v.lang)) || this.voices[0] || null;
+    return this.voices.find((v) => /en[-_]GB/i.test(v.lang)) || this.voices.find((v) => /en[-_]US/i.test(v.lang)) || this.voices[0] || null;
   }
   isFemale(v) { return Boolean(v && FEMALE.some((n) => v.name.includes(n))); }
   speak(sentences) {
-    if (!this.ok) return;
+    if (!this.ok || !sentences || !sentences.length) return;
     this.stop();
-    const v = this.pick();
-    const female = this.isFemale(v);
-    sentences.forEach((s, i) => {
-      const u = new SpeechSynthesisUtterance(s);
-      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
-      u.rate = this.rate;
-      u.pitch = female ? 1 : 1.25;
-      u.onstart = () => this.onSentence(i);
-      if (i === sentences.length - 1) u.onend = () => this.onEnd();
-      speechSynthesis.speak(u);
-    });
+    const my = ++this.token;
+    /* Chrome מפיל דיבור שמתחיל מיד אחרי cancel; מחכים רגע, ומוודאים שהמנוע לא "מושהה" */
+    setTimeout(() => {
+      if (my !== this.token) return;
+      try { speechSynthesis.resume(); } catch { /* */ }
+      const v = this.pick();
+      const female = this.isFemale(v);
+      let started = false;
+      sentences.forEach((s, i) => {
+        const u = new SpeechSynthesisUtterance(s);
+        if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
+        u.rate = this.rate;
+        u.pitch = female || !v ? 1 : 1.2;
+        u.volume = 1;
+        u.onstart = () => { if (my !== this.token) return; if (!started) { started = true; this.onStart(v); } this.onSentence(i); };
+        u.onerror = (e) => { if (my !== this.token || e.error === 'interrupted' || e.error === 'canceled') return; this.token++; this.onFail(e.error || 'error'); };
+        if (i === sentences.length - 1) u.onend = () => { if (my === this.token) this.onEnd(); };
+        speechSynthesis.speak(u);
+      });
+      /* אם אחרי 4 שניות עוד לא התחיל דיבור — המכשיר לא משמיע */
+      setTimeout(() => { if (my === this.token && !started && !speechSynthesis.speaking) { this.token++; this.onFail(this.all.length ? 'silent' : 'no-voices'); } }, 4000);
+    }, 120);
   }
   say(text) { this.speak([text]); }
-  stop() { if (this.ok) speechSynthesis.cancel(); }
+  stop() { this.token++; if (this.ok) { try { speechSynthesis.cancel(); } catch { /* */ } } }
 }
 
 /* ---------- צלילים: "קליק" של מהדק, וצליל הצלחה בסיום קבוצה ---------- */
