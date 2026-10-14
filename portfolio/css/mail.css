@@ -57,3 +57,5 @@ html.mail-open{overflow:hidden}
 #mail-toast.bad{border-color:#ff6b81}
 @media (prefers-reduced-motion:reduce){#mail-pill .mp-online i{animation:none}}
 html.a11y-contrast .mp-box{background:#000;color:#fff}
+
+html:has(.music.open) #mail-pill{display:none}

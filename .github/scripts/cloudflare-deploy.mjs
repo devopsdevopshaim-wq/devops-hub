@@ -42,12 +42,21 @@ const notes = [];
 const note = (s) => { notes.push(s); console.log(s); };
 const run = (args, opts = {}) => spawnSync('npx', ['wrangler', ...args], { cwd: 'cloudflare', encoding: 'utf8', env: process.env, ...opts });
 
-const d = run(['deploy', '--var', `PBKDF2_ITER:${ITER}`]);
+// Workers AI (Cloudflare's own models, a free allowance, no key) is bound as AI in a deploy-only copy of the config; if that deploy is refused
+// (the account has it switched off), the plain config is deployed so nothing else is affected.
+const toml = fs.readFileSync('cloudflare/wrangler.toml', 'utf8');
+fs.writeFileSync('cloudflare/wrangler.ai.toml', toml + '\n[ai]\nbinding = "AI"\n');
+let d = run(['deploy', '-c', 'wrangler.ai.toml', '--var', `PBKDF2_ITER:${ITER}`]);
+const withAI = d.status === 0;
+if (!withAI) { process.stdout.write((d.stdout || '') + (d.stderr || '')); console.log('deploy with the AI binding failed; deploying without it'); d = run(['deploy', '--var', `PBKDF2_ITER:${ITER}`]); }
+fs.rmSync('cloudflare/wrangler.ai.toml', { force: true });
+if (d.status === 0) console.log(withAI ? 'Workers AI bound as AI' : 'Workers AI not bound');
 process.stdout.write((d.stdout || '') + (d.stderr || ''));
 if (d.status !== 0) { note('- ❌ Cloudflare: הפריסה נכשלה'); finish(1); }
 const URL_ = ((d.stdout + d.stderr).match(/https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev/i) || [])[0] || '';
 if (!URL_) { note('- ❌ Cloudflare: לא נמצאה כתובת ה־Worker בפלט'); finish(1); }
 note(`- ✅ Cloudflare Worker פעיל: ${URL_}`);
+note(withAI ? '- ✅ Workers AI מחובר: מאיה ו־JARVIS עונים גם בלי מפתח (המודלים של Cloudflare)' : '- ℹ️ Workers AI לא חובר (החשבון לא מאפשר); בלי מפתח AI התשובות מוגבלות');
 
 // secrets only when there is something to set (an empty one is not stored); `wrangler secret bulk` replaces them in one call
 const bulk = Object.fromEntries(Object.entries(secrets).filter(([, v]) => v));

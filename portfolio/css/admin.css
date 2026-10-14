@@ -334,3 +334,12 @@
 .hero-btns { display: flex; flex-wrap: wrap; gap: 10px; }
 .hero-btns .btn { white-space: normal; }
 .admin .nav-inner { flex-wrap: wrap; row-gap: 6px; } .admin .links { flex-wrap: wrap; }
+
+/* AI tools directory */
+.ait-filt{display:flex;gap:8px;margin:10px 0 14px;flex-wrap:wrap}
+.ait-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.ait-card{position:relative;display:flex;flex-direction:column;gap:4px;padding:14px 14px 12px;border-radius:16px;border:1px solid var(--line-2,rgba(255,255,255,.14));background:rgba(241,238,252,.04);color:inherit;text-decoration:none;transition:transform .2s,border-color .2s}
+.ait-card:hover{transform:translateY(-3px);border-color:var(--brass,#e0b25a)}
+.ait-card b{font-size:17px}.ait-card small{opacity:.65}.ait-card p{margin:6px 0 0;font-size:13.5px;line-height:1.55;opacity:.85}
+.ait-tag{align-self:flex-start;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(98,220,184,.18);color:#62dcb8}
+.ait-card.paid .ait-tag{background:rgba(255,107,129,.18);color:#ff8a9b}
