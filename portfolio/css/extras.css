@@ -239,7 +239,7 @@ html.lenis { scroll-behavior: auto; }
 .g-stage { display: none; }
 @media (min-width: 900px) and (min-height: 560px) {
   .guide.staged.chat-open .g-stage {
-    display: block; position: fixed; bottom: 20px; inset-inline-end: 452px; width: min(330px, 26vw); height: min(640px, calc(100vh - 140px));
+    display: block; position: fixed; bottom: 20px; inset-inline-end: 452px; width: min(440px, 34vw); height: min(640px, calc(100vh - 140px));
     border-radius: 22px; overflow: hidden; border: 1px solid rgba(224, 178, 90, .35); background: #141132;
     box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .9); animation: pop .35s var(--ease); transition: box-shadow .2s;
   }
@@ -267,13 +267,13 @@ html.lenis { scroll-behavior: auto; }
 .g-panel { width: min(420px, calc(100vw - 24px)); height: min(680px, calc(100vh - 150px)); border-radius: 26px;
   background: linear-gradient(180deg, rgba(24, 20, 62, .98), rgba(14, 12, 38, .98)); border-color: rgba(224, 178, 90, .45);
   box-shadow: 0 40px 100px -24px rgba(0, 0, 0, .95), 0 0 0 1px rgba(139, 123, 255, .18), 0 0 60px -20px rgba(139, 123, 255, .5); }
-.g-portrait { position: relative; flex: none; height: clamp(150px, 26vh, 230px); overflow: hidden; background: #141132; }
+.g-portrait { position: relative; flex: none; height: clamp(170px, 28vh, 250px); overflow: hidden; background: #141132; }
 .g-portrait-img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 14%; display: block; transform-origin: 50% 90%; animation: breath 6s ease-in-out infinite; }
 .g-portrait::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(14, 12, 38, .0) 40%, rgba(24, 20, 62, .96) 100%), radial-gradient(120% 80% at 50% 0%, transparent 55%, rgba(14, 12, 38, .45)); }
 .g-portrait .g-wave { bottom: 14px; z-index: 1; }
 .talking .g-portrait .g-wave { opacity: 1; }
 .talking .g-portrait .g-wave i { animation: eq .8s ease-in-out infinite; }
-.photo .g-panel header { margin-top: -54px; position: relative; z-index: 1; background: none; border-bottom: 0; padding-top: 0; }
+.photo .g-panel header { margin-top: -54px; position: relative; z-index: 3; background: none; border-bottom: 0; padding-top: 0; }
 .photo .g-panel header .g-mini { display: none; }
 .photo .g-panel header b { font-size: 28px; text-shadow: 0 2px 14px rgba(0, 0, 0, .7); }
 .g-log { padding: 12px 14px 16px; gap: 12px; }
@@ -285,13 +285,13 @@ html.lenis { scroll-behavior: auto; }
 .g-form input { background: rgba(241, 238, 252, .08); padding: 13px 16px; }
 /* wide screens: she stands next to the chat, so the banner is not needed */
 @media (min-width: 900px) and (min-height: 560px) { .guide.staged.chat-open .g-portrait { display: none; } .guide.staged.chat-open.photo .g-panel header { margin-top: 0; } .guide.staged.chat-open.photo .g-panel header .g-mini { display: block; } }
-@media (max-width: 640px) { .g-panel { height: min(86vh, 680px); } .g-portrait { height: clamp(120px, 20vh, 170px); } }
+@media (max-width: 640px) { .g-panel { height: min(86vh, 680px); } .g-portrait { height: clamp(150px, 22vh, 200px); } }
 /* the ONLINE / mail pill steps aside while she is talking to you */
 html:has(.g-panel.open) #mail-pill { display: none; }
 
 /* the living face: the photo on a mesh (talking-face.js), cropped like the still photo it replaces */
 .g-facebox { position: absolute; left: 50%; top: 0; height: 100%; aspect-ratio: 1; transform: translateX(-50%); pointer-events: none; }
-.g-portrait .g-facebox { left: 0; width: 100%; height: auto; transform: none; margin-top: -9%; }
+.g-portrait .g-facebox { left: 0; width: 100%; height: auto; transform: none; margin-top: -4%; }
 .g-portrait.has-face .g-portrait-img, .g-stage.has-face .g-stage-photo { visibility: hidden; }
 .g-stage .g-facebox { height: 112%; top: -4%; }
 .g-portrait.has-face::after, .g-stage.has-face::after { z-index: 2; }
@@ -303,7 +303,7 @@ html:has(.g-panel.open) #mail-pill { display: none; }
 @keyframes bodydrift2 { 0%, 100% { transform: rotate(-.4deg) scale(1.0); } 50% { transform: rotate(.5deg) scale(1.015); } }
 .g-stage, .g-portrait { transition: transform .7s cubic-bezier(.3, .7, .2, 1); }
 .talking .g-stage.lean { transform: scale(1.015) translateY(-3px); }
-.talking .g-portrait.lean .g-facebox { margin-top: -10%; }
+.talking .g-portrait.lean .g-facebox { margin-top: -5%; }
 /* fuller picture: the whole height of the photo, shoulders included */
 .g-stage .g-facebox { height: 100%; top: 0; }
 @media (prefers-reduced-motion: reduce) { .g-stage.has-face .g-facebox, .g-portrait.has-face .g-facebox { animation: none; } }
