@@ -288,3 +288,10 @@ html.lenis { scroll-behavior: auto; }
 @media (max-width: 640px) { .g-panel { height: min(86vh, 680px); } .g-portrait { height: clamp(120px, 20vh, 170px); } }
 /* the ONLINE / mail pill steps aside while she is talking to you */
 html:has(.g-panel.open) #mail-pill { display: none; }
+
+/* the living face: the photo on a mesh (talking-face.js), cropped like the still photo it replaces */
+.g-facebox { position: absolute; left: 50%; top: 0; height: 100%; aspect-ratio: 1; transform: translateX(-50%); pointer-events: none; }
+.g-portrait .g-facebox { left: 0; width: 100%; height: auto; transform: none; margin-top: -9%; }
+.g-portrait.has-face .g-portrait-img, .g-stage.has-face .g-stage-photo { visibility: hidden; }
+.g-stage .g-facebox { height: 112%; top: -4%; }
+.g-portrait.has-face::after, .g-stage.has-face::after { z-index: 2; }
