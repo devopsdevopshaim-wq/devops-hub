@@ -111,6 +111,7 @@ function showView(v) {
   $('#tabs').hidden = v === 'home' || v === 'site';
   $$('#tabs a').forEach((a) => a.setAttribute('aria-current', a.dataset.tab === v ? 'page' : 'false'));
   { const cur = $(`#tabs a[data-tab="${v}"]`); if (cur && !$('#tabs').hidden) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+  document.body.classList.toggle('lab-mode', v === 'lab');
   if (v === 'home') { renderHome(); closeDrawer(); return; }
   if (v === 'site') { closeDrawer(); speaker.stop(); renderSite(); return; }
   if (v === 'wiring') closeDrawer();
@@ -2451,22 +2452,39 @@ function bindSite() {
   };
 }
 
-/* ---------- 9. מעבדה: בדיקת תקינות, הדמיה חיה, הוספת רכיבים וחיווט ---------- */
+/* ---------- 9. מעבדה: שולחן בדיקה — בדיקת תקינות, הדמיה חיה, הוספת רכיבים וחיווט ---------- */
 const Sim = window.WSim;
-const lab = { mode: 'check', view: null, st: null, res: null, log: [], pick: null, sel: null, pid: null, outFilter: '', ctl: null };
+const lab = { mode: 'check', view: null, st: null, res: null, log: [], pick: null, sel: null, pid: null, outFilter: '', ctl: null, ctab: 'ops', addType: 'contactor', addPoles: '' };
 const CHECK_CATS = [
-  ['power', 'בדיקת הפעלה (הדמיה)', 'מרימים את המפסק הראשי בהדמיה ובודקים שאין קצר, הגנה שנופלת או סליל שנשרף'],
+  ['power', 'בדיקת הפעלה', 'מרימים בהדמיה את כל המפסקים ובודקים שאין קצר, הגנה שנופלת או סליל שנשרף'],
   ['short', 'קצרים בתכנון', 'שני פוטנציאלים שונים (פאזות, אפס, ‎+24V, ‎0V) באותה רשת חוטים'],
-  ['coil', 'מתח סלילים', 'סליל 24V DC שמחובר ל-AC או סליל 230V שמחובר ל-DC'],
-  ['pe', 'הארקה', 'כל רכיב מתכתי או עם כניסת 230V מחובר ל-PE'],
+  ['coil', 'מתח סלילים', 'סליל 24V DC שמחובר ל-AC, או סליל 230V שמחובר ל-DC'],
+  ['pe', 'הארקה', 'כל רכיב עם כניסת 230V מחובר ל-PE'],
   ['color', 'צבעי חוטים', 'הארקה רק ירוק-צהוב, וירוק-צהוב רק להארקה; רשת אחת בצבע אחד'],
   ['section', 'חתך מול ההגנה', 'חתך החוט ביציאה של כל מאמ"ת מתאים לזרם שלו'],
-  ['terminal', 'עומס על הדקים', 'לא יותר מ-2 חוטים בהדק רכיב (TWIN) ו-4 בהדק מעבר'],
+  ['terminal', 'עומס על הדקים', 'עד 2 חוטים בהדק רכיב (TWIN) ועד 4 בהדק מעבר'],
   ['dup', 'חוטים כפולים', 'אין שני חוטים בין אותם הדקים ואין חוט שחוזר לאותו הדק'],
   ['complete', 'שלמות החיווט', 'לכל רכיב יש את החיבורים שהוא צריך כדי לעבוד']
 ];
 const POT_HE = { L1: 'פאזה L1 · 230V', L2: 'פאזה L2 · 230V', L3: 'פאזה L3 · 230V', N: 'אפס N', PE: 'הארקה PE', '+24': '‎+24V DC', '+12': '‎+12V DC', '0V': '‎0V DC' };
+const POT_LEGEND = [['#ff8a3d', 'L1'], ['#c46cff', 'L2'], ['#ffd23d', 'L3'], ['#4da3ff', 'N'], ['#ff4d6d', '+24V'], ['#5b8cff', '0V'], ['#3ddc84', 'PE'], ['#ff1f1f', 'קצר']];
 const TAG_PREFIX = { main_switch: 'Q', mcb: 'F', rcd: 'F', fuse: 'F', mpcb: 'Q', overload: 'F', contactor: 'K', relay: 'K', timer: 'K', psu: 'G', transformer: 'T', plc: 'A', io: 'A', terminal: 'X', pe_bar: 'PE', button: 'S', selector: 'S', estop: 'S', lamp: 'H', motor: 'M', sensor: 'B', valve: 'Y', fan: 'E', heater: 'E', socket: 'X', thermostat: 'B', meter: 'P', door_meter: 'P', vfd: 'T', softstarter: 'T', other: 'U', field: 'U' };
+/* הסוגים הנפוצים ראשונים, בסדר שבו בונים לוח */
+const ADD_TYPES = ['mcb', 'contactor', 'relay', 'overload', 'mpcb', 'psu', 'terminal', 'lamp', 'button', 'estop', 'selector', 'motor', 'sensor', 'timer', 'rcd', 'fuse', 'fan', 'valve', 'socket', 'io', 'main_switch', 'other'];
+
+/* צבע כיפה של לחצן / נורית לפי השם */
+function capColor(c) {
+  const n = String((c && (c.name + ' ' + (c.desc || ''))) || '');
+  if (/ירוק|green|הפעלה|start/i.test(n)) return '#2fb35f';
+  if (/אדום|red|עציר|stop|תקלה/i.test(n)) return '#d6332a';
+  if (/צהוב|כתום|amber|yellow|orange|אזהרה/i.test(n)) return '#f2b51b';
+  if (/כחול|blue|reset|איפוס/i.test(n)) return '#2f78d6';
+  if (/לבן|white/i.test(n)) return '#e8eaec';
+  return '#6c757d';
+}
+/* תגים כמו ‎-A1:DQA.0 בתוך טקסט עברי: עוטפים בבידוד כדי שהמינוס יישאר במקום */
+const isoTags = (t) => esc(t).replace(/(^|[\s(])(-[A-Za-z][\w.:+/-]*)/g, '$1⁦$2⁩');
+const nowT = () => new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 function nextTag(type) {
   const pre = TAG_PREFIX[type] || 'U';
@@ -2488,31 +2506,49 @@ function ensureLab() {
 }
 
 function labState() {
-  if (lab.pid !== raw.id || !lab.st) { lab.st = Sim.initialState(P); lab.pid = raw.id; lab.log = []; lab.res = null; lab.view && (lab.view.vb = null); }
+  if (lab.pid !== raw.id || !lab.st) { lab.st = Sim.initialState(P); lab.pid = raw.id; lab.log = []; lab.res = null; if (lab.view) lab.view.vb = null; }
   /* רכיבים חדשים: מצב ההתחלה שלהם */
   const init = Sim.initialState(P);
   Object.keys(init.on).forEach((t) => { if (!(t in lab.st.on)) lab.st.on[t] = init.on[t]; });
   return lab.st;
 }
 
+/* גובה הכותרת: המעבדה ממלאת את המסך שמתחתיה */
+function syncHdr() { const h = $('.topbar'); if (h) document.documentElement.style.setProperty('--hdr', h.offsetHeight + 'px'); }
+window.addEventListener('resize', syncHdr);
+
 function renderLab() {
+  syncHdr();
+  if (scrollY) scrollTo(0, 0);
   ensureLab();
   labState();
+  const fresh = !lab.view.vb;
   lab.view.render(P, L, { C });
   lab.view.setLayout(false);
+  if (fresh) labFit();
   lab.view.highlight(null);
   $$('#v-lab [data-lmode]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.lmode === lab.mode)));
   $('#labHint').textContent = {
-    check: 'בדיקה אוטומטית של כל החיווט: קצרים, צבעים, חתכים, הארקה, מתח סלילים ועומס על הדקים — וגם הפעלה מדומה של הלוח. לחיצה על ממצא מראה אותו בשרטוט.',
-    sim: 'הלוח עובד לפניכם: מרימים מפסקים, לוחצים על לחצנים ומפעילים יציאות בקר — וכל חוט שיש בו מתח זוהר בצבע הפוטנציאל שלו. לחיצה על רכיב בשרטוט מפעילה אותו.',
-    edit: 'מוסיפים רכיב לפרויקט, ואז לוחצים על הדק אחד ועל הדק שני בשרטוט כדי לחווט ביניהם. אחר כך עוברים להדמיה ובודקים שזה עובד.'
+    check: 'בדיקה אוטומטית של כל החיווט והפעלה מדומה של הלוח. לחיצה על ממצא מראה אותו בשרטוט.',
+    sim: 'מפעילים את הלוח: מפסקים, לחצנים, חיישנים ויציאות בקר. כל חוט עם מתח זוהר בצבע הפוטנציאל שלו.',
+    edit: 'מוסיפים רכיב, ואז לוחצים על הדק ועל הדק נוסף בשרטוט כדי לחווט ביניהם.'
   }[lab.mode];
   lab.view.setPinMode(lab.mode === 'edit', lab.pick);
   if (lab.mode === 'sim') { if (!lab.res) simRun(null, true); else paintSim(); }
   else lab.view.setSim(null);
   if (lab.sel && P.wires.some((w) => w.id === lab.sel)) lab.view.select(lab.sel, false); else lab.sel = null;
   renderLabBar();
+  renderConsole();
+}
+
+function renderConsole() {
   ({ check: renderLabCheck, sim: renderLabSim, edit: renderLabEdit }[lab.mode])();
+}
+const toggleBtn = '<button type="button" class="con-toggle" id="conToggle" aria-label="הקטנה או הגדלה של הקונסולה"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+function setTabs(list) {
+  const t = $('#conTabs');
+  t.hidden = !list.length;
+  t.innerHTML = list.map(([k, he, n]) => `<button type="button" role="tab" data-ctab="${k}" aria-selected="${lab.ctab === k}">${esc(he)}${n != null ? `<span class="n">${n}</span>` : ''}</button>`).join('');
 }
 
 /* ---------- בדיקות ---------- */
@@ -2525,8 +2561,7 @@ function powerTest() {
   Object.entries(r.tripped).forEach(([t, why]) => out.push({ sev: 'err', msg: `${t} נופל מיד בהפעלה — ${why}.`, tag: t }));
   Object.entries(r.burnt).forEach(([t, why]) => out.push({ sev: 'err', msg: `${t}: ${why} — הסליל נשרף.`, tag: t }));
   Object.entries(r.comps).forEach(([t, o]) => { if (o.fault && !r.burnt[t]) out.push({ sev: 'warn', msg: `${t}: ${o.fault}.`, tag: t }); });
-  const live = Object.keys(r.wires).length;
-  return { items: out, live, total: P.wires.length, on: Object.values(r.comps).filter((o) => o.on && !o.tripped).length };
+  return { items: out, live: Object.keys(r.wires).length };
 }
 
 function renderLabCheck() {
@@ -2536,20 +2571,26 @@ function renderLabCheck() {
   const sc = Sim.score(cats);
   lab.cats = cats;
   const cls = sc.err ? 'bad' : sc.warn ? 'warn' : '';
+  const passed = CHECK_CATS.filter(([k]) => !(cats[k] || []).length).length;
   const verdict = sc.err ? `${sc.err} תקלות שצריך לתקן` : sc.warn ? 'הלוח תקין, עם הערות לבדיקה' : 'הלוח תקין — כל הבדיקות עברו';
-  $('#labSide').innerHTML = `
-    <div class="lab-verdict ${cls}"><span class="led ${sc.err ? 'err' : sc.warn ? 'warn' : 'ok'}"></span><span class="big">${sc.err || sc.warn || '✓'}</span>
-      <span>${esc(verdict)}<small>${P.components.length} רכיבים · ${P.wires.length} חוטים · בהפעלה ${pt.live} חוטים מקבלים מתח${sc.warn && sc.err ? ' · ' + sc.warn + ' הערות' : ''}</small></span></div>
-    ${CHECK_CATS.map(([k, he, what]) => {
-      const it = cats[k] || [], e = it.filter((i) => i.sev === 'err').length;
-      return `<details class="chk-cat" ${it.length && (e || it.length < 6) ? 'open' : ''}><summary><span class="led ${e ? 'err' : it.length ? 'warn' : 'ok'}"></span><span class="grow">${esc(he)}</span><span class="cnt mono">${it.length ? it.length : 'תקין'}</span></summary>
-        <p class="muted small" style="margin:4px 0 0">${esc(what)}</p>
-        ${it.length ? `<ul>${it.slice(0, 60).map((i, n) => `<li class="${i.sev}"><button type="button" data-cat="${k}" data-n="${n}">${isoTags(i.msg)}</button></li>`).join('')}${it.length > 60 ? `<li class="muted small">ועוד ${it.length - 60}…</li>` : ''}</ul>` : ''}
-      </details>`;
-    }).join('')}
-    <p class="muted small">הבדיקות מבוססות על הכללים המקובלים (IEC 60204-1, צבעים וחתכים נפוצים). הן לא מחליפות בדיקת חשמלאי מוסמך ומדידות בלוח האמיתי.</p>`;
+  $('#conHead').innerHTML = `<div class="verdict ${cls}"><span class="gauge">${passed}/${CHECK_CATS.length}</span>
+    <span><b>${esc(verdict)}</b><small>${P.components.length} רכיבים · ${P.wires.length} חוטים · בהפעלה ${pt.live} חוטים מקבלים מתח${sc.warn ? ` · ${sc.warn} הערות` : ''}</small></span></div>${toggleBtn}`;
+  setTabs([]);
+  $('#conBody').innerHTML = CHECK_CATS.map(([k, he, what]) => {
+    const it = cats[k] || [], e = it.filter((i) => i.sev === 'err').length;
+    return `<details class="chk-cat" ${it.length && (e || it.length < 6) ? 'open' : ''}><summary><span class="led ${e ? 'err' : it.length ? 'warn' : 'ok'}"></span><span class="grow">${esc(he)}</span><span class="cnt">${it.length ? it.length : 'תקין'}</span></summary>
+      <p class="what">${esc(what)}</p>
+      ${it.length ? `<ul>${it.slice(0, 60).map((i, n) => `<li class="${i.sev}"><button type="button" data-cat="${k}" data-n="${n}">${isoTags(i.msg)}</button></li>`).join('')}${it.length > 60 ? `<li class="muted small">ועוד ${it.length - 60}…</li>` : ''}</ul>` : ''}
+    </details>`;
+  }).join('') + '<p class="con-note">הבדיקות לפי הכללים המקובלים (IEC 60204-1, צבעים וחתכים נפוצים). הן לא מחליפות בדיקה ומדידות של חשמלאי מוסמך בלוח האמיתי.</p>';
 }
 
+/* בטלפון: מתאימים את התצוגה לארון עצמו (בלי מסגרת הגיליון), כדי שהרכיבים ייראו גדולים */
+function labFit() {
+  if (innerWidth > 980 || !L.bounds) { lab.view.fit(); return; }
+  lab.view.vb = { x: -24, y: -24, w: L.bounds.w + 48, h: L.bounds.h + 48 };
+  lab.view.apply();
+}
 function labFocusTag(tag) {
   const b = L.comps[tag];
   if (!b || !lab.view.vb) return;
@@ -2558,14 +2599,8 @@ function labFocusTag(tag) {
 }
 function showFinding(i) {
   if (!i) return;
-  if (i.wires && i.wires.length) {
-    lab.view.highlight(i.wires);
-    lab.view.focusWire(i.wires[0]);
-  } else if (i.tag) {
-    const ids = compWireIds(P, i.tag);
-    lab.view.highlight(ids.length ? ids : null);
-    labFocusTag(i.tag);
-  }
+  if (i.wires && i.wires.length) { lab.view.highlight(i.wires); lab.view.focusWire(i.wires[0]); }
+  else if (i.tag) { const ids = compWireIds(P, i.tag); lab.view.highlight(ids.length ? ids : null); labFocusTag(i.tag); }
 }
 
 /* ---------- הדמיה ---------- */
@@ -2575,10 +2610,10 @@ function simRun(action, quiet) {
   st.tripped = { ...res.tripped };
   st.burnt = { ...res.burnt };
   res.state = st;
-  const now = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const now = nowT();
   if (action) lab.log.unshift({ t: now, msg: action, bad: false });
   res.events.forEach((m) => lab.log.unshift({ t: now, msg: m, bad: /נפל|נשרף|קצר|חסרה/.test(m) }));
-  lab.log = lab.log.slice(0, 120);
+  lab.log = lab.log.slice(0, 150);
   lab.res = res;
   paintSim();
   if (!quiet) { renderLabBar(); renderLabSim(); }
@@ -2595,7 +2630,7 @@ function paintSim() { lab.ctl = Sim.controls(P); lab.view.setSim(lab.res, { oper
 
 function operate(tag) {
   const c = compBy()[tag];
-  if (!c) return;
+  if (!c) return false;
   const st = labState();
   let msg = '';
   if (/main_switch|mcb|rcd|mpcb|fuse/.test(c.type)) {
@@ -2615,8 +2650,7 @@ function operate(tag) {
 }
 
 function labComp(tag) {
-  if (lab.mode === 'sim') { if (operable().has(tag)) { operate(tag); return; } }
-  if (lab.mode === 'edit') { lab.selComp = tag; renderLabBar(); }
+  if (lab.mode === 'sim' && operable().has(tag)) { operate(tag); return; }
   openComp(tag);
 }
 
@@ -2628,51 +2662,85 @@ function labTip(id, ev) {
   $('#tip').insertAdjacentHTML('beforeend', `<p class="pot"><b>${sh ? '⚠ קצר: ' + esc(sh.join(' / ')) : pots.length ? 'מתח: ' + esc(pots.map((p) => POT_HE[p] || p).join(' · ')) : 'אין מתח בחוט'}</b></p>`);
 }
 
-/* תגים כמו ‎-A1:DQA.0 בתוך טקסט עברי: עוטפים בבידוד כדי שהמינוס יישאר במקום */
-const isoTags = (t) => esc(t).replace(/(^|[\s(])(-[A-Za-z][\w.:+\/-]*)/g, '$1\u2066$2\u2069');
-const btnCtl = (tag, name, stTxt, pressed, extra = '') => `<button type="button" data-op="${esc(tag)}" aria-pressed="${pressed}" ${extra}><span class="led ${pressed ? 'ok' : 'off'}"></span><span class="tg">${esc(tag)}</span><span class="nm">${esc(name)}</span><span class="st">${esc(stTxt)}</span></button>`;
+/* התקן על המסילה: נראה כמו הרכיב האמיתי, לחיצה מפעילה אותו */
+function devHtml(x, kind) {
+  const st = lab.st, o = (lab.res && lab.res.comps[x.tag]) || {}, c = compBy()[x.tag] || {};
+  let on = false, stTxt = '', face = '', cls = '', door = false;
+  if (kind === 'main') { on = Boolean(o.on); stTxt = o.tripped ? 'נפל' : on ? 'מחובר' : 'מנותק'; face = '<span class="rot"><i></i><b>' + (on ? 'I' : 'O') + '</b></span>'; cls = 'main'; }
+  else if (kind === 'brk') { on = Boolean(o.on); stTxt = o.tripped ? 'נפל' : on ? 'מורם' : 'כבוי'; face = `<span class="brk"><span class="win">${on ? 'I' : 'O'}</span><span class="slot"><span class="lever"></span></span></span>`; }
+  else if (kind === 'ovl') { on = !st.tripped[x.tag]; stTxt = on ? 'תקין' : 'הופעל'; face = '<span class="ovl"><span class="flag"></span><span class="rst"></span></span>'; }
+  else if (kind === 'pb') { on = Boolean(st.pressed[x.tag]); stTxt = on ? 'לחוץ' : 'משוחרר'; face = `<span class="pb" style="--cap:${capColor(c)}"><i></i></span>`; door = true; }
+  else if (kind === 'es') { on = Boolean(st.pressed[x.tag]); stTxt = on ? 'לחוץ' : 'משוחרר'; face = '<span class="es"><i></i></span>'; door = true; }
+  else if (kind === 'sel') { on = Boolean(st.on[x.tag]); stTxt = on ? 'מצב 1' : 'מצב 0'; face = '<span class="selk"><b>0</b><i></i><b>1</b></span>'; door = true; }
+  else if (kind === 'sen') { on = Boolean(st.sense[x.tag]); stTxt = on ? 'מזהה' : 'פנוי'; face = '<span class="sen"><span></span><i></i></span>'; }
+  else if (kind === 'sw') { on = st.on[x.tag] !== false; stTxt = on ? 'סגור' : 'פתוח'; face = `<span class="brk"><span class="win">${on ? 'I' : 'O'}</span><span class="slot"><span class="lever"></span></span></span>`; }
+  const trip = o.tripped || (kind === 'ovl' && !on);
+  const act = kind === 'pb' || kind === 'es' ? (on ? 'לשחרר' : 'ללחוץ') : kind === 'sen' ? (on ? 'להפסיק זיהוי' : 'לזהות') : kind === 'ovl' ? (on ? 'להפעיל לבדיקה' : 'לאפס') : (on ? 'להוריד' : 'להרים');
+  return `<button type="button" class="dev ${cls} ${door ? 'door' : ''} ${on ? 'on' : ''} ${trip ? 'trip' : ''}" data-op="${esc(x.tag)}" aria-pressed="${on}" title="${esc(x.tag)} · ${esc(x.name)} — ${esc(stTxt)}" aria-label="${esc(x.tag)} ${esc(x.name)}: ${esc(stTxt)}. לחיצה כדי ${act}">
+    <span class="d-tag">${esc(x.tag)}</span><span class="d-face">${face}</span><span class="d-st">${esc(stTxt)}</span></button>`;
+}
 
 function renderLabSim() {
   const r = lab.res, st = lab.st, ctl = lab.ctl || Sim.controls(P);
   if (!r) return;
-  const comps = r.comps;
-  const en = Object.keys(comps).filter((t) => comps[t].energized), run = Object.keys(comps).filter((t) => comps[t].running), lit = Object.keys(comps).filter((t) => comps[t].lit);
+  const comps = r.comps, by = compBy();
+  const en = Object.keys(comps).filter((t) => comps[t].energized);
+  const run = Object.keys(comps).filter((t) => comps[t].running);
   const bad = Object.keys(comps).filter((t) => comps[t].tripped || comps[t].fault);
   const live = Object.keys(r.wires).length;
-  const prot = (x) => { const o = comps[x.tag] || {}; return btnCtl(x.tag, x.name, o.tripped ? 'נפל' : o.on ? 'מורם' : 'כבוי', Boolean(o.on), o.tripped ? 'class="trip"' : ''); };
-  const grp = (title, list, fn) => list.length ? `<h3>${esc(title)} <span class="cnt">${list.length}</span></h3><div class="sim-ctl">${list.map(fn).join('')}</div>` : '';
-  const f = lab.outFilter.toLowerCase();
-  const outs = ctl.outputs.filter((o) => !f || o.key.toLowerCase().includes(f) || String(o.name).toLowerCase().includes(f));
-  $('#labSide').innerHTML = `
-    <div class="sim-stat">
-      <div><b>${live}</b><span>חוטים חיים</span></div><div><b>${en.length}</b><span>סלילים נמשכו</span></div>
-      <div><b>${run.length}</b><span>עומסים פועלים</span></div><div class="${bad.length || r.shorts.length ? 'bad' : ''}"><b>${bad.length + r.shorts.length}</b><span>תקלות</span></div>
+  const faults = bad.length + r.shorts.length;
+  const last = lab.log[0];
+  $('#conHead').innerHTML = `<div class="readouts">
+      <div class="readout ${live ? '' : 'idle'}"><b>${live}</b><span>חוטים</span></div>
+      <div class="readout ${en.length ? '' : 'idle'}"><b>${en.length}</b><span>סלילים</span></div>
+      <div class="readout ${run.length ? '' : 'idle'}"><b>${run.length}</b><span>עומסים</span></div>
+      <div class="readout ${faults ? 'bad' : 'idle'}"><b>${faults}</b><span>תקלות</span></div>
     </div>
-    ${en.length || run.length || lit.length || bad.length ? `<h3>מצב עכשיו</h3><ul class="sim-state">
-      ${bad.map((t) => `<li><span class="led err"></span><span class="tg">${esc(t)}</span><span>${esc(comps[t].tripped || comps[t].fault)}</span></li>`).join('')}
-      ${en.map((t) => `<li><span class="led ok"></span><span class="tg">${esc(t)}</span><span>נמשך</span></li>`).join('')}
-      ${run.map((t) => `<li><span class="led ok"></span><span class="tg">${esc(t)}</span><span>פועל${comps[t].dir ? ' · סיבוב ' + esc(comps[t].dir) : ''}</span></li>`).join('')}
-      ${lit.map((t) => `<li><span class="led warn"></span><span class="tg">${esc(t)}</span><span>דולקת</span></li>`).join('')}
-    </ul>` : '<p class="muted small">אין עדיין עומס פעיל. מרימים את המפסק הראשי למעלה ומפעילים לחצנים או יציאות בקר.</p>'}
-    ${grp('הגנות ומפסקים', ctl.protect, prot)}
-    ${grp('ממסרים תרמיים', ctl.overload, (x) => btnCtl(x.tag, x.name, st.tripped[x.tag] ? 'הופעל' : 'תקין', !st.tripped[x.tag]))}
-    ${grp('לחצני חירום', ctl.estops, (x) => btnCtl(x.tag, x.name, st.pressed[x.tag] ? 'לחוץ' : 'משוחרר', Boolean(st.pressed[x.tag])))}
-    ${grp('לחצנים', ctl.buttons, (x) => btnCtl(x.tag, x.name, st.pressed[x.tag] ? 'לחוץ' : 'משוחרר', Boolean(st.pressed[x.tag])))}
-    ${grp('בוררים', ctl.selectors, (x) => btnCtl(x.tag, x.name, st.on[x.tag] ? '1' : '0', Boolean(st.on[x.tag])))}
-    ${grp('חיישנים', ctl.sensors, (x) => btnCtl(x.tag, x.name, st.sense[x.tag] ? 'מזהה' : '—', Boolean(st.sense[x.tag])))}
-    ${grp('מפסקי גבול ותרמוסטטים', ctl.switches, (x) => btnCtl(x.tag, x.name, st.on[x.tag] === false ? 'פתוח' : 'סגור', st.on[x.tag] !== false))}
-    ${ctl.outputs.length ? `<h3>יציאות בקר <span class="cnt">${ctl.outputs.length}</span></h3>
-      <p class="muted small" style="margin:0 0 6px">מדמה את התכנית של הבקר: מדליקים יציאה ורואים מה היא מפעילה.</p>
-      ${ctl.outputs.length > 16 ? `<input type="search" class="sim-filter" id="simOutF" placeholder="סינון יציאות (תג או מספר)…" value="${esc(lab.outFilter)}" aria-label="סינון יציאות בקר">` : ''}
-      <div class="sim-ctl outs">${outs.slice(0, 160).map((o) => `<button type="button" data-out="${esc(o.key)}" aria-pressed="${Boolean(st.out[o.key])}" title="${esc(o.name)}">${esc(o.key)}</button>`).join('')}</div>` : ''}
-    <h3>יומן אירועים <span class="cnt">${lab.log.length}</span></h3>
-    <ol class="sim-log">${lab.log.length ? lab.log.map((l) => `<li class="${l.bad ? 'bad' : ''}"><time>${esc(l.t)}</time>${isoTags(l.msg)}</li>`).join('') : '<li>ההדמיה מוכנה. ההזנה מחוברת והמפסק הראשי מנותק.</li>'}</ol>`;
+    <div class="ticker ${last && last.bad ? 'bad' : ''}">${last ? `<time>${esc(last.t)}</time><span class="msg">${isoTags(last.msg)}</span>` : '<span class="msg">ההזנה מחוברת. מרימים את המפסק הראשי כדי להתחיל.</span>'}</div>${toggleBtn}`;
+  const nOps = ctl.main.length + ctl.protect.length + ctl.overload.length + ctl.buttons.length + ctl.estops.length + ctl.selectors.length + ctl.sensors.length + ctl.switches.length;
+  setTabs([['ops', 'הפעלה', nOps + ctl.outputs.length], ['state', 'מצב', faults ? '!' : null], ['log', 'יומן', lab.log.length]]);
+  const rail = (title, list, kind) => list.length ? `<h3>${esc(title)} <span class="cnt">${list.length}</span></h3><div class="rail">${list.map((x) => devHtml(x, kind)).join('')}</div>` : '';
+  let body = '';
+  if (lab.ctab === 'ops') {
+    const f = lab.outFilter.toLowerCase();
+    const outs = ctl.outputs.filter((o) => !f || o.key.toLowerCase().includes(f) || String(o.name).toLowerCase().includes(f));
+    const mods = {};
+    outs.slice(0, 200).forEach((o) => { (mods[o.tag] = mods[o.tag] || { name: o.name, list: [] }).list.push(o); });
+    const prot = [...ctl.main.map((x) => devHtml(x, 'main')), ...ctl.protect.map((x) => devHtml(x, 'brk'))];
+    body = (prot.length ? `<h3>מפסק ראשי והגנות <span class="cnt">${prot.length}</span></h3><div class="rail">${prot.join('')}</div>` : '') +
+      rail('ממסרים תרמיים', ctl.overload, 'ovl') +
+      rail('לחצני חירום', ctl.estops, 'es') +
+      rail('לחצנים', ctl.buttons, 'pb') +
+      rail('בוררים', ctl.selectors, 'sel') +
+      rail('חיישנים', ctl.sensors, 'sen') +
+      rail('מפסקי גבול ותרמוסטטים', ctl.switches, 'sw') +
+      (ctl.outputs.length ? `<h3>יציאות בקר <span class="cnt">${ctl.outputs.length}</span></h3>
+        ${ctl.outputs.length > 16 ? `<input type="search" class="sim-filter" id="simOutF" placeholder="סינון יציאות לפי תג או מספר…" value="${esc(lab.outFilter)}" aria-label="סינון יציאות בקר">` : ''}
+        ${Object.entries(mods).map(([tag, m]) => `<div class="io-card"><header><b>${esc(tag)}</b><span>${esc(m.name)}</span></header><div class="io-ch">${m.list.map((o) => `<button type="button" data-out="${esc(o.key)}" aria-pressed="${Boolean(st.out[o.key])}" aria-label="יציאה ${esc(o.key)}"><span class="led"></span>${esc(o.term)}</button>`).join('')}</div></div>`).join('')}
+        <p class="con-note">מדמים את התכנית של הבקר: מדליקים יציאה ורואים מה היא מפעילה.</p>` : '') ||
+      '<p class="muted">אין בלוח רכיבים שאפשר להפעיל.</p>';
+  } else if (lab.ctab === 'state') {
+    const lamps = P.components.filter((c) => c.type === 'lamp');
+    const loads = P.components.filter((c) => /motor|fan|valve|heater|socket/.test(c.type) && (comps[c.tag] || P.wires.some((w) => w.from.tag === c.tag || w.to.tag === c.tag)));
+    const coils = P.components.filter((c) => /contactor|relay|timer/.test(c.type) && P.wires.some((w) => (w.from.tag === c.tag || w.to.tag === c.tag)));
+    const fanSvg = '<svg class="fan" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 8c0-3 1-6 3-6s1 4-3 6zm0 0c3 0 6 1 6 3s-4 1-6-3zm0 0c0 3-1 6-3 6s-1-4 3-6zm0 0c-3 0-6-1-6-3s4-1 6 3z" fill="currentColor"/></svg>';
+    body = (faults ? `<h3>תקלות <span class="cnt">${faults}</span></h3><ul class="state-list">${r.shorts.map((sh) => `<li class="bad"><span class="led err"></span><span class="nm">קצר: ${esc(sh.what.join(' / '))}</span></li>`).join('')}${bad.map((t) => `<li class="bad"><span class="led err"></span><span class="tg">${esc(t)}</span><span class="nm">${esc((by[t] || {}).name || '')}</span><span class="st">${esc(comps[t].tripped || comps[t].fault)}</span></li>`).join('')}</ul>` : '') +
+      (lamps.length ? `<h3>נוריות בדלת <span class="cnt">${lamps.length}</span></h3><div class="pilots">${lamps.map((c) => `<span class="pilot ${(comps[c.tag] || {}).lit ? 'lit' : ''}" style="--cap:${capColor(c)}" title="${esc(c.name || '')}"><i></i>${esc(c.tag)}</span>`).join('')}</div>` : '') +
+      (loads.length ? `<h3>עומסים <span class="cnt">${loads.length}</span></h3><ul class="state-list">${loads.map((c) => { const o = comps[c.tag] || {}; return `<li class="${o.running ? 'run' : o.fault ? 'bad' : ''} ${o.dir === 'שמאלה' ? 'ccw' : ''}">${fanSvg}<span class="tg">${esc(c.tag)}</span><span class="nm">${esc(c.name || '')}</span><span class="st">${o.running ? 'פועל' + (o.dir ? ' · ' + esc(o.dir) : '') : o.fault ? esc(o.fault) : 'עומד'}</span></li>`; }).join('')}</ul>` : '') +
+      (coils.length ? `<h3>מגענים וממסרים <span class="cnt">${coils.length}</span></h3><ul class="state-list">${coils.map((c) => { const o = comps[c.tag] || {}; return `<li class="${o.energized ? 'run' : o.fault ? 'bad' : ''}"><span class="led ${o.energized ? 'ok' : o.fault ? 'err' : 'off'}"></span><span class="tg">${esc(c.tag)}</span><span class="nm">${esc(c.name || '')}</span><span class="st">${o.energized ? 'נמשך' : o.fault ? 'נשרף' : 'מנותק'}</span></li>`; }).join('')}</ul>` : '') +
+      `<h3>צבעי המתח בשרטוט</h3><div class="con-legend">${POT_LEGEND.map(([c, l]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div>`;
+  } else {
+    body = `<ol class="sim-log">${lab.log.length ? lab.log.map((l) => `<li class="${l.bad ? 'bad' : ''}"><time>${esc(l.t)}</time>${isoTags(l.msg)}</li>`).join('') : '<li>ההדמיה מוכנה. ההזנה מחוברת והמפסק הראשי מנותק.</li>'}</ol>`;
+  }
+  const cb = $('#conBody'), y = cb.scrollTop;
+  cb.innerHTML = body;
+  cb.scrollTop = y;
 }
 
 function renderLabBar() {
   const bar = $('#labBar');
   if (lab.mode === 'check') {
-    bar.innerHTML = `<span>הלוח במצב בדיקה. לחיצה על ממצא מימין מסמנת את החוטים או הרכיב בשרטוט.</span><span class="grow"></span><button class="btn ghost small" type="button" id="labClearHl">ניקוי סימון</button>`;
+    bar.innerHTML = '<span class="hint-txt">לחיצה על ממצא בקונסולה מסמנת את החוטים או הרכיב בשרטוט.</span><span class="grow"></span><button class="btn ghost small" type="button" id="labClearHl">ניקוי סימון</button>';
     return;
   }
   if (lab.mode === 'sim') {
@@ -2680,18 +2748,18 @@ function renderLabBar() {
     const ms = ctl.main[0];
     const msO = ms && lab.res ? (lab.res.comps[ms.tag] || {}) : {};
     bar.innerHTML = `
-      <button class="btn small ${st.feed ? '' : 'ghost'}" type="button" id="simFeed" aria-pressed="${st.feed}"><span class="led ${st.feed ? 'ok' : 'off'}"></span> הזנת רשת ${st.feed ? 'מחוברת' : 'מנותקת'}</button>
-      ${ms ? `<button class="btn small ${msO.on ? '' : 'ghost'}" type="button" data-op="${esc(ms.tag)}" aria-pressed="${Boolean(msO.on)}"><span class="led ${msO.tripped ? 'err' : msO.on ? 'ok' : 'off'}"></span> מפסק ראשי <span class="mono" dir="ltr">${esc(ms.tag)}</span> ${msO.on ? 'מורם' : 'מנותק'}</button>` : ''}
+      <button class="btn small ${st.feed ? 'live' : 'ghost'}" type="button" id="simFeed" aria-pressed="${st.feed}"><span class="led ${st.feed ? 'ok' : 'off'}"></span> רשת ${st.feed ? 'מחוברת' : 'מנותקת'}</button>
+      ${ms ? `<button class="btn small ${msO.on ? 'live' : 'ghost'}" type="button" data-op="${esc(ms.tag)}" aria-pressed="${Boolean(msO.on)}"><span class="led ${msO.tripped ? 'err' : msO.on ? 'ok' : 'off'}"></span> <span class="mono" dir="ltr">${esc(ms.tag)}</span> ${msO.on ? 'מחובר' : 'מנותק'}</button>` : ''}
       <button class="btn ghost small" type="button" id="simAllOn">הכל למעלה</button>
       <button class="btn ghost small" type="button" id="simReset">איפוס</button>
       <span class="grow"></span>
-      <span class="pot-legend"><span><i style="background:#ff8a3d"></i>L1</span><span><i style="background:#c46cff"></i>L2</span><span><i style="background:#ffd23d"></i>L3</span><span><i style="background:#4da3ff"></i>N</span><span><i style="background:#ff4d6d"></i>+24V</span><span><i style="background:#5b8cff"></i>0V</span><span><i style="background:#ff1f1f"></i>קצר</span></span>`;
+      <span class="pot-legend">${POT_LEGEND.map(([c, l]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</span>`;
     return;
   }
   const w = lab.sel && wireById(lab.sel);
   const pk = lab.pick;
   bar.innerHTML = `
-    <span class="lab-pick">${pk ? `מ-<span class="ep mono" dir="ltr">${esc(pk)}</span> — לחצו על ההדק השני` : 'חיווט: לחצו על הדק (נקודה צהובה) ואז על הדק נוסף'}</span>
+    <span class="lab-pick">${pk ? `מ-<span class="ep mono" dir="ltr">${esc(pk)}</span> — עכשיו ההדק השני` : 'חיווט: לוחצים על הדק (נקודה צהובה) ואז על הדק נוסף'}</span>
     ${pk ? '<button class="btn ghost small" type="button" id="labPickX">ביטול</button>' : ''}
     <span class="grow"></span>
     ${w ? `<span>חוט <b class="mono">${esc(w.no)}</b></span><button class="btn ghost small" type="button" id="labWEdit">עריכה</button><button class="btn ghost small" type="button" id="labWDel">מחיקה</button>` : ''}`;
@@ -2710,26 +2778,26 @@ function labPin(k) {
 }
 
 function renderLabEdit() {
-  const types = Object.entries(C.TYPES);
   const added = raw.components.filter((c) => c.added === 'lab');
   const addedW = raw.wires.filter((w) => w.added === 'lab');
-  $('#labSide').innerHTML = `
-    <h3>הוספת רכיב</h3>
+  if (!['add', 'added'].includes(lab.ctab)) lab.ctab = 'add';
+  $('#conHead').innerHTML = `<div class="verdict"><span class="gauge" style="font-size:1rem">+</span><span><b>הוספה וחיווט</b><small>רכיב חדש נכנס לשרטוט עם כל ההדקים שלו. לחיווט — הדק ועוד הדק.</small></span></div>${toggleBtn}`;
+  setTabs([['add', 'רכיב חדש', null], ['added', 'נוספו במעבדה', added.length + addedW.length]]);
+  const t = lab.addType;
+  $('#conBody').innerHTML = lab.ctab === 'add' ? `
     <form class="lab-form" id="labAdd">
-      <label class="field full"><span>סוג</span><select name="type">${types.map(([k, v]) => `<option value="${k}" ${k === (lab.addType || 'contactor') ? 'selected' : ''}>${esc(v.he)}</option>`).join('')}</select></label>
-      <label class="field"><span>תג</span><input name="tag" dir="ltr" value="${esc(nextTag(lab.addType || 'contactor'))}" required></label>
-      <label class="field"><span>קטבים / הדקים</span><input name="poles" type="number" min="1" max="48" value="${esc(lab.addPoles || '')}" placeholder="לפי הסוג"></label>
+      <div class="full"><h3>סוג הרכיב</h3><div class="type-pick" role="group" aria-label="סוג הרכיב">${ADD_TYPES.filter((k) => C.TYPES[k]).map((k) => `<button type="button" data-atype="${k}" aria-pressed="${k === t}">${esc(C.TYPES[k].he)}</button>`).join('')}</div></div>
+      <input type="hidden" name="type" value="${esc(t)}">
+      <label class="field"><span>תג</span><input name="tag" dir="ltr" value="${esc(nextTag(t))}" required></label>
+      <label class="field"><span>${t === 'terminal' || t === 'pe_bar' ? 'מספר הדקים' : 'קטבים'}</span><input name="poles" type="number" min="1" max="48" value="${esc(lab.addPoles || '')}" placeholder="לפי הסוג"></label>
       <label class="field full"><span>שם</span><input name="name" placeholder="למשל: מגען משאבה 2"></label>
       <label class="field full"><span>דירוג</span><input name="rating" dir="auto" placeholder="C16 · 24V DC · 4kW · 3P"></label>
       <label class="check full"><input type="checkbox" name="real" checked> לשבץ חלק אמיתי (מק"ט) לפי המותג שנבחר</label>
       <button class="btn full" type="submit">הוספת הרכיב ללוח</button>
-    </form>
-    <p class="muted small">הרכיב נכנס לפריסה עם כל ההדקים שלו (נקודות צהובות). לחיווט: לוחצים על הדק ועל הדק נוסף, ממלאים צבע וחתך, ושומרים.</p>
-    <h3>נוספו במעבדה <span class="cnt">${added.length + addedW.length}</span></h3>
-    ${added.length || addedW.length ? `<ul class="lab-added">
-      ${added.map((c) => `<li><span class="mono" dir="ltr">${esc(c.tag)}</span><span class="grow">${esc(c.name || E.typeInfo(c.type).he)}${c.partNo ? ' · ' + esc(c.partNo) : ''}</span><button class="btn ghost small" type="button" data-show="${esc(c.tag)}">הצגה</button><button class="btn ghost small" type="button" data-delc="${esc(c.tag)}" aria-label="מחיקת ${esc(c.tag)}">✕</button></li>`).join('')}
-      ${addedW.map((w) => `<li><span class="mono">${esc(wireById(w.id) ? wireById(w.id).no : '')}</span><span class="grow" dir="ltr">${esc(w.from.tag)}:${esc(w.from.term)} → ${esc(w.to.tag)}:${esc(w.to.term)}</span><button class="btn ghost small" type="button" data-wedit="${esc(w.id)}">עריכה</button><button class="btn ghost small" type="button" data-delw="${esc(w.id)}" aria-label="מחיקת החוט">✕</button></li>`).join('')}
-    </ul>` : '<p class="muted small">עוד לא נוסף כלום.</p>'}`;
+    </form>` : (added.length || addedW.length ? `<ul class="lab-added">
+      ${added.map((c) => `<li><span class="mono" dir="ltr">${esc(c.tag)}</span><span class="grow">${esc(c.name || E.typeInfo(c.type).he)}${c.partNo ? ' · ' + esc(c.partNo) : ''}</span><button class="btn small" type="button" data-show="${esc(c.tag)}">הצגה</button><button class="btn small" type="button" data-delc="${esc(c.tag)}" aria-label="מחיקת ${esc(c.tag)}">✕</button></li>`).join('')}
+      ${addedW.map((w) => `<li><span class="mono">${esc(wireById(w.id) ? wireById(w.id).no : '')}</span><span class="grow" dir="ltr">${esc(w.from.tag)}:${esc(w.from.term)} → ${esc(w.to.tag)}:${esc(w.to.term)}</span><button class="btn small" type="button" data-wedit="${esc(w.id)}">עריכה</button><button class="btn small" type="button" data-delw="${esc(w.id)}" aria-label="מחיקת החוט">✕</button></li>`).join('')}
+    </ul>` : '<p class="muted">עוד לא נוסף כלום. מוסיפים רכיב בלשונית "רכיב חדש".</p>');
 }
 
 async function labAddComp(f) {
@@ -2747,7 +2815,7 @@ async function labAddComp(f) {
     } catch { /* בלי מק"ט */ }
   }
   raw.components.push(c);
-  lab.addType = type; lab.addPoles = f.poles.value;
+  lab.addPoles = f.poles.value;
   save(); derive();
   if (lab.view) lab.view.vb = null;
   renderLab();
@@ -2770,16 +2838,31 @@ async function labDelWire(id) {
 }
 
 function bindLab() {
-  $$('#v-lab [data-lmode]').forEach((b) => { b.onclick = () => { lab.mode = b.dataset.lmode; lab.pick = null; closeDrawer(); if (lab.view) lab.view.vb = null; renderLab(); }; });
+  $$('#v-lab [data-lmode]').forEach((b) => {
+    b.onclick = () => {
+      lab.mode = b.dataset.lmode; lab.pick = null; lab.ctab = lab.mode === 'edit' ? 'add' : 'ops';
+      closeDrawer(); if (lab.view) lab.view.vb = null; renderLab();
+    };
+  });
   $('#labZin').onclick = () => lab.view && lab.view.zoom(1 / 1.3);
   $('#labZout').onclick = () => lab.view && lab.view.zoom(1.3);
-  $('#labFit').onclick = () => lab.view && lab.view.fit();
+  $('#labFit').onclick = () => lab.view && labFit();
   $('#labSide').addEventListener('click', (e) => {
     const t = e.target.closest('button');
     if (!t) return;
+    if (t.id === 'conToggle') { $('#v-lab .lab-grid').classList.toggle('collapsed'); return; }
+    if (t.dataset.ctab) { lab.ctab = t.dataset.ctab; renderConsole(); $('#conBody').scrollTop = 0; return; }
     if (t.dataset.cat) { showFinding((lab.cats[t.dataset.cat] || [])[Number(t.dataset.n)]); return; }
     if (t.dataset.op) { operate(t.dataset.op); return; }
     if (t.dataset.out) { const k = t.dataset.out; lab.st.out[k] = !lab.st.out[k]; simRun(`יציאה ${k} ${lab.st.out[k] ? 'הודלקה' : 'כובתה'}`); return; }
+    if (t.dataset.atype) {
+      lab.addType = t.dataset.atype;
+      const f = $('#labAdd');
+      $$('#labAdd [data-atype]').forEach((b) => b.setAttribute('aria-pressed', String(b === t)));
+      f.type.value = lab.addType; f.tag.value = nextTag(lab.addType);
+      f.poles.previousElementSibling.textContent = lab.addType === 'terminal' || lab.addType === 'pe_bar' ? 'מספר הדקים' : 'קטבים';
+      return;
+    }
     if (t.dataset.show) { labFocusTag(t.dataset.show); lab.view.highlight(compWireIds(P, t.dataset.show)); return; }
     if (t.dataset.delc) { labDelComp(t.dataset.delc); return; }
     if (t.dataset.delw) { labDelWire(t.dataset.delw); return; }
@@ -2787,9 +2870,6 @@ function bindLab() {
   });
   $('#labSide').addEventListener('input', (e) => {
     if (e.target.id === 'simOutF') { lab.outFilter = e.target.value; const pos = e.target.selectionStart; renderLabSim(); const i = $('#simOutF'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
-  });
-  $('#labSide').addEventListener('change', (e) => {
-    if (e.target.name === 'type' && e.target.form && e.target.form.id === 'labAdd') { lab.addType = e.target.value; e.target.form.tag.value = nextTag(e.target.value); }
   });
   $('#labSide').addEventListener('submit', (e) => { if (e.target.id === 'labAdd') { e.preventDefault(); labAddComp(e.target); } });
   $('#labBar').addEventListener('click', (e) => {
@@ -2799,7 +2879,7 @@ function bindLab() {
     if (t.id === 'simFeed') { lab.st.feed = !lab.st.feed; simRun(lab.st.feed ? 'הזנת הרשת חוברה' : 'הזנת הרשת נותקה'); }
     if (t.id === 'simAllOn') { const ctl = lab.ctl || Sim.controls(P); [...ctl.main, ...ctl.protect].forEach((x) => { delete lab.st.tripped[x.tag]; lab.st.on[x.tag] = true; }); simRun('כל המפסקים וההגנות הורמו'); }
     if (t.id === 'simReset') { lab.st = Sim.initialState(P); lab.res = null; lab.log = []; simRun('איפוס — הכל חזר למצב ההתחלה'); }
-    if (t.id === 'labClearHl') { lab.view.highlight(null); lab.view.fit(); }
+    if (t.id === 'labClearHl') { lab.view.highlight(null); labFit(); }
     if (t.id === 'labPickX') { lab.pick = null; lab.view.setPinMode(true, null); renderLabBar(); }
     if (t.id === 'labWEdit' && lab.sel) openWireDialog(lab.sel);
     if (t.id === 'labWDel' && lab.sel) labDelWire(lab.sel);

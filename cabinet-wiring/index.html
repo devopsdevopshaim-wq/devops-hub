@@ -49,7 +49,7 @@
     <div class="top-actions">
       <span class="ai-badge" id="aiBadge" role="status">בודק חיבור…</span>
       <a class="btn on-dark ghost small" href="#home">הפרויקטים</a>
-      <label class="btn small" for="pdfInputTop">תכנית PDF חדשה</label>
+      <label class="btn small" for="pdfInputTop"><span><span class="long">תכנית </span>PDF<span class="long"> חדשה</span><span class="short-only" aria-hidden="true"> +</span></span></label>
       <input type="file" id="pdfInputTop" multiple accept="application/pdf,.pdf,.json" hidden>
     </div>
   </div>
@@ -518,7 +518,11 @@
           <button class="btn ghost small" type="button" id="labFit">כל הארון</button>
         </div>
       </div>
-      <aside class="lab-side" id="labSide" aria-live="polite"></aside>
+      <aside class="lab-side" id="labSide" aria-label="קונסולת המעבדה">
+        <div class="con-head" id="conHead"></div>
+        <div class="con-tabs" id="conTabs" role="tablist" aria-label="תצוגות הקונסולה"></div>
+        <div class="con-body" id="conBody"></div>
+      </aside>
     </div>
   </section>
 
