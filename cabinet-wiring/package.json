@@ -5,7 +5,7 @@
   "description": "ארון־פלאן — חיווט והרכבת ארון פיקוד מתכנית PDF: רשימת חוטים, צבעים, חתכים, הסבר לכל חוט, פריסת ארון וחיווט שלב אחר שלב",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node test/engine.test.mjs && node test/site.test.mjs && node test/parts.test.mjs"
+    "test": "node test/engine.test.mjs && node test/site.test.mjs && node test/parts.test.mjs && node test/sim.test.mjs"
   },
   "engines": {
     "node": ">=18"

@@ -532,6 +532,8 @@
     (p.components || []).forEach(function (c) { compBy[c.tag] = c; });
     var termsBy = {};
     (p.wires || []).forEach(function (w) { [w.from, w.to].forEach(function (e) { (termsBy[e.tag] = termsBy[e.tag] || []).push(e.term); }); });
+    /* הדקים שהוגדרו לרכיב (רכיב חדש בלי חוטים עדיין) */
+    (p.components || []).forEach(function (c) { (c.terms || []).forEach(function (t) { (termsBy[c.tag] = termsBy[c.tag] || []).push(t); }); });
     var M = 30, SD = 45, DUCT = 60, GAP = 22;
     var cab = (p.components || []).filter(function (c) { return c.zone === 'cabinet'; });
     var door = (p.components || []).filter(function (c) { return c.zone === 'door'; });
@@ -633,6 +635,19 @@
         o.terms[e.term] = 1;
         if (c.type === 'terminal' || c.type === 'pe_bar') { (o[s] || o.any)[e.term + '|' + s] = { term: e.term, side: s }; }
         else (s ? o[s] : o.any)[e.term] = { term: e.term, side: s };
+        if (!pins[key]) pins[key] = {};
+      });
+    });
+    (p.components || []).forEach(function (c) {
+      if (!c.terms || !c.terms.length || !comps[c.tag]) return;
+      var o = (pinsOf[c.tag] = pinsOf[c.tag] || { top: {}, bottom: {}, any: {}, terms: {} });
+      c.terms.forEach(function (t) {
+        if (o.terms[t]) return;
+        o.terms[t] = 1;
+        var r = termRole(c.type, t), sd = r.side === 'top' || r.side === 'bottom' ? r.side : null;
+        if (c.type === 'terminal' || c.type === 'pe_bar') o[sd || 'any'][t + '|' + (sd || 'any')] = { term: t, side: sd };
+        else (sd ? o[sd] : o.any)[t] = { term: t, side: sd };
+        var key = pinKey(c.tag, t);
         if (!pins[key]) pins[key] = {};
       });
     });

@@ -26,6 +26,7 @@
 <script src="js/engine.js"></script>
 <script src="js/parts.js"></script>
 <script src="js/split.js"></script>
+<script src="js/sim.js"></script>
 <script src="js/prompts.js"></script>
 <script src="js/demo.js"></script>
 <script src="js/library/plan-208b.js"></script>
@@ -66,7 +67,8 @@
         <li><a href="#p/three" data-tab="three"><span class="num">6</span><span class="t">ארון בתלת־ממד</span></a></li>
         <li><a href="#p/wiring" data-tab="wiring"><span class="num">7</span><span class="t">חיווט שלב אחר שלב</span></a></li>
         <li><a href="#p/assembly" data-tab="assembly"><span class="num">8</span><span class="t">הרכבה ובדיקות</span></a></li>
-        <li><a href="#p/export" data-tab="export"><span class="num">9</span><span class="t">הדפסה והגדרות</span></a></li>
+        <li><a href="#p/lab" data-tab="lab"><span class="num">9</span><span class="t">מעבדה</span></a></li>
+        <li><a href="#p/export" data-tab="export"><span class="num">10</span><span class="t">הדפסה והגדרות</span></a></li>
       </ol>
       <span class="progress-pill" id="progressPill" title="חוטים שסומנו כמחוברים"></span>
     </div>
@@ -493,6 +495,33 @@
   </section>
 
   <!-- ===== 7. הדפסה והגדרות ===== -->
+  <!-- ===== 9. מעבדה ===== -->
+  <section class="view" id="v-lab" data-view="lab" hidden>
+    <div class="lab-top">
+      <div class="lab-title">
+        <h2>מעבדה</h2>
+        <p class="muted small" id="labHint"></p>
+      </div>
+      <div class="seg lab-modes" role="tablist" aria-label="מצב המעבדה">
+        <button type="button" role="tab" data-lmode="check" aria-selected="true">בדיקת תקינות</button>
+        <button type="button" role="tab" data-lmode="sim" aria-selected="false">הדמיה חיה</button>
+        <button type="button" role="tab" data-lmode="edit" aria-selected="false">הוספה וחיווט</button>
+      </div>
+    </div>
+    <div class="lab-grid">
+      <div class="lab-stage">
+        <div class="lab-bar" id="labBar"></div>
+        <div class="cab-host lab-host" id="labHost"></div>
+        <div class="lab-zoom row gap">
+          <button class="btn ghost small" type="button" id="labZin" aria-label="הגדלה">+</button>
+          <button class="btn ghost small" type="button" id="labZout" aria-label="הקטנה">−</button>
+          <button class="btn ghost small" type="button" id="labFit">כל הארון</button>
+        </div>
+      </div>
+      <aside class="lab-side" id="labSide" aria-live="polite"></aside>
+    </div>
+  </section>
+
   <section class="view" id="v-export" data-view="export" hidden>
     <div class="grid-2">
       <div class="card">
