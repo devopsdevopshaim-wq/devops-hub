@@ -96,6 +96,7 @@ window.Guide = (function () {
     talkTimer = setInterval(function () {
       i++;
       mouth(i % 5 !== 0); // a short pause every few syllables
+      faceTalk(i % 5 !== 0);
       if (Math.random() < 0.08) { root.classList.add('brows-up'); setTimeout(function () { root.classList.remove('brows-up'); }, 380); }
     }, 105);
   }
@@ -104,7 +105,34 @@ window.Guide = (function () {
     clearInterval(talkTimer);
     root.classList.remove('talking');
     mouth(false);
+    faces.forEach(function (f) { f.stopSpeaking(); f.nodOnce(.6); });
   }
+
+  // The real face: the photo on a mesh that blinks, breathes, sways and talks (talking-face.js), in the portrait and the side stage.
+  var faces = [];
+  function faceTalk(open) {
+    if (!faces.length) return;
+    var lvl = parseFloat(root.style.getPropertyValue('--lvl'));   // her real voice, when it is a clip
+    faces.forEach(function (f) {
+      var e = open ? (isNaN(lvl) || !root.classList.contains('live') ? 0.35 + Math.random() * 0.6 : Math.min(1, lvl * 1.8)) : 0;
+      f.speak(e, Math.random() < .4 ? Math.random() : 0, Math.random() < .3 ? Math.random() : 0);
+      if (open && Math.random() < .06) f.browKick = .5;
+    });
+  }
+  function mountFace(host, box) {
+    if (reduce || typeof TalkingFace === 'undefined' || !host || host.getAttribute('data-face')) return;
+    host.setAttribute('data-face', '1');
+    if (!mountFace.obs) {
+      mountFace.obs = new MutationObserver(function () {
+        var m = root.classList.contains('thinking') ? 'think' : root.classList.contains('happy') ? 'happy' : 'calm';
+        faces.forEach(function (f) { f.mood(m); });
+      });
+      mountFace.obs.observe(root, { attributes: true, attributeFilter: ['class'] });
+    }
+    var f = new TalkingFace(box, { image: PHOTO, mesh: 'img/face-mesh.json' });
+    f.ready.then(function () { f.mood('calm'); faces.push(f); host.classList.add('has-face'); }).catch(function () { host.removeAttribute('data-face'); });
+  }
+
 
   // Little human things: a wave, a smile under the cursor, eyes that follow it,
   // and a nap when nobody is around.
@@ -636,7 +664,10 @@ window.Guide = (function () {
       Array.prototype.forEach.call(document.querySelectorAll('.g-mini, .g-av'), function (n) { n.innerHTML = tag; });
       if (panel && !panel.querySelector('.g-portrait')) {
         var ph = new Image(); ph.src = PHOTO; ph.alt = ''; ph.className = 'g-portrait-img';
-        panel.insertBefore(h('div', { class: 'g-portrait', 'aria-hidden': 'true' }, [ph, h('span', { class: 'g-wave' }, [h('i'), h('i'), h('i'), h('i'), h('i')])]), panel.firstChild);
+        var fbox = h('div', { class: 'g-facebox' });
+        var port = h('div', { class: 'g-portrait', 'aria-hidden': 'true' }, [ph, fbox, h('span', { class: 'g-wave' }, [h('i'), h('i'), h('i'), h('i'), h('i')])]);
+        panel.insertBefore(port, panel.firstChild);
+        mountFace(port, fbox);
       }
     };
     img.src = PHOTO;
@@ -648,11 +679,14 @@ window.Guide = (function () {
     var img = new Image();
     img.onload = function () {
       img.className = 'g-stage-photo'; img.alt = '';
-      root.appendChild(h('div', { class: 'g-stage', 'aria-hidden': 'true' }, [
-        img,
+      var sbox = h('div', { class: 'g-facebox' });
+      var stage = h('div', { class: 'g-stage', 'aria-hidden': 'true' }, [
+        img, sbox,
         h('span', { class: 'g-wave' }, [h('i'), h('i'), h('i'), h('i'), h('i')]),
         h('span', { class: 'g-tag', text: NAME + ' · ' + ROLE })
-      ]));
+      ]);
+      root.appendChild(stage);
+      mountFace(stage, sbox);
       root.classList.add('staged');
     };
     img.onerror = function () { if (img.getAttribute('data-fb')) return; img.setAttribute('data-fb', '1'); img.src = PHOTO; };
@@ -686,5 +720,5 @@ window.Guide = (function () {
     }, 1600);
   }
 
-  return { init: init, present: function (p) { stopTour(); present(p); }, startTour: startTour };
+  return { _talk: function (open) { faceTalk(open); }, init: init, present: function (p) { stopTour(); present(p); }, startTour: startTour };
 })();
