@@ -31,7 +31,7 @@
 
   var MOODS = {
     calm:      { smile: 0.12, brow: 0.0,  browIn: 0.0,  tilt: 0 },
-    happy:     { smile: 0.75, brow: 0.2,  browIn: 0.0,  tilt: 0.02 },
+    happy:     { smile: 0.32, brow: 0.2,  browIn: 0.0,  tilt: 0.02 },
     curious:   { smile: 0.1,  brow: 0.75, browIn: 0.0,  tilt: 0.05 },
     concerned: { smile: -0.15, brow: 0.2, browIn: 0.8,  tilt: -0.03 },
     think:     { smile: 0.0,  brow: 0.45, browIn: 0.15, tilt: 0.06 },
@@ -122,6 +122,7 @@
     if (round != null) this.target.round = round;
   };
   TalkingFace.prototype.stopSpeaking = function () { this.energy = 0; this.target.jaw = 0; this.target.wide = 0; this.target.round = 0; };
+  TalkingFace.prototype.gesture = function (yaw, pitch, roll) { this.look = { yaw: yaw || 0, pitch: pitch || 0, roll: roll || 0 }; };
   TalkingFace.prototype.nodOnce = function (a) { this.nod = a == null ? 1 : a; };
   TalkingFace.prototype.blinkNow = function () { this.blinkAt = this.t; };
 
@@ -154,9 +155,10 @@
     var rollBase = Math.sin(t * 0.29 + s * 5) * 0.25 + md.tilt * 3;
     this.nod = Math.max(0, this.nod - dt * 2.2);
     var nodv = Math.sin((1 - this.nod) * Math.PI) * this.nod;
-    tg.yaw = yawBase * (this.speaking ? 1.3 : 1);
-    tg.pitch = pitchBase + nodv * 1.4 + (this.speaking ? this.energy * 0.25 : 0);
-    tg.roll = rollBase;
+    var lk = this.look || { yaw: 0, pitch: 0, roll: 0 };   // gestures set from outside: where she looks, how she tilts
+    tg.yaw = yawBase * (this.speaking ? 1.3 : 1) + lk.yaw;
+    tg.pitch = pitchBase + nodv * 1.4 + (this.speaking ? this.energy * 0.25 : 0) + lk.pitch;
+    tg.roll = rollBase + lk.roll;
     // blink at human intervals, with an occasional double blink
     if (t > this.nextBlink && this.blinkAt < 0) { this.blinkAt = t; this.nextBlink = t + 2.2 + Math.random() * 4.2; if (Math.random() < 0.18) this.nextBlink = t + 0.45; }
     var b = 0;
@@ -253,8 +255,8 @@
     }
     var open = ymax - ymin;
     if (open < 1.4) return;
-    var cxm = (xmin + xmax) / 2, wd = xmax - xmin, fade = clamp((open - 1.4) / 3, 0, 1);
-    c.save(); c.scale(k, k); c.globalAlpha = fade;
+    var cxm = (xmin + xmax) / 2, wd = xmax - xmin, fade = clamp((open - 1.4) / 3, 0, 1) * clamp(this.energy * 7, 0, 1);   // a smile alone shows no inside of the mouth
+    c.save(); c.scale(k, k); c.globalAlpha = fade * 0.8; c.filter = 'blur(0.5px)';
     c.beginPath(); smooth(c, pts);
     var gr = c.createLinearGradient(0, ymin, 0, ymax);
     gr.addColorStop(0, '#1d090d'); gr.addColorStop(0.5, '#3b1419'); gr.addColorStop(1, '#5b2329');
@@ -264,28 +266,7 @@
     var tg0 = c.createRadialGradient(cxm, ymax + open * 0.1, 1, cxm, ymax + open * 0.1, wd * 0.34);
     tg0.addColorStop(0, 'rgba(176,86,92,.85)'); tg0.addColorStop(1, 'rgba(120,48,56,0)');
     c.fillStyle = tg0; c.fillRect(xmin, ymin, wd, open * 1.4);
-    // upper teeth: the middle of the upper inner lip, hanging a little way down
-    var th = Math.min(open * 0.5, m.face_h * 0.024), a0 = 2, a1 = up.length - 3, top = [], bot = [];
-    for (i = a0; i <= a1; i++) {
-      var ux = pos[up[i] * 2], uy = pos[up[i] * 2 + 1], t = (i - a0) / (a1 - a0), hh = th * (0.55 + 0.45 * Math.sin(Math.PI * t));
-      top.push([ux, uy - 0.6]); bot.push([ux, uy + hh]);
-    }
-    c.beginPath();
-    c.moveTo(top[0][0], top[0][1]);
-    for (i = 1; i < top.length; i++) c.lineTo(top[i][0], top[i][1]);
-    for (i = bot.length - 1; i >= 0; i--) { var bq = bot[i], bn = bot[i - 1] || bq; c.quadraticCurveTo(bq[0], bq[1] + 0.8, (bq[0] + bn[0]) / 2, (bq[1] + bn[1]) / 2 + 0.4); }
-    c.closePath();
-    var tg = c.createLinearGradient(0, ymin, 0, ymin + th);
-    tg.addColorStop(0, '#d9d2c7'); tg.addColorStop(0.35, '#f3eee6'); tg.addColorStop(1, '#d6cec2');
-    c.fillStyle = tg; c.fill();
-    // lower teeth, dimmer, only when open wide
-    if (open > m.face_h * 0.065) {
-      var lh = th * 0.5, l0 = 2, l1 = low.length - 3;
-      c.beginPath();
-      for (i = l0; i <= l1; i++) { var lx = pos[low[i] * 2], ly = pos[low[i] * 2 + 1]; if (i === l0) c.moveTo(lx, ly + 0.4); else c.lineTo(lx, ly + 0.4); }
-      for (i = l1; i >= l0; i--) c.lineTo(pos[low[i] * 2], pos[low[i] * 2 + 1] - lh * Math.sin(Math.PI * (i - l0) / (l1 - l0)) );
-      c.closePath(); c.fillStyle = 'rgba(214,206,194,.78)'; c.fill();
-    }
+    // no drawn teeth: a painted tooth row never looks like a real one, so the opening stays a soft, dark inside of the mouth
     // shadow under the upper lip
     var sh = c.createLinearGradient(0, ymin, 0, ymin + open * 0.55);
     sh.addColorStop(0, 'rgba(10,2,4,.55)'); sh.addColorStop(1, 'rgba(10,2,4,0)');
