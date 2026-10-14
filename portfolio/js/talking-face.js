@@ -45,6 +45,7 @@
     this.t = 0; this.last = 0;
     this.p = {}; this.target = {}; this.vel = {};
     ['jaw', 'wide', 'round', 'smile', 'brow', 'browIn', 'blink', 'yaw', 'pitch', 'roll', 'breath'].forEach(function (k) { me.p[k] = 0; me.target[k] = 0; me.vel[k] = 0; });
+    this.lips = !!opts.lips;
     this.energy = 0; this.speaking = false; this.nextBlink = 1.2; this.blinkAt = -1; this.mood_ = 'calm'; this.nod = 0; this.sway = Math.random() * 10;
     this.ready = Promise.all([load(opts.image || 'face.jpg'), fetch(opts.mesh || 'face-mesh.json').then(function (r) { return r.json(); })]).then(function (r) { me.init(r[0], r[1]); return me; });
   }
@@ -163,6 +164,9 @@
       this.energy = e; tg.jaw = e * 0.95; tg.wide = (Math.sin(t * 3.1) + 1) / 2 * 0.55; tg.round = (Math.sin(t * 2.3 + 1) + 1) / 2 * 0.45;
       if (Math.sin(t * 0.8) > 0.97) this.browKick = 0.4;
     }
+    // a warped photo can never look like a real mouth speaking, so by default the lips, jaw and smile are left exactly as photographed
+    // (new TalkingFace(host, { lips: true }) brings the old mouth movement back)
+    if (!this.lips) { tg.jaw = 0; tg.wide = 0; tg.round = 0; tg.smile = 0; }
     var lk = this.look || { yaw: 0, pitch: 0, roll: 0 };   // gestures set from outside: where she looks, how she tilts
     tg.yaw = yawBase * (this.speaking ? 1.3 : 1) + lk.yaw;
     tg.pitch = pitchBase + nodv * 1.4 + (this.speaking ? this.energy * 0.25 : 0) + lk.pitch;
@@ -254,6 +258,7 @@
   // the inside of the mouth, drawn over the face where the lips part: dark cavity, soft shadow under the
   // upper lip, a hint of tongue, and the teeth (upper, and the lower ones only when the mouth is wide)
   TalkingFace.prototype.mouth = function (pos) {
+    if (!this.lips) return;
     var m = this.m, c = this.octx, W = this.over.width, k = W / m.w;
     var loop = m.inner, up = m.in_up, low = m.in_low, i;
     var ymin = 1e9, ymax = -1e9, xmin = 1e9, xmax = -1e9, pts = [];
