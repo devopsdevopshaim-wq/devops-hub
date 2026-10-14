@@ -116,7 +116,7 @@
   };
   // mouth energy 0..1 and vowel shape: wide (ee) vs round (oo)
   TalkingFace.prototype.speak = function (level, wide, round) {
-    this.energy = clamp(level, 0, 1);
+    this.energy = clamp(level, 0, 1); this.lastExt = this.t;
     this.target.jaw = this.energy * 0.95;
     if (wide != null) this.target.wide = wide;
     if (round != null) this.target.round = round;
@@ -155,6 +155,14 @@
     var rollBase = Math.sin(t * 0.29 + s * 5) * 0.25 + md.tilt * 3;
     this.nod = Math.max(0, this.nod - dt * 2.2);
     var nodv = Math.sin((1 - this.nod) * Math.PI) * this.nod;
+    // self-driven speech: while `talking` is on (and no outside level is being fed), syllables and short pauses come from here, so the
+    // mouth keeps moving for as long as she talks, whatever the page's timers do
+    if (this.talking && this.t - (this.lastExt || -9) > 0.35) {
+      var ph = t * 10.5, env = Math.max(0, Math.sin(ph)), phr = Math.sin(t * 1.9 + 1.3) > -0.8 ? 1 : 0.0;   // a breath every few seconds
+      var e = Math.pow(env, 0.75) * (0.5 + 0.5 * Math.sin(t * 2.7 + 0.5)) * phr * 0.55 + 0.04 * phr;
+      this.energy = e; tg.jaw = e * 0.95; tg.wide = (Math.sin(t * 3.1) + 1) / 2 * 0.55; tg.round = (Math.sin(t * 2.3 + 1) + 1) / 2 * 0.45;
+      if (Math.sin(t * 0.8) > 0.97) this.browKick = 0.4;
+    }
     var lk = this.look || { yaw: 0, pitch: 0, roll: 0 };   // gestures set from outside: where she looks, how she tilts
     tg.yaw = yawBase * (this.speaking ? 1.3 : 1) + lk.yaw;
     tg.pitch = pitchBase + nodv * 1.4 + (this.speaking ? this.energy * 0.25 : 0) + lk.pitch;
