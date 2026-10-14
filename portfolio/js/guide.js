@@ -132,7 +132,7 @@ window.Guide = (function () {
     stageEls().forEach(function (e) { e.classList.add('lean'); setTimeout(function () { e.classList.remove('lean'); }, 700); });
   }
   function stageEls() { return Array.prototype.slice.call(root.querySelectorAll('.g-stage, .g-portrait')); }
-  function mountFace(host, box) {
+  function mountFace(host, box, image, mesh) {
     if (reduce || typeof TalkingFace === 'undefined' || !host || host.getAttribute('data-face')) return;
     host.setAttribute('data-face', '1');
     if (!mountFace.obs) {
@@ -142,7 +142,7 @@ window.Guide = (function () {
       });
       mountFace.obs.observe(root, { attributes: true, attributeFilter: ['class'] });
     }
-    var f = new TalkingFace(box, { image: PHOTO, mesh: 'img/face-mesh.json' });
+    var f = new TalkingFace(box, { image: image || PHOTO, mesh: mesh || 'img/face-mesh.json' });
     f.ready.then(function () { f.mood('calm'); f.talking = root.classList.contains('talking'); faces.push(f); host.classList.add('has-face'); }).catch(function () { host.removeAttribute('data-face'); });
   }
 
@@ -699,8 +699,8 @@ window.Guide = (function () {
         h('span', { class: 'g-tag', text: NAME + ' · ' + ROLE })
       ]);
       root.appendChild(stage);
-      // a separate full-length picture is shown as it is; the moving face is only for the portrait photo used as a stand-in
-      if (img.getAttribute('data-fb')) mountFace(stage, sbox);
+      // the half-body picture gets its own face mesh, so she blinks, breathes and talks in it too
+      if (img.getAttribute('data-fb')) mountFace(stage, sbox); else mountFace(stage, sbox, FULL, 'img/face-mesh-full.json');
       root.classList.add('staged');
     };
     img.onerror = function () { if (img.getAttribute('data-fb')) return; img.setAttribute('data-fb', '1'); img.src = PHOTO; };
