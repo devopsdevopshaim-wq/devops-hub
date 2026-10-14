@@ -295,3 +295,15 @@ html:has(.g-panel.open) #mail-pill { display: none; }
 .g-portrait.has-face .g-portrait-img, .g-stage.has-face .g-stage-photo { visibility: hidden; }
 .g-stage .g-facebox { height: 112%; top: -4%; }
 .g-portrait.has-face::after, .g-stage.has-face::after { z-index: 2; }
+
+/* body language: she breathes with her shoulders, leans in when she speaks, and the whole picture drifts a little */
+.g-stage.has-face .g-facebox, .g-portrait.has-face .g-facebox { animation: bodydrift 9s ease-in-out infinite; transform-origin: 50% 95%; }
+@keyframes bodydrift { 0%, 100% { transform: translateX(-50%) rotate(-.5deg) scale(1.0); } 50% { transform: translateX(-50%) rotate(.6deg) scale(1.012); } }
+.g-portrait.has-face .g-facebox { animation-name: bodydrift2; }
+@keyframes bodydrift2 { 0%, 100% { transform: rotate(-.4deg) scale(1.0); } 50% { transform: rotate(.5deg) scale(1.015); } }
+.g-stage, .g-portrait { transition: transform .7s cubic-bezier(.3, .7, .2, 1); }
+.talking .g-stage.lean { transform: scale(1.015) translateY(-3px); }
+.talking .g-portrait.lean .g-facebox { margin-top: -10%; }
+/* fuller picture: the whole height of the photo, shoulders included */
+.g-stage .g-facebox { height: 100%; top: 0; }
+@media (prefers-reduced-motion: reduce) { .g-stage.has-face .g-facebox, .g-portrait.has-face .g-facebox { animation: none; } }

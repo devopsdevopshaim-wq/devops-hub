@@ -97,6 +97,7 @@ window.Guide = (function () {
       i++;
       mouth(i % 5 !== 0); // a short pause every few syllables
       faceTalk(i % 5 !== 0);
+      if (i % 9 === 0) faceGesture();
       if (Math.random() < 0.08) { root.classList.add('brows-up'); setTimeout(function () { root.classList.remove('brows-up'); }, 380); }
     }, 105);
   }
@@ -105,7 +106,7 @@ window.Guide = (function () {
     clearInterval(talkTimer);
     root.classList.remove('talking');
     mouth(false);
-    faces.forEach(function (f) { f.stopSpeaking(); f.nodOnce(.6); });
+    faces.forEach(function (f) { f.stopSpeaking(); f.nodOnce(.6); f.gesture(0, 0, 0); });
   }
 
   // The real face: the photo on a mesh that blinks, breathes, sways and talks (talking-face.js), in the portrait and the side stage.
@@ -115,17 +116,28 @@ window.Guide = (function () {
     var lvl = parseFloat(root.style.getPropertyValue('--lvl'));   // her real voice, when it is a clip
     faces.forEach(function (f) {
       var e = open ? (isNaN(lvl) || !root.classList.contains('live') ? 0.35 + Math.random() * 0.6 : Math.min(1, lvl * 1.8)) : 0;
+      e *= .55;   // a natural mouth, never gaping
       f.speak(e, Math.random() < .4 ? Math.random() : 0, Math.random() < .3 ? Math.random() : 0);
       if (open && Math.random() < .06) f.browKick = .5;
     });
   }
+  // body language: while she talks her head turns and tilts a little every second or so, a nod ends a sentence, she looks up while thinking
+  function faceGesture() {
+    faces.forEach(function (f) {
+      var r = Math.random();
+      f.gesture((Math.random() - .5) * 1.1, (Math.random() - .35) * .5, (Math.random() - .5) * .8);
+      if (r < .25) f.nodOnce(.5);
+    });
+    stageEls().forEach(function (e) { e.classList.add('lean'); setTimeout(function () { e.classList.remove('lean'); }, 700); });
+  }
+  function stageEls() { return Array.prototype.slice.call(root.querySelectorAll('.g-stage, .g-portrait')); }
   function mountFace(host, box) {
     if (reduce || typeof TalkingFace === 'undefined' || !host || host.getAttribute('data-face')) return;
     host.setAttribute('data-face', '1');
     if (!mountFace.obs) {
       mountFace.obs = new MutationObserver(function () {
         var m = root.classList.contains('thinking') ? 'think' : root.classList.contains('happy') ? 'happy' : 'calm';
-        faces.forEach(function (f) { f.mood(m); });
+        faces.forEach(function (f) { f.mood(m); if (m === 'think') f.gesture(-.7, -.5, -.3); else if (!root.classList.contains('talking')) f.gesture(0, 0, 0); });
       });
       mountFace.obs.observe(root, { attributes: true, attributeFilter: ['class'] });
     }
@@ -302,7 +314,7 @@ window.Guide = (function () {
       setTimeout(end, 2500 + text.length * 120); // some browsers never fire onend
     } else {
       // no voice: the photo does not pretend to talk, the words just appear
-      if (root.classList.contains('photo')) stopTalking();
+      if (root.classList.contains('photo') && !faces.length) stopTalking();
       setTimeout(end, 900 + text.length * 55);
     }
   }
@@ -721,5 +733,5 @@ window.Guide = (function () {
     }, 1600);
   }
 
-  return { _talk: function (open) { faceTalk(open); }, init: init, present: function (p) { stopTour(); present(p); }, startTour: startTour };
+  return { _faces: function () { return faces; }, _talk: function (open) { faceTalk(open); }, init: init, present: function (p) { stopTour(); present(p); }, startTour: startTour };
 })();
