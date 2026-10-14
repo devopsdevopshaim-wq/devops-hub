@@ -20,7 +20,7 @@ import monitorTargets from './gen/monitor-targets.mjs';
 import monitorSummarize from './gen/monitor-summarize.mjs';
 import statusFresh from './gen/status-fresh.mjs';
 import statusRender from './gen/status-render.mjs';
-import { mailHandle, mailCallback } from './mail.mjs';
+import { mailHandle, mailCallback, who as sessionOf } from './mail.mjs';
 import { localGuide } from './guide-local.mjs';
 import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
 
@@ -39,6 +39,8 @@ const ROUTES = {
   'hasadna-guide': { svc: 'agents', kind: 'guide', max: 20000, free: true },
   'hasadna-status': { svc: 'agents', kind: 'status', max: 1000, free: true, method: 'GET' },
   // JARVIS, the personal assistant with the talking face (jarvis-web): the first AI key that answers
+  // HeyGen live video avatar: the page asks here for a short-lived session token (the API key never leaves the server)
+  'hasadna-heygen': { svc: 'agents', kind: 'heygen', max: 2000, free: true },
   'hasadna-jarvis': { svc: 'agents', kind: 'jarvis', max: 12000, free: true },
   // the clients' own mailboxes (Gmail); the callback is where Google sends the person back after they agree
   'hasadna-mail': { svc: 'main', kind: 'mail', max: 20000, free: true },
@@ -187,6 +189,24 @@ export class State extends DurableObject {
         if (!fresh) { await this.save(st); try { await this.runMonitor(false); } catch (e) { /* the page shows the last known state */ } const again = await this.load(); st.sd = again.sd; st.orig = again.orig; }
         const r = (await statusRender(ctx({}, { 'Status · Webhook': { query: q } })))[0].json;
         return new Response(r.body, { status: 200, headers: { ...CORS, 'Content-Type': r.contentType || 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src https://devopsdevopshaim-wq.github.io data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" } });
+      }
+      if (rt.kind === 'heygen') {
+        let hb = {}; try { hb = typeof body === 'string' ? JSON.parse(body) : (body || {}); } catch (e) { hb = {}; }
+        const w = sessionOf(st.sd, hb.token);
+        // a video minute costs money: only signed-in people, a few sessions an hour each
+        if (!w) return reply({ ok: true, available: false, reason: 'signin' });
+        if (!env.HEYGEN_API_KEY) return reply({ ok: true, available: false, reason: 'off' });
+        if (hb.action !== 'token') return reply({ ok: true, available: true, avatar: env.HEYGEN_AVATAR_ID || '', voice: env.HEYGEN_VOICE_ID || '', language: env.HEYGEN_LANG || 'he', minutes: 5 });
+        st.sd.heygenUse = st.sd.heygenUse || {};
+        const k = w.email, nowT = Date.now(), arr = (st.sd.heygenUse[k] || []).filter((x) => nowT - x < 3600000);
+        if (arr.length >= 6) return reply({ ok: false, error: 'limit' }, 429);
+        arr.push(nowT); st.sd.heygenUse[k] = arr;
+        let r, j = {};
+        try { r = await fetch('https://api.heygen.com/v1/streaming.create_token', { method: 'POST', headers: { 'x-api-key': env.HEYGEN_API_KEY, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(15000) }); j = await r.json().catch(() => ({})); } catch (e) { r = null; }
+        await this.save(st);
+        const tok = j && j.data && j.data.token;
+        if (!tok) return reply({ ok: false, error: 'heygen-' + (r ? r.status : 'net') });
+        return reply({ ok: true, token: tok, avatar: env.HEYGEN_AVATAR_ID || '', voice: env.HEYGEN_VOICE_ID || '', language: env.HEYGEN_LANG || 'he' });
       }
       if (rt.kind === 'jarvis') {
         const { sid, text } = jarvisInput(body);

@@ -25,7 +25,7 @@ async function gfetch(url, opt = {}) {
 }
 
 // the signed-in person: a client with a live subscription, or the admin; never a session that still has to choose a password
-function who(sd, token) {
+export function who(sd, token) {
   const t = String(token || '');
   if (!/^[a-f0-9]{48}$/.test(t)) return null;
   const s = (sd.sessions || {})[sha256(t)];
