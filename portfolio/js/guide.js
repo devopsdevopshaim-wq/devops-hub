@@ -686,7 +686,8 @@ window.Guide = (function () {
         h('span', { class: 'g-tag', text: NAME + ' · ' + ROLE })
       ]);
       root.appendChild(stage);
-      mountFace(stage, sbox);
+      // a separate full-length picture is shown as it is; the moving face is only for the portrait photo used as a stand-in
+      if (img.getAttribute('data-fb')) mountFace(stage, sbox);
       root.classList.add('staged');
     };
     img.onerror = function () { if (img.getAttribute('data-fb')) return; img.setAttribute('data-fb', '1'); img.src = PHOTO; };
