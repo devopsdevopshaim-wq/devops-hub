@@ -9,7 +9,7 @@ fs.mkdirSync('portfolio/img/candidates', { recursive: true });
 const base = 'Photorealistic half-body portrait photograph of a professional woman in her late thirties, wavy light-brown hair with subtle highlights, wearing a modern headset with a thin microphone, a tailored navy blazer over a white blouse and a thin gold necklace, seated at a clean modern office desk with hands relaxed on the desk, facing the camera, warm natural smile, soft window light, shallow depth of field, blurred dark navy office background with a plant, 85mm lens, natural skin texture, high detail';
 let ok = 0;
 for (let seed = 1; seed <= 6; seed++) {
-  const r = await fetch(API + '/maya-gen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: SHARED, prompt: base, seed: seed * 7919 }) });
+  const r = await fetch(API + '/maya-gen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: SHARED, prompt: base + ['', ', slightly longer hair', ', hair tied loosely', ', soft smile looking slightly to the left', ', bright airy office', ', warm evening light'][seed - 1] }) });
   const t = await r.text(); let j = {}; try { j = JSON.parse(t); } catch (e) {}
   const b64 = j.image;
   if (!b64) { console.log('seed', seed, 'failed', r.status, t.slice(0, 300)); continue; }

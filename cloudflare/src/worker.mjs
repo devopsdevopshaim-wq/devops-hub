@@ -194,7 +194,7 @@ export class State extends DurableObject {
         let gb = {}; try { gb = typeof body === 'string' ? JSON.parse(body) : (body || {}); } catch (e) { gb = {}; }
         if (!env.SHARED_KEY || gb.key !== env.SHARED_KEY || !env.AI) return reply({ ok: false, error: 'forbidden' }, 403);
         try {
-          const r = await env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt: String(gb.prompt || '').slice(0, 1500), steps: 8, seed: Number(gb.seed) || 1 });
+          const r = await env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt: String(gb.prompt || '').slice(0, 1500), steps: 8 });
           return reply({ ok: true, image: r && r.image });
         } catch (e) { return reply({ ok: false, error: String((e && e.message) || e).slice(0, 200) }, 500); }
       }
