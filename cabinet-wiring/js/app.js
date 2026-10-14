@@ -122,6 +122,54 @@ function showView(v) {
   updateCabSwitch();
   updatePill();
   ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, conn: renderConn, three: renderThree, wiring: renderWiring, assembly: renderAssembly, lab: renderLab, export: renderExport }[v] || renderPlan)();
+  renderVHead(v);
+}
+
+
+/* ---------- כותרת לכל לשונית: פס כהה עם תצוגות דיגיטליות, כמו בשולחן הבדיקה ---------- */
+const VHEAD = {
+  plan: ['התכנית', 'קובצי ה-PDF, הקריאה שלהם והערות לקריאה.'],
+  parts: ['רכיבים וחלקים', 'כל רכיב בלוח, עם יצרן ומק"ט אמיתי ורשימת הזמנה.'],
+  wires: ['רשימת חוטים', 'כל חוט מנקודה לנקודה: צבע, חתך, סוג, אורך והסבר.'],
+  cabinet: ['פריסת ארון', 'שרטוט הרכבה של הפלטה, המסילות, התעלות והדלת, במידות אמיתיות.'],
+  conn: ['חיבורים ומהדקים', 'לכל הדק: מה מחובר אליו מבפנים, ומה יוצא לשטח או לארון אחר.'],
+  three: ['ארון בתלת־ממד', 'הארון כמו שהוא ייראה מורכב — סובבו, פתחו את הדלת, לחצו על רכיב.'],
+  wiring: ['חיווט שלב אחר שלב', 'חוט אחרי חוט, לפי סדר העבודה, עם הקראה בקול.'],
+  assembly: ['הרכבה ובדיקות', 'סדר ההרכבה, רשימת החיתוך והבדיקות לפני מסירה.'],
+  export: ['הדפסה והגדרות', 'תיק חיווט, שרוולי סימון, קבצי CSV וגיבוי.']
+};
+function vheadStats(v) {
+  const n = P.wires.length, done = P.wires.filter((w) => raw.done[w.id]).length;
+  const len = P.wires.reduce((a, w) => a + (((L.routes[w.id] || {}).len) || 0), 0);
+  const cab = P.components.filter((c) => c.zone === 'cabinet').length;
+  const terms = P.components.filter((c) => c.type === 'terminal');
+  const tcount = Object.keys(L.pins).filter((k) => terms.some((t) => k.startsWith(t.tag + ':'))).length;
+  const ext = P.wires.filter((w) => { const a = compBy()[w.from.tag], b = compBy()[w.to.tag]; return (a && a.zone === 'field') || (b && b.zone === 'field'); }).length;
+  const withPn = P.components.filter((c) => c.partNo).length;
+  const enc = E.enclosure(P, L);
+  const pct = n ? Math.round((done / n) * 100) : 0;
+  return ({
+    plan: [[pages.length, 'עמודים'], [P.components.length, 'רכיבים'], [n, 'חוטים']],
+    parts: [[P.components.length, 'רכיבים'], [withPn, 'עם מק"ט'], [P.components.filter((c) => c.zone === 'door').length, 'בדלת'], [P.components.filter((c) => c.zone === 'field').length, 'בשטח']],
+    wires: [[n, 'חוטים'], [done, 'חוברו'], [(len / 1000).toFixed(1), 'מטר'], [new Set(P.wires.map((w) => w.color)).size, 'צבעים']],
+    cabinet: [[enc.w + '×' + enc.h, 'ארון מ"מ'], [L.rails.length, 'מסילות'], [cab, 'רכיבים']],
+    conn: [[terms.length, 'פסי מהדקים'], [tcount, 'הדקים'], [ext, 'חוטים לשטח']],
+    three: [[enc.w + '×' + enc.h + '×' + enc.d, 'מ"מ'], [P.components.length, 'רכיבים'], [n, 'חוטים']],
+    wiring: [],
+    assembly: [[E.assemblySteps(P, L).length, 'שלבים'], [(len / 1000).toFixed(1), 'מטר חוט'], [pct + '%', 'חיווט']],
+    export: [[n, 'חוטים'], [P.components.length, 'רכיבים']]
+  })[v] || [];
+}
+function renderVHead(v) {
+  const sec = $('#v-' + v);
+  if (!sec || !VHEAD[v]) return;
+  let h = sec.querySelector(':scope > .vhead');
+  if (!h) { h = document.createElement('header'); h.className = 'vhead'; sec.prepend(h); }
+  const [t, sub] = VHEAD[v];
+  let st = [];
+  try { st = vheadStats(v); } catch { /* בלי נתונים */ }
+  h.innerHTML = `<div class="vh-t"><h2>${esc(t)}</h2><p>${esc(sub)}</p></div>
+    <dl class="vh-r">${st.map(([val, lbl]) => `<div><dd>${esc(val)}</dd><dt>${esc(lbl)}</dt></div>`).join('')}</dl>`;
 }
 
 function rerender() { if (tab !== 'home') showView(tab); if (selected && !$('#drawer').hidden) openDrawer(selected); }
@@ -130,6 +178,7 @@ function updatePill() {
   if (!P) return;
   const d = P.wires.filter((w) => raw.done[w.id]).length;
   $('#progressPill').textContent = `${d}/${P.wires.length} חוטים חוברו`;
+  if (VHEAD[tab]) renderVHead(tab);
 }
 
 /* ---------- דף הבית ---------- */
@@ -2886,11 +2935,45 @@ function bindLab() {
   });
 }
 
+
+/* ---------- תמונות בדף הבית: הדמיות מהמודל, או תמונות שהמשתמש העלה מהארונות שלו ---------- */
+const HOME_IMG = { hero: 'img/hero-cabinet.webp', 1: 'img/inside-power.webp', 2: 'img/inside-terminals.webp', 3: 'img/cabinet-field.webp' };
+const homeUrls = [];
+async function loadHomePhotos() {
+  const n = Number((await files.get('home:photos:n')) || 0);
+  homeUrls.splice(0).forEach((u) => URL.revokeObjectURL(u));
+  const blobs = [];
+  for (let i = 0; i < n; i++) { const b = await files.get('home:photo:' + i); if (b) blobs.push(b); }
+  const urls = blobs.map((b) => { const u = URL.createObjectURL(b); homeUrls.push(u); return u; });
+  const hero = $('#srHero');
+  hero.src = urls[0] || HOME_IMG.hero;
+  hero.classList.toggle('user', Boolean(urls[0]));
+  $('#srCap').hidden = Boolean(urls[0]);
+  $$('[data-gal]').forEach((img) => { const k = Number(img.dataset.gal); img.src = urls[k] || HOME_IMG[k]; });
+  $('#galNote').textContent = urls.length ? `${urls.length} תמונות שלכם מהשטח. הן נשמרות בדפדפן הזה בלבד.` : 'הדמיות מהמודל התלת־ממדי שהמערכת בנתה מתכנית 208-B.';
+  $('#homePhotosReset').hidden = !urls.length;
+}
+function bindHomePhotos() {
+  $('#homePhotos').addEventListener('change', async (e) => {
+    const list = [...e.target.files].filter((f) => /^image\//.test(f.type)).slice(0, 4);
+    e.target.value = '';
+    if (!list.length) return;
+    await files.delPrefix('home:photo');
+    for (let i = 0; i < list.length; i++) await files.put('home:photo:' + i, list[i]);
+    await files.put('home:photos:n', list.length);
+    await loadHomePhotos();
+    toast(list.length === 1 ? 'התמונה הוצבה בראש הדף.' : `${list.length} התמונות הוצבו: הראשונה בראש הדף והשאר בגלריה.`);
+  });
+  $('#homePhotosReset').onclick = async () => { await files.delPrefix('home:photo'); await loadHomePhotos(); };
+  loadHomePhotos();
+}
+
 /* ---------- התחלה ---------- */
 async function start() {
   /* קודם מחברים את הכפתורים, כדי שהאתר יגיב גם אם האחסון בדפדפן איטי או חסום */
   bind();
   bindLab();
+  bindHomePhotos();
   try { state = await loadAllAsync(); } catch { /* נשארים עם localStorage */ }
   /* פסי הלבן-כחול בחוטי ‎0V של קטע הפתיחה מופיעים אחרי שהחוטים נמתחו */
   setTimeout(() => { const r = $('.run'); if (r) r.classList.add('drawn'); }, 2300);

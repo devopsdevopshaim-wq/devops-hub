@@ -79,66 +79,54 @@
 <main id="main">
   <!-- ===== דף הבית ===== -->
   <section class="view" id="v-home" data-view="home">
-    <div class="hero">
-      <div class="hero-text">
-        <p class="eyebrow">ארונות פיקוד · IEC 60204-1</p>
-        <h1>מתכנית החיווט לארון מחווט, <span class="cu">חוט אחרי חוט.</span></h1>
-        <p class="lead">מעלים את ה-PDF של תכנית החשמל. המערכת בונה ממנו את כל החוטים בארון, ולכל חוט מסבירה מה הוא עושה במעגל.</p>
-        <dl class="specs">
-          <div><dt>מאיפה ← לאן</dt><dd>תג והדק בשני הקצוות, נקודה לנקודה</dd></div>
-          <div><dt>צבע · חתך · שרוול</dt><dd>מהתכנית, או לפי התקן ומסומן</dd></div>
-          <div><dt>למה הוא שם</dt><dd>הסבר שמופיע כשעומדים על החוט</dd></div>
-        </dl>
-        <div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת קבצי PDF של תכניות החיווט">
-          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 6h14l10 10v26H14z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M28 6v10h10M26 36V22m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="drop-text"><strong>גררו לכאן את ה-PDF של התכנית — אחד או כמה ביחד</strong><span>קובץ אחד = ארון. כמה קבצים = אתר התקנה שבו כל קובץ הוא ארון · גם JSON מגיבוי</span></span>
-          <input type="file" id="pdfInput" multiple accept="application/pdf,.pdf,.json" hidden>
+    <div class="showroom">
+      <div class="sr-inner">
+        <div class="sr-copy">
+          <p class="eyebrow">ארונות פיקוד · IEC 60204-1</p>
+          <h1>מתכנית החיווט לארון מחווט, <span class="cu">חוט אחרי חוט.</span></h1>
+          <p class="lead">מעלים את ה-PDF של תכנית החשמל. המערכת בונה ממנו את כל החוטים בארון, משבצת חלקים אמיתיים, בודקת שהכל תקין ומפעילה את הלוח בהדמיה.</p>
+          <dl class="specs">
+            <div><dt>מאיפה ← לאן</dt><dd>תג והדק בשני הקצוות</dd></div>
+            <div><dt>צבע · חתך · שרוול</dt><dd>מהתכנית, או לפי התקן</dd></div>
+            <div><dt>למה הוא שם</dt><dd>הסבר לכל חוט במעגל</dd></div>
+          </dl>
+          <div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת קבצי PDF של תכניות החיווט">
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 6h14l10 10v26H14z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M28 6v10h10M26 36V22m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="drop-text"><strong>גררו לכאן את ה-PDF של התכנית — אחד או כמה ביחד</strong><span>קובץ אחד = ארון. כמה קבצים = אתר התקנה · גם JSON מגיבוי</span></span>
+            <input type="file" id="pdfInput" multiple accept="application/pdf,.pdf,.json" hidden>
+          </div>
+          <div class="home-actions">
+            <button class="btn" type="button" id="openDemo">לפתוח את הדוגמה: לוח משאבה עם בקר</button>
+            <button class="btn link" type="button" id="newEmpty">פרויקט ריק להזנה ידנית</button>
+            <a class="home-claude" id="homeClaude" href="#" target="_blank" rel="noopener" hidden>תכניות אחרות (לא 208-B)? קריאה אוטומטית של השרטוטים — בגרסת Claude ↗</a>
+          </div>
         </div>
-        <div class="home-actions">
-          <button class="btn ghost" type="button" id="openDemo">לפתוח את הדוגמה: לוח משאבה עם בקר</button>
-          <button class="btn link" type="button" id="newEmpty">פרויקט ריק להזנה ידנית</button>
-          <a class="home-claude" id="homeClaude" href="#" target="_blank" rel="noopener" hidden>תכניות אחרות (לא 208-B)? קריאה אוטומטית של השרטוטים — בגרסת Claude ↗</a>
+        <figure class="sr-media">
+          <img id="srHero" src="img/hero-cabinet.webp" width="1600" height="1100" fetchpriority="high" alt="ארון פיקוד פתוח: מסילות DIN עם מאמ&quot;תים, ספקי כוח, כרטיסי קלט/פלט ומאות חוטים בתעלות, והציוד בשטח מחובר בכבלים">
+          <figcaption class="sr-cap" id="srCap">
+            <span class="sr-k">ארון 208-B</span>
+            <span class="sr-n"><b>106</b> רכיבים</span><span class="sr-n"><b>581</b> חוטים</span><span class="sr-n"><b>0</b> תקלות במעבדה</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <section class="gallery" aria-labelledby="galTitle">
+      <div class="sec-head">
+        <h2 id="galTitle">מה נבנה מהתכנית</h2>
+        <div class="row gap">
+          <p class="muted small" id="galNote">הדמיות מהמודל התלת־ממדי שהמערכת בנתה מתכנית 208-B.</p>
+          <label class="btn ghost small" for="homePhotos">התמונות שלכם מהשטח</label>
+          <input type="file" id="homePhotos" accept="image/*" multiple hidden>
+          <button class="btn link small" type="button" id="homePhotosReset" hidden>חזרה להדמיות</button>
         </div>
       </div>
-      <figure class="run" aria-label="דוגמה: חוט 34 מהמהדק ‎-X2:8 לסליל המגען ‎-K1:A1">
-        <svg class="run-svg" viewBox="0 0 520 380" aria-hidden="true">
-          <defs>
-            <pattern id="slots" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#b9bfc4"/><rect x="1" width="3" height="9" fill="#a6adb3"/></pattern>
-            <pattern id="slotsv" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#b9bfc4"/><rect y="1" width="9" height="3" fill="#a6adb3"/></pattern>
-          </defs>
-          <rect x="6" y="6" width="508" height="368" rx="4" fill="#f4f5f3" stroke="#c4c9cc"/>
-          <rect x="24" y="22" width="472" height="34" fill="url(#slots)" opacity=".75"/>
-          <rect x="24" y="182" width="472" height="34" fill="url(#slots)" opacity=".75"/>
-          <rect x="24" y="330" width="472" height="30" fill="url(#slots)" opacity=".75"/>
-          <rect x="462" y="22" width="34" height="338" fill="url(#slotsv)" opacity=".75"/>
-          <rect x="44" y="104" width="400" height="22" fill="#c9ced2" stroke="#aab1b6"/>
-          <rect x="44" y="266" width="400" height="22" fill="#c9ced2" stroke="#aab1b6"/>
-          <g class="run-comp"><rect x="62" y="72" width="20" height="86" rx="2" fill="#3b4250"/><rect x="84" y="72" width="20" height="86" rx="2" fill="#3b4250"/><text x="72" y="66" text-anchor="middle">-F2</text><text x="95" y="66" text-anchor="middle">-F3</text></g>
-          <g class="run-comp"><rect x="120" y="66" width="66" height="98" rx="3" fill="#2f4a66"/><text x="153" y="119" text-anchor="middle" class="in">-G1</text></g>
-          <g class="run-comp"><rect x="300" y="74" width="54" height="82" rx="3" fill="#2d3e5c"/><rect x="302" y="102" width="50" height="24" rx="2" fill="#3e5070"/><text x="327" y="119" text-anchor="middle" class="in">-K1</text><circle cx="312" cy="78" r="2.4" class="pin"/><circle cx="342" cy="78" r="2.4" class="pin"/><circle cx="342" cy="152" r="2.4" class="pin"/></g>
-          <g class="run-comp">
-            <rect x="170" y="252" width="130" height="50" fill="#8e959c"/>
-            <g fill="#c8cdd2" stroke="#6d757c" stroke-width=".6">
-              <rect x="172" y="254" width="9.5" height="46"/><rect x="182" y="254" width="9.5" height="46"/><rect x="192" y="254" width="9.5" height="46"/><rect x="202" y="254" width="9.5" height="46"/><rect x="212" y="254" width="9.5" height="46"/><rect x="222" y="254" width="9.5" height="46"/><rect x="232" y="254" width="9.5" height="46"/><rect x="242" y="254" width="9.5" height="46" fill="#e8c9a8"/><rect x="252" y="254" width="9.5" height="46"/><rect x="262" y="254" width="9.5" height="46"/><rect x="272" y="254" width="9.5" height="46"/><rect x="282" y="254" width="9.5" height="46"/>
-            </g>
-            <text x="235" y="316" text-anchor="middle">-X2</text>
-          </g>
-          <path class="wire w1" pathLength="1" d="M94 158 V200 H186 V254" stroke="#1f4fd1"/>
-          <path class="wire w2" pathLength="1" d="M153 164 V206 H276 V254" stroke="#f4f4f4"/>
-          <path class="wire w2s" pathLength="1" d="M153 164 V206 H276 V254" stroke="#1f4fd1"/>
-          <path class="wire w3 hot" pathLength="1" d="M247 254 V194 H478 V38 H312 V78" stroke="#1f4fd1"/>
-          <path class="wire w4" pathLength="1" d="M342 152 V210 H286 V254" stroke="#f4f4f4"/>
-          <path class="wire w4s" pathLength="1" d="M342 152 V210 H286 V254" stroke="#1f4fd1"/>
-          <g class="sleeve s1"><rect x="230" y="224" width="34" height="13" rx="3"/><text x="247" y="234" text-anchor="middle">34</text></g>
-          <g class="sleeve s2"><rect x="295" y="56" width="34" height="13" rx="3"/><text x="312" y="66" text-anchor="middle">34</text></g>
-        </svg>
-        <figcaption class="run-card">
-          <span class="run-head"><span class="sw-dot" aria-hidden="true"></span><b>חוט 34</b> · פיקוד ‎+24V · כחול כהה · 0.75&nbsp;ממ"ר</span>
-          <span class="run-ends"><span class="ep" translate="no">-X2:8</span> ← <span class="ep" translate="no">-K1:A1</span></span>
-          <span class="run-why">מזין את סליל המגען ‎-K1 דרך לחצן החירום. כשיש מתח בחוט, המגען נסגר והמשאבה מתחילה לעבוד.</span>
-        </figcaption>
-      </figure>
-    </div>
+      <div class="gal-grid">
+        <figure class="gal"><img data-gal="1" src="img/inside-power.webp" width="960" height="720" loading="lazy" alt="מסילה עליונה: מאמ&quot;תים של Schneider, שלושה ספקי כוח 24V ו-12V וכרטיסי קלט/פלט של Beckhoff"><figcaption><b>הזנה, ספקים ובקר</b><span>כל רכיב עם יצרן ומק"ט אמיתי</span></figcaption></figure>
+        <figure class="gal"><img data-gal="2" src="img/inside-terminals.webp" width="960" height="720" loading="lazy" alt="פסי מהדקים עם עשרות חוטים בצבעים לפי התקן, מסודרים בתעלות"><figcaption><b>מהדקים וחיווט</b><span>כל מוליך הוא חוט, בצבע ובחתך שלו</span></figcaption></figure>
+        <figure class="gal"><img data-gal="3" src="img/cabinet-field.webp" width="960" height="660" loading="lazy" alt="הארון סגור, וממנו כבלים לחיישנים, ללחצני החירום ולבקרי השערים בשטח"><figcaption><b>הארון והשטח</b><span>כבלים לכל חיישן, לחצן ומנוע</span></figcaption></figure>
+      </div>
+    </section>
 
     <section class="how" aria-labelledby="howTitle">
       <h2 id="howTitle">ארבעה שלבים, מהתכנית ועד הבדיקות</h2>
