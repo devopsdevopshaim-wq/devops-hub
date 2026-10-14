@@ -110,6 +110,7 @@ function showView(v) {
   $$('.view').forEach((s) => { s.hidden = s.dataset.view !== v; });
   $('#tabs').hidden = v === 'home' || v === 'site';
   $$('#tabs a').forEach((a) => a.setAttribute('aria-current', a.dataset.tab === v ? 'page' : 'false'));
+  { const cur = $(`#tabs a[data-tab="${v}"]`); if (cur && !$('#tabs').hidden) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
   if (v === 'home') { renderHome(); closeDrawer(); return; }
   if (v === 'site') { closeDrawer(); speaker.stop(); renderSite(); return; }
   if (v === 'wiring') closeDrawer();
@@ -119,7 +120,7 @@ function showView(v) {
   if (ps) { $('#siteBack').href = '#site/' + ps.id; $('#siteBack').textContent = '→ ' + ps.name; }
   updateCabSwitch();
   updatePill();
-  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, conn: renderConn, three: renderThree, wiring: renderWiring, assembly: renderAssembly, export: renderExport }[v] || renderPlan)();
+  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, conn: renderConn, three: renderThree, wiring: renderWiring, assembly: renderAssembly, lab: renderLab, export: renderExport }[v] || renderPlan)();
 }
 
 function rerender() { if (tab !== 'home') showView(tab); if (selected && !$('#drawer').hidden) openDrawer(selected); }
@@ -1375,7 +1376,7 @@ function askDialog(msg, { ok = 'אישור', danger = false, input = false, valu
 }
 
 /* ---------- עריכת חוט ---------- */
-function openWireDialog(id) {
+function openWireDialog(id, pre = null) {
   const w = id ? raw.wires.find((x) => x.id === id) : null;
   const d = id ? wireById(id) : null;
   const f = $('#wireForm');
@@ -1384,7 +1385,7 @@ function openWireDialog(id) {
   f.color.innerHTML = `<option value="">לפי התקן${d ? ' (' + C.COLORS[d.color].he + ')' : ''}</option>` + Object.entries(C.COLORS).map(([k, v]) => `<option value="${k}">${esc(v.he)} (${k})</option>`).join('');
   f.section.innerHTML = `<option value="">ברירת מחדל${d ? ' (' + d.section + ')' : ''}</option>` + C.SECTIONS.map((x) => `<option value="${x}">${x}</option>`).join('');
   $('#tagList').innerHTML = P.components.map((c) => `<option value="${esc(c.tag)}">${esc(c.name)}</option>`).join('');
-  const v = w || {};
+  const v = w || pre || {};
   f.no.value = v.no || ''; f.func.value = C.FUNCS[v.func] ? v.func : '';
   f.fromTag.value = v.from ? v.from.tag : ''; f.fromTerm.value = v.from ? v.from.term : '';
   f.toTag.value = v.to ? v.to.tag : ''; f.toTerm.value = v.to ? v.to.term : '';
@@ -1393,6 +1394,7 @@ function openWireDialog(id) {
   f.wireType.value = v.wireType || ''; f.potential.value = v.potential || ''; f.page.value = v.page || '';
   f.desc.value = v.desc || ''; f.explain.value = v.explain || '';
   f.dataset.id = id || '';
+  f.dataset.added = (!w && pre && pre.added) || '';
   $('#wdDelete').hidden = !w;
   $('#wireDialog').showModal();
 }
@@ -1408,7 +1410,7 @@ function saveWireDialog() {
   };
   if (!data.from.tag || !data.to.tag || !data.from.term || !data.to.term) { toast('צריך תג והדק בשני הקצוות.'); return false; }
   if (id) { const w = raw.wires.find((x) => x.id === id); Object.assign(w, data); }
-  else { const w = { ...data, id: newId() }; raw.wires.push(w); selected = w.id; }
+  else { const w = { ...data, id: newId() }; if (f.dataset.added) w.added = f.dataset.added; raw.wires.push(w); selected = w.id; }
   save(); derive(); rerender();
   toast('החוט נשמר.');
   return true;
@@ -2449,10 +2451,366 @@ function bindSite() {
   };
 }
 
+/* ---------- 9. מעבדה: בדיקת תקינות, הדמיה חיה, הוספת רכיבים וחיווט ---------- */
+const Sim = window.WSim;
+const lab = { mode: 'check', view: null, st: null, res: null, log: [], pick: null, sel: null, pid: null, outFilter: '', ctl: null };
+const CHECK_CATS = [
+  ['power', 'בדיקת הפעלה (הדמיה)', 'מרימים את המפסק הראשי בהדמיה ובודקים שאין קצר, הגנה שנופלת או סליל שנשרף'],
+  ['short', 'קצרים בתכנון', 'שני פוטנציאלים שונים (פאזות, אפס, ‎+24V, ‎0V) באותה רשת חוטים'],
+  ['coil', 'מתח סלילים', 'סליל 24V DC שמחובר ל-AC או סליל 230V שמחובר ל-DC'],
+  ['pe', 'הארקה', 'כל רכיב מתכתי או עם כניסת 230V מחובר ל-PE'],
+  ['color', 'צבעי חוטים', 'הארקה רק ירוק-צהוב, וירוק-צהוב רק להארקה; רשת אחת בצבע אחד'],
+  ['section', 'חתך מול ההגנה', 'חתך החוט ביציאה של כל מאמ"ת מתאים לזרם שלו'],
+  ['terminal', 'עומס על הדקים', 'לא יותר מ-2 חוטים בהדק רכיב (TWIN) ו-4 בהדק מעבר'],
+  ['dup', 'חוטים כפולים', 'אין שני חוטים בין אותם הדקים ואין חוט שחוזר לאותו הדק'],
+  ['complete', 'שלמות החיווט', 'לכל רכיב יש את החיבורים שהוא צריך כדי לעבוד']
+];
+const POT_HE = { L1: 'פאזה L1 · 230V', L2: 'פאזה L2 · 230V', L3: 'פאזה L3 · 230V', N: 'אפס N', PE: 'הארקה PE', '+24': '‎+24V DC', '+12': '‎+12V DC', '0V': '‎0V DC' };
+const TAG_PREFIX = { main_switch: 'Q', mcb: 'F', rcd: 'F', fuse: 'F', mpcb: 'Q', overload: 'F', contactor: 'K', relay: 'K', timer: 'K', psu: 'G', transformer: 'T', plc: 'A', io: 'A', terminal: 'X', pe_bar: 'PE', button: 'S', selector: 'S', estop: 'S', lamp: 'H', motor: 'M', sensor: 'B', valve: 'Y', fan: 'E', heater: 'E', socket: 'X', thermostat: 'B', meter: 'P', door_meter: 'P', vfd: 'T', softstarter: 'T', other: 'U', field: 'U' };
+
+function nextTag(type) {
+  const pre = TAG_PREFIX[type] || 'U';
+  const re = new RegExp('^-' + pre + '(\\d+)$');
+  let n = 0;
+  P.components.forEach((c) => { const m = re.exec(c.tag); if (m) n = Math.max(n, Number(m[1])); });
+  return '-' + pre + (n + 1);
+}
+
+function ensureLab() {
+  if (lab.view) return;
+  lab.view = new CabinetView($('#labHost'), {
+    onHover: (id, ev) => labTip(id, ev),
+    onSelect: (id) => { lab.sel = id; if (lab.mode === 'edit') renderLabBar(); else if (id) openDrawer(id); else closeDrawer(); },
+    onComp: (tag) => labComp(tag),
+    onPin: (k) => labPin(k)
+  });
+  lab.view.layoutMode = false;
+}
+
+function labState() {
+  if (lab.pid !== raw.id || !lab.st) { lab.st = Sim.initialState(P); lab.pid = raw.id; lab.log = []; lab.res = null; lab.view && (lab.view.vb = null); }
+  /* רכיבים חדשים: מצב ההתחלה שלהם */
+  const init = Sim.initialState(P);
+  Object.keys(init.on).forEach((t) => { if (!(t in lab.st.on)) lab.st.on[t] = init.on[t]; });
+  return lab.st;
+}
+
+function renderLab() {
+  ensureLab();
+  labState();
+  lab.view.render(P, L, { C });
+  lab.view.setLayout(false);
+  lab.view.highlight(null);
+  $$('#v-lab [data-lmode]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.lmode === lab.mode)));
+  $('#labHint').textContent = {
+    check: 'בדיקה אוטומטית של כל החיווט: קצרים, צבעים, חתכים, הארקה, מתח סלילים ועומס על הדקים — וגם הפעלה מדומה של הלוח. לחיצה על ממצא מראה אותו בשרטוט.',
+    sim: 'הלוח עובד לפניכם: מרימים מפסקים, לוחצים על לחצנים ומפעילים יציאות בקר — וכל חוט שיש בו מתח זוהר בצבע הפוטנציאל שלו. לחיצה על רכיב בשרטוט מפעילה אותו.',
+    edit: 'מוסיפים רכיב לפרויקט, ואז לוחצים על הדק אחד ועל הדק שני בשרטוט כדי לחווט ביניהם. אחר כך עוברים להדמיה ובודקים שזה עובד.'
+  }[lab.mode];
+  lab.view.setPinMode(lab.mode === 'edit', lab.pick);
+  if (lab.mode === 'sim') { if (!lab.res) simRun(null, true); else paintSim(); }
+  else lab.view.setSim(null);
+  if (lab.sel && P.wires.some((w) => w.id === lab.sel)) lab.view.select(lab.sel, false); else lab.sel = null;
+  renderLabBar();
+  ({ check: renderLabCheck, sim: renderLabSim, edit: renderLabEdit }[lab.mode])();
+}
+
+/* ---------- בדיקות ---------- */
+function powerTest() {
+  const st = Sim.initialState(P);
+  Object.keys(st.on).forEach((t) => { st.on[t] = true; });
+  const r = Sim.run(P, st);
+  const out = [];
+  r.shorts.forEach((sh) => out.push({ sev: 'err', msg: 'קצר כשמפעילים את הלוח: ' + sh.what.join(' מול ') + '.', wires: P.wires.filter((w) => r.shortWires[w.id]).map((w) => w.id) }));
+  Object.entries(r.tripped).forEach(([t, why]) => out.push({ sev: 'err', msg: `${t} נופל מיד בהפעלה — ${why}.`, tag: t }));
+  Object.entries(r.burnt).forEach(([t, why]) => out.push({ sev: 'err', msg: `${t}: ${why} — הסליל נשרף.`, tag: t }));
+  Object.entries(r.comps).forEach(([t, o]) => { if (o.fault && !r.burnt[t]) out.push({ sev: 'warn', msg: `${t}: ${o.fault}.`, tag: t }); });
+  const live = Object.keys(r.wires).length;
+  return { items: out, live, total: P.wires.length, on: Object.values(r.comps).filter((o) => o.on && !o.tripped).length };
+}
+
+function renderLabCheck() {
+  const cats = Sim.checks(P);
+  const pt = powerTest();
+  cats.power = pt.items;
+  const sc = Sim.score(cats);
+  lab.cats = cats;
+  const cls = sc.err ? 'bad' : sc.warn ? 'warn' : '';
+  const verdict = sc.err ? `${sc.err} תקלות שצריך לתקן` : sc.warn ? 'הלוח תקין, עם הערות לבדיקה' : 'הלוח תקין — כל הבדיקות עברו';
+  $('#labSide').innerHTML = `
+    <div class="lab-verdict ${cls}"><span class="led ${sc.err ? 'err' : sc.warn ? 'warn' : 'ok'}"></span><span class="big">${sc.err || sc.warn || '✓'}</span>
+      <span>${esc(verdict)}<small>${P.components.length} רכיבים · ${P.wires.length} חוטים · בהפעלה ${pt.live} חוטים מקבלים מתח${sc.warn && sc.err ? ' · ' + sc.warn + ' הערות' : ''}</small></span></div>
+    ${CHECK_CATS.map(([k, he, what]) => {
+      const it = cats[k] || [], e = it.filter((i) => i.sev === 'err').length;
+      return `<details class="chk-cat" ${it.length && (e || it.length < 6) ? 'open' : ''}><summary><span class="led ${e ? 'err' : it.length ? 'warn' : 'ok'}"></span><span class="grow">${esc(he)}</span><span class="cnt mono">${it.length ? it.length : 'תקין'}</span></summary>
+        <p class="muted small" style="margin:4px 0 0">${esc(what)}</p>
+        ${it.length ? `<ul>${it.slice(0, 60).map((i, n) => `<li class="${i.sev}"><button type="button" data-cat="${k}" data-n="${n}">${isoTags(i.msg)}</button></li>`).join('')}${it.length > 60 ? `<li class="muted small">ועוד ${it.length - 60}…</li>` : ''}</ul>` : ''}
+      </details>`;
+    }).join('')}
+    <p class="muted small">הבדיקות מבוססות על הכללים המקובלים (IEC 60204-1, צבעים וחתכים נפוצים). הן לא מחליפות בדיקת חשמלאי מוסמך ומדידות בלוח האמיתי.</p>`;
+}
+
+function labFocusTag(tag) {
+  const b = L.comps[tag];
+  if (!b || !lab.view.vb) return;
+  lab.view.vb = { x: b.x - 160, y: b.y - 120, w: b.w + 320, h: b.h + 240 };
+  lab.view.apply();
+}
+function showFinding(i) {
+  if (!i) return;
+  if (i.wires && i.wires.length) {
+    lab.view.highlight(i.wires);
+    lab.view.focusWire(i.wires[0]);
+  } else if (i.tag) {
+    const ids = compWireIds(P, i.tag);
+    lab.view.highlight(ids.length ? ids : null);
+    labFocusTag(i.tag);
+  }
+}
+
+/* ---------- הדמיה ---------- */
+function simRun(action, quiet) {
+  const st = labState();
+  const res = Sim.run(P, st, lab.res);
+  st.tripped = { ...res.tripped };
+  st.burnt = { ...res.burnt };
+  res.state = st;
+  const now = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  if (action) lab.log.unshift({ t: now, msg: action, bad: false });
+  res.events.forEach((m) => lab.log.unshift({ t: now, msg: m, bad: /נפל|נשרף|קצר|חסרה/.test(m) }));
+  lab.log = lab.log.slice(0, 120);
+  lab.res = res;
+  paintSim();
+  if (!quiet) { renderLabBar(); renderLabSim(); }
+  if (!quiet && vpref.sfx !== false) {
+    try { if (res.events.some((m) => /נפל|נשרף|קצר/.test(m))) sfx('err'); else if (res.events.some((m) => /נמשך|שוחרר/.test(m))) sfx('click'); } catch { /* אין צליל */ }
+  }
+}
+
+function operable() {
+  const c = lab.ctl || Sim.controls(P);
+  return new Set([...c.main, ...c.protect, ...c.overload, ...c.buttons, ...c.estops, ...c.selectors, ...c.sensors, ...c.switches].map((x) => x.tag));
+}
+function paintSim() { lab.ctl = Sim.controls(P); lab.view.setSim(lab.res, { operable: operable() }); }
+
+function operate(tag) {
+  const c = compBy()[tag];
+  if (!c) return;
+  const st = labState();
+  let msg = '';
+  if (/main_switch|mcb|rcd|mpcb|fuse/.test(c.type)) {
+    if (st.tripped[tag]) { delete st.tripped[tag]; st.on[tag] = false; msg = `${tag} אופס אחרי נפילה (כבוי — לחיצה נוספת מרימה)`; }
+    else { st.on[tag] = !st.on[tag]; msg = `${tag} ${st.on[tag] ? 'הורם' : 'הורד'}`; }
+  } else if (c.type === 'overload') {
+    if (st.tripped[tag]) { delete st.tripped[tag]; msg = `${tag} אופס`; } else { st.tripped[tag] = 'הופעל לבדיקה'; msg = `${tag} הופעל (בדיקת הגנת עומס)`; }
+  } else if (c.type === 'button' || c.type === 'estop') {
+    st.pressed[tag] = !st.pressed[tag];
+    msg = c.type === 'estop' ? `${tag} ${st.pressed[tag] ? 'נלחץ — עצירת חירום' : 'שוחרר (סיבוב)'}` : `${tag} ${st.pressed[tag] ? 'לחוץ' : 'שוחרר'}`;
+  } else if (c.type === 'selector') { st.on[tag] = !st.on[tag]; msg = `${tag} בורר ${st.on[tag] ? 'במצב 1' : 'במצב 0'}`; }
+  else if (c.type === 'sensor') { st.sense[tag] = !st.sense[tag]; msg = `${tag} ${st.sense[tag] ? 'מזהה' : 'לא מזהה'}`; }
+  else if (c.type === 'thermostat' || c.type === 'other') { st.on[tag] = st.on[tag] === false; msg = `${tag} ${st.on[tag] ? 'סגור' : 'פתוח'}`; }
+  else return false;
+  simRun(msg);
+  return true;
+}
+
+function labComp(tag) {
+  if (lab.mode === 'sim') { if (operable().has(tag)) { operate(tag); return; } }
+  if (lab.mode === 'edit') { lab.selComp = tag; renderLabBar(); }
+  openComp(tag);
+}
+
+function labTip(id, ev) {
+  showTip(id, ev);
+  if (!id || lab.mode !== 'sim' || !lab.res) return;
+  const pots = lab.res.wires[id] || [];
+  const sh = lab.res.shortWires[id];
+  $('#tip').insertAdjacentHTML('beforeend', `<p class="pot"><b>${sh ? '⚠ קצר: ' + esc(sh.join(' / ')) : pots.length ? 'מתח: ' + esc(pots.map((p) => POT_HE[p] || p).join(' · ')) : 'אין מתח בחוט'}</b></p>`);
+}
+
+/* תגים כמו ‎-A1:DQA.0 בתוך טקסט עברי: עוטפים בבידוד כדי שהמינוס יישאר במקום */
+const isoTags = (t) => esc(t).replace(/(^|[\s(])(-[A-Za-z][\w.:+\/-]*)/g, '$1\u2066$2\u2069');
+const btnCtl = (tag, name, stTxt, pressed, extra = '') => `<button type="button" data-op="${esc(tag)}" aria-pressed="${pressed}" ${extra}><span class="led ${pressed ? 'ok' : 'off'}"></span><span class="tg">${esc(tag)}</span><span class="nm">${esc(name)}</span><span class="st">${esc(stTxt)}</span></button>`;
+
+function renderLabSim() {
+  const r = lab.res, st = lab.st, ctl = lab.ctl || Sim.controls(P);
+  if (!r) return;
+  const comps = r.comps;
+  const en = Object.keys(comps).filter((t) => comps[t].energized), run = Object.keys(comps).filter((t) => comps[t].running), lit = Object.keys(comps).filter((t) => comps[t].lit);
+  const bad = Object.keys(comps).filter((t) => comps[t].tripped || comps[t].fault);
+  const live = Object.keys(r.wires).length;
+  const prot = (x) => { const o = comps[x.tag] || {}; return btnCtl(x.tag, x.name, o.tripped ? 'נפל' : o.on ? 'מורם' : 'כבוי', Boolean(o.on), o.tripped ? 'class="trip"' : ''); };
+  const grp = (title, list, fn) => list.length ? `<h3>${esc(title)} <span class="cnt">${list.length}</span></h3><div class="sim-ctl">${list.map(fn).join('')}</div>` : '';
+  const f = lab.outFilter.toLowerCase();
+  const outs = ctl.outputs.filter((o) => !f || o.key.toLowerCase().includes(f) || String(o.name).toLowerCase().includes(f));
+  $('#labSide').innerHTML = `
+    <div class="sim-stat">
+      <div><b>${live}</b><span>חוטים חיים</span></div><div><b>${en.length}</b><span>סלילים נמשכו</span></div>
+      <div><b>${run.length}</b><span>עומסים פועלים</span></div><div class="${bad.length || r.shorts.length ? 'bad' : ''}"><b>${bad.length + r.shorts.length}</b><span>תקלות</span></div>
+    </div>
+    ${en.length || run.length || lit.length || bad.length ? `<h3>מצב עכשיו</h3><ul class="sim-state">
+      ${bad.map((t) => `<li><span class="led err"></span><span class="tg">${esc(t)}</span><span>${esc(comps[t].tripped || comps[t].fault)}</span></li>`).join('')}
+      ${en.map((t) => `<li><span class="led ok"></span><span class="tg">${esc(t)}</span><span>נמשך</span></li>`).join('')}
+      ${run.map((t) => `<li><span class="led ok"></span><span class="tg">${esc(t)}</span><span>פועל${comps[t].dir ? ' · סיבוב ' + esc(comps[t].dir) : ''}</span></li>`).join('')}
+      ${lit.map((t) => `<li><span class="led warn"></span><span class="tg">${esc(t)}</span><span>דולקת</span></li>`).join('')}
+    </ul>` : '<p class="muted small">אין עדיין עומס פעיל. מרימים את המפסק הראשי למעלה ומפעילים לחצנים או יציאות בקר.</p>'}
+    ${grp('הגנות ומפסקים', ctl.protect, prot)}
+    ${grp('ממסרים תרמיים', ctl.overload, (x) => btnCtl(x.tag, x.name, st.tripped[x.tag] ? 'הופעל' : 'תקין', !st.tripped[x.tag]))}
+    ${grp('לחצני חירום', ctl.estops, (x) => btnCtl(x.tag, x.name, st.pressed[x.tag] ? 'לחוץ' : 'משוחרר', Boolean(st.pressed[x.tag])))}
+    ${grp('לחצנים', ctl.buttons, (x) => btnCtl(x.tag, x.name, st.pressed[x.tag] ? 'לחוץ' : 'משוחרר', Boolean(st.pressed[x.tag])))}
+    ${grp('בוררים', ctl.selectors, (x) => btnCtl(x.tag, x.name, st.on[x.tag] ? '1' : '0', Boolean(st.on[x.tag])))}
+    ${grp('חיישנים', ctl.sensors, (x) => btnCtl(x.tag, x.name, st.sense[x.tag] ? 'מזהה' : '—', Boolean(st.sense[x.tag])))}
+    ${grp('מפסקי גבול ותרמוסטטים', ctl.switches, (x) => btnCtl(x.tag, x.name, st.on[x.tag] === false ? 'פתוח' : 'סגור', st.on[x.tag] !== false))}
+    ${ctl.outputs.length ? `<h3>יציאות בקר <span class="cnt">${ctl.outputs.length}</span></h3>
+      <p class="muted small" style="margin:0 0 6px">מדמה את התכנית של הבקר: מדליקים יציאה ורואים מה היא מפעילה.</p>
+      ${ctl.outputs.length > 16 ? `<input type="search" class="sim-filter" id="simOutF" placeholder="סינון יציאות (תג או מספר)…" value="${esc(lab.outFilter)}" aria-label="סינון יציאות בקר">` : ''}
+      <div class="sim-ctl outs">${outs.slice(0, 160).map((o) => `<button type="button" data-out="${esc(o.key)}" aria-pressed="${Boolean(st.out[o.key])}" title="${esc(o.name)}">${esc(o.key)}</button>`).join('')}</div>` : ''}
+    <h3>יומן אירועים <span class="cnt">${lab.log.length}</span></h3>
+    <ol class="sim-log">${lab.log.length ? lab.log.map((l) => `<li class="${l.bad ? 'bad' : ''}"><time>${esc(l.t)}</time>${isoTags(l.msg)}</li>`).join('') : '<li>ההדמיה מוכנה. ההזנה מחוברת והמפסק הראשי מנותק.</li>'}</ol>`;
+}
+
+function renderLabBar() {
+  const bar = $('#labBar');
+  if (lab.mode === 'check') {
+    bar.innerHTML = `<span>הלוח במצב בדיקה. לחיצה על ממצא מימין מסמנת את החוטים או הרכיב בשרטוט.</span><span class="grow"></span><button class="btn ghost small" type="button" id="labClearHl">ניקוי סימון</button>`;
+    return;
+  }
+  if (lab.mode === 'sim') {
+    const st = lab.st, ctl = lab.ctl || Sim.controls(P);
+    const ms = ctl.main[0];
+    const msO = ms && lab.res ? (lab.res.comps[ms.tag] || {}) : {};
+    bar.innerHTML = `
+      <button class="btn small ${st.feed ? '' : 'ghost'}" type="button" id="simFeed" aria-pressed="${st.feed}"><span class="led ${st.feed ? 'ok' : 'off'}"></span> הזנת רשת ${st.feed ? 'מחוברת' : 'מנותקת'}</button>
+      ${ms ? `<button class="btn small ${msO.on ? '' : 'ghost'}" type="button" data-op="${esc(ms.tag)}" aria-pressed="${Boolean(msO.on)}"><span class="led ${msO.tripped ? 'err' : msO.on ? 'ok' : 'off'}"></span> מפסק ראשי <span class="mono" dir="ltr">${esc(ms.tag)}</span> ${msO.on ? 'מורם' : 'מנותק'}</button>` : ''}
+      <button class="btn ghost small" type="button" id="simAllOn">הכל למעלה</button>
+      <button class="btn ghost small" type="button" id="simReset">איפוס</button>
+      <span class="grow"></span>
+      <span class="pot-legend"><span><i style="background:#ff8a3d"></i>L1</span><span><i style="background:#c46cff"></i>L2</span><span><i style="background:#ffd23d"></i>L3</span><span><i style="background:#4da3ff"></i>N</span><span><i style="background:#ff4d6d"></i>+24V</span><span><i style="background:#5b8cff"></i>0V</span><span><i style="background:#ff1f1f"></i>קצר</span></span>`;
+    return;
+  }
+  const w = lab.sel && wireById(lab.sel);
+  const pk = lab.pick;
+  bar.innerHTML = `
+    <span class="lab-pick">${pk ? `מ-<span class="ep mono" dir="ltr">${esc(pk)}</span> — לחצו על ההדק השני` : 'חיווט: לחצו על הדק (נקודה צהובה) ואז על הדק נוסף'}</span>
+    ${pk ? '<button class="btn ghost small" type="button" id="labPickX">ביטול</button>' : ''}
+    <span class="grow"></span>
+    ${w ? `<span>חוט <b class="mono">${esc(w.no)}</b></span><button class="btn ghost small" type="button" id="labWEdit">עריכה</button><button class="btn ghost small" type="button" id="labWDel">מחיקה</button>` : ''}`;
+}
+
+/* ---------- עריכה: הוספת רכיב וחיווט ---------- */
+function labPin(k) {
+  if (lab.mode !== 'edit') return;
+  if (!lab.pick) { lab.pick = k; lab.view.setPinMode(true, k); renderLabBar(); return; }
+  if (lab.pick === k) { lab.pick = null; lab.view.setPinMode(true, null); renderLabBar(); return; }
+  const a = lab.pick, i = a.indexOf(':'), j = k.indexOf(':');
+  lab.pick = null;
+  lab.view.setPinMode(true, null);
+  renderLabBar();
+  openWireDialog(null, { from: { tag: a.slice(0, i), term: a.slice(i + 1) }, to: { tag: k.slice(0, j), term: k.slice(j + 1) }, added: 'lab' });
+}
+
+function renderLabEdit() {
+  const types = Object.entries(C.TYPES);
+  const added = raw.components.filter((c) => c.added === 'lab');
+  const addedW = raw.wires.filter((w) => w.added === 'lab');
+  $('#labSide').innerHTML = `
+    <h3>הוספת רכיב</h3>
+    <form class="lab-form" id="labAdd">
+      <label class="field full"><span>סוג</span><select name="type">${types.map(([k, v]) => `<option value="${k}" ${k === (lab.addType || 'contactor') ? 'selected' : ''}>${esc(v.he)}</option>`).join('')}</select></label>
+      <label class="field"><span>תג</span><input name="tag" dir="ltr" value="${esc(nextTag(lab.addType || 'contactor'))}" required></label>
+      <label class="field"><span>קטבים / הדקים</span><input name="poles" type="number" min="1" max="48" value="${esc(lab.addPoles || '')}" placeholder="לפי הסוג"></label>
+      <label class="field full"><span>שם</span><input name="name" placeholder="למשל: מגען משאבה 2"></label>
+      <label class="field full"><span>דירוג</span><input name="rating" dir="auto" placeholder="C16 · 24V DC · 4kW · 3P"></label>
+      <label class="check full"><input type="checkbox" name="real" checked> לשבץ חלק אמיתי (מק"ט) לפי המותג שנבחר</label>
+      <button class="btn full" type="submit">הוספת הרכיב ללוח</button>
+    </form>
+    <p class="muted small">הרכיב נכנס לפריסה עם כל ההדקים שלו (נקודות צהובות). לחיווט: לוחצים על הדק ועל הדק נוסף, ממלאים צבע וחתך, ושומרים.</p>
+    <h3>נוספו במעבדה <span class="cnt">${added.length + addedW.length}</span></h3>
+    ${added.length || addedW.length ? `<ul class="lab-added">
+      ${added.map((c) => `<li><span class="mono" dir="ltr">${esc(c.tag)}</span><span class="grow">${esc(c.name || E.typeInfo(c.type).he)}${c.partNo ? ' · ' + esc(c.partNo) : ''}</span><button class="btn ghost small" type="button" data-show="${esc(c.tag)}">הצגה</button><button class="btn ghost small" type="button" data-delc="${esc(c.tag)}" aria-label="מחיקת ${esc(c.tag)}">✕</button></li>`).join('')}
+      ${addedW.map((w) => `<li><span class="mono">${esc(wireById(w.id) ? wireById(w.id).no : '')}</span><span class="grow" dir="ltr">${esc(w.from.tag)}:${esc(w.from.term)} → ${esc(w.to.tag)}:${esc(w.to.term)}</span><button class="btn ghost small" type="button" data-wedit="${esc(w.id)}">עריכה</button><button class="btn ghost small" type="button" data-delw="${esc(w.id)}" aria-label="מחיקת החוט">✕</button></li>`).join('')}
+    </ul>` : '<p class="muted small">עוד לא נוסף כלום.</p>'}`;
+}
+
+async function labAddComp(f) {
+  const type = f.type.value, tag = E.normTag(f.tag.value);
+  if (!tag) { toast('צריך תג.'); return; }
+  if (P.components.some((c) => c.tag === tag)) { toast(`התג ${tag} כבר קיים. בחרו תג אחר.`); return; }
+  const poles = Number(f.poles.value) || 0;
+  const rating = f.rating.value.trim();
+  const c = { tag, type, name: f.name.value.trim() || E.typeInfo(type).he, desc: rating, added: 'lab' };
+  c.terms = Sim.defaultTerms(type, { poles: poles || (/3P|3\s*קטב/i.test(rating) ? 3 : 0), count: poles || 6 });
+  if (f.real.checked && WP) {
+    try {
+      const r = WP.pick({ ...c, zone: E.typeInfo(type).zone }, partOpts(), P, L);
+      if (r && r.partNo) { c.maker = r.maker; c.partNo = r.partNo; c.partSeries = r.series; c.partExact = r.exact; c.partDesc = r.desc; if (!c.desc) { c.desc = r.desc; c.partAuto = true; } }
+    } catch { /* בלי מק"ט */ }
+  }
+  raw.components.push(c);
+  lab.addType = type; lab.addPoles = f.poles.value;
+  save(); derive();
+  if (lab.view) lab.view.vb = null;
+  renderLab();
+  labFocusTag(tag);
+  toast(`${tag} נוסף ללוח עם ההדקים ${c.terms.join(' ')}. עכשיו אפשר לחווט אותו.`, 6000);
+}
+
+async function labDelComp(tag) {
+  const n = raw.wires.filter((w) => w.from.tag === tag || w.to.tag === tag).length;
+  if (!(await askConfirm(`למחוק את ${tag}${n ? ` ואת ${n} החוטים שלו` : ''}?`, { ok: 'למחוק', danger: true }))) return;
+  raw.components = raw.components.filter((c) => c.tag !== tag);
+  raw.wires = raw.wires.filter((w) => { const k = w.from.tag === tag || w.to.tag === tag; if (k) delete raw.done[w.id]; return !k; });
+  save(); derive(); renderLab();
+}
+async function labDelWire(id) {
+  if (!(await askConfirm('למחוק את החוט?', { ok: 'למחוק', danger: true }))) return;
+  raw.wires = raw.wires.filter((w) => w.id !== id); delete raw.done[id];
+  if (lab.sel === id) lab.sel = null;
+  save(); derive(); renderLab();
+}
+
+function bindLab() {
+  $$('#v-lab [data-lmode]').forEach((b) => { b.onclick = () => { lab.mode = b.dataset.lmode; lab.pick = null; closeDrawer(); if (lab.view) lab.view.vb = null; renderLab(); }; });
+  $('#labZin').onclick = () => lab.view && lab.view.zoom(1 / 1.3);
+  $('#labZout').onclick = () => lab.view && lab.view.zoom(1.3);
+  $('#labFit').onclick = () => lab.view && lab.view.fit();
+  $('#labSide').addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.cat) { showFinding((lab.cats[t.dataset.cat] || [])[Number(t.dataset.n)]); return; }
+    if (t.dataset.op) { operate(t.dataset.op); return; }
+    if (t.dataset.out) { const k = t.dataset.out; lab.st.out[k] = !lab.st.out[k]; simRun(`יציאה ${k} ${lab.st.out[k] ? 'הודלקה' : 'כובתה'}`); return; }
+    if (t.dataset.show) { labFocusTag(t.dataset.show); lab.view.highlight(compWireIds(P, t.dataset.show)); return; }
+    if (t.dataset.delc) { labDelComp(t.dataset.delc); return; }
+    if (t.dataset.delw) { labDelWire(t.dataset.delw); return; }
+    if (t.dataset.wedit) openWireDialog(t.dataset.wedit);
+  });
+  $('#labSide').addEventListener('input', (e) => {
+    if (e.target.id === 'simOutF') { lab.outFilter = e.target.value; const pos = e.target.selectionStart; renderLabSim(); const i = $('#simOutF'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
+  });
+  $('#labSide').addEventListener('change', (e) => {
+    if (e.target.name === 'type' && e.target.form && e.target.form.id === 'labAdd') { lab.addType = e.target.value; e.target.form.tag.value = nextTag(e.target.value); }
+  });
+  $('#labSide').addEventListener('submit', (e) => { if (e.target.id === 'labAdd') { e.preventDefault(); labAddComp(e.target); } });
+  $('#labBar').addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.op) { operate(t.dataset.op); return; }
+    if (t.id === 'simFeed') { lab.st.feed = !lab.st.feed; simRun(lab.st.feed ? 'הזנת הרשת חוברה' : 'הזנת הרשת נותקה'); }
+    if (t.id === 'simAllOn') { const ctl = lab.ctl || Sim.controls(P); [...ctl.main, ...ctl.protect].forEach((x) => { delete lab.st.tripped[x.tag]; lab.st.on[x.tag] = true; }); simRun('כל המפסקים וההגנות הורמו'); }
+    if (t.id === 'simReset') { lab.st = Sim.initialState(P); lab.res = null; lab.log = []; simRun('איפוס — הכל חזר למצב ההתחלה'); }
+    if (t.id === 'labClearHl') { lab.view.highlight(null); lab.view.fit(); }
+    if (t.id === 'labPickX') { lab.pick = null; lab.view.setPinMode(true, null); renderLabBar(); }
+    if (t.id === 'labWEdit' && lab.sel) openWireDialog(lab.sel);
+    if (t.id === 'labWDel' && lab.sel) labDelWire(lab.sel);
+  });
+}
+
 /* ---------- התחלה ---------- */
 async function start() {
   /* קודם מחברים את הכפתורים, כדי שהאתר יגיב גם אם האחסון בדפדפן איטי או חסום */
   bind();
+  bindLab();
   try { state = await loadAllAsync(); } catch { /* נשארים עם localStorage */ }
   /* פסי הלבן-כחול בחוטי ‎0V של קטע הפתיחה מופיעים אחרי שהחוטים נמתחו */
   setTimeout(() => { const r = $('.run'); if (r) r.classList.add('drawn'); }, 2300);

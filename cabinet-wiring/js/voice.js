@@ -194,5 +194,6 @@ export function sfx(kind) {
   };
   if (kind === 'click') { tone(1900, 0, 0.035, 'square', 0.05); tone(620, 0.03, 0.08, 'triangle', 0.09); }
   else if (kind === 'step') tone(880, 0, 0.05, 'sine', 0.05);
+  else if (kind === 'err') { tone(196, 0, 0.28, 'sawtooth', 0.05); tone(147, 0.12, 0.3, 'sawtooth', 0.05); }
   else if (kind === 'milestone') { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.22, 'triangle', 0.08)); }
 }

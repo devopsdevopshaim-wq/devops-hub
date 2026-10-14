@@ -49,6 +49,37 @@ export const SVG_STYLE = `
   .frm-t { stroke: #8d959f; stroke-width: .9; }
   .t-frm { font-size: 13px; fill: #a4adb4; font-family: 'IBM Plex Mono', monospace; font-weight: 600; dominant-baseline: middle; }
   .comp.end > rect:first-of-type, .comp.end > circle:first-of-type { stroke: #e0904f; stroke-width: 3px; }
+  .pin-hit { fill: transparent; pointer-events: none; }
+  /* מעבדה — עריכה: לוחצים על הדק ואז על הדק נוסף ונוצר חוט */
+  svg.pinmode .pin-hit { pointer-events: all; cursor: crosshair; }
+  svg.pinmode .pn:hover .pin-hit { fill: rgba(224,144,79,.35); }
+  svg.pinmode .pn.pick .pin-hit { fill: rgba(224,144,79,.75); stroke: #e0904f; stroke-width: 1; }
+  svg.pinmode .pin { r: 2.4px; }
+  /* מעבדה — הדמיה חיה: חוטים שיש בהם מתח זוהרים בצבע הפוטנציאל וזורמים */
+  svg.sim .w:not(.live) polyline { stroke-opacity: .22; }
+  svg.sim .w.live .case { opacity: .95; stroke-width: 5px; }
+  svg.sim.flow .w.live .case { stroke-dasharray: 7 6; animation: flow .9s linear infinite; }
+  svg.sim .w.p-L1 .case { stroke: #ff8a3d; } svg.sim .w.p-L2 .case { stroke: #c46cff; } svg.sim .w.p-L3 .case { stroke: #ffd23d; }
+  svg.sim .w.p-N .case { stroke: #4da3ff; } svg.sim .w.p-PE .case { stroke: #3ddc84; animation: none; stroke-dasharray: none; opacity: .5; }
+  svg.sim .w.p-24 .case { stroke: #ff4d6d; } svg.sim .w.p-0V .case { stroke: #5b8cff; }
+  svg.sim .w.short .case { stroke: #ff1f1f; stroke-width: 8px; stroke-dasharray: 3 3; }
+  svg.sim.flow .w.short .case { animation: flow .3s linear infinite; }
+  svg.sim .comp { cursor: pointer; }
+  svg.sim .comp.op > rect:first-of-type, svg.sim .comp.op > circle:first-of-type { stroke: #e9ebe8; stroke-dasharray: 3 2; }
+  svg.sim .comp.s-on > rect:first-of-type { stroke: #3ddc84; stroke-width: 2.5px; stroke-dasharray: none; }
+  svg.sim .comp.s-off > rect:first-of-type { stroke: #8d959f; stroke-width: 2.5px; opacity: .75; }
+  svg.sim .comp.s-en > rect:first-of-type { stroke: #3ddc84; stroke-width: 4px; stroke-dasharray: none; }
+  svg.sim .comp.s-en > rect:nth-of-type(2) { fill: rgba(61,220,132,.55); }
+  svg.sim .comp.s-trip > rect:first-of-type, svg.sim .comp.s-fault > rect:first-of-type, svg.sim .comp.s-fault > circle:first-of-type { stroke: #ff1f1f; stroke-width: 4px; stroke-dasharray: 4 2; }
+  svg.sim .comp.s-press > circle:nth-of-type(2) { r: 9px; stroke: #fff; stroke-width: 2px; }
+  svg.sim .comp.s-lit > circle:nth-of-type(2) { filter: drop-shadow(0 0 6px #fff) brightness(1.5); opacity: 1; }
+  svg.sim .comp.ty-lamp:not(.s-lit) > circle:nth-of-type(2) { opacity: .25; }
+  svg.sim .comp.s-run > circle:first-of-type { stroke: #3ddc84; stroke-width: 5px; stroke-dasharray: 14 8; animation: spin 1.1s linear infinite; transform-box: fill-box; transform-origin: center; }
+  svg.sim .comp.s-run.ccw > circle:first-of-type { animation-direction: reverse; }
+  svg.sim .comp.s-sense > rect:first-of-type { stroke: #ffd23d; stroke-width: 4px; }
+  @keyframes flow { to { stroke-dashoffset: -26; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { svg.sim .w.live .case, svg.sim .comp.s-run > circle:first-of-type { animation: none; } }
 `;
 
 /* קיצור שם היצרן לתווית על הרכיב */
@@ -72,8 +103,9 @@ function lampColor(name) {
 }
 
 export class CabinetView {
-  constructor(host, { onHover, onSelect, onComp, mini = false } = {}) {
+  constructor(host, { onHover, onSelect, onComp, onPin, mini = false } = {}) {
     this.host = host;
+    this.onPin = onPin || null;
     this.onHover = onHover || (() => {});
     this.onSelect = onSelect || (() => {});
     this.onComp = onComp || (() => {});
@@ -147,7 +179,7 @@ export class CabinetView {
       const c = compBy[b.tag] || {};
       const info = (C && C.TYPES[c.type]) || { fill: '#444', he: '' };
       const name = esc(c.name || info.he);
-      out.push(`<g class="comp" data-tag="${esc(b.tag)}" tabindex="-1"><title>${esc(b.tag)} — ${name}</title>`);
+      out.push(`<g class="comp ty-${esc(c.type || 'x')}" data-tag="${esc(b.tag)}" tabindex="-1"><title>${esc(b.tag)} — ${name}</title>`);
       if (c.type === 'terminal') {
         const terms = Object.keys(L.pins).filter((k) => k.startsWith(b.tag + ':')).map((k) => ({ t: k.slice(b.tag.length + 1), x: L.pins[k].x }));
         out.push(`<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#7b828c" rx="1"/>`);
@@ -209,7 +241,7 @@ export class CabinetView {
         const term = k.slice(k.indexOf(':') + 1);
         const ty = pn.side === 'top' ? pn.y - 3 : pn.side === 'bottom' ? pn.y + 7 : pn.y + 2;
         const tx = pn.side === 'left' ? pn.x - 4 : pn.x;
-        out.push(`<circle cx="${pn.x}" cy="${pn.y}" r="1.7" class="pin"/><text x="${tx}" y="${ty}" class="t-pin" text-anchor="${pn.side === 'left' ? 'end' : 'middle'}">${esc(term)}</text>`);
+        out.push(`<g class="pn" data-k="${esc(k)}"><circle cx="${pn.x}" cy="${pn.y}" r="5" class="pin-hit"/><circle cx="${pn.x}" cy="${pn.y}" r="1.7" class="pin"/></g><text x="${tx}" y="${ty}" class="t-pin" text-anchor="${pn.side === 'left' ? 'end' : 'middle'}">${esc(term)}</text>`);
       });
       out.push('</g>');
     }
@@ -310,6 +342,45 @@ export class CabinetView {
   }
   /* שרטוט הרכבה (בלי חוטים) או תצוגה עם כל החוטים */
   setLayout(on) { this.layoutMode = on; this.svg.classList.toggle('lay', Boolean(on) && !this.mini); }
+  /* מעבדה: מצב בחירת הדקים לחיווט */
+  setPinMode(on, picked) {
+    this.pinMode = Boolean(on);
+    this.svg.classList.toggle('pinmode', this.pinMode);
+    this.svg.querySelectorAll('.pn.pick').forEach((g) => g.classList.remove('pick'));
+    if (on && picked) { const g = this.svg.querySelector(`.pn[data-k="${CSS.escape(picked)}"]`); if (g) g.classList.add('pick'); }
+  }
+  /* מעבדה: מציג את תוצאת ההדמיה — חוטים חיים, קצרים ומצב כל רכיב */
+  setSim(res, { operable } = {}) {
+    const on = Boolean(res);
+    this.svg.classList.toggle('sim', on);
+    const potCls = (p) => (/^L[123]$/.test(p) ? 'p-' + p : p === 'N' ? 'p-N' : p === 'PE' ? 'p-PE' : /^\+/.test(p) ? 'p-24' : p === '0V' ? 'p-0V' : '');
+    this.svg.querySelectorAll('.w').forEach((g) => {
+      g.classList.remove('live', 'short', 'p-L1', 'p-L2', 'p-L3', 'p-N', 'p-PE', 'p-24', 'p-0V');
+      if (!on) return;
+      const pots = res.wires[g.dataset.id];
+      if (res.shortWires[g.dataset.id]) g.classList.add('live', 'short');
+      else if (pots && pots.length) { g.classList.add('live'); const c = potCls(pots.find((p) => p !== 'PE') || pots[0]); if (c) g.classList.add(c); }
+    });
+    /* זרימה מונפשת רק בלוח קטן: מאות קווים מונפשים מאטים את הדפדפן */
+    this.svg.classList.toggle('flow', on && Object.keys(res.wires).length <= 90);
+    const st = (res && res.state) || {};
+    this.svg.querySelectorAll('.comp').forEach((g) => {
+      g.classList.remove('op', 's-on', 's-off', 's-en', 's-trip', 's-fault', 's-lit', 's-run', 'ccw', 's-press', 's-sense');
+      if (!on) return;
+      const t = g.dataset.tag, o = res.comps[t] || {};
+      if (operable && operable.has(t)) g.classList.add('op');
+      if (o.on === true) g.classList.add('s-on');
+      if (o.on === false) g.classList.add('s-off');
+      if (o.energized) g.classList.add('s-en');
+      if (o.tripped) g.classList.add('s-trip');
+      if (o.fault) g.classList.add('s-fault');
+      if (o.lit) g.classList.add('s-lit');
+      if (o.running) { g.classList.add('s-run'); if (o.dir === 'שמאלה') g.classList.add('ccw'); }
+      if ((st.pressed && st.pressed[t]) || (g.classList.contains('ty-selector') && st.on && st.on[t])) g.classList.add('s-press');
+      if (st.sense && st.sense[t]) g.classList.add('s-sense');
+    });
+  }
+
   /* אזור בשרטוט (למשל C4) של נקודה */
   zoneOf(x, y) {
     const g = this.grid; if (!g) return '';
@@ -334,6 +405,8 @@ export class CabinetView {
     });
     svg.addEventListener('click', (e) => {
       if (this.dragged) return;
+      const pn = this.pinMode && e.target.closest('.pn');
+      if (pn) { this.onPin && this.onPin(pn.dataset.k); return; }
       const g = e.target.closest('.w');
       if (g) { this.select(g.dataset.id === this.selected ? null : g.dataset.id); return; }
       const c = e.target.closest('.comp');

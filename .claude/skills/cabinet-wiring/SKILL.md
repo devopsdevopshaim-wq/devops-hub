@@ -26,8 +26,11 @@ Static files, no build step. `server.mjs` (Node, `@anthropic-ai/sdk`) is optiona
 
 catalog/engine/prompts/demo are UMD (browser globals `WCat`, `WEngine`, `WPrompts`, `WDemo`, and `require` in node). State (projects + sites) in IndexedDB key `__state__` and localStorage key `cabinet-wiring-v1`; PDF and pages in IndexedDB `cabinet-wiring` (`<pid>:pdf`, `<pid>:p<n>`).
 
+## Lab (`js/sim.js`, tab `lab`)
+`WSim.run(P, state, prev)` simulates the panel: nets via union-find through wires and through each component's closed contacts for its state (breakers on, contactor/relay coils energized, buttons pressed, sensors sensing), sources from the main switch inputs / supply strips, PSUs, and manual PLC outputs (`state.out['TAG:TERM']`); iterates until coils are stable, trips protection on shorts, burns 24V DC coils fed AC. `WSim.checks(P)` returns categories short/color/section/terminal/coil/pe/dup/complete. `WSim.controls(P)` lists what can be operated. In the UI (`renderLab` in app.js) `CabinetView.setSim(res)` colors live wires by potential and `setPinMode` lets the user click two pins to create a wire (opens `#wireDialog` prefilled). Components added in the lab carry `terms` (from `defaultTerms`) so the layout draws their pins before any wire exists, and `added: 'lab'`.
+
 ## Checking it
-`cd cabinet-wiring && npm test` (engine tests). In a browser: serve the repo root (`python3 -m http.server`), open `/cabinet-wiring/`, click `#openDemo`, hover `.w .hit` in `#cabHost` (tooltip `#tip`), click it (drawer `#drawer`), use `#wDone` in the wiring tab, `#printBook` in export. pdf.js loads from cdn.jsdelivr.net; in a sandbox without it, route that URL to a local `pdfjs-dist@4.10.38/build`.
+`cd cabinet-wiring && npm test` (engine, site, parts and sim tests). In a browser: serve the repo root (`python3 -m http.server`), open `/cabinet-wiring/`, click `#openDemo`, hover `.w .hit` in `#cabHost` (tooltip `#tip`), click it (drawer `#drawer`), use `#wDone` in the wiring tab, `#printBook` in export. pdf.js loads from cdn.jsdelivr.net; in a sandbox without it, route that URL to a local `pdfjs-dist@4.10.38/build`.
 
 ## Rules
 - Answer in Hebrew unless the user writes in another language. The site is RTL; wrap tag:terminal text in isolates (`⁦…⁩`) or `.ep`/`.mono` spans.
