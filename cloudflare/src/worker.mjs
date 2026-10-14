@@ -38,8 +38,6 @@ const ROUTES = {
   'hasadna-voice': { svc: 'voice', fn: voiceSpeak, max: 200000, free: true },
   'hasadna-guide': { svc: 'agents', kind: 'guide', max: 20000, free: true },
   'hasadna-status': { svc: 'agents', kind: 'status', max: 1000, free: true, method: 'GET' },
-  // one-off image generation for the assistant's picture (Workers AI), only with the shared key; remove when done
-  'maya-gen': { svc: 'agents', kind: 'imggen', max: 4000, free: true },
   // JARVIS, the personal assistant with the talking face (jarvis-web): the first AI key that answers
   'hasadna-jarvis': { svc: 'agents', kind: 'jarvis', max: 12000, free: true },
   // the clients' own mailboxes (Gmail); the callback is where Google sends the person back after they agree
@@ -189,14 +187,6 @@ export class State extends DurableObject {
         if (!fresh) { await this.save(st); try { await this.runMonitor(false); } catch (e) { /* the page shows the last known state */ } const again = await this.load(); st.sd = again.sd; st.orig = again.orig; }
         const r = (await statusRender(ctx({}, { 'Status · Webhook': { query: q } })))[0].json;
         return new Response(r.body, { status: 200, headers: { ...CORS, 'Content-Type': r.contentType || 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src https://devopsdevopshaim-wq.github.io data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" } });
-      }
-      if (rt.kind === 'imggen') {
-        let gb = {}; try { gb = typeof body === 'string' ? JSON.parse(body) : (body || {}); } catch (e) { gb = {}; }
-        if (!env.SHARED_KEY || gb.key !== env.SHARED_KEY || !env.AI) return reply({ ok: false, error: 'forbidden' }, 403);
-        try {
-          const r = await env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt: String(gb.prompt || '').slice(0, 1500), steps: 8 });
-          return reply({ ok: true, image: r && r.image });
-        } catch (e) { return reply({ ok: false, error: String((e && e.message) || e).slice(0, 200) }, 500); }
       }
       if (rt.kind === 'jarvis') {
         const { sid, text } = jarvisInput(body);
