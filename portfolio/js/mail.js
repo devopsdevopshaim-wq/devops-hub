@@ -261,7 +261,7 @@
   }
   function refreshOnline() {
     if (!Auth.session || Auth.session.role !== 'admin') return;
-    Auth.api('presence').then(function (r) { if (r && r.ok) { onlineChip = { online: r.online, offline: r.offline, members: r.members }; drawPill(); } });
+    Auth.api('presence').then(function (r) { if (r && r.ok) { onlineChip = { online: r.online + (r.admin ? 1 : 0), offline: r.offline, members: r.members }; drawPill(); } });
   }
 
   Promise.all([Auth.ready, fetch('api.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return null; })]).then(function (res) {

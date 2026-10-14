@@ -1,0 +1,17 @@
+import { localGuide } from '../src/guide-local.mjs';
+import fs from 'node:fs';
+let bad = 0;
+const check = (n, ok, x) => { if (!ok) { bad++; console.error('FAIL', n, x === undefined ? '' : JSON.stringify(x)); } else console.log('ok  ', n); };
+const K = JSON.parse(fs.readFileSync(new URL('../../portfolio/knowledge.json', import.meta.url)));
+const S = JSON.parse(fs.readFileSync(new URL('../../portfolio/services.json', import.meta.url)));
+let r = localGuide(K, S, 'מה אפשר לבנות לעסק שלי? שירותים ומחירים', '');
+check('business question → services with prices and the phone', /₪/.test(r.answer) && /054-497-9771/.test(r.answer), r);
+r = localGuide(K, S, 'אני רוצה לדעת איך אני יכול לשווק את עצמי על סמך האתר הזה', '');
+check('marketing question → a real answer, not the generic failure', !/לא הצלחתי לענות/.test(r.answer) && r.answer.length > 80, r);
+r = localGuide(K, S, 'ספרי לי על חופשות וטיולים', '');
+check('a topic → the matching project', r.project === 'vacation-hub' || /חופש/.test(r.answer), r);
+r = localGuide(K, S, 'שלום', '');
+check('greeting', /מאיה/.test(r.answer));
+r = localGuide(K, S, 'מי ניצח במונדיאל', '');
+check('unknown → honest, offers a human', /לא מצאתי/.test(r.answer) && /054/.test(r.answer), r);
+process.exit(bad ? 1 : 0);

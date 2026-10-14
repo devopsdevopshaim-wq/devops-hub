@@ -5,7 +5,7 @@ const check = (n, ok, x) => { if (!ok) { bad++; console.error('FAIL', n, x === u
 const calls = [];
 let plan = {};
 globalThis.fetch = async (url) => {
-  url = String(url); const k = /generativelanguage/.test(url) ? 'gemini' : /anthropic/.test(url) ? 'claude' : 'openai'; calls.push(k);
+  url = String(url); const k = /generativelanguage/.test(url) ? 'gemini' : /anthropic/.test(url) ? 'claude' : /pollinations/.test(url) ? 'free' : 'openai'; calls.push(k);
   const p = plan[k] || { status: 500, body: {} };
   return new Response(JSON.stringify(p.body), { status: p.status });
 };
@@ -22,10 +22,13 @@ plan = { claude: { status: 400, body: { error: 'credit balance too low' } }, ope
 r = await jarvisAsk({ ANTHROPIC_API_KEY: 'c', OPENAI_API_KEY: 'o' }, hist);
 check('then OpenAI', r.by === 'openai', r);
 plan = {};
-r = await jarvisAsk({ GEMINI_API_KEY: 'g' }, hist);
+r = await jarvisAsk({ GEMINI_API_KEY: 'g', FREE_AI: '0' }, hist);
 check('nothing answers: empty text and what was tried', r.text === '' && r.tried.length === 1, r);
-r = await jarvisAsk({}, hist);
+r = await jarvisAsk({ FREE_AI: '0' }, hist);
 check('no keys at all', r.text === '' && r.tried.length === 0);
+plan = { free: { status: 200, body: { choices: [{ message: { content: 'תשובה חופשית' } }] } } };
+r = await jarvisAsk({}, hist);
+check('with no key the free endpoint answers', r.by === 'free' && r.text === 'תשובה חופשית', r);
 check('input is trimmed and the session id cleaned', jarvisInput({ chatInput: '  שלום  ', sessionId: 'a b/../c' }).sid === 'abc' && jarvisInput({ chatInput: ' שלום ' }).text === 'שלום');
 let ok = 0; for (let i = 0; i < 45; i++) if (allowed('1.2.3.4')) ok++;
 check('an address is capped at 40 questions per 10 minutes', ok === 40, ok);
