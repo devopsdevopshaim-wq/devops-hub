@@ -522,14 +522,14 @@ window.Guide = (function () {
   function askServer(raw) {
     root.classList.add('thinking');
     typing(true);
-    var url = /\/webhook(-test)?\/|\/ask$/.test(api.guideApi) ? api.guideApi : api.guideApi.replace(/\/$/, '') + '/ask';
+    var url = /\/webhook(-test)?\/|\/ask$|\/hasadna-guide$/.test(api.guideApi) ? api.guideApi : api.guideApi.replace(/\/$/, '') + '/ask';
     var page = (/^#p\/(.+)$/.exec(location.hash) || [])[1] || '';
     var ctrl = 'AbortController' in window ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 45000);
     fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify({ question: raw, sessionId: sessionId, page: decodeURIComponent(page), history: history.slice(0, -1) }),
+      body: JSON.stringify({ question: raw, sessionId: sessionId, page: decodeURIComponent(page), history: history.slice(0, -1), exclude: api.exclude || [] }),
       signal: ctrl ? ctrl.signal : undefined
     })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -634,6 +634,10 @@ window.Guide = (function () {
       faceBtn.querySelector('.guy').outerHTML = tag;
       faceBtn.appendChild(h('span', { class: 'g-wave', 'aria-hidden': 'true' }, [h('i'), h('i'), h('i'), h('i'), h('i')]));
       Array.prototype.forEach.call(document.querySelectorAll('.g-mini, .g-av'), function (n) { n.innerHTML = tag; });
+      if (panel && !panel.querySelector('.g-portrait')) {
+        var ph = new Image(); ph.src = PHOTO; ph.alt = ''; ph.className = 'g-portrait-img';
+        panel.insertBefore(h('div', { class: 'g-portrait', 'aria-hidden': 'true' }, [ph, h('span', { class: 'g-wave' }, [h('i'), h('i'), h('i'), h('i'), h('i')])]), panel.firstChild);
+      }
     };
     img.src = PHOTO;
   }
@@ -651,13 +655,14 @@ window.Guide = (function () {
       ]));
       root.classList.add('staged');
     };
+    img.onerror = function () { if (img.getAttribute('data-fb')) return; img.setAttribute('data-fb', '1'); img.src = PHOTO; };
     img.src = FULL;
   }
 
   function init(a) {
     api = a;
     // the server voice lives next to the n8n agents
-    if (api.guideApi && /\/webhook\/hasadna-guide/.test(api.guideApi)) cloud = api.guideApi.replace(/hasadna-guide.*$/, 'hasadna-voice');
+    if (api.guideApi && /hasadna-guide/.test(api.guideApi)) cloud = api.guideApi.replace(/hasadna-guide.*$/, (/\/webhook\//.test(api.guideApi) ? '' : '') + 'hasadna-voice');
     voiceOn = store('guide-voice') !== '0';
     build();
     usePhoto();

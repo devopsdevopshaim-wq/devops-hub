@@ -21,7 +21,8 @@ import monitorSummarize from './gen/monitor-summarize.mjs';
 import statusFresh from './gen/status-fresh.mjs';
 import statusRender from './gen/status-render.mjs';
 import { mailHandle, mailCallback } from './mail.mjs';
-import { jarvisAsk, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
+import { localGuide } from './guide-local.mjs';
+import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
 
 const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
 const FROM_NAME = 'SPIDER · חיים קריספין';
@@ -43,6 +44,7 @@ const ROUTES = {
   'hasadna-mail': { svc: 'main', kind: 'mail', max: 20000, free: true },
   'hasadna-mail-callback': { svc: 'main', kind: 'mailcb', max: 1000, free: true, method: 'GET' }
 };
+const SERVICES = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/services.json';
 const KNOWLEDGE = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/knowledge.json';
 const routeOf = (pathname) => ROUTES[pathname.replace(/^\/(webhook\/)?/, '')];
 const CORS = { 'Access-Control-Allow-Origin': SITE_ORIGIN, Vary: 'Origin', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' };
@@ -215,20 +217,32 @@ export class State extends DurableObject {
         return reply(r.body, r.code);
       }
       if (rt.kind === 'guide') {
+        let gb = {}; try { gb = typeof body === 'string' ? JSON.parse(body) : (body || {}); } catch (e) { gb = {}; }
         const norm = (await guideNormalize(ctx({ body, headers })))[0].json;
         if (norm.blocked) { const r = (await guideBlocked(ctx(norm)))[0].json; await this.save(st); return reply({ answer: r.answer, project: r.project, next: r.next }); }
         let output = '';
         try {
-          const K = await n8nHttp({ method: 'GET', url: KNOWLEDGE, json: true, timeout: 15000 });
+          const K = await n8nHttp({ method: 'GET', url: env.KNOWLEDGE_URL || KNOWLEDGE, json: true, timeout: 15000 });
+          let S = {}; try { S = await n8nHttp({ method: 'GET', url: env.SERVICES_URL || SERVICES, json: true, timeout: 10000 }); } catch (e) { S = {}; }
+          const hide = new Set((Array.isArray(gb.exclude) ? gb.exclude : []).map(String));
+          if (hide.size) K.projects = K.projects.filter((p) => !hide.has(p.id));
           const c = (await guideContext(ctx(norm, { 'Agents · Load knowledge': K, 'Agents · Normalize': norm })))[0].json;
-          if (env.ANTHROPIC_API_KEY) {
-            const g = c.groups || {}, cut = (x) => String(x || '').slice(0, 14000);
-            const system = c.system + '\n\nהמידע שלך על הפרויקטים, לפי תחום (השתמשי בו, אל תמציאי):\n' +
-              ['devops', 'ai', 'data', 'tools', 'web'].map((k) => '### ' + k + '\n' + cut(g[k])).join('\n') + '\n### תהליך\n' + cut(g.pipeline) + '\n### זמינות האתרים\n' + cut(g.status);
-            const r = await n8nHttp({ method: 'POST', url: 'https://api.anthropic.com/v1/messages', json: true, timeout: 90000,
-              headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-              body: { model: env.CLAUDE_MODEL || 'claude-sonnet-5-5', max_tokens: 1500, system, messages: [{ role: 'user', content: c.question }] } });
-            output = ((r && r.content) || []).map((x) => x.text || '').join('');
+          const g = c.groups || {}, cut = (x) => String(x || '').slice(0, 14000);
+          const sv = ((S && S.services) || []).map((x) => '- ' + x.title + (x.from ? ' · מ־' + x.from + ' ₪ ' + (x.unit || '') : '') + ' · ' + (x.pitch || '')).join('\n');
+          const system = c.system + '\n\nהמידע שלך על הפרויקטים, לפי תחום (השתמשי בו, אל תמציאי):\n' +
+            ['devops', 'ai', 'data', 'tools', 'web'].map((k) => '### ' + k + '\n' + cut(g[k])).join('\n') + '\n### תהליך\n' + cut(g.pipeline) + '\n### זמינות האתרים\n' + cut(g.status) +
+            '\n### שירותים ומחירים\n' + sv + '\n\nענו תמיד בעברית, אנושית וקצרה. אם השאלה כללית (לא על הפרויקטים), ענו עליה בקצרה ובנחמדות ואז חברו חזרה למה שחיים יכול לעשות בשביל המבקר.';
+          const hist = (Array.isArray(gb.history) ? gb.history : []).map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', text: String(m.text || '').slice(0, 800) })).filter((m) => m.text).slice(-8);
+          while (hist.length && hist[0].role !== 'user') hist.shift();
+          let vault = {}; try { vault = JSON.parse((st.sd.aiVault && st.sd.aiVault.blob) || '{}') || {}; } catch (e) { vault = {}; }
+          const vk = (n) => String((vault[n] && vault[n].key) || '').trim();
+          const a = await askChain({ ...env, GEMINI_API_KEY: env.GEMINI_API_KEY || vk('gemini'), ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY || vk('claude'), OPENAI_API_KEY: env.OPENAI_API_KEY || vk('openai') },
+            system, hist.concat([{ role: 'user', text: c.question }]), 1500);
+          output = a.text;
+          if (!output) {
+            // no AI answered: still a real answer, from the site's own knowledge
+            const l = localGuide(K, S, c.question, norm.page);
+            output = l.answer + (l.project ? '\nPROJECT: ' + l.project : '') + (l.next || []).map((x) => '\nNEXT: ' + x).join('');
           }
         } catch (e) { output = ''; }
         const r = (await guideShape(ctx({ output }, { 'Agents · Normalize': norm })))[0].json;

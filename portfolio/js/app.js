@@ -797,14 +797,19 @@
       loadRecoCounts();
       loadLiveStatus(data.statusUrl);
       countHome();
-      if (window.Guide) window.Guide.init({
-        projects: data.projects,
-        categories: data.categories,
-        status: status,
-        focusProject: spotlight,
-        // Guy's AI knows every project, so a client gets his on-page answers only
-        guideApi: who && who.role === 'client' ? '' : (data.guideApi || ''),
-        filter: selectCat
+      // Maya's brain lives on the Cloudflare server (no execution cap); the n8n address is the fallback. A client's questions
+      // carry the ids hidden from clients, so she never speaks about them.
+      fetch('api.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }, function () { return null; }).then(function (cfg) {
+        var cf = cfg && /^https:\/\//.test(cfg.base || '') ? cfg.base.replace(/\/$/, '') + '/hasadna-guide' : '';
+        if (window.Guide) window.Guide.init({
+          projects: data.projects,
+          categories: data.categories,
+          status: status,
+          focusProject: spotlight,
+          guideApi: cf || data.guideApi || '',
+          exclude: who && who.role === 'client' ? (data.clientHide || []) : [],
+          filter: selectCat
+        });
       });
       route();
     })
