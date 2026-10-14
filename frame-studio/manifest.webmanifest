@@ -1,0 +1,13 @@
+{
+  "name": "פריים־סטודיו — עריכה, מסגרות והדפסה",
+  "short_name": "פריים־סטודיו",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "he",
+  "background_color": "#070b1f",
+  "theme_color": "#0a1030",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }],
+  "file_handlers": [{ "action": "./", "accept": { "image/*": [".jpg", ".jpeg", ".png", ".webp"] } }]
+}
