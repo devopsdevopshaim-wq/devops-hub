@@ -91,12 +91,13 @@ window.Guide = (function () {
 
   function startTalking() {
     root.classList.add('talking');
+    faces.forEach(function (f) { f.talking = true; });
     clearInterval(talkTimer);
     var i = 0;
     talkTimer = setInterval(function () {
       i++;
       mouth(i % 5 !== 0); // a short pause every few syllables
-      faceTalk(i % 5 !== 0);
+      if (root.classList.contains('live')) faceTalk(i % 5 !== 0);
       if (i % 9 === 0) faceGesture();
       if (Math.random() < 0.08) { root.classList.add('brows-up'); setTimeout(function () { root.classList.remove('brows-up'); }, 380); }
     }, 105);
@@ -106,7 +107,7 @@ window.Guide = (function () {
     clearInterval(talkTimer);
     root.classList.remove('talking');
     mouth(false);
-    faces.forEach(function (f) { f.stopSpeaking(); f.nodOnce(.6); f.gesture(0, 0, 0); });
+    faces.forEach(function (f) { f.talking = false; f.stopSpeaking(); f.nodOnce(.6); f.gesture(0, 0, 0); });
   }
 
   // The real face: the photo on a mesh that blinks, breathes, sways and talks (talking-face.js), in the portrait and the side stage.
@@ -142,7 +143,7 @@ window.Guide = (function () {
       mountFace.obs.observe(root, { attributes: true, attributeFilter: ['class'] });
     }
     var f = new TalkingFace(box, { image: PHOTO, mesh: 'img/face-mesh.json' });
-    f.ready.then(function () { f.mood('calm'); faces.push(f); host.classList.add('has-face'); }).catch(function () { host.removeAttribute('data-face'); });
+    f.ready.then(function () { f.mood('calm'); f.talking = root.classList.contains('talking'); faces.push(f); host.classList.add('has-face'); }).catch(function () { host.removeAttribute('data-face'); });
   }
 
 
