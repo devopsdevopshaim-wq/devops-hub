@@ -284,6 +284,19 @@
     var volIn = el('input', { type: 'range', min: '0', max: '100', value: String(vol), 'aria-label': 'עוצמה' });
     var ytFull = el('button', { class: 'mu-vbtn', type: 'button', text: '⛶ מסך מלא' });
     var frame = el('div', { class: 'mu-frame', hidden: '' }, [el('div', { id: 'mu-yt' })]);
+    var testBtn = el('button', { class: 'mu-vbtn', type: 'button', text: '🔊 בדיקת צליל' });
+    testBtn.addEventListener('click', function () {
+      // a short beep through a plain audio element: if it is silent, the problem is the device or the tab, not the music
+      var sr = 8000, n = Math.floor(sr * 0.5), b = new Uint8Array(44 + n), dv = new DataView(b.buffer);
+      function w(o, t) { for (var i = 0; i < t.length; i++) b[o + i] = t.charCodeAt(i); }
+      w(0, 'RIFF'); dv.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+      dv.setUint32(24, sr, true); dv.setUint32(28, sr, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true); w(36, 'data'); dv.setUint32(40, n, true);
+      for (var i = 0; i < n; i++) b[44 + i] = 128 + Math.round(90 * Math.sin(2 * Math.PI * 660 * i / sr) * Math.min(1, (n - i) / 800));
+      var a = new Audio(URL.createObjectURL(new Blob([b], { type: 'audio/wav' }))); a.volume = 0.6;
+      var pr = a.play();
+      say('שמעתם צפצוף?', 'אם לא: בדקו שהלשונית לא מושתקת (אייקון הרמקול בלשונית), שהווליום במכשיר מוגבר ושלא מחובר רמקול אחר');
+      if (pr && pr.catch) pr.catch(function () { say('הדפדפן חסם צליל', 'לחצו שוב'); });
+    });
     var acct = el('div', { class: 'mu-acct' });
     var panel = el('div', { class: 'mu-panel', id: 'mu-panel', role: 'dialog', 'aria-label': 'מוזיקה ברקע' }, [
       el('header', {}, [el('b', { text: '♫ רדיו ומוזיקה' }), el('button', { class: 'x', type: 'button', 'aria-label': 'סגירה', text: '×' })]),
@@ -291,7 +304,7 @@
       el('p', { class: 'mu-sub', text: 'רדיו לפי סגנון' }), chips,
       el('p', { class: 'mu-sub', text: 'מוזיקה מובנית (תמיד עובדת)' }), genChips,
       el('p', { class: 'mu-sub', text: 'יוטיוב' }), ytChips, acct,
-      frame, el('div', { class: 'mu-ytbar' }, [ytFull]), now,
+      frame, el('div', { class: 'mu-ytbar' }, [ytFull, testBtn]), now,
       el('div', { class: 'mu-ctrl' }, [playBtn, nextBtn, el('span', { class: 'vol', 'aria-hidden': 'true', text: '🔈' }), volIn]),
       el('p', { class: 'mu-note', text: 'תחנות רדיו חיות מכל העולם, נבדקות כל יום. אם תחנה לא עונה, עוברים לבאה אחריה או למוזיקה מובנית. אפשר לסגור את החלון והמוזיקה ממשיכה.' })
     ]);
@@ -336,14 +349,16 @@
     function quiet(keepGen) { clearTimeout(watchdog); [audioC, audioP].forEach(function (a) { a.pause(); a.removeAttribute('src'); a.load(); }); active = null; if (gen && !keepGen) gen.stop(); }
 
     // ----- built-in music
+    function loud() { if (!(vol >= 8)) { vol = 50; volIn.value = '50'; store('music-vol', '50'); } }
     function playGen(id, fallback) {
-      bridging = false;
+      bridging = false; loud();
       if (!graph()) { say('הדפדפן הזה לא מאפשר מוזיקה מובנית', ''); return; }
       stopYT(); quiet();
       mode = 'gen'; genId = id; mark();
       if (actx.state === 'suspended') actx.resume();
       gen.volume(vol / 100); gen.start(id);
       setPlaying(true);
+      setTimeout(function () { if (actx && actx.state !== 'running') { actx.resume(); say('הדפדפן עוצר צליל', 'לחצו שוב על ▶ או על כפתור בדיקת הצליל'); } }, 500);
       var g = GEN_STYLES.filter(function (x) { return x.id === id; })[0];
       store('music-last', 'g:' + id);
       say('♪ ' + g.style, fallback ? 'תחנות הרדיו לא ענו, אז מנגנים מוזיקה מובנית' : 'נוצרת בדפדפן, בלי חיבור');
@@ -393,7 +408,7 @@
       if (!graph()) return;
       try {
         if (actx.state === 'suspended') actx.resume();
-        bridging = true; gen.volume(vol / 100); gen.start(genFor(genres[gi])); setPlaying(true);
+        loud(); bridging = true; gen.volume(vol / 100); gen.start(genFor(genres[gi])); setPlaying(true);
       } catch (e) { bridging = false; }
     }
     function playGenre(i) {
