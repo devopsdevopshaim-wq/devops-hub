@@ -333,10 +333,11 @@
       playBtn.setAttribute('aria-label', on ? 'השהיה' : 'נגינה');
       $('.mu-label', pill).textContent = mode === 'radio' && gi >= 0 ? genres[gi].style : mode === 'gen' ? GEN_STYLES.filter(function (g) { return g.id === genId; })[0].style : mode === 'yt' && yi >= 0 ? picks[yi].style : 'מוזיקה';
     }
-    function quiet() { clearTimeout(watchdog); [audioC, audioP].forEach(function (a) { a.pause(); a.removeAttribute('src'); a.load(); }); active = null; if (gen) gen.stop(); }
+    function quiet(keepGen) { clearTimeout(watchdog); [audioC, audioP].forEach(function (a) { a.pause(); a.removeAttribute('src'); a.load(); }); active = null; if (gen && !keepGen) gen.stop(); }
 
     // ----- built-in music
     function playGen(id, fallback) {
+      bridging = false;
       if (!graph()) { say('הדפדפן הזה לא מאפשר מוזיקה מובנית', ''); return; }
       stopYT(); quiet();
       mode = 'gen'; genId = id; mark();
@@ -355,7 +356,7 @@
       clearTimeout(watchdog);
       var g = genres[gi], st = station();
       say('מתחבר: ' + st.name + '…', g.style);
-      quiet();
+      quiet(bridging);
       var cors = graph() && !noCors[st.url];
       if (cors && !corsSrc) { try { corsSrc = actx.createMediaElementSource(audioC); corsSrc.connect(bus); } catch (e) { cors = false; } }
       if (actx && actx.state === 'suspended') actx.resume();
@@ -386,6 +387,15 @@
       si++;
       tune();
     }
+    // a radio station can take many seconds (or never answer): the built-in music plays meanwhile, and stops when a station really starts
+    var bridging = false;
+    function bridge() {
+      if (!graph()) return;
+      try {
+        if (actx.state === 'suspended') actx.resume();
+        bridging = true; gen.volume(vol / 100); gen.start(genFor(genres[gi])); setPlaying(true);
+      } catch (e) { bridging = false; }
+    }
     function playGenre(i) {
       stopYT();
       mode = 'radio'; gi = i; tried = 0;
@@ -393,6 +403,7 @@
       store('music-last', 'r:' + genres[i].id);
       mark();
       tune();
+      bridge();
     }
     [audioC, audioP].forEach(function (a) {
       a.addEventListener('playing', function () {
@@ -400,6 +411,7 @@
         clearTimeout(watchdog);
         if (mode !== 'radio') return;
         tried = 0;
+        bridging = false; if (gen) gen.stop();
         setPlaying(true);
         var st = station();
         say('♪ ' + st.name, genres[gi].style + (st.country ? ' · ' + st.country : '') + (st.bitrate ? ' · ' + st.bitrate + 'kbps' : '') + (a === audioC ? '' : ' · התמונה בלי קשר לצליל'));

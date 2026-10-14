@@ -46,6 +46,17 @@ export async function askChain(env, system, turns, maxTokens = 700) {
     if (text) return { text, by: 'openai' };
     tried.push('openai ' + (r ? r.status : 'net'));
   }
+  // Cloudflare's own models (Workers AI): free allowance, no key, answers from the same server. Bound as `AI` at deploy time.
+  if (env.AI && env.FREE_AI !== '0') {
+    for (const model of ['@cf/google/gemma-3-12b-it', '@cf/meta/llama-3.3-70b-instruct-fp8-fast']) {
+      try {
+        const r = await env.AI.run(model, { messages: [{ role: 'system', content: system }, ...turns.map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }))], max_tokens: maxTokens });
+        const text = String((r && (r.response || (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content))) || '').trim();
+        if (text) return { text, by: 'workers-ai' };
+        tried.push(model.split('/').pop() + ' empty');
+      } catch (e) { tried.push(model.split('/').pop() + ' ' + String((e && e.message) || e).slice(0, 60)); }
+    }
+  }
   // last resort, no key needed: Pollinations' free text endpoint (OpenAI-compatible). Quality and speed vary; a key above is better.
   if (env.FREE_AI !== '0') {
     const r = await post('https://text.pollinations.ai/openai', {}, { model: 'openai', private: true, messages: [{ role: 'system', content: system }, ...turns.map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }))] }).catch(() => null);

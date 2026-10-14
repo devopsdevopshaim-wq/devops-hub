@@ -198,7 +198,7 @@ export class State extends DurableObject {
         // keys from the deploy's secrets, else the ones the admin saved in the vault on the AI page
         let vault = {}; try { vault = JSON.parse((st.sd.aiVault && st.sd.aiVault.blob) || '{}') || {}; } catch (e) { vault = {}; }
         const vk = (n) => String((vault[n] && vault[n].key) || '').trim();
-        const a = await jarvisAsk({ ...env, GEMINI_API_KEY: env.GEMINI_API_KEY || vk('gemini'), ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY || vk('claude'), OPENAI_API_KEY: env.OPENAI_API_KEY || vk('openai') }, hist);
+        const a = await jarvisAsk({ ...env, GEMINI_API_KEY: env.GEMINI_API_KEY || vk('gemini'), ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY || vk('claude'), OPENAI_API_KEY: env.OPENAI_API_KEY || vk('openai'), AI: env.AI }, hist);
         if (!a.text) { hist.pop(); return reply({ output: NO_ANSWER, tried: a.tried }); }
         hist.push({ role: 'assistant', text: a.text });
         this.chats.set(sid, hist.slice(-16));
@@ -236,7 +236,7 @@ export class State extends DurableObject {
           while (hist.length && hist[0].role !== 'user') hist.shift();
           let vault = {}; try { vault = JSON.parse((st.sd.aiVault && st.sd.aiVault.blob) || '{}') || {}; } catch (e) { vault = {}; }
           const vk = (n) => String((vault[n] && vault[n].key) || '').trim();
-          const a = await askChain({ ...env, GEMINI_API_KEY: env.GEMINI_API_KEY || vk('gemini'), ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY || vk('claude'), OPENAI_API_KEY: env.OPENAI_API_KEY || vk('openai') },
+          const a = await askChain({ ...env, GEMINI_API_KEY: env.GEMINI_API_KEY || vk('gemini'), ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY || vk('claude'), OPENAI_API_KEY: env.OPENAI_API_KEY || vk('openai'), AI: env.AI },
             system, hist.concat([{ role: 'user', text: c.question }]), 1500);
           output = a.text;
           if (!output) {
