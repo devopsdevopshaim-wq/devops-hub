@@ -275,7 +275,7 @@ window.Guide = (function () {
     var chat = panel && panel.classList.contains('open');
     var wait = chat && !reduce ? Math.min(1500, 450 + text.length * 9) : 0;
     // the server voice is fetched while she "types", so the words and the sound start together
-    var pending = voiceOn && cloud && !natural ? fetchClip(text) : null;
+    var pending = voiceOn && cloud && !natural && !(window.GuideAvatar && window.GuideAvatar.active) ? fetchClip(text) : null;
     var t0 = Date.now();
     function go(url) { if (id === sayId) speak(text, done, id, !!wait, url); else if (url) URL.revokeObjectURL(url); }
     if (wait) typing(true);
@@ -296,7 +296,11 @@ window.Guide = (function () {
       if (url) URL.revokeObjectURL(url);
       if (done) done();
     }
-    if (url) {
+    if (window.GuideAvatar && window.GuideAvatar.active) {
+      // the live video avatar speaks; the words appear in step with her
+      window.GuideAvatar.say(text);
+      setTimeout(end, 1500 + text.length * 70);
+    } else if (url) {
       var a = clip = new Audio(url);
       a.onended = end; a.onerror = end;
       // the words appear in step with her voice
