@@ -77,21 +77,83 @@
   }
   FS.openBiz = open;
 
-  /* write the details into business.json on the site (packages, FAQ and the rest stay as they are) */
-  function publish() {
+  /* write into business.json on the site: patch(base) changes only its own fields, everything else stays */
+  function publishSite(patch, message, done) {
     var tok = ''; try { tok = localStorage.getItem('fs-gh-token') || ''; } catch (e) { /* ignore */ }
     if (!tok) { FS.toast('נשמר אצלך. כדי לעדכן את האתר מגדירים פעם אחת "🔑 חיבור לאתר" בלשונית שמירה והדפסה.', 6500); return; }
     var H = { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, url = 'https://api.github.com/repos/' + REPO + '/contents/' + PATH;
     FS.busy('מעדכן את האתר…');
     fetch(url + '?ref=main', { headers: H }).then(function (r) { return r.ok ? r.json() : null; }).then(function (cur) {
-      var base = {}; try { base = cur ? JSON.parse(decodeURIComponent(escape(atob(cur.content.replace(/\s/g, ''))))) : FS.BIZ_SITE || {}; } catch (e) { base = FS.BIZ_SITE || {}; }
-      ['name', 'owner', 'phone', 'whatsapp', 'email', 'instagram', 'facebook', 'website', 'tagline', 'areas', 'hours', 'credit'].forEach(function (k) { base[k] = FS.BIZ[k]; });
-      var body = { message: 'frame-studio: business details', branch: 'main', content: btoa(unescape(encodeURIComponent(JSON.stringify(base, null, 2) + '\n'))) };
+      var base = {}; try { base = cur ? JSON.parse(decodeURIComponent(escape(atob(cur.content.replace(/\s/g, ''))))) : JSON.parse(JSON.stringify(FS.BIZ_SITE || {})); } catch (e) { base = JSON.parse(JSON.stringify(FS.BIZ_SITE || {})); }
+      patch(base); FS.BIZ_SITE = base;
+      var body = { message: message, branch: 'main', content: btoa(unescape(encodeURIComponent(JSON.stringify(base, null, 2) + '\n'))) };
       if (cur) body.sha = cur.sha;
       return fetch(url, { method: 'PUT', headers: H, body: JSON.stringify(body) });
-    }).then(function (r) { FS.busy(); if (!r.ok) throw new Error(r.status); FS.toast('🌐 האתר יתעדכן עם הפרטים החדשים תוך כשתי דקות', 6000); })
-      .catch(function (e) { FS.busy(); FS.toast(/401|403/.test(String(e.message)) ? 'מפתח GitHub לא תקין. בודקים ב"🔑 חיבור לאתר".' : 'העדכון לאתר לא הצליח. הפרטים נשמרו אצלך.', 6000); });
+    }).then(function (r) { FS.busy(); if (!r.ok) throw new Error(r.status); FS.toast(done || '🌐 האתר יתעדכן תוך כשתי דקות', 6000); })
+      .catch(function (e) { FS.busy(); FS.toast(/401|403/.test(String(e.message)) ? 'מפתח GitHub לא תקין. בודקים ב"🔑 חיבור לאתר".' : 'העדכון לאתר לא הצליח. השינויים נשמרו אצלך.', 6000); });
   }
+  FS.publishSite = publishSite;
+  function publish() {
+    publishSite(function (base) { ['name', 'owner', 'phone', 'whatsapp', 'email', 'instagram', 'facebook', 'website', 'tagline', 'areas', 'hours', 'credit'].forEach(function (k) { base[k] = FS.BIZ[k]; }); },
+      'frame-studio: business details', '🌐 האתר יתעדכן עם הפרטים החדשים תוך כשתי דקות');
+  }
+
+  /* ---------- packages and prices (owner only: publishing needs the owner's GitHub key) ---------- */
+  var PKEY = 'frame-studio-packages';
+  function packages() {
+    try { var l = JSON.parse(localStorage.getItem(PKEY) || 'null'); if (l && l.length) return l; } catch (e) { /* ignore */ }
+    return JSON.parse(JSON.stringify((FS.BIZ_SITE && FS.BIZ_SITE.packages) || []));
+  }
+  function openPackages() {
+    var list = packages(), body = FS.dialog('💰 חבילות ומחירים', '', true);
+    var evs = FS.EVENTS.map(function (e) { return [e.id, e.icon + ' ' + e.name]; });
+    function card(p, i) {
+      return '<article class="pkg-ed' + (p.featured ? ' star' : '') + (p.hidden ? ' off' : '') + '" data-i="' + i + '">' +
+        '<div class="pkg-top"><input class="pkg-name" data-k="name" value="' + FS.esc(p.name || '') + '" placeholder="שם החבילה">' +
+        '<div class="pkg-tools"><button type="button" data-a="up" title="למעלה">▲</button><button type="button" data-a="down" title="למטה">▼</button><button type="button" data-a="dup" title="שכפול">⧉</button><button type="button" data-a="del" class="danger" title="מחיקה">🗑</button></div></div>' +
+        '<div class="pkg-row"><label>מחיר<input data-k="price" value="' + FS.esc(p.price || '') + '" placeholder="₪1,490"></label><label>משך<input data-k="hours" value="' + FS.esc(p.hours || '') + '" placeholder="3 שעות"></label></div>' +
+        '<label>מגנטים / כמות<input data-k="magnets" value="' + FS.esc(p.magnets || '') + '" placeholder="עד 150 מגנטים"></label>' +
+        '<label>מה כלול (שורה לכל פריט)<textarea data-k="features" rows="4">' + FS.esc((p.features || []).join('\n')) + '</textarea></label>' +
+        '<label>הערה קטנה (לא חובה)<input data-k="note" value="' + FS.esc(p.note || '') + '" placeholder="למשל: מחיר לאירוע עד 200 אורחים"></label>' +
+        '<div class="pkg-for"><span>מתאימה ל:</span>' + evs.map(function (e) { return '<button type="button" data-ev="' + e[0] + '" class="' + ((p.for || []).indexOf(e[0]) > -1 ? 'on' : '') + '">' + e[1] + '</button>'; }).join('') + '</div>' +
+        '<div class="pkg-flags"><label class="check"><input type="checkbox" data-k="featured"' + (p.featured ? ' checked' : '') + '> ⭐ החבילה המומלצת</label><label class="check"><input type="checkbox" data-k="hidden"' + (p.hidden ? ' checked' : '') + '> להסתיר מהאתר</label></div></article>';
+    }
+    function draw() {
+      body.innerHTML = '<p class="hint">כאן קובעים מה מופיע באתר תחת "חבילות". רק מי שמחזיק את מפתח החיבור לאתר יכול לפרסם שינויים, כלומר רק אתה.</p>' +
+        '<div class="pkg-list">' + list.map(card).join('') + '<button type="button" class="pkg-add" id="pkg-add"><b>＋</b><span>חבילה חדשה</span></button></div>' +
+        '<div class="row2 pkg-addons"><div class="field"><label>תוספות (שורה לכל תוספת, יופיעו מתחת לחבילות)</label><textarea id="pkg-extras" rows="3" placeholder="שעה נוספת · ₪350&#10;מגנט בגודל 10×15 · ₪15 ליחידה">' + FS.esc(((FS.BIZ_SITE && FS.BIZ_SITE.extras) || []).join('\n')) + '</textarea></div>' +
+        '<div class="field"><label>הערה מתחת לחבילות</label><textarea id="pkg-note" rows="3">' + FS.esc((FS.BIZ_SITE && FS.BIZ_SITE.packagesNote) || 'כל החבילות כוללות הובלה, הקמה, עמדת הדפסה ושקיות מתנה. אפשר להוסיף שעות ומגנטים.') + '</textarea></div></div>' +
+        '<div class="pv-foot"><button class="btn" id="pkg-reset">↺ חזרה למה שבאתר</button><div class="inline"><a class="btn" href="./#packages" target="_blank" rel="noopener">👁 לראות באתר</a><button class="btn" id="pkg-save">💾 שמירה</button><button class="btn primary" id="pkg-publish">🌐 שמירה ופרסום באתר</button></div></div>';
+      $$('.pkg-ed', body).forEach(function (el) {
+        var p = list[Number(el.dataset.i)];
+        $$('[data-k]', el).forEach(function (f) { f.addEventListener('input', function () {
+          var k = f.dataset.k; p[k] = f.type === 'checkbox' ? f.checked : k === 'features' ? f.value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean) : f.value;
+          if (k === 'featured' && p.featured) { list.forEach(function (q) { if (q !== p) q.featured = false; }); draw(); }
+          if (k === 'hidden') el.classList.toggle('off', p.hidden);
+        }); });
+        $$('[data-ev]', el).forEach(function (b) { b.addEventListener('click', function () { p.for = p.for || []; var k = p.for.indexOf(b.dataset.ev); if (k > -1) p.for.splice(k, 1); else p.for.push(b.dataset.ev); b.classList.toggle('on'); }); });
+        $$('[data-a]', el).forEach(function (b) { b.addEventListener('click', function () {
+          var i = Number(el.dataset.i), a = b.dataset.a;
+          if (a === 'up' && i > 0) list.splice(i - 1, 0, list.splice(i, 1)[0]);
+          else if (a === 'down' && i < list.length - 1) list.splice(i + 1, 0, list.splice(i, 1)[0]);
+          else if (a === 'dup') { var c = JSON.parse(JSON.stringify(p)); c.id = 'p' + FS.uid(); c.name = (p.name || '') + ' (עותק)'; c.featured = false; list.splice(i + 1, 0, c); }
+          else if (a === 'del') { if (!confirm('למחוק את החבילה "' + (p.name || '') + '"?')) return; list.splice(i, 1); }
+          draw();
+        }); });
+      });
+      $('#pkg-add', body).addEventListener('click', function () { list.push({ id: 'p' + FS.uid(), name: 'חבילה חדשה', price: '', hours: '', magnets: '', features: [] }); draw(); var n = $$('.pkg-name', body); n[n.length - 1].focus(); n[n.length - 1].select(); });
+      $('#pkg-reset', body).addEventListener('click', function () { if (!confirm('לבטל את השינויים שלא פורסמו ולחזור לחבילות שבאתר?')) return; try { localStorage.removeItem(PKEY); } catch (e) { /* ignore */ } list = packages(); draw(); });
+      $('#pkg-save', body).addEventListener('click', function () { save(); FS.toast('💾 נשמר אצלך. "שמירה ופרסום באתר" מעדכן את האתר.'); });
+      $('#pkg-publish', body).addEventListener('click', function () {
+        save(); var extras = $('#pkg-extras', body).value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean), note = $('#pkg-note', body).value.trim();
+        publishSite(function (base) { base.packages = list; base.extras = extras; base.packagesNote = note; }, 'frame-studio: packages and prices', '🌐 החבילות יתעדכנו באתר תוך כשתי דקות');
+      });
+    }
+    function save() { list.forEach(function (p) { if (!p.id) p.id = 'p' + FS.uid(); }); try { localStorage.setItem(PKEY, JSON.stringify(list)); } catch (e) { /* ignore */ } }
+    draw();
+  }
+  FS.openPackages = openPackages;
+  $('#pkg-btn').addEventListener('click', openPackages);
 
   $('#biz-btn').addEventListener('click', open);
   var ev = $('#ev-credit-edit'); if (ev) ev.addEventListener('click', open);

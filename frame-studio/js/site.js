@@ -116,12 +116,27 @@
   function fill() {
     $$('[data-biz]').forEach(function (e) { if (BIZ[e.dataset.biz]) e.textContent = BIZ[e.dataset.biz]; });
     document.title = BIZ.name + ' · מגנטים לאירועים';
-    $('#pk').innerHTML = (BIZ.packages || []).map(function (p) {
-      return '<article class="pk' + (p.featured ? ' star' : '') + '">' + (p.featured ? '<span class="ribbon">הכי מוזמנת</span>' : '') +
-        '<h3>' + esc(p.name) + '</h3><p class="price">' + esc(p.price) + '</p><p class="meta">' + esc(p.hours) + ' · ' + esc(p.magnets) + '</p><ul>' +
-        (p.features || []).map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul><button class="btn ' + (p.featured ? 'gold' : 'line') + '" data-pk="' + esc(p.name) + '">לבדוק תאריך לחבילה</button></article>';
-    }).join('');
-    $$('[data-pk]').forEach(function (b) { b.addEventListener('click', function () { openWa('שלום! מתעניין/ת בחבילת "' + b.dataset.pk + '" למגנטים לאירוע. אפשר לבדוק תאריך?'); }); });
+    var pks = (BIZ.packages || []).filter(function (p) { return !p.hidden; });
+    function drawPk(type) {
+      $('#pk').innerHTML = pks.filter(function (p) { return !type || !(p.for && p.for.length) || p.for.indexOf(type) > -1; }).map(function (p) {
+        var meta = [p.hours, p.magnets].filter(Boolean).map(esc).join(' · ');
+        var fits = (p.for || []).map(function (id) { var e = FS.event(id); return '<span>' + e.icon + ' ' + esc(e.name) + '</span>'; }).join('');
+        return '<article class="pk' + (p.featured ? ' star' : '') + '">' + (p.featured ? '<span class="ribbon">הכי מוזמנת</span>' : '') +
+          '<h3>' + esc(p.name) + '</h3>' + (p.price ? '<p class="price">' + esc(p.price) + '</p>' : '') + (meta ? '<p class="meta">' + meta + '</p>' : '') + (fits ? '<p class="fits">' + fits + '</p>' : '') + '<ul>' +
+          (p.features || []).map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' + (p.note ? '<p class="pk-note">' + esc(p.note) + '</p>' : '') + '<button class="btn ' + (p.featured ? 'gold' : 'line') + '" data-pk="' + esc(p.name) + '">לבדוק תאריך לחבילה</button></article>';
+      }).join('') || '<p class="note center">אין חבילה מוגדרת לסוג הזה. כתבו לנו ונתאים לכם הצעה.</p>';
+      $$('[data-pk]').forEach(function (b) { b.addEventListener('click', function () { openWa('שלום! מתעניין/ת בחבילת "' + b.dataset.pk + '" למגנטים לאירוע. אפשר לבדוק תאריך?'); }); });
+    }
+    /* chips by event type, only when some package says which events it suits */
+    var used = {}; pks.forEach(function (p) { (p.for || []).forEach(function (id) { used[id] = 1; }); });
+    var pf = $('#pk-filter');
+    if (pf) {
+      pf.innerHTML = Object.keys(used).length ? '<button class="on" data-t="">הכול</button>' + FS.EVENTS.filter(function (e) { return used[e.id]; }).map(function (e) { return '<button data-t="' + e.id + '">' + e.icon + ' ' + e.name + '</button>'; }).join('') : '';
+      $$('button', pf).forEach(function (b) { b.addEventListener('click', function () { $$('button', pf).forEach(function (x) { x.classList.toggle('on', x === b); }); drawPk(b.dataset.t); }); });
+    }
+    drawPk('');
+    if (BIZ.packagesNote) $('#pk-note').textContent = BIZ.packagesNote;
+    $('#pk-extras').innerHTML = (BIZ.extras || []).length ? '<h3>תוספות</h3><ul>' + BIZ.extras.map(function (x) { var m = String(x).split(/\s+·\s+|\s+-\s+/); return '<li><span>' + esc(m[0]) + '</span>' + (m[1] ? '<b>' + esc(m.slice(1).join(' · ')) + '</b>' : '') + '</li>'; }).join('') + '</ul>' : '';
     $('#faq-list').innerHTML = (BIZ.faq || []).map(function (q, i) { return '<details' + (i ? '' : ' open') + '><summary>' + esc(q[0]) + '</summary><p>' + esc(q[1]) + '</p></details>'; }).join('');
     var ct = [];
     if (BIZ.phone) ct.push('<li>📞 <a href="tel:' + esc(BIZ.phone) + '">' + esc(BIZ.phone) + '</a></li>');
