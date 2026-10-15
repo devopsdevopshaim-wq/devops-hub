@@ -66,7 +66,9 @@
   /* multi-select: the marked photos; edits in batch mode reach all of them */
   FS.state.marked = {};
   FS.marked = function () { return FS.state.photos.filter(function (p) { return FS.state.marked[p.id]; }); };
-  FS.targets = function () { var m = FS.marked(), c = FS.cur(); if (FS.state.batch && m.length > 1 && c && FS.state.marked[c.id]) return m; return c ? [c] : []; };
+  FS.targets = function () { var m = FS.marked(), c = FS.cur(); if (FS.state.batch !== false && m.length > 1 && c && FS.state.marked[c.id]) return m; return c ? [c] : []; };
+  /* the same layer on another page: frame words, magnet words and copied layers share a link */
+  FS.linked = function (q, L) { if (!L || !L.link) return null; for (var i = 0; i < q.doc.layers.length; i++) if (q.doc.layers[i].link === L.link) return q.doc.layers[i]; return null; };
   FS.mmOf = function (d) { if (d.mm) return d.mm; var f = FS.fmt(d.fmt); return f && f.mm ? f.mm : [d.w / 300 * 25.4, d.h / 300 * 25.4]; };
 
   /* the place a photo shows through: the frame's hole, or the whole page */

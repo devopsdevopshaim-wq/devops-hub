@@ -140,7 +140,7 @@
   };
 
   /* ---------- AI styles (image model through the hubs server) ---------- */
-  var KEEP = ' Keep every person recognizable, with the same faces, poses, clothes and composition. High quality, no text, no watermark.';
+  var KEEP = ' IMPORTANT: this is a photo of real people at an event. Keep each person\'s identity: same face shape, features, skin tone, hair, expression and age, so family members recognize them instantly. Keep the same number of people, the same poses, positions and camera framing, and the same aspect ratio. Do not crop, do not add or remove people, no text, no watermark. Highly detailed, professional quality.';
   FS.AI_STYLES = [
     ['3d', 'אנימציה תלת־ממד', '🧸', 'Redraw this photo as a still from a modern 3D animated family movie: soft cinematic light, expressive eyes, smooth stylized characters, rich colours.'],
     ['anime', 'אנימה', '🌸', 'Redraw this photo as a beautiful Japanese anime illustration with clean line art, cel shading and a dreamy background.'],
@@ -164,15 +164,25 @@
     ['purim', 'תחפושות', '🎭', 'Dress every person in this photo in fun, colourful costumes (pirate, princess, astronaut, magician…), festive party background.']
   ];
   function photoB64(p) {
-    var im = FS.img(p.src), k = Math.min(1, 1280 / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k);
-    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    var im = FS.img(p.src), k = Math.min(1, 1536 / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k);
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.92).split(',')[1];
+  }
+  /* the answer is brought back to the original's shape and size (centre crop), so the frame, the faces and the layout stay where they were */
+  function matchShape(res, orig) {
+    var W = orig.naturalWidth, H = orig.naturalHeight, k = Math.min(1, 3000 / Math.max(W, H)); W = Math.round(W * k); H = Math.round(H * k);
+    var s = Math.max(W / res.naturalWidth, H / res.naturalHeight), c = FS.canvas(W, H), x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+    x.drawImage(res, (W - res.naturalWidth * s) / 2, (H - res.naturalHeight * s) / 2, res.naturalWidth * s, res.naturalHeight * s);
+    return new Promise(function (ok) { c.toBlob(function (b) { ok(FS.loadImg(URL.createObjectURL(b))); }, 'image/jpeg', 0.94); });
   }
   FS.restyle = function (p, prompt) {
+    var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight;
+    prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
+    var faces = p.faces ? p.faces.length : 0; if (faces) prompt += ' There are exactly ' + faces + ' faces in the photo; keep all ' + faces + '.';
     return FS.askServer({ action: 'restyle', prompt: prompt, image: photoB64(p), mime: 'image/jpeg' }).then(function (r) {
       if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
       var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
       return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
-    }).then(function (im) {
+    }).then(function (res) { return matchShape(res, orig); }).then(function (im) {
       if (!p.origSrc) p.origSrc = p.src;
       p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null;
       FS.fitPhoto(p.doc, im); FS.snap(p); return p;
@@ -210,7 +220,7 @@
   function runAI(prompt, label) {
     var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
     var done = 0, chain = Promise.resolve(), failed = null;
-    list.forEach(function (p) { chain = chain.then(function () { FS.busy('🤖 ' + label + ' · ' + (done + 1) + '/' + list.length + ' (עד דקה לתמונה)'); return FS.restyle(p, prompt).then(function () { done++; }).catch(function (e) { failed = e; }); }); });
+    list.forEach(function (p) { chain = chain.then(function () { FS.busy('🤖 ' + label + ' · ' + (done + 1) + '/' + list.length + ' (עד דקה לתמונה)'); return FS.findFaces(p, true).catch(function () {}).then(function () { return FS.restyle(p, prompt); }).then(function () { done++; }).catch(function (e) { failed = e; }); }); });
     chain.then(function () {
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip();
       if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות. "החזרת המקור" מבטל.', 4000);
