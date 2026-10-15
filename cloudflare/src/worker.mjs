@@ -39,7 +39,7 @@ const ROUTES = {
   'hasadna-guide': { svc: 'agents', kind: 'guide', max: 20000, free: true },
   'hasadna-status': { svc: 'agents', kind: 'status', max: 1000, free: true, method: 'GET' },
   // JARVIS, the personal assistant with the talking face (jarvis-web): the first AI key that answers
-  // HeyGen live video avatar: the page asks here for a short-lived session token (the API key never leaves the server)
+  // live video avatar (LiveAvatar): the page asks here for a session and for Hebrew speech (the API key never leaves the server)
   'hasadna-heygen': { svc: 'agents', kind: 'heygen', max: 2000, free: true },
   'hasadna-jarvis': { svc: 'agents', kind: 'jarvis', max: 12000, free: true },
   // the clients' own mailboxes (Gmail); the callback is where Google sends the person back after they agree
@@ -195,19 +195,50 @@ export class State extends DurableObject {
         const w = sessionOf(st.sd, hb.token);
         // a video minute costs money: only signed-in people, a few sessions an hour each
         if (!w) return reply({ ok: true, available: false, reason: 'signin' });
-        // HeyGen's old streaming API is retired; live avatars now run on LiveAvatar (its own key and credits). Until that integration is wired the button stays hidden.
-        if (!env.LIVEAVATAR_API_KEY) return reply({ ok: true, available: false, reason: 'off' });
-        if (hb.action !== 'token') return reply({ ok: true, available: true, avatar: env.HEYGEN_AVATAR_ID || '', voice: env.HEYGEN_VOICE_ID || '', language: env.HEYGEN_LANG || 'he', minutes: 5 });
+        // live avatars run on LiveAvatar (its own key and credits, LITE mode): the server mints the session and speaks Hebrew through Gemini
+        // TTS; the page only gets the room credentials and streams the audio to the avatar. The key never reaches a page.
+        if (!env.LIVEAVATAR_API_KEY || !env.GEMINI_API_KEY) return reply({ ok: true, available: false, reason: 'off' });
+        const LA = 'https://api.liveavatar.com', KEY = { 'X-API-KEY': env.LIVEAVATAR_API_KEY, 'Content-Type': 'application/json' };
+        if (hb.action === 'speak') {
+          const text = String(hb.text || '').replace(/\s+/g, ' ').trim().slice(0, 700);
+          if (!text) return reply({ ok: false, error: 'empty' }, 400);
+          st.sd.heygenSay = st.sd.heygenSay || {};
+          const sk = w.email, tn = Date.now(), sa = (st.sd.heygenSay[sk] || []).filter((x) => tn - x < 60000);
+          if (sa.length >= 12) return reply({ ok: false, error: 'limit' }, 429);
+          sa.push(tn); st.sd.heygenSay[sk] = sa; await this.save(st);
+          let tr, tj = {};
+          try {
+            tr = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + (env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts') + ':generateContent', { method: 'POST', headers: { 'x-goog-api-key': env.GEMINI_API_KEY, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(25000),
+              body: JSON.stringify({ contents: [{ parts: [{ text: 'אמרי בעברית טבעית, בחום ובקצב רגיל של שיחה: ' + text }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: env.GEMINI_TTS_VOICE || 'Kore' } } } } }) });
+            tj = await tr.json().catch(() => ({}));
+          } catch (e) { tr = null; }
+          const part = tj && tj.candidates && tj.candidates[0] && tj.candidates[0].content && tj.candidates[0].content.parts && tj.candidates[0].content.parts.find((x) => x.inlineData);
+          if (!part) return reply({ ok: false, error: 'tts-' + (tr ? tr.status : 'net') });
+          return reply({ ok: true, audio: part.inlineData.data, rate: 24000 });
+        }
+        if (hb.action === 'stop') {
+          if (hb.session && /^[\w-]{20,}$/.test(String(hb.session))) { try { await fetch(LA + '/v1/sessions/stop', { method: 'POST', headers: { 'X-API-KEY': env.LIVEAVATAR_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: String(hb.session) }), signal: AbortSignal.timeout(8000) }); } catch (e) { /* the session times out by itself */ } }
+          return reply({ ok: true });
+        }
+        if (hb.action !== 'start') return reply({ ok: true, available: true, minutes: 5 });
         st.sd.heygenUse = st.sd.heygenUse || {};
         const k = w.email, nowT = Date.now(), arr = (st.sd.heygenUse[k] || []).filter((x) => nowT - x < 3600000);
         if (arr.length >= 6) return reply({ ok: false, error: 'limit' }, 429);
-        arr.push(nowT); st.sd.heygenUse[k] = arr;
+        arr.push(nowT); st.sd.heygenUse[k] = arr; await this.save(st);
+        const sandbox = /^(1|true|yes)$/i.test(String(env.LIVEAVATAR_SANDBOX || ''));
+        const avatar = sandbox ? 'dd73ea75-1218-4ef3-92ce-606d5f7fbc0a' : (env.LIVEAVATAR_AVATAR_ID || '3b87f156-f007-496d-aaea-1d5b75795444');
         let r, j = {};
-        try { r = await fetch('https://api.heygen.com/v1/streaming.create_token', { method: 'POST', headers: { 'x-api-key': env.HEYGEN_API_KEY, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(15000) }); j = await r.json().catch(() => ({})); } catch (e) { r = null; }
-        await this.save(st);
-        const tok = j && j.data && j.data.token;
-        if (!tok) return reply({ ok: false, error: 'heygen-' + (r ? r.status : 'net') });
-        return reply({ ok: true, token: tok, avatar: env.HEYGEN_AVATAR_ID || '', voice: env.HEYGEN_VOICE_ID || '', language: env.HEYGEN_LANG || 'he' });
+        try {
+          r = await fetch(LA + '/v1/sessions/token', { method: 'POST', headers: KEY, signal: AbortSignal.timeout(15000), body: JSON.stringify({ mode: 'LITE', avatar_id: avatar, is_sandbox: sandbox, video_settings: { quality: 'high', encoding: 'H264' }, max_session_duration: 300 }) });
+          j = await r.json().catch(() => ({}));
+        } catch (e) { r = null; }
+        const d = (j && j.data) || {}, tok = d.session_token || d.token;
+        if (!tok) return reply({ ok: false, error: 'token-' + (r ? r.status : 'net') + (j && j.code ? '-' + j.code : '') });
+        let r2, j2 = {};
+        try { r2 = await fetch(LA + '/v1/sessions/start', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(25000) }); j2 = await r2.json().catch(() => ({})); } catch (e) { r2 = null; }
+        const s2 = (j2 && j2.data) || {};
+        if (!s2.livekit_url || !s2.livekit_client_token || !s2.ws_url) return reply({ ok: false, error: 'start-' + (r2 ? r2.status : 'net') + (j2 && j2.code ? '-' + j2.code : '') });
+        return reply({ ok: true, session: s2.session_id, url: s2.livekit_url, clientToken: s2.livekit_client_token, ws: s2.ws_url, seconds: s2.max_session_duration || 300 });
       }
       if (rt.kind === 'jarvis') {
         const { sid, text } = jarvisInput(body);

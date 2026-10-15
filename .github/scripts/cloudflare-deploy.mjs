@@ -30,15 +30,16 @@ const secrets = {
   BREVO_API_KEY: (process.env.BREVO_API_KEY || '').trim(), RESEND_API_KEY: (process.env.RESEND_API_KEY || '').trim(), MAIL_FROM: (process.env.MAIL_FROM || '').trim(),
   // the clients' mailboxes (Gmail): a Google OAuth client; MAIL_KEY encrypts the stored tokens (derived from the Google secret when absent)
   GOOGLE_CLIENT_ID: label('GOOGLE_CLIENT_ID', '[\\w.-]+\\.apps\\.googleusercontent\\.com') || (process.env.GOOGLE_CLIENT_ID || '').trim(), GOOGLE_CLIENT_SECRET: (process.env.GOOGLE_CLIENT_SECRET || label('GOOGLE_CLIENT_SECRET', 'GOCSPX-[\\w-]{20,60}')).trim(), MAIL_KEY: (process.env.MAIL_KEY || '').trim(),
-  // HeyGen live video avatar for Maya (the key never reaches a page; the server mints short-lived session tokens)
-  HEYGEN_API_KEY: (process.env.HEYGEN_API_KEY || '').trim(), HEYGEN_AVATAR_ID: (process.env.HEYGEN_AVATAR_ID || '').trim(), HEYGEN_VOICE_ID: (process.env.HEYGEN_VOICE_ID || '').trim()
+  // LiveAvatar live video avatar for Maya (the key never reaches a page; the server mints sessions). A pasted label line is tolerated: the last long token wins.
+  LIVEAVATAR_API_KEY: ((process.env.LIVEAVATAR_API_KEY || '').split(/\s+/).filter((t) => /^[A-Za-z0-9_-]{20,}$/.test(t)).pop() || ''),
+  LIVEAVATAR_AVATAR_ID: (process.env.LIVEAVATAR_AVATAR_ID || '').trim(), LIVEAVATAR_SANDBOX: (process.env.LIVEAVATAR_SANDBOX || '').trim()
 };
 if (ADMIN_PASSWORD.length >= 8) {
   // the same secret gives the same hash on every deploy, so a deploy does not look like a new password (which would sign the admin out everywhere)
   const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-v1').digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
-for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.HEYGEN_API_KEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 
 const notes = [];
 const note = (s) => { notes.push(s); console.log(s); };
@@ -72,7 +73,7 @@ if (Object.keys(bulk).length) {
 if (!secrets.ADMIN_PASSWORD_HASH) note('- ⚠️ אין ADMIN_PASSWORD (לפחות 8 תווים): כניסת המנהל תהיה רק דרך סיסמה ראשונית במייל');
 if (!secrets.ANTHROPIC_API_KEY) note('- ℹ️ אין ANTHROPIC_API_KEY: מאיה תענה רק בהודעה כללית (היא צריכה מפתח Claude עם יתרה)');
 if (!secrets.GEMINI_API_KEY) note('- ℹ️ אין GEMINI_API_KEY: ה־AI של האתרים והקומיקס יעבדו במצב המקומי בלבד');
-if (!secrets.HEYGEN_API_KEY) note('- ℹ️ אין HEYGEN_API_KEY: מאיה בלי שיחת וידאו חיה (HeyGen)');
+if (!secrets.LIVEAVATAR_API_KEY) note('- ℹ️ אין LIVEAVATAR_API_KEY: מאיה בלי שיחת וידאו חיה (LiveAvatar)');
 if (!secrets.GOOGLE_CLIENT_ID || !secrets.GOOGLE_CLIENT_SECRET) note('- ℹ️ אין GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET: חיבור תיבות המייל של הלקוחות (Gmail) עוד לא פעיל');
 if (!secrets.BREVO_API_KEY && !secrets.RESEND_API_KEY) note('- ⚠️ אין BREVO_API_KEY או RESEND_API_KEY: מיילים (סיסמה ראשונית, התראות) לא יישלחו');
 
