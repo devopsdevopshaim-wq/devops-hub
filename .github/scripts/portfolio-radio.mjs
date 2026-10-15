@@ -38,7 +38,10 @@ const STYLES = [
   ['reggae', 'רגאיי', ['reggae', 'roots reggae', 'dub'], []],
   ['rock', 'רוק', ['rock', 'classic rock', 'alternative rock'], []],
   ['80s', 'שנות ה־80', ['80s', '80er', 'eighties'], [soma('u80s', 'Underground 80s')]],
-  ['meditation', 'מדיטציה', ['meditation', 'relaxation', 'spa', 'new age'], []]
+  ['meditation', 'מדיטציה', ['meditation', 'relaxation', 'spa', 'new age'], []],
+  // all of Israel's radio, news and talk included (opts.any skips the "music only" filter); and Jewish prayer, cantorial and piyyut music
+  ['ilradio', 'תחנות רדיו ישראליות', ['israel', 'israeli', 'hebrew'], [], /./, null, { any: true, keep: 14, try: 40 }],
+  ['prayer', 'תפילות ופיוטים', ['jewish', 'hasidic', 'chazzanut', 'cantorial', 'piyyut', 'jewish music', 'torah', 'shabbat', 'synagogue', 'religious'], [], /kol ?chai|קול ?חי|ברמה|barama|jewish|יהוד|חסיד|chassid|hasid|tora|תור|שבת|shabbat|פיוט|חזנות|תפיל|tefil|prayer|רבנ|הלכה|yeshiv|ישיב|breslov|ברסלב|chabad|חב״?ד|קודש/, null, { any: true, keep: 10, try: 40 }]
 ];
 
 const SERVERS = ['de1.api.radio-browser.info', 'de2.api.radio-browser.info', 'fi1.api.radio-browser.info', 'nl1.api.radio-browser.info', 'at1.api.radio-browser.info'];
@@ -120,12 +123,12 @@ async function works(st) {
   }
 }
 
-async function pick(list) {
+async function pick(list, keep = KEEP, tryN = TRY) {
   const ok = [];
-  for (let i = 0; i < list.length && ok.length < KEEP && i < TRY; i += 6) {
+  for (let i = 0; i < list.length && ok.length < keep && i < tryN; i += 6) {
     const batch = list.slice(i, i + 6);
     const res = await Promise.all(batch.map(works));
-    batch.forEach((s, k) => { if (res[k] && ok.length < KEEP) ok.push(s); });
+    batch.forEach((s, k) => { if (res[k] && ok.length < keep) ok.push(s); });
   }
   return ok;
 }
@@ -134,17 +137,17 @@ let old = { genres: [] };
 try { old = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch {}
 const used = new Set(); // a station shows up under one style only
 const genres = [];
-for (const [id, style, tags, extra, ilRe, not] of STYLES) {
+for (const [id, style, tags, extra, ilRe, not, opts = {}] of STYLES) {
   let list = [...extra];
   if (ilRe) list = list.concat(await israel(ilRe));
   list = list.concat(await candidates(tags));
-  list = list.filter((s) => !NOT_MUSIC.test((s.tags || '') + ' ' + s.name.toLowerCase()) && !(not && not.test((s.tags || '') + ' ' + s.name.toLowerCase())));
+  list = list.filter((s) => (opts.any || !NOT_MUSIC.test((s.tags || '') + ' ' + s.name.toLowerCase())) && !(not && not.test((s.tags || '') + ' ' + s.name.toLowerCase())));
   const fresh = list.filter((s) => !used.has(s.url));
-  let ok = await pick(fresh.length >= 3 ? fresh : list);
+  let ok = await pick(fresh.length >= 3 ? fresh : list, opts.keep || KEEP, opts.try || TRY);
   ok.forEach((s) => used.add(s.url));
   const prev = (old.genres || []).find((g) => g.id === id);
   const stations = ok.length ? ok : (prev ? prev.stations : []);
-  console.log(`${style} (${id}): ${ok.length} working of ${Math.min(list.length, TRY)} checked${ok.length ? '' : prev ? " — kept yesterday's" : ''}: ${ok.map((s) => s.name).join(' | ')}`);
+  console.log(`${style} (${id}): ${ok.length} working of ${Math.min(list.length, opts.try || TRY)} checked${ok.length ? '' : prev ? " — kept yesterday's" : ''}: ${ok.map((s) => s.name).join(' | ')}`);
   if (stations.length) genres.push({ id, style, stations: stations.map(({ tags, ...s }) => s) });
 }
 if (!genres.length) { console.log('::warning::no working stations at all; keeping the old file'); process.exit(0); }
