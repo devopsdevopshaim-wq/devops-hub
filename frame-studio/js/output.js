@@ -179,10 +179,14 @@
   ['paper', 'layout', 'margin'].forEach(function (k) { if (FS.prefs['print_' + k]) $('#' + k).value = FS.prefs['print_' + k]; $('#' + k).addEventListener('change', function () { FS.prefs['print_' + k] = this.value; FS.savePrefs(); }); });
 
   function rotated(c) { var r = FS.canvas(c.height, c.width), x = r.getContext('2d'); x.translate(r.width, 0); x.rotate(Math.PI / 2); x.drawImage(c, 0, 0); return r; }
-  FS.printNow = function () {
-    if (!need()) return;
-    var paper = PAPERS.filter(function (p) { return p[0] === $('#paper').value; })[0], layout = $('#layout').value, mg = Number($('#margin').value);
-    var copies = FS.clamp(Number($('#copies').value) || 1, 1, 50), list = $('#print-all').checked ? S.photos.slice() : [FS.cur()], marks = $('#print-marks').checked;
+  FS.printNow = function (job) {
+    if (!job && !need()) return;
+    job = job || {};
+    var paper = PAPERS.filter(function (p) { return p[0] === (job.paper || $('#paper').value); })[0], layout = job.layout || $('#layout').value, mg = job.margin != null ? job.margin : Number($('#margin').value);
+    var copies = job.copies || FS.clamp(Number($('#copies').value) || 1, 1, 50), list = job.list || ($('#print-all').checked ? S.photos.slice() : [FS.cur()]), marks = job.marks != null ? job.marks : $('#print-marks').checked;
+    if (!job.list && $('#print-ok').checked) list = list.filter(function (p) { return !p.quality || p.quality.ok; });
+    if (!list.length) { FS.toast('אין תמונות להדפסה'); return; }
+    FS.emit('printed', list.length * copies);
     FS.busy('מכין להדפסה…');
     ready().then(function () {
       var imgs = [];
@@ -195,6 +199,8 @@
       else if (layout === '2') { if (ph >= pw) grid(1, 2); else grid(2, 1); }
       else if (layout === '4') grid(2, 2);
       else if (layout === '9') grid(3, 3);
+      else if (layout === '6') { if (ph >= pw) grid(2, 3); else grid(3, 2); }
+      else if (layout === '1') grid(1, 1);
       else { /* as many as fit at their true size */
         var m0 = imgs[0].mm, a = Math.min(m0[0], m0[1]), b = Math.max(m0[0], m0[1]), aw = pw - mg * 2, ah = ph - mg * 2, gap = mg ? 2 : 0;
         var o1 = Math.floor((aw + gap) / (a + gap)) * Math.floor((ah + gap) / (b + gap)), o2 = Math.floor((aw + gap) / (b + gap)) * Math.floor((ah + gap) / (a + gap));

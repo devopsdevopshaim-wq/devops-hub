@@ -13,6 +13,7 @@
     vision.catch(function () { vision = null; });
     return vision;
   }
+  FS.loadVision = loadVision;
   function getSegmenter() {
     if (segmenter) return segmenter;
     segmenter = loadVision().then(function (v) {
@@ -60,33 +61,39 @@
   $('#file-bg').addEventListener('change', function () { var f = this.files[0]; this.value = ''; if (!f) return; FS.fileToDataURL(f).then(FS.loadImg).then(function (im) { setBg('image', { src: im.src }); }); });
 
   /* ---------- faces ---------- */
-  FS.findFaces = function (p) {
+  FS.findFaces = function (p, quiet) {
     if (p.faces) return Promise.resolve(p.faces);
-    FS.busy('מחפש פנים…');
+    if (!quiet) FS.busy('מחפש פנים…');
     return getFaces().then(function (det) {
       var im = FS.img(p.src), c = small(im, 1600), r = det.detect(c), k = c.k;
       p.faces = (r.detections || []).map(function (d) {
         var b = d.boundingBox, kp = (d.keypoints || []).map(function (q) { return { x: q.x * c.width / k, y: q.y * c.height / k }; });
         return { x: b.originX / k, y: b.originY / k, w: b.width / k, h: b.height / k, kp: kp };
       });
-      FS.busy(); if (!p.faces.length) FS.toast('לא נמצאו פנים. הזיהוי עובד הכי טוב על פנים קרובות וברורות.', 4500);
+      if (!quiet) { FS.busy(); if (!p.faces.length) FS.toast('לא נמצאו פנים. הזיהוי עובד הכי טוב על פנים קרובות וברורות.', 4500); }
       return p.faces;
-    }).catch(function (e) { fail(e); throw e; });
+    }).catch(function (e) { if (quiet) return []; fail(e); throw e; });
   };
-  $('#smart-fit').addEventListener('click', function () {
-    var p = FS.cur(); if (!p) return;
-    FS.findFaces(p).then(function (faces) {
-      if (!faces.length) return;
+  /* place the faces in the frame's window: zoom so they read well, centre them, keep the window covered */
+  FS.smartFit = function (p, quiet) {
+    return FS.findFaces(p, quiet).then(function (faces) {
+      if (!faces.length) return 0;
       var d = p.doc, im = FS.img(p.src), H = FS.hole(d), x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
       FS.fitPhoto(d, im);
       faces.forEach(function (f) { [[f.x, f.y], [f.x + f.w, f.y + f.h]].forEach(function (q) { var t = FS.imgToDoc(d, im, q[0], q[1]); x0 = Math.min(x0, t.x); y0 = Math.min(y0, t.y); x1 = Math.max(x1, t.x); y1 = Math.max(y1, t.y); }); });
-      var fw = x1 - x0; if (fw > H.w * 0.75) { var k = H.w * 0.75 / fw; } else if (faces.length === 1 && fw < H.w * 0.22) { k = Math.min(2.2, H.w * 0.3 / fw); } else k = 1;
-      d.photo.s *= k; var cx = H.x + H.w / 2 + ((x0 + x1) / 2 - (H.x + H.w / 2)) * k, cy = H.y + H.h / 2 + ((y0 + y1) / 2 - (H.y + H.h / 2)) * k;
-      d.photo.x -= (cx - (H.x + H.w / 2)) * 1 + 0; d.photo.y -= (cy - (H.y + H.h * 0.38));
+      var fw = x1 - x0, k = fw > H.w * 0.75 ? H.w * 0.75 / fw : faces.length === 1 && fw < H.w * 0.22 ? Math.min(2.2, H.w * 0.3 / fw) : 1;
+      var hx = H.x + H.w / 2, hy = H.y + H.h / 2;
+      d.photo.s *= k; d.photo.x = hx + (d.photo.x - hx) * k; d.photo.y = hy + (d.photo.y - hy) * k;
+      var fcx = hx + ((x0 + x1) / 2 - hx) * k, fcy = hy + ((y0 + y1) / 2 - hy) * k;
+      d.photo.x -= fcx - hx; d.photo.y -= fcy - (H.y + H.h * 0.4);
       var rot = Math.abs(Math.round(d.photo.r / 90)) % 2, hw = (rot ? im.naturalHeight : im.naturalWidth) * d.photo.s / 2, hh = (rot ? im.naturalWidth : im.naturalHeight) * d.photo.s / 2;
       d.photo.x = FS.clamp(d.photo.x, H.x + H.w - hw, H.x + hw); d.photo.y = FS.clamp(d.photo.y, H.y + H.h - hh, H.y + hh);
-      FS.changed(); FS.toast('🎯 ' + faces.length + ' פנים במרכז החלון');
+      return faces.length;
     });
+  };
+  $('#smart-fit').addEventListener('click', function () {
+    var p = FS.cur(); if (!p) return;
+    FS.smartFit(p).then(function (n) { if (n) { FS.changed(); FS.toast('🎯 ' + n + ' פנים במרכז החלון'); } });
   });
   $('#face-blur').addEventListener('click', function () {
     var p = FS.cur(); if (!p) return;
