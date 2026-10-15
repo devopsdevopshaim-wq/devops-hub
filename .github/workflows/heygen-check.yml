@@ -1,4 +1,4 @@
-# One-off: LiveAvatar key check and docs for events, voices and the web SDK.
+# One-off: LiveAvatar languages, avatars and session/token API docs.
 name: LiveAvatar docs
 on: workflow_dispatch
 jobs:
@@ -10,16 +10,27 @@ jobs:
           RAW: ${{ secrets.LIVEAVATAR_API_KEY }}
         run: |
           K=$(printf %s "$RAW" | tr -s ' \t\r\n' '\n' | grep -E '^[A-Za-z0-9_-]{20,}$' | tail -1)
-          echo "key length ${#K}"
-          echo "=== public avatars"; curl -s "https://api.liveavatar.com/v1/avatars/public" -H "X-API-KEY: $K" -w "\nHTTP %{http_code}\n" | head -c 1500
-          echo; echo "=== user avatars"; curl -s "https://api.liveavatar.com/v1/avatars" -H "X-API-KEY: $K" -w "\nHTTP %{http_code}\n" | head -c 1200
-          echo; echo "=== voices"; curl -s "https://api.liveavatar.com/v1/voices?page_size=100" -H "X-API-KEY: $K" -w "\nHTTP %{http_code}\n" | python3 -c "
-          import sys,json,re
-          t=sys.stdin.read()
-          print(t[:300])
-          print('hebrew-ish:', re.findall(r'[^{}]{0,80}(?:he-IL|\"he\"|Hebrew)[^{}]{0,80}', t)[:6])
+          curl -s "https://api.liveavatar.com/v1/voices?page_size=100" -H "X-API-KEY: $K" > v.json
+          python3 - <<'PY'
+          import json,collections
+          d=json.load(open('v.json'))['data']['results']
+          c=collections.Counter(v['language'] for v in d)
+          print('voice languages', dict(c))
+          for v in d:
+              if v['language'] in ('he','iw','he-IL','multi','multilingual') : print(v)
+          PY
+          for pg in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+            curl -s "https://api.liveavatar.com/v1/avatars/public?page=$pg&page_size=20" -H "X-API-KEY: $K"
+            echo
+          done | python3 -c "
+          import sys,json
+          for l in sys.stdin:
+              l=l.strip()
+              if not l: continue
+              for a in json.loads(l)['data']['results']: print(a['id'],'|',a['name'],'|',a['type'],'|',a['default_voice']['name'] if a.get('default_voice') else '-')
           "
-          for p in docs/full-mode/events docs/full-mode/configuration docs/core-concepts/voices; do
-            echo "=================== $p"; curl -sL "https://docs.liveavatar.com/$p.md" | head -c 6500; echo
+          curl -sL https://docs.liveavatar.com/llms.txt | head -c 6000
+          for p in docs/full-mode/quickstart docs/full-mode/web-sdk docs/full-mode/custom-tts docs/full-mode/voice-settings; do
+            echo "=================== $p"; curl -sL "https://docs.liveavatar.com/$p.md" | head -c 5000; echo
           done
-          echo "=================== SDK readme"; curl -sL https://raw.githubusercontent.com/heygen-com/liveavatar-web-sdk/main/README.md | head -c 4500
+          echo "=================== openapi token"; curl -sL "https://docs.liveavatar.com/api-reference/sessions/create-session-token.md" | head -c 5000
