@@ -32,6 +32,7 @@
   $('#ia-designs').addEventListener('click', function () { close(function () { $('#my-designs-btn').click(); }); });
   $('#ia-demo').addEventListener('click', function () { close(function () { $('#demo').click(); }); });
   $('#ia-skip').addEventListener('click', function () { close(); });
+  $('#ia-biz').addEventListener('click', function () { close(function () { FS.openBiz(); }); });
   document.addEventListener('keydown', function k(e) { if (closed) return document.removeEventListener('keydown', k); if (e.key === 'Enter' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); close(); } if (e.key === 'Escape') close(); });
   ['dragenter', 'drop'].forEach(function (ev) { document.addEventListener(ev, function () { close(); }, { once: true }); });
 

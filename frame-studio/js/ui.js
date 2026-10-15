@@ -142,6 +142,7 @@
       if (ref) FS.fitPhoto(d, FS.img(p.src));
       if (p !== FS.cur()) { p.cache = {}; FS.snap(p); }
     });
+    FS.targets().forEach(function (p) { if (FS.applyCredit) FS.applyCredit(p); });
     FS.changed(); if (FS.targets().length > 1) FS.refreshStrip();
   }
   FS.setFormat = setFormat;
