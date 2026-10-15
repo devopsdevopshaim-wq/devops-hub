@@ -181,10 +181,12 @@
     var mo = new MutationObserver(function () { $$('.pk:not(.reveal), .faq details:not(.reveal)').forEach(function (el) { el.classList.add('reveal'); ro.observe(el); }); }); mo.observe(document.body, { childList: true, subtree: true });
   }
 
-  fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; }).then(function (b) {
+  var bizLoaded = fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; }).then(function (b) {
     Object.assign(BIZ, b || {}); fill();
+    /* the magnets drawn on this page carry the published details, not whatever this browser saved */
+    FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}) });
   });
-  fontsFor(['Amatic SC', 'Bellefair', 'Suez One', 'Secular One', 'Varela Round', 'Frank Ruhl Libre', 'Rubik', 'David Libre']).then(function () {
+  Promise.all([bizLoaded, fontsFor(['Amatic SC', 'Bellefair', 'Suez One', 'Secular One', 'Varela Round', 'Frank Ruhl Libre', 'Rubik', 'David Libre', 'Heebo'])]).then(function () {
     hero(); galleryFilter(); gallery(''); designer();
   });
 })();

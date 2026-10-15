@@ -44,7 +44,7 @@
       <button class="ia" id="ia-project"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg><b>המשך פרויקט</b><small>קובץ ‎.fstudio.json</small></button>
       <button class="ia" id="ia-designs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><b>העיצובים שלי</b><small>שמורים בדפדפן הזה</small></button>
     </div>
-    <div class="intro-more"><button class="link" id="ia-demo">לנסות עם תמונה לדוגמה</button><span>·</span><a class="link" href="./">לאתר העסק</a><span>·</span><button class="link" id="ia-skip">ישר לסטודיו <kbd>Enter</kbd></button></div>
+    <div class="intro-more"><button class="link" id="ia-demo">לנסות עם תמונה לדוגמה</button><span>·</span><button class="link" id="ia-biz">פרטי העסק</button><span>·</span><a class="link" href="./">לאתר העסק</a><span>·</span><button class="link" id="ia-skip">ישר לסטודיו <kbd>Enter</kbd></button></div>
     <ul class="intro-stats" id="intro-stats"></ul>
   </div>
 </div>
@@ -60,6 +60,7 @@
       <button class="ic" id="redo" title="חזרה (Ctrl+Y)" disabled>↷</button>
       <button class="ic" id="compare" title="החזק כדי לראות את המקור">◐ מקור</button>
       <select id="fmt" title="גודל הדף" aria-label="גודל הדף"></select>
+      <button class="btn ghost" id="biz-btn" title="שם, טלפון ומה שמודפס על המגנט">🏷️ פרטי העסק</button>
       <button class="btn ghost" id="install" hidden>⬇ התקנה כתוכנה</button>
       <button class="btn" id="quick-print">🖨️ הדפסה</button>
       <button class="btn primary" id="quick-save">💾 שמירה</button>
@@ -93,6 +94,7 @@
       <div class="field"><label>גופן</label><select id="ev-font"></select></div>
       <div class="row2"><label class="btn">🏷️ לוגו<input type="file" id="ev-logo" accept="image/*" hidden /></label><button class="btn" id="ev-logo-colors" disabled>🎨 צבעים מהלוגו</button></div>
       <div class="chips" id="logo-palette"></div>
+      <div class="credit-box"><label class="check"><input type="checkbox" id="ev-credit" /> <b>הפרטים שלי על המגנט</b></label><p class="hint" id="ev-credit-text"></p><button class="btn small" id="ev-credit-edit">✏️ עריכת הפרטים והעיצוב</button></div>
       <label class="check"><input type="checkbox" id="ev-on" /> <b>תבנית פעילה:</b> כל תמונה חדשה נכנסת לתבנית</label>
       <label class="check"><input type="checkbox" id="ev-smart" checked /> מרכוז אוטומטי לפי הפנים</label>
       <div class="row2"><button class="btn primary" id="ev-apply">✔ להחיל על התמונה / המסומנות</button><button class="btn" id="ev-apply-all">להחיל על כולן</button></div>
@@ -364,6 +366,7 @@
 <script src="js/event-studio.js"></script>
 <script src="js/styles.js"></script>
 <script src="js/library.js"></script>
+<script src="js/business.js"></script>
 <script src="js/intro.js"></script>
 <script type="module" src="js/fridge3d.js"></script>
 <script>

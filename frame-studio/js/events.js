@@ -45,8 +45,11 @@
     if (o.names) lines.push({ text: o.names, size: m * (font === 'Amatic SC' ? 0.1 : 0.072), font: font, weight: 700 });
     var sub = [FS.fmtDate(o.date), o.hashtag ? '#' + String(o.hashtag).replace(/^#/, '') : ''].filter(Boolean).join('   ·   ');
     if (sub) lines.push({ text: sub, size: m * 0.038, font: 'Bellefair', weight: 400 });
+    /* leave room at the bottom for the business line */
+    var cr = FS.BIZ && FS.BIZ.credit, reserve = cr && cr.on && FS.creditText() && /bottom|corner/.test(cr.pos || 'bottom') ? m * (cr.size || 3.2) / 100 * 1.7 : 0;
     var inBand = band > m * 0.16, total = lines.reduce(function (s, l) { return s + l.size * 1.25; }, 0);
-    var y = inBand ? H.y + H.h + (band - total) / 2 : d.h - total - m * 0.06;
+    if (inBand && total > band - reserve) { var shrink = Math.max(0.6, (band - reserve) / total); lines.forEach(function (l) { l.size *= shrink; }); total *= shrink; }
+    var y = inBand ? H.y + H.h + (band - reserve - total) / 2 : d.h - total - m * 0.06 - reserve;
     lines.forEach(function (l, li) {
       var size = Math.round(Math.min(l.size, inBand ? band * 0.55 : l.size));
       d.layers.push({ id: FS.uid(), link: 'mg' + li, type: 'text', magnet: true, text: l.text, x: d.w / 2, y: y + size * 0.62, size: size, font: l.font, weight: l.weight,
@@ -98,6 +101,46 @@
     }
     return c;
   };
+  /* ---------- the business line printed on every magnet (name, phone, Instagram…) ---------- */
+  FS.BIZ = { name: 'פריים מגנטים', owner: '', phone: '', whatsapp: '', email: '', instagram: '', facebook: '', website: '', tagline: '', areas: '', hours: '',
+    credit: { on: true, items: ['name', 'phone'], pos: 'bottom', size: 3.2, color: 'auto', font: 'Heebo', opacity: 0.85 } };
+  try { var savedBiz = JSON.parse(localStorage.getItem('frame-studio-biz') || 'null'); if (savedBiz) FS.BIZ = Object.assign({}, FS.BIZ, savedBiz, { credit: Object.assign({}, FS.BIZ.credit, savedBiz.credit || {}) }); } catch (e) { /* private mode */ }
+  FS.saveBiz = function () { try { localStorage.setItem('frame-studio-biz', JSON.stringify(FS.BIZ)); } catch (e) { /* private mode */ } };
+  function handle(u) { u = String(u || '').trim(); if (!u) return ''; var m = u.match(/instagram\.com\/([^/?#]+)/i); return '@' + (m ? m[1] : u.replace(/^@/, '')); }
+  FS.creditText = function (b) {
+    b = b || FS.BIZ; var c = b.credit || {}, parts = [];
+    (c.items || []).forEach(function (k) {
+      if (k === 'name' && b.name) parts.push(b.name);
+      else if (k === 'owner' && b.owner) parts.push(b.owner);
+      else if (k === 'phone' && b.phone) parts.push(b.phone);
+      else if (k === 'instagram' && b.instagram) parts.push(handle(b.instagram));
+      else if (k === 'website' && b.website) parts.push(String(b.website).replace(/^https?:\/\//, '').replace(/\/$/, ''));
+      else if (k === 'tagline' && b.tagline) parts.push(b.tagline);
+    });
+    return parts.join('  ·  ');
+  };
+  /* (re)place the credit on a page: a normal, editable text layer linked as "biz" */
+  FS.applyCredit = function (p, b) {
+    b = b || FS.BIZ; var c = b.credit || {}, d = p.doc;
+    d.layers = d.layers.filter(function (L) { return L.link !== 'biz'; });
+    var text = FS.creditText(b); if (!c.on || !text) return;
+    var m = Math.min(d.w, d.h), size = Math.max(10, Math.round(m * (c.size || 3.2) / 100)), H = FS.hole(d), pos = c.pos || 'bottom';
+    while (FS.layerBox({ type: 'text', text: text, size: size, font: c.font || 'Heebo', weight: 500, spacing: 1 }).w > (c.pos === 'side' ? d.h : d.w) * 0.94 && size > 8) size--;
+    var L = { id: FS.uid(), link: 'biz', credit: true, type: 'text', text: text, size: size, font: c.font || 'Heebo', weight: 500, r: 0, opacity: c.opacity == null ? 0.85 : c.opacity, strokeW: 0, stroke: '#000000', align: 'center', spacing: 1 };
+    var pad = size * 0.8;
+    if (pos === 'top') { L.x = d.w / 2; L.y = pad; }
+    else if (pos === 'corner-l') { L.x = pad * 0.6 + FS.layerBox(L).w / 2; L.y = d.h - pad; }
+    else if (pos === 'corner-r') { L.x = d.w - pad * 0.6 - FS.layerBox(L).w / 2; L.y = d.h - pad; }
+    else if (pos === 'side') { L.x = d.w - pad; L.y = d.h / 2; L.r = -90; }
+    else { L.x = d.w / 2; L.y = d.h - pad; }
+    var onBand = pos === 'side' ? H.x + H.w < L.x - size * 0.6 : pos === 'top' ? H.y > L.y + size * 0.6 : H.y + H.h < L.y - size * 0.6;
+    var fid = d.frame && d.frame.id, darkFrame = /neon|film|stars/.test(fid || '') || (d.frame && d.frame.kind === 'gen' && d.frame.color && FS.hexRgb(d.frame.color).reduce(function (a, v) { return a + v; }, 0) < 240 && /simple|mat|gold/.test(fid));
+    if (c.color && c.color !== 'auto') { L.color = c.color; L.shadow = !onBand; }
+    else if (onBand && d.frame) { L.color = darkFrame ? '#f2ead8' : '#5b5046'; L.shadow = false; }
+    else { L.color = '#ffffff'; L.shadow = true; }
+    d.layers.push(L);
+  };
+
   /* a finished magnet (frame, words, photo or drawn scene) as a canvas about `size` px long */
   var sceneCache = {};
   FS.magnetCanvas = function (o, size) {
