@@ -195,7 +195,8 @@ export class State extends DurableObject {
         const w = sessionOf(st.sd, hb.token);
         // a video minute costs money: only signed-in people, a few sessions an hour each
         if (!w) return reply({ ok: true, available: false, reason: 'signin' });
-        if (!env.HEYGEN_API_KEY) return reply({ ok: true, available: false, reason: 'off' });
+        // HeyGen's old streaming API is retired; live avatars now run on LiveAvatar (its own key and credits). Until that integration is wired the button stays hidden.
+        if (!env.LIVEAVATAR_API_KEY) return reply({ ok: true, available: false, reason: 'off' });
         if (hb.action !== 'token') return reply({ ok: true, available: true, avatar: env.HEYGEN_AVATAR_ID || '', voice: env.HEYGEN_VOICE_ID || '', language: env.HEYGEN_LANG || 'he', minutes: 5 });
         st.sd.heygenUse = st.sd.heygenUse || {};
         const k = w.email, nowT = Date.now(), arr = (st.sd.heygenUse[k] || []).filter((x) => nowT - x < 3600000);
