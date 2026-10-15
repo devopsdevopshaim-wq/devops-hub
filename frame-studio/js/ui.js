@@ -132,6 +132,7 @@
       b.addEventListener('click', function () { select(i); });
       st.appendChild(b);
     });
+    if (FS.markStrip) FS.markStrip();
     if (S.photos.length) { var add = document.createElement('label'); add.className = 'th add'; add.innerHTML = '＋<input type="file" accept="image/*" multiple hidden>'; add.querySelector('input').addEventListener('change', function () { addFiles(this.files); }); st.appendChild(add); }
   }
   FS.buildStrip = buildStrip;

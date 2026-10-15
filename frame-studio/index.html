@@ -4,15 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <script src="../portfolio/js/failover.js"></script>
-<meta name="theme-color" content="#0a1030" />
-<meta name="description" content="פריים־סטודיו: עריכת תמונות מקצועית בדפדפן, מסגרות PNG משלך, הסרת רקע ומדבקות AI, משחקים, שמירה בכמה פורמטים והדפסה בכל מדפסת שמותקנת במחשב." />
-<title>פריים־סטודיו</title>
+<meta name="theme-color" content="#1d1633" />
+<meta name="description" content="מגנטים לאירועים: צילום והדפסה במקום, מסגרת בעיצוב אישי לכל אירוע, ומגנט ביד תוך פחות מדקה. חתונות, בר/בת מצווה, בריתות, ימי הולדת ואירועי חברה." />
+<title>פריים מגנטים · מגנטים לאירועים</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="icon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Rubik:wght@400;700;900&family=Assistant:wght@400;700;800&family=Secular+One&family=Suez+One&family=Frank+Ruhl+Libre:wght@400;700;900&family=Amatic+SC:wght@400;700&family=Karantina:wght@400;700&family=Bellefair&family=Varela+Round&family=David+Libre:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" />
-<link rel="stylesheet" href="css/studio.css" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Amatic+SC:wght@400;700&family=Secular+One&family=Suez+One&family=Bellefair&family=Rubik:wght@400;700;900&family=Karantina:wght@400;700&family=Assistant:wght@400;700;800&family=Varela+Round&family=David+Libre:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" />
+<link rel="stylesheet" href="css/site.css" />
 <link rel="stylesheet" href="../portfolio/css/mobile.css" />
 <script src="../portfolio/js/track.js" defer></script>
 </head>
@@ -20,229 +19,152 @@
 <div class="standalone-bar">
   <span class="shelf">🧰 כלים ומחשבונים</span>
   <nav class="shelf-links" aria-label="כלים ומחשבונים">
-    <a href="./" aria-current="page">🖼️ פריים־סטודיו</a>
-    <a href="../aia-studio/">🎬 עיצוב AIA</a>
+    <a href="./" aria-current="page">🧲 מגנטים לאירועים</a>
+    <a href="studio.html">🖼️ הסטודיו</a>
     <a href="../marketing-hub/">📣 פרסום ושיווק</a>
     <a href="../portfolio/">כל האתרים שלי ←</a>
   </nav>
 </div>
 
-<div class="app" id="app">
-  <header class="topbar">
-    <div class="brand">
-      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="24" cy="24" r="10" fill="#4d8dff"/><circle cx="24" cy="24" r="4.5" fill="#0a1030"/><path d="M40 10 45 5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-      <div><b>פריים־סטודיו</b><small>עריכה · מסגרות · AI · הדפסה</small></div>
-    </div>
-    <div class="top-actions">
-      <button class="ic" id="undo" title="ביטול (Ctrl+Z)" disabled>↶</button>
-      <button class="ic" id="redo" title="חזרה (Ctrl+Y)" disabled>↷</button>
-      <button class="ic" id="compare" title="החזק כדי לראות את המקור">◐ מקור</button>
-      <select id="fmt" title="גודל הדף" aria-label="גודל הדף"></select>
-      <button class="btn ghost" id="install" hidden>⬇ התקנה כתוכנה</button>
-      <button class="btn" id="quick-print">🖨️ הדפסה</button>
-      <button class="btn primary" id="quick-save">💾 שמירה</button>
-    </div>
-  </header>
-
-  <nav class="tools" role="tablist" aria-label="כלים">
-    <button role="tab" data-tab="photos" aria-selected="true"><span>📷</span>תמונות</button>
-    <button role="tab" data-tab="adjust"><span>🎚️</span>עריכה</button>
-    <button role="tab" data-tab="filters"><span>✨</span>פילטרים</button>
-    <button role="tab" data-tab="frames"><span>🖼️</span>מסגרות</button>
-    <button role="tab" data-tab="text"><span>🔤</span>טקסט ומדבקות</button>
-    <button role="tab" data-tab="ai"><span>🤖</span>AI</button>
-    <button role="tab" data-tab="games"><span>🎮</span>משחקים</button>
-    <button role="tab" data-tab="output"><span>💾</span>שמירה והדפסה</button>
+<header class="nav" id="top">
+  <a class="logo" href="#top" aria-label="לראש הדף">
+    <span class="mark" aria-hidden="true"><i></i></span>
+    <span><b data-biz="name">פריים מגנטים</b><small>מגנטים לאירועים</small></span>
+  </a>
+  <nav class="links" aria-label="ניווט">
+    <a href="#how">איך זה עובד</a><a href="#gallery">עיצובים</a><a href="#designer">עצבו מגנט</a><a href="#packages">חבילות</a><a href="#tech">טכנולוגיה</a><a href="#faq">שאלות</a>
   </nav>
+  <div class="nav-cta">
+    <a class="btn ghost" href="studio.html">🖼️ לסטודיו</a>
+    <a class="btn gold" href="#contact" data-wa="אהלן! אשמח לבדוק תאריך פנוי לאירוע 🙂">בדיקת תאריך פנוי</a>
+  </div>
+</header>
 
-  <aside class="panel" id="panel">
-    <!-- photos -->
-    <section data-pane="photos">
-      <h2>תמונות</h2>
-      <label class="drop" id="drop">
-        <input type="file" id="file-photos" accept="image/*" multiple hidden />
-        <b>📂 בחירת תמונות</b><span>או גרירה לכאן · JPG, PNG, HEIC מהטלפון, WEBP · כמה תמונות ביחד</span>
-      </label>
-      <div class="row2">
-        <button class="btn" id="open-project">📁 פתיחת פרויקט</button>
-        <button class="btn" id="my-designs-btn">🗂️ העיצובים שלי</button>
+<main>
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">צילום · עיצוב · הדפסה במקום</p>
+      <h1>הרגעים של האירוע,<br /><span>על המקרר של כל אורח</span></h1>
+      <p class="lead">מצלמים את האורחים, ותוך פחות מדקה הם מקבלים מגנט במסגרת שעוצבה במיוחד לאירוע שלכם. מזכרת שנשארת על המקרר שנים.</p>
+      <div class="cta-row">
+        <a class="btn gold big" href="#designer">✨ עצבו את המגנט שלכם</a>
+        <a class="btn line big" href="#packages">לחבילות והמחירים</a>
       </div>
-      <input type="file" id="file-project" accept=".json,.fstudio,application/json" hidden />
-      <div class="field"><label>גודל דף לתמונות חדשות</label><select id="fmt-new"></select></div>
-      <label class="check"><input type="checkbox" id="frame-all" /> תמונה חדשה מקבלת את המסגרת האחרונה (לאירועים)</label>
-      <h3>על הדף</h3>
-      <div class="row2">
-        <button class="btn" data-act="rot-l">⟲ 90°</button><button class="btn" data-act="rot-r">⟳ 90°</button>
-        <button class="btn" data-act="flip-h">⇋ היפוך</button><button class="btn" data-act="flip-v">⇵ היפוך</button>
-        <button class="btn" data-act="fit-cover">מילוי החלון</button><button class="btn" data-act="fit-contain">כל התמונה</button>
-      </div>
-      <div class="field"><label>יישור (סיבוב עדין) <output id="o-straight">0°</output></label><input type="range" id="straight" min="-45" max="45" step="0.5" value="0" /></div>
-      <div class="field"><label>זום <output id="o-zoom">100%</output></label><input type="range" id="pzoom" min="20" max="400" step="1" value="100" /></div>
-      <div class="field"><label>צבע רקע הדף</label><input type="color" id="page-bg" value="#ffffff" /></div>
-      <p class="hint">גוררים את התמונה כדי למקם אותה. גלגלת העכבר או שתי אצבעות מגדילות ומקטינות.</p>
-    </section>
-
-    <!-- adjust -->
-    <section data-pane="adjust" hidden>
-      <h2>עריכה מקצועית</h2>
-      <div class="row2"><button class="btn primary" id="auto">✨ שיפור אוטומטי</button><button class="btn" id="reset-adj">↺ איפוס</button></div>
-      <div id="sliders"></div>
-      <div class="field"><label>גוון צבע</label>
-        <select id="tone"><option value="none">ללא</option><option value="sepia">ספיה</option><option value="gold">זהוב</option><option value="cool">קריר</option><option value="teal">קולנועי (כתום־טורקיז)</option></select></div>
-      <div class="row2"><button class="btn" id="copy-adj">📋 העתקת עריכה</button><button class="btn" id="paste-adj" disabled>📥 הדבקה</button></div>
-      <button class="btn wide" id="adj-all">החלת העריכה על כל התמונות</button>
-    </section>
-
-    <!-- filters -->
-    <section data-pane="filters" hidden>
-      <h2>פילטרים מוכנים</h2>
-      <div class="field"><label>עוצמה <output id="o-fstr">100%</output></label><input type="range" id="fstr" min="0" max="150" value="100" /></div>
-      <div class="grid thumbs" id="presets"></div>
-      <h3>הפילטרים שלי</h3>
-      <button class="btn wide" id="save-preset">➕ שמירת העריכה הנוכחית כפילטר</button>
-      <div class="grid thumbs" id="my-presets"></div>
-    </section>
-
-    <!-- frames -->
-    <section data-pane="frames" hidden>
-      <h2>מסגרות</h2>
-      <label class="drop small">
-        <input type="file" id="file-frames" accept="image/png,image/webp" multiple hidden />
-        <b>➕ הוספת מסגרת PNG</b><span>החלון השקוף נמצא אוטומטית</span>
-      </label>
-      <div class="frame-opts" id="frame-opts" hidden>
-        <div class="row2"><button class="btn" id="frame-none">✕ בלי מסגרת</button><button class="btn" id="frame-all-btn">החלה על כל התמונות</button></div>
-        <div class="field gen-only"><label>צבע המסגרת</label><input type="color" id="frame-color" /></div>
-        <div class="field gen-only"><label>עובי <output id="o-thick">100%</output></label><input type="range" id="frame-thick" min="40" max="200" value="100" /></div>
-        <div class="field png-only"><label>צביעת המסגרת</label><div class="inline"><input type="color" id="frame-tint" value="#d4a843" /><input type="range" id="frame-tint-amt" min="0" max="100" value="0" /></div></div>
-        <label class="check png-only"><input type="checkbox" id="frame-clip" /> לחתוך את התמונה לחלון</label>
-        <div class="field"><label>שקיפות <output id="o-fop">100%</output></label><input type="range" id="frame-op" min="10" max="100" value="100" /></div>
-      </div>
-      <h3>המסגרות שלי</h3>
-      <div class="grid frames" id="user-frames"><p class="empty">עדיין אין. מוסיפים PNG עם חלון שקוף, או שומרים מסגרת מעוצבת מלשונית "שמירה".</p></div>
-      <h3>מסגרות מוכנות</h3>
-      <div class="grid frames" id="gen-frames"></div>
-    </section>
-
-    <!-- text & stickers -->
-    <section data-pane="text" hidden>
-      <h2>טקסט ומדבקות</h2>
-      <div class="row2"><button class="btn primary" id="add-text">➕ טקסט</button>
-        <label class="btn">🖼️ לוגו / תמונה<input type="file" id="file-sticker" accept="image/*" hidden /></label></div>
-      <div id="layer-edit" class="layer-edit" hidden></div>
-      <h3>מדבקות</h3>
-      <div class="emoji-grid" id="emojis"></div>
-      <h3>שכבות</h3>
-      <ol class="layers" id="layers"></ol>
-    </section>
-
-    <!-- ai -->
-    <section data-pane="ai" hidden>
-      <h2>בינה מלאכותית</h2>
-      <div class="card">
-        <h3>✂️ רקע</h3>
-        <p class="hint">מזהה אנשים בתמונה ומחליף את הרקע. הכול נעשה במחשב שלך.</p>
-        <div class="chips" id="bg-modes">
-          <button data-bg="none" class="on">מקורי</button><button data-bg="blur">טשטוש (בוקה)</button><button data-bg="bw">רקע שחור־לבן</button>
-          <button data-bg="color">צבע</button><button data-bg="image">תמונה</button><button data-bg="remove">שקוף</button>
-        </div>
-        <div class="inline"><input type="color" id="bg-color" value="#ffffff" title="צבע רקע" />
-          <label class="btn small">תמונת רקע<input type="file" id="file-bg" accept="image/*" hidden /></label>
-          <input type="range" id="bg-blur" min="5" max="100" value="45" title="כמה טשטוש" /></div>
-      </div>
-      <div class="card">
-        <h3>🙂 פנים</h3>
-        <div class="row2"><button class="btn" id="smart-fit">🎯 מרכוז חכם לפי הפנים</button><button class="btn" id="face-blur">🫥 טשטוש פנים</button></div>
-        <p class="hint">מדבקות שיושבות על הפנים:</p>
-        <div class="chips" id="face-fx">
-          <button data-fx="glasses">🕶️ משקפיים</button><button data-fx="crown">👑 כתר</button><button data-fx="hat">🎩 כובע</button>
-          <button data-fx="party">🥳 מסיבה</button><button data-fx="hearts">😍 עיני לב</button><button data-fx="clown">🔴 אף ליצן</button>
-        </div>
-      </div>
-      <div class="card">
-        <h3>🎨 יצירה מתיאור</h3>
-        <textarea id="gen-prompt" rows="2" placeholder="למשל: שקיעה על חוף ים טרופי, צבעי פסטל"></textarea>
-        <div class="row2"><button class="btn" id="gen-bg">רקע מתיאור</button><button class="btn" id="gen-sticker">מדבקה מתיאור</button></div>
-        <div class="row2"><button class="btn" id="gen-frame">מסגרת מתיאור</button><button class="btn" id="gen-photo">תמונה חדשה</button></div>
-      </div>
-      <div class="card">
-        <h3>🤖 עוזר העריכה</h3>
-        <p class="hint">שולח את התמונה (מוקטנת) לניתוח ומחזיר עריכה מומלצת, כיתוב ומסגרת.</p>
-        <select id="ai-occasion"><option value="">איזה אירוע? (לא חובה)</option><option>חתונה</option><option>בר/בת מצווה</option><option>יום הולדת</option><option>ברית / לידה</option><option>חג</option><option>טבע ונוף</option><option>מוצר לעסק</option><option>פורטרט</option></select>
-        <button class="btn primary wide" id="ai-ask">ניתוח והצעה</button>
-        <div id="ai-out" class="ai-out"></div>
-      </div>
-    </section>
-
-    <!-- games -->
-    <section data-pane="games" hidden>
-      <h2>משחקים</h2>
-      <div class="games">
-        <button class="game" data-game="roulette"><span>🎰</span><b>רולטת עיצוב</b><small>מסגרת, פילטר ומדבקות בהגרלה</small></button>
-        <button class="game" data-game="puzzle"><span>🧩</span><b>פאזל הזזה</b><small>התמונה שלך מתפרקת לחלקים</small></button>
-        <button class="game" data-game="scratch"><span>🪄</span><b>כרטיס גירוד</b><small>מגרדים ומגלים את העריכה</small></button>
-        <button class="game" data-game="guess"><span>🎯</span><b>נחשו את הפילטר</b><small>כמה עין של צלם יש לך?</small></button>
-        <button class="game" data-game="confetti"><span>🎉</span><b>גשם מדבקות</b><small>מדבקות נופלות על המסגרת</small></button>
-        <button class="game" data-game="memory"><span>🃏</span><b>משחק זיכרון</b><small>זוגות מהתמונות שלך</small></button>
-      </div>
-    </section>
-
-    <!-- output -->
-    <section data-pane="output" hidden>
-      <h2>שמירה</h2>
-      <div class="field"><label>פורמט</label>
-        <div class="chips" id="out-type"><button data-t="jpeg" class="on">JPG</button><button data-t="png">PNG</button><button data-t="webp">WEBP</button><button data-t="pdf">PDF</button></div></div>
-      <div class="field" id="q-row"><label>איכות <output id="o-q">92%</output></label><input type="range" id="out-q" min="50" max="100" value="92" /></div>
-      <div class="field"><label>רזולוציה</label><select id="out-scale"><option value="1">מלאה להדפסה (300dpi)</option><option value="0.5">בינונית (לרשת)</option><option value="0.25">קטנה (וואטסאפ)</option><option value="2">כפולה</option></select></div>
-      <label class="check"><input type="checkbox" id="out-transparent" /> רקע שקוף (PNG)</label>
-      <div class="row2">
-        <button class="btn primary" id="save-one">⬇ התמונה הזאת</button>
-        <button class="btn" id="save-all">⬇ כל התמונות (ZIP)</button>
-        <button class="btn" id="save-design">🗂️ לעיצובים שלי</button>
-        <button class="btn" id="save-project">📁 קובץ פרויקט</button>
-        <button class="btn" id="save-as-frame">🖼️ שמירה כמסגרת</button>
-        <button class="btn" id="share">📤 שיתוף</button>
-      </div>
-      <h2>הדפסה</h2>
-      <div class="field"><label>גודל נייר</label><select id="paper"></select></div>
-      <div class="field"><label>סידור</label><select id="layout"><option value="one">תמונה אחת בכל דף</option><option value="fill">כמה שנכנס בדף</option><option value="2">2 בדף</option><option value="4">4 בדף</option><option value="9">9 בדף (כרטיסים)</option></select></div>
-      <div class="field"><label>שוליים</label><select id="margin"><option value="0">ללא שוליים</option><option value="3">3 מ"מ</option><option value="6">6 מ"מ</option></select></div>
-      <div class="field"><label>עותקים מכל תמונה</label><input type="number" id="copies" min="1" max="50" value="1" /></div>
-      <label class="check"><input type="checkbox" id="print-all" /> כל התמונות</label>
-      <label class="check"><input type="checkbox" id="print-marks" /> קווי חיתוך</label>
-      <button class="btn primary wide" id="print">🖨️ הדפסה…</button>
-      <p class="hint">חלון ההדפסה של המחשב נפתח, ושם בוחרים כל מדפסת שמותקנת, גם מדפסת תמונות. כדאי לסמן שם "גודל בפועל" (100%) ולבחור את אותו גודל נייר.</p>
-    </section>
-  </aside>
-
-  <main class="stage" id="stage">
-    <div class="canvas-wrap" id="wrap">
-      <canvas id="view" aria-label="התמונה בעריכה"></canvas>
-      <div class="welcome" id="welcome">
-        <div class="lens"></div>
-        <h1>פריים־סטודיו</h1>
-        <p>עורכים, ממסגרים, מוסיפים קסם של AI ומדפיסים. הכול בדפדפן, והתמונות לא יוצאות מהמחשב.</p>
-        <label class="btn primary big">📂 בחירת תמונות<input type="file" id="file-photos-2" accept="image/*" multiple hidden /></label>
-        <button class="btn" id="demo">✨ לנסות עם תמונה לדוגמה</button>
-      </div>
-      <div class="busy" id="busy" hidden><i></i><span id="busy-msg">רגע…</span></div>
+      <ul class="badges">
+        <li><b>60</b><span>שניות מהצילום<br />ועד המגנט ביד</span></li>
+        <li><b>100%</b><span>עיצוב אישי<br />לכל אירוע</span></li>
+        <li><b>AI</b><span>מרכוז פנים ובדיקת<br />עיניים עצומות</span></li>
+      </ul>
     </div>
-    <div class="strip" id="strip" aria-label="התמונות שלי"></div>
-  </main>
-</div>
+    <div class="fridge" aria-label="מגנטים לדוגמה על דלת מקרר">
+      <div class="door"><span class="handle"></span><div class="mags" id="hero-mags"></div></div>
+    </div>
+  </section>
 
-<dialog id="dlg"><form method="dialog" class="dlg-head"><b id="dlg-title"></b><button aria-label="סגירה">✕</button></form><div id="dlg-body"></div></dialog>
+  <div class="ticker" aria-hidden="true"><div id="ticker"></div></div>
+
+  <section class="sec" id="how">
+    <p class="eyebrow center">פשוט כמו 1־2־3־4</p>
+    <h2>איך זה עובד</h2>
+    <ol class="steps">
+      <li><span>💬</span><b>מתאמים</b><p>מספרים לנו על האירוע: תאריך, סגנון, צבעים ושמות.</p></li>
+      <li><span>🎨</span><b>מעצבים</b><p>מקבלים הדמיה של המגנט עם המסגרת האישית, ומאשרים.</p></li>
+      <li><span>📸</span><b>מצלמים</b><p>ביום האירוע הצלם שלנו מסתובב בין האורחים ובעמדה המעוצבת.</p></li>
+      <li><span>🧲</span><b>מדביקים</b><p>המגנט מודפס במקום, נחתך ומחכה לאורח בתוך שקית מתנה.</p></li>
+    </ol>
+  </section>
+
+  <section class="sec dark" id="gallery">
+    <p class="eyebrow center">השראה</p>
+    <h2>עיצובים שהאורחים לוקחים הביתה</h2>
+    <div class="chips center" id="gal-filter"></div>
+    <div class="gallery" id="gallery-grid"></div>
+    <p class="note center">כל עיצוב מתאים את עצמו לשמות, לתאריך ולצבעים של האירוע שלכם.</p>
+  </section>
+
+  <section class="sec" id="designer">
+    <p class="eyebrow center">נסו בעצמכם</p>
+    <h2>עצבו את המגנט של האירוע</h2>
+    <div class="designer">
+      <form class="d-form" id="d-form" onsubmit="return false">
+        <label>סוג האירוע<select id="d-type"></select></label>
+        <label>השמות על המגנט<input id="d-names" value="נועה & דניאל" maxlength="40" /></label>
+        <label>תאריך<input id="d-date" type="date" /></label>
+        <label>סגנון המסגרת<select id="d-frame"></select></label>
+        <div class="d-colors"><span>צבע</span><div id="d-swatches"></div><input type="color" id="d-color" value="#c9a14a" aria-label="צבע אחר" /></div>
+        <label>גופן<select id="d-font"></select></label>
+        <label class="up">📷 להעלות תמונה שלכם (לא חובה)<input type="file" id="d-photo" accept="image/*" /></label>
+        <div class="d-actions">
+          <button class="btn gold" id="d-send" type="button">💬 שלחו לי הצעה עם העיצוב</button>
+          <button class="btn line" id="d-dl" type="button">⬇ שמירת ההדמיה</button>
+        </div>
+        <p class="note">התמונה שלכם נשארת במכשיר ולא נשלחת לשום מקום.</p>
+      </form>
+      <div class="d-preview">
+        <div class="fridge-mini"><canvas id="d-canvas" aria-label="הדמיית המגנט"></canvas></div>
+        <p class="note center" id="d-size">מגנט 5×7.5 ס״מ</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec cream" id="packages">
+    <p class="eyebrow center">חבילות</p>
+    <h2>בוחרים חבילה, אנחנו דואגים לכל השאר</h2>
+    <div class="packages" id="pk"></div>
+    <p class="note center">כל החבילות כוללות הובלה, הקמה, עמדת הדפסה ושקיות מתנה. אפשר להוסיף שעות ומגנטים.</p>
+  </section>
+
+  <section class="sec dark" id="tech">
+    <p class="eyebrow center">מאחורי הקלעים</p>
+    <h2>סטודיו חכם שעובד בשבילכם</h2>
+    <div class="tech">
+      <article><span>🎯</span><b>מרכוז לפי פנים</b><p>הבינה המלאכותית מוצאת את הפנים וממקמת אותן בדיוק בחלון של המסגרת.</p></article>
+      <article><span>👁️</span><b>בדיקת עיניים עצומות</b><p>כל תמונה נבדקת, ותמונה עם עיניים עצומות או מטושטשת לא יוצאת להדפסה.</p></article>
+      <article><span>✨</span><b>ריטוש ותאורת פנים</b><p>עור חלק וטבעי ופנים מוארות, גם באולם חשוך.</p></article>
+      <article><span>🖼️</span><b>מסגרות AI לפי נושא</b><p>מתארים את האירוע במילים, ומקבלים מסגרת מקורית שאין לאף אחד אחר.</p></article>
+      <article><span>⚡</span><b>תחנת הדפסה חיה</b><p>תמונה מהמצלמה נכנסת לתבנית ויוצאת להדפסה, בלי לגעת במחשב.</p></article>
+      <article><span>💌</span><b>גלריה לאורחים</b><p>אחרי האירוע כל התמונות במקום אחד, לשיתוף ולהזמנת עותקים.</p></article>
+    </div>
+    <p class="center"><a class="btn line light" href="studio.html">🖼️ כניסה לסטודיו העריכה</a></p>
+  </section>
+
+  <section class="sec" id="faq">
+    <p class="eyebrow center">שאלות נפוצות</p>
+    <h2>כל מה שרציתם לדעת</h2>
+    <div class="faq" id="faq-list"></div>
+  </section>
+
+  <section class="sec contact" id="contact">
+    <div class="c-text">
+      <p class="eyebrow">בואו נדבר</p>
+      <h2>התאריך שלכם עוד פנוי?</h2>
+      <p>משאירים פרטים ונחזור אליכם עם הצעה והדמיה ראשונה של המגנט.</p>
+      <ul class="c-list" id="c-list"></ul>
+    </div>
+    <form class="c-form" id="c-form">
+      <label>שם<input name="name" required autocomplete="name" /></label>
+      <label>טלפון<input name="phone" type="tel" required autocomplete="tel" /></label>
+      <label>תאריך האירוע<input name="date" type="date" /></label>
+      <label>סוג האירוע<select name="type" id="c-type"></select></label>
+      <label>מספר אורחים משוער<input name="guests" type="number" min="10" step="10" /></label>
+      <label>הערות<textarea name="notes" rows="3" placeholder="מקום האירוע, סגנון, צבעים…"></textarea></label>
+      <button class="btn gold big" type="submit">שליחה בוואטסאפ 💬</button>
+    </form>
+  </section>
+</main>
+
+<footer class="foot">
+  <div><b data-biz="name">פריים מגנטים</b><span data-biz="tagline"></span></div>
+  <nav><a href="#how">איך זה עובד</a><a href="#packages">חבילות</a><a href="#contact">צור קשר</a><a href="studio.html">הסטודיו</a></nav>
+  <small>© <span id="year"></span> · כל הזכויות שמורות</small>
+</footer>
+
+<a class="wa-fab" id="wa-fab" href="#contact" aria-label="וואטסאפ">💬</a>
 <div id="toast" class="toast" role="status" hidden></div>
-<div id="print-root" aria-hidden="true"></div>
 
 <script src="js/core.js"></script>
 <script src="js/frames.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/ai.js"></script>
-<script src="js/output.js"></script>
-<script src="js/games.js"></script>
-<script>
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
-</script>
+<script src="js/events.js"></script>
+<script src="js/site.js"></script>
 </body>
 </html>

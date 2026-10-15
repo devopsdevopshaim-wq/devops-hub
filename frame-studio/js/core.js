@@ -31,7 +31,11 @@
     { id: 'sq', name: 'ריבוע 15×15 / פוסט', w: 1800, h: 1800, mm: [152, 152] },
     { id: 'story', name: 'סטורי 9:16', w: 1080, h: 1920, mm: [90, 160] },
     { id: 'post45', name: 'אינסטגרם 4:5', w: 1080, h: 1350, mm: [120, 150] },
-    { id: 'magnet', name: 'מגנט 5×7.5', w: 600, h: 900, mm: [51, 76] },
+    { id: 'magnet', name: '🧲 מגנט 5×7.5', w: 591, h: 886, mm: [50, 75] },
+    { id: 'magnetL', name: '🧲 מגנט 7.5×5 לרוחב', w: 886, h: 591, mm: [75, 50] },
+    { id: 'm69', name: '🧲 מגנט 6×9', w: 709, h: 1063, mm: [60, 90] },
+    { id: 'm710', name: '🧲 מגנט 7×10', w: 827, h: 1181, mm: [70, 100] },
+    { id: 'm66', name: '🧲 מגנט ריבוע 6×6', w: 709, h: 709, mm: [60, 60] },
     { id: 'orig', name: 'יחס מקורי של התמונה', w: 0, h: 0, mm: null }
   ];
   FS.fmt = function (id) { for (var i = 0; i < FS.FORMATS.length; i++) if (FS.FORMATS[i].id === id) return FS.FORMATS[i]; return null; };
@@ -105,6 +109,7 @@
       p.doc = FS.newDoc(im, fmt);
       if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
       FS.state.photos.push(p);
+      (FS.afterAdd || []).forEach(function (f) { try { f(p); } catch (e) { console.warn(e); } });
       return p;
     });
   };
@@ -166,7 +171,7 @@
   FS.processed = function (p, max, fast) {
     var d = p.doc, a = d.photo.adj, bg = d.photo.bg, im = FS.img(p.src);
     if (!im) return null;
-    var key = max + '|' + JSON.stringify(a) + '|' + JSON.stringify(bg) + '|' + JSON.stringify(d.photo.blurs || 0) + '|' + (p.maskV || 0) + '|' + (fast ? 1 : 0);
+    var key = max + '|' + JSON.stringify(a) + '|' + JSON.stringify(bg) + '|' + JSON.stringify(d.photo.blurs || 0) + '|' + JSON.stringify(d.photo.skin || 0) + '|' + (p.maskV || 0) + '|' + (fast ? 1 : 0);
     if (p.cache.key === key) return p.cache.canvas;
     var k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
     var w = Math.round(im.naturalWidth * k), h = Math.round(im.naturalHeight * k);
@@ -175,6 +180,7 @@
     var id = x.getImageData(0, 0, w, h);
     FS.adjustPixels(id.data, w, h, a, fast);
     (d.photo.blurs || []).forEach(function (b) { FS.pixelate(id.data, w, h, b.x * k, b.y * k, b.w * k, b.h * k); });
+    if (d.photo.skin && d.photo.skin.amt && d.photo.skin.faces) FS.smoothSkin(id.data, w, h, d.photo.skin, k, fast);
     if (bg && bg.mode !== 'none' && p.mask) FS.replaceBackground(id.data, w, h, p, bg, a);
     x.putImageData(id, 0, 0);
     p.cache = { key: key, canvas: c };
@@ -227,6 +233,23 @@
         if (ga) { seed = (seed * 1103515245 + 12345) & 0x7fffffff; var nz = ((seed >> 8) / 8388608 - 0.5) * ga; px[i] += nz; px[i + 1] += nz; px[i + 2] += nz; }
       }
     }
+  };
+
+  /* skin retouch: an edge-keeping blur inside each face oval (eyes, brows and lips keep their detail) */
+  FS.smoothSkin = function (px, w, h, sk, k, fast) {
+    var a = sk.amt / 100;
+    sk.faces.forEach(function (f) {
+      var fx = f.x * k, fy = f.y * k, fw = f.w * k, fh = f.h * k, x0 = Math.max(0, (fx - fw * 0.15) | 0), y0 = Math.max(0, (fy - fh * 0.25) | 0), x1 = Math.min(w, (fx + fw * 1.15) | 0), y1 = Math.min(h, (fy + fh * 1.2) | 0);
+      var bw = x1 - x0, bh = y1 - y0; if (bw < 8 || bh < 8) return;
+      var sub = new Uint8ClampedArray(bw * bh * 4), x, y, i, j;
+      for (y = 0; y < bh; y++) sub.set(px.subarray(((y0 + y) * w + x0) * 4, ((y0 + y) * w + x1) * 4), y * bw * 4);
+      var bl = FS.blur(sub, bw, bh, Math.max(2, fw / (fast ? 30 : 22))), cx = fx + fw / 2, cy = fy + fh * 0.45, rx = fw * 0.62, ry = fh * 0.78;
+      for (y = 0; y < bh; y++) for (x = 0; x < bw; x++) {
+        var ex = (x0 + x - cx) / rx, ey = (y0 + y - cy) / ry, e = ex * ex + ey * ey; if (e > 1) continue;
+        var m = a * (e > 0.7 ? (1 - e) / 0.3 : 1); i = ((y0 + y) * w + x0 + x) * 4; j = (y * bw + x) * 4;
+        for (var c = 0; c < 3; c++) { var dlt = bl[j + c] - px[i + c], keep = Math.max(0, 1 - Math.abs(dlt) / 26); px[i + c] += dlt * m * keep; }
+      }
+    });
   };
 
   /* privacy: big soft blocks over a rectangle (oval edge) */
@@ -387,11 +410,11 @@
     if (!L || L === 'photo') return;
     var b = FS.layerBox(L), lw = 2 / sc;
     ctx.save(); ctx.translate(L.x, L.y); ctx.rotate((L.r || 0) * Math.PI / 180);
-    ctx.strokeStyle = '#4d8dff'; ctx.lineWidth = lw; ctx.setLineDash([8 / sc, 5 / sc]);
+    ctx.strokeStyle = '#e3c98e'; ctx.lineWidth = lw; ctx.setLineDash([8 / sc, 5 / sc]);
     ctx.strokeRect(-b.w / 2 - 6 / sc, -b.h / 2 - 6 / sc, b.w + 12 / sc, b.h + 12 / sc);
     ctx.restore();
     var hp = FS.handlePos(L), r = 13 / sc;
-    ctx.save(); ctx.fillStyle = '#4d8dff'; ctx.strokeStyle = '#fff'; ctx.lineWidth = lw;
+    ctx.save(); ctx.fillStyle = '#e3c98e'; ctx.strokeStyle = '#fff'; ctx.lineWidth = lw;
     ctx.beginPath(); ctx.arc(hp.x, hp.y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.font = 'bold ' + (15 / sc) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('⤡', hp.x, hp.y + 1 / sc);
     ctx.restore();

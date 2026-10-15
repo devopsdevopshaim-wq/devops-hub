@@ -90,6 +90,32 @@
       for (i = 0; i <= w / s; i++) { c.moveTo(i * s + s / 2, s / 2); c.arc(i * s, s / 2, s / 2, 0, 7); c.moveTo(i * s + s / 2, h - s / 2); c.arc(i * s, h - s / 2, s / 2, 0, 7); }
       for (i = 0; i <= h / s; i++) { c.moveTo(s, i * s); c.arc(s / 2, i * s, s / 2, 0, 7); c.moveTo(w, i * s); c.arc(w - s / 2, i * s, s / 2, 0, 7); }
       c.fill(); var H = rectHole(u * 1.5, u * 1.5, w - u * 3, h - u * 3); cut(c, function () { c.rect(H.x, H.y, H.w, H.h); }); return H; } },
+    { id: 'classic', name: 'מגנט קלאסי', color: '#c9a45c', draw: function (c, w, h, col, t) {
+      var u = Math.min(w, h) * 0.05 * t; paper(c, w, h, '#fffdf9', 29);
+      var H = rectHole(u, u, w - u * 2, h - u * 5.2);
+      c.strokeStyle = col; c.lineWidth = u * 0.06; c.strokeRect(H.x - u * 0.35, H.y - u * 0.35, H.w + u * 0.7, H.h + u * 0.7);
+      var y = H.y + H.h + u * 1.15; c.lineWidth = u * 0.04; c.beginPath(); c.moveTo(w * 0.28, y); c.lineTo(w * 0.72, y); c.stroke();
+      c.fillStyle = col; c.beginPath(); c.moveTo(w / 2, y - u * 0.18); c.lineTo(w / 2 + u * 0.18, y); c.lineTo(w / 2, y + u * 0.18); c.lineTo(w / 2 - u * 0.18, y); c.fill();
+      cut(c, function () { c.rect(H.x, H.y, H.w, H.h); }); return H; },
+      texts: [{ text: 'נועה & דניאל', y: 0.885, size: 0.062, font: 'Amatic SC', color: '#5b4a2e', weight: 700 }, { text: '12.06.2026', y: 0.95, size: 0.026, font: 'Bellefair', color: '#8a7550', weight: 400 }] },
+    { id: 'floral', name: 'פרחים בצבעי מים', color: '#e9a8a6', draw: function (c, w, h, col, t) {
+      var u = Math.min(w, h) * 0.06 * t, r = rnd(31); paper(c, w, h, '#fffaf7', 37);
+      function flower(x, y, s, cc) { for (var i = 0; i < 6; i++) { var a = i / 6 * Math.PI * 2; c.save(); c.globalAlpha = 0.55; c.fillStyle = cc; c.beginPath(); c.ellipse(x + Math.cos(a) * s * 0.45, y + Math.sin(a) * s * 0.45, s * 0.42, s * 0.26, a, 0, 7); c.fill(); c.restore(); } c.fillStyle = '#e9c46a'; c.beginPath(); c.arc(x, y, s * 0.16, 0, 7); c.fill(); }
+      function leaf(x, y, s, a) { c.save(); c.translate(x, y); c.rotate(a); c.globalAlpha = 0.6; c.fillStyle = '#8fae8b'; c.beginPath(); c.ellipse(0, 0, s, s * 0.32, 0, 0, 7); c.fill(); c.restore(); }
+      [[0, 0], [w, 0], [0, h], [w, h]].forEach(function (p, k) { for (var i = 0; i < 7; i++) leaf(p[0] + (r() - 0.5) * u * 4, p[1] + (r() - 0.5) * u * 4, u * (0.7 + r() * 0.5), r() * 6);
+        for (i = 0; i < 4; i++) flower(p[0] + (r() - 0.5) * u * 3.4, p[1] + (r() - 0.5) * u * 3.4, u * (0.9 + r() * 0.7), k % 2 ? col : shade(col, 0.35)); });
+      var H = rectHole(u * 1.2, u * 1.2, w - u * 2.4, h - u * 5); cut(c, function () { rr(c, H.x, H.y, H.w, H.h, u * 0.3); });
+      c.strokeStyle = shade(col, -0.25); c.lineWidth = u * 0.05; rr(c, H.x - u * 0.2, H.y - u * 0.2, H.w + u * 0.4, H.h + u * 0.4, u * 0.4); c.stroke(); return H; },
+      texts: [{ text: 'נועה & דניאל', y: 0.885, size: 0.062, font: 'Amatic SC', color: '#9c5a58', weight: 700 }, { text: '12.06.2026', y: 0.95, size: 0.026, font: 'Bellefair', color: '#9c5a58', weight: 400 }] },
+    { id: 'boho', name: 'בוהו עלים', color: '#a3b18a', draw: function (c, w, h, col, t) {
+      var u = Math.min(w, h) * 0.07 * t, r = rnd(41); paper(c, w, h, '#f6f1e8', 43);
+      var H = rectHole(u, u * 1.2, w - u * 2, h - u * 4.4), rad = H.w / 2;
+      function arch(x, y, ww, hh) { var q = ww / 2; c.moveTo(x, y + hh); c.lineTo(x, y + q); c.arc(x + q, y + q, q, Math.PI, 0); c.lineTo(x + ww, y + hh); c.closePath(); }
+      for (var i = 0; i < 26; i++) { var a = Math.PI + i / 25 * Math.PI, cx = H.x + rad + Math.cos(a) * (rad + u * 0.45), cy = H.y + rad + Math.sin(a) * (rad + u * 0.45);
+        c.save(); c.translate(cx, cy); c.rotate(a + (i % 2 ? 0.6 : -0.6)); c.fillStyle = i % 3 ? col : shade(col, -0.3); c.beginPath(); c.ellipse(0, 0, u * 0.42, u * 0.16, 0, 0, 7); c.fill(); c.restore(); }
+      c.strokeStyle = shade(col, -0.35); c.lineWidth = u * 0.05; c.beginPath(); arch(H.x - u * 0.15, H.y - u * 0.15, H.w + u * 0.3, H.h + u * 0.3); c.stroke();
+      cut(c, function () { arch(H.x, H.y, H.w, H.h); }); void r; return H; },
+      texts: [{ text: 'נועה & דניאל', y: 0.9, size: 0.06, font: 'Amatic SC', color: '#5e6b4e', weight: 700 }, { text: '12.06.2026', y: 0.955, size: 0.025, font: 'Bellefair', color: '#5e6b4e', weight: 400 }] },
     { id: 'simple', name: 'קו פשוט', color: '#ffffff', draw: function (c, w, h, col, t) {
       var u = Math.min(w, h) * 0.035 * t; c.fillStyle = col; c.fillRect(0, 0, w, h); var H = rectHole(u, u, w - u * 2, h - u * 2);
       cut(c, function () { c.rect(H.x, H.y, H.w, H.h); }); return H; } },

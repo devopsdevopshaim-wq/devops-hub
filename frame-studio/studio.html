@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<script src="../portfolio/js/failover.js"></script>
+<meta name="theme-color" content="#1d1633" />
+<meta name="description" content="פריים־סטודיו: עריכת תמונות מקצועית בדפדפן, מסגרות PNG משלך, הסרת רקע ומדבקות AI, משחקים, שמירה בכמה פורמטים והדפסה בכל מדפסת שמותקנת במחשב." />
+<title>פריים־סטודיו · מגנטים לאירועים</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Rubik:wght@400;700;900&family=Assistant:wght@400;700;800&family=Secular+One&family=Suez+One&family=Frank+Ruhl+Libre:wght@400;700;900&family=Amatic+SC:wght@400;700&family=Karantina:wght@400;700&family=Bellefair&family=Varela+Round&family=David+Libre:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" />
+<link rel="stylesheet" href="css/studio.css" />
+<link rel="stylesheet" href="../portfolio/css/mobile.css" />
+<script src="../portfolio/js/track.js" defer></script>
+</head>
+<body>
+<div class="standalone-bar">
+  <span class="shelf">🧰 כלים ומחשבונים</span>
+  <nav class="shelf-links" aria-label="כלים ומחשבונים">
+    <a href="./">🧲 מגנטים לאירועים</a>
+    <a href="studio.html" aria-current="page">🖼️ הסטודיו</a>
+    <a href="../aia-studio/">🎬 עיצוב AIA</a>
+    <a href="../marketing-hub/">📣 פרסום ושיווק</a>
+    <a href="../portfolio/">כל האתרים שלי ←</a>
+  </nav>
+</div>
+
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="24" cy="24" r="10" fill="#c9a45c"/><circle cx="24" cy="24" r="4.5" fill="#1d1633"/><path d="M40 10 45 5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+      <div><b>פריים־סטודיו</b><small>סטודיו מגנטים לאירועים · עריכה · AI · הדפסה</small></div>
+    </div>
+    <div class="top-actions">
+      <button class="ic" id="undo" title="ביטול (Ctrl+Z)" disabled>↶</button>
+      <button class="ic" id="redo" title="חזרה (Ctrl+Y)" disabled>↷</button>
+      <button class="ic" id="compare" title="החזק כדי לראות את המקור">◐ מקור</button>
+      <select id="fmt" title="גודל הדף" aria-label="גודל הדף"></select>
+      <button class="btn ghost" id="install" hidden>⬇ התקנה כתוכנה</button>
+      <button class="btn" id="quick-print">🖨️ הדפסה</button>
+      <button class="btn primary" id="quick-save">💾 שמירה</button>
+    </div>
+  </header>
+
+  <nav class="tools" role="tablist" aria-label="כלים">
+    <button role="tab" data-tab="event"><span>🧲</span>אירוע</button>
+    <button role="tab" data-tab="photos" aria-selected="true"><span>📷</span>תמונות</button>
+    <button role="tab" data-tab="adjust"><span>🎚️</span>עריכה</button>
+    <button role="tab" data-tab="filters"><span>✨</span>פילטרים</button>
+    <button role="tab" data-tab="frames"><span>🖼️</span>מסגרות</button>
+    <button role="tab" data-tab="text"><span>🔤</span>טקסט ומדבקות</button>
+    <button role="tab" data-tab="ai"><span>🤖</span>AI</button>
+    <button role="tab" data-tab="games"><span>🎮</span>משחקים</button>
+    <button role="tab" data-tab="output"><span>💾</span>שמירה והדפסה</button>
+  </nav>
+
+  <aside class="panel" id="panel">
+    <!-- event -->
+    <section data-pane="event" hidden>
+      <h2>האירוע</h2>
+      <p class="hint">ממלאים פעם אחת, וכל תמונה שנכנסת הופכת למגנט בעיצוב של האירוע.</p>
+      <div class="field"><label>סוג האירוע</label><select id="ev-type"></select></div>
+      <div class="field"><label>שמות</label><input id="ev-names" placeholder="נועה & דניאל" /></div>
+      <div class="row2"><div class="field"><label>תאריך</label><input type="date" id="ev-date" /></div><div class="field"><label>האשטאג</label><input id="ev-tag" placeholder="NoaDaniel" /></div></div>
+      <div class="row2"><div class="field"><label>גודל מגנט</label><select id="ev-fmt"></select></div><div class="field"><label>מסגרת</label><select id="ev-frame"></select></div></div>
+      <div class="field"><label>צבע</label><div class="inline"><span id="ev-swatches" class="swatches"></span><input type="color" id="ev-color" value="#c9a45c" /></div></div>
+      <div class="field"><label>גופן</label><select id="ev-font"></select></div>
+      <div class="row2"><label class="btn">🏷️ לוגו<input type="file" id="ev-logo" accept="image/*" hidden /></label><button class="btn" id="ev-logo-colors" disabled>🎨 צבעים מהלוגו</button></div>
+      <div class="chips" id="logo-palette"></div>
+      <label class="check"><input type="checkbox" id="ev-on" /> <b>תבנית פעילה:</b> כל תמונה חדשה נכנסת לתבנית</label>
+      <label class="check"><input type="checkbox" id="ev-smart" checked /> מרכוז אוטומטי לפי הפנים</label>
+      <div class="row2"><button class="btn primary" id="ev-apply">✔ להחיל על התמונה</button><button class="btn" id="ev-apply-all">להחיל על כולן</button></div>
+      <div class="row2"><button class="btn" id="ev-save">💾 שמירת אירוע</button><button class="btn" id="ev-load">📂 אירועים שמורים</button></div>
+
+      <div class="card station">
+        <h3>⚡ תחנת אירוע חיה</h3>
+        <p class="hint">בוחרים את התיקייה שהמצלמה או תוכנת ההעברה שומרות בה. כל תמונה חדשה נכנסת לתבנית, נבדקת ונכנסת לתור ההדפסה.</p>
+        <div class="row2"><button class="btn primary" id="st-folder">📁 בחירת תיקייה</button><button class="btn" id="st-stop" disabled>⏹ עצירה</button></div>
+        <label class="check"><input type="checkbox" id="st-check" checked /> לדלג על תמונות עם עיניים עצומות או טשטוש</label>
+        <label class="check"><input type="checkbox" id="st-print" /> הדפסה אוטומטית כשהגיליון מתמלא</label>
+        <div class="row2"><div class="field"><label>מגנטים בגיליון</label><select id="st-per"><option value="1">1</option><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option><option value="9">9</option></select></div><div class="field"><label>נייר</label><select id="st-paper"><option value="10x15">10×15</option><option value="13x18">13×18</option><option value="A4" selected>A4</option></select></div></div>
+        <div class="stats"><div><b id="st-in">0</b><small>נקלטו</small></div><div><b id="st-queue">0</b><small>בתור</small></div><div><b id="st-skip">0</b><small>נפסלו</small></div><div><b id="st-printed">0</b><small>הודפסו</small></div></div>
+        <div class="row2"><button class="btn" id="st-print-now">🖨️ הדפסת התור עכשיו</button><button class="btn" id="st-clear">ניקוי התור</button></div>
+        <p class="hint" id="st-status">התחנה לא פעילה.</p>
+        <p class="hint">הדפסה בלי חלון אישור: פותחים את Chrome עם <code>--kiosk-printing</code>, וכל גיליון יוצא ישר למדפסת ברירת המחדל.</p>
+      </div>
+    </section>
+
+    <!-- photos -->
+    <section data-pane="photos">
+      <h2>תמונות</h2>
+      <label class="drop" id="drop">
+        <input type="file" id="file-photos" accept="image/*" multiple hidden />
+        <b>📂 בחירת תמונות</b><span>או גרירה לכאן · JPG, PNG, HEIC מהטלפון, WEBP · כמה תמונות ביחד</span>
+      </label>
+      <div class="row2">
+        <button class="btn" id="open-project">📁 פתיחת פרויקט</button>
+        <button class="btn" id="my-designs-btn">🗂️ העיצובים שלי</button>
+      </div>
+      <input type="file" id="file-project" accept=".json,.fstudio,application/json" hidden />
+      <div class="field"><label>גודל דף לתמונות חדשות</label><select id="fmt-new"></select></div>
+      <label class="check"><input type="checkbox" id="frame-all" /> תמונה חדשה מקבלת את המסגרת האחרונה (לאירועים)</label>
+      <h3>על הדף</h3>
+      <div class="row2">
+        <button class="btn" data-act="rot-l">⟲ 90°</button><button class="btn" data-act="rot-r">⟳ 90°</button>
+        <button class="btn" data-act="flip-h">⇋ היפוך</button><button class="btn" data-act="flip-v">⇵ היפוך</button>
+        <button class="btn" data-act="fit-cover">מילוי החלון</button><button class="btn" data-act="fit-contain">כל התמונה</button>
+      </div>
+      <div class="field"><label>יישור (סיבוב עדין) <output id="o-straight">0°</output></label><input type="range" id="straight" min="-45" max="45" step="0.5" value="0" /></div>
+      <div class="field"><label>זום <output id="o-zoom">100%</output></label><input type="range" id="pzoom" min="20" max="400" step="1" value="100" /></div>
+      <div class="field"><label>צבע רקע הדף</label><input type="color" id="page-bg" value="#ffffff" /></div>
+      <p class="hint">גוררים את התמונה כדי למקם אותה. גלגלת העכבר או שתי אצבעות מגדילות ומקטינות.</p>
+    </section>
+
+    <!-- adjust -->
+    <section data-pane="adjust" hidden>
+      <h2>עריכה מקצועית</h2>
+      <div class="row2"><button class="btn primary" id="auto">✨ שיפור אוטומטי</button><button class="btn" id="reset-adj">↺ איפוס</button></div>
+      <div id="sliders"></div>
+      <div class="field"><label>גוון צבע</label>
+        <select id="tone"><option value="none">ללא</option><option value="sepia">ספיה</option><option value="gold">זהוב</option><option value="cool">קריר</option><option value="teal">קולנועי (כתום־טורקיז)</option></select></div>
+      <div class="row2"><button class="btn" id="copy-adj">📋 העתקת עריכה</button><button class="btn" id="paste-adj" disabled>📥 הדבקה</button></div>
+      <button class="btn wide" id="adj-all">החלת העריכה על כל התמונות</button>
+    </section>
+
+    <!-- filters -->
+    <section data-pane="filters" hidden>
+      <h2>פילטרים מוכנים</h2>
+      <div class="field"><label>עוצמה <output id="o-fstr">100%</output></label><input type="range" id="fstr" min="0" max="150" value="100" /></div>
+      <div class="grid thumbs" id="presets"></div>
+      <h3>הפילטרים שלי</h3>
+      <button class="btn wide" id="save-preset">➕ שמירת העריכה הנוכחית כפילטר</button>
+      <div class="grid thumbs" id="my-presets"></div>
+    </section>
+
+    <!-- frames -->
+    <section data-pane="frames" hidden>
+      <h2>מסגרות</h2>
+      <label class="drop small">
+        <input type="file" id="file-frames" accept="image/png,image/webp" multiple hidden />
+        <b>➕ הוספת מסגרת PNG</b><span>החלון השקוף נמצא אוטומטית</span>
+      </label>
+      <div class="frame-opts" id="frame-opts" hidden>
+        <div class="row2"><button class="btn" id="frame-none">✕ בלי מסגרת</button><button class="btn" id="frame-all-btn">החלה על כל התמונות</button></div>
+        <div class="field gen-only"><label>צבע המסגרת</label><input type="color" id="frame-color" /></div>
+        <div class="field gen-only"><label>עובי <output id="o-thick">100%</output></label><input type="range" id="frame-thick" min="40" max="200" value="100" /></div>
+        <div class="field png-only"><label>צביעת המסגרת</label><div class="inline"><input type="color" id="frame-tint" value="#d4a843" /><input type="range" id="frame-tint-amt" min="0" max="100" value="0" /></div></div>
+        <label class="check png-only"><input type="checkbox" id="frame-clip" /> לחתוך את התמונה לחלון</label>
+        <div class="field"><label>שקיפות <output id="o-fop">100%</output></label><input type="range" id="frame-op" min="10" max="100" value="100" /></div>
+      </div>
+      <h3>המסגרות שלי</h3>
+      <div class="grid frames" id="user-frames"><p class="empty">עדיין אין. מוסיפים PNG עם חלון שקוף, או שומרים מסגרת מעוצבת מלשונית "שמירה".</p></div>
+      <h3>מסגרות מוכנות</h3>
+      <div class="grid frames" id="gen-frames"></div>
+    </section>
+
+    <!-- text & stickers -->
+    <section data-pane="text" hidden>
+      <h2>טקסט ומדבקות</h2>
+      <div class="row2"><button class="btn primary" id="add-text">➕ טקסט</button>
+        <label class="btn">🖼️ לוגו / תמונה<input type="file" id="file-sticker" accept="image/*" hidden /></label></div>
+      <div id="layer-edit" class="layer-edit" hidden></div>
+      <h3>מדבקות</h3>
+      <div class="emoji-grid" id="emojis"></div>
+      <h3>שכבות</h3>
+      <ol class="layers" id="layers"></ol>
+    </section>
+
+    <!-- ai -->
+    <section data-pane="ai" hidden>
+      <h2>בינה מלאכותית</h2>
+      <div class="card">
+        <h3>🪄 עיצוב מגנט מתיאור</h3>
+        <textarea id="mg-prompt" rows="2" placeholder="למשל: חתונה בוהו בגן, צבעי ירוק זית ושמנת, נועה ודניאל"></textarea>
+        <button class="btn primary wide" id="mg-make">✨ לעצב לי מגנט</button>
+      </div>
+      <div class="card">
+        <h3>👁️ בדיקת איכות</h3>
+        <p class="hint">מוצאת עיניים עצומות ותמונות מטושטשות, ומסמנת אותן בפס התמונות.</p>
+        <div class="row2"><button class="btn" id="qc-one">לבדוק את התמונה</button><button class="btn" id="qc-all">לבדוק את כולן</button></div>
+        <div id="qc-out" class="ai-out"></div>
+      </div>
+      <div class="card">
+        <h3>✨ פנים</h3>
+        <div class="field"><label>ריטוש עור <output id="o-skin">0</output></label><input type="range" id="skin" min="0" max="100" value="0" /></div>
+        <div class="row2"><button class="btn" id="face-light">💡 תאורת פנים אוטומטית</button><button class="btn" id="face-all">✨ שיפור מלא</button></div>
+      </div>
+      <div class="card">
+        <h3>💌 ברכות וכיתובים</h3>
+        <div class="chips" id="greets"></div>
+        <button class="btn wide" id="greet-ai">🤖 עוד ברכות מה־AI</button>
+      </div>
+      <div class="card">
+        <h3>✂️ רקע</h3>
+        <p class="hint">מזהה אנשים בתמונה ומחליף את הרקע. הכול נעשה במחשב שלך.</p>
+        <div class="chips" id="bg-modes">
+          <button data-bg="none" class="on">מקורי</button><button data-bg="blur">טשטוש (בוקה)</button><button data-bg="bw">רקע שחור־לבן</button>
+          <button data-bg="color">צבע</button><button data-bg="image">תמונה</button><button data-bg="remove">שקוף</button>
+        </div>
+        <div class="inline"><input type="color" id="bg-color" value="#ffffff" title="צבע רקע" />
+          <label class="btn small">תמונת רקע<input type="file" id="file-bg" accept="image/*" hidden /></label>
+          <input type="range" id="bg-blur" min="5" max="100" value="45" title="כמה טשטוש" /></div>
+      </div>
+      <div class="card">
+        <h3>🙂 פנים</h3>
+        <div class="row2"><button class="btn" id="smart-fit">🎯 מרכוז חכם לפי הפנים</button><button class="btn" id="face-blur">🫥 טשטוש פנים</button></div>
+        <p class="hint">מדבקות שיושבות על הפנים:</p>
+        <div class="chips" id="face-fx">
+          <button data-fx="glasses">🕶️ משקפיים</button><button data-fx="crown">👑 כתר</button><button data-fx="hat">🎩 כובע</button>
+          <button data-fx="party">🥳 מסיבה</button><button data-fx="hearts">😍 עיני לב</button><button data-fx="clown">🔴 אף ליצן</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🎨 יצירה מתיאור</h3>
+        <textarea id="gen-prompt" rows="2" placeholder="למשל: שקיעה על חוף ים טרופי, צבעי פסטל"></textarea>
+        <div class="row2"><button class="btn" id="gen-bg">רקע מתיאור</button><button class="btn" id="gen-sticker">מדבקה מתיאור</button></div>
+        <div class="row2"><button class="btn" id="gen-frame">מסגרת מתיאור</button><button class="btn" id="gen-photo">תמונה חדשה</button></div>
+      </div>
+      <div class="card">
+        <h3>🤖 עוזר העריכה</h3>
+        <p class="hint">שולח את התמונה (מוקטנת) לניתוח ומחזיר עריכה מומלצת, כיתוב ומסגרת.</p>
+        <select id="ai-occasion"><option value="">איזה אירוע? (לא חובה)</option><option>חתונה</option><option>בר/בת מצווה</option><option>יום הולדת</option><option>ברית / לידה</option><option>חג</option><option>טבע ונוף</option><option>מוצר לעסק</option><option>פורטרט</option></select>
+        <button class="btn primary wide" id="ai-ask">ניתוח והצעה</button>
+        <div id="ai-out" class="ai-out"></div>
+      </div>
+    </section>
+
+    <!-- games -->
+    <section data-pane="games" hidden>
+      <h2>משחקים</h2>
+      <div class="games">
+        <button class="game" data-game="roulette"><span>🎰</span><b>רולטת עיצוב</b><small>מסגרת, פילטר ומדבקות בהגרלה</small></button>
+        <button class="game" data-game="puzzle"><span>🧩</span><b>פאזל הזזה</b><small>התמונה שלך מתפרקת לחלקים</small></button>
+        <button class="game" data-game="scratch"><span>🪄</span><b>כרטיס גירוד</b><small>מגרדים ומגלים את העריכה</small></button>
+        <button class="game" data-game="guess"><span>🎯</span><b>נחשו את הפילטר</b><small>כמה עין של צלם יש לך?</small></button>
+        <button class="game" data-game="confetti"><span>🎉</span><b>גשם מדבקות</b><small>מדבקות נופלות על המסגרת</small></button>
+        <button class="game" data-game="memory"><span>🃏</span><b>משחק זיכרון</b><small>זוגות מהתמונות שלך</small></button>
+      </div>
+    </section>
+
+    <!-- output -->
+    <section data-pane="output" hidden>
+      <h2>שמירה</h2>
+      <div class="field"><label>פורמט</label>
+        <div class="chips" id="out-type"><button data-t="jpeg" class="on">JPG</button><button data-t="png">PNG</button><button data-t="webp">WEBP</button><button data-t="pdf">PDF</button></div></div>
+      <div class="field" id="q-row"><label>איכות <output id="o-q">92%</output></label><input type="range" id="out-q" min="50" max="100" value="92" /></div>
+      <div class="field"><label>רזולוציה</label><select id="out-scale"><option value="1">מלאה להדפסה (300dpi)</option><option value="0.5">בינונית (לרשת)</option><option value="0.25">קטנה (וואטסאפ)</option><option value="2">כפולה</option></select></div>
+      <label class="check"><input type="checkbox" id="out-transparent" /> רקע שקוף (PNG)</label>
+      <div class="row2">
+        <button class="btn primary" id="save-one">⬇ התמונה הזאת</button>
+        <button class="btn" id="save-all">⬇ כל התמונות (ZIP)</button>
+        <button class="btn" id="save-design">🗂️ לעיצובים שלי</button>
+        <button class="btn" id="save-project">📁 קובץ פרויקט</button>
+        <button class="btn" id="save-as-frame">🖼️ שמירה כמסגרת</button>
+        <button class="btn" id="share">📤 שיתוף</button>
+      </div>
+      <h2>הדפסה</h2>
+      <div class="field"><label>גודל נייר</label><select id="paper"></select></div>
+      <div class="field"><label>סידור</label><select id="layout"><option value="one">תמונה אחת בכל דף</option><option value="fill">כמה שנכנס בדף</option><option value="2">2 בדף</option><option value="4">4 בדף</option><option value="9">9 בדף (כרטיסים)</option></select></div>
+      <div class="field"><label>שוליים</label><select id="margin"><option value="0">ללא שוליים</option><option value="3">3 מ"מ</option><option value="6">6 מ"מ</option></select></div>
+      <div class="field"><label>עותקים מכל תמונה</label><input type="number" id="copies" min="1" max="50" value="1" /></div>
+      <label class="check"><input type="checkbox" id="print-all" /> כל התמונות</label>
+      <label class="check"><input type="checkbox" id="print-marks" /> קווי חיתוך</label>
+      <label class="check"><input type="checkbox" id="print-ok" /> לדלג על תמונות שנפסלו בבדיקת האיכות</label>
+      <button class="btn primary wide" id="print">🖨️ הדפסה…</button>
+      <p class="hint">חלון ההדפסה של המחשב נפתח, ושם בוחרים כל מדפסת שמותקנת, גם מדפסת תמונות. כדאי לסמן שם "גודל בפועל" (100%) ולבחור את אותו גודל נייר.</p>
+    </section>
+  </aside>
+
+  <main class="stage" id="stage">
+    <div class="canvas-wrap" id="wrap">
+      <canvas id="view" aria-label="התמונה בעריכה"></canvas>
+      <div class="welcome" id="welcome">
+        <div class="lens"></div>
+        <h1>פריים־סטודיו</h1>
+        <p>סטודיו המגנטים לאירועים: ממלאים פרטי אירוע, מכניסים תמונות, והן יוצאות מגנטים מעוצבים ומוכנים להדפסה. הכול בדפדפן, והתמונות לא יוצאות מהמחשב.</p>
+        <label class="btn primary big">📂 בחירת תמונות<input type="file" id="file-photos-2" accept="image/*" multiple hidden /></label>
+        <button class="btn" id="start-event">🧲 להתחיל אירוע</button>
+        <button class="btn" id="demo">✨ לנסות עם תמונה לדוגמה</button>
+      </div>
+      <div class="busy" id="busy" hidden><i></i><span id="busy-msg">רגע…</span></div>
+    </div>
+    <div class="strip" id="strip" aria-label="התמונות שלי"></div>
+  </main>
+</div>
+
+<dialog id="dlg"><form method="dialog" class="dlg-head"><b id="dlg-title"></b><button aria-label="סגירה">✕</button></form><div id="dlg-body"></div></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+<div id="print-root" aria-hidden="true"></div>
+
+<script src="js/core.js"></script>
+<script src="js/frames.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/output.js"></script>
+<script src="js/games.js"></script>
+<script src="js/events.js"></script>
+<script src="js/event-studio.js"></script>
+<script>
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
+</script>
+</body>
+</html>
