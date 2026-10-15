@@ -194,7 +194,7 @@ export class State extends DurableObject {
         let hb = {}; try { hb = typeof body === 'string' ? JSON.parse(body) : (body || {}); } catch (e) { hb = {}; }
         const w = sessionOf(st.sd, hb.token);
         // a video minute costs money: only signed-in people, a few sessions an hour each
-        if (!w) return reply({ ok: true, available: false, reason: 'signin' });
+        if (!w) return reply({ ok: true, available: false, reason: /^[a-f0-9]{48}$/.test(String(hb.token || '')) ? 'signin' : 'old-session' });
         // live avatars run on LiveAvatar (its own key and credits, LITE mode): the server mints the session and speaks Hebrew through Gemini
         // TTS; the page only gets the room credentials and streams the audio to the avatar. The key never reaches a page.
         if (!env.LIVEAVATAR_API_KEY || !env.GEMINI_API_KEY) return reply({ ok: true, available: false, reason: 'off' });

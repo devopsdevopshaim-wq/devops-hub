@@ -61,7 +61,7 @@
     setBusy(true); btn.textContent = 'מתחברת…';
     var LK;
     post({ action: 'status' }).then(function (st) {
-      if (!st || !st.available) throw new Error(st && st.reason === 'signin' ? 'צריך להתחבר מחדש' : 'השרת עוד לא מוגדר לשיחת וידאו');
+      if (!st || !st.available) throw new Error(st && st.reason === 'old-session' ? 'ההתחברות הנוכחית היא מהשרת הישן: צאו מהמערכת והתחברו שוב, ואז נסו שוב' : st && st.reason === 'signin' ? 'ההתחברות פגה: צאו והתחברו שוב' : 'השרת עוד לא מוגדר לשיחת וידאו');
       return Promise.all([loadLK(), post({ action: 'start' })]);
     }).then(function (res) {
       LK = res[0]; var r = res[1];
@@ -96,7 +96,7 @@
       });
     }).catch(function (e) {
       stop();
-      alert('שיחת הווידאו לא זמינה כרגע (' + String((e && e.message) || e).slice(0, 60) + '). אפשר להמשיך בצ׳אט.');
+      alert('שיחת הווידאו לא זמינה כרגע (' + String((e && e.message) || e).slice(0, 120) + '). אפשר להמשיך בצ׳אט.');
     });
   }
 
