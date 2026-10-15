@@ -1,4 +1,4 @@
-# One-off: LiveAvatar languages, avatars and session/token API docs.
+# One-off: LiveAvatar voice languages and session API docs.
 name: LiveAvatar docs
 on: workflow_dispatch
 jobs:
@@ -10,27 +10,14 @@ jobs:
           RAW: ${{ secrets.LIVEAVATAR_API_KEY }}
         run: |
           K=$(printf %s "$RAW" | tr -s ' \t\r\n' '\n' | grep -E '^[A-Za-z0-9_-]{20,}$' | tail -1)
-          curl -s "https://api.liveavatar.com/v1/voices?page_size=100" -H "X-API-KEY: $K" > v.json
-          python3 - <<'PY'
-          import json,collections
-          d=json.load(open('v.json'))['data']['results']
-          c=collections.Counter(v['language'] for v in d)
-          print('voice languages', dict(c))
+          echo "##### VOICES"
+          curl -s "https://api.liveavatar.com/v1/voices?page_size=100" -H "X-API-KEY: $K" | python3 -c "
+          import sys,json,collections
+          d=json.load(sys.stdin)['data']['results']
+          print(dict(collections.Counter(v['language'] for v in d)))
           for v in d:
-              if v['language'] in ('he','iw','he-IL','multi','multilingual') : print(v)
-          PY
-          for pg in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-            curl -s "https://api.liveavatar.com/v1/avatars/public?page=$pg&page_size=20" -H "X-API-KEY: $K"
-            echo
-          done | python3 -c "
-          import sys,json
-          for l in sys.stdin:
-              l=l.strip()
-              if not l: continue
-              for a in json.loads(l)['data']['results']: print(a['id'],'|',a['name'],'|',a['type'],'|',a['default_voice']['name'] if a.get('default_voice') else '-')
+              if v['language'].lower().startswith(('he','iw','multi')): print(v['id'],v['name'],v['language'],v['gender'])
           "
-          curl -sL https://docs.liveavatar.com/llms.txt | head -c 6000
-          for p in docs/full-mode/quickstart docs/full-mode/web-sdk docs/full-mode/custom-tts docs/full-mode/voice-settings; do
-            echo "=================== $p"; curl -sL "https://docs.liveavatar.com/$p.md" | head -c 5000; echo
+          for p in api-reference/sessions/create-session-token docs/full-mode/lifecycle docs/sandbox-mode docs/guides/embed-avatar api-reference/sessions/start-session; do
+            echo "##### $p"; curl -sL "https://docs.liveavatar.com/$p.md" | head -c 7000; echo
           done
-          echo "=================== openapi token"; curl -sL "https://docs.liveavatar.com/api-reference/sessions/create-session-token.md" | head -c 5000
