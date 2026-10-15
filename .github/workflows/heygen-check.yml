@@ -1,0 +1,14 @@
+# One-off: read LiveAvatar's docs for the integration.
+name: LiveAvatar docs
+on: workflow_dispatch
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read
+        run: |
+          for p in docs/full-mode/overview docs/full-mode/lifecycle api-reference/sessions/create-session-token api-reference/sessions/start-session docs/sandbox-mode; do
+            echo "=================== $p"
+            curl -sL "https://docs.liveavatar.com/$p.md" | head -c 5500
+            echo
+          done
