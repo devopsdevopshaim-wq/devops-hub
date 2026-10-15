@@ -54,6 +54,12 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
 
 `pay.html` (`js/pay.js`, `css/pay.css`) is the client's payment page. The deal summary and payment options travel in the link (`pay.html#<base64url JSON>`, written by `FS.dealPayLink`); nothing is stored on a server. It escapes everything and only opens https links. A payment confirmation is not a tax invoice or receipt; official ones come from a licensed invoicing service.
 
+## AI without Gemini
+
+- **In the browser** (`js/anime.js`): AnimeGANv2 "face paint 512 v2" (MIT, `models/face-paint-512-v2.onnx`, about 9MB) through onnxruntime-web 1.20.1 from jsDelivr. It uses WebGPU when present, WebAssembly otherwise, and works in 512px tiles with feathered overlaps. `FS.LOCAL_AI` (in `styles.js`) holds the anime result plus an optional instant style on top (comic, cartoon, oil, sketch). It is free, has no quota, and keeps faces. The Hayao and Shinkai weights are personal-use only and must not be used.
+- **On the server**: in the Cloudflare Worker, the hubs code sees `ENV.AI` (Workers AI). `image` uses FLUX.1 schnell, then FLUX.2 klein 4B. `restyle` uses FLUX.2 klein 4B, then 9B, then FLUX.2 dev, in a multipart form with `input_image_0` (the studio sends the photo under 512px, plus `w`/`h` for the output). It is free up to the daily neurons allowance. In n8n, which has no `ENV`, the old Gemini path stays.
+- Tests: `n8n/test/hubs-cloudflare.test.mjs`. The Cloudflare deploy runs whenever `n8n/hasadna-*.json` changes, and its summary shows one real text and one real picture.
+
 ## Growth tools: chat, free dates, reviews, guest gallery, event pages
 
 - **Chat** (`js/chat.js`, styles in `css/site.css`) replaces the WhatsApp button on the site. Fixed answers come from `business.json`: packages, FAQ, areas and hours. Free text goes to the hubs server (`action: 'ai'`, `tag: 'frame-chat'`) with the business facts and asks for JSON `{reply, lead, handoff}`. When the server is down or busy, it falls back to keyword and FAQ matching, then to WhatsApp. It asks for a quote step by step (event, date, guests, venue, name), checks the date against `busy`, and hands off to the owner's WhatsApp. The message carries `studio.html#lead=<base64url>`, which `js/grow.js` opens as a new deal. "בדיקת תאריך פנוי" and the package buttons open the chat.

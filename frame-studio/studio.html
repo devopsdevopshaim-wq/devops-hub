@@ -206,8 +206,11 @@
       <div class="row2"><button class="btn" id="style-none">✕ בלי סגנון</button><button class="btn" id="style-orig">↩ החזרת המקור (אחרי AI)</button></div>
       <h3>⚡ מיידיים, בלי אינטרנט</h3>
       <div class="grid thumbs" id="local-styles"></div>
-      <h3>🤖 טרנספורמציות AI</h3>
-      <p class="hint">התמונה נשלחת (מוקטנת) למודל התמונות ומצוירת מחדש. לוקח עד דקה לתמונה.</p>
+      <h3>🧠 AI במחשב: חינם, בלי הגבלה</h3>
+      <p class="hint">רץ במחשב שלך ושומר על הפנים. בפעם הראשונה נטען מודל של כ־9MB, ואחר כך זה עובד גם בלי אינטרנט. בין כמה שניות לדקה לתמונה, לפי מהירות המחשב.</p>
+      <div class="ai-styles" id="local-ai-styles"></div>
+      <h3>🤖 טרנספורמציות AI בשרת</h3>
+      <p class="hint">מודל FLUX.2 בשרת של Cloudflare, חינם עד מכסה יומית. התמונה נשלחת מוקטנת ומצוירת מחדש, עד דקה לתמונה. בטרנספורמציות גדולות (גיבורי על, חיות) הפנים עלולות להשתנות.</p>
       <div class="ai-styles" id="ai-styles"></div>
       <div class="field"><label>או לתאר במילים</label><textarea id="ai-custom" rows="2" placeholder="למשל: להלביש את כולם בתחפושות של פיראטים על ספינה"></textarea></div>
       <button class="btn primary wide" id="ai-custom-go">✨ לעשות</button>
@@ -366,6 +369,7 @@
 <script src="js/games.js"></script>
 <script src="js/events.js"></script>
 <script src="js/event-studio.js"></script>
+<script src="js/anime.js"></script>
 <script src="js/styles.js"></script>
 <script src="js/library.js"></script>
 <script src="js/business.js"></script>
