@@ -47,8 +47,10 @@ One-time setup (the secrets GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, optional 
    `https://spider-auth.devopsdevopshaim.workers.dev/hasadna-mail-callback`
 4. Copy the client id and secret into the repository secrets, then run the "Cloudflare deploy" workflow.
 
-## Live video avatar (HeyGen)
+## Live video avatar (LiveAvatar)
 
-`hasadna-heygen` mints short-lived HeyGen streaming tokens for signed-in visitors (6 sessions an hour each); the API key stays on the server.
-Set the repository secrets `HEYGEN_API_KEY` (and optionally `HEYGEN_AVATAR_ID`, `HEYGEN_VOICE_ID`), then run "Cloudflare deploy". The portfolio
-shows "🎥 שיחת וידאו" in Maya's chat only when the key exists; the call ends when the chat closes or after five idle minutes.
+`hasadna-heygen` starts a LiveAvatar LITE session for signed-in visitors (6 sessions an hour each) and speaks Hebrew through Gemini TTS, which the
+page streams to the avatar so its lips follow the speech. The API key stays on the server. Set the repository secret `LIVEAVATAR_API_KEY`
+(`GEMINI_API_KEY` is needed too; optionally `LIVEAVATAR_AVATAR_ID`, and `LIVEAVATAR_SANDBOX=1` for free one-minute tests with the Wayne avatar),
+then run "Cloudflare deploy". The portfolio shows "🎥 שיחת וידאו" in Maya's chat only when both keys exist; the call ends when the chat closes
+or after five idle minutes.

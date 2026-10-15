@@ -1,13 +1,31 @@
-# One-off: LiveAvatar LITE mode docs.
+# One-off: run a free sandbox LITE session end to end and show the response shapes (tokens redacted).
 name: LiveAvatar docs
 on: workflow_dispatch
 jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - name: Read
+      - name: Sandbox session
+        env:
+          RAW: ${{ secrets.LIVEAVATAR_API_KEY }}
         run: |
-          for p in docs/lite-mode/overview docs/lite-mode/lifecycle docs/lite-mode/configuration docs/lite-mode/events; do
-            echo "##### $p"; curl -sL "https://docs.liveavatar.com/$p.md" | head -c 9000; echo
-          done
-          echo "##### sdk"; curl -sL https://api.github.com/repos/heygen-com/liveavatar-web-sdk/contents | head -c 1500
+          K=$(printf %s "$RAW" | tr -s ' \t\r\n' '\n' | grep -E '^[A-Za-z0-9_-]{20,}$' | tail -1)
+          T=$(curl -s -X POST https://api.liveavatar.com/v1/sessions/token -H "X-API-KEY: $K" -H 'content-type: application/json' \
+            -d '{"mode":"LITE","is_sandbox":true,"avatar_id":"dd73ea75-1218-4ef3-92ce-606d5f7fbc0a","video_settings":{"quality":"high","encoding":"H264"}}')
+          echo "$T" | python3 -c "import sys,json; d=json.load(sys.stdin); print('token resp code',d.get('code'),'msg',d.get('message'),'keys',list((d.get('data') or {}).keys()))"
+          TOK=$(echo "$T" | python3 -c "import sys,json; d=(json.load(sys.stdin).get('data') or {}); print(d.get('session_token') or d.get('token') or '')")
+          S=$(curl -s -X POST https://api.liveavatar.com/v1/sessions/start -H "Authorization: Bearer $TOK" -H 'content-type: application/json')
+          echo "$S" | python3 -c "
+          import sys,json
+          d=json.load(sys.stdin); x=d.get('data') or {}
+          print('start code',d.get('code'),'msg',d.get('message'))
+          for k,v in x.items(): print(' ',k,'=',(str(v)[:28]+'…' if k.endswith('token') else str(v)[:90]))
+          "
+          echo "$S" | python3 -c "import sys,json; print((json.load(sys.stdin).get('data') or {}).get('ws_url',''))" > ws.txt
+          node -e "
+          const u=require('fs').readFileSync('ws.txt','utf8').trim(); if(!u){console.log('no ws_url');process.exit(0)}
+          const w=new WebSocket(u); const t=setTimeout(()=>{console.log('ws timeout');process.exit(0)},15000);
+          w.onopen=()=>console.log('ws open');
+          w.onmessage=e=>{console.log('ws msg',String(e.data).slice(0,200)); if(String(e.data).includes('connected')){ w.send(JSON.stringify({type:'agent.speak',audio:Buffer.alloc(48000).toString('base64')})); w.send(JSON.stringify({type:'agent.speak_end'})); setTimeout(()=>{clearTimeout(t);process.exit(0)},4000);} };
+          w.onerror=e=>console.log('ws error',e.message||'');
+          "
