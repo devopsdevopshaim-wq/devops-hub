@@ -1,4 +1,4 @@
-# One-off: LiveAvatar voice languages and session API docs.
+# One-off: LiveAvatar LITE mode docs.
 name: LiveAvatar docs
 on: workflow_dispatch
 jobs:
@@ -6,18 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Read
-        env:
-          RAW: ${{ secrets.LIVEAVATAR_API_KEY }}
         run: |
-          K=$(printf %s "$RAW" | tr -s ' \t\r\n' '\n' | grep -E '^[A-Za-z0-9_-]{20,}$' | tail -1)
-          echo "##### VOICES"
-          curl -s "https://api.liveavatar.com/v1/voices?page_size=100" -H "X-API-KEY: $K" | python3 -c "
-          import sys,json,collections
-          d=json.load(sys.stdin)['data']['results']
-          print(dict(collections.Counter(v['language'] for v in d)))
-          for v in d:
-              if v['language'].lower().startswith(('he','iw','multi')): print(v['id'],v['name'],v['language'],v['gender'])
-          "
-          for p in api-reference/sessions/create-session-token docs/full-mode/lifecycle docs/sandbox-mode docs/guides/embed-avatar api-reference/sessions/start-session; do
-            echo "##### $p"; curl -sL "https://docs.liveavatar.com/$p.md" | head -c 7000; echo
+          for p in docs/lite-mode/overview docs/lite-mode/lifecycle docs/lite-mode/configuration docs/lite-mode/events; do
+            echo "##### $p"; curl -sL "https://docs.liveavatar.com/$p.md" | head -c 9000; echo
           done
+          echo "##### sdk"; curl -sL https://api.github.com/repos/heygen-com/liveavatar-web-sdk/contents | head -c 1500
