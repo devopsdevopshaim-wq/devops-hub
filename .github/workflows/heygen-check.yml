@@ -1,4 +1,4 @@
-# One-off: read LiveAvatar's docs for the integration.
+# One-off: LiveAvatar key check and docs for events, voices and the web SDK.
 name: LiveAvatar docs
 on: workflow_dispatch
 jobs:
@@ -6,9 +6,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Read
+        env:
+          RAW: ${{ secrets.LIVEAVATAR_API_KEY }}
         run: |
-          for p in docs/full-mode/overview docs/full-mode/lifecycle api-reference/sessions/create-session-token api-reference/sessions/start-session docs/sandbox-mode; do
-            echo "=================== $p"
-            curl -sL "https://docs.liveavatar.com/$p.md" | head -c 5500
-            echo
+          K=$(printf %s "$RAW" | tr -s ' \t\r\n' '\n' | grep -E '^[A-Za-z0-9_-]{20,}$' | tail -1)
+          echo "key length ${#K}"
+          echo "=== public avatars"; curl -s "https://api.liveavatar.com/v1/avatars/public" -H "X-API-KEY: $K" -w "\nHTTP %{http_code}\n" | head -c 1500
+          echo; echo "=== user avatars"; curl -s "https://api.liveavatar.com/v1/avatars" -H "X-API-KEY: $K" -w "\nHTTP %{http_code}\n" | head -c 1200
+          echo; echo "=== voices"; curl -s "https://api.liveavatar.com/v1/voices?page_size=100" -H "X-API-KEY: $K" -w "\nHTTP %{http_code}\n" | python3 -c "
+          import sys,json,re
+          t=sys.stdin.read()
+          print(t[:300])
+          print('hebrew-ish:', re.findall(r'[^{}]{0,80}(?:he-IL|\"he\"|Hebrew)[^{}]{0,80}', t)[:6])
+          "
+          for p in docs/full-mode/events docs/full-mode/configuration docs/core-concepts/voices; do
+            echo "=================== $p"; curl -sL "https://docs.liveavatar.com/$p.md" | head -c 6500; echo
           done
+          echo "=================== SDK readme"; curl -sL https://raw.githubusercontent.com/heygen-com/liveavatar-web-sdk/main/README.md | head -c 4500
