@@ -163,8 +163,9 @@
     ['vintage', 'צילום מ־1920', '🎞️', 'Make this look like an authentic 1920s sepia photograph with period clothing, film grain and an aged paper border.'],
     ['purim', 'תחפושות', '🎭', 'Dress every person in this photo in fun, colourful costumes (pirate, princess, astronaut, magician…), festive party background.']
   ];
+  /* the image model (FLUX.2 on Cloudflare) takes pictures under 512px */
   function photoB64(p) {
-    var im = FS.img(p.src), k = Math.min(1, 1536 / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k);
+    var im = FS.img(p.src), k = Math.min(1, 496 / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k);
     c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.92).split(',')[1];
   }
   /* the answer is brought back to the original's shape and size (centre crop), so the frame, the faces and the layout stay where they were */
@@ -178,7 +179,8 @@
     var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight;
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
     var faces = p.faces ? p.faces.length : 0; if (faces) prompt += ' There are exactly ' + faces + ' faces in the photo; keep all ' + faces + '.';
-    return FS.askServer({ action: 'restyle', prompt: prompt, image: photoB64(p), mime: 'image/jpeg' }).then(function (r) {
+    var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
+    return FS.askServer({ action: 'restyle', prompt: prompt, image: photoB64(p), mime: 'image/jpeg', w: w, h: h }).then(function (r) {
       if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
       var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
       return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
@@ -188,6 +190,38 @@
       FS.fitPhoto(p.doc, im); FS.snap(p); return p;
     });
   };
+  /* in-browser AI (js/anime.js): the anime painting, then optionally one of the instant styles on top */
+  FS.LOCAL_AI = [
+    ['anime', 'אנימה', '🌸', null],
+    ['comic', 'קומיקס', '💥', { id: 'comic', amt: 55 }],
+    ['cartoon', 'סרט מצויר', '🎬', { id: 'cartoon', amt: 45 }],
+    ['oil', 'ציור שמן', '🖼️', { id: 'oil', amt: 50 }],
+    ['sketch', 'רישום צבעוני', '✏️', { id: 'sketch', amt: 35 }]
+  ];
+  FS.localRestyle = function (p, after, progress) {
+    var orig = FS.img(p.origSrc || p.src);
+    return FS.animeCanvas(orig, 1280, progress).then(function (c) {
+      return new Promise(function (ok) { c.toBlob(function (b) { ok(FS.loadImg(URL.createObjectURL(b))); }, 'image/jpeg', 0.94); });
+    }).then(function (res) { return matchShape(res, orig); }).then(function (im) {
+      if (!p.origSrc) p.origSrc = p.src;
+      p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null;
+      FS.fitPhoto(p.doc, im); p.doc.photo.style = after ? { id: after.id, amt: after.amt } : null; FS.snap(p); return p;
+    });
+  };
+  function runLocal(s) {
+    var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
+    var done = 0, chain = Promise.resolve(), failed = null;
+    FS.busy('🧠 טוען את מודל ה־AI למחשב (בפעם הראשונה כ־9MB)…');
+    list.forEach(function (p, i) { chain = chain.then(function () {
+      return FS.localRestyle(p, s[3], function (a, n) { FS.busy('🧠 ' + s[1] + ' · תמונה ' + (i + 1) + '/' + list.length + ' · ' + Math.round(a / n * 100) + '%'); }).then(function () { done++; }).catch(function (e) { failed = e; });
+    }); });
+    chain.then(function () {
+      FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip();
+      if (done) FS.toast('✨ ' + s[1] + ': ' + done + ' תמונות. "החזרת המקור" מבטל.', 4000);
+      if (failed) FS.toast(String(failed.message) === 'offline' ? 'בפעם הראשונה צריך אינטרנט כדי לטעון את מודל ה־AI. אחר כך זה עובד גם בלי.' : 'ה־AI במחשב לא הצליח בתמונה הזו. אפשר לנסות שוב.', 6000);
+    });
+  }
+
   FS.unstyle = function (p) {
     if (!p.origSrc) return false; p.src = p.origSrc; delete p.origSrc; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
     FS.fitPhoto(p.doc, FS.img(p.src)); p.doc.photo.style = null; FS.snap(p); return true;
@@ -211,6 +245,11 @@
         FS.changed(); FS.refreshStrip && FS.refreshStrip(); $$('#local-styles .tile').forEach(function (x) { x.classList.toggle('on', on && x.dataset.id === s[0]); });
       });
       g.appendChild(b);
+    });
+    var la = $('#local-ai-styles');
+    if (la && !la.children.length) FS.LOCAL_AI.forEach(function (s) {
+      var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + s[1] + '</span>';
+      b.addEventListener('click', function () { runLocal(s); }); la.appendChild(b);
     });
     if (!a.children.length) FS.AI_STYLES.forEach(function (s) {
       var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + s[1] + '</span>';

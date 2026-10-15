@@ -60,6 +60,8 @@ const HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com', 'feeds.fi
 
 const out = (body, code = 200) => [{ json: { code, body } }];
 const H = this.helpers;
+// Workers AI, when this code runs in the Cloudflare Worker (cloudflare/build.mjs passes ENV); n8n has none
+const WAI = (typeof ENV !== 'undefined' && ENV && ENV.AI && typeof ENV.AI.run === 'function') ? ENV.AI : null;
 // why a Gemini call failed, short and without the key: "429 limit: 0 ..." / "404 models/x is not found"
 const why = (e) => {
   let b = e && (e.response && e.response.body || e.cause && e.cause.response && e.cause.response.body);
@@ -70,7 +72,7 @@ const why = (e) => {
 };
 const failed = (errs) => {
   const all = errs.join(' | ');
-  const error = /limit: 0|free[_ ]tier|billing|FreeTier/i.test(all) ? 'no-free-tier' : /quota|exhausted|429/i.test(all) ? 'quota' : 'ai-failed';
+  const error = /limit: 0|free[_ ]tier|billing|FreeTier/i.test(all) ? 'no-free-tier' : /quota|exhausted|429|neurons|allocation/i.test(all) ? 'quota' : 'ai-failed';
   return out({ ok: false, error, detail: all.slice(0, 500) }, 502);
 };
 // the image models this key can use, read from Gemini once every 6 hours (names change); the fixed list is the fallback
@@ -155,7 +157,7 @@ if (b.action === 'ai') {
 if (b.action === 'restyle' || b.action === 'image') {
   const fresh = b.action === 'image';
   if (!hit('hubs-img-ip', ipKey(), IMG_IP_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
-  if (!set(GEMINI_KEY)) return out({ ok: false, error: 'no-key' }, 503);
+  if (!WAI && !set(GEMINI_KEY)) return out({ ok: false, error: 'no-key' }, 503);
   if ((sd.imgs || 0) >= IMG_DAY || sd.imgDay !== day) { if (sd.imgDay !== day) { sd.imgDay = day; sd.imgs = 0; } else return out({ ok: false, error: 'quota' }, 429); }
   const prompt = String(b.prompt || '').replace(/\u0000/g, ' ').trim();
   if (!prompt) return out({ ok: false, error: 'empty' }, 400);
@@ -168,6 +170,34 @@ if (b.action === 'restyle' || b.action === 'image') {
     if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return out({ ok: false, error: 'bad-image' }, 400);
   }
   sd.imgs = (sd.imgs || 0) + 1;
+  // on Cloudflare (the Worker gives ENV.AI): FLUX models from Workers AI, free up to the daily allowance; no Gemini
+  if (WAI) {
+    const toB64 = async (r) => {
+      if (r && typeof r.image === 'string' && r.image) return r.image;
+      let u = null;
+      if (r instanceof ArrayBuffer) u = new Uint8Array(r); else if (r instanceof Uint8Array) u = r; else if (r && typeof r.getReader === 'function') u = new Uint8Array(await new Response(r).arrayBuffer());
+      if (!u || !u.length) throw new Error('no picture in the answer');
+      let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+      return btoa(s);
+    };
+    const dim = (v) => Math.max(256, Math.min(1920, Math.round((Number(v) || 1024) / 16) * 16));
+    const W = dim(b.w), Hh = dim(b.h);
+    // FLUX.2 takes a multipart form; the photo is input_image_0 (under 512px, the studio sends it that size)
+    const form = () => {
+      const f = new FormData(); f.append('prompt', prompt); f.append('width', String(W)); f.append('height', String(Hh));
+      if (!fresh) { const bin = atob(data), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); f.append('input_image_0', new Blob([u], { type: mime })); }
+      const rq = new Response(f); return { multipart: { body: rq.body, contentType: rq.headers.get('content-type') } };
+    };
+    const plan = fresh
+      ? [['@cf/black-forest-labs/flux-1-schnell', () => ({ prompt, steps: 6 })], ['@cf/black-forest-labs/flux-2-klein-4b', form]]
+      : [['@cf/black-forest-labs/flux-2-klein-4b', form], ['@cf/black-forest-labs/flux-2-klein-9b', form], ['@cf/black-forest-labs/flux-2-dev', form]];
+    const tried = [];
+    for (const [m, input] of plan) {
+      try { const img = await toB64(await WAI.run(m, input())); return out({ ok: true, image: img, mime: 'image/jpeg', source: 'Cloudflare', model: m.split('/').pop() }); }
+      catch (e) { tried.push(m.split('/').pop() + ': ' + why(e)); }
+    }
+    return failed(tried);
+  }
   const errs = [];
   for (const m of await imageModels()) {
     const left = 112000 - (Date.now() - now);
