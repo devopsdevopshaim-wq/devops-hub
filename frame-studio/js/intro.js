@@ -42,7 +42,7 @@
   var stage = null, canvases = null;
   var shown = Promise.all(FS.SHOWCASE.map(function (o) { return FS.magnetCanvas(o, 720); })).then(function (cs) { canvases = cs; return cs; });
   function flat() {
-    var box = $('#intro-fallback'); if (box.childElementCount) return; intro.classList.add('flat');
+    var box = $('#intro-fallback'); if (!box || box.childElementCount) return; intro.classList.add('flat');
     var pos = [[8, 6, -7], [52, 4, 5], [30, 33, -2], [64, 38, 7], [6, 60, 4], [44, 64, -6]];
     canvases.slice(0, pos.length).forEach(function (c, i) { var m = document.createElement('div'); m.className = 'fm'; m.style.cssText = 'right:' + pos[i][0] + '%;top:' + pos[i][1] + '%;--r:' + pos[i][2] + 'deg;--d:' + (0.5 + i * 0.14) + 's'; m.appendChild(c); box.appendChild(m); });
   }

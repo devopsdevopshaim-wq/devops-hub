@@ -188,16 +188,37 @@
     var text = 'שלום! אשמח להצעה למגנטים לאירוע 🧲\nשם: ' + f.get('name') + '\nטלפון: ' + f.get('phone') + '\nאירוע: ' + f.get('type') + (f.get('date') ? '\nתאריך: ' + FS.fmtDate(f.get('date')) : '') + (f.get('guests') ? '\nאורחים: ' + f.get('guests') : '') + (f.get('notes') ? '\nהערות: ' + f.get('notes') : '');
     openWa(text);
   });
+  /* ---------- is the date free? busy dates come from the studio's closed deals (no names) ---------- */
+  function isBusy(iso) { return !!iso && (BIZ.busy || []).indexOf(iso) > -1; }
+  function availText(iso) {
+    if (!iso) return '';
+    var d = new Date(iso + 'T12:00:00'), t = new Date(); t.setHours(0, 0, 0, 0);
+    if (isNaN(d) || d < t) return '';
+    return isBusy(iso) ? '⚠️ התאריך הזה כבר תפוס אצלנו. כתבו לנו בכל זאת, לפעמים אפשר לתאם.' : '✔ נראה שהתאריך פנוי! כדאי לשריין מהר.';
+  }
+  $('#c-date').addEventListener('change', function () { var a = $('#c-avail'), t = availText(this.value); a.textContent = t; a.className = 'avail' + (t ? (isBusy(this.value) ? ' busy' : ' free') : ''); });
+
+  /* ---------- reviews from the studio ---------- */
+  function reviews() {
+    var list = (BIZ.reviews || []).filter(function (r) { return r && r.text; }), sec = $('#reviews'); if (!sec) return;
+    sec.hidden = !list.length && !BIZ.googleReviews;
+    $('#rv-grid').innerHTML = list.map(function (r) { var ev = FS.event(r.type), n = Math.max(1, Math.min(5, Number(r.stars) || 5));
+      return '<figure class="rv-card"><div class="stars" aria-label="' + n + ' מתוך 5">' + new Array(n + 1).join('★') + '<i>' + new Array(6 - n).join('★') + '</i></div><blockquote>' + esc(r.text) + '</blockquote><figcaption><b>' + esc(r.name || 'לקוח/ה') + '</b><span>' + ev.icon + ' ' + esc(ev.name) + '</span></figcaption></figure>'; }).join('');
+    $('#rv-google').innerHTML = /^https:\/\//.test(BIZ.googleReviews || '') ? '<a class="btn line" href="' + esc(BIZ.googleReviews) + '" target="_blank" rel="noopener">⭐ לכל הביקורות ולכתיבת ביקורת בגוגל</a>' : '';
+  }
+  window.SITE = { biz: BIZ, waLink: waLink, openWa: openWa, waNumber: waNumber, isBusy: isBusy, availText: availText };
+
   $('#year').textContent = new Date().getFullYear();
   /* sections and cards rise in as they scroll into view */
   if ('IntersectionObserver' in window) {
     var ro = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }); }, { rootMargin: '0px 0px -8% 0px' });
-    $$('.sec > h2, .sec > .eyebrow, .steps li, .pk, .tech article, .faq details, .designer, .contact > *').forEach(function (el, i) { el.classList.add('reveal'); el.style.transitionDelay = (i % 4) * 70 + 'ms'; ro.observe(el); });
-    var mo = new MutationObserver(function () { $$('.pk:not(.reveal), .faq details:not(.reveal)').forEach(function (el) { el.classList.add('reveal'); ro.observe(el); }); }); mo.observe(document.body, { childList: true, subtree: true });
+    $$('.sec > h2, .sec > .eyebrow, .steps li, .pk, .tech article, .faq details, .designer, .contact > *, .rv-card').forEach(function (el, i) { el.classList.add('reveal'); el.style.transitionDelay = (i % 4) * 70 + 'ms'; ro.observe(el); });
+    var mo = new MutationObserver(function () { $$('.pk:not(.reveal), .faq details:not(.reveal), .rv-card:not(.reveal)').forEach(function (el) { el.classList.add('reveal'); ro.observe(el); }); }); mo.observe(document.body, { childList: true, subtree: true });
   }
 
   var bizLoaded = fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; }).then(function (b) {
-    Object.assign(BIZ, b || {}); fill();
+    Object.assign(BIZ, b || {}); fill(); reviews();
+    window.dispatchEvent(new CustomEvent('site:biz', { detail: BIZ })); window.SITE.ready = true;
     /* the magnets drawn on this page carry the published details, not whatever this browser saved */
     FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}) });
   });

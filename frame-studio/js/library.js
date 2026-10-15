@@ -70,9 +70,10 @@
     Promise.all([token() ? readLibrary().catch(function () { return null; }) : Promise.resolve(null), FS.store.all('designs').catch(function () { return []; })]).then(function (r) {
       var pub = r[0], local = (r[1] || []).filter(function (d) { return d.lib; });
       var h = '<h3>באתר</h3>' + (pub === null ? '<p class="hint">' + (token() ? 'לא הצלחתי לקרוא את הספרייה מ־GitHub.' : 'אין חיבור GitHub, אז אין פרסום לאתר. מגדירים אותו בכפתור "חיבור לאתר".') + '</p>' :
-        pub.length ? '<ul class="ev-list">' + pub.map(function (a) { return '<li><span>' + FS.event(a.type).icon + ' <b>' + FS.esc(a.title) + '</b> <small>' + a.images.length + ' תמונות · ' + FS.fmtDate(a.date) + '</small></span><button class="btn small danger" data-pdel="' + FS.esc(a.id) + '">הסרה מהאתר</button></li>'; }).join('') + '</ul>' : '<p class="empty">עדיין אין אלבומים באתר.</p>');
+        pub.length ? '<ul class="ev-list">' + pub.map(function (a) { return '<li><span>' + FS.event(a.type).icon + ' <b>' + FS.esc(a.title) + '</b> <small>' + a.images.length + ' תמונות · ' + FS.fmtDate(a.date) + '</small></span><button class="btn small" data-qr="' + FS.esc(a.id) + '">📱 QR לאורחים</button><button class="btn small danger" data-pdel="' + FS.esc(a.id) + '">הסרה מהאתר</button></li>'; }).join('') + '</ul>' : '<p class="empty">עדיין אין אלבומים באתר.</p>');
       h += '<h3>בדפדפן הזה בלבד</h3>' + (local.length ? '<div class="designs">' + local.map(function (d) { return '<figure data-id="' + d.id + '"><img src="' + d.thumb + '" alt=""><figcaption><b>' + FS.esc(d.name) + '</b><small>' + d.images.length + ' תמונות</small></figcaption><div>' + (token() ? '<button class="btn small primary" data-lpub>פרסום לאתר</button>' : '') + '<button class="btn small danger" data-ldel>מחיקה</button></div></figure>'; }).join('') + '</div>' : '<p class="empty">אין.</p>');
       body.innerHTML = h;
+      $$('[data-qr]', body).forEach(function (b) { b.addEventListener('click', function () { if (FS.guestSign) FS.guestSign(pub.filter(function (x) { return x.id === b.dataset.qr; })[0]); }); });
       $$('[data-pdel]', body).forEach(function (b) { b.addEventListener('click', function () {
         var a = pub.filter(function (x) { return x.id === b.dataset.pdel; })[0]; if (!confirm('להסיר את "' + a.title + '" מהאתר?')) return;
         FS.busy('מסיר…');
