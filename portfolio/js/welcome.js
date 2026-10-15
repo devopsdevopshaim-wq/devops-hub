@@ -46,6 +46,7 @@
 
   // ---- the front door
   var QUICK = [
+    { id: 'frame-studio', t: 'עריכת תמונות והדפסה', d: 'עריכה, מסגרות PNG, AI ומדפסת, במקום אחד', i: '🖼️', c: '#4d8dff' },
     { id: 'bills-hub', t: 'תשלומים לבית', d: 'ארנונה, חשמל, מים וכל החשבונות במקום אחד', i: '🏠', c: '#5fd39a' },
     { id: 'finance-hub', t: 'הכסף שלי', d: 'לבדוק מצב, לקבל תוכנית ולהבין את השוק', i: '🧭', c: '#e0b25a' },
     { id: 'wellness-hub', t: 'בריאות וכושר', d: 'תוכנית אישית ואימון קצר כל יום', i: '💪', c: '#62dcb8' },
@@ -67,7 +68,7 @@
     var mine = {}; (Array.isArray(who.sites) ? who.sites : who.sites === 'all' ? ['*'] : []).forEach(function (id) { mine[id] = true; });
     var list = data.projects.filter(function (p) { return !hide[p.id] && !p.hidden && !p.pending && (who.role !== 'client' || mine['*'] || mine[p.id]); });
     var byId = {}; list.forEach(function (p) { byId[p.id] = p; });
-    var quick = QUICK.filter(function (q) { return byId[q.id]; }).slice(0, 8);
+    var quick = QUICK.filter(function (q) { return byId[q.id]; }).slice(0, 9);
     if (quick.length < 4) list.filter(function (p) { return p.featured && !quick.some(function (q) { return q.id === p.id; }); }).slice(0, 8 - quick.length).forEach(function (p) { quick.push({ id: p.id, t: p.title.replace(/\s[—-].*$/, ''), d: (p.desc || '').slice(0, 70), i: p.icon || '✦', c: '#8b7bff' }); });
 
     root.classList.add('friendly');
