@@ -176,6 +176,12 @@
     openWa(text);
   });
   $('#year').textContent = new Date().getFullYear();
+  /* sections and cards rise in as they scroll into view */
+  if ('IntersectionObserver' in window) {
+    var ro = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }); }, { rootMargin: '0px 0px -8% 0px' });
+    $$('.sec > h2, .sec > .eyebrow, .steps li, .pk, .tech article, .faq details, .designer, .contact > *').forEach(function (el, i) { el.classList.add('reveal'); el.style.transitionDelay = (i % 4) * 70 + 'ms'; ro.observe(el); });
+    var mo = new MutationObserver(function () { $$('.pk:not(.reveal), .faq details:not(.reveal)').forEach(function (el) { el.classList.add('reveal'); ro.observe(el); }); }); mo.observe(document.body, { childList: true, subtree: true });
+  }
 
   fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; }).then(function (b) {
     Object.assign(BIZ, b || {}); fill();

@@ -14,18 +14,40 @@
     return vision;
   }
   FS.loadVision = loadVision;
+  /* the multiclass person model (hair, face, body, clothes, accessories) gives cleaner people; the selfie model is the fallback */
   function getSegmenter() {
     if (segmenter) return segmenter;
     segmenter = loadVision().then(function (v) {
-      return v.m.ImageSegmenter.createFromOptions(v.fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite' }, runningMode: 'IMAGE', outputConfidenceMasks: true, outputCategoryMask: false });
+      var opt = function (url) { return { baseOptions: { modelAssetPath: url }, runningMode: 'IMAGE', outputConfidenceMasks: true, outputCategoryMask: false }; };
+      return v.m.ImageSegmenter.createFromOptions(v.fs, opt('https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite'))
+        .then(function (sg) { sg.multi = true; return sg; })
+        .catch(function () { return v.m.ImageSegmenter.createFromOptions(v.fs, opt('https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite')); });
     });
     segmenter.catch(function () { segmenter = null; });
     return segmenter;
   }
+  /* box mean with an integral image */
+  function boxMean(a, w, h, r) {
+    var W = w + 1, S = new Float64Array(W * (h + 1)), o = new Float32Array(w * h), x, y;
+    for (y = 0; y < h; y++) { var rs = 0; for (x = 0; x < w; x++) { rs += a[y * w + x]; S[(y + 1) * W + x + 1] = S[y * W + x + 1] + rs; } }
+    for (y = 0; y < h; y++) { var y0 = Math.max(0, y - r), y1 = Math.min(h, y + r + 1); for (x = 0; x < w; x++) { var x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1);
+      o[y * w + x] = (S[y1 * W + x1] - S[y0 * W + x1] - S[y1 * W + x0] + S[y0 * W + x0]) / ((x1 - x0) * (y1 - y0)); } }
+    return o;
+  }
+  /* guided filter (He et al.): the soft mask follows the photo's own edges, so hair and shoulders cut cleanly */
+  function guided(I, P, w, h, r, eps) {
+    var n = w * h, IP = new Float32Array(n), II = new Float32Array(n), i;
+    for (i = 0; i < n; i++) { IP[i] = I[i] * P[i]; II[i] = I[i] * I[i]; }
+    var mI = boxMean(I, w, h, r), mP = boxMean(P, w, h, r), mIP = boxMean(IP, w, h, r), mII = boxMean(II, w, h, r), A = new Float32Array(n), B = new Float32Array(n);
+    for (i = 0; i < n; i++) { var cov = mIP[i] - mI[i] * mP[i], vr = mII[i] - mI[i] * mI[i]; A[i] = cov / (vr + eps); B[i] = mP[i] - A[i] * mI[i]; }
+    var mA = boxMean(A, w, h, r), mB = boxMean(B, w, h, r), Q = new Float32Array(n);
+    for (i = 0; i < n; i++) Q[i] = Math.max(0, Math.min(1, mA[i] * I[i] + mB[i]));
+    return Q;
+  }
   function getFaces() {
     if (faceDet) return faceDet;
     faceDet = loadVision().then(function (v) {
-      return v.m.FaceDetector.createFromOptions(v.fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite' }, runningMode: 'IMAGE', minDetectionConfidence: 0.45 });
+      return v.m.FaceDetector.createFromOptions(v.fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite' }, runningMode: 'IMAGE', minDetectionConfidence: 0.5 });
     });
     faceDet.catch(function () { faceDet = null; });
     return faceDet;
@@ -38,13 +60,23 @@
     if (p.mask) return Promise.resolve(p.mask);
     FS.busy('מזהה את האנשים בתמונה…');
     return getSegmenter().then(function (seg) {
-      var c = small(FS.img(p.src), 1024), res = seg.segment(c), m = res.confidenceMasks[0], f = m.getAsFloat32Array(), w = m.width, h = m.height;
-      var mc = FS.canvas(w, h), x = mc.getContext('2d'), id = x.createImageData(w, h), cover = 0;
-      for (var i = 0; i < f.length; i++) { var v = Math.max(0, Math.min(1, (f[i] - 0.25) / 0.5)); cover += v; id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = 255 * v; id.data[i * 4 + 3] = 255; }
-      var soft = FS.blur(id.data, w, h, 2); for (i = 0; i < soft.length; i += 4) soft[i + 3] = 255;
-      id.data.set(soft); x.putImageData(id, 0, 0);
+      var c = small(FS.img(p.src), 1024), w = c.width, h = c.height, res = seg.segment(c), cm = res.confidenceMasks, i;
+      var mw = cm[0].width, mh = cm[0].height, f = cm[0].getAsFloat32Array(), low = new Float32Array(mw * mh);
+      for (i = 0; i < low.length; i++) low[i] = seg.multi ? 1 - f[i] : f[i];      /* multiclass: channel 0 is the background */
       if (res.close) res.close();
-      p.mask = mc; p.maskV = (p.maskV || 0) + 1; p.maskCover = cover / f.length; FS.busy();
+      /* bring the model's mask up to the working size, then refine it on the photo's edges */
+      var lc = FS.canvas(mw, mh), lx = lc.getContext('2d'), ld = lx.createImageData(mw, mh);
+      for (i = 0; i < low.length; i++) { ld.data[i * 4] = ld.data[i * 4 + 1] = ld.data[i * 4 + 2] = low[i] * 255; ld.data[i * 4 + 3] = 255; }
+      lx.putImageData(ld, 0, 0);
+      var up = FS.canvas(w, h), ux = up.getContext('2d', { willReadFrequently: true }); ux.imageSmoothingQuality = 'high'; ux.drawImage(lc, 0, 0, w, h);
+      var ud = ux.getImageData(0, 0, w, h).data, P = new Float32Array(w * h), I = new Float32Array(w * h);
+      var px = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+      for (i = 0; i < w * h; i++) { P[i] = ud[i * 4] / 255; I[i] = (0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2]) / 255; }
+      var Q = guided(I, P, w, h, Math.max(4, Math.round(Math.max(w, h) / 90)), 0.0008), cover = 0;
+      var mc = FS.canvas(w, h), x = mc.getContext('2d'), id = x.createImageData(w, h);
+      for (i = 0; i < w * h; i++) { var v = Math.max(0, Math.min(1, (Q[i] - 0.18) / 0.64)); v = v * v * (3 - 2 * v); cover += v; id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = 255 * v; id.data[i * 4 + 3] = 255; }
+      x.putImageData(id, 0, 0);
+      p.mask = mc; p.maskV = (p.maskV || 0) + 1; p.maskCover = cover / (w * h); FS.busy();
       if (p.maskCover < 0.015) FS.toast('לא נמצא אדם בתמונה. החלפת רקע עובדת על אנשים.', 5000);
       return mc;
     }).catch(function (e) { fail(e); throw e; });
@@ -61,16 +93,34 @@
   $('#file-bg').addEventListener('change', function () { var f = this.files[0]; this.value = ''; if (!f) return; FS.fileToDataURL(f).then(FS.loadImg).then(function (im) { setBg('image', { src: im.src }); }); });
 
   /* ---------- faces ---------- */
+  /* faces at every size: the whole photo, then overlapping tiles (small faces in group photos), merged */
   FS.findFaces = function (p, quiet) {
     if (p.faces) return Promise.resolve(p.faces);
     if (!quiet) FS.busy('מחפש פנים…');
     return getFaces().then(function (det) {
-      var im = FS.img(p.src), c = small(im, 1600), r = det.detect(c), k = c.k;
-      p.faces = (r.detections || []).map(function (d) {
-        var b = d.boundingBox, kp = (d.keypoints || []).map(function (q) { return { x: q.x * c.width / k, y: q.y * c.height / k }; });
-        return { x: b.originX / k, y: b.originY / k, w: b.width / k, h: b.height / k, kp: kp };
+      var im = FS.img(p.src), W = im.naturalWidth, H = im.naturalHeight, found = [];
+      function run(sx, sy, sw, sh) {
+        var k = Math.min(1, 1280 / Math.max(sw, sh)), c = FS.canvas(sw * k, sh * k); c.getContext('2d').drawImage(im, sx, sy, sw, sh, 0, 0, c.width, c.height);
+        (det.detect(c).detections || []).forEach(function (d) {
+          var b = d.boundingBox, sc = (d.categories && d.categories[0] && d.categories[0].score) || 0.5;
+          found.push({ x: sx + b.originX / k, y: sy + b.originY / k, w: b.width / k, h: b.height / k, score: sc,
+            kp: (d.keypoints || []).map(function (q) { return { x: sx + q.x * sw, y: sy + q.y * sh }; }) });
+        });
+      }
+      run(0, 0, W, H);
+      if (Math.max(W, H) > 900) { /* 2×2 tiles with a quarter overlap, and the middle */
+        var tw = W * 0.6, th = H * 0.6;
+        [[0, 0], [W - tw, 0], [0, H - th], [W - tw, H - th], [(W - tw) / 2, (H - th) / 2]].forEach(function (o) { run(o[0], o[1], tw, th); });
+      }
+      /* keep the best of overlapping boxes */
+      found.sort(function (a, b) { return b.score - a.score; });
+      var keep = [];
+      found.forEach(function (f) {
+        var dup = keep.some(function (g) { var ix = Math.max(0, Math.min(f.x + f.w, g.x + g.w) - Math.max(f.x, g.x)), iy = Math.max(0, Math.min(f.y + f.h, g.y + g.h) - Math.max(f.y, g.y)), inter = ix * iy; return inter / Math.min(f.w * f.h, g.w * g.h) > 0.35; });
+        if (!dup && f.w > 12) keep.push(f);
       });
-      if (!quiet) { FS.busy(); if (!p.faces.length) FS.toast('לא נמצאו פנים. הזיהוי עובד הכי טוב על פנים קרובות וברורות.', 4500); }
+      p.faces = keep.sort(function (a, b) { return a.x - b.x; });
+      if (!quiet) { FS.busy(); if (!p.faces.length) FS.toast('לא נמצאו פנים. הזיהוי עובד הכי טוב על פנים ברורות.', 4500); else FS.toast('👤 נמצאו ' + p.faces.length + ' פנים'); }
       return p.faces;
     }).catch(function (e) { if (quiet) return []; fail(e); throw e; });
   };

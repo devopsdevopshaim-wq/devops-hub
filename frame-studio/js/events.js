@@ -47,15 +47,15 @@
     if (sub) lines.push({ text: sub, size: m * 0.038, font: 'Bellefair', weight: 400 });
     var inBand = band > m * 0.16, total = lines.reduce(function (s, l) { return s + l.size * 1.25; }, 0);
     var y = inBand ? H.y + H.h + (band - total) / 2 : d.h - total - m * 0.06;
-    lines.forEach(function (l) {
+    lines.forEach(function (l, li) {
       var size = Math.round(Math.min(l.size, inBand ? band * 0.55 : l.size));
-      d.layers.push({ id: FS.uid(), type: 'text', magnet: true, text: l.text, x: d.w / 2, y: y + size * 0.62, size: size, font: l.font, weight: l.weight,
+      d.layers.push({ id: FS.uid(), link: 'mg' + li, type: 'text', magnet: true, text: l.text, x: d.w / 2, y: y + size * 0.62, size: size, font: l.font, weight: l.weight,
         color: inBand ? ink : '#ffffff', shadow: !inBand, strokeW: 0, stroke: '#000000', r: 0, opacity: 1, align: 'center' });
       y += size * 1.25;
     });
     if (o.logo && FS.img(o.logo)) {
       var li = FS.img(o.logo), s = m * 0.16 / Math.max(li.naturalWidth, li.naturalHeight);
-      d.layers.push({ id: FS.uid(), type: 'image', magnet: true, src: o.logo, s: s, x: H.x + H.w - li.naturalWidth * s / 2 - m * 0.03, y: H.y + H.h - li.naturalHeight * s / 2 - m * 0.03, r: 0, opacity: 0.95 });
+      d.layers.push({ id: FS.uid(), link: 'mglogo', type: 'image', magnet: true, src: o.logo, s: s, x: H.x + H.w - li.naturalWidth * s / 2 - m * 0.03, y: H.y + H.h - li.naturalHeight * s / 2 - m * 0.03, r: 0, opacity: 0.95 });
     }
     var im = FS.img(p.src); if (im) FS.fitPhoto(d, im);
   };

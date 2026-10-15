@@ -84,10 +84,36 @@
   var commitT = null;
   FS.commitSoon = function () { clearTimeout(commitT); commitT = setTimeout(function () { var p = FS.cur(); if (p) { FS.snap(p); refreshThumb(); } }, 450); };
 
+  /* ---------- crisp line icons for the tool rail ---------- */
+  var ICONS = {
+    event: '<path d="M6 3v7a6 6 0 0 0 12 0V3"/><path d="M6 3h4v7a2 2 0 0 0 4 0V3h4"/><path d="M6 7h4M14 7h4"/>',
+    photos: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 8"/>',
+    adjust: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+    filters: '<circle cx="9" cy="9" r="5"/><circle cx="15" cy="9" r="5"/><circle cx="12" cy="15" r="5"/>',
+    frames: '<rect x="3" y="3" width="18" height="18" rx="1"/><rect x="7" y="7" width="10" height="10"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/>',
+    text: '<path d="M5 6V4h14v2M12 4v16M9 20h6"/>',
+    styles: '<path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.8-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8Z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/>',
+    ai: '<path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/>',
+    games: '<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v4M5 13h4"/><circle cx="15.5" cy="12" r="1"/><circle cx="18" cy="14.5" r="1"/>',
+    output: '<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>'
+  };
+  $$('.tools [role=tab]').forEach(function (b, i) {
+    var ic = ICONS[b.dataset.tab]; if (!ic) return; var sp = b.querySelector('span');
+    if (sp) sp.outerHTML = '<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ic + '</svg>';
+    b.style.setProperty('--i', i);
+  });
+  /* a soft ripple where a button is pressed */
+  document.addEventListener('pointerdown', function (e) {
+    var b = e.target.closest && e.target.closest('.btn, .tools button, .tile, .ai-style, .game, .seg button'); if (!b || b.disabled) return;
+    var r = b.getBoundingClientRect(), s = document.createElement('i'); s.className = 'ripple'; var d = Math.max(r.width, r.height) * 2;
+    s.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - r.left - d / 2) + 'px;top:' + (e.clientY - r.top - d / 2) + 'px';
+    b.appendChild(s); setTimeout(function () { s.remove(); }, 600);
+  });
+
   /* ---------- tabs ---------- */
   function openTab(name) {
     $$('.tools [role=tab]').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === name ? 'true' : 'false'); });
-    $$('[data-pane]').forEach(function (s) { s.hidden = s.dataset.pane !== name; });
+    $$('[data-pane]').forEach(function (s) { var show = s.dataset.pane === name; if (show && s.hidden) { s.classList.remove('enter'); void s.offsetWidth; s.classList.add('enter'); } s.hidden = !show; });
     FS.prefs.tab = name; FS.savePrefs();
     if (name === 'filters') buildPresets();
     if (name === 'frames') buildFrames();
@@ -215,6 +241,8 @@
     if (range && lastClick > -1) { var a = Math.min(lastClick, i), z = Math.max(lastClick, i); for (var k = a; k <= z; k++) S.marked[S.photos[k].id] = true; }
     else { var id = S.photos[i].id; if (S.marked[id]) delete S.marked[id]; else S.marked[id] = true; }
     lastClick = i;
+    var c = FS.cur(); if (S.marked[S.photos[i].id] && (!c || !S.marked[c.id])) { select(i); }   /* the photo on screen is always one of the marked, so edits reach them all */
+    else if (c && !S.marked[c.id]) { var m0 = FS.marked()[0]; if (m0) select(S.photos.indexOf(m0)); }
     $$('#strip .th[data-i]').forEach(function (b) { var p = S.photos[Number(b.dataset.i)]; var on = !!S.marked[p.id]; b.classList.toggle('marked', on); b.querySelector('input').checked = on; });
     markBar();
   }
@@ -222,25 +250,25 @@
     var n = FS.marked().length, tot = S.photos.length;
     $('#mark-count').textContent = n ? n + ' מסומנות מתוך ' + tot : tot + ' תמונות';
     $('#stripbar').hidden = !tot;
-    var banner = $('#batch-banner'); banner.hidden = !(S.batch && n > 1);
+    var banner = $('#batch-banner'); banner.hidden = !(S.batch !== false && n > 1);
     banner.querySelector('b').textContent = n;
-    $('#batch-toggle').classList.toggle('on', !!S.batch);
+    $('#batch-toggle').classList.toggle('on', S.batch !== false && n > 1);
     $('#batch-toggle').disabled = n < 2;
   }
   FS.markBar = markBar;
   $('#mark-all').addEventListener('click', function () { S.photos.forEach(function (p) { S.marked[p.id] = true; }); buildStrip(); });
-  $('#mark-none').addEventListener('click', function () { S.marked = {}; S.batch = false; buildStrip(); });
+  $('#mark-none').addEventListener('click', function () { S.marked = {}; S.batch = undefined; buildStrip(); });
   $('#mark-inv').addEventListener('click', function () { S.photos.forEach(function (p) { if (S.marked[p.id]) delete S.marked[p.id]; else S.marked[p.id] = true; }); buildStrip(); });
   $('#mark-bad').addEventListener('click', function () { S.marked = {}; S.photos.forEach(function (p) { if (p.quality && !p.quality.ok) S.marked[p.id] = true; }); buildStrip(); FS.toast(FS.marked().length ? 'סומנו ' + FS.marked().length + ' תמונות שלא עברו בדיקה' : 'אין תמונות פסולות (או שעוד לא נבדקו)'); });
   $('#batch-toggle').addEventListener('click', function () {
-    S.batch = !S.batch; var c = FS.cur();
+    S.batch = S.batch === false; var c = FS.cur();
     if (S.batch && c && !S.marked[c.id]) { var m = FS.marked(); if (m.length) select(S.photos.indexOf(m[0])); }
-    markBar(); FS.toast(S.batch ? '✏️ עריכה מרובה: כל שינוי חל על ' + FS.marked().length + ' התמונות המסומנות' : 'עריכה מרובה כבויה');
+    markBar(); FS.toast(S.batch ? '✏️ עריכה מרובה: כל שינוי חל על ' + FS.marked().length + ' התמונות המסומנות' : 'עריכה מרובה כבויה: שינויים חלים רק על התמונה שעל המסך');
   });
   $('#mark-del').addEventListener('click', function () {
     var m = FS.marked(); if (!m.length) return; if (!confirm('להסיר ' + m.length + ' תמונות מהפרויקט?')) return;
     S.photos = S.photos.filter(function (p) { return !S.marked[p.id]; }); m.forEach(function (p) { if (/^blob:/.test(p.src)) setTimeout(function () { URL.revokeObjectURL(p.src); }, 5000); });
-    S.marked = {}; S.batch = false; S.cur = Math.min(S.cur, S.photos.length - 1); S.sel = null; buildStrip(); FS.emit('doc'); FS.emit('history');
+    S.marked = {}; S.batch = undefined; S.cur = Math.min(S.cur, S.photos.length - 1); S.sel = null; buildStrip(); FS.emit('doc'); FS.emit('history');
   });
   $('#mark-copies-go').addEventListener('click', function () {
     var n = FS.clamp(Number($('#mark-copies').value) || 1, 1, 999), list = FS.marked().length ? FS.marked() : FS.cur() ? [FS.cur()] : [];
@@ -261,6 +289,7 @@
   function select(i) {
     var prev = FS.cur(); if (prev && prev !== S.photos[i]) prev.cache = {}; /* only the photo on screen keeps its big preview in memory */
     S.cur = i; S.sel = null; lastClick = i;
+    view.classList.remove('swap'); void view.offsetWidth; view.classList.add('swap');
     var p = FS.cur(); if (p && !p.undo.length) FS.snap(p);
     $$('#strip .th[data-i]').forEach(function (b) { b.classList.toggle('on', Number(b.dataset.i) === i); });
     var cb = $('#strip .th[data-i="' + i + '"]'); if (cb && cb.scrollIntoView) cb.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -325,7 +354,7 @@
   });
   function up(e) {
     delete ptrs[e.pointerId];
-    if (drag && Object.keys(ptrs).length === 0) { drag = null; FS.changed(); if (S.sel) fillLayerEditor(); }
+    if (drag && Object.keys(ptrs).length === 0) { var dm = drag; drag = null; if (dm.L && dm.L.link) syncLinked(dm.L, dm.mode === 'move' ? ['pos'] : ['size', 'r']); FS.changed(); if (S.sel) fillLayerEditor(); }
     else if (drag && drag.mode === 'pinch') drag = null;
   }
   view.addEventListener('pointerup', up); view.addEventListener('pointercancel', up);
@@ -336,6 +365,7 @@
     if (S.sel && S.sel !== 'photo') scaleLayer(S.sel, k);
     else { var pt = docPt(e), d = p.doc; d.photo.x = pt.x + (d.photo.x - pt.x) * k; d.photo.y = pt.y + (d.photo.y - pt.y) * k; d.photo.s *= k; }
     FS.render(); FS.commitSoon(); syncPhotoControls();
+    clearTimeout(FS._wheelT); var WL = S.sel; FS._wheelT = setTimeout(function () { if (WL && WL !== 'photo' && WL.link) syncLinked(WL, ['size']); }, 400);
   }, { passive: false });
   document.addEventListener('keydown', function (e) {
     if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
@@ -537,9 +567,30 @@
   function addLayer(L) {
     var p = FS.cur(); if (!p) { FS.toast('בוחרים תמונה קודם'); return null; }
     var d = p.doc; L = Object.assign({ id: FS.uid(), x: d.w / 2, y: d.h / 2, r: 0, opacity: 1 }, L);
-    d.layers.push(L); S.sel = L; FS.changed(); openLayerEditor(); return L;
+    d.layers.push(L);
+    if (FS.targets().length > 1) { L.link = L.link || L.id; FS.batch(function (q) { q.doc.layers.push(cloneTo(L, d, q.doc)); }); }
+    S.sel = L; FS.changed(); openLayerEditor(); return L;
   }
   FS.addLayer = addLayer;
+  /* a layer moved to another page size: same relative place, size by the shorter side */
+  function cloneTo(L, from, to) {
+    var n = JSON.parse(JSON.stringify(L)), k = Math.min(to.w, to.h) / Math.min(from.w, from.h);
+    n.id = FS.uid(); n.x = L.x / from.w * to.w; n.y = L.y / from.h * to.h; if (n.size) n.size = L.size * k; if (n.s) n.s = L.s * k; return n;
+  }
+  /* the edit on the selected layer reaches the same layer on every marked photo */
+  function syncLinked(L, keys) {
+    if (!L || !L.link || FS.targets().length < 2) return;
+    var d = FS.cur().doc;
+    FS.batch(function (q) {
+      var x = FS.linked(q, L); if (!x) return; var k = Math.min(q.doc.w, q.doc.h) / Math.min(d.w, d.h);
+      keys.forEach(function (key) {
+        if (key === 'pos') { x.x = L.x / d.w * q.doc.w; x.y = L.y / d.h * q.doc.h; }
+        else if (key === 'size') { if (L.size != null) x.size = L.size * k; if (L.s != null) x.s = L.s * k; }
+        else x[key] = L[key] == null ? L[key] : JSON.parse(JSON.stringify(L[key]));
+      });
+    });
+  }
+  FS.syncLinked = syncLinked;
   $('#add-text').addEventListener('click', function () {
     var d = FS.cur() && FS.cur().doc; if (!d) { FS.toast('בוחרים תמונה קודם'); return; }
     addLayer({ type: 'text', text: 'הטקסט שלי', size: Math.round(Math.min(d.w, d.h) * 0.08), font: 'Heebo', weight: 800, color: '#ffffff', strokeW: 0, stroke: '#000000', shadow: true, align: 'center', bg: '#000000', bgOn: false });
@@ -572,7 +623,7 @@
     h += '<div class="row3"><button class="btn small" data-la="center">⌖ מרכז</button><button class="btn small" data-la="up">⬆ קדימה</button><button class="btn small" data-la="down">⬇ אחורה</button><button class="btn small" data-la="dup">⧉ שכפול</button><button class="btn small" data-la="lock">🔒 נעילה</button><button class="btn small danger" data-la="del">🗑 מחיקה</button></div>';
     box.innerHTML = h;
     function rng(k, label, mn, mx, v, st) { return '<div class="field"><label>' + label + ' <output>' + Math.round(v * 100) / 100 + '</output></label><input type="range" data-k="' + k + '" min="' + mn + '" max="' + mx + '" step="' + (st || 1) + '" value="' + v + '"></div>'; }
-    var t = $('#le-text'); if (t) t.addEventListener('input', function () { L.text = t.value; FS.render(); FS.commitSoon(); syncLayers(); });
+    var t = $('#le-text'); if (t) { t.addEventListener('input', function () { L.text = t.value; FS.render(); FS.commitSoon(); syncLayers(); }); t.addEventListener('change', function () { syncLinked(L, ['text']); }); }
     $$('[data-k]', box).forEach(function (el) {
       el.addEventListener('input', function () {
         var v = el.type === 'range' ? Number(el.value) : el.value;
@@ -581,16 +632,17 @@
         if (el.dataset.k === 'font' && document.fonts) document.fonts.load('700 40px "' + v + '"').then(function () { FS.render(); });
         FS.render(true); FS.commitSoon();
       });
+      el.addEventListener('change', function () { var k = el.dataset.k; syncLinked(L, [k === 'size' || k === 's' ? 'size' : k]); });
     });
-    var g2 = $('[data-tg2=grad]', box); if (g2) g2.addEventListener('change', function () { L.grad = g2.checked ? $('[data-k=grad]', box).value : null; FS.changed(); });
+    var g2 = $('[data-tg2=grad]', box); if (g2) g2.addEventListener('change', function () { L.grad = g2.checked ? $('[data-k=grad]', box).value : null; syncLinked(L, ['grad']); FS.changed(); });
     $$('[data-tg]', box).forEach(function (b) { b.addEventListener('click', function () {
       var k = b.dataset.tg; if (k === 'bold') L.weight = L.weight >= 700 ? 400 : 800; else L[k] = !L[k];
-      b.classList.toggle('on'); FS.changed(); }); });
+      syncLinked(L, [k === 'bold' ? 'weight' : k]); b.classList.toggle('on'); FS.changed(); }); });
     $$('[data-la]', box).forEach(function (b) { b.addEventListener('click', function () { layerAct(b.dataset.la); }); });
   }
   function layerAct(a) {
     var p = FS.cur(), L = S.sel; if (!p || !L) return; var arr = p.doc.layers, i = arr.indexOf(L);
-    if (a === 'center') { L.x = p.doc.w / 2; L.y = p.doc.h / 2; }
+    if (a === 'center') { L.x = p.doc.w / 2; L.y = p.doc.h / 2; syncLinked(L, ['pos']); }
     else if (a === 'up' && i < arr.length - 1) { arr.splice(i, 1); arr.splice(i + 1, 0, L); }
     else if (a === 'down' && i > 0) { arr.splice(i, 1); arr.splice(i - 1, 0, L); }
     else if (a === 'dup') return dupLayer();
@@ -599,10 +651,11 @@
     FS.changed();
   }
   function dupLayer() { var p = FS.cur(), L = S.sel; var c = JSON.parse(JSON.stringify(L)); c.id = FS.uid(); c.x += 30; c.y += 30; delete c.frameText; p.doc.layers.push(c); S.sel = c; FS.changed(); fillLayerEditor(); }
-  function delLayer() { var p = FS.cur(), L = S.sel; p.doc.layers = p.doc.layers.filter(function (x) { return x !== L; }); S.sel = null; closeLayerEditor(); FS.changed(); }
+  function delLayer() { var p = FS.cur(), L = S.sel; if (L && L.link) FS.batch(function (q) { var x = FS.linked(q, L); if (x) q.doc.layers = q.doc.layers.filter(function (y) { return y !== x; }); }); p.doc.layers = p.doc.layers.filter(function (x) { return x !== L; }); S.sel = null; closeLayerEditor(); FS.changed(); }
   $('#layers-to-marked').addEventListener('click', function () {
     var c = FS.cur(), m = FS.marked().filter(function (q) { return q !== c; }); if (!c || !m.length) return FS.toast('מסמנים תמונות נוספות בפס התמונות (Ctrl+לחיצה)');
     var Ls = c.doc.layers.filter(function (L) { return !L.frameText; });
+    Ls.forEach(function (L) { L.link = L.link || L.id; });
     m.forEach(function (q) { Ls.forEach(function (L) { var n = JSON.parse(JSON.stringify(L)); n.id = FS.uid(); n.x = L.x / c.doc.w * q.doc.w; n.y = L.y / c.doc.h * q.doc.h; var k = Math.min(q.doc.w, q.doc.h) / Math.min(c.doc.w, c.doc.h); if (n.size) n.size *= k; if (n.s) n.s *= k; q.doc.layers.push(n); }); q.cache = {}; FS.snap(q); });
     FS.refreshStrip(); FS.toast(Ls.length + ' שכבות הועתקו ל־' + m.length + ' תמונות');
   });

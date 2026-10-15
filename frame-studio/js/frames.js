@@ -226,8 +226,8 @@
     }
     if (ref && ref.kind === 'gen' && !opts.noTexts) {
       var def = FS.GEN_FRAMES.filter(function (f) { return f.id === ref.id; })[0];
-      (def && def.texts || []).forEach(function (t) {
-        d.layers.push({ id: FS.uid(), type: 'text', frameText: true, text: t.text, x: d.w / 2, y: d.h * t.y, size: Math.round(Math.min(d.w, d.h) * t.size * (d.h > d.w ? 1.2 : 1)),
+      (def && def.texts || []).forEach(function (t, ti) {
+        d.layers.push({ id: FS.uid(), link: 'ft' + ti, type: 'text', frameText: true, text: t.text, x: d.w / 2, y: d.h * t.y, size: Math.round(Math.min(d.w, d.h) * t.size * (d.h > d.w ? 1.2 : 1)),
           font: t.font, color: t.color, weight: t.weight || 700, strokeW: t.strokeW || 0, stroke: t.stroke || '#000', r: 0, opacity: 1, align: 'center' });
       });
     }
