@@ -109,3 +109,25 @@ function world({ key = true, ai = null, http = null } = {}) {
     check('hubs: refuses ' + bad, r.code >= 400 && sent.length === n, r.body);
   }
 }
+{
+  // the image model has no free tier: the answer says so, with Gemini's own words and no key
+  const err = Object.assign(new Error('Request failed with status code 429'), { httpCode: '429', response: { body: { error: { message: 'Quota exceeded for metric generate_content_free_tier_requests, limit: 0, model: gemini-2.5-flash-image AIzaSyFAKEFAKEFAKEFAKEFAKE' } } } });
+  const { call } = world({ ai: async (o) => { if (o.method === 'GET') return { models: [] }; throw err; } });
+  const r = await call({ action: 'image', prompt: 'heart' }, { ip: '9.9.9.1' });
+  check('hubs: an image model with no free tier is reported as such', r.code === 502 && r.body.error === 'no-free-tier' && /limit: 0/.test(r.body.detail) && !/AIza/.test(r.body.detail), JSON.stringify(r.body));
+}
+{
+  // the image models are read from Gemini, so a renamed model is still found
+  const png = { candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/png', data: 'UE5H' } }] } }] };
+  const { call, sent } = world({ ai: async (o) => o.method === 'GET' ? { models: [{ name: 'models/gemini-9-flash-image', supportedGenerationMethods: ['generateContent'] }, { name: 'models/imagen-4', supportedGenerationMethods: ['predict'] }, { name: 'models/gemini-9-flash', supportedGenerationMethods: ['generateContent'] }] } : png });
+  const r = await call({ action: 'image', prompt: 'heart' }, { ip: '9.9.9.2' });
+  check('hubs: the image model comes from the list Gemini gives', r.code === 200 && r.body.model === 'gemini-9-flash-image' && /gemini-9-flash-image:generateContent/.test(sent.at(-1).url), JSON.stringify(r.body));
+  const s = await call({ action: 'status' }, { ip: '9.9.9.2' });
+  check('hubs: status shows the image models found', JSON.stringify(s.body.imageModels) === '["gemini-9-flash-image"]');
+}
+{
+  // text: every model's reason comes back, not only the last one
+  const { call } = world({ ai: async () => { throw Object.assign(new Error('x'), { httpCode: '404', response: { body: { error: { message: 'model not found' } } } }); } });
+  const r = await call({ action: 'ai', prompt: 'hi' }, { ip: '9.9.9.3' });
+  check('hubs: a failed answer says why', r.code === 502 && r.body.error === 'ai-failed' && /404 model not found/.test(r.body.detail));
+}

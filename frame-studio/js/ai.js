@@ -187,16 +187,17 @@
     return fetch(HUB, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'http-' + r.status }; }); })
       .catch(function (e) { return { ok: false, error: e && e.name === 'AbortError' ? 'timeout' : 'offline' }; })
-      .then(function (r) { clearTimeout(to); return r; });
+      .then(function (r) { clearTimeout(to); FS.lastAiDetail = r && !r.ok ? String(r.detail || '') : ''; if (r && !r.ok && r.detail && window.console) console.warn('AI:', r.error, r.detail); return r; });
   };
   FS.aiError = function (m) {
     m = String(m || '');
     if (m === 'no-key') return 'שרת ה־AI עוד לא הוגדר (חסר מפתח Gemini בשרת).';
+    if (m === 'no-free-tier') return 'יצירת תמונות ב־Gemini לא כלולה בתוכנית החינמית של המפתח. צריך להפעיל חיוב (Billing) בפרויקט ב־Google AI Studio, והתמונות יתחילו לעבוד.';
     if (m === 'quota') return 'הגענו למכסת ה־AI היומית. מחר זה יתאפס.';
     if (m === 'rate-limited') return 'יותר מדי בקשות בשעה האחרונה. נסו שוב בעוד כמה דקות.';
     if (m === 'timeout') return 'ה־AI לא ענה בזמן. נסו שוב.';
     if (m === 'offline') return 'אין חיבור לשרת ה־AI. בודקים אינטרנט ומנסים שוב.';
-    return 'ה־AI לא הצליח הפעם. נסו שוב או ניסוח אחר.';
+    return 'ה־AI לא הצליח הפעם.' + (FS.lastAiDetail ? ' (' + FS.lastAiDetail.slice(0, 140) + ')' : ' נסו שוב או ניסוח אחר.');
   };
   function toEnglish(text) {
     if (!hasHeb(text)) return Promise.resolve(text);

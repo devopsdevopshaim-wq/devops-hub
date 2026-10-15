@@ -54,18 +54,45 @@ const GEMINI_KEY = '__GEMINI_API_KEY__';
 const set = (k) => k && !/^__/.test(k);
 const TEXT_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 const DAY_CAP = 1200, IP_HOUR = 30, FETCH_HOUR = 240, IMG_DAY = 200, IMG_IP_HOUR = 12;
-const IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-2.5-flash-image-preview', 'gemini-2.0-flash-preview-image-generation'];
+const IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image-preview', 'gemini-3-pro-image-preview', 'gemini-2.5-flash-image-preview'];
 // the market data the finance site shows; nothing else may be read through here
 const HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com', 'feeds.finance.yahoo.com', 'www.globes.co.il'];
 
 const out = (body, code = 200) => [{ json: { code, body } }];
+const H = this.helpers;
+// why a Gemini call failed, short and without the key: "429 limit: 0 ..." / "404 models/x is not found"
+const why = (e) => {
+  let b = e && (e.response && e.response.body || e.cause && e.cause.response && e.cause.response.body);
+  if (typeof b === 'string') { try { b = JSON.parse(b); } catch (x) { /* keep the text */ } }
+  const msg = (b && b.error && b.error.message) || (e && (e.description || e.message)) || String(e);
+  const code = (e && (e.httpCode || e.statusCode || (e.response && e.response.status))) || '';
+  return (String(code) + ' ' + String(msg)).replace(/AIza[\w-]{20,}/g, '…').replace(/\s+/g, ' ').trim().slice(0, 180);
+};
+const failed = (errs) => {
+  const all = errs.join(' | ');
+  const error = /limit: 0|free[_ ]tier|billing|FreeTier/i.test(all) ? 'no-free-tier' : /quota|exhausted|429/i.test(all) ? 'quota' : 'ai-failed';
+  return out({ ok: false, error, detail: all.slice(0, 500) }, 502);
+};
+// the image models this key can use, read from Gemini once every 6 hours (names change); the fixed list is the fallback
+async function imageModels() {
+  if (sd.imgModels && sd.imgModelsAt > now - 6 * 3600000) return sd.imgModels;
+  let found = [];
+  try {
+    const r = await H.httpRequest({ method: 'GET', url: 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', headers: { 'x-goog-api-key': GEMINI_KEY }, json: true, timeout: 10000 });
+    found = ((r && r.models) || []).filter((m) => /image/i.test(m.name || '') && !/imagen|veo|tts|embed/i.test(m.name) && (m.supportedGenerationMethods || []).includes('generateContent')).map((m) => String(m.name).replace(/^models\//, ''));
+  } catch (e) { /* the fixed list */ }
+  const rank = (m) => (IMAGE_MODELS.includes(m) ? 0 : 10) + (/flash/.test(m) ? 0 : 3) + (/preview|exp/.test(m) ? 1 : 0);
+  const list = found.length ? found.sort((a, b) => rank(a) - rank(b)).slice(0, 4) : IMAGE_MODELS;
+  if (found.length) { sd.imgModels = list; sd.imgModelsAt = now; }
+  return list;
+}
 if (!ORIGIN || !ORIGIN_OK) return out({ ok: false, error: 'forbidden' }, 403);
 let b = $json.body || {};
 if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { return out({ ok: false, error: 'bad-json' }, 400); } }
 const day = new Date(now).toISOString().slice(0, 10);
 if (sd.day !== day) { sd.day = day; sd.asked = 0; }
 
-if (b.action === 'status') return out({ ok: true, ai: set(GEMINI_KEY), left: Math.max(0, DAY_CAP - (sd.asked || 0)) });
+if (b.action === 'status') return out({ ok: true, ai: set(GEMINI_KEY), left: Math.max(0, DAY_CAP - (sd.asked || 0)), imageModels: sd.imgModels || null });
 
 if (b.action === 'fetch') {
   if (!hit('hubs-fetch', ipKey(), FETCH_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
@@ -104,7 +131,7 @@ if (b.action === 'ai') {
   const wiring = b.tag === 'wiring';
   const gen = wiring ? { temperature: 0.1, maxOutputTokens: 32768, responseMimeType: 'application/json' } : { temperature: media.length ? 0.1 : 0.7, maxOutputTokens: 4096 };
   sd.asked = (sd.asked || 0) + 1;
-  let last;
+  const errs = [];
   for (const m of TEXT_MODELS) {
     // the whole run must end inside n8n's 120 s limit
     const left = 112000 - (Date.now() - now);
@@ -120,11 +147,10 @@ if (b.action === 'ai') {
       });
       const t = r && r.candidates && r.candidates[0] && r.candidates[0].content && (r.candidates[0].content.parts || []).map((p) => p.text || '').join('');
       if (t && t.trim()) return out({ ok: true, text: t.trim(), source: 'Gemini' });
-      last = new Error('empty');
-    } catch (e) { last = e; }
+      errs.push(m + ': empty answer');
+    } catch (e) { errs.push(m + ': ' + why(e)); }
   }
-  const s = String((last && (last.description || last.message)) || last).slice(0, 200);
-  return out({ ok: false, error: /quota|exhausted|429/i.test(s) ? 'quota' : 'ai-failed' }, 502);
+  return failed(errs);
 }
 if (b.action === 'restyle' || b.action === 'image') {
   const fresh = b.action === 'image';
@@ -142,8 +168,8 @@ if (b.action === 'restyle' || b.action === 'image') {
     if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return out({ ok: false, error: 'bad-image' }, 400);
   }
   sd.imgs = (sd.imgs || 0) + 1;
-  let last;
-  for (const m of IMAGE_MODELS) {
+  const errs = [];
+  for (const m of await imageModels()) {
     const left = 112000 - (Date.now() - now);
     if (left < 20000) break;
     try {
@@ -157,12 +183,11 @@ if (b.action === 'restyle' || b.action === 'image') {
       });
       const parts = (r && r.candidates && r.candidates[0] && r.candidates[0].content && r.candidates[0].content.parts) || [];
       const img = parts.map((p) => p.inlineData || p.inline_data).filter((x) => x && x.data)[0];
-      if (img) return out({ ok: true, image: img.data, mime: img.mimeType || img.mime_type || 'image/png', source: 'Gemini' });
-      last = new Error('no-image');
-    } catch (e) { last = e; }
+      if (img) return out({ ok: true, image: img.data, mime: img.mimeType || img.mime_type || 'image/png', source: 'Gemini', model: m });
+      errs.push(m + ': no picture in the answer ' + parts.map((p) => p.text || '').join(' ').slice(0, 120));
+    } catch (e) { errs.push(m + ': ' + why(e)); }
   }
-  const s = String((last && (last.description || last.message)) || last).slice(0, 200);
-  return out({ ok: false, error: /quota|exhausted|429/i.test(s) ? 'quota' : 'ai-failed' }, 502);
+  return failed(errs);
 }
 return out({ ok: false, error: 'unknown-action' }, 400);
 """
