@@ -1,4 +1,4 @@
-# One-off diagnostic: does the HEYGEN_API_KEY work, and which streaming avatars does the account offer?
+# One-off diagnostic: does the HEYGEN_API_KEY work against the current HeyGen API, and what does the current API offer for live avatars?
 name: HeyGen check
 on: workflow_dispatch
 jobs:
@@ -7,33 +7,13 @@ jobs:
     steps:
       - name: Ask HeyGen
         env:
-          K: ${{ secrets.HEYGEN_API_KEY }}
+          RAW: ${{ secrets.HEYGEN_API_KEY }}
         run: |
-          echo "key length: ${#K}"
-          echo "shape: $(printf %s "$K" | sed 's/[A-Za-z0-9]/x/g' | sed 's/x\{2,\}/x+/g' | od -c | head -3)"
-          K=$(printf %s "$K" | tr -d '\r\n \t' )
-          echo "clean length: ${#K}"
-          echo "--- token"
-          curl -s -o /tmp/t.json -w "HTTP %{http_code}\n" -X POST https://api.heygen.com/v1/streaming.create_token -H "x-api-key: $K" -H "Content-Type: application/json"
-          python3 - <<'PY'
-          import json
-          try:
-              j=json.load(open('/tmp/t.json'))
-              print('token present:', bool((j.get('data') or {}).get('token')), '| error:', j.get('error') or j.get('message'))
-          except Exception as e: print('not json', e)
-          PY
-          echo "--- interactive avatars"
-          curl -s -o /tmp/a.json -w "HTTP %{http_code}\n" https://api.heygen.com/v1/streaming/avatar.list -H "x-api-key: $K"
-          python3 - <<'PY'
-          import json
-          try:
-              j=json.load(open('/tmp/a.json'))
-              d=j.get('data') or []
-              if isinstance(d,dict): d=d.get('avatars') or d.get('list') or []
-              print('count', len(d))
-              for a in d[:40]: print(a.get('avatar_id') or a.get('avatar_name'), '|', a.get('pose_name') or a.get('name'), '|', a.get('status'), '|', a.get('is_public'))
-              if not d: print(str(j)[:400])
-          except Exception as e: print('not json', e)
-          PY
-          echo "--- remaining quota"
-          curl -s https://api.heygen.com/v2/user/remaining_quota -H "x-api-key: $K" | head -c 400; echo
+          K=$(printf %s "$RAW" | tr -s ' \t\r\n' '\n' | grep -E '^[A-Za-z0-9_-]{30,}$' | tail -1)
+          echo "clean length: ${#K}  prefix: $(printf %s "$K" | cut -c1-6)"
+          echo "--- /v3/users/me"
+          curl -s -w "\nHTTP %{http_code}\n" https://api.heygen.com/v3/users/me -H "x-api-key: $K" | head -c 600
+          echo
+          echo "--- llms.txt (live / streaming / interactive avatar parts)"
+          curl -s https://developers.heygen.com/llms.txt -o /tmp/llms.txt -w "HTTP %{http_code} size %{size_download}\n"
+          grep -n -i -E "stream|live|interactive|realtime|real-time|session" /tmp/llms.txt | head -60
