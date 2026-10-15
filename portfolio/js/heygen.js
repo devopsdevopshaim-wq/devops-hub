@@ -60,7 +60,10 @@
     if (GA.active) { stop(); return; }
     setBusy(true); btn.textContent = 'מתחברת…';
     var LK;
-    Promise.all([loadLK(), post({ action: 'start' })]).then(function (res) {
+    post({ action: 'status' }).then(function (st) {
+      if (!st || !st.available) throw new Error(st && st.reason === 'signin' ? 'צריך להתחבר מחדש' : 'השרת עוד לא מוגדר לשיחת וידאו');
+      return Promise.all([loadLK(), post({ action: 'start' })]);
+    }).then(function (res) {
       LK = res[0]; var r = res[1];
       if (!r || !r.ok) throw new Error(r && r.error || 'start');
       session = r.session;
@@ -108,13 +111,11 @@
     return true;
   }
 
+  // the button is always there for a signed-in visitor; a click says plainly when the call cannot start
   Promise.all([Auth.ready, fetch('api.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return null; })]).then(function (res) {
     var who = res[0] || {}, c = res[1];
-    if (!who.role || who.role === 'visitor' || who.offline || !c || !c.base) return;
+    if (!who.role || who.offline || !c || !c.base) return;
     BASE = c.base;
-    post({ action: 'status' }).then(function (r) {
-      if (!r || !r.available) return;
-      var tries = 0, iv = setInterval(function () { if (mount() || ++tries > 40) clearInterval(iv); }, 500);
-    }).catch(function () {});
+    var tries = 0, iv = setInterval(function () { if (mount() || ++tries > 60) clearInterval(iv); }, 500);
   });
 })();
