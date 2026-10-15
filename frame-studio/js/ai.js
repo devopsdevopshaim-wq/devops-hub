@@ -181,20 +181,47 @@
 
   /* ---------- pictures from a description ---------- */
   function hasHeb(s) { return /[֐-׿]/.test(s); }
+  /* text/plain keeps it a simple request: the server answers no CORS preflight, so application/json never reached it */
   FS.askServer = function (body) {
-    return fetch(HUB, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      .then(function (r) { return r.json(); });
+    var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, body.action === 'ai' && !body.image ? 45000 : 115000);
+    return fetch(HUB, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'http-' + r.status }; }); })
+      .catch(function (e) { return { ok: false, error: e && e.name === 'AbortError' ? 'timeout' : 'offline' }; })
+      .then(function (r) { clearTimeout(to); return r; });
+  };
+  FS.aiError = function (m) {
+    m = String(m || '');
+    if (m === 'no-key') return 'שרת ה־AI עוד לא הוגדר (חסר מפתח Gemini בשרת).';
+    if (m === 'quota') return 'הגענו למכסת ה־AI היומית. מחר זה יתאפס.';
+    if (m === 'rate-limited') return 'יותר מדי בקשות בשעה האחרונה. נסו שוב בעוד כמה דקות.';
+    if (m === 'timeout') return 'ה־AI לא ענה בזמן. נסו שוב.';
+    if (m === 'offline') return 'אין חיבור לשרת ה־AI. בודקים אינטרנט ומנסים שוב.';
+    return 'ה־AI לא הצליח הפעם. נסו שוב או ניסוח אחר.';
   };
   function toEnglish(text) {
     if (!hasHeb(text)) return Promise.resolve(text);
     return FS.askServer({ action: 'ai', tag: 'photo', prompt: 'Translate this image description to a short English image-generation prompt. Answer with the prompt only:\n' + text })
       .then(function (r) { return r && r.ok && r.text ? r.text.replace(/^["'\s]+|["'\s]+$/g, '') : text; }).catch(function () { return text; });
   }
+  /* draw a picture into a w x h canvas, cropping to fill */
+  function cover(im, w, h) {
+    w = Math.round(w); h = Math.round(h); var c = FS.canvas(w, h), k = Math.max(w / im.naturalWidth, h / im.naturalHeight);
+    c.getContext('2d').drawImage(im, (w - im.naturalWidth * k) / 2, (h - im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k); return c;
+  }
+  /* Gemini's image model through the server first; Pollinations (free, no key) when the server cannot */
   function generate(prompt, w, h) {
-    return toEnglish(prompt).then(function (en) {
-      var url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(en) + '?width=' + Math.round(w) + '&height=' + Math.round(h) + '&nologo=true&seed=' + Math.floor(Math.random() * 1e6);
-      return FS.loadImg(url).then(function (im) { var c = FS.canvas(im.naturalWidth, im.naturalHeight); c.getContext('2d').drawImage(im, 0, 0); return c; });
-    });
+    var shape = w > h * 1.05 ? 'landscape' : h > w * 1.05 ? 'portrait' : 'square';
+    return FS.askServer({ action: 'image', prompt: 'Create one image: ' + prompt + '. Aspect ratio ' + shape + ' (' + Math.round(w) + 'x' + Math.round(h) + '). No text, no watermark.' }).then(function (r) {
+      if (!r || !r.ok || !r.image) throw new Error((r && r.error) || 'ai-failed');
+      var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
+    }).catch(function (e) {
+      var first = e && e.message;
+      return toEnglish(prompt).then(function (en) {
+        var url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(en) + '?width=' + Math.round(w) + '&height=' + Math.round(h) + '&nologo=true&seed=' + Math.floor(Math.random() * 1e6);
+        return FS.loadImg(url);
+      }).catch(function () { throw new Error(first || 'ai-failed'); });
+    }).then(function (im) { return cover(im, w, h); });
   }
   /* turn the near-white area joined to the given seeds transparent */
   function clearWhite(c, seeds, tol) {
@@ -207,7 +234,7 @@
   }
   function edgeSeeds(w, h) { var s = []; for (var i = 0; i < w; i += 3) { s.push(i, (h - 1) * w + i); } for (i = 0; i < h; i += 3) { s.push(i * w, i * w + w - 1); } return s; }
   function promptText() { var t = $('#gen-prompt').value.trim(); if (!t) { FS.toast('כותבים תיאור קודם'); $('#gen-prompt').focus(); } return t; }
-  function genBusy(promise) { FS.busy('יוצר… (עד חצי דקה)'); return promise.then(function (r) { FS.busy(); return r; }, function (e) { FS.busy(); FS.toast('היצירה לא הצליחה. נסו שוב או תיאור אחר.', 4500); throw e; }); }
+  function genBusy(promise) { FS.busy('יוצר… (עד חצי דקה)'); return promise.then(function (r) { FS.busy(); return r; }, function (e) { FS.busy(); FS.toast('היצירה לא הצליחה. ' + FS.aiError(e && e.message), 6000); return new Promise(function () {}); }); }
   $('#gen-bg').addEventListener('click', function () {
     var t = promptText(), p = FS.cur(); if (!t) return; if (!p) return FS.toast('בוחרים תמונה קודם');
     var im = FS.img(p.src), k = 1024 / Math.max(im.naturalWidth, im.naturalHeight);
@@ -259,7 +286,7 @@
       $$('[data-cap]', out).forEach(function (b) { b.addEventListener('click', function () { var d = p.doc; FS.addLayer({ type: 'text', text: j.captions[b.dataset.cap], size: Math.round(Math.min(d.w, d.h) * 0.07), font: 'Amatic SC', weight: 700, color: '#ffffff', shadow: true, y: d.h * 0.85, align: 'center' }); }); });
     }).catch(function (e) {
       var m = String(e && e.message);
-      out.innerHTML = '<p class="hint">' + (m === 'no-key' ? 'שרת ה־AI עוד לא הוגדר.' : m === 'quota' || m === 'rate-limited' ? 'הגענו למכסה. נסו שוב מאוחר יותר.' : 'העוזר לא זמין כרגע.') + ' בינתיים אפשר להשתמש ב"שיפור אוטומטי" בלשונית עריכה, שעובד בלי אינטרנט.</p>';
+      out.innerHTML = '<p class="hint">' + FS.aiError(m) + ' בינתיים אפשר להשתמש ב"שיפור אוטומטי" בלשונית עריכה, שעובד בלי אינטרנט.</p>';
     });
   });
 })();
