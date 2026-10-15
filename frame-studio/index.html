@@ -32,7 +32,7 @@
     <span><b data-biz="name">פריים מגנטים</b><small>מגנטים לאירועים</small></span>
   </a>
   <nav class="links" aria-label="ניווט">
-    <a href="#how">איך זה עובד</a><a href="#gallery">עיצובים</a><a href="#designer">עצבו מגנט</a><a href="#packages">חבילות</a><a href="#tech">טכנולוגיה</a><a href="#faq">שאלות</a>
+    <a href="#how">איך זה עובד</a><a href="#events">אירועים</a><a href="#gallery">עיצובים</a><a href="#designer">עצבו מגנט</a><a href="#packages">חבילות</a><a href="#tech">טכנולוגיה</a><a href="#faq">שאלות</a>
   </nav>
   <div class="nav-cta">
     <a class="btn ghost" href="studio.html">🖼️ לסטודיו</a>
@@ -72,6 +72,13 @@
       <li><span>📸</span><b>מצלמים</b><p>ביום האירוע הצלם שלנו מסתובב בין האורחים ובעמדה המעוצבת.</p></li>
       <li><span>🧲</span><b>מדביקים</b><p>המגנט מודפס במקום, נחתך ומחכה לאורח בתוך שקית מתנה.</p></li>
     </ol>
+  </section>
+
+  <section class="sec" id="events">
+    <p class="eyebrow center">מהאירועים שלנו</p>
+    <h2>אירועים</h2>
+    <div class="chips center light" id="ev-filter"></div>
+    <div class="albums" id="albums"><p class="note center">טוען…</p></div>
   </section>
 
   <section class="sec dark" id="gallery">
@@ -161,6 +168,7 @@
 
 <a class="wa-fab" id="wa-fab" href="#contact" aria-label="וואטסאפ">💬</a>
 <div id="toast" class="toast" role="status" hidden></div>
+<dialog class="lightbox" id="lightbox"><form method="dialog"><button class="lb-x" aria-label="סגירה">✕</button></form><h3 id="lb-title"></h3><div class="lb-main"><button class="lb-nav" id="lb-prev" aria-label="הקודמת">›</button><img id="lb-img" alt="" /><button class="lb-nav" id="lb-next" aria-label="הבאה">‹</button></div><div class="lb-thumbs" id="lb-thumbs"></div></dialog>
 
 <script src="js/core.js"></script>
 <script src="js/frames.js"></script>

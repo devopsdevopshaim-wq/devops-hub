@@ -9,7 +9,8 @@
   /* ---------- the event form ---------- */
   var MAG_FMTS = ['magnet', 'magnetL', 'm69', 'm710', 'm66', '10x15', '15x10', '13x18', 'sq'];
   $('#ev-type').innerHTML = FS.EVENTS.map(function (e) { return '<option value="' + e.id + '">' + e.icon + ' ' + e.name + '</option>'; }).join('');
-  $('#ev-fmt').innerHTML = MAG_FMTS.map(function (id) { var f = FS.fmt(id); return '<option value="' + id + '">' + f.name + '</option>'; }).join('');
+  $('#ev-fmt').innerHTML = MAG_FMTS.map(function (id) { var f = FS.fmt(id); return '<option value="' + id + '">' + f.name + '</option>'; }).join('') + '<option value="cm">📐 גודל מותאם (ס״מ)</option>';
+  $('#ev-fmt').addEventListener('change', function () { $('#ev-cm').hidden = this.value !== 'cm'; });
   $('#ev-font').innerHTML = FS.FONTS.map(function (f) { return '<option value="' + f[0] + '" style="font-family:\'' + f[0] + '\'">' + f[1] + '</option>'; }).join('');
   function fillFrames() {
     var cur = $('#ev-frame').value;
@@ -23,14 +24,14 @@
     $$('#ev-swatches button').forEach(function (b) { b.addEventListener('click', function () { $('#ev-color').value = b.dataset.c; save(); }); });
   }
   function read() {
-    var fr = $('#ev-frame').value, o = { type: $('#ev-type').value, names: $('#ev-names').value.trim(), date: $('#ev-date').value, hashtag: $('#ev-tag').value.trim(), fmt: $('#ev-fmt').value, frame: fr, color: $('#ev-color').value, font: $('#ev-font').value, logo: FS.prefs.event && FS.prefs.event.logo || '' };
+    var fr = $('#ev-frame').value, o = { type: $('#ev-type').value, names: $('#ev-names').value.trim(), date: $('#ev-date').value, hashtag: $('#ev-tag').value.trim(), fmt: $('#ev-fmt').value, frame: fr, color: $('#ev-color').value, font: $('#ev-font').value, logo: FS.prefs.event && FS.prefs.event.logo || '', cmw: Number($('#ev-cmw').value) || 5, cmh: Number($('#ev-cmh').value) || 7.5 };
     if (/^u:/.test(fr)) { o.frameRef = { kind: 'png', id: fr.slice(2), opacity: 1, tint: '#d4a843', tintAmt: 0, clip: false }; }
     return o;
   }
   function write(o) {
     $('#ev-type').value = o.type || 'wedding'; swatches(); fillFrames();
     $('#ev-names').value = o.names || ''; $('#ev-date').value = o.date || ''; $('#ev-tag').value = o.hashtag || '';
-    $('#ev-fmt').value = o.fmt || 'magnet'; $('#ev-frame').value = o.frame || FS.event(o.type).frame; $('#ev-color').value = o.color || FS.event(o.type).color; $('#ev-font').value = o.font || FS.event(o.type).font;
+    $('#ev-fmt').value = o.fmt || 'magnet'; $('#ev-cmw').value = o.cmw || 5; $('#ev-cmh').value = o.cmh || 7.5; $('#ev-cm').hidden = o.fmt !== 'cm'; $('#ev-frame').value = o.frame || FS.event(o.type).frame; $('#ev-color').value = o.color || FS.event(o.type).color; $('#ev-font').value = o.font || FS.event(o.type).font;
     $('#ev-logo-colors').disabled = !o.logo; greets();
   }
   function save() { var o = read(); delete o.frameRef; FS.prefs.event = o; FS.savePrefs(); }
@@ -38,14 +39,15 @@
     var ev = FS.event(this.value); swatches(); $('#ev-frame').value = ev.frame; $('#ev-color').value = ev.color; $('#ev-font').value = ev.font;
     if (!$('#ev-names').value) $('#ev-names').placeholder = ev.names; save(); greets();
   });
-  ['#ev-names', '#ev-date', '#ev-tag', '#ev-fmt', '#ev-frame', '#ev-color', '#ev-font'].forEach(function (s) { $(s).addEventListener('change', save); });
+  ['#ev-names', '#ev-date', '#ev-tag', '#ev-fmt', '#ev-frame', '#ev-color', '#ev-font', '#ev-cmw', '#ev-cmh'].forEach(function (s) { $(s).addEventListener('change', save); });
   $('#ev-on').checked = !!FS.prefs.eventOn; $('#ev-smart').checked = FS.prefs.eventSmart !== false;
   $('#ev-on').addEventListener('change', function () { FS.prefs.eventOn = this.checked; FS.savePrefs(); if (this.checked) FS.toast('מעכשיו כל תמונה חדשה נכנסת לתבנית האירוע'); });
   $('#ev-smart').addEventListener('change', function () { FS.prefs.eventSmart = this.checked; FS.savePrefs(); });
 
   FS.applyEvent = function (p, o, quiet) {
     o = o || read();
-    if (p.doc.fmt !== o.fmt) FS.applyFormat(p.doc, o.fmt, FS.img(p.src));
+    if (o.fmt === 'cm') { var mm = FS.mmOf(p.doc); if (p.doc.fmt !== 'cm' || Math.abs(mm[0] - o.cmw * 10) > 0.1 || Math.abs(mm[1] - o.cmh * 10) > 0.1) FS.applyFormat(p.doc, 'cm', FS.img(p.src), o.cmw * 10, o.cmh * 10); }
+    else if (p.doc.fmt !== o.fmt) FS.applyFormat(p.doc, o.fmt, FS.img(p.src));
     if (o.logo && !FS.img(o.logo)) FS.loadImg(o.logo).then(function () { FS.applyEvent(p, o, true); FS.render(); });
     FS.buildMagnet(p, o);
     var done = $('#ev-smart').checked ? FS.smartFit(p, true).catch(function () {}) : Promise.resolve();
@@ -53,7 +55,13 @@
   };
   FS.afterAdd = FS.afterAdd || [];
   FS.afterAdd.push(function (p) { if (FS.prefs.eventOn && FS.prefs.event) p.eventReady = FS.applyEvent(p, read(), true); });
-  $('#ev-apply').addEventListener('click', function () { var p = FS.cur(); if (!p) return FS.toast('בוחרים תמונה קודם'); save(); FS.applyEvent(p); });
+  $('#ev-apply').addEventListener('click', function () {
+    var list = FS.marked().length > 1 ? FS.marked() : FS.cur() ? [FS.cur()] : []; if (!list.length) return FS.toast('בוחרים תמונה קודם'); save();
+    if (list.length === 1) return FS.applyEvent(list[0]);
+    var o = read(), chain = Promise.resolve(); FS.busy('מחיל על ' + list.length + ' תמונות מסומנות…');
+    list.forEach(function (p) { chain = chain.then(function () { return FS.applyEvent(p, o, true); }); });
+    chain.then(function () { FS.busy(); FS.refreshStrip(); FS.emit('doc'); FS.toast('🧲 התבנית הוחלה על ' + list.length + ' תמונות מסומנות'); });
+  });
   $('#ev-apply-all').addEventListener('click', function () {
     if (!S.photos.length) return; save(); var o = read(), chain = Promise.resolve();
     FS.busy('מחיל על ' + S.photos.length + ' תמונות…');
