@@ -1,0 +1,23 @@
+# One-off: what happens with a production (non-sandbox) LiveAvatar session?
+name: LiveAvatar prod check
+on: workflow_dispatch
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Production token and start
+        env:
+          RAW: ${{ secrets.LIVEAVATAR_API_KEY }}
+        run: |
+          K=$(printf %s "$RAW" | tr -s ' \t\r\n' '\n' | grep -E '^[A-Za-z0-9_-]{20,}$' | tail -1)
+          T=$(curl -s -w '\nHTTP %{http_code}' -X POST https://api.liveavatar.com/v1/sessions/token -H "X-API-KEY: $K" -H 'content-type: application/json' \
+            -d '{"mode":"LITE","avatar_id":"3b87f156-f007-496d-aaea-1d5b75795444","video_settings":{"quality":"high","encoding":"H264"},"max_session_duration":60}')
+          echo "$T" | sed -E 's/"session_token":"[^"]{6}[^"]*"/"session_token":"…"/'
+          TOK=$(echo "$T" | head -1 | python3 -c "import sys,json; d=(json.loads(sys.stdin.read()).get('data') or {}); print(d.get('session_token') or '')")
+          if [ -n "$TOK" ]; then
+            S=$(curl -s -w '\nHTTP %{http_code}' -X POST https://api.liveavatar.com/v1/sessions/start -H "Authorization: Bearer $TOK" -H 'content-type: application/json')
+            echo "$S" | sed -E 's/("livekit_[a-z_]*token"):"[^"]*"/\1:"…"/g'
+            SID=$(echo "$S" | head -1 | python3 -c "import sys,json; print((json.loads(sys.stdin.read()).get('data') or {}).get('session_id') or '')")
+            [ -n "$SID" ] && curl -s -X POST https://api.liveavatar.com/v1/sessions/stop -H "X-API-KEY: $K" -H 'content-type: application/json' -d "{\"session_id\":\"$SID\"}" -w '\nstop HTTP %{http_code}\n'
+          fi
+          for e in v1/users/me v1/credits v1/wallet v1/billing/credits v1/account; do echo "== $e"; curl -s -m 10 "https://api.liveavatar.com/$e" -H "X-API-KEY: $K" -w '\nHTTP %{http_code}\n' | head -c 400; done
