@@ -30,13 +30,14 @@
     <a href="wellness-hub/">🩺 מצפן בריאות</a>
     <a href="torah-hub/">📖 ספריית קודש</a>
     <a href="comic-studio/">💥 סטודיו קומיקס</a>
+    <a href="frame-studio/">🖼️ פריים־סטודיו</a>
   </div>
 </main>
 <script>
   // a link to one of the sites with a missing page inside it goes to that site's front page
   (function () {
     var m = location.pathname.match(/\/devops-hub\/([\w-]+)(\/|$)/);
-    var known = ['finance-hub', 'bills-hub', 'marketing-hub', 'aia-studio', 'wellness-hub', 'torah-hub', 'comic-studio', 'portfolio'];
+    var known = ['finance-hub', 'bills-hub', 'marketing-hub', 'aia-studio', 'wellness-hub', 'torah-hub', 'comic-studio', 'frame-studio', 'portfolio'];
     var root = m ? '/devops-hub/' + m[1] : '';
     // never redirect to the page we are already on (that would loop when a site's own front page is the one missing)
     if (m && known.indexOf(m[1]) > -1 && location.pathname.replace(/\/+$/, '') !== root) location.replace(root + '/');
