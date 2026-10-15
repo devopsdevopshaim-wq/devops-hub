@@ -229,11 +229,11 @@ export class State extends DurableObject {
         const avatar = sandbox ? 'dd73ea75-1218-4ef3-92ce-606d5f7fbc0a' : (env.LIVEAVATAR_AVATAR_ID || '3b87f156-f007-496d-aaea-1d5b75795444');
         let r, j = {};
         try {
-          r = await fetch(LA + '/v1/sessions/token', { method: 'POST', headers: KEY, signal: AbortSignal.timeout(15000), body: JSON.stringify({ mode: 'LITE', avatar_id: avatar, is_sandbox: sandbox, video_settings: { quality: 'high', encoding: 'H264' }, max_session_duration: 300 }) });
+          r = await fetch(LA + '/v1/sessions/token', { method: 'POST', headers: KEY, signal: AbortSignal.timeout(15000), body: JSON.stringify({ mode: 'LITE', avatar_id: avatar, is_sandbox: sandbox, video_settings: { quality: 'high', encoding: 'H264' } }) });
           j = await r.json().catch(() => ({}));
         } catch (e) { r = null; }
         const d = (j && j.data) || {}, tok = d.session_token || d.token;
-        if (!tok) return reply({ ok: false, error: 'token-' + (r ? r.status : 'net') + (j && j.code ? '-' + j.code : '') });
+        if (!tok) return reply({ ok: false, error: 'token-' + (r ? r.status : 'net') + (j && j.code ? '-' + j.code : '') + (j && typeof j.message === 'string' ? ' ' + j.message.replace(/[^\w .,:'-]/g, '').slice(0, 90) : '') });
         let r2, j2 = {};
         try { r2 = await fetch(LA + '/v1/sessions/start', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(25000) }); j2 = await r2.json().catch(() => ({})); } catch (e) { r2 = null; }
         const s2 = (j2 && j2.data) || {};
