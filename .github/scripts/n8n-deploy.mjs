@@ -267,6 +267,14 @@ const checks = {
   checks['hasadna-hubs'] = st;
   note(`- האתרים העצמאיים (פיננסים, שיווק, AIA, בריאות, יהדות): ${st === 200 ? `✅ עונה · AI ${j.ai ? '✅' : '❌ (חסר GEMINI_API_KEY)'}` : '❌ ' + st}`);
 }
+// the frame studio's pictures: one real image from a description, and Gemini's reason when it cannot
+if (process.env.HUBS_IMAGE_CHECK !== '0') {
+  try {
+    const r = await fetch(`${BASE}/webhook/hasadna-hubs`, { method: 'POST', headers: { Origin: 'https://devopsdevopshaim-wq.github.io', 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ action: 'image', prompt: 'A small red heart sticker on a plain white background.' }) });
+    const j = await r.json().catch(() => ({}));
+    note(`- תמונות AI לסטודיו המגנטים: ${j.ok ? '✅ עובד (' + (j.model || 'Gemini') + ')' : '❌ ' + r.status + ' ' + (j.error || '') + ' · ' + (j.detail || '')}`);
+  } catch (e) { note('- ❌ תמונות AI לסטודיו המגנטים: ' + e.message); }
+}
 // the sign-in answers, and (if the secret's password is still the admin's) it opens
 {
   const inf = await post('hasadna-auth', { action: 'info' });
