@@ -51,6 +51,22 @@ const KNOWLEDGE = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/kn
 const routeOf = (pathname) => ROUTES[pathname.replace(/^\/(webhook\/)?/, '')];
 const CORS = { 'Access-Control-Allow-Origin': SITE_ORIGIN, Vary: 'Origin', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' };
 
+// LiveAvatar public avatars are looked up by name once per Worker instance
+const avatarIds = {};
+async function findAvatar(key, name) {
+  if (avatarIds[name]) return avatarIds[name];
+  try {
+    for (let page = 1; page <= 20; page++) {
+      const r = await fetch('https://api.liveavatar.com/v1/avatars/public?page=' + page + '&page_size=20', { headers: { 'X-API-KEY': key }, signal: AbortSignal.timeout(8000) });
+      const d = (await r.json().catch(() => ({}))).data || {};
+      const hit = (d.results || []).find((a) => String(a.name).toLowerCase() === name.toLowerCase());
+      if (hit) return (avatarIds[name] = hit.id);
+      if (!d.next) break;
+    }
+  } catch (e) { /* the default avatar is used */ }
+  return '';
+}
+
 const reply = (body, code = 200, extra = {}) => new Response(JSON.stringify(body), { status: code, headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', ...extra } });
 
 export default {
@@ -226,7 +242,8 @@ export class State extends DurableObject {
         if (arr.length >= 6) return reply({ ok: false, error: 'limit' }, 429);
         arr.push(nowT); st.sd.heygenUse[k] = arr; await this.save(st);
         const sandbox = /^(1|true|yes)$/i.test(String(env.LIVEAVATAR_SANDBOX || ''));
-        const avatar = sandbox ? 'dd73ea75-1218-4ef3-92ce-606d5f7fbc0a' : (env.LIVEAVATAR_AVATAR_ID || '3b87f156-f007-496d-aaea-1d5b75795444');
+        // the avatar is picked by its name from the public list (default "Emma (Fullbody)"), or by LIVEAVATAR_AVATAR_ID; Sarah (Fullbody) if the name is not found
+        let avatar = sandbox ? 'dd73ea75-1218-4ef3-92ce-606d5f7fbc0a' : (env.LIVEAVATAR_AVATAR_ID || await findAvatar(env.LIVEAVATAR_API_KEY, env.LIVEAVATAR_AVATAR_NAME || 'Emma (Fullbody)') || '3b87f156-f007-496d-aaea-1d5b75795444');
         let r, j = {};
         try {
           r = await fetch(LA + '/v1/sessions/token', { method: 'POST', headers: KEY, signal: AbortSignal.timeout(15000), body: JSON.stringify({ mode: 'LITE', avatar_id: avatar, is_sandbox: sandbox, video_settings: { quality: 'high', encoding: 'H264' } }) });

@@ -312,5 +312,5 @@ html:has(.g-panel.open) #mail-pill { display: none; }
 .hg-btn { flex: none; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid #62dcb8; background: rgba(98, 220, 184, .12); color: #bff5e4; font: 600 12.5px var(--body, system-ui); cursor: pointer; }
 .hg-btn.on { background: #e5484d; border-color: #e5484d; color: #fff; }
 .hg-btn:disabled { opacity: .6; cursor: progress; }
-.hg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 4; background: #0e0c26; }
+.hg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; z-index: 4; background: #0e0c26; }   /* the whole avatar, head to feet, never cropped */
 .hg-live .g-facebox, .hg-live .g-stage-photo, .hg-live .g-portrait-img { visibility: hidden; }

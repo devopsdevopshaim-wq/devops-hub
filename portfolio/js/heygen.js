@@ -26,7 +26,7 @@
   function uuid() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }); }
 
   function stop() {
-    clearTimeout(idle); clearInterval(keep); GA.active = false; ready = false; queue = []; playing = false;
+    clearTimeout(idle); clearTimeout(listenT); clearInterval(keep); listening = false; GA.active = false; ready = false; queue = []; playing = false;
     document.documentElement.classList.remove('hg-live');
     Array.prototype.forEach.call(document.querySelectorAll('.hg-video'), function (v) { try { v.srcObject = null; } catch (e) {} v.remove(); });
     Array.prototype.forEach.call(document.querySelectorAll('.hg-audio'), function (v) { v.remove(); });
@@ -38,13 +38,17 @@
   function bump() { clearTimeout(idle); idle = setTimeout(stop, 5 * 60000); }
 
   function b64(bytes) { var s = ''; for (var i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
+  // while the visitor types she turns to listen (the avatar's own listening pose), and relaxes a few seconds after they stop
+  var listenT = null, listening = false;
+  function listen(on) { if (listening === on || !ready) return; listening = on; send({ type: on ? 'agent.start_listening' : 'agent.stop_listening', event_id: uuid() }); }
+  function onType() { if (!GA.active || playing) return; listen(true); clearTimeout(listenT); listenT = setTimeout(function () { listen(false); }, 4000); }
   function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
 
   // one answer at a time: fetch the speech, then feed it to the avatar in one-second pieces
   function pump() {
     if (playing || !queue.length || !ready) return;
     playing = true;
-    var text = queue.shift();
+    var text = queue.shift(); clearTimeout(listenT); listen(false);
     post({ action: 'speak', text: text }).then(function (r) {
       if (!r || !r.ok || !r.audio) throw new Error('speak');
       var bin = atob(r.audio), a = new Uint8Array(bin.length);
@@ -105,6 +109,7 @@
     if (!head || btn) return !!btn;
     btn = document.createElement('button'); btn.type = 'button'; btn.className = 'hg-btn'; btn.textContent = '🎥 שיחת וידאו';
     btn.addEventListener('click', start);
+    var inp = document.querySelector('.guide .g-form input'); if (inp) inp.addEventListener('input', onType);
     head.insertBefore(btn, head.querySelector('.g-x') || null);
     // closing the chat ends the call (it costs money)
     new MutationObserver(function () { var p = document.querySelector('.guide .g-panel'); if (p && !p.classList.contains('open') && GA.active) stop(); }).observe(document.querySelector('.guide .g-panel'), { attributes: true, attributeFilter: ['class'] });
