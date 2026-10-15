@@ -40,7 +40,7 @@ const ROUTES = {
   'hasadna-status': { svc: 'agents', kind: 'status', max: 1000, free: true, method: 'GET' },
   // JARVIS, the personal assistant with the talking face (jarvis-web): the first AI key that answers
   // live video avatar (LiveAvatar): the page asks here for a session and for Hebrew speech (the API key never leaves the server)
-  'hasadna-heygen': { svc: 'agents', kind: 'heygen', max: 2000, free: true },
+  'hasadna-heygen': { svc: 'main', kind: 'heygen', max: 2000, free: true },
   'hasadna-jarvis': { svc: 'agents', kind: 'jarvis', max: 12000, free: true },
   // the clients' own mailboxes (Gmail); the callback is where Google sends the person back after they agree
   'hasadna-mail': { svc: 'main', kind: 'mail', max: 20000, free: true },
