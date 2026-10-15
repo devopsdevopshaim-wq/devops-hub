@@ -232,7 +232,7 @@
   function genFor(g) {
     if (g.gen) return g.gen;
     var t = (g.id + ' ' + g.style).toLowerCase();
-    return /trance|psy|goa|techno|house|dance|edm|progressive|טראנס|פסי|האוס|טכנו/.test(t) ? 'trance' : /ambient|dream|drone|space|new age|meditat|אמביינט|דרים/.test(t) ? 'ambient' : 'chill';
+    return /trance|psy|goa|techno|house|dance|edm|progressive|טראנס|פסי|האוס|טכנו/.test(t) ? 'trance' : /ambient|dream|drone|space|new age|meditat|prayer|תפיל|אמביינט|דרים/.test(t) ? 'ambient' : 'chill';
   }
 
   var mediaCfg = null;
