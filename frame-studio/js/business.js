@@ -153,6 +153,7 @@
     draw();
   }
   FS.openPackages = openPackages;
+  FS.getPackages = packages;
   $('#pkg-btn').addEventListener('click', openPackages);
 
   $('#biz-btn').addEventListener('click', open);
