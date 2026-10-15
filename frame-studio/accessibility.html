@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#1d1633" />
+<title>הצהרת נגישות · פריים מגנטים</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Frank+Ruhl+Libre:wght@700;900&display=swap" />
+<link rel="stylesheet" href="css/pay.css" />
+</head>
+<body>
+<main class="wrap" id="main">
+  <section class="card hero"><p class="brand">הצהרת נגישות<small data-biz="name">פריים מגנטים</small></p></section>
+  <section class="card">
+    <h2>המחויבות שלנו</h2>
+    <p>אנחנו רוצים שכל אחד ואחת יוכלו להשתמש באתר בנוחות, כולל אנשים עם מוגבלות. האתר נבנה בהתאם לעקרונות התקן הישראלי ת״י 5568 והנחיות WCAG 2.0 ברמה AA, ככל שהדבר ניתן.</p>
+    <h2>מה עשינו באתר</h2>
+    <ul>
+      <li>מבנה כותרות ברור, כיווניות מימין לשמאל ושפת העמוד מוגדרת לעברית.</li>
+      <li>אפשר לנווט בכל האתר עם המקלדת, כולל קישור "דילוג לתוכן" ומסגרת מודגשת סביב הרכיב שבפוקוס.</li>
+      <li>לכפתורים ולשדות יש תוויות, והודעות מתעדכנות מוקראות לקוראי מסך.</li>
+      <li>ניגודיות צבעים מספקת בטקסט, והאתר מתאים את עצמו לטלפון ולהגדלת טקסט בדפדפן.</li>
+      <li>כשבמחשב מוגדר "הפחתת תנועה", האנימציות באתר נעצרות.</li>
+    </ul>
+    <h2>מה עוד לא מושלם</h2>
+    <p>הדמיית המגנט והמקרר התלת־ממדי הן תמונות מצוירות, ותיאור מילולי שלהן חלקי. הצ׳אט נבנה כך שיעבוד עם מקלדת, אבל ייתכן שלא כל קוראי המסך מקריאים אותו בצורה מושלמת. אנחנו ממשיכים לשפר.</p>
+    <h2>נתקלתם בבעיה?</h2>
+    <p>נשמח לשמוע ולתקן. רכז/ת הנגישות: <b data-biz="owner">חיים קריספין</b><br>טלפון: <a data-biz-tel href="tel:0544979771">054-4979771</a><br>אימייל: <a data-biz-mail href="mailto:devopsdevopshaim@gmail.com">devopsdevopshaim@gmail.com</a></p>
+    <p class="foot">ההצהרה עודכנה בתאריך: אוקטובר 2026</p>
+  </section>
+  <p class="foot"><a href="./">חזרה לאתר</a></p>
+</main>
+<script>
+fetch('business.json').then(function (r) { return r.json(); }).then(function (b) {
+  document.querySelectorAll('[data-biz]').forEach(function (e) { if (b[e.dataset.biz]) e.textContent = b[e.dataset.biz]; });
+  var t = document.querySelector('[data-biz-tel]'); if (b.phone) { t.textContent = b.phone; t.href = 'tel:' + String(b.phone).replace(/[^\d+]/g, ''); }
+  var m = document.querySelector('[data-biz-mail]'); if (b.email) { m.textContent = b.email; m.href = 'mailto:' + b.email; }
+}).catch(function () {});
+</script>
+</body>
+</html>

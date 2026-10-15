@@ -11,7 +11,7 @@
     d.classList.toggle('wide', !!wide); if (!d.open) d.showModal(); return body;
   };
   FS.closeDialog = function () { var d = $('#dlg'); if (d.open) d.close(); };
-  $('#dlg').addEventListener('close', function () { FS.emit('dialog-closed'); $('#dlg-body').innerHTML = ''; });
+  $('#dlg').addEventListener('close', function () { FS.emit('dialog-closed'); if (!$('#dlg').open) $('#dlg-body').innerHTML = ''; });
   FS.esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
   /* ---------- render ---------- */

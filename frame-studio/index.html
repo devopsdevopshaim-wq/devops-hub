@@ -7,6 +7,13 @@
 <meta name="theme-color" content="#1d1633" />
 <meta name="description" content="מגנטים לאירועים: צילום והדפסה במקום, מסגרת בעיצוב אישי לכל אירוע, ומגנט ביד תוך פחות מדקה. חתונות, בר/בת מצווה, בריתות, ימי הולדת ואירועי חברה." />
 <title>פריים מגנטים · מגנטים לאירועים</title>
+<link rel="canonical" href="https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/" />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="he_IL" />
+<meta property="og:title" content="פריים מגנטים · מגנטים לאירועים" />
+<meta property="og:description" content="מצלמים את האורחים, ותוך פחות מדקה הם מקבלים מגנט במסגרת שעוצבה במיוחד לאירוע שלכם." />
+<meta property="og:url" content="https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/" />
+<script type="application/ld+json" id="ld-biz">{"@context": "https://schema.org", "@type": "LocalBusiness", "@id": "https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/#biz", "name": "פריים מגנטים", "description": "מגנטים לאירועים: צילום והדפסה במקום, מסגרת בעיצוב אישי לכל אירוע.", "url": "https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/", "telephone": "054-4979771", "email": "devopsdevopshaim@gmail.com", "image": "https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/icon.svg", "areaServed": "מרכז, השרון, ירושלים והשפלה", "priceRange": "₪₪"}</script>
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,6 +24,7 @@
 <script src="../portfolio/js/track.js" defer></script>
 </head>
 <body>
+<a class="skip" href="#main">דילוג לתוכן</a>
 <div class="standalone-bar">
   <span class="shelf">🧰 כלים ומחשבונים</span>
   <nav class="shelf-links" aria-label="כלים ומחשבונים">
@@ -41,7 +49,7 @@
   </div>
 </header>
 
-<main>
+<main id="main">
   <section class="hero">
     <div class="hero-text">
       <p class="eyebrow">צילום · עיצוב · הדפסה במקום</p>
@@ -139,6 +147,13 @@
     <p class="center"><a class="btn line light" href="studio.html">🖼️ כניסה לסטודיו העריכה</a></p>
   </section>
 
+  <section class="sec reviews" id="reviews" hidden>
+    <p class="eyebrow center">מה אומרים עלינו</p>
+    <h2>לקוחות מספרים</h2>
+    <div class="rv-grid" id="rv-grid"></div>
+    <p class="center" id="rv-google"></p>
+  </section>
+
   <section class="sec" id="faq">
     <p class="eyebrow center">שאלות נפוצות</p>
     <h2>כל מה שרציתם לדעת</h2>
@@ -155,7 +170,7 @@
     <form class="c-form" id="c-form">
       <label>שם<input name="name" required autocomplete="name" /></label>
       <label>טלפון<input name="phone" type="tel" required autocomplete="tel" /></label>
-      <label>תאריך האירוע<input name="date" type="date" /></label>
+      <label>תאריך האירוע<input name="date" type="date" id="c-date" /><small class="avail" id="c-avail" aria-live="polite"></small></label>
       <label>סוג האירוע<select name="type" id="c-type"></select></label>
       <label>מספר אורחים משוער<input name="guests" type="number" min="10" step="10" /></label>
       <label>הערות<textarea name="notes" rows="3" placeholder="מקום האירוע, סגנון, צבעים…"></textarea></label>
@@ -166,7 +181,8 @@
 
 <footer class="foot">
   <div><b data-biz="name">פריים מגנטים</b><span data-biz="tagline"></span></div>
-  <nav><a href="#how">איך זה עובד</a><a href="#packages">חבילות</a><a href="#contact">צור קשר</a><a href="studio.html">הסטודיו</a></nav>
+  <nav><a href="#how">איך זה עובד</a><a href="#packages">חבילות</a><a href="#contact">צור קשר</a><a href="studio.html">הסטודיו</a><a href="accessibility.html">הצהרת נגישות</a></nav>
+  <nav class="foot-ev" aria-label="מגנטים לפי סוג אירוע"><a href="l/wedding.html">מגנטים לחתונה</a><a href="l/barmitzvah.html">מגנטים לבר/בת מצווה</a><a href="l/brit.html">מגנטים לברית</a><a href="l/birthday.html">מגנטים ליום הולדת</a><a href="l/henna.html">מגנטים לחינה</a><a href="l/company.html">מגנטים לאירוע חברה</a><a href="l/engagement.html">מגנטים לאירוסין</a></nav>
   <small>© <span id="year"></span> · כל הזכויות שמורות</small>
 </footer>
 
@@ -178,6 +194,7 @@
 <script src="js/frames.js"></script>
 <script src="js/events.js"></script>
 <script src="js/site.js"></script>
+<script src="js/chat.js"></script>
 <script type="module" src="js/fridge3d.js"></script>
 </body>
 </html>

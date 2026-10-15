@@ -35,15 +35,21 @@
   }
 
   /* ---------- the manager ---------- */
-  function open(id) {
-    var body = FS.dialog('📑 עסקאות ותשלומים', '<div class="dl-tabs"><button data-v="list" class="on">כל העסקאות</button><button data-v="new">＋ עסקה חדשה</button><button data-v="settings">⚙️ אפשרויות תשלום ופרטי מסמכים</button></div><div id="dl-view"></div>', true);
+  /* more tabs (reviews, WhatsApp replies) come from js/grow.js through FS.dealTabs */
+  FS.dealTabs = FS.dealTabs || {};
+  function open(id, preset) {
+    var extra = Object.keys(FS.dealTabs).map(function (k) { return '<button data-v="' + k + '">' + FS.dealTabs[k].label + '</button>'; }).join('');
+    var body = FS.dialog('📑 עסקאות ותשלומים', '<div class="dl-tabs"><button data-v="list" class="on">כל העסקאות</button><button data-v="new">＋ עסקה חדשה</button>' + extra + '<button data-v="settings">⚙️ אפשרויות תשלום ופרטי מסמכים</button></div><div id="dl-view"></div>', true);
     $$('.dl-tabs button', body).forEach(function (b) { b.addEventListener('click', function () { tab(b.dataset.v); }); });
-    function tab(v, d) { $$('.dl-tabs button', body).forEach(function (b) { b.classList.toggle('on', b.dataset.v === (v === 'edit' ? 'list' : v)); }); if (v === 'list') list(); else if (v === 'settings') settings(); else edit(d || blank()); }
+    function tab(v, d) {
+      $$('.dl-tabs button', body).forEach(function (b) { b.classList.toggle('on', b.dataset.v === (v === 'edit' ? 'list' : v)); });
+      if (v === 'list') list(); else if (v === 'settings') settings(); else if (FS.dealTabs[v]) FS.dealTabs[v].draw($('#dl-view', body), { edit: function (x) { tab('edit', x); }, newDeal: function (pre) { tab('new', Object.assign(blank(), pre || {})); } }); else edit(d || blank());
+    }
     function list() {
       all().then(function (ds) {
         var open = 0, upcoming = 0, now = today(); ds.forEach(function (d) { open += totals(d).balance; if (d.date >= now) upcoming++; });
         var v = $('#dl-view', body);
-        v.innerHTML = '<div class="dl-sum"><div><b>' + ds.length + '</b><small>עסקאות</small></div><div><b>' + upcoming + '</b><small>אירועים קרובים</small></div><div><b>' + money(open) + '</b><small>יתרה פתוחה</small></div></div>' +
+        v.innerHTML = (ds.length ? '<div class="dl-bar"><span class="hint">תאריכים של עסקאות סגורות יכולים להופיע באתר כ"תפוס", בלי שמות.</span><button class="btn small" id="dl-busy">📢 עדכון תאריכים תפוסים באתר</button></div>' : '') + '<div class="dl-sum"><div><b>' + ds.length + '</b><small>עסקאות</small></div><div><b>' + upcoming + '</b><small>אירועים קרובים</small></div><div><b>' + money(open) + '</b><small>יתרה פתוחה</small></div></div>' +
           (ds.length ? '<div class="dl-list">' + ds.map(function (d) { var t = totals(d), st = status(d), ev = FS.event(d.type);
             return '<button class="dl-row" data-id="' + d.id + '"><span class="dl-date"><b>' + (d.date ? new Date(d.date + 'T12:00:00').getDate() : '?') + '</b><small>' + (d.date ? new Date(d.date + 'T12:00:00').toLocaleDateString('he-IL', { month: 'short', year: '2-digit' }) : 'ללא תאריך') + '</small></span>' +
               '<span class="dl-who"><b>' + esc(d.client.name || 'לקוח/ה חדש/ה') + '</b><small>' + ev.icon + ' ' + esc(ev.name) + (d.venue ? ' · ' + esc(d.venue) : '') + (d.no ? ' · עסקה ' + d.no : '') + '</small></span>' +
@@ -51,6 +57,7 @@
             : '<div class="dl-empty"><b>עוד אין עסקאות</b><p>כשלקוח סוגר תאריך, פותחים כאן עסקה, ומשם יוצאים מסמך הסגירה, בקשת התשלום והאישורים.</p><button class="btn primary" id="dl-first">＋ עסקה ראשונה</button></div>');
         $$('.dl-row', v).forEach(function (r) { r.addEventListener('click', function () { var d = ds.filter(function (x) { return x.id === r.dataset.id; })[0]; tab('edit', d); }); });
         var f = $('#dl-first', v); if (f) f.addEventListener('click', function () { tab('new'); });
+        var bz = $('#dl-busy', v); if (bz) bz.addEventListener('click', function () { publishBusy(ds); });
       });
     }
 
@@ -73,7 +80,7 @@
         '<section><h3>📜 תנאים והערות</h3><label><span>תנאי ההזמנה (יופיעו במסמך)</span><textarea data-p="terms" rows="5">' + esc(d.terms) + '</textarea></label><label><span>הערות פנימיות (לא מודפסות)</span><textarea data-p="notes" rows="2">' + esc(d.notes) + '</textarea></label></section></div>' +
         '<div class="dl-col"><section class="dl-status"><div><span class="st st-' + status(d)[0] + '" id="dl-st">' + status(d)[1] + '</span>' + (d.no ? '<small>עסקה מס׳ ' + d.no + '</small>' : '') + '</div>' +
           '<button class="btn primary wide" id="dl-close">' + (d.closed ? '✔ העסקה סגורה' : '🤝 סגירת עסקה') + '</button>' +
-          '<div class="row2"><button class="btn" id="dl-doc">📄 מסמך סגירת עסקה</button><button class="btn" id="dl-send">💬 שליחה ללקוח</button><button class="btn" id="dl-link">🔗 דף תשלום ללקוח</button><button class="btn" id="dl-ics">📅 ליומן</button></div></section>' +
+          '<div class="row2"><button class="btn" id="dl-doc">📄 מסמך סגירת עסקה</button><button class="btn" id="dl-send">💬 שליחה ללקוח</button><button class="btn" id="dl-link">🔗 דף תשלום ללקוח</button><button class="btn" id="dl-ics">📅 ליומן</button><button class="btn" id="dl-review">⭐ בקשת המלצה</button></div></section>' +
         '<section><h3>💳 תשלומים</h3><div id="dl-pays"></div><div class="dl-pay-new"><input id="np-amount" type="number" placeholder="סכום ₪"><select id="np-method">' + METHODS.map(function (m) { return '<option value="' + m[0] + '">' + m[1] + '</option>'; }).join('') + '</select><input id="np-date" type="date" value="' + today() + '"><input id="np-ref" placeholder="אסמכתא (לא חובה)"><button class="btn primary" id="np-add">＋ רישום תשלום</button></div></section>' +
         '<section><h3>✍️ חתימות</h3><div class="dl-signs"><div><canvas class="sig" data-s="client" width="360" height="130"></canvas><div class="sig-cap"><span>חתימת הלקוח/ה</span><button class="link" data-clear="client">ניקוי</button></div></div><div><canvas class="sig" data-s="me" width="360" height="130"></canvas><div class="sig-cap"><span>החתימה שלי</span><button class="link" data-clear="me">ניקוי</button></div></div></div><p class="hint">חותמים עם האצבע או העכבר, למשל בפגישה עם הלקוח. החתימות נכנסות למסמך.</p></section>' +
         '<div class="row2"><button class="btn" id="dl-back">← לכל העסקאות</button><button class="btn danger" id="dl-del">🗑 מחיקת העסקה</button></div></div></div>';
@@ -94,11 +101,13 @@
       function pays() {
         var t = totals(d);
         $('#dl-pays', v).innerHTML = (d.payments || []).length ? '<div class="dl-plist">' + d.payments.map(function (p, i) {
-          return '<div class="dl-p"><span><b>' + money(p.amount) + '</b><small>' + methodName(p.method) + ' · ' + new Date(p.date + 'T12:00:00').toLocaleDateString('he-IL') + (p.ref ? ' · ' + esc(p.ref) : '') + ' · מס׳ ' + p.no + '</small></span><button class="btn small" data-rc="' + i + '">📄 אישור</button><button class="btn small" data-rs="' + i + '">💬</button><button class="link" data-rd="' + i + '">✕</button></div>';
+          return '<div class="dl-p"><span><b>' + money(p.amount) + '</b><small>' + methodName(p.method) + ' · ' + new Date(p.date + 'T12:00:00').toLocaleDateString('he-IL') + (p.ref ? ' · ' + esc(p.ref) : '') + ' · מס׳ ' + p.no + '</small></span><button class="btn small" data-rc="' + i + '">📄 אישור</button><button class="btn small" data-rs="' + i + '">💬</button>' + (pay().invoiceUrl ? '<button class="btn small" data-ri="' + i + '" title="הפקת קבלה בתוכנת הקבלות שלך">🧾</button>' : '') + '<button class="link" data-rd="' + i + '">✕</button></div>';
         }).join('') + '</div>' : '<p class="hint">עוד לא נרשמו תשלומים.' + (t.total ? ' מקדמה מומלצת: ' + money(d.deposit || Math.round(t.total * 0.3)) + '.' : '') + '</p>';
         $('#np-amount', v).placeholder = t.balance ? 'סכום ₪ (יתרה ' + money(t.balance) + ')' : 'סכום ₪';
         $$('[data-rc]', v).forEach(function (b) { b.addEventListener('click', function () { printDoc(receiptDoc(d, d.payments[Number(b.dataset.rc)])); }); });
         $$('[data-rs]', v).forEach(function (b) { b.addEventListener('click', function () { var p = d.payments[Number(b.dataset.rs)], t2 = totals(d); wa(d, 'שלום ' + first(d) + ', קיבלתי את התשלום, תודה! 🙏\n' + pay().docLabel + ' מס׳ ' + p.no + ': ' + money(p.amount) + ' (' + methodName(p.method) + ')\n' + (t2.balance > 0 ? 'יתרה לתשלום: ' + money(t2.balance) : 'העסקה שולמה במלואה ✔') + '\n' + FS.BIZ.name); }); });
+        $$('[data-ri]', v).forEach(function (b) { b.addEventListener('click', function () { var p = d.payments[Number(b.dataset.ri)], t = [d.client.name, d.client.idNo, d.client.phone, d.client.email, money(p.amount) + ' · ' + methodName(p.method) + (p.ref ? ' · ' + p.ref : ''), FS.event(d.type).name + ' · ' + heDate(d.date) + (d.no ? ' · עסקה ' + d.no : '')].filter(Boolean).join('\n');
+          (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { FS.toast('📋 פרטי התשלום הועתקו. מדביקים אותם בתוכנת הקבלות.', 5000); }, function () {}); window.open(pay().invoiceUrl, '_blank', 'noopener'); }); });
         $$('[data-rd]', v).forEach(function (b) { b.addEventListener('click', function () { if (!confirm('למחוק את רישום התשלום?')) return; d.payments.splice(Number(b.dataset.rd), 1); pays(); tot(); save(true); }); });
       }
       $$('[data-p]', v).forEach(function (el) { el.addEventListener('input', function () { set(el.dataset.p, el.value); if (el.dataset.p === 'price' && !num(d.deposit)) $('[data-p=deposit]', v).placeholder = money(Math.round(totals(d).total * 0.3)); tot(); save(); }); el.addEventListener('change', function () { set(el.dataset.p, el.value); tot(); save(); }); });
@@ -125,6 +134,8 @@
       $('#dl-send', v).addEventListener('click', function () { wa(d, summary(d) + '\n\nלתשלום ולכל הפרטים:\n' + payLink(d)); });
       $('#dl-link', v).addEventListener('click', function () { var u = payLink(d); (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { FS.toast('🔗 הקישור הועתק. אפשר להדביק ללקוח בכל מקום.'); }, function () { prompt('הקישור לדף התשלום:', u); }); window.open(u, '_blank', 'noopener'); });
       $('#dl-ics', v).addEventListener('click', function () { ics(d); });
+      $('#dl-review', v).addEventListener('click', function () { var g = FS.BIZ.googleReviews || (FS.BIZ_SITE && FS.BIZ_SITE.googleReviews) || '';
+        wa(d, 'היי ' + first(d) + ' 😊 תודה שבחרתם ב' + FS.BIZ.name + '! מקווים שנהניתם מהמגנטים 🧲\nנשמח מאוד לכמה מילים על החוויה' + (g ? ', כאן בגוגל זה עוזר לנו המון:\n' + g : '. אפשר פשוט לענות להודעה הזו 🙏')); });
       $('#dl-back', v).addEventListener('click', function () { put(d).then(function () { tab('list'); }); });
       $('#dl-del', v).addEventListener('click', function () { if (!confirm('למחוק את העסקה של ' + (d.client.name || 'הלקוח') + '? אי אפשר לבטל.')) return; FS.store.del('deals', d.id).then(function () { tab('list'); }); });
       /* signatures */
@@ -150,20 +161,28 @@
         '<h3>🏦 העברה בנקאית</h3><div class="dl-grid">' + f('holder', 'שם בעל החשבון', '') + f('bankName', 'בנק', 'לאומי') + f('bankNo', 'מספר בנק', '10') + f('branch', 'סניף', '') + f('account', 'מספר חשבון', '') + '</div>' +
         '<div class="inline"><label class="check"><input type="checkbox" data-k="cash"' + (p.cash ? ' checked' : '') + '> מזומן</label><label class="check"><input type="checkbox" data-k="check"' + (p.check ? ' checked' : '') + '> צ׳ק</label></div></section></div>' +
         '<div class="dl-col"><section><h3>🧾 פרטים למסמכים</h3><div class="dl-grid"><label><span>סוג העסק</span><select data-k="bizType"><option' + (p.bizType === 'פטור' ? ' selected' : '') + ' value="פטור">עוסק פטור</option><option' + (p.bizType === 'מורשה' ? ' selected' : '') + ' value="מורשה">עוסק מורשה</option><option' + (p.bizType === 'חברה' ? ' selected' : '') + ' value="חברה">חברה בע״מ</option></select></label>' +
-        f('bizId', 'מספר עוסק / ח.פ', '') + f('address', 'כתובת העסק', '') + f('vat', 'שיעור מע״מ %', '18', 'number') + f('docLabel', 'כותרת אישור תשלום', 'אישור תשלום') + '</div>' +
+        f('bizId', 'מספר עוסק / ח.פ', '') + f('address', 'כתובת העסק', '') + f('vat', 'שיעור מע״מ %', '18', 'number') + f('docLabel', 'כותרת אישור תשלום', 'אישור תשלום') + f('invoiceUrl', 'קישור לתוכנת הקבלות שלך (לא חובה)', 'https://… (Morning / iCount / EZcount)') + '</div>' +
         '<label><span>תנאי ברירת המחדל לעסקה חדשה</span><textarea data-k="terms" rows="6">' + esc(p.terms || TERMS) + '</textarea></label>' +
         '<p class="note-warn">⚠️ "אישור תשלום" הוא אישור שהכסף התקבל. הוא לא חשבונית מס ולא קבלה לצורכי מס. קבלות וחשבוניות רשמיות מפיקים בתוכנה מוכרת לרשות המסים (למשל Morning, iCount, EZcount או רווחית). אפשר לחבר אחת מהן בהמשך.</p></section>' +
         '<div class="row2"><span></span><button class="btn primary" id="st-save">💾 שמירה</button></div></div></div>';
       $('#st-save', v).addEventListener('click', function () {
-        var bad = ['paybox', 'card', 'paypal'].filter(function (k) { var u = $('[data-k=' + k + ']', v).value.trim(); return u && !/^(https:\/\/|www\.)\S+$/i.test(u); });
+        var bad = ['paybox', 'card', 'paypal', 'invoiceUrl'].filter(function (k) { var u = $('[data-k=' + k + ']', v).value.trim(); return u && !/^(https:\/\/|www\.)\S+$/i.test(u); });
         if (bad.length) { FS.toast('קישור תשלום צריך להתחיל ב־https://'); $('[data-k=' + bad[0] + ']', v).focus(); return; }
         $$('[data-k]', v).forEach(function (el) { p[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value.trim(); });
         FS.BIZ.pay = p; FS.saveBiz(); FS.toast('✔ אפשרויות התשלום נשמרו');
       });
     }
-    if (id === 'new') tab('new'); else tab('list');
+    if (preset) tab('new', Object.assign(blank(), preset)); else if (id === 'new') tab('new'); else if (FS.dealTabs[id]) tab(id); else tab('list');
   }
   FS.openDeals = open;
+
+  /* closed deals' dates go to business.json as busy (no names), for the site's "is my date free?" */
+  function publishBusy(ds) {
+    var now = today(), busy = {};
+    ds.forEach(function (d) { if (d.closed && d.date && d.date >= now) busy[d.date] = 1; });
+    var list = Object.keys(busy).sort();
+    FS.publishSite(function (base) { base.busy = list; }, 'frame-studio: busy dates', '📢 ' + (list.length ? list.length + ' תאריכים תפוסים' : 'אין תאריכים תפוסים') + '. האתר יתעדכן תוך כשתי דקות.');
+  }
 
   /* ---------- texts, links, calendar ---------- */
   function first(d) { return String(d.client.name || '').split(' ')[0] || ''; }
@@ -243,7 +262,8 @@
     FS.toast('בחלון ההדפסה אפשר לבחור "שמירה כ־PDF" ולשלוח ללקוח', 5000);
   }
   window.addEventListener('afterprint', function () { document.body.classList.remove('printing-doc'); });
-  FS.dealDoc = dealDoc; FS.receiptDoc = receiptDoc; FS.dealTotals = totals;
+  FS.printDoc = printDoc; FS.dealDoc = dealDoc; FS.receiptDoc = receiptDoc; FS.dealTotals = totals;
+  FS.deals = { all: all, put: put, totals: totals, status: status, money: money, heDate: heDate, pay: pay, wa: wa, first: first };
 
   var btn = $('#deals-btn'); if (btn) btn.addEventListener('click', function () { open(); });
 })();
