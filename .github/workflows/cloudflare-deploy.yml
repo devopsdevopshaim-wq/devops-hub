@@ -1,12 +1,13 @@
 name: Deploy sign-in server to Cloudflare
 
 # The sign-in server runs on Cloudflare Workers (free plan, no monthly execution cap): cloudflare/. It needs two secrets:
+# The Worker also runs the other n8n workflows' Code nodes (built from n8n/hasadna-*.json), so a change there redeploys it.
 # CLOUDFLARE_API_TOKEN (the "Edit Cloudflare Workers" template) and CLOUDFLARE_ACCOUNT_ID. Without them this workflow does nothing.
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['cloudflare/**', 'n8n/snippets/access-handle.js', 'n8n/snippets/security.js', 'n8n/hasadna-access.json', '.github/scripts/cloudflare-deploy.mjs', '.github/workflows/cloudflare-deploy.yml']
+    paths: ['cloudflare/**', 'n8n/snippets/access-handle.js', 'n8n/snippets/security.js', 'n8n/hasadna-*.json', '.github/scripts/cloudflare-deploy.mjs', '.github/workflows/cloudflare-deploy.yml']
 
 concurrency:
   group: cloudflare-deploy

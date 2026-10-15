@@ -106,6 +106,14 @@ if (secrets.ADMIN_PASSWORD_HASH && !secrets.ADMIN_TOTP_SECRET) {
     note('- ℹ️ הסיסמה שבסוד ADMIN_PASSWORD כבר לא הסיסמה הפעילה של המנהל (כנראה בחרת סיסמה משלך במסך הכניסה). זה תקין; הפריסה הצליחה');
   } else { note('- ❌ כניסת מנהל נכשלה: ' + lg.status + ' ' + JSON.stringify(lg.json)); ok = false; }
 }
+// the sites' AI (hasadna-hubs): text, and one real picture for the frame studio, with Gemini's reason when it cannot (not a failure of the deploy)
+for (const [label, body] of [['AI טקסט לאתרים', { action: 'ai', prompt: 'Say OK.' }], ['תמונות AI לסטודיו המגנטים', { action: 'image', prompt: 'A small red heart sticker on a plain white background.' }]]) {
+  try {
+    const r = await fetch(URL_ + '/hasadna-hubs', { method: 'POST', headers: { Origin: 'https://devopsdevopshaim-wq.github.io', 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    note(`- ${label}: ${j.ok ? '✅ עובד' + (j.model ? ' (' + j.model + ')' : '') : '❌ ' + r.status + ' ' + (j.error || '') + ' · ' + (j.detail || '')}`);
+  } catch (e) { note(`- ❌ ${label}: ${e.message}`); }
+}
 if (ok) {
   fs.writeFileSync('portfolio/api.json', JSON.stringify({ base: URL_, auth: URL_ + '/hasadna-auth', where: 'cloudflare' }, null, 1) + '\n');
   note('- ✅ portfolio/api.json עודכן: האתר ידבר עם Cloudflare');
