@@ -53,8 +53,9 @@
   };
   FS.applyFormat = function (d, id, img, w, h) {
     var f = FS.fmt(id);
-    d.fmt = id;
+    d.fmt = id; delete d.mm;
     if (id === 'custom') { d.w = Math.round(w); d.h = Math.round(h); }
+    else if (id === 'cm') { d.mm = [w, h]; d.w = Math.round(w / 25.4 * 300); d.h = Math.round(h / 25.4 * 300); }
     else if (id === 'orig' || !f) {
       var iw = img ? img.naturalWidth || img.width : 1500, ih = img ? img.naturalHeight || img.height : 1000;
       var k = Math.min(1, 3600 / Math.max(iw, ih)); d.w = Math.round(iw * k); d.h = Math.round(ih * k);
@@ -62,6 +63,11 @@
     if (img) FS.fitPhoto(d, img);
   };
   FS.cur = function () { return FS.state.photos[FS.state.cur] || null; };
+  /* multi-select: the marked photos; edits in batch mode reach all of them */
+  FS.state.marked = {};
+  FS.marked = function () { return FS.state.photos.filter(function (p) { return FS.state.marked[p.id]; }); };
+  FS.targets = function () { var m = FS.marked(), c = FS.cur(); if (FS.state.batch && m.length > 1 && c && FS.state.marked[c.id]) return m; return c ? [c] : []; };
+  FS.mmOf = function (d) { if (d.mm) return d.mm; var f = FS.fmt(d.fmt); return f && f.mm ? f.mm : [d.w / 300 * 25.4, d.h / 300 * 25.4]; };
 
   /* the place a photo shows through: the frame's hole, or the whole page */
   FS.hole = function (d) {
@@ -89,23 +95,29 @@
     });
   };
   FS.img = function (src) { return IMGS[src] || null; };
+  /* a blob: URL becomes a data URL when it has to leave the page (project files, my designs) */
+  FS.toDataURL = function (src) {
+    if (!/^blob:/.test(src)) return Promise.resolve(src);
+    return fetch(src).then(function (r) { return r.blob(); }).then(FS.fileToDataURL);
+  };
   FS.fileToDataURL = function (file) {
     return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = rej; r.readAsDataURL(file); });
   };
   /* a photo larger than 6000px is brought down once, so the browser stays responsive */
+  /* photos are kept as blob URLs (not data URLs), so hundreds of them fit in memory; a photo over 6000px is brought down once */
   FS.addPhotoFile = function (file) {
-    return FS.fileToDataURL(file).then(FS.loadImg).then(function (im) {
-      var max = 6000, src = im.src;
+    var url = URL.createObjectURL(file);
+    return FS.loadImg(url).then(function (im) {
+      var max = 6000;
       if (Math.max(im.naturalWidth, im.naturalHeight) > max) {
         var k = max / Math.max(im.naturalWidth, im.naturalHeight), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k);
         c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-        src = c.toDataURL('image/jpeg', 0.93);
-        return FS.loadImg(src);
+        return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.93); }).then(function (b) { URL.revokeObjectURL(url); delete IMGS[url]; return FS.loadImg(URL.createObjectURL(b)); });
       }
       return im;
     }).then(function (im) {
-      var fmt = FS.prefs.fmt || 'orig';
-      var p = { id: FS.uid(), name: (file.name || 'תמונה').replace(/\.[^.]+$/, ''), src: im.src, doc: null, undo: [], redo: [], cache: {} };
+      var fmt = FS.prefs.fmt || 'magnet';
+      var p = { id: FS.uid(), name: (file.name || 'תמונה').replace(/\.[^.]+$/, ''), src: im.src, doc: null, undo: [], redo: [], cache: {}, copies: 1 };
       p.doc = FS.newDoc(im, fmt);
       if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
       FS.state.photos.push(p);
@@ -171,7 +183,7 @@
   FS.processed = function (p, max, fast) {
     var d = p.doc, a = d.photo.adj, bg = d.photo.bg, im = FS.img(p.src);
     if (!im) return null;
-    var key = max + '|' + JSON.stringify(a) + '|' + JSON.stringify(bg) + '|' + JSON.stringify(d.photo.blurs || 0) + '|' + JSON.stringify(d.photo.skin || 0) + '|' + (p.maskV || 0) + '|' + (fast ? 1 : 0);
+    var key = max + '|' + JSON.stringify(a) + '|' + JSON.stringify(bg) + '|' + JSON.stringify(d.photo.blurs || 0) + '|' + JSON.stringify(d.photo.skin || 0) + '|' + JSON.stringify(d.photo.style || 0) + '|' + (p.maskV || 0) + '|' + (fast ? 1 : 0);
     if (p.cache.key === key) return p.cache.canvas;
     var k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
     var w = Math.round(im.naturalWidth * k), h = Math.round(im.naturalHeight * k);
@@ -181,6 +193,7 @@
     FS.adjustPixels(id.data, w, h, a, fast);
     (d.photo.blurs || []).forEach(function (b) { FS.pixelate(id.data, w, h, b.x * k, b.y * k, b.w * k, b.h * k); });
     if (d.photo.skin && d.photo.skin.amt && d.photo.skin.faces) FS.smoothSkin(id.data, w, h, d.photo.skin, k, fast);
+    if (d.photo.style && d.photo.style.id && FS.applyStyle) FS.applyStyle(id.data, w, h, d.photo.style, fast);
     if (bg && bg.mode !== 'none' && p.mask) FS.replaceBackground(id.data, w, h, p, bg, a);
     x.putImageData(id, 0, 0);
     p.cache = { key: key, canvas: c };

@@ -56,6 +56,27 @@ function world({ key = true, ai = null, http = null } = {}) {
   check('hubs: an unknown action is refused', r.code === 400);
 }
 {
+  const png = { candidates: [{ content: { parts: [{ text: 'הנה' }, { inlineData: { mimeType: 'image/png', data: 'UE5H' } }] } }] };
+  const { call, sent } = world({ ai: async () => png });
+  let r = await call({ action: 'restyle', prompt: 'comic style', image: 'data:image/jpeg;base64,' + 'QUJD'.repeat(20), mime: 'image/jpeg' });
+  const rb = sent.at(-1).body;
+  check('hubs: a restyle sends the photo to the image model and returns a picture', r.code === 200 && r.body.ok && r.body.image === 'UE5H' && r.body.mime === 'image/png' && /image/.test(sent.at(-1).url) && rb.generationConfig.responseModalities.includes('IMAGE') && rb.contents[0].parts[0].inline_data.data === 'QUJD'.repeat(20));
+  let n = sent.length;
+  r = await call({ action: 'restyle', prompt: 'x', image: 'QUJD', mime: 'application/pdf' });
+  check('hubs: a restyle refuses a non-image', r.code === 400 && sent.length === n);
+  r = await call({ action: 'restyle', prompt: 'x', image: '<svg>', mime: 'image/png' });
+  check('hubs: a restyle refuses a non-base64 picture', r.code === 400 && sent.length === n);
+  r = await call({ action: 'restyle', prompt: '', image: 'QUJD', mime: 'image/png' });
+  check('hubs: a restyle needs a prompt', r.code === 400 && sent.length === n);
+  let lim = 0; for (let i = 0; i < 20; i++) { const x = await call({ action: 'restyle', prompt: 'q', image: 'QUJD', mime: 'image/png' }, { ip: '8.8.8.8' }); if (x.code === 429) lim++; }
+  check('hubs: restyles are rate limited per address', lim >= 7, lim);
+}
+{
+  const { call } = world({ ai: async () => ({ candidates: [{ content: { parts: [{ text: 'no picture' }] } }] }) });
+  const r = await call({ action: 'restyle', prompt: 'x', image: 'QUJD', mime: 'image/png' });
+  check('hubs: a restyle with no picture back fails cleanly', r.code === 502 && r.body.error === 'ai-failed');
+}
+{
   const { call } = world({ key: false });
   const r = await call({ action: 'ai', prompt: 'שלום' });
   check('hubs: no key -> 503', r.code === 503 && r.body.error === 'no-key');

@@ -11,6 +11,9 @@ The sites run in the browser by themselves. Two things a browser cannot do are d
     {action: 'ai', tag: 'wiring', prompt, images: [{data, mime}]}
                                           -> {ok, text, source}     a long JSON answer about up to 6 drawing pages
                                                                      (the cabinet-wiring site reads a wiring diagram page by page)
+    {action: 'restyle', prompt, image, mime}
+                                          -> {ok, image, mime}      one photo redrawn by Gemini's image model in a style
+                                                                     (the frame studio: comic, anime, superheroes, animals...)
     {action: 'fetch', url}                -> {ok, status, body}     a GET of an allowed host (market quotes and headlines,
                                                                      which browsers may not read directly)
 The Gemini key never lives in the repository: .github/scripts/n8n-deploy.mjs fills it in from the GEMINI_API_KEY secret.
@@ -48,7 +51,8 @@ sweep();
 const GEMINI_KEY = '__GEMINI_API_KEY__';
 const set = (k) => k && !/^__/.test(k);
 const TEXT_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
-const DAY_CAP = 1200, IP_HOUR = 30, FETCH_HOUR = 240;
+const DAY_CAP = 1200, IP_HOUR = 30, FETCH_HOUR = 240, IMG_DAY = 200, IMG_IP_HOUR = 12;
+const IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-2.5-flash-image-preview', 'gemini-2.0-flash-preview-image-generation'];
 // the market data the finance site shows; nothing else may be read through here
 const HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com', 'feeds.finance.yahoo.com', 'www.globes.co.il'];
 
@@ -115,6 +119,41 @@ if (b.action === 'ai') {
       const t = r && r.candidates && r.candidates[0] && r.candidates[0].content && (r.candidates[0].content.parts || []).map((p) => p.text || '').join('');
       if (t && t.trim()) return out({ ok: true, text: t.trim(), source: 'Gemini' });
       last = new Error('empty');
+    } catch (e) { last = e; }
+  }
+  const s = String((last && (last.description || last.message)) || last).slice(0, 200);
+  return out({ ok: false, error: /quota|exhausted|429/i.test(s) ? 'quota' : 'ai-failed' }, 502);
+}
+if (b.action === 'restyle') {
+  if (!hit('hubs-img-ip', ipKey(), IMG_IP_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
+  if (!set(GEMINI_KEY)) return out({ ok: false, error: 'no-key' }, 503);
+  if ((sd.imgs || 0) >= IMG_DAY || sd.imgDay !== day) { if (sd.imgDay !== day) { sd.imgDay = day; sd.imgs = 0; } else return out({ ok: false, error: 'quota' }, 429); }
+  const prompt = String(b.prompt || '').replace(/\u0000/g, ' ').trim();
+  if (!prompt) return out({ ok: false, error: 'empty' }, 400);
+  if (prompt.length > 2000) return out({ ok: false, error: 'too-big' }, 413);
+  const mime = String(b.mime || 'image/jpeg').toLowerCase();
+  const data = String(b.image || '').replace(/^data:[^,]{0,80},/, '').replace(/\s+/g, '');
+  if (!/^image\/(jpeg|png|webp)$/.test(mime)) return out({ ok: false, error: 'bad-image' }, 400);
+  if (!data || data.length > 5600000) return out({ ok: false, error: data ? 'too-big' : 'bad-image' }, data ? 413 : 400);
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return out({ ok: false, error: 'bad-image' }, 400);
+  sd.imgs = (sd.imgs || 0) + 1;
+  let last;
+  for (const m of IMAGE_MODELS) {
+    const left = 112000 - (Date.now() - now);
+    if (left < 20000) break;
+    try {
+      const r = await this.helpers.httpRequest({
+        method: 'POST',
+        url: `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,
+        headers: { 'x-goog-api-key': GEMINI_KEY, 'Content-Type': 'application/json' },
+        body: { contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime, data } }, { text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } },
+        json: true,
+        timeout: Math.min(100000, left)
+      });
+      const parts = (r && r.candidates && r.candidates[0] && r.candidates[0].content && r.candidates[0].content.parts) || [];
+      const img = parts.map((p) => p.inlineData || p.inline_data).filter((x) => x && x.data)[0];
+      if (img) return out({ ok: true, image: img.data, mime: img.mimeType || img.mime_type || 'image/png', source: 'Gemini' });
+      last = new Error('no-image');
     } catch (e) { last = e; }
   }
   const s = String((last && (last.description || last.message)) || last).slice(0, 200);

@@ -140,6 +140,36 @@
     $$('[data-wa]').forEach(function (a) { a.addEventListener('click', function (e) { if (waNumber()) { e.preventDefault(); openWa(a.dataset.wa); } }); });
     $('#wa-fab').addEventListener('click', function (e) { if (waNumber()) { e.preventDefault(); openWa('שלום! אשמח לשמוע על מגנטים לאירוע 🧲'); } });
   }
+  /* ---------- the events library (albums published from the studio) ---------- */
+  var ALBUMS = [];
+  function albums(type) {
+    var box = $('#albums'), list = ALBUMS.filter(function (a) { return !type || a.type === type; });
+    if (!ALBUMS.length) { box.innerHTML = '<div class="albums-empty"><span>📸</span><p>כאן יופיעו אלבומים מאירועים אמיתיים, ישר מהסטודיו.</p><a class="btn line" href="#gallery">בינתיים, לעיצובים לדוגמה</a></div>'; return; }
+    box.innerHTML = list.map(function (a, i) {
+      var ev = FS.event(a.type), imgs = a.images.slice(0, 3);
+      return '<button class="album" data-i="' + ALBUMS.indexOf(a) + '"><div class="stack">' + imgs.map(function (im, k) { return '<img loading="lazy" src="' + esc(im.src) + '" alt="" style="--k:' + k + '">'; }).join('') + '</div><b>' + esc(a.title) + '</b><span>' + ev.icon + ' ' + esc(ev.name) + (a.date ? ' · ' + FS.fmtDate(a.date) : '') + ' · ' + a.images.length + ' תמונות</span></button>';
+    }).join('') || '<p class="note center">אין עדיין אלבומים מהסוג הזה.</p>';
+    $$('.album', box).forEach(function (b) { b.addEventListener('click', function () { openAlbum(ALBUMS[Number(b.dataset.i)], 0); }); });
+  }
+  var lb = { a: null, i: 0 };
+  function openAlbum(a, i) {
+    lb.a = a; lb.i = i; var d = $('#lightbox'); $('#lb-title').textContent = a.title;
+    $('#lb-thumbs').innerHTML = a.images.map(function (im, k) { return '<button data-k="' + k + '"><img loading="lazy" src="' + esc(im.src) + '" alt=""></button>'; }).join('');
+    $$('#lb-thumbs button').forEach(function (b) { b.addEventListener('click', function () { show(Number(b.dataset.k)); }); });
+    show(i); if (!d.open) d.showModal();
+  }
+  function show(i) { var n = lb.a.images.length; lb.i = (i + n) % n; $('#lb-img').src = lb.a.images[lb.i].src; $$('#lb-thumbs button').forEach(function (b, k) { b.classList.toggle('on', k === lb.i); }); }
+  $('#lb-prev').addEventListener('click', function () { show(lb.i - 1); });
+  $('#lb-next').addEventListener('click', function () { show(lb.i + 1); });
+  document.addEventListener('keydown', function (e) { if (!$('#lightbox').open) return; if (e.key === 'ArrowRight') show(lb.i - 1); if (e.key === 'ArrowLeft') show(lb.i + 1); });
+  fetch('library/library.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }).then(function (list) {
+    ALBUMS = (list || []).map(function (a) { a.images = (a.images || []).map(function (im) { return Object.assign({}, im, { src: im.src }); }); return a; });
+    var types = {}; ALBUMS.forEach(function (a) { types[a.type] = 1; });
+    var f = $('#ev-filter'); f.innerHTML = Object.keys(types).length > 1 ? '<button class="on" data-t="">הכול</button>' + FS.EVENTS.filter(function (e) { return types[e.id]; }).map(function (e) { return '<button data-t="' + e.id + '">' + e.icon + ' ' + e.name + '</button>'; }).join('') : '';
+    $$('button', f).forEach(function (b) { b.addEventListener('click', function () { $$('button', f).forEach(function (x) { x.classList.toggle('on', x === b); }); albums(b.dataset.t); }); });
+    albums('');
+  });
+
   $('#c-form').addEventListener('submit', function (e) {
     e.preventDefault(); var f = new FormData(this);
     var text = 'שלום! אשמח להצעה למגנטים לאירוע 🧲\nשם: ' + f.get('name') + '\nטלפון: ' + f.get('phone') + '\nאירוע: ' + f.get('type') + (f.get('date') ? '\nתאריך: ' + FS.fmtDate(f.get('date')) : '') + (f.get('guests') ? '\nאורחים: ' + f.get('guests') : '') + (f.get('notes') ? '\nהערות: ' + f.get('notes') : '');
