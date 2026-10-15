@@ -48,7 +48,12 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
 - **Library (`library.js`).** "📤 פרסום לספריית האתר" renders the marked photos (1400px JPEG). It commits them with the git-data API (one commit) to `frame-studio/library/<album>/n.jpg` and prepends the album to `frame-studio/library/library.json`, using the owner's fine-grained token (Contents read/write on devops-hub) kept in `localStorage['fs-gh-token']`. Without a token, albums stay in IndexedDB (`designs` with `lib:true`). "ניהול הספרייה" removes an album from the site (one commit), and can publish local albums. The site's "אירועים" section reads `library/library.json`, shows albums by event type, and opens them in a lightbox.
 - **Server.** `n8n/build-hubs-workflow.py` has the `restyle` action, rate limited per address (12/hour) and per day (200). Tests are in `n8n/test/hubs.test.mjs`, and `n8n-deploy.yml` deploys it on push.
 
-## Changing it
+## Entry screen and the 3D fridge
+- `js/fridge3d.js` (ES module, three.js 0.186.1 through the import map) exposes `window.Fridge3D.mount(canvas, magnetCanvases, opts)`. It draws a brushed-steel fridge door (RoundedBox with a canvas brushed texture, RoomEnvironment reflections) turned a little towards the words. A camera flash opens the scene. The magnets fly in from the camera and snap on with a damped spring and a squash, and they cast soft shadows. The scene leans with the pointer, a magnet lifts under it, and it pauses when off screen. Options: `pointerHost`, `fit`, `turn`, `spots`, `onFlash`, `onSnap`. A ResizeObserver keeps the size right.
+- The magnets are the studio's own designs: `FS.SHOWCASE` drawn by `FS.magnetCanvas(o, size)` (in `events.js`).
+- `studio.html` opens on `#intro` (`js/intro.js`, `css/intro.css`), with a "darkroom and gold foil" look: the date line with a safelight dot, a gold-foil title, and four ways in (new event, open photos, continue project, my designs). It also has a demo, the business site, and "ישר לסטודיו" (Enter or Esc). Its counts come from this browser only (saved events, magnets printed, my frames), and a zero is left out. Dropping files also closes it. `?skip` in the address skips it, which is what the tests use. Without WebGL or the CDN after 3.5s, it shows a flat fridge (`.intro.flat`).
+- The business site's hero uses the same scene (`#hero3d`, 6 magnets) and falls back to the drawn CSS fridge.
+
 Edit the files in place. Push to `main`: `.github/workflows/vacation-hub-pages.yml` publishes `frame-studio/` to GitHub Pages (about two minutes). If you add a file, add it to `FILES` in `sw.js` and bump `CACHE`. Business details change in `business.json` only.
 
 ## Checking it

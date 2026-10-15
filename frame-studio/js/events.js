@@ -98,6 +98,28 @@
     }
     return c;
   };
+  /* a finished magnet (frame, words, photo or drawn scene) as a canvas about `size` px long */
+  var sceneCache = {};
+  FS.magnetCanvas = function (o, size) {
+    var ev = FS.event(o.type), fmt = o.fmt || 'magnet', f = FS.fmt(fmt), key = (o.scene || ev.scene) + fmt + (o.seed || 3);
+    if (!o.photo && !sceneCache[key]) { var long = 900, w = f.w >= f.h ? long : Math.round(long * f.w / f.h), h = f.w >= f.h ? Math.round(long * f.h / f.w) : long; sceneCache[key] = FS.sampleScene(o.scene || ev.scene, w, h, o.seed || 3).toDataURL('image/jpeg', 0.9); }
+    return FS.photoFrom(o.photo || sceneCache[key], fmt).then(function (p) {
+      FS.buildMagnet(p, o);
+      var d = p.doc, k = size / Math.max(d.w, d.h), c = FS.canvas(d.w * k, d.h * k);
+      FS.draw(c.getContext('2d'), p, { scale: k, max: Math.round(size * 1.4), export: true });
+      return c;
+    });
+  };
+  FS.SHOWCASE = [
+    { type: 'wedding', names: 'נועה & דניאל', date: '2026-06-12', frame: 'classic', seed: 3 },
+    { type: 'barmitzvah', names: 'יונתן', date: '2026-03-20', frame: 'stars', seed: 5 },
+    { type: 'wedding', names: 'שירה & עומר', date: '2026-08-04', frame: 'floral', color: '#e9a8a6', seed: 9 },
+    { type: 'birthday', names: 'מאיה 30', date: '2026-05-02', frame: 'polaroid', fmt: 'm66', seed: 4 },
+    { type: 'brit', names: 'ברוך הבא אריאל', date: '2026-01-15', frame: 'boho', color: '#a3b18a', seed: 6 },
+    { type: 'engagement', names: 'היא אמרה כן!', date: '2026-02-14', frame: 'hearts', seed: 8 },
+    { type: 'company', names: 'כנס השנתי 2026', date: '2026-09-10', frame: 'neon', color: '#35c8ff', seed: 11 }
+  ];
+
   /* a photo object around a drawn scene (or a real picture) */
   FS.photoFrom = function (src, fmt) {
     return FS.loadImg(src).then(function (im) { return { id: FS.uid(), name: 'דוגמה', src: im.src, doc: FS.newDoc(im, fmt || 'magnet'), undo: [], redo: [], cache: {} }; });

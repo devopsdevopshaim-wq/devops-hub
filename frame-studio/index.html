@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Amatic+SC:wght@400;700&family=Secular+One&family=Suez+One&family=Bellefair&family=Rubik:wght@400;700;900&family=Karantina:wght@400;700&family=Assistant:wght@400;700;800&family=Varela+Round&family=David+Libre:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" />
 <link rel="stylesheet" href="css/site.css" />
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/" } }</script>
 <link rel="stylesheet" href="../portfolio/css/mobile.css" />
 <script src="../portfolio/js/track.js" defer></script>
 </head>
@@ -57,6 +58,7 @@
       </ul>
     </div>
     <div class="fridge" aria-label="מגנטים לדוגמה על דלת מקרר">
+      <canvas id="hero3d" aria-hidden="true"></canvas>
       <div class="door"><span class="handle"></span><div class="mags" id="hero-mags"></div></div>
     </div>
   </section>
@@ -174,5 +176,6 @@
 <script src="js/frames.js"></script>
 <script src="js/events.js"></script>
 <script src="js/site.js"></script>
+<script type="module" src="js/fridge3d.js"></script>
 </body>
 </html>
