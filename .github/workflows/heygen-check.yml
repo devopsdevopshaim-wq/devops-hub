@@ -1,19 +1,12 @@
-# One-off diagnostic: does the HEYGEN_API_KEY work against the current HeyGen API, and what does the current API offer for live avatars?
+# One-off diagnostic: read HeyGen's current live-avatar docs.
 name: HeyGen check
 on: workflow_dispatch
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Ask HeyGen
-        env:
-          RAW: ${{ secrets.HEYGEN_API_KEY }}
+      - name: Read the docs
         run: |
-          K=$(printf %s "$RAW" | tr -s ' \t\r\n' '\n' | grep -E '^[A-Za-z0-9_-]{30,}$' | tail -1)
-          echo "clean length: ${#K}  prefix: $(printf %s "$K" | cut -c1-6)"
-          echo "--- /v3/users/me"
-          curl -s -w "\nHTTP %{http_code}\n" https://api.heygen.com/v3/users/me -H "x-api-key: $K" | head -c 600
-          echo
-          echo "--- llms.txt (live / streaming / interactive avatar parts)"
-          curl -s https://developers.heygen.com/llms.txt -o /tmp/llms.txt -w "HTTP %{http_code} size %{size_download}\n"
-          grep -n -i -E "stream|live|interactive|realtime|real-time|session" /tmp/llms.txt | head -60
+          curl -sL https://developers.heygen.com/live-avatar.md | head -c 6000
+          echo; echo "=========== liveavatar llms"
+          curl -sL https://docs.liveavatar.com/llms.txt | head -c 7000
