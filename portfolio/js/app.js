@@ -771,8 +771,8 @@
       // the clients' link never shows the lotto sites or the insurance analysis (projects.json: clientHide)
       var hideC = {};
       (data.clientHide || []).forEach(function (id) { hideC[id] = true; });
-      // only a signed-in admin sees them; clients, visitors and the open site (sign-in switched off) never do
-      if (!who || who.role !== 'admin' || who.open || /[?&]view=client\b/.test(location.search)) {
+      // they live on the admin screen only: the main page never lists them, not even for the admin (add ?all=1 to see them here)
+      if (!(who && who.role === 'admin' && !who.open && /[?&]all=1\b/.test(location.search))) {
         data.projects = data.projects.filter(function (p) { return !hideC[p.id]; });
       }
       if (who && who.role === 'client') {
