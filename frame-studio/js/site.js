@@ -32,19 +32,17 @@
   /* ---------- hero fridge ---------- */
   function hero() {
     var box = $('#hero-mags'); if (!box) return;
-    var picks = [
-      { type: 'wedding', names: 'נועה & דניאל', date: '2026-06-12', frame: 'classic', seed: 3 },
-      { type: 'barmitzvah', names: 'יונתן', date: '2026-03-20', frame: 'stars', seed: 5 },
-      { type: 'wedding', names: 'שירה & עומר', date: '2026-08-04', frame: 'floral', color: '#e9a8a6', seed: 9 },
-      { type: 'birthday', names: 'מאיה 30', date: '2026-05-02', frame: 'polaroid', fmt: 'm66', seed: 4 },
-      { type: 'brit', names: 'ברוך הבא אריאל', date: '2026-01-15', frame: 'boho', color: '#a3b18a', seed: 6 }
-    ];
-    var pos = [[5, 4, -6], [60, 3, 5], [33, 27, -2], [7, 54, 4], [61, 53, -5]];
-    picks.forEach(function (o, i) {
-      magnet(o, 230).then(function (c) {
-        var m = document.createElement('div'); m.className = 'mag'; m.style.cssText = 'right:' + pos[i][0] + '%;top:' + pos[i][1] + '%;--r:' + pos[i][2] + 'deg;--d:' + (i * 0.12) + 's';
-        m.appendChild(c); box.appendChild(m);
-      });
+    var fr = box.closest('.fridge'), cv = $('#hero3d'), stage = null;
+    var all = Promise.all(FS.SHOWCASE.map(function (o) { return FS.magnetCanvas(o, 720); }));
+    function flat(cs) { /* the drawn fridge, when WebGL or the CDN is missing */
+      if (box.childElementCount) return; fr.classList.remove('three');
+      var pos = [[5, 4, -6], [60, 3, 5], [33, 27, -2], [7, 54, 4], [61, 53, -5]];
+      cs.slice(0, 5).forEach(function (c, i) { var m = document.createElement('div'); m.className = 'mag'; m.style.cssText = 'right:' + pos[i][0] + '%;top:' + pos[i][1] + '%;--r:' + pos[i][2] + 'deg;--d:' + (i * 0.12) + 's'; m.appendChild(c); box.appendChild(m); });
+    }
+    all.then(function (cs) {
+      function go() { if (stage) return; fr.classList.add('three'); try { stage = window.Fridge3D.mount(cv, cs.slice(0, 6), { fit: 1.04, pointerHost: fr.parentNode }); } catch (e) { flat(cs); } }
+      if (window.Fridge3D) go(); else window.addEventListener('fridge3d:ready', go);
+      setTimeout(function () { if (!stage) flat(cs); }, 3500);
     });
   }
 
