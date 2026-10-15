@@ -199,7 +199,7 @@
     FS.busy('כותב ברכות…');
     FS.askServer({ action: 'ai', tag: 'photo', prompt: 'כתוב 8 ברכות קצרות וחמות בעברית (עד 6 מילים כל אחת) למגנט מזכרת מ' + ev.name + (names ? ' של ' + names : '') + '. ענה רק במערך JSON של מחרוזות.' })
       .then(function (r) { FS.busy(); if (!r || !r.ok) throw new Error(r && r.error); var arr = JSON.parse(String(r.text).replace(/^[^\[]*/, '').replace(/[^\]]*$/, '')); greets(arr.slice(0, 8)); })
-      .catch(function () { FS.busy(); FS.toast('עוזר ה־AI לא זמין כרגע. אפשר לבחור מהברכות המוכנות.', 4000); });
+      .catch(function (e) { FS.busy(); FS.toast(FS.aiError(e && e.message) + ' אפשר לבחור מהברכות המוכנות.', 6000); });
   });
 
   /* ---------- magnet design from a description ---------- */

@@ -62,6 +62,14 @@ function world({ key = true, ai = null, http = null } = {}) {
   const rb = sent.at(-1).body;
   check('hubs: a restyle sends the photo to the image model and returns a picture', r.code === 200 && r.body.ok && r.body.image === 'UE5H' && r.body.mime === 'image/png' && /image/.test(sent.at(-1).url) && rb.generationConfig.responseModalities.includes('IMAGE') && rb.contents[0].parts[0].inline_data.data === 'QUJD'.repeat(20));
   let n = sent.length;
+  r = await call({ action: 'image', prompt: 'sunset beach, sticker' });
+  const ib = sent.at(-1).body;
+  check('hubs: an image from a description returns a picture', r.code === 200 && r.body.ok && r.body.image === 'UE5H' && ib.contents[0].parts.length === 1 && ib.contents[0].parts[0].text === 'sunset beach, sticker' && ib.generationConfig.responseModalities.includes('IMAGE'));
+  n = sent.length;
+  r = await call({ action: 'image', prompt: '' });
+  check('hubs: an image needs a description', r.code === 400 && sent.length === n);
+  r = await call({ action: 'image', prompt: 'x'.repeat(2001) });
+  check('hubs: an image description has a size limit', r.code === 413 && sent.length === n);
   r = await call({ action: 'restyle', prompt: 'x', image: 'QUJD', mime: 'application/pdf' });
   check('hubs: a restyle refuses a non-image', r.code === 400 && sent.length === n);
   r = await call({ action: 'restyle', prompt: 'x', image: '<svg>', mime: 'image/png' });

@@ -14,6 +14,8 @@ The sites run in the browser by themselves. Two things a browser cannot do are d
     {action: 'restyle', prompt, image, mime}
                                           -> {ok, image, mime}      one photo redrawn by Gemini's image model in a style
                                                                      (the frame studio: comic, anime, superheroes, animals...)
+    {action: 'image', prompt}             -> {ok, image, mime}      a new picture from a description (the frame studio's
+                                                                     backgrounds, stickers and frames); same caps as restyle
     {action: 'fetch', url}                -> {ok, status, body}     a GET of an allowed host (market quotes and headlines,
                                                                      which browsers may not read directly)
 The Gemini key never lives in the repository: .github/scripts/n8n-deploy.mjs fills it in from the GEMINI_API_KEY secret.
@@ -124,7 +126,8 @@ if (b.action === 'ai') {
   const s = String((last && (last.description || last.message)) || last).slice(0, 200);
   return out({ ok: false, error: /quota|exhausted|429/i.test(s) ? 'quota' : 'ai-failed' }, 502);
 }
-if (b.action === 'restyle') {
+if (b.action === 'restyle' || b.action === 'image') {
+  const fresh = b.action === 'image';
   if (!hit('hubs-img-ip', ipKey(), IMG_IP_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
   if (!set(GEMINI_KEY)) return out({ ok: false, error: 'no-key' }, 503);
   if ((sd.imgs || 0) >= IMG_DAY || sd.imgDay !== day) { if (sd.imgDay !== day) { sd.imgDay = day; sd.imgs = 0; } else return out({ ok: false, error: 'quota' }, 429); }
@@ -133,9 +136,11 @@ if (b.action === 'restyle') {
   if (prompt.length > 2000) return out({ ok: false, error: 'too-big' }, 413);
   const mime = String(b.mime || 'image/jpeg').toLowerCase();
   const data = String(b.image || '').replace(/^data:[^,]{0,80},/, '').replace(/\s+/g, '');
-  if (!/^image\/(jpeg|png|webp)$/.test(mime)) return out({ ok: false, error: 'bad-image' }, 400);
-  if (!data || data.length > 5600000) return out({ ok: false, error: data ? 'too-big' : 'bad-image' }, data ? 413 : 400);
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return out({ ok: false, error: 'bad-image' }, 400);
+  if (!fresh) {
+    if (!/^image\/(jpeg|png|webp)$/.test(mime)) return out({ ok: false, error: 'bad-image' }, 400);
+    if (!data || data.length > 5600000) return out({ ok: false, error: data ? 'too-big' : 'bad-image' }, data ? 413 : 400);
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return out({ ok: false, error: 'bad-image' }, 400);
+  }
   sd.imgs = (sd.imgs || 0) + 1;
   let last;
   for (const m of IMAGE_MODELS) {
@@ -146,7 +151,7 @@ if (b.action === 'restyle') {
         method: 'POST',
         url: `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,
         headers: { 'x-goog-api-key': GEMINI_KEY, 'Content-Type': 'application/json' },
-        body: { contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime, data } }, { text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } },
+        body: { contents: [{ role: 'user', parts: fresh ? [{ text: prompt }] : [{ inline_data: { mime_type: mime, data } }, { text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } },
         json: true,
         timeout: Math.min(100000, left)
       });
