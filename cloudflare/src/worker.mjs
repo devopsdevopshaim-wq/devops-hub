@@ -40,7 +40,7 @@ const ROUTES = {
   'hasadna-status': { svc: 'agents', kind: 'status', max: 1000, free: true, method: 'GET' },
   // JARVIS, the personal assistant with the talking face (jarvis-web): the first AI key that answers
   // live video avatar (LiveAvatar): the page asks here for a session and for Hebrew speech (the API key never leaves the server)
-  'hasadna-heygen': { svc: 'agents', kind: 'heygen', max: 2000, free: true },
+  'hasadna-heygen': { svc: 'main', kind: 'heygen', max: 2000, free: true },
   'hasadna-jarvis': { svc: 'agents', kind: 'jarvis', max: 12000, free: true },
   // the clients' own mailboxes (Gmail); the callback is where Google sends the person back after they agree
   'hasadna-mail': { svc: 'main', kind: 'mail', max: 20000, free: true },
@@ -194,7 +194,7 @@ export class State extends DurableObject {
         let hb = {}; try { hb = typeof body === 'string' ? JSON.parse(body) : (body || {}); } catch (e) { hb = {}; }
         const w = sessionOf(st.sd, hb.token);
         // a video minute costs money: only signed-in people, a few sessions an hour each
-        if (!w) return reply({ ok: true, available: false, reason: 'signin' });
+        if (!w) return reply({ ok: true, available: false, reason: /^[a-f0-9]{48}$/.test(String(hb.token || '')) ? 'signin' : 'old-session' });
         // live avatars run on LiveAvatar (its own key and credits, LITE mode): the server mints the session and speaks Hebrew through Gemini
         // TTS; the page only gets the room credentials and streams the audio to the avatar. The key never reaches a page.
         if (!env.LIVEAVATAR_API_KEY || !env.GEMINI_API_KEY) return reply({ ok: true, available: false, reason: 'off' });
@@ -229,11 +229,11 @@ export class State extends DurableObject {
         const avatar = sandbox ? 'dd73ea75-1218-4ef3-92ce-606d5f7fbc0a' : (env.LIVEAVATAR_AVATAR_ID || '3b87f156-f007-496d-aaea-1d5b75795444');
         let r, j = {};
         try {
-          r = await fetch(LA + '/v1/sessions/token', { method: 'POST', headers: KEY, signal: AbortSignal.timeout(15000), body: JSON.stringify({ mode: 'LITE', avatar_id: avatar, is_sandbox: sandbox, video_settings: { quality: 'high', encoding: 'H264' }, max_session_duration: 300 }) });
+          r = await fetch(LA + '/v1/sessions/token', { method: 'POST', headers: KEY, signal: AbortSignal.timeout(15000), body: JSON.stringify({ mode: 'LITE', avatar_id: avatar, is_sandbox: sandbox, video_settings: { quality: 'high', encoding: 'H264' } }) });
           j = await r.json().catch(() => ({}));
         } catch (e) { r = null; }
         const d = (j && j.data) || {}, tok = d.session_token || d.token;
-        if (!tok) return reply({ ok: false, error: 'token-' + (r ? r.status : 'net') + (j && j.code ? '-' + j.code : '') });
+        if (!tok) return reply({ ok: false, error: 'token-' + (r ? r.status : 'net') + (j && j.code ? '-' + j.code : '') + (j && typeof j.message === 'string' ? ' ' + j.message.replace(/[^\w .,:'-]/g, '').slice(0, 90) : '') });
         let r2, j2 = {};
         try { r2 = await fetch(LA + '/v1/sessions/start', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(25000) }); j2 = await r2.json().catch(() => ({})); } catch (e) { r2 = null; }
         const s2 = (j2 && j2.data) || {};

@@ -771,7 +771,7 @@
       // the clients' link never shows the lotto sites or the insurance analysis (projects.json: clientHide)
       var hideC = {};
       (data.clientHide || []).forEach(function (id) { hideC[id] = true; });
-      // only a signed-in admin sees them; clients, visitors and the open site (sign-in switched off) never do
+      // only a signed-in admin sees them (on the main page too); clients, visitors and the open site (sign-in switched off) never do
       if (!who || who.role !== 'admin' || who.open || /[?&]view=client\b/.test(location.search)) {
         data.projects = data.projects.filter(function (p) { return !hideC[p.id]; });
       }
