@@ -26,12 +26,15 @@
     'bad-login': 'המייל או הסיסמה לא נכונים.', 'too-many': 'יותר מדי ניסיונות. נסו שוב בעוד שעה, או בקשו סיסמה ראשונית למייל.', 'rate-limited': 'יותר מדי בקשות. נסו שוב בעוד כמה דקות.',
     'bad-input': 'בודקים את המייל (והשם, בהרשמה).', 'weak-password': 'סיסמה של לפחות 8 תווים.', inactive: 'החשבון לא פעיל. פנו לבעל העסק.', 'signup-closed': 'ההרשמה סגורה כרגע.',
     'verify-device': 'זה מכשיר חדש. שלחנו סיסמה זמנית למייל: נכנסים איתה כדי לאשר את המכשיר.', 'signed-out': 'פג תוקף הכניסה. נכנסים שוב.', offline: 'אין חיבור לשרת. בודקים אינטרנט.',
-    'admin-only': 'האזור הזה לבעל העסק בלבד.', 'server-error': 'תקלה בשרת. נסו שוב.', 'too-big': 'גדול מדי לשמירה.', 'too-many-clients': 'אין מקום לחשבונות חדשים כרגע.', 'card-number': 'אסור לשמור כאן מספר כרטיס אשראי. התשלום באשראי עובר רק דרך קישור הסליקה.'
+    'admin-only': 'האזור הזה לבעל העסק בלבד.', 'server-error': 'תקלה בשרת. נסו שוב.', 'too-big': 'גדול מדי לשמירה.', 'too-many-clients': 'אין מקום לחשבונות חדשים כרגע.', 'card-number': 'אסור לשמור כאן מספר כרטיס אשראי. התשלום באשראי עובר רק דרך קישור הסליקה.',
+    'bad-contact': 'צריך שם וטלפון תקינים.', 'bad-date': 'בוחרים תאריך עתידי לאירוע.', 'bad-email': 'כתובת המייל לא תקינה.', full: 'אי אפשר לקבל בקשות כרגע. כתבו לנו בוואטסאפ.',
+    'date-taken': 'התאריך כבר תפוס ביומן.', already: 'הבקשה כבר אושרה.', 'not-frame-only': 'זה חשבון שמשמש גם אתרים אחרים, ולכן נחסם רק מהמנהל הראשי.', 'not-found': 'לא נמצא.'
   };
   function msg(r) { return MSG[r && r.error] || (r && r.error ? 'שגיאה: ' + r.error : 'שגיאה'); }
 
   var A = FS.account = {
     msg: msg,
+    apiBase: function () { return base; },
     session: load,
     signedIn: function () { var s = load(); return !!(s && s.token && !s.mustChange); },
     isAdmin: function () { var s = load(); return !!(s && s.token && s.role === 'admin' && !s.mustChange); },
@@ -112,9 +115,18 @@
       .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
     return Promise.all([file, live]).then(function (x) {
       var b = Object.assign({}, x[0] || {}, (x[1] && x[1].site) || {});
-      b.__frames = (x[1] && x[1].frames) || []; b.__live = !!(x[1] && x[1].site);
+      b.__frames = (x[1] && x[1].frames) || []; b.__live = !!(x[1] && x[1].site); b.__taken = (x[1] && x[1].taken) || [];
       return b;
     });
+  };
+  /* a booking request from the site: the server checks the calendar and keeps it for the owner, who approves it */
+  FS.book = {
+    send: function (data) {
+      var s = load(), b = Object.assign({}, data); if (s && s.token && !s.mustChange) b.token = s.token;
+      return base.then(function (u) { return fetch(u + '/frame-book', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(b) }); })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'http-' + r.status }; }); }, function () { return { ok: false, error: 'offline' }; });
+    },
+    msg: msg
   };
   FS.frameFileUrl = function (id) { return base.then(function (u) { return u + '/frame-file?id=' + encodeURIComponent(id); }); };
 })();

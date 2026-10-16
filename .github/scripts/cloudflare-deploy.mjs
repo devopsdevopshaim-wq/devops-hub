@@ -32,14 +32,16 @@ const secrets = {
   GOOGLE_CLIENT_ID: label('GOOGLE_CLIENT_ID', '[\\w.-]+\\.apps\\.googleusercontent\\.com') || (process.env.GOOGLE_CLIENT_ID || '').trim(), GOOGLE_CLIENT_SECRET: (process.env.GOOGLE_CLIENT_SECRET || label('GOOGLE_CLIENT_SECRET', 'GOCSPX-[\\w-]{20,60}')).trim(), MAIL_KEY: (process.env.MAIL_KEY || '').trim(),
   // LiveAvatar live video avatar for Maya (the key never reaches a page; the server mints sessions). A pasted label line is tolerated: the last long token wins.
   LIVEAVATAR_API_KEY: ((process.env.LIVEAVATAR_API_KEY || '').split(/\s+/).filter((t) => /^[A-Za-z0-9_-]{20,}$/.test(t)).pop() || ''),
-  LIVEAVATAR_AVATAR_ID: (process.env.LIVEAVATAR_AVATAR_ID || '').trim(), LIVEAVATAR_SANDBOX: (process.env.LIVEAVATAR_SANDBOX || '').trim()
+  LIVEAVATAR_AVATAR_ID: (process.env.LIVEAVATAR_AVATAR_ID || '').trim(), LIVEAVATAR_SANDBOX: (process.env.LIVEAVATAR_SANDBOX || '').trim(),
+  // פריים מגנטים: a WhatsApp message to the owner on a new booking request (CallMeBot, free; the key comes from their bot)
+  CALLMEBOT_APIKEY: (process.env.CALLMEBOT_APIKEY || '').trim(), CALLMEBOT_PHONE: (process.env.CALLMEBOT_PHONE || '').trim()
 };
 if (ADMIN_PASSWORD.length >= 8) {
   // the same secret gives the same hash on every deploy, so a deploy does not look like a new password (which would sign the admin out everywhere)
   const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-v1').digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
-for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 
 const notes = [];
 const note = (s) => { notes.push(s); console.log(s); };

@@ -1,6 +1,6 @@
 // The frame business data (src/frame.mjs) on an in-memory copy of Durable Object storage: who may do what, nothing leaks,
 // big values are split and come back whole, and card numbers are refused.
-import { frameBiz, frameSite, frameFile, hasCard } from '../src/frame.mjs';
+import { frameBiz, frameSite, frameFile, frameBook, frameCal, hasCard, today } from '../src/frame.mjs';
 
 let bad = 0;
 const check = (n, ok, x) => { if (!ok) { bad++; console.error('FAIL', n, x === undefined ? '' : JSON.stringify(x).slice(0, 300)); } else console.log('ok  ', n); };
@@ -100,6 +100,56 @@ await frameBiz(S, ADMIN, { action: 'frame-del', id: fid });
 check('a deleted frame leaves nothing behind', ![...S.m.keys()].some((k) => k.startsWith('ff:')));
 await frameBiz(S, DANA, { action: 'design-del', id: 'd1' });
 check('a deleted design leaves nothing behind', ![...S.m.keys()].some((k) => k.startsWith('d:dana@example.com:d1')));
+
+// booking requests: the site asks, the calendar answers, only the owner approves
+const S2 = storage();
+const plus = (n) => new Date(Date.parse(today() + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const D1 = plus(40), D2 = plus(41);
+const ask = (o) => frameBook(S2, null, Object.assign({ name: 'דנה כהן', phone: '050-1234567', email: 'dana@example.com', date: D1, type: 'wedding', typeName: 'חתונה', guests: '250', venue: 'אולם הגן', pkg: 'פרימיום' }, o));
+await frameBiz(S2, ADMIN, { action: 'site-save', site: { packages: [{ name: 'פרימיום', price: '₪2,290' }], busy: [D2] } });
+r = await ask({});
+check('a booking request is kept, the date is free', r.body.ok && r.body.free === true && /^R-\d+$/.test(r.body.ref) && r.notify.request.status === 'pending' && r.notify.state.free, r.body);
+const rq1 = r.body.id;
+r = await ask({ notes: 'שינוי קטן' });
+check('the same phone and date updates the open request', r.body.again && r.body.id === rq1);
+r = await ask({ date: D2, phone: '052-7654321', name: 'יוסי', email: 'yossi@example.com' });
+check('a date the owner marked busy is reported as taken', r.body.ok && r.body.free === false);
+const rq2 = r.body.id;
+check('a past date is refused', (await ask({ date: '2020-01-01' })).code === 400);
+check('a bad phone is refused', (await ask({ phone: '12' })).code === 400);
+check('a card number in a request is refused', (await ask({ notes: '4111 1111 1111 1111' })).body.error === 'card-number');
+check('a bot (hidden field) is ignored', (await ask({ website: 'x' })).notify === undefined);
+r = await frameBiz(S2, DANA, { action: 'request-decide', id: rq1, decision: 'approve' });
+check('a customer cannot approve', r.code === 403);
+r = await frameBiz(S2, DANA, { action: 'my-requests' });
+check('the customer sees her own requests and their state', r.body.requests.length === 1 && r.body.requests[0].status === 'pending' && !('phone' in r.body.requests[0]));
+r = await frameBiz(S2, ADMIN, { action: 'all' });
+check('the owner sees the requests', r.body.requests.length === 2 && r.body.requests.every((x) => x.status === 'pending'));
+r = await frameBiz(S2, ADMIN, { action: 'request-decide', id: rq1, decision: 'approve', answer: 'מחכים לכם!' });
+check('approving makes a closed deal with the package price', r.body.ok && r.body.deal.closed && r.body.deal.no === 1001 && r.body.deal.price === 2290 && r.body.deal.deposit === 687 && r.body.deal.client.name === 'דנה כהן' && r.notify.decision === 'approve', r.body);
+check('... and it cannot be approved twice', (await frameBiz(S2, ADMIN, { action: 'request-decide', id: rq1, decision: 'approve' })).code === 409);
+r = await frameSite(S2);
+check('the date is now taken on the public site (dates only)', r.taken.includes(D1) && !JSON.stringify(r.taken).includes('דנה'));
+r = await frameBook(S2, null, { name: 'אחר', phone: '053-1112223', date: D1, type: 'brit' });
+check('a new request for that date hears it is taken', r.body.ok && r.body.free === false && r.notify.state.deals.length === 1);
+const rq3 = r.body.id;
+r = await frameBiz(S2, ADMIN, { action: 'request-decide', id: rq3, decision: 'approve' });
+check('approving a taken date needs the owner to insist', r.code === 409 && r.body.error === 'date-taken');
+await frameBiz(S2, ADMIN, { action: 'settings-save', settings: { perDay: 2 } });
+r = await frameBiz(S2, ADMIN, { action: 'date-state', date: D1 });
+check('with two events a day the date is free again', r.body.state.free && r.body.state.perDay === 2);
+r = await frameBiz(S2, ADMIN, { action: 'request-decide', id: rq2, decision: 'decline', answer: 'מצטערים' });
+check('declining keeps the answer and tells the customer', r.body.request.status === 'declined' && r.notify.decision === 'decline');
+r = await frameBiz(S2, ADMIN, { action: 'all' });
+const dl = r.body.deals.find((d) => d.rq === rq1);
+await frameBiz(S2, ADMIN, { action: 'deal-del', id: dl.id });
+await frameBiz(S2, ADMIN, { action: 'settings-save', settings: { perDay: 1 } });
+check('deleting the deal frees the date', !(await frameSite(S2)).taken.includes(D1));
+check('no calendar feed without the secret', (await frameCal(S2, 'nope')) === null);
+r = await frameBiz(S2, ADMIN, { action: 'cal-key' });
+const ics = await frameCal(S2, r.body.calKey);
+check('the calendar feed has the pending requests', /BEGIN:VCALENDAR/.test(ics) && ics.includes('STATUS:TENTATIVE') && ics.includes('DTSTART;VALUE=DATE:' + D1.replace(/-/g, '')));
+check('... and a wrong key of the same length gets nothing', (await frameCal(S2, r.body.calKey.replace(/./, (c) => (c === 'a' ? 'b' : 'a')))) === null);
 
 console.log(bad ? `\n${bad} failed` : '\nframe: all passed');
 process.exit(bad ? 1 : 0);

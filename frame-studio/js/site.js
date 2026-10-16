@@ -125,7 +125,7 @@
           '<h3>' + esc(p.name) + '</h3>' + (p.price ? '<p class="price">' + esc(p.price) + '</p>' : '') + (meta ? '<p class="meta">' + meta + '</p>' : '') + (fits ? '<p class="fits">' + fits + '</p>' : '') + '<ul>' +
           (p.features || []).map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' + (p.note ? '<p class="pk-note">' + esc(p.note) + '</p>' : '') + '<button class="btn ' + (p.featured ? 'gold' : 'line') + '" data-pk="' + esc(p.name) + '">לבדוק תאריך לחבילה</button></article>';
       }).join('') || '<p class="note center">אין חבילה מוגדרת לסוג הזה. כתבו לנו ונתאים לכם הצעה.</p>';
-      $$('[data-pk]').forEach(function (b) { b.addEventListener('click', function () { openWa('שלום! מתעניין/ת בחבילת "' + b.dataset.pk + '" למגנטים לאירוע. אפשר לבדוק תאריך?'); }); });
+      $$('[data-pk]').forEach(function (b) { b.addEventListener('click', function () { var s = $('#c-pkg'); if (s) s.value = b.dataset.pk; $('#contact').scrollIntoView({ behavior: 'smooth' }); setTimeout(function () { $('#c-date').focus({ preventScroll: true }); }, 500); }); });
     }
     /* chips by event type, only when some package says which events it suits */
     var used = {}; pks.forEach(function (p) { (p.for || []).forEach(function (id) { used[id] = 1; }); });
@@ -149,6 +149,7 @@
     $('#c-list').innerHTML = ct.join('');
     var types = (BIZ.events && BIZ.events.length ? BIZ.events : FS.EVENTS.map(function (e) { return e.name; }));
     $('#c-type').innerHTML = types.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('');
+    var cp = $('#c-pkg'), keepPk = cp.value; cp.innerHTML = '<option value="">עוד לא יודעים</option>' + pks.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name) + (p.price ? ' · ' + esc(p.price) : '') + '</option>'; }).join(''); cp.value = keepPk;
     $('#ticker').innerHTML = new Array(3).join(FS.EVENTS.map(function (e) { return '<span>' + e.icon + ' ' + e.name + '</span><i>✦</i>'; }).join('') + '<span>🧲 מגנט ביד תוך דקה</span><i>✦</i>');
     $$('[data-wa]').forEach(function (a) { a.addEventListener('click', function (e) { if (waNumber()) { e.preventDefault(); openWa(a.dataset.wa); } }); });
     $('#wa-fab').addEventListener('click', function (e) { if (waNumber()) { e.preventDefault(); openWa('שלום! אשמח לשמוע על מגנטים לאירוע 🧲'); } });
@@ -183,20 +184,49 @@
     albums('');
   });
 
+  /* ---------- a booking request: checked against the calendar on the server, approved only by the owner ---------- */
+  function typeId(name) { var e = FS.EVENTS.filter(function (x) { return x.name === name || x.id === name; })[0]; return e ? e.id : ''; }
+  function bookText(f, ref) {
+    return 'שלום! שלחתי באתר בקשת הזמנה' + (ref ? ' (' + ref + ')' : '') + ' 🧲\nשם: ' + f.get('name') + '\nטלפון: ' + f.get('phone') + '\nאירוע: ' + f.get('type') + (f.get('date') ? '\nתאריך: ' + FS.fmtDate(f.get('date')) : '') +
+      (f.get('pkg') ? '\nחבילה: ' + f.get('pkg') : '') + (f.get('guests') ? '\nאורחים: ' + f.get('guests') : '') + (f.get('venue') ? '\nמקום: ' + f.get('venue') : '') + (f.get('notes') ? '\nהערות: ' + f.get('notes') : '');
+  }
   $('#c-form').addEventListener('submit', function (e) {
-    e.preventDefault(); var f = new FormData(this);
-    var text = 'שלום! אשמח להצעה למגנטים לאירוע 🧲\nשם: ' + f.get('name') + '\nטלפון: ' + f.get('phone') + '\nאירוע: ' + f.get('type') + (f.get('date') ? '\nתאריך: ' + FS.fmtDate(f.get('date')) : '') + (f.get('guests') ? '\nאורחים: ' + f.get('guests') : '') + (f.get('notes') ? '\nהערות: ' + f.get('notes') : '');
-    openWa(text);
+    e.preventDefault(); var form = this, f = new FormData(form), btn = $('#c-send'), err = $('.c-err', form);
+    if (err) err.remove();
+    if (!FS.book) { openWa(bookText(f)); return; }
+    btn.disabled = true; btn.textContent = 'בודקים ביומן…';
+    FS.book.send({ name: f.get('name'), phone: f.get('phone'), email: f.get('email'), date: f.get('date'), type: typeId(f.get('type')), typeName: f.get('type'), pkg: f.get('pkg'),
+      guests: f.get('guests'), venue: f.get('venue'), notes: f.get('notes'), website: f.get('website'), from: 'site' }).then(function (r) {
+      btn.disabled = false; btn.textContent = '📅 שליחת בקשת הזמנה';
+      if (!r || !r.ok) {
+        var p = document.createElement('p'); p.className = 'c-err'; p.setAttribute('role', 'alert');
+        var down = !r || /^(offline|server-error|http-|full|rate-limited)/.test(r.error || '');
+        p.textContent = (FS.book.msg(r) || 'שגיאה') + (down ? ' אפשר לשלוח את הפרטים ישר בוואטסאפ:' : '');
+        form.insertBefore(p, btn);
+        if (down) { var a = document.createElement('button'); a.type = 'button'; a.className = 'btn line c-wide'; a.textContent = '💬 שליחה בוואטסאפ'; a.addEventListener('click', function () { openWa(bookText(f)); }); form.insertBefore(a, btn); }
+        return;
+      }
+      var who = String(BIZ.owner || '').split(' ')[0] || 'אנחנו', done = $('#c-done');
+      done.innerHTML = '<span class="big-ic">' + (r.free ? '🎉' : '📨') + '</span><h3>הבקשה נשלחה!</h3><span class="ref">מספר בקשה ' + esc(r.ref) + '</span>' +
+        '<p>' + (r.free ? '✔ התאריך פנוי ביומן. ' : '⚠️ התאריך מופיע אצלנו כתפוס, אבל הבקשה נשמרה ונבדוק אם אפשר לתאם. ') + esc(who) + ' יאשר סופית ויחזור אליכם' + (f.get('email') ? ' (גם במייל)' : '') + '.</p>' +
+        '<div class="row"><button class="btn gold" type="button" id="c-wa">💬 לשלוח גם בוואטסאפ</button><button class="btn line" type="button" id="c-again">בקשה נוספת</button></div>';
+      form.hidden = true; done.hidden = false;
+      $('#c-wa').addEventListener('click', function () { openWa(bookText(f, r.ref)); });
+      $('#c-again').addEventListener('click', function () { form.reset(); $('#c-avail').textContent = ''; done.hidden = true; form.hidden = false; });
+      done.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   });
   /* ---------- is the date free? busy dates come from the studio's closed deals (no names) ---------- */
-  function isBusy(iso) { return !!iso && (BIZ.busy || []).indexOf(iso) > -1; }
+  var TAKEN = [];
+  function isBusy(iso) { return !!iso && ((BIZ.busy || []).indexOf(iso) > -1 || TAKEN.indexOf(iso) > -1); }
   function availText(iso) {
     if (!iso) return '';
     var d = new Date(iso + 'T12:00:00'), t = new Date(); t.setHours(0, 0, 0, 0);
     if (isNaN(d) || d < t) return '';
-    return isBusy(iso) ? '⚠️ התאריך הזה כבר תפוס אצלנו. כתבו לנו בכל זאת, לפעמים אפשר לתאם.' : '✔ נראה שהתאריך פנוי! כדאי לשריין מהר.';
+    return isBusy(iso) ? '⚠️ התאריך הזה כבר תפוס אצלנו. שלחו בקשה בכל זאת, לפעמים אפשר לתאם.' : '✔ התאריך פנוי ביומן! שולחים בקשה ונאשר סופית.';
   }
   $('#c-date').addEventListener('change', function () { var a = $('#c-avail'), t = availText(this.value); a.textContent = t; a.className = 'avail' + (t ? (isBusy(this.value) ? ' busy' : ' free') : ''); });
+  $('#c-date').min = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 
   /* ---------- reviews from the studio ---------- */
   function reviews() {
@@ -213,7 +243,7 @@
     if (e.origin !== location.origin || !e.data || e.data.type !== 'fs-preview' || !e.data.biz) return;
     Object.keys(e.data.biz).forEach(function (k) { BIZ[k] = e.data.biz[k]; }); fill(); reviews(); texts();
   });
-  window.SITE = { biz: BIZ, waLink: waLink, openWa: openWa, waNumber: waNumber, isBusy: isBusy, availText: availText };
+  window.SITE = { biz: BIZ, waLink: waLink, openWa: openWa, waNumber: waNumber, isBusy: isBusy, availText: availText, typeId: typeId };
 
   $('#year').textContent = new Date().getFullYear();
   /* sections and cards rise in as they scroll into view */
@@ -224,7 +254,7 @@
   }
 
   var bizLoaded = (FS.siteData ? FS.siteData() : fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; })).then(function (b) {
-    if (b) { delete b.__frames; delete b.__live; }
+    if (b) { TAKEN = b.__taken || []; delete b.__frames; delete b.__live; delete b.__taken; }
     Object.assign(BIZ, b || {}); fill(); reviews(); texts();
     window.dispatchEvent(new CustomEvent('site:biz', { detail: BIZ })); window.SITE.ready = true;
     /* the magnets drawn on this page carry the published details, not whatever this browser saved */

@@ -169,14 +169,20 @@
       <ul class="c-list" id="c-list"></ul>
     </div>
     <form class="c-form" id="c-form">
-      <label>שם<input name="name" required autocomplete="name" /></label>
-      <label>טלפון<input name="phone" type="tel" required autocomplete="tel" /></label>
-      <label>תאריך האירוע<input name="date" type="date" id="c-date" /><small class="avail" id="c-avail" aria-live="polite"></small></label>
+      <label>שם<input name="name" required minlength="2" maxlength="60" autocomplete="name" /></label>
+      <label>טלפון<input name="phone" type="tel" required autocomplete="tel" inputmode="tel" /></label>
+      <label>מייל (לאישור ההזמנה)<input name="email" type="email" autocomplete="email" maxlength="120" /></label>
+      <label>תאריך האירוע<input name="date" type="date" id="c-date" required /><small class="avail" id="c-avail" aria-live="polite"></small></label>
       <label>סוג האירוע<select name="type" id="c-type"></select></label>
+      <label>חבילה<select name="pkg" id="c-pkg"><option value="">עוד לא יודעים</option></select></label>
       <label>מספר אורחים משוער<input name="guests" type="number" min="10" step="10" /></label>
-      <label>הערות<textarea name="notes" rows="3" placeholder="מקום האירוע, סגנון, צבעים…"></textarea></label>
-      <button class="btn gold big" type="submit">שליחה בוואטסאפ 💬</button>
+      <label>מקום האירוע<input name="venue" maxlength="100" placeholder="אולם, גן אירועים או עיר" /></label>
+      <label class="hp" aria-hidden="true">אתר<input name="website" tabindex="-1" autocomplete="off" /></label>
+      <label class="c-wide">הערות<textarea name="notes" rows="3" maxlength="800" placeholder="שעה, סגנון, צבעים…"></textarea></label>
+      <p class="c-note c-wide">הבקשה נבדקת מול היומן ונשמרת. ההזמנה נסגרת רק אחרי אישור סופי מאיתנו, ותקבלו הודעה.</p>
+      <button class="btn gold big" type="submit" id="c-send">📅 שליחת בקשת הזמנה</button>
     </form>
+    <div class="c-form c-done" id="c-done" hidden aria-live="polite"></div>
   </section>
 </main>
 

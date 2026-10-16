@@ -188,19 +188,199 @@
     draw();
   };
 
-  /* ---------- customers ---------- */
-  V.customers = function (m, c) {
-    c.head(m, '👥 לקוחות ועיצובים', 'לקוחות שפתחו חשבון בעורך המסגרות ושמרו עיצובים. העיצובים שמורים בשרת ולא נמחקים.');
-    var l = c.customers().slice().sort(function (a, b) { return b.last - a.last; });
-    m.insertAdjacentHTML('beforeend', l.length ? '<table class="adm-tbl"><thead><tr><th>לקוח</th><th>עיצובים</th><th>עדכון אחרון</th><th></th></tr></thead><tbody>' + l.map(function (x) { return '<tr data-e="' + esc(x.email) + '"><td dir="ltr">' + esc(x.email) + '</td><td>' + x.designs + '</td><td>' + (x.last ? new Date(x.last).toLocaleString('he-IL') : '') + '</td><td class="act"><button data-a="open">👁 עיצובים</button><a href="mailto:' + esc(x.email) + '">✉️</a></td></tr>'; }).join('') + '</tbody></table><div id="cu-designs"></div>' : '<p class="hint">עוד אין לקוחות עם עיצובים שמורים. הלקוחות פותחים חשבון בעורך (design.html ← "👤 החשבון שלי").</p>');
-    $$('tr[data-e]', m).forEach(function (tr) {
-      $('[data-a=open]', tr).addEventListener('click', function () {
-        ACC.call('designs-of', { email: tr.dataset.e }).then(function (r) {
-          if (!r.ok) return FS.toast(ACC.msg(r));
-          $('#cu-designs').innerHTML = '<h3>העיצובים של ' + esc(tr.dataset.e) + '</h3><div class="dz-mine">' + r.designs.map(function (d) { return '<figure><img src="' + esc(d.thumb || '') + '" alt=""><figcaption><b>' + esc(d.name || 'עיצוב') + '</b><small>' + new Date(d.at).toLocaleDateString('he-IL') + '</small></figcaption><div><a class="btn small" target="_blank" rel="noopener" href="design.html?owner&open=' + encodeURIComponent(tr.dataset.e + ':' + d.id) + '">פתיחה בעורך</a></div></figure>'; }).join('') + '</div>';
+  /* ---------- booking requests: the calendar is checked, the owner decides ---------- */
+  function waLink(phone, text) { var n = String(phone || '').replace(/\D/g, '').replace(/^0/, '972'); return 'https://wa.me/' + n + '?text=' + encodeURIComponent(text || ''); }
+  function longDate(iso) { var d = new Date(iso + 'T12:00:00'); return isNaN(d) ? (iso || '') : d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+  function holds(d) { return d && d.date && !d.cancelled && (d.closed || (d.payments || []).length > 0); }
+  /* the same rule as the server: deals that hold a date, the owner's busy dates, and how many events fit in a day */
+  function dayState(c, iso, skipRq) {
+    var perDay = Math.max(1, Math.min(10, num(c.settings().perDay) || 1));
+    var deals = c.deals().filter(function (d) { return holds(d) && d.date === iso; });
+    var busy = (c.site().busy || []).indexOf(iso) > -1;
+    var pending = c.requests().filter(function (r) { return r.status === 'pending' && r.date === iso && r.id !== skipRq; });
+    return { free: !busy && deals.length < perDay, busy: busy, deals: deals, pending: pending, perDay: perDay };
+  }
+  function calText(st) {
+    if (st.free) return '<span class="cal-ok">✔ פנוי ביומן</span>' + (st.deals.length ? ' <small>(' + st.deals.length + ' מתוך ' + st.perDay + ' ביום)</small>' : '');
+    return '<span class="cal-no">⚠️ תפוס: ' + (st.deals.length ? st.deals.map(function (d) { return esc((d.client || {}).name || 'עסקה') + (d.no ? ' (' + d.no + ')' : ''); }).join(', ') : 'סימנת את התאריך כתפוס') + '</span>';
+  }
+  function gcal(o) {
+    var d = String(o.date || '').replace(/-/g, ''), n = new Date(new Date(o.date + 'T12:00:00Z').getTime() + 864e5).toISOString().slice(0, 10).replace(/-/g, '');
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('🧲 ' + o.title) + '&dates=' + d + '/' + n + '&details=' + encodeURIComponent(o.details || '') + '&location=' + encodeURIComponent(o.venue || '');
+  }
+  var STATUS = { pending: ['wait', '⏳ ממתינה לאישור'], approved: ['ok', '✔ אושרה'], declined: ['no', '✖ נדחתה'] };
+  V.requests = function (m, c) {
+    c.head(m, '📥 בקשות הזמנה', 'לקוחות שבחרו תאריך ושלחו פרטים, מהאתר או מהצ׳אט. המערכת בודקת את היומן; ההזמנה נסגרת רק כשאתה מאשר.');
+    var filter = 'pending', biz = c.site(), owner = String(biz.owner || '').split(' ')[0] || '';
+    m.insertAdjacentHTML('beforeend', '<div class="adm-row"><div class="seg" id="rq-f"><button data-f="pending" class="on">ממתינות</button><button data-f="approved">אושרו</button><button data-f="declined">נדחו</button><button data-f="all">הכול</button></div><button class="btn line small" id="rq-refresh">🔄 רענון</button><a class="btn line small" href="./#contact" target="_blank" rel="noopener">🌐 טופס ההזמנה באתר</a></div><div id="rq-list" class="rq-list"></div>');
+    function msgApprove(r) { return 'שלום ' + r.name + '! 🎉\nשמחים לאשר את ההזמנה שלכם (' + r.ref + ') ל' + longDate(r.date) + '.\nהתאריך שמור לכם. נשלח את פרטי העסקה והמקדמה.\n' + (biz.name || ''); }
+    function msgDecline(r, why) { return 'שלום ' + r.name + ',\nתודה על הפנייה (' + r.ref + '). לצערנו לא נוכל לקבל אירוע ב' + longDate(r.date) + '.' + (why ? '\n' + why : '') + '\n' + (biz.name || ''); }
+    function draw() {
+      var l = c.requests().filter(function (r) { return filter === 'all' || r.status === filter; }).sort(function (a, b) { return filter === 'pending' ? (a.date < b.date ? -1 : 1) : b.at - a.at; });
+      var box = $('#rq-list');
+      box.innerHTML = l.length ? l.map(function (r) {
+        var st = dayState(c, r.date, r.id), S = STATUS[r.status] || STATUS.pending, deal = r.dealId && c.deals().filter(function (d) { return d.id === r.dealId; })[0];
+        var pk = (biz.packages || []).filter(function (p) { return p.name === r.pkg; })[0];
+        return '<article class="rq rq-' + S[0] + '" data-id="' + esc(r.id) + '"><header><b>' + esc(r.ref) + '</b><span class="st st-' + S[0] + '">' + S[1] + '</span><small>התקבלה ' + new Date(r.at).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) + (r.from === 'chat' ? ' · מהצ׳אט' : '') + '</small></header>' +
+          '<div class="rq-body"><div><h3>' + esc(r.name) + '</h3><p><a href="tel:' + esc(r.phone) + '">📞 ' + esc(r.phone) + '</a>' + (r.email ? ' · <a href="mailto:' + esc(r.email) + '" dir="ltr">' + esc(r.email) + '</a>' : '') + '</p></div>' +
+          '<dl><dt>אירוע</dt><dd>' + esc(r.typeName || evName(r.type) || '—') + '</dd><dt>תאריך</dt><dd><b>' + esc(longDate(r.date)) + '</b>' + (r.time ? ' · ' + esc(r.time) : '') + '</dd>' + (r.guests ? '<dt>אורחים</dt><dd>' + esc(r.guests) + '</dd>' : '') + (r.venue ? '<dt>מקום</dt><dd>' + esc(r.venue) + '</dd>' : '') + (r.pkg ? '<dt>חבילה</dt><dd>' + esc(r.pkg) + (pk && pk.price ? ' · ' + esc(pk.price) : '') + '</dd>' : '') + (r.notes ? '<dt>הערות</dt><dd>' + esc(r.notes) + '</dd>' : '') + '</dl>' +
+          '<p class="rq-cal">📅 ' + (r.status === 'approved' ? '<span class="cal-ok">שמור ביומן' + (deal && deal.no ? ' · עסקה ' + esc(deal.no) : '') + '</span>' : calText(st)) + (r.status === 'pending' && st.pending.length ? ' · <span class="cal-warn">עוד ' + st.pending.length + ' בקשות ממתינות לאותו תאריך</span>' : '') + '</p>' +
+          (r.answer ? '<p class="rq-ans">ההודעה שלך: ' + esc(r.answer) + '</p>' : '') + '</div>' +
+          (r.status === 'pending' ? '<div class="rq-decide"><label>מחיר לעסקה ₪<input type="number" min="0" data-k="price" value="' + esc(num(pk && pk.price) || '') + '"></label><label class="grow">הודעה ללקוח (לא חובה)<input data-k="answer" maxlength="400" placeholder="למשל: נשמח לראות אתכם!"></label></div>' : '') +
+          '<div class="act-row">' + (r.status === 'pending' ? '<button class="btn gold" data-a="approve">✅ אישור וסגירת העסקה</button><button class="btn line" data-a="decline">✖ דחייה</button>' : '') +
+          (r.status === 'approved' ? '<a class="btn gold small" target="_blank" rel="noopener" href="' + esc(waLink(r.phone, msgApprove(r))) + '">📲 עדכון הלקוח בוואטסאפ</a><a class="btn line small" target="_blank" rel="noopener" href="' + esc(gcal({ date: r.date, title: (r.typeName || evName(r.type)) + ' · ' + r.name, venue: r.venue, details: r.ref + '\n' + r.phone })) + '">📅 ליומן Google</a>' + (deal ? '<a class="btn line small" target="_blank" rel="noopener" href="studio.html?deal=' + encodeURIComponent(deal.id) + '">📑 העסקה בסטודיו</a>' : '') : '') +
+          (r.status === 'declined' ? '<a class="btn line small" target="_blank" rel="noopener" href="' + esc(waLink(r.phone, msgDecline(r, r.answer))) + '">📲 עדכון הלקוח בוואטסאפ</a><button class="btn line small" data-a="reopen">↩ החזרה להמתנה</button>' : '') +
+          '<a class="btn line small" target="_blank" rel="noopener" href="' + esc(waLink(r.phone, 'שלום ' + r.name + ', כאן ' + owner + ' מ' + (biz.name || '') + ' לגבי בקשת ההזמנה ' + r.ref + ' ל' + longDate(r.date) + '.')) + '">💬 וואטסאפ</a>' +
+          (r.status !== 'pending' ? '<button class="btn line small" data-a="del" title="מחיקה">🗑</button>' : '') + '</div></article>';
+      }).join('') : '<p class="hint">' + (filter === 'pending' ? 'אין בקשות שממתינות לך. 🎉 בקשה חדשה מגיעה למייל ומופיעה כאן.' : 'אין בקשות כאן.') + '</p>';
+      $$('.rq', box).forEach(function (el) {
+        var r = c.requests().filter(function (x) { return x.id === el.dataset.id; })[0];
+        function val(k) { var i = $('[data-k=' + k + ']', el); return i ? i.value.trim() : ''; }
+        function decide(decision, force) {
+          FS.busy(decision === 'approve' ? 'סוגר את העסקה…' : 'שומר…');
+          ACC.call('request-decide', { id: r.id, decision: decision, price: val('price'), answer: val('answer'), force: !!force }).then(function (x) {
+            FS.busy();
+            if (x.error === 'date-taken') { if (confirm('התאריך כבר תפוס ביומן (' + x.state.deals.map(function (d) { return d.title; }).join(', ') + '). לאשר בכל זאת?')) decide(decision, true); return; }
+            if (!x.ok) return FS.toast(ACC.msg(x), 6000);
+            c.setRequests(c.requests().map(function (q) { return q.id === r.id ? x.request : q; }));
+            if (x.deal) c.setDeals(c.deals().concat([x.deal]));
+            c.badge();
+            FS.toast(decision === 'approve' ? '✔ אושרה. נפתחה עסקה מס׳ ' + x.deal.no + (x.mailed ? ' והלקוח קיבל מייל' : '') + '. אפשר לעדכן גם בוואטסאפ.' : decision === 'decline' ? 'הבקשה נדחתה' + (x.mailed ? ' והלקוח קיבל מייל' : '') : 'הוחזרה להמתנה', 6000);
+            draw();
+          });
+        }
+        el.querySelectorAll('[data-a]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var a = b.dataset.a;
+            if (a === 'approve') decide('approve');
+            if (a === 'decline' && confirm('לדחות את הבקשה של ' + r.name + '?')) decide('decline');
+            if (a === 'reopen') decide('pending');
+            if (a === 'del' && confirm('למחוק את הבקשה ' + r.ref + '?')) ACC.call('request-del', { id: r.id }).then(function (x) { if (!x.ok) return FS.toast(ACC.msg(x)); c.setRequests(c.requests().filter(function (q) { return q.id !== r.id; })); draw(); });
+          });
         });
       });
+    }
+    $$('#rq-f button').forEach(function (b) { b.addEventListener('click', function () { filter = b.dataset.f; $$('#rq-f button').forEach(function (x) { x.classList.toggle('on', x === b); }); draw(); }); });
+    $('#rq-refresh').addEventListener('click', function () { c.refresh().then(draw); });
+    c.onRefresh(draw);
+    draw();
+  };
+
+  /* ---------- the calendar: events, requests and busy dates by month; the Google Calendar link ---------- */
+  V.calendar = function (m, c) {
+    c.head(m, '🗓️ יומן', 'האירועים שנסגרו, בקשות שממתינות לך והתאריכים שסימנת כתפוסים. לפי היומן הזה האתר אומר ללקוחות אם התאריך פנוי.');
+    var now = new Date(), ym = now.toISOString().slice(0, 7), DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+    m.insertAdjacentHTML('beforeend', '<div class="adm-row cal-nav"><button class="btn line small" id="cal-prev">→</button><h2 id="cal-t"></h2><button class="btn line small" id="cal-next">←</button><button class="btn line small" id="cal-today">היום</button>' +
+      '<span class="cal-key"><i class="k-deal"></i>אירוע סגור <i class="k-rq"></i>בקשה ממתינה <i class="k-busy"></i>סימנת תפוס</span></div><div class="cal" id="cal"></div><div id="cal-day"></div>' +
+      '<section class="adm-card"><h3>⚙️ זמינות</h3><div class="adm-row"><label class="adm-f"><span>כמה אירועים אני יכול לקבל באותו יום</span><div class="adm-in"><input type="number" min="1" max="10" id="cal-per" value="' + esc(num(c.settings().perDay) || 1) + '"></div></label><button class="btn gold small" id="cal-per-save">💾 שמירה</button></div>' +
+      '<p class="hint">תאריך עם מספר האירועים הזה (עסקאות שנסגרו או ששולמה בהן מקדמה) מופיע באתר כתפוס. ימים שאתה לא עובד בהם: ב"📅 תאריכים תפוסים".</p></section>' +
+      '<section class="adm-card"><h3>📆 היומן בטלפון (Google / Apple)</h3><p class="hint">קישור פרטי שהיומן שלך קורא ממנו את האירועים והבקשות, ומתעדכן לבד. ב־Google Calendar במחשב: ⚙️ הגדרות ← "הוספת יומן" ← "מכתובת URL" ← מדביקים. מי שיש לו את הקישור רואה את האירועים, אז לא משתפים אותו.</p><div class="adm-row" id="cal-link"></div></section>');
+    function cellItems(iso) {
+      var out = [];
+      c.deals().forEach(function (d) { if (holds(d) && d.date === iso) out.push({ k: 'deal', t: (d.client || {}).name || 'אירוע', d: d }); });
+      c.requests().forEach(function (r) { if (r.status === 'pending' && r.date === iso) out.push({ k: 'rq', t: r.name, r: r }); });
+      if ((c.site().busy || []).indexOf(iso) > -1 && !out.some(function (x) { return x.k === 'deal'; })) out.push({ k: 'busy', t: 'תפוס' });
+      return out;
+    }
+    function draw() {
+      var y = +ym.slice(0, 4), mo = +ym.slice(5, 7) - 1, first = new Date(y, mo, 1), n = new Date(y, mo + 1, 0).getDate(), today = new Date().toISOString().slice(0, 10);
+      $('#cal-t').textContent = MONTHS[mo] + ' ' + y;
+      var h = DAYS.map(function (d) { return '<b class="cal-h">' + d + '</b>'; }).join('');
+      for (var i = 0; i < first.getDay(); i++) h += '<span class="cal-c empty"></span>';
+      for (var d = 1; d <= n; d++) {
+        var iso = ym + '-' + ('0' + d).slice(-2), it = cellItems(iso), st = dayState(c, iso);
+        h += '<button class="cal-c' + (iso === today ? ' today' : '') + (iso < today ? ' past' : '') + (!st.free ? ' full' : '') + '" data-d="' + iso + '"><span class="n">' + d + '</span>' + it.slice(0, 3).map(function (x) { return '<i class="k-' + x.k + '">' + esc(x.t) + '</i>'; }).join('') + (it.length > 3 ? '<i class="more">+' + (it.length - 3) + '</i>' : '') + '</button>';
+      }
+      $('#cal').innerHTML = h;
+      $$('#cal [data-d]').forEach(function (b) { b.addEventListener('click', function () { day(b.dataset.d); }); });
+    }
+    function day(iso) {
+      var it = cellItems(iso), st = dayState(c, iso);
+      $('#cal-day').innerHTML = '<section class="adm-card"><h3>' + esc(longDate(iso)) + '</h3><p>' + calText(st) + '</p>' + (it.length ? '<ul class="adm-hist">' + it.map(function (x) {
+        if (x.k === 'deal') return '<li><b>🧲 ' + esc(x.t) + ' · ' + evName(x.d.type) + '</b><small>' + esc([x.d.venue, (x.d.client || {}).phone, x.d.no ? 'עסקה ' + x.d.no : ''].filter(Boolean).join(' · ')) + ' · <a target="_blank" rel="noopener" href="studio.html?deal=' + encodeURIComponent(x.d.id) + '">פתיחה</a></small></li>';
+        if (x.k === 'rq') return '<li><b>❓ ' + esc(x.r.ref) + ' · ' + esc(x.t) + '</b><small>' + esc(x.r.typeName || '') + ' · ' + esc(x.r.phone) + ' · <a href="#requests" data-go="requests">לאישור</a></small></li>';
+        return '<li><b>⛔ סימנת את היום הזה כתפוס</b></li>';
+      }).join('') + '</ul>' : '<p class="hint">אין כלום ביום הזה.</p>') + '</section>';
+      $$('#cal-day [data-go]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); c.go('requests'); }); });
+    }
+    function link() {
+      var box = $('#cal-link'), k = c.calKey();
+      if (!k) { box.innerHTML = '<button class="btn gold small" id="cal-mk">🔗 יצירת קישור ליומן</button>'; $('#cal-mk').addEventListener('click', mk); return; }
+      ACC.apiBase().then(function (u) {
+        var url = u + '/frame-cal?k=' + k;
+        box.innerHTML = '<input readonly dir="ltr" value="' + esc(url) + '" id="cal-url" class="grow"><button class="btn gold small" id="cal-copy">📋 העתקה</button><button class="btn line small" id="cal-mk">🔄 קישור חדש (הישן יפסיק)</button>';
+        $('#cal-copy').addEventListener('click', function () { var i = $('#cal-url'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { FS.toast('📋 הועתק'); }, function () { document.execCommand('copy'); FS.toast('📋 הועתק'); }); });
+        $('#cal-mk').addEventListener('click', function () { if (confirm('ליצור קישור חדש? היומן שמחובר לקישור הישן יפסיק להתעדכן.')) mk(); });
+      });
+    }
+    function mk() { ACC.call('cal-key').then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); c.setCalKey(r.calKey); link(); }); }
+    $('#cal-prev').addEventListener('click', function () { var d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 2, 1); ym = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); draw(); });
+    $('#cal-next').addEventListener('click', function () { var d = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 1); ym = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); draw(); });
+    $('#cal-today').addEventListener('click', function () { ym = new Date().toISOString().slice(0, 7); draw(); });
+    $('#cal-per-save').addEventListener('click', function () {
+      var s = Object.assign({}, c.settings(), { perDay: Math.max(1, Math.min(10, num($('#cal-per').value) || 1)) });
+      ACC.call('settings-save', { settings: s }).then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); c.setSettings(s); draw(); FS.toast('✔ נשמר. האתר מתעדכן לפי זה.'); });
     });
+    c.onRefresh(draw);
+    draw(); link();
+  };
+
+  /* ---------- customers: everyone who opened an account, with their designs, requests and deals ---------- */
+  V.customers = function (m, c) {
+    c.head(m, '👥 לקוחות', 'כל מי שנרשם באתר (עורך המסגרות או בקשת הזמנה), ומי שהשאיר בקשה בלי חשבון. הכול שמור בשרת ולא נמחק.');
+    var q = '';
+    m.insertAdjacentHTML('beforeend', '<div class="adm-row"><a class="btn gold small" href="./" target="_blank" rel="noopener">🌐 האתר ללקוחות</a><a class="btn line small" href="design.html" target="_blank" rel="noopener">🎨 עורך המסגרות (הרשמה וכניסה ללקוחות)</a><input id="cu-q" placeholder="חיפוש לפי שם, מייל או טלפון…"></div><div id="cu-list"></div><div id="cu-one"></div>');
+    function phoneKey(p) { return String(p || '').replace(/\D/g, '').replace(/^972/, '0'); }
+    function people() {
+      var map = {};
+      function get(key, seed) { if (!map[key]) map[key] = Object.assign({ email: '', name: '', phone: '', designs: 0, requests: [], deals: [], account: null }, seed || {}); return map[key]; }
+      (c.accounts() || []).forEach(function (a) { var p = get(a.email, { email: a.email, name: a.name, phone: a.phone }); p.account = a; });
+      c.customers().forEach(function (x) { var p = get(x.email, { email: x.email }); p.designs = x.designs; p.last = x.last; });
+      function byContact(email, phone, name) {
+        if (email && map[email]) return map[email];
+        var pk = phoneKey(phone); if (pk) for (var k in map) if (phoneKey(map[k].phone) === pk) return map[k];
+        return get(email || ('tel:' + pk), { email: email || '', name: name || '', phone: phone || '' });
+      }
+      c.requests().forEach(function (r) { var p = byContact(r.email || r.by, r.phone, r.name); p.requests.push(r); if (!p.phone) p.phone = r.phone; if (!p.name) p.name = r.name; });
+      c.deals().forEach(function (d) { var cl = d.client || {}; if (!cl.email && !cl.phone) return; var p = byContact(String(cl.email || '').toLowerCase(), cl.phone, cl.name); p.deals.push(d); if (!p.name) p.name = cl.name; });
+      return Object.keys(map).map(function (k) { var p = map[k]; p.key = k; p.seen = Math.max(p.last || 0, Date.parse((p.account || {}).lastSeen || '') || 0, Date.parse((p.account || {}).lastLogin || '') || 0, p.requests.reduce(function (mx, r) { return Math.max(mx, r.at || 0); }, 0)); return p; })
+        .sort(function (a, b) { return b.seen - a.seen; });
+    }
+    function draw() {
+      var l = people().filter(function (p) { return !q || (p.name + ' ' + p.email + ' ' + p.phone + ' ' + phoneKey(p.phone)).toLowerCase().indexOf(q.toLowerCase()) > -1; });
+      $('#cu-list').innerHTML = l.length ? '<table class="adm-tbl"><thead><tr><th>לקוח</th><th>חשבון</th><th>פעילות אחרונה</th><th>עיצובים</th><th>בקשות</th><th>עסקאות</th><th></th></tr></thead><tbody>' + l.map(function (p) {
+        var a = p.account;
+        return '<tr data-k="' + esc(p.key) + '"><td><b>' + esc(p.name || '—') + '</b><small dir="ltr">' + esc(p.email || '') + '</small><small>' + esc(p.phone || '') + '</small></td>' +
+          '<td>' + (a ? (a.active ? (a.online ? '<span class="dot on"></span>מחובר' : '✔ פעיל') : '⛔ חסום') + '<small>נרשם ' + (a.createdAt ? new Date(a.createdAt).toLocaleDateString('he-IL') : '') + '</small>' : '<small>בלי חשבון</small>') + '</td>' +
+          '<td>' + (p.seen ? new Date(p.seen).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—') + '</td><td>' + (p.designs || 0) + '</td><td>' + p.requests.length + (p.requests.some(function (r) { return r.status === 'pending'; }) ? ' ⏳' : '') + '</td><td>' + p.deals.length + '</td>' +
+          '<td class="act"><button data-a="open" title="הכול על הלקוח">👁</button>' + (p.phone ? '<a target="_blank" rel="noopener" href="' + esc(waLink(p.phone, 'שלום ' + (p.name || '') + ',')) + '" title="וואטסאפ">💬</a>' : '') + (p.email ? '<a href="mailto:' + esc(p.email) + '" title="מייל">✉️</a>' : '') + '</td></tr>';
+      }).join('') + '</tbody></table>' : '<p class="hint">' + (q ? 'לא נמצא.' : 'עוד אין לקוחות. לקוחות נרשמים בעורך המסגרות (design.html ← "👤 החשבון שלי") או שולחים בקשת הזמנה באתר.') + '</p>';
+      $$('#cu-list tr[data-k]').forEach(function (tr) { $('[data-a=open]', tr).addEventListener('click', function () { one(people().filter(function (p) { return p.key === tr.dataset.k; })[0]); }); });
+    }
+    function one(p) {
+      var a = p.account, box = $('#cu-one');
+      box.innerHTML = '<section class="adm-card cu-one"><div class="adm-card-h"><h3>' + esc(p.name || p.email || p.phone) + '</h3><button class="btn line small" id="cu-x">✕</button></div>' +
+        '<dl class="cu-dl"><dt>מייל</dt><dd dir="ltr">' + esc(p.email || '—') + '</dd><dt>טלפון</dt><dd>' + esc(p.phone || '—') + '</dd>' +
+        (a ? '<dt>חשבון</dt><dd>' + (a.active ? '✔ פעיל' : '⛔ חסום') + (a.online ? ' · מחובר עכשיו' : '') + '</dd><dt>נרשם</dt><dd>' + (a.createdAt ? new Date(a.createdAt).toLocaleString('he-IL') : '—') + '</dd><dt>כניסה אחרונה</dt><dd>' + (a.lastLogin ? new Date(a.lastLogin).toLocaleString('he-IL') : '—') + '</dd>' : '<dt>חשבון</dt><dd>לא נרשם (השאיר בקשה)</dd>') + '</dl>' +
+        '<div class="act-row">' + (p.phone ? '<a class="btn gold small" target="_blank" rel="noopener" href="' + esc(waLink(p.phone, 'שלום ' + (p.name || '') + ',')) + '">💬 וואטסאפ</a><a class="btn line small" href="tel:' + esc(p.phone) + '">📞 חיוג</a>' : '') + (p.email ? '<a class="btn line small" href="mailto:' + esc(p.email) + '">✉️ מייל</a>' : '') +
+        (a && a.only ? '<button class="btn line small" id="cu-block">' + (a.active ? '⛔ חסימת החשבון' : '✔ הפעלת החשבון') + '</button>' : '') + '</div>' +
+        '<h4>📥 בקשות הזמנה</h4>' + (p.requests.length ? '<ul class="adm-hist">' + p.requests.map(function (r) { return '<li><b>' + esc(r.ref) + ' · ' + esc(longDate(r.date)) + ' · ' + esc(r.typeName || '') + '</b><small>' + (STATUS[r.status] || STATUS.pending)[1] + '</small></li>'; }).join('') + '</ul>' : '<p class="hint">אין.</p>') +
+        '<h4>📑 עסקאות</h4>' + (p.deals.length ? '<ul class="adm-hist">' + p.deals.map(function (d) { var t = totals(d, c.settings()); return '<li><b>' + esc(heDate(d.date)) + ' · ' + evName(d.type) + (d.no ? ' · עסקה ' + esc(d.no) : '') + '</b><small>' + money(t.total) + ' · ' + (t.balance > 0 ? 'יתרה ' + money(t.balance) : 'שולם ✔') + ' · <a target="_blank" rel="noopener" href="studio.html?deal=' + encodeURIComponent(d.id) + '">פתיחה</a></small></li>'; }).join('') + '</ul>' : '<p class="hint">אין.</p>') +
+        '<h4>🎨 עיצובים</h4><div id="cu-designs">' + (p.email && p.designs ? '…' : '<p class="hint">אין עיצובים שמורים.</p>') + '</div></section>';
+      $('#cu-x').addEventListener('click', function () { box.innerHTML = ''; });
+      var bl = $('#cu-block'); if (bl) bl.addEventListener('click', function () {
+        if (!confirm(a.active ? 'לחסום את ' + p.email + '? הלקוח ינותק ולא יוכל להיכנס עד שתפעיל שוב.' : 'להפעיל שוב את ' + p.email + '?')) return;
+        ACC.call('account-set', { email: p.email, active: !a.active }).then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); a.active = r.active; FS.toast(r.active ? '✔ החשבון פעיל' : '⛔ החשבון נחסם'); one(p); draw(); });
+      });
+      if (p.email && p.designs) ACC.call('designs-of', { email: p.email }).then(function (r) {
+        if (!r.ok) return FS.toast(ACC.msg(r));
+        $('#cu-designs').innerHTML = '<div class="dz-mine">' + r.designs.map(function (d) { return '<figure><img src="' + esc(d.thumb || '') + '" alt=""><figcaption><b>' + esc(d.name || 'עיצוב') + '</b><small>' + new Date(d.at).toLocaleDateString('he-IL') + '</small></figcaption><div><a class="btn small" target="_blank" rel="noopener" href="design.html?owner&open=' + encodeURIComponent(p.email + ':' + d.id) + '">פתיחה בעורך</a></div></figure>'; }).join('') + '</div>';
+      });
+      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    $('#cu-q').addEventListener('input', function () { q = this.value.trim(); draw(); });
+    c.onRefresh(draw);
+    draw();
   };
 
   /* ---------- payment and bank details ---------- */
@@ -226,5 +406,5 @@
     });
   };
 
-  FS.adminBiz = { view: function (k, m, c) { V[k](m, c); }, month: month, money: money, totals: totals, openBalance: openBalance, upcoming: upcoming };
+  FS.adminBiz = { view: function (k, m, c) { V[k](m, c); }, month: month, money: money, totals: totals, openBalance: openBalance, upcoming: upcoming, dayState: dayState, longDate: longDate };
 })();

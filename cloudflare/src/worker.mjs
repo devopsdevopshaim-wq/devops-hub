@@ -22,7 +22,7 @@ import statusFresh from './gen/status-fresh.mjs';
 import statusRender from './gen/status-render.mjs';
 import { mailHandle, mailCallback, who as sessionOf } from './mail.mjs';
 import { localGuide } from './guide-local.mjs';
-import { frameSite, frameFile, frameBiz } from './frame.mjs';
+import { frameSite, frameFile, frameBiz, frameBook, frameCal } from './frame.mjs';
 import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
 
 const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
@@ -49,8 +49,13 @@ const ROUTES = {
   // פריים מגנטים: the site's content and frames (public), and the business's data (signed in; the session is checked here)
   'frame-site': { svc: 'frame', kind: 'frame-site', max: 1000, free: true, method: 'GET' },
   'frame-file': { svc: 'frame', kind: 'frame-file', max: 1000, free: true, method: 'GET' },
-  'frame-biz': { svc: 'frame', kind: 'frame', max: 6000000 }
+  'frame-biz': { svc: 'frame', kind: 'frame', max: 6000000 },
+  // a booking request from the site (anyone; checked against the calendar, the owner approves), and the owner's calendar feed
+  'frame-book': { svc: 'frame', kind: 'frame-book', max: 8000 },
+  'frame-cal': { svc: 'frame', kind: 'frame-cal', max: 1000, free: true, method: 'GET' }
 };
+const FRAME_NAME = 'פריים מגנטים';
+const FRAME_ADMIN = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/admin.html';
 const SERVICES = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/services.json';
 const KNOWLEDGE = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/knowledge.json';
 const routeOf = (pathname) => ROUTES[pathname.replace(/^\/(webhook\/)?/, '')];
@@ -94,7 +99,11 @@ export default {
       const png = await fr.fileData(url.searchParams.get('id') || '');
       return png ? new Response(png, { headers: { ...CORS, 'Access-Control-Allow-Origin': '*', 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' } }) : reply({ ok: false, error: 'not-found' }, 404);
     }
-    if (rt.kind === 'frame') {
+    if (rt.kind === 'frame-cal') {
+      const ics = await env.STATE.get(env.STATE.idFromName('frame')).calData(url.searchParams.get('k') || '');
+      return ics ? new Response(ics, { headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'private, max-age=300', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } }) : reply({ ok: false, error: 'not-found' }, 404);
+    }
+    if (rt.kind === 'frame-book' || rt.kind === 'frame') {
       // only the site may call; who is asking comes from the sign-in session, never from the request itself
       const origin = request.headers.get('origin') || '';
       if (origin !== SITE_ORIGIN) return reply({ ok: false, error: 'forbidden' }, 403);
@@ -103,8 +112,13 @@ export default {
       let b = {}; try { b = JSON.parse(raw || '{}'); } catch (e) { return reply({ ok: false, error: 'bad-json' }, 400); }
       if (!b || typeof b !== 'object') return reply({ ok: false, error: 'bad-json' }, 400);
       const ip = request.headers.get('cf-connecting-ip') || 'unknown';
-      const who = await env.STATE.get(env.STATE.idFromName('main')).whoIs(String(b.token || ''));
-      const r = await env.STATE.get(env.STATE.idFromName('frame')).bizCall(who, b, ip);
+      const main = env.STATE.get(env.STATE.idFromName('main')), fr = env.STATE.get(env.STATE.idFromName('frame'));
+      const who = b.token ? await main.whoIs(String(b.token)) : null;
+      if (rt.kind === 'frame-book') { const r = await fr.bookCall(who, b, ip); return reply(r.body, r.code); }
+      // the customers' accounts live with the sign-in (main object): the owner sees them and may block or unblock one
+      if (who && who.role === 'admin' && b.action === 'account-set') return reply(await main.frameAccountSet(String(b.email || ''), !!b.active));
+      const r = await fr.bizCall(who, b, ip);
+      if (who && who.role === 'admin' && b.action === 'all' && r.body && r.body.ok) r.body.accounts = await main.frameAccounts();
       return reply(r.body, r.code);
     }
     const id = env.STATE.idFromName(rt.svc);
@@ -118,16 +132,51 @@ async function sendMail(env, mail) {
   try {
     if (env.BREVO_API_KEY) {
       const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': env.BREVO_API_KEY, 'Content-Type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({ sender: { name: FROM_NAME, email: from }, to: [{ email: mail.to }], subject: mail.subject, textContent: mail.text }) });
+        body: JSON.stringify({ sender: { name: mail.fromName || FROM_NAME, email: from }, replyTo: mail.replyTo ? { email: mail.replyTo } : undefined, to: [{ email: mail.to }], subject: mail.subject, textContent: mail.text }) });
       return r.ok ? {} : { error: 'brevo ' + r.status };
     }
     if (env.RESEND_API_KEY) {
       const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: env.MAIL_FROM_RESEND || `${FROM_NAME} <onboarding@resend.dev>`, to: [mail.to], subject: mail.subject, text: mail.text }) });
+        body: JSON.stringify({ from: env.MAIL_FROM_RESEND || `${mail.fromName || FROM_NAME} <onboarding@resend.dev>`, to: [mail.to], reply_to: mail.replyTo || undefined, subject: mail.subject, text: mail.text }) });
       return r.ok ? {} : { error: 'resend ' + r.status };
     }
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 100) }; }
   return { error: 'no-mail-provider' };
+}
+
+// ---- פריים מגנטים: the owner hears about a booking request by email (and WhatsApp through CallMeBot when set); the customer
+// gets an email that it arrived, and another when the owner approves or declines. Nothing here can approve anything.
+const heDay = (iso) => { const d = new Date(iso + 'T12:00:00Z'); return isNaN(d) ? iso : d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }); };
+const waOf = (phone) => 'https://wa.me/' + String(phone || '').replace(/\D/g, '').replace(/^0/, '972');
+function bookLines(q) {
+  return ['מספר בקשה: ' + q.ref, 'שם: ' + q.name, 'טלפון: ' + q.phone, q.email ? 'מייל: ' + q.email : '', 'אירוע: ' + (q.typeName || q.type || '—'), 'תאריך: ' + heDay(q.date) + (q.time ? ' · ' + q.time : ''),
+    q.guests ? 'אורחים: ' + q.guests : '', q.venue ? 'מקום: ' + q.venue : '', q.pkg ? 'חבילה: ' + q.pkg : '', q.notes ? 'הערות: ' + q.notes : ''].filter(Boolean);
+}
+async function frameNotify(env, n) {
+  const q = n.request, sent = {};
+  if (!n.decision) {
+    const s = n.state || {}, cal = s.free ? '✔ היומן פנוי בתאריך הזה' : '⚠️ התאריך תפוס' + (s.deals && s.deals.length ? ': ' + s.deals.map((d) => d.title).join(', ') : s.busy ? ' (סימנת אותו כתפוס)' : '');
+    const more = s.pending && s.pending.length ? '\nיש עוד ' + s.pending.length + ' בקשות ממתינות לאותו תאריך.' : '';
+    const text = 'בקשת הזמנה חדשה מהאתר 🧲\n\n' + bookLines(q).join('\n') + '\n\n' + cal + more + '\n\nאת ההזמנה סוגרים רק אחרי האישור שלך. לאישור או לדחייה:\n' + FRAME_ADMIN + '#requests' + '\n\nוואטסאפ ללקוח: ' + waOf(q.phone);
+    sent.owner = await sendMail(env, { to: ADMIN_EMAIL, fromName: FRAME_NAME, replyTo: q.email || undefined, subject: '🧲 בקשת הזמנה ' + q.ref + ' · ' + (q.typeName || q.type || 'אירוע') + ' · ' + q.date + (s.free ? ' · פנוי' : ' · תפוס'), text });
+    if (env.CALLMEBOT_APIKEY && env.CALLMEBOT_PHONE) {
+      try {
+        const msg = '🧲 בקשת הזמנה ' + q.ref + '\n' + q.name + ' · ' + q.phone + '\n' + (q.typeName || q.type || '') + ' · ' + q.date + '\n' + (s.free ? '✔ פנוי' : '⚠️ תפוס') + '\n' + FRAME_ADMIN + '#requests';
+        const r = await fetch('https://api.callmebot.com/whatsapp.php?phone=' + encodeURIComponent(env.CALLMEBOT_PHONE) + '&text=' + encodeURIComponent(msg) + '&apikey=' + encodeURIComponent(env.CALLMEBOT_APIKEY), { signal: AbortSignal.timeout(10000) });
+        sent.wa = r.ok ? {} : { error: 'callmebot ' + r.status };
+      } catch (e) { sent.wa = { error: 'callmebot' }; }
+    }
+    if (q.email) sent.client = await sendMail(env, { to: q.email, fromName: FRAME_NAME, replyTo: ADMIN_EMAIL, subject: 'קיבלנו את בקשת ההזמנה שלך (' + q.ref + ')',
+      text: 'שלום ' + q.name + ',\n\nתודה! קיבלנו את הבקשה שלך:\n' + bookLines(q).join('\n') + '\n\nהבקשה ממתינה לאישור. נבדוק את היומן ונחזור אליך בהקדם עם אישור סופי. התאריך נשמר רק אחרי האישור.\n\n' + FRAME_NAME });
+    return sent;
+  }
+  if (!q.email) return sent;
+  const ok = n.decision === 'approve';
+  sent.client = await sendMail(env, { to: q.email, fromName: FRAME_NAME, replyTo: ADMIN_EMAIL,
+    subject: ok ? '✔ ההזמנה שלך אושרה (' + q.ref + ')' : 'לגבי בקשת ההזמנה שלך (' + q.ref + ')',
+    text: 'שלום ' + q.name + ',\n\n' + (ok ? 'שמחים לאשר: התאריך ' + heDay(q.date) + ' שמור לך! 🧲\nנחזור אליך עם פרטי העסקה והמקדמה.' : 'מצטערים, לא נוכל לקבל את האירוע בתאריך ' + heDay(q.date) + '.') +
+      (q.answer ? '\n\n' + q.answer : '') + '\n\n' + bookLines(q).join('\n') + '\n\n' + FRAME_NAME });
+  return sent;
 }
 
 // n8n's helpers.httpRequest, as the Code nodes use it (json, encoding, returnFullResponse, ignoreHttpStatusErrors, timeout)
@@ -177,7 +226,44 @@ export class State extends DurableObject {
     arr.push(t); this.rl.set(k, arr); if (this.rl.size > 2000) this.rl.delete(this.rl.keys().next().value);
     const run = this.q.then(() => frameBiz(this.ctx.storage, who, b));
     this.q = run.catch(() => {});
-    try { return await run; } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; }
+    let r; try { r = await run; } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; }
+    if (r.notify) { const s = await frameNotify(this.env, r.notify); r.body.mailed = !!(s.client && !s.client.error); }
+    return r;
+  }
+
+  // a booking request: a few per address, so the form cannot flood the owner
+  async bookCall(who, b, ip) {
+    this.bk = this.bk || new Map();
+    const t = Date.now(), arr = (this.bk.get(ip) || []).filter((x) => t - x < 3600000), dn = Math.floor(t / 864e5), day = this.bkDay && this.bkDay.d === dn ? this.bkDay : (this.bkDay = { d: dn, n: 0 });
+    if (arr.length >= 6 || day.n >= 300) return { code: 429, body: { ok: false, error: 'rate-limited' } };
+    arr.push(t); this.bk.set(ip, arr); day.n++; if (this.bk.size > 5000) this.bk.delete(this.bk.keys().next().value);
+    const run = this.q.then(() => frameBook(this.ctx.storage, who, b));
+    this.q = run.catch(() => {});
+    let r; try { r = await run; } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; }
+    if (r.notify) { const s = await frameNotify(this.env, r.notify); r.body.mailed = !!(s.owner && !s.owner.error); }
+    return r;
+  }
+  calData(k) { return frameCal(this.ctx.storage, k); }
+  // in the main object: the frame shop's customer accounts (no passwords, no sessions)
+  async frameAccounts() {
+    const st = await this.load(), sess = st.sd.sessions || {}, online = {};
+    for (const s of Object.values(sess)) if (s && s.exp > Date.now()) online[s.email] = 1;
+    return Object.values(st.sd.clients || {}).filter((c) => c && Array.isArray(c.sites) && c.sites.includes('frame')).map((c) => ({ email: c.email, name: c.name || '', phone: c.phone || '',
+      createdAt: c.createdAt || null, lastLogin: c.lastLogin || null, lastSeen: c.lastSeen || null, active: c.active !== false, online: !!online[c.email], only: c.sites.length === 1 }));
+  }
+  // block or unblock a frame-only customer; blocking also ends their sessions
+  frameAccountSet(email, active) {
+    const run = this.q.then(async () => {
+      const st = await this.load(), e = email.toLowerCase(), c = (st.sd.clients || {})[e];
+      if (!c || !Array.isArray(c.sites) || !c.sites.includes('frame')) return { ok: false, error: 'not-found' };
+      if (c.sites.length !== 1) return { ok: false, error: 'not-frame-only' };
+      c.active = active;
+      if (!active) for (const [h, s] of Object.entries(st.sd.sessions || {})) if (s && s.email === e) delete st.sd.sessions[h];
+      await this.save(st);
+      return { ok: true, email: e, active };
+    });
+    this.q = run.catch(() => {});
+    return run.catch(() => ({ ok: false, error: 'server-error' }));
   }
 
   async load() {

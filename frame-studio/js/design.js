@@ -331,7 +331,12 @@
     wrap.querySelector('.x').addEventListener('click', close); wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
     var inBox = wrap.querySelector('#acc-in'), s = ACC.session();
     if (cloud()) {
-      inBox.innerHTML = '<div class="acc"><h2>החשבון שלי</h2><p dir="ltr">' + esc(s.email) + '</p><p class="hint">העיצובים שנשמרים כאן שמורים בחשבון שלך, בכל מכשיר, ולא נמחקים.</p><button class="btn gold" id="acc-up">☁️ העלאת העיצובים מהדפדפן הזה לחשבון</button><button class="btn line" id="acc-out">יציאה</button></div>';
+      inBox.innerHTML = '<div class="acc"><h2>החשבון שלי</h2><p dir="ltr">' + esc(s.email) + '</p><p class="hint">העיצובים שנשמרים כאן שמורים בחשבון שלך, בכל מכשיר, ולא נמחקים.</p><button class="btn gold" id="acc-up">☁️ העלאת העיצובים מהדפדפן הזה לחשבון</button><button class="btn line" id="acc-out">יציאה</button><h3>📅 ההזמנות שלי</h3><div id="acc-rq" class="hint">…</div><a class="btn line" href="./#contact">📅 בקשת הזמנה חדשה</a></div>';
+      ACC.call('my-requests').then(function (r) {
+        var box = inBox.querySelector('#acc-rq'); if (!box) return;
+        var ST = { pending: '⏳ ממתינה לאישור', approved: '✔ אושרה', declined: '✖ לא אושרה' };
+        box.innerHTML = r && r.ok && r.requests.length ? '<ul class="acc-rq">' + r.requests.map(function (q) { return '<li><b>' + esc(q.ref) + ' · ' + esc(new Date(q.date + 'T12:00:00').toLocaleDateString('he-IL')) + ' · ' + esc(q.typeName || '') + '</b><span>' + (ST[q.status] || '') + '</span>' + (q.answer ? '<small>' + esc(q.answer) + '</small>' : '') + '</li>'; }).join('') + '</ul>' : 'עוד אין בקשות הזמנה בחשבון.';
+      });
       inBox.querySelector('#acc-out').addEventListener('click', function () { ACC.logout(); close(); mine(); });
       inBox.querySelector('#acc-up').addEventListener('click', function () { uploadLocal().then(close); });
       return;
@@ -381,7 +386,7 @@
   fill();
   var SITE_FRAMES = [];
   var biz = FS.siteData().then(function (b) {
-    SITE_FRAMES = b.__frames || []; delete b.__frames; delete b.__live;
+    SITE_FRAMES = b.__frames || []; delete b.__frames; delete b.__live; delete b.__taken;
     FS.BIZ_SITE = b; FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}) });
     $$('[data-biz]').forEach(function (e) { if (b[e.dataset.biz]) e.textContent = b[e.dataset.biz]; });
   });

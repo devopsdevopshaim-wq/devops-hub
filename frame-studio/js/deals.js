@@ -42,6 +42,9 @@
         mine.forEach(function (d) { if (!by[d.id] || (d.updatedAt || 0) > (by[d.id].updatedAt || 0)) by[d.id] = d; });
         (r.deals || []).forEach(function (d) { var m = mine.filter(function (x) { return x.id === d.id; })[0]; if (!m || (d.updatedAt || 0) > (m.updatedAt || 0)) FS.store.put('deals', d).catch(function () {}); });
         if (up.length) ACC.call('deals-import', { deals: up });
+        /* deals approved from a booking request get their number on the server: the next one here follows on */
+        var top = Object.keys(by).reduce(function (mx, k) { return Math.max(mx, Number(by[k].no) || 0); }, 0);
+        try { if (top > Number(localStorage.getItem('fs-no-deal') || 0)) localStorage.setItem('fs-no-deal', top); } catch (e) { /* ignore */ }
         return sortD(Object.keys(by).map(function (k) { return by[k]; }));
       });
     });

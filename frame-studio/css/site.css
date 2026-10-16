@@ -144,7 +144,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold2); bor
 .contact h2 { font-size: clamp(30px, 4vw, 48px); margin-bottom: 12px; }
 .c-list { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; font-size: 17px; }
 .c-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; box-shadow: var(--shadow); }
-.c-form label:nth-last-of-type(1), .c-form button { grid-column: 1 / -1; }
+.c-form .c-wide, .c-form button { grid-column: 1 / -1; }
+.c-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.c-note { margin: 0; font-size: 13px; color: var(--dim); }
+.c-err { grid-column: 1 / -1; margin: 0; color: #b42318; font-weight: 600; font-size: 14px; }
+.c-done { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+.c-done .big-ic { font-size: 44px; line-height: 1; }
+.c-done h3 { margin: 0; font-size: 22px; }
+.c-done .ref { font-weight: 700; letter-spacing: .5px; background: var(--bg, #f6f1e7); padding: 4px 12px; border-radius: 999px; }
+.c-done .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
 .foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; padding: 30px clamp(16px, 5vw, 72px); background: var(--plum); color: #c9c0d8; }
 .foot b { font: 900 20px var(--display); color: #fff; margin-left: 10px; }
