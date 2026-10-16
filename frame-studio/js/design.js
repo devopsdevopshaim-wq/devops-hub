@@ -31,9 +31,11 @@
     return sample.c[key] || (sample.c[key] = FS.sampleScene(ev.scene, w, h, 3).toDataURL('image/jpeg', 0.9));
   }
   var drawing = null, again = false;
-  function build() {
+  /* scale > 1 builds the page bigger (the frame, words and ornaments are drawn at that size, not stretched) */
+  function build(scale) {
     return FS.photoFrom(userPhoto || sample(), D.fmt).then(function (p) {
       var ref = frameRef();
+      if (scale > 1) FS.applyFormat(p.doc, 'custom', FS.img(p.src), Math.round(p.doc.w * scale), Math.round(p.doc.h * scale));
       FS.buildMagnet(p, { type: D.type, names: D.names, date: D.date, hashtag: D.tag, frame: ref ? null : D.frame, frameRef: ref || undefined, color: D.color, font: D.font, ink: D.ink || undefined });
       var d = p.doc, m = Math.min(d.w, d.h), H = FS.hole(d);
       if (D.line) {
@@ -287,8 +289,10 @@
       .then(function (en) { return ornament(en, 'top'); }); });
 
   /* ---------- saving, sending ---------- */
+  /* max: the long side in pixels; a magnet's page is 300dpi, so 2x gives 600dpi */
   function snapshot(max, frameOnly) {
-    return build().then(function (p) { var d = p.doc, k = Math.min(1, (max || 2400) / Math.max(d.w, d.h)), c = FS.canvas(d.w * k, d.h * k); FS.draw(c.getContext('2d'), p, { scale: k, max: 2400, export: true, noPhoto: !!frameOnly, transparent: !!frameOnly }); return c; });
+    var f = FS.fmt(D.fmt) || FS.fmt('magnet'), long = Math.max(f.w, f.h), scale = Math.max(1, (max || 2400) / long);
+    return Promise.all(D.deco.map(function (o) { return FS.loadImg(o.src).catch(function () {}); })).then(function () { return build(scale); }).then(function (p) { var d = p.doc, k = Math.min(1, (max || 2400) / Math.max(d.w, d.h)), c = FS.canvas(d.w * k, d.h * k); FS.draw(c.getContext('2d'), p, { scale: k, max: 2400, export: true, noPhoto: !!frameOnly, transparent: !!frameOnly }); return c; });
   }
   function save(quiet) {
     D.name = $('#dname').value.trim() || D.names || 'העיצוב שלי'; D.at = Date.now(); D.saved = true;
@@ -307,8 +311,18 @@
   function dl(c, name) { c.toBlob(function (b) { var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000); }, 'image/png'); }
   $('#s-save').addEventListener('click', function () { save(); });
   $('#s-new').addEventListener('click', function () { if (!confirm('להתחיל עיצוב חדש? העיצוב הנוכחי נשאר אם שמרתם אותו.')) return; D = blank(D.type); sel = null; toForm(); render(); });
-  $('#s-png').addEventListener('click', function () { snapshot(2400).then(function (c) { dl(c, 'magnet-design.png'); }); });
-  $('#s-frame').addEventListener('click', function () { snapshot(2400, true).then(function (c) { dl(c, 'magnet-frame.png'); }); });
+  function fileName(kind) { var n = String(D.name || D.names || 'מגנט').replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '-').slice(0, 40); return (kind === 'frame' ? 'מסגרת-' : 'הדמיה-') + n + '.png'; }
+  /* the PNG at print quality: the page's long side at 600dpi */
+  function savePng(frameOnly) {
+    var f = FS.fmt(D.fmt) || FS.fmt('magnet'), px = Math.round(Math.max(f.w, f.h) * 2);
+    FS.busy('מכין PNG באיכות הדפסה…');
+    return snapshot(px, frameOnly).then(function (c) { FS.busy(); dl(c, fileName(frameOnly ? 'frame' : 'design')); FS.toast('⬇️ ' + (frameOnly ? 'המסגרת נשמרה כ־PNG שקוף' : 'ההדמיה נשמרה כ־PNG') + ' · ' + c.width + '×' + c.height + ' (600dpi)', 5000); save(true); })
+      .catch(function () { FS.busy(); FS.toast('השמירה כ־PNG לא הצליחה'); });
+  }
+  $('#s-png').addEventListener('click', function () { savePng(false); });
+  $('#s-frame').addEventListener('click', function () { savePng(true); });
+  $('#png-frame').addEventListener('click', function () { savePng(true); });
+  $('#png-design').addEventListener('click', function () { savePng(false); });
   $('#s-send').addEventListener('click', function () {
     var B = FS.BIZ_SITE || FS.BIZ || {}, n = String(B.whatsapp || B.phone || '').replace(/\D/g, ''); if (n.charAt(0) === '0') n = '972' + n.slice(1);
     var ev = FS.event(D.type), fr = /^png:/.test(D.frame) ? (PNGS.filter(function (x) { return 'png:' + x.key === D.frame; })[0] || {}).name : (FS.GEN_FRAMES.filter(function (f) { return f.id === D.frame; })[0] || {}).name;
