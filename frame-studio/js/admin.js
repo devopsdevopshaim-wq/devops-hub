@@ -9,7 +9,7 @@
   var DRAFT = 'fs-admin-draft';
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   FS.busy = FS.busy || function (msg) { var b = $('#busy'); if (msg) { $('#busy-msg').textContent = msg; b.hidden = false; } else b.hidden = true; };
-  var base = null, draft = null, dirty = {}, sec = 'home', TEXTS = [], FRAMES = [], DEALS = [], EXPENSES = [], SETTINGS = {}, CUSTOMERS = [];
+  var base = null, draft = null, dirty = {}, sec = 'home', TEXTS = [], FRAMES = [], DEALS = [], EXPENSES = [], SETTINGS = {}, CUSTOMERS = [], REQUESTS = [], ACCOUNTS = [], CALKEY = '', onRefresh = null;
 
   /* ---------- sign-in (the sites' server: email + password, PBKDF2, lock-outs, device checks, authenticator) ---------- */
   function showLogin(note) {
@@ -27,8 +27,9 @@
       FS.busy();
       var all = r[0];
       if (!all || !all.ok) { if (all && (all.error === 'signed-out' || all.error === 'admin-only')) return showLogin(ACC.msg(all)); FS.toast(ACC.msg(all), 6000); return; }
-      var fromFile = r[1] || {}; delete fromFile.__frames; delete fromFile.__live;
+      var fromFile = r[1] || {}; delete fromFile.__frames; delete fromFile.__live; delete fromFile.__taken;
       base = all.site || fromFile; FRAMES = all.frames || []; DEALS = all.deals || []; EXPENSES = all.expenses || []; SETTINGS = all.settings || {}; CUSTOMERS = all.customers || [];
+      REQUESTS = all.requests || []; ACCOUNTS = all.accounts || []; CALKEY = all.calKey || '';
       readTexts(r[2]);
       var saved = null; try { saved = JSON.parse(localStorage.getItem(DRAFT) || 'null'); } catch (e) { /* ignore */ }
       draft = clone(base); dirty = {};
@@ -44,9 +45,28 @@
       if (Object.keys(dirty).length && all.site) setTimeout(function () { FS.toast('💾 השינויים השמורים שלא פורסמו נטענו (' + Object.keys(dirty).map(label).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', ') + ')', 6000); }, 400);
       $('#login').hidden = true; $('#app').hidden = false; $('.dz-nav').hidden = false; $$('[data-biz]').forEach(function (e) { if (draft[e.dataset.biz]) e.textContent = draft[e.dataset.biz]; });
       $('#who').textContent = (ACC.session() || {}).email || '';
-      nav(); show(sec); state();
+      var h = location.hash.slice(1); if (VIEWS[h]) sec = h;
+      nav(); show(sec); state(); badge(); poll();
     });
   }
+  /* new booking requests show up by themselves while the admin is open */
+  var pollT = null;
+  function refresh() {
+    return ACC.call('all').then(function (a) {
+      if (!a || !a.ok) return;
+      var before = REQUESTS.filter(function (r) { return r.status === 'pending'; }).map(function (r) { return r.id; });
+      DEALS = a.deals || DEALS; EXPENSES = a.expenses || EXPENSES; SETTINGS = a.settings || SETTINGS; CUSTOMERS = a.customers || CUSTOMERS; REQUESTS = a.requests || REQUESTS; ACCOUNTS = a.accounts || ACCOUNTS; CALKEY = a.calKey || CALKEY;
+      var fresh = REQUESTS.filter(function (r) { return r.status === 'pending' && before.indexOf(r.id) < 0; });
+      if (fresh.length) FS.toast('📥 בקשת הזמנה חדשה: ' + fresh.map(function (r) { return r.name + ' · ' + r.date; }).join(', '), 7000);
+      badge(); if (onRefresh) onRefresh();
+    });
+  }
+  function poll() { clearInterval(pollT); pollT = setInterval(function () { if (!document.hidden && ACC.isAdmin()) refresh(); }, 90000); }
+  function badge() {
+    var n = REQUESTS.filter(function (r) { return r.status === 'pending'; }).length, b = $('#side [data-s=requests] i');
+    if (b) b.setAttribute('data-n', n || ''); document.title = (n ? '(' + n + ') ' : '') + 'ניהול · ' + (draft && draft.name || 'פריים מגנטים');
+  }
+  window.addEventListener('hashchange', function () { var h = location.hash.slice(1); if (VIEWS[h] && h !== sec && draft) show(h); });
   $('#logout-top').addEventListener('click', function () { ACC.logout(); location.reload(); });
 
   /* ---------- draft ---------- */
@@ -116,15 +136,20 @@
 
   /* ---------- the sections ---------- */
   var SECTIONS = [
-    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['deals', '📑', 'עסקאות ותשלומים'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['expenses', '💸', 'הוצאות'], ['customers', '👥', 'לקוחות ועיצובים'], ['payset', '🏦', 'תשלום ובנק'],
+    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['requests', '📥', 'בקשות הזמנה'], ['calendar', '🗓️', 'יומן'], ['deals', '📑', 'עסקאות ותשלומים'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['expenses', '💸', 'הוצאות'], ['customers', '👥', 'לקוחות'], ['payset', '🏦', 'תשלום ובנק'],
     ['-', '', 'האתר'], ['biz', '🏷️', 'פרטי העסק'], ['texts', '✍️', 'טקסטים באתר'], ['packages', '💰', 'חבילות ומחירים'], ['faq', '❓', 'שאלות נפוצות'],
-    ['reviews', '⭐', 'המלצות'], ['busy', '📅', 'תאריכים תפוסים'], ['frames', '🖼️', 'מסגרות ללקוחות'], ['events', '🎉', 'סוגי אירועים'], ['-', '', ''], ['account', '🔐', 'אבטחה וחשבון']
+    ['reviews', '⭐', 'המלצות'], ['busy', '📅', 'תאריכים תפוסים'], ['frames', '🖼️', 'מסגרות ללקוחות'], ['events', '🎉', 'סוגי אירועים'],
+    ['-', '', 'קישורים'], ['@./', '🌐', 'האתר ללקוחות'], ['@design.html', '🎨', 'עורך המסגרות ללקוחות'], ['@studio.html', '🖼️', 'הסטודיו'], ['-', '', ''], ['account', '🔐', 'אבטחה וחשבון']
   ];
   function nav() {
-    $('#side').innerHTML = SECTIONS.map(function (s) { return s[0] === '-' ? (s[2] ? '<small class="adm-side-h">' + s[2] + '</small>' : '<hr>') : '<button data-s="' + s[0] + '"' + (s[0] === sec ? ' class="on"' : '') + '><i>' + s[1] + '</i><span>' + s[2] + '</span></button>'; }).join('');
+    $('#side').innerHTML = SECTIONS.map(function (s) {
+      if (s[0] === '-') return s[2] ? '<small class="adm-side-h">' + s[2] + '</small>' : '<hr>';
+      if (s[0].charAt(0) === '@') return '<a class="adm-side-a" href="' + s[0].slice(1) + '" target="_blank" rel="noopener"><i>' + s[1] + '</i><span>' + s[2] + ' ↗</span></a>';
+      return '<button data-s="' + s[0] + '"' + (s[0] === sec ? ' class="on"' : '') + '><i>' + s[1] + '</i><span>' + s[2] + '</span></button>';
+    }).join('');
     $$('#side button').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.s); }); });
   }
-  function show(s) { sec = s; $$('#side button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === s); }); var m = $('#main'); m.innerHTML = ''; VIEWS[s](m); m.scrollTop = 0; window.scrollTo(0, 0); }
+  function show(s) { sec = s; onRefresh = null; if (location.hash.slice(1) !== s) history.replaceState(null, '', s === 'home' ? location.pathname + location.search : '#' + s); $$('#side button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === s); }); var m = $('#main'); m.innerHTML = ''; VIEWS[s](m); m.scrollTop = 0; window.scrollTo(0, 0); }
   function head(m, title, sub) { m.insertAdjacentHTML('beforeend', '<header class="adm-h"><h1>' + title + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</header>'); }
   function input(label, val, onIn, opt) {
     opt = opt || {};
@@ -141,8 +166,10 @@
   VIEWS.home = function (m) {
     head(m, 'שלום ' + esc(String(draft.owner || '').split(' ')[0] || '') + ' 👋', 'העסק והאתר במקום אחד, שמור בשרת המאובטח.');
     var B = FS.adminBiz, now = new Date(), ym = now.toISOString().slice(0, 7), mon = B.month(DEALS, EXPENSES, SETTINGS, ym);
-    var stats = [['💵', B.money(mon.income), 'הכנסות החודש'], ['💸', B.money(mon.expTotal), 'הוצאות החודש'], ['📑', DEALS.filter(function (d) { return d.date >= now.toISOString().slice(0, 10); }).length, 'אירועים קרובים'], ['⏳', B.money(B.openBalance(DEALS, SETTINGS)), 'יתרות פתוחות'], ['👥', CUSTOMERS.length, 'לקוחות עם עיצובים'], ['💰', (draft.packages || []).filter(function (p) { return !p.hidden; }).length, 'חבילות באתר']];
+    var pend = REQUESTS.filter(function (r) { return r.status === 'pending'; });
+    var stats = [['📥', pend.length, 'בקשות ממתינות'], ['💵', B.money(mon.income), 'הכנסות החודש'], ['💸', B.money(mon.expTotal), 'הוצאות החודש'], ['📑', DEALS.filter(function (d) { return d.date >= now.toISOString().slice(0, 10); }).length, 'אירועים קרובים'], ['⏳', B.money(B.openBalance(DEALS, SETTINGS)), 'יתרות פתוחות'], ['👥', ACCOUNTS.length, 'לקוחות רשומים']];
     m.insertAdjacentHTML('beforeend', '<div class="adm-stats">' + stats.map(function (s) { return '<div><i>' + s[0] + '</i><b>' + s[1] + '</b><small>' + s[2] + '</small></div>'; }).join('') + '</div>' +
+      (pend.length ? '<section class="adm-card rq-home"><div class="adm-card-h"><h3>📥 ' + pend.length + ' בקשות הזמנה מחכות לאישור שלך</h3><button class="btn gold small" id="go-rq">לבקשות ←</button></div><ul class="adm-hist">' + pend.slice(0, 5).map(function (r) { var st = B.dayState(ctx, r.date, r.id); return '<li><b>' + esc(r.ref) + ' · ' + esc(r.name) + ' · ' + esc(B.longDate(r.date)) + '</b><small>' + esc(r.typeName || '') + ' · ' + (st.free ? '✔ פנוי ביומן' : '⚠️ תפוס') + '</small></li>'; }).join('') + '</ul></section>' : '') +
       '<h2>הפלטפורמות</h2><div class="adm-links">' +
       '<a href="./" target="_blank" rel="noopener"><i>🌐</i><b>האתר</b><small>מה שהלקוחות רואים</small></a>' +
       '<a href="design.html" target="_blank" rel="noopener"><i>🎨</i><b>עורך המסגרות ללקוחות</b><small>הלקוחות מעצבים לבד, עם AI ומההזמנה</small></a>' +
@@ -150,6 +177,7 @@
       '<a href="studio.html" target="_blank" rel="noopener"><i>🖼️</i><b>הסטודיו</b><small>עריכה, הדפסה, עסקאות</small></a></div>' +
       '<h2>האירועים הקרובים</h2><div id="next"></div>');
     B.upcoming($('#next'), DEALS, SETTINGS);
+    var g = $('#go-rq'); if (g) g.addEventListener('click', function () { show('requests'); });
   };
   VIEWS.biz = function (m) {
     head(m, '🏷️ פרטי העסק', 'מופיעים באתר, בצ׳אט, במסמכים ובשורת העסק שעל המגנטים.');
@@ -348,9 +376,11 @@
   var ctx = {
     deals: function () { return DEALS; }, setDeals: function (l) { DEALS = l; }, expenses: function () { return EXPENSES; }, setExpenses: function (l) { EXPENSES = l; },
     settings: function () { return SETTINGS; }, setSettings: function (s2) { SETTINGS = s2; }, customers: function () { return CUSTOMERS; }, site: function () { return draft; },
-    head: head, input: input, esc: esc, reload: function () { show(sec); }, touchBusy: function (list) { draft.busy = list; touch('busy'); }
+    head: head, input: input, esc: esc, reload: function () { show(sec); }, touchBusy: function (list) { draft.busy = list; touch('busy'); },
+    requests: function () { return REQUESTS; }, setRequests: function (l) { REQUESTS = l; }, accounts: function () { return ACCOUNTS; }, calKey: function () { return CALKEY; }, setCalKey: function (k) { CALKEY = k; },
+    refresh: refresh, onRefresh: function (fn) { onRefresh = fn; }, badge: function () { badge(); }, go: function (s2) { show(s2); }
   };
-  ['deals', 'reports', 'expenses', 'customers', 'payset'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminBiz.view(k, m, ctx); }; });
+  ['requests', 'calendar', 'deals', 'reports', 'expenses', 'customers', 'payset'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminBiz.view(k, m, ctx); }; });
 
   signIn();
 })();

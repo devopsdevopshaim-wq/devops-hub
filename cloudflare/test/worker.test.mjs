@@ -106,6 +106,24 @@ check('the status page is HTML with a locked-down policy', r.status === 200 && /
   f = await fb({ action: 'design-save', token, design: { id: 'test' + RUN, name: 'בדיקה' } });
   f = await fb({ action: 'designs', token });
   check('frame: a signed-in person keeps designs', f.body && f.body.designs.some((x) => x.id === 'test' + RUN));
+  // a booking request from the site: no sign-in needed, checked against the calendar, the owner sees it and approves it
+  const day = new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10);
+  const book = async (b, origin = SITE) => { const x = await fetch(URL_ + '/frame-book', { method: 'POST', headers: { Origin: origin, 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(b) }); return { code: x.status, body: await x.json().catch(() => null) }; };
+  f = await book({ name: 'בדיקה ' + RUN, phone: '050-0000' + String(RUN).slice(-3).padStart(3, '0'), date: day, type: 'wedding', typeName: 'חתונה' });
+  check('frame: a booking request is accepted', f.body && f.body.ok && /^R-/.test(f.body.ref), f);
+  const rq = f.body && f.body.id;
+  check('frame: a booking from a foreign site is refused', (await book({ name: 'x', phone: '0501234567', date: day }, 'https://evil.example')).code === 403);
+  f = await fb({ action: 'all', token });
+  check('frame: the owner sees the request and the customers', f.body && f.body.requests.some((x) => x.id === rq) && Array.isArray(f.body.accounts), f.body && Object.keys(f.body));
+  f = await fb({ action: 'request-decide', token, id: rq, decision: 'approve' });
+  check('frame: the owner approves it into a deal', f.body && f.body.ok && f.body.deal && f.body.deal.closed, f);
+  const pub2 = await (await fetch(URL_ + '/frame-site', { headers: { Origin: SITE } })).json();
+  check('frame: the date shows as taken', pub2.taken.includes(day));
+  f = await fb({ action: 'cal-key', token });
+  r = await fetch(URL_ + '/frame-cal?k=' + f.body.calKey);
+  check('frame: the calendar feed is iCalendar', r.status === 200 && /text\/calendar/.test(r.headers.get('content-type')) && (await r.text()).includes('BEGIN:VEVENT'));
+  check('frame: no feed without the key', (await fetch(URL_ + '/frame-cal?k=x')).status === 404);
+  if (f.body && f.body.ok) await fb({ action: 'deal-del', token, id: (await fb({ action: 'all', token })).body.deals.find((d) => d.rq === rq).id });
 }
 r = await call({ action: 'logout', token });
 r = await call({ action: 'me', token });

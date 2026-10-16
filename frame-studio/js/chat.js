@@ -107,9 +107,10 @@
       $('#chat-date-ok').addEventListener('click', function () { var v = $('#chat-date').value; if (!v) return; say('me', heDate(v)); setDate(v); }); },
     guests: function () { bot('כמה אורחים בערך?'); chips(['עד 100', '100–200', '200–300', '300–500', '500+'].map(function (g) { return [g, function () { lead.guests = g; next(); }]; })); },
     venue: function () { bot('איפה האירוע? (אולם, גן אירועים או עיר)'); chips([['עוד לא יודעים', function () { lead.venue = '—'; next(); }]]); },
-    name: function () { bot('ואיך קוראים לך?'); chips([]); }
+    name: function () { bot('ואיך קוראים לך?'); chips([]); },
+    phone: function () { bot('ומספר טלפון לחזרה?'); chips([]); }
   };
-  var ORDER = ['type', 'date', 'guests', 'venue', 'name'];
+  var ORDER = ['type', 'date', 'guests', 'venue', 'name', 'phone'];
   function quote() { step = null; next(); }
   function next() {
     for (var i = 0; i < ORDER.length; i++) if (!lead[ORDER[i]]) { step = ORDER[i]; return ASK[step](); }
@@ -117,19 +118,31 @@
   }
   function setDate(iso) { lead.date = iso; var past = iso < new Date().toISOString().slice(0, 10); bot(availLine(iso)); if (past) { lead.date = ''; } next(); }
   function evName(id) { var e = FS.EVENTS.filter(function (x) { return x.id === id; })[0]; return e ? e.icon + ' ' + e.name : ''; }
+  /* the request goes to the server, which checks the calendar and keeps it for the owner; only the owner approves */
   function summary() {
-    bot('תודה' + (lead.name ? ' ' + lead.name : '') + '! זה מה שאעביר ל' + owner() + ':\n' + lines().join('\n') + '\n\nלחיצה על הכפתור שולחת את זה בוואטסאפ, ו' + owner() + ' יחזור עם הצעה מסודרת.');
-    handoff(false);
+    if (!FS.book) { bot('תודה' + (lead.name ? ' ' + lead.name : '') + '! זה מה שאעביר ל' + owner() + ':\n' + lines().join('\n')); return handoff(false); }
+    typing(true);
+    var ev = FS.EVENTS.filter(function (x) { return x.id === lead.type; })[0];
+    FS.book.send({ name: lead.name, phone: lead.phone, date: lead.date, type: lead.type, typeName: ev ? ev.name : '', guests: lead.guests, venue: lead.venue === '—' ? '' : lead.venue, pkg: lead.pkg, notes: lead.note, from: 'chat' }).then(function (r) {
+      typing(false);
+      if (r && r.ok) {
+        lead.ref = r.ref;
+        bot('✔ הבקשה נשלחה ל' + owner() + '! מספר בקשה ' + r.ref + '.\n' + lines().join('\n') + '\n\n' + (r.free ? 'התאריך פנוי ביומן. ' : 'התאריך מופיע כתפוס, אבל הבקשה נשמרה ו' + owner() + ' יבדוק אם אפשר לתאם. ') + 'ההזמנה נסגרת רק אחרי אישור סופי של ' + owner() + ', והוא יחזור אליך.');
+      } else if (r && /^bad-/.test(r.error || '')) {
+        bot(FS.book.msg(r) + ' בואו נתקן:'); if (r.error === 'bad-contact') { lead.phone = ''; } if (r.error === 'bad-date') { lead.date = ''; } return next();
+      } else bot('לא הצלחתי לשלוח את הבקשה כרגע. אפשר לשלוח ל' + owner() + ' ישר בוואטסאפ:\n' + lines().join('\n'));
+      handoff(false);
+    });
   }
   function lines() {
-    return [lead.name ? 'שם: ' + lead.name : '', lead.type ? 'אירוע: ' + evName(lead.type) : '', lead.date ? 'תאריך: ' + heDate(lead.date) + (S().isBusy(lead.date) ? ' (מופיע כתפוס)' : ' (נראה פנוי)') : '',
+    return [lead.name ? 'שם: ' + lead.name : '', lead.phone ? 'טלפון: ' + lead.phone : '', lead.type ? 'אירוע: ' + evName(lead.type) : '', lead.date ? 'תאריך: ' + heDate(lead.date) + (S().isBusy(lead.date) ? ' (מופיע כתפוס)' : ' (נראה פנוי)') : '',
       lead.guests ? 'אורחים: ' + lead.guests : '', lead.venue && lead.venue !== '—' ? 'מקום: ' + lead.venue : '', lead.pkg ? 'חבילה: ' + lead.pkg : ''].filter(Boolean);
   }
   function b64url(s) { return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
   function waText() {
     var studio = location.href.replace(/[^/]*([?#].*)?$/, '') + 'studio.html#lead=' + b64url(JSON.stringify({ name: lead.name, type: lead.type, date: lead.date, guests: lead.guests, venue: lead.venue === '—' ? '' : lead.venue, pkg: lead.pkg, note: lead.note }));
     var l = lines();
-    return 'שלום ' + owner() + '! הגעתי מהצ׳אט באתר 🧲' + (l.length ? '\n' + l.join('\n') : '') + (lead.note ? '\nשאלה: ' + lead.note : '') + '\n\n(לבעל העסק: פתיחה בסטודיו ' + studio + ')';
+    return 'שלום ' + owner() + '! הגעתי מהצ׳אט באתר 🧲' + (lead.ref ? ' (בקשה ' + lead.ref + ')' : '') + (l.length ? '\n' + l.join('\n') : '') + (lead.note ? '\nשאלה: ' + lead.note : '') + '\n\n(לבעל העסק: פתיחה בסטודיו ' + studio + ')';
   }
   function handoff(now) {
     var n = S().waNumber(), href = 'https://wa.me/' + n + '?text=' + encodeURIComponent(waText());
@@ -137,7 +150,7 @@
     var m = document.createElement('div'); m.className = 'msg bot act';
     m.innerHTML = '<a class="chat-wa" target="_blank" rel="noopener" href="' + esc(href) + '">📲 שליחה ל' + esc(owner()) + ' בוואטסאפ</a>';
     logEl.appendChild(m); scroll();
-    chips([['💬 עוד שאלה', function () { home(); input.focus(); }, true], ['✏️ לתקן פרטים', function () { lead = { pkg: lead.pkg }; quote(); }]]);
+    chips([['💬 עוד שאלה', function () { home(); input.focus(); }, true], ['✏️ לתקן פרטים', function () { lead = { pkg: lead.pkg, name: lead.name, phone: lead.phone }; quote(); }]]);
   }
 
   /* ---------- free text: the step's answer, a date, or a question for the AI ---------- */
@@ -145,6 +158,7 @@
     e.preventDefault(); var t = input.value.trim(); if (!t || busy) return; input.value = ''; say('me', t);
     if (step === 'date') { var iso = isoOf(t); if (iso) return setDate(iso); }
     if (step === 'name' || step === 'venue') { lead[step] = t.slice(0, 80); return next(); }
+    if (step === 'phone') { if ((t.match(/\d/g) || []).length >= 9 && /^[\d+\-\s().]+$/.test(t)) { lead.phone = t.slice(0, 24); return next(); } bot('צריך מספר טלפון תקין, למשל 050-1234567 🙂'); return; }
     if (step === 'guests' && /\d/.test(t)) { lead.guests = t.slice(0, 20); return next(); }
     var d = isoOf(t);
     if (d && !/[א-ת]{4,}.*\?/.test(t)) { lead.date = d; bot(availLine(d)); if (d < new Date().toISOString().slice(0, 10)) lead.date = ''; return next(); }

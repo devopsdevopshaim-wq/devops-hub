@@ -63,9 +63,32 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
   - `GET /frame-site` returns the published site content (only the `PUBLIC` keys) and the owner's frames. `GET /frame-file?id=` serves a frame PNG.
   - `POST /frame-biz` (text/plain JSON with `token`): a person's own designs (`designs`, `design-get`, `design-save`, `design-del`). Admin only: `all`, `site-save`, `settings-save` (card numbers refused by Luhn), `deal-save`, `deals-import` (newer wins), `deal-del`, `expense-save`, `expense-del`, `frame-add`, `frame-update`, `frame-del`, `designs-of`, `design-of`.
   - Big values are split into 100KB chunks. Tests: `cloudflare/test/frame.test.mjs` (unit) and the `frame:` checks in `cloudflare/test/worker.test.mjs` (wrangler dev, in CI).
+- **Booking requests** (`frameBook`, `POST /frame-book`, anyone, from the site's origin only):
+  - Senders: the site's contact form (`#c-form`, now "שליחת בקשת הזמנה") and the chat, after it asks for a phone number.
+  - The server checks the date against the calendar and keeps the request as `rq:<id>` with status `pending` and a number `R-101…`.
+  - It answers `free` true or false. The calendar is the deals that hold a date (closed or with a payment), indexed in `cal`, plus the owner's `busy` dates, with `settings.perDay` events a day.
+  - The same phone asking for the same date updates the open request.
+  - Refused: a past date, a bad phone, or a card number. A hidden `website` field catches bots. The rate limit is 6 an hour per address and 300 a day.
+  - The owner gets an email, and a WhatsApp message through CallMeBot when `CALLMEBOT_APIKEY` and `CALLMEBOT_PHONE` are set. The customer gets an email when they gave one.
+  - **Only the owner approves.** Admin actions:
+    - `request-decide` `approve` makes a closed deal with the next number and the package price, and puts it in the calendar. A taken date answers 409 `date-taken` unless `force` is set.
+    - `request-decide` `decline` or `pending`, with an optional `answer` emailed to the customer.
+    - `request-del`, `date-state`, and `cal-key`. `cal-key` makes the secret for `GET /frame-cal?k=`, an iCalendar feed of the events plus the pending requests as tentative, for Google Calendar's "from URL".
+  - `/frame-site` returns `taken`, the full future dates only, and the site shows them as busy.
+  - A signed-in customer reads their own requests with `my-requests`, shown in design.html → "👤 החשבון שלי".
+- **Customers' accounts**: `all` also returns `accounts`, the frame customers from the sign-in data: name, email, phone, sign-up, last sign-in, online, active. `account-set` blocks or unblocks a frame-only customer and ends their sessions. Both are handled in the Worker against the main object.
 - **Pages**: `FS.siteData()` merges `business.json` with `/frame-site`, so whatever is published in the admin shows at once; the site, the designer, the studio and `l/*.html` use it.
   - The studio's `FS.publishSite` and its deals (`deals.js`) go to the server when the owner is signed in. Each deal is saved locally at once and sent to the server after 2.5s. Studio links: `?deals`, `?deal=<id>`.
-  - `admin.html` has a CSP (scripts only from the site, connections to `*.workers.dev` and the n8n host) and no GitHub token. `js/admin-biz.js` holds the deals, reports (month and year: print and CSV), expenses, customers and payment/bank sections.
+  - `admin.html` has a CSP (scripts only from the site, connections to `*.workers.dev` and the n8n host) and no GitHub token.
+  - `js/admin-biz.js` holds these sections:
+    - 📥 requests: approve, decline, WhatsApp to the customer, add to Google Calendar.
+    - 🗓️ calendar: a month grid, events a day, and the private calendar link.
+    - Deals, and reports (month and year, print and CSV).
+    - Expenses.
+    - 👥 customers: everyone with an account, a request or a deal, each with their designs, requests and deals, contact buttons, and block or unblock.
+    - Payment and bank details.
+  - The side menu links to the site, the designer and the studio.
+  - `#requests` and the other hashes open a section. New requests are fetched every 90 seconds, with a count badge and a toast.
 
 ## The three platforms: site, customers' designer, admin
 
