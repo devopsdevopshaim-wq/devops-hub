@@ -223,7 +223,8 @@
     var mo = new MutationObserver(function () { $$('.pk:not(.reveal), .faq details:not(.reveal), .rv-card:not(.reveal)').forEach(function (el) { el.classList.add('reveal'); ro.observe(el); }); }); mo.observe(document.body, { childList: true, subtree: true });
   }
 
-  var bizLoaded = fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; }).then(function (b) {
+  var bizLoaded = (FS.siteData ? FS.siteData() : fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; })).then(function (b) {
+    if (b) { delete b.__frames; delete b.__live; }
     Object.assign(BIZ, b || {}); fill(); reviews(); texts();
     window.dispatchEvent(new CustomEvent('site:biz', { detail: BIZ })); window.SITE.ready = true;
     /* the magnets drawn on this page carry the published details, not whatever this browser saved */

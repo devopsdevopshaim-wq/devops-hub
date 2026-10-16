@@ -5,7 +5,7 @@ const BASE_CODE = nodeCode(wf, 'Auth · Handle');
 const SITE = 'https://devopsdevopshaim-wq.github.io';
 const TOTP = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';   // RFC 6238 test key
 const ADMIN_EMAIL = 'devopsdevopshaim@gmail.com';
-const MINE = 'Haim1978';                            // the admin's own choice: 8 characters must be accepted
+const MINE = 'Kp7rWq2z';                            // a short password of the admin's own: 8 characters must be accepted
 
 let T = 1_800_000_000_000;
 Date.now = () => T;
@@ -86,7 +86,7 @@ async function main(tag, { noCrypto = false, totp = false, full = true } = {}) {
   r = await call({ action: 'change-password', token, password: 'short' });
   check(t + 'a password under 8 characters is refused', r.code === 400 && r.body.error === 'weak-password');
   r = await call({ action: 'change-password', token, password: MINE });
-  check(t + 'the admin chooses "Haim1978" and it is accepted', r.body.ok === true && r.mail && /הוחלפה/.test(r.mail.subject));
+  check(t + 'the admin chooses an 8-character password and it is accepted', r.body.ok === true && r.mail && /הוחלפה/.test(r.mail.subject));
   check(t + 'only a hash of it is stored', !JSON.stringify(sd).includes(MINE) && /^p1\$/.test(sd.admin.pw) && sd.admin.tmp === null);
   r = await call({ action: 'me', token });
   check(t + 'the same session now has the admin proof', r.body.ok && r.body.role === 'admin' && /^\d{13}\.[a-f0-9]{64}$/.test(r.body.biz) && !r.body.mustChange);
@@ -473,12 +473,34 @@ async function usage(tag) {
   check(t + 'no address or raw visitor id is exposed', !JSON.stringify(r.body).includes('abcdefgh1234'));
 }
 await usage('[usage]');
+// פריים מגנטים: a customer who signs up from the frame designer sees only that, with no end date, and gets its own email
+async function frameSignup(t) {
+  const { call, sd } = world({ seed: 'Admin-Pass-123' });
+  sd.signupClosed = true;   // closing SPIDER's sign-up does not close the frame shop's
+  let r = await call({ action: 'signup', email: 'Dana@Example.com', name: 'דנה', site: 'frame' }, { ip: '6.6.6.1' });
+  const c = sd.clients['dana@example.com'];
+  check(t + ' a frame customer is created with only the frame site and no end date', r.body.ok && c && c.sites.length === 1 && c.sites[0] === 'frame' && c.expiresAt === null && c.plan === 'frame');
+  check(t + ' the email is the frame shop\'s, with the designer address', r.mail && /פריים מגנטים/.test(r.mail.subject) && /frame-studio\/design\.html/.test(r.mail.text) && !!tempFrom(r));
+  const d = dev();
+  r = await call({ action: 'login', email: 'dana@example.com', password: tempFrom((await call({ action: 'forgot', email: 'dana@example.com', site: 'frame' }, { ip: '6.6.6.2' }))), device: d }, { ip: '6.6.6.2' });
+  check(t + ' the customer signs in with the emailed password and must choose one', r.body.ok && r.body.role === 'client' && r.body.mustChange === true);
+  const ch = await call({ action: 'change-password', token: r.body.token, password: 'Dana-Own-Pass1' }, { ip: '6.6.6.2' });
+  check(t + ' and chooses a password of her own', ch.body.ok === true);
+  T += 400 * 24 * 3600000;   // over a year later: still a customer
+  r = await call({ action: 'login', email: 'dana@example.com', password: 'Dana-Own-Pass1', device: d }, { ip: '6.6.6.2' });
+  check(t + ' a year later she still signs in', r.body.ok && r.body.role === 'client', r.body);
+  r = await call({ action: 'forgot', email: 'dana@example.com', site: 'frame' }, { ip: '6.6.6.3' });
+  check(t + ' "forgot" from the frame site sends the frame shop\'s email', r.mail && /פריים מגנטים/.test(r.mail.subject));
+  r = await call({ action: 'signup', email: 'eve@example.com', name: 'איב' }, { ip: '6.6.6.4' });
+  check(t + ' SPIDER\'s own sign-up stays closed', r.body.error === 'signup-closed');
+}
 await planDoc('[plan]');
 await relay('[relay]');
 await presence('[presence]');
 await importing('[import]');
 await vault('[vault]');
 await signup('[signup]');
+await frameSignup('[frame]');
 await main('[password]');
 await main('[password + authenticator]', { totp: true });
 await seeded('[secret]');

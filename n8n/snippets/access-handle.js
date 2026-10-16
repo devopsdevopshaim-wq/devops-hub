@@ -17,6 +17,10 @@ const RENEW = '__RENEW__';
 const set = (v) => !!v && !/^__/.test(v);
 const ADMIN_PW = '__ADMIN_PASSWORD_HASH__';   // "p1$iterations$salt$hash" made from ADMIN_PASSWORD; only the hash is here
 const LOGIN_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/client.html';
+// פריים מגנטים: its customers sign up from the frame designer and see only that (sites ['frame']), with no end date
+const FRAME_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/design.html';
+const FRAME_ADMIN_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/admin.html';
+const FRAME_SIGN = 'פריים מגנטים · חיים קריספין · 054-4979771';
 const ADMIN_TOTP = '__ADMIN_TOTP_SECRET__';   // authenticator-app key of the admin; empty = no second step
 // Invoices through Morning (חשבונית ירוקה): MORNING_CLIENT_ID / MORNING_CLIENT_SECRET in the secret.
 //   docType 320 = חשבונית מס/קבלה (עוסק מורשה), 400 = קבלה (עוסק פטור)
@@ -216,9 +220,9 @@ switch (b.action) {
   // sign-in) and controls what the client sees afterwards (sites, days, suspension). New accounts see every open site (never the hidden ones)
   // for SIGNUP_DAYS days. Someone who already has an account just gets an initial password, as with "forgot".
   case 'signup': {
-    const e = email(b.email), nm = line(b.name, 60);
+    const e = email(b.email), nm = line(b.name, 60), frame = b.site === 'frame';
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2) return out({ ok: false, error: 'bad-input' }, 400);
-    if (sd.signupClosed) return out({ ok: false, error: 'signup-closed' }, 403);
+    if (sd.signupClosed && !frame) return out({ ok: false, error: 'signup-closed' }, 403);
     if (e === ADMIN_EMAIL) return out({ ok: false, error: 'bad-input' }, 400);
     if (!hit('su-ip', IPK, 3, HOUR) || !hit('su-all', 'all', 60, DAY) || !hit('su-mail', e, 3, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
     const reply = { ok: true, sent: true };
@@ -226,14 +230,20 @@ switch (b.action) {
     if (sd.clients[e]) {
       const a = sd.clients[e], keep = a.pwAt;
       giveTemp(a, temp, TEMP_CLIENT_DAYS * DAY, 'reset', false); a.pwAt = keep;
+      if (frame && Array.isArray(a.sites) && !a.sites.includes('*') && !a.sites.includes('frame')) a.sites.push('frame');
       log('הרשמה של כתובת שכבר רשומה: סיסמה ראשונית נשלחה', e);
     } else {
       if (Object.keys(sd.clients).length >= MAX_CLIENTS) return out({ ok: false, error: 'too-many-clients' }, 400);
-      sd.clients[e] = { email: e, name: nm, phone: phone(b.phone), note: 'נרשם בעצמו', sites: ['*'], plan: 'free', createdAt: new Date(now).toISOString(),
-        expiresAt: new Date(now + SIGNUP_DAYS * DAY).toISOString(), active: true, ipLock: false, maxDevices: DEFAULT_MAX_DEVICES, selfSignup: true };
+      sd.clients[e] = frame
+        ? { email: e, name: nm, phone: phone(b.phone), note: 'לקוח פריים מגנטים', sites: ['frame'], plan: 'frame', createdAt: new Date(now).toISOString(),
+            expiresAt: null, active: true, ipLock: false, maxDevices: DEFAULT_MAX_DEVICES, selfSignup: true }
+        : { email: e, name: nm, phone: phone(b.phone), note: 'נרשם בעצמו', sites: ['*'], plan: 'free', createdAt: new Date(now).toISOString(),
+            expiresAt: new Date(now + SIGNUP_DAYS * DAY).toISOString(), active: true, ipLock: false, maxDevices: DEFAULT_MAX_DEVICES, selfSignup: true };
       giveTemp(sd.clients[e], temp, TEMP_CLIENT_DAYS * DAY, 'admin', true);
       log('לקוח חדש נרשם בעצמו', e);
     }
+    if (frame) return out(reply, 200, mailTo(e, 'פריים מגנטים · הסיסמה הראשונית שלך',
+      `שלום ${nm},\n\nנפתח לך חשבון בעורך המסגרות של פריים מגנטים. העיצובים שלך נשמרים בו ולא נמחקים.\nכניסה: ${FRAME_URL}\nמייל: ${e}\nסיסמה ראשונית: ${temp}\n\nבכניסה הראשונה בוחרים סיסמה משלך. הסיסמה הראשונית תקפה ל־${TEMP_CLIENT_DAYS} ימים.\n\n${FRAME_SIGN}\n`));
     return out(reply, 200, mailTo(e, 'SPIDER · ברוכים הבאים, הסיסמה הראשונית שלך',
       `שלום ${nm},\n\nתודה שנרשמת ל־SPIDER.\nכניסה: ${LOGIN_URL}\nמייל: ${e}\nסיסמה ראשונית: ${temp}\n\nבכניסה הראשונה תבחר סיסמה משלך. הסיסמה הראשונית תקפה ל־${TEMP_CLIENT_DAYS} ימים.\n\nSPIDER · חיים קריספין · 054-4979771\n`));
   }
@@ -344,6 +354,9 @@ switch (b.action) {
     giveTemp(a, temp, adm ? TEMP_ADMIN_MIN * 60000 : TEMP_CLIENT_DAYS * DAY, 'reset', false);
     a.pwAt = keep;   // the date of the chosen password does not change
     log('סיסמה ראשונית נשלחה למייל', e);
+    // asked from the frame site: its own words and address (the owner's admin page, or the customers' designer)
+    if (b.site === 'frame') return out(ok, 200, mailTo(e, 'פריים מגנטים · הסיסמה הראשונית שלך',
+      `שלום${a.name ? ' ' + a.name : ''},\n\nהסיסמה הראשונית שלך: ${temp}\n\nהיא תקפה ${adm ? 'לשעה' : 'ל־' + TEMP_CLIENT_DAYS + ' ימים'}. נכנסים בעמוד ${adm ? FRAME_ADMIN_URL : FRAME_URL} עם המייל הזה, ובכניסה הראשונה בוחרים סיסמה משלך.\nאם לא ביקשת, אפשר להתעלם מהמייל: הסיסמה הקיימת שלך ממשיכה לעבוד.\n\n${FRAME_SIGN}\n`));
     return out(ok, 200, mailTo(e, 'SPIDER · הסיסמה הראשונית שלך',
       `שלום${a.name ? ' ' + a.name : ''},\n\nהסיסמה הראשונית שלך: ${temp}\n\nהיא תקפה ${adm ? 'לשעה' : 'ל־' + TEMP_CLIENT_DAYS + ' ימים'}. נכנסים בעמוד ${LOGIN_URL} עם המייל הזה, ובכניסה הראשונה בוחרים סיסמה משלך.\nאם לא ביקשת, אפשר להתעלם מהמייל: הסיסמה הקיימת שלך ממשיכה לעבוד.\n\nSPIDER · חיים קריספין · 054-4979771\n`));
   }

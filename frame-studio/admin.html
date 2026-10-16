@@ -6,6 +6,8 @@
 <script src="../portfolio/js/failover.js"></script>
 <meta name="theme-color" content="#1d1633" />
 <meta name="robots" content="noindex" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://*.workers.dev https://haimkripisn.app.n8n.cloud; img-src 'self' data: blob: https://*.workers.dev; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta name="referrer" content="no-referrer" />
 <title>ניהול האתר · פריים מגנטים</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -16,18 +18,15 @@
 <body class="adm-body">
 <header class="dz-top">
   <a class="dz-brand" href="./"><span class="mark" aria-hidden="true">⚙️</span><span><b data-biz="name">פריים מגנטים</b><small>ניהול האתר</small></span></a>
-  <nav class="dz-nav"><span class="adm-state" id="state"></span><button class="btn line small" id="preview-btn">👁 תצוגה מקדימה</button><button class="btn line small" id="save">💾 שמירה</button><button class="btn gold small" id="publish" disabled>🌐 פרסום באתר</button></nav>
+  <nav class="dz-nav" hidden><span class="adm-who" id="who"></span><span class="adm-state" id="state"></span><button class="btn line small" id="preview-btn">👁 תצוגה מקדימה</button><button class="btn line small" id="save">💾 שמירה</button><button class="btn gold small" id="publish" disabled>🌐 פרסום באתר</button><button class="btn line small" id="logout-top" title="יציאה">⏏</button></nav>
 </header>
 
 <section class="adm-login" id="login" hidden>
   <div class="card">
-    <h1>כניסת מנהל</h1>
-    <p>הניהול שומר את השינויים ישירות במאגר של האתר ב־GitHub. לכן הכניסה היא עם המפתח האישי שלך מ־GitHub (Fine-grained token), עם הרשאה אחת: <b>Contents: Read and write</b> למאגר <code>devops-hub</code> בלבד. זה אותו מפתח של "🔑 חיבור לאתר" בסטודיו.</p>
-    <p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">יצירת מפתח ב־GitHub ←</a></p>
-    <label>המפתח<input id="tok" type="password" dir="ltr" autocomplete="off" placeholder="github_pat_…" /></label>
-    <button class="btn gold wide" id="tok-go">כניסה</button>
-    <p class="hint">המפתח נשמר רק בדפדפן הזה, ונשלח רק ל־GitHub. מי שאין לו את המפתח לא יכול לשנות כלום באתר.</p>
-    <p class="hint" id="login-err"></p>
+    <h1>🔐 כניסת מנהל</h1>
+    <p>נכנסים עם המייל והסיסמה שלך. בפעם הראשונה, או אם שכחת: "שכחתי סיסמה" שולח סיסמה ראשונית למייל, ובכניסה בוחרים סיסמה קבועה.</p>
+    <div id="acc-box"></div>
+    <p class="hint">🛡️ הכניסה מאובטחת בשרת: סיסמאות נשמרות רק כגיבוב, ניסיונות חוזרים ננעלים, וכל פעולה נבדקת מול הכניסה שלך.</p>
   </div>
 </section>
 
@@ -38,11 +37,14 @@
 </main>
 <div class="dz-busy" id="busy" hidden><div><i></i><span id="busy-msg"></span></div></div>
 <div id="toast" class="toast" role="status" hidden></div>
+<div id="print-area" class="print-area" aria-hidden="true"></div>
 
 <script src="js/core.js"></script>
 <script src="js/frames.js"></script>
 <script src="js/events.js"></script>
 <script src="js/invite.js"></script>
+<script src="js/account.js"></script>
+<script src="js/admin-biz.js"></script>
 <script src="js/admin.js"></script>
 </body>
 </html>

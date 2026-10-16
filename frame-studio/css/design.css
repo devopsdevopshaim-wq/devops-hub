@@ -93,3 +93,15 @@ label.btn { display: inline-flex; }
 }
 @media (max-width: 480px) { .dz-inv { grid-template-columns: 1fr; } .two { grid-template-columns: 1fr; } }
 .dz-png { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; justify-content: center; margin-top: 4px; }
+/* the sign-in box (admin and the customers' account) */
+.acc { display: grid; gap: 10px; }
+.acc h2 { margin: 0; font: 900 20px var(--display); color: var(--plum); }
+.acc label { display: grid; gap: 4px; font-size: 13px; color: var(--dim); font-weight: 500; }
+.acc input { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 15px; background: #fff; color: var(--ink); }
+.acc .link { background: none; border: 0; color: var(--plum); text-decoration: underline; cursor: pointer; font-size: 13px; justify-self: start; padding: 0; }
+.acc-tabs { justify-self: start; }
+.acc-note { min-height: 1.2em; margin: 0; font-size: 13.5px; color: #8a3b12; }
+.acc-modal { position: fixed; inset: 0; background: rgba(29,22,51,.5); display: grid; place-items: center; z-index: 80; padding: 16px; backdrop-filter: blur(3px); }
+.acc-modal > div { background: var(--paper); border-radius: 22px; padding: 22px; width: min(420px, 100%); box-shadow: var(--shadow); position: relative; }
+.acc-modal .x { position: absolute; top: 10px; left: 12px; border: 0; background: none; font-size: 18px; cursor: pointer; }
+.dz-acc { border: 1px solid var(--gold); background: #fff; border-radius: 999px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 14px; color: var(--plum); }

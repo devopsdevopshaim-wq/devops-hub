@@ -464,6 +464,7 @@
   function tx(store, mode, fn) { return FS.db().then(function (db) { return new Promise(function (res, rej) { var t = db.transaction(store, mode), s = t.objectStore(store), out = fn(s); t.oncomplete = function () { res(out && out.result !== undefined ? out.result : out); }; t.onerror = function () { rej(t.error); }; }); }); }
   FS.store = {
     all: function (s) { return tx(s, 'readonly', function (st) { return st.getAll(); }); },
+    get: function (s, id) { return tx(s, 'readonly', function (st) { return st.get(id); }); },
     put: function (s, v) { return tx(s, 'readwrite', function (st) { st.put(v); }); },
     del: function (s, id) { return tx(s, 'readwrite', function (st) { st.delete(id); }); }
   };
