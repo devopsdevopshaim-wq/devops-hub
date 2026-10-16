@@ -26,8 +26,34 @@
   function status(d) { var t = totals(d); if (t.total > 0 && t.balance <= 0) return ['paid', 'שולם במלואו']; if (t.paid > 0) return ['deposit', 'שולמה מקדמה']; if (d.closed) return ['closed', 'נסגר · ממתין לתשלום']; return ['quote', 'הצעה']; }
 
   /* ---------- storage ---------- */
-  function all() { return FS.store.all('deals').then(function (l) { return (l || []).sort(function (a, b) { return (a.date || '9999') < (b.date || '9999') ? -1 : 1; }); }).catch(function () { return []; }); }
-  function put(d) { d.updatedAt = Date.now(); return FS.store.put('deals', JSON.parse(JSON.stringify(d))); }
+  /* deals live on the secure server when the owner is signed in (admin.html), with a copy in this browser for working offline.
+     The newer copy of each deal wins both ways. */
+  var ACC = FS.account, online = function () { return !!(ACC && ACC.isAdmin()); };
+  function sortD(l) { return (l || []).sort(function (a, b) { return (a.date || '9999') < (b.date || '9999') ? -1 : 1; }); }
+  function local() { return FS.store.all('deals').catch(function () { return []; }); }
+  function all() {
+    return local().then(function (mine) {
+      if (!online()) return sortD(mine);
+      return ACC.call('all').then(function (r) {
+        if (!r.ok) { if (r.error !== 'offline') FS.toast('העסקאות מהשרת לא נטענו: ' + ACC.msg(r), 5000); return sortD(mine); }
+        if (r.settings && r.settings.pay) { FS.BIZ.pay = Object.assign({}, FS.BIZ.pay || {}, r.settings.pay); FS.saveBiz(); }
+        var by = {}; (r.deals || []).forEach(function (d) { by[d.id] = d; });
+        var up = mine.filter(function (d) { return !by[d.id] || (d.updatedAt || 0) > (by[d.id].updatedAt || 0); });
+        mine.forEach(function (d) { if (!by[d.id] || (d.updatedAt || 0) > (by[d.id].updatedAt || 0)) by[d.id] = d; });
+        (r.deals || []).forEach(function (d) { var m = mine.filter(function (x) { return x.id === d.id; })[0]; if (!m || (d.updatedAt || 0) > (m.updatedAt || 0)) FS.store.put('deals', d).catch(function () {}); });
+        if (up.length) ACC.call('deals-import', { deals: up });
+        return sortD(Object.keys(by).map(function (k) { return by[k]; }));
+      });
+    });
+  }
+  function put(d) {
+    d.updatedAt = Date.now(); var copy = JSON.parse(JSON.stringify(d));
+    var p = FS.store.put('deals', copy);
+    /* while typing, the server gets the deal once things settle (the browser copy is saved at once) */
+    if (online()) { put.t = put.t || {}; clearTimeout(put.t[d.id]); put.t[d.id] = setTimeout(function () { ACC.call('deal-save', { deal: copy }).then(function (r) { if (!r.ok) FS.toast('לא נשמר בשרת: ' + ACC.msg(r) + '. נשמר בדפדפן ויעלה בפעם הבאה.', 6000); }); }, 2500); }
+    return p;
+  }
+  function remove(id) { if (online()) ACC.call('deal-del', { id: id }); return FS.store.del('deals', id); }
   function blank() {
     var ev = FS.prefs.event || {};
     return { id: 'd' + FS.uid(), no: null, createdAt: Date.now(), client: { name: '', phone: '', email: '', idNo: '', address: '' }, type: ev.type || 'wedding', date: '', time: '', venue: '', guests: '',
@@ -49,7 +75,7 @@
       all().then(function (ds) {
         var open = 0, upcoming = 0, now = today(); ds.forEach(function (d) { open += totals(d).balance; if (d.date >= now) upcoming++; });
         var v = $('#dl-view', body);
-        v.innerHTML = (ds.length ? '<div class="dl-bar"><span class="hint">תאריכים של עסקאות סגורות יכולים להופיע באתר כ"תפוס", בלי שמות.</span><button class="btn small" id="dl-busy">📢 עדכון תאריכים תפוסים באתר</button></div>' : '') + '<div class="dl-sum"><div><b>' + ds.length + '</b><small>עסקאות</small></div><div><b>' + upcoming + '</b><small>אירועים קרובים</small></div><div><b>' + money(open) + '</b><small>יתרה פתוחה</small></div></div>' +
+        v.innerHTML = (online() ? '<p class="dl-cloud ok">☁️ העסקאות נשמרות בשרת המאובטח</p>' : '<p class="dl-cloud">🔒 העסקאות נשמרות כרגע רק בדפדפן הזה. <a href="admin.html" target="_blank" rel="noopener">כניסה לניהול</a> שומרת אותן בשרת, כך שלא יאבדו.</p>') + (ds.length ? '<div class="dl-bar"><span class="hint">תאריכים של עסקאות סגורות יכולים להופיע באתר כ"תפוס", בלי שמות.</span><button class="btn small" id="dl-busy">📢 עדכון תאריכים תפוסים באתר</button></div>' : '') + '<div class="dl-sum"><div><b>' + ds.length + '</b><small>עסקאות</small></div><div><b>' + upcoming + '</b><small>אירועים קרובים</small></div><div><b>' + money(open) + '</b><small>יתרה פתוחה</small></div></div>' +
           (ds.length ? '<div class="dl-list">' + ds.map(function (d) { var t = totals(d), st = status(d), ev = FS.event(d.type);
             return '<button class="dl-row" data-id="' + d.id + '"><span class="dl-date"><b>' + (d.date ? new Date(d.date + 'T12:00:00').getDate() : '?') + '</b><small>' + (d.date ? new Date(d.date + 'T12:00:00').toLocaleDateString('he-IL', { month: 'short', year: '2-digit' }) : 'ללא תאריך') + '</small></span>' +
               '<span class="dl-who"><b>' + esc(d.client.name || 'לקוח/ה חדש/ה') + '</b><small>' + ev.icon + ' ' + esc(ev.name) + (d.venue ? ' · ' + esc(d.venue) : '') + (d.no ? ' · עסקה ' + d.no : '') + '</small></span>' +
@@ -137,7 +163,7 @@
       $('#dl-review', v).addEventListener('click', function () { var g = FS.BIZ.googleReviews || (FS.BIZ_SITE && FS.BIZ_SITE.googleReviews) || '';
         wa(d, 'היי ' + first(d) + ' 😊 תודה שבחרתם ב' + FS.BIZ.name + '! מקווים שנהניתם מהמגנטים 🧲\nנשמח מאוד לכמה מילים על החוויה' + (g ? ', כאן בגוגל זה עוזר לנו המון:\n' + g : '. אפשר פשוט לענות להודעה הזו 🙏')); });
       $('#dl-back', v).addEventListener('click', function () { put(d).then(function () { tab('list'); }); });
-      $('#dl-del', v).addEventListener('click', function () { if (!confirm('למחוק את העסקה של ' + (d.client.name || 'הלקוח') + '? אי אפשר לבטל.')) return; FS.store.del('deals', d.id).then(function () { tab('list'); }); });
+      $('#dl-del', v).addEventListener('click', function () { if (!confirm('למחוק את העסקה של ' + (d.client.name || 'הלקוח') + '? אי אפשר לבטל.')) return; remove(d.id).then(function () { tab('list'); }); });
       /* signatures */
       $$('canvas.sig', v).forEach(function (c) {
         var x = c.getContext('2d'), k = c.dataset.s, down = false, last = null;
@@ -169,7 +195,9 @@
         var bad = ['paybox', 'card', 'paypal', 'invoiceUrl'].filter(function (k) { var u = $('[data-k=' + k + ']', v).value.trim(); return u && !/^(https:\/\/|www\.)\S+$/i.test(u); });
         if (bad.length) { FS.toast('קישור תשלום צריך להתחיל ב־https://'); $('[data-k=' + bad[0] + ']', v).focus(); return; }
         $$('[data-k]', v).forEach(function (el) { p[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value.trim(); });
-        FS.BIZ.pay = p; FS.saveBiz(); FS.toast('✔ אפשרויות התשלום נשמרו');
+        FS.BIZ.pay = p; FS.saveBiz();
+        if (online()) ACC.call('all').then(function (r) { return r.ok ? ACC.call('settings-save', { settings: Object.assign({}, r.settings || {}, { pay: p }) }) : r; }).then(function (r) { FS.toast(r.ok ? '✔ אפשרויות התשלום נשמרו גם בשרת' : 'נשמר בדפדפן. בשרת: ' + ACC.msg(r), 5000); });
+        else FS.toast('✔ אפשרויות התשלום נשמרו');
       });
     }
     if (preset) tab('new', Object.assign(blank(), preset)); else if (id === 'new') tab('new'); else if (FS.dealTabs[id]) tab(id); else tab('list');
@@ -266,4 +294,13 @@
   FS.deals = { all: all, put: put, totals: totals, status: status, money: money, heDate: heDate, pay: pay, wa: wa, first: first };
 
   var btn = $('#deals-btn'); if (btn) btn.addEventListener('click', function () { open(); });
+  /* studio.html?deals opens the deals; ?deal=<id> opens that deal (links from the admin) */
+  (function () {
+    var q = new URLSearchParams(location.search), id = q.get('deal');
+    if (!q.has('deals') && !id) return;
+    setTimeout(function () {
+      var go = function () { if (!id) return open(); all().then(function (l) { var d = l.filter(function (x) { return x.id === id; })[0]; open(); if (d) setTimeout(function () { var row = document.querySelector('.dl-row[data-id="' + id.replace(/"/g, '') + '"]'); if (row) row.click(); }, 400); }); };
+      if (FS.closeIntro && $('#intro')) FS.closeIntro(go); else go();
+    }, 400);
+  })();
 })();

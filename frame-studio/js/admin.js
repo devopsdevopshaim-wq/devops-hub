@@ -1,64 +1,53 @@
-/* The owner's admin: everything the site shows, edited in one place and published to frame-studio/business.json
-   (GitHub contents API, the owner's own token, kept only in this browser): business details, the site's headings and
-   lines, packages, FAQ, reviews, busy dates, event types and which frames customers may pick, plus the owner's own PNG
-   frames for the customers' designer (frames/, one commit). A draft is kept in this browser until it is published;
-   the preview shows the real site with the draft. AI writes alternatives for any text. */
+/* The owner's admin: one place for the whole business. Sign-in is the owner's email and password on the sites' secure server
+   (the initial password arrives by email; an authenticator code when it is set up), and everything lives on that server, not
+   in this browser: the site's content (details, texts, packages, FAQ, reviews, busy dates, event types, customer frames),
+   deals and payments, expenses, monthly and yearly reports to print, the payment and bank details, and every customer's
+   saved designs. Only a draft of the site's content is kept here until it is published. AI writes alternatives for any text. */
 (function () {
   'use strict';
-  var FS = window.FS, $ = FS.$, $$ = FS.$$;
-  var REPO = 'devopsdevopshaim-wq/devops-hub', PATH = 'frame-studio/business.json', TOKEN = 'fs-gh-token', DRAFT = 'fs-admin-draft';
+  var FS = window.FS, $ = FS.$, $$ = FS.$$, ACC = FS.account;
+  var DRAFT = 'fs-admin-draft';
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   FS.busy = FS.busy || function (msg) { var b = $('#busy'); if (msg) { $('#busy-msg').textContent = msg; b.hidden = false; } else b.hidden = true; };
-  var base = null, draft = null, dirty = {}, sec = 'home', TEXTS = [], FRAMES = [], framesSha = null;
+  var base = null, draft = null, dirty = {}, sec = 'home', TEXTS = [], FRAMES = [], DEALS = [], EXPENSES = [], SETTINGS = {}, CUSTOMERS = [];
 
-  /* ---------- GitHub ---------- */
-  function token() { try { return localStorage.getItem(TOKEN) || ''; } catch (e) { return ''; } }
-  function gh(path, opts) {
-    opts = opts || {};
-    return fetch('https://api.github.com/repos/' + REPO + path, { method: opts.method || 'GET', cache: 'no-store', headers: { Authorization: 'Bearer ' + token(), Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, body: opts.body ? JSON.stringify(opts.body) : undefined })
-      .then(function (r) { if (r.status === 404 && opts.allow404) return null; if (!r.ok) { var e = new Error('gh-' + r.status); e.status = r.status; throw e; } return r.status === 204 ? {} : r.json(); });
+  /* ---------- sign-in (the sites' server: email + password, PBKDF2, lock-outs, device checks, authenticator) ---------- */
+  function showLogin(note) {
+    $('#login').hidden = false; $('#app').hidden = true; $('.dz-nav').hidden = true;
+    ACC.form($('#acc-box'), { adminOnly: true, note: note, done: start });
   }
-  function b64utf8(s) { return btoa(unescape(encodeURIComponent(s))); }
-  function unb64(s) { return decodeURIComponent(escape(atob(String(s).replace(/\s/g, '')))); }
-  function readJson(path) { return gh('/contents/' + path + '?ref=main', { allow404: true }).then(function (r) { if (!r || typeof r.content !== 'string') return { sha: r && r.sha || null, data: null }; try { return { sha: r.sha, data: JSON.parse(unb64(r.content)) }; } catch (e) { return { sha: r.sha, data: null }; } }); }
-  function commit(changes, message) {
-    var head;
-    return gh('/git/ref/heads/main').then(function (ref) { head = ref.object.sha; return gh('/git/commits/' + head); }).then(function (c) {
-      return Promise.all(changes.map(function (ch) {
-        if (ch.del) return Promise.resolve({ path: ch.path, mode: '100644', type: 'blob', sha: null });
-        return gh('/git/blobs', { method: 'POST', body: { content: ch.b64, encoding: 'base64' } }).then(function (b) { return { path: ch.path, mode: '100644', type: 'blob', sha: b.sha }; });
-      })).then(function (tree) { return gh('/git/trees', { method: 'POST', body: { base_tree: c.tree.sha, tree: tree } }); });
-    }).then(function (t) { return gh('/git/commits', { method: 'POST', body: { message: message, tree: t.sha, parents: [head] } }); })
-      .then(function (nc) { return gh('/git/refs/heads/main', { method: 'PATCH', body: { sha: nc.sha } }); });
-  }
-
-  /* ---------- sign-in ---------- */
   function signIn() {
-    if (!token()) { $('#login').hidden = false; $('#app').hidden = true; return; }
+    if (!ACC.isAdmin()) return showLogin();
     FS.busy('מתחבר…');
-    Promise.all([readJson(PATH), readJson('frame-studio/frames/frames.json'), fetch('index.html', { cache: 'no-cache' }).then(function (r) { return r.text(); }).catch(function () { return ''; })]).then(function (r) {
+    ACC.me().then(function (r) { FS.busy(); if (r.ok && r.role === 'admin' && !r.mustChange) start(); else showLogin(r.ok ? '' : ACC.msg(r)); });
+  }
+  function start() {
+    FS.busy('טוען את נתוני העסק…');
+    Promise.all([ACC.call('all'), FS.siteData(), fetch('index.html', { cache: 'no-cache' }).then(function (r) { return r.text(); }).catch(function () { return ''; })]).then(function (r) {
       FS.busy();
-      base = r[0].data || {}; base.__sha = r[0].sha; FRAMES = Array.isArray(r[1].data) ? r[1].data : []; framesSha = r[1].sha;
+      var all = r[0];
+      if (!all || !all.ok) { if (all && (all.error === 'signed-out' || all.error === 'admin-only')) return showLogin(ACC.msg(all)); FS.toast(ACC.msg(all), 6000); return; }
+      var fromFile = r[1] || {}; delete fromFile.__frames; delete fromFile.__live;
+      base = all.site || fromFile; FRAMES = all.frames || []; DEALS = all.deals || []; EXPENSES = all.expenses || []; SETTINGS = all.settings || {}; CUSTOMERS = all.customers || [];
       readTexts(r[2]);
       var saved = null; try { saved = JSON.parse(localStorage.getItem(DRAFT) || 'null'); } catch (e) { /* ignore */ }
-      draft = clone(base); delete draft.__sha; dirty = {};
+      draft = clone(base); dirty = {};
       /* what was saved here and not yet published comes back by itself */
       if (saved && saved.dirty) Object.keys(saved.dirty).forEach(function (k) { if (saved.draft && k in saved.draft) { draft[k] = saved.draft[k]; dirty[k] = 1; } });
       savedAt = saved && saved.at || 0;
       /* the packages are one draft shared with the studio (💰 חבילות): both save it in frame-studio-packages, so the latest save wins */
       var pk = studioPackages();
-      if (pk && JSON.stringify(pk) !== JSON.stringify(draft.packages || [])) {   // the latest save, from here or from the studio
+      if (pk && JSON.stringify(pk) !== JSON.stringify(draft.packages || [])) {
         if (JSON.stringify(pk) === JSON.stringify(base.packages || [])) { draft.packages = pk; delete dirty.packages; } else { draft.packages = pk; dirty.packages = 1; }
       }
-      if (Object.keys(dirty).length) setTimeout(function () { FS.toast('💾 השינויים השמורים שלא פורסמו נטענו (' + Object.keys(dirty).map(label).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', ') + ')', 6000); }, 400);
-      $('#login').hidden = true; $('#app').hidden = false; $$('[data-biz]').forEach(function (e) { if (draft[e.dataset.biz]) e.textContent = draft[e.dataset.biz]; });
+      if (!all.site) { Object.keys(draft).forEach(function (k) { dirty[k] = 1; }); }   // first time: what the site shows today becomes the server's copy at the first publish
+      if (Object.keys(dirty).length && all.site) setTimeout(function () { FS.toast('💾 השינויים השמורים שלא פורסמו נטענו (' + Object.keys(dirty).map(label).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', ') + ')', 6000); }, 400);
+      $('#login').hidden = true; $('#app').hidden = false; $('.dz-nav').hidden = false; $$('[data-biz]').forEach(function (e) { if (draft[e.dataset.biz]) e.textContent = draft[e.dataset.biz]; });
+      $('#who').textContent = (ACC.session() || {}).email || '';
       nav(); show(sec); state();
-    }).catch(function (e) {
-      FS.busy(); $('#login').hidden = false; $('#app').hidden = true;
-      $('#login-err').textContent = e.status === 401 || e.status === 403 ? 'המפתח לא תקין או בלי הרשאת Contents למאגר. בודקים ומנסים שוב.' : 'אין חיבור ל־GitHub כרגע. נסו שוב.';
     });
   }
-  $('#tok-go').addEventListener('click', function () { var t = $('#tok').value.trim(); if (!/^(github_pat_|ghp_)\w{20,}$/.test(t)) { $('#login-err').textContent = 'זה לא נראה כמו מפתח של GitHub (מתחיל ב־github_pat_).'; return; } try { localStorage.setItem(TOKEN, t); } catch (e) { /* ignore */ } signIn(); });
+  $('#logout-top').addEventListener('click', function () { ACC.logout(); location.reload(); });
 
   /* ---------- draft ---------- */
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -77,22 +66,20 @@
   function touch(k) { dirty[k] = 1; persist(); state(); pushPreview(); }
   function state() {
     var n = Object.keys(dirty).length; $('#publish').disabled = !n;
-    $('#state').textContent = n ? '💾 נשמר ' + (savedAt ? new Date(savedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '') + ' · ' + n + ' שינויים עוד לא באתר' : '✔ הכול שמור ומפורסם';
+    $('#state').textContent = n ? '💾 טיוטה נשמרה ' + (savedAt ? new Date(savedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '') + ' · ' + n + ' שינויים עוד לא באתר' : '✔ הכול שמור ומפורסם';
     $('#state').className = 'adm-state' + (n ? ' warn' : '');
   }
   $('#save').addEventListener('click', function () { persist(); state(); FS.toast(Object.keys(dirty).length ? '💾 נשמר. כדי שיופיע באתר לוחצים "פרסום באתר".' : '💾 הכול כבר שמור ומפורסם'); });
   $('#publish').addEventListener('click', function () {
     var keys = Object.keys(dirty); if (!keys.length) return;
     FS.busy('מפרסם…');
-    /* only what was changed here goes in; whatever the studio published meanwhile stays */
-    readJson(PATH).then(function (cur) {
-      var out = cur.data || {}; keys.forEach(function (k) { out[k] = draft[k]; });
-      return gh('/contents/' + PATH, { method: 'PUT', body: { message: 'frame-studio admin: ' + keys.map(label).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', '), branch: 'main', content: b64utf8(JSON.stringify(out, null, 2) + '\n'), sha: cur.sha || undefined } }).then(function () { return out; });
-    }).then(function (out) {
-      FS.busy(); base = out; dirty = {}; savedAt = Date.now();
-      try { localStorage.removeItem(DRAFT); if (out.packages) localStorage.setItem(PKEY, JSON.stringify(out.packages)); } catch (e) { /* ignore */ } state();
-      FS.toast('🌐 פורסם. האתר יתעדכן תוך כשתי דקות.', 6000);
-    }).catch(function (e) { FS.busy(); FS.toast(e.status === 409 ? 'מישהו עדכן בדיוק עכשיו. לוחצים שוב על פרסום.' : 'הפרסום לא הצליח (' + (e.status || 'רשת') + '). השינויים נשמרו כטיוטה.', 6000); });
+    ACC.call('site-save', { site: draft }).then(function (r) {
+      FS.busy();
+      if (!r.ok) { if (r.error === 'signed-out') return showLogin(ACC.msg(r)); return FS.toast('הפרסום לא הצליח: ' + ACC.msg(r) + '. השינויים שמורים כטיוטה.', 6000); }
+      base = clone(draft); dirty = {}; savedAt = Date.now();
+      try { localStorage.removeItem(DRAFT); if (draft.packages) localStorage.setItem(PKEY, JSON.stringify(draft.packages)); } catch (e) { /* ignore */ } state();
+      FS.toast('🌐 פורסם. האתר מתעדכן מיד.', 5000);
+    });
   });
 
   /* ---------- preview: the real site, with the draft ---------- */
@@ -129,11 +116,12 @@
 
   /* ---------- the sections ---------- */
   var SECTIONS = [
-    ['home', '🏠', 'סקירה'], ['biz', '🏷️', 'פרטי העסק'], ['texts', '✍️', 'טקסטים באתר'], ['packages', '💰', 'חבילות ומחירים'], ['faq', '❓', 'שאלות נפוצות'],
-    ['reviews', '⭐', 'המלצות'], ['busy', '📅', 'תאריכים תפוסים'], ['frames', '🖼️', 'מסגרות ללקוחות'], ['events', '🎉', 'סוגי אירועים'], ['account', '🔑', 'חיבור']
+    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['deals', '📑', 'עסקאות ותשלומים'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['expenses', '💸', 'הוצאות'], ['customers', '👥', 'לקוחות ועיצובים'], ['payset', '🏦', 'תשלום ובנק'],
+    ['-', '', 'האתר'], ['biz', '🏷️', 'פרטי העסק'], ['texts', '✍️', 'טקסטים באתר'], ['packages', '💰', 'חבילות ומחירים'], ['faq', '❓', 'שאלות נפוצות'],
+    ['reviews', '⭐', 'המלצות'], ['busy', '📅', 'תאריכים תפוסים'], ['frames', '🖼️', 'מסגרות ללקוחות'], ['events', '🎉', 'סוגי אירועים'], ['-', '', ''], ['account', '🔐', 'אבטחה וחשבון']
   ];
   function nav() {
-    $('#side').innerHTML = SECTIONS.map(function (s) { return '<button data-s="' + s[0] + '"' + (s[0] === sec ? ' class="on"' : '') + '><i>' + s[1] + '</i><span>' + s[2] + '</span></button>'; }).join('');
+    $('#side').innerHTML = SECTIONS.map(function (s) { return s[0] === '-' ? (s[2] ? '<small class="adm-side-h">' + s[2] + '</small>' : '<hr>') : '<button data-s="' + s[0] + '"' + (s[0] === sec ? ' class="on"' : '') + '><i>' + s[1] + '</i><span>' + s[2] + '</span></button>'; }).join('');
     $$('#side button').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.s); }); });
   }
   function show(s) { sec = s; $$('#side button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === s); }); var m = $('#main'); m.innerHTML = ''; VIEWS[s](m); m.scrollTop = 0; window.scrollTo(0, 0); }
@@ -151,18 +139,17 @@
 
   var VIEWS = {};
   VIEWS.home = function (m) {
-    head(m, 'שלום ' + esc(String(draft.owner || '').split(' ')[0] || '') + ' 👋', 'כל מה שמופיע באתר, במקום אחד. משנים, מסתכלים בתצוגה המקדימה ולוחצים "פרסום באתר".');
-    var stats = [['💰', (draft.packages || []).filter(function (p) { return !p.hidden; }).length, 'חבילות באתר'], ['❓', (draft.faq || []).length, 'שאלות נפוצות'], ['⭐', (draft.reviews || []).length, 'המלצות'], ['📅', (draft.busy || []).length, 'תאריכים תפוסים'], ['🖼️', FRAMES.filter(function (f) { return !f.hidden; }).length, 'מסגרות שלך ללקוחות']];
+    head(m, 'שלום ' + esc(String(draft.owner || '').split(' ')[0] || '') + ' 👋', 'העסק והאתר במקום אחד, שמור בשרת המאובטח.');
+    var B = FS.adminBiz, now = new Date(), ym = now.toISOString().slice(0, 7), mon = B.month(DEALS, EXPENSES, SETTINGS, ym);
+    var stats = [['💵', B.money(mon.income), 'הכנסות החודש'], ['💸', B.money(mon.expTotal), 'הוצאות החודש'], ['📑', DEALS.filter(function (d) { return d.date >= now.toISOString().slice(0, 10); }).length, 'אירועים קרובים'], ['⏳', B.money(B.openBalance(DEALS, SETTINGS)), 'יתרות פתוחות'], ['👥', CUSTOMERS.length, 'לקוחות עם עיצובים'], ['💰', (draft.packages || []).filter(function (p) { return !p.hidden; }).length, 'חבילות באתר']];
     m.insertAdjacentHTML('beforeend', '<div class="adm-stats">' + stats.map(function (s) { return '<div><i>' + s[0] + '</i><b>' + s[1] + '</b><small>' + s[2] + '</small></div>'; }).join('') + '</div>' +
       '<h2>הפלטפורמות</h2><div class="adm-links">' +
       '<a href="./" target="_blank" rel="noopener"><i>🌐</i><b>האתר</b><small>מה שהלקוחות רואים</small></a>' +
       '<a href="design.html" target="_blank" rel="noopener"><i>🎨</i><b>עורך המסגרות ללקוחות</b><small>הלקוחות מעצבים לבד, עם AI ומההזמנה</small></a>' +
       '<a href="design.html?owner" target="_blank" rel="noopener"><i>🧩</i><b>העורך, במצב בעל העסק</b><small>מסגרת מהזמנה ישר ל"המסגרות שלי" בסטודיו</small></a>' +
       '<a href="studio.html" target="_blank" rel="noopener"><i>🖼️</i><b>הסטודיו</b><small>עריכה, הדפסה, עסקאות</small></a></div>' +
-      '<h2>שינויים אחרונים באתר</h2><div id="hist" class="hint">טוען…</div>');
-    gh('/commits?path=frame-studio&per_page=6').then(function (l) {
-      $('#hist').innerHTML = '<ul class="adm-hist">' + (l || []).map(function (c) { return '<li><b>' + esc(c.commit.message.split('\n')[0]) + '</b><small>' + new Date(c.commit.author.date).toLocaleString('he-IL') + '</small></li>'; }).join('') + '</ul>';
-    }).catch(function () { $('#hist').textContent = ''; });
+      '<h2>האירועים הקרובים</h2><div id="next"></div>');
+    B.upcoming($('#next'), DEALS, SETTINGS);
   };
   VIEWS.biz = function (m) {
     head(m, '🏷️ פרטי העסק', 'מופיעים באתר, בצ׳אט, במסמכים ובשורת העסק שעל המגנטים.');
@@ -311,14 +298,15 @@
     });
     var u = document.createElement('section'); u.className = 'adm-card'; m.appendChild(u);
     function drawMine() {
-      u.innerHTML = '<h3>המסגרות שלך (PNG)</h3><p class="hint">PNG עם אזור שקוף לתמונה. הן נשמרות באתר מיד עם ההעלאה, בלי לחכות ל"פרסום".</p><div class="adm-frames" id="mine"></div>' +
+      u.innerHTML = '<h3>המסגרות שלך (PNG)</h3><p class="hint">PNG עם אזור שקוף לתמונה. נשמרות בשרת ומופיעות ללקוחות מיד עם ההעלאה.</p><div class="adm-frames" id="mine"></div>' +
         '<div class="adm-up"><label class="btn gold">⬆️ העלאת מסגרת PNG<input type="file" id="f-up" accept="image/png" hidden></label><input id="f-name" placeholder="שם המסגרת"></div>';
-      FRAMES.forEach(function (f, i) {
+      FRAMES.forEach(function (f) {
         var b = document.createElement('div'); b.className = 'adm-fr' + (f.hidden ? ' off' : '');
-        b.innerHTML = '<span class="th"><img src="' + esc(f.src) + '?v=' + (f.v || 1) + '" alt=""></span><small>' + esc(f.name) + '</small><div class="adm-tools"><button data-a="hide">' + (f.hidden ? '👁 להציג' : '🙈 להסתיר') + '</button><button data-a="del">🗑</button></div>';
+        b.innerHTML = '<span class="th"><img alt=""></span><small>' + esc(f.name) + '</small><div class="adm-tools"><button data-a="hide">' + (f.hidden ? '👁 להציג' : '🙈 להסתיר') + '</button><button data-a="del">🗑</button></div>';
+        if (!f.hidden) FS.frameFileUrl(f.id).then(function (url) { $('img', b).src = url + '&v=' + (f.v || 1); });
         $$('[data-a]', b).forEach(function (x) { x.addEventListener('click', function () {
-          if (x.dataset.a === 'hide') { f.hidden = !f.hidden; saveFrames([], 'frame-studio admin: ' + (f.hidden ? 'hide' : 'show') + ' frame ' + f.name); }
-          else if (confirm('למחוק את "' + f.name + '" מהאתר?')) { FRAMES.splice(i, 1); saveFrames([{ path: 'frame-studio/' + f.src, del: true }], 'frame-studio admin: remove frame ' + f.name); }
+          if (x.dataset.a === 'hide') frameCall('frame-update', { id: f.id, hidden: !f.hidden });
+          else if (confirm('למחוק את "' + f.name + '"?')) frameCall('frame-del', { id: f.id });
         }); });
         $('#mine', u).appendChild(b);
       });
@@ -328,26 +316,41 @@
         FS.fileToDataURL(file).then(function (url) { return FS.loadImg(url).then(function (im) {
           var hole = FS.detectHole(im); if (!hole && !confirm('לא מצאתי חלון שקוף במסגרת, אז התמונה לא תיראה דרכה. להעלות בכל זאת?')) return;
           var k = Math.min(1, 2400 / Math.max(im.naturalWidth, im.naturalHeight)), cv = FS.canvas(im.naturalWidth * k, im.naturalHeight * k); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
-          var id = 'f' + Date.now().toString(36), src = 'frames/' + id + '.png';
-          FRAMES.push({ id: id, name: name.slice(0, 40), src: src, for: [], at: new Date().toISOString() });
-          return saveFrames([{ path: 'frame-studio/' + src, b64: cv.toDataURL('image/png').split(',')[1] }], 'frame-studio admin: frame ' + name);
+          return frameCall('frame-add', { name: name.slice(0, 40), data: cv.toDataURL('image/png') });
         }); });
       });
     }
-    function saveFrames(files, msg) {
-      FS.busy('שומר באתר…');
-      return commit(files.concat([{ path: 'frame-studio/frames/frames.json', b64: b64utf8(JSON.stringify(FRAMES, null, 1) + '\n') }]), msg)
-        .then(function () { FS.busy(); FS.toast('✔ נשמר. יופיע ללקוחות תוך כשתי דקות.', 5000); drawMine(); })
-        .catch(function (e) { FS.busy(); FS.toast('השמירה לא הצליחה (' + (e.status || 'רשת') + ')', 5000); drawMine(); });
+    function frameCall(action, data) {
+      FS.busy('שומר בשרת…');
+      return ACC.call(action, data).then(function (r) { FS.busy(); if (!r.ok) return FS.toast('לא נשמר: ' + ACC.msg(r), 5000); FRAMES = r.frames || FRAMES; FS.toast('✔ נשמר. מופיע ללקוחות מיד.'); drawMine(); });
     }
     drawMine();
   };
   VIEWS.account = function (m) {
-    head(m, '🔑 חיבור', 'הכניסה לניהול היא עם מפתח GitHub שנשמר רק בדפדפן הזה.');
-    m.insertAdjacentHTML('beforeend', '<section class="adm-card"><p>מחובר למאגר <code>' + REPO + '</code>.</p><div class="adm-row"><button class="btn line" id="discard">↺ ביטול כל השינויים שלא פורסמו</button><button class="btn danger" id="logout">יציאה (מחיקת המפתח מהדפדפן)</button></div></section>');
-    $('#discard').addEventListener('click', function () { if (!confirm('לבטל את כל השינויים שלא פורסמו?')) return; draft = clone(base); delete draft.__sha; dirty = {}; try { localStorage.removeItem(DRAFT); localStorage.setItem(PKEY, JSON.stringify(base.packages || [])); } catch (e) { /* ignore */ } state(); pushPreview(); FS.toast('בוטל'); });
-    $('#logout').addEventListener('click', function () { if (!confirm('לצאת? גם "חיבור לאתר" בסטודיו בדפדפן הזה יתנתק.')) return; try { localStorage.removeItem(TOKEN); } catch (e) { /* ignore */ } location.reload(); });
+    var me = ACC.session() || {};
+    head(m, '🔐 אבטחה וחשבון', 'הכניסה היא עם המייל והסיסמה שלך בשרת המאובטח של האתרים. הסיסמה נשמרת שם רק כגיבוב (PBKDF2), ולא בדפדפן.');
+    m.insertAdjacentHTML('beforeend', '<section class="adm-card"><h3>החשבון</h3><p>מחובר כ־<b dir="ltr">' + esc(me.email || '') + '</b> (מנהל). הכניסה פגה אחרי 12 שעות.</p>' +
+      '<div class="adm-grid"><label class="adm-f"><span>הסיסמה הנוכחית</span><div class="adm-in"><input type="password" id="pw-cur" autocomplete="current-password"></div></label><label class="adm-f"><span>סיסמה חדשה (לפחות 8 תווים)</span><div class="adm-in"><input type="password" id="pw-new" autocomplete="new-password"></div></label><label class="adm-f"><span>שוב</span><div class="adm-in"><input type="password" id="pw-new2" autocomplete="new-password"></div></label></div>' +
+      '<div class="adm-row"><button class="btn gold" id="pw-go">🔑 החלפת סיסמה</button><button class="btn danger" id="logout">יציאה</button></div><p class="hint">החלפת סיסמה מנתקת את כל שאר המכשירים.</p></section>' +
+      '<section class="adm-card"><h3>מה שומר על המערכת</h3><ul class="adm-sec">' +
+      '<li>✅ סיסמאות נשמרות רק כגיבוב חזק (PBKDF2, 210,000 סבבים), אף פעם לא כטקסט.</li><li>✅ אחרי 8 ניסיונות שגויים הכניסה ננעלת לשעה, ומגיע אליך מייל התראה.</li>' +
+      '<li>✅ כל פעולה נבדקת בשרת מול הכניסה שלך. לקוח לא יכול לראות עסקאות, דוחות או פרטי בנק, וגם לא עיצובים של לקוח אחר.</li><li>✅ רק האתר שלך יכול לפנות לשרת. בקשה מאתר אחר נחסמת.</li>' +
+      '<li>✅ מספרי כרטיסי אשראי לא נשמרים בכלל, והשרת דוחה אותם. תשלום באשראי עובר רק דרך קישור הסליקה.</li><li>✅ הנתונים בשרת של Cloudflare, מוצפנים באחסון, ולא נמחקים כשמנקים את הדפדפן.</li>' +
+      '<li>⭐ מומלץ: אימות דו־שלבי עם אפליקציה (Google Authenticator). ההגדרה בעמוד <a href="../portfolio/admin-2fa.html" target="_blank" rel="noopener">הגדרת אימות דו־שלבי</a>.</li>' +
+      '<li>⭐ מומלץ: סיסמה ייחודית לאתר הזה, שלא משמשת באתרים אחרים.</li></ul></section>');
+    $('#pw-go').addEventListener('click', function () {
+      var a = $('#pw-new').value, b2 = $('#pw-new2').value; if (a.length < 8) return FS.toast('סיסמה של לפחות 8 תווים'); if (a !== b2) return FS.toast('שתי הסיסמאות לא זהות');
+      ACC.change(a, $('#pw-cur').value).then(function (r) { FS.toast(r.ok ? '✔ הסיסמה הוחלפה. שאר המכשירים נותקו.' : ACC.msg(r), 5000); if (r.ok) $$('#main input[type=password]').forEach(function (i) { i.value = ''; }); });
+    });
+    $('#logout').addEventListener('click', function () { ACC.logout(); location.reload(); });
   };
+  /* the business sections live in js/admin-biz.js; they get the data and a way to save */
+  var ctx = {
+    deals: function () { return DEALS; }, setDeals: function (l) { DEALS = l; }, expenses: function () { return EXPENSES; }, setExpenses: function (l) { EXPENSES = l; },
+    settings: function () { return SETTINGS; }, setSettings: function (s2) { SETTINGS = s2; }, customers: function () { return CUSTOMERS; }, site: function () { return draft; },
+    head: head, input: input, esc: esc, reload: function () { show(sec); }, touchBusy: function (list) { draft.busy = list; touch('busy'); }
+  };
+  ['deals', 'reports', 'expenses', 'customers', 'payset'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminBiz.view(k, m, ctx); }; });
 
   signIn();
 })();

@@ -4,7 +4,10 @@
   var box = document.getElementById('pk'); if (!box || !window.fetch) return;
   var ev = box.getAttribute('data-event');
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  fetch('../business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (b) {
+  /* the owner's latest prices: from the secure server (published in the admin), else business.json */
+  var live = fetch('../../portfolio/api.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (j) { return fetch(String(j.base || '').replace(/\/+$/, '') + '/frame-site'); })
+    .then(function (r) { return r.json(); }).then(function (j) { return j && j.site; }).catch(function () { return null; });
+  Promise.all([fetch('../business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; }), live]).then(function (x) { return Object.assign({}, x[0] || {}, x[1] || {}); }).then(function (b) {
     var l = (b.packages || []).filter(function (p) { return !p.hidden && (!(p.for && p.for.length) || p.for.indexOf(ev) > -1); });
     if (!l.length) return;
     box.innerHTML = l.map(function (p) {

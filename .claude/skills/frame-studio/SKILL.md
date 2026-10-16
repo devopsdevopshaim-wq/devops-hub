@@ -54,6 +54,19 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
 
 `pay.html` (`js/pay.js`, `css/pay.css`) is the client's payment page. The deal summary and payment options travel in the link (`pay.html#<base64url JSON>`, written by `FS.dealPayLink`); nothing is stored on a server. It escapes everything and only opens https links. A payment confirmation is not a tax invoice or receipt; official ones come from a licensed invoicing service.
 
+## Accounts and the business's data on the server (`cloudflare/src/frame.mjs`)
+
+- **Sign-in**: the admin and the customers use the sites' sign-in server (Cloudflare Worker `hasadna-auth`, the same one as SPIDER's): email and password (PBKDF2), an initial password by email, choosing one's own, lock-outs, new devices approved by email, and the owner's authenticator code when `ADMIN_TOTP_SECRET` is set. `js/account.js` (`FS.account`) wraps it.
+  - Customers sign up from `design.html` with `site: 'frame'`. That gives them `sites: ['frame']`, plan `frame`, no end date, and emails in the frame shop's name, open even when SPIDER's own sign-up is closed (`n8n/snippets/access-handle.js`, test `[frame]` in `n8n/test/access.test.mjs`).
+  - **Emails only go out when the Worker has `BREVO_API_KEY` or `RESEND_API_KEY`.** Without one, no initial password arrives.
+- **Data**: it lives in its own Durable Object (`frame`). The Worker resolves the session in the `main` object (`whoIs`) and passes `{role, email}`; a page can never set it.
+  - `GET /frame-site` returns the published site content (only the `PUBLIC` keys) and the owner's frames. `GET /frame-file?id=` serves a frame PNG.
+  - `POST /frame-biz` (text/plain JSON with `token`): a person's own designs (`designs`, `design-get`, `design-save`, `design-del`). Admin only: `all`, `site-save`, `settings-save` (card numbers refused by Luhn), `deal-save`, `deals-import` (newer wins), `deal-del`, `expense-save`, `expense-del`, `frame-add`, `frame-update`, `frame-del`, `designs-of`, `design-of`.
+  - Big values are split into 100KB chunks. Tests: `cloudflare/test/frame.test.mjs` (unit) and the `frame:` checks in `cloudflare/test/worker.test.mjs` (wrangler dev, in CI).
+- **Pages**: `FS.siteData()` merges `business.json` with `/frame-site`, so whatever is published in the admin shows at once; the site, the designer, the studio and `l/*.html` use it.
+  - The studio's `FS.publishSite` and its deals (`deals.js`) go to the server when the owner is signed in. Each deal is saved locally at once and sent to the server after 2.5s. Studio links: `?deals`, `?deal=<id>`.
+  - `admin.html` has a CSP (scripts only from the site, connections to `*.workers.dev` and the n8n host) and no GitHub token. `js/admin-biz.js` holds the deals, reports (month and year: print and CSV), expenses, customers and payment/bank sections.
+
 ## The three platforms: site, customers' designer, admin
 
 - **`design.html` (`js/design.js`, `css/design.css`)**: customers design their own frame.
@@ -64,7 +77,7 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
   - "✨ עיצוב עם AI": a request in plain words becomes a JSON patch (tag `design`). A new ornament comes from the `image` action (FLUX on Cloudflare) with its white background removed.
   - PNG: "⬇️ שמירת המסגרת כ־PNG" (under the preview, and on the save tab) builds the page at 2x its 300dpi size (600dpi, e.g. 1182×1772 for 5×7.5). The frame is see-through where the photo goes, and "הדמיה" includes the photo.
   - Saving: designs go to IndexedDB `mydesigns` (`frame-studio` v3). There are PNG downloads of the preview and of a see-through frame, and a WhatsApp send (files shared on phones). `?owner` adds "הוספה למסגרות שלי בסטודיו" (`FS.addUserFrame`).
-- **`admin.html` (`js/admin.js`, `css/admin.css`)**: the owner's content management, signed in with the GitHub token (`fs-gh-token`, the same one the studio uses).
+- **`admin.html` (`js/admin.js`, `js/admin-biz.js`, `css/admin.css`)**: the owner's business and content management, signed in with email and password (see above).
   - Sections: business details, the site's texts, packages, FAQ, reviews, busy dates, event types, and frames for customers.
   - Site texts: every element with `data-t` in `index.html` can be overridden from `business.json` `texts`, and `site.js` `texts()` applies them.
   - The draft is kept in localStorage `fs-admin-draft` on every change, comes back by itself, and "💾 שמירה" confirms it. The packages are one draft shared with the studio's 💰 editor through `frame-studio-packages`: the latest save from either one wins, and publishing writes the published list back. "פרסום באתר" re-reads `business.json` and writes only the changed top-level keys.

@@ -294,20 +294,58 @@
     var f = FS.fmt(D.fmt) || FS.fmt('magnet'), long = Math.max(f.w, f.h), scale = Math.max(1, (max || 2400) / long);
     return Promise.all(D.deco.map(function (o) { return FS.loadImg(o.src).catch(function () {}); })).then(function () { return build(scale); }).then(function (p) { var d = p.doc, k = Math.min(1, (max || 2400) / Math.max(d.w, d.h)), c = FS.canvas(d.w * k, d.h * k); FS.draw(c.getContext('2d'), p, { scale: k, max: 2400, export: true, noPhoto: !!frameOnly, transparent: !!frameOnly }); return c; });
   }
+  var ACC = FS.account;
+  function cloud() { return !!(ACC && ACC.signedIn()); }
+  /* saved in this browser, and in the customer's account on the server when signed in (it stays there, on any device) */
   function save(quiet) {
     D.name = $('#dname').value.trim() || D.names || 'העיצוב שלי'; D.at = Date.now(); D.saved = true;
-    return snapshot(320).then(function (c) { D.thumb = c.toDataURL('image/jpeg', 0.8); return FS.store.put('mydesigns', JSON.parse(JSON.stringify(D))); })
-      .then(function () { if (!quiet) { FS.toast('💾 נשמר בדפדפן הזה'); mine(); } }).catch(function () { if (!quiet) FS.toast('השמירה לא הצליחה (אולי מצב גלישה פרטית)'); });
+    return snapshot(320).then(function (c) { D.thumb = c.toDataURL('image/jpeg', 0.75); var copy = JSON.parse(JSON.stringify(D)); return FS.store.put('mydesigns', copy).catch(function () {}).then(function () { return copy; }); })
+      .then(function (copy) {
+        if (!cloud()) { if (!quiet) { FS.toast('💾 נשמר בדפדפן הזה. כדי שיישמר בחשבון ולא יאבד: "👤 החשבון שלי".', 5000); mine(); } return; }
+        return ACC.call('design-save', { design: copy }).then(function (r) { if (!quiet || !r.ok) FS.toast(r.ok ? '☁️ נשמר בחשבון שלך' : 'נשמר בדפדפן. בחשבון: ' + ACC.msg(r), 5000); if (!quiet) mine(); });
+      }).catch(function () { if (!quiet) FS.toast('השמירה לא הצליחה'); });
   }
   function mine() {
-    FS.store.all('mydesigns').then(function (l) {
-      l = (l || []).sort(function (a, b) { return b.at - a.at; }); var box = $('#mine');
-      box.innerHTML = l.length ? l.map(function (x) { return '<figure data-id="' + x.id + '"><img src="' + esc(x.thumb || '') + '" alt=""><figcaption><b>' + esc(x.name) + '</b><small>' + new Date(x.at).toLocaleDateString('he-IL') + '</small></figcaption><div><button class="btn small" data-open>פתיחה</button><button class="btn small danger" data-del>מחיקה</button></div></figure>'; }).join('') : '<p class="hint">עוד לא נשמרו עיצובים בדפדפן הזה.</p>';
+    var box = $('#mine');
+    Promise.all([FS.store.all('mydesigns').catch(function () { return []; }), cloud() ? ACC.call('designs') : Promise.resolve(null)]).then(function (r) {
+      var loc = r[0] || [], srv = r[1] && r[1].ok ? r[1].designs : null, ids = {};
+      var l = (srv || []).map(function (x) { ids[x.id] = 1; return Object.assign({ cloud: true }, x); }).concat(loc.filter(function (x) { return !ids[x.id]; }).map(function (x) { return { id: x.id, name: x.name, at: x.at, thumb: x.thumb, type: x.type, local: true }; }));
+      l.sort(function (a, b) { return b.at - a.at; });
+      box.innerHTML = (cloud() ? '' : '<p class="note-acc">🔒 העיצובים כרגע רק בדפדפן הזה. <button class="link" data-acc>פתיחת חשבון / כניסה</button> שומרים אותם בחשבון, בכל מכשיר.</p>') +
+        (l.length ? l.map(function (x) { return '<figure data-id="' + esc(x.id) + '"><img src="' + esc(x.thumb || '') + '" alt=""><figcaption><b>' + esc(x.name) + '</b><small>' + (x.cloud ? '☁️ ' : '💻 ') + new Date(x.at).toLocaleDateString('he-IL') + '</small></figcaption><div><button class="btn small" data-open>פתיחה</button><button class="btn small danger" data-del>מחיקה</button></div></figure>'; }).join('') : '<p class="hint">עוד לא נשמרו עיצובים.</p>');
+      var a = box.querySelector('[data-acc]'); if (a) a.addEventListener('click', openAcc);
       $$('figure', box).forEach(function (f) { var x = l.filter(function (y) { return y.id === f.dataset.id; })[0];
-        $('[data-open]', f).addEventListener('click', function () { D = Object.assign(blank(x.type), x); sel = null; thumbs = {}; toForm(); render(); FS.toast('נפתח: ' + x.name); });
-        $('[data-del]', f).addEventListener('click', function () { if (!confirm('למחוק את "' + x.name + '"?')) return; FS.store.del('mydesigns', x.id).then(mine); }); });
+        $('[data-open]', f).addEventListener('click', function () {
+          (x.cloud ? ACC.call('design-get', { id: x.id }).then(function (r) { return r.ok ? r.design : null; }) : FS.store.get('mydesigns', x.id)).then(function (full) {
+            if (!full) return FS.toast('לא הצלחתי לפתוח'); D = Object.assign(blank(full.type), full); sel = null; thumbs = {}; toForm(); render(); FS.toast('נפתח: ' + full.name);
+          });
+        });
+        $('[data-del]', f).addEventListener('click', function () { if (!confirm('למחוק את "' + x.name + '"?')) return; Promise.all([FS.store.del('mydesigns', x.id).catch(function () {}), x.cloud ? ACC.call('design-del', { id: x.id }) : null]).then(mine); }); });
+    });
+  }
+  /* ---------- the customer's account ---------- */
+  function accLabel() { var s = ACC && ACC.session(); $('#acc-btn').textContent = s && s.token && !s.mustChange ? '👤 ' + String(s.email || '').split('@')[0] : '👤 החשבון שלי'; }
+  function openAcc() {
+    var wrap = document.createElement('div'); wrap.className = 'acc-modal'; wrap.innerHTML = '<div role="dialog" aria-label="החשבון שלי"><button class="x" aria-label="סגירה">✕</button><div id="acc-in"></div></div>'; document.body.appendChild(wrap);
+    function close() { wrap.remove(); accLabel(); }
+    wrap.querySelector('.x').addEventListener('click', close); wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
+    var inBox = wrap.querySelector('#acc-in'), s = ACC.session();
+    if (cloud()) {
+      inBox.innerHTML = '<div class="acc"><h2>החשבון שלי</h2><p dir="ltr">' + esc(s.email) + '</p><p class="hint">העיצובים שנשמרים כאן שמורים בחשבון שלך, בכל מכשיר, ולא נמחקים.</p><button class="btn gold" id="acc-up">☁️ העלאת העיצובים מהדפדפן הזה לחשבון</button><button class="btn line" id="acc-out">יציאה</button></div>';
+      inBox.querySelector('#acc-out').addEventListener('click', function () { ACC.logout(); close(); mine(); });
+      inBox.querySelector('#acc-up').addEventListener('click', function () { uploadLocal().then(close); });
+      return;
+    }
+    ACC.form(inBox, { signup: true, done: function () { close(); FS.toast('👋 נכנסת. העיצובים יישמרו בחשבון שלך.', 5000); uploadLocal().then(mine); } });
+  }
+  function uploadLocal() {
+    return FS.store.all('mydesigns').then(function (l) {
+      l = l || []; if (!l.length) return;
+      return l.reduce(function (p, d) { return p.then(function () { return ACC.call('design-save', { design: d }); }); }, Promise.resolve()).then(function () { FS.toast('☁️ ' + l.length + ' עיצובים נשמרו בחשבון'); });
     }).catch(function () {});
   }
+  $('#acc-btn').addEventListener('click', openAcc);
+
   function dl(c, name) { c.toBlob(function (b) { var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000); }, 'image/png'); }
   $('#s-save').addEventListener('click', function () { save(); });
   $('#s-new').addEventListener('click', function () { if (!confirm('להתחיל עיצוב חדש? העיצוב הנוכחי נשאר אם שמרתם אותו.')) return; D = blank(D.type); sel = null; toForm(); render(); });
@@ -341,20 +379,32 @@
 
   /* ---------- start ---------- */
   fill();
-  var biz = fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; }).then(function (b) {
+  var SITE_FRAMES = [];
+  var biz = FS.siteData().then(function (b) {
+    SITE_FRAMES = b.__frames || []; delete b.__frames; delete b.__live;
     FS.BIZ_SITE = b; FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}) });
     $$('[data-biz]').forEach(function (e) { if (b[e.dataset.biz]) e.textContent = b[e.dataset.biz]; });
   });
-  var pngs = fetch('frames/frames.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }).then(function (list) {
-    return Promise.all((Array.isArray(list) ? list : []).filter(function (f) { return f && /^frames\/[\w.-]+\.png$/i.test(f.src || '') && !f.hidden; }).map(function (f) {
-      return FS.addUserFrame(f.src, f.name, false).then(function (u) { PNGS.push({ id: u.id, key: f.id || u.id, name: f.name || 'מסגרת', for: f.for || [] }); }).catch(function () {});
-    }));
+  /* the owner's PNG frames: the ones uploaded in the admin (on the server) and any in frames/frames.json */
+  var pngs = Promise.all([biz, fetch('frames/frames.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })]).then(function (r) {
+    var list = (Array.isArray(r[1]) ? r[1] : []).filter(function (f) { return f && /^frames\/[\w.-]+\.png$/i.test(f.src || '') && !f.hidden; }).map(function (f) { return Promise.resolve({ f: f, src: f.src }); })
+      .concat(SITE_FRAMES.map(function (f) { return FS.frameFileUrl(f.id).then(function (u) { return { f: f, src: u + '&v=' + (f.v || 1) }; }); }));
+    return Promise.all(list).then(function (items) { return Promise.all(items.map(function (it) {
+      return FS.addUserFrame(it.src, it.f.name, false).then(function (u) { PNGS.push({ id: u.id, key: it.f.id || u.id, name: it.f.name || 'מסגרת', for: it.f.for || [] }); }).catch(function () {});
+    })); });
   });
   var q = new URLSearchParams(location.search);
   D = blank(q.get('type') || 'wedding');
   if (q.get('frame')) D.frame = q.get('frame');
   if (q.get('names')) D.names = q.get('names').slice(0, 40);
-  Promise.all([biz, pngs]).then(function () { toForm(); render(); });
+  Promise.all([biz, pngs]).then(function () { toForm(); render(); openFromLink(); });
+  accLabel();
+  if (ACC && ACC.session()) ACC.me().then(accLabel);
+  /* design.html?owner&open=<email>:<id>: the owner opens a customer's design from the admin */
+  function openFromLink() {
+    var o = q.get('open'); if (!o || !ACC || !ACC.isAdmin()) return;
+    var k = o.lastIndexOf(':'); ACC.call('design-of', { email: o.slice(0, k), id: o.slice(k + 1) }).then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); D = Object.assign(blank(r.design.type), r.design, { id: 'd' + FS.uid(), saved: false }); thumbs = {}; toForm(); render(); FS.toast('נפתח העיצוב של ' + o.slice(0, k) + ' (כעותק)', 5000); });
+  }
   window.addEventListener('resize', function () { render(); });
   FS.designer = { state: function () { return D; }, render: render, addDeco: addDeco, openInvite: openInvite, pieces: function () { return PIECES; } };
 })();

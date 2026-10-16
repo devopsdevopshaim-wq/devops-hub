@@ -22,6 +22,7 @@ import statusFresh from './gen/status-fresh.mjs';
 import statusRender from './gen/status-render.mjs';
 import { mailHandle, mailCallback, who as sessionOf } from './mail.mjs';
 import { localGuide } from './guide-local.mjs';
+import { frameSite, frameFile, frameBiz } from './frame.mjs';
 import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
 
 const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
@@ -44,7 +45,11 @@ const ROUTES = {
   'hasadna-jarvis': { svc: 'agents', kind: 'jarvis', max: 12000, free: true },
   // the clients' own mailboxes (Gmail); the callback is where Google sends the person back after they agree
   'hasadna-mail': { svc: 'main', kind: 'mail', max: 20000, free: true },
-  'hasadna-mail-callback': { svc: 'main', kind: 'mailcb', max: 1000, free: true, method: 'GET' }
+  'hasadna-mail-callback': { svc: 'main', kind: 'mailcb', max: 1000, free: true, method: 'GET' },
+  // פריים מגנטים: the site's content and frames (public), and the business's data (signed in; the session is checked here)
+  'frame-site': { svc: 'frame', kind: 'frame-site', max: 1000, free: true, method: 'GET' },
+  'frame-file': { svc: 'frame', kind: 'frame-file', max: 1000, free: true, method: 'GET' },
+  'frame-biz': { svc: 'frame', kind: 'frame', max: 6000000 }
 };
 const SERVICES = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/services.json';
 const KNOWLEDGE = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/knowledge.json';
@@ -83,6 +88,25 @@ export default {
     // the price list is read with GET; everything else is POST
     const want = rt.method || (rt.fn === pricesRead ? 'GET' : 'POST');
     if (request.method !== want) return request.method === 'GET' ? reply({ ok: true, service: 'spider', where: 'cloudflare' }) : reply({ ok: false, error: 'bad-method' }, 405);
+    if (rt.kind === 'frame-site' || rt.kind === 'frame-file') {
+      const fr = env.STATE.get(env.STATE.idFromName('frame'));
+      if (rt.kind === 'frame-site') return reply(await fr.siteData(), 200, { 'Cache-Control': 'public, max-age=30' });
+      const png = await fr.fileData(url.searchParams.get('id') || '');
+      return png ? new Response(png, { headers: { ...CORS, 'Access-Control-Allow-Origin': '*', 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' } }) : reply({ ok: false, error: 'not-found' }, 404);
+    }
+    if (rt.kind === 'frame') {
+      // only the site may call; who is asking comes from the sign-in session, never from the request itself
+      const origin = request.headers.get('origin') || '';
+      if (origin !== SITE_ORIGIN) return reply({ ok: false, error: 'forbidden' }, 403);
+      const raw = await request.text();
+      if (raw.length > rt.max) return reply({ ok: false, error: 'too-big' }, 413);
+      let b = {}; try { b = JSON.parse(raw || '{}'); } catch (e) { return reply({ ok: false, error: 'bad-json' }, 400); }
+      if (!b || typeof b !== 'object') return reply({ ok: false, error: 'bad-json' }, 400);
+      const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+      const who = await env.STATE.get(env.STATE.idFromName('main')).whoIs(String(b.token || ''));
+      const r = await env.STATE.get(env.STATE.idFromName('frame')).bizCall(who, b, ip);
+      return reply(r.body, r.code);
+    }
     const id = env.STATE.idFromName(rt.svc);
     return env.STATE.get(id).fetch(request);
   }
@@ -139,6 +163,21 @@ export class State extends DurableObject {
     const run = this.q.then(() => this.handle(request, rt));
     this.q = run.catch(() => {});
     return run;
+  }
+
+  // ---- פריים מגנטים. whoIs runs in the main object (where the sessions are); the rest in the "frame" object, on its own storage.
+  async whoIs(token) { const st = await this.load(); return sessionOf(st.sd, token); }
+  siteData() { return frameSite(this.ctx.storage); }
+  fileData(id) { return frameFile(this.ctx.storage, id); }
+  async bizCall(who, b, ip) {
+    // a few hundred calls per 10 minutes per person or address; one at a time, so a save never overlaps another
+    this.rl = this.rl || new Map();
+    const k = (who && who.email) || ip, t = Date.now(), arr = (this.rl.get(k) || []).filter((x) => t - x < 600000);
+    if (arr.length >= 400) return { code: 429, body: { ok: false, error: 'rate-limited' } };
+    arr.push(t); this.rl.set(k, arr); if (this.rl.size > 2000) this.rl.delete(this.rl.keys().next().value);
+    const run = this.q.then(() => frameBiz(this.ctx.storage, who, b));
+    this.q = run.catch(() => {});
+    try { return await run; } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; }
   }
 
   async load() {

@@ -8,7 +8,8 @@
   var hasLocal = !!localStorage.getItem('frame-studio-biz');
 
   /* the site's published details fill in anything this browser has not set */
-  fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(function (b) {
+  (FS.siteData ? FS.siteData() : fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })).then(function (b) {
+    delete b.__frames; delete b.__live;
     FS.BIZ_SITE = b;
     if (!hasLocal) { ['name', 'owner', 'phone', 'whatsapp', 'email', 'instagram', 'facebook', 'website', 'tagline', 'areas', 'hours'].forEach(function (k) { if (b[k]) FS.BIZ[k] = b[k]; }); if (b.credit) FS.BIZ.credit = Object.assign({}, FS.BIZ.credit, b.credit); }
     syncQuick();
@@ -79,8 +80,18 @@
 
   /* write into business.json on the site: patch(base) changes only its own fields, everything else stays */
   function publishSite(patch, message, done) {
+    /* signed in as the owner (admin.html): the site's content lives on the secure server, and the site reads it from there at once */
+    if (FS.account && FS.account.isAdmin()) {
+      FS.busy('מעדכן את האתר…');
+      return FS.account.call('all').then(function (a) {
+        if (!a.ok) throw new Error(a.error);
+        var base = a.site || JSON.parse(JSON.stringify(FS.BIZ_SITE || {})); patch(base); FS.BIZ_SITE = base;
+        return FS.account.call('site-save', { site: base });
+      }).then(function (r) { FS.busy(); if (!r.ok) throw new Error(r.error); FS.toast(done ? done.replace(/תוך כשתי דקות/, 'מיד') : '🌐 האתר עודכן', 6000); })
+        .catch(function (e) { FS.busy(); FS.toast('העדכון לאתר לא הצליח: ' + FS.account.msg({ error: e.message }) + '. השינויים נשמרו אצלך.', 6000); });
+    }
     var tok = ''; try { tok = localStorage.getItem('fs-gh-token') || ''; } catch (e) { /* ignore */ }
-    if (!tok) { FS.toast('נשמר אצלך. כדי לעדכן את האתר מגדירים פעם אחת "🔑 חיבור לאתר" בלשונית שמירה והדפסה.', 6500); return; }
+    if (!tok) { FS.toast('נשמר אצלך. כדי לעדכן את האתר נכנסים פעם אחת ל"⚙️ ניהול האתר" עם המייל והסיסמה.', 6500); return; }
     var H = { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, url = 'https://api.github.com/repos/' + REPO + '/contents/' + PATH;
     FS.busy('מעדכן את האתר…');
     fetch(url + '?ref=main', { headers: H }).then(function (r) { return r.ok ? r.json() : null; }).then(function (cur) {

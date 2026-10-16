@@ -87,6 +87,26 @@ j = await r.json();
 check('the status data is served', r.status === 200 && j.counts && Array.isArray(j.results), j);
 r = await fetch(URL_ + '/hasadna-status', { headers: { Origin: SITE } });
 check('the status page is HTML with a locked-down policy', r.status === 200 && /text\/html/.test(r.headers.get('content-type')) && /default-src 'none'/.test(r.headers.get('content-security-policy') || ''));
+// פריים מגנטים: the business data answers only to a signed-in session from the site, and the owner's content reaches the public site
+{
+  const fb = async (b, origin = SITE) => { const x = await fetch(URL_ + '/frame-biz', { method: 'POST', headers: { ...(origin ? { Origin: origin } : {}), 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(b) }); return { code: x.status, body: await x.json().catch(() => null) }; };
+  let f = await fb({ action: 'all' });
+  check('frame: no session, no data', f.code === 401);
+  f = await fb({ action: 'all', token }, 'https://evil.example');
+  check('frame: a foreign site is refused', f.code === 403);
+  f = await fb({ action: 'all', token: 'c'.repeat(48) });
+  check('frame: a made-up token is refused', f.code === 401);
+  f = await fb({ action: 'site-save', token, site: { name: 'פריים בדיקה ' + RUN, packages: [{ name: 'בסיסי', price: '₪1' }], bank: 'secret-123' } });
+  check('frame: the owner publishes content', f.body && f.body.ok, f);
+  f = await fb({ action: 'settings-save', token, settings: { account: '998877' } });
+  check('frame: the owner keeps bank details', f.body && f.body.ok, f);
+  const pub = await (await fetch(URL_ + '/frame-site', { headers: { Origin: SITE } })).json();
+  check('frame: the public site reads the content', pub.ok && pub.site && pub.site.name === 'פריים בדיקה ' + RUN);
+  check('frame: private fields stay private', !JSON.stringify(pub).includes('secret-123') && !JSON.stringify(pub).includes('998877'));
+  f = await fb({ action: 'design-save', token, design: { id: 'test' + RUN, name: 'בדיקה' } });
+  f = await fb({ action: 'designs', token });
+  check('frame: a signed-in person keeps designs', f.body && f.body.designs.some((x) => x.id === 'test' + RUN));
+}
 r = await call({ action: 'logout', token });
 r = await call({ action: 'me', token });
 check('after logout the token is dead', r.code === 401);
