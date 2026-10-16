@@ -54,6 +54,24 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
 
 `pay.html` (`js/pay.js`, `css/pay.css`) is the client's payment page. The deal summary and payment options travel in the link (`pay.html#<base64url JSON>`, written by `FS.dealPayLink`); nothing is stored on a server. It escapes everything and only opens https links. A payment confirmation is not a tax invoice or receipt; official ones come from a licensed invoicing service.
 
+## The three platforms: site, customers' designer, admin
+
+- **`design.html` (`js/design.js`, `css/design.css`)**: customers design their own frame.
+  - They pick an event type, a frame (the built-in frames minus `business.json` `hideFrames`, plus the owner's PNG frames from `frames/frames.json`) and a magnet size.
+  - They set names, date, hashtag, an extra line, font, frame colour and text colour.
+  - Ornaments are image layers that can be dragged on the preview and changed in size, rotation and opacity. They can be flipped, duplicated as a mirrored pair, or copied to all four corners.
+  - "📨 מההזמנה": an image or a PDF (pdf.js 3.11.174, first page). `js/invite.js` takes the colours locally (k-means) and asks the hubs server `ai` (tag `invite`) for names, date, venue, line, palette, font, frame and ornament boxes (0–1000). `FS.cutPiece` cuts those boxes with the edge colour flood-filled away, and the customer can cut a box by hand too. "✨ עיצוב מסגרת מההזמנה" applies all of it, with the biggest ornament placed in the corners.
+  - "✨ עיצוב עם AI": a request in plain words becomes a JSON patch (tag `design`). A new ornament comes from the `image` action (FLUX on Cloudflare) with its white background removed.
+  - Saving: designs go to IndexedDB `mydesigns` (`frame-studio` v3). There are PNG downloads of the preview and of a see-through frame, and a WhatsApp send (files shared on phones). `?owner` adds "הוספה למסגרות שלי בסטודיו" (`FS.addUserFrame`).
+- **`admin.html` (`js/admin.js`, `css/admin.css`)**: the owner's content management, signed in with the GitHub token (`fs-gh-token`, the same one the studio uses).
+  - Sections: business details, the site's texts, packages, FAQ, reviews, busy dates, event types, and frames for customers.
+  - Site texts: every element with `data-t` in `index.html` can be overridden from `business.json` `texts`, and `site.js` `texts()` applies them.
+  - The draft is kept in localStorage `fs-admin-draft`. "פרסום באתר" re-reads `business.json` and writes only the changed top-level keys.
+  - Preview: `index.html?preview` takes the draft by `postMessage` from the same origin.
+  - The owner's PNG frames are committed at once (git-data) to `frames/<id>.png` together with `frames/frames.json`.
+  - ✨ next to every text field asks the AI (tag `admin`) for 3 alternatives, and the FAQ section can suggest missing questions.
+- **Hubs server, text on Cloudflare**: when Gemini can't answer, `ai` falls back to Workers AI: Llama 3.3 70B for text, Llama 4 Scout for one picture (as a data URL). Tests are in `n8n/test/hubs-cloudflare.test.mjs`.
+
 ## AI without Gemini
 
 - **In the browser** (`js/anime.js`): AnimeGANv2 "face paint 512 v2" (MIT, `models/face-paint-512-v2.onnx`, about 9MB) through onnxruntime-web 1.20.1 from jsDelivr. It uses WebGPU when present, WebAssembly otherwise, and works in 512px tiles with feathered overlaps. `FS.LOCAL_AI` (in `styles.js`) holds the anime result plus an optional instant style on top (comic, cartoon, oil, sketch). It is free, has no quota, and keeps faces. The Hayao and Shinkai weights are personal-use only and must not be used.

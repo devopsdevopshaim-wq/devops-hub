@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<script src="../portfolio/js/failover.js"></script>
+<meta name="theme-color" content="#1d1633" />
+<meta name="description" content="מעצבים לבד את מסגרת המגנטים לאירוע: בוחרים מסגרת, שמות, תאריך וצבעים, ומעלים את ההזמנה כדי שה־AI יעצב מסגרת תואמת." />
+<title>עיצוב המסגרת שלכם · פריים מגנטים</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Amatic+SC:wght@400;700&family=Secular+One&family=Suez+One&family=Bellefair&family=Rubik:wght@400;700;900&family=Karantina:wght@400;700&family=Assistant:wght@400;700;800&family=Varela+Round&family=David+Libre:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" />
+<link rel="stylesheet" href="css/design.css" />
+</head>
+<body>
+<a class="skip" href="#panel">דילוג לעורך</a>
+<header class="dz-top">
+  <a class="dz-brand" href="./"><span class="mark" aria-hidden="true">🧲</span><span><b data-biz="name">פריים מגנטים</b><small>עיצוב המסגרת שלכם</small></span></a>
+  <nav class="dz-nav"><a href="./#packages">חבילות</a><a href="./" class="ghost">← לאתר</a></nav>
+</header>
+
+<main class="dz">
+  <section class="dz-stage" aria-label="תצוגה מקדימה">
+    <div class="dz-view">
+      <div class="dz-canvas-wrap" id="wrap"><canvas id="cv" aria-label="המגנט שלכם"></canvas></div>
+      <div class="dz-view-bar">
+        <div class="seg" role="group" aria-label="תצוגה"><button class="on" data-view="photo">עם תמונה</button><button data-view="frame">מסגרת בלבד</button></div>
+        <label class="dz-photo-btn">📷 תמונה שלכם<input type="file" id="photo" accept="image/*" hidden /></label>
+      </div>
+      <p class="dz-tip" id="tip">טיפ: גוררים עיטור על המגנט כדי להזיז אותו.</p>
+    </div>
+  </section>
+
+  <section class="dz-panel" id="panel" aria-label="העורך">
+    <nav class="dz-tabs" role="tablist">
+      <button role="tab" data-tab="frame" class="on">🖼️ מסגרת</button>
+      <button role="tab" data-tab="text">✍️ טקסט וצבע</button>
+      <button role="tab" data-tab="invite">📨 מההזמנה · AI</button>
+      <button role="tab" data-tab="ai">✨ עיצוב עם AI</button>
+      <button role="tab" data-tab="deco">🧩 עיטורים</button>
+      <button role="tab" data-tab="save">💾 שמירה</button>
+    </nav>
+
+    <div class="dz-pane" data-pane="frame">
+      <label>סוג האירוע<select id="type"></select></label>
+      <h3>בוחרים מסגרת</h3>
+      <div class="dz-frames" id="frames"></div>
+      <label>גודל המגנט<select id="fmt"></select></label>
+    </div>
+
+    <div class="dz-pane" data-pane="text" hidden>
+      <label>שמות / כותרת<input id="names" maxlength="40" /></label>
+      <div class="two"><label>תאריך<input id="date" type="date" /></label><label>האשטג (לא חובה)<input id="tag" maxlength="24" dir="auto" /></label></div>
+      <label>שורה נוספת (לא חובה)<input id="line" maxlength="44" placeholder="למשל: תודה שבאתם לשמוח איתנו" /></label>
+      <label>גופן<select id="font"></select></label>
+      <h3>צבע המסגרת</h3>
+      <div class="dz-sw" id="colors"></div>
+      <div class="two"><label>צבע אחר<input type="color" id="color" /></label><label>צבע הכיתוב<select id="ink"><option value="">אוטומטי</option><option value="#ffffff">לבן</option><option value="#1d1633">כהה</option><option value="#c9a45c">זהב</option><option value="custom">אחר…</option></select></label></div>
+      <input type="color" id="ink-custom" hidden />
+    </div>
+
+    <div class="dz-pane" data-pane="invite" hidden>
+      <p class="hint">מעלים צילום או סריקה של ההזמנה, וה־AI לוקח ממנה את השמות, התאריך, הצבעים והקישוטים, ומעצב מסגרת תואמת. אפשר גם לגזור חלקים בעצמכם.</p>
+      <label class="dz-drop" id="drop"><input type="file" id="inv-file" accept="image/*,application/pdf" hidden /><b>📨 העלאת ההזמנה</b><span>תמונה (JPG / PNG) או PDF · נשאר אצלכם, ונשלח מוקטן רק לקריאה</span></label>
+      <div id="inv" hidden>
+        <div class="dz-inv"><div class="dz-inv-img" id="inv-box"><img id="inv-img" alt="ההזמנה" /><i id="inv-sel" hidden></i></div>
+          <div class="dz-inv-side"><div id="inv-status" class="hint"></div><div class="dz-pal" id="inv-pal"></div><button class="btn gold wide" id="inv-apply" disabled>✨ עיצוב מסגרת מההזמנה</button><button class="btn line wide" id="inv-cut" disabled>✂️ גזירת האזור שסימנתי</button><p class="hint">לגזירה: מסמנים מלבן על ההזמנה עם העכבר או האצבע.</p></div></div>
+        <h3>חלקים מההזמנה</h3>
+        <p class="hint">לוחצים על חלק כדי להוסיף אותו למסגרת. הרקע שלו מוסר אוטומטית.</p>
+        <div class="dz-pieces" id="pieces"><p class="hint">עוד אין חלקים.</p></div>
+      </div>
+    </div>
+
+    <div class="dz-pane" data-pane="ai" hidden>
+      <p class="hint">כותבים במילים מה לשנות, וה־AI מעצב בשבילכם.</p>
+      <textarea id="ai-ask" rows="3" maxlength="300" placeholder="למשל: מסגרת זהב יוקרתית עם פרחים בפינות, גופן כתב יד, ובתחתית ‘תודה שבאתם’"></textarea>
+      <div class="dz-chips" id="ai-chips"></div>
+      <button class="btn gold wide" id="ai-go">✨ לעצב</button>
+      <h3>🎨 עיטור חדש מתיאור</h3>
+      <div class="two"><input id="orn-ask" maxlength="120" placeholder="למשל: זר פרחים ורודים בצבעי מים" /><button class="btn line" id="orn-go">ליצור</button></div>
+      <p class="hint">העיטור נוצר בשרת (FLUX) ומתווסף למסגרת עם רקע שקוף.</p>
+      <div id="ai-out" class="dz-ai-out"></div>
+    </div>
+
+    <div class="dz-pane" data-pane="deco" hidden>
+      <div class="dz-decos" id="decos"></div>
+      <div id="deco-ed" hidden>
+        <label>גודל<input type="range" id="d-size" min="4" max="90" /></label>
+        <label>סיבוב<input type="range" id="d-rot" min="-180" max="180" /></label>
+        <label>שקיפות<input type="range" id="d-op" min="15" max="100" /></label>
+        <div class="dz-row"><button class="btn line" id="d-flip">↔ היפוך</button><button class="btn line" id="d-pair">⇋ זוג סימטרי</button><button class="btn line" id="d-corners">⌗ לארבע הפינות</button><button class="btn danger" id="d-del">🗑 מחיקה</button></div>
+      </div>
+      <p class="hint">עיטורים מוסיפים מהלשוניות "מההזמנה" ו"עיצוב עם AI", או מהמחשב:</p>
+      <label class="btn line">➕ עיטור מקובץ (PNG שקוף)<input type="file" id="deco-file" accept="image/*" hidden /></label>
+    </div>
+
+    <div class="dz-pane" data-pane="save" hidden>
+      <label>שם העיצוב<input id="dname" maxlength="40" placeholder="המגנטים של נועה ודניאל" /></label>
+      <div class="dz-row"><button class="btn gold" id="s-save">💾 שמירה</button><button class="btn line" id="s-new">＋ עיצוב חדש</button></div>
+      <h3>שליחה והורדה</h3>
+      <div class="dz-row"><button class="btn wa" id="s-send">💬 שליחה לעסק בוואטסאפ</button><button class="btn line" id="s-png">⬇️ הדמיה (PNG)</button><button class="btn line" id="s-frame">⬇️ מסגרת שקופה (PNG)</button></div>
+      <button class="btn line wide" id="s-studio" hidden>🖼️ הוספה למסגרות שלי בסטודיו</button>
+      <h3>העיצובים שלי</h3>
+      <div class="dz-mine" id="mine"><p class="hint">עוד לא נשמרו עיצובים בדפדפן הזה.</p></div>
+      <p class="hint">העיצובים נשמרים בדפדפן שלכם בלבד. כדי שנקבל אותם, שולחים בוואטסאפ.</p>
+    </div>
+  </section>
+</main>
+<div class="dz-busy" id="busy" hidden><div><i></i><span id="busy-msg"></span></div></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="js/core.js"></script>
+<script src="js/frames.js"></script>
+<script src="js/events.js"></script>
+<script src="js/invite.js"></script>
+<script src="js/design.js"></script>
+</body>
+</html>

@@ -46,3 +46,12 @@ const PIC = btoa('JPEGDATA');
   r = await call({ action: 'image', prompt: '' });
   check('cloudflare: an empty description is refused', r.code === 400 && !calls.length);
 }
+{
+  // text: Gemini has no key here, so Workers AI answers (Llama 3.3 for text, the vision model for a picture)
+  const { call, calls } = world((m) => ({ response: 'שלום מ' + m.split('/').pop() }));
+  let r = await call({ action: 'ai', prompt: 'hi' }, '8.8.4.1');
+  check('cloudflare: a text question is answered by Llama 3.3 when Gemini cannot', r.code === 200 && r.body.source === 'Cloudflare' && /llama-3.3/.test(r.body.model) && calls[0].input.messages[0].content === 'hi', JSON.stringify(r));
+  r = await call({ action: 'ai', prompt: 'read this', image: btoa('img'), mime: 'image/png' }, '8.8.4.2');
+  const part = calls.at(-1).input.messages[0].content[1];
+  check('cloudflare: a picture question goes to the vision model as a data URL', r.code === 200 && /llama-4-scout/.test(r.body.model) && part.image_url.url === 'data:image/png;base64,' + btoa('img'), JSON.stringify(r));
+}

@@ -301,3 +301,5 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold2); bor
 .l-list li::before { content: '✦ '; color: var(--gold); }
 .landing .faq { max-width: 860px; margin: 0 auto; }
 .l-end { text-align: center; }
+.hero h1 span.t1 { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: inherit; }
+.dz-cta { margin: -6px 0 22px; }

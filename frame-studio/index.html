@@ -41,7 +41,7 @@
     <span><b data-biz="name">פריים מגנטים</b><small>מגנטים לאירועים</small></span>
   </a>
   <nav class="links" aria-label="ניווט">
-    <a href="#how">איך זה עובד</a><a href="#events">אירועים</a><a href="#gallery">עיצובים</a><a href="#designer">עצבו מגנט</a><a href="#packages">חבילות</a><a href="#tech">טכנולוגיה</a><a href="#faq">שאלות</a>
+    <a href="#how">איך זה עובד</a><a href="#events">אירועים</a><a href="#gallery">עיצובים</a><a href="#designer">עצבו מגנט</a><a href="design.html">🎨 העורך המלא</a><a href="#packages">חבילות</a><a href="#tech">טכנולוגיה</a><a href="#faq">שאלות</a>
   </nav>
   <div class="nav-cta">
     <a class="btn ghost" href="studio.html">🖼️ לסטודיו</a>
@@ -52,9 +52,9 @@
 <main id="main">
   <section class="hero">
     <div class="hero-text">
-      <p class="eyebrow">צילום · עיצוב · הדפסה במקום</p>
-      <h1>הרגעים של האירוע,<br /><span>על המקרר של כל אורח</span></h1>
-      <p class="lead">מצלמים את האורחים, ותוך פחות מדקה הם מקבלים מגנט במסגרת שעוצבה במיוחד לאירוע שלכם. מזכרת שנשארת על המקרר שנים.</p>
+      <p class="eyebrow" data-t="hero.eyebrow">צילום · עיצוב · הדפסה במקום</p>
+      <h1><span data-t="hero.title1" class="t1">הרגעים של האירוע,</span><br /><span data-t="hero.title2">על המקרר של כל אורח</span></h1>
+      <p class="lead" data-t="hero.lead">מצלמים את האורחים, ותוך פחות מדקה הם מקבלים מגנט במסגרת שעוצבה במיוחד לאירוע שלכם. מזכרת שנשארת על המקרר שנים.</p>
       <div class="cta-row">
         <a class="btn gold big" href="#designer">✨ עצבו את המגנט שלכם</a>
         <a class="btn line big" href="#packages">לחבילות והמחירים</a>
@@ -74,8 +74,8 @@
   <div class="ticker" aria-hidden="true"><div id="ticker"></div></div>
 
   <section class="sec" id="how">
-    <p class="eyebrow center">פשוט כמו 1־2־3־4</p>
-    <h2>איך זה עובד</h2>
+    <p class="eyebrow center" data-t="how.eyebrow">פשוט כמו 1־2־3־4</p>
+    <h2 data-t="how.title">איך זה עובד</h2>
     <ol class="steps">
       <li><span>💬</span><b>מתאמים</b><p>מספרים לנו על האירוע: תאריך, סגנון, צבעים ושמות.</p></li>
       <li><span>🎨</span><b>מעצבים</b><p>מקבלים הדמיה של המגנט עם המסגרת האישית, ומאשרים.</p></li>
@@ -85,23 +85,24 @@
   </section>
 
   <section class="sec" id="events">
-    <p class="eyebrow center">מהאירועים שלנו</p>
-    <h2>אירועים</h2>
+    <p class="eyebrow center" data-t="events.eyebrow">מהאירועים שלנו</p>
+    <h2 data-t="events.title">אירועים</h2>
     <div class="chips center light" id="ev-filter"></div>
     <div class="albums" id="albums"><p class="note center">טוען…</p></div>
   </section>
 
   <section class="sec dark" id="gallery">
-    <p class="eyebrow center">השראה</p>
-    <h2>עיצובים שהאורחים לוקחים הביתה</h2>
+    <p class="eyebrow center" data-t="gallery.eyebrow">השראה</p>
+    <h2 data-t="gallery.title">עיצובים שהאורחים לוקחים הביתה</h2>
     <div class="chips center" id="gal-filter"></div>
     <div class="gallery" id="gallery-grid"></div>
     <p class="note center">כל עיצוב מתאים את עצמו לשמות, לתאריך ולצבעים של האירוע שלכם.</p>
   </section>
 
   <section class="sec" id="designer">
-    <p class="eyebrow center">נסו בעצמכם</p>
-    <h2>עצבו את המגנט של האירוע</h2>
+    <p class="eyebrow center" data-t="designer.eyebrow">נסו בעצמכם</p>
+    <h2 data-t="designer.title">עצבו את המגנט של האירוע</h2>
+    <p class="center dz-cta"><a class="btn gold" href="design.html">🎨 לעורך המלא: מסגרות, הזמנה ו־AI ←</a></p>
     <div class="designer">
       <form class="d-form" id="d-form" onsubmit="return false">
         <label>סוג האירוע<select id="d-type"></select></label>
@@ -125,8 +126,8 @@
   </section>
 
   <section class="sec cream" id="packages">
-    <p class="eyebrow center">חבילות</p>
-    <h2>בוחרים חבילה, אנחנו דואגים לכל השאר</h2>
+    <p class="eyebrow center" data-t="packages.eyebrow">חבילות</p>
+    <h2 data-t="packages.title">בוחרים חבילה, אנחנו דואגים לכל השאר</h2>
     <div class="chips center light" id="pk-filter"></div>
     <div class="packages" id="pk"></div>
     <div class="pk-extras" id="pk-extras"></div>
@@ -134,8 +135,8 @@
   </section>
 
   <section class="sec dark" id="tech">
-    <p class="eyebrow center">מאחורי הקלעים</p>
-    <h2>סטודיו חכם שעובד בשבילכם</h2>
+    <p class="eyebrow center" data-t="tech.eyebrow">מאחורי הקלעים</p>
+    <h2 data-t="tech.title">סטודיו חכם שעובד בשבילכם</h2>
     <div class="tech">
       <article><span>🎯</span><b>מרכוז לפי פנים</b><p>הבינה המלאכותית מוצאת את הפנים וממקמת אותן בדיוק בחלון של המסגרת.</p></article>
       <article><span>👁️</span><b>בדיקת עיניים עצומות</b><p>כל תמונה נבדקת, ותמונה עם עיניים עצומות או מטושטשת לא יוצאת להדפסה.</p></article>
@@ -148,23 +149,23 @@
   </section>
 
   <section class="sec reviews" id="reviews" hidden>
-    <p class="eyebrow center">מה אומרים עלינו</p>
-    <h2>לקוחות מספרים</h2>
+    <p class="eyebrow center" data-t="reviews.eyebrow">מה אומרים עלינו</p>
+    <h2 data-t="reviews.title">לקוחות מספרים</h2>
     <div class="rv-grid" id="rv-grid"></div>
     <p class="center" id="rv-google"></p>
   </section>
 
   <section class="sec" id="faq">
-    <p class="eyebrow center">שאלות נפוצות</p>
-    <h2>כל מה שרציתם לדעת</h2>
+    <p class="eyebrow center" data-t="faq.eyebrow">שאלות נפוצות</p>
+    <h2 data-t="faq.title">כל מה שרציתם לדעת</h2>
     <div class="faq" id="faq-list"></div>
   </section>
 
   <section class="sec contact" id="contact">
     <div class="c-text">
-      <p class="eyebrow">בואו נדבר</p>
-      <h2>התאריך שלכם עוד פנוי?</h2>
-      <p>משאירים פרטים ונחזור אליכם עם הצעה והדמיה ראשונה של המגנט.</p>
+      <p class="eyebrow" data-t="contact.eyebrow">בואו נדבר</p>
+      <h2 data-t="contact.title">התאריך שלכם עוד פנוי?</h2>
+      <p data-t="contact.lead">משאירים פרטים ונחזור אליכם עם הצעה והדמיה ראשונה של המגנט.</p>
       <ul class="c-list" id="c-list"></ul>
     </div>
     <form class="c-form" id="c-form">
