@@ -110,7 +110,7 @@ if (b.action === 'fetch') {
 
 if (b.action === 'ai') {
   if (!hit('hubs-ai-ip', ipKey(), IP_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
-  if (!set(GEMINI_KEY)) return out({ ok: false, error: 'no-key' }, 503);
+  if (!set(GEMINI_KEY) && !WAI) return out({ ok: false, error: 'no-key' }, 503);
   if ((sd.asked || 0) >= DAY_CAP) return out({ ok: false, error: 'quota' }, 429);
   const prompt = String(b.prompt || '').replace(/\u0000/g, ' ').trim();
   if (!prompt) return out({ ok: false, error: 'empty' }, 400);
@@ -134,7 +134,7 @@ if (b.action === 'ai') {
   const gen = wiring ? { temperature: 0.1, maxOutputTokens: 32768, responseMimeType: 'application/json' } : { temperature: media.length ? 0.1 : 0.7, maxOutputTokens: 4096 };
   sd.asked = (sd.asked || 0) + 1;
   const errs = [];
-  for (const m of TEXT_MODELS) {
+  for (const m of set(GEMINI_KEY) ? TEXT_MODELS : []) {
     // the whole run must end inside n8n's 120 s limit
     const left = 112000 - (Date.now() - now);
     if (left < 15000) break;
@@ -151,6 +151,20 @@ if (b.action === 'ai') {
       if (t && t.trim()) return out({ ok: true, text: t.trim(), source: 'Gemini' });
       errs.push(m + ': empty answer');
     } catch (e) { errs.push(m + ': ' + why(e)); }
+  }
+  // on Cloudflare, when Gemini cannot: Workers AI (a vision model for a picture, Llama 3.3 for text), free up to the daily allowance
+  if (WAI && !wiring && media.length <= 1) {
+    const plan = media.length
+      ? [['@cf/meta/llama-4-scout-17b-16e-instruct', { messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: 'data:' + media[0].inline_data.mime_type + ';base64,' + media[0].inline_data.data } }] }], max_tokens: 2048 }]]
+      : [['@cf/meta/llama-3.3-70b-instruct-fp8-fast', { messages: [{ role: 'user', content: prompt }], max_tokens: 2048 }], ['@cf/meta/llama-4-scout-17b-16e-instruct', { messages: [{ role: 'user', content: prompt }], max_tokens: 2048 }]];
+    for (const [m, input] of plan) {
+      try {
+        const r = await WAI.run(m, input);
+        const t = r && (typeof r.response === 'string' ? r.response : r.response && JSON.stringify(r.response));
+        if (t && t.trim()) return out({ ok: true, text: t.trim(), source: 'Cloudflare', model: m.split('/').pop() });
+        errs.push(m.split('/').pop() + ': empty answer');
+      } catch (e) { errs.push(m.split('/').pop() + ': ' + why(e)); }
+    }
   }
   return failed(errs);
 }

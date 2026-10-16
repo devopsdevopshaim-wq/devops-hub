@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<script src="../portfolio/js/failover.js"></script>
+<meta name="theme-color" content="#1d1633" />
+<meta name="robots" content="noindex" />
+<title>ניהול האתר · פריים מגנטים</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" />
+<link rel="stylesheet" href="css/design.css" />
+<link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="adm-body">
+<header class="dz-top">
+  <a class="dz-brand" href="./"><span class="mark" aria-hidden="true">⚙️</span><span><b data-biz="name">פריים מגנטים</b><small>ניהול האתר</small></span></a>
+  <nav class="dz-nav"><span class="adm-state" id="state"></span><button class="btn line small" id="preview-btn">👁 תצוגה מקדימה</button><button class="btn gold small" id="publish" disabled>🌐 פרסום באתר</button></nav>
+</header>
+
+<section class="adm-login" id="login" hidden>
+  <div class="card">
+    <h1>כניסת מנהל</h1>
+    <p>הניהול שומר את השינויים ישירות במאגר של האתר ב־GitHub. לכן הכניסה היא עם המפתח האישי שלך מ־GitHub (Fine-grained token), עם הרשאה אחת: <b>Contents: Read and write</b> למאגר <code>devops-hub</code> בלבד. זה אותו מפתח של "🔑 חיבור לאתר" בסטודיו.</p>
+    <p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">יצירת מפתח ב־GitHub ←</a></p>
+    <label>המפתח<input id="tok" type="password" dir="ltr" autocomplete="off" placeholder="github_pat_…" /></label>
+    <button class="btn gold wide" id="tok-go">כניסה</button>
+    <p class="hint">המפתח נשמר רק בדפדפן הזה, ונשלח רק ל־GitHub. מי שאין לו את המפתח לא יכול לשנות כלום באתר.</p>
+    <p class="hint" id="login-err"></p>
+  </div>
+</section>
+
+<main class="adm" id="app" hidden>
+  <nav class="adm-side" id="side" aria-label="ניהול"></nav>
+  <section class="adm-main" id="main" aria-live="polite"></section>
+  <aside class="adm-preview" id="pv" hidden><div class="adm-pv-bar"><b>תצוגה מקדימה (לפני פרסום)</b><button class="btn small line" id="pv-x">✕</button></div><iframe id="pv-frame" title="תצוגה מקדימה של האתר"></iframe></aside>
+</main>
+<div class="dz-busy" id="busy" hidden><div><i></i><span id="busy-msg"></span></div></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="js/core.js"></script>
+<script src="js/frames.js"></script>
+<script src="js/events.js"></script>
+<script src="js/invite.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

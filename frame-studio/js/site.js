@@ -206,6 +206,13 @@
       return '<figure class="rv-card"><div class="stars" aria-label="' + n + ' מתוך 5">' + new Array(n + 1).join('★') + '<i>' + new Array(6 - n).join('★') + '</i></div><blockquote>' + esc(r.text) + '</blockquote><figcaption><b>' + esc(r.name || 'לקוח/ה') + '</b><span>' + ev.icon + ' ' + esc(ev.name) + '</span></figcaption></figure>'; }).join('');
     $('#rv-google').innerHTML = /^https:\/\//.test(BIZ.googleReviews || '') ? '<a class="btn line" href="' + esc(BIZ.googleReviews) + '" target="_blank" rel="noopener">⭐ לכל הביקורות ולכתיבת ביקורת בגוגל</a>' : '';
   }
+  /* the site's headings and lines, as the owner edited them in admin.html (business.json "texts") */
+  function texts() { var t = BIZ.texts || {}; $$('[data-t]').forEach(function (e) { var v = t[e.dataset.t]; if (typeof v === 'string' && v.trim()) e.textContent = v; }); }
+  /* admin.html shows its draft here before publishing (same origin only) */
+  if (/[?&]preview\b/.test(location.search)) window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'fs-preview' || !e.data.biz) return;
+    Object.keys(e.data.biz).forEach(function (k) { BIZ[k] = e.data.biz[k]; }); fill(); reviews(); texts();
+  });
   window.SITE = { biz: BIZ, waLink: waLink, openWa: openWa, waNumber: waNumber, isBusy: isBusy, availText: availText };
 
   $('#year').textContent = new Date().getFullYear();
@@ -217,7 +224,7 @@
   }
 
   var bizLoaded = fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).catch(function () { return {}; }).then(function (b) {
-    Object.assign(BIZ, b || {}); fill(); reviews();
+    Object.assign(BIZ, b || {}); fill(); reviews(); texts();
     window.dispatchEvent(new CustomEvent('site:biz', { detail: BIZ })); window.SITE.ready = true;
     /* the magnets drawn on this page carry the published details, not whatever this browser saved */
     FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}) });

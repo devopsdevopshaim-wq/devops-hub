@@ -455,8 +455,8 @@
     if (dbp) return dbp;
     dbp = new Promise(function (res, rej) {
       if (!window.indexedDB) return rej(new Error('no-idb'));
-      var r = indexedDB.open('frame-studio', 2);
-      r.onupgradeneeded = function () { var db = r.result; ['frames', 'designs', 'deals'].forEach(function (s) { if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: 'id' }); }); };
+      var r = indexedDB.open('frame-studio', 3);
+      r.onupgradeneeded = function () { var db = r.result; ['frames', 'designs', 'deals', 'mydesigns'].forEach(function (s) { if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: 'id' }); }); };
       r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); };
     });
     return dbp;
