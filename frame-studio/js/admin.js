@@ -42,9 +42,15 @@
       readTexts(r[2]);
       var saved = null; try { saved = JSON.parse(localStorage.getItem(DRAFT) || 'null'); } catch (e) { /* ignore */ }
       draft = clone(base); delete draft.__sha; dirty = {};
-      if (saved && saved.dirty && Object.keys(saved.dirty).length && confirm('יש שינויים שלא פורסמו מהפעם הקודמת (' + Object.keys(saved.dirty).map(label).join(', ') + '). להמשיך מהם?')) {
-        Object.keys(saved.dirty).forEach(function (k) { draft[k] = saved.draft[k]; dirty[k] = 1; });
+      /* what was saved here and not yet published comes back by itself */
+      if (saved && saved.dirty) Object.keys(saved.dirty).forEach(function (k) { if (saved.draft && k in saved.draft) { draft[k] = saved.draft[k]; dirty[k] = 1; } });
+      savedAt = saved && saved.at || 0;
+      /* the packages are one draft shared with the studio (💰 חבילות): both save it in frame-studio-packages, so the latest save wins */
+      var pk = studioPackages();
+      if (pk && JSON.stringify(pk) !== JSON.stringify(draft.packages || [])) {   // the latest save, from here or from the studio
+        if (JSON.stringify(pk) === JSON.stringify(base.packages || [])) { draft.packages = pk; delete dirty.packages; } else { draft.packages = pk; dirty.packages = 1; }
       }
+      if (Object.keys(dirty).length) setTimeout(function () { FS.toast('💾 השינויים השמורים שלא פורסמו נטענו (' + Object.keys(dirty).map(label).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', ') + ')', 6000); }, 400);
       $('#login').hidden = true; $('#app').hidden = false; $$('[data-biz]').forEach(function (e) { if (draft[e.dataset.biz]) e.textContent = draft[e.dataset.biz]; });
       nav(); show(sec); state();
     }).catch(function (e) {
@@ -58,11 +64,23 @@
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   var LABELS = { name: 'פרטי העסק', texts: 'טקסטים', packages: 'חבילות', extras: 'תוספות', packagesNote: 'הערת חבילות', faq: 'שאלות', reviews: 'המלצות', googleReviews: 'קישור לגוגל', busy: 'תאריכים תפוסים', events: 'סוגי אירועים', hideFrames: 'מסגרות ללקוחות' };
   function label(k) { return LABELS[k] || 'פרטי העסק'; }
-  function touch(k) { dirty[k] = 1; try { localStorage.setItem(DRAFT, JSON.stringify({ draft: draft, dirty: dirty })); } catch (e) { /* ignore */ } state(); pushPreview(); }
+  /* every change is saved in this browser at once, and the studio's packages editor sees the same packages */
+  var PKEY = 'frame-studio-packages', savedAt = 0;
+  function studioPackages() { try { var l = JSON.parse(localStorage.getItem(PKEY) || 'null'); return Array.isArray(l) && l.length ? l : null; } catch (e) { return null; } }
+  function persist() {
+    savedAt = Date.now();
+    try {
+      localStorage.setItem(DRAFT, JSON.stringify({ draft: draft, dirty: dirty, at: savedAt }));
+      if (dirty.packages) localStorage.setItem(PKEY, JSON.stringify(draft.packages || []));
+    } catch (e) { FS.toast('השמירה בדפדפן לא הצליחה (אולי מצב גלישה פרטית)'); }
+  }
+  function touch(k) { dirty[k] = 1; persist(); state(); pushPreview(); }
   function state() {
     var n = Object.keys(dirty).length; $('#publish').disabled = !n;
-    $('#state').textContent = n ? '● ' + n + ' שינויים שלא פורסמו' : '✔ הכול מפורסם'; $('#state').className = 'adm-state' + (n ? ' warn' : '');
+    $('#state').textContent = n ? '💾 נשמר ' + (savedAt ? new Date(savedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '') + ' · ' + n + ' שינויים עוד לא באתר' : '✔ הכול שמור ומפורסם';
+    $('#state').className = 'adm-state' + (n ? ' warn' : '');
   }
+  $('#save').addEventListener('click', function () { persist(); state(); FS.toast(Object.keys(dirty).length ? '💾 נשמר. כדי שיופיע באתר לוחצים "פרסום באתר".' : '💾 הכול כבר שמור ומפורסם'); });
   $('#publish').addEventListener('click', function () {
     var keys = Object.keys(dirty); if (!keys.length) return;
     FS.busy('מפרסם…');
@@ -71,7 +89,8 @@
       var out = cur.data || {}; keys.forEach(function (k) { out[k] = draft[k]; });
       return gh('/contents/' + PATH, { method: 'PUT', body: { message: 'frame-studio admin: ' + keys.map(label).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', '), branch: 'main', content: b64utf8(JSON.stringify(out, null, 2) + '\n'), sha: cur.sha || undefined } }).then(function () { return out; });
     }).then(function (out) {
-      FS.busy(); base = out; dirty = {}; try { localStorage.removeItem(DRAFT); } catch (e) { /* ignore */ } state();
+      FS.busy(); base = out; dirty = {}; savedAt = Date.now();
+      try { localStorage.removeItem(DRAFT); if (out.packages) localStorage.setItem(PKEY, JSON.stringify(out.packages)); } catch (e) { /* ignore */ } state();
       FS.toast('🌐 פורסם. האתר יתעדכן תוך כשתי דקות.', 6000);
     }).catch(function (e) { FS.busy(); FS.toast(e.status === 409 ? 'מישהו עדכן בדיוק עכשיו. לוחצים שוב על פרסום.' : 'הפרסום לא הצליח (' + (e.status || 'רשת') + '). השינויים נשמרו כטיוטה.', 6000); });
   });
@@ -326,10 +345,9 @@
   VIEWS.account = function (m) {
     head(m, '🔑 חיבור', 'הכניסה לניהול היא עם מפתח GitHub שנשמר רק בדפדפן הזה.');
     m.insertAdjacentHTML('beforeend', '<section class="adm-card"><p>מחובר למאגר <code>' + REPO + '</code>.</p><div class="adm-row"><button class="btn line" id="discard">↺ ביטול כל השינויים שלא פורסמו</button><button class="btn danger" id="logout">יציאה (מחיקת המפתח מהדפדפן)</button></div></section>');
-    $('#discard').addEventListener('click', function () { if (!confirm('לבטל את כל השינויים שלא פורסמו?')) return; draft = clone(base); delete draft.__sha; dirty = {}; try { localStorage.removeItem(DRAFT); } catch (e) { /* ignore */ } state(); pushPreview(); FS.toast('בוטל'); });
+    $('#discard').addEventListener('click', function () { if (!confirm('לבטל את כל השינויים שלא פורסמו?')) return; draft = clone(base); delete draft.__sha; dirty = {}; try { localStorage.removeItem(DRAFT); localStorage.setItem(PKEY, JSON.stringify(base.packages || [])); } catch (e) { /* ignore */ } state(); pushPreview(); FS.toast('בוטל'); });
     $('#logout').addEventListener('click', function () { if (!confirm('לצאת? גם "חיבור לאתר" בסטודיו בדפדפן הזה יתנתק.')) return; try { localStorage.removeItem(TOKEN); } catch (e) { /* ignore */ } location.reload(); });
   };
 
-  window.addEventListener('beforeunload', function (e) { if (Object.keys(dirty).length) { e.preventDefault(); e.returnValue = ''; } });
   signIn();
 })();

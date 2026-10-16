@@ -62,11 +62,12 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
   - Ornaments are image layers that can be dragged on the preview and changed in size, rotation and opacity. They can be flipped, duplicated as a mirrored pair, or copied to all four corners.
   - "📨 מההזמנה": an image or a PDF (pdf.js 3.11.174, first page). `js/invite.js` takes the colours locally (k-means) and asks the hubs server `ai` (tag `invite`) for names, date, venue, line, palette, font, frame and ornament boxes (0–1000). `FS.cutPiece` cuts those boxes with the edge colour flood-filled away, and the customer can cut a box by hand too. "✨ עיצוב מסגרת מההזמנה" applies all of it, with the biggest ornament placed in the corners.
   - "✨ עיצוב עם AI": a request in plain words becomes a JSON patch (tag `design`). A new ornament comes from the `image` action (FLUX on Cloudflare) with its white background removed.
+  - PNG: "⬇️ שמירת המסגרת כ־PNG" (under the preview, and on the save tab) builds the page at 2x its 300dpi size (600dpi, e.g. 1182×1772 for 5×7.5). The frame is see-through where the photo goes, and "הדמיה" includes the photo.
   - Saving: designs go to IndexedDB `mydesigns` (`frame-studio` v3). There are PNG downloads of the preview and of a see-through frame, and a WhatsApp send (files shared on phones). `?owner` adds "הוספה למסגרות שלי בסטודיו" (`FS.addUserFrame`).
 - **`admin.html` (`js/admin.js`, `css/admin.css`)**: the owner's content management, signed in with the GitHub token (`fs-gh-token`, the same one the studio uses).
   - Sections: business details, the site's texts, packages, FAQ, reviews, busy dates, event types, and frames for customers.
   - Site texts: every element with `data-t` in `index.html` can be overridden from `business.json` `texts`, and `site.js` `texts()` applies them.
-  - The draft is kept in localStorage `fs-admin-draft`. "פרסום באתר" re-reads `business.json` and writes only the changed top-level keys.
+  - The draft is kept in localStorage `fs-admin-draft` on every change, comes back by itself, and "💾 שמירה" confirms it. The packages are one draft shared with the studio's 💰 editor through `frame-studio-packages`: the latest save from either one wins, and publishing writes the published list back. "פרסום באתר" re-reads `business.json` and writes only the changed top-level keys.
   - Preview: `index.html?preview` takes the draft by `postMessage` from the same origin.
   - The owner's PNG frames are committed at once (git-data) to `frames/<id>.png` together with `frames/frames.json`.
   - ✨ next to every text field asks the AI (tag `admin`) for 3 alternatives, and the FAQ section can suggest missing questions.
