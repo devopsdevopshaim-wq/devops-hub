@@ -1,0 +1,40 @@
+/* "תורה ויום": the weekly portion, commentaries, daily proverb and day plan */
+#torah-day { padding-block: clamp(40px, 6vw, 72px); }
+.td-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 18px; align-items: start; }
+.td-card { position: relative; padding: 22px 22px 20px; border: 1px solid var(--line-2); border-radius: 18px; background: linear-gradient(160deg, rgba(30, 26, 74, .72), rgba(15, 13, 36, .72)); box-shadow: 0 18px 40px -26px rgba(0, 0, 0, .8); }
+.td-card .eyebrow { margin-bottom: 8px; }
+.td-card h3 { margin: 0 0 10px; font: 400 clamp(26px, 3vw, 34px)/1.1 var(--display); color: var(--porcelain); }
+.td-ref { margin: -4px 0 14px; color: var(--mist); font: 500 14px/1.4 var(--mono); direction: ltr; text-align: right; }
+.td-muted { color: var(--mist); margin: 6px 0; font-size: 15px; }
+.td-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 14px; }
+.td-times div { padding: 12px 14px; border-radius: 12px; background: rgba(139, 123, 255, .1); border: 1px solid rgba(139, 123, 255, .22); }
+.td-times span { display: block; color: var(--mist); font-size: 13px; }
+.td-times b { display: block; margin-top: 2px; font: 700 28px/1.1 var(--body); color: var(--brass-2); font-variant-numeric: tabular-nums; }
+.td-city { display: flex; align-items: center; gap: 8px; color: var(--mist); font-size: 14px; margin-bottom: 12px; }
+.td-city select { background: rgba(15, 13, 36, .8); color: var(--porcelain); border: 1px solid var(--line-2); border-radius: 8px; padding: 6px 10px; font: inherit; }
+.td-links, .td-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.td-links a, .td-chip { display: inline-block; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--porcelain); text-decoration: none; font-size: 14px; background: rgba(241, 238, 252, .04); transition: background .2s, border-color .2s; }
+.td-links a:hover, .td-chip:hover { background: rgba(224, 178, 90, .14); border-color: var(--brass); }
+.td-more { margin-top: 14px; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--brass); background: transparent; color: var(--brass-2); font: inherit; cursor: pointer; }
+.td-more:disabled { opacity: .6; cursor: progress; }
+.td-snips { margin-top: 14px; display: grid; gap: 12px; max-height: 560px; overflow-y: auto; padding-inline-end: 4px; }
+.td-snip { padding: 12px 14px; border-radius: 12px; background: rgba(241, 238, 252, .04); border-inline-start: 3px solid var(--violet); }
+.td-snip b { color: var(--brass-2); }
+.td-snip p { margin: 6px 0 8px; line-height: 1.7; font-family: 'Frank Ruhl Libre', var(--body), serif; font-size: 17px; }
+.td-snip a { color: var(--mist); font-size: 13px; }
+.td-tal ul { margin: 8px 0 0; padding-inline-start: 18px; }
+.td-tal li { margin: 4px 0; }
+.td-tal a { color: var(--porcelain); font-size: 15px; }
+.td-proverb { background: linear-gradient(160deg, rgba(224, 178, 90, .16), rgba(30, 26, 74, .72)); }
+.td-proverb blockquote { margin: 6px 0 12px; font: 400 clamp(24px, 2.8vw, 32px)/1.45 'Frank Ruhl Libre', var(--display), serif; color: var(--porcelain); }
+.td-proverb cite { color: var(--brass-2); font-style: normal; font-size: 14px; }
+.td-plan { grid-column: span 1; }
+.td-rows { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.td-rows label { display: grid; grid-template-columns: auto 52px 1fr; gap: 10px; align-items: start; padding: 8px 6px; border-radius: 10px; cursor: pointer; }
+.td-rows label:hover { background: rgba(241, 238, 252, .04); }
+.td-rows input { margin-top: 5px; accent-color: var(--brass); width: 16px; height: 16px; }
+.td-t { color: var(--brass-2); font: 600 14px/1.8 var(--mono); font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
+.td-x b { display: block; font-weight: 600; }
+.td-x small { color: var(--mist); font-size: 13px; line-height: 1.5; }
+.td-rows input:checked ~ .td-x { opacity: .5; text-decoration: line-through; }
+@media (max-width: 560px) { .td-card { padding: 18px 16px; } .td-times b { font-size: 24px; } }
