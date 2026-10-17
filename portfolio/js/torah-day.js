@@ -26,8 +26,11 @@
   var SEF = 'https://www.sefaria.org';
   function urlRef(ref) { return SEF + '/' + encodeURIComponent(String(ref).trim().replace(/ (\d)/, '.$1').replace(/:/g, '.').replace(/ /g, '_')).replace(/%2E/g, '.').replace(/%2C/g, ','); }
   var COMM = [
-    ['רש״י', 'Rashi on '], ['רמב״ן', 'Ramban on '], ['אבן עזרא', 'Ibn Ezra on '], ['ספורנו', 'Sforno on '], ['אור החיים', 'Or HaChaim on '], ['כלי יקר', 'Kli Yakar on '], ['רשב״ם', 'Rashbam on '], ['אונקלוס', 'Onkelos ']
+    ['רש״י', 'Rashi on '], ['רמב״ן', 'Ramban on '], ['אבן עזרא', 'Ibn Ezra on '], ['ספורנו', 'Sforno on '], ['אור החיים', 'Or HaChaim on '], ['כלי יקר', 'Kli Yakar on '],
+    ['רשב״ם', 'Rashbam on '], ['חזקוני', 'Chizkuni, '], ['בעל הטורים', 'Baal HaTurim on '], ['רבנו בחיי', 'Rabbeinu Bahya, '], ['אונקלוס', 'Onkelos ']
   ];
+  var BOOKS_HE = { Genesis: 'Bereshit', Exodus: 'Shemot', Leviticus: 'Vayikra', Numbers: 'Bamidbar', Deuteronomy: 'Devarim' };
+  function commRef(c, book, ref) { return c[1] + (c[1].indexOf('Bahya') >= 0 ? (BOOKS_HE[book] || book) : book) + ' ' + ref; }
   function flat(x, out) { out = out || []; if (Array.isArray(x)) x.forEach(function (y) { flat(y, out); }); else if (typeof x === 'string' && x.trim()) out.push(x); return out; }
   function plain(h) { var d = document.createElement('div'); d.innerHTML = h; return (d.textContent || '').replace(/\s+/g, ' ').trim(); }
   function sefText(ref) {
@@ -123,6 +126,10 @@
   var state = { sh: null, times: {}, daf: '' };
   var today = new Date();
 
+  // the weekday plan is the visitor's own: rows can be edited, added and removed (kept in this browser); Shabbat keeps the built-in plan
+  function customPlan() { try { var c = JSON.parse(store('plan') || 'null'); return Array.isArray(c) && c.length ? c : null; } catch (e) { return null; } }
+  var editing = false;
+
   function render() {
     var sh = state.sh, ref = sh && sh.leyning && sh.leyning.torah, pr = parseRef(ref);
     var pv = PROVERBS[dayOfYear(today) % PROVERBS.length];
@@ -141,36 +148,54 @@
       (sh && sh.link ? '<a href="' + esc(sh.link) + '" target="_blank" rel="noopener">עוד על הפרשה ↗</a>' : '') + '</div>' +
       '</article>';
 
-    var commCard = '<article class="td-card td-comm"><p class="eyebrow">פירושים וניסוחים</p><h3>מגדולי המפרשים</h3>' +
-      (pr ? '<div class="td-chips">' + COMM.map(function (c, i) { return '<a class="td-chip" href="' + urlRef(c[1] + pr.whole) + '" target="_blank" rel="noopener">' + esc(c[0]) + '</a>'; }).join('') + '</div>' +
-        '<button type="button" class="td-more" id="td-load">הציגו ניסוחים מהפסוק הראשון ומהתלמוד</button>' +
-        '<div class="td-snips" id="td-snips" aria-live="polite"></div>' : '<p class="td-muted">הפרשה עוד לא נטענה. נסו לרענן.</p>') +
-      '</article>';
-
     var provCard = '<article class="td-card td-proverb"><p class="eyebrow">פתגם יומי · יום ' + DAYS[dow] + '</p><blockquote>' + esc(pv[0]) + '</blockquote><cite>' + esc(pv[1]) + '</cite></article>';
 
-    var rows = planFor(today, Object.assign({}, state.times, { candles: sh && sh.candles }), state.daf, aliyah ? aliyah.replace(/-/g, ' – ') : '');
-    var key = 'done-' + ymd(today), done = {}; try { done = JSON.parse(store(key) || '{}') || {}; } catch (e) { done = {}; }
-    var planCard = '<article class="td-card td-plan"><p class="eyebrow">סדר יום · ' + CITIES[city][0] + '</p><h3>היום, יום ' + DAYS[dow] + '</h3><ol class="td-rows">' +
-      rows.map(function (r, i) { return '<li><label><input type="checkbox" data-i="' + i + '"' + (done[i] ? ' checked' : '') + '><span class="td-t">' + esc(r[0]) + '</span><span class="td-x"><b>' + esc(r[1]) + '</b><small>' + esc(r[2]) + '</small></span></label></li>'; }).join('') +
-      '</ol></article>';
+    var todayRef = aliyah && parseRef(aliyah);
+    var commCard = '<article class="td-card td-comm"><p class="eyebrow">פירושים וניסוחים</p><h3>מגדולי המפרשים</h3>' +
+      (pr ? '<div class="td-chips">' + COMM.map(function (c) { return '<a class="td-chip" href="' + urlRef(commRef(c, pr.book, pr.whole.replace(pr.book + ' ', ''))) + '" target="_blank" rel="noopener">' + esc(c[0]) + '</a>'; }).join('') + '</div>' +
+        '<div class="td-pick"><span>ניסוחים על:</span>' +
+          '<button type="button" class="td-more" data-v="' + esc(pr.book + ' ' + pr.start) + '">פסוק הפתיחה של הפרשה</button>' +
+          (todayRef ? '<button type="button" class="td-more" data-v="' + esc(todayRef.book + ' ' + todayRef.start) + '">קריאת היום (' + esc(todayRef.start.replace(':', ', ')) + ')</button>' : '') +
+        '</div><div class="td-snips" id="td-snips" aria-live="polite"></div>' : '<p class="td-muted">הפרשה עוד לא נטענה. נסו לרענן.</p>') +
+      '</article>';
 
-    $('#td-grid').innerHTML = parshaCard + provCard + commCard + planCard;
+    var base = planFor(today, Object.assign({}, state.times, { candles: sh && sh.candles }), state.daf, aliyah ? aliyah.replace(/-/g, ' – ') : '');
+    var custom = dow !== 6 ? customPlan() : null;
+    var rows = custom || base;
+    var key = 'done-' + ymd(today), done = {}; try { done = JSON.parse(store(key) || '{}') || {}; } catch (e) { done = {}; }
+    var list = editing
+      ? rows.map(function (r, i) { return '<li class="td-edit" data-i="' + i + '"><input class="e-t" value="' + esc(r[0]) + '" placeholder="שעה" aria-label="שעה"><input class="e-x" value="' + esc(r[1]) + '" placeholder="מה עושים" aria-label="פעילות"><input class="e-n" value="' + esc(r[2]) + '" placeholder="הערה" aria-label="הערה"><button type="button" class="e-d" aria-label="מחיקה">✕</button></li>'; }).join('') + '<li><button type="button" class="td-more" id="td-add">+ שורה</button></li>'
+      : rows.map(function (r, i) { return '<li><label><input type="checkbox" data-i="' + i + '"' + (done[i] ? ' checked' : '') + '><span class="td-t">' + esc(r[0]) + '</span><span class="td-x"><b>' + esc(r[1]) + '</b><small>' + esc(r[2]) + '</small></span></label></li>'; }).join('');
+    var planCard = '<article class="td-card td-plan"><p class="eyebrow">סדר יום · ' + CITIES[city][0] + '</p><h3>היום, יום ' + DAYS[dow] + '</h3><ol class="td-rows">' + list + '</ol>' +
+      (dow !== 6 ? '<div class="td-planbar">' + (editing ? '<button type="button" class="td-more" id="td-save">שמירה</button><button type="button" class="td-link" id="td-reset">חזרה לברירת המחדל</button>' : '<button type="button" class="td-more" id="td-editbtn">עריכת סדר היום</button>') + '</div>' : '') +
+      '</article>';
+
+    $('#td-grid').innerHTML = '<div class="td-col">' + parshaCard + provCard + '</div><div class="td-col">' + commCard + '</div><div class="td-col">' + planCard + '</div>';
 
     $('#td-city').addEventListener('change', function (e) { city = e.target.value; store('city', city); load(); });
-    Array.prototype.forEach.call(root.querySelectorAll('.td-rows input'), function (cb) {
+    Array.prototype.forEach.call(root.querySelectorAll('.td-rows input[type=checkbox]'), function (cb) {
       cb.addEventListener('change', function () { done[cb.dataset.i] = cb.checked ? 1 : 0; store(key, JSON.stringify(done)); });
     });
-    var more = $('#td-load'); if (more && pr) more.addEventListener('click', function () { more.disabled = true; more.textContent = 'טוען…'; loadSnips(pr); });
+    Array.prototype.forEach.call(root.querySelectorAll('.td-pick .td-more'), function (btn) {
+      btn.addEventListener('click', function () { Array.prototype.forEach.call(root.querySelectorAll('.td-pick .td-more'), function (x) { x.classList.remove('on'); }); btn.classList.add('on'); loadSnips(pr, btn.dataset.v); });
+    });
+    function collect() { return Array.prototype.map.call(root.querySelectorAll('.td-edit'), function (li) { return [$('.e-t', li).value.trim(), $('.e-x', li).value.trim(), $('.e-n', li).value.trim()]; }).filter(function (r) { return r[1]; }); }
+    var eb = $('#td-editbtn'); if (eb) eb.addEventListener('click', function () { if (!custom) store('plan', JSON.stringify(base)); editing = true; render(); });
+    var sv = $('#td-save'); if (sv) sv.addEventListener('click', function () { var c = collect(); if (c.length) store('plan', JSON.stringify(c)); editing = false; render(); });
+    var rs = $('#td-reset'); if (rs) rs.addEventListener('click', function () { try { localStorage.removeItem('td-plan'); } catch (e) {} editing = false; render(); });
+    var ad = $('#td-add'); if (ad) ad.addEventListener('click', function () { var c = collect(); c.push(['', '', '']); store('plan', JSON.stringify(c.length ? c : base)); render(); });
+    Array.prototype.forEach.call(root.querySelectorAll('.e-d'), function (x) { x.addEventListener('click', function () { var li = x.closest('li'), c = collect(); c.splice(Number(li.dataset.i), 1); store('plan', JSON.stringify(c)); render(); }); });
   }
 
-  // first-verse wording of the leading commentators, and Talmud passages that cite the verse
-  function loadSnips(pr) {
-    var box = $('#td-snips'), verse = pr.book + ' ' + pr.start;
-    var calls = COMM.slice(0, 6).map(function (c) {
-      return sefText(c[1] + verse).then(function (r) { return r.text ? { who: c[0], text: r.text, href: urlRef(c[1] + verse) } : null; }).catch(function () { return null; });
+  // wording of the commentators on a verse (the portion's first verse, or the first verse of today's reading) and Talmud passages that cite it
+  function loadSnips(pr, verse) {
+    var box = $('#td-snips'), vref = verse.replace(/^(\S+(?: \S+)*?) (\d+:\d+).*$/, '$1|$2').split('|'), book = vref[0], at = vref[1] || pr.start;
+    box.innerHTML = '<p class="td-muted">טוען מספריא…</p>';
+    var calls = COMM.slice(0, 10).map(function (c) {
+      var ref = commRef(c, book, at);
+      return sefText(ref).then(function (r) { return r.text ? { who: c[0], text: r.text, href: urlRef(ref) } : null; }).catch(function () { return null; });
     });
-    var talmud = getJSON(SEF + '/api/related/' + encodeURIComponent(pr.book + '.' + pr.start.replace(':', '.')), 12000).then(function (j) {
+    var talmud = getJSON(SEF + '/api/related/' + encodeURIComponent(book + '.' + at.replace(':', '.')), 12000).then(function (j) {
       var seen = {}, out = [];
       (j.links || []).forEach(function (l) {
         if (l.category !== 'Talmud') return;
@@ -178,14 +203,15 @@
         var k = ref.replace(/:\d+.*$/, ''); if (seen[k]) return; seen[k] = 1;
         out.push({ ref: ref, he: l.sourceHeRef || l.heRef || ref });
       });
-      return out.slice(0, 3);
+      out = out.slice(0, 6);
+      return Promise.all(out.map(function (x) { return sefText(x.ref).then(function (r) { x.text = r.text; return x; }).catch(function () { return x; }); }));
     }).catch(function () { return []; });
     Promise.all([Promise.all(calls), talmud]).then(function (res) {
       var comms = res[0].filter(Boolean), tal = res[1];
-      var html = comms.map(function (c) { return '<div class="td-snip"><b>' + esc(c.who) + '</b><p>' + esc(c.text.length > 300 ? c.text.slice(0, 300).replace(/\s\S*$/, '') + '…' : c.text) + '</p><a href="' + c.href + '" target="_blank" rel="noopener">לפירוש המלא ↗</a></div>'; }).join('');
-      if (tal.length) html += '<div class="td-snip td-tal"><b>מהתלמוד · על פסוק הפתיחה</b><ul>' + tal.map(function (x) { return '<li><a href="' + urlRef(x.ref) + '" target="_blank" rel="noopener">' + esc(x.he) + ' ↗</a></li>'; }).join('') + '</ul></div>';
+      function cut(t, n) { return t.length > n ? t.slice(0, n).replace(/\s\S*$/, '') + '…' : t; }
+      var html = comms.map(function (c) { return '<div class="td-snip"><b>' + esc(c.who) + '</b><p>' + esc(cut(c.text, 300)) + '</p><a href="' + c.href + '" target="_blank" rel="noopener">לפירוש המלא ↗</a></div>'; }).join('');
+      if (tal.length) html += '<div class="td-snip td-tal"><b>מהתלמוד</b>' + tal.map(function (x) { return '<div class="td-tl"><a href="' + urlRef(x.ref) + '" target="_blank" rel="noopener">' + esc(x.he) + ' ↗</a>' + (x.text ? '<p>' + esc(cut(x.text, 220)) + '</p>' : '') + '</div>'; }).join('') + '</div>';
       box.innerHTML = html || '<p class="td-muted">לא הצלחתי להביא את הטקסטים כרגע. הקישורים למעלה פותחים אותם בספריא.</p>';
-      var b = $('#td-load'); if (b) b.remove();
     });
   }
 
@@ -197,7 +223,11 @@
     ]).then(function (r) { state.sh = r[0]; state.times = r[1] || {}; state.daf = r[2] || ''; render(); });
   }
 
-  root.innerHTML = '<div class="wrap"><header class="sec-head"><p class="eyebrow">תורה ויום</p><h2>הפרשה, הפתגם וסדר היום</h2></header><div class="td-grid" id="td-grid"><p class="td-muted">טוען…</p></div></div>';
+  var shut = store('shut') === '1';
+  root.innerHTML = '<div class="wrap"><header class="sec-head td-head"><div><p class="eyebrow">תורה ויום</p><h2>הפרשה, הפתגם וסדר היום</h2></div><button type="button" class="td-link" id="td-toggle" aria-expanded="' + (!shut) + '">' + (shut ? 'הצגה' : 'הסתרה') + '</button></header><div class="td-grid" id="td-grid"' + (shut ? ' hidden' : '') + '><p class="td-muted">טוען…</p></div></div>';
+  $('#td-toggle').addEventListener('click', function () {
+    shut = !shut; store('shut', shut ? '1' : '0'); $('#td-grid').hidden = shut; this.textContent = shut ? 'הצגה' : 'הסתרה'; this.setAttribute('aria-expanded', String(!shut));
+  });
   render(); // instant: the proverb and the day plan do not need the network
   load();
 })();

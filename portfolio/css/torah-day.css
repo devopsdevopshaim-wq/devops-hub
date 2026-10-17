@@ -1,6 +1,10 @@
 /* "תורה ויום": the weekly portion, commentaries, daily proverb and day plan */
 #torah-day { padding-block: clamp(40px, 6vw, 72px); }
-.td-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 18px; align-items: start; }
+.td-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 18px; align-items: start; }
+.td-grid[hidden] { display: none; }
+.td-col { display: grid; gap: 18px; min-width: 0; }
+.td-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
+.td-link { background: none; border: 0; color: var(--mist); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; padding: 6px 4px; }
 .td-card { position: relative; padding: 22px 22px 20px; border: 1px solid var(--line-2); border-radius: 18px; background: linear-gradient(160deg, rgba(30, 26, 74, .72), rgba(15, 13, 36, .72)); box-shadow: 0 18px 40px -26px rgba(0, 0, 0, .8); }
 .td-card .eyebrow { margin-bottom: 8px; }
 .td-card h3 { margin: 0 0 10px; font: 400 clamp(26px, 3vw, 34px)/1.1 var(--display); color: var(--porcelain); }
@@ -15,6 +19,18 @@
 .td-links, .td-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .td-links a, .td-chip { display: inline-block; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--porcelain); text-decoration: none; font-size: 14px; background: rgba(241, 238, 252, .04); transition: background .2s, border-color .2s; }
 .td-links a:hover, .td-chip:hover { background: rgba(224, 178, 90, .14); border-color: var(--brass); }
+.td-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; color: var(--mist); font-size: 14px; }
+.td-pick .td-more { margin-top: 0; padding: 8px 14px; font-size: 14px; }
+.td-more.on { background: rgba(224, 178, 90, .18); }
+.td-planbar { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+.td-planbar .td-more { margin-top: 0; }
+.td-edit { display: grid; grid-template-columns: 62px 1fr 28px; gap: 6px; padding: 6px 0; }
+.td-edit input { background: rgba(15, 13, 36, .8); color: var(--porcelain); border: 1px solid var(--line-2); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 14px; min-width: 0; }
+.td-edit .e-t { grid-row: span 2; direction: ltr; text-align: center; }
+.td-edit .e-n { grid-column: 2; color: var(--mist); }
+.td-edit .e-d { grid-column: 3; grid-row: 1 / span 2; background: none; border: 0; color: var(--mist); cursor: pointer; }
+.td-tl { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.td-tl p { margin: 4px 0 0; font-size: 15px; line-height: 1.65; font-family: 'Frank Ruhl Libre', var(--body), serif; }
 .td-more { margin-top: 14px; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--brass); background: transparent; color: var(--brass-2); font: inherit; cursor: pointer; }
 .td-more:disabled { opacity: .6; cursor: progress; }
 .td-snips { margin-top: 14px; display: grid; gap: 12px; max-height: 560px; overflow-y: auto; padding-inline-end: 4px; }
