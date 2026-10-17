@@ -1,7 +1,115 @@
 {
- "updatedAt": "2026-10-17T18:54:10.630Z",
+ "updatedAt": "2026-10-17T22:22:25.386Z",
  "feeds": {
   "main": [
+   {
+    "title": "ינון מגל: \"איזנקוט - קוף שמאחוריו אשכנזים אליטיסטים\"",
+    "link": "https://www.ynet.co.il/news/elections2026/article/r1600dsz2ze",
+    "source": "ynet",
+    "at": "2026-10-17T22:08:30.000Z"
+   },
+   {
+    "title": "תיעוד חריג מצרפת: בניין העירייה המפואר עלה באש וקרס; \"לוחמת גרילה\" ליד האליזה, קשישים נשדדו ונותרו בתחתונים",
+    "link": "https://www.ynet.co.il/news/article/rjtbabzhzg",
+    "source": "ynet",
+    "at": "2026-10-17T21:51:01.000Z"
+   },
+   {
+    "title": "דיפלומט שהשתתף במסיק: \"הפורעים בעטו בראש העיר וצעקו 'ויוה לה פראנס'\"",
+    "link": "https://www.ynet.co.il/news/article/ryftoe11hml",
+    "source": "ynet",
+    "at": "2026-10-17T21:39:56.000Z"
+   },
+   {
+    "title": "לא רק איראן: צה\"ל העלה כוננות כפולה בצפון | פרסום ראשון",
+    "link": "https://www.maariv.co.il/news/military/article-1378245",
+    "source": "מעריב",
+    "at": "2026-10-17T21:11:03.000Z"
+   },
+   {
+    "title": "הרבנים החלו לקרוא להצביע ג', האדמו\"ר מגור יצטרף: \"הצבעה אחרת - חילול השם\"",
+    "link": "https://www.ynet.co.il/news/elections2026/article/h1pouub3zl",
+    "source": "ynet",
+    "at": "2026-10-17T21:04:34.000Z"
+   },
+   {
+    "title": "עופר וינטר ממשיך לתקוף: \"שלמה פילבר מקבל כסף מקמפיין הליכוד\"",
+    "link": "https://www.maariv.co.il/news/elections-2026/article-1378243",
+    "source": "מעריב",
+    "at": "2026-10-17T20:41:45.000Z"
+   },
+   {
+    "title": "מתוך המשטרה: שוטרת ברהט חשודה בהעברת מידע לעבריינים",
+    "link": "https://www.walla.co.il/news/israel/383957817",
+    "source": "וואלה",
+    "at": "2026-10-17T20:08:32.000Z"
+   },
+   {
+    "title": "צרורות ירי בזמן נאום סמוטריץ' בלוד - והתושבים זועמים: \"מי יבוא לפה?\"",
+    "link": "https://www.ynet.co.il/news/elections2026/article/skzvhrznml",
+    "source": "ynet",
+    "at": "2026-10-17T20:02:11.000Z"
+   },
+   {
+    "title": "ינון מגל על איזנקוט: \"הוא קוף, מזרחי-מרוקאי שמאחוריו כל האשכנזים האליטיסטים מנהלים אותו\"",
+    "link": "https://news.google.com/rss/articles/CBMiR0FVX3lxTE45TXA5ZUprT3h4Qk5HSGlCX2VkVVhWdk04bk03Y2FuZURKMldZQzJJakVaTko5QWNObV8zbXdQZGc4MndFOHV3?oc=5",
+    "source": "אתר החדשות דבר",
+    "at": "2026-10-17T19:39:00.000Z"
+   },
+   {
+    "title": "\"הוא קוף, מרוקאי\": ינון מגל השתלח באיזנקוט - שלא נשאר חייב",
+    "link": "https://www.walla.co.il/news/israel/383957813",
+    "source": "וואלה",
+    "at": "2026-10-17T19:33:29.000Z"
+   },
+   {
+    "title": "לעיני החיילים: פורעים גנבו עדר כבשים מפלסטינים - ועזבו | תיעוד",
+    "link": "https://www.ynet.co.il/news/article/byh5nhzhzg",
+    "source": "ynet",
+    "at": "2026-10-17T19:33:19.000Z"
+   },
+   {
+    "title": "ינון מגל השתלח באיזנקוט: \"קוף\"; במפלגה הגיבו: \"עם ישראל יבחר בבן לעולים ממרוקו\"",
+    "link": "https://www.maariv.co.il/news/elections-2026/article-1378220",
+    "source": "מעריב",
+    "at": "2026-10-17T19:23:21.000Z"
+   },
+   {
+    "title": "הטייס הגיבור מפליי דובאי התראיין לראשונה: \"פתאום קיבלתי מכה חזקה בראש\"",
+    "link": "https://www.ynet.co.il/news/article/s1tmqvw2ml",
+    "source": "ynet",
+    "at": "2026-10-17T19:19:14.000Z"
+   },
+   {
+    "title": "דיפלומט שהשתתף במסיק: \"הפורעים בעטו בראש העיר. הצהרת נתניהו מזעזעת\"",
+    "link": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE03NHVTRGNYS3RuVFowV1VReUtGcmU0eVpBR0ZZbVkyVHV2U3dUNEw1bkY4R0dIS3VZbDNNQk5vc3VNdUNFMUIzUVdDMVAtWnh1VXRpSGtrT1QySDA?oc=5",
+    "source": "YNET",
+    "at": "2026-10-17T19:17:54.000Z"
+   },
+   {
+    "title": "עולם השקר: הבחירות הללו הן לא רק על \"כן ביבי, לא ביבי\"",
+    "link": "https://www.walla.co.il/news/opinions/383957808",
+    "source": "וואלה",
+    "at": "2026-10-17T19:07:30.000Z"
+   },
+   {
+    "title": "סערה בימין בעקבות דברי השגריר: \"נתניהו מתכנן ממשלה עם איזנקוט, בלי בן גביר\"",
+    "link": "https://www.maariv.co.il/news/politics/article-1378212",
+    "source": "מעריב",
+    "at": "2026-10-17T19:05:48.000Z"
+   },
+   {
+    "title": "נתניהו על הפרעות ביו\"ש: האשמות חמורות מחייבות ראיות מוצקות",
+    "link": "https://www.walla.co.il/news/israel/383957802",
+    "source": "וואלה",
+    "at": "2026-10-17T19:00:00.000Z"
+   },
+   {
+    "title": "דיווח: מתנגדי נתניהו מהדקים קשרים עם טראמפ",
+    "link": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE1fc2FTdU54RGY1SC11endscXZNSGZnbTIzTmg2QVNNbjdsd3lYS3NaaG14aHNScW1Wa0daRmxHQ3JEWnJNNXdCQQ?oc=5",
+    "source": "ערוץ 7",
+    "at": "2026-10-17T18:43:00.000Z"
+   },
    {
     "title": "\"אדם שמחכה 5 שנים לצדק מאבד תקווה\": המהפכה האמיתית שצריכה מערכת המשפט",
     "link": "https://www.ynet.co.il/news/article/yokra14922074",
@@ -13,6 +121,12 @@
     "link": "https://sports.walla.co.il/item/3872574",
     "source": "וואלה",
     "at": "2026-10-17T18:26:00.000Z"
+   },
+   {
+    "title": "250 מיליון דולר לאוניברסיטה העברית: התרומה הגדולה בתולדותיה",
+    "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTE53QXg5Y0ZWSFdpUE5FZmVLbk9pbTNrYm14QjAxRlV5MkJFWGd6MmR2NFVCMWdwWkNQc2wyUmUwOWpSbnBuSUZIWF85MHBfc1MwTGJPNnZrXy0wS1VQc3pONGNNcjJfY0dGMFJCU3pn?oc=5",
+    "source": "YNET",
+    "at": "2026-10-17T18:20:54.000Z"
    },
    {
     "title": "התמונה המפלילה? הטענות מאחורי הפנדל המכריע של הפועל ת\"א",
@@ -31,12 +145,6 @@
     "link": "https://www.maariv.co.il/news/elections-2026/article-1378195",
     "source": "מעריב",
     "at": "2026-10-17T18:14:07.000Z"
-   },
-   {
-    "title": "״סולידריות עם ישראל״: המיליארדר ג׳ון פולסון מכריז על תרומת ענק לאוניברסיטה העברית",
-    "link": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5yMDJJTlRob2Y5VTEyT1dQUkZMYi1SLXZWWUpwT09ZTUlOWEpGWUJ2U0FJX1MtY1d6ZW5wYk9acEFPX3BhZjlVcUJUVi1LRWItTDRpeTRfUWN2eFN2RGlNQ0M5ZkY3WjNs?oc=5",
-    "source": "גלובס",
-    "at": "2026-10-17T17:53:13.000Z"
    },
    {
     "title": "שיא לאוניברסיטה העברית: המשקיע ג'ון פולסון תורם סכום היסטורי",
@@ -69,118 +177,10 @@
     "at": "2026-10-17T17:09:20.000Z"
    },
    {
-    "title": "רה\"מ על האירוע ביו\"ש: האשמות חמורות מחייבות ראיות מוצקות",
-    "link": "https://www.walla.co.il/news/israel/383957802",
-    "source": "וואלה",
-    "at": "2026-10-17T17:08:04.000Z"
-   },
-   {
     "title": "יפהפה: צפו בצמח שהתגלה, ונקרא על שמו של מסי",
     "link": "https://sports.walla.co.il/item/3872568",
     "source": "וואלה",
     "at": "2026-10-17T17:05:00.000Z"
-   },
-   {
-    "title": "מחנה השינוי, בכסיות משי לא תנצחו את נתניהו. רק כפפות אגרוף יעבדו מולו",
-    "link": "https://news.google.com/rss/articles/CBMirwFBVV95cUxQaVZEd2ZkM2lYNGFsY21NaTdKRGxZZnZ0VnhpVWhNQ1IzOXN5aC1ZWDVST2FRdEcwTkFkUTZxek5kRTlHbDNTbmJadGFtcXAtWWxaRnEwNGZXcUgwaDlGa0Q2bWFJb20xYTItZlBjeTliOHBjYWRVdXFMSUVLN2pyeTY3a0loWDV5OUdZdDlSVVU3a2JNZ1h1ZUpRdVNBMEpkS0NINDcxek04VkFCZGd3?oc=5",
-    "source": "הארץ",
-    "at": "2026-10-17T17:00:00.000Z"
-   },
-   {
-    "title": "מראות מלחמה בערי צרפת: \"קרב\" במרסיי, ביזה נרחבת, בנייני ממשלה הותקפו ונשרפו",
-    "link": "https://www.ynet.co.il/news/article/hj1tf0ghfl",
-    "source": "ynet",
-    "at": "2026-10-17T16:45:10.000Z"
-   },
-   {
-    "title": "חשש מסנקציות: צה\"ל ושר החוץ גינו \"פורעים ישראלים\", נתניהו פקפק בתקיפת הדיפלומטים",
-    "link": "https://www.ynet.co.il/news/article/ryxcizbnfl",
-    "source": "ynet",
-    "at": "2026-10-17T16:14:35.000Z"
-   },
-   {
-    "title": "דורסת: עוד חמישייה לברצלונה אחרי משחק סוער בספרד",
-    "link": "https://sports.walla.co.il/item/3872357",
-    "source": "וואלה",
-    "at": "2026-10-17T16:14:00.000Z"
-   },
-   {
-    "title": "ליברמן מכוון לבחירות חוזרות בלי נתניהו: \"נדיח את אוחנה ונעביר את חוק הנאשם\"",
-    "link": "https://www.ynet.co.il/news/elections2026/article/rjlxogzhmx",
-    "source": "ynet",
-    "at": "2026-10-17T16:08:29.000Z"
-   },
-   {
-    "title": "צה\"ל חיסל ארבעה מחבלי חמאס בעזה, בהם מחבל שפשט ב-7 באוקטובר",
-    "link": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBJdTBxMy1hV3JsUUp5Z0YxaDlIbE5hQTBhUkZTaVBEMk13WHc1WWo4NnFxSkViSEttc05ZOVd4ZFpYbmRMQVhMWFR4azFEdFJTRXVYXzYzQVJYQTd3b09CUGJ1b3VLZGfSAW9BVV95cUxQbkx0SVlOOWdTazk2WWhUS1U3QXdfTWhPdnFKUHE2M3p6cFRnNlotV3MyRW4wUzFyVzdZanQ4MVRrbE0wUlh5N2M0bkI1Y2xnVENHcHJNNkc4VFk4d05GbDFMR2E5NXJiaGtlYnBHQmM?oc=5",
-    "source": "היום",
-    "at": "2026-10-17T16:06:33.000Z"
-   },
-   {
-    "title": "טראמפ: ישראל סייעה במלחמה נגד החותים, הסכמי אברהם עם סעודיה שוב על השולחן",
-    "link": "https://news.google.com/rss/articles/CBMiSEFVX3lxTFAzV0NCRjU4Yi00R0dXXy1TWjVWSHYzTG5UbjlrblpreGJPT1FyTFdQOVpoOWNxblBTYlhoNWtqeV80azNQNmFFMg?oc=5",
-    "source": "ערוץ 7",
-    "at": "2026-10-17T15:49:07.000Z"
-   },
-   {
-    "title": "המסר של טראמפ לסעודיה, השיא השלילי בבית הלבן והתקיפות ביו\"ש | סיכום השבת",
-    "link": "https://www.maariv.co.il/news/israel/article-1378118",
-    "source": "מעריב",
-    "at": "2026-10-17T15:45:34.000Z"
-   },
-   {
-    "title": "פורעים יהודים תקפו דיפלומטים אירופיים, מראות מלחמה בצרפת ודרמה בבית הלבן",
-    "link": "https://www.ynet.co.il/news/article/bjnmlwb2ge",
-    "source": "ynet",
-    "at": "2026-10-17T15:41:28.000Z"
-   },
-   {
-    "title": "איראן מתקשה לשלם, חמאס ממשיך להרוויח | חדשות סוף השבוע 17.10.26",
-    "link": "https://news.google.com/rss/articles/CBMifkFVX3lxTE1KMXFLMUpYNnBCQ3B5YmpVR3dXbFhGZ1F1UkdGNXp1dTJmZHYydjVlQ2NaU3otN2Zfd3pYblVlZjlMMWpsWFZycVQ0YlY2dEM0TE5fSzYtZkx0TTc5SzlKUERNSF84QUZSdWdBb1RjZDVWVElRYUVQSWZLWUp1UQ?oc=5",
-    "source": "mako",
-    "at": "2026-10-17T15:40:00.000Z"
-   },
-   {
-    "title": "לאחר הירי בנגמ\"ש: ליברמן משנה כיוון - ומעביר מסר מפתיע",
-    "link": "https://www.walla.co.il/news/politics/383957788",
-    "source": "וואלה",
-    "at": "2026-10-17T15:21:45.000Z"
-   },
-   {
-    "title": "התמונות שצילמה היידי לוין בישראל - וההתנצלות של הרצוג: \"זה בזוי, התייסרתי\"",
-    "link": "https://www.ynet.co.il/news/article/hyl7y11w3fx",
-    "source": "ynet",
-    "at": "2026-10-17T15:10:27.000Z"
-   },
-   {
-    "title": "צרפת בלהבות: בית העירייה נפרץ, תחנת המשטרה הותקפה",
-    "link": "https://www.maariv.co.il/news/world/article-1378125",
-    "source": "מעריב",
-    "at": "2026-10-17T14:43:17.000Z"
-   },
-   {
-    "title": "המפלגה הדמוקרטית מתרחקת מישראל: מורשת אובמה, שינוי אידאולוגי ומשבר הברית ההיסטורית | ד\"ר איתן לסרי",
-    "link": "https://www.maariv.co.il/news/opinions/article-1378134",
-    "source": "מעריב",
-    "at": "2026-10-17T14:35:39.000Z"
-   },
-   {
-    "title": "עם אף ארוך, על הרצועה של ישראל: קמפיין נרחב נגד נשיא אזרבייג'ן",
-    "link": "https://www.ynet.co.il/news/article/rknhtl11nml",
-    "source": "ynet",
-    "at": "2026-10-17T14:12:01.000Z"
-   },
-   {
-    "title": "המשט החדש לעזה נעצר: אלו הסיבות שהביאו לביטול ההפלגה",
-    "link": "https://www.walla.co.il/news/world/383957782",
-    "source": "וואלה",
-    "at": "2026-10-17T14:10:45.000Z"
-   },
-   {
-    "title": "כוכב העל אחרי ניתוח המוח: \"אני לא יכול להופיע\"",
-    "link": "https://e.walla.co.il/item/3872555",
-    "source": "וואלה",
-    "at": "2026-10-17T14:00:00.000Z"
    }
   ],
   "tech": [
@@ -188,13 +188,7 @@
     "title": "5 שנים להיעלמותו של מוישי קליינרמן: המשפחה מטיחה האשמות קשות במשטרה",
     "link": "https://news.google.com/rss/articles/CBMiS0FVX3lxTFBnZV80QzBzaktEQkJUMGNwT25nb3kteFRpS21iUl9uX0xBU2RvWE1sRFdWa3hHNmhwd2R0ajNaclBOS3RpUEU4X0lYSQ?oc=5",
     "source": "JDN",
-    "at": "2026-10-17T17:59:50.000Z"
-   },
-   {
-    "title": "האם דווקא הבינה המלאכותית תהיה זו שתחזיר את היוקרה לאוניברסיטאות?",
-    "link": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE9WZHlKc09WWW1pakpHQ1dWME94V0pIZ3V0WGtsc3pWZ0o2cGxVSzNQMlJudExCUXB6NzVyR3lMeXJMZUJHamV2emF3YW5STlZXMXU1ODdycXBWQXdOU3RFZ2Eza1lWaFA3?oc=5",
-    "source": "גלובס",
-    "at": "2026-10-17T16:04:33.000Z"
+    "at": "2026-10-17T18:02:32.000Z"
    },
    {
     "title": "3 אירועי טכנולוגיה שיהפכו את סוכני ה-AI שלכם להרבה יותר חזקים",
@@ -228,9 +222,9 @@
    },
    {
     "title": "פוטושופ ו-Word בחינם: השבוע שהרעיד את חברות התוכנה (ומה אומר החוק?)",
-    "link": "https://www.geektime.co.il/the-saaspocalypse-might-be-here/",
+    "link": "https://news.google.com/rss/articles/CBMia0FVX3lxTE5TRFFmeHBLVW80RWRmWmJVSzBtNV9MOTZkY0lnWEoyOEhLeFQ5WkJPblRpckdkVDJqZm1aUUVpQklLRndIZUpCNThKeHZKcHR1bDF5RGVwOXE2bVk0eVJLdUFGZHlpX3N5Z1VF?oc=5",
     "source": "גיקטיים",
-    "at": "2026-10-17T07:55:16.000Z"
+    "at": "2026-10-17T08:01:39.000Z"
    },
    {
     "title": "טלטלה במאנדיי: שורת מנהלים בכירים עוזבים את חברת התוכנה",
@@ -277,7 +271,7 @@
    {
     "title": "בלי עובדים ועם יותר מ-400 לקוחות: יהב בנה חברה שמכניסה יותר ממיליון דולר בשנה",
     "link": "https://news.google.com/rss/articles/CBMic0FVX3lxTE9MX2NpRm0tb2RqaXNmZXc5cWhGNVFFN0hHMEtQc1NONVBTU2pNMXFNd0h1Skp6RWY0YWhuc041c2dhWDlEZjI3eklxMlZCUWRMQ0VGWXpwZE9wRDh1QlBrcHhsdjl4WUwyRG1vQjJKNUk3Tlk?oc=5",
-    "source": "mako",
+    "source": "Mako",
     "at": "2026-10-16T03:00:00.000Z"
    },
    {
