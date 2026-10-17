@@ -1,0 +1,42 @@
+{
+  "name": "פריים־סטודיו — מגנטים לאירועים",
+  "short_name": "פריים־סטודיו",
+  "start_url": "studio.html",
+  "scope": "./",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "he",
+  "background_color": "#100b1e",
+  "theme_color": "#1d1633",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "studio.html",
+      "accept": {
+        "image/*": [
+          ".jpg",
+          ".jpeg",
+          ".png",
+          ".webp"
+        ]
+      }
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "אתר העסק",
+      "url": "./"
+    },
+    {
+      "name": "הסטודיו",
+      "url": "studio.html"
+    }
+  ]
+}

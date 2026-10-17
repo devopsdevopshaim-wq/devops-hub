@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ארון־פלאן — חיווט והרכבת ארון פיקוד</title>
+<meta name="description" content="מעלים תכנית חיווט ב-PDF ומקבלים את כל החוטים של ארון הפיקוד: מאיפה לאיפה, צבע, חתך, סוג חוט, שרוול, אורך והסבר לכל חוט. פריסת ארון, חיווט שלב אחר שלב, תכנית הרכבה, בדיקות ותיק חיווט להדפסה.">
+<meta name="theme-color" content="#2b3035">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232b3035'/%3E%3Crect x='8' y='5' width='16' height='22' rx='1.5' fill='none' stroke='%23e9ebe8' stroke-width='1.8'/%3E%3Cpath d='M12 10h4v5h5M12 19h9' fill='none' stroke='%23c4743a' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../portfolio/css/mobile.css">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="../portfolio/css/future.css">
+<script src="../portfolio/js/future.js" defer></script>
+<script>window.CLAUDE_APP = 'https://claude.ai/artifact/JxrsPNHAUZsM9C2kBNHNwk';</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+} }
+</script>
+<script src="js/catalog.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/parts.js"></script>
+<script src="js/split.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/prompts.js"></script>
+<script src="js/demo.js"></script>
+<script src="js/library/plan-208b.js"></script>
+<script src="js/site.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#home" aria-label="ארון־פלאן — לדף הבית">
+      <span class="plate" aria-hidden="true">
+        <svg class="brand-mark" viewBox="0 0 32 32"><rect x="8" y="4" width="16" height="24" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 10h4v5h5M12 20h9" fill="none" stroke="var(--copper-hi)" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">ארון־פלאן</span>
+        <span class="brand-tag">חיווט והרכבת ארונות פיקוד</span>
+      </span>
+    </a>
+    <div class="top-actions">
+      <span class="ai-badge" id="aiBadge" role="status">בודק חיבור…</span>
+      <a class="btn on-dark ghost small" href="#home">הפרויקטים</a>
+      <label class="btn small" for="pdfInputTop"><span><span class="long">תכנית </span>PDF<span class="long"> חדשה</span><span class="short-only" aria-hidden="true"> +</span></span></label>
+      <input type="file" id="pdfInputTop" multiple accept="application/pdf,.pdf,.json" hidden>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs" aria-label="שלבי העבודה" hidden>
+    <div class="tabs-inner">
+      <a class="site-back" id="siteBack" href="#home" hidden></a>
+      <select class="cab-switch" id="cabSwitch" aria-label="מעבר לארון אחר באתר" hidden></select>
+      <strong class="proj-title" id="projTitle"></strong>
+      <ol class="strip">
+        <li><a href="#p/plan" data-tab="plan"><span class="num">1</span><span class="t">תכנית</span></a></li>
+        <li><a href="#p/parts" data-tab="parts"><span class="num">2</span><span class="t">רכיבים</span></a></li>
+        <li><a href="#p/wires" data-tab="wires"><span class="num">3</span><span class="t">רשימת חוטים</span></a></li>
+        <li><a href="#p/cabinet" data-tab="cabinet"><span class="num">4</span><span class="t">פריסת ארון</span></a></li>
+        <li><a href="#p/conn" data-tab="conn"><span class="num">5</span><span class="t">חיבורים ומהדקים</span></a></li>
+        <li><a href="#p/three" data-tab="three"><span class="num">6</span><span class="t">ארון בתלת־ממד</span></a></li>
+        <li><a href="#p/wiring" data-tab="wiring"><span class="num">7</span><span class="t">חיווט שלב אחר שלב</span></a></li>
+        <li><a href="#p/assembly" data-tab="assembly"><span class="num">8</span><span class="t">הרכבה ובדיקות</span></a></li>
+        <li><a href="#p/lab" data-tab="lab"><span class="num">9</span><span class="t">מעבדה</span></a></li>
+        <li><a href="#p/export" data-tab="export"><span class="num">10</span><span class="t">הדפסה והגדרות</span></a></li>
+      </ol>
+      <span class="progress-pill" id="progressPill" title="חוטים שסומנו כמחוברים"></span>
+    </div>
+  </nav>
+  <div class="busy-bar" id="busyBar" role="status" aria-live="polite" hidden><div class="busy-track"><span id="busyFill"></span></div><span id="busyText"></span></div>
+</header>
+
+<main id="main">
+  <!-- ===== דף הבית ===== -->
+  <section class="view" id="v-home" data-view="home">
+    <div class="showroom">
+      <div class="sr-inner">
+        <div class="sr-copy">
+          <p class="eyebrow">ארונות פיקוד · IEC 60204-1</p>
+          <h1>מתכנית החיווט לארון מחווט, <span class="cu">חוט אחרי חוט.</span></h1>
+          <p class="lead">מעלים את ה-PDF של תכנית החשמל. המערכת בונה ממנו את כל החוטים בארון, משבצת חלקים אמיתיים, בודקת שהכל תקין ומפעילה את הלוח בהדמיה.</p>
+          <dl class="specs">
+            <div><dt>מאיפה ← לאן</dt><dd>תג והדק בשני הקצוות</dd></div>
+            <div><dt>צבע · חתך · שרוול</dt><dd>מהתכנית, או לפי התקן</dd></div>
+            <div><dt>למה הוא שם</dt><dd>הסבר לכל חוט במעגל</dd></div>
+          </dl>
+          <div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת קבצי PDF של תכניות החיווט">
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 6h14l10 10v26H14z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M28 6v10h10M26 36V22m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="drop-text"><strong>גררו לכאן את ה-PDF של התכנית — אחד או כמה ביחד</strong><span>קובץ אחד = ארון. כמה קבצים = אתר התקנה · גם JSON מגיבוי</span></span>
+            <input type="file" id="pdfInput" multiple accept="application/pdf,.pdf,.json" hidden>
+          </div>
+          <div class="home-actions">
+            <button class="btn" type="button" id="openDemo">לפתוח את הדוגמה: לוח משאבה עם בקר</button>
+            <button class="btn link" type="button" id="newEmpty">פרויקט ריק להזנה ידנית</button>
+            <a class="home-claude" id="homeClaude" href="#" target="_blank" rel="noopener" hidden>תכניות אחרות (לא 208-B)? קריאה אוטומטית של השרטוטים — בגרסת Claude ↗</a>
+          </div>
+        </div>
+        <figure class="sr-media">
+          <img id="srHero" src="img/hero-cabinet.webp" width="1600" height="1100" fetchpriority="high" alt="ארון פיקוד פתוח: מסילות DIN עם מאמ&quot;תים, ספקי כוח, כרטיסי קלט/פלט ומאות חוטים בתעלות, והציוד בשטח מחובר בכבלים">
+          <figcaption class="sr-cap" id="srCap">
+            <span class="sr-k">ארון 208-B</span>
+            <span class="sr-n"><b>106</b> רכיבים</span><span class="sr-n"><b>581</b> חוטים</span><span class="sr-n"><b>0</b> תקלות במעבדה</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <section class="gallery" aria-labelledby="galTitle">
+      <div class="sec-head">
+        <h2 id="galTitle">מה נבנה מהתכנית</h2>
+        <div class="row gap">
+          <p class="muted small" id="galNote">הדמיות מהמודל התלת־ממדי שהמערכת בנתה מתכנית 208-B.</p>
+          <label class="btn ghost small" for="homePhotos">התמונות שלכם מהשטח</label>
+          <input type="file" id="homePhotos" accept="image/*" multiple hidden>
+          <button class="btn link small" type="button" id="homePhotosReset" hidden>חזרה להדמיות</button>
+        </div>
+      </div>
+      <div class="gal-grid">
+        <figure class="gal"><img data-gal="1" src="img/inside-power.webp" width="960" height="720" loading="lazy" alt="מסילה עליונה: מאמ&quot;תים של Schneider, שלושה ספקי כוח 24V ו-12V וכרטיסי קלט/פלט של Beckhoff"><figcaption><b>הזנה, ספקים ובקר</b><span>כל רכיב עם יצרן ומק"ט אמיתי</span></figcaption></figure>
+        <figure class="gal"><img data-gal="2" src="img/inside-terminals.webp" width="960" height="720" loading="lazy" alt="פסי מהדקים עם עשרות חוטים בצבעים לפי התקן, מסודרים בתעלות"><figcaption><b>מהדקים וחיווט</b><span>כל מוליך הוא חוט, בצבע ובחתך שלו</span></figcaption></figure>
+        <figure class="gal"><img data-gal="3" src="img/cabinet-field.webp" width="960" height="660" loading="lazy" alt="הארון סגור, וממנו כבלים לחיישנים, ללחצני החירום ולבקרי השערים בשטח"><figcaption><b>הארון והשטח</b><span>כבלים לכל חיישן, לחצן ומנוע</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section class="how" aria-labelledby="howTitle">
+      <h2 id="howTitle">ארבעה שלבים, מהתכנית ועד הבדיקות</h2>
+      <ol class="how-list">
+        <li><span class="num">1</span><div><strong>מעלים PDF</strong><p>כל עמוד נשמר כתמונה, והטקסט נשלף עם המיקום שלו. הקובץ נשאר בדפדפן.</p></div></li>
+        <li><span class="num">2</span><div><strong>קוראים את התכנית</strong><p>רשימת חוטים בטקסט נקראת מיד. שרטוט סכמטי נקרא עם Claude, דרך השרת או בהעתק-הדבק.</p></div></li>
+        <li><span class="num">3</span><div><strong>משלימים ובודקים</strong><p>צבע, חתך וסוג חוט שחסרים בתכנית מושלמים לפי התקן ומסומנים בכוכבית.</p></div></li>
+        <li><span class="num">4</span><div><strong>מרכיבים ומחווטים</strong><p>ציור הארון, חיווט חוט אחר חוט עם סימון התקדמות, בדיקות ותיק להדפסה.</p></div></li>
+      </ol>
+    </section>
+    <section class="projects sites" aria-labelledby="sitesH">
+      <div class="sec-head">
+        <h2 id="sitesH">אתרי התקנה</h2>
+        <div class="row gap">
+          <p class="muted small">אתר = כמה ארונות במקום אחד, עם הכבלים ביניהם, כל הקבצים ומערך ההתקנה.</p>
+          <button class="btn small" type="button" id="newSite">אתר חדש</button>
+        </div>
+      </div>
+      <ul class="proj-list" id="siteList"></ul>
+    </section>
+    <section class="projects" aria-labelledby="projTitleH">
+      <div class="sec-head">
+        <h2 id="projTitleH">ארונות</h2>
+        <p class="muted small">נשמרים בדפדפן הזה בלבד. לגיבוי: הדפסה והגדרות ← ייצוא JSON.</p>
+      </div>
+      <ul class="proj-list" id="projList"></ul>
+    </section>
+  </section>
+
+  <!-- ===== אתר התקנה ===== -->
+  <section class="view" id="v-site" data-view="site" hidden>
+    <div class="site-head">
+      <div class="site-id">
+        <p class="eyebrow">אתר התקנה</p>
+        <input class="site-name" id="siteName" aria-label="שם האתר">
+        <input class="site-addr" id="siteAddr" aria-label="כתובת" placeholder="כתובת או תיאור המקום…">
+      </div>
+      <dl class="station-stats" id="siteStats"></dl>
+      <div class="site-actions">
+        <label class="btn" for="siteFiles">הוספת קבצים</label>
+        <input type="file" id="siteFiles" multiple hidden>
+        <label class="btn ghost small" for="siteFolder">תיקייה שלמה</label>
+        <input type="file" id="siteFolder" webkitdirectory multiple hidden>
+        <select id="siteAddCab" aria-label="הוספת ארון קיים לאתר"><option value="">הוספת ארון קיים…</option></select>
+        <button class="btn ghost small" type="button" id="sitePrint">הדפסת מערך ההתקנה</button>
+        <button class="btn ghost small danger" type="button" id="siteDelete">מחיקת האתר</button>
+      </div>
+    </div>
+    <div class="drop site-drop" id="siteDrop" tabindex="0" role="button" aria-label="הוספת קבצים לאתר">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 6h14l10 10v26H14z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M28 6v10h10M26 36V22m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="drop-text"><strong>גררו לכאן את כל הקבצים של הפרויקט</strong><span>כל PDF של תכנית חיווט הופך לארון. תמונות, מסמכים, DWG וכל קובץ אחר נשמרים בקבצי האתר.</span></span>
+    </div>
+    <ol class="import-list" id="siteImport" aria-live="polite"></ol>
+    <div class="site-read" id="siteRead" role="status" hidden></div>
+
+    <h2 class="sec-title">הארונות באתר</h2>
+    <div class="cab-cards" id="siteCabs"></div>
+
+    <div class="grid-site">
+      <div class="card">
+        <div class="card-head"><h2>תכנית ההתקנה · מבט על</h2>
+          <div class="row gap flexwrap">
+            <label class="mini-field">חדר <input type="number" id="roomW" min="2" max="60" step="0.5" aria-label="רוחב החדר במטרים"> × <input type="number" id="roomD" min="2" max="60" step="0.5" aria-label="עומק החדר במטרים"> מ'</label>
+            <label class="mini-field">מגש <input type="number" id="trayH" min="1.5" max="6" step="0.1" aria-label="גובה מגש הכבלים במטרים"> מ'</label>
+          </div>
+        </div>
+        <div class="plan-host" id="planHost"></div>
+        <p class="muted small">גוררים ארון כדי להזיז אותו (הצמדה ל-5 ס"מ). הקו המקווקו הוא קשת פתיחת הדלת. האורכים של הכבלים מתעדכנים לפי המיקום.</p>
+      </div>
+      <div class="card three-card">
+        <div class="card-head"><h2>האתר בתלת־ממד</h2><div class="row gap"><button class="btn ghost small" type="button" id="site3dHome">מבט כללי</button><button class="btn small" type="button" id="site3dPng">תמונה להורדה</button></div></div>
+        <div class="three-host site3d" id="site3dHost"><p class="three-wait" id="site3dWait">טוען תלת־ממד…</p></div>
+        <p class="muted small">עומדים על כבל כדי לראות מה עובר בו. לחיצה על ארון: פרטים; לחיצה כפולה: פתיחת הארון.</p>
+      </div>
+    </div>
+
+    <div class="card" id="siteSel" hidden></div>
+
+    <div class="card">
+      <div class="card-head"><h2>כבלים בין ארונות</h2><span class="muted small" id="linkCount"></span></div>
+      <div class="ic-host" id="linkDiagram"></div>
+      <div id="linkSuggest"></div>
+      <div class="table-wrap"><table class="tbl" id="linkTable"></table></div>
+      <details class="link-add">
+        <summary>הוספת כבל בין ארונות ידנית</summary>
+        <div class="row gap flexwrap">
+          <label class="field"><span>מארון</span><select id="laCab"></select></label>
+          <label class="field"><span>קבוצת גידים (מכשיר בשטח)</span><select id="laDev"></select></label>
+          <label class="field"><span>לארון</span><select id="lbCab"></select></label>
+          <label class="field"><span>קבוצת גידים</span><select id="lbDev"></select></label>
+          <button class="btn small" type="button" id="linkAdd">הוספת הכבל</button>
+        </div>
+        <p class="muted small">גידים בשם זהה מתחברים זה לזה, השאר לפי הסדר. אפשר לבדוק ולתקן בטבלה.</p>
+      </details>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2>מערך ההתקנה</h2>
+        <ol class="steps-list" id="siteSteps"></ol>
+      </div>
+      <div class="card">
+        <h2>קבצי האתר</h2>
+        <ul class="file-list" id="siteFileList"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 1. תכנית ===== -->
+  <section class="view" id="v-plan" data-view="plan" hidden>
+    <div class="grid-plan">
+      <div class="card pdf-card">
+        <div class="card-head">
+          <h2>התכנית</h2>
+          <div class="row gap">
+            <label class="btn ghost small" for="pdfAddPlan">הוספת קבצים לתכנית</label>
+            <input type="file" id="pdfAddPlan" accept="application/pdf,.pdf" multiple hidden>
+            <label class="btn ghost small" for="pdfInputPlan">החלפת PDF</label>
+            <input type="file" id="pdfInputPlan" accept="application/pdf,.pdf" multiple hidden>
+            <button class="btn ghost small" type="button" id="pageZoom" aria-pressed="false">הגדלה</button>
+          </div>
+        </div>
+        <div class="pdf-empty" id="pdfEmpty">
+          <p>אין עדיין PDF בפרויקט.</p>
+          <label class="btn" for="pdfInputPlan">בחירת PDF</label>
+        </div>
+        <div class="thumbs" id="thumbs" role="tablist" aria-label="עמודים"></div>
+        <div class="page-wrap" id="pageWrap">
+          <div class="page" id="page"><img id="pageImg" alt=""><div class="marks" id="marks"></div></div>
+        </div>
+        <p class="muted small" id="pageHint">כשבוחרים חוט, המיקומים של התגים ומספר החוט מסומנים על העמוד.</p>
+      </div>
+      <div class="side-col">
+        <div class="card">
+          <h2>קריאת התכנית</h2>
+          <p class="muted small" id="planStatus">—</p>
+          <label class="field"><span>הערות לקריאה <span class="opt">(לא חובה)</span></span>
+            <textarea id="hint" rows="3" placeholder="למשל: עמודים 3–7 הם הסכמה, עמוד 8 תכנית מהדקים. מתח פיקוד 24VDC. לא לכלול את עמוד הכריכה…"></textarea>
+          </label>
+          <div class="stack">
+            <button class="btn" type="button" id="runClaude">קריאה אוטומטית של התכנית</button>
+            <button class="btn ghost" type="button" id="runPaste">Claude.ai בהעתק-הדבק</button>
+            <button class="btn ghost" type="button" id="runLocal">שליפה מהטקסט (בלי AI)</button>
+            <label class="btn ghost" for="jsonInput">ייבוא JSON</label>
+            <input type="file" id="jsonInput" accept=".json,application/json" hidden>
+          </div>
+          <p class="ai-alt" id="aiAlt" hidden><b>קריאה אוטומטית של כל תכנית:</b> פתחו את האתר בגרסת Claude — שם Claude קורא את השרטוטים עמוד אחרי עמוד, על החשבון שלכם. <a class="btn small" href="#" target="_blank" rel="noopener">פתיחה בגרסת Claude ↗</a></p>
+          <div class="ai-progress" id="aiProgress" hidden>
+            <div class="bar"><span id="aiBar"></span></div>
+            <p class="small" id="aiText">שולח…</p>
+            <button class="btn ghost small" type="button" id="aiStop">עצירה</button>
+          </div>
+          <p class="muted small">קריאה אוטומטית: כל עמוד נשלח ל-Claude כתמונה מלאה ועוד הגדלות של החלקים שלו, כדי שמספרי הדקים קטנים ייקראו נכון. התוצאות מתאחדות לרשימה אחת, ועמוד שכבר נקרא לא נשלח שוב. שליפה מהטקסט מתאימה לרשימת חוטים שיוצאה מ-EPLAN.</p>
+        </div>
+        <div class="card" id="metaCard">
+          <h2>פרטי התכנית</h2>
+          <div class="meta-grid">
+            <label class="field"><span>שם</span><input id="mTitle"></label>
+            <label class="field"><span>מס' שרטוט</span><input id="mDrawing"></label>
+            <label class="field"><span>גרסה</span><input id="mRev"></label>
+            <label class="field"><span>הזנה</span><input id="mSupply" placeholder="3×400V+N+PE"></label>
+            <label class="field"><span>מתח פיקוד</span><input id="mControl" placeholder="24VDC"></label>
+          </div>
+          <div class="notes" id="notes"></div>
+        </div>
+        <div class="card stats" id="statsCard"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 2. רכיבים ===== -->
+  <section class="view" id="v-parts" data-view="parts" hidden>
+    <div class="card real-parts" id="realParts">
+      <div class="card-head"><h2>חלקים אמיתיים מיצרנים</h2><span class="muted small" id="rpSummary"></span></div>
+      <div class="rp-form">
+        <label class="field"><span>מותג ראשי (מפסקים, מגענים, מגיני מנוע, לחצנים)</span><select id="rpBrand"></select></label>
+        <label class="field"><span>מהדקים</span><select id="rpTerm"></select></label>
+        <label class="field"><span>ספקי כוח</span><select id="rpPsu"></select></label>
+        <label class="field"><span>ממסרים</span><select id="rpRelay"></select></label>
+        <label class="field"><span>סליל מגענים וממסרים (כשלא כתוב בתכנית)</span><select id="rpCoil"><option value="dc24">24V DC</option><option value="ac230">230V AC</option></select></label>
+        <label class="check rp-ow"><input type="checkbox" id="rpOver"> להחליף גם מק"טים שכבר כתובים בתכנית</label>
+      </div>
+      <div class="row gap flexwrap">
+        <button class="btn" type="button" id="rpApply">שיבוץ מק"טים לכל הלוח</button>
+        <button class="btn ghost small" type="button" id="rpCsv">רשימת הזמנה CSV</button>
+      </div>
+      <p class="muted small">המק"ט נבחר לפי סוג הרכיב והדירוג שבתכנית (זרם, קטבים, הספק, מתח סליל, חתך החוטים במהדקים). מק"ט מסומן "סדרה" הוא דגם בלבד — לבחור את המק"ט הסופי בקטלוג. לפני הזמנה מאמתים כל מק"ט מול קטלוג היצרן.</p>
+      <div id="rpOrder"></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h2>רכיבים <span class="muted small" id="partsCount"></span></h2>
+        <div class="row gap">
+          <input type="search" id="partsSearch" placeholder="חיפוש תג או שם…" aria-label="חיפוש רכיב">
+          <button class="btn small" type="button" id="addPart">הוספת רכיב</button>
+        </div>
+      </div>
+      <p class="muted small">הסוג קובע איפה הרכיב יושב בארון ואיך ההדקים שלו מתפרשים. רכיב שנוסף אוטומטית (מופיע רק בחוטים) מסומן ב-<span class="tag-auto">אוטו'</span>. "מסילה" ריק = לפי הסוג.</p>
+      <div class="table-wrap"><table class="tbl" id="partsTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ===== 3. רשימת חוטים ===== -->
+  <section class="view" id="v-wires" data-view="wires" hidden>
+    <div class="card wire-check" id="wireCheck" hidden></div>
+    <div class="card">
+      <div class="card-head">
+        <h2>רשימת חוטים <span class="muted small" id="wiresCount"></span></h2>
+        <div class="row gap flexwrap">
+          <input type="search" id="wireSearch" placeholder="תג, הדק, מספר או תיאור…" aria-label="חיפוש חוט">
+          <select id="wireColor" aria-label="סינון לפי צבע"><option value="">כל הצבעים</option></select>
+          <select id="wireState" aria-label="סינון לפי מצב">
+            <option value="">הכל</option><option value="todo">לא מחווטים</option><option value="done">מחווטים</option><option value="std">צבע / חתך לפי תקן</option>
+          </select>
+          <button class="btn small" type="button" id="addWire">הוספת חוט</button>
+          <button class="btn ghost small" type="button" id="csvWires">CSV</button>
+        </div>
+      </div>
+      <div class="chips" id="funcChips" role="group" aria-label="סינון לפי תפקיד"></div>
+      <div class="table-wrap"><table class="tbl wires" id="wiresTable"></table></div>
+      <p class="muted small">* כוכבית = הושלם לפי התקן או לפי ברירת המחדל (לא כתוב בתכנית). לחיצה על שורה פותחת את פרטי החוט.</p>
+    </div>
+  </section>
+
+  <!-- ===== 5. חיבורים ומהדקים ===== -->
+  <section class="view" id="v-conn" data-view="conn" hidden>
+    <div class="card conn-head">
+      <div class="card-head"><h2>חיבורים ומהדקים</h2><dl class="conn-stats" id="connStats"></dl></div>
+      <p class="muted small">לכל פס מהדקים: מה מחובר לכל הדק מבפנים (בתוך הארון), ומה יוצא ממנו החוצה — לשטח או לארון אחר באתר. לחיצה על מספר חוט פותחת את הפרטים שלו, על רכיב את הכרטיס שלו, ועל ארון אחר — את ההדק התואם שם.</p>
+      <div class="conn-nav" id="connNav"></div>
+    </div>
+    <div class="card" id="connX" hidden></div>
+    <div id="connStrips"></div>
+  </section>
+
+  <!-- ===== 4. פריסת ארון ===== -->
+  <section class="view" id="v-cabinet" data-view="cabinet" hidden>
+    <div class="cab-toolbar">
+      <div class="chips" id="cabChips" role="group" aria-label="הצגה לפי תפקיד"></div>
+      <div class="row gap">
+        <div class="seg" role="group" aria-label="סוג השרטוט">
+          <button type="button" id="cabLay" aria-pressed="true">שרטוט הרכבה</button>
+          <button type="button" id="cabAll" aria-pressed="false">כל החוטים</button>
+        </div>
+        <input type="search" id="cabSearch" placeholder="‎-K1 או מספר חוט…" aria-label="איתור רכיב או חוט">
+        <button class="btn ghost small" type="button" id="zoomIn" aria-label="הגדלה">+</button>
+        <button class="btn ghost small" type="button" id="zoomOut" aria-label="הקטנה">−</button>
+        <button class="btn ghost small" type="button" id="zoomFit">כל הארון</button>
+      </div>
+    </div>
+    <div class="cab-host" id="cabHost"></div>
+    <p class="muted small cab-help">שרטוט הרכבה: פלטה, תעלות, מסילות ורכיבים עם תגים ומידות, ברשת אזורים (A1, B3…) כמו בגיליון הנדסי. לחיצה על רכיב מציגה רק את החוטים שלו ואת הכרטיס שלו; בחירת תפקיד למעלה מציגה רק את החוטים של התפקיד. "כל החוטים" מציג את כולם. גלגלת או צביטה לזום, גרירה להזזה.</p>
+    <div class="legend" id="legend"></div>
+    <div class="card split-card" id="splitCard"></div>
+  </section>
+
+  <!-- ===== 5. תלת־ממד ===== -->
+  <section class="view" id="v-three" data-view="three" hidden>
+    <div class="cab-toolbar">
+      <div class="row gap flexwrap" role="group" aria-label="תצוגת הארון">
+        <button class="btn ghost small" type="button" id="t3Door" aria-pressed="true">לסגור את הדלת</button>
+        <button class="btn ghost small" type="button" id="t3Covers" aria-pressed="false">מכסי תעלות</button>
+        <button class="btn ghost small" type="button" data-view3="home">מבט כללי</button>
+        <button class="btn ghost small" type="button" data-view3="front">חזית</button>
+        <button class="btn ghost small" type="button" data-view3="inside">פנים הארון</button>
+        <button class="btn ghost small" type="button" data-view3="field">ציוד בשטח</button>
+      </div>
+      <div class="row gap">
+        <div class="chips" id="t3Chips" role="group" aria-label="הצגה לפי תפקיד"></div>
+        <button class="btn small" type="button" id="t3Png">תמונה להורדה</button>
+      </div>
+    </div>
+    <div class="grid-three">
+      <div class="three-host" id="threeHost"><p class="three-wait" id="threeWait">טוען תלת־ממד…</p></div>
+      <aside class="side-col">
+        <div class="card spec-card" id="encCard"></div>
+      </aside>
+    </div>
+    <p class="muted small cab-help">גוררים לסיבוב, גלגלת או צביטה לזום, קליק ימני או שתי אצבעות להזזה. עומדים על חוט כדי לראות מה הוא עושה; לחיצה על רכיב מציגה את פרטיו ומדגישה את החוטים שלו.</p>
+  </section>
+
+  <!-- ===== 6. חיווט שלב אחר שלב ===== -->
+  <section class="view" id="v-wiring" data-view="wiring" hidden>
+    <div class="station-top">
+      <div class="ring" aria-hidden="true">
+        <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" id="wRing" pathLength="100"/></svg>
+        <div class="ring-txt"><b id="wPct">0%</b><span>חוברו</span></div>
+      </div>
+      <dl class="station-stats">
+        <div><dt>חוברו</dt><dd id="stDone">0</dd></div>
+        <div><dt>נשארו</dt><dd id="stLeft">0</dd></div>
+        <div><dt>ברצף</dt><dd id="stStreak">0</dd></div>
+        <div><dt>זמן לסיום</dt><dd id="stEta">—</dd></div>
+      </dl>
+      <div class="station-ctl">
+        <label class="field"><span>קבוצה</span><select id="wGroup" aria-label="קבוצת חיווט"></select></label>
+        <label class="check"><input type="checkbox" id="wSkipDone" checked> לדלג על חוטים שחוברו</label>
+      </div>
+      <p class="sr-only" id="wProgText" aria-live="polite"></p>
+    </div>
+    <div class="group-strip" id="wGroups" role="group" aria-label="התקדמות לפי קבוצה"></div>
+    <div class="grid-wiring">
+      <article class="card wire-card" id="wireCard" aria-live="polite"></article>
+      <aside class="side-col">
+        <div class="card voice-card" lang="en">
+          <div class="card-head">
+            <h2><span class="vc-dot" aria-hidden="true"></span>Voice guide <span class="muted small">· English</span></h2>
+            <div class="row gap">
+              <button class="btn small" type="button" id="vPlay">▶ Play</button>
+              <button class="btn ghost small" type="button" id="vStop" aria-label="Stop">■</button>
+            </div>
+          </div>
+          <ol class="subs" id="vSubs" dir="ltr"></ol>
+          <div class="vc-ctl" dir="rtl" lang="he">
+            <label class="check"><input type="checkbox" id="vAuto"> הקראה אוטומטית בכל חוט</label>
+            <label class="check"><input type="checkbox" id="vSfx" checked> צלילים</label>
+            <label class="field"><span>מהירות הקריאה</span><input type="range" id="vRate" min="0.7" max="1.3" step="0.05" value="0.95"></label>
+            <label class="field"><span>קול</span><select id="vVoice"></select></label>
+          </div>
+          <p class="v-warn" id="vWarn" dir="rtl" lang="he" role="alert" hidden></p>
+          <p class="small muted" id="vNote" dir="rtl" lang="he"></p>
+        </div>
+        <div class="card mini-card"><div class="cab-host mini" id="miniHost"></div></div>
+      </aside>
+    </div>
+    <div class="wiring-nav">
+      <button class="btn ghost" type="button" id="wPrev">→ הקודם</button>
+      <button class="btn big" type="button" id="wDone">חוברו שני הקצוות ✓</button>
+      <button class="btn ghost" type="button" id="wNext">הבא ←</button>
+      <button class="btn ghost speak-btn" type="button" id="wSpeak" aria-label="הקראה באנגלית של החוט הזה" title="הקראה (R)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <p class="kbd-hint"><kbd>Enter</kbd> חוברו · <kbd>←</kbd> הבא · <kbd>→</kbd> הקודם · <kbd>R</kbd> הקראה · <kbd>1</kbd>–<kbd>6</kbd> שלבים</p>
+    </div>
+  </section>
+
+  <!-- ===== 6. הרכבה ובדיקות ===== -->
+  <section class="view" id="v-assembly" data-view="assembly" hidden>
+    <div class="grid-2">
+      <div class="card">
+        <h2>תכנית ההרכבה</h2>
+        <ol class="steps-list" id="stepsList"></ol>
+      </div>
+      <div class="side-col">
+        <div class="card">
+          <h2>רשימת חיתוך וקנייה</h2>
+          <p class="muted small">אורך משוער לפי מסלול החוט בתעלות + 10% + 10 ס"מ רזרבה. כבלים לשטח: לפי המרחק בפועל.</p>
+          <div class="table-wrap"><table class="tbl" id="cutTable"></table></div>
+        </div>
+        <div class="card">
+          <h2>חומרים מתכלים</h2>
+          <div class="table-wrap"><table class="tbl" id="ferruleTable"></table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 7. הדפסה והגדרות ===== -->
+  <!-- ===== 9. מעבדה ===== -->
+  <section class="view" id="v-lab" data-view="lab" hidden>
+    <div class="lab-top">
+      <div class="lab-title">
+        <h2>מעבדה</h2>
+        <p class="muted small" id="labHint"></p>
+      </div>
+      <div class="seg lab-modes" role="tablist" aria-label="מצב המעבדה">
+        <button type="button" role="tab" data-lmode="check" aria-selected="true">בדיקת תקינות</button>
+        <button type="button" role="tab" data-lmode="sim" aria-selected="false">הדמיה חיה</button>
+        <button type="button" role="tab" data-lmode="edit" aria-selected="false">הוספה וחיווט</button>
+      </div>
+    </div>
+    <div class="lab-grid">
+      <div class="lab-stage">
+        <div class="lab-bar" id="labBar"></div>
+        <div class="cab-host lab-host" id="labHost"></div>
+        <div class="lab-zoom row gap">
+          <button class="btn ghost small" type="button" id="labZin" aria-label="הגדלה">+</button>
+          <button class="btn ghost small" type="button" id="labZout" aria-label="הקטנה">−</button>
+          <button class="btn ghost small" type="button" id="labFit">כל הארון</button>
+        </div>
+      </div>
+      <aside class="lab-side" id="labSide" aria-label="קונסולת המעבדה">
+        <div class="con-head" id="conHead"></div>
+        <div class="con-tabs" id="conTabs" role="tablist" aria-label="תצוגות הקונסולה"></div>
+        <div class="con-body" id="conBody"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="view" id="v-export" data-view="export" hidden>
+    <div class="grid-2">
+      <div class="card">
+        <h2>הדפסה וייצוא</h2>
+        <div class="stack">
+          <button class="btn" type="button" id="printBook">תיק חיווט להדפסה / PDF</button>
+          <button class="btn ghost" type="button" id="printLabels">שרוולי סימון לחוטים (מדבקות)</button>
+          <button class="btn ghost" type="button" id="csvWires2">רשימת חוטים CSV (Excel)</button>
+          <button class="btn ghost" type="button" id="csvBom">רשימת רכיבים CSV</button>
+          <button class="btn ghost" type="button" id="svgOut">ציור הארון SVG</button>
+          <button class="btn ghost" type="button" id="jsonOut">ייצוא הפרויקט JSON</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>הגדרות הפרויקט</h2>
+        <label class="field"><span>שם הפרויקט</span><input id="sName"></label>
+        <label class="field"><span>צבעי פאזות (כשלא כתוב בתכנית)</span>
+          <select id="sPhase"><option value="iec60204">IEC 60204-1: כל מוליכי הכוח שחורים</option><option value="iec60445">IEC 60445: ‏L1 חום, L2 שחור, L3 אפור</option></select></label>
+        <label class="field"><span>מתח פיקוד</span>
+          <select id="sControl"><option value="dc24">24V DC</option><option value="ac230">230V AC</option><option value="ac24">24V AC</option></select></label>
+        <label class="field"><span>מהדקים</span>
+          <select id="sTech"><option value="screw">בורג</option><option value="pushin">קפיץ / Push-in</option></select></label>
+        <label class="field"><span>רוחב פלטה</span>
+          <select id="sPlate"><option value="auto">אוטומטי</option><option>400</option><option>500</option><option>600</option><option>800</option><option>1000</option><option>1200</option></select></label>
+        <div class="meta-grid">
+          <label class="field"><span>חתך כוח ברירת מחדל</span><select id="sPow"></select></label>
+          <label class="field"><span>חתך פיקוד</span><select id="sCtl"></select></label>
+          <label class="field"><span>חתך PE</span><select id="sPe"></select></label>
+        </div>
+        <hr>
+        <button class="btn danger ghost small" type="button" id="resetDone">איפוס סימוני חיווט</button>
+        <button class="btn danger ghost small" type="button" id="delProject">מחיקת הפרויקט</button>
+      </div>
+    </div>
+    <p class="muted small disclaimer">הצבעים, החתכים והמומנטים שהמערכת משלימה הם ערכים מקובלים לפי IEC 60204-1 ו-DIN 46228. הם לא מחליפים את התכנית המאושרת, את דפי היצרן ואת אישור מהנדס החשמל. עבודה בלוח רק כשהוא מנותק ומאובטח.</p>
+  </section>
+</main>
+
+<!-- פרטי חוט -->
+<aside class="drawer" id="drawer" hidden aria-label="פרטים">
+  <div class="drawer-head">
+    <button class="icon-btn" type="button" id="dBack" aria-label="חזרה" hidden>→</button>
+    <strong id="dTitle"></strong>
+    <button class="icon-btn" type="button" id="dClose" aria-label="סגירה">✕</button>
+  </div>
+  <div class="drawer-body" id="dBody"></div>
+  <div class="drawer-actions" id="cActions" hidden>
+    <button class="btn small" type="button" id="cWire">חיווט הרכיב שלב אחר שלב</button>
+    <button class="btn ghost small" type="button" id="cShowCab">בציור</button>
+    <button class="btn ghost small" type="button" id="cShow3d">בתלת־ממד</button>
+    <button class="btn ghost small" type="button" id="cShowPdf">בתכנית</button>
+    <button class="btn small" type="button" id="cOpen" hidden>פתיחה בארון</button>
+  </div>
+  <div class="drawer-actions" id="dActions">
+    <button class="btn small" type="button" id="dDone">סימון כמחווט</button>
+    <button class="btn ghost small" type="button" id="dShowCab">בציור</button>
+    <button class="btn ghost small" type="button" id="dShowPdf">בתכנית</button>
+    <button class="btn ghost small" type="button" id="dWire">חיווט</button>
+    <button class="btn ghost small" type="button" id="dEdit">עריכה</button>
+  </div>
+</aside>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+
+<!-- אישור / שאלה -->
+<dialog id="askDialog" class="ask-dialog" aria-labelledby="askMsg">
+  <form method="dialog" class="dlg">
+    <p id="askMsg" class="ask-msg"></p>
+    <input id="askInput" type="text" dir="auto" autocomplete="off" hidden>
+    <div class="row gap dlg-actions">
+      <button class="btn" type="submit" value="ok" id="askOk">אישור</button>
+      <button class="btn ghost" type="submit" value="alt" id="askAlt" hidden></button>
+      <button class="btn ghost" type="submit" value="cancel">ביטול</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- תיק להדפסה בתוך הדף -->
+<dialog id="bookDialog" class="book-dialog" aria-label="תיק להדפסה">
+  <form method="dialog" class="book-bar">
+    <strong>תיק להדפסה</strong>
+    <div class="row gap">
+      <button class="btn small" type="button" id="bookPrint">הדפסה</button>
+      <button class="btn ghost small" type="submit" value="close">סגירה</button>
+    </div>
+  </form>
+  <iframe id="bookFrame" title="תיק להדפסה"></iframe>
+</dialog>
+
+<!-- העתק-הדבק -->
+<dialog id="pasteDialog" aria-labelledby="pasteTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="pasteTitle">קריאה עם Claude.ai</h2>
+    <ol class="small">
+      <li>לוחצים "העתקת הבקשה".</li>
+      <li>פותחים צ'אט חדש ב-<a href="https://claude.ai/new" target="_blank" rel="noopener">Claude.ai</a>, מצרפים את קובץ ה-PDF של התכנית ומדביקים את הבקשה.</li>
+      <li>מעתיקים את כל התשובה (JSON) ומדביקים כאן.</li>
+    </ol>
+    <div class="row gap">
+      <button class="btn small" type="button" id="copyPrompt">העתקת הבקשה</button>
+      <a class="btn ghost small" id="pdfDownload" hidden>הורדת ה-PDF</a>
+    </div>
+    <textarea id="pasteBox" rows="10" placeholder='{"meta":…, "components":[…], "wires":[…]}' dir="ltr"></textarea>
+    <p class="err" id="pasteErr" role="alert"></p>
+    <div class="row gap jend">
+      <button class="btn ghost" value="cancel">ביטול</button>
+      <button class="btn" type="button" id="pasteOk">טעינת התשובה</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- עריכת חוט -->
+<dialog id="wireDialog" aria-labelledby="wdTitle">
+  <form method="dialog" class="dlg" id="wireForm">
+    <h2 id="wdTitle">חוט</h2>
+    <div class="meta-grid">
+      <label class="field"><span>מספר חוט</span><input name="no"></label>
+      <label class="field"><span>תפקיד</span><select name="func"></select></label>
+      <label class="field"><span>מ-תג</span><input name="fromTag" required list="tagList" dir="ltr"></label>
+      <label class="field"><span>מ-הדק</span><input name="fromTerm" required dir="ltr"></label>
+      <label class="field"><span>אל-תג</span><input name="toTag" required list="tagList" dir="ltr"></label>
+      <label class="field"><span>אל-הדק</span><input name="toTerm" required dir="ltr"></label>
+      <label class="field"><span>צבע</span><select name="color"></select></label>
+      <label class="field"><span>חתך ממ"ר</span><select name="section"></select></label>
+      <label class="field"><span>סוג חוט</span><input name="wireType" list="typeList" dir="ltr"></label>
+      <label class="field"><span>פוטנציאל</span><input name="potential" dir="ltr" placeholder="L1 / +24V / 0V"></label>
+      <label class="field"><span>עמוד בתכנית</span><input name="page" type="number" min="1"></label>
+    </div>
+    <label class="field"><span>תיאור קצר</span><input name="desc"></label>
+    <label class="field"><span>הסבר <span class="opt">(ריק = הסבר אוטומטי)</span></span><textarea name="explain" rows="3"></textarea></label>
+    <datalist id="tagList"></datalist>
+    <datalist id="typeList"><option>H05V-K</option><option>H07V-K</option><option>H07V-U</option><option>LiYY</option><option>LiYCY</option><option>ÖLFLEX</option><option>גשר מסרק</option></datalist>
+    <div class="row gap jend">
+      <button class="btn danger ghost" type="button" id="wdDelete">מחיקה</button>
+      <span class="grow"></span>
+      <button class="btn ghost" value="cancel" formnovalidate>ביטול</button>
+      <button class="btn" type="submit" value="ok">שמירה</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
