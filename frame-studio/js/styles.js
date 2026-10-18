@@ -116,14 +116,51 @@
     },
     duotone: function (px, w, h) { var a = hex('#1d1633'), b = hex('#e3c98e'), L = lum(px, w * h), out = new Uint8ClampedArray(px.length); for (var i = 0; i < w * h; i++) { var t = L[i]; for (var c = 0; c < 3; c++) out[i * 4 + c] = a[c] + (b[c] - a[c]) * t; out[i * 4 + 3] = 255; } return out; },
     stained: function (px, w, h) { var k = kuwahara(px, w, h, Math.max(4, Math.round(w / 160))); posterize(k, 6); saturate(k, 1.35); ink(k, sobel(lum(k, w * h), w, h), w, h, 0.3, [30, 24, 18], true); return k; },
-    noir: function (px, w, h) { var L = lum(px, w * h), out = new Uint8ClampedArray(px.length); for (var i = 0; i < w * h; i++) { var v = clamp((L[i] - 0.5) * 1.9 + 0.5, 0, 1); v = v * v * (3 - 2 * v) * 255; out[i * 4] = out[i * 4 + 1] = out[i * 4 + 2] = v; out[i * 4 + 3] = 255; } ink(out, sobel(L, w, h), w, h, 0.6); return out; }
+    noir: function (px, w, h) { var L = lum(px, w * h), out = new Uint8ClampedArray(px.length); for (var i = 0; i < w * h; i++) { var v = clamp((L[i] - 0.5) * 1.9 + 0.5, 0, 1); v = v * v * (3 - 2 * v) * 255; out[i * 4] = out[i * 4 + 1] = out[i * 4 + 2] = v; out[i * 4 + 3] = 255; } ink(out, sobel(L, w, h), w, h, 0.6); return out; },
+    /* an old photo: sepia, faded, a dark edge, grain and a few scratches */
+    oldphoto: function (px, w, h) {
+      var out = new Uint8ClampedArray(px.length), r = rnd(7), L = lum(px, w * h), cx = w / 2, cy = h / 2, R = Math.sqrt(cx * cx + cy * cy);
+      for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var i = y * w + x, l = 0.12 + L[i] * 0.78, d = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / R, v = l * (1 - 0.55 * Math.pow(d, 2.2)) + (r() - 0.5) * 0.07;
+        out[i * 4] = clamp(v * 255 * 1.08 + 18, 0, 255); out[i * 4 + 1] = clamp(v * 255 * 0.94 + 10, 0, 255); out[i * 4 + 2] = clamp(v * 255 * 0.74, 0, 255); out[i * 4 + 3] = 255; }
+      for (var s = 0; s < 9; s++) { var sx = Math.floor(r() * w), len = Math.floor(h * (0.2 + r() * 0.6)), y0 = Math.floor(r() * (h - len)); for (var yy = y0; yy < y0 + len; yy++) { var j = (yy * w + sx) * 4; out[j] = out[j + 1] = out[j + 2] = 225; } }
+      return out;
+    },
+    /* soft pastel painting: calm colour areas, light and gentle */
+    pastel: function (px, w, h) { var k = kuwahara(px, w, h, Math.max(2, Math.round(w / 300))); for (var i = 0; i < k.length; i += 4) for (var c = 0; c < 3; c++) k[i + c] = 255 - (255 - k[i + c]) * 0.62; saturate(k, 0.85); return k; },
+    /* a colouring page: black lines on white */
+    lineart: function (px, w, h) { var E = sobel(lum(kuwahara(px, w, h, 2), w * h), w, h), out = new Uint8ClampedArray(px.length); for (var i = 0; i < w * h; i++) { var v = 255 - clamp((E[i] - 0.12) * 900, 0, 255); out[i * 4] = out[i * 4 + 1] = out[i * 4 + 2] = v; out[i * 4 + 3] = 255; } return out; },
+    blueprint: function (px, w, h) { var E = dilate(sobel(lum(kuwahara(px, w, h, 2), w * h), w, h), w, h), out = new Uint8ClampedArray(px.length), g = Math.max(10, Math.round(w / 40));
+      for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var i = y * w + x, grid = (x % g === 0 || y % g === 0) ? 0.18 : 0, e = clamp((E[i] - 0.15) * 3, 0, 1) + grid; out[i * 4] = 18 + e * 210; out[i * 4 + 1] = 62 + e * 180; out[i * 4 + 2] = 128 + e * 125; out[i * 4 + 3] = 255; } return out; },
+    /* a tile mosaic with grout lines */
+    mosaic: function (px, w, h) {
+      var b = Math.max(6, Math.round(w / 60)), out = new Uint8ClampedArray(px.length);
+      for (var by = 0; by < h; by += b) for (var bx = 0; bx < w; bx += b) { var r = 0, g = 0, bl = 0, n = 0, x, y;
+        for (y = by; y < Math.min(by + b, h); y++) for (x = bx; x < Math.min(bx + b, w); x++) { var i = (y * w + x) * 4; r += px[i]; g += px[i + 1]; bl += px[i + 2]; n++; }
+        r /= n; g /= n; bl /= n; var sh = 0.88 + ((bx * 7 + by * 13) % 17) / 70;
+        for (y = by; y < Math.min(by + b, h); y++) for (x = bx; x < Math.min(bx + b, w); x++) { var j = (y * w + x) * 4, edge = x - bx < 1 || y - by < 1; out[j] = edge ? 235 : r * sh; out[j + 1] = edge ? 228 : g * sh; out[j + 2] = edge ? 215 : bl * sh; out[j + 3] = 255; } }
+      return out;
+    },
+    /* lomo: strong colour, deep vignette, cross-processed tones */
+    lomo: function (px, w, h) { var out = new Uint8ClampedArray(px), cx = w / 2, cy = h / 2, R = Math.sqrt(cx * cx + cy * cy); saturate(out, 1.45);
+      for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var i = (y * w + x) * 4, d = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / R, v = 1 - 0.75 * Math.pow(d, 2.4);
+        var rr = out[i] / 255, gg = out[i + 1] / 255, bb = out[i + 2] / 255; rr = rr * rr * (3 - 2 * rr); gg = gg * gg * (3 - 2 * gg); bb = 0.12 + bb * 0.8;
+        out[i] = rr * 255 * v; out[i + 1] = gg * 255 * v; out[i + 2] = bb * 255 * v; } return out; },
+    /* gold engraving: fine lines that follow the light, on cream */
+    engrave: function (px, w, h) { var L = lum(kuwahara(px, w, h, 2), w * h), out = new Uint8ClampedArray(px.length), p = Math.max(3, Math.round(w / 220));
+      for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var i = y * w + x, t = ((x + y * 0.6) % (p * 2)) / (p * 2), on = Math.abs(t - 0.5) * 2 > L[i] * 0.95 + 0.04;
+        out[i * 4] = on ? 70 : 246; out[i * 4 + 1] = on ? 52 : 236; out[i * 4 + 2] = on ? 28 : 212; out[i * 4 + 3] = 255; } return out; },
+    /* thermal camera colours */
+    thermal: function (px, w, h) { var L = lum(px, w * h), out = new Uint8ClampedArray(px.length), st = [[8, 6, 60], [90, 20, 150], [220, 40, 90], [255, 150, 20], [255, 245, 160]];
+      for (var i = 0; i < w * h; i++) { var t = clamp(L[i], 0, 0.999) * 4, k = Math.floor(t), f = t - k, a = st[k], b = st[k + 1]; for (var c = 0; c < 3; c++) out[i * 4 + c] = a[c] + (b[c] - a[c]) * f; out[i * 4 + 3] = 255; } return out; }
   };
   function edgeImg(E, w, h) { var o = new Uint8ClampedArray(w * h * 4); for (var i = 0; i < w * h; i++) { var v = clamp(E[i] * 255, 0, 255); o[i * 4] = o[i * 4 + 1] = o[i * 4 + 2] = v; o[i * 4 + 3] = 255; } return o; }
 
   FS.LOCAL_STYLES = [
     ['cartoon', 'אנימציה מצוירת', '🎬'], ['comic', 'קומיקס', '💥'], ['manga', 'מנגה יפנית', '🗾'], ['pop', 'פופ־ארט', '🟨'], ['graffiti', 'גרפיטי', '🎨'],
     ['sketch', 'סקיצת עיפרון', '✏️'], ['oil', 'ציור שמן', '🖼️'], ['watercolor', 'צבעי מים', '💧'], ['stained', 'ויטראז׳', '⛪'], ['neon', 'ניאון', '💡'],
-    ['pixel', 'פיקסל ארט', '👾'], ['glitch', 'גליץ׳', '📺'], ['duotone', 'דואוטון זהב', '✨'], ['noir', 'פילם נואר', '🕵️']
+    ['pixel', 'פיקסל ארט', '👾'], ['glitch', 'גליץ׳', '📺'], ['duotone', 'דואוטון זהב', '✨'], ['noir', 'פילם נואר', '🕵️'],
+    ['oldphoto', 'תמונה ישנה', '📜'], ['pastel', 'פסטל רך', '🌷'], ['lineart', 'דף צביעה', '🖍️'], ['blueprint', 'שרטוט כחול', '📐'],
+    ['mosaic', 'פסיפס', '🧩'], ['lomo', 'לומו', '📷'], ['engrave', 'תחריט זהב', '🪙'], ['thermal', 'מצלמה תרמית', '🌡️']
   ];
 
   /* run a style on the pipeline's pixels: at most 1400px wide, mixed back by amt */
@@ -161,7 +198,23 @@
     ['chibi', 'סטיקר צ׳יבי', '🍡', 'Redraw the people in this photo as cute chibi characters with big heads, as a die-cut sticker with a white border on a plain background.'],
     ['caric', 'קריקטורה', '😜', 'Redraw this photo as a friendly, funny caricature drawing with exaggerated but kind features, colored pencils.'],
     ['vintage', 'צילום מ־1920', '🎞️', 'Make this look like an authentic 1920s sepia photograph with period clothing, film grain and an aged paper border.'],
-    ['purim', 'תחפושות', '🎭', 'Dress every person in this photo in fun, colourful costumes (pirate, princess, astronaut, magician…), festive party background.']
+    ['purim', 'תחפושות', '🎭', 'Dress every person in this photo in fun, colourful costumes (pirate, princess, astronaut, magician…), festive party background.'],
+    ['studio', 'פורטרט סטודיו', '📸', 'Turn this into a professional studio portrait photograph: flattering soft-box lighting, clean seamless backdrop, natural skin retouching, sharp focus, magazine quality.'],
+    ['restore', 'שחזור ושיפור', '🪄', 'Restore and enhance this photo: remove noise, blur and scratches, recover sharp natural detail and true colours, as if taken with a high-end camera. Change nothing else.'],
+    ['pencil', 'רישום עיפרון', '✏️', 'Redraw this photo as a realistic graphite pencil portrait drawing on white paper, fine shading and cross-hatching.'],
+    ['ukiyoe', 'הדפס יפני', '🌊', 'Redraw this photo as a traditional Japanese ukiyo-e woodblock print with flat colours, bold outlines and stylized waves and clouds.'],
+    ['mosaic', 'פסיפס עתיק', '🏛️', 'Redraw this photo as an ancient Roman stone mosaic made of small coloured tiles.'],
+    ['stainedai', 'ויטראז׳', '⛪', 'Redraw this photo as a glowing cathedral stained-glass window with lead lines and jewel colours.'],
+    ['knight', 'אבירים וטירות', '🏰', 'Turn every person into medieval knights and nobles in shining armour and velvet, a castle courtyard behind them, epic fantasy painting.'],
+    ['western', 'מערבון', '🤠', 'Turn every person into a wild-west cowboy or cowgirl with hats and leather, a desert town at sunset behind them, cinematic.'],
+    ['beach', 'חוף טרופי', '🏝️', 'Move the people to a sunny tropical beach with turquoise water and palm trees, summer outfits, golden hour light, photorealistic.'],
+    ['snow', 'חורף מושלג', '❄️', 'Move the people to a snowy winter wonderland with falling snow, cosy winter coats and warm lights, photorealistic.'],
+    ['poster', 'פוסטר של סרט', '🎬', 'Turn this photo into an epic blockbuster movie poster scene with dramatic lighting, lens flares and a cinematic colour grade (no text).'],
+    ['plush', 'בובות פרווה', '🧸', 'Turn every person into a cute plush toy version of themselves, soft fabric and stitching, on a cosy shelf.'],
+    ['bricks', 'לבני צעצוע', '🧱', 'Rebuild this whole scene out of colourful plastic toy building bricks, minifigure-style people, studio lighting.'],
+    ['80s', 'שנות ה־80', '📼', 'Make this look like an authentic 1980s photo: big hair, retro neon outfits, film colours, a laser-grid studio backdrop.'],
+    ['angels', 'מלאכים וכנפיים', '🕊️', 'Give every person soft white angel wings and a glowing halo among dreamy clouds and golden light, ethereal painting.'],
+    ['gold', 'פסל זהב', '🏆', 'Turn every person into a polished gold statue of themselves on a marble plinth in a museum, photorealistic.']
   ];
   /* the image model (FLUX.2 on Cloudflare) takes pictures under 512px */
   function photoB64(p) {
@@ -196,7 +249,13 @@
     ['comic', 'קומיקס', '💥', { id: 'comic', amt: 55 }],
     ['cartoon', 'סרט מצויר', '🎬', { id: 'cartoon', amt: 45 }],
     ['oil', 'ציור שמן', '🖼️', { id: 'oil', amt: 50 }],
-    ['sketch', 'רישום צבעוני', '✏️', { id: 'sketch', amt: 35 }]
+    ['sketch', 'רישום צבעוני', '✏️', { id: 'sketch', amt: 35 }],
+    ['water', 'אנימה בצבעי מים', '💧', { id: 'watercolor', amt: 45 }],
+    ['pastel', 'אנימה פסטל', '🌷', { id: 'pastel', amt: 55 }],
+    ['pop', 'אנימה פופ־ארט', '🟨', { id: 'pop', amt: 40 }],
+    ['stained', 'אנימה ויטראז׳', '⛪', { id: 'stained', amt: 40 }],
+    ['neon', 'אנימה ניאון', '💡', { id: 'neon', amt: 35 }],
+    ['mosaic', 'אנימה פסיפס', '🧩', { id: 'mosaic', amt: 45 }]
   ];
   FS.localRestyle = function (p, after, progress) {
     var orig = FS.img(p.origSrc || p.src);

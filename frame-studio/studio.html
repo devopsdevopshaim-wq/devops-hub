@@ -329,10 +329,32 @@
 
   <main class="stage" id="stage">
     <div class="stagebar">
+      <button class="btn small gold-b" id="to-grid" hidden title="כל התמונות פרושות על המסך">▦ כל התמונות</button>
       <div class="seg" role="group" aria-label="תצוגה"><button data-view="single" class="on">▣ עריכה</button><button data-view="split">◧ מקור | עריכה</button></div>
       <div class="seg" role="group" aria-label="זום"><button id="zoom-out" title="הקטנה">−</button><button id="zoom-fit" title="התאמה למסך"><span id="zoom-val">100%</span></button><button id="zoom-in" title="הגדלה">+</button></div>
       <span class="info" id="stage-info"></span>
     </div>
+    <section class="gv" id="gv" hidden aria-label="כל התמונות">
+      <div class="gv-bar">
+        <b id="gv-count"></b>
+        <div class="seg" id="gv-show" role="group" aria-label="סינון התצוגה"><button data-show="all" class="on">הכול</button><button data-show="marked">נבחרו</button><button data-show="edited">נערכו</button><button data-show="plain">לא נערכו</button><button data-show="bad">⚠ פסולות</button></div>
+        <select id="gv-size" aria-label="סינון לפי גודל"></select>
+        <span class="sep"></span>
+        <button class="btn small" id="gv-all">סימון הכול</button><button class="btn small" id="gv-none">ניקוי</button><button class="btn small" id="gv-inv">היפוך</button>
+        <label class="gv-zoom" title="גודל התמונות במסך">🔍<input type="range" id="gv-zoom" min="120" max="420" step="10" value="220"></label>
+        <label class="btn small">＋ תמונות<input type="file" id="gv-add" accept="image/*" multiple hidden></label>
+      </div>
+      <div class="gv-act" id="gv-act">
+        <span id="gv-sel">בוחרים תמונות: לחיצה על תמונה מסמנת אותה</span>
+        <button class="btn small primary" id="gv-edit" disabled>✏️ למסך העריכה</button>
+        <div class="gv-dd"><button class="btn small" id="gv-filter" disabled>🎨 פילטר ▾</button><div class="gv-menu" id="gv-filter-m" hidden></div></div>
+        <div class="gv-dd"><button class="btn small" id="gv-style" disabled>🖌️ סגנון ▾</button><div class="gv-menu" id="gv-style-m" hidden></div></div>
+        <div class="gv-dd"><button class="btn small" id="gv-fmt" disabled>📐 גודל ▾</button><div class="gv-menu list" id="gv-fmt-m" hidden></div></div>
+        <label class="copies">עותקים <input type="number" id="gv-copies" min="1" max="999" value="1"></label><button class="btn small" id="gv-copies-go" disabled>החלה</button>
+        <button class="btn small danger" id="gv-del" disabled title="הסרה מהפרויקט">🗑</button>
+      </div>
+      <div class="gv-tiles" id="gv-tiles"></div>
+    </section>
     <div class="batch-banner" id="batch-banner" hidden>✏️ עריכה מרובה פעילה: כל שינוי חל על <b>0</b> התמונות המסומנות</div>
     <div class="canvas-wrap" id="wrap">
       <figure class="side-orig"><canvas id="view-orig" aria-label="התמונה המקורית" hidden></canvas></figure>
@@ -374,6 +396,7 @@
 <script src="js/event-studio.js"></script>
 <script src="js/anime.js"></script>
 <script src="js/styles.js"></script>
+<script src="js/grid.js"></script>
 <script src="js/library.js"></script>
 <script src="js/account.js"></script>
 <script src="js/business.js"></script>
