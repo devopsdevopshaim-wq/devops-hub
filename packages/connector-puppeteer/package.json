@@ -16,7 +16,7 @@
     "@hint/utils-fs": "^1.0.16",
     "@hint/utils-network": "^1.0.27",
     "@hint/utils-types": "^1.2.1",
-    "is-ci": "^3.0.1",
+    "is-ci": "^4.1.0",
     "lockfile": "^1.0.4",
     "puppeteer-core": "^13.0.1"
   },
