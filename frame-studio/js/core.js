@@ -120,7 +120,9 @@
     }).then(function (im) {
       var fmt = FS.prefs.fmt || 'magnet';
       var p = { id: FS.uid(), name: (file.name || 'תמונה').replace(/\.[^.]+$/, ''), src: im.src, doc: null, undo: [], redo: [], cache: {}, copies: 1 };
-      p.doc = FS.newDoc(im, fmt);
+      var my = /^my:/.test(fmt) && FS.sizeOf ? FS.sizeOf(fmt) : null;   /* one of the owner's saved sizes */
+      p.doc = FS.newDoc(im, my ? 'magnet' : fmt);
+      if (my) FS.applyFormat(p.doc, 'cm', im, my.w, my.h);
       if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
       FS.state.photos.push(p);
       (FS.afterAdd || []).forEach(function (f) { try { f(p); } catch (e) { console.warn(e); } });

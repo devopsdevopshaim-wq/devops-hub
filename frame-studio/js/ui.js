@@ -125,12 +125,28 @@
   $$('.tools [role=tab]').forEach(function (b) { b.addEventListener('click', function () { openTab(b.dataset.tab); }); });
 
   /* ---------- formats ---------- */
+  /* the owner's own sizes (in mm), kept in this browser: they show in every size menu */
+  FS.mySizes = function () { return Array.isArray(FS.prefs.sizes) ? FS.prefs.sizes : []; };
+  FS.saveSize = function (name, wmm, hmm) {
+    var l = FS.mySizes().filter(function (z) { return !(z.w === wmm && z.h === hmm); });
+    l.push({ id: 's' + FS.uid(), name: String(name || '').slice(0, 30) || (wmm / 10) + '×' + (hmm / 10), w: wmm, h: hmm });
+    FS.prefs.sizes = l; FS.savePrefs(); FS.emit('sizes');
+  };
+  FS.delSize = function (id) { FS.prefs.sizes = FS.mySizes().filter(function (z) { return z.id !== id; }); FS.savePrefs(); FS.emit('sizes'); };
+  FS.sizeLabel = function (z) { return z.name + ' (' + (z.w / 10) + '×' + (z.h / 10) + ' ס״מ)'; };
   function fillFormats(sel, withOrig) {
-    sel.innerHTML = FS.FORMATS.filter(function (f) { return withOrig || f.id !== 'orig'; }).map(function (f) { return '<option value="' + f.id + '">' + f.name + '</option>'; }).join('');
+    sel.innerHTML = FS.FORMATS.filter(function (f) { return withOrig || f.id !== 'orig'; }).map(function (f) { return '<option value="' + f.id + '">' + f.name + '</option>'; }).join('') +
+      (FS.mySizes().length ? '<optgroup label="⭐ הגדלים שלי">' + FS.mySizes().map(function (z) { return '<option value="my:' + z.id + '">' + FS.esc(FS.sizeLabel(z)) + '</option>'; }).join('') + '</optgroup>' : '');
   }
-  fillFormats($('#fmt'), true); fillFormats($('#fmt-new'), true);
-  $('#fmt').insertAdjacentHTML('beforeend', '<option value="custom" hidden>לפי המסגרת</option><option value="cm">📐 גודל מותאם (ס״מ)…</option>');
-  $('#fmt-new').value = FS.prefs.fmt || 'magnet';
+  function fillAll() {
+    var a = $('#fmt').value, b = $('#fmt-new').value;
+    fillFormats($('#fmt'), true); fillFormats($('#fmt-new'), true);
+    $('#fmt').insertAdjacentHTML('beforeend', '<option value="custom" hidden>לפי המסגרת</option><option value="cm">📐 גודל מותאם (ס״מ)…</option>');
+    if (a) $('#fmt').value = a; if (b) $('#fmt-new').value = b;
+  }
+  fillAll(); FS.on('sizes', fillAll);
+  FS.sizeOf = function (v) { if (!/^my:/.test(v)) return null; return FS.mySizes().filter(function (z) { return 'my:' + z.id === v; })[0] || null; };
+  $('#fmt-new').value = FS.prefs.fmt || 'magnet'; if (!$('#fmt-new').value) $('#fmt-new').value = 'magnet';
   $('#fmt-new').addEventListener('change', function () { FS.prefs.fmt = this.value; FS.savePrefs(); });
   $('#frame-all').checked = !!FS.prefs.frameForAll;
   $('#frame-all').addEventListener('change', function () { FS.prefs.frameForAll = this.checked; FS.savePrefs(); });
@@ -149,11 +165,16 @@
   $('#fmt').addEventListener('change', function () {
     if (!FS.cur()) return;
     if (this.value === 'cm') {
-      var mm = FS.mmOf(FS.cur().doc), body = FS.dialog('גודל מותאם', '<p class="hint">מגנט או תמונה בכל גודל. הקובץ נשמר ב־300dpi, ובהדפסה יוצא בגודל המדויק.</p><div class="row2"><div class="field"><label>רוחב (ס״מ)</label><input type="number" id="cm-w" step="0.1" min="1" max="100" value="' + (mm[0] / 10).toFixed(1) + '"></div><div class="field"><label>גובה (ס״מ)</label><input type="number" id="cm-h" step="0.1" min="1" max="100" value="' + (mm[1] / 10).toFixed(1) + '"></div></div><div class="chips" id="cm-quick"><button data-s="5x7.5">5×7.5</button><button data-s="6x9">6×9</button><button data-s="7x10">7×10</button><button data-s="8x8">8×8</button><button data-s="5.4x8.6">כרטיס אשראי</button><button data-s="10x10">10×10</button></div><button class="btn primary wide" id="cm-go">✔ להחיל' + (FS.targets().length > 1 ? ' על ' + FS.targets().length + ' תמונות' : '') + '</button>');
+      var mm = FS.mmOf(FS.cur().doc), body = FS.dialog('גודל מותאם', '<p class="hint">מגנט או תמונה בכל גודל. הקובץ נשמר ב־300dpi, ובהדפסה יוצא בגודל המדויק.</p><div class="row2"><div class="field"><label>רוחב (ס״מ)</label><input type="number" id="cm-w" step="0.1" min="1" max="100" value="' + (mm[0] / 10).toFixed(1) + '"></div><div class="field"><label>גובה (ס״מ)</label><input type="number" id="cm-h" step="0.1" min="1" max="100" value="' + (mm[1] / 10).toFixed(1) + '"></div></div><div class="chips" id="cm-quick"><button data-s="5x7.5">5×7.5</button><button data-s="6x9">6×9</button><button data-s="7x10">7×10</button><button data-s="8x8">8×8</button><button data-s="5.4x8.6">כרטיס אשראי</button><button data-s="10x10">10×10</button></div><div class="field"><label><input type="checkbox" id="cm-keep"> ⭐ לשמור ברשימת הגדלים שלי, בשם:</label><input id="cm-name" maxlength="30" placeholder="למשל: מגנט ענק"></div><button class="btn primary wide" id="cm-go">✔ להחיל' + (FS.targets().length > 1 ? ' על ' + FS.targets().length + ' תמונות' : '') + '</button>' +
+        (FS.mySizes().length ? '<h4>⭐ הגדלים שלי</h4><div class="chips" id="cm-mine">' + FS.mySizes().map(function (z) { return '<span class="chip-x"><button data-w="' + z.w + '" data-h="' + z.h + '">' + FS.esc(FS.sizeLabel(z)) + '</button><i data-del="' + z.id + '" title="מחיקה">✕</i></span>'; }).join('') + '</div>' : ''));
       $$('#cm-quick button', body).forEach(function (b) { b.addEventListener('click', function () { var v = b.dataset.s.split('x'); $('#cm-w', body).value = v[0]; $('#cm-h', body).value = v[1]; }); });
-      $('#cm-go', body).addEventListener('click', function () { var w = Number($('#cm-w', body).value), h = Number($('#cm-h', body).value); if (!(w > 0 && h > 0)) return; FS.closeDialog(); setFormat('cm', w * 10, h * 10); });
+      $$('#cm-mine button', body).forEach(function (b) { b.addEventListener('click', function () { $('#cm-w', body).value = b.dataset.w / 10; $('#cm-h', body).value = b.dataset.h / 10; }); });
+      $$('#cm-mine [data-del]', body).forEach(function (x) { x.addEventListener('click', function () { FS.delSize(x.dataset.del); x.parentNode.remove(); }); });
+      $('#cm-name', body).addEventListener('input', function () { $('#cm-keep', body).checked = !!this.value.trim(); });
+      $('#cm-go', body).addEventListener('click', function () { var w = Number($('#cm-w', body).value), h = Number($('#cm-h', body).value); if (!(w > 0 && h > 0)) return; if ($('#cm-keep', body).checked) FS.saveSize($('#cm-name', body).value.trim(), Math.round(w * 10), Math.round(h * 10)); FS.closeDialog(); setFormat('cm', w * 10, h * 10); });
       this.value = FS.cur().doc.fmt; return;
     }
+    var my = FS.sizeOf(this.value); if (my) { setFormat('cm', my.w, my.h); this.value = 'cm'; return; }
     setFormat(this.value);
   });
 
@@ -169,6 +190,7 @@
       if (bad) FS.toast(bad + ' קבצים לא נפתחו. HEIC נפתח רק בספארי; אפשר לשמור כ־JPG ולנסות שוב.', 5000);
       if (S.photos.length > first) select(first);
       buildStrip();
+      if (S.photos.length > first) FS.emit('photos-added', { from: first, n: S.photos.length - first });
     });
   }
   FS.addFiles = addFiles;
@@ -220,8 +242,9 @@
   var lastClick = -1;
   function buildStrip() {
     var st = $('#strip'); st.innerHTML = '';
-    var frag = document.createDocumentFragment();
+    var frag = document.createDocumentFragment(), only = S.onlyMarked && FS.marked().length;
     S.photos.forEach(function (p, i) {
+      if (only && !S.marked[p.id] && i !== S.cur) return;
       var b = document.createElement('div'); b.className = 'th' + (i === S.cur ? ' on' : '') + (S.marked[p.id] ? ' marked' : ''); b.title = p.name; b.dataset.i = i; b.tabIndex = 0;
       b.innerHTML = '<label class="mk" title="סימון"><input type="checkbox"' + (S.marked[p.id] ? ' checked' : '') + '></label><div class="thc"></div><div class="tmeta"></div><span class="tn">' + (i + 1) + '</span><span class="x" title="הסרה">✕</span>';
       tileInfo(b, p);
@@ -250,8 +273,9 @@
   function markBar() {
     var n = FS.marked().length, tot = S.photos.length;
     $('#mark-count').textContent = n ? n + ' מסומנות מתוך ' + tot : tot + ' תמונות';
-    $('#stripbar').hidden = !tot;
-    var banner = $('#batch-banner'); banner.hidden = !(S.batch !== false && n > 1);
+    var grid = FS.gridMode && FS.gridMode();
+    $('#stripbar').hidden = !tot || grid;
+    var banner = $('#batch-banner'); banner.hidden = grid || !(S.batch !== false && n > 1);
     banner.querySelector('b').textContent = n;
     $('#batch-toggle').classList.toggle('on', S.batch !== false && n > 1);
     $('#batch-toggle').disabled = n < 2;
@@ -287,6 +311,7 @@
     if (S.cur >= S.photos.length) S.cur = S.photos.length - 1;
     S.sel = null; buildStrip(); FS.emit('doc'); FS.emit('history');
   }
+  FS.select = function (i) { select(i); };
   function select(i) {
     var prev = FS.cur(); if (prev && prev !== S.photos[i]) prev.cache = {}; /* only the photo on screen keeps its big preview in memory */
     S.cur = i; S.sel = null; lastClick = i;
