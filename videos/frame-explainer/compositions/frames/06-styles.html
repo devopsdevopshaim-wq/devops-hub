@@ -1,0 +1,216 @@
+<template>
+<div id="root" data-composition-id="06-styles" data-width="1920" data-height="1080" data-duration="9.5">
+  <style>
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+
+    /* full-bleed dark ground (ink) + sun bloom behind the card + ember counter-bloom */
+    #s06-bg { position: absolute; inset: 0; background: #1d1633; container-type: size; overflow: hidden; }
+    #s06-bloom {
+      position: absolute; left: -260px; top: -420px; width: 1560px; height: 1560px;
+      background: radial-gradient(circle at 50% 50%, rgba(201,164,92,0.62) 0%, rgba(228,210,175,0.30) 24%, rgba(219,194,145,0.12) 44%, rgba(29,22,51,0) 66%);
+    }
+    #s06-ember {
+      position: absolute; right: -380px; bottom: -420px; width: 1100px; height: 1100px;
+      background: radial-gradient(circle at 50% 50%, rgba(227,201,142,0.18) 0%, rgba(227,201,142,0.06) 40%, rgba(29,22,51,0) 68%);
+    }
+
+    #s06-stage { position: absolute; inset: 0; }
+
+    /* 4-step rail — same box as Frames 3–7; on the dark ground "ink" reads as paper */
+    #s06-rail {
+      position: absolute; right: 96px; top: 64px; height: 48px;
+      display: flex; align-items: center; gap: 22px;
+      font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 26px; line-height: 1;
+      color: #fbf6ee; white-space: nowrap;
+    }
+    #s06-rail .s06-step { display: inline-flex; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 2px solid transparent; }
+    #s06-rail .s06-check { color: #c9a45c; font-size: 22px; }
+    #s06-rail .s06-now { color: #c9a45c; border-bottom-color: #c9a45c; }
+    #s06-rail .s06-later { opacity: 0.4; }
+    #s06-rail .s06-dot { opacity: 0.4; }
+
+    /* the pinned anchor: one square split card */
+    #s06-card {
+      position: absolute; left: 160px; top: 96px; width: 704px; height: 704px;
+      border: 1px solid #c9a45c; overflow: hidden; background: #1d1633;
+    }
+    #s06-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    #s06-card .s06-style { clip-path: inset(0 0 0 50%); visibility: hidden; }
+    #s06-divider {
+      position: absolute; left: 351px; top: 0; width: 2px; height: 100%;
+      background: #c9a45c; transform-origin: 50% 0%;
+    }
+    .s06-tag {
+      position: absolute; top: 20px; font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 20px;
+      letter-spacing: 0.12em; color: #fbf6ee; background: rgba(29,22,51,0.72); padding: 6px 12px;
+    }
+    #s06-tag-before { left: 20px; }
+    #s06-tag-after { right: 20px; color: #1d1633; background: #c9a45c; }
+
+    /* label chip under the card — text swaps in place, width re-fits per state */
+    #s06-chiprow {
+      position: absolute; left: 160px; top: 828px; width: 706px; height: 60px;
+      display: flex; justify-content: center; align-items: center;
+    }
+    #s06-chip {
+      display: inline-block; background: #c9a45c; color: #1d1633;
+      font-family: 'Heebo', sans-serif; font-weight: 700; font-size: 34px; line-height: 1;
+      padding: 12px 30px 14px; white-space: nowrap;
+    }
+
+    /* right column */
+    #s06-copy { position: absolute; right: 96px; top: 236px; width: 820px; text-align: right; }
+    #s06-head {
+      font-family: 'Frank Ruhl Libre', serif; font-weight: 400; font-size: 132px; line-height: 1.0;
+      letter-spacing: -0.005em; color: #fbf6ee; margin: 0;
+    }
+    #s06-head .s06-ai { color: #c9a45c; }
+    #s06-rule { width: 820px; height: 1px; background: rgba(251,246,238,0.28); margin: 40px 0 28px; transform-origin: 100% 50%; }
+    #s06-count {
+      font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 40px; line-height: 1.2;
+      color: #fbf6ee; font-variant-numeric: tabular-nums;
+    }
+    #s06-count bdi { display: inline-block; min-width: 78px; text-align: left; color: #c9a45c; }
+    #s06-line {
+      font-family: 'Frank Ruhl Libre', serif; font-weight: 400; font-size: 84px; line-height: 1.06;
+      color: #c9a45c; margin-top: 40px;
+    }
+  </style>
+
+  <div id="s06-bg" class="clip" data-start="0" data-duration="9.5" data-track-index="0">
+    <div id="s06-bloom"></div>
+    <div id="s06-ember"></div>
+  </div>
+
+  <div id="s06-stage" class="clip" data-start="0" data-duration="9.5" data-track-index="1">
+    <div id="s06-rail" dir="rtl" lang="he" data-layout-allow-overflow>
+      <span class="s06-step"><span>1 מתאמים</span><span class="s06-check">✓</span></span>
+      <span class="s06-dot">·</span>
+      <span class="s06-step"><span>2 מעצבים</span><span class="s06-check">✓</span></span>
+      <span class="s06-dot">·</span>
+      <span class="s06-step s06-now"><span>3 מצלמים</span></span>
+      <span class="s06-dot">·</span>
+      <span class="s06-step s06-later"><span>4 מדביקים</span></span>
+    </div>
+
+    <div id="s06-card">
+      <img id="s06-img-original" src="assets/portrait-original.jpg" alt="">
+      <img class="s06-style" id="s06-img-comic" src="assets/portrait-comic.jpg" alt="">
+      <img class="s06-style" id="s06-img-manga" src="assets/portrait-manga.jpg" alt="">
+      <img class="s06-style" id="s06-img-pop" src="assets/portrait-pop.jpg" alt="">
+      <img class="s06-style" id="s06-img-cartoon" src="assets/portrait-cartoon.jpg" alt="">
+      <img class="s06-style" id="s06-img-mosaic" src="assets/portrait-mosaic.jpg" alt="">
+      <img class="s06-style" id="s06-img-neon" src="assets/portrait-neon.jpg" alt="">
+      <img class="s06-style" id="s06-img-sketch" src="assets/portrait-sketch.jpg" alt="">
+      <img class="s06-style" id="s06-img-oldphoto" src="assets/portrait-oldphoto.jpg" alt="">
+      <div id="s06-divider"></div>
+      <div class="s06-tag" id="s06-tag-before" dir="rtl" lang="he">מקור</div>
+      <div class="s06-tag" id="s06-tag-after" dir="rtl" lang="he">AI</div>
+    </div>
+
+    <div id="s06-chiprow">
+      <span id="s06-chip" dir="rtl" lang="he">קומיקס</span>
+    </div>
+
+    <div id="s06-copy" dir="rtl" lang="he">
+      <h1 id="s06-head" dir="rtl" lang="he">ובונוס:<br>סגנונות <span class="s06-ai">AI</span></h1>
+      <div id="s06-rule"></div>
+      <div id="s06-count" dir="rtl" lang="he"><bdi dir="ltr" id="s06-num">22+</bdi> סגנונות</div>
+      <div id="s06-line" dir="rtl" lang="he">האורחים לא מאמינים</div>
+    </div>
+  </div>
+
+  <script src="assets/vendor/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="06-styles"]');
+      var q = function (sel) { return root.querySelector(sel); };
+      var BEAT = 60 / 104; // 0.577s
+      var TOTAL = 9;
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1 (0.0–1.6s): anchor lands and pins ----
+      tl.fromTo(q('#s06-bloom'), { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 1.4, ease: 'power2.out' }, 0);
+      tl.fromTo(q('#s06-ember'), { opacity: 0 }, { opacity: 1, duration: 1.6, ease: 'power1.out' }, 0.2);
+      tl.fromTo(q('#s06-card'), { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.2)' }, 0);
+      tl.fromTo(q('#s06-head'), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, 0.3);
+      tl.fromTo(q('#s06-divider'), { scaleY: 0 }, { scaleY: 1, duration: 0.6, ease: 'power2.inOut' }, 0.6);
+      tl.fromTo(q('#s06-tag-before'), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power1.out' }, 1.0);
+      tl.fromTo(q('#s06-rule'), { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: 'power2.out' }, 1.0);
+
+      // ---- Scene 2 (1.6–7.0s): the styled half hard-cuts through 8 styles on the beat ----
+      // Discrete state schedule (reverse search). 8 styles from beat 3 → beat 10, hold, then
+      // cut back to comic for the Scene 3 hold.
+      var STYLES = [
+        { id: 'comic',    label: 'קומיקס' },
+        { id: 'manga',    label: 'מנגה' },
+        { id: 'pop',      label: 'פופ־ארט' },
+        { id: 'cartoon',  label: 'סרט מצויר' },
+        { id: 'mosaic',   label: 'פסיפס' },
+        { id: 'neon',     label: 'ניאון' },
+        { id: 'sketch',   label: 'סקיצה' },
+        { id: 'oldphoto', label: 'תמונה ישנה' }
+      ];
+      var SEQ = [{ t: 0, s: -1 }];
+      for (var i = 0; i < STYLES.length; i++) SEQ.push({ t: BEAT * (3 + i), s: i });
+      var T_BACK = BEAT * 12; // ~6.92s
+      SEQ.push({ t: T_BACK, s: 0 });
+
+      var imgs = STYLES.map(function (st) { return q('#s06-img-' + st.id); });
+      var chip = q('#s06-chip');
+      var tagAfter = q('#s06-tag-after');
+      var chipRow = q('#s06-chiprow');
+
+      function stateAt(time) {
+        for (var k = SEQ.length - 1; k >= 0; k--) { if (time >= SEQ[k].t) return SEQ[k].s; }
+        return -1;
+      }
+      var lastS = null;
+      function render(time) {
+        var s = stateAt(time);
+        if (s === lastS) return;
+        lastS = s;
+        for (var j = 0; j < imgs.length; j++) imgs[j].style.visibility = (j === s) ? 'visible' : 'hidden';
+        var on = s >= 0;
+        chipRow.style.visibility = on ? 'visible' : 'hidden';
+        tagAfter.style.visibility = on ? 'visible' : 'hidden';
+        chip.textContent = on ? STYLES[s].label : STYLES[0].label;
+      }
+      var driver = { t: 0 };
+      render(0);
+      tl.to(driver, { t: TOTAL, duration: TOTAL, ease: 'none', onUpdate: function () { render(driver.t); } }, 0);
+
+      // label "slap" on every cut (transform only on the chip; the row stays put)
+      for (var m = 1; m < SEQ.length; m++) {
+        tl.fromTo(chip, { scale: 1.12 }, { scale: 1, duration: 0.22, ease: 'power3.out', immediateRender: false }, SEQ[m].t);
+      }
+
+      // counter "22+ סגנונות" under the headline — counts up across the cycle
+      var num = q('#s06-num');
+      var cnt = { v: 1 };
+      tl.fromTo(q('#s06-count'), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, BEAT * 4);
+      tl.fromTo(cnt, { v: 1 }, {
+        v: 22, duration: BEAT * 6, ease: 'power1.inOut',
+        onUpdate: function () { num.textContent = Math.round(cnt.v) + '+'; }
+      }, BEAT * 4);
+
+      // ---- Scene 3 (7.0–9.0s): payoff line in gold, hold on the comic split ----
+      tl.fromTo(q('#s06-line'), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out' }, 7.0);
+
+      // pad to full duration (static hold — no exit)
+      tl.set({}, {}, TOTAL);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["06-styles"] = tl;
+    })();
+  </script>
+</div>
+</template>

@@ -15,7 +15,24 @@
   function rectHole(x, y, w, h) { return { x: x, y: y, w: w, h: h }; }
 
   /* each draw(ctx, w, h, color, thick) paints the frame and returns its window in pixels */
+  /* the studio's base frames: plain, smooth and white (any colour from the picker), light to draw; everything else is the
+     owner's own frames (PNG). The decorated frames below stay for the site's sample magnets and the event templates. */
+  function plain(c, w, h, col) { c.fillStyle = col; c.fillRect(0, 0, w, h); }
+  function roundRect(c, x, y, w, h, r) { c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  FS.BASE_FRAMES = ['w-thin', 'w-classic', 'w-wide', 'w-band', 'w-round', 'w-oval'];
   FS.GEN_FRAMES = [
+    { id: 'w-thin', name: 'לבנה דקה', color: '#ffffff', base: true, draw: function (c, w, h, col, t) {
+      var u = Math.min(w, h) * 0.035 * t; plain(c, w, h, col); var H = rectHole(u, u, w - u * 2, h - u * 2); cut(c, function () { c.rect(H.x, H.y, H.w, H.h); }); return H; } },
+    { id: 'w-classic', name: 'לבנה קלאסית', color: '#ffffff', base: true, draw: function (c, w, h, col, t) {
+      var u = Math.min(w, h) * 0.065 * t; plain(c, w, h, col); var H = rectHole(u, u, w - u * 2, h - u * 2); cut(c, function () { c.rect(H.x, H.y, H.w, H.h); }); return H; } },
+    { id: 'w-wide', name: 'לבנה רחבה', color: '#ffffff', base: true, draw: function (c, w, h, col, t) {
+      var u = Math.min(w, h) * 0.11 * t; plain(c, w, h, col); var H = rectHole(u, u, w - u * 2, h - u * 2); cut(c, function () { c.rect(H.x, H.y, H.w, H.h); }); return H; } },
+    { id: 'w-band', name: 'לבנה עם פס לכיתוב', color: '#ffffff', base: true, draw: function (c, w, h, col, t) {
+      var u = Math.min(w, h) * 0.05 * t, b = Math.max(h, w) * 0.17; plain(c, w, h, col); var H = rectHole(u, u, w - u * 2, h - u - b); cut(c, function () { c.rect(H.x, H.y, H.w, H.h); }); return H; } },
+    { id: 'w-round', name: 'לבנה, פינות עגולות', color: '#ffffff', base: true, draw: function (c, w, h, col, t) {
+      var u = Math.min(w, h) * 0.06 * t, r = Math.min(w, h) * 0.07; plain(c, w, h, col); var H = rectHole(u, u, w - u * 2, h - u * 2); cut(c, function () { roundRect(c, H.x, H.y, H.w, H.h, r); }); return H; } },
+    { id: 'w-oval', name: 'לבנה, חלון אובלי', color: '#ffffff', base: true, draw: function (c, w, h, col, t) {
+      var u = Math.min(w, h) * 0.08 * t; plain(c, w, h, col); var H = rectHole(u, u, w - u * 2, h - u * 2); cut(c, function () { c.ellipse(w / 2, h / 2, H.w / 2, H.h / 2, 0, 0, Math.PI * 2); }); return H; } },
     { id: 'polaroid', name: 'פולארויד', color: '#fbfaf6', draw: function (c, w, h, col, t) {
       var u = Math.min(w, h) * 0.06 * t; paper(c, w, h, col, 7);
       var H = rectHole(u, u, w - u * 2, h - u * 4.2); cut(c, function () { c.rect(H.x, H.y, H.w, H.h); });
@@ -160,8 +177,20 @@
     if (!best || best.n < w * h * 0.02) return null;
     return { x: best.x0 / w, y: best.y0 / h, w: (best.x1 - best.x0 + 1) / w, h: (best.y1 - best.y0 + 1) / h };
   };
-  FS.addUserFrame = function (src, name, save) {
+  /* a frame file is made light before it is kept: at most 2400px on its long side (plenty for a 10x15cm print at 400dpi),
+     re-encoded as WebP with its transparency when the browser can (PNG otherwise), only when that is actually smaller */
+  FS.compactFrame = function (src) {
     return FS.loadImg(src).then(function (img) {
+      var W = img.naturalWidth, H = img.naturalHeight, k = Math.min(1, 2400 / Math.max(W, H));
+      if (k === 1 && src.length < 1500000) return src;
+      var c = FS.canvas(Math.round(W * k), Math.round(H * k)), x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
+      var webp = c.toDataURL('image/webp', 0.9), png = /^data:image\/webp/.test(webp) ? null : c.toDataURL('image/png');
+      var out = webp && /^data:image\/webp/.test(webp) ? webp : png;
+      return out.length < src.length ? out : src;
+    });
+  };
+  FS.addUserFrame = function (src, name, save) {
+    return (save === false ? Promise.resolve(src) : FS.compactFrame(src)).then(function (s2) { src = s2; return FS.loadImg(src); }).then(function (img) {
       var id = 'u' + FS.uid(), hole = FS.detectHole(img);
       USER[id] = { id: id, name: name || 'מסגרת שלי', src: src, hole: hole || { x: 0, y: 0, w: 1, h: 1 }, solid: !hole, aspect: img.naturalWidth / img.naturalHeight };
       if (save !== false) FS.store.put('frames', { id: id, name: USER[id].name, src: src, hole: USER[id].hole, solid: USER[id].solid, at: Date.now() }).catch(function () {});
@@ -171,7 +200,9 @@
   FS.loadUserFrames = function () {
     return FS.store.all('frames').then(function (list) {
       return Promise.all((list || []).sort(function (a, b) { return a.at - b.at; }).map(function (f) {
-        return FS.loadImg(f.src).then(function (img) { USER[f.id] = { id: f.id, name: f.name, src: f.src, hole: f.hole, solid: f.solid, aspect: img.naturalWidth / img.naturalHeight }; }).catch(function () {});
+        /* frames kept before were full size: they are made light once, here, and stored again */
+        var light = f.src.length > 1500000 ? FS.compactFrame(f.src).then(function (s2) { if (s2 !== f.src) { f.src = s2; FS.store.put('frames', f).catch(function () {}); } return s2; }) : Promise.resolve(f.src);
+        return light.then(FS.loadImg).then(function (img) { USER[f.id] = { id: f.id, name: f.name, src: f.src, hole: f.hole, solid: f.solid, aspect: img.naturalWidth / img.naturalHeight }; }).catch(function () {});
       }));
     }).catch(function () {});
   };

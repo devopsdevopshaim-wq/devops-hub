@@ -311,3 +311,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold2); bor
 .l-end { text-align: center; }
 .hero h1 span.t1 { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: inherit; }
 .dz-cta { margin: -6px 0 22px; }
+/* the two videos: the explainer large, the styles promo beside it */
+.vids { background: linear-gradient(180deg, var(--cream), var(--cream2)); }
+.vid-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 22px; max-width: 1200px; margin: 0 auto; align-items: start; }
+.vid { margin: 0; background: var(--plum); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow); }
+.vid video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.vid figcaption { color: #f3e6c8; padding: 12px 16px; font-weight: 600; font-size: 15px; }
+@media (max-width: 860px) { .vid-grid { grid-template-columns: 1fr; } }

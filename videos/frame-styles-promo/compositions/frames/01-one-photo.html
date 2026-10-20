@@ -1,0 +1,256 @@
+<template>
+  <style>
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      color: #1d1633;
+    }
+
+    /* full-bleed ground: paper + sun bloom (left-center, behind the card) + ember counter-bloom */
+    .f01-ground {
+      position: absolute;
+      inset: 0;
+      container-type: size;
+      background: #fbf6ee;
+      overflow: hidden;
+    }
+    .f01-sun {
+      position: absolute;
+      left: -153.6px;
+      top: -14cqh;
+      width: 1228.8px;
+      height: 1228.8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%,
+        rgba(201, 164, 92, 0.78) 0%,
+        rgba(228, 210, 175, 0.62) 30%,
+        rgba(219, 194, 145, 0.2) 55%,
+        rgba(251, 246, 238, 0) 70%);
+    }
+    .f01-ember {
+      position: absolute;
+      right: -268.8px;
+      top: -422.4px;
+      width: 844.8px;
+      height: 844.8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%,
+        rgba(227, 201, 142, 0.2) 0%,
+        rgba(227, 201, 142, 0.08) 45%,
+        rgba(227, 201, 142, 0) 70%);
+    }
+
+    /* hero photo card — left ~40%, slight tilt (tilt set by GSAP fromTo, not CSS transform) */
+    .f01-stage {
+      position: absolute;
+      inset: 0;
+      container-type: size;
+    }
+    .f01-card {
+      position: absolute;
+      left: 172.8px;          /* ~173px */
+      top: 130px;
+      width: 590px;
+      height: 740px;      /* bottom edge 870px, under the 900px keep-out */
+      background: #fbf6ee;
+      border: 1px solid #c9a45c;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .f01-card-scale {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .f01-photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 30%;
+      display: block;
+    }
+    .f01-photo.f01-flash { opacity: 0; }
+
+    /* headline — right side, RTL, two fixed slots swapped in place */
+    .f01-head {
+      position: absolute;
+      right: 119px;       /* ~119px */
+      top: 205px;
+      width: 960px;
+      text-align: right;
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 199.7px;  /* ~200px */
+      line-height: 0.96;
+      letter-spacing: -0.018em;
+      color: #1d1633;
+    }
+    .f01-line {
+      display: block;
+      min-height: 0.96em;
+      white-space: nowrap;
+    }
+    .f01-rule {
+      position: absolute;
+      right: 119px;
+      top: 640px;
+      width: 760px;
+      height: 1px;
+      background: #1d1633;
+    }
+    .f01-label {
+      position: absolute;
+      right: 119px;
+      top: 680px;
+      padding: 14px 22px 16px;
+      background: #c9a45c;
+      color: #1d1633;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 700;
+      font-size: 30.7px;   /* ~31px */
+      line-height: 1.2;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .f01-pagenum {
+      position: absolute;
+      right: 119px;
+      top: 862px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      color: rgba(29, 22, 51, 0.75);
+    }
+  </style>
+
+  <div id="root" data-composition-id="01-one-photo" data-start="0" data-duration="4.5" data-width="1920" data-height="1080">
+    <div class="f01-ground clip" id="01-one-photo-ground" data-start="0" data-duration="4.5" data-track-index="0">
+      <div class="f01-sun" id="01-one-photo-sun"></div>
+      <div class="f01-ember"></div>
+    </div>
+
+    <div class="f01-stage clip" id="01-one-photo-stage" data-start="0" data-duration="4.5" data-track-index="1">
+      <div class="f01-card" id="01-one-photo-card">
+        <div class="f01-card-scale" id="01-one-photo-card-scale">
+          <img class="f01-photo" id="01-one-photo-img-original" src="assets/portrait-original.jpg" alt="" />
+          <img class="f01-photo f01-flash" id="01-one-photo-img-comic" src="assets/portrait-comic.jpg" alt="" />
+          <img class="f01-photo f01-flash" id="01-one-photo-img-pop" src="assets/portrait-pop.jpg" alt="" />
+          <img class="f01-photo f01-flash" id="01-one-photo-img-manga" src="assets/portrait-manga.jpg" alt="" />
+        </div>
+      </div>
+
+      <div class="f01-head" dir="rtl" lang="he">
+        <span class="f01-line" id="01-one-photo-w1" dir="rtl" lang="he">תמונה</span>
+        <span class="f01-line" id="01-one-photo-w2" dir="rtl" lang="he">אחת.</span>
+      </div>
+      <div class="f01-rule" id="01-one-photo-rule"></div>
+      <div class="f01-label" id="01-one-photo-label" dir="rtl" lang="he"><bdi dir="ltr">22</bdi> סגנונות מיידיים + עוד ב־<bdi dir="ltr">AI</bdi></div>
+      <div class="f01-pagenum" dir="ltr">01</div>
+    </div>
+  </div>
+
+  <script src="assets/vendor/gsap.min.js"></script>
+  <script>
+    (function () {
+      var ID = "01-one-photo";
+      var root = document.querySelector('[data-composition-id="' + ID + '"]');
+      var $ = function (s) { return root.querySelector(s); };
+      var byId = function (id) { return root.querySelector('[id="' + ID + '-' + id + '"]'); };
+
+      var BEAT = 60 / 112;            // 0.536s — music bed grid
+      var TOTAL = 4;
+      var tl = gsap.timeline({ paused: true });
+
+      var card = byId("card");
+      var cardScale = byId("card-scale");
+      var w1 = byId("w1");
+      var w2 = byId("w2");
+      var rule = byId("rule");
+      var label = byId("label");
+      var sun = byId("sun");
+      var imgs = {
+        original: byId("img-original"),
+        comic: byId("img-comic"),
+        pop: byId("img-pop"),
+        manga: byId("img-manga")
+      };
+
+      // ---- Scene 1 (0.0–1.4s): card rises + fades in (tilted), per-word staggered headline reveal
+      tl.fromTo(card,
+        { opacity: 0, y: 70, rotation: -2.5 },
+        { opacity: 1, y: 0, rotation: -2.5, duration: 0.9, ease: "power3.out" }, 0);
+      // slow push underneath the whole shot (camera feel, card stays put)
+      tl.fromTo(cardScale, { scale: 1.0 }, { scale: 1.035, duration: TOTAL, ease: "none" }, 0);
+      tl.fromTo(sun, { scale: 0.94, opacity: 0.85 }, { scale: 1.04, opacity: 1, duration: TOTAL, ease: "sine.inOut" }, 0);
+
+      // per-word staggered fade/blur rise (RTL: first word on the top line)
+      tl.fromTo(w1,
+        { opacity: 0, y: 40, filter: "blur(10px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 0.2);
+      tl.fromTo(w2,
+        { opacity: 0, y: 40, filter: "blur(10px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, BEAT + 0.1);
+      // hairline drawn right→left under the headline
+      tl.fromTo(rule,
+        { scaleX: 0, transformOrigin: "100% 50%" },
+        { scaleX: 1, transformOrigin: "100% 50%", duration: 0.7, ease: "power2.inOut" }, 2 * BEAT);
+
+      // ---- Scene 2 (1.4–2.9s): in-place hard-cut token swap + card flashes one style per beat
+      // ---- Scene 3 (2.9–4.0s): card settles back on comic; micro-label fades in; hold
+      // Sparse state schedule (discrete-text-sequence / dynamic-content-sequencing): each state
+      // holds from its t until the next. Instant swaps, DOM written only on state change.
+      var SEQUENCE = [
+        { t: 0,        w1: "תמונה", w2: "אחת.",     img: "original" },
+        { t: 3 * BEAT, w1: "עשרות", w2: "סגנונות.", img: "comic" },   // 1.607s
+        { t: 4 * BEAT, w1: "עשרות", w2: "סגנונות.", img: "pop" },     // 2.143s
+        { t: 5 * BEAT, w1: "עשרות", w2: "סגנונות.", img: "manga" },   // 2.679s
+        { t: 6 * BEAT, w1: "עשרות", w2: "סגנונות.", img: "comic" }    // 3.214s settle
+      ];
+      function stateAt(time) {
+        for (var i = SEQUENCE.length - 1; i >= 0; i--) {
+          if (time >= SEQUENCE[i].t) return i;
+        }
+        return 0;
+      }
+      var last = -1;
+      function render(i) {
+        if (i === last) return;
+        var s = SEQUENCE[i];
+        w1.textContent = s.w1;
+        w2.textContent = s.w2;
+        for (var k in imgs) imgs[k].style.opacity = (k === s.img) ? "1" : "0";
+        last = i;
+      }
+      var driver = { t: 0 };
+      tl.to(driver, {
+        t: TOTAL,
+        duration: TOTAL,
+        ease: "none",
+        onUpdate: function () { render(stateAt(driver.t)); }
+      }, 0);
+
+      // micro-label lands with the settle beat, then the frame holds still
+      tl.fromTo(label,
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 6 * BEAT);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines[ID] = tl;
+    })();
+  </script>
+</template>

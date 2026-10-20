@@ -169,7 +169,7 @@
     <section data-pane="frames" hidden>
       <h2>מסגרות</h2>
       <a class="btn primary wide" href="design.html?owner" target="_blank" rel="noopener">📨 מסגרת מהזמנת האירוע (AI) ←</a>
-      <p class="hint">מעלים את ההזמנה, ה־AI לוקח ממנה צבעים, שמות וקישוטים, ו"🖼️ הוספה למסגרות שלי בסטודיו" מביא את המסגרת לכאן.</p>
+      <p class="hint">מעלים את ההזמנה, והמעצב בונה ממנה מסגרת שלמה לאורך ולרוחב. "🖼️ הוספה למסגרות שלי בסטודיו" מביא אותה לכאן. כל מסגרת נשמרת מוקטנת וקלה.</p>
       <label class="drop small">
         <input type="file" id="file-frames" accept="image/png,image/webp" multiple hidden />
         <b>➕ הוספת מסגרת PNG</b><span>החלון השקוף נמצא אוטומטית</span>
@@ -182,10 +182,11 @@
         <label class="check png-only"><input type="checkbox" id="frame-clip" /> לחתוך את התמונה לחלון</label>
         <div class="field"><label>שקיפות <output id="o-fop">100%</output></label><input type="range" id="frame-op" min="10" max="100" value="100" /></div>
       </div>
+      <h3>מסגרות בסיס</h3>
+      <div class="grid frames" id="gen-frames"></div>
       <h3>המסגרות שלי</h3>
       <div class="grid frames" id="user-frames"><p class="empty">עדיין אין. מוסיפים PNG עם חלון שקוף, או שומרים מסגרת מעוצבת מלשונית "שמירה".</p></div>
-      <h3>מסגרות מוכנות</h3>
-      <div class="grid frames" id="gen-frames"></div>
+      <button class="btn small danger wide" id="frames-clear">🗑 מחיקת כל המסגרות השמורות</button>
     </section>
 
     <!-- text & stickers -->
@@ -207,16 +208,14 @@
       <p class="hint">חל על התמונה, או על כל המסומנות כשהעריכה המרובה פעילה.</p>
       <div class="field"><label>עוצמת הסגנון <output id="o-style-amt">100%</output></label><input type="range" id="style-amt" min="10" max="100" value="100" /></div>
       <div class="row2"><button class="btn" id="style-none">✕ בלי סגנון</button><button class="btn" id="style-orig">↩ החזרת המקור (אחרי AI)</button></div>
-      <h3>⚡ מיידיים, בלי אינטרנט</h3>
-      <div class="grid thumbs" id="local-styles"></div>
-      <h3>🧠 AI במחשב: חינם, בלי הגבלה</h3>
-      <p class="hint">רץ במחשב שלך ושומר על הפנים. בפעם הראשונה נטען מודל של כ־9MB, ואחר כך זה עובד גם בלי אינטרנט. בין כמה שניות לדקה לתמונה, לפי מהירות המחשב.</p>
-      <div class="ai-styles" id="local-ai-styles"></div>
-      <h3>🤖 טרנספורמציות AI בשרת</h3>
-      <p class="hint">מודל FLUX.2 בשרת של Cloudflare, חינם עד מכסה יומית. התמונה נשלחת מוקטנת ומצוירת מחדש, עד דקה לתמונה. בטרנספורמציות גדולות (גיבורי על, חיות) הפנים עלולות להשתנות.</p>
+      <p class="offline-badge">🔌 הכול כאן רץ במחשב שלך, גם בלי אינטרנט. התמונות לא יוצאות מהמחשב.</p>
+      <h3>✨ מראות AI מיידיים</h3>
       <div class="ai-styles" id="ai-styles"></div>
-      <div class="field"><label>או לתאר במילים</label><textarea id="ai-custom" rows="2" placeholder="למשל: להלביש את כולם בתחפושות של פיראטים על ספינה"></textarea></div>
-      <button class="btn primary wide" id="ai-custom-go">✨ לעשות</button>
+      <h3>🧠 אנימה AI במחשב</h3>
+      <p class="hint">מודל AI שנשמר באתר ורץ אצלך (בלי שרת, בלי הגבלה) ושומר על הפנים. בין כמה שניות לדקה לתמונה, לפי מהירות המחשב.</p>
+      <div class="ai-styles" id="local-ai-styles"></div>
+      <h3>⚡ סגנונות ציור</h3>
+      <div class="grid thumbs" id="local-styles"></div>
     </section>
 
     <!-- ai -->
@@ -341,6 +340,7 @@
         <select id="gv-size" aria-label="סינון לפי גודל"></select>
         <span class="sep"></span>
         <button class="btn small" id="gv-all">סימון הכול</button><button class="btn small" id="gv-none">ניקוי</button><button class="btn small" id="gv-inv">היפוך</button>
+        <div class="seg" id="gv-view" role="group" aria-label="איך להציג"><button data-v="whole" title="כל התמונה, בלי חיתוך">🖼 כל התמונה</button><button data-v="page" title="כמו שתודפס, עם המסגרת">🧲 כמו בהדפסה</button></div>
         <label class="gv-zoom" title="גודל התמונות במסך">🔍<input type="range" id="gv-zoom" min="120" max="420" step="10" value="220"></label>
         <label class="btn small">＋ תמונות<input type="file" id="gv-add" accept="image/*" multiple hidden></label>
       </div>

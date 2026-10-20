@@ -1,0 +1,248 @@
+<template>
+  <style>
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      color: #1d1633;
+    }
+
+    /* full-bleed ground: paper + one centered sun-bloom + subordinate ember */
+    [id="08-cta-ground"] {
+      position: absolute;
+      inset: 0;
+      background: #fbf6ee;
+      container-type: size;
+    }
+    [class~="08-cta-bloom"] {
+      position: absolute;
+      left: 290px;
+      top: 40px;
+      width: 1340px;
+      height: 880px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(201,164,92,0.78) 0%, rgba(228,210,175,0.62) 38%, rgba(219,194,145,0.20) 70%, rgba(251,246,238,0) 100%);
+    }
+    [class~="08-cta-ember"] {
+      position: absolute;
+      right: -260px;
+      top: -300px;
+      width: 900px;
+      height: 760px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(227,201,142,0.20) 0%, rgba(227,201,142,0) 100%);
+    }
+
+    [class~="08-cta-stage"] {
+      position: absolute;
+      inset: 0;
+      transform-origin: 960px 460px;
+    }
+
+    /* magnets row (supporting) */
+    [class~="08-cta-magnets"] {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 96px;
+      height: 220px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 44px;
+    }
+    [class~="08-cta-magnet"] {
+      width: 136px;
+      height: 204px;
+      object-fit: cover;
+      display: block;
+      box-shadow: 0 14px 28px rgba(29,22,51,0.10);
+    }
+
+    /* headline */
+    [class~="08-cta-head"] {
+      position: absolute;
+      left: 160px;
+      right: 160px;
+      top: 372px;
+      text-align: center;
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 136px;
+      line-height: 1.06;
+      letter-spacing: -0.005em;
+      color: #1d1633;
+      white-space: nowrap;
+    }
+    [class~="08-cta-word"] {
+      display: inline-block;
+      margin: 0 0.12em;
+    }
+
+    [class~="08-cta-sub"] {
+      position: absolute;
+      left: 160px;
+      right: 160px;
+      top: 548px;
+      text-align: center;
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 66px;
+      line-height: 1.1;
+      color: #c9a45c;
+    }
+
+    [class~="08-cta-rule"] {
+      position: absolute;
+      left: 260px;
+      width: 1400px;
+      top: 690px;
+      height: 1px;
+      background: #c9a45c;
+      transform-origin: 50% 50%;
+    }
+
+    [class~="08-cta-contact"] {
+      position: absolute;
+      left: 160px;
+      right: 160px;
+      top: 724px;
+      height: 76px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 40px;
+      color: #1d1633;
+    }
+    [class~="08-cta-item"] {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      white-space: nowrap;
+    }
+    [class~="08-cta-brand"] {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 52px;
+      line-height: 1;
+    }
+    [class~="08-cta-phone"] {
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 38px;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      line-height: 1;
+    }
+    [class~="08-cta-site"] {
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 26px;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      opacity: 0.8;
+    }
+    [class~="08-cta-sep"] {
+      width: 1px;
+      height: 44px;
+      background: rgba(29,22,51,0.2);
+    }
+    [class~="08-cta-icon"] {
+      width: 38px;
+      height: 38px;
+      display: block;
+    }
+  </style>
+
+  <div id="root" data-composition-id="08-cta" data-width="1920" data-height="1080">
+    <div id="08-cta-ground" class="clip" data-start="0" data-duration="7" data-track-index="0">
+      <div class="08-cta-bloom" id="08-cta-bloom"></div>
+      <div class="08-cta-ember" id="08-cta-ember"></div>
+    </div>
+
+    <div class="08-cta-stage clip" id="08-cta-stage" data-start="0" data-duration="7" data-track-index="1">
+      <div class="08-cta-magnets">
+        <img class="08-cta-magnet" id="08-cta-mag-a" src="assets/magnet-0.png" alt="" />
+        <img class="08-cta-magnet" id="08-cta-mag-b" src="assets/magnet-2.png" alt="" />
+        <img class="08-cta-magnet" id="08-cta-mag-c" src="assets/magnet-5.png" alt="" />
+      </div>
+
+      <div class="08-cta-head" dir="rtl" lang="he">
+        <span class="08-cta-word">התאריך</span><span class="08-cta-word">שלכם</span><span class="08-cta-word">עוד</span><span class="08-cta-word">פנוי?</span>
+      </div>
+
+      <div class="08-cta-sub" id="08-cta-sub" dir="rtl" lang="he">בודקים באתר בשנייה</div>
+
+      <div class="08-cta-rule" id="08-cta-rule"></div>
+
+      <div class="08-cta-contact" dir="rtl" lang="he">
+        <div class="08-cta-item" id="08-cta-c1"><span class="08-cta-brand" dir="rtl" lang="he">פריים מגנטים</span></div>
+        <div class="08-cta-sep" id="08-cta-s1"></div>
+        <div class="08-cta-item" id="08-cta-c2">
+          <svg class="08-cta-icon" viewBox="0 0 40 40" aria-hidden="true">
+            <path d="M20 5c-8.3 0-15 5.9-15 13.2 0 3.9 1.9 7.4 5 9.8L8.6 35l7.6-3.6c1.2.3 2.5.4 3.8.4 8.3 0 15-5.9 15-13.6S28.3 5 20 5z" fill="none" stroke="#1d1633" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="13.5" cy="18.5" r="1.8" fill="#c9a45c"/>
+            <circle cx="20" cy="18.5" r="1.8" fill="#c9a45c"/>
+            <circle cx="26.5" cy="18.5" r="1.8" fill="#c9a45c"/>
+          </svg>
+          <span class="08-cta-phone"><bdi dir="ltr">054-4979771</bdi></span>
+        </div>
+        <div class="08-cta-sep" id="08-cta-s2"></div>
+        <div class="08-cta-item" id="08-cta-c3"><span class="08-cta-site"><bdi dir="ltr">devopsdevopshaim-wq.github.io/devops-hub/frame-studio</bdi></span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/vendor/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var root = document.querySelector('[data-composition-id="08-cta"]');
+      var q = function (sel) { return root.querySelectorAll(sel); };
+      var one = function (sel) { return root.querySelector(sel); };
+      var B = 0.577; // one beat at 104 bpm
+
+      var tl = gsap.timeline({ paused: true });
+
+      // macro camera: slow push-in on the stage + gentle bloom breathe (finite, one pass)
+      tl.fromTo(one('[id=\"08-cta-stage\"]'), { scale: 1 }, { scale: 1.03, duration: 6.5, ease: 'none' }, 0);
+      tl.fromTo(one('[id=\"08-cta-bloom\"]'), { scale: 0.94, opacity: 0.85 }, { scale: 1.04, opacity: 1, duration: 6.5, ease: 'sine.inOut' }, 0);
+
+      // Scene 1 (0.0-1.6): per-word staggered reveal of the headline, reading order (RTL)
+      tl.fromTo(q('[class~="08-cta-word"]'),
+        { opacity: 0, y: 46, scale: 0.96 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: 'power3.out', stagger: B / 2 }, 0.12);
+
+      // Scene 2 (1.6-3.6): gold line under the headline, then the three magnets slide up into a row
+      tl.fromTo(one('[id=\"08-cta-sub\"]'), { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, B * 3);
+      tl.fromTo(one('[id=\"08-cta-mag-a\"]'), { opacity: 0, y: 90, rotation: -9 }, { opacity: 1, y: 0, rotation: -4, duration: 0.7, ease: 'back.out(1.5)' }, B * 3 + 0.35);
+      tl.fromTo(one('[id=\"08-cta-mag-b\"]'), { opacity: 0, y: 90, rotation: 3 }, { opacity: 1, y: -10, rotation: 0, duration: 0.7, ease: 'back.out(1.5)' }, B * 3 + 0.35 + B / 2);
+      tl.fromTo(one('[id=\"08-cta-mag-c\"]'), { opacity: 0, y: 90, rotation: 9 }, { opacity: 1, y: 0, rotation: 4, duration: 0.7, ease: 'back.out(1.5)' }, B * 3 + 0.35 + B);
+
+      // Scene 3 (3.6-5.6): gold hairline draws from center, then brand · phone · site land in a row
+      tl.fromTo(one('[id=\"08-cta-rule\"]'), { scaleX: 0 }, { scaleX: 1, duration: 0.65, ease: 'power2.inOut' }, 3.6);
+      tl.fromTo(one('[id=\"08-cta-c1\"]'), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 3.6 + B);
+      tl.fromTo(one('[id=\"08-cta-s1\"]'), { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: 0.35, ease: 'power2.out' }, 3.6 + B * 1.5);
+      tl.fromTo(one('[id=\"08-cta-c2\"]'), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 3.6 + B * 1.5);
+      tl.fromTo(one('[id=\"08-cta-s2\"]'), { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: 0.35, ease: 'power2.out' }, 3.6 + B * 2);
+      tl.fromTo(one('[id=\"08-cta-c3\"]'), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 3.6 + B * 2);
+
+      // Scene 4 (5.6-7.0): hold, then the real exit — the last 0.5s fades to paper
+      tl.fromTo(one('[id=\"08-cta-stage\"]'), { opacity: 1 }, { opacity: 0, duration: 0.5, ease: 'power1.inOut', immediateRender: false }, 6.5);
+      tl.fromTo(one('[id=\"08-cta-bloom\"]'), { opacity: 1 }, { opacity: 0, duration: 0.5, ease: 'power1.inOut', immediateRender: false }, 6.5);
+      tl.fromTo(one('[id=\"08-cta-ember\"]'), { opacity: 1 }, { opacity: 0, duration: 0.5, ease: 'power1.inOut', immediateRender: false }, 6.5);
+
+      // pin the timeline length to the frame duration
+      tl.set({}, {}, 7);
+
+      window.__timelines["08-cta"] = tl;
+    })();
+  </script>
+</template>

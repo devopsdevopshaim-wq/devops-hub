@@ -1,0 +1,270 @@
+<template>
+  <div id="root" data-composition-id="03-watch-it-change" data-start="0" data-duration="7.4" data-width="1920" data-height="1080">
+    <style>
+      @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+      @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        container-type: size;
+      }
+
+      /* full-bleed ink ground with one sun bloom + ember counter-bloom */
+      .wic-bg {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 46% 52% at 52% 44%, rgba(201,164,92,0.34) 0%, rgba(228,210,175,0.14) 38%, rgba(219,194,145,0.05) 62%, rgba(29,22,51,0) 80%),
+          radial-gradient(circle at 8% 92%, rgba(227,201,142,0.16) 0%, rgba(227,201,142,0) 28%),
+          #1d1633;
+      }
+
+      .wic-stage {
+        position: absolute;
+        inset: 0;
+      }
+
+      .wic-card {
+        position: absolute;
+        left: 393px;
+        top: 72px;
+        width: 1134px;
+        height: 756px;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #1d1633;
+      }
+
+      .wic-layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 50% 32%;
+        display: block;
+      }
+      .wic-layer.wic-incoming { clip-path: inset(0% 0% 0% 100%); }
+
+      .wic-hairline {
+        position: absolute;
+        inset: 0;
+        border: 1px solid #c9a45c;
+        border-radius: 18px;
+        pointer-events: none;
+      }
+
+      .wic-wipe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        margin-left: -2px;
+        background: #c9a45c;
+        opacity: 0;
+      }
+      .wic-wipe-sheen {
+        position: absolute;
+        top: 0;
+        right: 4px;
+        width: 90px;
+        height: 100%;
+        background: linear-gradient(to right, rgba(201,164,92,0) 0%, rgba(228,210,175,0.42) 100%);
+      }
+
+      .wic-pill {
+        position: absolute;
+        top: 30px;
+        right: 30px;
+        height: 84px;
+        min-width: 210px;
+        padding: 0 38px;
+        border-radius: 42px;
+        background: #c9a45c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+      }
+      .wic-pill-label {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Frank Ruhl Libre', serif;
+        font-weight: 400;
+        font-size: 52px;
+        line-height: 1;
+        letter-spacing: -0.005em;
+        color: #1d1633;
+        white-space: nowrap;
+        text-align: center;
+        opacity: 0;
+        visibility: hidden;
+      }
+      .wic-pill-sizer {
+        visibility: hidden;
+        font-family: 'Frank Ruhl Libre', serif;
+        font-size: 52px;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .wic-counter {
+        position: absolute;
+        left: 393px;
+        top: 852px;
+        height: 34px;
+        font-family: 'Heebo', sans-serif;
+        font-weight: 500;
+        font-size: 28px;
+        line-height: 34px;
+        letter-spacing: 0.08em;
+        font-variant-numeric: tabular-nums;
+        color: #fbf6ee;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        opacity: 0;
+        visibility: hidden;
+      }
+      .wic-counter-num {
+        position: relative;
+        display: inline-block;
+        width: 2.1em;
+        height: 34px;
+        overflow: hidden;
+        color: #c9a45c;
+      }
+      .wic-counter-num span {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        visibility: hidden;
+      }
+      .wic-counter-rule {
+        display: inline-block;
+        width: 64px;
+        height: 1px;
+        background: rgba(251,246,238,0.45);
+      }
+      .wic-counter-total { opacity: 0.75; }
+
+      .wic-pagenum {
+        position: absolute;
+        right: 77px;
+        top: 860px;
+        font-family: 'Heebo', sans-serif;
+        font-weight: 500;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        font-variant-numeric: tabular-nums;
+        color: rgba(251,246,238,0.6);
+      }
+    </style>
+
+    <div id="wic-bg-03" class="wic-bg clip" data-start="0" data-duration="7.4" data-track-index="0"></div>
+
+    <div class="wic-stage clip" id="wic-stage-03" data-start="0" data-duration="7.4" data-track-index="1">
+      <div class="wic-card" id="wic-card-03">
+        <img class="wic-layer" src="assets/portrait-original.jpg" alt="" />
+        <img class="wic-layer wic-incoming" id="wic-l1-03" src="assets/portrait-comic.jpg" alt="" />
+        <img class="wic-layer wic-incoming" id="wic-l2-03" src="assets/portrait-pop.jpg" alt="" />
+        <img class="wic-layer wic-incoming" id="wic-l3-03" src="assets/portrait-manga.jpg" alt="" />
+        <img class="wic-layer wic-incoming" id="wic-l4-03" src="assets/portrait-oldphoto.jpg" alt="" />
+
+        <div class="wic-wipe" id="wic-wipe-03"><div class="wic-wipe-sheen"></div></div>
+
+        <div class="wic-pill" id="wic-pill-03" dir="rtl" lang="he">
+          <span class="wic-pill-sizer" aria-hidden="true">תמונה ישנה</span>
+          <span class="wic-pill-label" id="wic-p1-03" dir="rtl" lang="he">קומיקס</span>
+          <span class="wic-pill-label" id="wic-p2-03" dir="rtl" lang="he">פופ־ארט</span>
+          <span class="wic-pill-label" id="wic-p3-03" dir="rtl" lang="he">מנגה</span>
+          <span class="wic-pill-label" id="wic-p4-03" dir="rtl" lang="he">תמונה ישנה</span>
+        </div>
+
+        <div class="wic-hairline"></div>
+      </div>
+
+      <div class="wic-counter" id="wic-counter-03"><bdi dir="ltr" style="display:flex;align-items:center;gap:14px;">
+        <span class="wic-counter-num">
+          <span id="wic-c1-03">01</span><span id="wic-c2-03">02</span><span id="wic-c3-03">03</span><span id="wic-c4-03">04</span>
+        </span>
+        <span class="wic-counter-rule"></span>
+        <span class="wic-counter-total">22</span>
+      </bdi></div>
+
+      <div class="wic-pagenum"><bdi dir="ltr">03</bdi></div>
+    </div>
+
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      (function () {
+        window.__timelines = window.__timelines || {};
+        var FID = "03-watch-it-change";
+        var q = function (id) { return document.getElementById(id); };
+        var tl = gsap.timeline({ paused: true });
+
+        var CARD_W = 1134;
+        var WIPE = 0.7;          // sweep length
+        var BEAT = 0.536;        // 112 bpm
+        // sweep starts on beat multiples inside each Scene window
+        var starts = [BEAT * 1, BEAT * 4, BEAT * 7, BEAT * 9]; // 0.536, 2.144, 3.752, 4.824
+
+        var card = q("wic-card-03");
+        var wipe = q("wic-wipe-03");
+        var pill = q("wic-pill-03");
+        var counter = q("wic-counter-03");
+
+        // Hero card in fast (transition_in is a cut) + slow push underneath, settling still by ~5.6s
+        tl.fromTo(card, { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 0);
+        tl.fromTo(q("wic-stage-03"), { scale: 1 }, { scale: 1.035, duration: 5.6, ease: "sine.inOut", transformOrigin: "50% 42%" }, 0);
+
+        for (var i = 0; i < 4; i++) {
+          var t0 = starts[i];
+          var tEnd = t0 + WIPE;
+          var layer = q("wic-l" + (i + 1) + "-03");
+
+          // incoming layer revealed right -> left by its clip-path inset
+          tl.fromTo(layer,
+            { clipPath: "inset(0% 0% 0% 100%)" },
+            { clipPath: "inset(0% 0% 0% 0%)", duration: WIPE, ease: "power2.inOut" }, t0);
+
+          // gold line rides the reveal edge with the same ease
+          tl.fromTo(wipe, { x: CARD_W }, { x: 0, duration: WIPE, ease: "power2.inOut", immediateRender: false }, t0);
+          tl.fromTo(wipe, { opacity: 0 }, { opacity: 1, duration: 0.08, ease: "none", immediateRender: false }, t0);
+          tl.to(wipe, { opacity: 0, duration: 0.14, ease: "none" }, tEnd - 0.02);
+
+          // pill + counter: hard cut on wipe completion
+          if (i === 0) {
+            tl.fromTo(pill, { autoAlpha: 0, scale: 0.86 }, { autoAlpha: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, tEnd);
+            tl.fromTo(counter, { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.3, ease: "power2.out" }, tEnd);
+          } else {
+            tl.set(q("wic-p" + i + "-03"), { autoAlpha: 0 }, tEnd);
+            tl.set(q("wic-c" + i + "-03"), { autoAlpha: 0 }, tEnd);
+            tl.fromTo(pill, { scale: 1.07 }, { scale: 1, duration: 0.24, ease: "power2.out", immediateRender: false }, tEnd);
+          }
+          tl.set(q("wic-p" + (i + 1) + "-03"), { autoAlpha: 1 }, tEnd);
+          tl.set(q("wic-c" + (i + 1) + "-03"), { autoAlpha: 1 }, tEnd);
+          tl.fromTo(q("wic-c" + (i + 1) + "-03"),
+            { y: 22 },
+            { y: 0, duration: 0.22, ease: "power3.out" }, tEnd);
+        }
+
+        // hold still on the old-photo result through 7.0s (no exit)
+        tl.set({}, {}, 7);
+
+        window.__timelines[FID] = tl;
+      })();
+    </script>
+  </div>
+</template>

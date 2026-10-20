@@ -49,9 +49,14 @@
       return p;
     });
   }
+  /* the frame built from the invitation lives with the design (a light WebP), and is registered as a PNG frame on use */
+  function ensureInvFrame() {
+    var f = D && D.invFrame; if (!f || PNGS.some(function (x) { return x.key === f.key; })) return Promise.resolve();
+    return FS.addUserFrame(f.src, f.name || 'מסגרת מההזמנה', false).then(function (u) { PNGS.push({ id: u.id, key: f.key, name: f.name || 'מסגרת מההזמנה', for: [] }); }).catch(function () {});
+  }
   function render() {
     if (drawing) { again = true; return drawing; }
-    drawing = Promise.all(D.deco.map(function (o) { return FS.loadImg(o.src).catch(function () {}); })).then(build).then(function (p) {
+    drawing = ensureInvFrame().then(function () { return Promise.all(D.deco.map(function (o) { return FS.loadImg(o.src).catch(function () {}); })); }).then(build).then(function (p) {
       P = p; var cv = $('#cv'), wrap = $('#wrap'), d = p.doc, box = wrap.getBoundingClientRect();
       var k = Math.min((box.width || 500) / d.w, (Math.min(window.innerHeight * 0.72, 720)) / d.h), dpr = Math.min(2, window.devicePixelRatio || 1);
       cv.width = Math.round(d.w * k * dpr); cv.height = Math.round(d.h * k * dpr); cv.style.width = Math.round(d.w * k) + 'px'; cv.style.height = Math.round(d.h * k) + 'px';
@@ -89,7 +94,8 @@
   function frames() {
     var box = $('#frames'), ev = FS.event(D.type);
     var hide = (FS.BIZ_SITE && FS.BIZ_SITE.hideFrames) || [];
-    var gen = ev.frames.concat(FS.GEN_FRAMES.map(function (f) { return f.id; }).filter(function (id) { return ev.frames.indexOf(id) < 0; })).filter(function (id) { return hide.indexOf(id) < 0; });
+    var base = FS.GEN_FRAMES.filter(function (f) { return f.base; }).map(function (f) { return f.id; });
+    var gen = base.concat(ev.frames.filter(function (id) { return base.indexOf(id) < 0; }), FS.GEN_FRAMES.map(function (f) { return f.id; }).filter(function (id) { return ev.frames.indexOf(id) < 0 && base.indexOf(id) < 0; })).filter(function (id) { return hide.indexOf(id) < 0; });
     var items = PNGS.filter(function (f) { return !(f.for && f.for.length) || f.for.indexOf(D.type) > -1; }).map(function (f) { return { key: 'png:' + f.key, name: f.name, png: f } })
       .concat(gen.map(function (id) { var f = FS.GEN_FRAMES.filter(function (x) { return x.id === id; })[0]; return f ? { key: id, name: f.name } : null; }).filter(Boolean));
     box.innerHTML = items.map(function (it) { return '<button class="dz-fr' + (D.frame === it.key ? ' on' : '') + '" data-k="' + esc(it.key) + '"><span class="th"></span><small>' + esc(it.name) + (it.png ? ' ★' : '') + '</small></button>'; }).join('');
@@ -163,7 +169,7 @@
 
   /* ---------- the invitation ---------- */
   function loadPdf(file) {
-    var V = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
+    var V = new URL('vendor/pdfjs/', location.href).href;   /* shipped with the site: works offline */
     var ready = window.pdfjsLib ? Promise.resolve() : new Promise(function (ok, no) { var s = document.createElement('script'); s.src = V + 'pdf.min.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
     return ready.then(function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = V + 'pdf.worker.min.js'; return file.arrayBuffer(); })
       .then(function (buf) { return window.pdfjsLib.getDocument({ data: buf }).promise; }).then(function (doc) { return doc.getPage(1); })
@@ -246,6 +252,52 @@
     if (wide) chain = chain.then(function () { return addDeco(wide.c, { label: wide.label, w: 0.42, x: 0.5, y: 0.035, quiet: true }).then(function (o) { o.auto = true; }); });
     chain.then(function () { thumbs = {}; toForm(); changed(); FS.toast('✨ המסגרת עוצבה לפי ההזמנה. אפשר לשנות כל פרט.', 4500); });
   });
+
+  /* ---------- a whole frame from the invitation (portrait, landscape or square), built in the browser ---------- */
+  ['b', 't'].forEach(function (k) { $('#if-' + k).addEventListener('input', function () { $('#if-' + k + '-o').textContent = this.value + '%'; }); });
+  function invFrame(fmt) {
+    if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
+    var f = FS.fmt(fmt), k = 1800 / Math.max(f.w, f.h), W = Math.round(f.w * k), H = Math.round(f.h * k);
+    FS.busy('בונה מסגרת מההזמנה…');
+    setTimeout(function () {
+      var r = FS.frameFromInvite(invImg, W, H, { border: $('#if-b').value / 100, band: $('#if-t').value / 100, accent: FS.accentOf(D.palette.length ? D.palette : [D.color]) });
+      var webp = r.canvas.toDataURL('image/webp', 0.9), src = /^data:image\/webp/.test(webp) ? webp : r.canvas.toDataURL('image/png');
+      var key = 'inv' + FS.uid(), name = 'מסגרת מההזמנה';
+      FS.addUserFrame(src, name, false).then(function (u) {
+        PNGS = PNGS.filter(function (x) { return !/^inv/.test(x.key); }); PNGS.push({ id: u.id, key: key, name: name, for: [] });
+        D.invFrame = { key: key, src: src, name: name }; D.frame = 'png:' + key; D.fmt = fmt;
+        if (D.invFrame && D.deco.some(function (o) { return o.auto; })) D.deco = D.deco.filter(function (o) { return !o.auto; });
+        FS.busy(); thumbs = {}; toForm(); changed();
+        FS.toast('🖼️ המסגרת נבנתה מההזמנה (' + (fmt === 'magnetL' ? 'לרוחב' : fmt === 'm66' ? 'ריבוע' : 'לאורך') + '). השמות והתאריך מהלשונית "טקסט".', 5000);
+      });
+    }, 30);
+  }
+  $('#if-port').addEventListener('click', function () { invFrame(/^(magnet|m69|m710)$/.test(D.fmt) ? D.fmt : 'magnet'); });
+  $('#if-land').addEventListener('click', function () { invFrame('magnetL'); });
+  $('#if-square').addEventListener('click', function () { invFrame('m66'); });
+
+  /* ---------- elements drawn in code: add, move, size, delete ---------- */
+  function elems() {
+    var box = $('#elems'), col = $('#el-color').value;
+    box.innerHTML = '';
+    FS.ELEMENTS.forEach(function (e) {
+      var b = document.createElement('button'); b.className = 'dz-el'; b.title = e[1];
+      var c = FS.elementCanvas(e[0], col); var t = FS.canvas(64, 64), x = t.getContext('2d'), k = Math.min(56 / c.width, 56 / c.height); x.drawImage(c, (64 - c.width * k) / 2, (64 - c.height * k) / 2, c.width * k, c.height * k);
+      b.appendChild(t); var sm = document.createElement('small'); sm.textContent = e[1]; b.appendChild(sm);
+      b.addEventListener('click', function () { addDeco(FS.elementCanvas(e[0], $('#el-color').value), { label: e[1], w: e[2] === 'wide' ? 0.42 : 0.16, y: e[2] === 'wide' ? 0.06 : 0.12 }).then(function () { FS.toast('נוסף: ' + e[1] + '. גוררים אותו על המגנט.'); }); });
+      box.appendChild(b);
+    });
+  }
+  $('#el-color').addEventListener('change', elems);
+  document.addEventListener('keydown', function (e) { if ((e.key === 'Delete' || e.key === 'Backspace') && sel && !/input|textarea|select/i.test(e.target.tagName)) { e.preventDefault(); $('#d-del').click(); } });
+  $('#el-text-go').addEventListener('click', function () {
+    var t = $('#el-text').value.trim(); if (!t) return FS.toast('כותבים טקסט');
+    (document.fonts ? document.fonts.load('700 40px "' + D.font + '"').catch(function () {}) : Promise.resolve()).then(function () {
+      addDeco(FS.textCanvas(t, D.font, $('#el-color').value, 700), { label: t, w: 0.45, y: 0.1 }); $('#el-text').value = '';
+    });
+  });
+  $('#el-clear').addEventListener('click', function () { if (!D.deco.length) return; if (!confirm('למחוק את כל ' + D.deco.length + ' האלמנטים מהמסגרת?')) return; D.deco = []; sel = null; decos(); changed(); });
+  elems();
 
   /* ---------- design in words ---------- */
   var IDEAS = ['יותר יוקרתי, בזהב', 'פרחים בפינות', 'צבעי פסטל עדינים', 'גופן כתב יד', 'מינימליסטי ונקי', 'שמח וצבעוני לילדים'];

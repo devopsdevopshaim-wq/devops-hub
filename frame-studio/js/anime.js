@@ -4,16 +4,16 @@
 (function () {
   'use strict';
   var FS = window.FS;
-  var ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+  var ORT = new URL('vendor/ort/', location.href).href;   /* shipped with the site: works offline */
   var MODEL = 'models/face-paint-512-v2.onnx', T = 512, OV = 64;
   var session = null;
 
   function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { no(new Error('offline')); }; document.head.appendChild(s); }); }
   function getSession() {
     if (session) return session;
-    session = (window.ort ? Promise.resolve() : loadScript(ORT + 'ort.webgpu.min.js')).then(function () {
+    session = (window.ort ? Promise.resolve() : loadScript(ORT + 'ort.wasm.min.js')).then(function () {
       var ort = window.ort; ort.env.wasm.wasmPaths = ORT; ort.env.wasm.numThreads = 1;
-      var eps = navigator.gpu ? ['webgpu', 'wasm'] : ['wasm'];
+      var eps = ['wasm']; ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 1) > 1 && self.crossOriginIsolated ? 4 : 1;
       return ort.InferenceSession.create(MODEL, { executionProviders: eps }).catch(function () { return ort.InferenceSession.create(MODEL, { executionProviders: ['wasm'] }); });
     });
     session.catch(function () { session = null; });

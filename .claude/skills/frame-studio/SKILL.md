@@ -35,6 +35,26 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## Offline, light, base frames (Oct 2026)
+- **Everything AI runs locally.** These are shipped with the site, and the service worker keeps them in their own cache (`frame-studio-ai-v1`):
+  - In `vendor/`: MediaPipe tasks-vision 0.10.14, onnxruntime-web 1.20.1 (WASM build), pdf.js 3.11.174 and qrcode-generator.
+  - In `models/`: the selfie multiclass and selfie segmenters, the BlazeFace detector, the face landmarker and the AnimeGAN ONNX model.
+  - The styles tab has three groups: "מראות AI מיידיים" (`FS.LOCAL_LOOKS` and `FS.applyLook`: auto light, a style, adjustments and skin smoothing on locally found faces), anime looks (`FS.LOCAL_AI`) and instant styles.
+  - The cloud transformations (`FS.AI_STYLES`) are no longer shown.
+- **Light files.**
+  - Photos over 3000px (`FS.PHOTO_MAX`), or JPEGs over 4MB, are re-encoded on arrival.
+  - Frame files are compacted to at most 2400px, WebP with alpha when that is smaller (`FS.compactFrame`); stored old frames are compacted once on load.
+  - The photos screen caches a small whole-photo thumbnail per photo (`p._gt`).
+- **Base frames.** `FS.BASE_FRAMES` holds six plain white frames (thin, classic, wide, band for text, rounded, oval), drawn in any colour. They are the only ready frames in the studio and come first in the designer. The decorated frames stay for the site's samples and the event templates.
+  - "🗑 מחיקת כל המסגרות השמורות" clears the user frames, and a one-time question (`fs-frames-clean-v1`) offers it.
+- **Photos screen** shows each whole photo uncropped by default ("🖼 כל התמונה"), or "🧲 כמו בהדפסה".
+- **Designer (`js/inv-frame.js`)**:
+  - `FS.frameFromInvite(img, W, H, {border, band, text, accent})` rebuilds the invitation's own border around the photo at any size. It uses nine parts: corners kept, edges repeated mirrored, a names band in the invitation's paper colour, and the window cut see-through.
+  - Buttons make a portrait, landscape or square frame from it. The result is kept in the design as `D.invFrame` (WebP) and registered as a PNG frame.
+  - `FS.ELEMENTS` and `FS.elementCanvas` give 15 ornaments drawn in code, in any colour. `FS.textCanvas` adds free text.
+  - Elements are added on the 🧩 tab and deleted with 🗑 or the Delete key; "ניקוי כל האלמנטים" removes them all.
+- **Videos.** `media/explainer.mp4` (60s) and `media/promo.mp4` (30s), with posters, sit in the site's `#videos` section. They were made with HyperFrames in `videos/frame-explainer` and `videos/frame-styles-promo`, and the music bed is synthesized in code.
+
 ## Pro workflow (filmstrip, batch, styles, print plan, library)
 - **The photos screen (`js/grid.js`, `#gv`).** Two or more photos added at once open the photos screen instead of the editor. Every photo is spread out on the main screen, and the tile size is a slider.
   - Picking: a click picks a photo, Shift picks a range, Ctrl+A picks all, Esc clears. A double-click or ✏️ opens that one photo.

@@ -1,0 +1,250 @@
+<template>
+  <script src="assets/vendor/gsap.min.js"></script>
+  <style>
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      color: #1d1633;
+    }
+
+    /* ---- full-bleed ground: paper + one sun bloom + ember counter-bloom ---- */
+    .w04-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 34% 46% at 22% 58%, rgba(201,164,92,0.85) 0%, rgba(228,210,175,0.55) 38%, rgba(219,194,145,0.2) 66%, rgba(251,246,238,0) 100%),
+        radial-gradient(ellipse 26% 30% at 92% 6%, rgba(227,201,142,0.2) 0%, rgba(227,201,142,0) 100%),
+        #fbf6ee;
+    }
+
+    .w04-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* ---- headline (top-right, RTL, per-word) ---- */
+    .w04-headline {
+      position: absolute;
+      top: 62px;
+      right: 77px;
+      margin: 0;
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 88px;
+      line-height: 1.06;
+      letter-spacing: -0.005em;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .w04-word {
+      display: inline-block;
+    }
+    .w04-rule {
+      position: absolute;
+      top: 176px;
+      right: 77px;
+      width: 1600px;
+      height: 1px;
+      background: rgba(29,22,51,0.2);
+      transform-origin: 100% 50%;
+    }
+
+    /* ---- 4x3 wall (right-to-left flow) ---- */
+    .w04-camera {
+      position: absolute;
+      top: 200px;
+      right: 77px;
+      width: 1600px;
+      height: 690px;
+      transform-origin: 60% 30%;
+    }
+    .w04-grid {
+      position: absolute;
+      inset: 0;
+      direction: rtl;
+      display: grid;
+      grid-template-columns: repeat(4, 370px);
+      grid-template-rows: repeat(3, 226px);
+      column-gap: 40px; /* 4x370 + 3x40 = 1600 */
+      row-gap: 14px;
+    }
+    .w04-tile {
+      --dof: 0px;
+      position: relative;
+      width: 370px;
+      height: 226px;
+      filter: blur(var(--dof));
+      will-change: filter, transform, opacity;
+      transform-origin: 50% 42%;
+      z-index: 1;
+    }
+    .w04-tile.w04-focal {
+      z-index: 3;
+      filter: none;
+    }
+    .w04-ring {
+      position: absolute;
+      top: -12px;
+      left: -12px;
+      width: 394px;
+      height: 214px;
+      background: #c9a45c;
+      border: 1px solid #1d1633;
+      box-sizing: border-box;
+      opacity: 0;
+    }
+    .w04-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 370px;
+      height: 190px;
+      object-fit: cover;
+      object-position: 50% 30%;
+      display: block;
+    }
+    .w04-chip {
+      position: absolute;
+      top: 196px;
+      right: 0;
+      height: 30px;
+      padding: 0 12px;
+      background: #E4D2AF;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 24px;
+      line-height: 30px;
+      color: #1d1633;
+      white-space: nowrap;
+      text-align: right;
+    }
+    .w04-focal .w04-chip {
+      background: #c9a45c;
+    }
+  </style>
+
+  <div id="root" data-composition-id="04-wall-of-styles" data-width="1920" data-height="1080" data-duration="6.5">
+    <div class="clip w04-ground" id="w04-ground" data-start="0" data-duration="6.5" data-track-index="0"></div>
+
+    <div class="clip w04-stage" id="w04-stage" data-start="0" data-duration="6.5" data-track-index="1">
+      <h1 class="w04-headline" id="w04-headline" dir="rtl" lang="he"><span class="w04-word">בוחרים</span> <span class="w04-word">סגנון</span> <span class="w04-word">בלחיצה</span></h1>
+      <div class="w04-rule" id="w04-rule"></div>
+
+      <div class="w04-camera" id="w04-camera">
+        <div class="w04-grid" id="w04-grid">
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-cartoon.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">סרט מצויר</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-sketch.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">סקיצה</div></div>
+          <div class="w04-tile w04-focal" id="w04-neon"><div class="w04-ring" id="w04-ring"></div><img class="w04-img" src="assets/portrait-neon.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">ניאון</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-mosaic.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">פסיפס</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-engrave.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">תחריט זהב</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-lineart.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">דף צביעה</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-thermal.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">תרמית</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-stained.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">ויטראז׳</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-graffiti.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">גרפיטי</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-noir.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">נואר</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-blueprint.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">שרטוט כחול</div></div>
+          <div class="w04-tile"><img class="w04-img" src="assets/portrait-lomo.jpg" alt="" /><div class="w04-chip" dir="rtl" lang="he">לומו</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const root = document.querySelector('[data-composition-id="04-wall-of-styles"]');
+      const q = (sel) => Array.prototype.slice.call(root.querySelectorAll(sel));
+
+      // Scene 1 (0.0–0.8s) — headline per-word reveal (DOM order = RTL reading order)
+      tl.fromTo(
+        q(".w04-word"),
+        { opacity: 0, y: 34 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", stagger: 0.14 },
+        0.05
+      );
+      tl.fromTo(
+        root.querySelector("#w04-rule"),
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.6, ease: "power2.inOut" },
+        0.3
+      );
+
+      // Scene 2 (0.8–4.0s) — staggered self-assembling wall, right→left, row by row.
+      // Each tile rises a short distance straight into its own slot; its label chip follows.
+      const tiles = q(".w04-tile");
+      const START = 0.8;
+      const GAP = 0.22;
+      tiles.forEach((tile, i) => {
+        const t0 = START + i * GAP;
+        tl.fromTo(
+          tile,
+          { opacity: 0, y: 36 },
+          { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" },
+          t0
+        );
+        tl.fromTo(
+          tile.querySelector(".w04-chip"),
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" },
+          t0 + 0.14
+        );
+      });
+
+      // Macro camera — slow, faint push-in underneath the whole shot
+      tl.fromTo(
+        root.querySelector("#w04-camera"),
+        { scale: 1 },
+        { scale: 1.015, duration: 5.2, ease: "none" },
+        0.8
+      );
+
+      // Scene 3 (4.0–6.0s) — select ניאון: gold ring snaps, one press, lift (no overshoot)
+      const SEL = 4.02; // ≈ 7.5 beats @112bpm
+      const neon = root.querySelector("#w04-neon");
+      const PRESS_DUR = 0.12;
+      tl.fromTo(
+        root.querySelector("#w04-ring"),
+        { opacity: 0, scale: 1.07 },
+        { opacity: 1, scale: 1, duration: 0.22, ease: "power2.out" },
+        SEL
+      );
+      // press (linear-ish compression)
+      tl.fromTo(
+        neon,
+        { scale: 1 },
+        { scale: 0.96, duration: PRESS_DUR, ease: "power1.in", immediateRender: false },
+        SEL
+      );
+      // release → lift slightly, eased without overshoot (adjacent = state continuity)
+      tl.to(
+        neon,
+        { scale: 1.05, y: -10, duration: 0.6, ease: "power2.out" },
+        SEL + PRESS_DUR
+      );
+
+      // Depth-of-field: the other 11 tiles defocus lightly + dim to ~55%
+      q(".w04-tile:not(.w04-focal)").forEach((tile) => {
+        tl.to(
+          tile,
+          { "--dof": "3px", opacity: 0.55, duration: 0.7, ease: "power2.inOut" },
+          SEL
+        );
+      });
+
+      // hold to end (6s)
+      tl.set({}, {}, 6);
+
+      window.__timelines["04-wall-of-styles"] = tl;
+    })();
+  </script>
+</template>
