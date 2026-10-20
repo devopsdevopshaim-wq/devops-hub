@@ -261,7 +261,7 @@
       root.innerHTML = html;
       var st = $('#page-size') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'page-size' }));
       st.textContent = '@page { size: ' + pw + 'mm ' + ph + 'mm; margin: 0; }';
-      FS.emit('printed', plan.total);
+      FS.emit('printed', plan.total); FS.emit('print-job', plan);
       return Promise.all($$('img', root).map(function (im) { return im.decode ? im.decode().catch(function () {}) : null; }));
     }).then(function () { FS.busy(); document.body.classList.add('printing'); setTimeout(function () { window.print(); }, 60); })
       .catch(function () { FS.busy(); FS.toast('ההכנה להדפסה לא הצליחה'); });
@@ -281,23 +281,23 @@
       '<div class="pv-pages" id="pv-pages"></div></div><div class="pv-foot"><button class="btn" id="pv-back">חזרה לעריכה</button><button class="btn primary big" id="pv-print">🖨️ הדפסה</button></div>', true);
     $('#pv-paper', body).value = $('#paper').value; $('#pv-layout', body).value = job.layout === 'one' ? 'fill' : job.layout; $('#pv-margin', body).value = String(job.margin);
     var frames = '<option value="">בלי מסגרת</option>' + FS.GEN_FRAMES.map(function (f) { return '<option value="g:' + f.id + '">' + f.name + '</option>'; }).join('') + Object.keys(FS.USER_FRAMES).map(function (id) { return '<option value="u:' + id + '">' + FS.esc(FS.USER_FRAMES[id].name) + '</option>'; }).join('');
-    var sizes = FS.FORMATS.filter(function (f) { return f.id !== 'orig'; }).map(function (f) { return '<option value="' + f.id + '">' + f.name + '</option>'; }).join('');
+    var sizes = FS.mySizes().map(function (z) { return '<option value="my:' + z.id + '">' + FS.esc(FS.sizeLabel(z)) + '</option>'; }).join('');
     var on = {}; job.list.forEach(function (p) { on[p.id] = true; });
     var all = $('#print-all').checked ? S.photos.slice() : S.photos.filter(function (p) { return on[p.id]; });
     function frameVal(p) { var f = p.doc.frame; return !f ? '' : f.kind === 'png' ? 'u:' + f.id : 'g:' + f.id; }
     function table() {
       $('#pv-table', body).innerHTML = all.map(function (p) {
-        var t = (p._pt || (p._pt = FS.thumbOf(p, 360))).toDataURL('image/jpeg', 0.6), fmtOpts = sizes + (FS.fmt(p.doc.fmt) && p.doc.fmt !== 'orig' ? '' : '<option value="' + p.doc.fmt + '">' + (mmOf(p.doc)[0] / 10).toFixed(1) + '×' + (mmOf(p.doc)[1] / 10).toFixed(1) + ' ס״מ</option>');
+        var t = (p._pt || (p._pt = FS.thumbOf(p, 360))).toDataURL('image/jpeg', 0.6), fmtOpts = sizes + (FS.sizeOfDoc(p.doc) ? '' : '<option value="cur">' + (mmOf(p.doc)[0] / 10).toFixed(1) + '×' + (mmOf(p.doc)[1] / 10).toFixed(1) + ' ס״מ</option>');
         return '<div class="pv-row" data-id="' + p.id + '"><input type="checkbox" class="pv-on"' + (on[p.id] ? ' checked' : '') + ' title="בהדפסה"><img src="' + t + '" alt=""><div class="pv-f"><b>' + FS.esc(p.name) + '</b>' +
           '<select class="pv-frame" title="מסגרת">' + frames + '</select><select class="pv-size" title="גודל">' + fmtOpts + '</select></div><label class="pv-c">×<input type="number" class="pv-copies" min="1" max="999" value="' + (p.copies || 1) + '"></label></div>';
       }).join('');
       $$('.pv-row', body).forEach(function (row) {
         var p = S.photos.filter(function (x) { return x.id === row.dataset.id; })[0];
-        $('.pv-frame', row).value = frameVal(p); $('.pv-size', row).value = p.doc.fmt;
+        $('.pv-frame', row).value = frameVal(p); var z = FS.sizeOfDoc(p.doc); $('.pv-size', row).value = z ? 'my:' + z.id : 'cur';
         $('.pv-on', row).addEventListener('change', function () { if (this.checked) on[p.id] = true; else delete on[p.id]; plan(); });
         $('.pv-copies', row).addEventListener('change', function () { p.copies = FS.clamp(Number(this.value) || 1, 1, 999); plan(); });
         $('.pv-frame', row).addEventListener('change', function () { var v = this.value; FS.setFrame(p, !v ? null : v[0] === 'u' ? { kind: 'png', id: v.slice(2), opacity: 1, tint: '#d4a843', tintAmt: 0, clip: false } : { kind: 'gen', id: v.slice(2), opacity: 1, thick: 1 }, { quiet: true }); p.cache = {}; p._pt = null; FS.snap(p); table(); plan(); });
-        $('.pv-size', row).addEventListener('change', function () { var mm = mmOf(p.doc); FS.applyFormat(p.doc, this.value, FS.img(p.src), mm[0], mm[1]); if (p.doc.frame) FS.setFrame(p, p.doc.frame, { quiet: true, noTexts: true }); p.cache = {}; p._pt = null; FS.snap(p); table(); plan(); });
+        $('.pv-size', row).addEventListener('change', function () { var z = FS.sizeOf(this.value); if (!z) return; FS.applyFormat(p.doc, 'cm', FS.img(p.src), z.w, z.h); if (p.doc.frame) FS.setFrame(p, p.doc.frame, { quiet: true, noTexts: true }); p.cache = {}; p._pt = null; FS.snap(p); table(); plan(); });
       });
     }
     var current = null;

@@ -55,6 +55,19 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - Elements are added on the 🧩 tab and deleted with 🗑 or the Delete key; "ניקוי כל האלמנטים" removes them all.
 - **Videos.** `media/explainer.mp4` (60s) and `media/promo.mp4` (30s), with posters, sit in the site's `#videos` section. They were made with HyperFrames in `videos/frame-explainer` and `videos/frame-styles-promo`, and the music bed is synthesized in code.
 
+## Clean editor, offline AI tab, printer and event summary (Oct 2026)
+- **No top row (`js/shell.js`).** `body.clean-shell` hides `.standalone-bar` and `.topbar`.
+  - Undo / redo, ◐ original and `#fmt` move into the stage bar (`.sb-quick`); 🖨️ print, 💾 save and ☰ (`#sb-menu`: business details, packages, deals, site admin, install, business site, invitation frame) go to `.sb-act`.
+  - The event, text & stickers and games tab buttons are removed. `FS.openTab('event'|'games')` falls back to photos; the text pane still opens when a layer is selected. The event template (`prefs.eventOn`) is forced off, and the intro's "אירוע חדש" is hidden.
+- **AI tab with no internet (`js/ai-local.js`).** The server cards (magnet from a description, AI greetings, create from a description, the assistant) are hidden. On top:
+  - "⚡ שיפור חכם" (`FS.smartFix`): auto light, skin on the faces found, sharpening, smart fit, on all targets.
+  - 8 built-in designs (`FS.AI_DESIGNS`: a base frame in a colour + a `LOCAL_LOOKS` look).
+  - 14 built-in backgrounds drawn in code (`FS.AI_BGS`, 1200×1600 JPEG data URLs), applied as `bg.mode = 'image'` after `FS.ensureMask`.
+- **Printer and print log (`js/printlog.js`).** A browser can't list printers or read ink, so:
+  - The owner sets a printer profile once (`localStorage` `frame-studio-printer`: name with a model list, type dye/inkjet/laser, prints per ink set and per paper roll, used counters, "החלפתי דיו" / "מילאתי נייר", a test page). The print preview shows it on top and asks for it on first print.
+  - `doPrint` emits `print-job` with the plan. Each job is logged (`frame-studio-printlog`: sheets, photos, per-size counts, paper, printer), photos get `p.printed`, and a toast shows sheets out and estimated ink/paper left.
+  - `#pl-bar`, fixed at the bottom left: printer, sheets sent, sheets still waiting (`FS.planPrint` over unprinted photos with the print panel's settings) and ink/paper estimates. A click opens `FS.printSummary()`: photos printed, by size and by paper, sheets, a jobs list, CSV, copy, and "סיום ואירוע חדש" (archived to `frame-studio-printlog-past`).
+
 ## Pro workflow (filmstrip, batch, styles, print plan, library)
 - **The photos screen (`js/grid.js`, `#gv`).** Two or more photos added at once open the photos screen instead of the editor. Every photo is spread out on the main screen, and the tile size is a slider.
   - Picking: a click picks a photo, Shift picks a range, Ctrl+A picks all, Esc clears. A double-click or ✏️ opens that one photo.
@@ -62,9 +75,9 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - Actions on the picked photos, right on this screen: 🎨 filter (every preset and my presets), 🖌️ instant style, 📐 size (the formats, my saved sizes, or a new size in cm that can be saved with a name), copies and remove.
   - "✏️ עריכת N התמונות" opens the editor with batch editing on. The strip then shows only those photos (`S.onlyMarked`), and "▦ כל התמונות" (`#to-grid`) goes back.
   - Exposed: `FS.showGrid()`, `FS.gridMode()`, `FS.isEdited(p)` (the business credit line does not count) and `FS.select(i)`. `FS.emit('photos-added')` fires after files are added.
-- **My sizes.** `FS.prefs.sizes` holds `[{id, name, w, h}]` in mm, managed with `FS.saveSize`, `FS.delSize` and `FS.sizeOf('my:<id>')`.
-  - The sizes show under "⭐ הגדלים שלי" in `#fmt` and in `#fmt-new` (new photos can take one), and in the photos screen's size menu.
-  - The "📐 גודל מותאם" dialog can save the size it applies, and list or delete the saved ones.
+- **My sizes (the only sizes).** The owner keeps 1–5 sizes (`MAX_SIZES = 5`) in `FS.prefs.sizes` as `[{id, name, w, h}]` in mm; the first run seeds 5×7.5, 7.5×5 and 10×15.
+  - `FS.mySizes()`, `FS.saveSize`, `FS.delSize`, `FS.sizeOf('my:<id>')`, `FS.sizeOfDoc(doc)` (matches a page by mm), `FS.sizeLabel(z)`, `FS.syncFmt()`.
+  - Only these show in `#fmt` (plus "⚙️ ניהול הגדלים שלי…" → `FS.manageSizes()`, and a "נוכחי" entry when a page matches none), `#fmt-new`, the photos screen's 📐 menu and the print preview's per-photo size. They are applied as `applyFormat(doc, 'cm', img, w, h)`. `FS.FORMATS` remains only for the site samples and the designer.
 - **Any number of photos.** Photos are blob URLs (`FS.addPhotoFile`), thumbnails are drawn only when they scroll into view (IntersectionObserver), and only the photo on screen keeps a big preview (`p.cache` is cleared on switching). 150 photos load in about 3s. Project files and "my designs" turn blobs into data URLs on save (`FS.toDataURL`, async `FS.projectOf`).
 - **Filmstrip (`ui.js`).** Each tile shows the frame name, the size in cm, `×copies`, 🎨 for a style, 🤖 for an AI restyle, and a quality badge. Click selects. Ctrl/⌘+click or the checkbox marks a tile, and Shift marks a range. The bar has mark all / clear / invert / "פסולות", copies for the marked photos (`p.copies`) and remove. **Batch is automatic**: marking two or more photos turns it on (`S.batch` is undefined = on, ✏️ toggles it off), and marking a photo brings a marked one onto the screen, so `FS.targets()` returns every marked photo, and `FS.batch(fn)` copies the change from the current photo to the rest. It covers sliders, tone, auto, reset, presets, frames and frame options, rotate/flip/fit, page size, background colour and styles. The event tab's "להחיל" applies to the marked photos, and "📋 העתקת הטקסט והמדבקות" copies layers to them.
 - **Linked layers.** Frame words (`link: 'ft<i>'`), magnet words (`'mg<i>'`, `'mglogo'`) and layers added or copied while photos are marked share a `link`. `FS.syncLinked(L, keys)` copies text, colour, font, size, position, rotation and toggles to the same layer on every marked photo. Deleting a linked layer deletes it on all of them.
