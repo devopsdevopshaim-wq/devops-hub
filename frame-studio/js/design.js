@@ -261,17 +261,50 @@
     FS.busy('בונה מסגרת מההזמנה…');
     setTimeout(function () {
       var r = FS.frameFromInvite(invImg, W, H, { border: $('#if-b').value / 100, band: $('#if-t').value / 100, accent: FS.accentOf(D.palette.length ? D.palette : [D.color]) });
-      var webp = r.canvas.toDataURL('image/webp', 0.9), src = /^data:image\/webp/.test(webp) ? webp : r.canvas.toDataURL('image/png');
-      var key = 'inv' + FS.uid(), name = 'מסגרת מההזמנה';
-      FS.addUserFrame(src, name, false).then(function (u) {
-        PNGS = PNGS.filter(function (x) { return !/^inv/.test(x.key); }); PNGS.push({ id: u.id, key: key, name: name, for: [] });
-        D.invFrame = { key: key, src: src, name: name }; D.frame = 'png:' + key; D.fmt = fmt;
-        if (D.invFrame && D.deco.some(function (o) { return o.auto; })) D.deco = D.deco.filter(function (o) { return !o.auto; });
-        FS.busy(); thumbs = {}; toForm(); changed();
-        FS.toast('🖼️ המסגרת נבנתה מההזמנה (' + (fmt === 'magnetL' ? 'לרוחב' : fmt === 'm66' ? 'ריבוע' : 'לאורך') + '). השמות והתאריך מהלשונית "טקסט".', 5000);
+      useInvCanvas(r.canvas, fmt, 'מסגרת מההזמנה').then(function () {
+        FS.toast('🖼️ המסגרת נבנתה מההזמנה (' + shapeName(fmt) + '). השמות והתאריך מהלשונית "טקסט".', 5000);
       });
     }, 30);
   }
+  function shapeName(fmt) { return fmt === 'magnetL' ? 'לרוחב' : fmt === 'm66' ? 'ריבוע' : 'לאורך'; }
+  /* a frame canvas (with its see-through window) becomes the design's frame */
+  function useInvCanvas(canvas, fmt, name) {
+    var webp = canvas.toDataURL('image/webp', 0.9), src = /^data:image\/webp/.test(webp) ? webp : canvas.toDataURL('image/png');
+    var key = 'inv' + FS.uid();
+    return FS.addUserFrame(src, name, false).then(function (u) {
+      PNGS = PNGS.filter(function (x) { return !/^inv/.test(x.key); }); PNGS.push({ id: u.id, key: key, name: name, for: [] });
+      D.invFrame = { key: key, src: src, name: name }; D.frame = 'png:' + key; D.fmt = fmt;
+      if (D.deco.some(function (o) { return o.auto; })) D.deco = D.deco.filter(function (o) { return !o.auto; });
+      FS.busy(); thumbs = {}; toForm(); changed();
+    });
+  }
+  /* the AI frame: the image model paints a frame in the invitation's design; every result stays here to pick from */
+  var AIF = [];
+  function aiErr(m) {
+    m = String(m || '');
+    return m === 'no-window' ? 'ה־AI לא השאיר חלון לתמונה הפעם. לוחצים שוב לגרסה חדשה.' : m === 'quota' ? 'מכסת התמונות היומית של שרת ה־AI נגמרה. מתאפסת בלילה.' : m === 'rate-limited' ? 'יותר מדי בקשות בשעה האחרונה. נסו שוב בעוד כמה דקות.' : m === 'offline' || m === 'timeout' ? 'אין חיבור לשרת ה־AI. בודקים אינטרנט ומנסים שוב.' : 'ה־AI לא הצליח הפעם. מנסים שוב.';
+  }
+  function aiFrame(fmt) {
+    if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
+    var f = FS.fmt(fmt), k = 1800 / Math.max(f.w, f.h), W = Math.round(f.w * k), H = Math.round(f.h * k);
+    FS.busy('🤖 ה־AI מצייר מסגרת ' + shapeName(fmt) + ' בעיצוב של ההזמנה… (עד דקה)');
+    FS.aiFrameFromInvite(invImg, W, H, { round: $('#ai-round').checked, band: true }).then(function (r) {
+      AIF.unshift({ canvas: r.canvas, fmt: fmt }); drawAIF();
+      return useInvCanvas(r.canvas, fmt, 'מסגרת AI מההזמנה').then(function () { FS.toast('🤖 מסגרת ' + shapeName(fmt) + ' מוכנה. לא אהבת? לוחצים שוב לגרסה אחרת, וכל הגרסאות נשארות למטה.', 6000); });
+    }).catch(function (e) { FS.busy(); FS.toast(aiErr(e && e.message), 7000); });
+  }
+  function drawAIF() {
+    var box = $('#ai-frames'); box.innerHTML = '';
+    AIF.forEach(function (a, i) {
+      var b = document.createElement('button'); b.className = 'dz-aif' + (i === 0 ? ' on' : ''); b.title = 'להשתמש במסגרת הזאת';
+      var t = FS.canvas(160, Math.round(160 * a.canvas.height / a.canvas.width)); t.getContext('2d').drawImage(a.canvas, 0, 0, t.width, t.height); b.appendChild(t);
+      b.addEventListener('click', function () { $$('.dz-aif', box).forEach(function (x) { x.classList.toggle('on', x === b); }); FS.busy('מחליף מסגרת…'); useInvCanvas(a.canvas, a.fmt, 'מסגרת AI מההזמנה'); });
+      box.appendChild(b);
+    });
+  }
+  $('#ai-port').addEventListener('click', function () { aiFrame(/^(magnet|m69|m710)$/.test(D.fmt) ? D.fmt : 'magnet'); });
+  $('#ai-land').addEventListener('click', function () { aiFrame('magnetL'); });
+  $('#ai-square').addEventListener('click', function () { aiFrame('m66'); });
   $('#if-port').addEventListener('click', function () { invFrame(/^(magnet|m69|m710)$/.test(D.fmt) ? D.fmt : 'magnet'); });
   $('#if-land').addEventListener('click', function () { invFrame('magnetL'); });
   $('#if-square').addEventListener('click', function () { invFrame('m66'); });

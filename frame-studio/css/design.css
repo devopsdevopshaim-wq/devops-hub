@@ -119,3 +119,13 @@ label.btn { display: inline-flex; }
 .dz-invframe { background: linear-gradient(135deg, #fffaf0, #fff); border: 1px solid var(--gold); border-radius: 18px; padding: 12px 14px; margin: 12px 0; display: grid; gap: 8px; }
 .dz-invframe h3 { margin: 0; }
 .dz-invframe label { display: grid; gap: 4px; font-size: 13px; color: var(--dim); }
+/* AI frames from the invitation */
+.dz-invframe label.dz-check { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 6px; width: fit-content; }
+.dz-aiframes { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 6px; }
+.dz-aiframes:empty { display: none; }
+.dz-aif { flex: none; padding: 4px; border: 2px solid var(--line, #e5ded0); border-radius: 12px; cursor: pointer; background: repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 0 0 / 14px 14px; }
+.dz-aif canvas { display: block; width: 92px; height: auto; border-radius: 6px; }
+.dz-aif.on { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,164,92,.25); }
+.dz-basic summary { cursor: pointer; font-size: 13px; color: var(--dim); }
+.dz-basic[open] { display: grid; gap: 8px; }
+.dz-pane .dz-invframe label.dz-check input[type=checkbox][id] { width: 16px; min-width: 0; height: 16px; padding: 0; flex: none; margin: 0; } .dz-invframe label.dz-check { white-space: nowrap; }

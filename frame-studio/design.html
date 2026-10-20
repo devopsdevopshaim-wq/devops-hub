@@ -67,11 +67,17 @@
         <div class="dz-inv"><div class="dz-inv-img" id="inv-box"><img id="inv-img" alt="ההזמנה" /><i id="inv-sel" hidden></i></div>
           <div class="dz-inv-side"><div id="inv-status" class="hint"></div><div class="dz-pal" id="inv-pal"></div><button class="btn gold wide" id="inv-apply" disabled>✨ עיצוב מסגרת מההזמנה</button><button class="btn line wide" id="inv-cut" disabled>✂️ גזירת האזור שסימנתי</button><p class="hint">לגזירה: מסמנים מלבן על ההזמנה עם העכבר או האצבע.</p></div></div>
         <section class="dz-invframe">
-          <h3>🖼️ מסגרת שלמה מתוך ההזמנה</h3>
-          <p class="hint">השוליים המעוצבים של ההזמנה נבנים מחדש סביב התמונה, בכל גודל: הפינות נשמרות, הצדדים נמתחים בלי עיוות, ופס לשמות בצבע הנייר של ההזמנה. עובד במחשב, בלי אינטרנט.</p>
-          <label>כמה מההזמנה הוא השוליים <output id="if-b-o">17%</output><input type="range" id="if-b" min="6" max="35" value="17" /></label>
-          <label>עובי המסגרת על המגנט <output id="if-t-o">12%</output><input type="range" id="if-t" min="5" max="22" value="12" /></label>
-          <div class="dz-row"><button class="btn gold" id="if-port">▯ מסגרת לאורך</button><button class="btn gold" id="if-land">▭ מסגרת לרוחב</button><button class="btn line" id="if-square">◻ ריבוע</button></div>
+          <h3>🤖 מסגרת AI כמו ההזמנה</h3>
+          <p class="hint">ה־AI מצייר מסגרת חדשה באותו עיצוב של ההזמנה: אותם צבעים, נייר, פרחים וקישוטים, עם חלון שקוף לתמונה. עד דקה למסגרת. את השמות והתאריך מוסיפים אחר כך בלשונית "טקסט".</p>
+          <div class="dz-row"><button class="btn gold" id="ai-port">▯ לאורך</button><button class="btn gold" id="ai-land">▭ לרוחב</button><button class="btn line" id="ai-square">◻ ריבוע</button></div>
+          <label class="dz-check"><input type="checkbox" id="ai-round" /> פינות מעוגלות לחלון</label>
+          <div class="dz-aiframes" id="ai-frames"></div>
+          <details class="dz-basic"><summary>גרסה בסיסית, בלי אינטרנט</summary>
+            <p class="hint">בונה את השוליים של ההזמנה עצמה סביב התמונה.</p>
+            <label>כמה מההזמנה הוא השוליים <output id="if-b-o">17%</output><input type="range" id="if-b" min="6" max="35" value="17" /></label>
+            <label>עובי המסגרת על המגנט <output id="if-t-o">12%</output><input type="range" id="if-t" min="5" max="22" value="12" /></label>
+            <div class="dz-row"><button class="btn line" id="if-port">▯ לאורך</button><button class="btn line" id="if-land">▭ לרוחב</button><button class="btn line" id="if-square">◻ ריבוע</button></div>
+          </details>
         </section>
         <h3>חלקים מההזמנה</h3>
         <p class="hint">לוחצים על חלק כדי להוסיף אותו למסגרת. הרקע שלו מוסר אוטומטית.</p>
