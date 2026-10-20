@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='30';(function(){
+window.FS_V='31';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -20,9 +20,9 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Heebo:wght@300;400;500;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" />
-<link rel="stylesheet" href="css/design.css?v=30" />
-<link rel="stylesheet" href="css/admin.css?v=30" />
-<link rel="stylesheet" href="css/lux-admin.css?v=30" />
+<link rel="stylesheet" href="css/design.css?v=31" />
+<link rel="stylesheet" href="css/admin.css?v=31" />
+<link rel="stylesheet" href="css/lux-admin.css?v=31" />
 </head>
 <body class="adm-body">
 <header class="dz-top">
@@ -48,13 +48,13 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="print-area" class="print-area" aria-hidden="true"></div>
 
-<script src="js/core.js?v=30"></script>
-<script src="js/frames.js?v=30"></script>
-<script src="js/events.js?v=30"></script>
-<script src="js/invite.js?v=30"></script>
-<script src="js/account.js?v=30"></script>
-<script src="js/admin-biz.js?v=30"></script>
-<script src="js/admin.js?v=30"></script>
-<script src="js/admin-views.js?v=30"></script>
+<script src="js/core.js?v=31"></script>
+<script src="js/frames.js?v=31"></script>
+<script src="js/events.js?v=31"></script>
+<script src="js/invite.js?v=31"></script>
+<script src="js/account.js?v=31"></script>
+<script src="js/admin-biz.js?v=31"></script>
+<script src="js/admin.js?v=31"></script>
+<script src="js/admin-views.js?v=31"></script>
 </body>
 </html>

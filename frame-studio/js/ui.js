@@ -224,25 +224,31 @@
   /* ---------- photos in ---------- */
   function addFiles(files) {
     files = Array.prototype.filter.call(files || [], function (f) { return /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|heic|heif|avif)$/i.test(f.name); });
-    if (!files.length) return;
-    FS.busy('טוען ' + files.length + ' תמונות…');
-    var first = S.photos.length, chain = Promise.resolve(), bad = 0;
-    var n = files.length;
+    if (!files.length) return FS.toast('לא נבחרו קבצי תמונה (JPG, PNG, WEBP).', 5000);
+    var first = S.photos.length, chain = Promise.resolve(), fails = [], n = files.length, stop = false;
+    function mb(f) { return f.size ? ' · ' + (f.size / 1048576).toFixed(1) + 'MB' : ''; }
     files.forEach(function (f, i) { chain = chain.then(function () {
-      if (n > 3) FS.busy('טוען תמונות… ' + (i + 1) + ' מתוך ' + n);
-      /* a breath between photos, so the page keeps answering */
-      /* a breath between photos so the page keeps answering, and a photo that never opens is skipped after 20s */
+      if (stop) return;
+      FS.busy('טוען תמונות… ' + (i + 1) + ' מתוך ' + n + '\n' + (f.name || '') + mb(f), function () { stop = true; });
+      /* a breath between photos so the page keeps answering, and a photo that never opens is skipped after 45s */
       return new Promise(function (ok) { setTimeout(ok, 0); }).then(function () {
-        return Promise.race([FS.addPhotoFile(f), new Promise(function (_, no) { setTimeout(function () { no(new Error('timeout')); }, 20000); })]);
-      }).catch(function () { bad++; });
+        return Promise.race([FS.addPhotoFile(f), new Promise(function (_, no) { setTimeout(function () { var e = new Error('timeout'); e.why = 'נפתחה יותר מדי זמן ודילגתי עליה'; no(e); }, 45000); })]);
+      }).catch(function (e) { if (window.console) console.warn(f.name, e); fails.push({ name: f.name || 'קובץ', why: (e && e.why) || (e && e.message) || 'שגיאה לא ידועה' }); });
     }); });
     chain.catch(function () {}).then(function () {
       FS.busy();
-      if (bad) FS.toast(bad + ' קבצים לא נפתחו. HEIC נפתח רק בספארי; אפשר לשמור כ־JPG ולנסות שוב.', 5000);
+      if (fails.length) showFails(fails, n);
       if (S.photos.length > first) select(first);
       buildStrip();
       if (S.photos.length > first) FS.emit('photos-added', { from: first, n: S.photos.length - first });
     });
+  }
+  /* what didn't open and why, in a dialog the owner can photograph */
+  function showFails(fails, n) {
+    var html = '<p>' + (n - fails.length) + ' מתוך ' + n + ' תמונות נפתחו. אלה לא נפתחו:</p><ul class="fail-list">' +
+      fails.slice(0, 30).map(function (x) { return '<li><b>' + FS.esc(x.name) + '</b><span>' + FS.esc(x.why) + '</span></li>'; }).join('') + '</ul>' +
+      (fails.length > 30 ? '<p>ועוד ' + (fails.length - 30) + '.</p>' : '') + '<p class="hint">גרסה ' + (window.FS_V || '?') + '</p>';
+    if (FS.dialog) FS.dialog('⚠️ תמונות שלא נפתחו', html); else FS.toast(fails.length + ' תמונות לא נפתחו: ' + fails[0].why, 9000);
   }
   FS.addFiles = addFiles;
   ['#file-photos', '#file-photos-2'].forEach(function (s) { $(s).addEventListener('change', function () { addFiles(this.files); this.value = ''; }); });
