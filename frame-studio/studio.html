@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='32';(function(){
+window.FS_V='33';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -19,13 +19,13 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="apple-touch-icon" href="icon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Rubik:wght@400;700;900&family=Assistant:wght@400;700;800&family=Secular+One&family=Suez+One&family=Frank+Ruhl+Libre:wght@400;700;900&family=Amatic+SC:wght@400;700&family=Karantina:wght@400;700&family=Bellefair&family=Varela+Round&family=David+Libre:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" />
-<link rel="stylesheet" href="css/studio.css?v=32" />
-<link rel="stylesheet" href="css/intro.css?v=32" />
-<link rel="stylesheet" href="css/gate.css?v=32" />
+<link rel="stylesheet" href="css/studio.css?v=33" />
+<link rel="stylesheet" href="css/intro.css?v=33" />
+<link rel="stylesheet" href="css/gate.css?v=33" />
 <link rel="stylesheet" href="../portfolio/css/mobile.css" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Assistant:wght@400;600;700&family=Heebo:wght@500&display=swap" />
-<link rel="stylesheet" href="css/lux-studio.css?v=32" />
-<link rel="stylesheet" href="css/tools-x.css?v=32" />
+<link rel="stylesheet" href="css/lux-studio.css?v=33" />
+<link rel="stylesheet" href="css/tools-x.css?v=33" />
 <script src="../portfolio/js/track.js" defer></script>
 </head>
 <body class="gated">
@@ -50,7 +50,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
     <p class="intro-lead">סטודיו לעיצוב תמונות לאירועים. עורכים, מעצבים ומדפיסים לכל אורח, בדקה.</p>
     <div class="intro-actions">
       <button class="ia" id="ia-event"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v7a6 6 0 0 0 12 0V3"/><path d="M6 3h4v7a2 2 0 0 0 4 0V3h4"/><path d="M6 7h4M14 7h4"/></svg><b>אירוע חדש</b><small>שמות, תאריך, מסגרת ומידה</small></button>
-      <label class="ia main wide"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 8"/></svg><b>פתיחת תמונות</b><small>גם מאות בבת אחת</small><input type="file" id="ia-photos" accept="image/*" multiple hidden /></label>
+      <label class="ia main wide"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 8"/></svg><b>פתיחת תמונות</b><small>גם מאות בבת אחת</small><input type="file" id="ia-photos" accept="image/*,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.raw,.pef,.srw,.x3f,.3fr,.erf,.kdc,.mrw,.rwl,.iiq,.heic,.heif" multiple hidden /></label>
       <button class="ia" id="ia-project"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg><b>המשך פרויקט</b><small>קובץ ‎.fstudio.json</small></button>
       <button class="ia" id="ia-designs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><b>העיצובים שלי</b><small>שמורים בדפדפן הזה</small></button>
     </div>
@@ -130,8 +130,8 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
     <section data-pane="photos">
       <h2>תמונות</h2>
       <label class="drop" id="drop">
-        <input type="file" id="file-photos" accept="image/*" multiple hidden />
-        <b>📂 בחירת תמונות</b><span>או גרירה לכאן · JPG, PNG, HEIC מהטלפון, WEBP · כמה תמונות ביחד</span>
+        <input type="file" id="file-photos" accept="image/*,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.raw,.pef,.srw,.x3f,.3fr,.erf,.kdc,.mrw,.rwl,.iiq,.heic,.heif" multiple hidden />
+        <b>📂 בחירת תמונות</b><span>או גרירה לכאן · JPG, PNG, HEIC, RAW מהטלפון, WEBP · כמה תמונות ביחד</span>
       </label>
       <div class="row2">
         <button class="btn" id="open-project">📁 פתיחת פרויקט</button>
@@ -354,7 +354,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
         <button class="btn small" id="gv-all">סימון הכול</button><button class="btn small" id="gv-none">ניקוי</button><button class="btn small" id="gv-inv">היפוך</button>
         <div class="seg" id="gv-view" role="group" aria-label="איך להציג"><button data-v="whole" title="כל התמונה, בלי חיתוך">🖼 כל התמונה</button><button data-v="page" title="כמו שתודפס, עם המסגרת">🖨 כמו בהדפסה</button></div>
         <label class="gv-zoom" title="גודל התמונות במסך">🔍<input type="range" id="gv-zoom" min="120" max="420" step="10" value="220"></label>
-        <label class="btn small">＋ תמונות<input type="file" id="gv-add" accept="image/*" multiple hidden></label>
+        <label class="btn small">＋ תמונות<input type="file" id="gv-add" accept="image/*,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.raw,.pef,.srw,.x3f,.3fr,.erf,.kdc,.mrw,.rwl,.iiq,.heic,.heif" multiple hidden></label>
       </div>
       <div class="gv-act" id="gv-act">
         <span id="gv-sel">בוחרים תמונות: לחיצה על תמונה מסמנת אותה</span>
@@ -375,7 +375,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
         <div class="lens"></div>
         <h1>פריים־סטודיו</h1>
         <p>סטודיו המגנטים לאירועים: ממלאים פרטי אירוע, מכניסים תמונות, והן יוצאות מגנטים מעוצבים ומוכנים להדפסה. הכול בדפדפן, והתמונות לא יוצאות מהמחשב.</p>
-        <label class="btn primary big">📂 בחירת תמונות<input type="file" id="file-photos-2" accept="image/*" multiple hidden /></label>
+        <label class="btn primary big">📂 בחירת תמונות<input type="file" id="file-photos-2" accept="image/*,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.raw,.pef,.srw,.x3f,.3fr,.erf,.kdc,.mrw,.rwl,.iiq,.heic,.heif" multiple hidden /></label>
         <button class="btn" id="start-event">🧲 להתחיל אירוע</button>
         <button class="btn" id="demo">✨ לנסות עם תמונה לדוגמה</button>
       </div>
@@ -397,28 +397,28 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="print-root" aria-hidden="true"></div>
 
-<script src="js/core.js?v=32"></script>
-<script src="js/frames.js?v=32"></script>
-<script src="js/ui.js?v=32"></script>
-<script src="js/ai.js?v=32"></script>
-<script src="js/output.js?v=32"></script>
-<script src="js/games.js?v=32"></script>
-<script src="js/events.js?v=32"></script>
-<script src="js/event-studio.js?v=32"></script>
-<script src="js/styles.js?v=32"></script>
-<script src="js/ai-studio.js?v=32"></script>
-<script src="js/grid.js?v=32"></script>
-<script src="js/library.js?v=32"></script>
-<script src="js/account.js?v=32"></script>
-<script src="js/gate.js?v=32"></script>
-<script src="js/business.js?v=32"></script>
-<script src="js/deals.js?v=32"></script>
-<script src="js/printlog.js?v=32"></script>
-<script src="js/collage.js?v=32"></script>
-<script src="js/curate.js?v=32"></script>
-<script src="js/shell.js?v=32"></script>
-<script src="js/intro.js?v=32"></script>
-<script src="js/grow.js?v=32"></script>
+<script src="js/core.js?v=33"></script>
+<script src="js/frames.js?v=33"></script>
+<script src="js/ui.js?v=33"></script>
+<script src="js/ai.js?v=33"></script>
+<script src="js/output.js?v=33"></script>
+<script src="js/games.js?v=33"></script>
+<script src="js/events.js?v=33"></script>
+<script src="js/event-studio.js?v=33"></script>
+<script src="js/styles.js?v=33"></script>
+<script src="js/ai-studio.js?v=33"></script>
+<script src="js/grid.js?v=33"></script>
+<script src="js/library.js?v=33"></script>
+<script src="js/account.js?v=33"></script>
+<script src="js/gate.js?v=33"></script>
+<script src="js/business.js?v=33"></script>
+<script src="js/deals.js?v=33"></script>
+<script src="js/printlog.js?v=33"></script>
+<script src="js/collage.js?v=33"></script>
+<script src="js/curate.js?v=33"></script>
+<script src="js/shell.js?v=33"></script>
+<script src="js/intro.js?v=33"></script>
+<script src="js/grow.js?v=33"></script>
 <script>
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
 </script>

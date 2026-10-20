@@ -27,7 +27,7 @@
     'bad-input': 'בודקים את המייל (והשם, בהרשמה).', 'weak-password': 'סיסמה של לפחות 8 תווים.', inactive: 'החשבון לא פעיל. פנו לבעל העסק.', 'signup-closed': 'ההרשמה סגורה כרגע.',
     'verify-device': 'זה מכשיר חדש. שלחנו סיסמה זמנית למייל: נכנסים איתה כדי לאשר את המכשיר.', 'signed-out': 'פג תוקף הכניסה. נכנסים שוב.', offline: 'אין חיבור לשרת. בודקים אינטרנט.',
     'admin-only': 'האזור הזה לבעל העסק בלבד.', 'server-error': 'תקלה בשרת. נסו שוב.', 'too-big': 'גדול מדי לשמירה.', 'too-many-clients': 'אין מקום לחשבונות חדשים כרגע.', 'card-number': 'אסור לשמור כאן מספר כרטיס אשראי. התשלום באשראי עובר רק דרך קישור הסליקה.',
-    'bad-contact': 'צריך שם וטלפון תקינים.', 'bad-date': 'בוחרים תאריך עתידי לאירוע.', 'bad-email': 'כתובת המייל לא תקינה.', full: 'אי אפשר לקבל בקשות כרגע. כתבו לנו בוואטסאפ.',
+    'bad-contact': 'צריך שם, וטלפון או מייל תקינים.', 'bad-date': 'בוחרים תאריך עתידי לאירוע.', 'bad-email': 'כתובת המייל לא תקינה.', full: 'אי אפשר לקבל בקשות כרגע. כתבו לנו בוואטסאפ.',
     'date-taken': 'התאריך כבר תפוס ביומן.', already: 'הבקשה כבר אושרה.', 'not-frame-only': 'זה חשבון שמשמש גם אתרים אחרים, ולכן נחסם רק מהמנהל הראשי.', 'not-found': 'לא נמצא.'
   };
   function msg(r) { return MSG[r && r.error] || (r && r.error ? 'שגיאה: ' + r.error : 'שגיאה'); }
@@ -63,6 +63,59 @@
         .then(function (r) { if (r && r.error === 'signed-out') keep(null); return r; });
     },
     base: function () { return base; },
+    /* customers come in without a password: a code to their email, or (phone only, or when no email can be sent yet) straight in
+       as a visitor. Either way the visit is recorded on the server for the owner. */
+    visitor: function () { try { return JSON.parse(localStorage.getItem('frame-visitor') || 'null'); } catch (e) { return null; } },
+    setVisitor: function (v) { try { if (v) localStorage.setItem('frame-visitor', JSON.stringify(v)); else localStorage.removeItem('frame-visitor'); } catch (e) { /* private mode */ } },
+    visit: function (name, contact) { return auth('frame-visit', { name: name, contact: contact }); },
+    codeStart: function (name, contact) { return auth('frame-code', { name: name, contact: contact }); },
+    codeVerify: function (email, code) {
+      return auth('frame-code-verify', { email: email, code: code, device: device() }).then(function (r) {
+        if (r.ok) keep({ token: r.token, role: r.role, name: r.name || '', email: String(email).trim().toLowerCase(), mustChange: false, at: Date.now() });
+        return r;
+      });
+    },
+    /* the customer's way in: name + phone or email; done({name, contact, verified}) */
+    enterForm: function (box, opts) {
+      opts = opts || {};
+      var stage = 'start', who = { name: '', contact: '' }, isMail = function (x) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x); };
+      function fin(verified) { var v = { name: who.name, contact: who.contact, verified: !!verified, at: Date.now() }; A.setVisitor(v); if (opts.done) opts.done(v); }
+      function draw(note) {
+        box.innerHTML = '<div class="acc">' + (stage === 'code'
+          ? '<p class="hint">שלחנו קוד בן 6 ספרות ל־<b dir="ltr">' + esc(who.contact) + '</b>. הוא מגיע תוך דקה (בודקים גם בספאם).</p><label>הקוד מהמייל<input id="en-code" inputmode="numeric" maxlength="6" dir="ltr" autocomplete="one-time-code"></label>' +
+            '<button class="btn gold wide" id="en-go">כניסה</button><button class="link" id="en-back">← לשנות מייל או טלפון</button>'
+          : '<label>השם שלכם<input id="en-name" autocomplete="name" maxlength="60" value="' + esc(who.name) + '"></label><label>טלפון או מייל<input id="en-contact" autocomplete="email" dir="ltr" value="' + esc(who.contact) + '" placeholder="050-0000000 או name@mail.com"></label>' +
+            '<button class="btn gold wide" id="en-go">כניסה</button><p class="hint">בלי סיסמה. עם מייל נשלח אליכם קוד כניסה חד־פעמי.</p>') +
+          '<p class="acc-note" id="en-note" role="status">' + esc(note || '') + '</p></div>';
+        var go = box.querySelector('#en-go'), bk = box.querySelector('#en-back');
+        if (bk) bk.addEventListener('click', function () { stage = 'start'; draw(); });
+        go.addEventListener('click', submit);
+        Array.prototype.forEach.call(box.querySelectorAll('input'), function (i) { i.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } }); });
+        var f = box.querySelector('input'); if (f && !opts.noFocus) setTimeout(function () { f.focus(); }, 30);
+        function submit() {
+          if (stage === 'code') {
+            var code = String(box.querySelector('#en-code').value || '').replace(/\D/g, ''); if (code.length !== 6) return draw('6 ספרות מהמייל.');
+            go.disabled = true; go.textContent = '…';
+            return A.codeVerify(who.contact, code).then(function (r) { if (r.ok) return fin(true); draw(r.error === 'bad-code' ? 'הקוד לא נכון' + (r.left != null ? ' (נשארו ' + r.left + ' ניסיונות)' : '') + '.' : r.error === 'code-expired' ? 'הקוד פג. חוזרים אחורה ומבקשים קוד חדש.' : msg(r)); });
+          }
+          who.name = String(box.querySelector('#en-name').value || '').trim(); who.contact = String(box.querySelector('#en-contact').value || '').trim();
+          if (who.name.length < 2) return draw('כותבים שם.');
+          var mail = isMail(who.contact.toLowerCase()), tel = who.contact.replace(/\D/g, '').replace(/^972/, '0');
+          if (!mail && !/^0\d{8,11}$/.test(tel)) return draw('טלפון (כמו 050-1234567) או כתובת מייל.');
+          go.disabled = true; go.textContent = '…';
+          if (!mail) return A.visit(who.name, who.contact).then(function (r) { if (r.ok || r.error === 'offline') return fin(false); draw(msg(r)); });
+          who.contact = who.contact.toLowerCase();
+          A.codeStart(who.name, who.contact).then(function (r) {
+            if (r.ok && r.step === 'code') { stage = 'code'; return draw(); }
+            /* the code could not be emailed (no email service yet): in as a visitor, the visit is already recorded */
+            if (r.error === 'mail-failed' || r.error === 'offline') return fin(false);
+            if (r.error === 'admin-use-password') return draw('זו כתובת המנהל: נכנסים בלשונית "כניסת מנהל".');
+            draw(msg(r));
+          });
+        }
+      }
+      draw(opts.note);
+    },
     /* the sign-in box: into `box`; opts.signup lets new customers open an account; done(session) when signed in */
     form: function (box, opts) {
       opts = opts || {};

@@ -20,6 +20,7 @@
     if (client && !loaded) { frame.src = cur; loaded = true; }
     try { sessionStorage.setItem('adm-view', v); } catch (e) { /* ignore */ }
   }
+  FS.showClientView = function () { show('client'); };
   seg.addEventListener('click', function (e) { var b = e.target.closest('[data-v]'); if (b) show(b.dataset.v); });
   box.querySelector('.adm-client-pages').addEventListener('click', function (e) {
     var b = e.target.closest('[data-p]'); if (!b) return; cur = b.dataset.p; frame.src = cur; loaded = true;

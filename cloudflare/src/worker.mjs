@@ -118,7 +118,7 @@ export default {
       // the customers' accounts live with the sign-in (main object): the owner sees them and may block or unblock one
       if (who && who.role === 'admin' && b.action === 'account-set') return reply(await main.frameAccountSet(String(b.email || ''), !!b.active));
       const r = await fr.bizCall(who, b, ip);
-      if (who && who.role === 'admin' && b.action === 'all' && r.body && r.body.ok) r.body.accounts = await main.frameAccounts();
+      if (who && who.role === 'admin' && b.action === 'all' && r.body && r.body.ok) { r.body.accounts = await main.frameAccounts(); r.body.visitors = await main.frameVisitors(); }
       return reply(r.body, r.code);
     }
     const id = env.STATE.idFromName(rt.svc);
@@ -250,6 +250,12 @@ export class State extends DurableObject {
     for (const s of Object.values(sess)) if (s && s.exp > Date.now()) online[s.email] = 1;
     return Object.values(st.sd.clients || {}).filter((c) => c && Array.isArray(c.sites) && c.sites.includes('frame')).map((c) => ({ email: c.email, name: c.name || '', phone: c.phone || '',
       createdAt: c.createdAt || null, lastLogin: c.lastLogin || null, lastSeen: c.lastSeen || null, active: c.active !== false, online: !!online[c.email], only: c.sites.length === 1 }));
+  }
+  // who came in to the customer screen (name, email or phone, first and last visit, how many, verified by a code or not)
+  async frameVisitors() {
+    const st = await this.load();
+    return Object.values(st.sd.frameVisitors || {}).sort((a, z) => Date.parse(z.lastAt || 0) - Date.parse(a.lastAt || 0)).slice(0, 2000)
+      .map((v) => ({ name: v.name || '', email: v.email || '', phone: v.phone || '', firstAt: v.firstAt || null, lastAt: v.lastAt || null, visits: v.visits || 0, verified: !!v.verified }));
   }
   // block or unblock a frame-only customer; blocking also ends their sessions
   frameAccountSet(email, active) {

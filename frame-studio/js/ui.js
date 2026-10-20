@@ -223,8 +223,8 @@
 
   /* ---------- photos in ---------- */
   function addFiles(files) {
-    files = Array.prototype.filter.call(files || [], function (f) { return /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|heic|heif|avif)$/i.test(f.name); });
-    if (!files.length) return FS.toast('לא נבחרו קבצי תמונה (JPG, PNG, WEBP).', 5000);
+    files = Array.prototype.filter.call(files || [], function (f) { return /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|heic|heif|avif)$/i.test(f.name) || FS.RAW_EXT.test(f.name || ''); });
+    if (!files.length) return FS.toast('לא נבחרו קבצי תמונה (JPG, PNG, WEBP או RAW).', 5000);
     var first = S.photos.length, chain = Promise.resolve(), fails = [], n = files.length, stop = false;
     function mb(f) { return f.size ? ' · ' + (f.size / 1048576).toFixed(1) + 'MB' : ''; }
     files.forEach(function (f, i) { chain = chain.then(function () {
