@@ -39,8 +39,7 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
 - **Everything AI runs locally.** These are shipped with the site, and the service worker keeps them in their own cache (`frame-studio-ai-v1`):
   - In `vendor/`: MediaPipe tasks-vision 0.10.14, onnxruntime-web 1.20.1 (WASM build), pdf.js 3.11.174 and qrcode-generator.
   - In `models/`: the selfie multiclass and selfie segmenters, the BlazeFace detector, the face landmarker and the AnimeGAN ONNX model.
-  - The styles tab has three groups: "מראות AI מיידיים" (`FS.LOCAL_LOOKS` and `FS.applyLook`: auto light, a style, adjustments and skin smoothing on locally found faces), anime looks (`FS.LOCAL_AI`) and instant styles.
-  - The cloud transformations (`FS.AI_STYLES`) are no longer shown.
+  - The styles tab is as before #342 (restored at the owner's request after the local looks were rejected): instant styles (`FS.LOCAL_STYLES`), anime on the computer (`FS.LOCAL_AI`), and the server transformations (`FS.AI_STYLES` through `FS.restyle` → the hubs server) with a free-text request (`#ai-custom`). The AI tab shows all its cards (server ones included). Don't bring back built-in "looks" in their place.
 - **Light files.**
   - Photos over 3000px (`FS.PHOTO_MAX`), or JPEGs over 4MB, are re-encoded on arrival.
   - Frame files are compacted to at most 2400px, WebP with alpha when that is smaller (`FS.compactFrame`); stored old frames are compacted once on load.
@@ -59,11 +58,6 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
 - **No top row (`js/shell.js`).** `body.clean-shell` hides `.standalone-bar` and `.topbar`.
   - Undo / redo, ◐ original and `#fmt` move into the stage bar (`.sb-quick`); 🖨️ print, 💾 save and ☰ (`#sb-menu`: business details, packages, deals, site admin, install, business site, invitation frame) go to `.sb-act`.
   - The event, text & stickers and games tab buttons are removed. `FS.openTab('event'|'games')` falls back to photos; the text pane still opens when a layer is selected. The event template (`prefs.eventOn`) is forced off, and the intro's "אירוע חדש" is hidden.
-- **AI tab with no internet (`js/ai-local.js`).** The server cards (magnet from a description, AI greetings, create from a description, the assistant) are hidden. On top:
-  - "⚡ שיפור חכם" (`FS.smartFix`): auto light, skin on the faces found, sharpening, smart fit, on all targets.
-  - 8 built-in designs (`FS.AI_DESIGNS`: a base frame in a colour + a `LOCAL_LOOKS` look).
-  - 14 built-in backgrounds drawn in code (`FS.AI_BGS`, 1200×1600 JPEG data URLs), applied as `bg.mode = 'image'` after `FS.ensureMask`.
-- **Professional looks.** `FS.LOCAL_LOOKS` are 17 photographic grades (natural, clean portrait, bright & airy, high-key, warm glow, vivid event, night fix, Portra / Fuji / Kodak Gold film, soft cinema, moody, matte, three B&W, restore). They sit on `FS.softAuto(p)` (part of auto's light and white balance, none of its colour boost or sharpening), and the styles tab shows each as a preview tile on the current photo. Film split toning: the `tone` values `portra`, `fuji`, `kodak`, `airy`, `moody`, `bwwarm` (`SPLIT` in `core.js`).
 - **Undo.** `FS.undo` / `FS.redo` step every photo being batch-edited, not just the current one. `FS.resetEdits()` (⟲ איפוס in the stage bar) returns to the photo as it came in (first snapshot, AI restyle undone) and is itself undoable. The undo button shows the number of steps.
 - **The computer's printers (`helper/`).** A web page can't list printers, so a small local helper answers on `http://localhost:17777` only:
   - Windows: `frame-print.ps1` + `start-frame-print.bat` (PowerShell HttpListener; `Win32_Printer` / `Win32_PrintJob` for state, Windows-reported problems such as no paper or low ink, and queue; prints a 300dpi sheet JPEG with `System.Drawing.Printing` on the printer's closest paper, from the paper's edge).
