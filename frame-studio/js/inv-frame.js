@@ -101,4 +101,75 @@
     x = c.getContext('2d'); x.font = (weight || 700) + ' ' + size + 'px "' + (font || 'Heebo') + '"'; x.fillStyle = color || '#1d1633'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
     x.fillText(text, c.width / 2, c.height / 2); return c;
   };
+
+  /* ---------- a frame drawn by the image AI in the invitation's own design ----------
+     The invitation goes to the hubs server's image model with the shape wanted; the model paints a finished frame in the
+     same colours, paper and ornaments around a window of flat pure green, and the green is cut out here (with the green
+     fringe cleaned), so the result is a PNG frame with a see-through window. */
+  /* the invitation on a canvas of the frame's shape (image models answer in the shape they are given), on its own paper colour */
+  function shot(img, long, W, H) {
+    var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, cw = W >= H ? long : Math.round(long * W / H), ch = W >= H ? Math.round(long * H / W) : long;
+    var c = FS.canvas(cw, ch), x = c.getContext('2d'), t = FS.canvas(8, 8), tx = t.getContext('2d');
+    tx.drawImage(img, 0, 0, 8, 8); var e = tx.getImageData(0, 0, 8, 8).data, r = 0, g = 0, b = 0, k2 = 0;
+    for (var i = 0; i < 64; i++) { var X = i % 8, Y = i >> 3; if (X && X < 7 && Y && Y < 7) continue; r += e[i * 4]; g += e[i * 4 + 1]; b += e[i * 4 + 2]; k2++; }
+    x.fillStyle = 'rgb(' + Math.round(r / k2) + ',' + Math.round(g / k2) + ',' + Math.round(b / k2) + ')'; x.fillRect(0, 0, cw, ch);
+    var k = Math.min(cw * 0.94 / w, ch * 0.94 / h); x.imageSmoothingQuality = 'high'; x.drawImage(img, (cw - w * k) / 2, (ch - h * k) / 2, w * k, h * k);
+    return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+  }
+  FS.invFramePrompt = function (W, H, o) {
+    o = o || {};
+    var shape = W > H * 1.05 ? 'landscape (wider than tall)' : H > W * 1.05 ? 'portrait (taller than wide)' : 'square';
+    return 'This picture shows an event invitation (in the middle). Use it only as the design reference and create a NEW decorative photo frame for a fridge photo magnet, ' + shape + ', aspect ratio ' + W + ':' + H + '. ' +
+      'Copy the invitation\'s exact visual identity: the same colour palette, background paper texture, ornaments, flowers, leaves, line work, gold or foil details and overall style, so it clearly belongs to the same event. ' +
+      'Layout: an elegant decorative border around all four edges' + (o.band ? ', a little wider at the bottom' : '') + ', and one large empty photo window in the centre that covers about ' + Math.round((o.hole || 0.72) * 100) + '% of the frame. ' +
+      'Fill the window with perfectly flat, solid, pure green (#00FF00), with clean sharp edges' + (o.round ? ' and softly rounded corners' : '') + '; nothing may overlap or be drawn inside the green window. ' +
+      'No text, no letters, no names, no numbers, no people, no photo inside. Flat front view, the frame fills the whole image edge to edge, print quality, highly detailed.';
+  };
+  /* cut the green window: the green part that holds the centre (or the biggest green part) becomes transparent */
+  FS.keyGreenWindow = function (img, W, H) {
+    var c = FS.canvas(W, H), x = c.getContext('2d', { willReadFrequently: true }), iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    var s = Math.max(W / iw, H / ih); x.imageSmoothingQuality = 'high'; x.drawImage(img, (W - iw * s) / 2, (H - ih * s) / 2, iw * s, ih * s);
+    var d = x.getImageData(0, 0, W, H), px = d.data, n = W * H, g = new Uint8Array(n), i;
+    function green(r, gg, b) { return gg > 120 && gg - r > 60 && gg - b > 60; }
+    for (i = 0; i < n; i++) if (green(px[i * 4], px[i * 4 + 1], px[i * 4 + 2])) g[i] = 1;
+    /* connected green regions (4-neighbours), keep the one at the centre, else the largest */
+    var lab = new Int32Array(n), q = new Int32Array(n), best = 0, bestN = 0, centre = 0, sizes = [0];
+    for (i = 0; i < n; i++) {
+      if (!g[i] || lab[i]) continue;
+      var id = sizes.length, h = 0, t = 0, cnt = 0; lab[i] = id; q[t++] = i;
+      while (h < t) { var v = q[h++], vx = v % W; cnt++;
+        if (vx > 0 && g[v - 1] && !lab[v - 1]) { lab[v - 1] = id; q[t++] = v - 1; }
+        if (vx < W - 1 && g[v + 1] && !lab[v + 1]) { lab[v + 1] = id; q[t++] = v + 1; }
+        if (v >= W && g[v - W] && !lab[v - W]) { lab[v - W] = id; q[t++] = v - W; }
+        if (v < n - W && g[v + W] && !lab[v + W]) { lab[v + W] = id; q[t++] = v + W; } }
+      sizes.push(cnt); if (cnt > bestN) { bestN = cnt; best = id; }
+    }
+    var cid = lab[(H >> 1) * W + (W >> 1)]; if (cid && sizes[cid] > n * 0.08) best = cid;
+    if (!best || sizes[best] < n * 0.08) return null;
+    /* the window's box, and holes inside it (specks the model left) filled */
+    var x0 = W, y0 = H, x1 = 0, y1 = 0;
+    for (i = 0; i < n; i++) if (lab[i] === best) { var xx = i % W, yy = (i / W) | 0; if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+    for (var y = y0; y <= y1; y++) { var row = y * W, a = -1, b2 = -1; for (var xq = x0; xq <= x1; xq++) if (lab[row + xq] === best) { if (a < 0) a = xq; b2 = xq; } if (a >= 0) for (xq = a; xq <= b2; xq++) lab[row + xq] = best; }
+    /* transparent window with a 2px soft edge, and the green fringe around it pulled back to the frame's colours */
+    for (i = 0; i < n; i++) {
+      var r = px[i * 4], gg = px[i * 4 + 1], bb = px[i * 4 + 2];
+      if (lab[i] === best) { px[i * 4 + 3] = 0; continue; }
+      if (gg > r && gg > bb) { var near = false, X = i % W, Y = (i / W) | 0;
+        for (var dy = -3; dy <= 3 && !near; dy++) for (var dx = -3; dx <= 3; dx++) { var j = (Y + dy) * W + X + dx; if (Y + dy >= 0 && Y + dy < H && X + dx >= 0 && X + dx < W && lab[j] === best) { near = true; break; } }
+        if (near) { var m = Math.max(r, bb); px[i * 4 + 1] = Math.min(gg, m); if (green(r, gg, bb)) px[i * 4 + 3] = 90; } }
+    }
+    x.putImageData(d, 0, 0);
+    return { canvas: c, hole: { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }, cover: sizes[best] / n };
+  };
+  FS.aiFrameFromInvite = function (img, W, H, o) {
+    var ask = FS.askServer; if (!ask) return Promise.reject(new Error('offline'));
+    var gw = W >= H ? 1024 : Math.round(1024 * W / H / 16) * 16, gh = W >= H ? Math.round(1024 * H / W / 16) * 16 : 1024;
+    return ask({ action: 'restyle', prompt: FS.invFramePrompt(W, H, o), image: shot(img, 1280, W, H), small: shot(img, 496, W, H), mime: 'image/jpeg', w: gw, h: gh }).then(function (r) {
+      if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
+      var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
+    }).then(function (res) {
+      var k = FS.keyGreenWindow(res, W, H); if (!k) throw new Error('no-window'); return k;
+    });
+  };
 })();
