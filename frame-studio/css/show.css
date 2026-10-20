@@ -205,3 +205,45 @@ a { color: inherit; }
 }
 .pick-h { font: 700 15px var(--chunky); letter-spacing: .08em; color: var(--dim); margin: 0 0 14px; }
 .pick-note { color: var(--dim); font-size: 16px; margin: 20px 0 0; }
+
+/* ---------- your own magnet, live ---------- */
+.yours { background: var(--enamel); padding: 40px 0 110px; }
+.yours-box { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 5vw; align-items: center; margin-top: 30px; }
+.ymag { margin: 0 auto; width: min(100%, 380px); aspect-ratio: 2 / 3; background: var(--fc); border-radius: 8px; padding: 6% 6% 0; display: flex; flex-direction: column;
+  box-shadow: 0 2px 2px rgba(0,0,0,.08), 0 40px 70px -24px rgba(20, 16, 31, .5); transform: rotate(-2deg); transition: background .35s var(--ease); }
+.yphoto { flex: 1; min-height: 0; border-radius: 3px; overflow: hidden; background: #ccc; }
+.yphoto img { width: 100%; height: 100%; object-fit: cover; }
+.ymag figcaption { display: grid; justify-items: center; gap: 2px; padding: 14px 6px 16px; color: var(--tc); text-align: center; transition: color .35s; }
+.ymag figcaption b { font: 700 clamp(26px, 3vw, 36px)/1.1 'Frank Ruhl Libre', serif; overflow-wrap: anywhere; }
+.ymag figcaption span { font: 500 16px 'Frank Ruhl Libre', serif; letter-spacing: .08em; opacity: .85; }
+.ymag figcaption small { font-size: 11px; opacity: .6; margin-top: 4px; }
+.ymag.bump { animation: bump .35s var(--ease); }
+@keyframes bump { 40% { transform: rotate(-1deg) scale(1.025); } 100% { transform: rotate(-2deg) scale(1); } }
+.yform { display: grid; gap: 18px; max-width: 520px; }
+.yform label { display: grid; gap: 6px; font-weight: 700; }
+.yform input:not([type=file]) { font: 600 19px var(--body); padding: 12px 16px; border-radius: 14px; border: 2px solid rgba(22, 19, 31, .14); background: #fff; color: var(--ink); }
+.yform input:focus { border-color: var(--ink); outline: none; }
+.yform fieldset { border: 0; padding: 0; margin: 0; }
+.yform legend { font-weight: 700; margin-bottom: 8px; }
+.ychips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ychips button { font: 700 16px var(--body); padding: 9px 16px; border-radius: 999px; border: 2px solid rgba(22, 19, 31, .14); background: #fff; color: var(--ink); cursor: pointer; }
+.ychips button[aria-pressed=true] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.yswatch { display: flex; gap: 12px; }
+.yswatch button { width: 40px; height: 40px; border-radius: 50%; background: var(--s); border: 2px solid rgba(22, 19, 31, .2); cursor: pointer; box-shadow: inset 0 -3px 0 rgba(0,0,0,.12); }
+.yswatch button[aria-pressed=true] { outline: 3px solid var(--red); outline-offset: 3px; }
+.yup { justify-self: start; cursor: pointer; }
+.ynote { margin: 0; color: var(--dim); font-size: 14px; }
+.wall-grid a { display: block; text-decoration: none; color: inherit; }
+@media (max-width: 900px) { .yours-box { grid-template-columns: 1fr; } .ymag { width: min(78%, 340px); } }
+
+/* page to page: a soft cross-fade where the browser supports it */
+@view-transition { navigation: auto; }
+/* the sections run edge to edge (the shared mobile sheet pads <main>) */
+body main#main { padding-inline: 0; }
+@media (max-width: 900px) {
+  /* on a phone the magnet is small, so it fits on screen with the names and the date */
+  .yours-box { align-items: start; }
+  .ymag { width: 48%; }
+  .ymag figcaption { padding: 8px 4px 10px; }
+  .ymag figcaption b { font-size: 20px; } .ymag figcaption span { font-size: 12px; } .ymag figcaption small { display: none; }
+}

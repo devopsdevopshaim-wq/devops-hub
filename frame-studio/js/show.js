@@ -92,6 +92,25 @@
     e.preventDefault(); n = (n + l.length) % l.length; l[n].focus(); l[n].click();
   });
 
+  /* ---------- your own magnet, live: names, date, event, frame colour, your photo (kept in the browser) ---------- */
+  var ym = $('#ymag'), st = { ev: 'חתונה', color: 'לבן' };
+  function heDate(v) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; }
+  function bump() { if (still) return; ym.classList.remove('bump'); void ym.offsetWidth; ym.classList.add('bump'); }
+  function send() {
+    var t = 'היי! עיצבתי מגנט באתר ואשמח לבדוק תאריך 🙂\nשמות: ' + ($('#y-n').value.trim() || '—') + '\nתאריך: ' + (heDate($('#y-d').value) || '—') + '\nאירוע: ' + st.ev + '\nצבע מסגרת: ' + st.color;
+    $('#y-send').href = 'https://wa.me/972544979771?text=' + encodeURIComponent(t);
+  }
+  $('#y-n').addEventListener('input', function () { $('#y-names').textContent = this.value.trim() || ' '; send(); });
+  $('#y-n').addEventListener('change', bump);
+  $('#y-d').addEventListener('input', function () { $('#y-date').textContent = heDate(this.value); send(); bump(); });
+  $$('#y-ev button').forEach(function (b) { b.addEventListener('click', function () { $$('#y-ev button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); st.ev = b.dataset.v; send(); }); });
+  $$('#y-c button').forEach(function (b) { b.addEventListener('click', function () {
+    $$('#y-c button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    ym.style.setProperty('--fc', b.dataset.fc); ym.style.setProperty('--tc', b.dataset.tc); st.color = b.getAttribute('aria-label'); send(); bump();
+  }); });
+  $('#y-f').addEventListener('change', function () { var f = this.files[0]; if (!f) return; var u = URL.createObjectURL(f), im = $('#y-img'); im.onload = function () { bump(); }; im.src = u; });
+  send();
+
   /* ---------- the minute ---------- */
   var clock = $('#clock'), steps = $$('.steps li');
   function stepAt(sec) { var at = [0, 15, 40, 60], k = 0; at.forEach(function (t, i) { if (sec >= t - 0.5) k = i; }); steps.forEach(function (li, i) { li.classList.toggle('on', i <= k); }); }

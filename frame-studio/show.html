@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#14101F" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=Assistant:wght@400;600;700;800&family=Rubik:wght@500;700;900&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=Assistant:wght@400;600;700;800&family=Rubik:wght@500;700;900&family=Frank+Ruhl+Libre:wght@500;700&display=swap" />
 <link rel="stylesheet" href="css/show.css" />
 <link rel="stylesheet" href="../portfolio/css/mobile.css" />
 <script src="../portfolio/js/track.js" defer></script>
@@ -102,19 +102,50 @@
     </div>
   </section>
 
+  <!-- your own magnet, live -->
+  <section class="yours" id="yours" aria-labelledby="yours-title">
+    <div class="wrap">
+      <p class="eyebrow">נסו עכשיו</p>
+      <h2 id="yours-title" class="display">המגנט שלכם, עוד לפני האירוע</h2>
+      <div class="yours-box">
+        <figure class="ymag" id="ymag" style="--fc:#FFFFFF;--tc:#2A2238">
+          <div class="yphoto"><img id="y-img" src="show/p-original.webp" alt="התמונה במגנט" /></div>
+          <figcaption><b id="y-names">נועה & דניאל</b><span id="y-date">12.06.2027</span><small>פריים מגנטים · 054-4979771</small></figcaption>
+        </figure>
+        <form class="yform" id="yform" onsubmit="return false">
+          <label>השמות על המגנט<input id="y-n" maxlength="28" value="נועה & דניאל" autocomplete="off" /></label>
+          <label>תאריך האירוע<input id="y-d" type="date" value="2027-06-12" /></label>
+          <fieldset><legend>סוג האירוע</legend><div class="ychips" id="y-ev">
+            <button type="button" aria-pressed="true" data-v="חתונה">חתונה</button><button type="button" aria-pressed="false" data-v="בר/בת מצווה">בר/בת מצווה</button><button type="button" aria-pressed="false" data-v="ברית">ברית</button><button type="button" aria-pressed="false" data-v="יום הולדת">יום הולדת</button><button type="button" aria-pressed="false" data-v="אירוע חברה">אירוע חברה</button>
+          </div></fieldset>
+          <fieldset><legend>צבע המסגרת</legend><div class="yswatch" id="y-c">
+            <button type="button" aria-pressed="true" data-fc="#FFFFFF" data-tc="#2A2238" style="--s:#FFFFFF" aria-label="לבן"></button>
+            <button type="button" aria-pressed="false" data-fc="#D8B26A" data-tc="#2A2238" style="--s:#D8B26A" aria-label="זהב"></button>
+            <button type="button" aria-pressed="false" data-fc="#F3C9CF" data-tc="#5A2633" style="--s:#F3C9CF" aria-label="ורוד"></button>
+            <button type="button" aria-pressed="false" data-fc="#1F3A68" data-tc="#FFFFFF" style="--s:#1F3A68" aria-label="כחול"></button>
+            <button type="button" aria-pressed="false" data-fc="#16131F" data-tc="#D8B26A" style="--s:#16131F" aria-label="שחור"></button>
+          </div></fieldset>
+          <label class="btn ghost yup">📷 תמונה שלכם (נשארת אצלכם)<input id="y-f" type="file" accept="image/*" hidden /></label>
+          <a class="btn red magnetic" id="y-send" href="#" target="_blank" rel="noopener">שולחים לנו את העיצוב בוואטסאפ</a>
+          <p class="ynote">התמונה לא נשלחת לשום מקום. בוואטסאפ נשלחים רק השמות, התאריך, האירוע והצבע.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
   <!-- the fridge wall: one magnet per kind of event -->
   <section class="wall" id="wall" aria-labelledby="wall-title">
     <div class="wrap">
-      <p class="eyebrow">לכל אירוע</p>
+      <p class="eyebrow">לכל אירוע · לוחצים על מגנט</p>
       <h2 id="wall-title" class="display">מה כבר תלוי אצל אחרים</h2>
       <ul class="wall-grid">
-        <li><img src="show/m0.webp" alt="" loading="lazy" /><span class="tape">חתונה</span></li>
-        <li><img src="show/m1.webp" alt="" loading="lazy" /><span class="tape">בר / בת מצווה</span></li>
-        <li><img src="show/m4.webp" alt="" loading="lazy" /><span class="tape">ברית</span></li>
-        <li><img src="show/m3.webp" alt="" loading="lazy" /><span class="tape">יום הולדת</span></li>
-        <li><img src="show/m5.webp" alt="" loading="lazy" /><span class="tape">חינה</span></li>
-        <li><img src="show/m6.webp" alt="" loading="lazy" /><span class="tape">אירוע חברה</span></li>
-        <li><img src="show/m2.webp" alt="" loading="lazy" /><span class="tape">אירוסין</span></li>
+        <li><a href="l/wedding.html" aria-label="מגנטים לחתונה"><img src="show/m0.webp" alt="" loading="lazy" /><span class="tape">חתונה</span></a></li>
+        <li><a href="l/barmitzvah.html" aria-label="מגנטים לבר / בת מצווה"><img src="show/m1.webp" alt="" loading="lazy" /><span class="tape">בר / בת מצווה</span></a></li>
+        <li><a href="l/brit.html" aria-label="מגנטים לברית"><img src="show/m4.webp" alt="" loading="lazy" /><span class="tape">ברית</span></a></li>
+        <li><a href="l/birthday.html" aria-label="מגנטים ליום הולדת"><img src="show/m3.webp" alt="" loading="lazy" /><span class="tape">יום הולדת</span></a></li>
+        <li><a href="l/henna.html" aria-label="מגנטים לחינה"><img src="show/m5.webp" alt="" loading="lazy" /><span class="tape">חינה</span></a></li>
+        <li><a href="l/company.html" aria-label="מגנטים לאירוע חברה"><img src="show/m6.webp" alt="" loading="lazy" /><span class="tape">אירוע חברה</span></a></li>
+        <li><a href="l/engagement.html" aria-label="מגנטים לאירוסין"><img src="show/m2.webp" alt="" loading="lazy" /><span class="tape">אירוסין</span></a></li>
       </ul>
     </div>
   </section>

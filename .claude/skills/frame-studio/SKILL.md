@@ -62,9 +62,11 @@ A designed landing page for customers, linked from the site's nav ("✨ החוו
 - **Hero:** the headline "על המקרר" is coloured plastic letter magnets. A camera flash plays on arrival, and photo magnets (`show/m*.webp`, the site's sample magnets) snap on and can be dragged.
 - **"דקה אחת":** pinned and scrubbed by scroll (GSAP ScrollTrigger). A stopwatch runs 0:00 to 1:00 through flash, frame, print and in hand, and the card goes into the printer and comes out framed.
 - **Styles:** one photo in ten styles, with a clip-path wipe (`show/p-*.webp`).
-- **The fridge wall:** a magnet per event type, each with a label-maker tape.
+- **"המגנט שלכם" (`#yours`):** a live magnet. Names, date, event type, frame colour and the visitor's own photo (an object URL, never uploaded) update it as they type. "שולחים לנו את העיצוב בוואטסאפ" opens wa.me with the names, date, event and colour.
+- **The fridge wall:** a magnet per event type, each with a label-maker tape, linking to its page in `l/`.
 - **Packages and FAQ:** price tags held by magnets. Both are read from `business.json`, with a built-in fallback.
 - **The rest:** the promo film, the booking block (WhatsApp, phone, form, designer), and magnetic CTAs.
+- Page-to-page cross-fade with `@view-transition`. The shared mobile sheet's padding on `<main>` is cancelled here, so sections run edge to edge.
 - GSAP 3.14.2 is vendored in `vendor/gsap/`. Without it, or with reduced motion, every section shows its final state.
 
 ## Clean editor, offline AI tab, printer and event summary (Oct 2026)
