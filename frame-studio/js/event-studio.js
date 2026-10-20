@@ -114,7 +114,7 @@
   function getLandmarker() {
     if (landmarker) return landmarker;
     landmarker = FS.loadVision().then(function (v) {
-      return v.m.FaceLandmarker.createFromOptions(v.fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task' }, runningMode: 'IMAGE', numFaces: 12, outputFaceBlendshapes: true });
+      return v.m.FaceLandmarker.createFromOptions(v.fs, { baseOptions: { modelAssetPath: new URL('models/face_landmarker.task', location.href).href }, runningMode: 'IMAGE', numFaces: 12, outputFaceBlendshapes: true });
     });
     landmarker.catch(function () { landmarker = null; });
     return landmarker;

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   var FS = window.FS, $ = FS.$, $$ = FS.$$, S = FS.state, esc = FS.esc;
-  var show = 'all', sizeF = '', last = -1, mode = 'grid';
+  var show = 'all', sizeF = '', last = -1, mode = 'grid', view = FS.prefs.gridView || 'whole';
   try { var z0 = Number(FS.prefs.gridZoom); if (z0 >= 120 && z0 <= 420) $('#gv-zoom').value = z0; } catch (e) { /* ignore */ }
 
   function sizeKey(p) { var mm = FS.mmOf(p.doc); return (mm[0] / 10).toFixed(1) + '×' + (mm[1] / 10).toFixed(1); }
@@ -50,9 +50,21 @@
 
   /* ---------- the grid ---------- */
   var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { draw(e.target); io.unobserve(e.target); } }); }, { root: $('#gv-tiles'), rootMargin: '400px' }) : null;
+  /* the whole photo, never cropped: the source scaled down with its colour edits and style, kept per photo until it changes
+     (so scrolling a big event stays smooth). "כמו בהדפסה" shows the page as it will print instead. */
+  function wholeThumb(p, size) {
+    var ph = p.doc.photo, key = [p.src, size, JSON.stringify(ph.adj), JSON.stringify(ph.style || 0)].join('|');
+    if (p._gt && p._gt.key === key) return p._gt.c;
+    var im = FS.img(p.src), k = size / Math.max(im.naturalWidth, im.naturalHeight), c = FS.canvas(Math.max(1, im.naturalWidth * k), Math.max(1, im.naturalHeight * k)), x = c.getContext('2d', { willReadFrequently: true });
+    x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height);
+    try { var d = x.getImageData(0, 0, c.width, c.height); FS.adjustPixels(d.data, c.width, c.height, ph.adj, true); if (ph.style && FS.applyStyle) FS.applyStyle(d.data, c.width, c.height, ph.style, true); x.putImageData(d, 0, 0); } catch (e) { /* plain */ }
+    p._gt = { key: key, c: c }; return c;
+  }
   function draw(t) {
     var p = S.photos[Number(t.dataset.i)]; if (!p || !FS.img(p.src)) return;
-    var box = t.querySelector('.gt-img'), c = FS.thumbOf(p, Number($('#gv-zoom').value) * 1.6); box.innerHTML = ''; box.appendChild(c);
+    var size = Math.round(Number($('#gv-zoom').value) * 1.6), box = t.querySelector('.gt-img'), c = view === 'whole' ? wholeThumb(p, size) : FS.thumbOf(p, size);
+    if (view === 'whole') { var cl = FS.canvas(c.width, c.height); cl.getContext('2d').drawImage(c, 0, 0); c = cl; }
+    box.innerHTML = ''; box.appendChild(c);
   }
   function meta(p) {
     var bits = [sizeKey(p) + ' ס״מ'];
@@ -105,6 +117,10 @@
   $('#gv-all').addEventListener('click', function () { S.photos.forEach(function (p) { if (visible(p)) S.marked[p.id] = true; }); build(); });
   $('#gv-none').addEventListener('click', function () { S.marked = {}; build(); });
   $('#gv-inv').addEventListener('click', function () { S.photos.forEach(function (p) { if (!visible(p)) return; if (S.marked[p.id]) delete S.marked[p.id]; else S.marked[p.id] = true; }); build(); });
+  $$('#gv-view button').forEach(function (b) {
+    b.classList.toggle('on', b.dataset.v === view);
+    b.addEventListener('click', function () { view = b.dataset.v; FS.prefs.gridView = view; FS.savePrefs(); $$('#gv-view button').forEach(function (x) { x.classList.toggle('on', x === b); }); build(); });
+  });
   $('#gv-zoom').addEventListener('input', function () { $('#gv-tiles').style.setProperty('--gz', this.value + 'px'); });
   $('#gv-zoom').addEventListener('change', function () { FS.prefs.gridZoom = Number(this.value); FS.savePrefs(); build(); });
   $('#gv-add').addEventListener('change', function () { FS.addFiles(this.files); this.value = ''; });

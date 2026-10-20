@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   var FS = window.FS, $ = FS.$, $$ = FS.$$, esc = FS.esc;
-  var QR_LIB = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+  var QR_LIB = 'vendor/qrcode.js';
   function site() { return FS.BIZ_SITE || {}; }
   function siteUrl(path) { return location.href.replace(/[^/]*([?#].*)?$/, '') + (path || ''); }
   function copy(t, msg) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { FS.toast(msg || '📋 הועתק'); }, function () { prompt('להעתקה:', t); }); }

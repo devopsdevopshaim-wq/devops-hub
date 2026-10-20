@@ -105,16 +105,18 @@
   FS.fileToDataURL = function (file) {
     return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = rej; r.readAsDataURL(file); });
   };
-  /* a photo larger than 6000px is brought down once, so the browser stays responsive */
-  /* photos are kept as blob URLs (not data URLs), so hundreds of them fit in memory; a photo over 6000px is brought down once */
+  /* photos are kept as blob URLs (not data URLs), so hundreds of them fit in memory. A big photo is brought down once, on
+     arrival, to 3000px on its long side (enough for a 20x30cm print) and re-encoded as JPEG: the editor, the AI and the
+     print stay fast and light, and the result still prints sharp. */
+  FS.PHOTO_MAX = 3000;
   FS.addPhotoFile = function (file) {
     var url = URL.createObjectURL(file);
     return FS.loadImg(url).then(function (im) {
-      var max = 6000;
-      if (Math.max(im.naturalWidth, im.naturalHeight) > max) {
-        var k = max / Math.max(im.naturalWidth, im.naturalHeight), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k);
-        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-        return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.93); }).then(function (b) { URL.revokeObjectURL(url); delete IMGS[url]; return FS.loadImg(URL.createObjectURL(b)); });
+      var max = FS.PHOTO_MAX;
+      if (Math.max(im.naturalWidth, im.naturalHeight) > max || (file.size > 4000000 && !/png|webp/.test(file.type))) {
+        var k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k), cx = c.getContext('2d');
+        cx.imageSmoothingQuality = 'high'; cx.drawImage(im, 0, 0, c.width, c.height);
+        return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.9); }).then(function (b) { URL.revokeObjectURL(url); delete IMGS[url]; return FS.loadImg(URL.createObjectURL(b)); });
       }
       return im;
     }).then(function (im) {

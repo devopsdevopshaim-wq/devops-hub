@@ -109,3 +109,13 @@ label.btn { display: inline-flex; }
 .acc-rq li { display: grid; gap: 2px; background: var(--cream2); border-radius: 12px; padding: 8px 12px; color: var(--ink); }
 .acc-rq span { font-size: 13px; font-weight: 600; } .acc-rq small { color: var(--dim); }
 .acc h3 { margin: 8px 0 0; font-size: 16px; }
+/* elements drawn in code, and the frame built from the invitation */
+.dz-elems { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; margin: 8px 0 12px; }
+.dz-el { display: grid; justify-items: center; gap: 2px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 6px 4px; cursor: pointer; }
+.dz-el:hover { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,164,92,.25); }
+.dz-el canvas { width: 48px; height: 48px; } .dz-el small { font-size: 11.5px; color: var(--dim); }
+.dz-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dim); }
+.dz-inline input[type=color] { width: 40px; height: 32px; border: 1px solid var(--line); border-radius: 8px; padding: 2px; background: #fff; }
+.dz-invframe { background: linear-gradient(135deg, #fffaf0, #fff); border: 1px solid var(--gold); border-radius: 18px; padding: 12px 14px; margin: 12px 0; display: grid; gap: 8px; }
+.dz-invframe h3 { margin: 0; }
+.dz-invframe label { display: grid; gap: 4px; font-size: 13px; color: var(--dim); }

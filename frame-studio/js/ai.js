@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var FS = window.FS, $ = FS.$, $$ = FS.$$, S = FS.state;
-  var MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  var MP = new URL('vendor/mediapipe', location.href).href;   /* shipped with the site: works offline */
   var HUB = window.HUB_SERVER || 'https://haimkripisn.app.n8n.cloud/webhook/hasadna-hubs';
   var vision = null, segmenter = null, faceDet = null;
 
@@ -19,9 +19,9 @@
     if (segmenter) return segmenter;
     segmenter = loadVision().then(function (v) {
       var opt = function (url) { return { baseOptions: { modelAssetPath: url }, runningMode: 'IMAGE', outputConfidenceMasks: true, outputCategoryMask: false }; };
-      return v.m.ImageSegmenter.createFromOptions(v.fs, opt('https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite'))
+      return v.m.ImageSegmenter.createFromOptions(v.fs, opt(new URL('models/selfie_multiclass_256x256.tflite', location.href).href))
         .then(function (sg) { sg.multi = true; return sg; })
-        .catch(function () { return v.m.ImageSegmenter.createFromOptions(v.fs, opt('https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite')); });
+        .catch(function () { return v.m.ImageSegmenter.createFromOptions(v.fs, opt(new URL('models/selfie_segmenter.tflite', location.href).href)); });
     });
     segmenter.catch(function () { segmenter = null; });
     return segmenter;
@@ -47,7 +47,7 @@
   function getFaces() {
     if (faceDet) return faceDet;
     faceDet = loadVision().then(function (v) {
-      return v.m.FaceDetector.createFromOptions(v.fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite' }, runningMode: 'IMAGE', minDetectionConfidence: 0.5 });
+      return v.m.FaceDetector.createFromOptions(v.fs, { baseOptions: { modelAssetPath: new URL('models/blaze_face_short_range.tflite', location.href).href }, runningMode: 'IMAGE', minDetectionConfidence: 0.5 });
     });
     faceDet.catch(function () { faceDet = null; });
     return faceDet;

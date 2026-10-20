@@ -1,0 +1,337 @@
+<template>
+  <div id="root" data-composition-id="03-date" data-start="0" data-duration="8.5" data-width="1920" data-height="1080">
+    <style>
+      @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+      @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/Heebo-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/Heebo-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        container-type: size;
+        font-family: 'Heebo', sans-serif;
+        color: #1d1633;
+      }
+      #root .clip { position: absolute; }
+
+      /* ground: paper + one sun bloom (behind phone) + ember counter-bloom */
+      .f03-date-ground {
+        inset: 0;
+        background: #fbf6ee;
+        overflow: hidden;
+      }
+      .f03-date-sun {
+        position: absolute;
+        left: 40px;
+        top: -170px;
+        width: 1100px;
+        height: 1100px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 50%,
+          rgba(201,164,92,0.82) 0%,
+          rgba(228,210,175,0.70) 30%,
+          rgba(219,194,145,0.22) 56%,
+          rgba(251,246,238,0) 72%);
+      }
+      .f03-date-ember {
+        position: absolute;
+        right: -260px;
+        bottom: -320px;
+        width: 900px;
+        height: 900px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(227,201,142,0.20) 0%, rgba(227,201,142,0) 68%);
+      }
+
+      /* camera wrapper (micro push) */
+      .f03-date-cam {
+        position: absolute;
+        inset: 0;
+        transform-origin: 34% 48%;
+      }
+
+      /* 4-step rail — shared position across frames 3–7 */
+      .f03-date-rail {
+        position: absolute;
+        right: 96px;
+        top: 64px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        font-family: 'Heebo', sans-serif;
+        font-weight: 500;
+        font-size: 26px;
+        line-height: 1;
+        white-space: nowrap;
+      }
+      .f03-date-step {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 48px;
+        color: #1d1633;
+      }
+      .f03-date-step.is-later { opacity: 0.4; }
+      .f03-date-step.is-current { color: #c9a45c; }
+      .f03-date-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        font-size: 17px;
+        font-variant-numeric: tabular-nums;
+      }
+      .f03-date-uline {
+        position: absolute;
+        right: 0;
+        left: 0;
+        bottom: 2px;
+        height: 2px;
+        background: #c9a45c;
+        transform-origin: 100% 50%;
+      }
+      .f03-date-dot { color: #1d1633; opacity: 0.4; }
+
+      /* phone */
+      .f03-date-phone {
+        position: absolute;
+        left: 300px;
+        top: 46px;
+        width: 400px;
+        height: 836px;
+        border-radius: 58px;
+        background: #1d1633;
+        padding: 12px;
+        box-shadow: 0 34px 60px -30px rgba(29,22,51,0.30);
+      }
+      .f03-date-screen {
+        position: relative;
+        width: 376px;
+        height: 812px;
+        border-radius: 46px;
+        overflow: hidden;
+        background: #fbf6ee;
+      }
+      .f03-date-shot {
+        position: absolute;
+        inset: 0;
+      }
+      .f03-date-shot img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 50% 0%;
+      }
+      .f03-date-notch {
+        position: absolute;
+        left: 50%;
+        top: 12px;
+        width: 110px;
+        height: 28px;
+        margin-left: -55px;
+        border-radius: 14px;
+        background: #1d1633;
+      }
+
+      /* calendar chip — slides out from the phone's side */
+      .f03-date-chip {
+        position: absolute;
+        left: 652px;
+        top: 716px;
+        height: 84px;
+        width: 520px;
+        background: #c9a45c;
+        border: 1px solid #1d1633;
+        overflow: hidden;
+      }
+      .f03-date-token {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 18px;
+        padding: 0 30px;
+        font-family: 'Heebo', sans-serif;
+        font-weight: 500;
+        font-size: 32px;
+        line-height: 1;
+        color: #1d1633;
+        white-space: nowrap;
+      }
+      .f03-date-ico { width: 38px; height: 38px; flex: 0 0 38px; }
+      .f03-date-okbadge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        border-radius: 50%;
+        background: #2f8a4e;
+      }
+
+      /* headline + cue-3 line, right side */
+      .f03-date-copy {
+        position: absolute;
+        right: 96px;
+        top: 250px;
+        width: 760px;
+        text-align: right;
+      }
+      .f03-date-head {
+        font-family: 'Frank Ruhl Libre', serif;
+        font-weight: 400;
+        font-size: 124px;
+        line-height: 1.0;
+        letter-spacing: -0.01em;
+        color: #1d1633;
+      }
+      .f03-date-head span { display: block; }
+      .f03-date-rule {
+        margin-top: 40px;
+        margin-right: 0;
+        margin-left: auto;
+        width: 420px;
+        height: 1px;
+        background: #1d1633;
+        transform-origin: 100% 50%;
+      }
+      .f03-date-cue3 {
+        margin-top: 34px;
+        font-family: 'Heebo', sans-serif;
+        font-weight: 400;
+        font-size: 46px;
+        line-height: 1.3;
+        color: #1d1633;
+      }
+    </style>
+
+    <!-- full-bleed ground -->
+    <div class="clip f03-date-ground" data-start="0" data-duration="8.5" data-track-index="0">
+      <div class="f03-date-sun" id="f03-date-sun"></div>
+      <div class="f03-date-ember"></div>
+    </div>
+
+    <div class="clip f03-date-cam" id="f03-date-cam" data-start="0" data-duration="8.5" data-track-index="1">
+      <!-- step rail -->
+      <div class="f03-date-rail" id="f03-date-rail" dir="rtl" lang="he">
+        <div class="f03-date-step is-current" id="f03-date-step1"><span class="f03-date-num">1</span><span>מתאמים</span><i class="f03-date-uline" id="f03-date-uline"></i></div>
+        <span class="f03-date-dot">·</span>
+        <div class="f03-date-step is-later"><span class="f03-date-num">2</span><span>מעצבים</span></div>
+        <span class="f03-date-dot">·</span>
+        <div class="f03-date-step is-later"><span class="f03-date-num">3</span><span>מצלמים</span></div>
+        <span class="f03-date-dot">·</span>
+        <div class="f03-date-step is-later"><span class="f03-date-num">4</span><span>מדביקים</span></div>
+      </div>
+
+      <!-- calendar chip (behind phone so it slides out from its side) -->
+      <div class="f03-date-chip" id="f03-date-chip" dir="rtl" lang="he">
+        <div class="f03-date-token" id="f03-date-tok-check">
+          <svg class="f03-date-ico" viewBox="0 0 38 38" aria-hidden="true">
+            <rect x="4" y="7" width="30" height="27" fill="none" stroke="#1d1633" stroke-width="2.4"/>
+            <line x1="4" y1="15" x2="34" y2="15" stroke="#1d1633" stroke-width="2.4"/>
+            <line x1="12" y1="3" x2="12" y2="10" stroke="#1d1633" stroke-width="2.4"/>
+            <line x1="26" y1="3" x2="26" y2="10" stroke="#1d1633" stroke-width="2.4"/>
+            <rect x="10" y="20" width="5" height="4" fill="#1d1633"/>
+            <rect x="17" y="20" width="5" height="4" fill="#1d1633"/>
+            <rect x="24" y="20" width="5" height="4" fill="#1d1633"/>
+            <rect x="10" y="27" width="5" height="4" fill="#1d1633"/>
+          </svg>
+          <span>המערכת בודקת ביומן…</span>
+        </div>
+        <div class="f03-date-token" id="f03-date-tok-ok">
+          <span class="f03-date-okbadge">
+            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+              <path id="f03-date-okpath" d="M5 12.5 L10 17.5 L19 7.5" fill="none" stroke="#fbf6ee" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span>התאריך פנוי ביומן</span>
+        </div>
+      </div>
+
+      <!-- phone with cycling screens -->
+      <div class="f03-date-phone" id="f03-date-phone">
+        <div class="f03-date-screen">
+          <div class="f03-date-shot" id="f03-date-shot-form" data-layout-allow-overflow>
+            <img src="assets/shot-bk-form-M.png" alt="" />
+          </div>
+          <div class="f03-date-shot" id="f03-date-shot-done" data-layout-allow-overflow>
+            <img src="assets/shot-bk-done-M.png" alt="" />
+          </div>
+          <div class="f03-date-notch"></div>
+        </div>
+      </div>
+
+      <!-- headline + cue 3 -->
+      <div class="f03-date-copy" dir="rtl" lang="he">
+        <div class="f03-date-head" dir="rtl" lang="he">
+          <span id="f03-date-h1">בוחרים תאריך</span>
+          <span id="f03-date-h2">באתר</span>
+        </div>
+        <div class="f03-date-rule" id="f03-date-rule"></div>
+        <div class="f03-date-cue3" id="f03-date-cue3" dir="rtl" lang="he">פנוי? אנחנו מאשרים וחוזרים אליכם</div>
+      </div>
+    </div>
+
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      (function () {
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        var B = 0.577; // one beat at 104 bpm
+
+        // camera: slow push across the whole shot (macro move underneath)
+        tl.fromTo("#f03-date-cam", { scale: 1 }, { scale: 1.025, duration: 8, ease: "none" }, 0);
+        tl.fromTo("#f03-date-sun", { scale: 0.92, opacity: 0.7 }, { scale: 1, opacity: 1, duration: 2.2, ease: "power2.out" }, 0);
+
+        // Scene 1 (0–1.6): rail enters, step 1 lights; phone rises with form; headline
+        tl.fromTo("#f03-date-rail", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.1);
+        tl.fromTo("#f03-date-step1", { color: "#1d1633" }, { color: "#c9a45c", duration: 0.35, ease: "power2.out" }, 0.55);
+        tl.fromTo("#f03-date-uline", { scaleX: 0 }, { scaleX: 1, duration: 0.45, ease: "power3.out" }, 0.6);
+
+        tl.fromTo("#f03-date-phone", { y: 220, opacity: 0, rotation: -3 }, { y: 0, opacity: 1, rotation: 0, duration: 1.1, ease: "power3.out" }, 0.05);
+        tl.fromTo("#f03-date-shot-form", { yPercent: 0 }, { yPercent: 0, duration: 0.01 }, 0);
+        tl.fromTo("#f03-date-shot-done", { yPercent: 100 }, { yPercent: 100, duration: 0.01 }, 0);
+
+        tl.fromTo("#f03-date-h1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.35);
+        tl.fromTo("#f03-date-h2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.5);
+        tl.fromTo("#f03-date-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: "power2.inOut" }, 0.9);
+
+        // Scene 2 (1.6–4.2): chip slides out of the phone's side, then resolves to "free"
+        tl.fromTo("#f03-date-chip", { x: -420, opacity: 0 }, { x: 0, opacity: 1, duration: 0.75, ease: "power3.out" }, 3 * B);
+        tl.fromTo("#f03-date-tok-check", { y: 0, opacity: 1 }, { y: 0, opacity: 1, duration: 0.01 }, 0);
+        tl.fromTo("#f03-date-tok-ok", { y: 84, opacity: 0 }, { y: 84, opacity: 0, duration: 0.01 }, 0);
+        // in-place token swap at beat 6 (~3.46s)
+        tl.fromTo("#f03-date-tok-check", { y: 0, opacity: 1 }, { y: -84, opacity: 0, duration: 0.4, ease: "power3.in", immediateRender: false }, 6 * B - 0.1);
+        tl.fromTo("#f03-date-tok-ok", { y: 84, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out", immediateRender: false }, 6 * B + 0.1);
+        tl.fromTo("#f03-date-okpath", { strokeDasharray: 24, strokeDashoffset: 24 }, { strokeDasharray: 24, strokeDashoffset: 0, duration: 0.4, ease: "power2.out" }, 6 * B + 0.35);
+        tl.fromTo("#f03-date-chip", { scale: 1 }, { scale: 1.05, duration: 0.16, ease: "power2.out", immediateRender: false }, 6 * B + 0.3);
+        tl.fromTo("#f03-date-chip", { scale: 1.05 }, { scale: 1, duration: 0.3, ease: "power2.inOut", immediateRender: false }, 6 * B + 0.46);
+
+        // Scene 3 (4.2–6.4): screen swaps by vertical slide inside the screen; cue-3 line appears
+        tl.fromTo("#f03-date-shot-form", { yPercent: 0 }, { yPercent: -100, duration: 0.7, ease: "power3.inOut", immediateRender: false }, 4.3);
+        tl.fromTo("#f03-date-shot-done", { yPercent: 100 }, { yPercent: 0, duration: 0.7, ease: "power3.inOut", immediateRender: false }, 4.3);
+        tl.fromTo("#f03-date-phone", { y: 0 }, { y: -10, duration: 0.25, ease: "power2.out", immediateRender: false }, 4.3);
+        tl.fromTo("#f03-date-phone", { y: -10 }, { y: 0, duration: 0.45, ease: "power2.inOut", immediateRender: false }, 4.55);
+        tl.fromTo("#f03-date-cue3", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 9 * B);
+
+        // Scene 4 (6.4–8.0): hold — only the camera push keeps breathing
+        tl.set({}, {}, 8);
+
+        window.__timelines["03-date"] = tl;
+      })();
+    </script>
+  </div>
+</template>

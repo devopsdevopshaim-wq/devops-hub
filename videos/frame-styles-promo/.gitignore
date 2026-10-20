@@ -1,0 +1,5 @@
+node_modules/
+renders/
+.hyperframes/frame-packets/
+.hyperframes/artifacts/
+capture/

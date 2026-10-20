@@ -1,0 +1,203 @@
+<template>
+  <style>
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: 'Heebo', sans-serif;
+    }
+    [id="06-cta-ground"] {
+      position: absolute;
+      inset: 0;
+      background: #1d1633;
+    }
+    [id="06-cta-bloom"] {
+      position: absolute;
+      left: 576px;
+      top: -14cqh;
+      width: 1190.4px;
+      height: 110cqh;
+      background: radial-gradient(closest-side, rgba(201,164,92,0.30), rgba(228,210,175,0.12) 45%, rgba(219,194,145,0.05) 70%, rgba(29,22,51,0) 100%);
+    }
+    [id="06-cta-ember"] {
+      position: absolute;
+      left: -230.4px;
+      top: 52cqh;
+      width: 729.6px;
+      height: 70cqh;
+      background: radial-gradient(closest-side, rgba(227,201,142,0.16), rgba(227,201,142,0) 100%);
+    }
+    [id="06-cta-photo-wrap"] {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 641.3px;
+      height: 100cqh;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to left, #000 35%, rgba(0,0,0,0.5) 65%, rgba(0,0,0,0) 100%);
+      mask-image: linear-gradient(to left, #000 35%, rgba(0,0,0,0.5) 65%, rgba(0,0,0,0) 100%);
+    }
+    [id="06-cta-photo"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 20%;
+      opacity: 0.35;
+    }
+    [id="06-cta-copy"] {
+      position: absolute;
+      right: 499.2px;
+      top: 13cqh;
+      width: 1267.2px;
+      text-align: right;
+      color: #fbf6ee;
+    }
+    [class~="06-cta-line"] {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 161.3px;
+      line-height: 1.0;
+      letter-spacing: -0.005em;
+      display: block;
+      transform-origin: 100% 60%;
+    }
+    [id="06-cta-l1"] { color: #fbf6ee; }
+    [id="06-cta-l2"] { color: #c9a45c; margin-top: 11.5px; }
+    [id="06-cta-rule"] {
+      margin-top: 65.3px;
+      margin-right: 0;
+      margin-left: auto;
+      width: 844.8px;
+      height: 1px;
+      background: #c9a45c;
+      transform-origin: 100% 50%;
+    }
+    [id="06-cta-brand"] {
+      margin-top: 42.2px;
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 96px;
+      line-height: 1.0;
+      letter-spacing: -0.005em;
+      color: #fbf6ee;
+    }
+    [id="06-cta-contact"] {
+      margin-top: 42.2px;
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 42.2px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 26.9px;
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+      color: #fbf6ee;
+    }
+    [class~="06-cta-item"] {
+      display: flex;
+      align-items: center;
+      gap: 15.4px;
+      white-space: nowrap;
+    }
+    [class~="06-cta-icon"] {
+      width: 36.5px;
+      height: 36.5px;
+      flex: none;
+    }
+    [id="06-cta-sep"] {
+      width: 1px;
+      height: 42.2px;
+      background: rgba(201,164,92,0.6);
+    }
+    [id="06-cta-fade"] {
+      position: absolute;
+      inset: 0;
+      background: #1d1633;
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="06-cta" data-width="1920" data-height="1080" data-duration="4.5">
+    <div id="06-cta-ground" class="clip" data-start="0" data-duration="4.5" data-track-index="0">
+      <div id="06-cta-bloom"></div>
+      <div id="06-cta-ember"></div>
+      <div id="06-cta-photo-wrap">
+        <img id="06-cta-photo" src="assets/portrait-comic.jpg" alt="" />
+      </div>
+    </div>
+
+    <div id="06-cta-copy" class="clip" data-start="0" data-duration="4.5" data-track-index="1" dir="rtl" lang="he">
+      <span id="06-cta-l1" class="06-cta-line" dir="rtl" lang="he">בחרו סגנון.</span>
+      <span id="06-cta-l2" class="06-cta-line" dir="rtl" lang="he">אנחנו מדפיסים.</span>
+      <div id="06-cta-rule"></div>
+      <div id="06-cta-brand" dir="rtl" lang="he">פריים מגנטים</div>
+      <div id="06-cta-contact" dir="rtl" lang="he">
+        <div id="06-cta-phone" class="06-cta-item">
+          <svg class="06-cta-icon" viewBox="0 0 24 24" fill="none" stroke="#c9a45c" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3.5c-4.7 0-8.5 3.4-8.5 7.6 0 2.4 1.2 4.5 3.1 5.9L5.8 20.5l4-2.1c.7.2 1.4.3 2.2.3 4.7 0 8.5-3.4 8.5-7.6S16.7 3.5 12 3.5z"/>
+          </svg>
+          <bdi dir="ltr">054-4979771</bdi>
+        </div>
+        <div id="06-cta-sep"></div>
+        <div id="06-cta-site" class="06-cta-item">
+          <bdi dir="ltr">devopsdevopshaim-wq.github.io/devops-hub/frame-studio</bdi>
+        </div>
+      </div>
+    </div>
+
+    <div id="06-cta-fade" class="clip" data-start="0" data-duration="4.5" data-track-index="2"></div>
+  </div>
+
+  <script src="assets/vendor/gsap.min.js"></script>
+  <script>
+    (function () {
+      var B = 0.536; // one beat at 112 bpm
+      var scope = document.querySelector('[data-composition-id="06-cta"]') || document;
+      var el = function (k) { return scope.querySelector('[id="06-cta-' + k + '"]'); };
+      var tl = gsap.timeline({ paused: true });
+
+      // Macro move underneath: slow settle of the photo + bloom across the whole shot
+      tl.fromTo(el('photo-wrap'), { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 4.5, ease: 'power1.out' }, 0);
+      tl.fromTo(el('bloom'), { opacity: 0.4, scale: 0.92 }, { opacity: 1, scale: 1, duration: 4.5, ease: 'sine.out' }, 0);
+
+      // Scene 1 — line 1 slams in (smooth, no overshoot)
+      tl.fromTo(el('l1'),
+        { opacity: 0, scale: 1.28, filter: 'blur(14px)' },
+        { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.38, ease: 'power4.out' }, 0.08);
+      // next beat — gold line 2
+      tl.fromTo(el('l2'),
+        { opacity: 0, scale: 1.18, filter: 'blur(10px)' },
+        { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.36, ease: 'power4.out' }, B);
+
+      // Scene 2 — gold hairline draws right-to-left, then brand + contact row
+      tl.fromTo(el('rule'), { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: 'power3.inOut' }, 1.2);
+      tl.fromTo(el('brand'),
+        { opacity: 0, y: 34 },
+        { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, B * 3);
+      tl.fromTo(el('phone'),
+        { opacity: 0, x: 40 },
+        { opacity: 1, x: 0, duration: 0.42, ease: 'power3.out' }, B * 4);
+      tl.fromTo(el('sep'), { scaleY: 0 }, { scaleY: 1, duration: 0.3, ease: 'power2.out' }, B * 4 + 0.14);
+      tl.fromTo(el('site'),
+        { opacity: 0, x: 40 },
+        { opacity: 1, x: 0, duration: 0.42, ease: 'power3.out' }, B * 4.5);
+
+      // Scene 3 — hold; final 0.4s fade to ink (real exit: final frame)
+      tl.fromTo(el('fade'), { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power1.in' }, 4.1);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines['06-cta'] = tl;
+    })();
+  </script>
+</template>

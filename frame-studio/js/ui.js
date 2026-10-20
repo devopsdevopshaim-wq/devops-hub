@@ -532,7 +532,7 @@
   function buildFrames() {
     var p = FS.cur(), g = $('#gen-frames'), u = $('#user-frames'), cur = p && p.doc.frame;
     g.innerHTML = '';
-    FS.GEN_FRAMES.forEach(function (f) {
+    FS.GEN_FRAMES.filter(function (f) { return f.base; }).forEach(function (f) {
       g.appendChild(frameTile(f.name, framePreview(p, { kind: 'gen', id: f.id }), cur && cur.kind === 'gen' && cur.id === f.id, function () { useFrame({ kind: 'gen', id: f.id, color: f.color, thick: 1, opacity: 1 }); }));
     });
     var ids = Object.keys(FS.USER_FRAMES);
@@ -546,6 +546,15 @@
     syncFrameOpts();
   }
   FS.buildFrames = buildFrames;
+  /* clearing every frame kept in this browser (asked once after the move to plain base frames; also a button) */
+  function clearUserFrames(ask) {
+    var ids = Object.keys(FS.USER_FRAMES); if (!ids.length) { if (ask) FS.toast('אין מסגרות שמורות'); return Promise.resolve(); }
+    if (ask && !confirm('למחוק את כל ' + ids.length + ' המסגרות השמורות? אי אפשר לבטל.')) return Promise.resolve();
+    S.photos.forEach(function (p) { if (p.doc.frame && p.doc.frame.kind === 'png') { p.doc.frame = null; p.cache = {}; } });
+    return Promise.all(ids.map(function (id) { return FS.deleteUserFrame(id); })).then(function () { buildFrames(); FS.render(); FS.toast('🗑 ' + ids.length + ' מסגרות נמחקו'); });
+  }
+  $('#frames-clear').addEventListener('click', function () { clearUserFrames(true); });
+  FS.clearUserFrames = clearUserFrames;
   function useFrame(ref) {
     var p = FS.cur(); if (!p) { FS.toast('בוחרים תמונה קודם'); return; }
     var texts = null; FS.setFrame(p, ref); $('#fmt').value = p.doc.fmt;
@@ -713,7 +722,12 @@
   FS.syncPanels = syncPanels;
 
   /* ---------- start ---------- */
-  FS.loadUserFrames().then(function () { if (!$('[data-pane=frames]').hidden) buildFrames(); });
+  FS.loadUserFrames().then(function () {
+    if (!$('[data-pane=frames]').hidden) buildFrames();
+    /* once: the move to plain base frames offers to clear the frames this browser kept before */
+    var k = 'fs-frames-clean-v1'; try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch (e) { return; }
+    if (Object.keys(FS.USER_FRAMES).length) setTimeout(function () { clearUserFrames(true); }, 1200);
+  });
   openTab(FS.prefs.tab && FS.prefs.tab !== 'games' ? FS.prefs.tab : 'photos');
   if (document.fonts) document.fonts.ready.then(function () { FS.render(); });
   FS.render();

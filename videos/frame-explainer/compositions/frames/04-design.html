@@ -1,0 +1,406 @@
+<template>
+  <style>
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/Heebo-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/Heebo-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      color: #1d1633;
+      font-family: 'Heebo', sans-serif;
+    }
+
+    /* ---------- ground (full-bleed clip) ---------- */
+    .f04-bg {
+      position: absolute;
+      inset: 0;
+      background: #fbf6ee;
+      overflow: hidden;
+    }
+    .f04-sun {
+      position: absolute;
+      left: 330px;
+      top: -120px;
+      width: 1260px;
+      height: 1260px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%,
+        rgba(201, 164, 92, 0.62) 0%,
+        rgba(228, 210, 175, 0.55) 30%,
+        rgba(219, 194, 145, 0.2) 55%,
+        rgba(251, 246, 238, 0) 72%);
+    }
+    .f04-ember {
+      position: absolute;
+      left: -260px;
+      top: -300px;
+      width: 820px;
+      height: 820px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(227, 201, 142, 0.2) 0%, rgba(227, 201, 142, 0) 70%);
+    }
+
+    /* ---------- step rail (fixed across frames 4-7) ---------- */
+    .f04-rail {
+      position: absolute;
+      right: 96px;
+      top: 64px;
+      height: 48px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 34px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 26px;
+      line-height: 1;
+      color: #1d1633;
+    }
+    .f04-step {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 48px;
+      white-space: nowrap;
+    }
+    .f04-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border: 1.5px solid currentColor;
+      border-radius: 50%;
+      font-size: 17px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      box-sizing: border-box;
+    }
+    .f04-dim { opacity: 0.4; }
+    .f04-check {
+      width: 20px;
+      height: 20px;
+      display: block;
+    }
+    .f04-underline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 3px;
+      background: #c9a45c;
+      transform-origin: 100% 50%;
+    }
+
+    /* ---------- laptop window ---------- */
+    .f04-laptop {
+      position: absolute;
+      left: 140px;
+      top: 236px;
+      width: 1040px;
+      transform-origin: 50% 50%;
+    }
+    .f04-screen {
+      position: relative;
+      width: 1040px;
+      padding: 12px;
+      box-sizing: border-box;
+      background: #1d1633;
+      border-radius: 20px;
+      box-shadow: 0 30px 60px -28px rgba(29, 22, 51, 0.28);
+    }
+    .f04-screen img {
+      display: block;
+      width: 1016px;
+      height: 571.5px;
+      border-radius: 9px;
+    }
+    .f04-deck {
+      position: relative;
+      width: 1140px;
+      height: 20px;
+      margin-left: -50px;
+      background: linear-gradient(180deg, #2c2447 0%, #1d1633 100%);
+      border-radius: 2px 2px 14px 14px;
+    }
+    .f04-notch {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 140px;
+      margin-left: -70px;
+      height: 7px;
+      background: #3a3158;
+      border-radius: 0 0 8px 8px;
+    }
+
+    /* ---------- magnets ---------- */
+    .f04-fan {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+    }
+    .f04-mag {
+      position: absolute;
+      left: 812px;
+      top: 318px;
+      width: 236px;
+      height: 354px;
+      transform-origin: 50% 80%;
+    }
+    .f04-mag img {
+      display: block;
+      width: 236px;
+      height: 354px;
+      border-radius: 4px;
+      box-shadow: 0 22px 40px -20px rgba(29, 22, 51, 0.32);
+    }
+
+    .f04-spark {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      transform-origin: 50% 50%;
+    }
+
+    /* ---------- text column ---------- */
+    .f04-col {
+      position: absolute;
+      right: 96px;
+      top: 232px;
+      width: 600px;
+      text-align: right;
+    }
+    .f04-label {
+      font-family: 'Heebo', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: 0.18em;
+      color: #1d1633;
+      margin-bottom: 18px;
+    }
+    .f04-mask {
+      overflow: hidden;
+      padding-bottom: 6px;
+    }
+    .f04-hl {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 92px;
+      line-height: 1.04;
+      letter-spacing: -0.005em;
+      color: #1d1633;
+      white-space: nowrap;
+    }
+    .f04-rule {
+      height: 1px;
+      width: 600px;
+      background: #1d1633;
+      margin-top: 22px;
+      transform-origin: 100% 50%;
+    }
+    .f04-chips {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      margin-top: 30px;
+    }
+    .f04-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 62px;
+      padding: 0 28px;
+      border: 1px solid #1d1633;
+      background: rgba(251, 246, 238, 0.7);
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 32px;
+      color: #1d1633;
+      white-space: nowrap;
+    }
+    .f04-ai {
+      position: relative;
+      margin-top: 30px;
+      height: 78px;
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+    }
+    .f04-ai-halo {
+      position: absolute;
+      right: -30px;
+      top: -26px;
+      width: 640px;
+      height: 130px;
+      border-radius: 65px;
+      background: radial-gradient(closest-side, rgba(201, 164, 92, 0.55), rgba(228, 210, 175, 0.25) 60%, rgba(251, 246, 238, 0) 100%);
+    }
+    .f04-ai-pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      height: 78px;
+      padding: 0 30px 0 34px;
+      background: #c9a45c;
+      transform-origin: 100% 50%;
+    }
+    .f04-ai-inner {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 32px;
+      color: #1d1633;
+      white-space: nowrap;
+    }
+    .f04-ai-star {
+      width: 34px;
+      height: 34px;
+      display: block;
+      transform-origin: 50% 50%;
+    }
+  </style>
+
+  <div id="root" data-composition-id="04-design" data-width="1920" data-height="1080" data-duration="8.5">
+    <div id="f04-bg" class="clip f04-bg" data-start="0" data-duration="8.5" data-track-index="0">
+      <div class="f04-sun" id="f04-sun"></div>
+      <div class="f04-ember"></div>
+    </div>
+
+    <!-- step rail: right-to-left -->
+    <div class="f04-rail" id="f04-rail" dir="rtl" lang="he">
+      <div class="f04-step" id="f04-step1">
+        <span class="f04-num">1</span><span>מתאמים</span>
+        <svg class="f04-check" id="f04-check1" viewBox="0 0 20 20"><path d="M3.5 10.5 L8 15 L16.5 5.5" fill="none" stroke="#c9a45c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="f04-step" id="f04-step2">
+        <span class="f04-num">2</span><span>מעצבים</span>
+        <div class="f04-underline" id="f04-underline"></div>
+      </div>
+      <div class="f04-step f04-dim">
+        <span class="f04-num">3</span><span>מצלמים</span>
+      </div>
+      <div class="f04-step f04-dim">
+        <span class="f04-num">4</span><span>מדביקים</span>
+      </div>
+    </div>
+
+    <!-- laptop window with the real designer screen -->
+    <div class="f04-laptop" id="f04-laptop">
+      <div class="f04-screen">
+        <img src="assets/shot-designer.png" alt="" />
+      </div>
+      <div class="f04-deck"><div class="f04-notch"></div></div>
+    </div>
+
+    <!-- finished magnets fanning out of the screen -->
+    <div class="f04-fan" id="f04-fan">
+      <div class="f04-mag" id="f04-mag0"><img src="assets/magnet-0.png" alt="" /></div>
+      <div class="f04-mag" id="f04-mag6"><img src="assets/magnet-6.png" alt="" /></div>
+      <div class="f04-mag" id="f04-mag4"><img src="assets/magnet-4.png" alt="" /></div>
+      <svg class="f04-spark" id="f04-spark1" style="left: 1146px; top: 280px;" viewBox="0 0 44 44"><path d="M22 2 C23.5 15 29 20.5 42 22 C29 23.5 23.5 29 22 42 C20.5 29 15 23.5 2 22 C15 20.5 20.5 15 22 2 Z" fill="#c9a45c"/></svg>
+      <svg class="f04-spark" id="f04-spark2" style="left: 690px; top: 676px; width: 30px; height: 30px;" viewBox="0 0 44 44"><path d="M22 2 C23.5 15 29 20.5 42 22 C29 23.5 23.5 29 22 42 C20.5 29 15 23.5 2 22 C15 20.5 20.5 15 22 2 Z" fill="#c9a45c"/></svg>
+    </div>
+
+    <!-- headline + chips -->
+    <div class="f04-col" dir="rtl" lang="he">
+      <div class="f04-label" id="f04-label" dir="rtl" lang="he">שלב <bdi dir="ltr">2</bdi> · עיצוב</div>
+      <div class="f04-mask"><div class="f04-hl" id="f04-hl1" dir="rtl" lang="he">מעצבים</div></div>
+      <div class="f04-mask"><div class="f04-hl" id="f04-hl2" dir="rtl" lang="he">מסגרת אישית</div></div>
+      <div class="f04-rule" id="f04-rule"></div>
+      <div class="f04-chips" dir="rtl" lang="he">
+        <span class="f04-chip" id="f04-chip1" dir="rtl" lang="he">שמות</span>
+        <span class="f04-chip" id="f04-chip2" dir="rtl" lang="he">תאריך</span>
+        <span class="f04-chip" id="f04-chip3" dir="rtl" lang="he">צבעים</span>
+      </div>
+      <div class="f04-ai" dir="rtl" lang="he">
+        <div class="f04-ai-halo" id="f04-ai-halo"></div>
+        <div class="f04-ai-pill" id="f04-ai-pill">
+          <div class="f04-ai-inner" id="f04-ai-inner" dir="rtl" lang="he">
+            <svg class="f04-ai-star" id="f04-ai-star" viewBox="0 0 44 44"><path d="M22 2 C23.5 15 29 20.5 42 22 C29 23.5 23.5 29 22 42 C20.5 29 15 23.5 2 22 C15 20.5 20.5 15 22 2 Z" fill="#1d1633"/><path d="M36 4 C36.5 8 38 9.5 42 10 C38 10.5 36.5 12 36 16 C35.5 12 34 10.5 30 10 C34 9.5 35.5 8 36 4 Z" fill="#1d1633"/></svg>
+            <span>או <bdi dir="ltr">AI</bdi> שמעצב מתוך ההזמנה שלכם</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/vendor/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      var BEAT = 60 / 104; // 0.577s
+
+      // ground: slow bloom drift under the whole shot
+      tl.fromTo('#f04-sun', { scale: 1, x: 0 }, { scale: 1.08, x: -40, duration: 8, ease: 'none' }, 0);
+
+      // Scene 1 (0.0-2.0): rail lights step 2, laptop holds center-left, headline right
+      tl.fromTo('#f04-check1', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)' }, 0.1);
+      tl.fromTo('#f04-step2', { color: 'rgba(29,22,51,0.4)' }, { color: '#c9a45c', duration: 0.45, ease: 'power2.out' }, 0.15);
+      tl.fromTo('#f04-underline', { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: 'power3.out' }, 0.25);
+
+      tl.fromTo('#f04-laptop', { opacity: 0, scale: 0.9, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.7, ease: 'power3.out' }, 0);
+      tl.fromTo('#f04-label', { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out' }, 0.25);
+      tl.fromTo('#f04-hl1', { yPercent: 105 }, { yPercent: 0, duration: 0.6, ease: 'power3.out' }, 0.35);
+      tl.fromTo('#f04-hl2', { yPercent: 105 }, { yPercent: 0, duration: 0.6, ease: 'power3.out' }, BEAT + 0.05);
+      // small breath while the screen holds the center
+      tl.fromTo('#f04-laptop', { y: 0 }, { y: -8, duration: 1.2, ease: 'sine.inOut', immediateRender: false }, 0.8);
+
+      // Scene 2 (2.0-4.6): weight-transfer — screen slides left + shrinks, magnets fan out of it
+      tl.fromTo('#f04-laptop', { x: 0, y: -8, scale: 1 }, { x: -297, y: -44, scale: 0.56, duration: 0.95, ease: 'power3.inOut', immediateRender: false }, 2.0);
+      tl.fromTo('#f04-rule', { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: 'power3.out' }, 2.1);
+
+      var fan = [
+        { id: '#f04-mag0', t: 4 * BEAT, x: -158, y: 18, r: -10 },
+        { id: '#f04-mag4', t: 5 * BEAT, x: 0, y: -14, r: 0 },
+        { id: '#f04-mag6', t: 6 * BEAT, x: 158, y: 18, r: 10 }
+      ];
+      fan.forEach(function (m) {
+        tl.fromTo(m.id,
+          { x: -250, y: 40, rotation: 0, scale: 0.45, opacity: 0 },
+          { x: m.x, y: m.y, rotation: m.r, scale: 1, opacity: 1, duration: 0.7, ease: 'back.out(1.4)' },
+          m.t);
+      });
+
+      ['#f04-chip1', '#f04-chip2', '#f04-chip3'].forEach(function (id, i) {
+        tl.fromTo(id,
+          { opacity: 0, y: 24, scale: 0.85 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: 'back.out(1.8)' },
+          (5 + i) * BEAT + 0.15);
+      });
+
+      // Scene 3 (4.6-8.0): gold AI chip slides up and snaps open, halo blooms a beat behind, then hold
+      var T3 = 8 * BEAT; // 4.62
+      tl.fromTo('#f04-ai-pill', { y: 40, opacity: 0, scaleX: 0.08 }, { y: 0, opacity: 1, duration: 0.35, ease: 'power3.out' }, T3);
+      tl.fromTo('#f04-ai-pill', { scaleX: 0.08 }, { scaleX: 1, duration: 0.5, ease: 'power4.out', immediateRender: false }, T3 + 0.12);
+      tl.fromTo('#f04-ai-inner', { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.45, ease: 'power2.out' }, T3 + 0.32);
+      tl.fromTo('#f04-ai-star', { scale: 0, rotation: -120 }, { scale: 1, rotation: 0, duration: 0.6, ease: 'back.out(2)' }, T3 + 0.35);
+      tl.fromTo('#f04-ai-halo', { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1.04, duration: 0.9, ease: 'power2.out' }, T3 + BEAT);
+
+      // hold with quiet life: sparkle twinkles, magnets settle-drift
+      tl.fromTo('#f04-ai-star', { scale: 1 }, { scale: 1.22, duration: BEAT / 2, ease: 'sine.out', immediateRender: false }, 10 * BEAT);
+      tl.fromTo('#f04-ai-star', { scale: 1.22 }, { scale: 1, duration: BEAT / 2, ease: 'sine.in', immediateRender: false }, 10.5 * BEAT);
+      tl.fromTo('#f04-spark1', { scale: 0, rotation: -90, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.55, ease: 'back.out(2)' }, 11 * BEAT);
+      tl.fromTo('#f04-spark2', { scale: 0, rotation: 90, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.55, ease: 'back.out(2)' }, 12 * BEAT);
+      tl.fromTo('#f04-fan', { y: 0 }, { y: -10, duration: 8 - 4.4, ease: 'sine.inOut', immediateRender: false }, 4.4);
+      tl.fromTo('#f04-laptop', { scale: 0.56 }, { scale: 0.575, duration: 8 - 3.0, ease: 'sine.inOut', immediateRender: false }, 3.0);
+
+      tl.set({}, {}, 8);
+      window.__timelines['04-design'] = tl;
+    })();
+  </script>
+</template>

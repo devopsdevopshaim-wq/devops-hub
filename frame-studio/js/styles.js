@@ -281,6 +281,46 @@
     });
   }
 
+  /* AI looks that run fully in the browser, instantly, with no network: each is a recipe of the photo pipeline's own
+     tools (auto light, a style, adjustments, skin smoothing on the faces MediaPipe finds locally) */
+  FS.LOCAL_LOOKS = [
+    ['restore', 'שחזור ושיפור', '🪄', { auto: true, adj: { sharpen: 30, clarity: 18, vibrance: 12 } }],
+    ['studio', 'פורטרט סטודיו', '📸', { auto: true, skin: 45, adj: { clarity: -6, vignette: 22, exposure: 4 } }],
+    ['beauty', 'עור חלק וזוהר', '✨', { auto: true, skin: 60, adj: { highlights: -12, temp: 6 } }],
+    ['cinema', 'קולנועי', '🎬', { preset: 'cinema' }],
+    ['golden', 'שעת זהב', '🌅', { preset: 'golden' }],
+    ['vintage', 'צילום מ־1920', '🎞️', { style: 'oldphoto', amt: 100 }],
+    ['80s', 'שנות ה־80', '📼', { style: 'lomo', amt: 80, adj: { grain: 18 } }],
+    ['pencil', 'רישום עיפרון', '✏️', { style: 'sketch', amt: 100 }],
+    ['coloring', 'דף צביעה', '🖍️', { style: 'lineart', amt: 100 }],
+    ['comicpop', 'קומיקס', '💥', { style: 'comic', amt: 100 }],
+    ['mangaink', 'מנגה', '🗾', { style: 'manga', amt: 100 }],
+    ['popart', 'פופ־ארט', '🟨', { style: 'pop', amt: 100 }],
+    ['street', 'גרפיטי', '🎨', { style: 'graffiti', amt: 100 }],
+    ['glass', 'ויטראז׳', '⛪', { style: 'stained', amt: 100 }],
+    ['tiles', 'פסיפס', '🧩', { style: 'mosaic', amt: 100 }],
+    ['game', 'משחק וידאו', '👾', { style: 'pixel', amt: 100 }],
+    ['neonlight', 'ניאון', '💡', { style: 'neon', amt: 90 }],
+    ['goldprint', 'תחריט זהב', '🪙', { style: 'engrave', amt: 100 }],
+    ['blueprint', 'שרטוט', '📐', { style: 'blueprint', amt: 100 }],
+    ['heat', 'מצלמה תרמית', '🌡️', { style: 'thermal', amt: 100 }]
+  ];
+  FS.applyLook = function (p, look) {
+    var r = look[3], d = p.doc.photo, base = r.auto ? FS.autoAdjust(p) : Object.assign({}, FS.ADJ0);
+    if (r.preset) { var q = (FS.PRESETS || []).filter(function (x) { return x[0] === r.preset; })[0]; if (q) { base = FS.presetAdj(q[2], 1); d.preset = q[0]; } }
+    Object.keys(r.adj || {}).forEach(function (k) { base[k] = (base[k] || 0) + r.adj[k]; });
+    d.adj = base; d.style = r.style ? { id: r.style, amt: r.amt || 100 } : null;
+    if (!r.skin) { d.skin = null; return Promise.resolve(p); }
+    return FS.findFaces(p).then(function (faces) { d.skin = faces && faces.length ? { amt: r.skin, faces: faces.map(function (f) { return { x: f.x, y: f.y, w: f.w, h: f.h }; }) } : null; return p; }, function () { d.skin = null; return p; });
+  };
+  function runLook(look) {
+    var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
+    FS.busy('✨ ' + look[1] + '…');
+    var chain = Promise.resolve();
+    list.forEach(function (p) { chain = chain.then(function () { return FS.applyLook(p, look).then(function () { p.cache = {}; if (p !== FS.cur()) FS.snap(p); }); }); });
+    chain.then(function () { FS.busy(); FS.changed(); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.buildGrid(); FS.toast('✨ ' + look[1] + (list.length > 1 ? ' על ' + list.length + ' תמונות' : '') + ' · בלי אינטרנט', 3500); });
+  }
+
   FS.unstyle = function (p) {
     if (!p.origSrc) return false; p.src = p.origSrc; delete p.origSrc; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
     FS.fitPhoto(p.doc, FS.img(p.src)); p.doc.photo.style = null; FS.snap(p); return true;
@@ -310,9 +350,9 @@
       var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + s[1] + '</span>';
       b.addEventListener('click', function () { runLocal(s); }); la.appendChild(b);
     });
-    if (!a.children.length) FS.AI_STYLES.forEach(function (s) {
+    if (a && !a.children.length) FS.LOCAL_LOOKS.forEach(function (s) {
       var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + s[1] + '</span>';
-      b.addEventListener('click', function () { runAI(s[3] + KEEP, s[1]); }); a.appendChild(b);
+      b.addEventListener('click', function () { runLook(s); }); a.appendChild(b);
     });
   };
   function runAI(prompt, label) {
@@ -334,5 +374,5 @@
   });
   $('#style-none').addEventListener('click', function () { FS.targets().forEach(function (q) { q.doc.photo.style = null; FS.snap(q); }); FS.changed(); FS.buildStyles(); });
   $('#style-orig').addEventListener('click', function () { var n = 0; FS.targets().forEach(function (q) { if (FS.unstyle(q)) n++; }); FS.emit('doc'); FS.toast(n ? 'המקור הוחזר ל־' + n + ' תמונות' : 'אין סגנון AI להחזיר'); });
-  $('#ai-custom-go').addEventListener('click', function () { var t = $('#ai-custom').value.trim(); if (!t) return FS.toast('כותבים מה לעשות לתמונה'); runAI('Edit this photo: ' + t + '.' + KEEP, 'עריכת AI'); });
+  if ($('#ai-custom-go')) $('#ai-custom-go').addEventListener('click', function () { var t = $('#ai-custom').value.trim(); if (!t) return FS.toast('כותבים מה לעשות לתמונה'); runAI('Edit this photo: ' + t + '.' + KEEP, 'עריכת AI'); });
 })();

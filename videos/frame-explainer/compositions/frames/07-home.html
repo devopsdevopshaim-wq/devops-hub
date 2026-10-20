@@ -1,0 +1,441 @@
+<template>
+  <script src="assets/vendor/gsap.min.js"></script>
+  <style>
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      color: #1d1633;
+    }
+
+    /* ---- full-bleed ground: paper + sun bloom behind the magnet + ember counter-bloom ---- */
+    .h07-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 30% 44% at 22% 52%, rgba(201,164,92,0.82) 0%, rgba(228,210,175,0.55) 40%, rgba(219,194,145,0.2) 68%, rgba(251,246,238,0) 100%),
+        radial-gradient(ellipse 26% 32% at 90% 92%, rgba(227,201,142,0.2) 0%, rgba(227,201,142,0) 100%),
+        #fbf6ee;
+    }
+
+    .h07-stage {
+      position: absolute;
+      inset: 0;
+    }
+    .h07-camera {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 45%;
+    }
+
+    /* ---- 4-step rail (fixed position across frames 3–7) ---- */
+    .h07-rail {
+      position: absolute;
+      top: 64px;
+      right: 96px;
+      height: 48px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 18px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 26px;
+      line-height: 1;
+      white-space: nowrap;
+      color: #1d1633;
+    }
+    .h07-rail-item {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 48px;
+    }
+    .h07-rail-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border: 1.5px solid currentColor;
+      border-radius: 50%;
+      font-size: 16px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      box-sizing: border-box;
+    }
+    .h07-rail-check {
+      display: inline-block;
+      width: 7px;
+      height: 13px;
+      margin: 0 4px -2px 2px;
+      border-right: 2px solid #c9a45c;
+      border-bottom: 2px solid #c9a45c;
+      transform: rotate(45deg);
+    }
+    .h07-rail-sep {
+      opacity: 0.4;
+    }
+    .h07-rail-item.h07-current {
+      color: #c9a45c;
+    }
+    .h07-rail-underline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 4px;
+      height: 2px;
+      background: #c9a45c;
+    }
+
+    /* ---- left: magnet + kraft gift bag ---- */
+    .h07-bloom-shadow {
+      position: absolute;
+      left: 170px;
+      top: 790px;
+      width: 520px;
+      height: 80px;
+      background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(29,22,51,0.16) 0%, rgba(29,22,51,0) 100%);
+    }
+    .h07-bag-back {
+      position: absolute;
+      left: 160px;
+      top: 576px;
+      width: 540px;
+      height: 290px;
+      background: linear-gradient(180deg, #cfb380 0%, #d9c08f 100%);
+      border: 1px solid rgba(29,22,51,0.2);
+    }
+    .h07-magnet-wrap {
+      position: absolute;
+      left: 210px;
+      top: 150px;
+      width: 440px;
+      height: 660px;
+    }
+    .h07-magnet {
+      position: absolute;
+      inset: 0;
+      width: 440px;
+      height: 660px;
+      object-fit: cover;
+      display: block;
+      outline: 1px solid rgba(29,22,51,0.18);
+    }
+    .h07-bag-front {
+      position: absolute;
+      left: 160px;
+      top: 606px;
+      width: 540px;
+      height: 270px;
+      background: linear-gradient(180deg, #e4d2af 0%, #dbc291 62%, #d3b783 100%);
+      border: 1px solid rgba(29,22,51,0.22);
+    }
+    .h07-bag-fold {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 34px;
+      background: rgba(201,164,92,0.5);
+      border-bottom: 1px solid rgba(29,22,51,0.18);
+    }
+    .h07-bag-ribbon {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 132px;
+      height: 1px;
+      background: #c9a45c;
+    }
+    .h07-bag-tag {
+      position: absolute;
+      left: 232px;
+      top: 104px;
+      width: 76px;
+      height: 56px;
+      background: #fbf6ee;
+      border: 1px solid #c9a45c;
+    }
+    .h07-bag-tag::after {
+      content: "";
+      position: absolute;
+      left: 31px;
+      top: 21px;
+      width: 12px;
+      height: 12px;
+      border: 1px solid #c9a45c;
+    }
+    .h07-handle {
+      position: absolute;
+      left: 128px;
+      top: -132px;
+      width: 284px;
+      height: 150px;
+      overflow: visible;
+    }
+
+    /* ---- right: line, headline, package cards ---- */
+    .h07-line {
+      position: absolute;
+      top: 148px;
+      right: 96px;
+      width: 1040px;
+      margin: 0;
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 58px;
+      line-height: 1.1;
+      letter-spacing: -0.005em;
+      text-align: right;
+      white-space: nowrap;
+      transform-origin: 100% 0%;
+    }
+    .h07-word {
+      display: inline-block;
+    }
+    .h07-headline {
+      position: absolute;
+      top: 262px;
+      right: 96px;
+      margin: 0;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 34px;
+      line-height: 1.1;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .h07-rule {
+      position: absolute;
+      top: 328px;
+      right: 96px;
+      width: 1020px;
+      height: 1px;
+      background: rgba(29,22,51,0.2);
+      transform-origin: 100% 50%;
+    }
+    .h07-cards {
+      position: absolute;
+      top: 384px;
+      right: 96px;
+      width: 1020px;
+      height: 440px;
+      display: flex;
+      flex-direction: row;
+      gap: 36px;
+    }
+    .h07-card {
+      position: relative;
+      flex: 0 0 316px;
+      height: 440px;
+      background: #fbf6ee;
+      border: 1px solid #c9a45c;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transform-origin: 50% 70%;
+    }
+    .h07-card.h07-featured {
+      background: #1d1633;
+      color: #fbf6ee;
+    }
+    .h07-card-name {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 54px;
+      line-height: 1;
+      letter-spacing: -0.005em;
+    }
+    .h07-card-rule {
+      width: 120px;
+      height: 1px;
+      margin: 34px 0 30px;
+      background: #c9a45c;
+    }
+    .h07-card-price {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 80px;
+      line-height: 0.92;
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+    }
+    .h07-badge {
+      position: absolute;
+      top: -21px;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      width: fit-content;
+      padding: 8px 22px;
+      background: #c9a45c;
+      color: #1d1633;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+  </style>
+
+  <div id="root" data-composition-id="07-home" data-width="1920" data-height="1080" data-duration="8.5">
+    <div class="clip h07-ground" id="h07-ground" data-start="0" data-duration="8.5" data-track-index="0"></div>
+
+    <div class="clip h07-stage" id="h07-stage" data-start="0" data-duration="8.5" data-track-index="1">
+      <div class="h07-camera" id="h07-camera">
+
+        <!-- left: magnet tucked into a kraft gift bag -->
+        <div class="h07-bloom-shadow" id="h07-shadow"></div>
+        <div class="h07-bag-back" id="h07-bag-back"></div>
+        <div class="h07-magnet-wrap" id="h07-magnet-wrap">
+          <img class="h07-magnet" id="h07-magnet" src="assets/magnet-portrait.png" alt="">
+        </div>
+        <div class="h07-bag-front" id="h07-bag-front">
+          <svg class="h07-handle" viewBox="0 0 284 150" aria-hidden="true">
+            <path id="h07-handle-path" d="M 20 148 C 20 10, 264 10, 264 148" fill="none" stroke="#c9a45c" stroke-width="6" stroke-linecap="square" pathLength="1" stroke-dasharray="1" stroke-dashoffset="0"></path>
+          </svg>
+          <div class="h07-bag-fold"></div>
+          <div class="h07-bag-ribbon"></div>
+          <div class="h07-bag-tag"></div>
+        </div>
+
+        <!-- right: copy + packages -->
+        <p class="h07-line" id="h07-line" dir="rtl" lang="he"><span class="h07-word">כל</span> <span class="h07-word">אורח</span> <span class="h07-word">יוצא</span> <span class="h07-word">עם</span> <span class="h07-word">מגנט</span> <span class="h07-word">בשקית</span> <span class="h07-word">מתנה</span></p>
+
+        <p class="h07-headline" id="h07-headline" dir="rtl" lang="he">חבילות לכל אירוע</p>
+        <div class="h07-rule" id="h07-rule"></div>
+
+        <div class="h07-cards" dir="rtl" lang="he">
+          <div class="h07-card" id="h07-card-basic">
+            <div class="h07-card-name" dir="rtl" lang="he">בסיסי</div>
+            <div class="h07-card-rule"></div>
+            <div class="h07-card-price"><bdi dir="ltr">₪1,490</bdi></div>
+          </div>
+          <div class="h07-card h07-featured" id="h07-card-premium">
+            <div class="h07-badge" id="h07-badge" dir="rtl" lang="he">הכי מבוקש</div>
+            <div class="h07-card-name" dir="rtl" lang="he">פרימיום</div>
+            <div class="h07-card-rule"></div>
+            <div class="h07-card-price"><bdi dir="ltr">₪2,290</bdi></div>
+          </div>
+          <div class="h07-card" id="h07-card-vip">
+            <div class="h07-card-name" dir="rtl" lang="he"><bdi dir="ltr">VIP</bdi></div>
+            <div class="h07-card-rule"></div>
+            <div class="h07-card-price"><bdi dir="ltr">₪3,190</bdi></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- rail sits outside the camera so it stays pixel-fixed across frames -->
+      <div class="h07-rail" dir="rtl" lang="he">
+        <span class="h07-rail-item"><span class="h07-rail-num">1</span><span>מתאמים</span><span class="h07-rail-check" aria-hidden="true"></span></span>
+        <span class="h07-rail-sep">·</span>
+        <span class="h07-rail-item"><span class="h07-rail-num">2</span><span>מעצבים</span><span class="h07-rail-check" aria-hidden="true"></span></span>
+        <span class="h07-rail-sep">·</span>
+        <span class="h07-rail-item"><span class="h07-rail-num">3</span><span>מצלמים</span><span class="h07-rail-check" aria-hidden="true"></span></span>
+        <span class="h07-rail-sep">·</span>
+        <span class="h07-rail-item h07-current"><span class="h07-rail-num">4</span><span>מדביקים</span><span class="h07-rail-underline"></span></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      const root = document.querySelector('[data-composition-id="07-home"]');
+      const $ = (sel) => root.querySelector(sel);
+      const q = (sel) => Array.prototype.slice.call(root.querySelectorAll(sel));
+      const BEAT = 60 / 104; // 0.577s
+
+      const tl = gsap.timeline({ paused: true });
+
+      // Macro camera: slow steady push-in under the whole shot (multi-phase-camera, steady-push)
+      tl.fromTo("#h07-camera", { scale: 1 }, { scale: 1.025, duration: 8, ease: "none" }, 0);
+
+      // ---------- Scene 1 (0.0–2.4s): magnet rises, bag slides up in front, magnet drops in ----------
+      tl.fromTo("#h07-magnet-wrap",
+        { y: 200, opacity: 0 },
+        { y: -30, opacity: 1, duration: 0.9, ease: "power3.out" }, 0);
+      tl.fromTo("#h07-shadow", { opacity: 0 }, { opacity: 1, duration: 0.9, ease: "power2.out" }, 0.1);
+
+      tl.fromTo("#h07-bag-back",
+        { y: 340, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, ease: "expo.out" }, BEAT);
+      tl.fromTo("#h07-bag-front",
+        { y: 340, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, ease: "expo.out" }, BEAT + 0.05);
+      // handle draws in (svg-path-draw)
+      tl.fromTo("#h07-handle-path",
+        { strokeDashoffset: 1 },
+        { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut" }, BEAT + 0.45);
+
+      // magnet drops into the bag
+      tl.fromTo("#h07-magnet-wrap",
+        { y: -30 },
+        { y: 40, duration: 0.45, ease: "power2.in", immediateRender: false }, BEAT * 2.4);
+      tl.fromTo("#h07-magnet-wrap",
+        { y: 40 },
+        { y: 30, duration: 0.35, ease: "power2.out", immediateRender: false }, BEAT * 2.4 + 0.45);
+      // bag nudges on impact
+      tl.fromTo(["#h07-bag-front", "#h07-bag-back"],
+        { y: 0 },
+        { y: 8, duration: 0.12, ease: "power2.out", immediateRender: false }, BEAT * 2.4 + 0.45);
+      tl.fromTo(["#h07-bag-front", "#h07-bag-back"],
+        { y: 8 },
+        { y: 0, duration: 0.4, ease: "back.out(2)", immediateRender: false }, BEAT * 2.4 + 0.57);
+
+      // line: sits mid-right, per-word RTL reveal (DOM order = reading order)
+      tl.set("#h07-line", { y: 250, scale: 1.12 }, 0);
+      tl.fromTo(q(".h07-word"),
+        { opacity: 0, y: 34 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.09 }, BEAT * 0.8);
+
+      // ---------- Scene 2 (2.4–6.0s): line makes room, headline + 3 cards assemble right→left ----------
+      tl.fromTo("#h07-line",
+        { y: 250, scale: 1.12 },
+        { y: 0, scale: 1, duration: 0.7, ease: "power3.inOut", immediateRender: false }, 2.31);
+
+      tl.fromTo("#h07-headline",
+        { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, BEAT * 5);
+      tl.fromTo("#h07-rule",
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.8, ease: "power2.inOut" }, BEAT * 5 + 0.1);
+
+      // cards: short-path stagger-assemble into slot, one per beat (DOM order right→left)
+      const cards = ["#h07-card-basic", "#h07-card-premium", "#h07-card-vip"];
+      cards.forEach(function (sel, i) {
+        tl.fromTo(sel,
+          { opacity: 0, y: 70, scale: 0.95 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power3.out" }, BEAT * (6 + i));
+      });
+
+      // featured card: spring scale-up forward + badge pop (spring-pop-entrance)
+      tl.fromTo("#h07-card-premium",
+        { scale: 1 },
+        { scale: 1.05, duration: 0.5, ease: "back.out(2.2)", immediateRender: false }, BEAT * 9);
+      tl.fromTo("#h07-badge",
+        { opacity: 0, scale: 0.4, y: 12 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: "back.out(2.6)" }, BEAT * 9 + 0.08);
+
+      // ---------- Scene 3 (6.0–8.0s): hold (push-in keeps running) ----------
+      tl.set({}, {}, 8);
+
+      window.__timelines["07-home"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,194 @@
+<template id="01-moment-template">
+  <style>
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+    }
+
+    /* ---- ground (full-bleed clip, lowest track) ---- */
+    [class~="01-moment-layer"] { position: absolute; inset: 0; }
+    [class~="01-moment-ground"] {
+      position: absolute;
+      inset: 0;
+      background: #1d1633;
+    }
+    [class~="01-moment-door"] {
+      position: absolute;
+      left: 0; top: 0;
+      width: 1056px; height: 1080px;
+      background:
+        repeating-linear-gradient(90deg, rgba(251,246,238,0.018) 0px, rgba(251,246,238,0.018) 1px, rgba(251,246,238,0) 1px, rgba(251,246,238,0) 4px),
+        linear-gradient(100deg, rgba(251,246,238,0.03) 0%, rgba(251,246,238,0.11) 26%, rgba(251,246,238,0.05) 44%, rgba(251,246,238,0.09) 62%, rgba(251,246,238,0.02) 100%);
+    }
+    [class~="01-moment-door-edge"] {
+      position: absolute;
+      left: 1056px; top: 0;
+      width: 1px; height: 1080px;
+      background: rgba(251,246,238,0.18);
+    }
+    [class~="01-moment-sun"] {
+      position: absolute;
+      left: 1080px; top: 40px;
+      width: 900px; height: 760px;
+      background: radial-gradient(closest-side, rgba(201,164,92,0.26), rgba(228,210,175,0.10) 55%, rgba(219,194,145,0) 100%);
+    }
+    [class~="01-moment-ember"] {
+      position: absolute;
+      left: -200px; top: 560px;
+      width: 760px; height: 620px;
+      background: radial-gradient(closest-side, rgba(227,201,142,0.15), rgba(227,201,142,0) 100%);
+    }
+
+    /* ---- magnets (left 55%, the fridge door) ---- */
+    [class~="01-moment-board"] {
+      position: absolute;
+      left: 0; top: 0;
+      width: 1056px; height: 1080px;
+      transform-origin: 528px 540px;
+    }
+    [class~="01-moment-mag"] {
+      position: absolute;
+      width: 250px;
+      height: 375px;
+    }
+    [class~="01-moment-mag"] img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: drop-shadow(0 16px 22px rgba(10, 6, 24, 0.45));
+    }
+    [class~="01-moment-mag"][class~="01-moment-hero"] { width: 290px; height: 435px; }
+    [id="01-moment-mag-0"] { left: 96px;  top: 92px;  }
+    [id="01-moment-mag-2"] { left: 432px; top: 70px;  }
+    [id="01-moment-mag-5"] { left: 748px; top: 128px; }
+    [id="01-moment-mag-1"] { left: 172px; top: 500px; }
+    [id="01-moment-mag-3"] { left: 486px; top: 468px; }
+    [id="01-moment-mag-4"] { left: 784px; top: 512px; }
+
+    /* ---- type (right side, RTL) ---- */
+    [class~="01-moment-copy"] {
+      position: absolute;
+      right: 96px;
+      top: 214px;
+      width: 720px;
+      text-align: right;
+      color: #fbf6ee;
+    }
+    [class~="01-moment-head"] {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 112px;
+      line-height: 1.04;
+      letter-spacing: -0.005em;
+      margin: 0;
+    }
+    [class~="01-moment-w"] { display: inline-block; }
+    [class~="01-moment-rule"] {
+      width: 720px;
+      height: 1px;
+      margin: 46px 0 34px 0;
+      background: rgba(251,246,238,0.22);
+      transform-origin: 100% 50%;
+    }
+    [class~="01-moment-sub"] {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 58px;
+      line-height: 1.12;
+      margin: 0;
+    }
+    [class~="01-moment-gold"] { color: #c9a45c; }
+  </style>
+
+  <div id="root" data-composition-id="01-moment" data-width="1920" data-height="1080" data-duration="6.5">
+    <div class="clip 01-moment-ground" id="01-moment-ground" data-start="0" data-duration="6.5" data-track-index="0">
+      <div class="01-moment-ember"></div>
+      <div class="01-moment-door"></div>
+      <div class="01-moment-door-edge"></div>
+      <div class="01-moment-sun"></div>
+    </div>
+
+    <div class="clip 01-moment-layer" id="01-moment-magnets" data-start="0" data-duration="6.5" data-track-index="1">
+     <div class="01-moment-board" id="01-moment-board">
+      <div class="01-moment-mag 01-moment-hero" id="01-moment-mag-0"><img src="assets/magnet-0.png" alt="" /></div>
+      <div class="01-moment-mag" id="01-moment-mag-2"><img src="assets/magnet-2.png" alt="" /></div>
+      <div class="01-moment-mag" id="01-moment-mag-5"><img src="assets/magnet-5.png" alt="" /></div>
+      <div class="01-moment-mag" id="01-moment-mag-1"><img src="assets/magnet-1.png" alt="" /></div>
+      <div class="01-moment-mag" id="01-moment-mag-3"><img src="assets/magnet-3.png" alt="" /></div>
+      <div class="01-moment-mag" id="01-moment-mag-4"><img src="assets/magnet-4.png" alt="" /></div>
+     </div>
+    </div>
+
+    <div class="clip 01-moment-layer" id="01-moment-type" data-start="0" data-duration="6.5" data-track-index="2">
+     <div class="01-moment-copy" id="01-moment-copy" dir="rtl" lang="he">
+      <h1 class="01-moment-head" dir="rtl" lang="he"><span class="01-moment-w 01-moment-w1">הרגע</span> <span class="01-moment-w 01-moment-w1">הכי</span> <span class="01-moment-w 01-moment-w1">יפה</span> <span class="01-moment-w 01-moment-w1">באירוע</span></h1>
+      <div class="01-moment-rule" id="01-moment-rule"></div>
+      <p class="01-moment-sub" dir="rtl" lang="he"><span class="01-moment-w 01-moment-w2">על</span> <span class="01-moment-w 01-moment-w2">המקרר</span> <span class="01-moment-w 01-moment-w2">של</span> <span class="01-moment-w 01-moment-w2">כל</span> <span class="01-moment-w 01-moment-w2">אורח.</span> <span class="01-moment-w 01-moment-gold" id="01-moment-years">לשנים.</span></p>
+     </div>
+    </div>
+  </div>
+
+  <script src="assets/vendor/gsap.min.js"></script>
+  <script>
+    (function () {
+      var BEAT = 60 / 104; // 0.577s
+      var tl = gsap.timeline({ paused: true });
+
+      // Macro move underneath: the fridge door drifts in very slightly over the whole shot.
+      tl.fromTo("[id='01-moment-board']", { scale: 1.0 }, { scale: 1.035, duration: 6, ease: "none" }, 0);
+      tl.fromTo("[class~='01-moment-sun']", { opacity: 0.6, scale: 0.94 }, { opacity: 1, scale: 1, duration: 6, ease: "sine.out" }, 0);
+
+      // A magnet lands: drops from slightly above, rotation eases into its resting tilt, smooth settle.
+      function land(sel, at, rot, fromRot) {
+        tl.fromTo(sel,
+          { y: -150, opacity: 0, rotation: fromRot },
+          { y: 0, opacity: 1, rotation: rot, duration: 0.62, ease: "power3.out" },
+          at);
+        // tiny contact settle (magnet "clicks" onto the door)
+        tl.fromTo(sel, { scale: 1 }, { scale: 0.985, duration: 0.08, ease: "power1.out" }, at + 0.6);
+        tl.to(sel, { scale: 1, duration: 0.18, ease: "power2.out" }, at + 0.68);
+      }
+
+      // Scene 1 (0.0–2.4s): cue 1 per-word reveal; magnets 0, 2, 5 land on the beats.
+      land("[id='01-moment-mag-0']", 0.0, -5, -12);
+      land("[id='01-moment-mag-2']", BEAT * 2, 4, 11);      // 1.15s
+      land("[id='01-moment-mag-5']", BEAT * 3, -3, -10);    // 1.73s
+
+      tl.fromTo("[class~='01-moment-w1']",
+        { opacity: 0, y: 34, filter: "blur(10px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.55, ease: "power3.out", stagger: BEAT * 0.5 },
+        0.15);
+
+      // Scene 2 (2.4–4.6s): hairline draws, cue 2 builds, "לשנים." lands in gold; magnets 1, 3, 4.
+      tl.fromTo("[id='01-moment-rule']", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power2.inOut" }, 2.2);
+      tl.fromTo("[class~='01-moment-w2']",
+        { opacity: 0, y: 24, filter: "blur(8px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "power3.out", stagger: 0.13 },
+        BEAT * 4 + 0.05);                       // ~2.36s
+      tl.fromTo("[id='01-moment-years']",
+        { opacity: 0, scale: 1.35, filter: "blur(12px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.6, ease: "back.out(1.6)" },
+        BEAT * 6);                              // 3.46s
+
+      land("[id='01-moment-mag-1']", BEAT * 4.5, 5, 12);    // 2.60s
+      land("[id='01-moment-mag-3']", BEAT * 5.5, -4, -11);  // 3.17s
+      land("[id='01-moment-mag-4']", BEAT * 6.5, 6, 13);    // 3.75s
+
+      // Scene 3 (4.6–6.0s): hold — only the macro drift continues. Pin the full length.
+      tl.set({}, {}, 6);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["01-moment"] = tl;
+    })();
+  </script>
+</template>

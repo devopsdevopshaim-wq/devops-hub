@@ -1,0 +1,200 @@
+<template id="05-on-every-magnet-template">
+  <style>
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      color: #1d1633;
+    }
+    #root * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* full-bleed ground: paper + centered sun bloom + ember counter-bloom */
+    #f05-ground {
+      position: absolute;
+      inset: 0;
+      background: #fbf6ee;
+    }
+    #f05-bloom {
+      position: absolute;
+      left: 960px;
+      top: 470px;
+      width: 1300px;
+      height: 1300px;
+      margin-left: -650px;
+      margin-top: -650px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%,
+        rgba(201,164,92,0.85) 0%,
+        rgba(228,210,175,0.75) 26%,
+        rgba(219,194,145,0.22) 52%,
+        rgba(251,246,238,0) 70%);
+    }
+    #f05-ember {
+      position: absolute;
+      left: -260px;
+      top: -300px;
+      width: 900px;
+      height: 900px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(227,201,142,0.2) 0%, rgba(227,201,142,0) 68%);
+    }
+
+    /* magnets */
+    .f05-mag {
+      position: absolute;
+      display: block;
+    }
+    .f05-mag img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    /* atmospheric haze under each magnet (depth by bloom, not by shadow) */
+    .f05-haze {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 50% 50%, rgba(201,164,92,0.55) 0%, rgba(219,194,145,0.25) 45%, rgba(251,246,238,0) 72%);
+    }
+
+    #f05-anchor { left: 720px; top: 110px; width: 480px; height: 720px; }
+    #f05-mag-a  { left: 384px; top: 250px; width: 300px; height: 450px; }
+    #f05-mag-b  { left: 92px;  top: 345px; width: 252px; height: 378px; }
+    #f05-mag-c  { left: 1262px; top: 392px; width: 292px; height: 438px; }
+
+    #f05-haze-anchor { left: 600px; top: 40px;  width: 720px; height: 860px; }
+    #f05-haze-a      { left: 330px; top: 220px; width: 410px; height: 520px; }
+    #f05-haze-b      { left: 50px;  top: 320px; width: 340px; height: 430px; }
+    #f05-haze-c      { left: 1210px; top: 360px; width: 400px; height: 510px; }
+
+    /* type block, top-right */
+    #f05-type {
+      position: absolute;
+      right: 80px;
+      top: 112px;
+      width: 560px;
+      text-align: right;
+    }
+    #f05-head {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 120px;
+      line-height: 1.0;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+    }
+    #f05-rule {
+      display: block;
+      width: 380px;
+      height: 1px;
+      margin-left: auto;
+      margin-top: 22px;
+      background: #1d1633;
+      transform-origin: 100% 50%;
+    }
+    #f05-sub {
+      margin-top: 20px;
+      font-family: 'Frank Ruhl Libre', serif;
+      font-weight: 400;
+      font-size: 64px;
+      line-height: 1.06;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+    }
+    #f05-pagenum {
+      position: absolute;
+      right: 80px;
+      top: 872px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      font-variant-numeric: tabular-nums;
+      opacity: 0.75;
+    }
+  </style>
+
+  <div id="root" data-composition-id="05-on-every-magnet" data-width="1920" data-height="1080" data-duration="5.5">
+    <div id="f05-ground" class="clip" data-start="0" data-duration="5.5" data-track-index="0">
+      <div id="f05-ember"></div>
+      <div id="f05-bloom"></div>
+    </div>
+
+    <div id="f05-stage" class="clip" data-start="0" data-duration="5.5" data-track-index="1" style="position:absolute;inset:0;">
+      <div id="f05-haze-b" class="f05-haze"></div>
+      <div id="f05-haze-a" class="f05-haze"></div>
+      <div id="f05-haze-c" class="f05-haze"></div>
+      <div id="f05-haze-anchor" class="f05-haze"></div>
+
+      <div id="f05-mag-b" class="f05-mag"><img src="assets/magnet-5.png" alt="" /></div>
+      <div id="f05-mag-a" class="f05-mag"><img src="assets/magnet-0.png" alt="" /></div>
+      <div id="f05-mag-c" class="f05-mag"><img src="assets/magnet-2.png" alt="" /></div>
+      <div id="f05-anchor" class="f05-mag"><img src="assets/magnet-portrait.png" alt="" /></div>
+
+      <div id="f05-type" dir="rtl" lang="he">
+        <div id="f05-head" dir="rtl" lang="he">על המגנט.</div>
+        <span id="f05-rule"></span>
+        <div id="f05-sub" dir="rtl" lang="he">ביום האירוע.</div>
+      </div>
+
+      <div id="f05-pagenum" dir="ltr"><bdi dir="ltr">05</bdi></div>
+    </div>
+  </div>
+
+  <script src="assets/vendor/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var B = 0.536; // one beat at 112 bpm
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0.0–1.5s): ground blooms in, the anchor magnet lands and PINS.
+      tl.fromTo("#f05-bloom", { opacity: 0.35, scale: 0.86 }, { opacity: 1, scale: 1, duration: 1.2, ease: "power2.out" }, 0);
+      tl.fromTo("#f05-ember", { opacity: 0 }, { opacity: 1, duration: 1.0, ease: "power1.out" }, 0);
+      tl.fromTo("#f05-haze-anchor", { opacity: 0 }, { opacity: 1, duration: 0.9, ease: "power2.out" }, 0.05);
+      tl.fromTo("#f05-anchor", { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.9, ease: "power3.out" }, 0.05);
+      // anchor holds dead still from 0.95s to the end — no drift, no breathe.
+
+      // headline lands on beat 1
+      tl.fromTo("#f05-head", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, B);
+
+      // Scene 2 (1.5–3.6s): showcase magnets land beside the pinned one, one per beat.
+      var lands = [
+        { el: "#f05-mag-a", haze: "#f05-haze-a", rot: -7, at: 3 * B },
+        { el: "#f05-mag-c", haze: "#f05-haze-c", rot: 6,  at: 4 * B },
+        { el: "#f05-mag-b", haze: "#f05-haze-b", rot: 4,  at: 5 * B }
+      ];
+      lands.forEach(function (m) {
+        tl.fromTo(m.el,
+          { opacity: 0, scale: 1.14, y: -54, rotation: m.rot * 1.8 },
+          { opacity: 1, scale: 1, y: 0, rotation: m.rot, duration: 0.42, ease: "power3.out" },
+          m.at);
+        tl.fromTo(m.haze, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, m.at + 0.08);
+      });
+
+      // second line: hairline draws, then "ביום האירוע." on beat 6
+      tl.fromTo("#f05-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.inOut" }, 5.5 * B);
+      tl.fromTo("#f05-sub", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 6 * B);
+      tl.fromTo("#f05-pagenum", { opacity: 0 }, { opacity: 0.75, duration: 0.5, ease: "power1.out" }, 6 * B);
+
+      // Scene 3 (3.6–5.0s): hold — only a whisper of settle on the fridge magnets and the bloom.
+      tl.to("#f05-mag-a", { rotation: -6.5, duration: 1.4, ease: "sine.inOut" }, 3.6);
+      tl.to("#f05-mag-c", { rotation: 5.5, duration: 1.4, ease: "sine.inOut" }, 3.6);
+      tl.to("#f05-mag-b", { rotation: 4.5, duration: 1.4, ease: "sine.inOut" }, 3.6);
+      tl.to("#f05-bloom", { scale: 1.03, duration: 1.4, ease: "sine.inOut" }, 3.6);
+
+      // pad to the exact frame length
+      tl.set({}, {}, 5);
+
+      window.__timelines["05-on-every-magnet"] = tl;
+    })();
+  </script>
+</template>

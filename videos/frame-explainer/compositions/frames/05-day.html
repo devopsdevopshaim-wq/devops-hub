@@ -1,0 +1,437 @@
+<template>
+  <div id="root" data-composition-id="05-day" data-width="1920" data-height="1080" data-start="0" data-duration="8.4">
+    <style>
+      @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+      @font-face { font-family: 'Frank Ruhl Libre'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/FrankRuhlLibre-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/Heebo-400-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 400; font-display: block; src: url('assets/fonts/Heebo-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 500; font-display: block; src: url('assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-hebrew.woff2') format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+      @font-face { font-family: 'Heebo'; font-style: normal; font-weight: 700; font-display: block; src: url('assets/fonts/Heebo-700-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        font-family: 'Heebo', sans-serif;
+        color: #1d1633;
+      }
+
+      /* ---- ground: paper + one sun bloom + ember counter-bloom ---- */
+      .d05-ground {
+        position: absolute;
+        inset: 0;
+        background: #fbf6ee;
+        overflow: hidden;
+      }
+      .d05-sun {
+        position: absolute;
+        width: 1250px;
+        height: 1250px;
+        left: 1000px;
+        top: -40px;
+        border-radius: 50%;
+        background: radial-gradient(circle at center,
+          rgba(201, 164, 92, 0.78) 0%,
+          rgba(228, 210, 175, 0.62) 28%,
+          rgba(219, 194, 145, 0.22) 52%,
+          rgba(251, 246, 238, 0) 70%);
+      }
+      .d05-ember {
+        position: absolute;
+        width: 900px;
+        height: 900px;
+        left: -360px;
+        top: 520px;
+        border-radius: 50%;
+        background: radial-gradient(circle at center,
+          rgba(227, 201, 142, 0.2) 0%,
+          rgba(227, 201, 142, 0) 65%);
+      }
+
+      /* ---- step rail (identical position in frames 3–7) ---- */
+      .d05-rail {
+        position: absolute;
+        right: 96px;
+        top: 64px;
+        height: 48px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 18px;
+        font-family: 'Heebo', sans-serif;
+        font-weight: 500;
+        font-size: 26px;
+        line-height: 48px;
+        color: #1d1633;
+        white-space: nowrap;
+      }
+      .d05-rail-item {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 48px;
+      }
+      .d05-rail-sep { opacity: 0.4; }
+      .d05-rail-check { color: #c9a45c; font-size: 20px; }
+      .d05-rail-later { opacity: 0.4; }
+      .d05-rail-current { position: relative; }
+      .d05-rail-current-ink { color: #1d1633; }
+      .d05-rail-current-gold {
+        position: absolute;
+        inset: 0;
+        display: inline-flex;
+        align-items: center;
+        color: #c9a45c;
+        opacity: 0;
+      }
+      .d05-rail-underline {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 4px;
+        height: 2px;
+        background: #c9a45c;
+        transform-origin: right center;
+      }
+
+      /* ---- device stage (left 58%) ---- */
+      .d05-stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1200px;
+        height: 1080px;
+        transform-origin: 40% 50%;
+      }
+      .d05-laptop {
+        position: absolute;
+        left: 96px;
+        top: 196px;
+        width: 1032px;
+      }
+      .d05-laptop-shadow {
+        position: absolute;
+        left: 40px;
+        right: 40px;
+        top: 560px;
+        height: 70px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse at center, rgba(29, 22, 51, 0.16) 0%, rgba(29, 22, 51, 0) 70%);
+      }
+      .d05-laptop-bezel {
+        position: relative;
+        width: 1032px;
+        height: 591px;
+        padding: 12px;
+        box-sizing: border-box;
+        background: #1d1633;
+        border-radius: 14px 14px 4px 4px;
+      }
+      .d05-laptop-screen {
+        position: relative;
+        width: 1008px;
+        height: 567px;
+        overflow: hidden;
+        border-radius: 3px;
+        background: #0e0e11;
+      }
+      .d05-laptop-screen img {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1008px;
+        height: 567px;
+        display: block;
+      }
+      /* covers that lift to let the photo rows "fill" the grid */
+      .d05-fill {
+        position: absolute;
+        left: 0;
+        width: 786px;
+        background: #0e0e11;
+      }
+      .d05-fill-a { top: 263px; height: 153px; }
+      .d05-fill-b { top: 414px; height: 153px; }
+      .d05-laptop-base {
+        position: relative;
+        width: 1120px;
+        height: 18px;
+        margin-left: -44px;
+        background: #2a2245;
+        border-radius: 0 0 14px 14px;
+      }
+      .d05-laptop-notch {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        width: 140px;
+        margin-left: -70px;
+        height: 6px;
+        background: #1d1633;
+        border-radius: 0 0 6px 6px;
+      }
+
+      .d05-window {
+        position: absolute;
+        left: 470px;
+        top: 392px;
+        width: 700px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #1d1633;
+        border: 1px solid rgba(29, 22, 51, 0.6);
+        box-shadow: 0 18px 40px rgba(29, 22, 51, 0.14);
+      }
+      .d05-window-bar {
+        height: 30px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 14px;
+        background: #1d1633;
+      }
+      .d05-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(251, 246, 238, 0.35); }
+      .d05-dot-sun { background: #c9a45c; }
+      .d05-window img {
+        display: block;
+        width: 700px;
+        height: 443px;
+      }
+
+      /* ---- right column (RTL copy) ---- */
+      .d05-copy {
+        position: absolute;
+        right: 96px;
+        top: 186px;
+        width: 600px;
+        text-align: right;
+      }
+      .d05-headline {
+        font-family: 'Frank Ruhl Libre', serif;
+        font-weight: 400;
+        font-size: 96px;
+        line-height: 1.04;
+        letter-spacing: -0.005em;
+        margin: 0;
+      }
+      .d05-rule {
+        width: 600px;
+        height: 1px;
+        background: rgba(29, 22, 51, 0.2);
+        margin: 26px 0 22px 0;
+        transform-origin: right center;
+      }
+      .d05-body {
+        font-family: 'Heebo', sans-serif;
+        font-weight: 400;
+        font-size: 34px;
+        line-height: 1.4;
+        margin: 0 0 10px 0;
+      }
+
+      .d05-counter-block {
+        position: absolute;
+        right: 96px;
+        top: 486px;
+        width: 600px;
+        height: 300px;
+        text-align: right;
+      }
+      .d05-counter-wrap {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 300px;
+        height: 230px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+      }
+      .d05-counter {
+        display: inline-block;
+        font-family: 'Frank Ruhl Libre', serif;
+        font-weight: 400;
+        font-size: 250px;
+        line-height: 0.84;
+        letter-spacing: -0.04em;
+        color: #c9a45c;
+        font-variant-numeric: tabular-nums;
+        transform-origin: 50% 85%;
+      }
+      .d05-counter-label {
+        position: absolute;
+        right: 324px;
+        top: 70px;
+        width: 276px;
+        font-family: 'Heebo', sans-serif;
+        font-weight: 700;
+        font-size: 40px;
+        line-height: 1.12;
+        text-align: right;
+      }
+      .d05-counter-rule {
+        position: absolute;
+        right: 0;
+        top: 246px;
+        width: 600px;
+        height: 1px;
+        background: #1d1633;
+        transform-origin: right center;
+      }
+      .d05-print {
+        position: absolute;
+        right: 96px;
+        top: 752px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 22px;
+      }
+      .d05-print-word {
+        font-family: 'Frank Ruhl Libre', serif;
+        font-weight: 400;
+        font-size: 84px;
+        line-height: 1;
+        letter-spacing: -0.005em;
+      }
+      .d05-printer { width: 76px; height: 76px; display: block; }
+    </style>
+
+    <!-- full-bleed ground on its own clip -->
+    <div class="clip d05-ground" id="d05-ground" data-start="0" data-duration="8.4" data-track-index="0">
+      <div class="d05-sun" id="d05-sun"></div>
+      <div class="d05-ember"></div>
+    </div>
+
+    <div class="clip" id="d05-content" data-start="0" data-duration="8.4" data-track-index="1" style="position:absolute; inset:0;">
+
+      <!-- device stage -->
+      <div class="d05-stage" id="d05-stage">
+        <div class="d05-laptop" id="d05-laptop">
+          <div class="d05-laptop-shadow"></div>
+          <div class="d05-laptop-bezel">
+            <div class="d05-laptop-screen">
+              <img src="assets/shot-studio-grid.png" alt="" />
+              <div class="d05-fill d05-fill-a" id="d05-fill-a"></div>
+              <div class="d05-fill d05-fill-b" id="d05-fill-b"></div>
+            </div>
+          </div>
+          <div class="d05-laptop-base"><div class="d05-laptop-notch"></div></div>
+        </div>
+
+        <div class="d05-window" id="d05-window">
+          <div class="d05-window-bar">
+            <span class="d05-dot d05-dot-sun"></span><span class="d05-dot"></span><span class="d05-dot"></span>
+          </div>
+          <img src="assets/shot-gv-filter.png" alt="" />
+        </div>
+      </div>
+
+      <!-- step rail: on screen at t=0, step 3 lights -->
+      <div class="d05-rail" dir="rtl" lang="he">
+        <span class="d05-rail-item">1 מתאמים <span class="d05-rail-check">✓</span></span>
+        <span class="d05-rail-sep">·</span>
+        <span class="d05-rail-item">2 מעצבים <span class="d05-rail-check">✓</span></span>
+        <span class="d05-rail-sep">·</span>
+        <span class="d05-rail-item d05-rail-current">
+          <span class="d05-rail-current-ink" id="d05-rail-ink">3 מצלמים</span>
+          <span class="d05-rail-current-gold" id="d05-rail-gold">3 מצלמים</span>
+          <span class="d05-rail-underline" id="d05-rail-underline"></span>
+        </span>
+        <span class="d05-rail-sep">·</span>
+        <span class="d05-rail-item d05-rail-later">4 מדביקים</span>
+      </div>
+
+      <!-- right column copy -->
+      <div class="d05-copy" dir="rtl" lang="he">
+        <h2 class="d05-headline" id="d05-headline" dir="rtl" lang="he">ביום האירוע</h2>
+        <div class="d05-rule" id="d05-rule"></div>
+        <p class="d05-body" id="d05-body1" dir="rtl" lang="he">הצלם מסתובב בין האורחים</p>
+        <p class="d05-body" id="d05-body2" dir="rtl" lang="he">הסטודיו מעצב כל תמונה במסגרת שלכם</p>
+      </div>
+
+      <!-- value-scaled countdown -->
+      <div class="d05-counter-block" id="d05-counter-block">
+        <div class="d05-counter-wrap">
+          <bdi dir="ltr"><span class="d05-counter" id="d05-counter">60</span></bdi>
+        </div>
+        <div class="d05-counter-label" id="d05-counter-label" dir="rtl" lang="he">שניות עד מגנט ביד</div>
+        <div class="d05-counter-rule" id="d05-counter-rule"></div>
+      </div>
+
+      <div class="d05-print" id="d05-print" dir="rtl" lang="he">
+        <span class="d05-print-word" dir="rtl" lang="he">ומדפיס</span>
+        <svg class="d05-printer" id="d05-printer" viewBox="0 0 64 64" fill="none" stroke="#1d1633" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
+          <rect x="18" y="8" width="28" height="16" fill="#fbf6ee" />
+          <rect x="8" y="24" width="48" height="22" rx="3" fill="#c9a45c" />
+          <rect x="18" y="38" width="28" height="20" fill="#fbf6ee" />
+          <line x1="23" y1="45" x2="41" y2="45" />
+          <line x1="23" y1="51" x2="35" y2="51" />
+          <circle cx="48" cy="31" r="1.8" fill="#1d1633" stroke="none" />
+        </svg>
+      </div>
+    </div>
+
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      (function () {
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        var B = 0.577; // one beat at 104 bpm
+
+        // ---- ambient: bloom breathes, stage drifts slowly in (camera underneath) ----
+        tl.fromTo("#d05-sun", { scale: 0.94, opacity: 0.85 }, { scale: 1.04, opacity: 1, duration: 8, ease: "none" }, 0);
+        tl.fromTo("#d05-stage", { scale: 1 }, { scale: 1.025, duration: 8, ease: "none" }, 0);
+
+        // ---- Scene 1 (0.0–2.3): rail 3 lights, laptop rises, headline + body 1 ----
+        tl.fromTo("#d05-rail-gold", { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "power2.out" }, 0.15);
+        tl.fromTo("#d05-rail-ink", { opacity: 1 }, { opacity: 0, duration: 0.45, ease: "power2.out" }, 0.15);
+        tl.fromTo("#d05-rail-underline", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 0.2);
+
+        tl.fromTo("#d05-laptop", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power3.out" }, 0);
+        // photos fill the grid row by row
+        tl.fromTo("#d05-fill-a", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power1.out" }, B * 1.5);
+        tl.fromTo("#d05-fill-b", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power1.out" }, B * 2.5);
+
+        tl.fromTo("#d05-headline", { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 0.25);
+        tl.fromTo("#d05-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power2.out" }, 0.55);
+        tl.fromTo("#d05-body1", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, B * 1.25);
+
+        // ---- Scene 2 (2.3–5.2): filter window slides over, body 2 ----
+        var S2 = B * 4; // 2.31
+        tl.fromTo("#d05-window",
+          { x: 220, y: 40, opacity: 0, rotation: 1.5 },
+          { x: 0, y: 0, opacity: 1, rotation: 0, duration: 0.9, ease: "power3.out" }, S2);
+        tl.to("#d05-laptop", { opacity: 0.82, duration: 0.9, ease: "power2.out" }, S2 + 0.1);
+        tl.fromTo("#d05-body2", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, S2 + B * 1.5);
+
+        // ---- Scene 3 (5.2–8.0): gold countdown 60 → 0, value-scaled; then "ומדפיס" lands ----
+        var S3 = B * 9; // 5.19
+        var COUNT_DUR = B * 3; // ~1.73s, ends at beat 12
+        var counter = document.getElementById("d05-counter");
+        var state = { value: 60 };
+        tl.fromTo("#d05-counter-block", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, S3 - 0.15);
+        tl.fromTo(state, { value: 60 }, {
+          value: 0,
+          duration: COUNT_DUR,
+          ease: "power3.out",
+          onUpdate: function () { counter.textContent = String(Math.round(state.value)); }
+        }, S3);
+        tl.fromTo("#d05-counter", { scale: 0.5 }, { scale: 1, duration: COUNT_DUR, ease: "power3.out" }, S3);
+        tl.fromTo("#d05-counter-label", { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, S3 + 0.3);
+        tl.fromTo("#d05-counter-rule", { scaleX: 0 }, { scaleX: 1, duration: COUNT_DUR, ease: "power3.out" }, S3);
+
+        var LAND = S3 + COUNT_DUR; // ~6.92
+        tl.fromTo("#d05-print", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.6)" }, LAND);
+        tl.fromTo("#d05-printer", { rotation: -8, scale: 0.7 }, { rotation: 0, scale: 1, duration: 0.5, ease: "back.out(1.8)" }, LAND + 0.08);
+        // hold to 8.0s
+
+        window.__timelines["05-day"] = tl;
+      })();
+    </script>
+  </div>
+</template>

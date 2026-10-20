@@ -66,6 +66,13 @@
       <div id="inv" hidden>
         <div class="dz-inv"><div class="dz-inv-img" id="inv-box"><img id="inv-img" alt="ההזמנה" /><i id="inv-sel" hidden></i></div>
           <div class="dz-inv-side"><div id="inv-status" class="hint"></div><div class="dz-pal" id="inv-pal"></div><button class="btn gold wide" id="inv-apply" disabled>✨ עיצוב מסגרת מההזמנה</button><button class="btn line wide" id="inv-cut" disabled>✂️ גזירת האזור שסימנתי</button><p class="hint">לגזירה: מסמנים מלבן על ההזמנה עם העכבר או האצבע.</p></div></div>
+        <section class="dz-invframe">
+          <h3>🖼️ מסגרת שלמה מתוך ההזמנה</h3>
+          <p class="hint">השוליים המעוצבים של ההזמנה נבנים מחדש סביב התמונה, בכל גודל: הפינות נשמרות, הצדדים נמתחים בלי עיוות, ופס לשמות בצבע הנייר של ההזמנה. עובד במחשב, בלי אינטרנט.</p>
+          <label>כמה מההזמנה הוא השוליים <output id="if-b-o">17%</output><input type="range" id="if-b" min="6" max="35" value="17" /></label>
+          <label>עובי המסגרת על המגנט <output id="if-t-o">12%</output><input type="range" id="if-t" min="5" max="22" value="12" /></label>
+          <div class="dz-row"><button class="btn gold" id="if-port">▯ מסגרת לאורך</button><button class="btn gold" id="if-land">▭ מסגרת לרוחב</button><button class="btn line" id="if-square">◻ ריבוע</button></div>
+        </section>
         <h3>חלקים מההזמנה</h3>
         <p class="hint">לוחצים על חלק כדי להוסיף אותו למסגרת. הרקע שלו מוסר אוטומטית.</p>
         <div class="dz-pieces" id="pieces"><p class="hint">עוד אין חלקים.</p></div>
@@ -91,7 +98,12 @@
         <label>שקיפות<input type="range" id="d-op" min="15" max="100" /></label>
         <div class="dz-row"><button class="btn line" id="d-flip">↔ היפוך</button><button class="btn line" id="d-pair">⇋ זוג סימטרי</button><button class="btn line" id="d-corners">⌗ לארבע הפינות</button><button class="btn danger" id="d-del">🗑 מחיקה</button></div>
       </div>
-      <p class="hint">עיטורים מוסיפים מהלשוניות "מההזמנה" ו"עיצוב עם AI", או מהמחשב:</p>
+      <h3>➕ הוספת אלמנט</h3>
+      <div class="dz-row"><label class="dz-inline">צבע <input type="color" id="el-color" value="#c9a45c" /></label><button class="btn line small" id="el-clear">🗑 ניקוי כל האלמנטים</button></div>
+      <div class="dz-elems" id="elems"></div>
+      <div class="two"><input id="el-text" maxlength="40" placeholder="טקסט חופשי, למשל: תודה שבאתם ♡" /><button class="btn line" id="el-text-go">＋ טקסט</button></div>
+      <p class="hint">בוחרים אלמנט ברשימה למעלה כדי להזיז, לשנות גודל, להפוך או 🗑 למחוק. מתחילים ממסגרת לבנה בלשונית "מסגרת".</p>
+      <p class="hint">עיטורים מוסיפים גם מהלשוניות "מההזמנה" ו"עיצוב עם AI", או מהמחשב:</p>
       <label class="btn line">➕ עיטור מקובץ (PNG שקוף)<input type="file" id="deco-file" accept="image/*" hidden /></label>
     </div>
 
@@ -115,6 +127,7 @@
 <script src="js/events.js"></script>
 <script src="js/invite.js"></script>
 <script src="js/account.js"></script>
+<script src="js/inv-frame.js"></script>
 <script src="js/design.js"></script>
 </body>
 </html>
