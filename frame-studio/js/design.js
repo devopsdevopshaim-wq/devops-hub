@@ -14,6 +14,7 @@
   var PNGS = [];             // the owner's frames: { id (USER id), key, name, for }
   var D = null, P = null, view = 'photo', sel = null, invImg = null, invRead = null, saveT = null;
   var userPhoto = '';
+  var PZ = { s: 1, dx: 0, dy: 0 };   /* the preview photo's zoom and offset inside the window (share of the window) */
 
   function blank(type) {
     var ev = FS.event(type || 'wedding');
@@ -38,6 +39,7 @@
       if (scale > 1) FS.applyFormat(p.doc, 'custom', FS.img(p.src), Math.round(p.doc.w * scale), Math.round(p.doc.h * scale));
       FS.buildMagnet(p, { type: D.type, names: D.names, date: D.date, hashtag: D.tag, frame: ref ? null : D.frame, frameRef: ref || undefined, color: D.color, font: D.font, ink: D.ink || undefined });
       var d = p.doc, m = Math.min(d.w, d.h), H = FS.hole(d);
+      if (PZ.s !== 1 || PZ.dx || PZ.dy) { d.photo.s *= PZ.s; d.photo.x += PZ.dx * H.w; d.photo.y += PZ.dy * H.h; }
       if (D.line) {
         var top = H.y > m * 0.1, size = Math.round(m * (top ? 0.042 : 0.04));
         d.layers.push({ id: 'line', type: 'text', text: D.line, x: d.w / 2, y: top ? H.y / 2 + size * 0.35 : H.y + m * 0.07, size: size, font: D.font, weight: 700, color: top ? (D.ink || FS.inkFor(D.color)) : '#ffffff', shadow: !top, strokeW: 0, stroke: '#000', r: 0, opacity: 1, align: 'center' });
@@ -72,16 +74,27 @@
 
   /* ---------- dragging ornaments on the preview ---------- */
   (function () {
-    var cv = $('#cv'), drag = null;
+    var cv = $('#cv'), drag = null, photoDrag = null;
     function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }; }
     cv.addEventListener('pointerdown', function (e) {
       if (!P) return; var q = pt(e), d = P.doc, hit = null;
       D.deco.slice().reverse().some(function (o) { var b = decoBox(o, d); if (b && q.x * d.w >= b.x && q.x * d.w <= b.x + b.w && q.y * d.h >= b.y && q.y * d.h <= b.y + b.h) { hit = o; return true; } return false; });
-      if (!hit) { if (sel) { sel = null; decos(); render(); } return; }
+      if (!hit) {
+        if (sel) { sel = null; decos(); render(); }
+        /* no ornament under the finger: the photo itself moves inside the window */
+        if (view === 'photo') { var H = FS.hole(d); photoDrag = { x: q.x * d.w, y: q.y * d.h, dx: PZ.dx, dy: PZ.dy, hw: H.w, hh: H.h }; cv.setPointerCapture(e.pointerId); e.preventDefault(); }
+        return;
+      }
       sel = hit.id; drag = { o: hit, dx: q.x - hit.x, dy: q.y - hit.y }; cv.setPointerCapture(e.pointerId); decos(); render(); e.preventDefault();
     });
-    cv.addEventListener('pointermove', function (e) { if (!drag) return; var q = pt(e); drag.o.x = Math.max(0, Math.min(1, q.x - drag.dx)); drag.o.y = Math.max(0, Math.min(1, q.y - drag.dy)); render(); });
-    cv.addEventListener('pointerup', function () { if (drag) { drag = null; changed(); } });
+    cv.addEventListener('pointermove', function (e) {
+      if (photoDrag) { var p0 = pt(e), dd = P.doc; PZ.dx = photoDrag.dx + (p0.x * dd.w - photoDrag.x) / photoDrag.hw; PZ.dy = photoDrag.dy + (p0.y * dd.h - photoDrag.y) / photoDrag.hh; render(); return; }
+      if (!drag) return; var q = pt(e); drag.o.x = Math.max(0, Math.min(1, q.x - drag.dx)); drag.o.y = Math.max(0, Math.min(1, q.y - drag.dy)); render(); });
+    cv.addEventListener('pointerup', function () { photoDrag = null; if (drag) { drag = null; changed(); } });
+    cv.addEventListener('wheel', function (e) {
+      if (view !== 'photo') return; e.preventDefault();
+      PZ.s = Math.max(0.5, Math.min(3, PZ.s * (e.deltaY < 0 ? 1.08 : 1 / 1.08))); $('#pz-s').value = Math.round(PZ.s * 100); $('#pz-s-o').textContent = Math.round(PZ.s * 100) + '%'; render();
+    }, { passive: false });
   })();
 
   /* ---------- the frame tab ---------- */
@@ -217,19 +230,44 @@
       box.appendChild(b);
     });
   }
-  /* a hand-drawn box on the invitation */
+  var imShow = function () {};
+  /* a hand-drawn box on the invitation; once the invitation is a magnet, the box is its window: drag it to move it,
+     pull its corner to make it bigger or smaller, and the magnet follows */
   (function () {
-    var boxEl = $('#inv-box'), mark = $('#inv-sel'), start = null, rect = null;
+    var boxEl = $('#inv-box'), mark = $('#inv-sel'), start = null, rect = null, mode = null, grab = null;
+    mark.appendChild(document.createElement('b'));
     function pt(e) { var r = $('#inv-img').getBoundingClientRect(); return { x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)) }; }
-    boxEl.addEventListener('pointerdown', function (e) { if (!invImg) return; start = pt(e); rect = null; boxEl.setPointerCapture(e.pointerId); e.preventDefault(); });
-    boxEl.addEventListener('pointermove', function (e) {
-      if (!start) return; var q = pt(e); rect = { x: Math.min(start.x, q.x), y: Math.min(start.y, q.y), w: Math.abs(q.x - start.x), h: Math.abs(q.y - start.y) };
-      mark.hidden = false; mark.style.left = rect.x * 100 + '%'; mark.style.top = rect.y * 100 + '%'; mark.style.width = rect.w * 100 + '%'; mark.style.height = rect.h * 100 + '%';
+    boxEl.addEventListener('pointerdown', function (e) {
+      if (!invImg) return; var q = pt(e); boxEl.setPointerCapture(e.pointerId); e.preventDefault();
+      if (IM && e.target.tagName === 'B') { mode = 'size'; return; }
+      if (IM && e.target === mark) { mode = 'move'; grab = { x: q.x - IM.rect.x, y: q.y - IM.rect.y }; return; }
+      mode = 'draw'; start = q; rect = null;
     });
-    boxEl.addEventListener('pointerup', function () { start = null; var ok = !!(rect && rect.w > 0.02 && rect.h > 0.02); $('#inv-cut').disabled = !ok; if (ok) { FS.invWindow = Object.assign({}, rect); var st = $('#im-state'); if (st) st.textContent = '✓ סימנתם את מקום התמונה. עכשיו בוחרים צורה ולוחצים.'; } });
+    boxEl.addEventListener('pointermove', function (e) {
+      if (!mode) return; var q = pt(e);
+      if (mode === 'move') { var w = IM.rect; w.x = Math.max(0, Math.min(1 - w.w, q.x - grab.x)); w.y = Math.max(0, Math.min(1 - w.h, q.y - grab.y)); imShow(); imSoon(); return; }
+      /* the corner on the left-bottom grows the window from its top-right corner (the page reads right to left) */
+      if (mode === 'size') { var v = IM.rect, rx = v.x + v.w; v.w = Math.max(0.08, Math.min(rx, rx - q.x)); v.x = rx - v.w; v.h = Math.max(0.08, Math.min(1 - v.y, q.y - v.y)); imShow(); imSoon(); return; }
+      rect = { x: Math.min(start.x, q.x), y: Math.min(start.y, q.y), w: Math.abs(q.x - start.x), h: Math.abs(q.y - start.y) };
+      mark.hidden = false; mark.classList.remove('live'); place(rect);
+    });
+    function place(r) { mark.style.left = r.x * 100 + '%'; mark.style.top = r.y * 100 + '%'; mark.style.width = r.w * 100 + '%'; mark.style.height = r.h * 100 + '%'; }
+    imShow = function () {
+      if (!IM) return; var r = IM.rect; mark.hidden = false; mark.classList.add('live'); place(r);
+      $('#im-adj').hidden = false; $('#pz-adj').hidden = false;
+      $('#im-w').value = Math.round(r.w * 100); $('#im-h').value = Math.round(r.h * 100); $('#im-x').value = Math.round((r.x + r.w / 2) * 100); $('#im-y').value = Math.round((r.y + r.h / 2) * 100);
+      ['w', 'h', 'x', 'y'].forEach(function (k) { $('#im-' + k + '-o').textContent = $('#im-' + k).value + '%'; });
+    };
+    boxEl.addEventListener('pointerup', function () {
+      var m = mode; mode = null; start = null; if (m === 'move' || m === 'size') { imSoon(0); return; }
+      if (m !== 'draw') return;
+      var ok = !!(rect && rect.w > 0.02 && rect.h > 0.02); $('#inv-cut').disabled = !ok;
+      if (ok) { FS.invWindow = Object.assign({}, rect); var st = $('#im-state'); if (st) st.textContent = IM ? '✓ החלון הוזז למקום שסימנתם.' : '✓ סימנתם את מקום התמונה. עכשיו בוחרים צורה ולוחצים.'; if (IM && rect.w > 0.06 && rect.h > 0.06) { IM.rect = Object.assign({}, rect); imShow(); imSoon(0); } }
+      else if (IM) imShow();
+    });
     $('#inv-cut').addEventListener('click', function () {
       if (!rect) return; var c = FS.cutPiece(invImg, [rect.y * 1000, rect.x * 1000, (rect.y + rect.h) * 1000, (rect.x + rect.w) * 1000]);
-      PIECES.unshift({ label: 'גזירה שלי', c: c }); drawPieces(); mark.hidden = true; rect = null; this.disabled = true;
+      PIECES.unshift({ label: 'גזירה שלי', c: c }); drawPieces(); mark.hidden = true; rect = null; this.disabled = true; if (IM) imShow();
       addDeco(c, { label: 'גזירה שלי', w: 0.3 });
     });
   })();
@@ -338,21 +376,53 @@
     }).catch(function () { FS.busy(); FS.toast('לא הצלחתי לפתוח את הקובץ'); });
   });
   /* the invitation itself as the magnet: the window where the owner marked it, the magnet size closest to the invitation */
-  var imShape = 'round';
-  $$('[data-im]').forEach(function (b) { b.addEventListener('click', function () { imShape = b.dataset.im; $$('[data-im]').forEach(function (x) { x.classList.toggle('on', x === b); }); }); });
+  var imShape = 'round', IM = null, imT = 0;
+  var IM_DEF = { x: 0.17, y: 0.2, w: 0.66, h: 0.44 };
+  $$('[data-im]').forEach(function (b) { b.addEventListener('click', function () { imShape = b.dataset.im; $$('[data-im]').forEach(function (x) { x.classList.toggle('on', x === b); }); if (IM) { IM.shape = imShape; imSoon(0); } }); });
+  function imBuild(first) {
+    var f = IM.f, k = 1800 / Math.max(f.w, f.h), W = Math.round(f.w * k), H = Math.round(f.h * k);
+    var r = FS.inviteAsMagnet(invImg, W, H, IM.rect, IM.shape);
+    FS.invWindow = Object.assign({}, IM.rect);
+    if (first || !AIF.length || AIF[0] !== IM.entry) { IM.entry = { canvas: r.canvas, fmt: f.id }; AIF.unshift(IM.entry); } else IM.entry.canvas = r.canvas;
+    drawAIF();
+    return useInvCanvas(r.canvas, f.id, 'ההזמנה כמגנט');
+  }
+  /* each change rebuilds the magnet a moment after the last move, so dragging stays smooth */
+  function imSoon(ms) { if (!IM) return; clearTimeout(imT); imT = setTimeout(function () { imBuild(false); }, ms == null ? 160 : ms); }
   $('#im-go').addEventListener('click', function () {
     if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
     var ar = (invImg.naturalWidth || invImg.width) / (invImg.naturalHeight || invImg.height), best = null;
     FMTS.forEach(function (f) { var d = Math.abs(Math.log((f.w / f.h) / ar)); if (!best || d < best.d) best = { f: f, d: d }; });
-    var f = best.f, k = 1800 / Math.max(f.w, f.h), W = Math.round(f.w * k), H = Math.round(f.h * k);
     FS.busy('הופך את ההזמנה למגנט…');
     setTimeout(function () {
-      var r = FS.inviteAsMagnet(invImg, W, H, FS.invWindow || null, imShape);
-      AIF.unshift({ canvas: r.canvas, fmt: f.id }); drawAIF();
+      IM = { f: best.f, rect: Object.assign({}, FS.invWindow || IM_DEF), shape: imShape };
       D.names = ''; D.date = ''; D.line = '';   /* the invitation already carries its own names and date */
-      useInvCanvas(r.canvas, f.id, 'ההזמנה כמגנט').then(function () { FS.toast(FS.invWindow ? '💌 ההזמנה הפכה למגנט, עם חלון לתמונה במקום שסימנתם.' : '💌 ההזמנה הפכה למגנט. החלון במרכז; כדי לבחור מקום אחר מסמנים אותו על ההזמנה ולוחצים שוב.', 6000); });
+      imShow(); $('#im-state').textContent = '✓ המגנט מוכן. את החלון מגדילים, מקטינים ומזיזים למטה, או גוררים אותו על ההזמנה.';
+      imBuild(true).then(function () { FS.toast('💌 ההזמנה הפכה למגנט. עכשיו אפשר להגדיל, להקטין ולהזיז את החלון, וגם לעשות זום לתמונה שבפנים.', 6500); });
     }, 30);
   });
+  ['w', 'h', 'x', 'y'].forEach(function (k) {
+    $('#im-' + k).addEventListener('input', function () {
+      if (!IM) return; var r = IM.rect, v = this.value / 100, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+      if (k === 'w') r.w = v; else if (k === 'h') r.h = v; else if (k === 'x') cx = v; else cy = v;
+      r.x = Math.max(0, Math.min(1 - r.w, cx - r.w / 2)); r.y = Math.max(0, Math.min(1 - r.h, cy - r.h / 2));
+      imShow(); imSoon();
+    });
+  });
+  function imScale(m) {
+    if (!IM) return; var r = IM.rect, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+    r.w = Math.max(0.1, Math.min(0.96, r.w * m)); r.h = Math.max(0.1, Math.min(0.96, r.h * m));
+    r.x = Math.max(0, Math.min(1 - r.w, cx - r.w / 2)); r.y = Math.max(0, Math.min(1 - r.h, cy - r.h / 2));
+    imShow(); imSoon(0);
+  }
+  $('#im-bigger').addEventListener('click', function () { imScale(1.1); });
+  $('#im-smaller').addEventListener('click', function () { imScale(1 / 1.1); });
+  $('#im-center').addEventListener('click', function () { if (!IM) return; var r = IM.rect; r.x = (1 - r.w) / 2; r.y = (1 - r.h) / 2; imShow(); imSoon(0); });
+  /* the photo inside the window: bigger or smaller and moved, on the preview (the studio does the same for every real photo) */
+  function pzOut() { $('#pz-s').value = Math.round(PZ.s * 100); $('#pz-s-o').textContent = Math.round(PZ.s * 100) + '%'; }
+  $('#pz-s').addEventListener('input', function () { PZ.s = this.value / 100; pzOut(); render(); });
+  $('#pz-reset').addEventListener('click', function () { PZ.s = 1; PZ.dx = 0; PZ.dy = 0; pzOut(); render(); });
+  pzOut();
   $('#ai-port').addEventListener('click', function () { aiFrame(/^(magnet|m69|m710)$/.test(D.fmt) ? D.fmt : 'magnet'); });
   $('#ai-land').addEventListener('click', function () { aiFrame('magnetL'); });
   $('#ai-square').addEventListener('click', function () { aiFrame('m66'); });

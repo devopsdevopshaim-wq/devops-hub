@@ -72,6 +72,22 @@
           <p class="dz-im-state" id="im-state">עוד לא סומן מקום: החלון יהיה במרכז ההזמנה.</p>
           <div class="dz-row"><button class="btn line" data-im="rect">▭ מלבן</button><button class="btn line on" data-im="round">▢ פינות עגולות</button><button class="btn line" data-im="oval">◯ אליפסה</button><button class="btn line" data-im="arch">⌒ קשת</button></div>
           <button class="btn gold wide" id="im-go">💌 להפוך את ההזמנה למגנט</button>
+          <div class="dz-im-adj" id="im-adj" hidden>
+            <h4>📐 גודל ומקום החלון</h4>
+            <p class="hint">משנים והמגנט מתעדכן מיד. אפשר גם לגרור את המלבן על ההזמנה, ולמשוך את הפינה שלו כדי להגדיל או להקטין.</p>
+            <div class="dz-row"><button class="btn line" id="im-smaller">➖ חלון קטן יותר</button><button class="btn line" id="im-bigger">➕ חלון גדול יותר</button></div>
+            <label>רוחב החלון <output id="im-w-o"></output><input type="range" id="im-w" min="10" max="96" step="1" /></label>
+            <label>גובה החלון <output id="im-h-o"></output><input type="range" id="im-h" min="10" max="96" step="1" /></label>
+            <label>ימינה ושמאלה <output id="im-x-o"></output><input type="range" id="im-x" min="0" max="100" step="1" /></label>
+            <label>למעלה ולמטה <output id="im-y-o"></output><input type="range" id="im-y" min="0" max="100" step="1" /></label>
+            <button class="btn line" id="im-center">⊕ למרכז</button>
+          </div>
+          <div class="dz-im-adj" id="pz-adj" hidden>
+            <h4>🔍 התמונה בתוך החלון</h4>
+            <p class="hint">מגדילים או מקטינים את התמונה שבתוך החלון. גוררים את התמונה בתצוגה כדי להזיז אותה, וגלגלת העכבר עושה זום. בסטודיו לכל תמונה אמיתית יש אותו זום וגרירה.</p>
+            <label>גודל התמונה <output id="pz-s-o"></output><input type="range" id="pz-s" min="50" max="300" step="5" value="100" /></label>
+            <button class="btn line" id="pz-reset">↺ התמונה ממלאת את החלון</button>
+          </div>
         </section>
         <section class="dz-invframe">
           <h3>🤖 מסגרת AI כמו ההזמנה</h3>
