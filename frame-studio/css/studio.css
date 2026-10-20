@@ -698,3 +698,4 @@ body.clean-shell .app { grid-template-rows: 1fr; grid-template-areas: "tools pan
   body.clean-shell { padding-bottom: 76px; }
   .toast { bottom: 92px; }
 }
+#sz-rows { max-height: 55vh; overflow: auto; }
