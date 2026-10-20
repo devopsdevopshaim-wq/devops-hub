@@ -129,7 +129,7 @@
         <button class="btn" id="my-designs-btn">🗂️ העיצובים שלי</button>
       </div>
       <input type="file" id="file-project" accept=".json,.fstudio,application/json" hidden />
-      <div class="field"><label>גודל דף לתמונות חדשות</label><select id="fmt-new"></select></div>
+      <div class="field"><label>גודל דף לתמונות חדשות</label><div class="inline"><select id="fmt-new"></select><button class="btn small" id="sizes-btn" title="גדלים בסיסיים והגדלים שלך">📐 גדלים</button></div></div>
       <label class="check"><input type="checkbox" id="frame-all" /> תמונה חדשה מקבלת את המסגרת האחרונה (לאירועים)</label>
       <h3>על הדף</h3>
       <div class="row2">
@@ -209,8 +209,9 @@
       <div class="field"><label>עוצמת הסגנון <output id="o-style-amt">100%</output></label><input type="range" id="style-amt" min="10" max="100" value="100" /></div>
       <div class="row2"><button class="btn" id="style-none">✕ בלי סגנון</button><button class="btn" id="style-orig">↩ החזרת המקור (אחרי AI)</button></div>
       <p class="offline-badge">🔌 הכול כאן רץ במחשב שלך, גם בלי אינטרנט. התמונות לא יוצאות מהמחשב.</p>
-      <h3>✨ מראות AI מיידיים</h3>
-      <div class="ai-styles" id="ai-styles"></div>
+      <h3>✨ מראות מקצועיים</h3>
+      <p class="hint">עיבוד צבע כמו של צלמי אירועים: אור אוטומטי, ריטוש עדין לפנים וגוון פילם. התצוגה היא על התמונה שלך.</p>
+      <div class="grid thumbs" id="ai-styles"></div>
       <h3>🧠 אנימה AI במחשב</h3>
       <p class="hint">מודל AI שנשמר באתר ורץ אצלך (בלי שרת, בלי הגבלה) ושומר על הפנים. בין כמה שניות לדקה לתמונה, לפי מהירות המחשב.</p>
       <div class="ai-styles" id="local-ai-styles"></div>

@@ -245,7 +245,22 @@
     });
     return c;
   }
+  /* one sheet as a canvas at print resolution (300dpi), for printing straight to a printer through the helper */
+  FS.pageCanvas = function (plan, page, dpi) {
+    var k = (dpi || 300) / 25.4, c = FS.canvas(Math.round(plan.paper[2] * k), Math.round(plan.paper[3] * k)), x = c.getContext('2d'), cache = {};
+    x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingQuality = 'high';
+    page.forEach(function (it) {
+      var key = it.p.id + (it.rot ? 'r' : '');
+      if (!cache[key]) { var s = Math.min(1, 3600 / Math.max(it.p.doc.w, it.p.doc.h)), r = FS.renderFull(it.p, s, false); cache[key] = it.rot ? rotated(r) : r; }
+      var im = cache[key], dx = it.x * k, dy = it.y * k, dw = it.w * k, dh = it.h * k;
+      if (it.cover) { var ar = im.width / im.height, sw = im.width, sh = im.height, sx = 0, sy = 0; if (ar > dw / dh) { sw = im.height * dw / dh; sx = (im.width - sw) / 2; } else { sh = im.width * dh / dw; sy = (im.height - sh) / 2; } x.drawImage(im, sx, sy, sw, sh, dx, dy, dw, dh); }
+      else x.drawImage(im, dx, dy, dw, dh);
+      if (plan.marks) { x.strokeStyle = '#999'; x.lineWidth = 1; x.setLineDash([8, 8]); x.strokeRect(dx, dy, dw, dh); x.setLineDash([]); }
+    });
+    return c;
+  };
   FS.doPrint = function (plan) {
+    if (FS.directPrint && FS.directPrint.on()) return ready().then(function () { return FS.directPrint(plan); });
     FS.busy('מכין להדפסה…');
     return ready().then(function () {
       var cache = {}, root = $('#print-root'), html = '', pw = plan.paper[2], ph = plan.paper[3];

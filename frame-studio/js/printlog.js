@@ -24,7 +24,7 @@
   function inkLeft() { if (!pr || !(pr.inkCap > 0)) return null; return Math.max(0, Math.floor(100 - (pr.inkUsed || 0) / pr.inkCap * 100)); }
   function sheetsTxt(n) { return n === 1 ? 'דף אחד' : n + ' דפים'; }
   function paperLeft() { if (!pr || !(pr.paperCap > 0)) return null; return Math.max(0, pr.paperCap - (pr.paperUsed || 0)); }
-  function printerName() { return pr && pr.name ? pr.name : 'לא הוגדרה מדפסת'; }
+  function printerName() { var d = chosen(); return d ? d.name : pr && pr.name ? pr.name : 'לא נבחרה מדפסת'; }
   function sizeName(mm) {
     var z = FS.mySizes().filter(function (s) { return Math.abs(s.w - mm[0]) < 0.6 && Math.abs(s.h - mm[1]) < 0.6; })[0];
     return z ? FS.sizeLabel(z) : (mm[0] / 10).toFixed(1).replace(/\.0$/, '') + '×' + (mm[1] / 10).toFixed(1).replace(/\.0$/, '') + ' ס״מ';
@@ -71,7 +71,8 @@
   function draw() {
     var t = totals(), q = pending(), ink = inkLeft(), pap = paperLeft();
     bar.classList.toggle('warn', ink != null && ink <= 15);
-    bar.innerHTML = '<b>🖨️ ' + FS.esc(printerName()) + '</b>' +
+    var d = chosen();
+    bar.innerHTML = '<b>🖨️ ' + FS.esc(printerName()) + '</b>' + (d ? stateChip(d) + (d.jobs ? '<span>בתור במדפסת <b>' + d.jobs + '</b></span>' : '') : '') +
       '<span>נשלחו <b>' + t.sheets + '</b> דפים</span>' +
       '<span>ממתינים <b>' + q.sheets + '</b> דפים' + (q.items ? ' (' + q.items + ')' : '') + '</span>' +
       (ink != null ? '<span class="pl-ink" style="--v:' + ink + '%">דיו <b>~' + ink + '%</b></span>' : '') +
@@ -85,7 +86,7 @@
   FS.printerSetup = function (after) {
     var p = pr || { name: '', type: 'dye', inkCap: 400, paperCap: 400, inkUsed: 0, paperUsed: 0 };
     var body = FS.dialog('🖨️ המדפסת שלי',
-      '<p class="hint">דפדפן לא יכול לראות איזו מדפסת מחוברת או לקרוא את מפלס הדיו. מגדירים כאן את המדפסת פעם אחת, וכל הדפסה מהסטודיו נספרת: כמה דפים יצאו, והערכה כמה דיו ונייר נשארו. את המדפסת עצמה בוחרים בחלון ההדפסה של המחשב.</p>' +
+      '<p class="hint">רוב המדפסות לא מוסרות למחשב את מפלס הדיו. לכן כל הדפסה מהסטודיו נספרת, ומזה מחושבת הערכה כמה דיו ונייר נשארו (Windows כן מדווח כשהדיו נמוך או שאין נייר, וזה מוצג ליד המדפסת). מגדירים כאן כמה הדפסות יש בגליל / במחסנית.</p>' +
       '<div class="field"><label>דגם המדפסת</label><input id="pp-name" list="pp-models" maxlength="60" placeholder="למשל DNP DS620" value="' + FS.esc(p.name) + '"><datalist id="pp-models">' + MODELS.map(function (m) { return '<option value="' + FS.esc(m[0]) + '">'; }).join('') + '</datalist></div>' +
       '<div class="field"><label>סוג</label><select id="pp-type">' + Object.keys(TYPES).map(function (k) { return '<option value="' + k + '">' + TYPES[k] + '</option>'; }).join('') + '</select></div>' +
       '<div class="row2"><div class="field"><label>הדפסות לגליל / מחסנית דיו</label><input type="number" id="pp-ink" min="1" max="100000" value="' + (p.inkCap || '') + '"></div><div class="field"><label>דפים בגליל / במגש</label><input type="number" id="pp-paper" min="0" max="100000" value="' + (p.paperCap || '') + '"></div></div>' +
@@ -151,16 +152,110 @@
   /* the print window shows the printer and its state, and asks for it the first time */
   var preview = FS.printPreview;
   FS.printPreview = function () {
-    if (!pr) { FS.printerSetup(function () { FS.printPreview(); }); return; }
     preview.apply(this, arguments);
     var side = $('.pv-side'); if (!side) return;
-    var ink = inkLeft(), pap = paperLeft(), q = pending(), box = document.createElement('div'); box.className = 'pv-printer';
-    box.innerHTML = '<div><b>🖨️ ' + FS.esc(printerName()) + '</b><small>' + (TYPES[pr.type] || '') + '</small></div>' +
-      '<div class="pv-pst">' + (ink != null ? '<span class="pl-ink" style="--v:' + ink + '%">דיו ~' + ink + '%</span>' : '') + (pap != null ? '<span>נייר: ' + pap + ' דפים</span>' : '') + '<span>ממתינים: ' + q.sheets + ' דפים</span></div>' +
-      '<p class="hint">בחלון ההדפסה שנפתח בוחרים את המדפסת הזאת ו"גודל בפועל".</p><button class="btn small" id="pv-printer-set">⚙️ שינוי מדפסת</button>';
-    side.insertBefore(box, side.firstChild);
-    $('#pv-printer-set', box).addEventListener('click', function () { FS.printerSetup(function () { FS.printPreview(); }); });
+    var box = document.createElement('div'); box.className = 'pv-printer'; side.insertBefore(box, side.firstChild);
+    function fill() {
+      var ink = inkLeft(), pap = paperLeft(), q = pending(), d = chosen();
+      box.innerHTML = '<label class="pv-pl">🖨️ מדפסת</label><select id="pv-printer-sel">' + printerOptions() + '</select>' +
+        (d ? '<div class="pv-pst">' + stateChip(d) + (d.jobs ? '<span>בתור של המדפסת: ' + d.jobs + '</span>' : '') + '</div>' : '') +
+        '<div class="pv-pst">' + (ink != null ? '<span class="pl-ink" style="--v:' + ink + '%">דיו ~' + ink + '%</span>' : '') + (pap != null ? '<span>נייר: ' + pap + ' דפים</span>' : '') + '<span>ממתינים: ' + q.sheets + ' דפים</span></div>' +
+        '<p class="hint">' + (d ? 'ההדפסה יוצאת ישר למדפסת הזאת, בגודל האמיתי, בלי חלון נוסף.' : H.up ? 'חלון ההדפסה של המחשב ייפתח, ושם בוחרים מדפסת ו"גודל בפועל".' : 'כדי לראות כאן את המדפסות שמוגדרות במחשב ולהדפיס ישר אליהן מפעילים את "מנהל המדפסות" (בלשונית שמירה והדפסה).') + '</p>' +
+        '<button class="btn small" id="pv-printer-set">⚙️ דיו ונייר</button>';
+      $('#pv-printer-sel', box).addEventListener('change', function () { choose(this.value); fill(); });
+      $('#pv-printer-set', box).addEventListener('click', function () { FS.printerSetup(function () { FS.printPreview(); }); });
+    }
+    fill(); box._fill = fill;
   };
+
+  /* ---------- the printers installed on this computer, through the local helper ---------- */
+  /* frame-studio/helper: a small program (PowerShell on Windows, Python on Mac) that answers on localhost only */
+  var HELPER = 'http://localhost:17777', KSEL = 'frame-studio-printer-sel', KPS = 'frame-studio-printers';
+  var H = { up: false, printers: [], checked: false };
+  var sel = (function () { try { return localStorage.getItem(KSEL) || ''; } catch (e) { return ''; } })();
+  var STATE = { ready: ['מוכנה', 'ok'], printing: ['מדפיסה…', 'busy'], offline: ['לא מחוברת', 'bad'], unknown: ['מצב לא ידוע', ''] };
+  var ERR = { 'low-paper': 'הנייר עומד להיגמר', 'no-paper': 'אין נייר', 'low-ink': 'דיו נמוך', 'no-ink': 'הדיו נגמר', 'door-open': 'מכסה פתוח', jam: 'תקיעת נייר', offline: 'לא מחוברת', service: 'דרוש טיפול', 'output-full': 'מגש היציאה מלא' };
+  function chosen() { if (!H.up || !sel) return null; return H.printers.filter(function (x) { return x.name === sel; })[0] || null; }
+  function stateChip(d) { var st = STATE[d.state] || STATE.unknown, e = d.error && ERR[d.error]; return '<span class="pc-st ' + (e ? 'bad' : st[1]) + '">' + (e ? '⚠️ ' + e : st[0]) + '</span>'; }
+  function guessType(drv) { drv = String(drv || '').toLowerCase(); return /dnp|ds620|ds-rx|ds80|qw410|mitsubishi|cp-d|citizen|cx-0|hiti|selphy|sinfonia|kodak 6|dye/.test(drv) ? 'dye' : /laser|laserjet|mfc|brother|xerox|ricoh|kyocera/.test(drv) ? 'laser' : 'inkjet'; }
+  function printerOptions() {
+    var o = (H.up ? H.printers : []).map(function (x) { return '<option value="' + FS.esc(x.name) + '"' + (x.name === sel ? ' selected' : '') + '>' + FS.esc(x.name) + (x.default ? ' ★' : '') + '</option>'; }).join('');
+    return o + '<option value=""' + (chosen() ? '' : ' selected') + '>חלון ההדפסה של המחשב</option>';
+  }
+  /* each computer printer keeps its own ink / paper counters */
+  function choose(name) {
+    var all = load(KPS, {}); if (pr && pr.name) { all[pr.name] = pr; }
+    sel = name || ''; try { localStorage.setItem(KSEL, sel); } catch (e) { /* ignore */ }
+    var d = chosen();
+    if (d) {
+      var m = MODELS.filter(function (x) { return d.driver && d.driver.toLowerCase().indexOf(x[0].toLowerCase().split(' ').pop()) >= 0; })[0];
+      pr = all[d.name] || { name: d.name, type: m ? m[1] : guessType(d.driver), inkCap: m ? m[2] : 400, paperCap: m && m[1] === 'dye' ? m[2] : 0, inkUsed: 0, paperUsed: 0 };
+      save(KP, pr);
+    }
+    save(KPS, all); refresh(); drawCard();
+  }
+  function get(path, ms) {
+    var ac = window.AbortController ? new AbortController() : null, t = setTimeout(function () { if (ac) ac.abort(); }, ms || 1500);
+    return fetch(HELPER + path, { signal: ac ? ac.signal : undefined, cache: 'no-store' }).then(function (r) { clearTimeout(t); return r.json(); });
+  }
+  var pt = 0;
+  function poll() {
+    clearTimeout(pt);
+    return get('/printers').then(function (j) {
+      var was = JSON.stringify([H.up, H.printers]), before = chosen(); H.up = !!(j && j.ok); H.printers = (j && j.printers) || [];
+      var now = chosen(); if (now && now.error && (!before || before.error !== now.error)) FS.toast('⚠️ ' + now.name + ': ' + (ERR[now.error] || now.error), 8000);
+      if (H.up && !sel) { var def = H.printers.filter(function (x) { return x.default; })[0]; if (def && !load(KSEL + '-asked', 0)) { save(KSEL + '-asked', 1); choose(def.name); } }
+      if (was !== JSON.stringify([H.up, H.printers])) { refresh(); drawCard(); }
+    }, function () { if (H.up || !H.checked) { H.up = false; refresh(); drawCard(); } }).then(function () { H.checked = true; pt = setTimeout(poll, H.up ? 5000 : 15000); });
+  }
+  FS.printers = function () { return { up: H.up, list: H.printers.slice(), chosen: chosen() }; };
+
+  /* print straight to the chosen printer: one 300dpi JPEG per sheet */
+  FS.directPrint = function (plan) {
+    var d = chosen(), n = plan.pages.length, i = 0;
+    function b64(t) { return btoa(unescape(encodeURIComponent(t))); }
+    function next() {
+      if (i >= n) return Promise.resolve();
+      FS.busy('🖨️ שולח ל־' + d.name + ' · דף ' + (i + 1) + ' מתוך ' + n);
+      var c = FS.pageCanvas(plan, plan.pages[i]);
+      return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.95); }).then(function (blob) {
+        var q = '?p64=' + encodeURIComponent(b64(d.name)) + '&t64=' + encodeURIComponent(b64('Frame Studio ' + (i + 1) + '/' + n)) + '&w=' + plan.paper[2] + '&h=' + plan.paper[3] + '&copies=1';
+        return fetch(HELPER + '/print' + q, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+      }).then(function (r) { return r.json(); }).then(function (j) { if (!j.ok) throw new Error(j.error || 'print failed'); i++; return next(); });
+    }
+    return next().then(function () {
+      FS.busy(); var done = { paper: plan.paper, pages: plan.pages, total: plan.total, marks: plan.marks };
+      FS.emit('printed', plan.total); FS.emit('print-job', done); setTimeout(poll, 800);
+    }, function (e) {
+      FS.busy();
+      if (i) { var part = { paper: plan.paper, pages: plan.pages.slice(0, i), total: plan.pages.slice(0, i).reduce(function (a, pg) { return a + pg.length; }, 0), marks: plan.marks }; FS.emit('printed', part.total); FS.emit('print-job', part); }
+      FS.toast('⚠️ ההדפסה ל־' + d.name + ' נעצרה' + (i ? ' אחרי ' + sheetsTxt(i) : '') + ': ' + String(e && e.message || e).slice(0, 120) + '. אפשר לבחור "חלון ההדפסה של המחשב".', 9000);
+      poll();
+    });
+  };
+  FS.directPrint.on = function () { return !!chosen(); };
+
+  /* the card in "שמירה והדפסה": every printer on the computer, its state, and which one prints */
+  var card = document.createElement('div'); card.className = 'card pc'; card.id = 'pc-card';
+  var anchor = $('#paper') && $('#paper').closest('.field'); if (anchor) anchor.parentNode.insertBefore(card, anchor);
+  function drawCard() {
+    if (!card.isConnected) return;
+    if (!H.up) {
+      card.innerHTML = '<h3>🖨️ המדפסות במחשב</h3><p class="hint">' + (H.checked ? 'דפדפן לא יכול לראות לבד את המדפסות שמוגדרות במחשב. מפעילים את <b>מנהל המדפסות</b> (תוכנה קטנה שרצה במחשב), והמדפסות יופיעו כאן עם המצב שלהן, ותוכלו להדפיס ישר למדפסת שבחרתם.' : 'מחפש את המדפסות במחשב…') + '</p>' +
+        (H.checked ? '<div class="row2"><a class="btn primary" href="helper/frame-print-windows.zip" download>⬇ ל־Windows</a><a class="btn" href="helper/frame-print-mac.zip" download>⬇ ל־Mac</a></div><ol class="pc-how"><li>מחלצים את הקובץ ולוחצים פעמיים על <b>start-frame-print.bat</b> (ב־Mac: frame-print-mac.command).</li><li>משאירים את החלון השחור פתוח.</li><li>אם הדפדפן שואל על גישה לרשת המקומית, מאשרים.</li></ol><button class="btn wide" id="pc-retry">🔄 הפעלתי, לחפש שוב</button>' : '');
+      var rb = $('#pc-retry', card); if (rb) rb.addEventListener('click', function () { this.textContent = 'מחפש…'; poll(); });
+      return;
+    }
+    card.innerHTML = '<h3>🖨️ המדפסות במחשב <small>(' + H.printers.length + ')</small></h3><div class="pc-list">' + H.printers.map(function (x) {
+      return '<label class="pc-row' + (x.name === sel ? ' on' : '') + '"><input type="radio" name="pc" value="' + FS.esc(x.name) + '"' + (x.name === sel ? ' checked' : '') + '><span class="pc-n"><b>' + FS.esc(x.name) + (x.default ? ' <i title="ברירת המחדל של המחשב">★</i>' : '') + '</b><small>' + FS.esc(x.driver || '') + (x.network ? ' · רשת' : '') + '</small></span>' + stateChip(x) + (x.jobs ? '<span class="pc-q" title="עבודות בתור של המדפסת">' + x.jobs + ' בתור</span>' : '') + '</label>';
+    }).join('') + '<label class="pc-row' + (chosen() ? '' : ' on') + '"><input type="radio" name="pc" value=""' + (chosen() ? '' : ' checked') + '><span class="pc-n"><b>חלון ההדפסה של המחשב</b><small>בוחרים מדפסת בכל הדפסה</small></span></label></div>' +
+      '<div class="row2"><button class="btn small" id="pc-refresh">🔄 רענון</button><button class="btn small" id="pc-ink">⚙️ דיו ונייר</button></div>';
+    $$('input[name=pc]', card).forEach(function (r) { r.addEventListener('change', function () { choose(this.value); var d = chosen(); FS.toast(d ? '🖨️ ההדפסות יוצאות ל־' + d.name : 'ההדפסה תפתח את חלון ההדפסה של המחשב'); }); });
+    $('#pc-refresh', card).addEventListener('click', function () { poll(); });
+    $('#pc-ink', card).addEventListener('click', function () { FS.printerSetup(); });
+  }
+  drawCard(); poll();
+
 
   draw();
 })();

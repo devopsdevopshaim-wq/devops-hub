@@ -206,6 +206,11 @@
     return c;
   };
 
+  /* film split toning: [shadows r, g, b, highlights r, g, b] added by luminance */
+  var SPLIT = {
+    portra: [-4, 2, 8, 10, 4, -6], fuji: [-6, 4, 6, 4, 2, -4], kodak: [2, 0, -6, 14, 7, -8],
+    airy: [-2, 2, 8, 4, 2, -2], moody: [-8, 2, 10, 10, 3, -8], bwwarm: [0, -2, -6, 10, 5, -4]
+  };
   FS.adjustPixels = function (px, w, h, a, fast) {
     var plain = true;
     for (var k in FS.ADJ0) if (k !== 'tone' && a[k]) { plain = false; break; }
@@ -227,6 +232,7 @@
       else if (a.tone === 'cool') { b += 14; r -= 6; }
       else if (a.tone === 'gold') { r += 16; g += 8; b -= 10; }
       else if (a.tone === 'teal') { var t = L / 255; r += (t - 0.5) * 30 - 6; b += (0.5 - t) * 34 + 4; }
+      else if (SPLIT[a.tone]) { var sp = SPLIT[a.tone], u = L / 255, v1 = 1 - u; r += sp[0] * v1 + sp[3] * u; g += sp[1] * v1 + sp[4] * u; b += sp[2] * v1 + sp[5] * u; }
       px[i] = r; px[i + 1] = g; px[i + 2] = b;
     }
     var big = Math.max(w, h);
@@ -450,8 +456,12 @@
 
   /* ---------- history (per photo; a step is the page as JSON) ---------- */
   FS.snap = function (p) { p = p || FS.cur(); if (!p) return; var s = JSON.stringify(p.doc); if (p.undo[p.undo.length - 1] === s) return; p.undo.push(s); if (p.undo.length > 60) p.undo.shift(); p.redo = []; FS.emit('history'); };
-  FS.undo = function () { var p = FS.cur(); if (!p || p.undo.length < 2) return; p.redo.push(p.undo.pop()); p.doc = JSON.parse(p.undo[p.undo.length - 1]); FS.state.sel = null; FS.emit('doc'); FS.emit('history'); };
-  FS.redo = function () { var p = FS.cur(); if (!p || !p.redo.length) return; var s = p.redo.pop(); p.undo.push(s); p.doc = JSON.parse(s); FS.state.sel = null; FS.emit('doc'); FS.emit('history'); };
+  /* undo / redo step every photo being edited together (the marked photos in batch editing), or just this one */
+  function stepAll(fn) { var c = FS.cur(); if (!c) return; var done = 0; (FS.targets().indexOf(c) >= 0 ? FS.targets() : [c]).forEach(function (p) { if (fn(p)) { p.cache = {}; p._gt = null; done++; } }); if (!done) return; FS.state.sel = null; FS.emit('doc'); FS.emit('history'); FS.refreshStrip && FS.refreshStrip(); }
+  FS.undo = function () { stepAll(function (p) { if (p.undo.length < 2) return false; p.redo.push(p.undo.pop()); p.doc = JSON.parse(p.undo[p.undo.length - 1]); return true; }); };
+  FS.redo = function () { stepAll(function (p) { if (!p.redo.length) return false; var s = p.redo.pop(); p.undo.push(s); p.doc = JSON.parse(s); return true; }); };
+  /* back to the photo as it came in: every edit, frame, text and AI change removed (itself undoable) */
+  FS.resetEdits = function () { stepAll(function (p) { if (p.undo.length < 2 && !p.origSrc) return false; if (p.origSrc && FS.unstyle) FS.unstyle(p); if (!p.undo.length) return true; var first = JSON.parse(p.undo[0]); first.photo.bg = { mode: 'none', color: '#ffffff', src: '' }; p.doc = first; FS.snap(p); return true; }); };
 
   /* ---------- the browser store (IndexedDB): my frames and my designs ---------- */
   var dbp = null;
