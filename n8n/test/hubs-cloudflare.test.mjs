@@ -55,3 +55,35 @@ const PIC = btoa('JPEGDATA');
   const part = calls.at(-1).input.messages[0].content[1];
   check('cloudflare: a picture question goes to the vision model as a data URL', r.code === 200 && /llama-4-scout/.test(r.body.model) && part.image_url.url === 'data:image/png;base64,' + btoa('img'), JSON.stringify(r));
 }
+{
+  // with a Gemini key on Cloudflare: Gemini answers first (keeps faces best); when it cannot, FLUX does
+  const withKey = (gem) => {
+    const sd = {}, calls = [], asked = [];
+    const helpers = { httpRequest: async (o) => { asked.push(o); return gem(o); } };
+    globalThis.__WAI = { run: async (model, input) => { calls.push({ model, input }); return { image: PIC }; } };
+    const code = 'const ENV = { AI: globalThis.__WAI };\n' + code0.replace("'__GEMINI_API_KEY__'", "'test-key'");
+    const call = async (b, ip = '9.9.9.9') => (await run(code, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': ip, origin: SITE } }, sd, helpers }))[0].json;
+    return { call, calls, asked, sd };
+  };
+  const ok = withKey((o) => o.method === 'GET' ? { models: [] } : { candidates: [{ content: { parts: [{ inlineData: { data: 'GEMPIC', mimeType: 'image/png' } }] } }] });
+  let r = await ok.call({ action: 'restyle', prompt: 'pixar', image: btoa('p'), mime: 'image/jpeg' });
+  check('cloudflare + key: a restyle comes from Gemini first', r.code === 200 && r.body.source === 'Gemini' && r.body.image === 'GEMPIC' && !ok.calls.length, JSON.stringify(r));
+  const no = withKey((o) => { if (o.method === 'GET') return { models: [] }; const e = new Error('429 limit: 0 free tier'); throw e; });
+  r = await no.call({ action: 'restyle', prompt: 'pixar', image: btoa('p'), mime: 'image/jpeg' });
+  check('cloudflare + key: when Gemini has no allowance FLUX answers', r.code === 200 && r.body.source === 'Cloudflare' && r.body.model === 'flux-2-klein-4b' && no.sd.gemImgOff, JSON.stringify(r));
+  const n = no.asked.length; r = await no.call({ action: 'restyle', prompt: 'x', image: btoa('p'), mime: 'image/jpeg' }, '9.9.9.8');
+  check('cloudflare + key: a key with no image allowance is not asked again for a while', r.body.ok && no.asked.length === n);
+}
+{
+  // FLUX out of its daily allowance: one failure is enough, the other models are not tried
+  const { call, calls } = world(() => { throw new Error('4006: you have used up your daily free allocation of 10,000 neurons'); });
+  const r = await call({ action: 'restyle', prompt: 'x', image: btoa('p'), mime: 'image/jpeg' }, '6.6.6.6');
+  check('cloudflare: FLUX out of neurons stops at once and says quota', r.code === 502 && r.body.error === 'quota' && calls.length === 1, JSON.stringify(r));
+}
+{
+  // a big photo for Gemini, the small copy for FLUX
+  const { call, calls } = world(() => ({ image: PIC }));
+  const r = await call({ action: 'restyle', prompt: 'x', image: btoa('big-photo'), small: btoa('small-photo'), mime: 'image/jpeg' }, '6.6.6.7');
+  const img = r.body.ok && calls[0].input.multipart && (await new Response(calls[0].input.multipart.body, { headers: { 'content-type': calls[0].input.multipart.contentType } }).formData()).get('input_image_0');
+  check('cloudflare: FLUX gets the small copy of the photo', img && (await img.text()) === 'small-photo', JSON.stringify(r));
+}

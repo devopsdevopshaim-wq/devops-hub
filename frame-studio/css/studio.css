@@ -722,3 +722,15 @@ body.clean-shell .app { grid-template-rows: 1fr; grid-template-areas: "tools pan
 .pv-pl { display: block; font-size: 12px; color: var(--dim); margin-bottom: 4px; }
 #pv-printer-sel { width: 100%; margin-bottom: 4px; }
 .pl-bar .pc-st { font-size: 11px; }
+/* the busy sign covers the whole stage (editor or photos screen) and can carry ⏹ */
+.stage { position: relative; }
+.stage > .busy { z-index: 30; }
+#busy-stop { margin-top: 4px; }
+/* AI combinations */
+.ax-build .ax-group { margin: 8px 0; }
+.ax-build .ax-group > label { display: block; font-size: 12.5px; color: var(--dim); margin-bottom: 4px; }
+.ax-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.ax-chips button { flex: none; display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg2); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.ax-chips button i { font-style: normal; }
+.ax-chips button.on { border-color: var(--gold); background: rgba(212,175,106,.16); color: var(--gold); }
+.ax-name { margin: 8px 0 4px; font-weight: 700; color: var(--gold); font-size: 13.5px; min-height: 1.2em; }
