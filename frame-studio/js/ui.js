@@ -231,9 +231,12 @@
     files.forEach(function (f, i) { chain = chain.then(function () {
       if (n > 3) FS.busy('טוען תמונות… ' + (i + 1) + ' מתוך ' + n);
       /* a breath between photos, so the page keeps answering */
-      return new Promise(function (ok) { setTimeout(ok, 0); }).then(function () { return FS.addPhotoFile(f); }).catch(function () { bad++; });
+      /* a breath between photos so the page keeps answering, and a photo that never opens is skipped after 20s */
+      return new Promise(function (ok) { setTimeout(ok, 0); }).then(function () {
+        return Promise.race([FS.addPhotoFile(f), new Promise(function (_, no) { setTimeout(function () { no(new Error('timeout')); }, 20000); })]);
+      }).catch(function () { bad++; });
     }); });
-    chain.then(function () {
+    chain.catch(function () {}).then(function () {
       FS.busy();
       if (bad) FS.toast(bad + ' קבצים לא נפתחו. HEIC נפתח רק בספארי; אפשר לשמור כ־JPG ולנסות שוב.', 5000);
       if (S.photos.length > first) select(first);
