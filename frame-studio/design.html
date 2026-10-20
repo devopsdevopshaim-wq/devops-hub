@@ -65,30 +65,32 @@
       <label class="dz-drop" id="drop"><input type="file" id="inv-file" accept="image/*,application/pdf" hidden /><b>📨 העלאת ההזמנה</b><span>תמונה (JPG / PNG) או PDF · נשאר אצלכם, ונשלח מוקטן רק לקריאה</span></label>
       <div id="inv" hidden>
         <div class="dz-inv"><div class="dz-inv-img" id="inv-box"><img id="inv-img" alt="ההזמנה" /><i id="inv-sel" hidden></i></div>
-          <div class="dz-inv-side"><div id="inv-status" class="hint"></div><div class="dz-pal" id="inv-pal"></div><button class="btn gold wide" id="inv-apply" disabled>✨ עיצוב מסגרת מההזמנה</button><button class="btn line wide" id="inv-cut" disabled>✂️ גזירת האזור שסימנתי</button><p class="hint">לגזירה: מסמנים מלבן על ההזמנה עם העכבר או האצבע.</p></div></div>
+          <div class="dz-inv-side"><div id="inv-status" class="hint"></div><div class="dz-pal" id="inv-pal"></div><p class="hint">החלון המקווקו על ההזמנה הוא מקום התמונה: גוררים אותו, מושכים את הפינה, או מסמנים מלבן חדש.</p></div></div>
         <section class="dz-invframe dz-im">
-          <h3>💌 ההזמנה עצמה היא המגנט</h3>
-          <p class="hint">ההזמנה נשארת בדיוק כמו שהיא. מסמנים עליה (עם העכבר או האצבע) איפה תהיה התמונה, בוחרים צורה, ולוחצים. גודל המגנט נבחר לפי הפרופורציות של ההזמנה.</p>
-          <p class="dz-im-state" id="im-state">עוד לא סומן מקום: החלון יהיה במרכז ההזמנה.</p>
-          <div class="dz-row"><button class="btn line" data-im="rect">▭ מלבן</button><button class="btn line on" data-im="round">▢ פינות עגולות</button><button class="btn line" data-im="oval">◯ אליפסה</button><button class="btn line" data-im="arch">⌒ קשת</button></div>
-          <button class="btn gold wide" id="im-go">💌 להפוך את ההזמנה למגנט</button>
+          <h3>💌 מסגרת מההזמנה</h3>
+          <p class="hint">ההזמנה נשארת בדיוק כמו שהיא, נקייה, עם חלון לתמונה. הכול בפנים משתנה: גוררים את החלון, הטקסטים והקישוטים ומשנים להם גודל ישירות על המגנט.</p>
+          <p class="dz-im-state" id="im-state">המגנט נוצר לבד ברגע שמעלים את ההזמנה.</p>
+          <div class="dz-opt"><span>מקום החלון</span><div class="dz-row"><button class="btn line" data-place="smart">✨ במקום הפנוי</button><button class="btn line" data-place="big">⬜ גדול</button><button class="btn line" data-place="center">⊕ במרכז</button><button class="btn line" data-place="top">⬆ למעלה</button><button class="btn line" data-place="bottom">⬇ למטה</button></div></div>
+          <div class="dz-opt"><span>צורה</span><div class="dz-row"><button class="btn line" data-im="rect">▭ מלבן</button><button class="btn line on" data-im="round">▢ פינות עגולות</button><button class="btn line" data-im="oval">◯ אליפסה</button><button class="btn line" data-im="arch">⌒ קשת</button></div></div>
+          <div class="dz-opt"><span>קצה החלון</span><div class="dz-row"><button class="btn line" data-edge="none">ללא</button><button class="btn line on" data-edge="line">קו דק</button><button class="btn line" data-edge="double">קו כפול</button><button class="btn line" data-edge="mat">פספרטו</button></div></div>
+          <button class="btn gold wide" id="im-go">💌 יצירת המגנט מההזמנה</button>
           <div class="dz-im-adj" id="im-adj" hidden>
             <h4>📐 גודל ומקום החלון</h4>
-            <p class="hint">משנים והמגנט מתעדכן מיד. אפשר גם לגרור את המלבן על ההזמנה, ולמשוך את הפינה שלו כדי להגדיל או להקטין.</p>
-            <div class="dz-row"><button class="btn line" id="im-smaller">➖ חלון קטן יותר</button><button class="btn line" id="im-bigger">➕ חלון גדול יותר</button></div>
+            <div class="dz-row"><button class="btn line" id="im-smaller">➖ קטן יותר</button><button class="btn line" id="im-bigger">➕ גדול יותר</button></div>
             <label>רוחב החלון <output id="im-w-o"></output><input type="range" id="im-w" min="10" max="96" step="1" /></label>
             <label>גובה החלון <output id="im-h-o"></output><input type="range" id="im-h" min="10" max="96" step="1" /></label>
             <label>ימינה ושמאלה <output id="im-x-o"></output><input type="range" id="im-x" min="0" max="100" step="1" /></label>
             <label>למעלה ולמטה <output id="im-y-o"></output><input type="range" id="im-y" min="0" max="100" step="1" /></label>
-            <button class="btn line" id="im-center">⊕ למרכז</button>
           </div>
           <div class="dz-im-adj" id="pz-adj" hidden>
             <h4>🔍 התמונה בתוך החלון</h4>
-            <p class="hint">מגדילים או מקטינים את התמונה שבתוך החלון. גוררים את התמונה בתצוגה כדי להזיז אותה, וגלגלת העכבר עושה זום. בסטודיו לכל תמונה אמיתית יש אותו זום וגרירה.</p>
+            <p class="hint">גוררים את התמונה בתוך החלון כדי להזיז אותה, וגלגלת העכבר עושה זום. בסטודיו לכל תמונה אמיתית יש אותו זום וגרירה.</p>
             <label>גודל התמונה <output id="pz-s-o"></output><input type="range" id="pz-s" min="50" max="300" step="5" value="100" /></label>
             <button class="btn line" id="pz-reset">↺ התמונה ממלאת את החלון</button>
           </div>
         </section>
+        <details class="dz-more"><summary>עוד דרכים: מסגרת AI, קישוטים מההזמנה, גזירה</summary>
+        <div class="dz-row"><button class="btn line" id="inv-apply" disabled>✨ עיצוב מסגרת עם קישוטים מההזמנה</button><button class="btn line" id="inv-cut" disabled>✂️ גזירת האזור שסימנתי</button></div>
         <section class="dz-invframe">
           <h3>🤖 מסגרת AI כמו ההזמנה</h3>
           <p class="hint">ה־AI מצייר מסגרת חדשה באותו עיצוב של ההזמנה: אותם צבעים, נייר, פרחים וקישוטים, עם חלון שקוף לתמונה. עד דקה למסגרת. את השמות והתאריך מוסיפים אחר כך בלשונית "טקסט".</p>
@@ -113,6 +115,7 @@
         <h3>חלקים מההזמנה</h3>
         <p class="hint">לוחצים על חלק כדי להוסיף אותו למסגרת. הרקע שלו מוסר אוטומטית.</p>
         <div class="dz-pieces" id="pieces"><p class="hint">עוד אין חלקים.</p></div>
+        </details>
       </div>
     </div>
 

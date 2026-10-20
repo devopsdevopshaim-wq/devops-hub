@@ -1,5 +1,5 @@
-/* The studio's entry screen: today's line, real counts from this browser, the four ways in, and the 3D fridge with the
-   studio's own magnets (a flat fridge when WebGL or the CDN is missing). Closing it opens the studio behind it. */
+/* The studio's entry screen: today's line, real counts from this browser, the four ways in, and a designer's portfolio
+   wall of the studio's own work (plain images and CSS, no WebGL, so it opens at once). Closing it opens the studio. */
 (function () {
   'use strict';
   var FS = window.FS, $ = FS.$, $$ = FS.$$;
@@ -22,7 +22,7 @@
   function close(then) {
     if (closed) return; closed = true;
     intro.classList.add('leaving'); document.body.classList.remove('intro-on');
-    setTimeout(function () { intro.remove(); if (stage) stage.stop(); FS.render(); }, 750);
+    setTimeout(function () { intro.remove(); FS.render(); }, 750);
     if (then) setTimeout(then, 280);
   }
   FS.closeIntro = close;
@@ -30,35 +30,20 @@
   $('#ia-photos').addEventListener('change', function () { var f = this.files; close(function () { FS.addFiles(f); }); });
   $('#ia-project').addEventListener('click', function () { close(function () { $('#file-project').click(); }); });
   $('#ia-designs').addEventListener('click', function () { close(function () { $('#my-designs-btn').click(); }); });
-  $('#ia-demo').addEventListener('click', function () { close(function () { $('#demo').click(); }); });
   $('#ia-skip').addEventListener('click', function () { close(); });
-  $('#ia-biz').addEventListener('click', function () { close(function () { FS.openBiz(); }); });
-  $('#ia-pkg').addEventListener('click', function () { close(function () { FS.openPackages(); }); });
-  $('#ia-deals').addEventListener('click', function () { close(function () { FS.openDeals(); }); });
   document.addEventListener('keydown', function k(e) { if (closed) return document.removeEventListener('keydown', k); if (e.key === 'Enter' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); close(); } if (e.key === 'Escape') close(); });
   ['dragenter', 'drop'].forEach(function (ev) { document.addEventListener(ev, function () { close(); }, { once: true }); });
 
-  /* the magnets: the studio's own designs */
-  var stage = null, canvases = null;
-  var shown = Promise.all(FS.SHOWCASE.map(function (o) { return FS.magnetCanvas(o, 720); })).then(function (cs) { canvases = cs; return cs; });
-  function flat() {
-    var box = $('#intro-fallback'); if (!box || box.childElementCount) return; intro.classList.add('flat');
-    var pos = [[8, 6, -7], [52, 4, 5], [30, 33, -2], [64, 38, 7], [6, 60, 4], [44, 64, -6]];
-    canvases.slice(0, pos.length).forEach(function (c, i) { var m = document.createElement('div'); m.className = 'fm'; m.style.cssText = 'right:' + pos[i][0] + '%;top:' + pos[i][1] + '%;--r:' + pos[i][2] + 'deg;--d:' + (0.5 + i * 0.14) + 's'; m.appendChild(c); box.appendChild(m); });
+  /* the portfolio: three columns of the studio's work drifting slowly, each piece matted like a print on a wall */
+  var WORK = [['p-noir', 'נואר'], ['p-sketch', 'סקיצה'], ['p-pop', 'פופ־ארט'], ['p-oldphoto', 'וינטג׳'], ['p-stained', 'ויטראז׳'], ['p-manga', 'מנגה'],
+    ['p-mosaic', 'פסיפס'], ['p-comic', 'קומיקס'], ['p-neon', 'ניאון'], ['p-cartoon', 'איור'], ['p-graffiti', 'גרפיטי'], ['p-original', 'מקור']];
+  var folio = $('#folio');
+  if (folio) {
+    var cols = [[], [], []];
+    WORK.forEach(function (w, i) { cols[i % 3].push([w[0], w[1], i + 1]); });
+    folio.innerHTML = cols.map(function (c, ci) {
+      var items = c.map(function (w, i) { var n = String(w[2]).padStart(2, '0'); return '<figure><img src="show/' + w[0] + '.webp" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async" width="640" height="640" /><figcaption><i>' + n + '</i>' + w[1] + '</figcaption></figure>'; }).join('');
+      return '<div class="fcol" style="--dur:' + (46 + ci * 9) + 's"><div class="ftrack">' + items + items + '</div></div>';
+    }).join('');
   }
-  function go() {
-    if (stage || !canvases) return;
-    try {
-      stage = window.Fridge3D.mount($('#intro3d'), canvases, {
-        pointerHost: intro, fit: matchMedia('(max-width: 900px)').matches ? 1.02 : 1.1,
-        onFlash: function () { intro.classList.add('flashed'); },
-        onSnap: function () { intro.classList.remove('tick'); void intro.offsetWidth; intro.classList.add('tick'); }
-      });
-      intro.classList.add('three');
-    } catch (e) { console.warn(e); flat(); }
-  }
-  shown.then(function () {
-    if (window.Fridge3D) go(); else window.addEventListener('fridge3d:ready', go);
-    setTimeout(function () { if (!stage) flat(); }, 3500);
-  });
 })();

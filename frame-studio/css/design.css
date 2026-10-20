@@ -147,3 +147,11 @@ label.btn { display: inline-flex; }
 .dz-im { border-width: 2px; }
 .dz-im [data-im].on { border-color: var(--gold); background: rgba(201,164,92,.15); }
 .dz-im-state { margin: 0; font-weight: 700; font-size: 14px; color: #8a6a2e; }
+
+/* the invitation magnet: option rows, and the folded other ways */
+.dz-opt { display: grid; gap: 6px; margin: 10px 0; }
+.dz-opt > span { font-size: 13px; letter-spacing: .06em; opacity: .75; }
+.dz-opt .btn.on, .dz-im .dz-row .btn.on { border-color: var(--gold); background: rgba(201,164,92,.16); }
+.dz-more { margin-top: 18px; border-top: 1px solid rgba(201,164,92,.25); padding-top: 12px; }
+.dz-more > summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
+.dz-more[open] > summary { margin-bottom: 10px; }
