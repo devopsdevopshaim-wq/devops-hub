@@ -179,26 +179,62 @@
      The invitation stays exactly as it is; a window for the photo is cut where the owner marked it (rect in 0..1 of the
      invitation), in a shape: rect, round (rounded corners), oval or arch. The canvas has the shape of the magnet size
      chosen (W×H); the invitation is fitted to it with the smallest crop. */
-  FS.inviteAsMagnet = function (img, W, H, rect, shape) {
+  /* the window's outline, inset by t on every side */
+  function winPath(x, shape, hx, hy, hw, hh, t) {
+    hx += t; hy += t; hw -= 2 * t; hh -= 2 * t; x.beginPath();
+    if (shape === 'oval') x.ellipse(hx + hw / 2, hy + hh / 2, hw / 2, hh / 2, 0, 0, Math.PI * 2);
+    else if (shape === 'arch') { var rr = hw / 2, top = hy + Math.min(rr, hh); x.moveTo(hx, hy + hh); x.lineTo(hx, top); x.arc(hx + rr, top, rr, Math.PI, 0); x.lineTo(hx + hw, hy + hh); x.closePath(); }
+    else { var q = shape === 'round' ? Math.min(hw, hh) * 0.12 : 0; if (FS.roundRect) FS.roundRect(x, hx, hy, hw, hh, q); else x.rect(hx, hy, hw, hh); }
+  }
+  /* the invitation's darkest tone and its paper (lightest) tone */
+  function tones(img) {
+    var t = FS.canvas(12, 12), tx = t.getContext('2d'); tx.drawImage(img, 0, 0, 12, 12); var d = tx.getImageData(0, 0, 12, 12).data, lo = 999, hi = -1, dark = [0, 0, 0], light = [255, 255, 255];
+    for (var i = 0; i < 144; i++) { var L = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11; if (L < lo) { lo = L; dark = [d[i * 4], d[i * 4 + 1], d[i * 4 + 2]]; } if (L > hi) { hi = L; light = [d[i * 4], d[i * 4 + 1], d[i * 4 + 2]]; } }
+    return { dark: dark, light: light };
+  }
+  /* The invitation itself is the magnet: drawn whole (cover-fit), with a window cut where the photo shows through.
+     edge: 'none', 'line' (a fine line in the invitation's darkest tone), 'double' (two fine lines) or 'mat' (a paper-coloured
+     passe-partout inside the window, like a print in a gallery frame). Also returns where the invitation sits on the page,
+     so a window moved on the magnet maps back onto the invitation. */
+  FS.inviteAsMagnet = function (img, W, H, rect, shape, edge) {
     var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, c = FS.canvas(W, H), x = c.getContext('2d');
     var k = Math.max(W / iw, H / ih), dw = iw * k, dh = ih * k, ox = (W - dw) / 2, oy = (H - dh) / 2;
     x.imageSmoothingQuality = 'high'; x.drawImage(img, ox, oy, dw, dh);
     var r = rect || { x: 0.17, y: 0.2, w: 0.66, h: 0.44 };
     var hx = ox + r.x * dw, hy = oy + r.y * dh, hw = r.w * dw, hh = r.h * dh;
     hx = Math.max(0, hx); hy = Math.max(0, hy); hw = Math.min(W - hx, hw); hh = Math.min(H - hy, hh);
-    x.save(); x.globalCompositeOperation = 'destination-out'; x.fillStyle = '#000'; x.beginPath();
-    if (shape === 'oval') x.ellipse(hx + hw / 2, hy + hh / 2, hw / 2, hh / 2, 0, 0, Math.PI * 2);
-    else if (shape === 'arch') { var rr = hw / 2; x.moveTo(hx, hy + hh); x.lineTo(hx, hy + Math.min(rr, hh)); x.arc(hx + rr, hy + Math.min(rr, hh), rr, Math.PI, 0); x.lineTo(hx + hw, hy + hh); x.closePath(); }
-    else { var q = shape === 'round' ? Math.min(hw, hh) * 0.12 : 0; FS.roundRect ? FS.roundRect(x, hx, hy, hw, hh, q) : x.rect(hx, hy, hw, hh); }
-    x.fill(); x.restore();
-    /* a fine edge around the window, in the invitation's own darkest tone, so the photo sits in it neatly */
-    var t = FS.canvas(8, 8), tx = t.getContext('2d'); tx.drawImage(img, 0, 0, 8, 8); var d = tx.getImageData(0, 0, 8, 8).data, best = 999, col = '#000';
-    for (var i = 0; i < 64; i++) { var L = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11; if (L < best) { best = L; col = 'rgba(' + d[i * 4] + ',' + d[i * 4 + 1] + ',' + d[i * 4 + 2] + ',.55)'; } }
-    x.save(); x.strokeStyle = col; x.lineWidth = Math.max(1.5, Math.min(W, H) * 0.003); x.beginPath();
-    if (shape === 'oval') x.ellipse(hx + hw / 2, hy + hh / 2, hw / 2, hh / 2, 0, 0, Math.PI * 2);
-    else if (shape === 'arch') { var r2 = hw / 2; x.moveTo(hx, hy + hh); x.lineTo(hx, hy + Math.min(r2, hh)); x.arc(hx + r2, hy + Math.min(r2, hh), r2, Math.PI, 0); x.lineTo(hx + hw, hy + hh); x.closePath(); }
-    else { var q2 = shape === 'round' ? Math.min(hw, hh) * 0.12 : 0; FS.roundRect ? FS.roundRect(x, hx, hy, hw, hh, q2) : x.rect(hx, hy, hw, hh); }
-    x.stroke(); x.restore();
-    return { canvas: c, hole: { x: hx, y: hy, w: hw, h: hh } };
+    var m = Math.min(W, H), tn = tones(img), ink = 'rgba(' + tn.dark.join(',') + ',', e = edge || 'line', lw = Math.max(1.5, m * 0.0028);
+    function cut(t) { x.save(); x.globalCompositeOperation = 'destination-out'; x.fillStyle = '#000'; winPath(x, shape, hx, hy, hw, hh, t); x.fill(); x.restore(); }
+    function line(t, a, w) { x.save(); x.strokeStyle = ink + a + ')'; x.lineWidth = w; winPath(x, shape, hx, hy, hw, hh, t); x.stroke(); x.restore(); }
+    if (e === 'mat') {
+      var mat = Math.round(Math.min(hw, hh) * 0.055);
+      cut(0); x.save(); x.fillStyle = 'rgb(' + tn.light.map(function (v) { return Math.min(255, v + 8); }).join(',') + ')'; winPath(x, shape, hx, hy, hw, hh, 0); x.fill(); x.restore();
+      line(0, 0.35, lw); cut(mat); line(mat, 0.28, Math.max(1, lw * 0.6));
+    } else {
+      cut(0);
+      if (e === 'line') line(0, 0.55, lw);
+      else if (e === 'double') { line(-lw * 2.6, 0.5, lw * 0.8); line(0, 0.6, lw * 0.8); }
+    }
+    return { canvas: c, hole: { x: hx, y: hy, w: hw, h: hh }, map: { ox: ox / W, oy: oy / H, sw: dw / W, sh: dh / H } };
+  };
+  /* the quietest place on the invitation for a window of this shape: the area with the least text and ornament,
+     found on a small detail map (edges) with an integral image. aspect = window width / height on the invitation. */
+  FS.invSmartWindow = function (img, aspect, area) {
+    var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, N = 96, w = iw >= ih ? N : Math.round(N * iw / ih), h = iw >= ih ? Math.round(N * ih / iw) : N;
+    var c = FS.canvas(w, h), x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h); var d = x.getImageData(0, 0, w, h).data, L = new Float32Array(w * h), S = new Float64Array((w + 1) * (h + 1));
+    for (var i = 0; i < w * h; i++) L[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11;
+    for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++) {
+      var v = 0; if (xx > 0 && yy > 0) v = Math.abs(L[yy * w + xx] - L[yy * w + xx - 1]) + Math.abs(L[yy * w + xx] - L[(yy - 1) * w + xx]);
+      S[(yy + 1) * (w + 1) + xx + 1] = v + S[yy * (w + 1) + xx + 1] + S[(yy + 1) * (w + 1) + xx] - S[yy * (w + 1) + xx];
+    }
+    var A = area || 0.36, best = null, ww = Math.max(8, Math.min(w - 4, Math.round(Math.sqrt(A * w * h * aspect)))), hh = Math.max(8, Math.min(h - 4, Math.round(ww / aspect)));
+    var mx = Math.round(w * 0.06), my = Math.round(h * 0.06);
+    for (var y0 = my; y0 + hh <= h - my; y0++) for (var x0 = mx; x0 + ww <= w - mx; x0++) {
+      var sum = S[(y0 + hh) * (w + 1) + x0 + ww] - S[y0 * (w + 1) + x0 + ww] - S[(y0 + hh) * (w + 1) + x0] + S[y0 * (w + 1) + x0];
+      var off = Math.abs((x0 + ww / 2) / w - 0.5) * 0.25;   /* a little preference for the middle */
+      var score = sum / (ww * hh) + off * 40; if (!best || score < best.s) best = { s: score, x: x0, y: y0 };
+    }
+    if (!best) return { x: 0.17, y: 0.2, w: 0.66, h: 0.44 };
+    return { x: best.x / w, y: best.y / h, w: ww / w, h: hh / h };
   };
 })();

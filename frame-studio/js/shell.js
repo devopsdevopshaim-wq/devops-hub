@@ -26,7 +26,7 @@
   var menu = $('#sb-menu-m', more);
   var sz = document.createElement('button'); sz.className = 'btn'; sz.textContent = '📐 גדלים (בסיסיים ושלי)'; sz.addEventListener('click', function () { FS.manageSizes(); }); menu.appendChild(sz);
   ['#biz-btn', '#pkg-btn', '#deals-btn', '.top-actions a[href="admin.html"]', '#install'].forEach(function (s) { var el = $(s); if (el) { el.classList.remove('ghost'); menu.appendChild(el); } });
-  [['./', '🧲 לאתר העסק'], ['design.html?owner', '✨ מסגרת מהזמנה'], ['../portfolio/', '🧰 כל האתרים שלי']].forEach(function (l) {
+  [['./', '🏠 לאתר העסק'], ['design.html?owner', '✨ מסגרת מהזמנה'], ['../portfolio/', '🧰 כל האתרים שלי']].forEach(function (l) {
     var a = document.createElement('a'); a.className = 'btn'; a.href = l[0]; a.target = '_blank'; a.rel = 'noopener'; a.textContent = l[1]; menu.appendChild(a);
   });
   act.appendChild(more);

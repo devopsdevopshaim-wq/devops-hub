@@ -6,7 +6,7 @@ description: "Work on the standalone site 'פריים מגנטים / פריים�
 # פריים מגנטים + פריים־סטודיו (frame-studio)
 
 Two pages:
-- `index.html` — the public site of an event-magnets business (פריים מגנטים): a fridge with live-drawn magnets, how it works, a gallery of designs per event type, a designer where a visitor picks event type, names, date, frame, colour and font (and may load their own photo, which stays on the device) and sends the request to WhatsApp, packages, the AI/tech section, FAQ and a contact form that opens WhatsApp. All business details (name, phone/WhatsApp, e-mail, social links, areas, hours, packages and prices, FAQ, event types) live in `business.json`; the prices there are examples until the owner sets real ones. With no WhatsApp number, links open WhatsApp's contact picker. Code: `js/site.js`, `css/site.css`.
+- `index.html` — the public site of an event-magnets business (פריים מגנטים): a designer's portfolio hero, how it works, a gallery of designs per event type, a designer where a visitor picks event type, names, date, frame, colour and font (and may load their own photo, which stays on the device) and sends the request to WhatsApp, packages, the AI/tech section, FAQ and a contact form that opens WhatsApp. All business details (name, phone/WhatsApp, e-mail, social links, areas, hours, packages and prices, FAQ, event types) live in `business.json`; the prices there are examples until the owner sets real ones. With no WhatsApp number, links open WhatsApp's contact picker. Code: `js/site.js`, `css/site.css`.
 - `studio.html` — the working studio described below (it was `index.html` before; the PWA starts here).
 
 `js/events.js` (shared): `FS.EVENTS` (style per event type: frame, colour, font, palette, frames, greetings), `FS.buildMagnet(p, o)` (frame + names + date/hashtag + logo laid out in the frame's free band; `o.frameRef` for a user PNG frame), `FS.sampleScene` (drawn sample photos, no real people), `FS.photoFrom`.
@@ -71,6 +71,12 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - `FS.scoreAll` adds near-duplicates (64-bit dHash, Hamming ≤ 6); in each group only the best stays good.
   - Weak photos are listed with their reasons, and can be marked or removed.
   - `FS.slideshow(list, sec, title)` plays the best N spread over the evening: a canvas with a blurred fill, a slow move towards the faces and dissolves. ⏺ records it with MediaRecorder (mp4 where supported, otherwise webm).
+  - **Transitions:**
+    - 14 transitions sit in the `TR` table (`FS.slideTransitions`). "אקראי (מתחלף)" is the default; it shuffles without repeating a transition twice in a row.
+    - Slides are prerendered once (`makeFrame`), with the blur made by drawing small and stretching back.
+    - Controls: a transition select with a live preview, transition length 0.4–2.5s, seconds per photo, and the same select in the player bar. They are saved under `fs-slide-prefs`.
+    - The recording captures the same transitions.
+  - `scoreAll` yields to the browser about every 14ms (requestIdleCallback), so scoring hundreds of photos doesn't freeze the page.
 - `FS.busy(msg, onStop)` shows ⏹ on the busy sign, which lives in `.stage` so it shows on the photos screen too.
 
 ## Admin-only studio, calendar sync, the invitation as the magnet (Oct 2026)
@@ -82,12 +88,22 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - `RESET` in `.github/scripts/cloudflare-deploy.mjs` (now 'v2') changes that hash once for the same secret value. Bump it, then run the Cloudflare deploy after the owner sets the secret.
   - The emailed "forgot password" needs BREVO_API_KEY or RESEND_API_KEY, and none is set.
 - **Calendar sync** (`admin-biz.js`, `#cal-link`): "📅 הוספה ל־Google Calendar" opens `calendar.google.com/calendar/render?cid=webcal://…/frame-cal?k=…`, which subscribes the private feed in the signed-in Gmail account. There is also an Apple/Outlook `webcal:` link, and the raw link sits under a fold. Google refreshes such feeds every few hours.
-- **The invitation itself as the magnet** (designer, "💌 ההזמנה עצמה היא המגנט"): the owner marks the photo's place on the invitation (the `#inv-box` selection, kept in `FS.invWindow`) and picks a shape: rect, round, oval or arch.
-  - `FS.inviteAsMagnet(img, W, H, rect, shape)` keeps the invitation untouched, cuts the window, and adds a fine edge in the invitation's darkest tone.
-  - The magnet format is the one closest to the invitation's proportions. The designer's names, date and line are cleared, because the invitation has its own.
-  - The AI frame and ChatGPT/Gemini routes stay below it.
-  - After it is made, the window stays editable (`IM` in design.js: format, rect, shape). The "📐 גודל ומקום החלון" sliders (width, height, centre x/y), the ➖/➕ buttons and "למרכז" change it. The `#inv-sel` box on the invitation can be dragged to move it, and its corner handle resizes it. Changing the shape also rebuilds. Each change rebuilds through `inviteAsMagnet` and `useInvCanvas`, debounced 160ms. The current version replaces its own thumbnail in `#ai-frames` instead of adding one per move.
-  - "🔍 התמונה בתוך החלון" is a preview-only zoom and offset of the sample or own photo (`PZ`, applied in `build()`): a slider, dragging on the preview where there is no ornament, and the mouse wheel. Real photos get the same control in the studio (pinch, wheel, `#pzoom`).
+- **The invitation itself as the magnet** (designer, invitation tab, "💌 מסגרת מההזמנה"), the main way to make a frame from an invitation. It is made automatically as soon as the invitation is uploaded (`imCreate('smart')` in `openInvite`), and "💌 יצירת המגנט מההזמנה" makes it again.
+  - `FS.inviteAsMagnet(img, W, H, rect, shape, edge)` keeps the invitation untouched (cover-fit) and cuts the window. It returns `{canvas, hole, map}`, where `map` is where the invitation sits on the page, so a window moved on the magnet maps back.
+  - Shapes: rect, round, oval, arch.
+  - Edges: `none`, `line` (a fine line in the invitation's darkest tone), `double`, and `mat` (a paper-coloured passe-partout inside the window).
+  - `FS.invSmartWindow(img, aspect, area)` finds the quietest spot on the invitation (the least edge detail, via an integral image on a ~96px map) for a photo-shaped window: 4:5 on a tall invitation, about 4:3 on a wide one.
+  - Placement buttons (`data-place`): smart, big, center, top, bottom. The magnet format is the one closest to the invitation's proportions, and the designer's names, date and line are cleared.
+  - The window stays editable (`IM`: format, rect, shape, edge, map, key):
+    - the sliders, ➖/➕ and the placement buttons;
+    - the `#inv-sel` box on the invitation (drag to move, corner handle to resize, or draw a new box);
+    - directly on the preview `#cv`, where the corners resize the window and its edge moves it. The move is shown live as an outline and rebuilt on release (`imFromPage`).
+  - Rebuilds drop the previous invitation frame from `FS.USER_FRAMES` and `FS.IMGS`, so memory doesn't grow.
+  - **Editing everything on the preview** (design.js, `overlay()` + the `#cv` pointer handlers):
+    - the photo is dragged inside the window and the wheel zooms it (`PZ`, preview only);
+    - texts with a stable key (`mg0…` from `buildMagnet`, `biz`, `line`) are dragged, resized with their round handle, or resized with the wheel when selected. The changes are kept in `D.lay[key] = {dx, dy, k}` and applied in `build()`;
+    - ornaments are dragged and resized with their handle.
+  - The other ways (AI frame, ChatGPT/Gemini, the basic offline frame, auto-design with ornaments, cutting pieces) are folded under "עוד דרכים" (`.dz-more`), because the owner found the ornament version tacky.
 
 ## Showcase page (`show.html`, Oct 2026)
 A designed landing page for customers, linked from the site's nav ("✨ החוויה"). Its look: a fridge door at night, with enamel #EEF0F3, night #14101F, horseshoe-magnet red #E5383B, steel and foil gold. Type is Karantina for display, Assistant for body text and Rubik 900 for the letter magnets.
@@ -217,11 +233,10 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
 - **Event pages for Google**: `l/<event>.html` and `sitemap.xml` are generated by `python3 frame-studio/tools/build-landing.py`. Edit the texts there and rerun it. `js/landing.js` refreshes the packages from `business.json`. `index.html` carries LocalBusiness JSON-LD and og tags.
 - **Accessibility**: `accessibility.html` is the statement, linked from the footers. There is a skip link and visible focus.
 
-## Entry screen and the 3D fridge
-- `js/fridge3d.js` (ES module, three.js 0.186.1 through the import map) exposes `window.Fridge3D.mount(canvas, magnetCanvases, opts)`. It draws a brushed-steel fridge door (RoundedBox with a canvas brushed texture, RoomEnvironment reflections) turned a little towards the words. A camera flash opens the scene. The magnets fly in from the camera and snap on with a damped spring and a squash, and they cast soft shadows. The scene leans with the pointer, a magnet lifts under it, and it pauses when off screen. Options: `pointerHost`, `fit`, `turn`, `spots`, `onFlash`, `onSnap`. A ResizeObserver keeps the size right.
-- The magnets are the studio's own designs: `FS.SHOWCASE` drawn by `FS.magnetCanvas(o, size)` (in `events.js`).
-- `studio.html` opens on `#intro` (`js/intro.js`, `css/intro.css`), with a "darkroom and gold foil" look: the date line with a safelight dot, a gold-foil title, and four ways in (new event, open photos, continue project, my designs). It also has a demo, the business site, and "ישר לסטודיו" (Enter or Esc). Its counts come from this browser only (saved events, magnets printed, my frames), and a zero is left out. Dropping files also closes it. `?skip` in the address skips it, which is what the tests use. Without WebGL or the CDN after 3.5s, it shows a flat fridge (`.intro.flat`).
-- The business site's hero uses the same scene (`#hero3d`, 6 magnets) and falls back to the drawn CSS fridge.
+## Entry screen
+- `studio.html` opens on `#intro` (`js/intro.js`, `css/intro.css`). It is a design studio's portfolio wall: three columns of the studio's work (`show/p-*.webp`), matted like prints with a number and a name, drifting slowly. The motion is CSS transform only and pauses on hover. There is no WebGL, no three.js and no fridge, at the owner's request (the fridge and `js/fridge3d.js` were removed in Oct 2026).
+- The copy side has the date line, a gold-foil title and four ways in: new event, open photos, continue project and my designs. The owner asked for no link row under them; admin, the business details, packages, deals and the designer are all in the studio's ☰ menu. "לסטודיו Enter" sits in the top corner, and Enter or Esc closes the screen.
+- Its counts come from this browser only (saved events, magnets printed, my frames), and a zero is left out. Dropping files also closes it. `?skip` in the address skips it, which is what the tests use.
 
 Edit the files in place. Push to `main`: `.github/workflows/vacation-hub-pages.yml` publishes `frame-studio/` to GitHub Pages (about two minutes). If you add a file, add it to `FILES` in `sw.js` and bump `CACHE`. Business details change in `business.json` only.
 

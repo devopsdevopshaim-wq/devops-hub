@@ -29,23 +29,6 @@
   }
   function fontsFor(list) { return Promise.all(list.map(function (f) { return document.fonts ? document.fonts.load('700 40px "' + f + '"').catch(function () {}) : null; })).then(function () { return document.fonts && document.fonts.ready; }); }
 
-  /* ---------- hero fridge ---------- */
-  function hero() {
-    var box = $('#hero-mags'); if (!box) return;
-    var fr = box.closest('.fridge'), cv = $('#hero3d'), stage = null;
-    var all = Promise.all(FS.SHOWCASE.map(function (o) { return FS.magnetCanvas(o, 720); }));
-    function flat(cs) { /* the drawn fridge, when WebGL or the CDN is missing */
-      if (box.childElementCount) return; fr.classList.remove('three');
-      var pos = [[5, 4, -6], [60, 3, 5], [33, 27, -2], [7, 54, 4], [61, 53, -5]];
-      cs.slice(0, 5).forEach(function (c, i) { var m = document.createElement('div'); m.className = 'mag'; m.style.cssText = 'right:' + pos[i][0] + '%;top:' + pos[i][1] + '%;--r:' + pos[i][2] + 'deg;--d:' + (i * 0.12) + 's'; m.appendChild(c); box.appendChild(m); });
-    }
-    all.then(function (cs) {
-      function go() { if (stage) return; fr.classList.add('three'); try { stage = window.Fridge3D.mount(cv, cs.slice(0, 6), { fit: 1.04, pointerHost: fr.parentNode }); } catch (e) { flat(cs); } }
-      if (window.Fridge3D) go(); else window.addEventListener('fridge3d:ready', go);
-      setTimeout(function () { if (!stage) flat(cs); }, 3500);
-    });
-  }
-
   /* ---------- gallery ---------- */
   var GAL = [];
   FS.EVENTS.forEach(function (ev, i) {
@@ -261,6 +244,6 @@
     FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}) });
   });
   Promise.all([bizLoaded, fontsFor(['Amatic SC', 'Bellefair', 'Suez One', 'Secular One', 'Varela Round', 'Frank Ruhl Libre', 'Rubik', 'David Libre', 'Heebo'])]).then(function () {
-    hero(); galleryFilter(); gallery(''); designer();
+    galleryFilter(); gallery(''); designer();
   });
 })();

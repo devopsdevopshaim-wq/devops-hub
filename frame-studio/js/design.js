@@ -44,6 +44,9 @@
         var top = H.y > m * 0.1, size = Math.round(m * (top ? 0.042 : 0.04));
         d.layers.push({ id: 'line', type: 'text', text: D.line, x: d.w / 2, y: top ? H.y / 2 + size * 0.35 : H.y + m * 0.07, size: size, font: D.font, weight: 700, color: top ? (D.ink || FS.inkFor(D.color)) : '#ffffff', shadow: !top, strokeW: 0, stroke: '#000', r: 0, opacity: 1, align: 'center' });
       }
+      /* texts moved or resized on the preview keep their place (by their stable key) */
+      var lay = D.lay || {};
+      d.layers.forEach(function (L) { var o = L.type === 'text' && lay[tkey(L)]; if (o) { L.x += o.dx * d.w; L.y += o.dy * d.h; L.size *= o.k; } });
       D.deco.forEach(function (o) {
         var im = FS.img(o.src); if (!im) return;
         d.layers.push({ id: o.id, deco: true, type: 'image', src: o.src, s: o.w * d.w / im.naturalWidth, x: o.x * d.w, y: o.y * d.h, r: o.r || 0, opacity: o.opacity == null ? 1 : o.opacity, flip: !!o.flip });
@@ -64,36 +67,103 @@
       cv.width = Math.round(d.w * k * dpr); cv.height = Math.round(d.h * k * dpr); cv.style.width = Math.round(d.w * k) + 'px'; cv.style.height = Math.round(d.h * k) + 'px';
       FS.draw(cv.getContext('2d'), p, { scale: k * dpr, max: 1400, export: true, noPhoto: view === 'frame', transparent: view === 'frame' });
       cv.classList.toggle('see-through', view === 'frame');
-      if (sel) { var o = D.deco.filter(function (x) { return x.id === sel; })[0]; if (o) outline(cv.getContext('2d'), o, d, k * dpr); }
+      overlay(cv.getContext('2d'), d, k * dpr);
     }).catch(function (e) { if (window.console) console.warn(e); }).then(function () { drawing = null; if (again) { again = false; render(); } });
     return drawing;
   }
   function decoBox(o, d) { var im = FS.img(o.src); if (!im) return null; var w = o.w * d.w, h = w * im.naturalHeight / im.naturalWidth; return { x: o.x * d.w - w / 2, y: o.y * d.h - h / 2, w: w, h: h }; }
-  function outline(ctx, o, d, k) { var b = decoBox(o, d); if (!b) return; ctx.save(); ctx.strokeStyle = '#c9a45c'; ctx.setLineDash([6, 4]); ctx.lineWidth = 2; ctx.strokeRect(b.x * k, b.y * k, b.w * k, b.h * k); ctx.restore(); }
+  function tkey(L) { return L.link || (L.id === 'line' ? 'line' : ''); }
   function changed() { render(); clearTimeout(saveT); saveT = setTimeout(function () { if (D.saved) save(true); }, 1200); }
 
-  /* ---------- dragging ornaments on the preview ---------- */
+  /* ---------- editing everything on the preview: the window, the photo in it, the texts and the ornaments ----------
+     Corners of the window resize it and its edge moves it; inside it the photo moves (the wheel zooms it). A text or an
+     ornament is dragged to move it, and its round handle resizes it. */
+  var tsel = '', wlive = null, HANDLE = 0.028;
+  function imActive() { return !!(IM && IM.key && D.invFrame && D.invFrame.key === IM.key && view !== 'frame'); }
+  function winBox(d) { if (wlive) return { x: wlive.x * d.w, y: wlive.y * d.h, w: wlive.w * d.w, h: wlive.h * d.h }; return FS.hole(d); }
+  function textBox(L, d) {
+    var c = textBox.c || (textBox.c = FS.canvas(4, 4).getContext('2d'));
+    c.font = (L.weight || 700) + ' ' + L.size + 'px "' + L.font + '"'; var w = c.measureText(L.text || '').width;
+    var x = L.align === 'right' ? L.x - w : L.align === 'left' ? L.x : L.x - w / 2;
+    return { x: x - L.size * 0.15, y: L.y - L.size * 0.62, w: w + L.size * 0.3, h: L.size * 1.24 };
+  }
+  function texts(d) { return d.layers.filter(function (L) { return L.type === 'text' && tkey(L) && L.text; }); }
+  function handleAt(b) { return { x: b.x, y: b.y + b.h }; }   /* the bottom-left corner: the far end for a right-to-left page */
+  function dot(ctx, x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#c9a45c'; ctx.fill(); ctx.lineWidth = r * 0.35; ctx.strokeStyle = '#fff'; ctx.stroke(); }
+  function overlay(ctx, d, k) {
+    var m = Math.min(d.w, d.h), r = m * 0.016 * k; ctx.save();
+    if (imActive()) {
+      var w = winBox(d); ctx.setLineDash([7, 5]); ctx.lineWidth = 1.5; ctx.strokeStyle = wlive ? '#c9a45c' : 'rgba(201,164,92,.75)'; ctx.strokeRect(w.x * k, w.y * k, w.w * k, w.h * k); ctx.setLineDash([]);
+      [[w.x, w.y], [w.x + w.w, w.y], [w.x, w.y + w.h], [w.x + w.w, w.y + w.h]].forEach(function (c) { dot(ctx, c[0] * k, c[1] * k, r); });
+    }
+    var b = null;
+    if (sel) { var o = D.deco.filter(function (x) { return x.id === sel; })[0]; if (o) b = decoBox(o, d); }
+    else if (tsel) { var L = texts(d).filter(function (x) { return tkey(x) === tsel; })[0]; if (L) b = textBox(L, d); }
+    if (b) { ctx.setLineDash([6, 4]); ctx.lineWidth = 2; ctx.strokeStyle = '#c9a45c'; ctx.strokeRect(b.x * k, b.y * k, b.w * k, b.h * k); ctx.setLineDash([]); var h = handleAt(b); dot(ctx, h.x * k, h.y * k, r * 1.1); }
+    ctx.restore();
+  }
   (function () {
-    var cv = $('#cv'), drag = null, photoDrag = null;
+    var cv = $('#cv'), drag = null;
     function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }; }
+    function near(q, x, y, d) { var m = Math.min(d.w, d.h) * HANDLE * 1.6; return Math.abs(q.x * d.w - x) < m && Math.abs(q.y * d.h - y) < m; }
+    function inside(q, b, d, pad) { var X = q.x * d.w, Y = q.y * d.h; pad = pad || 0; return X >= b.x - pad && X <= b.x + b.w + pad && Y >= b.y - pad && Y <= b.y + b.h + pad; }
+    function pick() { decos(); render(); }
     cv.addEventListener('pointerdown', function (e) {
-      if (!P) return; var q = pt(e), d = P.doc, hit = null;
-      D.deco.slice().reverse().some(function (o) { var b = decoBox(o, d); if (b && q.x * d.w >= b.x && q.x * d.w <= b.x + b.w && q.y * d.h >= b.y && q.y * d.h <= b.y + b.h) { hit = o; return true; } return false; });
-      if (!hit) {
-        if (sel) { sel = null; decos(); render(); }
-        /* no ornament under the finger: the photo itself moves inside the window */
-        if (view === 'photo') { var H = FS.hole(d); photoDrag = { x: q.x * d.w, y: q.y * d.h, dx: PZ.dx, dy: PZ.dy, hw: H.w, hh: H.h }; cv.setPointerCapture(e.pointerId); e.preventDefault(); }
-        return;
+      if (!P) return; var q = pt(e), d = P.doc, m = Math.min(d.w, d.h), go = function (g) { drag = g; cv.setPointerCapture(e.pointerId); e.preventDefault(); };
+      /* 1. the handle of what is selected */
+      var so = sel && D.deco.filter(function (x) { return x.id === sel; })[0], sb = so ? decoBox(so, d) : null;
+      if (sb && near(q, handleAt(sb).x, handleAt(sb).y, d)) return go({ k: 'deco-size', o: so, cx: so.x * d.w, w0: so.w, r0: Math.hypot(q.x * d.w - so.x * d.w, q.y * d.h - so.y * d.h) });
+      var tl = tsel && texts(d).filter(function (x) { return tkey(x) === tsel; })[0], tb = tl ? textBox(tl, d) : null;
+      if (tb && near(q, handleAt(tb).x, handleAt(tb).y, d)) { var lo = (D.lay = D.lay || {})[tsel] || (D.lay[tsel] = { dx: 0, dy: 0, k: 1 }); return go({ k: 'text-size', o: lo, k0: lo.k, cx: tl.x, cy: tl.y, r0: Math.hypot(q.x * d.w - tl.x, q.y * d.h - tl.y) }); }
+      /* 2. the window's corners and edge */
+      var W = imActive() ? FS.hole(d) : null;
+      if (W) {
+        var cs = [[W.x, W.y], [W.x + W.w, W.y], [W.x, W.y + W.h], [W.x + W.w, W.y + W.h]];
+        for (var i = 0; i < 4; i++) if (near(q, cs[i][0], cs[i][1], d)) { sel = null; tsel = ''; wlive = { x: W.x / d.w, y: W.y / d.h, w: W.w / d.w, h: W.h / d.h }; return go({ k: 'win-size', c: i, ax: cs[3 - i][0] / d.w, ay: cs[3 - i][1] / d.h }); }
       }
-      sel = hit.id; drag = { o: hit, dx: q.x - hit.x, dy: q.y - hit.y }; cv.setPointerCapture(e.pointerId); decos(); render(); e.preventDefault();
+      /* 3. an ornament, then a text */
+      var hit = null;
+      D.deco.slice().reverse().some(function (o) { var b = decoBox(o, d); if (b && inside(q, b, d)) { hit = o; return true; } return false; });
+      if (hit) { sel = hit.id; tsel = ''; pick(); return go({ k: 'deco', o: hit, dx: q.x - hit.x, dy: q.y - hit.y }); }
+      var th = texts(d).slice().reverse().filter(function (L) { return inside(q, textBox(L, d), d); })[0];
+      if (th) { tsel = tkey(th); sel = null; var lo2 = (D.lay = D.lay || {})[tsel] || (D.lay[tsel] = { dx: 0, dy: 0, k: 1 }); pick(); return go({ k: 'text', o: lo2, x: q.x, y: q.y, dx0: lo2.dx, dy0: lo2.dy }); }
+      if (sel || tsel) { sel = null; tsel = ''; pick(); }
+      /* 4. the window's edge moves it; inside it the photo moves */
+      if (W) {
+        var band = m * 0.03, inW = inside(q, W, d, band), deep = inside(q, { x: W.x + band, y: W.y + band, w: W.w - 2 * band, h: W.h - 2 * band }, d);
+        if (inW && !deep) { wlive = { x: W.x / d.w, y: W.y / d.h, w: W.w / d.w, h: W.h / d.h }; return go({ k: 'win', gx: q.x - wlive.x, gy: q.y - wlive.y }); }
+      }
+      if (view === 'photo') { var H = FS.hole(d); go({ k: 'photo', x: q.x * d.w, y: q.y * d.h, dx: PZ.dx, dy: PZ.dy, hw: H.w, hh: H.h }); }
     });
     cv.addEventListener('pointermove', function (e) {
-      if (photoDrag) { var p0 = pt(e), dd = P.doc; PZ.dx = photoDrag.dx + (p0.x * dd.w - photoDrag.x) / photoDrag.hw; PZ.dy = photoDrag.dy + (p0.y * dd.h - photoDrag.y) / photoDrag.hh; render(); return; }
-      if (!drag) return; var q = pt(e); drag.o.x = Math.max(0, Math.min(1, q.x - drag.dx)); drag.o.y = Math.max(0, Math.min(1, q.y - drag.dy)); render(); });
-    cv.addEventListener('pointerup', function () { photoDrag = null; if (drag) { drag = null; changed(); } });
+      if (!drag) { if (P) cv.style.cursor = cursorAt(pt(e)); return; }
+      var q = pt(e), d = P.doc, g = drag;
+      if (g.k === 'photo') { PZ.dx = g.dx + (q.x * d.w - g.x) / g.hw; PZ.dy = g.dy + (q.y * d.h - g.y) / g.hh; }
+      else if (g.k === 'deco') { g.o.x = Math.max(0, Math.min(1, q.x - g.dx)); g.o.y = Math.max(0, Math.min(1, q.y - g.dy)); }
+      else if (g.k === 'deco-size') { g.o.w = Math.max(0.04, Math.min(1.2, g.w0 * Math.hypot(q.x * d.w - g.o.x * d.w, q.y * d.h - g.o.y * d.h) / Math.max(1, g.r0))); }
+      else if (g.k === 'text') { g.o.dx = g.dx0 + q.x - g.x; g.o.dy = g.dy0 + q.y - g.y; }
+      else if (g.k === 'text-size') { g.o.k = Math.max(0.3, Math.min(4, g.k0 * Math.hypot(q.x * d.w - g.cx, q.y * d.h - g.cy) / Math.max(1, g.r0))); }
+      else if (g.k === 'win') { wlive.x = Math.max(0, Math.min(1 - wlive.w, q.x - g.gx)); wlive.y = Math.max(0, Math.min(1 - wlive.h, q.y - g.gy)); }
+      else if (g.k === 'win-size') { var x = Math.max(0, Math.min(1, q.x)), y = Math.max(0, Math.min(1, q.y)); wlive = { x: Math.min(x, g.ax), y: Math.min(y, g.ay), w: Math.max(0.08, Math.abs(x - g.ax)), h: Math.max(0.08, Math.abs(y - g.ay)) }; }
+      render();
+    });
+    function end() {
+      var g = drag; drag = null; if (!g) return;
+      if (g.k === 'win' || g.k === 'win-size') { var w = wlive; wlive = null; imFromPage(w); return; }
+      if (g.k !== 'photo') changed();
+    }
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    function cursorAt(q) {
+      var d = P.doc, W = imActive() ? FS.hole(d) : null;
+      if (W) { var cs = [[W.x, W.y], [W.x + W.w, W.y], [W.x, W.y + W.h], [W.x + W.w, W.y + W.h]]; for (var i = 0; i < 4; i++) if (near(q, cs[i][0], cs[i][1], d)) return i === 0 || i === 3 ? 'nwse-resize' : 'nesw-resize'; }
+      if (D.deco.some(function (o) { var b = decoBox(o, d); return b && inside(q, b, d); }) || texts(d).some(function (L) { return inside(q, textBox(L, d), d); })) return 'move';
+      if (W) { var band = Math.min(d.w, d.h) * 0.03; if (inside(q, W, d, band) && !inside(q, { x: W.x + band, y: W.y + band, w: W.w - 2 * band, h: W.h - 2 * band }, d)) return 'move'; }
+      return view === 'photo' ? 'grab' : 'default';
+    }
     cv.addEventListener('wheel', function (e) {
-      if (view !== 'photo') return; e.preventDefault();
-      PZ.s = Math.max(0.5, Math.min(3, PZ.s * (e.deltaY < 0 ? 1.08 : 1 / 1.08))); $('#pz-s').value = Math.round(PZ.s * 100); $('#pz-s-o').textContent = Math.round(PZ.s * 100) + '%'; render();
+      if (view !== 'photo') return; e.preventDefault(); var f = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+      if (tsel && D.lay && D.lay[tsel]) { D.lay[tsel].k = Math.max(0.3, Math.min(4, D.lay[tsel].k * f)); render(); clearTimeout(cv._wt); cv._wt = setTimeout(changed, 400); return; }
+      PZ.s = Math.max(0.5, Math.min(3, PZ.s * f)); pzOut(); render();
     }, { passive: false });
   })();
 
@@ -201,6 +271,7 @@
     $('#inv-pal').innerHTML = D.palette.map(function (c) { return '<i style="--c:' + c + '" title="' + c + '"></i>'; }).join('');
     $('#inv-apply').disabled = false; swatches();
     $('#pieces').innerHTML = '<p class="hint">ה־AI מחפש קישוטים בהזמנה…</p>';
+    IM = null; FS.invWindow = null; imCreate('smart');
   }
   function readInvite() {
     $('#inv-status').innerHTML = '<span class="spin"></span> ה־AI קורא את ההזמנה…';
@@ -310,6 +381,7 @@
     var webp = canvas.toDataURL('image/webp', 0.9), src = /^data:image\/webp/.test(webp) ? webp : canvas.toDataURL('image/png');
     var key = 'inv' + FS.uid();
     return FS.addUserFrame(src, name, false).then(function (u) {
+      PNGS.filter(function (x) { return /^inv/.test(x.key); }).forEach(function (x) { var o = FS.USER_FRAMES[x.id]; if (o) { delete FS.IMGS[o.src]; delete FS.USER_FRAMES[x.id]; } });
       PNGS = PNGS.filter(function (x) { return !/^inv/.test(x.key); }); PNGS.push({ id: u.id, key: key, name: name, for: [] });
       D.invFrame = { key: key, src: src, name: name }; D.frame = 'png:' + key; D.fmt = fmt;
       if (D.deco.some(function (o) { return o.auto; })) D.deco = D.deco.filter(function (o) { return !o.auto; });
@@ -376,31 +448,60 @@
     }).catch(function () { FS.busy(); FS.toast('לא הצלחתי לפתוח את הקובץ'); });
   });
   /* the invitation itself as the magnet: the window where the owner marked it, the magnet size closest to the invitation */
-  var imShape = 'round', IM = null, imT = 0;
+  var imShape = 'round', imEdge = 'line', IM = null, imT = 0;
   var IM_DEF = { x: 0.17, y: 0.2, w: 0.66, h: 0.44 };
-  $$('[data-im]').forEach(function (b) { b.addEventListener('click', function () { imShape = b.dataset.im; $$('[data-im]').forEach(function (x) { x.classList.toggle('on', x === b); }); if (IM) { IM.shape = imShape; imSoon(0); } }); });
-  function imBuild(first) {
-    var f = IM.f, k = 1800 / Math.max(f.w, f.h), W = Math.round(f.w * k), H = Math.round(f.h * k);
-    var r = FS.inviteAsMagnet(invImg, W, H, IM.rect, IM.shape);
-    FS.invWindow = Object.assign({}, IM.rect);
-    if (first || !AIF.length || AIF[0] !== IM.entry) { IM.entry = { canvas: r.canvas, fmt: f.id }; AIF.unshift(IM.entry); } else IM.entry.canvas = r.canvas;
-    drawAIF();
-    return useInvCanvas(r.canvas, f.id, 'ההזמנה כמגנט');
-  }
-  /* each change rebuilds the magnet a moment after the last move, so dragging stays smooth */
-  function imSoon(ms) { if (!IM) return; clearTimeout(imT); imT = setTimeout(function () { imBuild(false); }, ms == null ? 160 : ms); }
-  $('#im-go').addEventListener('click', function () {
-    if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
+  function opt(attr, v) { $$('[' + attr + ']').forEach(function (x) { x.classList.toggle('on', x.getAttribute(attr) === v); }); }
+  $$('[data-im]').forEach(function (b) { b.addEventListener('click', function () { imShape = b.dataset.im; opt('data-im', imShape); if (IM) { IM.shape = imShape; imSoon(0); } }); });
+  $$('[data-edge]').forEach(function (b) { b.addEventListener('click', function () { imEdge = b.dataset.edge; opt('data-edge', imEdge); if (IM) { IM.edge = imEdge; imSoon(0); } }); });
+  /* the magnet size closest to the invitation's proportions, and the window's proportions on the invitation for a photo */
+  function imFormat() {
     var ar = (invImg.naturalWidth || invImg.width) / (invImg.naturalHeight || invImg.height), best = null;
     FMTS.forEach(function (f) { var d = Math.abs(Math.log((f.w / f.h) / ar)); if (!best || d < best.d) best = { f: f, d: d }; });
-    FS.busy('הופך את ההזמנה למגנט…');
+    return best.f;
+  }
+  function imPlace(kind) {
+    var ar = (invImg.naturalWidth || invImg.width) / (invImg.naturalHeight || invImg.height), port = ar < 1;
+    var aspect = port ? 0.8 : 1.3;   /* a photo-shaped window: 4:5 on a tall invitation, about 4:3 on a wide one */
+    function sized(area) { var w = Math.sqrt(area * aspect / ar), h = w * ar / aspect; if (w > 0.9) { h *= 0.9 / w; w = 0.9; } if (h > 0.9) { w *= 0.9 / h; h = 0.9; } return { w: w, h: h }; }
+    if (kind === 'smart') return FS.invSmartWindow(invImg, aspect, 0.34);
+    var z = sized(kind === 'big' ? 0.62 : 0.36);
+    return { x: (1 - z.w) / 2, y: kind === 'top' ? 0.08 : kind === 'bottom' ? 0.92 - z.h : (1 - z.h) / 2, w: z.w, h: z.h };
+  }
+  function imBuild(first) {
+    if (!IM || !invImg) return Promise.resolve();
+    var f = IM.f, k = 1800 / Math.max(f.w, f.h), W = Math.round(f.w * k), H = Math.round(f.h * k);
+    var r = FS.inviteAsMagnet(invImg, W, H, IM.rect, IM.shape, IM.edge);
+    IM.map = r.map; FS.invWindow = Object.assign({}, IM.rect);
+    if (first || !AIF.length || AIF[0] !== IM.entry) { IM.entry = { canvas: r.canvas, fmt: f.id }; AIF.unshift(IM.entry); } else IM.entry.canvas = r.canvas;
+    drawAIF(); imShow();
+    return useInvCanvas(r.canvas, f.id, 'ההזמנה כמגנט').then(function () { IM.key = D.invFrame.key; render(); });
+  }
+  /* each change rebuilds the magnet a moment after the last one, so sliders stay smooth */
+  function imSoon(ms) { if (!IM) return; clearTimeout(imT); imT = setTimeout(function () { imBuild(false); }, ms == null ? 160 : ms); }
+  /* a window moved on the magnet (page fractions) back onto the invitation */
+  function imFromPage(w) {
+    if (!IM || !IM.map || !w) return render(); var M = IM.map;
+    var x = (w.x - M.ox) / M.sw, y = (w.y - M.oy) / M.sh, ww = w.w / M.sw, hh = w.h / M.sh;
+    x = Math.max(0, x); y = Math.max(0, y); ww = Math.min(1 - x, ww); hh = Math.min(1 - y, hh);
+    IM.rect = { x: x, y: y, w: ww, h: hh }; imShow(); imBuild(false);
+  }
+  function imCreate(kind) {
+    if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
+    FS.busy('יוצר את המגנט מההזמנה…');
     setTimeout(function () {
-      IM = { f: best.f, rect: Object.assign({}, FS.invWindow || IM_DEF), shape: imShape };
-      D.names = ''; D.date = ''; D.line = '';   /* the invitation already carries its own names and date */
-      imShow(); $('#im-state').textContent = '✓ המגנט מוכן. את החלון מגדילים, מקטינים ומזיזים למטה, או גוררים אותו על ההזמנה.';
-      imBuild(true).then(function () { FS.toast('💌 ההזמנה הפכה למגנט. עכשיו אפשר להגדיל, להקטין ולהזיז את החלון, וגם לעשות זום לתמונה שבפנים.', 6500); });
+      IM = { f: imFormat(), rect: kind ? imPlace(kind) : Object.assign({}, FS.invWindow || imPlace('smart')), shape: imShape, edge: imEdge };
+      D.names = ''; D.date = ''; D.line = ''; D.lay = {};   /* the invitation already carries its own names and date */
+      $('#im-state').textContent = '✓ המגנט מוכן. גוררים את החלון בפינות או בקצה שלו, ישירות על המגנט או על ההזמנה.';
+      imBuild(true).then(function () { FS.toast('💌 המגנט מההזמנה מוכן. אפשר להזיז ולשנות גודל לחלון, לתמונה, לטקסטים ולקישוטים.', 6500); });
     }, 30);
-  });
+  }
+  $('#im-go').addEventListener('click', function () { imCreate(IM ? null : 'smart'); });
+  $$('[data-place]').forEach(function (b) { b.addEventListener('click', function () {
+    if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
+    opt('data-place', b.dataset.place);
+    if (!IM) return imCreate(b.dataset.place);
+    IM.rect = imPlace(b.dataset.place); imShow(); imSoon(0);
+  }); });
   ['w', 'h', 'x', 'y'].forEach(function (k) {
     $('#im-' + k).addEventListener('input', function () {
       if (!IM) return; var r = IM.rect, v = this.value / 100, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
@@ -417,7 +518,6 @@
   }
   $('#im-bigger').addEventListener('click', function () { imScale(1.1); });
   $('#im-smaller').addEventListener('click', function () { imScale(1 / 1.1); });
-  $('#im-center').addEventListener('click', function () { if (!IM) return; var r = IM.rect; r.x = (1 - r.w) / 2; r.y = (1 - r.h) / 2; imShow(); imSoon(0); });
   /* the photo inside the window: bigger or smaller and moved, on the preview (the studio does the same for every real photo) */
   function pzOut() { $('#pz-s').value = Math.round(PZ.s * 100); $('#pz-s-o').textContent = Math.round(PZ.s * 100) + '%'; }
   $('#pz-s').addEventListener('input', function () { PZ.s = this.value / 100; pzOut(); render(); });
