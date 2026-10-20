@@ -274,7 +274,7 @@
       '<span class="cal-key"><i class="k-deal"></i>אירוע סגור <i class="k-rq"></i>בקשה ממתינה <i class="k-busy"></i>סימנת תפוס</span></div><div class="cal" id="cal"></div><div id="cal-day"></div>' +
       '<section class="adm-card"><h3>⚙️ זמינות</h3><div class="adm-row"><label class="adm-f"><span>כמה אירועים אני יכול לקבל באותו יום</span><div class="adm-in"><input type="number" min="1" max="10" id="cal-per" value="' + esc(num(c.settings().perDay) || 1) + '"></div></label><button class="btn gold small" id="cal-per-save">💾 שמירה</button></div>' +
       '<p class="hint">תאריך עם מספר האירועים הזה (עסקאות שנסגרו או ששולמה בהן מקדמה) מופיע באתר כתפוס. ימים שאתה לא עובד בהם: ב"📅 תאריכים תפוסים".</p></section>' +
-      '<section class="adm-card"><h3>📆 היומן בטלפון (Google / Apple)</h3><p class="hint">קישור פרטי שהיומן שלך קורא ממנו את האירועים והבקשות, ומתעדכן לבד. ב־Google Calendar במחשב: ⚙️ הגדרות ← "הוספת יומן" ← "מכתובת URL" ← מדביקים. מי שיש לו את הקישור רואה את האירועים, אז לא משתפים אותו.</p><div class="adm-row" id="cal-link"></div></section>');
+      '<section class="adm-card"><h3>📆 סנכרון עם היומן של המייל שלך</h3><p class="hint">לחיצה אחת מחברת את היומן הזה ל־Google Calendar שלך. הקישור פרטי: מי שיש לו אותו רואה את האירועים, אז לא משתפים אותו.</p><div id="cal-link"></div></section>');
     function cellItems(iso) {
       var out = [];
       c.deals().forEach(function (d) { if (holds(d) && d.date === iso) out.push({ k: 'deal', t: (d.client || {}).name || 'אירוע', d: d }); });
@@ -305,15 +305,18 @@
     }
     function link() {
       var box = $('#cal-link'), k = c.calKey();
-      if (!k) { box.innerHTML = '<button class="btn gold small" id="cal-mk">🔗 יצירת קישור ליומן</button>'; $('#cal-mk').addEventListener('click', mk); return; }
+      if (!k) { box.innerHTML = '<button class="btn gold" id="cal-mk">📅 חיבור היומן ל־Google Calendar של המייל שלי</button>'; $('#cal-mk').addEventListener('click', function () { mk(true); }); return; }
       ACC.apiBase().then(function (u) {
-        var url = u + '/frame-cal?k=' + k;
-        box.innerHTML = '<input readonly dir="ltr" value="' + esc(url) + '" id="cal-url" class="grow"><button class="btn gold small" id="cal-copy">📋 העתקה</button><button class="btn line small" id="cal-mk">🔄 קישור חדש (הישן יפסיק)</button>';
+        var url = u + '/frame-cal?k=' + k, webcal = url.replace(/^https:/, 'webcal:'), gcal = 'https://calendar.google.com/calendar/render?cid=' + encodeURIComponent(webcal);
+        box.innerHTML = '<div class="cal-sync"><a class="btn gold" id="cal-google" href="' + esc(gcal) + '" target="_blank" rel="noopener">📅 הוספה ל־Google Calendar</a><a class="btn line" href="' + esc(webcal) + '">🍏 Apple / Outlook</a></div>' +
+          '<p class="hint">נפתח Google Calendar של המייל שמחובר בדפדפן (devopsdevopshaim@gmail.com), ולוחצים "הוספה". כל עסקה, בקשה ותאריך תפוס יופיעו שם, גם בטלפון, ומתעדכנים לבד (Google מרענן יומנים כאלה כל כמה שעות).</p>' +
+          '<details><summary>הקישור עצמו</summary><div class="cal-raw"><input readonly dir="ltr" value="' + esc(url) + '" id="cal-url" class="grow"><button class="btn gold small" id="cal-copy">📋 העתקה</button><button class="btn line small" id="cal-mk">🔄 קישור חדש (הישן יפסיק)</button></div></details>';
+        if (link.open) { link.open = false; window.open(gcal, '_blank', 'noopener'); }
         $('#cal-copy').addEventListener('click', function () { var i = $('#cal-url'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { FS.toast('📋 הועתק'); }, function () { document.execCommand('copy'); FS.toast('📋 הועתק'); }); });
         $('#cal-mk').addEventListener('click', function () { if (confirm('ליצור קישור חדש? היומן שמחובר לקישור הישן יפסיק להתעדכן.')) mk(); });
       });
     }
-    function mk() { ACC.call('cal-key').then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); c.setCalKey(r.calKey); link(); }); }
+    function mk(open) { ACC.call('cal-key').then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); c.setCalKey(r.calKey); link.open = open === true; link(); }); }
     $('#cal-prev').addEventListener('click', function () { var d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 2, 1); ym = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); draw(); });
     $('#cal-next').addEventListener('click', function () { var d = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 1); ym = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); draw(); });
     $('#cal-today').addEventListener('click', function () { ym = new Date().toISOString().slice(0, 7); draw(); });

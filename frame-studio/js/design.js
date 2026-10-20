@@ -226,7 +226,7 @@
       if (!start) return; var q = pt(e); rect = { x: Math.min(start.x, q.x), y: Math.min(start.y, q.y), w: Math.abs(q.x - start.x), h: Math.abs(q.y - start.y) };
       mark.hidden = false; mark.style.left = rect.x * 100 + '%'; mark.style.top = rect.y * 100 + '%'; mark.style.width = rect.w * 100 + '%'; mark.style.height = rect.h * 100 + '%';
     });
-    boxEl.addEventListener('pointerup', function () { start = null; $('#inv-cut').disabled = !(rect && rect.w > 0.02 && rect.h > 0.02); });
+    boxEl.addEventListener('pointerup', function () { start = null; var ok = !!(rect && rect.w > 0.02 && rect.h > 0.02); $('#inv-cut').disabled = !ok; if (ok) { FS.invWindow = Object.assign({}, rect); var st = $('#im-state'); if (st) st.textContent = '✓ סימנתם את מקום התמונה. עכשיו בוחרים צורה ולוחצים.'; } });
     $('#inv-cut').addEventListener('click', function () {
       if (!rect) return; var c = FS.cutPiece(invImg, [rect.y * 1000, rect.x * 1000, (rect.y + rect.h) * 1000, (rect.x + rect.w) * 1000]);
       PIECES.unshift({ label: 'גזירה שלי', c: c }); drawPieces(); mark.hidden = true; rect = null; this.disabled = true;
@@ -336,6 +336,22 @@
       AIF.unshift({ canvas: r.canvas, fmt: fmt }); drawAIF();
       return useInvCanvas(r.canvas, fmt, 'מסגרת מההזמנה').then(function () { FS.toast('🖼️ המסגרת נכנסה. את השמות והתאריך מוסיפים בלשונית "טקסט".', 6000); });
     }).catch(function () { FS.busy(); FS.toast('לא הצלחתי לפתוח את הקובץ'); });
+  });
+  /* the invitation itself as the magnet: the window where the owner marked it, the magnet size closest to the invitation */
+  var imShape = 'round';
+  $$('[data-im]').forEach(function (b) { b.addEventListener('click', function () { imShape = b.dataset.im; $$('[data-im]').forEach(function (x) { x.classList.toggle('on', x === b); }); }); });
+  $('#im-go').addEventListener('click', function () {
+    if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
+    var ar = (invImg.naturalWidth || invImg.width) / (invImg.naturalHeight || invImg.height), best = null;
+    FMTS.forEach(function (f) { var d = Math.abs(Math.log((f.w / f.h) / ar)); if (!best || d < best.d) best = { f: f, d: d }; });
+    var f = best.f, k = 1800 / Math.max(f.w, f.h), W = Math.round(f.w * k), H = Math.round(f.h * k);
+    FS.busy('הופך את ההזמנה למגנט…');
+    setTimeout(function () {
+      var r = FS.inviteAsMagnet(invImg, W, H, FS.invWindow || null, imShape);
+      AIF.unshift({ canvas: r.canvas, fmt: f.id }); drawAIF();
+      D.names = ''; D.date = ''; D.line = '';   /* the invitation already carries its own names and date */
+      useInvCanvas(r.canvas, f.id, 'ההזמנה כמגנט').then(function () { FS.toast(FS.invWindow ? '💌 ההזמנה הפכה למגנט, עם חלון לתמונה במקום שסימנתם.' : '💌 ההזמנה הפכה למגנט. החלון במרכז; כדי לבחור מקום אחר מסמנים אותו על ההזמנה ולוחצים שוב.', 6000); });
+    }, 30);
   });
   $('#ai-port').addEventListener('click', function () { aiFrame(/^(magnet|m69|m710)$/.test(D.fmt) ? D.fmt : 'magnet'); });
   $('#ai-land').addEventListener('click', function () { aiFrame('magnetL'); });
