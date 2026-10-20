@@ -76,6 +76,11 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
 ## Admin-only studio, calendar sync, the invitation as the magnet (Oct 2026)
 - **The studio opens only for the owner** (`js/gate.js`, `css/gate.css`). `<body class="gated">` hides everything until `FS.account.isAdmin()`. A device signed in as admin opens at once, even offline at an event. `FS.account.me()` then checks with the server, and a signed-out, revoked or non-admin session closes it. Anyone else gets `FS.account.form(..., { adminOnly: true })`.
   - This hides the tool; the protection itself is on the server, since business data needs an admin token there. The public site no longer links to the studio.
+- **Two screens in the admin** (`js/admin-views.js`): "⚙️ מסך מנהל" and "👁 מסך לקוח". The customer screen shows the site as customers see it (main site, showcase or designer) in a frame, at desktop or phone width.
+- **Admin locked out:** the admin password comes from the GitHub secret ADMIN_PASSWORD. Never write the password in code or commits.
+  - When the secret's hash changes, the server resets the admin password to it and clears lock-outs.
+  - `RESET` in `.github/scripts/cloudflare-deploy.mjs` (now 'v2') changes that hash once for the same secret value. Bump it, then run the Cloudflare deploy after the owner sets the secret.
+  - The emailed "forgot password" needs BREVO_API_KEY or RESEND_API_KEY, and none is set.
 - **Calendar sync** (`admin-biz.js`, `#cal-link`): "📅 הוספה ל־Google Calendar" opens `calendar.google.com/calendar/render?cid=webcal://…/frame-cal?k=…`, which subscribes the private feed in the signed-in Gmail account. There is also an Apple/Outlook `webcal:` link, and the raw link sits under a fold. Google refreshes such feeds every few hours.
 - **The invitation itself as the magnet** (designer, "💌 ההזמנה עצמה היא המגנט"): the owner marks the photo's place on the invitation (the `#inv-box` selection, kept in `FS.invWindow`) and picks a shape: rect, round, oval or arch.
   - `FS.inviteAsMagnet(img, W, H, rect, shape)` keeps the invitation untouched, cuts the window, and adds a fine edge in the invitation's darkest tone.

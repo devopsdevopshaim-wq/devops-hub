@@ -75,7 +75,8 @@ main { counter-reset: sec; }
 .sec > .eyebrow::after { content: ''; flex: 0 0 56px; height: 1px; background: var(--foil); opacity: .8; order: -0; }
 .sec > h2 { text-align: start; font-size: clamp(38px, 5.6vw, 82px); line-height: 1.02; font-weight: 500; letter-spacing: -.025em; margin-bottom: clamp(36px, 5vw, 64px); color: var(--ivory); text-wrap: balance; }
 .sec-lead { font-size: clamp(17px, 1.4vw, 20px); color: var(--ivory-dim); max-width: 40em; margin: calc(clamp(36px, 5vw, 64px) * -0.55) auto clamp(36px, 4vw, 56px); }
-.sec > .sec-lead { margin-inline: auto; padding-inline-end: calc(var(--wrap) - min(var(--wrap), 100%)); }
+.sec > .sec-lead { margin-inline: auto; }
+@media (min-width: 901px) { .sec > .sec-lead { padding-inline-end: 34%; } .landing .l-hero .lead { padding-inline-end: 38%; } }
 .center { text-align: center; }
 .note { color: var(--ivory-dim); font-size: 14.5px; }
 .sec > p.note.center { max-width: var(--wrap); margin-inline: auto; }
@@ -343,7 +344,7 @@ input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.8) sepia(.
 .landing .sec > .eyebrow::before { content: none; }
 .landing .sec > .eyebrow { counter-increment: none; }
 .landing .l-hero h1 { font: 500 clamp(46px, 7vw, 104px)/1 var(--display); letter-spacing: -.035em; margin: 6px auto 26px; max-width: var(--wrap); text-wrap: balance; }
-.landing .l-hero .lead { margin-inline: auto; max-width: var(--wrap); padding-inline-end: max(0px, calc(var(--wrap) - 36em)); }
+.landing .l-hero .lead { margin-inline: auto; max-width: var(--wrap); }
 .landing .l-hero .cta-row, .landing .l-end .cta-row { justify-content: flex-start; }
 .landing .l-hero .cta-row { max-width: var(--wrap); }
 .l-list { max-width: var(--wrap); gap: 0; border-top: 1px solid rgba(169,134,76,.4); counter-reset: li; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: clamp(20px, 4vw, 60px); }
@@ -396,6 +397,12 @@ input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.8) sepia(.
   .sec { padding: 76px 16px; }
   .sec > h2 { font-size: clamp(36px, 10.6vw, 46px); }
   .work-grid { gap: 22px 12px; }
+  .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .g-item { padding: 18px 10px 14px; gap: 10px; }
+  .mag-w canvas { max-height: 190px !important; }
+  .g-item figcaption b { font-size: 17px; }
+  .g-item figcaption span { font-size: 10px; letter-spacing: .1em; }
+  .g-item .btn.small { padding: 6px 12px; font-size: 13px; min-height: 40px; }
   .w figcaption { flex-direction: column; gap: 2px; }
   .w figcaption b { font-size: 18px; }
   .w figcaption span { font-size: 10px; letter-spacing: .12em; }
@@ -422,3 +429,6 @@ input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.8) sepia(.
   .lux-rv { opacity: 1; transform: none; }
   .btn.gold:hover { background-position: 100% 0; }
 }
+/* landing pages: one start-aligned editorial column, like the main site */
+.landing .sec > h2 { text-align: start; }
+.landing .sec > .note.center { text-align: start; }

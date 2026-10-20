@@ -37,8 +37,11 @@ const secrets = {
   CALLMEBOT_APIKEY: (process.env.CALLMEBOT_APIKEY || '').trim(), CALLMEBOT_PHONE: (process.env.CALLMEBOT_PHONE || '').trim()
 };
 if (ADMIN_PASSWORD.length >= 8) {
-  // the same secret gives the same hash on every deploy, so a deploy does not look like a new password (which would sign the admin out everywhere)
-  const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-v1').digest('hex').slice(0, 32);
+  // the same secret gives the same hash on every deploy, so a deploy does not look like a new password (which would sign the admin out everywhere).
+  // RESET changes the hash once: the next deploy then puts the admin password back to the ADMIN_PASSWORD secret (and clears lock-outs),
+  // even when the secret's value is the same as before. Bump it when the owner is locked out and has set the secret.
+  const RESET = 'v2';
+  const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-' + RESET).digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
 for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
