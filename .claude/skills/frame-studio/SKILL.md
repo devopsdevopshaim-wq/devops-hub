@@ -86,6 +86,8 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - `FS.inviteAsMagnet(img, W, H, rect, shape)` keeps the invitation untouched, cuts the window, and adds a fine edge in the invitation's darkest tone.
   - The magnet format is the one closest to the invitation's proportions. The designer's names, date and line are cleared, because the invitation has its own.
   - The AI frame and ChatGPT/Gemini routes stay below it.
+  - After it is made, the window stays editable (`IM` in design.js: format, rect, shape). The "📐 גודל ומקום החלון" sliders (width, height, centre x/y), the ➖/➕ buttons and "למרכז" change it. The `#inv-sel` box on the invitation can be dragged to move it, and its corner handle resizes it. Changing the shape also rebuilds. Each change rebuilds through `inviteAsMagnet` and `useInvCanvas`, debounced 160ms. The current version replaces its own thumbnail in `#ai-frames` instead of adding one per move.
+  - "🔍 התמונה בתוך החלון" is a preview-only zoom and offset of the sample or own photo (`PZ`, applied in `build()`): a slider, dragging on the preview where there is no ornament, and the mouse wheel. Real photos get the same control in the studio (pinch, wheel, `#pzoom`).
 
 ## Showcase page (`show.html`, Oct 2026)
 A designed landing page for customers, linked from the site's nav ("✨ החוויה"). Its look: a fridge door at night, with enamel #EEF0F3, night #14101F, horseshoe-magnet red #E5383B, steel and foil gold. Type is Karantina for display, Assistant for body text and Rubik 900 for the letter magnets.
