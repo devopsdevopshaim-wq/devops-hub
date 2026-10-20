@@ -9,8 +9,14 @@
   /* the tools that matter while editing, in the stage bar */
   var bar = $('.stagebar'), info = $('#stage-info');
   var quick = document.createElement('div'); quick.className = 'sb-quick';
-  ['#undo', '#redo', '#compare', '#fmt'].forEach(function (s) { var el = $(s); if (el) quick.appendChild(el); });
+  ['#undo', '#redo'].forEach(function (s) { var el = $(s); if (el) { el.classList.remove('ic'); el.classList.add('btn', 'small', 'hist'); quick.appendChild(el); } });
+  var reset = document.createElement('button'); reset.className = 'btn small hist'; reset.id = 'reset-edits'; reset.title = 'מחזיר את התמונה כמו שנכנסה: בלי עריכה, מסגרת, טקסט או AI'; reset.textContent = '⟲ איפוס'; reset.disabled = true;
+  reset.addEventListener('click', function () { if (confirm('למחוק את כל העריכה ולחזור לתמונה המקורית? (אפשר לבטל עם "ביטול")')) { FS.resetEdits(); FS.toast('⟲ חזרה לתמונה המקורית. "↶ ביטול" מחזיר את העריכה.', 4000); } });
+  quick.appendChild(reset);
+  ['#compare', '#fmt'].forEach(function (s) { var el = $(s); if (el) quick.appendChild(el); });
   bar.insertBefore(quick, info);
+  FS.emit('history');
+  var sb = $('#sizes-btn'); if (sb) sb.addEventListener('click', function () { FS.manageSizes(); });
   var act = document.createElement('div'); act.className = 'sb-act';
   ['#quick-print', '#quick-save'].forEach(function (s) { var el = $(s); if (el) { el.classList.add('small'); act.appendChild(el); } });
 
@@ -18,6 +24,7 @@
   var more = document.createElement('div'); more.className = 'sb-more';
   more.innerHTML = '<button class="btn small" id="sb-menu" aria-haspopup="true" aria-expanded="false" title="עוד">☰</button><div class="sb-menu" id="sb-menu-m" hidden></div>';
   var menu = $('#sb-menu-m', more);
+  var sz = document.createElement('button'); sz.className = 'btn'; sz.textContent = '📐 גדלים (בסיסיים ושלי)'; sz.addEventListener('click', function () { FS.manageSizes(); }); menu.appendChild(sz);
   ['#biz-btn', '#pkg-btn', '#deals-btn', '.top-actions a[href="admin.html"]', '#install'].forEach(function (s) { var el = $(s); if (el) { el.classList.remove('ghost'); menu.appendChild(el); } });
   [['./', '🧲 לאתר העסק'], ['design.html?owner', '✨ מסגרת מהזמנה'], ['../portfolio/', '🧰 כל האתרים שלי']].forEach(function (l) {
     var a = document.createElement('a'); a.className = 'btn'; a.href = l[0]; a.target = '_blank'; a.rel = 'noopener'; a.textContent = l[1]; menu.appendChild(a);

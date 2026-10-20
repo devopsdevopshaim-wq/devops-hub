@@ -47,17 +47,16 @@
 
   /* ready designs: a base frame in a colour and a look from the instant looks */
   var DESIGNS = [
-    ['wed', 'חתונה קלאסית', '💍', 'w-classic', '#ffffff', 'studio'],
-    ['lux', 'זהב יוקרתי', '👑', 'w-wide', '#c9a45c', 'golden'],
-    ['noir', 'שחור־לבן אלגנטי', '🖤', 'w-thin', '#111111', 'mono'],
-    ['retro', 'וינטג׳ חם', '🎞️', 'w-round', '#f3e9d2', 'vintage'],
-    ['bar', 'בר מצווה כחול', '✡️', 'w-band', '#1f4e8c', 'restore'],
-    ['pola', 'פולארויד', '📷', 'w-band', '#ffffff', 'cinema'],
-    ['pop', 'פופ צבעוני', '🎉', 'w-thin', '#ff3d7f', 'popart'],
-    ['love', 'רומנטי אובלי', '💗', 'w-oval', '#f6d6de', 'beauty']
+    ['wed', 'חתונה קלאסית', '💍', 'w-classic', '#ffffff', 'clean'],
+    ['lux', 'זהב יוקרתי', '👑', 'w-wide', '#c9a45c', 'warmglow'],
+    ['noir', 'שחור־לבן אלגנטי', '🖤', 'w-thin', '#111111', 'bwclassic'],
+    ['retro', 'וינטג׳ חם', '🎞️', 'w-round', '#f3e9d2', 'portra'],
+    ['bar', 'בר מצווה כחול', '✡️', 'w-band', '#1f4e8c', 'vivid'],
+    ['pola', 'פולארויד', '📷', 'w-band', '#ffffff', 'kodak'],
+    ['pop', 'פופ צבעוני', '🎉', 'w-thin', '#ff3d7f', 'vivid'],
+    ['love', 'רומנטי אובלי', '💗', 'w-oval', '#f6d6de', 'airy']
   ];
-  var MONO = ['mono', 'שחור־לבן', '🖤', { auto: true, adj: { mono: 100, contrast: 14, clarity: 10 } }];
-  function lookOf(id) { return id === 'mono' ? MONO : (FS.LOCAL_LOOKS || []).filter(function (l) { return l[0] === id; })[0]; }
+  function lookOf(id) { return (FS.LOCAL_LOOKS || []).filter(function (l) { return l[0] === id; })[0]; }
   function useDesign(d) {
     var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
     FS.useFrame({ kind: 'gen', id: d[3], color: d[4], thick: 1, opacity: 1 });
@@ -75,9 +74,9 @@
     var chain = Promise.resolve();
     list.forEach(function (p) {
       chain = chain.then(function () {
-        var a = FS.autoAdjust(p); a.sharpen = Math.max(a.sharpen || 0, 18); a.clarity = Math.max(a.clarity || 0, 8); a.vibrance = Math.max(a.vibrance || 0, 10); p.doc.photo.adj = a;
+        var a = FS.softAuto ? FS.softAuto(p) : FS.autoAdjust(p); a.sharpen = 12; a.clarity = 6; a.vibrance = 8; p.doc.photo.adj = a;
         return FS.findFaces(p, true).then(function (faces) {
-          if (faces && faces.length) p.doc.photo.skin = { amt: 35, faces: faces.map(function (f) { return { x: f.x, y: f.y, w: f.w, h: f.h }; }) };
+          if (faces && faces.length) p.doc.photo.skin = { amt: 30, faces: faces.map(function (f) { return { x: f.x, y: f.y, w: f.w, h: f.h }; }) };
           return FS.smartFit ? FS.smartFit(p, true) : null;
         }, function () { return null; }).then(function () { p.cache = {}; if (p !== FS.cur()) FS.snap(p); });
       });

@@ -78,7 +78,11 @@
   window.addEventListener('resize', function () { FS.render(); });
 
   FS.on('doc', function () { FS.render(); syncPanels(); refreshThumb(); });
-  FS.on('history', function () { var p = FS.cur(); $('#undo').disabled = !p || p.undo.length < 2; $('#redo').disabled = !p || !p.redo.length; });
+  FS.on('history', function () {
+    var p = FS.cur(), n = p ? p.undo.length - 1 : 0; $('#undo').disabled = !p || n < 1; $('#redo').disabled = !p || !p.redo.length;
+    $('#undo').innerHTML = '↶ ביטול' + (n > 0 ? ' <small>' + n + '</small>' : ''); $('#redo').textContent = '↷ חזרה';
+    var r = $('#reset-edits'); if (r) r.disabled = !p || (n < 1 && !p.origSrc);
+  });
   /* a change that should be undoable */
   FS.changed = function (fast) { var p = FS.cur(); if (!p) return; FS.render(fast); if (!fast) { FS.snap(p); syncPanels(); refreshThumb(); } };
   var commitT = null;
@@ -125,22 +129,33 @@
   $$('.tools [role=tab]').forEach(function (b) { b.addEventListener('click', function () { openTab(b.dataset.tab); }); });
 
   /* ---------- formats ---------- */
-  /* the owner's own sizes (in mm), kept in this browser: they show in every size menu */
-  /* the owner's own sizes, 3 to 5 of them (in mm), kept in this browser: they are the only sizes the studio offers */
-  var DEF_SIZES = [{ id: 's1', name: 'מגנט 5×7.5', w: 50, h: 75 }, { id: 's2', name: 'מגנט לרוחב 7.5×5', w: 75, h: 50 }, { id: 's3', name: 'תמונה 10×15', w: 100, h: 150 }];
-  if (!Array.isArray(FS.prefs.sizes) || !FS.prefs.sizes.length) { FS.prefs.sizes = DEF_SIZES.slice(); FS.savePrefs(); }
-  FS.mySizes = function () { return Array.isArray(FS.prefs.sizes) ? FS.prefs.sizes.slice() : []; };
+  /* the sizes: a fixed set of base sizes, plus as many of the owner's own as they want (in mm, kept in this browser).
+     Only these show in the size menus. */
+  FS.BASE_SIZES = [[75, 100], [100, 75], [100, 100], [100, 150], [150, 100], [150, 200], [200, 150]].map(function (s) { var n = (s[0] / 10) + '×' + (s[1] / 10); return { id: 'b' + s[0] + 'x' + s[1], name: n, w: s[0], h: s[1], base: true }; });
+  function sameMM(a, b) { return Math.abs(a.w - b.w) < 0.6 && Math.abs(a.h - b.h) < 0.6; }
+  if (!Array.isArray(FS.prefs.sizes)) FS.prefs.sizes = [];
+  if (!FS.prefs.sizesV2) {   /* the first seeded sizes go; the owner's own stay unless a base size covers them */
+    var OLD = { s1: [50, 75], s2: [75, 50], s3: [100, 150] };
+    FS.prefs.sizes = FS.prefs.sizes.filter(function (z) { var o = OLD[z.id]; return !(o && z.w === o[0] && z.h === o[1]) && !FS.BASE_SIZES.some(function (b) { return sameMM(b, z); }); });
+    FS.prefs.sizesV2 = 1; FS.savePrefs();
+  }
+  FS.userSizes = function () { return Array.isArray(FS.prefs.sizes) ? FS.prefs.sizes.slice() : []; };
+  FS.mySizes = function () { return FS.BASE_SIZES.concat(FS.userSizes()); };
   FS.saveSize = function (name, wmm, hmm) {
-    var l = FS.mySizes().filter(function (z) { return !(z.w === wmm && z.h === hmm); });
+    var hit = FS.mySizes().filter(function (z) { return z.w === wmm && z.h === hmm; })[0]; if (hit) return hit;
+    var l = FS.userSizes();
     var z = { id: 's' + FS.uid(), name: String(name || '').slice(0, 30) || (wmm / 10) + '×' + (hmm / 10), w: wmm, h: hmm }; l.push(z);
     FS.prefs.sizes = l; FS.savePrefs(); FS.emit('sizes'); return z;
   };
-  FS.delSize = function (id) { FS.prefs.sizes = FS.mySizes().filter(function (z) { return z.id !== id; }); FS.savePrefs(); FS.emit('sizes'); };
+  FS.delSize = function (id) { FS.prefs.sizes = FS.userSizes().filter(function (z) { return z.id !== id; }); FS.savePrefs(); FS.emit('sizes'); };
   FS.sizeLabel = function (z) { var d = (z.w / 10) + '×' + (z.h / 10); return z.name.indexOf(d) >= 0 ? z.name + ' ס״מ' : z.name + ' (' + d + ' ס״מ)'; };
   FS.sizeOf = function (v) { if (!/^my:/.test(v)) return null; return FS.mySizes().filter(function (z) { return 'my:' + z.id === v; })[0] || null; };
   /* which of my sizes a page is (by its true size), for the menus */
-  FS.sizeOfDoc = function (d) { var mm = FS.mmOf(d); return FS.mySizes().filter(function (z) { return Math.abs(z.w - mm[0]) < 0.6 && Math.abs(z.h - mm[1]) < 0.6; })[0] || null; };
-  function fillFormats(sel) { sel.innerHTML = FS.mySizes().map(function (z) { return '<option value="my:' + z.id + '">' + FS.esc(FS.sizeLabel(z)) + '</option>'; }).join(''); }
+  FS.sizeOfDoc = function (d) { var mm = FS.mmOf(d); return FS.mySizes().filter(function (z) { return sameMM(z, { w: mm[0], h: mm[1] }); })[0] || null; };
+  function fillFormats(sel) {
+    function opts(l) { return l.map(function (z) { return '<option value="my:' + z.id + '">' + FS.esc(FS.sizeLabel(z)) + '</option>'; }).join(''); }
+    sel.innerHTML = '<optgroup label="גדלים בסיסיים">' + opts(FS.BASE_SIZES) + '</optgroup>' + (FS.userSizes().length ? '<optgroup label="⭐ הגדלים שלי">' + opts(FS.userSizes()) + '</optgroup>' : '');
+  }
   function syncFmt() {
     var p = FS.cur(), sel = $('#fmt'); if (!p) return;
     var z = FS.sizeOfDoc(p.doc); if (z) { sel.value = 'my:' + z.id; return; }
@@ -151,34 +166,35 @@
   function fillAll() {
     var b = $('#fmt-new').value;
     fillFormats($('#fmt')); fillFormats($('#fmt-new'));
-    $('#fmt').insertAdjacentHTML('beforeend', '<option value="manage">⚙️ ניהול הגדלים שלי…</option>');
+    $('#fmt').insertAdjacentHTML('beforeend', '<option value="manage">＋ הוספת גודל / ניהול הגדלים…</option>');
     if (b && FS.sizeOf(b)) $('#fmt-new').value = b;
     syncFmt();
   }
   fillAll(); FS.on('sizes', fillAll); FS.on('doc', syncFmt);
-  if (!FS.sizeOf(FS.prefs.fmt || '')) { FS.prefs.fmt = 'my:' + FS.mySizes()[0].id; FS.savePrefs(); }
+  if (!FS.sizeOf(FS.prefs.fmt || '')) { FS.prefs.fmt = 'my:b100x150'; FS.savePrefs(); }
   $('#fmt-new').value = FS.prefs.fmt;
   $('#fmt-new').addEventListener('change', function () { FS.prefs.fmt = this.value; FS.savePrefs(); });
-  /* the sizes manager: name, width and height in cm, as many as the owner wants */
+  /* the sizes manager: the base sizes (fixed) and the owner's own, any number, name + width + height in cm */
   FS.manageSizes = function () {
-    var list = FS.mySizes().map(function (z) { return Object.assign({}, z); });
-    var body = FS.dialog('📐 הגדלים שלי', '<p class="hint">מוסיפים כמה גדלים שרוצים: רק הגדלים ששמרת יופיעו בכל התפריטים, והם נשמרים בתוכנה.</p><div id="sz-rows"></div><button class="btn wide" id="sz-add">＋ גודל</button><button class="btn primary wide" id="sz-save">💾 שמירה</button>');
+    var list = FS.userSizes().map(function (z) { return Object.assign({}, z); });
+    var body = FS.dialog('📐 גדלים', '<p class="hint">הגדלים הבסיסיים קבועים. מתחתם מוסיפים כמה גדלים שרוצים (רוחב × גובה בס״מ), והם נשמרים בתוכנה ומופיעים בכל תפריטי הגודל.</p>' +
+      '<h3>גדלים בסיסיים</h3><div class="sz-base">' + FS.BASE_SIZES.map(function (z) { return '<span>' + z.name + '</span>'; }).join('') + '</div>' +
+      '<h3>⭐ הגדלים שלי</h3><div id="sz-rows"></div><button class="btn wide" id="sz-add">＋ הוספת גודל</button><button class="btn primary wide" id="sz-save">💾 שמירה</button>');
     function rows() {
-      $('#sz-rows', body).innerHTML = list.map(function (z, i) { return '<div class="sz-row" data-i="' + i + '"><input class="sz-n" maxlength="30" value="' + FS.esc(z.name) + '" placeholder="שם"><label>רוחב<input class="sz-w" type="number" min="1" max="100" step="0.1" value="' + (z.w / 10) + '"></label><label>גובה<input class="sz-h" type="number" min="1" max="100" step="0.1" value="' + (z.h / 10) + '"></label><button class="btn small danger sz-del" title="מחיקה">🗑</button></div>'; }).join('');
+      $('#sz-rows', body).innerHTML = list.length ? list.map(function (z, i) { return '<div class="sz-row" data-i="' + i + '"><input class="sz-n" maxlength="30" value="' + FS.esc(z.name) + '" placeholder="שם (לא חובה)"><label>רוחב<input class="sz-w" type="number" min="1" max="100" step="0.1" value="' + (z.w / 10) + '"></label><label>גובה<input class="sz-h" type="number" min="1" max="100" step="0.1" value="' + (z.h / 10) + '"></label><button class="btn small danger sz-del" title="מחיקה">🗑</button></div>'; }).join('') : '<p class="hint">עוד אין גדלים משלך. לוחצים "＋ הוספת גודל".</p>';
       $$('.sz-row', body).forEach(function (r) {
         var z = list[Number(r.dataset.i)];
         $('.sz-n', r).addEventListener('input', function () { z.name = this.value; });
         $('.sz-w', r).addEventListener('input', function () { z.w = Math.round(Number(this.value) * 10); });
         $('.sz-h', r).addEventListener('input', function () { z.h = Math.round(Number(this.value) * 10); });
-        $('.sz-del', r).addEventListener('click', function () { if (list.length <= 1) return FS.toast('צריך לפחות גודל אחד'); list.splice(Number(r.dataset.i), 1); rows(); });
+        $('.sz-del', r).addEventListener('click', function () { list.splice(Number(r.dataset.i), 1); rows(); });
       });
     }
-    $('#sz-add', body).addEventListener('click', function () { list.push({ id: 's' + FS.uid(), name: 'גודל חדש', w: 60, h: 90 }); rows(); });
+    $('#sz-add', body).addEventListener('click', function () { list.push({ id: 's' + FS.uid(), name: '', w: 60, h: 90 }); rows(); var n = $$('.sz-n', body); n[n.length - 1].focus(); });
     $('#sz-save', body).addEventListener('click', function () {
-      var ok = list.filter(function (z) { return z.w > 9 && z.h > 9 && z.w <= 1000 && z.h <= 1000; });
-      if (!ok.length) return FS.toast('רוחב וגובה בס״מ');
+      var ok = list.filter(function (z) { return z.w > 9 && z.h > 9 && z.w <= 1000 && z.h <= 1000 && !FS.BASE_SIZES.some(function (b) { return sameMM(b, z); }); });
       ok.forEach(function (z) { z.name = String(z.name || '').trim().slice(0, 30) || (z.w / 10) + '×' + (z.h / 10); });
-      FS.prefs.sizes = ok; FS.savePrefs(); FS.emit('sizes'); FS.closeDialog(); FS.toast('✔ ' + ok.length + ' גדלים נשמרו');
+      FS.prefs.sizes = ok; FS.savePrefs(); FS.emit('sizes'); FS.closeDialog(); FS.toast('✔ ' + FS.mySizes().length + ' גדלים בתפריט (' + ok.length + ' משלך)');
     });
     rows();
   };

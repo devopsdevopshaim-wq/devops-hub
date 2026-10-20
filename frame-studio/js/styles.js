@@ -284,35 +284,43 @@
   /* AI looks that run fully in the browser, instantly, with no network: each is a recipe of the photo pipeline's own
      tools (auto light, a style, adjustments, skin smoothing on the faces MediaPipe finds locally) */
   FS.LOCAL_LOOKS = [
-    ['restore', 'שחזור ושיפור', '🪄', { auto: true, adj: { sharpen: 30, clarity: 18, vibrance: 12 } }],
-    ['studio', 'פורטרט סטודיו', '📸', { auto: true, skin: 45, adj: { clarity: -6, vignette: 22, exposure: 4 } }],
-    ['beauty', 'עור חלק וזוהר', '✨', { auto: true, skin: 60, adj: { highlights: -12, temp: 6 } }],
-    ['cinema', 'קולנועי', '🎬', { preset: 'cinema' }],
-    ['golden', 'שעת זהב', '🌅', { preset: 'golden' }],
-    ['vintage', 'צילום מ־1920', '🎞️', { style: 'oldphoto', amt: 100 }],
-    ['80s', 'שנות ה־80', '📼', { style: 'lomo', amt: 80, adj: { grain: 18 } }],
-    ['pencil', 'רישום עיפרון', '✏️', { style: 'sketch', amt: 100 }],
-    ['coloring', 'דף צביעה', '🖍️', { style: 'lineart', amt: 100 }],
-    ['comicpop', 'קומיקס', '💥', { style: 'comic', amt: 100 }],
-    ['mangaink', 'מנגה', '🗾', { style: 'manga', amt: 100 }],
-    ['popart', 'פופ־ארט', '🟨', { style: 'pop', amt: 100 }],
-    ['street', 'גרפיטי', '🎨', { style: 'graffiti', amt: 100 }],
-    ['glass', 'ויטראז׳', '⛪', { style: 'stained', amt: 100 }],
-    ['tiles', 'פסיפס', '🧩', { style: 'mosaic', amt: 100 }],
-    ['game', 'משחק וידאו', '👾', { style: 'pixel', amt: 100 }],
-    ['neonlight', 'ניאון', '💡', { style: 'neon', amt: 90 }],
-    ['goldprint', 'תחריט זהב', '🪙', { style: 'engrave', amt: 100 }],
-    ['blueprint', 'שרטוט', '📐', { style: 'blueprint', amt: 100 }],
-    ['heat', 'מצלמה תרמית', '🌡️', { style: 'thermal', amt: 100 }]
+    ['natural', 'טבעי מקצועי', '🙂', { auto: true, skin: 30, adj: { clarity: 6, vibrance: 8, sharpen: 15 } }],
+    ['clean', 'פורטרט נקי', '📸', { auto: true, skin: 45, adj: { highlights: -10, shadows: 12, vibrance: 6, sharpen: 12, vignette: 10 } }],
+    ['airy', 'בהיר ואוורירי', '🤍', { auto: true, skin: 35, adj: { exposure: 10, contrast: -12, highlights: -18, shadows: 20, fade: 10, saturation: -8, temp: 4, tone: 'airy' } }],
+    ['highkey', 'הייקי סטודיו', '💡', { auto: true, skin: 40, adj: { exposure: 14, contrast: -10, whites: 15, shadows: 25, saturation: -6 } }],
+    ['warmglow', 'חם וזוהר', '🌤️', { auto: true, skin: 40, adj: { temp: 5, highlights: -12, shadows: 10, vibrance: 8, tone: 'portra' } }],
+    ['vivid', 'צבעים חיים לאירוע', '🎉', { auto: true, adj: { vibrance: 22, clarity: 12, contrast: 8, sharpen: 15 } }],
+    ['night', 'תיקון צילום לילה', '🌙', { auto: true, skin: 25, adj: { shadows: 25, highlights: -20, clarity: 8, temp: -4, sharpen: 10 } }],
+    ['portra', 'פילם Portra', '🎞️', { auto: true, skin: 25, adj: { contrast: -6, fade: 12, saturation: -6, temp: 6, grain: 8, tone: 'portra' } }],
+    ['fuji', 'פילם Fuji', '🍃', { auto: true, adj: { contrast: 8, saturation: -4, fade: 8, grain: 8, tone: 'fuji' } }],
+    ['kodak', 'Kodak Gold', '🌅', { auto: true, adj: { temp: 4, vibrance: 8, contrast: 6, grain: 8, tone: 'kodak' } }],
+    ['cinema', 'קולנועי עדין', '🎬', { auto: true, adj: { contrast: 12, saturation: -10, highlights: -10, vignette: 18, blacks: -6, tone: 'moody' } }],
+    ['moody', 'מודי ואלגנטי', '🌑', { auto: true, adj: { exposure: -6, contrast: 18, highlights: -25, shadows: 6, saturation: -18, vignette: 28, tone: 'moody' } }],
+    ['matte', 'מט אלגנטי', '🪶', { auto: true, adj: { fade: 22, contrast: -8, saturation: -10, blacks: 12 } }],
+    ['bwclassic', 'שחור־לבן קלאסי', '⚫', { auto: true, adj: { mono: 100, contrast: 18, clarity: 10 } }],
+    ['bwfilm', 'שחור־לבן פילם', '🎞', { auto: true, adj: { mono: 100, contrast: 28, grain: 14, blacks: -10, vignette: 15 } }],
+    ['bwwarm', 'שחור־לבן חם', '🟤', { auto: true, adj: { mono: 100, contrast: 14, tone: 'bwwarm' } }],
+    ['restore', 'שחזור תמונה ישנה', '🪄', { auto: true, adj: { sharpen: 30, clarity: 18, vibrance: 12, contrast: 6 } }]
   ];
+  /* the looks sit on a gentle light correction: part of auto's exposure, white/black points and white balance, and none
+     of its colour boost or sharpening, so the grade stays clean and skin stays natural */
+  FS.softAuto = function (p) {
+    var a = FS.autoAdjust(p), o = Object.assign({}, FS.ADJ0), K = { exposure: 0.6, whites: 0.5, blacks: 0.5, contrast: 0.35, shadows: 0.6, highlights: 0.6, temp: 0.5, tint: 0.5 };
+    Object.keys(K).forEach(function (k) { o[k] = Math.round((a[k] || 0) * K[k]); }); return o;
+  };
   FS.applyLook = function (p, look) {
-    var r = look[3], d = p.doc.photo, base = r.auto ? FS.autoAdjust(p) : Object.assign({}, FS.ADJ0);
+    var r = look[3], d = p.doc.photo, base = r.auto ? FS.softAuto(p) : Object.assign({}, FS.ADJ0);
     if (r.preset) { var q = (FS.PRESETS || []).filter(function (x) { return x[0] === r.preset; })[0]; if (q) { base = FS.presetAdj(q[2], 1); d.preset = q[0]; } }
-    Object.keys(r.adj || {}).forEach(function (k) { base[k] = (base[k] || 0) + r.adj[k]; });
+    Object.keys(r.adj || {}).forEach(function (k) { base[k] = k === 'tone' ? r.adj[k] : (base[k] || 0) + r.adj[k]; });
     d.adj = base; d.style = r.style ? { id: r.style, amt: r.amt || 100 } : null;
     if (!r.skin) { d.skin = null; return Promise.resolve(p); }
     return FS.findFaces(p).then(function (faces) { d.skin = faces && faces.length ? { amt: r.skin, faces: faces.map(function (f) { return { x: f.x, y: f.y, w: f.w, h: f.h }; }) } : null; return p; }, function () { d.skin = null; return p; });
   };
+  /* the adjustments a look gives (for its preview tile) */
+  function lookAdj(look, auto) {
+    var r = look[3], a = r.auto && auto ? Object.assign({}, auto) : Object.assign({}, FS.ADJ0);
+    Object.keys(r.adj || {}).forEach(function (k) { a[k] = k === 'tone' ? r.adj[k] : (a[k] || 0) + r.adj[k]; }); return a;
+  }
   function runLook(look) {
     var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
     FS.busy('✨ ' + look[1] + '…');
@@ -350,10 +358,16 @@
       var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + s[1] + '</span>';
       b.addEventListener('click', function () { runLocal(s); }); la.appendChild(b);
     });
-    if (a && !a.children.length) FS.LOCAL_LOOKS.forEach(function (s) {
-      var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + s[1] + '</span>';
-      b.addEventListener('click', function () { runLook(s); }); a.appendChild(b);
-    });
+    if (a && a.dataset.for !== (p ? p.id + ':' + p.src.length : '-')) {
+      a.dataset.for = p ? p.id + ':' + p.src.length : '-'; a.innerHTML = '';
+      var auto = p ? FS.softAuto(p) : null;
+      FS.LOCAL_LOOKS.forEach(function (s) {
+        var b = document.createElement('button'); b.className = 'tile look'; b.dataset.id = s[0];
+        if (p) b.appendChild(FS.presetThumb(p, lookAdj(s, auto))); else { var e = document.createElement('i'); e.className = 'emo'; e.textContent = s[2]; b.appendChild(e); }
+        var t = document.createElement('span'); t.textContent = s[1]; b.appendChild(t);
+        b.addEventListener('click', function () { runLook(s); }); a.appendChild(b);
+      });
+    }
   };
   function runAI(prompt, label) {
     var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');

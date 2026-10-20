@@ -162,8 +162,8 @@
     redraw(l); FS.toast('📐 גודל חדש ל־' + l.length + ' תמונות');
   }
   menu('#gv-fmt', '#gv-fmt-m', function (m) {
-    m.innerHTML = '<p class="gv-mh">⭐ הגדלים שלי ל־' + picked().length + ' תמונות</p>' + FS.mySizes().map(function (z) { return '<button data-my="' + z.id + '">' + esc(FS.sizeLabel(z)) + '</button>'; }).join('') +
-      '<button id="gv-size-man">⚙️ ניהול הגדלים שלי…</button>';
+    m.innerHTML = '<p class="gv-mh">📐 גודל ל־' + picked().length + ' תמונות</p>' + FS.mySizes().map(function (z) { return '<button data-my="' + z.id + '">' + esc(FS.sizeLabel(z)) + '</button>'; }).join('') +
+      '<button id="gv-size-man">＋ הוספת גודל / ניהול…</button>';
     $$('[data-my]', m).forEach(function (b) { b.addEventListener('click', function () { var z = FS.sizeOf('my:' + b.dataset.my); m.hidden = true; if (z) setSize('cm', z.w, z.h); }); });
     $('#gv-size-man', m).addEventListener('click', function () { m.hidden = true; FS.manageSizes(); });
   });
