@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<script src="../portfolio/js/failover.js"></script>
+<title>פריים מגנטים · על המקרר של כל אורח</title>
+<meta name="description" content="פריים מגנטים: צלם/ת באירוע, הדפסה במקום ומגנט ביד תוך דקה. חתונות, בר ובת מצווה, בריתות ואירועי חברה. מרכז, השרון, ירושלים והשפלה." />
+<meta name="theme-color" content="#14101F" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=Assistant:wght@400;600;700;800&family=Rubik:wght@500;700;900&display=swap" />
+<link rel="stylesheet" href="css/show.css" />
+<link rel="stylesheet" href="../portfolio/css/mobile.css" />
+<script src="../portfolio/js/track.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן</a>
+<div class="flash" aria-hidden="true"></div>
+
+<header class="top" id="top">
+  <a class="brand" href="./" aria-label="פריים מגנטים, לאתר הראשי">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 4h8v16a4 4 0 0 0 8 0V4h8v16a12 12 0 0 1-24 0Z" fill="var(--red)"/><path d="M8 4h8v6H8zM24 4h8v6h-8z" fill="var(--steel)"/></svg>
+    <b>פריים מגנטים</b>
+  </a>
+  <nav class="nav" aria-label="ניווט בדף">
+    <a href="#minute">איך זה עובד</a><a href="#wall">מגנטים</a><a href="#packages">חבילות</a><a href="#faq">שאלות</a>
+  </nav>
+  <a class="pill magnetic" href="#book">בודקים תאריך</a>
+</header>
+
+<main id="main">
+  <!-- the fridge door -->
+  <section class="fridge" id="fridge" aria-labelledby="hero-title">
+    <div class="handle" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <p class="eyebrow">מגנטים לאירועים · מודפסים במקום</p>
+      <h1 id="hero-title" class="letters" aria-label="על המקרר">
+        <span class="w"><span class="lm" style="--c:#E5383B">ע</span><span class="lm" style="--c:#F2B33D">ל</span></span><span class="w"><span class="lm" style="--c:#2F7DE1">ה</span><span class="lm" style="--c:#2BA86A">מ</span><span class="lm" style="--c:#E5383B">ק</span><span class="lm" style="--c:#8A55D8">ר</span><span class="lm" style="--c:#F2B33D">ר</span></span>
+      </h1>
+      <p class="sub"><strong>של כל אורח.</strong> צלם/ת באירוע, הדפסה במקום, ומגנט ביד תוך דקה. הרגע הכי יפה של הערב נשאר במטבח לשנים.</p>
+      <div class="ctas"><a class="btn red magnetic" href="#book">בודקים תאריך פנוי</a><a class="btn ghost" href="#minute">איך זה עובד ↓</a></div>
+    </div>
+    <div class="board" id="board" aria-label="מגנטים לדוגמה. אפשר לגרור אותם.">
+      <img class="mag" src="show/m0.webp" alt="מגנט חתונה: נועה ודניאל" style="--x:6%;--y:8%;--r:-7deg;--w:30%" draggable="false" />
+      <img class="mag" src="show/m4.webp" alt="מגנט ברית: ברוך הבא אריאל" style="--x:38%;--y:2%;--r:4deg;--w:28%" draggable="false" />
+      <img class="mag" src="show/m1.webp" alt="מגנט בר מצווה: יונתן" style="--x:66%;--y:12%;--r:-3deg;--w:29%" draggable="false" />
+      <img class="mag" src="show/mp.webp" alt="מגנט עם צילום אמיתי" style="--x:18%;--y:46%;--r:5deg;--w:30%" draggable="false" />
+      <img class="mag" src="show/m6.webp" alt="מגנט אירוע חברה: כנס השנתי" style="--x:52%;--y:44%;--r:-6deg;--w:28%" draggable="false" />
+      <p class="drag-hint" aria-hidden="true">גוררים אותם, כמו על מקרר אמיתי ✋</p>
+    </div>
+  </section>
+
+  <!-- a minute, scrubbed by scroll -->
+  <section class="minute" id="minute" aria-labelledby="minute-title">
+    <div class="minute-pin">
+      <div class="minute-copy">
+        <p class="eyebrow">מהפלאש למקרר</p>
+        <h2 id="minute-title" class="display">דקה אחת.</h2>
+        <div class="clock" aria-hidden="true"><span id="clock">0:00</span><i></i></div>
+        <ol class="steps">
+          <li data-t="0:00"><b>פלאש</b><span>הצלם/ת שלנו תופס/ת את הרגע, בלי להעמיד ובלי לעכב.</span></li>
+          <li data-t="0:15"><b>מסגרת</b><span>התמונה נכנסת למסגרת של האירוע שלכם, עם השמות והתאריך.</span></li>
+          <li data-t="0:40"><b>הדפסה</b><span>מדפסת מקצועית בעמדה מעוצבת מדפיסה בצבעים חיים.</span></li>
+          <li data-t="1:00"><b>ביד</b><span>מגנט מוכן, והאורח ממשיך לרקוד. הביתה הוא ייקח אותו.</span></li>
+        </ol>
+      </div>
+      <div class="stage" aria-hidden="true">
+        <div class="printer"><i class="slot"></i><span>פריים</span></div>
+        <div class="card">
+          <img class="photo" src="show/p-original.webp" alt="" />
+          <img class="framed" src="show/mp.webp" alt="" />
+          <i class="burst"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- one photo, many worlds -->
+  <section class="worlds" id="worlds" aria-labelledby="worlds-title">
+    <div class="wrap">
+      <p class="eyebrow">מסגרות וסגנונות</p>
+      <h2 id="worlds-title" class="display">אותה תמונה. עשרה עולמות.</h2>
+      <p class="lead">מסגרת בעיצוב של האירוע, ואם בא לכם משהו מטורף: סגנונות AI שמציירים את התמונה מחדש ושומרים על הפנים.</p>
+      <div class="worlds-box">
+        <div class="viewer"><img id="w-base" src="show/p-original.webp" alt="תמונה מקורית" /><img id="w-top" src="show/p-original.webp" alt="" /></div>
+        <div class="pick"><p class="pick-h">לוחצים על סגנון, והתמונה מתחלפת</p>
+        <div class="chips" role="radiogroup" aria-label="בחירת סגנון">
+          <button role="radio" aria-checked="true" data-s="original">מקורי</button>
+          <button role="radio" aria-checked="false" data-s="cartoon">סרט מצויר</button>
+          <button role="radio" aria-checked="false" data-s="comic">קומיקס</button>
+          <button role="radio" aria-checked="false" data-s="manga">מנגה</button>
+          <button role="radio" aria-checked="false" data-s="pop">פופ־ארט</button>
+          <button role="radio" aria-checked="false" data-s="oldphoto">1920</button>
+          <button role="radio" aria-checked="false" data-s="neon">ניאון</button>
+          <button role="radio" aria-checked="false" data-s="stained">ויטראז׳</button>
+          <button role="radio" aria-checked="false" data-s="sketch">עיפרון</button>
+          <button role="radio" aria-checked="false" data-s="mosaic">פסיפס</button>
+        </div>
+        <p class="pick-note">את הסגנונות האלה מוסיפים לחבילה, ומקבלים הדמיה לפני האירוע.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- the fridge wall: one magnet per kind of event -->
+  <section class="wall" id="wall" aria-labelledby="wall-title">
+    <div class="wrap">
+      <p class="eyebrow">לכל אירוע</p>
+      <h2 id="wall-title" class="display">מה כבר תלוי אצל אחרים</h2>
+      <ul class="wall-grid">
+        <li><img src="show/m0.webp" alt="" loading="lazy" /><span class="tape">חתונה</span></li>
+        <li><img src="show/m1.webp" alt="" loading="lazy" /><span class="tape">בר / בת מצווה</span></li>
+        <li><img src="show/m4.webp" alt="" loading="lazy" /><span class="tape">ברית</span></li>
+        <li><img src="show/m3.webp" alt="" loading="lazy" /><span class="tape">יום הולדת</span></li>
+        <li><img src="show/m5.webp" alt="" loading="lazy" /><span class="tape">חינה</span></li>
+        <li><img src="show/m6.webp" alt="" loading="lazy" /><span class="tape">אירוע חברה</span></li>
+        <li><img src="show/m2.webp" alt="" loading="lazy" /><span class="tape">אירוסין</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- packages -->
+  <section class="packages" id="packages" aria-labelledby="pk-title">
+    <div class="wrap">
+      <p class="eyebrow">חבילות</p>
+      <h2 id="pk-title" class="display">בוחרים כמה שעות של רגעים</h2>
+      <div class="tags" id="tags"></div>
+      <p class="note">כל החבילות כוללות צלם/ת, עמדת הדפסה ועיצוב מסגרת אישי. מחיר סופי לפי מיקום ותאריך.</p>
+    </div>
+  </section>
+
+  <!-- the film -->
+  <section class="film" id="film" aria-labelledby="film-title">
+    <div class="wrap">
+      <p class="eyebrow">30 שניות</p>
+      <h2 id="film-title" class="display">ככה זה נראה</h2>
+      <div class="screen"><video src="media/promo.mp4" poster="media/promo.jpg" controls preload="none" playsinline></video></div>
+    </div>
+  </section>
+
+  <!-- questions -->
+  <section class="faq" id="faq" aria-labelledby="faq-title">
+    <div class="wrap narrow">
+      <h2 id="faq-title" class="display">שאלות ששואלים אותנו</h2>
+      <div id="faq-list"></div>
+    </div>
+  </section>
+
+  <!-- book -->
+  <section class="book" id="book" aria-labelledby="book-title">
+    <div class="horseshoe" aria-hidden="true"><svg viewBox="0 0 200 200"><path d="M40 20h40v80a20 20 0 0 0 40 0V20h40v80a60 60 0 0 1-120 0Z" fill="#E5383B"/><path d="M40 20h40v26H40zM120 20h40v26h-40z" fill="#C9CED6"/><path d="M48 24h6v18h-6zM128 24h6v18h-6z" fill="#fff" opacity=".5"/></svg></div>
+    <div class="wrap">
+      <h2 id="book-title" class="display big">התאריך שלכם עוד פנוי?</h2>
+      <p class="lead">שולחים תאריך ומקום, ותוך כמה שעות חוזרים אליכם עם זמינות והדמיה של המסגרת.</p>
+      <div class="ctas center">
+        <a class="btn red magnetic xl" id="wa" href="https://wa.me/972544979771?text=%D7%94%D7%99%D7%99%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%91%D7%93%D7%95%D7%A7%20%D7%AA%D7%90%D7%A8%D7%99%D7%9A%20%D7%9C%D7%9E%D7%92%D7%A0%D7%98%D7%99%D7%9D" target="_blank" rel="noopener">וואטסאפ: בודקים תאריך</a>
+        <a class="btn ghost light" href="tel:0544979771">054-4979771</a>
+        <a class="btn ghost light" href="index.html#contact">טופס הזמנה</a>
+      </div>
+      <dl class="facts"><div><dt>איפה</dt><dd>מרכז, השרון, ירושלים והשפלה</dd></div><div><dt>מתי עונים</dt><dd>א׳–ה׳ 9:00–20:00 · מוצ״ש בתיאום</dd></div><div><dt>עיצוב בעצמכם</dt><dd><a href="design.html">מעצבים מסגרת אונליין ←</a></dd></div></dl>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>© פריים מגנטים</span>
+  <nav aria-label="קישורים"><a href="./">האתר הראשי</a><a href="index.html#packages">חבילות</a><a href="design.html">עיצוב מסגרת</a><a href="accessibility.html">הצהרת נגישות</a></nav>
+</footer>
+
+<script src="vendor/gsap/gsap.min.js"></script>
+<script src="vendor/gsap/ScrollTrigger.min.js"></script>
+<script src="js/show.js"></script>
+</body>
+</html>

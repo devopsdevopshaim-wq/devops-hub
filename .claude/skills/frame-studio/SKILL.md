@@ -57,6 +57,16 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - Elements are added on the 🧩 tab and deleted with 🗑 or the Delete key; "ניקוי כל האלמנטים" removes them all.
 - **Videos.** `media/explainer.mp4` (60s) and `media/promo.mp4` (30s), with posters, sit in the site's `#videos` section. They were made with HyperFrames in `videos/frame-explainer` and `videos/frame-styles-promo`, and the music bed is synthesized in code.
 
+## Showcase page (`show.html`, Oct 2026)
+A designed landing page for customers, linked from the site's nav ("✨ החוויה"). Its look: a fridge door at night, with enamel #EEF0F3, night #14101F, horseshoe-magnet red #E5383B, steel and foil gold. Type is Karantina for display, Assistant for body text and Rubik 900 for the letter magnets.
+- **Hero:** the headline "על המקרר" is coloured plastic letter magnets. A camera flash plays on arrival, and photo magnets (`show/m*.webp`, the site's sample magnets) snap on and can be dragged.
+- **"דקה אחת":** pinned and scrubbed by scroll (GSAP ScrollTrigger). A stopwatch runs 0:00 to 1:00 through flash, frame, print and in hand, and the card goes into the printer and comes out framed.
+- **Styles:** one photo in ten styles, with a clip-path wipe (`show/p-*.webp`).
+- **The fridge wall:** a magnet per event type, each with a label-maker tape.
+- **Packages and FAQ:** price tags held by magnets. Both are read from `business.json`, with a built-in fallback.
+- **The rest:** the promo film, the booking block (WhatsApp, phone, form, designer), and magnetic CTAs.
+- GSAP 3.14.2 is vendored in `vendor/gsap/`. Without it, or with reduced motion, every section shows its final state.
+
 ## Clean editor, offline AI tab, printer and event summary (Oct 2026)
 - **No top row (`js/shell.js`).** `body.clean-shell` hides `.standalone-bar` and `.topbar`.
   - Undo / redo, ◐ original and `#fmt` move into the stage bar (`.sb-quick`); 🖨️ print, 💾 save and ☰ (`#sb-menu`: business details, packages, deals, site admin, install, business site, invitation frame) go to `.sb-act`.
