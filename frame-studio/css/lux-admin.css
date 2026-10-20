@@ -456,3 +456,17 @@ body.pv-on .adm { grid-template-columns: 210px minmax(0, 1fr) minmax(360px, 42%)
 .adm-client-stage { --fw: 100%; display: grid; justify-items: center; }
 .adm-client-stage iframe { width: var(--fw); max-width: 100%; height: calc(100vh - 170px); min-height: 520px; border: 1px solid rgba(214,183,126,.25); border-radius: 16px; background: #0D0B10; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8); transition: width .35s cubic-bezier(.2,.8,.2,1); }
 @media (max-width: 700px) { .adm-views button { padding: 6px 10px; font-size: 13px; } .adm-client-open { margin-inline-start: 0; } }
+
+/* who is signing in: customer (default) or the owner */
+.adm-who-tabs { display: flex; padding: 4px; border-radius: 999px; border: 1px solid rgba(214,183,126,.28); background: rgba(255,255,255,.035); gap: 4px; margin: 0 0 22px; }
+.adm-who-tabs button { flex: 1; border: 0; background: transparent; color: #BDB3A3; font: 600 15px 'Assistant', sans-serif; padding: 10px 14px; border-radius: 999px; cursor: pointer; }
+.adm-who-tabs button[aria-selected=true] { background: linear-gradient(115deg,#A9864C 0%,#F3DDA6 28%,#C9A35F 50%,#FFF1C9 66%,#A9864C 100%); color: #0D0B10; }
+.adm-who-tabs button:focus-visible { outline: 2px solid #D6B77E; outline-offset: 2px; }
+/* a customer sees only the customer screen */
+.adm-client-mode .adm-views, .adm-client-mode #state, .adm-client-mode #preview-btn, .adm-client-mode #save, .adm-client-mode #publish { display: none !important; }
+.adm-client-mode #app { display: none !important; }
+.vis-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 6px 0 14px; }
+.vis-stats div { border: 1px solid rgba(214,183,126,.22); border-radius: 14px; padding: 12px 14px; display: grid; gap: 2px; }
+.vis-stats b { font: 700 28px 'Frank Ruhl Libre', serif; color: #F3DDA6; line-height: 1; }
+.vis-stats span { font-size: 13px; color: #BDB3A3; }
+.vis-scroll { max-height: 420px; overflow: auto; }

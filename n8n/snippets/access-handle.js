@@ -219,6 +219,62 @@ switch (b.action) {
   // Anyone may open an account: the first (initial) password arrives by email, no step by the admin; the admin sees it in the list (and is told at the first
   // sign-in) and controls what the client sees afterwards (sites, days, suspension). New accounts see every open site (never the hidden ones)
   // for SIGNUP_DAYS days. Someone who already has an account just gets an initial password, as with "forgot".
+  // ---- פריים מגנטים: a customer comes in without a password. With an email: a 6-digit code is emailed, and the right code opens a
+  // customer session on that device (the mailbox is the proof). With a phone only, or when no code can be sent: the customer
+  // enters the public screens as a visitor, and the visit is recorded. Either way the owner sees who came (frameVisitors).
+  case 'frame-visit':
+  case 'frame-code': {
+    const nm = line(b.name, 60), raw = String(b.contact || b.email || '').trim();
+    const isMail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email(raw)), e = isMail ? email(raw) : '', ph = isMail ? phone(b.phone) : phone(raw);
+    if (nm.length < 2 || (!isMail && !/^0\d{8,11}$/.test(ph))) return out({ ok: false, error: 'bad-contact' }, 400);
+    if (e === ADMIN_EMAIL) return out({ ok: false, error: 'admin-use-password' }, 400);
+    if (!hit('fv-ip', IPK, 20, HOUR) || !hit('fv-all', 'all', 2000, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
+    sd.frameVisitors = sd.frameVisitors || {};
+    const key = e || 'tel:' + ph, v = sd.frameVisitors[key] || (sd.frameVisitors[key] = { email: e, phone: ph, firstAt: new Date(now).toISOString(), visits: 0, verified: false });
+    v.name = nm; if (ph) v.phone = ph; v.lastAt = new Date(now).toISOString(); v.visits = (v.visits || 0) + 1; v.ua = line(UA, 120);
+    const ks = Object.keys(sd.frameVisitors);
+    if (ks.length > 5000) { ks.sort((a, z) => Date.parse(sd.frameVisitors[a].lastAt) - Date.parse(sd.frameVisitors[z].lastAt)); delete sd.frameVisitors[ks[0]]; }
+    if (b.action === 'frame-visit' || !e) { log('לקוח נכנס למסך הלקוח', key); return out({ ok: true, step: 'in', verified: !!v.verified }); }
+    if (!hit('fc-mail', e, 4, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const code = String(parseInt(rnd(4), 16) % 1000000).padStart(6, '0');
+    sd.frameCodes = sd.frameCodes || {};
+    sd.frameCodes[e] = { h: sha256hex('fc:' + e + ':' + code), exp: now + 10 * 60000, tries: 0, name: nm, phone: ph };
+    for (const [k, c] of Object.entries(sd.frameCodes)) if (c.exp < now) delete sd.frameCodes[k];
+    log('קוד כניסה נשלח למייל', e);
+    // not soft: when the email can't go out the page hears it (mail-failed) and lets the customer in as a visitor instead
+    return out({ ok: true, step: 'code', via: 'email' }, 200, { to: e, subject: 'פריים מגנטים · קוד הכניסה שלך: ' + code,
+      text: `שלום ${nm},\n\nקוד הכניסה שלך: ${code}\n\nהקוד תקף ל־10 דקות. אם לא ביקשת אותו, אפשר להתעלם מההודעה.\n\nפריים מגנטים\n054-4979771` });
+  }
+  case 'frame-code-verify': {
+    const e = email(b.email || b.contact), code = String(b.code || '').replace(/\D/g, ''), dev = String(b.device || '');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || code.length !== 6 || !/^[a-f0-9]{32}$/.test(dev)) return out({ ok: false, error: 'bad-input' }, 400);
+    if (!hit('fcv-ip', IPK, 30, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    sd.frameCodes = sd.frameCodes || {};
+    const fc = sd.frameCodes[e];
+    if (!fc || fc.exp < now || fc.tries >= 5) { if (fc) delete sd.frameCodes[e]; return out({ ok: false, error: 'code-expired' }, 401); }
+    if (sha256hex('fc:' + e + ':' + code) !== fc.h) { fc.tries++; return out({ ok: false, error: 'bad-code', left: Math.max(0, 5 - fc.tries) }, 401); }
+    delete sd.frameCodes[e];
+    let c = sd.clients[e];
+    if (!c) {
+      if (Object.keys(sd.clients).length >= MAX_CLIENTS) return out({ ok: false, error: 'too-many-clients' }, 400);
+      c = sd.clients[e] = { email: e, name: fc.name, phone: fc.phone || '', note: 'לקוח פריים מגנטים (כניסה בקוד)', sites: ['frame'], plan: 'frame', createdAt: new Date(now).toISOString(),
+        expiresAt: null, active: true, ipLock: false, maxDevices: DEFAULT_MAX_DEVICES, selfSignup: true };
+      log('לקוח חדש נכנס בקוד למייל', e);
+    } else if (Array.isArray(c.sites) && !c.sites.includes('*') && !c.sites.includes('frame')) c.sites.push('frame');
+    if (!active(c)) return out({ ok: false, error: 'inactive' }, 403);
+    // the code proved the mailbox: this device is approved like one reached with an emailed password
+    const dh = sha256hex('dev:' + dev);
+    const r = checkDevice(c, dh, true);
+    if (r.status !== 'ok') approveByMail(c, r.d);
+    let exp = now + CLIENT_SESSION_DAYS * DAY;
+    if (c.expiresAt) exp = Math.min(exp, Date.parse(c.expiresAt));
+    const token = newSession(e, 'client', exp, { dev: dh });
+    c.lastLogin = new Date(now).toISOString();
+    if (sd.frameVisitors && sd.frameVisitors[e]) sd.frameVisitors[e].verified = true;
+    log('כניסת לקוח בקוד למייל', e);
+    return out({ ok: true, token, role: 'client', name: line(c.name, 60), exp: new Date(exp).toISOString() });
+  }
+
   case 'signup': {
     const e = email(b.email), nm = line(b.name, 60), frame = b.site === 'frame';
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2) return out({ ok: false, error: 'bad-input' }, 400);

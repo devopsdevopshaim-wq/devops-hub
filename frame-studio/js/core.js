@@ -134,12 +134,58 @@
     if (file.arrayBuffer) return file.arrayBuffer();
     return new Promise(function (ok, no) { var r = new FileReader(); r.onload = function () { ok(r.result); }; r.onerror = function () { no(r.error); }; r.readAsArrayBuffer(file); });
   }
+  /* RAW photos (CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2, PEF, SRW…): a browser can't develop RAW, but nearly every camera
+     stores a full-size JPEG of the same shot inside the file. The biggest JPEG in the file is taken, and the camera's
+     orientation (TIFF tag 0x0112) is applied, since the preview inside usually doesn't carry it. */
+  FS.RAW_EXT = /\.(cr2|cr3|crw|nef|nrw|arw|srf|sr2|dng|raf|orf|rw2|raw|pef|srw|x3f|3fr|erf|kdc|mrw|mos|iiq|rwl)$/i;
+  function rawOrientation(u8) {
+    try {
+      var le = u8[0] === 0x49 && u8[1] === 0x49, be = u8[0] === 0x4d && u8[1] === 0x4d; if (!le && !be) return 1;
+      var dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), off = dv.getUint32(4, le), n = dv.getUint16(off, le);
+      for (var i = 0; i < n; i++) { var e = off + 2 + i * 12; if (dv.getUint16(e, le) === 0x0112) return dv.getUint16(e + 8, le) || 1; }
+    } catch (x) { /* not TIFF-based (RAF, CR3) */ }
+    return 1;
+  }
+  function rawPreview(buf) {
+    var u8 = new Uint8Array(buf), best = null, i = 0, n = u8.length;
+    while (i < n - 3) {
+      if (u8[i] === 0xFF && u8[i + 1] === 0xD8 && u8[i + 2] === 0xFF) {
+        /* walk the JPEG's segments to its start-of-scan, then look for its end marker */
+        var j = i + 2, ok = false;
+        while (j < n - 4 && u8[j] === 0xFF) { var mk = u8[j + 1], len = (u8[j + 2] << 8) | u8[j + 3]; if (mk === 0xDA) { ok = true; j += 2 + len; break; } if (len < 2) break; j += 2 + len; }
+        if (ok) {
+          var k = j; while (k < n - 1 && !(u8[k] === 0xFF && u8[k + 1] === 0xD9)) k++;
+          if (k < n - 1) { var size = k + 2 - i; if (!best || size > best.size) best = { start: i, size: size }; i = k + 2; continue; }
+        }
+      }
+      i++;
+    }
+    if (!best || best.size < 20000) return null;
+    return { blob: new Blob([u8.subarray(best.start, best.start + best.size)], { type: 'image/jpeg' }), orient: rawOrientation(u8) };
+  }
+  /* a canvas turned by an EXIF orientation value (3 = 180°, 6 = 90° clockwise, 8 = 90° counter-clockwise) */
+  function orientCanvas(im, o) {
+    var w = im.naturalWidth, h = im.naturalHeight, side = o === 6 || o === 8, c = FS.canvas(side ? h : w, side ? w : h), x = c.getContext('2d');
+    if (o === 3) { x.translate(w, h); x.rotate(Math.PI); } else if (o === 6) { x.translate(h, 0); x.rotate(Math.PI / 2); } else if (o === 8) { x.translate(0, w); x.rotate(-Math.PI / 2); }
+    x.drawImage(im, 0, 0); return c;
+  }
   FS.addPhotoFile = function (file) {
     var url;
     return readFile(file).catch(function (e) { throw why(e, 'הקובץ לא נקרא מהמחשב (אולי הוא בענן, OneDrive או Google Drive, ולא הורד)'); }).then(function (buf) {
       if (!buf || !buf.byteLength) throw why('empty', 'הקובץ ריק');
       var h = new Uint8Array(buf, 0, Math.min(32, buf.byteLength)), tag = String.fromCharCode.apply(null, Array.prototype.slice.call(h, 4, 12));
-      if (/^ftyp(heic|heix|hevc|heim|heis|mif1|msf1)/.test(tag) && !SAFARI) throw why('heic', 'תמונת HEIC של אייפון, שהדפדפן הזה לא פותח. באייפון: הגדרות ← מצלמה ← תבניות ← "התאמה מרבית", או לשמור כ־JPG');
+      var isRaw = FS.RAW_EXT.test(file.name || '') || /^ftypcrx/.test(tag);
+      if (!isRaw && /^ftyp(heic|heix|hevc|heim|heis|mif1|msf1)/.test(tag) && !SAFARI) throw why('heic', 'תמונת HEIC של אייפון, שהדפדפן הזה לא פותח. באייפון: הגדרות ← מצלמה ← תבניות ← "התאמה מרבית", או לשמור כ־JPG');
+      if (isRaw) {
+        var rp = rawPreview(buf);
+        if (!rp) throw why('raw', 'קובץ RAW בלי תמונה מוכנה בתוכו. מייצאים אותו כ־JPG מהמצלמה או מ־Lightroom');
+        url = URL.createObjectURL(rp.blob);
+        return FS.loadImg(url).then(function (im) {
+          if (rp.orient !== 3 && rp.orient !== 6 && rp.orient !== 8) return im;
+          var c = orientCanvas(im, rp.orient);
+          return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.95); }).then(function (b) { URL.revokeObjectURL(url); delete IMGS[url]; url = URL.createObjectURL(b); return FS.loadImg(url); });
+        }).catch(function (e) { throw e && e.why ? e : why(e, 'לא הצלחתי לפתוח את קובץ ה־RAW'); });
+      }
       url = URL.createObjectURL(new Blob([buf], { type: file.type || 'image/jpeg' }));
       return FS.loadImg(url).catch(function (e) { throw why(e, 'הקובץ פגום או בפורמט שלא נתמך'); });
     }).then(function (im) {

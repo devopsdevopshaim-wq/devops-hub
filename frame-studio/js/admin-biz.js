@@ -382,8 +382,20 @@
       box.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     $('#cu-q').addEventListener('input', function () { q = this.value.trim(); draw(); });
-    c.onRefresh(draw);
-    draw();
+    /* who came in to the customer screen (admin.html → "כניסת לקוח"): how many, and their email or phone */
+    m.insertAdjacentHTML('afterbegin', '<section class="adm-card" id="vis-card"></section>');
+    function visits() {
+      var l = (c.visitors && c.visitors()) || [], wk = Date.now() - 7 * 864e5, day = Date.now() - 864e5;
+      var w = l.filter(function (v) { return Date.parse(v.lastAt || 0) > wk; }).length, d = l.filter(function (v) { return Date.parse(v.lastAt || 0) > day; }).length, ok = l.filter(function (v) { return v.verified; }).length;
+      var when = function (x) { return x ? new Date(x).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; };
+      $('#vis-card').innerHTML = '<h3>🚪 מי נכנס למסך הלקוח</h3><div class="vis-stats"><div><b>' + l.length + '</b><span>סה״כ נכנסו</span></div><div><b>' + d + '</b><span>ב־24 השעות האחרונות</span></div><div><b>' + w + '</b><span>בשבוע האחרון</span></div><div><b>' + ok + '</b><span>אומתו בקוד למייל</span></div></div>' +
+        (l.length ? '<div class="vis-scroll"><table class="adm-tbl"><thead><tr><th>שם</th><th>מייל / טלפון</th><th>כניסה ראשונה</th><th>אחרונה</th><th>כניסות</th><th>אימות</th><th></th></tr></thead><tbody>' + l.slice(0, 300).map(function (v) {
+          return '<tr><td><b>' + esc(v.name || '—') + '</b></td><td><small dir="ltr">' + esc(v.email || '') + '</small><small>' + esc(v.phone || '') + '</small></td><td>' + when(v.firstAt) + '</td><td>' + when(v.lastAt) + '</td><td>' + (v.visits || 0) + '</td><td>' + (v.verified ? '✔ קוד' : '—') + '</td>' +
+            '<td class="act">' + (v.phone ? '<a target="_blank" rel="noopener" href="' + esc(waLink(v.phone, 'שלום ' + (v.name || '') + ',')) + '" title="וואטסאפ">💬</a>' : '') + (v.email ? '<a href="mailto:' + esc(v.email) + '" title="מייל">✉️</a>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : '<p class="hint">עוד אף אחד לא נכנס. הקישור ללקוחות: <a href="admin.html" target="_blank" rel="noopener">admin.html</a> (גם בתפריט של האתר, "👤 כניסה").</p>');
+    }
+    c.onRefresh(function () { draw(); visits(); });
+    draw(); visits();
   };
 
   /* ---------- payment and bank details ---------- */
