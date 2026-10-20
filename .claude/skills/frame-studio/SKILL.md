@@ -71,6 +71,12 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - `FS.scoreAll` adds near-duplicates (64-bit dHash, Hamming ≤ 6); in each group only the best stays good.
   - Weak photos are listed with their reasons, and can be marked or removed.
   - `FS.slideshow(list, sec, title)` plays the best N spread over the evening: a canvas with a blurred fill, a slow move towards the faces and dissolves. ⏺ records it with MediaRecorder (mp4 where supported, otherwise webm).
+  - **Transitions:**
+    - 14 transitions sit in the `TR` table (`FS.slideTransitions`). "אקראי (מתחלף)" is the default; it shuffles without repeating a transition twice in a row.
+    - Slides are prerendered once (`makeFrame`), with the blur made by drawing small and stretching back.
+    - Controls: a transition select with a live preview, transition length 0.4–2.5s, seconds per photo, and the same select in the player bar. They are saved under `fs-slide-prefs`.
+    - The recording captures the same transitions.
+  - `scoreAll` yields to the browser about every 14ms (requestIdleCallback), so scoring hundreds of photos doesn't freeze the page.
 - `FS.busy(msg, onStop)` shows ⏹ on the busy sign, which lives in `.stage` so it shows on the photos screen too.
 
 ## Admin-only studio, calendar sync, the invitation as the magnet (Oct 2026)

@@ -14,8 +14,18 @@
 /* the slideshow player */
 .ss { position: fixed; inset: 0; z-index: 300; background: #000; }
 .ss canvas { width: 100%; height: 100%; display: block; }
-.ss-bar { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: rgba(13,11,16,.72); border: 1px solid rgba(214,183,126,.25); backdrop-filter: blur(10px); opacity: .25; transition: opacity .3s; }
+.ss-bar { position: absolute; bottom: 18px; left: 0; right: 0; margin-inline: auto; width: max-content; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 8px 12px; max-width: calc(100vw - 32px); box-sizing: border-box; border-radius: 28px; background: rgba(13,11,16,.72); border: 1px solid rgba(214,183,126,.25); backdrop-filter: blur(10px); opacity: .25; transition: opacity .3s; }
 .ss:hover .ss-bar, .ss-bar:focus-within { opacity: 1; }
+.ss-b, .ss-n { white-space: nowrap; flex-shrink: 0; }
 .ss-b { border: 0; background: transparent; color: #F5EFE4; font: 600 15px 'Assistant', sans-serif; padding: 8px 12px; border-radius: 999px; cursor: pointer; }
 .ss-b:hover { background: rgba(214,183,126,.16); }
 .ss-n { color: #BDB3A3; font: 500 13px 'Heebo', sans-serif; letter-spacing: .1em; padding: 0 6px; direction: ltr; }
+/* the transition picker: a 16:9 preview framed in hairline gold, and the duration bead */
+.cu-tr .cu-prev { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; margin-top: 10px; border-radius: 12px; background: #0D0B10; border: 1px solid var(--line, rgba(214,183,126,.22)); box-shadow: inset 0 1px 0 rgba(255,241,201,.07), 0 14px 30px rgba(0,0,0,.45); cursor: pointer; }
+.cu-tr .cu-prev:hover { border-color: var(--line-strong, rgba(214,183,126,.48)); }
+.cu-tr select, #cu-dur { width: 100%; }
+/* the picker inside the player's bar */
+.ss-sel { background-color: rgba(214,183,126,.08); color: #F5EFE4; border: 1px solid rgba(214,183,126,.32); border-radius: 999px; padding: 6px 12px; padding-inline-end: 30px; background-position: left 11px center; font: 600 13px 'Assistant', sans-serif; max-width: 10em; box-shadow: none; cursor: pointer; }
+.ss-sel:hover { border-color: rgba(214,183,126,.6); }
+.ss-sel option { background: #211B29; color: #F5EFE4; }
+@media (max-width: 560px) { .ss-bar { flex-wrap: wrap; bottom: 10px; gap: 2px; padding: 6px 8px; } .ss-b { padding: 7px 9px; font-size: 14px; } }
