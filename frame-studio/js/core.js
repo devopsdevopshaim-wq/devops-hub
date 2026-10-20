@@ -109,14 +109,29 @@
      arrival, to 3000px on its long side (enough for a 20x30cm print) and re-encoded as JPEG: the editor, the AI and the
      print stay fast and light, and the result still prints sharp. */
   FS.PHOTO_MAX = 3000;
+  /* The file is read into memory first. A file that can't be read (a cloud copy that isn't on the computer, a removed
+     card) fails at once with a clear reason instead of hanging the image decoder, and an iPhone HEIC photo is recognised by
+     its header. Each failure carries a Hebrew reason (err.why) that addFiles shows. */
+  var SAFARI = /^((?!chrome|chromium|android|edg).)*safari/i.test(navigator.userAgent);
+  function why(e, m) { e = e instanceof Error ? e : new Error(String(e)); e.why = m; return e; }
+  function readFile(file) {
+    if (file.arrayBuffer) return file.arrayBuffer();
+    return new Promise(function (ok, no) { var r = new FileReader(); r.onload = function () { ok(r.result); }; r.onerror = function () { no(r.error); }; r.readAsArrayBuffer(file); });
+  }
   FS.addPhotoFile = function (file) {
-    var url = URL.createObjectURL(file);
-    return FS.loadImg(url).then(function (im) {
+    var url;
+    return readFile(file).catch(function (e) { throw why(e, 'הקובץ לא נקרא מהמחשב (אולי הוא בענן, OneDrive או Google Drive, ולא הורד)'); }).then(function (buf) {
+      if (!buf || !buf.byteLength) throw why('empty', 'הקובץ ריק');
+      var h = new Uint8Array(buf, 0, Math.min(32, buf.byteLength)), tag = String.fromCharCode.apply(null, Array.prototype.slice.call(h, 4, 12));
+      if (/^ftyp(heic|heix|hevc|heim|heis|mif1|msf1)/.test(tag) && !SAFARI) throw why('heic', 'תמונת HEIC של אייפון, שהדפדפן הזה לא פותח. באייפון: הגדרות ← מצלמה ← תבניות ← "התאמה מרבית", או לשמור כ־JPG');
+      url = URL.createObjectURL(new Blob([buf], { type: file.type || 'image/jpeg' }));
+      return FS.loadImg(url).catch(function (e) { throw why(e, 'הקובץ פגום או בפורמט שלא נתמך'); });
+    }).then(function (im) {
       var max = FS.PHOTO_MAX;
       if (Math.max(im.naturalWidth, im.naturalHeight) > max || (file.size > 4000000 && !/png|webp/.test(file.type))) {
         var k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k), cx = c.getContext('2d');
         cx.imageSmoothingQuality = 'high'; cx.drawImage(im, 0, 0, c.width, c.height);
-        return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.9); }).then(function (b) { URL.revokeObjectURL(url); delete IMGS[url]; return FS.loadImg(URL.createObjectURL(b)); });
+        return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.9); }).then(function (b) { if (!b) throw why('blob', 'התמונה גדולה מדי לזיכרון של המחשב'); URL.revokeObjectURL(url); delete IMGS[url]; return FS.loadImg(URL.createObjectURL(b)); });
       }
       return im;
     }).then(function (im) {

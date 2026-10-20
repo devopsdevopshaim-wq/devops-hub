@@ -552,3 +552,10 @@ dialog[open] { animation: lx-dlg .6s var(--ease); }
   .btn.primary:hover:not(:disabled) { animation: none; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* the loading line keeps the file name on its own line; photos that didn't open, with the reason */
+#busy-msg { white-space: pre-line; text-align: center; }
+.fail-list { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 8px; max-height: 50vh; overflow: auto; }
+.fail-list li { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 12px; }
+.fail-list b { font-weight: 700; word-break: break-all; }
+.fail-list span { opacity: .8; font-size: 14px; }
