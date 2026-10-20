@@ -559,3 +559,11 @@ dialog[open] { animation: lx-dlg .6s var(--ease); }
 .fail-list li { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 12px; }
 .fail-list b { font-weight: 700; word-break: break-all; }
 .fail-list span { opacity: .8; font-size: 14px; }
+
+/* ---------- speed: no live blur behind panels (it repaints on every frame and on every grid tile); the panels are opaque
+   enough that it looked the same. The empty-screen lens stays still. */
+.app, .app *, .busy, dialog, dialog::backdrop, .dlg-head, .toast, .sb-menu { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.topbar, .stagebar, .stripbar, .gv-bar, .gv-act { background-color: rgba(13,11,16,.97); }
+.busy { background: rgba(13,11,16,.86); }
+dialog::backdrop { background: rgba(8,6,10,.8); }
+.lens { animation: none; }

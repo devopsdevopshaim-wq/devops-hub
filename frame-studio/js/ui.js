@@ -42,7 +42,7 @@
     view.style.width = Math.round(d.w * sc) + 'px'; view.style.height = Math.round(d.h * sc) + 'px';
     FS.viewScale = sc;
     var fast = Date.now() < fastUntil, max = Math.min(2400, Math.max(700, Math.round(Math.max(d.w, d.h) * sc * dpr * 1.3)));
-    FS.draw(vctx, p, { scale: sc * dpr, max: fast ? Math.min(max, 900) : max, fast: fast, sel: S.sel });
+    FS.draw(vctx, p, { scale: sc * dpr, max: fast ? Math.min(max, 640) : max, fast: fast, sel: S.sel });
     if (split) { /* the untouched photo, same size box, on the left */
       var im = FS.img(p.origSrc || p.src), k = Math.min(d.w * sc / im.naturalWidth, d.h * sc / im.naturalHeight);
       var ow = Math.round(im.naturalWidth * k), oh = Math.round(im.naturalHeight * k);
@@ -580,23 +580,52 @@
     if (onDel) { var x = document.createElement('i'); x.className = 'x'; x.textContent = '✕'; x.title = 'מחיקה'; x.addEventListener('click', function (e) { e.stopPropagation(); onDel(); }); b.appendChild(x); }
     return b;
   }
+  /* frame tiles: each preview is drawn on a small copy of the page (a frame drawn at full print size for a 130px tile was
+     the slow part), kept until the photo, the page size or the frame changes, and drawn a few at a time so the tab opens
+     at once */
+  var FP = {}, fpQueue = [], fpBusy = false;
+  function fpKey(p, ref) { return (p ? p.id + '|' + p.src + '|' + p.doc.w + 'x' + p.doc.h + '|' + JSON.stringify(p.doc.photo.adj) + '|' + JSON.stringify(p.doc.photo.style || 0) : '-') + '|' + JSON.stringify(ref); }
   function framePreview(p, ref) {
     var d = p ? p.doc : { w: 1200, h: 1800 }, k = 130 / Math.max(d.w, d.h), c = FS.canvas(d.w * k, d.h * k), x = c.getContext('2d');
-    if (p) { var tmp = { src: p.src, doc: JSON.parse(JSON.stringify(p.doc)), cache: p.cache, mask: p.mask, maskV: p.maskV }; FS.setFrame(tmp, ref, { quiet: true }); FS.draw(x, tmp, { scale: k, max: 300, fast: true }); }
+    if (p) {
+      var small = 320 / Math.max(d.w, d.h), im = FS.img(p.src);
+      var tmp = { src: p.src, doc: JSON.parse(JSON.stringify(p.doc)), cache: {}, mask: p.mask, maskV: p.maskV };
+      tmp.doc.layers = []; if (small < 1 && im) FS.applyFormat(tmp.doc, 'custom', im, d.w * small, d.h * small);
+      FS.setFrame(tmp, ref, { quiet: true }); FS.draw(x, tmp, { scale: c.width / tmp.doc.w, max: 300, fast: true });
+    }
     else { x.fillStyle = '#556'; x.fillRect(0, 0, c.width, c.height); var dd = { w: d.w, h: d.h, frame: ref, layers: [] }; x.save(); x.scale(k, k); FS.drawFrame(x, dd); x.restore(); }
     return c;
   }
+  function tileCanvas(p, ref) {
+    var key = fpKey(p, ref), d = p ? p.doc : { w: 1200, h: 1800 }, k = 130 / Math.max(d.w, d.h), c = FS.canvas(d.w * k, d.h * k);
+    if (FP[key]) c.getContext('2d').drawImage(FP[key], 0, 0);
+    else { c.classList.add('pending'); fpQueue.push({ c: c, p: p, ref: ref, key: key }); fpRun(); }
+    return c;
+  }
+  function fpRun() {
+    if (fpBusy) return; fpBusy = true;
+    (window.requestIdleCallback || function (f) { return setTimeout(f, 16); })(function () {
+      fpBusy = false; var t0 = Date.now();
+      while (fpQueue.length && Date.now() - t0 < 30) {
+        var j = fpQueue.shift(); if (!j.c.isConnected) continue;
+        try { FP[j.key] = FP[j.key] || framePreview(j.p, j.ref); j.c.getContext('2d').drawImage(FP[j.key], 0, 0); } catch (e) { /* skipped */ }
+        j.c.classList.remove('pending');
+      }
+      if (fpQueue.length) fpRun();
+    });
+  }
   function buildFrames() {
     var p = FS.cur(), g = $('#gen-frames'), u = $('#user-frames'), cur = p && p.doc.frame;
+    fpQueue = [];
     g.innerHTML = '';
     FS.GEN_FRAMES.filter(function (f) { return f.base; }).forEach(function (f) {
-      g.appendChild(frameTile(f.name, framePreview(p, { kind: 'gen', id: f.id }), cur && cur.kind === 'gen' && cur.id === f.id, function () { useFrame({ kind: 'gen', id: f.id, color: f.color, thick: 1, opacity: 1 }); }));
+      g.appendChild(frameTile(f.name, tileCanvas(p, { kind: 'gen', id: f.id }), cur && cur.kind === 'gen' && cur.id === f.id, function () { useFrame({ kind: 'gen', id: f.id, color: f.color, thick: 1, opacity: 1 }); }));
     });
     var ids = Object.keys(FS.USER_FRAMES);
     u.innerHTML = ids.length ? '' : '<p class="empty">עדיין אין. מוסיפים PNG עם חלון שקוף, או שומרים מסגרת מעוצבת מלשונית "שמירה".</p>';
     ids.forEach(function (id) {
       var f = FS.USER_FRAMES[id];
-      u.appendChild(frameTile(f.name + (f.solid ? ' ⚠' : ''), framePreview(p, { kind: 'png', id: id }), cur && cur.kind === 'png' && cur.id === id,
+      u.appendChild(frameTile(f.name + (f.solid ? ' ⚠' : ''), tileCanvas(p, { kind: 'png', id: id }), cur && cur.kind === 'png' && cur.id === id,
         function () { useFrame({ kind: 'png', id: id, opacity: 1, tint: '#d4a843', tintAmt: 0, clip: false }); if (f.solid) FS.toast('במסגרת הזאת אין אזור שקוף, אז היא מכסה את כל התמונה. כדאי לשמור אותה כ־PNG עם חלון שקוף.', 6000); },
         function () { if (confirm('למחוק את המסגרת "' + f.name + '"?')) FS.deleteUserFrame(id).then(buildFrames); }));
     });
@@ -644,8 +673,16 @@
   });
   FS.addFrameFiles = function (files) {
     var list = Array.prototype.slice.call(files || []); if (!list.length) return;
-    FS.busy('מוסיף מסגרות…');
-    Promise.all(list.map(function (f) { return FS.fileToDataURL(f).then(function (src) { return FS.addUserFrame(src, f.name.replace(/\.[^.]+$/, '')); }); })).then(function (fr) {
+    list = list.filter(function (f) { return /^image\//.test(f.type) || /\.(png|webp|jpe?g|gif)$/i.test(f.name); });
+    if (!list.length) return FS.toast('מסגרת צריכה להיות קובץ תמונה: PNG עם חלון שקוף (הכי טוב), WEBP או JPG.', 6000);
+    FS.busy('מוסיף מסגרת…');
+    /* one after another, so a big frame doesn't hold the page */
+    var fr = [], chain = Promise.resolve();
+    list.forEach(function (f, i) { chain = chain.then(function () {
+      if (list.length > 1) FS.busy('מוסיף מסגרות… ' + (i + 1) + ' מתוך ' + list.length);
+      return FS.fileToDataURL(f).then(function (src) { return FS.addUserFrame(src, f.name.replace(/\.[^.]+$/, '')); }).then(function (u) { fr.push(u); });
+    }); });
+    chain.then(function () {
       FS.busy(); buildFrames(); if (fr.length === 1 && FS.cur()) useFrame({ kind: 'png', id: fr[0].id, opacity: 1, tint: '#d4a843', tintAmt: 0, clip: false });
       FS.toast(fr.length + ' מסגרות נוספו ונשמרו בדפדפן');
     }).catch(function () { FS.busy(); FS.toast('המסגרת לא נפתחה'); });
