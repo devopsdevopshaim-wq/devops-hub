@@ -162,17 +162,10 @@
     redraw(l); FS.toast('📐 גודל חדש ל־' + l.length + ' תמונות');
   }
   menu('#gv-fmt', '#gv-fmt-m', function (m) {
-    m.innerHTML = '<p class="gv-mh">גודל ל־' + picked().length + ' תמונות</p>' + FS.FORMATS.map(function (f) { return '<button data-f="' + f.id + '">' + esc(f.name) + '</button>'; }).join('') +
-      (FS.mySizes().length ? '<p class="gv-mh">⭐ הגדלים שלי</p>' + FS.mySizes().map(function (z) { return '<button data-my="' + z.id + '">' + esc(FS.sizeLabel(z)) + '</button>'; }).join('') : '') +
-      '<div class="gv-new"><input type="number" id="gv-w" step="0.1" min="1" max="100" placeholder="רוחב ס״מ"><span>×</span><input type="number" id="gv-h" step="0.1" min="1" max="100" placeholder="גובה ס״מ"></div>' +
-      '<input id="gv-sname" maxlength="30" placeholder="שם לשמירה (לא חובה)"><button class="primary" id="gv-size-go">✔ להחיל גודל מותאם</button>';
-    $$('[data-f]', m).forEach(function (b) { b.addEventListener('click', function () { m.hidden = true; setSize(b.dataset.f); }); });
+    m.innerHTML = '<p class="gv-mh">⭐ הגדלים שלי ל־' + picked().length + ' תמונות</p>' + FS.mySizes().map(function (z) { return '<button data-my="' + z.id + '">' + esc(FS.sizeLabel(z)) + '</button>'; }).join('') +
+      '<button id="gv-size-man">⚙️ ניהול הגדלים שלי…</button>';
     $$('[data-my]', m).forEach(function (b) { b.addEventListener('click', function () { var z = FS.sizeOf('my:' + b.dataset.my); m.hidden = true; if (z) setSize('cm', z.w, z.h); }); });
-    $('#gv-size-go', m).addEventListener('click', function () {
-      var w = Number($('#gv-w', m).value), h = Number($('#gv-h', m).value); if (!(w > 0 && h > 0)) return FS.toast('רוחב וגובה בס״מ');
-      var nm = $('#gv-sname', m).value.trim(); if (nm) FS.saveSize(nm, Math.round(w * 10), Math.round(h * 10));
-      m.hidden = true; setSize('cm', w * 10, h * 10); if (nm) FS.toast('⭐ "' + nm + '" נשמר ברשימת הגדלים שלך', 4000);
-    });
+    $('#gv-size-man', m).addEventListener('click', function () { m.hidden = true; FS.manageSizes(); });
   });
   $('#gv-copies-go').addEventListener('click', function () { var n = FS.clamp(Number($('#gv-copies').value) || 1, 1, 999), l = picked(); l.forEach(function (p) { p.copies = n; }); redraw(l); FS.toast('×' + n + ' עותקים ל־' + l.length + ' תמונות'); });
   $('#gv-del').addEventListener('click', function () {

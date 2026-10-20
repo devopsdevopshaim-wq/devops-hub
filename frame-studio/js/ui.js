@@ -126,30 +126,65 @@
 
   /* ---------- formats ---------- */
   /* the owner's own sizes (in mm), kept in this browser: they show in every size menu */
-  FS.mySizes = function () { return Array.isArray(FS.prefs.sizes) ? FS.prefs.sizes : []; };
+  /* the owner's own sizes, 3 to 5 of them (in mm), kept in this browser: they are the only sizes the studio offers */
+  var MAX_SIZES = 5, DEF_SIZES = [{ id: 's1', name: 'מגנט 5×7.5', w: 50, h: 75 }, { id: 's2', name: 'מגנט לרוחב 7.5×5', w: 75, h: 50 }, { id: 's3', name: 'תמונה 10×15', w: 100, h: 150 }];
+  if (!Array.isArray(FS.prefs.sizes) || !FS.prefs.sizes.length) { FS.prefs.sizes = DEF_SIZES.slice(); FS.savePrefs(); }
+  FS.MAX_SIZES = MAX_SIZES;
+  FS.mySizes = function () { return Array.isArray(FS.prefs.sizes) ? FS.prefs.sizes.slice(0, MAX_SIZES) : []; };
   FS.saveSize = function (name, wmm, hmm) {
     var l = FS.mySizes().filter(function (z) { return !(z.w === wmm && z.h === hmm); });
-    l.push({ id: 's' + FS.uid(), name: String(name || '').slice(0, 30) || (wmm / 10) + '×' + (hmm / 10), w: wmm, h: hmm });
-    FS.prefs.sizes = l; FS.savePrefs(); FS.emit('sizes');
+    if (l.length >= MAX_SIZES) { FS.toast('אפשר עד ' + MAX_SIZES + ' גדלים. מוחקים אחד ב"ניהול הגדלים".', 5000); return null; }
+    var z = { id: 's' + FS.uid(), name: String(name || '').slice(0, 30) || (wmm / 10) + '×' + (hmm / 10), w: wmm, h: hmm }; l.push(z);
+    FS.prefs.sizes = l; FS.savePrefs(); FS.emit('sizes'); return z;
   };
   FS.delSize = function (id) { FS.prefs.sizes = FS.mySizes().filter(function (z) { return z.id !== id; }); FS.savePrefs(); FS.emit('sizes'); };
-  FS.sizeLabel = function (z) { return z.name + ' (' + (z.w / 10) + '×' + (z.h / 10) + ' ס״מ)'; };
-  function fillFormats(sel, withOrig) {
-    sel.innerHTML = FS.FORMATS.filter(function (f) { return withOrig || f.id !== 'orig'; }).map(function (f) { return '<option value="' + f.id + '">' + f.name + '</option>'; }).join('') +
-      (FS.mySizes().length ? '<optgroup label="⭐ הגדלים שלי">' + FS.mySizes().map(function (z) { return '<option value="my:' + z.id + '">' + FS.esc(FS.sizeLabel(z)) + '</option>'; }).join('') + '</optgroup>' : '');
-  }
-  function fillAll() {
-    var a = $('#fmt').value, b = $('#fmt-new').value;
-    fillFormats($('#fmt'), true); fillFormats($('#fmt-new'), true);
-    $('#fmt').insertAdjacentHTML('beforeend', '<option value="custom" hidden>לפי המסגרת</option><option value="cm">📐 גודל מותאם (ס״מ)…</option>');
-    if (a) $('#fmt').value = a; if (b) $('#fmt-new').value = b;
-  }
-  fillAll(); FS.on('sizes', fillAll);
+  FS.sizeLabel = function (z) { var d = (z.w / 10) + '×' + (z.h / 10); return z.name.indexOf(d) >= 0 ? z.name + ' ס״מ' : z.name + ' (' + d + ' ס״מ)'; };
   FS.sizeOf = function (v) { if (!/^my:/.test(v)) return null; return FS.mySizes().filter(function (z) { return 'my:' + z.id === v; })[0] || null; };
-  $('#fmt-new').value = FS.prefs.fmt || 'magnet'; if (!$('#fmt-new').value) $('#fmt-new').value = 'magnet';
+  /* which of my sizes a page is (by its true size), for the menus */
+  FS.sizeOfDoc = function (d) { var mm = FS.mmOf(d); return FS.mySizes().filter(function (z) { return Math.abs(z.w - mm[0]) < 0.6 && Math.abs(z.h - mm[1]) < 0.6; })[0] || null; };
+  function fillFormats(sel) { sel.innerHTML = FS.mySizes().map(function (z) { return '<option value="my:' + z.id + '">' + FS.esc(FS.sizeLabel(z)) + '</option>'; }).join(''); }
+  function syncFmt() {
+    var p = FS.cur(), sel = $('#fmt'); if (!p) return;
+    var z = FS.sizeOfDoc(p.doc); if (z) { sel.value = 'my:' + z.id; return; }
+    var mm = FS.mmOf(p.doc), o = $('#fmt-cur', sel) || sel.appendChild(Object.assign(document.createElement('option'), { id: 'fmt-cur' }));
+    o.value = 'cur'; o.textContent = 'נוכחי: ' + (mm[0] / 10).toFixed(1) + '×' + (mm[1] / 10).toFixed(1) + ' ס״מ'; sel.value = 'cur';
+  }
+  FS.syncFmt = syncFmt;
+  function fillAll() {
+    var b = $('#fmt-new').value;
+    fillFormats($('#fmt')); fillFormats($('#fmt-new'));
+    $('#fmt').insertAdjacentHTML('beforeend', '<option value="manage">⚙️ ניהול הגדלים שלי…</option>');
+    if (b && FS.sizeOf(b)) $('#fmt-new').value = b;
+    syncFmt();
+  }
+  fillAll(); FS.on('sizes', fillAll); FS.on('doc', syncFmt);
+  if (!FS.sizeOf(FS.prefs.fmt || '')) { FS.prefs.fmt = 'my:' + FS.mySizes()[0].id; FS.savePrefs(); }
+  $('#fmt-new').value = FS.prefs.fmt;
   $('#fmt-new').addEventListener('change', function () { FS.prefs.fmt = this.value; FS.savePrefs(); });
-  $('#frame-all').checked = !!FS.prefs.frameForAll;
-  $('#frame-all').addEventListener('change', function () { FS.prefs.frameForAll = this.checked; FS.savePrefs(); });
+  /* the sizes manager: name, width and height in cm, up to five */
+  FS.manageSizes = function () {
+    var list = FS.mySizes().map(function (z) { return Object.assign({}, z); });
+    var body = FS.dialog('📐 הגדלים שלי', '<p class="hint">מגדירים 3 עד 5 גדלים שעובדים איתם. רק הם יופיעו בכל התפריטים, ונשמרים בתוכנה.</p><div id="sz-rows"></div><button class="btn wide" id="sz-add">＋ גודל</button><button class="btn primary wide" id="sz-save">💾 שמירה</button>');
+    function rows() {
+      $('#sz-rows', body).innerHTML = list.map(function (z, i) { return '<div class="sz-row" data-i="' + i + '"><input class="sz-n" maxlength="30" value="' + FS.esc(z.name) + '" placeholder="שם"><label>רוחב<input class="sz-w" type="number" min="1" max="100" step="0.1" value="' + (z.w / 10) + '"></label><label>גובה<input class="sz-h" type="number" min="1" max="100" step="0.1" value="' + (z.h / 10) + '"></label><button class="btn small danger sz-del" title="מחיקה">🗑</button></div>'; }).join('');
+      $$('.sz-row', body).forEach(function (r) {
+        var z = list[Number(r.dataset.i)];
+        $('.sz-n', r).addEventListener('input', function () { z.name = this.value; });
+        $('.sz-w', r).addEventListener('input', function () { z.w = Math.round(Number(this.value) * 10); });
+        $('.sz-h', r).addEventListener('input', function () { z.h = Math.round(Number(this.value) * 10); });
+        $('.sz-del', r).addEventListener('click', function () { if (list.length <= 1) return FS.toast('צריך לפחות גודל אחד'); list.splice(Number(r.dataset.i), 1); rows(); });
+      });
+      $('#sz-add', body).disabled = list.length >= MAX_SIZES;
+    }
+    $('#sz-add', body).addEventListener('click', function () { if (list.length >= MAX_SIZES) return; list.push({ id: 's' + FS.uid(), name: 'גודל חדש', w: 60, h: 90 }); rows(); });
+    $('#sz-save', body).addEventListener('click', function () {
+      var ok = list.filter(function (z) { return z.w > 9 && z.h > 9 && z.w <= 1000 && z.h <= 1000; });
+      if (!ok.length) return FS.toast('רוחב וגובה בס״מ');
+      ok.forEach(function (z) { z.name = String(z.name || '').trim().slice(0, 30) || (z.w / 10) + '×' + (z.h / 10); });
+      FS.prefs.sizes = ok.slice(0, MAX_SIZES); FS.savePrefs(); FS.emit('sizes'); FS.closeDialog(); FS.toast('✔ ' + ok.length + ' גדלים נשמרו');
+    });
+    rows();
+  };
   function setFormat(id, w, h) {
     FS.targets().forEach(function (p) {
       var d = p.doc, oldW = d.w, oldH = d.h, ref = d.frame;
@@ -163,19 +198,10 @@
   }
   FS.setFormat = setFormat;
   $('#fmt').addEventListener('change', function () {
+    var v = this.value;
+    if (v === 'manage') { syncFmt(); FS.manageSizes(); return; }
     if (!FS.cur()) return;
-    if (this.value === 'cm') {
-      var mm = FS.mmOf(FS.cur().doc), body = FS.dialog('גודל מותאם', '<p class="hint">מגנט או תמונה בכל גודל. הקובץ נשמר ב־300dpi, ובהדפסה יוצא בגודל המדויק.</p><div class="row2"><div class="field"><label>רוחב (ס״מ)</label><input type="number" id="cm-w" step="0.1" min="1" max="100" value="' + (mm[0] / 10).toFixed(1) + '"></div><div class="field"><label>גובה (ס״מ)</label><input type="number" id="cm-h" step="0.1" min="1" max="100" value="' + (mm[1] / 10).toFixed(1) + '"></div></div><div class="chips" id="cm-quick"><button data-s="5x7.5">5×7.5</button><button data-s="6x9">6×9</button><button data-s="7x10">7×10</button><button data-s="8x8">8×8</button><button data-s="5.4x8.6">כרטיס אשראי</button><button data-s="10x10">10×10</button></div><div class="field"><label><input type="checkbox" id="cm-keep"> ⭐ לשמור ברשימת הגדלים שלי, בשם:</label><input id="cm-name" maxlength="30" placeholder="למשל: מגנט ענק"></div><button class="btn primary wide" id="cm-go">✔ להחיל' + (FS.targets().length > 1 ? ' על ' + FS.targets().length + ' תמונות' : '') + '</button>' +
-        (FS.mySizes().length ? '<h4>⭐ הגדלים שלי</h4><div class="chips" id="cm-mine">' + FS.mySizes().map(function (z) { return '<span class="chip-x"><button data-w="' + z.w + '" data-h="' + z.h + '">' + FS.esc(FS.sizeLabel(z)) + '</button><i data-del="' + z.id + '" title="מחיקה">✕</i></span>'; }).join('') + '</div>' : ''));
-      $$('#cm-quick button', body).forEach(function (b) { b.addEventListener('click', function () { var v = b.dataset.s.split('x'); $('#cm-w', body).value = v[0]; $('#cm-h', body).value = v[1]; }); });
-      $$('#cm-mine button', body).forEach(function (b) { b.addEventListener('click', function () { $('#cm-w', body).value = b.dataset.w / 10; $('#cm-h', body).value = b.dataset.h / 10; }); });
-      $$('#cm-mine [data-del]', body).forEach(function (x) { x.addEventListener('click', function () { FS.delSize(x.dataset.del); x.parentNode.remove(); }); });
-      $('#cm-name', body).addEventListener('input', function () { $('#cm-keep', body).checked = !!this.value.trim(); });
-      $('#cm-go', body).addEventListener('click', function () { var w = Number($('#cm-w', body).value), h = Number($('#cm-h', body).value); if (!(w > 0 && h > 0)) return; if ($('#cm-keep', body).checked) FS.saveSize($('#cm-name', body).value.trim(), Math.round(w * 10), Math.round(h * 10)); FS.closeDialog(); setFormat('cm', w * 10, h * 10); });
-      this.value = FS.cur().doc.fmt; return;
-    }
-    var my = FS.sizeOf(this.value); if (my) { setFormat('cm', my.w, my.h); this.value = 'cm'; return; }
-    setFormat(this.value);
+    var my = FS.sizeOf(v); if (my) setFormat('cm', my.w, my.h);
   });
 
   /* ---------- photos in ---------- */
@@ -557,7 +583,7 @@
   FS.clearUserFrames = clearUserFrames;
   function useFrame(ref) {
     var p = FS.cur(); if (!p) { FS.toast('בוחרים תמונה קודם'); return; }
-    var texts = null; FS.setFrame(p, ref); $('#fmt').value = p.doc.fmt;
+    var texts = null; FS.setFrame(p, ref); syncFmt();
     FS.batch(function (q, c) { if (q.doc.fmt !== c.doc.fmt) FS.applyFormat(q.doc, c.doc.fmt, FS.img(q.src), c.doc.mm ? c.doc.mm[0] : c.doc.w, c.doc.mm ? c.doc.mm[1] : c.doc.h); FS.setFrame(q, JSON.parse(JSON.stringify(ref)), { quiet: true }); });
     FS.changed(); buildFrames(); void texts;
     if (FS.targets().length > 1) FS.toast('🖼️ המסגרת הוחלה על ' + FS.targets().length + ' תמונות מסומנות');
@@ -713,7 +739,7 @@
   /* ---------- keep the panels true to the current page ---------- */
   function syncPanels() {
     var p = FS.cur(); if (!p) return;
-    $('#fmt').value = p.doc.fmt;
+    syncFmt();
     var cmo = $('#fmt option[value=cm]'); if (cmo) { var mm = FS.mmOf(p.doc); cmo.textContent = p.doc.fmt === 'cm' ? '📐 ' + (mm[0] / 10).toFixed(1) + '×' + (mm[1] / 10).toFixed(1) + ' ס״מ (מותאם)' : '📐 גודל מותאם (ס״מ)…'; }
     syncAdj(); syncPhotoControls(); syncFrameOpts(); syncLayers();
     if (S.sel && p.doc.layers.indexOf(S.sel) < 0) { S.sel = null; $('#layer-edit').hidden = true; }
