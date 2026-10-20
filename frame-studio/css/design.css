@@ -129,3 +129,9 @@ label.btn { display: inline-flex; }
 .dz-basic summary { cursor: pointer; font-size: 13px; color: var(--dim); }
 .dz-basic[open] { display: grid; gap: 8px; }
 .dz-pane .dz-invframe label.dz-check input[type=checkbox][id] { width: 16px; min-width: 0; height: 16px; padding: 0; flex: none; margin: 0; } .dz-invframe label.dz-check { white-space: nowrap; }
+.dz-ext { border-top: 1px dashed var(--gold); padding-top: 8px; }
+.dz-ext summary { cursor: pointer; font-weight: 800; color: #8a6a2e; }
+.dz-ext[open] { display: grid; gap: 8px; }
+.dz-step { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dz-step > b { width: 24px; height: 24px; border-radius: 50%; background: var(--gold); color: #fff; display: grid; place-items: center; font-size: 13px; flex: none; }
+.dz-ext [data-ext].on { border-color: var(--gold); background: rgba(201,164,92,.15); }

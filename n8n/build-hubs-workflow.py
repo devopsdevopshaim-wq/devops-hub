@@ -51,6 +51,7 @@ const sd = $getWorkflowStaticData('global');
 const now = Date.now();
 sweep();
 const GEMINI_KEY = '__GEMINI_API_KEY__';
+const OPENAI_KEY = '__OPENAI_API_KEY__';
 const set = (k) => k && !/^__/.test(k);
 const TEXT_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 const DAY_CAP = 1200, IP_HOUR = 30, FETCH_HOUR = 240, IMG_DAY = 200, IMG_IP_HOUR = 12;
@@ -212,6 +213,29 @@ if (b.action === 'restyle' || b.action === 'image') {
     if (gerrs.length && gerrs.every((e) => /limit: 0|free[_ ]tier|billing|FreeTier|PERMISSION_DENIED|403/i.test(e))) sd.gemImgOff = now;
     errs.push(...gerrs);
   }
+  // OpenAI's image model when its key is set (the same model ChatGPT draws with): an edit of the photo, or a new picture
+  if (set(OPENAI_KEY) && typeof fetch === 'function' && typeof FormData === 'function') {
+    const ow = Number(b.w) || 1024, oh = Number(b.h) || 1024;
+    const size = ow > oh * 1.15 ? '1536x1024' : oh > ow * 1.15 ? '1024x1536' : '1024x1024';
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    const tm = setTimeout(() => { if (ctl) ctl.abort(); }, Math.max(20000, 110000 - (Date.now() - now)));
+    try {
+      let res;
+      if (fresh) {
+        res = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', signal: ctl ? ctl.signal : undefined, headers: { Authorization: 'Bearer ' + OPENAI_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'gpt-image-1', prompt, size, n: 1 }) });
+      } else {
+        const bin = atob(data), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+        const f = new FormData(); f.append('model', 'gpt-image-1'); f.append('prompt', prompt); f.append('size', size); f.append('n', '1');
+        f.append('image', new Blob([u], { type: mime }), 'photo.' + (mime.split('/')[1] || 'jpg'));
+        res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', signal: ctl ? ctl.signal : undefined, headers: { Authorization: 'Bearer ' + OPENAI_KEY }, body: f });
+      }
+      const j = await res.json().catch(() => ({}));
+      const img = j && j.data && j.data[0] && j.data[0].b64_json;
+      if (img) { clearTimeout(tm); return out({ ok: true, image: img, mime: 'image/png', source: 'OpenAI', model: 'gpt-image-1' }); }
+      errs.push('gpt-image-1: ' + String(res.status) + ' ' + String((j && j.error && j.error.message) || 'no picture').slice(0, 160));
+    } catch (e) { errs.push('gpt-image-1: ' + why(e)); }
+    clearTimeout(tm);
+  }
   // on Cloudflare (the Worker gives ENV.AI): FLUX models from Workers AI, free up to the daily allowance
   if (WAI) {
     const toB64 = async (r) => {
@@ -234,7 +258,7 @@ if (b.action === 'restyle' || b.action === 'image') {
       ? [['@cf/black-forest-labs/flux-1-schnell', () => ({ prompt, steps: 6 })], ['@cf/black-forest-labs/flux-2-klein-4b', form]]
       : [['@cf/black-forest-labs/flux-2-klein-4b', form], ['@cf/black-forest-labs/flux-2-klein-9b', form], ['@cf/black-forest-labs/flux-2-dev', form]];
     for (const [m, input] of plan) {
-      try { const img = await toB64(await WAI.run(m, input())); return out({ ok: true, image: img, mime: 'image/jpeg', source: 'Cloudflare', model: m.split('/').pop() }); }
+      try { const img = await toB64(await WAI.run(m, input())); return out({ ok: true, image: img, mime: 'image/jpeg', source: 'Cloudflare', model: m.split('/').pop(), skipped: errs.length ? errs.join(' | ').slice(0, 400) : undefined }); }
       catch (e) { errs.push(m.split('/').pop() + ': ' + why(e)); if (/4006|neurons|allocation/i.test(String(e && e.message || e))) break; }
     }
   }

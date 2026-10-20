@@ -87,3 +87,20 @@ const PIC = btoa('JPEGDATA');
   const img = r.body.ok && calls[0].input.multipart && (await new Response(calls[0].input.multipart.body, { headers: { 'content-type': calls[0].input.multipart.contentType } }).formData()).get('input_image_0');
   check('cloudflare: FLUX gets the small copy of the photo', img && (await img.text()) === 'small-photo', JSON.stringify(r));
 }
+{
+  // OpenAI's image model when its key is set: Gemini (no allowance) → gpt-image-1 answers; FLUX is not used
+  const sd = {}, calls = [], fetched = [];
+  const helpers = { httpRequest: async (o) => { if (o.method === 'GET') return { models: [] }; throw new Error('429 limit: 0 free tier'); } };
+  globalThis.__WAI = { run: async (model, input) => { calls.push(model); return { image: PIC }; } };
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { fetched.push({ url, init }); return new Response(JSON.stringify({ data: [{ b64_json: 'OAIPIC' }] })); };
+  const code = 'const ENV = { AI: globalThis.__WAI };\n' + code0.replace("'__GEMINI_API_KEY__'", "'g-key'").replace("'__OPENAI_API_KEY__'", "'sk-test'");
+  const call = async (b, ip) => (await run(code, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': ip, origin: SITE } }, sd, helpers }))[0].json;
+  let r = await call({ action: 'restyle', prompt: 'frame like the invitation', image: btoa('inv'), mime: 'image/jpeg', w: 1024, h: 688 }, '4.4.4.1');
+  const f = fetched[0] && fetched[0].init.body;
+  check('openai: a restyle goes to gpt-image-1 edits with the photo, landscape size', r.code === 200 && r.body.source === 'OpenAI' && r.body.image === 'OAIPIC' && /images\/edits/.test(fetched[0].url) && f.get('size') === '1536x1024' && f.get('model') === 'gpt-image-1' && !calls.length, JSON.stringify(r));
+  globalThis.fetch = async () => new Response(JSON.stringify({ error: { message: 'billing hard limit' } }), { status: 400 });
+  r = await call({ action: 'restyle', prompt: 'x', image: btoa('inv'), mime: 'image/jpeg' }, '4.4.4.2');
+  check('openai failing: FLUX answers and says why the better models were skipped', r.code === 200 && r.body.source === 'Cloudflare' && /gpt-image-1: 400 billing/.test(r.body.skipped || ''), JSON.stringify(r));
+  globalThis.fetch = realFetch;
+}

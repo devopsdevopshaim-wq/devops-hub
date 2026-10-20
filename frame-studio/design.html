@@ -72,6 +72,14 @@
           <div class="dz-row"><button class="btn gold" id="ai-port">▯ לאורך</button><button class="btn gold" id="ai-land">▭ לרוחב</button><button class="btn line" id="ai-square">◻ ריבוע</button></div>
           <label class="dz-check"><input type="checkbox" id="ai-round" /> פינות מעוגלות לחלון</label>
           <div class="dz-aiframes" id="ai-frames"></div>
+          <details class="dz-ext" id="ext"><summary>✨ הכי איכותי: ליצור ב־ChatGPT או ב־Gemini</summary>
+            <p class="hint">משתמשים בחשבון ה־ChatGPT או ה־Gemini שלכם (גם החינמי). הכול מוכן כאן: ההזמנה בצורה הנכונה וההוראה. את המסגרת שמקבלים מעלים בחזרה, והחלון לתמונה נחתך לבד.</p>
+            <div class="dz-step"><b>1</b><span>צורה:</span><div class="dz-row"><button class="btn line on" data-ext="port">▯ לאורך</button><button class="btn line" data-ext="land">▭ לרוחב</button><button class="btn line" data-ext="square">◻ ריבוע</button></div></div>
+            <div class="dz-step"><b>2</b><div class="dz-row"><button class="btn gold" id="ext-img">⬇ הורדת ההזמנה המוכנה</button><button class="btn gold" id="ext-copy">📋 העתקת ההוראה</button><button class="btn line" id="ext-share" hidden>📤 שליחה לאפליקציה</button></div></div>
+            <div class="dz-step"><b>3</b><div class="dz-row"><a class="btn line" href="https://chatgpt.com/" target="_blank" rel="noopener">פתיחת ChatGPT</a><a class="btn line" href="https://gemini.google.com/app" target="_blank" rel="noopener">פתיחת Gemini</a></div></div>
+            <p class="hint">שם: מצרפים את התמונה שהורדתם, מדביקים את ההוראה ושולחים. כשהמסגרת מוכנה שומרים אותה למחשב או לטלפון.</p>
+            <div class="dz-step"><b>4</b><label class="btn gold">📥 העלאת המסגרת שקיבלתי<input type="file" id="ext-file" accept="image/*" hidden /></label></div>
+          </details>
           <details class="dz-basic"><summary>גרסה בסיסית, בלי אינטרנט</summary>
             <p class="hint">בונה את השוליים של ההזמנה עצמה סביב התמונה.</p>
             <label>כמה מההזמנה הוא השוליים <output id="if-b-o">17%</output><input type="range" id="if-b" min="6" max="35" value="17" /></label>

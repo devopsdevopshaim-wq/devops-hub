@@ -302,6 +302,41 @@
       box.appendChild(b);
     });
   }
+  /* the same frame made in the owner's own ChatGPT / Gemini: the invitation in the frame's shape and the instruction, then
+     the answer is uploaded back and its green window cut out here */
+  var EXT = { port: null, land: 'magnetL', square: 'm66' }, extShape = 'port';
+  function extFmt() { return EXT[extShape] || (/^(magnet|m69|m710)$/.test(D.fmt) ? D.fmt : 'magnet'); }
+  function extSize() { var f = FS.fmt(extFmt()), k = 1800 / Math.max(f.w, f.h); return [Math.round(f.w * k), Math.round(f.h * k)]; }
+  function extPrompt() { var z = extSize(); return 'Generate an image. ' + FS.invFramePrompt(z[0], z[1], { round: $('#ai-round').checked, band: true }); }
+  function extBlob() { var z = extSize(); return new Promise(function (ok) { FS.invShot(invImg, 1536, z[0], z[1]).toBlob(ok, 'image/jpeg', 0.92); }); }
+  $$('[data-ext]').forEach(function (b) { b.addEventListener('click', function () { extShape = b.dataset.ext; $$('[data-ext]').forEach(function (x) { x.classList.toggle('on', x === b); }); }); });
+  $('#ext-img').addEventListener('click', function () {
+    if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
+    extBlob().then(function (b) { var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'הזמנה-למסגרת.jpg'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); FS.toast('⬇ ההזמנה ירדה. עכשיו מעתיקים את ההוראה.'); });
+  });
+  $('#ext-copy').addEventListener('click', function () {
+    var t = extPrompt();
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { FS.toast('📋 ההוראה הועתקה. פותחים את ChatGPT או Gemini, מצרפים את התמונה ומדביקים.', 6000); }, function () { window.prompt('מעתיקים את ההוראה:', t); });
+  });
+  if (navigator.canShare && window.File && navigator.canShare({ files: [new File([''], 'a.jpg', { type: 'image/jpeg' })] })) {
+    $('#ext-share').hidden = false;
+    $('#ext-share').addEventListener('click', function () {
+      if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
+      extBlob().then(function (b) { return navigator.share({ files: [new File([b], 'invitation.jpg', { type: 'image/jpeg' })], text: extPrompt() }); }).catch(function () {});
+    });
+  }
+  $('#ext-file').addEventListener('change', function () {
+    var f = this.files[0]; this.value = ''; if (!f) return;
+    var z = extSize(), fmt = extFmt(); FS.busy('חותך את החלון לתמונה…');
+    FS.loadImg(URL.createObjectURL(f)).then(function (im) {
+      var w = im.naturalWidth, h = im.naturalHeight, want = z[0] / z[1], got = w / h;
+      if (Math.abs(Math.log(got / want)) > 0.25) { fmt = got > 1.15 ? 'magnetL' : got < 0.87 ? (/^(magnet|m69|m710)$/.test(D.fmt) ? D.fmt : 'magnet') : 'm66'; var ff = FS.fmt(fmt), kk = 1800 / Math.max(ff.w, ff.h); z = [Math.round(ff.w * kk), Math.round(ff.h * kk)]; }
+      var r = FS.keyGreenWindow(im, z[0], z[1]);
+      if (!r) { FS.busy(); return FS.toast('לא מצאתי חלון ירוק בתמונה. מבקשים שם: "the photo window must be solid pure green #00FF00" ומעלים שוב.', 8000); }
+      AIF.unshift({ canvas: r.canvas, fmt: fmt }); drawAIF();
+      return useInvCanvas(r.canvas, fmt, 'מסגרת מההזמנה').then(function () { FS.toast('🖼️ המסגרת נכנסה. את השמות והתאריך מוסיפים בלשונית "טקסט".', 6000); });
+    }).catch(function () { FS.busy(); FS.toast('לא הצלחתי לפתוח את הקובץ'); });
+  });
   $('#ai-port').addEventListener('click', function () { aiFrame(/^(magnet|m69|m710)$/.test(D.fmt) ? D.fmt : 'magnet'); });
   $('#ai-land').addEventListener('click', function () { aiFrame('magnetL'); });
   $('#ai-square').addEventListener('click', function () { aiFrame('m66'); });
