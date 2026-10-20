@@ -107,14 +107,16 @@
      same colours, paper and ornaments around a window of flat pure green, and the green is cut out here (with the green
      fringe cleaned), so the result is a PNG frame with a see-through window. */
   /* the invitation on a canvas of the frame's shape (image models answer in the shape they are given), on its own paper colour */
-  function shot(img, long, W, H) {
+  function shot(img, long, W, H) { return shotCanvas(img, long, W, H).toDataURL('image/jpeg', 0.9).split(',')[1]; }
+  FS.invShot = function (img, long, W, H) { return shotCanvas(img, long, W, H); };
+  function shotCanvas(img, long, W, H) {
     var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, cw = W >= H ? long : Math.round(long * W / H), ch = W >= H ? Math.round(long * H / W) : long;
     var c = FS.canvas(cw, ch), x = c.getContext('2d'), t = FS.canvas(8, 8), tx = t.getContext('2d');
     tx.drawImage(img, 0, 0, 8, 8); var e = tx.getImageData(0, 0, 8, 8).data, r = 0, g = 0, b = 0, k2 = 0;
     for (var i = 0; i < 64; i++) { var X = i % 8, Y = i >> 3; if (X && X < 7 && Y && Y < 7) continue; r += e[i * 4]; g += e[i * 4 + 1]; b += e[i * 4 + 2]; k2++; }
     x.fillStyle = 'rgb(' + Math.round(r / k2) + ',' + Math.round(g / k2) + ',' + Math.round(b / k2) + ')'; x.fillRect(0, 0, cw, ch);
     var k = Math.min(cw * 0.94 / w, ch * 0.94 / h); x.imageSmoothingQuality = 'high'; x.drawImage(img, (cw - w * k) / 2, (ch - h * k) / 2, w * k, h * k);
-    return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    return c;
   }
   FS.invFramePrompt = function (W, H, o) {
     o = o || {};

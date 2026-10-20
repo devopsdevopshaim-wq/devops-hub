@@ -113,7 +113,7 @@ for (const [label, body] of [['AI טקסט לאתרים', { action: 'ai', prompt
   try {
     const r = await fetch(URL_ + '/hasadna-hubs', { method: 'POST', headers: { Origin: 'https://devopsdevopshaim-wq.github.io', 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
-    note(`- ${label}: ${j.ok ? '✅ עובד' + (j.model ? ' (' + j.model + ')' : '') : '❌ ' + r.status + ' ' + (j.error || '') + ' · ' + (j.detail || '')}`);
+    note(`- ${label}: ${j.ok ? '✅ עובד' + (j.model ? ' (' + j.model + ')' : '') + (j.skipped ? ' · מודלים טובים יותר לא ענו: ' + j.skipped : '') : '❌ ' + r.status + ' ' + (j.error || '') + ' · ' + (j.detail || '')}`);
   } catch (e) { note(`- ❌ ${label}: ${e.message}`); }
 }
 if (ok) {
