@@ -1,6 +1,6 @@
-/* פריים מגנטים · showcase motion. The page reads fully without it (no GSAP, or reduced motion: every finished state is shown):
-   a camera flash on arrival, photo magnets that surface in a spotlight at their own depth (drag them, they follow the pointer in parallax),
-   a minute on a watch dial scrubbed by scroll (flash → frame → print → in hand), a gold wipe between styles, quiet reveals. */
+/* פריים סטודיו · showcase motion. The page reads fully without it (no GSAP, or reduced motion: every finished state is shown):
+   the studio's work rises into the hero at its own depth, a slideshow that plays while it is seen,
+   the design process scrubbed by scroll (raw → selection → design → finished piece), a gold seam between styles, quiet reveals. */
 (function () {
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); }, $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -48,34 +48,6 @@
   }
   magnetic();
 
-  /* ---------- the magnets in the spotlight: drag them anywhere on the stage ---------- */
-  var board = $('#board'), mags = $$('.mag', board), zTop = 40;
-  function rotOf(m) { return parseFloat(getComputedStyle(m).getPropertyValue('--r')) || 0; }
-  mags.forEach(function (m) {
-    var sx, sy, ox, oy, moved;
-    m.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); m.setPointerCapture(e.pointerId); m.classList.add('held'); m.style.zIndex = ++zTop; moved = false;
-      sx = e.clientX; sy = e.clientY; ox = m.offsetLeft; oy = m.offsetTop;
-      if (anim) G.to(m, { scale: 1.05, duration: 0.3, ease: 'power2.out', overwrite: 'auto' });
-    });
-    m.addEventListener('pointermove', function (e) {
-      if (!m.hasPointerCapture(e.pointerId)) return;
-      var dx = e.clientX - sx, dy = e.clientY - sy, W = board.clientWidth, H = board.clientHeight, tilt = Math.max(-12, Math.min(12, dx * 0.04)); moved = true;
-      m.style.left = Math.max(-m.offsetWidth * 0.3, Math.min(W - m.offsetWidth * 0.7, ox + dx)) + 'px';
-      m.style.top = Math.max(-m.offsetHeight * 0.2, Math.min(H - m.offsetHeight * 0.6, oy + dy)) + 'px';
-      if (anim) G.to(m, { rotation: tilt, duration: 0.25, ease: 'power2.out', overwrite: 'auto' });
-      else m.style.transform = 'rotate(' + tilt + 'deg) scale(1.04)';
-    });
-    function drop() {
-      if (!m.classList.contains('held')) return; m.classList.remove('held');
-      var r = +(Math.random() * 10 - 5).toFixed(1);
-      if (anim) G.to(m, { rotation: moved ? r : rotOf(m), scale: 1, duration: 0.9, ease: 'elastic.out(1, 0.6)', overwrite: 'auto' });
-      else if (moved) m.style.transform = 'rotate(' + r + 'deg)';
-      else m.style.transform = '';
-    }
-    m.addEventListener('pointerup', drop); m.addEventListener('pointercancel', drop);
-  });
-
   /* ---------- one photo, many worlds: a gold seam wipes in the new style ---------- */
   var cur = 'original', base = $('#w-base'), topImg = $('#w-top'), wName = $('#w-name'), wipe = $('.wipe'), busy = false;
   $$('.chips button').forEach(function (b) {
@@ -106,7 +78,7 @@
   function heDate(v) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; }
   function bump() { if (still) return; ym.classList.remove('bump'); void ym.offsetWidth; ym.classList.add('bump'); }
   function send() {
-    var t = 'היי! עיצבתי מגנט באתר ואשמח לבדוק תאריך 🙂\nשמות: ' + ($('#y-n').value.trim() || '—') + '\nתאריך: ' + (heDate($('#y-d').value) || '—') + '\nאירוע: ' + st.ev + '\nצבע מסגרת: ' + st.color;
+    var t = 'היי! עיצבתי באתר הדמיה לאירוע ואשמח לבדוק תאריך 🙂\nשמות: ' + ($('#y-n').value.trim() || '—') + '\nתאריך: ' + (heDate($('#y-d').value) || '—') + '\nאירוע: ' + st.ev + '\nצבע מסגרת: ' + st.color;
     $('#y-send').href = 'https://wa.me/972544979771?text=' + encodeURIComponent(t);
   }
   $('#y-n').addEventListener('input', function () { $('#y-names').textContent = this.value.trim() || ' '; send(); });
@@ -125,96 +97,104 @@
   $('.play').addEventListener('click', function () { var p = video.play(); if (p && p.catch) p.catch(function () {}); video.focus(); });
   video.addEventListener('play', function () { screen.classList.add('playing'); });
 
-  /* ---------- the minute: a watch dial, sixty ticks ---------- */
-  var ticks = $('.dial .ticks'), NS = 'http://www.w3.org/2000/svg';
-  for (var t = 0; t < 60; t++) {
-    var a = t / 60 * Math.PI * 2, major = t % 15 === 0, r1 = major ? 80 : 84, r2 = 87, ln = document.createElementNS(NS, 'line');
-    ln.setAttribute('x1', 100 + Math.sin(a) * r1); ln.setAttribute('y1', 100 - Math.cos(a) * r1);
-    ln.setAttribute('x2', 100 + Math.sin(a) * r2); ln.setAttribute('y2', 100 - Math.cos(a) * r2);
-    if (major) ln.setAttribute('class', 'major');
-    ticks.appendChild(ln);
+  /* ---------- the slideshow plays only while it is on screen ---------- */
+  var slides = $$('#slides img'), sBar = $('#slides .bar'), sI = 0, sTimer = null, SLIDE = 2800;
+  function nextSlide() {
+    slides[sI].classList.remove('on'); sI = (sI + 1) % slides.length; slides[sI].classList.add('on');
+    if (G) G.fromTo(sBar, { '--p': 0 }, { '--p': 1, duration: SLIDE / 1000, ease: 'none' });
   }
-  var clock = $('#clock'), steps = $$('.steps li'), stepsBox = $('.steps'), arc = $('#arc');
-  function stepAt(sec) {
-    var at = [0, 15, 40, 60], k = 0; at.forEach(function (t, i) { if (sec >= t - 0.5) k = i; });
+  if (!still && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting && !sTimer) { if (G) G.fromTo(sBar, { '--p': 0 }, { '--p': 1, duration: SLIDE / 1000, ease: 'none' }); sTimer = setInterval(nextSlide, SLIDE); }
+        else if (!e.isIntersecting && sTimer) { clearInterval(sTimer); sTimer = null; }
+      });
+    }, { threshold: 0.35 }).observe($('#slides'));
+  }
+
+  /* ---------- the process ---------- */
+  var steps = $$('.steps li'), stepsBox = $('.steps'), pnum = $('#pnum');
+  function stepAt(p) {
+    var k = Math.min(3, Math.floor(p * 4 + 0.001));
     steps.forEach(function (li, i) { li.classList.toggle('on', i <= k); li.classList.toggle('cur', i === k); });
-    stepsBox.style.setProperty('--fill', (sec / 60).toFixed(3));
+    stepsBox.style.setProperty('--fill', Math.min(1, p).toFixed(3));
+    pnum.textContent = '0' + (k + 1);
   }
 
   if (!anim) {
-    /* no motion: the finished states */
-    $('.card .framed').style.opacity = 1; stepAt(60); clock.textContent = '1:00';
+    /* no motion: the finished piece, every step shown */
+    stepAt(1); $('.pstage').classList.add('final');
     return;
   }
 
-  /* ---------- arrival: the flash, the magnets surface in the light, the gold headline ---------- */
-  var byDepth = mags.slice().sort(function (a, b) { return parseFloat(a.style.getPropertyValue('--d')) - parseFloat(b.style.getPropertyValue('--d')); });
-  mags.forEach(function (m) { G.set(m, { rotation: rotOf(m) }); });
-  var imgs = byDepth.map(function (m) { return m.querySelector('img'); });
+  /* ---------- arrival: the work rises into the light, the headline follows ---------- */
+  var tiles = $$('.tile'), depth = function (el) { return parseFloat(el.style.getPropertyValue('--d')) || 0.5; };
+  var byDepth = tiles.slice().sort(function (a, b) { return depth(a) - depth(b); });
   var intro = G.timeline({ defaults: { ease: 'expo.out' } });
-  intro.fromTo('.flash', { opacity: 0 }, { opacity: 0.92, duration: 0.07, ease: 'none' }, 0.15)
-    .to('.flash', { opacity: 0, duration: 1.2, ease: 'power2.out' }, 0.22)
-    .from('.beam, .hero-light, .floor', { opacity: 0, duration: 1.8, ease: 'power2.out' }, 0.2)
-    .fromTo(imgs, { opacity: 0, y: 46, scale: 1.1, filter: 'blur(14px)' }, { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.9, stagger: 0.12, clearProps: 'filter' }, 0.25)
-    .from('.hero .eyebrow', { opacity: 0, y: 12, duration: 1 }, 0.55)
-    .from('.hero h1 .ln > span', { yPercent: 112, duration: 1.4, stagger: 0.14 }, 0.6)
-    .fromTo('.hero h1 .foil', { backgroundPosition: '100% 0' }, { backgroundPosition: '0% 0', duration: 2.4, ease: 'power2.inOut' }, 0.7)
-    .from('.sub, .hero .ctas, .kinds', { opacity: 0, y: 16, duration: 1.1, stagger: 0.1 }, 1.15)
-    .from('.drag-hint, .cue', { opacity: 0, duration: 1 }, 1.8)
-    .add(function () {
-      /* then they breathe: each at its own pace */
-      imgs.forEach(function (im, i) { G.to(im, { y: -8 - i * 1.5, rotation: (i % 2 ? 0.8 : -0.8), duration: 3.2 + i * 0.45, ease: 'sine.inOut', yoyo: true, repeat: -1 }); });
-    }, 2.1);
+  intro.from('.hero-light', { opacity: 0, duration: 2, ease: 'power2.out' }, 0)
+    .fromTo(byDepth.map(function (t) { return t.querySelector('.ph'); }), { clipPath: 'inset(100% 0% 0% 0%)', y: 40 }, { clipPath: 'inset(0% 0% 0% 0%)', y: 0, duration: 1.6, stagger: 0.12 }, 0.15)
+    .from(byDepth.map(function (t) { return t.querySelector('img'); }), { scale: 1.3, duration: 2.2, stagger: 0.12 }, 0.15)
+    .from(byDepth.map(function (t) { return t.querySelector('figcaption'); }), { opacity: 0, y: 8, duration: 1, stagger: 0.1 }, 1)
+    .from('.hero .eyebrow', { opacity: 0, y: 12, duration: 1 }, 0.35)
+    .from('.hero h1 .ln > span', { yPercent: 112, duration: 1.4, stagger: 0.14 }, 0.4)
+    .fromTo('.hero h1 .foil', { backgroundPosition: '100% 0' }, { backgroundPosition: '0% 0', duration: 2.4, ease: 'power2.inOut' }, 0.6)
+    .from('.sub, .hero .ctas', { opacity: 0, y: 16, duration: 1.1, stagger: 0.1 }, 0.95);
 
-  /* the pointer moves the light and the magnets at their depth */
+  /* the pointer moves the work at its depth; scrolling away, nearer pieces drift faster */
   if (fine) {
-    var movers = mags.map(function (m) { var d = parseFloat(m.style.getPropertyValue('--d')) || 0.5; return { m: m, d: d, x: G.quickTo(m, 'x', { duration: 1.2, ease: 'power3.out' }), y: G.quickTo(m, 'y', { duration: 1.2, ease: 'power3.out' }) }; });
-    var beamX = G.quickTo('.beam', 'x', { duration: 1.6, ease: 'power3.out' });
+    var movers = tiles.map(function (t) { return { d: depth(t), x: G.quickTo(t, 'x', { duration: 1.4, ease: 'power3.out' }), y: G.quickTo(t, 'y', { duration: 1.4, ease: 'power3.out' }) }; });
     $('.hero').addEventListener('pointermove', function (e) {
       var nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
-      movers.forEach(function (o) { if (o.m.classList.contains('held')) return; o.x(nx * 34 * o.d); o.y(ny * 22 * o.d); });
-      beamX(nx * 30);
+      movers.forEach(function (o) { o.x(nx * 30 * o.d); o.y(ny * 20 * o.d); });
     });
   }
-  /* scrolling away: nearer magnets drift faster, the copy recedes */
-  mags.forEach(function (m) {
-    var d = parseFloat(m.style.getPropertyValue('--d')) || 0.5;
-    G.to(m, { yPercent: -18 - d * 40, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
+  tiles.forEach(function (t) {
+    G.to(t, { yPercent: -10 - depth(t) * 26, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
   });
-  G.to('.hero-copy', { y: -60, opacity: 0.2, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'center center', end: 'bottom top', scrub: true } });
+  G.to('.hero-copy', { y: -50, opacity: 0.25, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'center center', end: 'bottom top', scrub: true } });
 
-  /* ---------- the minute, scrubbed: flash, the frame lands, into the print slot, out as a magnet, in hand ---------- */
-  var card = $('.card'), mm = G.matchMedia();
+  /* ---------- the process, scrubbed: raw frames, one chosen, designed, finished ---------- */
+  var mm = G.matchMedia();
   mm.add({ wide: '(min-width: 901px)', narrow: '(max-width: 900px)' }, function (c) {
-    G.set(arc, { strokeDashoffset: 100 });
-    var tl = G.timeline({ defaults: { ease: 'power2.out' }, scrollTrigger: { trigger: '.minute-pin', start: 'top top', end: c.conditions.wide ? '+=2600' : '+=1700', scrub: 0.8, pin: true, anticipatePin: 1,
-      onUpdate: function (self) { var s = Math.round(self.progress * 60); clock.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); stepAt(s); } } });
-    tl.to(arc, { strokeDashoffset: 0, duration: 6, ease: 'none' }, 0)
-      /* 0:00 the flash */
-      .fromTo('.finder', { opacity: 0, scale: 1.08 }, { opacity: 1, scale: 1, duration: 0.5 }, 0)
-      .fromTo('.card .photo', { filter: 'brightness(.25) blur(6px)' }, { filter: 'brightness(1) blur(0px)', duration: 0.5 }, 0.15)
-      .fromTo('.burst', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.25 }, 0.15)
-      .to('.burst', { opacity: 0, duration: 0.9, ease: 'power2.in' }, 0.4)
-      /* 0:15 the frame */
-      .fromTo('.card .framed', { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 1 }, 1.5)
-      .to('.finder', { opacity: 0, scale: 1.05, duration: 0.6 }, 2.2)
-      /* 0:30 into the slot, 0:42 out, printed */
-      .to('.slot i', { opacity: 1, duration: 0.5 }, 2.8)
-      .to(card, { yPercent: 118, duration: 1.1, ease: 'power2.in' }, 3)
-      .to(card, { yPercent: 0, duration: 1.3, ease: 'power3.out' }, 4.2)
-      .fromTo('.card .sheen::before', {}, {}, 4.2)
-      .fromTo('.card .sheen', { '--s': 0 }, { '--s': 1, duration: 0.01 }, 4.2)
-      .to('.slot i', { opacity: 0.55, duration: 0.5 }, 5)
-      /* 0:55 in hand */
-      .to(card, { yPercent: -4, rotation: -3, scale: 1.06, duration: 0.8, ease: 'back.out(1.4)' }, 5.2);
-    var shine = G.fromTo('.card .sheen', { '--sx': '-60%' }, { '--sx': '160%', duration: 1, ease: 'power2.inOut', paused: true });
-    tl.add(function () { shine.restart(); }, 5.3);
-    return function () { G.set([card, '.card .framed', '.card .photo', '.finder', '.burst', '.slot i', arc], { clearProps: 'all' }); };
+    var shots = $$('.shot'), pick = $('.shot.pick'), others = shots.filter(function (s) { return s !== pick; });
+    var tl = G.timeline({ defaults: { ease: 'power2.out' }, scrollTrigger: { trigger: '.proc-pin', start: 'top top', end: c.conditions.wide ? '+=2600' : '+=1800', scrub: 0.8, pin: true, anticipatePin: 1,
+      onUpdate: function (self) { stepAt(self.progress); } } });
+    G.set('.piece', { left: '35%', top: '3%', width: '30%', opacity: 0 });
+    G.set('.piece .raw', { filter: 'saturate(.7) contrast(.92) brightness(.9)' });
+    G.set('.piece .framed', { opacity: 0 });
+    G.set('.done', { opacity: 0, y: 10 });
+    /* 01 raw */
+    G.from(shots, { opacity: 0, y: 30, duration: 1.2, ease: 'expo.out', stagger: 0.08, scrollTrigger: { trigger: '.pstage', start: 'top 80%' } });
+    tl.to(shots, { y: 0, duration: 0.6 }, 0)
+    /* 02 selection */
+      .to(others, { opacity: 0.22, duration: 0.4 }, 1.0)
+      .to(pick, { outlineColor: 'rgba(214,183,126,1)', duration: 0.3 }, 1.0)
+      .set('.piece', { opacity: 1 }, 1.55)
+      .to(others, { opacity: 0, duration: 0.4 }, 1.55)
+      .to(pick, { opacity: 0, duration: 0.1 }, 1.6)
+      .to('.piece', { left: '22%', top: '2%', width: '56%', duration: 0.6, ease: 'power3.inOut' }, 1.55)
+    /* 03 design */
+      .fromTo('.guide', { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, stagger: 0.05 }, 2.1)
+      .to('.piece .raw', { filter: 'saturate(1) contrast(1) brightness(1)', duration: 0.4 }, 2.15)
+      .fromTo('.piece .framed', { opacity: 0, scale: 1.05 }, { opacity: 1, scale: 1, duration: 0.45 }, 2.35)
+      .fromTo('.note', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.1 }, 2.4)
+    /* 04 finished */
+      .to('.guide, .note', { opacity: 0, duration: 0.3 }, 3.05)
+      .to('.piece', { rotation: -2.5, scale: 1.02, duration: 0.5, ease: 'back.out(1.4)' }, 3.15)
+      .fromTo('.piece .sheen', { '--sx': '-60%' }, { '--sx': '160%', duration: 0.5, ease: 'power2.inOut' }, 3.2)
+      .to('.done', { opacity: 1, y: 0, duration: 0.3 }, 3.4)
+      .to({}, { duration: 0.35 }, 3.65);
+    return function () { G.set(['.piece', '.piece .raw', '.piece .framed', '.done', '.guide', '.note', '.shot'], { clearProps: 'all' }); };
   });
 
   /* ---------- section reveals ---------- */
-  $$('.worlds .eyebrow, .worlds .display, .worlds .lead, .pick-h, .chips, .pick-note, .yours .eyebrow, .yours .display, .wall .eyebrow, .wall .display, .packages .eyebrow, .packages .display, .film .eyebrow, .film .display, .faq .eyebrow, .faq .display, .book .eyebrow, .book .display, .book .lead, .book .ctas, .facts').forEach(function (el) {
+  $$('.sec-head .eyebrow, .sec-head .display, .sec-head .lead, .worlds .eyebrow, .worlds .display, .worlds .lead, .pick-h, .chips, .pick-note, .yours .eyebrow, .yours .display, .yours .lead, .faq .eyebrow, .faq .display, .book .eyebrow, .book .display, .book .lead, .book .ctas, .facts').forEach(function (el) {
     G.from(el, { y: 28, opacity: 0, duration: 1.1, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%' } });
+  });
+  $$('.w').forEach(function (w) {
+    var v = w.querySelector('.vis');
+    G.fromTo(v, { clipPath: 'inset(12% 0% 0% 0% round 18px)', y: 40, opacity: 0 }, { clipPath: 'inset(0% 0% 0% 0% round 18px)', y: 0, opacity: 1, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: w, start: 'top 88%' } });
+    G.from(w.querySelector('.cap'), { y: 20, opacity: 0, duration: 1, delay: 0.15, ease: 'power3.out', scrollTrigger: { trigger: w, start: 'top 88%' } });
   });
   G.from('.viewer', { clipPath: 'inset(8% 8% 8% 8% round 18px)', scale: 1.04, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: '.viewer', start: 'top 85%' } });
   G.from('.ystage', { y: 50, opacity: 0, duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: '.ystage', start: 'top 88%' } });

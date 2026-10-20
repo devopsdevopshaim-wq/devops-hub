@@ -57,6 +57,22 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - Elements are added on the 🧩 tab and deleted with 🗑 or the Delete key; "ניקוי כל האלמנטים" removes them all.
 - **Videos.** `media/explainer.mp4` (60s) and `media/promo.mp4` (30s), with posters, sit in the site's `#videos` section. They were made with HyperFrames in `videos/frame-explainer` and `videos/frame-styles-promo`, and the music bed is synthesized in code.
 
+## Collages, choosing photos, slideshow; the look (Oct 2026)
+- **Look:** all four screens share one identity, a design studio for graphic and photo design.
+  - **Palette and type:** velvet black, champagne gold foil and ivory, in Frank Ruhl Libre, Assistant and Heebo.
+  - **Where it lives:** the studio in `css/lux-studio.css` (its `--ink` means ivory there; the near-black is `--lx-ink`), the admin in `css/lux-admin.css`, the main site in `css/lux-site.css` + `js/lux.js`, and the showcase in `show.*`.
+  - **No fridge or magnets theme:** magnets are one product among several.
+- **"קולאז׳" tab (`js/collage.js`):**
+  - `FS.collageLayouts(ars, W, H, gap, mode, seed)` tries up to 4000 guillotine trees. Split ratios follow the photos' aspects, and the cost is crop + small cells + uneven sizes, or the first photo at about 45% in `hero` mode; `grid` is a uniform grid. It returns up to 12 distinct layouts ("🔀 סידור אחר").
+  - `FS.drawCollage` cover-crops around `p.faces`, and adds margin, gap, corner radius, background and an optional title band.
+  - The result is added as a photo with `applyFormat('cm', W, H)` (`p.collage`).
+- **"בחירה ומצגת" tab (`js/curate.js`):**
+  - `FS.scorePhoto(p)` → `p.rate`, a score from 0 to 100: sharpness via Laplacian variance (40), exposure via histogram middle and clipping (25), faces with eyes open (20) and smiles (15), using `FS.getLandmarker()` blendshapes. Reasons: מטושטשת / חשוכה / שרופה / עיניים עצומות.
+  - `FS.scoreAll` adds near-duplicates (64-bit dHash, Hamming ≤ 6); in each group only the best stays good.
+  - Weak photos are listed with their reasons, and can be marked or removed.
+  - `FS.slideshow(list, sec, title)` plays the best N spread over the evening: a canvas with a blurred fill, a slow move towards the faces and dissolves. ⏺ records it with MediaRecorder (mp4 where supported, otherwise webm).
+- `FS.busy(msg, onStop)` shows ⏹ on the busy sign, which lives in `.stage` so it shows on the photos screen too.
+
 ## Admin-only studio, calendar sync, the invitation as the magnet (Oct 2026)
 - **The studio opens only for the owner** (`js/gate.js`, `css/gate.css`). `<body class="gated">` hides everything until `FS.account.isAdmin()`. A device signed in as admin opens at once, even offline at an event. `FS.account.me()` then checks with the server, and a signed-out, revoked or non-admin session closes it. Anyone else gets `FS.account.form(..., { adminOnly: true })`.
   - This hides the tool; the protection itself is on the server, since business data needs an admin token there. The public site no longer links to the studio.
