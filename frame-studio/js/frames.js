@@ -184,13 +184,38 @@
       var W = img.naturalWidth, H = img.naturalHeight, k = Math.min(1, 2400 / Math.max(W, H));
       if (k === 1 && src.length < 1500000) return src;
       var c = FS.canvas(Math.round(W * k), Math.round(H * k)), x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
-      var webp = c.toDataURL('image/webp', 0.9), png = /^data:image\/webp/.test(webp) ? null : c.toDataURL('image/png');
-      var out = webp && /^data:image\/webp/.test(webp) ? webp : png;
-      return out.length < src.length ? out : src;
+      return FS.canvasURL(c, 'image/webp', 0.9).then(function (out) { return out.length < src.length ? out : src; });
     });
+  };
+  /* a frame without a see-through window (a JPG, or a PNG saved without transparency): the flat area in the middle
+     (white, green or any one colour) becomes the window, flood-filled from the centre with a soft edge. null when the
+     middle isn't flat enough to be a window. */
+  FS.cutFlatWindow = function (img) {
+    var W = img.naturalWidth || img.width, H = img.naturalHeight || img.height, k = Math.min(1, 400 / Math.max(W, H));
+    var w = Math.max(2, Math.round(W * k)), h = Math.max(2, Math.round(H * k)), c = FS.canvas(w, h), x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, w, h); var a = x.getImageData(0, 0, w, h).data, cx = w >> 1, cy = h >> 1, ci = (cy * w + cx) * 4;
+    var r0 = a[ci], g0 = a[ci + 1], b0 = a[ci + 2], tol = 34, open = new Uint8Array(w * h), st = [cy * w + cx], n = 0;
+    function near(i) { var j = i * 4; return Math.abs(a[j] - r0) + Math.abs(a[j + 1] - g0) + Math.abs(a[j + 2] - b0) < tol * 3; }
+    open[st[0]] = 1;
+    while (st.length) { var q = st.pop(), px = q % w; n++;
+      if (px > 0 && !open[q - 1] && near(q - 1)) { open[q - 1] = 1; st.push(q - 1); }
+      if (px < w - 1 && !open[q + 1] && near(q + 1)) { open[q + 1] = 1; st.push(q + 1); }
+      if (q >= w && !open[q - w] && near(q - w)) { open[q - w] = 1; st.push(q - w); }
+      if (q < w * (h - 1) && !open[q + w] && near(q + w)) { open[q + w] = 1; st.push(q + w); } }
+    if (n < w * h * 0.08 || n > w * h * 0.92) return null;
+    var m = FS.canvas(w, h), mx = m.getContext('2d'), md = mx.createImageData(w, h);
+    for (var i = 0; i < w * h; i++) md.data[i * 4 + 3] = open[i] ? 255 : 0;
+    mx.putImageData(md, 0, 0);
+    var out = FS.canvas(W, H), o = out.getContext('2d'); o.drawImage(img, 0, 0, W, H);
+    o.globalCompositeOperation = 'destination-out'; o.filter = 'blur(' + Math.max(1, Math.round(1 / k)) + 'px)'; o.imageSmoothingQuality = 'high'; o.drawImage(m, 0, 0, W, H);
+    return out;
   };
   FS.addUserFrame = function (src, name, save) {
     return (save === false ? Promise.resolve(src) : FS.compactFrame(src)).then(function (s2) { src = s2; return FS.loadImg(src); }).then(function (img) {
+      if (save === false || FS.detectHole(img)) return img;
+      var cut = FS.cutFlatWindow(img); if (!cut) return img;
+      return FS.canvasURL(cut, 'image/webp', 0.9).then(function (u) { src = u; return FS.loadImg(u); });
+    }).then(function (img) {
       var id = 'u' + FS.uid(), hole = FS.detectHole(img);
       USER[id] = { id: id, name: name || 'מסגרת שלי', src: src, hole: hole || { x: 0, y: 0, w: 1, h: 1 }, solid: !hole, aspect: img.naturalWidth / img.naturalHeight };
       if (save !== false) FS.store.put('frames', { id: id, name: USER[id].name, src: src, hole: USER[id].hole, solid: USER[id].solid, at: Date.now() }).catch(function () {});

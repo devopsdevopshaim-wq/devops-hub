@@ -55,9 +55,13 @@
   function wholeThumb(p, size) {
     var ph = p.doc.photo, key = [p.src, size, JSON.stringify(ph.adj), JSON.stringify(ph.style || 0)].join('|');
     if (p._gt && p._gt.key === key) return p._gt.c;
-    var im = FS.img(p.src), k = size / Math.max(im.naturalWidth, im.naturalHeight), c = FS.canvas(Math.max(1, im.naturalWidth * k), Math.max(1, im.naturalHeight * k)), x = c.getContext('2d', { willReadFrequently: true });
+    /* drawn from a small copy made once per photo (scaling a 3000px photo down for every tile is what made the grid slow) */
+    var im = FS.smallOf(p, 720), iw = im.width || im.naturalWidth, ih = im.height || im.naturalHeight, k = Math.min(1, size / Math.max(iw, ih));
+    var plain = !(ph.style && ph.style.id); if (plain) for (var ak in FS.ADJ0) if (ak !== 'tone' && ph.adj[ak]) { plain = false; break; }
+    if (ph.adj.tone && ph.adj.tone !== 'none') plain = false;
+    var c = FS.canvas(Math.max(1, iw * k), Math.max(1, ih * k)), x = c.getContext('2d', plain ? undefined : { willReadFrequently: true });
     x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height);
-    try { var d = x.getImageData(0, 0, c.width, c.height); FS.adjustPixels(d.data, c.width, c.height, ph.adj, true); if (ph.style && FS.applyStyle) FS.applyStyle(d.data, c.width, c.height, ph.style, true); x.putImageData(d, 0, 0); } catch (e) { /* plain */ }
+    if (!plain) try { var d = x.getImageData(0, 0, c.width, c.height); FS.adjustPixels(d.data, c.width, c.height, ph.adj, true); if (ph.style && FS.applyStyle) FS.applyStyle(d.data, c.width, c.height, ph.style, true); x.putImageData(d, 0, 0); } catch (e) { /* plain */ }
     p._gt = { key: key, c: c }; return c;
   }
   function draw(t) {

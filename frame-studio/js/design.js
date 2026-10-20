@@ -378,9 +378,8 @@
   function shapeName(fmt) { return fmt === 'magnetL' ? 'לרוחב' : fmt === 'm66' ? 'ריבוע' : 'לאורך'; }
   /* a frame canvas (with its see-through window) becomes the design's frame */
   function useInvCanvas(canvas, fmt, name) {
-    var webp = canvas.toDataURL('image/webp', 0.9), src = /^data:image\/webp/.test(webp) ? webp : canvas.toDataURL('image/png');
-    var key = 'inv' + FS.uid();
-    return FS.addUserFrame(src, name, false).then(function (u) {
+    var key = 'inv' + FS.uid(), src;
+    return FS.canvasURL(canvas, 'image/webp', 0.9).then(function (u) { src = u; return FS.addUserFrame(src, name, false); }).then(function (u) {
       PNGS.filter(function (x) { return /^inv/.test(x.key); }).forEach(function (x) { var o = FS.USER_FRAMES[x.id]; if (o) { delete FS.IMGS[o.src]; delete FS.USER_FRAMES[x.id]; } });
       PNGS = PNGS.filter(function (x) { return !/^inv/.test(x.key); }); PNGS.push({ id: u.id, key: key, name: name, for: [] });
       D.invFrame = { key: key, src: src, name: name }; D.frame = 'png:' + key; D.fmt = fmt;

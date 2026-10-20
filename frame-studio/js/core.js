@@ -97,7 +97,23 @@
     });
   };
   FS.img = function (src) { return IMGS[src] || null; };
+  /* a small copy of a photo, made once, for thumbnails and tiles */
+  FS.smallOf = function (p, max) {
+    var im = FS.img(p.src); if (!im) return null;
+    if (p._small && p._small.src === p.src && p._small.max >= max) return p._small.c;
+    var k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight)); if (k === 1) return im;
+    var c = FS.canvas(Math.round(im.naturalWidth * k), Math.round(im.naturalHeight * k)), x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height);
+    p._small = { src: p.src, max: max, c: c }; return c;
+  };
   /* a blob: URL becomes a data URL when it has to leave the page (project files, my designs) */
+  /* a canvas to a data URL without blocking the page: toBlob encodes off the main thread (toDataURL freezes it for
+     seconds on a big frame). type falls back to PNG when the browser can't write it. */
+  FS.canvasURL = function (c, type, q) {
+    return new Promise(function (ok) { c.toBlob(function (b) { ok(b); }, type || 'image/png', q); }).then(function (b) {
+      if (!b || (type && b.type !== type)) return type && type !== 'image/png' ? FS.canvasURL(c, 'image/png') : c.toDataURL('image/png');
+      return new Promise(function (ok, no) { var r = new FileReader(); r.onload = function () { ok(r.result); }; r.onerror = no; r.readAsDataURL(b); });
+    });
+  };
   FS.toDataURL = function (src) {
     if (!/^blob:/.test(src)) return Promise.resolve(src);
     return fetch(src).then(function (r) { return r.blob(); }).then(FS.fileToDataURL);
@@ -106,9 +122,9 @@
     return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = rej; r.readAsDataURL(file); });
   };
   /* photos are kept as blob URLs (not data URLs), so hundreds of them fit in memory. A big photo is brought down once, on
-     arrival, to 3000px on its long side (enough for a 20x30cm print) and re-encoded as JPEG: the editor, the AI and the
+     arrival, to 2400px on its long side (300dpi on a 15x20 magnet, the biggest) and re-encoded as JPEG: the editor, the AI and the
      print stay fast and light, and the result still prints sharp. */
-  FS.PHOTO_MAX = 3000;
+  FS.PHOTO_MAX = 2400;
   /* The file is read into memory first. A file that can't be read (a cloud copy that isn't on the computer, a removed
      card) fails at once with a clear reason instead of hanging the image decoder, and an iPhone HEIC photo is recognised by
      its header. Each failure carries a Hebrew reason (err.why) that addFiles shows. */
@@ -208,8 +224,12 @@
     if (p.cache.key === key) return p.cache.canvas;
     var k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
     var w = Math.round(im.naturalWidth * k), h = Math.round(im.naturalHeight * k);
-    var c = FS.canvas(w, h), x = c.getContext('2d', { willReadFrequently: true });
-    x.drawImage(im, 0, 0, w, h);
+    /* an untouched photo is only drawn: reading and writing back every pixel is the slow part, so it is skipped */
+    var plain = (!a.tone || a.tone === 'none') && !(d.photo.blurs && d.photo.blurs.length) && !(d.photo.skin && d.photo.skin.amt) && !(d.photo.style && d.photo.style.id) && !(bg && bg.mode !== 'none' && p.mask);
+    if (plain) for (var ak in FS.ADJ0) if (ak !== 'tone' && a[ak]) { plain = false; break; }
+    var c = FS.canvas(w, h), x = c.getContext('2d', plain ? undefined : { willReadFrequently: true });
+    x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, w, h);
+    if (plain) { p.cache = { key: key, canvas: c }; return c; }
     var id = x.getImageData(0, 0, w, h);
     FS.adjustPixels(id.data, w, h, a, fast);
     (d.photo.blurs || []).forEach(function (b) { FS.pixelate(id.data, w, h, b.x * k, b.y * k, b.w * k, b.h * k); });
