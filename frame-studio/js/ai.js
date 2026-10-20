@@ -182,18 +182,23 @@
   /* ---------- pictures from a description ---------- */
   function hasHeb(s) { return /[֐-׿]/.test(s); }
   /* text/plain keeps it a simple request: the server answers no CORS preflight, so application/json never reached it */
+  /* every request in flight can be stopped (FS.aiStop): the answer is dropped and reads as 'cancelled' */
+  var live = [];
+  FS.aiStop = function () { live.slice().forEach(function (c) { c.stopped = true; if (c.ctl) c.ctl.abort(); }); };
   FS.askServer = function (body) {
-    var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, body.action === 'ai' && !body.image ? 45000 : 115000);
+    var ctl = window.AbortController ? new AbortController() : null, me = { ctl: ctl, stopped: false }, to = setTimeout(function () { if (ctl) ctl.abort(); }, body.action === 'ai' && !body.image ? 45000 : 115000);
+    live.push(me);
     return fetch(HUB, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'http-' + r.status }; }); })
-      .catch(function (e) { return { ok: false, error: e && e.name === 'AbortError' ? 'timeout' : 'offline' }; })
-      .then(function (r) { clearTimeout(to); FS.lastAiDetail = r && !r.ok ? String(r.detail || '') : ''; if (r && !r.ok && r.detail && window.console) console.warn('AI:', r.error, r.detail); return r; });
+      .catch(function (e) { return { ok: false, error: me.stopped ? 'cancelled' : e && e.name === 'AbortError' ? 'timeout' : 'offline' }; })
+      .then(function (r) { clearTimeout(to); live.splice(live.indexOf(me), 1); if (me.stopped) r = { ok: false, error: 'cancelled' }; FS.lastAiDetail = r && !r.ok ? String(r.detail || '') : ''; if (r && !r.ok && r.detail && window.console) console.warn('AI:', r.error, r.detail); return r; });
   };
   FS.aiError = function (m) {
     m = String(m || '');
     if (m === 'no-key') return 'שרת ה־AI עוד לא הוגדר (חסר מפתח Gemini בשרת).';
     if (m === 'no-free-tier') return 'יצירת תמונות ב־Gemini לא כלולה בתוכנית החינמית של המפתח. צריך להפעיל חיוב (Billing) בפרויקט ב־Google AI Studio, והתמונות יתחילו לעבוד.';
-    if (m === 'quota') return 'הגענו למכסת ה־AI היומית. מחר זה יתאפס.';
+    if (m === 'cancelled') return 'העריכה נעצרה.';
+    if (m === 'quota') return 'מכסת התמונות החינמית של היום נגמרה בשרת ה־AI. היא מתאפסת כל לילה (03:00). כדי שלא ייגמר: להפעיל חיוב (Billing) על מפתח ה־Gemini ב־Google AI Studio.';
     if (m === 'rate-limited') return 'יותר מדי בקשות בשעה האחרונה. נסו שוב בעוד כמה דקות.';
     if (m === 'timeout') return 'ה־AI לא ענה בזמן. נסו שוב.';
     if (m === 'offline') return 'אין חיבור לשרת ה־AI. בודקים אינטרנט ומנסים שוב.';

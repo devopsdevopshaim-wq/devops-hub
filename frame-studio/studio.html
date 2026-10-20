@@ -77,7 +77,7 @@
     <button role="tab" data-tab="filters"><span>✨</span>פילטרים</button>
     <button role="tab" data-tab="frames"><span>🖼️</span>מסגרות</button>
     <button role="tab" data-tab="text"><span>🔤</span>טקסט ומדבקות</button>
-    <button role="tab" data-tab="styles"><span>🎨</span>סגנונות</button>
+    <button role="tab" data-tab="styles"><span>🎨</span>עריכות AI</button>
     <button role="tab" data-tab="ai"><span>🤖</span>AI</button>
     <button role="tab" data-tab="games"><span>🎮</span>משחקים</button>
     <button role="tab" data-tab="output"><span>💾</span>שמירה והדפסה</button>
@@ -329,6 +329,7 @@
   </aside>
 
   <main class="stage" id="stage">
+    <div class="busy" id="busy" hidden><i></i><span id="busy-msg">רגע…</span><button class="btn small danger" id="busy-stop" hidden>⏹ עצירה</button></div>
     <div class="stagebar">
       <button class="btn small gold-b" id="to-grid" hidden title="כל התמונות פרושות על המסך">▦ כל התמונות</button>
       <div class="seg" role="group" aria-label="תצוגה"><button data-view="single" class="on">▣ עריכה</button><button data-view="split">◧ מקור | עריכה</button></div>
@@ -350,7 +351,7 @@
         <span id="gv-sel">בוחרים תמונות: לחיצה על תמונה מסמנת אותה</span>
         <button class="btn small primary" id="gv-edit" disabled>✏️ למסך העריכה</button>
         <div class="gv-dd"><button class="btn small" id="gv-filter" disabled>🎨 פילטר ▾</button><div class="gv-menu" id="gv-filter-m" hidden></div></div>
-        <div class="gv-dd"><button class="btn small" id="gv-style" disabled>🖌️ סגנון ▾</button><div class="gv-menu" id="gv-style-m" hidden></div></div>
+        <div class="gv-dd"><button class="btn small" id="gv-style" disabled>🤖 AI ▾</button><div class="gv-menu" id="gv-style-m" hidden></div></div>
         <div class="gv-dd"><button class="btn small" id="gv-fmt" disabled>📐 גודל ▾</button><div class="gv-menu list" id="gv-fmt-m" hidden></div></div>
         <label class="copies">עותקים <input type="number" id="gv-copies" min="1" max="999" value="1"></label><button class="btn small" id="gv-copies-go" disabled>החלה</button>
         <button class="btn small danger" id="gv-del" disabled title="הסרה מהפרויקט">🗑</button>
@@ -369,7 +370,6 @@
         <button class="btn" id="start-event">🧲 להתחיל אירוע</button>
         <button class="btn" id="demo">✨ לנסות עם תמונה לדוגמה</button>
       </div>
-      <div class="busy" id="busy" hidden><i></i><span id="busy-msg">רגע…</span></div>
     </div>
     <div class="stripbar" id="stripbar" hidden>
       <span id="mark-count"></span>
@@ -396,8 +396,8 @@
 <script src="js/games.js"></script>
 <script src="js/events.js"></script>
 <script src="js/event-studio.js"></script>
-<script src="js/anime.js"></script>
 <script src="js/styles.js"></script>
+<script src="js/ai-studio.js"></script>
 <script src="js/grid.js"></script>
 <script src="js/library.js"></script>
 <script src="js/account.js"></script>

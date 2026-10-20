@@ -69,7 +69,7 @@
   function meta(p) {
     var bits = [sizeKey(p) + ' ס״מ'];
     if (p.doc.photo.preset) { var q = (FS.PRESETS || []).filter(function (x) { return x[0] === p.doc.photo.preset; })[0]; bits.push('🎨 ' + (q ? q[1] : 'פילטר')); }
-    if (p.doc.photo.style) { var st = (FS.LOCAL_STYLES || []).filter(function (x) { return x[0] === p.doc.photo.style.id; })[0]; bits.push('🖌️ ' + (st ? st[1] : '')); }
+    if (p.origSrc) bits.push('🤖 AI');
     if (p.origSrc) bits.push('🤖'); if (p.doc.frame) bits.push('🖼️'); if (p.copies > 1) bits.push('×' + p.copies);
     if (p.quality && !p.quality.ok) bits.push('⚠');
     return bits.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('');
@@ -147,11 +147,18 @@
     });
   });
   menu('#gv-style', '#gv-style-m', function (m) {
-    m.innerHTML = '<p class="gv-mh">סגנון מיידי ל־' + picked().length + ' תמונות (סגנונות AI: במסך העריכה, לשונית סגנונות)</p><div class="gv-mgrid"></div>';
-    [['', 'בלי סגנון', '🚫']].concat(FS.LOCAL_STYLES).forEach(function (st) {
-      var b = document.createElement('button'); b.className = 'tile'; b.innerHTML = '<i class="emo">' + st[2] + '</i><span>' + esc(st[1]) + '</span>';
-      b.addEventListener('click', function () { var l = picked(); l.forEach(function (x) { x.doc.photo.style = st[0] ? { id: st[0], amt: 85 } : null; }); m.hidden = true; FS.busy('מצייר…'); setTimeout(function () { redraw(l); FS.busy(); FS.toast('🖌️ ' + st[1] + ' על ' + l.length + ' תמונות'); }, 30); });
-      m.lastChild.appendChild(b);
+    var A = FS.AI_COMBOS; if (!A) return;
+    m.innerHTML = '<p class="gv-mh">🤖 AI ל־' + picked().length + ' תמונות (עד דקה לתמונה, ⏹ עוצר)</p><div class="gv-mgrid"></div><p class="gv-mh">🎨 סגנונות</p><div class="gv-mgrid"></div>';
+    var g = $$('.gv-mgrid', m);
+    A.COMBOS.forEach(function (c) {
+      var b = document.createElement('button'); b.className = 'tile'; b.innerHTML = '<i class="emo">' + c[1] + '</i><span>' + esc(c[0]) + '</span>';
+      b.addEventListener('click', function () { var l = picked(), o = { style: c[2], world: c[3], outfit: c[4], mood: c[5] }; m.hidden = true; FS.runAI(A.promptOf(o), c[0], l).then(function () { redraw(l); }); });
+      g[0].appendChild(b);
+    });
+    (FS.AI_STYLES || []).forEach(function (s) {
+      var b = document.createElement('button'); b.className = 'tile'; b.innerHTML = '<i class="emo">' + s[2] + '</i><span>' + esc(s[1]) + '</span>';
+      b.addEventListener('click', function () { var l = picked(); m.hidden = true; FS.runAI(s[3] + FS.AI_KEEP, s[1], l).then(function () { redraw(l); }); });
+      g[1].appendChild(b);
     });
   });
   function setSize(id, w, h) {

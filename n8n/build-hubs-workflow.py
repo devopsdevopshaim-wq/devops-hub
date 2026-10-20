@@ -178,13 +178,41 @@ if (b.action === 'restyle' || b.action === 'image') {
   if (prompt.length > 2000) return out({ ok: false, error: 'too-big' }, 413);
   const mime = String(b.mime || 'image/jpeg').toLowerCase();
   const data = String(b.image || '').replace(/^data:[^,]{0,80},/, '').replace(/\s+/g, '');
+  // the studio may send a big photo for Gemini and a small copy (under 512px) for FLUX
+  const small = String(b.small || '').replace(/^data:[^,]{0,80},/, '').replace(/\s+/g, '');
+  const fluxData = small && small.length < 1500000 && /^[A-Za-z0-9+/]+={0,2}$/.test(small) ? small : data;
   if (!fresh) {
     if (!/^image\/(jpeg|png|webp)$/.test(mime)) return out({ ok: false, error: 'bad-image' }, 400);
     if (!data || data.length > 5600000) return out({ ok: false, error: data ? 'too-big' : 'bad-image' }, data ? 413 : 400);
     if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return out({ ok: false, error: 'bad-image' }, 400);
   }
   sd.imgs = (sd.imgs || 0) + 1;
-  // on Cloudflare (the Worker gives ENV.AI): FLUX models from Workers AI, free up to the daily allowance; no Gemini
+  const errs = [];
+  // Gemini first when there is a key (it keeps faces and the scene best); a key with no image allowance is skipped for 6 hours
+  if (set(GEMINI_KEY) && !(sd.gemImgOff > now - 6 * 3600000)) {
+    const gerrs = [];
+    for (const m of await imageModels()) {
+      const left = 112000 - (Date.now() - now);
+      if (left < 20000) break;
+      try {
+        const r = await this.helpers.httpRequest({
+          method: 'POST',
+          url: `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,
+          headers: { 'x-goog-api-key': GEMINI_KEY, 'Content-Type': 'application/json' },
+          body: { contents: [{ role: 'user', parts: fresh ? [{ text: prompt }] : [{ inline_data: { mime_type: mime, data } }, { text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } },
+          json: true,
+          timeout: Math.min(WAI ? 60000 : 100000, left)
+        });
+        const parts = (r && r.candidates && r.candidates[0] && r.candidates[0].content && r.candidates[0].content.parts) || [];
+        const img = parts.map((p) => p.inlineData || p.inline_data).filter((x) => x && x.data)[0];
+        if (img) return out({ ok: true, image: img.data, mime: img.mimeType || img.mime_type || 'image/png', source: 'Gemini', model: m });
+        gerrs.push(m + ': no picture in the answer ' + parts.map((p) => p.text || '').join(' ').slice(0, 120));
+      } catch (e) { gerrs.push(m + ': ' + why(e)); }
+    }
+    if (gerrs.length && gerrs.every((e) => /limit: 0|free[_ ]tier|billing|FreeTier|PERMISSION_DENIED|403/i.test(e))) sd.gemImgOff = now;
+    errs.push(...gerrs);
+  }
+  // on Cloudflare (the Worker gives ENV.AI): FLUX models from Workers AI, free up to the daily allowance
   if (WAI) {
     const toB64 = async (r) => {
       if (r && typeof r.image === 'string' && r.image) return r.image;
@@ -196,40 +224,19 @@ if (b.action === 'restyle' || b.action === 'image') {
     };
     const dim = (v) => Math.max(256, Math.min(1920, Math.round((Number(v) || 1024) / 16) * 16));
     const W = dim(b.w), Hh = dim(b.h);
-    // FLUX.2 takes a multipart form; the photo is input_image_0 (under 512px, the studio sends it that size)
+    // FLUX.2 takes a multipart form; the photo is input_image_0
     const form = () => {
       const f = new FormData(); f.append('prompt', prompt); f.append('width', String(W)); f.append('height', String(Hh));
-      if (!fresh) { const bin = atob(data), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); f.append('input_image_0', new Blob([u], { type: mime })); }
+      if (!fresh) { const bin = atob(fluxData), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); f.append('input_image_0', new Blob([u], { type: mime })); }
       const rq = new Response(f); return { multipart: { body: rq.body, contentType: rq.headers.get('content-type') } };
     };
     const plan = fresh
       ? [['@cf/black-forest-labs/flux-1-schnell', () => ({ prompt, steps: 6 })], ['@cf/black-forest-labs/flux-2-klein-4b', form]]
       : [['@cf/black-forest-labs/flux-2-klein-4b', form], ['@cf/black-forest-labs/flux-2-klein-9b', form], ['@cf/black-forest-labs/flux-2-dev', form]];
-    const tried = [];
     for (const [m, input] of plan) {
       try { const img = await toB64(await WAI.run(m, input())); return out({ ok: true, image: img, mime: 'image/jpeg', source: 'Cloudflare', model: m.split('/').pop() }); }
-      catch (e) { tried.push(m.split('/').pop() + ': ' + why(e)); }
+      catch (e) { errs.push(m.split('/').pop() + ': ' + why(e)); if (/4006|neurons|allocation/i.test(String(e && e.message || e))) break; }
     }
-    return failed(tried);
-  }
-  const errs = [];
-  for (const m of await imageModels()) {
-    const left = 112000 - (Date.now() - now);
-    if (left < 20000) break;
-    try {
-      const r = await this.helpers.httpRequest({
-        method: 'POST',
-        url: `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,
-        headers: { 'x-goog-api-key': GEMINI_KEY, 'Content-Type': 'application/json' },
-        body: { contents: [{ role: 'user', parts: fresh ? [{ text: prompt }] : [{ inline_data: { mime_type: mime, data } }, { text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } },
-        json: true,
-        timeout: Math.min(100000, left)
-      });
-      const parts = (r && r.candidates && r.candidates[0] && r.candidates[0].content && r.candidates[0].content.parts) || [];
-      const img = parts.map((p) => p.inlineData || p.inline_data).filter((x) => x && x.data)[0];
-      if (img) return out({ ok: true, image: img.data, mime: img.mimeType || img.mime_type || 'image/png', source: 'Gemini', model: m });
-      errs.push(m + ': no picture in the answer ' + parts.map((p) => p.text || '').join(' ').slice(0, 120));
-    } catch (e) { errs.push(m + ': ' + why(e)); }
   }
   return failed(errs);
 }

@@ -1,7 +1,6 @@
-/* Styles. Instant styles run in the browser on the photo's pixels (comic, manga, cartoon, pop art, sketch, oil, watercolour,
-   graffiti, neon, pixel, glitch, duotone…) as a step of the photo pipeline (doc.photo.style = {id, amt}).
-   AI styles (3D animation, anime, superheroes, animals…) send the photo to the hubs server's image model and replace the
-   photo with the answer (the original is kept in p.origSrc and can be brought back). */
+/* Styles. AI styles (3D animation, anime, superheroes, animals…) send the photo to the hubs server's image model (Gemini,
+   then FLUX on Cloudflare) and replace the photo with the answer (the original is kept in p.origSrc and can be brought back).
+   The panel is js/ai-studio.js. The pixel styles below are no longer offered; they stay so older projects still render. */
 (function () {
   'use strict';
   var FS = window.FS, $ = FS.$, $$ = FS.$$;
@@ -216,10 +215,11 @@
     ['angels', 'מלאכים וכנפיים', '🕊️', 'Give every person soft white angel wings and a glowing halo among dreamy clouds and golden light, ethereal painting.'],
     ['gold', 'פסל זהב', '🏆', 'Turn every person into a polished gold statue of themselves on a marble plinth in a museum, photorealistic.']
   ];
-  /* the image model (FLUX.2 on Cloudflare) takes pictures under 512px */
-  function photoB64(p) {
-    var im = FS.img(p.src), k = Math.min(1, 496 / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k);
-    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.92).split(',')[1];
+  FS.AI_KEEP = KEEP;
+  /* the photo for the image model: a big copy for Gemini, and one under 512px for FLUX.2 on Cloudflare */
+  function photoB64(p, long) {
+    var im = FS.img(p.origSrc || p.src), k = Math.min(1, long / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k), x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.9).split(',')[1];
   }
   /* the answer is brought back to the original's shape and size (centre crop), so the frame, the faces and the layout stay where they were */
   function matchShape(res, orig) {
@@ -233,106 +233,19 @@
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
     var faces = p.faces ? p.faces.length : 0; if (faces) prompt += ' There are exactly ' + faces + ' faces in the photo; keep all ' + faces + '.';
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
-    return FS.askServer({ action: 'restyle', prompt: prompt, image: photoB64(p), mime: 'image/jpeg', w: w, h: h }).then(function (r) {
+    return FS.askServer({ action: 'restyle', prompt: prompt, image: photoB64(p, 1280), small: photoB64(p, 496), mime: 'image/jpeg', w: w, h: h }).then(function (r) {
       if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
       var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
       return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
     }).then(function (res) { return matchShape(res, orig); }).then(function (im) {
       if (!p.origSrc) p.origSrc = p.src;
-      p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null;
+      p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
       FS.fitPhoto(p.doc, im); FS.snap(p); return p;
     });
   };
-  /* in-browser AI (js/anime.js): the anime painting, then optionally one of the instant styles on top */
-  FS.LOCAL_AI = [
-    ['anime', 'אנימה', '🌸', null],
-    ['comic', 'קומיקס', '💥', { id: 'comic', amt: 55 }],
-    ['cartoon', 'סרט מצויר', '🎬', { id: 'cartoon', amt: 45 }],
-    ['oil', 'ציור שמן', '🖼️', { id: 'oil', amt: 50 }],
-    ['sketch', 'רישום צבעוני', '✏️', { id: 'sketch', amt: 35 }],
-    ['water', 'אנימה בצבעי מים', '💧', { id: 'watercolor', amt: 45 }],
-    ['pastel', 'אנימה פסטל', '🌷', { id: 'pastel', amt: 55 }],
-    ['pop', 'אנימה פופ־ארט', '🟨', { id: 'pop', amt: 40 }],
-    ['stained', 'אנימה ויטראז׳', '⛪', { id: 'stained', amt: 40 }],
-    ['neon', 'אנימה ניאון', '💡', { id: 'neon', amt: 35 }],
-    ['mosaic', 'אנימה פסיפס', '🧩', { id: 'mosaic', amt: 45 }]
-  ];
-  FS.localRestyle = function (p, after, progress) {
-    var orig = FS.img(p.origSrc || p.src);
-    return FS.animeCanvas(orig, 1280, progress).then(function (c) {
-      return new Promise(function (ok) { c.toBlob(function (b) { ok(FS.loadImg(URL.createObjectURL(b))); }, 'image/jpeg', 0.94); });
-    }).then(function (res) { return matchShape(res, orig); }).then(function (im) {
-      if (!p.origSrc) p.origSrc = p.src;
-      p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null;
-      FS.fitPhoto(p.doc, im); p.doc.photo.style = after ? { id: after.id, amt: after.amt } : null; FS.snap(p); return p;
-    });
-  };
-  function runLocal(s) {
-    var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
-    var done = 0, chain = Promise.resolve(), failed = null;
-    FS.busy('🧠 טוען את מודל ה־AI למחשב (בפעם הראשונה כ־9MB)…');
-    list.forEach(function (p, i) { chain = chain.then(function () {
-      return FS.localRestyle(p, s[3], function (a, n) { FS.busy('🧠 ' + s[1] + ' · תמונה ' + (i + 1) + '/' + list.length + ' · ' + Math.round(a / n * 100) + '%'); }).then(function () { done++; }).catch(function (e) { failed = e; });
-    }); });
-    chain.then(function () {
-      FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip();
-      if (done) FS.toast('✨ ' + s[1] + ': ' + done + ' תמונות. "החזרת המקור" מבטל.', 4000);
-      if (failed) FS.toast(String(failed.message) === 'offline' ? 'בפעם הראשונה צריך אינטרנט כדי לטעון את מודל ה־AI. אחר כך זה עובד גם בלי.' : 'ה־AI במחשב לא הצליח בתמונה הזו. אפשר לנסות שוב.', 6000);
-    });
-  }
-
   FS.unstyle = function (p) {
     if (!p.origSrc) return false; p.src = p.origSrc; delete p.origSrc; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
     FS.fitPhoto(p.doc, FS.img(p.src)); p.doc.photo.style = null; FS.snap(p); return true;
   };
 
-  /* ---------- the panel ---------- */
-  function thumb(p, id) {
-    var im = FS.img(p.src), k = 150 / Math.max(im.naturalWidth, im.naturalHeight), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k), x = c.getContext('2d', { willReadFrequently: true });
-    x.drawImage(im, 0, 0, c.width, c.height); var d = x.getImageData(0, 0, c.width, c.height); FS.applyStyle(d.data, c.width, c.height, { id: id, amt: 100 }, true); x.putImageData(d, 0, 0); return c;
-  }
-  FS.buildStyles = function () {
-    var p = FS.cur(), g = $('#local-styles'), a = $('#ai-styles'); if (!g) return;
-    g.innerHTML = ''; var cur = p && p.doc.photo.style && p.doc.photo.style.id;
-    FS.LOCAL_STYLES.forEach(function (s) {
-      var b = document.createElement('button'); b.className = 'tile' + (cur === s[0] ? ' on' : ''); b.dataset.id = s[0];
-      if (p) b.appendChild(thumb(p, s[0])); else { var e = document.createElement('i'); e.className = 'emo'; e.textContent = s[2]; b.appendChild(e); }
-      var t = document.createElement('span'); t.textContent = s[1]; b.appendChild(t);
-      b.addEventListener('click', function () {
-        var amt = Number($('#style-amt').value), on = !(FS.cur() && FS.cur().doc.photo.style && FS.cur().doc.photo.style.id === s[0]);
-        FS.targets().forEach(function (q) { q.doc.photo.style = on ? { id: s[0], amt: amt } : null; if (q !== FS.cur()) FS.snap(q); });
-        FS.changed(); FS.refreshStrip && FS.refreshStrip(); $$('#local-styles .tile').forEach(function (x) { x.classList.toggle('on', on && x.dataset.id === s[0]); });
-      });
-      g.appendChild(b);
-    });
-    var la = $('#local-ai-styles');
-    if (la && !la.children.length) FS.LOCAL_AI.forEach(function (s) {
-      var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + s[1] + '</span>';
-      b.addEventListener('click', function () { runLocal(s); }); la.appendChild(b);
-    });
-    if (!a.children.length) FS.AI_STYLES.forEach(function (s) {
-      var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + s[1] + '</span>';
-      b.addEventListener('click', function () { runAI(s[3] + KEEP, s[1]); }); a.appendChild(b);
-    });
-  };
-  function runAI(prompt, label) {
-    var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
-    var done = 0, chain = Promise.resolve(), failed = null;
-    list.forEach(function (p) { chain = chain.then(function () { FS.busy('🤖 ' + label + ' · ' + (done + 1) + '/' + list.length + ' (עד דקה לתמונה)'); return FS.findFaces(p, true).catch(function () {}).then(function () { return FS.restyle(p, prompt); }).then(function () { done++; }).catch(function (e) { failed = e; }); }); });
-    chain.then(function () {
-      FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip();
-      if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות. "החזרת המקור" מבטל.', 4000);
-      if (failed) {
-        var m = String(failed.message);
-        FS.toast(FS.aiError(m) + ' בינתיים יש סגנונות מיידיים למעלה, שעובדים בלי אינטרנט.', 7000);
-      }
-    });
-  }
-  $('#style-amt').addEventListener('input', function () {
-    $('#o-style-amt').textContent = this.value + '%'; var v = Number(this.value);
-    FS.targets().forEach(function (q) { if (q.doc.photo.style) q.doc.photo.style.amt = v; }); FS.render(true); FS.commitSoon();
-  });
-  $('#style-none').addEventListener('click', function () { FS.targets().forEach(function (q) { q.doc.photo.style = null; FS.snap(q); }); FS.changed(); FS.buildStyles(); });
-  $('#style-orig').addEventListener('click', function () { var n = 0; FS.targets().forEach(function (q) { if (FS.unstyle(q)) n++; }); FS.emit('doc'); FS.toast(n ? 'המקור הוחזר ל־' + n + ' תמונות' : 'אין סגנון AI להחזיר'); });
-  $('#ai-custom-go').addEventListener('click', function () { var t = $('#ai-custom').value.trim(); if (!t) return FS.toast('כותבים מה לעשות לתמונה'); runAI('Edit this photo: ' + t + '.' + KEEP, 'עריכת AI'); });
 })();

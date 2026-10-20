@@ -5,7 +5,11 @@
   var view = $('#view'), vctx = view.getContext('2d'), wrap = $('#wrap');
 
   /* ---------- helpers shared with the other files ---------- */
-  FS.busy = function (msg) { var b = $('#busy'); if (msg) { $('#busy-msg').textContent = msg; b.hidden = false; } else b.hidden = true; };
+  /* the busy sign; with onStop it shows "⏹ עצירה" (an AI run can be stopped in the middle) */
+  FS.busy = function (msg, onStop) {
+    var b = $('#busy'), st = $('#busy-stop'); if (msg) { $('#busy-msg').textContent = msg; b.hidden = false; } else b.hidden = true;
+    if (st) { if (onStop !== undefined || !msg) st.hidden = !(msg && onStop); if (onStop) st.onclick = function () { st.hidden = true; $('#busy-msg').textContent = 'עוצר…'; onStop(); }; }
+  };
   FS.dialog = function (title, html, wide) {
     var d = $('#dlg'); $('#dlg-title').textContent = title; var body = $('#dlg-body'); body.innerHTML = html || '';
     d.classList.toggle('wide', !!wide); if (!d.open) d.showModal(); return body;
