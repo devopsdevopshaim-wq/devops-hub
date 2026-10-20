@@ -174,4 +174,31 @@
       var k = FS.keyGreenWindow(res, W, H); if (!k) throw new Error('no-window'); return k;
     });
   };
+
+  /* ---------- the invitation itself as the magnet ----------
+     The invitation stays exactly as it is; a window for the photo is cut where the owner marked it (rect in 0..1 of the
+     invitation), in a shape: rect, round (rounded corners), oval or arch. The canvas has the shape of the magnet size
+     chosen (W×H); the invitation is fitted to it with the smallest crop. */
+  FS.inviteAsMagnet = function (img, W, H, rect, shape) {
+    var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, c = FS.canvas(W, H), x = c.getContext('2d');
+    var k = Math.max(W / iw, H / ih), dw = iw * k, dh = ih * k, ox = (W - dw) / 2, oy = (H - dh) / 2;
+    x.imageSmoothingQuality = 'high'; x.drawImage(img, ox, oy, dw, dh);
+    var r = rect || { x: 0.17, y: 0.2, w: 0.66, h: 0.44 };
+    var hx = ox + r.x * dw, hy = oy + r.y * dh, hw = r.w * dw, hh = r.h * dh;
+    hx = Math.max(0, hx); hy = Math.max(0, hy); hw = Math.min(W - hx, hw); hh = Math.min(H - hy, hh);
+    x.save(); x.globalCompositeOperation = 'destination-out'; x.fillStyle = '#000'; x.beginPath();
+    if (shape === 'oval') x.ellipse(hx + hw / 2, hy + hh / 2, hw / 2, hh / 2, 0, 0, Math.PI * 2);
+    else if (shape === 'arch') { var rr = hw / 2; x.moveTo(hx, hy + hh); x.lineTo(hx, hy + Math.min(rr, hh)); x.arc(hx + rr, hy + Math.min(rr, hh), rr, Math.PI, 0); x.lineTo(hx + hw, hy + hh); x.closePath(); }
+    else { var q = shape === 'round' ? Math.min(hw, hh) * 0.12 : 0; FS.roundRect ? FS.roundRect(x, hx, hy, hw, hh, q) : x.rect(hx, hy, hw, hh); }
+    x.fill(); x.restore();
+    /* a fine edge around the window, in the invitation's own darkest tone, so the photo sits in it neatly */
+    var t = FS.canvas(8, 8), tx = t.getContext('2d'); tx.drawImage(img, 0, 0, 8, 8); var d = tx.getImageData(0, 0, 8, 8).data, best = 999, col = '#000';
+    for (var i = 0; i < 64; i++) { var L = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11; if (L < best) { best = L; col = 'rgba(' + d[i * 4] + ',' + d[i * 4 + 1] + ',' + d[i * 4 + 2] + ',.55)'; } }
+    x.save(); x.strokeStyle = col; x.lineWidth = Math.max(1.5, Math.min(W, H) * 0.003); x.beginPath();
+    if (shape === 'oval') x.ellipse(hx + hw / 2, hy + hh / 2, hw / 2, hh / 2, 0, 0, Math.PI * 2);
+    else if (shape === 'arch') { var r2 = hw / 2; x.moveTo(hx, hy + hh); x.lineTo(hx, hy + Math.min(r2, hh)); x.arc(hx + r2, hy + Math.min(r2, hh), r2, Math.PI, 0); x.lineTo(hx + hw, hy + hh); x.closePath(); }
+    else { var q2 = shape === 'round' ? Math.min(hw, hh) * 0.12 : 0; FS.roundRect ? FS.roundRect(x, hx, hy, hw, hh, q2) : x.rect(hx, hy, hw, hh); }
+    x.stroke(); x.restore();
+    return { canvas: c, hole: { x: hx, y: hy, w: hw, h: hh } };
+  };
 })();

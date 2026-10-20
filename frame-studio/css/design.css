@@ -135,3 +135,7 @@ label.btn { display: inline-flex; }
 .dz-step { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .dz-step > b { width: 24px; height: 24px; border-radius: 50%; background: var(--gold); color: #fff; display: grid; place-items: center; font-size: 13px; flex: none; }
 .dz-ext [data-ext].on { border-color: var(--gold); background: rgba(201,164,92,.15); }
+/* the invitation itself as the magnet */
+.dz-im { border-width: 2px; }
+.dz-im [data-im].on { border-color: var(--gold); background: rgba(201,164,92,.15); }
+.dz-im-state { margin: 0; font-weight: 700; font-size: 14px; color: #8a6a2e; }

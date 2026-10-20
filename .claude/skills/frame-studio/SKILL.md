@@ -57,6 +57,15 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - Elements are added on the 🧩 tab and deleted with 🗑 or the Delete key; "ניקוי כל האלמנטים" removes them all.
 - **Videos.** `media/explainer.mp4` (60s) and `media/promo.mp4` (30s), with posters, sit in the site's `#videos` section. They were made with HyperFrames in `videos/frame-explainer` and `videos/frame-styles-promo`, and the music bed is synthesized in code.
 
+## Admin-only studio, calendar sync, the invitation as the magnet (Oct 2026)
+- **The studio opens only for the owner** (`js/gate.js`, `css/gate.css`). `<body class="gated">` hides everything until `FS.account.isAdmin()`. A device signed in as admin opens at once, even offline at an event. `FS.account.me()` then checks with the server, and a signed-out, revoked or non-admin session closes it. Anyone else gets `FS.account.form(..., { adminOnly: true })`.
+  - This hides the tool; the protection itself is on the server, since business data needs an admin token there. The public site no longer links to the studio.
+- **Calendar sync** (`admin-biz.js`, `#cal-link`): "📅 הוספה ל־Google Calendar" opens `calendar.google.com/calendar/render?cid=webcal://…/frame-cal?k=…`, which subscribes the private feed in the signed-in Gmail account. There is also an Apple/Outlook `webcal:` link, and the raw link sits under a fold. Google refreshes such feeds every few hours.
+- **The invitation itself as the magnet** (designer, "💌 ההזמנה עצמה היא המגנט"): the owner marks the photo's place on the invitation (the `#inv-box` selection, kept in `FS.invWindow`) and picks a shape: rect, round, oval or arch.
+  - `FS.inviteAsMagnet(img, W, H, rect, shape)` keeps the invitation untouched, cuts the window, and adds a fine edge in the invitation's darkest tone.
+  - The magnet format is the one closest to the invitation's proportions. The designer's names, date and line are cleared, because the invitation has its own.
+  - The AI frame and ChatGPT/Gemini routes stay below it.
+
 ## Showcase page (`show.html`, Oct 2026)
 A designed landing page for customers, linked from the site's nav ("✨ החוויה"). Its look: a fridge door at night, with enamel #EEF0F3, night #14101F, horseshoe-magnet red #E5383B, steel and foil gold. Type is Karantina for display, Assistant for body text and Rubik 900 for the letter magnets.
 - **Hero:** the headline "על המקרר" is coloured plastic letter magnets. A camera flash plays on arrival, and photo magnets (`show/m*.webp`, the site's sample magnets) snap on and can be dragged.

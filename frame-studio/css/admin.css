@@ -151,3 +151,8 @@ body.pv-on .adm { grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 42%)
   .adm-h { min-width: 0; } .adm-h h1 { overflow-wrap: anywhere; }
   .adm-main > .adm-row { min-width: 0; } .adm-row input { min-width: 0; max-width: 100%; }
 }
+/* calendar sync with Google */
+.cal-sync { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 4px; }
+.cal-raw { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cal-raw input { flex: 1; min-width: 220px; }
+#cal-link details summary { cursor: pointer; font-size: 13px; opacity: .8; }

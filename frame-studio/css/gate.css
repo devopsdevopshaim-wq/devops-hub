@@ -1,0 +1,27 @@
+/* The studio's sign-in gate (js/gate.js): nothing of the studio shows until the owner is signed in. */
+body.gated > :not(#gate):not(script):not(.toast) { visibility: hidden !important; }
+#gate { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 20px; overflow-y: auto;
+  background: radial-gradient(70% 55% at 50% 0%, rgba(214, 183, 126, .16), transparent 70%), #0D0B10; color: #F5EFE4; font-family: 'Assistant', 'Heebo', system-ui, sans-serif; }
+#gate::after { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.gate-card { position: relative; z-index: 1; width: min(440px, 100%); padding: 38px 32px 28px; border-radius: 22px; background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(214, 183, 126, .25); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 40px 90px -30px rgba(0, 0, 0, .8); backdrop-filter: blur(10px); }
+.gate-eyebrow { margin: 0 0 10px; font: 500 12px 'Heebo', sans-serif; letter-spacing: .16em; color: #D6B77E; }
+#gate h1 { margin: 0 0 10px; font: 700 40px/1.05 'Frank Ruhl Libre', serif; letter-spacing: -.01em;
+  background: linear-gradient(115deg, #A9864C 0%, #F3DDA6 28%, #C9A35F 50%, #FFF1C9 66%, #A9864C 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.gate-lead { margin: 0 0 22px; color: #BDB3A3; font-size: 16px; line-height: 1.6; }
+#gate .acc { display: grid; gap: 14px; }
+#gate .acc h2 { margin: 0; font: 700 22px 'Frank Ruhl Libre', serif; color: #F5EFE4; }
+#gate .acc label { display: grid; gap: 6px; font: 500 13px 'Heebo', sans-serif; letter-spacing: .04em; color: #BDB3A3; }
+#gate .acc input { font: 600 16px 'Assistant', sans-serif; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(214, 183, 126, .25); background: rgba(0, 0, 0, .35); color: #F5EFE4; }
+#gate .acc input:focus { outline: none; border-color: #D6B77E; box-shadow: 0 0 0 3px rgba(214, 183, 126, .18); }
+#gate .btn { display: block; width: 100%; border: 0; border-radius: 999px; padding: 13px 20px; cursor: pointer; font: 700 17px 'Assistant', sans-serif; color: #0D0B10;
+  background: linear-gradient(115deg, #A9864C 0%, #F3DDA6 28%, #C9A35F 50%, #FFF1C9 66%, #A9864C 100%); background-size: 200% 100%; transition: background-position .8s cubic-bezier(.2, .8, .2, 1), transform .2s; }
+#gate .btn:hover { background-position: 100% 0; transform: translateY(-1px); }
+#gate .link { background: none; border: 0; color: #D6B77E; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; font: 500 14px 'Assistant', sans-serif; justify-self: start; padding: 0; }
+#gate .acc-note { min-height: 1.2em; margin: 0; color: #E8C3B9; font-size: 14px; }
+#gate .hint { color: #BDB3A3; font-size: 14px; margin: 0; }
+.gate-back { display: inline-block; margin-top: 18px; color: #BDB3A3; font-size: 14px; text-decoration: none; }
+.gate-back:hover { color: #F5EFE4; }
+#gate :focus-visible { outline: 2px solid #D6B77E; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { #gate .btn { transition: none; } }
