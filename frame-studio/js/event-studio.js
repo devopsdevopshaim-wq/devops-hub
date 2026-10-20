@@ -111,6 +111,7 @@
 
   /* ---------- quality: blur (variance of the Laplacian) and closed eyes (face landmarks) ---------- */
   var landmarker = null;
+  FS.getLandmarker = function () { return getLandmarker(); };
   function getLandmarker() {
     if (landmarker) return landmarker;
     landmarker = FS.loadVision().then(function (v) {
