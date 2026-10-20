@@ -109,21 +109,9 @@
      arrival, to 3000px on its long side (enough for a 20x30cm print) and re-encoded as JPEG: the editor, the AI and the
      print stay fast and light, and the result still prints sharp. */
   FS.PHOTO_MAX = 3000;
-  /* a big photo is decoded off the main thread (createImageBitmap) and shrunk there, so opening hundreds doesn't freeze the page */
-  function shrunkFile(file) {
-    var max = FS.PHOTO_MAX;
-    if (!window.createImageBitmap || /gif|svg/.test(file.type)) return Promise.resolve(null);
-    return createImageBitmap(file).then(function (bmp) {
-      var big = Math.max(bmp.width, bmp.height) > max || (file.size > 4000000 && !/png|webp/.test(file.type));
-      if (!big) { bmp.close && bmp.close(); return null; }
-      var k = Math.min(1, max / Math.max(bmp.width, bmp.height)), c = FS.canvas(bmp.width * k, bmp.height * k), cx = c.getContext('2d');
-      cx.imageSmoothingQuality = 'high'; cx.drawImage(bmp, 0, 0, c.width, c.height); bmp.close && bmp.close();
-      return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.9); });
-    }).catch(function () { return null; });
-  }
   FS.addPhotoFile = function (file) {
-    var url;
-    return shrunkFile(file).then(function (b) { url = URL.createObjectURL(b || file); return FS.loadImg(url); }).then(function (im) {
+    var url = URL.createObjectURL(file);
+    return FS.loadImg(url).then(function (im) {
       var max = FS.PHOTO_MAX;
       if (Math.max(im.naturalWidth, im.naturalHeight) > max || (file.size > 4000000 && !/png|webp/.test(file.type))) {
         var k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k), cx = c.getContext('2d');

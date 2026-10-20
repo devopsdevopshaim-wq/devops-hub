@@ -29,6 +29,7 @@
   [['./', '🏠 לאתר העסק'], ['design.html?owner', '✨ מסגרת מהזמנה'], ['../portfolio/', '🧰 כל האתרים שלי']].forEach(function (l) {
     var a = document.createElement('a'); a.className = 'btn'; a.href = l[0]; a.target = '_blank'; a.rel = 'noopener'; a.textContent = l[1]; menu.appendChild(a);
   });
+  var heal = document.createElement('button'); heal.className = 'btn'; heal.textContent = '🔄 רענון מלא (אם משהו נתקע)'; heal.addEventListener('click', function () { if (window.FS_HEAL) window.FS_HEAL(); else location.reload(); }); menu.appendChild(heal);
   act.appendChild(more);
   bar.appendChild(act);
   $('#sb-menu', more).addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; this.setAttribute('aria-expanded', String(!menu.hidden)); });
