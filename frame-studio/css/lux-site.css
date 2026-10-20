@@ -429,3 +429,6 @@ input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.8) sepia(.
   .lux-rv { opacity: 1; transform: none; }
   .btn.gold:hover { background-position: 100% 0; }
 }
+/* landing pages: one start-aligned editorial column, like the main site */
+.landing .sec > h2 { text-align: start; }
+.landing .sec > .note.center { text-align: start; }
