@@ -127,13 +127,11 @@
   /* ---------- formats ---------- */
   /* the owner's own sizes (in mm), kept in this browser: they show in every size menu */
   /* the owner's own sizes, 3 to 5 of them (in mm), kept in this browser: they are the only sizes the studio offers */
-  var MAX_SIZES = 5, DEF_SIZES = [{ id: 's1', name: 'מגנט 5×7.5', w: 50, h: 75 }, { id: 's2', name: 'מגנט לרוחב 7.5×5', w: 75, h: 50 }, { id: 's3', name: 'תמונה 10×15', w: 100, h: 150 }];
+  var DEF_SIZES = [{ id: 's1', name: 'מגנט 5×7.5', w: 50, h: 75 }, { id: 's2', name: 'מגנט לרוחב 7.5×5', w: 75, h: 50 }, { id: 's3', name: 'תמונה 10×15', w: 100, h: 150 }];
   if (!Array.isArray(FS.prefs.sizes) || !FS.prefs.sizes.length) { FS.prefs.sizes = DEF_SIZES.slice(); FS.savePrefs(); }
-  FS.MAX_SIZES = MAX_SIZES;
-  FS.mySizes = function () { return Array.isArray(FS.prefs.sizes) ? FS.prefs.sizes.slice(0, MAX_SIZES) : []; };
+  FS.mySizes = function () { return Array.isArray(FS.prefs.sizes) ? FS.prefs.sizes.slice() : []; };
   FS.saveSize = function (name, wmm, hmm) {
     var l = FS.mySizes().filter(function (z) { return !(z.w === wmm && z.h === hmm); });
-    if (l.length >= MAX_SIZES) { FS.toast('אפשר עד ' + MAX_SIZES + ' גדלים. מוחקים אחד ב"ניהול הגדלים".', 5000); return null; }
     var z = { id: 's' + FS.uid(), name: String(name || '').slice(0, 30) || (wmm / 10) + '×' + (hmm / 10), w: wmm, h: hmm }; l.push(z);
     FS.prefs.sizes = l; FS.savePrefs(); FS.emit('sizes'); return z;
   };
@@ -161,10 +159,10 @@
   if (!FS.sizeOf(FS.prefs.fmt || '')) { FS.prefs.fmt = 'my:' + FS.mySizes()[0].id; FS.savePrefs(); }
   $('#fmt-new').value = FS.prefs.fmt;
   $('#fmt-new').addEventListener('change', function () { FS.prefs.fmt = this.value; FS.savePrefs(); });
-  /* the sizes manager: name, width and height in cm, up to five */
+  /* the sizes manager: name, width and height in cm, as many as the owner wants */
   FS.manageSizes = function () {
     var list = FS.mySizes().map(function (z) { return Object.assign({}, z); });
-    var body = FS.dialog('📐 הגדלים שלי', '<p class="hint">מגדירים 3 עד 5 גדלים שעובדים איתם. רק הם יופיעו בכל התפריטים, ונשמרים בתוכנה.</p><div id="sz-rows"></div><button class="btn wide" id="sz-add">＋ גודל</button><button class="btn primary wide" id="sz-save">💾 שמירה</button>');
+    var body = FS.dialog('📐 הגדלים שלי', '<p class="hint">מוסיפים כמה גדלים שרוצים: רק הגדלים ששמרת יופיעו בכל התפריטים, והם נשמרים בתוכנה.</p><div id="sz-rows"></div><button class="btn wide" id="sz-add">＋ גודל</button><button class="btn primary wide" id="sz-save">💾 שמירה</button>');
     function rows() {
       $('#sz-rows', body).innerHTML = list.map(function (z, i) { return '<div class="sz-row" data-i="' + i + '"><input class="sz-n" maxlength="30" value="' + FS.esc(z.name) + '" placeholder="שם"><label>רוחב<input class="sz-w" type="number" min="1" max="100" step="0.1" value="' + (z.w / 10) + '"></label><label>גובה<input class="sz-h" type="number" min="1" max="100" step="0.1" value="' + (z.h / 10) + '"></label><button class="btn small danger sz-del" title="מחיקה">🗑</button></div>'; }).join('');
       $$('.sz-row', body).forEach(function (r) {
@@ -174,14 +172,13 @@
         $('.sz-h', r).addEventListener('input', function () { z.h = Math.round(Number(this.value) * 10); });
         $('.sz-del', r).addEventListener('click', function () { if (list.length <= 1) return FS.toast('צריך לפחות גודל אחד'); list.splice(Number(r.dataset.i), 1); rows(); });
       });
-      $('#sz-add', body).disabled = list.length >= MAX_SIZES;
     }
-    $('#sz-add', body).addEventListener('click', function () { if (list.length >= MAX_SIZES) return; list.push({ id: 's' + FS.uid(), name: 'גודל חדש', w: 60, h: 90 }); rows(); });
+    $('#sz-add', body).addEventListener('click', function () { list.push({ id: 's' + FS.uid(), name: 'גודל חדש', w: 60, h: 90 }); rows(); });
     $('#sz-save', body).addEventListener('click', function () {
       var ok = list.filter(function (z) { return z.w > 9 && z.h > 9 && z.w <= 1000 && z.h <= 1000; });
       if (!ok.length) return FS.toast('רוחב וגובה בס״מ');
       ok.forEach(function (z) { z.name = String(z.name || '').trim().slice(0, 30) || (z.w / 10) + '×' + (z.h / 10); });
-      FS.prefs.sizes = ok.slice(0, MAX_SIZES); FS.savePrefs(); FS.emit('sizes'); FS.closeDialog(); FS.toast('✔ ' + ok.length + ' גדלים נשמרו');
+      FS.prefs.sizes = ok; FS.savePrefs(); FS.emit('sizes'); FS.closeDialog(); FS.toast('✔ ' + ok.length + ' גדלים נשמרו');
     });
     rows();
   };

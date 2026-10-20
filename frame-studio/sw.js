@@ -1,5 +1,5 @@
 /* פריים־סטודיו offline shell: the page and its files come from the network first, the cache when offline. */
-var CACHE = 'frame-studio-v16';
+var CACHE = 'frame-studio-v17';
 /* the AI models and libraries are big and never change: kept in their own cache, served from it first, so the AI works offline */
 var HEAVY = 'frame-studio-ai-v1';
 var FILES = ['./', 'index.html', 'studio.html', 'business.json', 'css/studio.css', 'css/site.css', 'js/core.js', 'js/frames.js', 'js/events.js', 'js/site.js', 'js/ui.js', 'js/ai.js', 'js/output.js', 'js/games.js', 'js/event-studio.js', 'js/styles.js', 'js/grid.js', 'js/ai-local.js', 'js/printlog.js', 'js/shell.js', 'js/inv-frame.js', 'vendor/qrcode.js', 'js/anime.js', 'js/invite.js', 'design.html', 'js/design.js', 'css/design.css', 'admin.html', 'js/admin.js', 'js/admin-biz.js', 'js/account.js', 'css/admin.css', 'frames/frames.json', 'js/library.js', 'js/intro.js', 'js/business.js', 'js/deals.js', 'pay.html', 'js/pay.js', 'css/pay.css', 'js/grow.js', 'js/chat.js', 'gallery.html', 'js/gallery.js', 'css/gallery.css', 'accessibility.html', 'js/landing.js', 'js/fridge3d.js', 'css/intro.css', 'icon.svg', 'manifest.webmanifest'];
