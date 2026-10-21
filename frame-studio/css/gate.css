@@ -34,3 +34,6 @@ body.gated > :not(#gate):not(script):not(.toast) { visibility: hidden !important
 /* a licence holder uses the studio; the owner's business screens and admin links are not theirs */
 body.studio-licensed #biz-btn, body.studio-licensed #pkg-btn, body.studio-licensed #deals-btn, body.studio-licensed a[href="admin.html"],
 body.studio-licensed .sb-menu a[href="admin.html"] { display: none !important; }
+#gate .gate-agree { display: flex !important; grid-template-columns: none; align-items: center; gap: 10px; letter-spacing: 0; font: 500 14px 'Assistant', sans-serif; color: #F5EFE4; }
+#gate .gate-agree input { width: 18px; height: 18px; padding: 0; accent-color: #D6B77E; }
+#gate .gate-agree a { color: #D6B77E; }

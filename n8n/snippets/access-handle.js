@@ -224,6 +224,8 @@ switch (b.action) {
   // per email; it is fixed to that person, works on ONE computer (bound on first activation by a hashed machine id), and the owner
   // can see, revoke, free or replace it. Codes are random (16 characters, ~79 bits), activation is rate-limited and locks after
   // repeated failures, and every activation from another computer is refused and reported to the owner.
+  // the studio's price, for the download page (public)
+  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪' }); }
   case 'lic-activate': {
     const e = email(b.email), code = String(b.code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''), mach = String(b.machine || '').toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || code.length < 10 || !/^[a-f0-9]{32,64}$/.test(mach)) return out({ ok: false, error: 'bad-input' }, 400);
@@ -238,6 +240,10 @@ switch (b.action) {
       return out({ ok: false, error: 'bad-license' }, 401);
     }
     if (!L.active) { log('הפעלת סטודיו: רישיון מבוטל', e); return out({ ok: false, error: 'license-revoked' }, 403); }
+    // a licence opens only after the owner recorded the payment, and only with the purchase agreement accepted (its version is kept)
+    if (!L.paid) { log('הפעלת סטודיו: עוד לא שולם', e); return out({ ok: false, error: 'license-unpaid' }, 402); }
+    const agreeVer = line(b.agree, 20);
+    if (!/^v\d+$/.test(agreeVer)) return out({ ok: false, error: 'agreement-needed' }, 400);
     const mh = sha256hex('lic-machine:' + mach), iso = new Date(now).toISOString();
     L.history = (L.history || []).slice(0, 29);
     if (L.machine && L.machine !== mh) {
@@ -246,6 +252,7 @@ switch (b.action) {
       return out({ ok: false, error: 'license-in-use' }, 403, alert('ניסיון להפעיל סטודיו במחשב נוסף', `הקוד של ${L.name || e} (${e}) הוזן במחשב אחר מזה שהוא רשום אליו, והכניסה נחסמה.\nמחשב: ${UA || 'לא ידוע'}\nאם הלקוח החליף מחשב: במסך הניהול ← רישיונות סטודיו ← "שחרור מחשב".`));
     }
     sd.fails['lic:' + e] = [];
+    if (!L.agreement || L.agreement.ver !== agreeVer) L.agreement = { ver: agreeVer, at: iso, ip: maskIp(IP), ua: line(UA, 90) };
     if (!L.machine) { L.machine = mh; L.boundAt = iso; L.platform = line(b.platform, 20); L.desktop = b.desktop === '1' || b.desktop === true; L.history.unshift({ at: iso, what: 'הופעל במחשב', ip: maskIp(IP), ua: line(UA, 90) }); log('סטודיו הופעל במחשב חדש', e); }
     L.lastSeen = iso; L.lastIp = maskIp(IP); L.ua = line(UA, 110); L.version = line(b.version, 20);
     for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h];   // one live session per licence
@@ -257,6 +264,7 @@ switch (b.action) {
     if (!s || s.role !== 'studio') return out({ ok: false, error: 'signed-out' }, 401);
     const L = (sd.licenses || {})[s.lic];
     if (!L || !L.active) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-revoked' }, 403); }
+    if (!L.paid) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-unpaid' }, 402); }
     if (!/^[a-f0-9]{32,64}$/.test(mach) || L.machine !== sha256hex('lic-machine:' + mach) || s.mh !== L.machine) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-moved' }, 403); }
     if (!L.lastSeen || now - Date.parse(L.lastSeen) > 10 * 60000) { L.lastSeen = new Date(now).toISOString(); L.lastIp = maskIp(IP); L.version = line(b.version, 20) || L.version; }
     if (s.exp - now < 7 * DAY) s.exp = now + 30 * DAY;   // in use: the session renews
@@ -268,6 +276,8 @@ switch (b.action) {
   case 'lic-release':
   case 'lic-rotate':
   case 'lic-mail':
+  case 'lic-pay':
+  case 'lic-settings':
   case 'lic-delete': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     sd.licenses = sd.licenses || {};
@@ -276,16 +286,22 @@ switch (b.action) {
     const endSessions = (e) => { for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h]; };
     const online = {}; for (const x of Object.values(sd.sessions)) if (x && x.lic && x.exp > now) online[x.lic] = 1;
     const view = (L) => ({ email: L.email, name: L.name || '', phone: L.phone || '', note: L.note || '', code: L.code, active: L.active !== false, createdAt: L.createdAt, bound: !!L.machine,
-      boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10) });
+      boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10),
+      price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null });
+    sd.licSettings = sd.licSettings || { price: 990, currency: '₪' };
+    const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
     const mailCode = (L) => mailTo(L.email, 'פריים־סטודיו · קוד ההפעלה האישי שלך', `שלום ${L.name || ''},\n\nקוד ההפעלה האישי שלך לפריים־סטודיו:\n${L.code}\n\nהורדה והתקנה: ${STUDIO_DL}\nבהפעלה הראשונה מזינים את המייל הזה (${L.email}) ואת הקוד.\n\nהקוד אישי ומתאים למחשב אחד בלבד: אחרי ההפעלה הוא ננעל למחשב הזה. החלפת מחשב: פונים לחיים, 054-4979771.\nאין להעביר את הקוד לאחרים.\n\nפריים מגנטים`);
-    if (b.action === 'lic-list') return out({ ok: true, licenses: list() });
+    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings });
+    if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
     if (b.action === 'lic-create') {
       const e = email(b.email), nm = line(b.name, 60);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2) return out({ ok: false, error: 'bad-input' }, 400);
       if (sd.licenses[e]) return out({ ok: false, error: 'license-exists' }, 400);
       if (Object.keys(sd.licenses).length >= 2000) return out({ ok: false, error: 'too-many-clients' }, 400);
-      const L = sd.licenses[e] = { email: e, name: nm, phone: phone(b.phone), note: line(b.note, 200), code: newCode(), createdAt: new Date(now).toISOString(), active: true, machine: null, history: [] };
+      const L = sd.licenses[e] = { email: e, name: nm, phone: phone(b.phone), note: line(b.note, 200), code: newCode(), createdAt: new Date(now).toISOString(), active: true, machine: null, history: [],
+        price: money(b.price) || sd.licSettings.price, paid: false, payments: [] };
+      if (b.paidNow === '1' || b.paidNow === true) { L.payments.push({ at: new Date(now).toISOString(), date: line(b.payDate, 10) || new Date(now).toISOString().slice(0, 10), amount: money(b.amount) || L.price, method: line(b.method, 30), ref: line(b.ref, 60), note: '' }); L.paid = true; }
       log('רישיון סטודיו נוצר', e);
       return out({ ok: true, license: view(L), licenses: list() }, 200, b.send === '1' || b.send === true ? mailCode(L) : null);
     }
@@ -295,6 +311,17 @@ switch (b.action) {
     if (b.action === 'lic-set') { L.active = b.active === '1' || b.active === true; if (!L.active) endSessions(e); L.history.unshift({ at: iso, what: L.active ? 'הופעל מחדש על ידי המנהל' : 'בוטל על ידי המנהל' }); log(L.active ? 'רישיון סטודיו הופעל' : 'רישיון סטודיו בוטל', e); }
     else if (b.action === 'lic-release') { L.machine = null; L.boundAt = null; endSessions(e); L.history.unshift({ at: iso, what: 'המחשב שוחרר על ידי המנהל' }); log('רישיון סטודיו שוחרר ממחשב', e); }
     else if (b.action === 'lic-rotate') { L.code = newCode(); L.machine = null; L.boundAt = null; endSessions(e); L.history.unshift({ at: iso, what: 'קוד חדש הונפק' }); log('קוד סטודיו חדש הונפק', e); }
+    else if (b.action === 'lic-pay') {
+      // the owner records a payment (or takes one back); the licence opens once it is marked paid
+      if (b.undo === '1' || b.undo === true) { L.payments = (L.payments || []).filter((p) => p.at !== String(b.at || '')); L.paid = L.payments.length > 0; if (!L.paid) endSessions(e); L.history.unshift({ at: iso, what: 'תשלום נמחק' }); }
+      else {
+        const amt = money(b.amount); if (!amt) return out({ ok: false, error: 'bad-amount' }, 400);
+        L.payments = (L.payments || []).concat({ at: iso, date: /^\d{4}-\d{2}-\d{2}$/.test(String(b.date || '')) ? String(b.date) : iso.slice(0, 10), amount: amt, method: line(b.method, 30), ref: line(b.ref, 60), note: line(b.note, 200) }).slice(-50);
+        if (b.price) L.price = money(b.price) || L.price;
+        L.paid = true; L.history.unshift({ at: iso, what: 'נרשם תשלום ' + amt });
+      }
+      log('תשלום סטודיו עודכן', e);
+    }
     else if (b.action === 'lic-delete') { endSessions(e); delete sd.licenses[e]; log('רישיון סטודיו נמחק', e); return out({ ok: true, licenses: list() }); }
     return out({ ok: true, license: view(L), licenses: list() }, 200, b.action === 'lic-mail' || (b.action === 'lic-rotate' && (b.send === '1' || b.send === true)) ? mailCode(L) : null);
   }

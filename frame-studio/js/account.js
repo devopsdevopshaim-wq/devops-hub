@@ -173,11 +173,13 @@
   }
   var GRACE = 7 * 864e5;   /* offline at an event: a licence checked in the last 7 days keeps working */
   FS.license = {
+    AGREEMENT: 'v1',   /* agreement.html's version; a new version asks everyone to accept again */
     get: licLoad,
+    info: function () { return auth('lic-info', {}); },
     isDesktop: function () { return !!(window.FSDesktop && window.FSDesktop.isDesktop); },
     activate: function (email, code) {
       return machine().then(function (m) {
-        return auth('lic-activate', { email: email, code: code, machine: m, desktop: FS.license.isDesktop() ? '1' : '', platform: (window.FSDesktop && window.FSDesktop.platform) || 'web', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') });
+        return auth('lic-activate', { email: email, code: code, machine: m, agree: FS.license.AGREEMENT, desktop: FS.license.isDesktop() ? '1' : '', platform: (window.FSDesktop && window.FSDesktop.platform) || 'web', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') });
       }).then(function (r) { if (r.ok) licKeep({ token: r.token, email: r.email, name: r.name || '', checkedAt: Date.now() }); return r; });
     },
     /* ok: {ok:true} online or within the grace; a revoked or moved licence is forgotten here too */
@@ -195,7 +197,7 @@
   };
   Object.assign(MSG, { 'bad-license': 'המייל או קוד ההפעלה לא נכונים.', 'license-in-use': 'הקוד הזה כבר מופעל במחשב אחר. כל קוד עובד במחשב אחד בלבד. להחלפת מחשב פונים לבעל העסק.',
     'license-revoked': 'הרישיון בוטל. פונים לבעל העסק.', 'license-moved': 'הרישיון שייך למחשב אחר. מפעילים מחדש עם הקוד.', 'license-exists': 'כבר יש רישיון למייל הזה.',
-    'license-offline-too-long': 'צריך חיבור לאינטרנט פעם בשבוע כדי לאמת את הרישיון.', 'not-found': 'לא נמצא.' });
+    'license-offline-too-long': 'צריך חיבור לאינטרנט פעם בשבוע כדי לאמת את הרישיון.', 'license-unpaid': 'הרישיון יופעל אחרי קבלת התשלום. פונים לבעל העסק.', 'agreement-needed': 'צריך לאשר את הסכם הרכישה.', 'bad-amount': 'סכום לא תקין.', 'not-found': 'לא נמצא.' });
 
   /* the site's content: business.json in the repository, with what the owner published from the admin on top */
   FS.siteData = function (prefix) {
