@@ -1,0 +1,21 @@
+{
+  "url": "https://api.github.com/repos/leejet/stable-diffusion.cpp/releases/260000000",
+  "html_url": "https://github.com/leejet/stable-diffusion.cpp/releases/tag/master-512-abc1234",
+  "id": 260000000,
+  "tag_name": "master-512-abc1234",
+  "name": "b512",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2026-10-01T10:00:00Z",
+  "published_at": "2026-10-01T10:30:00Z",
+  "assets": [
+    { "name": "cudart-sd-bin-win-cu12-x64.zip", "size": 404000000, "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111", "content_type": "application/zip", "state": "uploaded", "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-512-abc1234/cudart-sd-bin-win-cu12-x64.zip" },
+    { "name": "sd-master-abc1234-bin-Darwin-macOS-15.6-arm64.zip", "size": 9100000, "digest": null, "content_type": "application/zip", "state": "uploaded", "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-512-abc1234/sd-master-abc1234-bin-Darwin-macOS-15.6-arm64.zip" },
+    { "name": "sd-master-abc1234-bin-Linux-Ubuntu-24.04-x86_64.zip", "size": 12000000, "digest": null, "content_type": "application/zip", "state": "uploaded", "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-512-abc1234/sd-master-abc1234-bin-Linux-Ubuntu-24.04-x86_64.zip" },
+    { "name": "sd-master-abc1234-bin-Linux-Ubuntu-24.04-x86_64-vulkan.zip", "size": 31000000, "digest": null, "content_type": "application/zip", "state": "uploaded", "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-512-abc1234/sd-master-abc1234-bin-Linux-Ubuntu-24.04-x86_64-vulkan.zip" },
+    { "name": "sd-master-abc1234-bin-win-cpu-x64.zip", "size": 14000000, "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222", "content_type": "application/zip", "state": "uploaded", "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-512-abc1234/sd-master-abc1234-bin-win-cpu-x64.zip" },
+    { "name": "sd-master-abc1234-bin-win-cuda12-x64.zip", "size": 250000000, "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333", "content_type": "application/zip", "state": "uploaded", "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-512-abc1234/sd-master-abc1234-bin-win-cuda12-x64.zip" },
+    { "name": "sd-master-abc1234-bin-win-rocm-7.1-x64.zip", "size": 600000000, "digest": null, "content_type": "application/zip", "state": "uploaded", "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-512-abc1234/sd-master-abc1234-bin-win-rocm-7.1-x64.zip" },
+    { "name": "sd-master-abc1234-bin-win-vulkan-x64.zip", "size": 42000000, "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444", "content_type": "application/zip", "state": "uploaded", "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-512-abc1234/sd-master-abc1234-bin-win-vulkan-x64.zip" }
+  ]
+}

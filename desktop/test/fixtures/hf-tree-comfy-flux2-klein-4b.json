@@ -1,0 +1,9 @@
+[
+  { "type": "directory", "oid": "c0", "size": 0, "path": "split_files" },
+  { "type": "directory", "oid": "c1", "size": 0, "path": "split_files/diffusion_models" },
+  { "type": "file", "oid": "c2", "size": 7750000000, "lfs": { "oid": "cc11111111111111111111111111111111111111111111111111111111111111", "size": 7750000000, "pointerSize": 135 }, "path": "split_files/diffusion_models/flux-2-klein-4b.safetensors" },
+  { "type": "directory", "oid": "c3", "size": 0, "path": "split_files/text_encoders" },
+  { "type": "file", "oid": "c4", "size": 8040000000, "lfs": { "oid": "cc22222222222222222222222222222222222222222222222222222222222222", "size": 8040000000, "pointerSize": 135 }, "path": "split_files/text_encoders/qwen_3_4b.safetensors" },
+  { "type": "directory", "oid": "c5", "size": 0, "path": "split_files/vae" },
+  { "type": "file", "oid": "c6", "size": 336213556, "lfs": { "oid": "cc33333333333333333333333333333333333333333333333333333333333333", "size": 336213556, "pointerSize": 135 }, "path": "split_files/vae/flux2-vae.safetensors" }
+]

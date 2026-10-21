@@ -16,7 +16,8 @@
     "start": "node scripts/copy-app.mjs && electron .",
     "dist:win": "node scripts/copy-app.mjs && electron-builder --win --publish never",
     "dist:dir": "node scripts/copy-app.mjs && electron-builder --dir --publish never",
-    "check": "node --check main.js && node --check preload.js"
+    "check": "node --check main.js && node --check preload.js && node --check local-ai.js",
+    "test:local-ai": "node --test test/local-ai.test.js"
   },
   "devDependencies": {
     "electron": "44.6.0",
@@ -33,6 +34,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "local-ai.js",
       "package.json",
       "build/icon.png",
       "app/**/*"

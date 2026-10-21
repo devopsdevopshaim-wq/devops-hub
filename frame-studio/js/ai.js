@@ -185,14 +185,38 @@
   /* every request in flight can be stopped (FS.aiStop): the answer is dropped and reads as 'cancelled' */
   var live = [];
   FS.aiStop = function () { live.slice().forEach(function (c) { c.stopped = true; if (c.ctl) c.ctl.abort(); }); };
+  /* Picture edits ('restyle') and new pictures ('image') can also run on this computer in the desktop program
+     (js/local-ai.js, FS.localAI). Mode 'fs-ai-mode': local = always here; auto = the cloud when online, here when offline
+     or when the cloud fails; cloud = never here. Text actions always go to the server. */
+  function askLocal(body) {
+    var me = { stopped: false, ctl: { abort: function () { FS.localAI.cancel(); } } };
+    live.push(me);
+    return FS.localAI.run(body).then(function (r) {
+      live.splice(live.indexOf(me), 1); if (me.stopped) r = { ok: false, error: 'cancelled' };
+      FS.lastAiDetail = r && !r.ok ? String(r.detail || '') : ''; return r;
+    });
+  }
   FS.askServer = function (body) {
+    var L = FS.localAI;
+    if (!L || !body || (body.action !== 'restyle' && body.action !== 'image') || L.mode() === 'cloud') return askCloud(body);
+    return L.whenReady().then(function (ready) {
+      if (!ready) return askCloud(body);
+      if (L.mode() === 'local' || navigator.onLine === false) return askLocal(body);
+      return askCloud(body).then(function (r) {
+        if ((r && r.ok && r.image) || (r && r.error === 'cancelled')) return r;
+        if (window.console) console.warn('AI: cloud failed (' + (r && r.error) + '), using the local engine');
+        return askLocal(body);
+      });
+    });
+  };
+  function askCloud(body) {
     var ctl = window.AbortController ? new AbortController() : null, me = { ctl: ctl, stopped: false }, to = setTimeout(function () { if (ctl) ctl.abort(); }, body.action === 'ai' && !body.image ? 45000 : 115000);
     live.push(me);
     return fetch(HUB, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'http-' + r.status }; }); })
       .catch(function (e) { return { ok: false, error: me.stopped ? 'cancelled' : e && e.name === 'AbortError' ? 'timeout' : 'offline' }; })
       .then(function (r) { clearTimeout(to); live.splice(live.indexOf(me), 1); if (me.stopped) r = { ok: false, error: 'cancelled' }; FS.lastAiDetail = r && !r.ok ? String(r.detail || '') : ''; if (r && !r.ok && r.detail && window.console) console.warn('AI:', r.error, r.detail); return r; });
-  };
+  }
   FS.aiError = function (m) {
     m = String(m || '');
     if (m === 'no-key') return 'שרת ה־AI עוד לא הוגדר (חסר מפתח Gemini בשרת).';

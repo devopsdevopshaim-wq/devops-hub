@@ -567,3 +567,62 @@ dialog[open] { animation: lx-dlg .6s var(--ease); }
 .busy { background: rgba(13,11,16,.86); }
 dialog::backdrop { background: rgba(8,6,10,.8); }
 .lens { animation: none; }
+
+/* =====================================================================================================
+   PRO EDITOR LAYER (Oct 2026): a neutral graphite workspace like professional photo editors, so the photo's
+   colours are judged against grey, not tinted purple; champagne is kept for what is active and for the
+   main actions only. Compact chrome, a status bar under the photo, a shortcuts sheet (?).
+   ===================================================================================================== */
+:root {
+  --lx-ink: #121214; --velvet: #1B1B1E; --velvet2: #232327;
+  --ivory: #ECE9E4; --ivory-dim: #9E9A93;
+  --line: rgba(255,255,255,.085); --line-soft: rgba(255,255,255,.055); --line-strong: rgba(214,183,126,.55);
+  --glass: rgba(255,255,255,.03); --glass-2: rgba(255,255,255,.05); --hi: inset 0 1px 0 rgba(255,255,255,.04);
+  --pro-stage: #0C0C0D; --pro-panel: #1B1B1E; --pro-raise: #232327; --pro-hover: #2A2A2F;
+}
+.app { background: var(--lx-ink); }
+.topbar { background: #161618; border-bottom: 1px solid #000; box-shadow: 0 1px 0 rgba(255,255,255,.04); }
+.tools { background: #161618; border-inline-start: 1px solid #000; box-shadow: inset 1px 0 0 rgba(255,255,255,.035); padding: 10px 6px; gap: 2px; }
+.tools button { border-radius: 10px; }
+.tools button:hover { background: var(--pro-hover); }
+.tools button[aria-selected=true] { background: var(--pro-raise); box-shadow: inset 0 0 0 1px rgba(214,183,126,.35); }
+.panel { background: var(--pro-panel); border-inline-start: 1px solid #000; box-shadow: inset 1px 0 0 rgba(255,255,255,.035); }
+.panel h2 { font: 600 13px var(--f-label); letter-spacing: .14em; text-transform: none; color: var(--ivory-dim); background: none; -webkit-text-fill-color: currentColor; margin-bottom: 14px; }
+.panel h2::after { display: none; }
+.panel h3 { font: 600 12px var(--f-label); letter-spacing: .12em; color: var(--ivory-dim); }
+.panel .card, .panel .field, .panel details { border-color: var(--line); }
+.panel .card { background: var(--pro-raise); box-shadow: none; }
+.stage { background: radial-gradient(80% 70% at 50% 45%, #18181B 0%, var(--pro-stage) 75%); }
+.stagebar { background: #161618 !important; border-bottom: 1px solid #000 !important; }
+.stripbar, .strip { background: #141416 !important; border-top: 1px solid #000; }
+.stage canvas#view { box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 30px 70px -20px rgba(0,0,0,.9); }
+.btn { border-color: var(--line); }
+.btn:hover:not(:disabled) { background: var(--pro-hover); }
+.seg { background: #0F0F11; border-color: var(--line); }
+input[type=range] { accent-color: var(--champagne); }
+
+/* the status bar under the photo */
+.pro-status { position: absolute; inset-inline: 0; bottom: 0; z-index: 4; display: flex; align-items: center; gap: 0; height: 28px; padding: 0 12px;
+  background: #161618; border-top: 1px solid #000; box-shadow: 0 -1px 0 rgba(255,255,255,.035); font: 500 12px/1 var(--f-label); color: var(--ivory-dim); white-space: nowrap; overflow: hidden; }
+.pro-status > span { padding: 0 10px; border-inline-start: 1px solid rgba(255,255,255,.07); }
+.pro-status > span:first-child { border: 0; padding-inline-start: 0; }
+.pro-status b { color: var(--ivory); font-weight: 600; }
+.pro-status .grow { flex: 1; border: 0; }
+.pro-status button { all: unset; cursor: pointer; padding: 3px 8px; border-radius: 6px; color: var(--ivory); border: 1px solid rgba(255,255,255,.1); font: 600 11.5px var(--f-label); }
+.pro-status button:hover, .pro-status button:focus-visible { border-color: var(--champagne); color: var(--champagne); }
+.pro-status .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #8FD3A8; margin-inline-end: 6px; vertical-align: middle; }
+.pro-status .dot.off { background: #F0B37E; }
+.stage.has-status { padding-bottom: 28px; }
+#stage-info { display: none; }
+
+/* the shortcuts sheet */
+.pro-keys { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; background: rgba(0,0,0,.6); }
+.pro-keys[hidden] { display: none; }
+.pro-keys-card { width: min(640px, 92vw); max-height: 86vh; overflow: auto; background: #1B1B1E; border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 22px 24px; box-shadow: 0 40px 90px -30px #000; }
+.pro-keys-card h2 { margin: 0 0 14px; font: 700 22px var(--f-display); color: var(--ivory); }
+.pro-keys-card dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 18px; margin: 0; }
+.pro-keys-card dt { white-space: nowrap; }
+.pro-keys-card dd { margin: 0; color: var(--ivory-dim); }
+.pro-keys-card kbd { display: inline-block; min-width: 22px; text-align: center; padding: 2px 7px; margin: 0 2px; border-radius: 6px; background: #0F0F11; border: 1px solid rgba(255,255,255,.14); border-bottom-width: 2px; font: 600 12px ui-monospace, Consolas, monospace; color: var(--ivory); }
+/* the printer summary sits just above the status bar instead of over it */
+.pl-bar { bottom: 40px !important; background: #1B1B1E; border-color: rgba(255,255,255,.1); }

@@ -1,0 +1,8 @@
+[
+  { "type": "file", "oid": "a3b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3", "size": 1519, "path": ".gitattributes" },
+  { "type": "file", "oid": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6", "size": 1203, "path": "README.md" },
+  { "type": "file", "oid": "11aa22bb33cc44dd55ee66ff77889900aabbccdd", "size": 2318000000, "lfs": { "oid": "5c7e8b4d2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d", "size": 2318000000, "pointerSize": 135 }, "path": "flux-2-klein-4b-Q4_0.gguf" },
+  { "type": "file", "oid": "22aa22bb33cc44dd55ee66ff77889900aabbccdd", "size": 2502000000, "lfs": { "oid": "6c7e8b4d2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d", "size": 2502000000, "pointerSize": 135 }, "path": "flux-2-klein-4b-Q4_K.gguf" },
+  { "type": "file", "oid": "33aa22bb33cc44dd55ee66ff77889900aabbccdd", "size": 2830000000, "lfs": { "oid": "7c7e8b4d2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d", "size": 2830000000, "pointerSize": 135 }, "path": "flux-2-klein-4b-Q5_0.gguf" },
+  { "type": "file", "oid": "44aa22bb33cc44dd55ee66ff77889900aabbccdd", "size": 4280000000, "lfs": { "oid": "8c7e8b4d2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d", "size": 4280000000, "pointerSize": 135 }, "path": "flux-2-klein-4b-Q8_0.gguf" }
+]
