@@ -1,0 +1,39 @@
+/* wall.html: the big screen in the hall. Dark, the photo large, its greeting underneath, a QR code in the corner. */
+:root { --gold: #D6B77E; --gold2: #F3DDA6; --ink: #F5EFE4; --display: 'Frank Ruhl Libre', 'Heebo', serif; --body: 'Heebo', system-ui, sans-serif; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #0b0910; color: var(--ink); font-family: var(--body); overflow: hidden; }
+body.idle { cursor: none; }
+body.idle .w-full { opacity: 0; }
+.wall { position: fixed; inset: 0; }
+.w-stage { position: absolute; inset: 0; }
+.w-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1.4s ease, transform 1.4s cubic-bezier(.2,.8,.2,1), filter 1.4s ease; }
+.w-slide.in { opacity: 1; transform: none; filter: none; }
+.w-slide.out { opacity: 0; transition-duration: 1.4s; }
+.fx-zoom { transform: scale(1.15); }
+.fx-slide { transform: translateX(-8%); }
+.fx-rise { transform: translateY(8%); }
+.fx-turn { transform: perspective(1400px) rotateY(18deg) scale(.92); }
+.fx-blur { filter: blur(24px); }
+.w-bg { position: absolute; inset: -40px; background: center / cover no-repeat; filter: blur(38px) brightness(.45) saturate(1.2); }
+.w-img { position: absolute; inset: 9vh 6vw 17vh; width: 88vw; height: 74vh; object-fit: contain; filter: drop-shadow(0 30px 60px rgba(0,0,0,.7)); }
+.kb { animation: kb 9s ease-out both; }
+.kb2 { animation-name: kb2; }
+@keyframes kb { from { transform: scale(1); } to { transform: scale(1.06) translateY(-1%); } }
+@keyframes kb2 { from { transform: scale(1.06); } to { transform: scale(1) translateX(1%); } }
+.w-cap { position: absolute; inset-inline: 0; bottom: 4vh; text-align: center; padding: 0 22vw 0 8vw; }
+.w-cap p { margin: 0 0 6px; font-family: var(--display); font-size: clamp(22px, 3.1vw, 50px); line-height: 1.25; text-shadow: 0 3px 18px #000; }
+.w-cap b { color: var(--gold2); font-size: clamp(16px, 1.8vw, 30px); }
+.w-new { position: absolute; top: 12vh; inset-inline-end: 7vw; background: linear-gradient(115deg, #A9864C, #F3DDA6, #C9A35F); color: #0D0B10; font-weight: 800; font-size: clamp(16px, 1.6vw, 28px); padding: 8px 22px; border-radius: 999px; box-shadow: 0 10px 30px -10px #000; animation: pop .8s cubic-bezier(.2,1.6,.4,1) both .6s; }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } }
+.w-top { position: absolute; top: 0; inset-inline: 0; padding: 2.4vh 3vw; display: flex; align-items: baseline; gap: 18px; background: linear-gradient(#0b0910cc, transparent); z-index: 2; }
+.w-top h1 { margin: 0; font-family: var(--display); font-size: clamp(22px, 2.6vw, 46px); color: var(--gold2); }
+.w-biz { margin: 0; font-size: clamp(12px, 1vw, 18px); color: #c9bfd8; order: 2; }
+.w-qr { position: absolute; bottom: 3vh; inset-inline-end: 2.4vw; z-index: 3; background: #fff; color: #1d1633; border-radius: 18px; padding: 10px; width: clamp(130px, 13vw, 240px); text-align: center; box-shadow: 0 18px 40px -12px #000; }
+.w-qr canvas { width: 100%; height: auto; display: block; }
+.w-qr p { margin: 6px 0 2px; font-size: clamp(12px, 1vw, 17px); line-height: 1.3; }
+.w-count { position: absolute; bottom: 3vh; inset-inline-start: 2.4vw; z-index: 3; color: #c9bfd8; font-size: clamp(13px, 1.1vw, 19px); }
+.w-full { position: absolute; top: 2vh; inset-inline-end: 1.6vw; z-index: 4; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: rgba(0,0,0,.4); color: #fff; font-size: 20px; cursor: pointer; transition: opacity .4s; }
+.w-empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 18px; font-size: clamp(20px, 2.4vw, 40px); }
+.w-empty p { margin: 0; }
+.w-empty canvas { width: min(42vh, 60vw); height: auto; margin: 0 auto; border-radius: 22px; }
+@media (prefers-reduced-motion: reduce) { .kb, .w-new { animation: none; } .w-slide { transition-duration: .3s; transform: none !important; filter: none !important; } }

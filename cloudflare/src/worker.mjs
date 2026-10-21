@@ -22,7 +22,8 @@ import statusFresh from './gen/status-fresh.mjs';
 import statusRender from './gen/status-render.mjs';
 import { mailHandle, mailCallback, who as sessionOf } from './mail.mjs';
 import { localGuide } from './guide-local.mjs';
-import { frameSite, frameFile, frameBiz, frameBook, frameCal } from './frame.mjs';
+import { frameSite, frameFile, frameBiz, frameBook, frameCal, FrameStore } from './frame.mjs';
+import { frameLive, liveFile, liveCron } from './live.mjs';
 import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
 
 const SITE_ORIGIN = 'https://devopsdevopshaim-wq.github.io';
@@ -53,6 +54,9 @@ const ROUTES = {
   // a booking request from the site (anyone; checked against the calendar, the owner approves), and the owner's calendar feed
   'frame-book': { svc: 'frame', kind: 'frame-book', max: 8000 },
   'frame-cal': { svc: 'frame', kind: 'frame-cal', max: 1000, free: true, method: 'GET' },
+  // the live event: guests' photos from the QR code, the stations' shared print queue, the big screen and the couple's gallery
+  'frame-live': { svc: 'frame', kind: 'frame-live', max: 2600000 },
+  'frame-live-img': { svc: 'frame', kind: 'frame-live-img', max: 1000, free: true, method: 'GET' },
   // a photo handed to the free image service for one edit: lives three minutes in memory, under an unguessable id
   'hubs-tmp': { svc: 'hubs', kind: 'hubs-tmp', max: 1000, free: true, method: 'GET' }
 };
@@ -85,6 +89,7 @@ export default {
   // every 2 hours: check the sites (the n8n flow did this every 15 minutes, at a cost in executions)
   async scheduled(event, env, ctx) {
     ctx.waitUntil(env.STATE.get(env.STATE.idFromName('agents')).runMonitor(true));
+    ctx.waitUntil(env.STATE.get(env.STATE.idFromName('frame')).liveTick());
   },
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -108,6 +113,22 @@ export default {
     if (rt.kind === 'frame-cal') {
       const ics = await env.STATE.get(env.STATE.idFromName('frame')).calData(url.searchParams.get('k') || '');
       return ics ? new Response(ics, { headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'private, max-age=300', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } }) : reply({ ok: false, error: 'not-found' }, 404);
+    }
+    if (rt.kind === 'frame-live-img') {
+      const q = url.searchParams, f = await env.STATE.get(env.STATE.idFromName('frame')).liveFileData(q.get('e') || '', q.get('p') || '', q.get('v') || '', q.get('a') === '1');
+      return f ? new Response(f.u, { headers: { 'Content-Type': f.mime, 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': SITE_ORIGIN, 'Cross-Origin-Resource-Policy': 'cross-origin' } }) : reply({ ok: false, error: 'not-found' }, 404);
+    }
+    if (rt.kind === 'frame-live') {
+      const origin = request.headers.get('origin') || '';
+      if (origin !== SITE_ORIGIN) return reply({ ok: false, error: 'forbidden' }, 403);
+      const raw = await request.text();
+      if (raw.length > rt.max) return reply({ ok: false, error: 'too-big' }, 413);
+      let b = {}; try { b = JSON.parse(raw || '{}'); } catch (e) { return reply({ ok: false, error: 'bad-json' }, 400); }
+      if (!b || typeof b !== 'object') return reply({ ok: false, error: 'bad-json' }, 400);
+      const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+      const who = b.token ? await env.STATE.get(env.STATE.idFromName('main')).whoIs(String(b.token)) : null;
+      const r = await env.STATE.get(env.STATE.idFromName('frame')).liveCall(who, b, ip);
+      return reply(r.body, r.code);
     }
     if (rt.kind === 'frame-book' || rt.kind === 'frame') {
       // only the site may call; who is asking comes from the sign-in session, never from the request itself
@@ -263,6 +284,40 @@ export class State extends DurableObject {
     return r;
   }
   calData(k) { return frameCal(this.ctx.storage, k); }
+  // the live event. Guests may send a photo every few seconds from one address (a table shares the venue's Wi-Fi, so not too few)
+  async liveCall(who, b, ip) {
+    const a = String(b.action || ''), t = Date.now();
+    if (a === 'guest-up') {
+      this.lg = this.lg || new Map();
+      const arr = (this.lg.get(ip) || []).filter((x) => t - x < 3600000), dn = Math.floor(t / 864e5), day = this.lgDay && this.lgDay.d === dn ? this.lgDay : (this.lgDay = { d: dn, n: 0 });
+      if (arr.length >= 120 || day.n >= 20000) return { code: 429, body: { ok: false, error: 'rate-limited' } };
+      arr.push(t); this.lg.set(ip, arr); day.n++; if (this.lg.size > 5000) this.lg.delete(this.lg.keys().next().value);
+    } else {
+      this.rl = this.rl || new Map();
+      const k = (who && who.email) || ip, arr = (this.rl.get(k) || []).filter((x) => t - x < 600000);
+      if (arr.length >= 1500) return { code: 429, body: { ok: false, error: 'rate-limited' } };
+      arr.push(t); this.rl.set(k, arr); if (this.rl.size > 2000) this.rl.delete(this.rl.keys().next().value);
+    }
+    const run = this.q.then(async () => {
+      const site = JSON.parse((await new FrameStore(this.ctx.storage).getBig('site')) || 'null') || {};
+      return frameLive(this.ctx.storage, who, b, site);
+    });
+    this.q = run.catch(() => {});
+    try { return await run; } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; }
+  }
+  liveFileData(e, p, v, audio) { return liveFile(this.ctx.storage, e, p, v, audio); }
+  // the cron: old photos go, and the couple gets their gallery and a review request the day after the event
+  async liveTick() {
+    const run = this.q.then(() => liveCron(this.ctx.storage));
+    this.q = run.catch(() => {});
+    let mails = []; try { mails = await run; } catch (e) { return; }
+    for (const m of mails) {
+      const album = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/album.html?e=' + m.e + '&v=' + m.v;
+      await sendMail(this.env, { to: m.to, fromName: m.biz || FRAME_NAME, replyTo: m.owner || ADMIN_EMAIL, subject: '📸 התמונות והברכות מ' + m.title,
+        text: 'שלום' + (m.name ? ' ' + m.name : '') + ',\n\nתודה שבחרתם בנו! כל המגנטים, התמונות שהאורחים צילמו והברכות שהשאירו מחכים לכם כאן:\n' + album +
+          (m.google ? '\n\nנהניתם? נשמח מאוד להמלצה קצרה בגוגל, זה עוזר לנו המון:\n' + m.google : '') + '\n\nמזל טוב!\n' + (m.biz || FRAME_NAME) });
+    }
+  }
   // in the main object: the frame shop's customer accounts (no passwords, no sessions)
   async frameAccounts() {
     const st = await this.load(), sess = st.sd.sessions || {}, online = {};
