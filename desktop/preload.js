@@ -40,4 +40,6 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
   localAI,
   // closes the program (same as the window's X; unsaved photos are asked about first)
   close: () => ipcRenderer.send('app:close'),
+  // removes the program from this computer (asks first, then opens Windows' uninstaller and closes)
+  uninstall: () => ipcRenderer.invoke('app:uninstall'),
 }));

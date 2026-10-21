@@ -238,6 +238,12 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
 - **AI in the program**: Chromium no longer falls back to software WebGL by itself, so on a computer whose graphics driver it rejects, `getContext('webgl2')` is null and MediaPipe (faces, cut-outs, quality check, smart centring) failed with "רכיב ה־AI לא נטען" (`_glActiveTexture ... activeTexture`). `desktop/main.js` sets `app.commandLine.appendSwitch('enable-unsafe-swiftshader')`, which gives software WebGL only when the GPU is unavailable.
 - **Closing**: the studio's `beforeunload` (unsaved photos) made Electron cancel the close silently, so the X did nothing. `will-prevent-unload` now asks (יציאה / ביטול) with `dialog.showMessageBoxSync`. Desktop only: a ✕ `#app-close` in the stage bar and "✕ סגירת התוכנה" in ☰ call `FSDesktop.close()` (preload → IPC `app:close` → `win.close()`).
 - **Opening again**: `will-quit` shuts the local AI engine down and forces `app.exit(0)` after 4 s, so nothing keeps the single-instance lock. A second launch focuses the window, opens a new one if none is left, or relaunches if the old run is quitting.
+- **Removing the program**: `desktop/build/installer.nsh` (UTF-8 with BOM, `nsis.include`):
+  - `customCheckAppRunning` force-closes `Frame Studio.exe` and `sd-cli.exe` before installing or removing, because a stuck background run made the old uninstaller give up.
+  - `customUnInstall` (not on updates) offers to delete `%APPDATA%\Frame Studio` (settings and the local AI, up to ~6 GB).
+  - The program appears in Windows' apps list as "פריים־סטודיו (Frame Studio)".
+  - In the studio, ☰ → "🗑️ הסרת התוכנה מהמחשב" calls `FSDesktop.uninstall()` (IPC `app:uninstall`): it asks, starts `Uninstall *.exe` from the install folder, detached, and exits.
+  - `download.html` has a "how to remove" section.
 - **Undoing AI designs**: `FS.restyle` keeps up to 5 earlier AI results in `p.aiPrev`. `FS.unstyleStep(p)` goes back one step, and `FS.unstyle(p)` goes back to the original. A "↩ ביטול AI" `#ai-undo` button appears in the stage bar whenever the photo on screen has an AI design. The AI designs tab has `#style-back` (last design) and `#style-orig` (original), both for the photo or for all marked photos.
 - **Collage** (`js/collage.js`):
   - Arrangements (`SPECIAL` in `FS.collageLayouts`):

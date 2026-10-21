@@ -64,7 +64,9 @@
       "language": "1037",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "artifactName": "FrameStudio-Setup-${version}.${ext}"
+      "artifactName": "FrameStudio-Setup-${version}.${ext}",
+      "include": "build/installer.nsh",
+      "uninstallDisplayName": "פריים־סטודיו (Frame Studio)"
     },
     "linux": {
       "target": [

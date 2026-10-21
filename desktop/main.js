@@ -9,7 +9,7 @@ const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain, dialog
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
-const { execFile } = require('node:child_process');
+const { execFile, spawn } = require('node:child_process');
 
 const HOST = 'devopsdevopshaim-wq.github.io';
 const ORIGIN = 'https://' + HOST;
@@ -357,6 +357,28 @@ app.whenReady().then(() => {
   });
 
   registerLocalAI();
+
+  // "remove the program" from the studio's ☰ menu: start Windows' own uninstaller and close, so nothing holds its files
+  ipcMain.handle('app:uninstall', async (event) => {
+    const frameUrl = event.senderFrame ? event.senderFrame.url : '';
+    if (!isAppUrl(frameUrl)) throw new Error('not allowed');
+    if (process.platform !== 'win32' || !app.isPackaged) return { ok: false, error: 'not-installed' };
+    const dir = path.dirname(process.execPath);
+    const exe = fs.readdirSync(dir).find((f) => /^Uninstall .*\.exe$/i.test(f));
+    if (!exe) return { ok: false, error: 'no-uninstaller' };
+    const w = BrowserWindow.fromWebContents(event.sender);
+    const { response } = await dialog.showMessageBox(w || undefined, {
+      type: 'warning', buttons: ['הסרה', 'ביטול'], defaultId: 1, cancelId: 1, noLink: true, title: 'פריים־סטודיו',
+      message: 'להסיר את פריים־סטודיו מהמחשב?',
+      detail: 'התוכנה תיסגר ותוכנית ההסרה של Windows תיפתח. תמונות ופרויקטים ששמרתם בתיקיות שלכם לא נמחקים.',
+    });
+    if (response !== 0) return { ok: false, error: 'cancelled' };
+    spawn(path.join(dir, exe), [], { detached: true, stdio: 'ignore', cwd: app.getPath('temp') }).unref();
+    quitting = true;
+    if (localAI) { try { localAI.shutdown(); } catch { /* closing anyway */ } }
+    setTimeout(() => app.exit(0), 300);
+    return { ok: true };
+  });
 
   // the studio's own ✕ button: the same as the window's X (the "not saved" question above still applies)
   ipcMain.on('app:close', (event) => {
