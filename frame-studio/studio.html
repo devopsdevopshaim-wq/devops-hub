@@ -26,6 +26,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Assistant:wght@400;600;700&family=Heebo:wght@500&display=swap" />
 <link rel="stylesheet" href="css/lux-studio.css?v=37" />
 <link rel="stylesheet" href="css/tools-x.css?v=37" />
+<link rel="stylesheet" href="css/edits-x.css?v=37" />
 <script src="../portfolio/js/track.js" defer></script>
 </head>
 <body class="gated">
@@ -157,9 +158,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
       <h2>עריכה מקצועית</h2>
       <canvas id="histo" class="histo" width="300" height="90" aria-label="היסטוגרמה"></canvas>
       <div class="row2"><button class="btn primary" id="auto">✨ שיפור אוטומטי</button><button class="btn" id="reset-adj">↺ איפוס</button></div>
-      <div id="sliders"></div>
-      <div class="field"><label>גוון צבע</label>
-        <select id="tone"><option value="none">ללא</option><option value="sepia">ספיה</option><option value="gold">זהוב</option><option value="cool">קריר</option><option value="teal">קולנועי (כתום־טורקיז)</option></select></div>
+      <div id="sliders" class="ax"></div>
       <div class="row2"><button class="btn" id="copy-adj">📋 העתקת עריכה</button><button class="btn" id="paste-adj" disabled>📥 הדבקה</button></div>
       <button class="btn wide" id="adj-all">החלת העריכה על כל התמונות</button>
     </section>
@@ -167,6 +166,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
     <!-- filters -->
     <section data-pane="filters" hidden>
       <h2>פילטרים מוכנים</h2>
+      <div class="chips pr-cats" id="preset-cats" role="toolbar" aria-label="סוגי פילטרים"></div>
       <div class="field"><label>עוצמה <output id="o-fstr">100%</output></label><input type="range" id="fstr" min="0" max="150" value="100" /></div>
       <div class="grid thumbs" id="presets"></div>
       <h3>הפילטרים שלי</h3>

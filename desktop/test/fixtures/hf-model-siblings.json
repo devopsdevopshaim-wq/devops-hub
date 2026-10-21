@@ -1,0 +1,5 @@
+{ "_id": "x", "id": "Comfy-Org/flux2-dev", "siblings": [
+  { "rfilename": ".gitattributes", "size": 1519 },
+  { "rfilename": "split_files/vae/flux2-vae.safetensors", "size": 336213556, "lfs": { "sha256": "dd33", "size": 336213556, "pointerSize": 135 } },
+  { "rfilename": "split_files/diffusion_models/flux2_dev_fp8mixed.safetensors", "size": 35500000000 }
+] }

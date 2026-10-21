@@ -153,6 +153,102 @@ function machineId() {
   return machineIdPromise;
 }
 
+// ---------- local AI engine (stable-diffusion.cpp + FLUX.2 klein 4B on this computer) ----------
+// The engine logic lives in local-ai.js (plain Node, testable without Electron); here it is only wired to IPC.
+let localAI = null;
+function getLocalAI() {
+  if (!localAI) {
+    const { createEngine } = require('./local-ai');
+    localAI = createEngine({
+      root: path.join(app.getPath('userData'), 'local-ai'),
+      // net.fetch uses the system proxy settings; skip our own https handler (it only serves the bundled site)
+      fetch: (url, init) => net.fetch(url, Object.assign({}, init, { bypassCustomProtocolHandlers: true })),
+      log: (m) => console.log(m),
+    });
+    gpuInfo().then((g) => localAI.setGpuHint(g.best)).catch(() => {});
+  }
+  return localAI;
+}
+
+function runOut(cmd, args, ms) {
+  // like run(), but keeps stdout when the command exits non-zero (reg.exe /s does on access-denied subkeys)
+  return new Promise((resolve) => {
+    execFile(cmd, args, { windowsHide: true, timeout: ms || 8000, maxBuffer: 4 << 20 }, (_err, stdout) => resolve(String(stdout || '')));
+  });
+}
+
+let gpuInfoPromise = null;
+function gpuInfo() {
+  if (gpuInfoPromise) return gpuInfoPromise;
+  gpuInfoPromise = (async () => {
+    const la = require('./local-ai');
+    const list = [];
+    try {
+      const info = await app.getGPUInfo('complete');
+      for (const d of (info && info.gpuDevice) || []) {
+        const name = d.deviceString || d.driverDescription || '';
+        if (name && !/microsoft basic|swiftshader/i.test(name)) list.push({ name, vramMB: 0, active: !!d.active, vendorId: d.vendorId });
+      }
+      const gl = info && info.auxAttributes && info.auxAttributes.glRenderer;
+      if (!list.length && gl) list.push({ name: String(gl).replace(/^ANGLE \(|\)$/g, ''), vramMB: 0 });
+    } catch { /* no GPU info */ }
+    if (process.platform === 'win32') {
+      const reg = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'reg.exe');
+      const out = await runOut(fs.existsSync(reg) ? reg : 'reg', ['query', 'HKLM\\SYSTEM\\ControlSet001\\Control\\Class\\{4d36e968-e325-11ce-bfc1-08002be10318}', '/s']);
+      for (const g of la.parseRegGpus(out)) {
+        if (/microsoft basic|remote display|virtual/i.test(g.name)) continue;
+        const same = list.find((x) => x.name && (x.name === g.name || g.name.includes(x.name) || x.name.includes(g.name)));
+        if (same) same.vramMB = Math.max(same.vramMB, g.vramMB); else list.push({ name: g.name, vramMB: g.vramMB });
+      }
+    }
+    if (process.platform !== 'darwin') {
+      const smi = process.platform === 'win32'
+        ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'nvidia-smi.exe')
+        : '/usr/bin/nvidia-smi';
+      if (fs.existsSync(smi)) {
+        for (const g of la.parseNvidiaSmi(await runOut(smi, ['--query-gpu=name,memory.total', '--format=csv,noheader,nounits']))) {
+          const same = list.find((x) => x.name === g.name || x.name.includes(g.name) || g.name.includes(x.name));
+          if (same) same.vramMB = g.vramMB; else list.push(g);
+        }
+      }
+    }
+    const best = list.slice().sort((a, b) => b.vramMB - a.vramMB)[0] || null;
+    const ramMB = Math.round(require('node:os').totalmem() / 1048576);
+    return { gpus: list, best, ramMB, speed: la.speedFor(best, 'vulkan') };
+  })();
+  return gpuInfoPromise;
+}
+
+// Only the studio's own pages may use these, and only with plain values; paths and arguments are built in local-ai.js.
+function fromApp(event) {
+  const frameUrl = event.senderFrame ? event.senderFrame.url : '';
+  if (!isAppUrl(frameUrl)) throw new Error('not allowed');
+}
+function jobId(v) { return typeof v === 'string' && /^[a-z0-9]{6,40}$/i.test(v) ? v : ''; }
+function sendTo(event, channel, id, data) {
+  try { if (!event.sender.isDestroyed()) event.sender.send(channel, { id, data }); } catch { /* window closed */ }
+}
+
+function registerLocalAI() {
+  ipcMain.handle('local-ai:status', (event) => { fromApp(event); return getLocalAI().status(); });
+  ipcMain.handle('local-ai:gpu', async (event) => { fromApp(event); const g = await gpuInfo(); return { gpus: g.gpus.slice(0, 6), best: g.best, ramMB: g.ramMB, speed: g.speed }; });
+  ipcMain.handle('local-ai:install', (event, o) => {
+    fromApp(event);
+    const id = jobId(o && o.id);
+    const variant = o && (o.variant === 'cpu' || o.variant === 'vulkan') ? o.variant : undefined;
+    return getLocalAI().install((p) => sendTo(event, 'local-ai:install-progress', id, p), { variant });
+  });
+  ipcMain.handle('local-ai:cancel-install', (event) => { fromApp(event); return getLocalAI().cancelInstall(); });
+  ipcMain.handle('local-ai:remove', (event) => { fromApp(event); return getLocalAI().remove(); });
+  ipcMain.handle('local-ai:run', (event, o) => {
+    fromApp(event);
+    const id = jobId(o && o.id);
+    const input = o && typeof o === 'object' ? { mode: o.mode, prompt: o.prompt, imageB64: o.imageB64, w: o.w, h: o.h, seed: o.seed } : null;
+    return getLocalAI().run(input, (p) => sendTo(event, 'local-ai:run-progress', id, p));
+  });
+  ipcMain.handle('local-ai:cancel', (event) => { fromApp(event); return getLocalAI().cancel(); });
+}
+
 // ---------- navigation guards ----------
 function isAppUrl(u) { return typeof u === 'string' && u.startsWith(APP_URL); }
 
@@ -234,9 +330,13 @@ app.whenReady().then(() => {
     return machineId();
   });
 
+  registerLocalAI();
+
   createWindow();
 
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
 app.on('window-all-closed', () => { app.quit(); });
+// a running picture or download must not outlive the program
+app.on('before-quit', () => { if (localAI) localAI.shutdown(); });

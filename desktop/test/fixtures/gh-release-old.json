@@ -1,0 +1,9 @@
+{
+  "tag_name": "master-330-1c32fa0",
+  "assets": [
+    { "name": "sd-master-1c32fa0-bin-win-avx-x64.zip", "size": 3000000, "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-330-1c32fa0/sd-master-1c32fa0-bin-win-avx-x64.zip" },
+    { "name": "sd-master-1c32fa0-bin-win-avx2-x64.zip", "size": 3000000, "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-330-1c32fa0/sd-master-1c32fa0-bin-win-avx2-x64.zip" },
+    { "name": "sd-master-1c32fa0-bin-win-avx512-x64.zip", "size": 3000000, "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-330-1c32fa0/sd-master-1c32fa0-bin-win-avx512-x64.zip" },
+    { "name": "sd-master-1c32fa0-bin-win-vulkan-x64.zip", "size": 20000000, "browser_download_url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-330-1c32fa0/sd-master-1c32fa0-bin-win-vulkan-x64.zip" }
+  ]
+}

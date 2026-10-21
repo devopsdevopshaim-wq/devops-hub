@@ -61,6 +61,7 @@
     var src = FS.processed(p, 400, true); if (!src) return;
     var x = src.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, src.width, src.height).data, H = [new Uint32Array(256), new Uint32Array(256), new Uint32Array(256), new Uint32Array(256)], mx = 1;
     for (var i = 0; i < x.length; i += 4) { H[0][x[i]]++; H[1][x[i + 1]]++; H[2][x[i + 2]]++; H[3][(0.299 * x[i] + 0.587 * x[i + 1] + 0.114 * x[i + 2]) | 0]++; }
+    FS.lumaHist = H[3]; if (FS.drawCurve) FS.drawCurve();
     for (var v = 2; v < 254; v++) for (var k = 0; k < 4; k++) mx = Math.max(mx, H[k][v]);
     var g = c.getContext('2d'), W = c.width, Hh = c.height; g.clearRect(0, 0, W, Hh); g.globalCompositeOperation = 'lighter';
     [['rgba(255,80,80,.55)', 0], ['rgba(80,220,120,.55)', 1], ['rgba(90,140,255,.6)', 2], ['rgba(230,230,240,.35)', 3]].forEach(function (s) {
@@ -502,65 +503,329 @@
   });
   $('#page-bg').addEventListener('input', function () { var p = FS.cur(); if (!p) return; p.doc.bg = this.value; var v = this.value; FS.targets().forEach(function (q) { q.doc.bg = v; q.cache = q === p ? q.cache : {}; }); FS.render(); FS.commitSoon(); });
 
-  /* ---------- adjustments ---------- */
+  /* ---------- adjustments: Lightroom-style sections (light, colour, presence, mixer, grading, curve, effects) ---------- */
   var SL = [
-    ['אור', [['exposure', 'חשיפה', -100, 100], ['brightness', 'בהירות', -100, 100], ['contrast', 'ניגודיות', -100, 100], ['highlights', 'אזורים בהירים', -100, 100], ['shadows', 'צללים', -100, 100], ['whites', 'לבנים', -100, 100], ['blacks', 'שחורים', -100, 100]]],
-    ['צבע', [['temp', 'טמפרטורה', -100, 100], ['tint', 'גוון ירוק/מג׳נטה', -100, 100], ['vibrance', 'חיות', -100, 100], ['saturation', 'רוויה', -100, 100], ['hue', 'סיבוב גוון', -180, 180], ['mono', 'שחור־לבן', 0, 100]]],
-    ['פרטים', [['clarity', 'בהירות פרטים (Clarity)', -100, 100], ['sharpen', 'חדות', 0, 100]]],
-    ['אפקטים', [['vignette', 'וינייט', -100, 100], ['grain', 'גרעיניות', 0, 100], ['fade', 'דהייה (מט)', 0, 100]]]
+    ['light', 'אור', [['exposure', 'חשיפה', -100, 100], ['contrast', 'ניגודיות', -100, 100], ['brightness', 'בהירות', -100, 100], ['highlights', 'בהירים', -100, 100], ['shadows', 'צללים', -100, 100], ['whites', 'לבנים', -100, 100], ['blacks', 'שחורים', -100, 100]]],
+    ['color', 'צבע', [['temp', 'טמפרטורה', -100, 100, 'temp'], ['tint', 'גוון', -100, 100, 'tint'], ['vibrance', 'חיות', -100, 100], ['saturation', 'רוויה', -100, 100], ['hue', 'סיבוב גוון', -180, 180], ['mono', 'שחור־לבן', 0, 100]]],
+    ['presence', 'נוכחות', [['texture', 'מרקם', -100, 100], ['clarity', 'בהירות פרטים', -100, 100], ['dehaze', 'הסרת אובך', -100, 100], ['sharpen', 'חדות', 0, 100]]],
+    ['mixer', 'מיקסר צבעים', null], ['grade', 'דירוג צבע', null], ['curve', 'עקומה', null],
+    ['effects', 'אפקטים', [['vignette', 'וינייט', -100, 100], ['grain', 'גרעיניות', 0, 100], ['fade', 'דהייה (מט)', 0, 100]]]
   ];
+  var SEC_KEYS = {}, OPEN0 = { light: 1, color: 1, presence: 1 };
+  SL.forEach(function (g) { SEC_KEYS[g[0]] = g[2] ? g[2].map(function (s) { return s[0]; }) : [g[0] === 'mixer' ? 'hsl' : g[0]]; });
+  SEC_KEYS.color.push('tone');
+  function row(id, label, mn, mx, attr, cls) {
+    return '<div class="sr' + (cls ? ' ' + cls : '') + '"><label for="' + id + '">' + label + '</label><input type="range" id="' + id + '" ' + attr + ' min="' + mn + '" max="' + mx + '" value="0" step="1" />' +
+      '<input type="number" class="num" data-for="' + id + '" min="' + mn + '" max="' + mx + '" value="0" step="1" aria-label="' + label + '" /></div>';
+  }
+  var CURVES = [['lin', 'ליניארי', [[0, 0], [255, 255]]], ['soft', 'S רך', [[0, 0], [64, 54], [192, 204], [255, 255]]], ['strong', 'S חזק', [[0, 0], [64, 38], [192, 220], [255, 255]]],
+    ['matte', 'מט', [[0, 38], [70, 74], [190, 194], [255, 242]]], ['fade', 'פילם דהוי', [[0, 28], [60, 62], [128, 132], [200, 206], [255, 236]]], ['bright', 'הבהרה', [[0, 0], [118, 146], [255, 255]]], ['dark', 'החשכה', [[0, 0], [136, 108], [255, 255]]]];
+  var ZONES = [['sh', 'צללים'], ['mid', 'ביניים'], ['hi', 'בהירים']];
+  function secBody(g) {
+    if (g[2]) return g[2].map(function (s) { return row('a-' + s[0], s[1], s[2], s[3], 'data-adj="' + s[0] + '"', s[4] ? 'col ' + s[4] : ''); }).join('') +
+      (g[0] === 'color' ? '<div class="sr sel"><label for="tone">גוון מוכן</label><select id="tone"><option value="none">ללא</option><option value="sepia">ספיה</option><option value="gold">זהוב</option><option value="cool">קריר</option><option value="teal">קולנועי (כתום־טורקיז)</option><option value="portra">פילם פורטרה</option><option value="fuji">פילם פוג׳י</option><option value="kodak">פילם קודאק</option><option value="moody">מאופק</option></select></div>' : '');
+    if (g[0] === 'mixer') return '<div class="mx-bands" role="radiogroup" aria-label="ערוץ צבע">' + FS.HSL_BANDS.map(function (b, i) { return '<button type="button" class="mx-dot' + (i ? '' : ' on') + '" data-band="' + b[0] + '" style="--c:' + b[2] + '" title="' + b[1] + '" aria-label="' + b[1] + '"></button>'; }).join('') + '</div>' +
+      '<div class="mx-name" id="mx-name">אדום</div>' + row('m-h', 'גוון', -100, 100, 'data-mix="h"', 'col mh') + row('m-s', 'רוויה', -100, 100, 'data-mix="s"', 'col ms') + row('m-l', 'בהירות', -100, 100, 'data-mix="l"', 'col ml');
+    if (g[0] === 'grade') return '<div class="gw-row">' + ZONES.map(function (z, i) { return '<figure class="gw' + (i ? '' : ' on') + '" data-zone="' + z[0] + '"><canvas width="96" height="96" aria-label="' + z[1] + '"></canvas><figcaption>' + z[1] + ' <small></small></figcaption></figure>'; }).join('') + '</div>' +
+      row('g-h', 'גוון', 0, 360, 'data-grade="h"', 'col gh') + row('g-s', 'עוצמה', 0, 100, 'data-grade="s"') + row('g-bal', 'איזון', -100, 100, 'data-grade="bal"');
+    if (g[0] === 'curve') return '<div class="cv-wrap"><canvas id="curve" width="512" height="512" aria-label="עקומת טונים"></canvas></div><p class="hint cv-hint">גוררים נקודה · לחיצה על הקו מוסיפה נקודה · לחיצה כפולה על נקודה מוחקת אותה</p>' +
+      '<div class="chips cv-pre">' + CURVES.map(function (c) { return '<button type="button" data-curve="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>';
+  }
+  var openSec = FS.prefs.adjOpen || OPEN0;
   $('#sliders').innerHTML = SL.map(function (g) {
-    return '<details open><summary>' + g[0] + '</summary>' + g[1].map(function (s) {
-      return '<div class="field sl"><label for="a-' + s[0] + '">' + s[1] + ' <output id="o-' + s[0] + '">0</output></label><input type="range" id="a-' + s[0] + '" data-adj="' + s[0] + '" min="' + s[2] + '" max="' + s[3] + '" value="0" /></div>';
-    }).join('') + '</details>';
+    return '<details class="ax-sec" data-sec="' + g[0] + '"' + (openSec[g[0]] ? ' open' : '') + '><summary><span class="ax-t">' + g[1] + '</span><i class="ax-mod" aria-hidden="true"></i><button type="button" class="ax-reset" data-reset="' + g[0] + '" title="איפוס ' + g[1] + '" aria-label="איפוס ' + g[1] + '">↺</button></summary><div class="ax-b">' + secBody(g) + '</div></details>';
   }).join('');
-  $$('[data-adj]').forEach(function (r) {
-    r.addEventListener('input', function () { var p = FS.cur(); if (!p) return; p.doc.photo.adj[r.dataset.adj] = Number(r.value); p.doc.photo.preset = null; $('#o-' + r.dataset.adj).textContent = r.value; FS.render(true); });
-    r.addEventListener('change', function () { FS.batch(function (q, c) { q.doc.photo.adj = JSON.parse(JSON.stringify(c.doc.photo.adj)); q.doc.photo.preset = null; }); FS.changed(); });
-    r.addEventListener('dblclick', function () { r.value = 0; r.dispatchEvent(new Event('input')); FS.changed(); });
+  $$('#sliders details').forEach(function (d) { d.addEventListener('toggle', function () { var o = {}; $$('#sliders details').forEach(function (x) { if (x.open) o[x.dataset.sec] = 1; }); FS.prefs.adjOpen = o; FS.savePrefs(); if (d.open && d.dataset.sec === 'curve') drawCurve(); if (d.open && d.dataset.sec === 'grade') drawWheels(); }); });
+
+  function curAdj() { var p = FS.cur(); return p ? p.doc.photo.adj : null; }
+  /* a live change while dragging (small, fast preview) and the commit afterwards (all marked photos, undo step) */
+  function live(fn) { var p = FS.cur(); if (!p) return; fn(p.doc.photo.adj); p.doc.photo.preset = null; FS.render(true); }
+  function commitAdj() { var p = FS.cur(); if (!p) return; p.doc.photo.preset = null; FS.batch(function (q, c) { q.doc.photo.adj = JSON.parse(JSON.stringify(c.doc.photo.adj)); q.doc.photo.preset = null; }); FS.changed(); }
+  /* the track fill: from the centre for -x..x sliders, from the start otherwise */
+  function fill(r) {
+    var mn = Number(r.min), mx = Number(r.max), v = Number(r.value), z = mn < 0 ? -mn / (mx - mn) : 0, t = (v - mn) / (mx - mn);
+    r.style.setProperty('--a', (Math.min(z, t) * 100).toFixed(1) + '%'); r.style.setProperty('--b', (Math.max(z, t) * 100).toFixed(1) + '%');
+  }
+  function setRow(r, v) { r.value = v; fill(r); var n = r.parentNode.querySelector('.num'); if (n && document.activeElement !== n) n.value = Math.round(v); }
+  /* the numeric boxes drive their sliders; a double-click on a slider (or its label) puts it back to 0 */
+  $$('#sliders .num').forEach(function (n) {
+    var r = $('#' + n.dataset.for);
+    n.addEventListener('change', function () { var v = FS.clamp(Math.round(Number(n.value) || 0), Number(r.min), Number(r.max)); n.value = v; r.value = v; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); });
+    n.addEventListener('keydown', function (e) { if (e.key === 'Enter') n.blur(); });
   });
-  $('#tone').addEventListener('change', function () { var p = FS.cur(); if (!p) return; p.doc.photo.adj.tone = this.value; var v = this.value; FS.batch(function (q) { q.doc.photo.adj.tone = v; }); FS.changed(); });
+  $$('#sliders input[type=range]').forEach(function (r) {
+    fill(r);
+    function zero() { r.value = r.dataset.grade === 'h' ? r.value : 0; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); }
+    r.addEventListener('dblclick', zero); var lb = r.parentNode.querySelector('label'); if (lb) lb.addEventListener('dblclick', zero);
+  });
+  $$('[data-adj]').forEach(function (r) {
+    var k = r.dataset.adj;
+    r.addEventListener('input', function () { var v = Number(r.value); setRow(r, v); live(function (a) { a[k] = v; }); markSecs(); });
+    r.addEventListener('change', commitAdj);
+  });
+  $('#tone').addEventListener('change', function () { var v = this.value; live(function (a) { a.tone = v; }); commitAdj(); });
+
+  /* colour mixer */
+  var band = 'red';
+  function bandVals(a) { return (a && a.hsl && a.hsl[band]) || { h: 0, s: 0, l: 0 }; }
+  function tidyHsl(a) { if (!a.hsl) return; var any = false; for (var b in a.hsl) { var v = a.hsl[b]; if (v.h || v.s || v.l) any = true; else delete a.hsl[b]; } if (!any) a.hsl = null; }
+  function mixTracks() {
+    var B = FS.HSL_BANDS, i = 0; for (; i < B.length; i++) if (B[i][0] === band) break;
+    var c = B[i][2], h0 = B[i][3], prev = 'hsl(' + (h0 - 30) + ',75%,52%)', next = 'hsl(' + (h0 + 30) + ',75%,52%)';
+    /* RTL: the minimum sits on the right, so the gradients run from right to left */
+    $('#m-h').style.setProperty('--track', 'linear-gradient(to left,' + prev + ',' + c + ',' + next + ')');
+    $('#m-s').style.setProperty('--track', 'linear-gradient(to left,#8a8a8a,' + c + ')');
+    $('#m-l').style.setProperty('--track', 'linear-gradient(to left,#151515,' + c + ',#f4f4f4)');
+    $('#mx-name').textContent = B[i][1];
+  }
+  $$('.mx-dot').forEach(function (d) { d.addEventListener('click', function () { band = d.dataset.band; $$('.mx-dot').forEach(function (x) { x.classList.toggle('on', x === d); }); mixTracks(); syncMix(); }); });
+  $$('[data-mix]').forEach(function (r) {
+    var k = r.dataset.mix;
+    r.addEventListener('input', function () { var v = Number(r.value); setRow(r, v); live(function (a) { a.hsl = a.hsl || {}; var o = a.hsl[band] = a.hsl[band] || { h: 0, s: 0, l: 0 }; o[k] = v; tidyHsl(a); }); markBands(); markSecs(); });
+    r.addEventListener('change', commitAdj);
+  });
+  function markBands() { var a = curAdj(); $$('.mx-dot').forEach(function (d) { var v = a && a.hsl && a.hsl[d.dataset.band]; d.classList.toggle('mod', !!(v && (v.h || v.s || v.l))); }); }
+  function syncMix() { var v = bandVals(curAdj()); setRow($('#m-h'), v.h || 0); setRow($('#m-s'), v.s || 0); setRow($('#m-l'), v.l || 0); markBands(); }
+  mixTracks();
+
+  /* colour grading: a wheel per zone (angle = hue, distance = amount) plus precise sliders for the chosen zone */
+  var zone = 'sh', wheelBase = null;
+  function gradeOf(a) { return (a && a.grade) || {}; }
+  function tidyGrade(a) { var g = a.grade; if (!g) return; if (!((g.sh && g.sh.s) || (g.mid && g.mid.s) || (g.hi && g.hi.s))) a.grade = null; }
+  function wheelImg() {
+    if (wheelBase) return wheelBase;
+    var c = FS.canvas(96, 96), x = c.getContext('2d'), id = x.createImageData(96, 96), d = id.data, R = 46;
+    for (var y = 0; y < 96; y++) for (var xx = 0; xx < 96; xx++) {
+      var dx = xx - 48 + 0.5, dy = y - 48 + 0.5, r = Math.sqrt(dx * dx + dy * dy), i = (y * 96 + xx) * 4; if (r > R + 1) continue;
+      var t = FS.hueTint(Math.atan2(-dy, dx) * 180 / Math.PI), m = Math.min(1, r / R), L = 0.5 + 0.12 * (1 - m);
+      d[i] = (L + t[0] * m * 0.9) * 255; d[i + 1] = (L + t[1] * m * 0.9) * 255; d[i + 2] = (L + t[2] * m * 0.9) * 255; d[i + 3] = r > R ? (R + 1 - r) * 255 : 255;
+    }
+    x.putImageData(id, 0, 0); wheelBase = c; return c;
+  }
+  function drawWheels() {
+    var g = gradeOf(curAdj());
+    $$('.gw').forEach(function (f) {
+      var c = f.querySelector('canvas'), x = c.getContext('2d'), v = g[f.dataset.zone] || {}, a = (v.h || 0) * Math.PI / 180, r = (v.s || 0) / 100 * 46;
+      x.clearRect(0, 0, 96, 96); x.drawImage(wheelImg(), 0, 0);
+      x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 1; x.beginPath(); x.moveTo(48, 6); x.lineTo(48, 90); x.moveTo(6, 48); x.lineTo(90, 48); x.stroke();
+      var px = 48 + Math.cos(a) * r, py = 48 - Math.sin(a) * r;
+      x.beginPath(); x.arc(px, py, 5.5, 0, 7); x.fillStyle = '#fff'; x.fill(); x.lineWidth = 2; x.strokeStyle = '#111'; x.stroke();
+      f.querySelector('small').textContent = v.s ? Math.round(v.h || 0) + '° · ' + Math.round(v.s) : '';
+      f.classList.toggle('on', f.dataset.zone === zone);
+    });
+  }
+  function syncGrade() { var g = gradeOf(curAdj()), v = g[zone] || {}; setRow($('#g-h'), v.h || 0); setRow($('#g-s'), v.s || 0); setRow($('#g-bal'), g.bal || 0); drawWheels(); }
+  function setGrade(fn) { live(function (a) { a.grade = a.grade ? JSON.parse(JSON.stringify(a.grade)) : {}; fn(a.grade); tidyGrade(a); }); drawWheels(); markSecs(); }
+  $('#g-h').style.setProperty('--track', 'linear-gradient(to left,#e5483e,#e6cf3c,#4fb64c,#3cc3c4,#3d6fe0,#d84aa6,#e5483e)');
+  $$('[data-grade]').forEach(function (r) {
+    var k = r.dataset.grade;
+    r.addEventListener('input', function () {
+      var v = Number(r.value); setRow(r, v);
+      setGrade(function (g) { if (k === 'bal') g.bal = v; else { var z = g[zone] = g[zone] || { h: 0, s: 0 }; z[k] = v; if (k === 'h' && !z.s) { z.s = 25; setRow($('#g-s'), 25); } } });
+    });
+    r.addEventListener('change', commitAdj);
+  });
+  $$('.gw').forEach(function (f) {
+    var c = f.querySelector('canvas'), drag = false;
+    function at(e) {
+      var b = c.getBoundingClientRect(), dx = (e.clientX - b.left) / b.width * 96 - 48, dy = (e.clientY - b.top) / b.height * 96 - 48;
+      var h = (Math.atan2(-dy, dx) * 180 / Math.PI + 360) % 360, s = Math.min(100, Math.sqrt(dx * dx + dy * dy) / 46 * 100);
+      setGrade(function (g) { g[zone] = { h: Math.round(h), s: Math.round(s < 4 ? 0 : s) }; }); syncGrade();
+    }
+    c.addEventListener('pointerdown', function (e) { zone = f.dataset.zone; drag = true; c.setPointerCapture(e.pointerId); at(e); e.preventDefault(); });
+    c.addEventListener('pointermove', function (e) { if (drag) at(e); });
+    c.addEventListener('pointerup', function () { if (drag) { drag = false; commitAdj(); } });
+    c.addEventListener('pointercancel', function () { drag = false; });
+    c.addEventListener('dblclick', function () { setGrade(function (g) { delete g[f.dataset.zone]; }); syncGrade(); commitAdj(); });
+    f.addEventListener('click', function () { if (zone !== f.dataset.zone) { zone = f.dataset.zone; syncGrade(); } });
+  });
+
+  /* tone curve: drag points, click the line to add one, double-click (or drag far out) to remove it */
+  var cv = $('#curve'), cvDrag = -1, cvOn = false, LIN = [[0, 0], [255, 255]];
+  function curvePts() { var a = curAdj(); return a && a.curve ? a.curve.map(function (q) { return q.slice(); }) : LIN.map(function (q) { return q.slice(); }); }
+  function setCurve(pts, commit) { live(function (a) { a.curve = FS.curveLUT(pts) ? pts.map(function (q) { return [Math.round(q[0]), Math.round(q[1])]; }) : null; }); drawCurve(); markSecs(); if (commit) commitAdj(); }
+  FS.drawCurve = function () { drawCurve(); };
+  function drawCurve() {
+    if (!cv || !cv.offsetWidth) return;
+    var x = cv.getContext('2d'), W = cv.width, s = W / 255, pts = curvePts(), lut = FS.curveLUT(pts), i;
+    x.clearRect(0, 0, W, W); x.fillStyle = '#161618'; x.fillRect(0, 0, W, W);
+    var H = FS.lumaHist; if (H) { var m = 1; for (i = 3; i < 253; i++) m = Math.max(m, H[i]); x.fillStyle = 'rgba(233,230,225,.10)'; x.beginPath(); x.moveTo(0, W); for (i = 0; i < 256; i++) x.lineTo(i * s, W - Math.min(1, H[i] / m) * W * 0.9); x.lineTo(W, W); x.fill(); }
+    x.strokeStyle = '#2F2F34'; x.lineWidth = 1; x.beginPath(); for (i = 1; i < 4; i++) { x.moveTo(i * W / 4, 0); x.lineTo(i * W / 4, W); x.moveTo(0, i * W / 4); x.lineTo(W, i * W / 4); } x.stroke();
+    x.strokeStyle = 'rgba(154,150,143,.45)'; x.setLineDash([6, 6]); x.beginPath(); x.moveTo(0, W); x.lineTo(W, 0); x.stroke(); x.setLineDash([]);
+    x.strokeStyle = '#E9E6E1'; x.lineWidth = 3; x.beginPath();
+    for (i = 0; i <= 255; i++) { var y = lut ? lut[i] : i; if (i) x.lineTo(i * s, W - y * s); else x.moveTo(0, W - y * s); } x.stroke();
+    pts.forEach(function (q, j) { x.beginPath(); x.arc(q[0] * s, W - q[1] * s, 9, 0, 7); x.fillStyle = j === cvDrag ? '#D6B77E' : '#1D1D20'; x.fill(); x.lineWidth = 3; x.strokeStyle = '#D6B77E'; x.stroke(); });
+  }
+  function cvAt(e) { var b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * 255, (1 - (e.clientY - b.top) / b.height) * 255, b]; }
+  function nearest(pts, q) { var best = -1, bd = 14; pts.forEach(function (p, j) { var d = Math.hypot(p[0] - q[0], p[1] - q[1]); if (d < bd) { bd = d; best = j; } }); return best; }
+  cv.addEventListener('pointerdown', function (e) {
+    var q = cvAt(e), pts = curvePts(), j = nearest(pts, q);
+    if (j < 0) { var lut = FS.curveLUT(pts), yy = lut ? lut[Math.round(FS.clamp(q[0], 0, 255))] : q[0]; if (Math.abs(yy - q[1]) > 28 || pts.length >= 12) return; pts.push([q[0], yy]); pts.sort(function (a, b) { return a[0] - b[0]; }); j = nearest(pts, [q[0], yy]); }
+    cvDrag = j; cvOn = true; cv.setPointerCapture(e.pointerId); setCurve(pts); e.preventDefault();
+  });
+  cv.addEventListener('pointermove', function (e) {
+    if (cvDrag < 0) return; var q = cvAt(e), pts = curvePts(), n = pts.length, j = cvDrag;
+    var out = q[0] < -30 || q[0] > 285 || q[1] < -30 || q[1] > 285;
+    if (out && j > 0 && j < n - 1) { pts.splice(j, 1); cvDrag = -1; setCurve(pts); return; }
+    var lo = j ? pts[j - 1][0] + 3 : 0, hi = j < n - 1 ? pts[j + 1][0] - 3 : 255;
+    pts[j] = [j === 0 ? Math.min(FS.clamp(q[0], 0, 255), hi) : j === n - 1 ? Math.max(FS.clamp(q[0], 0, 255), lo) : FS.clamp(q[0], lo, hi), FS.clamp(q[1], 0, 255)];
+    setCurve(pts);
+  });
+  cv.addEventListener('pointerup', function () { if (!cvOn) return; cvOn = false; cvDrag = -1; drawCurve(); commitAdj(); });
+  cv.addEventListener('pointercancel', function () { cvOn = false; cvDrag = -1; drawCurve(); });
+  cv.addEventListener('dblclick', function (e) { var pts = curvePts(), j = nearest(pts, cvAt(e)); if (j > 0 && j < pts.length - 1) { pts.splice(j, 1); setCurve(pts, true); } });
+  $$('[data-curve]').forEach(function (b) { b.addEventListener('click', function () { var c = CURVES.filter(function (q) { return q[0] === b.dataset.curve; })[0]; setCurve(c[2].map(function (q) { return q.slice(); }), true); }); });
+
+  /* per-section reset and the "changed" dot on each section header */
+  function secMod(a, s) { return SEC_KEYS[s].some(function (k) { return k === 'tone' ? a.tone && a.tone !== 'none' : !!a[k]; }); }
+  function markSecs() { var a = curAdj(); $$('#sliders details').forEach(function (d) { d.classList.toggle('mod', !!a && secMod(a, d.dataset.sec)); }); }
+  $$('.ax-reset').forEach(function (b) { b.addEventListener('click', function (e) {
+    e.preventDefault(); e.stopPropagation(); var s = b.dataset.reset;
+    live(function (a) { SEC_KEYS[s].forEach(function (k) { a[k] = k === 'tone' ? 'none' : FS.ADJ0[k]; }); }); commitAdj();
+  }); });
+
   $('#auto').addEventListener('click', function () { var p = FS.cur(); if (!p) return; p.doc.photo.adj = FS.autoAdjust(p); FS.batch(function (q) { q.doc.photo.adj = FS.autoAdjust(q); }); FS.changed(); FS.toast('✨ שופר אוטומטית. אפשר לכוונן בפסים.'); });
   $('#reset-adj').addEventListener('click', function () { var p = FS.cur(); if (!p) return; p.doc.photo.adj = Object.assign({}, FS.ADJ0); p.doc.photo.preset = null; FS.batch(function (q) { q.doc.photo.adj = Object.assign({}, FS.ADJ0); q.doc.photo.preset = null; }); FS.changed(); });
   var clip = null;
   $('#copy-adj').addEventListener('click', function () { var p = FS.cur(); if (!p) return; clip = JSON.parse(JSON.stringify(p.doc.photo.adj)); $('#paste-adj').disabled = false; FS.toast('העריכה הועתקה'); });
-  $('#paste-adj').addEventListener('click', function () { var p = FS.cur(); if (!p || !clip) return; p.doc.photo.adj = JSON.parse(JSON.stringify(clip)); FS.changed(); });
-  $('#adj-all').addEventListener('click', function () { var p = FS.cur(); if (!p) return; var a = JSON.stringify(p.doc.photo.adj); S.photos.forEach(function (q) { if (q !== p) { q.doc.photo.adj = JSON.parse(a); FS.snap(q); } }); buildStrip(); FS.toast('העריכה הוחלה על ' + S.photos.length + ' תמונות'); });
-  function syncAdj() { var p = FS.cur(); if (!p) return; var a = p.doc.photo.adj; $$('[data-adj]').forEach(function (r) { r.value = a[r.dataset.adj] || 0; $('#o-' + r.dataset.adj).textContent = a[r.dataset.adj] || 0; }); $('#tone').value = a.tone || 'none'; }
+  $('#paste-adj').addEventListener('click', function () { var p = FS.cur(); if (!p || !clip) return; p.doc.photo.adj = JSON.parse(JSON.stringify(clip)); FS.batch(function (q) { q.doc.photo.adj = JSON.parse(JSON.stringify(clip)); }); FS.changed(); });
+  $('#adj-all').addEventListener('click', function () { var p = FS.cur(); if (!p) return; var a = JSON.stringify(p.doc.photo.adj); S.photos.forEach(function (q) { if (q !== p) { q.doc.photo.adj = JSON.parse(a); q.cache = {}; FS.snap(q); } }); buildStrip(); FS.toast('העריכה הוחלה על ' + S.photos.length + ' תמונות'); });
+  function syncAdj() {
+    var p = FS.cur(); if (!p) return; var a = p.doc.photo.adj;
+    $$('[data-adj]').forEach(function (r) { setRow(r, a[r.dataset.adj] || 0); }); $('#tone').value = a.tone || 'none';
+    syncMix(); syncGrade(); drawCurve(); markSecs();
+  }
 
-  /* ---------- presets ---------- */
+  /* ---------- presets: adjustment values only (numbers, plus mixer / grading / curve), grouped by look ---------- */
+  var CS = [[0, 0], [64, 56], [192, 202], [255, 255]], CSS2 = [[0, 0], [64, 40], [192, 218], [255, 255]];
+  FS.PRESET_CATS = [['', 'הכל'], ['soft', 'עדין / טבעי'], ['wedding', 'חתונה'], ['film', 'וינטג׳ וסרט'], ['bw', 'שחור־לבן'], ['drama', 'דרמטי'], ['pop', 'צבעוני / פופ'], ['summer', 'קיץ'], ['winter', 'חורף'], ['night', 'אירוע ערב']];
   FS.PRESETS = [
-    ['original', 'מקורי', {}], ['vivid', 'חי', { vibrance: 40, contrast: 15, clarity: 15, saturation: 8 }],
-    ['golden', 'שעת זהב', { temp: 35, vibrance: 20, highlights: -15, shadows: 15, tone: 'gold' }], ['cool', 'קר', { temp: -30, tint: -5, contrast: 10 }],
-    ['vintage', 'וינטג׳', { fade: 40, saturation: -25, temp: 20, grain: 25, vignette: 30, tone: 'sepia', mono: 15 }], ['bw', 'שחור־לבן', { mono: 100, contrast: 25, clarity: 20 }],
-    ['noir', 'נואר', { mono: 100, contrast: 60, blacks: -30, vignette: 45, grain: 18 }], ['drama', 'דרמטי', { contrast: 35, clarity: 45, highlights: -40, shadows: 30, vignette: 30, saturation: -10 }],
-    ['wedding', 'רך לחתונות', { exposure: 10, contrast: -15, highlights: -20, fade: 15, temp: 8, vibrance: -5, clarity: -20 }], ['film', 'פילם', { fade: 25, grain: 30, tone: 'teal', contrast: 10, saturation: -10 }],
-    ['summer', 'קיץ', { exposure: 12, vibrance: 35, temp: 18, tint: 5, shadows: 20 }], ['night', 'לילה', { temp: -40, exposure: -15, contrast: 20, vignette: 40, tone: 'cool' }],
-    ['pastel', 'פסטל', { exposure: 15, contrast: -30, saturation: -20, fade: 30, tint: 8 }], ['matte', 'מט', { fade: 45, contrast: -10, blacks: 20 }],
-    ['hdr', 'HDR', { highlights: -70, shadows: 70, clarity: 60, vibrance: 30, sharpen: 30 }], ['sepia', 'ספיה', { mono: 70, tone: 'sepia', fade: 15 }],
-    ['cinema', 'קולנועי', { tone: 'teal', contrast: 25, saturation: -15, vignette: 25, blacks: -15 }], ['food', 'אוכל', { exposure: 8, temp: 12, vibrance: 35, clarity: 20, sharpen: 25 }]
+    ['original', 'מקורי', {}, ''],
+    /* soft / natural */
+    ['natural', 'טבעי', { exposure: 4, contrast: 6, vibrance: 14, clarity: 6, curve: [[0, 0], [64, 60], [192, 198], [255, 255]] }, 'soft'],
+    ['vivid', 'חי', { vibrance: 40, contrast: 15, clarity: 15, saturation: 8 }, 'soft'],
+    ['clean', 'נקי ובהיר', { exposure: 10, highlights: -20, shadows: 18, whites: 10, vibrance: 12, texture: 10 }, 'soft'],
+    ['skin', 'עור רך', { temp: 6, texture: -28, clarity: -10, highlights: -10, hsl: { orange: { h: 0, s: -10, l: 12 }, red: { h: 0, s: -6, l: 0 } } }, 'soft'],
+    ['portra', 'פורטרה 400', { temp: 8, contrast: -6, shadows: 12, highlights: -15, fade: 8, vibrance: -6, grain: 10, hsl: { orange: { h: -6, s: -8, l: 8 }, green: { h: -30, s: -25, l: 0 }, blue: { h: -10, s: -20, l: 0 } }, grade: { sh: { h: 200, s: 12 }, hi: { h: 40, s: 14 } }, curve: [[0, 14], [70, 72], [190, 198], [255, 250]] }, 'soft'],
+    ['fuji400h', 'פוג׳י 400H', { exposure: 6, temp: -6, tint: -4, contrast: -10, fade: 10, saturation: -10, hsl: { green: { h: 35, s: -15, l: 6 }, aqua: { h: -10, s: 0, l: 0 }, blue: { h: -12, s: -10, l: 0 }, orange: { h: 0, s: -10, l: 10 } }, grade: { sh: { h: 170, s: 18 }, hi: { h: 330, s: 6 } }, curve: [[0, 18], [64, 66], [192, 200], [255, 248]] }, 'soft'],
+    /* wedding */
+    ['wedding', 'רך לחתונות', { exposure: 10, contrast: -15, highlights: -20, fade: 15, temp: 8, vibrance: -5, clarity: -20 }, 'wedding'],
+    ['airy', 'בהיר ואוורירי', { exposure: 22, contrast: -18, highlights: -30, shadows: 30, whites: 8, vibrance: -8, temp: 4, fade: 6, hsl: { orange: { h: 0, s: -10, l: 12 }, green: { h: 30, s: -35, l: 12 }, yellow: { h: 0, s: -20, l: 0 } }, curve: [[0, 22], [128, 140], [255, 252]] }, 'wedding'],
+    ['ivory', 'שנהב', { exposure: 10, temp: 12, tint: 4, contrast: -10, saturation: -18, grade: { sh: { h: 30, s: 8 }, hi: { h: 45, s: 16 } }, curve: [[0, 16], [128, 134], [255, 246]] }, 'wedding'],
+    ['blush', 'ורוד עדין', { exposure: 12, tint: 12, contrast: -12, highlights: -15, shadows: 15, vibrance: -6, hsl: { red: { h: 0, s: -10, l: 8 }, orange: { h: 0, s: 0, l: 10 } }, grade: { mid: { h: 20, s: 6 }, hi: { h: 345, s: 16 } } }, 'wedding'],
+    ['romantic', 'רומנטי', { temp: 10, contrast: -8, highlights: -15, clarity: -18, texture: -15, vignette: 18, grade: { sh: { h: 20, s: 10 }, hi: { h: 40, s: 12 } }, curve: [[0, 20], [64, 66], [192, 200], [255, 248]] }, 'wedding'],
+    ['classic', 'חתונה קלאסית', { exposure: 6, contrast: 12, highlights: -25, shadows: 15, vibrance: 10, clarity: 8, temp: 4, hsl: { orange: { h: 0, s: 0, l: 6 } } }, 'wedding'],
+    ['pastel', 'פסטל', { exposure: 15, contrast: -30, saturation: -20, fade: 30, tint: 8 }, 'wedding'],
+    /* vintage and film */
+    ['vintage', 'וינטג׳', { fade: 40, saturation: -25, temp: 20, grain: 25, vignette: 30, tone: 'sepia', mono: 15 }, 'film'],
+    ['film', 'פילם', { fade: 25, grain: 30, tone: 'teal', contrast: 10, saturation: -10 }, 'film'],
+    ['kodakgold', 'קודאק גולד', { temp: 18, tint: -4, contrast: 10, vibrance: 10, grain: 18, hsl: { yellow: { h: -10, s: 15, l: 0 }, green: { h: -20, s: -10, l: 0 }, blue: { h: 0, s: -15, l: 0 }, red: { h: 0, s: 8, l: 0 } }, grade: { sh: { h: 30, s: 10 }, hi: { h: 45, s: 14 } }, curve: [[0, 12], [64, 60], [192, 206], [255, 248]] }, 'film'],
+    ['cross', 'קרוס־פרוסס', { contrast: 18, saturation: 12, hsl: { red: { h: 10, s: 0, l: 0 }, green: { h: -15, s: 20, l: 0 } }, grade: { sh: { h: 200, s: 40 }, mid: { h: 120, s: 8 }, hi: { h: 60, s: 40 } }, curve: [[0, 10], [64, 50], [192, 214], [255, 245]] }, 'film'],
+    ['matte', 'מט', { fade: 45, contrast: -10, blacks: 20 }, 'film'],
+    ['fadedmatte', 'מט דהוי', { fade: 20, contrast: -14, saturation: -22, grain: 12, grade: { sh: { h: 210, s: 10 } }, curve: [[0, 46], [60, 70], [190, 190], [255, 232]] }, 'film'],
+    ['polaroid', 'פולארויד', { exposure: 8, temp: 10, tint: 6, contrast: -12, fade: 22, saturation: -12, vignette: 22, grade: { sh: { h: 180, s: 16 }, hi: { h: 50, s: 20 } }, curve: [[0, 30], [128, 138], [255, 236]] }, 'film'],
+    ['retro70', 'שנות ה־70', { temp: 24, tint: 6, saturation: -10, fade: 18, grain: 24, hsl: { green: { h: -40, s: -30, l: 0 }, blue: { h: -30, s: -40, l: 0 }, orange: { h: 0, s: 10, l: 0 } }, grade: { sh: { h: 30, s: 18 }, hi: { h: 50, s: 18 } }, curve: [[0, 24], [128, 132], [255, 236]] }, 'film'],
+    ['sepia', 'ספיה', { mono: 70, tone: 'sepia', fade: 15 }, 'film'],
+    /* black and white */
+    ['bw', 'שחור־לבן', { mono: 100, contrast: 25, clarity: 20 }, 'bw'],
+    ['noir', 'נואר', { mono: 100, contrast: 60, blacks: -30, vignette: 45, grain: 18 }, 'bw'],
+    ['bwhigh', 'ש״ל חזק', { mono: 100, contrast: 40, clarity: 25, whites: 15, blacks: -20, texture: 12, curve: CSS2 }, 'bw'],
+    ['bwsoft', 'ש״ל רך', { mono: 100, contrast: -12, fade: 14, highlights: -20, shadows: 20, curve: [[0, 22], [128, 130], [255, 246]] }, 'bw'],
+    ['bwwarm', 'ש״ל חם', { mono: 100, contrast: 15, grade: { sh: { h: 30, s: 10 }, hi: { h: 40, s: 22 } }, curve: CS }, 'bw'],
+    ['selenium', 'סלניום', { mono: 100, contrast: 20, blacks: -10, grade: { sh: { h: 230, s: 18 }, hi: { h: 40, s: 6 } } }, 'bw'],
+    ['bwfilm', 'ש״ל פילם', { mono: 100, contrast: 22, grain: 35, fade: 10, vignette: 20, curve: [[0, 14], [64, 48], [192, 214], [255, 248]] }, 'bw'],
+    ['bwred', 'ש״ל פילטר אדום', { mono: 100, contrast: 20, hsl: { blue: { h: 0, s: 0, l: -45 }, aqua: { h: 0, s: 0, l: -30 }, red: { h: 0, s: 0, l: 20 }, orange: { h: 0, s: 0, l: 18 } } }, 'bw'],
+    /* dramatic */
+    ['drama', 'דרמטי', { contrast: 35, clarity: 45, highlights: -40, shadows: 30, vignette: 30, saturation: -10 }, 'drama'],
+    ['hdr', 'HDR', { highlights: -70, shadows: 70, clarity: 60, vibrance: 30, sharpen: 30 }, 'drama'],
+    ['cinema', 'קולנועי', { tone: 'teal', contrast: 25, saturation: -15, vignette: 25, blacks: -15 }, 'drama'],
+    ['tealorange', 'טורקיז וכתום', { contrast: 18, vibrance: 10, hsl: { orange: { h: -5, s: 10, l: 6 }, yellow: { h: -20, s: 0, l: 0 }, green: { h: 60, s: -30, l: 0 }, aqua: { h: 10, s: 10, l: 0 }, blue: { h: -15, s: 10, l: 0 } }, grade: { sh: { h: 195, s: 35 }, hi: { h: 35, s: 30 }, bal: -10 }, curve: [[0, 8], [64, 52], [192, 206], [255, 250]] }, 'drama'],
+    ['moody', 'כהה ומאופק', { exposure: -12, contrast: 14, highlights: -30, shadows: -6, saturation: -25, vignette: 30, hsl: { green: { h: 20, s: -40, l: -20 }, blue: { h: 0, s: -30, l: -10 }, orange: { h: 0, s: -6, l: 0 } }, grade: { sh: { h: 210, s: 20 }, hi: { h: 35, s: 10 } }, curve: [[0, 18], [80, 70], [190, 190], [255, 236]] }, 'drama'],
+    ['bleach', 'ביטול הלבנה', { contrast: 35, saturation: -45, clarity: 25, texture: 10, whites: 10, blacks: -10, curve: CSS2 }, 'drama'],
+    ['epic', 'אפי', { dehaze: 30, contrast: 20, clarity: 30, highlights: -35, shadows: 20, vibrance: 12, vignette: 25, grade: { sh: { h: 215, s: 15 }, hi: { h: 40, s: 12 } } }, 'drama'],
+    /* colourful / pop */
+    ['pop', 'פופ', { vibrance: 40, saturation: 15, contrast: 20, clarity: 10, curve: CS, hsl: { blue: { h: 0, s: 20, l: 0 }, red: { h: 0, s: 10, l: 0 } } }, 'pop'],
+    ['candy', 'סוכרייה', { exposure: 8, tint: 8, saturation: 20, contrast: -6, hsl: { red: { h: -10, s: 10, l: 0 }, magenta: { h: 0, s: 20, l: 0 }, aqua: { h: 0, s: 20, l: 0 }, yellow: { h: 0, s: -10, l: 0 } }, grade: { sh: { h: 200, s: 12 }, hi: { h: 330, s: 14 } } }, 'pop'],
+    ['tropical', 'טרופי', { vibrance: 35, temp: 6, contrast: 12, dehaze: 10, hsl: { green: { h: 20, s: 20, l: 0 }, aqua: { h: 0, s: 30, l: 0 }, blue: { h: -10, s: 20, l: 0 } } }, 'pop'],
+    ['retropop', 'רטרו פופ', { saturation: 25, contrast: 25, fade: 10, hsl: { orange: { h: -10, s: 0, l: 0 } }, grade: { sh: { h: 250, s: 20 }, hi: { h: 55, s: 25 } } }, 'pop'],
+    ['food', 'אוכל', { exposure: 8, temp: 12, vibrance: 35, clarity: 20, sharpen: 25 }, 'pop'],
+    /* summer */
+    ['golden', 'שעת זהב', { temp: 35, vibrance: 20, highlights: -15, shadows: 15, tone: 'gold' }, 'summer'],
+    ['summer', 'קיץ', { exposure: 12, vibrance: 35, temp: 18, tint: 5, shadows: 20 }, 'summer'],
+    ['beach', 'חוף', { exposure: 12, temp: 4, vibrance: 25, highlights: -20, shadows: 10, whites: 8, dehaze: 8, hsl: { aqua: { h: -5, s: 25, l: 6 }, blue: { h: -10, s: 20, l: 6 }, yellow: { h: 0, s: -8, l: 0 } } }, 'summer'],
+    ['sunset', 'שקיעה', { temp: 30, tint: 8, vibrance: 20, contrast: 12, highlights: -25, vignette: 15, grade: { sh: { h: 280, s: 16 }, hi: { h: 30, s: 30 } } }, 'summer'],
+    ['goldsoft', 'זהוב רך', { temp: 22, exposure: 6, contrast: -6, fade: 8, hsl: { orange: { h: 0, s: 0, l: 8 }, green: { h: -25, s: -15, l: 0 } }, grade: { mid: { h: 30, s: 10 }, hi: { h: 42, s: 28 } } }, 'summer'],
+    /* winter */
+    ['cool', 'קר', { temp: -30, tint: -5, contrast: 10 }, 'winter'],
+    ['winter', 'חורף', { temp: -22, tint: -2, exposure: 8, saturation: -20, highlights: -15, whites: 10, hsl: { orange: { h: 0, s: -15, l: 0 }, blue: { h: 0, s: 10, l: 8 } }, grade: { sh: { h: 215, s: 20 }, hi: { h: 200, s: 10 } }, curve: [[0, 12], [128, 134], [255, 252]] }, 'winter'],
+    ['frost', 'כפור', { temp: -30, exposure: 12, contrast: -8, saturation: -35, fade: 12, clarity: 10, grade: { sh: { h: 200, s: 16 }, mid: { h: 210, s: 8 } } }, 'winter'],
+    ['nordic', 'נורדי', { temp: -10, saturation: -25, contrast: 6, highlights: -20, shadows: 15, hsl: { green: { h: 20, s: -30, l: 0 }, yellow: { h: 0, s: -30, l: 0 } }, curve: [[0, 16], [128, 128], [255, 246]] }, 'winter'],
+    ['snow', 'שלג בהיר', { exposure: 20, whites: 20, temp: -12, contrast: -6, highlights: -10, vibrance: -10 }, 'winter'],
+    /* evening events */
+    ['night', 'לילה', { temp: -40, exposure: -15, contrast: 20, vignette: 40, tone: 'cool' }, 'night'],
+    ['neon', 'ניאון', { contrast: 22, vibrance: 30, saturation: 10, dehaze: 12, vignette: 20, blacks: -10, hsl: { magenta: { h: 0, s: 30, l: 0 }, purple: { h: 10, s: 25, l: 0 }, blue: { h: 0, s: 25, l: 0 }, aqua: { h: -10, s: 30, l: 0 }, orange: { h: 0, s: -10, l: 0 } }, grade: { sh: { h: 265, s: 30 }, hi: { h: 320, s: 16 } } }, 'night'],
+    ['club', 'מועדון', { contrast: 28, clarity: 15, saturation: 18, vignette: 30, blacks: -15, grade: { sh: { h: 240, s: 30 }, hi: { h: 300, s: 20 } } }, 'night'],
+    ['candle', 'אור נרות', { temp: 28, tint: 4, exposure: 6, highlights: -25, shadows: 20, contrast: -4, vignette: 22, texture: -10, grade: { sh: { h: 25, s: 16 }, hi: { h: 40, s: 20 } } }, 'night'],
+    ['evening', 'זוהר ערב', { exposure: 10, shadows: 30, highlights: -30, temp: 10, vibrance: 12, clarity: 8, dehaze: 8, grade: { sh: { h: 220, s: 12 }, hi: { h: 40, s: 14 } } }, 'night'],
+    ['flash', 'תיקון פלאש', { highlights: -40, whites: -10, shadows: 25, temp: 8, texture: -15, clarity: -6, hsl: { orange: { h: 0, s: -12, l: 6 }, red: { h: 0, s: -8, l: 0 } } }, 'night']
   ];
-  function presetAdj(vals, k) { var a = Object.assign({}, FS.ADJ0); for (var key in vals) a[key] = key === 'tone' ? (k > 0.3 ? vals[key] : 'none') : Math.round(vals[key] * k); return a; }
+  /* a preset at strength k (0..1.5): numbers scale, the mixer and grading amounts scale, the curve bends towards straight */
+  function presetAdj(vals, k) {
+    var a = Object.assign({}, FS.ADJ0), key, b;
+    for (key in vals) {
+      var v = vals[key];
+      if (key === 'tone') a.tone = k > 0.3 ? v : 'none';
+      else if (key === 'hsl' && v) { a.hsl = {}; for (b in v) a.hsl[b] = { h: Math.round((v[b].h || 0) * k), s: Math.round((v[b].s || 0) * k), l: Math.round((v[b].l || 0) * k) }; }
+      else if (key === 'grade' && v) { a.grade = { bal: Math.round((v.bal || 0) * k) }; ZONES.forEach(function (z) { if (v[z[0]]) a.grade[z[0]] = { h: v[z[0]].h || 0, s: Math.round(FS.clamp((v[z[0]].s || 0) * k, 0, 100)) }; }); }
+      else if (key === 'curve' && v) a.curve = k ? v.map(function (q) { return [q[0], Math.round(FS.clamp(q[0] + (q[1] - q[0]) * k, 0, 255))]; }) : null;
+      else if (typeof v === 'number') a[key] = Math.round(v * k);
+    }
+    if (k <= 0) { a.hsl = a.grade = a.curve = null; }
+    return a;
+  }
   FS.presetAdj = presetAdj;
   function myPresets() { try { return JSON.parse(localStorage.getItem('frame-studio-presets') || '[]'); } catch (e) { return []; } }
+  /* thumbnails: the photo is scaled down once (kept per photo), each look is drawn from that copy and kept until the photo changes */
+  var TB = { src: null, data: null, w: 0, h: 0, tiles: {} };
+  function thumbBase(p) {
+    if (TB.src === p.src && TB.data) return TB;
+    var im = FS.img(p.src), k = 132 / Math.max(im.naturalWidth, im.naturalHeight), c = FS.canvas(Math.max(1, Math.round(im.naturalWidth * k)), Math.max(1, Math.round(im.naturalHeight * k))), x = c.getContext('2d', { willReadFrequently: true });
+    x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height);
+    TB = { src: p.src, data: x.getImageData(0, 0, c.width, c.height), w: c.width, h: c.height, tiles: {} }; return TB;
+  }
   function presetThumb(p, adj) {
-    var im = FS.img(p.src), k = 150 / Math.max(im.naturalWidth, im.naturalHeight), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k), x = c.getContext('2d', { willReadFrequently: true });
-    x.drawImage(im, 0, 0, c.width, c.height); var id = x.getImageData(0, 0, c.width, c.height); FS.adjustPixels(id.data, c.width, c.height, adj, true); x.putImageData(id, 0, 0); return c;
+    var t = thumbBase(p), c = FS.canvas(t.w, t.h), x = c.getContext('2d'), id = new ImageData(new Uint8ClampedArray(t.data.data), t.w, t.h);
+    FS.adjustPixels(id.data, t.w, t.h, adj, true); x.putImageData(id, 0, 0); return c;
   }
   FS.presetThumb = presetThumb;
-  function presetBtn(p, id, name, vals, mine) {
-    var b = document.createElement('button'); b.className = 'tile' + (p.doc.photo.preset === id ? ' on' : '');
-    b.appendChild(presetThumb(p, presetAdj(vals, 1))); var s = document.createElement('span'); s.textContent = name; b.appendChild(s);
+  function presetBtn(p, id, name, vals, mine, cat) {
+    var b = document.createElement('button'); b.className = 'tile' + (p.doc.photo.preset === id ? ' on' : ''); b.dataset.cat = cat || '';
+    var t = thumbBase(p), key = id + '|' + JSON.stringify(vals), c = TB.tiles[key];
+    if (!c) { c = FS.canvas(t.w, t.h); c._todo = vals; TB.tiles[key] = c; }
+    b.appendChild(c); var s = document.createElement('span'); s.textContent = name; b.appendChild(s);
     b.addEventListener('click', function () { var k = Number($('#fstr').value) / 100; p.doc.photo.adj = presetAdj(vals, k); p.doc.photo.preset = id; FS.batch(function (q) { q.doc.photo.adj = presetAdj(vals, k); q.doc.photo.preset = id; }); FS.changed(); buildPresetsMarks(); });
     if (mine) { var x = document.createElement('i'); x.className = 'x'; x.textContent = '✕'; x.addEventListener('click', function (e) { e.stopPropagation(); localStorage.setItem('frame-studio-presets', JSON.stringify(myPresets().filter(function (q) { return q.id !== id; }))); buildPresets(); }); b.appendChild(x); }
     b.dataset.id = id; return b;
   }
+  /* the looks are drawn a few at a time, the visible category first, so the tab opens at once even on a slow computer */
+  var drawT = null;
+  function drawPending() {
+    clearTimeout(drawT); var p = FS.cur(); if (!p) return;
+    var list = $$('#presets .tile:not([hidden]) canvas, #my-presets .tile canvas, #presets .tile canvas').filter(function (c) { return c._todo; }), t0 = Date.now();
+    while (list.length && Date.now() - t0 < 24) { var c = list.shift(), id = new ImageData(new Uint8ClampedArray(TB.data.data), TB.w, TB.h); FS.adjustPixels(id.data, TB.w, TB.h, presetAdj(c._todo, 1), true); c.getContext('2d').putImageData(id, 0, 0); c._todo = null; }
+    if (list.length) drawT = setTimeout(drawPending, 16);
+  }
   function buildPresetsMarks() { var p = FS.cur(); $$('#presets .tile, #my-presets .tile').forEach(function (b) { b.classList.toggle('on', !!p && b.dataset.id === p.doc.photo.preset); }); }
+  var pcat = FS.prefs.presetCat || '';
+  function showCat() { $$('#preset-cats button').forEach(function (b) { b.classList.toggle('on', b.dataset.cat === pcat); }); $$('#presets .tile').forEach(function (b) { b.hidden = !!pcat && b.dataset.cat !== pcat && b.dataset.cat !== ''; }); }
+  $('#preset-cats').innerHTML = FS.PRESET_CATS.map(function (c) { return '<button type="button" data-cat="' + c[0] + '">' + c[1] + '</button>'; }).join('');
+  $$('#preset-cats button').forEach(function (b) { b.addEventListener('click', function () { pcat = b.dataset.cat; FS.prefs.presetCat = pcat; FS.savePrefs(); showCat(); drawPending(); }); });
   function buildPresets() {
     var p = FS.cur(), g = $('#presets'), m = $('#my-presets'); g.innerHTML = ''; m.innerHTML = '';
-    if (!p) { g.innerHTML = '<p class="empty">בוחרים תמונה קודם.</p>'; return; }
-    FS.PRESETS.forEach(function (q) { g.appendChild(presetBtn(p, q[0], q[1], q[2])); });
+    if (!p || !FS.img(p.src)) { g.innerHTML = '<p class="empty">בוחרים תמונה קודם.</p>'; return; }
+    FS.PRESETS.forEach(function (q) { g.appendChild(presetBtn(p, q[0], q[1], q[2], false, q[3])); });
     myPresets().forEach(function (q) { m.appendChild(presetBtn(p, q.id, q.name, q.adj, true)); });
+    showCat(); drawPending();
   }
   $('#fstr').addEventListener('input', function () {
     $('#o-fstr').textContent = this.value + '%'; var p = FS.cur(); if (!p || !p.doc.photo.preset) return;
@@ -569,7 +834,7 @@
   });
   $('#save-preset').addEventListener('click', function () {
     var p = FS.cur(); if (!p) return; var name = prompt('שם לפילטר:', 'הפילטר שלי'); if (!name) return;
-    var a = {}; for (var k in p.doc.photo.adj) if (p.doc.photo.adj[k] && p.doc.photo.adj[k] !== 'none') a[k] = p.doc.photo.adj[k];
+    var a = {}; for (var k in p.doc.photo.adj) if (p.doc.photo.adj[k] && p.doc.photo.adj[k] !== 'none') a[k] = JSON.parse(JSON.stringify(p.doc.photo.adj[k]));
     var list = myPresets(); list.push({ id: 'm' + FS.uid(), name: name, adj: a }); localStorage.setItem('frame-studio-presets', JSON.stringify(list)); buildPresets(); FS.toast('הפילטר נשמר');
   });
 
