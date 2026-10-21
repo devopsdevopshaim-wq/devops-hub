@@ -1,0 +1,76 @@
+{
+  "name": "frame-studio-desktop",
+  "productName": "Frame Studio",
+  "version": "1.0.0",
+  "description": "פריים־סטודיו - תוכנה למחשב (Electron)",
+  "author": "Frame Magnets",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devopsdevopshaim-wq/devops-hub.git"
+  },
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "copy": "node scripts/copy-app.mjs",
+    "start": "node scripts/copy-app.mjs && electron .",
+    "dist:win": "node scripts/copy-app.mjs && electron-builder --win --publish never",
+    "dist:dir": "node scripts/copy-app.mjs && electron-builder --dir --publish never",
+    "check": "node --check main.js && node --check preload.js"
+  },
+  "devDependencies": {
+    "electron": "44.6.0",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "il.frame-magnets.studio",
+    "productName": "Frame Studio",
+    "copyright": "Frame Magnets",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "build/icon.png",
+      "app/**/*"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "פריים־סטודיו",
+      "installerLanguages": [
+        "he_IL"
+      ],
+      "language": "1037",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "FrameStudio-Setup-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "dir"
+      ],
+      "icon": "build/icon.png",
+      "category": "Graphics"
+    },
+    "publish": null
+  }
+}
