@@ -262,7 +262,7 @@
   }
   pane.innerHTML = '<h2>עריכות AI</h2>' +
     '<p class="hint">AI אמיתי בשרת מצייר את התמונה מחדש ושומר על האנשים. עד דקה לתמונה. חל על התמונה, או על כל המסומנות. אפשר לעצור באמצע עם ⏹.</p>' +
-    '<button class="btn wide" id="style-orig">↩ החזרת המקור (ביטול ה־AI)</button>' +
+    '<div class="row2 ax-undo"><button class="btn" id="style-back" title="מבטל את עיצוב ה־AI האחרון (בתמונה או בכל המסומנות)">↶ ביטול העיצוב האחרון</button><button class="btn" id="style-orig" title="מחזיר את התמונה המקורית, בלי שום עיצוב AI">↩ חזרה למקור</button></div>' +
     '<div class="card ax-build"><h3>🎛️ שילוב משלך</h3>' + chips('🎨 סגנון', STYLE, 'style') + chips('🌍 איפה', WORLD, 'world') + chips('👗 תלבושת', OUTFIT, 'outfit') + chips('✨ אווירה', MOOD, 'mood') +
     '<p class="ax-name" id="ax-name"></p><div class="row2"><button class="btn" id="ax-random">🎲 הפתעה</button><button class="btn primary" id="ax-go">✨ ליצור</button></div></div>' +
     '<h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
@@ -292,6 +292,7 @@
     var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + FS.esc(s[1]) + '</span>';
     b.addEventListener('click', function () { FS.runAI(s[3] + KEEP, s[1]); }); $('#ai-styles').appendChild(b);
   });
+  $('#style-back').addEventListener('click', function () { var n = 0; FS.targets().forEach(function (q) { if (FS.unstyleStep(q)) n++; }); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.toast(n ? '↶ עיצוב ה־AI האחרון בוטל ב־' + n + ' תמונות' : 'אין עיצוב AI לבטל'); });
   $('#style-orig').addEventListener('click', function () { var n = 0; FS.targets().forEach(function (q) { if (FS.unstyle(q)) n++; }); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.toast(n ? '↩ המקור הוחזר ל־' + n + ' תמונות' : 'אין עריכת AI להחזיר'); });
   $('#ai-custom-go').addEventListener('click', function () { var t = $('#ai-custom').value.trim(); if (!t) return FS.toast('כותבים מה לעשות לתמונה'); FS.runAI('Edit this photo: ' + t + '.' + KEEP, 'עריכת AI'); });
   sync();

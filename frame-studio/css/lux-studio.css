@@ -626,3 +626,7 @@ input[type=range] { accent-color: var(--champagne); }
 .pro-keys-card kbd { display: inline-block; min-width: 22px; text-align: center; padding: 2px 7px; margin: 0 2px; border-radius: 6px; background: #0F0F11; border: 1px solid rgba(255,255,255,.14); border-bottom-width: 2px; font: 600 12px ui-monospace, Consolas, monospace; color: var(--ivory); }
 /* the printer summary sits just above the status bar instead of over it */
 .pl-bar { bottom: 40px !important; background: #1B1B1E; border-color: rgba(255,255,255,.1); }
+
+/* desktop program: the ✕ that closes it */
+.sb-act .app-close { min-width: 34px; font-weight: 700; }
+.sb-act .app-close:hover { background: #b3261e; border-color: #b3261e; color: #fff; }

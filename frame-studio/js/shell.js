@@ -13,6 +13,17 @@
   var reset = document.createElement('button'); reset.className = 'btn small hist'; reset.id = 'reset-edits'; reset.title = 'מחזיר את התמונה כמו שנכנסה: בלי עריכה, מסגרת, טקסט או AI'; reset.textContent = '⟲ איפוס'; reset.disabled = true;
   reset.addEventListener('click', function () { if (confirm('למחוק את כל העריכה ולחזור לתמונה המקורית? (אפשר לבטל עם "ביטול")')) { FS.resetEdits(); FS.toast('⟲ חזרה לתמונה המקורית. "↶ ביטול" מחזיר את העריכה.', 4000); } });
   quick.appendChild(reset);
+  /* cancelling an AI design is one click away whenever the photo on screen has one */
+  var aiUndo = document.createElement('button'); aiUndo.className = 'btn small hist ai-undo'; aiUndo.id = 'ai-undo'; aiUndo.hidden = true;
+  aiUndo.title = 'מבטל את עיצוב ה־AI האחרון בתמונה הזאת (לחיצה נוספת: עוד צעד אחורה, עד המקור)'; aiUndo.textContent = '↩ ביטול AI';
+  aiUndo.addEventListener('click', function () {
+    var p = FS.cur(); if (!p || !FS.unstyleStep) return;
+    if (FS.unstyleStep(p)) { FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.toast(p.origSrc ? '↩ חזרה לעיצוב ה־AI הקודם' : '↩ עיצוב ה־AI בוטל: התמונה המקורית חזרה', 3500); }
+    syncAiUndo();
+  });
+  quick.appendChild(aiUndo);
+  function syncAiUndo() { var p = FS.cur(); aiUndo.hidden = !(p && p.origSrc); }
+  FS.on('history', syncAiUndo); FS.on('doc', syncAiUndo);
   ['#compare', '#fmt'].forEach(function (s) { var el = $(s); if (el) quick.appendChild(el); });
   bar.insertBefore(quick, info);
   FS.emit('history');
@@ -34,6 +45,14 @@
   var L = FS.license && FS.license.get(); me.textContent = '🚪 יציאה' + (L && L.email && !(FS.account && FS.account.isAdmin()) ? ' · ' + L.email : ''); menu.appendChild(me);
   var heal = document.createElement('button'); heal.className = 'btn'; heal.textContent = '🔄 רענון מלא (אם משהו נתקע) · גרסה ' + (window.FS_V || '?'); heal.addEventListener('click', function () { if (window.FS_HEAL) window.FS_HEAL(); else location.reload(); }); menu.appendChild(heal);
   act.appendChild(more);
+  /* in the desktop program: a clear ✕ that closes it (the same as the window's X; unsaved photos are asked about first) */
+  var D = window.FSDesktop;
+  if (D && typeof D.close === 'function') {
+    var x = document.createElement('button'); x.className = 'btn small app-close'; x.id = 'app-close'; x.title = 'סגירת התוכנה'; x.setAttribute('aria-label', 'סגירת התוכנה'); x.textContent = '✕';
+    x.addEventListener('click', function () { D.close(); });
+    act.appendChild(x);
+    var q = document.createElement('button'); q.className = 'btn'; q.textContent = '✕ סגירת התוכנה'; q.addEventListener('click', function () { D.close(); }); menu.appendChild(q);
+  }
   bar.appendChild(act);
   $('#sb-menu', more).addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; this.setAttribute('aria-expanded', String(!menu.hidden)); });
   menu.addEventListener('click', function (e) { if (e.target.closest('.btn')) menu.hidden = true; });

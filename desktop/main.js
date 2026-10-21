@@ -5,7 +5,7 @@
 // routes). Every other https request (fonts, the API server, CDNs) goes to the network unchanged.
 'use strict';
 
-const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -33,13 +33,23 @@ const MIME = {
   '.pdf': 'application/pdf', '.zip': 'application/zip',
 };
 
+// The built-in AI (face finding, cut-outs, the quality check) draws through WebGL. On a computer whose graphics driver
+// Chromium does not accept, WebGL is simply missing and every one of those tools fails; this lets it fall back to
+// software WebGL (slower, but it works). With an accepted driver nothing changes.
+app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+
 // ---------- single instance ----------
+let quitting = false;
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  // Opening the program again while it runs brings the window back; if the old run has no window left
+  // (it was closing), open a new one there instead of leaving the person with nothing.
   app.on('second-instance', () => {
-    const w = BrowserWindow.getAllWindows()[0];
+    if (quitting) { app.relaunch(); app.exit(0); return; }
+    const w = BrowserWindow.getAllWindows().find((x) => !x.isDestroyed());
     if (w) { if (w.isMinimized()) w.restore(); w.show(); w.focus(); }
+    else if (app.isReady()) createWindow();
   });
 }
 
@@ -283,6 +293,22 @@ function windowOptions() {
 }
 
 app.on('web-contents-created', (_e, contents) => {
+  // The studio asks "leave without saving?" before closing (beforeunload). A browser shows that question itself;
+  // Electron silently cancels the close, so the X did nothing. Ask here, and close when the answer is yes.
+  contents.on('will-prevent-unload', (event) => {
+    const w = BrowserWindow.fromWebContents(contents);
+    const choice = dialog.showMessageBoxSync(w || undefined, {
+      type: 'question',
+      buttons: ['יציאה', 'ביטול'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'פריים־סטודיו',
+      message: 'לסגור את התוכנה?',
+      detail: 'יש תמונות שעוד לא נשמרו. שמירה: כפתור "💾 שמירה" או "שמירת פרויקט".',
+      noLink: true,
+    });
+    if (choice === 0) event.preventDefault();
+  });
   contents.on('will-navigate', (event, url) => {
     if (!isAppUrl(url)) { event.preventDefault(); openOutside(url); }
   });
@@ -332,11 +358,25 @@ app.whenReady().then(() => {
 
   registerLocalAI();
 
+  // the studio's own ✕ button: the same as the window's X (the "not saved" question above still applies)
+  ipcMain.on('app:close', (event) => {
+    const frameUrl = event.senderFrame ? event.senderFrame.url : '';
+    if (!isAppUrl(frameUrl)) return;
+    const w = BrowserWindow.fromWebContents(event.sender);
+    if (w) w.close();
+  });
+
   createWindow();
 
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
 app.on('window-all-closed', () => { app.quit(); });
-// a running picture or download must not outlive the program
-app.on('before-quit', () => { if (localAI) localAI.shutdown(); });
+// a running picture or download must not outlive the program, and nothing may keep it alive in the background:
+// a run that stays behind holds the single-instance lock, and the program would not open again until a restart
+// (will-quit comes after every window agreed to close; before-quit would also fire when the person then says "ביטול")
+app.on('will-quit', () => {
+  quitting = true;
+  if (localAI) { try { localAI.shutdown(); } catch { /* closing anyway */ } }
+  setTimeout(() => app.exit(0), 4000).unref();
+});
