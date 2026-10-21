@@ -36,8 +36,17 @@ const PIC = btoa('JPEGDATA');
 }
 {
   const { call } = world(() => { throw new Error('4006: you have used up your daily free allocation of 10,000 neurons'); });
-  const r = await call({ action: 'image', prompt: 'x' }, '7.7.7.7');
+  // the free fallback (Pollinations) is also down: the answer says quota
+  const realFetch = globalThis.fetch, asked = [];
+  globalThis.fetch = async (url) => { asked.push(String(url)); return new Response('busy', { status: 503 }); };
+  let r = await call({ action: 'image', prompt: 'x' }, '7.7.7.7');
   check('cloudflare: the daily allowance running out is reported as quota', r.code === 502 && r.body.error === 'quota' && /neurons/.test(r.body.detail), JSON.stringify(r.body));
+  check('cloudflare: after the allowance, the free Pollinations service is tried', asked.some((u) => /^https:\/\/image\.pollinations\.ai\/prompt\/x\?/.test(u) && /model=flux/.test(u)), asked);
+  // ... and when it answers, its picture comes back
+  globalThis.fetch = async () => new Response(new Uint8Array(6000).fill(7), { status: 200, headers: { 'content-type': 'image/jpeg' } });
+  r = await call({ action: 'image', prompt: 'x' }, '7.7.7.8');
+  check('cloudflare: Pollinations answers when FLUX is out', r.code === 200 && r.body.source === 'Pollinations' && r.body.model === 'flux' && r.body.mime === 'image/jpeg', JSON.stringify(r.body).slice(0, 200));
+  globalThis.fetch = realFetch;
 }
 {
   const { call, calls } = world(() => ({ image: PIC }));
