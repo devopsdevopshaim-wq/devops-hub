@@ -192,6 +192,26 @@ export async function frameBiz(storage, who, b) {
     return out({ ok: true });
   }
 
+  // the customer approves a design: the see-through frame (PNG, print size) and a preview go to the owner, who uses it
+  // in the studio (the live event's magnet, or any photo). The design itself stays the customer's.
+  if (a === 'design-approve') {
+    if (!ID.test(String(b.id || ''))) return out({ ok: false, error: 'bad-input' }, 400);
+    const raw = await st.getBig('d:' + me + ':' + b.id); if (!raw) return out({ ok: false, error: 'not-found' }, 404);
+    const frame = String(b.frame || '').replace(/^data:image\/png;base64,/, ''), preview = String(b.preview || '').replace(/^data:image\/jpeg;base64,/, '');
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(frame.slice(0, 2000) + frame.slice(-2000)) || frame.length < 100 || frame.length > MAX_FRAME) return out({ ok: false, error: 'bad-image' }, 400);
+    if (preview && (preview.length > 900000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(preview.slice(0, 2000) + preview.slice(-2000)))) return out({ ok: false, error: 'bad-image' }, 400);
+    const d = JSON.parse(raw), at = Date.now();
+    if (hasCard(clean(b.note, 300))) return out({ ok: false, error: 'card-number' }, 400);
+    d.approved = at; await st.putBig('d:' + me + ':' + d.id, json(d));
+    await st.putBig('dzf:' + me + ':' + d.id, frame); if (preview) await st.putBig('dzp:' + me + ':' + d.id, preview); else await st.delBig('dzp:' + me + ':' + d.id);
+    const idx = (await storage.get('di:' + me)) || [], row0 = idx.find((x) => x.id === d.id); if (row0) { row0.approved = at; await storage.put('di:' + me, idx); }
+    const row = { email: me, id: d.id, name: clean(d.name, 60), names: clean(d.names, 60), type: clean(d.type, 20), fmt: clean(d.fmt, 12), date: DAY.test(d.date || '') ? d.date : '',
+      eventDate: DAY.test(b.eventDate || '') ? b.eventDate : '', phone: clean(b.phone, 24), note: clean(b.note, 300), at, thumb: (row0 && row0.thumb) || '' };
+    const ok = ((await storage.get('dzok')) || []).filter((x) => !(x.email === me && x.id === d.id)); ok.unshift(row);
+    await storage.put('dzok', ok.slice(0, 300));
+    return out({ ok: true, at }, 200, { design: row });
+  }
+
   if (a === 'my-requests') {
     const list = [];
     for (const [, r] of await st.list('rq:')) if (r && (r.by === me || r.email === me)) list.push({ id: r.id, ref: r.ref, date: r.date, typeName: r.typeName || r.type, status: r.status, at: r.at, answer: r.answer || '' });
@@ -309,6 +329,19 @@ export async function frameBiz(storage, who, b) {
     else { if ('name' in b) f.name = clean(b.name, 40) || f.name; if ('hidden' in b) f.hidden = !!b.hidden; if (Array.isArray(b.for)) f.for = b.for.map((x) => clean(x, 20)).slice(0, 12); }
     await storage.put('frames', frames);
     return out({ ok: true, frames });
+  }
+  if (a === 'approved-list') return out({ ok: true, designs: (await storage.get('dzok')) || [] });
+  if (a === 'approved-frame') {
+    const e = String(b.email || '').toLowerCase(); if (!EMAIL.test(e) || !ID.test(String(b.id || ''))) return out({ ok: false, error: 'bad-input' }, 400);
+    const frame = await st.getBig('dzf:' + e + ':' + b.id); if (!frame) return out({ ok: false, error: 'not-found' }, 404);
+    const row = ((await storage.get('dzok')) || []).find((x) => x.email === e && x.id === b.id) || {};
+    return out({ ok: true, frame, preview: (await st.getBig('dzp:' + e + ':' + b.id)) || '', design: row });
+  }
+  if (a === 'approved-del') {
+    const e = String(b.email || '').toLowerCase(); if (!EMAIL.test(e) || !ID.test(String(b.id || ''))) return out({ ok: false, error: 'bad-input' }, 400);
+    await st.delBig('dzf:' + e + ':' + b.id); await st.delBig('dzp:' + e + ':' + b.id);
+    await storage.put('dzok', ((await storage.get('dzok')) || []).filter((x) => !(x.email === e && x.id === b.id)));
+    return out({ ok: true });
   }
   if (a === 'designs-of') {
     const e = String(b.email || '').toLowerCase(); if (!EMAIL.test(e)) return out({ ok: false, error: 'bad-input' }, 400);

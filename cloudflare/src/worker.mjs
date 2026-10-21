@@ -180,7 +180,16 @@ function bookLines(q) {
     q.guests ? 'אורחים: ' + q.guests : '', q.venue ? 'מקום: ' + q.venue : '', q.pkg ? 'חבילה: ' + q.pkg : '', q.notes ? 'הערות: ' + q.notes : ''].filter(Boolean);
 }
 async function frameNotify(env, n) {
-  const q = n.request, sent = {};
+  const sent = {};
+  // a customer approved a magnet design: it waits in the studio (live event → the customer's design)
+  if (n.design) {
+    const d = n.design;
+    sent.owner = await sendMail(env, { to: ADMIN_EMAIL, fromName: FRAME_NAME, replyTo: d.email, subject: '🎨 עיצוב מגנט אושר · ' + (d.names || d.name || d.email),
+      text: 'לקוח/ה אישר/ה עיצוב מגנט ושלח/ה אותו אליך 🧲\n\nמייל: ' + d.email + (d.phone ? '\nטלפון: ' + d.phone : '') + '\nשמות: ' + (d.names || '—') + (d.eventDate ? '\nתאריך האירוע: ' + heDay(d.eventDate) : '') + (d.note ? '\nהערה: ' + d.note : '') +
+        '\n\nהמסגרת מחכה בסטודיו: לשונית "🎉 אירוע חי" ← "🎨 עיצובים מאושרים של לקוחות".\n' + FRAME_ADMIN.replace('admin.html', 'studio.html') });
+    return sent;
+  }
+  const q = n.request;
   if (!n.decision) {
     const s = n.state || {}, cal = s.free ? '✔ היומן פנוי בתאריך הזה' : '⚠️ התאריך תפוס' + (s.deals && s.deals.length ? ': ' + s.deals.map((d) => d.title).join(', ') : s.busy ? ' (סימנת אותו כתפוס)' : '');
     const more = s.pending && s.pending.length ? '\nיש עוד ' + s.pending.length + ' בקשות ממתינות לאותו תאריך.' : '';

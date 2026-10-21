@@ -78,7 +78,7 @@
   /* ---------- editing everything on the preview: the window, the photo in it, the texts and the ornaments ----------
      Corners of the window resize it and its edge moves it; inside it the photo moves (the wheel zooms it). A text or an
      ornament is dragged to move it, and its round handle resizes it. */
-  var tsel = '', wlive = null, HANDLE = 0.028;
+  var tsel = '', wlive = null, HANDLE = 0.028, guides = false;
   function imActive() { return !!(IM && IM.key && D.invFrame && D.invFrame.key === IM.key && view !== 'frame'); }
   function winBox(d) { if (wlive) return { x: wlive.x * d.w, y: wlive.y * d.h, w: wlive.w * d.w, h: wlive.h * d.h }; return FS.hole(d); }
   function textBox(L, d) {
@@ -100,7 +100,25 @@
     if (sel) { var o = D.deco.filter(function (x) { return x.id === sel; })[0]; if (o) b = decoBox(o, d); }
     else if (tsel) { var L = texts(d).filter(function (x) { return tkey(x) === tsel; })[0]; if (L) b = textBox(L, d); }
     if (b) { ctx.setLineDash([6, 4]); ctx.lineWidth = 2; ctx.strokeStyle = '#c9a45c'; ctx.strokeRect(b.x * k, b.y * k, b.w * k, b.h * k); ctx.setLineDash([]); var h = handleAt(b); dot(ctx, h.x * k, h.y * k, r * 1.1); }
+    if (guides) {
+      /* the print check: the cut line (the magnet's edge) and the safe area 3mm inside it, where nothing important may be */
+      var s = safe(d), W = d.w * k, H = d.h * k;
+      ctx.fillStyle = 'rgba(220,40,60,.13)'; ctx.fillRect(0, 0, W, s * k); ctx.fillRect(0, H - s * k, W, s * k); ctx.fillRect(0, s * k, s * k, H - 2 * s * k); ctx.fillRect(W - s * k, s * k, s * k, H - 2 * s * k);
+      ctx.lineWidth = Math.max(1, k * 2); ctx.setLineDash([8, 5]); ctx.strokeStyle = '#d7263d'; ctx.strokeRect(1, 1, W - 2, H - 2);
+      ctx.strokeStyle = '#1f9d6b'; ctx.strokeRect(s * k, s * k, W - 2 * s * k, H - 2 * s * k); ctx.setLineDash([]);
+      ctx.font = '600 ' + Math.max(11, Math.round(m * 0.03 * k)) + 'px Heebo, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#1f9d6b'; ctx.fillText('אזור בטוח', W / 2, s * k + Math.max(13, m * 0.035 * k));
+    }
     ctx.restore();
+    printCheck(d);
+  }
+  /* 3mm inside the edge: the cut can move that much */
+  function safe(d) { var mm = FS.mmOf ? FS.mmOf(d) : [d.w / 300 * 25.4, d.h / 300 * 25.4]; return 3 * d.w / mm[0]; }
+  function printCheck(d) {
+    var s = safe(d), bad = [], el = $('#warn'); if (!el) return;
+    texts(d).forEach(function (L) { if (L.credit) return; var b = textBox(L, d); if (b.x < s || b.y < s || b.x + b.w > d.w - s || b.y + b.h > d.h - s) bad.push('"' + L.text + '"'); });
+    D.deco.forEach(function (o) { var b = decoBox(o, d); if (b && !o.auto && (b.x + b.w * 0.5 < 0 || b.y + b.h * 0.5 < 0 || b.x + b.w * 0.5 > d.w || b.y + b.h * 0.5 > d.h)) bad.push('עיטור "' + (o.label || '') + '" יוצא מהמגנט'); });
+    el.hidden = !bad.length;
+    if (bad.length) el.innerHTML = '⚠️ קרוב מדי לקצה ועלול להיחתך בהדפסה: ' + esc(bad.slice(0, 3).join(', ')) + '. גוררים פנימה, או לוחצים "📏 בדיקת הדפסה" כדי לראות את הקווים.';
   }
   (function () {
     var cv = $('#cv'), drag = null;
@@ -198,6 +216,7 @@
     $$('#colors button').forEach(function (b) { b.addEventListener('click', function () { D.color = b.dataset.c; $('#color').value = D.color; swatches(); frames(); changed(); }); });
   }
   function toForm() {
+    setTimeout(apStatus, 0);
     $('#type').value = D.type; $('#names').value = D.names || ''; $('#date').value = D.date || ''; $('#tag').value = D.tag || ''; $('#line').value = D.line || '';
     $('#font').value = D.font; $('#color').value = D.color; $('#fmt').value = D.fmt; $('#dname').value = D.name || '';
     $('#ink').value = !D.ink ? '' : ['#ffffff', '#1d1633', '#c9a45c'].indexOf(D.ink) > -1 ? D.ink : 'custom'; $('#ink-custom').hidden = $('#ink').value !== 'custom'; if (D.ink) $('#ink-custom').value = D.ink;
@@ -617,7 +636,7 @@
       var l = (srv || []).map(function (x) { ids[x.id] = 1; return Object.assign({ cloud: true }, x); }).concat(loc.filter(function (x) { return !ids[x.id]; }).map(function (x) { return { id: x.id, name: x.name, at: x.at, thumb: x.thumb, type: x.type, local: true }; }));
       l.sort(function (a, b) { return b.at - a.at; });
       box.innerHTML = (cloud() ? '' : '<p class="note-acc">🔒 העיצובים כרגע רק בדפדפן הזה. <button class="link" data-acc>פתיחת חשבון / כניסה</button> שומרים אותם בחשבון, בכל מכשיר.</p>') +
-        (l.length ? l.map(function (x) { return '<figure data-id="' + esc(x.id) + '"><img src="' + esc(x.thumb || '') + '" alt=""><figcaption><b>' + esc(x.name) + '</b><small>' + (x.cloud ? '☁️ ' : '💻 ') + new Date(x.at).toLocaleDateString('he-IL') + '</small></figcaption><div><button class="btn small" data-open>פתיחה</button><button class="btn small danger" data-del>מחיקה</button></div></figure>'; }).join('') : '<p class="hint">עוד לא נשמרו עיצובים.</p>');
+        (l.length ? l.map(function (x) { return '<figure data-id="' + esc(x.id) + '"><img src="' + esc(x.thumb || '') + '" alt=""><figcaption><b>' + esc(x.name) + '</b><small>' + (x.approved ? '✅ אושר · ' : '') + (x.cloud ? '☁️ ' : '💻 ') + new Date(x.at).toLocaleDateString('he-IL') + '</small></figcaption><div><button class="btn small" data-open>פתיחה</button><button class="btn small danger" data-del>מחיקה</button></div></figure>'; }).join('') : '<p class="hint">עוד לא נשמרו עיצובים.</p>');
       var a = box.querySelector('[data-acc]'); if (a) a.addEventListener('click', openAcc);
       $$('figure', box).forEach(function (f) { var x = l.filter(function (y) { return y.id === f.dataset.id; })[0];
         $('[data-open]', f).addEventListener('click', function () {
@@ -686,6 +705,41 @@
   });
   $('#s-studio').hidden = !OWNER;
   $('#s-studio').addEventListener('click', function () { snapshot(2400, true).then(function (c) { return FS.addUserFrame(c.toDataURL('image/png'), D.name || D.names || 'מסגרת מעוצבת'); }).then(function (f) { FS.toast(f.solid ? 'נשמר, אבל לא נמצא חלון שקוף במסגרת' : '🖼️ נוסף ל"המסגרות שלי" בסטודיו (בסטודיו פתוח מרעננים את הדף)', 5000); }); });
+
+  /* ---------- step by step: a "next" button at the end of each step, ending at the approval ---------- */
+  var NEXT = { frame: ['text', 'הבא: שמות, טקסט וצבע'], text: ['deco', 'הבא: עיטורים (לא חובה)'], invite: ['text', 'הבא: שמות, טקסט וצבע'], ai: ['deco', 'הבא: עיטורים'], deco: ['save', 'הבא: אישור ושליחה'] };
+  Object.keys(NEXT).forEach(function (k) {
+    var pane = $('.dz-pane[data-pane="' + k + '"]'); if (!pane) return;
+    var b = document.createElement('button'); b.className = 'btn gold wide dz-next'; b.textContent = NEXT[k][1] + ' ←';
+    b.addEventListener('click', function () { var t = $('.dz-tabs [data-tab="' + NEXT[k][0] + '"]'); if (t) { t.click(); t.scrollIntoView({ block: 'nearest', inline: 'center' }); } $('#panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    pane.appendChild(b);
+  });
+  $('#guides').addEventListener('click', function () { guides = !guides; this.setAttribute('aria-pressed', String(guides)); this.classList.toggle('on', guides); render(); });
+
+  /* ---------- approving: the print frame goes to the studio (the customer's account is needed, so it is theirs) ---------- */
+  function apStatus() {
+    var st = $('#ap-st'); if (!st) return;
+    st.innerHTML = D && D.approved ? '✅ העיצוב אושר ונשלח אלינו ב־' + esc(new Date(D.approved).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })) + '. שיניתם משהו? מאשרים שוב והגרסה החדשה מחליפה את הקודמת.' : '';
+    if (D && /^\d{4}-\d{2}-\d{2}$/.test(D.date || '') && !$('#ap-date').value) $('#ap-date').value = D.date;
+  }
+  function frameB64() {
+    return snapshot(2400, true).then(function (c) {
+      var u = c.toDataURL('image/png'); if (u.length < 4100000) return u;
+      return snapshot(1800, true).then(function (c2) { return c2.toDataURL('image/png'); });
+    }).then(function (u) { return u.split(',')[1]; });
+  }
+  $('#ap-go').addEventListener('click', function () {
+    if (!$('#ap-ok').checked) { FS.toast('מסמנים שבדקתם את השמות, התאריך והאיות'); $('#ap-ok').focus(); return; }
+    if (!cloud()) { FS.toast('כדי לשלוח לצלם נכנסים לחשבון (או נרשמים, לוקח דקה). העיצוב נשמר.', 6000); save(true); openAcc(); return; }
+    var btn = this; btn.disabled = true; FS.busy('שולח את העיצוב לצלם…');
+    save(true).then(function () { return Promise.all([frameB64(), snapshot(1100)]); }).then(function (r) {
+      return ACC.call('design-approve', { id: D.id, frame: r[0], preview: r[1].toDataURL('image/jpeg', 0.85).split(',')[1], eventDate: $('#ap-date').value, phone: $('#ap-phone').value.trim(), note: $('#ap-note').value.trim() });
+    }).then(function (r) {
+      FS.busy(); btn.disabled = false;
+      if (!r || !r.ok) return FS.toast('השליחה לא הצליחה: ' + (ACC ? ACC.msg(r) : ''), 6000);
+      D.approved = r.at; apStatus(); FS.toast('✅ העיצוב אושר ונשלח! נחזור אליכם אם יהיו שאלות.', 6000); mine();
+    }).catch(function () { FS.busy(); btn.disabled = false; FS.toast('השליחה לא הצליחה. נסו שוב.'); });
+  });
 
   /* ---------- start ---------- */
   fill();

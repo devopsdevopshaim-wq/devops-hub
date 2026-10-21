@@ -123,7 +123,7 @@
   FS.applyCredit = function (p, b) {
     b = b || FS.BIZ; var c = b.credit || {}, d = p.doc;
     d.layers = d.layers.filter(function (L) { return L.link !== 'biz'; });
-    var text = FS.creditText(b); if (!c.on || !text) return;
+    var text = FS.creditText(b); if (!c.on || !text || p.noCredit) return;   /* noCredit: a customer's frame that already carries it */
     var m = Math.min(d.w, d.h), size = Math.max(10, Math.round(m * (c.size || 3.2) / 100)), H = FS.hole(d), pos = c.pos || 'bottom';
     while (FS.layerBox({ type: 'text', text: text, size: size, font: c.font || 'Heebo', weight: 500, spacing: 1 }).w > (c.pos === 'side' ? d.h : d.w) * 0.94 && size > 8) size--;
     var L = { id: FS.uid(), link: 'biz', credit: true, type: 'text', text: text, size: size, font: c.font || 'Heebo', weight: 500, r: 0, opacity: c.opacity == null ? 0.85 : c.opacity, strokeW: 0, stroke: '#000000', align: 'center', spacing: 1 };

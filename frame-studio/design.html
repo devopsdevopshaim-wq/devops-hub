@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='41';(function(){
+window.FS_V='42';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -17,7 +17,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Amatic+SC:wght@400;700&family=Secular+One&family=Suez+One&family=Bellefair&family=Rubik:wght@400;700;900&family=Karantina:wght@400;700&family=Assistant:wght@400;700;800&family=Varela+Round&family=David+Libre:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" />
-<link rel="stylesheet" href="css/design.css?v=41" />
+<link rel="stylesheet" href="css/design.css?v=42" />
 </head>
 <body>
 <a class="skip" href="#panel">דילוג לעורך</a>
@@ -33,8 +33,10 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
       <div class="dz-view-bar">
         <div class="seg" role="group" aria-label="תצוגה"><button class="on" data-view="photo">עם תמונה</button><button data-view="frame">מסגרת בלבד</button></div>
         <label class="dz-photo-btn">📷 תמונה שלכם<input type="file" id="photo" accept="image/*" hidden /></label>
+        <button class="btn line small" id="guides" aria-pressed="false" title="מציג את קו החיתוך ואת האזור הבטוח להדפסה">📏 בדיקת הדפסה</button>
         <div class="dz-png"><button class="btn gold small" id="png-frame">⬇️ שמירת המסגרת כ־PNG</button><button class="btn line small" id="png-design" title="עם התמונה">⬇️ הדמיה PNG</button></div>
       </div>
+      <p class="dz-warn" id="warn" role="status" hidden></p>
       <p class="dz-tip" id="tip">טיפ: גוררים עיטור על המגנט כדי להזיז אותו.</p>
     </div>
   </section>
@@ -46,7 +48,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
       <button role="tab" data-tab="invite">📨 מההזמנה · AI</button>
       <button role="tab" data-tab="ai">✨ עיצוב עם AI</button>
       <button role="tab" data-tab="deco">🧩 עיטורים</button>
-      <button role="tab" data-tab="save">💾 שמירה</button>
+      <button role="tab" data-tab="save">✅ אישור ושליחה</button>
     </nav>
 
     <div class="dz-pane" data-pane="frame">
@@ -155,9 +157,18 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
     </div>
 
     <div class="dz-pane" data-pane="save" hidden>
+      <div class="dz-approve" id="approve">
+        <h3>✅ אישור העיצוב ושליחה אלינו</h3>
+        <p class="hint">כשהמגנט נראה בדיוק כמו שרציתם, מאשרים. העיצוב מגיע ישר לסטודיו שלנו, ובאירוע כל תמונה מודפסת בו.</p>
+        <div class="dz-row2"><label>תאריך האירוע<input type="date" id="ap-date" /></label><label>טלפון<input id="ap-phone" inputmode="tel" dir="ltr" maxlength="24" /></label></div>
+        <label>הערה לצלם (לא חובה)<input id="ap-note" maxlength="300" placeholder="למשל: את הלוגו קצת יותר גדול" /></label>
+        <label class="dz-chk"><input type="checkbox" id="ap-ok" /> בדקתי את השמות, התאריך והאיות, ואת "📏 בדיקת הדפסה"</label>
+        <button class="btn gold wide" id="ap-go">✅ אישור ושליחה לצלם</button>
+        <p class="dz-ap-st" id="ap-st" role="status"></p>
+      </div>
       <label>שם העיצוב<input id="dname" maxlength="40" placeholder="המגנטים של נועה ודניאל" /></label>
       <div class="dz-row"><button class="btn gold" id="s-save">💾 שמירה</button><button class="btn line" id="s-new">＋ עיצוב חדש</button></div>
-      <h3>שליחה והורדה</h3>
+      <h3>עוד אפשרויות</h3>
       <div class="dz-row"><button class="btn wa" id="s-send">💬 שליחה לעסק בוואטסאפ</button><button class="btn line" id="s-png">⬇️ הדמיה (PNG)</button><button class="btn line" id="s-frame">⬇️ מסגרת שקופה (PNG)</button></div>
       <button class="btn line wide" id="s-studio" hidden>🖼️ הוספה למסגרות שלי בסטודיו</button>
       <h3>העיצובים שלי</h3>
@@ -169,12 +180,12 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <div class="dz-busy" id="busy" hidden><div><i></i><span id="busy-msg"></span></div></div>
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="js/core.js?v=41"></script>
-<script src="js/frames.js?v=41"></script>
-<script src="js/events.js?v=41"></script>
-<script src="js/invite.js?v=41"></script>
-<script src="js/account.js?v=41"></script>
-<script src="js/inv-frame.js?v=41"></script>
-<script src="js/design.js?v=41"></script>
+<script src="js/core.js?v=42"></script>
+<script src="js/frames.js?v=42"></script>
+<script src="js/events.js?v=42"></script>
+<script src="js/invite.js?v=42"></script>
+<script src="js/account.js?v=42"></script>
+<script src="js/inv-frame.js?v=42"></script>
+<script src="js/design.js?v=42"></script>
 </body>
 </html>

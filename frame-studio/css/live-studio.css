@@ -50,3 +50,6 @@ body.staff-mode .tools [role=tab]:not([data-tab=photos]):not([data-tab=frames]):
 body.staff-mode .sb-more, body.staff-mode .lv-owner, body.staff-mode .lv-staff, body.staff-mode #biz-btn, body.staff-mode #pkg-btn, body.staff-mode #deals-btn, body.staff-mode a[href="admin.html"] { display: none !important; }
 #staff-bar { position: fixed; top: 108px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; gap: 10px; align-items: center; padding: 6px 8px 6px 14px; border-radius: 999px;
   background: #2b2033; color: #F5EFE4; border: 1px solid var(--champagne, #D6B77E); font: 600 14px Heebo, sans-serif; box-shadow: 0 10px 30px -12px #000; }
+.lv-dz { margin: 0; font-size: 13px; }
+.lv-grid figcaption small { display: block; opacity: .75; }
+.lv-grid figcaption .btn { width: 100%; }
