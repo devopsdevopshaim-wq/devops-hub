@@ -32,3 +32,7 @@
 
 /* the viral AI ideas stand out a little */
 .ai-style.hot { border-color: rgba(214,183,126,.55); background: linear-gradient(160deg, rgba(214,183,126,.14), rgba(214,183,126,.03)); }
+.cl-sw { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cl-sw button { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(214,183,126,.45); cursor: pointer; padding: 0; }
+.cl-sw button:hover { transform: scale(1.12); }
+#cl-mode, #cl-shape, #cl-deco, #cl-bgs { flex-wrap: wrap; }

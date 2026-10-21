@@ -238,14 +238,22 @@
       var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
       return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
     }).then(function (res) { return matchShape(res, orig); }).then(function (im) {
-      if (!p.origSrc) p.origSrc = p.src;
+      /* the original stays in origSrc; earlier AI results are kept too (a few), so "ביטול AI" can go back one step at a time */
+      if (!p.origSrc) p.origSrc = p.src; else { p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5); }
       p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
       FS.fitPhoto(p.doc, im); FS.snap(p); return p;
     });
   };
   FS.unstyle = function (p) {
-    if (!p.origSrc) return false; p.src = p.origSrc; delete p.origSrc; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
+    if (!p.origSrc) return false; p.src = p.origSrc; delete p.origSrc; delete p.aiPrev; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
     FS.fitPhoto(p.doc, FS.img(p.src)); p.doc.photo.style = null; FS.snap(p); return true;
+  };
+  /* one AI design back: the previous AI result, or the original photo when there was only one */
+  FS.unstyleStep = function (p) {
+    if (!p || !p.origSrc) return false;
+    if (!p.aiPrev || !p.aiPrev.length) return FS.unstyle(p);
+    p.src = p.aiPrev.pop(); p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
+    FS.fitPhoto(p.doc, FS.img(p.src)); FS.snap(p); return true;
   };
 
 })();

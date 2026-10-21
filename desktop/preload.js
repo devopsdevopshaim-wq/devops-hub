@@ -38,4 +38,6 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
   // SHA-256 of this computer's id (with a fixed salt), 64 hex characters. The raw id never reaches the page.
   machineId: () => ipcRenderer.invoke('machine-id'),
   localAI,
+  // closes the program (same as the window's X; unsaved photos are asked about first)
+  close: () => ipcRenderer.send('app:close'),
 }));
