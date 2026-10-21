@@ -175,6 +175,25 @@
     if (o === 3) { x.translate(w, h); x.rotate(Math.PI); } else if (o === 6) { x.translate(h, 0); x.rotate(Math.PI / 2); } else if (o === 8) { x.translate(0, w); x.rotate(-Math.PI / 2); }
     x.drawImage(im, 0, 0); return c;
   }
+  /* developing a RAW file: LibRaw 0.21 compiled to WebAssembly (libraw-wasm 1.6.0, ISC), loaded on first use, run in its own
+     worker. Half size (a 24MP camera gives ~3000px, more than a magnet needs) with the camera's white balance; JPEG out. */
+  var rawLib = null;
+  FS.decodeRaw = function (buf) {
+    if (!rawLib) rawLib = import(new URL('vendor/libraw/index.js', location.href).href).then(function (m) { return m.default; });
+    rawLib.catch(function () { rawLib = null; });
+    return rawLib.then(function (LibRaw) {
+      var lr = new LibRaw();
+      var done = function (x) { try { lr.dispose(); } catch (e) { /* gone */ } return x; };
+      return lr.open(new Uint8Array(buf), { halfSize: FS.prefs.rawMode !== 'full', useCameraWb: true, outputBps: 8, userQual: 3 })
+        .then(function () { return lr.imageData(); })
+        .then(function (im) {
+          var w = im.width, h = im.height, src = im.data, n = w * h, rgba = new Uint8ClampedArray(n * 4), ch = im.colors || 3;
+          for (var i = 0, j = 0; i < n; i++, j += ch) { rgba[i * 4] = src[j]; rgba[i * 4 + 1] = src[j + 1]; rgba[i * 4 + 2] = src[j + 2]; rgba[i * 4 + 3] = 255; }
+          var c = FS.canvas(w, h); c.getContext('2d').putImageData(new ImageData(rgba, w, h), 0, 0);
+          return new Promise(function (res, rej) { c.toBlob(function (b) { if (b) res(b); else rej(new Error('jpeg')); }, 'image/jpeg', 0.95); });
+        }).then(done, function (e) { done(); throw e; });
+    });
+  };
   FS.addPhotoFile = function (file) {
     var url;
     return readFile(file).catch(function (e) { throw why(e, 'הקובץ לא נקרא מהמחשב (אולי הוא בענן, OneDrive או Google Drive, ולא הורד)'); }).then(function (buf) {
@@ -183,10 +202,14 @@
       var isRaw = FS.RAW_EXT.test(file.name || '') || /^ftypcrx/.test(tag);
       if (!isRaw && /^ftyp(heic|heix|hevc|heim|heis|mif1|msf1)/.test(tag) && !SAFARI) throw why('heic', 'תמונת HEIC של אייפון, שהדפדפן הזה לא פותח. באייפון: הגדרות ← מצלמה ← תבניות ← "התאמה מרבית", או לשמור כ־JPG');
       if (isRaw) {
-        var rp = rawPreview(buf);
-        if (!rp) throw why('raw', 'קובץ RAW בלי תמונה מוכנה בתוכו. מייצאים אותו כ־JPG מהמצלמה או מ־Lightroom');
+        /* the camera's own full-size JPEG inside the RAW is the fastest and looks like the camera intended; when there is none
+           (or it is small, as in many DNG files), the RAW itself is developed with LibRaw (WebAssembly, in a worker) */
+        var rp = rawPreview(buf), raw = buf.slice(0);
+        var decode = function () { return FS.decodeRaw(raw).then(function (b) { url = URL.createObjectURL(b); return FS.loadImg(url); }); };
+        if (!rp || FS.prefs.rawMode === 'full') return decode().catch(function (e) { throw why(e, 'לא הצלחתי לפענח את קובץ ה־RAW (' + ((e && e.message) || 'שגיאה') + ')'); });
         url = URL.createObjectURL(rp.blob);
         return FS.loadImg(url).then(function (im) {
+          if (Math.max(im.naturalWidth, im.naturalHeight) < 1500) { URL.revokeObjectURL(url); delete IMGS[url]; return decode().catch(function () { return FS.loadImg(URL.createObjectURL(rp.blob)); }); }
           if (rp.orient !== 3 && rp.orient !== 6 && rp.orient !== 8) return im;
           var c = orientCanvas(im, rp.orient);
           return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.95); }).then(function (b) { URL.revokeObjectURL(url); delete IMGS[url]; url = URL.createObjectURL(b); return FS.loadImg(url); });

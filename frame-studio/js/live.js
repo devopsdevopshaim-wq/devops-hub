@@ -74,7 +74,8 @@
         '<div class="lv-stats"><span>בתור בשרת <b id="lv-w">' + run.waiting + '</b></span><span>התקבלו כאן <b id="lv-g">' + run.got + '</b></span><span>מחכות להדפסה <b id="lv-q">' + run.queue.length + '</b></span><span>הודפסו <b id="lv-p">' + run.printed + '</b></span></div>' +
         '<button class="btn small" id="lv-print-now"' + (run.queue.length ? '' : ' disabled') + '>🖨️ הדפסת מה שמחכה עכשיו</button>' +
         '<p class="lv-status" id="lv-status" role="status">' + (run.on ? '🔴 העמדה פעילה ומקבלת תמונות' : 'העמדה כבויה') + '</p>' +
-        '<div class="lv-st" id="lv-st">' + stationsHtml() + '</div></div>' +
+        '<div class="lv-st" id="lv-st">' + stationsHtml() + '</div>' +
+        (FS.eventFolder ? '<button class="btn wide" id="lv-finish">🏁 סיום האירוע: שמירה לתיקייה במחשב וכיווץ</button>' : '') + '</div>' +
       '<div class="card lv-card lv-owner"><h3>📊 דוח האירוע</h3><dl class="lv-rep">' +
         '<div><dt>תמונות מאורחים</dt><dd>' + (n.in || 0) + '</dd></div><div><dt>ברכות</dt><dd>' + (n.wishes || 0) + '</dd></div>' +
         '<div><dt>מגנטים שהודפסו</dt><dd>' + prints + '</dd></div><div><dt>באלבום הדיגיטלי</dt><dd>' + ((n.album || 0) + (n.in || 0)) + '</dd></div>' +
@@ -102,6 +103,7 @@
     on('#lv-month', monthly);
     on('#lv-staff', function () { staffOn(); });
     on('#lv-dzl', approvedList);
+    on('#lv-finish', function () { if (run.on && confirm('לעצור את העמדה לפני סיום האירוע?')) stop(); FS.eventFolder.finish(); });
     $$('[data-review]', pane).forEach(function (b) { b.addEventListener('click', function () { review(events.filter(function (e) { return e.id === b.dataset.review; })[0]); }); });
   }
   function on(sel, fn, evName) { var el = $(sel, pane); if (el) el.addEventListener(evName || 'click', fn); }
@@ -387,5 +389,6 @@
 
   draw();
   FS.liveRefresh = refresh;
+  FS.liveCurrent = function () { return ev; };
   setTimeout(function () { if (token()) refresh(); }, 1200);
 })();
