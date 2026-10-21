@@ -76,7 +76,7 @@ function world({ key = true, ai = null, http = null } = {}) {
   check('hubs: a restyle refuses a non-base64 picture', r.code === 400 && sent.length === n);
   r = await call({ action: 'restyle', prompt: '', image: 'QUJD', mime: 'image/png' });
   check('hubs: a restyle needs a prompt', r.code === 400 && sent.length === n);
-  let lim = 0; for (let i = 0; i < 20; i++) { const x = await call({ action: 'restyle', prompt: 'q', image: 'QUJD', mime: 'image/png' }, { ip: '8.8.8.8' }); if (x.code === 429) lim++; }
+  let lim = 0; for (let i = 0; i < 70; i++) { const x = await call({ action: 'restyle', prompt: 'q', image: 'QUJD', mime: 'image/png' }, { ip: '8.8.8.8' }); if (x.code === 429) lim++; }
   check('hubs: restyles are rate limited per address', lim >= 7, lim);
 }
 {

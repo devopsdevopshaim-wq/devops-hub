@@ -198,8 +198,8 @@
     if (m === 'no-key') return 'שרת ה־AI עוד לא הוגדר (חסר מפתח Gemini בשרת).';
     if (m === 'no-free-tier') return 'יצירת תמונות ב־Gemini לא כלולה בתוכנית החינמית של המפתח. צריך להפעיל חיוב (Billing) בפרויקט ב־Google AI Studio, והתמונות יתחילו לעבוד.';
     if (m === 'cancelled') return 'העריכה נעצרה.';
-    if (m === 'quota') return 'מכסת התמונות החינמית של היום נגמרה בשרת ה־AI. היא מתאפסת כל לילה (03:00). כדי שלא ייגמר: להפעיל חיוב (Billing) על מפתח ה־Gemini ב־Google AI Studio.';
-    if (m === 'rate-limited') return 'יותר מדי בקשות בשעה האחרונה. נסו שוב בעוד כמה דקות.';
+    if (m === 'quota') return 'כל שרתי ה־AI עמוסים כרגע (גם השרת החינמי). מחכים דקה ומנסים שוב.';
+    if (m === 'rate-limited') return 'יותר מדי בקשות ברצף. מחכים דקה ומנסים שוב.';
     if (m === 'timeout') return 'ה־AI לא ענה בזמן. נסו שוב.';
     if (m === 'offline') return 'אין חיבור לשרת ה־AI. בודקים אינטרנט ומנסים שוב.';
     return 'ה־AI לא הצליח הפעם.' + (FS.lastAiDetail ? ' (' + FS.lastAiDetail.slice(0, 140) + ')' : ' נסו שוב או ניסוח אחר.');

@@ -52,7 +52,9 @@ const ROUTES = {
   'frame-biz': { svc: 'frame', kind: 'frame', max: 6000000 },
   // a booking request from the site (anyone; checked against the calendar, the owner approves), and the owner's calendar feed
   'frame-book': { svc: 'frame', kind: 'frame-book', max: 8000 },
-  'frame-cal': { svc: 'frame', kind: 'frame-cal', max: 1000, free: true, method: 'GET' }
+  'frame-cal': { svc: 'frame', kind: 'frame-cal', max: 1000, free: true, method: 'GET' },
+  // a photo handed to the free image service for one edit: lives three minutes in memory, under an unguessable id
+  'hubs-tmp': { svc: 'hubs', kind: 'hubs-tmp', max: 1000, free: true, method: 'GET' }
 };
 const FRAME_NAME = 'פריים מגנטים';
 const FRAME_ADMIN = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/admin.html';
@@ -93,6 +95,10 @@ export default {
     // the price list is read with GET; everything else is POST
     const want = rt.method || (rt.fn === pricesRead ? 'GET' : 'POST');
     if (request.method !== want) return request.method === 'GET' ? reply({ ok: true, service: 'spider', where: 'cloudflare' }) : reply({ ok: false, error: 'bad-method' }, 405);
+    if (rt.kind === 'hubs-tmp') {
+      const t = await env.STATE.get(env.STATE.idFromName('hubs')).tmpImage(url.searchParams.get('id') || '');
+      return t ? new Response(t.u, { headers: { 'Content-Type': t.mime, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': '*' } }) : reply({ ok: false, error: 'not-found' }, 404);
+    }
     if (rt.kind === 'frame-site' || rt.kind === 'frame-file') {
       const fr = env.STATE.get(env.STATE.idFromName('frame'));
       if (rt.kind === 'frame-site') return reply(await fr.siteData(), 200, { 'Cache-Control': 'public, max-age=30' });
@@ -215,6 +221,19 @@ export class State extends DurableObject {
   }
 
   // ---- פריים מגנטים. whoIs runs in the main object (where the sessions are); the rest in the "frame" object, on its own storage.
+  // the short-lived photos for the free image service (kept in this object's memory only, never stored)
+  tmpImage(id) {
+    const m = this.tmp && /^[a-f0-9]{40}$/.test(id) ? this.tmp.get(id) : null;
+    return m && m.exp > Date.now() ? { u: m.u, mime: m.mime } : null;
+  }
+  tmpPut(origin, b64, mime) {
+    this.tmp = this.tmp || new Map();
+    const t = Date.now(); for (const [k, v] of this.tmp) if (v.exp < t) this.tmp.delete(k);
+    if (this.tmp.size > 200) this.tmp.delete(this.tmp.keys().next().value);
+    const id = nodeCrypto.randomBytes(20).toString('hex'), u = Uint8Array.from(atob(String(b64)), (c) => c.charCodeAt(0));
+    this.tmp.set(id, { u, mime: /^image\/(jpeg|png|webp)$/.test(mime) ? mime : 'image/jpeg', exp: t + 180000 });
+    return origin + '/hubs-tmp?id=' + id;
+  }
   async whoIs(token) { const st = await this.load(); return sessionOf(st.sd, token); }
   siteData() { return frameSite(this.ctx.storage); }
   fileData(id) { return frameFile(this.ctx.storage, id); }
@@ -327,7 +346,10 @@ export class State extends DurableObject {
     const st = await this.load();
     const $getWorkflowStaticData = () => st.sd;
     const helpers = { httpRequest: n8nHttp };
-    const ctx = (json, nodes = {}) => ({ $json: json, $getWorkflowStaticData, require: requireShim, $: (n) => first(n, nodes), ENV: env, helpers });
+    // the hubs flow may hand a photo to the free image service through a short-lived link on this server
+    const origin = new URL(request.url).origin, self = this;
+    const ENVX = rt.svc === 'hubs' ? new Proxy(env, { get: (t, k) => (k === 'TMP_PUT' ? (b64, mime) => self.tmpPut(origin, b64, mime) : t[k]) }) : env;
+    const ctx = (json, nodes = {}) => ({ $json: json, $getWorkflowStaticData, require: requireShim, $: (n) => first(n, nodes), ENV: ENVX, helpers });
     let h;
     try {
       if (rt.kind === 'status') {

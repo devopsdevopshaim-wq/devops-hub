@@ -33,7 +33,21 @@
     ['1920', 'צילום מ־1920', '🎞️', 'Make it an authentic 1920s sepia photograph with film grain and an aged border'],
     ['80s', 'שנות ה־80', '📼', 'Make it an authentic 1980s photo with film colours and retro flash'],
     ['ukiyoe', 'הדפס יפני', '🌊', 'Make it a traditional Japanese ukiyo-e woodblock print'],
-    ['glass', 'ויטראז׳', '⛪', 'Make it a glowing stained-glass window with lead lines and jewel colours']
+    ['glass', 'ויטראז׳', '⛪', 'Make it a glowing stained-glass window with lead lines and jewel colours'],
+    ['magazine', 'שער מגזין אופנה', '📰', 'Make it a glossy high-fashion magazine cover photo, studio lighting, editorial retouching, elegant poses (no text)'],
+    ['cinema', 'פריים מסרט הוליוודי', '🎞️', 'Make it a still from a big-budget Hollywood movie, anamorphic cinematic light, teal and orange colour grade, shallow depth of field'],
+    ['noir', 'קולנוע נואר', '🕵️', 'Make it a 1940s film-noir photograph, dramatic black and white, hard shadows from window blinds, smoky mood'],
+    ['polaroid', 'פולארויד וינטג׳', '📸', 'Make it a faded vintage instant-film photograph with soft warm colours, light leaks and gentle grain'],
+    ['renaissance', 'ציור רנסנס', '🖼️', 'Paint it as a Renaissance master oil painting, rich chiaroscuro, classical composition, fine cracked varnish'],
+    ['impression', 'אימפרסיוניזם', '🌻', 'Paint it in the style of French impressionism, loose visible brush strokes, dappled sunlight, soft pastel colours'],
+    ['charcoal', 'פחם על נייר', '✏️', 'Draw it as an expressive charcoal drawing on textured paper, deep blacks and soft smudged shading'],
+    ['mosaic', 'פסיפס רומי', '🧩', 'Make it an ancient Roman floor mosaic of small stone tiles with natural earthy colours'],
+    ['origami', 'אוריגמי', '🦢', 'Make everything look folded from origami paper, crisp folds, soft studio light, paper texture'],
+    ['knit', 'סרוג ביד', '🧶', 'Make everything look hand-knitted from soft wool yarn, cosy stitches, warm light'],
+    ['cyber', 'סייברפאנק', '🌆', 'Make it a cyberpunk scene, neon pink and cyan light, rain-soaked reflections, futuristic details'],
+    ['fantasy', 'פנטזיה אפית', '🐉', 'Paint it as epic fantasy book-cover art, dramatic light, rich detail, heroic atmosphere'],
+    ['wedding', 'צילום חתונה יוקרתי', '💍', 'Make it a luxury fine-art wedding photograph, soft romantic light, creamy bokeh, elegant and timeless'],
+    ['bw', 'שחור־לבן אמנותי', '⚫', 'Make it a fine-art black and white portrait photograph with rich tones and soft contrast']
   ];
   var WORLD = [
     ['', 'בלי שינוי רקע', '🖼️', ''],
@@ -61,7 +75,19 @@
     ['stage', 'במה של הופעה', '🎤', 'a huge concert stage with lights and a cheering crowd'],
     ['clouds', 'בין העננים', '☁️', 'soft pastel clouds high in the sky at sunrise'],
     ['ice', 'ארמון קרח', '🧊', 'a sparkling ice palace'],
-    ['jungle', 'ג׳ונגל טרופי', '🌴', 'a lush rainforest with a waterfall']
+    ['jungle', 'ג׳ונגל טרופי', '🌴', 'a lush rainforest with a waterfall'],
+    ['maldives', 'וילה במלדיביים', '🌴', 'an overwater villa in the Maldives with crystal lagoon and sunset sky'],
+    ['london', 'לונדון', '💂', 'a London street with red buses, Big Ben and soft drizzle'],
+    ['rome', 'רומא', '🏛️', 'the Colosseum and old Roman streets in warm afternoon light'],
+    ['dubai', 'דובאי', '🏙️', 'the Dubai skyline at dusk with glittering skyscrapers'],
+    ['northern', 'זוהר צפוני', '🌌', 'a snowy landscape under bright green northern lights'],
+    ['desert', 'מדבר וגמלים', '🐫', 'golden desert dunes with camels at sunset'],
+    ['garden', 'גן פרחים', '🌷', 'a blooming flower garden full of roses and tulips'],
+    ['library', 'ספרייה קסומה', '📚', 'a grand old library with towering bookshelves and warm lamps'],
+    ['circus', 'קרקס', '🎪', 'a colourful vintage circus tent with lights and performers'],
+    ['ballroom', 'אולם נשפים', '🕯️', 'a grand palace ballroom with crystal chandeliers and golden walls'],
+    ['underwater', 'עיר אטלנטיס', '🐚', 'the sunken city of Atlantis with glowing coral and fish'],
+    ['mountains', 'פסגת הרים', '🏔️', 'a dramatic mountain peak above the clouds at sunrise']
   ];
   var OUTFIT = [
     ['', 'הבגדים שלהם', '👕', ''],
@@ -84,7 +110,15 @@
     ['chef', 'שפים', '👨‍🍳', 'chef jackets and tall white hats'],
     ['sport', 'נבחרת ספורט', '⚽', 'matching sports team jerseys'],
     ['animals', 'חיות', '🦁', 'cute animal versions of themselves (a fitting animal for each), same clothes'],
-    ['angels', 'מלאכים', '🕊️', 'soft white angel wings and glowing halos']
+    ['angels', 'מלאכים', '🕊️', 'soft white angel wings and glowing halos'],
+    ['wedding', 'חתן וכלה', '👰', 'elegant wedding dress and tailored groom suit'],
+    ['princess', 'נסיכות ונסיכים', '👸', 'fairy-tale princess gowns and prince outfits with crowns'],
+    ['spy', 'סוכנים חשאיים', '🕶️', 'sleek black spy suits and sunglasses'],
+    ['fairy', 'פיות', '🧚', 'sparkling fairy outfits with delicate translucent wings'],
+    ['80sfit', 'שנות ה־80', '📼', 'colourful 1980s outfits, neon windbreakers and big hair'],
+    ['retro50', 'שנות ה־50', '🎙️', '1950s rock-and-roll outfits, polka dots and leather jackets'],
+    ['dancers', 'רקדנים', '💃', 'glamorous ballroom dance costumes'],
+    ['doctors', 'רופאים', '🩺', 'doctors in white coats and scrubs']
   ];
   var MOOD = [
     ['', 'רגיל', '✨', ''],
@@ -99,7 +133,13 @@
     ['lanterns', 'פנסים מרחפים', '🏮', 'glowing floating lanterns'],
     ['cherry', 'פריחת דובדבן', '🌸', 'cherry blossoms'],
     ['storm', 'סערה דרמטית', '⚡', 'a dramatic stormy sky with lightning'],
-    ['spot', 'זרקורים ועשן', '🔦', 'stage spotlights and soft smoke']
+    ['spot', 'זרקורים ועשן', '🔦', 'stage spotlights and soft smoke'],
+    ['bokeh', 'אורות מטושטשים', '✨', 'soft dreamy bokeh lights in the background'],
+    ['candle', 'אור נרות', '🕯️', 'warm intimate candlelight'],
+    ['moonlight', 'אור ירח', '🌙', 'cool silver moonlight and a starry sky'],
+    ['butterflies', 'פרפרים', '🦋', 'colourful butterflies fluttering around'],
+    ['bubbles', 'בועות סבון', '🫧', 'floating iridescent soap bubbles'],
+    ['hearts', 'לבבות', '💖', 'little floating hearts and a romantic glow']
   ];
   /* ready combinations: style, world, outfit, mood */
   var COMBOS = [
@@ -132,7 +172,31 @@
     ['משחק וידאו רטרו', '👾', 'pixel', 'forest', 'knight', ''],
     ['בובות פרווה ביער', '🧸', 'plush', 'forest', 'animals', 'sparkle'],
     ['נבחרת על הבמה', '⚽', 'photo', 'stage', 'sport', 'confetti'],
-    ['שפים בפריז', '👨‍🍳', 'cartoon', 'paris', 'chef', '']
+    ['שפים בפריז', '👨‍🍳', 'cartoon', 'paris', 'chef', ''],
+    ['שער מגזין אופנה', '📰', 'magazine', '', 'gala', 'spot'],
+    ['סרט הוליוודי', '🎞️', 'cinema', 'nyc', 'spy', ''],
+    ['חתונה במלדיביים', '💍', 'wedding', 'maldives', 'wedding', 'golden'],
+    ['נשף בארמון', '🕯️', 'renaissance', 'ballroom', 'princess', 'candle'],
+    ['פיות בגן הפרחים', '🧚', 'ghibli', 'garden', 'fairy', 'butterflies'],
+    ['זוהר צפוני', '🌌', 'photo', 'northern', '', 'moonlight'],
+    ['סייברפאנק בטוקיו', '🌆', 'cyber', 'tokyo', '', ''],
+    ['נואר בלונדון', '🕵️', 'noir', 'london', 'spy', ''],
+    ['פולארויד בחוף', '📸', 'polaroid', 'beach', '', 'golden'],
+    ['אימפרסיוניזם בפריז', '🌻', 'impression', 'paris', '', 'petals'],
+    ['רומאים ברומא', '🏛️', 'photo', 'rome', 'roman', 'golden'],
+    ['קרקס וינטג׳', '🎪', 'polaroid', 'circus', 'retro50', 'balloons'],
+    ['דרקונים ופנטזיה', '🐉', 'fantasy', 'mountains', 'knight', 'storm'],
+    ['אוריגמי קסום', '🦢', 'origami', 'garden', '', 'butterflies'],
+    ['סרוג ביד בחורף', '🧶', 'knit', 'snow', '', 'snowfall'],
+    ['דובאי בלילה', '🏙️', 'cinema', 'dubai', 'gala', 'bokeh'],
+    ['שנות ה־80 בניאון', '📼', '80s', 'future', '80sfit', ''],
+    ['פסיפס רומי', '🧩', 'mosaic', 'rome', 'roman', ''],
+    ['אטלנטיס', '🐚', '3d', 'underwater', 'princess', 'bubbles'],
+    ['ספרייה קסומה', '📚', 'ghibli', 'library', 'wizard', 'candle'],
+    ['שחור־לבן אמנותי', '⚫', 'bw', '', '', ''],
+    ['רקדנים על הבמה', '💃', 'cinema', 'stage', 'dancers', 'spot'],
+    ['מדבר וגמלים', '🐫', 'photo', 'desert', '', 'golden'],
+    ['רישום פחם', '✏️', 'charcoal', '', '', '']
   ];
   function find(list, id) { return list.filter(function (x) { return x[0] === id; })[0] || list[0]; }
   function promptOf(c) {
