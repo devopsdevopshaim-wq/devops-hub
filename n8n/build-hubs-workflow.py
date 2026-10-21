@@ -54,7 +54,7 @@ const GEMINI_KEY = '__GEMINI_API_KEY__';
 const OPENAI_KEY = '__OPENAI_API_KEY__';
 const set = (k) => k && !/^__/.test(k);
 const TEXT_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
-const DAY_CAP = 1200, IP_HOUR = 30, FETCH_HOUR = 240, IMG_DAY = 200, IMG_IP_HOUR = 12;
+const DAY_CAP = 1200, IP_HOUR = 30, FETCH_HOUR = 240, IMG_DAY = 800, IMG_IP_HOUR = 60;
 const IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image-preview', 'gemini-3-pro-image-preview', 'gemini-2.5-flash-image-preview'];
 // the market data the finance site shows; nothing else may be read through here
 const HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com', 'feeds.finance.yahoo.com', 'www.globes.co.il'];
@@ -172,7 +172,7 @@ if (b.action === 'ai') {
 if (b.action === 'restyle' || b.action === 'image') {
   const fresh = b.action === 'image';
   if (!hit('hubs-img-ip', ipKey(), IMG_IP_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
-  if (!WAI && !set(GEMINI_KEY)) return out({ ok: false, error: 'no-key' }, 503);
+  if (!WAI && !set(GEMINI_KEY) && typeof fetch !== 'function') return out({ ok: false, error: 'no-key' }, 503);
   if ((sd.imgs || 0) >= IMG_DAY || sd.imgDay !== day) { if (sd.imgDay !== day) { sd.imgDay = day; sd.imgs = 0; } else return out({ ok: false, error: 'quota' }, 429); }
   const prompt = String(b.prompt || '').replace(/\u0000/g, ' ').trim();
   if (!prompt) return out({ ok: false, error: 'empty' }, 400);
@@ -246,7 +246,10 @@ if (b.action === 'restyle' || b.action === 'image') {
       let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
       return btoa(s);
     };
-    const dim = (v) => Math.max(256, Math.min(1920, Math.round((Number(v) || 1024) / 16) * 16));
+    // the picture is made at most 1024px on its long side: FLUX's cost grows with the pixels, so the free daily allowance
+    // makes about three times as many pictures as at 1920px (the studio enlarges the result for print)
+    const fk = 1024 / Math.max(Number(b.w) || 1024, Number(b.h) || 1024, 1);
+    const dim = (v) => Math.max(256, Math.min(1024, Math.round(((Number(v) || 1024) * Math.min(1, fk)) / 16) * 16));
     const W = dim(b.w), Hh = dim(b.h);
     // FLUX.2 takes a multipart form; the photo is input_image_0
     const form = () => {
@@ -260,6 +263,41 @@ if (b.action === 'restyle' || b.action === 'image') {
     for (const [m, input] of plan) {
       try { const img = await toB64(await WAI.run(m, input())); return out({ ok: true, image: img, mime: 'image/jpeg', source: 'Cloudflare', model: m.split('/').pop(), skipped: errs.length ? errs.join(' | ').slice(0, 400) : undefined }); }
       catch (e) { errs.push(m.split('/').pop() + ': ' + why(e)); if (/4006|neurons|allocation/i.test(String(e && e.message || e))) break; }
+    }
+  }
+  // free and with no daily allowance: Pollinations. A new picture is drawn by FLUX; a photo is edited by Kontext, which reads the
+  // photo from a link that lives three minutes on this server (ENV.TMP_PUT, on Cloudflare). POLLINATIONS_TOKEN (free, from
+  // auth.pollinations.ai) lifts the anonymous speed limit and opens the photo-editing models; without it, what is open anonymously.
+  if (typeof fetch === 'function') {
+    const pk = 1024 / Math.max(Number(b.w) || 1024, Number(b.h) || 1024, 1);
+    const pd = (v) => Math.max(256, Math.round(((Number(v) || 1024) * Math.min(1, pk)) / 16) * 16);
+    const PW = pd(b.w), PH = pd(b.h);
+    const put = (typeof ENV !== 'undefined' && ENV && typeof ENV.TMP_PUT === 'function') ? ENV.TMP_PUT : null;
+    const PTOK = (typeof ENV !== 'undefined' && ENV && ENV.POLLINATIONS_TOKEN) || '';
+    let src = '';
+    if (!fresh && put) { try { src = await put(data, mime); } catch (e) { errs.push('tmp: ' + why(e)); } }
+    const tries = fresh ? ['flux', 'turbo'] : src ? ['kontext', 'nanobanana', 'seedream', 'gptimage'] : [];
+    for (const model of tries) {
+      const left = 118000 - (Date.now() - now);
+      if (left < 15000) break;
+      const q = new URLSearchParams({ width: String(PW), height: String(PH), model, nologo: 'true', private: 'true', enhance: 'false', safe: 'true', seed: String(Math.floor(Math.random() * 1e9)), referrer: 'frame-studio' });
+      if (src) q.set('image', src);
+      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      const tm = setTimeout(() => { if (ctl) ctl.abort(); }, Math.min(left - 5000, 95000));
+      try {
+        const r = await fetch('https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt.slice(0, 1600)) + '?' + q.toString(), { signal: ctl ? ctl.signal : undefined, headers: PTOK ? { Authorization: 'Bearer ' + PTOK } : {} });
+        const ct = (r.headers.get('content-type') || '').split(';')[0];
+        if (r.ok && /^image\//.test(ct)) {
+          const u = new Uint8Array(await r.arrayBuffer());
+          if (u.length > 4000) {
+            clearTimeout(tm);
+            let s2 = ''; for (let i = 0; i < u.length; i += 0x8000) s2 += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+            return out({ ok: true, image: btoa(s2), mime: ct, source: 'Pollinations', model, skipped: errs.length ? errs.join(' | ').slice(0, 400) : undefined });
+          }
+        }
+        errs.push('pollinations ' + model + ': ' + r.status + ' ' + String(await r.text().catch(() => '')).slice(0, 140));
+      } catch (e) { errs.push('pollinations ' + model + ': ' + why(e)); }
+      clearTimeout(tm);
     }
   }
   return failed(errs);
