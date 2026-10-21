@@ -481,3 +481,11 @@ body.pv-on .adm { grid-template-columns: 210px minmax(0, 1fr) minmax(360px, 42%)
 .lic-hist ul { margin: 0; padding: 6px 18px; font-size: 13px; color: #BDB3A3; }
 .lic-made { margin-top: 14px; padding: 14px 16px; border: 1px solid rgba(214,183,126,.4); border-radius: 14px; background: rgba(214,183,126,.06); }
 .lic-big code { font: 700 22px ui-monospace, Consolas, monospace; letter-spacing: .08em; color: #F3DDA6; user-select: all; }
+.lic-pay td { background: rgba(214,183,126,.05); }
+.lic-pay .adm-row { flex-wrap: wrap; gap: 8px; align-items: center; }
+.lic-pays { margin: 8px 0 0; padding-inline-start: 18px; font-size: 14px; color: #BDB3A3; }
+.adm-main, .adm-main .adm-card { min-width: 0; }
+.vis-scroll { overflow: auto; max-width: 100%; }
+#lic-q { max-width: 220px; min-width: 0; }
+.lic-tbl td small { white-space: nowrap; }
+.adm-card > * { min-width: 0; }

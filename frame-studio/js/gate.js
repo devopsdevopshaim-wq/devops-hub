@@ -23,6 +23,7 @@
       (tab === 'license'
         ? '<p class="gate-lead">מזינים את המייל ואת קוד ההפעלה האישי שקיבלתם. הקוד עובד במחשב אחד בלבד.</p><div class="acc">' +
           '<label>מייל<input id="lic-email" type="email" dir="ltr" autocomplete="email"></label><label>קוד הפעלה<input id="lic-code" dir="ltr" autocomplete="off" spellcheck="false" placeholder="FS-XXXX-XXXX-XXXX-XXXX"></label>' +
+          '<label class="gate-agree"><input type="checkbox" id="lic-agree"> קראתי ואני מסכים/ה ל<a href="agreement.html" target="_blank" rel="noopener">הסכם הרכישה והשימוש</a></label>' +
           '<button class="btn" id="lic-go">הפעלה</button><p class="acc-note" id="lic-note" role="status">' + esc(note || '') + '</p></div>' +
           '<p class="gate-lead small">אין לכם קוד? פונים לחיים: <a href="https://wa.me/972544979771" target="_blank" rel="noopener">וואטסאפ 054-4979771</a></p>'
         : '<p class="gate-lead">נכנסים עם המייל והסיסמה של מסך הניהול.</p><div id="gate-box"></div>') +
@@ -38,6 +39,7 @@
     function submit() {
       var e = String(em.value || '').trim(), c = String(cd.value || '').trim(); typed = { e: e, c: c };
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || c.replace(/[^A-Za-z0-9]/g, '').length < 10) { document.getElementById('lic-note').textContent = 'מייל וקוד הפעלה מלאים.'; return; }
+      if (!document.getElementById('lic-agree').checked) { document.getElementById('lic-note').textContent = 'מסמנים את האישור להסכם הרכישה.'; return; }
       go.disabled = true; go.textContent = '…';
       LIC.activate(e, c).then(function (r) { if (r.ok) return unlock('license'); lock(ACC ? ACC.msg(r) : 'שגיאה'); });
     }

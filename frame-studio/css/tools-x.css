@@ -29,3 +29,6 @@
 .ss-sel:hover { border-color: rgba(214,183,126,.6); }
 .ss-sel option { background: #211B29; color: #F5EFE4; }
 @media (max-width: 560px) { .ss-bar { flex-wrap: wrap; bottom: 10px; gap: 2px; padding: 6px 8px; } .ss-b { padding: 7px 9px; font-size: 14px; } }
+
+/* the viral AI ideas stand out a little */
+.ai-style.hot { border-color: rgba(214,183,126,.55); background: linear-gradient(160deg, rgba(214,183,126,.14), rgba(214,183,126,.03)); }

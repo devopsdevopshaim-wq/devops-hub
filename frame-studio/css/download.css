@@ -38,3 +38,10 @@ main { max-width: 1040px; margin: 0 auto; padding: 0 16px 60px; }
 .dl-foot a { color: var(--dim); }
 a:focus-visible { outline: 2px solid var(--champ); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .dl-btn { transition: none; } }
+.dl-legal { max-width: 820px; padding-top: 40px; }
+.dl-legal h1 { font: 700 clamp(30px, 5vw, 44px)/1.15 'Frank Ruhl Libre', serif; margin: 6px 0 18px; }
+.dl-legal h2 { font: 700 22px 'Frank Ruhl Libre', serif; color: var(--champ); margin: 30px 0 8px; }
+.dl-legal ol { padding-inline-start: 22px; display: grid; gap: 8px; }
+.dl-legal p, .dl-legal li { color: #E6DED0; }
+.dl-price { margin: 18px auto 0; font: 700 20px 'Assistant', sans-serif; color: var(--ivory); }
+.dl-price b { font: 900 34px 'Frank Ruhl Libre', serif; background: var(--foil); -webkit-background-clip: text; background-clip: text; color: transparent; }

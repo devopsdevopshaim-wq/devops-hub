@@ -5,6 +5,8 @@
   'use strict';
   var FS = window.FS, $ = FS.$, $$ = FS.$$;
   var KEEP = FS.AI_KEEP || '';
+  /* for the viral ideas the scene, framing (and in two of them the age) change on purpose: only the people stay recognisable */
+  var KEEP_FREE = ' IMPORTANT: these are real people from an event. Keep every person clearly recognisable to their family (same face features, skin tone, hair and expression) and keep the same number of people. No text, no letters, no watermark. Highly detailed, professional quality.';
 
   /* [id, Hebrew name, icon, what it adds to the prompt] */
   var STYLE = [
@@ -198,6 +200,31 @@
     ['מדבר וגמלים', '🐫', 'photo', 'desert', '', 'golden'],
     ['רישום פחם', '✏️', 'charcoal', '', '', '']
   ];
+  /* the viral ones: whole ideas, not style + place. Each is a complete instruction (the people's faces are kept by KEEP). */
+  var VIRAL = [
+    ['בובת אקשן בקופסה', '🧸', 'Turn each person into a collectible action figure sealed in a retail blister pack: glossy plastic figure with visible joints, cardboard backing card with bold colourful graphics, a few tiny accessories that match the event in their own plastic slots, shot on a clean studio background with soft reflections'],
+    ['בובת ויניל אספנית', '🎁', 'Turn the people into cute collectible vinyl figures with big heads and simple dot eyes, standing in front of their open window-box packaging, studio product shot'],
+    ['דמויות לגו', '🧱', 'Rebuild the whole scene from toy bricks, the people as toy-brick minifigures with their hairstyles and outfits, crisp plastic shine, tilt-shift macro photo'],
+    ['כדור שלג', '🔮', 'Place the people as tiny figurines inside a glass snow globe on a wooden base, swirling snowflakes inside, warm bokeh lights around, macro photo'],
+    ['עולם מיניאטורה', '🏘️', 'Make it a miniature diorama: tiny hand-painted figurines of the people in a detailed model set, tilt-shift macro photography, shallow depth of field'],
+    ['כרזת סרט', '🎬', 'Make it a dramatic Hollywood blockbuster movie poster: cinematic lighting, epic sky, the people as the heroes posed in front, lens flare, rich colour grade (leave space at the top, no text)'],
+    ['קלף אספנים', '🃏', 'Make it a rare holographic trading card: the people framed in an ornate shiny foil card border with sparkles and a glossy finish, flat front view'],
+    ['בובות ראש מתנדנד', '🏆', 'Turn the people into bobblehead dolls with oversized heads on small bodies, standing on a desk, playful product photo'],
+    ['פלסטלינה סטופ־מושן', '🎞️', 'Make it a stop-motion claymation scene: everything sculpted from plasticine with visible fingerprints and handmade texture, warm studio light'],
+    ['שלט ניאון', '💡', 'Turn the people into a glowing neon-tube sign artwork on a dark brick wall, bright pink and blue neon lines tracing their outlines, soft glow'],
+    ['פסל קרח', '🧊', 'Turn the people into a crystal-clear ice sculpture glowing with blue light, frosty details, at a luxury winter gala'],
+    ['פסל בלונים', '🎈', 'Recreate the people as a sculpture made of shiny twisted party balloons in bright colours, on a festive background'],
+    ['מדבקות', '🏷️', 'Turn the people into a sheet of cute die-cut vinyl stickers with thick white borders, several fun poses and little party icons around them, flat lay'],
+    ['רקמה', '🧵', 'Make it an embroidered patch: the people stitched in colourful thread on fabric, satin stitches and a stitched border'],
+    ['ציור קיר גרפיטי', '🎨', 'Paint the people as a huge colourful street-art mural on a city wall, spray-paint texture, drips and bold shapes, a ladder and paint cans beside it'],
+    ['שער מגזין טיים', '📰', 'Make it a prestigious news-magazine cover portrait: bold red frame border, dramatic studio portrait lighting, serious editorial look (no text)'],
+    ['פוסטר וינטג׳ ממסע', '🗺️', 'Make it a 1950s vintage travel poster: flat screen-printed colours, bold simple shapes, retro paper texture, the people as stylized poster figures'],
+    ['תמונת תינוקות', '👶', 'Show the same people as cute toddlers of about three years old, keeping each one recognisable, same clothes colours and the same scene, soft natural light'],
+    ['בעוד 50 שנה', '👴', 'Show the same people aged about eighty, naturally and warmly, keeping each one recognisable, same pose and scene, gentle portrait light'],
+    ['כרטיס ברכה אנימציה', '💌', 'Make it a heart-warming 3D animated-movie greeting card scene, soft pastel colours, sparkles and floating hearts around the people'],
+    ['אריזת קורנפלקס', '🥣', 'Put the people on the front of a colourful retro breakfast-cereal box as the cheerful cartoon mascots, studio product shot of the box'],
+    ['בובות סרוגות', '🧶', 'Turn the people into adorable hand-crocheted amigurumi dolls with yarn texture, sitting together on a cosy knitted blanket']
+  ];
   function find(list, id) { return list.filter(function (x) { return x[0] === id; })[0] || list[0]; }
   function promptOf(c) {
     var st = find(STYLE, c.style), w = find(WORLD, c.world), o = find(OUTFIT, c.outfit), m = find(MOOD, c.mood), parts = ['Transform this photo.'];
@@ -238,6 +265,7 @@
     '<button class="btn wide" id="style-orig">↩ החזרת המקור (ביטול ה־AI)</button>' +
     '<div class="card ax-build"><h3>🎛️ שילוב משלך</h3>' + chips('🎨 סגנון', STYLE, 'style') + chips('🌍 איפה', WORLD, 'world') + chips('👗 תלבושת', OUTFIT, 'outfit') + chips('✨ אווירה', MOOD, 'mood') +
     '<p class="ax-name" id="ax-name"></p><div class="row2"><button class="btn" id="ax-random">🎲 הפתעה</button><button class="btn primary" id="ax-go">✨ ליצור</button></div></div>' +
+    '<h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
     '<h3>⭐ שילובים מוכנים</h3><div class="ai-styles" id="ax-combos"></div>' +
     '<h3>🎨 סגנונות</h3><div class="ai-styles" id="ai-styles"></div>' +
     '<h3>✍️ לתאר במילים</h3><div class="field"><textarea id="ai-custom" rows="2" placeholder="למשל: להלביש את כולם בתחפושות של פיראטים על ספינה בסערה"></textarea></div>' +
@@ -250,6 +278,11 @@
     $$('.ax-chips button.on', pane).forEach(function (b) { b.scrollIntoView({ block: 'nearest', inline: 'center' }); });
   });
   $('#ax-go').addEventListener('click', function () { FS.runAI(promptOf(cur), nameOf(cur)); });
+  VIRAL.forEach(function (v) {
+    var b = document.createElement('button'); b.className = 'ai-style hot'; b.title = v[0];
+    b.innerHTML = '<i>' + v[1] + '</i><span>' + FS.esc(v[0]) + '</span>';
+    b.addEventListener('click', function () { FS.runAI(v[2] + '.' + KEEP_FREE, v[0]); }); $('#ax-viral').appendChild(b);
+  });
   COMBOS.forEach(function (c) {
     var o = { style: c[2], world: c[3], outfit: c[4], mood: c[5] }, b = document.createElement('button'); b.className = 'ai-style'; b.title = nameOf(o);
     b.innerHTML = '<i>' + c[1] + '</i><span>' + FS.esc(c[0]) + '</span>';
@@ -263,5 +296,5 @@
   $('#ai-custom-go').addEventListener('click', function () { var t = $('#ai-custom').value.trim(); if (!t) return FS.toast('כותבים מה לעשות לתמונה'); FS.runAI('Edit this photo: ' + t + '.' + KEEP, 'עריכת AI'); });
   sync();
   FS.buildStyles = function () {};
-  FS.AI_COMBOS = { STYLE: STYLE, WORLD: WORLD, OUTFIT: OUTFIT, MOOD: MOOD, COMBOS: COMBOS, promptOf: promptOf, nameOf: nameOf };
+  FS.AI_COMBOS = { VIRAL: VIRAL, STYLE: STYLE, WORLD: WORLD, OUTFIT: OUTFIT, MOOD: MOOD, COMBOS: COMBOS, promptOf: promptOf, nameOf: nameOf };
 })();
