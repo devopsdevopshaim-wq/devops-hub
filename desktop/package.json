@@ -71,6 +71,11 @@
       "icon": "build/icon.png",
       "category": "Graphics"
     },
-    "publish": null
+    "publish": null,
+    "electronLanguages": [
+      "he",
+      "en-US"
+    ],
+    "compression": "maximum"
   }
 }

@@ -436,3 +436,38 @@ input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.8) sepia(.
 /* the way in for customers and the owner */
 .links a.nav-enter { border: 1px solid rgba(214,183,126,.45); border-radius: 999px; padding: 6px 14px; }
 .links a.nav-enter:hover { background: rgba(214,183,126,.12); }
+
+/* ---------- navigation: a short menu; on tablets and phones a full-screen menu behind "תפריט" ---------- */
+.standalone-bar { display: none; }
+.links { align-items: center; }
+.links-sep { width: 1px; height: 18px; background: var(--line, rgba(214,183,126,.3)); }
+.links a.nav-soft { color: var(--champagne); }
+#events[hidden] { display: none; }
+.menu-btn { display: none; align-items: center; gap: 10px; background: transparent; border: 1px solid rgba(214,183,126,.4); color: var(--ivory); border-radius: 999px; padding: 9px 14px; font: 600 14px var(--body); cursor: pointer; }
+.menu-btn .bars { display: grid; gap: 5px; width: 18px; }
+.menu-btn .bars i { display: block; height: 1.5px; background: currentColor; border-radius: 2px; transition: transform .35s var(--ease); }
+.menu-open .menu-btn .bars i:first-child { transform: translateY(3.25px) rotate(45deg); }
+.menu-open .menu-btn .bars i:last-child { transform: translateY(-3.25px) rotate(-45deg); }
+.menu-btn:focus-visible { outline: 2px solid var(--champagne); outline-offset: 3px; }
+@media (max-width: 1120px) {
+  .menu-btn { display: inline-flex; }
+  .nav { position: sticky; z-index: 60; }
+  .links { display: flex; position: fixed; inset: 0; z-index: -1; flex-direction: column; justify-content: center; align-items: center; gap: 6px;
+    background: radial-gradient(70% 50% at 50% 30%, rgba(214,183,126,.12), transparent 70%), #0D0B10;
+    opacity: 0; visibility: hidden; transition: opacity .4s var(--ease), visibility 0s linear .4s; }
+  .menu-open .links { opacity: 1; visibility: visible; transition: opacity .4s var(--ease); }
+  .links a { font: 700 clamp(26px, 7vw, 40px)/1.35 var(--display, 'Frank Ruhl Libre', serif); color: var(--ivory); padding: 4px 0; opacity: 0; transform: translateY(12px); transition: opacity .5s var(--ease), transform .5s var(--ease), color .3s; }
+  .menu-open .links a { opacity: 1; transform: none; }
+  .menu-open .links a:nth-child(2) { transition-delay: .03s; } .menu-open .links a:nth-child(3) { transition-delay: .06s; } .menu-open .links a:nth-child(4) { transition-delay: .09s; }
+  .menu-open .links a:nth-child(5) { transition-delay: .12s; } .menu-open .links a:nth-child(6) { transition-delay: .15s; } .menu-open .links a:nth-child(7) { transition-delay: .18s; }
+  .links a.nav-soft, .links a.nav-enter { font: 600 17px var(--body); margin-top: 8px; }
+  .links a.nav-enter { border: 1px solid rgba(214,183,126,.45); border-radius: 999px; padding: 8px 20px; }
+  .links-sep { width: 48px; height: 1px; margin: 14px 0 6px; background: var(--champagne); }
+  body.menu-lock { overflow: hidden; }
+}
+@media (max-width: 560px) {
+  .nav-cta .btn.gold { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .links, .links a, .menu-btn .bars i { transition: none !important; } }
+/* a blurred header would become the box the full-screen menu is placed in; while open it is plain */
+@media (max-width: 1120px) { .nav.menu-open { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(13,11,16,.98); } }
