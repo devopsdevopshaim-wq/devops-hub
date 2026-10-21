@@ -151,5 +151,31 @@ const ics = await frameCal(S2, r.body.calKey);
 check('the calendar feed has the pending requests', /BEGIN:VCALENDAR/.test(ics) && ics.includes('STATUS:TENTATIVE') && ics.includes('DTSTART;VALUE=DATE:' + D1.replace(/-/g, '')));
 check('... and a wrong key of the same length gets nothing', (await frameCal(S2, r.body.calKey.replace(/./, (c) => (c === 'a' ? 'b' : 'a')))) === null);
 
+// a customer approves a design: the print frame reaches the owner, nobody else
+{
+  const S3 = storage(), PNG = 'iVBORw0KGgo' + 'A'.repeat(400000);
+  await frameBiz(S3, DANA, { action: 'design-save', design: { id: 'dz1', name: 'נועה ודניאל', names: 'נועה & דניאל', type: 'wedding', fmt: 'magnet', thumb: 'data:image/jpeg;base64,QUJD' } });
+  r = await frameBiz(S3, EVE, { action: 'design-approve', id: 'dz1', frame: PNG });
+  check('approve: only the design\'s owner', r.code === 404);
+  r = await frameBiz(S3, DANA, { action: 'design-approve', id: 'dz1', frame: 'not an image!' });
+  check('approve: a broken frame is refused', r.code === 400);
+  r = await frameBiz(S3, DANA, { action: 'design-approve', id: 'dz1', frame: PNG, preview: 'QUJD', eventDate: '2027-06-12', phone: '0501234567', note: 'בלי דבר' });
+  check('approve: the customer approves, the owner is told', r.body.ok && r.notify && r.notify.design.names === 'נועה & דניאל' && r.notify.design.eventDate === '2027-06-12', r);
+  r = await frameBiz(S3, DANA, { action: 'designs' });
+  check('approve: her list shows it approved', r.body.designs[0].approved > 0);
+  r = await frameBiz(S3, DANA, { action: 'approved-list' });
+  check('approve: a customer cannot list approved designs', r.code === 403);
+  r = await frameBiz(S3, ADMIN, { action: 'approved-list' });
+  check('approve: the owner lists it', r.body.designs.length === 1 && r.body.designs[0].email === 'dana@example.com' && r.body.designs[0].thumb);
+  r = await frameBiz(S3, ADMIN, { action: 'approved-frame', email: 'dana@example.com', id: 'dz1' });
+  check('approve: the owner gets the print frame whole', r.body.frame === PNG && r.body.preview === 'QUJD');
+  await frameBiz(S3, DANA, { action: 'design-approve', id: 'dz1', frame: PNG });
+  r = await frameBiz(S3, ADMIN, { action: 'approved-list' });
+  check('approve: approving again replaces it', r.body.designs.length === 1);
+  await frameBiz(S3, ADMIN, { action: 'approved-del', email: 'dana@example.com', id: 'dz1' });
+  r = await frameBiz(S3, ADMIN, { action: 'approved-frame', email: 'dana@example.com', id: 'dz1' });
+  check('approve: the owner removes it', r.code === 404 && ![...S3.m.keys()].some((k) => k.startsWith('dzf:')));
+}
+
 console.log(bad ? `\n${bad} failed` : '\nframe: all passed');
 process.exit(bad ? 1 : 0);

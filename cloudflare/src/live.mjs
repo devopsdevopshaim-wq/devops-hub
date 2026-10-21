@@ -24,7 +24,7 @@ const out = (body, code) => ({ code: code || 200, body });
 // what the owner sees of an event (with the keys) and what the public sees (without)
 function ownerView(ev) {
   return { id: ev.id, title: ev.title, date: ev.date, dealId: ev.dealId || '', couple: ev.couple || {}, open: ev.open !== false, copies: ev.copies || 1,
-    cost: ev.cost || 0, price: ev.price || 0, album: ev.album !== false, k: ev.k, v: ev.v, n: ev.n || {}, stations: ev.stations || {}, created: ev.created,
+    cost: ev.cost || 0, price: ev.price || 0, album: ev.album !== false, design: ev.design || null, k: ev.k, v: ev.v, n: ev.n || {}, stations: ev.stations || {}, created: ev.created,
     reviewAt: ev.reviewAt || null, purged: !!ev.purged };
 }
 const isOwner = (who, ev) => who && ev && (ev.owner === who.email);
@@ -120,6 +120,7 @@ export async function frameLive(storage, who, b, site) {
     const title = clean(e.title, 80).trim(); if (!title) return out({ ok: false, error: 'no-title' }, 400);
     if (hasCard(JSON.stringify(e))) return out({ ok: false, error: 'card-number' }, 400);
     Object.assign(ev, { title, date: DAY.test(e.date || '') ? e.date : today(), dealId: clean(e.dealId, 48), couple, open: e.open !== false, album: e.album !== false,
+      design: e.design && EMAIL.test(String(e.design.email || '')) && /^[\w-]{1,48}$/.test(String(e.design.id || '')) ? { email: String(e.design.email).toLowerCase(), id: String(e.design.id), name: clean(e.design.name, 60) } : null,
       copies: num(e.copies, 1, 4, 1), cost: num(e.cost, 0, 1000, 0), price: num(e.price, 0, 1e6, 0), bizName: clean(e.bizName || (site && site.name), 60), google: clean(e.google, 300) });
     await storage.put('lv:' + ev.id, ev);
     if (isNew) { idx[ev.id] = who.email; await storage.put('lvidx', idx); }

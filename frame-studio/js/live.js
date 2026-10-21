@@ -62,13 +62,14 @@
         '<div class="lv-links"><button class="btn primary" id="lv-sign">🖨️ שלט QR לשולחנות</button><button class="btn" id="lv-wall">📺 מסך ענק לאולם</button>' +
         '<button class="btn" id="lv-guest">🔗 קישור לאורחים</button><button class="btn lv-owner" id="lv-album">💞 האלבום של הזוג</button>' +
         '<button class="btn lv-owner" id="lv-photos">🗂️ ניהול התמונות</button><button class="btn lv-owner" id="lv-send">💬 אלבום + המלצה לזוג</button></div>' +
-        '<label class="check lv-owner"><input type="checkbox" id="lv-open"' + (ev.open ? ' checked' : '') + '> האורחים יכולים לשלוח תמונות</label></div>' +
+        '<label class="check lv-owner"><input type="checkbox" id="lv-open"' + (ev.open ? ' checked' : '') + '> האורחים יכולים לשלוח תמונות</label>' +
+        '<p class="lv-dz">' + (ev.design ? '🎨 המגנט של האירוע: <b>' + esc(ev.design.name || ev.design.email) + '</b> (העיצוב של הלקוח)' : '🎨 עוד לא נבחר עיצוב לקוח למגנט') + '</p></div>' +
       '<div class="card lv-card"><h3>🖨️ העמדה</h3>' +
         '<div class="row2"><div class="field"><label>שם העמדה</label><input id="lv-station" maxlength="30" value="' + esc(cfg.station) + '"></div>' +
         '<div class="field"><label>הדפסה</label><select id="lv-per"><option value="one">כל תמונה מיד</option><option value="2">2 בדף</option><option value="4">4 בדף</option><option value="fill">כמה שנכנס בדף</option></select></div></div>' +
         '<label class="check"><input type="checkbox" id="lv-auto"' + (cfg.auto ? ' checked' : '') + '> הדפסה אוטומטית כשמגיעה תמונה</label>' +
         '<p class="lv-copies">' + (ev.copies > 1 ? '🧲🧲 הדפסה כפולה: מגנט לאורח ועוד אחד לאלבום של הזוג' : '🧲 מגנט אחד לכל תמונה') + ' <button class="btn small lv-owner" id="lv-dbl">' + (ev.copies > 1 ? 'רק אחד' : 'הדפסה כפולה') + '</button></p>' +
-        '<div class="lv-tpl"><button class="btn small" id="lv-tpl">🎯 העיצוב של התמונה שעל המסך לכל תמונה של אורח</button>' + (cfg.tpl ? '<span>✓ יש עיצוב קבוע <button class="btn small" id="lv-tpl-x">ביטול</button></span>' : '<span class="hint">בלי עיצוב קבוע: התמונה נכנסת כמו שהיא</span>') + '</div>' +
+        '<div class="lv-tpl"><button class="btn small" id="lv-tpl">🎯 העיצוב של התמונה שעל המסך לכל תמונה של אורח</button>' + (cfg.tpl || cfg.tplFrame ? '<span>✓ יש עיצוב קבוע' + (cfg.tplFrame && !cfg.tpl ? ' (של הלקוח)' : '') + ' <button class="btn small" id="lv-tpl-x">ביטול</button></span>' : '<span class="hint">בלי עיצוב קבוע: התמונה נכנסת כמו שהיא</span>') + '</div>' +
         '<button class="btn wide ' + (run.on ? '' : 'primary') + '" id="lv-run">' + (run.on ? '⏹ עצירת העמדה' : '▶ הפעלת העמדה') + '</button>' +
         '<div class="lv-stats"><span>בתור בשרת <b id="lv-w">' + run.waiting + '</b></span><span>התקבלו כאן <b id="lv-g">' + run.got + '</b></span><span>מחכות להדפסה <b id="lv-q">' + run.queue.length + '</b></span><span>הודפסו <b id="lv-p">' + run.printed + '</b></span></div>' +
         '<button class="btn small" id="lv-print-now"' + (run.queue.length ? '' : ' disabled') + '>🖨️ הדפסת מה שמחכה עכשיו</button>' +
@@ -80,6 +81,7 @@
         '<div><dt>עלות נייר ומגנט</dt><dd>' + money(cost) + ' <small>(₪' + (ev.cost || 0) + ' ליחידה)</small></dd></div><div><dt>הכנסה</dt><dd>' + money(ev.price || 0) + '</dd></div>' +
         '<div class="sum"><dt>רווח</dt><dd>' + money((ev.price || 0) - cost) + '</dd></div></dl>' +
         '<button class="btn small" id="lv-month">📅 דוח חודשי</button></div>') +
+      (isAdmin() ? '<div class="lv-staff lv-owner"><button class="btn small" id="lv-dzl">🎨 עיצובים מאושרים של לקוחות</button></div>' : '') +
       '<div class="lv-staff"><button class="btn small" id="lv-staff">👷 מצב עובד (מסך פשוט לעובד באירוע)</button></div>';
     var sel = $('#lv-ev', pane); if (sel) sel.addEventListener('change', function () { pick(this.value); });
     $('#lv-new', pane).addEventListener('click', function () { editEvent(null); });
@@ -93,12 +95,13 @@
     on('#lv-station', function () { cfg.station = this.value.trim() || 'עמדה 1'; keep(KS, cfg); }, 'change');
     var per = $('#lv-per', pane); if (per) { per.value = cfg.per; per.addEventListener('change', function () { cfg.per = this.value; keep(KS, cfg); }); }
     on('#lv-auto', function () { cfg.auto = this.checked; keep(KS, cfg); if (cfg.auto) maybePrint(); }, 'change');
-    on('#lv-tpl', function () { var p = FS.cur(); if (!p) return FS.toast('פותחים קודם תמונה עם העיצוב הרצוי (מסגרת, גודל, טקסט)'); cfg.tpl = JSON.parse(JSON.stringify(p.doc)); keep(KS, cfg); FS.toast('🎯 כל תמונה חדשה של אורח תקבל את העיצוב הזה', 4000); draw(); });
-    on('#lv-tpl-x', function () { cfg.tpl = null; keep(KS, cfg); draw(); });
+    on('#lv-tpl', function () { var p = FS.cur(); if (!p) return FS.toast('פותחים קודם תמונה עם העיצוב הרצוי (מסגרת, גודל, טקסט)'); cfg.tpl = JSON.parse(JSON.stringify(p.doc)); cfg.tplFrame = null; keep(KS, cfg); FS.toast('🎯 כל תמונה חדשה של אורח תקבל את העיצוב הזה', 4000); draw(); });
+    on('#lv-tpl-x', function () { cfg.tpl = null; cfg.tplFrame = null; keep(KS, cfg); draw(); });
     on('#lv-run', function () { if (run.on) stop(); else start(); });
     on('#lv-print-now', function () { printQueue(true); });
     on('#lv-month', monthly);
     on('#lv-staff', function () { staffOn(); });
+    on('#lv-dzl', approvedList);
     $$('[data-review]', pane).forEach(function (b) { b.addEventListener('click', function () { review(events.filter(function (e) { return e.id === b.dataset.review; })[0]); }); });
   }
   function on(sel, fn, evName) { var el = $(sel, pane); if (el) el.addEventListener(evName || 'click', fn); }
@@ -175,6 +178,55 @@
     });
   }
 
+  /* ---------- the customers' approved designs (from the designer, design.html): the event's magnet ---------- */
+  function isAdmin() { return !!(FS.account && FS.account.isAdmin()); }
+  var dzCache = load('fs-live-dz', {});
+  function frameRef(id) { return { kind: 'png', id: id, opacity: 1, tint: '#d4a843', tintAmt: 0, clip: false }; }
+  /* the customer's frame already carries the business line at the bottom: the studio's own copy goes, so it isn't printed twice */
+  function putDesign(p, id) { FS.setFrame(p, frameRef(id), { quiet: true }); p.noCredit = true; p.doc.layers = p.doc.layers.filter(function (L) { return !L.credit; }); FS.snap(p); }
+  /* the customer's print frame, as one of the studio's frames (fetched once, kept with the studio's own frames) */
+  function dzFrame(dz) {
+    var key = dz.email + ':' + dz.id, have = dzCache[key];
+    if (have && FS.USER_FRAMES && FS.USER_FRAMES[have]) return Promise.resolve(FS.USER_FRAMES[have]);
+    return FS.account.call('approved-frame', { email: dz.email, id: dz.id }).then(function (r) {
+      if (!r.ok) throw new Error(err(r));
+      return FS.addUserFrame('data:image/png;base64,' + r.frame, (dz.names || dz.name || 'עיצוב לקוח') + ' 🎨', true);
+    }).then(function (u) { dzCache[key] = u.id; keep('fs-live-dz', dzCache); if (FS.buildFrames) FS.buildFrames(); return u; });
+  }
+  /* the station prints every guest's photo in it */
+  function useDesign(dz, toEvent) {
+    FS.busy('טוען את העיצוב של הלקוח…');
+    return dzFrame(dz).then(function (u) {
+      FS.busy(); cfg.tpl = null; cfg.tplFrame = u.id; keep(KS, cfg);
+      var p = FS.cur(); if (p) { putDesign(p, u.id); FS.emit('doc'); }
+      if (toEvent && ev) return saveEv({ design: { email: dz.email, id: dz.id, name: dz.names || dz.name || '' } });
+      draw();
+    }).then(function () { FS.toast('🎨 העיצוב של הלקוח נטען: כל תמונה של אורח תודפס בו', 5000); }, function (e) { FS.busy(); FS.toast('העיצוב לא נטען: ' + (e && e.message || ''), 5000); });
+  }
+  function approvedList() {
+    FS.account.call('approved-list').then(function (r) {
+      if (!r.ok) return FS.toast(err(r));
+      var list = r.designs || [];
+      var body = FS.dialog('🎨 עיצובים שלקוחות אישרו (' + list.length + ')', list.length ? '<p class="hint">לקוחות מעצבים באתר (עיצוב המסגרת שלכם) ולוחצים "אישור ושליחה". העיצוב מגיע לכאן בגודל הדפסה.</p><div class="lv-grid">' + list.map(function (d, i) {
+        return '<figure data-i="' + i + '"><img alt="" src="' + esc(d.thumb || '') + '"><figcaption><b>' + esc(d.names || d.name || '') + '</b><small>' + esc(d.email) + (d.phone ? ' · ' + esc(d.phone) : '') + '</small>' +
+          (d.eventDate ? '<small>📅 ' + esc(heDate(d.eventDate)) + '</small>' : '') + (d.note ? '<small>💬 ' + esc(d.note) + '</small>' : '') + '<small>אושר ' + esc(new Date(d.at).toLocaleDateString('he-IL')) + '</small>' +
+          (ev ? '<button class="btn small primary" data-act="event">🎯 המגנט של "' + esc(ev.title.slice(0, 18)) + '"</button>' : '') +
+          '<button class="btn small" data-act="photo">🖼️ על התמונה שעל המסך</button><button class="btn small" data-act="png">⬇️ PNG להדפסה</button>' +
+          '<a class="btn small" target="_blank" rel="noopener" href="design.html?owner&open=' + encodeURIComponent(d.email + ':' + d.id) + '">✏️ פתיחה בעורך</a><button class="btn small danger" data-act="del">🗑</button></figcaption></figure>';
+      }).join('') + '</div>' : '<p class="hint">עוד אין עיצובים מאושרים. שולחים ללקוחות את הקישור לעיצוב: <span dir="ltr">' + esc(siteBase + 'design.html') + '</span></p>', true);
+      $$('figure', body).forEach(function (f) {
+        var d = list[Number(f.dataset.i)];
+        $$('[data-act]', f).forEach(function (b) { b.addEventListener('click', function () {
+          var act = b.dataset.act;
+          if (act === 'event') { FS.closeDialog(); useDesign(d, true); }
+          else if (act === 'photo') { if (!FS.cur()) return FS.toast('פותחים קודם תמונה'); FS.closeDialog(); FS.busy('טוען…'); dzFrame(d).then(function (u) { FS.busy(); putDesign(FS.cur(), u.id); FS.emit('doc'); FS.toast('🖼️ העיצוב של הלקוח על התמונה'); }, function () { FS.busy(); }); }
+          else if (act === 'png') FS.account.call('approved-frame', { email: d.email, id: d.id }).then(function (x) { if (!x.ok) return FS.toast(err(x)); var a = document.createElement('a'); a.href = 'data:image/png;base64,' + x.frame; a.download = 'מסגרת-' + (d.names || d.id).replace(/[\\/:*?"<>|]/g, '') + '.png'; a.click(); });
+          else if (act === 'del' && confirm('להסיר את העיצוב של ' + d.email + ' מהרשימה? (אצל הלקוח הוא נשאר)')) FS.account.call('approved-del', { email: d.email, id: d.id }).then(approvedList);
+        }); });
+      });
+    });
+  }
+
   /* ---------- the sign for the tables ---------- */
   function sign() {
     FS.busy('מכין שלט…');
@@ -198,6 +250,7 @@
   }
   function start() {
     if (!ev) return; if (!ev.open) FS.toast('שימו לב: האירוע סגור להעלאות של אורחים', 4000);
+    if (ev.design && isAdmin() && !cfg.tpl) dzFrame(ev.design).then(function (u) { cfg.tplFrame = u.id; keep(KS, cfg); }).catch(function () { FS.toast('העיצוב של הלקוח לא נטען. התמונות ייכנסו בלעדיו.', 5000); });
     run.on = true; document.body.classList.add('live'); draw(); tick(); run.timer = setInterval(tick, 4000);
   }
   function stop() { run.on = false; clearInterval(run.timer); document.body.classList.remove('live'); draw(); stats(); }
@@ -217,7 +270,7 @@
       p.liveId = ph.id; p.liveEv = ev.id; p.liveName = ph.name; p.liveText = ph.text; p.copies = ev.copies || 1;
       if (cfg.tpl) {
         try { var d = JSON.parse(JSON.stringify(cfg.tpl)); p.doc = d; FS.fitPhoto(p.doc, FS.img(p.src)); FS.snap(p); } catch (e) { /* keeps its own design */ }
-      }
+      } else if (cfg.tplFrame && FS.USER_FRAMES && FS.USER_FRAMES[cfg.tplFrame]) putDesign(p, cfg.tplFrame);
       run.got++; run.queue.push(p);
       FS.buildStrip(); FS.select(S.photos.indexOf(p));
       FS.toast('📸 תמונה חדשה' + (ph.name ? ' מ' + ph.name : '') + (ph.text ? ' · 💌 עם ברכה' : ''), 3000);

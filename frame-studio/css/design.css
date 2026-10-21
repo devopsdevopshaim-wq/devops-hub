@@ -155,3 +155,16 @@ label.btn { display: inline-flex; }
 .dz-more { margin-top: 18px; border-top: 1px solid rgba(201,164,92,.25); padding-top: 12px; }
 .dz-more > summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .dz-more[open] > summary { margin-bottom: 10px; }
+
+/* step-by-step, the print check and the approval */
+.dz-next { margin-top: 14px; }
+.dz-warn { margin: 8px 0 0; padding: 8px 12px; border-radius: 12px; background: #fff4e5; border: 1px solid #f0b45a; color: #7a4a00; font-size: 14px; }
+#guides.on { background: rgba(31,157,107,.12); border-color: #1f9d6b; color: #1f6b4b; }
+.dz-approve { border: 1px solid var(--gold); border-radius: 18px; padding: 14px; margin-bottom: 14px; background: linear-gradient(160deg, rgba(201,164,92,.10), transparent 60%); display: grid; gap: 8px; }
+.dz-approve h3 { margin: 0; }
+.dz-approve .hint { margin: 0; }
+.dz-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dz-chk { display: flex !important; flex-direction: row !important; align-items: flex-start; gap: 8px; font-size: 14px; }
+.dz-chk input { width: auto !important; margin-top: 4px; }
+.dz-ap-st { margin: 0; font-weight: 600; color: #1f6b4b; }
+@media (max-width: 420px) { .dz-row2 { grid-template-columns: 1fr; } }
