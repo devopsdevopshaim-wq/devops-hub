@@ -15,3 +15,18 @@
   watch();
   new MutationObserver(function () { watch(); }).observe(document.getElementById('main') || document.body, { childList: true, subtree: true });
 })();
+
+/* the menu on tablets and phones: opens over the page, closes on a link, on Esc and on the button */
+(function () {
+  var btn = document.getElementById('menu-btn'), nav = document.querySelector('header.nav'), menu = document.getElementById('site-menu');
+  if (!btn || !nav || !menu) return;
+  function set(open) {
+    nav.classList.toggle('menu-open', open); document.body.classList.toggle('menu-lock', open);
+    btn.setAttribute('aria-expanded', String(open)); btn.querySelector('.menu-label').textContent = open ? 'סגירה' : 'תפריט';
+    if (open) { var f = menu.querySelector('a'); if (f) setTimeout(function () { f.focus(); }, 60); }
+  }
+  btn.addEventListener('click', function () { set(!nav.classList.contains('menu-open')); });
+  menu.addEventListener('click', function (e) { if (e.target.closest('a')) set(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && nav.classList.contains('menu-open')) { set(false); btn.focus(); } });
+  window.addEventListener('resize', function () { if (window.innerWidth > 1120 && nav.classList.contains('menu-open')) set(false); });
+})();

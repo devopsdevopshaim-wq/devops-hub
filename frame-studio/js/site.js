@@ -141,6 +141,8 @@
   var ALBUMS = [];
   function albums(type) {
     var box = $('#albums'), list = ALBUMS.filter(function (a) { return !type || a.type === type; });
+    /* no albums yet: the section stays out of sight rather than showing an empty promise */
+    var sec = $('#events'); if (sec) sec.hidden = !ALBUMS.length;
     if (!ALBUMS.length) { box.innerHTML = '<div class="albums-empty"><span>📸</span><p>כאן יופיעו אלבומים מאירועים אמיתיים, ישר מהסטודיו.</p><a class="btn line" href="#gallery">בינתיים, לעיצובים לדוגמה</a></div>'; return; }
     box.innerHTML = list.map(function (a, i) {
       var ev = FS.event(a.type), imgs = a.images.slice(0, 3);
