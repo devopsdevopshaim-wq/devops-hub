@@ -284,6 +284,34 @@
     }
     return { h: H, s: S, l: L };
   }
+  /* one pixel through the colour mixer: its hue picks the band; hue turns with the chroma kept, then saturation and luminance */
+  function hslPixel(r, g, b, T, o) {
+    var mx = r > g ? (r > b ? r : b) : (g > b ? g : b), mn = r < g ? (r < b ? r : b) : (g < b ? g : b), c = mx - mn, hh, di, cw, q, L0, sec, fr;
+    if (c > 0.5) {
+      hh = mx === r ? (g - b) / c : mx === g ? (b - r) / c + 2 : (r - g) / c + 4; if (hh < 0) hh += 6;
+      di = (hh * 60) | 0; if (di > 360) di = 360; cw = c / 76; if (cw > 1) cw = 1;
+      if (T.h[di]) {
+        hh += T.h[di] * cw / 60; if (hh < 0) hh += 6; else if (hh >= 6) hh -= 6;
+        sec = hh | 0; fr = hh - sec;
+        if (sec === 0) { r = mx; g = mn + c * fr; b = mn; } else if (sec === 1) { r = mx - c * fr; g = mx; b = mn; } else if (sec === 2) { r = mn; g = mx; b = mn + c * fr; }
+        else if (sec === 3) { r = mn; g = mx - c * fr; b = mx; } else if (sec === 4) { r = mn + c * fr; g = mn; b = mx; } else { r = mx; g = mn; b = mx - c * fr; }
+      }
+      if (T.s[di]) { L0 = 0.299 * r + 0.587 * g + 0.114 * b; q = 1 + T.s[di] * (T.s[di] > 0 ? cw : 1); r = L0 + (r - L0) * q; g = L0 + (g - L0) * q; b = L0 + (b - L0) * q; }
+      if (T.l[di]) { q = T.l[di] * 0.6 * cw; if (q > 0) { r += (255 - r) * q * 0.7; g += (255 - g) * q * 0.7; b += (255 - b) * q * 0.7; } else { r *= 1 + q; g *= 1 + q; b *= 1 + q; } }
+    }
+    o[0] = r; o[1] = g; o[2] = b;
+  }
+  /* the mixer's change on a 33 x 33 x 33 grid of colours, kept while the mixer stays the same (quick previews add the nearest) */
+  var hslGrid = { key: '', d: null };
+  function hslDelta(hsl, T) {
+    var key = JSON.stringify(hsl); if (hslGrid.key === key) return hslGrid.d;
+    var d = new Float32Array(35937 * 3), o = [0, 0, 0], j = 0, ri, gi, bi, r, g, b;
+    for (ri = 0; ri < 33; ri++) for (gi = 0; gi < 33; gi++) for (bi = 0; bi < 33; bi++) {
+      r = Math.min(255, ri * 7.96875); g = Math.min(255, gi * 7.96875); b = Math.min(255, bi * 7.96875);
+      hslPixel(r, g, b, T, o); d[j++] = o[0] - r; d[j++] = o[1] - g; d[j++] = o[2] - b;
+    }
+    hslGrid = { key: key, d: d }; return d;
+  }
   /* the pure colour of a hue (0..360) minus its own luminance: a tint that does not brighten or darken */
   function hueTint(h) {
     var x = ((h % 360) + 360) % 360 / 60, c = 1 - Math.abs(x % 2 - 1), r, g, b;
@@ -365,8 +393,8 @@
     if (FS.adjPlain(a)) return;
     var lut = toneLUT(a), ex = Math.pow(2, a.exposure / 50);
     /* the optional stages build their tables once per call and cost nothing per pixel when unused */
-    var HT = hslTables(a.hsl), HH = HT && HT.h, HS = HT && HT.s, HL = HT && HT.l, GL = gradeLUT(a.grade), dz = (a.dehaze || 0) / 100 * 0.55;
-    var c, hh, di, sec, fr, cw, q, L0;
+    var HT = hslTables(a.hsl), HD = HT && fast ? hslDelta(a.hsl, HT) : null, HO = [0, 0, 0], GL = gradeLUT(a.grade), dz = (a.dehaze || 0) / 100 * 0.55;
+    var c, di, q, TN = { sepia: 1, cool: 2, gold: 3, teal: 4 }[a.tone] || (SPLIT[a.tone] ? 5 : 0), SPT = SPLIT[a.tone];
     var tr = a.temp * 0.32 + a.tint * 0.1, tg = -a.tint * 0.3, tb = -a.temp * 0.32 + a.tint * 0.1;
     var hm = a.hue ? hueMatrix(a.hue) : null, sat = 1 + a.saturation / 100, vib = a.vibrance / 100, mono = a.mono / 100;
     var n = px.length, i, r, g, b, L, mx, mn, f;
@@ -375,23 +403,12 @@
       r = lut[clamp(r * 4.0118 | 0, 0, 1023)]; g = lut[clamp(g * 4.0118 | 0, 0, 1023)]; b = lut[clamp(b * 4.0118 | 0, 0, 1023)];
       if (dz > 0) { /* dehaze: the darkest channel stands in for the haze, which is taken off towards a white airlight */
         mn = r < g ? (r < b ? r : b) : (g < b ? g : b); q = 1 - dz * (mn > 0 ? mn / 255 : 0); f = 255 * (1 - q);
-        r = (r - f) / q; g = (g - f) / q; b = (b - f) / q;
+        q = 1 / q; r = (r - f) * q; g = (g - f) * q; b = (b - f) * q;
       } else if (dz < 0) { q = -dz * 0.6; r += (212 - r) * q; g += (214 - g) * q; b += (218 - b) * q; }
       if (hm) { var r2 = r * hm[0] + g * hm[1] + b * hm[2], g2 = r * hm[3] + g * hm[4] + b * hm[5]; b = r * hm[6] + g * hm[7] + b * hm[8]; r = r2; g = g2; }
-      if (HT) { /* colour mixer: the pixel's hue picks its band; hue turns with the chroma kept, then saturation and luminance */
-        mx = r > g ? (r > b ? r : b) : (g > b ? g : b); mn = r < g ? (r < b ? r : b) : (g < b ? g : b); c = mx - mn;
-        if (c > 0.5) {
-          hh = mx === r ? (g - b) / c : mx === g ? (b - r) / c + 2 : (r - g) / c + 4; if (hh < 0) hh += 6;
-          di = (hh * 60) | 0; if (di > 360) di = 360; cw = c / 76; if (cw > 1) cw = 1;
-          if (HH[di]) {
-            hh += HH[di] * cw / 60; if (hh < 0) hh += 6; else if (hh >= 6) hh -= 6;
-            sec = hh | 0; fr = hh - sec;
-            if (sec === 0) { r = mx; g = mn + c * fr; b = mn; } else if (sec === 1) { r = mx - c * fr; g = mx; b = mn; } else if (sec === 2) { r = mn; g = mx; b = mn + c * fr; }
-            else if (sec === 3) { r = mn; g = mx - c * fr; b = mx; } else if (sec === 4) { r = mn + c * fr; g = mn; b = mx; } else { r = mx; g = mn; b = mx - c * fr; }
-          }
-          if (HS[di]) { L0 = 0.299 * r + 0.587 * g + 0.114 * b; q = 1 + HS[di] * (HS[di] > 0 ? cw : 1); r = L0 + (r - L0) * q; g = L0 + (g - L0) * q; b = L0 + (b - L0) * q; }
-          if (HL[di]) { q = HL[di] * 0.6 * cw; if (q > 0) { r += (255 - r) * q * 0.7; g += (255 - g) * q * 0.7; b += (255 - b) * q * 0.7; } else { r *= 1 + q; g *= 1 + q; b *= 1 + q; } }
-        }
+      if (HT) { /* colour mixer: exact per pixel for the final picture, a cached 33^3 table of changes for the quick preview */
+        if (HD) { di = ((r <= 0 ? 0 : r >= 255 ? 32 : (r * 0.12549 + 0.5) | 0) * 1089 + (g <= 0 ? 0 : g >= 255 ? 32 : (g * 0.12549 + 0.5) | 0) * 33 + (b <= 0 ? 0 : b >= 255 ? 32 : (b * 0.12549 + 0.5) | 0)) * 3; r += HD[di]; g += HD[di + 1]; b += HD[di + 2]; }
+        else { hslPixel(r, g, b, HT, HO); r = HO[0]; g = HO[1]; b = HO[2]; }
       }
       L = 0.299 * r + 0.587 * g + 0.114 * b;
       f = sat;
@@ -399,17 +416,18 @@
       if (f !== 1) { r = L + (r - L) * f; g = L + (g - L) * f; b = L + (b - L) * f; }
       if (mono) { r += (L - r) * mono; g += (L - g) * mono; b += (L - b) * mono; }
       if (GL) { di = L < 0 ? 0 : L > 255 ? 765 : (L | 0) * 3; r += GL[di]; g += GL[di + 1]; b += GL[di + 2]; }
-      if (a.tone === 'sepia') { var sr = L * 1.07 + 12, sg = L * 0.95 + 4, sb = L * 0.78; r = (r + sr) / 2; g = (g + sg) / 2; b = (b + sb) / 2; }
-      else if (a.tone === 'cool') { b += 14; r -= 6; }
-      else if (a.tone === 'gold') { r += 16; g += 8; b -= 10; }
-      else if (a.tone === 'teal') { var t = L / 255; r += (t - 0.5) * 30 - 6; b += (0.5 - t) * 34 + 4; }
-      else if (SPLIT[a.tone]) { var sp = SPLIT[a.tone], u = L / 255, v1 = 1 - u; r += sp[0] * v1 + sp[3] * u; g += sp[1] * v1 + sp[4] * u; b += sp[2] * v1 + sp[5] * u; }
+      if (!TN) { /* no tone */ }
+      else if (TN === 1) { var sr = L * 1.07 + 12, sg = L * 0.95 + 4, sb = L * 0.78; r = (r + sr) / 2; g = (g + sg) / 2; b = (b + sb) / 2; }
+      else if (TN === 2) { b += 14; r -= 6; }
+      else if (TN === 3) { r += 16; g += 8; b -= 10; }
+      else if (TN === 4) { var t = L / 255; r += (t - 0.5) * 30 - 6; b += (0.5 - t) * 34 + 4; }
+      else { var sp = SPT, u = L / 255, v1 = 1 - u; r += sp[0] * v1 + sp[3] * u; g += sp[1] * v1 + sp[4] * u; b += sp[2] * v1 + sp[5] * u; }
       px[i] = r; px[i + 1] = g; px[i + 2] = b;
     }
     var big = Math.max(w, h);
     if (!fast && (a.clarity || a.sharpen || a.texture)) {
       if (a.texture) { /* texture: fine detail only (a small radius), the large edges clarity works on are left alone */
-        var bt = FS.blur(px, w, h, Math.max(1.2, big / 520)), ta = a.texture / 100;
+        var tr0 = Math.max(1, Math.round(big / 700)), bt = boxBlur(boxBlur(px, w, h, tr0), w, h, tr0), ta = a.texture / 100;
         for (i = 0; i < n; i += 4) for (c = 0; c < 3; c++) { q = px[i + c] - bt[i + c]; if (ta > 0) q = q > 28 ? 28 : q < -28 ? -28 : q; px[i + c] += q * ta * (ta > 0 ? 1.3 : 0.95); }
       }
       if (a.clarity) {
