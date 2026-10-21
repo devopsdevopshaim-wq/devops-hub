@@ -125,6 +125,25 @@ check('the status page is HTML with a locked-down policy', r.status === 200 && /
   check('frame: no feed without the key', (await fetch(URL_ + '/frame-cal?k=x')).status === 404);
   if (f.body && f.body.ok) await fb({ action: 'deal-del', token, id: (await fb({ action: 'all', token })).body.deals.find((d) => d.rq === rq).id });
 }
+// the live event: guests upload with the QR key, a station claims the photo, the gallery serves it with the viewing key
+{
+  const lv = async (b, origin = SITE) => { const x = await fetch(URL_ + '/frame-live', { method: 'POST', headers: { Origin: origin, 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(b) }); return { code: x.status, body: await x.json().catch(() => null) }; };
+  let f = await lv({ action: 'ev-save', token, event: { title: 'בדיקה חיה ' + RUN } });
+  check('live: the owner opens an event', f.body && f.body.ok && f.body.event.k, f);
+  const ev = f.body.event, img = Buffer.from('fake-jpeg-' + RUN).toString('base64');
+  check('live: a foreign site is refused', (await lv({ action: 'guest-info', e: ev.id, k: ev.k }, 'https://evil.example')).code === 403);
+  f = await lv({ action: 'guest-up', e: ev.id, k: ev.k, img, name: 'אורח', text: 'מזל טוב' });
+  check('live: a guest uploads a photo', f.body && f.body.ok, f);
+  const pid = f.body.id;
+  f = await lv({ action: 'claim', token, e: ev.id, station: 'בדיקה', max: 3 });
+  check('live: the station gets it', f.body && f.body.photos.length === 1 && f.body.photos[0].img === img, f.body && f.body.photos);
+  f = await lv({ action: 'feed', e: ev.id, v: ev.v });
+  check('live: the gallery lists it', f.body && f.body.photos.some((p) => p.id === pid));
+  r = await fetch(URL_ + '/frame-live-img?e=' + ev.id + '&p=' + pid + '&v=' + ev.v);
+  check('live: the photo is served with the viewing key', r.status === 200 && Buffer.from(await r.arrayBuffer()).toString('base64') === img);
+  check('live: not without it', (await fetch(URL_ + '/frame-live-img?e=' + ev.id + '&p=' + pid + '&v=' + ev.k)).status === 404);
+  await lv({ action: 'ev-del', token, e: ev.id });
+}
 r = await call({ action: 'logout', token });
 r = await call({ action: 'me', token });
 check('after logout the token is dead', r.code === 401);
