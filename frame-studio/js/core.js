@@ -43,7 +43,13 @@
   /* ---------- state ---------- */
   FS.state = { photos: [], cur: -1, sel: null, zoom: 0, showOriginal: false };
   FS.ADJ0 = { exposure: 0, brightness: 0, contrast: 0, highlights: 0, shadows: 0, whites: 0, blacks: 0, temp: 0, tint: 0,
-    vibrance: 0, saturation: 0, hue: 0, clarity: 0, sharpen: 0, vignette: 0, grain: 0, fade: 0, mono: 0, tone: 'none' };
+    vibrance: 0, saturation: 0, hue: 0, dehaze: 0, texture: 0, clarity: 0, sharpen: 0, vignette: 0, grain: 0, fade: 0, mono: 0, tone: 'none',
+    hsl: null, grade: null, curve: null };   /* the last three are objects, set only while they do something */
+  /* the colour mixer's eight bands: id, Hebrew name, swatch, centre hue in degrees */
+  FS.HSL_BANDS = [['red', 'אדום', '#e5483e', 0], ['orange', 'כתום', '#ef8a2e', 30], ['yellow', 'צהוב', '#e6cf3c', 60], ['green', 'ירוק', '#4fb64c', 120],
+    ['aqua', 'טורקיז', '#3cc3c4', 180], ['blue', 'כחול', '#3d6fe0', 235], ['purple', 'סגול', '#8b52d8', 275], ['magenta', 'מג׳נטה', '#d84aa6', 320]];
+  /* nothing to do: every number zero, no tone, no mixer / grading / curve */
+  FS.adjPlain = function (a) { if (!a) return true; if (a.tone && a.tone !== 'none') return false; for (var k in FS.ADJ0) if (k !== 'tone' && a[k]) return false; return true; };
   FS.newDoc = function (img, fmtId) {
     var f = FS.fmt(fmtId || 'orig') || FS.fmt('orig');
     var d = { fmt: f.id, w: f.w, h: f.h, bg: '#ffffff', frame: null, layers: [],
@@ -219,7 +225,7 @@
       0.213 - c * 0.213 - s * 0.787, 0.715 - c * 0.715 + s * 0.715, 0.072 + c * 0.928 + s * 0.072];
   }
   function toneLUT(a) {
-    var lut = new Float32Array(1024), gam = Math.pow(2, -a.brightness / 100);
+    var cl = curveLUT(a.curve), lut = new Float32Array(1024), gam = Math.pow(2, -a.brightness / 100);
     var con = a.contrast >= 0 ? 1 + a.contrast / 60 : 1 + a.contrast / 110;
     for (var i = 0; i < 1024; i++) {
       var v = i / 1023;
@@ -230,9 +236,73 @@
       v = v + (a.blacks / 100) * 0.12 * (1 - v);
       v = (v - 0.5) * con + 0.5;
       v = (a.fade / 100) * 0.18 + v * (1 - (a.fade / 100) * 0.24);
-      lut[i] = clamp(v, 0, 1) * 255;
+      v = clamp(v, 0, 1) * 255;
+      if (cl) { var ci = v | 0, cf = v - ci; v = ci >= 255 ? cl[255] : cl[ci] + (cl[ci + 1] - cl[ci]) * cf; }
+      lut[i] = v;
     }
     return lut;
+  }
+  /* tone curve: points [[x, y], ...] in 0..255 through a monotone cubic (no overshoot), as a 256 table; null when straight */
+  function curveLUT(pts) {
+    if (!pts || pts.length < 2) return null;
+    var P = pts.slice().sort(function (p, q) { return p[0] - q[0]; }), n = P.length, i, straight = true;
+    for (i = 0; i < n; i++) if (Math.abs(P[i][0] - P[i][1]) > 0.5) { straight = false; break; }
+    if (straight && P[0][0] <= 0 && P[n - 1][0] >= 255) return null;
+    var X = P.map(function (p) { return p[0]; }), Y = P.map(function (p) { return p[1]; }), d = [], m = [];
+    for (i = 0; i < n - 1; i++) d[i] = (Y[i + 1] - Y[i]) / Math.max(1e-6, X[i + 1] - X[i]);
+    m[0] = d[0]; m[n - 1] = d[n - 2];
+    for (i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+    for (i = 0; i < n - 1; i++) {
+      if (!d[i]) { m[i] = m[i + 1] = 0; continue; }
+      var al = m[i] / d[i], be = m[i + 1] / d[i], t = al * al + be * be;
+      if (t > 9) { t = 3 / Math.sqrt(t); m[i] = t * al * d[i]; m[i + 1] = t * be * d[i]; }
+    }
+    var out = new Float32Array(257), j = 0;
+    for (var x = 0; x <= 256; x++) {
+      var xx = Math.min(x, 255);
+      if (xx <= X[0]) { out[x] = clamp(Y[0], 0, 255); continue; }
+      if (xx >= X[n - 1]) { out[x] = clamp(Y[n - 1], 0, 255); continue; }
+      while (j < n - 2 && xx > X[j + 1]) j++;
+      var hh = X[j + 1] - X[j], s = (xx - X[j]) / hh, s2 = s * s, s3 = s2 * s;
+      out[x] = clamp((2 * s3 - 3 * s2 + 1) * Y[j] + (s3 - 2 * s2 + s) * hh * m[j] + (-2 * s3 + 3 * s2) * Y[j + 1] + (s3 - s2) * hh * m[j + 1], 0, 255);
+    }
+    return out;
+  }
+  FS.curveLUT = curveLUT;
+  /* colour mixer: per degree of hue the shift (degrees), saturation and luminance factors, eased between band centres */
+  function hslTables(hsl) {
+    if (!hsl) return null;
+    var B = FS.HSL_BANDS, any = false, vals = B.map(function (b) { var v = hsl[b[0]] || {}; if (v.h || v.s || v.l) any = true; return [(v.h || 0) * 0.3, (v.s || 0) / 100, (v.l || 0) / 100]; });
+    if (!any) return null;
+    var H = new Float32Array(361), S = new Float32Array(361), L = new Float32Array(361), n = B.length;
+    for (var dg = 0; dg <= 360; dg++) {
+      var d = dg % 360, j = n - 1;
+      for (var k = 0; k < n; k++) if (B[k][3] <= d) j = k;
+      var c0 = B[j][3], c1 = j === n - 1 ? B[0][3] + 360 : B[j + 1][3], dd = d < c0 ? d + 360 : d, t = (dd - c0) / (c1 - c0), nx = (j + 1) % n;
+      t = t * t * (3 - 2 * t);
+      H[dg] = vals[j][0] * (1 - t) + vals[nx][0] * t; S[dg] = vals[j][1] * (1 - t) + vals[nx][1] * t; L[dg] = vals[j][2] * (1 - t) + vals[nx][2] * t;
+    }
+    return { h: H, s: S, l: L };
+  }
+  /* the pure colour of a hue (0..360) minus its own luminance: a tint that does not brighten or darken */
+  function hueTint(h) {
+    var x = ((h % 360) + 360) % 360 / 60, c = 1 - Math.abs(x % 2 - 1), r, g, b;
+    if (x < 1) { r = 1; g = c; b = 0; } else if (x < 2) { r = c; g = 1; b = 0; } else if (x < 3) { r = 0; g = 1; b = c; } else if (x < 4) { r = 0; g = c; b = 1; } else if (x < 5) { r = c; g = 0; b = 1; } else { r = 1; g = 0; b = c; }
+    var l = 0.299 * r + 0.587 * g + 0.114 * b; return [r - l, g - l, b - l];
+  }
+  FS.hueTint = hueTint;
+  /* colour grading: shadows / midtones / highlights each {h, s}, bal shifts the split; a 256 x rgb table of additions by luminance */
+  function gradeLUT(gr) {
+    if (!gr) return null;
+    var Z = [['sh', 62], ['mid', 52], ['hi', 54]], T = [], any = false;
+    Z.forEach(function (z) { var v = gr[z[0]] || {}, t = hueTint(v.h || 0), k = (v.s || 0) / 100 * z[1]; if (k) any = true; T.push([t[0] * k, t[1] * k, t[2] * k]); });
+    if (!any) return null;
+    var out = new Float32Array(256 * 3), e = Math.pow(2, -(gr.bal || 0) / 60);
+    for (var i = 0; i < 256; i++) {
+      var u = Math.pow(i / 255, e), ws = (1 - u) * (1 - u), wh = u * u, wm = 1 - ws - wh;
+      for (var c = 0; c < 3; c++) out[i * 3 + c] = T[0][c] * ws + T[1][c] * wm * 1.4 + T[2][c] * wh;
+    }
+    return out;
   }
   /* box blur of RGBA in place, separable, radius r; three passes look like a gaussian */
   function boxBlur(src, w, h, r) {
@@ -271,8 +341,7 @@
     var k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
     var w = Math.round(im.naturalWidth * k), h = Math.round(im.naturalHeight * k);
     /* an untouched photo is only drawn: reading and writing back every pixel is the slow part, so it is skipped */
-    var plain = (!a.tone || a.tone === 'none') && !(d.photo.blurs && d.photo.blurs.length) && !(d.photo.skin && d.photo.skin.amt) && !(d.photo.style && d.photo.style.id) && !(bg && bg.mode !== 'none' && p.mask);
-    if (plain) for (var ak in FS.ADJ0) if (ak !== 'tone' && a[ak]) { plain = false; break; }
+    var plain = FS.adjPlain(a) && !(d.photo.blurs && d.photo.blurs.length) && !(d.photo.skin && d.photo.skin.amt) && !(d.photo.style && d.photo.style.id) && !(bg && bg.mode !== 'none' && p.mask);
     var c = FS.canvas(w, h), x = c.getContext('2d', plain ? undefined : { willReadFrequently: true });
     x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, w, h);
     if (plain) { p.cache = { key: key, canvas: c }; return c; }
@@ -293,22 +362,43 @@
     airy: [-2, 2, 8, 4, 2, -2], moody: [-8, 2, 10, 10, 3, -8], bwwarm: [0, -2, -6, 10, 5, -4]
   };
   FS.adjustPixels = function (px, w, h, a, fast) {
-    var plain = true;
-    for (var k in FS.ADJ0) if (k !== 'tone' && a[k]) { plain = false; break; }
-    if (plain && (!a.tone || a.tone === 'none')) return;
+    if (FS.adjPlain(a)) return;
     var lut = toneLUT(a), ex = Math.pow(2, a.exposure / 50);
+    /* the optional stages build their tables once per call and cost nothing per pixel when unused */
+    var HT = hslTables(a.hsl), HH = HT && HT.h, HS = HT && HT.s, HL = HT && HT.l, GL = gradeLUT(a.grade), dz = (a.dehaze || 0) / 100 * 0.55;
+    var c, hh, di, sec, fr, cw, q, L0;
     var tr = a.temp * 0.32 + a.tint * 0.1, tg = -a.tint * 0.3, tb = -a.temp * 0.32 + a.tint * 0.1;
     var hm = a.hue ? hueMatrix(a.hue) : null, sat = 1 + a.saturation / 100, vib = a.vibrance / 100, mono = a.mono / 100;
     var n = px.length, i, r, g, b, L, mx, mn, f;
     for (i = 0; i < n; i += 4) {
       r = (px[i] + tr) * ex; g = (px[i + 1] + tg) * ex; b = (px[i + 2] + tb) * ex;
       r = lut[clamp(r * 4.0118 | 0, 0, 1023)]; g = lut[clamp(g * 4.0118 | 0, 0, 1023)]; b = lut[clamp(b * 4.0118 | 0, 0, 1023)];
+      if (dz > 0) { /* dehaze: the darkest channel stands in for the haze, which is taken off towards a white airlight */
+        mn = r < g ? (r < b ? r : b) : (g < b ? g : b); q = 1 - dz * (mn > 0 ? mn / 255 : 0); f = 255 * (1 - q);
+        r = (r - f) / q; g = (g - f) / q; b = (b - f) / q;
+      } else if (dz < 0) { q = -dz * 0.6; r += (212 - r) * q; g += (214 - g) * q; b += (218 - b) * q; }
       if (hm) { var r2 = r * hm[0] + g * hm[1] + b * hm[2], g2 = r * hm[3] + g * hm[4] + b * hm[5]; b = r * hm[6] + g * hm[7] + b * hm[8]; r = r2; g = g2; }
+      if (HT) { /* colour mixer: the pixel's hue picks its band; hue turns with the chroma kept, then saturation and luminance */
+        mx = r > g ? (r > b ? r : b) : (g > b ? g : b); mn = r < g ? (r < b ? r : b) : (g < b ? g : b); c = mx - mn;
+        if (c > 0.5) {
+          hh = mx === r ? (g - b) / c : mx === g ? (b - r) / c + 2 : (r - g) / c + 4; if (hh < 0) hh += 6;
+          di = (hh * 60) | 0; if (di > 360) di = 360; cw = c / 76; if (cw > 1) cw = 1;
+          if (HH[di]) {
+            hh += HH[di] * cw / 60; if (hh < 0) hh += 6; else if (hh >= 6) hh -= 6;
+            sec = hh | 0; fr = hh - sec;
+            if (sec === 0) { r = mx; g = mn + c * fr; b = mn; } else if (sec === 1) { r = mx - c * fr; g = mx; b = mn; } else if (sec === 2) { r = mn; g = mx; b = mn + c * fr; }
+            else if (sec === 3) { r = mn; g = mx - c * fr; b = mx; } else if (sec === 4) { r = mn + c * fr; g = mn; b = mx; } else { r = mx; g = mn; b = mx - c * fr; }
+          }
+          if (HS[di]) { L0 = 0.299 * r + 0.587 * g + 0.114 * b; q = 1 + HS[di] * (HS[di] > 0 ? cw : 1); r = L0 + (r - L0) * q; g = L0 + (g - L0) * q; b = L0 + (b - L0) * q; }
+          if (HL[di]) { q = HL[di] * 0.6 * cw; if (q > 0) { r += (255 - r) * q * 0.7; g += (255 - g) * q * 0.7; b += (255 - b) * q * 0.7; } else { r *= 1 + q; g *= 1 + q; b *= 1 + q; } }
+        }
+      }
       L = 0.299 * r + 0.587 * g + 0.114 * b;
       f = sat;
       if (vib) { mx = r > g ? (r > b ? r : b) : (g > b ? g : b); mn = r < g ? (r < b ? r : b) : (g < b ? g : b); f *= 1 + vib * (1 - (mx - mn) / 255) * 1.2; }
       if (f !== 1) { r = L + (r - L) * f; g = L + (g - L) * f; b = L + (b - L) * f; }
       if (mono) { r += (L - r) * mono; g += (L - g) * mono; b += (L - b) * mono; }
+      if (GL) { di = L < 0 ? 0 : L > 255 ? 765 : (L | 0) * 3; r += GL[di]; g += GL[di + 1]; b += GL[di + 2]; }
       if (a.tone === 'sepia') { var sr = L * 1.07 + 12, sg = L * 0.95 + 4, sb = L * 0.78; r = (r + sr) / 2; g = (g + sg) / 2; b = (b + sb) / 2; }
       else if (a.tone === 'cool') { b += 14; r -= 6; }
       else if (a.tone === 'gold') { r += 16; g += 8; b -= 10; }
@@ -317,7 +407,11 @@
       px[i] = r; px[i + 1] = g; px[i + 2] = b;
     }
     var big = Math.max(w, h);
-    if (!fast && (a.clarity || a.sharpen)) {
+    if (!fast && (a.clarity || a.sharpen || a.texture)) {
+      if (a.texture) { /* texture: fine detail only (a small radius), the large edges clarity works on are left alone */
+        var bt = FS.blur(px, w, h, Math.max(1.2, big / 520)), ta = a.texture / 100;
+        for (i = 0; i < n; i += 4) for (c = 0; c < 3; c++) { q = px[i + c] - bt[i + c]; if (ta > 0) q = q > 28 ? 28 : q < -28 ? -28 : q; px[i + c] += q * ta * (ta > 0 ? 1.3 : 0.95); }
+      }
       if (a.clarity) {
         var bl = FS.blur(px, w, h, Math.max(2, big / 90)), ca = a.clarity / 100 * 0.7;
         for (i = 0; i < n; i += 4) { px[i] += (px[i] - bl[i]) * ca; px[i + 1] += (px[i + 1] - bl[i + 1]) * ca; px[i + 2] += (px[i + 2] - bl[i + 2]) * ca; }
