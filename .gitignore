@@ -33,3 +33,9 @@ cloudflare/node_modules/
 cloudflare/src/gen/
 .dev.vars
 .wrangler/
+
+# desktop app (Electron): copied site, build output, deps; the lockfile is committed for npm ci
+desktop/app/
+desktop/dist/
+desktop/node_modules/
+!desktop/package-lock.json

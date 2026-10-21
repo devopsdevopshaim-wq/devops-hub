@@ -1,0 +1,94 @@
+name: Build Frame Studio desktop app
+
+# Packages frame-studio/ as a Windows program (Electron, desktop/) and publishes the installer as a release asset:
+#   - release desktop-v<version> with FrameStudio-Setup-<version>.exe
+#   - release desktop-latest with FrameStudio-Setup.exe (stable download link for the site):
+#     https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/desktop-latest/FrameStudio-Setup.exe
+# Version = major.minor from desktop/package.json + the run number (1.0.<run_number>), so every run gets a new tag.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - 'frame-studio/**'
+      - 'portfolio/api.json'
+      - 'portfolio/js/failover.js'
+      - 'portfolio/js/track.js'
+      - 'portfolio/css/mobile.css'
+      - '.github/workflows/desktop-build.yml'
+
+concurrency:
+  group: desktop-build
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Version
+        run: |
+          BASE=$(node -p "require('./package.json').version.split('.').slice(0,2).join('.')")
+          VERSION="$BASE.${{ github.run_number }}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Building version $VERSION"
+
+      - name: Install
+        run: npm ci
+
+      - name: Copy the studio into the app
+        run: node scripts/copy-app.mjs
+
+      - name: Build the installer
+        run: npx electron-builder --win --publish never -c.extraMetadata.version="$VERSION"
+
+      - name: Prepare files
+        run: |
+          ls -la dist
+          test -f "dist/FrameStudio-Setup-$VERSION.exe"
+          cp "dist/FrameStudio-Setup-$VERSION.exe" dist/FrameStudio-Setup.exe
+
+      - name: Publish release desktop-v${{ env.VERSION }}
+        run: |
+          NOTES="פריים־סטודיו לווינדוס, גרסה $VERSION (commit ${GITHUB_SHA::7}).
+          ההתקנה לא חתומה דיגיטלית: אם Windows מציג 'Windows protected your PC', לוחצים 'More info' ואז 'Run anyway'."
+          if gh release view "desktop-v$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            # a re-run of the same run keeps its run number: replace the file
+            gh release upload "desktop-v$VERSION" "dist/FrameStudio-Setup-$VERSION.exe" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "desktop-v$VERSION" "dist/FrameStudio-Setup-$VERSION.exe" \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Frame Studio desktop $VERSION" --notes "$NOTES" --latest=false
+          fi
+
+      - name: Update release desktop-latest
+        run: |
+          NOTES="הגרסה האחרונה של פריים־סטודיו לווינדוס: $VERSION (commit ${GITHUB_SHA::7}).
+          קישור קבוע להורדה: https://github.com/$GITHUB_REPOSITORY/releases/download/desktop-latest/FrameStudio-Setup.exe"
+          # move the tag to this commit
+          git tag -f desktop-latest "$GITHUB_SHA"
+          git push -f origin refs/tags/desktop-latest
+          if gh release view desktop-latest --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload desktop-latest dist/FrameStudio-Setup.exe --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit desktop-latest --repo "$GITHUB_REPOSITORY" --title "Frame Studio desktop (latest: $VERSION)" --notes "$NOTES"
+          else
+            gh release create desktop-latest dist/FrameStudio-Setup.exe --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --title "Frame Studio desktop (latest: $VERSION)" --notes "$NOTES" --latest=false
+          fi
