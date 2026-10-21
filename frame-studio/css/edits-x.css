@@ -30,12 +30,12 @@
 [data-pane=adjust] .sr label { margin: 0; font: 500 12.5px/1.2 var(--f-body, system-ui, sans-serif); color: var(--ex-dim); letter-spacing: 0; text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; display: block; }
 [data-pane=adjust] .sr:hover label { color: var(--ex-ink); }
 [data-pane=adjust] .sr .num { width: 44px; height: 22px; box-sizing: border-box; padding: 0 4px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--ex-ink);
-  font: 600 12px/1 var(--f-label, system-ui, sans-serif); font-variant-numeric: tabular-nums; text-align: center; -moz-appearance: textfield; appearance: textfield; }
+  font: 600 12px/1 var(--f-label, system-ui, sans-serif); font-variant-numeric: tabular-nums; text-align: center; direction: ltr; unicode-bidi: plaintext; -moz-appearance: textfield; appearance: textfield; }
 [data-pane=adjust] .sr .num::-webkit-inner-spin-button, [data-pane=adjust] .sr .num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 [data-pane=adjust] .sr:hover .num { border-color: var(--ex-line); background: var(--ex-panel); }
 [data-pane=adjust] .sr .num:focus { outline: none; border-color: var(--ex-acc); background: #141416; }
 [data-pane=adjust] .sr.sel { grid-template-columns: 92px minmax(0, 1fr); }
-[data-pane=adjust] .sr.sel select { height: 26px; font-size: 12.5px; }
+[data-pane=adjust] .sr.sel select { width: 100%; height: 28px; min-height: 0; padding: 0 10px 0 28px; line-height: 26px; font-size: 12.5px; border-radius: 6px; border: 1px solid var(--ex-line); background-color: var(--ex-panel); color: var(--ex-ink); }
 
 [data-pane=adjust] .sr input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; margin: 0; background: transparent; accent-color: var(--ex-acc); --a: 0%; --b: 0%; cursor: pointer; }
 [data-pane=adjust] .sr input[type=range]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px;

@@ -75,7 +75,8 @@ test('progress parser: load, sample, decode, never backwards', () => {
   push('\r|============>                     | 1/4 - 3.21s/it\x1b[K');
   push('\r|=========================>        | 3/4 - 1.50it/s\x1b[K');
   push('\r|==================================| 4/4 - 3.00s/it\x1b[K\n');
-  push('\r|======>  | 1/6 - 0.50s/it\x1b[K\r|=====| 6/6 - 0.40s/it\x1b[K');
+  push('\r|======>  | 1/6 - 0.50s/it\x1b[K');
+  push('\r|=====| 6/6 - 0.40s/it\x1b[K');
   push('\r|########| 2/3 - 900.00MB/s\x1b[K');   // loading lines after sampling are ignored
   assert.deepEqual(seen, [10, 25, 45, 75, 90, 92, 99]);
 });
