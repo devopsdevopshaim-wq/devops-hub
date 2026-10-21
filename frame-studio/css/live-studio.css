@@ -53,3 +53,10 @@ body.staff-mode .sb-more, body.staff-mode .lv-owner, body.staff-mode .lv-staff, 
 .lv-dz { margin: 0; font-size: 13px; }
 .lv-grid figcaption small { display: block; opacity: .75; }
 .lv-grid figcaption .btn { width: 100%; }
+/* the event folder on the computer (js/folders.js) */
+.ef-card { display: grid; gap: 8px; margin: 0 0 12px; padding: 14px; border-radius: 16px; border: 1px solid rgba(214,183,126,.3); background: rgba(214,183,126,.05); }
+.ef-card h3 { margin: 0; font-size: 16px; }
+.ef-card .hint { margin: 0; }
+.ef-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ef-root { font-size: 13px; opacity: .85; overflow-wrap: anywhere; }
+.ef-st { margin: 0; font-size: 12px; opacity: .75; }

@@ -314,7 +314,7 @@
     });
     st.appendChild(frag);
     if (FS.markStrip) FS.markStrip();
-    if (S.photos.length) { var add = document.createElement('label'); add.className = 'th add'; add.innerHTML = '<span>＋</span><small>עוד תמונות</small><input type="file" accept="image/*" multiple hidden>'; add.querySelector('input').addEventListener('change', function () { addFiles(this.files); }); st.appendChild(add); }
+    if (S.photos.length) { var add = document.createElement('label'); add.className = 'th add'; add.innerHTML = '<span>＋</span><small>עוד תמונות</small><input type="file" accept="image/*,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.raw,.pef,.srw,.x3f,.3fr,.erf,.kdc,.mrw,.rwl,.iiq,.heic,.heif" multiple hidden>'; add.querySelector('input').addEventListener('change', function () { addFiles(this.files); }); st.appendChild(add); }
     markBar();
   }
   FS.buildStrip = buildStrip;

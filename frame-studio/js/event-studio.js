@@ -243,7 +243,7 @@
   function stats() { $('#st-in').textContent = st.n.in; $('#st-queue').textContent = st.queue.length; $('#st-skip').textContent = st.n.skip; $('#st-printed').textContent = st.n.printed; }
   FS.on('printed', function (n) { st.n.printed += n; try { localStorage.setItem('frame-studio-printed', st.n.printed); } catch (e) { /* ignore */ } stats(); });
   function status(t) { $('#st-status').textContent = t; }
-  function isImg(name) { return /\.(jpe?g|png|webp|heic)$/i.test(name); }
+  function isImg(name) { return /\.(jpe?g|png|webp|heic)$/i.test(name) || FS.RAW_EXT.test(name); }
   function take(file) {
     st.n.in++; stats();
     if (!FS.prefs.eventOn) { FS.prefs.eventOn = true; $('#ev-on').checked = true; FS.savePrefs(); }
