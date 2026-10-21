@@ -470,3 +470,14 @@ body.pv-on .adm { grid-template-columns: 210px minmax(0, 1fr) minmax(360px, 42%)
 .vis-stats b { font: 700 28px 'Frank Ruhl Libre', serif; color: #F3DDA6; line-height: 1; }
 .vis-stats span { font-size: 13px; color: #BDB3A3; }
 .vis-scroll { max-height: 420px; overflow: auto; }
+
+/* studio licences */
+.lic-tbl td small { display: block; }
+.lic-code { font: 600 13px ui-monospace, Consolas, monospace; letter-spacing: .04em; color: #F3DDA6; background: rgba(214,183,126,.08); border: 1px solid rgba(214,183,126,.22); padding: 3px 8px; border-radius: 8px; white-space: nowrap; }
+.lic-st { white-space: nowrap; font-weight: 600; }
+.lic-st.on { color: #9fd8a4; } .lic-st.off { color: #e8a39a; } .lic-st.wait { color: #e9cf8f; }
+.lic-note { color: #BDB3A3; font-style: italic; }
+.lic-act button, .lic-act a { margin: 1px; }
+.lic-hist ul { margin: 0; padding: 6px 18px; font-size: 13px; color: #BDB3A3; }
+.lic-made { margin-top: 14px; padding: 14px 16px; border: 1px solid rgba(214,183,126,.4); border-radius: 14px; background: rgba(214,183,126,.06); }
+.lic-big code { font: 700 22px ui-monospace, Consolas, monospace; letter-spacing: .08em; color: #F3DDA6; user-select: all; }

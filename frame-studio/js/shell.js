@@ -29,6 +29,9 @@
   [['./', '🏠 לאתר העסק'], ['design.html?owner', '✨ מסגרת מהזמנה'], ['../portfolio/', '🧰 כל האתרים שלי']].forEach(function (l) {
     var a = document.createElement('a'); a.className = 'btn'; a.href = l[0]; a.target = '_blank'; a.rel = 'noopener'; a.textContent = l[1]; menu.appendChild(a);
   });
+  /* who is using the studio, and a way out (the licence stays on this computer; signing in again needs the code) */
+  var me = document.createElement('button'); me.className = 'btn'; me.addEventListener('click', function () { if (confirm('לצאת מהסטודיו? בכניסה הבאה צריך שוב את קוד ההפעלה.')) FS.gateLogout && FS.gateLogout(); });
+  var L = FS.license && FS.license.get(); me.textContent = '🚪 יציאה' + (L && L.email && !(FS.account && FS.account.isAdmin()) ? ' · ' + L.email : ''); menu.appendChild(me);
   var heal = document.createElement('button'); heal.className = 'btn'; heal.textContent = '🔄 רענון מלא (אם משהו נתקע) · גרסה ' + (window.FS_V || '?'); heal.addEventListener('click', function () { if (window.FS_HEAL) window.FS_HEAL(); else location.reload(); }); menu.appendChild(heal);
   act.appendChild(more);
   bar.appendChild(act);

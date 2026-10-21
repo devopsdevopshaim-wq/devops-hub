@@ -160,6 +160,43 @@
       draw(opts.note);
     }
   };
+  /* ---------- פריים־סטודיו licences: one code per person, fixed to one computer (see the server's lic-* actions) ----------
+     The machine id comes from the desktop program (a hash of the computer's own id); in a browser it is this browser's device id,
+     so clearing the browser's data counts as a new computer and the owner frees the old one. */
+  var LIC = 'frame-license';
+  function licLoad() { try { return JSON.parse(localStorage.getItem(LIC) || 'null'); } catch (e) { return null; } }
+  function licKeep(v) { try { if (v) localStorage.setItem(LIC, JSON.stringify(v)); else localStorage.removeItem(LIC); } catch (e) { /* private mode */ } }
+  function machine() {
+    var D = window.FSDesktop;
+    if (D && D.machineId) return Promise.resolve(D.machineId()).then(function (m) { return /^[a-f0-9]{32,64}$/.test(m || '') ? m : device(); }, function () { return device(); });
+    return Promise.resolve(device());
+  }
+  var GRACE = 7 * 864e5;   /* offline at an event: a licence checked in the last 7 days keeps working */
+  FS.license = {
+    get: licLoad,
+    isDesktop: function () { return !!(window.FSDesktop && window.FSDesktop.isDesktop); },
+    activate: function (email, code) {
+      return machine().then(function (m) {
+        return auth('lic-activate', { email: email, code: code, machine: m, desktop: FS.license.isDesktop() ? '1' : '', platform: (window.FSDesktop && window.FSDesktop.platform) || 'web', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') });
+      }).then(function (r) { if (r.ok) licKeep({ token: r.token, email: r.email, name: r.name || '', checkedAt: Date.now() }); return r; });
+    },
+    /* ok: {ok:true} online or within the grace; a revoked or moved licence is forgotten here too */
+    check: function () {
+      var L = licLoad(); if (!L || !L.token) return Promise.resolve({ ok: false, error: 'no-license' });
+      return machine().then(function (m) { return auth('lic-check', { token: L.token, machine: m, version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') }); }).then(function (r) {
+        if (r.ok) { L.checkedAt = Date.now(); L.name = r.name || L.name; licKeep(L); return r; }
+        if (r.error === 'offline' || r.error === 'rate-limited' || /^http-5/.test(r.error || '')) return Date.now() - (L.checkedAt || 0) < GRACE ? { ok: true, offline: true, email: L.email, name: L.name } : { ok: false, error: 'license-offline-too-long' };
+        licKeep(null); return r;
+      });
+    },
+    forget: function () { licKeep(null); },
+    /* the owner's licence management (an admin session) */
+    admin: function (action, data) { var s = load(); return auth(action, Object.assign({}, data || {}, { token: s && s.token })); }
+  };
+  Object.assign(MSG, { 'bad-license': 'המייל או קוד ההפעלה לא נכונים.', 'license-in-use': 'הקוד הזה כבר מופעל במחשב אחר. כל קוד עובד במחשב אחד בלבד. להחלפת מחשב פונים לבעל העסק.',
+    'license-revoked': 'הרישיון בוטל. פונים לבעל העסק.', 'license-moved': 'הרישיון שייך למחשב אחר. מפעילים מחדש עם הקוד.', 'license-exists': 'כבר יש רישיון למייל הזה.',
+    'license-offline-too-long': 'צריך חיבור לאינטרנט פעם בשבוע כדי לאמת את הרישיון.', 'not-found': 'לא נמצא.' });
+
   /* the site's content: business.json in the repository, with what the owner published from the admin on top */
   FS.siteData = function (prefix) {
     prefix = prefix || '';

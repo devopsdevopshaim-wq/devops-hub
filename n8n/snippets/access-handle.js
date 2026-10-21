@@ -19,6 +19,7 @@ const ADMIN_PW = '__ADMIN_PASSWORD_HASH__';   // "p1$iterations$salt$hash" made 
 const LOGIN_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/client.html';
 // פריים מגנטים: its customers sign up from the frame designer and see only that (sites ['frame']), with no end date
 const FRAME_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/design.html';
+const STUDIO_DL = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/download.html';
 const FRAME_ADMIN_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/admin.html';
 const FRAME_SIGN = 'פריים מגנטים · חיים קריספין · 054-4979771';
 const ADMIN_TOTP = '__ADMIN_TOTP_SECRET__';   // authenticator-app key of the admin; empty = no second step
@@ -219,6 +220,85 @@ switch (b.action) {
   // Anyone may open an account: the first (initial) password arrives by email, no step by the admin; the admin sees it in the list (and is told at the first
   // sign-in) and controls what the client sees afterwards (sites, days, suspension). New accounts see every open site (never the hidden ones)
   // for SIGNUP_DAYS days. Someone who already has an account just gets an initial password, as with "forgot".
+  // ---- פריים־סטודיו licences: the studio program (desktop or browser) opens only with an activation code. The owner issues one code
+  // per email; it is fixed to that person, works on ONE computer (bound on first activation by a hashed machine id), and the owner
+  // can see, revoke, free or replace it. Codes are random (16 characters, ~79 bits), activation is rate-limited and locks after
+  // repeated failures, and every activation from another computer is refused and reported to the owner.
+  case 'lic-activate': {
+    const e = email(b.email), code = String(b.code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''), mach = String(b.machine || '').toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || code.length < 10 || !/^[a-f0-9]{32,64}$/.test(mach)) return out({ ok: false, error: 'bad-input' }, 400);
+    if (!hit('lic-ip', IPK, 12, HOUR) || !hit('lic-all', 'all', 600, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    sd.licenses = sd.licenses || {};
+    if (sd.lock['lic:' + e] > now) return out({ ok: false, error: 'too-many' }, 429);
+    const L = sd.licenses[e], good = L && sha256hex('lic-code:' + code) === sha256hex('lic-code:' + String(L.code).replace(/[^A-Z0-9]/g, ''));
+    if (!good) {
+      const f = (sd.fails['lic:' + e] = (sd.fails['lic:' + e] || []).filter((t) => now - t < HOUR).concat(now));
+      log('הפעלת סטודיו נכשלה (קוד שגוי)', e);
+      if (f.length >= 6) { sd.lock['lic:' + e] = now + HOUR; return out({ ok: false, error: 'too-many' }, 429, L ? alert('ניסיונות הפעלה כושלים לסטודיו', `6 קודי הפעלה שגויים עבור ${e} בשעה האחרונה. ההפעלה ננעלה לשעה.`) : null); }
+      return out({ ok: false, error: 'bad-license' }, 401);
+    }
+    if (!L.active) { log('הפעלת סטודיו: רישיון מבוטל', e); return out({ ok: false, error: 'license-revoked' }, 403); }
+    const mh = sha256hex('lic-machine:' + mach), iso = new Date(now).toISOString();
+    L.history = (L.history || []).slice(0, 29);
+    if (L.machine && L.machine !== mh) {
+      L.history.unshift({ at: iso, what: 'נדחה: מחשב אחר', ip: maskIp(IP), ua: line(UA, 90) });
+      log('הפעלת סטודיו ממחשב אחר נדחתה', e);
+      return out({ ok: false, error: 'license-in-use' }, 403, alert('ניסיון להפעיל סטודיו במחשב נוסף', `הקוד של ${L.name || e} (${e}) הוזן במחשב אחר מזה שהוא רשום אליו, והכניסה נחסמה.\nמחשב: ${UA || 'לא ידוע'}\nאם הלקוח החליף מחשב: במסך הניהול ← רישיונות סטודיו ← "שחרור מחשב".`));
+    }
+    sd.fails['lic:' + e] = [];
+    if (!L.machine) { L.machine = mh; L.boundAt = iso; L.platform = line(b.platform, 20); L.desktop = b.desktop === '1' || b.desktop === true; L.history.unshift({ at: iso, what: 'הופעל במחשב', ip: maskIp(IP), ua: line(UA, 90) }); log('סטודיו הופעל במחשב חדש', e); }
+    L.lastSeen = iso; L.lastIp = maskIp(IP); L.ua = line(UA, 110); L.version = line(b.version, 20);
+    for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h];   // one live session per licence
+    const token = newSession(e, 'studio', now + 30 * DAY, { lic: e, mh });
+    return out({ ok: true, token, role: 'studio', name: line(L.name, 60), email: e, exp: new Date(now + 30 * DAY).toISOString() });
+  }
+  case 'lic-check': {
+    const s = session(), mach = String(b.machine || '').toLowerCase();
+    if (!s || s.role !== 'studio') return out({ ok: false, error: 'signed-out' }, 401);
+    const L = (sd.licenses || {})[s.lic];
+    if (!L || !L.active) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-revoked' }, 403); }
+    if (!/^[a-f0-9]{32,64}$/.test(mach) || L.machine !== sha256hex('lic-machine:' + mach) || s.mh !== L.machine) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-moved' }, 403); }
+    if (!L.lastSeen || now - Date.parse(L.lastSeen) > 10 * 60000) { L.lastSeen = new Date(now).toISOString(); L.lastIp = maskIp(IP); L.version = line(b.version, 20) || L.version; }
+    if (s.exp - now < 7 * DAY) s.exp = now + 30 * DAY;   // in use: the session renews
+    return out({ ok: true, role: 'studio', email: s.lic, name: line(L.name, 60), exp: new Date(s.exp).toISOString() });
+  }
+  case 'lic-list':
+  case 'lic-create':
+  case 'lic-set':
+  case 'lic-release':
+  case 'lic-rotate':
+  case 'lic-mail':
+  case 'lic-delete': {
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    sd.licenses = sd.licenses || {};
+    const ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const newCode = () => { const h = rnd(16); let o = ''; for (let i = 0; i < 16; i++) o += ABC[parseInt(h.substr(i * 2, 2), 16) % ABC.length]; return 'FS-' + o.match(/.{4}/g).join('-'); };
+    const endSessions = (e) => { for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h]; };
+    const online = {}; for (const x of Object.values(sd.sessions)) if (x && x.lic && x.exp > now) online[x.lic] = 1;
+    const view = (L) => ({ email: L.email, name: L.name || '', phone: L.phone || '', note: L.note || '', code: L.code, active: L.active !== false, createdAt: L.createdAt, bound: !!L.machine,
+      boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10) });
+    const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
+    const mailCode = (L) => mailTo(L.email, 'פריים־סטודיו · קוד ההפעלה האישי שלך', `שלום ${L.name || ''},\n\nקוד ההפעלה האישי שלך לפריים־סטודיו:\n${L.code}\n\nהורדה והתקנה: ${STUDIO_DL}\nבהפעלה הראשונה מזינים את המייל הזה (${L.email}) ואת הקוד.\n\nהקוד אישי ומתאים למחשב אחד בלבד: אחרי ההפעלה הוא ננעל למחשב הזה. החלפת מחשב: פונים לחיים, 054-4979771.\nאין להעביר את הקוד לאחרים.\n\nפריים מגנטים`);
+    if (b.action === 'lic-list') return out({ ok: true, licenses: list() });
+    if (b.action === 'lic-create') {
+      const e = email(b.email), nm = line(b.name, 60);
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2) return out({ ok: false, error: 'bad-input' }, 400);
+      if (sd.licenses[e]) return out({ ok: false, error: 'license-exists' }, 400);
+      if (Object.keys(sd.licenses).length >= 2000) return out({ ok: false, error: 'too-many-clients' }, 400);
+      const L = sd.licenses[e] = { email: e, name: nm, phone: phone(b.phone), note: line(b.note, 200), code: newCode(), createdAt: new Date(now).toISOString(), active: true, machine: null, history: [] };
+      log('רישיון סטודיו נוצר', e);
+      return out({ ok: true, license: view(L), licenses: list() }, 200, b.send === '1' || b.send === true ? mailCode(L) : null);
+    }
+    const e = email(b.email), L = sd.licenses[e];
+    if (!L) return out({ ok: false, error: 'not-found' }, 404);
+    const iso = new Date(now).toISOString(); L.history = (L.history || []).slice(0, 29);
+    if (b.action === 'lic-set') { L.active = b.active === '1' || b.active === true; if (!L.active) endSessions(e); L.history.unshift({ at: iso, what: L.active ? 'הופעל מחדש על ידי המנהל' : 'בוטל על ידי המנהל' }); log(L.active ? 'רישיון סטודיו הופעל' : 'רישיון סטודיו בוטל', e); }
+    else if (b.action === 'lic-release') { L.machine = null; L.boundAt = null; endSessions(e); L.history.unshift({ at: iso, what: 'המחשב שוחרר על ידי המנהל' }); log('רישיון סטודיו שוחרר ממחשב', e); }
+    else if (b.action === 'lic-rotate') { L.code = newCode(); L.machine = null; L.boundAt = null; endSessions(e); L.history.unshift({ at: iso, what: 'קוד חדש הונפק' }); log('קוד סטודיו חדש הונפק', e); }
+    else if (b.action === 'lic-delete') { endSessions(e); delete sd.licenses[e]; log('רישיון סטודיו נמחק', e); return out({ ok: true, licenses: list() }); }
+    return out({ ok: true, license: view(L), licenses: list() }, 200, b.action === 'lic-mail' || (b.action === 'lic-rotate' && (b.send === '1' || b.send === true)) ? mailCode(L) : null);
+  }
+
   // ---- פריים מגנטים: a customer comes in without a password. With an email: a 6-digit code is emailed, and the right code opens a
   // customer session on that device (the mailbox is the proof). With a phone only, or when no code can be sent: the customer
   // enters the public screens as a visitor, and the visit is recorded. Either way the owner sees who came (frameVisitors).

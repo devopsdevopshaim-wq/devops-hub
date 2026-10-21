@@ -152,10 +152,10 @@
 
   /* ---------- the sections ---------- */
   var SECTIONS = [
-    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['requests', '📥', 'בקשות הזמנה'], ['calendar', '🗓️', 'יומן'], ['deals', '📑', 'עסקאות ותשלומים'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['expenses', '💸', 'הוצאות'], ['customers', '👥', 'לקוחות'], ['payset', '🏦', 'תשלום ובנק'],
+    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['requests', '📥', 'בקשות הזמנה'], ['calendar', '🗓️', 'יומן'], ['deals', '📑', 'עסקאות ותשלומים'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['expenses', '💸', 'הוצאות'], ['customers', '👥', 'לקוחות'], ['licenses', '🔑', 'רישיונות סטודיו'], ['payset', '🏦', 'תשלום ובנק'],
     ['-', '', 'האתר'], ['biz', '🏷️', 'פרטי העסק'], ['texts', '✍️', 'טקסטים באתר'], ['packages', '💰', 'חבילות ומחירים'], ['faq', '❓', 'שאלות נפוצות'],
     ['reviews', '⭐', 'המלצות'], ['busy', '📅', 'תאריכים תפוסים'], ['frames', '🖼️', 'מסגרות ללקוחות'], ['events', '🎉', 'סוגי אירועים'],
-    ['-', '', 'קישורים'], ['@./', '🌐', 'האתר ללקוחות'], ['@design.html', '🎨', 'עורך המסגרות ללקוחות'], ['@studio.html', '🖼️', 'הסטודיו'], ['-', '', ''], ['account', '🔐', 'אבטחה וחשבון']
+    ['-', '', 'קישורים'], ['@./', '🌐', 'האתר ללקוחות'], ['@design.html', '🎨', 'עורך המסגרות ללקוחות'], ['@studio.html', '🖼️', 'הסטודיו'], ['@download.html', '⬇', 'דף ההורדה'], ['-', '', ''], ['account', '🔐', 'אבטחה וחשבון']
   ];
   function nav() {
     $('#side').innerHTML = SECTIONS.map(function (s) {
@@ -396,6 +396,7 @@
     requests: function () { return REQUESTS; }, setRequests: function (l) { REQUESTS = l; }, accounts: function () { return ACCOUNTS; }, visitors: function () { return VISITORS; }, calKey: function () { return CALKEY; }, setCalKey: function (k) { CALKEY = k; },
     refresh: refresh, onRefresh: function (fn) { onRefresh = fn; }, badge: function () { badge(); }, go: function (s2) { show(s2); }
   };
+  VIEWS.licenses = function (m) { FS.adminLicenses(m, ctx); };
   ['requests', 'calendar', 'deals', 'reports', 'expenses', 'customers', 'payset'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminBiz.view(k, m, ctx); }; });
 
   signIn();

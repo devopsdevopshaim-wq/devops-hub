@@ -25,3 +25,12 @@ body.gated > :not(#gate):not(script):not(.toast) { visibility: hidden !important
 .gate-back:hover { color: #F5EFE4; }
 #gate :focus-visible { outline: 2px solid #D6B77E; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { #gate .btn { transition: none; } }
+.gate-tabs { display: flex; gap: 4px; padding: 4px; margin: 0 0 18px; border-radius: 999px; border: 1px solid rgba(214, 183, 126, .25); }
+.gate-tabs button { flex: 1; border: 0; border-radius: 999px; padding: 9px 12px; background: transparent; color: #BDB3A3; font: 600 15px 'Assistant', sans-serif; cursor: pointer; }
+.gate-tabs button[aria-selected=true] { background: linear-gradient(115deg, #A9864C 0%, #F3DDA6 28%, #C9A35F 50%, #FFF1C9 66%, #A9864C 100%); color: #0D0B10; }
+#gate #lic-code { letter-spacing: .08em; font-family: ui-monospace, Consolas, monospace; text-transform: uppercase; }
+.gate-lead.small { font-size: 14px; margin: 16px 0 0; }
+.gate-lead a { color: #D6B77E; }
+/* a licence holder uses the studio; the owner's business screens and admin links are not theirs */
+body.studio-licensed #biz-btn, body.studio-licensed #pkg-btn, body.studio-licensed #deals-btn, body.studio-licensed a[href="admin.html"],
+body.studio-licensed .sb-menu a[href="admin.html"] { display: none !important; }
