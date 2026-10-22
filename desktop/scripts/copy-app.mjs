@@ -15,8 +15,8 @@ const SKIP = [
   'tools',            // build scripts of the site, not used by pages
   'sitemap.xml',
   'models/selfie_multiclass_256x256.tflite',    // the fine background cut-out (16 MB): read from the web when online; offline the small one is used
-  'media/promo.mp4',  // marketing videos of the business site (index/show), ~12 MB; streamed from the web if opened
   'media/explainer.mp4',
+  'media/promo',      // the promo films (videos/promo-src), ~30 MB with the vertical ones; streamed from the web
 ];
 
 // Files outside frame-studio/ that its pages reference via ../portfolio/...

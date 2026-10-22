@@ -55,7 +55,10 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - Buttons make a portrait, landscape or square frame from it. The result is kept in the design as `D.invFrame` (WebP) and registered as a PNG frame.
   - `FS.ELEMENTS` and `FS.elementCanvas` give 15 ornaments drawn in code, in any colour. `FS.textCanvas` adds free text.
   - Elements are added on the 🧩 tab and deleted with 🗑 or the Delete key; "ניקוי כל האלמנטים" removes them all.
-- **Videos.** `media/explainer.mp4` (60s) and `media/promo.mp4` (30s), with posters, sit in the site's `#videos` section. They were made with HyperFrames in `videos/frame-explainer` and `videos/frame-styles-promo`, and the music bed is synthesized in code.
+- **Videos.** The site's `#videos` section holds the three promo films plus `media/explainer.mp4` (60s); show.html plays the studio film. The old `media/promo.mp4` (styles that are no longer offered) was removed.
+- **Promo films (Oct 22):** `media/promo/{site,studio,app}.mp4` (16:9, ~45s each) and `*-v.mp4` (9:16 for status, Reels and TikTok), with posters `*.jpg`. They are made by `videos/promo-src/build.py`, which generates six HyperFrames projects (`videos/promo-{site,studio,app}{,-v}`, git-ignored) from one scene spec. The pictures are real: screenshots taken with `videos/promo-src/capture/cap*.cjs`, the sample photos and show images, and the local-AI end-to-end pictures in `promo-src/e2e`. Render each project with `npx hyperframes@0.8.185 render -o renders/video.mp4`, then encode for the web (H.264 CRF 25/26, faststart, loudnorm -15 LUFS); the commands are in the PR that added them (#379).
+  - Music: Kevin MacLeod (incompetech.com), CC BY 4.0 ("Inspired", "Upbeat Forever", "Beauty Flow"), credited on each end card and under the site videos (`promo-src/music/CREDITS.md`). The tracks were fetched by `.github/workflows/ci-music-fetch.yml` (incompetech and FreePD are blocked from the sandbox); MusicGen was not used because its weights are non-commercial.
+  - The admin home has a "🎬 סרטוני תדמית" section: each film plays, with downloads in both shapes and a WhatsApp share (`PROMOS` in admin.js). The desktop bundle leaves `media/promo` out (streamed from the web).
 
 ## Collages, choosing photos, slideshow; the look (Oct 2026)
 - **Look:** all four screens share one identity, a design studio for graphic and photo design.

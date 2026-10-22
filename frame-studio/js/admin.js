@@ -178,6 +178,8 @@
     row.appendChild(el); if (opt.ai) row.appendChild(aiButton(el, opt.ai, opt.max)); w.appendChild(row); return w;
   }
 
+  /* the promo films (videos/promo-src/build.py): [file, title, line, download name] */
+  var PROMOS = [['site', 'פריים מגנטים', 'מגנט אישי לכל אורח · 45 שניות', 'frame-magnets'], ['studio', 'פריים־סטודיו', 'עריכה, מסגרות ו־AI · 45 שניות', 'frame-studio'], ['app', 'התוכנה לווינדוס', 'AI גם בלי אינטרנט · 41 שניות', 'frame-studio-windows']];
   var VIEWS = {};
   VIEWS.home = function (m) {
     head(m, 'שלום ' + esc(String(draft.owner || '').split(' ')[0] || '') + ' 👋', 'העסק והאתר במקום אחד, שמור בשרת המאובטח.');
@@ -191,6 +193,13 @@
       '<a href="design.html" target="_blank" rel="noopener"><i>🎨</i><b>עורך המסגרות ללקוחות</b><small>הלקוחות מעצבים לבד, עם AI ומההזמנה</small></a>' +
       '<a href="design.html?owner" target="_blank" rel="noopener"><i>🧩</i><b>העורך, במצב בעל העסק</b><small>מסגרת מהזמנה ישר ל"המסגרות שלי" בסטודיו</small></a>' +
       '<a href="studio.html" target="_blank" rel="noopener"><i>🖼️</i><b>הסטודיו</b><small>עריכה, הדפסה, עסקאות</small></a></div>' +
+      '<h2>🎬 סרטוני תדמית</h2><p class="hint">להעלאה לאתר, ליוטיוב ולפייסבוק (רוחבי) ולסטטוס, רילס וטיקטוק (אנכי). הסרטונים גם בדף הבית של האתר.</p><div class="adm-promo">' +
+      PROMOS.map(function (v) {
+        var abs = new URL('media/promo/' + v[0] + '.mp4', location.href).href;
+        return '<figure><video src="media/promo/' + v[0] + '.mp4" poster="media/promo/' + v[0] + '.jpg" controls playsinline preload="none"></video><figcaption><b>' + v[1] + '</b><small>' + v[2] + '</small>' +
+          '<span class="adm-promo-a"><a class="btn small" href="media/promo/' + v[0] + '.mp4" download="' + v[3] + '.mp4">⬇️ רוחבי 16:9</a><a class="btn small" href="media/promo/' + v[0] + '-v.mp4" download="' + v[3] + '-vertical.mp4">⬇️ אנכי 9:16</a>' +
+          '<a class="btn small" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(v[1] + ' ' + abs) + '">💬 וואטסאפ</a></span></figcaption></figure>';
+      }).join('') + '</div>' +
       '<h2>האירועים הקרובים</h2><div id="next"></div>');
     B.upcoming($('#next'), DEALS, SETTINGS);
     var g = $('#go-rq'); if (g) g.addEventListener('click', function () { show('requests'); });
