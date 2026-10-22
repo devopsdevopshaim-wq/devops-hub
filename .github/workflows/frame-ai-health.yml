@@ -11,25 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - uses: actions/checkout@v4
       - name: Ask the servers
         run: |
           O='Origin: https://devopsdevopshaim-wq.github.io'
-          curl -sL -o photo.jpg "https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/show/p-original.webp" || true
-          python3 - <<'PY'
-          import base64, io, json, subprocess, urllib.request
-          try:
-              from PIL import Image
-          except ImportError:
-              subprocess.run(['pip', 'install', '-q', 'pillow'], check=False); from PIL import Image
-          im = Image.open('photo.jpg').convert('RGB'); im.thumbnail((512, 512)); b = io.BytesIO(); im.save(b, 'JPEG', quality=85)
-          open('photo.b64', 'w').write(base64.b64encode(b.getvalue()).decode())
-          PY
+          base64 -w0 desktop/test/fixtures/wedding.jpg > photo.b64
           for S in https://spider-auth.devopsdevopshaim.workers.dev/hasadna-hubs https://haimkripisn.app.n8n.cloud/webhook/hasadna-hubs; do
             echo "================ $S"
             echo "-- engines:"; curl -s -m 30 -X POST -H "$O" -H 'Content-Type: text/plain' --data '{"action":"engines"}' "$S" | head -c 600; echo
             echo "-- status:";  curl -s -m 30 -X POST -H "$O" -H 'Content-Type: text/plain' --data '{"action":"status"}' "$S" | head -c 600; echo
             for E in "" gemini flux free openai; do
-              python3 -c "import json;print(json.dumps({'action':'restyle','prompt':'Redraw this photo as a classical oil painting. Keep the people recognisable.','image':open('photo.b64').read(),'mime':'image/jpeg','w':512,'h':512,'engine':'$E'}))" > body.json
+              python3 -c "import json;print(json.dumps({'action':'restyle','prompt':'Redraw this photo as a classical oil painting. Keep the people recognisable.','image':open('photo.b64').read(),'mime':'image/jpeg','w':512,'h':768,'engine':'$E'}))" > body.json
               t0=$(date +%s); r=$(curl -s -m 125 -X POST -H "$O" -H 'Content-Type: text/plain' --data @body.json "$S")
               echo "-- restyle engine='$E' ($(( $(date +%s) - t0 ))s): $(echo "$r" | python3 -c "import json,sys
           try:
