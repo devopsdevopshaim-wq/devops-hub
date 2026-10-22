@@ -1,0 +1,304 @@
+{
+  "made": "2026-10-22T16:12:53.206Z",
+  "langs": {
+    "gemini-he": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 12.95
+        },
+        {
+          "id": "install",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 13.25
+        },
+        {
+          "id": "activate",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 9.75
+        },
+        {
+          "id": "engine",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 13.05
+        },
+        {
+          "id": "photos",
+          "error": "no voice"
+        },
+        {
+          "id": "frames",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 14.25
+        },
+        {
+          "id": "adjust",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 11.35
+        },
+        {
+          "id": "ai",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 16.65
+        },
+        {
+          "id": "offline",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 14.75
+        },
+        {
+          "id": "curate",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 14.85
+        },
+        {
+          "id": "live",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 11.65
+        },
+        {
+          "id": "output",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 15.65
+        },
+        {
+          "id": "buy",
+          "error": "no voice"
+        }
+      ],
+      "provider": "gemini",
+      "tried": [
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key"
+      ]
+    },
+    "he": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 12.05
+        },
+        {
+          "id": "install",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 14.25
+        },
+        {
+          "id": "activate",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 10.35
+        },
+        {
+          "id": "engine",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 12.55
+        },
+        {
+          "id": "photos",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 13.75
+        },
+        {
+          "id": "frames",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 14.95
+        },
+        {
+          "id": "adjust",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 9.75
+        },
+        {
+          "id": "ai",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 15.15
+        },
+        {
+          "id": "offline",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 14.05
+        },
+        {
+          "id": "curate",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 14.75
+        },
+        {
+          "id": "live",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 11.15
+        },
+        {
+          "id": "output",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 13.15
+        },
+        {
+          "id": "buy",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 15.95
+        }
+      ],
+      "provider": "edge",
+      "tried": []
+    },
+    "gemini-en": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 11.85
+        },
+        {
+          "id": "install",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 11.35
+        },
+        {
+          "id": "activate",
+          "error": "no voice"
+        },
+        {
+          "id": "engine",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 12.95
+        },
+        {
+          "id": "photos",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 12.35
+        },
+        {
+          "id": "frames",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.15
+        },
+        {
+          "id": "adjust",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 8.25
+        },
+        {
+          "id": "ai",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 13.65
+        },
+        {
+          "id": "offline",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 13.25
+        },
+        {
+          "id": "curate",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.55
+        },
+        {
+          "id": "live",
+          "error": "no voice"
+        },
+        {
+          "id": "output",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.85
+        },
+        {
+          "id": "buy",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 14.35
+        }
+      ],
+      "provider": "edge",
+      "tried": [
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key",
+        "edge: edge-tts Traceback (most recent call last):\n  File \"/opt/pipx_bin/edge-tts\", line 6, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/opt/pipx/venvs/edge-tts/lib/python3.12/site-packages/",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key",
+        "edge: edge-tts Traceback (most recent call last):\n  File \"/opt/pipx_bin/edge-tts\", line 6, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/opt/pipx/venvs/edge-tts/lib/python3.12/site-packages/",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key"
+      ]
+    },
+    "en": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 11.85
+        },
+        {
+          "id": "install",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 10.55
+        },
+        {
+          "id": "activate",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 8.65
+        },
+        {
+          "id": "engine",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 12.05
+        },
+        {
+          "id": "photos",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 12.35
+        },
+        {
+          "id": "frames",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.15
+        },
+        {
+          "id": "adjust",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 8.25
+        },
+        {
+          "id": "ai",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 12.85
+        },
+        {
+          "id": "offline",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 11.15
+        },
+        {
+          "id": "curate",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.55
+        },
+        {
+          "id": "live",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 10.65
+        },
+        {
+          "id": "output",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.85
+        },
+        {
+          "id": "buy",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 14.35
+        }
+      ],
+      "provider": "edge",
+      "tried": []
+    }
+  }
+}
