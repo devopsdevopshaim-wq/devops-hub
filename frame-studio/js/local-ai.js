@@ -14,7 +14,8 @@
   var st = null, gpu = null, prog = null, installing = null, lastResult = null, testImg = '';
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function mode() { var m = ls(KEY); return m === 'local' || m === 'cloud' || m === 'auto' ? m : 'auto'; }
-  function localSize() { return ls(SIZE_KEY) === '768' ? 768 : 1024; }
+  /* the CPU build is slow (measured on a 4-core runner: ~24 min for 512x768), so it works at 768 unless 1024 was chosen */
+  function localSize() { var v = ls(SIZE_KEY); if (v === '768') return 768; if (v === '1024') return 1024; return st && st.engine && st.engine.variant === 'cpu' ? 768 : 1024; }
   function gb(b) { return b ? (b / 1e9).toFixed(b >= 1e10 ? 0 : 1) + ' GB' : '—'; }
   function toast(m, ms) { if (FS.toast) FS.toast(m, ms); }
 
@@ -86,7 +87,7 @@
     var name = b ? esc(b.name) + (b.vramMB ? ' · ' + (b.vramMB / 1024).toFixed(b.vramMB % 1024 ? 1 : 0) + ' GB זיכרון מסך' : ' · זיכרון מסך לא ידוע') : 'לא זוהה כרטיס מסך';
     var fast = !cpu && b && b.vramMB >= 6144;
     return '<div class="la-gpu"><b>' + name + '</b>' + (gpu.ramMB ? '<span class="la-dim"> · ' + Math.round(gpu.ramMB / 1024) + ' GB זיכרון</span>' : '') + '</div>' +
-      '<div class="la-speed ' + (fast ? 'fast' : 'slow') + '">' + (fast ? '⚡ מהיר: בערך 10–40 שניות לתמונה' : '🐢 איטי: כמה דקות לכל תמונה' + (cpu ? ' (גרסת מעבד)' : '')) + '</div>' +
+      '<div class="la-speed ' + (fast ? 'fast' : 'slow') + '">' + (fast ? '⚡ מהיר: בערך 10–40 שניות לתמונה' : cpu || !b ? '🐢 בלי כרטיס מסך: בערך 10–25 דקות לתמונה (תלוי במעבד). כדאי להריץ כמה תמונות ולהמשיך לעבוד.' : '🐢 כרטיס מסך חלש: כמה דקות לתמונה') + '</div>' +
       (gpu.ramMB && gpu.ramMB < 12 * 1024 ? '<div class="la-warn">⚠️ במחשב פחות מ־12GB זיכרון. זה יעבוד, אבל לאט.</div>' : '');
   }
   function bars() {
@@ -139,16 +140,27 @@
     installing = true; prog = { phase: 'plan', files: [] };
     if (st) st.state = 'installing'; paint();
     var t = 0;
-    API.install(function (p) { prog = p; var n = Date.now(); if (n - t > 200 || p.phase !== 'download') { t = n; if (st) st.state = 'installing'; paint(); } }, variant ? { variant: variant } : undefined)
+    ls(AUTO, null);
+    API.install(function (p) { prog = p; var n = Date.now(); if (n - t > 200 || p.phase !== 'download') { t = n; if (st) st.state = 'installing'; paint(); pill(); } }, variant ? { variant: variant } : undefined)
       .then(function (r) {
         installing = r && r.ok ? null : 'failed';
         if (r && r.status) st = r.status;
         if (st && r && !r.ok) st.lastCode = r.error;
-        if (r && r.ok) { if (!ls(KEY)) ls(KEY, 'auto'); toast('✅ ה־AI המקומי מוכן. עריכות התמונות יעבדו גם בלי אינטרנט.', 5000); }
-        else if (r && r.error === 'cancelled') { installing = null; toast('ההורדה נעצרה. אפשר להמשיך מאותה נקודה.'); }
+        if (r && r.ok) { if (!ls(KEY)) ls(KEY, 'auto'); activate(variant); }
+        else if (r && r.error === 'cancelled') { installing = null; ls(AUTO, 'off'); toast('ההורדה נעצרה. אפשר להמשיך מאותה נקודה (☰ ← AI מקומי).'); }
         else toast('⚠️ ' + (ERR[r && r.error] || ERR['install-failed']), 6000);
         prog = null; paint(); pill();
       }, function (e) { installing = 'failed'; toast('⚠️ ' + String(e && e.message || e)); refresh(); });
+  }
+  /* after an install: one small picture proves the engine runs on this computer. If the graphics card build fails,
+     the CPU build is installed (the models stay) and checked once more. */
+  function activate(variant) {
+    toast('🔧 מפעיל את מנוע ה־AI המקומי ובודק אותו בתמונה קטנה…', 6000);
+    API.run({ mode: 'image', prompt: 'an ornate gold picture frame on dark velvet, studio light, photorealistic', w: 256, h: 256, seed: 1 }).then(function (r) {
+      if (r && r.ok) { ls('fs-ai-local-ok', String(Date.now())); toast('✅ מנוע ה־AI המקומי פועל (' + Math.round((r.ms || 0) / 1000) + ' שניות לתמונת בדיקה). מעכשיו כל עיצובי ה־AI עובדים גם בלי אינטרנט.', 8000); refresh(); return; }
+      if (variant !== 'cpu' && st && st.engine && st.engine.variant !== 'cpu') { toast('כרטיס המסך לא הסתדר עם המנוע. עובר לגרסת המעבד (איטית יותר, עובדת בכל מחשב)…', 7000); install('cpu'); return; }
+      toast('⚠️ מנוע ה־AI הותקן אבל הבדיקה לא הצליחה' + (r && r.detail ? ': ' + String(r.detail).slice(-160) : '') + '. ☰ ← AI מקומי ← תמונת ניסיון.', 10000); refresh();
+    });
   }
   function test() {
     var b = body(), btn = b && b.querySelector('[data-la=test]'); if (btn) { btn.disabled = true; btn.textContent = '🧪 0%'; }
@@ -172,7 +184,7 @@
     else if (a === 'test') test();
     else if (a === 'remove') {
       if (!confirm('להסיר את ה־AI המקומי מהמחשב? (משתחררים כ־5.5GB. אפשר להתקין שוב מתי שרוצים)')) return;
-      t.disabled = true; API.remove().then(function (s) { st = s; installing = null; testImg = ''; paint(); pill(); toast('הוסר.'); });
+      t.disabled = true; API.remove().then(function (s) { st = s; installing = null; testImg = ''; ls(AUTO, 'off'); paint(); pill(); toast('הוסר.'); });
     }
   }
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#dlg-body .la')) onClick(e); });
@@ -189,7 +201,9 @@
     var el = document.getElementById('la-pill'); if (!el) return;
     var s = st || {}, m = mode();
     el.className = 'la-badge ' + (s.ready ? 'on' : s.state === 'installing' || installing === true ? 'act' : 'off');
-    el.textContent = s.ready ? (m === 'local' ? 'תמיד מקומי' : m === 'cloud' ? 'כבוי (ענן)' : 'אוטומטי') : installing === true ? 'מתקין…' : 'לא מותקן';
+    var pct = installing === true && prog && prog.total ? ' ' + Math.floor((prog.done || 0) / prog.total * 100) + '%' : '';
+    el.textContent = s.ready ? (m === 'local' ? 'תמיד מקומי' : m === 'cloud' ? 'כבוי (ענן)' : 'אוטומטי') : installing === true ? 'מוריד…' + pct : 'לא מותקן';
+    var mb = document.getElementById('la-menu'); if (mb) mb.textContent = TITLE + (installing === true ? ' · מוריד' + pct : '');
   }
   var pane = document.querySelector('[data-pane=ai]');
   if (pane) {
@@ -207,4 +221,19 @@
     menu.insertBefore(mb, menu.children[1] || null);
   }
   pill();
+
+  /* automatic: the first time the program opens with internet (and every later opening until it is complete), the engine
+     downloads in the background (desktop/local-ai.js, resumable), so the AI designs work offline without anyone asking for it.
+     Stopping the download or removing the engine turns this off (fs-ai-local-auto = off); installing again turns it back on. */
+  var AUTO = 'fs-ai-local-auto';
+  first.then(function (s) {
+    if (!s || s.ready || s.state === 'installing' || !s.supported || ls(AUTO) === 'off') return;
+    function go() {
+      if (installing === true || (st && st.ready)) return;
+      install();
+      toast('⬇️ מוריד ברקע את מנוע ה־AI המקומי (כ־5.5GB), כדי שכל עיצובי ה־AI יעבדו גם בלי אינטרנט. אפשר להמשיך לעבוד.', 7000);
+    }
+    if (navigator.onLine === false) window.addEventListener('online', function on() { window.removeEventListener('online', on); setTimeout(go, 3000); });
+    else setTimeout(go, 3000);
+  });
 })();
