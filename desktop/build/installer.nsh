@@ -24,6 +24,6 @@
 ; (frame-studio/js/local-ai.js starts the download on the first opening with internet, then checks it with a test picture).
 !macro customInstall
   ${ifNot} ${isUpdated}
-    MessageBox MB_OK|MB_ICONINFORMATION "בסיום ההתקנה פריים־סטודיו ייפתח, יוריד ברקע את מנוע ה־AI המקומי (כ־5.5GB, פעם אחת) ויפעיל אותו.$\r$\nמהרגע שזה מסתיים, כל עיצובי ה־AI עובדים גם בלי אינטרנט.$\r$\nצריך חיבור לאינטרנט בפתיחה הראשונה." /SD IDOK
+    MessageBox MB_OK|MB_ICONINFORMATION "בסיום ההתקנה פריים־סטודיו ייפתח, יוריד ברקע את מנוע ה־AI המקומי (כ־5.5GB, פעם אחת) ויפעיל אותו.$\r$\nאת ההתקדמות רואים בכרטיס בתחתית המסך ובסמל התוכנה בשורת המשימות, ובסוף מופיע "ההתקנה הסתיימה".$\r$\nמהרגע שזה מסתיים, כל עיצובי ה־AI עובדים גם בלי אינטרנט. צריך חיבור לאינטרנט בפתיחה הראשונה." /SD IDOK
   ${endIf}
 !macroend

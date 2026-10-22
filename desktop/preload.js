@@ -44,6 +44,9 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
     set: (k, v) => ipcRenderer.invoke('vault:set', k, v),
     del: (k) => ipcRenderer.invoke('vault:del', k),
   }),
+  // the taskbar button's progress (0..1, -1 clears, 2 = failed) and a Windows notification
+  progress: (f) => ipcRenderer.send('app:progress', Number(f)),
+  notify: (title, body) => ipcRenderer.send('app:notify', String(title || ''), String(body || '')),
   // closes the program (same as the window's X; unsaved photos are asked about first)
   close: () => ipcRenderer.send('app:close'),
   // removes the program from this computer (asks first, then opens Windows' uninstaller and closes)

@@ -5,7 +5,7 @@
 // routes). Every other https request (fonts, the API server, CDNs) goes to the network unchanged.
 'use strict';
 
-const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain, dialog, safeStorage } = require('electron');
+const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain, dialog, safeStorage, Notification } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -341,6 +341,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Windows shows notifications only for a program with its app id (the installer registers the same one)
+  if (process.platform === 'win32') app.setAppUserModelId('il.frame-magnets.studio');
   Menu.setApplicationMenu(null);
 
   protocol.handle('https', handleHttps);
@@ -357,6 +359,26 @@ app.whenReady().then(() => {
   });
 
   registerLocalAI();
+
+  // the local AI engine's download, shown on the program's taskbar button (a number 0..1, or -1 to clear it)
+  ipcMain.on('app:progress', (event, f) => {
+    const frameUrl = event.senderFrame ? event.senderFrame.url : '';
+    if (!isAppUrl(frameUrl)) return;
+    const w = BrowserWindow.fromWebContents(event.sender); if (!w || w.isDestroyed()) return;
+    const v = Number(f);
+    try {
+      if (v === 2) w.setProgressBar(1, { mode: 'error' });
+      else w.setProgressBar(Number.isFinite(v) && v >= 0 && v <= 1 ? v : -1);
+    } catch { /* old Windows */ }
+  });
+  // a Windows notification (the local AI engine is ready); plain short text only, and the button flashes when the window is in the background
+  ipcMain.on('app:notify', (event, title, body) => {
+    const frameUrl = event.senderFrame ? event.senderFrame.url : '';
+    if (!isAppUrl(frameUrl)) return;
+    const t = String(title || '').slice(0, 80), b = String(body || '').slice(0, 240);
+    try { if (Notification.isSupported()) new Notification({ title: t, body: b }).show(); } catch { /* no notifications */ }
+    const w = BrowserWindow.fromWebContents(event.sender); if (w && !w.isDestroyed() && !w.isFocused()) w.flashFrame(true);
+  });
 
   // "remove the program" from the studio's ☰ menu: start Windows' own uninstaller and close, so nothing holds its files
   ipcMain.handle('app:uninstall', async (event) => {
