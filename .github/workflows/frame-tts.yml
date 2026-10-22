@@ -1,0 +1,43 @@
+name: Frame Studio narration
+# Speaks the narration of a Frame Studio film (videos/promo-src/<film>/script.json) in Hebrew and English with the voices this
+# account has (Gemini, Azure, ElevenLabs, else Microsoft Edge voices) and pushes the clips with report.json to the branch ci-tts.
+on:
+  workflow_dispatch:
+    inputs:
+      film:
+        description: 'Folder under videos/promo-src'
+        default: 'app-tutorial'
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: ['videos/promo-src/*/script.json', '.github/scripts/frame-tts.mjs', '.github/workflows/frame-tts.yml']
+permissions:
+  contents: write
+jobs:
+  tts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tools
+        run: |
+          sudo apt-get -qq update && sudo apt-get -qq install -y ffmpeg >/dev/null
+          pipx install edge-tts >/dev/null 2>&1 || pip install --user edge-tts >/dev/null 2>&1 || true
+      - name: Speak
+        env:
+          SPIDER: ${{ secrets.SPIDER }}
+          HAIM_WEB_KEY: ${{ secrets.HAIM_WEB_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
+          AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: node .github/scripts/frame-tts.mjs "videos/promo-src/${{ inputs.film || 'app-tutorial' }}/script.json" "$RUNNER_TEMP/tts"
+      - name: Push to ci-tts
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/tts" || exit 0
+          git init -q && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b ci-tts && git add -A && git commit -q -m "narration, run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-tts
