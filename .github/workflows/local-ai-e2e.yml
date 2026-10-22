@@ -1,0 +1,52 @@
+name: Local AI engine end-to-end
+
+# Proves the desktop program's local AI engine (desktop/local-ai.js) on a real Windows machine: installs
+# stable-diffusion.cpp (CPU build) and FLUX.2 klein 4B from the real GitHub / Hugging Face, runs a few of the studio's
+# AI designs on a real photo, and pushes the pictures and timings to the branch ci-local-ai-e2e for review.
+on:
+  workflow_dispatch:
+    inputs:
+      styles:
+        description: 'Comma-separated FS.AI_STYLES ids'
+        default: '3d,anime,oil,royal'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: local-ai-e2e
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: windows-latest
+    timeout-minutes: 300
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install and run the engine
+        working-directory: desktop
+        run: node scripts/local-ai-e2e.mjs "$RUNNER_TEMP/local-ai" "$RUNNER_TEMP/e2e-out" test/fixtures/wedding.jpg "${{ inputs.styles }}"
+
+      - name: Publish the pictures to ci-local-ai-e2e
+        if: always()
+        run: |
+          set -e
+          out="$RUNNER_TEMP/e2e-out"
+          [ -d "$out" ] || exit 0
+          cp desktop/test/fixtures/wedding.jpg "$out/original.jpg"
+          cd "$out"
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b ci-local-ai-e2e
+          git add -A
+          git commit -q -m "local AI e2e: run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-local-ai-e2e
