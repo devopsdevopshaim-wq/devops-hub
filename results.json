@@ -1,0 +1,61 @@
+{
+  "started": "2026-10-22T07:24:03.556Z",
+  "cpu": "AMD EPYC 7763 64-Core Processor                ",
+  "cores": 4,
+  "ramGB": 16,
+  "runs": [
+    {
+      "id": "3d",
+      "ok": true,
+      "ms": 1435983
+    },
+    {
+      "id": "anime",
+      "ok": true,
+      "ms": 1429544
+    },
+    {
+      "id": "oil",
+      "ok": true,
+      "ms": 1441705
+    }
+  ],
+  "install": {
+    "ms": 30297,
+    "status": {
+      "state": "ready",
+      "ready": true,
+      "why": "",
+      "error": "",
+      "progress": null,
+      "running": false,
+      "queued": 0,
+      "engine": {
+        "variant": "cpu",
+        "tag": "master-987-a77d362",
+        "asset": "sd-master-a77d362-bin-win-cpu-x64.zip"
+      },
+      "files": {
+        "diffusion": {
+          "repo": "leejet/FLUX.2-klein-4B-GGUF",
+          "path": "flux-2-klein-4b-Q4_0.gguf",
+          "size": 2460378560
+        },
+        "llm": {
+          "repo": "unsloth/Qwen3-4B-GGUF",
+          "path": "Qwen3-4B-Q4_K_M.gguf",
+          "size": 2497281312
+        },
+        "vae": {
+          "repo": "Comfy-Org/flux2-klein-4B",
+          "path": "split_files/vae/flux2-vae.safetensors",
+          "size": 336211292
+        }
+      },
+      "bytes": 5293871164,
+      "model": "flux-2-klein-4b",
+      "platform": "win32",
+      "supported": true
+    }
+  }
+}
