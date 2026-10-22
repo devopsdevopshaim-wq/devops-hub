@@ -643,3 +643,14 @@ input[type=range] { accent-color: var(--champagne); }
 .ax-cloud-note { margin: 4px 0 8px; font-size: 12px; opacity: .8; border-top: 1px dashed rgba(214,183,126,.3); padding-top: 10px; }
 body.no-net [data-pane=styles] .ai-style:not(.off):not(.px) { opacity: .45; }
 body.no-net .ax-cloud-note { color: #e5a14d; opacity: 1; }
+/* the AI engine bar and the "3 versions" chooser */
+.ax-eng { padding: 12px; border-radius: 14px; margin-bottom: 12px; }
+.ax-eng h3 { margin: 0 0 8px; font-size: 15px; }
+.ax-eng .ax-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ax-var { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-weight: 600; cursor: pointer; }
+.ax-var small { flex-basis: 100%; opacity: .7; font-weight: 400; }
+.ai-vars { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0; }
+.ai-var { display: grid; gap: 8px; padding: 8px; border-radius: 14px; border: 1px solid var(--line, #3a332a); background: rgba(255,255,255,.03); color: inherit; cursor: pointer; transition: transform .18s, border-color .18s; }
+.ai-var img { width: 100%; aspect-ratio: auto; max-height: 52vh; object-fit: contain; border-radius: 10px; background: #000; }
+.ai-var b { font-size: 15px; }
+.ai-var:hover, .ai-var:focus-visible { transform: translateY(-2px); border-color: var(--champagne, #D6B77E); }

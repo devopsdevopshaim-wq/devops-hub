@@ -217,7 +217,33 @@
     ['bricks', 'לבני צעצוע', '🧱', 'Rebuild this whole scene out of colourful plastic toy building bricks, minifigure-style people, studio lighting.'],
     ['80s', 'שנות ה־80', '📼', 'Make this look like an authentic 1980s photo: big hair, retro neon outfits, film colours, a laser-grid studio backdrop.'],
     ['angels', 'מלאכים וכנפיים', '🕊️', 'Give every person soft white angel wings and a glowing halo among dreamy clouds and golden light, ethereal painting.'],
-    ['gold', 'פסל זהב', '🏆', 'Turn every person into a polished gold statue of themselves on a marble plinth in a museum, photorealistic.']
+    ['gold', 'פסל זהב', '🏆', 'Turn every person into a polished gold statue of themselves on a marble plinth in a museum, photorealistic.'],
+    ['classic2d', 'אנימציה קלאסית', '🏰', 'Redraw this photo as a still from a classic hand-drawn 2D animated fairy-tale film: clean ink outlines, soft painted backgrounds, warm storybook colours.'],
+    ['dreamy', 'אנימה חלומית', '☁️', 'Redraw this photo as a frame from a dreamy hand-painted Japanese animated film: soft watercolour skies, lush detailed backgrounds, gentle warm light.'],
+    ['dolls', 'בובות אופנה', '🎀', 'Turn every person into a glossy fashion doll version of themselves in a pink dreamhouse set: smooth doll skin, perfect styling, bright toy-box lighting.'],
+    ['wed50', 'חתונה בשנות ה־50', '🎞️', 'Make this an elegant black and white wedding photograph from the 1950s: soft film grain, classic studio lighting, period hairstyles and clothes.'],
+    ['hollywood', 'הוליווד הקלאסית', '🎬', 'Make this a glamorous classic Hollywood black and white portrait: dramatic studio lighting, soft glow, 1940s film-star styling.'],
+    ['fashion', 'צילום אופנה', '📸', 'Turn this into a high-end fashion magazine photoshoot: editorial lighting, elegant styling, a luxurious backdrop, sharp professional photography.'],
+    ['chuppah', 'חופה בשקיעה', '💍', 'Place the people under a beautiful wedding chuppah decorated with white flowers at golden-hour sunset in an olive grove, photorealistic, warm romantic light.'],
+    ['kotel', 'בכותל המערבי', '🕍', 'Place the people in front of the Western Wall in Jerusalem at golden hour, festive and respectful, photorealistic, warm light.'],
+    ['jerusalem', 'ירושלים של זהב', '🌇', 'Place the people on a terrace overlooking the golden Old City of Jerusalem at sunset, photorealistic, warm golden light.'],
+    ['telaviv', 'חוף תל אביב', '🏖️', 'Place the people on the Tel Aviv beach promenade at sunset with the sea and the city skyline behind them, photorealistic, summer evening light.'],
+    ['hanukkah', 'אורות חנוכה', '🕎', 'Place the people beside a glowing menorah with lit candles and sufganiyot in a cosy festive home, warm candle light, photorealistic.'],
+    ['seder', 'ליל הסדר', '🍷', 'Place the people around a festive Passover seder table with matza, wine glasses and candles, warm family light, photorealistic.'],
+    ['newyear', 'שנה טובה', '🍎', 'Place the people in a festive Rosh Hashana scene with apples, honey and pomegranates on the table, warm golden light, photorealistic.'],
+    ['paris', 'פריז רומנטית', '🗼', 'Place the people on a Paris street at night with the Eiffel Tower sparkling behind them, romantic city lights, photorealistic.'],
+    ['santorini', 'סנטוריני', '🏛️', 'Place the people on a white terrace in Santorini with blue domes and the Aegean sea at sunset, photorealistic.'],
+    ['safari', 'ספארי', '🦒', 'Place the people on an African safari at golden hour with giraffes and acacia trees, wearing safari outfits, photorealistic.'],
+    ['underwater', 'מתחת למים', '🐠', 'Place the people underwater in a coral reef with colourful fish and sun rays, hair floating gently, photorealistic and magical.'],
+    ['vikings', 'ויקינגים', '🛡️', 'Turn every person into a Viking with furs, braids and round shields on a misty fjord shore, epic cinematic painting.'],
+    ['samurai', 'סמוראים', '⛩️', 'Turn every person into a samurai or a noble in traditional Japanese armour and kimono in a cherry-blossom garden, cinematic.'],
+    ['egypt', 'מצרים העתיקה', '🏺', 'Turn every person into ancient Egyptian royalty with gold jewellery and headdresses, the pyramids behind them, epic painting.'],
+    ['marble', 'פסל שיש', '🗿', 'Turn every person into a classical white marble statue of themselves in a museum gallery, photorealistic sculpture.'],
+    ['origami', 'אוריגמי', '🦢', 'Rebuild the whole scene from folded origami paper: the people, their clothes and the background made of crisp coloured paper folds, studio light.'],
+    ['crayon', 'ציור ילדים', '🖍️', 'Redraw this photo as a cheerful crayon drawing by a child on white paper, with wobbly lines and bright colours, still recognisable.'],
+    ['wood', 'פסל עץ', '🪵', 'Turn every person into a hand-carved wooden figurine of themselves, warm polished wood grain, studio light.'],
+    ['flowers', 'זר פרחים', '🌸', 'Give every person a beautiful crown of fresh flowers and surround them with blooming flowers and soft spring light, a dreamy portrait.'],
+    ['circus', 'קרקס וינטג׳', '🎪', 'Turn every person into vintage circus performers under a striped big top with warm lights, colourful painterly style.']
   ];
   FS.AI_KEEP = KEEP;
   /* the photo for the image model: a big copy for Gemini, and one under 512px for FLUX.2 on Cloudflare */
@@ -232,21 +258,30 @@
     x.drawImage(res, (W - res.naturalWidth * s) / 2, (H - res.naturalHeight * s) / 2, res.naturalWidth * s, res.naturalHeight * s);
     return new Promise(function (ok) { c.toBlob(function (b) { ok(FS.loadImg(URL.createObjectURL(b))); }, 'image/jpeg', 0.94); });
   }
-  FS.restyle = function (p, prompt) {
-    var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight;
+  /* the engine the AI tab chose ('' = each in turn); FS.restyle uses it unless an engine is passed */
+  FS.aiEngine = function (v) { try { if (v !== undefined) localStorage.setItem('fs-ai-engine', v); return localStorage.getItem('fs-ai-engine') || ''; } catch (e) { return v || ''; } };
+  FS.restyle = function (p, prompt, engine) { return FS.restyleTry(p, prompt, engine).then(function (im) { return FS.applyAI(p, im); }); };
+  /* one AI design of the photo, not applied yet: an image the shape of the original, with .aiSource (who made it) */
+  FS.restyleTry = function (p, prompt, engine) {
+    var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight, src = '';
+    if (engine === undefined) engine = FS.aiEngine();
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
     var faces = p.faces ? p.faces.length : 0; if (faces) prompt += ' There are exactly ' + faces + ' faces in the photo; keep all ' + faces + '.';
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
-    return FS.askServer({ action: 'restyle', prompt: prompt, image: photoB64(p, 1280), small: photoB64(p, 496), mime: 'image/jpeg', w: w, h: h }).then(function (r) {
+    var body = { action: 'restyle', prompt: prompt, image: photoB64(p, 1280), small: photoB64(p, 496), mime: 'image/jpeg', w: w, h: h };
+    if (engine) body.engine = engine;
+    return FS.askServer(body).then(function (r) {
       if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
+      src = r.source || (engine === 'local' ? 'מקומי' : '');
       var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
       return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
-    }).then(function (res) { return matchShape(res, orig); }).then(function (im) {
-      /* the original stays in origSrc; earlier AI results are kept too (a few), so "ביטול AI" can go back one step at a time */
-      if (!p.origSrc) p.origSrc = p.src; else { p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5); }
-      p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
-      FS.fitPhoto(p.doc, im); FS.snap(p); return p;
-    });
+    }).then(function (res) { return matchShape(res, orig); }).then(function (im) { im.aiSource = src; return im; });
+  };
+  /* put an AI result on the photo: the original stays in origSrc; earlier AI results are kept too (a few), so "ביטול AI" can go back one step at a time */
+  FS.applyAI = function (p, im) {
+    if (!p.origSrc) p.origSrc = p.src; else { p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5); }
+    p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
+    FS.fitPhoto(p.doc, im); FS.snap(p); return p;
   };
   FS.unstyle = function (p) {
     if (!p.origSrc) return false; p.src = p.origSrc; delete p.origSrc; delete p.aiPrev; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;

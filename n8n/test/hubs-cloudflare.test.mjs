@@ -113,3 +113,31 @@ const PIC = btoa('JPEGDATA');
   check('openai failing: FLUX answers and says why the better models were skipped', r.code === 200 && r.body.source === 'Cloudflare' && /gpt-image-1: 400 billing/.test(r.body.skipped || ''), JSON.stringify(r));
   globalThis.fetch = realFetch;
 }
+{
+  // the engine choice: the studio can ask for one engine; the others are not tried
+  const sd = {}, calls = [], fetched = [], gem = [];
+  const helpers = { httpRequest: async (o) => { gem.push(o); if (o.method === 'GET') return { models: [] }; return { candidates: [{ content: { parts: [{ inlineData: { data: 'GEMPIC', mimeType: 'image/png' } }] } }] }; } };
+  globalThis.__WAI = { run: async (model) => { calls.push(model); return { image: PIC }; } };
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { fetched.push(url); return new Response(JSON.stringify({ data: [{ b64_json: 'OAIPIC' }] })); };
+  const code = 'const ENV = { AI: globalThis.__WAI };\n' + code0.replace("'__GEMINI_API_KEY__'", "'g-key'").replace("'__OPENAI_API_KEY__'", "'sk-test'");
+  const call = async (b, ip) => (await run(code, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': ip, origin: SITE } }, sd, helpers }))[0].json;
+  let r = await call({ action: 'engines' }, '4.4.5.1');
+  check('engines: the server lists its picture engines', r.code === 200 && r.body.engines.gemini && r.body.engines.openai && r.body.engines.flux && r.body.engines.free, JSON.stringify(r));
+  r = await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg', engine: 'flux' }, '4.4.5.2');
+  check('engine flux: only FLUX is asked (no Gemini, no OpenAI)', r.code === 200 && r.body.source === 'Cloudflare' && !gem.some((o) => o.method === 'POST') && !fetched.length, JSON.stringify(r));
+  r = await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg', engine: 'gemini' }, '4.4.5.3');
+  check('engine gemini: Gemini answers', r.code === 200 && r.body.source === 'Gemini' && r.body.image === 'GEMPIC', JSON.stringify(r));
+  r = await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg', engine: 'openai' }, '4.4.5.4');
+  check('engine openai: gpt-image-1 answers', r.code === 200 && r.body.source === 'OpenAI', JSON.stringify(r));
+  r = await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg', engine: 'midjourney' }, '4.4.5.5');
+  check('engine: an unknown engine is refused', r.code === 400 && r.body.error === 'bad-engine', JSON.stringify(r));
+  globalThis.fetch = realFetch;
+}
+{
+  // an engine this server does not have answers engine-off at once
+  const code = code0;   // n8n: no ENV.AI, no keys
+  const call = async (b, ip) => (await run(code, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': ip, origin: SITE } }, sd: {}, helpers: { httpRequest: async () => { throw new Error('no'); } } }))[0].json;
+  const r = await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg', engine: 'flux' }, '4.4.6.1');
+  check('engine off: FLUX without Workers AI says engine-off', r.code === 503 && r.body.error === 'engine-off', JSON.stringify(r));
+}

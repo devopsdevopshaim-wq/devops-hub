@@ -198,6 +198,9 @@
   }
   FS.askServer = function (body) {
     var L = FS.localAI;
+    /* a chosen engine (the AI tab's engine bar, or one of the "3 versions"): 'local' is this computer, the others one cloud engine */
+    if (body && body.engine === 'local') { var bl = Object.assign({}, body); delete bl.engine; return L && L.isReady && L.isReady() ? askLocal(bl) : Promise.resolve({ ok: false, error: 'local-missing' }); }
+    if (body && body.engine) return askCloud(body);
     if (!L || !body || (body.action !== 'restyle' && body.action !== 'image') || L.mode() === 'cloud') return askCloud(body);
     return L.whenReady().then(function (ready) {
       if (!ready) return askCloud(body);
@@ -217,8 +220,17 @@
       .catch(function (e) { return { ok: false, error: me.stopped ? 'cancelled' : e && e.name === 'AbortError' ? 'timeout' : 'offline' }; })
       .then(function (r) { clearTimeout(to); live.splice(live.indexOf(me), 1); if (me.stopped) r = { ok: false, error: 'cancelled' }; FS.lastAiDetail = r && !r.ok ? String(r.detail || '') : ''; if (r && !r.ok && r.detail && window.console) console.warn('AI:', r.error, r.detail); return r; });
   }
+  /* the picture engines this server has ({gemini, openai, flux, free}); an older server without the list: the usual three */
+  var engP = null;
+  FS.aiEngines = function () {
+    if (!engP) engP = askCloud({ action: 'engines' }).then(function (r) { return r && r.ok && r.engines ? r.engines : { gemini: true, flux: true, free: true, openai: false }; });
+    engP.then(function (e) { if (navigator.onLine === false) engP = null; });
+    return engP;
+  };
+  FS.ENGINE_NAMES = { '': '✨ אוטומטי', gemini: 'Gemini', flux: 'FLUX', free: 'Pollinations', openai: 'GPT‑Image', local: '🖥️ מקומי' };
   FS.aiError = function (m) {
     m = String(m || '');
+    if (m === 'engine-off') return 'המנוע שנבחר לא מופעל בשרת. בוחרים "אוטומטי" או מנוע אחר בראש לשונית ה־AI.';
     if (m === 'no-key') return 'שרת ה־AI עוד לא הוגדר (חסר מפתח Gemini בשרת).';
     if (m === 'no-free-tier') return 'יצירת תמונות ב־Gemini לא כלולה בתוכנית החינמית של המפתח. צריך להפעיל חיוב (Billing) בפרויקט ב־Google AI Studio, והתמונות יתחילו לעבוד.';
     if (m === 'cancelled') return 'העריכה נעצרה.';
