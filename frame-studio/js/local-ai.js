@@ -141,27 +141,73 @@
     if (st) st.state = 'installing'; paint();
     var t = 0;
     ls(AUTO, null);
-    API.install(function (p) { prog = p; var n = Date.now(); if (n - t > 200 || p.phase !== 'download') { t = n; if (st) st.state = 'installing'; paint(); pill(); } }, variant ? { variant: variant } : undefined)
+    showFloat('dl', prog);
+    API.install(function (p) { prog = p; var n = Date.now(); if (n - t > 200 || p.phase !== 'download') { t = n; if (st) st.state = 'installing'; paint(); pill(); showFloat('dl', p); } }, variant ? { variant: variant } : undefined)
       .then(function (r) {
         installing = r && r.ok ? null : 'failed';
         if (r && r.status) st = r.status;
         if (st && r && !r.ok) st.lastCode = r.error;
         if (r && r.ok) { if (!ls(KEY)) ls(KEY, 'auto'); activate(variant); }
-        else if (r && r.error === 'cancelled') { installing = null; ls(AUTO, 'off'); toast('ההורדה נעצרה. אפשר להמשיך מאותה נקודה (☰ ← AI מקומי).'); }
-        else toast('⚠️ ' + (ERR[r && r.error] || ERR['install-failed']), 6000);
+        else if (r && r.error === 'cancelled') { installing = null; ls(AUTO, 'off'); hideFloat(); toast('ההורדה נעצרה. אפשר להמשיך מאותה נקודה (☰ ← AI מקומי).'); }
+        else { toast('⚠️ ' + (ERR[r && r.error] || ERR['install-failed']), 6000); showFloat('fail', ERR[r && r.error] || ERR['install-failed']); }
         prog = null; paint(); pill();
-      }, function (e) { installing = 'failed'; toast('⚠️ ' + String(e && e.message || e)); refresh(); });
+      }, function (e) { installing = 'failed'; toast('⚠️ ' + String(e && e.message || e)); showFloat('fail', String(e && e.message || e)); refresh(); });
   }
   /* after an install: one small picture proves the engine runs on this computer. If the graphics card build fails,
      the CPU build is installed (the models stay) and checked once more. */
   function activate(variant) {
-    toast('🔧 מפעיל את מנוע ה־AI המקומי ובודק אותו בתמונה קטנה…', 6000);
+    showFloat('check');
     API.run({ mode: 'image', prompt: 'an ornate gold picture frame on dark velvet, studio light, photorealistic', w: 256, h: 256, seed: 1 }).then(function (r) {
-      if (r && r.ok) { ls('fs-ai-local-ok', String(Date.now())); toast('✅ מנוע ה־AI המקומי פועל (' + Math.round((r.ms || 0) / 1000) + ' שניות לתמונת בדיקה). מעכשיו כל עיצובי ה־AI עובדים גם בלי אינטרנט.', 8000); refresh(); return; }
+      if (r && r.ok) { ls('fs-ai-local-ok', String(Date.now())); showFloat('ok', r.ms); refresh(); return; }
       if (variant !== 'cpu' && st && st.engine && st.engine.variant !== 'cpu') { toast('כרטיס המסך לא הסתדר עם המנוע. עובר לגרסת המעבד (איטית יותר, עובדת בכל מחשב)…', 7000); install('cpu'); return; }
-      toast('⚠️ מנוע ה־AI הותקן אבל הבדיקה לא הצליחה' + (r && r.detail ? ': ' + String(r.detail).slice(-160) : '') + '. ☰ ← AI מקומי ← תמונת ניסיון.', 10000); refresh();
+      toast('⚠️ מנוע ה־AI הותקן אבל הבדיקה לא הצליחה' + (r && r.detail ? ': ' + String(r.detail).slice(-160) : '') + '. ☰ ← AI מקומי ← תמונת ניסיון.', 10000); showFloat('fail', 'הבדיקה לא הצליחה'); refresh();
     });
   }
+  /* ---------- the download, seen on every screen: a floating card (click opens the panel), the taskbar button, a notification at the end ---------- */
+  var flo = null, t0 = 0, b0 = 0, lastPct = -1, floHide = 0;
+  function hideFloat() { clearTimeout(floHide); if (flo) { flo.remove(); flo = null; } if (D && D.progress) D.progress(-1); lastPct = -1; }
+  function showFloat(kind, p) {
+    if (!document.body) return;
+    if (!flo) { flo = document.createElement('button'); flo.type = 'button'; flo.id = 'la-float'; flo.addEventListener('click', open); document.body.appendChild(flo); }
+    clearTimeout(floHide);
+    if (kind === 'dl') {
+      var tot = (p && p.total) || 0, done = (p && p.done) || 0, f = tot ? done / tot : 0, pct = Math.floor(f * 100);
+      if (!t0 || done < b0) { t0 = Date.now(); b0 = done; }
+      var sec = (Date.now() - t0) / 1000, sp = sec > 0 ? (done - b0) / sec : 0, left = sp > 0 && tot ? (tot - done) / sp : 0;
+      var eta = left > 0 && sec > 5 ? ' · נשארו ' + (left >= 3600 ? (left / 3600).toFixed(1) + ' שעות' : left >= 90 ? Math.round(left / 60) + ' דקות' : Math.max(1, Math.round(left)) + ' שניות') : '';
+      var ph = !tot ? 'מתחיל…' : gb(done) + ' מתוך ' + gb(tot) + eta;
+      flo.className = 'la-float dl';
+      flo.innerHTML = '<b>⬇️ מתקין את מנוע ה־AI המקומי · ' + pct + '%</b><span>' + ph + ' · אפשר להמשיך לעבוד</span><i style="width:' + pct + '%"></i>';
+      if (D && D.progress && pct !== lastPct) { lastPct = pct; D.progress(tot ? f : 0.01); }
+    } else if (kind === 'check') {
+      flo.className = 'la-float dl';
+      flo.innerHTML = '<b>🔧 מפעיל את מנוע ה־AI ובודק אותו…</b><span>ההורדה הסתיימה. עוד רגע זה מוכן, אפשר להמשיך לעבוד</span><i class="run"></i>';
+      if (D && D.progress) D.progress(1);
+    } else if (kind === 'ok') {
+      flo.className = 'la-float ok';
+      flo.innerHTML = '<b>✅ ההתקנה הסתיימה: מנוע ה־AI המקומי מוכן</b><span>כל עיצובי ה־AI עובדים עכשיו גם בלי אינטרנט' + (p ? ' · תמונת הבדיקה לקחה ' + Math.max(1, Math.round(p / 1000)) + ' שניות' : '') + '</span>';
+      if (D && D.progress) D.progress(-1);
+      if (D && D.notify) D.notify('פריים־סטודיו', 'ההתקנה הסתיימה: מנוע ה־AI המקומי מותקן ופועל. כל עיצובי ה־AI עובדים עכשיו גם בלי אינטרנט.');
+      floHide = setTimeout(hideFloat, 30000);
+    } else if (kind === 'fail') {
+      flo.className = 'la-float bad';
+      flo.innerHTML = '<b>⚠️ התקנת מנוע ה־AI נעצרה</b><span>' + esc(String(p || '')) + ' · לחיצה כאן ממשיכה</span>';
+      if (D && D.progress) D.progress(2);
+    }
+  }
+  /* the download runs in the program itself; after a reload of the page it is followed again from its status */
+  var follow = 0;
+  function followStatus() {
+    clearTimeout(follow);
+    API.status().then(function (s) {
+      st = s;
+      if (s && s.state === 'installing' && installing !== true) { showFloat('dl', s.progress); follow = setTimeout(followStatus, 1500); }
+      else if (s && s.ready && flo && installing !== true) { activate(); }
+      pill();
+    }).catch(function () {});
+  }
+  first.then(function (s) { if (s && s.state === 'installing') followStatus(); });
+
   function test() {
     var b = body(), btn = b && b.querySelector('[data-la=test]'); if (btn) { btn.disabled = true; btn.textContent = '🧪 0%'; }
     API.run({ mode: 'image', prompt: 'an ornate gold picture frame on dark velvet, studio light, photorealistic', w: 512, h: 512 }, function (p) {
@@ -230,8 +276,7 @@
     if (!s || s.ready || s.state === 'installing' || !s.supported || ls(AUTO) === 'off') return;
     function go() {
       if (installing === true || (st && st.ready)) return;
-      install();
-      toast('⬇️ מוריד ברקע את מנוע ה־AI המקומי (כ־5.5GB), כדי שכל עיצובי ה־AI יעבדו גם בלי אינטרנט. אפשר להמשיך לעבוד.', 7000);
+      install();   /* the floating card says it (showFloat) */
     }
     if (navigator.onLine === false) window.addEventListener('online', function on() { window.removeEventListener('online', on); setTimeout(go, 3000); });
     else setTimeout(go, 3000);
