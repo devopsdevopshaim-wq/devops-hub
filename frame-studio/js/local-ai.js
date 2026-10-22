@@ -145,11 +145,21 @@
         installing = r && r.ok ? null : 'failed';
         if (r && r.status) st = r.status;
         if (st && r && !r.ok) st.lastCode = r.error;
-        if (r && r.ok) { if (!ls(KEY)) ls(KEY, 'auto'); toast('✅ ה־AI המקומי מוכן. עריכות התמונות יעבדו גם בלי אינטרנט.', 5000); }
+        if (r && r.ok) { if (!ls(KEY)) ls(KEY, 'auto'); activate(variant); }
         else if (r && r.error === 'cancelled') { installing = null; ls(AUTO, 'off'); toast('ההורדה נעצרה. אפשר להמשיך מאותה נקודה (☰ ← AI מקומי).'); }
         else toast('⚠️ ' + (ERR[r && r.error] || ERR['install-failed']), 6000);
         prog = null; paint(); pill();
       }, function (e) { installing = 'failed'; toast('⚠️ ' + String(e && e.message || e)); refresh(); });
+  }
+  /* after an install: one small picture proves the engine runs on this computer. If the graphics card build fails,
+     the CPU build is installed (the models stay) and checked once more. */
+  function activate(variant) {
+    toast('🔧 מפעיל את מנוע ה־AI המקומי ובודק אותו בתמונה קטנה…', 6000);
+    API.run({ mode: 'image', prompt: 'an ornate gold picture frame on dark velvet, studio light, photorealistic', w: 256, h: 256, seed: 1 }).then(function (r) {
+      if (r && r.ok) { ls('fs-ai-local-ok', String(Date.now())); toast('✅ מנוע ה־AI המקומי פועל (' + Math.round((r.ms || 0) / 1000) + ' שניות לתמונת בדיקה). מעכשיו כל עיצובי ה־AI עובדים גם בלי אינטרנט.', 8000); refresh(); return; }
+      if (variant !== 'cpu' && st && st.engine && st.engine.variant !== 'cpu') { toast('כרטיס המסך לא הסתדר עם המנוע. עובר לגרסת המעבד (איטית יותר, עובדת בכל מחשב)…', 7000); install('cpu'); return; }
+      toast('⚠️ מנוע ה־AI הותקן אבל הבדיקה לא הצליחה' + (r && r.detail ? ': ' + String(r.detail).slice(-160) : '') + '. ☰ ← AI מקומי ← תמונת ניסיון.', 10000); refresh();
+    });
   }
   function test() {
     var b = body(), btn = b && b.querySelector('[data-la=test]'); if (btn) { btn.disabled = true; btn.textContent = '🧪 0%'; }
