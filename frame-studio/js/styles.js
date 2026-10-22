@@ -162,6 +162,8 @@
     ['mosaic', 'פסיפס', '🧩'], ['lomo', 'לומו', '📷'], ['engrave', 'תחריט זהב', '🪙'], ['thermal', 'מצלמה תרמית', '🌡️']
   ];
 
+  /* the ones offered in the menu: checked on portraits, the faces stay clean (the others still render for older projects) */
+  FS.PRO_STYLES = ['cartoon', 'oil', 'watercolor', 'sketch', 'lineart', 'noir', 'duotone', 'oldphoto', 'lomo', 'pastel', 'manga'];
   /* run a style on the pipeline's pixels: at most 1400px wide, mixed back by amt */
   FS.applyStyle = function (px, w, h, st, fast) {
     var fn = S[st.id]; if (!fn) return;

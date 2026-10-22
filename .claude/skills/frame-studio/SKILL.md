@@ -236,6 +236,8 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
 ## Offline AI built in, realistic sample photos, sign-in that stays (Oct 2026, v44)
 
 **AI designs that need no internet** (`js/offline-ai.js`; the old `js/anime.js` is gone):
+- Quality pass (Oct 22): only what keeps faces clean is offered. `FS.PRO_STYLES` (11 of the 22 pixel styles: cartoon, oil, watercolor, sketch, lineart, noir, duotone, oldphoto, lomo, pastel, manga). Pointillism was removed (muddy).
+- With no internet (or a failed call with `offline`) and no local engine, a cloud design opens `FS.offlineChooser(label)`, which lists the built-in designs, instead of an error. `body.no-net` dims the cloud designs, and `.ax-cloud-note` says they need the internet.
 - `FS.OFFLINE_AI` lists the built-in designs. They are run with onnxruntime-web 1.20 from `vendor/ort` (WebAssembly, one thread unless cross-origin isolated):
   - anime: AnimeGANv2 face paint, `models/face-paint-512-v2.onnx`, 512 tiles;
   - mosaic, candy, rain, udnie, pointillism: fast neural style, `models/style/*.onnx`, the whole photo at once.

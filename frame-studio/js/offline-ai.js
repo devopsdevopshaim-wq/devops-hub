@@ -1,7 +1,7 @@
 /* 🖥️ AI designs built into the studio: they run on this computer with onnxruntime-web (WebAssembly), with no server, no quota
    and no internet. The models and the runtime are part of the site and of the desktop program (models/README.md):
      anime      AnimeGANv2 "face paint" (MIT), 512px tiles with feathered overlaps, faces stay recognizable
-     mosaic / candy / rain / udnie / pointil   fast neural style transfer (PyTorch examples, BSD-3), the whole photo at once
+     mosaic / candy / rain / udnie   fast neural style transfer (PyTorch examples, BSD-3), the whole photo at once
    The result replaces the photo the same way a cloud AI design does (the original stays in p.origSrc; "↩ ביטול AI" undoes it). */
 (function () {
   'use strict';
@@ -12,8 +12,7 @@
     ['mosaic', 'פסיפס צבעוני', '🔷', 'models/style/mosaic.onnx'],
     ['candy', 'סוכריות פופ', '🍬', 'models/style/candy.onnx'],
     ['rain', 'ציור גשם רומנטי', '🌧️', 'models/style/rain-princess.onnx'],
-    ['udnie', 'קוביזם מודרני', '🎭', 'models/style/udnie.onnx'],
-    ['pointil', 'פוינטיליזם', '🔴', 'models/style/pointilism.onnx']
+    ['udnie', 'קוביזם מודרני', '🎭', 'models/style/udnie.onnx']
   ];
   var sessions = {}, rt = null;
   function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { no(new Error('ort')); }; document.head.appendChild(s); }); }

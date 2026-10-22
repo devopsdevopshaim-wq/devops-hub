@@ -237,8 +237,18 @@
   function nameOf(c) { return [find(STYLE, c.style), find(WORLD, c.world), find(OUTFIT, c.outfit), find(MOOD, c.mood)].filter(function (x, i) { return i === 0 || x[0]; }).map(function (x) { return x[1]; }).join(' · '); }
 
   /* run one prompt on the photos, one at a time; ⏹ stops the run (the photos done so far keep their result) */
+  /* a design that needs the internet, without the internet (and no local engine): offer the built-in designs right away */
+  var noNet = false;
+  function localReady() { return !!(FS.localAI && FS.localAI.isReady && FS.localAI.isReady()); }
+  FS.offlineChooser = function (label) {
+    var body = FS.dialog('📴 אין חיבור לאינטרנט', '<p>' + (label ? 'העיצוב "<b>' + FS.esc(label) + '</b>" ' : 'העיצוב הזה ') + 'נוצר בשרת AI ולכן צריך אינטרנט' + (FS.localAI ? ', או את מנוע ה־AI המקומי (☰ ← AI מקומי, הורדה חד־פעמית)' : '') + '.</p>' +
+      '<p><b>אלה עובדים עכשיו, בלי אינטרנט, על המחשב:</b></p><div class="ai-styles" id="oc-list"></div><h4>מסננים מיידיים</h4><div class="ai-styles small" id="oc-px"></div>', true);
+    (FS.OFFLINE_AI || []).forEach(function (o) { var b = document.createElement('button'); b.className = 'ai-style off'; b.innerHTML = '<i>' + o[2] + '</i><span>' + FS.esc(o[1]) + '</span>'; b.addEventListener('click', function () { FS.closeDialog(); runOffline(o[0], o[1]); }); $('#oc-list', body).appendChild(b); });
+    (FS.LOCAL_STYLES || []).filter(function (o) { return !FS.PRO_STYLES || FS.PRO_STYLES.indexOf(o[0]) > -1; }).forEach(function (o) { var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + o[2] + '</i><span>' + FS.esc(o[1]) + '</span>'; b.addEventListener('click', function () { FS.closeDialog(); var bt = $('#ax-pixel [data-px="' + o[0] + '"]'); if (bt) bt.click(); }); $('#oc-px', body).appendChild(b); });
+  };
   FS.runAI = function (prompt, label, list) {
     list = list || FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
+    if ((navigator.onLine === false || noNet) && !localReady()) return FS.offlineChooser(label);
     var done = 0, stop = false, failed = null, chain = Promise.resolve();
     function onStop() { stop = true; FS.aiStop && FS.aiStop(); }
     list.forEach(function (p, i) { chain = chain.then(function () {
@@ -251,7 +261,8 @@
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.gridMode && FS.gridMode() && FS.buildGrid();
       if (stop) FS.toast('⏹ העריכה נעצרה' + (done ? '. ' + done + ' תמונות כבר עודכנו ("↩ החזרת המקור" מבטל).' : '. התמונות לא השתנו.'), 5000);
       else if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות. "↩ החזרת המקור" מבטל.', 4500);
-      if (failed && !stop) FS.toast(FS.aiError(String(failed.message)) + (/offline|timeout/.test(String(failed.message)) ? ' בלי אינטרנט עובדים העיצובים ב"🖥️ מובנה בתוכנה" שבראש הלשונית.' : ''), 9000);
+      if (failed && !stop && /offline/.test(String(failed.message)) && !localReady()) { noNet = true; setTimeout(function () { noNet = false; }, 60000); FS.offlineChooser(label); }
+      else if (failed && !stop) FS.toast(FS.aiError(String(failed.message)) + (/timeout/.test(String(failed.message)) ? ' בלי אינטרנט עובדים העיצובים ב"🖥️ מובנה בתוכנה" שבראש הלשונית.' : ''), 9000);
     });
   };
 
@@ -267,7 +278,7 @@
     '<div class="row2 ax-undo"><button class="btn" id="style-back" title="מבטל את עיצוב ה־AI האחרון (בתמונה או בכל המסומנות)">↶ ביטול העיצוב האחרון</button><button class="btn" id="style-orig" title="מחזיר את התמונה המקורית, בלי שום עיצוב AI">↩ חזרה למקור</button></div>' +
     '<div class="card ax-build"><h3>🎛️ שילוב משלך</h3>' + chips('🎨 סגנון', STYLE, 'style') + chips('🌍 איפה', WORLD, 'world') + chips('👗 תלבושת', OUTFIT, 'outfit') + chips('✨ אווירה', MOOD, 'mood') +
     '<p class="ax-name" id="ax-name"></p><div class="row2"><button class="btn" id="ax-random">🎲 הפתעה</button><button class="btn primary" id="ax-go">✨ ליצור</button></div></div>' +
-    '<h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
+    '<p class="ax-cloud-note">🌐 העיצובים מכאן ולמטה נוצרים בשרת AI וצריכים אינטרנט' + (FS.localAI ? ' (או את מנוע ה־AI המקומי)' : '') + '.</p><h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
     '<h3>⭐ שילובים מוכנים</h3><div class="ai-styles" id="ax-combos"></div>' +
     '<h3>🎨 סגנונות</h3><div class="ai-styles" id="ai-styles"></div>' +
     '<h3>✍️ לתאר במילים</h3><div class="field"><textarea id="ai-custom" rows="2" placeholder="למשל: להלביש את כולם בתחפושות של פיראטים על ספינה בסערה"></textarea></div>' +
@@ -316,7 +327,7 @@
       else if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות, בלי אינטרנט. "↩ ביטול AI" מחזיר.', 4500);
     });
   }
-  (FS.LOCAL_STYLES || []).forEach(function (o) {
+  (FS.LOCAL_STYLES || []).filter(function (o) { return !FS.PRO_STYLES || FS.PRO_STYLES.indexOf(o[0]) > -1; }).forEach(function (o) {
     var b = document.createElement('button'); b.className = 'ai-style px'; b.dataset.px = o[0]; b.title = o[1] + ' · מיידי, אפשר לבטל';
     b.innerHTML = '<i>' + o[2] + '</i><span>' + FS.esc(o[1]) + '</span>';
     b.addEventListener('click', function () {
@@ -332,6 +343,7 @@
   FS.on('doc', pxMark); FS.on('history', pxMark);
   /* without the internet: say what still works */
   function net() {
+    document.body.classList.toggle('no-net', navigator.onLine === false && !localReady());
     var el = $('#ax-net'); if (!el) return;
     var local = FS.localAI && FS.localAI.isReady && FS.localAI.isReady();
     el.innerHTML = navigator.onLine === false
