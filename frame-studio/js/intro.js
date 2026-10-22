@@ -35,8 +35,8 @@
   ['dragenter', 'drop'].forEach(function (ev) { document.addEventListener(ev, function () { close(); }, { once: true }); });
 
   /* the portfolio: three columns of the studio's work drifting slowly, each piece matted like a print on a wall */
-  var WORK = [['p-noir', 'נואר'], ['p-sketch', 'סקיצה'], ['p-pop', 'פופ־ארט'], ['p-oldphoto', 'וינטג׳'], ['p-stained', 'ויטראז׳'], ['p-manga', 'מנגה'],
-    ['p-mosaic', 'פסיפס'], ['p-comic', 'קומיקס'], ['p-neon', 'ניאון'], ['p-cartoon', 'איור'], ['p-graffiti', 'גרפיטי'], ['p-original', 'מקור']];
+  var WORK = [['p-noir', 'נואר'], ['p-sketch', 'סקיצה'], ['p-candy', 'סוכריות פופ'], ['p-oldphoto', 'וינטג׳'], ['p-rain', 'ציור גשם'], ['p-manga', 'מנגה'],
+    ['p-oil', 'ציור שמן'], ['p-anime', 'אנימה'], ['p-lomo', 'לומו'], ['p-cartoon', 'איור'], ['p-original', 'מקור']];
   var folio = $('#folio');
   if (folio) {
     var cols = [[], [], []];

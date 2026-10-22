@@ -256,7 +256,10 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
   - the designer's `sample()`;
   - the studio's `#demo` and the event tab's demo photo.
 - When the list is empty, the drawn scenes stay.
-- The photos are AI-generated people, made in CI by `.github/workflows/frame-studio-photos.yml` (run by hand) with `frame-studio/tools/real-photos.mjs` (Pollinations FLUX, `POLLINATIONS_TOKEN` when set, then sharp to 900×1350 WebP). Any file can be replaced by a real photo with the same name.
+- The photos are AI-generated people, made in CI by `.github/workflows/frame-studio-photos.yml` (run by hand) with `frame-studio/tools/real-photos.mjs`. It tries the site's own image server first (`/hasadna-hubs` `action: image`, Gemini / FLUX on Cloudflare, no watermark), with Pollinations as the fallback (its watermark cropped), then sharp to 900×1350 WebP. Any file can be replaced by a real photo with the same name.
+- Look at every new set before keeping it. In v46, henna-1/2 (Indian bridal look, a bindi) and holiday-1 (a Christmas tree) were deleted from the list and the folder.
+- The homepage and show.html images (`show/p-*.webp`, `show/m0..m6.webp`, `show/mp.webp`) are rendered in a browser from these photos: `FS.magnetCanvas` for the magnets (m0 wedding, m1 bar mitzvah, m2 engagement, m3 birthday 6.6×6.6, m4 brit, m5 henna, m6 company; mp = wedding seed 5), and a 640px square crop of the wedding seed 5 photo run through `FS.applyStyle` / `FS.offlineStyleCanvas` for the styles. Show only styles that are still offered (PRO_STYLES and the built-in AI ones): original, oldphoto, noir, sketch, manga, cartoon, oil, lomo, anime, candy, rain.
+- The sketch filter lifts dark tones (`0.2 + 0.8·L`) before its colour dodge and darkens the lines ×2.3: without the lift, deep shadows turned JPEG/WebP block noise into black squares.
 
 **Sign-in that stays:**
 - Licence:

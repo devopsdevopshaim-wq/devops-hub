@@ -71,10 +71,12 @@
       ink(out, sobel(L, w, h), w, h, 0.45, [10, 10, 30], true); return out;
     },
     sketch: function (px, w, h) {
+      /* the dark tones are lifted first: the dodge divides by (255 - blurred), and in deep shadows that turned compression noise into black blocks */
       var L = lum(px, w * h), inv = new Uint8ClampedArray(px.length), i;
+      for (i = 0; i < w * h; i++) L[i] = 0.2 + 0.8 * L[i];
       for (i = 0; i < w * h; i++) { var v = 255 - L[i] * 255; inv[i * 4] = inv[i * 4 + 1] = inv[i * 4 + 2] = v; inv[i * 4 + 3] = 255; }
       var b = FS.blur(inv, w, h, Math.max(3, w / 120)), out = new Uint8ClampedArray(px.length), r = rnd(5);
-      for (i = 0; i < w * h; i++) { var base = L[i] * 255, d = Math.min(255, base * 255 / Math.max(1, 255 - b[i * 4])); d = 255 - (255 - d) * 1.25 - (r() * 10); out[i * 4] = out[i * 4 + 1] = d; out[i * 4 + 2] = d * 0.97; out[i * 4 + 3] = 255; }
+      for (i = 0; i < w * h; i++) { var base = L[i] * 255, d = Math.min(255, base * 255 / Math.max(1, 255 - b[i * 4])); d = 255 - (255 - d) * 2.3 - (r() * 10); out[i * 4] = out[i * 4 + 1] = d; out[i * 4 + 2] = d * 0.97; out[i * 4 + 3] = 255; }
       return out;
     },
     oil: function (px, w, h) { var k = kuwahara(px, w, h, Math.max(3, Math.round(w / 260))); saturate(k, 1.18); var E = sobel(lum(k, w * h), w, h); for (var i = 0; i < w * h; i++) { var a = E[i] * 40; k[i * 4] += a; k[i * 4 + 1] += a; k[i * 4 + 2] += a; } return k; },
