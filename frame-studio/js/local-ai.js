@@ -139,13 +139,14 @@
     installing = true; prog = { phase: 'plan', files: [] };
     if (st) st.state = 'installing'; paint();
     var t = 0;
-    API.install(function (p) { prog = p; var n = Date.now(); if (n - t > 200 || p.phase !== 'download') { t = n; if (st) st.state = 'installing'; paint(); } }, variant ? { variant: variant } : undefined)
+    ls(AUTO, null);
+    API.install(function (p) { prog = p; var n = Date.now(); if (n - t > 200 || p.phase !== 'download') { t = n; if (st) st.state = 'installing'; paint(); pill(); } }, variant ? { variant: variant } : undefined)
       .then(function (r) {
         installing = r && r.ok ? null : 'failed';
         if (r && r.status) st = r.status;
         if (st && r && !r.ok) st.lastCode = r.error;
         if (r && r.ok) { if (!ls(KEY)) ls(KEY, 'auto'); toast('✅ ה־AI המקומי מוכן. עריכות התמונות יעבדו גם בלי אינטרנט.', 5000); }
-        else if (r && r.error === 'cancelled') { installing = null; toast('ההורדה נעצרה. אפשר להמשיך מאותה נקודה.'); }
+        else if (r && r.error === 'cancelled') { installing = null; ls(AUTO, 'off'); toast('ההורדה נעצרה. אפשר להמשיך מאותה נקודה (☰ ← AI מקומי).'); }
         else toast('⚠️ ' + (ERR[r && r.error] || ERR['install-failed']), 6000);
         prog = null; paint(); pill();
       }, function (e) { installing = 'failed'; toast('⚠️ ' + String(e && e.message || e)); refresh(); });
@@ -172,7 +173,7 @@
     else if (a === 'test') test();
     else if (a === 'remove') {
       if (!confirm('להסיר את ה־AI המקומי מהמחשב? (משתחררים כ־5.5GB. אפשר להתקין שוב מתי שרוצים)')) return;
-      t.disabled = true; API.remove().then(function (s) { st = s; installing = null; testImg = ''; paint(); pill(); toast('הוסר.'); });
+      t.disabled = true; API.remove().then(function (s) { st = s; installing = null; testImg = ''; ls(AUTO, 'off'); paint(); pill(); toast('הוסר.'); });
     }
   }
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#dlg-body .la')) onClick(e); });
@@ -189,7 +190,9 @@
     var el = document.getElementById('la-pill'); if (!el) return;
     var s = st || {}, m = mode();
     el.className = 'la-badge ' + (s.ready ? 'on' : s.state === 'installing' || installing === true ? 'act' : 'off');
-    el.textContent = s.ready ? (m === 'local' ? 'תמיד מקומי' : m === 'cloud' ? 'כבוי (ענן)' : 'אוטומטי') : installing === true ? 'מתקין…' : 'לא מותקן';
+    var pct = installing === true && prog && prog.total ? ' ' + Math.floor((prog.done || 0) / prog.total * 100) + '%' : '';
+    el.textContent = s.ready ? (m === 'local' ? 'תמיד מקומי' : m === 'cloud' ? 'כבוי (ענן)' : 'אוטומטי') : installing === true ? 'מוריד…' + pct : 'לא מותקן';
+    var mb = document.getElementById('la-menu'); if (mb) mb.textContent = TITLE + (installing === true ? ' · מוריד' + pct : '');
   }
   var pane = document.querySelector('[data-pane=ai]');
   if (pane) {
@@ -208,20 +211,18 @@
   }
   pill();
 
-  /* the offer: the program opens with internet and the engine is not installed -> ask once, again after 3 days when declined.
-     The download runs in the program's background (desktop/local-ai.js), so work goes on while it downloads. */
-  var ASK = 'fs-ai-local-ask';
+  /* automatic: the first time the program opens with internet (and every later opening until it is complete), the engine
+     downloads in the background (desktop/local-ai.js, resumable), so the AI designs work offline without anyone asking for it.
+     Stopping the download or removing the engine turns this off (fs-ai-local-auto = off); installing again turns it back on. */
+  var AUTO = 'fs-ai-local-auto';
   first.then(function (s) {
-    if (!s || s.ready || s.state === 'installing' || !s.supported || navigator.onLine === false) return;
-    var at = Number(ls(ASK)) || 0; if (Date.now() - at < 3 * 864e5) return;
-    setTimeout(function () {
-      if (!FS.dialog || ($('#dlg') && $('#dlg').open)) return;
-      ls(ASK, String(Date.now()));
-      var d = FS.dialog('🖥️ AI שעובד גם בלי אינטרנט', '<div class="la" dir="rtl"><p class="la-lead">כדי ש<b>כל</b> עיצובי ה־AI (סגנונות, ויראליים, שילובים ועריכה במילים) יעבדו גם כשאין אינטרנט, מתקינים פעם אחת את מנוע ה־AI המקומי.</p>' +
-        '<p class="la-dim">ההורדה כ־5.5GB ורצה ברקע, אפשר להמשיך לעבוד. ' + (s.state === 'partial' || s.state === 'error' ? 'ההורדה הקודמת תמשיך מאותה נקודה.' : '') + '</p>' +
-        '<div class="la-actions"><button class="btn primary la-gold" id="la-ask-go">⬇️ להתקין עכשיו</button><button class="btn ghost" id="la-ask-later">אחר כך</button></div></div>');
-      d.querySelector('#la-ask-go').addEventListener('click', function () { open(); install(); });
-      d.querySelector('#la-ask-later').addEventListener('click', function () { FS.closeDialog && FS.closeDialog(); });
-    }, 4000);
+    if (!s || s.ready || s.state === 'installing' || !s.supported || ls(AUTO) === 'off') return;
+    function go() {
+      if (installing === true || (st && st.ready)) return;
+      install();
+      toast('⬇️ מוריד ברקע את מנוע ה־AI המקומי (כ־5.5GB), כדי שכל עיצובי ה־AI יעבדו גם בלי אינטרנט. אפשר להמשיך לעבוד.', 7000);
+    }
+    if (navigator.onLine === false) window.addEventListener('online', function on() { window.removeEventListener('online', on); setTimeout(go, 3000); });
+    else setTimeout(go, 3000);
   });
 })();
