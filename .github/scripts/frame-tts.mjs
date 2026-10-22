@@ -2,7 +2,8 @@
 // m4a per scene and language to <out>/<lang>/<id>.m4a, with report.json (which voice, how long). Keys are read like the
 // deploys read them (each secret on its own, or inside SPIDER); none is ever printed.
 // Order per language: Gemini TTS → Azure Speech → ElevenLabs → Microsoft Edge voices (edge-tts, no key). The first one that
-// speaks the first scene is used for the whole language, so the film keeps one voice.
+// speaks the first scene is used for the whole language, and the others stand in only when they are not Edge, so the
+// film keeps one voice. A scene its voice cannot speak today (quota) stays missing and is spoken on the next run.
 //   node .github/scripts/frame-tts.mjs videos/promo-src/app-tutorial/script.json out
 import fs from 'node:fs';
 import path from 'node:path';
@@ -34,6 +35,7 @@ const VOICES = {
 
 async function gemini(text, lang, file) {
   if (!KEYS.gemini) throw new Error('no key');
+  let last = '';
   for (const model of ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts']) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST', headers: { 'x-goog-api-key': KEYS.gemini, 'Content-Type': 'application/json' },
@@ -46,8 +48,11 @@ async function gemini(text, lang, file) {
       const rate = Number((/rate=(\d+)/.exec(part.inlineData.mimeType || '') || [])[1] || 24000);
       ffmpeg(['-f', 's16le', '-ar', String(rate), '-ac', '1', '-i', raw, file]); fs.rmSync(raw); return model + '/' + VOICES.gemini[lang];
     }
-    if (r.status !== 404) throw new Error('gemini ' + r.status + ' ' + String((j.error && j.error.message) || '').slice(0, 160));
+    // 429: each model has its own quota, so the next one is asked; 404: the model is gone
+    if (r.status !== 404 && r.status !== 429) throw new Error('gemini ' + r.status + ' ' + String((j.error && j.error.message) || '').slice(0, 160));
+    last = 'gemini ' + r.status + ' ' + String((j.error && j.error.message) || '').slice(0, 160);
   }
+  if (last) throw new Error(last);
   throw new Error('gemini: no model');
 }
 async function azure(text, lang, file) {
@@ -66,23 +71,30 @@ async function eleven(text, lang, file) {
 }
 async function edge(text, lang, file) {
   const mp3 = file + '.mp3', v = VOICES.edge[lang];
-  const r = spawnSync('edge-tts', ['--voice', v, '--rate', '-6%', '--text', text, '--write-media', mp3]);
+  const r = spawnSync('edge-tts', ['--voice', v, '--rate=-6%', '--text', text, '--write-media', mp3]);
   if (r.status || !fs.existsSync(mp3)) throw new Error('edge-tts ' + String(r.stderr).slice(0, 200));
   ffmpeg(['-i', mp3, file]); fs.rmSync(mp3); return 'edge/' + v;
 }
 const PROVIDERS = { gemini, azure, eleven, edge };
 
+// Clips already in <out> (from an earlier run, kept on the branch ci-tts) are not spoken again. Every scene is also
+// spoken with the Edge voice into <out>/<lang>-edge, so a film whose main voice ran out of quota can still use one voice.
+const old = fs.existsSync(path.join(out, 'report.json')) ? JSON.parse(fs.readFileSync(path.join(out, 'report.json'), 'utf8')) : { langs: {} };
 const report = { made: new Date().toISOString(), langs: {} };
-for (const lang of ['he', 'en']) {
+for (const lang of ['he', 'en', 'he-edge', 'en-edge']) {
+  const base = lang.slice(0, 2), only = lang.endsWith('-edge') ? 'edge' : '';
+  const prev = Object.fromEntries(((old.langs[lang] || {}).scenes || []).filter((x) => x.voice).map((x) => [x.id, x]));
   fs.mkdirSync(path.join(out, lang), { recursive: true });
   let chosen = null; const tried = [];
   report.langs[lang] = { scenes: [] };
   for (const sc of script.scenes) {
     const wav = path.join(out, lang, sc.id + '.wav'), m4a = path.join(out, lang, sc.id + '.m4a');
-    const order = chosen ? [chosen, ...Object.keys(PROVIDERS).filter((p) => p !== chosen)] : Object.keys(PROVIDERS);
+    if (prev[sc.id] && fs.existsSync(m4a)) { report.langs[lang].scenes.push(prev[sc.id]); if (!chosen) chosen = prev[sc.id].voice.startsWith('edge') ? 'edge' : prev[sc.id].voice.startsWith('gemini') ? 'gemini' : chosen; continue; }
+    const main = Object.keys(PROVIDERS).filter((p) => p !== 'edge' || chosen === 'edge');
+    const order = only ? [only] : chosen ? [chosen, ...main.filter((p) => p !== chosen)] : Object.keys(PROVIDERS);
     let voice = '';
     for (const p of order) {
-      try { voice = await PROVIDERS[p](sc[lang], lang, wav); if (!chosen) chosen = p; break; } catch (e) { tried.push(p + ': ' + String(e.message || e).slice(0, 200)); }
+      try { voice = await PROVIDERS[p](sc[base], base, wav); if (!chosen) chosen = p; break; } catch (e) { tried.push(p + ': ' + String(e.message || e).slice(0, 200)); }
     }
     if (!voice) { report.langs[lang].scenes.push({ id: sc.id, error: 'no voice' }); continue; }
     // the voice levelled and a little air at both ends
@@ -94,5 +106,5 @@ for (const lang of ['he', 'en']) {
   report.langs[lang].provider = chosen; report.langs[lang].tried = tried.slice(0, 12);
 }
 fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
-const missing = Object.values(report.langs).flatMap((l) => l.scenes.filter((s) => s.error));
+const missing = Object.entries(report.langs).filter(([k]) => k.endsWith('-edge')).flatMap(([, l]) => l.scenes.filter((s) => s.error));
 if (missing.length) { console.error('missing:', JSON.stringify(missing)); process.exitCode = 1; }

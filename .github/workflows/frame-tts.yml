@@ -25,6 +25,10 @@ jobs:
         run: |
           sudo apt-get -qq update && sudo apt-get -qq install -y ffmpeg >/dev/null
           pipx install edge-tts >/dev/null 2>&1 || pip install --user edge-tts >/dev/null 2>&1 || true
+      - name: Clips from the last run
+        run: |
+          git fetch -q origin ci-tts && mkdir -p "$RUNNER_TEMP/tts" && git archive origin/ci-tts | tar -x -C "$RUNNER_TEMP/tts" || true
+          rm -rf "$RUNNER_TEMP/tts/.git"
       - name: Speak
         env:
           SPIDER: ${{ secrets.SPIDER }}
