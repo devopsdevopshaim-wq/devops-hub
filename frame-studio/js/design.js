@@ -29,7 +29,7 @@
   function sample() {
     var ev = FS.event(D.type), f = FS.fmt(D.fmt) || FS.fmt('magnet'), long = 900, w = f.w >= f.h ? long : Math.round(long * f.w / f.h), h = f.w >= f.h ? Math.round(long * f.h / f.w) : long;
     var key = ev.scene + D.fmt; sample.c = sample.c || {};
-    return sample.c[key] || (sample.c[key] = FS.sampleScene(ev.scene, w, h, 3).toDataURL('image/jpeg', 0.9));
+    return sample.c[key] || (sample.c[key] = FS.realPhoto(D.type, 1) || FS.sampleScene(ev.scene, w, h, 3).toDataURL('image/jpeg', 0.9));
   }
   var drawing = null, again = false;
   /* scale > 1 builds the page bigger (the frame, words and ornaments are drawn at that size, not stretched) */

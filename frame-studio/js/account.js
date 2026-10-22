@@ -32,6 +32,15 @@
   };
   function msg(r) { return MSG[r && r.error] || (r && r.error ? 'שגיאה: ' + r.error : 'שגיאה'); }
 
+  /* kept on this computer so the first sign-in stays: in the desktop program the owner's email and password, encrypted by the
+     operating system (Electron safeStorage, DPAPI on Windows), for a quiet sign-in when the server's session runs out; and the
+     licence's email and code (in a browser too: it is the person's own code). "🚪 יציאה" forgets them. */
+  var VD = function () { return window.FSDesktop && window.FSDesktop.vault; };
+  var VAULT = FS.vault = {
+    get: function (k) { var d = VD(); if (d) return Promise.resolve(d.get(k)).then(function (v) { try { return v ? JSON.parse(v) : null; } catch (e) { return null; } }, function () { return null; }); try { return Promise.resolve(JSON.parse(localStorage.getItem('fs-vault-' + k) || 'null')); } catch (e) { return Promise.resolve(null); } },
+    set: function (k, v) { var d = VD(); if (d) return Promise.resolve(d.set(k, JSON.stringify(v))).catch(function () {}); if (k === 'admin') return Promise.resolve(); try { localStorage.setItem('fs-vault-' + k, JSON.stringify(v)); } catch (e) { /* blocked */ } return Promise.resolve(); },
+    del: function (k) { var d = VD(); if (d) return Promise.resolve(d.del(k)).catch(function () {}); try { localStorage.removeItem('fs-vault-' + k); } catch (e) { /* blocked */ } return Promise.resolve(); }
+  };
   var A = FS.account = {
     msg: msg,
     apiBase: function () { return base; },
@@ -41,9 +50,15 @@
     login: function (email, password, totp) {
       return auth('login', { email: email, password: password, device: device(), totp: totp || '' }).then(function (r) {
         if (r.ok) keep({ token: r.token, role: r.role, name: r.name || '', email: String(email).trim().toLowerCase(), mustChange: !!r.mustChange, at: Date.now() });
+        if (r.ok && r.role === 'admin' && !r.mustChange && VD()) VAULT.set('admin', { email: String(email).trim().toLowerCase(), password: password });
         return r;
       });
     },
+    /* the desktop program signs the owner in again by itself (the server's session ran out); offline it answers 'offline' */
+    relogin: function () {
+      return VAULT.get('admin').then(function (v) { return v && v.email && v.password ? A.login(v.email, v.password) : { ok: false, error: 'no-saved' }; });
+    },
+    hasSaved: function () { return VD() ? VAULT.get('admin').then(function (v) { return !!(v && v.email); }) : Promise.resolve(false); },
     signup: function (name, email, phone) { return auth('signup', { name: name, email: email, phone: phone || '', site: 'frame' }); },
     forgot: function (email) { return auth('forgot', { email: email, site: 'frame' }); },
     change: function (password, current) {
@@ -171,7 +186,6 @@
     if (D && D.machineId) return Promise.resolve(D.machineId()).then(function (m) { return /^[a-f0-9]{32,64}$/.test(m || '') ? m : device(); }, function () { return device(); });
     return Promise.resolve(device());
   }
-  var GRACE = 7 * 864e5;   /* offline at an event: a licence checked in the last 7 days keeps working */
   FS.license = {
     AGREEMENT: 'v1',   /* agreement.html's version; a new version asks everyone to accept again */
     get: licLoad,
@@ -180,18 +194,29 @@
     activate: function (email, code) {
       return machine().then(function (m) {
         return auth('lic-activate', { email: email, code: code, machine: m, agree: FS.license.AGREEMENT, desktop: FS.license.isDesktop() ? '1' : '', platform: (window.FSDesktop && window.FSDesktop.platform) || 'web', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') });
-      }).then(function (r) { if (r.ok) licKeep({ token: r.token, email: r.email, name: r.name || '', checkedAt: Date.now() }); return r; });
+      }).then(function (r) { if (r.ok) { licKeep({ token: r.token, email: r.email, name: r.name || '', checkedAt: Date.now() }); VAULT.set('lic', { email: String(email).trim().toLowerCase(), code: String(code).trim() }); } return r; });
     },
+    saved: function () { return VAULT.get('lic'); },
     /* ok: {ok:true} online or within the grace; a revoked or moved licence is forgotten here too */
     check: function () {
       var L = licLoad(); if (!L || !L.token) return Promise.resolve({ ok: false, error: 'no-license' });
       return machine().then(function (m) { return auth('lic-check', { token: L.token, machine: m, version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') }); }).then(function (r) {
         if (r.ok) { L.checkedAt = Date.now(); L.name = r.name || L.name; licKeep(L); return r; }
-        if (r.error === 'offline' || r.error === 'rate-limited' || /^http-5/.test(r.error || '')) return Date.now() - (L.checkedAt || 0) < GRACE ? { ok: true, offline: true, email: L.email, name: L.name } : { ok: false, error: 'license-offline-too-long' };
-        licKeep(null); return r;
+        /* no internet (or the server is busy): the licence keeps working, with no time limit; the server's word comes next time */
+        if (r.error === 'offline' || r.error === 'rate-limited' || /^http-5/.test(r.error || '')) return { ok: true, offline: true, email: L.email, name: L.name };
+        /* the session ran out (30 days): activated again quietly with the code kept on this computer */
+        if (r.error === 'signed-out') return VAULT.get('lic').then(function (v) {
+          if (!v || !v.code) { licKeep(null); return r; }
+          return FS.license.activate(v.email, v.code).then(function (x) {
+            if (x.ok) return x;
+            if (x.error === 'offline' || x.error === 'rate-limited' || /^http-5/.test(x.error || '')) return { ok: true, offline: true, email: L.email, name: L.name };
+            licKeep(null); VAULT.del('lic'); return x;
+          });
+        });
+        licKeep(null); VAULT.del('lic'); return r;
       });
     },
-    forget: function () { licKeep(null); },
+    forget: function () { licKeep(null); VAULT.del('lic'); },
     /* the owner's licence management (an admin session) */
     admin: function (action, data) { var s = load(); return auth(action, Object.assign({}, data || {}, { token: s && s.token })); }
   };

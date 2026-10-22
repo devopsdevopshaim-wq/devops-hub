@@ -1,0 +1,31 @@
+# Makes the realistic sample photos of פריים מגנטים (frame-studio/media/real) and commits them. Run by hand.
+name: Frame Studio sample photos
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  photos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Make the photos
+        env:
+          POLLINATIONS_TOKEN: ${{ secrets.POLLINATIONS_TOKEN }}
+        run: |
+          mkdir -p /tmp/sh && cd /tmp/sh && npm init -y >/dev/null && npm install --no-audit --no-fund sharp@0.34.4 >/dev/null
+          cp frame-studio/tools/real-photos.mjs /tmp/sh/real-photos.mjs
+          sed -i "s#join(dirname(fileURLToPath(import.meta.url)), '..')#process.env.FS_ROOT#" /tmp/sh/real-photos.mjs
+          FS_ROOT="$GITHUB_WORKSPACE/frame-studio" node /tmp/sh/real-photos.mjs
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frame-studio/media/real frame-studio/js/real-photos.js
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -q -m "frame-studio: realistic sample photos (tools/real-photos.mjs)"
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break || sleep 5; done

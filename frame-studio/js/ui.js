@@ -265,6 +265,12 @@
     var items = e.clipboardData && e.clipboardData.files; if (items && items.length) addFiles(items);
   });
   $('#demo').addEventListener('click', function () {
+    /* a realistic sample photo when the site has them (js/real-photos.js); the drawn sunset otherwise */
+    var real = FS.realPhoto && FS.realPhoto('wedding', 0);
+    if (real) { fetch(real).then(function (r) { if (!r.ok) throw new Error(); return r.blob(); }).then(function (b) { addFiles([new File([b], 'תמונה לדוגמה.webp', { type: b.type || 'image/webp' })]); }, drawSample); return; }
+    drawSample();
+  });
+  function drawSample() {
     var c = FS.canvas(1800, 1200), x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 1200);
     g.addColorStop(0, '#ffb26b'); g.addColorStop(0.55, '#ff6f91'); g.addColorStop(0.56, '#2d4f8e'); g.addColorStop(1, '#0f2147');
     x.fillStyle = g; x.fillRect(0, 0, 1800, 1200);
@@ -273,7 +279,7 @@
     x.fillStyle = '#0b1530'; x.beginPath(); x.moveTo(0, 820); x.quadraticCurveTo(300, 700, 620, 830); x.lineTo(620, 1200); x.lineTo(0, 1200); x.fill();
     x.beginPath(); x.moveTo(1800, 790); x.quadraticCurveTo(1450, 680, 1180, 840); x.lineTo(1180, 1200); x.lineTo(1800, 1200); x.fill();
     c.toBlob(function (b) { b.name = 'שקיעה לדוגמה.jpg'; addFiles([new File([b], 'שקיעה לדוגמה.jpg', { type: 'image/jpeg' })]); }, 'image/jpeg', 0.92);
-  });
+  }
 
   /* ---------- the strip ---------- */
   function thumbOf(p, size) {

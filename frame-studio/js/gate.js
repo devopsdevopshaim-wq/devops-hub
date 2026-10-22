@@ -48,14 +48,37 @@
     setTimeout(function () { (em.value ? cd : em).focus(); }, 30);
   }
   if (!ACC || !LIC) { lock('אין חיבור לשרת הכניסה.'); return; }
-  if (ACC.isAdmin()) {
-    unlock('admin');
-    /* the server's word wins when it can be reached: a signed-out or revoked session closes the studio */
-    ACC.me().then(function (r) { if (!r.ok && /signed-out|inactive|device-revoked/.test(r.error || '')) { tab = 'admin'; lock('החיבור פג. נכנסים שוב.'); } else if (r.ok && r.role !== 'admin') { ACC.logout(); lock(); } }, function () {});
-  } else if (LIC.get()) {
-    var L = LIC.get();
-    if (Date.now() - (L.checkedAt || 0) < 7 * 864e5) unlock('license');
+  /* The first sign-in on this computer stays: the studio opens at once, with or without the internet, and is checked with the
+     server in the background when there is a connection. An ended session signs in again by itself (FS.account.relogin with
+     the details the desktop program keeps encrypted, the licence with its saved code); only a revoked licence, one moved to
+     another computer, a changed password or "🚪 יציאה" close it. */
+  function adminCheck() {
+    ACC.me().then(function (r) {
+      if (r.ok) { if (r.role !== 'admin') { ACC.logout(); lock(); } return; }
+      if (!/signed-out|inactive|device-revoked/.test(r.error || '')) return;   /* offline or busy: stay open */
+      return ACC.relogin().then(function (x) {
+        if (x.ok || x.error === 'offline' || /^http-5|rate-limited/.test(x.error || '')) return;
+        tab = 'admin'; lock(x.error === 'no-saved' ? 'החיבור פג. נכנסים שוב.' : 'הכניסה השמורה לא עברה (' + ACC.msg(x) + '). נכנסים שוב.');
+      });
+    }, function () {});
+  }
+  if (ACC.isAdmin()) { unlock('admin'); adminCheck(); }
+  else if (LIC.get()) {
+    unlock('license');
     LIC.check().then(function (r) { if (r.ok) unlock('license'); else lock(ACC.msg(r)); });
-  } else lock();
-  FS.gateLogout = function () { if (LIC) LIC.forget(); if (ACC) ACC.logout(); location.reload(); };
+  } else {
+    /* nothing signed in here, but the desktop program remembers the owner (or a licence): open, and sign in quietly */
+    ACC.hasSaved().then(function (has) {
+      if (has) { unlock('admin'); return ACC.relogin().then(function (x) { if (!x.ok && x.error !== 'offline' && !/^http-5|rate-limited/.test(x.error || '')) { tab = 'admin'; lock('נכנסים שוב עם המייל והסיסמה.'); } }); }
+      return LIC.saved().then(function (v) {
+        if (!v || !v.code) return lock();
+        LIC.activate(v.email, v.code).then(function (r) {
+          if (r.ok) unlock('license');
+          else if (r.error === 'offline' || /^http-5|rate-limited/.test(r.error || '')) unlock('license');
+          else lock(ACC.msg(r));
+        });
+      });
+    }, function () { lock(); });
+  }
+  FS.gateLogout = function () { if (LIC) LIC.forget(); if (ACC) ACC.logout(); if (FS.vault) FS.vault.del('admin'); setTimeout(function () { location.reload(); }, 150); };
 })();
