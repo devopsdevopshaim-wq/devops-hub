@@ -640,3 +640,6 @@ input[type=range] { accent-color: var(--champagne); }
 .ai-styles.small { grid-template-columns: repeat(3, 1fr); }
 .ai-styles.small .ai-style { padding: 6px 7px; font-size: 12px; }
 .ai-style.px.on { border-color: var(--champagne, #D6B77E); box-shadow: inset 0 0 0 1px var(--champagne, #D6B77E); }
+.ax-cloud-note { margin: 4px 0 8px; font-size: 12px; opacity: .8; border-top: 1px dashed rgba(214,183,126,.3); padding-top: 10px; }
+body.no-net [data-pane=styles] .ai-style:not(.off):not(.px) { opacity: .45; }
+body.no-net .ax-cloud-note { color: #e5a14d; opacity: 1; }
