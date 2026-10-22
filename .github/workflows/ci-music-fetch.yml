@@ -1,0 +1,46 @@
+name: Fetch promo music candidates
+# Downloads free music for the Frame Studio promo films (FreePD = CC0; incompetech / Kevin MacLeod = CC BY 4.0, credit needed),
+# measures each file and pushes them with a report to the branch ci-music. Runs when this file changes on the working branch.
+on:
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: ['.github/workflows/ci-music-fetch.yml']
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Download and measure
+        run: |
+          set +e
+          sudo apt-get -qq update && sudo apt-get -qq install -y ffmpeg >/dev/null
+          mkdir -p out/pages && cd out
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36'
+          for page in upbeat electronic romantic; do curl -sL -A "$UA" "https://freepd.com/$page.php" -o "pages/freepd-$page.html"; done
+          grep -hoiE '(href|src|data-[a-z]+)="[^"]+\.mp3"' pages/*.html | head -80 > pages/mp3-links.txt
+          # FreePD: links found on the pages
+          grep -hoiE '"[^"]+\.mp3"' pages/freepd-*.html | tr -d '"' | sort -u | head -40 | while read -r u; do
+            case "$u" in http*) full="$u";; /*) full="https://freepd.com$u";; *) full="https://freepd.com/$u";; esac
+            n="freepd--$(basename "$u" | sed 's/%20/_/g; s/[^A-Za-z0-9._-]/_/g')"
+            curl -sL -A "$UA" "$full" -o "$n"
+          done
+          # incompetech (Kevin MacLeod, CC BY 4.0): bright, upbeat titles
+          for t in "Inspired" "Life of Riley" "Carefree" "Beauty Flow" "Happy Alley" "Wholesome" "Dreamer" "Pamgaea" "Hyperfun" "Upbeat Forever" "Funkorama" "Bossa Antigua" "Cheery Monday" "Daily Beetle" "Feelin Good" "Fluffing a Duck"; do
+            n="incompetech--$(echo "$t" | sed 's/ /_/g').mp3"
+            curl -sL -A "$UA" "https://incompetech.com/music/royalty-free/mp3-royaltyfree/$(echo "$t" | sed 's/ /%20/g').mp3" -o "$n"
+          done
+          for f in *.mp3; do
+            if ! ffprobe -v error "$f" >/dev/null 2>&1; then rm -f "$f"; continue; fi
+            dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")
+            loud=$(ffmpeg -v info -i "$f" -af ebur128 -f null - 2>&1 | grep -E '^\s+I:' | tail -1 | awk '{print $2}')
+            echo -e "$f\t$dur\t$loud" >> report.tsv
+          done
+          ls -la; cat report.tsv
+      - name: Push to ci-music
+        run: |
+          cd out
+          git init -q && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b ci-music && git add -A && git commit -q -m "promo music candidates, run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-music
