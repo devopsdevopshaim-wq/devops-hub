@@ -18,7 +18,7 @@ jobs:
           POLLINATIONS_TOKEN: ${{ secrets.POLLINATIONS_TOKEN }}
         run: |
           mkdir -p /tmp/sh && cd /tmp/sh && npm init -y >/dev/null && npm install --no-audit --no-fund sharp@0.34.4 >/dev/null
-          cp frame-studio/tools/real-photos.mjs /tmp/sh/real-photos.mjs
+          cp "$GITHUB_WORKSPACE/frame-studio/tools/real-photos.mjs" /tmp/sh/real-photos.mjs
           sed -i "s#join(dirname(fileURLToPath(import.meta.url)), '..')#process.env.FS_ROOT#" /tmp/sh/real-photos.mjs
           FS_ROOT="$GITHUB_WORKSPACE/frame-studio" node /tmp/sh/real-photos.mjs
       - name: Commit
