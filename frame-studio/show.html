@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='45';(function(){
+window.FS_V='46';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -18,7 +18,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Assistant:wght@400;600;700&family=Heebo:wght@500&display=swap" />
-<link rel="stylesheet" href="css/show.css?v=45" />
+<link rel="stylesheet" href="css/show.css?v=46" />
 <link rel="stylesheet" href="../portfolio/css/mobile.css" />
 <script src="../portfolio/js/track.js" defer></script>
 </head>
@@ -51,8 +51,8 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
       <figure class="tile" style="--x:0%;--y:2%;--w:33%;--d:.35"><span class="ph sq"><img src="show/p-noir.webp" alt="עיצוב תמונה בשחור־לבן" /></span><figcaption>עיצוב תמונה</figcaption></figure>
       <figure class="tile" style="--x:73%;--y:0%;--w:27%;--d:.45"><span class="ph"><img src="show/m0.webp" alt="מסגרת לחתונה עם השמות והתאריך" /></span><figcaption>מסגרת לחתונה</figcaption></figure>
       <figure class="tile hero-tile" style="--x:30%;--y:13%;--w:41%;--d:1"><span class="ph"><img src="show/mp.webp" alt="צילום ממוסגר ומוכן להדפסה" /></span><figcaption>הדפסה ממוסגרת</figcaption></figure>
-      <figure class="tile" style="--x:3%;--y:53%;--w:28%;--d:.6"><span class="ph sq"><img src="show/p-stained.webp" alt="סגנון AI: ויטראז׳" /></span><figcaption>סגנון AI · ויטראז׳</figcaption></figure>
-      <figure class="tile" style="--x:73%;--y:58%;--w:27%;--d:.55"><span class="ph sq"><img src="show/p-pop.webp" alt="סגנון AI: פופ־ארט" /></span><figcaption>סגנון AI · פופ־ארט</figcaption></figure>
+      <figure class="tile" style="--x:3%;--y:53%;--w:28%;--d:.6"><span class="ph sq"><img src="show/p-rain.webp" alt="סגנון AI: ציור גשם" /></span><figcaption>סגנון AI · ציור גשם</figcaption></figure>
+      <figure class="tile" style="--x:73%;--y:58%;--w:27%;--d:.55"><span class="ph sq"><img src="show/p-candy.webp" alt="סגנון AI: סוכריות פופ" /></span><figcaption>סגנון AI · סוכריות פופ</figcaption></figure>
     </div>
   </section>
 
@@ -72,7 +72,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
           <div class="cap"><h3>עיצוב תמונות</h3><p>צבע, אור וגוון, וטיפול עדין שמשאיר את הפנים טבעיות.</p></div>
         </article>
         <article class="w w-ai">
-          <div class="vis slices"><img src="show/p-neon.webp" alt="סגנון ניאון" /><img src="show/p-comic.webp" alt="סגנון קומיקס" /><img src="show/p-sketch.webp" alt="סגנון עיפרון" /><img src="show/p-mosaic.webp" alt="סגנון פסיפס" /></div>
+          <div class="vis slices"><img src="show/p-candy.webp" alt="סגנון סוכריות פופ" /><img src="show/p-anime.webp" alt="סגנון אנימה" /><img src="show/p-sketch.webp" alt="סגנון עיפרון" /><img src="show/p-rain.webp" alt="סגנון ציור גשם" /></div>
           <div class="cap"><h3>סגנונות AI</h3><p>סגנונות שמציירים את התמונה מחדש ושומרים על הפנים.</p></div>
         </article>
         <article class="w w-collage">
@@ -88,7 +88,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
           <div class="cap"><h3>אלבומים</h3><p>אלבום אירוע מעוצב, עמוד אחרי עמוד.</p></div>
         </article>
         <article class="w w-slides">
-          <div class="vis slides" id="slides"><img class="on" src="show/p-original.webp" alt="" /><img src="show/p-oldphoto.webp" alt="" /><img src="show/p-neon.webp" alt="" /><img src="show/p-comic.webp" alt="" /><img src="show/p-stained.webp" alt="" /><i class="bar"></i></div>
+          <div class="vis slides" id="slides"><img class="on" src="show/p-original.webp" alt="" /><img src="show/p-oldphoto.webp" alt="" /><img src="show/p-candy.webp" alt="" /><img src="show/p-anime.webp" alt="" /><img src="show/p-rain.webp" alt="" /><i class="bar"></i></div>
           <div class="cap"><h3>מצגות</h3><p>מצגת תמונות מהאירוע, לשיתוף ולמסך.</p></div>
         </article>
         <article class="w w-prints">
@@ -277,6 +277,6 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 
 <script src="vendor/gsap/gsap.min.js"></script>
 <script src="vendor/gsap/ScrollTrigger.min.js"></script>
-<script src="js/show.js?v=45"></script>
+<script src="js/show.js?v=46"></script>
 </body>
 </html>

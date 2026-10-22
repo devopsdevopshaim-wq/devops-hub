@@ -23,8 +23,6 @@ window.FS.REAL_PHOTOS = {
   "media/real/birthday-3.webp"
  ],
  "henna": [
-  "media/real/henna-1.webp",
-  "media/real/henna-2.webp",
   "media/real/henna-3.webp"
  ],
  "company": [
@@ -37,7 +35,6 @@ window.FS.REAL_PHOTOS = {
   "media/real/engagement-2.webp"
  ],
  "holiday": [
-  "media/real/holiday-1.webp",
   "media/real/holiday-2.webp"
  ]
 };
