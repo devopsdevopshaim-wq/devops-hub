@@ -113,7 +113,7 @@ function world({ key = true, ai = null, http = null } = {}) {
   // the image model has no free tier: the answer says so, with Gemini's own words and no key
   const err = Object.assign(new Error('Request failed with status code 429'), { httpCode: '429', response: { body: { error: { message: 'Quota exceeded for metric generate_content_free_tier_requests, limit: 0, model: gemini-2.5-flash-image AIzaSyFAKEFAKEFAKEFAKEFAKE' } } } });
   const { call } = world({ ai: async (o) => { if (o.method === 'GET') return { models: [] }; throw err; } });
-  const r = await call({ action: 'image', prompt: 'heart' }, { ip: '9.9.9.1' });
+  const r = await call({ action: 'image', prompt: 'heart', engine: 'gemini' }, { ip: '9.9.9.1' });
   check('hubs: an image model with no free tier is reported as such', r.code === 502 && r.body.error === 'no-free-tier' && /limit: 0/.test(r.body.detail) && !/AIza/.test(r.body.detail), JSON.stringify(r.body));
 }
 {

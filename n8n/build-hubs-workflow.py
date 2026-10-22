@@ -97,7 +97,7 @@ if (sd.day !== day) { sd.day = day; sd.asked = 0; }
 
 if (b.action === 'status') return out({ ok: true, ai: set(GEMINI_KEY), left: Math.max(0, DAY_CAP - (sd.asked || 0)), imageModels: sd.imgModels || null });
 // which picture engines this server has: the studio shows only these in its engine choice (free = Pollinations, always there)
-if (b.action === 'engines') return out({ ok: true, engines: { gemini: set(GEMINI_KEY) && !(sd.gemImgOff > now - 6 * 3600000), openai: set(OPENAI_KEY), flux: !!WAI, free: typeof fetch === 'function' } });
+if (b.action === 'engines') return out({ ok: true, engines: { gemini: set(GEMINI_KEY) && !(sd.gemImgOff > now - 6 * 3600000), openai: set(OPENAI_KEY), flux: !!WAI && sd.fluxOffDay !== day, free: typeof fetch === 'function' } });
 
 if (b.action === 'fetch') {
   if (!hit('hubs-fetch', ipKey(), FETCH_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
@@ -268,7 +268,7 @@ if (b.action === 'restyle' || b.action === 'image') {
       : [['@cf/black-forest-labs/flux-2-klein-4b', form], ['@cf/black-forest-labs/flux-2-klein-9b', form], ['@cf/black-forest-labs/flux-2-dev', form]];
     for (const [m, input] of plan) {
       try { const img = await toB64(await WAI.run(m, input())); return out({ ok: true, image: img, mime: 'image/jpeg', source: 'Cloudflare', model: m.split('/').pop(), skipped: errs.length ? errs.join(' | ').slice(0, 400) : undefined }); }
-      catch (e) { errs.push(m.split('/').pop() + ': ' + why(e)); if (/4006|neurons|allocation/i.test(String(e && e.message || e))) break; }
+      catch (e) { errs.push(m.split('/').pop() + ': ' + why(e)); if (/4006|neurons|allocation/i.test(String(e && e.message || e))) { sd.fluxOffDay = day; break; } }
     }
   }
   // free and with no daily allowance: Pollinations. A new picture is drawn by FLUX; a photo is edited by Kontext, which reads the
@@ -282,8 +282,13 @@ if (b.action === 'restyle' || b.action === 'image') {
     const PTOK = (typeof ENV !== 'undefined' && ENV && ENV.POLLINATIONS_TOKEN) || '';
     let src = '';
     if (!fresh && put) { try { src = await put(data, mime); } catch (e) { errs.push('tmp: ' + why(e)); } }
-    const tries = fresh ? ['flux', 'turbo'] : src ? ['kontext', 'nanobanana', 'seedream', 'gptimage'] : [];
-    for (const model of tries) {
+    // without a key only some models answer ("isn't part of the Classic API" for the rest): those are remembered for 6 hours and skipped
+    const keyOnly = sd.polKeyOnly && sd.polKeyOnlyAt > now - 6 * 3600000 && !PTOK ? sd.polKeyOnly : [];
+    const all = fresh ? ['flux', 'turbo'] : src ? (PTOK ? ['kontext', 'nanobanana', 'seedream', 'gptimage'] : ['gptimage', 'kontext', 'nanobanana', 'seedream']) : [];
+    const tries = all.filter((m) => !keyOnly.includes(m));
+    let waited = false;
+    for (let ti = 0; ti < tries.length; ti++) {
+      const model = tries[ti];
       const left = 118000 - (Date.now() - now);
       if (left < 15000) break;
       const q = new URLSearchParams({ width: String(PW), height: String(PH), model, nologo: 'true', private: 'true', enhance: 'false', safe: 'true', seed: String(Math.floor(Math.random() * 1e9)), referrer: 'frame-studio' });
@@ -301,7 +306,11 @@ if (b.action === 'restyle' || b.action === 'image') {
             return out({ ok: true, image: btoa(s2), mime: ct, source: 'Pollinations', model, skipped: errs.length ? errs.join(' | ').slice(0, 400) : undefined });
           }
         }
-        errs.push('pollinations ' + model + ': ' + r.status + ' ' + String(await r.text().catch(() => '')).slice(0, 140));
+        const txt = String(await r.text().catch(() => ''));
+        if (r.status === 403 && /Classic API|pollen key/i.test(txt) && !PTOK) { sd.polKeyOnly = Array.from(new Set((sd.polKeyOnly || []).concat(model))); sd.polKeyOnlyAt = now; }
+        // the anonymous speed limit: one wait and the same model again
+        if (r.status === 429 && !waited && 118000 - (Date.now() - now) > 30000) { waited = true; clearTimeout(tm); await new Promise((ok) => setTimeout(ok, 8000)); ti--; continue; }
+        errs.push('pollinations ' + model + ': ' + r.status + ' ' + txt.slice(0, 140));
       } catch (e) { errs.push('pollinations ' + model + ': ' + why(e)); }
       clearTimeout(tm);
     }

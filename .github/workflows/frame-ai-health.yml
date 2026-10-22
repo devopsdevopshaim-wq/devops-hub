@@ -1,0 +1,31 @@
+name: Frame Studio AI health
+# Asks the live AI servers (Cloudflare and n8n) which picture engines are on, then tries one small real design on each
+# engine, so a failure says which engine and why. Run by hand, or when this file changes on the working branch.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: ['.github/workflows/frame-ai-health.yml']
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ask the servers
+        run: |
+          O='Origin: https://devopsdevopshaim-wq.github.io'
+          base64 -w0 desktop/test/fixtures/wedding.jpg > photo.b64
+          for S in https://spider-auth.devopsdevopshaim.workers.dev/hasadna-hubs https://haimkripisn.app.n8n.cloud/webhook/hasadna-hubs; do
+            echo "================ $S"
+            echo "-- engines:"; curl -s -m 30 -X POST -H "$O" -H 'Content-Type: text/plain' --data '{"action":"engines"}' "$S" | head -c 600; echo
+            echo "-- status:";  curl -s -m 30 -X POST -H "$O" -H 'Content-Type: text/plain' --data '{"action":"status"}' "$S" | head -c 600; echo
+            for E in "" gemini flux free openai; do
+              python3 -c "import json;print(json.dumps({'action':'restyle','prompt':'Redraw this photo as a classical oil painting. Keep the people recognisable.','image':open('photo.b64').read(),'mime':'image/jpeg','w':512,'h':768,'engine':'$E'}))" > body.json
+              t0=$(date +%s); r=$(curl -s -m 125 -X POST -H "$O" -H 'Content-Type: text/plain' --data @body.json "$S")
+              echo "-- restyle engine='$E' ($(( $(date +%s) - t0 ))s): $(echo "$r" | python3 -c "import json,sys
+          try:
+            d=json.load(sys.stdin); d['image']=('<%d chars>'%len(d['image'])) if d.get('image') else None; print(json.dumps(d,ensure_ascii=False)[:700])
+          except Exception as e: print('not json:', sys.stdin.read()[:300])")"
+            done
+          done
