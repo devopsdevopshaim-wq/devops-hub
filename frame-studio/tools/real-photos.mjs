@@ -10,7 +10,7 @@ import sharp from 'sharp';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'media', 'real');
-const LOOK = 'candid professional event photography, photorealistic, natural skin texture, real people, warm evening light, 50mm lens, shallow depth of field, soft bokeh lights in the background, sharp focus on faces, Canon EOS R5, no text, no watermark, no logo';
+const LOOK = 'Israeli people with Mediterranean and Middle Eastern features, candid professional event photography, photorealistic, natural imperfect skin, real documentary photo, natural skin texture, real people, warm evening light, 50mm lens, shallow depth of field, soft bokeh lights in the background, sharp focus on faces, Canon EOS R5, no text, no watermark, no logo';
 const SHOTS = {
   wedding: [
     'an Israeli bride in a white gown and a groom in a navy suit laughing and hugging at their outdoor wedding reception',
@@ -53,7 +53,24 @@ const SHOTS = {
 };
 const TOKEN = process.env.POLLINATIONS_TOKEN || '';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// the site's own server first: its image chain (Gemini, OpenAI, FLUX on Cloudflare) gives real-looking people with no watermark
+const HUB = 'https://spider-auth.devopsdevopshaim.workers.dev/hasadna-hubs';
+async function viaServer(prompt) {
+  const r = await fetch(HUB, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8', Origin: 'https://devopsdevopshaim-wq.github.io' },
+    body: JSON.stringify({ action: 'image', prompt: 'Create one image: ' + prompt + ', ' + LOOK + '. Portrait orientation (832x1248). No text, no watermark.', w: 832, h: 1248 }), signal: AbortSignal.timeout(150000) });
+  const j = await r.json().catch(() => ({}));
+  if (!j.ok || !j.image) throw new Error('server: ' + (j.error || r.status) + ' ' + String(j.detail || '').slice(0, 120));
+  console.log('  via', j.source || 'server', j.model || '');
+  return Buffer.from(j.image, 'base64');
+}
 async function one(prompt, seed) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try { const b = await viaServer(prompt); if (b.length > 20000) return { buf: b, mark: false }; throw new Error('too small'); }
+    catch (e) { console.log('  server', attempt, e.message); await sleep(5000 * attempt); }
+  }
+  return { buf: await pollinations(prompt, seed), mark: true };
+}
+async function pollinations(prompt, seed) {
   const q = new URLSearchParams({ width: '832', height: '1248', model: 'flux', nologo: 'true', seed: String(seed), enhance: 'false', private: 'true' });
   for (let attempt = 1; attempt <= 4; attempt++) {
     try {
@@ -74,10 +91,12 @@ for (const [type, list] of Object.entries(SHOTS)) {
   for (let i = 0; i < list.length; i++) {
     const name = `${type}-${i + 1}.webp`;
     console.log(name);
-    const raw = await one(list[i], seed++);
-    await sharp(raw).resize(900, 1350, { fit: 'cover', position: 'attention' }).webp({ quality: 82 }).toFile(join(OUT, name));
+    const got = await one(list[i], seed++);
+    let img = sharp(got.buf);
+    if (got.mark) { const m = await img.metadata(); img = sharp(got.buf).extract({ left: 0, top: 0, width: m.width, height: Math.round(m.height * 0.93) }); }   /* the free service's corner mark */
+    await img.resize(900, 1350, { fit: 'cover', position: 'attention' }).webp({ quality: 84 }).toFile(join(OUT, name));
     manifest[type].push('media/real/' + name);
-    await sleep(TOKEN ? 1500 : 6000);
+    await sleep(3000);
   }
 }
 writeFileSync(join(ROOT, 'js', 'real-photos.js'),
