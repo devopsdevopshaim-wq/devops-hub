@@ -5,7 +5,7 @@
 // routes). Every other https request (fonts, the API server, CDNs) goes to the network unchanged.
 'use strict';
 
-const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain, dialog, safeStorage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -378,6 +378,29 @@ app.whenReady().then(() => {
     if (localAI) { try { localAI.shutdown(); } catch { /* closing anyway */ } }
     setTimeout(() => app.exit(0), 300);
     return { ok: true };
+  });
+
+  // what the studio keeps so the first sign-in stays (the owner's email and password, a licence code): encrypted with the
+  // operating system's key (DPAPI on Windows) in vault.json in the user's profile; nothing is kept when encryption is missing
+  const vaultFile = () => path.join(app.getPath('userData'), 'vault.json');
+  const vaultRead = () => { try { return JSON.parse(fs.readFileSync(vaultFile(), 'utf8')) || {}; } catch { return {}; } };
+  const vaultKey = (k) => (typeof k === 'string' && /^[a-z]{2,12}$/.test(k) ? k : '');
+  ipcMain.handle('vault:get', (event, k) => {
+    fromApp(event); k = vaultKey(k); const v = k && vaultRead()[k];
+    if (!v || !safeStorage.isEncryptionAvailable()) return null;
+    try { return safeStorage.decryptString(Buffer.from(v, 'base64')); } catch { return null; }
+  });
+  ipcMain.handle('vault:set', (event, k, value) => {
+    fromApp(event); k = vaultKey(k);
+    if (!k || typeof value !== 'string' || value.length > 4000 || !safeStorage.isEncryptionAvailable()) return false;
+    const all = vaultRead(); all[k] = safeStorage.encryptString(value).toString('base64');
+    fs.mkdirSync(path.dirname(vaultFile()), { recursive: true }); fs.writeFileSync(vaultFile(), JSON.stringify(all), { mode: 0o600 });
+    return true;
+  });
+  ipcMain.handle('vault:del', (event, k) => {
+    fromApp(event); k = vaultKey(k); const all = vaultRead();
+    if (k && all[k]) { delete all[k]; try { fs.writeFileSync(vaultFile(), JSON.stringify(all), { mode: 0o600 }); } catch { /* gone */ } }
+    return true;
   });
 
   // the studio's own ✕ button: the same as the window's X (the "not saved" question above still applies)

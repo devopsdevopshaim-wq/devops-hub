@@ -38,6 +38,12 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
   // SHA-256 of this computer's id (with a fixed salt), 64 hex characters. The raw id never reaches the page.
   machineId: () => ipcRenderer.invoke('machine-id'),
   localAI,
+  // the first sign-in, kept encrypted by the operating system (see main.js vault:*)
+  vault: Object.freeze({
+    get: (k) => ipcRenderer.invoke('vault:get', k),
+    set: (k, v) => ipcRenderer.invoke('vault:set', k, v),
+    del: (k) => ipcRenderer.invoke('vault:del', k),
+  }),
   // closes the program (same as the window's X; unsaved photos are asked about first)
   close: () => ipcRenderer.send('app:close'),
   // removes the program from this computer (asks first, then opens Windows' uninstaller and closes)

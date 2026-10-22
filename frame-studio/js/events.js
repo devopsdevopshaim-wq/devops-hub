@@ -141,10 +141,13 @@
     d.layers.push(L);
   };
 
+  /* a realistic sample photo for the event type (js/real-photos.js), or null (then the drawn scene) */
+  FS.realPhoto = function (type, seed) { var R = FS.REAL_PHOTOS || {}, l = R[type] && R[type].length ? R[type] : R.wedding; return l && l.length ? new URL(l[Math.abs(seed || 0) % l.length], location.href).href : null; };
   /* a finished magnet (frame, words, photo or drawn scene) as a canvas about `size` px long */
   var sceneCache = {};
   FS.magnetCanvas = function (o, size) {
     var ev = FS.event(o.type), fmt = o.fmt || 'magnet', f = FS.fmt(fmt), key = (o.scene || ev.scene) + fmt + (o.seed || 3);
+    var real = !o.photo && !o.scene && FS.realPhoto(o.type, o.seed || 3); if (real) return FS.photoFrom(real, fmt).then(function (p) { FS.buildMagnet(p, o); var d = p.doc, k = size / Math.max(d.w, d.h), c = FS.canvas(d.w * k, d.h * k); FS.draw(c.getContext('2d'), p, { scale: k, max: Math.round(size * 1.4), export: true }); return c; }).catch(function () { return FS.magnetCanvas(Object.assign({}, o, { scene: o.scene || ev.scene }), size); });
     if (!o.photo && !sceneCache[key]) { var long = 900, w = f.w >= f.h ? long : Math.round(long * f.w / f.h), h = f.w >= f.h ? Math.round(long * f.h / f.w) : long; sceneCache[key] = FS.sampleScene(o.scene || ev.scene, w, h, o.seed || 3).toDataURL('image/jpeg', 0.9); }
     return FS.photoFrom(o.photo || sceneCache[key], fmt).then(function (p) {
       FS.buildMagnet(p, o);

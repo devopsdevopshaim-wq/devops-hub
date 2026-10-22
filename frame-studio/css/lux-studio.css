@@ -630,3 +630,13 @@ input[type=range] { accent-color: var(--champagne); }
 /* desktop program: the ✕ that closes it */
 .sb-act .app-close { min-width: 34px; font-weight: 700; }
 .sb-act .app-close:hover { background: #b3261e; border-color: #b3261e; color: #fff; }
+
+/* AI designs built into the studio (no internet): js/offline-ai.js and the pixel styles */
+.ax-off { border: 1px solid rgba(214,183,126,.35); background: linear-gradient(160deg, rgba(214,183,126,.08), transparent 60%); padding: 12px; border-radius: 14px; margin-bottom: 12px; }
+.ax-off h3 { margin: 0 0 4px; font-size: 15px; }
+.ax-off h4 { margin: 10px 0 6px; font-size: 13px; opacity: .85; }
+.ax-off .hint { margin: 0 0 8px; }
+.ax-off .hint a { color: var(--champagne, #D6B77E); }
+.ai-styles.small { grid-template-columns: repeat(3, 1fr); }
+.ai-styles.small .ai-style { padding: 6px 7px; font-size: 12px; }
+.ai-style.px.on { border-color: var(--champagne, #D6B77E); box-shadow: inset 0 0 0 1px var(--champagne, #D6B77E); }

@@ -234,6 +234,8 @@
     });
   });
   function demoPhoto(ev) {
+    var real = FS.realPhoto(ev.id, 2);
+    if (real) return fetch(real).then(function (r) { return r.blob(); }).then(function (b) { return FS.addPhotoFile(new File([b], 'דוגמה.webp', { type: b.type || 'image/webp' })); }).then(function (p) { FS.buildStrip(); FS.select(S.photos.indexOf(p)); return p; });
     var c = FS.sampleScene(ev.scene, 900, 1350, 5);
     return new Promise(function (res) { c.toBlob(function (b) { FS.addFiles([new File([b], 'דוגמה.jpg', { type: 'image/jpeg' })]); var t = setInterval(function () { if (FS.cur()) { clearInterval(t); res(FS.cur()); } }, 100); }, 'image/jpeg', 0.92); });
   }

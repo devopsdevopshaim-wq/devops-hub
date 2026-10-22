@@ -251,7 +251,7 @@
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.gridMode && FS.gridMode() && FS.buildGrid();
       if (stop) FS.toast('⏹ העריכה נעצרה' + (done ? '. ' + done + ' תמונות כבר עודכנו ("↩ החזרת המקור" מבטל).' : '. התמונות לא השתנו.'), 5000);
       else if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות. "↩ החזרת המקור" מבטל.', 4500);
-      if (failed && !stop) FS.toast(FS.aiError(String(failed.message)), 9000);
+      if (failed && !stop) FS.toast(FS.aiError(String(failed.message)) + (/offline|timeout/.test(String(failed.message)) ? ' בלי אינטרנט עובדים העיצובים ב"🖥️ מובנה בתוכנה" שבראש הלשונית.' : ''), 9000);
     });
   };
 
@@ -262,6 +262,8 @@
   }
   pane.innerHTML = '<h2>עריכות AI</h2>' +
     '<p class="hint">AI אמיתי בשרת מצייר את התמונה מחדש ושומר על האנשים. עד דקה לתמונה. חל על התמונה, או על כל המסומנות. אפשר לעצור באמצע עם ⏹.</p>' +
+    '<div class="card ax-off"><h3>🖥️ מובנה בתוכנה · עובד בלי אינטרנט</h3><p class="hint" id="ax-net"></p>' +
+      '<div class="ai-styles" id="ax-offline"></div><h4>🎨 מסננים אומנותיים (מיידי)</h4><div class="ai-styles small" id="ax-pixel"></div></div>' +
     '<div class="row2 ax-undo"><button class="btn" id="style-back" title="מבטל את עיצוב ה־AI האחרון (בתמונה או בכל המסומנות)">↶ ביטול העיצוב האחרון</button><button class="btn" id="style-orig" title="מחזיר את התמונה המקורית, בלי שום עיצוב AI">↩ חזרה למקור</button></div>' +
     '<div class="card ax-build"><h3>🎛️ שילוב משלך</h3>' + chips('🎨 סגנון', STYLE, 'style') + chips('🌍 איפה', WORLD, 'world') + chips('👗 תלבושת', OUTFIT, 'outfit') + chips('✨ אווירה', MOOD, 'mood') +
     '<p class="ax-name" id="ax-name"></p><div class="row2"><button class="btn" id="ax-random">🎲 הפתעה</button><button class="btn primary" id="ax-go">✨ ליצור</button></div></div>' +
@@ -292,6 +294,53 @@
     var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + FS.esc(s[1]) + '</span>';
     b.addEventListener('click', function () { FS.runAI(s[3] + KEEP, s[1]); }); $('#ai-styles').appendChild(b);
   });
+  /* ---------- built in, no internet: neural styles (offline-ai.js) and the instant pixel styles (styles.js) ---------- */
+  (FS.OFFLINE_AI || []).forEach(function (o) {
+    var b = document.createElement('button'); b.className = 'ai-style off'; b.title = o[1] + ' · עובד בלי אינטרנט';
+    b.innerHTML = '<i>' + o[2] + '</i><span>' + FS.esc(o[1]) + '</span>';
+    b.addEventListener('click', function () { runOffline(o[0], o[1]); }); $('#ax-offline').appendChild(b);
+  });
+  function runOffline(id, label) {
+    var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
+    var done = 0, stop = false, failed = null;
+    list.reduce(function (ch, p, i) {
+      return ch.then(function () {
+        if (stop || failed) return;
+        var base = '🖥️ ' + label + ' · תמונה ' + (i + 1) + ' מתוך ' + list.length + ' (על המחשב, בלי אינטרנט)';
+        FS.busy(base, function () { stop = true; });
+        return FS.restyleOffline(p, id, function (f) { if (!stop) FS.busy(base + ' · ' + Math.round(f * 100) + '%', function () { stop = true; }); }).then(function () { done++; }, function (e) { failed = e; });
+      });
+    }, Promise.resolve()).then(function () {
+      FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip();
+      if (failed) FS.toast('העיצוב המובנה לא הצליח: ' + ((failed && failed.message) || '') + '. "🔄 רענון מלא" ומנסים שוב.', 7000);
+      else if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות, בלי אינטרנט. "↩ ביטול AI" מחזיר.', 4500);
+    });
+  }
+  (FS.LOCAL_STYLES || []).forEach(function (o) {
+    var b = document.createElement('button'); b.className = 'ai-style px'; b.dataset.px = o[0]; b.title = o[1] + ' · מיידי, אפשר לבטל';
+    b.innerHTML = '<i>' + o[2] + '</i><span>' + FS.esc(o[1]) + '</span>';
+    b.addEventListener('click', function () {
+      var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
+      var cur = list[0].doc.photo.style, off = cur && cur.id === o[0];
+      list.forEach(function (p) { p.doc.photo.style = off ? null : { id: o[0], amt: 100 }; p.cache = {}; FS.snap(p); });
+      FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); pxMark();
+      FS.toast(off ? 'המסנן הוסר' : '🎨 ' + o[1] + ' · לחיצה נוספת מסירה', 2500);
+    });
+    $('#ax-pixel').appendChild(b);
+  });
+  function pxMark() { var p = FS.cur(), id = p && p.doc.photo.style && p.doc.photo.style.id; $$('#ax-pixel button').forEach(function (b) { b.classList.toggle('on', b.dataset.px === id); }); }
+  FS.on('doc', pxMark); FS.on('history', pxMark);
+  /* without the internet: say what still works */
+  function net() {
+    var el = $('#ax-net'); if (!el) return;
+    var local = FS.localAI && FS.localAI.isReady && FS.localAI.isReady();
+    el.innerHTML = navigator.onLine === false
+      ? (local ? '📴 אין אינטרנט · מנוע ה־AI המקומי מותקן, אז גם כל העיצובים שלמטה עובדים (לאט יותר).' : '📴 אין אינטרנט · העיצובים כאן עובדים. העיצובים שלמטה צריכים אינטרנט, או את <a href="#" id="ax-la">מנוע ה־AI המקומי</a> (הורדה חד־פעמית).')
+      : 'רצים על המחשב שלכם: אין המתנה לשרת ואין מכסה. העיצובים שלמטה (ויראליים, שילובים, סגנונות) עובדים דרך האינטרנט' + (local ? ', או על מנוע ה־AI המקומי כשאין רשת.' : '.');
+    var a = $('#ax-la'); if (a) a.addEventListener('click', function (e) { e.preventDefault(); if (FS.localAI && FS.localAI.open) FS.localAI.open(); else FS.toast('מנוע ה־AI המקומי זמין בתוכנה למחשב'); });
+  }
+  window.addEventListener('online', net); window.addEventListener('offline', net); setTimeout(net, 1500); net();
+
   $('#style-back').addEventListener('click', function () { var n = 0; FS.targets().forEach(function (q) { if (FS.unstyleStep(q)) n++; }); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.toast(n ? '↶ עיצוב ה־AI האחרון בוטל ב־' + n + ' תמונות' : 'אין עיצוב AI לבטל'); });
   $('#style-orig').addEventListener('click', function () { var n = 0; FS.targets().forEach(function (q) { if (FS.unstyle(q)) n++; }); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.toast(n ? '↩ המקור הוחזר ל־' + n + ' תמונות' : 'אין עריכת AI להחזיר'); });
   $('#ai-custom-go').addEventListener('click', function () { var t = $('#ai-custom').value.trim(); if (!t) return FS.toast('כותבים מה לעשות לתמונה'); FS.runAI('Edit this photo: ' + t + '.' + KEEP, 'עריכת AI'); });
