@@ -14,7 +14,8 @@
   var st = null, gpu = null, prog = null, installing = null, lastResult = null, testImg = '';
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function mode() { var m = ls(KEY); return m === 'local' || m === 'cloud' || m === 'auto' ? m : 'auto'; }
-  function localSize() { return ls(SIZE_KEY) === '768' ? 768 : 1024; }
+  /* the CPU build is slow (measured on a 4-core runner: ~24 min for 512x768), so it works at 768 unless 1024 was chosen */
+  function localSize() { var v = ls(SIZE_KEY); if (v === '768') return 768; if (v === '1024') return 1024; return st && st.engine && st.engine.variant === 'cpu' ? 768 : 1024; }
   function gb(b) { return b ? (b / 1e9).toFixed(b >= 1e10 ? 0 : 1) + ' GB' : '—'; }
   function toast(m, ms) { if (FS.toast) FS.toast(m, ms); }
 
@@ -86,7 +87,7 @@
     var name = b ? esc(b.name) + (b.vramMB ? ' · ' + (b.vramMB / 1024).toFixed(b.vramMB % 1024 ? 1 : 0) + ' GB זיכרון מסך' : ' · זיכרון מסך לא ידוע') : 'לא זוהה כרטיס מסך';
     var fast = !cpu && b && b.vramMB >= 6144;
     return '<div class="la-gpu"><b>' + name + '</b>' + (gpu.ramMB ? '<span class="la-dim"> · ' + Math.round(gpu.ramMB / 1024) + ' GB זיכרון</span>' : '') + '</div>' +
-      '<div class="la-speed ' + (fast ? 'fast' : 'slow') + '">' + (fast ? '⚡ מהיר: בערך 10–40 שניות לתמונה' : '🐢 איטי: כמה דקות לכל תמונה' + (cpu ? ' (גרסת מעבד)' : '')) + '</div>' +
+      '<div class="la-speed ' + (fast ? 'fast' : 'slow') + '">' + (fast ? '⚡ מהיר: בערך 10–40 שניות לתמונה' : cpu || !b ? '🐢 בלי כרטיס מסך: בערך 10–25 דקות לתמונה (תלוי במעבד). כדאי להריץ כמה תמונות ולהמשיך לעבוד.' : '🐢 כרטיס מסך חלש: כמה דקות לתמונה') + '</div>' +
       (gpu.ramMB && gpu.ramMB < 12 * 1024 ? '<div class="la-warn">⚠️ במחשב פחות מ־12GB זיכרון. זה יעבוד, אבל לאט.</div>' : '');
   }
   function bars() {

@@ -449,7 +449,9 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
     - local;
     - cloud.
   - `FS.askServer` in `js/ai.js` routes `restyle`/`image` through `askLocal` when the mode says so; text AI stays in the cloud.
-  - Not tested against the real HF, GitHub or sd-cli (the sandbox can't reach them); the first real run is on the owner's PC.
+  - **Proven end to end (Oct 22)** by `.github/workflows/local-ai-e2e.yml` (`desktop/scripts/local-ai-e2e.mjs`, run by hand on windows-latest, pictures pushed to the branch `ci-local-ai-e2e`): the CPU build installed from the real GitHub/HF in 30 s (sd master-987, flux-2-klein-4b-Q4_0 2.46 GB, Qwen3-4B-Q4_K_M 2.5 GB, flux2-vae 336 MB), and 3d / anime / oil on a 512×768 wedding photo all came out at cloud quality with the faces kept, about **24 minutes each** on 4 EPYC cores. So the CPU build works at 768 by default (`localSize`) and the panel says 10–25 minutes; with a 6 GB+ graphics card (Vulkan) it should be tens of seconds (not measured).
+  - **Installs itself:** the first opening with internet starts the download in the background (`fs-ai-local-auto`; stopping or removing it turns that off), the progress shows on the AI tab pill and the ☰ button, then `activate()` makes a 256×256 test picture and, if the graphics-card build fails, installs the CPU build and tests again. The NSIS installer says so (`customInstall`, new installs only) and runs the program at the end (`runAfterFinish`).
+  - The instant pixel filters are no longer offered in the AI tab or the no-internet dialog (the owner found them ugly); without internet the dialog points to the local engine. An experiment with Magenta arbitrary style transfer and more AnimeGAN weights was judged not professional and left out.
 
 ## Main site navigation and a lighter desktop program (Oct 2026)
 - **index.html's menu is short:** works, frames, how it works, design it yourself, packages, questions, contact. Then the studio download and "👤 כניסה".
