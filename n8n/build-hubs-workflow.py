@@ -283,8 +283,9 @@ if (b.action === 'restyle' || b.action === 'image') {
     let src = '';
     if (!fresh && put) { try { src = await put(data, mime); } catch (e) { errs.push('tmp: ' + why(e)); } }
     // without a key only some models answer ("isn't part of the Classic API" for the rest): those are remembered for 6 hours and skipped
-    const keyOnly = sd.polKeyOnly && sd.polKeyOnlyAt > now - 6 * 3600000 && !PTOK ? sd.polKeyOnly : [];
-    const all = fresh ? ['flux', 'turbo'] : src ? (PTOK ? ['kontext', 'nanobanana', 'seedream', 'gptimage'] : ['gptimage', 'kontext', 'nanobanana', 'seedream']) : [];
+    // (an old "classic" token does not open them either, so this is remembered with or without POLLINATIONS_TOKEN)
+    const keyOnly = sd.polKeyOnly && sd.polKeyOnlyAt > now - 6 * 3600000 ? sd.polKeyOnly : [];
+    const all = fresh ? ['flux', 'turbo'] : src ? (PTOK && !keyOnly.length ? ['kontext', 'nanobanana', 'seedream', 'gptimage'] : ['gptimage', 'kontext', 'nanobanana', 'seedream']) : [];
     const tries = all.filter((m) => !keyOnly.includes(m));
     let waited = false;
     for (let ti = 0; ti < tries.length; ti++) {
@@ -307,9 +308,10 @@ if (b.action === 'restyle' || b.action === 'image') {
           }
         }
         const txt = String(await r.text().catch(() => ''));
-        if (r.status === 403 && /Classic API|pollen key/i.test(txt) && !PTOK) { sd.polKeyOnly = Array.from(new Set((sd.polKeyOnly || []).concat(model))); sd.polKeyOnlyAt = now; }
-        // the anonymous speed limit: one wait and the same model again
-        if (r.status === 429 && !waited && 118000 - (Date.now() - now) > 30000) { waited = true; clearTimeout(tm); await new Promise((ok) => setTimeout(ok, 8000)); ti--; continue; }
+        if (r.status === 403 && /Classic API|pollen key/i.test(txt)) { sd.polKeyOnly = Array.from(new Set((sd.polKeyOnly || []).concat(model))); sd.polKeyOnlyAt = now; }
+        // the free speed limit (429, or 402 FREE_LIMIT "Retry after Ns"): one wait and the same model again
+        const ra = Number((/Retry after (\d+)\s*s/i.exec(txt) || [])[1] || 8);
+        if ((r.status === 429 || (r.status === 402 && /FREE_LIMIT/.test(txt))) && !waited && ra <= 50 && 118000 - (Date.now() - now) > (ra + 25) * 1000) { waited = true; clearTimeout(tm); await new Promise((ok) => setTimeout(ok, (ra + 1) * 1000)); ti--; continue; }
         errs.push('pollinations ' + model + ': ' + r.status + ' ' + txt.slice(0, 140));
       } catch (e) { errs.push('pollinations ' + model + ': ' + why(e)); }
       clearTimeout(tm);
