@@ -246,9 +246,36 @@
     var la = $('#oc-la', body); if (la) la.addEventListener('click', function () { FS.closeDialog(); if (FS.localAI && FS.localAI.open) FS.localAI.open(); });
     (FS.OFFLINE_AI || []).forEach(function (o) { var b = document.createElement('button'); b.className = 'ai-style off'; b.innerHTML = '<i>' + o[2] + '</i><span>' + FS.esc(o[1]) + '</span>'; b.addEventListener('click', function () { FS.closeDialog(); runOffline(o[0], o[1]); }); $('#oc-list', body).appendChild(b); });
   };
+  function variantsOn() { try { return localStorage.getItem('fs-ai-variants') === '1'; } catch (e) { return false; } }
+  /* "3 versions": the same design from up to three engines at once; the person picks the one they like */
+  function runVariants(p, prompt, label) {
+    return FS.aiEngines().then(function (av) {
+      var order = ['gemini', 'flux', 'free', 'openai'].filter(function (k) { return av[k]; }).slice(0, 3);
+      if (order.length < 2) return FS.restyle(p, prompt).then(function () { FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.toast('✨ ' + label + ' (רק מנוע אחד פעיל בשרת, אז גרסה אחת)'); });
+      var stop = false, got = 0;
+      function msg() { FS.busy('🎯 ' + label + ' · ' + order.length + ' גרסאות ממנועים שונים · ' + got + ' מוכנות (עד דקה)', function () { stop = true; FS.aiStop && FS.aiStop(); }); }
+      msg();
+      return FS.findFaces(p, true).catch(function () {}).then(function () {
+        return Promise.all(order.map(function (k) { return FS.restyleTry(p, prompt, k).then(function (im) { got++; if (!stop) msg(); return { k: k, im: im }; }, function (e) { return { k: k, err: e }; }); }));
+      }).then(function (rs) {
+        FS.busy(); if (stop) return FS.toast('⏹ נעצר. התמונה לא השתנתה.');
+        var ok = rs.filter(function (r) { return r.im; });
+        if (!ok.length) { var e = rs[0] && rs[0].err; return FS.toast(FS.aiError(String(e && e.message || 'ai-failed')), 8000); }
+        var body = FS.dialog('🎯 ' + FS.esc(label) + ' · בוחרים גרסה', '<p class="hint">כל גרסה נוצרה במנוע AI אחר. לוחצים על היפה ביותר והיא נכנסת לתמונה.</p><div class="ai-vars" id="ai-vars"></div>' +
+          (ok.length < rs.length ? '<p class="hint">' + rs.filter(function (r) { return !r.im; }).map(function (r) { return FS.ENGINE_NAMES[r.k] + ': ' + FS.aiError(String(r.err && r.err.message || '')); }).join('<br>') + '</p>' : ''), true);
+        ok.forEach(function (r) {
+          var b = document.createElement('button'); b.className = 'ai-var'; b.type = 'button';
+          b.innerHTML = '<img alt="" src="' + r.im.src + '"><b>' + FS.esc(FS.ENGINE_NAMES[r.k] || r.k) + '</b>';
+          b.addEventListener('click', function () { FS.closeDialog(); FS.applyAI(p, r.im); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.toast('✨ ' + label + ' · ' + (FS.ENGINE_NAMES[r.k] || r.k) + '. "↶ ביטול העיצוב האחרון" מחזיר.', 4500); });
+          $('#ai-vars', body).appendChild(b);
+        });
+      });
+    });
+  }
   FS.runAI = function (prompt, label, list) {
     list = list || FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
     if ((navigator.onLine === false || noNet) && !localReady()) return FS.offlineChooser(label);
+    if (variantsOn() && list.length === 1 && navigator.onLine !== false) return runVariants(list[0], prompt, label);
     var done = 0, stop = false, failed = null, chain = Promise.resolve();
     function onStop() { stop = true; FS.aiStop && FS.aiStop(); }
     list.forEach(function (p, i) { chain = chain.then(function () {
@@ -275,6 +302,8 @@
     '<p class="hint">AI אמיתי בשרת מצייר את התמונה מחדש ושומר על האנשים. עד דקה לתמונה. חל על התמונה, או על כל המסומנות. אפשר לעצור באמצע עם ⏹.</p>' +
     '<div class="card ax-off"><h3>🖥️ מובנה בתוכנה · עובד בלי אינטרנט</h3><p class="hint" id="ax-net"></p>' +
       '<div class="ai-styles" id="ax-offline"></div></div>' +
+    '<div class="card ax-eng"><h3>⚙️ מנוע ה־AI</h3><div class="ax-chips" id="ax-eng"></div>' +
+      '<label class="ax-var"><input type="checkbox" id="ax-var"> 🎯 3 גרסאות לבחירה <small>אותו עיצוב משלושה מנועים, בוחרים את היפה (לתמונה אחת)</small></label></div>' +
     '<div class="row2 ax-undo"><button class="btn" id="style-back" title="מבטל את עיצוב ה־AI האחרון (בתמונה או בכל המסומנות)">↶ ביטול העיצוב האחרון</button><button class="btn" id="style-orig" title="מחזיר את התמונה המקורית, בלי שום עיצוב AI">↩ חזרה למקור</button></div>' +
     '<div class="card ax-build"><h3>🎛️ שילוב משלך</h3>' + chips('🎨 סגנון', STYLE, 'style') + chips('🌍 איפה', WORLD, 'world') + chips('👗 תלבושת', OUTFIT, 'outfit') + chips('✨ אווירה', MOOD, 'mood') +
     '<p class="ax-name" id="ax-name"></p><div class="row2"><button class="btn" id="ax-random">🎲 הפתעה</button><button class="btn primary" id="ax-go">✨ ליצור</button></div></div>' +
@@ -327,6 +356,25 @@
       else if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות, בלי אינטרנט. "↩ ביטול AI" מחזיר.', 4500);
     });
   }
+  /* the engine bar: auto, the engines this server has, and this computer's engine in the desktop program */
+  function engBar() {
+    var box = $('#ax-eng'); if (!box) return;
+    FS.aiEngines().then(function (av) {
+      var cur = FS.aiEngine(), keys = [''].concat(['gemini', 'flux', 'free', 'openai'].filter(function (k) { return av[k]; }));
+      if (FS.localAI) keys.push('local');
+      if (keys.indexOf(cur) < 0) { cur = ''; FS.aiEngine(''); }
+      box.innerHTML = keys.map(function (k) { return '<button data-eng="' + k + '"' + (k === cur ? ' class="on"' : '') + '>' + FS.esc(FS.ENGINE_NAMES[k]) + '</button>'; }).join('');
+    });
+  }
+  $('#ax-eng').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-eng]'); if (!b) return;
+    if (b.dataset.eng === 'local' && !localReady()) { FS.toast('מנוע ה־AI המקומי עוד לא מותקן. ☰ ← AI מקומי'); if (FS.localAI && FS.localAI.open) FS.localAI.open(); return; }
+    FS.aiEngine(b.dataset.eng); $$('#ax-eng button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    FS.toast('⚙️ מנוע: ' + FS.ENGINE_NAMES[b.dataset.eng] + (b.dataset.eng ? '' : ' (הכי טוב שזמין, ואם נכשל הבא בתור)'));
+  });
+  var vbox = $('#ax-var'); try { vbox.checked = localStorage.getItem('fs-ai-variants') === '1'; } catch (e) {}
+  vbox.addEventListener('change', function () { try { localStorage.setItem('fs-ai-variants', vbox.checked ? '1' : '0'); } catch (e) {} FS.toast(vbox.checked ? '🎯 כל עיצוב יגיע ב־3 גרסאות לבחירה' : 'גרסה אחת לכל עיצוב'); });
+  engBar(); window.addEventListener('online', engBar);
   /* without the internet: say what still works */
   function net() {
     document.body.classList.toggle('no-net', navigator.onLine === false && !localReady());

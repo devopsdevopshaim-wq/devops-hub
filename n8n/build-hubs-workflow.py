@@ -96,6 +96,8 @@ const day = new Date(now).toISOString().slice(0, 10);
 if (sd.day !== day) { sd.day = day; sd.asked = 0; }
 
 if (b.action === 'status') return out({ ok: true, ai: set(GEMINI_KEY), left: Math.max(0, DAY_CAP - (sd.asked || 0)), imageModels: sd.imgModels || null });
+// which picture engines this server has: the studio shows only these in its engine choice (free = Pollinations, always there)
+if (b.action === 'engines') return out({ ok: true, engines: { gemini: set(GEMINI_KEY) && !(sd.gemImgOff > now - 6 * 3600000), openai: set(OPENAI_KEY), flux: !!WAI, free: typeof fetch === 'function' } });
 
 if (b.action === 'fetch') {
   if (!hit('hubs-fetch', ipKey(), FETCH_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
@@ -187,10 +189,14 @@ if (b.action === 'restyle' || b.action === 'image') {
     if (!data || data.length > 5600000) return out({ ok: false, error: data ? 'too-big' : 'bad-image' }, data ? 413 : 400);
     if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return out({ ok: false, error: 'bad-image' }, 400);
   }
+  // b.engine picks one engine (gemini / openai / flux / free); empty = each in turn until one answers
+  const ENG = String(b.engine || '').toLowerCase();
+  if (ENG && !['gemini', 'openai', 'flux', 'free'].includes(ENG)) return out({ ok: false, error: 'bad-engine' }, 400);
+  const want = (k) => !ENG || ENG === k;
   sd.imgs = (sd.imgs || 0) + 1;
   const errs = [];
   // Gemini first when there is a key (it keeps faces and the scene best); a key with no image allowance is skipped for 6 hours
-  if (set(GEMINI_KEY) && !(sd.gemImgOff > now - 6 * 3600000)) {
+  if (want('gemini') && set(GEMINI_KEY) && !(ENG !== 'gemini' && sd.gemImgOff > now - 6 * 3600000)) {
     const gerrs = [];
     for (const m of await imageModels()) {
       const left = 112000 - (Date.now() - now);
@@ -214,7 +220,7 @@ if (b.action === 'restyle' || b.action === 'image') {
     errs.push(...gerrs);
   }
   // OpenAI's image model when its key is set (the same model ChatGPT draws with): an edit of the photo, or a new picture
-  if (set(OPENAI_KEY) && typeof fetch === 'function' && typeof FormData === 'function') {
+  if (want('openai') && set(OPENAI_KEY) && typeof fetch === 'function' && typeof FormData === 'function') {
     const ow = Number(b.w) || 1024, oh = Number(b.h) || 1024;
     const size = ow > oh * 1.15 ? '1536x1024' : oh > ow * 1.15 ? '1024x1536' : '1024x1024';
     const ctl = typeof AbortController === 'function' ? new AbortController() : null;
@@ -237,7 +243,7 @@ if (b.action === 'restyle' || b.action === 'image') {
     clearTimeout(tm);
   }
   // on Cloudflare (the Worker gives ENV.AI): FLUX models from Workers AI, free up to the daily allowance
-  if (WAI) {
+  if (want('flux') && WAI) {
     const toB64 = async (r) => {
       if (r && typeof r.image === 'string' && r.image) return r.image;
       let u = null;
@@ -268,7 +274,7 @@ if (b.action === 'restyle' || b.action === 'image') {
   // free and with no daily allowance: Pollinations. A new picture is drawn by FLUX; a photo is edited by Kontext, which reads the
   // photo from a link that lives three minutes on this server (ENV.TMP_PUT, on Cloudflare). POLLINATIONS_TOKEN (free, from
   // auth.pollinations.ai) lifts the anonymous speed limit and opens the photo-editing models; without it, what is open anonymously.
-  if (typeof fetch === 'function') {
+  if (want('free') && typeof fetch === 'function') {
     const pk = 1024 / Math.max(Number(b.w) || 1024, Number(b.h) || 1024, 1);
     const pd = (v) => Math.max(256, Math.round(((Number(v) || 1024) * Math.min(1, pk)) / 16) * 16);
     const PW = pd(b.w), PH = pd(b.h);
@@ -300,6 +306,7 @@ if (b.action === 'restyle' || b.action === 'image') {
       clearTimeout(tm);
     }
   }
+  if (ENG && !errs.length) return out({ ok: false, error: 'engine-off', detail: ENG }, 503);
   return failed(errs);
 }
 return out({ ok: false, error: 'unknown-action' }, 400);
