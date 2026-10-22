@@ -207,4 +207,21 @@
     menu.insertBefore(mb, menu.children[1] || null);
   }
   pill();
+
+  /* the offer: the program opens with internet and the engine is not installed -> ask once, again after 3 days when declined.
+     The download runs in the program's background (desktop/local-ai.js), so work goes on while it downloads. */
+  var ASK = 'fs-ai-local-ask';
+  first.then(function (s) {
+    if (!s || s.ready || s.state === 'installing' || !s.supported || navigator.onLine === false) return;
+    var at = Number(ls(ASK)) || 0; if (Date.now() - at < 3 * 864e5) return;
+    setTimeout(function () {
+      if (!FS.dialog || ($('#dlg') && $('#dlg').open)) return;
+      ls(ASK, String(Date.now()));
+      var d = FS.dialog('🖥️ AI שעובד גם בלי אינטרנט', '<div class="la" dir="rtl"><p class="la-lead">כדי ש<b>כל</b> עיצובי ה־AI (סגנונות, ויראליים, שילובים ועריכה במילים) יעבדו גם כשאין אינטרנט, מתקינים פעם אחת את מנוע ה־AI המקומי.</p>' +
+        '<p class="la-dim">ההורדה כ־5.5GB ורצה ברקע, אפשר להמשיך לעבוד. ' + (s.state === 'partial' || s.state === 'error' ? 'ההורדה הקודמת תמשיך מאותה נקודה.' : '') + '</p>' +
+        '<div class="la-actions"><button class="btn primary la-gold" id="la-ask-go">⬇️ להתקין עכשיו</button><button class="btn ghost" id="la-ask-later">אחר כך</button></div></div>');
+      d.querySelector('#la-ask-go').addEventListener('click', function () { open(); install(); });
+      d.querySelector('#la-ask-later').addEventListener('click', function () { FS.closeDialog && FS.closeDialog(); });
+    }, 4000);
+  });
 })();
