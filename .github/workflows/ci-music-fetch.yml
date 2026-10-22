@@ -1,0 +1,41 @@
+name: Fetch free promo music (CC0)
+# Downloads public-domain (CC0) tracks from FreePD for the Frame Studio promo films and pushes them, with a loudness and
+# tempo report, to the branch ci-music. Runs on pushes to ci-music-fetch only.
+on:
+  push:
+    branches: [ci-music-fetch]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Download and measure
+        run: |
+          set -e
+          sudo apt-get -qq update && sudo apt-get -qq install -y ffmpeg >/dev/null
+          mkdir -p out && cd out
+          for page in upbeat electronic romantic world; do
+            curl -sL "https://freepd.com/$page.php" -o "$page.html" || true
+            grep -oE 'href="[^"]+\.mp3"' "$page.html" | sed 's/href="//;s/"$//' | head -14 | sed "s|^|$page\t|" >> list.tsv || true
+          done
+          echo "pages:"; wc -l list.tsv; head -60 list.tsv
+          n=0
+          while IFS=$'\t' read -r page url; do
+            case "$url" in http*) full="$url";; /*) full="https://freepd.com$url";; *) full="https://freepd.com/$url";; esac
+            name="$page--$(basename "$url" | sed 's/%20/_/g; s/[^A-Za-z0-9._-]/_/g')"
+            curl -sL "$full" -o "$name" || continue
+            [ -s "$name" ] || continue
+            dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$name" || echo 0)
+            loud=$(ffmpeg -v error -i "$name" -af ebur128 -f null - 2>&1 | grep -E '^\s+I:' | tail -1 | awk '{print $2}')
+            echo -e "$name\t$dur\t$loud" | tee -a report.tsv
+            n=$((n+1)); [ $n -ge 40 ] && break
+          done < list.tsv
+          rm -f *.html
+      - name: Push to ci-music
+        run: |
+          cd out
+          git init -q && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b ci-music && git add -A && git commit -q -m "CC0 music from FreePD, run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-music
