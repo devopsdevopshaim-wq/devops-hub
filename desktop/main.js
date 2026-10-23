@@ -426,6 +426,39 @@ app.whenReady().then(() => {
   });
 
   // the studio's own ✕ button: the same as the window's X (the "not saved" question above still applies)
+  // an approved update: the studio asks for a version ("1.0.N"); only that version's installer from this project's GitHub releases is
+  // downloaded (never a link from the page), checked to be a Windows program, started as an update (settings and the local AI stay),
+  // and the program closes so the installer can replace it
+  ipcMain.handle('app:update', async (event, ver) => {
+    const frameUrl = event.senderFrame ? event.senderFrame.url : '';
+    if (!isAppUrl(frameUrl)) throw new Error('not allowed');
+    if (!/^\d{1,4}\.\d{1,4}\.\d{1,6}$/.test(String(ver || ''))) return { ok: false, error: 'bad-version' };
+    if (process.platform !== 'win32' || !app.isPackaged) return { ok: false, error: 'not-installed' };
+    const url = `https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/desktop-v${ver}/FrameStudio-Setup-${ver}.exe`;
+    const file = path.join(app.getPath('temp'), `FrameStudio-Setup-${ver}.exe`);
+    const send = (p) => { try { event.sender.send('app:update-progress', p); } catch { /* window closed */ } };
+    try {
+      const res = await net.fetch(url, { cache: 'no-store' });
+      if (!res.ok || !res.body) return { ok: false, error: 'http-' + res.status };
+      const total = Number(res.headers.get('content-length')) || 0, out = fs.createWriteStream(file), reader = res.body.getReader();
+      let done = 0, last = 0;
+      for (;;) {
+        const { done: end, value } = await reader.read(); if (end) break;
+        done += value.length; if (!out.write(Buffer.from(value))) await new Promise((r) => out.once('drain', r));
+        if (Date.now() - last > 250) { last = Date.now(); send({ done, total }); }
+      }
+      await new Promise((r, j) => out.end((e) => (e ? j(e) : r())));
+      send({ done, total: total || done });
+      const head = Buffer.alloc(2), fd = fs.openSync(file, 'r'); fs.readSync(fd, head, 0, 2, 0); fs.closeSync(fd);
+      if (done < 5e6 || head.toString('latin1') !== 'MZ') { try { fs.unlinkSync(file); } catch { /* ignore */ } return { ok: false, error: 'bad-file' }; }
+    } catch (e) { return { ok: false, error: 'download-failed', detail: String(e && e.message || e).slice(0, 200) }; }
+    spawn(file, ['--updated'], { detached: true, stdio: 'ignore', cwd: app.getPath('temp') }).unref();
+    quitting = true;
+    if (localAI) { try { localAI.shutdown(); } catch { /* closing anyway */ } }
+    setTimeout(() => app.exit(0), 400);
+    return { ok: true };
+  });
+
   ipcMain.on('app:close', (event) => {
     const frameUrl = event.senderFrame ? event.senderFrame.url : '';
     if (!isAppUrl(frameUrl)) return;

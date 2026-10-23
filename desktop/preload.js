@@ -51,4 +51,10 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
   close: () => ipcRenderer.send('app:close'),
   // removes the program from this computer (asks first, then opens Windows' uninstaller and closes)
   uninstall: () => ipcRenderer.invoke('app:uninstall'),
+  // installs an approved update (a version "1.0.N"): downloads its installer with progress {done, total}, starts it and closes
+  update: (ver, onProgress) => {
+    const listener = (_e, p) => { if (typeof onProgress === 'function') onProgress({ done: Number(p && p.done) || 0, total: Number(p && p.total) || 0 }); };
+    ipcRenderer.on('app:update-progress', listener);
+    return ipcRenderer.invoke('app:update', String(ver || '')).finally(() => ipcRenderer.removeListener('app:update-progress', listener));
+  },
 }));
