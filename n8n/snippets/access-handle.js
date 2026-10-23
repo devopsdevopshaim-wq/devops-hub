@@ -60,6 +60,22 @@ const rndPassword = () => { const h = rnd(12); let o = ''; for (let i = 0; i < 1
 const mailTo = (to, subject, text) => ({ to, subject, text, soft: true });   // soft: a failed send never blocks the answer
 const log = (what, who) => { sd.log.unshift({ at: new Date(now).toISOString(), what, who, ip: IPK.slice(0, 6) }); if (sd.log.length > 300) sd.log.length = 300; };
 const when = () => new Date(now).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' });
+// ---- פריים־סטודיו updates: the desktop program is versioned "1.0.N". A licence may run every version up to L.appVer (set from the
+// version it was first used with); a newer one opens only after the owner approved it (a paid update) or published it as free.
+const vparse = (v) => /^\d{1,4}\.\d{1,4}\.\d{1,6}$/.test(String(v || '')) ? String(v).split('.').map(Number) : null;
+const vcmp = (a, z) => { const x = vparse(a), y = vparse(z); if (!x || !y) return 0; for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1; return 0; };
+const UPD_DL = (v) => `https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/desktop-v${v}/FrameStudio-Setup-${v}.exe`;
+const updFor = (L, running) => {
+  const U = sd.appUpd || { versions: [] }, pubs = (U.versions || []).slice().sort((a, z) => vcmp(z.ver, a.ver)), latest = pubs[0] || null;
+  const freeTop = pubs.filter((x) => x.free).map((x) => x.ver)[0] || '';
+  const may = (v) => !!vparse(v) && (!L.appVer || vcmp(v, L.appVer) <= 0 || (!!freeTop && vcmp(v, freeTop) <= 0));
+  if (vparse(running) && freeTop && L.appVer && vcmp(running, L.appVer) > 0 && vcmp(running, freeTop) <= 0) L.appVer = String(running);   // a free update: approved by being free
+  const locked = !!vparse(running) && !may(running);
+  const r = { cur: L.appVer || '', locked, running: vparse(running) ? String(running) : '', req: L.updReq || null, price: U.price || 49, phone: '054-4979771' };
+  if (locked && L.appVer) r.back = { ver: L.appVer, url: UPD_DL(L.appVer) };
+  if (latest) { r.latest = { ver: latest.ver, notes: latest.notes || '', price: latest.free ? 0 : (latest.price || U.price || 49), free: !!latest.free, at: latest.at }; r.allowed = may(latest.ver); if (r.allowed) r.latest.url = UPD_DL(latest.ver); }
+  return r;
+};
 const alert = (subject, text) => ({ to: ADMIN_EMAIL, subject: 'SPIDER · ' + subject, text: text + `\n\nזמן: ${when()}\nכתובת: ${IP}\n`, alert: true });
 // 84.229.12.7 -> 84.229.x.x : enough to recognise a network, not enough to expose a person
 const maskIp = (ip) => /^\d+\.\d+\.\d+\.\d+$/.test(ip) ? ip.split('.').slice(0, 2).join('.') + '.x.x' : /:/.test(ip) ? ip.split(':').slice(0, 3).join(':') + '::' : 'לא ידוע';
@@ -255,9 +271,10 @@ switch (b.action) {
     if (!L.agreement || L.agreement.ver !== agreeVer) L.agreement = { ver: agreeVer, at: iso, ip: maskIp(IP), ua: line(UA, 90) };
     if (!L.machine) { L.machine = mh; L.boundAt = iso; L.platform = line(b.platform, 20); L.desktop = b.desktop === '1' || b.desktop === true; L.history.unshift({ at: iso, what: 'הופעל במחשב', ip: maskIp(IP), ua: line(UA, 90) }); log('סטודיו הופעל במחשב חדש', e); }
     L.lastSeen = iso; L.lastIp = maskIp(IP); L.ua = line(UA, 110); L.version = line(b.version, 20);
+    if (!L.appVer && vparse(b.version)) L.appVer = String(b.version);
     for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h];   // one live session per licence
     const token = newSession(e, 'studio', now + 30 * DAY, { lic: e, mh });
-    return out({ ok: true, token, role: 'studio', name: line(L.name, 60), email: e, exp: new Date(now + 30 * DAY).toISOString() });
+    return out({ ok: true, token, role: 'studio', name: line(L.name, 60), email: e, exp: new Date(now + 30 * DAY).toISOString(), upd: updFor(L, b.version) });
   }
   case 'lic-check': {
     const s = session(), mach = String(b.machine || '').toLowerCase();
@@ -268,7 +285,20 @@ switch (b.action) {
     if (!/^[a-f0-9]{32,64}$/.test(mach) || L.machine !== sha256hex('lic-machine:' + mach) || s.mh !== L.machine) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-moved' }, 403); }
     if (!L.lastSeen || now - Date.parse(L.lastSeen) > 10 * 60000) { L.lastSeen = new Date(now).toISOString(); L.lastIp = maskIp(IP); L.version = line(b.version, 20) || L.version; }
     if (s.exp - now < 7 * DAY) s.exp = now + 30 * DAY;   // in use: the session renews
-    return out({ ok: true, role: 'studio', email: s.lic, name: line(L.name, 60), exp: new Date(s.exp).toISOString() });
+    if (!L.appVer && vparse(b.version)) L.appVer = String(b.version);   // licences from before updates were managed: the version they run
+    return out({ ok: true, role: 'studio', email: s.lic, name: line(L.name, 60), exp: new Date(s.exp).toISOString(), upd: updFor(L, b.version) });
+  }
+  // a licence holder asks for the newest update (the owner is told; the owner approves it after the payment)
+  case 'upd-request': {
+    const s = session(); if (!s || s.role !== 'studio') return out({ ok: false, error: 'signed-out' }, 401);
+    const L = (sd.licenses || {})[s.lic]; if (!L || !L.active) return out({ ok: false, error: 'license-revoked' }, 403);
+    const U = sd.appUpd || { versions: [] }, v = line(b.ver, 20), pub = (U.versions || []).filter((x) => x.ver === v)[0];
+    if (!pub) return out({ ok: false, error: 'not-found' }, 404);
+    if (!hit('upd-req', s.lic, 4, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
+    L.updReq = { ver: v, at: new Date(now).toISOString(), note: line(b.note, 200) };
+    L.history = [{ at: L.updReq.at, what: 'ביקש עדכון לגרסה ' + v }].concat(L.history || []).slice(0, 30);
+    log('בקשת עדכון סטודיו ' + v, s.lic);
+    return out({ ok: true, upd: updFor(L, b.version) }, 200, alert('בקשת עדכון גרסה לסטודיו', `${L.name || s.lic} (${s.lic}${L.phone ? ', ' + L.phone : ''}) ביקש/ה עדכון לגרסה ${v} (מחיר ${pub.free ? 'חינם' : pub.price + ' ₪'}).\nאחרי התשלום: מסך הניהול ← רישיונות סטודיו ← עדכוני גרסה ← אישור.${L.updReq.note ? '\nהערה: ' + L.updReq.note : ''}`));
   }
   case 'lic-list':
   case 'lic-create':
@@ -278,6 +308,10 @@ switch (b.action) {
   case 'lic-mail':
   case 'lic-pay':
   case 'lic-settings':
+  case 'upd-publish':
+  case 'upd-unpublish':
+  case 'upd-settings':
+  case 'upd-grant':
   case 'lic-delete': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     sd.licenses = sd.licenses || {};
@@ -287,12 +321,24 @@ switch (b.action) {
     const online = {}; for (const x of Object.values(sd.sessions)) if (x && x.lic && x.exp > now) online[x.lic] = 1;
     const view = (L) => ({ email: L.email, name: L.name || '', phone: L.phone || '', note: L.note || '', code: L.code, active: L.active !== false, createdAt: L.createdAt, bound: !!L.machine,
       boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10),
-      price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null });
+      price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null, appVer: L.appVer || '', updReq: L.updReq || null });
     sd.licSettings = sd.licSettings || { price: 990, currency: '₪' };
     const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
     const mailCode = (L) => mailTo(L.email, 'פריים־סטודיו · קוד ההפעלה האישי שלך', `שלום ${L.name || ''},\n\nקוד ההפעלה האישי שלך לפריים־סטודיו:\n${L.code}\n\nהורדה והתקנה: ${STUDIO_DL}\nבהפעלה הראשונה מזינים את המייל הזה (${L.email}) ואת הקוד.\n\nהקוד אישי ומתאים למחשב אחד בלבד: אחרי ההפעלה הוא ננעל למחשב הזה. החלפת מחשב: פונים לחיים, 054-4979771.\nאין להעביר את הקוד לאחרים.\n\nפריים מגנטים`);
-    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings });
+    sd.appUpd = sd.appUpd || { versions: [], price: 49 };
+    const U = sd.appUpd;
+    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U });
+    // updates: publish a build as an update (notes, price, or free for everyone), take it back, the default price
+    if (b.action === 'upd-settings') { U.price = money(b.price) || U.price; log('מחיר עדכון גרסה: ' + U.price, ADMIN_EMAIL); return out({ ok: true, upd: U, licenses: list() }); }
+    if (b.action === 'upd-publish' || b.action === 'upd-unpublish') {
+      const v = line(b.ver, 20); if (!vparse(v)) return out({ ok: false, error: 'bad-input' }, 400);
+      U.versions = (U.versions || []).filter((x) => x.ver !== v);
+      if (b.action === 'upd-publish') U.versions.push({ ver: v, notes: line(b.notes, 1500), price: money(b.price) || U.price, free: b.free === '1' || b.free === true, at: new Date(now).toISOString() });
+      U.versions = U.versions.sort((a, z) => vcmp(z.ver, a.ver)).slice(0, 60);
+      log((b.action === 'upd-publish' ? 'פורסם עדכון ' : 'בוטל פרסום עדכון ') + v, ADMIN_EMAIL);
+      return out({ ok: true, upd: U, licenses: list() });
+    }
     if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
     if (b.action === 'lic-create') {
       const e = email(b.email), nm = line(b.name, 60);
@@ -321,6 +367,19 @@ switch (b.action) {
         L.paid = true; L.history.unshift({ at: iso, what: 'נרשם תשלום ' + amt });
       }
       log('תשלום סטודיו עודכן', e);
+    }
+    else if (b.action === 'upd-grant') {
+      // the owner approves an update for this licence (after the payment, recorded with it); undo puts the previous version back
+      if (b.undo === '1' || b.undo === true) { L.appVer = line(b.ver, 20) && vparse(b.ver) ? String(b.ver) : L.appVer; L.history.unshift({ at: iso, what: 'אישור העדכון בוטל, חזרה לגרסה ' + L.appVer }); }
+      else {
+        const v = line(b.ver, 20); if (!vparse(v)) return out({ ok: false, error: 'bad-input' }, 400);
+        const amt = money(b.amount);
+        if (amt) L.payments = (L.payments || []).concat({ at: iso, date: iso.slice(0, 10), amount: amt, method: line(b.method, 30), ref: line(b.ref, 60), note: 'עדכון לגרסה ' + v, kind: 'update' }).slice(-50);
+        if (!L.appVer || vcmp(v, L.appVer) > 0) L.appVer = v;
+        if (L.updReq && vcmp(L.updReq.ver, L.appVer) <= 0) delete L.updReq;
+        L.history.unshift({ at: iso, what: 'עדכון לגרסה ' + v + ' אושר' + (amt ? ' (שולם ' + amt + ')' : ' (בלי תשלום)') });
+      }
+      log('עדכון סטודיו אושר ' + (L.appVer || ''), e);
     }
     else if (b.action === 'lic-delete') { endSessions(e); delete sd.licenses[e]; log('רישיון סטודיו נמחק', e); return out({ ok: true, licenses: list() }); }
     return out({ ok: true, license: view(L), licenses: list() }, 200, b.action === 'lic-mail' || (b.action === 'lic-rotate' && (b.send === '1' || b.send === true)) ? mailCode(L) : null);

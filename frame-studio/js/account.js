@@ -217,6 +217,8 @@
       });
     },
     forget: function () { licKeep(null); VAULT.del('lic'); },
+    /* a licence holder's own call (an update request) */
+    call: function (action, data) { return auth(action, data || {}); },
     /* the owner's licence management (an admin session) */
     admin: function (action, data) { var s = load(); return auth(action, Object.assign({}, data || {}, { token: s && s.token })); }
   };

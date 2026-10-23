@@ -494,6 +494,47 @@ async function frameSignup(t) {
   r = await call({ action: 'signup', email: 'eve@example.com', name: 'איב' }, { ip: '6.6.6.4' });
   check(t + ' SPIDER\'s own sign-up stays closed', r.body.error === 'signup-closed');
 }
+// ---- פריים־סטודיו updates: a newer program version opens only after the owner approves it (paid) or publishes it free
+async function studioUpdates(tag) {
+  const { sd, call } = world();
+  const t = tag + ' ';
+  const a = await adminIn(call, t);
+  let r = await call({ action: 'lic-create', token: a.token, email: 'photo@example.com', name: 'צלם', phone: '0521234567', paidNow: '1', amount: '990', method: 'ביט' });
+  check(t + 'a paid licence is issued', r.body.ok && r.body.license.paid, r.body);
+  const code = r.body.license.code, mach = crypto.randomBytes(32).toString('hex');
+  r = await call({ action: 'lic-activate', email: 'photo@example.com', code, machine: mach, agree: 'v1', desktop: '1', version: '1.0.21' }, { ip: '20.0.0.1' });
+  check(t + 'activation remembers the version it started with', r.body.ok && sd.licenses['photo@example.com'].appVer === '1.0.21' && r.body.upd && r.body.upd.locked === false, r.body);
+  const tok = r.body.token;
+  r = await call({ action: 'lic-check', token: tok, machine: mach, version: '1.0.21' }, { ip: '20.0.0.1' });
+  check(t + 'with nothing published there is no update and nothing is locked', r.body.ok && !r.body.upd.latest && !r.body.upd.locked, r.body);
+  r = await call({ action: 'upd-publish', token: tok, ver: '1.0.25' }, { ip: '20.0.0.1' });
+  check(t + 'a licence holder cannot publish updates', r.code === 403);
+  r = await call({ action: 'upd-publish', token: a.token, ver: '1.0.25', notes: 'סביבת עבודה מהירה', price: '39' });
+  check(t + 'the owner publishes an update with notes and a price', r.body.ok && r.body.upd.versions[0].ver === '1.0.25' && r.body.upd.versions[0].price === 39, r.body);
+  r = await call({ action: 'lic-check', token: tok, machine: mach, version: '1.0.21' }, { ip: '20.0.0.1' });
+  check(t + 'the studio sees the update, not yet allowed, with no download link', r.body.upd.latest.ver === '1.0.25' && r.body.upd.allowed === false && !r.body.upd.latest.url && r.body.upd.latest.price === 39, r.body.upd);
+  r = await call({ action: 'lic-check', token: tok, machine: mach, version: '1.0.25' }, { ip: '20.0.0.1' });
+  check(t + 'installing the newer version without approval locks it, and offers the approved one back', r.body.ok && r.body.upd.locked === true && r.body.upd.back.ver === '1.0.21' && /desktop-v1\.0\.21\/FrameStudio-Setup-1\.0\.21\.exe$/.test(r.body.upd.back.url), r.body.upd);
+  r = await call({ action: 'upd-request', token: tok, ver: '1.0.25', version: '1.0.21' }, { ip: '20.0.0.1' });
+  check(t + 'asking for the update tells the owner', r.body.ok && r.mail && /בקשת עדכון/.test(r.mail.subject) && sd.licenses['photo@example.com'].updReq.ver === '1.0.25', r.body);
+  r = await call({ action: 'lic-list', token: a.token });
+  check(t + 'the owner sees the request and the approved version', r.body.licenses[0].updReq.ver === '1.0.25' && r.body.licenses[0].appVer === '1.0.21');
+  r = await call({ action: 'upd-grant', token: a.token, email: 'photo@example.com', ver: '1.0.25', amount: '39', method: 'ביט' });
+  check(t + 'the owner approves it with the payment', r.body.ok && r.body.license.appVer === '1.0.25' && !r.body.license.updReq && r.body.license.payments.some((p) => p.kind === 'update' && p.amount === 39), r.body);
+  r = await call({ action: 'lic-check', token: tok, machine: mach, version: '1.0.25' }, { ip: '20.0.0.1' });
+  check(t + 'the approved version opens, and its download link is given', r.body.upd.locked === false && r.body.upd.allowed === true && /1\.0\.25\.exe$/.test(r.body.upd.latest.url), r.body.upd);
+  r = await call({ action: 'lic-check', token: tok, machine: mach, version: '1.0.27' }, { ip: '20.0.0.1' });
+  check(t + 'a build that was never approved stays locked', r.body.upd.locked === true);
+  await call({ action: 'upd-publish', token: a.token, ver: '1.0.27', notes: 'תיקון', free: '1' });
+  r = await call({ action: 'lic-check', token: tok, machine: mach, version: '1.0.27' }, { ip: '20.0.0.1' });
+  check(t + 'a free update opens for everyone and becomes the approved version', r.body.upd.locked === false && sd.licenses['photo@example.com'].appVer === '1.0.27', r.body.upd);
+  r = await call({ action: 'lic-check', token: tok, machine: mach, version: '52' }, { ip: '20.0.0.1' });
+  check(t + 'the online studio (a page version, not a program version) is never locked', r.body.ok && r.body.upd.locked === false);
+  r = await call({ action: 'upd-unpublish', token: a.token, ver: '1.0.27' });
+  check(t + 'the owner can take an update back', r.body.ok && r.body.upd.versions.length === 1);
+}
+
+await studioUpdates('[updates]');
 await planDoc('[plan]');
 await relay('[relay]');
 await presence('[presence]');

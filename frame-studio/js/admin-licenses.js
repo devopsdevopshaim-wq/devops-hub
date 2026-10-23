@@ -12,18 +12,21 @@
   function codeText(L) { return 'שלום ' + (L.name || '') + ',\nקוד ההפעלה האישי שלך לפריים־סטודיו:\n' + L.code + '\n\nהורדה והתקנה: ' + DL + '\nבהפעלה מזינים את המייל ' + L.email + ' ואת הקוד.\nהקוד אישי ועובד במחשב אחד בלבד.'; }
   function copy(t) { return navigator.clipboard ? navigator.clipboard.writeText(t).then(function () { FS.toast('📋 הועתק'); }, function () { window.prompt('מעתיקים:', t); }) : window.prompt('מעתיקים:', t); }
 
+  function vcmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0) ? -1 : 1; return 0; }
   var METHODS = ['ביט', 'פייבוקס', 'העברה בנקאית', 'מזומן', 'אשראי', 'צ׳ק', 'אחר'];
   function methodSel(id) { return '<select id="' + id + '">' + METHODS.map(function (x) { return '<option>' + x + '</option>'; }).join('') + '</select>'; }
   var nis = function (v) { return '₪' + Number(v || 0).toLocaleString('he-IL'); };
   /* how many times the installer was downloaded: GitHub counts every release asset (public, no key) */
   function downloads() {
     return fetch('https://api.github.com/repos/devopsdevopshaim-wq/devops-hub/releases?per_page=100', { headers: { Accept: 'application/vnd.github+json' } }).then(function (r) { return r.ok ? r.json() : []; }).then(function (rels) {
-      var n = 0, week = 0, latest = '';
+      var n = 0, week = 0, latest = '', builds = [];
       (rels || []).filter(function (r) { return /^desktop-/.test(r.tag_name); }).forEach(function (r) {
+        var m = /^desktop-v(\d+\.\d+\.\d+)$/.exec(r.tag_name); if (m) builds.push({ ver: m[1], at: r.published_at || r.created_at });
         if (r.tag_name === 'desktop-latest') latest = (r.name || '').replace(/^.*latest:\s*/, '').replace(/\)$/, '');
         (r.assets || []).forEach(function (a) { if (/\.exe$/i.test(a.name)) n += a.download_count || 0; });
       });
-      return { n: n, latest: latest };
+      builds.sort(function (a, z) { return vcmp(z.ver, a.ver); });
+      return { n: n, latest: latest, builds: builds };
     }).catch(function () { return null; });
   }
 
@@ -43,6 +46,7 @@
       '<p class="hint">הקוד נוצר אקראית בשרת ונשמר רק אצלך. בהפעלה הראשונה הוא ננעל למחשב של אותו אדם, ומחשב נוסף עם אותו קוד נחסם (ואתה מקבל התראה).</p></section>' +
       '<section class="adm-card"><h3>💰 מחיר ותנאים</h3><div class="adm-row"><label class="adm-f" style="max-width:240px"><span>מחיר ברירת מחדל לרישיון (₪)</span><div class="adm-in"><input id="ls-price" inputmode="decimal" dir="ltr"></div></label><button class="btn line small" id="ls-save">שמירה</button>' +
       '<a class="btn line small" href="agreement.html" target="_blank" rel="noopener">📄 הסכם הרכישה (v1)</a></div><p class="hint">המחיר מופיע בדף ההורדה. כל רוכש מאשר את הסכם הרכישה בהפעלה, והאישור נרשם אצלך עם התאריך.</p></section>' +
+      '<section class="adm-card" id="upd-card"><h3>⬆️ עדכוני גרסה לתוכנה</h3><p class="hint">כל גרסה חדשה של התוכנה נבנית לבד, אבל לקוחות לא מקבלים אותה עד שאתה מפרסם אותה כאן. עדכון שפורסם בתשלום נפתח ללקוח רק אחרי שאישרת אותו (עם התשלום). גרסה שהותקנה בלי אישור ננעלת, ומציעה ללקוח לחזור לגרסה המאושרת שלו. עדכון בחינם נפתח לכולם.</p><div id="upd-body"><p class="hint">טוען…</p></div></section>' +
       '<section class="adm-card"><div class="adm-row"><h3 style="margin:0">רשימת הרישיונות</h3><input id="lic-q" placeholder="חיפוש שם / מייל / טלפון" style="margin-inline-start:auto"></div><div id="lic-list"><p class="hint">טוען…</p></div></section>');
     var ALL = [], q = '';
     var SET = { price: 990 }, DLS = null;
@@ -66,10 +70,10 @@
         '<td>' + (L.paid ? '<span class="lic-st on">✔ שולם</span><small>' + nis((L.payments || []).reduce(function (t, p) { return t + (p.amount || 0); }, 0)) + ((L.payments || [])[0] ? ' · ' + esc(L.payments[L.payments.length - 1].method || '') : '') + '</small>' : '<span class="lic-st wait">⏳ לא שולם</span><small>מחיר ' + nis(L.price) + '</small>') +
           (L.agreement ? '<small>📄 הסכם ' + esc(L.agreement.ver) + ' אושר ' + when(L.agreement.at) + '</small>' : '') + '</td>' +
         '<td>' + st + (L.session ? '<small><span class="dot on"></span>מחובר</small>' : '') + '</td>' +
-        '<td>' + (L.bound ? '<small>' + (L.desktop ? '💻 תוכנה' : '🌐 דפדפן') + (L.platform ? ' · ' + esc(L.platform) : '') + '</small><small>מאז ' + when(L.boundAt) + '</small>' : '—') + '</td>' +
+        '<td>' + (L.bound ? '<small>' + (L.desktop ? '💻 תוכנה' : '🌐 דפדפן') + (L.platform ? ' · ' + esc(L.platform) : '') + '</small><small>מאז ' + when(L.boundAt) + '</small>' : '—') + (L.appVer ? '<small>⬆️ מאושר עד <span dir="ltr">' + esc(L.appVer) + '</span>' + (L.version && L.version !== L.appVer ? ' · מותקן <span dir="ltr">' + esc(L.version) + '</span>' : '') + '</small>' : '') + (L.updReq ? '<small class="lic-st wait">📨 ביקש עדכון ' + esc(L.updReq.ver) + '</small>' : '') + '</td>' +
         '<td>' + when(L.lastSeen) + (L.lastIp ? '<small dir="ltr">' + esc(L.lastIp) + '</small>' : '') + '</td>' +
         '<td class="act lic-act">' +
-          '<button data-a="pay" title="רישום תשלום">💰</button><button data-a="copy" title="העתקת הקוד וההוראות">📋</button>' +
+          '<button data-a="pay" title="רישום תשלום">💰</button><button data-a="upd" title="אישור עדכון גרסה">⬆️</button><button data-a="copy" title="העתקת הקוד וההוראות">📋</button>' +
           (L.phone ? '<a target="_blank" rel="noopener" href="' + esc(wa(L.phone, codeText(L))) + '" title="שליחה בוואטסאפ">💬</a>' : '') +
           '<button data-a="mail" title="שליחה למייל">✉️</button>' +
           (L.bound ? '<button data-a="release" title="שחרור המחשב (מעבר למחשב חדש)">🔓</button>' : '') +
@@ -97,9 +101,45 @@
         $$('.lp-undo', tr).forEach(function (b) { b.addEventListener('click', function () { if (!confirm('למחוק את התשלום הזה? אם לא נשאר תשלום, התוכנה תיחסם אצל הלקוח.')) return; LIC.admin('lic-pay', { email: email, undo: '1', at: b.dataset.at }).then(function (r) { done(r, 'התשלום נמחק.'); }); }); });
       });
     }
-    function done(r, okMsg) { if (!r.ok) { FS.toast(ACC.msg(r), 6000); return; } ALL = r.licenses || ALL; draw(); if (okMsg) FS.toast(okMsg, 5000); }
+    function done(r, okMsg) { if (!r.ok) { FS.toast(ACC.msg(r), 6000); return; } ALL = r.licenses || ALL; if (r.upd) UPD = r.upd; draw(); updDraw(); if (okMsg) FS.toast(okMsg, 5000); }
+    /* ---------- updates: publish a build, its price, the requests, approve after the payment ---------- */
+    var UPD = { versions: [], price: 49 };
+    function latestPub() { return (UPD.versions || [])[0] || null; }
+    function updDraw() {
+      var box = $('#upd-body'); if (!box) return;
+      var pubs = UPD.versions || [], published = {}; pubs.forEach(function (v) { published[v.ver] = 1; });
+      var builds = (DLS && DLS.builds || []).filter(function (b) { return !published[b.ver]; }).slice(0, 15);
+      var reqs = ALL.filter(function (L) { return L.updReq; });
+      box.innerHTML =
+        '<div class="adm-row"><label class="adm-f" style="max-width:220px"><span>מחיר עדכון ברירת מחדל (₪)</span><div class="adm-in"><input id="up-price" inputmode="decimal" dir="ltr" value="' + esc(UPD.price || 49) + '"></div></label><button class="btn line small" id="up-price-save">שמירה</button></div>' +
+        '<h4>📢 פרסום עדכון</h4><div class="adm-grid"><label class="adm-f"><span>גרסה (מהבניות האחרונות)</span><div class="adm-in"><select id="up-ver">' + (builds.length ? builds.map(function (b) { return '<option value="' + esc(b.ver) + '">' + esc(b.ver) + ' · ' + when(b.at) + '</option>'; }).join('') : '<option value="">אין בניות חדשות</option>') + '</select></div></label>' +
+        '<label class="adm-f"><span>מחיר (₪)</span><div class="adm-in"><input id="up-p" inputmode="decimal" dir="ltr" value="' + esc(UPD.price || 49) + '"></div></label></div>' +
+        '<label class="adm-f"><span>מה חדש (הלקוח רואה את זה)</span><div class="adm-in"><textarea id="up-notes" rows="3" maxlength="1500" placeholder="למשל: סביבת עבודה מהירה, חלון הדפסה חדש, 18 עיצובי AI חדשים"></textarea></div></label>' +
+        '<div class="adm-row"><label class="adm-chk"><input type="checkbox" id="up-free"> עדכון בחינם לכולם</label><button class="btn gold" id="up-go"' + (builds.length ? '' : ' disabled') + '>📢 פרסום העדכון</button></div>' +
+        (pubs.length ? '<h4>עדכונים שפורסמו</h4><table class="adm-tbl"><tbody>' + pubs.map(function (v) { return '<tr><td dir="ltr"><b>' + esc(v.ver) + '</b></td><td>' + (v.free ? 'חינם' : nis(v.price)) + '</td><td>' + when(v.at) + '</td><td>' + esc(v.notes || '') + '</td><td class="act"><button data-unpub="' + esc(v.ver) + '" title="ביטול הפרסום">🗑</button></td></tr>'; }).join('') + '</tbody></table>' : '<p class="hint">עוד לא פורסם עדכון. עד אז הלקוחות נשארים בגרסה שהתקינו.</p>') +
+        '<h4>📨 בקשות עדכון (' + reqs.length + ')</h4>' + (reqs.length ? '<table class="adm-tbl"><tbody>' + reqs.map(function (L) { return '<tr><td><b>' + esc(L.name) + '</b><small dir="ltr">' + esc(L.email) + '</small></td><td dir="ltr">' + esc(L.appVer || '—') + ' → ' + esc(L.updReq.ver) + '</td><td>' + when(L.updReq.at) + '</td><td class="act">' + (L.phone ? '<a target="_blank" rel="noopener" href="' + esc(wa(L.phone, 'שלום ' + (L.name || '') + ', לגבי עדכון פריים־סטודיו לגרסה ' + L.updReq.ver + ': המחיר ' + nis(UPD.price) + '. אחרי התשלום אאשר והעדכון ייפתח אצלך בתוכנה ("⬆️ עדכון גרסה").')) + '" title="וואטסאפ">💬</a>' : '') + '<button data-grant="' + esc(L.email) + '" title="אישור (אחרי תשלום)">✔ אישור</button></td></tr>'; }).join('') + '</tbody></table>' : '<p class="hint">אין בקשות פתוחות.</p>');
+      $('#up-price-save').addEventListener('click', function () { LIC.admin('upd-settings', { price: $('#up-price').value.trim() }).then(function (r) { done(r, '✔ מחיר העדכון נשמר'); }); });
+      $('#up-go').addEventListener('click', function () {
+        var v = $('#up-ver').value; if (!v) return;
+        var free = $('#up-free').checked;
+        if (!confirm('לפרסם את גרסה ' + v + ' כעדכון' + (free ? ' בחינם לכולם' : ' במחיר ' + nis($('#up-p').value) + '') + '?')) return;
+        LIC.admin('upd-publish', { ver: v, price: $('#up-p').value.trim(), notes: $('#up-notes').value.trim(), free: free ? '1' : '' }).then(function (r) { done(r, '📢 העדכון פורסם. הלקוחות יראו אותו ב"⬆️ עדכון גרסה".'); });
+      });
+      $$('[data-unpub]', box).forEach(function (b) { b.addEventListener('click', function () { if (!confirm('לבטל את פרסום העדכון ' + b.dataset.unpub + '?')) return; LIC.admin('upd-unpublish', { ver: b.dataset.unpub }).then(function (r) { done(r, 'הפרסום בוטל'); }); }); });
+      $$('[data-grant]', box).forEach(function (b) { b.addEventListener('click', function () { grant(ALL.filter(function (x) { return x.email === b.dataset.grant; })[0]); }); });
+    }
+    function grant(L) {
+      var top = latestPub(), v = (L.updReq && L.updReq.ver) || (top && top.ver);
+      if (!v) return FS.toast('קודם מפרסמים עדכון');
+      v = window.prompt('לאשר ל־' + L.name + ' עדכון לגרסה:', v); if (!v) return;
+      var pub = (UPD.versions || []).filter(function (x) { return x.ver === v; })[0];
+      var amt = window.prompt('כמה שולם על העדכון? (₪, 0 = בלי תשלום)', pub && !pub.free ? pub.price : 0); if (amt == null) return;
+      var method = Number(amt) > 0 ? window.prompt('איך שולם? (ביט, פייבוקס, העברה, מזומן…)', 'ביט') || '' : '';
+      LIC.admin('upd-grant', { email: L.email, ver: v.trim(), amount: amt, method: method }).then(function (r) { done(r, '⬆️ העדכון לגרסה ' + v + ' אושר ל־' + L.name + '. אצלו בתוכנה: "⬆️ עדכון גרסה" ← הורדה והתקנה.'); });
+    }
     function act(a, L) {
       if (a === 'pay') { var pr = $('#lic-list tr[data-p="' + L.email.replace(/"/g, '') + '"]'); if (pr) pr.hidden = !pr.hidden; return; }
+      if (a === 'upd') return grant(L);
       if (a === 'copy') return copy(codeText(L));
       if (a === 'history') { var h = $('#lic-list tr[data-h="' + L.email.replace(/"/g, '') + '"]'); if (h) h.hidden = !h.hidden; return; }
       if (a === 'mail') return LIC.admin('lic-mail', { email: L.email }).then(function (r) { done(r, '✉️ נשלח למייל ' + L.email + ' (אם שירות המיילים מחובר).'); });
@@ -124,10 +164,10 @@
       });
     });
     $('#lic-q').addEventListener('input', function () { q = this.value.trim(); draw(); });
-    function load() { LIC.admin('lic-list').then(function (r) { if (!r.ok) { $('#lic-list').innerHTML = '<p class="hint">' + esc(ACC.msg(r)) + '</p>'; return; } ALL = r.licenses; if (r.settings) { SET = r.settings; $('#ls-price').value = SET.price; if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); }); }
+    function load() { LIC.admin('lic-list').then(function (r) { if (!r.ok) { $('#lic-list').innerHTML = '<p class="hint">' + esc(ACC.msg(r)) + '</p>'; return; } ALL = r.licenses; if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; $('#ls-price').value = SET.price; if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }); }
     $('#ln-paid').addEventListener('change', function () { $('.ln-pay').hidden = !this.checked; if (this.checked && !$('#ln-amount').value) $('#ln-amount').value = $('#ln-price').value; });
     $('#ls-save').addEventListener('click', function () { LIC.admin('lic-settings', { price: $('#ls-price').value.trim() }).then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); SET = r.settings; $('#ln-price').value = SET.price; FS.toast('✔ המחיר נשמר ומופיע בדף ההורדה.'); }); });
-    downloads().then(function (d) { DLS = d || { n: '—' }; if (ALL) stats(); });
+    downloads().then(function (d) { DLS = d || { n: '—' }; if (ALL) { stats(); updDraw(); } });
     c.onRefresh(load);
     load();
   };
