@@ -1,0 +1,289 @@
+{
+  "made": "2026-10-23T08:47:23.811Z",
+  "langs": {
+    "he": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 12.95
+        },
+        {
+          "id": "install",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 13.25
+        },
+        {
+          "id": "activate",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 9.75
+        },
+        {
+          "id": "engine",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 13.05
+        },
+        {
+          "id": "photos",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 15.15
+        },
+        {
+          "id": "frames",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 14.25
+        },
+        {
+          "id": "adjust",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 11.35
+        },
+        {
+          "id": "ai",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 16.65
+        },
+        {
+          "id": "offline",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 14.75
+        },
+        {
+          "id": "curate",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 14.85
+        },
+        {
+          "id": "live",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 11.65
+        },
+        {
+          "id": "output",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 15.65
+        },
+        {
+          "id": "buy",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 14.65
+        }
+      ],
+      "provider": "gemini",
+      "tried": []
+    },
+    "en": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 11.85
+        },
+        {
+          "id": "install",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 11.35
+        },
+        {
+          "id": "activate",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 8.65
+        },
+        {
+          "id": "engine",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 12.95
+        },
+        {
+          "id": "photos",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 12.35
+        },
+        {
+          "id": "frames",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.15
+        },
+        {
+          "id": "adjust",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 8.25
+        },
+        {
+          "id": "ai",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 13.65
+        },
+        {
+          "id": "offline",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 13.25
+        },
+        {
+          "id": "curate",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.55
+        },
+        {
+          "id": "live",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 10.65
+        },
+        {
+          "id": "output",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.85
+        },
+        {
+          "id": "buy",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 14.35
+        }
+      ],
+      "provider": "edge",
+      "tried": []
+    },
+    "he-edge": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 12.05
+        },
+        {
+          "id": "install",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 14.25
+        },
+        {
+          "id": "activate",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 10.35
+        },
+        {
+          "id": "engine",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 12.55
+        },
+        {
+          "id": "photos",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 13.75
+        },
+        {
+          "id": "frames",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 14.95
+        },
+        {
+          "id": "adjust",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 9.75
+        },
+        {
+          "id": "ai",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 15.15
+        },
+        {
+          "id": "offline",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 14.05
+        },
+        {
+          "id": "curate",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 14.75
+        },
+        {
+          "id": "live",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 11.15
+        },
+        {
+          "id": "output",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 13.15
+        },
+        {
+          "id": "buy",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 15.95
+        }
+      ],
+      "provider": "edge",
+      "tried": []
+    },
+    "en-edge": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 11.85
+        },
+        {
+          "id": "install",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 10.55
+        },
+        {
+          "id": "activate",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 8.65
+        },
+        {
+          "id": "engine",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 12.05
+        },
+        {
+          "id": "photos",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 12.35
+        },
+        {
+          "id": "frames",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.15
+        },
+        {
+          "id": "adjust",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 8.25
+        },
+        {
+          "id": "ai",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 12.85
+        },
+        {
+          "id": "offline",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 11.15
+        },
+        {
+          "id": "curate",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.55
+        },
+        {
+          "id": "live",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 10.65
+        },
+        {
+          "id": "output",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 13.85
+        },
+        {
+          "id": "buy",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 14.35
+        }
+      ],
+      "provider": "edge",
+      "tried": []
+    }
+  }
+}
