@@ -103,8 +103,10 @@
   };
   /* ---------- the business line printed on every magnet (name, phone, Instagram…) ---------- */
   FS.BIZ = { name: 'פריים מגנטים', owner: '', phone: '', whatsapp: '', email: '', instagram: '', facebook: '', website: '', tagline: '', areas: '', hours: '',
-    credit: { on: true, items: ['name', 'phone'], pos: 'bottom', size: 3.2, color: 'auto', font: 'Heebo', opacity: 0.85 } };
+    credit: { on: false, items: ['name', 'phone'], pos: 'bottom', size: 3.2, color: 'auto', font: 'Heebo', opacity: 0.85 } };
   try { var savedBiz = JSON.parse(localStorage.getItem('frame-studio-biz') || 'null'); if (savedBiz) FS.BIZ = Object.assign({}, FS.BIZ, savedBiz, { credit: Object.assign({}, FS.BIZ.credit, savedBiz.credit || {}) }); } catch (e) { /* private mode */ }
+  /* Oct 2026: the business line is no longer added to photos by default; the owner adds it when wanted (once, for everyone) */
+  try { if (!localStorage.getItem('fs-credit-off-v1')) { localStorage.setItem('fs-credit-off-v1', '1'); FS.BIZ.credit.on = false; if (savedBiz) localStorage.setItem('frame-studio-biz', JSON.stringify(FS.BIZ)); } } catch (e) { /* private mode */ }
   FS.saveBiz = function () { try { localStorage.setItem('frame-studio-biz', JSON.stringify(FS.BIZ)); } catch (e) { /* private mode */ } };
   function handle(u) { u = String(u || '').trim(); if (!u) return ''; var m = u.match(/instagram\.com\/([^/?#]+)/i); return '@' + (m ? m[1] : u.replace(/^@/, '')); }
   FS.creditText = function (b) {

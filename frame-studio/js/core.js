@@ -43,7 +43,7 @@
   /* ---------- state ---------- */
   FS.state = { photos: [], cur: -1, sel: null, zoom: 0, showOriginal: false };
   FS.ADJ0 = { exposure: 0, brightness: 0, contrast: 0, highlights: 0, shadows: 0, whites: 0, blacks: 0, temp: 0, tint: 0,
-    vibrance: 0, saturation: 0, hue: 0, dehaze: 0, texture: 0, clarity: 0, sharpen: 0, vignette: 0, grain: 0, fade: 0, mono: 0, tone: 'none',
+    vibrance: 0, saturation: 0, hue: 0, cr: 0, cg: 0, cb: 0, dehaze: 0, texture: 0, clarity: 0, sharpen: 0, vignette: 0, grain: 0, fade: 0, mono: 0, tone: 'none',
     hsl: null, grade: null, curve: null };   /* the last three are objects, set only while they do something */
   /* the colour mixer's eight bands: id, Hebrew name, swatch, centre hue in degrees */
   FS.HSL_BANDS = [['red', 'אדום', '#e5483e', 0], ['orange', 'כתום', '#ef8a2e', 30], ['yellow', 'צהוב', '#e6cf3c', 60], ['green', 'ירוק', '#4fb64c', 120],
@@ -418,7 +418,7 @@
     /* the optional stages build their tables once per call and cost nothing per pixel when unused */
     var HT = hslTables(a.hsl), HD = HT && fast ? hslDelta(a.hsl, HT) : null, HO = [0, 0, 0], GL = gradeLUT(a.grade), dz = (a.dehaze || 0) / 100 * 0.55;
     var c, di, q, TN = { sepia: 1, cool: 2, gold: 3, teal: 4 }[a.tone] || (SPLIT[a.tone] ? 5 : 0), SPT = SPLIT[a.tone];
-    var tr = a.temp * 0.32 + a.tint * 0.1, tg = -a.tint * 0.3, tb = -a.temp * 0.32 + a.tint * 0.1;
+    var tr = a.temp * 0.32 + a.tint * 0.1 + (a.cr || 0) * 0.45, tg = -a.tint * 0.3 + (a.cg || 0) * 0.45, tb = -a.temp * 0.32 + a.tint * 0.1 + (a.cb || 0) * 0.45;
     var hm = a.hue ? hueMatrix(a.hue) : null, sat = 1 + a.saturation / 100, vib = a.vibrance / 100, mono = a.mono / 100;
     var n = px.length, i, r, g, b, L, mx, mn, f;
     for (i = 0; i < n; i += 4) {

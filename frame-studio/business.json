@@ -87,7 +87,7 @@
   ],
   "owner": "חיים קריספין",
   "credit": {
-    "on": true,
+    "on": false,
     "items": [
       "name",
       "phone"

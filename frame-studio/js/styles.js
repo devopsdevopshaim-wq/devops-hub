@@ -243,7 +243,26 @@
     ['crayon', 'ציור ילדים', '🖍️', 'Redraw this photo as a cheerful crayon drawing by a child on white paper, with wobbly lines and bright colours, still recognisable.'],
     ['wood', 'פסל עץ', '🪵', 'Turn every person into a hand-carved wooden figurine of themselves, warm polished wood grain, studio light.'],
     ['flowers', 'זר פרחים', '🌸', 'Give every person a beautiful crown of fresh flowers and surround them with blooming flowers and soft spring light, a dreamy portrait.'],
-    ['circus', 'קרקס וינטג׳', '🎪', 'Turn every person into vintage circus performers under a striped big top with warm lights, colourful painterly style.']
+    ['circus', 'קרקס וינטג׳', '🎪', 'Turn every person into vintage circus performers under a striped big top with warm lights, colourful painterly style.'],
+    /* Oct 23: more looks for event photographers */
+    ['cinema-bw', 'שחור־לבן קולנועי', '🎞️', 'Make this a timeless black and white fine-art portrait: deep blacks, silver highlights, soft film grain, the light of a classic movie still.'],
+    ['golden', 'שקיעה זהובה', '🌅', 'Relight this photo with warm golden-hour sunset light: a glowing rim light on hair and shoulders, soft lens flare, a warm sky behind them.'],
+    ['bokeh', 'בוקה רומנטי', '✨', 'Make the background a dreamy romantic bokeh of warm fairy lights while the people stay sharp, soft glow, wedding photography.'],
+    ['vogue', 'שער מגזין אופנה', '💃', 'Turn this into a high-fashion magazine cover shoot: editorial lighting, elegant styling, rich colour grade, no text.'],
+    ['charcoal', 'רישום פחם', '🖤', 'Redraw this photo as an expressive charcoal drawing on textured paper with smudged shadows and confident strokes.'],
+    ['pastel-art', 'ציור פסטל', '🖍️', 'Redraw this photo as a soft chalk pastel painting with gentle colours and visible paper texture.'],
+    ['stained', 'ויטראז׳', '⛪', 'Redraw this photo as a glowing stained-glass window with lead lines and jewel-toned glass, light shining through.'],
+    ['mosaic-art', 'פסיפס עתיק', '🏛️', 'Redraw this photo as an ancient Roman floor mosaic made of small stone tiles, warm earthy colours.'],
+    ['ukiyo', 'הדפס יפני', '🌊', 'Redraw this photo as a Japanese ukiyo-e woodblock print with flat colours, fine outlines and a stylised wave or Mount Fuji behind.'],
+    ['impression', 'אימפרסיוניזם', '🎨', 'Redraw this photo as an impressionist painting in the spirit of Monet: dappled light, short brush strokes, a garden in bloom.'],
+    ['gold-leaf', 'עלי זהב', '🪙', 'Redraw this photo as an Art Nouveau portrait with ornate gold leaf patterns, flowing lines and a decorative halo, in the spirit of Klimt.'],
+    ['neon-night', 'לילה ניאון', '🌆', 'Relight the people with pink and blue neon light at night, wet reflections and a glowing city behind, cinematic.'],
+    ['medbeach', 'חוף הים התיכון', '🏖️', 'Place the people on a beautiful Mediterranean beach at sunset with turquoise water and soft sand, natural photo, the same clothes.'],
+    ['garden', 'גן פורח', '🌷', 'Place the people in a lush blooming garden with roses and soft afternoon light, natural photo, the same clothes.'],
+    ['castle', 'ארמון אגדות', '🏰', 'Place the people in front of a fairy-tale castle at dusk with fireworks in the sky, magical light, photorealistic.'],
+    ['retro80', 'שנות ה־80', '📼', 'Restyle this photo as a 1980s retro photo: big hair, bold colours, a laser-grid background and VHS colour bleed.'],
+    ['polaroid', 'פולארויד וינטג׳', '📷', 'Make this look like a faded vintage instant photo from the 1970s: warm cast, soft focus, slight light leak.'],
+    ['caricature', 'קריקטורה עדינה', '😄', 'Redraw this photo as a friendly, flattering caricature with slightly bigger heads and warm smiles, colourful hand-drawn style.']
   ];
   FS.AI_KEEP = KEEP;
   /* the photo for the image model: a big copy for Gemini, and one under 512px for FLUX.2 on Cloudflare */

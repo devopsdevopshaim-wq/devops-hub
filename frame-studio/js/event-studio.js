@@ -176,6 +176,7 @@
       return true;
     });
   }
+  FS.faceLight = faceLight;
   $('#face-light').addEventListener('click', function () { var p = FS.cur(); if (!p) return; faceLight(p).then(function (ok) { if (ok) { FS.changed(); FS.toast('💡 הפנים הוארו'); } }); });
   $('#face-all').addEventListener('click', function () {
     var p = FS.cur(); if (!p) return;

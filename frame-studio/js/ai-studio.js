@@ -293,6 +293,31 @@
     });
   };
 
+  /* smart edits (Oct 23): the photo stays the photo; one thing changes. Same people, faces, poses, clothes and framing. */
+  var SAME = ' Keep everything else exactly as it is: the same people, faces, expressions, poses, clothes and framing. Photorealistic, no text, no watermark.';
+  var EDITS = [
+    ['שחזור תמונה ישנה', '🧓', 'Restore this old or damaged photo: remove scratches, dust, creases and fading, recover sharp natural detail and faces'],
+    ['צביעת שחור־לבן', '🎨', 'Colourise this black and white photo with natural, historically believable colours and skin tones'],
+    ['שיפור חדות ופנים', '🔍', 'Enhance this photo like a professional retoucher: sharper detail, clean natural skin, bright eyes, corrected focus and noise'],
+    ['תאורת סטודיו', '💡', 'Relight the people with soft, flattering professional studio light, balanced exposure and gentle shadows'],
+    ['חיוך טבעי לכולם', '😊', 'Give everyone a natural, relaxed, happy expression with open eyes, subtle and believable'],
+    ['פתיחת עיניים עצומות', '👁️', 'Open any closed eyes naturally so everyone looks at the camera with natural eyes matching their face'],
+    ['הסרת אנשים ברקע', '🧹', 'Remove the strangers and passers-by in the background and fill the space naturally, keep the main people'],
+    ['רקע חופה', '💒', 'Replace only the background with an elegant wedding chuppah decorated with white flowers and soft lights'],
+    ['רקע אולם מעוצב', '🥂', 'Replace only the background with a beautifully lit, elegant event hall with warm lights and flowers'],
+    ['רקע בלונים', '🎈', 'Replace only the background with a festive wall of pastel balloons and soft party lights'],
+    ['רקע ים בשקיעה', '🌅', 'Replace only the background with a calm sea at sunset with a warm golden sky'],
+    ['רקע גן פורח', '🌷', 'Replace only the background with a lush blooming garden with soft afternoon light'],
+    ['רקע ירושלים', '🕍', 'Replace only the background with a view of Jerusalem\'s golden stone walls at sunset'],
+    ['רקע סטודיו לבן', '⬜', 'Replace only the background with a clean seamless white studio backdrop with a soft floor shadow'],
+    ['רקע לילה מנצנץ', '🌌', 'Replace only the background with a magical night sky full of stars and soft glowing lights'],
+    ['קונפטי וחגיגה', '🎉', 'Add colourful falling confetti and a festive sparkle in the air around the people'],
+    ['שלג יורד', '❄️', 'Add gently falling snowflakes and a soft winter glow over the scene'],
+    ['הרחבת התמונה', '↔️', 'Extend the scene naturally beyond its edges, giving more room around the people while keeping them the same size in the middle']
+  ];
+  FS.AI_EDITS = EDITS.map(function (e) { return [e[0], e[1], e[2] + '.' + SAME]; });
+  FS.AI_VIRAL = VIRAL; FS.AI_KEEP_FREE = KEEP_FREE;
+
   var pane = $('[data-pane=styles]'); if (!pane) return;
   var cur = { style: '3d', world: '', outfit: '', mood: '' };
   function chips(id, list, key) {
@@ -307,7 +332,7 @@
     '<div class="row2 ax-undo"><button class="btn" id="style-back" title="מבטל את עיצוב ה־AI האחרון (בתמונה או בכל המסומנות)">↶ ביטול העיצוב האחרון</button><button class="btn" id="style-orig" title="מחזיר את התמונה המקורית, בלי שום עיצוב AI">↩ חזרה למקור</button></div>' +
     '<div class="card ax-build"><h3>🎛️ שילוב משלך</h3>' + chips('🎨 סגנון', STYLE, 'style') + chips('🌍 איפה', WORLD, 'world') + chips('👗 תלבושת', OUTFIT, 'outfit') + chips('✨ אווירה', MOOD, 'mood') +
     '<p class="ax-name" id="ax-name"></p><div class="row2"><button class="btn" id="ax-random">🎲 הפתעה</button><button class="btn primary" id="ax-go">✨ ליצור</button></div></div>' +
-    '<p class="ax-cloud-note">🌐 העיצובים מכאן ולמטה נוצרים בשרת AI וצריכים אינטרנט' + (FS.localAI ? ' (או את מנוע ה־AI המקומי)' : '') + '.</p><h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
+    '<p class="ax-cloud-note">🌐 העיצובים מכאן ולמטה נוצרים בשרת AI וצריכים אינטרנט' + (FS.localAI ? ' (או את מנוע ה־AI המקומי)' : '') + '.</p><h3>🪄 עריכות חכמות <small>התמונה נשארת, משתנה דבר אחד</small></h3><div class="ai-styles" id="ax-edits"></div><h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
     '<h3>⭐ שילובים מוכנים</h3><div class="ai-styles" id="ax-combos"></div>' +
     '<h3>🎨 סגנונות</h3><div class="ai-styles" id="ai-styles"></div>' +
     '<h3>✍️ לתאר במילים</h3><div class="field"><textarea id="ai-custom" rows="2" placeholder="למשל: להלביש את כולם בתחפושות של פיראטים על ספינה בסערה"></textarea></div>' +
@@ -320,6 +345,11 @@
     $$('.ax-chips button.on', pane).forEach(function (b) { b.scrollIntoView({ block: 'nearest', inline: 'center' }); });
   });
   $('#ax-go').addEventListener('click', function () { FS.runAI(promptOf(cur), nameOf(cur)); });
+  FS.AI_EDITS.forEach(function (v) {
+    var b = document.createElement('button'); b.className = 'ai-style'; b.title = v[0];
+    b.innerHTML = '<i>' + v[1] + '</i><span>' + FS.esc(v[0]) + '</span>';
+    b.addEventListener('click', function () { FS.runAI(v[2], v[0]); }); $('#ax-edits').appendChild(b);
+  });
   VIRAL.forEach(function (v) {
     var b = document.createElement('button'); b.className = 'ai-style hot'; b.title = v[0];
     b.innerHTML = '<i>' + v[1] + '</i><span>' + FS.esc(v[0]) + '</span>';
