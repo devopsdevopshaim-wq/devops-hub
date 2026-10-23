@@ -7,3 +7,7 @@
 /promo-app-v/
 /promo-src/music/src/
 .hyperframes/
+/promo-app-tutorial-he/
+/promo-app-tutorial-en/
+/promo-src/app-tutorial/voice/gemini-*/
+__pycache__/

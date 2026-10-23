@@ -22,6 +22,8 @@
   function toBlob(c, type, q) { return new Promise(function (res) { c.toBlob(res, 'image/' + type, q); }); }
   function download(blob, name) { var a = document.createElement('a'), u = URL.createObjectURL(blob); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000); }
   FS.download = download;
+  /* a file name for many photos: the date, never the site's name */
+  FS.outName = function () { var d = new Date(); return 'תמונות ' + d.getDate() + '.' + (d.getMonth() + 1) + '.' + String(d.getFullYear()).slice(2); };
   function safe(n) { return String(n || 'תמונה').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60); }
   function opts() { return { scale: Number($('#out-scale').value), q: Number($('#out-q').value) / 100, transparent: outType === 'png' && $('#out-transparent').checked }; }
   function fileOf(p, o) {
@@ -89,10 +91,10 @@
   $('#save-all').addEventListener('click', function () {
     if (!need()) return; var o = opts(), list = S.photos.slice(); FS.busy('מכין ' + list.length + ' קבצים…');
     ready().then(function () {
-      if (outType === 'pdf') return makePdf(list, o).then(function (b) { download(b, 'פריים־סטודיו.pdf'); });
+      if (outType === 'pdf') return makePdf(list, o).then(function (b) { download(b, FS.outName() + '.pdf'); });
       var chain = Promise.resolve(), files = [];
       list.forEach(function (p, i) { chain = chain.then(function () { FS.busy('מכין ' + (i + 1) + '/' + list.length + '…'); return fileOf(p, o).then(function (f) { return f.blob.arrayBuffer().then(function (ab) { files.push({ name: f.name, data: new Uint8Array(ab) }); }); }); }); });
-      return chain.then(function () { download(FS.zip(files), 'פריים־סטודיו.zip'); });
+      return chain.then(function () { download(FS.zip(files), FS.outName() + '.zip'); });
     }).then(function () { FS.busy(); FS.savedOnce = true; FS.toast('✔ כל התמונות נשמרו'); }).catch(function () { FS.busy(); FS.toast('השמירה לא הצליחה'); });
   });
 
@@ -179,6 +181,7 @@
   /* ---------- print ---------- */
   var PAPERS = [['10x15', 'תמונה 10×15', 102, 152], ['13x18', '13×18', 127, 178], ['15x20', '15×20', 152, 203], ['20x30', '20×30', 203, 305],
     ['A6', 'A6', 105, 148], ['A5', 'A5', 148, 210], ['A4', 'A4', 210, 297], ['A3', 'A3', 297, 420], ['Letter', 'Letter', 215.9, 279.4], ['sq15', 'ריבוע 15×15', 152, 152], ['10x10', 'ריבוע 10×10', 102, 102], ['card', 'כרטיס 5.4×8.6', 54, 86]];
+  FS.PAPERS = PAPERS;
   $('#paper').innerHTML = PAPERS.map(function (p) { return '<option value="' + p[0] + '">' + p[1] + ' (' + p[2] + '×' + p[3] + ' מ"מ)</option>'; }).join('');
   $('#paper').value = FS.prefs.paper || '10x15';
   ['paper', 'layout', 'margin'].forEach(function (k) { if (FS.prefs['print_' + k]) $('#' + k).value = FS.prefs['print_' + k]; $('#' + k).addEventListener('change', function () { FS.prefs['print_' + k] = this.value; FS.savePrefs(); }); });
@@ -215,7 +218,7 @@
     var paper = paperOf(job.paper), pw = paper[2], ph = paper[3], mg = job.margin || 0, gap = job.layout === 'fill' ? (job.gap != null ? job.gap : 2) : (mg ? 2 : 0);
     var groups = {}, order = [];
     job.list.forEach(function (p) { var mm = mmOf(p.doc), key = job.layout === 'fill' ? mm.map(function (v) { return v.toFixed(1); }).join('x') : 'all'; if (!groups[key]) { groups[key] = { mm: mm, items: [] }; order.push(key); }
-      var n = (job.copies || 1) * (p.copies || 1); for (var i = 0; i < n; i++) groups[key].items.push(p); });
+      var n = (job.copies || 1) * (p.copies == null ? 1 : p.copies); for (var i = 0; i < n; i++) groups[key].items.push(p); });
     var pages = [], total = 0;
     order.forEach(function (key) {
       var g = groups[key], cells = cellsFor(job.layout, pw, ph, mg, gap, g.mm);
@@ -259,6 +262,7 @@
     });
     return c;
   };
+  FS.drawPlanPage = drawPage;
   FS.doPrint = function (plan) {
     if (FS.directPrint && FS.directPrint.on()) return ready().then(function () { return FS.directPrint(plan); });
     FS.busy('מכין להדפסה…');

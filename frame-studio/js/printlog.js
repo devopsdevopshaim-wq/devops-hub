@@ -209,6 +209,7 @@
     }, function () { if (H.up || !H.checked) { H.up = false; refresh(); drawCard(); } }).then(function () { H.checked = true; pt = setTimeout(poll, H.up ? 5000 : 15000); });
   }
   FS.printers = function () { return { up: H.up, list: H.printers.slice(), chosen: chosen() }; };
+  FS.choosePrinter = function (name) { choose(name); };
 
   /* print straight to the chosen printer: one 300dpi JPEG per sheet */
   FS.directPrint = function (plan) {
@@ -217,7 +218,7 @@
     function next() {
       if (i >= n) return Promise.resolve();
       FS.busy('🖨️ שולח ל־' + d.name + ' · דף ' + (i + 1) + ' מתוך ' + n);
-      var c = FS.pageCanvas(plan, plan.pages[i]);
+      var c = FS.pageCanvas(plan, plan.pages[i], plan.dpi);
       return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.95); }).then(function (blob) {
         var q = '?p64=' + encodeURIComponent(b64(d.name)) + '&t64=' + encodeURIComponent(b64('Frame Studio ' + (i + 1) + '/' + n)) + '&w=' + plan.paper[2] + '&h=' + plan.paper[3] + '&copies=1';
         return fetch(HELPER + '/print' + q, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
