@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
+window.FS_V='52';(function(){
+window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
+Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
+try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
+var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename||ev.filename.indexOf('/frame-studio/')<0)return;shown=1;var b=document.createElement('div');b.setAttribute('role','alert');b.style.cssText='position:fixed;z-index:2147483647;bottom:16px;left:50%;transform:translateX(-50%);background:#17131D;color:#F5EFE4;border:1px solid #D6B77E;border-radius:999px;padding:10px 12px 10px 18px;font:600 15px Assistant,Heebo,sans-serif;display:flex;gap:12px;align-items:center;box-shadow:0 20px 50px -20px #000;direction:rtl';b.innerHTML='משהו לא נטען כמו שצריך.<button style="font:inherit;border:0;border-radius:999px;padding:8px 16px;cursor:pointer;background:linear-gradient(115deg,#A9864C,#F3DDA6,#C9A35F);color:#0D0B10">🔄 רענון מלא</button>';b.querySelector('button').onclick=window.FS_HEAL;(document.body||document.documentElement).appendChild(b);});
+})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0D0B10" />
+<title>הסכם רכישה ושימוש · פריים־סטודיו</title>
+<meta name="description" content="הסכם הרכישה והרישיון לשימוש בתוכנת פריים־סטודיו." />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" />
+<link rel="stylesheet" href="css/download.css?v=52" />
+</head>
+<body>
+<header class="dl-top"><a href="./" class="dl-brand"><img src="icon.svg" alt="" width="34" height="34" /><span>פריים מגנטים</span></a><a href="download.html" class="dl-back">← לדף ההורדה</a></header>
+<main class="dl-legal">
+  <p class="dl-eyebrow">גרסה v1 · בתוקף מ־21.10.2026</p>
+  <h1>הסכם רכישה ורישיון שימוש בפריים־סטודיו</h1>
+  <p>הסכם זה נערך בין <b>פריים מגנטים, חיים קריספין</b> (להלן: "המפתח"), טלפון 054-4979771, מייל devopsdevopshaim@gmail.com, לבין מי שרכש רישיון לתוכנה ומפעיל אותה (להלן: "הרוכש"). הפעלת התוכנה וסימון האישור במסך ההפעלה מהווים הסכמה לתנאים אלה. אישור ההסכם נרשם בשרת יחד עם מועד ההפעלה.</p>
+
+  <h2>1. הרישיון</h2>
+  <ol>
+    <li>המפתח מעניק לרוכש רישיון אישי, לא בלעדי ולא ניתן להעברה, להתקין ולהשתמש בתוכנת "פריים־סטודיו" (להלן: "התוכנה") <b>במחשב אחד בלבד</b>, לצורכי עסקו או לשימושו האישי.</li>
+    <li>לכל רוכש נמסר קוד הפעלה אישי, המשויך לכתובת המייל שלו. בהפעלה הראשונה הקוד ננעל למחשב שבו הופעל. הפעלה של אותו קוד במחשב נוסף תיחסם.</li>
+    <li>החלפת מחשב (למשל בעקבות תקלה או רכישת מחשב חדש) תיעשה בפנייה למפתח, שישחרר את המחשב הקודם. המפתח רשאי לסרב לשחרורים חוזרים שנראים כשימוש בכמה מחשבים.</li>
+    <li>הרישיון אינו מקנה בעלות בתוכנה. כל זכויות הקניין הרוחני בתוכנה, בעיצובים, במסגרות ובקוד שמורות למפתח.</li>
+  </ol>
+
+  <h2>2. התמורה והתשלום</h2>
+  <ol>
+    <li>מחיר הרישיון הוא כפי שסוכם בין הצדדים ונרשם אצל המפתח בעת הרכישה. ההפעלה מתאפשרת רק לאחר שהתשלום התקבל ונרשם.</li>
+    <li>התשלום הוא חד־פעמי לרישיון למחשב אחד, אלא אם סוכם אחרת בכתב. עדכוני תוכנה שהמפתח מפרסם ניתנים ללא תשלום נוסף כל עוד הרישיון בתוקף, אך המפתח אינו מתחייב לפרסם עדכונים.</li>
+    <li>קבלה או חשבונית יינתנו על ידי המפתח כדין.</li>
+  </ol>
+
+  <h2>3. מה אסור</h2>
+  <ol>
+    <li>להעביר, למכור, להשכיר, לשתף או לפרסם את קוד ההפעלה או את התוכנה לאחרים.</li>
+    <li>להעתיק, לפרק, לבצע הנדסה לאחור, לעקוף את מנגנון הרישוי או לשנות את התוכנה.</li>
+    <li>להשתמש בתוכנה לכל מטרה שאינה חוקית, או ליצור באמצעותה תוכן פוגעני, מטעה או מפר זכויות של אחרים.</li>
+  </ol>
+
+  <h2>4. שירותי בינה מלאכותית</h2>
+  <ol>
+    <li>חלק מהיכולות (עריכות AI) פועלות דרך שרתים חיצוניים, חלקם חינמיים ושל צדדים שלישיים. לצורך זה התמונה שבחרתם לערוך נשלחת לעיבוד. המפתח אינו שומר את התמונות האלה, אך אינו אחראי למדיניות של השירותים החיצוניים.</li>
+    <li>זמינות שירותי ה־AI, מהירותם ואיכות התוצאה אינן מובטחות, והם עשויים להשתנות או להיפסק. רישיון התוכנה אינו כולל התחייבות לשירות AI מסוים.</li>
+    <li>הרוכש אחראי לקבל את הסכמת המצולמים לצילום, לעריכה ולהדפסה של תמונותיהם.</li>
+  </ol>
+
+  <h2>5. אחריות</h2>
+  <ol>
+    <li>התוכנה ניתנת כמות שהיא ("AS IS"). המפתח יעשה מאמץ סביר לתקן תקלות שידווחו לו, אך אינו מתחייב שהתוכנה תפעל ללא תקלות או שתתאים לכל מחשב או מדפסת.</li>
+    <li>ככל שהדין מתיר, אחריות המפתח לכל נזק, ישיר או עקיף, מוגבלת לסכום ששולם בפועל עבור הרישיון. המפתח אינו אחראי לאובדן הכנסות, לאובדן קבצים או לנזק לאירוע. מומלץ לשמור גיבוי של התמונות והפרויקטים.</li>
+  </ol>
+
+  <h2>6. ביטול ההסכם</h2>
+  <ol>
+    <li>ביטול עסקה על ידי הרוכש ייעשה בהתאם להוראות חוק הגנת הצרכן, התשמ"א-1981, ככל שהן חלות על העסקה. עם הביטול הרישיון מבוטל והתוכנה תיחסם.</li>
+    <li>הפרה של סעיף 3 מאפשרת למפתח לבטל את הרישיון מיד, ללא החזר.</li>
+  </ol>
+
+  <h2>7. פרטיות</h2>
+  <p>לצורך הרישוי נשמרים בשרת: שם, מייל, טלפון, מזהה מחשב מוצפן (hash, לא המזהה עצמו), מועדי הפעלה ושימוש, וכתובת רשת חלקית. המידע משמש לניהול הרישיון ולתמיכה בלבד ואינו מועבר לאחרים.</p>
+
+  <h2>8. כללי</h2>
+  <ol>
+    <li>על הסכם זה יחולו דיני מדינת ישראל, וסמכות השיפוט הבלעדית נתונה לבתי המשפט המוסמכים במחוז מגורי המפתח.</li>
+    <li>המפתח רשאי לעדכן הסכם זה. גרסה חדשה תוצג לאישור בהפעלה הבאה של התוכנה.</li>
+    <li>פניות ותמיכה: וואטסאפ / טלפון 054-4979771, מייל devopsdevopshaim@gmail.com.</li>
+  </ol>
+  <p class="dl-note">⚖️ ההסכם נוסח כבסיס בלבד ואינו מחליף ייעוץ משפטי. לפני מכירה רחבה מומלץ שעורך דין יעבור עליו.</p>
+</main>
+<footer class="dl-foot"><a href="./">פריים מגנטים</a> · <a href="download.html">הורדת הסטודיו</a> · <a href="accessibility.html">הצהרת נגישות</a></footer>
+</body>
+</html>

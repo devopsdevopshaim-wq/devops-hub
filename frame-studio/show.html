@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
+window.FS_V='52';(function(){
+window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
+Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
+try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
+var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename||ev.filename.indexOf('/frame-studio/')<0)return;shown=1;var b=document.createElement('div');b.setAttribute('role','alert');b.style.cssText='position:fixed;z-index:2147483647;bottom:16px;left:50%;transform:translateX(-50%);background:#17131D;color:#F5EFE4;border:1px solid #D6B77E;border-radius:999px;padding:10px 12px 10px 18px;font:600 15px Assistant,Heebo,sans-serif;display:flex;gap:12px;align-items:center;box-shadow:0 20px 50px -20px #000;direction:rtl';b.innerHTML='משהו לא נטען כמו שצריך.<button style="font:inherit;border:0;border-radius:999px;padding:8px 16px;cursor:pointer;background:linear-gradient(115deg,#A9864C,#F3DDA6,#C9A35F);color:#0D0B10">🔄 רענון מלא</button>';b.querySelector('button').onclick=window.FS_HEAL;(document.body||document.documentElement).appendChild(b);});
+})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<script src="../portfolio/js/failover.js"></script>
+<title>פריים סטודיו · עיצוב גרפי ועיצוב תמונות</title>
+<meta name="description" content="פריים סטודיו: סטודיו לעיצוב גרפי ועיצוב תמונות. עיצוב תמונות וסגנונות AI, קולאז׳ים, מסגרות והזמנות, אלבומים ומצגות, הדפסות ומגנטים באירוע. מרכז, השרון, ירושלים והשפלה." />
+<meta name="theme-color" content="#0D0B10" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Assistant:wght@400;600;700&family=Heebo:wght@500&display=swap" />
+<link rel="stylesheet" href="css/show.css?v=52" />
+<link rel="stylesheet" href="../portfolio/css/mobile.css" />
+<script src="../portfolio/js/track.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן</a>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="top" id="top">
+  <a class="brand" href="./" aria-label="פריים סטודיו, לאתר הראשי">
+    <span class="mono" aria-hidden="true">פ</span>
+    <span class="brand-t"><b>פריים סטודיו</b><small>עיצוב גרפי ועיצוב תמונות</small></span>
+  </a>
+  <nav class="nav" aria-label="ניווט בדף">
+    <a href="#work">עבודות</a><a href="#process">תהליך</a><a href="#worlds">סגנונות</a><a href="#packages">חבילות</a><a href="#faq">שאלות</a>
+  </nav>
+  <a class="pill magnetic" href="#book">מתחילים פרויקט</a>
+</header>
+
+<main id="main">
+  <!-- hero: the studio, in type and in work -->
+  <section class="hero" id="hero" aria-labelledby="hero-title">
+    <div class="hero-light" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <p class="eyebrow">סטודיו לעיצוב גרפי ועיצוב תמונות</p>
+      <h1 id="hero-title"><span class="ln"><span class="h-a">עיצוב גרפי</span></span><span class="ln"><span class="h-b foil">ועיצוב תמונות.</span></span></h1>
+      <p class="sub">מעצבים את התמונות של הרגעים הגדולים: עיבוד וסגנונות AI, קולאז׳ים, מסגרות והזמנות, אלבומים ומצגות, והדפסות, גם במקום, ביום האירוע.</p>
+      <div class="ctas"><a class="btn gold magnetic" href="#book">מתחילים פרויקט</a><a class="btn line" href="#work">לעבודות</a></div>
+    </div>
+    <div class="mosaic" aria-label="מבחר עבודות">
+      <figure class="tile" style="--x:0%;--y:2%;--w:33%;--d:.35"><span class="ph sq"><img src="show/p-noir.webp" alt="עיצוב תמונה בשחור־לבן" /></span><figcaption>עיצוב תמונה</figcaption></figure>
+      <figure class="tile" style="--x:73%;--y:0%;--w:27%;--d:.45"><span class="ph"><img src="show/m0.webp" alt="מסגרת לחתונה עם השמות והתאריך" /></span><figcaption>מסגרת לחתונה</figcaption></figure>
+      <figure class="tile hero-tile" style="--x:30%;--y:13%;--w:41%;--d:1"><span class="ph"><img src="show/mp.webp" alt="צילום ממוסגר ומוכן להדפסה" /></span><figcaption>הדפסה ממוסגרת</figcaption></figure>
+      <figure class="tile" style="--x:3%;--y:53%;--w:28%;--d:.6"><span class="ph sq"><img src="show/p-rain.webp" alt="סגנון AI: ציור גשם" /></span><figcaption>סגנון AI · ציור גשם</figcaption></figure>
+      <figure class="tile" style="--x:73%;--y:58%;--w:27%;--d:.55"><span class="ph sq"><img src="show/p-candy.webp" alt="סגנון AI: סוכריות פופ" /></span><figcaption>סגנון AI · סוכריות פופ</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- what the studio designs -->
+  <div class="band" aria-hidden="true"><div class="band-in"><span>עיצוב תמונות</span><span>סגנונות AI</span><span>קולאז׳ים</span><span>מסגרות והזמנות</span><span>אלבומים</span><span>מצגות</span><span>הדפסות</span><span>עיצוב תמונות</span><span>סגנונות AI</span><span>קולאז׳ים</span><span>מסגרות והזמנות</span><span>אלבומים</span><span>מצגות</span><span>הדפסות</span></div></div>
+
+  <!-- the work -->
+  <section class="work" id="work" aria-labelledby="work-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">מה אנחנו מעצבים</p>
+        <h2 id="work-title" class="display">כל מה שתמונה <span class="foil">יכולה להיות.</span></h2>
+      </div>
+      <div class="bento">
+        <article class="w w-photo">
+          <div class="vis split"><img src="show/p-original.webp" alt="תמונה לפני העיצוב" /><img class="half" src="show/p-oldphoto.webp" alt="אותה תמונה אחרי עיצוב בגוון ישן" /><i class="seam"></i><span class="tagl r">לפני</span><span class="tagl l">אחרי</span></div>
+          <div class="cap"><h3>עיצוב תמונות</h3><p>צבע, אור וגוון, וטיפול עדין שמשאיר את הפנים טבעיות.</p></div>
+        </article>
+        <article class="w w-ai">
+          <div class="vis slices"><img src="show/p-candy.webp" alt="סגנון סוכריות פופ" /><img src="show/p-anime.webp" alt="סגנון אנימה" /><img src="show/p-sketch.webp" alt="סגנון עיפרון" /><img src="show/p-rain.webp" alt="סגנון ציור גשם" /></div>
+          <div class="cap"><h3>סגנונות AI</h3><p>סגנונות שמציירים את התמונה מחדש ושומרים על הפנים.</p></div>
+        </article>
+        <article class="w w-collage">
+          <div class="vis paper"><div class="sheet"><img class="c1" src="show/p-original.webp" alt="" /><img class="c2" src="show/p-noir.webp" alt="" /><img class="c3" src="show/p-oldphoto.webp" alt="" /><img class="c4" src="show/p-sketch.webp" alt="" /><p class="sheet-t">נועה & דניאל<small>12.06</small></p></div></div>
+          <div class="cap"><h3>קולאז׳ים</h3><p>כמה תמונות על דף אחד, בקומפוזיציה ובטיפוגרפיה של האירוע.</p></div>
+        </article>
+        <article class="w w-frames">
+          <div class="vis fan"><img class="f1" src="show/m4.webp" alt="מסגרת לברית" /><img class="f2" src="show/m0.webp" alt="מסגרת לחתונה" /><img class="f3" src="show/m5.webp" alt="מסגרת לחינה" /></div>
+          <div class="cap"><h3>מסגרות והזמנות</h3><p>מסגרת בעיצוב של האירוע עם השמות והתאריך, והזמנות באותה שפה.</p></div>
+        </article>
+        <article class="w w-album">
+          <div class="vis album"><div class="spread"><div class="pg pg-r"><img src="show/p-original.webp" alt="" /><p>הערב שלנו</p></div><div class="pg pg-l"><img class="a1" src="show/p-noir.webp" alt="" /><img class="a2" src="show/p-oldphoto.webp" alt="" /><img class="a3" src="show/p-sketch.webp" alt="" /></div></div></div>
+          <div class="cap"><h3>אלבומים</h3><p>אלבום אירוע מעוצב, עמוד אחרי עמוד.</p></div>
+        </article>
+        <article class="w w-slides">
+          <div class="vis slides" id="slides"><img class="on" src="show/p-original.webp" alt="" /><img src="show/p-oldphoto.webp" alt="" /><img src="show/p-candy.webp" alt="" /><img src="show/p-anime.webp" alt="" /><img src="show/p-rain.webp" alt="" /><i class="bar"></i></div>
+          <div class="cap"><h3>מצגות</h3><p>מצגת תמונות מהאירוע, לשיתוף ולמסך.</p></div>
+        </article>
+        <article class="w w-prints">
+          <div class="vis prints"><img class="p1" src="show/m2.webp" alt="הדפסה לאירוסין" /><img class="p2" src="show/mp.webp" alt="הדפסה ממוסגרת" /><img class="p3" src="show/m6.webp" alt="הדפסה לאירוע חברה" /></div>
+          <div class="cap"><h3>הדפסות ומגנטים</h3><p>הדפסה בצבעים חיים, וגם מגנטים: צלם/ת באירוע, הדפסה במקום, ומגנט ביד תוך דקה.</p><a class="more" href="#packages">החבילות לאירוע ←</a></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- the process, scrubbed by scroll -->
+  <section class="process" id="process" aria-labelledby="process-title">
+    <div class="proc-pin">
+      <div class="proc-copy">
+        <p class="eyebrow">התהליך</p>
+        <h2 id="process-title" class="display">מהתמונה הגולמית <span class="foil">ליצירה.</span></h2>
+        <p class="pnum" aria-hidden="true"><span id="pnum" class="foil">04</span><small>/ 04</small></p>
+        <ol class="steps">
+          <li><b>צילום גולמי</b><span>הרבה פריימים מהרגע, כמו שהם יוצאים מהמצלמה.</span></li>
+          <li><b>בחירה</b><span>בוחרים את הפריים: המבט, האור, הרגע.</span></li>
+          <li><b>עיצוב</b><span>צבע, מסגרת, טיפוגרפיה וסגנון, בשפה של האירוע.</span></li>
+          <li><b>יצירה מוגמרת</b><span>מוכנה להדפסה, לאלבום, לקולאז׳ או למצגת.</span></li>
+        </ol>
+      </div>
+      <div class="pstage" aria-hidden="true">
+        <div class="shots">
+          <span class="shot" style="--x:2%;--y:3%;--op:30% 20%;--z:1.35"><img src="show/p-original.webp" alt="" /></span>
+          <span class="shot pick" style="--x:35%;--y:3%;--op:50% 50%;--z:1"><img src="show/p-original.webp" alt="" /></span>
+          <span class="shot" style="--x:68%;--y:3%;--op:60% 30%;--z:1.6"><img src="show/p-original.webp" alt="" /></span>
+          <span class="shot" style="--x:2%;--y:51%;--op:45% 70%;--z:1.2"><img src="show/p-original.webp" alt="" /></span>
+          <span class="shot" style="--x:35%;--y:51%;--op:70% 40%;--z:1.45"><img src="show/p-original.webp" alt="" /></span>
+          <span class="shot" style="--x:68%;--y:51%;--op:35% 55%;--z:1.15"><img src="show/p-original.webp" alt="" /></span>
+        </div>
+        <div class="piece">
+          <img class="raw" src="show/p-original.webp" alt="" />
+          <img class="framed" src="show/mp.webp" alt="" />
+          <i class="sheen"></i>
+          <i class="guide g1"></i><i class="guide g2"></i><i class="guide g3"></i><i class="guide g4"></i>
+        </div>
+        <span class="note n1">צבע</span><span class="note n2">מסגרת</span><span class="note n3">טיפוגרפיה</span>
+        <p class="done">מוכן להדפסה · לאלבום · למצגת</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- one photo, many worlds -->
+  <section class="worlds" id="worlds" aria-labelledby="worlds-title">
+    <div class="wrap">
+      <div class="worlds-box">
+        <div class="pick">
+          <p class="eyebrow">סגנונות AI</p>
+          <h2 id="worlds-title" class="display">אותה תמונה. <span class="foil">עשרה עולמות.</span></h2>
+          <p class="lead">מסגרת בעיצוב של האירוע, ואם בא לכם משהו מטורף: סגנונות AI שמציירים את התמונה מחדש ושומרים על הפנים.</p>
+          <p class="pick-h">לוחצים על סגנון, והתמונה מתחלפת</p>
+          <div class="chips" role="radiogroup" aria-label="בחירת סגנון">
+            <button role="radio" aria-checked="true" data-s="original">מקורי</button>
+            <button role="radio" aria-checked="false" data-s="cartoon">סרט מצויר</button>
+            <button role="radio" aria-checked="false" data-s="comic">קומיקס</button>
+            <button role="radio" aria-checked="false" data-s="manga">מנגה</button>
+            <button role="radio" aria-checked="false" data-s="pop">פופ־ארט</button>
+            <button role="radio" aria-checked="false" data-s="oldphoto">1920</button>
+            <button role="radio" aria-checked="false" data-s="neon">ניאון</button>
+            <button role="radio" aria-checked="false" data-s="stained">ויטראז׳</button>
+            <button role="radio" aria-checked="false" data-s="sketch">עיפרון</button>
+            <button role="radio" aria-checked="false" data-s="mosaic">פסיפס</button>
+          </div>
+          <p class="pick-note">את הסגנונות האלה מוסיפים לחבילה, ומקבלים הדמיה לפני האירוע.</p>
+        </div>
+        <div class="viewer-wrap">
+          <div class="viewer"><img id="w-base" src="show/p-original.webp" alt="תמונה מקורית" /><img id="w-top" src="show/p-original.webp" alt="" /><i class="wipe" aria-hidden="true"></i></div>
+          <p class="viewer-cap" aria-live="polite"><span>הסגנון</span><b id="w-name">מקורי</b></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- your own piece, designed live -->
+  <section class="yours" id="yours" aria-labelledby="yours-title">
+    <div class="wrap">
+      <p class="eyebrow">נסו עכשיו</p>
+      <h2 id="yours-title" class="display">העיצוב שלכם, בזמן אמת</h2>
+      <p class="lead">שמות, תאריך, סוג האירוע, צבע ותמונה משלכם. ככה תיראה היצירה שלכם, עוד לפני האירוע.</p>
+      <div class="yours-box">
+        <div class="ystage">
+          <figure class="ymag" id="ymag" style="--fc:#FFFFFF;--tc:#2A2238">
+            <div class="yphoto"><img id="y-img" src="show/p-original.webp" alt="התמונה בעיצוב" /></div>
+            <figcaption><b id="y-names">נועה & דניאל</b><span id="y-date">12.06.2027</span><small>פריים סטודיו · 054-4979771</small></figcaption>
+          </figure>
+        </div>
+        <form class="yform" id="yform" onsubmit="return false">
+          <label>השמות בעיצוב<input id="y-n" maxlength="28" value="נועה & דניאל" autocomplete="off" /></label>
+          <label>תאריך האירוע<input id="y-d" type="date" value="2027-06-12" /></label>
+          <fieldset><legend>סוג האירוע</legend><div class="ychips" id="y-ev">
+            <button type="button" aria-pressed="true" data-v="חתונה">חתונה</button><button type="button" aria-pressed="false" data-v="בר/בת מצווה">בר/בת מצווה</button><button type="button" aria-pressed="false" data-v="ברית">ברית</button><button type="button" aria-pressed="false" data-v="יום הולדת">יום הולדת</button><button type="button" aria-pressed="false" data-v="אירוע חברה">אירוע חברה</button>
+          </div></fieldset>
+          <fieldset><legend>צבע המסגרת</legend><div class="yswatch" id="y-c">
+            <button type="button" aria-pressed="true" data-fc="#FFFFFF" data-tc="#2A2238" style="--s:#FFFFFF" aria-label="לבן"></button>
+            <button type="button" aria-pressed="false" data-fc="#D8B26A" data-tc="#2A2238" style="--s:#D8B26A" aria-label="זהב"></button>
+            <button type="button" aria-pressed="false" data-fc="#F3C9CF" data-tc="#5A2633" style="--s:#F3C9CF" aria-label="ורוד"></button>
+            <button type="button" aria-pressed="false" data-fc="#1F3A68" data-tc="#FFFFFF" style="--s:#1F3A68" aria-label="כחול"></button>
+            <button type="button" aria-pressed="false" data-fc="#16131F" data-tc="#D8B26A" style="--s:#16131F" aria-label="שחור"></button>
+          </div></fieldset>
+          <div class="yacts">
+            <label class="btn line dark yup"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>תמונה שלכם (נשארת אצלכם)<input id="y-f" type="file" accept="image/*" hidden /></label>
+            <a class="btn gold magnetic" id="y-send" href="#" target="_blank" rel="noopener">שולחים לנו את העיצוב בוואטסאפ</a>
+          </div>
+          <p class="ynote">התמונה לא נשלחת לשום מקום. בוואטסאפ נשלחים רק השמות, התאריך, האירוע והצבע.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- portfolio by event -->
+  <section class="wall" id="wall" aria-labelledby="wall-title">
+    <div class="wrap">
+      <div class="sec-head row">
+        <div><p class="eyebrow">תיק עבודות</p>
+        <h2 id="wall-title" class="display">עבודות <span class="foil">לפי אירוע</span></h2></div>
+        <p class="lead">לוחצים על אירוע ורואים מה אפשר לעצב בשבילו.</p>
+      </div>
+      <ul class="wall-grid">
+        <li class="big"><a href="l/wedding.html"><span class="pic"><img src="show/m0.webp" alt="" loading="lazy" /></span><span class="tape"><b>חתונה</b><i>←</i></span></a></li>
+        <li><a href="l/barmitzvah.html"><span class="pic"><img src="show/m1.webp" alt="" loading="lazy" /></span><span class="tape"><b>בר / בת מצווה</b><i>←</i></span></a></li>
+        <li><a href="l/brit.html"><span class="pic"><img src="show/m4.webp" alt="" loading="lazy" /></span><span class="tape"><b>ברית</b><i>←</i></span></a></li>
+        <li><a href="l/birthday.html"><span class="pic"><img src="show/m3.webp" alt="" loading="lazy" /></span><span class="tape"><b>יום הולדת</b><i>←</i></span></a></li>
+        <li><a href="l/henna.html"><span class="pic"><img src="show/m5.webp" alt="" loading="lazy" /></span><span class="tape"><b>חינה</b><i>←</i></span></a></li>
+        <li><a href="l/company.html"><span class="pic"><img src="show/m6.webp" alt="" loading="lazy" /></span><span class="tape"><b>אירוע חברה</b><i>←</i></span></a></li>
+        <li><a href="l/engagement.html"><span class="pic"><img src="show/m2.webp" alt="" loading="lazy" /></span><span class="tape"><b>אירוסין</b><i>←</i></span></a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- packages -->
+  <section class="packages" id="packages" aria-labelledby="pk-title">
+    <div class="wrap">
+      <div class="sec-head center">
+        <p class="eyebrow">חבילות לאירוע</p>
+        <h2 id="pk-title" class="display">צילום, עיצוב והדפסה <span class="foil">ביום האירוע</span></h2>
+      </div>
+      <div class="tags" id="tags"></div>
+      <p class="note">כל החבילות כוללות צלם/ת, עמדת הדפסה ועיצוב מסגרת אישי. מחיר סופי לפי מיקום ותאריך.</p>
+    </div>
+  </section>
+
+  <!-- the film -->
+  <section class="film" id="film" aria-labelledby="film-title">
+    <div class="wrap">
+      <div class="sec-head row">
+        <div><p class="eyebrow">30 שניות</p>
+        <h2 id="film-title" class="display">ככה זה <span class="foil">נראה</span></h2></div>
+      </div>
+      <div class="screen"><video src="media/promo/studio.mp4" poster="media/promo/studio.jpg" controls preload="none" playsinline></video><button class="play" type="button" aria-label="הפעלת הסרטון"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button></div>
+    </div>
+  </section>
+
+  <!-- questions -->
+  <section class="faq" id="faq" aria-labelledby="faq-title">
+    <div class="wrap faq-box">
+      <div><p class="eyebrow">לפני שמתחילים</p>
+      <h2 id="faq-title" class="display">שאלות ששואלים אותנו</h2></div>
+      <div id="faq-list"></div>
+    </div>
+  </section>
+
+  <!-- book -->
+  <section class="book" id="book" aria-labelledby="book-title">
+    <div class="book-light" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="eyebrow">פרויקט חדש</p>
+      <h2 id="book-title" class="display big">נתחיל <span class="foil">לעצב?</span></h2>
+      <p class="lead">שולחים תאריך ומקום, ותוך כמה שעות חוזרים אליכם עם זמינות והדמיה של המסגרת.</p>
+      <div class="ctas center">
+        <a class="btn gold magnetic xl" id="wa" href="https://wa.me/972544979771?text=%D7%94%D7%99%D7%99%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%91%D7%93%D7%95%D7%A7%20%D7%AA%D7%90%D7%A8%D7%99%D7%9A" target="_blank" rel="noopener">וואטסאפ: בודקים תאריך</a>
+        <a class="btn line" href="tel:0544979771">054-4979771</a>
+        <a class="btn line" href="index.html#contact">טופס הזמנה</a>
+      </div>
+      <dl class="facts"><div><dt>איפה</dt><dd>מרכז, השרון, ירושלים והשפלה</dd></div><div><dt>מתי עונים</dt><dd>א׳–ה׳ 9:00–20:00 · מוצ״ש בתיאום</dd></div><div><dt>עיצוב בעצמכם</dt><dd><a href="design.html">מעצבים מסגרת אונליין ←</a></dd></div></dl>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>© פריים סטודיו · פריים מגנטים</span>
+  <nav aria-label="קישורים"><a href="./">האתר הראשי</a><a href="index.html#packages">חבילות</a><a href="design.html">עיצוב מסגרת</a><a href="accessibility.html">הצהרת נגישות</a></nav>
+</footer>
+
+<script src="vendor/gsap/gsap.min.js"></script>
+<script src="vendor/gsap/ScrollTrigger.min.js"></script>
+<script src="js/show.js?v=52"></script>
+</body>
+</html>
