@@ -89,6 +89,7 @@
       '<p class="mt-hint" id="mt-ai-target"></p>' +
       '<div class="mt-card"><h3>🖥️ מיד, על המחשב · עובד גם בלי אינטרנט</h3><div class="mt-chips" id="mt-ai-local"></div></div>' +
       '<div class="mt-card"><h3>⚙️ מנוע ה־AI</h3><div class="mt-chips" id="mt-ai-eng"></div></div>' +
+      '<div class="mt-card"><h3>🧑 על אדם אמיתי <small>נשאר צילום אמיתי של אותם אנשים, משתנים הלבוש והמקום</small></h3><div class="mt-ai-g" id="mt-ai-real"></div></div>' +
       '<div class="mt-card"><h3>🪄 עריכות חכמות <small>התמונה נשארת, משתנה דבר אחד</small></h3><div class="mt-ai-g" id="mt-ai-edits"></div></div>' +
       '<div class="mt-card"><h3>🔥 טרנדים ויראליים</h3><div class="mt-ai-g" id="mt-ai-viral"></div></div>' +
       '<div class="mt-card"><h3>🎨 סגנונות</h3><div class="mt-ai-g" id="mt-ai-styles"></div></div>' +
@@ -597,7 +598,7 @@
     aiTarget();
     $('#mt-ai-local', root).innerHTML = LOCAL.map(function (x) { return '<button data-la="' + x[0] + '">' + x[1] + '</button>'; }).join('');
     function cards(list, sel, kind) { $(sel, root).innerHTML = list.map(function (v, i) { return '<button data-ai="' + kind + ':' + i + '"><i>' + (kind === 'st' ? v[2] : v[1]) + '</i><span>' + esc(kind === 'st' ? v[1] : v[0]) + '</span></button>'; }).join(''); }
-    cards(FS.AI_EDITS || [], '#mt-ai-edits', 'ed'); cards(FS.AI_VIRAL || [], '#mt-ai-viral', 'vi'); cards(FS.AI_STYLES || [], '#mt-ai-styles', 'st');
+    cards(FS.AI_REAL || [], '#mt-ai-real', 're'); cards(FS.AI_EDITS || [], '#mt-ai-edits', 'ed'); cards(FS.AI_VIRAL || [], '#mt-ai-viral', 'vi'); cards(FS.AI_STYLES || [], '#mt-ai-styles', 'st');
     $('#mt-dai', root).innerHTML = $('#mt-ai-local', root).innerHTML;
     engines();
   }
@@ -613,7 +614,8 @@
   function runAI(prompt, label) { var l = aiList(); if (!l.length) return FS.toast('אין תמונות'); Promise.resolve(FS.runAI(prompt, label, l)).then(function () { after(l); }); }
   $('.mt-ai', root).addEventListener('click', function (e) {
     var b = e.target.closest('[data-ai]'); if (!b) return; var k = b.dataset.ai.split(':'), i = Number(k[1]);
-    if (k[0] === 'ed') runAI(FS.AI_EDITS[i][2], FS.AI_EDITS[i][0]);
+    if (k[0] === 're') runAI(FS.AI_REAL[i][2], FS.AI_REAL[i][0]);
+    else if (k[0] === 'ed') runAI(FS.AI_EDITS[i][2], FS.AI_EDITS[i][0]);
     else if (k[0] === 'vi') runAI(FS.AI_VIRAL[i][2] + '.' + (FS.AI_KEEP_FREE || ''), FS.AI_VIRAL[i][0]);
     else if (k[0] === 'st') runAI(FS.AI_STYLES[i][3] + (FS.AI_KEEP || ''), FS.AI_STYLES[i][1]);
   });
