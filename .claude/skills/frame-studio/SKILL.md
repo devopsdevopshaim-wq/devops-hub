@@ -35,6 +35,10 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## Fast switch, 4/6/9 edit screen (Oct 25, v55)
+- `#mt-switch` (mate.js): one fixed switch "⚡ עבודה מהירה | 🎨 סטודיו עיצוב" on both screens (top centre in the workspace, bottom above the status line in the studio, bottom on phones), and F2 toggles (`FS.mate.toggle`). The old "⚡ סביבת עבודה" and "🎨 הסטודיו המלא" buttons are gone. A switch takes ~10–50 ms: grids keep their drawn canvases (`keepCanvases`/`reuse`, by photo and size; `drawTile` redraws only a photo whose doc changed), and closing selects the photo on the next frame only when it changed.
+- The edit view ("ערוך תמונה") shows a page of 4 (2×2), 6 (3×2) or 9 (3×3) photos filling the screen (`fs-mate-en`), with paging (◀ ▶, PageUp/PageDown). "🔗 עריכה של כל התמונות שבמסך יחד" (`fs-mate-etog`, on by default) makes every change (sliders, auto, reset, title, frames, effects, clipart) reach all the photos on the page, redrawn live while the slider moves.
+
 ## Faster AI at events, photoreal looks (Oct 25, v53)
 - `FS.runAI` runs up to 3 photos at once (one at a time on the local engine); the busy sign counts the ready ones. The cloud photo is 1024px JPEG 0.86 (was 1280 at 0.9), and the server's per-address picture limit is 120 an hour (`IMG_IP_HOUR`).
 - Measured live on Oct 25 (`frame-ai-health.yml`, 512×768): auto 7s, FLUX on Cloudflare 8s, Pollinations gptimage 6s; Gemini still 429 (no billing). Once FLUX's free daily neurons run out, only Pollinations is left (one picture per 45s per address), so lasting speed at events needs billing on Gemini or Workers Paid.

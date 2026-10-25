@@ -87,8 +87,13 @@ body.mt-on #pl-bar { display: none; }
 .mt-sli.cr { background: #E5483E; color: #fff; } .mt-sli.cg { background: #3DA54F; color: #fff; } .mt-sli.cb { background: #2F63D8; color: #fff; }
 .mt-l { display: flex; gap: 8px; align-items: center; }
 .mt-pfoot { margin-top: auto; display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
-.mt-egrid { flex: 1; overflow: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; align-content: start; }
-.mt-tile.big .mt-th { aspect-ratio: 1; }
+.mt-ework { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mt-ebar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--pro-panel); flex-wrap: wrap; }
+.mt-ebar b { min-width: 54px; text-align: center; }
+.mt-egrid { flex: 1; min-height: 0; overflow: hidden; padding: 10px; display: grid; grid-template-columns: repeat(var(--ec, 3), minmax(0, 1fr)); grid-template-rows: repeat(var(--er, 2), minmax(0, 1fr)); gap: 10px; }
+.mt-egrid .mt-tile.big { display: flex; flex-direction: column; min-height: 0; }
+.mt-egrid .mt-tile.big .mt-th { flex: 1; min-height: 0; aspect-ratio: auto; }
+.mt-egrid .mt-name { flex: none; }
 .mt-dl { border: 0; background: none; cursor: pointer; color: var(--ivory-dim); }
 .mt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .mt-chips button { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--pro-raise); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
@@ -183,3 +188,12 @@ body.mt-on #pl-bar { display: none; }
 .upd-new { border-color: var(--champagne, #D6B77E) !important; color: var(--champagne, #D6B77E) !important; }
 #sb-menu.upd-dot { position: relative; }
 #sb-menu.upd-dot::after { content: ''; position: absolute; top: 2px; inset-inline-end: 2px; width: 9px; height: 9px; border-radius: 50%; background: #E5483E; }
+
+/* the switch between the fast workspace and the full design studio (both screens, same place, F2) */
+#mt-switch { position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 72; display: flex; padding: 3px; gap: 2px; border-radius: 999px; background: rgba(20,20,22,.92); border: 1px solid var(--line-strong, rgba(214,183,126,.55)); box-shadow: 0 8px 24px rgba(0,0,0,.45); font: 600 13px var(--f-body, 'Assistant', sans-serif); }
+#mt-switch button { border: 0; border-radius: 999px; padding: 6px 14px; background: transparent; color: var(--ivory-dim, #9E9A93); cursor: pointer; white-space: nowrap; font: inherit; }
+#mt-switch button.on { background: linear-gradient(180deg, #E6C990, var(--champagne, #D6B77E)); color: #17130E; }
+body.gated #mt-switch, body.upd-locked #mt-switch, body.printing #mt-switch { display: none; }
+/* in the full studio the top row is full of tools: the switch sits at the bottom, above the status line */
+body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
+@media (max-width: 900px) { #mt-switch { top: auto; bottom: 8px; } }
