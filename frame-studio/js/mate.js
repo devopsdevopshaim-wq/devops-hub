@@ -30,7 +30,7 @@
       '<button data-v="main" class="on">🗂️ ראשי</button><button data-v="edit">🎚️ ערוך תמונה</button><button data-v="design">🖌️ עורך מלא</button><button data-v="ai">🤖 AI</button><button data-v="print">🖨️ הדפסה</button></nav>' +
       '<div class="mt-stat" id="mt-stat"></div>' +
       '<div class="mt-acts"><label class="mt-btn">📂 תמונות<input type="file" id="mt-files" multiple hidden accept="image/*,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.raw,.pef,.srw,.x3f,.3fr,.erf,.kdc,.mrw,.rwl,.iiq,.heic,.heif"></label>' +
-      '<button class="mt-btn" id="mt-folder">📁 תיקייה</button><button class="mt-btn" id="mt-studio" title="העורך המלא של הסטודיו (שכבות, טקסטים, קולאז׳, אירוע חי)">🎨 הסטודיו המלא</button></div></header>' +
+      '<button class="mt-btn" id="mt-folder">📁 תיקייה</button></div></header>' +
     /* main */
     '<section class="mt-view" data-view="main">' +
       '<div class="mt-sub"><button data-bar="size" class="on">📐 גודל</button><button data-bar="files">📁 תמונות</button><button data-bar="copies">🧾 הדפסים</button><button data-bar="biz">🏷️ פרטי העסק</button>' +
@@ -64,7 +64,10 @@
         '<div class="mt-pp" data-pp="fx" hidden><div class="mt-chips small" id="mt-fxcat"></div><div class="mt-fx" id="mt-fx"></div><h4>סגנון</h4><div class="mt-chips" id="mt-styles"></div></div>' +
         '<div class="mt-pp" data-pp="clip" hidden><div class="mt-emo" id="mt-emo"></div><label class="mt-btn">🖼️ לוגו / תמונה<input type="file" id="mt-logo" accept="image/*" hidden></label><button class="mt-btn" id="mt-clipdel">🗑 הסרת הקליפארט</button></div>' +
         '<div class="mt-pfoot"><p class="mt-hint" id="mt-target"></p><button class="mt-btn" id="mt-apply-all">החל את התיקון על כל התמונות</button></div>' +
-      '</aside><div class="mt-egrid" id="mt-egrid"></div>' +
+      '</aside><div class="mt-ework"><div class="mt-ebar"><label>תמונות במסך:</label><div class="mt-seg" id="mt-en"><button data-n="4">4</button><button data-n="6">6</button><button data-n="9">9</button></div>' +
+        '<label class="mt-chk-l"><input type="checkbox" id="mt-etog"> 🔗 עריכה של כל התמונות שבמסך יחד</label><span class="mt-sp"></span>' +
+        '<button class="mt-ic" id="mt-eprev" title="הקודמות (PageUp)">▶</button><b id="mt-epg">1 / 1</b><button class="mt-ic" id="mt-enext" title="הבאות (PageDown)">◀</button></div>' +
+        '<div class="mt-egrid" id="mt-egrid"></div></div>' +
     '</section>' +
     /* the full editor */
     '<section class="mt-view" data-view="design" hidden>' +
@@ -110,24 +113,30 @@
     stat();
   }
   function open(v) {
-    root.hidden = false; document.body.classList.add('mt-on'); ls('fs-mate', 'on');
+    root.hidden = false; document.body.classList.add('mt-on'); ls('fs-mate', 'on'); if (typeof sw === 'function') sw();
     if (FS.gridMode && FS.gridMode() && FS.showGrid) { /* the studio's own photos screen stays behind */ }
     show(v || view);
   }
   function close() {
-    root.hidden = true; document.body.classList.remove('mt-on'); ls('fs-mate', 'off');
-    var p = focus(); if (p) FS.select(idx(p));
-    FS.emit('doc'); if (FS.refreshStrip) FS.refreshStrip(); if (FS.render) FS.render();
+    root.hidden = true; document.body.classList.remove('mt-on'); ls('fs-mate', 'off'); sw();
+    var p = focus();
+    requestAnimationFrame(function () {
+      if (p && idx(p) !== S.cur) FS.select(idx(p)); else if (FS.render) FS.render();
+      FS.emit('doc'); if (FS.refreshStrip) FS.refreshStrip();
+    });
   }
-  FS.mate = { open: open, close: close, isOn: on, print: function () { openPrint(); } };
+  function toggle() { if (on()) close(); else open(); }
+  /* the switch between the two, always in the same place (and F2) */
+  var swEl = document.createElement('div'); swEl.id = 'mt-switch'; swEl.setAttribute('dir', 'rtl');
+  swEl.innerHTML = '<button data-sw="mt" title="סביבת עבודה מהירה (F2)">⚡ עבודה מהירה</button><button data-sw="studio" title="סטודיו עיצוב מלא (F2)">🎨 סטודיו עיצוב</button>';
+  document.body.appendChild(swEl);
+  function sw() { $$('#mt-switch [data-sw]').forEach(function (b) { b.classList.toggle('on', (b.dataset.sw === 'mt') === on()); }); }
+  swEl.addEventListener('click', function (e) { var b = e.target.closest('[data-sw]'); if (!b) return; if (b.dataset.sw === 'mt') { if (!on()) open(); } else if (on()) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'F2' && !document.body.classList.contains('gated')) { e.preventDefault(); toggle(); } });
+  FS.mate = { open: open, close: function () { close(); }, toggle: function () { toggle(); }, isOn: on, print: function () { openPrint(); } };
   $$('.mt-tabs [data-v]', root).forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.v); }); });
   $$('[data-go]', root).forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
-  $('#mt-studio', root).addEventListener('click', close);
 
-  /* the studio's way back here */
-  var back = document.createElement('button'); back.className = 'btn small'; back.id = 'mt-open'; back.textContent = '⚡ סביבת עבודה'; back.title = 'מסך התמונות, הגדלים, העותקים וההדפסה';
-  back.addEventListener('click', function () { open(); });
-  var act = $('.sb-act'); if (act) act.insertBefore(back, act.firstChild); else document.body.appendChild(back);
 
   /* photos in */
   function addFiles(fl) { if (fl && fl.length) FS.addFiles(fl); }
@@ -205,11 +214,14 @@
       '<div class="mt-band"><b>' + sizeTxt(p) + '</b><span class="mt-cp"><button data-cp="-1" title="פחות">−</button><i>' + copies(p) + ' הדפסים</i><button data-cp="1" title="עוד">+</button></span>' +
       (p.printed ? '<small>הודפסו ' + p.printed + '</small>' : '') + '</div></div><div class="mt-name" title="' + esc(p.name || '') + '">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '</div></div>';
   }
+  /* a rebuilt grid keeps the canvases already drawn (by photo and size); drawTile then redraws only photos that changed */
+  function keepCanvases(g) { var k = {}; $$('.mt-tile', g).forEach(function (el) { var c = el.querySelector('.mt-th canvas'); if (c && el._sig) k[el.dataset.id + '|' + el.dataset.px] = { c: c, sig: el._sig }; }); return k; }
+  function reuse(g, k) { $$('.mt-tile', g).forEach(function (el) { var o = k[el.dataset.id + '|' + el.dataset.px]; if (o) { var box = el.querySelector('.mt-th'); box.insertBefore(o.c, box.firstChild); el._sig = o.sig; } watch(el); }); }
   function buildGrid() {
-    var g = $('#mt-grid', root), l = shown();
+    var g = $('#mt-grid', root), l = shown(), k = keepCanvases(g);
     $('#mt-empty', root).hidden = !!S.photos.length; g.hidden = !S.photos.length;
     g.innerHTML = l.map(function (p) { return tileHTML(p, zoom); }).join('');
-    $$('.mt-tile', g).forEach(watch);
+    reuse(g, k);
     foot(); stat();
   }
   function refreshTile(p) {
@@ -326,20 +338,38 @@
   }).join('');
   function focus() { var p = focusId && byId(focusId); return p || FS.cur() || S.photos[0] || null; }
   function editList() { var m = marked(); return m.length ? m : S.photos.slice(); }
-  /* what a change reaches: the marked photos (with the focused one), or the focused one */
-  function targets() { var f = focus(), m = marked(); if (f && m.length && S.marked[f.id]) return m; if (!f && m.length) return m; return f ? [f] : []; }
+  /* the edit screen shows 4, 6 or 9 photos at a time, filling the screen; "together" makes every change reach all of them */
+  var eN = Number(ls('fs-mate-en')) || 6, ePage = 0, eTog = ls('fs-mate-etog') !== '0';
+  function eCols() { return eN === 4 ? 2 : 3; }
+  function ePages() { return Math.max(1, Math.ceil(editList().length / eN)); }
+  function pageList() { var l = editList(); ePage = Math.min(ePage, ePages() - 1); return l.slice(ePage * eN, ePage * eN + eN); }
+  /* what a change reaches: all the photos on the edit screen (together), else the marked photos (with the focused one), or the focused one */
+  function targets() {
+    if (eTog && view === 'edit') return pageList();
+    var f = focus(), m = marked(); if (f && m.length && S.marked[f.id]) return m; if (!f && m.length) return m; return f ? [f] : [];
+  }
   function eTileHTML(p) {
     return '<div class="mt-tile big' + (S.marked[p.id] ? ' sel' : '') + (p.id === (focus() || {}).id ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + etile + '"><div class="mt-th"><button class="mt-chk" title="סימון">✓</button></div><div class="mt-name">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '<button class="mt-dl" title="שמירת התמונה">⬇</button></div></div>';
   }
   var etile = 420;
   function buildEdit() {
-    var g = $('#mt-egrid', root), l = editList();
-    etile = Math.max(260, Math.min(720, Math.round((g.clientWidth || innerWidth * 0.7) / 3 - 24)));
-    if (!focus() && l[0]) focusId = l[0].id;
+    var g = $('#mt-egrid', root), l = pageList(), k = keepCanvases(g), cols = eCols(), rows = Math.ceil(eN / cols);
+    var cw = (g.clientWidth || innerWidth * 0.7) / cols, ch = (g.clientHeight || innerHeight * 0.75) / rows;
+    etile = Math.round(Math.max(200, Math.min(900, Math.max(cw, ch) * 1.1)));
+    g.style.setProperty('--ec', cols); g.style.setProperty('--er', rows);
+    if (l.length && !l.some(function (p) { return p.id === focusId; })) focusId = l[0].id;
     g.innerHTML = l.length ? l.map(eTileHTML).join('') : '<p class="mt-hint">אין תמונות עדיין.</p>';
-    $$('.mt-tile', g).forEach(watch); syncSliders(); targetTxt(); buildFrames(); buildFx(); stat();
+    reuse(g, k);
+    seg('#mt-en', String(eN), 'n'); $('#mt-etog', root).checked = eTog; $('#mt-epg', root).textContent = (ePage + 1) + ' / ' + ePages();
+    $('#mt-eprev', root).disabled = ePage <= 0; $('#mt-enext', root).disabled = ePage >= ePages() - 1;
+    syncSliders(); targetTxt(); buildFrames(); buildFx(); stat();
   }
-  function targetTxt() { var n = targets().length; $('#mt-target', root).textContent = n > 1 ? 'השינויים חלים על ' + n + ' התמונות המסומנות' : n ? 'השינויים חלים על התמונה המודגשת · לסימון כמה תמונות לוחצים על ✓' : ''; }
+  function ePageGo(n) { var to = FS.clamp(ePage + n, 0, ePages() - 1); if (to === ePage) return; ePage = to; buildEdit(); }
+  function targetTxt() { var n = targets().length; $('#mt-target', root).textContent = eTog ? 'השינויים חלים יחד על ' + n + ' התמונות שבמסך' : n > 1 ? 'השינויים חלים על ' + n + ' התמונות המסומנות' : n ? 'השינויים חלים על התמונה המודגשת · לסימון כמה תמונות לוחצים על ✓' : ''; }
+  $('#mt-en', root).addEventListener('click', function (e) { var b = e.target.closest('[data-n]'); if (!b) return; var first = ePage * eN; eN = Number(b.dataset.n); ls('fs-mate-en', eN); ePage = Math.floor(first / eN); buildEdit(); });
+  $('#mt-etog', root).addEventListener('change', function () { eTog = this.checked; ls('fs-mate-etog', eTog ? '1' : '0'); targetTxt(); });
+  $('#mt-eprev', root).addEventListener('click', function () { ePageGo(-1); });
+  $('#mt-enext', root).addEventListener('click', function () { ePageGo(1); });
   $('#mt-egrid', root).addEventListener('click', function (e) {
     var t = e.target.closest('.mt-tile'); if (!t) return; var p = byId(t.dataset.id);
     if (e.target.closest('.mt-dl')) { saveOne(p); return; }
@@ -356,7 +386,7 @@
     var list = targets(); if (!list.length) return;
     list.forEach(function (p) { p.doc.photo.adj[k] = v; p.doc.photo.preset = null; });
     cancelAnimationFrame(liveT);
-    liveT = requestAnimationFrame(function () { var f = focus(); $$('.mt-tile[data-id="' + (f && f.id) + '"]', root).forEach(function (el) { el._sig = null; drawTile(el); }); });
+    liveT = requestAnimationFrame(function () { var ids = eTog && view === 'edit' ? list.map(function (p) { return p.id; }) : [(focus() || {}).id]; ids.forEach(function (id) { $$('#mt-egrid .mt-tile[data-id="' + id + '"]', root).forEach(function (el) { el._sig = null; drawTile(el); }); }); });
     clearTimeout(endT);
     endT = setTimeout(function () { list.forEach(function (p) { p.cache = {}; $$('.mt-tile[data-id="' + p.id + '"]', root).forEach(function (el) { el._sig = null; enqueue(el); }); }); }, final ? 0 : 260);
     if (final) list.forEach(function (p) { FS.snap(p); });
@@ -753,7 +783,7 @@
 
   /* ---------- keys, events, start ---------- */
   window.addEventListener('keydown', function (e) {
-    if (!on() || ($('#dlg') && $('#dlg').open) || document.body.classList.contains('gated')) return;
+    if (e.key === 'F2' || !on() || ($('#dlg') && $('#dlg').open) || document.body.classList.contains('gated')) return;
     var typing = /input|textarea|select/i.test(e.target.tagName || ''), k = (e.key || '').toLowerCase(), mod = e.ctrlKey || e.metaKey;
     if (typing) { e.stopImmediatePropagation(); return; }
     if (mod && k === 'a') { e.preventDefault(); shown().forEach(function (p) { mark(p, true); }); refreshAll(); }
@@ -761,6 +791,7 @@
     else if (mod && k === 'z') { e.preventDefault(); if (view === 'design') hist(FS.undo); else { FS.undo(); refreshAll(); } }
     else if (mod && k === 'y') { e.preventDefault(); if (view === 'design') hist(FS.redo); else { FS.redo(); refreshAll(); } }
     else if (k === 'escape') { S.marked = {}; refreshAll(); }
+    else if (view === 'edit' && (k === 'pagedown' || k === 'pageup')) { e.preventDefault(); ePageGo(k === 'pagedown' ? 1 : -1); }
     else if (view === 'design' && (k === 'arrowleft' || k === 'arrowright')) step(k === 'arrowleft' ? 1 : -1);
     else if (view === 'design' && (k === 'delete' || k === 'backspace') && selL) $('#mt-odel', root).click();
     e.stopImmediatePropagation();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='54';(function(){
+window.FS_V='55';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -16,15 +16,15 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" />
-<link rel="stylesheet" href="css/pay.css?v=54" />
-<link rel="stylesheet" href="css/gallery.css?v=54" />
-<link rel="stylesheet" href="css/live.css?v=54" />
+<link rel="stylesheet" href="css/pay.css?v=55" />
+<link rel="stylesheet" href="css/gallery.css?v=55" />
+<link rel="stylesheet" href="css/live.css?v=55" />
 </head>
 <body>
 <main class="gwrap al" id="app" aria-live="polite"><div class="card load">טוען את האלבום…</div></main>
 <dialog class="gview" id="view"><img id="view-img" alt="" /><p class="v-wish" id="v-wish"></p><div class="gview-bar"><button type="button" id="v-prev" aria-label="הקודמת">›</button><button type="button" class="btn-dl" id="v-dl">⬇️ שמירה</button><button type="button" id="v-next" aria-label="הבאה">‹</button><button type="button" id="v-x" aria-label="סגירה">✕</button></div></dialog>
 <div class="toast" id="toast" role="status"></div>
-<script src="js/live-common.js?v=54"></script>
-<script src="js/album.js?v=54"></script>
+<script src="js/live-common.js?v=55"></script>
+<script src="js/album.js?v=55"></script>
 </body>
 </html>
