@@ -358,6 +358,23 @@
     ['20 שנה אחורה', '⏪', 'Show the same people about 20 years younger, natural and believable, the same setting']
   ];
   FS.AI_REAL = REAL.map(function (e) { return [e[0], e[1], e[2] + '.' + REAL_KEEP]; });
+  /* superheroes on the real people (Oct 25): original costumes of our own (no known characters, logos or brands), a movie-still look */
+  var HERO_KEEP = ' Original costume design, no logos of existing characters or brands, the faces uncovered and clearly visible. Like a still from a big-budget superhero movie.' + REAL_KEEP;
+  var HEROES = [
+    ['גיבור על קלאסי', '🦸', 'Dress each person in a heroic superhero suit with a flowing cape and a bold emblem, standing proudly on a city rooftop at sunset'],
+    ['שריון היי־טק', '🤖', 'Dress each person in sleek high-tech metallic armour with glowing blue lines, the helmet open so the face shows, sparks and city lights behind'],
+    ['גיבור הלילה', '🦇', 'Dress each person as a dark night vigilante in black tactical armour and a long cape, on a gothic rooftop in the rain with the city lights below'],
+    ['כוחות ברק', '⚡', 'Give each person a sleek speedster suit with electric lightning crackling around them, motion streaks of a city street behind'],
+    ['כוחות אש', '🔥', 'Give each person a fiery hero suit with flames swirling from their hands, embers in the air, dramatic orange light'],
+    ['כוחות קרח', '❄️', 'Give each person an icy hero suit with frost and ice crystals forming around their hands, a frozen landscape and cold blue light'],
+    ['עפים מעל העיר', '🌆', 'Show the people flying in hero suits with capes high above a city skyline at golden hour, wind in their hair'],
+    ['צוות גיבורים', '👨‍👩‍👧‍👦', 'Make the people a superhero team in matching suits of different colours, posed together heroically with an explosion of light behind them'],
+    ['גיבורת על', '🦸‍♀️', 'Dress each person in an elegant warrior-hero suit with armour details and a cape, a glowing shield, a dramatic battlefield of light behind'],
+    ['גיבור על קטן', '🧒', 'Dress each person in a cute colourful superhero costume with a little cape and mask pushed up on the forehead, a playful heroic pose in a bright city'],
+    ['כרזת סרט גיבורים', '🎬', 'Make it a photorealistic superhero movie poster: the people in hero suits, dramatic sky, lens flares and cinematic colour grade, no text'],
+    ['מגן החלל', '🌌', 'Dress each person in a cosmic hero suit with glowing star patterns, floating in space with planets and a nebula behind']
+  ];
+  FS.AI_HEROES = HEROES.map(function (e) { return [e[0], e[1], e[2] + '.' + HERO_KEEP]; });
   FS.AI_VIRAL = VIRAL; FS.AI_KEEP_FREE = KEEP_FREE;
 
   var pane = $('[data-pane=styles]'); if (!pane) return;
@@ -374,7 +391,7 @@
     '<div class="row2 ax-undo"><button class="btn" id="style-back" title="מבטל את עיצוב ה־AI האחרון (בתמונה או בכל המסומנות)">↶ ביטול העיצוב האחרון</button><button class="btn" id="style-orig" title="מחזיר את התמונה המקורית, בלי שום עיצוב AI">↩ חזרה למקור</button></div>' +
     '<div class="card ax-build"><h3>🎛️ שילוב משלך</h3>' + chips('🎨 סגנון', STYLE, 'style') + chips('🌍 איפה', WORLD, 'world') + chips('👗 תלבושת', OUTFIT, 'outfit') + chips('✨ אווירה', MOOD, 'mood') +
     '<p class="ax-name" id="ax-name"></p><div class="row2"><button class="btn" id="ax-random">🎲 הפתעה</button><button class="btn primary" id="ax-go">✨ ליצור</button></div></div>' +
-    '<p class="ax-cloud-note">🌐 העיצובים מכאן ולמטה נוצרים בשרת AI וצריכים אינטרנט' + (FS.localAI ? ' (או את מנוע ה־AI המקומי)' : '') + '.</p><h3>🧑 על אדם אמיתי <small>נשאר צילום אמיתי, משתנים הלבוש והמקום</small></h3><div class="ai-styles" id="ax-real"></div><h3>🪄 עריכות חכמות <small>התמונה נשארת, משתנה דבר אחד</small></h3><div class="ai-styles" id="ax-edits"></div><h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
+    '<p class="ax-cloud-note">🌐 העיצובים מכאן ולמטה נוצרים בשרת AI וצריכים אינטרנט' + (FS.localAI ? ' (או את מנוע ה־AI המקומי)' : '') + '.</p><h3>🦸 גיבורי על <small>על האנשים האמיתיים, כמו סצנה מסרט</small></h3><div class="ai-styles" id="ax-heroes"></div><h3>🧑 על אדם אמיתי <small>נשאר צילום אמיתי, משתנים הלבוש והמקום</small></h3><div class="ai-styles" id="ax-real"></div><h3>🪄 עריכות חכמות <small>התמונה נשארת, משתנה דבר אחד</small></h3><div class="ai-styles" id="ax-edits"></div><h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
     '<h3>⭐ שילובים מוכנים</h3><div class="ai-styles" id="ax-combos"></div>' +
     '<h3>🎨 סגנונות</h3><div class="ai-styles" id="ai-styles"></div>' +
     '<h3>✍️ לתאר במילים</h3><div class="field"><textarea id="ai-custom" rows="2" placeholder="למשל: להלביש את כולם בתחפושות של פיראטים על ספינה בסערה"></textarea></div>' +
@@ -387,6 +404,11 @@
     $$('.ax-chips button.on', pane).forEach(function (b) { b.scrollIntoView({ block: 'nearest', inline: 'center' }); });
   });
   $('#ax-go').addEventListener('click', function () { FS.runAI(promptOf(cur), nameOf(cur)); });
+  FS.AI_HEROES.forEach(function (v) {
+    var b = document.createElement('button'); b.className = 'ai-style hot'; b.title = v[0];
+    b.innerHTML = '<i>' + v[1] + '</i><span>' + FS.esc(v[0]) + '</span>';
+    b.addEventListener('click', function () { FS.runAI(v[2], v[0]); }); $('#ax-heroes').appendChild(b);
+  });
   FS.AI_REAL.forEach(function (v) {
     var b = document.createElement('button'); b.className = 'ai-style'; b.title = v[0];
     b.innerHTML = '<i>' + v[1] + '</i><span>' + FS.esc(v[0]) + '</span>';
