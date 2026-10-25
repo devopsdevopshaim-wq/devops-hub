@@ -276,15 +276,22 @@
     list = list || FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
     if ((navigator.onLine === false || noNet) && !localReady()) return FS.offlineChooser(label);
     if (variantsOn() && list.length === 1 && navigator.onLine !== false) return runVariants(list[0], prompt, label);
-    var done = 0, stop = false, failed = null, chain = Promise.resolve();
+    var done = 0, stop = false, failed = null, next = 0;
     function onStop() { stop = true; FS.aiStop && FS.aiStop(); }
-    list.forEach(function (p, i) { chain = chain.then(function () {
-      if (stop || failed) return;
-      FS.busy('🤖 ' + label + ' · תמונה ' + (i + 1) + ' מתוך ' + list.length + ' (עד דקה לתמונה)', onStop);
-      return FS.findFaces(p, true).catch(function () {}).then(function () { if (!stop) return FS.restyle(p, prompt).then(function () { done++; }); })
-        .catch(function (e) { if (!stop) failed = e; });
-    }); });
-    return chain.then(function () {
+    /* several photos at once (the server answers each on its own), so an event's batch takes the time of a few photos, not of all;
+       the engine on this computer runs one picture at a time */
+    var local = FS.aiEngine() === 'local' || (FS.localAI && FS.localAI.mode && FS.localAI.mode() === 'local') || navigator.onLine === false;
+    var lanes = local ? 1 : Math.min(3, list.length);
+    function msg() { FS.busy('🤖 ' + label + ' · ' + done + ' מתוך ' + list.length + ' מוכנות' + (lanes > 1 ? ' (' + lanes + ' במקביל)' : ''), onStop); }
+    function lane() {
+      if (stop || failed || next >= list.length) return Promise.resolve();
+      var p = list[next++];
+      return FS.findFaces(p, true).catch(function () {}).then(function () { if (!stop) return FS.restyle(p, prompt).then(function () { done++; if (!stop) msg(); }); })
+        .catch(function (e) { if (!stop) failed = e; }).then(lane);
+    }
+    msg();
+    var lanesP = []; for (var li = 0; li < lanes; li++) lanesP.push(lane());
+    return Promise.all(lanesP).then(function () {
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.gridMode && FS.gridMode() && FS.buildGrid();
       if (stop) FS.toast('⏹ העריכה נעצרה' + (done ? '. ' + done + ' תמונות כבר עודכנו ("↩ החזרת המקור" מבטל).' : '. התמונות לא השתנו.'), 5000);
       else if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות. "↩ החזרת המקור" מבטל.', 4500);
@@ -316,6 +323,41 @@
     ['הרחבת התמונה', '↔️', 'Extend the scene naturally beyond its edges, giving more room around the people while keeping them the same size in the middle']
   ];
   FS.AI_EDITS = EDITS.map(function (e) { return [e[0], e[1], e[2] + '.' + SAME]; });
+  /* on the real person (Oct 25): the result stays a photograph of the same people, only the look, the clothes or the place change */
+  var REAL_KEEP = ' This must stay a real photograph of the very same people: identical faces, features, skin tone, age, body and expression, so their family recognises them at once. Photorealistic, natural skin texture, professional camera and lighting. No cartoon, no painting, no text, no watermark.';
+  var REAL = [
+    ['חתן וכלה בהוליווד', '🎬', 'Dress the people as glamorous Hollywood stars on a red carpet with flashing cameras and velvet ropes'],
+    ['שער מגזין', '📰', 'Make it a professional fashion magazine cover shoot with editorial lighting and elegant styling, no text'],
+    ['צילום תדמית עסקי', '💼', 'Make it a professional corporate headshot: smart business clothes, soft studio light, a clean office background'],
+    ['שמלת כלה וחליפה', '👰', 'Dress the people in an elegant white wedding gown and a classic black tuxedo, a romantic wedding setting'],
+    ['ערב גאלה', '🥂', 'Dress the people in black-tie evening wear at a luxurious gala with chandeliers and warm light'],
+    ['שנות ה־20', '🎩', 'Dress the people in 1920s Great Gatsby fashion in an art deco ballroom, as a real photograph'],
+    ['שנות ה־50', '🚗', 'Dress the people in 1950s fashion beside a classic car on a sunny retro street, as a real photograph'],
+    ['שנות ה־70 דיסקו', '🪩', 'Dress the people in 1970s disco fashion under a glittering mirror ball on a lit dance floor'],
+    ['מערב פרוע', '🤠', 'Dress the people as cowboys in the wild west with a dusty town and a golden sunset behind them'],
+    ['אבירים ונסיכות', '🏰', 'Dress the people as a medieval knight and royalty in a real stone castle hall, cinematic light'],
+    ['טייסים', '✈️', 'Dress the people as airline pilots in uniform in front of a jet on the runway'],
+    ['רופאים', '🩺', 'Dress the people as doctors in white coats in a bright modern hospital'],
+    ['שפים', '👨‍🍳', 'Dress the people as chefs in white uniforms in a professional restaurant kitchen'],
+    ['כדורגלנים', '⚽', 'Dress the people as football players in team kits on a stadium pitch under the floodlights'],
+    ['כוכבי רוק', '🎸', 'Make the people rock stars on a concert stage with lights, smoke and a cheering crowd'],
+    ['דוגמנות מסלול', '💃', 'Make the people models on a fashion runway with photographers and bright stage lights'],
+    ['אסטרונאוטים אמיתיים', '👨‍🚀', 'Dress the people in realistic NASA space suits at a launch pad with a rocket behind them'],
+    ['טיול בפריז', '🗼', 'Place the people in Paris with the Eiffel Tower behind them on a golden evening, natural travel photo'],
+    ['ניו יורק', '🗽', 'Place the people in Times Square in New York at night with bright billboards, natural travel photo'],
+    ['ונציה', '🛶', 'Place the people in a gondola on a canal in Venice at sunset, natural travel photo'],
+    ['מלדיביים', '🏝️', 'Place the people on a white sand beach in the Maldives with turquoise water and palm trees'],
+    ['הרים מושלגים', '🏔️', 'Place the people in the Swiss Alps with snowy peaks and warm winter clothes'],
+    ['ספארי', '🦒', 'Place the people on an African safari with giraffes and an acacia tree at sunset'],
+    ['יאכטה', '🛥️', 'Place the people on a luxury yacht on a blue sea on a sunny day'],
+    ['הכותל המערבי', '🕍', 'Place the people at the Western Wall in Jerusalem in soft morning light, natural photo'],
+    ['שקיעה בים המלח', '🌄', 'Place the people at the Dead Sea at sunset with the mountains of Moab behind them'],
+    ['איפור ותסרוקת ערב', '💄', 'Give the people elegant evening makeup and a professional salon hairstyle, flattering beauty light'],
+    ['תמונת משפחה בסטודיו', '👨‍👩‍👧', 'Make it a professional family studio portrait with matching outfits and a soft grey backdrop'],
+    ['פסטיבל אורות', '🏮', 'Place the people at a night festival full of glowing lanterns and fairy lights, warm bokeh'],
+    ['20 שנה אחורה', '⏪', 'Show the same people about 20 years younger, natural and believable, the same setting']
+  ];
+  FS.AI_REAL = REAL.map(function (e) { return [e[0], e[1], e[2] + '.' + REAL_KEEP]; });
   FS.AI_VIRAL = VIRAL; FS.AI_KEEP_FREE = KEEP_FREE;
 
   var pane = $('[data-pane=styles]'); if (!pane) return;
@@ -332,7 +374,7 @@
     '<div class="row2 ax-undo"><button class="btn" id="style-back" title="מבטל את עיצוב ה־AI האחרון (בתמונה או בכל המסומנות)">↶ ביטול העיצוב האחרון</button><button class="btn" id="style-orig" title="מחזיר את התמונה המקורית, בלי שום עיצוב AI">↩ חזרה למקור</button></div>' +
     '<div class="card ax-build"><h3>🎛️ שילוב משלך</h3>' + chips('🎨 סגנון', STYLE, 'style') + chips('🌍 איפה', WORLD, 'world') + chips('👗 תלבושת', OUTFIT, 'outfit') + chips('✨ אווירה', MOOD, 'mood') +
     '<p class="ax-name" id="ax-name"></p><div class="row2"><button class="btn" id="ax-random">🎲 הפתעה</button><button class="btn primary" id="ax-go">✨ ליצור</button></div></div>' +
-    '<p class="ax-cloud-note">🌐 העיצובים מכאן ולמטה נוצרים בשרת AI וצריכים אינטרנט' + (FS.localAI ? ' (או את מנוע ה־AI המקומי)' : '') + '.</p><h3>🪄 עריכות חכמות <small>התמונה נשארת, משתנה דבר אחד</small></h3><div class="ai-styles" id="ax-edits"></div><h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
+    '<p class="ax-cloud-note">🌐 העיצובים מכאן ולמטה נוצרים בשרת AI וצריכים אינטרנט' + (FS.localAI ? ' (או את מנוע ה־AI המקומי)' : '') + '.</p><h3>🧑 על אדם אמיתי <small>נשאר צילום אמיתי, משתנים הלבוש והמקום</small></h3><div class="ai-styles" id="ax-real"></div><h3>🪄 עריכות חכמות <small>התמונה נשארת, משתנה דבר אחד</small></h3><div class="ai-styles" id="ax-edits"></div><h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
     '<h3>⭐ שילובים מוכנים</h3><div class="ai-styles" id="ax-combos"></div>' +
     '<h3>🎨 סגנונות</h3><div class="ai-styles" id="ai-styles"></div>' +
     '<h3>✍️ לתאר במילים</h3><div class="field"><textarea id="ai-custom" rows="2" placeholder="למשל: להלביש את כולם בתחפושות של פיראטים על ספינה בסערה"></textarea></div>' +
@@ -345,6 +387,11 @@
     $$('.ax-chips button.on', pane).forEach(function (b) { b.scrollIntoView({ block: 'nearest', inline: 'center' }); });
   });
   $('#ax-go').addEventListener('click', function () { FS.runAI(promptOf(cur), nameOf(cur)); });
+  FS.AI_REAL.forEach(function (v) {
+    var b = document.createElement('button'); b.className = 'ai-style'; b.title = v[0];
+    b.innerHTML = '<i>' + v[1] + '</i><span>' + FS.esc(v[0]) + '</span>';
+    b.addEventListener('click', function () { FS.runAI(v[2], v[0]); }); $('#ax-real').appendChild(b);
+  });
   FS.AI_EDITS.forEach(function (v) {
     var b = document.createElement('button'); b.className = 'ai-style'; b.title = v[0];
     b.innerHTML = '<i>' + v[1] + '</i><span>' + FS.esc(v[0]) + '</span>';

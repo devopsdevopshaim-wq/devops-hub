@@ -54,7 +54,7 @@ const GEMINI_KEY = '__GEMINI_API_KEY__';
 const OPENAI_KEY = '__OPENAI_API_KEY__';
 const set = (k) => k && !/^__/.test(k);
 const TEXT_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
-const DAY_CAP = 1200, IP_HOUR = 30, FETCH_HOUR = 240, IMG_DAY = 800, IMG_IP_HOUR = 60;
+const DAY_CAP = 1200, IP_HOUR = 30, FETCH_HOUR = 240, IMG_DAY = 800, IMG_IP_HOUR = 120;
 const IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image-preview', 'gemini-3-pro-image-preview', 'gemini-2.5-flash-image-preview'];
 // the market data the finance site shows; nothing else may be read through here
 const HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com', 'feeds.finance.yahoo.com', 'www.globes.co.il'];

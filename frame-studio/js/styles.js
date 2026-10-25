@@ -268,7 +268,7 @@
   /* the photo for the image model: a big copy for Gemini, and one under 512px for FLUX.2 on Cloudflare */
   function photoB64(p, long) {
     var im = FS.img(p.origSrc || p.src), k = Math.min(1, long / Math.max(im.naturalWidth, im.naturalHeight)), c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k), x = c.getContext('2d');
-    x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.86).split(',')[1];
   }
   /* the answer is brought back to the original's shape and size (centre crop), so the frame, the faces and the layout stay where they were */
   function matchShape(res, orig) {
@@ -287,7 +287,7 @@
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
     var faces = p.faces ? p.faces.length : 0; if (faces) prompt += ' There are exactly ' + faces + ' faces in the photo; keep all ' + faces + '.';
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
-    var body = { action: 'restyle', prompt: prompt, image: photoB64(p, 1280), small: photoB64(p, 496), mime: 'image/jpeg', w: w, h: h };
+    var body = { action: 'restyle', prompt: prompt, image: photoB64(p, 1024), small: photoB64(p, 496), mime: 'image/jpeg', w: w, h: h };
     if (engine) body.engine = engine;
     return FS.askServer(body).then(function (r) {
       if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
