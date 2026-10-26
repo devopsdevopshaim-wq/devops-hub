@@ -183,7 +183,8 @@
   function hasHeb(s) { return /[֐-׿]/.test(s); }
   /* text/plain keeps it a simple request: the server answers no CORS preflight, so application/json never reached it */
   /* every request in flight can be stopped (FS.aiStop): the answer is dropped and reads as 'cancelled' */
-  var live = [];
+  var live = [], cloudOff = 0;
+  FS.cloudOff = function () { return cloudOff > Date.now(); };
   FS.aiStop = function () { live.slice().forEach(function (c) { c.stopped = true; if (c.ctl) c.ctl.abort(); }); };
   /* Picture edits ('restyle') and new pictures ('image') can also run on this computer in the desktop program
      (js/local-ai.js, FS.localAI). Mode 'fs-ai-mode': local = always here; auto = the cloud when online, here when offline
@@ -204,9 +205,11 @@
     if (!L || !body || (body.action !== 'restyle' && body.action !== 'image') || L.mode() === 'cloud') return askCloud(body);
     return L.whenReady().then(function (ready) {
       if (!ready) return askCloud(body);
-      if (L.mode() === 'local' || navigator.onLine === false) return askLocal(body);
+      if (L.mode() === 'local' || navigator.onLine === false || cloudOff > Date.now()) return askLocal(body);
       return askCloud(body).then(function (r) {
         if ((r && r.ok && r.image) || (r && r.error === 'cancelled')) return r;
+        /* the free cloud ran out (or refuses): for the next 30 minutes the pictures go straight to this computer, no waiting on it */
+        if (r && /quota|no-free-tier|rate-limited|engine-off|ai-failed/.test(String(r.error || ''))) cloudOff = Date.now() + 30 * 60000;
         if (window.console) console.warn('AI: cloud failed (' + (r && r.error) + '), using the local engine');
         return askLocal(body);
       });
