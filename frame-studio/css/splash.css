@@ -1,40 +1,63 @@
-/* אופטימוס: the opening of the program (studio.html). The aperture's ring draws, its blades turn open, the AI spark lights in the
-   middle, a light passes over it and the name rises in; then the screen lifts away by itself (about 3s). Once per session
-   (html.op-seen); a click skips it; with reduced motion it only fades. */
-#op-splash { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; cursor: pointer;
-  background: radial-gradient(900px 600px at 50% 42%, #1E1A14 0%, #0B0C0F 62%, #060608 100%);
-  animation: op-leave .6s cubic-bezier(.6,0,.4,1) 3.5s forwards; }
+/* אופטימוס: the opening of the program (studio.html, #op-splash), about 5 s, like the first light through a lens.
+   Gold dust drifts up (a canvas), a spotlight opens, the lens barrel's ticks turn into place and its rings draw, the aperture's
+   blades turn open, a metal shine runs over them (an SVG gradient), the AI spark ignites with a camera flash and an anamorphic
+   flare, the name settles letter by letter with a gold glint, then the whole stage lifts away. Once per session (html.op-seen),
+   a click skips it, and with reduced motion it only fades. */
+#op-splash { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; overflow: hidden; cursor: pointer;
+  background: radial-gradient(120% 90% at 50% 45%, #0F0E0B 0%, #050506 60%, #000 100%);
+  animation: sp-leave .75s cubic-bezier(.7,0,.3,1) 4.55s forwards; }
 html.op-seen #op-splash { display: none; }
-#op-splash.op-out { animation: op-leave .35s ease forwards; }
-.op-stage { position: relative; display: grid; justify-items: center; gap: 18px; }
-.op-halo { position: absolute; top: -60px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(227,196,138,.28), rgba(227,196,138,0) 62%); filter: blur(6px); opacity: 0; animation: op-halo 2.2s ease .9s forwards; }
-.op-mark { width: 220px; height: 220px; position: relative; filter: drop-shadow(0 24px 50px rgba(0,0,0,.7)); animation: op-pop .9s cubic-bezier(.2,1.4,.4,1) .05s both; }
-.op-mark svg { width: 100%; height: 100%; overflow: visible; }
-.op-mark .op-ring { stroke-dasharray: 274; stroke-dashoffset: 274; animation: op-draw 1s cubic-bezier(.6,0,.2,1) .15s forwards; transform-origin: 50px 50px; transform: rotate(-90deg); }
-.op-mark .op-blades { transform-origin: 50px 50px; animation: op-open 1.15s cubic-bezier(.2,.9,.25,1) .45s both; }
-.op-mark .op-blade { opacity: 0; animation: op-blade .5s ease forwards; animation-delay: calc(.5s + var(--i) * 70ms); }
-.op-mark .op-spark { transform-origin: 50px 50px; transform: scale(0); animation: op-spark .75s cubic-bezier(.2,1.6,.4,1) 1.35s forwards; }
-.op-mark .op-glow { transform-origin: 50px 50px; opacity: 0; animation: op-glow 1.6s ease-in-out 1.45s forwards; }
-.op-sweep { position: absolute; top: 0; left: 50%; width: 220px; height: 220px; margin-left: -110px; border-radius: 50%; overflow: hidden; pointer-events: none; }
-.op-sweep::after { content: ''; position: absolute; top: -40%; left: -120%; width: 60%; height: 180%; transform: rotate(25deg); background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,248,225,.55), rgba(255,255,255,0)); animation: op-sweep .9s ease-in-out 1.75s forwards; }
-.op-word { display: flex; gap: .3em; font: 800 52px/1.1 'Heebo', 'Assistant', system-ui, sans-serif; direction: ltr; margin-top: 6px; }
-.op-word span { background: linear-gradient(180deg, #FFF6DE 0%, #E3C48A 55%, #A9864C 100%); -webkit-background-clip: text; background-clip: text; color: transparent; display: inline-block; opacity: 0; transform: translateY(18px); filter: blur(8px); animation: op-letter .55s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: calc(1.35s + var(--i) * 60ms); }
-.op-he { font: 700 22px 'Frank Ruhl Libre', 'Heebo', serif; color: #EDE3CF; letter-spacing: .08em; opacity: 0; animation: op-fade .6s ease 1.95s forwards; margin-top: -6px; }
-.op-tag { font: 500 14px 'Heebo', 'Assistant', sans-serif; color: #9A978F; letter-spacing: .14em; opacity: 0; animation: op-fade .6s ease 2.2s forwards; }
-.op-line { width: 0; height: 1px; background: linear-gradient(90deg, transparent, #E3C48A, transparent); animation: op-line .8s ease 1.9s forwards; }
-@keyframes op-pop { from { transform: scale(.55); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes op-draw { to { stroke-dashoffset: 0; } }
-@keyframes op-open { from { transform: rotate(-150deg) scale(.35); } to { transform: rotate(0) scale(1); } }
-@keyframes op-blade { to { opacity: 1; } }
-@keyframes op-spark { 0% { transform: scale(0) rotate(-90deg); } 70% { transform: scale(1.35) rotate(10deg); } 100% { transform: scale(1) rotate(0); } }
-@keyframes op-glow { 0% { opacity: 0; transform: scale(.6); } 40% { opacity: 1; transform: scale(1.6); } 100% { opacity: .6; transform: scale(1); } }
-@keyframes op-sweep { to { left: 160%; } }
-@keyframes op-letter { to { opacity: 1; transform: none; filter: blur(0); } }
-@keyframes op-fade { to { opacity: 1; } }
-@keyframes op-line { to { width: 260px; } }
-@keyframes op-halo { 0% { opacity: 0; transform: scale(.7); } 50% { opacity: 1; } 100% { opacity: .75; transform: scale(1); } }
-@keyframes op-leave { to { opacity: 0; transform: scale(1.04); visibility: hidden; pointer-events: none; } }
+#op-splash.op-out { animation: sp-leave .4s ease forwards; }
+#op-splash .sp-dust { position: absolute; inset: 0; width: 100%; height: 100%; }
+#op-splash .sp-spot { position: absolute; left: 50%; top: 44%; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(227,196,138,.20) 0%, rgba(227,196,138,.06) 32%, rgba(0,0,0,0) 62%); opacity: 0; transform: scale(.5); animation: sp-spot 2.4s cubic-bezier(.2,.8,.2,1) .1s forwards; }
+#op-splash .sp-flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 42%, #fff 0%, rgba(255,240,205,.6) 25%, rgba(255,255,255,0) 60%); opacity: 0; animation: sp-flash .55s ease-out 1.78s forwards; pointer-events: none; }
+#op-splash .sp-stage { position: relative; display: grid; justify-items: center; animation: sp-stage-out .75s cubic-bezier(.7,0,.3,1) 4.5s forwards; }
+#op-splash .sp-mark { position: relative; width: 270px; height: 270px; filter: drop-shadow(0 30px 60px rgba(0,0,0,.85)) drop-shadow(0 0 40px rgba(227,196,138,.12)); }
+#op-splash .sp-svg { width: 100%; height: 100%; overflow: visible; }
+#op-splash .sp-disc { transform-origin: 50px 50px; opacity: 0; transform: scale(.82); animation: sp-in .9s cubic-bezier(.2,.8,.2,1) .1s forwards; }
+#op-splash .sp-ticks { transform-origin: 50px 50px; opacity: 0; transform: rotate(-50deg); animation: sp-ticks 1.4s cubic-bezier(.2,.8,.2,1) .25s forwards; }
+#op-splash .sp-ring2 { stroke-dasharray: 315; stroke-dashoffset: 315; transform-origin: 50px 50px; transform: rotate(-90deg); animation: sp-draw 1.2s cubic-bezier(.6,0,.2,1) .3s forwards; }
+#op-splash .sp-ring { stroke-dasharray: 274; stroke-dashoffset: -274; transform-origin: 50px 50px; transform: rotate(-90deg); animation: sp-draw 1.1s cubic-bezier(.6,0,.2,1) .5s forwards; }
+#op-splash .sp-blades { transform-origin: 50px 50px; transform: rotate(-160deg) scale(.25); animation: sp-iris 1.35s cubic-bezier(.16,.9,.22,1) .75s forwards; }
+#op-splash .sp-blade { opacity: 0; animation: sp-fade .45s ease forwards; animation-delay: calc(.8s + var(--i) * 60ms); }
+#op-splash .sp-glow { transform-origin: 50px 50px; opacity: 0; transform: scale(.4); animation: sp-glow 2.2s ease-out 1.72s forwards; }
+#op-splash .sp-spark { transform-origin: 50px 50px; transform: scale(0) rotate(-120deg); animation: sp-spark .8s cubic-bezier(.2,1.7,.4,1) 1.72s forwards; }
+#op-splash .sp-flare { position: absolute; left: 50%; top: 50%; width: 560px; height: 2px; margin: -1px 0 0 -280px; border-radius: 2px; pointer-events: none;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,236,190,.9) 45%, #fff 50%, rgba(255,236,190,.9) 55%, rgba(255,255,255,0)); opacity: 0; transform: scaleX(0); animation: sp-flare 1.3s cubic-bezier(.2,.8,.2,1) 1.76s forwards; filter: blur(.4px); }
+#op-splash .sp-flare.v { width: 2px; height: 220px; margin: -110px 0 0 -1px; background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,240,205,.7) 50%, rgba(255,255,255,0)); transform: scaleY(0); animation-name: sp-flare-v; }
+#op-splash .sp-word { display: flex; margin-top: 34px; direction: ltr; font: 500 56px/1 'Frank Ruhl Libre', 'Times New Roman', serif; letter-spacing: 0; }
+#op-splash .sp-word span { display: inline-block; margin: 0 .19em; opacity: 0; filter: blur(10px); transform: translateX(calc((var(--i) - 3) * 26px)) scale(1.12);
+  background: linear-gradient(100deg, #A9864C 0%, #E3C48A 30%, #FFF8E4 45%, #E3C48A 60%, #A9864C 100%); background-size: 320% 100%; background-position: 100% 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: sp-letter .9s cubic-bezier(.2,.8,.2,1) forwards, sp-glint 1.4s ease-in-out forwards; animation-delay: calc(2.05s + var(--i) * 55ms), calc(2.95s + var(--i) * 70ms); }
+#op-splash .sp-he { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+#op-splash .sp-he i { display: block; width: 0; height: 1px; background: linear-gradient(90deg, rgba(227,196,138,0), #E3C48A); animation: sp-line .8s cubic-bezier(.2,.8,.2,1) 2.85s forwards; }
+#op-splash .sp-he i:last-child { background: linear-gradient(270deg, rgba(227,196,138,0), #E3C48A); }
+#op-splash .sp-he b { font: 600 21px 'Frank Ruhl Libre', serif; color: #EFE6D2; letter-spacing: .12em; opacity: 0; animation: sp-fade .7s ease 2.95s forwards; }
+#op-splash .sp-tag { margin-top: 12px; font: 500 11.5px 'Heebo', 'Assistant', sans-serif; letter-spacing: .55em; color: #8F8A80; direction: ltr; opacity: 0; animation: sp-tag 1s cubic-bezier(.2,.8,.2,1) 3.2s forwards; }
+#op-splash .sp-shine { opacity: 0; animation: sp-shine 1.3s ease-in-out 1.85s forwards; }
+@keyframes sp-shine { 0% { opacity: 0; } 30% { opacity: .6; } 100% { opacity: 0; } }
+@keyframes sp-in { to { opacity: 1; transform: none; } }
+@keyframes sp-ticks { to { opacity: 1; transform: none; } }
+@keyframes sp-draw { to { stroke-dashoffset: 0; } }
+@keyframes sp-iris { to { transform: none; } }
+@keyframes sp-fade { to { opacity: 1; } }
+@keyframes sp-glow { 0% { opacity: 0; transform: scale(.4); } 25% { opacity: 1; transform: scale(2.1); } 100% { opacity: .7; transform: scale(1); } }
+@keyframes sp-spark { to { transform: none; } }
+@keyframes sp-flash { 0% { opacity: 0; } 18% { opacity: .38; } 100% { opacity: 0; } }
+@keyframes sp-flare { 0% { opacity: 0; transform: scaleX(0); } 22% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1.25); } }
+@keyframes sp-flare-v { 0% { opacity: 0; transform: scaleY(0); } 25% { opacity: .8; transform: scaleY(1); } 100% { opacity: 0; transform: scaleY(1.1); } }
+@keyframes sp-spot { to { opacity: 1; transform: none; } }
+@keyframes sp-letter { to { opacity: 1; filter: blur(0); transform: none; } }
+@keyframes sp-glint { to { background-position: 0 0; } }
+@keyframes sp-line { to { width: 70px; } }
+@keyframes sp-tag { from { opacity: 0; letter-spacing: .9em; } to { opacity: 1; letter-spacing: .55em; } }
+@keyframes sp-stage-out { to { transform: scale(.93) translateY(-8px); opacity: 0; filter: blur(4px); } }
+@keyframes sp-leave { to { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) {
   #op-splash * { animation: none !important; opacity: 1 !important; transform: none !important; filter: none !important; stroke-dashoffset: 0 !important; }
-  #op-splash { animation: op-leave .4s ease 1.2s forwards; }
+  #op-splash .sp-flash, #op-splash .sp-flare { display: none; }
+  #op-splash { animation: sp-leave .5s ease 1.4s forwards !important; }
 }
+@media (max-width: 600px) { #op-splash .sp-mark { width: 190px; height: 190px; } #op-splash .sp-word { font-size: 38px; } }

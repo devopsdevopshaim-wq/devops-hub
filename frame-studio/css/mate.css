@@ -321,3 +321,21 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 /* the program's mark (optimus.svg) */
 #mt .mt-mark { background: none; box-shadow: none; width: 38px; height: 38px; }
 #mt .mt-mark img { width: 38px; height: 38px; filter: drop-shadow(0 4px 10px rgba(227,196,138,.35)); }
+
+/* before | after (Oct 27): the photo as it came in beside the edited one — edit screen tiles, the full editor, the big preview */
+#mt .mt-ba { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px; }
+#mt .mt-ba > div { position: relative; border-radius: 8px; overflow: hidden; background: #0a0b0e; }
+#mt .mt-ba canvas { position: absolute; inset: 0; margin: auto; max-width: 100%; max-height: 100%; }
+#mt .mt-ba span, #mt .mt-cvw figcaption, #mt-dlg-ba figcaption, .mt-big2 figcaption { position: absolute; top: 8px; inset-inline-start: 8px; z-index: 1; font: 700 11px/1 'Heebo', sans-serif; letter-spacing: .06em; padding: 5px 9px; border-radius: 999px; background: rgba(10,10,12,.72); color: #EDEAE4; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+#mt .mt-ba .mt-a span, #mt .mt-cv1 figcaption, .mt-big2 figure:last-child figcaption { background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); color: #1A140B; box-shadow: none; }
+#mt .mt-tile.big .mt-chk { z-index: 2; }
+#mt .mt-cvw.two { display: flex; align-items: center; justify-content: center; gap: 22px; }
+#mt .mt-cvw figure { position: relative; margin: 0; display: grid; place-items: center; }
+#mt .mt-cvw figure[hidden] { display: none; }
+#mt .mt-cvw:not(.two) .mt-cv1 figcaption { display: none; }
+#mt-cv0 { border-radius: 4px; box-shadow: 0 30px 80px -20px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.06); }
+#mt .mt-cmpb.on, #mt .mt-cmpb.on:hover { background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); color: #1A140B; }
+.mt-big2 { display: grid !important; grid-template-columns: 1fr 1fr; gap: 14px; }
+.mt-big2 figure { position: relative; margin: 0; display: grid; place-items: center; background: #0b0c0f; border-radius: 12px; padding: 10px; min-height: 200px; }
+.mt-big2 canvas { max-width: 100%; max-height: 66vh; }
+#mt .mt-ba span { top: auto; bottom: 8px; }
