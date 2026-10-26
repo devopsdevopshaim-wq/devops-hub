@@ -266,6 +266,9 @@ if (b.action === 'restyle' || b.action === 'image') {
     const plan = fresh
       ? [['@cf/black-forest-labs/flux-1-schnell', () => ({ prompt, steps: 6 })], ['@cf/black-forest-labs/flux-2-klein-4b', form]]
       : [['@cf/black-forest-labs/flux-2-klein-4b', form], ['@cf/black-forest-labs/flux-2-klein-9b', form], ['@cf/black-forest-labs/flux-2-dev', form]];
+    // a chosen FLUX model goes first (fluxModel: klein-4b / klein-9b / dev): "dev" is the big one, the most lifelike on real people
+    const fm = { 'klein-4b': 'flux-2-klein-4b', 'klein-9b': 'flux-2-klein-9b', dev: 'flux-2-dev' }[String(b.fluxModel || '')];
+    if (fm && !fresh) plan.sort((x, y) => (y[0].endsWith(fm) ? 1 : 0) - (x[0].endsWith(fm) ? 1 : 0));
     for (const [m, input] of plan) {
       try { const img = await toB64(await WAI.run(m, input())); return out({ ok: true, image: img, mime: 'image/jpeg', source: 'Cloudflare', model: m.split('/').pop(), skipped: errs.length ? errs.join(' | ').slice(0, 400) : undefined }); }
       catch (e) { errs.push(m.split('/').pop() + ': ' + why(e)); if (/4006|neurons|allocation/i.test(String(e && e.message || e))) { sd.fluxOffDay = day; break; } }
