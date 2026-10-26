@@ -198,7 +198,7 @@
       flo.className = 'la-float ok';
       flo.innerHTML = '<b>✅ ההתקנה הסתיימה: מנוע ה־AI המקומי מוכן</b><span>כל עיצובי ה־AI עובדים עכשיו גם בלי אינטרנט' + (p ? ' · תמונת הבדיקה לקחה ' + Math.max(1, Math.round(p / 1000)) + ' שניות' : '') + '</span>';
       if (D && D.progress) D.progress(-1);
-      if (D && D.notify) D.notify('פריים־סטודיו', 'ההתקנה הסתיימה: מנוע ה־AI המקומי מותקן ופועל. כל עיצובי ה־AI עובדים עכשיו גם בלי אינטרנט.');
+      if (D && D.notify) D.notify('אופטימוס', 'ההתקנה הסתיימה: מנוע ה־AI המקומי מותקן ופועל. כל עיצובי ה־AI עובדים עכשיו גם בלי אינטרנט.');
       floHide = setTimeout(hideFloat, 30000);
     } else if (kind === 'fail') {
       flo.className = 'la-float bad';

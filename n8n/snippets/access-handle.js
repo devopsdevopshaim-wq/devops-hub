@@ -60,7 +60,7 @@ const rndPassword = () => { const h = rnd(12); let o = ''; for (let i = 0; i < 1
 const mailTo = (to, subject, text) => ({ to, subject, text, soft: true });   // soft: a failed send never blocks the answer
 const log = (what, who) => { sd.log.unshift({ at: new Date(now).toISOString(), what, who, ip: IPK.slice(0, 6) }); if (sd.log.length > 300) sd.log.length = 300; };
 const when = () => new Date(now).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' });
-// ---- פריים־סטודיו updates: the desktop program is versioned "1.0.N". A licence may run every version up to L.appVer (set from the
+// ---- אופטימוס updates: the desktop program is versioned "1.0.N". A licence may run every version up to L.appVer (set from the
 // version it was first used with); a newer one opens only after the owner approved it (a paid update) or published it as free.
 const vparse = (v) => /^\d{1,4}\.\d{1,4}\.\d{1,6}$/.test(String(v || '')) ? String(v).split('.').map(Number) : null;
 const vcmp = (a, z) => { const x = vparse(a), y = vparse(z); if (!x || !y) return 0; for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1; return 0; };
@@ -236,7 +236,7 @@ switch (b.action) {
   // Anyone may open an account: the first (initial) password arrives by email, no step by the admin; the admin sees it in the list (and is told at the first
   // sign-in) and controls what the client sees afterwards (sites, days, suspension). New accounts see every open site (never the hidden ones)
   // for SIGNUP_DAYS days. Someone who already has an account just gets an initial password, as with "forgot".
-  // ---- פריים־סטודיו licences: the studio program (desktop or browser) opens only with an activation code. The owner issues one code
+  // ---- אופטימוס licences: the studio program (desktop or browser) opens only with an activation code. The owner issues one code
   // per email; it is fixed to that person, works on ONE computer (bound on first activation by a hashed machine id), and the owner
   // can see, revoke, free or replace it. Codes are random (16 characters, ~79 bits), activation is rate-limited and locks after
   // repeated failures, and every activation from another computer is refused and reported to the owner.
@@ -325,7 +325,7 @@ switch (b.action) {
     sd.licSettings = sd.licSettings || { price: 990, currency: '₪' };
     const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
-    const mailCode = (L) => mailTo(L.email, 'פריים־סטודיו · קוד ההפעלה האישי שלך', `שלום ${L.name || ''},\n\nקוד ההפעלה האישי שלך לפריים־סטודיו:\n${L.code}\n\nהורדה והתקנה: ${STUDIO_DL}\nבהפעלה הראשונה מזינים את המייל הזה (${L.email}) ואת הקוד.\n\nהקוד אישי ומתאים למחשב אחד בלבד: אחרי ההפעלה הוא ננעל למחשב הזה. החלפת מחשב: פונים לחיים, 054-4979771.\nאין להעביר את הקוד לאחרים.\n\nפריים מגנטים`);
+    const mailCode = (L) => mailTo(L.email, 'אופטימוס · קוד ההפעלה האישי שלך', `שלום ${L.name || ''},\n\nקוד ההפעלה האישי שלך לאופטימוס:\n${L.code}\n\nהורדה והתקנה: ${STUDIO_DL}\nבהפעלה הראשונה מזינים את המייל הזה (${L.email}) ואת הקוד.\n\nהקוד אישי ומתאים למחשב אחד בלבד: אחרי ההפעלה הוא ננעל למחשב הזה. החלפת מחשב: פונים לחיים, 054-4979771.\nאין להעביר את הקוד לאחרים.\n\nפריים מגנטים`);
     sd.appUpd = sd.appUpd || { versions: [], price: 49 };
     const U = sd.appUpd;
     if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U });

@@ -1,4 +1,4 @@
-/* פריים־סטודיו — the core: state, formats, image loading, the photo pipeline (adjustments, sharpen, vignette, grain,
+/* אופטימוס — the core: state, formats, image loading, the photo pipeline (adjustments, sharpen, vignette, grain,
    background replace), drawing a page, history and the browser store. Everything else hangs off window.FS. */
 (function () {
   'use strict';

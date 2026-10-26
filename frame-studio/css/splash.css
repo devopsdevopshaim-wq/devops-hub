@@ -1,0 +1,40 @@
+/* אופטימוס: the opening of the program (studio.html). The aperture's ring draws, its blades turn open, the AI spark lights in the
+   middle, a light passes over it and the name rises in; then the screen lifts away by itself (about 3s). Once per session
+   (html.op-seen); a click skips it; with reduced motion it only fades. */
+#op-splash { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; cursor: pointer;
+  background: radial-gradient(900px 600px at 50% 42%, #1E1A14 0%, #0B0C0F 62%, #060608 100%);
+  animation: op-leave .6s cubic-bezier(.6,0,.4,1) 3.5s forwards; }
+html.op-seen #op-splash { display: none; }
+#op-splash.op-out { animation: op-leave .35s ease forwards; }
+.op-stage { position: relative; display: grid; justify-items: center; gap: 18px; }
+.op-halo { position: absolute; top: -60px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(227,196,138,.28), rgba(227,196,138,0) 62%); filter: blur(6px); opacity: 0; animation: op-halo 2.2s ease .9s forwards; }
+.op-mark { width: 220px; height: 220px; position: relative; filter: drop-shadow(0 24px 50px rgba(0,0,0,.7)); animation: op-pop .9s cubic-bezier(.2,1.4,.4,1) .05s both; }
+.op-mark svg { width: 100%; height: 100%; overflow: visible; }
+.op-mark .op-ring { stroke-dasharray: 274; stroke-dashoffset: 274; animation: op-draw 1s cubic-bezier(.6,0,.2,1) .15s forwards; transform-origin: 50px 50px; transform: rotate(-90deg); }
+.op-mark .op-blades { transform-origin: 50px 50px; animation: op-open 1.15s cubic-bezier(.2,.9,.25,1) .45s both; }
+.op-mark .op-blade { opacity: 0; animation: op-blade .5s ease forwards; animation-delay: calc(.5s + var(--i) * 70ms); }
+.op-mark .op-spark { transform-origin: 50px 50px; transform: scale(0); animation: op-spark .75s cubic-bezier(.2,1.6,.4,1) 1.35s forwards; }
+.op-mark .op-glow { transform-origin: 50px 50px; opacity: 0; animation: op-glow 1.6s ease-in-out 1.45s forwards; }
+.op-sweep { position: absolute; top: 0; left: 50%; width: 220px; height: 220px; margin-left: -110px; border-radius: 50%; overflow: hidden; pointer-events: none; }
+.op-sweep::after { content: ''; position: absolute; top: -40%; left: -120%; width: 60%; height: 180%; transform: rotate(25deg); background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,248,225,.55), rgba(255,255,255,0)); animation: op-sweep .9s ease-in-out 1.75s forwards; }
+.op-word { display: flex; gap: .3em; font: 800 52px/1.1 'Heebo', 'Assistant', system-ui, sans-serif; direction: ltr; margin-top: 6px; }
+.op-word span { background: linear-gradient(180deg, #FFF6DE 0%, #E3C48A 55%, #A9864C 100%); -webkit-background-clip: text; background-clip: text; color: transparent; display: inline-block; opacity: 0; transform: translateY(18px); filter: blur(8px); animation: op-letter .55s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: calc(1.35s + var(--i) * 60ms); }
+.op-he { font: 700 22px 'Frank Ruhl Libre', 'Heebo', serif; color: #EDE3CF; letter-spacing: .08em; opacity: 0; animation: op-fade .6s ease 1.95s forwards; margin-top: -6px; }
+.op-tag { font: 500 14px 'Heebo', 'Assistant', sans-serif; color: #9A978F; letter-spacing: .14em; opacity: 0; animation: op-fade .6s ease 2.2s forwards; }
+.op-line { width: 0; height: 1px; background: linear-gradient(90deg, transparent, #E3C48A, transparent); animation: op-line .8s ease 1.9s forwards; }
+@keyframes op-pop { from { transform: scale(.55); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes op-draw { to { stroke-dashoffset: 0; } }
+@keyframes op-open { from { transform: rotate(-150deg) scale(.35); } to { transform: rotate(0) scale(1); } }
+@keyframes op-blade { to { opacity: 1; } }
+@keyframes op-spark { 0% { transform: scale(0) rotate(-90deg); } 70% { transform: scale(1.35) rotate(10deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes op-glow { 0% { opacity: 0; transform: scale(.6); } 40% { opacity: 1; transform: scale(1.6); } 100% { opacity: .6; transform: scale(1); } }
+@keyframes op-sweep { to { left: 160%; } }
+@keyframes op-letter { to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes op-fade { to { opacity: 1; } }
+@keyframes op-line { to { width: 260px; } }
+@keyframes op-halo { 0% { opacity: 0; transform: scale(.7); } 50% { opacity: 1; } 100% { opacity: .75; transform: scale(1); } }
+@keyframes op-leave { to { opacity: 0; transform: scale(1.04); visibility: hidden; pointer-events: none; } }
+@media (prefers-reduced-motion: reduce) {
+  #op-splash * { animation: none !important; opacity: 1 !important; transform: none !important; filter: none !important; stroke-dashoffset: 0 !important; }
+  #op-splash { animation: op-leave .4s ease 1.2s forwards; }
+}

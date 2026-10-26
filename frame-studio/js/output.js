@@ -108,7 +108,7 @@
   }
   FS.projectOf = projectOf;
   FS.openProject = function (proj) {
-    if (!proj || proj.app !== 'frame-studio') { FS.toast('זה לא קובץ של פריים־סטודיו'); return Promise.resolve(); }
+    if (!proj || proj.app !== 'frame-studio') { FS.toast('זה לא קובץ של אופטימוס'); return Promise.resolve(); }
     FS.busy('פותח פרויקט…');
     var fr = Object.keys(proj.frames || {}).map(function (id) { var f = proj.frames[id];
       return FS.loadImg(f.src).then(function (img) { FS.USER_FRAMES[id] = { id: id, name: f.name, src: f.src, hole: f.hole, solid: f.solid, aspect: img.naturalWidth / img.naturalHeight };

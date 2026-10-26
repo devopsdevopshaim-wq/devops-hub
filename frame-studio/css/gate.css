@@ -1,5 +1,5 @@
 /* The studio's sign-in gate (js/gate.js): nothing of the studio shows until the owner is signed in. */
-body.gated > :not(#gate):not(script):not(.toast) { visibility: hidden !important; }
+body.gated > :not(#gate):not(script):not(.toast):not(#op-splash) { visibility: hidden !important; }
 #gate { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 20px; overflow-y: auto;
   background: radial-gradient(70% 55% at 50% 0%, rgba(214, 183, 126, .16), transparent 70%), #0D0B10; color: #F5EFE4; font-family: 'Assistant', 'Heebo', system-ui, sans-serif; }
 #gate::after { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .05;

@@ -54,7 +54,7 @@
     var q = document.createElement('button'); q.className = 'btn'; q.textContent = '✕ סגירת התוכנה'; q.addEventListener('click', function () { D.close(); }); menu.appendChild(q);
     if (typeof D.uninstall === 'function') {
       var un = document.createElement('button'); un.className = 'btn'; un.textContent = '🗑️ הסרת התוכנה מהמחשב';
-      un.addEventListener('click', function () { D.uninstall().then(function (r) { if (r && !r.ok && r.error !== 'cancelled') FS.toast('אפשר להסיר גם מ: הגדרות Windows ← אפליקציות ← "פריים־סטודיו" ← הסרה.', 7000); }); });
+      un.addEventListener('click', function () { D.uninstall().then(function (r) { if (r && !r.ok && r.error !== 'cancelled') FS.toast('אפשר להסיר גם מ: הגדרות Windows ← אפליקציות ← "אופטימוס" ← הסרה.', 7000); }); });
       menu.appendChild(un);
     }
   }

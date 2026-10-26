@@ -317,3 +317,7 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 
 #mt .mt-acts { margin-inline-start: auto; }
 #mt .mt-stat { margin-inline-start: 0; }
+
+/* the program's mark (optimus.svg) */
+#mt .mt-mark { background: none; box-shadow: none; width: 38px; height: 38px; }
+#mt .mt-mark img { width: 38px; height: 38px; filter: drop-shadow(0 4px 10px rgba(227,196,138,.35)); }

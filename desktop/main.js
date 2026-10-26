@@ -275,7 +275,7 @@ function windowOptions() {
     height: 900,
     minWidth: 1100,
     minHeight: 700,
-    title: 'פריים־סטודיו',
+    title: 'אופטימוס',
     backgroundColor: '#1d1633',
     icon: path.join(__dirname, 'build', 'icon.png'),
     autoHideMenuBar: true,
@@ -302,7 +302,7 @@ app.on('web-contents-created', (_e, contents) => {
       buttons: ['יציאה', 'ביטול'],
       defaultId: 0,
       cancelId: 1,
-      title: 'פריים־סטודיו',
+      title: 'אופטימוס',
       message: 'לסגור את התוכנה?',
       detail: 'יש תמונות שעוד לא נשמרו. שמירה: כפתור "💾 שמירה" או "שמירת פרויקט".',
       noLink: true,
@@ -327,7 +327,7 @@ app.on('web-contents-created', (_e, contents) => {
     if (contents.getType() === 'window') {
       event.preventDefault();
       const w = BrowserWindow.fromWebContents(contents);
-      if (w) w.setTitle('פריים־סטודיו');
+      if (w) w.setTitle('אופטימוס');
     }
   });
 });
@@ -390,8 +390,8 @@ app.whenReady().then(() => {
     if (!exe) return { ok: false, error: 'no-uninstaller' };
     const w = BrowserWindow.fromWebContents(event.sender);
     const { response } = await dialog.showMessageBox(w || undefined, {
-      type: 'warning', buttons: ['הסרה', 'ביטול'], defaultId: 1, cancelId: 1, noLink: true, title: 'פריים־סטודיו',
-      message: 'להסיר את פריים־סטודיו מהמחשב?',
+      type: 'warning', buttons: ['הסרה', 'ביטול'], defaultId: 1, cancelId: 1, noLink: true, title: 'אופטימוס',
+      message: 'להסיר את אופטימוס מהמחשב?',
       detail: 'התוכנה תיסגר ותוכנית ההסרה של Windows תיפתח. תמונות ופרויקטים ששמרתם בתיקיות שלכם לא נמחקים.',
     });
     if (response !== 0) return { ok: false, error: 'cancelled' };

@@ -1,4 +1,4 @@
-/* The owner's studio licences: who has פריים־סטודיו, their personal code, which computer it is bound to, when it was last used.
+/* The owner's studio licences: who has אופטימוס, their personal code, which computer it is bound to, when it was last used.
    A code is issued per email and sent by email or WhatsApp; it works on one computer. The owner can free the computer (the
    person moved to a new one), issue a new code (the old one stops at once), cancel or restore, and delete. Every change goes to
    the sign-in server with the admin's session; nothing is decided in this page. */
@@ -9,7 +9,7 @@
   var DL = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/download.html';
   var when = function (x) { return x ? new Date(x).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; };
   function wa(phone, text) { var d = String(phone || '').replace(/\D/g, '').replace(/^0/, '972'); return 'https://wa.me/' + d + '?text=' + encodeURIComponent(text); }
-  function codeText(L) { return 'שלום ' + (L.name || '') + ',\nקוד ההפעלה האישי שלך לפריים־סטודיו:\n' + L.code + '\n\nהורדה והתקנה: ' + DL + '\nבהפעלה מזינים את המייל ' + L.email + ' ואת הקוד.\nהקוד אישי ועובד במחשב אחד בלבד.'; }
+  function codeText(L) { return 'שלום ' + (L.name || '') + ',\nקוד ההפעלה האישי שלך לאופטימוס:\n' + L.code + '\n\nהורדה והתקנה: ' + DL + '\nבהפעלה מזינים את המייל ' + L.email + ' ואת הקוד.\nהקוד אישי ועובד במחשב אחד בלבד.'; }
   function copy(t) { return navigator.clipboard ? navigator.clipboard.writeText(t).then(function () { FS.toast('📋 הועתק'); }, function () { window.prompt('מעתיקים:', t); }) : window.prompt('מעתיקים:', t); }
 
   function vcmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0) ? -1 : 1; return 0; }
@@ -31,7 +31,7 @@
   }
 
   FS.adminLicenses = function (m, c) {
-    c.head(m, '🔑 רישיונות סטודיו', 'מי משתמש בפריים־סטודיו: קוד הפעלה אישי לכל מייל, נעול למחשב אחד. רק אתה רואה את הקודים.');
+    c.head(m, '🔑 רישיונות סטודיו', 'מי משתמש באופטימוס: קוד הפעלה אישי לכל מייל, נעול למחשב אחד. רק אתה רואה את הקודים.');
     m.insertAdjacentHTML('beforeend',
       '<section class="adm-card" id="lic-stats"></section>' +
       '<section class="adm-card"><h3>➕ רישיון חדש</h3><div class="adm-grid lic-new">' +
@@ -117,7 +117,7 @@
         '<label class="adm-f"><span>מה חדש (הלקוח רואה את זה)</span><div class="adm-in"><textarea id="up-notes" rows="3" maxlength="1500" placeholder="למשל: סביבת עבודה מהירה, חלון הדפסה חדש, 18 עיצובי AI חדשים"></textarea></div></label>' +
         '<div class="adm-row"><label class="adm-chk"><input type="checkbox" id="up-free"> עדכון בחינם לכולם</label><button class="btn gold" id="up-go"' + (builds.length ? '' : ' disabled') + '>📢 פרסום העדכון</button></div>' +
         (pubs.length ? '<h4>עדכונים שפורסמו</h4><table class="adm-tbl"><tbody>' + pubs.map(function (v) { return '<tr><td dir="ltr"><b>' + esc(v.ver) + '</b></td><td>' + (v.free ? 'חינם' : nis(v.price)) + '</td><td>' + when(v.at) + '</td><td>' + esc(v.notes || '') + '</td><td class="act"><button data-unpub="' + esc(v.ver) + '" title="ביטול הפרסום">🗑</button></td></tr>'; }).join('') + '</tbody></table>' : '<p class="hint">עוד לא פורסם עדכון. עד אז הלקוחות נשארים בגרסה שהתקינו.</p>') +
-        '<h4>📨 בקשות עדכון (' + reqs.length + ')</h4>' + (reqs.length ? '<table class="adm-tbl"><tbody>' + reqs.map(function (L) { return '<tr><td><b>' + esc(L.name) + '</b><small dir="ltr">' + esc(L.email) + '</small></td><td dir="ltr">' + esc(L.appVer || '—') + ' → ' + esc(L.updReq.ver) + '</td><td>' + when(L.updReq.at) + '</td><td class="act">' + (L.phone ? '<a target="_blank" rel="noopener" href="' + esc(wa(L.phone, 'שלום ' + (L.name || '') + ', לגבי עדכון פריים־סטודיו לגרסה ' + L.updReq.ver + ': המחיר ' + nis(UPD.price) + '. אחרי התשלום אאשר והעדכון ייפתח אצלך בתוכנה ("⬆️ עדכון גרסה").')) + '" title="וואטסאפ">💬</a>' : '') + '<button data-grant="' + esc(L.email) + '" title="אישור (אחרי תשלום)">✔ אישור</button></td></tr>'; }).join('') + '</tbody></table>' : '<p class="hint">אין בקשות פתוחות.</p>');
+        '<h4>📨 בקשות עדכון (' + reqs.length + ')</h4>' + (reqs.length ? '<table class="adm-tbl"><tbody>' + reqs.map(function (L) { return '<tr><td><b>' + esc(L.name) + '</b><small dir="ltr">' + esc(L.email) + '</small></td><td dir="ltr">' + esc(L.appVer || '—') + ' → ' + esc(L.updReq.ver) + '</td><td>' + when(L.updReq.at) + '</td><td class="act">' + (L.phone ? '<a target="_blank" rel="noopener" href="' + esc(wa(L.phone, 'שלום ' + (L.name || '') + ', לגבי עדכון אופטימוס לגרסה ' + L.updReq.ver + ': המחיר ' + nis(UPD.price) + '. אחרי התשלום אאשר והעדכון ייפתח אצלך בתוכנה ("⬆️ עדכון גרסה").')) + '" title="וואטסאפ">💬</a>' : '') + '<button data-grant="' + esc(L.email) + '" title="אישור (אחרי תשלום)">✔ אישור</button></td></tr>'; }).join('') + '</tbody></table>' : '<p class="hint">אין בקשות פתוחות.</p>');
       $('#up-price-save').addEventListener('click', function () { LIC.admin('upd-settings', { price: $('#up-price').value.trim() }).then(function (r) { done(r, '✔ מחיר העדכון נשמר'); }); });
       $('#up-go').addEventListener('click', function () {
         var v = $('#up-ver').value; if (!v) return;

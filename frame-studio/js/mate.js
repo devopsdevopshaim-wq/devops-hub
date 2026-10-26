@@ -126,7 +126,7 @@
     t.nodeValue = t.nodeValue.slice(m[0].length); b.insertAdjacentHTML('afterbegin', svg(EMOJI[m[1]]));
   });
   /* a mark of the program (no name) at the start of the top bar, and the drop zone's icon */
-  $('.mt-top', root).insertAdjacentHTML('afterbegin', '<div class="mt-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M14.3 3.3L9 12.5M20.2 8.2H9.7M19 16.5L13.6 7.4M9.7 20.7L15 11.5M3.8 15.8h10.5M5 7.5l5.3 9.1"/></svg></div>');
+  $('.mt-top', root).insertAdjacentHTML('afterbegin', '<div class="mt-mark" title="אופטימוס"><img src="optimus.svg" alt="אופטימוס"></div>');
   $('.mt-empty', root).insertAdjacentHTML('afterbegin', '<div class="mt-drop-ic">' + svg('upload') + '</div>');
   $('.mt-empty p', root).insertAdjacentHTML('afterend', '<small class="mt-drop-hint">או גוררים לכאן תמונות מהמחשב · JPG · PNG · HEIC · RAW</small>');
 

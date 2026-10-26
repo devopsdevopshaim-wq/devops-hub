@@ -35,6 +35,17 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## The program is called אופטימוס (Optimus), with an animated logo (Oct 27, v60)
+- **The name:** every user-facing "פריים־סטודיו" is now "אופטימוס". That covers the studio, the gate, the intro, the site, the download page, the agreement, the admin, the licence emails in `access-handle.js`, the NSIS texts, the dialogs in main.js, the shortcut (`shortcutName`) and the Windows apps list ("אופטימוס (Optimus)"). The business is still "פריים מגנטים".
+- **What did not change:** the internal `productName` "Frame Studio", the exe, `%APPDATA%\Frame Studio` (settings, licence vault, the 5.5 GB local AI), the appId and the installer file names (`FrameStudio-Setup*.exe`, which the update system downloads). So an update installs over the old program and keeps everything.
+- **The logo:** `optimus.svg`, a gold camera aperture of six blades (clipped to a ring, alternating gradients) with an AI spark in the middle, on graphite. It is the studio's favicon, the PWA icon (manifest), the workspace mark (`.mt-mark img`), and the desktop's `build/icon.png` / `icon.ico` (rendered from the SVG; 16 to 256 px).
+- **The opening** (`css/splash.css` + the `#op-splash` markup at the top of studio.html's body):
+  - the ring draws, the blades turn open with a stagger, the spark pops in with a glow, a light sweeps across;
+  - "OPTIMUS" rises letter by letter (the gradient is on each span, since background-clip text fails on transformed children), then "אופטימוס" and a tagline;
+  - it leaves at about 3.5 s, and a click skips it.
+- It shows once per session (`sessionStorage` "op-splash" → `html.op-seen`), so on every start of the desktop program. An inline script removes the element when it ends (or after 4.6 s at the latest), so it never stands over the program.
+- `gate.css` excludes `#op-splash` from the gated hiding.
+
 ## The workspace's new look (Oct 27, v59)
 - At the end of `css/mate.css` ("the look, 2026"):
   - deep graphite with soft champagne light (radial glows), scoped tokens on `#mt` (`--g0..--g4`, `--gold`, `--gold-grad`);
