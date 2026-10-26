@@ -287,7 +287,8 @@
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
     var faces = p.faces ? p.faces.length : 0; if (faces) prompt += ' There are exactly ' + faces + ' faces in the photo; keep all ' + faces + '.';
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
-    var body = { action: 'restyle', prompt: prompt, image: photoB64(p, 1024), small: photoB64(p, 496), mime: 'image/jpeg', w: w, h: h };
+    /* FLUX gets the same 1024px photo (compared Oct 26, frame-ai-compare.yml: from a 496px copy it drew new faces; from 1024 it keeps the people) */
+    var b64 = photoB64(p, 1024), body = { action: 'restyle', prompt: prompt, image: b64, small: b64, mime: 'image/jpeg', w: w, h: h };
     if (engine) body.engine = engine;
     return FS.askServer(body).then(function (r) {
       if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');

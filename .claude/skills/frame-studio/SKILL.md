@@ -35,6 +35,17 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## Lifelike AI on real people (Oct 26, v56)
+- **Compared on the live server** (`frame-ai-compare.yml` + `.github/scripts/frame-ai-compare.mjs`, one event photo `.github/ai-compare/wedding-*.jpg`, the real-person looks, results with times on the branch `ci-ai-compare`):
+  - FLUX.2 klein 4B given the old 496px copy (`small`) drew new, generic people;
+  - given the 1024px photo it kept the same faces and framing and looked like a real photo (about 6-8s);
+  - FLUX.2 dev drifted further from the faces;
+  - Workers AI sometimes refuses real-person results (3030 "output flagged", then the next model is tried);
+  - the free daily neurons ran out after about 8 pictures, and Pollinations answered 402 FREE_LIMIT.
+- So `FS.restyleTry` sends the same 1024px JPEG as `image` and `small`. The real-person prompt (`REAL_KEEP`, also used by the heroes) asks to keep the framing, the camera angle and the people's size, and to change only clothes, look and surroundings.
+- The hubs server takes `fluxModel` (klein-4b / klein-9b / dev) to put one FLUX model first (default order unchanged).
+- Offline, the local engine runs the same klein 4B on the 1024px photo, so the quality matches; its speed depends on the graphics card.
+
 ## Fast switch, 4/6/9 edit screen (Oct 25, v55)
 - `#mt-switch` (mate.js): one fixed switch "⚡ עבודה מהירה | 🎨 סטודיו עיצוב" on both screens (top centre in the workspace, bottom above the status line in the studio, bottom on phones), and F2 toggles (`FS.mate.toggle`). The old "⚡ סביבת עבודה" and "🎨 הסטודיו המלא" buttons are gone. A switch takes ~10–50 ms: grids keep their drawn canvases (`keepCanvases`/`reuse`, by photo and size; `drawTile` redraws only a photo whose doc changed), and closing selects the photo on the next frame only when it changed.
 - The edit view ("ערוך תמונה") shows a page of 4 (2×2), 6 (3×2) or 9 (3×3) photos filling the screen (`fs-mate-en`), with paging (◀ ▶, PageUp/PageDown). "🔗 עריכה של כל התמונות שבמסך יחד" (`fs-mate-etog`, on by default) makes every change (sliders, auto, reset, title, frames, effects, clipart) reach all the photos on the page, redrawn live while the slider moves.

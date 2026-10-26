@@ -324,7 +324,7 @@
   ];
   FS.AI_EDITS = EDITS.map(function (e) { return [e[0], e[1], e[2] + '.' + SAME]; });
   /* on the real person (Oct 25): the result stays a photograph of the same people, only the look, the clothes or the place change */
-  var REAL_KEEP = ' This must stay a real photograph of the very same people: identical faces, features, skin tone, age, body and expression, so their family recognises them at once. Photorealistic, natural skin texture, professional camera and lighting. No cartoon, no painting, no text, no watermark.';
+  var REAL_KEEP = ' This must stay a real photograph of the very same people: identical faces, features, skin tone, age, body and expression, so their family recognises them at once. Photorealistic, natural skin texture, professional camera and lighting. Keep the same framing, camera angle and the people\'s size in the picture; change only the clothes, the look and the surroundings. No cartoon, no painting, no text, no watermark.';
   var REAL = [
     ['חתן וכלה בהוליווד', '🎬', 'Dress the people as glamorous Hollywood stars on a red carpet with flashing cameras and velvet ropes'],
     ['שער מגזין', '📰', 'Make it a professional fashion magazine cover shoot with editorial lighting and elegant styling, no text'],
