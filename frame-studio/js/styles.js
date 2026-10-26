@@ -295,7 +295,11 @@
       src = r.source || (engine === 'local' ? 'מקומי' : '');
       var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
       return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
-    }).then(function (res) { return matchShape(res, orig); }).then(function (im) { im.aiSource = src; return im; });
+    }).then(function (res) { return matchShape(res, orig); }).then(function (im) {
+      /* looks that must stay a photograph of the same people: the real faces are laid back in (js/face-keep.js, on this computer) */
+      if (!FS.keepFaces || !/very same people|Keep everything else exactly as it is/.test(prompt)) return im;
+      return FS.keepFaces(orig, im).then(function (k) { return k || im; }, function () { return im; });
+    }).then(function (im) { im.aiSource = src; return im; });
   };
   /* put an AI result on the photo: the original stays in origSrc; earlier AI results are kept too (a few), so "ביטול AI" can go back one step at a time */
   FS.applyAI = function (p, im) {
