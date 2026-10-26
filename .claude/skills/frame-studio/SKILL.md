@@ -35,6 +35,12 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## Free and faster: the cloud and this computer together (Oct 26, v57)
+- The owner wants no paid engine. So, in the desktop program with the local engine installed, auto mode online runs the free cloud (3 at once) **and** this computer (1 more lane, `engine: 'local'`) at the same time (`both` in `FS.runAI`; the busy sign says "כולל המחשב").
+- When the cloud answers quota / no-free-tier / rate-limited / engine-off / ai-failed, `askServer` sends pictures straight to the local engine for 30 minutes (`cloudOff`, `FS.cloudOff()`), so no time is lost waiting on a cloud that ran out. The local engine queues its runs, so parallel calls are safe.
+- Local speed: the reference photo is scaled down to the size of the picture being made (`fitRef` in js/local-ai.js; fewer tokens, much faster on a processor), and the panel offers 512 "⚡ הכי מהיר" beside 768 and 1024 (`fs-ai-local-size`).
+- What stays true: free cloud capacity is small (Workers AI ~8-20 pictures a day; Pollinations' anonymous limit). Free *and* fast all evening needs a graphics card in the event computer (the same FLUX.2 klein 4B then makes a picture in seconds).
+
 ## Lifelike AI on real people (Oct 26, v56)
 - **Compared on the live server** (`frame-ai-compare.yml` + `.github/scripts/frame-ai-compare.mjs`, one event photo `.github/ai-compare/wedding-*.jpg`, the real-person looks, results with times on the branch `ci-ai-compare`):
   - FLUX.2 klein 4B given the old 496px copy (`small`) drew new, generic people;

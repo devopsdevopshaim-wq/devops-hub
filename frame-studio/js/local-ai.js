@@ -15,7 +15,7 @@
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function mode() { var m = ls(KEY); return m === 'local' || m === 'cloud' || m === 'auto' ? m : 'auto'; }
   /* the CPU build is slow (measured on a 4-core runner: ~24 min for 512x768), so it works at 768 unless 1024 was chosen */
-  function localSize() { var v = ls(SIZE_KEY); if (v === '768') return 768; if (v === '1024') return 1024; return st && st.engine && st.engine.variant === 'cpu' ? 768 : 1024; }
+  function localSize() { var v = ls(SIZE_KEY); if (v === '512') return 512; if (v === '768') return 768; if (v === '1024') return 1024; return st && st.engine && st.engine.variant === 'cpu' ? 768 : 1024; }
   function gb(b) { return b ? (b / 1e9).toFixed(b >= 1e10 ? 0 : 1) + ' GB' : '—'; }
   function toast(m, ms) { if (FS.toast) FS.toast(m, ms); }
 
@@ -41,7 +41,17 @@
     var b = $('#busy'), m = $('#busy-msg');
     if (b && m && !b.hidden && m.textContent !== 'עוצר…') m.textContent = t;
   }
+  function fitRef(b64, long) {
+    return new Promise(function (ok) {
+      var im = new Image(); im.onload = function () {
+        var k = Math.min(1, long / Math.max(im.naturalWidth, im.naturalHeight)); if (k >= 0.99) return ok(b64);
+        var c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+        var x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height); ok(c.toDataURL('image/jpeg', 0.9).split(',')[1]);
+      }; im.onerror = function () { ok(b64); }; im.src = 'data:image/jpeg;base64,' + b64;
+    });
+  }
   function runBody(body) {
+    if (body.action === 'restyle' && body.image && !body._fit) return fitRef(body.image, Math.max(sizeFor(body).w, sizeFor(body).h)).then(function (b) { return runBody(Object.assign({}, body, { image: b, _fit: 1 })); });
     var sz = sizeFor(body), prev = $('#busy-msg') ? $('#busy-msg').textContent : '';
     busyText('AI מקומי… מתחיל');
     return API.run({ mode: body.action === 'restyle' ? 'restyle' : 'image', prompt: String(body.prompt || '').slice(0, 2000), imageB64: body.action === 'restyle' ? body.image : undefined, w: sz.w, h: sz.h },
@@ -123,7 +133,8 @@
       [['auto', '✨ אוטומטי', 'ענן כשיש אינטרנט, מקומי כשאין או כשהענן נכשל'], ['local', '🖥️ תמיד מקומי', 'פרטי לגמרי, לא יוצא מהמחשב'], ['cloud', '☁️ תמיד ענן', 'כמו קודם']].map(function (o) {
         return '<button role="radio" aria-checked="' + (m === o[0]) + '" class="la-mode' + (m === o[0] ? ' on' : '') + '" data-mode="' + o[0] + '"' + (ready || o[0] === 'cloud' ? '' : ' disabled') + '><b>' + o[1] + '</b><small>' + o[2] + '</small></button>';
       }).join('') + '</div>' +
-      '<div class="la-row la-size"><span>גודל התמונה במחשב</span><span class="la-seg"><button data-size="1024" class="' + (localSize() === 1024 ? 'on' : '') + '">1024 · איכות</button><button data-size="768" class="' + (localSize() === 768 ? 'on' : '') + '">768 · מהיר</button></span></div></div>';
+      '<div class="la-row la-size"><span>גודל התמונה במחשב</span><span class="la-seg"><button data-size="1024" class="' + (localSize() === 1024 ? 'on' : '') + '">1024 · איכות</button><button data-size="768" class="' + (localSize() === 768 ? 'on' : '') + '">768 · מאוזן</button><button data-size="512" class="' + (localSize() === 512 ? 'on' : '') + '">512 · ⚡ הכי מהיר</button></span></div>' +
+      '<p class="hint">בלי כרטיס מסך: 512 מהיר בערך פי 2 מ־768 (מתאים למגנט קטן). עם כרטיס מסך: 1024.</p></div>';
     if (s.state !== 'installing' && (s.suggestCpu || (s.engine && s.engine.variant === 'vulkan' && ready))) {
       h += '<details class="la-more"><summary>הכרטיס לא מסתדר?</summary><p class="la-dim">אם העריכה נכשלת, אפשר לעבור לגרסה שרצה על המעבד בלבד (איטית יותר, אבל עובדת בכל מחשב). המודלים נשארים.</p><button class="btn small" data-la="cpu">להתקין גרסת מעבד</button></details>';
     } else if (s.state !== 'installing' && s.engine && s.engine.variant === 'cpu') {

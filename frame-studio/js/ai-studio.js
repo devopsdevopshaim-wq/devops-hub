@@ -281,16 +281,20 @@
     /* several photos at once (the server answers each on its own), so an event's batch takes the time of a few photos, not of all;
        the engine on this computer runs one picture at a time */
     var local = FS.aiEngine() === 'local' || (FS.localAI && FS.localAI.mode && FS.localAI.mode() === 'local') || navigator.onLine === false;
-    var lanes = local ? 1 : Math.min(3, list.length);
-    function msg() { FS.busy('🤖 ' + label + ' · ' + done + ' מתוך ' + list.length + ' מוכנות' + (lanes > 1 ? ' (' + lanes + ' במקביל)' : ''), onStop); }
-    function lane() {
+    /* auto, online, with the engine installed here: the free cloud (3 at once) and this computer (1) work at the same time */
+    var both = !local && !FS.aiEngine() && localReady() && list.length > 1 && !(FS.localAI.mode && FS.localAI.mode() === 'cloud');
+    var lanes = local ? 1 : Math.min(3, list.length), engines = [];
+    for (var ei = 0; ei < lanes; ei++) engines.push(undefined);
+    if (both) { engines.push('local'); lanes++; }
+    function msg() { FS.busy('🤖 ' + label + ' · ' + done + ' מתוך ' + list.length + ' מוכנות' + (lanes > 1 ? ' (' + lanes + ' במקביל' + (both ? ', כולל המחשב' : '') + ')' : ''), onStop); }
+    function lane(eng) {
       if (stop || failed || next >= list.length) return Promise.resolve();
       var p = list[next++];
-      return FS.findFaces(p, true).catch(function () {}).then(function () { if (!stop) return FS.restyle(p, prompt).then(function () { done++; if (!stop) msg(); }); })
-        .catch(function (e) { if (!stop) failed = e; }).then(lane);
+      return FS.findFaces(p, true).catch(function () {}).then(function () { if (!stop) return FS.restyle(p, prompt, eng).then(function () { done++; if (!stop) msg(); }); })
+        .catch(function (e) { if (!stop) failed = e; }).then(function () { return lane(eng); });
     }
     msg();
-    var lanesP = []; for (var li = 0; li < lanes; li++) lanesP.push(lane());
+    var lanesP = engines.map(function (eng) { return lane(eng); });
     return Promise.all(lanesP).then(function () {
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.gridMode && FS.gridMode() && FS.buildGrid();
       if (stop) FS.toast('⏹ העריכה נעצרה' + (done ? '. ' + done + ' תמונות כבר עודכנו ("↩ החזרת המקור" מבטל).' : '. התמונות לא השתנו.'), 5000);
