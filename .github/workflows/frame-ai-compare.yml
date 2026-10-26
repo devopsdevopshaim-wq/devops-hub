@@ -1,0 +1,29 @@
+name: Frame Studio AI compare
+# Makes the same "on the real person" looks with each picture engine on one event photo, and pushes the pictures with their times
+# to the branch ci-ai-compare, so the most lifelike engine can be chosen by looking. Run by hand, or when these files change on the
+# working branch.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: ['.github/scripts/frame-ai-compare.mjs', '.github/workflows/frame-ai-compare.yml']
+permissions:
+  contents: write
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node .github/scripts/frame-ai-compare.mjs "$RUNNER_TEMP/cmp"
+      - name: Push to ci-ai-compare
+        if: always()
+        run: |
+          cp .github/ai-compare/wedding-1024.jpg "$RUNNER_TEMP/cmp/original.jpg" 2>/dev/null || true
+          cd "$RUNNER_TEMP/cmp" || exit 0
+          git init -q && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b ci-ai-compare && git add -A && git commit -q -m "AI compare, run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-ai-compare
