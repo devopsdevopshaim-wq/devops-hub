@@ -391,6 +391,7 @@
     '<div class="card ax-off"><h3>🖥️ מובנה בתוכנה · עובד בלי אינטרנט</h3><p class="hint" id="ax-net"></p>' +
       '<div class="ai-styles" id="ax-offline"></div></div>' +
     '<div class="card ax-eng"><h3>⚙️ מנוע ה־AI</h3><div class="ax-chips" id="ax-eng"></div>' +
+      '<label class="ax-var"><input type="checkbox" id="ax-keep"> 🙂 שמירת הפנים המקוריות <small>בעיצובים על אדם אמיתי, גיבורי על ועריכות חכמות: הפנים האמיתיות מוחזרות לתוצאה, בלי עיוות (על המחשב)</small></label>' +
       '<label class="ax-var"><input type="checkbox" id="ax-var"> 🎯 3 גרסאות לבחירה <small>אותו עיצוב משלושה מנועים, בוחרים את היפה (לתמונה אחת)</small></label></div>' +
     '<div class="row2 ax-undo"><button class="btn" id="style-back" title="מבטל את עיצוב ה־AI האחרון (בתמונה או בכל המסומנות)">↶ ביטול העיצוב האחרון</button><button class="btn" id="style-orig" title="מחזיר את התמונה המקורית, בלי שום עיצוב AI">↩ חזרה למקור</button></div>' +
     '<div class="card ax-build"><h3>🎛️ שילוב משלך</h3>' + chips('🎨 סגנון', STYLE, 'style') + chips('🌍 איפה', WORLD, 'world') + chips('👗 תלבושת', OUTFIT, 'outfit') + chips('✨ אווירה', MOOD, 'mood') +
@@ -475,6 +476,7 @@
     FS.aiEngine(b.dataset.eng); $$('#ax-eng button').forEach(function (x) { x.classList.toggle('on', x === b); });
     FS.toast('⚙️ מנוע: ' + FS.ENGINE_NAMES[b.dataset.eng] + (b.dataset.eng ? '' : ' (הכי טוב שזמין, ואם נכשל הבא בתור)'));
   });
+  var kbox = $('#ax-keep'); if (kbox && FS.keepFacesOn) { kbox.checked = FS.keepFacesOn(); kbox.addEventListener('change', function () { FS.keepFacesOn(kbox.checked); FS.toast(kbox.checked ? '🙂 הפנים המקוריות יוחזרו לכל עיצוב על אדם אמיתי' : 'הפנים יישארו כמו שה־AI צייר'); }); }
   var vbox = $('#ax-var'); try { vbox.checked = localStorage.getItem('fs-ai-variants') === '1'; } catch (e) {}
   vbox.addEventListener('change', function () { try { localStorage.setItem('fs-ai-variants', vbox.checked ? '1' : '0'); } catch (e) {} FS.toast(vbox.checked ? '🎯 כל עיצוב יגיע ב־3 גרסאות לבחירה' : 'גרסה אחת לכל עיצוב'); });
   engBar(); window.addEventListener('online', engBar);

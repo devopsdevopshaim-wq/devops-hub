@@ -35,6 +35,17 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## Real faces kept, no distortion (Oct 26, v58)
+- `js/face-keep.js`, `FS.keepFaces(original, result)`: for prompts that must stay a photograph of the same people (`REAL_KEEP` "very same people", smart edits "Keep everything else exactly as it is"), `FS.restyleTry` lays every original face back into the AI result. It runs on this computer, with no internet:
+  - MediaPipe FaceLandmarker on both pictures;
+  - each face matched by place and size;
+  - a least-squares similarity fit on 15 stable points; a fit error above 7.5% of the face width leaves the model's face;
+  - the original warped onto the new head;
+  - colours moved 55% towards the new light (mean/std in the oval);
+  - laid in through the face oval pulled in a little and blurred.
+- Tried on the live comparison results: 2 faces restored per picture in about 0.3s (2.6s on the first, with the model loading). Results that redrew the people at another size are left as they are.
+- On/off: `fs-ai-keepfaces` (on by default), "🙂 שמירת הפנים המקוריות" in the AI tab and the workspace's engine card. Cartoon-style looks (the KEEP prompt) are never touched.
+
 ## Free and faster: the cloud and this computer together (Oct 26, v57)
 - The owner wants no paid engine. So, in the desktop program with the local engine installed, auto mode online runs the free cloud (3 at once) **and** this computer (1 more lane, `engine: 'local'`) at the same time (`both` in `FS.runAI`; the busy sign says "כולל המחשב").
 - When the cloud answers quota / no-free-tier / rate-limited / engine-off / ai-failed, `askServer` sends pictures straight to the local engine for 30 minutes (`cloudOff`, `FS.cloudOff()`), so no time is lost waiting on a cloud that ran out. The local engine queues its runs, so parallel calls are safe.
