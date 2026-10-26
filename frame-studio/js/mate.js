@@ -102,6 +102,34 @@
     '</div></section>';
   document.body.appendChild(root);
 
+  /* line icons instead of emoji on the workspace's own buttons (24px grid, stroke 1.8, like the studio's tool rail) */
+  var ICON = {
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+    brush: '<path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 114.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 00-3-3.02z"/>',
+    spark: '<path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/><path d="M19 3v4M21 5h-4"/>',
+    print: '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
+    image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-3.1-3.1a2 2 0 00-2.8 0L6 21"/>',
+    folder: '<path d="M4 20h16a2 2 0 002-2V8a2 2 0 00-2-2h-7.9a2 2 0 01-1.7-.9l-.8-1.2A2 2 0 007.9 3H4a2 2 0 00-2 2v13c0 1.1.9 2 2 2z"/>',
+    ruler: '<path d="M21.3 15.3a2.4 2.4 0 010 3.4l-2.6 2.6a2.4 2.4 0 01-3.4 0L2.7 8.7a2.41 2.41 0 010-3.4l2.6-2.6a2.41 2.41 0 013.4 0z"/><path d="M14.5 12.5l2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/>',
+    copies: '<rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    tag: '<path d="M12.6 2.6A2 2 0 0011.2 2H4a2 2 0 00-2 2v7.2a2 2 0 00.6 1.4l8.7 8.7a2.4 2.4 0 003.4 0l6.6-6.6a2.4 2.4 0 000-3.4z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+    pencil: '<path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5z"/>',
+    trash: '<path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+    upload: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>'
+  };
+  var EMOJI = { '🗂️': 'grid', '🎚️': 'sliders', '🖌️': 'brush', '🤖': 'spark', '🖨️': 'print', '📂': 'image', '📁': 'folder', '📐': 'ruler', '🧾': 'copies', '🏷️': 'tag', '✏️': 'pencil', '🗑': 'trash' };
+  function svg(n) { return '<svg class="mt-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>'; }
+  $$('.mt-tabs button, .mt-sub button, .mt-acts .mt-btn, .mt-empty .mt-btn, #mt-size-edit, #mt-del', root).forEach(function (b) {
+    var t = b.firstChild; if (!t || t.nodeType !== 3) return;
+    var m = /^\s*(\S+?)\s+/.exec(t.nodeValue); if (!m || !EMOJI[m[1]]) { if (b.id === 'mt-size-edit') b.innerHTML = svg('pencil'); return; }
+    t.nodeValue = t.nodeValue.slice(m[0].length); b.insertAdjacentHTML('afterbegin', svg(EMOJI[m[1]]));
+  });
+  /* a mark of the program (no name) at the start of the top bar, and the drop zone's icon */
+  $('.mt-top', root).insertAdjacentHTML('afterbegin', '<div class="mt-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M14.3 3.3L9 12.5M20.2 8.2H9.7M19 16.5L13.6 7.4M9.7 20.7L15 11.5M3.8 15.8h10.5M5 7.5l5.3 9.1"/></svg></div>');
+  $('.mt-empty', root).insertAdjacentHTML('afterbegin', '<div class="mt-drop-ic">' + svg('upload') + '</div>');
+  $('.mt-empty p', root).insertAdjacentHTML('afterend', '<small class="mt-drop-hint">או גוררים לכאן תמונות מהמחשב · JPG · PNG · HEIC · RAW</small>');
+
   var view = 'main', bar = ls('fs-mate-bar') || 'size', focusId = null;
   function on() { return !root.hidden; }
   function show(v) {
