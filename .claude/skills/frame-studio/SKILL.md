@@ -35,6 +35,17 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## The workspace's new look (Oct 27, v59)
+- At the end of `css/mate.css` ("the look, 2026"):
+  - deep graphite with soft champagne light (radial glows), scoped tokens on `#mt` (`--g0..--g4`, `--gold`, `--gold-grad`);
+  - a top bar with a gold hairline and the program's mark (no name);
+  - tabs as a pill group whose active tab is gold;
+  - sub-tabs with an underline; bars, cards and tiles with soft depth;
+  - tiles that lift on hover, a gold ring when marked, a gold size chip and a dark copies stepper on the photo;
+  - custom sliders; an empty state as a drop zone with a floating icon;
+  - views fading in and tiles rising in. `prefers-reduced-motion` turns the motion off.
+- `mate.js` swaps the emoji on its own buttons for line icons (`ICON`, `EMOJI` → `svg()`), adds the mark (`.mt-mark`) and the drop zone's icon.
+
 ## Real faces kept, no distortion (Oct 26, v58)
 - `js/face-keep.js`, `FS.keepFaces(original, result)`: for prompts that must stay a photograph of the same people (`REAL_KEEP` "very same people", smart edits "Keep everything else exactly as it is"), `FS.restyleTry` lays every original face back into the AI result. It runs on this computer, with no internet:
   - MediaPipe FaceLandmarker on both pictures;
