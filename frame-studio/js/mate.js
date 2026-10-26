@@ -65,15 +65,15 @@
         '<div class="mt-pp" data-pp="clip" hidden><div class="mt-emo" id="mt-emo"></div><label class="mt-btn">🖼️ לוגו / תמונה<input type="file" id="mt-logo" accept="image/*" hidden></label><button class="mt-btn" id="mt-clipdel">🗑 הסרת הקליפארט</button></div>' +
         '<div class="mt-pfoot"><p class="mt-hint" id="mt-target"></p><button class="mt-btn" id="mt-apply-all">החל את התיקון על כל התמונות</button></div>' +
       '</aside><div class="mt-ework"><div class="mt-ebar"><label>תמונות במסך:</label><div class="mt-seg" id="mt-en"><button data-n="4">4</button><button data-n="6">6</button><button data-n="9">9</button></div>' +
-        '<label class="mt-chk-l"><input type="checkbox" id="mt-etog"> 🔗 עריכה של כל התמונות שבמסך יחד</label><span class="mt-sp"></span>' +
+        '<label class="mt-chk-l"><input type="checkbox" id="mt-etog"> 🔗 עריכה של כל התמונות שבמסך יחד</label><button class="mt-btn mt-cmpb" id="mt-cmp" title="התמונה המקורית ליד העריכה">◧ לפני | אחרי</button><span class="mt-sp"></span>' +
         '<button class="mt-ic" id="mt-eprev" title="הקודמות (PageUp)">▶</button><b id="mt-epg">1 / 1</b><button class="mt-ic" id="mt-enext" title="הבאות (PageDown)">◀</button></div>' +
         '<div class="mt-egrid" id="mt-egrid"></div></div>' +
     '</section>' +
     /* the full editor */
     '<section class="mt-view" data-view="design" hidden>' +
       '<aside class="mt-browser"><div class="mt-row"><button class="mt-btn" id="mt-dir">📁 פתיחת תיקייה</button></div><div class="mt-tree" id="mt-tree"></div><div class="mt-files" id="mt-flist"></div><h4>בעבודה</h4><div class="mt-proj" id="mt-proj"></div></aside>' +
-      '<div class="mt-dz"><div class="mt-cvw" id="mt-cvw"><canvas id="mt-cv"></canvas></div>' +
-        '<div class="mt-dinfo"><span id="mt-dname"></span><span id="mt-dsize"></span><span class="mt-sp"></span><button class="mt-ic" id="mt-prev" title="הקודמת">▶</button><button class="mt-ic" id="mt-next" title="הבאה">◀</button></div>' +
+      '<div class="mt-dz"><div class="mt-cvw" id="mt-cvw"><figure class="mt-cv0" id="mt-cv0f"><canvas id="mt-cv0"></canvas><figcaption>לפני</figcaption></figure><figure class="mt-cv1"><canvas id="mt-cv"></canvas><figcaption>אחרי</figcaption></figure></div>' +
+        '<div class="mt-dinfo"><span id="mt-dname"></span><span id="mt-dsize"></span><span class="mt-sp"></span><button class="mt-btn mt-cmpb" id="mt-dcmp" title="התמונה המקורית ליד העריכה">◧ לפני | אחרי</button><button class="mt-ic" id="mt-prev" title="הקודמת">▶</button><button class="mt-ic" id="mt-next" title="הבאה">◀</button></div>' +
         '<div class="mt-dtools"><nav class="mt-ptabs"><button data-dt="gen" class="on">כללי</button><button data-dt="obj">עצמים</button><button data-dt="crop">חיתוך</button><button data-dt="ai">כלים AI</button></nav>' +
           '<div class="mt-dp" data-dp="gen"><div class="mt-dgrid">' +
             '<select id="mt-dframe" title="מסגרת"></select><button class="mt-btn" data-d="auto">רמה אוטומטית</button><button class="mt-btn" data-d="sharp">חידוד</button><button class="mt-btn" data-d="clear">הברקה</button>' +
@@ -204,6 +204,14 @@
     FS.draw(c.getContext('2d'), proxy, { scale: k, max: Math.round(size * 1.5), fast: fast !== false, export: true });
     p._mc = proxy.cache; return c;
   }
+  /* "before": the photo as it came in (before AI and every edit), whole, in a box of the page's shape */
+  function origCanvas(p, size) {
+    var im = FS.img(p.origSrc || p.src), d = p.doc, k = size / Math.max(d.w, d.h), c = FS.canvas(d.w * k, d.h * k), x = c.getContext('2d');
+    x.fillStyle = '#0c0d10'; x.fillRect(0, 0, c.width, c.height); if (!im) return c;
+    var s = Math.min(c.width / im.naturalWidth, c.height / im.naturalHeight), w = im.naturalWidth * s, h = im.naturalHeight * s;
+    x.imageSmoothingQuality = 'high'; x.drawImage(im, (c.width - w) / 2, (c.height - h) / 2, w, h); return c;
+  }
+  var cmp = ls('fs-mate-cmp') !== '0';
   function sig(p, size) { return size + '|' + p.src + '|' + JSON.stringify(p.doc); }
   var queue = [], qOn = false;
   function enqueue(el) { if (queue.indexOf(el) < 0) queue.push(el); if (!qOn) { qOn = true; requestAnimationFrame(pump); } }
@@ -215,8 +223,14 @@
   function drawTile(el) {
     var p = byId(el.dataset.id), box = el.querySelector('.mt-th'); if (!p || !box || !el.isConnected) return;
     if (!FS.img(p.src)) { FS.loadImg(p.src).then(function () { enqueue(el); }, function () {}); return; }
+    if (p.origSrc && !FS.img(p.origSrc)) { FS.loadImg(p.origSrc).then(function () { enqueue(el); }, function () {}); }
     var size = Number(el.dataset.px) || 220, s = sig(p, size); if (el._sig === s) return;
-    var c = pageCanvas(p, size), old = box.querySelector('canvas'); if (old) box.replaceChild(c, old); else box.insertBefore(c, box.firstChild);
+    var ba = box.querySelector('.mt-ba');
+    if (ba) {   /* before | after, side by side */
+      var half = Math.round(size * 0.62), bs = (p.origSrc || p.src) + '|' + half + '|' + p.doc.w + 'x' + p.doc.h;
+      var A = $('.mt-a', ba), B = $('.mt-b', ba), ca = pageCanvas(p, half), oa = A.querySelector('canvas'); if (oa) A.replaceChild(ca, oa); else A.insertBefore(ca, A.firstChild);
+      if (B._s !== bs) { var cb = origCanvas(p, half), ob = B.querySelector('canvas'); if (ob) B.replaceChild(cb, ob); else B.insertBefore(cb, B.firstChild); B._s = bs; }
+    } else { var c = pageCanvas(p, size), old = box.querySelector('canvas'); if (old) box.replaceChild(c, old); else box.insertBefore(c, box.firstChild); }
     el._sig = s;
   }
   var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) enqueue(e.target); }); }, { rootMargin: '300px' }) : null;
@@ -276,9 +290,9 @@
   });
   $('#mt-grid', root).addEventListener('dblclick', function (e) { var t = e.target.closest('.mt-tile'); if (!t || e.target.closest('button')) return; focusId = t.dataset.id; show('design'); });
   function big(p) {
-    var c = pageCanvas(p, Math.min(1400, Math.round(Math.max(innerWidth, innerHeight) * 0.8)), false);
-    var b = FS.dialog(esc(p.name || ''), '<div class="mt-big"></div><div class="mt-row"><button class="mt-btn" id="mt-big-edit">🖌️ לעורך המלא</button></div>', true);
-    $('.mt-big', b).appendChild(c); $('#mt-big-edit', b).addEventListener('click', function () { FS.closeDialog(); focusId = p.id; show('design'); });
+    var px = Math.min(1100, Math.round(Math.max(innerWidth, innerHeight) * 0.55)), c = pageCanvas(p, px, false);
+    var b = FS.dialog(esc(p.name || ''), '<div class="mt-big mt-big2"><figure><figcaption>לפני</figcaption></figure><figure><figcaption>אחרי</figcaption></figure></div><div class="mt-row"><button class="mt-btn" id="mt-big-edit">🖌️ לעורך המלא</button></div>', true);
+    var figs = $$('.mt-big figure', b); FS.loadImg(p.origSrc || p.src).then(function () { figs[0].insertBefore(origCanvas(p, px), figs[0].firstChild); }, function () {}); figs[1].insertBefore(c, figs[1].firstChild); $('#mt-big-edit', b).addEventListener('click', function () { FS.closeDialog(); focusId = p.id; show('design'); });
   }
   function foot() {
     var n = S.photos.length, m = marked().length, prints = S.photos.reduce(function (a, p) { return a + copies(p); }, 0), done = S.photos.filter(function (p) { return p.printed; }).length;
@@ -377,7 +391,7 @@
     var f = focus(), m = marked(); if (f && m.length && S.marked[f.id]) return m; if (!f && m.length) return m; return f ? [f] : [];
   }
   function eTileHTML(p) {
-    return '<div class="mt-tile big' + (S.marked[p.id] ? ' sel' : '') + (p.id === (focus() || {}).id ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + etile + '"><div class="mt-th"><button class="mt-chk" title="סימון">✓</button></div><div class="mt-name">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '<button class="mt-dl" title="שמירת התמונה">⬇</button></div></div>';
+    return '<div class="mt-tile big' + (S.marked[p.id] ? ' sel' : '') + (p.id === (focus() || {}).id ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + etile + '"><div class="mt-th">' + (cmp ? '<div class="mt-ba"><div class="mt-b"><span>לפני</span></div><div class="mt-a"><span>אחרי</span></div></div>' : '') + '<button class="mt-chk" title="סימון">✓</button></div><div class="mt-name">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '<button class="mt-dl" title="שמירת התמונה">⬇</button></div></div>';
   }
   var etile = 420;
   function buildEdit() {
@@ -395,6 +409,9 @@
   function ePageGo(n) { var to = FS.clamp(ePage + n, 0, ePages() - 1); if (to === ePage) return; ePage = to; buildEdit(); }
   function targetTxt() { var n = targets().length; $('#mt-target', root).textContent = eTog ? 'השינויים חלים יחד על ' + n + ' התמונות שבמסך' : n > 1 ? 'השינויים חלים על ' + n + ' התמונות המסומנות' : n ? 'השינויים חלים על התמונה המודגשת · לסימון כמה תמונות לוחצים על ✓' : ''; }
   $('#mt-en', root).addEventListener('click', function (e) { var b = e.target.closest('[data-n]'); if (!b) return; var first = ePage * eN; eN = Number(b.dataset.n); ls('fs-mate-en', eN); ePage = Math.floor(first / eN); buildEdit(); });
+  function cmpSync() { $$('.mt-cmpb', root).forEach(function (b) { b.classList.toggle('on', cmp); }); }
+  function setCmp(v) { cmp = v; ls('fs-mate-cmp', v ? '1' : '0'); cmpSync(); if (view === 'edit') { $('#mt-egrid', root).innerHTML = ''; buildEdit(); } else if (view === 'design') drawDesign(); }
+  $('#mt-cmp', root).addEventListener('click', function () { setCmp(!cmp); });
   $('#mt-etog', root).addEventListener('change', function () { eTog = this.checked; ls('fs-mate-etog', eTog ? '1' : '0'); targetTxt(); });
   $('#mt-eprev', root).addEventListener('click', function () { ePageGo(-1); });
   $('#mt-enext', root).addEventListener('click', function () { ePageGo(1); });
@@ -541,9 +558,15 @@
     $('#mt-dsize', root).textContent = p ? sizeTxt(p) + ' ס״מ' : '';
     if (!p) { cv.width = 10; cv.height = 10; return; }
     if (!FS.img(p.src)) { FS.loadImg(p.src).then(function () { drawDesign(); }); return; }
-    var d = p.doc; dk = Math.min((W - 24) / d.w, (H - 24) / d.h);
+    var d = p.doc, f0 = $('#mt-cv0f', root); f0.hidden = !cmp; wrap.classList.toggle('two', cmp);
+    dk = Math.min(((cmp ? W / 2 : W) - 36) / d.w, (H - 52) / d.h);
     var dpr = window.devicePixelRatio || 1; cv.width = Math.round(d.w * dk * dpr); cv.height = Math.round(d.h * dk * dpr); cv.style.width = Math.round(d.w * dk) + 'px'; cv.style.height = Math.round(d.h * dk) + 'px';
     FS.draw(cvx, p, { scale: dk * dpr, max: fast ? 900 : 2200, fast: !!fast, sel: selL });
+    if (cmp && !fast) {
+      var o = p.origSrc || p.src;
+      if (!FS.img(o)) FS.loadImg(o).then(function () { drawDesign(); }, function () {});
+      else { var oc = origCanvas(p, Math.max(d.w, d.h) * dk * dpr), c0 = $('#mt-cv0', root); c0.width = oc.width; c0.height = oc.height; c0.style.width = cv.style.width; c0.style.height = cv.style.height; c0.getContext('2d').drawImage(oc, 0, 0); }
+    }
   }
   function proj() {
     var box = $('#mt-proj', root), f = dcur();
@@ -552,6 +575,7 @@
   }
   $('#mt-proj', root).addEventListener('click', function (e) { var b = e.target.closest('.mt-pj'); if (!b) return; focusId = b.dataset.id; selL = null; buildDesign(); });
   function step(n) { var p = dcur(), i = idx(p) + n; if (i < 0 || i >= S.photos.length) return; focusId = S.photos[i].id; selL = null; buildDesign(); }
+  $('#mt-dcmp', root).addEventListener('click', function () { setCmp(!cmp); });
   $('#mt-prev', root).addEventListener('click', function () { step(-1); });
   $('#mt-next', root).addEventListener('click', function () { step(1); });
   window.addEventListener('resize', function () { if (on() && view === 'design') drawDesign(); });
@@ -829,5 +853,6 @@
   FS.on('print-job', function () { if (on()) setTimeout(refreshAll, 300); });
   FS.on('sizes', function () { if (on() && view === 'design') buildDesign(); });
   /* the workspace is where the studio opens, unless the owner closed it last time */
+  cmpSync();
   if (ls('fs-mate') !== 'off') open('main');
 })();

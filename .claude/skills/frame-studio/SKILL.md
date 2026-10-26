@@ -35,6 +35,21 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## A luxurious opening and before / after side by side (Oct 27, v61)
+- **The opening** was rebuilt (`css/splash.css`, `sp-*` classes, about 5 s), like the first light through a lens:
+  - gold dust drifts up (a canvas `.sp-dust`, 90 particles, drawn by the inline script; skipped under reduced motion), a spotlight opens;
+  - the lens barrel's 72 ticks turn into place, two rings draw, the six blades turn open with a stagger;
+  - a metal shine runs over the blades (SVG gradient, SMIL from 1.9 s), the AI spark ignites with a camera flash and an anamorphic flare (`.sp-flare`, `.sp-flare.v`);
+  - "OPTIMUS" settles letter by letter out of a blur, then a gold glint runs across it; "אופטימוס" between two gold lines; the tag "STUDIO · AI · PRINT";
+  - the stage lifts away at 4.5 s, the splash leaves at 4.55 s. The inline script removes it on its own animationend, on a click (`op-out`), or at 6.2 s.
+  - An inline `<style>` in the head paints the page #050506 until `op-seen`, so there is no white flash before the CSS loads.
+- **Before / after in the fast workspace** (`js/mate.js`), on by default, saved as `fs-mate-cmp`:
+  - `origCanvas(p, size)` draws the photo as it came in (`p.origSrc || p.src`), whole, in a box of the page's shape.
+  - The edit screen's tiles get `.mt-ba` with "לפני" (`.mt-b`) and "אחרי" (`.mt-a`) side by side; the toggle is `#mt-cmp` "◧ לפני | אחרי" in the edit bar.
+  - The full editor shows `#mt-cv0` ("לפני") beside `#mt-cv` ("אחרי") in `#mt-cvw.two`; the toggle is `#mt-dcmp`.
+  - The big preview (`big(p)`) is `.mt-big2`, two figures.
+  - `setCmp(v)` saves and rebuilds; the "before" canvas is cached by its signature (`B._s`).
+
 ## The program is called אופטימוס (Optimus), with an animated logo (Oct 27, v60)
 - **The name:** every user-facing "פריים־סטודיו" is now "אופטימוס". That covers the studio, the gate, the intro, the site, the download page, the agreement, the admin, the licence emails in `access-handle.js`, the NSIS texts, the dialogs in main.js, the shortcut (`shortcutName`) and the Windows apps list ("אופטימוס (Optimus)"). The business is still "פריים מגנטים".
 - **What did not change:** the internal `productName` "Frame Studio", the exe, `%APPDATA%\Frame Studio` (settings, licence vault, the 5.5 GB local AI), the appId and the installer file names (`FrameStudio-Setup*.exe`, which the update system downloads). So an update installs over the old program and keeps everything.
