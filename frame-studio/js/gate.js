@@ -18,7 +18,7 @@
       g = document.createElement('div'); g.id = 'gate'; g.setAttribute('role', 'dialog'); g.setAttribute('aria-modal', 'true'); g.setAttribute('aria-labelledby', 'gate-title');
       body.appendChild(g);
     }
-    g.innerHTML = '<div class="gate-card"><p class="gate-eyebrow">פריים־סטודיו</p><h1 id="gate-title">' + (tab === 'license' ? 'הפעלת הסטודיו' : 'כניסת בעל העסק') + '</h1>' +
+    g.innerHTML = '<div class="gate-card"><p class="gate-eyebrow">אופטימוס</p><h1 id="gate-title">' + (tab === 'license' ? 'הפעלת הסטודיו' : 'כניסת בעל העסק') + '</h1>' +
       '<div class="gate-tabs" role="tablist"><button role="tab" data-t="license" aria-selected="' + (tab === 'license') + '">🔑 קוד הפעלה</button><button role="tab" data-t="admin" aria-selected="' + (tab === 'admin') + '">🔐 מנהל</button></div>' +
       (tab === 'license'
         ? '<p class="gate-lead">מזינים את המייל ואת קוד ההפעלה האישי שקיבלתם. הקוד עובד במחשב אחד בלבד.</p><div class="acc">' +

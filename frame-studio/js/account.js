@@ -175,7 +175,7 @@
       draw(opts.note);
     }
   };
-  /* ---------- פריים־סטודיו licences: one code per person, fixed to one computer (see the server's lic-* actions) ----------
+  /* ---------- אופטימוס licences: one code per person, fixed to one computer (see the server's lic-* actions) ----------
      The machine id comes from the desktop program (a hash of the computer's own id); in a browser it is this browser's device id,
      so clearing the browser's data counts as a new computer and the owner frees the old one. */
   var LIC = 'frame-license';

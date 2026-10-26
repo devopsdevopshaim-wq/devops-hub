@@ -46,7 +46,7 @@
       '<div class="upd-acts">' +
         (back && D && D.update ? '<button class="btn primary" data-u="back">⬇️ חזרה לגרסה ' + esc(back.ver) + '</button>' : '') +
         '<button class="btn" data-u="req">' + (req ? '✔ הבקשה נשלחה · לשלוח שוב' : '📨 בקשת אישור לעדכון') + '</button>' +
-        '<a class="btn" target="_blank" rel="noopener" href="' + esc(wa(u, 'שלום, אני רוצה לאשר את עדכון פריים־סטודיו לגרסה ' + RUN + '.')) + '">💬 וואטסאפ לחיים</a>' +
+        '<a class="btn" target="_blank" rel="noopener" href="' + esc(wa(u, 'שלום, אני רוצה לאשר את עדכון אופטימוס לגרסה ' + RUN + '.')) + '">💬 וואטסאפ לחיים</a>' +
         '<button class="btn" data-u="again">🔄 בדיקה שוב</button></div><p class="upd-st" id="upd-st"></p></div>';
     box.hidden = false; document.body.classList.add('upd-locked');
   }
@@ -90,7 +90,7 @@
         (u.allowed ? '<p>✔ העדכון מאושר לרישיון שלך.</p><div class="upd-acts"><button class="btn primary" data-u="install">⬇️ הורדה והתקנה</button></div><p class="hint">התוכנה תיסגר, ההתקנה תיפתח, ובסיום התוכנה נפתחת מחדש. ההגדרות, הרישיון ומנוע ה־AI נשארים.</p>'
           : '<p>' + (L.free ? 'העדכון בחינם.' : 'עדכון גרסה: <b>₪' + esc(L.price) + '</b> (תשלום סמלי, פעם אחת לעדכון הזה).') + ' אחרי התשלום חיים מאשר, והכפתור להתקנה נפתח כאן.</p>' +
             '<div class="upd-acts"><button class="btn primary" data-u="req">' + (req ? '✔ הבקשה נשלחה · לשלוח שוב' : '📨 בקשת העדכון') + '</button>' +
-            '<a class="btn" target="_blank" rel="noopener" href="' + esc(wa(u, 'שלום, אני רוצה את עדכון פריים־סטודיו לגרסה ' + L.ver + '.')) + '">💬 וואטסאפ לחיים</a><button class="btn" data-u="again">🔄 בדיקה שוב</button></div>');
+            '<a class="btn" target="_blank" rel="noopener" href="' + esc(wa(u, 'שלום, אני רוצה את עדכון אופטימוס לגרסה ' + L.ver + '.')) + '">💬 וואטסאפ לחיים</a><button class="btn" data-u="again">🔄 בדיקה שוב</button></div>');
     }
     FS.dialog('⬆️ עדכון גרסה', '<div class="upd-dlg">' + h + '<p class="upd-st" id="upd-st2"></p></div>');
   }

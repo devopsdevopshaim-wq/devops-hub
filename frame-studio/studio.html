@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='59';(function(){
+window.FS_V='60';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -12,27 +12,39 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <script src="../portfolio/js/failover.js"></script>
 <meta name="theme-color" content="#1d1633" />
-<meta name="description" content="פריים־סטודיו: עריכת תמונות מקצועית בדפדפן, מסגרות PNG משלך, הסרת רקע ומדבקות AI, משחקים, שמירה בכמה פורמטים והדפסה בכל מדפסת שמותקנת במחשב." />
-<title>סטודיו עריכה</title>
+<meta name="description" content="אופטימוס: עריכת תמונות מקצועית בדפדפן, מסגרות PNG משלך, הסרת רקע ומדבקות AI, משחקים, שמירה בכמה פורמטים והדפסה בכל מדפסת שמותקנת במחשב." />
+<title>אופטימוס</title>
 <link rel="manifest" href="manifest.webmanifest" />
-<link rel="icon" href="icon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="icon" href="optimus.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="optimus.svg" />
+<link rel="stylesheet" href="css/splash.css?v=60" />
+<script>/* the opening animation once per session (each start of the program) */try{if(sessionStorage.getItem("op-splash"))document.documentElement.classList.add("op-seen");else sessionStorage.setItem("op-splash","1")}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Rubik:wght@400;700;900&family=Assistant:wght@400;700;800&family=Secular+One&family=Suez+One&family=Frank+Ruhl+Libre:wght@400;700;900&family=Amatic+SC:wght@400;700&family=Karantina:wght@400;700&family=Bellefair&family=Varela+Round&family=David+Libre:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" />
-<link rel="stylesheet" href="css/studio.css?v=59" />
-<link rel="stylesheet" href="css/intro.css?v=59" />
-<link rel="stylesheet" href="css/gate.css?v=59" />
+<link rel="stylesheet" href="css/studio.css?v=60" />
+<link rel="stylesheet" href="css/intro.css?v=60" />
+<link rel="stylesheet" href="css/gate.css?v=60" />
 <link rel="stylesheet" href="../portfolio/css/mobile.css" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Assistant:wght@400;600;700&family=Heebo:wght@500&display=swap" />
-<link rel="stylesheet" href="css/lux-studio.css?v=59" />
-<link rel="stylesheet" href="css/tools-x.css?v=59" />
-<link rel="stylesheet" href="css/live-studio.css?v=59" />
-<link rel="stylesheet" href="css/local-ai.css?v=59" />
-<link rel="stylesheet" href="css/mate.css?v=59" />
-<link rel="stylesheet" href="css/edits-x.css?v=59" />
+<link rel="stylesheet" href="css/lux-studio.css?v=60" />
+<link rel="stylesheet" href="css/tools-x.css?v=60" />
+<link rel="stylesheet" href="css/live-studio.css?v=60" />
+<link rel="stylesheet" href="css/local-ai.css?v=60" />
+<link rel="stylesheet" href="css/mate.css?v=60" />
+<link rel="stylesheet" href="css/edits-x.css?v=60" />
 <script src="../portfolio/js/track.js" defer></script>
 </head>
 <body class="gated">
+<div id="op-splash" aria-hidden="true"><div class="op-stage"><div class="op-halo"></div><div class="op-mark"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="opg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1C9"/><stop offset=".45" stop-color="#E3C48A"/><stop offset="1" stop-color="#A9864C"/></linearGradient>
+<linearGradient id="opg2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3DDA6"/><stop offset="1" stop-color="#8E6B36"/></linearGradient><radialGradient id="opc" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#FFE7AE"/><stop offset="1" stop-color="#FFE7AE" stop-opacity="0"/></radialGradient>
+<clipPath id="opk"><circle cx="50" cy="50" r="38.5"/></clipPath></defs>
+<circle cx="50" cy="50" r="47" fill="#121318"/>
+<circle class="op-ring" cx="50" cy="50" r="43.5" fill="none" stroke="url(#opg)" stroke-width="3.2"/>
+<g clip-path="url(#opk)"><g class="op-blades" fill="url(#opg)" stroke="#121318" stroke-width="2.4" stroke-linejoin="round"><path class="op-blade" style="--i:0" d="M50.00 37.50 L30.16 -4.50 L94.43 12.72 L60.83 43.75Z"/><path class="op-blade" style="--i:1" fill="url(#opg2)" d="M60.83 43.75 L87.28 5.57 L104.50 69.84 L60.83 56.25Z"/><path class="op-blade" style="--i:2" d="M60.83 56.25 L107.12 60.07 L60.07 107.12 L50.00 62.50Z"/><path class="op-blade" style="--i:3" fill="url(#opg2)" d="M50.00 62.50 L69.84 104.50 L5.57 87.28 L39.17 56.25Z"/><path class="op-blade" style="--i:4" d="M39.17 56.25 L12.72 94.43 L-4.50 30.16 L39.17 43.75Z"/><path class="op-blade" style="--i:5" fill="url(#opg2)" d="M39.17 43.75 L-7.12 39.93 L39.93 -7.12 L50.00 37.50Z"/></g></g>
+<circle class="op-glow" cx="50" cy="50" r="11" fill="url(#opc)" opacity=".6"/>
+<path class="op-spark" fill="#FFFFFF" d="M50 40.5 C51.1 46.8 53.2 48.9 59.5 50 C53.2 51.1 51.1 53.2 50 59.5 C48.9 53.2 46.8 51.1 40.5 50 C46.8 48.9 48.9 46.8 50 40.5Z"/>
+</svg><i class="op-sweep"></i></div>
+<div class="op-word"><span style="--i:0">O</span><span style="--i:1">P</span><span style="--i:2">T</span><span style="--i:3">I</span><span style="--i:4">M</span><span style="--i:5">U</span><span style="--i:6">S</span></div><div class="op-line"></div><div class="op-he">אופטימוס</div><div class="op-tag">עריכה · AI · הדפסה לאירועים</div></div></div><script>/* the opening leaves the page when it ends (or on a click), so it never stands over the program */(function(){var s=document.getElementById('op-splash');if(!s)return;function go(){if(s.parentNode)s.parentNode.removeChild(s);}s.addEventListener('animationend',function(e){if(e.target===s)go();});s.addEventListener('click',function(){s.classList.add('op-out');setTimeout(go,380);});setTimeout(go,4600);if(document.documentElement.classList.contains('op-seen'))go();})();</script>
 <div class="standalone-bar">
   <span class="shelf">🧰 כלים ומחשבונים</span>
   <nav class="shelf-links" aria-label="כלים ומחשבונים">
@@ -50,7 +62,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
   <button class="intro-x" id="ia-skip" aria-label="כניסה לסטודיו">לסטודיו <kbd>Enter</kbd></button>
   <div class="intro-copy">
     <p class="intro-eyebrow"><i class="rec"></i><span id="intro-today">מוכן לאירוע</span></p>
-    <h1 id="intro-title" class="foil">פריים־סטודיו</h1>
+    <h1 id="intro-title" class="foil">אופטימוס</h1>
     <p class="intro-lead">סטודיו לעיצוב תמונות לאירועים. עורכים, מעצבים ומדפיסים לכל אורח, בדקה.</p>
     <div class="intro-actions">
       <button class="ia" id="ia-event"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v7a6 6 0 0 0 12 0V3"/><path d="M6 3h4v7a2 2 0 0 0 4 0V3h4"/><path d="M6 7h4M14 7h4"/></svg><b>אירוע חדש</b><small>שמות, תאריך, מסגרת ומידה</small></button>
@@ -66,7 +78,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
   <header class="topbar">
     <div class="brand">
       <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="24" cy="24" r="10" fill="#c9a45c"/><circle cx="24" cy="24" r="4.5" fill="#1d1633"/><path d="M40 10 45 5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-      <div><b>פריים־סטודיו</b><small>סטודיו מגנטים לאירועים · עריכה · AI · הדפסה</small></div>
+      <div><b>אופטימוס</b><small>סטודיו מגנטים לאירועים · עריכה · AI · הדפסה</small></div>
     </div>
     <div class="top-actions">
       <button class="ic" id="undo" title="ביטול (Ctrl+Z)" disabled>↶</button>
@@ -400,37 +412,37 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="print-root" aria-hidden="true"></div>
 
-<script src="js/core.js?v=59"></script>
-<script src="js/frames.js?v=59"></script>
-<script src="js/ui.js?v=59"></script>
-<script src="js/ai.js?v=59"></script>
-<script src="js/output.js?v=59"></script>
-<script src="js/games.js?v=59"></script>
-<script src="js/real-photos.js?v=59"></script>
-<script src="js/events.js?v=59"></script>
-<script src="js/event-studio.js?v=59"></script>
-<script src="js/styles.js?v=59"></script>
-<script src="js/face-keep.js?v=59"></script>
-<script src="js/offline-ai.js?v=59"></script>
-<script src="js/ai-studio.js?v=59"></script>
-<script src="js/grid.js?v=59"></script>
-<script src="js/library.js?v=59"></script>
-<script src="js/account.js?v=59"></script>
-<script src="js/updates.js?v=59"></script>
-<script src="js/gate.js?v=59"></script>
-<script src="js/business.js?v=59"></script>
-<script src="js/deals.js?v=59"></script>
-<script src="js/printlog.js?v=59"></script>
-<script src="js/collage.js?v=59"></script>
-<script src="js/live.js?v=59"></script>
-<script src="js/folders.js?v=59"></script>
-<script src="js/curate.js?v=59"></script>
-<script src="js/shell.js?v=59"></script>
-<script src="js/pro.js?v=59"></script>
-<script src="js/intro.js?v=59"></script>
-<script src="js/grow.js?v=59"></script>
-<script src="js/local-ai.js?v=59"></script>
-<script src="js/mate.js?v=59"></script>
+<script src="js/core.js?v=60"></script>
+<script src="js/frames.js?v=60"></script>
+<script src="js/ui.js?v=60"></script>
+<script src="js/ai.js?v=60"></script>
+<script src="js/output.js?v=60"></script>
+<script src="js/games.js?v=60"></script>
+<script src="js/real-photos.js?v=60"></script>
+<script src="js/events.js?v=60"></script>
+<script src="js/event-studio.js?v=60"></script>
+<script src="js/styles.js?v=60"></script>
+<script src="js/face-keep.js?v=60"></script>
+<script src="js/offline-ai.js?v=60"></script>
+<script src="js/ai-studio.js?v=60"></script>
+<script src="js/grid.js?v=60"></script>
+<script src="js/library.js?v=60"></script>
+<script src="js/account.js?v=60"></script>
+<script src="js/updates.js?v=60"></script>
+<script src="js/gate.js?v=60"></script>
+<script src="js/business.js?v=60"></script>
+<script src="js/deals.js?v=60"></script>
+<script src="js/printlog.js?v=60"></script>
+<script src="js/collage.js?v=60"></script>
+<script src="js/live.js?v=60"></script>
+<script src="js/folders.js?v=60"></script>
+<script src="js/curate.js?v=60"></script>
+<script src="js/shell.js?v=60"></script>
+<script src="js/pro.js?v=60"></script>
+<script src="js/intro.js?v=60"></script>
+<script src="js/grow.js?v=60"></script>
+<script src="js/local-ai.js?v=60"></script>
+<script src="js/mate.js?v=60"></script>
 <script>
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
 </script>
