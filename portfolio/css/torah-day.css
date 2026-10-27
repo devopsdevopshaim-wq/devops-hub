@@ -93,3 +93,7 @@
 .td-t { text-align: start; }
 .td-card { overflow: hidden; }
 .td-parsha::after { content: ""; position: absolute; inset-block-start: -60px; inset-inline-end: -60px; width: 190px; height: 190px; border-radius: 50%; background: radial-gradient(circle, rgba(139, 123, 255, .35), transparent 68%); pointer-events: none; }
+/* ---- v6: timeline spacing ---- */
+.td-rows::before { inset-inline-start: 67px; }
+.td-rows label { grid-template-columns: 46px 1fr auto; gap: 0 28px; }
+.td-rows > li:not(.td-edit) > label::before { inset-inline-start: 62px; }
