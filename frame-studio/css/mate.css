@@ -339,3 +339,23 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 .mt-big2 figure { position: relative; margin: 0; display: grid; place-items: center; background: #0b0c0f; border-radius: 12px; padding: 10px; min-height: 200px; }
 .mt-big2 canvas { max-width: 100%; max-height: 66vh; }
 #mt .mt-ba span { top: auto; bottom: 8px; }
+/* v62: the AI's before | after, frames with thumbnails, saved edits */
+#mt .mt-aiba { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 12px; }
+#mt .mt-aiba .mt-tile { cursor: zoom-in; }
+#mt .mt-aiba .mt-th { aspect-ratio: 4 / 3; }
+#mt .mt-aibac { position: sticky; top: 0; z-index: 2; background: linear-gradient(180deg, rgba(30,32,39,.97), rgba(22,24,30,.97)); }
+@media (max-width: 900px) { #mt .mt-aiba { grid-template-columns: 1fr; } }
+#mt .mt-frl { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+#mt .mt-frl button { position: relative; flex-direction: column; justify-content: center; border-radius: 12px; padding: 8px 6px 6px; min-height: 44px; }
+#mt .mt-frl img { width: 64px; height: 64px; object-fit: contain; background: repeating-conic-gradient(#2a2c33 0 25%, #1c1e24 0 50%) 0 0 / 12px 12px; border-radius: 6px; }
+#mt .mt-frl em { font-style: normal; font-size: 11.5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#mt .mt-frl button.on { box-shadow: 0 0 0 2px var(--gold, #D9B677); }
+#mt .mt-frx { position: absolute; top: 3px; inset-inline-end: 3px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; background: rgba(0,0,0,.65); color: #fff; opacity: 0; }
+#mt .mt-frl button:hover .mt-frx { opacity: 1; }
+#mt .mt-looks { display: grid; gap: 6px; margin-top: 8px; }
+#mt .mt-look { display: flex; gap: 6px; }
+#mt .mt-look .mt-btn { flex: 1; justify-content: flex-start; }
+#mt [data-pp="looks"] h4 { margin: 12px 0 6px; }
+#mt .mt-aiba { grid-template-columns: repeat(var(--n, 3), minmax(0, 460px)); justify-content: center; }
+#mt .mt-aiba .mt-th { aspect-ratio: auto; height: min(30vh, 300px); }
+#mt .mt-aibac h3 { margin-bottom: 8px; }
