@@ -297,10 +297,11 @@
         return restyleOnce(p, prompt, plan[i]).then(function (im) {
           if (!n0 || !FS.countFaces) return im;
           return FS.countFaces(im).catch(function () { return n0; }).then(function (n) {
-            if (n >= 1 && (n0 < 3 || n >= n0 * 0.5)) return im;
-            if (window.console) console.warn('AI: the answer lost the people (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
+            var lost = !(n >= 1 && (n0 < 3 || n >= n0 * 0.5)), extra = n > (n0 <= 4 ? n0 : n0 + 1);
+            if (!lost && !extra) return im;
+            if (window.console) console.warn('AI: the answer ' + (lost ? 'lost the people' : 'added people') + ' (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
             if (i + 1 < plan.length) return go(i + 1);
-            throw new Error('lost-people');
+            throw new Error(lost ? 'lost-people' : 'extra-people');
           });
         });
       }
@@ -311,7 +312,12 @@
     var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight, src = '';
     if (engine === undefined) engine = FS.aiEngine();
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
-    var faces = p.faces ? p.faces.length : 0; if (faces) prompt += ' There are exactly ' + faces + ' faces in the photo; keep all ' + faces + '.';
+    var faces = p.faces ? p.faces.length : 0;
+    /* the people in the photo, by count: one person stays one person (the models like to add a partner or a figure) */
+    if (faces === 1) prompt = prompt.replace(/\b(each|every) person\b/gi, 'the person').replace(/\bthe people\b/gi, 'the person').replace(/\beveryone\b/gi, 'the person') +
+      ' There is exactly ONE person in this photo. The result must show only this one person: do not add any other person, partner, figure, silhouette, reflection or face.';
+    else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces.';
+    prompt += ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
     /* FLUX gets the same 1024px photo (compared Oct 26, frame-ai-compare.yml: from a 496px copy it drew new faces; from 1024 it keeps the people) */
     var b64 = photoB64(p, 1024), body = { action: 'restyle', prompt: prompt, image: b64, small: b64, mime: 'image/jpeg', w: w, h: h };
@@ -325,8 +331,23 @@
       /* looks that must stay a photograph of the same people: the real faces are laid back in (js/face-keep.js, on this computer) */
       if (!FS.keepFaces || !/very same people|Keep everything else exactly as it is/.test(prompt)) return im;
       return FS.keepFaces(orig, im).then(function (k) { return k || im; }, function () { return im; });
-    }).then(function (im) { im.aiSource = src; return im; });
+    }).then(function (im) { return FS.aiOnlyPerson() ? onlyPerson(orig, im) : im; }).then(function (im) { im.aiSource = src; return im; });
   };
+  /* "only on the person" ('fs-ai-only'): the AI's person is laid over the original photo, so the background, the place and
+     everyone else stay exactly as they were (the person mask of the answer, on this computer) */
+  FS.aiOnlyPerson = function (v) { try { if (v !== undefined) localStorage.setItem('fs-ai-only', v ? '1' : '0'); return localStorage.getItem('fs-ai-only') === '1'; } catch (e) { return false; } };
+  function onlyPerson(orig, im) {
+    var tmp = { src: im.src, doc: null };
+    return FS.ensureMask(tmp).then(function (m) {
+      if (!m || (tmp.maskCover || 0) < 0.02) return im;
+      var W = im.naturalWidth, H = im.naturalHeight, c = FS.canvas(W, H), x = c.getContext('2d'), pc = FS.canvas(W, H), px = pc.getContext('2d');
+      /* the mask is grey (white = person): its light becomes the alpha of the AI picture */
+      px.drawImage(im, 0, 0, W, H); var mc = FS.canvas(W, H), mx = mc.getContext('2d', { willReadFrequently: true }); mx.drawImage(m, 0, 0, W, H);
+      var md = mx.getImageData(0, 0, W, H).data, id = px.getImageData(0, 0, W, H); for (var i = 3; i < id.data.length; i += 4) id.data[i] = md[i - 3]; px.putImageData(id, 0, 0);
+      x.imageSmoothingQuality = 'high'; x.drawImage(orig, 0, 0, W, H); x.drawImage(pc, 0, 0);
+      return new Promise(function (ok) { c.toBlob(function (b) { ok(b ? FS.loadImg(URL.createObjectURL(b)) : im); }, 'image/jpeg', 0.94); });
+    }).catch(function () { return im; });
+  }
   /* put an AI result on the photo: the original stays in origSrc; earlier AI results are kept too (a few), so "ביטול AI" can go back one step at a time */
   FS.applyAI = function (p, im) {
     if (!p.origSrc) p.origSrc = p.src; else { p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5); }

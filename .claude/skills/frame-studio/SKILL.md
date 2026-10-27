@@ -35,6 +35,11 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## One person stays one person; "only on the person"; a finer look (Oct 27, v64)
+- The models added a partner or a figure to a photo of one girl (superhero looks). `restyleTry` now also throws away an answer with more faces than the photo (`extra-people`; a group of 5+ may gain one), and asks again as for `lost-people`.
+- `restyleOnce` writes the count into the prompt: for one face "each person / every person / the people / everyone" become "the person", plus "exactly ONE person … do not add any other person, partner, figure, silhouette, reflection or face"; for N faces "exactly these N people". Every restyle also asks for a high-end result: the face sharp, lit and fully visible (no mask, hood or shadow over it), cinematic grading.
+- **🎯 רק על הדמות** (`FS.aiOnlyPerson`, 'fs-ai-only', off by default; `#mt-only` in the workspace's AI engine card, `#ax-only` in the studio's AI tab): the person of the AI answer (its person mask, `FS.ensureMask` on a temporary photo, grey → alpha) is laid over the original photo, so the background and everyone else stay as they were.
+
 ## An AI result without the people is never applied (Oct 27, v63)
 - A "שילוב משלך" (comic + magic forest + superheroes + sparkles) came back as a forest with nobody in it, from the free engine (Pollinations), with its name stamped in the corner.
 - `FS.restyleTry` (styles.js) now counts the faces of the original (`p.faces`, or `FS.countFaces`, ai.js: the whole picture, then 2x2 tiles) and of each answer. An answer with no face, or under half of a group of 3+, is thrown away and asked again: the same engine choice (or 'free' with a new seed), then the engine on this computer when installed. When every try loses the people the error is `lost-people` (its message in `FS.aiError`), and the photo stays as it was.
