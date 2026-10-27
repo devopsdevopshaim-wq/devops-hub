@@ -1,0 +1,39 @@
+name: Frame Studio invitation frames showcase
+# Runs "frames from the invitation" for real (the studio page in a browser, the public hubs server) on an invitation, and pushes
+# the invitation, every AI frame (see-through and with a photo), a contact sheet and report.json to the branch ci-frame-showcase,
+# to look at. Run by hand, or when these files change on the working branch.
+on:
+  workflow_dispatch:
+    inputs:
+      shapes:
+        description: portrait / landscape / both
+        default: portrait
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: ['.github/scripts/frame-showcase.mjs', '.github/workflows/frame-showcase.yml']
+permissions:
+  contents: write
+jobs:
+  showcase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Playwright in a folder of its own (the repository's root package.json has unrelated dev dependencies)
+      - name: Install Playwright
+        run: |
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null && npm i playwright@1.48.2 && npx playwright install --with-deps chromium
+          cp "$GITHUB_WORKSPACE/.github/scripts/frame-showcase.mjs" "$RUNNER_TEMP/pw/"
+      - name: Serve the studio
+        run: (cd frame-studio && python3 -m http.server 8099 >/dev/null 2>&1 &) && sleep 2
+      - run: node "$RUNNER_TEMP/pw/frame-showcase.mjs" "$RUNNER_TEMP/show" "${{ github.event.inputs.shapes || 'portrait' }}"
+      - name: Push to ci-frame-showcase
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/show" || exit 0
+          git init -q && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b ci-frame-showcase && git add -A && git commit -q -m "Frames showcase, run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-frame-showcase

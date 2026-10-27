@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='67';(function(){
+window.FS_V='68';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -17,7 +17,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Amatic+SC:wght@400;700&family=Secular+One&family=Suez+One&family=Bellefair&family=Rubik:wght@400;700;900&family=Karantina:wght@400;700&family=Assistant:wght@400;700;800&family=Varela+Round&family=David+Libre:wght@400;700&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" />
-<link rel="stylesheet" href="css/design.css?v=67" />
+<link rel="stylesheet" href="css/design.css?v=68" />
 </head>
 <body>
 <a class="skip" href="#panel">דילוג לעורך</a>
@@ -105,6 +105,8 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
           <p class="hint">ה־AI מצייר מסגרת חדשה באותו עיצוב של ההזמנה: אותם צבעים, נייר, פרחים וקישוטים, עם חלון שקוף לתמונה. עד דקה למסגרת. את השמות והתאריך מוסיפים אחר כך בלשונית "טקסט".</p>
           <div class="dz-row"><button class="btn gold" id="ai-port">▯ לאורך</button><button class="btn gold" id="ai-land">▭ לרוחב</button><button class="btn line" id="ai-square">◻ ריבוע</button></div>
           <label class="dz-check"><input type="checkbox" id="ai-round" /> פינות מעוגלות לחלון</label>
+          <div class="dz-aiset"><b>🤖 גלריה: 16 מסגרות בעיצובים שונים</b><span class="hint">קלאסית, מינימלית, זר פרחים, זהב ארט דקו, צבעי מים, תחרה, יוקרה כהה, פספרטו ועוד. כל מסגרת מופיעה למטה כשהיא מוכנה.</span>
+            <div class="dz-row"><button class="btn gold" id="ai-set-port">▯ 16 לאורך</button><button class="btn gold" id="ai-set-land">▭ 16 לרוחב</button></div><p class="hint" id="ai-set-st"></p></div>
           <div class="dz-aiframes" id="ai-frames"></div>
           <details class="dz-ext" id="ext"><summary>✨ הכי איכותי: ליצור ב־ChatGPT או ב־Gemini</summary>
             <p class="hint">משתמשים בחשבון ה־ChatGPT או ה־Gemini שלכם (גם החינמי). הכול מוכן כאן: ההזמנה בצורה הנכונה וההוראה. את המסגרת שמקבלים מעלים בחזרה, והחלון לתמונה נחתך לבד.</p>
@@ -180,13 +182,13 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <div class="dz-busy" id="busy" hidden><div><i></i><span id="busy-msg"></span></div></div>
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="js/core.js?v=67"></script>
-<script src="js/frames.js?v=67"></script>
-<script src="js/real-photos.js?v=67"></script>
-<script src="js/events.js?v=67"></script>
-<script src="js/invite.js?v=67"></script>
-<script src="js/account.js?v=67"></script>
-<script src="js/inv-frame.js?v=67"></script>
-<script src="js/design.js?v=67"></script>
+<script src="js/core.js?v=68"></script>
+<script src="js/frames.js?v=68"></script>
+<script src="js/real-photos.js?v=68"></script>
+<script src="js/events.js?v=68"></script>
+<script src="js/invite.js?v=68"></script>
+<script src="js/account.js?v=68"></script>
+<script src="js/inv-frame.js?v=68"></script>
+<script src="js/design.js?v=68"></script>
 </body>
 </html>

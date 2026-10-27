@@ -118,6 +118,26 @@
     var k = Math.min(cw * 0.94 / w, ch * 0.94 / h); x.imageSmoothingQuality = 'high'; x.drawImage(img, (cw - w * k) / 2, (ch - h * k) / 2, w * k, h * k);
     return c;
   }
+  /* the design directions for a set of AI frames from one invitation (the program's frame editor and the site's designer):
+     [Hebrew name, the direction for the image model, options for the window] */
+  FS.INV_FRAME_STYLES = [
+    ['קלאסית מעוטרת', 'classic and ornate: the invitation\'s ornaments repeated richly and symmetrically along all four edges, like engraved luxury stationery', { band: true, round: true, hole: 0.68 }],
+    ['מינימלית יוקרתית', 'minimal luxury: a fine double hairline in the invitation\'s accent colour, generous calm paper, one small refined ornament centred at the top', { hole: 0.76 }],
+    ['זר פרחים בפינות', 'lush floral: abundant flowers and leaves in the invitation\'s style gathered as two rich bouquets in the top-left and bottom-right corners, the other corners light', { band: true, hole: 0.68 }],
+    ['זהב ארט דקו', 'Art Deco gold foil: geometric gold lines, stepped corners and sunburst fans, embossed metallic shine, glamorous 1920s elegance', { hole: 0.7 }],
+    ['צבעי מים', 'soft watercolour: hand-painted washes in the invitation\'s colours bleeding gently into the paper, delicate and romantic', { round: true, hole: 0.7 }],
+    ['רצועת שמות', 'an elegant wide decorated band along the bottom made for the couple\'s names, with a slimmer matching border on the other sides', { band: true, hole: 0.64 }],
+    ['חלון קשת', 'an arched photo window (round top, straight sides) set in an ornamental arch like a chapel window, in the invitation\'s style', { hole: 0.66 }],
+    ['זר עגול', 'a round wreath of the invitation\'s flowers and leaves circling an oval photo window', { hole: 0.58 }],
+    ['בוטנית ירוקה', 'botanical: fresh leafy greenery, olive and eucalyptus branches climbing up both sides and meeting at the top', { band: true, hole: 0.68 }],
+    ['חגיגית מנצנצת', 'festive and glowing: fine gold sparkles, tiny stars and a soft shimmer scattered around the window, celebratory but elegant', { round: true, hole: 0.7 }],
+    ['פספרטו גלריה', 'gallery passe-partout: a wide paper mat with a bevelled inner edge and a thin gold fillet around the window, museum-framing elegance', { hole: 0.62 }],
+    ['תחרה עדינה', 'delicate lace: an intricate white or ivory lace border with scalloped edges, like a bridal veil, with the invitation\'s accent colour as a fine ribbon', { round: true, hole: 0.68 }],
+    ['יוקרה כהה', 'dark luxury: deep rich background in the invitation\'s darkest tone with bright gold ornaments and fine gold lines, dramatic and premium', { band: true, hole: 0.68 }],
+    ['פולארויד מעוצב', 'a designer instant-photo look: a clean wide bottom margin, a thin border, and a few of the invitation\'s ornaments tucked at one corner like a sticker', { band: true, hole: 0.7 }],
+    ['פרחים מיובשים', 'pressed and dried flowers in muted tones arranged along the top and one side, natural paper texture, boho chic', { hole: 0.68 }],
+    ['מסגרת בעבודת יד', 'an ornate carved and gilded picture frame, rich baroque scrollwork rendered as flat print in the invitation\'s colours', { hole: 0.62 }]
+  ];
   FS.invFramePrompt = function (W, H, o) {
     o = o || {};
     var shape = W > H * 1.05 ? 'landscape (wider than tall)' : H > W * 1.05 ? 'portrait (taller than wide)' : 'square';
@@ -125,7 +145,8 @@
       'Copy the invitation\'s exact visual identity: the same colour palette, background paper texture, ornaments, flowers, leaves, line work, gold or foil details and overall style, so it clearly belongs to the same event. ' +
       'Layout: an elegant decorative border around all four edges' + (o.band ? ', a little wider at the bottom' : '') + ', and one large empty photo window in the centre that covers about ' + Math.round((o.hole || 0.72) * 100) + '% of the frame. ' +
       'Fill the window with perfectly flat, solid, pure green (#00FF00), with clean sharp edges' + (o.round ? ' and softly rounded corners' : '') + '; nothing may overlap or be drawn inside the green window. ' +
-      'No text, no letters, no names, no numbers, no people, no photo inside. Flat front view, the frame fills the whole image edge to edge, print quality, highly detailed.' +
+      'No text, no letters, no names, no numbers, no people, no photo inside. Flat front view, the frame fills the whole image edge to edge, print quality, highly detailed. ' +
+      'Make it breathtaking: the work of a top luxury stationery designer, refined balanced composition, crisp fine detail, rich true colours, premium materials such as foil, deckled paper or watercolour.' +
       (o.extra ? ' Design direction for this version: ' + o.extra + '.' : '');
   };
   /* cut the green window: the green part that holds the centre (or the biggest green part) becomes transparent */
@@ -153,6 +174,11 @@
     var x0 = W, y0 = H, x1 = 0, y1 = 0;
     for (i = 0; i < n; i++) if (lab[i] === best) { var xx = i % W, yy = (i / W) | 0; if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
     for (var y = y0; y <= y1; y++) { var row = y * W, a = -1, b2 = -1; for (var xq = x0; xq <= x1; xq++) if (lab[row + xq] === best) { if (a < 0) a = xq; b2 = xq; } if (a >= 0) for (xq = a; xq <= b2; xq++) lab[row + xq] = best; }
+    /* the window grown by a few pixels (a separable max filter), so the model's soft green edge goes with it */
+    var R = Math.max(2, Math.round(Math.min(W, H) * 0.004)), row2 = new Uint8Array(n), grown = new Uint8Array(n);
+    for (y = 0; y < H; y++) { var o = y * W, run = -1e9; for (xq = 0; xq < W; xq++) { if (lab[o + xq] === best) run = xq; if (xq - run <= R) row2[o + xq] = 1; } run = 1e9; for (xq = W - 1; xq >= 0; xq--) { if (lab[o + xq] === best) run = xq; if (run - xq <= R) row2[o + xq] = 1; } }
+    for (var xc = 0; xc < W; xc++) { var rn = -1e9; for (y = 0; y < H; y++) { if (row2[y * W + xc]) rn = y; if (y - rn <= R) grown[y * W + xc] = 1; } rn = 1e9; for (y = H - 1; y >= 0; y--) { if (row2[y * W + xc]) rn = y; if (rn - y <= R) grown[y * W + xc] = 1; } }
+    for (i = 0; i < n; i++) if (grown[i]) lab[i] = best;
     /* transparent window with a 2px soft edge, and the green fringe around it pulled back to the frame's colours */
     for (i = 0; i < n; i++) {
       var r = px[i * 4], gg = px[i * 4 + 1], bb = px[i * 4 + 2];

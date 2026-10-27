@@ -421,11 +421,29 @@
       return useInvCanvas(r.canvas, fmt, 'מסגרת AI מההזמנה').then(function () { FS.toast('🤖 מסגרת ' + shapeName(fmt) + ' מוכנה. לא אהבת? לוחצים שוב לגרסה אחרת, וכל הגרסאות נשארות למטה.', 6000); });
     }).catch(function (e) { FS.busy(); FS.toast(aiErr(e && e.message), 7000); });
   }
-  function drawAIF() {
+  /* the gallery: every design direction in FS.INV_FRAME_STYLES, three at a time; each frame joins the list below when it is back */
+  var setRun = 0;
+  function aiSet(fmt) {
+    if (!invImg) return FS.toast('מעלים קודם את ההזמנה');
+    var st = $('#ai-set-st'), L = FS.INV_FRAME_STYLES || [];
+    if (setRun) { setRun++; if (FS.aiStop) FS.aiStop(); st.textContent = 'נעצר.'; return; }
+    var f = FS.fmt(fmt), k = 1800 / Math.max(f.w, f.h), W = Math.round(f.w * k), H = Math.round(f.h * k), next = 0, done = 0, bad = 0, run = ++setRun;
+    function msg() { st.textContent = '🤖 ' + done + ' מתוך ' + L.length + ' מוכנות' + (bad ? ' · ' + bad + ' לא הצליחו' : '') + (done + bad < L.length && run === setRun ? ' · עוד מעצב… (לחיצה נוספת עוצרת)' : ''); }
+    function lane() {
+      if (run !== setRun || next >= L.length) return Promise.resolve(); var s = L[next++];
+      return FS.aiFrameFromInvite(invImg, W, H, Object.assign({ extra: s[1] }, s[2])).then(function (r) { done++; AIF.push({ canvas: r.canvas, fmt: fmt, name: s[0] }); drawAIF(-1); }, function (e) { bad++; if (window.console) console.warn(s[0], e && e.message); })
+        .then(function () { msg(); return lane(); });
+    }
+    msg(); Promise.all([lane(), lane(), lane()]).then(function () { if (run === setRun) { setRun = 0; msg(); FS.toast('🤖 ' + done + ' מסגרות מוכנות. לוחצים על מסגרת כדי להשתמש בה.' + (bad ? ' ' + aiErr('') : ''), 7000); } });
+  }
+  $('#ai-set-port').addEventListener('click', function () { aiSet(/^(magnet|m69|m710)$/.test(D.fmt) ? D.fmt : 'magnet'); });
+  $('#ai-set-land').addEventListener('click', function () { aiSet('magnetL'); });
+  function drawAIF(onI) {
     var box = $('#ai-frames'); box.innerHTML = '';
     AIF.forEach(function (a, i) {
-      var b = document.createElement('button'); b.className = 'dz-aif' + (i === 0 ? ' on' : ''); b.title = 'להשתמש במסגרת הזאת';
+      var b = document.createElement('button'); b.className = 'dz-aif' + (i === (onI == null ? 0 : onI) ? ' on' : ''); b.title = (a.name ? a.name + ' · ' : '') + 'להשתמש במסגרת הזאת';
       var t = FS.canvas(160, Math.round(160 * a.canvas.height / a.canvas.width)); t.getContext('2d').drawImage(a.canvas, 0, 0, t.width, t.height); b.appendChild(t);
+      if (a.name) { var cap = document.createElement('span'); cap.textContent = a.name; b.appendChild(cap); }
       b.addEventListener('click', function () { $$('.dz-aif', box).forEach(function (x) { x.classList.toggle('on', x === b); }); FS.busy('מחליף מסגרת…'); useInvCanvas(a.canvas, a.fmt, 'מסגרת AI מההזמנה'); });
       box.appendChild(b);
     });

@@ -149,21 +149,11 @@
     aiCards();
   }
 
-  /* ---------- ten frames the image AI designs from the invitation, standing, lying or both ----------
+  /* ---------- the frames the image AI designs (FS.INV_FRAME_STYLES, 16) from the invitation, standing, lying or both ----------
      Each one gets its own design direction (FS.invFramePrompt's o.extra), three are asked at a time, and every card shows
      its frame the moment it is back; a card that failed is asked again on a click. The results stay while the program is open. */
-  var AI_DIRS = [
-    ['קלאסית מעוטרת', 'classic and ornate, the invitation\'s ornaments repeated richly along all four edges', { band: true, round: true, hole: 0.7 }],
-    ['מינימלית יוקרתית', 'minimal and luxurious: a fine double line in the invitation\'s accent colour, lots of calm paper, one small ornament at the top', { hole: 0.78 }],
-    ['פרחונית', 'floral: generous flowers and leaves from the invitation gathered in two opposite corners, the rest light', { band: true, hole: 0.7 }],
-    ['זהב וארט דקו', 'gold foil Art Deco: geometric gold lines and corner fans, elegant and festive', { hole: 0.72 }],
-    ['צבעי מים', 'soft watercolour washes in the invitation\'s colours, painted edges that fade into the paper', { round: true, hole: 0.72 }],
-    ['רצועת שמות רחבה', 'a wide decorated band at the bottom for the names, a slimmer border on the other sides', { band: true, hole: 0.66 }],
-    ['חלון קשת', 'an arched window (round top) framed by an ornamental arch in the invitation\'s style', { hole: 0.68 }],
-    ['חלון אליפסה', 'an oval window surrounded by a wreath of the invitation\'s ornaments', { hole: 0.6 }],
-    ['בוטנית ירוקה', 'botanical: leafy greenery and branches climbing up the sides, fresh and natural', { band: true, hole: 0.7 }],
-    ['חגיגית מנצנצת', 'festive and glowing: fine sparkles, confetti of the invitation\'s colours and a soft shimmer around the window', { round: true, hole: 0.72 }]
-  ];
+  var AI_DIRS = FS.INV_FRAME_STYLES || [];
+
   var aiEx = [], aiOr = 'p', aiRun = 0;
   function portraitSize() { var s = sizeOf(D.size); return s.H >= s.W ? D.size : '10x15'; }
   function landscapeSize() { var s = sizeOf(D.size); return s.W > s.H ? D.size : '15x10'; }
@@ -198,7 +188,7 @@
     var next = 0, run = ++aiRun; $('#fm-ai10', root).textContent = '⏹ עצירה';
     function lane() { if (run !== aiRun || next >= jobs.length) return Promise.resolve(); var j = jobs[next++]; return aiJob(j).then(lane); }
     Promise.all([lane(), lane(), lane()]).then(function () {
-      aiRun = 0; $('#fm-ai10', root).textContent = '🤖 10 מסגרות AI'; jobs.forEach(function (j) { if (j.st === 'wait') j.st = 'err'; }); aiCards();
+      aiRun = 0; $('#fm-ai10', root).textContent = '🤖 16 מסגרות AI'; jobs.forEach(function (j) { if (j.st === 'wait') j.st = 'err'; }); aiCards();
       var ok = jobs.filter(function (j) { return j.st === 'ok'; }).length, bad = jobs.length - ok;
       FS.toast('🤖 ' + ok + ' מסגרות AI מוכנות' + (bad ? ' · ' + bad + ' לא הצליחו (לחיצה על כרטיס מנסה שוב)' + (FS.lastAiDetail ? '' : '') : '') + '. בוחרים אחת ועורכים.', 7000);
     });
@@ -242,8 +232,8 @@
     '<div class="fm-body"><aside class="fm-side"><nav class="fm-tabs"><button data-t="ex" class="on">✨ דוגמאות</button><button data-t="els">🌿 אלמנטים</button><button data-t="txt">🔤 טקסט</button><button data-t="bg">🎨 רקע וחלון</button></nav>' +
       '<section data-p="ex"><div class="fm-inv"><img id="fm-inv-img" alt=""><div><label class="fm-btn gold">📨 העלאת ההזמנה<input type="file" id="fm-inv" accept="image/*" hidden></label><button class="fm-btn" id="fm-read">🤖 קריאת ההזמנה</button><p class="fm-hint">הדוגמאות נבנות מההזמנה: הצבעים, הגבול, הקישוטים והשמות.</p></div></div>' +
         '<div class="fm-row"><input id="fm-names" placeholder="שמות, למשל: נועה ודניאל"><input id="fm-date" placeholder="תאריך" style="max-width:120px"></div><button class="fm-btn" id="fm-reex">↻ עדכון הדוגמאות</button>' +
-        '<h4>🤖 מסגרות שה־AI עיצב מההזמנה</h4><p class="fm-hint">עשר מסגרות שונות בסגנון ההזמנה, כל אחת בכיוון אחר: קלאסית, מינימלית, פרחונית, זהב, צבעי מים ועוד. כל מסגרת מופיעה כשהיא מוכנה, ואז אפשר לערוך אותה.</p>' +
-        '<div class="fm-row"><div class="fm-seg fm-or" id="fm-aior"><button data-o="p" class="on">עומדות</button><button data-o="l">שוכבות</button><button data-o="b">שתיהן</button></div><button class="fm-btn gold" id="fm-ai10">🤖 10 מסגרות AI</button></div><div class="fm-ex" id="fm-aiex"></div>' +
+        '<h4>🤖 מסגרות שה־AI עיצב מההזמנה</h4><p class="fm-hint">16 מסגרות מעוצבות בסגנון ההזמנה, כל אחת בכיוון אחר: קלאסית, מינימלית, זר פרחים, זהב ארט דקו, צבעי מים, תחרה, יוקרה כהה, פספרטו ועוד. כל מסגרת מופיעה כשהיא מוכנה, ואז אפשר לערוך אותה.</p>' +
+        '<div class="fm-row"><div class="fm-seg fm-or" id="fm-aior"><button data-o="p" class="on">עומדות</button><button data-o="l">שוכבות</button><button data-o="b">שתיהן</button></div><button class="fm-btn gold" id="fm-ai10">🤖 16 מסגרות AI</button></div><div class="fm-ex" id="fm-aiex"></div>' +
         '<h4>✨ דוגמאות מוכנות</h4><div class="fm-ex" id="fm-ex"></div><h4>העיצובים שלי</h4><div class="fm-mine" id="fm-mine"></div></section>' +
       '<section data-p="els" hidden><div class="fm-row"><label>צבע</label><input type="color" id="fm-ecol" value="#B8904F"><button class="fm-btn" id="fm-epal" title="צבעי ההזמנה">🎨</button><span class="fm-pal" id="fm-pal"></span></div><div class="fm-orn" id="fm-orn"></div>' +
         '<h4>מההזמנה</h4><div class="fm-orn" id="fm-pieces"></div><div class="fm-row"><button class="fm-btn" id="fm-crop">✂️ חיתוך חלק מההזמנה</button><label class="fm-btn">🖼️ תמונה / לוגו<input type="file" id="fm-img" accept="image/*" hidden></label></div></section>' +
