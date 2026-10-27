@@ -118,6 +118,26 @@
     var k = Math.min(cw * 0.94 / w, ch * 0.94 / h); x.imageSmoothingQuality = 'high'; x.drawImage(img, (cw - w * k) / 2, (ch - h * k) / 2, w * k, h * k);
     return c;
   }
+  /* the design directions for a set of AI frames from one invitation (the program's frame editor and the site's designer):
+     [Hebrew name, the direction for the image model, options for the window] */
+  FS.INV_FRAME_STYLES = [
+    ['קלאסית מעוטרת', 'classic and ornate: the invitation\'s ornaments repeated richly and symmetrically along all four edges, like engraved luxury stationery', { band: true, round: true, hole: 0.68 }],
+    ['מינימלית יוקרתית', 'minimal luxury: a fine double hairline in the invitation\'s accent colour, generous calm paper, one small refined ornament centred at the top', { hole: 0.76 }],
+    ['זר פרחים בפינות', 'lush floral: abundant flowers and leaves in the invitation\'s style gathered as two rich bouquets in the top-left and bottom-right corners, the other corners light', { band: true, hole: 0.68 }],
+    ['זהב ארט דקו', 'Art Deco gold foil: geometric gold lines, stepped corners and sunburst fans, embossed metallic shine, glamorous 1920s elegance', { hole: 0.7 }],
+    ['צבעי מים', 'soft watercolour: hand-painted washes in the invitation\'s colours bleeding gently into the paper, delicate and romantic', { round: true, hole: 0.7 }],
+    ['רצועת שמות', 'an elegant wide decorated band along the bottom made for the couple\'s names, with a slimmer matching border on the other sides', { band: true, hole: 0.64 }],
+    ['חלון קשת', 'an arched photo window (round top, straight sides) set in an ornamental arch like a chapel window, in the invitation\'s style', { hole: 0.66 }],
+    ['זר עגול', 'a round wreath of the invitation\'s flowers and leaves circling an oval photo window', { hole: 0.58 }],
+    ['בוטנית ירוקה', 'botanical: fresh leafy greenery, olive and eucalyptus branches climbing up both sides and meeting at the top', { band: true, hole: 0.68 }],
+    ['חגיגית מנצנצת', 'festive and glowing: fine gold sparkles, tiny stars and a soft shimmer scattered around the window, celebratory but elegant', { round: true, hole: 0.7 }],
+    ['פספרטו גלריה', 'gallery passe-partout: a wide paper mat with a bevelled inner edge and a thin gold fillet around the window, museum-framing elegance', { hole: 0.62 }],
+    ['תחרה עדינה', 'delicate lace: an intricate white or ivory lace border with scalloped edges, like a bridal veil, with the invitation\'s accent colour as a fine ribbon', { round: true, hole: 0.68 }],
+    ['יוקרה כהה', 'dark luxury: deep rich background in the invitation\'s darkest tone with bright gold ornaments and fine gold lines, dramatic and premium', { band: true, hole: 0.68 }],
+    ['פולארויד מעוצב', 'a designer instant-photo look: a clean wide bottom margin, a thin border, and a few of the invitation\'s ornaments tucked at one corner like a sticker', { band: true, hole: 0.7 }],
+    ['פרחים מיובשים', 'pressed and dried flowers in muted tones arranged along the top and one side, natural paper texture, boho chic', { hole: 0.68 }],
+    ['מסגרת בעבודת יד', 'an ornate carved and gilded picture frame, rich baroque scrollwork rendered as flat print in the invitation\'s colours', { hole: 0.62 }]
+  ];
   FS.invFramePrompt = function (W, H, o) {
     o = o || {};
     var shape = W > H * 1.05 ? 'landscape (wider than tall)' : H > W * 1.05 ? 'portrait (taller than wide)' : 'square';
@@ -125,7 +145,8 @@
       'Copy the invitation\'s exact visual identity: the same colour palette, background paper texture, ornaments, flowers, leaves, line work, gold or foil details and overall style, so it clearly belongs to the same event. ' +
       'Layout: an elegant decorative border around all four edges' + (o.band ? ', a little wider at the bottom' : '') + ', and one large empty photo window in the centre that covers about ' + Math.round((o.hole || 0.72) * 100) + '% of the frame. ' +
       'Fill the window with perfectly flat, solid, pure green (#00FF00), with clean sharp edges' + (o.round ? ' and softly rounded corners' : '') + '; nothing may overlap or be drawn inside the green window. ' +
-      'No text, no letters, no names, no numbers, no people, no photo inside. Flat front view, the frame fills the whole image edge to edge, print quality, highly detailed.' +
+      'No text, no letters, no names, no numbers, no people, no photo inside. Flat front view, the frame fills the whole image edge to edge, print quality, highly detailed. ' +
+      'Make it breathtaking: the work of a top luxury stationery designer, refined balanced composition, crisp fine detail, rich true colours, premium materials such as foil, deckled paper or watercolour.' +
       (o.extra ? ' Design direction for this version: ' + o.extra + '.' : '');
   };
   /* cut the green window: the green part that holds the centre (or the biggest green part) becomes transparent */

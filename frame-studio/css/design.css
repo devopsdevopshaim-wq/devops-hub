@@ -168,3 +168,7 @@ label.btn { display: inline-flex; }
 .dz-chk input { width: auto !important; margin-top: 4px; }
 .dz-ap-st { margin: 0; font-weight: 600; color: #1f6b4b; }
 @media (max-width: 420px) { .dz-row2 { grid-template-columns: 1fr; } }
+/* the gallery of AI frames (16 design directions) */
+.dz-aiset { display: grid; gap: 6px; margin: 10px 0; padding: 12px; border-radius: 14px; background: linear-gradient(160deg, rgba(201,164,92,.12), rgba(201,164,92,.03)); border: 1px solid rgba(201,164,92,.35); }
+.dz-aif { display: grid; justify-items: center; gap: 3px; }
+.dz-aif span { font-size: 11px; max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
