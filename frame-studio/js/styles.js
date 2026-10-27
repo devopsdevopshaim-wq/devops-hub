@@ -271,17 +271,43 @@
     x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.86).split(',')[1];
   }
   /* the answer is brought back to the original's shape and size (centre crop), so the frame, the faces and the layout stay where they were */
-  function matchShape(res, orig) {
+  function matchShape(res, orig, trimBottom) {
     var W = orig.naturalWidth, H = orig.naturalHeight, k = Math.min(1, 3000 / Math.max(W, H)); W = Math.round(W * k); H = Math.round(H * k);
-    var s = Math.max(W / res.naturalWidth, H / res.naturalHeight), c = FS.canvas(W, H), x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
-    x.drawImage(res, (W - res.naturalWidth * s) / 2, (H - res.naturalHeight * s) / 2, res.naturalWidth * s, res.naturalHeight * s);
+    /* trimBottom: the free engine may stamp its name in the bottom corner; that strip is left out */
+    var rw = res.naturalWidth, rh = res.naturalHeight * (1 - (trimBottom || 0));
+    var s = Math.max(W / rw, H / rh), c = FS.canvas(W, H), x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+    x.drawImage(res, 0, 0, rw, rh, (W - rw * s) / 2, (H - rh * s) / 2, rw * s, rh * s);
     return new Promise(function (ok) { c.toBlob(function (b) { ok(FS.loadImg(URL.createObjectURL(b))); }, 'image/jpeg', 0.94); });
   }
   /* the engine the AI tab chose ('' = each in turn); FS.restyle uses it unless an engine is passed */
   FS.aiEngine = function (v) { try { if (v !== undefined) localStorage.setItem('fs-ai-engine', v); return localStorage.getItem('fs-ai-engine') || ''; } catch (e) { return v || ''; } };
   FS.restyle = function (p, prompt, engine) { return FS.restyleTry(p, prompt, engine).then(function (im) { return FS.applyAI(p, im); }); };
   /* one AI design of the photo, not applied yet: an image the shape of the original, with .aiSource (who made it) */
+  /* A result that lost the people (the photo had faces, the answer has none, or under half of a group) is never put on the photo:
+     it is asked again, once more from the free engine with a new seed, then from the engine on this computer when it is installed.
+     When every try loses the people, the error is 'lost-people'. */
   FS.restyleTry = function (p, prompt, engine) {
+    if (engine === undefined) engine = FS.aiEngine();
+    var local = FS.localAI && FS.localAI.isReady && FS.localAI.isReady(), plan = [engine];
+    if (engine !== 'local') { plan.push(engine || 'free'); if (local) plan.push('local'); }
+    var orig = FS.img(p.origSrc || p.src);
+    var want = p.faces ? Promise.resolve(p.faces.length) : FS.countFaces ? FS.countFaces(orig).catch(function () { return 0; }) : Promise.resolve(0);
+    return want.then(function (n0) {
+      function go(i) {
+        return restyleOnce(p, prompt, plan[i]).then(function (im) {
+          if (!n0 || !FS.countFaces) return im;
+          return FS.countFaces(im).catch(function () { return n0; }).then(function (n) {
+            if (n >= 1 && (n0 < 3 || n >= n0 * 0.5)) return im;
+            if (window.console) console.warn('AI: the answer lost the people (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
+            if (i + 1 < plan.length) return go(i + 1);
+            throw new Error('lost-people');
+          });
+        });
+      }
+      return go(0);
+    });
+  };
+  function restyleOnce(p, prompt, engine) {
     var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight, src = '';
     if (engine === undefined) engine = FS.aiEngine();
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
@@ -295,7 +321,7 @@
       src = r.source || (engine === 'local' ? 'מקומי' : '');
       var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
       return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
-    }).then(function (res) { return matchShape(res, orig); }).then(function (im) {
+    }).then(function (res) { return matchShape(res, orig, /pollinations/i.test(src) ? 0.06 : 0); }).then(function (im) {
       /* looks that must stay a photograph of the same people: the real faces are laid back in (js/face-keep.js, on this computer) */
       if (!FS.keepFaces || !/very same people|Keep everything else exactly as it is/.test(prompt)) return im;
       return FS.keepFaces(orig, im).then(function (k) { return k || im; }, function () { return im; });
