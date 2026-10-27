@@ -3,9 +3,9 @@
    halachic times. Times and the portion come from Hebcal; every part degrades to plain links when a service does not answer. */
 (function () {
   'use strict';
-  var root = document.getElementById('torah-day');
+  var root = document.getElementById('torah-day'), dockEl = document.getElementById('day-dock');
   if (!root) return;
-  var $ = function (s, r) { return (r || root).querySelector(s); };
+  var $ = function (s, r) { return (r || document).querySelector(s); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem('td-' + k); localStorage.setItem('td-' + k, v); } catch (e) { return null; } }
   function getJSON(url, ms) {
@@ -122,6 +122,16 @@
     return rows;
   }
 
+  // ---------------------------------------------------------------- the live clock (Hebrew and civil date)
+  function tickClock() {
+    var t = document.getElementById('td-time'), d = document.getElementById('td-date'); if (!t) return;
+    var n = new Date();
+    t.textContent = n.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    var heb = ''; try { heb = new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).format(n); } catch (e) { heb = ''; }
+    if (d) d.textContent = 'יום ' + DAYS[n.getDay()] + ' · ' + n.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }) + (heb ? ' · ' + heb : '');
+  }
+  setInterval(tickClock, 1000);
+
   // ---------------------------------------------------------------- render
   var state = { sh: null, times: {}, daf: '' };
   var today = new Date();
@@ -148,7 +158,8 @@
       (sh && sh.link ? '<a href="' + esc(sh.link) + '" target="_blank" rel="noopener">עוד על הפרשה ↗</a>' : '') + '</div>' +
       '</article>';
 
-    var provCard = '<article class="td-card td-proverb"><p class="eyebrow">פתגם יומי · יום ' + DAYS[dow] + '</p><blockquote>' + esc(pv[0]) + '</blockquote><cite>' + esc(pv[1]) + '</cite></article>';
+    var provCard = '<article class="td-card td-proverb"><div class="td-clock" aria-label="השעה עכשיו"><b id="td-time" dir="ltr"></b><span id="td-date"></span></div>' +
+      '<p class="eyebrow">פתגם יומי · יום ' + DAYS[dow] + '</p><blockquote>' + esc(pv[0]) + '</blockquote><cite>' + esc(pv[1]) + '</cite></article>';
 
     var todayRef = aliyah && parseRef(aliyah);
     var commCard = '<article class="td-card td-comm"><p class="eyebrow">פירושים וניסוחים</p><h3>מגדולי המפרשים</h3>' +
@@ -170,21 +181,37 @@
       (dow !== 6 ? '<div class="td-planbar">' + (editing ? '<button type="button" class="td-more" id="td-save">שמירה</button><button type="button" class="td-link" id="td-reset">חזרה לברירת המחדל</button>' : '<button type="button" class="td-more" id="td-editbtn">עריכת סדר היום</button>') + '</div>' : '') +
       '</article>';
 
-    $('#td-grid').innerHTML = '<div class="td-col">' + parshaCard + provCard + '</div><div class="td-col">' + commCard + '</div><div class="td-col">' + planCard + '</div>';
+    var tab = store('dock-tab') === 'comm' ? 'comm' : 'plan';
+    root.innerHTML = '<div class="td-bandgrid">' + parshaCard + provCard + '</div>';
+    if (dockEl) {
+      dockEl.innerHTML = '<div class="dd-inner"><div class="dd-tabs" role="tablist">' +
+        '<button type="button" role="tab" data-t="plan" aria-selected="' + (tab === 'plan') + '">סדר יום</button>' +
+        '<button type="button" role="tab" data-t="comm" aria-selected="' + (tab === 'comm') + '">פירושים וניסוחים</button></div>' +
+        '<div class="dd-pane" data-p="plan"' + (tab === 'plan' ? '' : ' hidden') + '>' + planCard + '</div>' +
+        '<div class="dd-pane" data-p="comm"' + (tab === 'comm' ? '' : ' hidden') + '>' + commCard + '</div></div>';
+      Array.prototype.forEach.call(dockEl.querySelectorAll('.dd-tabs button'), function (b) {
+        b.addEventListener('click', function () {
+          store('dock-tab', b.dataset.t);
+          Array.prototype.forEach.call(dockEl.querySelectorAll('.dd-tabs button'), function (x) { x.setAttribute('aria-selected', String(x === b)); });
+          Array.prototype.forEach.call(dockEl.querySelectorAll('.dd-pane'), function (p) { p.hidden = p.dataset.p !== b.dataset.t; });
+        });
+      });
+    }
+    tickClock();
 
     $('#td-city').addEventListener('change', function (e) { city = e.target.value; store('city', city); load(); });
-    Array.prototype.forEach.call(root.querySelectorAll('.td-rows input[type=checkbox]'), function (cb) {
+    Array.prototype.forEach.call(document.querySelectorAll('.td-rows input[type=checkbox]'), function (cb) {
       cb.addEventListener('change', function () { done[cb.dataset.i] = cb.checked ? 1 : 0; store(key, JSON.stringify(done)); });
     });
-    Array.prototype.forEach.call(root.querySelectorAll('.td-pick .td-more'), function (btn) {
-      btn.addEventListener('click', function () { Array.prototype.forEach.call(root.querySelectorAll('.td-pick .td-more'), function (x) { x.classList.remove('on'); }); btn.classList.add('on'); loadSnips(pr, btn.dataset.v); });
+    Array.prototype.forEach.call(document.querySelectorAll('.td-pick .td-more'), function (btn) {
+      btn.addEventListener('click', function () { Array.prototype.forEach.call(document.querySelectorAll('.td-pick .td-more'), function (x) { x.classList.remove('on'); }); btn.classList.add('on'); loadSnips(pr, btn.dataset.v); });
     });
-    function collect() { return Array.prototype.map.call(root.querySelectorAll('.td-edit'), function (li) { return [$('.e-t', li).value.trim(), $('.e-x', li).value.trim(), $('.e-n', li).value.trim()]; }).filter(function (r) { return r[1]; }); }
+    function collect() { return Array.prototype.map.call(document.querySelectorAll('.td-edit'), function (li) { return [$('.e-t', li).value.trim(), $('.e-x', li).value.trim(), $('.e-n', li).value.trim()]; }).filter(function (r) { return r[1]; }); }
     var eb = $('#td-editbtn'); if (eb) eb.addEventListener('click', function () { if (!custom) store('plan', JSON.stringify(base)); editing = true; render(); });
     var sv = $('#td-save'); if (sv) sv.addEventListener('click', function () { var c = collect(); if (c.length) store('plan', JSON.stringify(c)); editing = false; render(); });
     var rs = $('#td-reset'); if (rs) rs.addEventListener('click', function () { try { localStorage.removeItem('td-plan'); } catch (e) {} editing = false; render(); });
     var ad = $('#td-add'); if (ad) ad.addEventListener('click', function () { var c = collect(); c.push(['', '', '']); store('plan', JSON.stringify(c.length ? c : base)); render(); });
-    Array.prototype.forEach.call(root.querySelectorAll('.e-d'), function (x) { x.addEventListener('click', function () { var li = x.closest('li'), c = collect(); c.splice(Number(li.dataset.i), 1); store('plan', JSON.stringify(c)); render(); }); });
+    Array.prototype.forEach.call(document.querySelectorAll('.e-d'), function (x) { x.addEventListener('click', function () { var li = x.closest('li'), c = collect(); c.splice(Number(li.dataset.i), 1); store('plan', JSON.stringify(c)); render(); }); });
   }
 
   // wording of the commentators on a verse (the portion's first verse, or the first verse of today's reading) and Talmud passages that cite it
@@ -223,11 +250,6 @@
     ]).then(function (r) { state.sh = r[0]; state.times = r[1] || {}; state.daf = r[2] || ''; render(); });
   }
 
-  var shut = store('shut') === '1';
-  root.innerHTML = '<div class="wrap"><header class="sec-head td-head"><div><p class="eyebrow">תורה ויום</p><h2>הפרשה, הפתגם וסדר היום</h2></div><button type="button" class="td-link" id="td-toggle" aria-expanded="' + (!shut) + '">' + (shut ? 'הצגה' : 'הסתרה') + '</button></header><div class="td-grid" id="td-grid"' + (shut ? ' hidden' : '') + '><p class="td-muted">טוען…</p></div></div>';
-  $('#td-toggle').addEventListener('click', function () {
-    shut = !shut; store('shut', shut ? '1' : '0'); $('#td-grid').hidden = shut; this.textContent = shut ? 'הצגה' : 'הסתרה'; this.setAttribute('aria-expanded', String(!shut));
-  });
   render(); // instant: the proverb and the day plan do not need the network
   load();
 })();

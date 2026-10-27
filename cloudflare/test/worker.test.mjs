@@ -39,6 +39,16 @@ check('the plan is kept', r.body.blob === '{"a":1}');
 r = await call({ action: 'ai-vault-set', token, blob: '{"gemini":{"key":"k"}}' });
 r = await call({ action: 'ai-vault-get', token });
 check('the vault is kept', r.body.blob.includes('gemini'));
+// the layout of the portfolio's tabs: public to read, admin only to change
+async function layout(b) { const r = await fetch(URL_ + '/hasadna-layout', { method: 'POST', headers: { Origin: SITE, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(b) }); return { code: r.status, body: await r.json().catch(() => null) }; }
+r = await layout({ action: 'get' });
+check('the layout is readable by anyone', r.code === 200 && r.body.ok === true, r);
+r = await layout({ action: 'save', layout: JSON.stringify({ cats: [{ id: 'web', name: 'אתרים' }], order: {}, moved: {} }), token: 'c'.repeat(48) });
+check('... and cannot be saved without the admin session', r.code === 403, r);
+r = await layout({ action: 'save', token, layout: JSON.stringify({ cats: [{ id: 'web', name: 'אתרים' }, { id: 'mine-1', name: '<b>שלי</b>' }], order: { web: ['a', 'b', 'bad id!'] }, moved: { a: 'mine-1' } }) });
+check('the admin saves a layout (names are cleaned)', r.body.ok === true && r.body.layout.cats[1].name.indexOf('<') < 0, r);
+r = await layout({ action: 'get' });
+check('the saved layout is served', r.body.layout && r.body.layout.cats.length === 2 && r.body.layout.order.web.join() === 'a,b' && r.body.layout.moved.a === 'mine-1', r);
 // a client signs up (no mail provider here: the answer must still come)
 r = await call({ action: 'signup', email: `new.${RUN}@example.com`, name: 'לקוח חדש' }, { ip: '10.3.3.3' });
 check('sign-up works without a mail provider', r.body.ok === true, r);

@@ -223,9 +223,18 @@
         el('h3', {}, [el('a', { class: 'more', href: '#p/' + p.id, text: p.title })])
       ].concat(tabs(c, p, info))),
       foot(p, s),
-      state.admin ? adminStrip(p) : null
+      state.admin ? adminStrip(p) : null,
+      state.edit ? editStrip(p) : null
     ].forEach(function (n) { if (n) c.appendChild(n); });
     fillAddr(c, s);
+    if (state.edit) {
+      c.draggable = true;
+      c.addEventListener('dragstart', function (e) { state.drag = p.id; c.classList.add('dragging'); try { e.dataTransfer.setData('text/plain', p.id); e.dataTransfer.effectAllowed = 'move'; } catch (x) {} });
+      c.addEventListener('dragend', function () { state.drag = null; c.classList.remove('dragging'); });
+      c.addEventListener('dragover', function (e) { if (state.drag && state.drag !== p.id) { e.preventDefault(); c.classList.add('drop'); } });
+      c.addEventListener('dragleave', function () { c.classList.remove('drop'); });
+      c.addEventListener('drop', function (e) { e.preventDefault(); c.classList.remove('drop'); dropOn(p.id); });
+    }
     c.addEventListener('pointermove', function (e) {
       var r = c.getBoundingClientRect();
       c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
@@ -252,6 +261,10 @@
     var list = state.data.projects.filter(matches);
     if (state.sort === 'az') list.sort(function (a, b) { return a.title.localeCompare(b.title, 'he'); });
     else if (state.sort === 'popular') list.sort(function (a, b) { return (state.opens[b.id] || 0) - (state.opens[a.id] || 0); });
+    else if (state.data.layout && state.data.layout.cats && state.data.layout.cats.length) {
+      var keys = catKeys(), pos = {}; keys.forEach(function (k) { ordered(k).forEach(function (p, i) { pos[p.id] = i; }); });
+      list = list.map(function (p, i) { return [p, i]; }).sort(function (a, b) { return (state.cat === 'all' ? keys.indexOf(a[0].category) - keys.indexOf(b[0].category) : 0) || (pos[a[0].id] - pos[b[0].id]) || (a[1] - b[1]); }).map(function (x) { return x[0]; });
+    }
     grid.replaceChildren.apply(grid, list.map(card));
     if (!list.length) grid.appendChild(el('p', { class: 'empty', text: 'אין פרויקט שמתאים לסינון. נסו לנקות אותו.' }));
     syncFilters();
@@ -291,6 +304,7 @@
 
   function renderFeatured() {
     var box = document.getElementById('featured-list');
+    if (!box) return;
     var list = state.data.projects.filter(function (p) { return p.featured; }).slice(0, 3);
     box.replaceChildren.apply(box, list.map(function (p, i) {
       var s = status(p);
@@ -407,30 +421,164 @@
     render();
   }
 
+  // ---------- tabs (the domains) in the left column, and the admin's tools for arranging them ----------
+  var layoutApi = '', saveTimer = null, saveMsg = null;
+  function catKeys() { return state.data.catOrder || Object.keys(state.data.categories); }
+  function catCounts() { var c = {}; state.data.projects.forEach(function (p) { c[p.category] = (c[p.category] || 0) + 1; }); return c; }
+
   function renderTiles() {
-    var cats = state.data.categories;
-    var counts = {};
-    state.data.projects.forEach(function (p) { counts[p.category] = (counts[p.category] || 0) + 1; });
+    var cats = state.data.categories, counts = catCounts();
     var box = document.getElementById('tiles');
-    var keys = ['all'].concat(Object.keys(cats).filter(function (k) { return counts[k]; }));
+    box.replaceChildren();
+    var keys = ['all'].concat(catKeys().filter(function (k) { return cats[k] && (counts[k] || state.edit); }));
     keys.forEach(function (k, i) {
-      var t = el('button', {
-        class: 'tile reveal ' + (k === 'all' ? 'all' : 'cat-' + k), type: 'button', role: 'tab',
-        'aria-selected': String(k === state.cat), 'data-cat': k, style: '--rd:' + i * 60 + 'ms'
+      var t = el('div', {
+        class: 'tile ' + (k === 'all' ? 'all' : 'cat-' + k), role: 'tab', tabindex: '0',
+        'aria-selected': String(k === state.cat), 'data-cat': k
       }, [
-        el('span', { html: art(k === 'all' ? 'web' : k) }),
-        el('span', {}, [
+        el('span', { class: 'tile-art', html: art(k === 'all' ? 'web' : k) }),
+        el('span', { class: 'tile-txt' }, [
           el('b', { text: k === 'all' ? 'הכול' : cats[k] }),
-          el('small', { text: (k === 'all' ? state.data.projects.length : counts[k]) + ' פרויקטים' })
+          el('small', { text: (k === 'all' ? state.data.projects.length : (counts[k] || 0)) + ' פרויקטים' })
         ])
       ]);
-      t.addEventListener('click', function () {
-        selectCat(k);
-        document.getElementById('all').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
-      });
+      function go() { selectCat(k); if (window.matchMedia('(max-width: 1000px)').matches) document.getElementById('all').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' }); }
+      t.addEventListener('click', function (e) { if (!e.target.closest('.tile-tools')) go(); });
+      t.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('.tile-tools')) { e.preventDefault(); go(); } });
+      if (state.edit && k !== 'all') {
+        var tools = el('span', { class: 'tile-tools' });
+        [['▲', 'הזזה למעלה', function () { moveCat(k, -1); }], ['▼', 'הזזה למטה', function () { moveCat(k, 1); }], ['✎', 'שינוי שם', function () { renameCat(k); }], ['✕', 'מחיקת הלשונית', function () { deleteCat(k); }]]
+          .forEach(function (d) { var bt = el('button', { type: 'button', title: d[1], 'aria-label': d[1], text: d[0] }); bt.addEventListener('click', d[2]); tools.appendChild(bt); });
+        t.appendChild(tools);
+      }
+      // a card dropped on a tab moves to that tab (admin editing only)
+      if (state.edit && k !== 'all') {
+        t.addEventListener('dragover', function (e) { if (state.drag) { e.preventDefault(); t.classList.add('drop'); } });
+        t.addEventListener('dragleave', function () { t.classList.remove('drop'); });
+        t.addEventListener('drop', function (e) { e.preventDefault(); t.classList.remove('drop'); if (state.drag) moveCard(state.drag, k); });
+      }
       box.appendChild(t);
     });
-    observe(box.querySelectorAll('.reveal'));
+    var head = document.getElementById('cats-tools');
+    if (head) {
+      head.replaceChildren();
+      if (state.isAdmin) {
+        var eb = el('button', { type: 'button', class: 'cats-edit' + (state.edit ? ' on' : ''), text: state.edit ? '✓ סיום עריכה' : '✎ עריכת תחומים וסדר' });
+        eb.addEventListener('click', function () { state.edit = !state.edit; document.documentElement.classList.toggle('layout-edit', state.edit); renderTiles(); render(); });
+        head.appendChild(eb);
+        if (state.edit) {
+          var add = el('button', { type: 'button', class: 'cats-add', text: '+ לשונית חדשה' });
+          add.addEventListener('click', addCat);
+          var rs = el('button', { type: 'button', class: 'cats-reset', text: 'איפוס לסדר המקורי' });
+          rs.addEventListener('click', resetLayout);
+          saveMsg = el('small', { class: 'cats-msg', 'aria-live': 'polite' });
+          head.append(add, rs, saveMsg);
+        }
+      }
+    }
+  }
+
+  // The working copy of the arrangement: tabs in order, the order of the sites inside each tab, and sites moved to another tab.
+  function currentLayout() {
+    var L = { cats: [], order: {}, moved: {} };
+    catKeys().forEach(function (k) { if (state.data.categories[k]) L.cats.push({ id: k, name: state.data.categories[k] }); });
+    state.data.allProjects.forEach(function (p) { if (p.category !== p.origCategory) L.moved[p.id] = p.category; });
+    L.cats.forEach(function (c) { L.order[c.id] = ordered(c.id).map(function (p) { return p.id; }); });
+    return L;
+  }
+  function ordered(cat) {
+    var list = state.data.allProjects.filter(function (p) { return p.category === cat; });
+    var o = (state.data.layout && state.data.layout.order && state.data.layout.order[cat]) || [];
+    return list.map(function (p, i) { return [p, i]; }).sort(function (a, b) {
+      var x = o.indexOf(a[0].id), y = o.indexOf(b[0].id);
+      x = x < 0 ? 1e6 + a[1] : x; y = y < 0 ? 1e6 + b[1] : y; return x - y;
+    }).map(function (a) { return a[0]; });
+  }
+  function commit(msg) {
+    var L = currentLayout();
+    state.data.layout = L;
+    var vis = {}; state.data.projects.forEach(function (p) { vis[p.id] = 1; });
+    state.data.projects = state.data.allProjects.filter(function (p) { return vis[p.id]; });
+    if (!state.data.categories[state.cat] && state.cat !== 'all') state.cat = 'all';
+    fillCatSelect(); renderTiles(); render();
+    if (saveMsg) saveMsg.textContent = 'שומר…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      var b = new URLSearchParams({ action: 'save', token: window.HasadnaAuth ? window.HasadnaAuth.token() : '', layout: JSON.stringify(L) });
+      fetch(layoutApi, { method: 'POST', body: b }).then(function (r) { return r.json(); }).then(function (j) {
+        if (saveMsg) saveMsg.textContent = j && j.ok ? '✓ נשמר ומופיע לכולם' : 'לא נשמר (' + (j && j.error || 'שגיאה') + ')';
+      }).catch(function () { if (saveMsg) saveMsg.textContent = 'לא נשמר: אין חיבור לשרת'; });
+    }, 500);
+  }
+  function moveCat(k, d) {
+    var keys = catKeys().slice(), i = keys.indexOf(k), j = i + d;
+    if (j < 0 || j >= keys.length) return;
+    keys.splice(i, 1); keys.splice(j, 0, k);
+    state.data.catOrder = keys; commit();
+  }
+  function renameCat(k) {
+    var n = prompt('שם חדש ללשונית:', state.data.categories[k]);
+    if (!n || !n.trim()) return;
+    state.data.categories[k] = n.trim().slice(0, 40); commit();
+  }
+  function addCat() {
+    var n = prompt('שם הלשונית החדשה:');
+    if (!n || !n.trim()) return;
+    var id = 'c-' + Date.now().toString(36);
+    state.data.categories[id] = n.trim().slice(0, 40);
+    state.data.catOrder = catKeys().concat(id); commit();
+  }
+  function deleteCat(k) {
+    var keys = catKeys().filter(function (x) { return x !== k; });
+    if (!keys.length) { alert('חייבת להישאר לפחות לשונית אחת.'); return; }
+    var target = keys.indexOf('other') >= 0 ? 'other' : keys[0];
+    var n = state.data.allProjects.filter(function (p) { return p.category === k; }).length;
+    if (!confirm('למחוק את הלשונית "' + state.data.categories[k] + '"?' + (n ? '\n' + n + ' אתרים יעברו ללשונית "' + state.data.categories[target] + '".' : ''))) return;
+    state.data.allProjects.forEach(function (p) { if (p.category === k) p.category = target; });
+    delete state.data.categories[k]; state.data.catOrder = keys; commit();
+  }
+  function moveCard(id, cat) {
+    var p = state.data.allProjects.filter(function (x) { return x.id === id; })[0];
+    if (!p || p.category === cat) return;
+    p.category = cat;
+    var L = state.data.layout || { order: {} }; L.order = L.order || {};
+    Object.keys(L.order).forEach(function (c) { L.order[c] = (L.order[c] || []).filter(function (x) { return x !== id; }); });
+    L.order[cat] = (L.order[cat] || ordered(cat).map(function (x) { return x.id; })).filter(function (x) { return x !== id; }).concat(id);
+    state.data.layout = L; commit();
+  }
+  function shiftCard(id, d) {
+    var p = state.data.allProjects.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+    var ids = ordered(p.category).map(function (x) { return x.id; }), i = ids.indexOf(id), j = i + d;
+    if (j < 0 || j >= ids.length) return;
+    ids.splice(i, 1); ids.splice(j, 0, id);
+    var L = state.data.layout || { order: {} }; L.order = L.order || {}; L.order[p.category] = ids;
+    state.data.layout = L; commit();
+  }
+  function dropOn(targetId) {
+    var d = state.drag; if (!d || d === targetId) return;
+    var a = state.data.allProjects.filter(function (x) { return x.id === d; })[0], b = state.data.allProjects.filter(function (x) { return x.id === targetId; })[0];
+    if (!a || !b) return;
+    if (a.category !== b.category) { moveCard(d, b.category); }
+    var ids = ordered(b.category).map(function (x) { return x.id; }).filter(function (x) { return x !== d; });
+    ids.splice(ids.indexOf(targetId), 0, d);
+    var L = state.data.layout || { order: {} }; L.order = L.order || {}; L.order[b.category] = ids;
+    state.data.layout = L; commit();
+  }
+  function resetLayout() {
+    if (!confirm('לאפס את הלשוניות והסדר לברירת המחדל מהקובץ?')) return;
+    state.data.categories = Object.assign({}, state.data.baseCategories); state.data.catOrder = Object.keys(state.data.baseCategories);
+    state.data.allProjects.forEach(function (p) { p.category = p.origCategory; });
+    state.data.layout = { cats: [], order: {}, moved: {} };
+    commit();
+  }
+  function editStrip(p) {
+    var cats = state.data.categories;
+    var sel = el('select', { 'aria-label': 'העברה ללשונית' }, catKeys().filter(function (k) { return cats[k]; }).map(function (k) { return el('option', { value: k, text: cats[k] }); }));
+    sel.value = p.category;
+    sel.addEventListener('change', function () { moveCard(p.id, sel.value); });
+    var l = el('button', { type: 'button', title: 'קודם', 'aria-label': 'הזזה אחורה', text: '▶' }), r = el('button', { type: 'button', title: 'אחרי', 'aria-label': 'הזזה קדימה', text: '◀' });
+    l.addEventListener('click', function () { shiftCard(p.id, -1); }); r.addEventListener('click', function () { shiftCard(p.id, 1); });
+    return el('div', { class: 'edit-strip', 'aria-label': 'סידור האתר' }, [el('span', { class: 'grip', title: 'אפשר גם לגרור', text: '⠿' }), l, r, sel]);
   }
 
   // ---------- orbit ----------
@@ -761,7 +909,13 @@
   Promise.all([
     fetch('projects.json').then(function (r) { return r.json(); }),
     fetch('shots/index.json').then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }),
-    window.HasadnaAuth ? window.HasadnaAuth.ready : Promise.resolve({ role: 'admin', sites: 'all' })
+    window.HasadnaAuth ? window.HasadnaAuth.ready : Promise.resolve({ role: 'admin', sites: 'all' }),
+    // how the admin arranged the tabs and cards (kept on the Cloudflare server); the page works without it
+    fetch('api.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (cfg) {
+      if (!cfg || !/^https:\/\//.test(cfg.base || '')) return null;
+      layoutApi = cfg.base.replace(/\/$/, '') + '/hasadna-layout';
+      return Promise.race([fetch(layoutApi, { method: 'POST', body: new URLSearchParams({ action: 'get' }) }).then(function (r) { return r.json(); }), new Promise(function (ok) { setTimeout(function () { ok(null); }, 6000); })]).then(function (j) { return j && j.layout || null; });
+    }).catch(function () { return null; })
   ])
     .then(function (res) {
       var data = res[0];
@@ -785,12 +939,24 @@
       data.allProjects = data.projects;
       var gone = state.admin ? removedIds() : {};
       data.projects = data.projects.filter(function (p) { return !p.hidden && !p.pending && !gone[p.id]; });
+      // the admin's arrangement: tabs in their order, sites moved between tabs, and the order inside a tab
+      data.baseCategories = Object.assign({}, data.categories);
+      data.catOrder = Object.keys(data.categories);
+      data.allProjects.forEach(function (p) { p.origCategory = p.category; });
+      var L = res[3];
+      if (L && L.cats && L.cats.length) {
+        var cats = {}; L.cats.forEach(function (c) { cats[c.id] = c.name; });
+        data.categories = cats; data.catOrder = L.cats.map(function (c) { return c.id; });
+        var fallback = cats.other ? 'other' : data.catOrder[0];
+        data.allProjects.forEach(function (p) { var c = (L.moved && L.moved[p.id]) || p.category; p.category = cats[c] ? c : fallback; });
+        data.layout = L;
+      }
+      state.isAdmin = !!(who && who.role === 'admin' && !who.open && !/[?&]view=client\b/.test(location.search) && layoutApi);
       state.data = data;
       fillCatSelect();
       document.getElementById('gh-link').href = 'https://github.com/' + data.owner;
       document.getElementById('gh-top').href = 'https://github.com/' + data.owner;
       renderOrbit();
-      renderFeatured();
       renderTiles();
       render();
       loadRepos(data.owner);
