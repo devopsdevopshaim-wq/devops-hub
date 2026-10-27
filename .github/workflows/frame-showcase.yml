@@ -22,10 +22,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      # Playwright in a folder of its own (the repository's root package.json has unrelated dev dependencies)
+      - name: Install Playwright
+        run: |
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null && npm i playwright@1.48.2 && npx playwright install --with-deps chromium
+          cp "$GITHUB_WORKSPACE/.github/scripts/frame-showcase.mjs" "$RUNNER_TEMP/pw/"
       - name: Serve the studio
         run: (cd frame-studio && python3 -m http.server 8099 >/dev/null 2>&1 &) && sleep 2
-      - run: node .github/scripts/frame-showcase.mjs "$RUNNER_TEMP/show" "${{ github.event.inputs.shapes || 'portrait' }}"
+      - run: node "$RUNNER_TEMP/pw/frame-showcase.mjs" "$RUNNER_TEMP/show" "${{ github.event.inputs.shapes || 'portrait' }}"
       - name: Push to ci-frame-showcase
         if: always()
         run: |
