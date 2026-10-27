@@ -262,7 +262,7 @@
         '<p class="gate-sent" id="gate-info" role="status" hidden></p>' +
         '<p class="add-error" id="gate-err" role="alert"' + (msg ? '' : ' hidden') + '>' + (msg || '') + '</p>' +
         '<div class="gate-promo">' +
-          '<p class="gate-promo-title">סרטון התדמית · 1:58</p>' +
+          '<p class="gate-promo-title">הדמיה של האתר · 1:19</p>' +
           '<div class="gate-promo-btns">' +
             '<button class="g-btn ghost" type="button" data-promo="he">▶ עברית</button>' +
             '<button class="g-btn ghost" type="button" data-promo="en" lang="en" dir="ltr">▶ English</button>' +
@@ -279,8 +279,8 @@
       b.addEventListener('click', function () {
         var l = b.getAttribute('data-promo');
         g.querySelectorAll('[data-promo]').forEach(function (x) { x.classList.toggle('on', x === b); });
-        vid.poster = 'videos/spider-promo-' + l + '.jpg';
-        vid.src = 'videos/spider-promo-' + l + '.mp4';
+        vid.poster = 'videos/site-demo-' + l + '.jpg';
+        vid.src = 'videos/site-demo-' + l + '.mp4';
         vid.hidden = false;
         var p = vid.play(); if (p && p.catch) p.catch(function () {});
       });

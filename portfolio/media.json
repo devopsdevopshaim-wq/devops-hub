@@ -1,29 +1,20 @@
 {
  "music": [],
- "videos": [
+ "videos": [],
+ "showreel": [
   {
-   "title": "הדמיה של האתר — לאינסטגרם וללינקדין",
+   "lang": "he",
+   "title": "הדמיה של האתר",
    "url": "videos/site-demo-he.mp4",
    "poster": "videos/site-demo-he.jpg",
-   "desc": "סיור באתר: הפרשה, התחומים, מאיה, הניהול והמוזיקה. 4:5, 1:19, כתוביות בעברית."
+   "desc": "סיור באתר: הפרשה, התחומים, מאיה, הניהול והמוזיקה. 1:19 דקות, כתוביות בעברית."
   },
   {
-   "title": "Site demo — for Instagram and LinkedIn",
+   "lang": "en",
+   "title": "Site demo",
    "url": "videos/site-demo-en.mp4",
    "poster": "videos/site-demo-en.jpg",
-   "desc": "A tour of the site: the weekly portion, domains, Maya, admin and music. 4:5, 1:19, English captions."
-  },
-  {
-   "title": "סרטון תדמית — SPIDER",
-   "url": "videos/spider-promo-he.mp4",
-   "poster": "videos/spider-promo-he.jpg",
-   "desc": "הרשת: 48 פרויקטים, סוכני AI, הנדסה וכלים ליומיום. ‏1:58."
-  },
-  {
-   "title": "SPIDER — Promo video (English)",
-   "url": "videos/spider-promo-en.mp4",
-   "poster": "videos/spider-promo-en.jpg",
-   "desc": "The web: 48 real projects, from AI agents to engineering. English narration and captions. 1:58."
+   "desc": "A tour of the site: the weekly portion, domains, Maya, admin and music. 1:19, with English narration."
   }
  ]
 }

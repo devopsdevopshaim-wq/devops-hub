@@ -5,6 +5,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'src'); BUILD = os.path.join(ROOT, 'build')
 V2 = os.path.join(ROOT, '..', 'spider-promo', 'v2'); IG = os.path.join(ROOT, '..', 'spider-promo-ig')
 W, H = 1080, 1350
+COUNTS = json.load(open(os.path.join(ROOT, 'data', 'counts.json')))
+NP, ND = COUNTS['projects'], COUNTS['domains']
+ONES = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen']
+TENS = {2:'twenty',3:'thirty',4:'forty',5:'fifty',6:'sixty',7:'seventy',8:'eighty',9:'ninety'}
+def words_en(n): return ONES[n] if n < 20 else TENS[n // 10] + ('' if n % 10 == 0 else '-' + ONES[n % 10])
+HE_ND = {7:'שבעה', 8:'שמונה', 9:'תשעה', 10:'עשרה'}.get(ND, str(ND))
 SX, SY, SW = 35, 432, 1010            # the screen inside the window frame (4:3 recording scaled to 1010 wide)
 SH = round(SW * 0.75)                 # 758
 K = SW / 1280                         # page px -> film px
@@ -26,7 +32,7 @@ SCENES = [
       ('clock', 0.7, 2.6, 470, 150, 'שעון, תאריך ופתגם יומי', 'Clock, date and a daily proverb')]),
  dict(id='domains', n=2, dur=10.5, push=(1.0, 1.1, 0.12, 0.35),
   he_eye='תחומים', en_eye='DOMAINS',
-  he_t='תשעה תחומים. 52 פרויקטים.', en_t='Nine domains. 52 projects.',
+  he_t=f'{HE_ND} תחומים. {NP} פרויקטים.', en_t=f'{words_en(ND).capitalize()} domains. {NP} projects.',
   he_s='פותחים את הרשימה, בוחרים תחום, והכול מסתדר.', en_s='Open the list, pick a domain, and everything falls into place.',
   co=[('open', 0.6, 2.2, 150, 160, 'כל התחומים בלחיצה', 'Every domain, one click'),
       ('ai', 0.9, 2.0, 540, 190, 'סוכני AI', 'AI agents'),
@@ -178,7 +184,7 @@ tl.fromTo('#grain', {{ x: 0, y: 0 }}, {{ x: -160, y: 110, duration: TOTAL, ease:
 tl.fromTo('#prog', {{ width: '0%' }}, {{ width: '100%', duration: TOTAL, ease: 'none' }}, 0);
 // hook: the number counts up, then the line rises
 const cnt = {{ v: 0 }};
-tl.to(cnt, {{ v: 52, duration: 2.0, ease: 'power3.out', onUpdate: () => {{ document.getElementById('num').textContent = Math.round(cnt.v); }} }}, 0.25);
+tl.to(cnt, {{ v: {NP}, duration: 2.0, ease: 'power3.out', onUpdate: () => {{ document.getElementById('num').textContent = Math.round(cnt.v); }} }}, 0.25);
 tl.fromTo('#num', {{ scale: 0.84, opacity: 0, filter: 'blur(18px)' }}, {{ scale: 1, opacity: 1, filter: 'blur(0px)', duration: 1.3, ease: 'power3.out' }}, 0.1);
 tl.fromTo('.n2w', {{ yPercent: 115 }}, {{ yPercent: 0, duration: 0.9, ease: 'power4.out', stagger: 0.14 }}, 1.5);
 tl.fromTo('#hs', {{ y: 24, opacity: 0 }}, {{ y: 0, opacity: 1, duration: 0.9, ease: 'power3.out' }}, 2.3);
@@ -230,7 +236,8 @@ window.__timelines['main'] = tl;
 <body>
 <div id="root" data-composition-id="main" data-start="0" data-width="{W}" data-height="{H}" data-duration="{total}">
 {body}
-<audio id="bgm" src="assets/bgm/score.m4a" data-start="0" data-duration="{total}" data-track-index="30" data-volume="0.9"></audio>
+<audio id="bgm" src="assets/bgm/score.m4a" data-start="0" data-duration="{total}" data-track-index="30" data-volume="{0.9 if he else 0.42}"></audio>
+{'' if he else f'<audio id="vo" src="assets/bgm/vo.wav" data-start="0" data-duration="{total}" data-track-index="31" data-volume="1"></audio>'}
 </div>
 <script>
 {js}
@@ -241,6 +248,19 @@ window.__timelines['main'] = tl;
     open(os.path.join(out, 'index.html'), 'w').write(html)
     # music: the film's own score, cut to length with a gentle ending
     subprocess.check_call(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(IG, 'assets/bgm/score-v2-he.m4a'), '-t', str(total), '-af', f'afade=t=in:d=1.2,afade=t=out:st={total-3.2}:d=3.2', '-c:a', 'aac', '-b:a', '192k', os.path.join(out, 'assets/bgm/score.m4a')])
+    if not he:
+        import sys; sys.path.insert(0, os.path.dirname(__file__)); import vo
+        N, D = words_en(NP).capitalize(), words_en(ND)
+        say = {'overview': 'One hover shows the weekly portion, the Shabbat times, and a proverb for the day.',
+               'domains': f'{D.capitalize()} domains, {words_en(NP)} projects. Open the list, pick one, and everything falls into place.',
+               'plan': 'A daily plan with the current hour highlighted, and commentary from Rashi, Ramban, Ibn Ezra and more, straight from the source.',
+               'maya': 'Maya is an AI assistant. Ask in plain language, get an answer at any hour, and book a call with Haim.',
+               'admin': 'The admin arranges the tabs and the sites, and everyone sees it instantly.',
+               'rail': 'Music, live headlines and accessibility are always at hand.'}
+        lines = [(1.3, HOOK - 1.6, f'{N} projects. One site.')]
+        for sc in plan: lines.append((sc['start'] + 0.9, sc['dur'] - 1.5, say[sc['id']]))
+        lines.append((cta_start + 0.8, CTA - 1.4, 'Come and see the site. The link is in the bio. Haim Krispin.'))
+        vo.build(lines, total, os.path.join(out, 'assets/bgm/vo.wav'))
     json.dump({'name': f'site-demo-{lang}', 'private': True, 'type': 'module', 'scripts': {'check': 'npx --yes hyperframes check', 'render': 'npx --yes hyperframes render'}}, open(os.path.join(out, 'package.json'), 'w'))
     json.dump({'id': f'site-demo-{lang}', 'name': f'site-demo-{lang}'}, open(os.path.join(out, 'meta.json'), 'w'))
     shutil.copy(os.path.join(IG, 'hyperframes.json'), os.path.join(out, 'hyperframes.json'))

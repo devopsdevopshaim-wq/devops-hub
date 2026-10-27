@@ -29,14 +29,14 @@
 <link rel="stylesheet" href="css/torah-day.css?v=6">
 <link rel="stylesheet" href="css/auth.css">
 <link rel="stylesheet" href="css/welcome.css">
-<link rel="stylesheet" href="css/mail.css">
+<link rel="stylesheet" href="css/mail.css?v=2">
 <script src="js/auth.js"></script>
 <link rel="preload" as="image" href="img/sky.webp" type="image/webp">
 <script src="js/track.js" defer></script>
 <link rel="stylesheet" href="css/mobile.css">
 <link rel="stylesheet" href="css/future.css">
 <link rel="stylesheet" href="css/rail.css">
-<link rel="stylesheet" href="css/shell.css?v=8">
+<link rel="stylesheet" href="css/shell.css?v=11">
 <script src="js/future.js" defer></script>
 </head>
 <body class="has-scene">
@@ -64,6 +64,26 @@
 </header>
 
 <main id="top" class="shell">
+
+      <figure class="orbit" id="orbit">
+        <svg id="orbit-svg" viewBox="-265 -160 530 320" role="img" aria-label="מפת כל הפרויקטים">
+          <defs>
+            <radialGradient id="core-fill" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#3a3280" stop-opacity=".5"/><stop offset="1" stop-color="#17143a" stop-opacity=".58"/></radialGradient>
+            <radialGradient id="core-glow"><stop offset="0" stop-color="#8b7bff" stop-opacity=".45"/><stop offset="1" stop-color="#8b7bff" stop-opacity="0"/></radialGradient>
+          </defs>
+          <g id="orbit-core" aria-hidden="true">
+            <circle r="120" fill="url(#core-glow)"/>
+            <circle r="66" fill="url(#core-fill)" stroke="rgba(224,178,90,.55)" stroke-width="1.2"/>
+            <circle r="76" fill="none" stroke="rgba(139,123,255,.18)" stroke-width="8"/>
+            <text class="core-num" id="core-num" y="10" text-anchor="middle">0</text>
+            <text class="core-label" y="34" text-anchor="middle">פרויקטים</text>
+          </g>
+        </svg>
+        <div class="orbit-tip" id="orbit-tip" hidden></div>
+        <figcaption><span class="hand">כל נקודה היא פרויקט אמיתי</span> רחפו לראות שם, לחצו כדי לקפוץ אליו.</figcaption>
+      </figure>
+
+  <section id="reel" class="reel" aria-label="הדמיה של האתר" hidden></section>
   <aside id="day-dock" class="day-dock" aria-label="סדר יום ופירושים"></aside>
   <section id="torah-day" class="td-band" aria-label="פרשת השבוע, פתגם יומי ושעון"></section>
 
@@ -81,23 +101,6 @@
         <dl class="stats rise" style="--d:4" id="stats"></dl>
       </div>
 
-      <figure class="orbit rise" style="--d:2" id="orbit">
-        <svg id="orbit-svg" viewBox="-265 -160 530 320" role="img" aria-label="מפת כל הפרויקטים">
-          <defs>
-            <radialGradient id="core-fill" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#3a3280" stop-opacity=".5"/><stop offset="1" stop-color="#17143a" stop-opacity=".58"/></radialGradient>
-            <radialGradient id="core-glow"><stop offset="0" stop-color="#8b7bff" stop-opacity=".45"/><stop offset="1" stop-color="#8b7bff" stop-opacity="0"/></radialGradient>
-          </defs>
-          <g id="orbit-core" aria-hidden="true">
-            <circle r="120" fill="url(#core-glow)"/>
-            <circle r="66" fill="url(#core-fill)" stroke="rgba(224,178,90,.55)" stroke-width="1.2"/>
-            <circle r="76" fill="none" stroke="rgba(139,123,255,.18)" stroke-width="8"/>
-            <text class="core-num" id="core-num" y="10" text-anchor="middle">0</text>
-            <text class="core-label" y="34" text-anchor="middle">פרויקטים</text>
-          </g>
-        </svg>
-        <div class="orbit-tip" id="orbit-tip" hidden></div>
-        <figcaption><span class="hand">כל נקודה היא פרויקט אמיתי</span> רחפו לראות שם, לחצו כדי לקפוץ אליו.</figcaption>
-      </figure>
     </div>
   </section>
 
@@ -257,6 +260,7 @@
 <script src="js/heygen.js?v=lite4" defer></script>
 <script src="js/torah-day.js?v=7" defer></script>
 <script src="js/ticker.js?v=1" defer></script>
+<script src="js/showreel.js?v=1" defer></script>
 <script src="js/app.js?v=shell3"></script>
 <script src="js/welcome.js" defer></script>
 <script src="js/orbit-fx.js" defer></script>
