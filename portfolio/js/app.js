@@ -446,7 +446,7 @@
           el('small', { text: (k === 'all' ? state.data.projects.length : (counts[k] || 0)) + ' פרויקטים' })
         ])
       ]);
-      function go() { selectCat(k); if (window.matchMedia('(max-width: 1000px)').matches) document.getElementById('all').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' }); }
+      function go() { selectCat(k); var all = document.getElementById('all'); if (all && all.getBoundingClientRect().top > window.innerHeight * 0.55) all.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' }); }
       t.addEventListener('click', function (e) { if (!e.target.closest('.tile-tools')) go(); });
       t.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('.tile-tools')) { e.preventDefault(); go(); } });
       if (state.edit && k !== 'all') {

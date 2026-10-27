@@ -27,7 +27,7 @@
   function urlRef(ref) { return SEF + '/' + encodeURIComponent(String(ref).trim().replace(/ (\d)/, '.$1').replace(/:/g, '.').replace(/ /g, '_')).replace(/%2E/g, '.').replace(/%2C/g, ','); }
   var COMM = [
     ['רש״י', 'Rashi on '], ['רמב״ן', 'Ramban on '], ['אבן עזרא', 'Ibn Ezra on '], ['ספורנו', 'Sforno on '], ['אור החיים', 'Or HaChaim on '], ['כלי יקר', 'Kli Yakar on '],
-    ['רשב״ם', 'Rashbam on '], ['חזקוני', 'Chizkuni, '], ['בעל הטורים', 'Baal HaTurim on '], ['רבנו בחיי', 'Rabbeinu Bahya, '], ['אונקלוס', 'Onkelos ']
+    ['רשב״ם', 'Rashbam on '], ['חזקוני', 'Chizkuni, '], ['רבנו בחיי', 'Rabbeinu Bahya, '], ['אונקלוס', 'Onkelos ']
   ];
   var BOOKS_HE = { Genesis: 'Bereshit', Exodus: 'Shemot', Leviticus: 'Vayikra', Numbers: 'Bamidbar', Deuteronomy: 'Devarim' };
   function commRef(c, book, ref) { return c[1] + (c[1].indexOf('Bahya') >= 0 ? (BOOKS_HE[book] || book) : book) + ' ' + ref; }
@@ -36,7 +36,8 @@
   function sefText(ref) {
     return getJSON(SEF + '/api/v3/texts/' + encodeURIComponent(ref) + '?version=hebrew', 10000).then(function (j) {
       var v = (j.versions || [])[0]; var parts = v ? flat(v.text) : [];
-      return { heRef: j.heRef || '', text: parts.length ? plain(parts[0]) : '' };
+      var texts = parts.map(plain).filter(Boolean), pick = texts.filter(function (t) { return t.length >= 70; })[0] || texts[0] || '';
+      return { heRef: j.heRef || '', text: pick };
     });
   }
 
@@ -55,6 +56,8 @@
     });
   }
 
+  var BOOK_HE = { Genesis: 'בראשית', Exodus: 'שמות', Leviticus: 'ויקרא', Numbers: 'במדבר', Deuteronomy: 'דברים' };
+  function heRef(r) { return String(r || '').replace(/^(Genesis|Exodus|Leviticus|Numbers|Deuteronomy)/, function (b) { return BOOK_HE[b]; }).replace(/-/g, ' – '); }
   function parseRef(ref) { // "Genesis 1:1-6:8" -> { book, start }
     var m = /^(.+?) (\d+:\d+)/.exec(ref || ''); return m ? { book: m[1], start: m[2], whole: ref } : null;
   }
@@ -159,7 +162,7 @@
       '<p class="eyebrow">פרשת השבוע</p>' +
       '<h3>' + esc(sh ? sh.parsha.replace(/^פרשת\s*/, '') : 'פרשת השבוע') + '</h3>' +
       '<p class="td-heb">' + esc((function () { try { return new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).format(today); } catch (e) { return ''; } })()) + '</p>' +
-      (ref ? '<p class="td-ref">' + esc(ref.replace(/-/g, ' – ')) + '</p>' : '') +
+      (ref ? '<p class="td-ref">' + esc(heRef(ref)) + '</p>' : '') +
       '<div class="td-times">' +
         '<div><span>כניסת שבת</span><b>' + (sh && sh.candles ? fmtTime(sh.candles) : '—') + '</b></div>' +
         '<div><span>יציאת שבת</span><b>' + (sh && sh.havdalah ? fmtTime(sh.havdalah) : '—') + '</b></div>' +
@@ -181,7 +184,7 @@
         '</div><div class="td-snips" id="td-snips" aria-live="polite"></div>' : '<p class="td-muted">הפרשה עוד לא נטענה. נסו לרענן.</p>') +
       '</article>';
 
-    var base = planFor(today, Object.assign({}, state.times, { candles: sh && sh.candles }), state.daf, aliyah ? aliyah.replace(/-/g, ' – ') : '');
+    var base = planFor(today, Object.assign({}, state.times, { candles: sh && sh.candles }), state.daf, aliyah ? heRef(aliyah) : '');
     var custom = dow !== 6 ? customPlan() : null;
     var rows = custom || base;
     var key = 'done-' + ymd(today), done = {}; try { done = JSON.parse(store(key) || '{}') || {}; } catch (e) { done = {}; }
