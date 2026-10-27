@@ -35,6 +35,10 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## Before|after tiles never go black; the AI's before|after in its own column (Oct 27, v65)
+- The edit screen showed black boxes: a rebuilt grid (`keepCanvases`/`reuse`, and `refreshTile`) put back the tile's first canvas straight into the new tile and kept its signature, so `drawTile` skipped the before|after pair. Now `drawn(el)` keeps either the whole `.mt-ba` pair (only once its "after" is drawn) or the single canvas, and `put(el, o, sig)` puts it back only into a tile of the same kind; otherwise the tile is drawn afresh.
+- The AI view on a screen ≥1100px is two columns: the looks on one side, the before|after card (`.mt-aibac`) in its own sticky column (`clamp(380px, 30vw, 560px)`, scrolling inside), so it never covers the styles. Narrower: on top, not sticky.
+
 ## One person stays one person; "only on the person"; a finer look (Oct 27, v64)
 - The models added a partner or a figure to a photo of one girl (superhero looks). `restyleTry` now also throws away an answer with more faces than the photo (`extra-people`; a group of 5+ may gain one), and asks again as for `lost-people`.
 - `restyleOnce` writes the count into the prompt: for one face "each person / every person / the people / everyone" become "the person", plus "exactly ONE person … do not add any other person, partner, figure, silhouette, reflection or face"; for N faces "exactly these N people". Every restyle also asks for a high-end result: the face sharp, lit and fully visible (no mask, hood or shadow over it), cinematic grading.
