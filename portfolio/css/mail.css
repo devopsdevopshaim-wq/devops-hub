@@ -1,5 +1,5 @@
 /* SPIDER mail: the pill and the mailbox panel */
-#mail-pill{position:fixed;inset-block-start:calc(108px + env(safe-area-inset-top));inset-inline-end:max(12px,env(safe-area-inset-right));z-index:45;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;max-width:calc(100vw - 24px);pointer-events:none}
+#mail-pill{position:fixed;inset-block-end:calc(54px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:45;display:flex;flex-wrap:nowrap;gap:8px;justify-content:center;max-width:calc(100vw - 24px);pointer-events:none}
 #mail-pill>*{pointer-events:auto}
 #mail-pill .mp-online,#mail-pill .mp-mail{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 14px;border-radius:999px;font:600 13px/1 system-ui,'Segoe UI',Arial,sans-serif;text-decoration:none;color:#eaf2ff;background:rgba(14,12,38,.78);border:1px solid rgba(139,123,255,.45);box-shadow:0 8px 28px rgba(0,0,0,.4);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer}
 #mail-pill .mp-online i{width:9px;height:9px;border-radius:50%;background:#62dcb8;box-shadow:0 0 0 0 rgba(98,220,184,.7);animation:mpPing 2s infinite}
@@ -8,7 +8,7 @@
 #mail-pill .mp-mail.has{border-color:#e0b25a;box-shadow:0 8px 28px rgba(0,0,0,.4),0 0 18px -4px #e0b25a}
 #mail-pill .mp-mail em{font-style:normal;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#e0b25a;color:#1b1430;display:inline-grid;place-items:center;font-size:12px;font-weight:800}
 @keyframes mpPing{70%{box-shadow:0 0 0 8px rgba(98,220,184,0)}100%{box-shadow:0 0 0 0 rgba(98,220,184,0)}}
-@media (max-width:520px){#mail-pill .mp-online small{display:none}#mail-pill{inset-block-start:calc(100px + env(safe-area-inset-top))}}
+@media (max-width:520px){#mail-pill .mp-online small{display:none}#mail-pill{inset-block-end:calc(64px + env(safe-area-inset-bottom))}}
 
 html.mail-open{overflow:hidden}
 #mail-panel{position:fixed;inset:0;z-index:90;display:none;background:rgba(5,4,16,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);overflow-y:auto;overscroll-behavior:contain}

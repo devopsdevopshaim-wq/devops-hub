@@ -886,6 +886,6 @@
     mediaCfg = r[0];
     try { music(r[3], r[0].music); } catch (e) { console.warn('music', e); }
     try { if (!document.body.classList.contains('no-dock')) dock(r[1], r[2]); } catch (e) { console.warn('dock', e); }
-    try { videos(r[0].videos); } catch (e) { console.warn('videos', e); }
+    try { videos((r[0].showreel || []).concat(r[0].videos || [])); } catch (e) { console.warn('videos', e); }
   });
 })();

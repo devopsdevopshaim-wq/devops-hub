@@ -26,6 +26,12 @@ async function mocks(page) {
     if (/localhost:8950/.test(u)) {
       if (/\/js\/auth\.js/.test(u)) return r.fulfill({ contentType: 'text/javascript', body: "window.HasadnaAuth={ready:Promise.resolve({role:'admin',sites:'all',name:'חיים'}),token:function(){return 'T'},session:{role:'admin'},api:function(){return Promise.resolve({})},logout:function(){}};document.documentElement.classList.remove('locked');" });
       if (/\/js\/(orbit-fx|cursor|track|talking-face)\.js/.test(u)) return r.fulfill({ contentType: 'text/javascript', body: '' });
+      if (/\/projects\.json/.test(u)) {   // the film never shows the lotto tab or the private insurance analysis
+        const d = JSON.parse(fs.readFileSync(path.resolve(ROOT, '../../portfolio/projects.json'), 'utf8'));
+        d.projects = d.projects.filter((p) => p.category !== 'lotto' && p.id !== 'insurance-analysis'); delete d.categories.lotto;
+        fs.writeFileSync(path.join(ROOT, 'data/counts.json'), JSON.stringify({ projects: d.projects.length, domains: Object.keys(d.categories).length }));
+        return r.fulfill(J(d));
+      }
       if (/\/api\.json/.test(u)) return r.fulfill(J({ base: 'https://w.example' }));
       if (/\/news\.json/.test(u)) return r.fulfill(J(news));
       if (/\/radio\.json/.test(u)) return r.fulfill(J({ genres: [{ id: 'trance', style: 'טראנס', stations: [{ name: 'x', url: 'https://x.example/s' }] }, { id: 'ambient', style: 'אמביינט', stations: [{ name: 'y', url: 'https://y.example/s' }] }, { id: 'il', style: 'תחנות רדיו ישראליות', stations: [{ name: 'z', url: 'https://z.example/s' }] }] }));
