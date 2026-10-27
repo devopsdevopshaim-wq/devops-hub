@@ -52,7 +52,7 @@
     '</section>' +
     /* edit (colour correction and the rest, on big tiles) */
     '<section class="mt-view" data-view="edit" hidden>' +
-      '<aside class="mt-panel"><nav class="mt-ptabs"><button data-pt="color" class="on">תיקון צבע</button><button data-pt="title">כותרת</button><button data-pt="frames">מסגרות</button><button data-pt="fx">אפקטים</button><button data-pt="clip">קליפארט</button></nav>' +
+      '<aside class="mt-panel"><nav class="mt-ptabs"><button data-pt="color" class="on">תיקון צבע</button><button data-pt="title">כותרת</button><button data-pt="frames">מסגרות</button><button data-pt="fx">אפקטים</button><button data-pt="clip">קליפארט</button><button data-pt="looks">💾 שמורים</button></nav>' +
         '<div class="mt-pp" data-pp="color"><div id="mt-sliders"></div><div class="mt-row"><button class="mt-btn" id="mt-auto">✨ אוטומטי</button><button class="mt-btn" id="mt-reset">↺ איפוס תיקון</button></div></div>' +
         '<div class="mt-pp" data-pp="title" hidden><textarea id="mt-tt" rows="2" placeholder="למשל: נועה ומשה · 4.12.25"></textarea>' +
           '<div class="mt-row"><select id="mt-tfont"></select><input type="color" id="mt-tcol" value="#ffffff"></div>' +
@@ -60,9 +60,14 @@
           '<div class="mt-seg" id="mt-tpos"><button data-p="top">למעלה</button><button data-p="mid">באמצע</button><button data-p="bottom" class="on">למטה</button></div>' +
           '<label class="mt-chk-l"><input type="checkbox" id="mt-tsh" checked> צל לקריאות</label>' +
           '<div class="mt-row"><button class="mt-btn primary" id="mt-tadd">➕ הוספת כותרת</button><button class="mt-btn" id="mt-tdel">🗑 הסרה</button></div></div>' +
-        '<div class="mt-pp" data-pp="frames" hidden><div class="mt-row"><label>צבע</label><input type="color" id="mt-fcol" value="#ffffff"><label class="mt-btn">➕ PNG משלי<input type="file" id="mt-fpng" accept="image/*" hidden></label></div><div class="mt-chips" id="mt-frames"></div></div>' +
+        '<div class="mt-pp" data-pp="frames" hidden><div class="mt-row"><label>צבע</label><input type="color" id="mt-fcol" value="#ffffff"></div><div class="mt-row"><label class="mt-btn">➕ מסגרות משלי (כמה ביחד)<input type="file" id="mt-fpng" accept="image/*" multiple hidden></label><label class="mt-btn">📁 תיקיית מסגרות<input type="file" id="mt-fdir" webkitdirectory multiple hidden></label></div>' +
+          '<p class="mt-hint">PNG עם חלון שקוף הכי טוב. מסגרת אחת חדשה מולבשת מיד על התמונות שבמסך.</p><div class="mt-chips mt-frl" id="mt-frames"></div></div>' +
         '<div class="mt-pp" data-pp="fx" hidden><div class="mt-chips small" id="mt-fxcat"></div><div class="mt-fx" id="mt-fx"></div><h4>סגנון</h4><div class="mt-chips" id="mt-styles"></div></div>' +
         '<div class="mt-pp" data-pp="clip" hidden><div class="mt-emo" id="mt-emo"></div><label class="mt-btn">🖼️ לוגו / תמונה<input type="file" id="mt-logo" accept="image/*" hidden></label><button class="mt-btn" id="mt-clipdel">🗑 הסרת הקליפארט</button></div>' +
+        '<div class="mt-pp" data-pp="looks" hidden><h4>העתקת עריכה</h4><div class="mt-row"><button class="mt-btn" id="mt-lcopy" title="Ctrl+Shift+C">📋 העתקת העריכה</button><button class="mt-btn" id="mt-lpaste" title="Ctrl+Shift+V">📥 הדבקה</button></div>' +
+          '<div class="mt-row"><button class="mt-btn" id="mt-lprev">⤺ כמו התמונה הקודמת</button></div><p class="mt-hint" id="mt-lclip"></p>' +
+          '<h4>מצבי עריכה שמורים</h4><p class="mt-hint">שומרים את התיקון, האפקט, הסגנון, הרקע, המסגרת, הכותרת והקליפארט, ומחילים בלחיצה גם בפעמים הבאות.</p>' +
+          '<div class="mt-row"><input id="mt-lname" placeholder="שם, למשל: חתונה חמימה"><button class="mt-btn primary" id="mt-lsave">💾 שמירה</button></div><div class="mt-looks" id="mt-looks"></div></div>' +
         '<div class="mt-pfoot"><p class="mt-hint" id="mt-target"></p><button class="mt-btn" id="mt-apply-all">החל את התיקון על כל התמונות</button></div>' +
       '</aside><div class="mt-ework"><div class="mt-ebar"><label>תמונות במסך:</label><div class="mt-seg" id="mt-en"><button data-n="4">4</button><button data-n="6">6</button><button data-n="9">9</button></div>' +
         '<label class="mt-chk-l"><input type="checkbox" id="mt-etog"> 🔗 עריכה של כל התמונות שבמסך יחד</label><button class="mt-btn mt-cmpb" id="mt-cmp" title="התמונה המקורית ליד העריכה">◧ לפני | אחרי</button><span class="mt-sp"></span>' +
@@ -84,12 +89,13 @@
             '<div class="mt-emo" id="mt-oemo"></div><div class="mt-row"><label class="mt-btn">🖼️ לוגו / תמונה<input type="file" id="mt-ologo" accept="image/*" hidden></label><button class="mt-btn" id="mt-odel">🗑 מחיקת העצם המסומן</button><span class="mt-hint">גוררים עצם על התמונה כדי להזיז, גלגלת משנה גודל</span></div></div>' +
           '<div class="mt-dp" data-dp="crop" hidden><div class="mt-chips" id="mt-crops"></div><div class="mt-row"><div class="mt-seg" id="mt-cfit"><button data-f="contain">להתאים</button><button data-f="cover" class="on">לחתוך</button></div><button class="mt-btn" id="mt-cface">🎯 מרכוז לפי הפנים</button><span class="mt-hint">גוררים את התמונה כדי לבחור מה נכנס, גלגלת לזום</span></div></div>' +
           '<div class="mt-dp" data-dp="ai" hidden><div class="mt-chips" id="mt-dai"></div></div>' +
-          '<div class="mt-dacts"><button class="mt-btn" id="mt-dsave">💾 שמירה</button><button class="mt-btn" id="mt-dprint">🖨️ הדפסה</button><button class="mt-btn" id="mt-dundo">↶ ביטול</button><button class="mt-btn" id="mt-dredo">↷ חזרה</button><button class="mt-btn" id="mt-dall">↺ ביטול הכל</button></div>' +
+          '<div class="mt-dacts"><button class="mt-btn" id="mt-dsave">💾 שמירה</button><button class="mt-btn" id="mt-dprint">🖨️ הדפסה</button><button class="mt-btn" id="mt-dundo">↶ ביטול</button><button class="mt-btn" id="mt-dredo">↷ חזרה</button><button class="mt-btn" id="mt-dall">↺ ביטול הכל</button><button class="mt-btn" id="mt-dcopy" title="Ctrl+Shift+C">📋 העתקת העריכה</button><button class="mt-btn" id="mt-dpaste" title="Ctrl+Shift+V">📥 הדבקה</button></div>' +
         '</div></div>' +
     '</section>' +
     /* AI */
     '<section class="mt-view" data-view="ai" hidden><div class="mt-ai">' +
       '<p class="mt-hint" id="mt-ai-target"></p>' +
+      '<div class="mt-card mt-aibac"><h3>◧ לפני | אחרי <small>התמונות שה־AI עובד עליהן: המקור מימין, התוצאה משמאל · לחיצה מגדילה</small></h3><div class="mt-aiba" id="mt-aiba"></div><p class="mt-hint" id="mt-aiba-more"></p></div>' +
       '<div class="mt-card"><h3>🖥️ מיד, על המחשב · עובד גם בלי אינטרנט</h3><div class="mt-chips" id="mt-ai-local"></div></div>' +
       '<div class="mt-card"><h3>⚙️ מנוע ה־AI</h3><div class="mt-chips" id="mt-ai-eng"></div><label class="mt-chk-l" style="margin-top:8px"><input type="checkbox" id="mt-keep"> 🙂 שמירת הפנים המקוריות (בלי עיוות) בעיצובים על אדם אמיתי</label></div>' +
       '<div class="mt-card"><h3>🦸 גיבורי על <small>על האנשים האמיתיים, כמו סצנה מסרט</small></h3><div class="mt-ai-g" id="mt-ai-heroes"></div></div>' +
@@ -268,7 +274,7 @@
   }
   function refreshTile(p) {
     $$('.mt-tile[data-id="' + p.id + '"]', root).forEach(function (el) {
-      if (el.classList.contains('mt-pj')) { el._sig = null; enqueue(el); return; }
+      if (el.classList.contains('mt-pj') || el.closest('#mt-aiba')) { el._sig = null; enqueue(el); return; }
       var big = el.closest('#mt-egrid'), n = document.createElement('div');
       n.innerHTML = big ? eTileHTML(p) : tileHTML(p, Number(el.dataset.px) || zoom);
       var ne = n.firstChild, c = el.querySelector('canvas'), box = ne.querySelector('.mt-th');
@@ -276,7 +282,7 @@
       el.parentNode.replaceChild(ne, el); watch(ne);
     });
   }
-  function refreshAll() { if (!on()) return; if (view === 'main') buildGrid(); else if (view === 'edit') buildEdit(); else if (view === 'design') drawDesign(); stat(); }
+  function refreshAll() { if (!on()) return; if (view === 'main') buildGrid(); else if (view === 'edit') buildEdit(); else if (view === 'design') drawDesign(); else if (view === 'ai') { aiTarget(); aiBA(); } stat(); }
   function mark(p, v) { if (v) S.marked[p.id] = true; else delete S.marked[p.id]; }
   $('#mt-grid', root).addEventListener('click', function (e) {
     var t = e.target.closest('.mt-tile'); if (!t) return; var p = byId(t.dataset.id); if (!p) return;
@@ -404,7 +410,7 @@
     reuse(g, k);
     seg('#mt-en', String(eN), 'n'); $('#mt-etog', root).checked = eTog; $('#mt-epg', root).textContent = (ePage + 1) + ' / ' + ePages();
     $('#mt-eprev', root).disabled = ePage <= 0; $('#mt-enext', root).disabled = ePage >= ePages() - 1;
-    syncSliders(); targetTxt(); buildFrames(); buildFx(); stat();
+    syncSliders(); targetTxt(); buildFrames(); buildFx(); buildLooks(); stat();
   }
   function ePageGo(n) { var to = FS.clamp(ePage + n, 0, ePages() - 1); if (to === ePage) return; ePage = to; buildEdit(); }
   function targetTxt() { var n = targets().length; $('#mt-target', root).textContent = eTog ? 'השינויים חלים יחד על ' + n + ' התמונות שבמסך' : n > 1 ? 'השינויים חלים על ' + n + ' התמונות המסומנות' : n ? 'השינויים חלים על התמונה המודגשת · לסימון כמה תמונות לוחצים על ✓' : ''; }
@@ -477,15 +483,27 @@
     return [['', 'בלי מסגרת']].concat(base.map(function (f) { return ['g:' + f.id, f.name]; }), Object.keys(FS.USER_FRAMES || {}).map(function (id) { return ['u:' + id, FS.USER_FRAMES[id].name, FS.USER_FRAMES[id].src]; }));
   }
   function buildFrames() {
-    $('#mt-frames', root).innerHTML = frameOptions().map(function (f) { return '<button data-fr="' + esc(f[0]) + '">' + (f[2] ? '<img src="' + esc(f[2]) + '" alt="">' : '') + esc(f[1]) + '</button>'; }).join('');
+    var p = focus(), fr = p && p.doc.frame, cur = !fr ? '' : (fr.kind === 'png' ? 'u:' : 'g:') + fr.id;
+    $('#mt-frames', root).innerHTML = frameOptions().map(function (f) { return '<button data-fr="' + esc(f[0]) + '"' + (f[0] === cur ? ' class="on"' : '') + ' title="' + esc(f[1]) + '">' + (f[2] ? '<img src="' + esc(f[2]) + '" alt="">' : '') + '<em>' + esc(f[1]) + '</em>' + (f[0][0] === 'u' ? '<b class="mt-frx" data-frx="' + esc(f[0].slice(2)) + '" title="מחיקת המסגרת">✕</b>' : '') + '</button>'; }).join('');
   }
+  FS.on('frames', function () { if (on() && view === 'edit') buildFrames(); });
   function setFrames(list, v) {
     var ref = frameRef(v, $('#mt-fcol', root).value);
     list.forEach(function (p) { FS.setFrame(p, ref ? JSON.parse(JSON.stringify(ref)) : null, { quiet: true }); if (p.fit) FS.fitPhoto(p.doc, FS.img(p.src), p.fit); p.cache = {}; FS.snap(p); refreshTile(p); });
     FS.emit('doc');
   }
-  $('#mt-frames', root).addEventListener('click', function (e) { var b = e.target.closest('[data-fr]'); if (!b) return; var l = targets(); Promise.all(l.map(function (p) { return FS.loadImg(p.src); })).then(function () { setFrames(l, b.dataset.fr); }); });
-  $('#mt-fpng', root).addEventListener('change', function () { var f = this.files; this.value = ''; if (f && f.length && FS.addFrameFiles) Promise.resolve(FS.addFrameFiles(f)).then(function () { setTimeout(buildFrames, 400); }); });
+  $('#mt-frames', root).addEventListener('click', function (e) {
+    var x = e.target.closest('[data-frx]'); if (x) { var id = x.dataset.frx, f = FS.USER_FRAMES[id]; if (f && confirm('למחוק את המסגרת "' + f.name + '"?')) FS.deleteUserFrame(id).then(function () { buildFrames(); if (FS.buildFrames) FS.buildFrames(); }); return; }
+    var b = e.target.closest('[data-fr]'); if (!b) return; var l = targets(); Promise.all(l.map(function (p) { return FS.loadImg(p.src); })).then(function () { setFrames(l, b.dataset.fr); buildFrames(); }); });
+  function addFrames(input) {
+    var f = Array.prototype.slice.call(input.files || []); input.value = ''; if (!f.length || !FS.addFrameFiles) return;
+    Promise.resolve(FS.addFrameFiles(f, { noUse: true })).then(function (added) {
+      buildFrames(); added = added || [];
+      if (added.length === 1) { var l = targets(); Promise.all(l.map(function (p) { return FS.loadImg(p.src); })).then(function () { setFrames(l, 'u:' + added[0].id); buildFrames(); }); }
+    });
+  }
+  $('#mt-fpng', root).addEventListener('change', function () { addFrames(this); });
+  $('#mt-fdir', root).addEventListener('change', function () { addFrames(this); });
 
   /* effects: the presets with small previews of the focused photo, and the instant styles */
   var fxCat = '';
@@ -525,6 +543,63 @@
   function logoFile(f, list) { FS.fileToDataURL(f).then(function (u) { return FS.loadImg(u); }).then(function (im) { addClip(list, { type: 'image', src: im.src, w0: Math.max(im.naturalWidth, im.naturalHeight) }); }); }
   $('#mt-logo', root).addEventListener('change', function () { var f = this.files[0]; this.value = ''; if (f) logoFile(f, targets()); });
   $('#mt-clipdel', root).addEventListener('click', function () { var l = targets(); l.forEach(function (p) { p.doc.layers = p.doc.layers.filter(function (L) { return !L.mtClip; }); }); redraw(l); });
+
+  /* ---------- saved edits: copy / paste, "like the previous photo", and named looks kept for next time ----------
+     A look is what an edit is, without what belongs to one picture (crop, faces, blur spots, AI): the colour correction,
+     the effect, the instant style, the background mode, the frame, the title and the clipart (placed by share of the page).
+     The looks live in localStorage 'fs-mate-looks'; the copied edit in 'fs-mate-clip', so it also crosses sessions. */
+  function lookOf(p) {
+    var d = p.doc, ph = d.photo, m = Math.min(d.w, d.h), bg = ph.bg && ph.bg.mode !== 'none' && ph.bg.mode !== 'image' ? { mode: ph.bg.mode, color: ph.bg.color, amount: ph.bg.amount } : null;
+    var layers = d.layers.filter(function (L) { return L.link === 'mt-title' || L.mtClip; }).map(function (L) {
+      var n = JSON.parse(JSON.stringify(L)); delete n.id; n.fx = L.x / d.w; n.fy = L.y / d.h; if (L.size != null) n.fsize = L.size / m; if (L.s != null) n.fs = L.s / m; return n;
+    });
+    return { adj: Object.assign({}, ph.adj), preset: ph.preset || null, style: ph.style || null, bg: bg, frame: d.frame ? JSON.parse(JSON.stringify(d.frame)) : null, layers: layers };
+  }
+  function lookOn(list, k) {
+    if (!k || !list.length) return Promise.resolve();
+    return Promise.all(list.map(function (p) { return FS.loadImg(p.src).catch(function () {}); })).then(function () {
+      return Promise.all(list.map(function (p) {
+        var d = p.doc, ph = d.photo, m = Math.min(d.w, d.h);
+        ph.adj = Object.assign({}, FS.ADJ0, k.adj); ph.preset = k.preset || null; ph.style = k.style ? JSON.parse(JSON.stringify(k.style)) : null;
+        var fr = k.frame && k.frame.kind === 'png' && !(FS.USER_FRAMES || {})[k.frame.id] ? null : k.frame;
+        FS.setFrame(p, fr ? JSON.parse(JSON.stringify(fr)) : null, { quiet: true, noTexts: true }); if (p.fit) FS.fitPhoto(d, FS.img(p.src), p.fit);
+        d.layers = d.layers.filter(function (L) { return !(L.link === 'mt-title' || L.mtClip); });
+        (k.layers || []).forEach(function (L) {
+          var n = JSON.parse(JSON.stringify(L)); n.id = FS.uid(); n.x = L.fx * d.w; n.y = L.fy * d.h; if (L.fsize != null) n.size = L.fsize * m; if (L.fs != null) n.s = L.fs * m;
+          delete n.fx; delete n.fy; delete n.fsize; delete n.fs; d.layers.push(n);
+        });
+        if (k.bg) return bgSet(p, k.bg.mode, { color: k.bg.color, amount: k.bg.amount }).catch(function () {});
+        if (ph.bg && ph.bg.mode !== 'none') ph.bg = Object.assign({}, ph.bg, { mode: 'none' });
+      }));
+    }).then(function () { redraw(list); syncSliders(); });
+  }
+  function looks() { return lsj('fs-mate-looks', []); }
+  function looksSave(l) { try { localStorage.setItem('fs-mate-looks', JSON.stringify(l)); return true; } catch (e) { FS.toast('אין מקום לשמור. מוחקים מצב ישן או לוגו גדול.'); return false; } }
+  function buildLooks() {
+    var l = looks(), c = lsj('fs-mate-clip', null);
+    $('#mt-looks', root).innerHTML = l.length ? l.map(function (k, i) { return '<div class="mt-look"><button class="mt-btn" data-look="' + i + '">✨ ' + esc(k.name) + '</button><button class="mt-ic" data-lookx="' + i + '" title="מחיקה">✕</button></div>'; }).join('') : '<p class="mt-hint">עוד אין מצבים שמורים.</p>';
+    $('#mt-lclip', root).textContent = c ? '📋 מועתקת עריכה של "' + (c.from || 'תמונה') + '"' : '';
+  }
+  $('#mt-lcopy', root).addEventListener('click', function () { var p = focus(); if (!p) return; var k = lookOf(p); k.from = String(p.name || '').replace(/\.[^.]+$/, ''); try { localStorage.setItem('fs-mate-clip', JSON.stringify(k)); } catch (e) { FS.toast('העריכה גדולה מדי להעתקה'); return; } buildLooks(); FS.toast('📋 העריכה הועתקה · בוחרים תמונות ולוחצים "הדבקה"'); });
+  $('#mt-lpaste', root).addEventListener('click', function () { var k = lsj('fs-mate-clip', null); if (!k) return FS.toast('קודם מעתיקים עריכה'); var l = targets(); lookOn(l, k).then(function () { FS.toast('📥 העריכה הודבקה על ' + l.length + ' תמונות'); }); });
+  $('#mt-lprev', root).addEventListener('click', function () {
+    var l = targets(), done = 0;
+    l.reduce(function (ch, p) { return ch.then(function () { var i = idx(p); if (i < 1) return; done++; return lookOn([p], lookOf(S.photos[i - 1])); }); }, Promise.resolve())
+      .then(function () { FS.toast(done ? '⤺ ' + done + ' תמונות קיבלו את העריכה של התמונה שלפניהן' : 'אין תמונה קודמת'); });
+  });
+  $('#mt-lsave', root).addEventListener('click', function () {
+    var p = focus(); if (!p) return; var n = $('#mt-lname', root).value.trim() || 'מצב ' + (looks().length + 1), l = looks().filter(function (k) { return k.name !== n; });
+    var k = lookOf(p); k.name = n; k.at = Date.now(); l.unshift(k);
+    if (looksSave(l.slice(0, 40))) { $('#mt-lname', root).value = ''; buildLooks(); FS.toast('💾 מצב העריכה "' + n + '" נשמר'); }
+  });
+  $('#mt-looks', root).addEventListener('click', function (e) {
+    var x = e.target.closest('[data-lookx]'), b = e.target.closest('[data-look]'), l = looks();
+    if (x) { var k0 = l[Number(x.dataset.lookx)]; if (k0 && confirm('למחוק את "' + k0.name + '"?')) { l.splice(Number(x.dataset.lookx), 1); looksSave(l); buildLooks(); } return; }
+    if (!b) return; var k = l[Number(b.dataset.look)], t = targets(); lookOn(t, k).then(function () { FS.toast('✨ "' + k.name + '" הוחל על ' + t.length + ' תמונות'); });
+  });
+  FS.mateLooks = { of: lookOf, apply: lookOn };
+  $('#mt-dcopy', root).addEventListener('click', function () { $('#mt-lcopy', root).click(); });
+  $('#mt-dpaste', root).addEventListener('click', function () { var k = lsj('fs-mate-clip', null), p = focus(); if (!k) return FS.toast('קודם מעתיקים עריכה'); if (p) lookOn([p], k).then(function () { drawDesign(); FS.toast('📥 העריכה הודבקה'); }); });
 
   function saveOne(p) {
     var keep = S.cur; S.cur = idx(p); try { FS.saveCurrent(); } finally { S.cur = keep; }
@@ -677,8 +752,24 @@
   ];
   function aiList() { var m = marked(); if (m.length) return m; var f = focus(); return f ? [f] : []; }
   function aiTarget() { var n = aiList().length; $('#mt-ai-target', root).textContent = n ? 'חל על ' + n + (n > 1 ? ' התמונות המסומנות' : ' תמונה (המודגשת)') + '. לסימון כמה, לוחצים ✓ במסך הראשי.' : 'אין תמונות עדיין.'; }
+  /* before | after of the photos the AI works on (up to 6), redrawn as results come in */
+  function aiBA() {
+    var g = $('#mt-aiba', root); if (!g) return; var l = aiList(), shownL = l.slice(0, 6), px = 520;
+    var k = {}; $$('.mt-tile', g).forEach(function (el) { k[el.dataset.id + '|' + el.dataset.px] = el; });
+    g.style.setProperty('--n', Math.min(3, Math.max(1, shownL.length)));
+    var frag = document.createDocumentFragment();
+    shownL.forEach(function (p) {
+      var el = k[p.id + '|' + px];
+      if (!el) { var d = document.createElement('div'); d.innerHTML = '<div class="mt-tile big" data-id="' + p.id + '" data-px="' + px + '"><div class="mt-th"><div class="mt-ba"><div class="mt-b"><span>לפני</span></div><div class="mt-a"><span>אחרי</span></div></div></div><div class="mt-name">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '<i class="mt-aist"></i></div></div>'; el = d.firstChild; }
+      frag.appendChild(el);
+    });
+    g.innerHTML = ''; g.appendChild(frag); $$('.mt-tile', g).forEach(function (el) { el._sig = el._sig || null; watch(el); enqueue(el); });
+    $('#mt-aiba-more', root).textContent = l.length > shownL.length ? 'ועוד ' + (l.length - shownL.length) + ' תמונות. רואים את כולן ב"ערוך תמונה" עם לפני | אחרי.' : (l.length ? '' : 'מסמנים תמונות במסך הראשי, או לוחצים על תמונה כדי שתהיה המודגשת.');
+  }
+  $('#mt-aiba', root).addEventListener('click', function (e) { var t = e.target.closest('.mt-tile'), p = t && byId(t.dataset.id); if (p) big(p); });
+  FS.on('doc', function () { if (on() && view === 'ai') $$('#mt-aiba .mt-tile', root).forEach(function (el) { enqueue(el); }); });
   function buildAI() {
-    aiTarget();
+    aiTarget(); aiBA();
     $('#mt-ai-local', root).innerHTML = LOCAL.map(function (x) { return '<button data-la="' + x[0] + '">' + x[1] + '</button>'; }).join('');
     function cards(list, sel, kind) { $(sel, root).innerHTML = list.map(function (v, i) { return '<button data-ai="' + kind + ':' + i + '"><i>' + (kind === 'st' ? v[2] : v[1]) + '</i><span>' + esc(kind === 'st' ? v[1] : v[0]) + '</span></button>'; }).join(''); }
     cards(FS.AI_HEROES || [], '#mt-ai-heroes', 'he'); cards(FS.AI_REAL || [], '#mt-ai-real', 're'); cards(FS.AI_EDITS || [], '#mt-ai-edits', 'ed'); cards(FS.AI_VIRAL || [], '#mt-ai-viral', 'vi'); cards(FS.AI_STYLES || [], '#mt-ai-styles', 'st');
@@ -695,7 +786,13 @@
   var mk = $('#mt-keep', root); if (mk && FS.keepFacesOn) { mk.checked = FS.keepFacesOn(); mk.addEventListener('change', function () { FS.keepFacesOn(mk.checked); var k2 = document.getElementById('ax-keep'); if (k2) k2.checked = mk.checked; }); }
   $('#mt-ai-eng', root).addEventListener('click', function (e) { var b = e.target.closest('[data-eng]'); if (!b) return; if (b.dataset.eng === 'local' && !(FS.localAI && FS.localAI.isReady())) { FS.toast('מנוע ה־AI המקומי עוד לא מותקן'); if (FS.localAI) FS.localAI.open(); return; } FS.aiEngine(b.dataset.eng); engines(); });
   function after(list) { list.forEach(function (p) { p.cache = {}; p._mc = null; }); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); refreshAll(); }
-  function runAI(prompt, label) { var l = aiList(); if (!l.length) return FS.toast('אין תמונות'); Promise.resolve(FS.runAI(prompt, label, l)).then(function () { after(l); }); }
+  function runAI(prompt, label) {
+    var l = aiList(); if (!l.length) return FS.toast('אין תמונות');
+    $('.mt-aibac', root).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    /* each photo's result shows in its pair as soon as it is back */
+    var tick = setInterval(function () { if (view === 'ai') $$('#mt-aiba .mt-tile', root).forEach(function (el) { enqueue(el); }); }, 900);
+    Promise.resolve(FS.runAI(prompt, label, l)).then(function () { clearInterval(tick); after(l); }, function () { clearInterval(tick); after(l); });
+  }
   $('.mt-ai', root).addEventListener('click', function (e) {
     var b = e.target.closest('[data-ai]'); if (!b) return; var k = b.dataset.ai.split(':'), i = Number(k[1]);
     if (k[0] === 'he') runAI(FS.AI_HEROES[i][2], FS.AI_HEROES[i][0]);
@@ -841,6 +938,8 @@
     if (typing) { e.stopImmediatePropagation(); return; }
     if (mod && k === 'a') { e.preventDefault(); shown().forEach(function (p) { mark(p, true); }); refreshAll(); }
     else if (mod && k === 'p') { e.preventDefault(); openPrint(); }
+    else if (mod && e.shiftKey && k === 'c') { e.preventDefault(); $('#mt-lcopy', root).click(); }
+    else if (mod && e.shiftKey && k === 'v') { e.preventDefault(); $(view === 'design' ? '#mt-dpaste' : '#mt-lpaste', root).click(); }
     else if (mod && k === 'z') { e.preventDefault(); if (view === 'design') hist(FS.undo); else { FS.undo(); refreshAll(); } }
     else if (mod && k === 'y') { e.preventDefault(); if (view === 'design') hist(FS.redo); else { FS.redo(); refreshAll(); } }
     else if (k === 'escape') { S.marked = {}; refreshAll(); }

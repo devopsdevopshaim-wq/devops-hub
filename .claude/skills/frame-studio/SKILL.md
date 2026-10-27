@@ -35,6 +35,15 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## Frames that load, the AI's before / after, saved edits (Oct 27, v62)
+- **Frames in the fast workspace** (edit → "מסגרות"): "➕ מסגרות משלי" takes many files at once (`multiple`), "📁 תיקיית מסגרות" a whole folder (`webkitdirectory`). `FS.addFrameFiles(files, { noUse })` (ui.js) now returns a promise of the frames added; a file that fails no longer stops the rest. One new frame goes straight onto the photos on screen. The chips show each frame's picture, mark the current one, and a ✕ deletes a frame of your own. `FS.emit('frames')` after the frames load from storage or are added, so the list is never stale.
+- **AI before / after:** the AI view opens with a sticky card `.mt-aibac` / `#mt-aiba`: the photos the AI works on (up to 6, `aiList()`), "לפני" beside "אחרי" (the same `.mt-ba` tiles as the edit screen). It redraws while `runAI` runs (every 0.9 s, and on `doc`), so each result shows the moment it is back; a click opens the big before/after.
+- **Saved edits** (edit → "💾 שמורים", and in the full editor):
+  - a "look" (`lookOf(p)`) is the colour correction, effect, instant style, background mode, frame, title and clipart (placed by share of the page), without what belongs to one picture (crop, faces, blur spots, AI);
+  - "📋 העתקת העריכה" / "📥 הדבקה" (Ctrl+Shift+C / V), kept in `fs-mate-clip`;
+  - "⤺ כמו התמונה הקודמת": each target gets the edit of the photo before it;
+  - named looks (up to 40) in `fs-mate-looks`, applied in one click next time. `lookOn(list, look)`; `FS.mateLooks`.
+
 ## A luxurious opening and before / after side by side (Oct 27, v61)
 - **The opening** was rebuilt (`css/splash.css`, `sp-*` classes, about 5 s), like the first light through a lens:
   - gold dust drifts up (a canvas `.sp-dust`, 90 particles, drawn by the inline script; skipped under reduced motion), a spotlight opens;

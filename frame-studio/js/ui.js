@@ -942,21 +942,24 @@
       FS.setFrame(q, JSON.parse(ref), { quiet: true, noTexts: true }); texts.forEach(function (L) { q.doc.layers.push(Object.assign(JSON.parse(JSON.stringify(L)), { id: FS.uid() })); }); FS.snap(q); });
     buildStrip(); FS.toast('המסגרת הוחלה על כל ' + S.photos.length + ' התמונות');
   });
-  FS.addFrameFiles = function (files) {
-    var list = Array.prototype.slice.call(files || []); if (!list.length) return;
+  /* frame files (many at once, or a whole folder) are added one after another; a file that fails doesn't stop the rest.
+     Resolves with the frames added. opt.noUse: don't put a single new frame on the studio's current photo (the workspace does its own). */
+  FS.addFrameFiles = function (files, opt) {
+    var list = Array.prototype.slice.call(files || []); if (!list.length) return Promise.resolve([]);
     list = list.filter(function (f) { return /^image\//.test(f.type) || /\.(png|webp|jpe?g|gif)$/i.test(f.name); });
-    if (!list.length) return FS.toast('מסגרת צריכה להיות קובץ תמונה: PNG עם חלון שקוף (הכי טוב), WEBP או JPG.', 6000);
+    if (!list.length) { FS.toast('מסגרת צריכה להיות קובץ תמונה: PNG עם חלון שקוף (הכי טוב), WEBP או JPG.', 6000); return Promise.resolve([]); }
     FS.busy('מוסיף מסגרת…');
-    /* one after another, so a big frame doesn't hold the page */
-    var fr = [], chain = Promise.resolve();
+    var fr = [], bad = 0, chain = Promise.resolve();
     list.forEach(function (f, i) { chain = chain.then(function () {
       if (list.length > 1) FS.busy('מוסיף מסגרות… ' + (i + 1) + ' מתוך ' + list.length);
-      return FS.fileToDataURL(f).then(function (src) { return FS.addUserFrame(src, f.name.replace(/\.[^.]+$/, '')); }).then(function (u) { fr.push(u); });
+      return FS.fileToDataURL(f).then(function (src) { return FS.addUserFrame(src, f.name.replace(/\.[^.]+$/, '')); }).then(function (u) { fr.push(u); }, function () { bad++; });
     }); });
-    chain.then(function () {
-      FS.busy(); buildFrames(); if (fr.length === 1 && FS.cur()) useFrame({ kind: 'png', id: fr[0].id, opacity: 1, tint: '#d4a843', tintAmt: 0, clip: false });
-      FS.toast(fr.length + ' מסגרות נוספו ונשמרו בדפדפן');
-    }).catch(function () { FS.busy(); FS.toast('המסגרת לא נפתחה'); });
+    return chain.then(function () {
+      FS.busy(); buildFrames(); FS.emit('frames');
+      if (!(opt && opt.noUse) && fr.length === 1 && FS.cur()) useFrame({ kind: 'png', id: fr[0].id, opacity: 1, tint: '#d4a843', tintAmt: 0, clip: false });
+      FS.toast((fr.length === 1 ? 'מסגרת נוספה ונשמרה' : fr.length + ' מסגרות נוספו ונשמרו') + (bad ? ' · ' + bad + ' קבצים לא נפתחו' : ''), 5000);
+      return fr;
+    });
   };
   $('#file-frames').addEventListener('change', function () { FS.addFrameFiles(this.files); this.value = ''; });
 
@@ -1089,6 +1092,7 @@
   /* ---------- start ---------- */
   FS.loadUserFrames().then(function () {
     if (!$('[data-pane=frames]').hidden) buildFrames();
+    FS.emit('frames');
     /* once: the move to plain base frames offers to clear the frames this browser kept before */
     var k = 'fs-frames-clean-v1'; try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch (e) { return; }
     if (Object.keys(FS.USER_FRAMES).length) setTimeout(function () { clearUserFrames(true); }, 1200);
