@@ -45,6 +45,8 @@ const ROUTES = {
   'hasadna-heygen': { svc: 'main', kind: 'heygen', max: 2000, free: true },
   'hasadna-jarvis': { svc: 'agents', kind: 'jarvis', max: 12000, free: true },
   // the clients' own mailboxes (Gmail); the callback is where Google sends the person back after they agree
+  // how the portfolio's tabs and cards are arranged: anyone reads it, only the signed-in admin changes it (one request at a time: it edits the shared state)
+  'hasadna-layout': { svc: 'main', kind: 'layout', max: 40000 },
   'hasadna-mail': { svc: 'main', kind: 'mail', max: 20000, free: true },
   'hasadna-mail-callback': { svc: 'main', kind: 'mailcb', max: 1000, free: true, method: 'GET' },
   // פריים מגנטים: the site's content and frames (public), and the business's data (signed in; the session is checked here)
@@ -473,6 +475,28 @@ export class State extends DurableObject {
         const s2 = (j2 && j2.data) || {};
         if (!s2.livekit_url || !s2.livekit_client_token || !s2.ws_url) return reply({ ok: false, error: 'start-' + (r2 ? r2.status : 'net') + (j2 && j2.code ? '-' + j2.code : '') });
         return reply({ ok: true, session: s2.session_id, url: s2.livekit_url, clientToken: s2.livekit_client_token, ws: s2.ws_url, seconds: s2.max_session_duration || 300 });
+      }
+      if (rt.kind === 'layout') {
+        let lb = {}; try { lb = typeof body === 'string' ? JSON.parse(body) : (body || {}); } catch (e) { lb = {}; }
+        if (lb.action !== 'save') return reply({ ok: true, layout: st.sd.layout || null });
+        const w = sessionOf(st.sd, lb.token);
+        if (!w || w.role !== 'admin') return reply({ ok: false, error: 'admin-only' }, 403);
+        let L; try { L = JSON.parse(String(lb.layout || '')); } catch (e) { return reply({ ok: false, error: 'bad-layout' }, 400); }
+        const id = (x) => typeof x === 'string' && /^[\w.-]{1,60}$/.test(x);
+        const clean = { cats: [], order: {}, moved: {}, at: Date.now() };
+        for (const c of (Array.isArray(L.cats) ? L.cats : []).slice(0, 40)) {
+          if (!c || !id(c.id) || typeof c.name !== 'string') continue;
+          clean.cats.push({ id: c.id, name: c.name.replace(/[<>]/g, '').trim().slice(0, 40) || c.id });
+        }
+        if (!clean.cats.length) return reply({ ok: false, error: 'no-tabs' }, 400);
+        for (const [k, v] of Object.entries(L.order && typeof L.order === 'object' ? L.order : {}).slice(0, 60)) {
+          if (id(k) && Array.isArray(v)) clean.order[k] = v.filter(id).slice(0, 300);
+        }
+        for (const [k, v] of Object.entries(L.moved && typeof L.moved === 'object' ? L.moved : {}).slice(0, 400)) {
+          if (id(k) && id(v)) clean.moved[k] = v;
+        }
+        st.sd.layout = clean; await this.save(st);
+        return reply({ ok: true, layout: clean });
       }
       if (rt.kind === 'jarvis') {
         const { sid, text } = jarvisInput(body);
