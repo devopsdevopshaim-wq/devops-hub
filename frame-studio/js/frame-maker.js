@@ -37,12 +37,21 @@
   }
   /* an element's picture (cached by what it shows) */
   function elCanvas(e) {
-    var k = e.t + '|' + (e.t === 'orn' ? e.key + e.color : e.t === 'text' ? e.text + e.font + e.color + e.weight : e.src.length + e.src.slice(-40));
+    var k = e.t + '|' + (e.t === 'orn' ? e.key + e.color : e.t === 'text' ? [e.text, e.font, e.color, e.weight, e.stroke, e.sw, e.ls, e.italic].join('|') : e.src.length + e.src.slice(-40));
     if (cache[k]) return cache[k];
     if (e.t === 'orn') return (cache[k] = FS.elementCanvas(e.key, e.color));
-    if (e.t === 'text') return (cache[k] = FS.textCanvas(e.text || ' ', e.font, e.color, e.weight));
+    if (e.t === 'text') return (cache[k] = textCv(e));
     var im = FS.img(e.src); if (!im) { FS.loadImg(e.src).then(draw, function () {}); return null; }
     return (cache[k] = im);
+  }
+  /* a line of text: font, colour, weight, italic, an outline (e.stroke, e.sw as a share of the letters) and spacing (e.ls, em) */
+  function textCv(e) {
+    var size = 160, f = (e.italic ? 'italic ' : '') + (e.weight || 700) + ' ' + size + 'px "' + (e.font || 'Heebo') + '", Heebo, sans-serif', sw = e.stroke ? Math.max(2, (e.sw || 0.06) * size) : 0;
+    var m = FS.canvas(4, 4).getContext('2d'); m.font = f; if ('letterSpacing' in m) m.letterSpacing = (e.ls || 0) * size + 'px';
+    var c = FS.canvas(Math.max(40, Math.ceil(m.measureText(e.text || ' ').width + sw * 2 + 40)), Math.round(size * 1.45 + sw * 2)), x = c.getContext('2d');
+    x.font = f; if ('letterSpacing' in x) x.letterSpacing = (e.ls || 0) * size + 'px'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl'; x.lineJoin = 'round';
+    if (sw) { x.strokeStyle = e.stroke; x.lineWidth = sw; x.strokeText(e.text || ' ', c.width / 2, c.height / 2); }
+    x.fillStyle = e.color || '#1d1633'; x.fillText(e.text || ' ', c.width / 2, c.height / 2); return c;
   }
   function elBox(e, W, H) { var c = elCanvas(e); if (!c) return null; var w = e.w * W, h = w * (c.naturalHeight || c.height) / (c.naturalWidth || c.width); return { c: c, cx: e.x * W, cy: e.y * H, w: w, h: h }; }
   /* the background made from the invitation, rebuilt for the size asked (or the saved picture, cover-fit) */
@@ -61,13 +70,23 @@
     }
     return (cache[k] = out);
   }
-  /* the frame at W×H: background, the line around the window, the window cut see-through, then the elements */
+  /* the frame at W×H: background, the elements set behind the photo, the line around the window, the window cut
+     see-through (it also cuts what is behind the photo), then the elements in front of the photo */
   function render(W, H, withPhoto) {
     var c = FS.canvas(W, H), x = c.getContext('2d'), M = Math.min(W, H), b = base(W, H);
     if (b && b.win && D.bg.gen && D.bg.gen.fn !== 'cover') D.win = b.win;
     var w = D.win, hx = w.x * W, hy = w.y * H, hw = w.w * W, hh = w.h * H, r = D.radius * M;
     x.fillStyle = D.bg.color || '#ffffff'; x.fillRect(0, 0, W, H);
     if (b) { x.imageSmoothingQuality = 'high'; x.drawImage(b.c, 0, 0, W, H); if (D.bg.dim) { x.fillStyle = 'rgba(0,0,0,' + D.bg.dim + ')'; x.fillRect(0, 0, W, H); } }
+    function els(under) {
+      D.els.forEach(function (e) {
+        if (!!e.under !== under) return; var bx = elBox(e, W, H); if (!bx) return;
+        x.save(); x.globalAlpha = e.op == null ? 1 : e.op; x.translate(bx.cx, bx.cy); x.rotate((e.rot || 0) * Math.PI / 180); if (e.flip) x.scale(-1, 1);
+        if (e.shadow) { x.shadowColor = 'rgba(0,0,0,.35)'; x.shadowBlur = M * 0.01; x.shadowOffsetY = M * 0.003; }
+        x.drawImage(bx.c, -bx.w / 2, -bx.h / 2, bx.w, bx.h); x.restore();
+      });
+    }
+    els(true);
     if (D.line && D.line.w > 0) {
       x.save(); x.strokeStyle = D.line.color; x.lineWidth = Math.max(1, D.line.w * M);
       winPath(x, D.shape, hx, hy, hw, hh, r, -D.line.w * M * 1.4); x.stroke();
@@ -75,12 +94,7 @@
       x.restore();
     }
     x.save(); x.globalCompositeOperation = 'destination-out'; winPath(x, D.shape, hx, hy, hw, hh, r); x.fill(); x.restore();
-    D.els.forEach(function (e) {
-      var bx = elBox(e, W, H); if (!bx) return;
-      x.save(); x.globalAlpha = e.op == null ? 1 : e.op; x.translate(bx.cx, bx.cy); x.rotate((e.rot || 0) * Math.PI / 180); if (e.flip) x.scale(-1, 1);
-      if (e.shadow) { x.shadowColor = 'rgba(0,0,0,.35)'; x.shadowBlur = M * 0.01; x.shadowOffsetY = M * 0.003; }
-      x.drawImage(bx.c, -bx.w / 2, -bx.h / 2, bx.w, bx.h); x.restore();
-    });
+    els(false);
     if (!withPhoto || !photo) return c;
     var o = FS.canvas(W, H), ox = o.getContext('2d'), s = Math.max(hw / photo.naturalWidth, hh / photo.naturalHeight);
     ox.fillStyle = '#222'; ox.fillRect(0, 0, W, H); ox.imageSmoothingQuality = 'high';
@@ -119,8 +133,7 @@
   function buildExamples() {
     var box = $('#fm-ex', root); if (!box) return;
     var list = examples(), s = sizeOf(D.size), tw = 200, th = Math.round(tw * s.H / s.W), keep = D;
-    box.innerHTML = list.map(function (e, i) { return '<button class="fm-exb" data-ex="' + i + '"><canvas width="' + tw + '" height="' + th + '"></canvas><span>' + esc(e[0]) + '</span></button>'; }).join('') +
-      (inv ? '<button class="fm-exb fm-ai" id="fm-aigo"><i>🤖</i><span>מסגרת חדשה בעיצוב ההזמנה (AI)</span></button>' : '');
+    box.innerHTML = list.map(function (e, i) { return '<button class="fm-exb" data-ex="' + i + '"><canvas width="' + tw + '" height="' + th + '"></canvas><span>' + esc(e[0]) + '</span></button>'; }).join('');
     var i = 0;
     (function step() {
       var t0 = performance.now();
@@ -132,19 +145,68 @@
       } catch (e) { if (window.console) console.warn('frame example', e); } finally { D = keep; }
       if (i < list.length && box.isConnected) requestAnimationFrame(step);
     })();
-    box.onclick = function (e) {
-      if (e.target.closest('#fm-aigo')) return aiFrame();
-      var b = e.target.closest('[data-ex]'); if (b) useExample(list[Number(b.dataset.ex)][1]);
-    };
+    box.onclick = function (e) { var b = e.target.closest('[data-ex]'); if (b) useExample(list[Number(b.dataset.ex)][1]); };
+    aiCards();
   }
-  function aiFrame() {
-    var s = sizeOf(D.size);
-    FS.busy('🤖 מעצב מסגרת בסגנון ההזמנה… (עד דקה)');
-    FS.aiFrameFromInvite(inv, s.W, s.H, { band: true, round: true, hole: 0.7 }).then(function (r) {
-      FS.busy(); snap();
-      D.bg = { color: pal.paper, src: r.canvas.toDataURL('image/png'), gen: null }; D.win = { x: r.hole.x / s.W, y: r.hole.y / s.H, w: r.hole.w / s.W, h: r.hole.h / s.H }; D.shape = 'rect'; D.line = { color: pal.accent, w: 0 };
-      D.els = textEls(pal, Math.min(0.93, D.win.y + D.win.h + (1 - D.win.y - D.win.h) / 2 - 0.02)); cache = {}; ui(); draw(); tab('els'); FS.toast('🤖 המסגרת מוכנה. אפשר להוסיף ולהזיז אלמנטים.');
-    }, function (e) { FS.busy(); FS.toast('המסגרת לא נוצרה. ' + (FS.aiError ? FS.aiError(e && e.message) : ''), 7000); });
+
+  /* ---------- ten frames the image AI designs from the invitation, standing, lying or both ----------
+     Each one gets its own design direction (FS.invFramePrompt's o.extra), three are asked at a time, and every card shows
+     its frame the moment it is back; a card that failed is asked again on a click. The results stay while the program is open. */
+  var AI_DIRS = [
+    ['קלאסית מעוטרת', 'classic and ornate, the invitation\'s ornaments repeated richly along all four edges', { band: true, round: true, hole: 0.7 }],
+    ['מינימלית יוקרתית', 'minimal and luxurious: a fine double line in the invitation\'s accent colour, lots of calm paper, one small ornament at the top', { hole: 0.78 }],
+    ['פרחונית', 'floral: generous flowers and leaves from the invitation gathered in two opposite corners, the rest light', { band: true, hole: 0.7 }],
+    ['זהב וארט דקו', 'gold foil Art Deco: geometric gold lines and corner fans, elegant and festive', { hole: 0.72 }],
+    ['צבעי מים', 'soft watercolour washes in the invitation\'s colours, painted edges that fade into the paper', { round: true, hole: 0.72 }],
+    ['רצועת שמות רחבה', 'a wide decorated band at the bottom for the names, a slimmer border on the other sides', { band: true, hole: 0.66 }],
+    ['חלון קשת', 'an arched window (round top) framed by an ornamental arch in the invitation\'s style', { hole: 0.68 }],
+    ['חלון אליפסה', 'an oval window surrounded by a wreath of the invitation\'s ornaments', { hole: 0.6 }],
+    ['בוטנית ירוקה', 'botanical: leafy greenery and branches climbing up the sides, fresh and natural', { band: true, hole: 0.7 }],
+    ['חגיגית מנצנצת', 'festive and glowing: fine sparkles, confetti of the invitation\'s colours and a soft shimmer around the window', { round: true, hole: 0.72 }]
+  ];
+  var aiEx = [], aiOr = 'p', aiRun = 0;
+  function portraitSize() { var s = sizeOf(D.size); return s.H >= s.W ? D.size : '10x15'; }
+  function landscapeSize() { var s = sizeOf(D.size); return s.W > s.H ? D.size : '15x10'; }
+  function aiCards() {
+    var box = $('#fm-aiex', root); if (!box) return;
+    box.innerHTML = aiEx.map(function (j, i) {
+      var s = sizeOf(j.size), tw = 200, th = Math.round(tw * s.H / s.W);
+      return '<button class="fm-exb fm-aij ' + j.st + '" data-aj="' + i + '"><canvas width="' + tw + '" height="' + th + '"></canvas><span>' + esc(j.name) + ' · ' + (s.W > s.H ? 'שוכבת' : 'עומדת') + '</span>' +
+        (j.st === 'wait' ? '<em>🤖 מעצב…</em>' : j.st === 'err' ? '<em>⚠ לא הצליח · לחיצה לנסות שוב</em>' : '') + '</button>';
+    }).join('');
+    $$('[data-aj]', box).forEach(function (b) { var j = aiEx[Number(b.dataset.aj)]; if (j.st === 'ok') aiThumb(j, b.querySelector('canvas')); });
+  }
+  function aiThumb(j, cv) {
+    FS.loadImg(j.src).then(function (im) {
+      var x = cv.getContext('2d'), w = j.win, W = cv.width, H = cv.height;
+      if (photo) { var hx = w.x * W, hy = w.y * H, hw = w.w * W, hh = w.h * H, s = Math.max(hw / photo.naturalWidth, hh / photo.naturalHeight); x.drawImage(photo, hx + (hw - photo.naturalWidth * s) / 2, hy + (hh - photo.naturalHeight * s) / 2, photo.naturalWidth * s, photo.naturalHeight * s); }
+      x.drawImage(im, 0, 0, W, H);
+    }, function () {});
+  }
+  function aiJob(j) {
+    var s = sizeOf(j.size), dir = AI_DIRS[j.k]; j.st = 'wait'; aiCards();
+    return FS.aiFrameFromInvite(inv, s.W, s.H, Object.assign({ extra: dir[1] }, dir[2])).then(function (r) {
+      j.src = r.canvas.toDataURL('image/png'); j.win = { x: r.hole.x / s.W, y: r.hole.y / s.H, w: r.hole.w / s.W, h: r.hole.h / s.H }; j.st = 'ok';
+    }, function (e) { j.st = 'err'; j.err = e && e.message; }).then(aiCards);
+  }
+  function ai10() {
+    if (!inv) return FS.toast('מעלים קודם את ההזמנה');
+    if (aiRun) { aiRun++; if (FS.aiStop) FS.aiStop(); return; }
+    var sizes = aiOr === 'p' ? [portraitSize()] : aiOr === 'l' ? [landscapeSize()] : [portraitSize(), landscapeSize()], jobs = [];
+    sizes.forEach(function (sz) { AI_DIRS.forEach(function (d, k) { jobs.push({ k: k, name: d[0], size: sz, st: 'wait' }); }); });
+    aiEx = jobs.concat(aiEx.filter(function (j) { return j.st === 'ok'; })); aiCards();
+    var next = 0, run = ++aiRun; $('#fm-ai10', root).textContent = '⏹ עצירה';
+    function lane() { if (run !== aiRun || next >= jobs.length) return Promise.resolve(); var j = jobs[next++]; return aiJob(j).then(lane); }
+    Promise.all([lane(), lane(), lane()]).then(function () {
+      aiRun = 0; $('#fm-ai10', root).textContent = '🤖 10 מסגרות AI'; jobs.forEach(function (j) { if (j.st === 'wait') j.st = 'err'; }); aiCards();
+      var ok = jobs.filter(function (j) { return j.st === 'ok'; }).length, bad = jobs.length - ok;
+      FS.toast('🤖 ' + ok + ' מסגרות AI מוכנות' + (bad ? ' · ' + bad + ' לא הצליחו (לחיצה על כרטיס מנסה שוב)' + (FS.lastAiDetail ? '' : '') : '') + '. בוחרים אחת ועורכים.', 7000);
+    });
+  }
+  function useAI(j) {
+    snap(); D.size = j.size; D.bg = { color: pal.paper, src: j.src, gen: null }; D.win = j.win; D.shape = 'rect'; D.radius = 0; D.line = { color: pal.accent, w: 0 };
+    D.els = textEls(pal, Math.min(0.94, D.win.y + D.win.h + (1 - D.win.y - D.win.h) / 2 - 0.02)); sel = null; cache = {}; ui(); draw(); tab('els');
+    FS.toast('🤖 "' + j.name + '" בעורך. אפשר להוסיף, להזיז, לשנות טקסטים ולשמור.');
   }
   function loadInvite(file) {
     FS.fileToDataURL(file).then(function (u) { return FS.loadImg(u).then(function (im) { inv = im; invSrc = u; }); }).then(function () {
@@ -180,19 +242,25 @@
     '<div class="fm-body"><aside class="fm-side"><nav class="fm-tabs"><button data-t="ex" class="on">✨ דוגמאות</button><button data-t="els">🌿 אלמנטים</button><button data-t="txt">🔤 טקסט</button><button data-t="bg">🎨 רקע וחלון</button></nav>' +
       '<section data-p="ex"><div class="fm-inv"><img id="fm-inv-img" alt=""><div><label class="fm-btn gold">📨 העלאת ההזמנה<input type="file" id="fm-inv" accept="image/*" hidden></label><button class="fm-btn" id="fm-read">🤖 קריאת ההזמנה</button><p class="fm-hint">הדוגמאות נבנות מההזמנה: הצבעים, הגבול, הקישוטים והשמות.</p></div></div>' +
         '<div class="fm-row"><input id="fm-names" placeholder="שמות, למשל: נועה ודניאל"><input id="fm-date" placeholder="תאריך" style="max-width:120px"></div><button class="fm-btn" id="fm-reex">↻ עדכון הדוגמאות</button>' +
-        '<div class="fm-ex" id="fm-ex"></div><h4>העיצובים שלי</h4><div class="fm-mine" id="fm-mine"></div></section>' +
+        '<h4>🤖 מסגרות שה־AI עיצב מההזמנה</h4><p class="fm-hint">עשר מסגרות שונות בסגנון ההזמנה, כל אחת בכיוון אחר: קלאסית, מינימלית, פרחונית, זהב, צבעי מים ועוד. כל מסגרת מופיעה כשהיא מוכנה, ואז אפשר לערוך אותה.</p>' +
+        '<div class="fm-row"><div class="fm-seg fm-or" id="fm-aior"><button data-o="p" class="on">עומדות</button><button data-o="l">שוכבות</button><button data-o="b">שתיהן</button></div><button class="fm-btn gold" id="fm-ai10">🤖 10 מסגרות AI</button></div><div class="fm-ex" id="fm-aiex"></div>' +
+        '<h4>✨ דוגמאות מוכנות</h4><div class="fm-ex" id="fm-ex"></div><h4>העיצובים שלי</h4><div class="fm-mine" id="fm-mine"></div></section>' +
       '<section data-p="els" hidden><div class="fm-row"><label>צבע</label><input type="color" id="fm-ecol" value="#B8904F"><button class="fm-btn" id="fm-epal" title="צבעי ההזמנה">🎨</button><span class="fm-pal" id="fm-pal"></span></div><div class="fm-orn" id="fm-orn"></div>' +
         '<h4>מההזמנה</h4><div class="fm-orn" id="fm-pieces"></div><div class="fm-row"><button class="fm-btn" id="fm-crop">✂️ חיתוך חלק מההזמנה</button><label class="fm-btn">🖼️ תמונה / לוגו<input type="file" id="fm-img" accept="image/*" hidden></label></div></section>' +
       '<section data-p="txt" hidden><input id="fm-tt" placeholder="הטקסט"><div class="fm-row"><select id="fm-tf">' + fonts + '</select><input type="color" id="fm-tc" value="#3A2E1F"></div>' +
-        '<div class="fm-row"><label class="fm-chk"><input type="checkbox" id="fm-tb" checked> מודגש</label><label class="fm-chk"><input type="checkbox" id="fm-ts"> צל</label></div><button class="fm-btn gold" id="fm-tadd">➕ הוספת טקסט</button><p class="fm-hint">טקסט מסומן משתנה ישר מכאן.</p>' +
-        '<div class="fm-row fm-quick"><button class="fm-btn" data-q="names">השמות</button><button class="fm-btn" data-q="date">התאריך</button><button class="fm-btn" data-q="tag">#האשטאג</button></div></section>' +
+        '<div class="fm-row"><label class="fm-chk"><input type="checkbox" id="fm-tb" checked> מודגש</label><label class="fm-chk"><input type="checkbox" id="fm-ti"> נטוי</label><label class="fm-chk"><input type="checkbox" id="fm-ts"> צל</label></div>' +
+        '<div class="fm-row"><label class="fm-chk"><input type="checkbox" id="fm-to"> קו מתאר</label><input type="color" id="fm-toc" value="#ffffff"><label class="fm-l" style="flex:1">עובי <input type="range" id="fm-tow" min="2" max="20" value="6"></label></div>' +
+        '<label class="fm-l">ריווח אותיות <input type="range" id="fm-tls" min="-5" max="60" value="0"></label>' +
+        '<button class="fm-btn gold" id="fm-tadd">➕ הוספת טקסט</button><p class="fm-hint">טקסט מסומן משתנה ישר מכאן. לחיצה כפולה על טקסט במסגרת פותחת אותו לעריכה.</p>' +
+        '<div class="fm-row fm-quick"><button class="fm-btn" data-q="names">השמות</button><button class="fm-btn" data-q="date">התאריך</button><button class="fm-btn" data-q="tag">#האשטאג</button><button class="fm-btn" data-q="thanks">תודה שבאתם</button><button class="fm-btn" data-q="mazal">מזל טוב</button></div>' +
+        '<h4>כל הטקסטים במסגרת</h4><div class="fm-tlist" id="fm-tlist"></div></section>' +
       '<section data-p="bg" hidden><div class="fm-row"><label>צבע הרקע</label><input type="color" id="fm-bgc"><label class="fm-btn">🖼️ תמונת רקע<input type="file" id="fm-bgi" accept="image/*" hidden></label><button class="fm-btn" id="fm-bginv">📨 ההזמנה כרקע</button><button class="fm-btn" id="fm-bgx">✕</button></div>' +
         '<label class="fm-l">הכהיית הרקע <input type="range" id="fm-dim" min="0" max="60"></label>' +
         '<h4>החלון של התמונה</h4><div class="fm-seg" id="fm-shape"><button data-s="rect">ישר</button><button data-s="round">מעוגל</button><button data-s="oval">אליפסה</button><button data-s="arch">קשת</button></div>' +
         '<label class="fm-l">שוליים בצדדים <input type="range" id="fm-wx" min="0" max="30"></label><label class="fm-l">למעלה <input type="range" id="fm-wy" min="0" max="30"></label><label class="fm-l">למטה (מקום לשמות) <input type="range" id="fm-wb" min="0" max="40"></label><label class="fm-l">עיגול פינות <input type="range" id="fm-wr" min="0" max="12"></label>' +
         '<h4>קו סביב החלון</h4><div class="fm-row"><input type="color" id="fm-lc"><label class="fm-l" style="flex:1">עובי <input type="range" id="fm-lw" min="0" max="20"></label><label class="fm-chk"><input type="checkbox" id="fm-ld"> כפול</label></div></section>' +
     '</aside><main class="fm-stage" id="fm-stage"><div class="fm-selbar" id="fm-selbar" hidden><input type="color" id="fm-scol" title="צבע"><label title="שקיפות">◐<input type="range" id="fm-sop" min="10" max="100"></label>' +
-        '<button data-s="small" title="הקטנה">−</button><button data-s="big" title="הגדלה">+</button><button data-s="rl" title="סיבוב">⟲</button><button data-s="rr" title="סיבוב">⟳</button><button data-s="flip" title="היפוך">⇋</button><button data-s="dup" title="שכפול (Ctrl+D)">⧉</button><button data-s="up" title="קדימה">⬆</button><button data-s="down" title="אחורה">⬇</button><button data-s="del" class="danger" title="מחיקה (Delete)">🗑</button></div>' +
+        '<button data-s="small" title="הקטנה">−</button><button data-s="big" title="הגדלה">+</button><button data-s="rl" title="סיבוב">⟲</button><button data-s="rr" title="סיבוב">⟳</button><button data-s="flip" title="היפוך">⇋</button><button data-s="dup" title="שכפול (Ctrl+D)">⧉</button><button data-s="layer" class="fm-lay" title="לפני או מאחורי התמונה">⇅</button><button data-s="up" title="קדימה">⬆</button><button data-s="down" title="אחורה">⬇</button><button data-s="del" class="danger" title="מחיקה (Delete)">🗑</button></div>' +
       '<canvas id="fm-cv"></canvas><div class="fm-foot"><label class="fm-chk"><input type="checkbox" id="fm-ph" checked> תמונה לדוגמה בחלון</label><span class="fm-hint">גוררים כדי להזיז · העיגול בפינה משנה גודל · גלגלת: גודל · Shift+גלגלת: סיבוב</span></div></main></div>';
   document.body.appendChild(root);
 
@@ -209,6 +277,7 @@
       var b = elBox(e, cv.width, cv.height); if (!b) return;
       x.save(); x.translate(b.cx, b.cy); x.rotate((e.rot || 0) * Math.PI / 180); x.strokeStyle = '#D9B677'; x.lineWidth = 1.5 * dpr; x.setLineDash([6 * dpr, 4 * dpr]); x.strokeRect(-b.w / 2 - 4, -b.h / 2 - 4, b.w + 8, b.h + 8);
       x.setLineDash([]); x.fillStyle = '#D9B677'; x.beginPath(); x.arc(b.w / 2 + 4, b.h / 2 + 4, 9 * dpr, 0, 7); x.fill(); x.restore();
+      $('.fm-lay', root).classList.toggle('on', !!e.under); $('.fm-lay', root).title = e.under ? 'מאחורי התמונה · לחיצה מעבירה לפני התמונה' : 'לפני התמונה · לחיצה מעבירה מאחורי התמונה';
       $('#fm-scol', root).value = /^#[0-9a-f]{6}$/i.test(e.color || '') ? e.color : '#ffffff'; $('#fm-scol', root).disabled = e.t === 'img'; $('#fm-sop', root).value = Math.round((e.op == null ? 1 : e.op) * 100);
     }
   }
@@ -244,7 +313,8 @@
     else if (k === 'dup') { var n = JSON.parse(JSON.stringify(e)); n.id = FS.uid(); n.x = Math.min(0.95, n.x + 0.04); n.y = Math.min(0.95, n.y + 0.04); D.els.push(n); sel = n.id; }
     else if (k === 'up' && i < D.els.length - 1) { D.els.splice(i, 1); D.els.splice(i + 1, 0, e); } else if (k === 'down' && i > 0) { D.els.splice(i, 1); D.els.splice(i - 1, 0, e); }
     else if (k === 'del') { D.els.splice(i, 1); sel = null; }
-    draw(); save(true);
+    else if (k === 'layer') { e.under = !e.under; FS.toast(e.under ? '⇅ מאחורי התמונה: התמונה מכסה אותו בחלון' : '⇅ לפני התמונה: הוא מונח מעליה'); }
+    draw(); save(true); tlist();
   }
   $('#fm-selbar', root).addEventListener('click', function (ev) { var b = ev.target.closest('[data-s]'); if (b) act(b.dataset.s); });
   $('#fm-scol', root).addEventListener('input', function () { var e = selEl(); if (!e || e.t === 'img') return; snapSoon(); e.color = this.value; draw(); });
@@ -288,12 +358,53 @@
     });
   });
   /* texts */
-  function syncText() { var e = selEl(); if (!e || e.t !== 'text') return; $('#fm-tt', root).value = e.text; $('#fm-tf', root).value = e.font; $('#fm-tc', root).value = e.color; $('#fm-tb', root).checked = (e.weight || 700) >= 600; $('#fm-ts', root).checked = !!e.shadow; }
-  function textChange() { var e = selEl(); if (!e || e.t !== 'text') return; snapSoon(); e.text = $('#fm-tt', root).value || ' '; e.font = $('#fm-tf', root).value; e.color = $('#fm-tc', root).value; e.weight = $('#fm-tb', root).checked ? 700 : 400; e.shadow = $('#fm-ts', root).checked; draw(); }
-  ['#fm-tt', '#fm-tf', '#fm-tc', '#fm-tb', '#fm-ts'].forEach(function (s) { $(s, root).addEventListener('input', textChange); $(s, root).addEventListener('change', textChange); });
-  function addText(t) { if (!t) return FS.toast('כותבים טקסט'); add({ t: 'text', text: t, font: $('#fm-tf', root).value, color: $('#fm-tc', root).value, weight: $('#fm-tb', root).checked ? 700 : 400, shadow: $('#fm-ts', root).checked, w: Math.min(0.8, 0.07 + t.length * 0.035), y: 0.88, x: 0.5 }); }
+  function hexOr(v, d) { return /^#[0-9a-f]{6}$/i.test(v || '') ? v : d; }
+  function syncText() {
+    var e = selEl(); tlist(); if (!e || e.t !== 'text') return;
+    $('#fm-tt', root).value = e.text; $('#fm-tf', root).value = e.font; $('#fm-tc', root).value = hexOr(e.color, '#3a2e1f'); $('#fm-tb', root).checked = (e.weight || 700) >= 600; $('#fm-ti', root).checked = !!e.italic; $('#fm-ts', root).checked = !!e.shadow;
+    $('#fm-to', root).checked = !!e.stroke; $('#fm-toc', root).value = hexOr(e.stroke, '#ffffff'); $('#fm-tow', root).value = Math.round((e.sw || 0.06) * 100); $('#fm-tls', root).value = Math.round((e.ls || 0) * 100);
+  }
+  function tStyle(e) {
+    e.font = $('#fm-tf', root).value; e.color = $('#fm-tc', root).value; e.weight = $('#fm-tb', root).checked ? 700 : 400; e.italic = $('#fm-ti', root).checked; e.shadow = $('#fm-ts', root).checked;
+    e.stroke = $('#fm-to', root).checked ? $('#fm-toc', root).value : ''; e.sw = Number($('#fm-tow', root).value) / 100; e.ls = Number($('#fm-tls', root).value) / 100; return e;
+  }
+  /* the text's box keeps its letters the same size when the words change */
+  function textChange() {
+    var e = selEl(); if (!e || e.t !== 'text') return; snapSoon();
+    var old = elCanvas(e), ow = old ? old.width : 0; e.text = $('#fm-tt', root).value || ' '; tStyle(e);
+    var nw = elCanvas(e); if (ow && nw && this && this.id === 'fm-tt') e.w = Math.max(0.03, Math.min(1.6, e.w * nw.width / ow));
+    draw(); tlist();
+  }
+  ['#fm-tt', '#fm-tf', '#fm-tc', '#fm-tb', '#fm-ti', '#fm-ts', '#fm-to', '#fm-toc', '#fm-tow', '#fm-tls'].forEach(function (s) { $(s, root).addEventListener('input', textChange); $(s, root).addEventListener('change', textChange); });
+  /* a new text goes to the band under the window (or above it), to a height no other text holds */
+  function freeY() {
+    var w = D.win, below = 1 - w.y - w.h, above = w.y, ys = D.els.filter(function (e) { return e.t === 'text'; }).map(function (e) { return e.y; });
+    var start = below >= above ? w.y + w.h + Math.max(0.035, below * 0.45) : Math.max(0.04, above * 0.55), step = below >= above ? 0.065 : -0.065;
+    for (var i = 0, y = start; i < 12; i++, y += step) { if (y > 0.97 || y < 0.03) break; if (!ys.some(function (v) { return Math.abs(v - y) < 0.05; })) return y; }
+    return 0.5;
+  }
+  function addText(t) { if (!t) return FS.toast('כותבים טקסט'); add(tStyle({ t: 'text', text: t, w: Math.min(0.8, 0.07 + t.length * 0.035), y: freeY(), x: 0.5 })); syncText(); }
   $('#fm-tadd', root).addEventListener('click', function () { sel = null; addText($('#fm-tt', root).value.trim()); });
-  $('.fm-quick', root).addEventListener('click', function (ev) { var b = ev.target.closest('[data-q]'); if (!b) return; sel = null; var q = b.dataset.q; addText(q === 'names' ? $('#fm-names', root).value.trim() || 'נועה ודניאל' : q === 'date' ? $('#fm-date', root).value.trim() || '12.12.2026' : '#' + ($('#fm-names', root).value.trim().replace(/\s+/g, '_') || 'האירוע_שלנו')); });
+  $('.fm-quick', root).addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-q]'); if (!b) return; sel = null; var q = b.dataset.q, nm = $('#fm-names', root).value.trim();
+    addText(q === 'names' ? nm || 'נועה ודניאל' : q === 'date' ? $('#fm-date', root).value.trim() || '12.12.2026' : q === 'thanks' ? 'תודה שבאתם לשמוח איתנו' : q === 'mazal' ? 'מזל טוב!' : '#' + (nm.replace(/\s+/g, '_') || 'האירוע_שלנו'));
+  });
+  /* every text on the frame, to change in place, pick or delete */
+  function tlist() {
+    var box = $('#fm-tlist', root); if (!box || !D) return; var l = D.els.filter(function (e) { return e.t === 'text'; });
+    if (box.contains(document.activeElement) && box.children.length === l.length) return;
+    box.innerHTML = l.length ? l.map(function (e) { return '<div class="fm-tr' + (e.id === sel ? ' on' : '') + '" data-tid="' + e.id + '"><input value="' + esc(e.text) + '"><button class="fm-btn" data-tx="pick" title="סימון">🎯</button><button class="fm-btn" data-tx="del" title="מחיקה">✕</button></div>'; }).join('') : '<p class="fm-hint">אין עדיין טקסט במסגרת.</p>';
+  }
+  $('#fm-tlist', root).addEventListener('input', function (ev) {
+    var r = ev.target.closest('[data-tid]'), e = r && D.els.filter(function (x) { return x.id === r.dataset.tid; })[0]; if (!e) return; snapSoon();
+    var old = elCanvas(e), ow = old ? old.width : 0; e.text = ev.target.value || ' '; var nw = elCanvas(e); if (ow && nw) e.w = Math.max(0.03, Math.min(1.6, e.w * nw.width / ow));
+    if (e.id === sel) $('#fm-tt', root).value = e.text; draw();
+  });
+  $('#fm-tlist', root).addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-tx]'), r = b && b.closest('[data-tid]'); if (!r) return; sel = r.dataset.tid;
+    if (b.dataset.tx === 'del') act('del'); else { syncText(); draw(); }
+  });
+  cv.addEventListener('dblclick', function (ev) { var h = hit(at(ev)); if (h && h.t === 'text') { sel = h.id; tab('txt'); syncText(); draw(); var t = $('#fm-tt', root); t.focus(); t.select(); } });
   /* background and window */
   function bgUI() {
     $('#fm-bgc', root).value = /^#[0-9a-f]{6}$/i.test(D.bg.color || '') ? D.bg.color : '#ffffff'; $('#fm-dim', root).value = Math.round((D.bg.dim || 0) * 100);
@@ -381,6 +492,9 @@
   $('#fm-inv', root).addEventListener('change', function () { var f = this.files[0]; this.value = ''; if (f) loadInvite(f); });
   $('#fm-read', root).addEventListener('click', function () { if (!inv) return FS.toast('מעלים קודם את ההזמנה'); readInvite(); });
   $('#fm-reex', root).addEventListener('click', buildExamples);
+  $('#fm-ai10', root).addEventListener('click', ai10);
+  $('#fm-aior', root).addEventListener('click', function (ev) { var b = ev.target.closest('[data-o]'); if (!b) return; aiOr = b.dataset.o; $$('#fm-aior [data-o]', root).forEach(function (x) { x.classList.toggle('on', x === b); }); });
+  $('#fm-aiex', root).addEventListener('click', function (ev) { var b = ev.target.closest('[data-aj]'); if (!b) return; var j = aiEx[Number(b.dataset.aj)]; if (!j) return; if (j.st === 'ok') useAI(j); else if (j.st === 'err' && inv) aiJob(j); });
   $('#fm-ph', root).addEventListener('change', function () { showPhoto = this.checked; draw(); });
   $('#fm-undo', root).addEventListener('click', undo); $('#fm-redo', root).addEventListener('click', redo);
   $('#fm-close', root).addEventListener('click', close);
