@@ -125,7 +125,8 @@
       'Copy the invitation\'s exact visual identity: the same colour palette, background paper texture, ornaments, flowers, leaves, line work, gold or foil details and overall style, so it clearly belongs to the same event. ' +
       'Layout: an elegant decorative border around all four edges' + (o.band ? ', a little wider at the bottom' : '') + ', and one large empty photo window in the centre that covers about ' + Math.round((o.hole || 0.72) * 100) + '% of the frame. ' +
       'Fill the window with perfectly flat, solid, pure green (#00FF00), with clean sharp edges' + (o.round ? ' and softly rounded corners' : '') + '; nothing may overlap or be drawn inside the green window. ' +
-      'No text, no letters, no names, no numbers, no people, no photo inside. Flat front view, the frame fills the whole image edge to edge, print quality, highly detailed.';
+      'No text, no letters, no names, no numbers, no people, no photo inside. Flat front view, the frame fills the whole image edge to edge, print quality, highly detailed.' +
+      (o.extra ? ' Design direction for this version: ' + o.extra + '.' : '');
   };
   /* cut the green window: the green part that holds the centre (or the biggest green part) becomes transparent */
   FS.keyGreenWindow = function (img, W, H) {

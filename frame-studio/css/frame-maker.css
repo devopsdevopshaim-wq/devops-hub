@@ -66,4 +66,19 @@ body.fm-on { overflow: hidden; }
 #fm .fm-top input, #fm .fm-top select { width: auto; flex: 0 1 240px; }
 #fm .fm-top .fm-btn { flex: none; }
 #fm .fm-orn > p { grid-column: 1 / -1; }
+/* v67: the AI's ten frames, the texts list, behind/in front of the photo */
+#fm .fm-or { grid-template-columns: repeat(3, 1fr); flex: 1; }
+#fm .fm-aij { position: relative; }
+#fm .fm-aij em { position: absolute; inset: 8px 8px 30px; display: grid; place-items: center; font-style: normal; font-size: 12px; text-align: center; border-radius: 6px; background: rgba(12,13,16,.72); color: #F3DDA6; }
+#fm .fm-aij.wait em { animation: fm-pulse 1.4s ease-in-out infinite; }
+#fm .fm-aij.err em { color: #F2B8B5; }
+#fm .fm-aij.wait canvas { background: linear-gradient(110deg, #1d1f25 30%, #2a2c33 50%, #1d1f25 70%) 0 0 / 200% 100%; animation: fm-shim 1.4s linear infinite; }
+@keyframes fm-pulse { 50% { opacity: .55; } }
+@keyframes fm-shim { to { background-position: -200% 0; } }
+#fm .fm-tlist { display: grid; gap: 6px; }
+#fm .fm-tr { display: flex; gap: 6px; padding: 4px; border-radius: 12px; }
+#fm .fm-tr.on { background: rgba(217,182,119,.12); box-shadow: inset 0 0 0 1px rgba(217,182,119,.35); }
+#fm .fm-tr input { flex: 1; }
+#fm .fm-tr .fm-btn { padding: 6px 9px; }
+#fm .fm-selbar button.on { background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); color: #1A140B; }
 @media (max-width: 900px) { #fm .fm-body { grid-template-columns: 1fr; grid-template-rows: 46vh 1fr; } #fm .fm-side { order: 2; } }
