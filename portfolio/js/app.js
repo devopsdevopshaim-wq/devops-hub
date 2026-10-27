@@ -424,17 +424,21 @@
   // ---------- tabs (the domains) in the left column, and the admin's tools for arranging them ----------
   var layoutApi = '', saveTimer = null, saveMsg = null;
   function catKeys() { return state.data.catOrder || Object.keys(state.data.categories); }
+  function catsOpen() { try { return localStorage.getItem('cats-open') === '1'; } catch (e) { return false; } }
   function catCounts() { var c = {}; state.data.projects.forEach(function (p) { c[p.category] = (c[p.category] || 0) + 1; }); return c; }
 
   function renderTiles() {
     var cats = state.data.categories, counts = catCounts();
     var box = document.getElementById('tiles');
     box.replaceChildren();
+    // the domains stay shut (a slim column of icons) until the visitor opens them; editing opens them
+    var open = state.edit || catsOpen();
+    document.getElementById('top').classList.toggle('cats-closed', !open);
     var keys = ['all'].concat(catKeys().filter(function (k) { return cats[k] && (counts[k] || state.edit); }));
     keys.forEach(function (k, i) {
       var t = el('div', {
         class: 'tile ' + (k === 'all' ? 'all' : 'cat-' + k), role: 'tab', tabindex: '0',
-        'aria-selected': String(k === state.cat), 'data-cat': k
+        'aria-selected': String(k === state.cat), 'data-cat': k, title: k === 'all' ? 'הכול' : cats[k]
       }, [
         el('span', { class: 'tile-art', html: art(k === 'all' ? 'web' : k) }),
         el('span', { class: 'tile-txt' }, [
@@ -462,6 +466,9 @@
     var head = document.getElementById('cats-tools');
     if (head) {
       head.replaceChildren();
+      var tg = el('button', { type: 'button', class: 'cats-toggle', 'aria-expanded': String(open), title: open ? 'סגירת התחומים' : 'פתיחת התחומים' }, [el('span', { class: 'ct-ico', 'aria-hidden': 'true', text: '☰' }), el('span', { class: 'ct-txt', text: open ? 'סגירה' : 'תחומים' })]);
+      tg.addEventListener('click', function () { try { localStorage.setItem('cats-open', open ? '0' : '1'); } catch (e) {} if (state.edit) { state.edit = false; document.documentElement.classList.remove('layout-edit'); } renderTiles(); render(); });
+      head.appendChild(tg);
       if (state.isAdmin) {
         var eb = el('button', { type: 'button', class: 'cats-edit' + (state.edit ? ' on' : ''), text: state.edit ? '✓ סיום עריכה' : '✎ עריכת תחומים וסדר' });
         eb.addEventListener('click', function () { state.edit = !state.edit; document.documentElement.classList.toggle('layout-edit', state.edit); renderTiles(); render(); });

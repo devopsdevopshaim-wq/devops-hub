@@ -133,8 +133,9 @@
   }
   function tickClock() {
     markNow();
-    var t = document.getElementById('td-time'), d = document.getElementById('td-date'); if (!t) return;
+    var ts = document.getElementById('td-time-s'), t = document.getElementById('td-time'), d = document.getElementById('td-date'); if (!t) return;
     var n = new Date();
+    if (ts) ts.textContent = n.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
     t.textContent = n.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     var heb = ''; try { heb = new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).format(n); } catch (e) { heb = ''; }
     if (d) d.textContent = 'יום ' + DAYS[n.getDay()] + ' · ' + n.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }) + (heb ? ' · ' + heb : '');
@@ -191,21 +192,35 @@
       (dow !== 6 ? '<div class="td-planbar">' + (editing ? '<button type="button" class="td-more" id="td-save">שמירה</button><button type="button" class="td-link" id="td-reset">חזרה לברירת המחדל</button>' : '<button type="button" class="td-more" id="td-editbtn">עריכת סדר היום</button>') + '</div>' : '') +
       '</article>';
 
-    var tab = store('dock-tab') === 'comm' ? 'comm' : 'plan';
-    root.innerHTML = '<div class="td-bandgrid">' + parshaCard + provCard + '</div>';
+    // top row: two small pills (the portion of the week, the clock); each opens a card on hover, focus or tap
+    var parshaName = sh ? sh.parsha.replace(/^פרשת\s*/, '') : '';
+    root.innerHTML = '<div class="td-chips-bar">' +
+      '<div class="td-chipwrap" data-k="p"><button type="button" class="td-pill" aria-haspopup="true" aria-expanded="false"><span class="td-pill-ico" aria-hidden="true">📖</span><span class="td-pill-txt"><small>פרשת השבוע</small><b>' + esc(parshaName || '—') + '</b></span>' +
+        (sh && sh.candles ? '<em title="כניסת שבת">' + fmtTime(sh.candles) + '</em>' : '') + '</button><div class="td-pop td-pop-p" role="dialog" aria-label="פרשת השבוע וזמני שבת">' + parshaCard + '</div></div>' +
+      '<div class="td-chipwrap" data-k="c"><button type="button" class="td-pill" aria-haspopup="true" aria-expanded="false"><span class="td-pill-ico" aria-hidden="true">🕐</span><b id="td-time-s" dir="ltr"></b></button><div class="td-pop td-pop-c" role="dialog" aria-label="השעה והפתגם היומי">' + provCard + '</div></div></div>';
+    var wraps = root.querySelectorAll('.td-chipwrap'), closeT = null;
+    function setOpen(w, on) { w.classList.toggle('open', on); var bt = w.querySelector('.td-pill'); if (bt) bt.setAttribute('aria-expanded', String(on)); }
+    function closeAll(except) { Array.prototype.forEach.call(wraps, function (w) { if (w !== except) setOpen(w, false); }); }
+    Array.prototype.forEach.call(wraps, function (w) {
+      w.addEventListener('pointerenter', function (e) { if (e.pointerType === 'touch') return; clearTimeout(closeT); closeAll(w); setOpen(w, true); });
+      w.addEventListener('pointerleave', function (e) { if (e.pointerType === 'touch') return; closeT = setTimeout(function () { setOpen(w, false); }, 260); });
+      w.querySelector('.td-pill').addEventListener('click', function () { var on = !w.classList.contains('open'); closeAll(w); setOpen(w, on); });
+    });
+    if (!window.__tdOutside) {
+      window.__tdOutside = true;
+      document.addEventListener('click', function (e) { if (!e.target.closest('.td-chipwrap')) Array.prototype.forEach.call(document.querySelectorAll('.td-chipwrap.open'), function (w) { w.classList.remove('open'); }); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { Array.prototype.forEach.call(document.querySelectorAll('.td-chipwrap.open'), function (w) { w.classList.remove('open'); }); var d = document.getElementById('comm-drawer'); if (d) d.hidden = true; } });
+    }
+
+    // the day plan lives in the dock; the commentaries stay shut until the button is pressed, and then slide out in the same column
     if (dockEl) {
-      dockEl.innerHTML = '<div class="dd-inner"><div class="dd-tabs" role="tablist">' +
-        '<button type="button" role="tab" data-t="plan" aria-selected="' + (tab === 'plan') + '">סדר יום</button>' +
-        '<button type="button" role="tab" data-t="comm" aria-selected="' + (tab === 'comm') + '">פירושים וניסוחים</button></div>' +
-        '<div class="dd-pane" data-p="plan"' + (tab === 'plan' ? '' : ' hidden') + '>' + planCard + '</div>' +
-        '<div class="dd-pane" data-p="comm"' + (tab === 'comm' ? '' : ' hidden') + '>' + commCard + '</div></div>';
-      Array.prototype.forEach.call(dockEl.querySelectorAll('.dd-tabs button'), function (b) {
-        b.addEventListener('click', function () {
-          store('dock-tab', b.dataset.t);
-          Array.prototype.forEach.call(dockEl.querySelectorAll('.dd-tabs button'), function (x) { x.setAttribute('aria-selected', String(x === b)); });
-          Array.prototype.forEach.call(dockEl.querySelectorAll('.dd-pane'), function (p) { p.hidden = p.dataset.p !== b.dataset.t; });
-        });
-      });
+      dockEl.innerHTML = '<div class="dd-inner"><button type="button" class="dd-comm-btn" id="comm-open"><span class="dd-comm-ico" aria-hidden="true">📜</span><span><b>פירושים וניסוחים</b><small>רש״י, רמב״ן, תלמוד ועוד על הפרשה</small></span><i aria-hidden="true">‹</i></button>' + planCard + '</div>';
+      var old = document.getElementById('comm-drawer'), wasOpen = old && !old.hidden; if (old) old.remove();
+      var dr = document.createElement('aside'); dr.id = 'comm-drawer'; dr.className = 'comm-drawer'; dr.hidden = !wasOpen; dr.setAttribute('aria-label', 'פירושים וניסוחים');
+      dr.innerHTML = '<button type="button" class="cd-x" aria-label="סגירה">✕</button>' + commCard;
+      document.body.appendChild(dr);
+      $('#comm-open').addEventListener('click', function () { dr.hidden = !dr.hidden; });
+      dr.querySelector('.cd-x').addEventListener('click', function () { dr.hidden = true; });
     }
     tickClock();
 
