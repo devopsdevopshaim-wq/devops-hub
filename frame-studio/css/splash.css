@@ -55,6 +55,41 @@ html.op-seen #op-splash { display: none; }
 @keyframes sp-tag { from { opacity: 0; letter-spacing: .9em; } to { opacity: 1; letter-spacing: .55em; } }
 @keyframes sp-stage-out { to { transform: scale(.93) translateY(-8px); opacity: 0; filter: blur(4px); } }
 @keyframes sp-leave { to { opacity: 0; visibility: hidden; } }
+/* v66, the whole screen: a camera shutter of eight blades covers the screen and turns open (each blade slides out along
+   its own line while the shutter twists), light rays turn slowly behind, a viewfinder draws itself in the four corners
+   with its readouts, and a diagonal band of light crosses the screen with the flash. */
+#op-splash .sp-rays { position: absolute; inset: -30%; background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(227,196,138,.10) 0deg 2deg, rgba(0,0,0,0) 2deg 12deg);
+  -webkit-mask: radial-gradient(circle at 50% 50%, #000 0%, rgba(0,0,0,.6) 30%, transparent 62%); mask: radial-gradient(circle at 50% 50%, #000 0%, rgba(0,0,0,.6) 30%, transparent 62%);
+  opacity: 0; animation: sp-rays-in 1.6s ease-out 1.7s forwards, sp-turn 40s linear infinite; }
+#op-splash .sp-shutter { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+#op-splash .sp-sh-g { transform-origin: 0 0; animation: sp-sh-twist 1.25s cubic-bezier(.65,0,.25,1) .25s forwards; }
+#op-splash .sp-sh { animation: sp-sh-open 1.25s cubic-bezier(.65,0,.25,1) .25s forwards; }
+#op-splash .sp-sweep { position: absolute; top: -50%; bottom: -50%; left: -40%; width: 26%; transform: rotate(18deg) translateX(-120%); z-index: 4; pointer-events: none;
+  background: linear-gradient(90deg, rgba(255,240,205,0), rgba(255,240,205,.16) 45%, rgba(255,255,255,.32) 50%, rgba(255,240,205,.16) 55%, rgba(255,240,205,0)); animation: sp-sweep 1.5s cubic-bezier(.4,0,.2,1) 1.8s forwards; }
+#op-splash .sp-flash { z-index: 5; }
+#op-splash .sp-vf { position: absolute; inset: clamp(16px, 3vw, 40px); z-index: 4; pointer-events: none; }
+#op-splash .sp-vf i { position: absolute; width: clamp(40px, 6vw, 84px); height: clamp(40px, 6vw, 84px); border: 0 solid #D9B677; opacity: 0; animation: sp-vf 0.9s cubic-bezier(.2,.8,.2,1) 1.3s forwards; }
+#op-splash .sp-vf .tl { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; transform: translate(-24px, -24px); }
+#op-splash .sp-vf .tr { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; transform: translate(24px, -24px); }
+#op-splash .sp-vf .bl { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; transform: translate(-24px, 24px); }
+#op-splash .sp-vf .br { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; transform: translate(24px, 24px); }
+#op-splash .sp-rule { position: absolute; left: 50%; width: 0; height: 1px; background: linear-gradient(90deg, rgba(217,182,119,0), rgba(217,182,119,.55), rgba(217,182,119,0)); transform: translateX(-50%); animation: sp-rule 1.2s cubic-bezier(.2,.8,.2,1) 2.3s forwards; }
+#op-splash .sp-rule.t { top: clamp(60px, 9vh, 110px); } #op-splash .sp-rule.b { bottom: clamp(60px, 9vh, 110px); }
+#op-splash .sp-meta { position: absolute; bottom: 6px; font: 600 11px/1 'Heebo', sans-serif; letter-spacing: .32em; color: #A99A7C; direction: ltr; opacity: 0; animation: sp-fade .8s ease 2.6s forwards; }
+#op-splash .sp-meta.l { left: clamp(56px, 7vw, 110px); } #op-splash .sp-meta.r { right: clamp(56px, 7vw, 110px); color: #D9B677; }
+#op-splash .sp-stage { z-index: 2; }
+#op-splash .sp-mark { width: clamp(220px, 30vmin, 340px); height: clamp(220px, 30vmin, 340px); }
+#op-splash .sp-word { font-size: clamp(42px, 6.4vmin, 76px); }
+@keyframes sp-sh-open { to { transform: translateX(250px); } }
+@keyframes sp-sh-twist { from { transform: rotate(0); } to { transform: rotate(-38deg); } }
+@keyframes sp-rays-in { to { opacity: 1; } }
+@keyframes sp-turn { to { rotate: 360deg; } }
+@keyframes sp-sweep { to { transform: rotate(18deg) translateX(720%); } }
+@keyframes sp-vf { to { opacity: .9; transform: none; } }
+@keyframes sp-rule { to { width: min(70vw, 1100px); } }
+@media (prefers-reduced-motion: reduce) {
+  #op-splash .sp-shutter, #op-splash .sp-sweep { display: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   #op-splash * { animation: none !important; opacity: 1 !important; transform: none !important; filter: none !important; stroke-dashoffset: 0 !important; }
   #op-splash .sp-flash, #op-splash .sp-flare { display: none; }
