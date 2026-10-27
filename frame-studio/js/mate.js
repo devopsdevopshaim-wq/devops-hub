@@ -60,7 +60,7 @@
           '<div class="mt-seg" id="mt-tpos"><button data-p="top">למעלה</button><button data-p="mid">באמצע</button><button data-p="bottom" class="on">למטה</button></div>' +
           '<label class="mt-chk-l"><input type="checkbox" id="mt-tsh" checked> צל לקריאות</label>' +
           '<div class="mt-row"><button class="mt-btn primary" id="mt-tadd">➕ הוספת כותרת</button><button class="mt-btn" id="mt-tdel">🗑 הסרה</button></div></div>' +
-        '<div class="mt-pp" data-pp="frames" hidden><div class="mt-row"><label>צבע</label><input type="color" id="mt-fcol" value="#ffffff"></div><div class="mt-row"><label class="mt-btn">➕ מסגרות משלי (כמה ביחד)<input type="file" id="mt-fpng" accept="image/*" multiple hidden></label><label class="mt-btn">📁 תיקיית מסגרות<input type="file" id="mt-fdir" webkitdirectory multiple hidden></label></div>' +
+        '<div class="mt-pp" data-pp="frames" hidden><button class="mt-btn primary mt-fmgo" data-fm-open>🖌️ עורך מסגרות מקצועי · דוגמאות מההזמנה</button><div class="mt-row"><label>צבע</label><input type="color" id="mt-fcol" value="#ffffff"></div><div class="mt-row"><label class="mt-btn">➕ מסגרות משלי (כמה ביחד)<input type="file" id="mt-fpng" accept="image/*" multiple hidden></label><label class="mt-btn">📁 תיקיית מסגרות<input type="file" id="mt-fdir" webkitdirectory multiple hidden></label></div>' +
           '<p class="mt-hint">PNG עם חלון שקוף הכי טוב. מסגרת אחת חדשה מולבשת מיד על התמונות שבמסך.</p><div class="mt-chips mt-frl" id="mt-frames"></div></div>' +
         '<div class="mt-pp" data-pp="fx" hidden><div class="mt-chips small" id="mt-fxcat"></div><div class="mt-fx" id="mt-fx"></div><h4>סגנון</h4><div class="mt-chips" id="mt-styles"></div></div>' +
         '<div class="mt-pp" data-pp="clip" hidden><div class="mt-emo" id="mt-emo"></div><label class="mt-btn">🖼️ לוגו / תמונה<input type="file" id="mt-logo" accept="image/*" hidden></label><button class="mt-btn" id="mt-clipdel">🗑 הסרת הקליפארט</button></div>' +
@@ -945,7 +945,7 @@
 
   /* ---------- keys, events, start ---------- */
   window.addEventListener('keydown', function (e) {
-    if (e.key === 'F2' || !on() || ($('#dlg') && $('#dlg').open) || document.body.classList.contains('gated')) return;
+    if (e.key === 'F2' || !on() || ($('#dlg') && $('#dlg').open) || document.body.classList.contains('gated') || document.body.classList.contains('fm-on')) return;
     var typing = /input|textarea|select/i.test(e.target.tagName || ''), k = (e.key || '').toLowerCase(), mod = e.ctrlKey || e.metaKey;
     if (typing) { e.stopImmediatePropagation(); return; }
     if (mod && k === 'a') { e.preventDefault(); shown().forEach(function (p) { mark(p, true); }); refreshAll(); }
