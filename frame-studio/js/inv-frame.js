@@ -174,6 +174,11 @@
     var x0 = W, y0 = H, x1 = 0, y1 = 0;
     for (i = 0; i < n; i++) if (lab[i] === best) { var xx = i % W, yy = (i / W) | 0; if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
     for (var y = y0; y <= y1; y++) { var row = y * W, a = -1, b2 = -1; for (var xq = x0; xq <= x1; xq++) if (lab[row + xq] === best) { if (a < 0) a = xq; b2 = xq; } if (a >= 0) for (xq = a; xq <= b2; xq++) lab[row + xq] = best; }
+    /* the window grown by a few pixels (a separable max filter), so the model's soft green edge goes with it */
+    var R = Math.max(2, Math.round(Math.min(W, H) * 0.004)), row2 = new Uint8Array(n), grown = new Uint8Array(n);
+    for (y = 0; y < H; y++) { var o = y * W, run = -1e9; for (xq = 0; xq < W; xq++) { if (lab[o + xq] === best) run = xq; if (xq - run <= R) row2[o + xq] = 1; } run = 1e9; for (xq = W - 1; xq >= 0; xq--) { if (lab[o + xq] === best) run = xq; if (run - xq <= R) row2[o + xq] = 1; } }
+    for (var xc = 0; xc < W; xc++) { var rn = -1e9; for (y = 0; y < H; y++) { if (row2[y * W + xc]) rn = y; if (y - rn <= R) grown[y * W + xc] = 1; } rn = 1e9; for (y = H - 1; y >= 0; y--) { if (row2[y * W + xc]) rn = y; if (rn - y <= R) grown[y * W + xc] = 1; } }
+    for (i = 0; i < n; i++) if (grown[i]) lab[i] = best;
     /* transparent window with a 2px soft edge, and the green fringe around it pulled back to the frame's colours */
     for (i = 0; i < n; i++) {
       var r = px[i * 4], gg = px[i * 4 + 1], bb = px[i * 4 + 2];
