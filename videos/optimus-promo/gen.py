@@ -70,11 +70,11 @@ def scene(sid, dur, css, body, js):
 <script>
 (function(){
 var tl = gsap.timeline({ paused: true });
-var IN = '{{WIPE_IN}}', OUT = '{{WIPE_OUT}}', SQ = {{SQ}};
+var IN = '{{WIPE_IN}}', OUT = '{{WIPE_OUT}}', SQ = {{SQ}}, D = {{DUR_@@SID@@}};
 function wipe(sel, at, d){ tl.fromTo(sel, { clipPath: IN }, { clipPath: 'inset(0% 0% 0% 0%)', duration: d || 0.45, ease: 'power3.out', stagger: 0.1 }, at); }
 function unwipe(sel, at){ tl.to(sel, { clipPath: OUT, duration: 0.3, ease: 'power2.in', stagger: 0.05 }, at); }
 @@JS@@
-tl.set({}, {}, @@DUR@@);
+tl.set({}, {}, D);
 window.__timelines["@@SID@@"] = tl;
 })();
 </script>
@@ -127,7 +127,7 @@ tl.to('#s1-n1', { y: step, duration: 0.45, ease: 'power3.out' }, 1.15);
 tl.fromTo('#s1-n3', { y: -260, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power3.out' }, 1.7);
 tl.to('#s1-n2', { y: step, duration: 0.45, ease: 'power3.out' }, 1.7);
 tl.to('#s1-n1', { y: step * 2, duration: 0.45, ease: 'power3.out' }, 1.7);
-tl.fromTo('#s1-phone', { scale: 1 }, { scale: 1.05, duration: 3.2, ease: 'none' }, 0);
+tl.fromTo('#s1-phone', { scale: 1 }, { scale: 1.05, duration: D, ease: 'none' }, 0);
 """)
   # 2 · tension: the photos burst out of the phone into a pile, 1 -> 100
   S['s2'] = scene('s2', 3.0, PILE_CSS + """
@@ -165,6 +165,8 @@ wipe('#s2-t .ln.s span', 1.2);
       '<svg id="s3-sh" viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="s3g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#202127"/><stop offset=".6" stop-color="#141519"/><stop offset="1" stop-color="#0A0B0D"/></linearGradient><linearGradient id="s3e" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFF1C9"/><stop offset=".5" stop-color="#D9B677"/><stop offset="1" stop-color="#7E5E2C" stop-opacity="0"/></linearGradient></defs><g id="s3-shg">' + sh + '</g></svg>', """
 tl.fromTo('#root .sh', { x: 250 }, { x: 0, duration: 0.6, ease: 'power2.in' }, 0.1);
 tl.fromTo('#s3-shg', { rotation: 30, svgOrigin: '0 0' }, { rotation: 0, svgOrigin: '0 0', duration: 0.6, ease: 'power2.in' }, 0.1);
+tl.set('#s3-logo', { opacity: 0 }, 0);
+tl.set('#s3-logo', { opacity: 1 }, 0.75);
 tl.set('#s3-pile', { opacity: 0 }, 0.75);
 tl.to('#root .sh', { x: 250, duration: 0.9, ease: 'power3.out' }, 1.0);
 tl.to('#s3-shg', { rotation: -38, svgOrigin: '0 0', duration: 0.9, ease: 'power3.out' }, 1.0);
@@ -184,7 +186,7 @@ wipe('#s3-word', 1.55, 0.6); wipe('#s3-tag', 1.95, 0.5);
 <img id="s4-btn" src="assets/cap/btn-auto.png">
 <svg id="s4-cur" viewBox="0 0 40 52"><path d="M3 2 L3 42 L13 33 L20 49 L27 46 L20 30 L34 30 Z" fill="#fff" stroke="#14110F" stroke-width="2.5" stroke-linejoin="round"/></svg>""", """
 wipe('#s4-t .ln span', 0.15);
-tl.fromTo('#s4-scr', { scale: 1 }, { scale: 1.05, duration: 4.2, ease: 'none' }, 0);
+tl.fromTo('#s4-scr', { scale: 1 }, { scale: 1.05, duration: D, ease: 'none' }, 0);
 tl.fromTo('#s4-btn', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.6)' }, 0.8);
 var bx = SQ ? 945 : 885, by = SQ ? 640 : 1175;
 tl.fromTo('#s4-cur', { x: 1200, y: SQ ? 1100 : 1900 }, { x: bx, y: by, duration: 0.8, ease: 'power3.out' }, 1.1);
@@ -219,6 +221,7 @@ tl.fromTo('#root .g', { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, durati
 tl.fromTo('#s5-big', { opacity: 0, scale: SQ ? 0.2 : 0.25, x: SQ ? -61 : 376, y: SQ ? -172 : -504 }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.7, ease: 'expo.inOut' }, 3.3);
 tl.to('#root .g', { opacity: 0.18, duration: 0.5 }, 3.3);
 tl.fromTo('#s5-ed', { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power1.inOut' }, 4.15);
+tl.fromTo('#s5-ed', { scale: 1 }, { scale: 1.06, duration: Math.max(0.5, D - 4.15), ease: 'none' }, 4.15);
 """)
   # 6 · proof 3: the real couple -> a gold wipe -> the real AI red-carpet result
   S['s6'] = scene('s6', 4.0, """
@@ -241,7 +244,7 @@ tl.fromTo('#s6-line', { x: rtl ? cw : 0 }, { x: rtl ? 0 : cw, duration: 1.0, eas
 tl.set('#s6-line', { opacity: 0 }, 2.15);
 tl.fromTo('#s6-a', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 2.0);
 tl.to('#s6-b', { opacity: 0, duration: 0.2 }, 1.9);
-tl.fromTo('#s6-card', { scale: 1 }, { scale: 1.04, duration: 4.0, ease: 'none' }, 0);
+tl.fromTo('#s6-card', { scale: 1 }, { scale: 1.04, duration: D, ease: 'none' }, 0);
 """)
   # 7 · output: the print slides out of the printer, two more follow
   S['s7'] = scene('s7', 3.4, """
@@ -309,25 +312,46 @@ wipe('#s9-ph', 1.75, 0.45);
 """)
   return S
 
-AUDIO = [  # id, file, start, duration, volume, media start
-  ('a-music', 'music/site.m4a', 0, 33.0, 0.8, 0),
-  ('a-p1', 'sfx/pop.mp3', 0.6, 0.7, 0.6, 0), ('a-p2', 'sfx/pop.mp3', 1.15, 0.7, 0.6, 0), ('a-p3', 'sfx/pop.mp3', 1.7, 0.7, 0.6, 0),
-  ('a-w1', 'sfx/whoosh.mp3', 3.25, 0.57, 0.7, 0), ('a-riser', 'sfx/riser.mp3', 4.4, 2.2, 0.3, 1.2),
-  ('a-w2', 'sfx/whoosh-short.mp3', 6.3, 0.57, 0.8, 0), ('a-b1', 'sfx/impact-bass-1.mp3', 7.2, 2.1, 0.8, 0),
-  ('a-c1', 'sfx/click-soft.mp3', 11.4, 0.36, 1.0, 0), ('a-w3', 'sfx/whoosh-short.mp3', 15.1, 0.57, 0.6, 0), ('a-p4', 'sfx/pop.mp3', 16.9, 0.7, 0.5, 0),
-  ('a-w4', 'sfx/whoosh.mp3', 19.7, 0.57, 0.6, 0), ('a-w5', 'sfx/whoosh-short.mp3', 22.9, 0.57, 0.6, 0), ('a-w6', 'sfx/whoosh-short.mp3', 24.1, 0.57, 0.5, 0),
-  ('a-w7', 'sfx/whoosh-short.mp3', 24.5, 0.57, 0.5, 0), ('a-p5', 'sfx/pop.mp3', 26.55, 0.7, 0.8, 0), ('a-b2', 'sfx/impact-bass-1.mp3', 29.1, 2.1, 0.7, 0),
+SFX = [  # id, file, scene, offset in the scene, duration, volume, media start
+  ('a-p1', 'sfx/pop.mp3', 's1', 0.6, 0.7, 0.5, 0), ('a-p2', 'sfx/pop.mp3', 's1', 1.15, 0.7, 0.5, 0), ('a-p3', 'sfx/pop.mp3', 's1', 1.7, 0.7, 0.5, 0),
+  ('a-w1', 'sfx/whoosh.mp3', 's2', 0.05, 0.57, 0.6, 0),
+  ('a-w2', 'sfx/whoosh-short.mp3', 's3', 0.1, 0.57, 0.7, 0), ('a-b1', 'sfx/impact-bass-1.mp3', 's3', 1.0, 2.1, 0.7, 0),
+  ('a-c1', 'sfx/click-soft.mp3', 's4', 2.0, 0.36, 0.9, 0), ('a-w3', 'sfx/whoosh-short.mp3', 's5', 1.5, 0.57, 0.5, 0), ('a-p4', 'sfx/pop.mp3', 's5', 3.3, 0.7, 0.4, 0),
+  ('a-w4', 'sfx/whoosh.mp3', 's6', 1.1, 0.57, 0.5, 0), ('a-w5', 'sfx/whoosh-short.mp3', 's7', 0.3, 0.57, 0.5, 0), ('a-w6', 'sfx/whoosh-short.mp3', 's7', 1.5, 0.57, 0.4, 0),
+  ('a-w7', 'sfx/whoosh-short.mp3', 's7', 1.9, 0.57, 0.4, 0), ('a-p5', 'sfx/pop.mp3', 's8', 0.55, 0.7, 0.7, 0), ('a-b2', 'sfx/impact-bass-1.mp3', 's9', 0.1, 2.1, 0.6, 0),
 ]
+LEAD = 0.25   # the voice starts this long into its scene
+TAIL = 0.45   # and the scene holds this long after it
+
+def voice_len(lang, sid):
+  f = os.path.join(ROOT, 'assets', 'voice', lang, sid + '.m4a')
+  if not os.path.exists(f): return None
+  import subprocess
+  return float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f], capture_output=True, text=True).stdout.strip())
+
+def durations(lang):
+  out = {}
+  for sid, d in SCENES:
+    v = voice_len(lang, sid)
+    out[sid] = round(max(d, (v + LEAD + TAIL) if v else d), 2)
+  return out
 
 def T_(k): return '{{%s}}' % k
 
-def index_html(W, H):
-  t, hosts = 0.0, []
-  for i, (sid, d) in enumerate(SCENES):
+def index_html(W, H, lang, DU):
+  t, hosts, starts = 0.0, [], {}
+  for i, (sid, _) in enumerate(SCENES):
+    d = DU[sid]; starts[sid] = t
     hosts.append('<div id="%s" data-composition-id="%s" data-composition-src="compositions/%s.html" data-start="%.2f" data-duration="%.2f" data-track-index="1" data-track-kind="graphics" data-width="%d" data-height="%d" style="z-index:%d"></div>' % (sid, sid, sid, t, d, W, H, i + 1))
     t += d
+  A = [('a-music', 'music/bed.m4a', 0, t, 0.32, 0)]
+  A += [(a, f, starts[sc] + o, d, v, m) for a, f, sc, o, d, v, m in SFX]
+  A.append(('a-riser', 'sfx/riser.mp3', starts['s3'] - 1.8, 2.2, 0.25, 1.2))
+  for sid, _ in SCENES:
+    v = voice_len(lang, sid)
+    if v: A.append(('v-' + sid, 'voice/%s/%s.m4a' % (lang, sid), starts[sid] + LEAD, v, 1.0, 0))
   aud = ''.join('<audio id="%s" class="clip" src="assets/%s" data-start="%.2f" data-duration="%.2f" data-volume="%s" data-media-start="%s" data-track-index="%d"%s></audio>\n' %
-                (a, f, s, d, v, m, 10 + i, ' data-fade-in="0.4" data-fade-out="1.2"' if a == 'a-music' else '') for i, (a, f, s, d, v, m) in enumerate(AUDIO))
+                (a, f, s, d, v, m, 10 + i, ' data-fade-in="0.4" data-fade-out="1.2"' if a == 'a-music' else '') for i, (a, f, s, d, v, m) in enumerate(A))
   return """<!doctype html>
 <html lang="{{LANG}}">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=%d, height=%d"><script src="assets/vendor/gsap.min.js"></script>
@@ -361,8 +385,9 @@ def main():
       for f in ('hyperframes.json', 'package.json'): shutil.copy(os.path.join(ROOT, f), d)
       json.dump({'id': 'optimus-%s-%s' % (fmt_key, lang), 'name': 'Optimus promo %s %s' % (fmt_key, lang)}, open(os.path.join(d, 'meta.json'), 'w'))
       # the titles, written per language (rich text) before the rest of the words
+      DU = durations(lang)
       for sid, html in scenes.items():
-        h = html
+        h = html.replace('{{DUR_%s}}' % sid, str(DU[sid]))
         for k in ('s1a', 's1b', 's2a', 's2b', 's4a', 's4b', 's5a', 's5b', 's5c', 's6a', 's6b', 's7a', 's7b', 's8a', 's8b'):
           h = h.replace(rich('{{%s}}' % k), rich(words[k])).replace('{{%s}}' % k, rich(words[k]))
         if sid == 's2':
@@ -370,7 +395,8 @@ def main():
         if sid == 's3':
           h = h.replace('>אופטימוס<', '>%s<' % ('אופטימוס' if lang == 'he' else 'Optimus'))
         open(os.path.join(d, 'compositions', sid + '.html'), 'w').write(fill(h, words, fmt, W, H))
-      open(os.path.join(d, 'index.html'), 'w').write(fill(index_html(W, H), words, fmt, W, H))
+      open(os.path.join(d, 'index.html'), 'w').write(fill(index_html(W, H, lang, DU), words, fmt, W, H))
+      print('  scenes', DU, 'total', round(sum(DU.values()), 2))
       print('built', d)
 
 if __name__ == '__main__':
