@@ -74,3 +74,22 @@
 .dd-pane .td-card h3 { font-size: 24px; }
 .dd-pane .td-snips { max-height: none; overflow: visible; }
 @media (max-width: 1000px) { .td-bandgrid { grid-template-columns: 1fr; } .day-dock .dd-inner { padding: 10px; } }
+
+/* ---- v5: finer details ---- */
+.td-heb { margin: -2px 0 6px; color: var(--brass-2); font-size: 14px; }
+.td-ref { margin-top: 0; }
+.td-rows { position: relative; gap: 2px; }
+.td-rows::before { content: ""; position: absolute; inset-block: 14px; inset-inline-start: 62px; width: 2px; background: linear-gradient(180deg, transparent, rgba(139, 123, 255, .35) 8%, rgba(139, 123, 255, .35) 92%, transparent); }
+.td-rows > li { position: relative; }
+.td-rows label { grid-template-columns: 50px 1fr auto; gap: 0 22px; padding: 9px 8px; border-radius: 12px; transition: background .2s; }
+.td-rows > li:not(.td-edit) > label::before { content: ""; position: absolute; inset-inline-start: 57px; top: 18px; width: 12px; height: 12px; border-radius: 50%; background: #17143a; border: 2px solid rgba(139, 123, 255, .8); box-sizing: border-box; }
+.td-rows > li.now > label { background: linear-gradient(90deg, transparent, rgba(224, 178, 90, .13)); box-shadow: inset -3px 0 0 var(--brass); }
+.td-rows > li.now > label::before { background: var(--brass); border-color: var(--brass-2); box-shadow: 0 0 0 5px rgba(224, 178, 90, .2), 0 0 16px rgba(224, 178, 90, .7); }
+.td-rows > li.now .td-t { color: var(--porcelain); }
+.td-rows input[type=checkbox] { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; margin: 4px 0 0; border-radius: 50%; border: 2px solid rgba(241, 238, 252, .3); background: transparent; cursor: pointer; display: grid; place-items: center; }
+.td-rows input[type=checkbox]:checked { background: var(--mint); border-color: var(--mint); }
+.td-rows input[type=checkbox]:checked::after { content: "✓"; color: #062d22; font: 700 13px/1 var(--body); }
+.td-rows label:has(input:checked) .td-x { opacity: .5; text-decoration: line-through; }
+.td-t { text-align: start; }
+.td-card { overflow: hidden; }
+.td-parsha::after { content: ""; position: absolute; inset-block-start: -60px; inset-inline-end: -60px; width: 190px; height: 190px; border-radius: 50%; background: radial-gradient(circle, rgba(139, 123, 255, .35), transparent 68%); pointer-events: none; }
