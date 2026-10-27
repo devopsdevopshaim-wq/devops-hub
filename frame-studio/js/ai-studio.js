@@ -227,7 +227,7 @@
   ];
   function find(list, id) { return list.filter(function (x) { return x[0] === id; })[0] || list[0]; }
   function promptOf(c) {
-    var st = find(STYLE, c.style), w = find(WORLD, c.world), o = find(OUTFIT, c.outfit), m = find(MOOD, c.mood), parts = ['Transform this photo.'];
+    var st = find(STYLE, c.style), w = find(WORLD, c.world), o = find(OUTFIT, c.outfit), m = find(MOOD, c.mood), parts = ['Transform this photo of real people. The same people stay the main subjects, as large in the frame and in the same poses and places as in the photo; only the look around them changes.'];
     parts.push(st[3] + '.');
     if (w[3]) parts.push('Move the people into ' + w[3] + ', with matching natural lighting on them.');
     if (o[3]) parts.push('Dress every person in ' + o[3] + '.');

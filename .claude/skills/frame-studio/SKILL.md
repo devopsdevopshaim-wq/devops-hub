@@ -35,6 +35,12 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## An AI result without the people is never applied (Oct 27, v63)
+- A "שילוב משלך" (comic + magic forest + superheroes + sparkles) came back as a forest with nobody in it, from the free engine (Pollinations), with its name stamped in the corner.
+- `FS.restyleTry` (styles.js) now counts the faces of the original (`p.faces`, or `FS.countFaces`, ai.js: the whole picture, then 2x2 tiles) and of each answer. An answer with no face, or under half of a group of 3+, is thrown away and asked again: the same engine choice (or 'free' with a new seed), then the engine on this computer when installed. When every try loses the people the error is `lost-people` (its message in `FS.aiError`), and the photo stays as it was.
+- An answer from Pollinations has its bottom 6% left out (`matchShape(res, orig, trimBottom)`), where the free engine stamps its name.
+- The mix prompt (`promptOf`, ai-studio.js) now opens with: the same people stay the main subjects, as large and in the same poses; only the look around them changes.
+
 ## Frames that load, the AI's before / after, saved edits (Oct 27, v62)
 - **Frames in the fast workspace** (edit → "מסגרות"): "➕ מסגרות משלי" takes many files at once (`multiple`), "📁 תיקיית מסגרות" a whole folder (`webkitdirectory`). `FS.addFrameFiles(files, { noUse })` (ui.js) now returns a promise of the frames added; a file that fails no longer stops the rest. One new frame goes straight onto the photos on screen. The chips show each frame's picture, mark the current one, and a ✕ deletes a frame of your own. `FS.emit('frames')` after the frames load from storage or are added, so the list is never stale.
 - **AI before / after:** the AI view opens with a sticky card `.mt-aibac` / `#mt-aiba`: the photos the AI works on (up to 6, `aiList()`), "לפני" beside "אחרי" (the same `.mt-ba` tiles as the edit screen). It redraws while `runAI` runs (every 0.9 s, and on `doc`), so each result shows the moment it is back; a click opens the big before/after.

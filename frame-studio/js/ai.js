@@ -124,6 +124,17 @@
       return p.faces;
     }).catch(function (e) { if (quiet) return []; fail(e); throw e; });
   };
+  /* how many faces a picture has (an AI result, before it is put on the photo): the whole picture, then 2x2 tiles when none */
+  FS.countFaces = function (im) {
+    return getFaces().then(function (det) {
+      var W = im.naturalWidth || im.width, H = im.naturalHeight || im.height;
+      function run(sx, sy, sw, sh) { var k = Math.min(1, 1024 / Math.max(sw, sh)), c = FS.canvas(sw * k, sh * k); c.getContext('2d').drawImage(im, sx, sy, sw, sh, 0, 0, c.width, c.height); return (det.detect(c).detections || []).length; }
+      var n = run(0, 0, W, H); if (n) return n;
+      var tw = W * 0.6, th = H * 0.6;
+      [[0, 0], [W - tw, 0], [0, H - th], [W - tw, H - th]].forEach(function (o) { n = Math.max(n, run(o[0], o[1], tw, th)); });
+      return n;
+    });
+  };
   /* place the faces in the frame's window: zoom so they read well, centre them, keep the window covered */
   FS.smartFit = function (p, quiet) {
     return FS.findFaces(p, quiet).then(function (faces) {
@@ -237,6 +248,7 @@
     if (m === 'no-key') return 'שרת ה־AI עוד לא הוגדר (חסר מפתח Gemini בשרת).';
     if (m === 'no-free-tier') return 'יצירת תמונות ב־Gemini לא כלולה בתוכנית החינמית של המפתח. צריך להפעיל חיוב (Billing) בפרויקט ב־Google AI Studio, והתמונות יתחילו לעבוד.';
     if (m === 'cancelled') return 'העריכה נעצרה.';
+    if (m === 'lost-people') return 'ה־AI החזיר תמונה בלי האנשים שבצילום, אז היא לא הוחלה. כדאי לנסות שוב, לבחור מנוע אחר בראש הלשונית, או להשתמש במנוע שבמחשב.';
     if (m === 'quota') return 'כל שרתי ה־AI עמוסים כרגע (גם השרת החינמי). מחכים דקה ומנסים שוב.';
     if (m === 'rate-limited') return 'יותר מדי בקשות ברצף. מחכים דקה ומנסים שוב.';
     if (m === 'timeout') return 'ה־AI לא ענה בזמן. נסו שוב.';
