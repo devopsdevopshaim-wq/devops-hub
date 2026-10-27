@@ -2,6 +2,18 @@
  "music": [],
  "videos": [
   {
+   "title": "הדמיה של האתר — לאינסטגרם וללינקדין",
+   "url": "videos/site-demo-he.mp4",
+   "poster": "videos/site-demo-he.jpg",
+   "desc": "סיור באתר: הפרשה, התחומים, מאיה, הניהול והמוזיקה. 4:5, 1:19, כתוביות בעברית."
+  },
+  {
+   "title": "Site demo — for Instagram and LinkedIn",
+   "url": "videos/site-demo-en.mp4",
+   "poster": "videos/site-demo-en.jpg",
+   "desc": "A tour of the site: the weekly portion, domains, Maya, admin and music. 4:5, 1:19, English captions."
+  },
+  {
    "title": "סרטון תדמית — SPIDER",
    "url": "videos/spider-promo-he.mp4",
    "poster": "videos/spider-promo-he.jpg",
