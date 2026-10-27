@@ -26,9 +26,8 @@ async function mocks(page) {
     if (/localhost:8950/.test(u)) {
       if (/\/js\/auth\.js/.test(u)) return r.fulfill({ contentType: 'text/javascript', body: "window.HasadnaAuth={ready:Promise.resolve({role:'admin',sites:'all',name:'חיים'}),token:function(){return 'T'},session:{role:'admin'},api:function(){return Promise.resolve({})},logout:function(){}};document.documentElement.classList.remove('locked');" });
       if (/\/js\/(orbit-fx|cursor|track|talking-face)\.js/.test(u)) return r.fulfill({ contentType: 'text/javascript', body: '' });
-      if (/\/projects\.json/.test(u)) {   // the film never shows the lotto tab or the private insurance analysis
+      if (/\/projects\.json/.test(u)) {   // every number in the film is the real one; the lotto tab and the private insurance analysis are only hidden from view (see HIDE below)
         const d = JSON.parse(fs.readFileSync(path.resolve(ROOT, '../../portfolio/projects.json'), 'utf8'));
-        d.projects = d.projects.filter((p) => p.category !== 'lotto' && p.id !== 'insurance-analysis'); delete d.categories.lotto;
         fs.writeFileSync(path.join(ROOT, 'data/counts.json'), JSON.stringify({ projects: d.projects.length, domains: Object.keys(d.categories).length }));
         return r.fulfill(J(d));
       }
@@ -50,9 +49,10 @@ async function mocks(page) {
   await page.addInitScript(() => {
     // a visible pointer for the film (the headless browser draws none), and a ripple on every click
     const st = document.createElement('style');
-    st.textContent = '.scene,.future-bg{display:none!important}.cur-dot,.cur-ring{display:none!important}#__ptr{position:fixed;z-index:2147483647;left:0;top:0;width:26px;height:26px;margin:-4px 0 0 -4px;pointer-events:none;transition:transform .06s linear;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6))}#__rip{position:fixed;z-index:2147483646;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:3px solid #f3d596;pointer-events:none;opacity:0}#__rip.go{animation:__r .55s ease-out}@keyframes __r{from{opacity:.95;transform:scale(.4)}to{opacity:0;transform:scale(3.4)}}';
+    st.textContent = '#reel{display:none!important}[data-cat="lotto"],.card.cat-lotto,#p-insurance-analysis{display:none!important}.scene,.future-bg{display:none!important}.cur-dot,.cur-ring{display:none!important}#__ptr{position:fixed;z-index:2147483647;left:0;top:0;width:26px;height:26px;margin:-4px 0 0 -4px;pointer-events:none;transition:transform .06s linear;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6))}#__rip{position:fixed;z-index:2147483646;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:3px solid #f3d596;pointer-events:none;opacity:0}#__rip.go{animation:__r .55s ease-out}@keyframes __r{from{opacity:.95;transform:scale(.4)}to{opacity:0;transform:scale(3.4)}}';
     document.addEventListener('DOMContentLoaded', () => {
       document.head.appendChild(st);
+      new MutationObserver(() => document.querySelectorAll('option').forEach((o) => { if (o.textContent.trim() === 'לוטו') o.remove(); })).observe(document.body, { childList: true, subtree: true });
       const p = document.createElement('div'); p.id = '__ptr'; p.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26"><path d="M4 2l15 9-6.5 1.7L9.5 20z" fill="#fff" stroke="#111" stroke-width="1.6" stroke-linejoin="round"/></svg>';
       const r = document.createElement('div'); r.id = '__rip'; document.body.append(p, r);
       addEventListener('mousemove', (e) => { p.style.transform = `translate(${e.clientX}px,${e.clientY}px)`; r.style.left = e.clientX + 'px'; r.style.top = e.clientY + 'px'; }, true);
@@ -141,8 +141,8 @@ const SCENES = {
     await click(page, '.cats-toggle'); await sleep(900);
     mark('edit'); await click(page, '.cats-edit'); await sleep(1000);
     await click(page, '.tile[data-cat="ai"]'); await sleep(1400);
-    mark('add'); await click(page, '.cats-add'); await sleep(1300);
-    mark('move'); await page.selectOption('#grid .card:first-child .edit-strip select', { label: 'לקוחות VIP' }); await sleep(1700);
+    await page.locator('.cats-add').scrollIntoViewIfNeeded(); await sleep(400); mark('add'); await click(page, '.cats-add'); await sleep(1300);
+    mark('move'); await page.waitForFunction(() => { const sel = [...document.querySelectorAll('#grid .card .edit-strip select')].find((x) => x.offsetParent); const o = sel && [...sel.options].find((x) => x.textContent.trim() === 'לקוחות VIP'); if (!o) return false; sel.value = o.value; sel.dispatchEvent(new Event('change', { bubbles: true })); return true; }, null, { timeout: 20000, polling: 300 }); await sleep(1700);
     await page.locator('.cats').hover(); await page.mouse.wheel(0, 900); await sleep(900);
     mark('newtab'); await click(page, '.tile[data-cat^="c-"]'); await sleep(2200);
   },
