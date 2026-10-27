@@ -3,8 +3,8 @@
   'use strict';
   let ctx = null, master = null, noiseBuf = null, enabled = true;
 
-  function ensure() {
-    if (!enabled) return null;
+  function ensure(force) {
+    if (!enabled && !force && !musicOn) return null;
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
@@ -78,6 +78,67 @@
     click() { tone(1400, 0.03, { type: 'square', vol: 0.05 }); },
     deny() { tone(220, 0.14, { type: 'sawtooth', vol: 0.08, slide: 0.7 }); },
     end() { [784, 659, 523].forEach((f, i) => tone(f, 0.3, { vol: 0.14, at: i * 0.14 })); },
+  };
+
+  /* ambient music: a slow drone, an oud-like pluck wandering a hijaz scale on D, and a soft frame drum */
+  let musicOn = false, musicBus = null, musicTimer = 0, step = 0, note = 4;
+  const HIJAZ = [146.83, 155.56, 185.0, 196.0, 220.0, 233.08, 261.63, 293.66, 311.13, 369.99, 392.0, 440.0];
+  function reverb(c) {
+    const len = c.sampleRate * 2.6, buf = c.createBuffer(2, len, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+    const cv = c.createConvolver(); cv.buffer = buf; return cv;
+  }
+  function musicStart() {
+    const c = ensure(); if (!c || musicBus) return;
+    musicBus = c.createGain(); musicBus.gain.value = 0;
+    musicBus.gain.linearRampToValueAtTime(0.5, c.currentTime + 3);
+    const rv = reverb(c), wet = c.createGain(); wet.gain.value = 0.55;
+    musicBus.connect(master); musicBus.connect(rv); rv.connect(wet); wet.connect(master);
+    musicBus._drone = [73.42, 110, 146.83].map((f, i) => {
+      const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = (i - 1) * 6;
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 340;
+      const g = c.createGain(); g.gain.value = 0.022;
+      const lfo = c.createOscillator(); lfo.frequency.value = 0.07 + i * 0.03; const lg = c.createGain(); lg.gain.value = 120; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
+      o.connect(lp); lp.connect(g); g.connect(musicBus); o.start();
+      return [o, lfo];
+    });
+    const beat = 0.42;
+    musicTimer = setInterval(() => {
+      if (!musicBus) return;
+      const t = c.currentTime + 0.05;
+      step++;
+      // drum: dum on 1, tek on 3 and 4 of an 8-step cycle
+      const pos = step % 8;
+      if (pos === 0 || pos === 5) { const o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.25); g.gain.setValueAtTime(0.22, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35); o.connect(g); g.connect(musicBus); o.start(t); o.stop(t + 0.4); }
+      if (pos === 3 || pos === 7 || (pos === 6 && Math.random() < 0.4)) {
+        const src = c.createBufferSource(); src.buffer = noiseBuf; const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 3200; f.Q.value = 1.4;
+        const g = c.createGain(); g.gain.setValueAtTime(0.07, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08); src.connect(f); f.connect(g); g.connect(musicBus); src.start(t, Math.random()); src.stop(t + 0.1);
+      }
+      // melody: a random walk, resting now and then
+      if (Math.random() < (pos % 2 ? 0.35 : 0.7)) {
+        note = Math.max(0, Math.min(HIJAZ.length - 1, note + [-2, -1, -1, 0, 1, 1, 2][Math.floor(Math.random() * 7)]));
+        const fr = HIJAZ[note] * 2;
+        [1, 2.01].forEach((m, i) => {
+          const o = c.createOscillator(), g = c.createGain(), lp = c.createBiquadFilter();
+          o.type = i ? 'sine' : 'triangle'; o.frequency.setValueAtTime(fr * m, t);
+          if (Math.random() < 0.15) o.frequency.exponentialRampToValueAtTime(fr * m * 1.06, t + 0.12);
+          lp.type = 'lowpass'; lp.frequency.setValueAtTime(3200, t); lp.frequency.exponentialRampToValueAtTime(600, t + 0.5);
+          g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(i ? 0.02 : 0.07, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+          o.connect(lp); lp.connect(g); g.connect(musicBus); o.start(t); o.stop(t + 1.2);
+        });
+      }
+    }, beat * 1000);
+  }
+  function musicStop() {
+    if (!musicBus || !ctx) return;
+    const bus = musicBus; musicBus = null; clearInterval(musicTimer);
+    bus.gain.cancelScheduledValues(ctx.currentTime); bus.gain.setValueAtTime(bus.gain.value, ctx.currentTime); bus.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.8);
+    setTimeout(() => { bus._drone.forEach(([o, l]) => { try { o.stop(); l.stop(); } catch (e) { /* already stopped */ } }); bus.disconnect(); }, 1000);
+  }
+  window.MUSIC = {
+    set(on) { musicOn = !!on; if (musicOn && ctx) musicStart(); if (!musicOn) musicStop(); },
+    kick() { if (musicOn) { ensure(true); musicStart(); } },
+    get on() { return musicOn; },
   };
 
   window.SFX = new Proxy(SFX, {

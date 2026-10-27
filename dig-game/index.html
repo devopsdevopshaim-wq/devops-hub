@@ -15,14 +15,16 @@
 <link rel="stylesheet" href="css/game.css" />
 </head>
 <body data-screen="home">
+<canvas id="bg-cv" aria-hidden="true"></canvas>
 
 <header class="topbar">
   <a class="brand" href="#" data-go="home" aria-label="שכבות, מסך הפתיחה"><img src="img/icon.svg" alt="" width="30" height="30" /><b>שכבות</b></a>
   <div class="stats">
-    <div class="lvl" title="רמת חוקר"><span class="badge">⭐ <b id="lvl">1</b></span><div class="xp"><i id="xp-fill"></i></div></div>
-    <span class="pill" title="מטבעות">🪙 <b id="coins">0</b></span>
-    <span class="pill" title="קרעי מפת אוצר">🗺️ <b id="frags">0/3</b></span>
-    <button class="icon-btn" id="snd" aria-label="צליל">🔊</button>
+    <div class="lvl" title="רמת חוקר"><span class="badge"><i data-ico="star"></i><b id="lvl">1</b></span><div class="xp"><i id="xp-fill"></i></div></div>
+    <span class="pill" title="מטבעות"><i data-ico="coin"></i><b id="coins">0</b></span>
+    <span class="pill" title="קרעי מפת אוצר"><i data-ico="map"></i><b id="frags">0/3</b></span>
+    <button class="icon-btn" id="mus" aria-label="מוזיקה"></button>
+    <button class="icon-btn" id="snd" aria-label="צלילים"></button>
   </div>
 </header>
 
@@ -30,17 +32,16 @@
   <!-- home -->
   <section class="screen" id="scr-home">
     <div class="hero">
-      <div class="strata-bg" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <div id="hero-finds" class="hero-finds" aria-hidden="true"></div>
+      <canvas id="hero-cv" aria-hidden="true"></canvas>
       <div class="hero-text">
         <p class="kicker">הרפתקה ארכיאולוגית</p>
-        <h1>שכבות</h1>
+        <h1 data-text="שכבות">שכבות</h1>
         <p class="tag">כל שכבה היא אלף שנה. מה אתם תגלו?</p>
         <button class="btn gold xl" id="play">להתחיל לחפור ⛏️</button>
         <ul class="how">
-          <li><b>⛏️ חופרים</b> עם מכוש, כף ומברשת</li>
-          <li><b>🏺 חושפים</b> ממצאים אמיתיים מ־8 תקופות</li>
-          <li><b>🏛️ בונים</b> מוזיאון ומשדרגים את המשלחת</li>
+          <li><i data-ico="pick"></i><span><b>חופרים</b> עם מכוש, כף ומברשת</span></li>
+          <li><i data-ico="vase"></i><span><b>חושפים</b> 41 ממצאים אמיתיים מ־8 תקופות</span></li>
+          <li><i data-ico="museum"></i><span><b>בונים</b> מוזיאון ומשדרגים את המשלחת</span></li>
         </ul>
       </div>
     </div>
@@ -58,22 +59,22 @@
   <!-- dig -->
   <section class="screen" id="scr-dig" hidden>
     <div class="dig-head">
-      <button class="icon-btn" id="dig-exit" aria-label="יציאה מהחפירה">✕</button>
+      <button class="icon-btn" id="dig-exit" aria-label="יציאה מהחפירה"><i data-ico="close"></i></button>
       <div class="dig-title"><b id="dig-site"></b><small id="dig-place"></small></div>
-      <div class="energy" title="אנרגיה"><span>⚡</span><div class="en-bar"><i id="en-fill"></i></div><b id="en-num">0</b></div>
-      <div class="dig-stats"><span title="ממצאים">🏺 <b id="finds-num">0/0</b></span><span title="מטבעות בחפירה">🪙 <b id="dig-coins">0</b></span></div>
+      <div class="energy" title="אנרגיה"><i data-ico="bolt"></i><div class="en-bar"><i id="en-fill"></i></div><b id="en-num">0</b></div>
+      <div class="dig-stats"><span title="ממצאים"><i data-ico="vase"></i><b id="finds-num">0/0</b></span><span title="מטבעות בחפירה"><i data-ico="coin"></i><b id="dig-coins">0</b></span></div>
     </div>
     <div class="pit-wrap">
-      <canvas id="pit" aria-label="אתר החפירה: הקישו על משבצת כדי לחפור"></canvas>
+      <div class="pit-frame"><canvas id="pit" aria-label="אתר החפירה: הקישו על משבצת כדי לחפור"></canvas></div>
       <div class="tip" id="tip" role="status"></div>
     </div>
     <div class="tools">
       <div class="tool-row">
-        <button class="tool" data-t="pick"><span class="ti">⛏️</span><span>מכוש</span><em class="dmg">💥<b id="t-pick-n">4</b></em></button>
-        <button class="tool" data-t="trowel"><span class="ti">🔺</span><span>כף</span><em class="dmg">💥2</em></button>
-        <button class="tool" data-t="brush"><span class="ti">🖌️</span><span>מברשת</span><em class="dmg">💥1</em></button>
-        <button class="tool special" data-t="sonar"><span class="ti">🔊</span><span>סונאר</span><em class="cnt">×<b id="t-sonar-n">1</b></em></button>
-        <button class="tool special" data-t="dyn"><span class="ti">🧨</span><span>פיצוץ</span><em class="cnt">×<b id="t-dyn-n">0</b></em></button>
+        <button class="tool" data-t="pick"><span class="ti" data-ico="pick"></span><span>מכוש</span><em class="dmg">💥<b id="t-pick-n">4</b></em></button>
+        <button class="tool" data-t="trowel"><span class="ti" data-ico="trowel"></span><span>כף</span><em class="dmg">💥2</em></button>
+        <button class="tool" data-t="brush"><span class="ti" data-ico="brush"></span><span>מברשת</span><em class="dmg">💥1</em></button>
+        <button class="tool special" data-t="sonar"><span class="ti" data-ico="sonar"></span><span>סונאר</span><em class="cnt">×<b id="t-sonar-n">1</b></em></button>
+        <button class="tool special" data-t="dyn"><span class="ti" data-ico="dyn"></span><span>פיצוץ</span><em class="cnt">×<b id="t-dyn-n">0</b></em></button>
       </div>
       <p class="tool-hint" id="tool-hint"></p>
     </div>
@@ -90,15 +91,15 @@
 
   <!-- camp -->
   <section class="screen" id="scr-camp" hidden>
-    <div class="camp-head"><div class="m-ico">🏕️</div><div><h2>המחנה</h2><p>משקיעים את המטבעות במשלחת: כלים טובים יותר, יותר כוח ויותר מזל.</p></div></div>
+    <div class="camp-head"><div class="m-ico" data-ico="camp"></div><div><h2>המחנה</h2><p>משקיעים את המטבעות במשלחת: כלים טובים יותר, יותר כוח ויותר מזל.</p></div></div>
     <div class="ups" id="ups"></div>
   </section>
 </main>
 
 <nav class="tabbar" aria-label="ניווט">
-  <button data-go="map"><span>🗺️</span>אתרים</button>
-  <button data-go="museum"><span>🏛️</span>מוזיאון</button>
-  <button data-go="camp"><span>🏕️</span>מחנה</button>
+  <button data-go="map"><span data-ico="map"></span>אתרים</button>
+  <button data-go="museum"><span data-ico="museum"></span>מוזיאון</button>
+  <button data-go="camp"><span data-ico="camp"></span>מחנה</button>
 </nav>
 
 <div class="modal" id="modal" role="dialog" aria-modal="true"><div class="modal-card" id="modal-card"></div></div>
@@ -106,6 +107,8 @@
 <div class="fx" id="fx" aria-hidden="true"></div>
 
 <script src="js/art.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/hero.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/game.js"></script>
 </body>

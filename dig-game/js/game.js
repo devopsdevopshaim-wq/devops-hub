@@ -8,6 +8,9 @@
   const COLS = 9, ROWS = 13;
   const fmt = (n) => Math.round(n).toLocaleString('he-IL');
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const { ICONS, scene } = window.SHCHAVOT_ICONS;
+  const ICO_URL = Object.fromEntries(Object.entries(ICONS).map(([k, v]) => [k, D.svgUrl(v)]));
+  const ico = (name, cls = 'ico') => `<img class="${cls}" src="${ICO_URL[name]}" alt="">`;
   const ERA = Object.fromEntries(ERAS.map((e) => [e.id, e]));
   const ERA_COLOR = { ottoman: '#3fa7a0', crusader: '#c0392b', byzantine: '#d4a017', roman: '#a33d6b', second: '#3b7dd8', first: '#8e5bd1', canaan: '#2e9d5b', prehistory: '#a0663a' };
 
@@ -30,7 +33,7 @@
 
   /* ---------- save ---------- */
   const KEY = 'shchavot.v1';
-  const fresh = () => ({ coins: 0, xp: 0, lvl: 1, up: {}, museum: {}, frags: 0, maps: 0, stats: { tiles: 0, finds: 0, perfect: 0, digs: 0, bestDig: 0 }, quests: null, daily: null, tut: {}, sound: true });
+  const fresh = () => ({ music: true, coins: 0, xp: 0, lvl: 1, up: {}, museum: {}, frags: 0, maps: 0, stats: { tiles: 0, finds: 0, perfect: 0, digs: 0, bestDig: 0 }, quests: null, daily: null, tut: {}, sound: true });
   function load() {
     try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === 'object') return Object.assign(fresh(), s); } catch (e) { /* private mode */ }
     return fresh();
@@ -39,6 +42,9 @@
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage off: the run still plays */ } }
   const up = (id) => S.up[id] || 0;
   SFX.setEnabled(S.sound);
+  if (S.music === undefined) S.music = true;
+  MUSIC.set(S.music);
+  document.addEventListener('pointerdown', () => MUSIC.kick());
 
   /* ---------- progression ---------- */
   const xpFor = (l) => Math.round(30 * l + 14 * l * l);
@@ -137,12 +143,15 @@
     const rowEra = [];
     for (let r = 0; r < ROWS; r++) rowEra[r] = r === 0 ? 0 : Math.min(eras.length - 1, Math.floor((r - 1) / per));
     const hpBonus = Math.floor(siteIdx * 0.5);
+    const waveK = R() * 6;
     const grid = [];
     for (let r = 0; r < ROWS; r++) {
       const row = [];
       const t = r / (ROWS - 1);
       for (let c = 0; c < COLS; c++) {
-        let m = r === 0 ? 0 : clamp(Math.round(1 + t * (2.4 + Math.min(2.2, siteIdx * 0.55)) + (R() - 0.5) * 1.8), 1, 6);
+        // layers run sideways and wave a little, like real strata
+        const wave = Math.sin(c * 0.7 + waveK) * 0.55 + Math.sin(c * 1.9 + waveK * 2) * 0.25;
+        let m = r === 0 ? 0 : clamp(Math.round(1 + ((r + wave) / (ROWS - 1)) * (2.4 + Math.min(2.2, siteIdx * 0.55)) + (R() - 0.5) * 0.7), 1, 6);
         if (r > 3 && siteIdx > 0 && R() < 0.035 + 0.035 * t) m = 7;
         const hp = MATS[m].hp + (m ? hpBonus : 0);
         row.push({ m, hp, max: hp, broken: false, art: -1, item: -1, v: Math.floor(R() * 3), seed: Math.floor(R() * 1e9) });
@@ -221,56 +230,99 @@
   const cv = $('#pit');
   const ctx = cv.getContext('2d');
   let dpr = 1, W = 360, CELL = 40, SURF = 36, H = 560;
-  let TEX = null, DARK = null, SURFIMG = null;
+  let SOIL = null, PIT = null, SURFIMG = null, GLOW = {};
   let dig = null, tool = 'pick', lastTool = 'pick';
-  let parts = [], floats = [], flyers = [], rings = [], shake = 0, flash = 0, hover = null, running = false, lastT = 0;
+  let pendingFinds = 0, parts = [], floats = [], flyers = [], rings = [], shake = 0, flash = 0, hover = null, running = false, lastT = 0, light = null, comboFx = null;
 
-  function makeTex(mat, v, dark) {
-    const c = document.createElement('canvas');
-    const px = Math.ceil(CELL * dpr);
-    c.width = c.height = px;
-    const x = c.getContext('2d');
-    x.scale(px / CELL, px / CELL);
-    const R = rng(hashStr(mat.id) + v * 977 + (dark ? 5 : 0));
-    const g = x.createLinearGradient(0, 0, CELL * 0.3, CELL);
-    g.addColorStop(0, mat.c[0]); g.addColorStop(1, mat.c[1]);
-    x.fillStyle = g; x.fillRect(0, 0, CELL, CELL);
-    if (mat.id === 'chalk' || mat.id === 'lime') {
-      x.strokeStyle = 'rgba(90,70,40,.18)'; x.lineWidth = 1;
-      for (let i = 0; i < 3; i++) { const y = CELL * (0.2 + i * 0.3 + R() * 0.1); x.beginPath(); x.moveTo(0, y); x.bezierCurveTo(CELL * 0.3, y - 3, CELL * 0.6, y + 3, CELL, y - 1); x.stroke(); }
+  // the whole cross-section is painted once per dig: materials melt into each other, then grain, pebbles, stones and fossils on top
+  function buildSoil() {
+    const GH = ROWS * CELL;
+    const mk = () => { const c = document.createElement('canvas'); c.width = Math.round(W * dpr); c.height = Math.round(GH * dpr); const x = c.getContext('2d'); x.scale(dpr, dpr); return [c, x]; };
+    const [base, b] = mk();
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const m = MATS[dig.grid[r][c].m];
+      const g = b.createLinearGradient(0, r * CELL, 0, (r + 1) * CELL);
+      g.addColorStop(0, m.c[0]); g.addColorStop(1, m.c[1]);
+      b.fillStyle = g; b.fillRect(c * CELL - 1, r * CELL - 1, CELL + 2, CELL + 2);
     }
-    for (let i = 0; i < 70; i++) {
-      x.fillStyle = R() < 0.5 ? mat.sp : 'rgba(0,0,0,.6)';
-      x.globalAlpha = 0.12 + R() * 0.2;
-      const s = 0.6 + R() * 1.8;
-      x.fillRect(R() * CELL, R() * CELL, s, s);
+    const [soil, x] = mk();
+    x.drawImage(base, 0, 0, W, GH);
+    x.filter = `blur(${Math.max(2, CELL * 0.2)}px)`;
+    x.drawImage(base, 0, 0, W, GH);
+    x.filter = 'none';
+    const R = rng(dig.grid[0][0].seed);
+    const matAt = (px, py) => MATS[dig.grid[clamp(Math.floor(py / CELL), 0, ROWS - 1)][clamp(Math.floor(px / CELL), 0, COLS - 1)].m];
+    // sediment lines
+    for (let i = 0; i < ROWS * 2.2; i++) {
+      const y0 = R() * GH, k = R() * 6;
+      x.strokeStyle = R() < 0.5 ? 'rgba(255,240,210,.10)' : 'rgba(30,15,5,.16)'; x.lineWidth = 0.8 + R() * 1.4;
+      x.beginPath();
+      for (let px = 0; px <= W; px += 6) { const y = y0 + Math.sin(px * 0.02 + k) * 2.2 + Math.sin(px * 0.07 + k * 2) * 0.8; px ? x.lineTo(px, y) : x.moveTo(px, y); }
+      x.stroke();
     }
-    x.globalAlpha = 1;
-    const pebbles = mat.id === 'boulder' ? 0 : 1 + Math.floor(R() * (mat.hard > 0.4 ? 3 : 2));
-    for (let i = 0; i < pebbles; i++) {
-      const px2 = 4 + R() * (CELL - 8), py = 4 + R() * (CELL - 8), rr = 1.5 + R() * CELL * 0.08;
-      x.fillStyle = 'rgba(0,0,0,.28)'; x.beginPath(); x.ellipse(px2 + 0.8, py + 1, rr, rr * 0.75, 0, 0, 7); x.fill();
-      x.fillStyle = R() < 0.5 ? mat.sp : mat.c[1]; x.beginPath(); x.ellipse(px2, py, rr, rr * 0.75, 0, 0, 7); x.fill();
-      x.fillStyle = 'rgba(255,255,255,.35)'; x.beginPath(); x.ellipse(px2 - rr * 0.3, py - rr * 0.3, rr * 0.35, rr * 0.25, 0, 0, 7); x.fill();
+    // grain
+    for (let i = 0; i < (W * GH) / 14; i++) {
+      x.fillStyle = R() < 0.5 ? 'rgba(255,240,215,.13)' : 'rgba(0,0,0,.2)';
+      const sz = 0.5 + R() * 1.4; x.fillRect(R() * W, R() * GH, sz, sz);
     }
-    if (mat.id === 'boulder' || mat.id === 'rock') {
-      x.strokeStyle = 'rgba(0,0,0,.25)'; x.lineWidth = 1.2;
-      x.beginPath(); x.moveTo(CELL * 0.1, CELL * (0.3 + R() * 0.4)); x.lineTo(CELL * 0.5, CELL * (0.4 + R() * 0.2)); x.lineTo(CELL * 0.9, CELL * (0.3 + R() * 0.4)); x.stroke();
-      if (mat.id === 'boulder') {
-        const rg2 = x.createRadialGradient(CELL * 0.35, CELL * 0.3, 2, CELL / 2, CELL / 2, CELL * 0.7);
-        rg2.addColorStop(0, 'rgba(255,255,255,.22)'); rg2.addColorStop(1, 'rgba(0,0,0,.25)');
-        x.fillStyle = rg2; x.fillRect(0, 0, CELL, CELL);
+    // pebbles
+    for (let i = 0; i < (W * GH) / (CELL * CELL) * 2.6; i++) {
+      const px = R() * W, py = R() * GH, m = matAt(px, py);
+      if (m.id === 'boulder') continue;
+      const rr = (1.2 + R() * CELL * 0.07) * (0.7 + m.hard);
+      x.fillStyle = 'rgba(0,0,0,.3)'; x.beginPath(); x.ellipse(px + 0.8, py + 1.1, rr, rr * 0.72, 0, 0, 7); x.fill();
+      x.fillStyle = R() < 0.55 ? m.sp : m.c[1]; x.beginPath(); x.ellipse(px, py, rr, rr * 0.72, R(), 0, 7); x.fill();
+      x.fillStyle = 'rgba(255,255,255,.32)'; x.beginPath(); x.ellipse(px - rr * 0.3, py - rr * 0.3, rr * 0.35, rr * 0.22, 0, 0, 7); x.fill();
+    }
+    // stone cells get their own faceted rock; boulders are one big rounded stone
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const cell = dig.grid[r][c], m = MATS[cell.m];
+      const cx0 = c * CELL, cy0 = r * CELL;
+      if (m.id === 'rock' || m.id === 'boulder') {
+        const RR = rng(cell.seed);
+        const pts = []; const n = 7 + Math.floor(RR() * 3); const pad = m.id === 'boulder' ? 1.5 : CELL * 0.08;
+        for (let k = 0; k < n; k++) { const a = (k / n) * Math.PI * 2; const rad = CELL / 2 - pad - RR() * CELL * 0.08; pts.push([cx0 + CELL / 2 + Math.cos(a) * rad, cy0 + CELL / 2 + Math.sin(a) * rad * 0.92]); }
+        x.save();
+        x.shadowColor = 'rgba(0,0,0,.45)'; x.shadowBlur = 4; x.shadowOffsetY = 2;
+        const g = x.createRadialGradient(cx0 + CELL * 0.35, cy0 + CELL * 0.3, 1, cx0 + CELL / 2, cy0 + CELL / 2, CELL * 0.7);
+        g.addColorStop(0, m.sp); g.addColorStop(0.45, m.c[0]); g.addColorStop(1, m.c[1]);
+        x.fillStyle = g; x.beginPath(); pts.forEach(([a, bb], k) => (k ? x.lineTo(a, bb) : x.moveTo(a, bb))); x.closePath(); x.fill();
+        x.restore();
+        x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = 1;
+        x.beginPath(); x.moveTo(pts[1][0], pts[1][1]); x.lineTo(cx0 + CELL * (0.4 + RR() * 0.2), cy0 + CELL * (0.4 + RR() * 0.2)); x.lineTo(pts[Math.floor(n / 2) + 1][0], pts[Math.floor(n / 2) + 1][1]); x.stroke();
+        x.strokeStyle = 'rgba(255,255,255,.22)'; x.beginPath(); x.moveTo(pts[n - 2][0], pts[n - 2][1]); x.lineTo(pts[n - 1][0], pts[n - 1][1]); x.lineTo(pts[0][0], pts[0][1]); x.stroke();
       }
     }
-    if (dark) {
-      x.fillStyle = 'rgba(20,10,4,.62)'; x.fillRect(0, 0, CELL, CELL);
-    } else {
-      x.fillStyle = 'rgba(255,255,255,.16)'; x.fillRect(0, 0, CELL, 1.5);
-      x.fillStyle = 'rgba(255,255,255,.07)'; x.fillRect(CELL - 1.5, 0, 1.5, CELL);
-      x.fillStyle = 'rgba(0,0,0,.28)'; x.fillRect(0, CELL - 2, CELL, 2);
-      x.fillStyle = 'rgba(0,0,0,.14)'; x.fillRect(0, 0, 1.5, CELL);
+    // roots under the grass, and a few fossil shells deep down
+    x.strokeStyle = 'rgba(60,32,12,.55)'; x.lineCap = 'round';
+    for (let i = 0; i < COLS * 0.8; i++) { let px = R() * W, py = 0; x.lineWidth = 1.6; x.beginPath(); x.moveTo(px, py); for (let k = 0; k < 7; k++) { px += (R() - 0.5) * CELL * 0.4; py += CELL * (0.12 + R() * 0.18); x.lineTo(px, py); x.lineWidth *= 0.8; } x.stroke(); }
+    for (let i = 0; i < 3; i++) {
+      const fx = R() * W, fy = GH * (0.55 + R() * 0.4), fr = CELL * 0.18;
+      x.strokeStyle = 'rgba(255,245,225,.22)'; x.lineWidth = 1.2; x.beginPath();
+      for (let a = 0; a < 14; a += 0.3) { const rr = fr * (a / 14); x.lineTo(fx + Math.cos(a) * rr, fy + Math.sin(a) * rr); } x.stroke();
     }
-    return c;
+    // a faint grid so every cell can be aimed at
+    x.strokeStyle = 'rgba(0,0,0,.13)'; x.lineWidth = 1;
+    for (let c = 1; c < COLS; c++) { x.beginPath(); x.moveTo(c * CELL, 0); x.lineTo(c * CELL, GH); x.stroke(); }
+    for (let r = 1; r < ROWS; r++) { x.beginPath(); x.moveTo(0, r * CELL); x.lineTo(W, r * CELL); x.stroke(); }
+    x.strokeStyle = 'rgba(255,240,210,.06)';
+    for (let c = 1; c < COLS; c++) { x.beginPath(); x.moveTo(c * CELL + 1, 0); x.lineTo(c * CELL + 1, GH); x.stroke(); }
+    SOIL = soil;
+    // the walls of the hole: the same strata, deep in shadow
+    const [pit, p] = mk();
+    p.drawImage(soil, 0, 0, W, GH);
+    p.fillStyle = 'rgba(16,8,3,.66)'; p.fillRect(0, 0, W, GH);
+    const dg = p.createLinearGradient(0, 0, 0, GH); dg.addColorStop(0, 'rgba(0,0,0,0)'); dg.addColorStop(1, 'rgba(0,0,0,.35)');
+    p.fillStyle = dg; p.fillRect(0, 0, W, GH);
+    PIT = pit;
+  }
+  function glow(color) {
+    if (GLOW[color]) return GLOW[color];
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const x = c.getContext('2d'); const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.18, color); g.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    return (GLOW[color] = c);
   }
   function makeSurface(site) {
     const c = document.createElement('canvas');
@@ -307,16 +359,14 @@
   function layout() {
     dpr = Math.min(2.5, window.devicePixelRatio || 1);
     const wrap = $('.pit-wrap');
-    const availW = Math.min(wrap.clientWidth || window.innerWidth - 24, 540);
-    const head = $('.dig-head').offsetHeight + $('.tools').offsetHeight + 34;
+    const availW = Math.min(wrap.clientWidth || window.innerWidth - 24, 540) - 10;
+    const head = $('.dig-head').offsetHeight + $('.tools').offsetHeight + 50;
     const availH = Math.max(320, window.innerHeight - head);
     CELL = Math.floor(Math.min(availW / COLS, availH / (ROWS + 0.9)));
     W = CELL * COLS; SURF = Math.round(CELL * 0.9); H = SURF + CELL * ROWS;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
-    TEX = MATS.map((m) => [0, 1, 2].map((v) => makeTex(m, v, false)));
-    DARK = MATS.map((m) => makeTex(m, 0, true));
-    if (dig) SURFIMG = makeSurface(dig.site);
+    if (dig) { SURFIMG = makeSurface(dig.site); buildSoil(); }
   }
 
   const cellAt = (e) => {
@@ -385,6 +435,7 @@
     cell.hp -= dmg;
     const excess = Math.max(0, dmg - before);
     const x = cx(c), y = cy(r);
+    light = { x, y, a: 1 };
     if (how === 'pick') { SFX.hit(mat.hard); shake = Math.max(shake, 3.2); }
     else if (how === 'trowel') { SFX.trowel(); shake = Math.max(shake, 1.4); }
     else if (how === 'brush') { SFX.brush(); }
@@ -411,6 +462,15 @@
       dig.tiles++; S.stats.tiles++; quest('tiles');
       dig.xp += 1; addXP(1);
       SFX.breakTile(mat.hard);
+      const nowMs = performance.now();
+      dig.combo = nowMs - (dig.lastBreak || 0) < 1500 ? (dig.combo || 0) + 1 : 1;
+      dig.lastBreak = nowMs;
+      if (dig.combo >= 3) comboFx = { n: dig.combo, t: 0 };
+      if (dig.combo % 5 === 0) {
+        const cb = Math.round(2 * (dig.daily ? 2 : dig.site.mult) * Math.min(4, dig.combo / 5));
+        dig.coins += cb; S.coins += cb; quest('coins', cb); dig.xp += 2; addXP(2);
+        floatText(x, y - CELL * 0.4, `🔥 רצף! +${cb}`, '#ffb347'); SFX.coin();
+      }
       burst(x, y, [mat.c[0], mat.c[1], mat.sp], 10, 1);
       dust(x, y, 'rgba(200,170,120,.5)', 4);
       if (cell.art >= 0) {
@@ -474,7 +534,9 @@
     floatText(x + (a.w * CELL) / 2, y, `+${fmt(value)} 🪙${perfect ? ' מושלם!' : ''}`, perfect ? '#ffd34d' : '#fff', true);
     save(); hud();
     const eraNowDone = isNew && eraComplete(a.f.era);
+    pendingFinds++;
     setTimeout(() => {
+      pendingFinds--;
       if (isNew || rar.rank >= 2) showFind(a.f, a.cond, value, isNew, perfect);
       if (eraNowDone) toast(`🏛️ השלמתם את אוסף ${ERA[a.f.era].name}! מעכשיו +15% לערך הממצאים מהתקופה`, 'gold', 5000);
       if (dig && !dig.over && dig.arts.every((z) => z.done)) setTimeout(() => endDig('cleared'), isNew || rar.rank >= 2 ? 50 : 700);
@@ -528,13 +590,14 @@
 
   function outOfEnergy() {
     if (!dig || dig.over || $('#modal').classList.contains('open')) return;
+    if (pendingFinds > 0) { setTimeout(outOfEnergy, 400); return; }
     if (dig.dyn > 0) { toast('⚡ נגמרה האנרגיה, אבל נשאר לכם חומר נפץ 🧨', 'gold'); return; }
     const cost = Math.round(25 * (dig.daily ? 2 : dig.site.mult) * (1 + dig.bought));
     const half = dig.arts.filter((a) => !a.done && a.exposed > 0).length;
     const canBuy = !dig.daily && S.coins >= cost;
     SFX.deny();
     modal(`
-      <div class="m-ico">😮‍💨</div>
+      <div class="m-ico">${ico('bolt', 'big')}</div>
       <h2>נגמר הכוח לחפור</h2>
       ${half ? `<p class="hot">יש ${half === 1 ? 'ממצא אחד שנחשף' : `${half} ממצאים שנחשפו`} רק בחלקו. עוד כמה מכות והוא שלכם!</p>` : '<p>אפשר לסיים כאן, או לשתות קפה שחור ולהמשיך.</p>'}
       <div class="m-actions">
@@ -569,12 +632,20 @@
     ctx.clearRect(0, 0, W, H);
     ctx.save();
     if (shake > 0.1) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
-    if (SURFIMG) ctx.drawImage(SURFIMG, 0, 0, W, SURF);
+    if (SURFIMG) {
+      ctx.drawImage(SURFIMG, 0, 0, W, SURF);
+      ctx.save(); ctx.globalAlpha = 0.55; ctx.fillStyle = '#fff';
+      for (let i = 0; i < 3; i++) {
+        const cxp = ((t * (6 + i * 3) + i * W * 0.4) % (W + 80)) - 40, cyp = SURF * (0.18 + i * 0.12);
+        ctx.beginPath(); ctx.ellipse(cxp, cyp, CELL * 0.7, CELL * 0.14, 0, 0, 7); ctx.ellipse(cxp + CELL * 0.3, cyp - CELL * 0.08, CELL * 0.35, CELL * 0.14, 0, 0, 7); ctx.fill();
+      }
+      ctx.restore();
+    }
 
     // dug cells show the darker layer wall behind
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       const cell = dig.grid[r][c];
-      if (cell.broken) ctx.drawImage(DARK[cell.m], c * CELL, SURF + r * CELL, CELL, CELL);
+      if (cell.broken) ctx.drawImage(PIT, c * CELL * dpr, r * CELL * dpr, CELL * dpr, CELL * dpr, c * CELL, SURF + r * CELL, CELL, CELL);
     }
     // finds and items, under the soil that still covers them
     for (const a of dig.arts) {
@@ -610,10 +681,38 @@
         if (right && !right.broken) { const g = ctx.createLinearGradient(x + CELL, 0, x + CELL * 0.75, 0); g.addColorStop(0, 'rgba(0,0,0,.4)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(x + CELL * 0.75, y, CELL * 0.25, CELL); }
         continue;
       }
-      ctx.drawImage(TEX[cell.m][cell.v], x, y, CELL, CELL);
+      ctx.drawImage(SOIL, c * CELL * dpr, r * CELL * dpr, CELL * dpr, CELL * dpr, x, y, CELL, CELL);
       if (cell.hp < cell.max) drawCracks(x + 3, y + 3, CELL - 6, CELL - 6, 1 + Math.floor((1 - cell.hp / cell.max) * 4), cell.seed, 0.6);
-      const below = G(r + 1, c);
-      if (below && below.broken) { ctx.fillStyle = 'rgba(255,240,210,.12)'; ctx.fillRect(x, y + CELL - 2, CELL, 2); }
+    }
+    // crumbly lips where the hole meets solid ground
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const cell = dig.grid[r][c];
+      if (!cell.broken) continue;
+      const x = c * CELL, y = SURF + r * CELL;
+      const sides = [[r === 0 ? 'grass' : G(r - 1, c), 0], [G(r + 1, c), 1], [G(r, c - 1), 2], [G(r, c + 1), 3]];
+      for (const [n, side] of sides) {
+        if (!n || (n !== 'grass' && n.broken)) continue;
+        const col = n === 'grass' ? '#4f6e2c' : MATS[n.m].c[1];
+        const R = rng(cell.seed + side * 31);
+        const steps = 6, depth = CELL * 0.07;
+        ctx.beginPath();
+        const pt = (u, d) => side === 0 ? [x + u * CELL, y + d] : side === 1 ? [x + u * CELL, y + CELL - d] : side === 2 ? [x + d, y + u * CELL] : [x + CELL - d, y + u * CELL];
+        ctx.moveTo(...pt(0, 0));
+        for (let k = 0; k <= steps; k++) ctx.lineTo(...pt(k / steps, depth * (0.3 + R() * 1.1)));
+        ctx.lineTo(...pt(1, 0)); ctx.closePath();
+        ctx.fillStyle = col; ctx.fill();
+        if (side === 0) { ctx.strokeStyle = 'rgba(255,235,200,.22)'; ctx.lineWidth = 1; ctx.stroke(); }
+      }
+    }
+    // depth falls into shadow, and a warm work-lamp follows the last strike
+    const dg = ctx.createLinearGradient(0, SURF, 0, H);
+    dg.addColorStop(0, 'rgba(0,0,0,0)'); dg.addColorStop(1, 'rgba(8,4,0,.32)');
+    ctx.fillStyle = dg; ctx.fillRect(0, SURF, W, H - SURF);
+    if (light) {
+      light.a = Math.max(0, light.a - dt * 0.25);
+      const lg2 = ctx.createRadialGradient(light.x, light.y, 0, light.x, light.y, CELL * 3.2);
+      lg2.addColorStop(0, `rgba(255,214,150,${0.2 * light.a + 0.06})`); lg2.addColorStop(1, 'rgba(255,214,150,0)');
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = lg2; ctx.fillRect(light.x - CELL * 3.3, light.y - CELL * 3.3, CELL * 6.6, CELL * 6.6); ctx.restore();
     }
     // era bands: a tick and a name on the side of each layer
     let prev = -1;
@@ -715,12 +814,14 @@
       const k = 1 - p.t / p.life;
       if (p.kind === 'chunk') {
         ctx.globalAlpha = Math.min(1, k * 1.5); ctx.fillStyle = p.color;
-        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot + p.t * 8); ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx.restore();
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot + p.t * 8); ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.35); ctx.restore();
       } else if (p.kind === 'dust') {
         ctx.globalAlpha = k * 0.6; ctx.fillStyle = p.color;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (1.6 - k * 0.6), 0, Math.PI * 2); ctx.fill();
       } else {
         ctx.globalAlpha = k; ctx.fillStyle = p.color;
+        const gs = p.size * 3.2;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glow(p.color), p.x - gs, p.y - gs, gs * 2, gs * 2); ctx.restore();
         star(p.x, p.y, p.size * (0.6 + Math.sin(p.t * 20) * 0.25));
       }
     }
@@ -757,7 +858,25 @@
       ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, y);
       ctx.restore();
     }
+    if (comboFx) {
+      comboFx.t += dt;
+      if (comboFx.t > 1.5) comboFx = null;
+      else {
+        const k = comboFx.t, pop = k < 0.15 ? 0.6 + (k / 0.15) * 0.6 : 1.2 - Math.min(0.2, (k - 0.15) * 0.6);
+        const hue = Math.min(comboFx.n * 9, 60);
+        ctx.save(); ctx.globalAlpha = k > 1.1 ? (1.5 - k) / 0.4 : 1;
+        ctx.translate(W / 2, SURF + CELL * 0.9); ctx.scale(pop, pop); ctx.rotate(-0.05);
+        ctx.font = `900 ${Math.max(18, CELL * 0.62)}px Heebo, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(`רצף ×${comboFx.n}`, 0, 0);
+        const tg = ctx.createLinearGradient(0, -CELL * 0.3, 0, CELL * 0.3); tg.addColorStop(0, '#fff6c8'); tg.addColorStop(1, `hsl(${45 - hue},100%,55%)`);
+        ctx.fillStyle = tg; ctx.fillText(`רצף ×${comboFx.n}`, 0, 0);
+        ctx.restore();
+      }
+    }
     ctx.restore();
+    const vg = ctx.createRadialGradient(W / 2, H * 0.5, Math.min(W, H) * 0.35, W / 2, H * 0.5, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.42)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     if (flash > 0) { ctx.fillStyle = `rgba(255,248,220,${flash})`; ctx.fillRect(0, 0, W, H); flash = Math.max(0, flash - dt * 1.8); }
     shake *= Math.pow(0.0008, dt);
   }
@@ -816,7 +935,7 @@
     $('#en-num').textContent = e;
     const done = dig.arts.filter((a) => a.done).length;
     $('#finds-num').textContent = `${done}/${dig.arts.length}`;
-    $('#dig-coins').textContent = fmt(dig.coins);
+    countTo($('#dig-coins'), dig.coins);
     $$('.tool').forEach((b) => b.classList.toggle('on', b.dataset.t === tool));
     $('#t-pick-n').textContent = dig.lo.pick;
     $('#t-sonar-n').textContent = dig.sonar;
@@ -849,12 +968,12 @@
     save();
     tool = 'pick'; lastTool = 'pick';
     $$('.tool.pulse').forEach((b) => b.classList.remove('pulse'));
-    parts = []; floats = []; flyers = []; rings = []; shake = 0; flash = 0; pendingLevels = [];
+    parts = []; floats = []; flyers = []; rings = []; shake = 0; flash = 0; pendingLevels = []; light = null; comboFx = null;
     show('dig');
     $('#dig-site').textContent = site.name;
     $('#dig-place').textContent = daily ? `${site.place} · ${counted ? 'נספר לשיא היומי' : 'אימון'}` : site.place;
     requestAnimationFrame(() => {
-      layout(); SURFIMG = makeSurface(site); hud();
+      layout(); hud();
       if (!running) { running = true; lastT = performance.now(); requestAnimationFrame(frame); }
       tip('start', '⛏️ <b>הקישו על האדמה כדי לחפור.</b> כל מכה עולה ⚡ אחת. החזיקו את האצבע כדי לחפור ברצף.', 5200);
       if (useMap) toast('🗺️ מפת האוצר בשימוש! חפשו את ה־X בעומק', 'gold', 4200);
@@ -881,19 +1000,27 @@
     const missed = dig.arts.filter((a) => !a.done);
     const rows = dig.found.map((f) => {
       const d = BY_ID[f.id]; const [cl, cc] = condLabel(f.cond);
-      return `<li><img src="${D.svgUrl(d.svg)}" alt=""><span class="n">${d.name}${f.isNew ? ' <em class="new">חדש!</em>' : ''}<small style="color:${RARITY[d.rarity].color}">${RARITY[d.rarity].name}</small></span><span class="c" style="color:${cc}">${cl}</span><b>${fmt(f.value)} 🪙</b></li>`;
+      return `<li><img src="${D.svgUrl(d.svg)}" alt=""><span class="n">${d.name}${f.isNew ? ' <em class="new">חדש!</em>' : ''}<small style="color:${RARITY[d.rarity].color}">${RARITY[d.rarity].name}</small></span><span class="c" style="color:${cc}">${cl}</span><b>${fmt(f.value)} ${ico('coin', 'ico sm')}</b></li>`;
     }).join('');
     const missHtml = missed.length
       ? `<div class="missed"><h4>${cleared ? '' : 'עוד חיכו לכם באדמה…'}</h4><div class="miss-row">${missed.map((a) => `<span class="miss" style="--rc:${RARITY[a.f.rarity].color}" title="${a.exposed ? a.f.name : RARITY[a.f.rarity].name}"><img src="${D.svgUrl(a.f.svg)}" alt="" class="${a.exposed ? 'half' : 'sil'}"><small>${a.exposed ? a.f.name : RARITY[a.f.rarity].name}</small></span>`).join('')}</div></div>`
       : '';
-    const lv = pendingLevels.length ? `<div class="lvup">⭐ עליתם לרמה ${S.lvl}!</div>` : '';
+    const lv = pendingLevels.length ? `<div class="lvup">${ico('star')} עליתם לרמה ${S.lvl}!</div>` : '';
+    if (pendingLevels.length) {
+      const unlocked = SITES.filter((z) => pendingLevels.includes(z.level));
+      confetti(60);
+      modal(`<div class="levelup"><div class="lv-rays"></div><div class="lv-star">${ico('star')}<b>${S.lvl}</b></div></div>
+        <h2 class="lv-title">רמה חדשה!</h2><p class="sub">החוקר שלכם מתקדם. עוד מטבעות, עוד אתרים, עוד סודות.</p>
+        ${unlocked.map((z) => `<div class="lv-site"><div class="mini">${scene(z, z.eras.map((e) => ERA_COLOR[e]))}</div><div><small>אתר חדש נפתח</small><b>${z.name}</b></div></div>`).join('')}
+        <div class="m-actions"><button class="btn gold" id="m-lv">מעולה!</button></div>`, (root) => { $('#m-lv', root).onclick = closeModal; }, false);
+    }
     modal(`
-      <div class="m-ico">${cleared ? '🏆' : '🏺'}</div>
+      <div class="m-ico">${ico(cleared ? 'trophy' : 'vase', 'big')}</div>
       <h2>${cleared ? 'האתר נחשף במלואו!' : dig.daily ? 'חפירת היום הסתיימה' : 'סוף יום החפירה'}</h2>
       <p class="sub">${dig.site.name} · ${dig.tiles} משבצות · ${dig.found.length} ממצאים</p>
       ${rows ? `<ul class="sum">${rows}</ul>` : '<p class="sub">הפעם האדמה שמרה את סודותיה. נסו להתחיל בסונאר 🔊</p>'}
       ${bonus ? `<div class="bonus">✨ בונוס על חשיפת האתר כולו: +${fmt(bonus)} 🪙</div>` : ''}
-      <div class="total"><span>סה״כ</span><b>${fmt(dig.coins)} 🪙</b><span>+${dig.xp} XP</span></div>
+      <div class="total"><span>סה״כ</span><b>${fmt(dig.coins)} ${ico('coin', 'ico md')}</b><span>+${dig.xp} XP</span></div>
       ${lv}${missHtml}
       <div class="m-actions">
         ${dig.daily ? '<button class="btn gold" id="m-share">📤 שתפו את התוצאה</button>' : '<button class="btn gold" id="m-again">⛏️ עוד חפירה כאן</button>'}
@@ -926,7 +1053,7 @@
     const [cl, cc] = condLabel(cond);
     if (r.rank >= 3) confetti(r.rank === 4 ? 90 : 45, r.color);
     modal(`
-      <div class="find r${r.rank}" style="--rc:${r.color}">
+      <div class="find r${r.rank} ${r.rank >= 3 ? 'holo' : ''}" style="--rc:${r.color}">
         <div class="rays"></div>
         <div class="ribbon">${isNew ? '✦ ממצא חדש לאוסף ✦' : r.name}</div>
         <div class="art" style="aspect-ratio:${f.w}/${f.h}"><img src="${D.svgUrl(f.svg)}" alt="${f.name}"></div>
@@ -990,6 +1117,8 @@
     document.body.dataset.screen = name;
     $$('.tabbar button').forEach((b) => b.classList.toggle('on', b.dataset.go === name));
     if (name !== 'dig') running = false;
+    if (name === 'home') SHCHAVOT_HERO.start(); else SHCHAVOT_HERO.stop();
+    SHCHAVOT_HERO.bg(name === 'map' || name === 'museum' || name === 'camp');
     if (name === 'map') renderMap();
     if (name === 'museum') renderMuseum();
     if (name === 'camp') renderCamp();
@@ -999,7 +1128,7 @@
   $$('[data-go]').forEach((b) => b.addEventListener('click', () => { SFX.unlock(); SFX.click(); show(b.dataset.go); }));
   $('#dig-exit').addEventListener('click', () => {
     if (!dig || dig.over) return show('map');
-    modal(`<div class="m-ico">🏕️</div><h2>לסיים את החפירה?</h2><p>הממצאים שכבר אספתם נשמרים. מה שעוד באדמה יישאר שם.</p>
+    modal(`<div class="m-ico">${ico('camp', 'big')}</div><h2>לסיים את החפירה?</h2><p>הממצאים שכבר אספתם נשמרים. מה שעוד באדמה יישאר שם.</p>
       <div class="m-actions"><button class="btn gold" id="m-stay">להמשיך לחפור</button><button class="btn ghost" id="m-quit">סיום</button></div>`, (root) => {
       $('#m-stay', root).onclick = closeModal;
       $('#m-quit', root).onclick = () => { closeModal(); endDig('quit'); };
@@ -1009,10 +1138,21 @@
   function topbar() {
     $('#lvl').textContent = S.lvl;
     $('#xp-fill').style.width = `${clamp((S.xp / xpFor(S.lvl)) * 100, 0, 100)}%`;
-    $('#coins').textContent = fmt(S.coins);
+    countTo($('#coins'), S.coins);
     $('#frags').textContent = S.maps ? `🗺️×${S.maps}` : `${S.frags}/3`;
-    $('#snd').textContent = S.sound ? '🔊' : '🔇';
+    $('#snd').innerHTML = ico(S.sound ? 'soundOn' : 'soundOff');
+    $('#mus').innerHTML = ico(S.music ? 'music' : 'musicOff');
   }
+  function countTo(el, to) {
+    const from = +(el.dataset.v || 0);
+    el.dataset.v = to;
+    if (from === to) { el.textContent = fmt(to); return; }
+    const t0 = performance.now(), dur = Math.min(900, 250 + Math.abs(to - from) * 2);
+    el.parentElement.classList.remove('bump'); void el.offsetWidth; el.parentElement.classList.add('bump');
+    const step = (now) => { const k = Math.min(1, (now - t0) / dur); el.textContent = fmt(from + (to - from) * (1 - Math.pow(1 - k, 3))); if (k < 1 && el.dataset.v == to) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+  $('#mus').addEventListener('click', () => { S.music = !S.music; MUSIC.set(S.music); if (S.music) MUSIC.kick(); save(); topbar(); SFX.click(); });
   $('#snd').addEventListener('click', () => { S.sound = !S.sound; SFX.setEnabled(S.sound); save(); topbar(); SFX.click(); });
 
   function renderMap() {
@@ -1044,13 +1184,16 @@
       const locked = S.lvl < s.level;
       const all = FINDS.filter((f) => s.eras.includes(f.era));
       const got = all.filter((f) => S.museum[f.id] && S.museum[f.id].n).length;
-      const strata = s.eras.map((e) => `<i style="background:${ERA_COLOR[e]}"></i>`).join('');
       return `<button class="site ${locked ? 'locked' : ''}" data-site="${i}" ${locked ? 'aria-disabled="true"' : ''}>
-        <div class="thumb" style="--s0:${s.sky[0]};--s1:${s.sky[1]}"><div class="strata">${strata}</div>${locked ? `<div class="lock">🔒 רמה ${s.level}</div>` : `<div class="mult">×${s.mult} ערך</div>`}</div>
+        <div class="thumb">${scene(s, s.eras.map((e) => ERA_COLOR[e]))}${locked ? `<div class="lock">${ico('lock')}רמה ${s.level}</div>` : `<div class="mult">×${s.mult} ערך</div>`}<span class="shine"></span></div>
         <div class="info"><h4>${s.name}</h4><small>${s.place}</small><p>${s.blurb}</p>
         <div class="chips">${s.eras.map((e) => `<span style="--ec:${ERA_COLOR[e]}">${ERA[e].short}</span>`).join('')}</div>
         <div class="prog"><div class="bar"><i style="width:${(got / all.length) * 100}%"></i></div><small>${got}/${all.length} באוסף</small></div></div></button>`;
     }).join('');
+    $$('.site').forEach((b) => {
+      b.addEventListener('pointermove', (e) => { const r = b.getBoundingClientRect(); b.style.setProperty('--rx', `${((e.clientY - r.top) / r.height - 0.5) * -6}deg`); b.style.setProperty('--ry', `${((e.clientX - r.left) / r.width - 0.5) * 8}deg`); b.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`); });
+      b.addEventListener('pointerleave', () => { b.style.setProperty('--rx', '0deg'); b.style.setProperty('--ry', '0deg'); });
+    });
     $$('.site').forEach((b) => b.onclick = () => {
       const i = +b.dataset.site;
       if (S.lvl < SITES[i].level) { SFX.deny(); toast(`האתר ייפתח ברמה ${SITES[i].level}. חפרו עוד כדי לעלות רמה ⭐`); return; }
@@ -1072,7 +1215,7 @@
     $('#mus-grid').innerHTML = list.map((f) => {
       const m = S.museum[f.id];
       const r = RARITY[f.rarity];
-      return `<button class="exhibit ${m ? '' : 'unknown'}" data-id="${f.id}" style="--rc:${r.color}">
+      return `<button class="exhibit ${m ? '' : 'unknown'} ${f.rarity === 'legendary' ? 'leg' : ''}" data-id="${f.id}" style="--rc:${r.color}">
         <div class="pic"><img src="${D.svgUrl(f.svg)}" alt="" style="aspect-ratio:${f.w}/${f.h}"></div>
         <b>${m ? f.name : '???'}</b><small style="color:${r.color}">${r.name}</small>${m ? `<span class="cnt">×${m.n}${m.best >= 100 ? ' ⭐' : ''}</span>` : ''}</button>`;
     }).join('');
@@ -1094,7 +1237,8 @@
   function renderCamp() {
     $('#ups').innerHTML = UPS.map((u) => {
       const l = up(u.id), maxed = l >= u.max, cost = upCost(u);
-      return `<div class="up ${maxed ? 'max' : ''}"><div class="ui">${u.icon}</div><div class="ut"><h4>${u.name}</h4><p>${u.desc(l)}</p>
+      const UI = { pick: 'pick', stamina: 'bolt', detector: 'sonar', sonar: 'sonar', restore: 'brush', luck: 'star', funding: 'map', dynamite: 'dyn' };
+      return `<div class="up ${maxed ? 'max' : ''}"><div class="ui">${ico(UI[u.id])}</div><div class="ut"><h4>${u.name}</h4><p>${u.desc(l)}</p>
         <div class="pips">${Array.from({ length: u.max }, (_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('')}</div></div>
         <button class="btn ${maxed ? 'ghost' : 'gold'} sm" data-up="${u.id}" ${maxed || S.coins < cost ? 'disabled' : ''}>${maxed ? 'מקסימום' : `${fmt(cost)} 🪙`}</button></div>`;
     }).join('');
@@ -1110,12 +1254,8 @@
 
   /* ---------- home ---------- */
   $('#play').addEventListener('click', () => { SFX.unlock(); SFX.click(); show('map'); });
-  (function heroFloaters() {
-    const host = $('#hero-finds');
-    const pick = ['r_head', 's_shekel', 'o_dallah', 'b_amphora', 'k_ivory', 'c_sword', 'f_bulla', 'p_handaxe'];
-    host.innerHTML = pick.map((id, i) => `<img src="${D.svgUrl(BY_ID[id].svg)}" alt="" style="--i:${i}">`).join('');
-  })();
-  if (S.stats.digs > 0) $('#play').textContent = 'להמשיך לחפור ⛏️';
+  if (S.stats.digs > 0) $('#play').textContent = 'להמשיך לחפור';
+  $$('[data-ico]').forEach((el) => { el.innerHTML = ico(el.dataset.ico); });
 
   window.addEventListener('resize', () => { if (dig && !$('#scr-dig').hidden) { layout(); } });
   topbar();

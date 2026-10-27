@@ -13,7 +13,9 @@ Live: https://devopsdevopshaim-wq.github.io/devops-hub/dig-game/ · Code: `dig-g
 | --- | --- |
 | `index.html` | screens: home, map (daily dig, quests, sites), dig (canvas + tools), museum, camp |
 | `js/art.js` | every artwork as an SVG string drawn in code (`A.*`), and the data: `RARITY`, `ERAS`, `FINDS` (41), `ITEMS`, `SITES` (7) → `window.SHCHAVOT` |
-| `js/audio.js` | sound effects synthesized with WebAudio (`window.SFX`) |
+| `js/icons.js` | the drawn icon set (`ICONS`: tools, coin, bolt, tabs…) and `scene(site)`, the illustrated landscape on each site card |
+| `js/hero.js` | the animated opening scene (sunset, stars, mountains with parallax, soil with glowing finds) and the drifting dust behind the menus |
+| `js/audio.js` | sound effects (`window.SFX`) and generative background music on a hijaz scale (`window.MUSIC`), all synthesized with WebAudio |
 | `js/game.js` | save (`localStorage` key `shchavot.v1`), progression, upgrades, quests, dig generation, canvas rendering and effects, input, modals |
 | `css/game.css` | night-desert look, Suez One + Heebo |
 
@@ -23,6 +25,7 @@ Live: https://devopsdevopshaim-wq.github.io/devops-hub/dig-game/ · Code: `dig-g
 - Value = base × site mult × (0.25 + 0.75·condition) × 1.5 if perfect × 1.15 if the era's collection is complete.
 - Daily dig: seeded by date with a fixed loadout, so it is identical for everyone. The first run is the one that counts, and the result is shared as emoji squares.
 - Three daily quests are seeded by date. Three map fragments make a treasure map, and the next regular dig then places an epic or legendary find in the deepest layer, marked with an X.
+- The look: the soil is painted once per dig as one continuous cross-section (`buildSoil`), and the hole edges crumble. There is also a work lamp at the last strike, a streak counter ("רצף") with a coin bonus every 5 breaks, cinematic finds with a holographic card for epic and above, and a full-screen level-up.
 - The first dig ever places an uncommon find in rows 1–2, so a new player finds something fast.
 
 ## Content rules
