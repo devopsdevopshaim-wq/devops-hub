@@ -263,8 +263,19 @@
       (p.printed ? '<small>הודפסו ' + p.printed + '</small>' : '') + '</div></div><div class="mt-name" title="' + esc(p.name || '') + '">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '</div></div>';
   }
   /* a rebuilt grid keeps the canvases already drawn (by photo and size); drawTile then redraws only photos that changed */
-  function keepCanvases(g) { var k = {}; $$('.mt-tile', g).forEach(function (el) { var c = el.querySelector('.mt-th canvas'); if (c && el._sig) k[el.dataset.id + '|' + el.dataset.px] = { c: c, sig: el._sig }; }); return k; }
-  function reuse(g, k) { $$('.mt-tile', g).forEach(function (el) { var o = k[el.dataset.id + '|' + el.dataset.px]; if (o) { var box = el.querySelector('.mt-th'); box.insertBefore(o.c, box.firstChild); el._sig = o.sig; } watch(el); }); }
+  /* the drawn part of a tile: its before|after pair, or its one canvas; it goes back only into a tile of the same kind
+     (a plain canvas put into a before|after tile left the pair undrawn: black boxes) */
+  function drawn(el) {
+    var box = el.querySelector('.mt-th'), ba = box && box.querySelector('.mt-ba'), c = box && box.querySelector(':scope > canvas');
+    return ba ? (ba.querySelector('.mt-a canvas') ? { ba: ba } : null) : c ? { c: c } : null;
+  }
+  function put(el, o, sig) {
+    var box = el.querySelector('.mt-th'), ba = box.querySelector('.mt-ba');
+    if (o.ba && ba) box.replaceChild(o.ba, ba); else if (o.c && !ba) box.insertBefore(o.c, box.firstChild); else return;
+    el._sig = sig;
+  }
+  function keepCanvases(g) { var k = {}; $$('.mt-tile', g).forEach(function (el) { var o = el._sig && drawn(el); if (o) { o.sig = el._sig; k[el.dataset.id + '|' + el.dataset.px] = o; } }); return k; }
+  function reuse(g, k) { $$('.mt-tile', g).forEach(function (el) { var o = k[el.dataset.id + '|' + el.dataset.px]; if (o) put(el, o, o.sig); watch(el); }); }
   function buildGrid() {
     var g = $('#mt-grid', root), l = shown(), k = keepCanvases(g);
     $('#mt-empty', root).hidden = !!S.photos.length; g.hidden = !S.photos.length;
@@ -277,8 +288,8 @@
       if (el.classList.contains('mt-pj') || el.closest('#mt-aiba')) { el._sig = null; enqueue(el); return; }
       var big = el.closest('#mt-egrid'), n = document.createElement('div');
       n.innerHTML = big ? eTileHTML(p) : tileHTML(p, Number(el.dataset.px) || zoom);
-      var ne = n.firstChild, c = el.querySelector('canvas'), box = ne.querySelector('.mt-th');
-      if (c && el._sig) { box.insertBefore(c, box.firstChild); ne._sig = el._sig; }
+      var ne = n.firstChild, o = el._sig && drawn(el);
+      if (o) put(ne, o, el._sig);
       el.parentNode.replaceChild(ne, el); watch(ne);
     });
   }
