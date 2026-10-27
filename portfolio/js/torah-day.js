@@ -123,7 +123,16 @@
   }
 
   // ---------------------------------------------------------------- the live clock (Hebrew and civil date)
+  function markNow() {
+    var rows = document.querySelectorAll('.td-rows > li[data-t]'), now = new Date(), m = now.getHours() * 60 + now.getMinutes(), cur = null;
+    Array.prototype.forEach.call(rows, function (li) {
+      li.classList.remove('now');
+      var mm = /^(\d{1,2}):(\d{2})$/.exec(li.dataset.t || ''); if (mm && Number(mm[1]) * 60 + Number(mm[2]) <= m) cur = li;
+    });
+    if (cur) cur.classList.add('now');
+  }
   function tickClock() {
+    markNow();
     var t = document.getElementById('td-time'), d = document.getElementById('td-date'); if (!t) return;
     var n = new Date();
     t.textContent = n.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -148,6 +157,7 @@
     var parshaCard = '<article class="td-card td-parsha">' +
       '<p class="eyebrow">פרשת השבוע</p>' +
       '<h3>' + esc(sh ? sh.parsha.replace(/^פרשת\s*/, '') : 'פרשת השבוע') + '</h3>' +
+      '<p class="td-heb">' + esc((function () { try { return new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).format(today); } catch (e) { return ''; } })()) + '</p>' +
       (ref ? '<p class="td-ref">' + esc(ref.replace(/-/g, ' – ')) + '</p>' : '') +
       '<div class="td-times">' +
         '<div><span>כניסת שבת</span><b>' + (sh && sh.candles ? fmtTime(sh.candles) : '—') + '</b></div>' +
@@ -176,7 +186,7 @@
     var key = 'done-' + ymd(today), done = {}; try { done = JSON.parse(store(key) || '{}') || {}; } catch (e) { done = {}; }
     var list = editing
       ? rows.map(function (r, i) { return '<li class="td-edit" data-i="' + i + '"><input class="e-t" value="' + esc(r[0]) + '" placeholder="שעה" aria-label="שעה"><input class="e-x" value="' + esc(r[1]) + '" placeholder="מה עושים" aria-label="פעילות"><input class="e-n" value="' + esc(r[2]) + '" placeholder="הערה" aria-label="הערה"><button type="button" class="e-d" aria-label="מחיקה">✕</button></li>'; }).join('') + '<li><button type="button" class="td-more" id="td-add">+ שורה</button></li>'
-      : rows.map(function (r, i) { return '<li><label><input type="checkbox" data-i="' + i + '"' + (done[i] ? ' checked' : '') + '><span class="td-t">' + esc(r[0]) + '</span><span class="td-x"><b>' + esc(r[1]) + '</b><small>' + esc(r[2]) + '</small></span></label></li>'; }).join('');
+      : rows.map(function (r, i) { return '<li data-t="' + esc(r[0]) + '"><label><span class="td-t">' + esc(r[0]) + '</span><span class="td-x"><b>' + esc(r[1]) + '</b><small>' + esc(r[2]) + '</small></span><input type="checkbox" data-i="' + i + '"' + (done[i] ? ' checked' : '') + ' aria-label="סימון כבוצע"></label></li>'; }).join('');
     var planCard = '<article class="td-card td-plan"><p class="eyebrow">סדר יום · ' + CITIES[city][0] + '</p><h3>היום, יום ' + DAYS[dow] + '</h3><ol class="td-rows">' + list + '</ol>' +
       (dow !== 6 ? '<div class="td-planbar">' + (editing ? '<button type="button" class="td-more" id="td-save">שמירה</button><button type="button" class="td-link" id="td-reset">חזרה לברירת המחדל</button>' : '<button type="button" class="td-more" id="td-editbtn">עריכת סדר היום</button>') + '</div>' : '') +
       '</article>';

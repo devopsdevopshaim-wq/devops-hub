@@ -120,3 +120,36 @@ html.has-ticker .wa-fab, html.has-ticker .a11y-fab { bottom: calc(22px + var(--t
 }
 @media (max-width: 640px) { :root { --tk-h: 38px; } .tk-label { padding-inline: 12px 22px; } .tk-label span + * { display: none; } }
 @media print { .ticker, .day-dock { display: none; } }
+
+/* ---------- v2: the middle column, finished ---------- */
+:root { --side-r: 340px; --side-l: 236px; }
+.shell #all .sec-head { display: grid; gap: 12px; margin-bottom: 14px; }
+.shell #all .sec-head h2 { font-size: clamp(30px, 3vw, 40px); }
+.shell #all .search { width: 100%; max-width: none; }
+.shell .fbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; }
+.shell .fbar label { min-width: 0; } .shell .fbar select { width: 100%; }
+.shell .fbar .admin-on { grid-column: 1 / -1; }
+.shell .card { position: relative; }
+.shell .card::before { content: ""; position: absolute; inset-inline: 0; top: 0; height: 3px; z-index: 3; background: linear-gradient(90deg, var(--c, var(--violet)), transparent 85%); opacity: .9; }
+.shell .card .media { height: 168px; }
+.shell .card .body { padding: 14px 18px 16px; gap: 9px; }
+.shell .card h3 { font-size: 19px; }
+.shell .card .cat { text-transform: none; letter-spacing: .02em; }
+.shell .card p { font-size: 14.5px; line-height: 1.6; }
+.shell .badge { backdrop-filter: blur(6px); }
+.shell .tile .tile-art { opacity: .9; }
+.shell .tile[aria-selected="true"] .tile-art { opacity: 1; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--c) 70%, transparent)); }
+.shell .tile small { display: inline-block; }
+.shell > .td-band .td-card { transition: transform .3s, box-shadow .3s; }
+.shell > .td-band .td-card:hover { transform: translateY(-2px); box-shadow: 0 26px 50px -30px rgba(0, 0, 0, .9); }
+.nav { backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(12, 10, 32, .72); }
+@media (min-width: 1700px) { :root { --side-r: 380px; --side-l: 260px; } .shell .grid { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); } }
+@media (max-width: 1250px) { .shell .fbar { grid-template-columns: 1fr 1fr; } }
+
+/* ---------- the rail's panels (music, news, accessibility) open inside the right column, in place of the dock, and never cover the page ---------- */
+@media (min-width: 1001px) {
+  html.has-rail .rail .mu-panel, html.has-rail .rail .dk-panel, html.has-rail .a11y-panel {
+    position: fixed !important; inset-inline-start: var(--rail-w) !important; inset-inline-end: auto !important; width: var(--side-r) !important;
+    top: calc(var(--nav-h) + 36px) !important; bottom: calc(var(--tk-h) + 14px) !important; max-height: none !important; height: auto !important;
+    overflow-y: auto; border-radius: 22px; z-index: 46; background: linear-gradient(170deg, #1d1a47, #0e0c26) !important; box-shadow: 0 30px 70px -30px #000; }
+}
