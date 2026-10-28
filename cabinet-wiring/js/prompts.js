@@ -52,13 +52,17 @@
       notes: { type: 'array', items: str },
       layout: {
         type: 'object', additionalProperties: false,
-        required: ['pages', 'enclosure', 'rails', 'door', 'terminalOrder', 'glands', 'notes'],
+        required: ['pages', 'cabinets', 'enclosure', 'rails', 'door', 'terminalOrder', 'glands', 'notes'],
         properties: {
           pages: { type: 'array', items: { type: 'integer' } },
+          cabinets: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: false, required: ['name', 'tags', 'w', 'h', 'd'], properties: { name: str, tags: { type: 'array', items: str }, w: { type: 'number' }, h: { type: 'number' }, d: { type: 'number' } } }
+          },
           enclosure: { type: 'object', additionalProperties: false, required: ['w', 'h', 'd'], properties: { w: { type: 'number' }, h: { type: 'number' }, d: { type: 'number' } } },
           rails: {
             type: 'array',
-            items: { type: 'object', additionalProperties: false, required: ['label', 'tags', 'spacer'], properties: { label: str, tags: { type: 'array', items: str }, spacer: { type: 'number' } } }
+            items: { type: 'object', additionalProperties: false, required: ['cabinet', 'label', 'tags', 'spacer'], properties: { cabinet: str, label: str, tags: { type: 'array', items: str }, spacer: { type: 'number' } } }
           },
           door: { type: 'array', items: str },
           terminalOrder: {
@@ -67,7 +71,7 @@
           },
           glands: {
             type: 'array',
-            items: { type: 'object', additionalProperties: false, required: ['label', 'size', 'row'], properties: { label: str, size: str, row: { type: 'integer' } } }
+            items: { type: 'object', additionalProperties: false, required: ['cabinet', 'label', 'size', 'row'], properties: { cabinet: str, label: str, size: str, row: { type: 'integer' } } }
           },
           notes: str
         }
@@ -100,7 +104,9 @@
     '8. page: מספר העמוד ב-PDF שבו החוט מופיע.',
     '9. אל תמציא חוטים שלא בתכנית. אם משהו לא קריא או לא ברור, כתוב זאת ב-notes (למשל: "עמוד 4: מספר ההדק של ‎-K3 לא קריא").',
     '10. meta: שם התכנית, מספר שרטוט, גרסה, מתח הזנה ומתח פיקוד כפי שמופיעים בטבלת הכותרת.',
-    '11. layout — הארון כפי שהוא מוגדר בשרטוטים (לא המלצה שלך). ממלאים רק ממה שמופיע בתכנית: שרטוט פריסה / מבט חזית של הפלטה (Layout, Mounting plate, פלטה), רשימת מהדקים, שרטוט בלוק הבקר, פלטת אנטיגרונים (PG).',
+    '11. layout — הארון או הארונות כפי שהם מוגדרים בשרטוטים (לא המלצה שלך). ממלאים רק ממה שמופיע בתכנית: שרטוט פריסה / מבט חזית של הפלטה (Layout, Mounting plate, פלטה), תמונה או הדמיה של הארון או הארונות בתוך ה-PDF, מבט על מבנה הארונות, רשימת מהדקים, שרטוט בלוק הבקר, פלטת אנטיגרונים (PG).',
+    '   תמונה של ארון בתוך ה-PDF היא הגדרה של הארון: קוראים ממנה אילו מסילות יש ומה יושב על כל מסילה משמאל לימין. רכיב בתמונה בלי תג גלוי — מזהים אותו לפי הסוג, היצרן, הדגם והכיתוב שעליו ומתאימים לתג מהסכמה; אם אין התאמה בטוחה — משאירים בחוץ וכותבים ב-notes.',
+    '   cabinets: אם בשרטוטים יש כמה ארונות (למשל ארון כוח וארון פיקוד, A CABINET ו-B CABINET, ארון ראשי וארוני משנה) — ארון לכל אחד: name כפי שכתוב, tags = כל תגי הרכיבים שנמצאים בו (כולל פסי מהדקים ורכיבי הדלת שלו), w/h/d במ"מ אם כתובים (אחרת 0). ארון אחד בלבד — רשומה אחת (או מערך ריק אם לא ברור). rails.cabinet ו-glands.cabinet = שם הארון שבו הם נמצאים.',
     '   rails: כל מסילת DIN מלמעלה למטה, ובכל אחת התגים משמאל לימין בדיוק בסדר שבשרטוט. label = שם המסילה או מה שעליה. spacer = גובה מרווח (ספייסר) במ"מ אם כתוב, אחרת 0.',
     '   terminalOrder: לכל פס מהדקים בתכנית — ההדקים בסדר הפיזי שלהם משמאל לימין, כמו ברשימת המהדקים. door: התגים בדלת בסדר שבשרטוט.',
     '   glands: כל כניסת כבל בפלטת האנטיגרונים: label = הכבל או היעד, size = הגודל כפי שכתוב (PG21, M20, 16...), row = שורה מלמעלה (1, 2...).',
@@ -133,7 +139,7 @@
       ' "components":[{"tag":"-K1","type":"contactor","name":"","desc":"","maker":"","partNo":"","location":"cabinet","page":1}],',
       ' "wires":[{"no":"","fromTag":"-X1","fromTerm":"1","toTag":"-Q1","toTerm":"1","color":"BK","colorSource":"drawing","section":2.5,"wireType":"H07V-K","func":"power","potential":"L1","desc":"","explain":"","page":1}],',
       ' "notes":[],',
-      ' "layout":{"pages":[],"enclosure":{"w":0,"h":0,"d":0},"rails":[{"label":"","tags":["-Q1","-F1"],"spacer":0}],"door":[],"terminalOrder":[{"tag":"-X1","terms":["1","2","PE"]}],"glands":[{"label":"","size":"PG16","row":1}],"notes":""}}'
+      ' "layout":{"pages":[],"cabinets":[{"name":"","tags":["-Q1","-F1","-X1"],"w":0,"h":0,"d":0}],"enclosure":{"w":0,"h":0,"d":0},"rails":[{"cabinet":"","label":"","tags":["-Q1","-F1"],"spacer":0}],"door":[],"terminalOrder":[{"tag":"-X1","terms":["1","2","PE"]}],"glands":[{"cabinet":"","label":"","size":"PG16","row":1}],"notes":""}}'
     ].join('\n');
   }
 
@@ -146,14 +152,14 @@
       SYSTEM, '', RULES, '',
       'מצורפים ' + pages.length + ' עמודים מתוך התכנית: עמודים ' + pages.join(', ') + ' ב-PDF, בסדר הזה. page = מספר העמוד ב-PDF.',
       'אם עמוד הוא כריכה, תוכן עניינים או רשימת חלקים בלי חוטים, החזר ממנו רק רכיבים.',
-      'אם עמוד הוא שרטוט פריסה, רשימת מהדקים, בלוק בקר או פלטת אנטיגרונים — מלא ממנו את layout (סעיף 11).',
+      'אם עמוד הוא שרטוט פריסה, תמונה של הארון או הארונות, רשימת מהדקים, בלוק בקר או פלטת אנטיגרונים — מלא ממנו את layout (סעיף 11), כולל איזה רכיב באיזה ארון.',
       'קו שממשיך לעמוד אחר (חץ עם הפניה כמו /5.3): חבר אותו לתג וההדק שמופיעים בהפניה אם הם ידועים.',
       known.length ? 'רכיבים שכבר זוהו בעמודים קודמים (השתמש באותם תגים): ' + known.join(', ') : '',
       opts.hint ? 'הערות המשתמש: ' + String(opts.hint).slice(0, 1500) : '',
       opts.text ? 'טקסט שנשלף מהעמודים האלה (לעזרה בקריאת מספרים קטנים):\n' + String(opts.text).slice(0, 7000) : '',
       '',
       'החזר JSON בלבד במבנה:',
-      '{"meta":{"title":"","drawingNo":"","revision":"","supply":"","control":"","notes":""},"components":[{"tag":"-K1","type":"contactor","name":"","desc":"","maker":"","partNo":"","location":"cabinet","page":1}],"wires":[{"no":"","fromTag":"-X1","fromTerm":"1","toTag":"-Q1","toTerm":"1","color":"BK","colorSource":"drawing","section":2.5,"wireType":"H07V-K","func":"power","potential":"L1","desc":"","explain":"","page":1}],"notes":[],"layout":{"pages":[],"enclosure":{"w":0,"h":0,"d":0},"rails":[],"door":[],"terminalOrder":[],"glands":[],"notes":""}}'
+      '{"meta":{"title":"","drawingNo":"","revision":"","supply":"","control":"","notes":""},"components":[{"tag":"-K1","type":"contactor","name":"","desc":"","maker":"","partNo":"","location":"cabinet","page":1}],"wires":[{"no":"","fromTag":"-X1","fromTerm":"1","toTag":"-Q1","toTerm":"1","color":"BK","colorSource":"drawing","section":2.5,"wireType":"H07V-K","func":"power","potential":"L1","desc":"","explain":"","page":1}],"notes":[],"layout":{"pages":[],"cabinets":[],"enclosure":{"w":0,"h":0,"d":0},"rails":[],"door":[],"terminalOrder":[],"glands":[],"notes":""}}'
     ];
     return parts.filter(function (x) { return x !== ''; }).join('\n').slice(0, 23800);
   }
@@ -191,25 +197,33 @@
   var normTag = function (t) { t = String(t || '').trim().toUpperCase().replace(/\s+/g, ''); return t && /^[A-Z0-9]/.test(t) ? '-' + t : t; };
   function layoutFromJson(l) {
     if (!l || typeof l !== 'object') return null;
-    var rails = (l.rails || []).map(function (r) { return { label: String(r.label || ''), tags: (r.tags || []).map(normTag).filter(Boolean), spacer: Number(r.spacer) || 0 }; }).filter(function (r) { return r.tags.length; });
+    var rails = (l.rails || []).map(function (r) { return { cabinet: String(r.cabinet || ''), label: String(r.label || ''), tags: (r.tags || []).map(normTag).filter(Boolean), spacer: Number(r.spacer) || 0 }; }).filter(function (r) { return r.tags.length; });
+    var cabinets = (l.cabinets || []).map(function (c) { return { name: String(c.name || '').trim(), tags: (c.tags || []).map(normTag).filter(Boolean), w: Number(c.w) || 0, h: Number(c.h) || 0, d: Number(c.d) || 0 }; }).filter(function (c) { return c.name && c.tags.length; });
     var termOrder = {};
     (l.terminalOrder || []).forEach(function (t) { var k = normTag(t.tag); if (k && t.terms && t.terms.length) termOrder[k] = t.terms.map(function (x) { return String(x).trim(); }); });
-    var glands = (l.glands || []).map(function (g) { return { label: String(g.label || ''), size: String(g.size || ''), row: Number(g.row) || 1 }; }).filter(function (g) { return g.size || g.label; });
+    var glands = (l.glands || []).map(function (g) { return { cabinet: String(g.cabinet || ''), label: String(g.label || ''), size: String(g.size || ''), row: Number(g.row) || 1 }; }).filter(function (g) { return g.size || g.label; });
     var door = (l.door || []).map(normTag).filter(Boolean);
     var e = l.enclosure || {};
     var enc = Number(e.w) > 0 && Number(e.h) > 0 ? { w: Number(e.w), h: Number(e.h), d: Number(e.d) || 0 } : null;
-    if (!rails.length && !Object.keys(termOrder).length && !glands.length && !door.length && !enc) return null;
-    return { source: 'drawing', pages: (l.pages || []).map(Number).filter(Boolean), enclosure: enc, rails: rails, door: door, termOrder: termOrder, glands: glands, notes: String(l.notes || '') };
+    if (!enc && cabinets.length === 1 && cabinets[0].w && cabinets[0].h) enc = { w: cabinets[0].w, h: cabinets[0].h, d: cabinets[0].d };
+    if (!rails.length && !Object.keys(termOrder).length && !glands.length && !door.length && !enc && cabinets.length < 2) return null;
+    return { source: 'drawing', pages: (l.pages || []).map(Number).filter(Boolean), cabinets: cabinets, enclosure: enc, rails: rails, door: door, termOrder: termOrder, glands: glands, notes: String(l.notes || '') };
   }
   function mergeLayouts(list) {
     list = (list || []).filter(Boolean);
     if (!list.length) return null;
-    var out = { source: 'drawing', pages: [], enclosure: null, rails: [], door: [], termOrder: {}, glands: [], notes: '' };
+    var out = { source: 'drawing', pages: [], cabinets: [], enclosure: null, rails: [], door: [], termOrder: {}, glands: [], notes: '' };
     var used = {};
     list.forEach(function (l) {
       (l.pages || []).forEach(function (p) { if (out.pages.indexOf(p) < 0) out.pages.push(p); });
       if (!out.enclosure && l.enclosure) out.enclosure = l.enclosure;
-      (l.rails || []).forEach(function (r) { var tags = r.tags.filter(function (t) { return !used[t]; }); tags.forEach(function (t) { used[t] = 1; }); if (tags.length) out.rails.push({ label: r.label, tags: tags, spacer: r.spacer || 0 }); });
+      (l.cabinets || []).forEach(function (c) {
+        var k = c.name.toUpperCase().replace(/\s+/g, ' ');
+        var have = out.cabinets.find(function (x) { return x.name.toUpperCase().replace(/\s+/g, ' ') === k; });
+        if (!have) out.cabinets.push({ name: c.name, tags: c.tags.slice(), w: c.w, h: c.h, d: c.d });
+        else { c.tags.forEach(function (t) { if (have.tags.indexOf(t) < 0) have.tags.push(t); }); ['w', 'h', 'd'].forEach(function (f) { if (!have[f] && c[f]) have[f] = c[f]; }); }
+      });
+      (l.rails || []).forEach(function (r) { var tags = r.tags.filter(function (t) { return !used[t]; }); tags.forEach(function (t) { used[t] = 1; }); if (tags.length) out.rails.push({ cabinet: r.cabinet || '', label: r.label, tags: tags, spacer: r.spacer || 0 }); });
       (l.door || []).forEach(function (t) { if (out.door.indexOf(t) < 0) out.door.push(t); });
       Object.keys(l.termOrder || {}).forEach(function (k) { if (!out.termOrder[k]) out.termOrder[k] = l.termOrder[k]; });
       out.glands = out.glands.concat(l.glands || []);

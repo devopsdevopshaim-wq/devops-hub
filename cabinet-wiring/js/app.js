@@ -1009,8 +1009,16 @@ function renderLayoutSrc() {
     box.innerHTML = `<span class="sb-k">לפי השרטוט</span>
       <span><b>הארון בנוי כפי שהוא מוגדר בתכנית</b>${pagesTxt(pl) ? ' · ' + esc(pagesTxt(pl)) : ''}${nD ? ` · ${nD} מסילות מהשרטוט` : ''}${Object.keys(pl.termOrder || {}).length ? ` · סדר ההדקים ב-${Object.keys(pl.termOrder).length} פסי מהדקים` : ''}${pl.enclosure ? ` · ארון ${pl.enclosure.w}×${pl.enclosure.h}${pl.enclosure.d ? '×' + pl.enclosure.d : ''}` : ''}.
       ${L.unplaced.length ? `<br><span class="muted">${L.unplaced.length} רכיבים שהשרטוט לא ממקם נכנסו לפי המלצה, ומסומנים בקו כתום מקווקו.</span>` : ''}
-      ${pl.notes ? `<br><span class="muted">${esc(pl.notes)}</span>` : ''}</span>
+      ${pl.notes ? `<br><span class="muted">${esc(pl.notes)}</span>` : ''}
+      ${(L.warnings || []).map((w) => `<br><span class="sb-warn">⚠ ${esc(w)}</span>`).join('')}</span>
       <a class="btn ghost small" href="#p/rec">המלצת הרכבה ←</a>`;
+    const dc = drawnCabs();
+    if (dc.length >= 2) {
+      const sp = raw.splitInto && state.sites.find((x) => x.id === raw.splitInto);
+      box.insertAdjacentHTML('beforeend', `<div class="sb-cabs"><b>בשרטוטים מוגדרים ${dc.length} ארונות:</b> ${dc.map((c) => `<span class="cab-chip">${esc(c.name)} <small>${c.tags.length} רכיבים</small></span>`).join('')}
+        ${sp ? `<a class="btn small" href="#site/${esc(sp.id)}">לאתר עם הארונות ←</a>` : '<button class="btn small" type="button" id="splitByDrawing">לחווט לפי הארונות שבשרטוטים</button>'}
+        <span class="muted small">${sp ? 'החיווט כבר חולק לארונות שבשרטוטים.' : 'כל ארון יקבל את הרכיבים, הפריסה והחיווט שלו, והחוטים שעוברים בין הארונות יהפכו לכבלים.'}</span></div>`);
+    }
   } else {
     box.className = 'src-band auto';
     box.innerHTML = `<span class="sb-k">המלצה</span>
@@ -1050,7 +1058,7 @@ function glandSvg(glands) {
     y += ln.h + 52;
   });
   const H = y;
-  return `<svg class="gland-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="פלטת אנטיגרונים"><rect x="4" y="4" width="${W - 8}" height="${H - 8}" rx="6" class="gl-plate"/>${parts.join('')}</svg>`;
+  return `<svg class="gland-svg" viewBox="0 0 ${W} ${H}" width="${Math.round(W * 1.2)}" role="img" aria-label="פלטת אנטיגרונים"><rect x="4" y="4" width="${W - 8}" height="${H - 8}" rx="6" class="gl-plate"/>${parts.join('')}</svg>`;
 }
 function renderGlands() {
   const box = $('#glandCard');
@@ -2179,9 +2187,38 @@ function previewSplit() {
     <button class="btn" type="button" id="spGo">יצירת ${n} הארונות ואתר ההתקנה</button>`;
   $('#spGo').onclick = () => doSplit(n, mode);
 }
+/* הארונות שמוגדרים בשרטוטים (שניים ומעלה) */
+const drawnCabs = () => (L && L.plan && (L.plan.cabinets || []).filter((c) => c.tags.some((t) => P.components.some((x) => x.tag === t)))) || [];
+
+/* הפריסה מהשרטוט של ארון אחד מתוך כמה */
+function subPlan(plan, cab, tags, first) {
+  const set = new Set(tags);
+  const termOrder = {};
+  Object.keys(plan.termOrder || {}).forEach((t) => { if (set.has(t)) termOrder[t] = plan.termOrder[t]; });
+  return {
+    source: 'drawing', pages: plan.pages || [], cabinets: [],
+    enclosure: cab.w && cab.h ? { w: cab.w, h: cab.h, d: cab.d || 0 } : null,
+    rails: (plan.rails || []).filter((r) => (r.cabinet ? r.cabinet === cab.name : r.tags.every((t) => set.has(t)))).map((r) => ({ ...r, tags: r.tags.filter((t) => set.has(t)) })).filter((r) => r.tags.length),
+    door: (plan.door || []).filter((t) => set.has(t)),
+    termOrder,
+    glands: (plan.glands || []).filter((g) => (g.cabinet ? g.cabinet === cab.name : first)),
+    notes: plan.notes || ''
+  };
+}
+
 async function doSplit(n, mode) {
-  if (!(await askConfirm(`לפצל את "${raw.name}" ל-${n} ארונות? נוצרים ${n} ארונות חדשים עם החיווט שלהם ואתר התקנה עם הכבלים ביניהם. הארון המקורי נשאר.`, { ok: 'לפצל' }))) return;
-  const r = WS.split(P, L, n, { mode });
+  const byDrawing = mode === 'drawing';
+  const dc = byDrawing ? drawnCabs() : [];
+  if (byDrawing) n = dc.length;
+  if (!(await askConfirm(byDrawing
+    ? `לחווט לפי ${n} הארונות שבשרטוטים (${dc.map((c) => c.name).join(', ')})? נוצר ארון לכל אחד עם הרכיבים והחיווט שלו, ואתר התקנה עם הכבלים ביניהם. הפרויקט המקורי נשאר.`
+    : `לפצל את "${raw.name}" ל-${n} ארונות? נוצרים ${n} ארונות חדשים עם החיווט שלהם ואתר התקנה עם הכבלים ביניהם. הארון המקורי נשאר.`, { ok: byDrawing ? 'לחווט לפי השרטוטים' : 'לפצל' }))) return;
+  let r;
+  if (byDrawing) {
+    const bin = {};
+    dc.forEach((c, i) => c.tags.forEach((t) => { if (bin[t] == null) bin[t] = i; }));
+    r = WS.split(P, L, n, { bin, roles: dc.map((c) => c.name) });
+  } else r = WS.split(P, L, n, { mode });
   const orig = raw;
   let st = siteOf(orig);
   if (!st) {
@@ -2190,12 +2227,13 @@ async function doSplit(n, mode) {
   }
   const settings = splitSettings();
   const ids = r.cabinets.map((c) => {
-    const p = newProject(`${orig.name} · ארון ${c.index + 1} (${c.role})`, {
+    const p = newProject(byDrawing ? `${c.role} · ${orig.name}` : `${orig.name} · ארון ${c.index + 1} (${c.role})`, {
       siteId: st.id, source: 'split', settings: { ...settings },
       meta: { ...(orig.meta || {}), drawingNo: ((orig.meta && orig.meta.drawingNo) || '') + '/' + (c.index + 1) },
       components: c.components.map((x) => { const y = { ...x }; if (y.zone) y.location = y.zone; return y; }),
       wires: c.wires.map((w) => ({ ...w, id: newId() })),
-      notes: [`פוצל מהארון "${orig.name}": ארון ${c.index + 1} מתוך ${n} (${c.role}). חוטים שעוברים לארונות האחרים מחוברים למהדקי הממשק ‎-XC.`],
+      notes: [byDrawing ? `הארון "${c.role}" כפי שהוא מוגדר בשרטוטים של "${orig.name}". חוטים שעוברים לארונות האחרים מחוברים למהדקי הממשק ‎-XC.` : `פוצל מהארון "${orig.name}": ארון ${c.index + 1} מתוך ${n} (${c.role}). חוטים שעוברים לארונות האחרים מחוברים למהדקי הממשק ‎-XC.`],
+      ...(byDrawing ? { layoutPlan: subPlan(L.plan, dc[c.index], c.components.map((x) => x.tag), c.index === 0) } : {}),
       pdf: orig.pdf, pdfFrom: orig.pdfFrom || orig.id, hint: orig.hint || ''
     });
     p.status = `ארון ${c.index + 1} מתוך ${n} שפוצלו מ"${orig.name}".`;
@@ -2207,7 +2245,7 @@ async function doSplit(n, mode) {
     a: { pid: ids[l.a], device: '', strips: ['-XC' + (l.b + 1)] }, b: { pid: ids[l.b], device: '', strips: ['-XC' + (l.a + 1)] }, cores: l.cores }));
   orig.splitInto = st.id;
   saveProject(orig); saveAll(state);
-  toast(`נוצרו ${n} ארונות ו-${r.links.length} כבלים ביניהם באתר "${st.name}".`, 7000);
+  toast(byDrawing ? `החיווט חולק לפי ${n} הארונות שבשרטוטים, עם ${r.links.length} כבלים ביניהם, באתר "${st.name}".` : `נוצרו ${n} ארונות ו-${r.links.length} כבלים ביניהם באתר "${st.name}".`, 7000);
   location.hash = '#site/' + st.id;
 }
 
@@ -3015,6 +3053,7 @@ async function labDelWire(id) {
 
 function bindLab() {
   $('#recFit').onclick = () => recView && recView.fit();
+  $('#layoutSrc').addEventListener('click', (e) => { if (e.target.closest('#splitByDrawing')) doSplit(0, 'drawing'); });
   $$('#v-lab [data-lmode]').forEach((b) => {
     b.onclick = () => {
       lab.mode = b.dataset.lmode; lab.pick = null; lab.ctab = lab.mode === 'edit' ? 'add' : 'ops';

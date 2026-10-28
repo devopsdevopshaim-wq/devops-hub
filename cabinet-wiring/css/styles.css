@@ -1078,7 +1078,7 @@ li.run.ccw .fan { animation-direction: reverse; }
 /* פלטת אנטיגרונים */
 .gland-card { margin-top: 14px; }
 .gland-wrap { overflow-x: auto; background: var(--anthracite); border-radius: 10px; padding: 10px; }
-.gland-svg { display: block; min-width: 760px; width: 100%; height: auto; }
+.gland-svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
 .gland-svg .gl-plate { fill: #b9c0c8; stroke: #7d8894; stroke-width: 2; }
 .gland-svg .gl-o { fill: #2b3035; stroke: #15181b; stroke-width: 1.5; }
 .gland-svg .gl-i { fill: #3d444b; }
@@ -1101,3 +1101,7 @@ li.run.ccw .fan { animation-direction: reverse; }
 .rd.principles ul { margin: 0; padding-inline-start: 18px; color: var(--ink-2); display: grid; gap: 3px; }
 .rd .led { border: 0; }
 @media (max-width: 980px) { .rec-grid { grid-template-columns: minmax(0, 1fr); } .rec-host { height: 60vh; } }
+.src-band .sb-cabs { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.cab-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 10px; border-radius: 99px; background: var(--anthracite); color: #fff; font-size: .82rem; font-weight: 600; }
+.cab-chip small { color: #b9c2ca; font-weight: 400; }
+.src-band .sb-warn { color: var(--warn); font-weight: 600; }

@@ -71,11 +71,31 @@
     return { bin: bin, roles: roles };
   }
 
+  /* חלוקה לפי הארונות שבשרטוטים: bin = תג → מספר ארון. רכיב שהשרטוט לא משייך — לארון שרוב החוטים שלו הולכים אליו */
+  function fromBin(P, given, roles) {
+    var bin = {};
+    Object.keys(given).forEach(function (t) { bin[t] = given[t]; });
+    var vote = function (tag) {
+      var cnt = {};
+      P.wires.forEach(function (w) {
+        var o = w.from.tag === tag ? w.to.tag : w.to.tag === tag ? w.from.tag : null;
+        if (o != null && bin[o] != null) cnt[bin[o]] = (cnt[bin[o]] || 0) + 1;
+      });
+      var best = null, bn = -1;
+      Object.keys(cnt).forEach(function (b) { if (cnt[b] > bn) { bn = cnt[b]; best = Number(b); } });
+      return best;
+    };
+    for (var pass = 0; pass < 3; pass++) {
+      P.components.forEach(function (c) { if (bin[c.tag] == null && c.zone !== 'field' && c.type !== 'pe_bar') { var v = vote(c.tag); if (v != null) bin[c.tag] = v; else if (pass === 2) bin[c.tag] = 0; } });
+    }
+    return { bin: bin, roles: roles };
+  }
+
   /* הפיצול עצמו: פרויקט לכל ארון, וכבלים בין הארונות */
   function split(P, L, n, opts) {
     opts = opts || {};
     n = Math.max(2, Math.min(8, n | 0));
-    var part = partition(P, L, n, opts.mode || 'auto');
+    var part = opts.bin ? fromBin(P, opts.bin, opts.roles || []) : partition(P, L, n, opts.mode || 'auto');
     var bin = part.bin;
     var by = {};
     P.components.forEach(function (c) { by[c.tag] = c; });
@@ -141,5 +161,5 @@
     return { cabinets: out, links: linkList, roles: part.roles };
   }
 
-  return { MAX: MAX, advise: advise, partition: partition, split: split };
+  return { MAX: MAX, advise: advise, partition: partition, fromBin: fromBin, split: split };
 });
