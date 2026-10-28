@@ -571,8 +571,13 @@
     var widest = Math.max.apply(null, rows.map(rowWidth).concat(planRails.map(function (r) { return rowWidth(r.items); })).concat([200]));
     var plateW = settings.plateWidth === 'auto' ? roundUp(Math.min(widest, 1100) + 2 * (M + SD + 15), STD_W) : Number(settings.plateWidth) || 600;
     /* מסילה מהשרטוט לא נחתכת: הפלטה רחבה מספיק לה, וגם לארון שבשרטוט אם כתוב */
-    if (planRails.length) plateW = Math.max(plateW, roundUp(Math.max.apply(null, planRails.map(function (r) { return rowWidth(r.items); })) + 2 * (M + SD + 15), STD_W));
-    if (plan && plan.enclosure && plan.enclosure.w) plateW = Math.max(plateW, plan.enclosure.w - 50);
+    var needW = planRails.length ? Math.max.apply(null, planRails.map(function (r) { return rowWidth(r.items); })) + 2 * (M + SD + 15) : 0;
+    var warnings = [];
+    if (plan && plan.enclosure && plan.enclosure.w) {
+      /* ארון שמידותיו בשרטוט: הפלטה בתוכו (כ-50 מ"מ פחות) */
+      plateW = plan.enclosure.w - 50;
+      if (needW > plateW) { warnings.push('המסילה הרחבה בשרטוט צריכה כ-' + Math.round(needW) + ' מ"מ, והארון בשרטוט רחב ' + plan.enclosure.w + ' מ"מ. לבדוק את המידות או את סדר הרכיבים.'); plateW = roundUp(needW, STD_W); }
+    } else if (needW) plateW = Math.max(plateW, roundUp(needW, STD_W));
     var usable = plateW - 2 * (M + SD + 15);
     /* גלישה: שורה ארוכה מתחלקת לכמה מסילות */
     var rails = [];
@@ -617,6 +622,11 @@
       y += DUCT + GAP;
     });
     var plateH = roundUp(y - GAP + M, STD_H);
+    if (plan && plan.enclosure && plan.enclosure.h) {
+      var ph = plan.enclosure.h - 50;
+      if (y - GAP + M > ph) warnings.push('המסילות והתעלות צריכות כ-' + Math.round(y - GAP + M) + ' מ"מ גובה, והארון בשרטוט גבוה ' + plan.enclosure.h + ' מ"מ.');
+      else plateH = ph;
+    }
     ducts.push({ x: M, y: M, w: SD, h: plateH - 2 * M, kind: 'v', side: 'L' });
     ducts.push({ x: plateW - M - SD, y: M, w: SD, h: plateH - 2 * M, kind: 'v', side: 'R' });
     /* דלת: מימין לפלטה. שטח: מתחת לפלטה */
@@ -721,7 +731,7 @@
       });
     });
     var L = { plate: { w: plateW, h: plateH }, rails: rails, ducts: ducts, comps: comps, pins: pins, door: doorBox, field: fieldBox, margin: M, sideDuct: SD,
-      mode: plan ? 'drawing' : 'auto', plan: plan, unplaced: plan ? allCab.filter(function (c) { return !inPlan[c.tag]; }).map(function (c) { return c.tag; }) : [] };
+      mode: plan ? 'drawing' : 'auto', plan: plan, warnings: warnings, unplaced: plan ? allCab.filter(function (c) { return !inPlan[c.tag]; }).map(function (c) { return c.tag; }) : [] };
     L.routes = route(p, L, compBy);
     L.bounds = { w: Math.max(plateW, doorBox ? doorBox.x + doorBox.w + 20 : 0), h: fieldBox ? fieldBox.y + fieldBox.h + 20 : plateH + 20 };
     return L;

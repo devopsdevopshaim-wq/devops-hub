@@ -126,4 +126,16 @@ test('קריאת פריסה מתשובת Claude', () => {
   assert.equal(empty.layoutPlan, undefined);
 });
 
+test('כמה ארונות בשרטוט: כל רכיב בארון שלו, וחוטים בין ארונות הופכים לכבל', () => {
+  const SP = require('../js/split.js');
+  const P = demo(), L = E.layout(P);
+  const bin = {}; ['-X0', '-Q0', '-F1', '-K1', '-X1'].forEach((t) => { bin[t] = 0; }); ['-F2', '-F3', '-G1', '-A1', '-X2'].forEach((t) => { bin[t] = 1; });
+  const r = SP.split(P, L, 2, { bin, roles: ['ארון כוח', 'ארון פיקוד'] });
+  assert.deepEqual(r.roles, ['ארון כוח', 'ארון פיקוד']);
+  const has = (i, t) => r.cabinets[i].components.some((c) => c.tag === t);
+  assert.ok(has(0, '-K1') && has(0, '-Q0') && !has(0, '-A1'));
+  assert.ok(has(1, '-A1') && has(1, '-G1') && !has(1, '-K1'));
+  assert.ok(r.links.length >= 1);
+});
+
 console.log(`\n${n} בדיקות עברו`);
