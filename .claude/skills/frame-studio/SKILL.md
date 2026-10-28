@@ -734,3 +734,19 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
   - The main grid puts an `.mt-orih` heading before each group. Its "✔ סימון כולן" button marks or unmarks the whole group.
 - The frames panel has a "מסגרת לפי כיוון" box. It holds two selects, `#mt-ftall` and `#mt-fwide` (remembered as `fs-mate-f<o>`), and their `[data-fori]` "החל" buttons put the chosen frame on every photo of that direction.
 - A PNG frame has a direction (`frameOri` from `USER_FRAMES[id].aspect`). It is listed only in its own direction's select. Clicking it in the chips reaches only the targets of that direction, and a toast reports the rest as skipped. This matters because `FS.setFrame` reshapes the page to a PNG frame's aspect, which would otherwise flip a wide photo tall.
+
+## Friendlier edit screen: one whole photo, a strip, side arrows, slides (Oct 28, v73)
+
+- **Photos per screen** (edit view, mate.js): the choices are now 1, 2, 4, 6 and 9, with 1 as the default (`fs-mate-en2`).
+  - `eCols` gives 1 column for 1, 2 columns for 2 and 4, and 3 columns otherwise.
+  - The tile size is capped at 1600 for 1 or 2 per screen.
+  - Each tile shows its whole page (contain).
+- **Before | after** is off by default (`fs-mate-cmp2`), so the photo gets the whole space. Holding a tile for 260 ms shows the original over it (`.mt-peekw`), and letting go returns to the edit.
+- **Edit view navigation:**
+  - The grid sits in `.mt-estage` with big round side arrows `#mt-enavp` / `#mt-enavn` (SVG chevrons). In right-to-left the next page is on the left. The small top arrows are hidden.
+  - `#mt-estrip` is a strip of every photo in `editList()`, drawn lazily as `.mt-pj` tiles. The photos on screen are lit, and a click goes to that photo's page (`ePageGo(0, to)`).
+  - Swiping (more than 70 px horizontal within 700 ms) turns the page.
+  - ← and → turn the page as well as PageUp/PageDown; ← is next.
+  - `slide(el, n)` adds `.sl-n` or `.sl-p`, a 0.32 s slide-and-fade in from the side the page comes from. It respects reduced motion.
+  - The counter reads "2 מתוך 8".
+- **Design view** has the same side arrows on the canvas (`#mt-dnavp` / `#mt-dnavn`), and `step()` slides too.
