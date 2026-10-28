@@ -97,7 +97,7 @@
       '<p class="mt-hint" id="mt-ai-target"></p>' +
       '<div class="mt-card mt-aibac"><h3>◧ לפני | אחרי <small>התמונות שה־AI עובד עליהן: המקור מימין, התוצאה משמאל · לחיצה מגדילה</small></h3><div class="mt-aiba" id="mt-aiba"></div><p class="mt-hint" id="mt-aiba-more"></p></div>' +
       '<div class="mt-card"><h3>🖥️ מיד, על המחשב · עובד גם בלי אינטרנט</h3><div class="mt-chips" id="mt-ai-local"></div></div>' +
-      '<div class="mt-card"><h3>⚙️ מנוע ה־AI</h3><div class="mt-chips" id="mt-ai-eng"></div><label class="mt-chk-l" style="margin-top:8px"><input type="checkbox" id="mt-keep"> 🙂 שמירת הפנים המקוריות (בלי עיוות) בעיצובים על אדם אמיתי</label><label class="mt-chk-l"><input type="checkbox" id="mt-only"> 🎯 רק על הדמות: הרקע והמקום נשארים מהצילום המקורי, ה־AI משנה רק את האדם</label></div>' +
+      '<div class="mt-card"><h3>⚙️ מנוע ה־AI</h3><div class="mt-chips" id="mt-ai-eng"></div><label class="mt-chk-l" style="margin-top:8px"><input type="checkbox" id="mt-keep"> 🙂 שמירת הפנים המקוריות (בלי עיוות) בעיצובים על אדם אמיתי</label><label class="mt-chk-l"><input type="checkbox" id="mt-one"> 👤 רק על אדם אחד: בתמונה עם כמה אנשים בוחרים את מי לעצב, והשאר נשארים כמו בצילום</label><label class="mt-chk-l"><input type="checkbox" id="mt-only"> 🎯 רק על הדמות: הרקע והמקום נשארים מהצילום המקורי, ה־AI משנה רק את האדם</label></div>' +
       '<div class="mt-card"><h3>🦸 גיבורי על <small>על האנשים האמיתיים, כמו סצנה מסרט</small></h3><div class="mt-ai-g" id="mt-ai-heroes"></div></div>' +
       '<div class="mt-card"><h3>🧑 על אדם אמיתי <small>נשאר צילום אמיתי של אותם אנשים, משתנים הלבוש והמקום</small></h3><div class="mt-ai-g" id="mt-ai-real"></div></div>' +
       '<div class="mt-card"><h3>🪄 עריכות חכמות <small>התמונה נשארת, משתנה דבר אחד</small></h3><div class="mt-ai-g" id="mt-ai-edits"></div></div>' +
@@ -794,6 +794,7 @@
       box.innerHTML = keys.map(function (k) { return '<button data-eng="' + k + '"' + (k === cur ? ' class="on"' : '') + '>' + esc((FS.ENGINE_NAMES || {})[k] || k || 'אוטומטי') + '</button>'; }).join('');
     });
   }
+  var m1 = $('#mt-one', root); if (m1 && FS.aiOnePerson) { m1.checked = FS.aiOnePerson(); m1.addEventListener('change', function () { FS.aiOnePerson(m1.checked); var o2 = document.getElementById('ax-one'); if (o2) o2.checked = m1.checked; }); }
   var mo = $('#mt-only', root); if (mo && FS.aiOnlyPerson) { mo.checked = FS.aiOnlyPerson(); mo.addEventListener('change', function () { FS.aiOnlyPerson(mo.checked); var o2 = document.getElementById('ax-only'); if (o2) o2.checked = mo.checked; }); }
   var mk = $('#mt-keep', root); if (mk && FS.keepFacesOn) { mk.checked = FS.keepFacesOn(); mk.addEventListener('change', function () { FS.keepFacesOn(mk.checked); var k2 = document.getElementById('ax-keep'); if (k2) k2.checked = mk.checked; }); }
   $('#mt-ai-eng', root).addEventListener('click', function (e) { var b = e.target.closest('[data-eng]'); if (!b) return; if (b.dataset.eng === 'local' && !(FS.localAI && FS.localAI.isReady())) { FS.toast('מנוע ה־AI המקומי עוד לא מותקן'); if (FS.localAI) FS.localAI.open(); return; } FS.aiEngine(b.dataset.eng); engines(); });

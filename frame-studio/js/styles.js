@@ -283,36 +283,100 @@
   FS.aiEngine = function (v) { try { if (v !== undefined) localStorage.setItem('fs-ai-engine', v); return localStorage.getItem('fs-ai-engine') || ''; } catch (e) { return v || ''; } };
   FS.restyle = function (p, prompt, engine) { return FS.restyleTry(p, prompt, engine).then(function (im) { return FS.applyAI(p, im); }); };
   /* one AI design of the photo, not applied yet: an image the shape of the original, with .aiSource (who made it) */
-  /* A result that lost the people (the photo had faces, the answer has none, or under half of a group) is never put on the photo:
-     it is asked again, once more from the free engine with a new seed, then from the engine on this computer when it is installed.
-     When every try loses the people, the error is 'lost-people'. */
+  /* A result that lost the people (the photo had faces, the answer has none, or under half of a group) or that added people is
+     never put on the photo: it is asked again, from the free engine with a new seed, then from the engine on this computer when
+     it is installed; when every try fails the error is 'lost-people' / 'extra-people'. The people are counted with
+     FS.mainFaces (clear faces, not small or false ones in the background), the same count the prompt is given.
+     "👤 רק על אדם אחד" (FS.aiOnePerson, 'fs-ai-one'): on a photo with two or more people, one is chosen (a picker for a single
+     photo, the largest face in a batch); only the area around that person goes to the AI, as a photo of one person, and only
+     that person (the answer's person mask, soft at the edges) is laid back into the photo; everyone else stays as shot. */
+  FS.aiOnePerson = function (v) { try { if (v !== undefined) localStorage.setItem('fs-ai-one', v ? '1' : '0'); return localStorage.getItem('fs-ai-one') === '1'; } catch (e) { return false; } };
+  var batch = false; FS.aiBatch = function (v) { batch = !!v; };
   FS.restyleTry = function (p, prompt, engine) {
     if (engine === undefined) engine = FS.aiEngine();
-    var local = FS.localAI && FS.localAI.isReady && FS.localAI.isReady(), plan = [engine];
-    if (engine !== 'local') { plan.push(engine || 'free'); if (local) plan.push('local'); }
     var orig = FS.img(p.origSrc || p.src);
-    var want = p.faces ? Promise.resolve(p.faces.length) : FS.countFaces ? FS.countFaces(orig).catch(function () { return 0; }) : Promise.resolve(0);
-    return want.then(function (n0) {
-      function go(i) {
-        return restyleOnce(p, prompt, plan[i]).then(function (im) {
-          if (!n0 || !FS.countFaces) return im;
-          return FS.countFaces(im).catch(function () { return n0; }).then(function (n) {
-            var lost = !(n >= 1 && (n0 < 3 || n >= n0 * 0.5)), extra = n > (n0 <= 4 ? n0 : n0 + 1);
-            if (!lost && !extra) return im;
-            if (window.console) console.warn('AI: the answer ' + (lost ? 'lost the people' : 'added people') + ' (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
-            if (i + 1 < plan.length) return go(i + 1);
-            throw new Error(lost ? 'lost-people' : 'extra-people');
-          });
-        });
-      }
-      return go(0);
+    var det = FS.detectFaces ? FS.detectFaces(orig).catch(function () { return []; }) : Promise.resolve([]);
+    return det.then(function (all) {
+      var main = FS.mainFaces ? FS.mainFaces(all) : all, n0 = main.length;
+      if (FS.aiOnePerson() && n0 >= 2) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
+      return guarded(p, prompt, engine, n0);
     });
   };
+  function guarded(p, prompt, engine, n0) {
+    var local = FS.localAI && FS.localAI.isReady && FS.localAI.isReady(), plan = [engine];
+    if (engine !== 'local') { plan.push(engine || 'free'); if (local) plan.push('local'); }
+    p._n0 = n0;
+    function go(i) {
+      return restyleOnce(p, prompt, plan[i]).then(function (im) {
+        if (!n0 || !FS.countFaces) return im;
+        return FS.countFaces(im).catch(function () { return n0; }).then(function (n) {
+          var lost = !(n >= 1 && (n0 < 3 || n >= n0 * 0.5)), extra = n > (n0 <= 4 ? n0 : n0 + 1);
+          if (!lost && !extra) return im;
+          if (window.console) console.warn('AI: the answer ' + (lost ? 'lost the people' : 'added people') + ' (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
+          if (i + 1 < plan.length) return go(i + 1);
+          throw new Error(lost ? 'lost-people' : 'extra-people');
+        });
+      });
+    }
+    return go(0);
+  }
+  /* which person: the one picked a moment ago on this photo (the "3 versions" ask three times), the largest in a batch, or a picker */
+  function pickPerson(p, faces, orig) {
+    var big = faces.slice().sort(function (a, b) { return b.w * b.h - a.w * a.h; })[0];
+    if (p._aiPick && p._aiPick.at > Date.now() - 120000) return p._aiPick.p;
+    var pr = batch || !FS.dialog ? Promise.resolve(big) : new Promise(function (ok, no) {
+      var body = FS.dialog('👤 על מי לעשות את העיצוב?', '<p class="hint">לוחצים על האדם. רק הוא ישתנה, וכל השאר נשאר כמו בצילום.</p><div class="ai-pick" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center"></div>');
+      var box = body.querySelector('.ai-pick'), done = false, dlg = document.getElementById('dlg');
+      faces.forEach(function (f) {
+        var m = f.w * 0.5, x = Math.max(0, f.x - m), y = Math.max(0, f.y - m), w = Math.min(orig.naturalWidth - x, f.w + 2 * m), h = Math.min(orig.naturalHeight - y, f.h + 2 * m);
+        var c = FS.canvas(140, Math.round(140 * h / w)); c.getContext('2d').drawImage(orig, x, y, w, h, 0, 0, c.width, c.height);
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.style.cssText = 'padding:6px;border-radius:14px'; c.style.cssText = 'display:block;border-radius:10px'; b.appendChild(c);
+        b.addEventListener('click', function () { done = true; FS.closeDialog(); ok(f); }); box.appendChild(b);
+      });
+      if (dlg) dlg.addEventListener('close', function () { if (!done) no(new Error('cancelled')); }, { once: true });
+    });
+    p._aiPick = { p: pr, at: Date.now() }; pr.catch(function () { p._aiPick = null; });
+    return pr;
+  }
+  function onePerson(p, orig, f, main, prompt, engine) {
+    var W = orig.naturalWidth, H = orig.naturalHeight;
+    var x0 = Math.max(0, Math.round(f.x + f.w / 2 - f.w * 1.8)), y0 = Math.max(0, Math.round(f.y - f.h * 0.9));
+    var w = Math.min(W - x0, Math.round(f.w * 3.6)), h = Math.min(H - y0, Math.round(f.h * 7.5));
+    var crop = FS.canvas(w, h); crop.getContext('2d').drawImage(orig, x0, y0, w, h, 0, 0, w, h);
+    return new Promise(function (ok) { crop.toBlob(function (bl) { ok(FS.loadImg(URL.createObjectURL(bl))); }, 'image/jpeg', 0.95); }).then(function (cim) {
+      /* neighbours partly inside the crop are counted, and told to stay as they are; only the middle person is taken back */
+      var inCrop = main.filter(function (g) { var cx = g.x + g.w / 2, cy = g.y + g.h / 2; return cx > x0 && cx < x0 + w && cy > y0 && cy < y0 + h; }).length || 1;
+      var one = { src: cim.src, doc: p.doc, faces: [{ x: f.x - x0, y: f.y - y0, w: f.w, h: f.h }] };
+      var pr = prompt + (inCrop > 1 ? ' Change only the person in the middle of the picture; the other people partly in the picture stay exactly as they are.' : '');
+      return guarded(one, pr, engine, inCrop).then(function (res) {
+        var tmp = { src: res.src };
+        return FS.ensureMask(tmp).then(function (m) {
+          var out = FS.canvas(W, H), x = out.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(orig, 0, 0, W, H);
+          var pc = FS.canvas(w, h), px = pc.getContext('2d', { willReadFrequently: true }); px.drawImage(res, 0, 0, w, h);
+          var mc = FS.canvas(w, h), mx = mc.getContext('2d', { willReadFrequently: true }); mx.drawImage(m, 0, 0, w, h);
+          var md = mx.getImageData(0, 0, w, h).data, id = px.getImageData(0, 0, w, h), e = Math.max(6, Math.round(Math.min(w, h) * 0.04)), fc = f.x + f.w / 2 - x0;
+          /* the border with each neighbour: halfway between the two faces (a neighbour beside the person, not above or below) */
+          var lo = -1e9, hi = 1e9, fe = f.w * 0.12;
+          main.forEach(function (g) { if (g === f || Math.abs((g.y + g.h / 2) - (f.y + f.h / 2)) > f.h * 2.5) return; var gc = g.x + g.w / 2 - x0, mid = (gc + fc) / 2; if (gc < fc) lo = Math.max(lo, mid); else hi = Math.min(hi, mid); });
+          for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++) {
+            /* the person's mask, faded near the crop's edges (unless the edge is the photo's own edge) */
+            var k = Math.min(1, (x0 + xx > 0 && xx < e ? xx / e : 1), (x0 + w < W && w - 1 - xx < e ? (w - 1 - xx) / e : 1), (y0 + yy > 0 && yy < e ? yy / e : 1), (y0 + h < H && h - 1 - yy < e ? (h - 1 - yy) / e : 1));
+            /* and only around the chosen person: full within 1.6 face widths of the face's centre, gone by 2.2 */
+            var dx = Math.abs(xx - fc) / f.w, kx = dx <= 1.6 ? 1 : dx >= 2.2 ? 0 : (2.2 - dx) / 0.6;
+            kx = Math.min(kx, Math.max(0, Math.min(1, (xx - lo) / fe + 0.5)), Math.max(0, Math.min(1, (hi - xx) / fe + 0.5)));
+            var i = (yy * w + xx) * 4; id.data[i + 3] = md[i] * Math.min(k, kx);
+          }
+          px.putImageData(id, 0, 0); x.drawImage(pc, x0, y0);
+          return new Promise(function (ok) { out.toBlob(function (bl) { ok(FS.loadImg(URL.createObjectURL(bl))); }, 'image/jpeg', 0.94); });
+        }).then(function (im) { im.aiSource = res.aiSource; return im; });
+      });
+    });
+  }
   function restyleOnce(p, prompt, engine) {
     var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight, src = '';
     if (engine === undefined) engine = FS.aiEngine();
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
-    var faces = p.faces ? p.faces.length : 0;
+    var faces = p._n0 != null ? p._n0 : (p.faces ? p.faces.length : 0);
     /* the people in the photo, by count: one person stays one person (the models like to add a partner or a figure) */
     if (faces === 1) prompt = prompt.replace(/\b(each|every) person\b/gi, 'the person').replace(/\bthe people\b/gi, 'the person').replace(/\beveryone\b/gi, 'the person') +
       ' There is exactly ONE person in this photo. The result must show only this one person: do not add any other person, partner, figure, silhouette, reflection or face.';
