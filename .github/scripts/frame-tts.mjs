@@ -9,8 +9,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const [scriptPath, out] = process.argv.slice(2);
+const [scriptPath, outRoot] = process.argv.slice(2);
 const script = JSON.parse(fs.readFileSync(scriptPath, 'utf8'));
+/* a film with its own "slug" keeps its clips in a folder of its own on the branch */
+const out = script.slug ? path.join(outRoot, script.slug) : outRoot;
 const combined = [process.env.SPIDER, process.env.HAIM_WEB_KEY].filter(Boolean).join('\n');
 const label = (name, re) => (process.env[name] || (combined.match(new RegExp(name + '\\W*(' + re + ')')) || [])[1] || '').trim();
 const pick = (re) => (combined.match(re) || [])[0] || '';
@@ -22,7 +24,7 @@ const KEYS = {
 const ffmpeg = (args) => { const r = spawnSync('ffmpeg', ['-v', 'error', '-y', ...args]); if (r.status) throw new Error('ffmpeg: ' + String(r.stderr).slice(0, 300)); };
 const dur = (f) => Number(String(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).stdout).trim());
 
-const STYLE = {
+const STYLE = script.style || {
   he: 'קרא בעברית ברורה ונעימה, בקצב רגוע ומקצועי של סרטון הדרכה, עם הגייה מדויקת: ',
   en: 'Read in clear, warm, professional English, at a calm tutorial pace: ',
 };
@@ -77,6 +79,42 @@ async function edge(text, lang, file) {
 }
 const PROVIDERS = { gemini, azure, eleven, edge };
 
+/* Every clip is heard back: Gemini transcribes it, and the words are compared with the script (letters, after dropping
+   punctuation and vowel marks; numbers as words). A clip under 0.82, or read too fast or too slow for its text, is
+   spoken again (up to 4 times) and the closest one is kept. Without the key the clip is kept unchecked. */
+const NUM = { he: { '16': 'שש עשרה', '100': 'מאה' }, en: { '16': 'sixteen', '100': 'a hundred' } };
+function norm(t, lang) {
+  t = String(t || '').toLowerCase().replace(/[\u0591-\u05C7]/g, '');
+  for (const [d, w] of Object.entries(NUM[lang] || {})) t = t.split(d).join(w);
+  return t.replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+}
+function similar(a, b) {
+  const m = a.length, n = b.length; if (!m || !n) return 0;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) { const cur = [i]; for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+  return 1 - prev[n] / Math.max(m, n);
+}
+async function hear(wav, lang) {
+  if (!KEYS.gemini) return null;
+  const data = fs.readFileSync(wav).toString('base64');
+  for (const model of ['gemini-2.5-flash', 'gemini-2.0-flash']) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST', headers: { 'x-goog-api-key': KEYS.gemini, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ inline_data: { mime_type: 'audio/wav', data } }, { text: 'Transcribe this ' + (lang === 'he' ? 'Hebrew' : 'English') + ' speech exactly, word for word, with nothing added. Answer with the words only.' }] }], generationConfig: { temperature: 0 } }),
+    });
+    const j = await r.json().catch(() => ({}));
+    const t = j && j.candidates && j.candidates[0] && j.candidates[0].content && (j.candidates[0].content.parts || []).map((x) => x.text || '').join(' ');
+    if (t) return t.trim();
+    if (r.status !== 404 && r.status !== 429) return null;
+  }
+  return null;
+}
+async function check(text, lang, wav) {
+  const heard = await hear(wav, lang), s = dur(wav), per = norm(text, lang).length / Math.max(0.1, s);
+  const pace = per > 6 && per < 24;
+  return { heard, score: heard == null ? null : Math.round(similar(norm(text, lang), norm(heard, lang)) * 100) / 100, pace, cps: Math.round(per * 10) / 10 };
+}
+
 // Clips already in <out> (from an earlier run, kept on the branch ci-tts) are not spoken again. Every scene is also
 // spoken with the Edge voice into <out>/<lang>-edge, so a film whose main voice ran out of quota can still use one voice.
 const old = fs.existsSync(path.join(out, 'report.json')) ? JSON.parse(fs.readFileSync(path.join(out, 'report.json'), 'utf8')) : { langs: {} };
@@ -93,14 +131,25 @@ for (const lang of ['he', 'en', 'he-edge', 'en-edge']) {
     const main = Object.keys(PROVIDERS).filter((p) => p !== 'edge' || chosen === 'edge');
     const order = only ? [only] : chosen ? [chosen, ...main.filter((p) => p !== chosen)] : Object.keys(PROVIDERS);
     let voice = '';
+    let heard = null;
     for (const p of order) {
-      try { voice = await PROVIDERS[p](sc[base], base, wav); if (!chosen) chosen = p; break; } catch (e) { tried.push(p + ': ' + String(e.message || e).slice(0, 200)); }
+      try {
+        let best = null;
+        for (let a = 0; a < (p === 'edge' ? 1 : 4); a++) {
+          const tryWav = wav + '.' + a + '.wav', v = await PROVIDERS[p](sc[base], base, tryWav), c = await check(sc[base], base, tryWav);
+          console.log(lang, sc.id, 'try', a + 1, v, 'match', c.score, 'chars/s', c.cps);
+          const rank = (c.score == null ? 0.9 : c.score) - (c.pace ? 0 : 0.3);
+          if (!best || rank > best.rank) { if (best) fs.rmSync(best.f); best = { f: tryWav, v, c, rank }; } else fs.rmSync(tryWav);
+          if (c.score == null || (c.score >= 0.82 && c.pace)) break;
+        }
+        fs.renameSync(best.f, wav); voice = best.v; heard = best.c; if (!chosen) chosen = p; break;
+      } catch (e) { tried.push(p + ': ' + String(e.message || e).slice(0, 200)); }
     }
     if (!voice) { report.langs[lang].scenes.push({ id: sc.id, error: 'no voice' }); continue; }
     // the voice levelled and a little air at both ends
     ffmpeg(['-i', wav, '-af', 'silenceremove=start_periods=1:start_threshold=-50dB,areverse,silenceremove=start_periods=1:start_threshold=-50dB,areverse,loudnorm=I=-16:TP=-1.5:LRA=7,apad=pad_dur=0.15', '-ar', '48000', '-c:a', 'aac', '-b:a', '160k', m4a]);
     fs.rmSync(wav);
-    report.langs[lang].scenes.push({ id: sc.id, voice, seconds: Math.round(dur(m4a) * 100) / 100 });
+    report.langs[lang].scenes.push({ id: sc.id, voice, seconds: Math.round(dur(m4a) * 100) / 100, match: heard && heard.score, heard: heard && heard.heard, pace: heard && heard.cps });
     console.log(lang, sc.id, voice, dur(m4a).toFixed(2) + 's');
   }
   report.langs[lang].provider = chosen; report.langs[lang].tried = tried.slice(0, 12);

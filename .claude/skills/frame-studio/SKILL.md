@@ -35,6 +35,10 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## Without internet the AI looks always reach the local engine (Oct 28, v69)
+- A user with the local engine installed got "אין חיבור לשרת ה־AI" on every look: `FS.askServer` (ai.js) handed a failed cloud answer to this computer only for quota-like errors, never for `offline` / `timeout`, and never when a cloud engine was chosen in the engine bar or the mode was "cloud only".
+- Now, for pictures (`restyle` / `image`) with the local engine ready: any cloud failure (except a cancel) goes to `askLocal`, and `cloudOff` sends the next pictures straight there (10 minutes after a lost connection, 30 after a quota); a chosen cloud engine does the same (straight to local when offline or within `cloudOff`); "cloud only" still uses this computer when there is no connection. Without the local engine, the `offline` message now says how to install it (☰ ← 🖥️ AI מקומי).
+
 ## 16 AI frame designs, in the program and on the site; a real showcase run (Oct 27, v68)
 - The design directions live in `FS.INV_FRAME_STYLES` (js/inv-frame.js, 16: classic, minimal luxury, corner bouquets, Art Deco gold, watercolour, names band, arch, round wreath, botanical, festive, gallery passe-partout, lace, dark luxury, designer instant photo, dried flowers, gilded carved frame); `FS.invFramePrompt` adds `o.extra` and asks for a breathtaking, top-stationery-designer result.
 - The program's frame editor uses them (`AI_DIRS`, "🤖 16 מסגרות AI"); the site's designer (design.html, "🤖 מסגרת AI כמו ההזמנה") has a gallery: "▯ 16 לאורך" / "▭ 16 לרוחב" (`aiSet`, three at a time, each joins `#ai-frames` with its name; a second click stops).

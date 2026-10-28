@@ -212,15 +212,33 @@
     var L = FS.localAI;
     /* a chosen engine (the AI tab's engine bar, or one of the "3 versions"): 'local' is this computer, the others one cloud engine */
     if (body && body.engine === 'local') { var bl = Object.assign({}, body); delete bl.engine; return L && L.isReady && L.isReady() ? askLocal(bl) : Promise.resolve({ ok: false, error: 'local-missing' }); }
-    if (body && body.engine) return askCloud(body);
-    if (!L || !body || (body.action !== 'restyle' && body.action !== 'image') || L.mode() === 'cloud') return askCloud(body);
+    /* a chosen cloud engine that fails (no connection, quota, timeout) hands the picture to this computer when its engine is installed */
+    var pic = body && (body.action === 'restyle' || body.action === 'image'), here = function () { return !!(pic && L && L.isReady && L.isReady()); };
+    var toLocal = function () { var bl = Object.assign({}, body); delete bl.engine; return askLocal(bl); };
+    if (body && body.engine) {
+      if (here() && (navigator.onLine === false || cloudOff > Date.now())) return toLocal();
+      return askCloud(body).then(function (r) {
+        if ((r && r.ok && r.image) || (r && r.error === 'cancelled') || !here()) return r;
+        cloudOff = Date.now() + 10 * 60000;
+        if (window.console) console.warn('AI: the chosen engine failed (' + (r && r.error) + '), using the local engine');
+        return toLocal();
+      });
+    }
+    /* "cloud only": still, without a connection the picture is made on this computer rather than not at all */
+    if (pic && L && L.mode && L.mode() === 'cloud') return (here() && navigator.onLine === false ? toLocal() : askCloud(body).then(function (r) {
+      return r && !r.ok && /offline|timeout/.test(String(r.error || '')) && here() ? toLocal() : r;
+    }));
+    if (!L || !pic) return askCloud(body);
     return L.whenReady().then(function (ready) {
       if (!ready) return askCloud(body);
       if (L.mode() === 'local' || navigator.onLine === false || cloudOff > Date.now()) return askLocal(body);
       return askCloud(body).then(function (r) {
         if ((r && r.ok && r.image) || (r && r.error === 'cancelled')) return r;
-        /* the free cloud ran out (or refuses): for the next 30 minutes the pictures go straight to this computer, no waiting on it */
-        if (r && /quota|no-free-tier|rate-limited|engine-off|ai-failed/.test(String(r.error || ''))) cloudOff = Date.now() + 30 * 60000;
+        /* any failure of the cloud (no connection, a timeout, the free allowance ran out, a refusal): this picture goes to this
+           computer, and for a while the next ones go straight there without waiting on the cloud (30 minutes after a quota,
+           10 after a lost connection) */
+        var er = String((r && r.error) || '');
+        cloudOff = Date.now() + (/quota|no-free-tier|rate-limited|engine-off/.test(er) ? 30 : 10) * 60000;
         if (window.console) console.warn('AI: cloud failed (' + (r && r.error) + '), using the local engine');
         return askLocal(body);
       });
@@ -253,7 +271,7 @@
     if (m === 'quota') return 'כל שרתי ה־AI עמוסים כרגע (גם השרת החינמי). מחכים דקה ומנסים שוב.';
     if (m === 'rate-limited') return 'יותר מדי בקשות ברצף. מחכים דקה ומנסים שוב.';
     if (m === 'timeout') return 'ה־AI לא ענה בזמן. נסו שוב.';
-    if (m === 'offline') return 'אין חיבור לשרת ה־AI. בודקים אינטרנט ומנסים שוב.';
+    if (m === 'offline') return FS.localAI && FS.localAI.isReady && FS.localAI.isReady() ? 'אין חיבור לשרת ה־AI, ומנוע ה־AI שבמחשב לא הצליח הפעם. מנסים שוב.' : 'אין חיבור לשרת ה־AI. כדי שהעיצובים יעבדו גם בלי אינטרנט, מתקינים את מנוע ה־AI שבמחשב: ☰ ← 🖥️ AI מקומי.';
     return 'ה־AI לא הצליח הפעם.' + (FS.lastAiDetail ? ' (' + FS.lastAiDetail.slice(0, 140) + ')' : ' נסו שוב או ניסוח אחר.');
   };
   function toEnglish(text) {

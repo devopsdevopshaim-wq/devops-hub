@@ -11,3 +11,5 @@
 /promo-app-tutorial-en/
 /promo-src/app-tutorial/voice/gemini-*/
 __pycache__/
+/optimus-promo/out/
+/optimus-promo/renders/

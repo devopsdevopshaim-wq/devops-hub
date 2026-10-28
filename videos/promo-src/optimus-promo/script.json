@@ -1,0 +1,55 @@
+{
+  "_note": "The narration of the Optimus promo (videos/optimus-promo, story A), one entry per scene, Hebrew and English. Spoken by .github/workflows/frame-tts.yml (film: optimus-promo); every clip is transcribed back and spoken again when the words do not match. Numbers are written as words so they are read the same way every time.",
+  "style": {
+    "he": "קרא כקריין פרסומות מקצועי בעברית: חם, בטוח וברור, בקצב טבעי לא ממהר, הגייה מדויקת, בלי לדלג ובלי להוסיף מילים. הטקסט: ",
+    "en": "Read as a professional commercial voice-over: warm, confident and clear, at a natural unhurried pace, every word exactly as written. The text: "
+  },
+  "scenes": [
+    {
+      "id": "s1",
+      "he": "ערב חתונה. מאה אורחים, והתמונות לא מפסיקות להגיע.",
+      "en": "A wedding night. A hundred guests, and the photos keep coming."
+    },
+    {
+      "id": "s2",
+      "he": "וכל אחד מהם רוצה מגנט, עכשיו.",
+      "en": "And every one of them wants a magnet. Now."
+    },
+    {
+      "id": "s3",
+      "he": "הכירו את אופטימוס, הסטודיו לצלמי אירועים.",
+      "en": "Meet Optimus, the studio built for event photographers."
+    },
+    {
+      "id": "s4",
+      "he": "לחיצה אחת, וכל התמונות מתוקנות יחד, עם לפני ואחרי מול העיניים.",
+      "en": "One click fixes every photo at once, with before and after right in front of you."
+    },
+    {
+      "id": "s5",
+      "he": "מעלים את ההזמנה של הזוג, והבינה המלאכותית מעצבת ממנה שש עשרה מסגרות. בוחרים, עורכים, וזהו.",
+      "en": "Upload the couple's invitation, and the AI designs sixteen frames from it. Pick one, edit it, done."
+    },
+    {
+      "id": "s6",
+      "he": "רוצים יותר? עיצובים חכמים על האורחים האמיתיים, עם אותם פנים בדיוק.",
+      "en": "Want more? AI looks on your real guests, with the very same faces."
+    },
+    {
+      "id": "s7",
+      "he": "מדפיסים במקום, ממוסגר ומוכן.",
+      "en": "Print it on the spot, framed and ready."
+    },
+    {
+      "id": "s8",
+      "he": "והמגנט נשאר על המקרר, הרבה אחרי שהאירוע נגמר.",
+      "en": "And the magnet stays on the fridge, long after the party ends."
+    },
+    {
+      "id": "s9",
+      "he": "אופטימוס, של פריים מגנטים. נסו עכשיו.",
+      "en": "Optimus, by Frame Magnets. Try it today."
+    }
+  ],
+  "slug": "optimus-promo"
+}
