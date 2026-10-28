@@ -63,12 +63,13 @@
         <li><a href="#p/parts" data-tab="parts"><span class="num">2</span><span class="t">רכיבים</span></a></li>
         <li><a href="#p/wires" data-tab="wires"><span class="num">3</span><span class="t">רשימת חוטים</span></a></li>
         <li><a href="#p/cabinet" data-tab="cabinet"><span class="num">4</span><span class="t">פריסת ארון</span></a></li>
-        <li><a href="#p/conn" data-tab="conn"><span class="num">5</span><span class="t">חיבורים ומהדקים</span></a></li>
-        <li><a href="#p/three" data-tab="three"><span class="num">6</span><span class="t">ארון בתלת־ממד</span></a></li>
-        <li><a href="#p/wiring" data-tab="wiring"><span class="num">7</span><span class="t">חיווט שלב אחר שלב</span></a></li>
-        <li><a href="#p/assembly" data-tab="assembly"><span class="num">8</span><span class="t">הרכבה ובדיקות</span></a></li>
-        <li><a href="#p/lab" data-tab="lab"><span class="num">9</span><span class="t">מעבדה</span></a></li>
-        <li><a href="#p/export" data-tab="export"><span class="num">10</span><span class="t">הדפסה והגדרות</span></a></li>
+        <li><a href="#p/rec" data-tab="rec"><span class="num">5</span><span class="t">המלצת הרכבה</span></a></li>
+        <li><a href="#p/conn" data-tab="conn"><span class="num">6</span><span class="t">חיבורים ומהדקים</span></a></li>
+        <li><a href="#p/three" data-tab="three"><span class="num">7</span><span class="t">ארון בתלת־ממד</span></a></li>
+        <li><a href="#p/wiring" data-tab="wiring"><span class="num">8</span><span class="t">חיווט שלב אחר שלב</span></a></li>
+        <li><a href="#p/assembly" data-tab="assembly"><span class="num">9</span><span class="t">הרכבה ובדיקות</span></a></li>
+        <li><a href="#p/lab" data-tab="lab"><span class="num">10</span><span class="t">מעבדה</span></a></li>
+        <li><a href="#p/export" data-tab="export"><span class="num">11</span><span class="t">הדפסה והגדרות</span></a></li>
       </ol>
       <span class="progress-pill" id="progressPill" title="חוטים שסומנו כמחוברים"></span>
     </div>
@@ -377,10 +378,29 @@
         <button class="btn ghost small" type="button" id="zoomFit">כל הארון</button>
       </div>
     </div>
+    <div class="src-band" id="layoutSrc" role="note"></div>
     <div class="cab-host" id="cabHost"></div>
     <p class="muted small cab-help">שרטוט הרכבה: פלטה, תעלות, מסילות ורכיבים עם תגים ומידות, ברשת אזורים (A1, B3…) כמו בגיליון הנדסי. לחיצה על רכיב מציגה רק את החוטים שלו ואת הכרטיס שלו; בחירת תפקיד למעלה מציגה רק את החוטים של התפקיד. "כל החוטים" מציג את כולם. גלגלת או צביטה לזום, גרירה להזזה.</p>
     <div class="legend" id="legend"></div>
+    <div class="card gland-card" id="glandCard" hidden></div>
     <div class="card split-card" id="splitCard"></div>
+  </section>
+
+  <!-- ===== 5. המלצת הרכבה ===== -->
+  <section class="view" id="v-rec" data-view="rec" hidden>
+    <div class="src-band" id="recSrc" role="note"></div>
+    <div class="rec-grid">
+      <div class="card rec-draw">
+        <div class="card-head"><h2>הפריסה שהמערכת ממליצה</h2>
+          <div class="row gap"><button class="btn ghost small" type="button" id="recFit">כל הארון</button></div>
+        </div>
+        <div class="cab-host rec-host" id="recHost"></div>
+      </div>
+      <div class="card rec-diff">
+        <div class="card-head"><h2>מה שונה מהשרטוט</h2><span class="muted small" id="recCount"></span></div>
+        <div id="recDiff"></div>
+      </div>
+    </div>
   </section>
 
   <!-- ===== 5. תלת־ממד ===== -->

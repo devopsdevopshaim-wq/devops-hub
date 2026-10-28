@@ -49,6 +49,9 @@ export const SVG_STYLE = `
   .frm-t { stroke: #8d959f; stroke-width: .9; }
   .t-frm { font-size: 13px; fill: #a4adb4; font-family: 'IBM Plex Mono', monospace; font-weight: 600; dominant-baseline: middle; }
   .comp.end > rect:first-of-type, .comp.end > circle:first-of-type { stroke: #e0904f; stroke-width: 3px; }
+  .t-rl { font-size: 10px; font-weight: 700; fill: #2f6f4f; }
+  .t-rl.rec { fill: #b0651f; font-weight: 600; font-style: italic; }
+  .comp.nd > rect:first-of-type { stroke: #e0904f; stroke-width: 2px; stroke-dasharray: 5 3; }
   .pin-hit { fill: transparent; pointer-events: none; }
   /* מעבדה — עריכה: לוחצים על הדק ואז על הדק נוסף ונוצר חוט */
   svg.pinmode .pin-hit { pointer-events: all; cursor: crosshair; }
@@ -148,6 +151,11 @@ export class CabinetView {
       out.push(`<rect x="${r.x1}" y="${r.y - 17.5}" width="${r.x2 - r.x1}" height="35" fill="#b9c0c8" stroke="#8d959f"/>`);
       out.push(`<text x="${r.x1 - 4}" y="${r.y + 3}" class="t-rail" text-anchor="end">${i + 1}</text>`);
       if (!this.mini) out.push(`<text x="${r.x2 + 4}" y="${r.y + 3}" class="t-dim">TS35 · ${Math.round(r.x2 - r.x1)}</text>`);
+      /* מסילה מהשרטוט: השם שלה; מסילה שהשרטוט לא מגדיר: מסומנת כהמלצה */
+      if (!this.mini && L.mode === 'drawing' && r.top != null) {
+        const lbl = r.fromDrawing ? (r.label || 'לפי השרטוט') : 'לפי המלצה — לא מופיע בשרטוט';
+        out.push(`<text x="${r.x1}" y="${r.top - 5}" class="t-rl ${r.fromDrawing ? 'drw' : 'rec'}">${esc(lbl)}</text>`);
+      }
     });
     out.push('</g>');
     /* מידות: רוחב וגובה הפלטה, ומיקום כל מסילה מראש הפלטה */
@@ -179,7 +187,8 @@ export class CabinetView {
       const c = compBy[b.tag] || {};
       const info = (C && C.TYPES[c.type]) || { fill: '#444', he: '' };
       const name = esc(c.name || info.he);
-      out.push(`<g class="comp ty-${esc(c.type || 'x')}" data-tag="${esc(b.tag)}" tabindex="-1"><title>${esc(b.tag)} — ${name}</title>`);
+      const nd = L.mode === 'drawing' && b.zone === 'cabinet' && !b.fromDrawing ? ' nd' : '';
+      out.push(`<g class="comp ty-${esc(c.type || 'x')}${nd}" data-tag="${esc(b.tag)}" tabindex="-1"><title>${esc(b.tag)} — ${name}</title>`);
       if (c.type === 'terminal') {
         const terms = Object.keys(L.pins).filter((k) => k.startsWith(b.tag + ':')).map((k) => ({ t: k.slice(b.tag.length + 1), x: L.pins[k].x }));
         out.push(`<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#7b828c" rx="1"/>`);

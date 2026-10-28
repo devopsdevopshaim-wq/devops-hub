@@ -1067,3 +1067,37 @@ li.run.ccw .fan { animation-direction: reverse; }
   .vh-r div { flex: 1; min-width: 70px; padding: 5px 6px; }
   .vh-r dd { font-size: 1.02rem; }
 }
+
+/* ===== מקור הפריסה: השרטוט או המלצה ===== */
+.src-band { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; padding: 12px 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); border-inline-start: 4px solid var(--ok); box-shadow: var(--shadow-1); font-size: .9rem; line-height: 1.5; }
+.src-band > span:nth-child(2) { flex: 1; min-width: 240px; }
+.src-band .sb-k { flex: none; font-family: var(--mono); font-size: .72rem; font-weight: 700; letter-spacing: .06em; padding: 4px 9px; border-radius: 4px; background: var(--ok-soft); color: var(--ok); }
+.src-band.auto { border-inline-start-color: var(--copper); }
+.src-band.auto .sb-k { background: var(--copper-soft); color: var(--copper); }
+.src-band:empty { display: none; }
+/* פלטת אנטיגרונים */
+.gland-card { margin-top: 14px; }
+.gland-wrap { overflow-x: auto; background: var(--anthracite); border-radius: 10px; padding: 10px; }
+.gland-svg { display: block; min-width: 760px; width: 100%; height: auto; }
+.gland-svg .gl-plate { fill: #b9c0c8; stroke: #7d8894; stroke-width: 2; }
+.gland-svg .gl-o { fill: #2b3035; stroke: #15181b; stroke-width: 1.5; }
+.gland-svg .gl-i { fill: #3d444b; }
+.gland-svg .gl-s { fill: #e9ebe8; font: 700 10px var(--mono); text-anchor: middle; }
+.gland-svg .gl-l { fill: #20252c; font: 600 9px var(--font); text-anchor: middle; }
+.gland-svg .gl:hover .gl-o { stroke: var(--copper-hi); stroke-width: 3; }
+/* המלצת הרכבה */
+.rec-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr); gap: 14px; align-items: start; }
+.rec-host { height: min(72vh, 820px); }
+.rec-diff #recDiff { display: grid; gap: 10px; max-height: min(72vh, 820px); overflow: auto; }
+.rd { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: #fff; }
+.rd.same { background: var(--surface-2); }
+.rd-h { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: .9rem; }
+.rd-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; align-items: start; padding: 3px 0; }
+.rd-row .k { font-size: .76rem; color: var(--muted); padding-top: 3px; }
+.seq { display: flex; flex-wrap: wrap; gap: 3px; }
+.seq i { font: 600 .74rem var(--mono); font-style: normal; padding: 2px 6px; border-radius: 3px; background: #e7f2ec; color: #1f5b3d; }
+.seq.rec i { background: var(--copper-soft); color: #7a3f17; }
+.seq sub { font-size: .6rem; opacity: .7; margin-inline-start: 2px; }
+.rd.principles ul { margin: 0; padding-inline-start: 18px; color: var(--ink-2); display: grid; gap: 3px; }
+.rd .led { border: 0; }
+@media (max-width: 980px) { .rec-grid { grid-template-columns: minmax(0, 1fr); } .rec-host { height: 60vh; } }
