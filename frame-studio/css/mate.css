@@ -368,3 +368,14 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
   #mt .mt-aibac .mt-aiba .mt-th { height: clamp(200px, 30vh, 320px); }
 }
 @media (max-width: 1099px) { #mt .mt-aibac { position: static; } }
+
+/* tall / wide sections */
+.mt-ori i { font-style: normal; opacity: .7; font-size: .85em; }
+.mt-orih { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; margin: 6px 0 -4px; padding-bottom: 6px; border-bottom: 1px solid var(--hair, var(--line)); font-size: 1.05rem; color: var(--gold, var(--champagne)); }
+.mt-orih i { font-style: normal; font-weight: 400; font-size: .85rem; color: var(--ivory-dim); }
+.mt-orih .mt-btn { margin-inline-start: auto; padding: 4px 10px; font-size: .8rem; }
+.mt-fori { border: 1px solid var(--hair, var(--line)); border-radius: 10px; padding: 8px 10px; margin: 8px 0; }
+.mt-fori h4 { margin: 0 0 6px; }
+.mt-fori label { min-width: 78px; }
+.mt-fori label i { font-style: normal; opacity: .7; }
+.mt-fori select { flex: 1; min-width: 0; }

@@ -725,3 +725,12 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
   - square photos or square pages are left alone.
 - It is on by default. It follows `FS.prefs.keepOrient`, which is the "לפי כיוון התמונה" checkbox (`#mt-orient`) in the size bar (mate.js); the checkbox is now saved.
 - The event template (`FS.applyEvent`) still forces its own size when it is on.
+
+## Tall and wide sections, a frame for each direction (Oct 28, v72)
+
+- mate.js has a direction filter: `ori` = all / tall / wide. It is saved as `fs-mate-ori` and shown as the `.mt-ori` segment, with counts, in two places: the "📁 תמונות" bar and the edit bar.
+  - `oriOf(p)` reads the page: wider than 1.02 is wide, taller than 1.02 is tall, anything else is square.
+  - `byOri` filters, or in "all" groups tall, then wide, then square, keeping the import order. Both `shown()` and `editList()` go through it.
+  - The main grid puts an `.mt-orih` heading before each group. Its "✔ סימון כולן" button marks or unmarks the whole group.
+- The frames panel has a "מסגרת לפי כיוון" box. It holds two selects, `#mt-ftall` and `#mt-fwide` (remembered as `fs-mate-f<o>`), and their `[data-fori]` "החל" buttons put the chosen frame on every photo of that direction.
+- A PNG frame has a direction (`frameOri` from `USER_FRAMES[id].aspect`). It is listed only in its own direction's select. Clicking it in the chips reaches only the targets of that direction, and a toast reports the rest as skipped. This matters because `FS.setFrame` reshapes the page to a PNG frame's aspect, which would otherwise flip a wide photo tall.
