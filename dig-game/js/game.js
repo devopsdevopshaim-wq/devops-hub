@@ -474,7 +474,7 @@
       SFX.unlock();
       hoverAt(p); strike(p);
       held = true; clearInterval(holdTimer);
-      if (tool === 'pick' || tool === 'trowel' || tool === 'brush') holdTimer = setInterval(() => { if (held && hoverP) strike(hoverP); }, tool === 'brush' ? 130 : 210);
+      if (tool === 'pick' || tool === 'trowel' || tool === 'brush') holdTimer = setInterval(() => { if (held && hoverP) strike(hoverP); }, tool === 'pick' ? 620 : tool === 'trowel' ? 330 : 200);
     },
     move(p) { hoverAt(p); },
     release() { held = false; clearInterval(holdTimer); },

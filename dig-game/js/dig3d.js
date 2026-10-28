@@ -22,7 +22,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /* ---------- renderer ---------- */
 let renderer, scene, camera, composer, bloom, clock, host = null, overlay = null, ro = null;
-let running = false, mode = 'idle', aoPass = null, slow = 0;
+let running = false, mode = 'idle', aoPass = null, slow = 0, showcaseHits = [], showSpot = null;
 function initRenderer() {
   if (renderer) return true;
   try {
@@ -232,7 +232,7 @@ function buildWorld(site, withAO = false) {
   composer.addPass(new OutputPass());
   resize();
   buildFx();
-  buildTools(); showTool(toolKind);
+  person = buildPerson();
 }
 
 function addGrass() {
@@ -316,69 +316,192 @@ function addProps() {
 }
 
 /* ---------- the tool in your hand ---------- */
-let toolRig = null, toolKind = 'pick', swingT = 9, toolPos = new THREE.Vector3(), toolSeen = 0;
-function buildTools() {
+/* ---------- the archaeologist ---------- */
+let person = null, toolKind = 'pick', holdUntil = 0, pendingFx = [], focus = null;
+// effects of a strike wait for the moment the tool meets the ground
+function later(fn) { if (clock && clock.elapsedTime < holdUntil) pendingFx.push(fn); else fn(); }
+
+function toolModel(kind) {
   const wood = new THREE.MeshStandardMaterial({ color: '#8a5a32', roughness: 0.7 });
   const steel = new THREE.MeshStandardMaterial({ color: '#c7ccd2', roughness: 0.35, metalness: 0.85 });
   const dark = new THREE.MeshStandardMaterial({ color: '#2a2d31', roughness: 0.5, metalness: 0.6 });
-  const make = (kind) => {
-    const g = new THREE.Group();
-    if (kind === 'pick') {
-      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 1.15, 10), wood); handle.position.y = -0.58; g.add(handle);
-      const head = new THREE.Group(); head.position.y = -1.12;
-      const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.05, 0.42, 8), steel); blade.rotation.z = Math.PI / 2; blade.position.x = 0.22; blade.rotation.y = 0.1;
-      const adze = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.09), steel); adze.position.x = -0.15;
-      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.1), dark);
-      head.add(blade, adze, eye); head.rotation.z = -0.15; g.add(head);
-    } else if (kind === 'trowel') {
-      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.034, 0.32, 10), wood); handle.position.y = -0.16; g.add(handle);
-      const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0.09, 0.05); sh.lineTo(0, 0.32); sh.lineTo(-0.09, 0.05); sh.closePath();
-      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.008, bevelEnabled: false }), steel); blade.rotation.x = Math.PI; blade.position.y = -0.34; g.add(blade);
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.08, 6), dark); neck.position.y = -0.34; g.add(neck);
-    } else {
-      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.026, 0.3, 10), wood); handle.position.y = -0.15; g.add(handle);
-      const ferrule = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 12), new THREE.MeshStandardMaterial({ color: '#c9a24a', metalness: 0.8, roughness: 0.3 })); ferrule.position.y = -0.32; g.add(ferrule);
-      const bristles = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.09, 0.035), new THREE.MeshStandardMaterial({ color: '#d8c49a', roughness: 1 })); bristles.position.y = -0.39; g.add(bristles);
-    }
-    g.traverse((o) => { o.castShadow = true; });
-    return g;
-  };
-  toolRig = new THREE.Group();
-  toolRig.userData.models = { pick: make('pick'), trowel: make('trowel'), brush: make('brush') };
-  const swing = new THREE.Group(); toolRig.add(swing); toolRig.userData.swing = swing;
-  for (const m of Object.values(toolRig.userData.models)) { m.visible = false; swing.add(m); }
-  toolRig.visible = false;
-  scene.add(toolRig);
+  const g = new THREE.Group();
+  if (kind === 'pick') {
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.03, 0.95, 10), wood); handle.position.y = -0.4; g.add(handle);
+    const head = new THREE.Group(); head.position.y = -0.86;
+    const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.035, 0.34, 8), steel); blade.rotation.x = Math.PI / 2; blade.position.z = 0.17;
+    const adze = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.02, 0.24), steel); adze.position.z = -0.12;
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.08), dark);
+    head.add(blade, adze, eye); g.add(head);
+  } else if (kind === 'trowel') {
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.024, 0.13, 10), wood); handle.position.y = -0.03; g.add(handle);
+    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0.055, 0.03); sh.lineTo(0, 0.2); sh.lineTo(-0.055, 0.03); sh.closePath();
+    const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.005, bevelEnabled: false }), steel); blade.rotation.x = Math.PI; blade.position.y = -0.13; g.add(blade);
+  } else {
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.017, 0.16, 10), wood); handle.position.y = -0.04; g.add(handle);
+    const ferrule = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.03, 12), new THREE.MeshStandardMaterial({ color: '#c9a24a', metalness: 0.8, roughness: 0.3 })); ferrule.position.y = -0.13; g.add(ferrule);
+    const bristles = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.022), new THREE.MeshStandardMaterial({ color: '#d8c49a', roughness: 1 })); bristles.position.y = -0.17; g.add(bristles);
+  }
+  g.traverse((o) => { o.castShadow = true; });
+  return g;
 }
-function showTool(kind) {
-  toolKind = kind;
-  if (!toolRig) return;
-  for (const [k, m] of Object.entries(toolRig.userData.models)) m.visible = k === kind;
+
+function buildPerson() {
+  const M = (c, r = 0.85) => new THREE.MeshStandardMaterial({ color: c, roughness: r });
+  const skin = M('#c48a62', 0.55), shirt = M('#b49c74'), pants = M('#5d5140'), boot = M('#3a291b', 0.6), hatM = M('#c9b386'), bandM = M('#4a3622'), scarfM = M('#a8362a'), hairM = M('#3a2a1c', 0.9), dark = M('#1c1714', 0.4), beltM = M('#5a3a20', 0.6), packM = M('#6e6a4a');
+  const cap = (r, len, mat) => { const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 6, 14), mat); m.castShadow = true; m.receiveShadow = true; return m; };
+  const box = (w, h, d, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.castShadow = true; return m; };
+  const joint = (parent, x, y, z) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; };
+  const P = { root: new THREE.Group() };
+  P.body = joint(P.root, 0, 0, 0);
+  P.hips = joint(P.body, 0, 0.95, 0);
+  const pelvis = cap(0.135, 0.07, pants); pelvis.scale.set(1.15, 1, 0.78); P.hips.add(pelvis);
+  P.spine = joint(P.hips, 0, 0.07, 0);
+  const torso = cap(0.15, 0.3, shirt); torso.scale.set(1.15, 1, 0.74); torso.position.y = 0.22; P.spine.add(torso);
+  const belt = box(0.35, 0.05, 0.23, beltM); belt.position.y = 0.0; P.spine.add(belt);
+  const buckle = box(0.05, 0.035, 0.01, M('#c9a24a', 0.3)); buckle.position.set(0, 0.0, 0.116); P.spine.add(buckle);
+  for (const sx of [-1, 1]) { const pk = box(0.08, 0.07, 0.02, shirt); pk.position.set(sx * 0.07, 0.32, 0.105); P.spine.add(pk); }
+  const pack = box(0.24, 0.3, 0.12, packM); pack.position.set(0, 0.25, -0.15); P.spine.add(pack);
+  P.neck = joint(P.spine, 0, 0.47, 0);
+  const neckM = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.1, 12), skin); neckM.position.y = 0.03; P.neck.add(neckM);
+  const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.065, 0.028, 8, 18), scarfM); scarf.rotation.x = Math.PI / 2; scarf.position.y = 0.0; scarf.castShadow = true; P.neck.add(scarf);
+  P.head = joint(P.neck, 0, 0.09, 0);
+  const headM = new THREE.Mesh(new THREE.SphereGeometry(0.102, 24, 18), skin); headM.scale.set(0.92, 1.1, 1); headM.position.y = 0.1; headM.castShadow = true; P.head.add(headM);
+  const jaw = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), hairM); jaw.scale.set(1, 0.6, 0.95); jaw.position.set(0, 0.04, 0.02); P.head.add(jaw); // a short beard
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.05, 8), skin); nose.rotation.x = Math.PI / 2; nose.position.set(0, 0.1, 0.105); P.head.add(nose);
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), dark); eye.position.set(sx * 0.035, 0.125, 0.088); P.head.add(eye);
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 6), skin); ear.scale.set(0.5, 1, 0.8); ear.position.set(sx * 0.094, 0.1, 0); P.head.add(ear);
+  }
+  const hat = new THREE.Group(); hat.position.y = 0.19; P.head.add(hat);
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.21, 0.012, 28), hatM); brim.castShadow = true;
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.11, 0.1, 22), hatM); crown.position.y = 0.055; crown.castShadow = true;
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.112, 0.112, 0.024, 22), bandM); band.position.y = 0.018;
+  hat.add(brim, crown, band); hat.rotation.x = -0.08;
+  for (const sx of [-1, 1]) {
+    const k = sx < 0 ? 'L' : 'R';
+    P['sh' + k] = joint(P.spine, sx * 0.21, 0.42, 0);
+    const up = cap(0.048, 0.19, shirt); up.position.y = -0.13; P['sh' + k].add(up);
+    P['el' + k] = joint(P['sh' + k], 0, -0.28, 0);
+    const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 12), shirt); cuff.position.y = -0.01; P['el' + k].add(cuff);
+    const fore = cap(0.038, 0.17, skin); fore.position.y = -0.11; P['el' + k].add(fore);
+    P['ha' + k] = joint(P['el' + k], 0, -0.26, 0);
+    const hand = box(0.06, 0.085, 0.04, skin); hand.position.y = -0.03; P['ha' + k].add(hand);
+    P['hp' + k] = joint(P.hips, sx * 0.095, -0.04, 0);
+    const thigh = cap(0.066, 0.29, pants); thigh.position.y = -0.2; P['hp' + k].add(thigh);
+    const pocket = box(0.05, 0.09, 0.07, pants); pocket.position.set(sx * 0.07, -0.22, 0); P['hp' + k].add(pocket);
+    P['kn' + k] = joint(P['hp' + k], 0, -0.42, 0);
+    const shin = cap(0.056, 0.29, pants); shin.position.y = -0.19; P['kn' + k].add(shin);
+    P['an' + k] = joint(P['kn' + k], 0, -0.41, 0);
+    const b = box(0.1, 0.1, 0.24, boot); b.position.set(0, -0.03, 0.045); P['an' + k].add(b);
+  }
+  // tools in the right hand
+  P.tools = { pick: toolModel('pick'), trowel: toolModel('trowel'), brush: toolModel('brush') };
+  for (const [k, t] of Object.entries(P.tools)) { t.position.y = -0.03; t.rotation.x = k === 'pick' ? 0.15 : 0.3; P.haR.add(t); }
+  P.cur = { ...POSES.stand }; P.pos = new THREE.Vector3(0, 0, HALF + 1.2); P.goal = P.pos.clone(); P.face = Math.PI; P.act = 'idle'; P.t = 0; P.walk = 0; P.aim = null;
+  P.root.position.copy(P.pos); P.root.scale.setScalar(PS);
+  scene.add(P.root);
+  return P;
 }
-function updateTool(dt) {
-  if (!toolRig) return;
-  const has = toolRig.userData.models[toolKind];
-  toolSeen = Math.max(0, toolSeen - dt);
-  const vis = !!has && mode === 'dig' && (!!hoverP || toolSeen > 0);
-  toolRig.visible = vis;
-  if (!vis) return;
-  const target = hoverP || toolPos;
-  toolPos.lerp(target, toolRig.userData.placed ? 1 - Math.pow(0.0001, dt) : 1); toolRig.userData.placed = true;
-  // held toward you: the rig leans back to the camera so the handle reads on screen
-  const S = toolKind === 'pick' ? 1.45 : 1.9, grip = (toolKind === 'pick' ? 1.15 : 0.42) * S, lean = 0.75;
-  toolRig.scale.setScalar(S);
-  toolRig.position.set(toolPos.x + Math.sin(camYaw) * Math.sin(lean) * grip, toolPos.y + Math.cos(lean) * grip, toolPos.z + Math.cos(camYaw) * Math.sin(lean) * grip);
-  toolRig.rotation.set(0, 0, 0);
-  toolRig.rotateY(camYaw); toolRig.rotateX(-lean); toolRig.rotateY(Math.PI / 2);
-  swingT += dt;
-  // raised, then down onto the point, then back up
-  const rest = toolKind === 'pick' ? 1.05 : 0.55, hit = 0;
-  const a = swingT < 0.09 ? rest + (hit - rest) * (swingT / 0.09) : swingT < 0.4 ? hit + (rest - hit) * Math.pow((swingT - 0.09) / 0.31, 0.7) : rest;
-  const sw = toolRig.userData.swing;
-  sw.rotation.z = toolKind === 'pick' ? a : a * 0.8;
-  sw.position.y = toolKind === 'pick' ? 0 : (a / rest) * 0.12;
-  if (toolKind !== 'pick') sw.rotation.x = Math.sin(swingT * 30) * 0.08 * Math.max(0, 1 - swingT * 3);
+
+// joint angles, in radians. shoulders: x lifts the arm forward (negative), z spreads it out; elbows and knees bend
+const POSES = {
+  stand: { drop: 0, spine: 0.05, neck: 0.1, shLx: -0.25, shLz: 0.1, elL: 0.35, shRx: -0.35, shRz: 0.08, elR: 0.6, hpL: 0, knL: 0.03, hpR: 0, knR: 0.03 },
+  pickUp: { drop: 0.02, spine: -0.22, neck: 0.25, shLx: -2.75, shLz: 0.05, elL: 0.45, shRx: -2.85, shRz: 0.05, elR: 0.35, hpL: -0.18, knL: 0.15, hpR: 0.12, knR: 0.1 },
+  pickHit: { drop: 0.1, spine: 0.85, neck: -0.25, shLx: -1.45, shLz: 0.02, elL: 0.15, shRx: -1.4, shRz: 0.02, elR: 0.1, hpL: -0.6, knL: 0.5, hpR: -0.05, knR: 0.38 },
+  kneel: { drop: 0.42, spine: 0.75, neck: -0.15, shLx: -0.55, shLz: 0.22, elL: 1.15, shRx: -1.25, shRz: 0.05, elR: 0.35, hpL: -1.45, knL: 1.55, hpR: -0.2, knR: 1.95 },
+  cheer: { drop: 0, spine: -0.18, neck: -0.35, shLx: -2.95, shLz: 0.55, elL: 0.25, shRx: -2.95, shRz: 0.55, elR: 0.25, hpL: 0, knL: 0.05, hpR: 0, knR: 0.05 },
+};
+const IMPACT = { pick: 0.27, trowel: 0.16, brush: 0.12 };
+const PS = 1.3; // a little larger than life, so he reads on a phone
+const STAND_OFF = { pick: 1.0, trowel: 0.78, brush: 0.78 };
+
+// where the digger stands for a strike at p: across the hole from the camera, facing it, at the height of the ground there
+function standFor(p, kind) {
+  const d = (STAND_OFF[kind] || 0.9) * PS;
+  const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw), rx = Math.cos(camYaw), rz = -Math.sin(camYaw);
+  const cands = [[fx, fz], [rx, rz], [-rx, -rz], [-fx, -fz]].map(([ax, az]) => new THREE.Vector3(p.x + ax * d, 0, p.z + az * d));
+  let best = null, bs = Infinity;
+  cands.forEach((c, k) => {
+    const out = Math.max(0, Math.abs(c.x) - (HALF + 1.6)) + Math.max(0, Math.abs(c.z) - (HALF + 1.6));
+    const inside = Math.abs(c.x) < HALF - 0.1 && Math.abs(c.z) < HALF - 0.1;
+    c.y = inside ? heightAt(c.x, c.z) : 0;
+    const score = out * 10 + Math.abs(c.y - p.y) * 1.5 + k * 0.35;
+    if (score < bs) { bs = score; best = c; }
+  });
+  return best;
 }
+// start an action; returns how long until the tool meets the ground
+function act(kind, p) {
+  if (!person) return 0;
+  const P = person;
+  const goal = standFor(p, kind);
+  const dist = Math.hypot(goal.x - P.pos.x, goal.z - P.pos.z);
+  P.goal.copy(goal); P.aim = p.clone(); P.kind = kind;
+  const walkT = dist > 0.12 ? Math.min(0.9, dist / 3.2) : 0;
+  P.walkLeft = walkT;
+  P.act = kind; P.t = -walkT;
+  return walkT + IMPACT[kind];
+}
+function cheer() { if (person) { person.act = 'cheer'; person.t = 0; } }
+const lerpPose = (a, b, k) => { const o = {}; for (const key in a) o[key] = a[key] + (b[key] - a[key]) * k; return o; };
+const ease = (x) => (x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x));
+function updatePerson(dt, t) {
+  const P = person;
+  if (!P) return;
+  for (const [k, m] of Object.entries(P.tools)) m.visible = k === toolKind;
+  // walk toward the goal
+  const dx = P.goal.x - P.pos.x, dz = P.goal.z - P.pos.z, dist = Math.hypot(dx, dz);
+  let walking = false;
+  if (dist > 0.03) {
+    const step = Math.min(dist, dt * 3.2);
+    P.pos.x += (dx / dist) * step; P.pos.z += (dz / dist) * step;
+    P.face = Math.atan2(dx, dz); walking = true; P.walk += dt * 11;
+  } else if (P.aim) P.face = Math.atan2(P.aim.x - P.pos.x, P.aim.z - P.pos.z);
+  const inside = Math.abs(P.pos.x) < HALF - 0.05 && Math.abs(P.pos.z) < HALF - 0.05;
+  const gy = inside ? heightAt(P.pos.x, P.pos.z) : 0;
+  P.pos.y += (gy - P.pos.y) * (1 - Math.pow(0.0005, dt));
+  // turn smoothly
+  let da = P.face - P.root.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
+  P.root.rotation.y += da * (1 - Math.pow(0.0002, dt));
+  P.t += dt;
+  // the pose for this moment
+  let target = POSES.stand, k = 1 - Math.pow(0.001, dt);
+  const breathe = Math.sin(t * 1.8) * 0.02;
+  if (walking && P.t < 0) {
+    const s = Math.sin(P.walk);
+    target = { ...POSES.stand, hpL: s * 0.55, hpR: -s * 0.55, knL: Math.max(0, -s) * 0.9 + 0.05, knR: Math.max(0, s) * 0.9 + 0.05, shLx: -0.25 - s * 0.45, shRx: -0.35 + s * 0.3, spine: 0.12, drop: Math.abs(Math.cos(P.walk)) * -0.03 + 0.02 };
+    k = 1 - Math.pow(0.00001, dt);
+  } else if (P.act === 'pick' && P.t >= 0) {
+    const ph = P.t;
+    if (ph < 0.2) { target = POSES.pickUp; k = 1 - Math.pow(0.000001, dt); }
+    else if (ph < 0.62) { target = POSES.pickHit; k = ph < 0.3 ? 1 - Math.pow(1e-12, dt) : 1 - Math.pow(0.01, dt); }
+    else { target = POSES.stand; k = 1 - Math.pow(0.002, dt); if (ph > 1.2) P.act = 'idle'; }
+  } else if ((P.act === 'brush' || P.act === 'trowel') && P.t >= 0) {
+    const ph = P.t, stroke = Math.sin(ph * (P.act === 'brush' ? 26 : 16));
+    target = { ...POSES.kneel, shRx: POSES.kneel.shRx + stroke * (P.act === 'brush' ? 0.22 : 0.3) - (P.act === 'trowel' ? 0.15 : 0), elR: POSES.kneel.elR - stroke * 0.15, spine: POSES.kneel.spine + (P.act === 'trowel' ? 0.1 : 0) };
+    k = 1 - Math.pow(0.00001, dt);
+    if (ph > 1.6) P.act = 'idle';
+  } else if (P.act === 'cheer') {
+    const j = Math.max(0, Math.sin(P.t * 9)) * (P.t < 1.2 ? 1 : 0);
+    target = { ...POSES.cheer, drop: -j * 0.12, shLz: 0.55 + Math.sin(P.t * 12) * 0.15, shRz: 0.55 - Math.sin(P.t * 12) * 0.15 };
+    k = 1 - Math.pow(0.00001, dt);
+    if (P.t > 1.6) P.act = 'idle';
+  } else if (P.act === 'idle' && P.kind && P.kind !== 'pick') {
+    target = POSES.kneel; // stays down by the find between strokes
+    if (P.t > 3) P.kind = 'pick';
+  }
+  P.cur = lerpPose(P.cur, target, k);
+  const c = P.cur;
+  P.root.position.set(P.pos.x, P.pos.y, P.pos.z);
+  P.body.position.y = -c.drop;
+  P.spine.rotation.x = c.spine + breathe; P.neck.rotation.x = c.neck;
+  P.shL.rotation.set(c.shLx, 0, -c.shLz); P.shR.rotation.set(c.shRx, 0, c.shRz);
+  P.elL.rotation.x = -c.elL; P.elR.rotation.x = -c.elR;
+  P.hpL.rotation.x = c.hpL; P.hpR.rotation.x = c.hpR; P.knL.rotation.x = c.knL; P.knR.rotation.x = c.knR;
+  P.anL.rotation.x = -(c.hpL + c.knL) * 0.6; P.anR.rotation.x = -(c.hpR + c.knR) * 0.6;
+}
+function showTool(kind) { toolKind = kind; }
 
 /* ---------- the dig in this world ---------- */
 const vIdx = (gx, gz) => gz * GN + gx;
@@ -501,7 +624,7 @@ let heapVol = 0;
 function carve(p, spec) {
   const res = { touched: false, removed: 0, harmed: new Map(), first: [], done: [], hard: 0.2, colors: ['#8a6a48', '#5a4030', '#b89a72'] };
   if (!dig) return res;
-  if (spec.kind !== 'dyn') { swingT = 0; toolSeen = 0.9; toolPos.copy(p); }
+  if (spec.kind !== 'dyn' && person) holdUntil = clock.elapsedTime + act(spec.kind, p);
   const rad = spec.r, gx0 = Math.max(1, Math.floor((p.x - rad + HALF) * RES)), gx1 = Math.min(GN - 2, Math.ceil((p.x + rad + HALF) * RES));
   const gz0 = Math.max(1, Math.floor((p.z - rad + HALF) * RES)), gz1 = Math.min(GN - 2, Math.ceil((p.z + rad + HALF) * RES));
   const MATS = D.MATS3D;
@@ -624,12 +747,14 @@ function buildFx() {
 }
 const tmpC = new THREE.Color(), tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpV = new THREE.Vector3();
 function burst(p, colors, n, power = 1) {
+  if (clock.elapsedTime < holdUntil) { const q = p.clone(); pendingFx.push(() => burst(q, colors, n, power)); return; }
   for (let i = 0; i < n && debrisData.length < 260; i++) {
     const a = Math.random() * Math.PI * 2, up = 2 + Math.random() * 3.2;
     debrisData.push({ p: p.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.3, 0.05, (Math.random() - 0.5) * 0.3)), v: new THREE.Vector3(Math.cos(a) * (0.6 + Math.random() * 1.6) * power, up * power, Math.sin(a) * (0.6 + Math.random() * 1.6) * power), r: new THREE.Euler(Math.random() * 6, Math.random() * 6, 0), s: 0.5 + Math.random() * 1.3, c: colors[i % colors.length], t: 0, life: 1.1 + Math.random() * 0.6 });
   }
 }
 function dust(p, color = '#c8b08a', n = 6, spread = 0.4) {
+  if (clock.elapsedTime < holdUntil) { const q = p.clone(); pendingFx.push(() => dust(q, color, n, spread)); return; }
   for (let i = 0; i < n && dustData.length < 400; i++) dustData.push({ p: p.clone().add(new THREE.Vector3((Math.random() - 0.5) * spread, Math.random() * 0.2, (Math.random() - 0.5) * spread)), v: new THREE.Vector3((Math.random() - 0.5) * 0.4, 0.3 + Math.random() * 0.5, (Math.random() - 0.5) * 0.4), c: new THREE.Color(color), t: 0, life: 1.4 + Math.random(), s: 1 + Math.random() });
 }
 function sparkle(p, color = '#fff3b0', n = 1, spread = 0.3) {
@@ -637,6 +762,7 @@ function sparkle(p, color = '#fff3b0', n = 1, spread = 0.3) {
 }
 function floatText(p, text, color = '#fff', big = false) {
   if (!overlay) return;
+  if (clock.elapsedTime < holdUntil) { const q = p.clone(); pendingFx.push(() => floatText(q, text, color, big)); return; }
   const el = document.createElement('div'); el.className = 'f3d' + (big ? ' big' : ''); el.textContent = text; el.style.color = color;
   overlay.appendChild(el);
   labels.push({ el, p: p.clone(), t: 0, life: big ? 1.7 : 1.2 });
@@ -647,8 +773,12 @@ function project(p) {
 }
 // a find rises out of the ground, turns in the light and flies away
 function lift(z, color, rank) {
+  if (clock.elapsedTime < holdUntil) { pendingFx.push(() => lift(z, color, rank)); return; }
   const o = arts.find((a) => a.z === z) || items.find((a) => a.z === z);
   if (!o) return;
+  // the digger cheers and the camera leans in on the find
+  cheer();
+  if (z.f) focus = { pos: o.mesh.position.clone(), t: 0, life: rank >= 2 ? 2.4 : 1.6 };
   const m = o.mesh;
   const start = m.position.clone();
   m.material.depthTest = true;
@@ -667,19 +797,22 @@ function lift(z, color, rank) {
 }
 
 /* ---------- camera ---------- */
-let camYaw = 0.55, camPitch = 0.98, camDist = 15.5;
+let camYaw = 0.55, camPitch = 0.98, camDist = 15.5, camZoom = 1;
 const camT = new THREE.Vector3(0, -0.6, 0), camLook = new THREE.Vector3(0, -0.6, 0);
 function updateCamera(dt, t) {
-  if (mode === 'showcase') camYaw += dt * 0.06;
+  if (mode === 'showcase') camYaw = 0.5 + Math.sin(t * 0.08) * 0.6;
   // follow the pit down a little
-  if (dig && target) {
+  if (dig && target && mode === 'dig') {
     let s = 0, n = 0;
     for (let i = 0; i < target.length; i += 23) { if (target[i] < -0.05) { s += target[i]; n++; } }
     camT.y = n ? Math.max(-2.4, (s / n) * 0.5) - 0.4 : -0.5;
   }
-  camLook.lerp(camT, 1 - Math.pow(0.02, dt));
+  let tgt = camT, dmul = 1;
+  if (focus) { focus.t += dt; if (focus.t > focus.life) focus = null; else { tgt = focus.pos; dmul = 0.55 + 0.45 * ease((focus.t - focus.life + 0.6) / 0.6); } }
+  camLook.lerp(tgt, 1 - Math.pow(0.02, dt));
+  camZoom += (dmul - camZoom) * (1 - Math.pow(0.03, dt));
   const sx = shake > 0.002 ? (Math.random() - 0.5) * shake : 0, sy = shake > 0.002 ? (Math.random() - 0.5) * shake : 0;
-  const dist = camDist * (camera.aspect < 0.8 ? 1.42 : 1);
+  const dist = camDist * camZoom * (camera.aspect < 0.8 ? 1.42 : 1);
   camera.position.set(camLook.x + Math.sin(camYaw) * Math.cos(camPitch) * dist + sx, camLook.y + Math.sin(camPitch) * dist + sy, camLook.z + Math.cos(camYaw) * Math.cos(camPitch) * dist);
   camera.lookAt(camLook);
   shake *= Math.pow(0.002, dt);
@@ -694,7 +827,7 @@ function frame() {
   if (aoPass && aoPass.enabled) { slow = slow * 0.95 + (raw > 0.045 ? 1 : 0) * 0.05; if (slow > 0.6) aoPass.enabled = false; }
   U.uTime.value = t;
   // the ground settles into its new shape over a few frames
-  if (moving && heights) {
+  if (moving && heights && t >= holdUntil) {
     let still = true; const pos = tGeo.attributes.position;
     const k = 1 - Math.pow(0.0005, dt);
     for (let i = 0; i < heights.length; i++) {
@@ -755,7 +888,15 @@ function frame() {
   }
   beams = beams.filter((b) => { b.t += dt; b.m.material.uniforms.a.value = Math.sin(Math.min(1, b.t / b.life) * Math.PI); if (b.t > b.life) { scene.remove(b.m); return false; } return true; });
   updateCamera(dt, t);
-  updateTool(dt);
+  updatePerson(dt, t);
+  if (pendingFx.length && t >= holdUntil) { const q = pendingFx; pendingFx = []; q.forEach((fn) => fn()); }
+  if (mode === 'showcase' && person && (!person.nextDig || t > person.nextDig)) {
+    // on the opening screen he keeps working the trench
+    const spot = showSpot;
+    const d = act('pick', spot); person.nextDig = t + 1.7;
+    showcaseHits.push({ at: t + d, p: spot });
+  }
+  showcaseHits = showcaseHits.filter((h) => { if (t >= h.at) { burst(h.p, ['#8a6a48', '#5a4030', '#b89a72'], 8, 0.7); dust(h.p, '#bfa47c', 5, 0.5); shake = Math.max(shake, mode === 'showcase' ? 0 : 0.05); return false; } return true; });
   // labels follow their point in the world
   labels = labels.filter((l) => {
     l.t += dt; const f = l.t / l.life;
@@ -863,7 +1004,20 @@ function showcase(el, dg, site) {
   }
   heights.set(target); const pos = tGeo.attributes.position; for (let i = 0; i < heights.length; i++) pos.setY(i, heights[i]); pos.needsUpdate = true; tGeo.computeVertexNormals();
   heapVol = 2.2;
-  camYaw = 0.4; camPitch = 0.62; camDist = 14.5;
+  // he works a spot in the trench; the camera frames him low on the screen, under the title
+  const o = arts[0];
+  // a spot on untouched ground at the lip of the pit, so he stands in plain view
+  showSpot = new THREE.Vector3(0, 0, 0);
+  if (o) {
+    const cx = (o.x0 + o.x1) / 2, cz = (o.z0 + o.z1) / 2; let best = Infinity;
+    for (let gz = 6; gz < GN - 6; gz += 2) for (let gx = 6; gx < GN - 6; gx += 2) {
+      const X = wx(gx), Z = wz(gz); if (target[vIdx(gx, gz)] < -0.02) continue;
+      const d = Math.hypot(X - cx, Z - cz); if (d < best) { best = d; showSpot.set(X, 0, Z); }
+    }
+  }
+  camYaw = 0.5; camPitch = 0.3; camDist = 7.6;
+  if (person) { person.pos.copy(standFor(showSpot, 'pick')); person.goal.copy(person.pos); person.nextDig = 0; }
+  camT.copy(showSpot).add(new THREE.Vector3(0, 3.4, 0));
   mode = 'showcase';
   if (!running) { running = true; clock.getDelta(); requestAnimationFrame(frame); }
   return true;
