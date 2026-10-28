@@ -64,9 +64,14 @@ function derive() {
   LR = null;
   if (!raw) { P = L = null; return; }
   /* פרויקט מספריית התכניות שנשמר לפני שהפריסה מהשרטוט נוספה */
-  if (raw.source === 'library' && !raw.layoutPlan) {
+  if (raw.source === 'library' && (!raw.layoutPlan || !raw.deviceSettings)) {
     const lib = LIBRARY.find((l) => l.id === (raw.meta || {}).drawingNo);
-    if (lib) { const lp = lib.project(); if (lp.layoutPlan) { raw.layoutPlan = lp.layoutPlan; save(); } }
+    if (lib) {
+      const lp = lib.project();
+      if (!raw.layoutPlan && lp.layoutPlan) raw.layoutPlan = lp.layoutPlan;
+      if (!raw.deviceSettings && lp.deviceSettings) raw.deviceSettings = lp.deviceSettings;
+      save();
+    }
   }
   raw.wires.forEach((w) => { if (!w.id) w.id = newId(); });
   const first = E.enrich(raw);
@@ -128,7 +133,7 @@ function showView(v) {
   if (ps) { $('#siteBack').href = '#site/' + ps.id; $('#siteBack').textContent = '→ ' + ps.name; }
   updateCabSwitch();
   updatePill();
-  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, rec: renderRec, conn: renderConn, three: renderThree, wiring: renderWiring, assembly: renderAssembly, lab: renderLab, export: renderExport }[v] || renderPlan)();
+  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, rec: renderRec, conn: renderConn, cfg: renderCfg, three: renderThree, wiring: renderWiring, assembly: renderAssembly, lab: renderLab, export: renderExport }[v] || renderPlan)();
   renderVHead(v);
 }
 
@@ -139,6 +144,7 @@ const VHEAD = {
   parts: ['רכיבים וחלקים', 'כל רכיב בלוח, עם יצרן ומק"ט אמיתי ורשימת הזמנה.'],
   wires: ['רשימת חוטים', 'כל חוט מנקודה לנקודה: צבע, חתך, סוג, אורך והסבר.'],
   cabinet: ['פריסת ארון', 'הארון כפי שהוא מוגדר בשרטוטים: מסילות, סדר רכיבים, סדר הדקים ואנטיגרונים.'],
+  cfg: ['הגדרות בקרים וציוד', 'הבקר ומפת ה-I/O, הרשת, הראוטר, הדרייברים והציוד החכם — לפי השרטוטים והחיווט.'],
   rec: ['המלצת הרכבה', 'הפריסה שהמערכת ממליצה עליה, לצד הארון שבשרטוט — להשוואה.'],
   conn: ['חיבורים ומהדקים', 'לכל הדק: מה מחובר אליו מבפנים, ומה יוצא לשטח או לארון אחר.'],
   three: ['ארון בתלת־ממד', 'הארון כמו שהוא ייראה מורכב — סובבו, פתחו את הדלת, לחצו על רכיב.'],
@@ -161,6 +167,7 @@ function vheadStats(v) {
     parts: [[P.components.length, 'רכיבים'], [withPn, 'עם מק"ט'], [P.components.filter((c) => c.zone === 'door').length, 'בדלת'], [P.components.filter((c) => c.zone === 'field').length, 'בשטח']],
     wires: [[n, 'חוטים'], [done, 'חוברו'], [(len / 1000).toFixed(1), 'מטר'], [new Set(P.wires.map((w) => w.color)).size, 'צבעים']],
     cabinet: [[enc.w + '×' + enc.h, 'ארון מ"מ'], [L.rails.length, 'מסילות'], [cab, 'רכיבים']],
+    cfg: (() => { const c = WCfg.build(P, L); return [[c.plcs.reduce((n, x) => n + x.io.length, 0), 'ערוצי I/O'], [c.links.length, 'כבלי תקשורת'], [c.drives.length, 'דרייברים'], [c.settings.length, 'מהשרטוט']]; })(),
     rec: L.plan ? [[L.rails.filter((r) => r.fromDrawing).length, 'מסילות מהשרטוט'], [L.unplaced.length, 'לפי המלצה'], [recL().rails.length, 'מסילות בהמלצה']] : [[recL().rails.length, 'מסילות'], [cab, 'רכיבים']],
     conn: [[terms.length, 'פסי מהדקים'], [tcount, 'הדקים'], [ext, 'חוטים לשטח']],
     three: [[enc.w + '×' + enc.h + '×' + enc.d, 'מ"מ'], [P.components.length, 'רכיבים'], [n, 'חוטים']],
@@ -282,7 +289,7 @@ function detectContent(p, allPages) {
   if (lib && !p.wires.length) {
     const lp = lib.project();
     p.settings = { ...lp.settings, ...(p.settings || {}) };
-    applyResult({ components: lp.components, wires: lp.wires, meta: lp.meta, notes: lp.notes, layoutPlan: lp.layoutPlan }, 'library', true, p);
+    applyResult({ components: lp.components, wires: lp.wires, meta: lp.meta, notes: lp.notes, layoutPlan: lp.layoutPlan, deviceSettings: lp.deviceSettings }, 'library', true, p);
     if (!p.name || p.pdf && p.name === baseName(p.pdf.files[0].name)) p.name = lp.name;
     return { kind: 'library', msg: `זוהתה ${lib.title}: נטענה קריאה מלאה של כל השרטוטים (${lp.wires.length} חוטים, ${lp.components.length} רכיבים) עם חתכים וצבעים לפי התקנות.` };
   }
@@ -425,6 +432,7 @@ function applyResult(res, source, silent, p = raw) {
   p.notes = res.notes || [];
   /* הארון כפי שהוא מוגדר בשרטוטים (אם יש בתכנית שרטוט פריסה / רשימת מהדקים / פלטת אנטיגרונים) */
   if (res.layoutPlan) p.layoutPlan = res.layoutPlan; else delete p.layoutPlan;
+  if (res.deviceSettings) p.deviceSettings = res.deviceSettings; else delete p.deviceSettings;
   p.source = source;
   p.status = `נטענו ${p.wires.length} חוטים ו-${p.components.length} רכיבים (${({ claude: 'Claude', paste: 'Claude.ai', text: 'שליפה מהטקסט', json: 'JSON', gemini: 'קריאה אוטומטית', library: 'קריאה מלאה של התכנית' })[source] || source}).`;
   saveProject(p);
@@ -3135,11 +3143,103 @@ function bindHomePhotos() {
   loadHomePhotos();
 }
 
+
+/* ---------- הגדרות בקרים וציוד: לפי השרטוטים ולפי החיווט ---------- */
+const WCfg = window.WConfig;
+const cfgUi = { q: '', dir: '' };
+const SRC = { drawing: ['מהשרטוט', 'drw'], wiring: ['מהחיווט', 'wir'], recommended: ['המלצה', 'rec'], plate: ['מלוחית המנוע', 'plt'], missing: ['חסר בשרטוט', 'mis'] };
+const srcBadge = (src, page) => { const x = SRC[src] || SRC.wiring; return `<span class="src ${x[1]}">${x[0]}${page ? ' · עמ׳ ' + page : ''}</span>`; };
+const epx = (t) => `<span class="ep mono" dir="ltr">${esc(t)}</span>`;
+function givenTable(list) {
+  if (!list || !list.length) return '';
+  return `<h4>כתוב בשרטוט</h4><div class="table-wrap"><table class="tbl cfg-t"><thead><tr><th>נושא</th><th>הגדרה</th><th>ערך</th><th>מקור</th></tr></thead><tbody>${list.map((g) => `<tr><td>${esc(g.group)}</td><td class="mono">${esc(g.name)}</td><td>${isoTags(g.value)}</td><td>${srcBadge('drawing', g.page)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function pinTable(rows, withRole) {
+  const seen = new Set();
+  const uniq = rows.filter((r) => { const k = r.term + '|' + r.to; if (seen.has(k)) return false; seen.add(k); return true; });
+  if (!uniq.length) return '<p class="muted small">אין חיבורים.</p>';
+  return `<div class="table-wrap"><table class="tbl cfg-t"><thead><tr><th>הדק / פורט</th><th>מחובר אל</th><th>חוט</th><th>${withRole ? 'תפקיד לפי החיווט' : 'תיאור'}</th></tr></thead><tbody>${uniq.map((r) => `<tr><td class="mono" dir="ltr">${esc(r.term)}</td><td>${epx(r.to)} <span class="muted small">${esc(r.toName).slice(0, 40)}</span></td><td class="mono">${esc(r.no)}</td><td class="small">${isoTags(withRole ? (r.role || r.desc) : r.desc)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function renderCfg() {
+  const cfg = WCfg.build(P, L);
+  const nGiven = cfg.settings.length;
+  const band = $('#cfgSrc');
+  band.className = 'src-band ' + (nGiven ? 'drawing' : 'auto');
+  band.innerHTML = `<span class="sb-k">${nGiven ? 'לפי השרטוט' : 'מהחיווט'}</span><span><b>${nGiven ? `${nGiven} הגדרות כתובות בשרטוטים, והן גוברות על כל השאר.` : 'בשרטוטים לא כתובות הגדרות ציוד; כל מה שכאן נגזר מהחיווט שבתכנית.'}</b><br><span class="muted">כל ערך מסומן במקור שלו: ${srcBadge('drawing')} ${srcBadge('wiring')} ${srcBadge('recommended')} ${srcBadge('missing')}. ערך "המלצה" לא מופיע בתכנית — לאשר לפני הפעלה.</span></span>`;
+  const secs = [];
+  cfg.plcs.forEach((s) => secs.push(['plc-' + s.tag, `בקר ${s.tag}`, plcHtml(s)]));
+  if (cfg.links.length || cfg.switches.length) secs.push(['net', 'רשת תקשורת', netHtml(cfg)]);
+  cfg.routers.forEach((r) => secs.push(['rt-' + r.tag, `ראוטר ${r.tag}`, routerHtml(r)]));
+  cfg.drives.forEach((d) => secs.push(['dr-' + d.tag, `דרייבר ${d.tag}`, driveHtml(d)]));
+  if (!cfg.drives.length) secs.push(['dr', 'דרייברים', `<div class="card cfg-card"><div class="card-head"><h2>ממירי תדר (דרייברים)</h2></div><p>בתכנית הזו אין ממיר תדר / דרייבר. כשיהיה — כאן תופיע טבלת הפרמטרים שלו: נתוני המנוע מהשרטוט, פרמטרים שכתובים בתכנית, ושאר הפרמטרים כהמלצה לפי היצרן (Siemens SINAMICS, Schneider Altivar, ABB ACS, Danfoss VLT).</p></div>`]);
+  cfg.smart.forEach((d) => secs.push(['sm-' + d.tag, `${d.tag}`, smartHtml(d)]));
+  $('#cfgNav').innerHTML = secs.map(([id, t]) => `<a href="#" data-goto="${esc(id)}">${esc(t)}</a>`).join('');
+  $('#cfgBody').innerHTML = secs.map(([id, , h]) => `<section class="cfg-sec" id="cfg-${esc(id)}">${h}</section>`).join('');
+  lastCfg = cfg;
+}
+let lastCfg = null;
+function plcHtml(s) {
+  const q = cfgUi.q.toLowerCase();
+  const io = s.io.filter((r) => (!cfgUi.dir || r.dir === cfgUi.dir) && (!q || [r.module, r.ch, r.name, r.no, r.to, r.toName, r.signal].join(' ').toLowerCase().includes(q)));
+  const dirHe = { in: 'כניסה', out: 'יציאה', ain: 'כניסה אנלוגית', aout: 'יציאה אנלוגית' };
+  const cnt = (d) => s.io.filter((r) => r.dir === d).length;
+  return `<div class="card cfg-card"><div class="card-head"><h2>${esc(s.name || 'בקר')} <span class="mono muted small" dir="ltr">${esc(s.tag)}</span></h2><span class="muted small">${esc(s.maker)} ${esc(s.model)}</span></div>
+    ${givenTable(s.given)}
+    <h4>חומרה — לפי הסדר ${s.fromDrawing ? 'שבשרטוט' : 'בפריסה'} ${s.fromDrawing ? srcBadge('drawing') : srcBadge('wiring')}</h4>
+    <div class="hw-strip" dir="ltr">${s.hw.map((h) => `<div class="hw ${h.slot ? '' : 'cpu'}" title="${esc(h.name)}"><b>${esc(h.tag)}</b><span>${esc(h.model || h.name).slice(0, 18)}</span><i>${esc(h.kind)}</i><small>${h.slot ? 'כרטיס ' + h.slot : 'בקר'}</small></div>`).join('')}</div>
+    ${s.ports.length ? `<h4>פורטי תקשורת</h4>${pinTable(s.ports.map((p) => ({ ...p, term: (p.via && p.via !== s.tag ? p.via + ' ' : '') + p.term })), false)}` : ''}
+    <h4>מפת ה-I/O <span class="muted small">${cnt('in')} כניסות · ${cnt('out')} יציאות${cnt('ain') + cnt('aout') ? ` · ${cnt('ain') + cnt('aout')} אנלוגיים` : ''}</span> ${srcBadge('wiring')}</h4>
+    <div class="row gap cfg-tools">
+      <input type="search" data-cfgq placeholder="חיפוש ערוץ, חוט או אות…" value="${esc(cfgUi.q)}" aria-label="חיפוש במפת ה-I/O">
+      <select data-cfgdir aria-label="סינון לפי כיוון"><option value="">הכל</option><option value="in" ${cfgUi.dir === 'in' ? 'selected' : ''}>כניסות</option><option value="out" ${cfgUi.dir === 'out' ? 'selected' : ''}>יציאות</option></select>
+      <button class="btn ghost small" type="button" data-iocsv="${esc(s.tag)}">מפת I/O ל-CSV</button>
+    </div>
+    <div class="table-wrap io-wrap"><table class="tbl cfg-t"><thead><tr><th>כרטיס</th><th>ערוץ</th><th>כיוון</th><th>שם משתנה מוצע</th><th>חוט</th><th>מחובר אל</th><th>אות</th></tr></thead><tbody>${io.map((r) => `<tr><td class="mono" dir="ltr">${esc(r.module)}</td><td class="mono" dir="ltr">${esc(r.ch)}</td><td><span class="dir ${esc(r.dir)}">${esc(dirHe[r.dir] || '—')}</span></td><td class="mono small" dir="ltr">${esc(r.name)}</td><td class="mono">${esc(r.no)}</td><td>${epx(r.to)}</td><td class="small">${isoTags(r.signal)}</td></tr>`).join('')}</tbody></table></div>
+    <p class="muted small">שם המשתנה הוא הצעה לפי תיאור האות בשרטוט. הכתובות עצמן (‎%I / %Q) נקבעות בתוכנת הבקר לפי סדר הכרטיסים שלמעלה.</p></div>`;
+}
+function netHtml(cfg) {
+  return `<div class="card cfg-card"><div class="card-head"><h2>רשת התקשורת</h2><span class="muted small">${cfg.links.length} כבלי תקשורת</span></div>
+    <div class="table-wrap"><table class="tbl cfg-t"><thead><tr><th>מ-</th><th>אל</th><th>כבל</th><th>תיאור</th></tr></thead><tbody>${cfg.links.map((l) => `<tr><td>${epx(l.a)}</td><td>${epx(l.b)}</td><td class="mono">${esc(l.no)}</td><td class="small">${isoTags(l.desc)}</td></tr>`).join('')}</tbody></table></div>
+    ${cfg.switches.map((sw) => `<h4>${esc(sw.name)} <span class="mono muted small" dir="ltr">${esc(sw.tag)}</span> <span class="muted small">${esc(sw.model)}</span></h4>${givenTable(sw.given)}${pinTable(sw.ports.concat(sw.pins), false)}`).join('')}
+    <p class="muted small">כתובות IP, VLAN ושמות רשת לא מופיעים בשרטוטים${cfg.settings.some((x) => /IP|כתובת/i.test(x.name + x.value)) ? ' (חוץ ממה שכתוב למעלה)' : ''} — למלא לפי תכנית הרשת של הלקוח.</p></div>`;
+}
+function routerHtml(r) {
+  return `<div class="card cfg-card"><div class="card-head"><h2>${esc(r.name || 'ראוטר')} <span class="mono muted small" dir="ltr">${esc(r.tag)}</span></h2><span class="muted small">${esc(r.maker)} ${esc(r.model)}</span></div>
+    ${givenTable(r.given)}
+    <h4>חיבורי I/O ופורטים לפי החיווט</h4>${pinTable(r.pins.concat(r.ports), true)}
+    <h4>מה להגדיר בראוטר</h4><ul class="setup">${r.setup.map((x) => `<li>${srcBadge(x.src)} <b>${esc(x.name)}</b> — ${isoTags(x.value)}</li>`).join('')}</ul>
+    <p class="muted small">שמות התפריטים משתנים בין גרסאות RutOS. את הגדרות ה-I/O עושים בממשק הראוטר (Services → Input/Output), ואת כללי האיפוס והתזכורות לפי מה שהחיווט מאפשר.</p></div>`;
+}
+function driveHtml(d) {
+  return `<div class="card cfg-card"><div class="card-head"><h2>${esc(d.name || 'ממיר תדר')} <span class="mono muted small" dir="ltr">${esc(d.tag)}</span></h2><span class="muted small">${esc(d.maker)} ${esc(d.model)}</span></div>
+    ${d.motor ? `<p>מנוע: ${epx(d.motor.tag)} ${esc(d.motor.name)}</p>` : '<p class="muted">לא נמצא מנוע מחובר ליציאות U/V/W בשרטוט.</p>'}
+    <h4>פרמטרים</h4><div class="table-wrap"><table class="tbl cfg-t"><thead><tr><th>פרמטר</th><th>שם</th><th>ערך</th><th>מקור</th></tr></thead><tbody>${d.params.map((p) => `<tr><td class="mono" dir="ltr">${esc(p.id)}</td><td>${esc(p.name)}</td><td>${isoTags(p.value)}</td><td>${srcBadge(p.src, p.page)}</td></tr>`).join('')}</tbody></table></div>
+    <h4>חיווט הפיקוד של הדרייבר</h4>${pinTable(d.control, false)}</div>`;
+}
+function smartHtml(d) {
+  return `<div class="card cfg-card"><div class="card-head"><h2>${esc(d.name)} <span class="mono muted small" dir="ltr">${esc(d.tag)}</span></h2><span class="muted small">${esc(d.maker)} ${esc(d.model)}</span></div>
+    ${givenTable(d.given)}<h4>חיבורים לפי החיווט</h4>${pinTable(d.pins.concat(d.ports), false)}</div>`;
+}
+function bindCfg() {
+  $('#cfgNav').addEventListener('click', (e) => { const a = e.target.closest('[data-goto]'); if (!a) return; e.preventDefault(); const t = document.getElementById('cfg-' + a.dataset.goto); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  $('#cfgBody').addEventListener('input', (e) => {
+    if (e.target.matches('[data-cfgq]')) { cfgUi.q = e.target.value; const pos = e.target.selectionStart; renderCfg(); const i = $('#cfgBody [data-cfgq]'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
+  });
+  $('#cfgBody').addEventListener('change', (e) => { if (e.target.matches('[data-cfgdir]')) { cfgUi.dir = e.target.value; renderCfg(); } });
+  $('#cfgBody').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-iocsv]');
+    if (!b || !lastCfg) return;
+    const sys = lastCfg.plcs.find((x) => x.tag === b.dataset.iocsv);
+    if (sys) download(fileBase() + '-io-' + sys.tag.replace(/^-/, '') + '.csv', WCfg.ioCsv(sys), 'text/csv;charset=utf-8');
+  });
+}
+
 /* ---------- התחלה ---------- */
 async function start() {
   /* קודם מחברים את הכפתורים, כדי שהאתר יגיב גם אם האחסון בדפדפן איטי או חסום */
   bind();
   bindLab();
+  bindCfg();
   bindHomePhotos();
   try { state = await loadAllAsync(); } catch { /* נשארים עם localStorage */ }
   /* פסי הלבן-כחול בחוטי ‎0V של קטע הפתיחה מופיעים אחרי שהחוטים נמתחו */

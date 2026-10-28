@@ -445,6 +445,38 @@
     notes: 'הבקר מותקן על ספייסר של 50 מ"מ (עמוד 23). מהדקי פיקוד: PT 1.5 של Phoenix Contact (עמוד 27). ‎-XSPR (מהדקי הרזרבה) מפוזר בשרטוט בשלוש השורות — כאן הוא פס אחד בסוף שורה 3.'
   };
 
+  /* הגדרות ציוד שכתובות בשרטוטים (עמודים 6, 23–26) */
+  var SETTINGS = [
+    { tag: '-A1', group: 'התקנה', name: 'ספייסר', value: 'להתקין את הבקר על ספייסר של 50 מ"מ', page: 23 },
+    { tag: '-A1', group: 'חומרה', name: 'סדר הכרטיסים', value: 'CX2020 · EL1809 ×3 (I/O TERMINAL 1–3) · EL2809 ×4 (I/O TERMINAL 4–7) · EK1122 ×2 (C1/C2 CABINET, E1/E2 CABINET)', page: 23 },
+    { tag: '-A1', group: 'הזנה', name: '24PLC', value: '‎+24V מעמוד 4 דרך מגע RPLC 11-12 (איפוס הבקר)', page: 23 },
+    { tag: '-A1', group: 'רשת', name: 'X000', value: 'למתג ‎-SW2 פורט X3', page: 24 },
+    { tag: '-A1', group: 'רשת', name: 'X001', value: 'למתג ‎-SW1 פורט X3', page: 24 },
+    { tag: '-A1', group: 'הערה', name: 'דגם הבקר', value: 'בעמוד 23 מצויר CX2020, ובעמוד 24 כתוב CX2030 — לאמת את הדגם מול ההזמנה', page: 24 },
+    { tag: '-SW1', group: 'רשת', name: 'X1', value: 'TIBBO', page: 24 },
+    { tag: '-SW1', group: 'רשת', name: 'X3', value: 'CX2030 X001', page: 24 },
+    { tag: '-SW1', group: 'דגם', name: 'מק"ט', value: 'Phoenix Contact 2891001', page: 24 },
+    { tag: '-SW2', group: 'רשת', name: 'X2', value: 'ROUTER LAN 1', page: 24 },
+    { tag: '-SW2', group: 'רשת', name: 'X3', value: 'CX2030 X000', page: 24 },
+    { tag: '-SW2', group: 'דגם', name: 'מק"ט', value: 'Phoenix Contact 2891001', page: 24 },
+    { tag: '-SW3', group: 'דגם', name: 'ראוטר', value: 'Teltonika RUT955', page: 25 },
+    { tag: '-SW3', group: 'רשת', name: 'LAN1', value: 'SW2 X2', page: 25 },
+    { tag: '-SW3', group: 'רשת', name: 'WAN', value: 'CLIENT ROUTER (הראוטר של הלקוח)', page: 25 },
+    { tag: '-SW3', group: 'הזנה', name: 'PWR', value: '9–30 VDC; בלוח: ‎+24V דרך מגע RTEL 10-2 (חוט 24SW3)', page: 6 },
+    { tag: '-SW3', group: 'I/O', name: 'פין 1', value: 'TL1 (מהדק Teltonika)', page: 6 },
+    { tag: '-SW3', group: 'I/O', name: 'פין 2', value: 'TL2 — מגע RUPS 11-12 מ-‎+24V (מצב רשת)', page: 6 },
+    { tag: '-SW3', group: 'I/O', name: 'פין 3', value: '111 — לכניסה בבקר (עמוד 7: TELTONIKA OUTPUT)', page: 6 },
+    { tag: '-SW3', group: 'I/O', name: 'פין 5', value: '‎+24V', page: 6 },
+    { tag: '-SW3', group: 'I/O', name: 'פין 10', value: 'סליל RPLC (איפוס הבקר, עמוד 4)', page: 6 },
+    { tag: '-SW3', group: 'I/O', name: 'פינים (-), 7, 8, 9', value: '0V', page: 6 },
+    { tag: '-TB', group: 'הזנה', name: '12V', value: 'מפס 12T; ‎0V משותף', page: 26 },
+    { tag: '-TB', group: 'I/O', name: 'in1', value: '601 — מיציאה של הבקר (עמוד 17)', page: 26 },
+    { tag: '-TB', group: 'I/O', name: 'in2', value: '602 — מיציאה של הבקר (עמוד 17)', page: 26 },
+    { tag: '-TB', group: 'I/O', name: 'ממסר 2 (8–9)', value: 'T2Q — לסליל RTEL, איפוס Teltonika (עמוד 14)', page: 26 },
+    { tag: '-TB', group: 'קוראים', name: 'READER 1 · GP20', value: '12T / 0V / T1 (GR) / T2 (WH+YL)', page: 26 },
+    { tag: '-TB', group: 'קוראים', name: 'READER 2 · GP20', value: '12R / 0V / T11 (GR) / T12 (WH+YL)', page: 26 }
+  ];
+
   function project() {
     return {
       name: '208-B · B CABINET · הגדוד העברי 53',
@@ -454,7 +486,8 @@
       wires: JSON.parse(JSON.stringify(wires)),
       notes: NOTES.slice(),
       settings: { control: 'dc24', phaseColors: 'iec60445', termTech: 'pushin', plateWidth: 1100, powerSection: 2.5, controlSection: 0.75, peSection: 2.5 },
-      layoutPlan: JSON.parse(JSON.stringify(LAYOUT))
+      layoutPlan: JSON.parse(JSON.stringify(LAYOUT)),
+      deviceSettings: JSON.parse(JSON.stringify(SETTINGS))
     };
   }
 

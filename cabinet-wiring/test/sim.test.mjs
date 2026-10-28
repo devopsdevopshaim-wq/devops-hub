@@ -138,4 +138,28 @@ test('כמה ארונות בשרטוט: כל רכיב בארון שלו, וחו�
   assert.ok(r.links.length >= 1);
 });
 
+test('הגדרות ציוד: בקר ומפת I/O, ראוטר לפי החיווט, דרייבר עם פרמטרים', () => {
+  const W = require('../js/config.js');
+  const P = E.enrich(lib.project()), L = E.layout(P);
+  const c = W.build(P, L);
+  assert.equal(c.plcs.length, 1);
+  assert.deepEqual(c.plcs[0].hw.map((h) => h.tag).slice(0, 3), ['-A1', '-IO1', '-IO2']);
+  assert.ok(c.plcs[0].io.length >= 100);
+  assert.ok(c.plcs[0].io.some((r) => r.module === '-IO1' && r.ch === '11' && r.dir === 'in' && r.to === '-SW3:3'));
+  assert.deepEqual(c.routers.map((r) => r.tag), ['-SW3']);
+  assert.ok(c.routers[0].setup.some((x) => /RTEL/.test(x.value)));
+  assert.ok(c.settings.some((x) => x.tag === '-SW3' && x.name === 'WAN'));
+  /* דרייבר: נתוני המנוע מהשרטוט, פרמטר שכתוב בתכנית גובר */
+  const raw = { name: 't', components: [{ tag: '-T1', type: 'vfd', name: 'ממיר תדר SINAMICS G120' }, { tag: '-M1', type: 'motor', name: 'משאבה 2.2kW 400V 4.9A 1430rpm' }], wires: ['U', 'V', 'W'].map((t, i) => ({ no: String(i + 1), from: { tag: '-T1', term: t }, to: { tag: '-M1', term: t + '1' } })), deviceSettings: [{ tag: '-T1', group: 'פרמטרים', name: 'p1120', value: '5 s', page: 12 }] };
+  const P2 = E.enrich(raw);
+  const d = W.build(P2, E.layout(P2)).drives[0];
+  assert.equal(d.family, 'siemens');
+  assert.equal(d.motor.tag, '-M1');
+  const pv = (id) => d.params.find((p) => p.id === id);
+  assert.equal(pv('p0307').value, '2.2 kW'); assert.equal(pv('p0307').src, 'drawing');
+  assert.equal(pv('p0305').value, '4.9 A'); assert.equal(pv('p0311').value, '1430 rpm');
+  assert.equal(pv('p1120').value, '5 s'); assert.equal(pv('p1120').src, 'drawing');
+  assert.equal(pv('p1121').src, 'recommended');
+});
+
 console.log(`\n${n} בדיקות עברו`);
