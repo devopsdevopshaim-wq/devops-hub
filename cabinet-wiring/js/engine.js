@@ -525,8 +525,11 @@
     return { w: info.w, h: info.h };
   }
 
-  function layout(project) {
+  /* opts.mode: 'drawing' (ברירת מחדל: לפי הארון שבשרטוטים אם יש) או 'auto' (ההמלצה של המערכת) */
+  function layout(project, opts) {
     var p = project;
+    opts = opts || {};
+    var plan = opts.mode === 'auto' ? null : (p.layoutPlan || null);
     var settings = settingsOf(p);
     var compBy = {};
     (p.components || []).forEach(function (c) { compBy[c.tag] = c; });
@@ -535,7 +538,18 @@
     /* הדקים שהוגדרו לרכיב (רכיב חדש בלי חוטים עדיין) */
     (p.components || []).forEach(function (c) { (c.terms || []).forEach(function (t) { (termsBy[c.tag] = termsBy[c.tag] || []).push(t); }); });
     var M = 30, SD = 45, DUCT = 60, GAP = 22;
-    var cab = (p.components || []).filter(function (c) { return c.zone === 'cabinet'; });
+    var allCab = (p.components || []).filter(function (c) { return c.zone === 'cabinet'; });
+    /* מסילות שמוגדרות בשרטוט: בדיוק בסדר שבשרטוט */
+    var planRails = [], inPlan = {};
+    if (plan && plan.rails) {
+      plan.rails.forEach(function (r) {
+        var items = (r.tags || []).map(function (t) { return compBy[t]; }).filter(function (c) { return c && c.zone === 'cabinet' && !inPlan[c.tag] && (inPlan[c.tag] = 1); });
+        if (!items.length) return;
+        var cnt = [0, 0, 0, 0]; items.forEach(function (c) { var rr = typeInfo(c.type).row; cnt[rr == null ? 1 : rr]++; });
+        planRails.push({ row: cnt.indexOf(Math.max.apply(null, cnt)), items: items, label: r.label || '', spacer: r.spacer || 0, fromDrawing: true });
+      });
+    }
+    var cab = allCab.filter(function (c) { return !inPlan[c.tag]; });
     var door = (p.components || []).filter(function (c) { return c.zone === 'door'; });
     var field = (p.components || []).filter(function (c) { return c.zone === 'field'; });
     /* קבוצות לפי שורה, מסודרות לפי תג; ממסר תרמי צמוד למגען שלו */
@@ -552,10 +566,13 @@
     rows[2] = chainRow(rows[2], p.wires || []);
     rows[3].sort(function (a, b) { return (a.type === 'pe_bar') - (b.type === 'pe_bar') || natCmp(tagBody(a.tag), tagBody(b.tag)); });
     var sizes = {};
-    cab.forEach(function (c) { sizes[c.tag] = compSize(c, termsBy); });
+    allCab.forEach(function (c) { sizes[c.tag] = compSize(c, termsBy); });
     var rowWidth = function (r) { return r.reduce(function (s, c, i) { return s + sizes[c.tag].w + (i ? groupGap(r[i - 1], c) : 0); }, 0); };
-    var widest = Math.max.apply(null, rows.map(rowWidth).concat([200]));
+    var widest = Math.max.apply(null, rows.map(rowWidth).concat(planRails.map(function (r) { return rowWidth(r.items); })).concat([200]));
     var plateW = settings.plateWidth === 'auto' ? roundUp(Math.min(widest, 1100) + 2 * (M + SD + 15), STD_W) : Number(settings.plateWidth) || 600;
+    /* מסילה מהשרטוט לא נחתכת: הפלטה רחבה מספיק לה, וגם לארון שבשרטוט אם כתוב */
+    if (planRails.length) plateW = Math.max(plateW, roundUp(Math.max.apply(null, planRails.map(function (r) { return rowWidth(r.items); })) + 2 * (M + SD + 15), STD_W));
+    if (plan && plan.enclosure && plan.enclosure.w) plateW = Math.max(plateW, plan.enclosure.w - 50);
     var usable = plateW - 2 * (M + SD + 15);
     /* גלישה: שורה ארוכה מתחלקת לכמה מסילות */
     var rails = [];
@@ -568,6 +585,17 @@
       });
       if (cur.length) rails.push({ row: ri, items: cur });
     });
+    /* רכיבים שהשרטוט לא ממקם: נכנסים לפי ההמלצה, בין מסילות השרטוט לפי סוג השורה */
+    if (planRails.length) {
+      rails.forEach(function (r) { r.notInDrawing = true; });
+      var merged = planRails.slice();
+      rails.forEach(function (r) {
+        var at = merged.length;
+        for (var k = 0; k < merged.length; k++) if (merged[k].fromDrawing && merged[k].row > r.row) { at = k; break; }
+        merged.splice(at, 0, r);
+      });
+      rails = merged;
+    }
     var y = M, ducts = [], comps = {};
     var x0 = M + SD + 15;
     ducts.push({ x: M + SD, y: y, w: plateW - 2 * (M + SD), h: DUCT, kind: 'h', idx: 0 });
@@ -580,7 +608,7 @@
       rail.items.forEach(function (c, j) {
         if (j) x += groupGap(rail.items[j - 1], c);
         var s = sizes[c.tag];
-        comps[c.tag] = { tag: c.tag, x: x, y: cy - s.h / 2, w: s.w, h: s.h, zone: 'cabinet', rail: i, type: c.type };
+        comps[c.tag] = { tag: c.tag, x: x, y: cy - s.h / 2, w: s.w, h: s.h, zone: 'cabinet', rail: i, type: c.type, fromDrawing: Boolean(rail.fromDrawing) };
         x += s.w;
       });
       rail.x1 = x0 - 10; rail.x2 = Math.max(x + 10, x0 + 100);
@@ -597,7 +625,11 @@
       var cols = Math.max(1, Math.min(3, Math.ceil(door.length / 6)));
       var dw = Math.max(140, cols * 80 + 40);
       doorBox = { x: plateW + 70, y: 0, w: dw, h: Math.max(240, Math.ceil(door.length / cols) * 75 + 60) };
-      door.sort(function (a, b) { return natCmp(tagBody(a.tag), tagBody(b.tag)); });
+      var dOrd = plan && plan.door && plan.door.length ? plan.door : null;
+      door.sort(function (a, b) {
+        if (dOrd) { var ia = dOrd.indexOf(a.tag), ib = dOrd.indexOf(b.tag); ia = ia < 0 ? 1e6 : ia; ib = ib < 0 ? 1e6 : ib; if (ia !== ib) return ia - ib; }
+        return natCmp(tagBody(a.tag), tagBody(b.tag));
+      });
       door.forEach(function (c, i) {
         var info = typeInfo(c.type);
         var col = i % cols, row = Math.floor(i / cols);
@@ -654,7 +686,11 @@
     Object.keys(pinsOf).forEach(function (tag) {
       var c = compBy[tag], b = comps[tag], o = pinsOf[tag];
       if (c.type === 'terminal' || c.type === 'pe_bar') {
-        var list = Object.keys(o.terms).sort(natCmp);
+        var tOrd = (plan && plan.termOrder && plan.termOrder[tag]) || null;
+        var list = Object.keys(o.terms).sort(function (a, b) {
+          if (tOrd) { var ia = tOrd.indexOf(a), ib = tOrd.indexOf(b); ia = ia < 0 ? 1e6 : ia; ib = ib < 0 ? 1e6 : ib; if (ia !== ib) return ia - ib; }
+          return natCmp(a, b);
+        });
         var step = c.type === 'terminal' ? 6.2 : 12;
         list.forEach(function (t, i) {
           var x = b.x + 4 + step * (i + 0.5) + (c.type === 'pe_bar' ? 6 : 0);
@@ -684,7 +720,8 @@
         });
       });
     });
-    var L = { plate: { w: plateW, h: plateH }, rails: rails, ducts: ducts, comps: comps, pins: pins, door: doorBox, field: fieldBox, margin: M, sideDuct: SD };
+    var L = { plate: { w: plateW, h: plateH }, rails: rails, ducts: ducts, comps: comps, pins: pins, door: doorBox, field: fieldBox, margin: M, sideDuct: SD,
+      mode: plan ? 'drawing' : 'auto', plan: plan, unplaced: plan ? allCab.filter(function (c) { return !inPlan[c.tag]; }).map(function (c) { return c.tag; }) : [] };
     L.routes = route(p, L, compBy);
     L.bounds = { w: Math.max(plateW, doorBox ? doorBox.x + doorBox.w + 20 : 0), h: fieldBox ? fieldBox.y + fieldBox.h + 20 : plateH + 20 };
     return L;
@@ -921,6 +958,9 @@
     var deepest = 0;
     (p.components || []).forEach(function (c) { if (L.comps[c.tag] && c.zone === 'cabinet') deepest = Math.max(deepest, DEPTH[c.type] || 60); });
     var w = roundUp(L.plate.w + 50, ENC_W), h = roundUp(L.plate.h + 50, ENC_H), d = roundUp(deepest + 90, ENC_D);
+    /* ארון שמידותיו כתובות בשרטוט: המידות שלו, לא המלצה */
+    var pe = L.plan && L.plan.enclosure;
+    if (pe && pe.w && pe.h) { w = pe.w; h = pe.h; if (pe.d) d = pe.d; }
     var hd = L.ducts.filter(function (x) { return x.kind === 'h'; }), vd = L.ducts.filter(function (x) { return x.kind === 'v'; });
     var ductM = (hd.reduce(function (s, x) { return s + x.w; }, 0) + vd.reduce(function (s, x) { return s + x.h; }, 0)) / 1000;
     var railM = L.rails.reduce(function (s, r) { return s + (r.x2 - r.x1); }, 0) / 1000;
@@ -929,7 +969,7 @@
     var door = (p.components || []).filter(function (c) { return c.zone === 'door'; }).length;
     return {
       w: w, h: h, d: d, deepest: deepest, plinth: h >= 1400 ? 100 : 0, door: door,
-      text: w + '×' + h + '×' + d + ' מ"מ (רוחב×גובה×עומק)',
+      text: w + '×' + h + '×' + d + ' מ"מ (רוחב×גובה×עומק)' + (pe && pe.w ? ' — לפי השרטוט' : ''), fromDrawing: Boolean(pe && pe.w),
       material: 'פלדה צבועה RAL 7035, דלת אחת עם ידית ומנעול, פלטת הרכבה מגולוונת',
       ip: 'IP54 לפחות (IP55 במקום עם אבק או התזות מים)',
       ductM: Math.round(ductM * 10) / 10, railM: Math.round(railM * 10) / 10, wireM: Math.round(wireM * 10) / 10,

@@ -101,4 +101,29 @@ test('רכיב חדש עם הדקים מקבל פינים בפריסה', () => {
   assert.ok(L.comps['-K9']);
 });
 
+test('הארון לפי השרטוט: מסילות וסדר הדקים מהתכנית, וההמלצה בנפרד', () => {
+  const P = E.enrich(lib.project());
+  const L = E.layout(P), A = E.layout(P, { mode: 'auto' });
+  assert.equal(L.mode, 'drawing'); assert.equal(A.mode, 'auto');
+  const r1 = L.rails.find((r) => r.fromDrawing && r.items[0].tag === '-A1');
+  assert.deepEqual(r1.items.map((c) => c.tag), ['-A1', '-IO1', '-IO2', '-IO3', '-IO4', '-IO5', '-IO6', '-IO7', '-EK1', '-EK2']);
+  const t = L.rails.find((r) => r.fromDrawing && r.items[0].tag === '-XS');
+  assert.deepEqual(t.items.map((c) => c.tag).slice(0, 4), ['-XS', '-XUPS', '-XMG1', '-XMG2']);
+  const order = (LL, tag) => Object.keys(LL.pins).filter((k) => k.startsWith(tag + ':')).sort((a, b) => LL.pins[a].x - LL.pins[b].x).map((k) => k.slice(tag.length + 1));
+  assert.deepEqual(order(L, '-XG1').slice(0, 7), ['G1O1', 'G1O2', 'G1C1', 'G1C2', 'G1S1', 'G1S2', '105']);
+  assert.notDeepEqual(order(A, '-XG1'), order(L, '-XG1'));
+  assert.ok(L.unplaced.includes('-F1') && !L.unplaced.includes('-A1'));
+  /* בלי שרטוט פריסה: ההמלצה היא הפריסה */
+  assert.equal(E.layout(demo()).mode, 'auto');
+});
+
+test('קריאת פריסה מתשובת Claude', () => {
+  const Pr = require('../js/prompts.js');
+  const r = Pr.fromJson({ wires: [], components: [], layout: { pages: [5], enclosure: { w: 800, h: 1200, d: 300 }, rails: [{ label: 'כוח', tags: ['Q1', '-F1'], spacer: 0 }], door: [], terminalOrder: [{ tag: 'X1', terms: ['3', '1', '2'] }], glands: [{ label: 'הזנה', size: 'M25', row: 1 }], notes: '' } });
+  assert.deepEqual(r.layoutPlan.rails[0].tags, ['-Q1', '-F1']);
+  assert.deepEqual(r.layoutPlan.termOrder['-X1'], ['3', '1', '2']);
+  const empty = Pr.fromJson({ wires: [], components: [], layout: { pages: [], enclosure: { w: 0, h: 0, d: 0 }, rails: [], door: [], terminalOrder: [], glands: [], notes: '' } });
+  assert.equal(empty.layoutPlan, undefined);
+});
+
 console.log(`\n${n} בדיקות עברו`);

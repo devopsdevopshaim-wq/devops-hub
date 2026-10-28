@@ -395,6 +395,56 @@
     'חוק החשמל: הלוח מורכב ומחובר בידי חשמלאי בעל רישיון מתאים, ונבדק לפני הפעלה (בידוד, רציפות הארקה, פחת). לצרף תעודת בדיקה ותכנית מעודכנת בכיס הדלת.'
   ];
 
+  /* הארון כפי שהוא מוגדר בשרטוטים: בלוק הבקר (עמוד 23), רשימת המהדקים (עמוד 27) ופלטת האנטיגרונים (עמוד 28).
+     רכיבים שהשרטוטים לא ממקמים (מפסקים, ספקים, ממסרים) נכנסים לפי ההמלצה ומסומנים. */
+  var LAYOUT = {
+    source: 'drawing', pages: [23, 27, 28], enclosure: null,
+    rails: [
+      { label: 'בקר Beckhoff ו-I/O — עמוד 23 (על ספייסר 50 מ"מ)', spacer: 50, tags: ['-A1', '-IO1', '-IO2', '-IO3', '-IO4', '-IO5', '-IO6', '-IO7', '-EK1', '-EK2'] },
+      { label: 'מהדקים, שורה 1 — עמוד 27', spacer: 0, tags: ['-XS', '-XUPS', '-XMG1', '-XMG2', '-XG1', '-XG2', '-XD1', '-XD2', '-XEN', '-XPUP'] },
+      { label: 'מהדקים, שורה 2 — עמוד 27', spacer: 0, tags: ['-XSR', '-XSL', '-XST', '-XES'] },
+      { label: 'מהדקים, שורה 3 — עמוד 27', spacer: 0, tags: ['-XMP', '-XSP', '-XLT', '-XDP', '-XSPR'] },
+      { label: 'Teltonika ושקעי RJ45 על פס DIN — עמוד 27', spacer: 0, tags: ['-XTL', '-XRJ'] }
+    ],
+    door: [],
+    termOrder: {
+      '-XS': ['R', 'S', 'T', 'N', 'PE'],
+      '-XUPS': ['UPS1', 'UPS2', 'UPS1N', 'UPS2N'],
+      '-XMG1': ['R', 'S', 'T', 'N', 'PE'],
+      '-XMG2': ['R', 'S', 'T', 'N', 'PE'],
+      '-XG1': ['G1O1', 'G1O2', 'G1C1', 'G1C2', 'G1S1', 'G1S2', '105', '106', '109', '+24V', '0V'],
+      '-XG2': ['G2O1', 'G2O2', 'G2C1', 'G2C2', 'G2S1', 'G2S2', '107', '108', '+24V', '0V'],
+      '-XD1': ['D1.1', 'D1.2', '103', '+24V', '0V'],
+      '-XD2': ['D2.1', 'D2.2', '104', '+24V', '0V'],
+      '-XEN': ['E+1', 'E-1', 'E+2', 'E-2', 'E+3', 'E-3', 'E+4', 'E-4'],
+      '-XPUP': ['+24V', '0V', 'PLT'],
+      '-XSR': ['201', '202', '203', '204', '501', '502', '503', '504', '+24V', '0V'],
+      '-XSL': ['205', '206', '207', '208', '505', '506', '507', '508', '+24V', '0V'],
+      '-XST': ['209', '210', '211', '212', '509', '510', '511', '512', '+24V', '0V'],
+      '-XES': (function () { var a = []; for (var i = 1; i <= 15; i++) a.push('ES' + i + '.1', 'ES' + i + '.2', 'ES' + i + '.3'); return a; })(),
+      '-XMP': ['T1', 'T2', '12T', '0V', 'M+', 'M-', '413', '0V/2', '24V', '112', '414', '0V/3', '415'],
+      '-XSP': ['12R', '0V', 'T11', 'T12', '513', '0V/2', '514', '0V/3'],
+      '-XLT': ['515', '0V', '516', '0V/2'],
+      '-XDP': ['609', '610', '611', '612', '613', '614', '615', '616', '701', '702', '703', '704', '705', '706', '707', '708', '709', '710', 'LD19', '0V'],
+      '-XSPR': ['113', '114', '115', '116', '213', '214', '215', '216', '316', '605', '606', '607', '608', '712', '713', '714', '715', '716'],
+      '-XTL': ['110', '+24V', 'TL1', '0V'],
+      '-XRJ': ['C1', 'C2', 'E1', 'E2']
+    },
+    glands: [
+      { label: 'S0 — הזנה', size: 'PG21', row: 1 }, { label: 'MG1', size: 'PG21', row: 1 }, { label: 'Gate 1', size: 'PG16', row: 1 }, { label: 'D1', size: 'PG13.5', row: 1 },
+      { label: 'Enable', size: 'PG11', row: 1 }, { label: 'Enable', size: 'PG11', row: 1 }, { label: 'Scan R', size: 'PG11', row: 1 }, { label: 'Scan T', size: 'PG11', row: 1 },
+      { label: 'ES1', size: 'PG11', row: 1 }, { label: 'ES3', size: 'PG11', row: 1 }, { label: 'ES5', size: 'PG11', row: 1 }, { label: 'ES7', size: 'PG11', row: 1 },
+      { label: 'Main Customer Panel', size: 'PG16', row: 1 }, { label: 'Secondary Customer Panel', size: 'PG16', row: 1 }, { label: 'Direction Panel', size: 'PG16', row: 1 },
+      { label: 'CAT6 C1', size: 'PG11', row: 1 }, { label: 'CAT6 E1', size: 'PG11', row: 1 }, { label: 'רזרבה', size: 'PG11', row: 1 }, { label: 'רזרבה', size: 'PG11', row: 1 },
+      { label: 'רזרבה', size: 'PG21', row: 2 }, { label: 'MG2', size: 'PG21', row: 2 }, { label: 'Gate 2', size: 'PG16', row: 2 }, { label: 'D2', size: 'PG13.5', row: 2 },
+      { label: 'Enable', size: 'PG11', row: 2 }, { label: 'Enable', size: 'PG11', row: 2 }, { label: 'PUP', size: 'PG11', row: 2 }, { label: 'Scan L', size: 'PG11', row: 2 },
+      { label: 'ES2', size: 'PG11', row: 2 }, { label: 'ES4', size: 'PG11', row: 2 }, { label: 'ES6', size: 'PG11', row: 2 }, { label: 'ES8', size: 'PG11', row: 2 },
+      { label: 'Main Customer Panel', size: 'PG13.5', row: 2 }, { label: 'Light Tower', size: 'PG11', row: 2 }, { label: 'רזרבה', size: 'PG11', row: 2 },
+      { label: 'CAT6 C2', size: 'PG11', row: 2 }, { label: 'CAT6 E2', size: 'PG11', row: 2 }, { label: 'רזרבה', size: 'PG11', row: 2 }, { label: 'רזרבה', size: 'PG11', row: 2 }
+    ],
+    notes: 'הבקר מותקן על ספייסר של 50 מ"מ (עמוד 23). מהדקי פיקוד: PT 1.5 של Phoenix Contact (עמוד 27). ‎-XSPR (מהדקי הרזרבה) מפוזר בשרטוט בשלוש השורות — כאן הוא פס אחד בסוף שורה 3.'
+  };
+
   function project() {
     return {
       name: '208-B · B CABINET · הגדוד העברי 53',
@@ -403,7 +453,8 @@
       components: JSON.parse(JSON.stringify(comps)),
       wires: JSON.parse(JSON.stringify(wires)),
       notes: NOTES.slice(),
-      settings: { control: 'dc24', phaseColors: 'iec60445', termTech: 'pushin', plateWidth: 1100, powerSection: 2.5, controlSection: 0.75, peSection: 2.5 }
+      settings: { control: 'dc24', phaseColors: 'iec60445', termTech: 'pushin', plateWidth: 1100, powerSection: 2.5, controlSection: 0.75, peSection: 2.5 },
+      layoutPlan: JSON.parse(JSON.stringify(LAYOUT))
     };
   }
 
