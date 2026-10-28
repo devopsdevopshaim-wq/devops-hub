@@ -715,3 +715,13 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
 - Answer in Hebrew unless the user writes in another language. The site is RTL.
 - Do not name or copy another company's product (for example MAGNETOTI); this is the user's own tool.
 - Do not add keys, accounts or personal data to the repo. Photos stay in the browser unless the user presses the editing assistant.
+
+## Wide stays wide, tall stays tall on import (Oct 28, v71)
+
+- New photos used to take the default size as is (10×15 portrait), so wide photos came in tall.
+- `FS.matchOrient(d, img)` (core.js) now turns the page to the photo's own direction right after import:
+  - saved and preset sizes swap their mm through `'cm'`;
+  - `orig` / `custom` swap the pixels;
+  - square photos or square pages are left alone.
+- It is on by default. It follows `FS.prefs.keepOrient`, which is the "לפי כיוון התמונה" checkbox (`#mt-orient`) in the size bar (mate.js); the checkbox is now saved.
+- The event template (`FS.applyEvent`) still forces its own size when it is on.

@@ -37,7 +37,7 @@
         '<span class="mt-sp"></span><button data-go="edit">🎚️ ערוך תמונה</button><button data-go="design">🖌️ עיצוב</button><button data-go="print" class="mt-pr-btn">🖨️ הדפסה</button></div>' +
       '<div class="mt-bar" data-b="size"><label>גודל:</label><select id="mt-size"></select><button class="mt-ic" id="mt-size-edit" title="ניהול הגדלים">✏️</button>' +
         '<div class="mt-seg" id="mt-fit"><button data-f="contain">להתאים</button><button data-f="cover">לחתוך</button></div>' +
-        '<label class="mt-chk-l"><input type="checkbox" id="mt-orient" checked> לפי כיוון התמונה</label>' +
+        '<label class="mt-chk-l"><input type="checkbox" id="mt-orient"> לפי כיוון התמונה</label>' +
         '<button class="mt-btn" id="mt-size-sel">החל על המסומנות</button><button class="mt-btn" id="mt-size-all">החל על כולן</button></div>' +
       '<div class="mt-bar" data-b="files" hidden><button class="mt-btn" id="mt-all">✔ סימון הכל</button><button class="mt-btn" id="mt-none">ניקוי סימון</button><button class="mt-btn" id="mt-inv">היפוך</button>' +
         '<select id="mt-show"><option value="all">הכל</option><option value="sel">רק המסומנות</option><option value="todo">שלא הודפסו</option><option value="done">שהודפסו</option><option value="edited">שנערכו</option></select>' +
@@ -357,6 +357,9 @@
     FS.fitPhoto(d, im, mode); p.fit = mode;
     p.cache = {}; p._pt = null; p._gt = null; FS.snap(p);
   }
+  /* also how new photos come in: wide stays wide, tall stays tall (on unless turned off) */
+  $('#mt-orient', root).checked = FS.prefs.keepOrient !== false;
+  $('#mt-orient', root).addEventListener('change', function () { FS.prefs.keepOrient = this.checked; FS.savePrefs(); });
   function applySize(list) {
     var z = FS.sizeOf($('#mt-size', root).value); if (!z) return FS.toast('בוחרים גודל');
     if (!list.length) return FS.toast('אין תמונות');
