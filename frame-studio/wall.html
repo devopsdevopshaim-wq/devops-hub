@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='71';(function(){
+window.FS_V='72';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -16,12 +16,12 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" />
-<link rel="stylesheet" href="css/wall.css?v=71" />
+<link rel="stylesheet" href="css/wall.css?v=72" />
 </head>
 <body>
 <main class="wall" id="wall"><div class="w-stage" id="stage"></div><header class="w-top"><p class="w-biz" id="w-biz"></p><h1 id="w-title">טוען…</h1></header><aside class="w-qr" id="w-qr" hidden><canvas id="w-qrc" aria-hidden="true"></canvas><p><b>צלמו ושלחו</b><br>התמונה תודפס כמגנט 🧲</p></aside><div class="w-count" id="w-count"></div><button class="w-full" id="w-full" type="button" title="מסך מלא">⛶</button></main>
 <div class="toast" id="toast" role="status"></div>
-<script src="js/live-common.js?v=71"></script>
-<script src="js/wall.js?v=71"></script>
+<script src="js/live-common.js?v=72"></script>
+<script src="js/wall.js?v=72"></script>
 </body>
 </html>

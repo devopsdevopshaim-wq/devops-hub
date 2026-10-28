@@ -40,6 +40,7 @@
         '<label class="mt-chk-l"><input type="checkbox" id="mt-orient"> לפי כיוון התמונה</label>' +
         '<button class="mt-btn" id="mt-size-sel">החל על המסומנות</button><button class="mt-btn" id="mt-size-all">החל על כולן</button></div>' +
       '<div class="mt-bar" data-b="files" hidden><button class="mt-btn" id="mt-all">✔ סימון הכל</button><button class="mt-btn" id="mt-none">ניקוי סימון</button><button class="mt-btn" id="mt-inv">היפוך</button>' +
+        '<div class="mt-seg mt-ori"><button data-ori="all">הכל <i></i></button><button data-ori="tall">↕ לאורך <i></i></button><button data-ori="wide">↔ לרוחב <i></i></button></div>' +
         '<select id="mt-show"><option value="all">הכל</option><option value="sel">רק המסומנות</option><option value="todo">שלא הודפסו</option><option value="done">שהודפסו</option><option value="edited">שנערכו</option></select>' +
         '<select id="mt-sort"><option value="">הסדר שנכנסו</option><option value="name">לפי שם</option></select><button class="mt-btn danger" id="mt-del">🗑 הסרה מהעבודה</button></div>' +
       '<div class="mt-bar" data-b="copies" hidden><label>הדפסים למסומנות:</label><button class="mt-ic" data-cpa="-1">−</button><b id="mt-cpn">1</b><button class="mt-ic" data-cpa="1">+</button>' +
@@ -61,6 +62,8 @@
           '<label class="mt-chk-l"><input type="checkbox" id="mt-tsh" checked> צל לקריאות</label>' +
           '<div class="mt-row"><button class="mt-btn primary" id="mt-tadd">➕ הוספת כותרת</button><button class="mt-btn" id="mt-tdel">🗑 הסרה</button></div></div>' +
         '<div class="mt-pp" data-pp="frames" hidden><button class="mt-btn primary mt-fmgo" data-fm-open>🖌️ עורך מסגרות מקצועי · דוגמאות מההזמנה</button><div class="mt-row"><label>צבע</label><input type="color" id="mt-fcol" value="#ffffff"></div><div class="mt-row"><label class="mt-btn">➕ מסגרות משלי (כמה ביחד)<input type="file" id="mt-fpng" accept="image/*" multiple hidden></label><label class="mt-btn">📁 תיקיית מסגרות<input type="file" id="mt-fdir" webkitdirectory multiple hidden></label></div>' +
+          '<div class="mt-fori"><h4>מסגרת לפי כיוון</h4><div class="mt-row"><label>↕ לאורך <i data-oc="tall"></i></label><select id="mt-ftall"></select><button class="mt-btn" data-fori="tall">החל</button></div>' +
+          '<div class="mt-row"><label>↔ לרוחב <i data-oc="wide"></i></label><select id="mt-fwide"></select><button class="mt-btn" data-fori="wide">החל</button></div><p class="mt-hint">כל מסגרת עולה רק על התמונות בכיוון שלה. מסגרת PNG לאורך לא תהפוך תמונה לרוחב.</p></div>' +
           '<p class="mt-hint">PNG עם חלון שקוף הכי טוב. מסגרת אחת חדשה מולבשת מיד על התמונות שבמסך.</p><div class="mt-chips mt-frl" id="mt-frames"></div></div>' +
         '<div class="mt-pp" data-pp="fx" hidden><div class="mt-chips small" id="mt-fxcat"></div><div class="mt-fx" id="mt-fx"></div><h4>סגנון</h4><div class="mt-chips" id="mt-styles"></div></div>' +
         '<div class="mt-pp" data-pp="clip" hidden><div class="mt-emo" id="mt-emo"></div><label class="mt-btn">🖼️ לוגו / תמונה<input type="file" id="mt-logo" accept="image/*" hidden></label><button class="mt-btn" id="mt-clipdel">🗑 הסרת הקליפארט</button></div>' +
@@ -70,6 +73,7 @@
           '<div class="mt-row"><input id="mt-lname" placeholder="שם, למשל: חתונה חמימה"><button class="mt-btn primary" id="mt-lsave">💾 שמירה</button></div><div class="mt-looks" id="mt-looks"></div></div>' +
         '<div class="mt-pfoot"><p class="mt-hint" id="mt-target"></p><button class="mt-btn" id="mt-apply-all">החל את התיקון על כל התמונות</button></div>' +
       '</aside><div class="mt-ework"><div class="mt-ebar"><label>תמונות במסך:</label><div class="mt-seg" id="mt-en"><button data-n="4">4</button><button data-n="6">6</button><button data-n="9">9</button></div>' +
+        '<div class="mt-seg mt-ori"><button data-ori="all">הכל <i></i></button><button data-ori="tall">↕ לאורך <i></i></button><button data-ori="wide">↔ לרוחב <i></i></button></div>' +
         '<label class="mt-chk-l"><input type="checkbox" id="mt-etog"> 🔗 עריכה של כל התמונות שבמסך יחד</label><button class="mt-btn mt-cmpb" id="mt-cmp" title="התמונה המקורית ליד העריכה">◧ לפני | אחרי</button><span class="mt-sp"></span>' +
         '<button class="mt-ic" id="mt-eprev" title="הקודמות (PageUp)">▶</button><b id="mt-epg">1 / 1</b><button class="mt-ic" id="mt-enext" title="הבאות (PageDown)">◀</button></div>' +
         '<div class="mt-egrid" id="mt-egrid"></div></div>' +
@@ -247,6 +251,23 @@
   $('#mt-zoom', root).value = zoom;
   $('#mt-zoom', root).addEventListener('input', function () { zoom = Number(this.value); ls('fs-mate-zoom', zoom); root.style.setProperty('--mt-tile', zoom + 'px'); buildGrid(); });
   root.style.setProperty('--mt-tile', zoom + 'px');
+  /* tall and wide photos in their own sections: a filter shows one side, "all" shows tall first, then wide */
+  var ori = ls('fs-mate-ori') || 'all', ORI_ORDER = { tall: 0, wide: 1, sq: 2 }, ORI_NAME = { tall: '↕ לאורך', wide: '↔ לרוחב', sq: '◻ ריבוע' };
+  function oriOf(p) { var d = p.doc; return d.w > d.h * 1.02 ? 'wide' : d.h > d.w * 1.02 ? 'tall' : 'sq'; }
+  function byOri(l) {
+    if (ori !== 'all') return l.filter(function (p) { return oriOf(p) === ori; });
+    return l.map(function (p, i) { return [p, i]; }).sort(function (a, b) { return ORI_ORDER[oriOf(a[0])] - ORI_ORDER[oriOf(b[0])] || a[1] - b[1]; }).map(function (x) { return x[0]; });
+  }
+  function oriSync() {
+    var n = { all: S.photos.length, tall: 0, wide: 0, sq: 0 }; S.photos.forEach(function (p) { n[oriOf(p)]++; });
+    $$('.mt-ori button', root).forEach(function (b) { b.classList.toggle('on', b.dataset.ori === ori); $('i', b).textContent = '(' + n[b.dataset.ori] + ')'; });
+    $$('[data-oc]', root).forEach(function (x) { x.textContent = '(' + n[x.dataset.oc] + ')'; });
+  }
+  root.addEventListener('click', function (e) {
+    var b = e.target.closest('.mt-ori [data-ori]'); if (!b) return;
+    ori = b.dataset.ori; ls('fs-mate-ori', ori); ePage = 0; oriSync();
+    if (view === 'edit') { $('#mt-egrid', root).innerHTML = ''; buildEdit(); } else buildGrid();
+  });
   function shown() {
     var f = $('#mt-show', root).value, l = S.photos.slice();
     if (f === 'sel') l = l.filter(function (p) { return S.marked[p.id]; });
@@ -254,7 +275,7 @@
     else if (f === 'done') l = l.filter(function (p) { return p.printed; });
     else if (f === 'edited') l = l.filter(function (p) { return FS.isEdited ? FS.isEdited(p) : true; });
     if ($('#mt-sort', root).value === 'name') l.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'he', { numeric: true }); });
-    return l;
+    return byOri(l);
   }
   function tileHTML(p, px) {
     return '<div class="mt-tile' + (S.marked[p.id] ? ' sel' : '') + (p.id === focusId ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + px + '"><div class="mt-th">' +
@@ -279,9 +300,10 @@
   function buildGrid() {
     var g = $('#mt-grid', root), l = shown(), k = keepCanvases(g);
     $('#mt-empty', root).hidden = !!S.photos.length; g.hidden = !S.photos.length;
-    g.innerHTML = l.map(function (p) { return tileHTML(p, zoom); }).join('');
+    var last = null, cnt = {}; l.forEach(function (p) { var o = oriOf(p); cnt[o] = (cnt[o] || 0) + 1; });
+    g.innerHTML = l.map(function (p) { var o = oriOf(p), h = ''; if (o !== last) { last = o; h = '<h3 class="mt-orih" data-orih="' + o + '">' + ORI_NAME[o] + ' <i>' + cnt[o] + ' תמונות</i><button class="mt-btn" data-orisel="' + o + '">✔ סימון כולן</button></h3>'; } return h + tileHTML(p, zoom); }).join('');
     reuse(g, k);
-    foot(); stat();
+    oriSync(); foot(); stat();
   }
   function refreshTile(p) {
     $$('.mt-tile[data-id="' + p.id + '"]', root).forEach(function (el) {
@@ -296,6 +318,7 @@
   function refreshAll() { if (!on()) return; if (view === 'main') buildGrid(); else if (view === 'edit') buildEdit(); else if (view === 'design') drawDesign(); else if (view === 'ai') { aiTarget(); aiBA(); } stat(); }
   function mark(p, v) { if (v) S.marked[p.id] = true; else delete S.marked[p.id]; }
   $('#mt-grid', root).addEventListener('click', function (e) {
+    var os = e.target.closest('[data-orisel]'); if (os) { var all = S.photos.filter(function (p) { return oriOf(p) === os.dataset.orisel; }), on = all.some(function (p) { return !S.marked[p.id]; }); all.forEach(function (p) { mark(p, on); }); buildGrid(); return; }
     var t = e.target.closest('.mt-tile'); if (!t) return; var p = byId(t.dataset.id); if (!p) return;
     var cp = e.target.closest('[data-cp]');
     if (cp) { p.copies = FS.clamp(copies(p) + Number(cp.dataset.cp), 0, 999); refreshTile(p); foot(); return; }
@@ -399,7 +422,7 @@
     return '<div class="mt-sl" data-k="' + s[0] + '"><span class="mt-sli ' + (/^c[rgb]$/.test(s[0]) ? s[0] : '') + '">' + s[2] + '</span><label>' + s[1] + '</label><input type="range" min="' + lo + '" max="100" value="0"><input type="number" min="' + lo + '" max="100" value="0"><button class="mt-ic" title="איפוס">↺</button></div>';
   }).join('');
   function focus() { var p = focusId && byId(focusId); return p || FS.cur() || S.photos[0] || null; }
-  function editList() { var m = marked(); return m.length ? m : S.photos.slice(); }
+  function editList() { var m = marked(); return byOri(m.length ? m : S.photos.slice()); }
   /* the edit screen shows 4, 6 or 9 photos at a time, filling the screen; "together" makes every change reach all of them */
   var eN = Number(ls('fs-mate-en')) || 6, ePage = 0, eTog = ls('fs-mate-etog') !== '0';
   function eCols() { return eN === 4 ? 2 : 3; }
@@ -424,7 +447,7 @@
     reuse(g, k);
     seg('#mt-en', String(eN), 'n'); $('#mt-etog', root).checked = eTog; $('#mt-epg', root).textContent = (ePage + 1) + ' / ' + ePages();
     $('#mt-eprev', root).disabled = ePage <= 0; $('#mt-enext', root).disabled = ePage >= ePages() - 1;
-    syncSliders(); targetTxt(); buildFrames(); buildFx(); buildLooks(); stat();
+    syncSliders(); targetTxt(); buildFrames(); buildFx(); buildLooks(); oriSync(); stat();
   }
   function ePageGo(n) { var to = FS.clamp(ePage + n, 0, ePages() - 1); if (to === ePage) return; ePage = to; buildEdit(); }
   function targetTxt() { var n = targets().length; $('#mt-target', root).textContent = eTog ? 'השינויים חלים יחד על ' + n + ' התמונות שבמסך' : n > 1 ? 'השינויים חלים על ' + n + ' התמונות המסומנות' : n ? 'השינויים חלים על התמונה המודגשת · לסימון כמה תמונות לוחצים על ✓' : ''; }
@@ -496,7 +519,14 @@
     var base = FS.GEN_FRAMES.filter(function (f) { return (FS.BASE_FRAMES || []).indexOf(f.id) >= 0; });
     return [['', 'בלי מסגרת']].concat(base.map(function (f) { return ['g:' + f.id, f.name]; }), Object.keys(FS.USER_FRAMES || {}).map(function (id) { return ['u:' + id, FS.USER_FRAMES[id].name, FS.USER_FRAMES[id].src]; }));
   }
+  /* a PNG frame has its own direction; a drawn frame fits any page */
+  function frameOri(v) { var u = v && v[0] === 'u' && (FS.USER_FRAMES || {})[v.slice(2)]; return !u || !u.aspect ? null : u.aspect > 1.02 ? 'wide' : u.aspect < 0.98 ? 'tall' : null; }
   function buildFrames() {
+    ['tall', 'wide'].forEach(function (o) {
+      var sel = $('#mt-f' + o, root), keep = sel.value || ls('fs-mate-f' + o) || '';
+      sel.innerHTML = frameOptions().filter(function (f) { var fo = frameOri(f[0]); return !fo || fo === o; }).map(function (f) { return '<option value="' + esc(f[0]) + '">' + esc(f[1]) + '</option>'; }).join('');
+      if ($('option[value="' + keep.replace(/"/g, '') + '"]', sel)) sel.value = keep;
+    });
     var p = focus(), fr = p && p.doc.frame, cur = !fr ? '' : (fr.kind === 'png' ? 'u:' : 'g:') + fr.id;
     $('#mt-frames', root).innerHTML = frameOptions().map(function (f) { return '<button data-fr="' + esc(f[0]) + '"' + (f[0] === cur ? ' class="on"' : '') + ' title="' + esc(f[1]) + '">' + (f[2] ? '<img src="' + esc(f[2]) + '" alt="">' : '') + '<em>' + esc(f[1]) + '</em>' + (f[0][0] === 'u' ? '<b class="mt-frx" data-frx="' + esc(f[0].slice(2)) + '" title="מחיקת המסגרת">✕</b>' : '') + '</button>'; }).join('');
   }
@@ -508,7 +538,15 @@
   }
   $('#mt-frames', root).addEventListener('click', function (e) {
     var x = e.target.closest('[data-frx]'); if (x) { var id = x.dataset.frx, f = FS.USER_FRAMES[id]; if (f && confirm('למחוק את המסגרת "' + f.name + '"?')) FS.deleteUserFrame(id).then(function () { buildFrames(); if (FS.buildFrames) FS.buildFrames(); }); return; }
-    var b = e.target.closest('[data-fr]'); if (!b) return; var l = targets(); Promise.all(l.map(function (p) { return FS.loadImg(p.src); })).then(function () { setFrames(l, b.dataset.fr); buildFrames(); }); });
+    var b = e.target.closest('[data-fr]'); if (!b) return; var l = targets(), fo = frameOri(b.dataset.fr), all = l.length;
+    if (fo) l = l.filter(function (p) { return oriOf(p) === fo; });
+    if (!l.length) return FS.toast('המסגרת ' + ORI_NAME[fo] + ', ואין תמונות ' + ORI_NAME[fo] + ' בבחירה');
+    Promise.all(l.map(function (p) { return FS.loadImg(p.src); })).then(function () { setFrames(l, b.dataset.fr); buildFrames(); if (l.length < all) FS.toast('המסגרת עלתה על ' + l.length + ' התמונות ' + ORI_NAME[fo] + ' · ' + (all - l.length) + ' בכיוון השני נשארו בלי שינוי'); }); });
+  $$('[data-fori]', root).forEach(function (b) { b.addEventListener('click', function () {
+    var o = b.dataset.fori, v = $('#mt-f' + o, root).value, l = S.photos.filter(function (p) { return oriOf(p) === o; });
+    ls('fs-mate-f' + o, v); if (!l.length) return FS.toast('אין תמונות ' + ORI_NAME[o]);
+    Promise.all(l.map(function (p) { return FS.loadImg(p.src); })).then(function () { setFrames(l, v); buildFrames(); FS.toast((v ? '🖼️ המסגרת עלתה על ' : 'המסגרת הוסרה מ־') + l.length + ' תמונות ' + ORI_NAME[o]); });
+  }); });
   function addFrames(input) {
     var f = Array.prototype.slice.call(input.files || []); input.value = ''; if (!f.length || !FS.addFrameFiles) return;
     Promise.resolve(FS.addFrameFiles(f, { noUse: true })).then(function (added) {
