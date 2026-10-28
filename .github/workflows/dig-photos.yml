@@ -5,6 +5,7 @@ name: Fetch dig game photos
 
 on:
   push:
+    branches-ignore: [main]   # candidates land on the work branch, never on main
     paths: ['.github/scripts/dig-photos.py']
   workflow_dispatch:
 
