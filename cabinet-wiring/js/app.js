@@ -59,8 +59,15 @@ function saveProject(p) {
   if (!saveAll(state)) toast('האחסון בדפדפן מלא. כדאי לייצא את הפרויקט ל-JSON.');
 }
 
+let LR = null; // ההמלצה של המערכת (נבנית רק כשצריך)
 function derive() {
+  LR = null;
   if (!raw) { P = L = null; return; }
+  /* פרויקט מספריית התכניות שנשמר לפני שהפריסה מהשרטוט נוספה */
+  if (raw.source === 'library' && !raw.layoutPlan) {
+    const lib = LIBRARY.find((l) => l.id === (raw.meta || {}).drawingNo);
+    if (lib) { const lp = lib.project(); if (lp.layoutPlan) { raw.layoutPlan = lp.layoutPlan; save(); } }
+  }
   raw.wires.forEach((w) => { if (!w.id) w.id = newId(); });
   const first = E.enrich(raw);
   const L1 = E.layout(first);
@@ -121,7 +128,7 @@ function showView(v) {
   if (ps) { $('#siteBack').href = '#site/' + ps.id; $('#siteBack').textContent = '→ ' + ps.name; }
   updateCabSwitch();
   updatePill();
-  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, conn: renderConn, three: renderThree, wiring: renderWiring, assembly: renderAssembly, lab: renderLab, export: renderExport }[v] || renderPlan)();
+  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, rec: renderRec, conn: renderConn, three: renderThree, wiring: renderWiring, assembly: renderAssembly, lab: renderLab, export: renderExport }[v] || renderPlan)();
   renderVHead(v);
 }
 
@@ -131,7 +138,8 @@ const VHEAD = {
   plan: ['התכנית', 'קובצי ה-PDF, הקריאה שלהם והערות לקריאה.'],
   parts: ['רכיבים וחלקים', 'כל רכיב בלוח, עם יצרן ומק"ט אמיתי ורשימת הזמנה.'],
   wires: ['רשימת חוטים', 'כל חוט מנקודה לנקודה: צבע, חתך, סוג, אורך והסבר.'],
-  cabinet: ['פריסת ארון', 'שרטוט הרכבה של הפלטה, המסילות, התעלות והדלת, במידות אמיתיות.'],
+  cabinet: ['פריסת ארון', 'הארון כפי שהוא מוגדר בשרטוטים: מסילות, סדר רכיבים, סדר הדקים ואנטיגרונים.'],
+  rec: ['המלצת הרכבה', 'הפריסה שהמערכת ממליצה עליה, לצד הארון שבשרטוט — להשוואה.'],
   conn: ['חיבורים ומהדקים', 'לכל הדק: מה מחובר אליו מבפנים, ומה יוצא לשטח או לארון אחר.'],
   three: ['ארון בתלת־ממד', 'הארון כמו שהוא ייראה מורכב — סובבו, פתחו את הדלת, לחצו על רכיב.'],
   wiring: ['חיווט שלב אחר שלב', 'חוט אחרי חוט, לפי סדר העבודה, עם הקראה בקול.'],
@@ -153,6 +161,7 @@ function vheadStats(v) {
     parts: [[P.components.length, 'רכיבים'], [withPn, 'עם מק"ט'], [P.components.filter((c) => c.zone === 'door').length, 'בדלת'], [P.components.filter((c) => c.zone === 'field').length, 'בשטח']],
     wires: [[n, 'חוטים'], [done, 'חוברו'], [(len / 1000).toFixed(1), 'מטר'], [new Set(P.wires.map((w) => w.color)).size, 'צבעים']],
     cabinet: [[enc.w + '×' + enc.h, 'ארון מ"מ'], [L.rails.length, 'מסילות'], [cab, 'רכיבים']],
+    rec: L.plan ? [[L.rails.filter((r) => r.fromDrawing).length, 'מסילות מהשרטוט'], [L.unplaced.length, 'לפי המלצה'], [recL().rails.length, 'מסילות בהמלצה']] : [[recL().rails.length, 'מסילות'], [cab, 'רכיבים']],
     conn: [[terms.length, 'פסי מהדקים'], [tcount, 'הדקים'], [ext, 'חוטים לשטח']],
     three: [[enc.w + '×' + enc.h + '×' + enc.d, 'מ"מ'], [P.components.length, 'רכיבים'], [n, 'חוטים']],
     wiring: [],
@@ -273,7 +282,7 @@ function detectContent(p, allPages) {
   if (lib && !p.wires.length) {
     const lp = lib.project();
     p.settings = { ...lp.settings, ...(p.settings || {}) };
-    applyResult({ components: lp.components, wires: lp.wires, meta: lp.meta, notes: lp.notes }, 'library', true, p);
+    applyResult({ components: lp.components, wires: lp.wires, meta: lp.meta, notes: lp.notes, layoutPlan: lp.layoutPlan }, 'library', true, p);
     if (!p.name || p.pdf && p.name === baseName(p.pdf.files[0].name)) p.name = lp.name;
     return { kind: 'library', msg: `זוהתה ${lib.title}: נטענה קריאה מלאה של כל השרטוטים (${lp.wires.length} חוטים, ${lp.components.length} רכיבים) עם חתכים וצבעים לפי התקנות.` };
   }
@@ -414,6 +423,8 @@ function applyResult(res, source, silent, p = raw) {
   p.meta = { ...(p.meta || {}), ...meta };
   if (meta.title && (/^פרויקט חדש$|\.pdf$/i.test(p.name) || (p.pdf && p.name === baseName(p.pdf.name)) || (p.pdf && p.pdf.files && p.name === baseName(p.pdf.files[0].name)))) p.name = meta.title;
   p.notes = res.notes || [];
+  /* הארון כפי שהוא מוגדר בשרטוטים (אם יש בתכנית שרטוט פריסה / רשימת מהדקים / פלטת אנטיגרונים) */
+  if (res.layoutPlan) p.layoutPlan = res.layoutPlan; else delete p.layoutPlan;
   p.source = source;
   p.status = `נטענו ${p.wires.length} חוטים ו-${p.components.length} רכיבים (${({ claude: 'Claude', paste: 'Claude.ai', text: 'שליפה מהטקסט', json: 'JSON', gemini: 'קריאה אוטומטית', library: 'קריאה מלאה של התכנית' })[source] || source}).`;
   saveProject(p);
@@ -981,7 +992,123 @@ function renderCabinet() {
   P.wires.forEach((w) => { const k = w.color; used[k] = (used[k] || 0) + 1; });
   $('#legend').innerHTML = Object.entries(used).map(([k, n]) => `<span><span class="sw" style="${swStyle(C.COLORS[k])}"></span>${esc(C.COLORS[k].he)} · ${n}</span>`).join('') +
     `<span>פלטה ${L.plate.w}×${L.plate.h} מ"מ · ${L.rails.length} מסילות</span>`;
+  renderLayoutSrc();
+  renderGlands();
   renderSplitCard();
+}
+
+/* ---------- הארון מהשרטוט מול ההמלצה ---------- */
+const recL = () => LR || (LR = E.layout(P, { mode: 'auto' }));
+const pagesTxt = (pl) => pl.pages && pl.pages.length ? `עמוד${pl.pages.length > 1 ? 'ים' : ''} ${pl.pages.join(', ')}` : '';
+function renderLayoutSrc() {
+  const box = $('#layoutSrc');
+  const pl = L.plan;
+  if (L.mode === 'drawing' && pl) {
+    const nD = L.rails.filter((r) => r.fromDrawing).length;
+    box.className = 'src-band drawing';
+    box.innerHTML = `<span class="sb-k">לפי השרטוט</span>
+      <span><b>הארון בנוי כפי שהוא מוגדר בתכנית</b>${pagesTxt(pl) ? ' · ' + esc(pagesTxt(pl)) : ''}${nD ? ` · ${nD} מסילות מהשרטוט` : ''}${Object.keys(pl.termOrder || {}).length ? ` · סדר ההדקים ב-${Object.keys(pl.termOrder).length} פסי מהדקים` : ''}${pl.enclosure ? ` · ארון ${pl.enclosure.w}×${pl.enclosure.h}${pl.enclosure.d ? '×' + pl.enclosure.d : ''}` : ''}.
+      ${L.unplaced.length ? `<br><span class="muted">${L.unplaced.length} רכיבים שהשרטוט לא ממקם נכנסו לפי המלצה, ומסומנים בקו כתום מקווקו.</span>` : ''}
+      ${pl.notes ? `<br><span class="muted">${esc(pl.notes)}</span>` : ''}</span>
+      <a class="btn ghost small" href="#p/rec">המלצת הרכבה ←</a>`;
+  } else {
+    box.className = 'src-band auto';
+    box.innerHTML = `<span class="sb-k">המלצה</span>
+      <span><b>בתכנית אין שרטוט פריסה של הארון, לכן זו פריסה שהמערכת ממליצה.</b><br><span class="muted">אם יש לכם שרטוט פריסה, רשימת מהדקים או פלטת אנטיגרונים — הוסיפו אותם ל-PDF וקראו שוב. אז הארון ייבנה לפיהם, וההמלצה תעבור ללשונית "המלצת הרכבה".</span></span>`;
+  }
+}
+
+/* פלטת אנטיגרונים מהשרטוט */
+const PG_D = { 7: 12.5, 9: 15.2, 11: 18.6, 13.5: 20.4, 16: 22.5, 21: 28.3, 29: 37, 36: 47, 42: 54, 48: 59.3 };
+function glandD(size) {
+  const t = String(size || '').toUpperCase().replace(/\s+/g, '');
+  const m = /(\d+(?:\.\d+)?)/.exec(t);
+  if (!m) return 18;
+  const n = Number(m[1]);
+  if (/^M/.test(t)) return n;
+  return PG_D[n] || n * 1.3;
+}
+function glandSvg(glands) {
+  const rows = [...new Set(glands.map((g) => g.row || 1))].sort((a, b) => a - b);
+  const k = 1.6, gap = 10, pad = 24;
+  let W = 0;
+  const lines = rows.map((r) => {
+    const list = glands.filter((g) => (g.row || 1) === r);
+    let x = pad;
+    const items = list.map((g) => { const d = glandD(g.size) * k; const it = { g, d, cx: x + d / 2 }; x += d + gap; return it; });
+    W = Math.max(W, x + pad - gap);
+    return { r, items, h: Math.max(...items.map((i) => i.d)) };
+  });
+  let y = 26;
+  const parts = [];
+  lines.forEach((ln) => {
+    const cy = y + ln.h / 2 + 14;
+    ln.items.forEach((it, i) => {
+      const lblY = i % 2 ? cy + it.d / 2 + 14 : cy - it.d / 2 - 6;
+      parts.push(`<g class="gl"><title>${esc(it.g.label)} · ${esc(it.g.size)}</title><circle cx="${it.cx}" cy="${cy}" r="${it.d / 2}" class="gl-o"/><circle cx="${it.cx}" cy="${cy}" r="${it.d / 2 - 5}" class="gl-i"/><text x="${it.cx}" y="${cy + 3.5}" class="gl-s">${esc(String(it.g.size).replace(/^PG/i, ''))}</text><text x="${it.cx}" y="${lblY}" class="gl-l">${esc(it.g.label.slice(0, 14))}</text></g>`);
+    });
+    y += ln.h + 52;
+  });
+  const H = y;
+  return `<svg class="gland-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="פלטת אנטיגרונים"><rect x="4" y="4" width="${W - 8}" height="${H - 8}" rx="6" class="gl-plate"/>${parts.join('')}</svg>`;
+}
+function renderGlands() {
+  const box = $('#glandCard');
+  const g = L.plan && L.plan.glands;
+  box.hidden = !(g && g.length);
+  if (box.hidden) return;
+  const by = {};
+  g.forEach((x) => { by[x.size] = (by[x.size] || 0) + 1; });
+  box.innerHTML = `<div class="card-head"><h2>פלטת אנטיגרונים — לפי השרטוט</h2><span class="muted small">${g.length} כניסות כבל · ${Object.entries(by).map(([k, n]) => `<span dir="ltr">${n}× ${esc(k)}</span>`).join(' · ')}</span></div>
+    <div class="gland-wrap">${glandSvg(g)}</div>
+    <p class="muted small">גודל העיגול לפי קוטר ההברגה של האנטיגרון. כל כבל לשטח נכנס באנטיגרון שלו, כמו בשרטוט.</p>`;
+}
+
+let recView = null;
+function renderRec() {
+  const auto = recL();
+  const hasPlan = L.mode === 'drawing' && L.plan;
+  const band = $('#recSrc');
+  band.className = 'src-band ' + (hasPlan ? 'auto' : 'drawing');
+  band.innerHTML = hasPlan
+    ? `<span class="sb-k">המלצה</span><span><b>זו הפריסה שהמערכת הייתה ממליצה עליה — להשוואה בלבד.</b><br><span class="muted">החיווט, אורכי החוטים, השלבים, התלת־ממד והמעבדה בנויים על הארון שבשרטוט (לשונית "פריסת ארון").</span></span><a class="btn ghost small" href="#p/cabinet">→ הארון לפי השרטוט</a>`
+    : `<span class="sb-k">המלצה</span><span><b>בתכנית אין שרטוט פריסה, לכן הארון בלשונית "פריסת ארון" בנוי לפי ההמלצה הזו.</b><br><span class="muted">כשיהיה שרטוט פריסה בתכנית, הארון ייבנה לפיו וההמלצה תישאר כאן להשוואה.</span></span>`;
+  if (!recView) recView = new CabinetView($('#recHost'), { onHover: (id, ev) => showTip(id, ev), onSelect: (id) => { if (id) openDrawer(id); }, onComp: (tag) => openComp(tag) });
+  recView.layoutMode = true;
+  recView.render(P, auto, { C });
+  const diffs = [];
+  if (hasPlan) {
+    const posD = {}, posA = {};
+    L.rails.forEach((r, i) => r.items.forEach((c, j) => { posD[c.tag] = { rail: i + 1, j: j + 1, label: r.fromDrawing ? r.label : '' }; }));
+    auto.rails.forEach((r, i) => r.items.forEach((c, j) => { posA[c.tag] = { rail: i + 1, j: j + 1 }; }));
+    L.rails.filter((r) => r.fromDrawing).forEach((r) => {
+      const d = r.items.map((c) => c.tag);
+      const a = d.slice().sort((x, y) => (posA[x].rail - posA[y].rail) || (posA[x].j - posA[y].j));
+      const same = d.join() === a.join() && new Set(d.map((t) => posA[t].rail)).size === 1;
+      diffs.push(`<div class="rd ${same ? 'same' : ''}"><div class="rd-h"><span class="led ${same ? 'ok' : 'warn'}"></span><b>${esc(r.label || 'מסילה מהשרטוט')}</b></div>
+        <div class="rd-row"><span class="k">בשרטוט</span><span class="seq" dir="ltr">${d.map((t) => `<i>${esc(t)}</i>`).join('')}</span></div>
+        ${same ? '<div class="rd-row"><span class="k">בהמלצה</span><span class="muted small">אותו סדר</span></div>' : `<div class="rd-row"><span class="k">בהמלצה</span><span class="seq rec" dir="ltr">${a.map((t) => `<i title="מסילה ${posA[t].rail}">${esc(t)}<sub>${posA[t].rail}</sub></i>`).join('')}</span></div>`}</div>`);
+    });
+    Object.entries(L.plan.termOrder || {}).forEach(([tag, ord]) => {
+      const pins = Object.keys(L.pins).filter((k) => k.startsWith(tag + ':')).map((k) => k.slice(tag.length + 1));
+      if (!pins.length) return;
+      const drawn = pins.slice().sort((a, b) => L.pins[tag + ':' + a].x - L.pins[tag + ':' + b].x);
+      const rec = pins.slice().sort((a, b) => auto.pins[tag + ':' + a].x - auto.pins[tag + ':' + b].x);
+      if (drawn.join() === rec.join()) return;
+      diffs.push(`<div class="rd"><div class="rd-h"><span class="led warn"></span><b>סדר ההדקים ב-<span dir="ltr">${esc(tag)}</span></b></div>
+        <div class="rd-row"><span class="k">בשרטוט</span><span class="seq" dir="ltr">${drawn.map((t) => `<i>${esc(t)}</i>`).join('')}</span></div>
+        <div class="rd-row"><span class="k">בהמלצה</span><span class="seq rec" dir="ltr">${rec.map((t) => `<i>${esc(t)}</i>`).join('')}</span></div></div>`);
+    });
+    if (L.unplaced.length) diffs.push(`<div class="rd"><div class="rd-h"><span class="led off"></span><b>רכיבים שהשרטוט לא ממקם (${L.unplaced.length})</b></div><p class="muted small">אצלם הארון שבשרטוט והמלצה זהים: הם נכנסו לפי ההמלצה, ומסומנים בקו כתום מקווקו בפריסה.</p><span class="seq" dir="ltr">${L.unplaced.map((t) => `<i>${esc(t)}</i>`).join('')}</span></div>`);
+    const eD = E.enclosure(P, L), eA = E.enclosure(P, auto);
+    if (eD.w !== eA.w || eD.h !== eA.h) diffs.unshift(`<div class="rd"><div class="rd-h"><span class="led warn"></span><b>מידות הארון</b></div><div class="rd-row"><span class="k">בשרטוט</span><span dir="ltr">${eD.w}×${eD.h}×${eD.d}</span></div><div class="rd-row"><span class="k">בהמלצה</span><span dir="ltr">${eA.w}×${eA.h}×${eA.d}</span></div></div>`);
+  }
+  $('#recCount').textContent = hasPlan ? `${diffs.filter((d) => !/rd same/.test(d)).length} הבדלים` : '';
+  $('#recDiff').innerHTML = (hasPlan ? diffs.join('') : '') + `<div class="rd principles"><div class="rd-h"><b>עקרונות ההמלצה</b></div><ul class="small">
+      <li>מסילה עליונה: מפסק ראשי, פחת, מאמ"תים וספקי כוח — קרוב לכניסת ההזנה.</li>
+      <li>באמצע: בקר, כרטיסי I/O וממסרים; מתחתם מיתוג כוח (מגני מנוע, מגענים, ממסרים תרמיים — צמודים לפי מנוע).</li>
+      <li>למטה: פסי מהדקים לפי תג ומספר, ופס הארקה — קרוב לפלטת האנטיגרונים.</li>
+      <li>תעלה מעל ומתחת לכל מסילה ותעלות צד, כך שכל חוט עובר בתעלה.</li></ul></div>`;
 }
 
 function applyCabFilter() {
@@ -2887,6 +3014,7 @@ async function labDelWire(id) {
 }
 
 function bindLab() {
+  $('#recFit').onclick = () => recView && recView.fit();
   $$('#v-lab [data-lmode]').forEach((b) => {
     b.onclick = () => {
       lab.mode = b.dataset.lmode; lab.pick = null; lab.ctab = lab.mode === 'edit' ? 'add' : 'ops';
