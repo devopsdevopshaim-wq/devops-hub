@@ -5,7 +5,7 @@ description: "Work on the browser game 'שכבות — הרפתקה ארכיאו
 
 # שכבות — הרפתקה ארכיאולוגית (dig-game)
 
-A Hebrew RTL browser game with no server. The player digs a 9×13 grid of soil on a canvas. Each band of rows is a historical era (shallow is recent, deep is old), and deeper rows are harder material. Finds are hidden under the soil and cover 1×1 up to 3×2 cells. The rule that makes it a game: a strike that deals more damage than the tile has left ("overkill") damages the find under it. The pick is fast but risky, the trowel is in between, and the brush never harms a find. Every strike costs ⚡ energy. When the energy runs out the player can buy +10 with coins or end the dig.
+A Hebrew RTL browser game with no server. The player digs a cross-section of ground on a canvas: 9×13 cells for placing finds, each cell split into 4×4 pieces (`SUB`) that the tools actually carve. Each band of rows is a historical era (shallow is recent, deep is old), and deeper rows are harder material. Finds are hidden under the soil and cover 1×1 up to 3×2 cells. Each strike carves a circle (`carve()`): damage falls off from the centre, and every piece whose hardness runs out is cut away as a ragged bite. You can only dig where the ground is open, at the surface or the edge of the hole (`reachable()`). The rule that makes it a game: overkill on a piece that covers a find damages the find. The pick is wide and strong but risky, the trowel is in between, and the brush never harms a find but is weak on stone. A find comes out when 88% of its pieces are uncovered. Every strike costs ⚡ energy. When the energy runs out the player can buy +10 with coins or end the dig.
 
 Live: https://devopsdevopshaim-wq.github.io/devops-hub/dig-game/ · Code: `dig-game/`
 
@@ -16,6 +16,8 @@ Live: https://devopsdevopshaim-wq.github.io/devops-hub/dig-game/ · Code: `dig-g
 | `js/icons.js` | the drawn icon set (`ICONS`: tools, coin, bolt, tabs…) and `scene(site)`, the illustrated landscape on each site card |
 | `js/hero.js` | the animated opening scene (sunset, stars, mountains with parallax, soil with glowing finds) and the drifting dust behind the menus |
 | `js/audio.js` | sound effects (`window.SFX`) and generative background music on a hijaz scale (`window.MUSIC`), all synthesized with WebAudio |
+| `js/photos.js` | `SHCHAVOT_PHOTOS`: the real photo of each site and of objects like the finds, with Hebrew caption, author, licence and Commons page. Every caption must say exactly what is in the photo (e.g. "from Turin", "a copy") |
+| `photos/` | the photos themselves (sites ~1100px, objects ~560px) and `soil-detail.jpg`, a seamless grain map cut from a real trench wall and laid over the painted strata |
 | `js/game.js` | save (`localStorage` key `shchavot.v1`), progression, upgrades, quests, dig generation, canvas rendering and effects, input, modals |
 | `css/game.css` | night-desert look, Suez One + Heebo |
 
@@ -25,8 +27,11 @@ Live: https://devopsdevopshaim-wq.github.io/devops-hub/dig-game/ · Code: `dig-g
 - Value = base × site mult × (0.25 + 0.75·condition) × 1.5 if perfect × 1.15 if the era's collection is complete.
 - Daily dig: seeded by date with a fixed loadout, so it is identical for everyone. The first run is the one that counts, and the result is shared as emoji squares.
 - Three daily quests are seeded by date. Three map fragments make a treasure map, and the next regular dig then places an epic or legendary find in the deepest layer, marked with an X.
-- The look: the soil is painted once per dig as one continuous cross-section (`buildSoil`), and the hole edges crumble. There is also a work lamp at the last strike, a streak counter ("רצף") with a coin bonus every 5 breaks, cinematic finds with a holographic card for epic and above, and a full-screen level-up.
+- The look: the strata are generated per piece (waving layers, lenses, stones) and painted once per dig with the real soil grain on top (`buildSoil`). Holes are cut out of a live copy (`soilLive`), and `rebuildTerrain()` gives them a cast shadow. The horizon strip above the dig is a band of the site's real photo. There is also a work lamp at the last strike, a streak counter ("רצף") with a coin bonus every 5 breaks, cinematic finds with a holographic card for epic and above, and a full-screen level-up.
 - The first dig ever places an uncommon find in rows 1–2, so a new player finds something fast.
+
+## Photos
+The container can't reach Wikimedia, so photos come in through `.github/workflows/dig-photos.yml`. A push that changes `.github/scripts/dig-photos.py` (its `QUERIES`) makes Actions download up to 3 freely licensed candidates per key into `dig-game/photos/_candidates/` with `credits.json`. Pull, look at them, copy the good ones to `photos/` at web size, add them to `js/photos.js`, then delete `_candidates/`. The museum has a "קרדיטים לצילומים" list. Keep it complete, since CC BY and CC BY-SA require attribution.
 
 ## Content rules
 - Facts about finds must be true and modest (real sites, real years). If unsure, say less rather than invent.

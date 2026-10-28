@@ -6,11 +6,21 @@
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const COLS = 9, ROWS = 13;
+  const SUB = 4, FC = COLS * SUB, FR = ROWS * SUB; // the fine ground the tools actually carve
   const fmt = (n) => Math.round(n).toLocaleString('he-IL');
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const { ICONS, scene } = window.SHCHAVOT_ICONS;
   const ICO_URL = Object.fromEntries(Object.entries(ICONS).map(([k, v]) => [k, D.svgUrl(v)]));
   const ico = (name, cls = 'ico') => `<img class="${cls}" src="${ICO_URL[name]}" alt="">`;
+  const PH = window.SHCHAVOT_PHOTOS || { sites: {}, finds: {} };
+  const PHIMG = {};
+  const photo = (src) => { if (!PHIMG[src]) { const im = new Image(); im.decoding = 'async'; im.src = src; PHIMG[src] = im; } return PHIMG[src]; };
+  const sitePhoto = (site) => PH.sites[site.id && site.id.startsWith('daily') ? 'daily' : site.id];
+  const credit = (p) => `צילום: ${esc(p.artist)} · ${esc(p.license)} · <a href="${p.page}" target="_blank" rel="noopener">ויקישיתוף</a>`;
+  const esc = (t) => String(t).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  // the grain of a real trench wall, laid over the painted strata
+  const SOILTEX = photo('photos/soil-detail.jpg');
+  SOILTEX.addEventListener('load', () => { if (dig && SOIL) { buildSoil(); } });
   const ERA = Object.fromEntries(ERAS.map((e) => [e.id, e]));
   const ERA_COLOR = { ottoman: '#3fa7a0', crusader: '#c0392b', byzantine: '#d4a017', roman: '#a33d6b', second: '#3b7dd8', first: '#8e5bd1', canaan: '#2e9d5b', prehistory: '#a0663a' };
 
@@ -62,7 +72,7 @@
   const UPS = [
     { id: 'pick', icon: '⛏️', name: 'מכוש מחושל', max: 6, base: 60, desc: (l) => `עוצמת המכוש ${4 + l}${l < 6 ? ` ← ${5 + l}` : ''}. שובר סלע מהר יותר.` },
     { id: 'stamina', icon: '💪', name: 'כושר גופני', max: 10, base: 45, desc: (l) => `אנרגיה בכל חפירה: ${42 + 8 * l}${l < 10 ? ` ← ${50 + 8 * l}` : ''}` },
-    { id: 'detector', icon: '📡', name: 'גלאי מתכות', max: 4, base: 110, desc: (l) => `ניצוצות מגלים ממצאים במרחק ${1 + l}${l < 4 ? ` ← ${2 + l}` : ''} משבצות מהחפירה.` },
+    { id: 'detector', icon: '📡', name: 'גלאי מתכות', max: 4, base: 110, desc: (l) => `ניצוצות מגלים ממצאים במרחק ${1 + l}${l < 4 ? ` ← ${2 + l}` : ''} צעדים משולי הבור.` },
     { id: 'sonar', icon: '🔊', name: 'סונאר קרקע', max: 4, base: 140, desc: (l) => `${1 + l}${l < 4 ? ` ← ${2 + l}` : ''} סריקות בכל חפירה. כל סריקה חושפת שטח של 5×5.` },
     { id: 'restore', icon: '🧤', name: 'ידיים של משמר', max: 5, base: 130, desc: (l) => `הנזק לממצאים קטן ב־${12 * l}%${l < 5 ? ` ← ${12 * (l + 1)}%` : ''}.` },
     { id: 'luck', icon: '🍀', name: 'אינטואיציה של חוקר', max: 8, base: 190, desc: (l) => `סיכוי לממצאים נדירים +${20 * l}%${l < 8 ? ` ← +${20 * (l + 1)}%` : ''}` },
@@ -79,7 +89,7 @@
 
   /* ---------- daily quests ---------- */
   const QPOOL = [
-    { type: 'tiles', goal: 60, text: 'חפרו 60 משבצות' },
+    { type: 'tiles', goal: 60, text: '60 מכות חפירה' },
     { type: 'finds', goal: 6, text: 'מצאו 6 ממצאים' },
     { type: 'rare', goal: 1, text: 'מצאו ממצא נדיר או יותר' },
     { type: 'perfect', goal: 3, text: 'חשפו 3 ממצאים במצב מושלם' },
@@ -219,7 +229,30 @@
     if (R() < 0.38) addItem(ITEMS.mapfrag);
     if (R() < 0.14) addItem(ITEMS.chest);
 
+    // the ground itself: every cell is SUB×SUB small pieces, each a little harder or softer than its neighbours
+    const RF = rng((opts.seed ^ 0x9e3779b9) >>> 0);
+    const N = FC * FR;
+    const fhp = new Float32Array(N), fmax = new Float32Array(N), fmat = new Uint8Array(N), fdug = new Uint8Array(N);
+    const fart = new Int16Array(N).fill(-1), fitem = new Int16Array(N).fill(-1);
+    // strata that wave across the section, lenses of other material, and stones
+    const span = 2.4 + Math.min(2.2, siteIdx * 0.55);
+    const k1 = RF() * 6, k2 = RF() * 6, k3 = RF() * 6;
+    const lenses = Array.from({ length: 5 + Math.floor(RF() * 4) }, () => ({ x: RF() * FC, y: 4 + RF() * (FR - 4), rx: 3 + RF() * 8, ry: 1 + RF() * 2.2, m: 1 + Math.floor(RF() * 6) }));
+    const stones = Array.from({ length: 3 + Math.floor(RF() * 3) + Math.min(5, siteIdx) }, () => ({ x: 1 + RF() * (FC - 2), y: 6 + RF() * (FR - 7), r: 1.3 + RF() * 1.6, m: siteIdx > 0 && RF() < 0.45 ? 7 : 6, seed: Math.floor(RF() * 1e9) }));
+    for (let fy = 0; fy < FR; fy++) for (let fx = 0; fx < FC; fx++) {
+      const cell = grid[(fy / SUB) | 0][(fx / SUB) | 0], i = fy * FC + fx;
+      const wave = Math.sin(fx * 0.17 + k1) * 2.4 + Math.sin(fx * 0.43 + k2) * 1 + Math.sin(fx * 0.9 + k3) * 0.35;
+      let m = fy < 2 + (Math.sin(fx * 0.5 + k1) > 0.6 ? 1 : 0) ? 0 : clamp(Math.round(1 + ((fy + wave) / (FR - 1)) * span + (RF() - 0.5) * 0.35), 1, 6);
+      for (const l of lenses) if (fy > 2 && ((fx - l.x) / l.rx) ** 2 + ((fy - l.y + Math.sin(fx * 0.4) * 0.6) / l.ry) ** 2 < 1) m = l.m;
+      for (const st of stones) if ((fx + 0.5 - st.x) ** 2 + (fy + 0.5 - st.y) ** 2 < st.r * st.r) m = st.m;
+      fmat[i] = m; fart[i] = cell.art; fitem[i] = cell.item;
+      fhp[i] = fmax[i] = (MATS[m].hp + (m ? hpBonus : 0)) * 0.6 * (0.85 + RF() * 0.3);
+    }
+    arts.forEach((a) => { a.total = a.w * a.h * SUB * SUB; a.exposed = 0; });
+    items.forEach((it) => { it.total = it.w * it.h * SUB * SUB; it.exposed = 0; });
+
     return {
+      fhp, fmax, fmat, fdug, fart, fitem, stones,
       site, siteIdx, daily: !!opts.daily, counted: !!opts.counted, grid, arts, items, rowEra, eras, lo,
       energy: lo.energy, maxEnergy: lo.energy, sonar: lo.sonar, dyn: lo.dyn,
       found: [], coins: 0, xp: 0, bought: 0, over: false, mapArt, glints: [], tiles: 0,
@@ -230,28 +263,38 @@
   const cv = $('#pit');
   const ctx = cv.getContext('2d');
   let dpr = 1, W = 360, CELL = 40, SURF = 36, H = 560;
-  let SOIL = null, PIT = null, SURFIMG = null, GLOW = {};
+  let SOIL = null, PIT = null, SURFIMG = null, GLOW = {}, soilLive = null, TERR = null, tdpr = 1;
   let dig = null, tool = 'pick', lastTool = 'pick';
   let pendingFinds = 0, parts = [], floats = [], flyers = [], rings = [], shake = 0, flash = 0, hover = null, running = false, lastT = 0, light = null, comboFx = null;
 
   // the whole cross-section is painted once per dig: materials melt into each other, then grain, pebbles, stones and fossils on top
   function buildSoil() {
     const GH = ROWS * CELL;
-    const mk = () => { const c = document.createElement('canvas'); c.width = Math.round(W * dpr); c.height = Math.round(GH * dpr); const x = c.getContext('2d'); x.scale(dpr, dpr); return [c, x]; };
+    tdpr = Math.min(dpr, 1.6);
+    const mk = () => { const c = document.createElement('canvas'); c.width = Math.round(W * tdpr); c.height = Math.round(GH * tdpr); const x = c.getContext('2d'); x.scale(tdpr, tdpr); return [c, x]; };
     const [base, b] = mk();
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      const m = MATS[dig.grid[r][c].m];
-      const g = b.createLinearGradient(0, r * CELL, 0, (r + 1) * CELL);
-      g.addColorStop(0, m.c[0]); g.addColorStop(1, m.c[1]);
-      b.fillStyle = g; b.fillRect(c * CELL - 1, r * CELL - 1, CELL + 2, CELL + 2);
+    const f = fsz(), RB = rng(dig.fmat.length + dig.siteIdx * 7);
+    for (let i = 0; i < FC * FR; i++) {
+      const m = MATS[dig.fmat[i]];
+      b.fillStyle = RB() < 0.5 ? m.c[0] : m.c[1];
+      b.fillRect((i % FC) * f - 0.5, ((i / FC) | 0) * f - 0.5, f + 1, f + 1);
     }
     const [soil, x] = mk();
     x.drawImage(base, 0, 0, W, GH);
-    x.filter = `blur(${Math.max(2, CELL * 0.2)}px)`;
+    x.filter = `blur(${Math.max(1.5, f * 0.9)}px)`;
     x.drawImage(base, 0, 0, W, GH);
     x.filter = 'none';
+    if (SOILTEX.complete && SOILTEX.naturalWidth) {
+      const pat = x.createPattern(SOILTEX, 'repeat');
+      const lay = (scale, ox, oy, mode, alpha) => {
+        if (pat.setTransform) pat.setTransform(new DOMMatrix().translate(ox, oy).scale((CELL * scale) / SOILTEX.naturalWidth));
+        x.save(); x.globalCompositeOperation = mode; x.globalAlpha = alpha; x.fillStyle = pat; x.fillRect(0, 0, W, GH); x.restore();
+      };
+      lay(5.4, 0, 0, 'overlay', 0.75);
+      lay(3.1, CELL * 1.7, CELL * 0.9, 'soft-light', 0.55);
+    }
     const R = rng(dig.grid[0][0].seed);
-    const matAt = (px, py) => MATS[dig.grid[clamp(Math.floor(py / CELL), 0, ROWS - 1)][clamp(Math.floor(px / CELL), 0, COLS - 1)].m];
+    const matAt = (px, py) => MATS[dig.fmat[clamp(Math.floor(py / f), 0, FR - 1) * FC + clamp(Math.floor(px / f), 0, FC - 1)]];
     // sediment lines
     for (let i = 0; i < ROWS * 2.2; i++) {
       const y0 = R() * GH, k = R() * 6;
@@ -261,7 +304,7 @@
       x.stroke();
     }
     // grain
-    for (let i = 0; i < (W * GH) / 14; i++) {
+    for (let i = 0; i < (W * GH) / 40; i++) {
       x.fillStyle = R() < 0.5 ? 'rgba(255,240,215,.13)' : 'rgba(0,0,0,.2)';
       const sz = 0.5 + R() * 1.4; x.fillRect(R() * W, R() * GH, sz, sz);
     }
@@ -274,24 +317,21 @@
       x.fillStyle = R() < 0.55 ? m.sp : m.c[1]; x.beginPath(); x.ellipse(px, py, rr, rr * 0.72, R(), 0, 7); x.fill();
       x.fillStyle = 'rgba(255,255,255,.32)'; x.beginPath(); x.ellipse(px - rr * 0.3, py - rr * 0.3, rr * 0.35, rr * 0.22, 0, 0, 7); x.fill();
     }
-    // stone cells get their own faceted rock; boulders are one big rounded stone
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      const cell = dig.grid[r][c], m = MATS[cell.m];
-      const cx0 = c * CELL, cy0 = r * CELL;
-      if (m.id === 'rock' || m.id === 'boulder') {
-        const RR = rng(cell.seed);
-        const pts = []; const n = 7 + Math.floor(RR() * 3); const pad = m.id === 'boulder' ? 1.5 : CELL * 0.08;
-        for (let k = 0; k < n; k++) { const a = (k / n) * Math.PI * 2; const rad = CELL / 2 - pad - RR() * CELL * 0.08; pts.push([cx0 + CELL / 2 + Math.cos(a) * rad, cy0 + CELL / 2 + Math.sin(a) * rad * 0.92]); }
-        x.save();
-        x.shadowColor = 'rgba(0,0,0,.45)'; x.shadowBlur = 4; x.shadowOffsetY = 2;
-        const g = x.createRadialGradient(cx0 + CELL * 0.35, cy0 + CELL * 0.3, 1, cx0 + CELL / 2, cy0 + CELL / 2, CELL * 0.7);
-        g.addColorStop(0, m.sp); g.addColorStop(0.45, m.c[0]); g.addColorStop(1, m.c[1]);
-        x.fillStyle = g; x.beginPath(); pts.forEach(([a, bb], k) => (k ? x.lineTo(a, bb) : x.moveTo(a, bb))); x.closePath(); x.fill();
-        x.restore();
-        x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = 1;
-        x.beginPath(); x.moveTo(pts[1][0], pts[1][1]); x.lineTo(cx0 + CELL * (0.4 + RR() * 0.2), cy0 + CELL * (0.4 + RR() * 0.2)); x.lineTo(pts[Math.floor(n / 2) + 1][0], pts[Math.floor(n / 2) + 1][1]); x.stroke();
-        x.strokeStyle = 'rgba(255,255,255,.22)'; x.beginPath(); x.moveTo(pts[n - 2][0], pts[n - 2][1]); x.lineTo(pts[n - 1][0], pts[n - 1][1]); x.lineTo(pts[0][0], pts[0][1]); x.stroke();
-      }
+    // the stones: faceted rocks where the ground holds them
+    for (const st of dig.stones) {
+      const m = MATS[st.m], RR = rng(st.seed);
+      const sx = st.x * f, sy = st.y * f, rad = st.r * f * 1.05;
+      const pts = []; const n = 8 + Math.floor(RR() * 4);
+      for (let k = 0; k < n; k++) { const a = (k / n) * Math.PI * 2; const rr = rad * (0.82 + RR() * 0.22); pts.push([sx + Math.cos(a) * rr, sy + Math.sin(a) * rr * 0.86]); }
+      x.save();
+      x.shadowColor = 'rgba(0,0,0,.45)'; x.shadowBlur = 4; x.shadowOffsetY = 2;
+      const g = x.createRadialGradient(sx - rad * 0.3, sy - rad * 0.35, 1, sx, sy, rad * 1.2);
+      g.addColorStop(0, m.sp); g.addColorStop(0.45, m.c[0]); g.addColorStop(1, m.c[1]);
+      x.fillStyle = g; x.beginPath(); pts.forEach(([a, bb], k) => (k ? x.lineTo(a, bb) : x.moveTo(a, bb))); x.closePath(); x.fill();
+      x.restore();
+      x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = 1;
+      x.beginPath(); x.moveTo(pts[1][0], pts[1][1]); x.lineTo(sx + (RR() - 0.5) * rad * 0.4, sy + (RR() - 0.5) * rad * 0.4); x.lineTo(pts[(n >> 1) + 1][0], pts[(n >> 1) + 1][1]); x.stroke();
+      x.strokeStyle = 'rgba(255,255,255,.22)'; x.beginPath(); x.moveTo(pts[n - 2][0], pts[n - 2][1]); x.lineTo(pts[n - 1][0], pts[n - 1][1]); x.lineTo(pts[0][0], pts[0][1]); x.stroke();
     }
     // roots under the grass, and a few fossil shells deep down
     x.strokeStyle = 'rgba(60,32,12,.55)'; x.lineCap = 'round';
@@ -301,20 +341,44 @@
       x.strokeStyle = 'rgba(255,245,225,.22)'; x.lineWidth = 1.2; x.beginPath();
       for (let a = 0; a < 14; a += 0.3) { const rr = fr * (a / 14); x.lineTo(fx + Math.cos(a) * rr, fy + Math.sin(a) * rr); } x.stroke();
     }
-    // a faint grid so every cell can be aimed at
-    x.strokeStyle = 'rgba(0,0,0,.13)'; x.lineWidth = 1;
-    for (let c = 1; c < COLS; c++) { x.beginPath(); x.moveTo(c * CELL, 0); x.lineTo(c * CELL, GH); x.stroke(); }
-    for (let r = 1; r < ROWS; r++) { x.beginPath(); x.moveTo(0, r * CELL); x.lineTo(W, r * CELL); x.stroke(); }
-    x.strokeStyle = 'rgba(255,240,210,.06)';
-    for (let c = 1; c < COLS; c++) { x.beginPath(); x.moveTo(c * CELL + 1, 0); x.lineTo(c * CELL + 1, GH); x.stroke(); }
     SOIL = soil;
     // the walls of the hole: the same strata, deep in shadow
     const [pit, p] = mk();
     p.drawImage(soil, 0, 0, W, GH);
-    p.fillStyle = 'rgba(16,8,3,.66)'; p.fillRect(0, 0, W, GH);
+    p.fillStyle = 'rgba(16,8,3,.55)'; p.fillRect(0, 0, W, GH);
     const dg = p.createLinearGradient(0, 0, 0, GH); dg.addColorStop(0, 'rgba(0,0,0,0)'); dg.addColorStop(1, 'rgba(0,0,0,.35)');
     p.fillStyle = dg; p.fillRect(0, 0, W, GH);
     PIT = pit;
+    // the live ground: a copy of the soil that holes are cut out of
+    const [live, lx] = mk();
+    lx.drawImage(soil, 0, 0, W, GH);
+    lx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < FC * FR; i++) if (dig.fdug[i]) eraseAt(lx, i);
+    soilLive = live;
+    TERR = mk()[0];
+    rebuildTerrain();
+  }
+  // a ragged round bite, the same for a piece every time it is drawn
+  function eraseAt(x, i) {
+    const h = ((i * 2654435761) >>> 0) / 4294967296, h2 = ((i * 40503 + 12345) % 1000) / 1000;
+    const f = fsz();
+    x.beginPath();
+    x.arc(fcx(i) + (h - 0.5) * f * 0.35, fcy(i) - SURF + (h2 - 0.5) * f * 0.35, f * (0.82 + h * 0.3), 0, 7);
+    x.fill();
+  }
+  // holes get depth: the ground casts a soft shadow into them, and their floors catch a little light
+  function rebuildTerrain() {
+    const x = TERR.getContext('2d'), GH = ROWS * CELL;
+    x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, TERR.width, TERR.height);
+    x.setTransform(tdpr, 0, 0, tdpr, 0, 0);
+    x.save();
+    x.shadowColor = 'rgba(255,225,180,.22)'; x.shadowOffsetY = -1.4 * tdpr; x.shadowBlur = 0;
+    x.drawImage(soilLive, 0, 0, W, GH);
+    x.restore();
+    x.save();
+    x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowOffsetY = CELL * 0.12 * tdpr; x.shadowOffsetX = CELL * 0.03 * tdpr; x.shadowBlur = CELL * 0.22 * tdpr;
+    x.drawImage(soilLive, 0, 0, W, GH);
+    x.restore();
   }
   function glow(color) {
     if (GLOW[color]) return GLOW[color];
@@ -328,6 +392,19 @@
     const c = document.createElement('canvas');
     c.width = Math.ceil(W * dpr); c.height = Math.ceil(SURF * dpr);
     const x = c.getContext('2d'); x.scale(dpr, dpr);
+    const ph = sitePhoto(site), im = ph && photo(ph.src);
+    if (im && im.complete && im.naturalWidth) {
+      // the real place on the horizon: a wide band from the middle of the photo
+      const iw = im.naturalWidth, ih = im.naturalHeight, bandH = Math.min(ih, (iw * SURF) / W);
+      x.drawImage(im, 0, (ih - bandH) * 0.45, iw, bandH, 0, 0, W, SURF);
+      const fade = x.createLinearGradient(0, 0, 0, SURF);
+      fade.addColorStop(0, 'rgba(0,0,0,.15)'); fade.addColorStop(0.75, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(30,18,8,.55)');
+      x.fillStyle = fade; x.fillRect(0, 0, W, SURF);
+      x.fillStyle = 'rgba(255,255,255,.75)'; x.font = `600 ${Math.max(9, CELL * 0.22)}px Heebo, sans-serif`; x.textAlign = 'left'; x.textBaseline = 'top';
+      x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = 3; x.fillText('📷 ' + ph.caption, 10, 7); x.shadowBlur = 0;
+      return c;
+    }
+    if (im && !im.complete) im.addEventListener('load', () => { if (dig && dig.site === site) SURFIMG = makeSurface(site); }, { once: true });
     const g = x.createLinearGradient(0, 0, 0, SURF);
     g.addColorStop(0, site.sky[0]); g.addColorStop(1, site.sky[1]);
     x.fillStyle = g; x.fillRect(0, 0, W, SURF);
@@ -362,22 +439,39 @@
     const availW = Math.min(wrap.clientWidth || window.innerWidth - 24, 540) - 10;
     const head = $('.dig-head').offsetHeight + $('.tools').offsetHeight + 50;
     const availH = Math.max(320, window.innerHeight - head);
-    CELL = Math.floor(Math.min(availW / COLS, availH / (ROWS + 0.9)));
-    W = CELL * COLS; SURF = Math.round(CELL * 0.9); H = SURF + CELL * ROWS;
+    CELL = Math.floor(Math.min(availW / COLS, availH / (ROWS + 1.5)));
+    W = CELL * COLS; SURF = Math.round(CELL * 1.5); H = SURF + CELL * ROWS;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     if (dig) { SURFIMG = makeSurface(dig.site); buildSoil(); }
   }
 
-  const cellAt = (e) => {
+  const pointAt = (e) => {
     const r = cv.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * W, y = ((e.clientY - r.top) / r.height) * H - SURF;
-    const c = Math.floor(x / CELL), rr = Math.floor(y / CELL);
-    if (c < 0 || c >= COLS || rr < 0 || rr >= ROWS) return null;
-    return { r: rr, c };
+    const x = ((e.clientX - r.left) / r.width) * W, y = ((e.clientY - r.top) / r.height) * H;
+    if (x < 0 || x > W || y < SURF - CELL * 0.3 || y > H) return null;
+    return { x, y: Math.max(SURF + 1, y) };
   };
-  const G = (r, c) => (dig && r >= 0 && r < ROWS && c >= 0 && c < COLS ? dig.grid[r][c] : null);
-  const cx = (c) => c * CELL + CELL / 2, cy = (r) => SURF + r * CELL + CELL / 2;
+  const fsz = () => CELL / SUB;
+  const fcx = (i) => ((i % FC) + 0.5) * fsz(), fcy = (i) => SURF + (((i / FC) | 0) + 0.5) * fsz();
+  const matAtPoint = (x, y) => MATS[dig.fmat[clamp(Math.floor((y - SURF) / fsz()), 0, FR - 1) * FC + clamp(Math.floor(x / fsz()), 0, FC - 1)]];
+  // every fine piece inside a circle, nearest first
+  function piecesIn(x, y, rad) {
+    const f = fsz(), out = [];
+    const x0 = clamp(Math.floor((x - rad) / f), 0, FC - 1), x1 = clamp(Math.floor((x + rad) / f), 0, FC - 1);
+    const y0 = clamp(Math.floor((y - SURF - rad) / f), 0, FR - 1), y1 = clamp(Math.floor((y - SURF + rad) / f), 0, FR - 1);
+    for (let fy = y0; fy <= y1; fy++) for (let fx = x0; fx <= x1; fx++) {
+      const i = fy * FC + fx, d = Math.hypot(fcx(i) - x, fcy(i) - y);
+      if (d <= rad) out.push([i, d]);
+    }
+    return out;
+  }
+  // you can only dig where the ground is open: at the surface or at the edge of the hole
+  function reachable(x, y, rad) {
+    if (y - SURF <= rad * 0.8) return true;
+    for (const [i] of piecesIn(x, y, rad + fsz() * 1.2)) if (dig.fdug[i]) return true;
+    return false;
+  }
 
   /* ---------- effects ---------- */
   function burst(x, y, colors, n, power = 1) {
@@ -407,100 +501,139 @@
 
   /* ---------- striking ---------- */
   const TOOL = {
-    pick: { name: 'מכוש', harm: 9 },
-    trowel: { name: 'כף', dmg: 2, harm: 4 },
-    brush: { name: 'מברשת', dmg: 1, harm: 0 },
+    pick: { name: 'מכוש', r: 0.7, harm: 0.8 },
+    trowel: { name: 'כף', r: 0.5, p: 3, harm: 0.45 },
+    brush: { name: 'מברשת', r: 0.44, p: 2.4, harm: 0 },
+    dyn: { r: 1.55, p: 12, harm: 1.0 },
   };
-  function strike(r, c) {
-    if (!dig || dig.over || !G(r, c)) return;
-    if (tool === 'sonar') return useSonar(r, c);
-    if (tool === 'dyn') return useDynamite(r, c);
-    const cell = G(r, c);
-    if (cell.broken) return;
+  let lastNope = 0;
+  function strike(x, y) {
+    if (!dig || dig.over) return;
+    if (tool === 'sonar') return useSonar(x, y);
+    if (tool === 'dyn') return useDynamite(x, y);
     if (dig.energy <= 0) return outOfEnergy();
+    const T = TOOL[tool], rad = T.r * CELL;
+    if (!reachable(x, y, rad)) {
+      const now = performance.now();
+      if (now - lastNope > 700) { lastNope = now; SFX.deny(); floatText(x, y, 'חופרים מלמעלה ↓', '#ffd9a0'); tip('reach', '⛏️ חופרים כמו באמת: <b>מתחילים מפני השטח</b> ומעמיקים משולי הבור.'); }
+      return;
+    }
+    const power = tool === 'pick' ? dig.lo.pick : T.p;
+    const res = carve(x, y, rad, power, tool);
+    if (!res.touched) return; // only air there: free
     dig.energy--;
-    const dmg = tool === 'pick' ? dig.lo.pick : TOOL[tool].dmg;
-    if (tool === 'brush') { quest('brush'); }
-    hitCell(r, c, dmg, tool);
+    if (tool === 'brush') quest('brush');
     if (navigator.vibrate && tool === 'pick') try { navigator.vibrate(6); } catch (e) { /* no haptics */ }
     hud();
     if (dig.energy <= 0) setTimeout(() => { if (dig && !dig.over && dig.energy <= 0) outOfEnergy(); }, 900);
   }
 
-  function hitCell(r, c, dmg, how) {
-    const cell = G(r, c);
-    if (!cell || cell.broken) return;
-    const mat = MATS[cell.m];
-    const before = cell.hp;
-    cell.hp -= dmg;
-    const excess = Math.max(0, dmg - before);
-    const x = cx(c), y = cy(r);
+  function carve(x, y, rad, power, how) {
+    const T = TOOL[how];
+    const mat = matAtPoint(x, y);
+    const pieces = piecesIn(x, y, rad);
+    let touched = false, removed = 0;
+    const harmed = new Map(), opened = [], chipped = [];
+    for (const [i, d] of pieces) {
+      if (dig.fdug[i]) continue;
+      touched = true;
+      const dmg = power * (1 - 0.55 * (d / rad)) * (how === 'brush' && MATS[dig.fmat[i]].hard > 0.4 ? 0.4 : 1);
+      const before = dig.fhp[i];
+      dig.fhp[i] -= dmg;
+      const ai = dig.fart[i];
+      if (ai >= 0 && dmg > before && T.harm) harmed.set(ai, (harmed.get(ai) || 0) + (dmg - before) * T.harm);
+      if (dig.fhp[i] <= 0) { dig.fdug[i] = 1; opened.push(i); removed++; } else chipped.push(i);
+    }
+    if (!touched) return { touched };
     light = { x, y, a: 1 };
     if (how === 'pick') { SFX.hit(mat.hard); shake = Math.max(shake, 3.2); }
     else if (how === 'trowel') { SFX.trowel(); shake = Math.max(shake, 1.4); }
-    else if (how === 'brush') { SFX.brush(); }
-    burst(x, y, [mat.c[0], mat.c[1], mat.sp], how === 'brush' ? 2 : 4, how === 'brush' ? 0.4 : 0.8);
-    if (how === 'brush') dust(x, y, 'rgba(230,210,170,.45)', 3);
+    else if (how === 'brush') SFX.brush();
+    if (removed) SFX.breakTile(mat.hard);
+    burst(x, y, [mat.c[0], mat.c[1], mat.sp], how === 'brush' ? 3 : 4 + Math.min(12, removed), how === 'brush' ? 0.4 : 0.9);
+    dust(x, y, how === 'brush' ? 'rgba(230,210,170,.45)' : 'rgba(200,170,120,.5)', how === 'brush' ? 4 : 2 + Math.min(4, removed >> 2));
 
-    if (cell.art >= 0 && excess > 0) {
-      const a = dig.arts[cell.art];
-      const harm = (how === 'pick' ? TOOL.pick.harm : how === 'trowel' ? TOOL.trowel.harm : how === 'dyn' ? 7 : 0) * excess * (1 - 0.12 * dig.lo.restore);
-      if (harm > 0 && !a.done) {
-        const was = a.cond;
-        a.cond = Math.max(5, Math.round(a.cond - harm));
-        if (a.cond < was) {
-          SFX.crack();
-          floatText(x, y - CELL * 0.2, `−${was - a.cond}% שבר!`, '#ff6b5b');
-          burst(x, y, ['#ffffff', '#ffd27a'], 6, 0.9);
-          tip('damage', '💥 אוי! המכה פגעה בממצא. <b>ליד ממצאים עדיף לעבוד עם המברשת או עם הכף.</b>');
-        }
+    for (const [ai, h] of harmed) {
+      const a = dig.arts[ai];
+      if (a.done) continue;
+      const was = a.cond;
+      a.cond = Math.max(5, Math.round(a.cond - h * (1 - 0.12 * dig.lo.restore)));
+      if (a.cond < was) {
+        SFX.crack();
+        floatText(x, y - CELL * 0.2, `−${was - a.cond}% שבר!`, '#ff6b5b');
+        burst(x, y, ['#ffffff', '#ffd27a'], 6, 0.9);
+        tip('damage', '💥 אוי! המכה פגעה בממצא. <b>ליד ממצאים עדיף לעבוד עם המברשת או עם הכף.</b>');
       }
     }
+    // the ground itself changes: opened pieces are cut away, struck pieces darken a little
+    const lx = soilLive.getContext('2d');
+    lx.save(); lx.setTransform(tdpr, 0, 0, tdpr, 0, 0);
+    lx.fillStyle = 'rgba(30,15,5,.10)';
+    for (const i of chipped) { lx.beginPath(); lx.arc(fcx(i), fcy(i) - SURF, fsz() * 0.45, 0, 7); lx.fill(); }
+    lx.globalCompositeOperation = 'destination-out'; lx.fillStyle = '#000';
+    for (const i of opened) eraseAt(lx, i);
+    lx.restore();
+    if (opened.length) rebuildTerrain();
 
-    if (cell.hp <= 0) {
-      cell.hp = 0; cell.broken = true;
+    if (removed) {
       dig.tiles++; S.stats.tiles++; quest('tiles');
       dig.xp += 1; addXP(1);
-      SFX.breakTile(mat.hard);
-      const nowMs = performance.now();
-      dig.combo = nowMs - (dig.lastBreak || 0) < 1500 ? (dig.combo || 0) + 1 : 1;
-      dig.lastBreak = nowMs;
-      if (dig.combo >= 3) comboFx = { n: dig.combo, t: 0 };
-      if (dig.combo % 5 === 0) {
-        const cb = Math.round(2 * (dig.daily ? 2 : dig.site.mult) * Math.min(4, dig.combo / 5));
-        dig.coins += cb; S.coins += cb; quest('coins', cb); dig.xp += 2; addXP(2);
-        floatText(x, y - CELL * 0.4, `🔥 רצף! +${cb}`, '#ffb347'); SFX.coin();
+      if (how !== 'dyn') {
+        const nowMs = performance.now();
+        dig.combo = nowMs - (dig.lastBreak || 0) < 1500 ? (dig.combo || 0) + 1 : 1;
+        dig.lastBreak = nowMs;
+        if (dig.combo >= 3) comboFx = { n: dig.combo, t: 0 };
+        if (dig.combo % 5 === 0) {
+          const cb = Math.round(2 * (dig.daily ? 2 : dig.site.mult) * Math.min(4, dig.combo / 5));
+          dig.coins += cb; S.coins += cb; quest('coins', cb); dig.xp += 2; addXP(2);
+          floatText(x, y - CELL * 0.4, `🔥 רצף! +${cb}`, '#ffb347'); SFX.coin();
+        }
       }
-      burst(x, y, [mat.c[0], mat.c[1], mat.sp], 10, 1);
-      dust(x, y, 'rgba(200,170,120,.5)', 4);
-      if (cell.art >= 0) {
-        const a = dig.arts[cell.art];
+    }
+    // finds and items count their uncovered pieces
+    const done = new Set();
+    for (const i of opened) {
+      const ai = dig.fart[i], ii = dig.fitem[i];
+      if (ai >= 0) {
+        const a = dig.arts[ai];
         a.exposed++;
         if (a.exposed === 1) {
-          SFX.reveal(); sparkle(x, y, RARITY[a.f.rarity].color, 6);
-          tip('reveal', '🪶 מצאתם משהו! <b>עברו למברשת</b> כדי לחשוף אותו בלי לשבור. מכה חזקה מדי פוגעת בממצא.', 6000);
+          SFX.reveal(); sparkle(fcx(i), fcy(i), RARITY[a.f.rarity].color, 6);
+          tip('reveal', '🪶 מצאתם משהו! <b>עברו למברשת</b> וחשפו אותו בעדינות. מכה חזקה מדי פוגעת בממצא.', 6000);
           pulseTool('brush');
         }
-        if (a.exposed === a.w * a.h && !a.done) completeArt(a);
+        if (!a.done && a.exposed >= a.total * 0.88) done.add(a);
       }
-      if (cell.item >= 0) {
-        const it = dig.items[cell.item];
+      if (ii >= 0) {
+        const it = dig.items[ii];
         it.exposed++;
-        if (it.exposed === it.w * it.h && !it.done) collectItem(it);
+        if (!it.done && it.exposed >= it.total * 0.7) done.add(it);
       }
-      computeGlints();
     }
+    for (const z of done) { clearRect(z); if (z.f) completeArt(z); else collectItem(z); }
+    computeGlints();
+    return { touched, removed };
+  }
+  // a find comes out with the last crumbs around it
+  function clearRect(z) {
+    const lx = soilLive.getContext('2d');
+    lx.save(); lx.setTransform(tdpr, 0, 0, tdpr, 0, 0); lx.globalCompositeOperation = 'destination-out';
+    for (let fy = z.y * SUB; fy < (z.y + z.h) * SUB; fy++) for (let fx = z.x * SUB; fx < (z.x + z.w) * SUB; fx++) {
+      const i = fy * FC + fx;
+      if (!dig.fdug[i]) { dig.fdug[i] = 1; eraseAt(lx, i); }
+    }
+    lx.restore(); rebuildTerrain();
   }
 
   function computeGlints() {
     const g = [];
-    const R = dig.lo.det;
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      const cell = dig.grid[r][c];
-      if (cell.broken || cell.art < 0 || dig.arts[cell.art].done) continue;
+    const reach = dig.lo.det * SUB;
+    for (const a of dig.arts) {
+      if (a.done) continue;
       let near = false;
-      for (let dr = -R; dr <= R && !near; dr++) for (let dc = -R; dc <= R && !near; dc++) { const n = G(r + dr, c + dc); if (n && n.broken) near = true; }
-      if (near) g.push([r, c]);
+      for (let fy = Math.max(0, a.y * SUB - reach); fy < Math.min(FR, (a.y + a.h) * SUB + reach) && !near; fy++)
+        for (let fx = Math.max(0, a.x * SUB - reach); fx < Math.min(FC, (a.x + a.w) * SUB + reach); fx++) if (dig.fdug[fy * FC + fx]) { near = true; break; }
+      if (near) g.push(a);
     }
     if (g.length && !dig.glints.length) tip('glint', '✨ <b>ניצוצות באדמה</b>: ממצא מחכה ממש מתחת. בגלאי מתכות משודרג רואים אותם מרחוק יותר.');
     dig.glints = g;
@@ -569,22 +702,22 @@
     save(); hud(); topbar();
   }
 
-  function useSonar(r, c) {
+  function useSonar(x, y) {
     if (dig.sonar <= 0) { SFX.deny(); return; }
     dig.sonar--;
     SFX.sonar();
-    rings.push({ x: cx(c), y: cy(r), t: 0, life: 1.1, color: '#7fe7ff' });
-    dig.sonarFx = { r, c, t: 0 };
+    rings.push({ x, y, t: 0, life: 1.1, color: '#7fe7ff' });
+    dig.sonarFx = { x, y, t: 0 };
     setTool(lastTool); hud();
   }
-  function useDynamite(r, c) {
+  function useDynamite(x, y) {
     if (dig.dyn <= 0) { SFX.deny(); return; }
     dig.dyn--;
     SFX.boom(); shake = 11; flash = 0.6;
-    rings.push({ x: cx(c), y: cy(r), t: 0, life: 0.6, color: '#ffb347' });
-    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) hitCell(r + dr, c + dc, 10, 'dyn');
-    burst(cx(c), cy(r), ['#ffdd57', '#ff8a3d', '#5a4a3a', '#2a2018'], 30, 1.6);
-    dust(cx(c), cy(r), 'rgba(90,80,70,.6)', 12);
+    rings.push({ x, y, t: 0, life: 0.6, color: '#ffb347' });
+    carve(x, y, TOOL.dyn.r * CELL, TOOL.dyn.p, 'dyn');
+    burst(x, y, ['#ffdd57', '#ff8a3d', '#5a4a3a', '#2a2018'], 30, 1.6);
+    dust(x, y, 'rgba(90,80,70,.6)', 12);
     setTool(lastTool); hud();
   }
 
@@ -642,12 +775,8 @@
       ctx.restore();
     }
 
-    // dug cells show the darker layer wall behind
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      const cell = dig.grid[r][c];
-      if (cell.broken) ctx.drawImage(PIT, c * CELL * dpr, r * CELL * dpr, CELL * dpr, CELL * dpr, c * CELL, SURF + r * CELL, CELL, CELL);
-    }
-    // finds and items, under the soil that still covers them
+    // the wall of the hole, the finds lying in it, then the ground that still covers them
+    if (PIT) ctx.drawImage(PIT, 0, SURF, W, ROWS * CELL);
     for (const a of dig.arts) {
       if (a.done || !a.exposed) continue;
       const x = a.x * CELL, y = SURF + a.y * CELL;
@@ -665,45 +794,7 @@
       const im = IMG[it.it.id];
       if (im.complete) ctx.drawImage(im, it.x * CELL + 3, SURF + it.y * CELL + 3, it.w * CELL - 6, it.h * CELL - 6);
     }
-    // soil
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      const cell = dig.grid[r][c];
-      const x = c * CELL, y = SURF + r * CELL;
-      if (cell.broken) {
-        const above = r === 0 ? null : dig.grid[r - 1][c];
-        if (r === 0 || (above && !above.broken)) {
-          const g = ctx.createLinearGradient(0, y, 0, y + CELL * 0.45);
-          g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = g; ctx.fillRect(x, y, CELL, CELL * 0.45);
-        }
-        const left = G(r, c - 1), right = G(r, c + 1);
-        if (left && !left.broken) { const g = ctx.createLinearGradient(x, 0, x + CELL * 0.25, 0); g.addColorStop(0, 'rgba(0,0,0,.4)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(x, y, CELL * 0.25, CELL); }
-        if (right && !right.broken) { const g = ctx.createLinearGradient(x + CELL, 0, x + CELL * 0.75, 0); g.addColorStop(0, 'rgba(0,0,0,.4)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(x + CELL * 0.75, y, CELL * 0.25, CELL); }
-        continue;
-      }
-      ctx.drawImage(SOIL, c * CELL * dpr, r * CELL * dpr, CELL * dpr, CELL * dpr, x, y, CELL, CELL);
-      if (cell.hp < cell.max) drawCracks(x + 3, y + 3, CELL - 6, CELL - 6, 1 + Math.floor((1 - cell.hp / cell.max) * 4), cell.seed, 0.6);
-    }
-    // crumbly lips where the hole meets solid ground
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      const cell = dig.grid[r][c];
-      if (!cell.broken) continue;
-      const x = c * CELL, y = SURF + r * CELL;
-      const sides = [[r === 0 ? 'grass' : G(r - 1, c), 0], [G(r + 1, c), 1], [G(r, c - 1), 2], [G(r, c + 1), 3]];
-      for (const [n, side] of sides) {
-        if (!n || (n !== 'grass' && n.broken)) continue;
-        const col = n === 'grass' ? '#4f6e2c' : MATS[n.m].c[1];
-        const R = rng(cell.seed + side * 31);
-        const steps = 6, depth = CELL * 0.07;
-        ctx.beginPath();
-        const pt = (u, d) => side === 0 ? [x + u * CELL, y + d] : side === 1 ? [x + u * CELL, y + CELL - d] : side === 2 ? [x + d, y + u * CELL] : [x + CELL - d, y + u * CELL];
-        ctx.moveTo(...pt(0, 0));
-        for (let k = 0; k <= steps; k++) ctx.lineTo(...pt(k / steps, depth * (0.3 + R() * 1.1)));
-        ctx.lineTo(...pt(1, 0)); ctx.closePath();
-        ctx.fillStyle = col; ctx.fill();
-        if (side === 0) { ctx.strokeStyle = 'rgba(255,235,200,.22)'; ctx.lineWidth = 1; ctx.stroke(); }
-      }
-    }
+    if (TERR) ctx.drawImage(TERR, 0, SURF, W, ROWS * CELL);
     // depth falls into shadow, and a warm work-lamp follows the last strike
     const dg = ctx.createLinearGradient(0, SURF, 0, H);
     dg.addColorStop(0, 'rgba(0,0,0,0)'); dg.addColorStop(1, 'rgba(8,4,0,.32)');
@@ -723,7 +814,7 @@
       const y = SURF + r * CELL;
       const era = ERA[dig.eras[e]];
       ctx.save();
-      if (r > 0) { ctx.strokeStyle = 'rgba(255,240,200,.28)'; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); ctx.setLineDash([]); }
+      if (r > 0) { ctx.strokeStyle = 'rgba(255,240,200,.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(W - 14, y); ctx.lineTo(W, y); ctx.stroke(); }
       ctx.font = `600 ${Math.max(9, CELL * 0.24)}px Heebo, sans-serif`;
       const label = `${era.short} · ${era.years}`;
       const tw = ctx.measureText(label).width + 10;
@@ -742,7 +833,7 @@
       ctx.beginPath(); ctx.moveTo(x - 7, y - 7); ctx.lineTo(x + 7, y + 7); ctx.moveTo(x + 7, y - 7); ctx.lineTo(x - 7, y + 7); ctx.stroke(); ctx.restore();
     }
     // glints
-    for (const [r, c] of dig.glints) if (Math.random() < dt * 1.6) sparkle(c * CELL + CELL / 2, SURF + r * CELL + CELL / 2, '#fff3b0', 1, CELL * 0.8);
+    for (const a of dig.glints) if (Math.random() < dt * 1.6 * a.w * a.h) sparkle((a.x + Math.random() * a.w) * CELL, SURF + (a.y + Math.random() * a.h) * CELL, '#fff3b0', 1, CELL * 0.3);
     // sonar
     if (dig.sonarFx) {
       const s = dig.sonarFx; s.t += dt;
@@ -750,54 +841,40 @@
       if (s.t > 3.4) dig.sonarFx = null;
       else {
         ctx.save();
-        const x0 = (s.c - 2) * CELL, y0 = SURF + (s.r - 2) * CELL;
-        ctx.beginPath(); ctx.rect(Math.max(0, x0), Math.max(SURF, y0), CELL * 5, CELL * 5); ctx.clip();
-        ctx.fillStyle = `rgba(20,80,110,${0.35 * k})`; ctx.fillRect(x0, y0, CELL * 5, CELL * 5);
-        const seen = new Set();
-        for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) {
-          const cell = G(s.r + dr, s.c + dc);
-          if (!cell) continue;
-          if (cell.art >= 0 && !seen.has('a' + cell.art)) {
-            seen.add('a' + cell.art);
-            const a = dig.arts[cell.art];
-            if (a.done) continue;
-            ctx.globalAlpha = 0.75 * k;
-            ctx.drawImage(IMG[a.f.id], a.x * CELL + 2, SURF + a.y * CELL + 2, a.w * CELL - 4, a.h * CELL - 4);
-            ctx.globalAlpha = k; ctx.strokeStyle = RARITY[a.f.rarity].color; ctx.lineWidth = 2.5;
-            roundRect(a.x * CELL + 1, SURF + a.y * CELL + 1, a.w * CELL - 2, a.h * CELL - 2, 6); ctx.stroke();
-          }
-          if (cell.item >= 0 && !seen.has('i' + cell.item)) {
-            seen.add('i' + cell.item);
-            const it = dig.items[cell.item];
-            if (it.done) continue;
-            ctx.globalAlpha = 0.65 * k;
-            ctx.drawImage(IMG[it.it.id], it.x * CELL + 4, SURF + it.y * CELL + 4, it.w * CELL - 8, it.h * CELL - 8);
-          }
+        const R0 = CELL * 2.5;
+        ctx.beginPath(); ctx.arc(s.x, s.y, R0, 0, 7); ctx.clip();
+        ctx.fillStyle = `rgba(20,80,110,${0.35 * k})`; ctx.fillRect(s.x - R0, s.y - R0, R0 * 2, R0 * 2);
+        const hits = (z) => { const nx = clamp(s.x, z.x * CELL, (z.x + z.w) * CELL), ny = clamp(s.y, SURF + z.y * CELL, SURF + (z.y + z.h) * CELL); return Math.hypot(nx - s.x, ny - s.y) < R0; };
+        for (const a of dig.arts) {
+          if (a.done || !hits(a)) continue;
+          ctx.globalAlpha = 0.75 * k;
+          ctx.drawImage(IMG[a.f.id], a.x * CELL + 2, SURF + a.y * CELL + 2, a.w * CELL - 4, a.h * CELL - 4);
+          ctx.globalAlpha = k; ctx.strokeStyle = RARITY[a.f.rarity].color; ctx.lineWidth = 2.5;
+          roundRect(a.x * CELL + 1, SURF + a.y * CELL + 1, a.w * CELL - 2, a.h * CELL - 2, 6); ctx.stroke();
+        }
+        for (const it of dig.items) {
+          if (it.done || !hits(it)) continue;
+          ctx.globalAlpha = 0.65 * k;
+          ctx.drawImage(IMG[it.it.id], it.x * CELL + 4, SURF + it.y * CELL + 4, it.w * CELL - 8, it.h * CELL - 8);
         }
         ctx.globalAlpha = 1;
         const sweep = (s.t * 1.4) % 1;
         ctx.strokeStyle = `rgba(127,231,255,${0.6 * k})`; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(cx(s.c), cy(s.r), sweep * CELL * 3.2, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(s.x, s.y, sweep * CELL * 2.5, 0, Math.PI * 2); ctx.stroke();
         ctx.restore();
       }
     }
-    // hover
+    // hover: the circle the tool will bite
     if (hover && !dig.over) {
-      const cell = G(hover.r, hover.c);
-      if (cell) {
-        ctx.save();
-        const col = tool === 'pick' ? '#ffcf6b' : tool === 'trowel' ? '#a8e08a' : tool === 'brush' ? '#ffffff' : tool === 'sonar' ? '#7fe7ff' : '#ff8a3d';
-        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.globalAlpha = 0.85;
-        const span = tool === 'sonar' ? 2 : tool === 'dyn' ? 1 : 0;
-        roundRect((hover.c - span) * CELL + 1, SURF + (hover.r - span) * CELL + 1, CELL * (span * 2 + 1) - 2, CELL * (span * 2 + 1) - 2, 5); ctx.stroke();
-        if (!cell.broken && span === 0) {
-          ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(0,0,0,.5)';
-          const w = CELL * 0.7, x = hover.c * CELL + (CELL - w) / 2, y = SURF + hover.r * CELL + CELL - 7;
-          ctx.fillRect(x, y, w, 3.5);
-          ctx.fillStyle = col; ctx.fillRect(x, y, (w * cell.hp) / cell.max, 3.5);
-        }
-        ctx.restore();
-      }
+      ctx.save();
+      const col = tool === 'pick' ? '#ffcf6b' : tool === 'trowel' ? '#a8e08a' : tool === 'brush' ? '#ffffff' : tool === 'sonar' ? '#7fe7ff' : '#ff8a3d';
+      const rad = tool === 'sonar' ? CELL * 2.5 : (TOOL[tool] ? TOOL[tool].r : 0.6) * CELL;
+      const ok = tool === 'sonar' || tool === 'dyn' || reachable(hover.x, hover.y, rad);
+      ctx.strokeStyle = ok ? col : 'rgba(255,120,100,.8)'; ctx.lineWidth = 2; ctx.globalAlpha = 0.85;
+      if (!ok) ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.arc(hover.x, hover.y, rad, 0, 7); ctx.stroke();
+      ctx.globalAlpha = 0.12; ctx.fillStyle = ok ? col : '#ff7a64'; ctx.fill();
+      ctx.restore();
     }
     // rings
     rings = rings.filter((g) => (g.t += dt) < g.life);
@@ -897,14 +974,14 @@
   cv.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     SFX.unlock();
-    const p = cellAt(e); hover = p;
+    const p = pointAt(e); hover = p;
     if (!p) return;
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* old browsers */ }
-    strike(p.r, p.c);
+    strike(p.x, p.y);
     held = true; clearInterval(holdTimer);
-    if (tool === 'pick' || tool === 'trowel' || tool === 'brush') holdTimer = setInterval(() => { if (held && hover) strike(hover.r, hover.c); }, 190);
+    if (tool === 'pick' || tool === 'trowel' || tool === 'brush') holdTimer = setInterval(() => { if (held && hover) strike(hover.x, hover.y); }, tool === 'brush' ? 120 : 190);
   });
-  cv.addEventListener('pointermove', (e) => { hover = cellAt(e); });
+  cv.addEventListener('pointermove', (e) => { hover = pointAt(e); });
   const release = () => { held = false; clearInterval(holdTimer); };
   cv.addEventListener('pointerup', release);
   cv.addEventListener('pointercancel', release);
@@ -942,7 +1019,7 @@
     $('#t-dyn-n').textContent = dig.dyn;
     $('.tool[data-t="sonar"]').classList.toggle('empty', dig.sonar <= 0);
     $('.tool[data-t="dyn"]').classList.toggle('empty', dig.dyn <= 0);
-    const hint = { pick: 'מכוש: חזק ומהיר, אבל מכה עודפת שוברת ממצאים', trowel: 'כף: 2 נזק, פוגעת בממצאים רק מעט', brush: 'מברשת: 1 נזק, לא פוגעת לעולם', sonar: 'סונאר: הקישו על נקודה כדי לסרוק 5×5', dyn: 'חומר נפץ: הקישו כדי לפוצץ 3×3. זהירות!' }[tool];
+    const hint = { pick: 'מכוש: חזק ורחב, שובר סלע, אבל מכה עודפת שוברת ממצאים', trowel: 'כף: מדויקת, פוגעת בממצאים רק מעט', brush: 'מברשת: מנקה אדמה רכה ולא פוגעת לעולם. על סלע היא חלשה', sonar: 'סונאר: הקישו על נקודה כדי לסרוק 5×5', dyn: 'חומר נפץ: הקישו כדי לפוצץ 3×3. זהירות!' }[tool];
     $('#tool-hint').textContent = hint;
   }
 
@@ -971,6 +1048,8 @@
     parts = []; floats = []; flyers = []; rings = []; shake = 0; flash = 0; pendingLevels = []; light = null; comboFx = null;
     show('dig');
     $('#dig-site').textContent = site.name;
+    const bgp = sitePhoto(site);
+    $('#scr-dig').style.setProperty('--bgphoto', bgp ? `url("${bgp.src}")` : 'none');
     $('#dig-place').textContent = daily ? `${site.place} · ${counted ? 'נספר לשיא היומי' : 'אימון'}` : site.place;
     requestAnimationFrame(() => {
       layout(); hud();
@@ -1011,13 +1090,13 @@
       confetti(60);
       modal(`<div class="levelup"><div class="lv-rays"></div><div class="lv-star">${ico('star')}<b>${S.lvl}</b></div></div>
         <h2 class="lv-title">רמה חדשה!</h2><p class="sub">החוקר שלכם מתקדם. עוד מטבעות, עוד אתרים, עוד סודות.</p>
-        ${unlocked.map((z) => `<div class="lv-site"><div class="mini">${scene(z, z.eras.map((e) => ERA_COLOR[e]))}</div><div><small>אתר חדש נפתח</small><b>${z.name}</b></div></div>`).join('')}
+        ${unlocked.map((z) => `<div class="lv-site"><div class="mini">${PH.sites[z.id] ? `<img src="${PH.sites[z.id].src}" alt="">` : scene(z, z.eras.map((e) => ERA_COLOR[e]))}</div><div><small>אתר חדש נפתח</small><b>${z.name}</b></div></div>`).join('')}
         <div class="m-actions"><button class="btn gold" id="m-lv">מעולה!</button></div>`, (root) => { $('#m-lv', root).onclick = closeModal; }, false);
     }
     modal(`
       <div class="m-ico">${ico(cleared ? 'trophy' : 'vase', 'big')}</div>
       <h2>${cleared ? 'האתר נחשף במלואו!' : dig.daily ? 'חפירת היום הסתיימה' : 'סוף יום החפירה'}</h2>
-      <p class="sub">${dig.site.name} · ${dig.tiles} משבצות · ${dig.found.length} ממצאים</p>
+      <p class="sub">${dig.site.name} · ${dig.tiles} מכות · ${dig.found.length} ממצאים</p>
       ${rows ? `<ul class="sum">${rows}</ul>` : '<p class="sub">הפעם האדמה שמרה את סודותיה. נסו להתחיל בסונאר 🔊</p>'}
       ${bonus ? `<div class="bonus">✨ בונוס על חשיפת האתר כולו: +${fmt(bonus)} 🪙</div>` : ''}
       <div class="total"><span>סה״כ</span><b>${fmt(dig.coins)} ${ico('coin', 'ico md')}</b><span>+${dig.xp} XP</span></div>
@@ -1062,6 +1141,7 @@
       <p class="sub"><span class="rar" style="color:${r.color}">${r.name}</span> · ${ERA[f.era].name} · ${ERA[f.era].years}</p>
       <div class="cond"><span>מצב</span><div class="bar"><i style="width:${cond}%;background:${cc}"></i></div><b style="color:${cc}">${cl}${perfect ? ' ×1.5' : ''}</b></div>
       <p class="fact">${f.fact}</p>
+      ${PH.finds[f.id] ? `<figure class="real"><img src="${PH.finds[f.id].src}" alt="${esc(PH.finds[f.id].caption)}"><figcaption><b>📷 בעולם האמיתי</b>${esc(PH.finds[f.id].caption)}<small>${credit(PH.finds[f.id])}</small></figcaption></figure>` : ''}
       <div class="m-actions"><button class="btn gold" id="m-ok">${isNew ? '🏛️ למוזיאון!' : `+${fmt(value)} 🪙 המשך`}</button></div>`, (root) => {
       $('#m-ok', root).onclick = closeModal;
     });
@@ -1185,7 +1265,7 @@
       const all = FINDS.filter((f) => s.eras.includes(f.era));
       const got = all.filter((f) => S.museum[f.id] && S.museum[f.id].n).length;
       return `<button class="site ${locked ? 'locked' : ''}" data-site="${i}" ${locked ? 'aria-disabled="true"' : ''}>
-        <div class="thumb">${scene(s, s.eras.map((e) => ERA_COLOR[e]))}${locked ? `<div class="lock">${ico('lock')}רמה ${s.level}</div>` : `<div class="mult">×${s.mult} ערך</div>`}<span class="shine"></span></div>
+        <div class="thumb">${PH.sites[s.id] ? `<img class="ph" src="${PH.sites[s.id].src}" alt="${esc(PH.sites[s.id].caption)}" loading="lazy"><div class="strata">${s.eras.map((e) => `<i style="background:${ERA_COLOR[e]}"></i>`).join('')}</div>` : scene(s, s.eras.map((e) => ERA_COLOR[e]))}${locked ? `<div class="lock">${ico('lock')}רמה ${s.level}</div>` : `<div class="mult">×${s.mult} ערך</div>`}<span class="shine"></span></div>
         <div class="info"><h4>${s.name}</h4><small>${s.place}</small><p>${s.blurb}</p>
         <div class="chips">${s.eras.map((e) => `<span style="--ec:${ERA_COLOR[e]}">${ERA[e].short}</span>`).join('')}</div>
         <div class="prog"><div class="bar"><i style="width:${(got / all.length) * 100}%"></i></div><small>${got}/${all.length} באוסף</small></div></div></button>`;
@@ -1217,7 +1297,7 @@
       const r = RARITY[f.rarity];
       return `<button class="exhibit ${m ? '' : 'unknown'} ${f.rarity === 'legendary' ? 'leg' : ''}" data-id="${f.id}" style="--rc:${r.color}">
         <div class="pic"><img src="${D.svgUrl(f.svg)}" alt="" style="aspect-ratio:${f.w}/${f.h}"></div>
-        <b>${m ? f.name : '???'}</b><small style="color:${r.color}">${r.name}</small>${m ? `<span class="cnt">×${m.n}${m.best >= 100 ? ' ⭐' : ''}</span>` : ''}</button>`;
+        <b>${m ? f.name : '???'}</b>${m && PH.finds[f.id] ? '<span class="phb" title="יש צילום אמיתי">📷</span>' : ''}<small style="color:${r.color}">${r.name}</small>${m ? `<span class="cnt">×${m.n}${m.best >= 100 ? ' ⭐' : ''}</span>` : ''}</button>`;
     }).join('');
     $$('.exhibit').forEach((b) => b.onclick = () => {
       const f = BY_ID[b.dataset.id], m = S.museum[f.id];
@@ -1225,8 +1305,12 @@
       showFind(f, m.best, 0, false, m.best >= 100);
       const ok = $('#m-ok'); if (ok) ok.textContent = 'סגירה';
     });
-    $('#stats').innerHTML = `<span>⛏️ ${fmt(S.stats.tiles)} משבצות</span><span>🏺 ${fmt(S.stats.finds)} ממצאים</span><span>⭐ ${fmt(S.stats.perfect)} מושלמים</span><span>🏆 שיא חפירה: ${fmt(S.stats.bestDig)} 🪙</span>`;
+    $('#stats').innerHTML = `<span>⛏️ ${fmt(S.stats.tiles)} מכות חפירה</span><span>🏺 ${fmt(S.stats.finds)} ממצאים</span><span>⭐ ${fmt(S.stats.perfect)} מושלמים</span><span>🏆 שיא חפירה: ${fmt(S.stats.bestDig)} 🪙</span>`;
   }
+  $('#credits').addEventListener('click', () => {
+    const rows = [...Object.values(PH.sites), ...Object.values(PH.finds)].map((p) => `<li><img src="${p.src}" alt="" loading="lazy"><span><b>${esc(p.caption)}</b><small>${credit(p)}</small></span></li>`).join('');
+    modal(`<h2>קרדיטים לצילומים</h2><p class="sub">כל הצילומים מוויקישיתוף, ברישיונות חופשיים. תודה לצלמים.</p><ul class="creds">${rows}</ul><div class="m-actions"><button class="btn gold" id="m-cr">סגירה</button></div>`, (root) => { $('#m-cr', root).onclick = closeModal; });
+  });
   $('#reset').addEventListener('click', () => {
     modal(`<div class="m-ico">⚠️</div><h2>לאפס את כל ההתקדמות?</h2><p>המוזיאון, המטבעות והשדרוגים יימחקו לגמרי.</p><div class="m-actions"><button class="btn danger" id="m-yes">כן, לאפס</button><button class="btn ghost" id="m-no">ביטול</button></div>`, (root) => {
       $('#m-yes', root).onclick = () => { S = fresh(); save(); closeModal(); show('home'); };
