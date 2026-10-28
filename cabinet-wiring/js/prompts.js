@@ -16,7 +16,7 @@
   var SCHEMA = {
     type: 'object',
     additionalProperties: false,
-    required: ['meta', 'components', 'wires', 'notes', 'layout'],
+    required: ['meta', 'components', 'wires', 'notes', 'layout', 'settings'],
     properties: {
       meta: {
         type: 'object', additionalProperties: false,
@@ -50,6 +50,10 @@
         }
       },
       notes: { type: 'array', items: str },
+      settings: {
+        type: 'array',
+        items: { type: 'object', additionalProperties: false, required: ['tag', 'group', 'name', 'value', 'page'], properties: { tag: str, group: str, name: str, value: str, page: { type: 'integer' } } }
+      },
       layout: {
         type: 'object', additionalProperties: false,
         required: ['pages', 'cabinets', 'enclosure', 'rails', 'door', 'terminalOrder', 'glands', 'notes'],
@@ -110,7 +114,8 @@
     '   rails: כל מסילת DIN מלמעלה למטה, ובכל אחת התגים משמאל לימין בדיוק בסדר שבשרטוט. label = שם המסילה או מה שעליה. spacer = גובה מרווח (ספייסר) במ"מ אם כתוב, אחרת 0.',
     '   terminalOrder: לכל פס מהדקים בתכנית — ההדקים בסדר הפיזי שלהם משמאל לימין, כמו ברשימת המהדקים. door: התגים בדלת בסדר שבשרטוט.',
     '   glands: כל כניסת כבל בפלטת האנטיגרונים: label = הכבל או היעד, size = הגודל כפי שכתוב (PG21, M20, 16...), row = שורה מלמעלה (1, 2...).',
-    '   enclosure: רוחב, גובה ועומק הארון במ"מ אם כתובים, אחרת 0. pages = העמודים שמהם נלקחה הפריסה. אם אין בתכנית שום שרטוט פריסה — מחזירים מערכים ריקים, ולא ממציאים.'
+    '   enclosure: רוחב, גובה ועומק הארון במ"מ אם כתובים, אחרת 0. pages = העמודים שמהם נלקחה הפריסה. אם אין בתכנית שום שרטוט פריסה — מחזירים מערכים ריקים, ולא ממציאים.',
+    '12. settings — כל הגדרה של ציוד שכתובה בתכנית, כפי שהיא כתובה: פרמטרים של ממיר תדר / דרייבר (טבלת פרמטרים, מספר פרמטר וערך), נתוני לוחית מנוע, כתובות IP, שמות רשת, פורטים (איזה פורט מחובר לאן), הגדרות ראוטר / מודם (Teltonika וכו\'), כתובות ותצורת בקר וכרטיסים, גרסאות קושחה, הערות התקנה של ציוד. tag = התג של הציוד, group = נושא (פרמטרים, רשת, I/O, הזנה, התקנה), name = שם / מספר הפרמטר, value = הערך. רק מה שכתוב — לא ממליצים ולא משלימים.'
   ].join('\n');
 
   function build(opts) {
@@ -139,6 +144,7 @@
       ' "components":[{"tag":"-K1","type":"contactor","name":"","desc":"","maker":"","partNo":"","location":"cabinet","page":1}],',
       ' "wires":[{"no":"","fromTag":"-X1","fromTerm":"1","toTag":"-Q1","toTerm":"1","color":"BK","colorSource":"drawing","section":2.5,"wireType":"H07V-K","func":"power","potential":"L1","desc":"","explain":"","page":1}],',
       ' "notes":[],',
+      ' "settings":[{"tag":"-T1","group":"פרמטרים","name":"p1120","value":"5 s","page":12}],',
       ' "layout":{"pages":[],"cabinets":[{"name":"","tags":["-Q1","-F1","-X1"],"w":0,"h":0,"d":0}],"enclosure":{"w":0,"h":0,"d":0},"rails":[{"cabinet":"","label":"","tags":["-Q1","-F1"],"spacer":0}],"door":[],"terminalOrder":[{"tag":"-X1","terms":["1","2","PE"]}],"glands":[{"cabinet":"","label":"","size":"PG16","row":1}],"notes":""}}'
     ].join('\n');
   }
@@ -152,6 +158,7 @@
       SYSTEM, '', RULES, '',
       'מצורפים ' + pages.length + ' עמודים מתוך התכנית: עמודים ' + pages.join(', ') + ' ב-PDF, בסדר הזה. page = מספר העמוד ב-PDF.',
       'אם עמוד הוא כריכה, תוכן עניינים או רשימת חלקים בלי חוטים, החזר ממנו רק רכיבים.',
+      'אם בעמוד כתובות הגדרות של ציוד (פרמטרים של דרייבר, כתובות IP, פורטים, הגדרות ראוטר או בקר) — רשום אותן ב-settings (סעיף 12).',
       'אם עמוד הוא שרטוט פריסה, תמונה של הארון או הארונות, רשימת מהדקים, בלוק בקר או פלטת אנטיגרונים — מלא ממנו את layout (סעיף 11), כולל איזה רכיב באיזה ארון.',
       'קו שממשיך לעמוד אחר (חץ עם הפניה כמו /5.3): חבר אותו לתג וההדק שמופיעים בהפניה אם הם ידועים.',
       known.length ? 'רכיבים שכבר זוהו בעמודים קודמים (השתמש באותם תגים): ' + known.join(', ') : '',
@@ -159,14 +166,14 @@
       opts.text ? 'טקסט שנשלף מהעמודים האלה (לעזרה בקריאת מספרים קטנים):\n' + String(opts.text).slice(0, 7000) : '',
       '',
       'החזר JSON בלבד במבנה:',
-      '{"meta":{"title":"","drawingNo":"","revision":"","supply":"","control":"","notes":""},"components":[{"tag":"-K1","type":"contactor","name":"","desc":"","maker":"","partNo":"","location":"cabinet","page":1}],"wires":[{"no":"","fromTag":"-X1","fromTerm":"1","toTag":"-Q1","toTerm":"1","color":"BK","colorSource":"drawing","section":2.5,"wireType":"H07V-K","func":"power","potential":"L1","desc":"","explain":"","page":1}],"notes":[],"layout":{"pages":[],"cabinets":[],"enclosure":{"w":0,"h":0,"d":0},"rails":[],"door":[],"terminalOrder":[],"glands":[],"notes":""}}'
+      '{"meta":{"title":"","drawingNo":"","revision":"","supply":"","control":"","notes":""},"components":[{"tag":"-K1","type":"contactor","name":"","desc":"","maker":"","partNo":"","location":"cabinet","page":1}],"wires":[{"no":"","fromTag":"-X1","fromTerm":"1","toTag":"-Q1","toTerm":"1","color":"BK","colorSource":"drawing","section":2.5,"wireType":"H07V-K","func":"power","potential":"L1","desc":"","explain":"","page":1}],"notes":[],"settings":[],"layout":{"pages":[],"cabinets":[],"enclosure":{"w":0,"h":0,"d":0},"rails":[],"door":[],"terminalOrder":[],"glands":[],"notes":""}}'
     ];
     return parts.filter(function (x) { return x !== ''; }).join('\n').slice(0, 23800);
   }
 
   /* איחוד התשובות של כמה קטעים לתוצאה אחת: רכיבים לפי תג, חוטים לפי שני הקצוות */
   function merge(list) {
-    var meta = {}, comps = {}, order = [], wires = [], seen = {}, notes = [], lays = [];
+    var meta = {}, comps = {}, order = [], wires = [], seen = {}, notes = [], lays = [], settings = [], sset = {};
     var nt = function (t) { t = String(t || '').trim().toUpperCase().replace(/\s+/g, ''); return t && /^[A-Z0-9]/.test(t) ? '-' + t : t; };
     (list || []).forEach(function (r) {
       if (!r) return;
@@ -186,10 +193,12 @@
       });
       (r.notes || []).forEach(function (n) { if (notes.indexOf(n) < 0) notes.push(n); });
       if (r.layoutPlan) lays.push(r.layoutPlan);
+      (r.deviceSettings || []).forEach(function (x) { var k = x.tag + '|' + x.name + '|' + x.value; if (!sset[k]) { sset[k] = 1; settings.push(x); } });
     });
     var out = { meta: meta, components: order.map(function (k) { return comps[k]; }), wires: wires, notes: notes };
     var lp = mergeLayouts(lays);
     if (lp) out.layoutPlan = lp;
+    if (settings.length) out.deviceSettings = settings;
     return out;
   }
 
@@ -262,6 +271,8 @@
     var out = { meta: j.meta || {}, components: components, wires: wires, notes: Array.isArray(j.notes) ? j.notes : [] };
     var lp = layoutFromJson(j.layout);
     if (lp) out.layoutPlan = lp;
+    var st = (j.settings || []).map(function (x) { return { tag: normTag(x.tag), group: String(x.group || ''), name: String(x.name || ''), value: String(x.value == null ? '' : x.value), page: Number(x.page) || null }; }).filter(function (x) { return x.tag && x.name; });
+    if (st.length) out.deviceSettings = st;
     return out;
   }
 

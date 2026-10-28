@@ -27,6 +27,7 @@
 <script src="js/parts.js"></script>
 <script src="js/split.js"></script>
 <script src="js/sim.js"></script>
+<script src="js/config.js"></script>
 <script src="js/prompts.js"></script>
 <script src="js/demo.js"></script>
 <script src="js/library/plan-208b.js"></script>
@@ -65,11 +66,12 @@
         <li><a href="#p/cabinet" data-tab="cabinet"><span class="num">4</span><span class="t">פריסת ארון</span></a></li>
         <li><a href="#p/rec" data-tab="rec"><span class="num">5</span><span class="t">המלצת הרכבה</span></a></li>
         <li><a href="#p/conn" data-tab="conn"><span class="num">6</span><span class="t">חיבורים ומהדקים</span></a></li>
-        <li><a href="#p/three" data-tab="three"><span class="num">7</span><span class="t">ארון בתלת־ממד</span></a></li>
-        <li><a href="#p/wiring" data-tab="wiring"><span class="num">8</span><span class="t">חיווט שלב אחר שלב</span></a></li>
-        <li><a href="#p/assembly" data-tab="assembly"><span class="num">9</span><span class="t">הרכבה ובדיקות</span></a></li>
-        <li><a href="#p/lab" data-tab="lab"><span class="num">10</span><span class="t">מעבדה</span></a></li>
-        <li><a href="#p/export" data-tab="export"><span class="num">11</span><span class="t">הדפסה והגדרות</span></a></li>
+        <li><a href="#p/cfg" data-tab="cfg"><span class="num">7</span><span class="t">הגדרות בקרים וציוד</span></a></li>
+        <li><a href="#p/three" data-tab="three"><span class="num">8</span><span class="t">ארון בתלת־ממד</span></a></li>
+        <li><a href="#p/wiring" data-tab="wiring"><span class="num">9</span><span class="t">חיווט שלב אחר שלב</span></a></li>
+        <li><a href="#p/assembly" data-tab="assembly"><span class="num">10</span><span class="t">הרכבה ובדיקות</span></a></li>
+        <li><a href="#p/lab" data-tab="lab"><span class="num">11</span><span class="t">מעבדה</span></a></li>
+        <li><a href="#p/export" data-tab="export"><span class="num">12</span><span class="t">הדפסה והגדרות</span></a></li>
       </ol>
       <span class="progress-pill" id="progressPill" title="חוטים שסומנו כמחוברים"></span>
     </div>
@@ -361,6 +363,13 @@
     </div>
     <div class="card" id="connX" hidden></div>
     <div id="connStrips"></div>
+  </section>
+
+  <!-- ===== הגדרות בקרים וציוד ===== -->
+  <section class="view" id="v-cfg" data-view="cfg" hidden>
+    <div class="src-band" id="cfgSrc" role="note"></div>
+    <nav class="cfg-nav" id="cfgNav" aria-label="ציוד"></nav>
+    <div id="cfgBody"></div>
   </section>
 
   <!-- ===== 4. פריסת ארון ===== -->
