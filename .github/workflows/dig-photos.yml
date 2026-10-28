@@ -1,0 +1,27 @@
+name: Fetch dig game photos
+
+# One-off: downloads freely licensed photos from Wikimedia Commons into
+# dig-game/photos/_candidates on the branch that changed the fetch script.
+
+on:
+  push:
+    paths: ['.github/scripts/dig-photos.py']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pillow
+      - run: python .github/scripts/dig-photos.py dig-game/photos/_candidates
+      - name: Commit the candidates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dig-game/photos
+          git diff --cached --quiet || git commit -m "dig-game: candidate photos from Wikimedia Commons"
+          git push
