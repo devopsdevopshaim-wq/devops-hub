@@ -68,6 +68,14 @@
     } else { d.w = f.w; d.h = f.h; }
     if (img) FS.fitPhoto(d, img);
   };
+  /* the page turned to the photo's own direction: a wide photo gets a wide page of the same size, a tall photo a tall one */
+  FS.matchOrient = function (d, img) {
+    var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    if (iw === ih || d.w === d.h || (iw > ih) === (d.w > d.h)) return;
+    var mm = FS.mmOf(d);
+    if (d.fmt === 'orig' || d.fmt === 'custom') FS.applyFormat(d, 'custom', img, d.h, d.w);
+    else FS.applyFormat(d, 'cm', img, mm[1], mm[0]);
+  };
   FS.cur = function () { return FS.state.photos[FS.state.cur] || null; };
   /* multi-select: the marked photos; edits in batch mode reach all of them */
   FS.state.marked = {};
@@ -231,6 +239,7 @@
       var my = /^my:/.test(fmt) && FS.sizeOf ? FS.sizeOf(fmt) : null;   /* one of the owner's saved sizes */
       p.doc = FS.newDoc(im, my ? 'magnet' : fmt);
       if (my) FS.applyFormat(p.doc, 'cm', im, my.w, my.h);
+      if (FS.prefs.keepOrient !== false) FS.matchOrient(p.doc, im);   /* a wide photo stays wide, a tall one stays tall */
       if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
       FS.state.photos.push(p);
       (FS.afterAdd || []).forEach(function (f) { try { f(p); } catch (e) { console.warn(e); } });
