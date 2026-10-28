@@ -329,7 +329,14 @@ function prepareDig(dg) {
   const place = (z, isItem) => {
     const R = rng(z.seed || (z.x * 131 + z.y * 977 + 7));
     const w = z.w, h = z.h;
-    const x0 = -HALF + z.x, zz0 = -HALF + 0.15 + R() * (COLS - h - 0.3);
+    const x0 = -HALF + z.x;
+    // never lie on top of another find, so each can be reached from above
+    let zz0 = -HALF + 0.15 + R() * (COLS - h - 0.3);
+    for (let tries = 0; tries < 30; tries++) {
+      const clash = placed.some((q) => x0 < q.x1 + 0.1 && x0 + w > q.x0 - 0.1 && zz0 < q.z1 + 0.1 && zz0 + h > q.z0 - 0.1);
+      if (!clash) break;
+      zz0 = -HALF + 0.15 + R() * (COLS - h - 0.3);
+    }
     const top = 0.22 + z.y * ROWD + R() * 0.12;
     const svg = isItem ? z.it.svg : z.f.svg;
     const mesh = spriteMesh(svg, w - 0.12, h - 0.12, isItem ? null : D.RARITY[z.f.rarity]);
@@ -338,8 +345,10 @@ function prepareDig(dg) {
     const o = { z, x0: x0 + 0.06, x1: x0 + w - 0.06, z0: zz0 + 0.06, z1: zz0 + h - 0.06, top, mesh, verts: [], exposedFirst: false };
     for (let gz = 0; gz < GN; gz++) for (let gx = 0; gx < GN; gx++) { const X = wx(gx), Z = wz(gz); if (X >= o.x0 && X <= o.x1 && Z >= o.z0 && Z <= o.z1) o.verts.push(vIdx(gx, gz)); }
     z.total = o.verts.length; z.exposed = 0;
+    placed.push(o);
     return o;
   };
+  const placed = [];
   arts = dig.arts.map((a) => place(a, false));
   items = dig.items.map((it) => place(it, true));
   // stones: hard, and they break apart when struck enough
@@ -347,7 +356,7 @@ function prepareDig(dg) {
   const nst = 4 + Math.floor(R() * 4) + Math.min(5, dig.siteIdx || 0);
   for (let i = 0; i < nst; i++) {
     const r = 0.22 + R() * 0.32, x = -HALF + 0.6 + R() * (COLS - 1.2), z = -HALF + 0.6 + R() * (COLS - 1.2), top = 0.5 + R() * (MAXD - 1);
-    if (arts.some((a) => x > a.x0 - r && x < a.x1 + r && z > a.z0 - r && z < a.z1 + r && Math.abs(top - a.top) < 0.6)) continue;
+    if ([...arts, ...items].some((a) => x > a.x0 - r - 0.2 && x < a.x1 + r + 0.2 && z > a.z0 - r - 0.2 && z < a.z1 + r + 0.2)) continue;
     const g = new THREE.IcosahedronGeometry(r, 1); const p = g.attributes.position;
     for (let k = 0; k < p.count; k++) { const s = 1 + (R() - 0.5) * 0.35; p.setXYZ(k, p.getX(k) * s, p.getY(k) * s * 0.75, p.getZ(k) * s); }
     g.computeVertexNormals();
@@ -400,7 +409,10 @@ function carve(p, spec) {
     if (cur <= -MAXD + 0.001) continue;
     const m = MATS[strata(-cur)];
     const hp = m.hp;
-    const hardMul = spec.kind === 'brush' && m.hard > 0.4 ? 0.4 : 1;
+    // the brush is made for the last few centimetres over a find: there it cleans fast whatever the ground
+    let overFind = false;
+    if (spec.kind === 'brush') for (const o of arts) if (!o.z.done && X >= o.x0 - 0.15 && X <= o.x1 + 0.15 && Z >= o.z0 - 0.15 && Z <= o.z1 + 0.15 && cur + o.top < 0.4) { overFind = true; break; }
+    const hardMul = spec.kind === 'brush' ? (overFind ? 1.8 : m.hard > 0.4 ? 0.4 : 1) : 1;
     const u = dd / rad, fall = u < 0.62 ? 1 : Math.max(0.08, 1 - Math.pow((u - 0.62) / 0.38, 1.4) * 0.92);
     let lower = (spec.power * 0.2 * fall * hardMul) / (hp * 0.5);
     let next = Math.max(-MAXD, cur - lower);
