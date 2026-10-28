@@ -64,7 +64,8 @@ window.SHCHAVOT_PHOTOS = {
    "caption": "נר שמן מחרס, המוזיאון המצרי בטורינו",
    "artist": "לא ידוע",
    "license": "CC0",
-   "page": "https://commons.wikimedia.org/wiki/File:Oil_lamp,_baked_clay_-_Museo_Egizio,_Turin_S_2122_p01.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Oil_lamp,_baked_clay_-_Museo_Egizio,_Turin_S_2122_p01.jpg",
+   "cut": "photos/cut/b_lamp.webp"
   },
   "b_mosaic": {
    "src": "photos/b_mosaic.jpg",
@@ -78,35 +79,40 @@ window.SHCHAVOT_PHOTOS = {
    "caption": "סולידוס של הרקליוס ובנו, מוזיאון המטרופוליטן",
    "artist": "לא ידוע",
    "license": "CC0",
-   "page": "https://commons.wikimedia.org/wiki/File:Solidus_of_Heraclius_and_Heraclius_Constantine_MET_sf04-2-821s1.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Solidus_of_Heraclius_and_Heraclius_Constantine_MET_sf04-2-821s1.jpg",
+   "cut": "photos/cut/b_solidus.webp"
   },
   "c_coin": {
    "src": "photos/c_coin.jpg",
    "caption": "מטבע של המלך אמלריך, ממלכת ירושלים הצלבנית",
    "artist": "The Museum of the Order of St. John and The University of Birmingham",
    "license": "CC BY-SA 3.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Coin_of_King_Amalric.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Coin_of_King_Amalric.jpg",
+   "cut": "photos/cut/c_coin.webp"
   },
   "c_seal": {
    "src": "photos/c_seal.jpg",
    "caption": "חותם מסדר ההוספיטלרים (תחריט)",
    "artist": "Thomas Andrew Archer,  Charles Lethbridge Kingsford",
    "license": "Public domain",
-   "page": "https://commons.wikimedia.org/wiki/File:Seal_of_Hospitallers.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Seal_of_Hospitallers.jpg",
+   "cut": "photos/cut/c_seal.webp"
   },
   "f_bulla": {
    "src": "photos/f_bulla.jpg",
    "caption": "בולת \"יהוזרח בן חלקיהו עבד חזקיהו\", המאה ה־8 לפנה״ס",
    "artist": "SalemOptix",
    "license": "CC0",
-   "page": "https://commons.wikimedia.org/wiki/File:Bulla_of_Yehozarah,_son_of_Hilkiah,_servant_of_Hezekiah,_8th_century_BC.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Bulla_of_Yehozarah,_son_of_Hilkiah,_servant_of_Hezekiah,_8th_century_BC.jpg",
+   "cut": "photos/cut/f_bulla.webp"
   },
   "f_figurine": {
    "src": "photos/f_figurine.jpg",
    "caption": "צלמית עמוד יהודאית, מוזיאון המטרופוליטן",
    "artist": "לא ידוע",
    "license": "CC0",
-   "page": "https://commons.wikimedia.org/wiki/File:Nude_female_figure_(Judean_pillar_figurine)_MET_DP-42289-001.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Nude_female_figure_(Judean_pillar_figurine)_MET_DP-42289-001.jpg",
+   "cut": "photos/cut/f_figurine.webp"
   },
   "k_ivory": {
    "src": "photos/k_ivory.jpg",
@@ -120,56 +126,64 @@ window.SHCHAVOT_PHOTOS = {
    "caption": "קמע חרפושית מצרי, מוזיאון וולטרס",
    "artist": "Egyptian (?)\n\nCanaanite (?)",
    "license": "Public domain",
-   "page": "https://commons.wikimedia.org/wiki/File:Egyptian_-_Scarab_Amulet_-_Walters_4225_-_Back.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Egyptian_-_Scarab_Amulet_-_Walters_4225_-_Back.jpg",
+   "cut": "photos/cut/k_scarab.webp"
   },
   "o_coin": {
    "src": "photos/o_coin.jpg",
    "caption": "אקצ׳ה של הסולטן מוראד השני",
    "artist": "Kalashnov",
    "license": "CC BY-SA 3.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Ak%C3%A7e_of_Murad_II_Obverse.JPG"
+   "page": "https://commons.wikimedia.org/wiki/File:Ak%C3%A7e_of_Murad_II_Obverse.JPG",
+   "cut": "photos/cut/o_coin.webp"
   },
   "o_dallah": {
    "src": "photos/o_dallah.jpg",
-   "caption": "דלה, קומקום קפה ערבי",
-   "artist": "Bluehillies",
+   "caption": "דלה מסוריה",
+   "artist": "O.Mustafin",
    "license": "CC0",
-   "page": "https://commons.wikimedia.org/wiki/File:Arabic_dallah_(coffee_pot).jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Dallah_Syria.jpg",
+   "cut": "photos/cut/o_dallah.webp"
   },
   "o_glass": {
    "src": "photos/o_glass.jpg",
    "caption": "כלי זכוכית חברונית",
    "artist": "Padres Hana",
    "license": "CC BY-SA 3.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Hebron_glass_I.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Hebron_glass_I.jpg",
+   "cut": "photos/cut/o_glass.webp"
   },
   "o_pipe": {
    "src": "photos/o_pipe.jpg",
    "caption": "ראש מקטרת חרס (ממצא מאנגליה)",
    "artist": "Kent County Council, Jo Ahmet, 2019-10-16 13:05:47",
    "license": "CC BY 2.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Bowl_of_a_smoking_pipe_(FindID_975384).jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Bowl_of_a_smoking_pipe_(FindID_975384).jpg",
+   "cut": "photos/cut/o_pipe.webp"
   },
   "o_sultani": {
    "src": "photos/o_sultani.jpg",
    "caption": "סולטאני של הסולטן סולימאן הראשון",
    "artist": "CNG",
    "license": "CC BY-SA 2.5",
-   "page": "https://commons.wikimedia.org/wiki/File:Sultani_Sulayman_I_obverse.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Sultani_Sulayman_I_obverse.jpg",
+   "cut": "photos/cut/o_sultani.webp"
   },
   "p_beads": {
    "src": "photos/p_beads.jpg",
    "caption": "חרוזי צדף מנוקבים ממערת בלומבוס, דרום אפריקה",
    "artist": "Chenshilwood at English Wikipedia",
    "license": "CC BY 2.5",
-   "page": "https://commons.wikimedia.org/wiki/File:BBC-shell-beads.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:BBC-shell-beads.jpg",
+   "cut": "photos/cut/p_beads.webp"
   },
   "p_handaxe": {
    "src": "photos/p_handaxe.jpg",
    "caption": "אבן יד אשלית מסנט־אשל, צרפת",
    "artist": "לא ידוע",
    "license": "CC BY-SA 4.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Biface_de_St_Acheul_MHNT.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Biface_de_St_Acheul_MHNT.jpg",
+   "cut": "photos/cut/p_handaxe.webp"
   },
   "p_mortar": {
    "src": "photos/p_mortar.jpg",
@@ -183,21 +197,24 @@ window.SHCHAVOT_PHOTOS = {
    "caption": "העתק של הגולגולת סחול 5 ממערות הכרמל",
    "artist": "Rama",
    "license": "CC BY-SA 3.0 fr",
-   "page": "https://commons.wikimedia.org/wiki/File:Skhul_5_cast,_norma_frontalis.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Skhul_5_cast,_norma_frontalis.jpg",
+   "cut": "photos/cut/p_skull.webp"
   },
   "r_amphora": {
    "src": "photos/r_amphora.jpg",
    "caption": "אמפורה מחרס, המוזיאון המצרי בטורינו",
    "artist": "לא ידוע",
    "license": "CC0",
-   "page": "https://commons.wikimedia.org/wiki/File:Amphora,_baked_clay_-_Museo_Egizio,_Turin_S_5836_p01.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Amphora,_baked_clay_-_Museo_Egizio,_Turin_S_5836_p01.jpg",
+   "cut": "photos/cut/r_amphora.webp"
   },
   "r_denarius": {
    "src": "photos/r_denarius.jpg",
    "caption": "דינר של טיבריוס (\"מטבע המס\")",
    "artist": "Winchester Museums Service, Katie Hinds, 2015-01-07 10:41:38",
    "license": "CC BY-SA 4.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Roman_coin_,_%27Tribute_penny%27_denarius_of_Tiberius_(FindID_658767).jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Roman_coin_,_%27Tribute_penny%27_denarius_of_Tiberius_(FindID_658767).jpg",
+   "cut": "photos/cut/r_denarius.webp"
   },
   "r_helmet": {
    "src": "photos/r_helmet.jpg",
@@ -239,7 +256,56 @@ window.SHCHAVOT_PHOTOS = {
    "caption": "אבן \"לבית התקיעה\" מפינת הר הבית",
    "artist": "Andrey Zeigarnik from Raanana, Israel",
    "license": "CC BY-SA 2.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Trumpeting_place_Zeigarnik.jpg"
+   "page": "https://commons.wikimedia.org/wiki/File:Trumpeting_place_Zeigarnik.jpg",
+   "cut": "photos/cut/s_trumpet.webp"
+  },
+  "c_arrow": {
+   "src": "photos/c_arrow.jpg",
+   "caption": "ראש חץ מברזל מחושל (ממצא מאנגליה)",
+   "artist": "Bristol City Council, Kurt Adams, 2010-11-25 15:05:46",
+   "license": "CC BY-SA 2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:3900_Forged_iron_arrowhead_(FindID_417582).jpg",
+   "cut": "photos/cut/c_arrow.webp"
+  },
+  "f_ostracon": {
+   "src": "photos/f_ostracon.jpg",
+   "caption": "העתק של אוסטרקון מצד חשביהו, מכתב עברי מהמאה ה־7 לפנה״ס",
+   "artist": "GU-theolog",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Mesad_Hashavyahu_Ostracon_Replica.JPG",
+   "cut": "photos/cut/f_ostracon.webp"
+  },
+  "k_axe": {
+   "src": "photos/k_axe.jpg",
+   "caption": "גרזן ברונזה, המוזיאון הלאומי של בשקורטוסטן",
+   "artist": "Лапоть",
+   "license": "CC0",
+   "page": "https://commons.wikimedia.org/wiki/File:Axe,_knives_-_Bronze_Age_-_Bashkortostan_National_Museum.jpg",
+   "cut": "photos/cut/k_axe.webp"
+  },
+  "k_figurine": {
+   "src": "photos/k_figurine.jpg",
+   "caption": "פסלון ברונזה כנעני מצופה בחלקו זהב, מספינת אולובורון הטבועה",
+   "artist": "Dosseman",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Bodrum_Museum_Uluburun_find_Bronze_Canaanite_figurine_partly_covered_with_gold_in_2015_3718.jpg",
+   "cut": "photos/cut/k_figurine.webp"
+  },
+  "o_shoe": {
+   "src": "photos/o_shoe.jpg",
+   "caption": "פרסת ברזל מהמאות ה־16–18 (ממצא מאנגליה)",
+   "artist": "Museum of London, Kate Sumnall, 2014-03-24 12:47:47",
+   "license": "CC BY-SA 2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:A_post_medieval_iron_horseshoe_dating_16th_-_18th_century._(FindID_607408).jpg",
+   "cut": "photos/cut/o_shoe.webp"
+  },
+  "r_glass": {
+   "src": "photos/r_glass.jpg",
+   "caption": "בקבוקון בושם מזכוכית, מוזיאון המטרופוליטן",
+   "artist": "לא ידוע",
+   "license": "CC0",
+   "page": "https://commons.wikimedia.org/wiki/File:Glass_unguentarium_(perfume_bottle)_MET_DP153949.jpg",
+   "cut": "photos/cut/r_glass.webp"
   }
  }
 };

@@ -15,6 +15,8 @@
   const PH = window.SHCHAVOT_PHOTOS || { sites: {}, finds: {} };
   const PHIMG = {};
   const photo = (src) => { if (!PHIMG[src]) { const im = new Image(); im.decoding = 'async'; im.src = src; PHIMG[src] = im; } return PHIMG[src]; };
+  // a find is shown as its real object when there is a cut-out photo of one, otherwise as its drawing
+  const artUrl = (f) => (PH.finds[f.id] && PH.finds[f.id].cut) || D.svgUrl(f.svg);
   const sitePhoto = (site) => PH.sites[site.id && site.id.startsWith('daily') ? 'daily' : site.id];
   const credit = (p) => `צילום: ${esc(p.artist)} · ${esc(p.license)} · <a href="${p.page}" target="_blank" rel="noopener">ויקישיתוף</a>`;
   const esc = (t) => String(t).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -494,6 +496,7 @@
     if (t === 'dyn' && dig.dyn <= 0) { SFX.deny(); toast(up('dynamite') || dig.daily ? 'נגמר חומר הנפץ' : 'חומר נפץ נפתח במחנה 🧨'); return; }
     if (t !== 'sonar' && t !== 'dyn') lastTool = t;
     tool = t; SFX.click();
+    if (G3() && G3().setTool) G3().setTool(t);
     if (hoverP) hoverAt(hoverP);
     hud();
   }
@@ -549,6 +552,7 @@
     $('#dig-place').textContent = daily ? `${site.place} · ${counted ? 'נספר לשיא היומי' : 'אימון'}` : site.place;
     requestAnimationFrame(() => {
       hud();
+      if (G3() && G3().setTool) G3().setTool('pick');
       if (!G3() || !G3().start($('#pit3d'), dig, site, digHandlers)) { toast('הדפדפן הזה לא תומך בתלת־ממד (WebGL). נסו בכרום או בספארי מעודכנים.', '', 6000); return; }
       tip('start', '⛏️ <b>הקישו על הקרקע בריבוע החפירה.</b> כל מכה עולה ⚡ אחת. החזיקו לחפירה ברצף, ושתי אצבעות מסובבות את המצלמה.', 6000);
       if (useMap) toast('🗺️ מפת האוצר בשימוש! בעומק הבור מחכה ממצא נדיר ביותר', 'gold', 4200);
@@ -575,10 +579,10 @@
     const missed = dig.arts.filter((a) => !a.done);
     const rows = dig.found.map((f) => {
       const d = BY_ID[f.id]; const [cl, cc] = condLabel(f.cond);
-      return `<li><img src="${D.svgUrl(d.svg)}" alt=""><span class="n">${d.name}${f.isNew ? ' <em class="new">חדש!</em>' : ''}<small style="color:${RARITY[d.rarity].color}">${RARITY[d.rarity].name}</small></span><span class="c" style="color:${cc}">${cl}</span><b>${fmt(f.value)} ${ico('coin', 'ico sm')}</b></li>`;
+      return `<li><img src="${artUrl(d)}" alt=""><span class="n">${d.name}${f.isNew ? ' <em class="new">חדש!</em>' : ''}<small style="color:${RARITY[d.rarity].color}">${RARITY[d.rarity].name}</small></span><span class="c" style="color:${cc}">${cl}</span><b>${fmt(f.value)} ${ico('coin', 'ico sm')}</b></li>`;
     }).join('');
     const missHtml = missed.length
-      ? `<div class="missed"><h4>${cleared ? '' : 'עוד חיכו לכם באדמה…'}</h4><div class="miss-row">${missed.map((a) => `<span class="miss" style="--rc:${RARITY[a.f.rarity].color}" title="${a.exposed ? a.f.name : RARITY[a.f.rarity].name}"><img src="${D.svgUrl(a.f.svg)}" alt="" class="${a.exposed ? 'half' : 'sil'}"><small>${a.exposed ? a.f.name : RARITY[a.f.rarity].name}</small></span>`).join('')}</div></div>`
+      ? `<div class="missed"><h4>${cleared ? '' : 'עוד חיכו לכם באדמה…'}</h4><div class="miss-row">${missed.map((a) => `<span class="miss" style="--rc:${RARITY[a.f.rarity].color}" title="${a.exposed ? a.f.name : RARITY[a.f.rarity].name}"><img src="${artUrl(a.f)}" alt="" class="${a.exposed ? 'half' : 'sil'}"><small>${a.exposed ? a.f.name : RARITY[a.f.rarity].name}</small></span>`).join('')}</div></div>`
       : '';
     const lv = pendingLevels.length ? `<div class="lvup">${ico('star')} עליתם לרמה ${S.lvl}!</div>` : '';
     if (pendingLevels.length) {
@@ -631,7 +635,7 @@
       <div class="find r${r.rank} ${r.rank >= 3 ? 'holo' : ''}" style="--rc:${r.color}">
         <div class="rays"></div>
         <div class="ribbon">${isNew ? '✦ ממצא חדש לאוסף ✦' : r.name}</div>
-        <div class="art" style="aspect-ratio:${f.w}/${f.h}"><img src="${D.svgUrl(f.svg)}" alt="${f.name}"></div>
+        <div class="art"><img src="${artUrl(f)}" alt="${f.name}"></div>
       </div>
       <h2 class="fname">${f.name}</h2>
       <p class="sub"><span class="rar" style="color:${r.color}">${r.name}</span> · ${ERA[f.era].name} · ${ERA[f.era].years}</p>
@@ -792,7 +796,7 @@
       const m = S.museum[f.id];
       const r = RARITY[f.rarity];
       return `<button class="exhibit ${m ? '' : 'unknown'} ${f.rarity === 'legendary' ? 'leg' : ''}" data-id="${f.id}" style="--rc:${r.color}">
-        <div class="pic"><img src="${D.svgUrl(f.svg)}" alt="" style="aspect-ratio:${f.w}/${f.h}"></div>
+        <div class="pic"><img src="${artUrl(f)}" alt="" loading="lazy"></div>
         <b>${m ? f.name : '???'}</b>${m && PH.finds[f.id] ? '<span class="phb" title="יש צילום אמיתי">📷</span>' : ''}<small style="color:${r.color}">${r.name}</small>${m ? `<span class="cnt">×${m.n}${m.best >= 100 ? ' ⭐' : ''}</span>` : ''}</button>`;
     }).join('');
     $$('.exhibit').forEach((b) => b.onclick = () => {

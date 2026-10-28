@@ -5,6 +5,7 @@ import { EffectComposer } from '../vendor/three/addons/postprocessing/EffectComp
 import { RenderPass } from '../vendor/three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from '../vendor/three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/three/addons/postprocessing/OutputPass.js';
+import { GTAOPass } from '../vendor/three/addons/postprocessing/GTAOPass.js';
 
 const D = window.SHCHAVOT;
 const PH = window.SHCHAVOT_PHOTOS || { sites: {}, finds: {} };
@@ -21,7 +22,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /* ---------- renderer ---------- */
 let renderer, scene, camera, composer, bloom, clock, host = null, overlay = null, ro = null;
-let running = false, mode = 'idle';
+let running = false, mode = 'idle', aoPass = null, slow = 0;
 function initRenderer() {
   if (renderer) return true;
   try {
@@ -153,7 +154,7 @@ diffuseColor.rgb = mix(mix(dirt, dry, smoothstep(0.3, 0.65, g)), green, pch*0.75
   return m;
 }
 
-function buildWorld(site) {
+function buildWorld(site, withAO = false) {
   scene = new THREE.Scene();
   const skyTop = new THREE.Color('#3f7cc4'), skyHor = new THREE.Color(site && site.sky ? site.sky[1] : '#ffd9a0');
   scene.fog = new THREE.Fog(skyHor.clone().lerp(new THREE.Color('#c9d6e4'), 0.4), 34, 120);
@@ -168,8 +169,15 @@ function buildWorld(site) {
         gl_FragColor = vec4(c, 1.0); }`,
   }));
   scene.add(sky);
+  // the sky also lights everything softly (image-based lighting)
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene(); envScene.add(sky.clone());
+  const gnd = new THREE.Mesh(new THREE.CircleGeometry(200, 16), new THREE.MeshBasicMaterial({ color: '#6b5236' })); gnd.rotation.x = -Math.PI / 2; gnd.position.y = -1; envScene.add(gnd);
+  scene.environment = pmrem.fromScene(envScene, 0.04).texture;
+  scene.environmentIntensity = 0.6;
+  pmrem.dispose();
   // light
-  hemi = new THREE.HemisphereLight('#cfe3ff', '#6b4a2c', 0.85); scene.add(hemi);
+  hemi = new THREE.HemisphereLight('#cfe3ff', '#6b4a2c', 0.45); scene.add(hemi);
   sun = new THREE.DirectionalLight('#fff0d6', 2.6);
   sun.position.set(9, 13, -6);
   sun.castShadow = true;
@@ -208,11 +216,23 @@ function buildWorld(site) {
   if (composer) composer.dispose();
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
+  aoPass = null; slow = 0;
+  if (!MOBILE && withAO) {
+    try {
+      const ao = new GTAOPass(scene, camera, host.clientWidth, host.clientHeight);
+      aoPass = ao;
+      ao.output = GTAOPass.OUTPUT.Default; ao.blendIntensity = 0.9;
+      ao.updateGtaoMaterial({ radius: 0.7, distanceExponent: 1.4, thickness: 1.2, scale: 1.1, samples: 16 });
+      ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 });
+      composer.addPass(ao);
+    } catch (e) { /* ambient occlusion is a bonus */ }
+  }
   bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.55, 0.86);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
   resize();
   buildFx();
+  buildTools(); showTool(toolKind);
 }
 
 function addGrass() {
@@ -295,6 +315,71 @@ function addProps() {
   heap = new THREE.Mesh(hg, heapMat); heap.position.set(7.6, 0, -1.6); heap.scale.set(0.01, 0.01, 0.01); heap.castShadow = true; heap.receiveShadow = true; scene.add(heap);
 }
 
+/* ---------- the tool in your hand ---------- */
+let toolRig = null, toolKind = 'pick', swingT = 9, toolPos = new THREE.Vector3(), toolSeen = 0;
+function buildTools() {
+  const wood = new THREE.MeshStandardMaterial({ color: '#8a5a32', roughness: 0.7 });
+  const steel = new THREE.MeshStandardMaterial({ color: '#c7ccd2', roughness: 0.35, metalness: 0.85 });
+  const dark = new THREE.MeshStandardMaterial({ color: '#2a2d31', roughness: 0.5, metalness: 0.6 });
+  const make = (kind) => {
+    const g = new THREE.Group();
+    if (kind === 'pick') {
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 1.15, 10), wood); handle.position.y = -0.58; g.add(handle);
+      const head = new THREE.Group(); head.position.y = -1.12;
+      const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.05, 0.42, 8), steel); blade.rotation.z = Math.PI / 2; blade.position.x = 0.22; blade.rotation.y = 0.1;
+      const adze = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.09), steel); adze.position.x = -0.15;
+      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.1), dark);
+      head.add(blade, adze, eye); head.rotation.z = -0.15; g.add(head);
+    } else if (kind === 'trowel') {
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.034, 0.32, 10), wood); handle.position.y = -0.16; g.add(handle);
+      const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0.09, 0.05); sh.lineTo(0, 0.32); sh.lineTo(-0.09, 0.05); sh.closePath();
+      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.008, bevelEnabled: false }), steel); blade.rotation.x = Math.PI; blade.position.y = -0.34; g.add(blade);
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.08, 6), dark); neck.position.y = -0.34; g.add(neck);
+    } else {
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.026, 0.3, 10), wood); handle.position.y = -0.15; g.add(handle);
+      const ferrule = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 12), new THREE.MeshStandardMaterial({ color: '#c9a24a', metalness: 0.8, roughness: 0.3 })); ferrule.position.y = -0.32; g.add(ferrule);
+      const bristles = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.09, 0.035), new THREE.MeshStandardMaterial({ color: '#d8c49a', roughness: 1 })); bristles.position.y = -0.39; g.add(bristles);
+    }
+    g.traverse((o) => { o.castShadow = true; });
+    return g;
+  };
+  toolRig = new THREE.Group();
+  toolRig.userData.models = { pick: make('pick'), trowel: make('trowel'), brush: make('brush') };
+  const swing = new THREE.Group(); toolRig.add(swing); toolRig.userData.swing = swing;
+  for (const m of Object.values(toolRig.userData.models)) { m.visible = false; swing.add(m); }
+  toolRig.visible = false;
+  scene.add(toolRig);
+}
+function showTool(kind) {
+  toolKind = kind;
+  if (!toolRig) return;
+  for (const [k, m] of Object.entries(toolRig.userData.models)) m.visible = k === kind;
+}
+function updateTool(dt) {
+  if (!toolRig) return;
+  const has = toolRig.userData.models[toolKind];
+  toolSeen = Math.max(0, toolSeen - dt);
+  const vis = !!has && mode === 'dig' && (!!hoverP || toolSeen > 0);
+  toolRig.visible = vis;
+  if (!vis) return;
+  const target = hoverP || toolPos;
+  toolPos.lerp(target, toolRig.userData.placed ? 1 - Math.pow(0.0001, dt) : 1); toolRig.userData.placed = true;
+  // held toward you: the rig leans back to the camera so the handle reads on screen
+  const S = toolKind === 'pick' ? 1.45 : 1.9, grip = (toolKind === 'pick' ? 1.15 : 0.42) * S, lean = 0.75;
+  toolRig.scale.setScalar(S);
+  toolRig.position.set(toolPos.x + Math.sin(camYaw) * Math.sin(lean) * grip, toolPos.y + Math.cos(lean) * grip, toolPos.z + Math.cos(camYaw) * Math.sin(lean) * grip);
+  toolRig.rotation.set(0, 0, 0);
+  toolRig.rotateY(camYaw); toolRig.rotateX(-lean); toolRig.rotateY(Math.PI / 2);
+  swingT += dt;
+  // raised, then down onto the point, then back up
+  const rest = toolKind === 'pick' ? 1.05 : 0.55, hit = 0;
+  const a = swingT < 0.09 ? rest + (hit - rest) * (swingT / 0.09) : swingT < 0.4 ? hit + (rest - hit) * Math.pow((swingT - 0.09) / 0.31, 0.7) : rest;
+  const sw = toolRig.userData.swing;
+  sw.rotation.z = toolKind === 'pick' ? a : a * 0.8;
+  sw.position.y = toolKind === 'pick' ? 0 : (a / rest) * 0.12;
+  if (toolKind !== 'pick') sw.rotation.x = Math.sin(swingT * 30) * 0.08 * Math.max(0, 1 - swingT * 3);
+}
+
 /* ---------- the dig in this world ---------- */
 const vIdx = (gx, gz) => gz * GN + gx;
 const wx = (gx) => -HALF + gx / RES, wz = (gz) => -HALF + gz / RES;
@@ -339,7 +424,10 @@ function prepareDig(dg) {
     }
     const top = 0.22 + z.y * ROWD + R() * 0.12;
     const svg = isItem ? z.it.svg : z.f.svg;
-    const mesh = spriteMesh(svg, w - 0.12, h - 0.12, isItem ? null : D.RARITY[z.f.rarity]);
+    const ph = !isItem && PH.finds[z.f.id];
+    const SLABS = { r_pilate: 1, s_scroll: 1, b_mosaic: 1 };
+    const url = ph && (ph.cut || (SLABS[z.f.id] ? ph.src : null));
+    const mesh = spriteMesh(svg, w - 0.12, h - 0.12, isItem ? null : D.RARITY[z.f.rarity], url, R);
     mesh.position.set(x0 + w / 2, -top + 0.012, zz0 + h / 2);
     scene.add(mesh);
     const o = { z, x0: x0 + 0.06, x1: x0 + w - 0.06, z0: zz0 + 0.06, z1: zz0 + h - 0.06, top, mesh, verts: [], exposedFirst: false };
@@ -368,13 +456,29 @@ function prepareDig(dg) {
   glints = [];
   heapVol = 0;
   heap.scale.set(0.01, 0.01, 0.01);
-  camT.set(0, -0.6, 0); camYaw = 0.6; camPitch = 0.7; camDist = 14;
+  camT.set(0, -0.6, 0); camYaw = 0.6; camPitch = 0.9; camDist = 13;
 }
 
 const texCache = {};
-function spriteMesh(svg, w, h, rar) {
-  const key = svg.length + ':' + svg.slice(-60);
+function spriteMesh(svg, w, h, rar, url, R) {
+  const key = url || svg.length + ':' + svg.slice(-60);
   let tex = texCache[key];
+  if (!tex && url) {
+    // a real object: its photo, fitted into the footprint without stretching
+    tex = new THREE.Texture(); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const im = new Image();
+    im.onload = () => {
+      const c = document.createElement('canvas'), px = 384;
+      c.width = Math.round(px * Math.min(3, w / h)); c.height = Math.round(px * Math.min(3, h / w));
+      const x = c.getContext('2d'), s = Math.min(c.width / im.width, c.height / im.height);
+      const turn = (w > h) !== (im.width > im.height) && Math.abs(w - h) > 0.3;
+      if (turn) { const s2 = Math.min(c.width / im.height, c.height / im.width); x.translate(c.width / 2, c.height / 2); x.rotate(Math.PI / 2); x.drawImage(im, -im.width * s2 / 2, -im.height * s2 / 2, im.width * s2, im.height * s2); }
+      else x.drawImage(im, (c.width - im.width * s) / 2, (c.height - im.height * s) / 2, im.width * s, im.height * s);
+      tex.image = c; tex.needsUpdate = true;
+    };
+    im.src = url;
+    texCache[key] = tex;
+  }
   if (!tex) {
     const c = document.createElement('canvas'); const px = 256;
     c.width = Math.round(px * Math.min(3, w / h)); c.height = Math.round(px * Math.min(3, h / w));
@@ -384,9 +488,10 @@ function spriteMesh(svg, w, h, rar) {
     im.src = D.svgUrl(svg);
     texCache[key] = tex;
   }
-  const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.25, roughness: 0.55, metalness: 0.1, emissive: new THREE.Color(rar ? rar.color : '#ffffff'), emissiveMap: tex, emissiveIntensity: 0 });
+  const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.25, roughness: url ? 0.7 : 0.55, metalness: 0.05, bumpMap: url ? tex : null, bumpScale: url ? 2.2 : 0, emissive: new THREE.Color(rar ? rar.color : '#ffffff'), emissiveMap: tex, emissiveIntensity: 0 });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
   m.rotation.x = -Math.PI / 2;
+  if (R) m.rotation.z = (R() - 0.5) * 0.18;
   m.receiveShadow = true;
   return m;
 }
@@ -396,6 +501,7 @@ let heapVol = 0;
 function carve(p, spec) {
   const res = { touched: false, removed: 0, harmed: new Map(), first: [], done: [], hard: 0.2, colors: ['#8a6a48', '#5a4030', '#b89a72'] };
   if (!dig) return res;
+  if (spec.kind !== 'dyn') { swingT = 0; toolSeen = 0.9; toolPos.copy(p); }
   const rad = spec.r, gx0 = Math.max(1, Math.floor((p.x - rad + HALF) * RES)), gx1 = Math.min(GN - 2, Math.ceil((p.x + rad + HALF) * RES));
   const gz0 = Math.max(1, Math.floor((p.z - rad + HALF) * RES)), gz1 = Math.min(GN - 2, Math.ceil((p.z + rad + HALF) * RES));
   const MATS = D.MATS3D;
@@ -583,7 +689,9 @@ function updateCamera(dt, t) {
 function frame() {
   if (!running) return;
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
+  const raw = clock.getDelta(), dt = Math.min(0.05, raw), t = clock.elapsedTime;
+  // keep it smooth: if frames get slow, drop the ambient occlusion first
+  if (aoPass && aoPass.enabled) { slow = slow * 0.95 + (raw > 0.045 ? 1 : 0) * 0.05; if (slow > 0.6) aoPass.enabled = false; }
   U.uTime.value = t;
   // the ground settles into its new shape over a few frames
   if (moving && heights) {
@@ -647,6 +755,7 @@ function frame() {
   }
   beams = beams.filter((b) => { b.t += dt; b.m.material.uniforms.a.value = Math.sin(Math.min(1, b.t / b.life) * Math.PI); if (b.t > b.life) { scene.remove(b.m); return false; } return true; });
   updateCamera(dt, t);
+  updateTool(dt);
   // labels follow their point in the world
   labels = labels.filter((l) => {
     l.t += dt; const f = l.t / l.life;
@@ -729,7 +838,7 @@ let inputBound = false;
 function start(el, dg, site, h) {
   if (!attach(el)) return false;
   handlers = h || {};
-  buildWorld(site);
+  buildWorld(site, true);
   prepareDig(dg);
   if (!inputBound) { bindInput(); inputBound = true; }
   mode = 'dig';
@@ -767,6 +876,7 @@ window.DIG3D = {
   sonar(p) { sonarT = 0; U.uSonar.value.set(p.x, p.y, p.z, 0); holo(true, p); },
   artCenter(z) { const o = arts.find((a) => a.z === z) || items.find((a) => a.z === z); return o ? new THREE.Vector3((o.x0 + o.x1) / 2, -o.top + 0.1, (o.z0 + o.z1) / 2) : new THREE.Vector3(); },
   rotate(dir) { camYaw += dir * Math.PI / 4; },
+  setTool(kind) { showTool(kind); },
   vec: (x, y, z) => new THREE.Vector3(x, y, z),
   supported: !!window.WebGL2RenderingContext,
 };
