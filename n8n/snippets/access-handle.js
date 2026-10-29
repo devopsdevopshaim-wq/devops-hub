@@ -442,6 +442,7 @@ switch (b.action) {
   case 'upd-settings':
   case 'upd-grant':
   case 'lead-delete':
+  case 'task-done':
   case 'lic-delete': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     sd.licenses = sd.licenses || {};
@@ -464,7 +465,15 @@ switch (b.action) {
         code: T0.code && T0.code.exp > now ? T0.code.plain : '' }));
     const STUDIO_LOG = /ניסיון|נרשם|קוד אימות|סטודיו|שדרוג|אירוע|תשלום|עדכון/;
     const activity = () => (sd.log || []).filter((x) => STUDIO_LOG.test(x.what || '')).slice(0, 80).map((x) => ({ at: x.at, what: x.what, who: x.who }));
-    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads(), activity: activity() });
+    // the owner's to-do list is worked out in the admin from the leads and licences; the server only keeps what was marked done
+    sd.tasksDone = sd.tasksDone || {};
+    if (b.action === 'task-done') {
+      const k = line(b.key, 200); if (!k) return out({ ok: false, error: 'bad-input' }, 400);
+      if (b.undo === '1' || b.undo === true) delete sd.tasksDone[k]; else sd.tasksDone[k] = new Date(now).toISOString();
+      const ks = Object.keys(sd.tasksDone); if (ks.length > 3000) for (const x of ks.slice(0, ks.length - 3000)) delete sd.tasksDone[x];
+      return out({ ok: true, tasksDone: sd.tasksDone });
+    }
+    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads(), activity: activity(), tasksDone: sd.tasksDone });
     if (b.action === 'lead-delete') { if (sd.trialLeads) delete sd.trialLeads[email(b.email)]; return out({ ok: true, leads: leads(), licenses: list() }); }
     // updates: publish a build as an update (notes, price, or free for everyone), take it back, the default price
     if (b.action === 'upd-settings') { U.price = money(b.price) || U.price; log('מחיר עדכון גרסה: ' + U.price, ADMIN_EMAIL); return out({ ok: true, upd: U, licenses: list() }); }
@@ -634,11 +643,13 @@ switch (b.action) {
     // The admin's own devices (ones that already signed in as admin) are never held back. Guessing from any other device gets
     // 10 tries an hour in total, however many addresses it comes from, so a short, memorable password is not easy to brute-force.
     const trusted = trustedDev;
-    if (adm && !trusted && sd.lock['admin-guess'] > now) return out({ ok: false, error: 'too-many' }, 429);
+    // while unknown devices are held back, the emailed initial password still opens (the mailbox is the proof), never a guess
+    const guessLock = adm && !trusted && sd.lock['admin-guess'] > now;
     // two checks every time (the chosen password and an emailed initial one), real or dummy, so the time reveals nothing
     const okMain = acc && acc.pw ? pwCheck(pw, acc.pw) : pwDummy(pw);
     const okTemp = tempOk(acc) ? pwCheck(pw, acc.tmp.h) : pwDummy(pw);
-    const good = okMain || okTemp, viaTemp = !okMain && okTemp;
+    if (guessLock && !okTemp) return out({ ok: false, error: 'too-many' }, 429);
+    const good = guessLock ? okTemp : okMain || okTemp, viaTemp = guessLock || (!okMain && okTemp);
     const fail = (why) => {
       const f1 = (sd.fails[lk] = (sd.fails[lk] || []).filter((t) => now - t < HOUR).concat(now));
       const f2 = (sd.fails[e] = (sd.fails[e] || []).filter((t) => now - t < HOUR).concat(now));

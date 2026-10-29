@@ -600,6 +600,9 @@ async function studioTrial(tag) {
   check(t + 'asking for an event pass tells the owner, with the price', r.body.ok && r.mail && /כרטיס אירוע/.test(r.mail.subject) && /79/.test(r.mail.text), r.body);
   r = await call({ action: 'lic-list', token: await adm() });
   const row = r.body.licenses.filter((x) => x.email === 'new@example.com')[0];
+  { const k = 'req:new@example.com'; let q = await call({ action: 'task-done', token: await adm(), key: k });
+    check(t + 'the owner marks a task done, and it stays done', q.body.ok && q.body.tasksDone[k]);
+    q = await call({ action: 'task-done', token: tok2, key: k }); check(t + 'only the owner can', q.code === 403); }
   check(t + 'the owner sees the trial, its events and the request', row && row.plan.tier === 'free' && row.trial.events.length === 2 && row.planReq.want === 'pass', row);
   r = await call({ action: 'lic-pay', token: await adm(), email: 'new@example.com', amount: '79', method: 'ביט', plan: 'pass' });
   check(t + 'a paid pass opens everything for 48 hours, without making the licence paid', r.body.ok && r.body.license.plan.tier === 'pass' && !r.body.license.paid && !r.body.license.planReq, r.body.license);

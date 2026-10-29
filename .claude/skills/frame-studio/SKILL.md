@@ -931,3 +931,28 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
 - The Worker cron (every 2 h) calls `studioDigest()` on the main object.
 - After 20:00 Israel time, once a day (`sd.digestDay`), it emails the owner a summary: new leads with phones, verified, trials started, events, open requests, payments, who worked today with hours, and trials not used yet.
 - It is skipped on a day with no activity.
+
+## Offers on the left, the owner's to-do list, and lifting the admin lock (Oct 29, v80)
+
+**Admin lock:**
+- The deploy's `RESET` is bumped to v3. A new seed hash lifts every admin lock-out (the password stays the secret's).
+- While `admin-guess` holds unknown devices back, the emailed initial password ("שכחתי סיסמה") still signs in; a guessed password never does.
+
+**Offers panel:**
+- `#pl-offers` in plan.js is a drawer fixed to the left edge. It shows on trial, free and pass, and never on the gate.
+- It holds the promotion, the 4 plans with prices, "אני מעוניין/ת", what is included and the terms.
+- "אני מעוניין/ת" sends `plan-request` with a note ("מתוך חלון המבצעים בתוכנה"). The owner gets the alert email.
+- ✕ collapses it to a "💎 מבצעים" tab, remembered as `fs-offers-min`.
+
+**Owner's to-do list:**
+- "📋 משימות לביצוע" is worked out in admin-licenses.js from the leads and licences:
+  - ⏳ unverified, with the live code to send;
+  - 📞 every registration (an intro call);
+  - 📩 upgrade request, with 💰 to the payment row;
+  - ⌛ trial ending in 3 days or less;
+  - 😴 trial not used after a day;
+  - 🔁 trial ended, now on free;
+  - 📅 subscription ended.
+- Each task has 💬, 📞 and "✔ בוצע".
+- The server keeps only what was done (`sd.tasksDone`, admin action `task-done`, returned by `lic-list`).
+- A badge counts the open tasks, and a checkbox shows the done ones.

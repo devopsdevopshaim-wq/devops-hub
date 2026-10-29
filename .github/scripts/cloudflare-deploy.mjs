@@ -45,7 +45,7 @@ if (ADMIN_PASSWORD.length >= 8) {
   // the same secret gives the same hash on every deploy, so a deploy does not look like a new password (which would sign the admin out everywhere).
   // RESET changes the hash once: the next deploy then puts the admin password back to the ADMIN_PASSWORD secret (and clears lock-outs),
   // even when the secret's value is the same as before. Bump it when the owner is locked out and has set the secret.
-  const RESET = 'v2';
+  const RESET = 'v3';   // v3: lifted the lock-out left by the deploy checks (Oct 29)
   const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-' + RESET).digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
