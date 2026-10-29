@@ -197,7 +197,40 @@
     if (was === 'trial' && t === 'free') setTimeout(function () { FS.upgrade('🎁 הניסיון החינמי הסתיים. התוכנה ממשיכה לעבוד בגרסה החינמית, ואפשר לפתוח הכל שוב בכל רגע.'); }, 800);
     if (was !== t) ls('fs-plan-was', t);
   }
-  FS.on('plan', function () { pill(); report(); marks(); });
+  /* ---------- the offers, on the left of the screen while on the trial or the free tier: every plan with its price, the
+     promotion and the terms; "אני מעוניין/ת" tells the owner which plan (a lead with the plan in it) ---------- */
+  function offers() {
+    var t = FS.planTier(), el = document.getElementById('pl-offers'), want = t === 'trial' || t === 'free' || t === 'pass';
+    if (document.body.classList.contains('gated')) { if (el) el.hidden = true; clearTimeout(offers._t); offers._t = setTimeout(offers, 1500); return; }   /* again once the sign-in closes */
+    if (!want) { if (el) el.hidden = true; return; }
+    if (!el) {
+      el = document.createElement('aside'); el.id = 'pl-offers'; el.setAttribute('aria-label', 'מבצעים לרכישה'); document.body.appendChild(el);
+      el.addEventListener('click', function (e) {
+        if (e.target.closest('[data-pl-toggle]')) { var c = !el.classList.contains('min'); el.classList.toggle('min', c); ls('fs-offers-min', c ? '1' : '0'); return; }
+        var b = e.target.closest('[data-pl-want]'); if (!b) return;
+        var L = LIC.get() || {}, name = b.closest('.plo-card').querySelector('h4').textContent, note = el.querySelector('.plo-note');
+        b.disabled = true; b.textContent = '…';
+        LIC.call('plan-request', { token: L.token, want: b.dataset.plWant, note: 'מתוך חלון המבצעים בתוכנה' }).then(function (r) {
+          if (r && r.ok) { b.textContent = '✔ נשלח'; note.innerHTML = '✔ חיים קיבל את הבקשה ל' + FS.esc(name) + ' ויחזור אליך. אפשר גם <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני מעוניין/ת ב' + name + ' של אופטימוס (' + (L.email || '') + ')') + '">בוואטסאפ</a>.'; }
+          else { b.disabled = false; b.textContent = 'אני מעוניין/ת'; note.innerHTML = 'לא נשלח כרגע. <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני מעוניין/ת ב' + name + ' של אופטימוס (' + (L.email || '') + ')') + '">כותבים לחיים בוואטסאפ</a>.'; }
+        });
+      });
+    }
+    el.hidden = false; el.classList.toggle('min', ls('fs-offers-min') === '1');
+    if (el._drawn) return; el._drawn = true;
+    prices().then(function (pr) {
+      var P = { pass: pr.passPrice || 79, month: pr.monthPrice || 89, year: pr.yearPrice || 790, full: pr.price || 990 }, cur = ' ' + (pr.currency || '₪'), h = pr.passHours || 48;
+      var cards = [['pass', '🎟️ כרטיס אירוע', P.pass, 'הכל פתוח ל־' + h + ' שעות'], ['month', '📅 מנוי חודשי', P.month, 'הכל פתוח לחודש'], ['year', '📆 מנוי שנתי', P.year, 'הכי משתלם'], ['full', '💎 רישיון מלא', P.full, 'פעם אחת, לתמיד']];
+      el.innerHTML = '<button class="plo-tab" data-pl-toggle title="מבצעים לרכישה">💎 מבצעים</button><div class="plo-in"><div class="plo-head"><b>💎 אופטימוס המלא</b><button data-pl-toggle title="הסתרה">✕</button></div>' +
+        (pr.promo ? '<p class="plo-promo">🏷️ ' + FS.esc(pr.promo) + '</p>' : '') +
+        cards.map(function (c) { return '<div class="plo-card' + (c[0] === 'year' ? ' best' : '') + '"><h4>' + c[1] + '</h4><b>' + Number(c[2]).toLocaleString('he-IL') + cur + '</b><small>' + c[3] + '</small><button data-pl-want="' + c[0] + '">אני מעוניין/ת</button></div>'; }).join('') +
+        '<ul class="plo-inc"><li>כל עיצובי ה־AI בלי הגבלה</li><li>הדפסות בלי סימן</li><li>קולאז׳ ועורך מסגרות מקצועי</li><li>AI גם בלי אינטרנט</li></ul>' +
+        (pr.terms ? '<p class="plo-terms">💳 ' + FS.esc(pr.terms) + '</p>' : '<p class="plo-terms">💳 ביט, פייבוקס, העברה או אשראי. מיד אחרי התשלום הכל נפתח.</p>') +
+        '<p class="plo-note"></p></div>';
+    });
+  }
+  FS.on('plan', function () { pill(); report(); marks(); offers(); });
+  setTimeout(offers, 2500); setInterval(offers, 60000);
   document.addEventListener('DOMContentLoaded', pill);
   setTimeout(function () { pill(); report(); }, 1500);
   setInterval(pill, 60000);

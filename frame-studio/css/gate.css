@@ -75,3 +75,22 @@ body.studio-licensed .sb-menu a[href="admin.html"] { display: none !important; }
 
 /* the version at the bottom of the screen */
 #fs-ver { position: fixed; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); z-index: 2147483000; pointer-events: none; font: 500 11px/1.4 'Heebo', sans-serif; color: rgba(237,234,228,.55); background: rgba(12,12,14,.55); padding: 2px 10px; border-radius: 999px; direction: rtl; white-space: nowrap; }
+
+/* the offers on the left of the screen (trial / free) */
+#pl-offers { position: fixed; left: 0; top: 50%; transform: translateY(-50%); z-index: 850; display: flex; align-items: stretch; direction: rtl; font-family: 'Heebo', sans-serif; }
+#pl-offers[hidden] { display: none; }
+#pl-offers .plo-in { order: 1; width: 260px; max-height: 84vh; overflow: auto; background: rgba(16,17,22,.97); color: #EDEAE4; border: 1px solid rgba(227,196,138,.4); border-left: 0; border-radius: 0 14px 14px 0; padding: 12px; display: grid; gap: 8px; box-shadow: 10px 0 30px rgba(0,0,0,.45); }
+#pl-offers .plo-tab { order: 2; display: none; writing-mode: vertical-rl; background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); color: #1A140B; border: 0; border-radius: 0 10px 10px 0; padding: 14px 7px; font: 700 13px 'Heebo', sans-serif; cursor: pointer; box-shadow: 4px 0 14px rgba(0,0,0,.4); }
+#pl-offers.min .plo-in { display: none; }
+#pl-offers.min .plo-tab { display: block; }
+#pl-offers .plo-head { display: flex; justify-content: space-between; align-items: center; color: #F3DDA6; }
+#pl-offers .plo-head button { background: transparent; border: 0; color: #BDB3A3; cursor: pointer; font-size: 15px; }
+#pl-offers .plo-promo { margin: 0; padding: 7px 10px; border-radius: 9px; background: rgba(227,196,138,.16); border: 1px solid rgba(227,196,138,.5); font-size: 13px; font-weight: 600; }
+#pl-offers .plo-card { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; }
+#pl-offers .plo-card.best { border-color: #D9B677; background: rgba(227,196,138,.07); }
+#pl-offers .plo-card h4 { margin: 0; font-size: 14px; } #pl-offers .plo-card b { color: #F3DDA6; font-size: 16px; } #pl-offers .plo-card small { grid-column: 1 / -1; font-size: 12px; opacity: .75; }
+#pl-offers .plo-card button { grid-column: 1 / -1; margin-top: 4px; border: 1px solid rgba(227,196,138,.6); background: transparent; color: #F3DDA6; border-radius: 999px; padding: 5px; font: 600 13px 'Heebo', sans-serif; cursor: pointer; }
+#pl-offers .plo-card button:hover { background: rgba(227,196,138,.15); }
+#pl-offers .plo-inc { margin: 0; padding-inline-start: 18px; font-size: 12.5px; opacity: .9; display: grid; gap: 2px; }
+#pl-offers .plo-terms, #pl-offers .plo-note { margin: 0; font-size: 12px; opacity: .85; } #pl-offers .plo-note a { color: #F3DDA6; }
+@media (max-width: 900px) { #pl-offers .plo-in { width: 220px; } }
