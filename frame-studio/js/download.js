@@ -33,9 +33,7 @@
       b.disabled = false;
       if (r.ok || r.error === 'mail-failed') {
         form.hidden = true; codef.hidden = false; $('dl-wa').href = wa();
-        var alt = r.alt || []; $('dl-alt').hidden = !alt.length;
-        Array.prototype.forEach.call(document.querySelectorAll('#dl-alt [data-via]'), function (b) { b.hidden = alt.indexOf(b.dataset.via) < 0; });
-        $('dl-sent').innerHTML = r.ok && r.via === 'sms' ? 'המייל לא יצא, אז שלחנו את הקוד ב־SMS לטלפון שלך.' : r.ok ? 'שלחנו קוד בן 6 ספרות ל־<b dir="ltr"></b>. מזינים אותו כאן (בודקים גם בספאם ובקידומי מכירות).' : '📵 המייל לא יצא כרגע. ' + (alt.length ? 'בוחרים SMS או וואטסאפ למטה.' : 'לוחצים "קבלת הקוד בוואטסאפ", וחיים שולח את הקוד.');
+        $('dl-sent').innerHTML = r.ok ? 'שלחנו קוד בן 6 ספרות ל־<b dir="ltr"></b>. מזינים אותו כאן (בודקים גם בספאם ובקידומי מכירות).' : '📵 המייל לא יצא כרגע. לוחצים "קבלת הקוד בוואטסאפ", וחיים שולח את הקוד.';
         var bb = $('dl-sent').querySelector('b'); if (bb) bb.textContent = who.e;
         setTimeout(function () { $('dl-code').focus(); }, 30); return;
       }
@@ -61,14 +59,6 @@
       err(r.error === 'bad-code' ? 'הקוד לא נכון' + (r.left != null ? ' (נשארו ' + r.left + ' ניסיונות).' : '.') : MSG[r.error] || 'משהו השתבש. נסו שוב.');
     });
   });
-  Array.prototype.forEach.call(document.querySelectorAll('#dl-alt [data-via]'), function (b) { b.addEventListener('click', function () {
-    var via = b.dataset.via; b.disabled = true; err('');
-    call('trial-resend', { email: who.e, via: via }).then(function (r) {
-      b.disabled = false;
-      if (r.ok) { $('dl-sent').textContent = 'שלחנו את הקוד ' + (via === 'whatsapp' ? 'בוואטסאפ' : 'ב־SMS') + ' לטלפון ' + who.p + '.'; return; }
-      err(r.error === 'code-expired' ? 'הקוד פג. שולחים קוד חדש.' : r.error === 'rate-limited' ? MSG['rate-limited'] : 'ההודעה לא נשלחה. נסו בדרך אחרת או בוואטסאפ לחיים.');
-    });
-  }); });
   $('dl-again').addEventListener('click', function (ev) { ev.preventDefault(); codef.hidden = true; form.hidden = false; send(); });
   $('dl-fix').addEventListener('click', function (ev) { ev.preventDefault(); codef.hidden = true; form.hidden = false; err(''); });
 })();

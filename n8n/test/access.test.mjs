@@ -555,11 +555,6 @@ async function studioTrial(tag) {
   r = await call({ action: 'trial-code', email: 'new@example.com', name: 'צלמת חדשה', phone: '050-111-2222', where: 'app' }, { ip: '30.0.0.1' });
   const c1 = codeOf(r);
   check(t + 'a 6-digit code goes to the email (not soft: a failed send is heard)', r.body.ok && c1 && r.mail.to === 'new@example.com' && !r.mail.soft, r.body);
-  check(t + 'the email carries an SMS fallback to the registered phone', r.mail.fallback && r.mail.fallback.phone === '0501112222' && r.mail.fallback.text.includes(c1), r.mail.fallback);
-  r = await call({ action: 'trial-resend', email: 'new@example.com', via: 'whatsapp' }, { ip: '30.0.0.1' });
-  check(t + 'the same code again by WhatsApp, only to the registered phone', r.body.ok && r.mail && r.mail.sms && r.mail.via === 'whatsapp' && r.mail.phone === '0501112222' && r.mail.text.includes(c1), r);
-  r = await call({ action: 'trial-resend', email: 'nobody@example.com', via: 'sms' }, { ip: '30.0.0.1' });
-  check(t + 'no live code, nothing to send', r.code === 401 && r.body.error === 'code-expired' && !r.mail);
   r = await call({ action: 'trial-verify', email: 'new@example.com', code: c1 === '000000' ? '000001' : '000000', machine: mach, agree: 'v1' }, { ip: '30.0.0.1' });
   check(t + 'a wrong code is refused, with the tries left', r.code === 401 && r.body.error === 'bad-code' && r.body.left === 4, r.body);
   r = await call({ action: 'lic-list', token: a.token });

@@ -4,7 +4,7 @@
    a revoked licence, or one moved to another computer, closes the studio. */
 (function () {
   'use strict';
-  var FS = window.FS || {}, ACC = FS.account, LIC = FS.license, body = document.body, tab = 'trial', typed = { e: '', c: '', n: '', p: '' }, trialStep = 'details', mailFailed = false, alt = [], sentVia = 'email';
+  var FS = window.FS || {}, ACC = FS.account, LIC = FS.license, body = document.body, tab = 'trial', typed = { e: '', c: '', n: '', p: '' }, trialStep = 'details', mailFailed = false;
   var WA = '972544979771';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function unlock(kind) {
@@ -15,7 +15,7 @@
   /* the trial's code: to the email; when the email can't go out the owner sends it by WhatsApp (he sees it in the admin) */
   function sendCode() {
     LIC.trialCode(typed.n, typed.e, typed.p).then(function (r) {
-      if (r.ok || r.error === 'mail-failed') { mailFailed = r.error === 'mail-failed'; alt = r.alt || []; sentVia = r.via || 'email'; trialStep = 'code'; lock(mailFailed ? (alt.length ? 'המייל לא יצא. בוחרים SMS או וואטסאפ למטה.' : '') : '📩 הקוד נשלח.'); return; }
+      if (r.ok || r.error === 'mail-failed') { mailFailed = r.error === 'mail-failed'; trialStep = 'code'; lock(mailFailed ? '' : '📩 הקוד נשלח.'); return; }
       lock(ACC ? ACC.msg(r) : 'שגיאה');
     });
   }
@@ -29,11 +29,10 @@
     g.innerHTML = '<div class="gate-card"><p class="gate-eyebrow">אופטימוס</p><h1 id="gate-title">' + ({ trial: 'מנסים את אופטימוס בחינם', license: 'הפעלת הסטודיו' }[tab] || 'כניסת בעל העסק') + '</h1>' +
       '<div class="gate-tabs" role="tablist"><button role="tab" data-t="trial" aria-selected="' + (tab === 'trial') + '">🎁 ניסיון חינם</button><button role="tab" data-t="license" aria-selected="' + (tab === 'license') + '">🔑 קוד הפעלה</button><button role="tab" data-t="admin" aria-selected="' + (tab === 'admin') + '">🔐 מנהל</button></div>' +
       (tab === 'trial' && trialStep === 'code'
-        ? '<p class="gate-lead">' + (sentVia === 'email' ? 'שלחנו קוד בן 6 ספרות למייל <b dir="ltr">' + esc(typed.e) + '</b> (בודקים גם בספאם ובקידומי מכירות).' : 'שלחנו קוד בן 6 ספרות ב' + (sentVia === 'whatsapp' ? 'וואטסאפ' : '־SMS') + ' לטלפון <b dir="ltr">' + esc(typed.p) + '</b>.') + ' מזינים אותו כאן.</p><div class="acc">' +
+        ? '<p class="gate-lead">שלחנו קוד בן 6 ספרות למייל <b dir="ltr">' + esc(typed.e) + '</b> (בודקים גם בספאם ובקידומי מכירות). מזינים אותו כאן.</p><div class="acc">' +
           '<label>קוד אימות<input id="tr-code" dir="ltr" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"></label>' +
           '<label class="gate-agree"><input type="checkbox" id="tr-agree"> קראתי ואני מסכים/ה ל<a href="agreement.html" target="_blank" rel="noopener">הסכם השימוש</a></label>' +
           '<button class="btn" id="tr-ok">✔ אימות וכניסה</button><p class="acc-note" id="tr-note" role="status">' + esc(note || '') + '</p></div>' +
-          (alt.length ? '<div class="gate-alt"><span>לא הגיע? לקבל את הקוד לטלפון:</span>' + (alt.indexOf('sms') >= 0 ? '<button class="btn line" data-via="sms">📱 ב־SMS</button>' : '') + (alt.indexOf('whatsapp') >= 0 ? '<button class="btn line" data-via="whatsapp">💬 בוואטסאפ</button>' : '') + '</div>' : '') +
           (mailFailed ? '<p class="gate-lead small">📵 המייל לא יצא כרגע. <a target="_blank" rel="noopener" href="https://wa.me/' + WA + '?text=' + encodeURIComponent('שלום, נרשמתי לניסיון של אופטימוס ולא קיבלתי קוד. ' + typed.n + ' · ' + typed.p + ' · ' + typed.e) + '">שולחים לחיים בוואטסאפ</a> והוא שולח את הקוד בוואטסאפ.</p>' : '<p class="gate-lead small">לא הגיע? <a href="#" id="tr-again">שליחה מחדש</a> · <a href="#" id="tr-back">תיקון הפרטים</a> · <a target="_blank" rel="noopener" href="https://wa.me/' + WA + '?text=' + encodeURIComponent('שלום, נרשמתי לניסיון של אופטימוס ולא קיבלתי קוד. ' + typed.n + ' · ' + typed.p + ' · ' + typed.e) + '">קבלת הקוד בוואטסאפ</a></p>')
         : tab === 'trial'
         ? '<p class="gate-lead">כל האפשרויות פתוחות ל־2 אירועים או 30 יום, מה שמגיע אחרון. בלי סיסמה ובלי כרטיס אשראי: נרשמים עם הפרטים, מאמתים בקוד שמגיע למייל ונכנסים.</p><div class="acc">' +
@@ -70,10 +69,6 @@
       tok.addEventListener('click', verify);
       tc.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); verify(); } });
       var ag = document.getElementById('tr-again'); if (ag) ag.addEventListener('click', function (ev) { ev.preventDefault(); sendCode(); });
-      Array.prototype.forEach.call(document.querySelectorAll('#gate [data-via]'), function (b) { b.addEventListener('click', function () {
-        b.disabled = true; b.textContent = '…';
-        LIC.trialResend(typed.e, b.dataset.via).then(function (r) { if (r.ok) { sentVia = b.dataset.via; lock('📩 הקוד נשלח ' + (sentVia === 'whatsapp' ? 'בוואטסאפ' : 'ב־SMS') + '.'); } else lock(ACC ? ACC.msg(r) : 'שגיאה'); });
-      }); });
       var bk = document.getElementById('tr-back'); if (bk) bk.addEventListener('click', function (ev) { ev.preventDefault(); trialStep = 'details'; lock(); });
       setTimeout(function () { tc.focus(); }, 30);
       return;

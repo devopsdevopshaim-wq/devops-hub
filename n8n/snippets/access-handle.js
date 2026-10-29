@@ -80,7 +80,6 @@ const updFor = (L, running) => {
 // ---- אופטימוס plans: a free trial (every feature for 2 events or 30 days, whichever comes last, never past 90 days), then the free
 // tier (watermark, a little cloud AI, no collage / pro frame editor / local AI). An event pass opens everything for 48 hours; a month,
 // a year or the full licence (paid) keep it open. The program enforces the tier; the server only says which tier a licence is in.
-const smsText = (code) => `קוד האימות שלך לאופטימוס: ${code}\nתקף ל־30 דקות. פריים מגנטים`;
 const TRIAL = { events: 2, days: 30, maxDays: 90, eventPrints: 20 }, PASS_HOURS = 48;
 const planOf = (L) => {
   const pass = L.passUntil && Date.parse(L.passUntil) > now ? L.passUntil : null;
@@ -280,18 +279,7 @@ switch (b.action) {
     log('קוד אימות לניסיון נשלח', e);
     // not soft: when the email can't go out the page hears it (mail-failed) and offers WhatsApp through the owner
     return out({ ok: true, step: 'code', via: 'email' }, 200, { to: e, subject: 'אופטימוס · קוד האימות שלך: ' + code,
-      text: `שלום ${nm},\n\nקוד האימות שלך לאופטימוס: ${code}\n\nהקוד תקף ל־30 דקות. מזינים אותו ${where === 'app' ? 'בתוכנה' : 'בדף ההורדה'}.\nאם לא ביקשת אותו, אפשר להתעלם מההודעה.\n\nפריים מגנטים · 054-4979771`,
-      fallback: { phone: ph, text: smsText(code) } });   // the server sends it by SMS instead when the email fails (when SMS is set up)
-  }
-  // the code again, by SMS or WhatsApp to the phone the person registered with (the same live code; never to another number)
-  case 'trial-resend': {
-    const e = email(b.email), via = b.via === 'whatsapp' ? 'whatsapp' : 'sms';
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return out({ ok: false, error: 'bad-input' }, 400);
-    if (!hit('tr-ip', IPK, 10, HOUR) || !hit('tr-mail', e, 4, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
-    const T0 = (sd.trialLeads || {})[e], c = T0 && T0.code;
-    if (!c || c.exp < now || !T0.phone) return out({ ok: false, error: 'code-expired' }, 401);
-    log('קוד אימות נשלח שוב (' + via + ')', e);
-    return out({ ok: true, step: 'code', via }, 200, { sms: true, via, phone: T0.phone, text: smsText(c.plain) });
+      text: `שלום ${nm},\n\nקוד האימות שלך לאופטימוס: ${code}\n\nהקוד תקף ל־30 דקות. מזינים אותו ${where === 'app' ? 'בתוכנה' : 'בדף ההורדה'}.\nאם לא ביקשת אותו, אפשר להתעלם מההודעה.\n\nפריים מגנטים · 054-4979771` });
   }
   case 'trial-verify': {
     const e = email(b.email), code = String(b.code || '').replace(/\D/g, ''), mach = String(b.machine || '').toLowerCase();
