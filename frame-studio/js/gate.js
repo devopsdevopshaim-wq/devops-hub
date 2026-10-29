@@ -101,6 +101,12 @@
     [em, cd].forEach(function (i) { i.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); submit(); } }); });
     setTimeout(function () { (em.value ? cd : em).focus(); }, 30);
   }
+  /* the version, always at the bottom of the screen (also on this sign-in screen): the page's number and the installed program's */
+  (function () {
+    var D = window.FSDesktop, v = document.createElement('div'); v.id = 'fs-ver'; v.setAttribute('aria-label', 'גרסת התוכנה');
+    v.textContent = 'אופטימוס · גרסה ' + (window.FS_V || '?') + (D && D.version ? ' · תוכנה ' + D.version : '');
+    body.appendChild(v);
+  })();
   if (!ACC || !LIC) { lock('אין חיבור לשרת הכניסה.'); return; }
   /* The first sign-in on this computer stays: the studio opens at once, with or without the internet, and is checked with the
      server in the background when there is a connection. An ended session signs in again by itself (FS.account.relogin with

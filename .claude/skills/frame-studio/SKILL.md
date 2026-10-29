@@ -846,3 +846,11 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
 - **`sendMail` order:** Brevo, then Resend, then Gmail (`GMAIL_APP_PASSWORD` plus optional `GMAIL_USER`, default the admin's Gmail; the mail goes out from that address).
 - **The deploy** (`cloudflare-deploy.mjs`) takes `GMAIL_APP_PASSWORD` from its own secret or from the SPIDER bundle (`GMAIL_APP_PASSWORD xxxx xxxx xxxx xxxx`), masks it, sets it as a Worker secret, and signs in to Gmail once (sending nothing). Its log line is "✅ מיילים נשלחים דרך Gmail", or ❌ with the reason.
 - **The owner's one-time step when it is missing:** Google account → 2-Step Verification on → https://myaccount.google.com/apppasswords → create one (16 letters) → GitHub secret `GMAIL_APP_PASSWORD` → run "Deploy sign-in server to Cloudflare".
+
+## The version at the bottom, and checking mail for a given address (Oct 29, v76)
+
+- **Version label:** `gate.js` adds `#fs-ver` on every screen, including the sign-in. It reads "אופטימוס · גרסה {FS_V} · תוכנה {FSDesktop.version}", sits fixed at the bottom centre and doesn't take clicks.
+- **Mail check for one address:** the Cloudflare deploy's manual input `mailtest` takes an email address.
+  - The deploy signs in as the admin and logs what the server knows of that address: registered or not, verified or not, whether a live code exists, the licence, and the latest registrations with masked addresses.
+  - Then it sends that address a real code with its own name and phone.
+  - With `mailtest` = 1 it mails the owner's `+mailtest` address instead.
