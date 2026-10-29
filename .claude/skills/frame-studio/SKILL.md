@@ -854,3 +854,25 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
   - The deploy signs in as the admin and logs what the server knows of that address: registered or not, verified or not, whether a live code exists, the licence, and the latest registrations with masked addresses.
   - Then it sends that address a real code with its own name and phone.
   - With `mailtest` = 1 it mails the owner's `+mailtest` address instead.
+
+## The code by SMS or WhatsApp (Oct 29, v77)
+
+**Server:**
+- `trial-code`'s mail carries `fallback: {phone, text}`. If the email fails and SMS is set up, the Worker sends the same code by SMS and answers `via: 'sms'`.
+- `trial-resend` {email, via: sms|whatsapp} sends the same live code, and only to the phone that registered. Limits: 4 an hour per email, 10 an hour per IP.
+- `cloudflare/src/text.mjs` (`sendText`, `textChannels`, `intlPhone`) talks to Twilio:
+  - SMS uses `TWILIO_SMS_FROM`;
+  - WhatsApp uses `TWILIO_WHATSAPP_FROM`, plus `TWILIO_WA_CONTENT_SID`, an approved template with {{1}} = the code, for messages outside a chat.
+- Every `step: 'code'` answer carries `alt`, the channels that are on.
+- Missing Twilio secrets mean `alt` is `[]` and resend answers `channel-off`.
+- The deploy checks the Twilio account.
+- Tests: `cloudflare/test/text.test.mjs` and `studioTrial` (426 checks).
+
+**Gate and download page:**
+- "לא הגיע? לקבל את הקוד לטלפון: 📱 ב־SMS / 💬 בוואטסאפ" appears when `alt` is not empty.
+- The text says where the code was sent.
+- The manual "קבלת הקוד בוואטסאפ" (to Haim) stays.
+
+**Mail:**
+- No custom Message-ID any more (Gmail sets its own).
+- The text asks people to look in spam and promotions too.

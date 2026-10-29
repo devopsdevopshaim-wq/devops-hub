@@ -70,3 +70,7 @@ a:focus-visible { outline: 2px solid var(--champ); outline-offset: 3px; }
 .dl-plans b { color: var(--champ); font-size: 19px; } .dl-plans small { grid-column: 1 / -1; color: var(--dim); font-size: 13px; }
 .dl-inc { margin: 0 0 16px; padding-inline-start: 20px; color: var(--dim); font-size: 15px; }
 @media (max-width: 760px) { .dl-two { grid-template-columns: 1fr; } }
+
+.dl-alt { margin: 0; color: var(--dim); font-size: 15px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dl-mini { font: inherit; font-size: 14px; color: var(--champ); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.dl-mini[hidden] { display: none; }
