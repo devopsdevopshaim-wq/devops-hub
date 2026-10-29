@@ -5,6 +5,11 @@ name: Deploy sign-in server to Cloudflare
 # CLOUDFLARE_API_TOKEN (the "Edit Cloudflare Workers" template) and CLOUDFLARE_ACCOUNT_ID. Without them this workflow does nothing.
 on:
   workflow_dispatch:
+    inputs:
+      mailtest:
+        description: 'Send one real verification code to the owner (devopsdevopshaim+mailtest@gmail.com) to prove mail goes out'
+        required: false
+        default: ''
   push:
     branches: [main]
     paths: ['cloudflare/**', 'n8n/snippets/access-handle.js', 'n8n/snippets/security.js', 'n8n/hasadna-*.json', '.github/scripts/cloudflare-deploy.mjs', '.github/workflows/cloudflare-deploy.yml']
@@ -79,6 +84,7 @@ jobs:
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
           POLLINATIONS_TOKEN: ${{ secrets.POLLINATIONS_TOKEN }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          MAILTEST: ${{ github.event.inputs.mailtest }}
         run: node .github/scripts/cloudflare-deploy.mjs
       - name: Point the site at the Worker
         if: steps.have.outputs.go == 'true'

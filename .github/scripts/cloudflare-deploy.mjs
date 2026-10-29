@@ -105,6 +105,12 @@ await new Promise((r) => setTimeout(r, 4000));   // the new version spreads in a
 let info = await post({ action: 'info' }).catch(() => ({ status: 0 }));
 for (let i = 0; i < 16 && info.status !== 200; i++) { await new Promise((r) => setTimeout(r, 10000)); info = await post({ action: 'info' }).catch(() => ({ status: 0 })); }
 if (info.status === 200) note('- ✅ השרת עונה'); else { note('- ❌ השרת לא עונה (' + info.status + ')'); ok = false; }
+// on request (a manual run with mailtest): one real code to the owner's own Gmail (+mailtest), through the live server
+if (process.env.MAILTEST) {
+  const mt = await post({ action: 'trial-code', email: 'devopsdevopshaim+mailtest@gmail.com', name: 'בדיקת מערכת', phone: '0500000000', where: 'app' }).catch((e) => ({ status: 0, json: { error: String(e) } }));
+  const mb = mt.json || {};
+  note(mt.status === 200 && mb.ok ? '- ✅ בדיקת מייל אמיתית: קוד נשלח ל־devopsdevopshaim+mailtest@gmail.com (מגיע לתיבה של המנהל)' : '- ❌ בדיקת מייל אמיתית נכשלה: ' + mt.status + ' ' + JSON.stringify(mb).slice(0, 200));
+}
 const evil = await post({ action: 'info' }, 'https://evil.example').catch(() => ({ status: 0 }));
 note(evil.status === 403 ? '- ✅ בקשה מאתר זר נחסמת' : '- ❌ בקשה מאתר זר לא נחסמה (' + evil.status + ')'); if (evil.status !== 403) ok = false;
 const bad = await post({ action: 'login', email: 'devopsdevopshaim@gmail.com', password: 'definitely-not-the-password', device: 'a'.repeat(32) }).catch(() => ({ status: 0 }));
