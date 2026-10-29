@@ -833,3 +833,16 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
   - a "📝 נרשמים להורדה ולניסיון" card (verified or not, the live code with a WhatsApp send, call, delete);
   - a "⏱️ שימוש" column (total hours, this week, prints and AI);
   - promotion and payment-terms fields.
+
+## Mail: the verification codes go out through Gmail (Oct 29)
+
+- **The problem:** codes never arrived because the Cloudflare server (which runs the site) had no mail provider. There was no BREVO_API_KEY, RESEND_API_KEY or GMAIL_APP_PASSWORD, so `sendMail` returned `no-mail-provider`, the trial code answered `mail-failed`, and only the WhatsApp fallback worked.
+- **`cloudflare/src/smtp.mjs`:** `smtpSend(open, {...})` is a small SMTP client:
+  - it uses `AUTH LOGIN` on smtp.gmail.com:465 over TLS;
+  - the subject is UTF-8 (B-encoded) and the body base64;
+  - `verifyOnly` signs in and stops.
+  - The Worker opens the socket with `cloudflare:sockets` `connect(..., {secureTransport:'on'})`.
+  - Tests: `cloudflare/test/smtp.test.mjs`, against a fake server; they run in the deploy.
+- **`sendMail` order:** Brevo, then Resend, then Gmail (`GMAIL_APP_PASSWORD` plus optional `GMAIL_USER`, default the admin's Gmail; the mail goes out from that address).
+- **The deploy** (`cloudflare-deploy.mjs`) takes `GMAIL_APP_PASSWORD` from its own secret or from the SPIDER bundle (`GMAIL_APP_PASSWORD xxxx xxxx xxxx xxxx`), masks it, sets it as a Worker secret, and signs in to Gmail once (sending nothing). Its log line is "✅ מיילים נשלחים דרך Gmail", or ❌ with the reason.
+- **The owner's one-time step when it is missing:** Google account → 2-Step Verification on → https://myaccount.google.com/apppasswords → create one (16 letters) → GitHub secret `GMAIL_APP_PASSWORD` → run "Deploy sign-in server to Cloudflare".

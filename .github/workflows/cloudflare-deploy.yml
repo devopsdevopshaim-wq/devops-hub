@@ -43,6 +43,7 @@ jobs:
           node build.mjs
           node test/frame.test.mjs
           node test/live.test.mjs
+          node test/smtp.test.mjs
           printf 'ADMIN_PASSWORD_HASH=%s\nSHARED_KEY=test-shared-key\n' "$(node test/hash.mjs 'Test-Passw0rd-xyz')" > .dev.vars
           (npx wrangler dev --local --port 8787 > /tmp/wrangler-dev.log 2>&1 &)
           for i in $(seq 1 40); do curl -s localhost:8787/ >/dev/null && break; sleep 1; done
@@ -67,6 +68,8 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           MAIL_KEY: ${{ secrets.MAIL_KEY }}

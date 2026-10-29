@@ -28,6 +28,9 @@ const secrets = {
   AZURE_SPEECH_KEY: label('AZURE_SPEECH_KEY', '[A-Za-z0-9]{32,100}'), AZURE_SPEECH_REGION: label('AZURE_SPEECH_REGION', '[a-z0-9]{4,30}'),
   ELEVENLABS_API_KEY: label('ELEVENLABS_API_KEY', '(?:sk_)?[A-Za-z0-9]{32,80}') || pick(/\bsk_[a-f0-9]{40,}\b/),
   BREVO_API_KEY: (process.env.BREVO_API_KEY || '').trim(), RESEND_API_KEY: (process.env.RESEND_API_KEY || '').trim(), MAIL_FROM: (process.env.MAIL_FROM || '').trim(),
+  // or the owner's Gmail: an app password (16 letters, myaccount.google.com/apppasswords), from its own secret or the SPIDER bundle
+  GMAIL_APP_PASSWORD: (process.env.GMAIL_APP_PASSWORD || (combined.match(/GMAIL_APP_PASSWORD\W*([a-z]{4}\s?[a-z]{4}\s?[a-z]{4}\s?[a-z]{4})\b/i) || [])[1] || '').replace(/\s+/g, ''),
+  GMAIL_USER: (process.env.GMAIL_USER || '').trim(),
   // the clients' mailboxes (Gmail): a Google OAuth client; MAIL_KEY encrypts the stored tokens (derived from the Google secret when absent)
   GOOGLE_CLIENT_ID: label('GOOGLE_CLIENT_ID', '[\\w.-]+\\.apps\\.googleusercontent\\.com') || (process.env.GOOGLE_CLIENT_ID || '').trim(), GOOGLE_CLIENT_SECRET: (process.env.GOOGLE_CLIENT_SECRET || label('GOOGLE_CLIENT_SECRET', 'GOCSPX-[\\w-]{20,60}')).trim(), MAIL_KEY: (process.env.MAIL_KEY || '').trim(),
   // LiveAvatar live video avatar for Maya (the key never reaches a page; the server mints sessions). A pasted label line is tolerated: the last long token wins.
@@ -46,7 +49,7 @@ if (ADMIN_PASSWORD.length >= 8) {
   const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-' + RESET).digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
-for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.POLLINATIONS_TOKEN, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.GMAIL_APP_PASSWORD, secrets.POLLINATIONS_TOKEN, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 
 const notes = [];
 const note = (s) => { notes.push(s); console.log(s); };
@@ -82,7 +85,14 @@ if (!secrets.ANTHROPIC_API_KEY) note('- ℹ️ אין ANTHROPIC_API_KEY: מאי�
 if (!secrets.GEMINI_API_KEY) note('- ℹ️ אין GEMINI_API_KEY: ה־AI של האתרים והקומיקס יעבדו במצב המקומי בלבד');
 if (!secrets.LIVEAVATAR_API_KEY) note('- ℹ️ אין LIVEAVATAR_API_KEY: מאיה בלי שיחת וידאו חיה (LiveAvatar)');
 if (!secrets.GOOGLE_CLIENT_ID || !secrets.GOOGLE_CLIENT_SECRET) note('- ℹ️ אין GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET: חיבור תיבות המייל של הלקוחות (Gmail) עוד לא פעיל');
-if (!secrets.BREVO_API_KEY && !secrets.RESEND_API_KEY) note('- ⚠️ אין BREVO_API_KEY או RESEND_API_KEY: מיילים (סיסמה ראשונית, התראות) לא יישלחו');
+if (!secrets.BREVO_API_KEY && !secrets.RESEND_API_KEY && !secrets.GMAIL_APP_PASSWORD) note('- ⚠️ אין שירות מיילים (GMAIL_APP_PASSWORD, BREVO_API_KEY או RESEND_API_KEY): קודי אימות, סיסמאות והתראות לא יישלחו. הכי פשוט: סיסמת אפליקציה של Gmail בסוד GMAIL_APP_PASSWORD');
+else if (secrets.GMAIL_APP_PASSWORD && !secrets.BREVO_API_KEY && !secrets.RESEND_API_KEY) {
+  // the deploy signs in to Gmail once (nothing is sent) to prove the app password works
+  const tls = await import('node:tls'), { Duplex } = await import('node:stream'), { smtpSend } = await import('../../cloudflare/src/smtp.mjs');
+  const open = (host, port) => new Promise((ok, no) => { const t = tls.connect({ host, port, servername: host }, () => ok(Duplex.toWeb(t))); t.on('error', no); t.setTimeout(15000, () => t.destroy(new Error('timeout'))); });
+  const r = await smtpSend(open, { user: secrets.GMAIL_USER || 'devopsdevopshaim@gmail.com', pass: secrets.GMAIL_APP_PASSWORD, verifyOnly: true }).catch((e) => ({ error: String(e && e.message || e) }));
+  note(r.error ? '- ❌ מיילים דרך Gmail: הכניסה נכשלה (' + r.error.slice(0, 120) + '). בודקים את סיסמת האפליקציה בסוד GMAIL_APP_PASSWORD' : '- ✅ מיילים נשלחים דרך Gmail (' + (secrets.GMAIL_USER || 'devopsdevopshaim@gmail.com') + ')');
+}
 
 const ORIGIN = 'https://devopsdevopshaim-wq.github.io';
 const post = async (b, origin = ORIGIN) => {
