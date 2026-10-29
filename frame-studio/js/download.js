@@ -7,7 +7,8 @@
     return fetch(base + '/hasadna-auth', { method: 'POST', body: new URLSearchParams({ action: 'lic-info' }) });
   }).then(function (r) { return r.json(); }).then(function (r) {
     if (!r || !r.ok || !r.price) return;
-    box.innerHTML = 'רישיון למחשב אחד: <b>' + Number(r.price).toLocaleString('he-IL') + ' ' + (r.currency || '₪') + '</b> · תשלום חד־פעמי';
+    var c = ' ' + (r.currency || '₪'), n = function (v) { return Number(v).toLocaleString('he-IL') + c; };
+    box.innerHTML = 'רישיון מלא: <b>' + n(r.price) + '</b> · תשלום חד־פעמי' + (r.monthPrice ? '<br><small>או מנוי: ' + n(r.monthPrice) + ' לחודש · ' + n(r.yearPrice) + ' לשנה · כרטיס אירוע ' + n(r.passPrice) + ' (' + (r.passHours || 48) + ' שעות)</small>' : '');
     box.hidden = false;
   }).catch(function () { /* no price shown offline */ });
 })();

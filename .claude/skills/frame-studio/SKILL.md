@@ -750,3 +750,48 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
   - `slide(el, n)` adds `.sl-n` or `.sl-p`, a 0.32 s slide-and-fade in from the side the page comes from. It respects reduced motion.
   - The counter reads "2 מתוך 8".
 - **Design view** has the same side arrows on the canvas (`#mt-dnavp` / `#mt-dnavn`), and `step()` slides too.
+
+## Free trial, free tier, event pass and subscriptions (Oct 29, v74)
+
+**Server** (`n8n/snippets/access-handle.js`, built into `n8n/hasadna-access.json` with `python3 n8n/build-access-workflow.py`; Cloudflare builds from that JSON at deploy):
+- `TRIAL = { events: 2, days: 30, maxDays: 90, eventPrints: 20 }` and `PASS_HOURS = 48`.
+- `planOf(L)` returns one of:
+  - `pro`: paid, and `paidUntil` (if set) is still in the future;
+  - `pass`: `passUntil` is still in the future;
+  - `trial`: within 90 days of the start, and either fewer than 2 events or still within 30 days;
+  - `free`: anything else, with `was` set to trial or sub.
+- `licOpens(L)`: a licence opens when it is paid, on trial, or once had a period or a pass. A licence the owner issued and nobody paid for still answers 402.
+- New actions:
+  - `trial-start` (public): name, email, phone, machine and agreement. It allows one trial per email and one per computer (`sd.trialMachines`), creates a licence with `trial: {start, events}` and a code, returns a token, the code and the plan, and alerts the owner with the lead.
+  - `trial-event` (session): a day with at least 20 prints counts once.
+  - `plan-request` (session): pass / month / year / full. It sets `L.planReq` and alerts the owner with the price.
+- `lic-pay` takes `plan`:
+  - `full` (the default) sets `paid` and removes `paidUntil`;
+  - `month` / `year` set `paid` and add 30 / 365 days to `paidUntil`;
+  - `pass` adds 48 h to `passUntil` without setting `paid`, and its payments are tagged `kind:'pass'`.
+- `lic-settings` takes `passPrice` / `monthPrice` / `yearPrice` (defaults 79 / 89 / 790; full 990). `lic-info` returns them.
+- `lic-activate`, `lic-check` and the admin view all return `plan`.
+- Tests are in `n8n/test/access.test.mjs` (`studioTrial`); `node n8n/test/run-all.mjs` must pass.
+
+**Program:**
+- `account.js`:
+  - `FS.license.trialStart(name, email, phone)` keeps the code in the vault;
+  - `FS.license.plan()` / `setPlan()` read and write the plan cached with the licence, and emit `plan`.
+- `gate.js`: "🎁 ניסיון חינם" is the first, default tab, ahead of "🔑 קוד הפעלה" and "🔐 מנהל".
+- `js/plan.js` (loaded last):
+  - `FS.planTier()`: the owner and licences from before plans count as full. It ages the cached plan by the clock and by the events counted locally (`fs-plan-events`).
+  - `FS.can(what)` and `FS.planGate(what)`.
+  - The free tier:
+    - `FS.renderFull` adds a band "נערך באופטימוס · פריים מגנטים · גרסה חינמית" to every print and file;
+    - `FS.askServer` allows 3 restyle/image calls a day (`fs-plan-ai`), then returns `plan-limit`;
+    - `FS.openTab('collage')`, `[data-fm-open]` / `FS.frameMaker.open` and `FS.localAI.open` are gated;
+    - `ai.js` drops the local engine when `!FS.can('local-ai')`.
+  - `FS.on('printed')` totals the day's prints (`fs-plan-day`) and reports `trial-event`.
+  - `#plan-pill` sits in the workspace header and shows the trial (events and days left), the pass, the free tier, or a subscription ending within 7 days.
+  - `FS.upgrade(why)` opens a window comparing free with full and offering 4 plan cards. "📩 בקשה" sends `plan-request`, with WhatsApp as a fallback. The window opens by itself once, when the trial ends.
+- `admin-licenses.js`:
+  - a plan cell (trial events and end date, pass, subscription, free, 📩 request);
+  - the payment row has a plan select that is prefilled from the request;
+  - price fields for the plans;
+  - stats for trials and requests.
+- `download.html` advertises the trial, and `download.js` shows the subscription prices.

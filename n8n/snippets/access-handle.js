@@ -76,6 +76,24 @@ const updFor = (L, running) => {
   if (latest) { r.latest = { ver: latest.ver, notes: latest.notes || '', price: latest.free ? 0 : (latest.price || U.price || 49), free: !!latest.free, at: latest.at }; r.allowed = may(latest.ver); if (r.allowed) r.latest.url = UPD_DL(latest.ver); }
   return r;
 };
+// ---- אופטימוס plans: a free trial (every feature for 2 events or 30 days, whichever comes last, never past 90 days), then the free
+// tier (watermark, a little cloud AI, no collage / pro frame editor / local AI). An event pass opens everything for 48 hours; a month,
+// a year or the full licence (paid) keep it open. The program enforces the tier; the server only says which tier a licence is in.
+const TRIAL = { events: 2, days: 30, maxDays: 90, eventPrints: 20 }, PASS_HOURS = 48;
+const planOf = (L) => {
+  const pass = L.passUntil && Date.parse(L.passUntil) > now ? L.passUntil : null;
+  if (L.paid && (!L.paidUntil || Date.parse(L.paidUntil) > now)) return { tier: 'pro', until: L.paidUntil || null, pass };
+  if (pass) return { tier: 'pass', until: pass };
+  if (L.trial) {
+    const st = Date.parse(L.trial.start) || now, ev = (L.trial.events || []).length, ends = st + TRIAL.days * DAY, hard = st + TRIAL.maxDays * DAY;
+    if (now < hard && (ev < TRIAL.events || now < ends)) return { tier: 'trial', events: ev, eventsMax: TRIAL.events, eventPrints: TRIAL.eventPrints, ends: new Date(ends).toISOString(), hardEnd: new Date(hard).toISOString() };
+  }
+  return { tier: 'free', was: L.trial ? 'trial' : L.paidUntil ? 'sub' : '' };
+};
+// a licence that opens: paid, on trial (even an ended one: it opens as the free tier), or once paid for a period or a pass
+const licOpens = (L) => !!(L.paid || L.trial || L.paidUntil || L.passUntil);
+const LIC_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const licCode = () => { const h = rnd(16); let o = ''; for (let i = 0; i < 16; i++) o += LIC_ABC[parseInt(h.substr(i * 2, 2), 16) % LIC_ABC.length]; return 'FS-' + o.match(/.{4}/g).join('-'); };
 const alert = (subject, text) => ({ to: ADMIN_EMAIL, subject: 'SPIDER · ' + subject, text: text + `\n\nזמן: ${when()}\nכתובת: ${IP}\n`, alert: true });
 // 84.229.12.7 -> 84.229.x.x : enough to recognise a network, not enough to expose a person
 const maskIp = (ip) => /^\d+\.\d+\.\d+\.\d+$/.test(ip) ? ip.split('.').slice(0, 2).join('.') + '.x.x' : /:/.test(ip) ? ip.split(':').slice(0, 3).join(':') + '::' : 'לא ידוע';
@@ -241,7 +259,64 @@ switch (b.action) {
   // can see, revoke, free or replace it. Codes are random (16 characters, ~79 bits), activation is rate-limited and locks after
   // repeated failures, and every activation from another computer is refused and reported to the owner.
   // the studio's price, for the download page (public)
-  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪' }); }
+  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS }); }
+  // a free trial: name + email (+ phone) on this computer, no code and no payment. One trial per email and one per computer; the
+  // owner is told (a lead). It is a licence like any other (with a code kept on the computer for signing in again), on trial.
+  case 'trial-start': {
+    const e = email(b.email), nm = line(b.name, 60), mach = String(b.machine || '').toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2 || !/^[a-f0-9]{32,64}$/.test(mach)) return out({ ok: false, error: 'bad-input' }, 400);
+    const agreeVer = line(b.agree, 20); if (!/^v\d+$/.test(agreeVer)) return out({ ok: false, error: 'agreement-needed' }, 400);
+    if (!hit('trial-ip', IPK, 5, DAY) || !hit('trial-all', 'all', 300, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
+    sd.licenses = sd.licenses || {}; sd.trialMachines = sd.trialMachines || {};
+    const mh = sha256hex('lic-machine:' + mach), iso = new Date(now).toISOString(), was = sd.trialMachines[mh];
+    let L = sd.licenses[e];
+    if (L && !(L.trial && L.machine === mh)) return out({ ok: false, error: L.trial ? 'trial-used' : 'license-exists' }, 403);
+    if (!L && was && was !== e) return out({ ok: false, error: 'trial-used' }, 403);
+    if (!L && Object.keys(sd.licenses).length >= 2000) return out({ ok: false, error: 'too-many-clients' }, 400);
+    const fresh = !L;
+    if (fresh) {
+      L = sd.licenses[e] = { email: e, name: nm, phone: phone(b.phone), note: 'ניסיון חינם', code: licCode(), createdAt: iso, active: true, machine: mh, boundAt: iso,
+        platform: line(b.platform, 20), desktop: b.desktop === '1' || b.desktop === true, history: [{ at: iso, what: 'התחיל ניסיון חינם', ip: maskIp(IP), ua: line(UA, 90) }],
+        price: (sd.licSettings || {}).price || 990, paid: false, payments: [], trial: { start: iso, events: [] }, agreement: { ver: agreeVer, at: iso, ip: maskIp(IP), ua: line(UA, 90) } };
+      sd.trialMachines[mh] = e;
+      const ks = Object.keys(sd.trialMachines); if (ks.length > 5000) for (const k of ks.slice(0, ks.length - 5000)) delete sd.trialMachines[k];
+      log('ניסיון חינם התחיל', e);
+    }
+    if (!L.active) return out({ ok: false, error: 'license-revoked' }, 403);
+    L.lastSeen = iso; L.lastIp = maskIp(IP); L.ua = line(UA, 110); L.version = line(b.version, 20);
+    if (!L.appVer && vparse(b.version)) L.appVer = String(b.version);
+    for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h];
+    const token = newSession(e, 'studio', now + 30 * DAY, { lic: e, mh });
+    return out({ ok: true, token, role: 'studio', name: line(L.name, 60), email: e, code: L.code, exp: new Date(now + 30 * DAY).toISOString(), plan: planOf(L), upd: updFor(L, b.version) }, 200,
+      fresh ? alert('ניסיון חינם חדש באופטימוס', `${nm} (${e}${L.phone ? ', ' + L.phone : ''}) התקין/ה את אופטימוס והתחיל/ה ניסיון חינם (${TRIAL.events} אירועים או ${TRIAL.days} יום).\nזה ליד חם: כדאי להתקשר בימים הקרובים.\nמסך הניהול ← רישיונות סטודיו.`) : null);
+  }
+  // the program reports a day of real work (TRIAL.eventPrints prints or more): it counts as one of the trial's events
+  case 'trial-event': {
+    const s = session(); if (!s || s.role !== 'studio') return out({ ok: false, error: 'signed-out' }, 401);
+    const L = (sd.licenses || {})[s.lic]; if (!L || !L.active) return out({ ok: false, error: 'license-revoked' }, 403);
+    if (!hit('trial-ev', s.lic, 20, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(String(b.day || '')) ? String(b.day) : new Date(now).toISOString().slice(0, 10), n = Math.max(0, Math.min(100000, Number(b.prints) || 0));
+    if (L.trial && planOf(L).tier === 'trial' && n >= TRIAL.eventPrints && (L.trial.events || []).indexOf(day) < 0) {
+      L.trial.events = (L.trial.events || []).concat(day).slice(-10);
+      L.history = [{ at: new Date(now).toISOString(), what: 'אירוע בניסיון (' + n + ' הדפסות, ' + day + ')' }].concat(L.history || []).slice(0, 30);
+      log('אירוע בניסיון חינם ' + day, s.lic);
+    }
+    return out({ ok: true, plan: planOf(L) });
+  }
+  // the user asks to upgrade (an event pass, a month, a year, the full licence): the owner is told, records the payment and it opens
+  case 'plan-request': {
+    const s = session(); if (!s || s.role !== 'studio') return out({ ok: false, error: 'signed-out' }, 401);
+    const L = (sd.licenses || {})[s.lic]; if (!L || !L.active) return out({ ok: false, error: 'license-revoked' }, 403);
+    const want = ['pass', 'month', 'year', 'full'].indexOf(String(b.want)) >= 0 ? String(b.want) : '';
+    if (!want) return out({ ok: false, error: 'bad-input' }, 400);
+    if (!hit('plan-req', s.lic, 6, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const ls = sd.licSettings || {}, NAMES = { pass: 'כרטיס אירוע (' + PASS_HOURS + ' שעות)', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' };
+    const PRICE = { pass: ls.passPrice || 79, month: ls.monthPrice || 89, year: ls.yearPrice || 790, full: ls.price || 990 }[want];
+    L.planReq = { want, at: new Date(now).toISOString(), note: line(b.note, 200) };
+    L.history = [{ at: L.planReq.at, what: 'ביקש ' + NAMES[want] }].concat(L.history || []).slice(0, 30);
+    log('בקשת שדרוג: ' + want, s.lic);
+    return out({ ok: true, plan: planOf(L), req: L.planReq }, 200, alert('בקשת שדרוג באופטימוס: ' + NAMES[want], `${L.name || s.lic} (${s.lic}${L.phone ? ', ' + L.phone : ''}) מבקש/ת ${NAMES[want]} במחיר ${PRICE} ₪.${L.planReq.note ? '\nהערה: ' + L.planReq.note : ''}\nאחרי התשלום: מסך הניהול ← רישיונות סטודיו ← "רישום תשלום" ובוחרים את התוכנית.`));
+  }
   case 'lic-activate': {
     const e = email(b.email), code = String(b.code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''), mach = String(b.machine || '').toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || code.length < 10 || !/^[a-f0-9]{32,64}$/.test(mach)) return out({ ok: false, error: 'bad-input' }, 400);
@@ -257,7 +332,7 @@ switch (b.action) {
     }
     if (!L.active) { log('הפעלת סטודיו: רישיון מבוטל', e); return out({ ok: false, error: 'license-revoked' }, 403); }
     // a licence opens only after the owner recorded the payment, and only with the purchase agreement accepted (its version is kept)
-    if (!L.paid) { log('הפעלת סטודיו: עוד לא שולם', e); return out({ ok: false, error: 'license-unpaid' }, 402); }
+    if (!licOpens(L)) { log('הפעלת סטודיו: עוד לא שולם', e); return out({ ok: false, error: 'license-unpaid' }, 402); }
     const agreeVer = line(b.agree, 20);
     if (!/^v\d+$/.test(agreeVer)) return out({ ok: false, error: 'agreement-needed' }, 400);
     const mh = sha256hex('lic-machine:' + mach), iso = new Date(now).toISOString();
@@ -274,19 +349,19 @@ switch (b.action) {
     if (!L.appVer && vparse(b.version)) L.appVer = String(b.version);
     for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h];   // one live session per licence
     const token = newSession(e, 'studio', now + 30 * DAY, { lic: e, mh });
-    return out({ ok: true, token, role: 'studio', name: line(L.name, 60), email: e, exp: new Date(now + 30 * DAY).toISOString(), upd: updFor(L, b.version) });
+    return out({ ok: true, token, role: 'studio', name: line(L.name, 60), email: e, exp: new Date(now + 30 * DAY).toISOString(), plan: planOf(L), upd: updFor(L, b.version) });
   }
   case 'lic-check': {
     const s = session(), mach = String(b.machine || '').toLowerCase();
     if (!s || s.role !== 'studio') return out({ ok: false, error: 'signed-out' }, 401);
     const L = (sd.licenses || {})[s.lic];
     if (!L || !L.active) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-revoked' }, 403); }
-    if (!L.paid) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-unpaid' }, 402); }
+    if (!licOpens(L)) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-unpaid' }, 402); }
     if (!/^[a-f0-9]{32,64}$/.test(mach) || L.machine !== sha256hex('lic-machine:' + mach) || s.mh !== L.machine) { delete sd.sessions[tokenHash()]; return out({ ok: false, error: 'license-moved' }, 403); }
     if (!L.lastSeen || now - Date.parse(L.lastSeen) > 10 * 60000) { L.lastSeen = new Date(now).toISOString(); L.lastIp = maskIp(IP); L.version = line(b.version, 20) || L.version; }
     if (s.exp - now < 7 * DAY) s.exp = now + 30 * DAY;   // in use: the session renews
     if (!L.appVer && vparse(b.version)) L.appVer = String(b.version);   // licences from before updates were managed: the version they run
-    return out({ ok: true, role: 'studio', email: s.lic, name: line(L.name, 60), exp: new Date(s.exp).toISOString(), upd: updFor(L, b.version) });
+    return out({ ok: true, role: 'studio', email: s.lic, name: line(L.name, 60), exp: new Date(s.exp).toISOString(), plan: planOf(L), upd: updFor(L, b.version) });
   }
   // a licence holder asks for the newest update (the owner is told; the owner approves it after the payment)
   case 'upd-request': {
@@ -315,13 +390,13 @@ switch (b.action) {
   case 'lic-delete': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     sd.licenses = sd.licenses || {};
-    const ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-    const newCode = () => { const h = rnd(16); let o = ''; for (let i = 0; i < 16; i++) o += ABC[parseInt(h.substr(i * 2, 2), 16) % ABC.length]; return 'FS-' + o.match(/.{4}/g).join('-'); };
+    const newCode = licCode;
     const endSessions = (e) => { for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h]; };
     const online = {}; for (const x of Object.values(sd.sessions)) if (x && x.lic && x.exp > now) online[x.lic] = 1;
     const view = (L) => ({ email: L.email, name: L.name || '', phone: L.phone || '', note: L.note || '', code: L.code, active: L.active !== false, createdAt: L.createdAt, bound: !!L.machine,
       boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10),
-      price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null, appVer: L.appVer || '', updReq: L.updReq || null });
+      price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null, appVer: L.appVer || '', updReq: L.updReq || null,
+      plan: planOf(L), trial: L.trial || null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null });
     sd.licSettings = sd.licSettings || { price: 990, currency: '₪' };
     const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
@@ -339,7 +414,7 @@ switch (b.action) {
       log((b.action === 'upd-publish' ? 'פורסם עדכון ' : 'בוטל פרסום עדכון ') + v, ADMIN_EMAIL);
       return out({ ok: true, upd: U, licenses: list() });
     }
-    if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
+    if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; for (const k of ['passPrice', 'monthPrice', 'yearPrice']) if (money(b[k])) sd.licSettings[k] = money(b[k]); log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
     if (b.action === 'lic-create') {
       const e = email(b.email), nm = line(b.name, 60);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2) return out({ ok: false, error: 'bad-input' }, 400);
@@ -359,12 +434,19 @@ switch (b.action) {
     else if (b.action === 'lic-rotate') { L.code = newCode(); L.machine = null; L.boundAt = null; endSessions(e); L.history.unshift({ at: iso, what: 'קוד חדש הונפק' }); log('קוד סטודיו חדש הונפק', e); }
     else if (b.action === 'lic-pay') {
       // the owner records a payment (or takes one back); the licence opens once it is marked paid
-      if (b.undo === '1' || b.undo === true) { L.payments = (L.payments || []).filter((p) => p.at !== String(b.at || '')); L.paid = L.payments.length > 0; if (!L.paid) endSessions(e); L.history.unshift({ at: iso, what: 'תשלום נמחק' }); }
+      // the plan paid for: the full licence (default), a month or a year (paid until a date), or an event pass (open for PASS_HOURS)
+      if (b.undo === '1' || b.undo === true) { L.payments = (L.payments || []).filter((p) => p.at !== String(b.at || '')); L.paid = L.payments.some((p) => p.kind !== 'pass'); if (!licOpens(L)) endSessions(e); L.history.unshift({ at: iso, what: 'תשלום נמחק' }); }
       else {
         const amt = money(b.amount); if (!amt) return out({ ok: false, error: 'bad-amount' }, 400);
-        L.payments = (L.payments || []).concat({ at: iso, date: /^\d{4}-\d{2}-\d{2}$/.test(String(b.date || '')) ? String(b.date) : iso.slice(0, 10), amount: amt, method: line(b.method, 30), ref: line(b.ref, 60), note: line(b.note, 200) }).slice(-50);
+        const plan = ['pass', 'month', 'year'].indexOf(String(b.plan)) >= 0 ? String(b.plan) : 'full';
+        L.payments = (L.payments || []).concat({ at: iso, date: /^\d{4}-\d{2}-\d{2}$/.test(String(b.date || '')) ? String(b.date) : iso.slice(0, 10), amount: amt, method: line(b.method, 30), ref: line(b.ref, 60), note: line(b.note, 200), ...(plan === 'full' ? {} : { kind: plan }) }).slice(-50);
         if (b.price) L.price = money(b.price) || L.price;
-        L.paid = true; L.history.unshift({ at: iso, what: 'נרשם תשלום ' + amt });
+        const from = (v) => Math.max(now, Date.parse(v || '') || 0);
+        if (plan === 'pass') L.passUntil = new Date(from(L.passUntil) + PASS_HOURS * HOUR).toISOString();
+        else if (plan === 'month' || plan === 'year') { L.paid = true; L.paidUntil = new Date(from(L.paidUntil) + (plan === 'month' ? 30 : 365) * DAY).toISOString(); }
+        else { L.paid = true; delete L.paidUntil; }
+        if (L.planReq) delete L.planReq;
+        L.history.unshift({ at: iso, what: 'נרשם תשלום ' + amt + ({ pass: ' (כרטיס אירוע)', month: ' (חודש)', year: ' (שנה)', full: '' })[plan] });
       }
       log('תשלום סטודיו עודכן', e);
     }
