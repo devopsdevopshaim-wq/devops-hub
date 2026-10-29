@@ -593,6 +593,8 @@ export class State extends DurableObject {
       if (cur.mail) {
         const res = await sendMail(env, cur.mail);
         cur = (await afterMail(ctx(res, { 'Send an email?': cur })))[0].json;
+        // why a mail did not go out (no secrets in it): for the page's own message and the deploy's mail check
+        if (res && res.error && cur.body && cur.body.error === 'mail-failed') cur.body.why = String(res.error).slice(0, 100);
       }
       await this.save(st);
       return reply(cur.body, cur.code || 200);
