@@ -157,6 +157,15 @@ export default {
   }
 };
 
+// the html part of a mail: the same words, right to left, and a 6-digit code shown large (a plain, well-formed message, as people send)
+function mailHtml(mail) {
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const code = (String(mail.subject || '').match(/(\d{6})\s*$/) || [])[1];
+  const lines = esc(mail.text || '').split('\n').map((l) => code && l.includes(code) ? l.replace(code, '<b style="display:inline-block;font-size:28px;letter-spacing:6px;color:#1A140B;background:#F3E3BC;padding:6px 14px;border-radius:8px;margin:6px 0">' + code + '</b>') : l);
+  return '<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>' + esc(mail.subject || '') + '</title></head><body style="margin:0;padding:24px;background:#f6f3ee;font-family:Arial,Helvetica,sans-serif;color:#222">' +
+    '<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;line-height:1.7;font-size:16px;direction:rtl;text-align:right">' + lines.join('<br>') + '</div></body></html>';
+}
+
 // ---- mail: Brevo (a verified sender, e.g. the Gmail address), Resend, or Gmail itself (SMTP with an app password)
 async function sendMail(env, mail) {
   const from = env.MAIL_FROM || ADMIN_EMAIL;
@@ -175,7 +184,7 @@ async function sendMail(env, mail) {
     if (env.GMAIL_APP_PASSWORD) {
       const user = env.GMAIL_USER || ADMIN_EMAIL;
       const open = async (hostname, port) => { const s = connect({ hostname, port }, { secureTransport: 'on' }); await s.opened; return s; };
-      return await smtpSend(open, { user, pass: env.GMAIL_APP_PASSWORD, from: user, fromName: mail.fromName || FROM_NAME, to: mail.to, replyTo: mail.replyTo, subject: mail.subject, text: mail.text });
+      return await smtpSend(open, { user, pass: env.GMAIL_APP_PASSWORD, from: user, fromName: mail.fromName || FROM_NAME, to: mail.to, replyTo: mail.replyTo, subject: mail.subject, text: mail.text, html: mailHtml(mail) });
     }
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 100) }; }
   return { error: 'no-mail-provider' };

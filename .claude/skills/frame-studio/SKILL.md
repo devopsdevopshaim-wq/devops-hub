@@ -889,3 +889,12 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
 - The free manual ways stay:
   - the customer's link "קבלת הקוד בוואטסאפ" (a message to Haim);
   - the admin's "💬 קוד" button, which sends the live code by WhatsApp from Haim's phone.
+
+## Code mails out of spam (Oct 29)
+
+- Codes landed in the recipient's spam folder. Three changes:
+  - the sender name is now "אופטימוס · פריים מגנטים" (`fromName` on trial-code), not SPIDER;
+  - every Gmail SMTP mail is multipart/alternative: a text part plus an HTML part from `mailHtml(mail)` in worker.mjs (RTL card, the 6-digit code large);
+  - there is no custom Message-ID.
+- A first mail to a new recipient can still be filtered. Once the person marks it "not spam" (or adds the sender to contacts), the next ones arrive in the inbox.
+- Real sender authority needs an own domain with SPF/DKIM/DMARC.

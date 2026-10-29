@@ -6,7 +6,7 @@ const b64 = (s) => { const u = enc.encode(String(s)); let bin = ''; for (const c
 const header = (s) => /^[\x20-\x7e]*$/.test(String(s)) ? String(s) : '=?UTF-8?B?' + b64(s) + '?=';
 const addr = (s) => String(s || '').replace(/[\r\n<>]/g, '').trim();
 
-export async function smtpSend(open, { host = 'smtp.gmail.com', port = 465, user, pass, from, fromName = '', to, replyTo, subject = '', text = '', verifyOnly = false }) {
+export async function smtpSend(open, { host = 'smtp.gmail.com', port = 465, user, pass, from, fromName = '', to, replyTo, subject = '', text = '', html = '', verifyOnly = false }) {
   if (!user || !pass) return { error: 'smtp-no-login' };
   let sock;
   try { sock = await open(host, port); } catch (e) { return { error: 'smtp-connect ' + String((e && e.message) || e).slice(0, 80) }; }
@@ -31,11 +31,15 @@ export async function smtpSend(open, { host = 'smtp.gmail.com', port = 465, user
       await step('MAIL FROM:<' + addr(from || user) + '>', [250]);
       await step('RCPT TO:<' + addr(to) + '>', [250, 251]);
       await step('DATA', [354]);
-      const body = b64(text).replace(/.{1,76}/g, '$&\r\n');
-      const msg = ['From: ' + (fromName ? header(fromName) + ' ' : '') + '<' + addr(from || user) + '>', 'To: <' + addr(to) + '>', replyTo ? 'Reply-To: <' + addr(replyTo) + '>' : '',
-        'Subject: ' + header(subject), 'Date: ' + new Date().toUTCString(),
-        'MIME-Version: 1.0', 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64'].filter(Boolean).join('\r\n');
-      await step(msg + '\r\n\r\n' + body + '.', [250]);
+      // a text part, and with html also an html part (multipart/alternative: what ordinary mail looks like to spam filters)
+      const part = (v) => b64(v).replace(/.{1,76}/g, '$&\r\n');
+      const bound = 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+      const head = ['From: ' + (fromName ? header(fromName) + ' ' : '') + '<' + addr(from || user) + '>', 'To: <' + addr(to) + '>', replyTo ? 'Reply-To: <' + addr(replyTo) + '>' : '',
+        'Subject: ' + header(subject), 'Date: ' + new Date().toUTCString(), 'MIME-Version: 1.0',
+        html ? 'Content-Type: multipart/alternative; boundary="' + bound + '"' : 'Content-Type: text/plain; charset=UTF-8', html ? '' : 'Content-Transfer-Encoding: base64'].filter(Boolean).join('\r\n');
+      const body = !html ? part(text) : ['--' + bound, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', part(text) + '--' + bound,
+        'Content-Type: text/html; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', part(html) + '--' + bound + '--', ''].join('\r\n');
+      await step(head + '\r\n\r\n' + body + '.', [250]);
     }
     await send('QUIT').catch(() => {});
     return {};
