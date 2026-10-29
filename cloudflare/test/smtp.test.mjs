@@ -43,6 +43,13 @@ const open = (host, port) => new Promise((ok, no) => { const s = net.connect(por
 }
 {
   const f = await fake();
+  const r = await smtpSend(open, { port: f.port, user: 'me@gmail.com', pass: 'abcdabcdabcdabcd', to: 'dana@example.com', subject: 'קוד: 123456', text: 'הקוד: 123456', html: '<p dir="rtl">הקוד: <b>123456</b></p>' });
+  const parts = f.got.data.split(/--b[a-z0-9]+/);
+  check('with html: multipart/alternative, a text part and an html part', !r.error && /multipart\/alternative/.test(f.got.data) && parts.length >= 4 && /text\/plain/.test(parts[1]) && /text\/html/.test(parts[2]) && Buffer.from(parts[2].split('\r\n\r\n')[1].replace(/\r\n/g, ''), 'base64').toString().includes('<b>123456</b>'), r);
+  f.srv.close();
+}
+{
+  const f = await fake();
   const r = await smtpSend(open, { port: f.port, user: 'me@gmail.com', pass: 'wrongwrongwrongw', to: 'x@example.com', subject: 's', text: 't' });
   check('a wrong password is an error, not a hang', /smtp 535/.test(r.error || ''), r);
   f.srv.close();
