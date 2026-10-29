@@ -101,6 +101,7 @@
           '<button data-a="mail" title="שליחה למייל">✉️</button>' +
           (L.bound ? '<button data-a="release" title="שחרור המחשב (מעבר למחשב חדש)">🔓</button>' : '') +
           '<button data-a="rotate" title="קוד חדש (הישן מפסיק לעבוד)">♻️</button>' +
+          (L.trial ? '<button data-a="trelease" title="ניסיון חדש מההתחלה (גם במחשב אחר)">🔄</button>' : '') +
           '<button data-a="toggle" title="' + (L.active ? 'ביטול הרישיון' : 'הפעלה מחדש') + '">' + (L.active ? '⛔' : '✅') + '</button>' +
           '<button data-a="history" title="היסטוריה">🕘</button><button data-a="delete" title="מחיקה">🗑</button></td></tr>' +
         '<tr class="lic-pay" data-p="' + esc(L.email) + '" hidden><td colspan="8"><div class="adm-row"><b>💰 רישום תשלום:</b><select class="lp-plan">' + ['full', 'month', 'year', 'pass'].map(function (k) { return '<option value="' + k + '"' + (L.planReq && L.planReq.want === k ? ' selected' : '') + '>' + PLAN_NAMES[k] + '</option>'; }).join('') + '</select><input class="lp-amount" inputmode="decimal" dir="ltr" placeholder="סכום" value="' + (L.planReq ? (PRICE[L.planReq.want] || '') : L.paid ? '' : (L.price || '')) + '" style="width:90px"><input class="lp-date" type="date" value="' + new Date().toISOString().slice(0, 10) + '">' + '<select class="lp-method">' + METHODS.map(function (x) { return '<option>' + x + '</option>'; }).join('') + '</select><input class="lp-ref" placeholder="אסמכתא / קבלה" style="width:140px"><button class="btn gold small lp-go">שמירה</button></div>' + ((L.payments || []).length ? '<ul class="lic-pays">' + L.payments.map(function (p) { return '<li>' + esc(p.date) + ' · ' + nis(p.amount) + ' · ' + esc(p.method || '') + (p.ref ? ' · ' + esc(p.ref) : '') + ' <button class="link lp-undo" data-at="' + esc(p.at) + '">מחיקה</button></li>'; }).join('') + '</ul>' : '') + '</td></tr>' +
@@ -143,7 +144,7 @@
       Array.prototype.forEach.call(box.querySelectorAll('[data-ld]'), function (b) { b.addEventListener('click', function () { if (!confirm('למחוק את ' + b.dataset.ld + ' מרשימת הנרשמים?')) return; LIC.admin('lead-delete', { email: b.dataset.ld }).then(function (r) { if (r.ok) { LEADS = r.leads || []; leadsDraw(); } }); }); });
     }
     /* the to-do list: every lead and customer who needs something from the owner, worked out from the lists; "✔ בוצע" is kept */
-    var DONE = {};
+    var DONE = {}, BLOCKED = [];
     function tasks() {
       var t = Date.now(), DAY = 864e5, out = [], byEmail = {};
       ALL.forEach(function (L) { byEmail[L.email] = L; });
@@ -151,6 +152,10 @@
         var L = byEmail[x.email];
         if (!x.verified && x.code) out.push({ key: 'code:' + x.email + ':' + x.lastAt, at: x.lastAt, icon: '⏳', who: x, what: 'נרשם/ה ולא הזין/ה קוד. לשלוח את הקוד בוואטסאפ: ' + x.code, code: x.code });
         out.push({ key: 'call:' + x.email, at: x.firstAt || x.lastAt, icon: '📞', who: x, what: (x.verified ? 'נרשם/ה ואימת/ה' : 'נרשם/ה') + (x.app || L ? ' והתקין/ה את התוכנה' : ' להורדה') + '. שיחת היכרות ועזרה בהתחלה' });
+      });
+      BLOCKED.forEach(function (x) {
+        out.push({ key: 'blocked:' + x.email + ':' + x.at, at: x.at, icon: '🚫', who: x, hot: true, release: x.email,
+          what: 'ניסה/תה להתחיל ניסיון נוסף ונחסם/ה: ' + ({ email: 'המייל כבר קיבל ניסיון במחשב אחר', computer: 'המחשב כבר קיבל ניסיון', phone: 'הטלפון כבר קיבל ניסיון', network: 'מהרשת הזו כבר היה ניסיון' }[x.why] || x.why) + (x.prev && x.prev !== x.email ? ' (' + x.prev + ')' : '') + '. לשחרר?' });
       });
       ALL.forEach(function (L) {
         var p = L.plan || {}, used = L.usage && L.usage.min;
@@ -172,11 +177,16 @@
         return '<li class="' + (done ? 'done' : '') + (x.hot ? ' hot' : '') + '"><i>' + x.icon + '</i><div><b>' + esc(w.name || w.email) + '</b> <small dir="ltr">' + esc(ph) + '</small><p>' + esc(x.what) + '</p><small>' + when(x.at) + '</small></div><span class="lic-task-act">' +
           (ph ? '<a target="_blank" rel="noopener" href="' + esc(wa(ph, msg)) + '" title="וואטסאפ">💬</a><a href="tel:' + esc(ph) + '" title="שיחה">📞</a>' : '') +
           (x.pay ? '<button data-tpay="' + esc(x.pay) + '" title="רישום תשלום">💰</button>' : '') +
+          (x.release ? '<button data-trel="' + esc(x.release) + '" title="לאפשר לו ניסיון">🔓 שחרור</button>' : '') +
           '<button data-tdone="' + esc(x.key) + '"' + (done ? ' data-undo="1"' : '') + '>' + (done ? '↩ להחזיר' : '✔ בוצע') + '</button></span></li>';
       }).join('') + '</ul>';
       Array.prototype.forEach.call(box.querySelectorAll('[data-tdone]'), function (b) { b.addEventListener('click', function () {
         var k = b.dataset.tdone, undo = b.dataset.undo; if (undo) delete DONE[k]; else DONE[k] = new Date().toISOString(); tasksDraw();
         LIC.admin('task-done', { key: k, undo: undo ? '1' : '' }).then(function (r) { if (r.ok && r.tasksDone) { DONE = r.tasksDone; tasksDraw(); } });
+      }); });
+      Array.prototype.forEach.call(box.querySelectorAll('[data-trel]'), function (b) { b.addEventListener('click', function () {
+        if (!confirm('לאפשר ל־' + b.dataset.trel + ' ניסיון חינם?')) return;
+        LIC.admin('trial-release', { email: b.dataset.trel }).then(function (r) { if (r.ok) { BLOCKED = r.blocked || []; if (r.licenses) ALL = r.licenses; tasksDraw(); FS.toast('🔓 שוחרר. עכשיו הוא יכול להתחיל ניסיון בתוכנה.', 5000); } else FS.toast(ACC.msg(r)); });
       }); });
       Array.prototype.forEach.call(box.querySelectorAll('[data-tpay]'), function (b) { b.addEventListener('click', function () {
         var tr = $('#lic-list tr[data-p="' + b.dataset.tpay.replace(/"/g, '') + '"]'); if (tr) { tr.hidden = false; tr.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
@@ -249,6 +259,7 @@
       if (a === 'mail') return LIC.admin('lic-mail', { email: L.email }).then(function (r) { done(r, '✉️ נשלח למייל ' + L.email + ' (אם שירות המיילים מחובר).'); });
       if (a === 'release') { if (!confirm('לשחרר את המחשב של ' + L.name + '? הקוד יופעל מחדש במחשב הבא שבו יוזן, והמחשב הנוכחי ינותק.')) return; return LIC.admin('lic-release', { email: L.email }).then(function (r) { done(r, '🔓 המחשב שוחרר.'); }); }
       if (a === 'rotate') { if (!confirm('להנפיק ל־' + L.name + ' קוד חדש? הקוד הישן יפסיק לעבוד מיד, והתוכנה תנותק עד שיוזן הקוד החדש.')) return; return LIC.admin('lic-rotate', { email: L.email, send: confirm('לשלוח את הקוד החדש גם למייל?') ? '1' : '' }).then(function (r) { done(r, '♻️ קוד חדש: ' + (r.license ? r.license.code : '')); }); }
+      if (a === 'trelease') { if (!confirm('לתת ל־' + L.name + ' ניסיון חינם חדש מההתחלה? (2 אירועים או 30 יום, גם במחשב אחר)')) return; return LIC.admin('trial-release', { email: L.email, fresh: '1' }).then(function (r) { done(r, '🔄 ' + L.name + ' קיבל/ה ניסיון חדש. בפתיחה הבאה של התוכנה הוא מתחיל.'); }); }
       if (a === 'toggle') { if (L.active && !confirm('לבטל את הרישיון של ' + L.name + '? הסטודיו ייסגר אצלו מיד (או בחיבור הבא לאינטרנט).')) return; return LIC.admin('lic-set', { email: L.email, active: L.active ? '' : '1' }).then(function (r) { done(r, L.active ? '⛔ הרישיון בוטל.' : '✅ הרישיון פעיל.'); }); }
       if (a === 'delete') { if (!confirm('למחוק לגמרי את הרישיון של ' + L.name + '? אי אפשר לבטל.')) return; return LIC.admin('lic-delete', { email: L.email }).then(function (r) { done(r, '🗑 נמחק.'); }); }
     }
@@ -269,7 +280,7 @@
     });
     $('#lic-tasks-done').addEventListener('change', tasksDraw);
     $('#lic-q').addEventListener('input', function () { q = this.value.trim(); draw(); });
-    function load() { LIC.admin('lic-list').then(function (r) { if (!r.ok) { $('#lic-list').innerHTML = '<p class="hint">' + esc(ACC.msg(r)) + '</p>'; return; } ALL = r.licenses; LEADS = r.leads || []; ACT = r.activity || []; DONE = r.tasksDone || DONE; leadsDraw(); nowDraw(); tasksDraw(); if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; prices(); if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }); }
+    function load() { LIC.admin('lic-list').then(function (r) { if (!r.ok) { $('#lic-list').innerHTML = '<p class="hint">' + esc(ACC.msg(r)) + '</p>'; return; } ALL = r.licenses; LEADS = r.leads || []; ACT = r.activity || []; DONE = r.tasksDone || DONE; BLOCKED = r.blocked || []; leadsDraw(); nowDraw(); tasksDraw(); if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; prices(); if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }); }
     $('#ln-paid').addEventListener('change', function () { $('.ln-pay').hidden = !this.checked; if (this.checked && !$('#ln-amount').value) $('#ln-amount').value = $('#ln-price').value; });
     $('#ls-save').addEventListener('click', function () { LIC.admin('lic-settings', { price: $('#ls-price').value.trim(), passPrice: $('#ls-pass').value.trim(), monthPrice: $('#ls-month').value.trim(), yearPrice: $('#ls-year').value.trim(), promo: $('#ls-promo').value.trim(), terms: $('#ls-terms').value.trim() }).then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); SET = r.settings; prices(); $('#ln-price').value = SET.price; FS.toast('✔ המחירים נשמרו.'); }); });
     downloads().then(function (d) { DLS = d || { n: '—' }; if (ALL) { stats(); updDraw(); nowDraw(); } });

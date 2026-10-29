@@ -956,3 +956,29 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
 - Each task has 💬, 📞 and "✔ בוצע".
 - The server keeps only what was done (`sd.tasksDone`, admin action `task-done`, returned by `lic-list`).
 - A badge counts the open tasks, and a checkbox shows the done ones.
+
+## One trial per email, computer, phone and network; the owner releases (Oct 29, v81)
+
+**Blocking** (`trial-verify`, the program path):
+- A new trial is refused when any of these already had one:
+  - **computer:** `sd.trialMachines`;
+  - **phone:** `sd.trialPhones`;
+  - **network:** `sd.trialIps`, a sha256 of the IP;
+  - **email:** an existing trial on another computer.
+- A refusal answers `trial-used` with `why`, records `sd.trialBlocked[e]` (name, phone, why, prev), and alerts the owner at most once a day per email.
+- Reinstalling on the same computer with the same email signs back into the same trial. It never starts a new one.
+
+**Release** (admin action `trial-release`):
+- For a blocked person it sets `sd.trialAllow[e]`: one trial that bypasses the indexes.
+- For an existing trial it unbinds the computer, and with `fresh` it restarts the trial (start = now, events = []) and ends its sessions.
+- `lic-list` returns `blocked`.
+
+**Admin:**
+- A 🚫 task with "🔓 שחרור".
+- A 🔄 button on trial licences (a fresh trial).
+
+**Customer:** the `trial-used` message says Haim got word and can release.
+
+**Offers:** the drawer re-reads prices and the promotion every 10 minutes and on `online` (`freshOffers`).
+
+Tests: 434.
