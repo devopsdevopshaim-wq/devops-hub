@@ -898,3 +898,36 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
   - there is no custom Message-ID.
 - A first mail to a new recipient can still be filtered. Once the person marks it "not spam" (or adds the sender to contacts), the next ones arrive in the inbox.
 - Real sender authority needs an own domain with SPF/DKIM/DMARC.
+
+## No lock-outs for the owner, a live view and a daily summary (Oct 29, v79)
+
+**Login** (access-handle.js):
+- A trusted admin device (`sd.adminDevices`, now up to 30) skips:
+  - the per-IP login rate limit;
+  - the `email|IP` lock and the email lock;
+  - the admin-guess lock.
+- A wrong password from a trusted device answers `bad-login` and never locks.
+- Unknown devices are still stopped after 10 guesses an hour.
+- Test: `adminNoLock`.
+
+**Deploy:**
+- It signs in as the admin with one fixed device, `DEPLOY_DEV` (an HMAC of ADMIN_PASSWORD). Random devices used to push the owner's real devices out of the list of 10.
+- Its wrong-password check uses `deploy-check@example.com`, never the admin's address.
+
+**Live view:**
+- `lic-list` returns `activity`: studio log lines (registration, codes, trials, upgrades, events, payments, updates).
+- `admin-licenses.js` opens with "📊 מצב עכשיו":
+  - who is online;
+  - registered today and this week;
+  - verified this week;
+  - downloads;
+  - hours of use today and this week;
+  - trial, free and paying counts;
+  - open upgrade requests with phones;
+  - a "🕘 מה קרה לאחרונה" feed.
+- It refreshes every minute, but not while a row is open or a field has focus.
+
+**Daily summary:**
+- The Worker cron (every 2 h) calls `studioDigest()` on the main object.
+- After 20:00 Israel time, once a day (`sd.digestDay`), it emails the owner a summary: new leads with phones, verified, trials started, events, open requests, payments, who worked today with hours, and trials not used yet.
+- It is skipped on a day with no activity.

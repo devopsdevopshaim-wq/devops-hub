@@ -629,7 +629,23 @@ async function studioTrial(tag) {
   check(t + 'but never past 90 days', r.body.plan.tier === 'free', r.body);
 }
 
+// the owner's own devices are never locked out, however many wrong passwords; unknown devices still are
+async function adminNoLock(tag) {
+  const { call } = world();
+  const t = tag + ' ';
+  const a = await adminIn(call, t);
+  for (let i = 0; i < 25; i++) await call({ action: 'login', email: ADMIN_EMAIL, password: 'wrong-' + i, device: a.device }, { ip: '15.1.1.1' });
+  let r = await call({ action: 'login', email: ADMIN_EMAIL, password: MINE, device: a.device }, { ip: '15.1.1.1' });
+  check(t + 'after 25 wrong passwords the owner\'s own device still signs in', r.body.ok && r.body.token, r.body);
+  const stranger = dev();
+  for (let i = 0; i < 12; i++) r = await call({ action: 'login', email: ADMIN_EMAIL, password: 'guess-' + i, device: stranger }, { ip: '66.6.6.6' });
+  check(t + 'an unknown device guessing is still stopped', r.code === 429 && r.body.error === 'too-many', r.body);
+  r = await call({ action: 'login', email: ADMIN_EMAIL, password: MINE, device: a.device }, { ip: '15.1.1.1' });
+  check(t + 'and the owner\'s device is not affected by it', r.body.ok && r.body.token, r.body);
+}
+
 await studioUpdates('[updates]');
+await adminNoLock('[admin no lock]');
 await studioTrial('[trial]');
 await planDoc('[plan]');
 await relay('[relay]');

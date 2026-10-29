@@ -95,6 +95,9 @@ else if (secrets.GMAIL_APP_PASSWORD && !secrets.BREVO_API_KEY && !secrets.RESEND
 }
 
 const ORIGIN = 'https://devopsdevopshaim-wq.github.io';
+// the deploy's own sign-in as the admin always uses one device (from the secret), so it becomes one of the owner's known devices
+// instead of filling the list with new ones; its wrong-password check uses a made-up address, never the admin's (no lock-outs)
+const DEPLOY_DEV = crypto.createHmac('sha256', ADMIN_PASSWORD || 'none').update('spider-deploy-device').digest('hex').slice(0, 32);
 const post = async (b, origin = ORIGIN) => {
   const r = await fetch(URL_ + '/hasadna-auth', { method: 'POST', headers: { ...(origin ? { Origin: origin } : {}) }, body: new URLSearchParams(b) });
   return { status: r.status, json: await r.json().catch(() => null) };
@@ -111,7 +114,7 @@ if (process.env.MAILTEST) {
   const to = /@/.test(process.env.MAILTEST) ? process.env.MAILTEST.trim().toLowerCase() : 'devopsdevopshaim+mailtest@gmail.com';
   let name = 'בדיקת מערכת', phone = '0500000000';
   if (to !== 'devopsdevopshaim+mailtest@gmail.com' && ADMIN_PASSWORD) {
-    const lg = await post({ action: 'login', email: 'devopsdevopshaim@gmail.com', password: ADMIN_PASSWORD, device: crypto.randomBytes(16).toString('hex') }).catch(() => ({ json: {} }));
+    const lg = await post({ action: 'login', email: 'devopsdevopshaim@gmail.com', password: ADMIN_PASSWORD, device: DEPLOY_DEV }).catch(() => ({ json: {} }));
     if (lg.json && lg.json.token) {
       const ll = await post({ action: 'lic-list', token: lg.json.token }).catch(() => ({ json: {} }));
       const ld = ((ll.json && ll.json.leads) || []).filter((x) => x.email === to)[0], lc = ((ll.json && ll.json.licenses) || []).filter((x) => x.email === to)[0];
@@ -127,13 +130,13 @@ if (process.env.MAILTEST) {
 }
 const evil = await post({ action: 'info' }, 'https://evil.example').catch(() => ({ status: 0 }));
 note(evil.status === 403 ? '- ✅ בקשה מאתר זר נחסמת' : '- ❌ בקשה מאתר זר לא נחסמה (' + evil.status + ')'); if (evil.status !== 403) ok = false;
-const bad = await post({ action: 'login', email: 'devopsdevopshaim@gmail.com', password: 'definitely-not-the-password', device: 'a'.repeat(32) }).catch(() => ({ status: 0 }));
+const bad = await post({ action: 'login', email: 'deploy-check@example.com', password: 'definitely-not-the-password', device: 'a'.repeat(32) }).catch(() => ({ status: 0 }));
 note(bad.status === 401 ? '- ✅ סיסמה שגויה נדחית' : '- ❌ סיסמה שגויה לא נדחתה (' + bad.status + ')'); if (bad.status !== 401) ok = false;
 if (secrets.ADMIN_PASSWORD_HASH && !secrets.ADMIN_TOTP_SECRET) {
   // a freshly set secret takes a few seconds to reach every edge location: try again before calling it a failure
   let lg = { status: 0, json: {} };
   for (let i = 0; i < 2; i++) {
-    lg = await post({ action: 'login', email: 'devopsdevopshaim@gmail.com', password: ADMIN_PASSWORD, device: crypto.randomBytes(16).toString('hex') }).catch(() => ({ status: 0, json: {} }));
+    lg = await post({ action: 'login', email: 'devopsdevopshaim@gmail.com', password: ADMIN_PASSWORD, device: DEPLOY_DEV }).catch(() => ({ status: 0, json: {} }));
     if (lg.json && lg.json.token) break;
     await new Promise((r) => setTimeout(r, 6000));
   }

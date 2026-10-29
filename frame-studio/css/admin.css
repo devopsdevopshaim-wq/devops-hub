@@ -162,3 +162,10 @@ body.pv-on .adm { grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 42%)
 .cal-raw { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .cal-raw input { flex: 1; min-width: 220px; }
 #cal-link details summary { cursor: pointer; font-size: 13px; opacity: .8; }
+
+/* the licences' live view */
+.lic-now .vis-stats > div.on b { color: #3fae6a; }
+.lic-now .vis-stats > div.warn b { color: #d9822b; }
+.lic-act-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 320px; overflow: auto; font-size: 14px; }
+.lic-act-feed li { padding: 4px 0; border-bottom: 1px solid rgba(127,127,127,.15); }
+.lic-act-feed small { opacity: .7; margin-inline-end: 6px; font-variant-numeric: tabular-nums; }

@@ -462,7 +462,9 @@ switch (b.action) {
     const leads = () => Object.values(sd.trialLeads || {}).sort((a, z) => Date.parse(z.lastAt) - Date.parse(a.lastAt)).slice(0, 500)
       .map((T0) => ({ email: T0.email, name: T0.name, phone: T0.phone, firstAt: T0.firstAt, lastAt: T0.lastAt, where: T0.where, verified: !!T0.verified, verifiedAt: T0.verifiedAt || null, downloads: T0.downloads || 0, app: !!T0.app,
         code: T0.code && T0.code.exp > now ? T0.code.plain : '' }));
-    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads() });
+    const STUDIO_LOG = /ניסיון|נרשם|קוד אימות|סטודיו|שדרוג|אירוע|תשלום|עדכון/;
+    const activity = () => (sd.log || []).filter((x) => STUDIO_LOG.test(x.what || '')).slice(0, 80).map((x) => ({ at: x.at, what: x.what, who: x.who }));
+    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads(), activity: activity() });
     if (b.action === 'lead-delete') { if (sd.trialLeads) delete sd.trialLeads[email(b.email)]; return out({ ok: true, leads: leads(), licenses: list() }); }
     // updates: publish a build as an update (notes, price, or free for everyone), take it back, the default price
     if (b.action === 'upd-settings') { U.price = money(b.price) || U.price; log('מחיר עדכון גרסה: ' + U.price, ADMIN_EMAIL); return out({ ok: true, upd: U, licenses: list() }); }
@@ -620,16 +622,18 @@ switch (b.action) {
     const e = email(b.email), pw = String(b.password == null ? '' : b.password).slice(0, 200);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || !pw) return out({ ok: false, error: 'bad-input' }, 400);
     const dev = String(b.device || '');
-    if (!hit('login-ip', IPK, 20, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
-    const lk = e + '|' + IPK;                       // one address cannot lock the real owner out from another
-    if (sd.lock[lk] > now || sd.lock[e] > now) return out({ ok: false, error: 'too-many' }, 429);
     const adm = e === ADMIN_EMAIL;
+    sd.adminDevices = sd.adminDevices || [];
+    // the owner's own devices (any that signed in as admin before) are never slowed or locked out
+    const trustedDev = adm && /^[a-f0-9]{32}$/.test(dev) && sd.adminDevices.includes(sha256hex('dev:' + dev));
+    if (!trustedDev && !hit('login-ip', IPK, 20, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const lk = e + '|' + IPK;                       // one address cannot lock the real owner out from another
+    if (!trustedDev && (sd.lock[lk] > now || sd.lock[e] > now)) return out({ ok: false, error: 'too-many' }, 429);
     const c = sd.clients[e];
     const acc = adm ? sd.admin : c;
     // The admin's own devices (ones that already signed in as admin) are never held back. Guessing from any other device gets
     // 10 tries an hour in total, however many addresses it comes from, so a short, memorable password is not easy to brute-force.
-    sd.adminDevices = sd.adminDevices || [];
-    const trusted = adm && /^[a-f0-9]{32}$/.test(dev) && sd.adminDevices.includes(sha256hex('dev:' + dev));
+    const trusted = trustedDev;
     if (adm && !trusted && sd.lock['admin-guess'] > now) return out({ ok: false, error: 'too-many' }, 429);
     // two checks every time (the chosen password and an emailed initial one), real or dummy, so the time reveals nothing
     const okMain = acc && acc.pw ? pwCheck(pw, acc.pw) : pwDummy(pw);
@@ -639,6 +643,7 @@ switch (b.action) {
       const f1 = (sd.fails[lk] = (sd.fails[lk] || []).filter((t) => now - t < HOUR).concat(now));
       const f2 = (sd.fails[e] = (sd.fails[e] || []).filter((t) => now - t < HOUR).concat(now));
       let mail = null, code = 401, error = 'bad-login';
+      if (trusted) { log('כניסת מנהל: סיסמה שגויה ממכשיר מוכר', e); return out({ ok: false, error: 'bad-login' }, 401); }   // never a lock on the owner's own devices
       if (f1.length >= 8) { sd.lock[lk] = now + HOUR; error = 'too-many'; code = 429; if (adm || c) mail = alert('נחסמה כניסה אחרי ניסיונות כושלים', `8 סיסמאות שגויות עבור ${e} מהכתובת הזו. הכניסה משם נחסמה לשעה.`); }
       else if (f2.length >= 60) { sd.lock[e] = now + 10 * 60000; error = 'too-many'; code = 429; }   // many addresses at once: a short pause for everyone
       if (adm && !trusted) {
@@ -659,7 +664,7 @@ switch (b.action) {
         sd.totpLast = step;
       }
       sd.fails[lk] = [];
-      if (/^[a-f0-9]{32}$/.test(dev) && !trusted) { sd.adminDevices.unshift(sha256hex('dev:' + dev)); sd.adminDevices.length = Math.min(sd.adminDevices.length, 10); }
+      if (/^[a-f0-9]{32}$/.test(dev) && !trusted) { sd.adminDevices.unshift(sha256hex('dev:' + dev)); sd.adminDevices.length = Math.min(sd.adminDevices.length, 30); }
       if (!viaTemp) sd.admin.tmp = null;
       sd.admin.lastLogin = new Date(now).toISOString();
       const token = newSession(e, 'admin', now + ADMIN_SESSION_DAYS * DAY, viaTemp ? { mc: true } : {});
