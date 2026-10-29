@@ -19,7 +19,12 @@
   function state() { try { return JSON.parse(ls(K) || 'null'); } catch (e) { return null; } }
   function admin() { return !!(FS.account && FS.account.isAdmin && FS.account.isAdmin()); }
   function newer(u) { return !!(u && u.latest && RUN && vcmp(u.latest.ver, RUN) > 0); }
-  function wa(u, text) { var d = String((u && u.phone) || '054-4979771').replace(/\D/g, '').replace(/^0/, '972'); return 'https://wa.me/' + d + '?text=' + encodeURIComponent(text); }
+  function wa(u, text) {
+    var d = String((u && u.phone) || '054-4979771').replace(/\D/g, '').replace(/^0/, '972'), L = LIC.get() || {};
+    /* who asks and for what: the owner sees it at once, without asking back */
+    text += '\nשם: ' + (L.name || '—') + '\nמייל: ' + (L.email || '—') + '\nמותקן: ' + (RUN || '—') + ' · מאושר עד: ' + ((u && u.cur) || '—');
+    return 'https://wa.me/' + d + '?text=' + encodeURIComponent(text);
+  }
 
   /* the server's answer comes with every licence check and activation */
   function keep(r) {

@@ -982,3 +982,25 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
 **Offers:** the drawer re-reads prices and the promotion every 10 minutes and on `online` (`freshOffers`).
 
 Tests: 434.
+
+## Update requests reach the owner, and the pulse on every admin screen (Oct 29, v82)
+
+**Update requests:**
+- **The bug:** `upd-request` answered 404 for a version the owner had not published. That is usually the installed build on the lock screen, so no email went out and nothing showed in the admin.
+- **The fix:** any valid version is now recorded. An unpublished one gets the default price and the note "(עוד לא פורסמה)".
+- **The alert** reads "⬆️ בקשת עדכון לאופטימוס {ver}: {name}", with email, phone, the installed and approved versions, and the price.
+- The customer's WhatsApp texts in `updates.js` add name, email, installed version and approved version.
+- **Admin task:** ⬆️ with "✔ אישור עדכון", which calls `grant(L)`.
+
+**`lic-pulse`** (admin only) returns:
+- counts: online, leads today, trials, paying, plan requests, update requests, blocked;
+- the latest 40 items: upd, plan, blocked, lead, trial.
+
+**`js/admin-pulse.js`** (admin.html):
+- polls every 45 s and when the tab becomes visible;
+- `#adm-pulse` is a status bar fixed bottom-left that links to #licenses, with requests highlighted;
+- `#adm-pops` shows a pop-up per new item (keys remembered in `adm-pulse-shown`), with "לטיפול", WhatsApp and call;
+- leads and trials older than the first visit don't pop up;
+- the title shows the number of open requests.
+
+Tests: 437.
