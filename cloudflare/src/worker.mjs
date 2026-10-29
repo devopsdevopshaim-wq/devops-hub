@@ -8,7 +8,6 @@ import invoiceSave from './gen/invoice-save.mjs';
 import afterMail from './gen/after-mail.mjs';
 import { connect } from 'cloudflare:sockets';
 import { smtpSend } from './smtp.mjs';
-import { sendText, textChannels } from './text.mjs';
 import leadSave from './gen/lead.mjs';
 import pricesRead from './gen/prices.mjs';
 import adminHandle from './gen/admin.mjs';
@@ -591,24 +590,14 @@ export class State extends DurableObject {
         } catch (e) { doc = { error: { message: 'create-failed' } }; }
         cur = (await invoiceSave(ctx(doc, { 'Auth · Handle': h })))[0].json;
       }
-      if (cur.mail && cur.mail.sms) {
-        // a text message (SMS or WhatsApp) instead of an email
-        const res = await sendText(env, cur.mail.phone, cur.mail.text, cur.mail.via);
-        if (res.error) cur = { code: 502, body: { ok: false, error: res.error === 'no-' + cur.mail.via ? 'channel-off' : 'send-failed', why: String(res.error).slice(0, 100) } };
-        else cur = { code: cur.code, body: cur.body };
-      } else if (cur.mail) {
-        const fb = cur.mail.fallback, res = await sendMail(env, cur.mail);
-        const h = cur;
+      if (cur.mail) {
+        const res = await sendMail(env, cur.mail);
         cur = (await afterMail(ctx(res, { 'Send an email?': cur })))[0].json;
         // why a mail did not go out (no secrets in it): for the page's own message and the deploy's mail check
         if (res && res.error && cur.body && cur.body.error === 'mail-failed') {
           cur.body.why = String(res.error).slice(0, 100);
-          // the email failed: the same code by SMS to the registered phone, when SMS is set up
-          if (fb && fb.phone && (await sendText(env, fb.phone, fb.text, 'sms')).error === undefined) cur = { code: 200, body: { ...h.body, via: 'sms' } };
         }
       }
-      // which other ways the code can go (the page offers "send by SMS / WhatsApp")
-      if (cur.body && cur.body.step === 'code') cur.body.alt = textChannels(env);
       await this.save(st);
       return reply(cur.body, cur.code || 200);
     } catch (e) {

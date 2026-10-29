@@ -876,3 +876,16 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
 **Mail:**
 - No custom Message-ID any more (Gmail sets its own).
 - The text asks people to look in spam and promotions too.
+
+## SMS / WhatsApp removed (Oct 29, v78)
+
+- The owner doesn't want a paid provider, so all of v77's phone channels are gone:
+  - Twilio, `text.mjs` and its test;
+  - `trial-resend`;
+  - the SMS fallback;
+  - `alt`;
+  - the gate and download buttons.
+- The code goes by email only, from the owner's Gmail.
+- The free manual ways stay:
+  - the customer's link "קבלת הקוד בוואטסאפ" (a message to Haim);
+  - the admin's "💬 קוד" button, which sends the live code by WhatsApp from Haim's phone.

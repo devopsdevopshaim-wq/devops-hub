@@ -31,9 +31,6 @@ const secrets = {
   // or the owner's Gmail: an app password (16 letters, myaccount.google.com/apppasswords), from its own secret or the SPIDER bundle
   GMAIL_APP_PASSWORD: (process.env.GMAIL_APP_PASSWORD || (combined.match(/GMAIL_APP_PASSWORD\W*([a-z]{4}\s?[a-z]{4}\s?[a-z]{4}\s?[a-z]{4})\b/i) || [])[1] || '').replace(/\s+/g, ''),
   GMAIL_USER: (process.env.GMAIL_USER || '').trim(),
-  // the verification code by SMS / WhatsApp (Twilio): the account, its token, and the senders
-  TWILIO_ACCOUNT_SID: label('TWILIO_ACCOUNT_SID', 'AC[a-f0-9]{32}'), TWILIO_AUTH_TOKEN: label('TWILIO_AUTH_TOKEN', '[a-f0-9]{32}'),
-  TWILIO_SMS_FROM: (process.env.TWILIO_SMS_FROM || '').trim(), TWILIO_WHATSAPP_FROM: (process.env.TWILIO_WHATSAPP_FROM || '').trim(), TWILIO_WA_CONTENT_SID: (process.env.TWILIO_WA_CONTENT_SID || '').trim(),
   // the clients' mailboxes (Gmail): a Google OAuth client; MAIL_KEY encrypts the stored tokens (derived from the Google secret when absent)
   GOOGLE_CLIENT_ID: label('GOOGLE_CLIENT_ID', '[\\w.-]+\\.apps\\.googleusercontent\\.com') || (process.env.GOOGLE_CLIENT_ID || '').trim(), GOOGLE_CLIENT_SECRET: (process.env.GOOGLE_CLIENT_SECRET || label('GOOGLE_CLIENT_SECRET', 'GOCSPX-[\\w-]{20,60}')).trim(), MAIL_KEY: (process.env.MAIL_KEY || '').trim(),
   // LiveAvatar live video avatar for Maya (the key never reaches a page; the server mints sessions). A pasted label line is tolerated: the last long token wins.
@@ -52,7 +49,7 @@ if (ADMIN_PASSWORD.length >= 8) {
   const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-' + RESET).digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
-for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.GMAIL_APP_PASSWORD, secrets.TWILIO_AUTH_TOKEN, secrets.POLLINATIONS_TOKEN, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.GMAIL_APP_PASSWORD, secrets.POLLINATIONS_TOKEN, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 
 const notes = [];
 const note = (s) => { notes.push(s); console.log(s); };
@@ -108,12 +105,6 @@ await new Promise((r) => setTimeout(r, 4000));   // the new version spreads in a
 let info = await post({ action: 'info' }).catch(() => ({ status: 0 }));
 for (let i = 0; i < 16 && info.status !== 200; i++) { await new Promise((r) => setTimeout(r, 10000)); info = await post({ action: 'info' }).catch(() => ({ status: 0 })); }
 if (info.status === 200) note('- ✅ השרת עונה'); else { note('- ❌ השרת לא עונה (' + info.status + ')'); ok = false; }
-// SMS / WhatsApp for the verification codes (Twilio): the account answers, and which channels are on
-if (secrets.TWILIO_ACCOUNT_SID && secrets.TWILIO_AUTH_TOKEN) {
-  const tw = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${secrets.TWILIO_ACCOUNT_SID}.json`, { headers: { Authorization: 'Basic ' + Buffer.from(secrets.TWILIO_ACCOUNT_SID + ':' + secrets.TWILIO_AUTH_TOKEN).toString('base64') } }).catch(() => ({ status: 0 }));
-  const ch = [secrets.TWILIO_SMS_FROM ? 'SMS' : '', secrets.TWILIO_WHATSAPP_FROM ? 'WhatsApp' : ''].filter(Boolean).join(' + ') || 'אין שולח (TWILIO_SMS_FROM / TWILIO_WHATSAPP_FROM)';
-  note(tw.status === 200 ? '- ✅ קודי אימות בטלפון (Twilio): ' + ch : '- ❌ Twilio לא ענה (' + tw.status + '): בודקים TWILIO_ACCOUNT_SID ו־TWILIO_AUTH_TOKEN');
-} else note('- ℹ️ אין Twilio: קודי האימות נשלחים רק במייל (ובוואטסאפ ידני ממסך הניהול)');
 // on request (a manual run with mailtest): one real code through the live server, to the owner's Gmail (+mailtest) or to the
 // address given; for an address, first what the server knows of it (registration, verified, a live code, licence), as the admin
 if (process.env.MAILTEST) {
