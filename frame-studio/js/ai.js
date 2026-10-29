@@ -223,7 +223,7 @@
     });
   }
   FS.askServer = function (body) {
-    var L = FS.localAI;
+    var L = FS.can && !FS.can('local-ai') ? null : FS.localAI;   /* the free tier has no local AI (plan.js) */
     /* a chosen engine (the AI tab's engine bar, or one of the "3 versions"): 'local' is this computer, the others one cloud engine */
     if (body && body.engine === 'local') { var bl = Object.assign({}, body); delete bl.engine; return L && L.isReady && L.isReady() ? askLocal(bl) : Promise.resolve({ ok: false, error: 'local-missing' }); }
     /* a chosen cloud engine that fails (no connection, quota, timeout) hands the picture to this computer when its engine is installed */

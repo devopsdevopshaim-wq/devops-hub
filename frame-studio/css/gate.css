@@ -37,3 +37,24 @@ body.studio-licensed .sb-menu a[href="admin.html"] { display: none !important; }
 #gate .gate-agree { display: flex !important; grid-template-columns: none; align-items: center; gap: 10px; letter-spacing: 0; font: 500 14px 'Assistant', sans-serif; color: #F5EFE4; }
 #gate .gate-agree input { width: 18px; height: 18px; padding: 0; accent-color: #D6B77E; }
 #gate .gate-agree a { color: #D6B77E; }
+
+/* plans (plan.js): the pill in the workspace header, the upgrade window */
+#plan-pill { border: 1px solid rgba(227,196,138,.45); background: rgba(227,196,138,.12); color: #F3DDA6; border-radius: 999px; padding: 6px 14px; font: 600 13px/1.2 'Heebo', sans-serif; cursor: pointer; white-space: nowrap; }
+#plan-pill:hover { background: rgba(227,196,138,.24); }
+#plan-pill.free { background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); color: #1A140B; border-color: transparent; }
+#plan-pill.fixed { position: fixed; top: 12px; left: 12px; z-index: 900; }
+#plan-pill[hidden] { display: none; }
+.pl-up { display: grid; gap: 14px; }
+.pl-why { margin: 0; padding: 10px 14px; border-radius: 10px; background: rgba(227,196,138,.12); border: 1px solid rgba(227,196,138,.3); }
+.pl-cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pl-cmp > div { border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 10px 14px; }
+.pl-cmp > div.on { border-color: rgba(227,196,138,.55); background: rgba(227,196,138,.06); }
+.pl-cmp h4, .pl-card h4 { margin: 0 0 6px; }
+.pl-cmp ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; font-size: 14px; }
+.pl-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.pl-card { border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 12px; display: grid; gap: 6px; align-content: start; text-align: center; }
+.pl-card.best { border-color: #D9B677; box-shadow: 0 0 0 1px #D9B677 inset; }
+.pl-card b { font-size: 22px; color: #F3DDA6; }
+.pl-card p { margin: 0; font-size: 13px; opacity: .8; min-height: 3em; }
+.pl-note { margin: 0; font-size: 13px; opacity: .85; }
+@media (max-width: 760px) { .pl-cmp { grid-template-columns: 1fr; } .pl-cards { grid-template-columns: 1fr 1fr; } }

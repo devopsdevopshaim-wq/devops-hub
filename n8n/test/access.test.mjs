@@ -534,7 +534,72 @@ async function studioUpdates(tag) {
   check(t + 'the owner can take an update back', r.body.ok && r.body.upd.versions.length === 1);
 }
 
+// ---- אופטימוס free trial: every feature for 2 events or 30 days (whichever comes last), then the free tier; passes and subscriptions
+async function studioTrial(tag) {
+  const { sd, call } = world();
+  const t = tag + ' ';
+  const a = await adminIn(call, t);
+  const adm = async () => (await call({ action: 'login', email: ADMIN_EMAIL, password: MINE, device: a.device }, { ip: '15.1.1.1' })).body.token;   // weeks pass: a fresh admin session
+  const mach = crypto.randomBytes(32).toString('hex'), D = 86400000;
+  let r = await call({ action: 'trial-start', email: 'new@example.com', name: 'צלמת חדשה', phone: '0501112222', machine: mach, agree: 'v1', desktop: '1', version: '1.0.73' }, { ip: '30.0.0.1' });
+  check(t + 'a trial starts with no code and no payment, and the owner hears of the lead', r.body.ok && r.body.token && r.body.code && r.body.plan.tier === 'trial' && r.body.plan.events === 0 && r.mail && /ניסיון חינם/.test(r.mail.subject), r.body);
+  const tok = r.body.token, code = r.body.code;
+  r = await call({ action: 'trial-start', email: 'new@example.com', name: 'צלמת חדשה', machine: mach, agree: 'v1' }, { ip: '30.0.0.1' });
+  check(t + 'starting again on the same computer just signs in again, without a second alert', r.body.ok && r.body.plan.tier === 'trial' && !r.mail, r.body);
+  r = await call({ action: 'trial-start', email: 'other@example.com', name: 'אחר', machine: mach, agree: 'v1' }, { ip: '30.0.0.2' });
+  check(t + 'one trial per computer: another email on it is refused', r.code === 403 && r.body.error === 'trial-used', r.body);
+  r = await call({ action: 'trial-start', email: 'new@example.com', name: 'צלמת חדשה', machine: crypto.randomBytes(32).toString('hex'), agree: 'v1' }, { ip: '30.0.0.3' });
+  check(t + 'one trial per email: another computer is refused', r.code === 403 && r.body.error === 'trial-used', r.body);
+  r = await call({ action: 'trial-start', email: 'x@example.com', name: 'אבג', machine: crypto.randomBytes(32).toString('hex') }, { ip: '30.0.0.4' });
+  check(t + 'the agreement must be accepted', r.code === 400 && r.body.error === 'agreement-needed');
+  r = await call({ action: 'lic-activate', email: 'new@example.com', code, machine: mach, agree: 'v1' }, { ip: '30.0.0.1' });
+  check(t + 'the kept code signs the trial in again', r.body.ok && r.body.plan.tier === 'trial', r.body);
+  const tok2 = r.body.token;
+  r = await call({ action: 'trial-event', token: tok2, day: '2027-01-10', prints: 5 }, { ip: '30.0.0.1' });
+  check(t + 'a day with few prints is not an event', r.body.ok && r.body.plan.events === 0);
+  r = await call({ action: 'trial-event', token: tok2, day: '2027-01-10', prints: 40 }, { ip: '30.0.0.1' });
+  await call({ action: 'trial-event', token: tok2, day: '2027-01-10', prints: 60 }, { ip: '30.0.0.1' });
+  r = await call({ action: 'trial-event', token: tok2, day: '2027-01-11', prints: 25 }, { ip: '30.0.0.1' });
+  check(t + 'two real event days are counted once each', r.body.plan.events === 2 && r.body.plan.tier === 'trial', r.body);
+  T += 25 * D; await call({ action: 'lic-check', token: tok2, machine: mach, version: '1.0.73' }, { ip: '30.0.0.1' });   // in use, the session renews
+  T += 6 * D;
+  r = await call({ action: 'lic-check', token: tok2, machine: mach, version: '1.0.73' }, { ip: '30.0.0.1' });
+  check(t + 'after 2 events and 30 days the studio still opens, as the free tier', r.body.ok && r.body.plan.tier === 'free' && r.body.plan.was === 'trial', r.body);
+  r = await call({ action: 'plan-request', token: tok2, want: 'pass', note: 'חתונה ביום חמישי' }, { ip: '30.0.0.1' });
+  check(t + 'asking for an event pass tells the owner, with the price', r.body.ok && r.mail && /כרטיס אירוע/.test(r.mail.subject) && /79/.test(r.mail.text), r.body);
+  r = await call({ action: 'lic-list', token: await adm() });
+  const row = r.body.licenses.filter((x) => x.email === 'new@example.com')[0];
+  check(t + 'the owner sees the trial, its events and the request', row && row.plan.tier === 'free' && row.trial.events.length === 2 && row.planReq.want === 'pass', row);
+  r = await call({ action: 'lic-pay', token: await adm(), email: 'new@example.com', amount: '79', method: 'ביט', plan: 'pass' });
+  check(t + 'a paid pass opens everything for 48 hours, without making the licence paid', r.body.ok && r.body.license.plan.tier === 'pass' && !r.body.license.paid && !r.body.license.planReq, r.body.license);
+  T += 49 * 3600000;
+  r = await call({ action: 'lic-check', token: tok2, machine: mach, version: '1.0.73' }, { ip: '30.0.0.1' });
+  check(t + 'when the pass ends it is the free tier again', r.body.ok && r.body.plan.tier === 'free', r.body);
+  await call({ action: 'lic-pay', token: await adm(), email: 'new@example.com', amount: '89', method: 'ביט', plan: 'month' });
+  r = await call({ action: 'lic-check', token: tok2, machine: mach, version: '1.0.73' }, { ip: '30.0.0.1' });
+  check(t + 'a month opens everything until its date', r.body.plan.tier === 'pro' && Date.parse(r.body.plan.until) > T + 29 * D, r.body);
+  T += 20 * D; await call({ action: 'lic-check', token: tok2, machine: mach, version: '1.0.73' }, { ip: '30.0.0.1' });
+  T += 11 * D;
+  r = await call({ action: 'lic-check', token: tok2, machine: mach, version: '1.0.73' }, { ip: '30.0.0.1' });
+  check(t + 'a month that ran out is the free tier, not locked out', r.body.ok && r.body.plan.tier === 'free', r.body);
+  await call({ action: 'lic-pay', token: await adm(), email: 'new@example.com', amount: '990', method: 'העברה' });
+  r = await call({ action: 'lic-check', token: tok2, machine: mach, version: '1.0.73' }, { ip: '30.0.0.1' });
+  check(t + 'the full licence is pro with no end', r.body.plan.tier === 'pro' && !r.body.plan.until, r.body);
+  r = await call({ action: 'lic-create', token: await adm(), email: 'unpaid@example.com', name: 'לא שילם' });
+  const m2 = crypto.randomBytes(32).toString('hex');
+  r = await call({ action: 'lic-activate', email: 'unpaid@example.com', code: r.body.license.code, machine: m2, agree: 'v1' }, { ip: '30.0.0.9' });
+  check(t + 'a licence the owner issued and was not paid for still waits for the payment', r.code === 402 && r.body.error === 'license-unpaid', r.body);
+  const fresh = crypto.randomBytes(32).toString('hex');
+  r = await call({ action: 'trial-start', email: 'late@example.com', name: 'מאוחר', machine: fresh, agree: 'v1' }, { ip: '30.0.0.5' });
+  const tk = r.body.token;
+  for (const d of [25, 15]) { T += d * D; r = await call({ action: 'lic-check', token: tk, machine: fresh }, { ip: '30.0.0.5' }); }
+  check(t + 'with no events the trial goes on after 30 days', r.body.plan.tier === 'trial', r.body);
+  for (const d of [12, 26, 13]) { T += d * D; r = await call({ action: 'lic-check', token: tk, machine: fresh }, { ip: '30.0.0.5' }); }
+  check(t + 'but never past 90 days', r.body.plan.tier === 'free', r.body);
+}
+
 await studioUpdates('[updates]');
+await studioTrial('[trial]');
 await planDoc('[plan]');
 await relay('[relay]');
 await presence('[presence]');

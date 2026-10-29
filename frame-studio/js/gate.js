@@ -4,7 +4,7 @@
    a revoked licence, or one moved to another computer, closes the studio. */
 (function () {
   'use strict';
-  var FS = window.FS || {}, ACC = FS.account, LIC = FS.license, body = document.body, tab = 'license', typed = { e: '', c: '' };
+  var FS = window.FS || {}, ACC = FS.account, LIC = FS.license, body = document.body, tab = 'trial', typed = { e: '', c: '', n: '', p: '' };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function unlock(kind) {
     body.classList.remove('gated'); var g = document.getElementById('gate'); if (g) g.remove();
@@ -18,9 +18,15 @@
       g = document.createElement('div'); g.id = 'gate'; g.setAttribute('role', 'dialog'); g.setAttribute('aria-modal', 'true'); g.setAttribute('aria-labelledby', 'gate-title');
       body.appendChild(g);
     }
-    g.innerHTML = '<div class="gate-card"><p class="gate-eyebrow">אופטימוס</p><h1 id="gate-title">' + (tab === 'license' ? 'הפעלת הסטודיו' : 'כניסת בעל העסק') + '</h1>' +
-      '<div class="gate-tabs" role="tablist"><button role="tab" data-t="license" aria-selected="' + (tab === 'license') + '">🔑 קוד הפעלה</button><button role="tab" data-t="admin" aria-selected="' + (tab === 'admin') + '">🔐 מנהל</button></div>' +
-      (tab === 'license'
+    g.innerHTML = '<div class="gate-card"><p class="gate-eyebrow">אופטימוס</p><h1 id="gate-title">' + ({ trial: 'מנסים את אופטימוס בחינם', license: 'הפעלת הסטודיו' }[tab] || 'כניסת בעל העסק') + '</h1>' +
+      '<div class="gate-tabs" role="tablist"><button role="tab" data-t="trial" aria-selected="' + (tab === 'trial') + '">🎁 ניסיון חינם</button><button role="tab" data-t="license" aria-selected="' + (tab === 'license') + '">🔑 קוד הפעלה</button><button role="tab" data-t="admin" aria-selected="' + (tab === 'admin') + '">🔐 מנהל</button></div>' +
+      (tab === 'trial'
+        ? '<p class="gate-lead">כל האפשרויות פתוחות ל־2 אירועים או 30 יום, מה שמגיע אחרון. בלי כרטיס אשראי ובלי קוד. אחר כך התוכנה ממשיכה לעבוד בגרסה החינמית.</p><div class="acc">' +
+          '<label>שם<input id="tr-name" autocomplete="name"></label><label>מייל<input id="tr-email" type="email" dir="ltr" autocomplete="email"></label><label>טלפון (לא חובה)<input id="tr-phone" type="tel" dir="ltr" autocomplete="tel"></label>' +
+          '<label class="gate-agree"><input type="checkbox" id="tr-agree"> קראתי ואני מסכים/ה ל<a href="agreement.html" target="_blank" rel="noopener">הסכם השימוש</a></label>' +
+          '<button class="btn" id="tr-go">🎁 מתחילים ניסיון חינם</button><p class="acc-note" id="tr-note" role="status">' + esc(note || '') + '</p></div>' +
+          '<p class="gate-lead small">ניסיון אחד לכל מחשב. כבר קניתם? עוברים ל"🔑 קוד הפעלה".</p>'
+        : tab === 'license'
         ? '<p class="gate-lead">מזינים את המייל ואת קוד ההפעלה האישי שקיבלתם. הקוד עובד במחשב אחד בלבד.</p><div class="acc">' +
           '<label>מייל<input id="lic-email" type="email" dir="ltr" autocomplete="email"></label><label>קוד הפעלה<input id="lic-code" dir="ltr" autocomplete="off" spellcheck="false" placeholder="FS-XXXX-XXXX-XXXX-XXXX"></label>' +
           '<label class="gate-agree"><input type="checkbox" id="lic-agree"> קראתי ואני מסכים/ה ל<a href="agreement.html" target="_blank" rel="noopener">הסכם הרכישה והשימוש</a></label>' +
@@ -32,6 +38,21 @@
     if (tab === 'admin') {
       if (!ACC) { document.getElementById('gate-box').innerHTML = '<p class="gate-lead">אין חיבור לשרת הכניסה. בודקים אינטרנט ומרעננים.</p>'; return; }
       ACC.form(document.getElementById('gate-box'), { adminOnly: true, note: note || '', done: function (s) { if (s && s.role === 'admin') unlock('admin'); else lock('הכניסה הזאת לבעל העסק בלבד.'); } });
+      return;
+    }
+    if (tab === 'trial') {
+      var tg = document.getElementById('tr-go'), tn = document.getElementById('tr-name'), te = document.getElementById('tr-email'), tp = document.getElementById('tr-phone');
+      tn.value = typed.n; te.value = typed.e; tp.value = typed.p;
+      var trial = function () {
+        var n = String(tn.value || '').trim(), e = String(te.value || '').trim(), ph = String(tp.value || '').trim(); typed.n = n; typed.e = e; typed.p = ph;
+        if (n.length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { document.getElementById('tr-note').textContent = 'שם ומייל מלאים.'; return; }
+        if (!document.getElementById('tr-agree').checked) { document.getElementById('tr-note').textContent = 'מסמנים את האישור להסכם השימוש.'; return; }
+        tg.disabled = true; tg.textContent = '…';
+        LIC.trialStart(n, e, ph).then(function (r) { if (r.ok) { unlock('license'); if (FS.toast) FS.toast('🎁 הניסיון החינמי התחיל: כל האפשרויות פתוחות'); return; } lock(ACC ? ACC.msg(r) : 'שגיאה'); });
+      };
+      tg.addEventListener('click', trial);
+      [tn, te, tp].forEach(function (i) { i.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); trial(); } }); });
+      setTimeout(function () { tn.focus(); }, 30);
       return;
     }
     var go = document.getElementById('lic-go'), em = document.getElementById('lic-email'), cd = document.getElementById('lic-code');

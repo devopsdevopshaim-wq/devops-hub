@@ -186,6 +186,7 @@
     if (D && D.machineId) return Promise.resolve(D.machineId()).then(function (m) { return /^[a-f0-9]{32,64}$/.test(m || '') ? m : device(); }, function () { return device(); });
     return Promise.resolve(device());
   }
+  function planNews() { if (FS.emit) try { FS.emit('plan'); } catch (e) { /* no listeners yet */ } }
   FS.license = {
     AGREEMENT: 'v1',   /* agreement.html's version; a new version asks everyone to accept again */
     get: licLoad,
@@ -194,14 +195,23 @@
     activate: function (email, code) {
       return machine().then(function (m) {
         return auth('lic-activate', { email: email, code: code, machine: m, agree: FS.license.AGREEMENT, desktop: FS.license.isDesktop() ? '1' : '', platform: (window.FSDesktop && window.FSDesktop.platform) || 'web', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') });
-      }).then(function (r) { if (r.ok) { licKeep({ token: r.token, email: r.email, name: r.name || '', checkedAt: Date.now() }); VAULT.set('lic', { email: String(email).trim().toLowerCase(), code: String(code).trim() }); } return r; });
+      }).then(function (r) { if (r.ok) { licKeep({ token: r.token, email: r.email, name: r.name || '', plan: r.plan || null, checkedAt: Date.now() }); VAULT.set('lic', { email: String(email).trim().toLowerCase(), code: String(code).trim() }); planNews(); } return r; });
     },
+    /* a free trial on this computer: name and email (and a phone), no code; the code the server issues is kept for signing in again */
+    trialStart: function (name, email, phone) {
+      return machine().then(function (m) {
+        return auth('trial-start', { name: name, email: email, phone: phone || '', machine: m, agree: FS.license.AGREEMENT, desktop: FS.license.isDesktop() ? '1' : '', platform: (window.FSDesktop && window.FSDesktop.platform) || 'web', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') });
+      }).then(function (r) { if (r.ok) { licKeep({ token: r.token, email: r.email, name: r.name || '', plan: r.plan || null, checkedAt: Date.now() }); VAULT.set('lic', { email: r.email, code: r.code }); planNews(); } return r; });
+    },
+    /* the plan the server gave last (trial / free / pass / pro), kept for working offline */
+    plan: function () { var L = licLoad(); return L && L.plan || null; },
+    setPlan: function (p) { var L = licLoad(); if (!L || !p) return; L.plan = p; licKeep(L); planNews(); },
     saved: function () { return VAULT.get('lic'); },
     /* ok: {ok:true} online or within the grace; a revoked or moved licence is forgotten here too */
     check: function () {
       var L = licLoad(); if (!L || !L.token) return Promise.resolve({ ok: false, error: 'no-license' });
       return machine().then(function (m) { return auth('lic-check', { token: L.token, machine: m, version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') }); }).then(function (r) {
-        if (r.ok) { L.checkedAt = Date.now(); L.name = r.name || L.name; licKeep(L); return r; }
+        if (r.ok) { L.checkedAt = Date.now(); L.name = r.name || L.name; if (r.plan) L.plan = r.plan; licKeep(L); planNews(); return r; }
         /* no internet (or the server is busy): the licence keeps working, with no time limit; the server's word comes next time */
         if (r.error === 'offline' || r.error === 'rate-limited' || /^http-5/.test(r.error || '')) return { ok: true, offline: true, email: L.email, name: L.name };
         /* the session ran out (30 days): activated again quietly with the code kept on this computer */
@@ -224,7 +234,7 @@
   };
   Object.assign(MSG, { 'bad-license': 'המייל או קוד ההפעלה לא נכונים.', 'license-in-use': 'הקוד הזה כבר מופעל במחשב אחר. כל קוד עובד במחשב אחד בלבד. להחלפת מחשב פונים לבעל העסק.',
     'license-revoked': 'הרישיון בוטל. פונים לבעל העסק.', 'license-moved': 'הרישיון שייך למחשב אחר. מפעילים מחדש עם הקוד.', 'license-exists': 'כבר יש רישיון למייל הזה.',
-    'license-offline-too-long': 'צריך חיבור לאינטרנט פעם בשבוע כדי לאמת את הרישיון.', 'license-unpaid': 'הרישיון יופעל אחרי קבלת התשלום. פונים לבעל העסק.', 'agreement-needed': 'צריך לאשר את הסכם הרכישה.', 'bad-amount': 'סכום לא תקין.', 'not-found': 'לא נמצא.' });
+    'trial-used': 'כבר היה ניסיון חינם במחשב הזה או במייל הזה. לשדרוג פונים לחיים: 054-4979771.', 'license-offline-too-long': 'צריך חיבור לאינטרנט פעם בשבוע כדי לאמת את הרישיון.', 'license-unpaid': 'הרישיון יופעל אחרי קבלת התשלום. פונים לבעל העסק.', 'agreement-needed': 'צריך לאשר את הסכם הרכישה.', 'bad-amount': 'סכום לא תקין.', 'not-found': 'לא נמצא.' });
 
   /* the site's content: business.json in the repository, with what the owner published from the admin on top */
   FS.siteData = function (prefix) {
