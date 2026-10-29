@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='76';(function(){
+window.FS_V='77';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -17,7 +17,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" />
-<link rel="stylesheet" href="css/download.css?v=76" />
+<link rel="stylesheet" href="css/download.css?v=77" />
 </head>
 <body>
 <header class="dl-top"><a href="./" class="dl-brand"><img src="icon.svg" alt="" width="34" height="34" /><span>פריים מגנטים</span></a><a href="./" class="dl-back">← לאתר</a></header>
@@ -40,6 +40,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
           <p class="dl-small" id="dl-sent"></p>
           <label>קוד אימות<input id="dl-code" dir="ltr" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"></label>
           <button class="dl-btn" type="submit" id="dl-check"><span><b>✔ אימות</b></span></button>
+          <p class="dl-alt" id="dl-alt" hidden>לא הגיע? לקבל לטלפון: <button type="button" class="dl-mini" data-via="sms" hidden>📱 ב־SMS</button> <button type="button" class="dl-mini" data-via="whatsapp" hidden>💬 בוואטסאפ</button></p>
           <p class="dl-small"><a href="#" id="dl-again">שליחה מחדש</a> · <a href="#" id="dl-fix">תיקון הפרטים</a> · <a id="dl-wa" target="_blank" rel="noopener" href="#">קבלת הקוד בוואטסאפ</a></p>
         </form>
         <div id="dl-ready" hidden>
@@ -113,6 +114,6 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
   </section>
 </main>
 <footer class="dl-foot"><a href="./">פריים מגנטים</a> · <a href="agreement.html">הסכם רכישה</a> · <a href="accessibility.html">הצהרת נגישות</a></footer>
-<script src="js/download.js?v=76"></script>
+<script src="js/download.js?v=77"></script>
 </body>
 </html>

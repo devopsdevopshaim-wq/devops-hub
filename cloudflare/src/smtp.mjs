@@ -33,7 +33,7 @@ export async function smtpSend(open, { host = 'smtp.gmail.com', port = 465, user
       await step('DATA', [354]);
       const body = b64(text).replace(/.{1,76}/g, '$&\r\n');
       const msg = ['From: ' + (fromName ? header(fromName) + ' ' : '') + '<' + addr(from || user) + '>', 'To: <' + addr(to) + '>', replyTo ? 'Reply-To: <' + addr(replyTo) + '>' : '',
-        'Subject: ' + header(subject), 'Date: ' + new Date().toUTCString(), 'Message-ID: <' + Date.now().toString(36) + Math.random().toString(36).slice(2) + '@spider-auth>',
+        'Subject: ' + header(subject), 'Date: ' + new Date().toUTCString(),
         'MIME-Version: 1.0', 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64'].filter(Boolean).join('\r\n');
       await step(msg + '\r\n\r\n' + body + '.', [250]);
     }
