@@ -6,6 +6,8 @@ import * as nodeCrypto from 'node:crypto';
 import handle from './gen/handle.mjs';
 import invoiceSave from './gen/invoice-save.mjs';
 import afterMail from './gen/after-mail.mjs';
+import { connect } from 'cloudflare:sockets';
+import { smtpSend } from './smtp.mjs';
 import leadSave from './gen/lead.mjs';
 import pricesRead from './gen/prices.mjs';
 import adminHandle from './gen/admin.mjs';
@@ -155,7 +157,7 @@ export default {
   }
 };
 
-// ---- mail: Brevo (a verified sender, e.g. the Gmail address) or Resend
+// ---- mail: Brevo (a verified sender, e.g. the Gmail address), Resend, or Gmail itself (SMTP with an app password)
 async function sendMail(env, mail) {
   const from = env.MAIL_FROM || ADMIN_EMAIL;
   try {
@@ -168,6 +170,12 @@ async function sendMail(env, mail) {
       const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: env.MAIL_FROM_RESEND || `${mail.fromName || FROM_NAME} <onboarding@resend.dev>`, to: [mail.to], reply_to: mail.replyTo || undefined, subject: mail.subject, text: mail.text }) });
       return r.ok ? {} : { error: 'resend ' + r.status };
+    }
+    // Gmail with an app password (GMAIL_APP_PASSWORD): the mail goes out from the owner's own Gmail
+    if (env.GMAIL_APP_PASSWORD) {
+      const user = env.GMAIL_USER || ADMIN_EMAIL;
+      const open = async (hostname, port) => { const s = connect({ hostname, port }, { secureTransport: 'on' }); await s.opened; return s; };
+      return await smtpSend(open, { user, pass: env.GMAIL_APP_PASSWORD, from: user, fromName: mail.fromName || FROM_NAME, to: mail.to, replyTo: mail.replyTo, subject: mail.subject, text: mail.text });
     }
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 100) }; }
   return { error: 'no-mail-provider' };
