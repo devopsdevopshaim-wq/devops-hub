@@ -47,3 +47,26 @@ a:focus-visible { outline: 2px solid var(--champ); outline-offset: 3px; }
 .dl-price b { font: 900 34px 'Frank Ruhl Libre', serif; background: var(--foil); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 .dl-trial { margin: 14px auto 0; max-width: 640px; padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(227,196,138,.45); background: rgba(227,196,138,.10); line-height: 1.6; }
+
+/* registration for the free version, and the full purchase beside it */
+.dl-two { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; text-align: right; margin-top: 8px; }
+.dl-reg, .dl-buy { padding: clamp(20px, 3vw, 30px); border: 1px solid var(--line); border-radius: 22px; background: rgba(255,255,255,.03); }
+.dl-reg { border-color: rgba(214,183,126,.55); box-shadow: 0 30px 60px -40px rgba(214,183,126,.6); }
+.dl-reg h2, .dl-buy h2 { margin: 0 0 8px; font: 700 26px 'Frank Ruhl Libre', serif; }
+.dl-buy h3 { margin: 18px 0 6px; font: 700 17px 'Assistant', sans-serif; color: var(--champ); }
+.dl-small { margin: 0 0 12px; color: var(--dim); font-size: 15px; }
+.dl-reg form { display: grid; gap: 12px; }
+.dl-reg label { display: grid; gap: 4px; font-size: 14px; color: var(--dim); }
+.dl-reg input { font: inherit; color: var(--ivory); background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.dl-reg input:focus { outline: 2px solid var(--champ); outline-offset: 1px; }
+.dl-reg .dl-btn { justify-content: center; border: 0; cursor: pointer; font: inherit; }
+.dl-reg .dl-btn:disabled { opacity: .6; cursor: wait; }
+.dl-err { margin: 10px 0 0; min-height: 1.4em; color: #F3B4A6; font-size: 15px; }
+#dl-ready { display: grid; gap: 10px; justify-items: start; }
+.dl-promo { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: rgba(214,183,126,.16); border: 1px solid var(--champ); font-weight: 700; }
+.dl-plans { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.dl-plans li { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 14px; }
+.dl-plans li.best { border-color: var(--champ); background: rgba(214,183,126,.08); }
+.dl-plans b { color: var(--champ); font-size: 19px; } .dl-plans small { grid-column: 1 / -1; color: var(--dim); font-size: 13px; }
+.dl-inc { margin: 0 0 16px; padding-inline-start: 20px; color: var(--dim); font-size: 15px; }
+@media (max-width: 760px) { .dl-two { grid-template-columns: 1fr; } }

@@ -20,6 +20,7 @@ const LOGIN_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/portfolio/cl
 // פריים מגנטים: its customers sign up from the frame designer and see only that (sites ['frame']), with no end date
 const FRAME_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/design.html';
 const STUDIO_DL = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/download.html';
+const STUDIO_EXE = 'https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/desktop-latest/FrameStudio-Setup.exe';
 const FRAME_ADMIN_URL = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/admin.html';
 const FRAME_SIGN = 'פריים מגנטים · חיים קריספין · 054-4979771';
 const ADMIN_TOTP = '__ADMIN_TOTP_SECRET__';   // authenticator-app key of the admin; empty = no second step
@@ -259,36 +260,89 @@ switch (b.action) {
   // can see, revoke, free or replace it. Codes are random (16 characters, ~79 bits), activation is rate-limited and locks after
   // repeated failures, and every activation from another computer is refused and reported to the owner.
   // the studio's price, for the download page (public)
-  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS }); }
-  // a free trial: name + email (+ phone) on this computer, no code and no payment. One trial per email and one per computer; the
-  // owner is told (a lead). It is a licence like any other (with a code kept on the computer for signing in again), on trial.
-  case 'trial-start': {
-    const e = email(b.email), nm = line(b.name, 60), mach = String(b.machine || '').toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2 || !/^[a-f0-9]{32,64}$/.test(mach)) return out({ ok: false, error: 'bad-input' }, 400);
+  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS, promo: ls.promo || '', terms: ls.terms || '' }); }
+  // ---- a free trial, registered and verified: full name, phone and email; a 6-digit code goes to the email (and, if the email
+  // can't go out, the owner sees the code in the admin and sends it by WhatsApp). The right code proves the person: on the download
+  // page it opens the download; in the program it starts the trial on that computer (one trial per email and per computer). The
+  // owner sees every registration (sd.trialLeads) and is told of each new verified one.
+  case 'trial-code': {
+    const e = email(b.email), nm = line(b.name, 60), ph = phone(b.phone), where = b.where === 'app' ? 'app' : 'download';
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.split(/\s+/).filter((w) => w.length > 1).length < 2 || !/^0\d{8,11}$/.test(ph)) return out({ ok: false, error: 'bad-details' }, 400);
+    if (e === ADMIN_EMAIL) return out({ ok: false, error: 'admin-use-password' }, 400);
+    if (!hit('tc-ip', IPK, 10, HOUR) || !hit('tc-all', 'all', 1500, DAY) || !hit('tc-mail', e, 5, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    sd.trialLeads = sd.trialLeads || {};
+    const iso = new Date(now).toISOString(), T0 = sd.trialLeads[e] || { email: e, firstAt: iso, verified: false, downloads: 0 };
+    sd.trialLeads[e] = Object.assign(T0, { name: nm, phone: ph, lastAt: iso, where, ip: maskIp(IP), ua: line(UA, 110) });
+    const code = String(parseInt(rnd(4), 16) % 1000000).padStart(6, '0');
+    T0.code = { h: sha256hex('tc:' + e + ':' + code), exp: now + 30 * 60000, tries: 0, plain: code };   // plain: the owner may send it by WhatsApp
+    const ks = Object.keys(sd.trialLeads); if (ks.length > 5000) { ks.sort((a, z) => Date.parse(sd.trialLeads[a].lastAt) - Date.parse(sd.trialLeads[z].lastAt)); delete sd.trialLeads[ks[0]]; }
+    log('קוד אימות לניסיון נשלח', e);
+    // not soft: when the email can't go out the page hears it (mail-failed) and offers WhatsApp through the owner
+    return out({ ok: true, step: 'code', via: 'email' }, 200, { to: e, subject: 'אופטימוס · קוד האימות שלך: ' + code,
+      text: `שלום ${nm},\n\nקוד האימות שלך לאופטימוס: ${code}\n\nהקוד תקף ל־30 דקות. מזינים אותו ${where === 'app' ? 'בתוכנה' : 'בדף ההורדה'}.\nאם לא ביקשת אותו, אפשר להתעלם מההודעה.\n\nפריים מגנטים · 054-4979771` });
+  }
+  case 'trial-verify': {
+    const e = email(b.email), code = String(b.code || '').replace(/\D/g, ''), mach = String(b.machine || '').toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || code.length !== 6) return out({ ok: false, error: 'bad-input' }, 400);
+    if (!hit('tv-ip', IPK, 30, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const T0 = (sd.trialLeads || {})[e], c = T0 && T0.code;
+    if (!c || c.exp < now || c.tries >= 5) { if (T0) delete T0.code; return out({ ok: false, error: 'code-expired' }, 401); }
+    if (sha256hex('tc:' + e + ':' + code) !== c.h) { c.tries++; return out({ ok: false, error: 'bad-code', left: Math.max(0, 5 - c.tries) }, 401); }
+    delete T0.code;
+    const iso = new Date(now).toISOString(), first = !T0.verified;
+    T0.verified = true; T0.verifiedAt = T0.verifiedAt || iso;
+    const lead = () => alert('נרשם/ה לאופטימוס: ' + T0.name, `${T0.name}\nטלפון: ${T0.phone}\nמייל: ${e}\nנרשם/ה ${T0.where === 'app' ? 'בתוכנה' : 'להורדת התוכנה'} ואימת/ה את המייל.\nזה ליד חם: כדאי להתקשר בימים הקרובים.\nמסך הניהול ← רישיונות סטודיו.`);
+    if (!/^[a-f0-9]{32,64}$/.test(mach)) {   // the download page
+      T0.downloads = (T0.downloads || 0) + 1; T0.dlAt = iso; log('נרשם להורדת התוכנה', e);
+      return out({ ok: true, step: 'download', url: STUDIO_EXE }, 200, first ? lead() : null);
+    }
+    // the program: the trial starts (or the same computer signs in again)
     const agreeVer = line(b.agree, 20); if (!/^v\d+$/.test(agreeVer)) return out({ ok: false, error: 'agreement-needed' }, 400);
-    if (!hit('trial-ip', IPK, 5, DAY) || !hit('trial-all', 'all', 300, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
     sd.licenses = sd.licenses || {}; sd.trialMachines = sd.trialMachines || {};
-    const mh = sha256hex('lic-machine:' + mach), iso = new Date(now).toISOString(), was = sd.trialMachines[mh];
+    const mh = sha256hex('lic-machine:' + mach), was = sd.trialMachines[mh];
     let L = sd.licenses[e];
-    if (L && !(L.trial && L.machine === mh)) return out({ ok: false, error: L.trial ? 'trial-used' : 'license-exists' }, 403);
+    if (L && !L.trial) {   // a buyer verifying their email: the licence on this computer, as with the code
+      if (L.machine && L.machine !== mh) return out({ ok: false, error: 'license-in-use' }, 403);
+      if (!licOpens(L)) return out({ ok: false, error: 'license-unpaid' }, 402);
+    } else if (L && L.machine !== mh) return out({ ok: false, error: 'trial-used' }, 403);
     if (!L && was && was !== e) return out({ ok: false, error: 'trial-used' }, 403);
     if (!L && Object.keys(sd.licenses).length >= 2000) return out({ ok: false, error: 'too-many-clients' }, 400);
     const fresh = !L;
     if (fresh) {
-      L = sd.licenses[e] = { email: e, name: nm, phone: phone(b.phone), note: 'ניסיון חינם', code: licCode(), createdAt: iso, active: true, machine: mh, boundAt: iso,
-        platform: line(b.platform, 20), desktop: b.desktop === '1' || b.desktop === true, history: [{ at: iso, what: 'התחיל ניסיון חינם', ip: maskIp(IP), ua: line(UA, 90) }],
+      L = sd.licenses[e] = { email: e, name: T0.name, phone: T0.phone, note: 'ניסיון חינם', code: licCode(), createdAt: iso, active: true, machine: mh, boundAt: iso,
+        platform: line(b.platform, 20), desktop: b.desktop === '1' || b.desktop === true, history: [{ at: iso, what: 'התחיל ניסיון חינם (המייל אומת)', ip: maskIp(IP), ua: line(UA, 90) }],
         price: (sd.licSettings || {}).price || 990, paid: false, payments: [], trial: { start: iso, events: [] }, agreement: { ver: agreeVer, at: iso, ip: maskIp(IP), ua: line(UA, 90) } };
       sd.trialMachines[mh] = e;
-      const ks = Object.keys(sd.trialMachines); if (ks.length > 5000) for (const k of ks.slice(0, ks.length - 5000)) delete sd.trialMachines[k];
+      const km = Object.keys(sd.trialMachines); if (km.length > 5000) for (const k of km.slice(0, km.length - 5000)) delete sd.trialMachines[k];
       log('ניסיון חינם התחיל', e);
     }
     if (!L.active) return out({ ok: false, error: 'license-revoked' }, 403);
+    if (!L.machine) { L.machine = mh; L.boundAt = iso; }
+    T0.app = true;
     L.lastSeen = iso; L.lastIp = maskIp(IP); L.ua = line(UA, 110); L.version = line(b.version, 20);
     if (!L.appVer && vparse(b.version)) L.appVer = String(b.version);
     for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h];
     const token = newSession(e, 'studio', now + 30 * DAY, { lic: e, mh });
     return out({ ok: true, token, role: 'studio', name: line(L.name, 60), email: e, code: L.code, exp: new Date(now + 30 * DAY).toISOString(), plan: planOf(L), upd: updFor(L, b.version) }, 200,
-      fresh ? alert('ניסיון חינם חדש באופטימוס', `${nm} (${e}${L.phone ? ', ' + L.phone : ''}) התקין/ה את אופטימוס והתחיל/ה ניסיון חינם (${TRIAL.events} אירועים או ${TRIAL.days} יום).\nזה ליד חם: כדאי להתקשר בימים הקרובים.\nמסך הניהול ← רישיונות סטודיו.`) : null);
+      fresh ? alert('ניסיון חינם חדש באופטימוס: ' + T0.name, `${T0.name}\nטלפון: ${T0.phone}\nמייל: ${e}\nהתקין/ה את אופטימוס, אימת/ה את המייל והתחיל/ה ניסיון חינם (${TRIAL.events} אירועים או ${TRIAL.days} יום).\nזה ליד חם: כדאי להתקשר בימים הקרובים.`) : null);
+  }
+  // how much the program is used: minutes of real work (the program counts them, also offline, and sends them when online)
+  case 'usage': {
+    const s = session(); if (!s || s.role !== 'studio') return out({ ok: false, error: 'signed-out' }, 401);
+    const L = (sd.licenses || {})[s.lic]; if (!L || !L.active) return out({ ok: false, error: 'license-revoked' }, 403);
+    if (!hit('usage', s.lic, 30, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    let days = {}; try { days = JSON.parse(String(b.days || '{}')) || {}; } catch (er) { days = {}; }
+    const U = L.usage = L.usage || { min: 0, prints: 0, ai: 0, days: {}, firstAt: new Date(now).toISOString() };
+    let add = 0;
+    for (const [d, m] of Object.entries(days)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+      const v = Math.max(0, Math.min(24 * 60, Math.round(Number(m) || 0))); if (!v) continue;
+      U.days[d] = Math.min(24 * 60, (U.days[d] || 0) + v); add += v;
+    }
+    const dk = Object.keys(U.days).sort(); if (dk.length > 120) for (const k of dk.slice(0, dk.length - 120)) delete U.days[k];
+    U.min += add; U.prints += Math.max(0, Math.min(100000, Math.round(Number(b.prints) || 0))); U.ai += Math.max(0, Math.min(10000, Math.round(Number(b.ai) || 0)));
+    U.lastAt = new Date(now).toISOString(); L.lastSeen = U.lastAt;
+    return out({ ok: true, plan: planOf(L) });
   }
   // the program reports a day of real work (TRIAL.eventPrints prints or more): it counts as one of the trial's events
   case 'trial-event': {
@@ -387,6 +441,7 @@ switch (b.action) {
   case 'upd-unpublish':
   case 'upd-settings':
   case 'upd-grant':
+  case 'lead-delete':
   case 'lic-delete': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     sd.licenses = sd.licenses || {};
@@ -396,14 +451,19 @@ switch (b.action) {
     const view = (L) => ({ email: L.email, name: L.name || '', phone: L.phone || '', note: L.note || '', code: L.code, active: L.active !== false, createdAt: L.createdAt, bound: !!L.machine,
       boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10),
       price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null, appVer: L.appVer || '', updReq: L.updReq || null,
-      plan: planOf(L), trial: L.trial || null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null });
+      plan: planOf(L), trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null });
     sd.licSettings = sd.licSettings || { price: 990, currency: '₪' };
     const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
     const mailCode = (L) => mailTo(L.email, 'אופטימוס · קוד ההפעלה האישי שלך', `שלום ${L.name || ''},\n\nקוד ההפעלה האישי שלך לאופטימוס:\n${L.code}\n\nהורדה והתקנה: ${STUDIO_DL}\nבהפעלה הראשונה מזינים את המייל הזה (${L.email}) ואת הקוד.\n\nהקוד אישי ומתאים למחשב אחד בלבד: אחרי ההפעלה הוא ננעל למחשב הזה. החלפת מחשב: פונים לחיים, 054-4979771.\nאין להעביר את הקוד לאחרים.\n\nפריים מגנטים`);
     sd.appUpd = sd.appUpd || { versions: [], price: 49 };
     const U = sd.appUpd;
-    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U });
+    // the registrations: who registered (download page / program), verified or not; an unverified one shows its live code for WhatsApp
+    const leads = () => Object.values(sd.trialLeads || {}).sort((a, z) => Date.parse(z.lastAt) - Date.parse(a.lastAt)).slice(0, 500)
+      .map((T0) => ({ email: T0.email, name: T0.name, phone: T0.phone, firstAt: T0.firstAt, lastAt: T0.lastAt, where: T0.where, verified: !!T0.verified, verifiedAt: T0.verifiedAt || null, downloads: T0.downloads || 0, app: !!T0.app,
+        code: T0.code && T0.code.exp > now ? T0.code.plain : '' }));
+    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads() });
+    if (b.action === 'lead-delete') { if (sd.trialLeads) delete sd.trialLeads[email(b.email)]; return out({ ok: true, leads: leads(), licenses: list() }); }
     // updates: publish a build as an update (notes, price, or free for everyone), take it back, the default price
     if (b.action === 'upd-settings') { U.price = money(b.price) || U.price; log('מחיר עדכון גרסה: ' + U.price, ADMIN_EMAIL); return out({ ok: true, upd: U, licenses: list() }); }
     if (b.action === 'upd-publish' || b.action === 'upd-unpublish') {
@@ -414,7 +474,7 @@ switch (b.action) {
       log((b.action === 'upd-publish' ? 'פורסם עדכון ' : 'בוטל פרסום עדכון ') + v, ADMIN_EMAIL);
       return out({ ok: true, upd: U, licenses: list() });
     }
-    if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; for (const k of ['passPrice', 'monthPrice', 'yearPrice']) if (money(b[k])) sd.licSettings[k] = money(b[k]); log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
+    if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; for (const k of ['passPrice', 'monthPrice', 'yearPrice']) if (money(b[k])) sd.licSettings[k] = money(b[k]); if (b.promo != null) sd.licSettings.promo = line(b.promo, 400); if (b.terms != null) sd.licSettings.terms = line(b.terms, 600); log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
     if (b.action === 'lic-create') {
       const e = email(b.email), nm = line(b.name, 60);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2) return out({ ok: false, error: 'bad-input' }, 400);

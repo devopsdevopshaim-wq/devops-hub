@@ -795,3 +795,41 @@ Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: 
   - price fields for the plans;
   - stats for trials and requests.
 - `download.html` advertises the trial, and `download.js` shows the subscription prices.
+
+## Verified registration, usage hours, the AI-focused free tier, tips and a guide (Oct 29, v75)
+
+**Registration (server, access-handle.js):**
+- `trial-start` is gone. Every entry to the trial is verified in two steps:
+  1. `trial-code` takes a full name (two words), a phone (`0\d{8,11}`), an email and `where` (`download` or `app`). It stores `sd.trialLeads[e]` and emails a 6-digit code, valid for 30 minutes with 5 tries.
+     - The mail is not soft, so a failed send answers `mail-failed`.
+     - The code is also kept in plain text (`code.plain`) so the owner can send it by WhatsApp from the admin.
+  2. `trial-verify` checks the code:
+     - with no machine (the download page), it marks the lead verified and returns the exe URL (`STUDIO_EXE`);
+     - with a machine (the program), it starts or re-signs the trial on that computer (one per email and one per computer);
+     - a buyer verifying their email gets their own licence.
+  - The owner is alerted once per new verified lead, with name, phone and email.
+- `usage` (session) takes `days` as JSON `{YYYY-MM-DD: minutes}` plus `prints` and `ai`, and adds them to `L.usage` (the last 120 days are kept).
+- `lic-list` returns `leads` (an unverified lead shows its live code). `lead-delete` removes one.
+- `lic-settings` and `lic-info` carry `promo` and `terms`.
+- Tests: `studioTrial` in `n8n/test/access.test.mjs` (423 checks).
+
+**Program:**
+- `gate.js`: the trial tab has two steps, details and then the code. It offers resend, fixing the details, and getting the code by WhatsApp; the WhatsApp link is the only option after `mail-failed`. `FS.license.trialCode` / `trialVerify` live in account.js.
+- `plan.js`:
+  - **Usage:** a minute counts while the program is visible and was used in the last 2 minutes (`fs-usage`). It is sent every 5 minutes, at start and on `online` (`FS.usageSend`), and only what was sent is subtracted.
+  - **Free tier = AI:** `FREE_AI` is 15 a day, and `FREE_PICK` opens the first 4 heroes, 3 real, 5 edits, 3 viral and 6 styles, plus editing in words. Everything else gets `.pl-lock` ⭐ (from a MutationObserver), and a click on it opens the upgrade.
+  - **Reliable AI:** `FS.askServer` always answers within `AI_WAIT` (150 s) and never throws. `FS.runAI` catches errors and shows a calm toast.
+  - The upgrade window shows `promo` and `terms`.
+- `js/help.js`:
+  - A floating tip (`#fs-tip`) after 450 ms on any tab or button. The text comes from `TIPS`, else from the element's title, which is moved to `data-tip`.
+  - `FS.helpGuide()`: a guide to every part of the program. It opens once (`fs-guide-seen`), right after the trial starts, and from "❓ עזרה" in the workspace header.
+
+**Pages:**
+- `download.html` has two panels:
+  - registration (name, phone, email, code, then the download starts);
+  - the full purchase (prices from `lic-info`, promotion, payment terms, what is included, WhatsApp).
+  - The script is `download.js`.
+- `admin-licenses.js`:
+  - a "📝 נרשמים להורדה ולניסיון" card (verified or not, the live code with a WhatsApp send, call, delete);
+  - a "⏱️ שימוש" column (total hours, this week, prints and AI);
+  - promotion and payment-terms fields.
