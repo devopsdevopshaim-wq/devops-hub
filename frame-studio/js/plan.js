@@ -1,14 +1,23 @@
 /* אופטימוס plans. A new computer starts a free trial (every feature for 2 events or 30 days, whichever comes last); after it the
-   program keeps working as the free tier: prints and saved files carry a small "made with Optimus" band, the cloud AI does a few
-   photos a day, and the collage, the pro frame editor and the local AI open again with an upgrade (an event pass for 48 hours, a
+   program keeps working as the free tier, which is mostly the AI: a chosen set of the AI designs (the rest show ⭐), FREE_AI
+   photos a day; prints and saved files carry a small "made with Optimus" band, and the collage, the pro frame editor and the
+   local AI open again with an upgrade (an event pass for 48 hours, a
    month, a year or the full licence; the owner records the payment and the server says so). The owner's own sign-in and licences
    from before plans are always full. The server's word is kept for working offline, and the dates and events count here too. */
 (function () {
   'use strict';
   var FS = window.FS, LIC = FS.license, ACC = FS.account;
   if (!LIC) return;
-  var FREE_AI = 3, DAY = 86400000, WA = '972544979771';
-  var LOCKED = { collage: 'הקולאז׳', 'frame-pro': 'עורך המסגרות המקצועי (16 עיצובי AI מההזמנה)', 'local-ai': 'ה־AI המקומי שעובד בלי אינטרנט', ai: 'עוד עיצובי AI היום' };
+  var FREE_AI = 15, DAY = 86400000, WA = '972544979771', AI_WAIT = 150000;
+  /* the AI designs open in the free tier: the first few of every family, and editing in words */
+  var FREE_PICK = { AI_HEROES: 4, AI_REAL: 3, AI_EDITS: 5, AI_VIRAL: 3, AI_STYLES: 6 }, FREE_LABELS = null;
+  function freeLabels() {
+    if (FREE_LABELS) return FREE_LABELS; FREE_LABELS = { 'עריכת AI': 1 };
+    Object.keys(FREE_PICK).forEach(function (k) { (FS[k] || []).slice(0, FREE_PICK[k]).forEach(function (v) { FREE_LABELS[k === 'AI_STYLES' ? v[1] : v[0]] = 1; }); });
+    return FREE_LABELS;
+  }
+  function freeStyle(label) { return !!freeLabels()[label]; }
+  var LOCKED = { collage: 'הקולאז׳', 'frame-pro': 'עורך המסגרות המקצועי (16 עיצובי AI מההזמנה)', 'local-ai': 'ה־AI המקומי שעובד בלי אינטרנט', ai: 'עוד עיצובי AI היום (' + FREE_AI + ' ביום בגרסה החינמית)', 'ai-style': 'העיצוב הזה' };
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function jget(k, d) { try { return JSON.parse(ls(k) || 'null') || d; } catch (e) { return d; } }
   function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -51,9 +60,11 @@
         ['year', '📆 מנוי שנתי', P.year, 'הכל פתוח לשנה, במחיר של פחות מ־9 חודשים.'], ['full', '💎 רישיון מלא', P.full, 'קונים פעם אחת, פתוח לתמיד.']];
       var b = FS.dialog('⭐ שדרוג אופטימוס',
         '<div class="pl-up">' + (why ? '<p class="pl-why">' + why + '</p>' : '') +
-        '<div class="pl-cmp"><div><h4>גרסה חינמית</h4><ul><li>עריכה, תיקון צבע, מסגרות והדפסה</li><li>פס קטן "נערך באופטימוס" על כל הדפסה וקובץ</li><li>' + FREE_AI + ' עיצובי AI ביום</li><li>בלי קולאז׳, עורך מסגרות מקצועי ו־AI מקומי</li></ul></div>' +
-        '<div class="on"><h4>אופטימוס מלא</h4><ul><li>הדפסות וקבצים נקיים, בלי שום סימן</li><li>AI בלי הגבלה, גם מקומי בלי אינטרנט</li><li>קולאז׳, 16 מסגרות AI מההזמנה ועורך מקצועי</li><li>כל העדכונים לתוכנית שלך</li></ul></div></div>' +
+        '<div class="pl-cmp"><div><h4>גרסה חינמית</h4><ul><li>עריכה, תיקון צבע, מסגרות והדפסה</li><li>פס קטן "נערך באופטימוס" על כל הדפסה וקובץ</li><li>🤖 AI: ' + FREE_AI + ' תמונות ביום, מבחר עיצובים (גיבורי על, על אדם אמיתי, עריכות חכמות, טרנדים, סגנונות, ועריכה במילים)</li><li>בלי קולאז׳, עורך מסגרות מקצועי ו־AI מקומי</li></ul></div>' +
+        '<div class="on"><h4>אופטימוס מלא</h4><ul><li>הדפסות וקבצים נקיים, בלי שום סימן</li><li>כל עיצובי ה־AI בלי הגבלה, גם מקומי בלי אינטרנט</li><li>קולאז׳, 16 מסגרות AI מההזמנה ועורך מקצועי</li><li>כל העדכונים לתוכנית שלך</li></ul></div></div>' +
+        (pr.promo ? '<p class="pl-promo">🏷️ ' + FS.esc(pr.promo) + '</p>' : '') +
         '<div class="pl-cards">' + cards.map(function (c) { return '<div class="pl-card' + (c[0] === 'year' ? ' best' : '') + '"><h4>' + c[1] + '</h4><b>' + c[2] + ' ' + cur + '</b><p>' + c[3] + '</p><button class="btn" data-want="' + c[0] + '">📩 בקשה</button></div>'; }).join('') + '</div>' +
+        (pr.terms ? '<p class="pl-terms">💳 ' + FS.esc(pr.terms) + '</p>' : '') +
         '<p class="pl-note" id="pl-note">לוחצים "בקשה": חיים מקבל הודעה עם הפרטים שלך, ואחרי התשלום (ביט, העברה או אשראי) הכל נפתח לבד בתוכנה. אפשר גם ישר <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני רוצה לשדרג את אופטימוס (' + (L.email || '') + ')') + '">בוואטסאפ</a>.</p></div>', true);
       b.addEventListener('click', function (e) {
         var x = e.target.closest('[data-want]'); if (!x) return;
@@ -83,13 +94,40 @@
     return c;
   };
   /* the cloud AI: a few photos a day */
+  /* every AI call: never hangs (an answer within AI_WAIT, else 'timeout') and never throws; the free tier's daily photos */
   var ask = FS.askServer;
   if (ask) FS.askServer = function (body) {
-    var pic = body && (body.action === 'restyle' || body.action === 'image');
-    if (!pic || FS.planTier() !== 'free') return ask.apply(this, arguments);
-    if (!FS.can('ai')) { gate('ai'); return Promise.resolve({ ok: false, error: 'plan-limit' }); }
-    return ask.apply(this, arguments).then(function (r) { if (r && r.ok) aiCount(); return r; });
+    var self = this, args = arguments, pic = body && (body.action === 'restyle' || body.action === 'image'), free = pic && FS.planTier() === 'free';
+    if (free && !FS.can('ai')) { gate('ai'); return Promise.resolve({ ok: false, error: 'plan-limit' }); }
+    var run;
+    try { run = Promise.resolve(ask.apply(self, args)); } catch (e) { run = Promise.resolve({ ok: false, error: 'failed' }); }
+    var t, wait = new Promise(function (ok) { t = setTimeout(function () { ok({ ok: false, error: 'timeout' }); }, AI_WAIT); });
+    return Promise.race([run.catch(function () { return { ok: false, error: 'failed' }; }), wait]).then(function (r) {
+      clearTimeout(t); if (r && r.ok && pic) { if (free) aiCount(); use.ai++; keep(); } return r;
+    });
   };
+  /* the AI designs: in the free tier only the open set runs; the others open the upgrade window */
+  var runAI = FS.runAI;
+  if (runAI) FS.runAI = function (prompt, label) {
+    if (FS.planTier() === 'free' && label && !freeStyle(label)) { FS.upgrade('⭐ "' + label + '" הוא מעיצובי ה־AI המלאים. בגרסה החינמית פתוחים ' + Object.keys(freeLabels()).length + ' עיצובים (מסומנים בלי ⭐), ' + FREE_AI + ' תמונות ביום.'); return Promise.resolve(); }
+    try { return Promise.resolve(runAI.apply(this, arguments)).catch(function (e) { console.warn(e); FS.toast('ה־AI לא הצליח הפעם. התמונות נשארו כמו שהיו, ואפשר לנסות שוב.'); }); }
+    catch (e) { console.warn(e); FS.toast('ה־AI לא הצליח הפעם. אפשר לנסות שוב.'); return Promise.resolve(); }
+  };
+  /* ⭐ on the designs the free tier doesn't open */
+  function marks() {
+    var free = FS.planTier() === 'free';
+    Array.prototype.forEach.call(document.querySelectorAll('.ai-style span, #mt .mt-ai-g [data-ai] span'), function (sp) {
+      var b = sp.parentNode; if (b.classList.contains('off')) return;
+      b.classList.toggle('pl-lock', free && !freeStyle(sp.textContent.trim()));
+    });
+  }
+  /* a click on a ⭐ design opens the upgrade straight away (before anything else checks the photos) */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.pl-lock'); if (!b || FS.planTier() !== 'free') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    var sp = b.querySelector('span'); FS.upgrade('⭐ "' + (sp ? sp.textContent.trim() : '') + '" הוא מעיצובי ה־AI המלאים. בגרסה החינמית פתוחים ' + Object.keys(freeLabels()).length + ' עיצובים (בלי ⭐), ' + FREE_AI + ' תמונות ביום.');
+  }, true);
+  var mq = 0; new MutationObserver(function () { if (!mq) mq = setTimeout(function () { mq = 0; marks(); }, 300); }).observe(document.body, { childList: true, subtree: true });
   /* the collage, the pro frame editor, the local AI */
   var openTab = FS.openTab;
   if (openTab) FS.openTab = function (n) { if (n === 'collage' && !gate('collage')) return; return openTab.apply(this, arguments); };
@@ -113,8 +151,32 @@
   FS.on('printed', function (n) {
     var d = jget('fs-plan-day', null), t = today();
     if (!d || d.day !== t) d = { day: t, n: 0 };
-    d.n += Number(n) || 0; ls('fs-plan-day', JSON.stringify(d)); report(); pill();
+    d.n += Number(n) || 0; ls('fs-plan-day', JSON.stringify(d)); use.prints += Number(n) || 0; keep(); report(); pill();
   });
+
+  /* ---------- usage: a minute counts when the program is in front and was used in the last 2 minutes; kept on the computer and
+     sent when there is a connection (every 5 minutes, at start and when the internet comes back) ---------- */
+  var use = jget('fs-usage', null) || { days: {}, prints: 0, ai: 0 }, lastAct = Date.now();
+  function keep() { ls('fs-usage', JSON.stringify(use)); }
+  ['pointerdown', 'keydown', 'wheel', 'pointermove'].forEach(function (k) { document.addEventListener(k, function () { lastAct = Date.now(); }, { passive: true, capture: true }); });
+  setInterval(function () {
+    if (!LIC.get() || owner() || document.hidden || Date.now() - lastAct > 120000) return;
+    var d = today(); use.days[d] = (use.days[d] || 0) + 1; keep();
+  }, 60000);
+  var sending = false;
+  function sendUse() {
+    var L = LIC.get(); if (!L || owner() || sending || !navigator.onLine) return;
+    var days = use.days, n = Object.keys(days).length; if (!n && !use.prints && !use.ai) return;
+    var sent = { days: days, prints: use.prints, ai: use.ai }; sending = true;
+    LIC.call('usage', { token: L.token, days: JSON.stringify(days), prints: use.prints, ai: use.ai }).then(function (r) {
+      sending = false; if (!r || !r.ok) return;
+      Object.keys(sent.days).forEach(function (k) { use.days[k] = Math.max(0, (use.days[k] || 0) - sent.days[k]); if (!use.days[k]) delete use.days[k]; });
+      use.prints = Math.max(0, use.prints - sent.prints); use.ai = Math.max(0, use.ai - sent.ai); keep();
+      if (r.plan) LIC.setPlan(r.plan);
+    }, function () { sending = false; });
+  }
+  FS.usageSend = sendUse;
+  setInterval(sendUse, 5 * 60000); window.addEventListener('online', function () { setTimeout(sendUse, 3000); report(); }); setTimeout(sendUse, 8000);
 
   /* ---------- the plan pill, and a word when the trial ends ---------- */
   function left(iso) { return Math.max(0, Math.ceil((Date.parse(iso) - Date.now()) / DAY)); }
@@ -135,7 +197,7 @@
     if (was === 'trial' && t === 'free') setTimeout(function () { FS.upgrade('🎁 הניסיון החינמי הסתיים. התוכנה ממשיכה לעבוד בגרסה החינמית, ואפשר לפתוח הכל שוב בכל רגע.'); }, 800);
     if (was !== t) ls('fs-plan-was', t);
   }
-  FS.on('plan', function () { pill(); report(); });
+  FS.on('plan', function () { pill(); report(); marks(); });
   document.addEventListener('DOMContentLoaded', pill);
   setTimeout(function () { pill(); report(); }, 1500);
   setInterval(pill, 60000);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='74';(function(){
+window.FS_V='75';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -17,7 +17,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" />
-<link rel="stylesheet" href="css/download.css?v=74" />
+<link rel="stylesheet" href="css/download.css?v=75" />
 </head>
 <body>
 <header class="dl-top"><a href="./" class="dl-brand"><img src="icon.svg" alt="" width="34" height="34" /><span>פריים מגנטים</span></a><a href="./" class="dl-back">← לאתר</a></header>
@@ -26,13 +26,46 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
     <p class="dl-eyebrow">התוכנה למחשב</p>
     <h1>אופטימוס</h1>
     <p class="dl-lead">כל הסטודיו מותקן אצלכם במחשב: עריכת תמונות, מסגרות, קולאז׳ים, מצגות והדפסה ישירה למדפסת. עובד גם בלי אינטרנט באירוע.</p>
-    <div class="dl-actions">
-      <a class="dl-btn" id="dl-win" href="https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/desktop-latest/FrameStudio-Setup.exe"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5 10.5 4.5v7H3zM11.5 4.4 21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.4z"/></svg><span><b>הורדה ל־Windows</b><small>Windows 10 / 11 · 64 ביט</small></span></a>
-      <a class="dl-line" href="studio.html">ניסיון חינם או קוד: פתיחה בדפדפן ↗</a>
+    <div class="dl-two">
+      <section class="dl-reg" id="dl-reg" aria-labelledby="dl-reg-h">
+        <h2 id="dl-reg-h">🎁 הורדת הגרסה החינמית</h2>
+        <p class="dl-small">ניסיון מלא ל־2 אירועים או 30 יום (מה שמגיע אחרון), ואחר כך גרסה חינמית עם AI. נרשמים, מאמתים בקוד שמגיע למייל, ומורידים.</p>
+        <form id="dl-form" novalidate>
+          <label>שם מלא<input id="dl-name" autocomplete="name" placeholder="שם פרטי ושם משפחה" required></label>
+          <label>טלפון<input id="dl-phone" type="tel" dir="ltr" autocomplete="tel" placeholder="05X-XXXXXXX" required></label>
+          <label>מייל<input id="dl-email" type="email" dir="ltr" autocomplete="email" required></label>
+          <button class="dl-btn" type="submit" id="dl-send"><span><b>📩 שליחת קוד אימות</b></span></button>
+        </form>
+        <form id="dl-codef" hidden novalidate>
+          <p class="dl-small" id="dl-sent"></p>
+          <label>קוד אימות<input id="dl-code" dir="ltr" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"></label>
+          <button class="dl-btn" type="submit" id="dl-check"><span><b>✔ אימות</b></span></button>
+          <p class="dl-small"><a href="#" id="dl-again">שליחה מחדש</a> · <a href="#" id="dl-fix">תיקון הפרטים</a> · <a id="dl-wa" target="_blank" rel="noopener" href="#">קבלת הקוד בוואטסאפ</a></p>
+        </form>
+        <div id="dl-ready" hidden>
+          <p>✔ אומת. אפשר להוריד:</p>
+          <a class="dl-btn" id="dl-win" href="#"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5 10.5 4.5v7H3zM11.5 4.4 21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.4z"/></svg><span><b>הורדה ל־Windows</b><small>Windows 10 / 11 · 64 ביט</small></span></a>
+          <p class="dl-small">בפתיחה הראשונה בוחרים "🎁 ניסיון חינם" ומאמתים שוב עם אותו מייל. אפשר גם <a href="studio.html">לפתוח בדפדפן ↗</a>.</p>
+        </div>
+        <p class="dl-err" id="dl-err" role="status"></p>
+      </section>
+      <aside class="dl-buy" aria-labelledby="dl-buy-h">
+        <h2 id="dl-buy-h">💎 רכישה מלאה</h2>
+        <p class="dl-promo" id="dl-promo" hidden></p>
+        <ul class="dl-plans" id="dl-plans">
+          <li><span>🎟️ כרטיס אירוע</span><b data-p="passPrice">79 ₪</b><small>הכל פתוח ל־48 שעות</small></li>
+          <li><span>📅 מנוי חודשי</span><b data-p="monthPrice">89 ₪</b><small>הכל פתוח לחודש</small></li>
+          <li class="best"><span>📆 מנוי שנתי</span><b data-p="yearPrice">790 ₪</b><small>פחות מ־9 חודשים</small></li>
+          <li><span>💎 רישיון מלא</span><b data-p="price">990 ₪</b><small>פעם אחת, פתוח לתמיד</small></li>
+        </ul>
+        <h3>💳 תנאי תשלום</h3>
+        <p class="dl-small" id="dl-terms">ביט, פייבוקס, העברה בנקאית או אשראי. קבלה על כל תשלום. מיד אחרי התשלום הכל נפתח בתוכנה, בלי להתקין מחדש.</p>
+        <h3>מה כולל</h3>
+        <ul class="dl-inc"><li>כל עיצובי ה־AI בלי הגבלה, גם בלי אינטרנט</li><li>הדפסות וקבצים נקיים, בלי סימן</li><li>קולאז׳, 16 מסגרות AI מההזמנה ועורך מקצועי</li><li>עדכונים לפי התוכנית</li></ul>
+        <a class="dl-btn small" target="_blank" rel="noopener" href="https://wa.me/972544979771?text=%D7%A9%D7%9C%D7%95%D7%9D%20%D7%97%D7%99%D7%99%D7%9D%2C%20%D7%90%D7%A0%D7%99%20%D7%A8%D7%95%D7%A6%D7%94%20%D7%9C%D7%A8%D7%9B%D7%95%D7%A9%20%D7%90%D7%AA%20%D7%90%D7%95%D7%A4%D7%98%D7%99%D7%9E%D7%95%D7%A1"><span><b>💬 לרכישה בוואטסאפ</b></span></a>
+      </aside>
     </div>
-    <p class="dl-price" id="dl-price" hidden></p>
-    <p class="dl-trial">🎁 <b>ניסיון חינם:</b> כל האפשרויות פתוחות ל־2 אירועים או 30 יום, מה שמגיע אחרון. בלי כרטיס אשראי ובלי קוד: בפתיחה הראשונה מזינים שם ומייל. אחר כך התוכנה ממשיכה לעבוד בגרסה חינמית, ואפשר לפתוח הכל בכרטיס אירוע, במנוי או ברישיון מלא.</p>
-    <p class="dl-note">🔒 ההורדה חופשית. רכשתם? ההפעלה בקוד אישי שעובד במחשב אחד. <a href="agreement.html">הסכם הרכישה והשימוש</a></p>
+    <p class="dl-note">🔒 רכשתם? ההפעלה בקוד אישי שעובד במחשב אחד. <a href="agreement.html">הסכם הרכישה והשימוש</a></p>
   </section>
 
   <section class="dl-steps">
@@ -80,6 +113,6 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
   </section>
 </main>
 <footer class="dl-foot"><a href="./">פריים מגנטים</a> · <a href="agreement.html">הסכם רכישה</a> · <a href="accessibility.html">הצהרת נגישות</a></footer>
-<script src="js/download.js?v=74"></script>
+<script src="js/download.js?v=75"></script>
 </body>
 </html>

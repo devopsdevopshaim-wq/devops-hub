@@ -58,3 +58,17 @@ body.studio-licensed .sb-menu a[href="admin.html"] { display: none !important; }
 .pl-card p { margin: 0; font-size: 13px; opacity: .8; min-height: 3em; }
 .pl-note { margin: 0; font-size: 13px; opacity: .85; }
 @media (max-width: 760px) { .pl-cmp { grid-template-columns: 1fr; } .pl-cards { grid-template-columns: 1fr 1fr; } }
+.pl-lock { position: relative; opacity: .72; }
+.pl-lock::after { content: '⭐'; position: absolute; top: 4px; inset-inline-end: 6px; font-size: 13px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+.pl-promo { margin: 0; padding: 10px 14px; border-radius: 10px; background: linear-gradient(135deg, rgba(243,221,166,.22), rgba(184,144,79,.18)); border: 1px solid rgba(227,196,138,.5); font-weight: 600; }
+.pl-terms { margin: 0; font-size: 13px; opacity: .9; }
+/* help.js: the floating tip and the guide */
+#fs-tip { position: fixed; z-index: 10000; max-width: 300px; padding: 8px 12px; border-radius: 10px; background: rgba(16,17,22,.96); color: #EDEAE4; font: 500 13px/1.5 'Heebo', sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,.5), inset 0 0 0 1px rgba(227,196,138,.35); pointer-events: none; direction: rtl; animation: fsTip .14s ease-out; }
+#fs-tip[hidden] { display: none; }
+@keyframes fsTip { from { opacity: 0; transform: translateY(3px); } }
+.hp-g { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.hp-i { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); }
+.hp-i i { font-style: normal; font-size: 24px; line-height: 1; }
+.hp-i b { color: #F3DDA6; } .hp-i p { margin: 4px 0 0; font-size: 14px; line-height: 1.55; opacity: .9; }
+.hp-f { margin: 12px 0 0; font-size: 13px; opacity: .8; } .hp-a { display: flex; justify-content: flex-end; margin-top: 10px; }
+@media (max-width: 760px) { .hp-g { grid-template-columns: 1fr; } }

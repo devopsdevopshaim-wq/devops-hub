@@ -197,10 +197,12 @@
         return auth('lic-activate', { email: email, code: code, machine: m, agree: FS.license.AGREEMENT, desktop: FS.license.isDesktop() ? '1' : '', platform: (window.FSDesktop && window.FSDesktop.platform) || 'web', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') });
       }).then(function (r) { if (r.ok) { licKeep({ token: r.token, email: r.email, name: r.name || '', plan: r.plan || null, checkedAt: Date.now() }); VAULT.set('lic', { email: String(email).trim().toLowerCase(), code: String(code).trim() }); planNews(); } return r; });
     },
-    /* a free trial on this computer: name and email (and a phone), no code; the code the server issues is kept for signing in again */
-    trialStart: function (name, email, phone) {
+    /* a free trial: full name, phone and email; a code goes to the email, and the right code starts the trial on this computer
+       (the code the server issues for signing in again is kept in the vault) */
+    trialCode: function (name, email, phone) { return auth('trial-code', { name: name, email: email, phone: phone, where: 'app' }); },
+    trialVerify: function (email, code) {
       return machine().then(function (m) {
-        return auth('trial-start', { name: name, email: email, phone: phone || '', machine: m, agree: FS.license.AGREEMENT, desktop: FS.license.isDesktop() ? '1' : '', platform: (window.FSDesktop && window.FSDesktop.platform) || 'web', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') });
+        return auth('trial-verify', { email: email, code: code, machine: m, agree: FS.license.AGREEMENT, desktop: FS.license.isDesktop() ? '1' : '', platform: (window.FSDesktop && window.FSDesktop.platform) || 'web', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') });
       }).then(function (r) { if (r.ok) { licKeep({ token: r.token, email: r.email, name: r.name || '', plan: r.plan || null, checkedAt: Date.now() }); VAULT.set('lic', { email: r.email, code: r.code }); planNews(); } return r; });
     },
     /* the plan the server gave last (trial / free / pass / pro), kept for working offline */
@@ -234,7 +236,7 @@
   };
   Object.assign(MSG, { 'bad-license': 'המייל או קוד ההפעלה לא נכונים.', 'license-in-use': 'הקוד הזה כבר מופעל במחשב אחר. כל קוד עובד במחשב אחד בלבד. להחלפת מחשב פונים לבעל העסק.',
     'license-revoked': 'הרישיון בוטל. פונים לבעל העסק.', 'license-moved': 'הרישיון שייך למחשב אחר. מפעילים מחדש עם הקוד.', 'license-exists': 'כבר יש רישיון למייל הזה.',
-    'trial-used': 'כבר היה ניסיון חינם במחשב הזה או במייל הזה. לשדרוג פונים לחיים: 054-4979771.', 'license-offline-too-long': 'צריך חיבור לאינטרנט פעם בשבוע כדי לאמת את הרישיון.', 'license-unpaid': 'הרישיון יופעל אחרי קבלת התשלום. פונים לבעל העסק.', 'agreement-needed': 'צריך לאשר את הסכם הרכישה.', 'bad-amount': 'סכום לא תקין.', 'not-found': 'לא נמצא.' });
+    'bad-details': 'שם מלא (פרטי ומשפחה), טלפון ומייל תקינים.', 'bad-code': 'הקוד לא נכון.', 'code-expired': 'הקוד פג או נוצל. מבקשים קוד חדש.', 'mail-failed': 'המייל לא יצא כרגע.', 'trial-used': 'כבר היה ניסיון חינם במחשב הזה או במייל הזה. לשדרוג פונים לחיים: 054-4979771.', 'license-offline-too-long': 'צריך חיבור לאינטרנט פעם בשבוע כדי לאמת את הרישיון.', 'license-unpaid': 'הרישיון יופעל אחרי קבלת התשלום. פונים לבעל העסק.', 'agreement-needed': 'צריך לאשר את הסכם הרכישה.', 'bad-amount': 'סכום לא תקין.', 'not-found': 'לא נמצא.' });
 
   /* the site's content: business.json in the repository, with what the owner published from the admin on top */
   FS.siteData = function (prefix) {

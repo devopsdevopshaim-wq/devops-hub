@@ -25,6 +25,13 @@
       : p.tier === 'free' ? '<span class="lic-st off">חינמי</span><small>' + (p.was === 'trial' ? 'הניסיון הסתיים' : p.was === 'sub' ? 'המנוי הסתיים' : '') + '</small>' : '';
     return t + (L.planReq ? '<small class="lic-req">📩 ביקש ' + esc(PLAN_NAMES[L.planReq.want] || L.planReq.want) + ' · ' + when(L.planReq.at) + '</small>' : '');
   }
+  /* hours of use: total, the last 7 days, and the day it was last used */
+  function hrs(m) { m = Math.round(m || 0); return m < 60 ? m + ' דק׳' : (Math.round(m / 6) / 10).toLocaleString('he-IL') + ' שעות'; }
+  function useCell(L) {
+    var u = L.usage; if (!u || !u.min) return '<small>עוד לא נמדד</small>';
+    var wk = 0, d = new Date(); for (var i = 0; i < 7; i++) { var k = new Date(d - i * 864e5).toISOString().slice(0, 10); wk += (u.days || {})[k] || 0; }
+    return '<b>' + hrs(u.min) + '</b><small>השבוע ' + hrs(wk) + '</small><small>' + (u.prints || 0) + ' הדפסות · ' + (u.ai || 0) + ' AI</small>';
+  }
   var nis = function (v) { return '₪' + Number(v || 0).toLocaleString('he-IL'); };
   /* how many times the installer was downloaded: GitHub counts every release asset (public, no key) */
   function downloads() {
@@ -54,13 +61,14 @@
       '<div class="adm-row"><label class="adm-chk"><input type="checkbox" id="ln-send" checked> לשלוח את הקוד גם למייל</label><button class="btn gold" id="ln-go">🔑 הנפקת קוד</button></div>' +
       '<p class="hint">💡 התוכנה נפתחת רק אחרי שרשמת תשלום. אפשר להנפיק קוד עכשיו ולרשום את התשלום כשמתקבל.</p>' +
       '<p class="hint">הקוד נוצר אקראית בשרת ונשמר רק אצלך. בהפעלה הראשונה הוא ננעל למחשב של אותו אדם, ומחשב נוסף עם אותו קוד נחסם (ואתה מקבל התראה).</p></section>' +
-      '<section class="adm-card"><h3>💰 מחיר ותנאים</h3><div class="adm-row"><label class="adm-f" style="max-width:240px"><span>מחיר ברירת מחדל לרישיון (₪)</span><div class="adm-in"><input id="ls-price" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>🎟️ כרטיס אירוע</span><div class="adm-in"><input id="ls-pass" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>📅 חודש</span><div class="adm-in"><input id="ls-month" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>📆 שנה</span><div class="adm-in"><input id="ls-year" inputmode="decimal" dir="ltr"></div></label><button class="btn line small" id="ls-save">שמירה</button>' +
+      '<section class="adm-card"><h3>💰 מחיר ותנאים</h3><div class="adm-row"><label class="adm-f" style="max-width:240px"><span>מחיר ברירת מחדל לרישיון (₪)</span><div class="adm-in"><input id="ls-price" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>🎟️ כרטיס אירוע</span><div class="adm-in"><input id="ls-pass" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>📅 חודש</span><div class="adm-in"><input id="ls-month" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>📆 שנה</span><div class="adm-in"><input id="ls-year" inputmode="decimal" dir="ltr"></div></label><button class="btn line small" id="ls-save">שמירה</button></div><div class="adm-grid"><label class="adm-f"><span>🏷️ מבצע (מופיע בדף ההורדה ובחלון השדרוג)</span><div class="adm-in"><input id="ls-promo" maxlength="400" placeholder="למשל: מחיר מייסדים: 20% הנחה ל־100 הרוכשים הראשונים"></div></label><label class="adm-f"><span>💳 תנאי תשלום</span><div class="adm-in"><input id="ls-terms" maxlength="600" placeholder="למשל: ביט, פייבוקס, העברה או אשראי עד 3 תשלומים. קבלה על כל תשלום."></div></label></div><div class="adm-row">' +
       '<a class="btn line small" href="agreement.html" target="_blank" rel="noopener">📄 הסכם הרכישה (v1)</a></div><p class="hint">🎁 כל מי שמוריד את התוכנה מקבל ניסיון חינם: הכל פתוח ל־2 אירועים או 30 יום (מה שמגיע אחרון). אחר כך היא עובדת בגרסה חינמית: פס "נערך באופטימוס" על כל הדפסה, 3 עיצובי AI ביום, בלי קולאז׳, עורך מסגרות מקצועי ו־AI מקומי. כל ניסיון חדש מגיע אליך כהתראה (ליד), ובקשות שדרוג מופיעות ברשימה עם 📩. המחירים כאן מופיעים ללקוח בחלון השדרוג. המחיר מופיע בדף ההורדה. כל רוכש מאשר את הסכם הרכישה בהפעלה, והאישור נרשם אצלך עם התאריך.</p></section>' +
       '<section class="adm-card" id="upd-card"><h3>⬆️ עדכוני גרסה לתוכנה</h3><p class="hint">כל גרסה חדשה של התוכנה נבנית לבד, אבל לקוחות לא מקבלים אותה עד שאתה מפרסם אותה כאן. עדכון שפורסם בתשלום נפתח ללקוח רק אחרי שאישרת אותו (עם התשלום). גרסה שהותקנה בלי אישור ננעלת, ומציעה ללקוח לחזור לגרסה המאושרת שלו. עדכון בחינם נפתח לכולם.</p><div id="upd-body"><p class="hint">טוען…</p></div></section>' +
+      '<section class="adm-card"><h3>📝 נרשמים להורדה ולניסיון</h3><p class="hint">כל מי שנרשם בדף ההורדה או בתוכנה: שם מלא, טלפון ומייל. "✔ אומת" = הזין את הקוד שהגיע למייל. מי שלא קיבל מייל: הקוד שלו מופיע כאן (30 דקות), ושולחים לו בוואטסאפ בלחיצה.</p><div id="lead-list"><p class="hint">טוען…</p></div></section>' +
       '<section class="adm-card"><div class="adm-row"><h3 style="margin:0">רשימת הרישיונות</h3><input id="lic-q" placeholder="חיפוש שם / מייל / טלפון" style="margin-inline-start:auto"></div><div id="lic-list"><p class="hint">טוען…</p></div></section>');
     var ALL = [], q = '';
     var SET = { price: 990 }, DLS = null, PRICE = { full: 990, month: 89, year: 790, pass: 79 };
-    function prices() { PRICE = { full: SET.price || 990, month: SET.monthPrice || 89, year: SET.yearPrice || 790, pass: SET.passPrice || 79 }; $('#ls-price').value = PRICE.full; $('#ls-pass').value = PRICE.pass; $('#ls-month').value = PRICE.month; $('#ls-year').value = PRICE.year; }
+    function prices() { PRICE = { full: SET.price || 990, month: SET.monthPrice || 89, year: SET.yearPrice || 790, pass: SET.passPrice || 79 }; $('#ls-price').value = PRICE.full; $('#ls-pass').value = PRICE.pass; $('#ls-month').value = PRICE.month; $('#ls-year').value = PRICE.year; $('#ls-promo').value = SET.promo || ''; $('#ls-terms').value = SET.terms || ''; }
     function stats() {
       var wk = Date.now() - 7 * 864e5;
       var n = ALL.length, paid = ALL.filter(function (l) { return l.paid; }).length, bound = ALL.filter(function (l) { return l.bound; }).length, on = ALL.filter(function (l) { return Date.parse(l.lastSeen || 0) > wk; }).length;
@@ -81,6 +89,7 @@
         '<td><code class="lic-code">' + esc(L.code) + '</code></td>' +
         '<td>' + planCell(L) + (L.paid ? '<span class="lic-st on">✔ שולם</span><small>' + nis((L.payments || []).reduce(function (t, p) { return t + (p.amount || 0); }, 0)) + ((L.payments || [])[0] ? ' · ' + esc(L.payments[L.payments.length - 1].method || '') : '') + '</small>' : L.trial ? '' : '<span class="lic-st wait">⏳ לא שולם</span><small>מחיר ' + nis(L.price) + '</small>') +
           (L.agreement ? '<small>📄 הסכם ' + esc(L.agreement.ver) + ' אושר ' + when(L.agreement.at) + '</small>' : '') + '</td>' +
+        '<td>' + useCell(L) + '</td>' +
         '<td>' + st + (L.session ? '<small><span class="dot on"></span>מחובר</small>' : '') + '</td>' +
         '<td>' + (L.bound ? '<small>' + (L.desktop ? '💻 תוכנה' : '🌐 דפדפן') + (L.platform ? ' · ' + esc(L.platform) : '') + '</small><small>מאז ' + when(L.boundAt) + '</small>' : '—') + (L.appVer ? '<small>⬆️ מאושר עד <span dir="ltr">' + esc(L.appVer) + '</span>' + (L.version && L.version !== L.appVer ? ' · מותקן <span dir="ltr">' + esc(L.version) + '</span>' : '') + '</small>' : '') + (L.updReq ? '<small class="lic-st wait">📨 ביקש עדכון ' + esc(L.updReq.ver) + '</small>' : '') + '</td>' +
         '<td>' + when(L.lastSeen) + (L.lastIp ? '<small dir="ltr">' + esc(L.lastIp) + '</small>' : '') + '</td>' +
@@ -92,13 +101,13 @@
           '<button data-a="rotate" title="קוד חדש (הישן מפסיק לעבוד)">♻️</button>' +
           '<button data-a="toggle" title="' + (L.active ? 'ביטול הרישיון' : 'הפעלה מחדש') + '">' + (L.active ? '⛔' : '✅') + '</button>' +
           '<button data-a="history" title="היסטוריה">🕘</button><button data-a="delete" title="מחיקה">🗑</button></td></tr>' +
-        '<tr class="lic-pay" data-p="' + esc(L.email) + '" hidden><td colspan="7"><div class="adm-row"><b>💰 רישום תשלום:</b><select class="lp-plan">' + ['full', 'month', 'year', 'pass'].map(function (k) { return '<option value="' + k + '"' + (L.planReq && L.planReq.want === k ? ' selected' : '') + '>' + PLAN_NAMES[k] + '</option>'; }).join('') + '</select><input class="lp-amount" inputmode="decimal" dir="ltr" placeholder="סכום" value="' + (L.planReq ? (PRICE[L.planReq.want] || '') : L.paid ? '' : (L.price || '')) + '" style="width:90px"><input class="lp-date" type="date" value="' + new Date().toISOString().slice(0, 10) + '">' + '<select class="lp-method">' + METHODS.map(function (x) { return '<option>' + x + '</option>'; }).join('') + '</select><input class="lp-ref" placeholder="אסמכתא / קבלה" style="width:140px"><button class="btn gold small lp-go">שמירה</button></div>' + ((L.payments || []).length ? '<ul class="lic-pays">' + L.payments.map(function (p) { return '<li>' + esc(p.date) + ' · ' + nis(p.amount) + ' · ' + esc(p.method || '') + (p.ref ? ' · ' + esc(p.ref) : '') + ' <button class="link lp-undo" data-at="' + esc(p.at) + '">מחיקה</button></li>'; }).join('') + '</ul>' : '') + '</td></tr>' +
-        '<tr class="lic-hist" data-h="' + esc(L.email) + '" hidden><td colspan="7"><ul>' + (L.history || []).map(function (h) { return '<li>' + when(h.at) + ' · ' + esc(h.what) + (h.ip ? ' · <span dir="ltr">' + esc(h.ip) + '</span>' : '') + (h.ua ? ' · <small>' + esc(h.ua) + '</small>' : '') + '</li>'; }).join('') + '</ul></td></tr>';
+        '<tr class="lic-pay" data-p="' + esc(L.email) + '" hidden><td colspan="8"><div class="adm-row"><b>💰 רישום תשלום:</b><select class="lp-plan">' + ['full', 'month', 'year', 'pass'].map(function (k) { return '<option value="' + k + '"' + (L.planReq && L.planReq.want === k ? ' selected' : '') + '>' + PLAN_NAMES[k] + '</option>'; }).join('') + '</select><input class="lp-amount" inputmode="decimal" dir="ltr" placeholder="סכום" value="' + (L.planReq ? (PRICE[L.planReq.want] || '') : L.paid ? '' : (L.price || '')) + '" style="width:90px"><input class="lp-date" type="date" value="' + new Date().toISOString().slice(0, 10) + '">' + '<select class="lp-method">' + METHODS.map(function (x) { return '<option>' + x + '</option>'; }).join('') + '</select><input class="lp-ref" placeholder="אסמכתא / קבלה" style="width:140px"><button class="btn gold small lp-go">שמירה</button></div>' + ((L.payments || []).length ? '<ul class="lic-pays">' + L.payments.map(function (p) { return '<li>' + esc(p.date) + ' · ' + nis(p.amount) + ' · ' + esc(p.method || '') + (p.ref ? ' · ' + esc(p.ref) : '') + ' <button class="link lp-undo" data-at="' + esc(p.at) + '">מחיקה</button></li>'; }).join('') + '</ul>' : '') + '</td></tr>' +
+        '<tr class="lic-hist" data-h="' + esc(L.email) + '" hidden><td colspan="8"><ul>' + (L.history || []).map(function (h) { return '<li>' + when(h.at) + ' · ' + esc(h.what) + (h.ip ? ' · <span dir="ltr">' + esc(h.ip) + '</span>' : '') + (h.ua ? ' · <small>' + esc(h.ua) + '</small>' : '') + '</li>'; }).join('') + '</ul></td></tr>';
     }
     function draw() {
       stats();
       var l = ALL.filter(function (L) { return !q || (L.name + ' ' + L.email + ' ' + L.phone + ' ' + L.note).toLowerCase().indexOf(q.toLowerCase()) > -1; });
-      $('#lic-list').innerHTML = l.length ? '<div class="vis-scroll"><table class="adm-tbl lic-tbl"><thead><tr><th>מי</th><th>קוד</th><th>תשלום</th><th>מצב</th><th>מחשב</th><th>שימוש אחרון</th><th></th></tr></thead><tbody>' + l.map(row).join('') + '</tbody></table></div>'
+      $('#lic-list').innerHTML = l.length ? '<div class="vis-scroll"><table class="adm-tbl lic-tbl"><thead><tr><th>מי</th><th>קוד</th><th>תשלום</th><th>⏱️ שימוש</th><th>מצב</th><th>מחשב</th><th>שימוש אחרון</th><th></th></tr></thead><tbody>' + l.map(row).join('') + '</tbody></table></div>'
         : '<p class="hint">' + (q ? 'לא נמצא.' : 'עוד אין רישיונות. מנפיקים את הראשון למעלה.') + '</p>';
       $$('#lic-list tr[data-e]').forEach(function (tr) {
         var L = ALL.filter(function (x) { return x.email === tr.dataset.e; })[0];
@@ -114,6 +123,22 @@
         $('.lp-plan', tr).addEventListener('change', function () { $('.lp-amount', tr).value = PRICE[this.value] || ''; });
         $$('.lp-undo', tr).forEach(function (b) { b.addEventListener('click', function () { if (!confirm('למחוק את התשלום הזה? אם לא נשאר תשלום, התוכנה תיחסם אצל הלקוח.')) return; LIC.admin('lic-pay', { email: email, undo: '1', at: b.dataset.at }).then(function (r) { done(r, 'התשלום נמחק.'); }); }); });
       });
+    }
+    var LEADS = [];
+    function leadsDraw() {
+      var box = $('#lead-list'); if (!box) return;
+      if (!LEADS.length) { box.innerHTML = '<p class="hint">עוד אין נרשמים.</p>'; return; }
+      var ver = LEADS.filter(function (x) { return x.verified; }).length;
+      box.innerHTML = '<p class="hint">' + LEADS.length + ' נרשמו · ' + ver + ' אומתו · ' + LEADS.filter(function (x) { return x.app; }).length + ' התקינו ונכנסו לתוכנה</p><div class="vis-scroll"><table class="adm-tbl"><thead><tr><th>מי</th><th>טלפון</th><th>איפה</th><th>אימות</th><th>מתי</th><th></th></tr></thead><tbody>' +
+        LEADS.map(function (x) {
+          var waCode = x.code ? wa(x.phone, 'שלום ' + x.name + ', קוד האימות שלך לאופטימוס: ' + x.code) : '';
+          return '<tr><td><b>' + esc(x.name) + '</b><small dir="ltr">' + esc(x.email) + '</small></td><td dir="ltr">' + esc(x.phone) + '</td><td>' + (x.app ? '💻 בתוכנה' : x.where === 'app' ? '💻 בתוכנה' : '⬇ דף ההורדה') + (x.downloads ? '<small>' + x.downloads + ' הורדות</small>' : '') + '</td>' +
+            '<td>' + (x.verified ? '<span class="lic-st on">✔ אומת</span><small>' + when(x.verifiedAt) + '</small>' : '<span class="lic-st wait">⏳ לא אומת</span>' + (x.code ? '<small>קוד: <b dir="ltr">' + esc(x.code) + '</b></small>' : '')) + '</td>' +
+            '<td>' + when(x.lastAt) + '</td><td class="act">' + (waCode ? '<a target="_blank" rel="noopener" href="' + esc(waCode) + '" title="שליחת הקוד בוואטסאפ">💬 קוד</a>' : '') +
+            '<a target="_blank" rel="noopener" href="' + esc(wa(x.phone, 'שלום ' + x.name + ', כאן חיים מאופטימוס. ראיתי שנרשמת לניסיון, אשמח לעזור בהתחלה 🙂')) + '" title="וואטסאפ">💬</a><a href="tel:' + esc(x.phone) + '" title="שיחה">📞</a>' +
+            '<button data-ld="' + esc(x.email) + '" title="מחיקה מהרשימה">🗑</button></td></tr>';
+        }).join('') + '</tbody></table></div>';
+      Array.prototype.forEach.call(box.querySelectorAll('[data-ld]'), function (b) { b.addEventListener('click', function () { if (!confirm('למחוק את ' + b.dataset.ld + ' מרשימת הנרשמים?')) return; LIC.admin('lead-delete', { email: b.dataset.ld }).then(function (r) { if (r.ok) { LEADS = r.leads || []; leadsDraw(); } }); }); });
     }
     function done(r, okMsg) { if (!r.ok) { FS.toast(ACC.msg(r), 6000); return; } ALL = r.licenses || ALL; if (r.upd) UPD = r.upd; draw(); updDraw(); if (okMsg) FS.toast(okMsg, 5000); }
     /* ---------- updates: publish a build, its price, the requests, approve after the payment ---------- */
@@ -178,9 +203,9 @@
       });
     });
     $('#lic-q').addEventListener('input', function () { q = this.value.trim(); draw(); });
-    function load() { LIC.admin('lic-list').then(function (r) { if (!r.ok) { $('#lic-list').innerHTML = '<p class="hint">' + esc(ACC.msg(r)) + '</p>'; return; } ALL = r.licenses; if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; prices(); if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }); }
+    function load() { LIC.admin('lic-list').then(function (r) { if (!r.ok) { $('#lic-list').innerHTML = '<p class="hint">' + esc(ACC.msg(r)) + '</p>'; return; } ALL = r.licenses; LEADS = r.leads || []; leadsDraw(); if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; prices(); if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }); }
     $('#ln-paid').addEventListener('change', function () { $('.ln-pay').hidden = !this.checked; if (this.checked && !$('#ln-amount').value) $('#ln-amount').value = $('#ln-price').value; });
-    $('#ls-save').addEventListener('click', function () { LIC.admin('lic-settings', { price: $('#ls-price').value.trim(), passPrice: $('#ls-pass').value.trim(), monthPrice: $('#ls-month').value.trim(), yearPrice: $('#ls-year').value.trim() }).then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); SET = r.settings; prices(); $('#ln-price').value = SET.price; FS.toast('✔ המחירים נשמרו.'); }); });
+    $('#ls-save').addEventListener('click', function () { LIC.admin('lic-settings', { price: $('#ls-price').value.trim(), passPrice: $('#ls-pass').value.trim(), monthPrice: $('#ls-month').value.trim(), yearPrice: $('#ls-year').value.trim(), promo: $('#ls-promo').value.trim(), terms: $('#ls-terms').value.trim() }).then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); SET = r.settings; prices(); $('#ln-price').value = SET.price; FS.toast('✔ המחירים נשמרו.'); }); });
     downloads().then(function (d) { DLS = d || { n: '—' }; if (ALL) { stats(); updDraw(); } });
     c.onRefresh(load);
     load();

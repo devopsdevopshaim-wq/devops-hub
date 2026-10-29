@@ -4,12 +4,20 @@
    a revoked licence, or one moved to another computer, closes the studio. */
 (function () {
   'use strict';
-  var FS = window.FS || {}, ACC = FS.account, LIC = FS.license, body = document.body, tab = 'trial', typed = { e: '', c: '', n: '', p: '' };
+  var FS = window.FS || {}, ACC = FS.account, LIC = FS.license, body = document.body, tab = 'trial', typed = { e: '', c: '', n: '', p: '' }, trialStep = 'details', mailFailed = false;
+  var WA = '972544979771';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function unlock(kind) {
     body.classList.remove('gated'); var g = document.getElementById('gate'); if (g) g.remove();
     /* a licence holder gets the studio itself; the owner's business screens stay the owner's */
     body.classList.toggle('studio-licensed', kind === 'license');
+  }
+  /* the trial's code: to the email; when the email can't go out the owner sends it by WhatsApp (he sees it in the admin) */
+  function sendCode() {
+    LIC.trialCode(typed.n, typed.e, typed.p).then(function (r) {
+      if (r.ok || r.error === 'mail-failed') { mailFailed = r.error === 'mail-failed'; trialStep = 'code'; lock(mailFailed ? '' : '📩 הקוד נשלח.'); return; }
+      lock(ACC ? ACC.msg(r) : 'שגיאה');
+    });
   }
   function lock(note) {
     body.classList.add('gated');
@@ -20,11 +28,16 @@
     }
     g.innerHTML = '<div class="gate-card"><p class="gate-eyebrow">אופטימוס</p><h1 id="gate-title">' + ({ trial: 'מנסים את אופטימוס בחינם', license: 'הפעלת הסטודיו' }[tab] || 'כניסת בעל העסק') + '</h1>' +
       '<div class="gate-tabs" role="tablist"><button role="tab" data-t="trial" aria-selected="' + (tab === 'trial') + '">🎁 ניסיון חינם</button><button role="tab" data-t="license" aria-selected="' + (tab === 'license') + '">🔑 קוד הפעלה</button><button role="tab" data-t="admin" aria-selected="' + (tab === 'admin') + '">🔐 מנהל</button></div>' +
-      (tab === 'trial'
-        ? '<p class="gate-lead">כל האפשרויות פתוחות ל־2 אירועים או 30 יום, מה שמגיע אחרון. בלי כרטיס אשראי ובלי קוד. אחר כך התוכנה ממשיכה לעבוד בגרסה החינמית.</p><div class="acc">' +
-          '<label>שם<input id="tr-name" autocomplete="name"></label><label>מייל<input id="tr-email" type="email" dir="ltr" autocomplete="email"></label><label>טלפון (לא חובה)<input id="tr-phone" type="tel" dir="ltr" autocomplete="tel"></label>' +
+      (tab === 'trial' && trialStep === 'code'
+        ? '<p class="gate-lead">שלחנו קוד בן 6 ספרות למייל <b dir="ltr">' + esc(typed.e) + '</b>. מזינים אותו כאן (בודקים גם בספאם).</p><div class="acc">' +
+          '<label>קוד אימות<input id="tr-code" dir="ltr" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"></label>' +
           '<label class="gate-agree"><input type="checkbox" id="tr-agree"> קראתי ואני מסכים/ה ל<a href="agreement.html" target="_blank" rel="noopener">הסכם השימוש</a></label>' +
-          '<button class="btn" id="tr-go">🎁 מתחילים ניסיון חינם</button><p class="acc-note" id="tr-note" role="status">' + esc(note || '') + '</p></div>' +
+          '<button class="btn" id="tr-ok">✔ אימות וכניסה</button><p class="acc-note" id="tr-note" role="status">' + esc(note || '') + '</p></div>' +
+          (mailFailed ? '<p class="gate-lead small">📵 המייל לא יצא כרגע. <a target="_blank" rel="noopener" href="https://wa.me/' + WA + '?text=' + encodeURIComponent('שלום, נרשמתי לניסיון של אופטימוס ולא קיבלתי קוד. ' + typed.n + ' · ' + typed.p + ' · ' + typed.e) + '">שולחים לחיים בוואטסאפ</a> והוא שולח את הקוד בוואטסאפ.</p>' : '<p class="gate-lead small">לא הגיע? <a href="#" id="tr-again">שליחה מחדש</a> · <a href="#" id="tr-back">תיקון הפרטים</a> · <a target="_blank" rel="noopener" href="https://wa.me/' + WA + '?text=' + encodeURIComponent('שלום, נרשמתי לניסיון של אופטימוס ולא קיבלתי קוד. ' + typed.n + ' · ' + typed.p + ' · ' + typed.e) + '">קבלת הקוד בוואטסאפ</a></p>')
+        : tab === 'trial'
+        ? '<p class="gate-lead">כל האפשרויות פתוחות ל־2 אירועים או 30 יום, מה שמגיע אחרון. בלי סיסמה ובלי כרטיס אשראי: נרשמים עם הפרטים, מאמתים בקוד שמגיע למייל ונכנסים.</p><div class="acc">' +
+          '<label>שם מלא<input id="tr-name" autocomplete="name" placeholder="שם פרטי ושם משפחה"></label><label>טלפון<input id="tr-phone" type="tel" dir="ltr" autocomplete="tel" placeholder="05X-XXXXXXX"></label><label>מייל<input id="tr-email" type="email" dir="ltr" autocomplete="email"></label>' +
+          '<button class="btn" id="tr-go">📩 שליחת קוד אימות</button><p class="acc-note" id="tr-note" role="status">' + esc(note || '') + '</p></div>' +
           '<p class="gate-lead small">ניסיון אחד לכל מחשב. כבר קניתם? עוברים ל"🔑 קוד הפעלה".</p>'
         : tab === 'license'
         ? '<p class="gate-lead">מזינים את המייל ואת קוד ההפעלה האישי שקיבלתם. הקוד עובד במחשב אחד בלבד.</p><div class="acc">' +
@@ -40,18 +53,38 @@
       ACC.form(document.getElementById('gate-box'), { adminOnly: true, note: note || '', done: function (s) { if (s && s.role === 'admin') unlock('admin'); else lock('הכניסה הזאת לבעל העסק בלבד.'); } });
       return;
     }
+    if (tab === 'trial' && trialStep === 'code') {
+      var tc = document.getElementById('tr-code'), tok = document.getElementById('tr-ok');
+      var verify = function () {
+        var c = String(tc.value || '').replace(/\D/g, '');
+        if (c.length !== 6) { document.getElementById('tr-note').textContent = 'קוד בן 6 ספרות.'; return; }
+        if (!document.getElementById('tr-agree').checked) { document.getElementById('tr-note').textContent = 'מסמנים את האישור להסכם השימוש.'; return; }
+        tok.disabled = true; tok.textContent = '…';
+        LIC.trialVerify(typed.e, c).then(function (r) {
+          if (r.ok) { trialStep = 'details'; unlock('license'); if (FS.toast) FS.toast(r.plan && r.plan.tier === 'trial' ? '🎁 הניסיון החינמי התחיל: כל האפשרויות פתוחות' : '✔ ברוכים הבאים'); if (FS.helpWelcome) setTimeout(FS.helpWelcome, 900); return; }
+          if (r.error === 'code-expired') trialStep = 'details';
+          lock(r.error === 'bad-code' ? 'הקוד לא נכון' + (r.left != null ? ' (נשארו ' + r.left + ' ניסיונות)' : '') + '.' : ACC ? ACC.msg(r) : 'שגיאה');
+        });
+      };
+      tok.addEventListener('click', verify);
+      tc.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); verify(); } });
+      var ag = document.getElementById('tr-again'); if (ag) ag.addEventListener('click', function (ev) { ev.preventDefault(); sendCode(); });
+      var bk = document.getElementById('tr-back'); if (bk) bk.addEventListener('click', function (ev) { ev.preventDefault(); trialStep = 'details'; lock(); });
+      setTimeout(function () { tc.focus(); }, 30);
+      return;
+    }
     if (tab === 'trial') {
       var tg = document.getElementById('tr-go'), tn = document.getElementById('tr-name'), te = document.getElementById('tr-email'), tp = document.getElementById('tr-phone');
       tn.value = typed.n; te.value = typed.e; tp.value = typed.p;
-      var trial = function () {
-        var n = String(tn.value || '').trim(), e = String(te.value || '').trim(), ph = String(tp.value || '').trim(); typed.n = n; typed.e = e; typed.p = ph;
-        if (n.length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { document.getElementById('tr-note').textContent = 'שם ומייל מלאים.'; return; }
-        if (!document.getElementById('tr-agree').checked) { document.getElementById('tr-note').textContent = 'מסמנים את האישור להסכם השימוש.'; return; }
-        tg.disabled = true; tg.textContent = '…';
-        LIC.trialStart(n, e, ph).then(function (r) { if (r.ok) { unlock('license'); if (FS.toast) FS.toast('🎁 הניסיון החינמי התחיל: כל האפשרויות פתוחות'); return; } lock(ACC ? ACC.msg(r) : 'שגיאה'); });
+      var details = function () {
+        var n = String(tn.value || '').trim().replace(/\s+/g, ' '), e = String(te.value || '').trim(), ph = String(tp.value || '').trim(); typed.n = n; typed.e = e; typed.p = ph;
+        if (n.split(' ').filter(function (w) { return w.length > 1; }).length < 2) { document.getElementById('tr-note').textContent = 'שם מלא: שם פרטי ושם משפחה.'; return; }
+        if (!/^0\d{8,11}$/.test(ph.replace(/\D/g, '').replace(/^972/, '0'))) { document.getElementById('tr-note').textContent = 'מספר טלפון מלא.'; return; }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { document.getElementById('tr-note').textContent = 'כתובת מייל תקינה.'; return; }
+        tg.disabled = true; tg.textContent = '…'; sendCode();
       };
-      tg.addEventListener('click', trial);
-      [tn, te, tp].forEach(function (i) { i.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); trial(); } }); });
+      tg.addEventListener('click', details);
+      [tn, te, tp].forEach(function (i) { i.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); details(); } }); });
       setTimeout(function () { tn.focus(); }, 30);
       return;
     }
