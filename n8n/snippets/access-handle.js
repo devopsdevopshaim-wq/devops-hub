@@ -278,7 +278,7 @@ switch (b.action) {
     const ks = Object.keys(sd.trialLeads); if (ks.length > 5000) { ks.sort((a, z) => Date.parse(sd.trialLeads[a].lastAt) - Date.parse(sd.trialLeads[z].lastAt)); delete sd.trialLeads[ks[0]]; }
     log('קוד אימות לניסיון נשלח', e);
     // not soft: when the email can't go out the page hears it (mail-failed) and offers WhatsApp through the owner
-    return out({ ok: true, step: 'code', via: 'email' }, 200, { to: e, subject: 'אופטימוס · קוד האימות שלך: ' + code,
+    return out({ ok: true, step: 'code', via: 'email' }, 200, { to: e, fromName: 'אופטימוס · פריים מגנטים', subject: 'אופטימוס · קוד האימות שלך: ' + code,
       text: `שלום ${nm},\n\nקוד האימות שלך לאופטימוס: ${code}\n\nהקוד תקף ל־30 דקות. מזינים אותו ${where === 'app' ? 'בתוכנה' : 'בדף ההורדה'}.\nאם לא ביקשת אותו, אפשר להתעלם מההודעה.\n\nפריים מגנטים · 054-4979771` });
   }
   case 'trial-verify': {
