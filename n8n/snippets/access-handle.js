@@ -304,15 +304,31 @@ switch (b.action) {
     if (L && !L.trial) {   // a buyer verifying their email: the licence on this computer, as with the code
       if (L.machine && L.machine !== mh) return out({ ok: false, error: 'license-in-use' }, 403);
       if (!licOpens(L)) return out({ ok: false, error: 'license-unpaid' }, 402);
-    } else if (L && L.machine !== mh) return out({ ok: false, error: 'trial-used' }, 403);
-    if (!L && was && was !== e) return out({ ok: false, error: 'trial-used' }, 403);
+    }
+    // one free trial per email, computer, phone and network: a second one waits for the owner's release ("שחרור" in the admin)
+    sd.trialPhones = sd.trialPhones || {}; sd.trialIps = sd.trialIps || {}; sd.trialBlocked = sd.trialBlocked || {}; sd.trialAllow = sd.trialAllow || {};
+    const iph = sha256hex('trial-ip:' + IP), allowed = !!sd.trialAllow[e];
+    const blockedBy = (L && L.trial && L.machine && L.machine !== mh) ? ['email', e]
+      : L ? null
+      : allowed ? null
+      : was && was !== e ? ['computer', was]
+      : T0.phone && sd.trialPhones[T0.phone] && sd.trialPhones[T0.phone] !== e ? ['phone', sd.trialPhones[T0.phone]]
+      : sd.trialIps[iph] && sd.trialIps[iph] !== e ? ['network', sd.trialIps[iph]] : null;
+    if (blockedBy) {
+      const WHY = { email: 'המייל הזה כבר קיבל ניסיון במחשב אחר', computer: 'במחשב הזה כבר היה ניסיון', phone: 'הטלפון הזה כבר קיבל ניסיון', network: 'מהרשת הזו כבר היה ניסיון' };
+      const prev = sd.trialBlocked[e];
+      sd.trialBlocked[e] = { email: e, name: T0.name, phone: T0.phone, why: blockedBy[0], prev: blockedBy[1], at: iso };
+      log('ניסיון נוסף נחסם (' + WHY[blockedBy[0]] + ')', e);
+      return out({ ok: false, error: 'trial-used', why: blockedBy[0] }, 403, prev && Date.parse(prev.at) > now - DAY ? null : alert('ניסיון נוסף נחסם באופטימוס: ' + T0.name, `${T0.name} (${e}, ${T0.phone}) ניסה/תה להתחיל ניסיון חינם, ונחסם/ה: ${WHY[blockedBy[0]]}${blockedBy[1] !== e ? ' (' + blockedBy[1] + ')' : ''}.\nכדי לאפשר: מסך הניהול ← רישיונות סטודיו ← משימות ← "שחרור".`));
+    }
     if (!L && Object.keys(sd.licenses).length >= 2000) return out({ ok: false, error: 'too-many-clients' }, 400);
     const fresh = !L;
     if (fresh) {
       L = sd.licenses[e] = { email: e, name: T0.name, phone: T0.phone, note: 'ניסיון חינם', code: licCode(), createdAt: iso, active: true, machine: mh, boundAt: iso,
         platform: line(b.platform, 20), desktop: b.desktop === '1' || b.desktop === true, history: [{ at: iso, what: 'התחיל ניסיון חינם (המייל אומת)', ip: maskIp(IP), ua: line(UA, 90) }],
         price: (sd.licSettings || {}).price || 990, paid: false, payments: [], trial: { start: iso, events: [] }, agreement: { ver: agreeVer, at: iso, ip: maskIp(IP), ua: line(UA, 90) } };
-      sd.trialMachines[mh] = e;
+      sd.trialMachines[mh] = e; if (T0.phone) sd.trialPhones[T0.phone] = e; sd.trialIps[iph] = e; delete sd.trialAllow[e]; delete sd.trialBlocked[e];
+      for (const ix of [sd.trialPhones, sd.trialIps]) { const kx = Object.keys(ix); if (kx.length > 5000) for (const k of kx.slice(0, kx.length - 5000)) delete ix[k]; }
       const km = Object.keys(sd.trialMachines); if (km.length > 5000) for (const k of km.slice(0, km.length - 5000)) delete sd.trialMachines[k];
       log('ניסיון חינם התחיל', e);
     }
@@ -443,6 +459,7 @@ switch (b.action) {
   case 'upd-grant':
   case 'lead-delete':
   case 'task-done':
+  case 'trial-release':
   case 'lic-delete': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
     sd.licenses = sd.licenses || {};
@@ -473,7 +490,17 @@ switch (b.action) {
       const ks = Object.keys(sd.tasksDone); if (ks.length > 3000) for (const x of ks.slice(0, ks.length - 3000)) delete sd.tasksDone[x];
       return out({ ok: true, tasksDone: sd.tasksDone });
     }
-    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads(), activity: activity(), tasksDone: sd.tasksDone });
+    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads(), activity: activity(), tasksDone: sd.tasksDone, blocked: Object.values(sd.trialBlocked || {}) });
+    // the owner's release: a blocked person may start a trial (once), or an existing trial starts over on any computer
+    if (b.action === 'trial-release') {
+      const e = email(b.email), L = sd.licenses[e], iso = new Date(now).toISOString();
+      sd.trialAllow = sd.trialAllow || {}; sd.trialBlocked = sd.trialBlocked || {};
+      if (L && L.trial) { L.machine = null; L.boundAt = null; if (b.fresh === '1' || b.fresh === true) L.trial = { start: iso, events: [] }; L.history = [{ at: iso, what: b.fresh === '1' || b.fresh === true ? 'ניסיון חדש שוחרר על ידי המנהל' : 'שוחרר למחשב אחר על ידי המנהל' }].concat(L.history || []).slice(0, 30); endSessions(e); }
+      else sd.trialAllow[e] = iso;
+      delete sd.trialBlocked[e];
+      log('ניסיון שוחרר על ידי המנהל', e);
+      return out({ ok: true, licenses: list(), leads: leads(), blocked: Object.values(sd.trialBlocked) });
+    }
     if (b.action === 'lead-delete') { if (sd.trialLeads) delete sd.trialLeads[email(b.email)]; return out({ ok: true, leads: leads(), licenses: list() }); }
     // updates: publish a build as an update (notes, price, or free for everyone), take it back, the default price
     if (b.action === 'upd-settings') { U.price = money(b.price) || U.price; log('מחיר עדכון גרסה: ' + U.price, ADMIN_EMAIL); return out({ ok: true, upd: U, licenses: list() }); }

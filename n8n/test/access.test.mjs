@@ -574,6 +574,18 @@ async function studioTrial(tag) {
   check(t + 'one trial per email: another computer is refused', r.code === 403 && r.body.error === 'trial-used', r.body);
   r = await start('x@example.com', 'אבג דהו', '0503334444', crypto.randomBytes(32).toString('hex'), '30.0.0.4', { agree: '' });
   check(t + 'the agreement must be accepted', r.code === 400 && r.body.error === 'agreement-needed', r.body);
+  r = await start('samephone@example.com', 'אותו טלפון', '0501112222', crypto.randomBytes(32).toString('hex'), '30.0.0.8');
+  check(t + 'one trial per phone: a new email and computer with the same phone is refused, and the owner hears of it', r.code === 403 && r.body.error === 'trial-used' && r.body.why === 'phone' && r.mail && /נחסם/.test(r.mail.subject), r);
+  r = await start('samenet@example.com', 'אותה רשת', '0507778888', crypto.randomBytes(32).toString('hex'), '30.0.0.1');
+  check(t + 'one trial per network: the same internet address is refused', r.code === 403 && r.body.why === 'network', r.body);
+  r = await call({ action: 'lic-list', token: a.token });
+  check(t + 'the owner sees who was blocked and why', (r.body.blocked || []).some((x) => x.email === 'samephone@example.com' && x.why === 'phone' && x.prev === 'new@example.com'), r.body.blocked);
+  r = await call({ action: 'trial-release', token: a.token, email: 'samephone@example.com' });
+  check(t + 'the owner releases a blocked person', r.body.ok && !(r.body.blocked || []).some((x) => x.email === 'samephone@example.com'));
+  r = await start('samephone@example.com', 'אותו טלפון', '0501112222', crypto.randomBytes(32).toString('hex'), '30.0.0.8');
+  check(t + 'after the release that person gets a trial', r.body.ok && r.body.plan.tier === 'trial', r.body);
+  r = await call({ action: 'trial-release', token: tok, email: 'samephone@example.com' }, { ip: '30.0.0.1' });
+  check(t + 'only the owner can release', r.code === 403);
   // the download page: registering opens the download, and the owner hears of it once
   r = await call({ action: 'trial-code', email: 'dl@example.com', name: 'יוסי כהן', phone: '0541234567' }, { ip: '30.0.0.6' });
   r = await call({ action: 'trial-verify', email: 'dl@example.com', code: codeOf(r) }, { ip: '30.0.0.6' });

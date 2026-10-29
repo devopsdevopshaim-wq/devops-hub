@@ -231,6 +231,9 @@
   }
   FS.on('plan', function () { pill(); report(); marks(); offers(); });
   setTimeout(offers, 2500); setInterval(offers, 60000);
+  /* the owner's prices and promotion change: read again every 10 minutes and when the internet comes back */
+  function freshOffers() { info = null; var el = document.getElementById('pl-offers'); if (el && !el.querySelector('[data-pl-want]:disabled')) el._drawn = false; offers(); }
+  setInterval(freshOffers, 10 * 60000); window.addEventListener('online', freshOffers);
   document.addEventListener('DOMContentLoaded', pill);
   setTimeout(function () { pill(); report(); }, 1500);
   setInterval(pill, 60000);
