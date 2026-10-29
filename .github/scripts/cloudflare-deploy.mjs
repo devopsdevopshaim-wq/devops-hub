@@ -105,11 +105,25 @@ await new Promise((r) => setTimeout(r, 4000));   // the new version spreads in a
 let info = await post({ action: 'info' }).catch(() => ({ status: 0 }));
 for (let i = 0; i < 16 && info.status !== 200; i++) { await new Promise((r) => setTimeout(r, 10000)); info = await post({ action: 'info' }).catch(() => ({ status: 0 })); }
 if (info.status === 200) note('- ✅ השרת עונה'); else { note('- ❌ השרת לא עונה (' + info.status + ')'); ok = false; }
-// on request (a manual run with mailtest): one real code to the owner's own Gmail (+mailtest), through the live server
+// on request (a manual run with mailtest): one real code through the live server, to the owner's Gmail (+mailtest) or to the
+// address given; for an address, first what the server knows of it (registration, verified, a live code, licence), as the admin
 if (process.env.MAILTEST) {
-  const mt = await post({ action: 'trial-code', email: 'devopsdevopshaim+mailtest@gmail.com', name: 'בדיקת מערכת', phone: '0500000000', where: 'app' }).catch((e) => ({ status: 0, json: { error: String(e) } }));
+  const to = /@/.test(process.env.MAILTEST) ? process.env.MAILTEST.trim().toLowerCase() : 'devopsdevopshaim+mailtest@gmail.com';
+  let name = 'בדיקת מערכת', phone = '0500000000';
+  if (to !== 'devopsdevopshaim+mailtest@gmail.com' && ADMIN_PASSWORD) {
+    const lg = await post({ action: 'login', email: 'devopsdevopshaim@gmail.com', password: ADMIN_PASSWORD, device: crypto.randomBytes(16).toString('hex') }).catch(() => ({ json: {} }));
+    if (lg.json && lg.json.token) {
+      const ll = await post({ action: 'lic-list', token: lg.json.token }).catch(() => ({ json: {} }));
+      const ld = ((ll.json && ll.json.leads) || []).filter((x) => x.email === to)[0], lc = ((ll.json && ll.json.licenses) || []).filter((x) => x.email === to)[0];
+      note('- 🔎 ' + to + ': ' + (ld ? 'נרשם/ה (' + ld.where + ', ' + ld.lastAt + '), ' + (ld.verified ? 'אומת/ה' : 'לא אומת/ה') + ', קוד פעיל: ' + (ld.code ? 'כן' : 'לא') : 'אין הרשמה בשרת') + ' · ' + (lc ? 'רישיון: ' + JSON.stringify(lc.plan || {}).slice(0, 80) : 'אין רישיון'));
+      note('- 🔎 נרשמים אחרונים: ' + ((ll.json && ll.json.leads) || []).slice(0, 6).map((x) => x.email.replace(/^(.{3}).*@/, '$1…@') + ' ' + (x.verified ? '✔' : '⏳') + ' ' + String(x.lastAt).slice(5, 16)).join(' | '));
+      if (ld) { name = ld.name || name; phone = ld.phone || phone; }
+      await post({ action: 'logout', token: lg.json.token });
+    } else note('- 🔎 לא נכנסתי כמנהל לבדיקה: ' + JSON.stringify(lg.json || {}).slice(0, 80));
+  }
+  const mt = await post({ action: 'trial-code', email: to, name, phone, where: 'app' }).catch((e) => ({ status: 0, json: { error: String(e) } }));
   const mb = mt.json || {};
-  note(mt.status === 200 && mb.ok ? '- ✅ בדיקת מייל אמיתית: קוד נשלח ל־devopsdevopshaim+mailtest@gmail.com (מגיע לתיבה של המנהל)' : '- ❌ בדיקת מייל אמיתית נכשלה: ' + mt.status + ' ' + JSON.stringify(mb).slice(0, 200));
+  note(mt.status === 200 && mb.ok ? '- ✅ בדיקת מייל אמיתית: קוד נשלח ל־' + to : '- ❌ בדיקת מייל אמיתית ל־' + to + ' נכשלה: ' + mt.status + ' ' + JSON.stringify(mb).slice(0, 200));
 }
 const evil = await post({ action: 'info' }, 'https://evil.example').catch(() => ({ status: 0 }));
 note(evil.status === 403 ? '- ✅ בקשה מאתר זר נחסמת' : '- ❌ בקשה מאתר זר לא נחסמה (' + evil.status + ')'); if (evil.status !== 403) ok = false;
