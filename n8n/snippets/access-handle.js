@@ -437,13 +437,14 @@ switch (b.action) {
   case 'upd-request': {
     const s = session(); if (!s || s.role !== 'studio') return out({ ok: false, error: 'signed-out' }, 401);
     const L = (sd.licenses || {})[s.lic]; if (!L || !L.active) return out({ ok: false, error: 'license-revoked' }, 403);
-    const U = sd.appUpd || { versions: [] }, v = line(b.ver, 20), pub = (U.versions || []).filter((x) => x.ver === v)[0];
-    if (!pub) return out({ ok: false, error: 'not-found' }, 404);
+    // any version may be asked for: one the owner published, or one installed before it was published (the owner decides)
+    const U = sd.appUpd || { versions: [] }, v = line(b.ver, 20), pub = (U.versions || []).filter((x) => x.ver === v)[0] || { ver: v, price: U.price || 49, unpublished: true };
+    if (!vparse(v)) return out({ ok: false, error: 'bad-input' }, 400);
     if (!hit('upd-req', s.lic, 4, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
     L.updReq = { ver: v, at: new Date(now).toISOString(), note: line(b.note, 200) };
     L.history = [{ at: L.updReq.at, what: 'ביקש עדכון לגרסה ' + v }].concat(L.history || []).slice(0, 30);
     log('בקשת עדכון סטודיו ' + v, s.lic);
-    return out({ ok: true, upd: updFor(L, b.version) }, 200, alert('בקשת עדכון גרסה לסטודיו', `${L.name || s.lic} (${s.lic}${L.phone ? ', ' + L.phone : ''}) ביקש/ה עדכון לגרסה ${v} (מחיר ${pub.free ? 'חינם' : pub.price + ' ₪'}).\nאחרי התשלום: מסך הניהול ← רישיונות סטודיו ← עדכוני גרסה ← אישור.${L.updReq.note ? '\nהערה: ' + L.updReq.note : ''}`));
+    return out({ ok: true, upd: updFor(L, b.version) }, 200, alert('⬆️ בקשת עדכון לאופטימוס ' + v + ': ' + (L.name || s.lic), `${L.name || s.lic}\nמייל: ${s.lic}${L.phone ? '\nטלפון: ' + L.phone : ''}\nמבקש/ת עדכון לגרסה ${v} (מאושר עד היום: ${L.appVer || '—'}, מותקן: ${line(b.version, 20) || '—'}).\nמחיר: ${pub.free ? 'חינם' : (pub.price || U.price || 49) + ' ₪'}${pub.unpublished ? ' (הגרסה עוד לא פורסמה כעדכון)' : ''}.${L.updReq.note ? '\nהערה: ' + L.updReq.note : ''}\n\nלאישור: מסך הניהול ← רישיונות סטודיו ← משימות לביצוע ← "✔ אישור עדכון".`));
   }
   case 'lic-list':
   case 'lic-create':
@@ -459,6 +460,7 @@ switch (b.action) {
   case 'upd-grant':
   case 'lead-delete':
   case 'task-done':
+  case 'lic-pulse':
   case 'trial-release':
   case 'lic-delete': {
     if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
@@ -489,6 +491,21 @@ switch (b.action) {
       if (b.undo === '1' || b.undo === true) delete sd.tasksDone[k]; else sd.tasksDone[k] = new Date(now).toISOString();
       const ks = Object.keys(sd.tasksDone); if (ks.length > 3000) for (const x of ks.slice(0, ks.length - 3000)) delete sd.tasksDone[x];
       return out({ ok: true, tasksDone: sd.tasksDone });
+    }
+    if (b.action === 'lic-pulse') {
+      const L = Object.values(sd.licenses), T = Object.values(sd.trialLeads || {}), on = (iso, ms) => iso && now - Date.parse(iso) < ms;
+      const items = [].concat(
+        L.filter((x) => x.updReq).map((x) => ({ kind: 'upd', at: x.updReq.at, name: x.name, email: x.email, phone: x.phone || '', text: 'מבקש/ת עדכון לגרסה ' + x.updReq.ver })),
+        L.filter((x) => x.planReq).map((x) => ({ kind: 'plan', at: x.planReq.at, name: x.name, email: x.email, phone: x.phone || '', text: 'מבקש/ת ' + ({ pass: 'כרטיס אירוע', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' }[x.planReq.want] || x.planReq.want) })),
+        Object.values(sd.trialBlocked || {}).map((x) => ({ kind: 'blocked', at: x.at, name: x.name, email: x.email, phone: x.phone || '', text: 'ניסה/תה ניסיון נוסף ונחסם/ה' })),
+        T.filter((x) => on(x.firstAt, 7 * DAY)).map((x) => ({ kind: 'lead', at: x.firstAt, name: x.name, email: x.email, phone: x.phone || '', text: 'נרשם/ה' + (x.verified ? ' ואימת/ה' : '') })),
+        L.filter((x) => x.trial && on(x.trial.start, 7 * DAY)).map((x) => ({ kind: 'trial', at: x.trial.start, name: x.name, email: x.email, phone: x.phone || '', text: 'התחיל/ה ניסיון חינם' }))
+      ).sort((a, z) => Date.parse(z.at) - Date.parse(a.at)).slice(0, 40);
+      const online = {}; for (const x of Object.values(sd.sessions)) if (x && x.lic && x.exp > now) online[x.lic] = 1;
+      return out({ ok: true, at: new Date(now).toISOString(), items, counts: {
+        online: L.filter((x) => online[x.email] && on(x.lastSeen, 15 * 60000)).length, leadsToday: T.filter((x) => on(x.firstAt, DAY)).length,
+        trials: L.filter((x) => planOf(x).tier === 'trial').length, paying: L.filter((x) => ['pro', 'pass'].includes(planOf(x).tier)).length,
+        plan: L.filter((x) => x.planReq).length, upd: L.filter((x) => x.updReq).length, blocked: Object.keys(sd.trialBlocked || {}).length } });
     }
     if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads(), activity: activity(), tasksDone: sd.tasksDone, blocked: Object.values(sd.trialBlocked || {}) });
     // the owner's release: a blocked person may start a trial (once), or an existing trial starts over on any computer

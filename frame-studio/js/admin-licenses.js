@@ -159,6 +159,7 @@
       });
       ALL.forEach(function (L) {
         var p = L.plan || {}, used = L.usage && L.usage.min;
+        if (L.updReq) out.push({ key: 'upd:' + L.email + ':' + L.updReq.at, at: L.updReq.at, icon: '⬆️', who: L, what: 'מבקש/ת עדכון לגרסה ' + L.updReq.ver + ' (מאושר עד ' + (L.appVer || '—') + '). אחרי התשלום: אישור', upd: L.email, hot: true });
         if (L.planReq) out.push({ key: 'req:' + L.email + ':' + L.planReq.at, at: L.planReq.at, icon: '📩', who: L, what: 'ביקש/ה ' + (PLAN_NAMES[L.planReq.want] || L.planReq.want) + '. לגבות ולרשום תשלום (💰)', pay: L.email, hot: true });
         if (p.tier === 'trial' && p.ends && Date.parse(p.ends) - t < 3 * DAY && Date.parse(p.ends) > t) out.push({ key: 'end:' + L.email + ':' + p.ends, at: new Date(Date.parse(p.ends) - 3 * DAY).toISOString(), icon: '⌛', who: L, what: 'הניסיון נגמר בעוד ' + Math.max(1, Math.ceil((Date.parse(p.ends) - t) / DAY)) + ' ימים. להציע מבצע' });
         if (p.tier === 'trial' && !used && L.createdAt && t - Date.parse(L.createdAt) > DAY) out.push({ key: 'idle:' + L.email, at: new Date(Date.parse(L.createdAt) + DAY).toISOString(), icon: '😴', who: L, what: 'בניסיון ועוד לא עבד/ה עם התוכנה. לעזור בהתחלה' });
@@ -177,6 +178,7 @@
         return '<li class="' + (done ? 'done' : '') + (x.hot ? ' hot' : '') + '"><i>' + x.icon + '</i><div><b>' + esc(w.name || w.email) + '</b> <small dir="ltr">' + esc(ph) + '</small><p>' + esc(x.what) + '</p><small>' + when(x.at) + '</small></div><span class="lic-task-act">' +
           (ph ? '<a target="_blank" rel="noopener" href="' + esc(wa(ph, msg)) + '" title="וואטסאפ">💬</a><a href="tel:' + esc(ph) + '" title="שיחה">📞</a>' : '') +
           (x.pay ? '<button data-tpay="' + esc(x.pay) + '" title="רישום תשלום">💰</button>' : '') +
+          (x.upd ? '<button data-tupd="' + esc(x.upd) + '" title="אישור העדכון">✔ אישור עדכון</button>' : '') +
           (x.release ? '<button data-trel="' + esc(x.release) + '" title="לאפשר לו ניסיון">🔓 שחרור</button>' : '') +
           '<button data-tdone="' + esc(x.key) + '"' + (done ? ' data-undo="1"' : '') + '>' + (done ? '↩ להחזיר' : '✔ בוצע') + '</button></span></li>';
       }).join('') + '</ul>';
@@ -184,6 +186,7 @@
         var k = b.dataset.tdone, undo = b.dataset.undo; if (undo) delete DONE[k]; else DONE[k] = new Date().toISOString(); tasksDraw();
         LIC.admin('task-done', { key: k, undo: undo ? '1' : '' }).then(function (r) { if (r.ok && r.tasksDone) { DONE = r.tasksDone; tasksDraw(); } });
       }); });
+      Array.prototype.forEach.call(box.querySelectorAll('[data-tupd]'), function (b) { b.addEventListener('click', function () { var L = ALL.filter(function (x) { return x.email === b.dataset.tupd; })[0]; if (L) grant(L); }); });
       Array.prototype.forEach.call(box.querySelectorAll('[data-trel]'), function (b) { b.addEventListener('click', function () {
         if (!confirm('לאפשר ל־' + b.dataset.trel + ' ניסיון חינם?')) return;
         LIC.admin('trial-release', { email: b.dataset.trel }).then(function (r) { if (r.ok) { BLOCKED = r.blocked || []; if (r.licenses) ALL = r.licenses; tasksDraw(); FS.toast('🔓 שוחרר. עכשיו הוא יכול להתחיל ניסיון בתוכנה.', 5000); } else FS.toast(ACC.msg(r)); });

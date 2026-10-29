@@ -507,6 +507,12 @@ async function studioUpdates(tag) {
   const tok = r.body.token;
   r = await call({ action: 'lic-check', token: tok, machine: mach, version: '1.0.21' }, { ip: '20.0.0.1' });
   check(t + 'with nothing published there is no update and nothing is locked', r.body.ok && !r.body.upd.latest && !r.body.upd.locked, r.body);
+  r = await call({ action: 'upd-request', token: tok, ver: '1.0.23', version: '1.0.23' }, { ip: '20.0.0.1' });
+  check(t + 'a version not published yet can still be asked for, and the owner hears of it', r.body.ok && r.mail && /בקשת עדכון/.test(r.mail.subject) && /1\.0\.23/.test(r.mail.text) && /0521234567/.test(r.mail.text), r);
+  r = await call({ action: 'lic-pulse', token: a.token });
+  check(t + 'the owner\'s pulse shows the update request', r.body.ok && r.body.counts.upd === 1 && r.body.items.some((x) => x.kind === 'upd' && /1\.0\.23/.test(x.text)), r.body);
+  r = await call({ action: 'lic-pulse', token: tok }, { ip: '20.0.0.1' });
+  check(t + 'only the owner gets the pulse', r.code === 403);
   r = await call({ action: 'upd-publish', token: tok, ver: '1.0.25' }, { ip: '20.0.0.1' });
   check(t + 'a licence holder cannot publish updates', r.code === 403);
   r = await call({ action: 'upd-publish', token: a.token, ver: '1.0.25', notes: 'סביבת עבודה מהירה', price: '39' });
