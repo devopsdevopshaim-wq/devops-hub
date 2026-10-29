@@ -94,6 +94,7 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(env.STATE.get(env.STATE.idFromName('agents')).runMonitor(true));
     ctx.waitUntil(env.STATE.get(env.STATE.idFromName('frame')).liveTick());
+    ctx.waitUntil(env.STATE.get(env.STATE.idFromName('main')).studioDigest());
   },
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -345,6 +346,42 @@ export class State extends DurableObject {
         text: 'שלום' + (m.name ? ' ' + m.name : '') + ',\n\nתודה שבחרתם בנו! כל המגנטים, התמונות שהאורחים צילמו והברכות שהשאירו מחכים לכם כאן:\n' + album +
           (m.google ? '\n\nנהניתם? נשמח מאוד להמלצה קצרה בגוגל, זה עוזר לנו המון:\n' + m.google : '') + '\n\nמזל טוב!\n' + (m.biz || FRAME_NAME) });
     }
+  }
+  // in the main object: once a day in the evening (Israel), the owner gets the day of אופטימוס by email: who registered, who
+  // started a trial or worked an event, upgrade requests waiting, payments, hours of use, and where every customer stands
+  studioDigest(force) {
+    const run = this.q.then(async () => {
+      const st = await this.load(), sd = st.sd, now = Date.now();
+      const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', hourCycle: 'h23' }).format(new Date(now)));
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(new Date(now));
+      if (!force && (hour < 20 || sd.digestDay === today)) return null;
+      const DAY = 86400000, since = now - DAY, recent = (iso) => iso && Date.parse(iso) > since;
+      const L = Object.values(sd.licenses || {}), T = Object.values(sd.trialLeads || {});
+      const tier = (x) => x.paid && (!x.paidUntil || Date.parse(x.paidUntil) > now) ? 'מנוי/רישיון' : x.passUntil && Date.parse(x.passUntil) > now ? 'כרטיס אירוע' : x.trial ? (Date.parse(x.trial.start) + 90 * DAY > now && ((x.trial.events || []).length < 2 || Date.parse(x.trial.start) + 30 * DAY > now) ? 'ניסיון' : 'חינמי') : x.paid ? 'מנוי/רישיון' : 'ממתין לתשלום';
+      const count = {}; L.forEach((x) => { const t = tier(x); count[t] = (count[t] || 0) + 1; });
+      const hrs = (m) => (Math.round((m || 0) / 6) / 10) + ' ש׳';
+      const usedToday = L.map((x) => ({ x, m: ((x.usage || {}).days || {})[today] || 0 })).filter((u) => u.m > 0).sort((a, z) => z.m - a.m);
+      const newLeads = T.filter((t) => recent(t.firstAt)), verified = T.filter((t) => recent(t.verifiedAt));
+      const trials = L.filter((x) => x.trial && recent(x.trial.start)), events = L.filter((x) => x.trial && (x.trial.events || []).includes(today));
+      const reqs = L.filter((x) => x.planReq), pays = L.flatMap((x) => (x.payments || []).filter((p) => recent(p.at)).map((p) => ({ x, p })));
+      const quiet = L.filter((x) => tier(x) === 'ניסיון' && (!x.usage || !x.usage.min) && Date.parse(x.createdAt) < now - DAY);
+      if (!force && !newLeads.length && !verified.length && !trials.length && !usedToday.length && !reqs.length && !pays.length) { sd.digestDay = today; await this.save(st); return null; }
+      const who = (x) => (x.name || x.email) + (x.phone ? ' · ' + x.phone : ''), PN = { pass: 'כרטיס אירוע', month: 'חודש', year: 'שנה', full: 'רישיון מלא' };
+      const lines = ['📊 אופטימוס היום (' + today + ')', '',
+        '⬇ נרשמו: ' + newLeads.length + ' · אימתו מייל: ' + verified.length + ' · התחילו ניסיון: ' + trials.length + ' · עבדו אירוע בניסיון: ' + events.length,
+        '⏱️ שעות שימוש היום: ' + hrs(usedToday.reduce((a, u) => a + u.m, 0)) + ' אצל ' + usedToday.length + ' לקוחות',
+        '👥 כל הלקוחות: ' + Object.entries(count).map(([k, v]) => k + ' ' + v).join(' · '), ''];
+      if (newLeads.length) lines.push('📝 נרשמים חדשים (כדאי להתקשר):', ...newLeads.map((t) => '  • ' + who(t) + ' · ' + t.email + (t.verified ? ' ✔' : ' (לא אימת)')), '');
+      if (reqs.length) lines.push('📩 בקשות שדרוג פתוחות:', ...reqs.map((x) => '  • ' + who(x) + ' · ' + (PN[x.planReq.want] || x.planReq.want)), '');
+      if (pays.length) lines.push('💰 תשלומים:', ...pays.map(({ x, p }) => '  • ' + who(x) + ' · ' + p.amount + ' ₪' + (p.kind ? ' (' + (PN[p.kind] || p.kind) + ')' : '')), '');
+      if (usedToday.length) lines.push('⏱️ עבדו היום:', ...usedToday.slice(0, 15).map((u) => '  • ' + who(u.x) + ' · ' + hrs(u.m) + ' · ' + tier(u.x)), '');
+      if (quiet.length) lines.push('😴 בניסיון ועוד לא השתמשו (טלפון יעזור):', ...quiet.slice(0, 10).map((x) => '  • ' + who(x)), '');
+      lines.push('הכל במסך הניהול ← רישיונות סטודיו:', 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/admin.html#licenses');
+      sd.digestDay = today; await this.save(st);
+      return { to: ADMIN_EMAIL, fromName: 'אופטימוס', subject: '📊 אופטימוס היום: ' + newLeads.length + ' נרשמו, ' + trials.length + ' התחילו ניסיון, ' + reqs.length + ' בקשות', text: lines.join('\n') };
+    });
+    this.q = run.catch(() => {});
+    return run.then((m) => m ? sendMail(this.env, m) : null).catch(() => null);
   }
   // in the main object: the frame shop's customer accounts (no passwords, no sessions)
   async frameAccounts() {

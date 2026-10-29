@@ -50,6 +50,7 @@
   FS.adminLicenses = function (m, c) {
     c.head(m, '🔑 רישיונות סטודיו', 'מי משתמש באופטימוס: קוד הפעלה אישי לכל מייל, נעול למחשב אחד. רק אתה רואה את הקודים.');
     m.insertAdjacentHTML('beforeend',
+      '<section class="adm-card lic-now" id="lic-now"><div class="adm-row"><h3 style="margin:0">📊 מצב עכשיו</h3><small id="lic-now-at" class="hint" style="margin-inline-start:auto"></small></div><div id="lic-now-body"><p class="hint">טוען…</p></div></section>' +
       '<section class="adm-card" id="lic-stats"></section>' +
       '<section class="adm-card"><h3>➕ רישיון חדש</h3><div class="adm-grid lic-new">' +
       '<label class="adm-f"><span>שם</span><div class="adm-in"><input id="ln-name" maxlength="60"></div></label>' +
@@ -140,6 +141,29 @@
         }).join('') + '</tbody></table></div>';
       Array.prototype.forEach.call(box.querySelectorAll('[data-ld]'), function (b) { b.addEventListener('click', function () { if (!confirm('למחוק את ' + b.dataset.ld + ' מרשימת הנרשמים?')) return; LIC.admin('lead-delete', { email: b.dataset.ld }).then(function (r) { if (r.ok) { LEADS = r.leads || []; leadsDraw(); } }); }); });
     }
+    /* the live view: what happens now, refreshed every minute while this screen is open */
+    var ACT = [];
+    function nowDraw() {
+      var box = $('#lic-now-body'); if (!box) return;
+      var t = Date.now(), DAY = 864e5, today = new Date().toLocaleDateString('en-CA'), wk = t - 7 * DAY;
+      var since = function (iso, ms) { return iso && t - Date.parse(iso) < ms; };
+      var tierOf = function (L) { return (L.plan && L.plan.tier) || (L.paid ? 'pro' : 'wait'); };
+      var cnt = { trial: 0, free: 0, pass: 0, pro: 0, wait: 0 }; ALL.forEach(function (L) { cnt[tierOf(L)] = (cnt[tierOf(L)] || 0) + 1; });
+      var online = ALL.filter(function (L) { return L.session && since(L.lastSeen, 15 * 60000); });
+      var todayMin = 0, weekMin = 0; ALL.forEach(function (L) { var d = (L.usage && L.usage.days) || {}; todayMin += d[today] || 0; Object.keys(d).forEach(function (k) { if (Date.parse(k) > wk) weekMin += d[k]; }); });
+      var reg24 = LEADS.filter(function (x) { return since(x.firstAt || x.lastAt, DAY); }).length, reg7 = LEADS.filter(function (x) { return since(x.firstAt || x.lastAt, 7 * DAY); }).length;
+      var ver7 = LEADS.filter(function (x) { return since(x.verifiedAt, 7 * DAY); }).length, reqs = ALL.filter(function (L) { return L.planReq; });
+      var tile = function (n, label, cls) { return '<div' + (cls ? ' class="' + cls + '"' : '') + '><b>' + n + '</b><span>' + label + '</span></div>'; };
+      box.innerHTML = '<div class="vis-stats">' +
+        tile(online.length, '🟢 מחוברים עכשיו', online.length ? 'on' : '') + tile(reg24 + ' / ' + reg7, '📝 נרשמו היום / השבוע') + tile(ver7, '✔ אימתו השבוע') + tile(DLS ? DLS.n : '…', '⬇ הורדות (סה״כ)') +
+        tile(hrs(todayMin) + ' / ' + hrs(weekMin), '⏱️ שימוש היום / השבוע') + tile(cnt.trial, '🎁 בניסיון') + tile(cnt.free, 'חינמי') + tile((cnt.pro || 0) + (cnt.pass || 0), '💎 משלמים') +
+        tile(reqs.length, '📩 בקשות שדרוג', reqs.length ? 'warn' : '') + '</div>' +
+        (online.length ? '<p class="hint">🟢 ' + online.map(function (L) { return esc(L.name || L.email); }).join(' · ') + '</p>' : '') +
+        (reqs.length ? '<p class="lic-req">📩 מחכים לך: ' + reqs.map(function (L) { return esc(L.name || L.email) + ' (' + esc(PLAN_NAMES[L.planReq.want] || L.planReq.want) + (L.phone ? ', <a href="tel:' + esc(L.phone) + '">' + esc(L.phone) + '</a>' : '') + ')'; }).join(' · ') + '</p>' : '') +
+        '<h4>🕘 מה קרה לאחרונה</h4>' + (ACT.length ? '<ul class="lic-act-feed">' + ACT.slice(0, 25).map(function (a) { return '<li><small>' + when(a.at) + '</small> ' + esc(a.what) + (a.who ? ' · <span dir="ltr">' + esc(a.who) + '</span>' : '') + '</li>'; }).join('') + '</ul>' : '<p class="hint">עוד אין פעילות.</p>') +
+        '<p class="hint">📧 כל ערב בשמונה מגיע אליך במייל סיכום היום: מי נרשם, מי עבד, בקשות ותשלומים.</p>';
+      var at = $('#lic-now-at'); if (at) at.textContent = 'עודכן ' + new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) + ' · מתעדכן כל דקה';
+    }
     function done(r, okMsg) { if (!r.ok) { FS.toast(ACC.msg(r), 6000); return; } ALL = r.licenses || ALL; if (r.upd) UPD = r.upd; draw(); updDraw(); if (okMsg) FS.toast(okMsg, 5000); }
     /* ---------- updates: publish a build, its price, the requests, approve after the payment ---------- */
     var UPD = { versions: [], price: 49 };
@@ -203,11 +227,14 @@
       });
     });
     $('#lic-q').addEventListener('input', function () { q = this.value.trim(); draw(); });
-    function load() { LIC.admin('lic-list').then(function (r) { if (!r.ok) { $('#lic-list').innerHTML = '<p class="hint">' + esc(ACC.msg(r)) + '</p>'; return; } ALL = r.licenses; LEADS = r.leads || []; leadsDraw(); if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; prices(); if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }); }
+    function load() { LIC.admin('lic-list').then(function (r) { if (!r.ok) { $('#lic-list').innerHTML = '<p class="hint">' + esc(ACC.msg(r)) + '</p>'; return; } ALL = r.licenses; LEADS = r.leads || []; ACT = r.activity || []; leadsDraw(); nowDraw(); if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; prices(); if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }); }
     $('#ln-paid').addEventListener('change', function () { $('.ln-pay').hidden = !this.checked; if (this.checked && !$('#ln-amount').value) $('#ln-amount').value = $('#ln-price').value; });
     $('#ls-save').addEventListener('click', function () { LIC.admin('lic-settings', { price: $('#ls-price').value.trim(), passPrice: $('#ls-pass').value.trim(), monthPrice: $('#ls-month').value.trim(), yearPrice: $('#ls-year').value.trim(), promo: $('#ls-promo').value.trim(), terms: $('#ls-terms').value.trim() }).then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); SET = r.settings; prices(); $('#ln-price').value = SET.price; FS.toast('✔ המחירים נשמרו.'); }); });
-    downloads().then(function (d) { DLS = d || { n: '—' }; if (ALL) { stats(); updDraw(); } });
+    downloads().then(function (d) { DLS = d || { n: '—' }; if (ALL) { stats(); updDraw(); nowDraw(); } });
     c.onRefresh(load);
     load();
+    /* every minute while the licences screen is open (quietly: no "loading" in between) */
+    var tick = setInterval(function () { if (!document.getElementById('lic-now')) { clearInterval(tick); return; } var busy = document.querySelector('#lic-list tr.lic-pay:not([hidden]), #lic-list tr.lic-hist:not([hidden])') || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));   /* never while the owner types or has a row open */
+      if (!document.hidden && !busy) load(); }, 60000);
   };
 })();
