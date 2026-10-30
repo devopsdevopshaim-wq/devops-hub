@@ -63,6 +63,8 @@ const h = $('Send an email?').first().json;
 if ($json.error) {
   // a security alert or an initial password that could not be sent must never block the answer itself
   if (h.mail && (h.mail.alert || h.mail.soft)) return [{ json: { code: h.code, body: h.body } }];
+  // keep: the answer still goes back, saying the mail did not go out (the owner sends the same text by WhatsApp)
+  if (h.mail && h.mail.keep) return [{ json: { code: h.code, body: Object.assign({}, h.body, { mailed: false }) } }];
   return [{ json: { code: 502, body: { ok: false, error: 'mail-failed' } } }];
 }
 return [{ json: { code: h.code, body: h.body } }];

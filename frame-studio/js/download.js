@@ -23,7 +23,6 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-p]'), function (b) { var v = r[b.dataset.p]; if (v) b.textContent = Number(v).toLocaleString('he-IL') + cur; });
     if (r.promo) { $('dl-promo').textContent = '🏷️ ' + r.promo; $('dl-promo').hidden = false; }
     if (r.terms) $('dl-terms').textContent = r.terms;
-    Array.prototype.forEach.call(document.querySelectorAll('[data-pay]'), function (a) { var u = (r.payLinks || {})[a.dataset.pay]; if (/^https:\/\/[^\s"'<>]+$/i.test(u || '')) { a.href = u; a.hidden = false; } });
   });
 
   /* registration: details, code, download */

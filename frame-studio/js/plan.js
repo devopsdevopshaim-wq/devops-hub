@@ -63,26 +63,22 @@
         '<div class="pl-cmp"><div><h4>גרסה חינמית</h4><ul><li>עריכה, תיקון צבע, מסגרות והדפסה</li><li>פס קטן "נערך באופטימוס" על כל הדפסה וקובץ</li><li>🤖 AI: ' + FREE_AI + ' תמונות ביום, מבחר עיצובים (גיבורי על, על אדם אמיתי, עריכות חכמות, טרנדים, סגנונות, ועריכה במילים)</li><li>בלי קולאז׳, עורך מסגרות מקצועי ו־AI מקומי</li></ul></div>' +
         '<div class="on"><h4>אופטימוס מלא</h4><ul><li>הדפסות וקבצים נקיים, בלי שום סימן</li><li>כל עיצובי ה־AI בלי הגבלה, גם מקומי בלי אינטרנט</li><li>קולאז׳, 16 מסגרות AI מההזמנה ועורך מקצועי</li><li>כל העדכונים לתוכנית שלך</li></ul></div></div>' +
         (pr.promo ? '<p class="pl-promo">🏷️ ' + FS.esc(pr.promo) + '</p>' : '') +
-        '<div class="pl-cards">' + cards.map(function (c) { return '<div class="pl-card' + (c[0] === 'year' ? ' best' : '') + '"><h4>' + c[1] + '</h4><b>' + c[2] + ' ' + cur + '</b><p>' + c[3] + '</p>' + (payOf(pr, c[0]) ? '<a class="btn" target="_blank" rel="noopener" data-pl-pay="' + c[0] + '" href="' + FS.esc(payOf(pr, c[0])) + '">💳 לתשלום מאובטח</a>' : '') + '<button class="btn" data-want="' + c[0] + '">📩 בקשה</button></div>'; }).join('') + '</div>' +
+        '<div class="pl-cards">' + cards.map(function (c) { return '<div class="pl-card' + (c[0] === 'year' ? ' best' : '') + '"><h4>' + c[1] + '</h4><b>' + c[2] + ' ' + cur + '</b><p>' + c[3] + '</p>' + '<button class="btn" data-want="' + c[0] + '">📩 אני מעוניין/ת</button></div>'; }).join('') + '</div>' +
         (pr.terms ? '<p class="pl-terms">💳 ' + FS.esc(pr.terms) + '</p>' : '') +
-        '<p class="pl-note" id="pl-note">לוחצים "בקשה": חיים מקבל הודעה עם הפרטים שלך, ואחרי התשלום (ביט, העברה או אשראי) הכל נפתח לבד בתוכנה. אפשר גם ישר <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני רוצה לשדרג את אופטימוס (' + (L.email || '') + ')') + '">בוואטסאפ</a>.</p></div>', true);
+        '<p class="pl-note" id="pl-note">לוחצים "אני מעוניין/ת": הבקשה מגיעה ישר לחיים, והוא שולח לך פרטים להעברה בנקאית או הוראת קבע. מיד כשהתשלום מתקבל הכל נפתח לבד בתוכנה, וקבלה נשלחת למייל. אפשר גם ישר <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני רוצה לשדרג את אופטימוס (' + (L.email || '') + ')') + '">בוואטסאפ</a>.</p></div>', true);
       b.addEventListener('click', function (e) {
-        var py = e.target.closest('[data-pl-pay]'); if (py) { payClicked(py.dataset.plPay); return; }
         var x = e.target.closest('[data-want]'); if (!x) return;
         var want = x.dataset.want, name = x.closest('.pl-card').querySelector('h4').textContent;
         x.disabled = true; x.textContent = '…';
         LIC.call('plan-request', { token: L.token, want: want }).then(function (r) {
           var n = b.querySelector('#pl-note');
-          if (r && r.ok) { x.textContent = '✔ נשלח'; n.innerHTML = '✔ הבקשה ל' + name + ' נשלחה לחיים. הוא יחזור אליך לתשלום, ומיד אחריו הכל נפתח. רוצה מהר? <a target="_blank" rel="noopener" href="' + wa('שלום חיים, ביקשתי ' + name + ' באופטימוס (' + (L.email || '') + ')') + '">כותבים לו בוואטסאפ</a>.'; }
-          else { x.disabled = false; x.textContent = '📩 בקשה'; n.innerHTML = 'הבקשה לא נשלחה (' + (ACC ? ACC.msg(r || {}) : 'שגיאה') + '). אפשר <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני רוצה ' + name + ' באופטימוס (' + (L.email || '') + ')') + '">בוואטסאפ</a>.'; }
+          if (r && r.ok) { x.textContent = '✔ נשלח'; n.innerHTML = '✔ הבקשה ל' + name + ' נשלחה לחיים. הוא ישלח לך פרטים להעברה בנקאית או הוראת קבע, ומיד אחרי התשלום הכל נפתח. רוצה מהר? <a target="_blank" rel="noopener" href="' + wa('שלום חיים, ביקשתי ' + name + ' באופטימוס (' + (L.email || '') + ')') + '">כותבים לו בוואטסאפ</a>.'; }
+          else { x.disabled = false; x.textContent = '📩 אני מעוניין/ת'; n.innerHTML = 'הבקשה לא נשלחה (' + (ACC ? ACC.msg(r || {}) : 'שגיאה') + '). אפשר <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני רוצה ' + name + ' באופטימוס (' + (L.email || '') + ')') + '">בוואטסאפ</a>.'; }
         });
       });
     });
     return t;
   };
-  /* the owner's payment page for a plan (https only), and a word to the owner when someone goes to it */
-  function payOf(pr, k) { var u = pr && pr.payLinks && pr.payLinks[k]; return /^https:\/\/[^\s"'<>]+$/i.test(u || '') ? u : ''; }
-  function payClicked(want) { var L = LIC.get() || {}; if (L.token) LIC.call('plan-request', { token: L.token, want: want, note: 'עבר/ה לדף התשלום המאובטח' }); }
   function gate(what) { if (FS.can(what)) return true; FS.upgrade(LOCKED[what] + ' פתוח בניסיון החינמי ובכל תוכנית בתשלום.'); return false; }
   FS.planGate = gate;
 
@@ -210,13 +206,12 @@
     if (!el) {
       el = document.createElement('aside'); el.id = 'pl-offers'; el.setAttribute('aria-label', 'מבצעים לרכישה'); document.body.appendChild(el);
       el.addEventListener('click', function (e) {
-        var py = e.target.closest('[data-pl-pay]'); if (py) { payClicked(py.dataset.plPay); return; }   /* the link opens the payment page; the owner hears who went to pay */
         if (e.target.closest('[data-pl-toggle]')) { var c = !el.classList.contains('min'); el.classList.toggle('min', c); ls('fs-offers-min', c ? '1' : '0'); return; }
         var b = e.target.closest('[data-pl-want]'); if (!b) return;
         var L = LIC.get() || {}, name = b.closest('.plo-card').querySelector('h4').textContent, note = el.querySelector('.plo-note');
         b.disabled = true; b.textContent = '…';
         LIC.call('plan-request', { token: L.token, want: b.dataset.plWant, note: 'מתוך חלון המבצעים בתוכנה' }).then(function (r) {
-          if (r && r.ok) { b.textContent = '✔ נשלח'; note.innerHTML = '✔ חיים קיבל את הבקשה ל' + FS.esc(name) + ' ויחזור אליך. אפשר גם <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני מעוניין/ת ב' + name + ' של אופטימוס (' + (L.email || '') + ')') + '">בוואטסאפ</a>.'; }
+          if (r && r.ok) { b.textContent = '✔ נשלח'; note.innerHTML = '✔ חיים קיבל את הבקשה ל' + FS.esc(name) + ' וישלח לך פרטים להעברה בנקאית או הוראת קבע. אפשר גם <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני מעוניין/ת ב' + name + ' של אופטימוס (' + (L.email || '') + ')') + '">בוואטסאפ</a>.'; }
           else { b.disabled = false; b.textContent = 'אני מעוניין/ת'; note.innerHTML = 'לא נשלח כרגע. <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני מעוניין/ת ב' + name + ' של אופטימוס (' + (L.email || '') + ')') + '">כותבים לחיים בוואטסאפ</a>.'; }
         });
       });
@@ -228,9 +223,9 @@
       var cards = [['pass', '🎟️ כרטיס אירוע', P.pass, 'הכל פתוח ל־' + h + ' שעות'], ['month', '📅 מנוי חודשי', P.month, 'הכל פתוח לחודש'], ['year', '📆 מנוי שנתי', P.year, 'הכי משתלם'], ['full', '💎 רישיון מלא', P.full, 'פעם אחת, לתמיד']];
       el.innerHTML = '<button class="plo-tab" data-pl-toggle title="מבצעים לרכישה">💎 מבצעים</button><div class="plo-in"><div class="plo-head"><b>💎 אופטימוס המלא</b><button data-pl-toggle title="הסתרה">✕</button></div>' +
         (pr.promo ? '<p class="plo-promo">🏷️ ' + FS.esc(pr.promo) + '</p>' : '') +
-        cards.map(function (c) { return '<div class="plo-card' + (c[0] === 'year' ? ' best' : '') + '"><h4>' + c[1] + '</h4><b>' + Number(c[2]).toLocaleString('he-IL') + cur + '</b><small>' + c[3] + '</small>' + (payOf(pr, c[0]) ? '<a class="plo-pay" target="_blank" rel="noopener" data-pl-pay="' + c[0] + '" href="' + FS.esc(payOf(pr, c[0])) + '">💳 לתשלום מאובטח</a>' : '') + '<button data-pl-want="' + c[0] + '">' + (payOf(pr, c[0]) ? 'שאלה / בקשה' : 'אני מעוניין/ת') + '</button></div>'; }).join('') +
+        cards.map(function (c) { return '<div class="plo-card' + (c[0] === 'year' ? ' best' : '') + '"><h4>' + c[1] + '</h4><b>' + Number(c[2]).toLocaleString('he-IL') + cur + '</b><small>' + c[3] + '</small>' + '<button data-pl-want="' + c[0] + '">אני מעוניין/ת</button></div>'; }).join('') +
         '<ul class="plo-inc"><li>כל עיצובי ה־AI בלי הגבלה</li><li>הדפסות בלי סימן</li><li>קולאז׳ ועורך מסגרות מקצועי</li><li>AI גם בלי אינטרנט</li></ul>' +
-        (pr.terms ? '<p class="plo-terms">💳 ' + FS.esc(pr.terms) + '</p>' : '<p class="plo-terms">💳 ביט, פייבוקס, העברה או אשראי. מיד אחרי התשלום הכל נפתח.</p>') +
+        (pr.terms ? '<p class="plo-terms">💳 ' + FS.esc(pr.terms) + '</p>' : '<p class="plo-terms">🏦 תשלום בהעברה בנקאית או בהוראת קבע: לוחצים "אני מעוניין/ת", וחיים שולח את הפרטים. מיד אחרי התשלום הכל נפתח, וקבלה נשלחת למייל.</p>') +
         '<p class="plo-note"></p></div>';
     });
   }
