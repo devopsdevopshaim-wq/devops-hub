@@ -32,6 +32,32 @@ r = await frameBiz(S, ADMIN, { action: 'report-mail', to: 'not-an-email', subjec
 check('a bad address is refused', r.code === 400);
 r = await frameBiz(S, ADMIN, { action: 'report-mail', to: 'cpa@example.com', subject: 'x', text: 'כרטיס 4111 1111 1111 1111' });
 check('a card number never goes out in a report', r.code === 400 && r.body.error === 'card-number', r.body);
+// suppliers, purchases and receipt photos
+r = await frameBiz(S, DANA, { action: 'supplier-save', supplier: { id: 's1', name: 'x' } });
+check('a customer cannot add suppliers', r.code === 403);
+r = await frameBiz(S, ADMIN, { action: 'supplier-save', supplier: { id: 's1', name: 'מגנטים בע״מ', phone: '03-5555555', items: 'נייר מגנטי A4', site: 'javascript:alert(1)' } });
+check('the owner keeps a supplier (no unsafe link)', r.body.ok && r.body.supplier.name === 'מגנטים בע״מ' && r.body.supplier.site === '', r.body);
+r = await frameBiz(S, ADMIN, { action: 'expense-save', expense: { id: 'p1', date: '2026-10-08', desc: 'נייר מגנטי', cat: 'חומרים (נייר מגנטי, דיו)', supId: 's1', supplier: 'מגנטים בע״מ', item: 'נייר מגנטי A4', qty: '500', unit: 'גיליון', unitPrice: '1.2', amount: '600', vat: true } });
+check('a purchase keeps supplier, item, quantity and unit price', r.body.ok && r.body.expense.qty === 500 && r.body.expense.unitPrice === 1.2 && r.body.expense.supId === 's1' && !r.body.expense.photo, r.body);
+r = await frameBiz(S, ADMIN, { action: 'receipt-put', id: 'p1', data: 'data:text/html;base64,PHNjcmlwdD4=' });
+check('a receipt photo must be an image', r.code === 400);
+const photo = 'data:image/jpeg;base64,' + 'Q'.repeat(300000);
+r = await frameBiz(S, ADMIN, { action: 'receipt-put', id: 'p1', data: photo });
+check('the photo of the receipt is kept (split, big)', r.body.ok && r.body.expense.photo, r.body);
+r = await frameBiz(S, ADMIN, { action: 'expense-save', expense: { id: 'p1', date: '2026-10-08', desc: 'נייר מגנטי (תיקון)', amount: '600' } });
+check('editing the expense keeps the photo', r.body.expense.photo === true);
+r = await frameBiz(S, ADMIN, { action: 'receipt-get', id: 'p1' });
+check('... and it comes back whole', r.body.ok && r.body.data === photo);
+r = await frameBiz(S, DANA, { action: 'receipt-get', id: 'p1' });
+check('a customer cannot see receipts', r.code === 403);
+r = await frameBiz(S, ADMIN, { action: 'all' });
+check('all: suppliers and when the last backup was', r.body.suppliers.length === 1 && r.body.backupAt === 0 && r.body.expenses.some((x) => x.id === 'p1' && x.photo));
+r = await frameBiz(S, ADMIN, { action: 'backup-mark' }); const bt = r.body.backupAt;
+r = await frameBiz(S, ADMIN, { action: 'all' }); check('a backup is remembered', r.body.backupAt === bt && bt > 0);
+await frameBiz(S, ADMIN, { action: 'expense-del', id: 'p1' });
+r = await frameBiz(S, ADMIN, { action: 'receipt-get', id: 'p1' });
+check('deleting the expense deletes its photo', r.code === 404 && ![...S.m.keys()].some((k) => k.startsWith('rcpt:p1')));
+await frameBiz(S, ADMIN, { action: 'supplier-del', id: 's1' });
 for (const a of ['site-save', 'settings-save', 'deal-save', 'deals-import', 'deal-del', 'expense-save', 'frame-add', 'frame-del', 'designs-of', 'design-of']) {
   r = await frameBiz(S, DANA, { action: a, id: 'x', email: 'eve@example.com' });
   if (r.code !== 403) check('a customer cannot ' + a, false, r);
