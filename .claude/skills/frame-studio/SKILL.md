@@ -1004,3 +1004,33 @@ Tests: 434.
 - the title shows the number of open requests.
 
 Tests: 437.
+
+## Secure payment links, and security events with alerts (Oct 30, v83)
+
+**Payments:**
+- The owner pastes his own payment pages (Morning / חשבונית ירוקה, Grow, PayBox business …), one per plan, in admin "💰 מחיר ותנאים". They are stored as `licSettings.payLinks` (https only) and returned by `lic-info`.
+- Where the "💳 לתשלום מאובטח" buttons appear:
+  - the offers drawer (`.plo-pay`);
+  - the upgrade window;
+  - the download page (`[data-pay]`).
+- A click also sends `plan-request` with the note "עבר/ה לדף התשלום המאובטח", so the owner gets the lead and the alert.
+- The provider issues the invoice or receipt and emails it: the original to the customer and a copy to the owner.
+- Opening the plan is still the owner's 💰. Full automation (a provider webhook, then the plan opens by itself) waits for the owner's provider account and API key.
+- The code already has Morning invoice support (`INVOICE`, MORNING_CLIENT_ID / MORNING_CLIENT_SECRET, unset).
+
+**Security** (access-handle.js):
+- `secEvent(kind, text, who)` keeps `sd.sec` (300 entries) and emails "🛡️ התראת אבטחה" at most once an hour per kind.
+- Events recorded:
+  - a foreign origin (403);
+  - a wrong admin password from an unknown device;
+  - an admin-only action without the admin;
+  - an admin sign-in from a new device (recorded, not emailed separately; every admin sign-in already emails).
+- `lic-pulse` returns `counts.sec` (24 h) and `sec` items.
+- `lic-list` returns `sec` and `security` {twoFactor, adminDevices}.
+
+**Admin:**
+- The "🛡️ אבטחה" card lists the protections and warns (with a link to portfolio/admin-2fa.html) when 2-step verification is off.
+- It shows the event feed.
+- The pulse bar shows "🛡️ מאובטח" or the count of today's events, and pops up security items.
+
+Tests: 439.

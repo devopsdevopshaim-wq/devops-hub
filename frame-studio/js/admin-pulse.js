@@ -11,7 +11,7 @@
   function wa(phone, text) { var d = String(phone || '').replace(/\D/g, '').replace(/^0/, '972'); return 'https://wa.me/' + d + '?text=' + encodeURIComponent(text); }
   var shown = {}; try { shown = JSON.parse(ls(KEY) || '{}') || {}; } catch (e) { shown = {}; }
   if (!ls(START)) ls(START, new Date().toISOString());
-  var ICON = { upd: '⬆️', plan: '📩', blocked: '🚫', lead: '📝', trial: '🎁' }, TITLE = { upd: 'בקשת עדכון גרסה', plan: 'בקשת רכישה', blocked: 'ניסיון נוסף נחסם', lead: 'נרשם חדש', trial: 'התחיל ניסיון' };
+  var ICON = { upd: '⬆️', plan: '📩', blocked: '🚫', lead: '📝', trial: '🎁', sec: '🛡️' }, TITLE = { upd: 'בקשת עדכון גרסה', plan: 'בקשת רכישה', blocked: 'ניסיון נוסף נחסם', lead: 'נרשם חדש', trial: 'התחיל ניסיון', sec: 'התראת אבטחה' };
   var bar = null, stack = null, base = document.title;
   function ensure() {
     if (!bar) {
@@ -38,11 +38,11 @@
       ensure();
       var c = r.counts || {}, open = (c.upd || 0) + (c.plan || 0) + (c.blocked || 0);
       bar.innerHTML = '<span>🟢 ' + (c.online || 0) + ' מחוברים</span><span>📝 ' + (c.leadsToday || 0) + ' נרשמו היום</span><span>🎁 ' + (c.trials || 0) + ' בניסיון</span><span>💎 ' + (c.paying || 0) + ' משלמים</span>' +
-        '<span class="' + (c.plan ? 'hot' : '') + '">📩 ' + (c.plan || 0) + ' בקשות רכישה</span><span class="' + (c.upd ? 'hot' : '') + '">⬆️ ' + (c.upd || 0) + ' בקשות עדכון</span>' + (c.blocked ? '<span class="hot">🚫 ' + c.blocked + ' נחסמו</span>' : '');
+        '<span class="' + (c.plan ? 'hot' : '') + '">📩 ' + (c.plan || 0) + ' בקשות רכישה</span><span class="' + (c.upd ? 'hot' : '') + '">⬆️ ' + (c.upd || 0) + ' בקשות עדכון</span>' + (c.blocked ? '<span class="hot">🚫 ' + c.blocked + ' נחסמו</span>' : '') + (c.sec ? '<span class="hot">🛡️ ' + c.sec + ' אירועי אבטחה היום</span>' : '<span>🛡️ מאובטח</span>');
       document.title = (open ? '(' + open + ') ' : '') + base;
       var start = Date.parse(ls(START) || 0), fresh = (r.items || []).filter(function (it) {
-        var k = it.kind + ':' + it.email + ':' + it.at; if (shown[k]) return false;
-        if ((it.kind === 'lead' || it.kind === 'trial') && Date.parse(it.at) < start) { shown[k] = 1; return false; }   /* old news: no pop-up */
+        var k = it.kind + ':' + it.email + ':' + it.at + (it.kind === 'sec' ? ':' + it.text.slice(0, 40) : ''); if (shown[k]) return false;
+        if ((it.kind === 'lead' || it.kind === 'trial' || it.kind === 'sec') && Date.parse(it.at) < start) { shown[k] = 1; return false; }   /* old news: no pop-up */
         shown[k] = 1; return true;
       });
       fresh.slice(0, 4).reverse().forEach(pop);

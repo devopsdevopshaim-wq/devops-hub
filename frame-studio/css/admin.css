@@ -195,3 +195,5 @@ body.pv-on .adm { grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 42%)
 .adm-pop p { margin: 4px 0; } .adm-pop-m { font-size: 12.5px; opacity: .75; text-align: right; }
 .adm-pop-a { display: flex; gap: 10px; flex-wrap: wrap; } .adm-pop-a a { color: #E1C384; text-decoration: none; font-weight: 600; }
 @keyframes admPop { from { opacity: 0; transform: translateY(8px); } }
+.lic-sec-ok { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14.5px; }
+.lic-sec-ok li.warn { color: #d9822b; font-weight: 600; }

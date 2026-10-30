@@ -622,6 +622,12 @@ async function studioTrial(tag) {
     check(t + 'the owner marks a task done, and it stays done', q.body.ok && q.body.tasksDone[k]);
     q = await call({ action: 'task-done', token: tok2, key: k }); check(t + 'only the owner can', q.code === 403); }
   check(t + 'the owner sees the trial, its events and the request', row && row.plan.tier === 'free' && row.trial.events.length === 2 && row.planReq.want === 'pass', row);
+  r = await call({ action: 'lic-settings', token: await adm(), payLinks: JSON.stringify({ year: 'https://pay.example.com/optimus-year', month: 'javascript:alert(1)' }) });
+  r = await call({ action: 'lic-info' });
+  check(t + 'payment links per plan: https only', r.body.payLinks.year === 'https://pay.example.com/optimus-year' && !r.body.payLinks.month, r.body.payLinks);
+  r = await call({ action: 'lic-list', token: 'f'.repeat(64) }, { ip: '77.7.7.7' });
+  r = await call({ action: 'lic-pulse', token: await adm() });
+  check(t + 'an admin action without the admin is a security event the owner sees', r.body.counts.sec >= 1 && r.body.items.some((x) => x.kind === 'sec'), r.body.counts);
   r = await call({ action: 'lic-pay', token: await adm(), email: 'new@example.com', amount: '79', method: 'ביט', plan: 'pass' });
   check(t + 'a paid pass opens everything for 48 hours, without making the licence paid', r.body.ok && r.body.license.plan.tier === 'pass' && !r.body.license.paid && !r.body.license.planReq, r.body.license);
   T += 49 * 3600000;
