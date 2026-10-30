@@ -7,7 +7,7 @@
   var FS = window.FS, $ = FS.$, $$ = FS.$$, ACC = FS.account;
   var MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
   var METHODS = { bit: 'ביט', paybox: 'פייבוקס', card: 'אשראי', transfer: 'העברה בנקאית', cash: 'מזומן', check: 'צ׳ק', paypal: 'PayPal', other: 'אחר' };
-  var CATS = ['חומרים (נייר מגנטי, דיו)', 'ציוד', 'נסיעות ודלק', 'פרסום ושיווק', 'תוכנה ומנויים', 'שכירות', 'עובדים', 'אחר'];
+  var CATS = ['חומרים (נייר מגנטי, דיו)', 'ציוד', 'נסיעות ודלק', 'פרסום ושיווק', 'תוכנה ומנויים', 'טלפון ואינטרנט', 'שכירות', 'עובדים', 'ביטוחים', 'רואה חשבון ושירותים מקצועיים', 'עמלות בנק', 'אחר'];
   function num(v) { var n = parseFloat(String(v == null ? '' : v).replace(/[^\d.\-]/g, '')); return isFinite(n) ? n : 0; }
   function money(n) { return '₪' + (Math.round(num(n) * 100) / 100).toLocaleString('he-IL', { maximumFractionDigits: 2 }); }
   function pay(st) { return Object.assign({ vat: 18, bizType: 'פטור' }, (st && st.pay) || {}); }
@@ -421,5 +421,5 @@
     });
   };
 
-  FS.adminBiz = { view: function (k, m, c) { V[k](m, c); }, month: month, money: money, totals: totals, openBalance: openBalance, upcoming: upcoming, dayState: dayState, longDate: longDate };
+  FS.adminBiz = { view: function (k, m, c) { V[k](m, c); }, printHtml: printHtml, csv: csv, totals: totals, MONTHS: MONTHS, METHODS: METHODS, CATS: CATS, heDate: heDate, num: num, pay: pay, month: month, money: money, totals: totals, openBalance: openBalance, upcoming: upcoming, dayState: dayState, longDate: longDate };
 })();
