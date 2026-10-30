@@ -218,3 +218,10 @@ body.pv-on .adm { grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 42%)
 .tx-paper .adm-tbl, .tx-paper .adm-tbl tr, .tx-paper .adm-tbl td { background: #fff !important; color: #1d1633 !important; border-color: #e4dccd !important; }
 .tx-paper .adm-tbl th { background: #f4efe6 !important; color: #5d5470 !important; } .tx-paper .adm-tbl tr.tot td { background: #faf6ee !important; font-weight: 700; }
 .tx-paper p, .tx-paper li { color: #1d1633; } .tx-paper .tx-warn { color: #c0392b !important; }
+/* purchases, suppliers, backup (admin-buy.js) */
+.bu-cam { cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.bu-filter { flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.bu-sups { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.bu-sups .adm-card { margin: 0; } .bu-sups p { margin: 4px 0; }
+.bu-acts { display: inline-flex; gap: 4px; margin-inline-start: auto; } .bu-acts button { background: none; border: 1px solid rgba(255,255,255,.15); border-radius: 8px; padding: 3px 7px; cursor: pointer; color: inherit; }
+#ex-list td small { display: block; opacity: .75; font-size: 12px; }

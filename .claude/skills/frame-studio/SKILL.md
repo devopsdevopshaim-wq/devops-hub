@@ -1105,3 +1105,41 @@ New admin section "🧮 רואה חשבון ומיסים" (`js/admin-tax.js`, `F
 Everything is labelled a draft for the accountant; official filing is the accountant's or on the tax authority's site.
 
 Tests: frame +5 (report-mail), smtp +1 (attachment).
+
+## Suppliers, purchases with receipt photos, the price list, and the weekly Excel backup (Oct 30, v86)
+
+New file `js/admin-buy.js` (`FS.adminBuy`). It replaces the old `V.expenses` view (`VIEWS.expenses`) and adds the `VIEWS.suppliers` and `VIEWS.backup` screens.
+
+**Server** (`frame.mjs`):
+- `expense-save` also keeps `supId`, `item`, `qty`, `unit`, `unitPrice`, `printer` and `note`. It keeps `photo` from the stored row.
+- `supplier-save` / `supplier-del` work on `sup:<id>`: max 500 suppliers, https-only site, card numbers refused.
+- `receipt-put` / `receipt-get` / `receipt-del` work on `rcpt:<id>` through `putBig`. Images only (data URL jpeg/png/webp), up to 2.5 MB; `expense-del` also deletes the photo.
+- `backup-mark` stores `backupAt`.
+- `all` now also returns `suppliers` and `backupAt`.
+
+**Expenses and purchases (💸 הוצאות ורכישות):**
+- Form fields:
+  - supplier (with "＋ ספק חדש…"), category, item (datalist), quantity, unit, unit price, total (auto = qty × unit price);
+  - a printer field that appears for ribbon, ink, toner or printer;
+  - invoice number, VAT included, description.
+- A 📷 receipt photo: camera capture, shrunk to 1600 px JPEG of at most about 2.3 MB.
+- ✏️ editing (and adding a photo later).
+- Filters: month or all months, category, supplier, search.
+- Totals by category and by supplier.
+- 🏷️ price list per item (+ printer): purchases, quantity, average unit price, last price and supplier, cheapest supplier.
+
+**Suppliers (🏪 ספקים):**
+- Cards with contact, phone, WhatsApp, mail, site, items, terms and notes.
+- Purchases count, this year's total, overall total, the last purchase and the items bought.
+- 🧾 opens the expenses filtered by that supplier (`supFilter`).
+
+**Backup (💾 גיבוי וייצוא לאקסל):**
+- `FS.xlsx(sheets)` in `js/xlsx-lite.js` writes a real .xlsx with no library: inline strings, RTL, frozen header, autofilter, widths, and a stored ZIP with CRC32. `FS.zip` and `FS.saveBlob` live in the same file.
+- 11 tabs: סיכום חודשי, הכנסות (magnets + Optimus receipts), הוצאות ורכישות, לפי קטגוריה (× year), לפי ספק, מחירון פריטים, ספקים, עסקאות, רישיונות אופטימוס, תשלומים לרשויות, בקשות הזמנה.
+- The full ZIP holds the xlsx, `קבלות/<date>_<supplier>_<amount>_<id>.jpg` and a full-data JSON.
+- Downloaded file names are ASCII (`frame-magnets-YYYY-MM-DD.xlsx`, `backup-frame-magnets-….zip`): headless Chromium ignored a Hebrew `download` name.
+- The home screen shows "💾 … הגיע הזמן לגיבוי השבועי" after 7 days.
+
+**Other changes:** new menu items 🏪 ספקים and 💾 גיבוי וייצוא לאקסל; "הוצאות" renamed "הוצאות ורכישות".
+
+Tests: frame +10 (suppliers, purchase fields, receipt photos, backup mark). The xlsx was checked with openpyxl (no warnings).

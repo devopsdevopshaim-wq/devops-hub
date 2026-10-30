@@ -229,7 +229,8 @@ export async function frameBiz(storage, who, b) {
     const customers = []; for (const [k, v] of await st.list('di:')) customers.push({ email: k.slice(3), designs: (v || []).length, last: (v || []).reduce((m, x) => Math.max(m, x.at || 0), 0) });
     const requests = []; for (const [, v] of await st.list('rq:')) if (v) requests.push(v);
     return out({ ok: true, site, siteAt: (await storage.get('siteAt')) || null, settings: (await storage.get('settings')) || {}, deals: deals.filter((x) => x && x.id),
-      expenses, frames: (await storage.get('frames')) || [], customers, requests: requests.sort((x, y) => y.at - x.at), calKey: (await storage.get('calKey')) || '', sentReports: (await storage.get('sentReports')) || [] });
+      expenses, frames: (await storage.get('frames')) || [], customers, requests: requests.sort((x, y) => y.at - x.at), calKey: (await storage.get('calKey')) || '', sentReports: (await storage.get('sentReports')) || [],
+      suppliers: (await st.list('sup:')).map(([, v]) => v).filter(Boolean), backupAt: (await storage.get('backupAt')) || 0 });
   }
   // the owner's report by email (to the accountant, or to himself): html and text from the admin page, with up to 3 CSV files.
   // Only the owner, at most 40 a day; the html loses scripts and handlers; card numbers are refused as everywhere.
@@ -317,16 +318,47 @@ export async function frameBiz(storage, who, b) {
   }
   if (a === 'deal-del' || a === 'expense-del') {
     if (!ID.test(String(b.id || ''))) return out({ ok: false, error: 'bad-input' }, 400);
-    if (a === 'deal-del') { await st.delBig('deal:' + b.id); await calSet(storage, st, { id: b.id }, true); } else await storage.delete('exp:' + b.id);
+    if (a === 'deal-del') { await st.delBig('deal:' + b.id); await calSet(storage, st, { id: b.id }, true); } else { await storage.delete('exp:' + b.id); await st.delBig('rcpt:' + b.id); }
     return out({ ok: true });
   }
   if (a === 'expense-save') {
     const e = b.expense; if (!e || !ID.test(String(e.id || ''))) return out({ ok: false, error: 'bad-input' }, 400);
+    const n2 = (v) => Math.round(Number(v) * 100) / 100 || 0, old = (await storage.get('exp:' + e.id)) || {};
     const row = { id: e.id, date: /^\d{4}-\d{2}-\d{2}$/.test(e.date || '') ? e.date : new Date().toISOString().slice(0, 10), desc: clean(e.desc, 120), cat: clean(e.cat, 40),
-      amount: Math.round(Number(e.amount) * 100) / 100 || 0, vat: !!e.vat, supplier: clean(e.supplier, 80), ref: clean(e.ref, 40), at: Date.now() };
+      amount: n2(e.amount), vat: !!e.vat, supplier: clean(e.supplier, 80), ref: clean(e.ref, 40), at: Date.now(),
+      // a purchase: from which supplier, what, how many, at what price, for which printer
+      supId: ID.test(String(e.supId || '')) ? e.supId : '', item: clean(e.item, 80), qty: n2(e.qty), unit: clean(e.unit, 20), unitPrice: n2(e.unitPrice), printer: clean(e.printer, 60), note: clean(e.note, 300),
+      photo: !!old.photo };
     await storage.put('exp:' + row.id, row);
     return out({ ok: true, expense: row });
   }
+  // suppliers: who sells what, how to reach them
+  if (a === 'supplier-save') {
+    const x = b.supplier; if (!x || !ID.test(String(x.id || '')) || !clean(x.name, 80).trim()) return out({ ok: false, error: 'bad-input' }, 400);
+    if ((await st.list('sup:')).length >= 500 && !(await storage.get('sup:' + x.id))) return out({ ok: false, error: 'too-many' }, 400);
+    const row = { id: x.id, name: clean(x.name, 80).trim(), contact: clean(x.contact, 60), phone: clean(x.phone, 24), email: clean(x.email, 120), site: /^https:\/\/\S+$/i.test(String(x.site || '')) ? clean(x.site, 200) : '',
+      items: clean(x.items, 300), cat: clean(x.cat, 40), terms: clean(x.terms, 200), notes: clean(x.notes, 600), at: Date.now() };
+    if (hasCard(json(row))) return out({ ok: false, error: 'card-number' }, 400);
+    await storage.put('sup:' + row.id, row);
+    return out({ ok: true, supplier: row });
+  }
+  if (a === 'supplier-del') { if (!ID.test(String(b.id || ''))) return out({ ok: false, error: 'bad-input' }, 400); await storage.delete('sup:' + b.id); return out({ ok: true }); }
+  // the photo of an expense's receipt or invoice (a JPEG/PNG/WebP data URL, made small in the browser)
+  if (a === 'receipt-put') {
+    const id = String(b.id || ''), d = String(b.data || ''), e = ID.test(id) && (await storage.get('exp:' + id));
+    if (!e) return out({ ok: false, error: 'not-found' }, 404);
+    if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(d)) return out({ ok: false, error: 'bad-input' }, 400);
+    if (d.length > 2500000) return out({ ok: false, error: 'too-big' }, 413);
+    await st.putBig('rcpt:' + id, d); e.photo = true; await storage.put('exp:' + id, e);
+    return out({ ok: true, expense: e });
+  }
+  if (a === 'receipt-get') { const id = String(b.id || ''); if (!ID.test(id)) return out({ ok: false, error: 'bad-input' }, 400); const d = await st.getBig('rcpt:' + id); return d ? out({ ok: true, data: d }) : out({ ok: false, error: 'not-found' }, 404); }
+  if (a === 'receipt-del') {
+    const id = String(b.id || ''), e = ID.test(id) && (await storage.get('exp:' + id)); if (!e) return out({ ok: false, error: 'not-found' }, 404);
+    await st.delBig('rcpt:' + id); e.photo = false; await storage.put('exp:' + id, e); return out({ ok: true, expense: e });
+  }
+  // the weekly backup: when the owner last downloaded one
+  if (a === 'backup-mark') { const t = Date.now(); await storage.put('backupAt', t); return out({ ok: true, backupAt: t }); }
   if (a === 'frame-add') {
     const data = String(b.data || '').replace(/^data:image\/png;base64,/, '');
     if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data) || data.length > MAX_FRAME || !data.startsWith('iVBORw0KGgo')) return out({ ok: false, error: 'bad-image' }, 400);
