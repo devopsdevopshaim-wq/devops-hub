@@ -71,3 +71,5 @@ a:focus-visible { outline: 2px solid var(--champ); outline-offset: 3px; }
 .dl-inc { margin: 0 0 16px; padding-inline-start: 20px; color: var(--dim); font-size: 15px; }
 @media (max-width: 760px) { .dl-two { grid-template-columns: 1fr; } }
 
+.dl-pay { grid-column: 1 / -1; margin-top: 6px; text-align: center; text-decoration: none; background: var(--foil); color: var(--ink); border-radius: 999px; padding: 7px; font-weight: 700; font-size: 14px; }
+.dl-pay[hidden] { display: none; }

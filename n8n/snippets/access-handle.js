@@ -99,6 +99,16 @@ const alert = (subject, text) => ({ to: ADMIN_EMAIL, subject: 'SPIDER · ' + sub
 // 84.229.12.7 -> 84.229.x.x : enough to recognise a network, not enough to expose a person
 const maskIp = (ip) => /^\d+\.\d+\.\d+\.\d+$/.test(ip) ? ip.split('.').slice(0, 2).join('.') + '.x.x' : /:/.test(ip) ? ip.split(':').slice(0, 3).join(':') + '::' : 'לא ידוע';
 const UA = line(HDR['user-agent'], 110);
+// ---- security events: every attempt that looks like an attack is kept for the owner (sd.sec) and, at most once an hour per
+// kind, emailed. A sign-in as the admin from a new device is always emailed.
+const SEC_NAMES = { origin: 'בקשה מאתר זר נחסמה', 'admin-fail': 'סיסמת מנהל שגויה ממכשיר לא מוכר', 'admin-new': 'כניסת מנהל ממכשיר חדש', 'admin-only': 'ניסיון לפעולת מנהל בלי הרשאה', lock: 'נעילה אחרי ניסיונות כושלים', 'bad-code': 'קודי הפעלה שגויים' };
+const secEvent = (kind, text, who, always) => {
+  sd.sec = (sd.sec || []); sd.sec.unshift({ at: new Date(now).toISOString(), kind, text: line(text, 200), who: line(who, 120), ip: maskIp(IP), ua: line(UA, 90) }); if (sd.sec.length > 300) sd.sec.length = 300;
+  sd.secAlert = sd.secAlert || {};
+  if (!always && sd.secAlert[kind] > now - HOUR) return null;
+  sd.secAlert[kind] = now;
+  return alert('🛡️ התראת אבטחה: ' + (SEC_NAMES[kind] || kind), text + (who ? '\nמי: ' + who : '') + '\nמכשיר: ' + (UA || 'לא ידוע') + '\n\nכל אירועי האבטחה: מסך הניהול ← רישיונות סטודיו ← 🛡️ אבטחה.');
+};
 
 // tidy up: expired sessions and codes, locks, counters, and anything left by the older (plain) format
 for (const [t, s] of Object.entries(sd.sessions)) if (t.length !== 64 || s.exp < now) delete sd.sessions[t];
@@ -107,7 +117,7 @@ for (const [e, t] of Object.entries(sd.lock)) if (t < now) delete sd.lock[e];
 for (const [e, a] of Object.entries(sd.fails)) if (!a.some((t) => now - t < HOUR)) delete sd.fails[e];
 sweep();
 
-if (!ORIGIN_OK) return out({ ok: false, error: 'forbidden' }, 403);
+if (!ORIGIN_OK) { const m = secEvent('origin', 'בקשה לשרת מאתר זר: ' + line(ORIGIN, 100) + ' (נחסמה)', ''); return out({ ok: false, error: 'forbidden' }, 403, m); }
 const b = $json.body || {};
 if (JSON.stringify(b).length > (b.action === 'plan-set' ? 45000 : 30000)) return out({ ok: false, error: 'too-big' }, 413);
 if (!hit('all', IPK, 240, 10 * 60000)) return out({ ok: false, error: 'rate-limited' }, 429);
@@ -260,7 +270,7 @@ switch (b.action) {
   // can see, revoke, free or replace it. Codes are random (16 characters, ~79 bits), activation is rate-limited and locks after
   // repeated failures, and every activation from another computer is refused and reported to the owner.
   // the studio's price, for the download page (public)
-  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS, promo: ls.promo || '', terms: ls.terms || '' }); }
+  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS, promo: ls.promo || '', terms: ls.terms || '', payLinks: ls.payLinks || {} }); }
   // ---- a free trial, registered and verified: full name, phone and email; a 6-digit code goes to the email (and, if the email
   // can't go out, the owner sees the code in the admin and sends it by WhatsApp). The right code proves the person: on the download
   // page it opens the download; in the program it starts the trial on that computer (one trial per email and per computer). The
@@ -463,7 +473,7 @@ switch (b.action) {
   case 'lic-pulse':
   case 'trial-release':
   case 'lic-delete': {
-    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403);
+    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403, secEvent('admin-only', 'ניסיון לפעולת מנהל (' + line(b.action, 30) + ') בלי כניסת מנהל', ''));
     sd.licenses = sd.licenses || {};
     const newCode = licCode;
     const endSessions = (e) => { for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h]; };
@@ -499,15 +509,18 @@ switch (b.action) {
         L.filter((x) => x.planReq).map((x) => ({ kind: 'plan', at: x.planReq.at, name: x.name, email: x.email, phone: x.phone || '', text: 'מבקש/ת ' + ({ pass: 'כרטיס אירוע', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' }[x.planReq.want] || x.planReq.want) })),
         Object.values(sd.trialBlocked || {}).map((x) => ({ kind: 'blocked', at: x.at, name: x.name, email: x.email, phone: x.phone || '', text: 'ניסה/תה ניסיון נוסף ונחסם/ה' })),
         T.filter((x) => on(x.firstAt, 7 * DAY)).map((x) => ({ kind: 'lead', at: x.firstAt, name: x.name, email: x.email, phone: x.phone || '', text: 'נרשם/ה' + (x.verified ? ' ואימת/ה' : '') })),
-        L.filter((x) => x.trial && on(x.trial.start, 7 * DAY)).map((x) => ({ kind: 'trial', at: x.trial.start, name: x.name, email: x.email, phone: x.phone || '', text: 'התחיל/ה ניסיון חינם' }))
+        L.filter((x) => x.trial && on(x.trial.start, 7 * DAY)).map((x) => ({ kind: 'trial', at: x.trial.start, name: x.name, email: x.email, phone: x.phone || '', text: 'התחיל/ה ניסיון חינם' })),
+        (sd.sec || []).filter((x) => on(x.at, DAY) && x.kind !== 'admin-new').slice(0, 10).map((x) => ({ kind: 'sec', at: x.at, name: SEC_NAMES[x.kind] || x.kind, email: x.who || '', phone: '', text: x.text + ' · ' + x.ip }))
       ).sort((a, z) => Date.parse(z.at) - Date.parse(a.at)).slice(0, 40);
       const online = {}; for (const x of Object.values(sd.sessions)) if (x && x.lic && x.exp > now) online[x.lic] = 1;
       return out({ ok: true, at: new Date(now).toISOString(), items, counts: {
         online: L.filter((x) => online[x.email] && on(x.lastSeen, 15 * 60000)).length, leadsToday: T.filter((x) => on(x.firstAt, DAY)).length,
         trials: L.filter((x) => planOf(x).tier === 'trial').length, paying: L.filter((x) => ['pro', 'pass'].includes(planOf(x).tier)).length,
-        plan: L.filter((x) => x.planReq).length, upd: L.filter((x) => x.updReq).length, blocked: Object.keys(sd.trialBlocked || {}).length } });
+        plan: L.filter((x) => x.planReq).length, upd: L.filter((x) => x.updReq).length, blocked: Object.keys(sd.trialBlocked || {}).length,
+        sec: (sd.sec || []).filter((x) => on(x.at, DAY) && x.kind !== 'admin-new').length } });
     }
-    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads(), activity: activity(), tasksDone: sd.tasksDone, blocked: Object.values(sd.trialBlocked || {}) });
+    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads(), activity: activity(), tasksDone: sd.tasksDone, blocked: Object.values(sd.trialBlocked || {}),
+      sec: (sd.sec || []).slice(0, 60), security: { twoFactor: set(ADMIN_TOTP), adminDevices: (sd.adminDevices || []).length } });
     // the owner's release: a blocked person may start a trial (once), or an existing trial starts over on any computer
     if (b.action === 'trial-release') {
       const e = email(b.email), L = sd.licenses[e], iso = new Date(now).toISOString();
@@ -529,7 +542,8 @@ switch (b.action) {
       log((b.action === 'upd-publish' ? 'פורסם עדכון ' : 'בוטל פרסום עדכון ') + v, ADMIN_EMAIL);
       return out({ ok: true, upd: U, licenses: list() });
     }
-    if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; for (const k of ['passPrice', 'monthPrice', 'yearPrice']) if (money(b[k])) sd.licSettings[k] = money(b[k]); if (b.promo != null) sd.licSettings.promo = line(b.promo, 400); if (b.terms != null) sd.licSettings.terms = line(b.terms, 600); log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
+    if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; for (const k of ['passPrice', 'monthPrice', 'yearPrice']) if (money(b[k])) sd.licSettings[k] = money(b[k]); if (b.promo != null) sd.licSettings.promo = line(b.promo, 400);
+      if (b.payLinks != null) { let pl = {}; try { pl = JSON.parse(String(b.payLinks)) || {}; } catch (er) { pl = {}; } sd.licSettings.payLinks = {}; for (const k of ['pass', 'month', 'year', 'full']) { const u = line(pl[k], 300); if (/^https:\/\/[^\s"'<>]+$/i.test(u)) sd.licSettings.payLinks[k] = u; } } if (b.terms != null) sd.licSettings.terms = line(b.terms, 600); log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
     if (b.action === 'lic-create') {
       const e = email(b.email), nm = line(b.name, 60);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2) return out({ ok: false, error: 'bad-input' }, 400);
@@ -702,6 +716,8 @@ switch (b.action) {
       if (f1.length >= 8) { sd.lock[lk] = now + HOUR; error = 'too-many'; code = 429; if (adm || c) mail = alert('נחסמה כניסה אחרי ניסיונות כושלים', `8 סיסמאות שגויות עבור ${e} מהכתובת הזו. הכניסה משם נחסמה לשעה.`); }
       else if (f2.length >= 60) { sd.lock[e] = now + 10 * 60000; error = 'too-many'; code = 429; }   // many addresses at once: a short pause for everyone
       if (adm && !trusted) {
+        const sm = secEvent('admin-fail', 'סיסמה שגויה לכניסת מנהל ממכשיר לא מוכר. מכשירים שכבר נכנסת מהם לא נחסמים.', e);
+        if (sm && !mail) mail = sm;
         const f3 = (sd.fails['admin-guess'] = (sd.fails['admin-guess'] || []).filter((t) => now - t < HOUR).concat(now));
         if (f3.length >= 10) { sd.lock['admin-guess'] = now + HOUR; error = 'too-many'; code = 429; mail = alert('ניחושי סיסמה למנהל', '10 סיסמאות שגויות בשעה האחרונה ממכשירים לא מוכרים. כניסה ממכשירים לא מוכרים נחסמה לשעה. המכשירים שנכנסת מהם בעבר ממשיכים לעבוד.'); }
       }
@@ -719,7 +735,9 @@ switch (b.action) {
         sd.totpLast = step;
       }
       sd.fails[lk] = [];
-      if (/^[a-f0-9]{32}$/.test(dev) && !trusted) { sd.adminDevices.unshift(sha256hex('dev:' + dev)); sd.adminDevices.length = Math.min(sd.adminDevices.length, 30); }
+      const newAdminDev = /^[a-f0-9]{32}$/.test(dev) && !trusted;
+      if (newAdminDev) { sd.adminDevices.unshift(sha256hex('dev:' + dev)); sd.adminDevices.length = Math.min(sd.adminDevices.length, 30); }
+      if (newAdminDev) secEvent('admin-new', 'כניסת מנהל ממכשיר חדש. המכשיר נוסף למכשירים המוכרים שלך.', e);
       if (!viaTemp) sd.admin.tmp = null;
       sd.admin.lastLogin = new Date(now).toISOString();
       const token = newSession(e, 'admin', now + ADMIN_SESSION_DAYS * DAY, viaTemp ? { mc: true } : {});
