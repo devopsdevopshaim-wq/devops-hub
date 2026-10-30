@@ -229,7 +229,22 @@ export async function frameBiz(storage, who, b) {
     const customers = []; for (const [k, v] of await st.list('di:')) customers.push({ email: k.slice(3), designs: (v || []).length, last: (v || []).reduce((m, x) => Math.max(m, x.at || 0), 0) });
     const requests = []; for (const [, v] of await st.list('rq:')) if (v) requests.push(v);
     return out({ ok: true, site, siteAt: (await storage.get('siteAt')) || null, settings: (await storage.get('settings')) || {}, deals: deals.filter((x) => x && x.id),
-      expenses, frames: (await storage.get('frames')) || [], customers, requests: requests.sort((x, y) => y.at - x.at), calKey: (await storage.get('calKey')) || '' });
+      expenses, frames: (await storage.get('frames')) || [], customers, requests: requests.sort((x, y) => y.at - x.at), calKey: (await storage.get('calKey')) || '', sentReports: (await storage.get('sentReports')) || [] });
+  }
+  // the owner's report by email (to the accountant, or to himself): html and text from the admin page, with up to 3 CSV files.
+  // Only the owner, at most 40 a day; the html loses scripts and handlers; card numbers are refused as everywhere.
+  if (a === 'report-mail') {
+    const to = String(b.to || '').trim().toLowerCase(), subject = clean(b.subject, 160), text = clean(b.text, 60000).replace(/\u0000/g, '');
+    let html = String(b.html || '').slice(0, 400000);
+    if (!EMAIL.test(to) || !subject || (!text && !html)) return out({ ok: false, error: 'bad-input' }, 400);
+    html = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<(iframe|object|embed|form)[\s\S]*?>/gi, '').replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '').replace(/javascript:/gi, '');
+    const files = (Array.isArray(b.files) ? b.files : []).slice(0, 3).map((f) => ({ name: clean(f && f.name, 80).replace(/[\\/:*?"<>|]/g, '_') || 'report.csv', content: String((f && f.content) || '').slice(0, 1000000), type: 'text/csv' })).filter((f) => f.content);
+    if (hasCard(text + html.replace(/https?:[^"\s]+/g, '') + files.map((f) => f.content).join(''))) return out({ ok: false, error: 'card-number' }, 400);
+    const dk = 'mailday:' + today(), n = (await storage.get(dk)) || 0; if (n >= 40) return out({ ok: false, error: 'rate-limited' }, 429);
+    await storage.put(dk, n + 1);
+    const sent = [{ at: Date.now(), to, subject, kind: clean(b.kind, 30), period: clean(b.period, 20) }].concat((await storage.get('sentReports')) || []).slice(0, 200);
+    await storage.put('sentReports', sent);
+    return { code: 200, body: { ok: true, sentReports: sent }, mail: { to, subject, text: text || subject, html: html || undefined, attachments: files, replyTo: who.email, fromName: clean(b.fromName, 60) || undefined } };
   }
   if (a === 'date-state') {
     if (!DAY.test(String(b.date || ''))) return out({ ok: false, error: 'bad-input' }, 400);

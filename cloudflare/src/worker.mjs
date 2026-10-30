@@ -167,25 +167,28 @@ function mailHtml(mail) {
     '<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;line-height:1.7;font-size:16px;direction:rtl;text-align:right">' + lines.join('<br>') + '</div></body></html>';
 }
 
+const b64u = (t) => { const u = new TextEncoder().encode(String(t)); let s = ''; for (const c of u) s += String.fromCharCode(c); return btoa(s); };
 // ---- mail: Brevo (a verified sender, e.g. the Gmail address), Resend, or Gmail itself (SMTP with an app password)
 async function sendMail(env, mail) {
   const from = env.MAIL_FROM || ADMIN_EMAIL;
   try {
     if (env.BREVO_API_KEY) {
       const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': env.BREVO_API_KEY, 'Content-Type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({ sender: { name: mail.fromName || FROM_NAME, email: from }, replyTo: mail.replyTo ? { email: mail.replyTo } : undefined, to: [{ email: mail.to }], subject: mail.subject, textContent: mail.text }) });
+        body: JSON.stringify({ sender: { name: mail.fromName || FROM_NAME, email: from }, replyTo: mail.replyTo ? { email: mail.replyTo } : undefined, to: [{ email: mail.to }], subject: mail.subject, textContent: mail.text, htmlContent: mail.html || undefined,
+          attachment: (mail.attachments || []).length ? mail.attachments.map((f) => ({ name: f.name, content: b64u(f.content) })) : undefined }) });
       return r.ok ? {} : { error: 'brevo ' + r.status };
     }
     if (env.RESEND_API_KEY) {
       const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: env.MAIL_FROM_RESEND || `${mail.fromName || FROM_NAME} <onboarding@resend.dev>`, to: [mail.to], reply_to: mail.replyTo || undefined, subject: mail.subject, text: mail.text }) });
+        body: JSON.stringify({ from: env.MAIL_FROM_RESEND || `${mail.fromName || FROM_NAME} <onboarding@resend.dev>`, to: [mail.to], reply_to: mail.replyTo || undefined, subject: mail.subject, text: mail.text, html: mail.html || undefined,
+          attachments: (mail.attachments || []).length ? mail.attachments.map((f) => ({ filename: f.name, content: b64u(f.content) })) : undefined }) });
       return r.ok ? {} : { error: 'resend ' + r.status };
     }
     // Gmail with an app password (GMAIL_APP_PASSWORD): the mail goes out from the owner's own Gmail
     if (env.GMAIL_APP_PASSWORD) {
       const user = env.GMAIL_USER || ADMIN_EMAIL;
       const open = async (hostname, port) => { const s = connect({ hostname, port }, { secureTransport: 'on' }); await s.opened; return s; };
-      return await smtpSend(open, { user, pass: env.GMAIL_APP_PASSWORD, from: user, fromName: mail.fromName || FROM_NAME, to: mail.to, replyTo: mail.replyTo, subject: mail.subject, text: mail.text, html: mailHtml(mail) });
+      return await smtpSend(open, { user, pass: env.GMAIL_APP_PASSWORD, from: user, fromName: mail.fromName || FROM_NAME, to: mail.to, replyTo: mail.replyTo, subject: mail.subject, text: mail.text, html: mail.html || mailHtml(mail), attachments: mail.attachments || [] });
     }
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 100) }; }
   return { error: 'no-mail-provider' };
@@ -297,6 +300,8 @@ export class State extends DurableObject {
     this.q = run.catch(() => {});
     let r; try { r = await run; } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; }
     if (r.notify) { const s = await frameNotify(this.env, r.notify); r.body.mailed = !!(s.client && !s.client.error); }
+    // the owner's own mail (a report to the accountant): whether it went out, and why not (no secrets in it)
+    if (r.mail) { const s = await sendMail(this.env, r.mail); r.body.mailed = !s.error; if (s.error) r.body.why = String(s.error).slice(0, 100); delete r.mail; }
     return r;
   }
 

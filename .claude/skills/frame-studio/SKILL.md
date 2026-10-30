@@ -1067,3 +1067,41 @@ The owner does not want card clearing: every purchase goes through him, by bank 
 - The deploy checks `lic-list` and `lic-pulse` with the admin session ("✅ מסך הרישיונות עונה").
 
 Tests: 445.
+
+## The accountant and taxes: monthly package, VAT and advances, the year and declarations, deadlines (Oct 30, v85)
+
+New admin section "🧮 רואה חשבון ומיסים" (`js/admin-tax.js`, `FS.adminTax(m, ctx)`, `VIEWS.tax`). Its settings are `settings.tax`, saved with `settings-save`:
+- accountant: `cpaName`, `cpaEmail`, `cpaPhone`;
+- reporting: `vatFreq` and `advFreq` (1 or 2 months), `advPct`, `niMonthly`, `ceiling` (default 120000; the owner checks it each year);
+- `close[ym]` (the month-close checklist) and `paid[]` (payments to the authorities: kind, period, date, amount, ref).
+
+**Where the income comes from:** magnet deal payments (`FS.adminBiz.month`) plus the אופטימוס licence payments from `lic-list`, which carry their receipt numbers. Each income row has `src`.
+- For עוסק מורשה / חברה, VAT is taken out of income. `net` is the turnover without VAT, and advances = `net × advPct`.
+
+**Tabs:**
+1. 📦 Monthly package (default: last month):
+   - summary, income by source and method, expenses with a "missing document" marker, expenses by category;
+   - VAT, advances, payments to the authorities, open customer balances;
+   - the month-close checklist.
+2. 🏛️ VAT and advances per period of the year, with the due date (the 15th after the period) and "לא נרשם" when a payment is late. Payments are recorded here.
+3. 📑 Year:
+   - a P&L summary for the annual report;
+   - the עוסק פטור turnover declaration (draft; due 31 January), with a check against the ceiling;
+   - a general income declaration (for a bank or ביטוח לאומי).
+4. 📅 Deadlines and settings: upcoming deadlines, the last 6 months' close status, reports sent, accountant and tax settings, and guidance on proper bookkeeping.
+
+**Output:**
+- Every document can be printed (`FS.adminBiz.printHtml`) or exported to CSV.
+- "✉️ שליחה לרואה החשבון" calls the new `report-mail` action in `frame.mjs`:
+  - owner only; at most 40 a day;
+  - the HTML is stripped of scripts, handlers and `javascript:`;
+  - up to 3 CSV attachments of 1 MB; card numbers are refused;
+  - each send is logged in `sentReports` (its own key, returned by `all`).
+- `bizCall` sends `r.mail` with `sendMail`, and the body says `mailed` / `why`.
+- `sendMail` and `smtpSend` now take `html` and `attachments` (SMTP builds multipart/mixed; Brevo and Resend use their attachment fields).
+
+**Other changes:** expense categories gained טלפון ואינטרנט, ביטוחים, רואה חשבון ושירותים מקצועיים and עמלות בנק. `FS.adminBiz` exports printHtml, csv, totals, MONTHS, METHODS, CATS, heDate, num and pay.
+
+Everything is labelled a draft for the accountant; official filing is the accountant's or on the tax authority's site.
+
+Tests: frame +5 (report-mail), smtp +1 (attachment).

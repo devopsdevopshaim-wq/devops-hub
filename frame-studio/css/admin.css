@@ -197,3 +197,24 @@ body.pv-on .adm { grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 42%)
 @keyframes admPop { from { opacity: 0; transform: translateY(8px); } }
 .lic-sec-ok { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14.5px; }
 .lic-sec-ok li.warn { color: #d9822b; font-weight: 600; }
+/* the accountant and taxes (admin-tax.js) */
+.tx-tabs { margin: 4px 0 14px; flex-wrap: wrap; }
+.tx-act { margin: 8px 0 12px; }
+.tx-paper { background: #fff; color: #1d1633; border-radius: 14px; padding: 18px 20px; margin-top: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+.tx-paper .adm-tbl { background: #fff; } .tx-paper .adm-tbl td, .tx-paper .adm-tbl th { color: #1d1633; } .tx-paper .adm-tbl th { background: #f4efe6; }
+.tx-paper h2 { color: #1d1633; margin-top: 4px; } .tx-paper h3 { color: #8a6d36; } .tx-paper .hint, .tx-note { color: #6b6280; font-size: 12.5px; }
+.tx-paper .adm-stats div { background: #faf6ee; color: #1d1633; } .tx-paper .adm-stats small { color: #6b6280; }
+.tx-paper .adm-by { background: #faf6ee; color: #1d1633; }
+.tx-biz { color: #5d5470; margin: 0 0 4px; font-size: 13px; }
+.tx-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; } @media (max-width: 700px) { .tx-two { grid-template-columns: 1fr; } }
+.tx-warn { color: #c0392b; }
+.tx-sign { display: flex; gap: 30px; flex-wrap: wrap; margin-top: 34px; }
+.tx-close ul, .tx-tips { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; }
+.tx-tips li { line-height: 1.6; }
+.rp .tx-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .rp .tx-sign { margin-top: 40px; }
+.tx-paper h2, .tx-paper h3, .tx-paper .adm-stats b { background: none !important; -webkit-text-fill-color: currentColor !important; text-shadow: none !important; }
+.tx-paper h2, .tx-paper .adm-stats b { color: #1d1633 !important; } .tx-paper h3 { color: #8a6d36 !important; }
+.tx-paper .adm-stats div { box-shadow: none !important; border: 1px solid #e4dccd; } .tx-paper .adm-stats div::before, .tx-paper .adm-stats div::after { display: none !important; }
+.tx-paper .adm-tbl, .tx-paper .adm-tbl tr, .tx-paper .adm-tbl td { background: #fff !important; color: #1d1633 !important; border-color: #e4dccd !important; }
+.tx-paper .adm-tbl th { background: #f4efe6 !important; color: #5d5470 !important; } .tx-paper .adm-tbl tr.tot td { background: #faf6ee !important; font-weight: 700; }
+.tx-paper p, .tx-paper li { color: #1d1633; } .tx-paper .tx-warn { color: #c0392b !important; }

@@ -21,6 +21,17 @@ let r = await frameBiz(S, null, { action: 'designs' });
 check('no session: nothing', r.code === 401);
 r = await frameBiz(S, DANA, { action: 'all' });
 check('a customer cannot read the business', r.code === 403);
+r = await frameBiz(S, DANA, { action: 'report-mail', to: 'eve@example.com', subject: 'x', text: 'y' });
+check('a customer cannot send a report mail', r.code === 403 && !r.mail);
+r = await frameBiz(S, ADMIN, { action: 'report-mail', to: 'cpa@example.com', subject: 'דוח חודשי · אוקטובר 2026', text: 'הכנסות 1000', kind: 'month', period: '2026-10',
+  html: '<h1 onclick="evil()">דוח</h1><script>alert(1)</script><a href="javascript:x">a</a>', files: [{ name: 'דוח/10.csv', content: 'סוג,סכום\nהכנסה,1000' }, { name: 'empty.csv', content: '' }] });
+check('the owner mails a report to the accountant: html without scripts or handlers, the CSV attached',
+  r.body.ok && r.mail.to === 'cpa@example.com' && r.mail.replyTo === ADMIN.email && !/script|onclick|javascript:/i.test(r.mail.html) && /<h1>דוח<\/h1>/.test(r.mail.html) && r.mail.attachments.length === 1 && r.mail.attachments[0].name === 'דוח_10.csv', r.mail);
+check('... and it is logged', r.body.sentReports[0].period === '2026-10' && r.body.sentReports[0].to === 'cpa@example.com');
+r = await frameBiz(S, ADMIN, { action: 'report-mail', to: 'not-an-email', subject: 'x', text: 'y' });
+check('a bad address is refused', r.code === 400);
+r = await frameBiz(S, ADMIN, { action: 'report-mail', to: 'cpa@example.com', subject: 'x', text: 'כרטיס 4111 1111 1111 1111' });
+check('a card number never goes out in a report', r.code === 400 && r.body.error === 'card-number', r.body);
 for (const a of ['site-save', 'settings-save', 'deal-save', 'deals-import', 'deal-del', 'expense-save', 'frame-add', 'frame-del', 'designs-of', 'design-of']) {
   r = await frameBiz(S, DANA, { action: a, id: 'x', email: 'eve@example.com' });
   if (r.code !== 403) check('a customer cannot ' + a, false, r);
