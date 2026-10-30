@@ -591,7 +591,7 @@ async function studioTrial(tag) {
   r = await start('samephone@example.com', 'אותו טלפון', '0501112222', crypto.randomBytes(32).toString('hex'), '30.0.0.8');
   check(t + 'after the release that person gets a trial', r.body.ok && r.body.plan.tier === 'trial', r.body);
   r = await call({ action: 'trial-release', token: tok, email: 'samephone@example.com' }, { ip: '30.0.0.1' });
-  check(t + 'only the owner can release', r.code === 403);
+  check(t + 'only the owner can release', r.code === 401 || r.code === 403);
   // the download page: registering opens the download, and the owner hears of it once
   r = await call({ action: 'trial-code', email: 'dl@example.com', name: 'יוסי כהן', phone: '0541234567' }, { ip: '30.0.0.6' });
   r = await call({ action: 'trial-verify', email: 'dl@example.com', code: codeOf(r) }, { ip: '30.0.0.6' });
@@ -622,14 +622,23 @@ async function studioTrial(tag) {
     check(t + 'the owner marks a task done, and it stays done', q.body.ok && q.body.tasksDone[k]);
     q = await call({ action: 'task-done', token: tok2, key: k }); check(t + 'only the owner can', q.code === 403); }
   check(t + 'the owner sees the trial, its events and the request', row && row.plan.tier === 'free' && row.trial.events.length === 2 && row.planReq.want === 'pass', row);
-  r = await call({ action: 'lic-settings', token: await adm(), payLinks: JSON.stringify({ year: 'https://pay.example.com/optimus-year', month: 'javascript:alert(1)' }) });
+  r = await call({ action: 'pay-details', token: await adm(), email: 'new@example.com', want: 'pass' });
+  check(t + 'payment details wait for the owner\'s bank account', r.code === 400 && r.body.error === 'no-bank', r.body);
+  r = await call({ action: 'lic-settings', token: await adm(), bank_holder: 'חיים קריספין', bank_bank: 'לאומי (10)', bank_branch: '800', bank_account: '123456', bank_standing: 'טופס הרשאה לחיוב', biz_name: 'פריים מגנטים', biz_kind: 'עוסק פטור', biz_id: '000000018', payLinks: JSON.stringify({ year: 'https://pay.example.com/x' }) });
+  check(t + 'the owner keeps the bank account and the business for receipts', r.body.ok && r.body.settings.bankInfo.account === '123456' && r.body.settings.biz.kind === 'עוסק פטור' && !r.body.settings.payLinks, r.body.settings);
   r = await call({ action: 'lic-info' });
-  check(t + 'payment links per plan: https only', r.body.payLinks.year === 'https://pay.example.com/optimus-year' && !r.body.payLinks.month, r.body.payLinks);
+  check(t + 'customers never see the bank account or payment links', r.body.ok && !r.body.payLinks && !JSON.stringify(r.body).includes('123456'), r.body);
+  r = await call({ action: 'pay-details', token: tok2, email: 'new@example.com', want: 'pass' });
+  check(t + 'only the owner sends payment details', r.code === 403, r.body);
+  r = await call({ action: 'pay-details', token: await adm(), email: 'new@example.com', want: 'pass' });
+  check(t + 'the owner sends the bank details by mail: amount, reference, account, standing order', r.body.ok && r.mail && r.mail.to === 'new@example.com' && r.mail.keep && /79 ₪/.test(r.mail.text) && /123456/.test(r.mail.text) && /הוראת קבע/.test(r.mail.text) && /OPT-/.test(r.mail.text) && r.body.text === r.mail.text, r.mail);
+  check(t + 'and it is noted on the customer', r.body.license.payDetails && r.body.license.payDetails.amount === 79, r.body.license);
   r = await call({ action: 'lic-list', token: 'f'.repeat(64) }, { ip: '77.7.7.7' });
   r = await call({ action: 'lic-pulse', token: await adm() });
   check(t + 'an admin action without the admin is a security event the owner sees', r.body.counts.sec >= 1 && r.body.items.some((x) => x.kind === 'sec'), r.body.counts);
-  r = await call({ action: 'lic-pay', token: await adm(), email: 'new@example.com', amount: '79', method: 'ביט', plan: 'pass' });
+  r = await call({ action: 'lic-pay', token: await adm(), email: 'new@example.com', amount: '79', method: 'העברה בנקאית', plan: 'pass' });
   check(t + 'a paid pass opens everything for 48 hours, without making the licence paid', r.body.ok && r.body.license.plan.tier === 'pass' && !r.body.license.paid && !r.body.license.planReq, r.body.license);
+  check(t + 'a numbered receipt goes to the customer (original) and a copy to the owner', r.body.receipt === 1001 && r.mail && r.mail.to === 'new@example.com' && /מקור/.test(r.mail.text) && /עוסק פטור/.test(r.mail.text) && r.mail2 && /העתק/.test(r.mail2.text) && /1001/.test(r.mail2.subject), { m: r.mail, m2: r.mail2 });
   T += 49 * 3600000;
   r = await call({ action: 'lic-check', token: tok2, machine: mach, version: '1.0.73' }, { ip: '30.0.0.1' });
   check(t + 'when the pass ends it is the free tier again', r.body.ok && r.body.plan.tier === 'free', r.body);

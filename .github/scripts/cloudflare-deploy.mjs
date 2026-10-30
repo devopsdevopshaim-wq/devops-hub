@@ -140,7 +140,16 @@ if (secrets.ADMIN_PASSWORD_HASH && !secrets.ADMIN_TOTP_SECRET) {
     if (lg.json && lg.json.token) break;
     await new Promise((r) => setTimeout(r, 6000));
   }
-  if (lg.json && lg.json.token) { note('- ✅ כניסת מנהל עובדת עם הסיסמה שהוגדרה'); await post({ action: 'logout', token: lg.json.token }); }
+  if (lg.json && lg.json.token) {
+    note('- ✅ כניסת מנהל עובדת עם הסיסמה שהוגדרה');
+    // the owner's licences screen answers (the list, the pulse) as the admin sees it
+    const ll = await post({ action: 'lic-list', token: lg.json.token }).catch((e) => ({ status: 0, json: { error: String(e) } }));
+    const pl = await post({ action: 'lic-pulse', token: lg.json.token }).catch((e) => ({ status: 0, json: { error: String(e) } }));
+    note(ll.json && ll.json.ok ? '- ✅ מסך הרישיונות עונה: ' + (ll.json.licenses || []).length + ' רישיונות, ' + (ll.json.leads || []).length + ' נרשמים' : '- ❌ מסך הרישיונות לא ענה: ' + ll.status + ' ' + JSON.stringify(ll.json || {}).slice(0, 160));
+    note(pl.json && pl.json.ok ? '- ✅ הדופק למנהל עונה' : '- ❌ הדופק למנהל לא ענה: ' + pl.status + ' ' + JSON.stringify(pl.json || {}).slice(0, 160));
+    if (!(ll.json && ll.json.ok)) ok = false;
+    await post({ action: 'logout', token: lg.json.token });
+  }
   else if (lg.json && lg.json.error === 'bad-login') {
     // not a failed deploy: the admin chose a password of their own in the admin screen (which replaces the secret's), so the secret no longer opens the door
     note('- ℹ️ הסיסמה שבסוד ADMIN_PASSWORD כבר לא הסיסמה הפעילה של המנהל (כנראה בחרת סיסמה משלך במסך הכניסה). זה תקין; הפריסה הצליחה');

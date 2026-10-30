@@ -94,5 +94,4 @@ body.studio-licensed .sb-menu a[href="admin.html"] { display: none !important; }
 #pl-offers .plo-inc { margin: 0; padding-inline-start: 18px; font-size: 12.5px; opacity: .9; display: grid; gap: 2px; }
 #pl-offers .plo-terms, #pl-offers .plo-note { margin: 0; font-size: 12px; opacity: .85; } #pl-offers .plo-note a { color: #F3DDA6; }
 @media (max-width: 900px) { #pl-offers .plo-in { width: 220px; } }
-#pl-offers .plo-pay { grid-column: 1 / -1; margin-top: 4px; display: block; text-align: center; text-decoration: none; background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); color: #1A140B; border-radius: 999px; padding: 6px; font: 700 13px 'Heebo', sans-serif; }
 .pl-card a.btn { text-decoration: none; }

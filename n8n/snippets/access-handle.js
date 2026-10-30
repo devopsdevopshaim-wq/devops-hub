@@ -270,7 +270,7 @@ switch (b.action) {
   // can see, revoke, free or replace it. Codes are random (16 characters, ~79 bits), activation is rate-limited and locks after
   // repeated failures, and every activation from another computer is refused and reported to the owner.
   // the studio's price, for the download page (public)
-  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS, promo: ls.promo || '', terms: ls.terms || '', payLinks: ls.payLinks || {} }); }
+  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS, promo: ls.promo || '', terms: ls.terms || '' }); }
   // ---- a free trial, registered and verified: full name, phone and email; a 6-digit code goes to the email (and, if the email
   // can't go out, the owner sees the code in the admin and sends it by WhatsApp). The right code proves the person: on the download
   // page it opens the download; in the program it starts the trial on that computer (one trial per email and per computer). The
@@ -470,10 +470,11 @@ switch (b.action) {
   case 'upd-grant':
   case 'lead-delete':
   case 'task-done':
+  case 'pay-details':
   case 'lic-pulse':
   case 'trial-release':
   case 'lic-delete': {
-    if (!admin()) return out({ ok: false, error: 'admin-only' }, 403, secEvent('admin-only', 'ניסיון לפעולת מנהל (' + line(b.action, 30) + ') בלי כניסת מנהל', ''));
+    if (!admin()) { const sx = session(); return out({ ok: false, error: sx ? 'admin-only' : 'signed-out' }, sx ? 403 : 401, sx && sx.role !== 'admin' ? secEvent('admin-only', 'ניסיון לפעולת מנהל (' + line(b.action, 30) + ') מחשבון שאינו מנהל', sx.lic || sx.email || '') : null); }
     sd.licenses = sd.licenses || {};
     const newCode = licCode;
     const endSessions = (e) => { for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e) delete sd.sessions[h]; };
@@ -481,7 +482,7 @@ switch (b.action) {
     const view = (L) => ({ email: L.email, name: L.name || '', phone: L.phone || '', note: L.note || '', code: L.code, active: L.active !== false, createdAt: L.createdAt, bound: !!L.machine,
       boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10),
       price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null, appVer: L.appVer || '', updReq: L.updReq || null,
-      plan: planOf(L), trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null });
+      plan: planOf(L), trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null, payDetails: L.payDetails || null });
     sd.licSettings = sd.licSettings || { price: 990, currency: '₪' };
     const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
@@ -531,6 +532,18 @@ switch (b.action) {
       log('ניסיון שוחרר על ידי המנהל', e);
       return out({ ok: true, licenses: list(), leads: leads(), blocked: Object.values(sd.trialBlocked) });
     }
+    if (b.action === 'pay-details') {
+      const e = email(b.email), L = sd.licenses[e]; if (!L) return out({ ok: false, error: 'not-found' }, 404);
+      const BI = (sd.licSettings || {}).bankInfo || {}; if (!BI.account) return out({ ok: false, error: 'no-bank' }, 400);
+      const NAMES = { pass: 'כרטיס אירוע', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' }, want = NAMES[b.want] ? b.want : (L.planReq && L.planReq.want) || 'full';
+      const ls = sd.licSettings || {}, amount = money(b.amount) || { pass: ls.passPrice || 79, month: ls.monthPrice || 89, year: ls.yearPrice || 790, full: ls.price || 990 }[want];
+      const ref = 'OPT-' + (L.code || '').replace(/\W/g, '').slice(-4) + '-' + new Date(now).toISOString().slice(5, 10).replace('-', '');
+      L.payDetails = { want, amount, ref, at: new Date(now).toISOString() };
+      L.history = [{ at: L.payDetails.at, what: 'נשלחו פרטי תשלום: ' + NAMES[want] + ' ' + amount + ' ₪' }].concat(L.history || []).slice(0, 30);
+      log('נשלחו פרטי תשלום', e);
+      const text = `שלום ${L.name || ''},\n\nתודה שבחרת באופטימוס! אלה פרטי התשלום עבור ${NAMES[want]}:\n\nסכום: ${amount} ₪\nאסמכתא לציון בהעברה: ${ref}\n\n🏦 העברה בנקאית:\nשם החשבון: ${BI.holder || ''}\nבנק: ${BI.bank || ''}\nסניף: ${BI.branch || ''}\nחשבון: ${BI.account}\n${BI.standing ? '\n🔁 הוראת קבע: ' + BI.standing + '\n' : ''}\nאחרי ההעברה שולחים צילום אסמכתא בוואטסאפ 054-4979771 או בתשובה למייל הזה. מיד כשהתשלום מתקבל אני פותח לך הכל בתוכנה, ונשלחת אליך קבלה במייל.\n\nחיים קריספין · פריים מגנטים · אופטימוס`;
+      return out({ ok: true, license: view(L), licenses: list(), text }, 200, { to: e, fromName: 'אופטימוס · פריים מגנטים', replyTo: ADMIN_EMAIL, subject: 'אופטימוס · פרטי תשלום ל' + NAMES[want] + ' (' + amount + ' ₪)', text, keep: true });
+    }
     if (b.action === 'lead-delete') { if (sd.trialLeads) delete sd.trialLeads[email(b.email)]; return out({ ok: true, leads: leads(), licenses: list() }); }
     // updates: publish a build as an update (notes, price, or free for everyone), take it back, the default price
     if (b.action === 'upd-settings') { U.price = money(b.price) || U.price; log('מחיר עדכון גרסה: ' + U.price, ADMIN_EMAIL); return out({ ok: true, upd: U, licenses: list() }); }
@@ -543,7 +556,9 @@ switch (b.action) {
       return out({ ok: true, upd: U, licenses: list() });
     }
     if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; for (const k of ['passPrice', 'monthPrice', 'yearPrice']) if (money(b[k])) sd.licSettings[k] = money(b[k]); if (b.promo != null) sd.licSettings.promo = line(b.promo, 400);
-      if (b.payLinks != null) { let pl = {}; try { pl = JSON.parse(String(b.payLinks)) || {}; } catch (er) { pl = {}; } sd.licSettings.payLinks = {}; for (const k of ['pass', 'month', 'year', 'full']) { const u = line(pl[k], 300); if (/^https:\/\/[^\s"'<>]+$/i.test(u)) sd.licSettings.payLinks[k] = u; } } if (b.terms != null) sd.licSettings.terms = line(b.terms, 600); log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
+      for (const k of ['holder', 'bank', 'branch', 'account', 'standing']) if (b['bank_' + k] != null) { sd.licSettings.bankInfo = sd.licSettings.bankInfo || {}; sd.licSettings.bankInfo[k] = line(b['bank_' + k], k === 'standing' ? 400 : 80); }
+      for (const k of ['name', 'id', 'address', 'kind']) if (b['biz_' + k] != null) { sd.licSettings.biz = sd.licSettings.biz || {}; sd.licSettings.biz[k] = line(b['biz_' + k], 120); }
+      delete sd.licSettings.payLinks; if (b.terms != null) sd.licSettings.terms = line(b.terms, 600); log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
     if (b.action === 'lic-create') {
       const e = email(b.email), nm = line(b.name, 60);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || nm.length < 2) return out({ ok: false, error: 'bad-input' }, 400);
@@ -558,6 +573,7 @@ switch (b.action) {
     const e = email(b.email), L = sd.licenses[e];
     if (!L) return out({ ok: false, error: 'not-found' }, 404);
     const iso = new Date(now).toISOString(); L.history = (L.history || []).slice(0, 29);
+    let receipt = null, receiptCopy = null;
     if (b.action === 'lic-set') { L.active = b.active === '1' || b.active === true; if (!L.active) endSessions(e); L.history.unshift({ at: iso, what: L.active ? 'הופעל מחדש על ידי המנהל' : 'בוטל על ידי המנהל' }); log(L.active ? 'רישיון סטודיו הופעל' : 'רישיון סטודיו בוטל', e); }
     else if (b.action === 'lic-release') { L.machine = null; L.boundAt = null; endSessions(e); L.history.unshift({ at: iso, what: 'המחשב שוחרר על ידי המנהל' }); log('רישיון סטודיו שוחרר ממחשב', e); }
     else if (b.action === 'lic-rotate') { L.code = newCode(); L.machine = null; L.boundAt = null; endSessions(e); L.history.unshift({ at: iso, what: 'קוד חדש הונפק' }); log('קוד סטודיו חדש הונפק', e); }
@@ -575,6 +591,12 @@ switch (b.action) {
         else if (plan === 'month' || plan === 'year') { L.paid = true; L.paidUntil = new Date(from(L.paidUntil) + (plan === 'month' ? 30 : 365) * DAY).toISOString(); }
         else { L.paid = true; delete L.paidUntil; }
         if (L.planReq) delete L.planReq;
+        sd.receiptNo = (sd.receiptNo || 1000) + 1;
+        const rno = sd.receiptNo, BZ = (sd.licSettings || {}).biz || {}, PN = { pass: 'כרטיס אירוע (48 שעות)', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' };
+        L.payments[L.payments.length - 1].receipt = rno;
+        const rtext = (copy) => `${copy ? 'העתק' : 'מקור'}\nקבלה מס׳ ${rno}\n\n${BZ.name || 'פריים מגנטים · חיים קריספין'}${BZ.kind ? ' · ' + BZ.kind : ''}${BZ.id ? ' ' + BZ.id : ''}${BZ.address ? '\n' + BZ.address : ''}\n\nתאריך: ${new Date(now).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' })}\nהתקבל מ: ${L.name || ''} (${L.email})\nעבור: אופטימוס · ${PN[plan] || plan}\nסכום: ${amt} ₪\nאמצעי תשלום: ${line(b.method, 30) || 'העברה בנקאית'}${b.ref ? '\nאסמכתא: ' + line(b.ref, 60) : ''}\n\nתודה! הכל כבר פתוח אצלך בתוכנה (בחיבור הבא לאינטרנט).\nחיים קריספין · 054-4979771`;
+        receipt = { to: L.email, fromName: 'אופטימוס · פריים מגנטים', replyTo: ADMIN_EMAIL, subject: 'אופטימוס · קבלה מס׳ ' + rno + ' (' + amt + ' ₪)', text: rtext(false), soft: true };
+        receiptCopy = { to: ADMIN_EMAIL, fromName: 'אופטימוס', subject: 'העתק · קבלה מס׳ ' + rno + ' · ' + (L.name || L.email) + ' · ' + amt + ' ₪', text: rtext(true), soft: true };
         L.history.unshift({ at: iso, what: 'נרשם תשלום ' + amt + ({ pass: ' (כרטיס אירוע)', month: ' (חודש)', year: ' (שנה)', full: '' })[plan] });
       }
       log('תשלום סטודיו עודכן', e);
@@ -593,6 +615,7 @@ switch (b.action) {
       log('עדכון סטודיו אושר ' + (L.appVer || ''), e);
     }
     else if (b.action === 'lic-delete') { endSessions(e); delete sd.licenses[e]; log('רישיון סטודיו נמחק', e); return out({ ok: true, licenses: list() }); }
+    if (receipt) return [{ json: { code: 200, body: { ok: true, license: view(L), licenses: list(), receipt: L.payments[L.payments.length - 1].receipt }, mail: receipt, mail2: receiptCopy } }];
     return out({ ok: true, license: view(L), licenses: list() }, 200, b.action === 'lic-mail' || (b.action === 'lic-rotate' && (b.send === '1' || b.send === true)) ? mailCode(L) : null);
   }
 

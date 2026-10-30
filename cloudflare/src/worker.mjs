@@ -644,6 +644,8 @@ export class State extends DurableObject {
           cur.body.why = String(res.error).slice(0, 100);
         }
       }
+      // a second mail with the same answer: the owner's copy of a receipt
+      if (h.mail2) await sendMail(env, h.mail2).catch(() => {});
       await this.save(st);
       return reply(cur.body, cur.code || 200);
     } catch (e) {

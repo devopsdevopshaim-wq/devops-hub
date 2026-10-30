@@ -1034,3 +1034,36 @@ Tests: 437.
 - The pulse bar shows "🛡️ מאובטח" or the count of today's events, and pops up security items.
 
 Tests: 439.
+
+## Bank transfer or standing order by the owner, receipts, and the licences screen never stuck (Oct 30, v84)
+
+The owner does not want card clearing: every purchase goes through him, by bank transfer or standing order (הוראת קבע). The v83 payment links are gone.
+
+**Payments:**
+- `lic-info` no longer returns `payLinks`, and `lic-settings` deletes any that were stored. No "💳 לתשלום מאובטח" buttons remain (offers drawer, upgrade window, download page).
+- "אני מעוניין/ת" sends `plan-request`. The owner gets a 📩 task, an alert and a pop-up.
+- The owner's bank details live in `licSettings.bankInfo` {holder, bank, branch, account, standing}, saved through `lic-settings` as `bank_*`. The business on the receipt lives in `licSettings.biz` {name, kind, id, address}, saved as `biz_*`. Neither is ever returned to customers.
+- When empty, the admin form prefills them from the site's "🏦 תשלום ובנק" (`settings.pay`).
+- Admin action `pay-details` {email, want, amount}:
+  - returns `no-bank` (400) when there is no account;
+  - otherwise emails the customer the amount, a reference `OPT-xxxx-MMDD`, the account and the standing-order text;
+  - stores `L.payDetails` (shown in `view`);
+  - returns `text` so the admin can also send it by WhatsApp.
+- The mail has `keep: true`: when it fails, AFTER_MAIL still answers, with `mailed: false`.
+- The 📩 task has "🏦 פרטי תשלום". It asks for the amount, sends, then shows the text with WhatsApp and copy. Once sent, the task says so.
+- `lic-pay` numbers receipts (`sd.receiptNo` from 1001; `payment.receipt`):
+  - `mail` is the original to the customer;
+  - `mail2` is the copy to the owner (worker.mjs sends `h.mail2` after `cur.mail`).
+- The admin shows "🧾 קבלה N" per payment.
+- Payment methods now start with "העברה בנקאית" and "הוראת קבע".
+- Whether a receipt is legally valid depends on the business status (עוסק פטור / מורשה). The receipt carries the details the owner fills in.
+
+**Licences screen:**
+- An expired token returns `signed-out` (401) with no security event.
+- `load()`:
+  - on `signed-out` / `admin-only`, tries `ACC.relogin()` once;
+  - otherwise every card shows "🔑 החיבור כמנהל פג … כניסה מחדש" (logout and reload to the sign-in);
+  - other errors, and no answer within 20 s, show "↻ לנסות שוב".
+- The deploy checks `lic-list` and `lic-pulse` with the admin session ("✅ מסך הרישיונות עונה").
+
+Tests: 445.
