@@ -1,0 +1,1344 @@
+{
+ "updatedAt": "2026-10-30T10:26:58.294Z",
+ "source": "radio-browser.info + SomaFM",
+ "genres": [
+  {
+   "id": "psytrance",
+   "style": "פסיטראנס",
+   "stations": [
+    {
+     "name": "__TRANCE__ by rautemusik (rm.fm)",
+     "url": "https://trance-high.rautemusik.fm/?ref=radiobrowser",
+     "home": "https://www.rm.fm/trance",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "Technolovers - PSYTRANCE",
+     "url": "https://stream.technolovers.fm/psytrance?ref=radiobrowser",
+     "home": "https://technolovers.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "Goanight",
+     "url": "https://goanight.stream.laut.fm/goanight",
+     "home": "http://www.goanight.net/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": ""
+    },
+    {
+     "name": "#joint radio Beat Trance",
+     "url": "https://jointil.com/stream-beat",
+     "home": "https://www.jointil.com/",
+     "codec": "MP3",
+     "bitrate": 320,
+     "country": "IL"
+    },
+    {
+     "name": "RadiOzora Trance",
+     "url": "https://trance.out.airtime.pro/trance_a",
+     "home": "https://radiozora.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "HU"
+    },
+    {
+     "name": "Psychedelic Travel Radio",
+     "url": "https://e20.yesstreaming.net:6148/stream",
+     "home": "https://www.instagram.com/dj_alchemist_official",
+     "codec": "MP3",
+     "bitrate": 320,
+     "country": "RS"
+    }
+   ]
+  },
+  {
+   "id": "trance",
+   "style": "טראנס",
+   "stations": [
+    {
+     "name": "Mix4.me uplifitng trance web radio",
+     "url": "https://s9.webradio-hosting.com/proxy/mix4me/stream",
+     "home": "https://www.mix4.me/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "CY"
+    },
+    {
+     "name": "ГУСЬ.Транс",
+     "url": "https://stream.radiogoose.ru/listen/trance/play",
+     "home": "https://radiogoose.ru/",
+     "codec": "AAC",
+     "bitrate": 128,
+     "country": "RU"
+    },
+    {
+     "name": "Record Trancemission",
+     "url": "https://radiorecord.hostingradio.ru/tm96.aacp",
+     "home": "https://radiorecord.ru/",
+     "codec": "AAC",
+     "bitrate": 0,
+     "country": "RU"
+    },
+    {
+     "name": "Technolovers - UPLIFTING TRANCE",
+     "url": "https://stream.technolovers.fm/uplifting-trance?ref=radiobrowser",
+     "home": "https://technolovers.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "Play Trance Radio Uplifting Only Channel (High Quality)",
+     "url": "https://streaming.playtrance.com/playtrance-uplifting-high",
+     "home": "https://www.playtrance.com/player/radio/",
+     "codec": "AAC",
+     "bitrate": 64,
+     "country": "ES"
+    },
+    {
+     "name": "DFM Armin van Buuren",
+     "url": "https://dfm.hostingradio.ru/avburren96.aacp",
+     "home": "https://dfm.ru/",
+     "codec": "AAC+",
+     "bitrate": 96,
+     "country": "RU"
+    }
+   ]
+  },
+  {
+   "id": "progressive",
+   "style": "פרוגרסיב",
+   "stations": [
+    {
+     "name": "SomaFM · The Trip",
+     "url": "https://ice2.somafm.com/thetrip-128-mp3",
+     "home": "https://somafm.com/thetrip/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "# TOP 100 CLUB CHARTS - DANCE & DJ MIX RADIO - 24 HOURS NON-",
+     "url": "https://breakz-2012-high.rautemusik.fm/?ref=radiobrowser-top100-clubcharts",
+     "home": "https://rm.fm/breakz/team",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "# TOP 100 DJ CHARTS - DJ REMIX & CHARTS RADIO @ TikTok Chart",
+     "url": "https://breakz-high.rautemusik.fm/?ref=radiobrowser-top100-djcharts",
+     "home": "https://rm.fm/breakz",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "UZIC.CH :: TECHNO - MINIMAL :: best of electronic with techn",
+     "url": "https://uzic.ice.infomaniak.ch/uzic-128.aac",
+     "home": "https://uzic.ch/",
+     "codec": "AAC+",
+     "bitrate": 128,
+     "country": "CH"
+    },
+    {
+     "name": "WeRave Music Radio 01 - Dark and Underground",
+     "url": "https://stream.zeno.fm/pjktyby8dn5tv",
+     "home": "https://werave.com.br/en",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "Club Hits 2000s",
+     "url": "https://radio.retrolan.party:8000/radio.mp3",
+     "home": "https://www.lan.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "RU"
+    }
+   ]
+  },
+  {
+   "id": "dream",
+   "style": "דרים",
+   "stations": [
+    {
+     "name": "SomaFM · Lush",
+     "url": "https://ice2.somafm.com/lush-128-mp3",
+     "home": "https://somafm.com/lush/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "[1337 4M813N7] RADIO.MASCHINENGEIST.ORG Deep Field Transmiss",
+     "url": "https://stream.radio.maschinengeist.org:8000/13374m813n7.192k.mp3",
+     "home": "https://radio.maschinengeist.org/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "CH"
+    },
+    {
+     "name": "Laut.FM Shoegaze",
+     "url": "https://shoegaze.stream.laut.fm/shoegaze",
+     "home": "https://laut.fm/shoegaze",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "DE"
+    },
+    {
+     "name": "HighFi Dream",
+     "url": "https://cdn06-us-east.radio.cloud/80ba63862a97bd69c593cc7a2ccaab1c_hq",
+     "home": "https://highfidream.com/",
+     "codec": "OGG",
+     "bitrate": 1200,
+     "country": "US"
+    },
+    {
+     "name": "CAMP Radio",
+     "url": "https://listen.camp/campradio.ogg",
+     "home": "https://listen.camp/",
+     "codec": "OGG",
+     "bitrate": 0,
+     "country": "FR"
+    },
+    {
+     "name": "Radio Robotic",
+     "url": "https://stream.zeno.fm/x4hneey2vwzuv",
+     "home": "https://www.radiorobotic.com/",
+     "codec": "AAC",
+     "bitrate": 160,
+     "country": "NZ"
+    }
+   ]
+  },
+  {
+   "id": "ambient",
+   "style": "אמביינט",
+   "stations": [
+    {
+     "name": "SomaFM · Drone Zone",
+     "url": "https://ice2.somafm.com/dronezone-128-mp3",
+     "home": "https://somafm.com/dronezone/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "SomaFM · Deep Space One",
+     "url": "https://ice2.somafm.com/deepspaceone-128-mp3",
+     "home": "https://somafm.com/deepspaceone/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "SomaFM · Space Station",
+     "url": "https://ice2.somafm.com/spacestation-128-mp3",
+     "home": "https://somafm.com/spacestation/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "SomaFM Groove Salad (128k MP3)",
+     "url": "https://ice2.somafm.com/groovesalad-128-mp3",
+     "home": "https://somafm.com/groovesalad/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "IBIZA CHILLOUT LOUNGE - Ambient, Deep House, Balearic, Smoot",
+     "url": "https://0nlineradio.radioho.st/lounge-ibiza-chillout-lounge?ref=rb26",
+     "home": "https://0nlineradio.com/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "0R - MUSIC FOR SLEEP || Sleep, Relax, Calm, Meditation, Natu",
+     "url": "https://0nlineradio.radioho.st/classical-classical-music-for-sleep?ref=radio-browser26",
+     "home": "https://plus.rm.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    }
+   ]
+  },
+  {
+   "id": "chillout",
+   "style": "צ׳ילאאוט",
+   "stations": [
+    {
+     "name": "SomaFM · Fluid",
+     "url": "https://ice2.somafm.com/fluid-128-mp3",
+     "home": "https://somafm.com/fluid/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "Relax FM Chillout",
+     "url": "https://pub0201.101.ru/stream/trust/mp3/128/24?",
+     "home": "https://relax-fm.ru/",
+     "codec": "MP3",
+     "bitrate": 0,
+     "country": "RU"
+    },
+    {
+     "name": "Спокойное радио",
+     "url": "https://listen1.myradio24.com/6262",
+     "home": "http://spokoinoeradio.ru/",
+     "codec": "MP3",
+     "bitrate": 320,
+     "country": "RU"
+    },
+    {
+     "name": "AIRPORT LOUNGE RADIO",
+     "url": "https://az1.mediacp.eu/listen/airport-lounge-radio/radio.mp3",
+     "home": "https://radiosuitenetwork.torontocast.stream/airport-lounge-radio/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "CA"
+    },
+    {
+     "name": "_DEEJAY REMIXE_ Your Radio for finest House, EDM, Electro, D",
+     "url": "https://breakz-high.rautemusik.fm/?ref=radiobrowser-deejay-remixes-radio",
+     "home": "https://breakz.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "Smooth Chill",
+     "url": "https://media-ssl.musicradio.com/ChillMP3",
+     "home": "https://www.smoothradio.com/chill/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "GB"
+    }
+   ]
+  },
+  {
+   "id": "lounge",
+   "style": "לאונג׳",
+   "stations": [
+    {
+     "name": "SomaFM · Illinois Street Lounge",
+     "url": "https://ice2.somafm.com/illstreet-128-mp3",
+     "home": "https://somafm.com/illstreet/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "SomaFM · Secret Agent",
+     "url": "https://ice2.somafm.com/secretagent-128-mp3",
+     "home": "https://somafm.com/secretagent/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "Classic Vinyl HD",
+     "url": "https://icecast.walmradio.com:8443/classic",
+     "home": "https://walmradio.com/classic",
+     "codec": "MP3",
+     "bitrate": 320,
+     "country": "US"
+    },
+    {
+     "name": "Classic Vinyl HD Opus",
+     "url": "https://icecast.walmradio.com:8443/classic_opus",
+     "home": "https://walmradio.com/classic",
+     "codec": "OGG",
+     "bitrate": 192,
+     "country": "US"
+    },
+    {
+     "name": "- DJ & CLUB CHARTS ---> Club Classics, Festival-Hits, Remixe",
+     "url": "https://breakz-2012-high.rautemusik.fm/?ref=rb-djclubcharts",
+     "home": "https://breakz.fm/trackliste/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "SomaFM Secret Agent (128k MP3)",
+     "url": "https://ice6.somafm.com/secretagent-128-mp3",
+     "home": "https://somafm.com/secretagent/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    }
+   ]
+  },
+  {
+   "id": "deephouse",
+   "style": "דיפ האוס",
+   "stations": [
+    {
+     "name": "Pescobar Radio",
+     "url": "https://listen.radioking.com/radio/701141/stream/766385",
+     "home": "https://pescobar.radio/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "RO"
+    },
+    {
+     "name": "#TOP 200 DJ CHARTS - JUST MUSIC - DJ REMIX & CHARTS RADIO @ ",
+     "url": "https://breakz-high.rautemusik.fm/stream.mp3?ref=DJCHARTSRB",
+     "home": "https://www.breakz.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "0R - DEEP HOUSE || Chillout, Ambient House, Chill, Lounge, E",
+     "url": "https://0nlineradio.radioho.st/technolovers-deep-house?ref=radio-browser26",
+     "home": "https://plus.rm.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "Extreme Deep House Radio",
+     "url": "https://whsh4u-panel.com/proxy/yfryujzw/stream",
+     "home": "https://www.extremedeephouse.com/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "BG"
+    },
+    {
+     "name": "Ibiza X Radio",
+     "url": "https://stream.radiojar.com/p1f2vpv37reuv",
+     "home": "https://www.ibizaxradio.com/player/",
+     "codec": "AAC",
+     "bitrate": 0,
+     "country": "ES"
+    },
+    {
+     "name": "*CLUB CHARTS TOP 100 || IMMER AKTUELL || DJ CHARTS || HOUSE,",
+     "url": "https://breakz-2012-high.rautemusik.fm/?ref=N1CLUBBING26",
+     "home": "https://www.rm.fm/breakz/playlist",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    }
+   ]
+  },
+  {
+   "id": "house",
+   "style": "האוס",
+   "stations": [
+    {
+     "name": "Intense Radio - We love Dance 256K",
+     "url": "https://secure.live-streams.nl/main",
+     "home": "https://www.intenseradio.net/",
+     "codec": "MP3",
+     "bitrate": 256,
+     "country": "NL"
+    },
+    {
+     "name": "Kiss Fm",
+     "url": "https://live.kissfm.ro/kissfm.aacp",
+     "home": "https://www.kissfm.ro/",
+     "codec": "AAC",
+     "bitrate": 80,
+     "country": "RO"
+    },
+    {
+     "name": "-- # TOP 100 CHARTS --- DJ MIXES -- Pop, Rock, Dance, House,",
+     "url": "https://breakz-high.rautemusik.fm/?ref=rb-djclubcharts0326",
+     "home": "https://www.breakz.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "# Aktuelle HITS - 24H NON-STOP MUSIC - DANCE & DJ MIX RADIO ",
+     "url": "https://breakz-2012-high.rautemusik.fm/?ref=radiobrowser-akthits",
+     "home": "https://rm.fm/breakz/team",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "- NEUERSCHEINUNGEN - Radio Charts - DJ Charts - Club Charts ",
+     "url": "https://breakz-high.rautemusik.fm/?ref=rb-neuerscheinungen",
+     "home": "https://www.breakz.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "Technolovers EDM",
+     "url": "https://stream.technolovers.fm/edm?ref=radiobrowser",
+     "home": "https://technolovers.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    }
+   ]
+  },
+  {
+   "id": "techno",
+   "style": "טכנו",
+   "stations": [
+    {
+     "name": "# RdMix DJSET 70s 80s 90s",
+     "url": "https://cast1.torontocast.com:4560/stream",
+     "home": "https://radiodimensionemix.torontocast.stream/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "CA"
+    },
+    {
+     "name": "__TECHNO__ by rautemusik.fm",
+     "url": "https://streams.rautemusik.fm/techno/mp3-192/?ref=radiobrowser",
+     "home": "https://rm.fm/techno",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "Best Pro Electronic",
+     "url": "https://az1.sednastream.com/radio/8150/Live?1582297952",
+     "home": "https://bestproradio.com/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "AL"
+    },
+    {
+     "name": "- TOP 100 - DJ Charts - / - REMIX DEEJAY RADIO - CLUB RADIO ",
+     "url": "https://radio2.breakz.fm/?ref=rb-gpt-t100",
+     "home": "https://www.breakz.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "UK Bass Radio",
+     "url": "https://www.ukbassradio.com/stream",
+     "home": "https://www.ukbassradio.com/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "GB"
+    },
+    {
+     "name": "Melodic House & Techno @ Technolovers.FM (Chillout, Beach, F",
+     "url": "https://stream.technolovers.fm/melodic-house-techno?ref=radiobrowser-2",
+     "home": "https://technolovers.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    }
+   ]
+  },
+  {
+   "id": "dnb",
+   "style": "דראם אנד בייס",
+   "stations": [
+    {
+     "name": "Intamixx 80s 90s Radio UK",
+     "url": "https://radio.intamixx.uk:8443/radio2",
+     "home": "https://80s.intamixx.uk/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "GB"
+    },
+    {
+     "name": "Atmospheric dnb s0urce",
+     "url": "https://brokenbeats.net/stream/aac",
+     "home": "https://brokenbeats.net/",
+     "codec": "AAC",
+     "bitrate": 320,
+     "country": "RO"
+    },
+    {
+     "name": "Kool FM",
+     "url": "https://admin.stream.rinse.fm/proxy/kool/stream",
+     "home": "https://rinse.fm/channels/kool/",
+     "codec": "AAC+",
+     "bitrate": 128,
+     "country": "GB"
+    },
+    {
+     "name": "DnB&EDM",
+     "url": "https://edmdnb.com:448/radio/8000/radio.mp3",
+     "home": "https://edmdnb.com/",
+     "codec": "MP3",
+     "bitrate": 0,
+     "country": "US"
+    },
+    {
+     "name": "HouseTime.FM",
+     "url": "https://listen.housetime.fm/tunein-aac-hd-pls",
+     "home": "https://housetime.fm/",
+     "codec": "AAC",
+     "bitrate": 256,
+     "country": "DE"
+    },
+    {
+     "name": "Old Skool Rave Tapes",
+     "url": "https://azuracast.oldskoolravetapes.co.uk/listen/old_skool_rave_tapes/listen",
+     "home": "https://oldskoolravetapes.co.uk/",
+     "codec": "AAC",
+     "bitrate": 0,
+     "country": "GB"
+    }
+   ]
+  },
+  {
+   "id": "lofi",
+   "style": "לו־פיי",
+   "stations": [
+    {
+     "name": "0R - LO-FI || LoFi, Chill, Study, Hip Hop, Relax, Background",
+     "url": "https://0nlineradio.radioho.st/0r-lo-fi?ref=radio-browser26",
+     "home": "https://plus.rm.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "yojosuknam Radio",
+     "url": "https://stream.yojosuknam.com/live.mp3",
+     "home": "https://music.yojosuknam.com/radio",
+     "codec": "MP3",
+     "bitrate": 0,
+     "country": "KR"
+    },
+    {
+     "name": "Radio Digital Malayali",
+     "url": "https://radio.digitalmalayali.in/listen/stream/radio.mp3",
+     "home": "https://radio.digitalmalayali.in/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IN"
+    },
+    {
+     "name": "ISEKOI Radio | Chill Zone",
+     "url": "https://public.isekoi-radio.com/listen/chill/radio.mp3",
+     "home": "https://isekoi-radio.com/",
+     "codec": "MP3",
+     "bitrate": 320,
+     "country": "FR"
+    },
+    {
+     "name": "LITT Live - Lofi - Chill & Instrumental Jazz Beats",
+     "url": "https://das-sa39.cdnstream1.com/5582_128",
+     "home": "https://littlive.com/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "Nightwave Plaza",
+     "url": "https://radio.plaza.one/ogg",
+     "home": "https://plaza.one/",
+     "codec": "OGG",
+     "bitrate": 64,
+     "country": "RU"
+    }
+   ]
+  },
+  {
+   "id": "jazz",
+   "style": "ג׳אז",
+   "stations": [
+    {
+     "name": "SomaFM · Sonic Universe",
+     "url": "https://ice2.somafm.com/sonicuniverse-128-mp3",
+     "home": "https://somafm.com/sonicuniverse/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "Anon.FM",
+     "url": "https://icecast.anon.fm/radio",
+     "home": "https://anon.radio.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "RU"
+    },
+    {
+     "name": "AR RADIO",
+     "url": "https://free.rcast.net/200660",
+     "home": "https://arradiokerala.blogspot.com/",
+     "codec": "MP3",
+     "bitrate": 32,
+     "country": "IN"
+    },
+    {
+     "name": "Bossa Jazz Brasil",
+     "url": "https://centova5.transmissaodigital.com:20104/live",
+     "home": "https://bossajazzbrasil.com/",
+     "codec": "AAC+",
+     "bitrate": 64,
+     "country": "BR"
+    },
+    {
+     "name": "A MISSISSIPPI BLUES",
+     "url": "https://cast1.torontocast.com:4450/;?type=http&nocache=1745625391",
+     "home": "https://radiosuitenetwork.torontocast.stream/amississippiblues/",
+     "codec": "MP3",
+     "bitrate": 320,
+     "country": "CA"
+    },
+    {
+     "name": "SMOOTH JAZZ: Sax, piano, guitarra y voz: cool jazz",
+     "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/ACIR22_s01AAC.aac",
+     "home": "https://www.iheart.com/live/smooth-jazz-8063/",
+     "codec": "AAC+",
+     "bitrate": 48,
+     "country": "MX"
+    }
+   ]
+  },
+  {
+   "id": "classical",
+   "style": "קלאסית",
+   "stations": [
+    {
+     "name": "SWR4 BW [48 aac]",
+     "url": "https://liveradio.swr.de/sw890cl/swr4bw/",
+     "home": "https://www.swr.de/swr4/index.html",
+     "codec": "AAC",
+     "bitrate": 96,
+     "country": "DE"
+    },
+    {
+     "name": "50首经典古典音乐",
+     "url": "https://lhttp-hw.qtfm.cn/live/5022308/64k.mp3",
+     "home": "https://www.qtfm.cn/",
+     "codec": "MP3",
+     "bitrate": 0,
+     "country": "CN"
+    },
+    {
+     "name": "Magic Classical",
+     "url": "https://stream-mz.hellorayo.co.uk/scala.aac",
+     "home": "https://www.hellorayo.co.uk/magic-classical",
+     "codec": "AAC+",
+     "bitrate": 47,
+     "country": "GB"
+    },
+    {
+     "name": "CHILLOUT PIANO by Epic Piano",
+     "url": "https://stream.epic-piano.com/chillout-piano?ref=radiobrowser",
+     "home": "https://epic-piano.com/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "EPIC CLASSICAL - Classical Chillout",
+     "url": "https://stream.epic-classical.com/classical-chillout?ref=liveradio",
+     "home": "https://epic-classical.com/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "0nlineradio VIVALDI",
+     "url": "https://stream.0nlineradio.com/vivaldi?ref=radiobrowser",
+     "home": "https://0nlineradio.com/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    }
+   ]
+  },
+  {
+   "id": "piano",
+   "style": "פסנתר",
+   "stations": [
+    {
+     "name": "0R - PIANO JAZZ LOUNGE || Jazz, Piano, Lounge, Smooth, Chill",
+     "url": "https://0nlineradio.radioho.st/lounge-piano-jazz-bar?ref=radio-browser26",
+     "home": "https://plus.rm.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "0R - PIANO CLASSICAL || Klassik, Solopiano, Elegant, Relax, ",
+     "url": "https://0nlineradio.radioho.st/classical-classical-piano?ref=radio-browser26",
+     "home": "https://plus.rm.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "JAZU - Japanese Jazz",
+     "url": "https://tunein-live-b.cdnstream1.com/3885_128.mp3?aw_0_1st.skey=1733919523&lat=37.751&lon=-97.822&aw_0_1st.abtest=&aw_0_1st.stationId=s321092&aw_0_1st.premium=false&source=TuneIn&aw_0_req.gdpr=true&aw_0_1st.platform=tunein&aw_0_1st.genre_id=g11&aw_0_1st.class=music&aw_0_1st.ads_partner_alias=ce.Other&aw_0_azn.planguage=en&aw_0_1st.is_ondemand=false&aw_0_1st.topicId=na&aw_0_1st.affiliateIds=a38725%2ca40075&aw_0_1st.bandId=16",
+     "home": "https://zeno.fm/radio/jazu-japanese-jazz/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "CA"
+    },
+    {
+     "name": "0R - BACH - CLASSICAL || Classical, Baroque, Orchestra, Pian",
+     "url": "https://0nlineradio.radioho.st/0r-bach?ref=radio-browser26",
+     "home": "https://plus.rm.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "0R - ROMANTIC PIANO || Piano, Romantic, Soft, Classical, Bal",
+     "url": "https://0nlineradio.radioho.st/piano-romantic-piano?ref=radio-browser26",
+     "home": "https://plus.rm.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "0R - MOZART - CLASSICAL || Orchestra, Piano, Strings, Chambe",
+     "url": "https://0nlineradio.radioho.st/0r-mozart?ref=radio-browser26",
+     "home": "https://plus.rm.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    }
+   ]
+  },
+  {
+   "id": "mizrahi",
+   "style": "מזרחית",
+   "stations": [
+    {
+     "name": "Radio Angelika",
+     "url": "https://radioangelika.com/stream",
+     "home": "https://radioangelika.com/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "Radios 100FM - 100% Mizrachit (מזרחי)",
+     "url": "https://gb25.streamgates.net/radios-audio/100Mizrachit/icecast.audio",
+     "home": "https://digital.100fm.co.il/#mizrachit",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "OM Kalthom أم كلثوم",
+     "url": "https://stream.zeno.fm/zsgrfxg71s8uv",
+     "home": "https://zeno.fm/radio/om-kalthom/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "EG"
+    },
+    {
+     "name": "Abdel Halim Hafez عبدالحليم حافظ",
+     "url": "https://stream.zeno.fm/8a4eqkd0pnhvv",
+     "home": "https://zeno.fm/radio/abdel-halim-hafez/",
+     "codec": "AAC",
+     "bitrate": 128,
+     "country": "EG"
+    },
+    {
+     "name": "Fairuz فيروز",
+     "url": "https://stream.zeno.fm/xkhnk4vee18uv",
+     "home": "https://zeno.fm/radio/faerowz/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "LB"
+    },
+    {
+     "name": "AYMEVA Deep",
+     "url": "https://live.aymeva.com/listen/aymeva/deep.aac",
+     "home": "https://aymeva.com/",
+     "codec": "AAC",
+     "bitrate": 192,
+     "country": "DE"
+    }
+   ]
+  },
+  {
+   "id": "israeli",
+   "style": "ישראלי",
+   "stations": [
+    {
+     "name": "Glglz",
+     "url": "https://api.bynetcdn.com/Redirector/glz/glglz/ICE-LIVE",
+     "home": "https://glz.co.il/%D7%92%D7%9C%D7%92%D7%9C%D7%A6",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "KAN Gimel כאן גימל",
+     "url": "https://27873.live.streamtheworld.com/KAN_GIMMEL.mp3",
+     "home": "https://www.kan.org.il/content/kan/kan-gimel/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "IL"
+    },
+    {
+     "name": "Radio 103FM",
+     "url": "https://cdn.cybercdn.live/103FM/Live/icecast.audio",
+     "home": "https://103fm.maariv.co.il/",
+     "codec": "MP3",
+     "bitrate": 0,
+     "country": "IL"
+    },
+    {
+     "name": "Galgalatz",
+     "url": "https://glzwizzlv.bynetcdn.com/glglz_mp3?awCollectionId=misc&awEpisodeId=glglz",
+     "home": "https://glz.co.il/%D7%92%D7%9C%D7%92%D7%9C%D7%A6",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "#joint radio Blues Rock",
+     "url": "https://jointil.com/stream-blues",
+     "home": "https://www.jointil.com/",
+     "codec": "MP3",
+     "bitrate": 320,
+     "country": "IL"
+    },
+    {
+     "name": "Первое радио 89.1FM",
+     "url": "https://cdn.cybercdn.live/Pervoia/Audio/icecast.audio",
+     "home": "https://www.891fm.co.il/",
+     "codec": "MP3",
+     "bitrate": 0,
+     "country": "IL"
+    }
+   ]
+  },
+  {
+   "id": "reggae",
+   "style": "רגאיי",
+   "stations": [
+    {
+     "name": "REGGAE CHILL CAFE",
+     "url": "https://maggie.torontocast.com:2020/stream/reggaechillcafe",
+     "home": "https://radiosuitenetwork.torontocast.stream/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "CA"
+    },
+    {
+     "name": "SomaFM Heavyweight Reggae (256k MP3)",
+     "url": "https://ice6.somafm.com/reggae-256-mp3",
+     "home": "https://somafm.com/reggae/",
+     "codec": "MP3",
+     "bitrate": 320,
+     "country": "US"
+    },
+    {
+     "name": "100 % COVERS LOUNGE",
+     "url": "https://az1.mediacp.eu/listen/100coverslounge/radio.mp3",
+     "home": "https://radiosuitenetwork.torontocast.stream/100-covers-lounge/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "CA"
+    },
+    {
+     "name": "RADIO NOVA",
+     "url": "https://novazz.ice.infomaniak.ch/novazz-128.mp3",
+     "home": "https://www.nova.fr/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "FR"
+    },
+    {
+     "name": "Radio ACID - Everything Chill.",
+     "url": "https://stream.radioacid.com/stream",
+     "home": "https://radioacid.com/",
+     "codec": "MP3",
+     "bitrate": 256,
+     "country": "US"
+    },
+    {
+     "name": "Urbano 106 - 105.9 FM - San José, Costa Rica",
+     "url": "https://usa18.fastcast4u.com/proxy/rmoohhrw?mp=/1",
+     "home": "https://www.urbano106.com/",
+     "codec": "AAC+",
+     "bitrate": 64,
+     "country": "CR"
+    }
+   ]
+  },
+  {
+   "id": "rock",
+   "style": "רוק",
+   "stations": [
+    {
+     "name": "# RdMix Classic Rock 70s 80s 90s",
+     "url": "https://cast1.torontocast.com:4610/stream",
+     "home": "https://radiodimensionemix.torontocast.stream/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "CA"
+    },
+    {
+     "name": "Convoy en vivo",
+     "url": "https://live.convoynetwork.com/stream",
+     "home": "http://convoynetwork.com/",
+     "codec": "AAC",
+     "bitrate": 64,
+     "country": "MX"
+    },
+    {
+     "name": "Retro Rádió",
+     "url": "https://icast.connectmedia.hu/5001/live.mp3",
+     "home": "http://www.retroradio.hu/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "HU"
+    },
+    {
+     "name": "FM4 | ORF | HQ",
+     "url": "https://orf-live.ors-shoutcast.at/fm4-q2a",
+     "home": "https://fm4.orf.at/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "AT"
+    },
+    {
+     "name": "OUI FM",
+     "url": "https://ouifm.ice.infomaniak.ch/ouifm-high.mp3",
+     "home": "https://www.ouifm.fr/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "FR"
+    },
+    {
+     "name": "1LIVE",
+     "url": "https://wdr-1live-live.icecastssl.wdr.de/wdr/1live/live/mp3/128/stream.mp3",
+     "home": "https://einslive.de/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "DE"
+    }
+   ]
+  },
+  {
+   "id": "80s",
+   "style": "שנות ה־80",
+   "stations": [
+    {
+     "name": "SomaFM · Underground 80s",
+     "url": "https://ice2.somafm.com/u80s-128-mp3",
+     "home": "https://somafm.com/u80s/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "Heart 80s",
+     "url": "https://media-ssl.musicradio.com/Heart80sMP3",
+     "home": "https://www.heart.co.uk/80s",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "GB"
+    },
+    {
+     "name": "KISS FM",
+     "url": "https://adhandler.kissfmradio.cires21.com/get_link?url=https://bbkissfm.kissfmradio.cires21.com/bbkissfm.mp3",
+     "home": "https://www.kissfm.es/",
+     "codec": "MP3",
+     "bitrate": 56,
+     "country": "ES"
+    },
+    {
+     "name": "OLDIE ANTENNE",
+     "url": "https://s1-webradio.oldie-antenne.de/oldie-antenne?aw_0_1st.playerid=OldieAntenneWebPlayer",
+     "home": "https://www.oldie-antenne.de/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "DE"
+    },
+    {
+     "name": "- 0 N - Classic Rock on Radio",
+     "url": "https://0n-classicrock.radionetz.de/0n-classicrock.mp3",
+     "home": "http://www.0nradio.com/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "DE"
+    },
+    {
+     "name": "# 100 GREATEST HEAVY METAL",
+     "url": "https://cast1.torontocast.com:4660/stream",
+     "home": "https://100-greatest-network.torontocast.stream/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "CA"
+    }
+   ]
+  },
+  {
+   "id": "meditation",
+   "style": "מדיטציה",
+   "stations": [
+    {
+     "name": "0R - SPA LOUNGE || Relax, Spa, Calm, Meditation, Nature, Amb",
+     "url": "https://0nlineradio.radioho.st/lounge-spa-lounge?ref=radio-browser26",
+     "home": "https://plus.rm.fm/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "NATURE RADIO SLEEP",
+     "url": "https://az1.mediacp.eu/listen/natureradiosleep/radio.mp3",
+     "home": "https://natureradiosleep.weebly.com/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IT"
+    },
+    {
+     "name": "Positively Meditation -om",
+     "url": "https://streaming.positivity.radio/pr/posimeditation/icecast.audio",
+     "home": "https://play.you.radio/station/1121",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "AE"
+    },
+    {
+     "name": "ambient.fm",
+     "url": "https://ambient.fm/live/",
+     "home": "https://ambient.fm/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "US"
+    },
+    {
+     "name": "Epic Lounge - SLEEP & MEDITATION",
+     "url": "https://stream.epic-lounge.com/sleep-meditation?ref=radiobrowser",
+     "home": "https://epic-lounge.com/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "DE"
+    },
+    {
+     "name": "1st Greek New Age FLAC Radio AAC+ 320kbps",
+     "url": "https://stream.newageradio.gr/listen/hq/radio.aac",
+     "home": "https://newageradio.gr/",
+     "codec": "AAC",
+     "bitrate": 320,
+     "country": "GR"
+    }
+   ]
+  },
+  {
+   "id": "ilradio",
+   "style": "תחנות רדיו ישראליות",
+   "stations": [
+    {
+     "name": "Kan Bet",
+     "url": "https://28563.live.streamtheworld.com/KAN_BET.mp3",
+     "home": "https://www.kan.org.il/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "Kan Bet",
+     "url": "https://25583.live.streamtheworld.com/KAN_BET.mp3?dist=bynetredirect&1737047133",
+     "home": "https://www.kan.org.il/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "גלצ",
+     "url": "https://glzwizzlv.bynetcdn.com/glz_mp3?awCollectionId=misc&awEpisodeId=glz",
+     "home": "https://glz.co.il/%D7%92%D7%9C%D7%A6",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "88 FM",
+     "url": "https://29073.live.streamtheworld.com/KAN_88.mp3",
+     "home": "https://www.kan.org.il/content/kan/kan-88/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "IL"
+    },
+    {
+     "name": "גלי ישראל Galey Yisrael",
+     "url": "https://cdn.cybercdn.live/Galei_Israel/Live/icecast.audio",
+     "home": "http://www.gly.co.il/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "اذاعة الشمس - A-Shams",
+     "url": "https://cdna.streamgates.net/Ashams/Live/icecast.audio",
+     "home": "https://www.ashams.com/",
+     "codec": "AAC+",
+     "bitrate": 64,
+     "country": "IL"
+    },
+    {
+     "name": "Radio Haifa רדיו חיפה",
+     "url": "https://1075.livecdn.biz/radiohaifa",
+     "home": "https://1075.fm/",
+     "codec": "AAC+",
+     "bitrate": 64,
+     "country": "IL"
+    },
+    {
+     "name": "קול פליי | kol-play",
+     "url": "https://cdn.cybercdn.live/Kol_Barama/Music/icecast.audio",
+     "home": "https://kol-play.co.il/",
+     "codec": "AAC+",
+     "bitrate": 64,
+     "country": "IL"
+    },
+    {
+     "name": "Radios 100FM רדיוס",
+     "url": "https://cdn.cybercdn.live/Radios_100FM/Audio/icecast.audio",
+     "home": "https://www.100fm.co.il/",
+     "codec": "MP3",
+     "bitrate": 0,
+     "country": "IL"
+    },
+    {
+     "name": "Radio Nas",
+     "url": "https://cdna.streamgates.net/RadioNas/Live-Audio/icecast.audio",
+     "home": "https://nasradio.fm/",
+     "codec": "AAC+",
+     "bitrate": 64,
+     "country": "IL"
+    },
+    {
+     "name": "#Joint Radio Reggae",
+     "url": "https://jointil.com/stream-reggae",
+     "home": "https://www.jointil.com/",
+     "codec": "MP3",
+     "bitrate": 320,
+     "country": "IL"
+    },
+    {
+     "name": "94fm רדיו גלי ישראל",
+     "url": "https://cdn.cybercdn.live/Galei_Israel/Live/icecast.audio",
+     "home": "https://www.gly.co.il/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "Galgalatz 91.8 FM",
+     "url": "https://glzicylv01.bynetcdn.com/glglz_mp3",
+     "home": "https://glz.co.il/%D7%92%D7%9C%D7%92%D7%9C%D7%A6",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "Israeli voice radio",
+     "url": "https://icecast.live/ivr",
+     "home": "https://israelivoiceradio.co.il/",
+     "codec": "MP3",
+     "bitrate": 192,
+     "country": "IL"
+    }
+   ]
+  },
+  {
+   "id": "prayer",
+   "style": "תפילות ופיוטים",
+   "stations": [
+    {
+     "name": "קול חי - Kol Chai",
+     "url": "https://media2.93fm.co.il/live-new",
+     "home": "https://www.93fm.co.il/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "Kcm FM Channel 01 Live",
+     "url": "https://media2.93fm.co.il/livemusic",
+     "home": "https://kcm.fm/",
+     "codec": "AAC",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "ברסלב פוריו: דעת רבנו",
+     "url": "https://cast.breslevforyou.co.il/listen/radiobreslev/radio.mp3",
+     "home": "https://breslevforyou.co.il/",
+     "codec": "AAC",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "קול חי מיוזיק - Kol Chai Music",
+     "url": "https://media2.93fm.co.il/livemusic",
+     "home": "https://kcm.fm/",
+     "codec": "AAC",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "Music-ToraVeZimra",
+     "url": "https://cast.breslevforyou.co.il/listen/music-toravezimra/radio.mp3",
+     "home": "https://breslevforyou.co.il/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "ברסלב פוריו: תורה וזימרה",
+     "url": "https://cast.breslevforyou.co.il/listen/music-toravezimra/radio.mp3",
+     "home": "https://breslevforyou.co.il/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "קול חי מיוזיק - Kol Chai Music",
+     "url": "https://media2.93fm.co.il/livemusic",
+     "home": "http://kcm.fm/",
+     "codec": "AAC",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "ברסלב פוריו: ספרי ברסלב",
+     "url": "https://cast.breslevforyou.co.il/listen/books/radio.mp3",
+     "home": "https://breslevforyou.co.il/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "Jewish Music Stream",
+     "url": "https://stream.jewishmusicstream.com:8000/",
+     "home": "https://jewishmusicstream.com/",
+     "codec": "MP3",
+     "bitrate": 128,
+     "country": "IL"
+    },
+    {
+     "name": "קול חי מיוזיק - Kol Chai Music",
+     "url": "https://media2.93fm.co.il/livemusic",
+     "home": "http://kcm.fm/",
+     "codec": "AAC",
+     "bitrate": 128,
+     "country": "IL"
+    }
+   ]
+  }
+ ]
+}

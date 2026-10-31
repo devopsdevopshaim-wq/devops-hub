@@ -1,0 +1,42 @@
+{
+  "name": "אופטימוס — סטודיו לאירועים",
+  "short_name": "אופטימוס",
+  "start_url": "studio.html",
+  "scope": "./",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "he",
+  "background_color": "#100b1e",
+  "theme_color": "#1d1633",
+  "icons": [
+    {
+      "src": "optimus.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "studio.html",
+      "accept": {
+        "image/*": [
+          ".jpg",
+          ".jpeg",
+          ".png",
+          ".webp"
+        ]
+      }
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "אתר העסק",
+      "url": "./"
+    },
+    {
+      "name": "הסטודיו",
+      "url": "studio.html"
+    }
+  ]
+}

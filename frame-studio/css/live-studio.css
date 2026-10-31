@@ -1,0 +1,62 @@
+/* The live event panel in the studio (js/live.js), its QR sign for the tables, and staff mode. */
+.tools [data-tab=live] { position: relative; }
+.lv-dot { position: absolute; top: 6px; inset-inline-end: 10px; width: 9px; height: 9px; border-radius: 50%; background: #e5484d; box-shadow: 0 0 0 0 rgba(229,72,77,.7); animation: lvp 1.6s infinite; }
+@keyframes lvp { 70% { box-shadow: 0 0 0 8px rgba(229,72,77,0); } 100% { box-shadow: 0 0 0 0 rgba(229,72,77,0); } }
+[data-pane=live] .lv-row { display: flex; gap: 6px; align-items: center; }
+[data-pane=live] .lv-row select { flex: 1; min-width: 0; }
+.lv-card { display: grid; gap: 10px; margin: 12px 0; padding: 14px; border-radius: 16px; border: 1px solid rgba(214,183,126,.22); background: rgba(255,255,255,.03); }
+.lv-card h3 { margin: 0; font-size: 16px; }
+.lv-meta { margin: 0; font-size: 13px; opacity: .8; }
+.lv-meta .ok { color: #46c38b; } .lv-meta .no { color: #e5a14d; }
+.lv-links { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.lv-links .btn { font-size: 13px; padding-inline: 8px; }
+.lv-copies { margin: 0; font-size: 13px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lv-tpl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.lv-tpl .hint { margin: 0; }
+.lv-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; font-size: 11px; opacity: .9; }
+.lv-stats span { display: grid; padding: 6px 2px; border-radius: 10px; background: rgba(0,0,0,.25); }
+.lv-stats b { font-size: 18px; color: var(--champagne, #D6B77E); font-variant-numeric: tabular-nums; }
+.lv-status { margin: 0; font-size: 13px; }
+.lv-st ul { margin: 0; padding: 0; list-style: none; font-size: 13px; display: grid; gap: 2px; }
+.lv-st .hint { margin: 0; }
+.lv-rep { margin: 0; display: grid; gap: 4px; font-size: 14px; }
+.lv-rep div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed rgba(214,183,126,.18); padding-bottom: 3px; }
+.lv-rep dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lv-rep .sum { border: 0; font-size: 16px; } .lv-rep .sum dd { color: var(--champagne, #D6B77E); }
+.lv-due { border: 1px solid var(--champagne, #D6B77E); border-radius: 14px; padding: 8px 12px; background: rgba(214,183,126,.08); font-size: 13px; }
+.lv-due p { margin: 4px 0; }
+.lv-staff { margin-top: 10px; }
+.lv-form { display: grid; gap: 8px; }
+.lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.lv-grid figure { margin: 0; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,.25); display: grid; }
+.lv-grid figure.off { opacity: .45; }
+.lv-grid img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block; background: #222; }
+.lv-grid figcaption { padding: 6px; font-size: 12px; display: grid; gap: 4px; }
+.lv-grid figcaption span { opacity: .7; }
+.lv-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 10px; }
+.lv-table th, .lv-table td { padding: 6px 8px; border-bottom: 1px solid rgba(214,183,126,.18); text-align: start; font-variant-numeric: tabular-nums; }
+
+/* the sign for the tables (printed through FS.printDoc, two on an A4) */
+.lv-signs { display: grid; grid-template-rows: 1fr 1fr; height: 268mm; gap: 6mm; }
+.lv-sign { border: 0.6mm solid #c9a45c; border-radius: 6mm; padding: 6mm 10mm; text-align: center; display: grid; align-content: center; gap: 2mm; font-family: Heebo, sans-serif; color: #1d1633; break-inside: avoid; }
+.lv-sign h1 { margin: 0; font-family: 'Frank Ruhl Libre', serif; font-size: 22pt; line-height: 1.15; }
+.lv-sign img { width: 52mm; height: 52mm; margin: 0 auto; }
+.lv-sign ol { margin: 0 auto; padding-inline-start: 6mm; text-align: start; font-size: 11pt; line-height: 1.5; }
+.ls-ev { margin: 0; font-size: 12pt; color: #8a6d35; font-weight: 700; }
+.ls-biz { margin: 0; font-size: 10pt; color: #555; }
+
+/* staff mode */
+body.staff-mode .tools [role=tab]:not([data-tab=photos]):not([data-tab=frames]):not([data-tab=output]):not([data-tab=live]):not([data-tab=adjust]),
+body.staff-mode .sb-more, body.staff-mode .lv-owner, body.staff-mode .lv-staff, body.staff-mode #biz-btn, body.staff-mode #pkg-btn, body.staff-mode #deals-btn, body.staff-mode a[href="admin.html"] { display: none !important; }
+#staff-bar { position: fixed; top: 108px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; gap: 10px; align-items: center; padding: 6px 8px 6px 14px; border-radius: 999px;
+  background: #2b2033; color: #F5EFE4; border: 1px solid var(--champagne, #D6B77E); font: 600 14px Heebo, sans-serif; box-shadow: 0 10px 30px -12px #000; }
+.lv-dz { margin: 0; font-size: 13px; }
+.lv-grid figcaption small { display: block; opacity: .75; }
+.lv-grid figcaption .btn { width: 100%; }
+/* the event folder on the computer (js/folders.js) */
+.ef-card { display: grid; gap: 8px; margin: 0 0 12px; padding: 14px; border-radius: 16px; border: 1px solid rgba(214,183,126,.3); background: rgba(214,183,126,.05); }
+.ef-card h3 { margin: 0; font-size: 16px; }
+.ef-card .hint { margin: 0; }
+.ef-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ef-root { font-size: 13px; opacity: .85; overflow-wrap: anywhere; }
+.ef-st { margin: 0; font-size: 12px; opacity: .75; }

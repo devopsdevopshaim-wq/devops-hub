@@ -1,0 +1,18 @@
+{
+ "note": "כלי וידאו ותמונה בבינה מלאכותית, מתוך הפוסטים ששמרת. המחירים והתנאים כפי שהופיעו בפוסטים ויכולים להשתנות.",
+ "tools": [
+  { "name": "Google Veo 3", "kind": "וידאו", "plan": "paid", "note": "וידאו ריאליסטי באיכות גבוהה עם סאונד. בפוסט: $249 לחודש", "url": "https://deepmind.google/models/veo/" },
+  { "name": "Sora 2", "kind": "וידאו", "plan": "free", "note": "קל למתחילים, איכות וידאו טובה. בפוסט: $0 לחודש", "url": "https://openai.com/sora/" },
+  { "name": "RunwayML", "kind": "וידאו", "plan": "paid", "note": "וידאו קולנועי למקצוענים. בפוסט: $76 לחודש", "url": "https://runwayml.com/" },
+  { "name": "Wan 2.6", "kind": "וידאו", "plan": "free", "note": "חינמי, איכות טובה, קל להתחיל", "url": "https://wan.video/" },
+  { "name": "Weavy AI", "kind": "וידאו ותמונה", "plan": "free", "note": "סביבת עבודה ויזואלית שמחברת כמה מודלים", "url": "https://www.weavy.ai/" },
+  { "name": "Midjourney", "kind": "תמונה", "plan": "paid", "note": "תמונות באיכות אמנותית גבוהה (וגם וידאו קצר)", "url": "https://www.midjourney.com/" },
+  { "name": "Leonardo", "kind": "תמונה ווידאו", "plan": "free", "note": "יש חבילה חינמית עם קרדיטים יומיים", "url": "https://leonardo.ai/" },
+  { "name": "Cascadeur", "kind": "אנימציה", "plan": "free", "note": "כלי אנימציה בעזרת AI, חינמי", "url": "https://cascadeur.com/" },
+  { "name": "Artlist AI", "kind": "וידאו ותמונה", "plan": "free", "note": "קרדיטים חינמיים ליצירת תמונות ווידאו", "url": "https://artlist.io/ai-image-video-generator" },
+  { "name": "Bing Video Creator", "kind": "וידאו", "plan": "free", "note": "קליפים קצרים בחינם בתוך אפליקציית Bing", "url": "https://www.bing.com/videos/create" },
+  { "name": "Meta AI", "kind": "וידאו", "plan": "free", "note": "קליפים קצרים בחינם בתוך האפליקציות של Meta", "url": "https://www.meta.ai/" },
+  { "name": "VEED.io", "kind": "עריכה", "plan": "free", "note": "עריכת וידאו עם AI, חבילה חינמית שמיש", "url": "https://www.veed.io/" },
+  { "name": "DaVinci Resolve", "kind": "עריכה", "plan": "free", "note": "עורך מלא וכלי B-roll בעזרת AI, בחינם", "url": "https://www.blackmagicdesign.com/products/davinciresolve" }
+ ]
+}
