@@ -257,7 +257,7 @@
     function status() { var t = c.backupAt(), d = t ? Math.floor((Date.now() - t) / 864e5) : null; return t ? (d >= 7 ? '<p class="note-warn">⚠️ הגיבוי האחרון לפני ' + d + ' ימים (' + new Date(t).toLocaleString('he-IL') + '). הגיע הזמן לגיבוי השבועי.</p>' : '<p class="adm-by">✔ הגיבוי האחרון: ' + new Date(t).toLocaleString('he-IL') + ' (לפני ' + (d ? d + ' ימים' : 'פחות מיום') + '). הבא: עד ' + new Date(t + 7 * 864e5).toLocaleDateString('he-IL') + '.</p>') : '<p class="note-warn">⚠️ עוד לא הורדת גיבוי למחשב.</p>'; }
     m.insertAdjacentHTML('beforeend', '<div id="bk-st">' + status() + '</div><section class="adm-card"><h3>📊 קובץ אקסל</h3><p class="hint">לשוניות: סיכום חודשי · הכנסות (מגנטים ואופטימוס) · הוצאות ורכישות · לפי קטגוריה · לפי ספק · מחירון פריטים · ספקים · עסקאות · רישיונות אופטימוס · תשלומים לרשויות · בקשות הזמנה. כל לשונית עם כותרת קבועה וסינון.</p>' +
       '<div class="adm-row"><button class="btn gold" id="bk-x">⬇️ הורדת קובץ אקסל</button></div></section>' +
-      '<section class="adm-card"><h3>🗂️ גיבוי מלא (ZIP)</h3><p class="hint">בתוך הקובץ: קובץ האקסל, תיקיית "קבלות" עם כל צילומי הקבלות (שם הקובץ: תאריך, ספק, סכום), וקובץ נתונים מלא (JSON) שאפשר לשחזר ממנו הכל.</p>' +
+      '<section class="adm-card"><h3>🗂️ גיבוי מלא (ZIP)</h3><p class="hint">בתוך הקובץ: קובץ האקסל, תיקיית "קבלות" עם כל צילומי הקבלות (שם הקובץ: תאריך, ספק, סכום), תיקיית "מסמכים" עם המסמכים שצילמת, וקובץ נתונים מלא (JSON) שאפשר לשחזר ממנו הכל.</p>' +
       '<div class="adm-row"><button class="btn gold" id="bk-z">⬇️ הורדת גיבוי מלא</button><span class="hint" id="bk-p"></span></div></section>' +
       '<section class="adm-card"><h3>💡 איך שומרים נכון</h3><ul class="tx-tips"><li>שומרים את הקובץ בתיקייה קבועה, למשל "מסמכים ← פריים מגנטים ← גיבויים".</li><li>פעם בחודש מעתיקים את התיקייה גם לדיסק און קי או לענן (Google Drive / OneDrive).</li><li>שם הקובץ כולל את התאריך, כך שכל שבוע נשמר בנפרד.</li></ul></section>');
     function lic() { return FS.license && FS.license.admin ? FS.license.admin('lic-list').then(function (r) { return r && r.ok ? r.licenses || [] : []; }, function () { return []; }) : Promise.resolve([]); }
@@ -271,16 +271,25 @@
       var b = this, p = $('#bk-p'), withPh = c.expenses().filter(function (e) { return e.photo; }), files = [], i = 0; b.disabled = true;
       lic().then(function (L) {
         files.push({ name: 'פריים-מגנטים-' + stamp + '.xlsx', blob: FS.xlsx(sheets(c, L)) });
-        files.push({ name: 'נתונים-מלאים-' + stamp + '.json', data: JSON.stringify({ at: new Date().toISOString(), site: c.site(), settings: c.settings(), deals: c.deals(), expenses: c.expenses(), suppliers: c.suppliers(), requests: c.requests(), licenses: L }, null, 1) });
+        files.push({ name: 'נתונים-מלאים-' + stamp + '.json', data: JSON.stringify({ at: new Date().toISOString(), site: c.site(), settings: c.settings(), deals: c.deals(), expenses: c.expenses(), suppliers: c.suppliers(), docs: c.docs ? c.docs() : [], requests: c.requests(), licenses: L }, null, 1) });
         var sups = c.suppliers() || [];
         function next() {
-          if (i >= withPh.length) return finish();
+          if (i >= withPh.length) return docsNext(0);
           var e = withPh[i++]; p.textContent = 'קבלות: ' + i + ' / ' + withPh.length;
           return ACC.call('receipt-get', { id: e.id }).then(function (r) {
             if (r.ok) { var s = sups.filter(function (x) { return x.id === e.supId; })[0], bin = atob(r.data.split(',')[1]), u = new Uint8Array(bin.length); for (var k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
               files.push({ name: 'קבלות/' + e.date + '_' + safe(s ? s.name : e.supplier || e.item || e.desc) + '_' + Math.round(e.amount) + '_' + e.id.slice(-5) + (/^data:image\/png/.test(r.data) ? '.png' : /^data:image\/webp/.test(r.data) ? '.webp' : '.jpg'), data: u }); }
             return next();
           }, next);
+        }
+        function docsNext(j) {
+          var ds = (c.docs ? c.docs() : []) || []; if (j >= ds.length) return finish();
+          var d = ds[j]; p.textContent = 'מסמכים: ' + (j + 1) + ' / ' + ds.length;
+          return ACC.call('doc-get', { id: d.id }).then(function (r) {
+            if (r.ok) { var bin = atob(r.data.split(',')[1]), u = new Uint8Array(bin.length); for (var k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+              files.push({ name: 'מסמכים/' + d.date + '_' + safe(d.cat) + '_' + safe(d.title) + '_' + d.id.slice(-4) + (/^data:image\/png/.test(r.data) ? '.png' : '.jpg'), data: u }); }
+            return docsNext(j + 1);
+          }, function () { return docsNext(j + 1); });
         }
         function finish() {
           Promise.all(files.map(function (f) { return f.blob ? f.blob.arrayBuffer().then(function (a) { return { name: f.name, data: new Uint8Array(a) }; }) : f; })).then(function (l) {

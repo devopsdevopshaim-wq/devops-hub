@@ -24,7 +24,8 @@ import statusFresh from './gen/status-fresh.mjs';
 import statusRender from './gen/status-render.mjs';
 import { mailHandle, mailCallback, who as sessionOf } from './mail.mjs';
 import { localGuide } from './guide-local.mjs';
-import { frameSite, frameFile, frameBiz, frameBook, frameCal, FrameStore } from './frame.mjs';
+import { frameSite, frameFile, frameBiz, frameBook, frameCal, frameSnapshot, FrameStore } from './frame.mjs';
+import { frameDaily, frameWeekly, notifyOwner, telegramFind, calendarSync, maton, ilDate, ilHour, ilWeekday } from './notify.mjs';
 import { frameLive, liveFile, liveCron } from './live.mjs';
 import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
 
@@ -95,6 +96,7 @@ export default {
     ctx.waitUntil(env.STATE.get(env.STATE.idFromName('agents')).runMonitor(true));
     ctx.waitUntil(env.STATE.get(env.STATE.idFromName('frame')).liveTick());
     ctx.waitUntil(env.STATE.get(env.STATE.idFromName('main')).studioDigest());
+    ctx.waitUntil(env.STATE.get(env.STATE.idFromName('frame')).frameWatch());
   },
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -290,12 +292,56 @@ export class State extends DurableObject {
   async whoIs(token) { const st = await this.load(); return sessionOf(st.sd, token); }
   siteData() { return frameSite(this.ctx.storage); }
   fileData(id) { return frameFile(this.ctx.storage, id); }
+  // ---- פריים מגנטים: the owner's morning message, the Saturday-night summary and the calendar (the cron, every two hours) ----
+  // kind: undefined (the cron decides by the Israeli clock), 'daily' or 'weekly' (the owner's "send now"), 'preview' (nothing sent)
+  async frameWatch(kind, preview) {
+    const now = Date.now(), storage = this.ctx.storage;
+    const run = this.q.then(async () => ({ S: await frameSnapshot(storage), meta: (await storage.get('notifyMeta')) || {} }));
+    this.q = run.catch(() => {});
+    let S, meta; try { ({ S, meta } = await run); } catch (e) { return { ok: false, error: 'server-error' }; }
+    const n = Object.assign({ daily: true, weekly: true, calendar: true, gmail: true, telegram: true, email: ADMIN_EMAIL }, (S.settings || {}).notify || {}); n.email = n.email || ADMIN_EMAIL;
+    const today = ilDate(now), hour = ilHour(now), out = [], res = {};
+    if (kind === 'daily' || (!kind && n.daily && hour >= 7 && meta.day !== today)) { const m = frameDaily(S, now); if (!kind) meta.day = today; if (m) out.push(m); else if (kind) out.push({ kind: 'daily', subject: '☀️ פריים מגנטים · אין משהו דחוף', text: 'אין היום אירועים, בקשות ממתינות או יתרות לגבייה בשבוע הקרוב.' }); }
+    if (kind === 'weekly' || (!kind && n.weekly && ilWeekday(now) === 'Sat' && hour >= 20 && meta.week !== today)) {
+      let lic = null; try { lic = await this.env.STATE.get(this.env.STATE.idFromName('main')).licWeek(now - 7 * 864e5, now); } catch (e) { lic = null; }
+      out.push(frameWeekly(S, now, lic)); if (!kind) meta.week = today;
+    }
+    if (preview) return { ok: true, messages: out };
+    for (const m of out) { res[m.kind] = await notifyOwner(this.env, n, Object.assign({ to: ADMIN_EMAIL }, m), sendMail); meta['last_' + m.kind] = { at: now, via: res[m.kind].via, errors: res[m.kind].errors }; }
+    // the calendar: at most every 6 hours from the cron, at once when the owner asks
+    let cal = null;
+    if (this.env.MATON_API_KEY && n.calendar && (kind === 'calendar' || (!kind && now - (meta.calAt || 0) > 6 * 3600e3))) {
+      const c = await calendarSync(this.env, S, (await storage.get('calMap')) || {}, now);
+      await storage.put('calMap', c.map); meta.calAt = now; meta.cal = Object.assign({ n: Object.keys(c.map).length }, c.done); cal = meta.cal;
+    }
+    const save = this.q.then(async () => { const cur = (await storage.get('notifyMeta')) || {}; await storage.put('notifyMeta', Object.assign(cur, meta)); });
+    this.q = save.catch(() => {}); await save.catch(() => {});
+    return { ok: true, sent: res, calendar: cal, meta };
+  }
+  // the owner's buttons in the admin: is Maton set and what answers, find the Telegram chat, send now, sync the calendar
+  async notifyAction(b) {
+    const a = String(b.action || '');
+    if (a === 'notify-status') {
+      const has = !!this.env.MATON_API_KEY, out = { ok: true, maton: has, apps: {} };
+      if (has) {
+        const [g, c, t] = await Promise.all([maton(this.env, '/google-mail/gmail/v1/users/me/profile'), maton(this.env, '/google-calendar/calendar/v3/users/me/calendarList?maxResults=1'), maton(this.env, '/telegram/:token/getMe')]);
+        out.apps = { gmail: g.ok ? { ok: true, who: (g.json || {}).emailAddress || '' } : { ok: false, error: g.error }, calendar: c.ok ? { ok: true } : { ok: false, error: c.error }, telegram: t.ok ? { ok: true, who: ((t.json || {}).result || {}).username || '' } : { ok: false, error: t.error } };
+      }
+      out.state = (await this.ctx.storage.get('notifyMeta')) || {};
+      return { code: 200, body: out };
+    }
+    if (a === 'notify-tg-find') { const r = await telegramFind(this.env); return { code: 200, body: r.ok ? r : { ok: false, error: r.error || 'no-chat' } }; }
+    if (a === 'notify-preview') { const r = await this.frameWatch(b.kind === 'weekly' ? 'weekly' : 'daily', true); return { code: 200, body: r }; }
+    if (a === 'notify-send') { const k = ['daily', 'weekly', 'calendar'].includes(b.kind) ? b.kind : 'daily'; return { code: 200, body: await this.frameWatch(k) }; }
+    return { code: 400, body: { ok: false, error: 'bad-input' } };
+  }
   async bizCall(who, b, ip) {
     // a few hundred calls per 10 minutes per person or address; one at a time, so a save never overlaps another
     this.rl = this.rl || new Map();
     const k = (who && who.email) || ip, t = Date.now(), arr = (this.rl.get(k) || []).filter((x) => t - x < 600000);
     if (arr.length >= 400) return { code: 429, body: { ok: false, error: 'rate-limited' } };
     arr.push(t); this.rl.set(k, arr); if (this.rl.size > 2000) this.rl.delete(this.rl.keys().next().value);
+    if (/^notify-/.test(String(b.action || ''))) { if (!who || who.role !== 'admin') return { code: who ? 403 : 401, body: { ok: false, error: who ? 'admin-only' : 'signed-out' } }; try { return await this.notifyAction(b); } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; } }
     const run = this.q.then(() => frameBiz(this.ctx.storage, who, b));
     this.q = run.catch(() => {});
     let r; try { r = await run; } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; }
@@ -387,6 +433,13 @@ export class State extends DurableObject {
     });
     this.q = run.catch(() => {});
     return run.then((m) => m ? sendMail(this.env, m) : null).catch(() => null);
+  }
+  // in the main object: אופטימוס over a week, for the owner's Saturday-night summary (counts and payments, nothing private)
+  async licWeek(from, to) {
+    const st = await this.load(), sd = st.sd, inW = (iso) => { const t = Date.parse(iso || ''); return t >= from && t <= to; };
+    const L = Object.values(sd.licenses || {});
+    return { payments: L.flatMap((x) => (x.payments || []).filter((p) => inW(p.at)).map((p) => ({ name: x.name || x.email, amount: Number(p.amount) || 0 }))),
+      leads: Object.values(sd.trialLeads || {}).filter((t) => inW(t.firstAt)).length, trials: L.filter((x) => x.trial && inW(x.trial.start)).length, requests: L.filter((x) => x.planReq).length };
   }
   // in the main object: the frame shop's customer accounts (no passwords, no sessions)
   async frameAccounts() {

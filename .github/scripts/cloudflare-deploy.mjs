@@ -39,7 +39,9 @@ const secrets = {
   // פריים מגנטים: a WhatsApp message to the owner on a new booking request (CallMeBot, free; the key comes from their bot)
   CALLMEBOT_APIKEY: (process.env.CALLMEBOT_APIKEY || '').trim(), CALLMEBOT_PHONE: (process.env.CALLMEBOT_PHONE || '').trim(),
   // free AI pictures with no daily allowance (Pollinations); the token (free, auth.pollinations.ai) lifts the anonymous limit and opens photo editing
-  POLLINATIONS_TOKEN: (process.env.POLLINATIONS_TOKEN || '').trim()
+  POLLINATIONS_TOKEN: (process.env.POLLINATIONS_TOKEN || '').trim(),
+  // פריים מגנטים: the owner's alerts, weekly summary and calendar through Maton (apps he connected at maton.ai: Gmail, Telegram, Google Calendar)
+  MATON_API_KEY: ((process.env.MATON_API_KEY || '').trim() || label('MATON_API_KEY', 'v\\d\\.[A-Za-z0-9._-]{20,400}')).replace(/\s+/g, '')
 };
 if (ADMIN_PASSWORD.length >= 8) {
   // the same secret gives the same hash on every deploy, so a deploy does not look like a new password (which would sign the admin out everywhere).
@@ -49,7 +51,7 @@ if (ADMIN_PASSWORD.length >= 8) {
   const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-' + RESET).digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
-for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.GMAIL_APP_PASSWORD, secrets.POLLINATIONS_TOKEN, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.GMAIL_APP_PASSWORD, secrets.POLLINATIONS_TOKEN, secrets.MATON_API_KEY, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 
 const notes = [];
 const note = (s) => { notes.push(s); console.log(s); };
@@ -83,6 +85,7 @@ if (Object.keys(bulk).length) {
 if (!secrets.ADMIN_PASSWORD_HASH) note('- ⚠️ אין ADMIN_PASSWORD (לפחות 8 תווים): כניסת המנהל תהיה רק דרך סיסמה ראשונית במייל');
 if (!secrets.ANTHROPIC_API_KEY) note('- ℹ️ אין ANTHROPIC_API_KEY: מאיה תענה רק בהודעה כללית (היא צריכה מפתח Claude עם יתרה)');
 if (!secrets.GEMINI_API_KEY) note('- ℹ️ אין GEMINI_API_KEY: ה־AI של האתרים והקומיקס יעבדו במצב המקומי בלבד');
+if (!secrets.MATON_API_KEY) note('- ℹ️ אין MATON_API_KEY: ההתראות והסיכום השבועי של פריים מגנטים יוצאים במייל של השרת, בלי טלגרם ובלי סנכרון ליומן גוגל');
 if (!secrets.LIVEAVATAR_API_KEY) note('- ℹ️ אין LIVEAVATAR_API_KEY: מאיה בלי שיחת וידאו חיה (LiveAvatar)');
 if (!secrets.GOOGLE_CLIENT_ID || !secrets.GOOGLE_CLIENT_SECRET) note('- ℹ️ אין GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET: חיבור תיבות המייל של הלקוחות (Gmail) עוד לא פעיל');
 if (!secrets.BREVO_API_KEY && !secrets.RESEND_API_KEY && !secrets.GMAIL_APP_PASSWORD) note('- ⚠️ אין שירות מיילים (GMAIL_APP_PASSWORD, BREVO_API_KEY או RESEND_API_KEY): קודי אימות, סיסמאות והתראות לא יישלחו. הכי פשוט: סיסמת אפליקציה של Gmail בסוד GMAIL_APP_PASSWORD');

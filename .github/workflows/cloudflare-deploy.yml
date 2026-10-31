@@ -47,6 +47,7 @@ jobs:
           npm install --no-audit --no-fund
           node build.mjs
           node test/frame.test.mjs
+          node test/notify.test.mjs
           node test/live.test.mjs
           node test/smtp.test.mjs
           printf 'ADMIN_PASSWORD_HASH=%s\nSHARED_KEY=test-shared-key\n' "$(node test/hash.mjs 'Test-Passw0rd-xyz')" > .dev.vars
@@ -83,6 +84,7 @@ jobs:
           LIVEAVATAR_SANDBOX: ${{ secrets.LIVEAVATAR_SANDBOX }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
           POLLINATIONS_TOKEN: ${{ secrets.POLLINATIONS_TOKEN }}
+          MATON_API_KEY: ${{ secrets.MATON_API_KEY }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           MAILTEST: ${{ github.event.inputs.mailtest }}
         run: node .github/scripts/cloudflare-deploy.mjs

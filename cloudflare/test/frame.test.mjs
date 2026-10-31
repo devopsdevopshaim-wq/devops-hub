@@ -32,6 +32,21 @@ r = await frameBiz(S, ADMIN, { action: 'report-mail', to: 'not-an-email', subjec
 check('a bad address is refused', r.code === 400);
 r = await frameBiz(S, ADMIN, { action: 'report-mail', to: 'cpa@example.com', subject: 'x', text: 'כרטיס 4111 1111 1111 1111' });
 check('a card number never goes out in a report', r.code === 400 && r.body.error === 'card-number', r.body);
+// documents
+r = await frameBiz(S, DANA, { action: 'doc-save', doc: { id: 'x1', title: 'x' }, data: 'data:image/jpeg;base64,QUJD' });
+check('a customer cannot keep documents', r.code === 403);
+r = await frameBiz(S, ADMIN, { action: 'doc-save', doc: { id: 'x1', title: 'פוליסת ביטוח', cat: 'ביטוח', expiry: '2027-01-31' }, data: 'data:image/png;base64,' + 'QUJD'.repeat(40000) });
+check('the owner keeps a photographed document', r.body.ok && r.body.doc.title === 'פוליסת ביטוח' && r.body.doc.expiry === '2027-01-31', r.body);
+r = await frameBiz(S, ADMIN, { action: 'doc-save', doc: { id: 'x1', title: 'פוליסת ביטוח 2027' } });
+check('renaming keeps the photo', r.body.ok && r.body.doc.size > 100000);
+r = await frameBiz(S, ADMIN, { action: 'doc-get', id: 'x1' });
+check('... which comes back whole', r.body.ok && r.body.data.length === 'data:image/png;base64,'.length + 160000);
+r = await frameBiz(S, ADMIN, { action: 'doc-save', doc: { id: 'x2', title: 'y' }, data: 'data:application/pdf;base64,QUJD' });
+check('only images', r.code === 400);
+r = await frameBiz(S, ADMIN, { action: 'all' });
+check('all: documents and the notification state', r.body.docs.length === 1 && typeof r.body.notifyState === 'object');
+await frameBiz(S, ADMIN, { action: 'doc-del', id: 'x1' });
+check('a deleted document leaves nothing', ![...S.m.keys()].some((k) => k.startsWith('doc:x1') || k.startsWith('docimg:x1')));
 // suppliers, purchases and receipt photos
 r = await frameBiz(S, DANA, { action: 'supplier-save', supplier: { id: 's1', name: 'x' } });
 check('a customer cannot add suppliers', r.code === 403);
