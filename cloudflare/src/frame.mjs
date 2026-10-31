@@ -157,6 +157,16 @@ export async function frameCal(storage, k) {
   return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//frame-studio//he', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:פריים מגנטים · אירועים', 'X-WR-TIMEZONE:Asia/Jerusalem'].concat(rows, ['END:VCALENDAR']).join('\r\n') + '\r\n';
 }
 
+// what the morning message and the weekly summary are made of
+export async function frameSnapshot(storage) {
+  const st = new FrameStore(storage), deals = [], expenses = [], requests = [];
+  for (const [k, v] of await st.list('deal:')) { const s = typeof v === 'string' ? v : await st.getBig(k); try { if (s) deals.push(JSON.parse(s)); } catch (e) { /* skip a broken one */ } }
+  for (const [, v] of await st.list('exp:')) if (v) expenses.push(v);
+  for (const [, v] of await st.list('rq:')) if (v) requests.push(v);
+  const docs = (await st.list('doc:')).map(([, v]) => v).filter(Boolean);
+  return { deals: deals.filter((x) => x && x.id), expenses, requests, docs, settings: (await storage.get('settings')) || {}, backupAt: (await storage.get('backupAt')) || 0 };
+}
+
 /* ---------- signed in ---------- */
 // who: { role, email } from the session, or null. Answers { code, body }.
 export async function frameBiz(storage, who, b) {
@@ -230,7 +240,8 @@ export async function frameBiz(storage, who, b) {
     const requests = []; for (const [, v] of await st.list('rq:')) if (v) requests.push(v);
     return out({ ok: true, site, siteAt: (await storage.get('siteAt')) || null, settings: (await storage.get('settings')) || {}, deals: deals.filter((x) => x && x.id),
       expenses, frames: (await storage.get('frames')) || [], customers, requests: requests.sort((x, y) => y.at - x.at), calKey: (await storage.get('calKey')) || '', sentReports: (await storage.get('sentReports')) || [],
-      suppliers: (await st.list('sup:')).map(([, v]) => v).filter(Boolean), backupAt: (await storage.get('backupAt')) || 0 });
+      suppliers: (await st.list('sup:')).map(([, v]) => v).filter(Boolean), backupAt: (await storage.get('backupAt')) || 0,
+      docs: (await st.list('doc:')).map(([, v]) => v).filter(Boolean), notifyState: (await storage.get('notifyMeta')) || {} });
   }
   // the owner's report by email (to the accountant, or to himself): html and text from the admin page, with up to 3 CSV files.
   // Only the owner, at most 40 a day; the html loses scripts and handlers; card numbers are refused as everywhere.
@@ -357,6 +368,21 @@ export async function frameBiz(storage, who, b) {
     const id = String(b.id || ''), e = ID.test(id) && (await storage.get('exp:' + id)); if (!e) return out({ ok: false, error: 'not-found' }, 404);
     await st.delBig('rcpt:' + id); e.photo = false; await storage.put('exp:' + id, e); return out({ ok: true, expense: e });
   }
+  // documents: a photo of anything worth keeping (a contract, a permit, a letter from the tax office, an insurance policy)
+  if (a === 'doc-save') {
+    const x = b.doc; if (!x || !ID.test(String(x.id || ''))) return out({ ok: false, error: 'bad-input' }, 400);
+    const old = (await storage.get('doc:' + x.id)) || null, d = String(b.data || '');
+    if (!old && !d) return out({ ok: false, error: 'bad-input' }, 400);
+    if (d && (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(d) || d.length > 2500000)) return out({ ok: false, error: d.length > 2500000 ? 'too-big' : 'bad-input' }, d.length > 2500000 ? 413 : 400);
+    if (!old && (await st.list('doc:')).length >= 1500) return out({ ok: false, error: 'too-many' }, 400);
+    const row = { id: x.id, title: clean(x.title, 100).trim() || 'מסמך', cat: clean(x.cat, 40), date: DAY.test(x.date || '') ? x.date : today(), note: clean(x.note, 400), expiry: DAY.test(x.expiry || '') ? x.expiry : '', at: Date.now(), size: d ? d.length : (old && old.size) || 0 };
+    if (hasCard(json(row))) return out({ ok: false, error: 'card-number' }, 400);
+    if (d) await st.putBig('docimg:' + row.id, d);
+    await storage.put('doc:' + row.id, row);
+    return out({ ok: true, doc: row });
+  }
+  if (a === 'doc-get') { const id = String(b.id || ''); if (!ID.test(id)) return out({ ok: false, error: 'bad-input' }, 400); const d = await st.getBig('docimg:' + id); return d ? out({ ok: true, data: d }) : out({ ok: false, error: 'not-found' }, 404); }
+  if (a === 'doc-del') { const id = String(b.id || ''); if (!ID.test(id)) return out({ ok: false, error: 'bad-input' }, 400); await st.delBig('docimg:' + id); await storage.delete('doc:' + id); return out({ ok: true }); }
   // the weekly backup: when the owner last downloaded one
   if (a === 'backup-mark') { const t = Date.now(); await storage.put('backupAt', t); return out({ ok: true, backupAt: t }); }
   if (a === 'frame-add') {

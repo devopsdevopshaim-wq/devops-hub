@@ -9,7 +9,7 @@
   var DRAFT = 'fs-admin-draft';
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   FS.busy = FS.busy || function (msg) { var b = $('#busy'); if (msg) { $('#busy-msg').textContent = msg; b.hidden = false; } else b.hidden = true; };
-  var base = null, draft = null, dirty = {}, sec = 'home', TEXTS = [], FRAMES = [], DEALS = [], EXPENSES = [], SETTINGS = {}, CUSTOMERS = [], REQUESTS = [], ACCOUNTS = [], VISITORS = [], CALKEY = '', SENT = [], SUPS = [], BACKUPAT = 0, onRefresh = null;
+  var base = null, draft = null, dirty = {}, sec = 'home', TEXTS = [], FRAMES = [], DEALS = [], EXPENSES = [], SETTINGS = {}, CUSTOMERS = [], REQUESTS = [], ACCOUNTS = [], VISITORS = [], CALKEY = '', SENT = [], SUPS = [], BACKUPAT = 0, DOCS = [], NSTATE = {}, onRefresh = null;
 
   /* ---------- sign-in (the sites' server: email + password, PBKDF2, lock-outs, device checks, authenticator) ---------- */
   /* two ways in: customers (name + phone or email, no password) see the customer screen; the owner signs in as admin */
@@ -45,7 +45,7 @@
       if (!all || !all.ok) { if (all && (all.error === 'signed-out' || all.error === 'admin-only')) return showLogin(ACC.msg(all)); FS.toast(ACC.msg(all), 6000); return; }
       var fromFile = r[1] || {}; delete fromFile.__frames; delete fromFile.__live; delete fromFile.__taken;
       base = all.site || fromFile; FRAMES = all.frames || []; DEALS = all.deals || []; EXPENSES = all.expenses || []; SETTINGS = all.settings || {}; CUSTOMERS = all.customers || [];
-      REQUESTS = all.requests || []; ACCOUNTS = all.accounts || []; VISITORS = all.visitors || []; CALKEY = all.calKey || ''; SENT = all.sentReports || []; SUPS = all.suppliers || []; BACKUPAT = all.backupAt || 0;
+      REQUESTS = all.requests || []; ACCOUNTS = all.accounts || []; VISITORS = all.visitors || []; CALKEY = all.calKey || ''; SENT = all.sentReports || []; SUPS = all.suppliers || []; BACKUPAT = all.backupAt || 0; DOCS = all.docs || []; NSTATE = all.notifyState || {};
       readTexts(r[2]);
       var saved = null; try { saved = JSON.parse(localStorage.getItem(DRAFT) || 'null'); } catch (e) { /* ignore */ }
       draft = clone(base); dirty = {};
@@ -71,7 +71,7 @@
     return ACC.call('all').then(function (a) {
       if (!a || !a.ok) return;
       var before = REQUESTS.filter(function (r) { return r.status === 'pending'; }).map(function (r) { return r.id; });
-      DEALS = a.deals || DEALS; EXPENSES = a.expenses || EXPENSES; SETTINGS = a.settings || SETTINGS; CUSTOMERS = a.customers || CUSTOMERS; REQUESTS = a.requests || REQUESTS; ACCOUNTS = a.accounts || ACCOUNTS; VISITORS = a.visitors || VISITORS; CALKEY = a.calKey || CALKEY; SENT = a.sentReports || SENT; SUPS = a.suppliers || SUPS; BACKUPAT = a.backupAt || BACKUPAT;
+      DEALS = a.deals || DEALS; EXPENSES = a.expenses || EXPENSES; SETTINGS = a.settings || SETTINGS; CUSTOMERS = a.customers || CUSTOMERS; REQUESTS = a.requests || REQUESTS; ACCOUNTS = a.accounts || ACCOUNTS; VISITORS = a.visitors || VISITORS; CALKEY = a.calKey || CALKEY; SENT = a.sentReports || SENT; SUPS = a.suppliers || SUPS; BACKUPAT = a.backupAt || BACKUPAT; DOCS = a.docs || DOCS; NSTATE = a.notifyState || NSTATE;
       var fresh = REQUESTS.filter(function (r) { return r.status === 'pending' && before.indexOf(r.id) < 0; });
       if (fresh.length) FS.toast('📥 בקשת הזמנה חדשה: ' + fresh.map(function (r) { return r.name + ' · ' + r.date; }).join(', '), 7000);
       badge(); if (onRefresh) onRefresh();
@@ -152,7 +152,7 @@
 
   /* ---------- the sections ---------- */
   var SECTIONS = [
-    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['requests', '📥', 'בקשות הזמנה'], ['calendar', '🗓️', 'יומן'], ['deals', '📑', 'עסקאות ותשלומים'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['tax', '🧮', 'רואה חשבון ומיסים'], ['expenses', '💸', 'הוצאות ורכישות'], ['suppliers', '🏪', 'ספקים'], ['customers', '👥', 'לקוחות'], ['licenses', '🔑', 'רישיונות סטודיו'], ['payset', '🏦', 'תשלום ובנק'],
+    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['requests', '📥', 'בקשות הזמנה'], ['calendar', '🗓️', 'יומן'], ['deals', '📑', 'עסקאות ותשלומים'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['tax', '🧮', 'רואה חשבון ומיסים'], ['expenses', '💸', 'הוצאות ורכישות'], ['suppliers', '🏪', 'ספקים'], ['docs', '📁', 'מסמכים'], ['notify', '🔔', 'התראות וסיכום שבועי'], ['customers', '👥', 'לקוחות'], ['licenses', '🔑', 'רישיונות סטודיו'], ['payset', '🏦', 'תשלום ובנק'],
     ['-', '', 'האתר'], ['biz', '🏷️', 'פרטי העסק'], ['texts', '✍️', 'טקסטים באתר'], ['packages', '💰', 'חבילות ומחירים'], ['faq', '❓', 'שאלות נפוצות'],
     ['reviews', '⭐', 'המלצות'], ['busy', '📅', 'תאריכים תפוסים'], ['frames', '🖼️', 'מסגרות ללקוחות'], ['events', '🎉', 'סוגי אירועים'],
     ['-', '', 'קישורים'], ['@./', '🌐', 'האתר ללקוחות'], ['@design.html', '🎨', 'עורך המסגרות ללקוחות'], ['@studio.html', '🖼️', 'הסטודיו'], ['@download.html', '⬇', 'דף ההורדה'], ['-', '', ''], ['backup', '💾', 'גיבוי וייצוא לאקסל'], ['account', '🔐', 'אבטחה וחשבון']
@@ -404,12 +404,24 @@
     deals: function () { return DEALS; }, setDeals: function (l) { DEALS = l; }, expenses: function () { return EXPENSES; }, setExpenses: function (l) { EXPENSES = l; },
     settings: function () { return SETTINGS; }, setSettings: function (s2) { SETTINGS = s2; }, customers: function () { return CUSTOMERS; }, site: function () { return draft; },
     head: head, input: input, esc: esc, reload: function () { show(sec); }, touchBusy: function (list) { draft.busy = list; touch('busy'); },
-    requests: function () { return REQUESTS; }, setRequests: function (l) { REQUESTS = l; }, accounts: function () { return ACCOUNTS; }, visitors: function () { return VISITORS; }, calKey: function () { return CALKEY; }, setCalKey: function (k) { CALKEY = k; }, sent: function () { return SENT; }, setSent: function (l) { SENT = l; }, suppliers: function () { return SUPS; }, setSuppliers: function (l) { SUPS = l; }, backupAt: function () { return BACKUPAT; }, setBackupAt: function (t) { BACKUPAT = t; },
+    requests: function () { return REQUESTS; }, setRequests: function (l) { REQUESTS = l; }, accounts: function () { return ACCOUNTS; }, visitors: function () { return VISITORS; }, calKey: function () { return CALKEY; }, setCalKey: function (k) { CALKEY = k; }, sent: function () { return SENT; }, setSent: function (l) { SENT = l; }, suppliers: function () { return SUPS; }, setSuppliers: function (l) { SUPS = l; }, backupAt: function () { return BACKUPAT; }, setBackupAt: function (t) { BACKUPAT = t; }, docs: function () { return DOCS; }, setDocs: function (l) { DOCS = l; }, notifyState: function () { return NSTATE; },
     refresh: refresh, onRefresh: function (fn) { onRefresh = fn; }, badge: function () { badge(); }, go: function (s2) { show(s2); }
   };
   VIEWS.licenses = function (m) { FS.adminLicenses(m, ctx); };
   VIEWS.tax = function (m) { FS.adminTax(m, ctx); };
   ['expenses', 'suppliers', 'backup'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminBuy[k](m, ctx); }; });
+  ['docs', 'notify'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminNotify[k](m, ctx); }; });
+  /* on the phone: one button to photograph a receipt or a document, from any screen */
+  (function () {
+    var fab = document.createElement('div'); fab.id = 'adm-cam'; fab.innerHTML = '<button class="adm-cam-b" aria-label="צילום קבלה או מסמך">📷</button><div class="adm-cam-m" hidden><button data-cam="expenses">🧾 קבלה / הוצאה</button><button data-cam="docs">📁 מסמך</button></div>';
+    document.body.appendChild(fab); setInterval(function () { fab.hidden = !ACC.isAdmin(); }, 1500); fab.hidden = !ACC.isAdmin();
+    fab.addEventListener('click', function (e) {
+      if (e.target.closest('.adm-cam-b')) { var mm = fab.querySelector('.adm-cam-m'); mm.hidden = !mm.hidden; return; }
+      var b = e.target.closest('[data-cam]'); if (!b || !ACC.isAdmin()) return;
+      fab.querySelector('.adm-cam-m').hidden = true; show(b.dataset.cam);
+      var inp = document.getElementById(b.dataset.cam === 'docs' ? 'dc-photo' : 'ex-photo'); if (inp) inp.click();   /* the camera opens in the same tap */
+    });
+  })();
   ['requests', 'calendar', 'deals', 'reports', 'customers', 'payset'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminBiz.view(k, m, ctx); }; });
 
   signIn();

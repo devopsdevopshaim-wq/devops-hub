@@ -1143,3 +1143,64 @@ New file `js/admin-buy.js` (`FS.adminBuy`). It replaces the old `V.expenses` vie
 **Other changes:** new menu items 🏪 ספקים and 💾 גיבוי וייצוא לאקסל; "הוצאות" renamed "הוצאות ורכישות".
 
 Tests: frame +10 (suppliers, purchase fields, receipt photos, backup mark). The xlsx was checked with openpyxl (no warnings).
+
+## Maton alerts, the Saturday-night summary, the Google Calendar, documents, and the phone (Oct 31, v87)
+
+New file `cloudflare/src/notify.mjs` (tests in `cloudflare/test/notify.test.mjs`, which runs in the deploy workflow). The owner's Maton key is the `MATON_API_KEY` secret: its own GitHub secret, or a `MATON_API_KEY …` line in SPIDER. The deploy masks it and passes it to the Worker. It is never in code or pages.
+
+**Maton:**
+- `maton(env, path, init)` calls `https://api.maton.ai` + `/app/...` with `Authorization: Bearer`, and tries `gateway.maton.ai` on 404 / 5xx / network failure.
+- Apps:
+  - Gmail: `/google-mail/gmail/v1/users/me/messages/send` with `raw` (base64url RFC 2822);
+  - Telegram: `/telegram/:token/sendMessage`; `getUpdates` finds the chat after the owner sends `/start`;
+  - Google Calendar: `/google-calendar/calendar/v3/calendars/primary/events`.
+- WhatsApp Business through Maton is paid (Meta), so it is not used (the owner refused paid messaging).
+
+**The two messages:**
+- `frameDaily(S, now)` is null when there is nothing worth sending. It covers:
+  - events today, tomorrow and in 7 days (time, venue, phone, balance);
+  - pending booking requests ("the date is not held until you approve"), with days to the event and days waited (⚠️ within a week);
+  - open quotes (no deposit) within 21 days;
+  - balances to collect within 7 days;
+  - documents expiring at 30, 14, 7, 3, 1 or 0 days;
+  - a backup more than 7 days old.
+- `frameWeekly(S, now, lic)`:
+  - the week that ended (Sunday … Saturday): events held, income from magnets + Optimus (`licWeek` on the main object), expenses, profit, new requests by status, Optimus leads, trials and open requests;
+  - the week ahead: events with balances, the total to collect, pending requests, open quotes, the 15th tax date (when relevant), and the backup.
+- `dealTotals` matches `admin-biz.js` (VAT only when `vatMode === 'plus'`).
+
+**Delivery and schedule:**
+- `notifyOwner` sends by Telegram (when `chatId` is set) and Gmail through Maton. When neither goes out, it falls back to the server's own `sendMail`.
+- `State.frameWatch(kind, preview)` on the frame object runs from the cron (every 2 h):
+  - the morning message at the first tick from 07:00 Israel time (`notifyMeta.day`);
+  - the weekly summary on Saturday from 20:00 (`notifyMeta.week`);
+  - the calendar every 6 h.
+- `calendarSync` keeps `calMap` (dealId → Google event id + hash): it creates events for deals that hold a date (from yesterday to 180 days ahead), patches changed ones, deletes cancelled or quote ones, and keeps past ones. Reminders are popups at 1440 and 180 minutes. Timed events use the Asia/Jerusalem time zone.
+- Admin actions reach `bizCall` as `notify-*`, owner only:
+  - `notify-status` (key set? and which apps answer);
+  - `notify-tg-find`;
+  - `notify-preview {kind}`;
+  - `notify-send {kind: daily | weekly | calendar}`.
+- Settings live in `settings.notify` {daily, weekly, calendar, gmail, telegram, email, chatId, chatName}.
+
+**Documents:**
+- `frame.mjs` actions `doc-save` / `doc-get` / `doc-del`:
+  - `doc:<id>` holds title, cat, date, expiry, note and size; `docimg:<id>` holds the image through `putBig`;
+  - images only, up to 2.5 MB, max 1500;
+  - renaming keeps the photo.
+- `all` returns `docs` and `notifyState`; `frameSnapshot(storage)` feeds the messages.
+
+**Admin** (`js/admin-notify.js`, `FS.adminNotify`):
+- 📁 מסמכים: camera or file, category, expiry, view, edit, delete.
+- 🔔 התראות וסיכום שבועי:
+  - Maton status per app and the connection steps;
+  - toggles, the email and Telegram "🔎 מציאת הצ׳אט שלי";
+  - preview and send-now for both messages, and calendar sync now.
+- The backup ZIP adds a `מסמכים/` folder, and `docs` is added to the JSON.
+
+**Phone** (≤ 820 px):
+- A floating 📷 button (`#adm-cam`) on every admin screen opens "🧾 קבלה / הוצאה" or "📁 מסמך" and starts the camera in the same tap.
+- The pulse bar shows only urgent items, or nothing.
+- No horizontal overflow on any screen at 390 px.
+
+Tests: notify 21, frame +7 (documents).
