@@ -1,189 +1,225 @@
 {
- "updatedAt": "2026-10-31T12:38:58.448Z",
+ "updatedAt": "2026-10-31T18:35:52.433Z",
  "feeds": {
   "main": [
    {
-    "title": "אחרי טורקיה, סעודיה ופקיסטן: השכנה של ישראל שוקלת מהלך דרמטי",
-    "link": "https://www.maariv.co.il/news/world/article-1383168",
-    "source": "מעריב",
-    "at": "2026-10-31T12:35:56.000Z"
-   },
-   {
-    "title": "ניידת ביטחון עירוני פגעה בנער על קורקינט והמשיכה בנסיעה",
-    "link": "https://www.walla.co.il/news/israel/383959546",
-    "source": "וואלה",
-    "at": "2026-10-31T11:05:52.000Z"
-   },
-   {
-    "title": "בעזה טוענים: ישראל נותנת למחבלי חמאס לבחור איך ימותו",
-    "link": "https://www.maariv.co.il/news/military/article-1383155",
-    "source": "מעריב",
-    "at": "2026-10-31T11:02:31.000Z"
-   },
-   {
-    "title": "\"סגן שר איראני בקטאר\", חמינאי בהצהרה לוחמנית: \"רק אנחנו נקבע מתי זה ייגמר\"",
-    "link": "https://www.ynet.co.il/news/article/bjvvis76gl",
+    "title": "קצין בכיר במשטרה נעצר: חשוד שתקף את אשתו הנכה והתעלל בה",
+    "link": "https://www.ynet.co.il/news/article/ryjvkj7azx",
     "source": "ynet",
-    "at": "2026-10-31T11:01:25.000Z"
+    "at": "2026-10-31T18:10:40.000Z"
    },
    {
-    "title": "\"סגן שר איראני בקטאר\", חמינאי בהצהרה לוחמנית: \"כל מטרות ישראל בטווח שלנו\"",
-    "link": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFBod3JTSHl5RHJ0TGgyZEFLMGFRUUM5eTBjNzdTZ1ZNS0hxY0hyNEJ2dmlfNGgxRVNpUnRvZ19uUWc3bGhiMnlfOTJPejZqYy1kN0NzQkQtcnlmUQ?oc=5",
-    "source": "YNET",
-    "at": "2026-10-31T11:01:25.000Z"
+    "title": "איזנקוט לא מחכה לממשלה - וחושף את הצעדים הבאים",
+    "link": "https://www.maariv.co.il/news/elections-2026/article-1383247",
+    "source": "מעריב",
+    "at": "2026-10-31T18:01:14.000Z"
    },
    {
-    "title": "האיום של ח'אמנאי: \"אם איראן תותקף - נגיב מיד ובעוצמה, ללא מגבלה גיאוגרפית\"",
-    "link": "https://news.google.com/rss/articles/CBMifEFVX3lxTE9YWkJmdnQ2Z01Db05ZRlZXQ3YwVXlRaDFLMU9UdU92bWpPQjE5RkdGUmJBanFBZXFqWTR2TFVsY1o4WWVPd1RzQjhuSXhnVlljbnBIc0tqdXJjOGFpX3BKT1VEYWp1cDJIUnFVRzc3TWNZVUhjaWEwQm84N3A?oc=5",
+    "title": "התעשייה האווירית נתנה לצרפתים עוד סיבה להתעצבן",
+    "link": "https://finance.walla.co.il/item/3874398",
+    "source": "וואלה",
+    "at": "2026-10-31T17:53:00.000Z"
+   },
+   {
+    "title": "בישראל מחממים מנועים לקראת בחירות האמצע: \"המו\"מ תקוע, איראן לא בדרך לפשרה\"",
+    "link": "https://www.ynet.co.il/news/article/hkinj5xtgl",
+    "source": "ynet",
+    "at": "2026-10-31T17:52:23.000Z"
+   },
+   {
+    "title": "\"הכדור שירו באלון היה עם מנגנון השהיה\": דודה של מור שמלי ז\"ל בריאיון",
+    "link": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9wUlNGbEhNYnVmLTdfaURtM0paQlZBa2g5a3ZiNmg0SE5RREpBLW0yYUhaWGJfZFBxYzE2TWpTLS0yVnQ4YzRsQVBmWnV1bGMwOTBXNjZaOVFuRFI1U0sySGhtQWFkUW1WSE9ZNlR5Y0o4c2J4WFdlQm5aczR6QQ?oc=5",
     "source": "mako",
-    "at": "2026-10-31T10:50:00.000Z"
+    "at": "2026-10-31T17:52:00.000Z"
    },
    {
-    "title": "מהלומה אפשרית באיראן: טראמפ ונתניהו לא חושבים על אותו הדבר",
-    "link": "https://www.ynet.co.il/news/article/hka00rqxpfe",
+    "title": "בש\"ס מעכלים את השפל בבחירות: דרעי יפרוש מהנהגת המפלגה?",
+    "link": "https://www.ynet.co.il/news/article/sjzmzo7pgx",
     "source": "ynet",
-    "at": "2026-10-31T10:40:20.000Z"
+    "at": "2026-10-31T17:50:46.000Z"
    },
    {
-    "title": "פריצת דרך: משלחת אמריקנית צפויה להצטרף לשיחות בדוחא",
-    "link": "https://www.walla.co.il/news/world/383959545",
+    "title": "מלשכת נתניהו למפכ\"ל: כך הפכה פרשת שוחד הבחירות לכלי פוליטי",
+    "link": "https://www.walla.co.il/news/opinions/383959573",
     "source": "וואלה",
-    "at": "2026-10-31T10:39:25.000Z"
+    "at": "2026-10-31T17:37:22.000Z"
    },
    {
-    "title": "\"דוקטורינת הדאחייה\" בדרך לבלפור? בטורקיה לומדים את איזנקוט - ונחרדים",
-    "link": "https://www.maariv.co.il/news/world/article-1383087",
-    "source": "מעריב",
-    "at": "2026-10-31T10:22:25.000Z"
-   },
-   {
-    "title": "צרפת שוב נערכת עם רבבות שוטרים ברחובות: \"סיכון גבוה מאוד להפרות סדר\"",
-    "link": "https://www.ynet.co.il/news/article/rjzdam7tmx",
+    "title": "איזנקוט מסביר: זה מה שאעשה עם \"הרוב הפרלמנטרי המובהק\" נגד נתניהו",
+    "link": "https://www.ynet.co.il/news/article/bysmrjq6gg",
     "source": "ynet",
-    "at": "2026-10-31T10:14:42.000Z"
+    "at": "2026-10-31T17:33:00.000Z"
    },
    {
-    "title": "בזמן שארדואן יוצא למלחמה למענם: ה\"בגידה\" השקטה של אבו מאזן שמסעירה את הטורקים",
-    "link": "https://www.maariv.co.il/news/world/article-1383090",
+    "title": "איזנקוט נפגש עם לפיד: \"דנו בתוצאות הבחירות ובתיאום מהלכים\"",
+    "link": "https://news.google.com/rss/articles/CBMigAFBVV95cUxOb2E3TmtfNE8zOHp4SDBnLUdZdUhOZ0hyM0lYNGtkdk1MakRHOWR6SUtJemJuLXlKYzNUWGpVRVlSM3JoZWo1WkR1cnZtX0xxTld6NXVjZVM5bEtkdmp6elczV25tSWhhMVM0aGNLMDYzUmltR3dOMGZVek9GVGI0Mg?oc=5",
+    "source": "mako",
+    "at": "2026-10-31T17:25:00.000Z"
+   },
+   {
+    "title": "ממשלת אחדות לא צריכה להתחיל בנתניהו | דן פרי",
+    "link": "https://www.maariv.co.il/news/opinions/article-1383232",
     "source": "מעריב",
-    "at": "2026-10-31T10:11:43.000Z"
+    "at": "2026-10-31T17:21:35.000Z"
    },
    {
-    "title": "כמה מהפנים החדשות והמפתיעות שמגיעות למשכן",
-    "link": "https://www.walla.co.il/news/politics/383959457",
-    "source": "וואלה",
-    "at": "2026-10-31T10:08:38.000Z"
-   },
-   {
-    "title": "נער התגרה עם קורקינט חשמלי, ניידת פיקוח פגעה בו - והמשיכה בנסיעה | תיעוד",
-    "link": "https://www.ynet.co.il/news/article/rjxuznqpgl",
+    "title": "גנבו כלי רכב של לוחם שב\"כ שנהרג ב-7/10 - בפעם השנייה: \"הקשר של הילדים לאבא\"",
+    "link": "https://www.ynet.co.il/news/article/bjtvr57pze",
     "source": "ynet",
-    "at": "2026-10-31T09:43:29.000Z"
+    "at": "2026-10-31T17:16:38.000Z"
    },
    {
-    "title": "בנק מטרות מעודכן ותגובה \"ללא גבולות\": מוג'תבא חמינאי מכין את צבא איראן למלחמה",
-    "link": "https://www.maariv.co.il/news/world/article-1383149",
-    "source": "מעריב",
-    "at": "2026-10-31T09:41:11.000Z"
-   },
-   {
-    "title": "אכלו בוטנים במשך חצי שנה - ובדם שלהם התגלה שינוי מפתיע",
-    "link": "https://www.walla.co.il/healthy/myhealth/383959533",
+    "title": "איזנקוט ולפיד נפגשו, ליברמן: \"אין לי רצון להיות יו\"ר הכנסת\"",
+    "link": "https://www.walla.co.il/news/politics/383959571",
     "source": "וואלה",
-    "at": "2026-10-31T09:35:34.000Z"
+    "at": "2026-10-31T17:12:04.000Z"
    },
    {
-    "title": "ההבטחה היחידה שאסור להפר",
-    "link": "https://www.walla.co.il/news/politics/383959509",
-    "source": "וואלה",
-    "at": "2026-10-31T09:28:56.000Z"
-   },
-   {
-    "title": "מרדף אחרי נער על קורקינט הסתבך - והתיעוד מעורר סערה",
-    "link": "https://www.maariv.co.il/news/law/article-1383147",
+    "title": "לבזוז עסקים יהודיים ולהחזיר את 1939: ההסתה שנחשפה באירופה",
+    "link": "https://www.maariv.co.il/news/world/article-1383230",
     "source": "מעריב",
-    "at": "2026-10-31T09:26:04.000Z"
+    "at": "2026-10-31T17:07:41.000Z"
    },
    {
-    "title": "\"להחזיר את המדינה שלנו\": המחאה שמתרחבת נגד ישראלים ביעד המבוקש",
-    "link": "https://www.maariv.co.il/news/world/article-1383144",
-    "source": "מעריב",
-    "at": "2026-10-31T08:59:09.000Z"
-   },
-   {
-    "title": "מצרים באזהרה דרמטית: \"הסבב הבא מול איראן יהיה הרסני יותר\"",
-    "link": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1sUW1JZ3ppaU53WldDbVhwSlBoeTNmWERyUW1NRWNWT0pfUUVnVVBmNjBsYVpMdlFoNkZ6bDVxQ09La2dfNlFFSjVSbVZqYUZZT0N5UWc2ak9LaWkzN0M0LVQtWmI1aXl6WUp1THZtQXRqN0pHdjNxWTctdXVoNHfSAYcBQVVfeXFMTUswTHpvaG5Sb1dNUEt2NXZqUno0T25pV2Y5RUhvcUp5Mmd3aTZtTVlHQjBpSU1DWHBVanV6OU1ESk91eXZVNEUwTjJDcy0zRGN1WUdKc1lGZFUwdXU0SUd3LW9OS2c5R2ZvbmpNQk0xOW43UEFMckk3ZE1laXhyZTY4NnJwdE53?oc=5",
-    "source": "היום",
-    "at": "2026-10-31T08:32:06.000Z"
-   },
-   {
-    "title": "נשיא פולין לא קיבל את המהלך בבית הדין - ובא בעצמו באמצע הלילה",
-    "link": "https://www.maariv.co.il/news/world/article-1383137",
-    "source": "מעריב",
-    "at": "2026-10-31T08:21:11.000Z"
-   },
-   {
-    "title": "הכיסא הריק בפסגה של ארדואן: בעל הברית הקרוב נשאר בבית",
-    "link": "https://www.walla.co.il/news/world/383959532",
-    "source": "וואלה",
-    "at": "2026-10-31T08:09:05.000Z"
-   },
-   {
-    "title": "תפנית מפתיעה בפרשת מדלן מקאן: המשטרה קיבלה בשורה קשה",
-    "link": "https://www.maariv.co.il/news/world/article-1383132",
-    "source": "מעריב",
-    "at": "2026-10-31T07:54:36.000Z"
-   },
-   {
-    "title": "החשש באירופה, התקווה ברמאללה ודילמת טראמפ: כך העולם נערך לפלונטר הישראלי",
-    "link": "https://www.ynet.co.il/news/article/h1fooszpgx",
+    "title": "מטייל נהרג בנחל בנגב, החשד: קרובת משפחה דרסה אותו בשוגג",
+    "link": "https://www.ynet.co.il/news/article/sj11rp5mtze",
     "source": "ynet",
-    "at": "2026-10-31T07:06:48.000Z"
+    "at": "2026-10-31T17:06:11.000Z"
    },
    {
-    "title": "יותר מכל בני ה-40 יחד: הנתון המדהים של לברון ג'יימס",
-    "link": "https://sports.walla.co.il/item/3874351",
-    "source": "וואלה",
-    "at": "2026-10-31T06:47:00.000Z"
-   },
-   {
-    "title": "דיווחים סותרים: בקטאר טענו ל\"פריצת דרך\" עם איראן; ארה\"ב למפרציות: התכוננו לשבוע הבא",
-    "link": "https://www.ynet.co.il/news/article/r1dlow76me",
+    "title": "בליכוד מקטינים סיכויים לממשלת אחדות - וההימור של איזנקוט",
+    "link": "https://www.ynet.co.il/news/article/hka0mqmpfe",
     "source": "ynet",
-    "at": "2026-10-31T06:30:52.000Z"
+    "at": "2026-10-31T17:04:28.000Z"
    },
    {
-    "title": "על מיטה מתקפלת במנהרה: תיעודים חדשים של מוחמד דף, הנייה וסינוואר",
-    "link": "https://www.maariv.co.il/news/military/article-1383118",
+    "title": "פגע בהולך רגל לפי החשד ונמלט – ואז הגיעה בדיקת הינשוף",
+    "link": "https://www.maariv.co.il/news/law/article-1383224",
     "source": "מעריב",
-    "at": "2026-10-31T06:20:42.000Z"
+    "at": "2026-10-31T16:46:55.000Z"
    },
    {
-    "title": "דיווח: טראמפ הודיע למפרציות להיערך לתקיפה באיראן יום לאחר בחירות האמצע",
-    "link": "https://news.google.com/rss/articles/CBMitwFBVV95cUxQeUNYQkI4N1oyUDdFb09oc3c4YWZKRGdTbzVyS0ZPeDY0RjlrWkduMjZpMGxFd0tPOERkNVRtUW85c3pOVkR3a2dkWU05WnFtekY4eGJyRkpGU2lWNGxSbTdEV1VEaU80WGh3ekgydHFRLTVvTXNwal9iU0VoMEJrS0djbGMwWmdIZWZqWVgweEFhZG9hdExpM3MwV2NEN3BHZmRTUmZYT1g0RFRUYk51dm1CUkRzb3c?oc=5",
-    "source": "הארץ",
-    "at": "2026-10-31T06:14:00.000Z"
-   },
-   {
-    "title": "נשארו על סף המשכן: הפנים המוכרות שנותרו מחוץ לכנסת ה-26",
-    "link": "https://www.walla.co.il/news/politics/383959461",
+    "title": "\"הרגו אותנו\": העיתון הרוסי שהתנגד לפוטין נסגר",
+    "link": "https://www.walla.co.il/news/world/383959568",
     "source": "וואלה",
-    "at": "2026-10-31T05:54:43.000Z"
+    "at": "2026-10-31T16:43:50.000Z"
    },
    {
-    "title": "בת לניצולי שואה בדרך לראשות האו\"ם? היהודייה שמובילה - והמועמד של ארדואן",
-    "link": "https://www.ynet.co.il/news/article/s1sz005z6gl",
+    "title": "משבר חוקתי בפולין: הנשיא קטע ביקור באפריקה, התעמת עם שופטים והכריז על התייעצויות חירום",
+    "link": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE15V0FLaTlsTThwNEsyeVNjem9sbzF0QUxuaVdrZ05wc0xFeV9xZlI1Nk04bXNZUmNNT1BzOFlsd2FzQW9mc1VVNw?oc=5",
+    "source": "אפוק",
+    "at": "2026-10-31T16:42:35.000Z"
+   },
+   {
+    "title": "מלחמה או הסכם: צה\"ל ערוך מול איראן - ומחכה להחלטה של טראמפ",
+    "link": "https://www.ynet.co.il/news/article/s1ecyympmg",
     "source": "ynet",
-    "at": "2026-10-31T04:36:32.000Z"
+    "at": "2026-10-31T16:35:02.000Z"
    },
    {
-    "title": "לפתוח את התנ\"ך, לפתוח את הלב | יונה ברטל",
-    "link": "https://www.maariv.co.il/news/opinions/article-1383103",
+    "title": "המנהיג העליון האיראני במסר לוחמני: \"רק אנחנו נקבע מתי זה ייגמר\"",
+    "link": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE1HRGtHOFlZYUlyYjIwOVNmeVhzTkV1X0dZbjlPMjI3enZGUGpNS29XQTN4cHlHcmVKMDVTU0o5TDJLYklMX2FlUUw1Vi1uMDZyTDdZ?oc=5",
+    "source": "הידברות",
+    "at": "2026-10-31T16:32:00.000Z"
+   },
+   {
+    "title": "המעורבות של לשכת נתניהו, המעצרים והחשד לשוחד: עושים סדר בפרשת רע\"מ",
+    "link": "https://www.maariv.co.il/news/law/article-1383205",
     "source": "מעריב",
-    "at": "2026-10-31T04:00:45.000Z"
+    "at": "2026-10-31T16:22:42.000Z"
+   },
+   {
+    "title": "זחאלקה על החשד להתערבות בבחירות: \"ההר הוליד עכבר\"",
+    "link": "https://news.google.com/rss/articles/CBMiggFBVV95cUxOdlo2d3ZqM0R1bnZfdnUycVZwWGZLMjhmS1VYTzNFcVlqRk5FYWVnZkdTU1BRdVlCbnJnU0pEZml5MmxBMlQ1Y0dtSDJZbzdpeGFZaFQ2SjJTMkpvZHVNaFZmX3gxejNCU2pTVEx4eElablAtUXJzV05YLTlTdFNNTDNR?oc=5",
+    "source": "כאן 11",
+    "at": "2026-10-31T16:07:14.000Z"
+   },
+   {
+    "title": "איראן ממשיכה לאיים בצל המו\"מ, חקירת הטיית הבחירות נמשכת",
+    "link": "https://news.google.com/rss/articles/CBMiS0FVX3lxTE85aVZIVEF3dUhRZE5jc0J3cFdKc1VoY3JHRE11VGtyc3JkQk9ELUZwR0RkRUdHVzZHLTJ4ai0yekNROVF0SkJmdy1CWQ?oc=5",
+    "source": "בחדרי חרדים",
+    "at": "2026-10-31T15:50:00.000Z"
+   },
+   {
+    "title": "אירוע דקירה בנתניה: גבר נפצע באורח קשה - סריקות נרחבות אחר החשוד",
+    "link": "https://www.maariv.co.il/news/law/article-1383200",
+    "source": "מעריב",
+    "at": "2026-10-31T15:35:20.000Z"
+   },
+   {
+    "title": "1,711 יום בנפרד: המפגש המרגש של בני הזוג מעיר המוקשים אחרי \"הפסקת האש של מלניה\"",
+    "link": "https://www.ynet.co.il/news/article/syqlf00mtgl",
+    "source": "ynet",
+    "at": "2026-10-31T15:35:03.000Z"
+   },
+   {
+    "title": "\"אין דרך אחרת\": הדרמה המשפטית בפולין - וחילופי ההאשמות בין ראשי המדינה",
+    "link": "https://www.ynet.co.il/news/article/hyjnaumtzx",
+    "source": "ynet",
+    "at": "2026-10-31T15:33:09.000Z"
+   },
+   {
+    "title": "שיעורי ההצבעה הגבוהים הם ה-7 באוקטובר של ערביי ישראל",
+    "link": "https://news.google.com/rss/articles/CBMiakFVX3lxTFBVSVowWEdELW5sREdjTmN0MzdPaS1SMUw5MFBCR0lDSHkzZDE5bTNTNGNiVXJSdXZwRERselBRbWRFMFJUbVNKenpQRk0wS0FGQVV2WlRhOXp1NlROajJoUW1oTmFCcWdMWWc?oc=5",
+    "source": "מקור ראשון",
+    "at": "2026-10-31T15:30:04.000Z"
+   },
+   {
+    "title": "חמאס בונה על החורף למהלך הבא נגד ישראל",
+    "link": "https://www.walla.co.il/news/military/383959559",
+    "source": "וואלה",
+    "at": "2026-10-31T15:29:41.000Z"
+   },
+   {
+    "title": "רוסיה: קיבלנו מארה\"ב התרעה על אירוע רב נפגעים במוסקבה",
+    "link": "https://www.walla.co.il/news/world/383959560",
+    "source": "וואלה",
+    "at": "2026-10-31T15:24:34.000Z"
+   },
+   {
+    "title": "ההצהרה הלוחמנית של חמינאי - והסוף הטרגי של מור, שבעלה נרצח לנגד עיניה במצרים | כותרות השבת",
+    "link": "https://www.ynet.co.il/news/article/rjj8bdq6gl",
+    "source": "ynet",
+    "at": "2026-10-31T15:20:41.000Z"
    }
   ],
   "tech": [
+   {
+    "title": "ריקושט של טירוף ה-AI: הפחד מפני התפוצצות הבועה טלטל את וול סטריט",
+    "link": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE5zc0NEOFQ0OTluVVMzbWhhcnVnR2dHMVZ6U3ExUFVVZ2U2cHdXX0ZwYWtMaFV6UlVDb1RkcGItb2dZanV4TVY0LXVDWVp1UkRvQ0M1YWVNMjlBTEVuOHJpMGx5MA?oc=5",
+    "source": "כלכליסט",
+    "at": "2026-10-31T17:33:00.000Z"
+   },
+   {
+    "title": "מתי באמת צריך AI ומתי עדיף קוד מסורתי? 3 אירועי טכנולוגיה מומלצים",
+    "link": "https://www.geektime.co.il/geek-events-1112026/",
+    "source": "גיקטיים",
+    "at": "2026-10-31T17:19:39.000Z"
+   },
+   {
+    "title": "חשש מכאוס: הפגנות הענק חזרו ללב אירופה",
+    "link": "https://news.google.com/rss/articles/CBMic0FVX3lxTFBZSUkzUE5LS1ZXOHYtd0VkTFBLTzRkN2c0UGF2ellOTWdRbm5NVkZHY25UeUJxOWkyUVpCS1ptQWlyanRiOF9Wa0Q5RWZyb1MtZmpGeW9rbGhGMG5MUWFTbl92QW1VVU9QbXVlQ05nWWNQMTA?oc=5",
+    "source": "mako",
+    "at": "2026-10-31T16:03:00.000Z"
+   },
+   {
+    "title": "שוד הקריפטו הגדול בהיסטוריה: סימני השאלה שמציפה פריצת הענק סביב תוכנית נתניהו",
+    "link": "https://news.google.com/rss/articles/CBMifEFVX3lxTFBDMEZRRFpRa0JvQTktWkcwSk4zZk56aG9GbVJWWE11eTE4cDlOaEVlV1k2aFNacktMTUh3VjNEYlNHRDRtZWxNeHYwVkRtZXJLNXBTZXlTb09HaU81VkVBVGxsTmtWdlVfYmdxdFpUQ1pTRC1vOFVrVk9aLTM?oc=5",
+    "source": "mako",
+    "at": "2026-10-31T14:47:00.000Z"
+   },
+   {
+    "title": "סטארטאפ ישראלי שנבנה כולו על ידי AI קיבל השקעה ממאור שלמה ומיכה קאופמן מ-fiverr",
+    "link": "https://www.geektime.co.il/plnty-is-out-of-stealth-with-a-check-from-base44-founder/",
+    "source": "גיקטיים",
+    "at": "2026-10-31T13:03:36.000Z"
+   },
+   {
+    "title": "המשטרה חוקרת אירוע חריג בפ\"ת שבו ניידת דרסה רוכב קורקינט",
+    "link": "https://news.google.com/rss/articles/CBMidEFVX3lxTE9sSDhnYWRGcUpNV01kX2JQWDdWVUU2U3g0S1RXRFpiYklhTXRXUDAwalRWZGRTWmk5VHJiQVNPTkVnQmUwbXFYNzBKcFVIWWViNnZHNUloNlNoVkNJdTR1Tk0ycVhvMERvMHVoUUVtNVNXQXc5?oc=5",
+    "source": "mako",
+    "at": "2026-10-31T11:51:00.000Z"
+   },
    {
     "title": "לוחם צה\"ל פיתח משחק יריות בעברית בהשראת הלחימה בעזה",
     "link": "https://www.geektime.co.il/nitzachon-video-game/",
@@ -204,15 +240,21 @@
    },
    {
     "title": "140 מיליארד דולר נמחקו: מה גרם למניית אינטל להתרסק בכמעט 30%?",
-    "link": "https://news.google.com/rss/articles/CBMickFVX3lxTFA3eS1yU3RrZmxtcUlZcEtJaUdCTHRNekU2ZVl2YzNFU2pycU94d3hnY2VZeWdEMktOcHBqVkd2V2w5eEthMU1oVHNjcVk2d1pPY3ZSWmJxaV9aOE5WQ0taV2FOd1ZKeC1aZHBaUVZTQ3J1Zw?oc=5",
+    "link": "https://www.geektime.co.il/intel-stock-crash-q3-2026-kiryat-gat/",
     "source": "גיקטיים",
-    "at": "2026-10-31T07:32:07.000Z"
+    "at": "2026-10-31T07:00:00.000Z"
    },
    {
-    "title": "הכסף ברח מה-AI ועבר לתוכנה, לנפט ולביטחון: המנצחות והמפסידות של אוקטובר הסוער בוול סטריט",
-    "link": "https://news.google.com/rss/articles/CBMicEFVX3lxTE9pM0pHd2RMYnlvNC0yczg2NlJueEZXRTNOdUktN1dBZ1Y1aGNrX2NmdzdESm5CMDFaMjJCMnVTS1RJT1I1QUZlUV9WQVd0M2F5NlY3U1BTS3prWmw4SFI3NXhFODlmNTNGdXItbUpqaUY?oc=5",
-    "source": "ביזפורטל",
-    "at": "2026-10-31T05:31:00.000Z"
+    "title": "מחקר ישראלי: האם גם דורבנים מתאבלים?",
+    "link": "https://news.google.com/rss/articles/CBMib0FVX3lxTFBxd2JPMVFDdnVlMWs5Y191UzBuRXFPZWY4c1F4R1FadENKS3RLbFN6WWpSR2Q4b3BpaUtWcV8wQi1JVjV4NzZ4bDZzTlhkbmVUdXE5SXFDR3dtS0xKUEhjVDVLdmt0eG1vcFMtemp4SQ?oc=5",
+    "source": "YNET",
+    "at": "2026-10-31T05:50:36.000Z"
+   },
+   {
+    "title": "למרות הצניחה במניית אינטל, יש לא מעט סיבות לאופטימיות",
+    "link": "https://news.google.com/rss/articles/CBMia0FVX3lxTE0xX080RjFCS2JFNS1QU1p0QndQVFc3NElOQ3F5WlhuU296Z2pvRmRFUW05OTlPYXNxVVA3X24zMU5ja1RjeFljSmlac2RzZHRoMm0tWWM4MEVFWGZHVVI5QWY0aDdkSHY3UXpR?oc=5",
+    "source": "כלכליסט",
+    "at": "2026-10-30T19:49:00.000Z"
    },
    {
     "title": "במערכת הביטחון מודאגים: רחפנים מועברים מישראל וממצרים לעזה - והופכים לנשק",
@@ -233,12 +275,6 @@
     "at": "2026-10-30T10:05:21.000Z"
    },
    {
-    "title": "דיווח: סייארה מבקשת לגייס לפי שווי של 20 מיליארד דולר - זינוק של 66% מיוני",
-    "link": "https://news.google.com/rss/articles/CBMia0FVX3lxTE1nUU54UG15WWdGUXFmVVhRMUgxZ3lnU3R2ay16VUlzdTRSNmxweDdVZG9iQXVkRHdfT2hwSFNKX3BXWjhKSmh4TVVHOUpFOWMxb0kyMHo3OGZCNG1HZWhGcXAwZXp2TTYtTzcw?oc=5",
-    "source": "כלכליסט",
-    "at": "2026-10-30T08:02:00.000Z"
-   },
-   {
     "title": "\"רוב סוגי הסרטן ייעלמו בתוך 10 שנים\": התחזית הדרמטית של ענק הטכנולוגיה",
     "link": "https://www.ynet.co.il/digital/technews/article/byfcj3wpme",
     "source": "ynet מחשבים",
@@ -251,16 +287,10 @@
     "at": "2026-10-30T06:40:36.000Z"
    },
    {
-    "title": "מנכ\"לית יאהו לשעבר חוזרת עם הימור חדש: סוכן AI לאמהות עסוקות",
-    "link": "https://news.google.com/rss/articles/CBMia0FVX3lxTE1XeWNQZlR3UXdTX3pDeHF2eXNSQVc3cEI0UTExOERKNW5TT0NVazE2WlpQNU1fY2FUb1JhZVNJV0tidXM4c3BYdjIzVGdPaWx3N2p6eUpYbHg1UG5jTkNtMnp0ODc1X1dCNDJj?oc=5",
-    "source": "כלכליסט",
-    "at": "2026-10-30T06:00:00.000Z"
-   },
-   {
-    "title": "פריצת הקריפטו הגדולה בהיסטוריה: בייננס איבדה 6.3 מיליארד דולר והביטקוין צולל",
-    "link": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5Ta25EUXBQUGpzODRxZDV3YnczN0VNcGoweUUzSTNIXy1BWXRSbFgySjd3OC1PV0VFQTBheVVadXFVT05CSXpJVmJVRE9MNmkxc3Z1dUtYTGVoOEF0UFE?oc=5",
-    "source": "YNET",
-    "at": "2026-10-30T04:39:27.000Z"
+    "title": "כמו כל הבורסה של ת\"א: הקיצוץ שמאיים על כולנו",
+    "link": "https://news.google.com/rss/articles/CBMic0FVX3lxTE1CdjNveWhkYVV6c0pzQzNRV1BHZ0lCYnhLeldDaTRCVU1yb3VxLUVQY0lUX21GWUhOOUNTeHZqYjJRcWVUb1RjbVc5V3o3Rnk2ZEpnNXlCbTQ1d3JTVWJlN21RVW9LTk5DXzN4RVlWTHgzS0k?oc=5",
+    "source": "mako",
+    "at": "2026-10-30T04:00:00.000Z"
    },
    {
     "title": "פרידה מהקפטן והפרופסור: פטריק סטיוארט הלך לעולמו",
@@ -273,12 +303,6 @@
     "link": "https://www.geektime.co.il/github-copilot-universe-2026-agents-guide/",
     "source": "גיקטיים",
     "at": "2026-10-29T17:12:21.000Z"
-   },
-   {
-    "title": "המצלמה תפסה אותו בנת\"צ, ובית המשפט זיכה אותו: המסמכים שהעירייה שכחה להגיש",
-    "link": "https://news.google.com/rss/articles/CBMifEFVX3lxTE1fS0xuNkZLZTItdTEyblRkbXNBQTlPTlVMcjFNMkhKSXVtM2R0REVoT3F3OTIxdzV4Y0VHTXJ5R1lrU096R3RkM3dHVERSeHc5cHlFdG9JUk5jNVdmcGcyVHBQTkZGTV9lMU1XTXdwV194U0VjVmdBa1RzcGo?oc=5",
-    "source": "mako",
-    "at": "2026-10-29T16:11:00.000Z"
    },
    {
     "title": "חצי טריליון דולר נמחקו ביממה: מה מפחיד כל-כך את המשקיעים של גוגל?",
@@ -311,18 +335,6 @@
     "at": "2026-10-29T11:29:56.000Z"
    },
    {
-    "title": "פיצ'ר המילוי האוטומטי של כרום משתדרג והולך לחסוך לכם הרבה זמן וטאבים פתוחים",
-    "link": "https://www.geektime.co.il/google-chrome-new-autofill/",
-    "source": "גיקטיים",
-    "at": "2026-10-29T08:28:02.000Z"
-   },
-   {
-    "title": "בדרך למהפכת אינטרנט בישראל: האם בקרוב נשלם פחות ונעבור בשנייה בין חברות?",
-    "link": "https://www.geektime.co.il/ministry-of-communications-internet-price-reform/",
-    "source": "גיקטיים",
-    "at": "2026-10-29T07:52:43.000Z"
-   },
-   {
     "title": "סטיב ג'ובס מתהפך בקברו: אפל חשפה מקבוק פרו חדש ויקר להחריד",
     "link": "https://www.ynet.co.il/digital/technews/article/rkipsugtml",
     "source": "ynet מחשבים",
@@ -333,12 +345,6 @@
     "link": "https://www.ynet.co.il/digital/technews/article/hyiksllafx",
     "source": "ynet מחשבים",
     "at": "2026-10-29T06:33:43.000Z"
-   },
-   {
-    "title": "תורים שלא היו, פתקים שלא הושחתו: השקרים שכבשו את הרשת ביום הבחירות",
-    "link": "https://www.ynet.co.il/digital/technews/article/sk401jjazg",
-    "source": "ynet מחשבים",
-    "at": "2026-10-28T16:40:44.000Z"
    }
   ]
  }
