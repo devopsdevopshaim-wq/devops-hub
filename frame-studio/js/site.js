@@ -243,7 +243,7 @@
     Object.assign(BIZ, b || {}); fill(); reviews(); texts();
     window.dispatchEvent(new CustomEvent('site:biz', { detail: BIZ })); window.SITE.ready = true;
     /* the magnets drawn on this page carry the published details, not whatever this browser saved */
-    FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}) });
+    FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}, { on: FS.creditOn ? FS.creditOn() : !!(FS.BIZ.credit && FS.BIZ.credit.on) }) });
   });
   Promise.all([bizLoaded, fontsFor(['Amatic SC', 'Bellefair', 'Suez One', 'Secular One', 'Varela Round', 'Frank Ruhl Libre', 'Rubik', 'David Libre', 'Heebo'])]).then(function () {
     galleryFilter(); gallery(''); designer();

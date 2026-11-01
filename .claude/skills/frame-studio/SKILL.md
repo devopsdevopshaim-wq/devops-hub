@@ -1404,3 +1404,18 @@ The owner could not print "4 on a sheet" at 7.5×10, did not see his printer, an
 - The preview labels each item's real size, and the summary names the paper and the magnet size.
 
 Checked: 4 photos sized 10×15 with "4 × 7.5×10 on 15×20" plan as 1 sheet of 4, each 75×100 mm; the same photos on 10×15 paper make 2 sheets of 2.
+
+## The business line ("LMagnet · 054-…") only when the owner adds it (Nov 1, v94)
+
+The owner saw his name and phone on every framed or printed photo without having asked for it.
+
+**Cause:** the business details loaded from the site (`business.js`, `design.js`, `site.js`, which merge `b.credit`) carried `credit.on` from the published data, and switched the line back on after the local v1 reset turned it off.
+
+**Fix** (`js/events.js`):
+- `FS.creditOn()` reads the local key `fs-credit-on` ('1' only when the owner turned it on on this computer). `FS.BIZ.credit.on` starts from it.
+- `FS.saveBiz` writes it.
+- All three merges now force `credit.on` from `FS.creditOn()`. The site's other details (name, phone, items, position) still come through.
+- `FS.applyCredit` still removes `biz` layers when the line is off, so new photos and frame changes come out clean.
+- The quick workspace's "🏷️ הוספת הפרטים" (explicit, on chosen photos) works as before.
+
+Checked: an old saved setting that was on, with no local choice, gives no line; turning it on adds the line; turning it off and reloading removes it.

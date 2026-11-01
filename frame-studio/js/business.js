@@ -11,7 +11,7 @@
   (FS.siteData ? FS.siteData() : fetch('business.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })).then(function (b) {
     delete b.__frames; delete b.__live; delete b.__taken;
     FS.BIZ_SITE = b;
-    if (!hasLocal) { ['name', 'owner', 'phone', 'whatsapp', 'email', 'instagram', 'facebook', 'website', 'tagline', 'areas', 'hours'].forEach(function (k) { if (b[k]) FS.BIZ[k] = b[k]; }); if (b.credit) FS.BIZ.credit = Object.assign({}, FS.BIZ.credit, b.credit); }
+    if (!hasLocal) { ['name', 'owner', 'phone', 'whatsapp', 'email', 'instagram', 'facebook', 'website', 'tagline', 'areas', 'hours'].forEach(function (k) { if (b[k]) FS.BIZ[k] = b[k]; }); if (b.credit) FS.BIZ.credit = Object.assign({}, FS.BIZ.credit, b.credit, { on: FS.creditOn() }); }
     syncQuick();
   });
   FS.afterAdd = FS.afterAdd || [];

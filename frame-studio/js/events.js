@@ -106,8 +106,11 @@
     credit: { on: false, items: ['name', 'phone'], pos: 'bottom', size: 3.2, color: 'auto', font: 'Heebo', opacity: 0.85 } };
   try { var savedBiz = JSON.parse(localStorage.getItem('frame-studio-biz') || 'null'); if (savedBiz) FS.BIZ = Object.assign({}, FS.BIZ, savedBiz, { credit: Object.assign({}, FS.BIZ.credit, savedBiz.credit || {}) }); } catch (e) { /* private mode */ }
   /* Oct 2026: the business line is no longer added to photos by default; the owner adds it when wanted (once, for everyone) */
-  try { if (!localStorage.getItem('fs-credit-off-v1')) { localStorage.setItem('fs-credit-off-v1', '1'); FS.BIZ.credit.on = false; if (savedBiz) localStorage.setItem('frame-studio-biz', JSON.stringify(FS.BIZ)); } } catch (e) { /* private mode */ }
-  FS.saveBiz = function () { try { localStorage.setItem('frame-studio-biz', JSON.stringify(FS.BIZ)); } catch (e) { /* private mode */ } };
+  /* Whether the business line goes on the photos is this computer's own choice ('fs-credit-on'), off unless the owner turned
+     it on here. The site's published details never turn it on (they used to, and the line came back on every photo). */
+  FS.creditOn = function () { try { return localStorage.getItem('fs-credit-on') === '1'; } catch (e) { return false; } };
+  FS.BIZ.credit.on = FS.creditOn();
+  FS.saveBiz = function () { try { localStorage.setItem('fs-credit-on', FS.BIZ.credit.on ? '1' : '0'); localStorage.setItem('frame-studio-biz', JSON.stringify(FS.BIZ)); } catch (e) { /* private mode */ } };
   function handle(u) { u = String(u || '').trim(); if (!u) return ''; var m = u.match(/instagram\.com\/([^/?#]+)/i); return '@' + (m ? m[1] : u.replace(/^@/, '')); }
   FS.creditText = function (b) {
     b = b || FS.BIZ; var c = b.credit || {}, parts = [];
