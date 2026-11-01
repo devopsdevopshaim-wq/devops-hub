@@ -1204,3 +1204,28 @@ New file `cloudflare/src/notify.mjs` (tests in `cloudflare/test/notify.test.mjs`
 - No horizontal overflow on any screen at 390 px.
 
 Tests: notify 21, frame +7 (documents).
+
+## The manager app for the phone (PWA), photos shared to it, and no Windows download on a phone (Nov 1, v88)
+
+The owner tried to open `FrameStudio-Setup.exe` (over 100 MB) on the phone. Instead, the admin is an installable app: no store, no big file, it updates itself.
+- **Install page:** `app.html` + `css/app.css` (https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/app.html):
+  - Android: the `beforeinstallprompt` button;
+  - iPhone: a Safari "הוסף למסך הבית" sheet;
+  - computer: a QR code (`vendor/qrcode.js`) to open the page on the phone.
+- **Manifest:** `admin.webmanifest`:
+  - "פריים ניהול", start `admin.html?app=1`, scope `./`, standalone, RTL;
+  - PNG icons `app-192.png`, `app-512.png`, `app-maskable-512.png`, plus `apple-touch-icon.png`;
+  - shortcuts to expenses, requests, documents and licences;
+  - `share_target` (POST multipart `photo`, image/*).
+- **Install bar:** `js/app-install.js`, on admin.html and app.html:
+  - registers `sw.js` (https only), handles the install prompt and the iOS help;
+  - on a phone outside the app, shows a small "📲 התקנה" bar after 4 s; ✕ hides it for 7 days;
+  - admin.html links the manifest and app.css, with apple meta tags (no inline script: the page's CSP allows only the self-heal hash).
+- **Share to app** (`sw.js`):
+  - a POST to `share-in.html` stores the file in cache `frame-share` (kept on activate) and redirects 303 to `admin.html?app=1&shared=1#expenses`;
+  - the expenses view takes it as the receipt photo (`shrink`), deletes it and cleans the URL;
+  - `share-in.html` itself only redirects (when the worker is not installed).
+- **Download page:** on a phone, `download.js` shows that Optimus is for Windows and, after the code, does not start the .exe download.
+- **Admin menu:** new link "📲 אפליקציה לטלפון".
+
+Checked with Chrome DevTools Protocol: `getAppManifest` and `getInstallabilityErrors` report no errors. On a Pixel 7 emulation, the share POST got the redirect and the photo arrived in the expense form.

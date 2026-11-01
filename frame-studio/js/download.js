@@ -16,6 +16,13 @@
   function err(t) { $('dl-err').textContent = t || ''; }
   function wa() { return 'https://wa.me/' + WA + '?text=' + encodeURIComponent('שלום, נרשמתי להורדת אופטימוס ולא קיבלתי קוד. ' + who.n + ' · ' + who.p + ' · ' + who.e); }
 
+  /* on a phone: אופטימוס is a Windows program (too big for a phone, and it does not run there) */
+  if (/Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)) {
+    var note = document.createElement('p'); note.className = 'dl-mobile';
+    note.textContent = '📱 אופטימוס מותקנת על מחשב Windows, לא בטלפון. נרשמים כאן מהטלפון, והקישור להורדה מגיע גם למייל, כדי לפתוח אותו מהמחשב.';
+    var hero = document.querySelector('.dl-two'); if (hero) hero.parentNode.insertBefore(note, hero);
+  }
+
   /* the purchase: prices, promotion, terms */
   call('lic-info').then(function (r) {
     if (!r || !r.ok) return;
@@ -54,7 +61,13 @@
     var b = $('dl-check'); b.disabled = true; err('');
     call('trial-verify', { email: who.e, code: c }).then(function (r) {
       b.disabled = false;
-      if (r.ok && r.url) { codef.hidden = true; $('dl-ready').hidden = false; $('dl-win').href = r.url; location.href = r.url; return; }
+      if (r.ok && r.url) {
+        codef.hidden = true; $('dl-ready').hidden = false; $('dl-win').href = r.url;
+        if (!/Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)) { location.href = r.url; return; }
+        /* a phone does not download the Windows file by itself: the same page, opened on the computer, does */
+        var p = $('dl-ready').querySelector('p'); if (p) p.textContent = '✔ אומת. ההורדה היא למחשב Windows: פותחים את הדף הזה במחשב (או את הקישור מהמייל) ומורידים שם.';
+        return;
+      }
       if (r.error === 'code-expired') { codef.hidden = true; form.hidden = false; }
       err(r.error === 'bad-code' ? 'הקוד לא נכון' + (r.left != null ? ' (נשארו ' + r.left + ' ניסיונות).' : '.') : MSG[r.error] || 'משהו השתבש. נסו שוב.');
     });
