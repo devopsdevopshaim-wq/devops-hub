@@ -427,3 +427,23 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 #mt .mt-pj.sel::after { content: '✓'; position: absolute; top: 3px; inset-inline-start: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--gold-grad, #E3C48A); color: #1A140B; font: 800 12px/18px 'Heebo', sans-serif; text-align: center; }
 #mt .mt-pj { position: relative; }
 .mp-pre { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; } .mp-pre .mt-btn { font-size: 12.5px; padding: 6px 10px; }
+/* the full editor: tools on the right, photos along the bottom (v95) */
+#mt .mt-view[data-view=design] { flex-direction: row; }
+#mt .mt-dside { width: 330px; flex: none; display: flex; flex-direction: column; min-height: 0; overflow: auto; padding: 10px 12px; background: linear-gradient(180deg, rgba(25,27,33,.97), rgba(18,19,24,.97)); box-shadow: 1px 0 0 var(--hair); }
+#mt .mt-dside .mt-dtools { border-top: 0; background: transparent; padding: 0; gap: 10px; flex: 1; display: flex; flex-direction: column; }
+#mt .mt-dside .mt-ptabs { justify-content: center; }
+#mt .mt-dside .mt-dgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#mt .mt-dside .mt-dsl { grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
+#mt .mt-dside .mt-dsl label { grid-template-columns: 70px 1fr; font-size: 13px; }
+#mt .mt-dside .mt-dacts { margin-top: auto; justify-content: center; position: sticky; bottom: -10px; background: rgba(18,19,24,.97); padding: 10px 0; }
+#mt .mt-dside .mt-row { flex-wrap: wrap; }
+#mt .mt-dz .mt-bstrip { width: auto; max-height: none; flex: none; flex-direction: row; align-items: center; gap: 10px; padding: 8px 12px; overflow-x: auto; overflow-y: hidden; border-top: 1px solid var(--hair); box-shadow: none; }
+#mt .mt-bstrip > * { flex: none; }
+#mt .mt-bstrip h4 { display: none; }
+#mt .mt-bstrip .mt-tree:empty, #mt .mt-bstrip .mt-files:empty { display: none; }
+#mt .mt-bstrip .mt-tree { max-height: 104px; min-width: 160px; }
+#mt .mt-bstrip .mt-files, #mt .mt-bstrip .mt-proj { display: flex; gap: 8px; }
+#mt .mt-bstrip .mt-proj .mt-pj, #mt .mt-bstrip .mt-files .mt-fi { width: 86px; flex: none; }
+#mt .mt-bstrip .mt-files .mt-btn { flex: none; }
+@media (max-width: 900px) { #mt .mt-view[data-view=design] { flex-direction: column-reverse; } #mt .mt-dside { width: auto; max-height: 40vh; } }
+#mt .mt-dz .mt-bstrip { padding-bottom: 20px; }

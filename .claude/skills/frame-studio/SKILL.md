@@ -1419,3 +1419,16 @@ The owner saw his name and phone on every framed or printed photo without having
 - The quick workspace's "🏷️ הוספת הפרטים" (explicit, on chosen photos) works as before.
 
 Checked: an old saved setting that was on, with no local choice, gives no line; turning it on adds the line; turning it off and reloading removes it.
+
+## The full editor: tools on the right, photos along the bottom (Nov 1, v95)
+
+The owner asked, in the quick workspace's "🖌️ עורך מלא", to swap the photo browser and the tools: the photos go down, the editing goes to the right side.
+
+`js/mate.js`: right after the workspace is built, an IIFE moves `.mt-dtools` (the tabs כללי / עצמים / חיתוך / כלים AI, the buttons, the sliders, save / print / undo) into a new `aside.mt-dside`, placed first in the design view (the right side in RTL). The `.mt-browser` (folder, tree, files, the "בעבודה" photos `#mt-proj`) moves to the end of `.mt-dz`, under the canvas and the info bar, as `.mt-bstrip`. No ids or handlers changed.
+
+`css/mate.css` (v95 block):
+- `.mt-dside` is 330 px wide, scrolls, has a 2-column button grid, sliders one per row, and the actions sticky at the bottom.
+- `.mt-bstrip` is a horizontal scrolling strip of 86 px thumbnails, with the "בעבודה" title hidden and room left for the version label.
+- Below 900 px the panel goes under the canvas.
+
+Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side panel edits and enables undo.
