@@ -285,7 +285,9 @@
   /* one AI design of the photo, not applied yet: an image the shape of the original, with .aiSource (who made it) */
   /* A result that lost the people (the photo had faces, the answer has none, or under half of a group) or that added people is
      never put on the photo: it is asked again, from the free engine with a new seed, then from the engine on this computer when
-     it is installed; when every try fails the error is 'lost-people' / 'extra-people'. The people are counted with
+     it is installed; when every try fails the owner sees the last answer and decides ("להחיל בכל זאת"), or, in a batch, the error
+     is 'lost-people' / 'extra-people'. Before an answer counts as lost, the face count is loosened for drawn faces and the
+     people are looked for as bodies too (FS.personCover, at least 35% of the original's). The people are counted with
      FS.mainFaces (clear faces, not small or false ones in the background), the same count the prompt is given.
      "👤 רק על אדם אחד" (FS.aiOnePerson, 'fs-ai-one'): on a photo with two or more people, one is chosen (a picker for a single
      photo, the largest face in a batch); only the area around that person goes to the AI, as a photo of one person, and only
@@ -306,16 +308,39 @@
     var local = FS.localAI && FS.localAI.isReady && FS.localAI.isReady(), plan = [engine];
     if (engine !== 'local') { plan.push(engine || 'free'); if (local) plan.push('local'); }
     p._n0 = n0;
+    var orig = FS.img(p.origSrc || p.src), cover0 = null;
+    function origCover() { if (cover0 == null) cover0 = FS.personCover ? FS.personCover(orig).catch(function () { return 0; }) : Promise.resolve(0); return cover0; }
+    /* the faces were not found in the answer: are the people still there as people (bodies)? drawn styles and small faces fool the face finder */
+    function bodiesKept(im) {
+      if (!FS.personCover) return Promise.resolve(false);
+      return Promise.all([origCover(), FS.personCover(im).catch(function () { return 0; })]).then(function (c) { return c[0] > 0.01 && c[1] >= Math.max(0.01, c[0] * 0.35); });
+    }
     function go(i) {
       return restyleOnce(p, prompt, plan[i]).then(function (im) {
         if (!n0 || !FS.countFaces) return im;
-        return FS.countFaces(im).catch(function () { return n0; }).then(function (n) {
+        return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
           var lost = !(n >= 1 && (n0 < 3 || n >= n0 * 0.5)), extra = n > (n0 <= 4 ? n0 : n0 + 1);
           if (!lost && !extra) return im;
-          if (window.console) console.warn('AI: the answer ' + (lost ? 'lost the people' : 'added people') + ' (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
-          if (i + 1 < plan.length) return go(i + 1);
-          throw new Error(lost ? 'lost-people' : 'extra-people');
+          return (lost ? bodiesKept(im) : Promise.resolve(false)).then(function (kept) {
+            if (kept) return im;
+            if (window.console) console.warn('AI: the answer ' + (lost ? 'lost the people' : 'added people') + ' (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
+            if (i + 1 < plan.length) return go(i + 1);
+            return ask(im, lost);
+          });
         });
+      });
+    }
+    /* not sure: the owner sees the answer and decides (in a batch, it is skipped as before) */
+    function ask(im, lost) {
+      if (batch || !FS.dialog) return Promise.reject(new Error(lost ? 'lost-people' : 'extra-people'));
+      return new Promise(function (ok, no) {
+        var body = FS.dialog('🤔 לא בטוח שהאנשים נשמרו', '<p>' + (lost ? 'לא זיהיתי בבירור את האנשים בתוצאה (קורה בסגנונות מצוירים ובתמונות שבהן האנשים קטנים).' : 'נראה שה־AI הוסיף אנשים לתמונה.') + ' הנה התוצאה. מחליטים בעצמכם:</p>' +
+          '<img src="' + im.src + '" alt="" style="display:block;max-width:100%;max-height:58vh;margin:8px auto;border-radius:10px">' +
+          '<div class="row2" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" data-ai-ok>✔ להחיל בכל זאת</button><button class="btn" data-ai-no>✕ לא להחיל</button></div>', true);
+        var done = false, dlg = document.getElementById('dlg');
+        body.querySelector('[data-ai-ok]').addEventListener('click', function () { done = true; FS.closeDialog(); ok(im); });
+        body.querySelector('[data-ai-no]').addEventListener('click', function () { done = true; FS.closeDialog(); no(new Error(lost ? 'lost-people' : 'extra-people')); });
+        if (dlg) dlg.addEventListener('close', function () { if (!done) no(new Error(lost ? 'lost-people' : 'extra-people')); }, { once: true });
       });
     }
     return go(0);
