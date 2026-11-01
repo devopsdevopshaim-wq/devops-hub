@@ -164,6 +164,15 @@
     if (sup) $('#ex-all').checked = true;
     fill(); prn(); draw();
     c.onRefresh(function () { fill(); draw(); });
+    /* a photo shared to the app (from the gallery or WhatsApp) waits in the offline worker's store: it becomes this expense's receipt */
+    if (/[?&]shared=1/.test(location.search) && window.caches) caches.open('frame-share').then(function (cs) {
+      return cs.match('shared-photo').then(function (r) {
+        if (!r) return; return r.blob().then(function (bl) {
+          cs.delete('shared-photo'); history.replaceState(null, '', location.pathname + '?app=1' + location.hash);
+          return shrink(bl).then(function (d) { photo = d; $('#ex-ph').innerHTML = '<img src="' + d + '" alt="" style="height:44px;border-radius:6px;vertical-align:middle"> ✔ התמונה ששיתפת מוכנה'; FS.toast('📷 התמונה ששיתפת מוכנה: ממלאים ספק, פריט וסכום ושומרים.', 6000); $('#ex-form').scrollIntoView({ behavior: 'smooth' }); });
+        });
+      });
+    }).catch(function () {});
   }
 
   /* ---------- suppliers ---------- */
