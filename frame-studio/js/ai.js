@@ -148,7 +148,24 @@
     var l = (faces || []).filter(function (f) { return (f.score == null ? 1 : f.score) >= 0.6; }), w0 = l.reduce(function (m, f) { return Math.max(m, f.w); }, 0);
     return l.filter(function (f) { return f.w >= w0 * 0.4; });
   };
-  FS.countFaces = function (im) { return FS.detectFaces(im).then(function (l) { return FS.mainFaces(l).length; }); };
+  FS.countFaces = function (im, loose) {
+    return FS.detectFaces(im).then(function (l) {
+      /* loose (an AI answer in a drawn style): drawn faces score lower, so a lower bar */
+      if (loose) l = l.map(function (f) { return Object.assign({}, f, { score: Math.min(1, (f.score == null ? 1 : f.score) + 0.2) }); });
+      return FS.mainFaces(l).length;
+    });
+  };
+  /* how much of a picture is people (0..1), from the person mask: a second opinion when a drawn answer's faces are not found */
+  FS.personCover = function (im) {
+    return getSegmenter().then(function (seg) {
+      var w0 = im.naturalWidth || im.width, h0 = im.naturalHeight || im.height, k = Math.min(1, 512 / Math.max(w0, h0)), c = FS.canvas(w0 * k, h0 * k);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      var res = seg.segment(c), f = res.confidenceMasks[0].getAsFloat32Array(), n = 0;
+      for (var i = 0; i < f.length; i++) if ((seg.multi ? 1 - f[i] : f[i]) > 0.5) n++;
+      if (res.close) res.close();
+      return n / f.length;
+    });
+  };
   /* place the faces in the frame's window: zoom so they read well, centre them, keep the window covered */
   FS.smartFit = function (p, quiet) {
     return FS.findFaces(p, quiet).then(function (faces) {

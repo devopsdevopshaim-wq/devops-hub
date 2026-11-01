@@ -1357,3 +1357,19 @@ Keeping and deleting:
   - Space marks or unmarks the focused photo; Enter opens it in the full editor;
   - PageUp/PageDown turn pages.
 - The bar stays on one line: the labels are shorter ("🔗 כל המסך יחד", "◧ לפני|אחרי"), and the grid has less padding so the photos are bigger.
+
+## An AI style is no longer thrown away when the people are small or drawn (Nov 1, v92)
+
+The owner's case: a full-length couple, far away (small faces), in a drawn style. The guard (v63) found no faces in the answer, tried every engine and refused with 'lost-people' every time. The drawn faces and small faces fooled the face finder; the people were there.
+
+`js/styles.js` `guarded()` now:
+- counts faces in the answer with `FS.countFaces(im, true)` (loose: +0.2 on each detection's score, for drawn faces);
+- before calling an answer "lost", looks for the people as bodies (`bodiesKept`): `FS.personCover(answer)` must be ≥ max(1 %, 35 % of the original's cover). If so, the answer is applied;
+- when the last try still looks wrong and it is not a batch, shows the answer in a dialog: "🤔 לא בטוח שהאנשים נשמרו" with "✔ להחיל בכל זאת" / "✕ לא להחיל". A batch still skips it as before. Only the last try asks.
+
+`js/ai.js`: new `FS.personCover(im)` (person-mask share, segmenter at 512 px); `FS.countFaces(im, loose)`.
+
+Checked on a synthetic far couple:
+- the original: 0 faces strict, 1 loose, cover 0.05;
+- posterised "drawn": cover 0.081, so it is kept;
+- an empty scene: cover 0, so it is caught.
