@@ -1254,3 +1254,87 @@ New file `js/wow.js` (`FS.livingPhoto(p)`; `FS.livingPrepare` and `FS.livingFram
 **The viewer** (full screen, `.wow`): mode buttons, ✕, and 🎬 which records 2 loops (12 s) with MediaRecorder from `captureStream(30)`, as mp4 (avc1) where supported, else webm, 9 Mbps. The file is `living-photo-<name>.mp4`.
 
 Checked in Chromium on `media/real/wedding-2.webp`: the layers separate cleanly, the pop-out works with the `w-wide` frame, and a 12 s MP4 of 7.4 MB was saved.
+
+## Eight wow features: the living magnet, the time capsule, the magic mirror, find me, open eyes, the live mosaic, the spoken greeting, colours from the invitation (Nov 1, v90)
+
+**Server** (`cloudflare/src/live.mjs`; tests in `cloudflare/test/magic.test.mjs`, which runs in the deploy workflow):
+
+Codes and files:
+- `studio-up` also takes:
+  - `code` (/^[a-z0-9]{10,16}$/, once per event; index `lcode:<e>:<code>` → magnet id);
+  - `mask` (the page's person mask, JPEG/PNG ≤600 KB → `lm:`);
+  - `from` (the guest photo: its name, text and voice are copied onto the magnet, so they outlive the 60-day purge).
+- `liveFile(storage, e, p, v, kind, c, k)`:
+  - by viewing key with kind '' / audio / mask / hero / cap;
+  - or by the magnet's own code with k = img / mask / audio.
+- The worker reads `frame-live-img` with `a=1`, `m=1`, `h=1`, `cap=1`, or `c=&k=`.
+
+Public actions:
+- `magic` {e, c} gives the magnet's guest name, text, audio and mask flag (or `pending`), the title, `capsuleOpens` and the business. No event key is ever returned.
+- `capsule-put` {e, c, name, text, audio}:
+  - needs a real code; closed once the capsule opens;
+  - stored as `lc:` + `lca:`; at most 3000 per event; rate-limited like `guest-up`.
+- `capsules` {e, v}: before `capsuleOpens(ev)` (event date + 1 year) only the count; after it, every message, with voice via `cap=1`.
+- `find` {e, v, d}: ranks the photos by their closest face signature (RMS over int8) and returns up to 40, skipping hidden ones.
+
+Owner actions:
+- `ev-hero` (`lh:`, `ev.hero`; `feed` reports `hero` and `faces`).
+- `faces` {items: [{p, f: [sig…]}]} → `lf:<e>` JSON via `putBig`, `ev.n.faces`.
+- `ev-get` returns `faced`.
+
+Keeping and deleting:
+- The 60-day purge (`dropPhotos(…, false)`) keeps magnets that have a code. They go after `MAGIC_DAYS` = 400.
+- On the capsule's day the couple gets the email "💌 שנה לאירוע" (cron `kind: 'capsule'`, sent by `liveTick`) linking `capsule.html?e=&v=`. Capsules are deleted 120 days after opening.
+- `ev-del` removes everything (`dropPhotos(…, true)` + capsules + hero).
+
+**Shared craft:** `js/magic-core.js` (`window.MagicCore`): alpha, fillBehind (push-pull), cut, centroid, dots, sheen, swing, `layers(img, mask)`, `magnetFrame(ctx, L, t, tilt)`. `wow.js` now uses it.
+
+**1. The living magnet**
+- In the station, the option "✨ מגנט חי" (`cfg.magic`, on by default) calls `FS.magicTag(p, ev)`:
+  - a new code, and an `image` layer `magicQr` with the QR for `m.html?e=&c=` (`siteBase`);
+  - placed in the frame's bottom margin, else the left margin, else inside the photo's corner (15 % of the short side).
+- On `print-job`, a living magnet always goes up, even when the station is off. Its `pageMask` is the person mask on the page, black under the frame (`noPhoto` overlay), JPEG 0.8.
+- The button "✨ QR חי לתמונה הזו" tags the current photo.
+- `m.html` + `js/magic.js` + `css/magic.css`:
+  - "✨ לחצו כדי להעיר את המגנט": the person comes forward with gold light and the guest's voice plays;
+  - 3D by tilt or mouse; 🎬 a 12 s video, shared with `navigator.share` when possible;
+  - the capsule form (text or voice up to 30 s); a call to action for the business.
+- `live-common.js` now reads `c` from the URL.
+- The QR decodes at full print resolution (checked with jsQR).
+
+**2. The time capsule:** `capsule.html` + `js/capsule.js`. Before the date it shows the count; after it, the messages with their voices.
+
+**3. The magic mirror:** `mirror.html` + `js/mirror.js` + `css/mirror.css`.
+- The camera, with live selfie segmentation (VIDEO mode, GPU then CPU).
+- Backgrounds: none, blurred, gold lights, night, pastel, or your own photo.
+- The magnet frame comes from the studio's photo: `localStorage` `fs-mirror-frame`, and `postMessage({mirrorFrame})` for the desktop program's other origin.
+- 3-2-1 and a flash. The photo is saved unmirrored and without the frame (the station applies the event's design), then sent with `guest-up` named "🪞 מראה קסם".
+- Studio button "🪞 מראה קסם".
+
+**4. Find me:**
+- `js/faces.js` (`window.FaceSig`): FaceLandmarker with 12 faces. The signature is 150 log-ratios of 3D distances between 21 rigid points (rotation-invariant), plus 12 colour bytes (forehead, cheek, hair, lips) = 162 bytes in base64.
+- Studio:
+  - `FS.faceIndex(p, ev, id)` runs after each guest photo is taken and after each `studio-up`;
+  - "🔍 מצא אותי" (`FS.faceIndexEvent`) indexes the rest of the event.
+- The album has a "🔍 מצא אותי" tab when `feed.faces` is set: a selfie → `FaceSig.selfie` → `find`.
+- Test: 20 transformed probes all matched their own photo first (distance 1–3 against 3–10).
+
+**5. Open eyes:** `js/eyes.js`, `FS.openEyes(p, donors)`, button `[data-open-eyes]` in the AI pane.
+- An eye counts as closed when the lid gap is under 13 % of the eye's width.
+- The same person in a donor is found by a similarity fit on 9 stable points (residual < 0.12 of the eye distance), and the donor's eye must be open (> 0.2).
+- The donor is warped with a least-squares similarity on corners, brow, nose bridge and cheek, colour-matched to the skin under the eye, and blended through a feathered ellipse.
+- Donors are the marked photos, or the strip neighbours ±4. The original stays in `origSrc` / `aiPrev`, so "↩ ביטול AI" undoes it.
+
+**6. The live mosaic:**
+- `js/mosaic.js` on `wall.html?…&mosaic=1` (`wall.js` steps aside).
+- The grid follows the hero photo's shape. Early photos take several cells; every new photo flies in.
+- The hero shows through as the grid fills. The reveal comes on "R" / "💞 חשיפה", or automatically when the grid is full with at least 20 photos, with the title and a sheen.
+- Studio buttons: "💞 תמונת הזוג לפסיפס" (`ev-hero` from the current photo) and "🧩 פסיפס חי".
+
+**7. The spoken greeting:**
+- `live-guest.js` runs `SpeechRecognition` (he-IL) while recording the voice greeting, and fills the text if it is empty.
+- The station option "✍️ הברכה של האורח בכתב יד על המגנט" (`cfg.wish`, `addWish`) adds an Amatic SC text layer `wishLayer`, up to 3 lines plus the name.
+
+**8. Colours from the invitation:** `js/palette.js`, under "צבע המסגרת".
+- From the invitation file or the current photo, k-means finds 6 swatches.
+- A tap sets the generated frame's colour (through `#frame-color`'s input handler) and, optionally, the texts (not `wishLayer`).

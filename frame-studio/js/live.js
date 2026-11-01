@@ -62,12 +62,19 @@
         '<div class="lv-links"><button class="btn primary" id="lv-sign">🖨️ שלט QR לשולחנות</button><button class="btn" id="lv-wall">📺 מסך ענק לאולם</button>' +
         '<button class="btn" id="lv-guest">🔗 קישור לאורחים</button><button class="btn lv-owner" id="lv-album">💞 האלבום של הזוג</button>' +
         '<button class="btn lv-owner" id="lv-photos">🗂️ ניהול התמונות</button><button class="btn lv-owner" id="lv-send">💬 אלבום + המלצה לזוג</button></div>' +
+        '<div class="lv-links lv-wow"><button class="btn" id="lv-mirror" title="מצלמה באירוע: האורחים רואים את עצמם בתוך המגנט, עם רקע לבחירה, ומצלמים להדפסה">🪞 מראה קסם</button>' +
+        '<button class="btn" id="lv-mosaic" title="על המסך הגדול נבנית תמונת הזוג מכל התמונות של האורחים">🧩 פסיפס חי</button>' +
+        '<button class="btn lv-owner" id="lv-hero" title="התמונה שעל המסך עכשיו תהיה תמונת הפסיפס">💞 תמונת הזוג לפסיפס' + (ev.hero ? ' ✓' : '') + '</button>' +
+        '<button class="btn lv-owner" id="lv-faces" title="מכין את &quot;מצא אותי&quot; באלבום: מאתר פנים בכל תמונות האירוע">🔍 מצא אותי' + (ev.n && ev.n.faces ? ' (' + ev.n.faces + ')' : '') + '</button>' +
+        '<button class="btn" id="lv-qr1" title="QR חי על התמונה שעל המסך">✨ QR חי לתמונה הזו</button></div>' +
         '<label class="check lv-owner"><input type="checkbox" id="lv-open"' + (ev.open ? ' checked' : '') + '> האורחים יכולים לשלוח תמונות</label>' +
         '<p class="lv-dz">' + (ev.design ? '🎨 המגנט של האירוע: <b>' + esc(ev.design.name || ev.design.email) + '</b> (העיצוב של הלקוח)' : '🎨 עוד לא נבחר עיצוב לקוח למגנט') + '</p></div>' +
       '<div class="card lv-card"><h3>🖨️ העמדה</h3>' +
         '<div class="row2"><div class="field"><label>שם העמדה</label><input id="lv-station" maxlength="30" value="' + esc(cfg.station) + '"></div>' +
         '<div class="field"><label>הדפסה</label><select id="lv-per"><option value="one">כל תמונה מיד</option><option value="2">2 בדף</option><option value="4">4 בדף</option><option value="fill">כמה שנכנס בדף</option></select></div></div>' +
         '<label class="check"><input type="checkbox" id="lv-auto"' + (cfg.auto ? ' checked' : '') + '> הדפסה אוטומטית כשמגיעה תמונה</label>' +
+        '<label class="check"><input type="checkbox" id="lv-magic"' + (cfg.magic !== false ? ' checked' : '') + '> ✨ מגנט חי: QR קטן על כל מגנט. בבית סורקים, והמגנט מתעורר עם הברכה, וקפסולת זמן לזוג</label>' +
+        '<label class="check"><input type="checkbox" id="lv-wish"' + (cfg.wish ? ' checked' : '') + '> ✍️ הברכה של האורח בכתב יד על המגנט</label>' +
         '<p class="lv-copies">' + (ev.copies > 1 ? '🧲🧲 הדפסה כפולה: מגנט לאורח ועוד אחד לאלבום של הזוג' : '🧲 מגנט אחד לכל תמונה') + ' <button class="btn small lv-owner" id="lv-dbl">' + (ev.copies > 1 ? 'רק אחד' : 'הדפסה כפולה') + '</button></p>' +
         '<div class="lv-tpl"><button class="btn small" id="lv-tpl">🎯 העיצוב של התמונה שעל המסך לכל תמונה של אורח</button>' + (cfg.tpl || cfg.tplFrame ? '<span>✓ יש עיצוב קבוע' + (cfg.tplFrame && !cfg.tpl ? ' (של הלקוח)' : '') + ' <button class="btn small" id="lv-tpl-x">ביטול</button></span>' : '<span class="hint">בלי עיצוב קבוע: התמונה נכנסת כמו שהיא</span>') + '</div>' +
         '<button class="btn wide ' + (run.on ? '' : 'primary') + '" id="lv-run">' + (run.on ? '⏹ עצירת העמדה' : '▶ הפעלת העמדה') + '</button>' +
@@ -96,6 +103,25 @@
     on('#lv-station', function () { cfg.station = this.value.trim() || 'עמדה 1'; keep(KS, cfg); }, 'change');
     var per = $('#lv-per', pane); if (per) { per.value = cfg.per; per.addEventListener('change', function () { cfg.per = this.value; keep(KS, cfg); }); }
     on('#lv-auto', function () { cfg.auto = this.checked; keep(KS, cfg); if (cfg.auto) maybePrint(); }, 'change');
+    on('#lv-magic', function () { cfg.magic = this.checked; keep(KS, cfg); }, 'change');
+    on('#lv-mirror', function () {
+      var p = FS.cur(), F = null;
+      if (p) { var k = Math.min(1, 1400 / Math.max(p.doc.w, p.doc.h)), c = FS.canvas(p.doc.w * k, p.doc.h * k), H = FS.hole(p.doc);
+        FS.draw(c.getContext('2d'), p, { scale: k, transparent: true, noPhoto: true, export: true });
+        F = { src: c.toDataURL('image/png'), w: c.width, h: c.height, hole: { x: H.x * k, y: H.y * k, w: H.w * k, h: H.h * k } }; try { localStorage.setItem('fs-mirror-frame', JSON.stringify(F)); } catch (e) { /* full */ } }
+      var w = window.open(link('mirror.html', 'k', ev.k), '_blank');
+      if (w && F) [800, 2000, 4000].forEach(function (ms) { setTimeout(function () { try { w.postMessage({ mirrorFrame: F }, '*'); } catch (e) { /* closed */ } }, ms); });
+      FS.toast('🪞 המראה נפתחה עם המסגרת של התמונה שעל המסך. מומלץ טאבלט או מחשב עם מצלמה, במסך מלא.', 6000);
+    });
+    on('#lv-mosaic', function () { window.open(wallUrl() + '&mosaic=1', '_blank'); if (!ev.hero) FS.toast('💡 בוחרים קודם "תמונת הזוג לפסיפס" (התמונה שעל המסך).', 6000); });
+    on('#lv-hero', function () {
+      var p = FS.cur(); if (!p) return FS.toast('פותחים את תמונת הזוג על המסך');
+      var k = Math.min(1, 1400 / Math.max(p.doc.w, p.doc.h)), c = FS.renderFull(p, k, false);
+      api('ev-hero', { e: ev.id, img: c.toDataURL('image/jpeg', 0.88).split(',')[1] }).then(function (r) { if (!r.ok) return FS.toast(err(r)); ev.hero = true; draw(); FS.toast('💞 תמונת הזוג לפסיפס נשמרה. "🧩 פסיפס חי" פותח אותו למסך הגדול.', 6000); });
+    });
+    on('#lv-faces', function () { if (FS.faceIndexEvent) FS.faceIndexEvent(ev, imgUrl); });
+    on('#lv-qr1', function () { var p = FS.cur(); if (!p) return FS.toast('פותחים תמונה'); FS.magicTag(p, ev).then(function () { FS.toast('✨ נוסף QR חי. כשהיא מודפסת בזמן שהעמדה פעילה, המגנט מתעורר בסריקה.', 6000); }); });
+    on('#lv-wish', function () { cfg.wish = this.checked; keep(KS, cfg); }, 'change');
     on('#lv-tpl', function () { var p = FS.cur(); if (!p) return FS.toast('פותחים קודם תמונה עם העיצוב הרצוי (מסגרת, גודל, טקסט)'); cfg.tpl = JSON.parse(JSON.stringify(p.doc)); cfg.tplFrame = null; keep(KS, cfg); FS.toast('🎯 כל תמונה חדשה של אורח תקבל את העיצוב הזה', 4000); draw(); });
     on('#lv-tpl-x', function () { cfg.tpl = null; cfg.tplFrame = null; keep(KS, cfg); draw(); });
     on('#lv-run', function () { if (run.on) stop(); else start(); });
@@ -273,11 +299,81 @@
       if (cfg.tpl) {
         try { var d = JSON.parse(JSON.stringify(cfg.tpl)); p.doc = d; FS.fitPhoto(p.doc, FS.img(p.src)); FS.snap(p); } catch (e) { /* keeps its own design */ }
       } else if (cfg.tplFrame && FS.USER_FRAMES && FS.USER_FRAMES[cfg.tplFrame]) putDesign(p, cfg.tplFrame);
+      if (cfg.wish && (ph.text || '').trim()) addWish(p, ph.text, ph.name);
+      return (cfg.magic !== false ? FS.magicTag(p, ev) : Promise.resolve()).catch(function () { /* printed without the QR */ }).then(function () { return p; });
+    }).then(function (p) {
       run.got++; run.queue.push(p);
+      if (FS.faceIndex) FS.faceIndex(p, ev);   /* "find me": this photo's faces, in the background */
       FS.buildStrip(); FS.select(S.photos.indexOf(p));
       FS.toast('📸 תמונה חדשה' + (ph.name ? ' מ' + ph.name : '') + (ph.text ? ' · 💌 עם ברכה' : ''), 3000);
     }).catch(function () { api('mark', { e: ev.id, ids: [ph.id], st: 'new' }); });
   }
+  /* ✨ the living magnet: a small QR with the magnet's own code. At home the guest scans it and the magnet wakes up (m.html):
+     the person comes out of it in 3D, with their greeting, and a time capsule for the couple. The code goes up with the magnet. */
+  function newCode() { var a = new Uint8Array(12); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (x) { return 'abcdefghijkmnpqrstuvwxyz23456789'[x % 32]; }).join(''); }
+  FS.magicTag = function (p, e) {
+    e = e || ev; if (!p || !e) return Promise.resolve();
+    var d = p.doc; d.layers = (d.layers || []).filter(function (L) { return !L.magicQr; });
+    p.magicCode = newCode(); p.magicEv = e.id;
+    return FS.qrCanvas(siteBase + 'm.html?e=' + e.id + '&c=' + p.magicCode, 700).then(function (qc) {
+      var src = qc.toDataURL('image/png');
+      return FS.loadImg(src).then(function () {
+        var H = FS.hole(d), side = Math.min(d.w, d.h), q = side * 0.15, gap = side * 0.012;
+        var below = d.h - (H.y + H.h), left = H.x, x, y, sz;
+        if (below >= q * 0.9) { sz = Math.min(q, below - gap * 2); x = gap + sz / 2 + Math.max(0, left - sz) / 2; y = H.y + H.h + below / 2; }
+        else if (left >= q * 0.9) { sz = Math.min(q, left - gap * 2); x = left / 2; y = d.h - gap - sz / 2; }
+        else { sz = q * 0.9; x = H.x + gap + sz / 2; y = H.y + H.h - gap - sz / 2; }
+        d.layers.push({ id: FS.uid(), type: 'image', src: src, s: sz / qc.width, x: x, y: y, r: 0, magicQr: true });
+        if (FS.render) FS.render();
+      });
+    });
+  };
+  /* the guest's written greeting on the magnet, in a hand-written font */
+  function addWish(p, text, name) {
+    var d = p.doc, H = FS.hole(d), words = String(text).trim().split(/\s+/), lines = [], cur = '';
+    words.forEach(function (w) { if ((cur + ' ' + w).trim().length > 26 && cur) { lines.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); });
+    if (cur) lines.push(cur); lines = lines.slice(0, 3); if (name) lines.push('— ' + String(name).slice(0, 24));
+    var size = Math.min(d.w, d.h) * 0.06;
+    d.layers = (d.layers || []).filter(function (L) { return !L.wishLayer; });
+    d.layers.push({ id: FS.uid(), type: 'text', text: lines.join('\n'), font: 'Amatic SC', weight: 700, size: size, color: '#ffffff', shadow: true, align: 'center', x: H.x + H.w / 2, y: H.y + H.h - size * (lines.length * 0.62 + 0.5), r: 0, wishLayer: true });
+  }
+  /* the magnet's person, on the page: white where the person is, black elsewhere and under the frame (for the living magnet) */
+  function pageMask(p, k, w, h) {
+    return FS.ensureMask(p).then(function (mask) {
+      if (!mask || (p.maskCover || 0) < 0.02) return null;
+      var d = p.doc, im = FS.img(p.src), m = FS.photoMatrix(d, im), mc = FS.canvas(w, h), x = mc.getContext('2d');
+      x.fillStyle = '#000'; x.fillRect(0, 0, w, h);
+      x.save(); x.scale(k, k); var fo = d.frame && FS.frameOf(d.frame, d); if (fo && fo.clip) { fo.clip(x, FS.hole(d)); x.clip(); }
+      x.translate(m.x, m.y); x.rotate(m.r); x.scale(m.s * m.fh, m.s * m.fv); x.drawImage(mask, -m.iw / 2, -m.ih / 2, m.iw, m.ih); x.restore();
+      var over = FS.canvas(w, h), ox = over.getContext('2d'); FS.draw(ox, p, { scale: k, transparent: true, noPhoto: true, export: true });
+      ox.globalCompositeOperation = 'source-in'; ox.fillStyle = '#000'; ox.fillRect(0, 0, w, h); x.drawImage(over, 0, 0);
+      return mc.toDataURL('image/jpeg', 0.8).split(',')[1];
+    }).catch(function () { return null; });
+  }
+  /* 🔍 "find me": the faces in each photo of the event, as short signatures (FaceSig), for the album's search by selfie */
+  FS.faceIndex = function (p, e, id) {
+    var im = FS.img(p.origSrc || p.src); id = id || p.liveId; if (!im || !id || !e || !window.FaceSig) return Promise.resolve();
+    return FaceSig.describe(im).then(function (f) { return api('faces', { e: e.id, items: [{ p: id, f: f }] }); }).catch(function () { /* no faces read: the search skips it */ });
+  };
+  FS.faceIndexEvent = function (e, url) {
+    if (!window.FaceSig) return;
+    FS.busy('מכין את "מצא אותי"…');
+    api('ev-get', { e: e.id }).then(function (r) {
+      if (!r.ok) { FS.busy(); return FS.toast(err(r)); }
+      var done = {}; (r.faced || []).forEach(function (x) { done[x] = 1; });
+      var todo = (r.photos || []).filter(function (m) { return !done[m.id] && m.st !== 'hidden'; }), n = 0, batch = [];
+      if (!todo.length) { FS.busy(); return FS.toast('✔ כל התמונות כבר מוכנות לחיפוש (' + (r.faced || []).length + ').', 5000); }
+      function send() { if (!batch.length) return Promise.resolve(); var b = batch; batch = []; return api('faces', { e: e.id, items: b }).then(function (x) { if (x && x.ok) { ev.n = ev.n || {}; ev.n.faces = x.n; } }); }
+      return todo.reduce(function (ch, m) {
+        return ch.then(function () { return url(m.id); }).then(function (u) {
+          return new Promise(function (ok) { var i = new Image(); i.crossOrigin = 'anonymous'; i.onload = function () { ok(i); }; i.onerror = function () { ok(null); }; i.src = u; });
+        }).then(function (i) {
+          n++; FS.busy('מצא אותי: ' + n + ' / ' + todo.length);
+          return i ? FaceSig.describe(i).then(function (f) { batch.push({ p: m.id, f: f }); }, function () {}) : null;
+        }).then(function () { return batch.length >= 10 ? send() : null; });
+      }, Promise.resolve()).then(send).then(function () { FS.busy(); draw(); FS.toast('🔍 "מצא אותי" מוכן: ' + ((ev.n && ev.n.faces) || 0) + ' תמונות עם פנים. באלבום האורחים מצלמים סלפי ומקבלים את התמונות שלהם.', 7000); });
+    }).catch(function () { FS.busy(); });
+  };
   function maybePrint() {
     if (!run.on || !cfg.auto || !run.queue.length) return;
     var need = cfg.per === 'one' ? 1 : cfg.per === 'fill' ? 4 : Number(cfg.per);
@@ -292,18 +388,27 @@
   /* whatever is printed while the station runs: the guests' photos are marked on the server, the numbers go to the report,
      and the magnets go into the couple's digital album */
   FS.on('print-job', function (plan) {
-    if (!ev || !run.on) return;
+    if (!ev) return;
     var seen = {}, uniq = [];
     (plan.pages || []).forEach(function (pg) { pg.forEach(function (it) { if (it.p && !seen[it.p.id]) { seen[it.p.id] = 1; uniq.push(it.p); } }); });
-    var ids = uniq.filter(function (p) { return p.liveId && p.liveEv === ev.id; }).map(function (p) { return p.liveId; });
-    run.printed += plan.total || 0; stats();
-    if (ids.length) api('mark', { e: ev.id, ids: ids, st: 'printed' });
-    api('stat', { e: ev.id, station: cfg.station, prints: plan.total || 0 });
-    if (ev.album !== false) uniq.filter(function (p) { return !p.albumUp; }).reduce(function (ch, p) {
+    if (!run.on) uniq = uniq.filter(function (p) { return p.magicCode && p.magicEv === ev.id; });   /* the station is off: only the living magnets go up (their QR must work) */
+    if (!uniq.length) return;
+    if (run.on) {
+      var ids = uniq.filter(function (p) { return p.liveId && p.liveEv === ev.id; }).map(function (p) { return p.liveId; });
+      run.printed += plan.total || 0; stats();
+      if (ids.length) api('mark', { e: ev.id, ids: ids, st: 'printed' });
+      api('stat', { e: ev.id, station: cfg.station, prints: plan.total || 0 });
+    }
+    /* the magnets go up to the couple's album; a living magnet goes up anyway (its QR must find it), with its person mask */
+    uniq.filter(function (p) { return !p.albumUp && (ev.album !== false || (p.magicCode && p.magicEv === ev.id)); }).reduce(function (ch, p) {
       return ch.then(function () {
         p.albumUp = true;
-        var k = Math.min(1, 1600 / Math.max(p.doc.w, p.doc.h)), c = FS.renderFull(p, k, false);
-        return api('studio-up', { e: ev.id, station: cfg.station, name: p.liveName || '', img: c.toDataURL('image/jpeg', 0.88).split(',')[1] });
+        var k = Math.min(1, 1600 / Math.max(p.doc.w, p.doc.h)), c = FS.renderFull(p, k, false), magic = p.magicCode && p.magicEv === ev.id;
+        return (magic ? pageMask(p, k, c.width, c.height) : Promise.resolve(null)).then(function (mask) {
+          var body = { e: ev.id, station: cfg.station, name: p.liveName || '', img: c.toDataURL('image/jpeg', 0.88).split(',')[1] };
+          if (magic) { body.code = p.magicCode; if (mask) body.mask = mask; if (p.liveId) body.from = p.liveId; }
+          return api('studio-up', body).then(function (r) { if (r && r.ok && r.id && FS.faceIndex) FS.faceIndex(p, ev, r.id); });
+        });
       }).catch(function () { p.albumUp = false; });
     }, Promise.resolve());
   });

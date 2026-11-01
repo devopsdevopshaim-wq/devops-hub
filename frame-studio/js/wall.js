@@ -9,6 +9,7 @@
 
   function msg(t) { stage.innerHTML = '<div class="w-empty">' + t + '</div>'; }
   if (!L.e || !L.v) { msg('הקישור למסך לא שלם.'); return; }
+  if (/[?&]mosaic=1/.test(location.search)) return;   /* the live mosaic runs this screen instead (mosaic.js) */
 
   function poll(first) {
     return L.call({ action: 'feed', e: L.e, v: L.v, since: since }).then(function (r) {

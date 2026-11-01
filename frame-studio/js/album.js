@@ -3,7 +3,7 @@
    name small in the corner. The link (with its viewing key) comes by email the day after the event, or from the studio. */
 (function () {
   'use strict';
-  var L = window.FL, esc = L.esc, app = document.getElementById('app'), data = null, list = [], tab = 'all', view = [], vi = 0, srcs = {};
+  var L = window.FL, esc = L.esc, app = document.getElementById('app'), data = null, list = [], tab = 'all', view = [], vi = 0, srcs = {}, mine = null;
 
   function fail(t) { app.innerHTML = '<div class="card hero"><p class="brand">📸</p><p class="hello">' + esc(t) + '</p></div>'; }
   if (!L.e || !L.v) { fail('הקישור לאלבום לא שלם.'); return; }
@@ -22,7 +22,7 @@
       '<section class="card hero"><p class="brand">' + esc(B.name || 'פריים מגנטים') + '<small>האלבום מהאירוע</small></p><h1 class="lv-title">' + esc(data.title) + '</h1>' +
         '<p class="hello">' + esc(L.heDate(data.date)) + '</p></section>' +
       '<div class="al-stats"><span><b>' + mags + '</b> מגנטים</span><span><b>' + guests + '</b> תמונות של אורחים</span><span><b>' + w + '</b> ברכות</span></div>' +
-      '<div class="al-tabs" role="tablist">' + [['all', '📸 הכל'], ['mag', '🧲 המגנטים'], ['guest', '🤳 של האורחים'], ['wish', '💌 ספר הברכות']].map(function (t) {
+      '<div class="al-tabs" role="tablist">' + [['all', '📸 הכל'], ['mag', '🧲 המגנטים'], ['guest', '🤳 של האורחים'], ['wish', '💌 ספר הברכות']].concat(data.faces && window.FaceSig ? [['me', '🔍 מצא אותי']] : []).map(function (t) {
         return '<button role="tab" data-t="' + t[0] + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<div class="gtools"><button class="gbtn main" id="zip">⬇️ שמירת כל התמונות (ZIP)</button>' + (tab === 'wish' ? '<button class="gbtn" id="print">🖨️ הדפסת ספר הברכות</button>' : '') +
         '<button class="gbtn" id="share">💬 שיתוף בוואטסאפ</button></div>' +
@@ -34,6 +34,27 @@
     document.getElementById('share').addEventListener('click', function () { window.open('https://wa.me/?text=' + encodeURIComponent('📸 התמונות והברכות מ' + data.title + ':\n' + location.href), '_blank', 'noopener'); });
     var pr = document.getElementById('print'); if (pr) pr.addEventListener('click', function () { window.print(); });
     var body = document.getElementById('body');
+    if (tab === 'me' && !mine) {
+      body.innerHTML = '<section class="card al-me"><h2>🔍 מצא אותי</h2><p>מצלמים סלפי (או בוחרים תמונה שלכם), ומקבלים את כל התמונות מהאירוע שאתם בהן. התמונה לא נשמרת ולא נשלחת: רק תיאור קצר של תווי הפנים.</p>' +
+        '<label class="gbtn main">📸 סלפי<input type="file" id="me-file" accept="image/*" capture="user" hidden></label><p class="hint" id="me-st"></p></section>';
+      view = [];
+      document.getElementById('me-file').addEventListener('change', function () {
+        var f = this.files && this.files[0]; if (!f) return; var st = document.getElementById('me-st'); st.textContent = 'מזהה את הפנים… (בפעם הראשונה זה לוקח כמה שניות)';
+        var i = new Image(); i.onload = function () {
+          FaceSig.selfie(i).then(function (d) {
+            if (!d) { st.textContent = 'לא מצאתי פנים בתמונה. מנסים סלפי מקרוב, באור טוב.'; return; }
+            st.textContent = 'מחפש באירוע…';
+            return L.call({ action: 'find', e: L.e, v: L.v, d: d }).then(function (r) {
+              if (!r.ok) { st.textContent = L.msg(r); return; }
+              var by = {}; list.forEach(function (p) { by[p.id] = p; });
+              mine = r.photos.map(function (h) { return by[h.id]; }).filter(Boolean); render();
+            });
+          }).catch(function () { st.textContent = 'זיהוי הפנים לא נטען בדפדפן הזה. מנסים ב־Chrome.'; });
+        };
+        i.src = URL.createObjectURL(f);
+      });
+      return;
+    }
     if (tab === 'wish') {
       var ws = wishes();
       body.innerHTML = ws.length ? '<div class="wishes">' + ws.map(function (p) {
@@ -41,10 +62,14 @@
           (p.audio ? '<audio controls preload="none" src="' + srcs[p.id] + '&a=1"></audio>' : '') + '</article>'; }).join('') + '</div>' : '<div class="card load">עוד אין ברכות.</div>';
       view = ws;
     } else {
-      view = list.filter(function (p) { return tab === 'all' || (tab === 'mag' ? p.src === 'studio' : p.src === 'guest'); });
+      view = tab === 'me' ? mine : list.filter(function (p) { return tab === 'all' || (tab === 'mag' ? p.src === 'studio' : p.src === 'guest'); });
       body.innerHTML = view.length ? '<div class="ggrid">' + view.map(function (p) {
         return '<button data-id="' + p.id + '" aria-label="פתיחה"><img src="' + srcs[p.id] + '" alt="" loading="lazy">' + (p.text || p.audio ? '<span class="tag">' + (p.audio ? '🎙️' : '💌') + (p.name ? ' ' + esc(p.name) : '') + '</span>' : '') + '</button>'; }).join('') + '</div>'
         : '<div class="card load">עוד אין כאן תמונות.</div>';
+      if (tab === 'me') {
+        body.insertAdjacentHTML('afterbegin', '<p class="al-me-n">' + (view.length ? '🔍 ' + view.length + ' תמונות שנראה שאתם בהן (הכי דומות קודם)' : 'לא נמצאו תמונות דומות.') + ' <button class="gbtn" id="me-again">חיפוש מחדש</button></p>');
+        document.getElementById('me-again').addEventListener('click', function () { mine = null; render(); });
+      }
     }
     Array.prototype.forEach.call(body.querySelectorAll('[data-id]'), function (b) { b.addEventListener('click', function () { open(view.map(function (p) { return p.id; }).indexOf(b.dataset.id)); }); });
   }
