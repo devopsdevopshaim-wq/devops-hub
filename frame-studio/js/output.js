@@ -217,7 +217,7 @@
   FS.planPrint = function (job) {
     var paper = paperOf(job.paper), pw = paper[2], ph = paper[3], mg = job.margin || 0, gap = job.layout === 'fill' ? (job.gap != null ? job.gap : 2) : (mg ? 2 : 0);
     var groups = {}, order = [];
-    job.list.forEach(function (p) { var mm = mmOf(p.doc), key = job.layout === 'fill' ? mm.map(function (v) { return v.toFixed(1); }).join('x') : 'all'; if (!groups[key]) { groups[key] = { mm: mm, items: [] }; order.push(key); }
+    job.list.forEach(function (p) { var mm = job.size || mmOf(p.doc), key = job.layout === 'fill' ? mm.map(function (v) { return v.toFixed(1); }).join('x') : 'all'; if (!groups[key]) { groups[key] = { mm: mm, items: [] }; order.push(key); }
       var n = (job.copies || 1) * (p.copies == null ? 1 : p.copies); for (var i = 0; i < n; i++) groups[key].items.push(p); });
     var pages = [], total = 0;
     order.forEach(function (key) {
@@ -225,10 +225,12 @@
       for (var i = 0; i < g.items.length; i += cells.length) {
         var page = [];
         cells.forEach(function (cell, j) {
-          var p = g.items[i + j]; if (!p) return; var mm = mmOf(p.doc), rot = (mm[0] > mm[1]) !== (cell.w > cell.h) && Math.abs(cell.w - cell.h) > 1;
+          var p = g.items[i + j]; if (!p) return; var mm = job.size || mmOf(p.doc), rot = (mm[0] > mm[1]) !== (cell.w > cell.h) && Math.abs(cell.w - cell.h) > 1;
           var iw = rot ? mm[1] : mm[0], ih = rot ? mm[0] : mm[1], ar = iw / ih, w, h;
-          if (cell.exact) { w = iw; h = ih; } else if ((job.layout === 'one' || job.layout === '1') && !mg) { w = cell.w; h = cell.h; } else { w = cell.w; h = cell.w / ar; if (h > cell.h) { h = cell.h; w = cell.h * ar; } }
-          page.push({ p: p, x: cell.x + (cell.w - w) / 2, y: cell.y + (cell.h - h) / 2, w: w, h: h, rot: rot, cover: (job.layout === 'one' || job.layout === '1') && !mg });
+          /* the real size whenever it fits (4 magnets of 7.5×10 on a 15×20 sheet print at 7.5×10, not stretched to the cell) */
+          var fits = iw <= cell.w + 1.5 && ih <= cell.h + 1.5;
+          if (cell.exact || (fits && job.layout !== 'one' && job.layout !== '1')) { w = iw; h = ih; } else if ((job.layout === 'one' || job.layout === '1') && !mg) { w = cell.w; h = cell.h; } else { w = cell.w; h = cell.w / ar; if (h > cell.h) { h = cell.h; w = cell.h * ar; } }
+          page.push({ p: p, x: cell.x + (cell.w - w) / 2, y: cell.y + (cell.h - h) / 2, w: w, h: h, rot: rot, cover: ((job.layout === 'one' || job.layout === '1') && !mg) || !!job.size, want: [mm[0], mm[1]] });
           total++;
         });
         pages.push(page);
@@ -245,6 +247,13 @@
       x.save(); x.translate((it.x + it.w / 2) * pxPerMm, (it.y + it.h / 2) * pxPerMm); if (it.rot) x.rotate(Math.PI / 2);
       var w = (it.rot ? it.h : it.w) * pxPerMm, h = (it.rot ? it.w : it.h) * pxPerMm; x.drawImage(t, -w / 2, -h / 2, w, h); x.restore();
       if (plan.marks) { x.strokeStyle = '#9aa'; x.setLineDash([3, 3]); x.strokeRect(it.x * pxPerMm, it.y * pxPerMm, it.w * pxPerMm, it.h * pxPerMm); x.setLineDash([]); }
+      if (plan.labels) {   /* the preview says each item's real printed size; smaller than wanted is marked */
+        var a = Math.min(it.w, it.h) / 10, b = Math.max(it.w, it.h) / 10, small = it.want && Math.max(it.w, it.h) < Math.max(it.want[0], it.want[1]) - 2;
+        var t2 = (Math.round(a * 10) / 10) + '×' + (Math.round(b * 10) / 10) + ' ס״מ' + (small ? ' ⚠️ מוקטן' : ''), fs = Math.max(10, Math.min(16, it.w * pxPerMm / 9));
+        x.font = '700 ' + fs + 'px Heebo, Arial, sans-serif'; var tw = x.measureText(t2).width + 10;
+        x.fillStyle = small ? 'rgba(192,57,43,.9)' : 'rgba(29,22,51,.78)'; x.fillRect(it.x * pxPerMm + 4, it.y * pxPerMm + 4, tw, fs + 8);
+        x.fillStyle = '#fff'; x.textBaseline = 'top'; x.fillText(t2, it.x * pxPerMm + 9, it.y * pxPerMm + 8);
+      }
     });
     return c;
   }
@@ -263,8 +272,8 @@
     return c;
   };
   FS.drawPlanPage = drawPage;
-  FS.doPrint = function (plan) {
-    if (FS.directPrint && FS.directPrint.on()) return ready().then(function () { return FS.directPrint(plan); });
+  FS.doPrint = function (plan, viaDesktop) {
+    if (!viaDesktop && FS.directPrint && FS.directPrint.on()) return ready().then(function () { return FS.directPrint(plan); });
     FS.busy('מכין להדפסה…');
     return ready().then(function () {
       var cache = {}, root = $('#print-root'), html = '', pw = plan.paper[2], ph = plan.paper[3];
@@ -282,9 +291,24 @@
       st.textContent = '@page { size: ' + pw + 'mm ' + ph + 'mm; margin: 0; }';
       FS.emit('printed', plan.total); FS.emit('print-job', plan);
       return Promise.all($$('img', root).map(function (im) { return im.decode ? im.decode().catch(function () {}) : null; }));
-    }).then(function () { FS.busy(); document.body.classList.add('printing'); setTimeout(function () { window.print(); }, 60); })
-      .catch(function () { FS.busy(); FS.toast('ההכנה להדפסה לא הצליחה'); });
+    }).then(function () {
+      FS.busy(); document.body.classList.add('printing');
+      /* the desktop program prints straight to the chosen printer at the sheet's exact size; otherwise the computer's print window */
+      var dev = viaDesktop ? FS.printerChoice() : '';
+      if (window.FSDesktop && FSDesktop.print && dev) {
+        FS.busy('שולח ל' + dev + '…');
+        return FSDesktop.print.run({ deviceName: dev, wMm: plan.paper[2], hMm: plan.paper[3] }).then(function (r) {
+          FS.busy(); document.body.classList.remove('printing'); $('#print-root').innerHTML = '';
+          FS.toast(r && r.ok ? '🖨️ נשלח ל' + dev + ' · ' + plan.pages.length + ' דפים ' + plan.paper[1] : '⚠️ ההדפסה לא יצאה (' + ((r && r.reason) || '') + '). בודקים שהמדפסת דלוקה ומחוברת.', 6000);
+        });
+      }
+      setTimeout(function () { window.print(); }, 60);
+    }).catch(function () { FS.busy(); FS.toast('ההכנה להדפסה לא הצליחה'); });
   };
+  /* the printer the desktop program sends to ('' = the computer's print window); kept for next time */
+  FS.printerChoice = function (v) { if (v !== undefined && FS.choosePrinter) { FS.choosePrinter(v); return v; } try { if (v !== undefined) localStorage.setItem('frame-studio-printer-sel', v); return localStorage.getItem('frame-studio-printer-sel') || ''; } catch (e) { return v || ''; } };
+  /* ready layouts for magnets: [paper, w, h] in mm (the magnet's size, the sheet it is cut from) */
+  var MAGNET_PRESETS = [['15x20', 75, 100, '🧲 4 מגנטים 7.5×10 בדף 15×20'], ['10x15', 75, 100, '🧲 2 מגנטים 7.5×10 בדף 10×15'], ['A4', 75, 100, '🧲 4 מגנטים 7.5×10 בדף A4'], ['10x15', 50, 75, '🧲 4 מגנטים 5×7.5 בדף 10×15']];
   /* the station prints straight away; the buttons open the layout preview first */
   FS.printNow = function (job) {
     if (job) { var plan = FS.planPrint(job); if (!plan.total) return; return FS.doPrint(plan); }
@@ -293,6 +317,8 @@
   FS.printPreview = function () {
     var job = jobFromPanel(); if (!job.list.length) { FS.toast('אין תמונות להדפסה'); return; }
     var body = FS.dialog('🖨️ תכנון הדפסה ופריסה', '<div class="pv-wrap"><div class="pv-side">' +
+      '<div class="field"><label>🧲 פריסה מוכנה למגנטים</label><div class="chips pv-presets">' + MAGNET_PRESETS.map(function (m, i) { return '<button type="button" class="chip" data-mp="' + i + '">' + m[3] + '</button>'; }).join('') + '<button type="button" class="chip" data-mp="-1">לפי גודל התמונה</button></div></div>' +
+      '<div class="field"><label>🖨️ מדפסת</label><select id="pv-printer"><option value="">חלון ההדפסה של המחשב (לבחירה שם)</option></select><small class="hint" id="pv-ph"></small></div>' +
       '<div class="row2"><div class="field"><label>נייר</label><select id="pv-paper">' + $('#paper').innerHTML + '</select></div><div class="field"><label>סידור</label><select id="pv-layout">' + $('#layout').innerHTML + '</select></div></div>' +
       '<div class="row2"><div class="field"><label>שוליים</label><select id="pv-margin">' + $('#margin').innerHTML + '</select></div><div class="field"><label>רווח בין מגנטים (מ״מ)</label><input type="number" id="pv-gap" min="0" max="20" step="0.5" value="2"></div></div>' +
       '<label class="check"><input type="checkbox" id="pv-marks"' + ($('#print-marks').checked ? ' checked' : '') + '> קווי חיתוך</label>' +
@@ -319,10 +345,28 @@
         $('.pv-size', row).addEventListener('change', function () { var z = FS.sizeOf(this.value); if (!z) return; FS.applyFormat(p.doc, 'cm', FS.img(p.src), z.w, z.h); if (p.doc.frame) FS.setFrame(p, p.doc.frame, { quiet: true, noTexts: true }); p.cache = {}; p._pt = null; FS.snap(p); table(); plan(); });
       });
     }
-    var current = null;
+    var current = null, forced = null;
+    /* the magnet presets: the paper, every item at the magnet's size (cut to fill it), packed as many as fit, no margins */
+    $$('[data-mp]', body).forEach(function (b) { b.addEventListener('click', function () {
+      var m = MAGNET_PRESETS[Number(b.dataset.mp)];
+      $$('[data-mp]', body).forEach(function (x) { x.classList.toggle('on', x === b); });
+      if (!m) { forced = null; plan(); return; }
+      forced = [m[1], m[2]]; $('#pv-paper', body).value = m[0]; $('#pv-layout', body).value = 'fill'; $('#pv-margin', body).value = '0'; $('#pv-gap', body).value = '0'; plan();
+    }); });
+    /* the printers of this computer (the desktop program), the last one chosen first */
+    (function () {
+      var sel = $('#pv-printer', body), ph = $('#pv-ph', body);
+      if (!(window.FSDesktop && FSDesktop.print)) { ph.textContent = 'בדפדפן בוחרים את המדפסת בחלון ההדפסה שנפתח. בתוכנה למחשב היא נבחרת כאן.'; sel.disabled = true; return; }
+      FSDesktop.print.printers().then(function (l) {
+        sel.innerHTML += l.map(function (x) { return '<option value="' + FS.esc(x.name) + '">' + FS.esc(x.label) + (x.default ? ' (ברירת מחדל)' : '') + '</option>'; }).join('');
+        var was = FS.printerChoice(); if (was && l.some(function (x) { return x.name === was; })) sel.value = was;
+        ph.textContent = l.length ? 'נמצאו ' + l.length + ' מדפסות. ההדפסה יוצאת ישר אליה, בגודל הנייר המדויק ובלי שוליים.' : 'לא נמצאו מדפסות מותקנות במחשב.';
+      }).catch(function () { ph.textContent = 'לא הצלחתי לקרוא את המדפסות. ייפתח חלון ההדפסה של המחשב.'; });
+      sel.addEventListener('change', function () { FS.printerChoice(sel.value); });
+    })();
     function plan() {
-      var j = { list: all.filter(function (p) { return on[p.id]; }), paper: $('#pv-paper', body).value, layout: $('#pv-layout', body).value, margin: Number($('#pv-margin', body).value), gap: Number($('#pv-gap', body).value), copies: job.copies, marks: $('#pv-marks', body).checked };
-      current = FS.planPrint(j);
+      var j = { list: all.filter(function (p) { return on[p.id]; }), paper: $('#pv-paper', body).value, layout: $('#pv-layout', body).value, margin: Number($('#pv-margin', body).value), gap: Number($('#pv-gap', body).value), copies: job.copies, marks: $('#pv-marks', body).checked, size: forced };
+      current = FS.planPrint(j); current.labels = true;
       var box = $('#pv-pages', body); box.innerHTML = '';
       var k = Math.min(3, 520 / current.paper[3]);
       current.pages.slice(0, 40).forEach(function (pg, i) { var f = document.createElement('figure'); f.appendChild(drawPage(current, pg, k)); var cap = document.createElement('figcaption'); cap.textContent = 'דף ' + (i + 1) + ' · ' + pg.length + ' פריטים'; f.appendChild(cap); box.appendChild(f); });
@@ -334,7 +378,7 @@
     }
     ['#pv-paper', '#pv-layout', '#pv-margin', '#pv-gap', '#pv-marks'].forEach(function (s) { $(s, body).addEventListener('change', plan); });
     $('#pv-back', body).addEventListener('click', function () { FS.closeDialog(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); });
-    $('#pv-print', body).addEventListener('click', function () { var pl = current; $('#paper').value = $('#pv-paper', body).value; $('#layout').value = $('#pv-layout', body).value; FS.closeDialog(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.doPrint(pl); });
+    $('#pv-print', body).addEventListener('click', function () { var pl = current; pl.labels = false; $('#paper').value = $('#pv-paper', body).value; $('#layout').value = $('#pv-layout', body).value; FS.closeDialog(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.doPrint(pl); });
     table(); plan();
   };
   window.addEventListener('afterprint', function () { document.body.classList.remove('printing'); $('#print-root').innerHTML = ''; });
