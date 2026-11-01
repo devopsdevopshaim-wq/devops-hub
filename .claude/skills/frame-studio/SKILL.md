@@ -1229,3 +1229,28 @@ The owner tried to open `FrameStudio-Setup.exe` (over 100 MB) on the phone. Inst
 - **Admin menu:** new link "📲 אפליקציה לטלפון".
 
 Checked with Chrome DevTools Protocol: `getAppManifest` and `getInstallabilityErrors` report no errors. On a Pixel 7 emulation, the share POST got the redirect and the photo arrived in the expense form.
+
+## ✨ The living photo: 3D from a still, out of the frame, a video for the couple (Nov 1, v89)
+
+New file `js/wow.js` (`FS.livingPhoto(p)`; `FS.livingPrepare` and `FS.livingFrame` are exposed for tests). Buttons `[data-wow]` "✨ תמונה חיה תלת־ממד" sit at the top of the filters, AI and output panes, styled `.wow-btn` with a passing sheen.
+
+**Preparing the layers** (`prepare`; everything local, nothing online):
+- The person mask is `FS.ensureMask`; under 2 % cover it says there is no person.
+- The person layer is the processed photo (`FS.processed(p, 1600)`) cut by the mask.
+- The background behind the person is filled by push-pull over a canvas pyramid: the mask is widened (blur ×3), punched out, and transparent pixels take their neighbours' colour.
+- The page without the photo (`FS.draw` with `noPhoto` + `transparent`) stays on top, still: the frame, texts and stickers.
+
+**Each frame** (`frame(S, ctx, t, mode, tilt)`):
+- Both layers use the photo's own matrix (`FS.photoMatrix`), scaled about the person's centroid and clipped to the frame window (`FS.frameOf(...).clip`).
+- The loop goes there and back with a cubic ease, so it is seamless (6 s).
+- Gold bokeh dots float behind the person and (every 4th) in front; a soft-light sheen passes once per loop.
+- On the free tier, a "נוצר באופטימוס" band is drawn.
+
+**Modes:**
+- `dolly`: the camera moves in; the person comes forward faster than the background.
+- `pop`: the person grows in front of the frame, out of the magnet. It is clipped to the frame window's bottom, so it breaks over the top and sides only.
+- `tilt`: follows the mouse or the phone's tilt (`deviceorientation`, with the iOS permission). While recording it moves in a circle.
+
+**The viewer** (full screen, `.wow`): mode buttons, ✕, and 🎬 which records 2 loops (12 s) with MediaRecorder from `captureStream(30)`, as mp4 (avc1) where supported, else webm, 9 Mbps. The file is `living-photo-<name>.mp4`.
+
+Checked in Chromium on `media/real/wedding-2.webp`: the layers separate cleanly, the pop-out works with the `w-wide` frame, and a 12 s MP4 of 7.4 MB was saved.

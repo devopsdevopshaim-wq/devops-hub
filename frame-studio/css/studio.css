@@ -734,3 +734,17 @@ body.clean-shell .app { grid-template-rows: 1fr; grid-template-areas: "tools pan
 .ax-chips button i { font-style: normal; }
 .ax-chips button.on { border-color: var(--gold); background: rgba(212,175,106,.16); color: var(--gold); }
 .ax-name { margin: 8px 0 4px; font-weight: 700; color: var(--gold); font-size: 13.5px; min-height: 1.2em; }
+/* ✨ the living photo (wow.js) */
+.wow-btn { background: linear-gradient(120deg, #2a1f45, #4b2f6b 40%, #8a6d36) !important; color: #fff3d6 !important; border: 1px solid rgba(243,221,166,.6) !important; font-weight: 800; position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 2px; padding: 12px !important; margin-bottom: 10px; }
+.wow-btn small { font-weight: 500; opacity: .85; font-size: 12px; }
+.wow-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,240,200,.45) 50%, transparent 70%); transform: translateX(-100%); animation: wowSheen 3.2s ease-in-out infinite; }
+@keyframes wowSheen { 0%, 55% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.wow { position: fixed; inset: 0; z-index: 3000; background: radial-gradient(120% 90% at 50% 30%, #1f1733 0%, #07060b 70%); display: flex; align-items: center; justify-content: center; animation: wowIn .35s ease; }
+@keyframes wowIn { from { opacity: 0; } to { opacity: 1; } }
+.wow-in { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 96vw; max-height: 96vh; }
+.wow-cv { max-width: 92vw; max-height: 76vh; border-radius: 10px; box-shadow: 0 30px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(243,221,166,.25); background: #000; touch-action: none; }
+.wow-bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; direction: rtl; }
+.wow-bar button { border: 1px solid rgba(243,221,166,.45); background: rgba(255,255,255,.06); color: #f3ecdc; border-radius: 999px; padding: 9px 16px; font: 600 15px 'Heebo', sans-serif; cursor: pointer; }
+.wow-bar button.on { background: linear-gradient(135deg, #F3DDA6, #B8904F); color: #1A140B; }
+.wow-bar .wow-rec { background: #c0392b; border-color: #e66; color: #fff; }
+.wow-hint { color: #bdb3cf; font: 14px 'Heebo', sans-serif; margin: 0; text-align: center; direction: rtl; }
