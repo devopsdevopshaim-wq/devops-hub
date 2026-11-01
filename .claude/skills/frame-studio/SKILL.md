@@ -1338,3 +1338,22 @@ Keeping and deleting:
 **8. Colours from the invitation:** `js/palette.js`, under "צבע המסגרת".
 - From the invitation file or the current photo, k-means finds 6 swatches.
 - A tap sets the generated frame's colour (through `#frame-color`'s input handler) and, optionally, the texts (not `wishLayer`).
+
+## The edit screen ("ערוך תמונה") made for several photos at once (Nov 1, v91)
+
+`js/mate.js` + `css/mate.css`:
+- Six photos on screen by default (`fs-mate-en2` defaults to 6, not 1).
+- **The photos stay put.** The set of the edit screen is decided when it opens (`eSet`): the marked photos, or all of them. ✓ marks on the edit screen no longer shrink the grid. Before, ticking a photo turned the list into only the ticked ones on the next rebuild, which broke paging and the arrow keys. "📚 כל התמונות" (`#mt-eall`) appears when the screen opened with only the marked photos.
+- **What a change reaches** (`targets()`):
+  1. the photos with ✓ (on any page);
+  2. else, with "🔗 כל המסך יחד", the whole screen;
+  3. else the focused photo.
+  The live redraw follows the same list, and `#mt-target` says which one applies.
+- **The selection bar** in the edit bar (`.mt-sel`): the count "✓ N מסומנות", "✓ המסך", "✓ הכל" (Ctrl+A) and "✕ ניקוי" (Esc). The bottom strip shows a gold ✓ on marked photos (`.mt-pj.sel`), so marks on other pages are visible.
+- **Paging** reads "1–6 מתוך 12".
+- **Keyboard on the edit screen** (`FS.mateKeys`):
+  - ←/→ move between photos, on to the next or previous page (right to left: ← is next);
+  - ↑/↓ move by a row; Home/End go to the first or last photo;
+  - Space marks or unmarks the focused photo; Enter opens it in the full editor;
+  - PageUp/PageDown turn pages.
+- The bar stays on one line: the labels are shorter ("🔗 כל המסך יחד", "◧ לפני|אחרי"), and the grid has less padding so the photos are bigger.
