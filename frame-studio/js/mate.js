@@ -74,7 +74,9 @@
         '<div class="mt-pfoot"><p class="mt-hint" id="mt-target"></p><button class="mt-btn" id="mt-apply-all">החל את התיקון על כל התמונות</button></div>' +
       '</aside><div class="mt-ework"><div class="mt-ebar"><label>תמונות במסך:</label><div class="mt-seg" id="mt-en"><button data-n="1">1</button><button data-n="2">2</button><button data-n="4">4</button><button data-n="6">6</button><button data-n="9">9</button></div>' +
         '<div class="mt-seg mt-ori"><button data-ori="all">הכל <i></i></button><button data-ori="tall">↕ לאורך <i></i></button><button data-ori="wide">↔ לרוחב <i></i></button></div>' +
-        '<label class="mt-chk-l"><input type="checkbox" id="mt-etog"> 🔗 עריכה של כל התמונות שבמסך יחד</label><button class="mt-btn mt-cmpb" id="mt-cmp" title="התמונה המקורית ליד העריכה">◧ לפני | אחרי</button><span class="mt-sp"></span>' +
+        '<label class="mt-chk-l" title="כל שינוי חל על כל התמונות שבמסך (כשאין תמונות מסומנות ✓)"><input type="checkbox" id="mt-etog"> 🔗 כל המסך יחד</label><button class="mt-btn mt-cmpb" id="mt-cmp" title="התמונה המקורית ליד העריכה">◧ לפני|אחרי</button><span class="mt-sp"></span>' +
+        '<span class="mt-sel"><b id="mt-selc"></b><button class="mt-btn" id="mt-selp" title="מסמן את כל התמונות שבמסך">✓ המסך</button><button class="mt-btn" id="mt-sela" title="Ctrl+A">✓ הכל</button><button class="mt-btn" id="mt-seln" title="Esc">✕ ניקוי</button><button class="mt-btn" id="mt-eall" title="נכנסתם לעריכה עם התמונות המסומנות בלבד" hidden>📚 כל התמונות</button></span>' +
+        '<span class="mt-sp"></span>' +
         '<button class="mt-ic" id="mt-eprev" title="הקודמות (PageUp)">▶</button><b id="mt-epg">1 / 1</b><button class="mt-ic" id="mt-enext" title="הבאות (PageDown)">◀</button></div>' +
         '<div class="mt-estage"><div class="mt-egrid" id="mt-egrid"></div><button class="mt-nav prev" id="mt-enavp" title="הקודמות (→)"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="mt-nav next" id="mt-enavn" title="הבאות (←)"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>' +
         '<div class="mt-strip" id="mt-estrip"></div></div>' +
@@ -145,6 +147,7 @@
   function on() { return !root.hidden; }
   function show(v) {
     if (v === 'print') { openPrint(); return; }
+    if (v === 'edit' && view !== 'edit') eSet = null;   /* entering the edit screen: its photos are decided now (below) */
     view = v || view;
     $$('.mt-tabs [data-v]', root).forEach(function (b) { b.classList.toggle('on', b.dataset.v === view); });
     $$('.mt-view', root).forEach(function (s) { s.hidden = s.dataset.view !== view; });
@@ -423,16 +426,24 @@
     return '<div class="mt-sl" data-k="' + s[0] + '"><span class="mt-sli ' + (/^c[rgb]$/.test(s[0]) ? s[0] : '') + '">' + s[2] + '</span><label>' + s[1] + '</label><input type="range" min="' + lo + '" max="100" value="0"><input type="number" min="' + lo + '" max="100" value="0"><button class="mt-ic" title="איפוס">↺</button></div>';
   }).join('');
   function focus() { var p = focusId && byId(focusId); return p || FS.cur() || S.photos[0] || null; }
-  function editList() { var m = marked(); return byOri(m.length ? m : S.photos.slice()); }
+  /* the photos of the edit screen: the marked ones when it opened (or all), and they stay while ✓ marks change what a change reaches */
+  var eSet = null;
+  function editList() {
+    if (!eSet) { var m = marked(); eSet = m.length && m.length < S.photos.length ? m.map(function (p) { return p.id; }) : 'all'; }
+    if (eSet === 'all') return byOri(S.photos.slice());
+    var l = eSet.map(byId).filter(Boolean); if (!l.length) { eSet = 'all'; return byOri(S.photos.slice()); } return byOri(l);
+  }
   /* the edit screen shows 4, 6 or 9 photos at a time, filling the screen; "together" makes every change reach all of them */
-  var eN = Number(ls('fs-mate-en2')) || 1, ePage = 0, eTog = ls('fs-mate-etog') !== '0';
+  var eN = Number(ls('fs-mate-en2')) || 6, ePage = 0, eTog = ls('fs-mate-etog') !== '0';
   function eCols() { return eN === 1 ? 1 : eN <= 4 ? 2 : 3; }
   function ePages() { return Math.max(1, Math.ceil(editList().length / eN)); }
   function pageList() { var l = editList(); ePage = Math.min(ePage, ePages() - 1); return l.slice(ePage * eN, ePage * eN + eN); }
   /* what a change reaches: all the photos on the edit screen (together), else the marked photos (with the focused one), or the focused one */
   function targets() {
+    var f = focus(), m = marked();
+    if (view === 'edit' && m.length) return m;                     /* the photos with ✓ (on any page) */
     if (eTog && view === 'edit') return pageList();
-    var f = focus(), m = marked(); if (f && m.length && S.marked[f.id]) return m; if (!f && m.length) return m; return f ? [f] : [];
+    if (f && m.length && S.marked[f.id]) return m; if (!f && m.length) return m; return f ? [f] : [];
   }
   function eTileHTML(p) {
     return '<div class="mt-tile big' + (S.marked[p.id] ? ' sel' : '') + (p.id === (focus() || {}).id ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + etile + '"><div class="mt-th">' + (cmp ? '<div class="mt-ba"><div class="mt-b"><span>לפני</span></div><div class="mt-a"><span>אחרי</span></div></div>' : '') + '<button class="mt-chk" title="סימון">✓</button></div><div class="mt-name">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '<button class="mt-dl" title="שמירת התמונה">⬇</button></div></div>';
@@ -446,7 +457,7 @@
     if (l.length && !l.some(function (p) { return p.id === focusId; })) focusId = l[0].id;
     g.innerHTML = l.length ? l.map(eTileHTML).join('') : '<p class="mt-hint">אין תמונות עדיין.</p>';
     reuse(g, k);
-    seg('#mt-en', String(eN), 'n'); $('#mt-etog', root).checked = eTog; $('#mt-epg', root).textContent = (ePage + 1) + ' מתוך ' + ePages();
+    seg('#mt-en', String(eN), 'n'); $('#mt-etog', root).checked = eTog; $('#mt-eall', root).hidden = eSet === 'all'; var tot = editList().length, a0 = ePage * eN; $('#mt-epg', root).textContent = tot ? (a0 + 1) + (eN > 1 ? '–' + Math.min(tot, a0 + eN) : '') + ' מתוך ' + tot : '0';
     $('#mt-eprev', root).disabled = ePage <= 0; $('#mt-enext', root).disabled = ePage >= ePages() - 1;
     $('#mt-enavp', root).disabled = ePage <= 0; $('#mt-enavn', root).disabled = ePage >= ePages() - 1;
     syncSliders(); targetTxt(); buildFrames(); buildFx(); buildLooks(); oriSync(); eStrip(); stat();
@@ -463,7 +474,7 @@
       box.innerHTML = l.map(function (p, i) { return '<button class="mt-pj mt-tile" data-id="' + p.id + '" data-i="' + i + '" data-px="90"><span class="mt-th"></span><i>' + (i + 1) + '</i></button>'; }).join('');
       $$('.mt-pj', box).forEach(watch);
     }
-    $$('.mt-pj', box).forEach(function (b) { b.classList.toggle('on', on.indexOf(b.dataset.id) >= 0); b.classList.toggle('focus', b.dataset.id === focusId); });
+    $$('.mt-pj', box).forEach(function (b) { b.classList.toggle('on', on.indexOf(b.dataset.id) >= 0); b.classList.toggle('focus', b.dataset.id === focusId); b.classList.toggle('sel', !!S.marked[b.dataset.id]); });
     var f = $('.mt-pj.on', box); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
   }
   $('#mt-estrip', root).addEventListener('click', function (e) { var b = e.target.closest('.mt-pj'); if (!b) return; focusId = b.dataset.id; var to = Math.floor(Number(b.dataset.i) / eN); if (to === ePage) { buildEdit(); return; } ePageGo(0, to); });
@@ -485,12 +496,40 @@
     });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (k) { g.addEventListener(k, off); });
   })();
-  function targetTxt() { var n = targets().length; $('#mt-target', root).textContent = eTog ? 'השינויים חלים יחד על ' + n + ' התמונות שבמסך' : n > 1 ? 'השינויים חלים על ' + n + ' התמונות המסומנות' : n ? 'השינויים חלים על התמונה המודגשת · לסימון כמה תמונות לוחצים על ✓' : ''; }
+  function targetTxt() {
+    var n = targets().length, m = marked().length;
+    $('#mt-target', root).textContent = view === 'edit' && m ? '✓ השינויים חלים על ' + m + ' התמונות המסומנות' : eTog ? 'השינויים חלים יחד על ' + n + ' התמונות שבמסך' : n ? 'השינויים חלים על התמונה המודגשת · מסמנים ✓ כדי לערוך כמה יחד' : '';
+    var sc = $('#mt-selc', root); if (sc) sc.textContent = m ? '✓ ' + m + ' מסומנות' : 'לא סומנו תמונות';
+    if (view === 'edit') $$('#mt-estrip .mt-pj', root).forEach(function (b) { b.classList.toggle('sel', !!S.marked[b.dataset.id]); });
+  }
   $('#mt-en', root).addEventListener('click', function (e) { var b = e.target.closest('[data-n]'); if (!b) return; var first = ePage * eN; eN = Number(b.dataset.n); ls('fs-mate-en2', eN); ePage = Math.floor(first / eN); buildEdit(); });
   function cmpSync() { $$('.mt-cmpb', root).forEach(function (b) { b.classList.toggle('on', cmp); }); }
   function setCmp(v) { cmp = v; ls('fs-mate-cmp2', v ? '1' : '0'); cmpSync(); if (view === 'edit') { $('#mt-egrid', root).innerHTML = ''; buildEdit(); } else if (view === 'design') drawDesign(); }
   $('#mt-cmp', root).addEventListener('click', function () { setCmp(!cmp); });
   $('#mt-etog', root).addEventListener('change', function () { eTog = this.checked; ls('fs-mate-etog', eTog ? '1' : '0'); targetTxt(); });
+  /* choosing which photos the changes reach: the screen, all of them, none */
+  function selMany(list, v) { list.forEach(function (p) { mark(p, v); }); $$('#mt-egrid .mt-tile', root).forEach(function (t) { t.classList.toggle('sel', !!S.marked[t.dataset.id]); }); targetTxt(); stat(); syncSliders(); }
+  $('#mt-selp', root).addEventListener('click', function () { selMany(pageList(), true); });
+  $('#mt-sela', root).addEventListener('click', function () { selMany(editList(), true); });
+  $('#mt-seln', root).addEventListener('click', function () { selMany(editList(), false); });
+  $('#mt-eall', root).addEventListener('click', function () { eSet = 'all'; ePage = 0; buildEdit(); });
+  /* the keyboard on the edit screen: arrows move between the photos (and on to the next page), space marks, Enter opens the full editor */
+  function eMove(d) {
+    var l = editList(), f = focus(), i = Math.max(0, l.indexOf(f)), to = FS.clamp(i + d, 0, l.length - 1); if (!l.length || to === i) return;
+    focusId = l[to].id; var pg = Math.floor(to / eN);
+    if (pg !== ePage) ePageGo(0, pg); else { $$('#mt-egrid .mt-tile', root).forEach(function (x) { x.classList.toggle('focus', x.dataset.id === focusId); }); syncSliders(); targetTxt(); buildFx(); eStrip(); }
+  }
+  FS.mateKeys = function (k, e) {
+    if (view !== 'edit') return false;
+    var c = eCols();
+    if (k === 'arrowleft') eMove(1); else if (k === 'arrowright') eMove(-1);
+    else if (k === 'arrowdown') eMove(c); else if (k === 'arrowup') eMove(-c);
+    else if (k === 'home') eMove(-1e6); else if (k === 'end') eMove(1e6);
+    else if (k === ' ' || k === 'spacebar') { var p = focus(); if (!p) return true; mark(p, !S.marked[p.id]); $$('#mt-egrid .mt-tile[data-id="' + p.id + '"]', root).forEach(function (t) { t.classList.toggle('sel', !!S.marked[p.id]); }); targetTxt(); stat(); }
+    else if (k === 'enter') show('design');
+    else return false;
+    e.preventDefault(); return true;
+  };
   $('#mt-eprev', root).addEventListener('click', function () { ePageGo(-1); });
   $('#mt-enext', root).addEventListener('click', function () { ePageGo(1); });
   $('#mt-egrid', root).addEventListener('click', function (e) {
@@ -509,7 +548,7 @@
     var list = targets(); if (!list.length) return;
     list.forEach(function (p) { p.doc.photo.adj[k] = v; p.doc.photo.preset = null; });
     cancelAnimationFrame(liveT);
-    liveT = requestAnimationFrame(function () { var ids = eTog && view === 'edit' ? list.map(function (p) { return p.id; }) : [(focus() || {}).id]; ids.forEach(function (id) { $$('#mt-egrid .mt-tile[data-id="' + id + '"]', root).forEach(function (el) { el._sig = null; drawTile(el); }); }); });
+    liveT = requestAnimationFrame(function () { var ids = view === 'edit' ? list.map(function (p) { return p.id; }) : [(focus() || {}).id]; ids.forEach(function (id) { $$('#mt-egrid .mt-tile[data-id="' + id + '"]', root).forEach(function (el) { el._sig = null; drawTile(el); }); }); });
     clearTimeout(endT);
     endT = setTimeout(function () { list.forEach(function (p) { p.cache = {}; $$('.mt-tile[data-id="' + p.id + '"]', root).forEach(function (el) { el._sig = null; enqueue(el); }); }); }, final ? 0 : 260);
     if (final) list.forEach(function (p) { FS.snap(p); });
@@ -1034,8 +1073,9 @@
     else if (mod && e.shiftKey && k === 'v') { e.preventDefault(); $(view === 'design' ? '#mt-dpaste' : '#mt-lpaste', root).click(); }
     else if (mod && k === 'z') { e.preventDefault(); if (view === 'design') hist(FS.undo); else { FS.undo(); refreshAll(); } }
     else if (mod && k === 'y') { e.preventDefault(); if (view === 'design') hist(FS.redo); else { FS.redo(); refreshAll(); } }
-    else if (k === 'escape') { S.marked = {}; refreshAll(); }
-    else if (view === 'edit' && (k === 'pagedown' || k === 'pageup' || k === 'arrowleft' || k === 'arrowright')) { e.preventDefault(); ePageGo(k === 'pagedown' || k === 'arrowleft' ? 1 : -1); }
+    else if (k === 'escape') { S.marked = {}; refreshAll(); if (view === 'edit') targetTxt(); }
+    else if (view === 'edit' && (k === 'pagedown' || k === 'pageup')) { e.preventDefault(); ePageGo(k === 'pagedown' ? 1 : -1); }
+    else if (view === 'edit' && FS.mateKeys && FS.mateKeys(k, e)) { /* handled */ }
     else if (view === 'design' && (k === 'arrowleft' || k === 'arrowright')) step(k === 'arrowleft' ? 1 : -1);
     else if (view === 'design' && (k === 'delete' || k === 'backspace') && selL) $('#mt-odel', root).click();
     e.stopImmediatePropagation();
