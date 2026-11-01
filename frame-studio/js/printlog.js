@@ -201,7 +201,9 @@
   var pt = 0;
   function poll() {
     clearTimeout(pt);
-    return get('/printers').then(function (j) {
+    /* the desktop program sees the computer's printers itself: no helper needed */
+    var desk = window.FSDesktop && FSDesktop.print ? FSDesktop.print.printers().then(function (l) { return { ok: true, printers: l.map(function (x) { return { name: x.name, default: x.default, state: 'ready', driver: x.label }; }) }; }) : null;
+    return (desk || get('/printers')).then(function (j) {
       var was = JSON.stringify([H.up, H.printers]), before = chosen(); H.up = !!(j && j.ok); H.printers = (j && j.printers) || [];
       var now = chosen(); if (now && now.error && (!before || before.error !== now.error)) FS.toast('⚠️ ' + now.name + ': ' + (ERR[now.error] || now.error), 8000);
       if (H.up && !sel) { var def = H.printers.filter(function (x) { return x.default; })[0]; if (def && !load(KSEL + '-asked', 0)) { save(KSEL + '-asked', 1); choose(def.name); } }
@@ -214,6 +216,7 @@
   /* print straight to the chosen printer: one 300dpi JPEG per sheet */
   FS.directPrint = function (plan) {
     var d = chosen(), n = plan.pages.length, i = 0;
+    if (window.FSDesktop && FSDesktop.print) return FS.doPrint(plan, true);   /* the desktop program prints the laid-out sheets itself */
     function b64(t) { return btoa(unescape(encodeURIComponent(t))); }
     function next() {
       if (i >= n) return Promise.resolve();

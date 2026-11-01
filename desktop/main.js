@@ -360,6 +360,22 @@ app.whenReady().then(() => {
 
   registerLocalAI();
 
+  // printing straight to a chosen printer, at the sheet's exact size and without margins (the page lays the sheets out in
+  // #print-root and calls print:run). With no printer named, Windows' own print window opens, as before.
+  ipcMain.handle('print:printers', async (event) => {
+    fromApp(event);
+    const list = await event.sender.getPrintersAsync();
+    return list.map((x) => ({ name: String(x.name || ''), label: String(x.displayName || x.name || ''), default: !!x.isDefault, status: Number(x.status) || 0 }));
+  });
+  ipcMain.handle('print:run', (event, o) => {
+    fromApp(event);
+    const mm = (v) => Math.max(20, Math.min(1200, Number(v) || 0));
+    const opts = { silent: !!(o && o.deviceName), printBackground: true, margins: { marginType: 'none' }, copies: Math.max(1, Math.min(99, Number(o && o.copies) || 1)),
+      pageSize: { width: Math.round(mm(o && o.wMm) * 1000), height: Math.round(mm(o && o.hMm) * 1000) }, dpi: { horizontal: 300, vertical: 300 } };
+    if (o && o.deviceName) opts.deviceName = String(o.deviceName).slice(0, 200);
+    return new Promise((ok) => { event.sender.print(opts, (success, reason) => ok({ ok: !!success, reason: success ? '' : String(reason || 'failed') })); });
+  });
+
   // the local AI engine's download, shown on the program's taskbar button (a number 0..1, or -1 to clear it)
   ipcMain.on('app:progress', (event, f) => {
     const frameUrl = event.senderFrame ? event.senderFrame.url : '';

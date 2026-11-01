@@ -973,7 +973,11 @@
   $('#mt-dai', root).addEventListener('click', function (e) { var b = e.target.closest('[data-la]'); var p = dcur(); if (b && p) Promise.resolve(local(b.dataset.la, [p])).then(function () { drawDesign(); }); });
 
   /* ---------- print ---------- */
-  var PS = Object.assign({ paper: '10x15', dpi: 300, mode: 'real', margin: 0, marginOn: false, marks: false, pfit: 'cover', which: 'auto' }, lsj('fs-mate-print', {}));
+  var PS = Object.assign({ paper: '10x15', dpi: 300, mode: 'real', margin: 0, marginOn: false, marks: false, pfit: 'cover', which: 'auto', msize: '' }, lsj('fs-mate-print', {}));
+  /* the magnet's printed size (mm), whatever the photo's own size; '' = the photo's size */
+  var MSIZES = [['', 'לפי גודל התמונה'], ['75x100', '7.5×10 ס״מ'], ['50x75', '5×7.5 ס״מ'], ['60x90', '6×9 ס״מ'], ['100x150', '10×15 ס״מ'], ['100x100', '10×10 ס״מ']];
+  /* ready layouts: [paper, magnet size, label] */
+  var MPRESETS = [['15x20', '75x100', '🧲 4 × 7.5×10 בדף 15×20'], ['10x15', '75x100', '🧲 2 × 7.5×10 בדף 10×15'], ['A4', '75x100', '🧲 4 × 7.5×10 בדף A4'], ['10x15', '50x75', '🧲 4 × 5×7.5 בדף 10×15']];
   function printList(which, only) {
     if (only) return only;
     var l = which === 'all' ? S.photos.slice() : which === 'todo' ? S.photos.filter(function (p) { return !p.printed; }) : which === 'sel' ? marked() : (marked().length ? marked() : S.photos.slice());
@@ -995,7 +999,7 @@
   function makePlan(o, only) {
     var list = printList(o.which, only);
     var plan = o.mode === 'page' ? pagePlan(list, o.paper, o.pfit, o.marks)
-      : FS.planPrint({ list: list, paper: o.paper, layout: 'fill', margin: o.marginOn ? o.margin : 0, gap: o.marginOn ? 2 : 0, copies: 1, marks: o.marks });
+      : FS.planPrint({ list: list, paper: o.paper, layout: 'fill', margin: o.marginOn ? o.margin : 0, gap: o.marginOn ? 2 : 0, copies: 1, marks: o.marks, size: o.msize ? o.msize.split('x').map(Number) : null });
     plan.dpi = Number(o.dpi) || 300; return plan;
   }
   function drawPv(plan, page, maxW, maxH) {
@@ -1009,6 +1013,9 @@
       if (it.cover) { var s = Math.max(w / t.width, h / t.height); x.drawImage(t, -t.width * s / 2, -t.height * s / 2, t.width * s, t.height * s); } else x.drawImage(t, -w / 2, -h / 2, w, h);
       x.restore();
       if (plan.marks) { x.strokeStyle = '#8a8a8a'; x.setLineDash([4, 3]); x.strokeRect(it.x * k, it.y * k, it.w * k, it.h * k); x.setLineDash([]); }
+      /* the real printed size on each one, so what comes out is clear before printing */
+      var lt = (Math.round(Math.min(it.w, it.h)) / 10) + '×' + (Math.round(Math.max(it.w, it.h)) / 10) + ' ס״מ', fz = Math.max(10, Math.min(15, it.w * k / 8));
+      x.font = '700 ' + fz + 'px Heebo, Arial, sans-serif'; var lw = x.measureText(lt).width + 10; x.fillStyle = 'rgba(29,22,51,.78)'; x.fillRect(it.x * k + 4, it.y * k + 4, lw, fz + 8); x.fillStyle = '#fff'; x.textBaseline = 'top'; x.fillText(lt, it.x * k + 9, it.y * k + 8);
     });
     x.strokeStyle = 'rgba(0,0,0,.25)'; x.strokeRect(0.5, 0.5, c.width - 1, c.height - 1);
     return c;
@@ -1020,7 +1027,9 @@
     var papers = FS.PAPERS.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + ' · ' + trim(x[2] / 25.4) + '×' + trim(x[3] / 25.4) + '״</option>'; }).join('');
     var b = FS.dialog('🖨️ הדפסה', '<div class="mp"><div class="mp-side">' +
       '<label>מדפסת</label><select id="mp-printer">' + printers + '</select>' + (pr.up ? '' : '<p class="mt-hint">לבחירת מדפסת ישירה מפעילים את "מנהל המדפסות" (שמירה והדפסה ← המדפסות במחשב).</p>') +
+      '<label>🧲 פריסה מוכנה</label><div class="mp-pre">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn" data-mpre="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' +
       '<label>גודל נייר</label><select id="mp-paper">' + papers + '</select>' +
+      '<label>גודל המגנט בהדפסה</label><select id="mp-msize">' + MSIZES.map(function (z) { return '<option value="' + z[0] + '">' + z[1] + '</option>'; }).join('') + '</select>' +
       '<label>DPI</label><select id="mp-dpi"><option>300</option><option>600</option></select>' +
       '<fieldset><legend>אפשרויות גודל</legend>' +
         '<label class="mt-chk-l"><input type="radio" name="mp-mode" value="real"> גודל אמיתי</label>' +
@@ -1033,20 +1042,21 @@
       '<div class="mp-pv"><div class="mp-cv" id="mp-cv"></div><div class="mp-nav"><button data-nav="first">|&lt;</button><button data-nav="prev">&lt;</button><b id="mp-pg">1 / 1</b><button data-nav="next">&gt;</button><button data-nav="last">&gt;|</button></div></div></div>' +
       '<div class="mp-foot"><button class="mt-btn" id="mp-cur">הדפסת העמוד הנוכחי</button><button class="mt-btn primary" id="mp-go">🖨️ הדפסה</button><button class="mt-btn" id="mp-save">💾 שמירת הגדרות</button><button class="mt-btn" id="mp-cancel">ביטול</button></div>', true);
     b.classList.add('mp-dlg');
-    $('#mp-paper', b).value = PS.paper; $('#mp-dpi', b).value = String(PS.dpi); $('#mp-margin', b).value = String(PS.margin || 3); $('#mp-mon', b).checked = !!PS.marginOn; $('#mp-marks', b).value = PS.marks ? '1' : '0';
+    $('#mp-paper', b).value = PS.paper; $('#mp-msize', b).value = PS.msize || '';
+    $$('[data-mpre]', b).forEach(function (btn) { btn.addEventListener('click', function () { var m = MPRESETS[Number(btn.dataset.mpre)]; $('#mp-paper', b).value = m[0]; $('#mp-msize', b).value = m[1]; $$('[name=mp-mode]', b).forEach(function (r) { r.checked = r.value === 'real'; }); $('#mp-mon', b).checked = false; paint(); }); }); $('#mp-dpi', b).value = String(PS.dpi); $('#mp-margin', b).value = String(PS.margin || 3); $('#mp-mon', b).checked = !!PS.marginOn; $('#mp-marks', b).value = PS.marks ? '1' : '0';
     $$('[name=mp-mode]', b).forEach(function (r) { r.checked = r.value === PS.mode; }); $$('[name=mp-fit]', b).forEach(function (r) { r.checked = r.value === PS.pfit; });
     if ($('#mp-which', b)) $('#mp-which', b).value = PS.which || 'auto';
     var plan = null, pg = 0;
     function read() {
       var mode = ($('[name=mp-mode]:checked', b) || {}).value || 'real';
-      return { paper: $('#mp-paper', b).value, dpi: Number($('#mp-dpi', b).value), mode: mode, margin: Number($('#mp-margin', b).value), marginOn: $('#mp-mon', b).checked, marks: $('#mp-marks', b).value === '1', pfit: ($('[name=mp-fit]:checked', b) || {}).value || 'cover', which: $('#mp-which', b) ? $('#mp-which', b).value : 'auto' };
+      return { paper: $('#mp-paper', b).value, msize: $('#mp-msize', b).value, dpi: Number($('#mp-dpi', b).value), mode: mode, margin: Number($('#mp-margin', b).value), marginOn: $('#mp-mon', b).checked, marks: $('#mp-marks', b).value === '1', pfit: ($('[name=mp-fit]:checked', b) || {}).value || 'cover', which: $('#mp-which', b) ? $('#mp-which', b).value : 'auto' };
     }
     function paint() {
       var o = read(); $$('.mp-in', b)[0].classList.toggle('off', o.mode !== 'real'); $$('.mp-in', b)[1].classList.toggle('off', o.mode !== 'page');
       plan = makePlan(o, only); pg = Math.min(pg, Math.max(0, plan.pages.length - 1));
       var box = $('#mp-cv', b); box.innerHTML = ''; box.appendChild(drawPv(plan, plan.pages[pg], Math.max(260, box.clientWidth - 20 || 420), Math.max(320, (innerHeight * 0.62) | 0)));
       $('#mp-pg', b).textContent = (plan.pages.length ? pg + 1 : 0) + ' / ' + plan.pages.length;
-      $('#mp-sum', b).innerHTML = '<b>' + plan.total + '</b> הדפסים · <b>' + plan.pages.length + '</b> דפים' + (plan.pages[0] ? ' · ' + plan.pages[0].length + ' בדף' : '');
+      $('#mp-sum', b).innerHTML = '<b>' + plan.total + '</b> הדפסים · <b>' + plan.pages.length + '</b> דפים' + (plan.pages[0] ? ' · ' + plan.pages[0].length + ' בדף' : '') + '<br>נייר ' + esc(plan.paper[1]) + ' (' + (plan.paper[2] / 10) + '×' + (plan.paper[3] / 10) + ' ס״מ)' + (o.msize ? ' · מגנט ' + o.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : '');
       $('#mp-go', b).disabled = $('#mp-cur', b).disabled = !plan.total;
     }
     $$('select, input', $('.mp-side', b)).forEach(function (el) { el.addEventListener('change', function () { if (el.id === 'mp-printer' && FS.choosePrinter) FS.choosePrinter(el.value); paint(); }); });

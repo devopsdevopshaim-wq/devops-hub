@@ -1373,3 +1373,34 @@ Checked on a synthetic far couple:
 - the original: 0 faces strict, 1 loose, cover 0.05;
 - posterised "drawn": cover 0.081, so it is kept;
 - an empty scene: cover 0, so it is caught.
+
+## Printing: the computer's printers in the desktop program, magnet sizes, real-size preview (Nov 1, v93)
+
+The owner could not print "4 on a sheet" at 7.5×10, did not see his printer, and wanted a true preview.
+
+**Desktop program** (`desktop/main.js`, `desktop/preload.js`):
+- `FSDesktop.print.printers()` (`print:printers`) returns {name, label, default} from `webContents.getPrintersAsync()`.
+- `FSDesktop.print.run({deviceName, wMm, hMm})` (`print:run`) calls `webContents.print` with these settings:
+  - silent to the named printer;
+  - `pageSize` in microns from the sheet's size, margins `none`, 300 dpi, `printBackground`.
+  - With no printer named, Windows' own print window opens.
+
+**`js/printlog.js`:** in the desktop program the printer list comes from `FSDesktop.print`, so no helper is needed (`FS.printers()` and the `mp-printer` select fill themselves). `FS.directPrint` hands the job to `FS.doPrint(plan, true)`.
+
+**`js/output.js`:**
+- `FS.doPrint(plan, viaDesktop)` lays the sheets out in `#print-root`, then calls `FSDesktop.print.run` with `FS.printerChoice()` (the same `frame-studio-printer-sel` key as printlog). Otherwise it calls `window.print()`.
+- `FS.planPrint(job)`:
+  - `job.size` = [w, h] mm forces the magnet's printed size; the photo fills it (`cover`);
+  - the grid layouts (2/4/6/9) print at the real size whenever it fits the cell;
+  - each item carries `want` (the wanted size).
+- The preview's `plan.labels` draws "7.5×10 ס״מ" on each item, and "⚠️ מוקטן" in red when it came out smaller than wanted.
+- The print planner (`FS.printPreview`) has:
+  - ready magnet layouts (`MAGNET_PRESETS`): 4 × 7.5×10 on 15×20; 2 × 7.5×10 on 10×15; 4 × 7.5×10 on A4; 4 × 5×7.5 on 10×15;
+  - a 🖨️ printer select (desktop only; in a browser, a note that the computer's print window chooses).
+
+**Quick workspace print** (`js/mate.js` `openPrint`):
+- "🧲 פריסה מוכנה" buttons (`MPRESETS`).
+- "גודל המגנט בהדפסה" (`PS.msize`: 7.5×10, 5×7.5, 6×9, 10×15, 10×10, or the photo's own size), passed to `planPrint` as `size`.
+- The preview labels each item's real size, and the summary names the paper and the magnet size.
+
+Checked: 4 photos sized 10×15 with "4 × 7.5×10 on 15×20" plan as 1 sheet of 4, each 75×100 mm; the same photos on 10×15 paper make 2 sheets of 2.

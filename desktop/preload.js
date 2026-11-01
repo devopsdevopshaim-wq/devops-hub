@@ -44,6 +44,11 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
     set: (k, v) => ipcRenderer.invoke('vault:set', k, v),
     del: (k) => ipcRenderer.invoke('vault:del', k),
   }),
+  // the printers installed on this computer, and printing the laid-out sheets to one of them at the exact paper size
+  print: Object.freeze({
+    printers: () => ipcRenderer.invoke('print:printers'),
+    run: (o) => ipcRenderer.invoke('print:run', { deviceName: o && o.deviceName ? String(o.deviceName) : '', wMm: Number(o && o.wMm) || 0, hMm: Number(o && o.hMm) || 0, copies: Number(o && o.copies) || 1 }),
+  }),
   // the taskbar button's progress (0..1, -1 clears, 2 = failed) and a Windows notification
   progress: (f) => ipcRenderer.send('app:progress', Number(f)),
   notify: (title, body) => ipcRenderer.send('app:notify', String(title || ''), String(body || '')),
