@@ -764,7 +764,7 @@
   var SITE_FRAMES = [];
   var biz = FS.siteData().then(function (b) {
     SITE_FRAMES = b.__frames || []; delete b.__frames; delete b.__live; delete b.__taken;
-    FS.BIZ_SITE = b; FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}) });
+    FS.BIZ_SITE = b; FS.BIZ = Object.assign({}, FS.BIZ, b || {}, { credit: Object.assign({}, FS.BIZ.credit, (b && b.credit) || {}, { on: FS.creditOn ? FS.creditOn() : false }) });
     $$('[data-biz]').forEach(function (e) { if (b[e.dataset.biz]) e.textContent = b[e.dataset.biz]; });
   });
   /* the owner's PNG frames: the ones uploaded in the admin (on the server) and any in frames/frames.json */
