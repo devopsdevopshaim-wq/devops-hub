@@ -176,6 +176,14 @@
   swEl.addEventListener('click', function (e) { var b = e.target.closest('[data-sw]'); if (!b) return; if (b.dataset.sw === 'mt') { if (!on()) open(); } else if (on()) close(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'F2' && !document.body.classList.contains('gated')) { e.preventDefault(); toggle(); } });
   FS.mate = { open: open, close: function () { close(); }, toggle: function () { toggle(); }, isOn: on, print: function () { openPrint(); } };
+  /* the full editor: the editing tools in a panel on the right, the photos in a strip along the bottom, the photo big in between */
+  (function () {
+    var dv = $('[data-view="design"]', root), br = dv && $('.mt-browser', dv), dz = dv && $('.mt-dz', dv), tools = dv && $('.mt-dtools', dv);
+    if (!dv || !br || !dz || !tools) return;
+    var side = document.createElement('aside'); side.className = 'mt-dside'; side.appendChild(tools);
+    dv.insertBefore(side, dv.firstChild);
+    br.classList.add('mt-bstrip'); dz.appendChild(br);
+  })();
   $$('.mt-tabs [data-v]', root).forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.v); }); });
   $$('[data-go]', root).forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
 
