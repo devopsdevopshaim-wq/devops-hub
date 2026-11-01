@@ -70,6 +70,14 @@
         fr.readAsDataURL(blob);
       };
       r.start(); document.getElementById('mic').textContent = '⏹ עצירה';
+      /* the spoken words written down too (where the phone can: Chrome / Android, Safari), so the greeting can be printed on the magnet */
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition, heard = '';
+      if (SR) try {
+        var sr = new SR(); sr.lang = 'he-IL'; sr.continuous = true; sr.interimResults = false;
+        sr.onresult = function (e) { for (var i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) heard += (heard ? ' ' : '') + e.results[i][0].transcript; };
+        sr.onend = function () { var tx = document.getElementById('tx'); if (heard && tx && !tx.value.trim()) { tx.value = heard.slice(0, 300); L.toast('✍️ הברכה נכתבה גם במילים. אפשר לתקן.', 4000); } };
+        sr.start(); var stop0 = r.onstop; r.onstop = function () { try { sr.stop(); } catch (e2) { /* ended */ } stop0(); };
+      } catch (e) { /* no speech-to-text here: the voice alone goes */ }
       tick = setInterval(function () { var s = Math.floor((Date.now() - t0) / 1000); document.getElementById('mic-t').textContent = '🔴 ' + s + ' / 30'; if (s >= 30) r.stop(); }, 250);
     }, function () { L.toast('אין גישה למיקרופון. אפשר לכתוב ברכה במקום.', 4500); });
   }

@@ -122,7 +122,8 @@ export default {
       return ics ? new Response(ics, { headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'private, max-age=300', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } }) : reply({ ok: false, error: 'not-found' }, 404);
     }
     if (rt.kind === 'frame-live-img') {
-      const q = url.searchParams, f = await env.STATE.get(env.STATE.idFromName('frame')).liveFileData(q.get('e') || '', q.get('p') || '', q.get('v') || '', q.get('a') === '1');
+      const q = url.searchParams, kind = q.get('a') === '1' ? 'audio' : q.get('m') === '1' ? 'mask' : q.get('h') === '1' ? 'hero' : q.get('cap') === '1' ? 'cap' : '';
+      const f = await env.STATE.get(env.STATE.idFromName('frame')).liveFileData(q.get('e') || '', q.get('p') || '', q.get('v') || '', kind, q.get('c') || '', q.get('k') || '');
       return f ? new Response(f.u, { headers: { 'Content-Type': f.mime, 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': SITE_ORIGIN, 'Cross-Origin-Resource-Policy': 'cross-origin' } }) : reply({ ok: false, error: 'not-found' }, 404);
     }
     if (rt.kind === 'frame-live') {
@@ -367,7 +368,7 @@ export class State extends DurableObject {
   // the live event. Guests may send a photo every few seconds from one address (a table shares the venue's Wi-Fi, so not too few)
   async liveCall(who, b, ip) {
     const a = String(b.action || ''), t = Date.now();
-    if (a === 'guest-up') {
+    if (a === 'guest-up' || a === 'capsule-put' || a === 'find') {
       this.lg = this.lg || new Map();
       const arr = (this.lg.get(ip) || []).filter((x) => t - x < 3600000), dn = Math.floor(t / 864e5), day = this.lgDay && this.lgDay.d === dn ? this.lgDay : (this.lgDay = { d: dn, n: 0 });
       if (arr.length >= 120 || day.n >= 20000) return { code: 429, body: { ok: false, error: 'rate-limited' } };
@@ -385,13 +386,19 @@ export class State extends DurableObject {
     this.q = run.catch(() => {});
     try { return await run; } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; }
   }
-  liveFileData(e, p, v, audio) { return liveFile(this.ctx.storage, e, p, v, audio); }
+  liveFileData(e, p, v, kind, c, k) { return liveFile(this.ctx.storage, e, p, v, kind, c, k); }
   // the cron: old photos go, and the couple gets their gallery and a review request the day after the event
   async liveTick() {
     const run = this.q.then(() => liveCron(this.ctx.storage));
     this.q = run.catch(() => {});
     let mails = []; try { mails = await run; } catch (e) { return; }
     for (const m of mails) {
+      if (m.kind === 'capsule') {   // a year after the event: the time capsule opens
+        await sendMail(this.env, { to: m.to, fromName: m.biz || FRAME_NAME, replyTo: m.owner || ADMIN_EMAIL, subject: '💌 שנה לאירוע: קפסולת הזמן שלכם נפתחה',
+          text: 'שלום' + (m.name ? ' ' + m.name : '') + ',\n\nבדיוק לפני שנה חגגתם את ' + m.title + '. באירוע ' + m.count + ' מהאורחים השאירו לכם הודעות בקפסולת הזמן, דרך הקוד שעל המגנטים, והן נפתחות היום:\n' +
+            'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/capsule.html?e=' + m.e + '&v=' + m.v + '\n\nמזל טוב ליום השנה!\n' + (m.biz || FRAME_NAME) });
+        continue;
+      }
       const album = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/album.html?e=' + m.e + '&v=' + m.v;
       await sendMail(this.env, { to: m.to, fromName: m.biz || FRAME_NAME, replyTo: m.owner || ADMIN_EMAIL, subject: '📸 התמונות והברכות מ' + m.title,
         text: 'שלום' + (m.name ? ' ' + m.name : '') + ',\n\nתודה שבחרתם בנו! כל המגנטים, התמונות שהאורחים צילמו והברכות שהשאירו מחכים לכם כאן:\n' + album +

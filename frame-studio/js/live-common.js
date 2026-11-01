@@ -8,7 +8,7 @@
     .then(function (j) { var b = String((j && j.base) || '').replace(/\/+$/, ''); return /^https:\/\/[\w.-]+(:\d+)?$/.test(b) ? b : DEFAULT; }).catch(function () { return DEFAULT; });
   var q = new URLSearchParams(location.search);
   var L = window.FL = {
-    e: (q.get('e') || '').replace(/[^a-z0-9]/g, ''), k: (q.get('k') || '').replace(/[^a-f0-9]/g, ''), v: (q.get('v') || '').replace(/[^a-f0-9]/g, ''),
+    e: (q.get('e') || '').replace(/[^a-z0-9]/g, ''), k: (q.get('k') || '').replace(/[^a-f0-9]/g, ''), v: (q.get('v') || '').replace(/[^a-f0-9]/g, ''), c: (q.get('c') || '').replace(/[^a-z0-9]/g, ''),
     base: base,
     call: function (body) {
       return base.then(function (u) { return fetch(u + '/frame-live', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body) }); })

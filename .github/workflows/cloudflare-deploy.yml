@@ -48,6 +48,7 @@ jobs:
           node build.mjs
           node test/frame.test.mjs
           node test/notify.test.mjs
+          node test/magic.test.mjs
           node test/live.test.mjs
           node test/smtp.test.mjs
           printf 'ADMIN_PASSWORD_HASH=%s\nSHARED_KEY=test-shared-key\n' "$(node test/hash.mjs 'Test-Passw0rd-xyz')" > .dev.vars

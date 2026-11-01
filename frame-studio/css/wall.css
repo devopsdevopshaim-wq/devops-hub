@@ -37,3 +37,8 @@ body.idle .w-full { opacity: 0; }
 .w-empty p { margin: 0; }
 .w-empty canvas { width: min(42vh, 60vw); height: auto; margin: 0 auto; border-radius: 22px; }
 @media (prefers-reduced-motion: reduce) { .kb, .w-new { animation: none; } .w-slide { transition-duration: .3s; transform: none !important; filter: none !important; } }
+/* the live mosaic (mosaic.js) */
+body.mosaic .w-stage { position: fixed; inset: 0; }
+.mz-cv { position: fixed; inset: 0; display: block; }
+.mz-bar { position: fixed; bottom: 18px; right: 18px; z-index: 5; display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,.55); color: #f3ecdc; padding: 8px 12px; border-radius: 999px; font: 600 18px 'Heebo', sans-serif; direction: rtl; }
+.mz-bar button { border: 0; border-radius: 999px; padding: 8px 16px; font: 800 17px 'Heebo', sans-serif; background: linear-gradient(135deg, #F3DDA6, #B8904F); color: #1A140B; cursor: pointer; }
