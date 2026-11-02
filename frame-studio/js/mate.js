@@ -28,6 +28,7 @@
   root.innerHTML =
     '<header class="mt-top"><nav class="mt-tabs" role="tablist">' +
       '<button data-v="main" class="on">🗂️ ראשי</button><button data-v="edit">🎚️ ערוך תמונה</button><button data-v="design">🖌️ עורך מלא</button><button data-v="ai">🤖 AI</button><button data-v="print">🖨️ הדפסה</button></nav>' +
+      '<div class="mt-qp"><button class="mt-btn primary" id="mt-qprint" title="ישר למדפסת, בלי חלונות (Ctrl+P)">⚡ הדפסה מיידית</button><button class="mt-ic" id="mt-qset" title="הגדרת ההדפסה המיידית">⚙</button></div>' +
       '<div class="mt-stat" id="mt-stat"></div>' +
       '<div class="mt-acts"><label class="mt-btn">📂 תמונות<input type="file" id="mt-files" multiple hidden accept="image/*,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.raw,.pef,.srw,.x3f,.3fr,.erf,.kdc,.mrw,.rwl,.iiq,.heic,.heif"></label>' +
       '<button class="mt-btn" id="mt-folder">📁 תיקייה</button></div></header>' +
@@ -1004,6 +1005,38 @@
     });
     return { paper: paper, pages: pages, total: total, marks: marks };
   }
+  /* ⚡ the instant print: the printer and the layout are chosen once; then one click prints the marked photos (or the one on
+     screen) straight to the printer, no window, at the exact size (the desktop program; a browser still shows its print window) */
+  function qpGet() { return lsj('fs-qprint', null); }
+  function qpList() { var m = marked(); if (m.length) return m; var f = focus(); return f ? [f] : []; }
+  function qpRun() {
+    var q = qpGet(); if (!q) return qpSetup(true);
+    var list = qpList(); if (!list.length) return FS.toast('אין תמונה להדפסה');
+    var plan = FS.planPrint({ list: list, paper: q.paper, layout: 'fill', margin: 0, gap: 0, copies: 1, size: q.msize ? q.msize.split('x').map(Number) : null });
+    if (!plan.total) return FS.toast('אין מה להדפיס');
+    if (window.FSDesktop && FSDesktop.print && q.printer) { if (FS.choosePrinter) FS.choosePrinter(q.printer); else FS.printerChoice(q.printer); }
+    else FS.toast('בדפדפן נפתח חלון ההדפסה. בתוכנה למחשב ההדפסה יוצאת ישר למדפסת.', 5000);
+    FS.toast('⚡ ' + plan.total + ' מגנטים · ' + plan.pages.length + ' דפים ' + plan.paper[1] + (q.printer ? ' → ' + q.printer : ''), 4000);
+    Promise.resolve(FS.doPrint(plan)).then(function () { setTimeout(refreshAll, 400); });
+  }
+  function qpSetup(thenPrint) {
+    var q = qpGet() || { paper: '15x20', msize: '75x100', printer: '' }, pr = FS.printers ? FS.printers() : { up: false, list: [] };
+    var b = FS.dialog('⚡ הגדרת הדפסה מיידית', '<p class="mt-hint">בוחרים פעם אחת: מדפסת ופריסה. מעכשיו "⚡ הדפסה מיידית" (או Ctrl+P) מדפיס ישר, בלי חלונות.</p>' +
+      '<label>מדפסת</label><select id="qp-printer">' + (pr.up ? pr.list : []).map(function (x) { return '<option value="' + esc(x.name) + '">' + esc(x.name) + (x.default ? ' ★' : '') + '</option>'; }).join('') + '<option value="">חלון ההדפסה של המחשב</option></select>' +
+      (pr.up ? '' : '<p class="mt-hint">⚠️ המדפסות מופיעות בתוכנה למחשב (Windows). בדפדפן ייפתח חלון ההדפסה.</p>') +
+      '<label>פריסה</label><div class="mp-pre" id="qp-pre">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn" data-q="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' +
+      '<p class="mt-hint" id="qp-cur"></p><div class="mt-row"><button class="mt-btn primary" id="qp-save">' + (thenPrint ? '💾 שמירה והדפסה' : '💾 שמירה') + '</button></div>');
+    var cur = { paper: q.paper, msize: q.msize };
+    function show() { var m = MPRESETS.filter(function (x) { return x[0] === cur.paper && x[1] === cur.msize; })[0]; $('#qp-cur', b).textContent = m ? 'נבחר: ' + m[2] : 'נבחר: נייר ' + cur.paper + ', מגנט ' + cur.msize; $$('[data-q]', b).forEach(function (x) { var mm = MPRESETS[Number(x.dataset.q)]; x.classList.toggle('on', mm[0] === cur.paper && mm[1] === cur.msize); }); }
+    $('#qp-printer', b).value = q.printer && (pr.list || []).some(function (x) { return x.name === q.printer; }) ? q.printer : (pr.chosen ? pr.chosen.name : ((pr.list || []).filter(function (x) { return x.default; })[0] || { name: '' }).name);
+    $$('[data-q]', b).forEach(function (x) { x.addEventListener('click', function () { var m = MPRESETS[Number(x.dataset.q)]; cur = { paper: m[0], msize: m[1] }; show(); }); });
+    $('#qp-save', b).addEventListener('click', function () { ls('fs-qprint', JSON.stringify({ printer: $('#qp-printer', b).value, paper: cur.paper, msize: cur.msize })); FS.closeDialog(); FS.toast('⚡ ההדפסה המיידית מוכנה'); qpBtn(); if (thenPrint) qpRun(); });
+    show();
+  }
+  function qpBtn() { var q = qpGet(), btn = $('#mt-qprint', root); if (btn) btn.title = q ? 'ישר ל' + (q.printer || 'חלון ההדפסה') + ' · ' + q.paper + ' · מגנט ' + q.msize + ' (Ctrl+P)' : 'הגדרה ראשונה, ואז ישר למדפסת'; }
+  $('#mt-qprint', root).addEventListener('click', qpRun);
+  $('#mt-qset', root).addEventListener('click', function () { qpSetup(false); });
+  qpBtn();
   function makePlan(o, only) {
     var list = printList(o.which, only);
     var plan = o.mode === 'page' ? pagePlan(list, o.paper, o.pfit, o.marks)
@@ -1086,7 +1119,7 @@
     var typing = /input|textarea|select/i.test(e.target.tagName || ''), k = (e.key || '').toLowerCase(), mod = e.ctrlKey || e.metaKey;
     if (typing) { e.stopImmediatePropagation(); return; }
     if (mod && k === 'a') { e.preventDefault(); shown().forEach(function (p) { mark(p, true); }); refreshAll(); }
-    else if (mod && k === 'p') { e.preventDefault(); openPrint(); }
+    else if (mod && k === 'p') { e.preventDefault(); if (e.shiftKey || !qpGet()) openPrint(); else qpRun(); }
     else if (mod && e.shiftKey && k === 'c') { e.preventDefault(); $('#mt-lcopy', root).click(); }
     else if (mod && e.shiftKey && k === 'v') { e.preventDefault(); $(view === 'design' ? '#mt-dpaste' : '#mt-lpaste', root).click(); }
     else if (mod && k === 'z') { e.preventDefault(); if (view === 'design') hist(FS.undo); else { FS.undo(); refreshAll(); } }
