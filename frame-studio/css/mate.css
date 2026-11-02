@@ -447,3 +447,6 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 #mt .mt-bstrip .mt-files .mt-btn { flex: none; }
 @media (max-width: 900px) { #mt .mt-view[data-view=design] { flex-direction: column-reverse; } #mt .mt-dside { width: auto; max-height: 40vh; } }
 #mt .mt-dz .mt-bstrip { padding-bottom: 20px; }
+/* ⚡ the instant print */
+#mt .mt-qp { display: inline-flex; gap: 4px; align-items: center; }
+#mt #mt-qprint { white-space: nowrap; }

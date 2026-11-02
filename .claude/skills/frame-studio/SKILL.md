@@ -1432,3 +1432,23 @@ The owner asked, in the quick workspace's "🖌️ עורך מלא", to swap the
 - Below 900 px the panel goes under the canvas.
 
 Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side panel edits and enables undo.
+
+## ⚡ Instant print, and the first opening (Nov 2, v96)
+
+**⚡ Instant print** (`js/mate.js`):
+- The buttons `#mt-qprint` "⚡ הדפסה מיידית" and `#mt-qset` ⚙ sit in the workspace header.
+- The profile `fs-qprint` holds {printer, paper, msize}. It is chosen once in `qpSetup` (the computer's printers through `FS.printers()`, the `MPRESETS` layouts), and the setup can print right away.
+- `qpRun` prints the marked photos (or the focused one) through `FS.planPrint({ layout: 'fill', margin: 0, gap: 0, size: msize })`, then `FS.choosePrinter(printer)`, then `FS.doPrint`. In the desktop program that goes straight to the printer through `FSDesktop.print.run` (silent, exact sheet size); in a browser the print window opens.
+- Ctrl+P runs the instant print once a profile exists; Ctrl+Shift+P opens the print window.
+- "Straight to the printer" still goes through the printer's Windows driver, as in any professional program; only the dialogs are skipped.
+- Checked with a simulated desktop program: the setup listed DNP / HP with the default chosen; save sent `{deviceName: 'DNP DS620', wMm: 152, hMm: 203}`; Ctrl+P printed again with no dialog.
+
+**✨ The first opening** (`js/firstrun.js` + `css/firstrun.css`, `FS.showWow()` replays it):
+- It shows once (`fs-wow-v1`), after the logo splash `#op-splash` has gone (it polls up to about 9 s).
+- The sequence:
+  1. gold sparks gather, then a soft flash;
+  2. a white wedding magnet appears, and the couple steps out of it over the top and the sides (MagicCore layers built from the prepared `media/demo/couple.jpg` + `couple-mask.png`, made once with the studio's own mask, so nothing has to load);
+  3. "אופטימוס" in moving gold with "התמונה שלכם. חיה.";
+  4. five feature cards fly in; "✨ בואו נתחיל" pulses.
+- Enter / Esc / Space / either button closes it. "Reduce motion" shows the end state.
+- `css/gate.css`: `body.gated` no longer hides `#wow1` (it was hidden behind the sign-in at first).
