@@ -97,7 +97,7 @@
       function fin(verified) { var v = { name: who.name, contact: who.contact, verified: !!verified, at: Date.now() }; A.setVisitor(v); if (opts.done) opts.done(v); }
       function draw(note) {
         box.innerHTML = '<div class="acc">' + (stage === 'code'
-          ? '<p class="hint">שלחנו קוד בן 6 ספרות ל־<b dir="ltr">' + esc(who.contact) + '</b>. הוא מגיע תוך דקה (בודקים גם בספאם).</p><label>הקוד מהמייל<input id="en-code" inputmode="numeric" maxlength="6" dir="ltr" autocomplete="one-time-code"></label>' +
+          ? '<p class="hint">שלחנו קוד בן 6 ספרות ל־<b dir="ltr">' + esc(who.contact) + '</b>. הוא מגיע תוך כמה דקות (בודקים גם בספאם).</p><label>הקוד מהמייל<input id="en-code" inputmode="numeric" maxlength="6" dir="ltr" autocomplete="one-time-code"></label>' +
             '<button class="btn gold wide" id="en-go">כניסה</button><button class="link" id="en-back">← לשנות מייל או טלפון</button>'
           : '<label>השם שלכם<input id="en-name" autocomplete="name" maxlength="60" value="' + esc(who.name) + '"></label><label>טלפון או מייל<input id="en-contact" autocomplete="email" dir="ltr" value="' + esc(who.contact) + '" placeholder="050-0000000 או name@mail.com"></label>' +
             '<button class="btn gold wide" id="en-go">כניסה</button><p class="hint">בלי סיסמה. עם מייל נשלח אליכם קוד כניסה חד־פעמי.</p>') +
@@ -159,8 +159,8 @@
         var first = box.querySelector('input'); if (first && !opts.noFocus) setTimeout(function () { first.focus(); }, 30);
         function submit() {
           var e = val('#acc-email');
-          if (view === 'signup') { busy(go); return A.signup(val('#acc-name'), e, val('#acc-phone')).then(function (r) { last.email = e; view = 'login'; draw(r.ok ? 'שלחנו סיסמה ראשונית ל־' + e + '. היא מגיעה תוך דקה (בודקים גם בספאם).' : msg(r)); }); }
-          if (view === 'forgot') { busy(go); return A.forgot(e).then(function (r) { last.email = e; view = 'login'; draw(r.ok ? 'אם המייל רשום, נשלחה אליו סיסמה ראשונית. היא מגיעה תוך דקה (בודקים גם בספאם).' : msg(r)); }); }
+          if (view === 'signup') { busy(go); return A.signup(val('#acc-name'), e, val('#acc-phone')).then(function (r) { last.email = e; view = 'login'; draw(r.ok ? 'שלחנו סיסמה ראשונית ל־' + e + '. היא מגיעה תוך כמה דקות (בודקים גם בספאם).' : msg(r)); }); }
+          if (view === 'forgot') { busy(go); return A.forgot(e).then(function (r) { last.email = e; view = 'login'; draw(r.ok ? 'אם המייל רשום, נשלחה אליו סיסמה ראשונית. היא מגיעה תוך כמה דקות (בודקים גם בספאם).' : msg(r)); }); }
           last.email = e; last.pw = val('#acc-pw') || last.pw; busy(go);
           A.login(e, last.pw, val('#acc-totp')).then(function (r) {
             if (r.ok) { if (opts.adminOnly && r.role !== 'admin') { keep(null); return draw('האזור הזה לבעל העסק בלבד. לקוחות נכנסים בעורך המסגרות.'); } if (r.mustChange) return draw(); if (opts.done) opts.done(load()); return; }

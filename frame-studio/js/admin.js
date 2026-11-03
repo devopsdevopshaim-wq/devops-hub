@@ -99,7 +99,22 @@
       if (dirty.packages) localStorage.setItem(PKEY, JSON.stringify(draft.packages || []));
     } catch (e) { FS.toast('השמירה בדפדפן לא הצליחה (אולי מצב גלישה פרטית)'); }
   }
-  function touch(k) { dirty[k] = 1; persist(); state(); pushPreview(); }
+  function touch(k) { dirty[k] = 1; persist(); state(); pushPreview(); if (/^(packages|extras|packagesNote)$/.test(k)) livePrices(); }
+  /* 💰 prices are live: the packages (and their extras and note) are published by themselves 1.5 s after the last change,
+     on top of what is already on the site, so other unpublished edits stay a draft */
+  var priceT = 0;
+  function livePrices() {
+    clearTimeout(priceT);
+    priceT = setTimeout(function () {
+      var s = clone(base), K = ['packages', 'extras', 'packagesNote']; K.forEach(function (k) { if (k in draft) s[k] = clone(draft[k]); });
+      ACC.call('site-save', { site: s }).then(function (r) {
+        if (!r || !r.ok) { if (r && r.error === 'signed-out') return; return FS.toast('המחיר לא עודכן באתר: ' + ACC.msg(r) + '. נשמר כטיוטה.', 5000); }
+        K.forEach(function (k) { if (k in draft) base[k] = clone(draft[k]); delete dirty[k]; });
+        try { if (draft.packages) localStorage.setItem(PKEY, JSON.stringify(draft.packages)); } catch (e) { /* ignore */ }
+        persist(); state(); FS.toast('🌐 המחירים החדשים כבר באתר', 2500);
+      });
+    }, 1500);
+  }
   function state() {
     var n = Object.keys(dirty).length; $('#publish').disabled = !n;
     $('#state').textContent = n ? '💾 טיוטה נשמרה ' + (savedAt ? new Date(savedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '') + ' · ' + n + ' שינויים עוד לא באתר' : '✔ הכול שמור ומפורסם';

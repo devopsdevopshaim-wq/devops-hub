@@ -5,7 +5,9 @@
    Karantina for the big words, Assistant to read, IBM Plex Sans Hebrew for numbers. Loaded last in studio.html.
    ========================================================================== */
 :root {
-  --at-night0: #0A0F1F; --at-night1: #0F1528; --at-night2: #151D35; --at-night3: #1C2642; --at-night4: #26324F;
+  /* a neutral graphite desk, like the pro editors (a tinted interface skews how the photo's colours look); three tiers
+     of lightness give the depth; quartz only where something acts or is chosen */
+  --at-night0: #0F0F11; --at-night1: #151517; --at-night2: #1C1C1F; --at-night3: #242428; --at-night4: #2E2E33;
   --at-flash: #F8F7F4; --at-quartz: #EDB6BE; --at-quartz-deep: #C98894; --at-thread: #CFAE74;
   --at-grad: linear-gradient(135deg, #FCE6E9 0%, #EDB6BE 48%, #C98894 100%);
   /* the studio's own names */
@@ -23,12 +25,9 @@
   --g0: var(--at-night0); --g1: var(--at-night1); --g2: var(--at-night2); --g3: var(--at-night3); --g4: var(--at-night4);
   --gold: var(--at-quartz); --gold2: var(--at-quartz-deep); --gold-grad: var(--at-grad);
   --ink: #F3F1EC; --dim: #A3AAC0; --hair: rgba(255,255,255,.07); --hair2: rgba(255,255,255,.11);
-  background:
-    radial-gradient(1100px 520px at 88% -12%, rgba(237,182,190,.12), transparent 62%),
-    radial-gradient(900px 620px at -8% 112%, rgba(90,120,255,.10), transparent 60%),
-    var(--at-night0);
+  background: var(--at-night0);
 }
-#mt .mt-top { background: linear-gradient(180deg, rgba(17,24,45,.94), rgba(12,17,33,.94)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+#mt .mt-top { background: rgba(21,21,23,.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 #mt .mt-top::after { background: linear-gradient(90deg, transparent, rgba(237,182,190,.55), rgba(207,174,116,.4), transparent); animation: none; }
 #mt .mt-mark { background: var(--at-grad); color: var(--at-night1); box-shadow: 0 6px 18px -6px rgba(237,182,190,.6); }
 #mt .mt-tabs { background: rgba(0,0,0,.28); }
@@ -56,15 +55,15 @@
 #mt .mt-tile.sel .mt-name { color: var(--at-quartz); }
 
 /* cards and headings */
-#mt .mt-card { background: linear-gradient(180deg, rgba(28,38,66,.62), rgba(17,24,44,.62)); }
+#mt .mt-card { background: var(--at-night2); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
 #mt .mt-card h3 { font-family: var(--f-display); font-weight: 700; font-size: 30px; line-height: 1; letter-spacing: .01em; }
 #mt .mt-card h3 small { font-family: 'Assistant', sans-serif; font-size: 12.5px; font-weight: 400; color: var(--dim); letter-spacing: 0; }
 #mt .mt-ai-g button:hover { box-shadow: inset 0 0 0 1px rgba(237,182,190,.5), 0 16px 30px -16px rgba(237,182,190,.4); }
 #mt .mt-chips button:hover, #mt .mt-chips button.on { box-shadow: inset 0 0 0 1px rgba(237,182,190,.55); color: var(--at-quartz); }
 #mt .mt-empty { border-color: rgba(237,182,190,.4); background: radial-gradient(600px 300px at 50% 30%, rgba(237,182,190,.10), transparent 70%), rgba(255,255,255,.015); }
 #mt .mt-empty h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(56px, 6vw, 92px); line-height: .95; background: linear-gradient(180deg, #fff, #F2D3D8); -webkit-background-clip: text; background-clip: text; }
-#mt .mt-cvw { background: radial-gradient(800px 500px at 50% 40%, #18213D, var(--at-night0)); }
-#mt-switch { background: rgba(12,17,33,.94); box-shadow: 0 0 0 1px rgba(237,182,190,.45), 0 14px 34px -12px rgba(0,0,0,.9); }
+#mt .mt-cvw { background: #121214; }
+#mt-switch { background: rgba(21,21,23,.94); box-shadow: 0 0 0 1px rgba(237,182,190,.45), 0 14px 34px -12px rgba(0,0,0,.9); }
 #mt-switch button.on { background: var(--at-grad); color: var(--at-night1); }
 
 /* the puzzles and cubes card */
@@ -77,7 +76,7 @@
 .topbar, .tools, .stagebar, .stripbar, .strip { background: var(--at-night1) !important; }
 .panel { background: var(--at-night1); }
 .panel .card { background: var(--at-night2); }
-.stage { background: radial-gradient(80% 70% at 50% 45%, #18213D 0%, var(--at-night0) 75%); }
+.stage { background: #121214; }
 .tools button[aria-selected=true] { background: var(--at-night3); box-shadow: inset 0 0 0 1px rgba(237,182,190,.45); color: var(--at-quartz); }
 .btn.primary, .btn.gold { background: var(--at-grad); color: var(--at-night1); border-color: transparent; }
 
@@ -85,3 +84,13 @@
 #dlg { background: var(--at-night1); border: 1px solid rgba(255,255,255,.08); box-shadow: 0 40px 120px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(237,182,190,.12); }
 #dlg-title { font-family: var(--f-display); font-weight: 700; font-size: 34px; letter-spacing: .01em; }
 @media (prefers-reduced-motion: reduce) { #mt .mt-tile .mt-th canvas { transition: none; } #mt .mt-tile:hover .mt-th canvas { transform: none !important; } }
+
+/* the quiet chrome: panels and bars one step lighter than the desk, no coloured glows */
+#mt .mt-panel, #mt .mt-browser, #mt .mt-ebar, #mt .mt-dinfo, #mt .mt-dtools, #mt .mt-foot { background: var(--at-night1); }
+#mt .mt-bar { background: var(--at-night2); }
+#mt .mt-btn { background: var(--at-night3); }
+#mt .mt-tile .mt-th canvas { box-shadow: 0 1px 0 rgba(0,0,0,.2), 0 14px 26px -12px rgba(0,0,0,.95); }
+/* the lock and keep-in buttons in the designer */
+#mt .mt-ic.on { background: rgba(237,182,190,.18); box-shadow: inset 0 0 0 1px rgba(237,182,190,.6); }
+#ph-lock.on { background: rgba(237,182,190,.18); border-color: rgba(237,182,190,.6); }
+.lock-row { align-items: center; }

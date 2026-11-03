@@ -145,3 +145,19 @@ h1, h2 { font-family: var(--display); font-weight: 700; letter-spacing: 0; }
   .dev-on .dev-img::after, .dev-on .dev-img img, .dev-on .dev-back { animation: none !important; }
   .dev-img::after { opacity: 0; }
 }
+
+/* ---------- 🧲 the magnet wall ---------- */
+.mwall { position: relative; padding: clamp(64px, 8vw, 120px) 0 clamp(56px, 7vw, 100px); background: radial-gradient(70% 60% at 50% 0%, rgba(237,182,190,.10), transparent 70%), var(--night); overflow: hidden; }
+.mwall > .eyebrow, .mwall > h2 { text-align: center; margin-inline: auto; padding-inline: 16px; }
+.mwall > .eyebrow { display: block; }
+.mwall > h2 { font-family: var(--display); font-weight: 700; font-size: clamp(56px, 7vw, 116px); line-height: .9; color: var(--flash); margin: 10px auto clamp(36px, 4vw, 56px); }
+.mw-row { overflow: hidden; padding: 18px 0; -webkit-mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.mw-track { display: flex; gap: clamp(18px, 2.2vw, 34px); width: max-content; animation: mw-move 70s linear infinite; }
+.mw-row.r2 .mw-track { animation-direction: reverse; animation-duration: 82s; }
+.mw-row:hover .mw-track { animation-play-state: paused; }
+@keyframes mw-move { from { transform: translateX(0); } to { transform: translateX(50%); } }
+.mw-m { margin: 0; flex: none; width: clamp(150px, 15vw, 220px); background: #fff; padding: 8px 8px 0; border-radius: 3px; transform: rotate(var(--t, 0deg)); box-shadow: 0 2px 0 rgba(0,0,0,.05), 0 26px 50px -24px rgba(0,0,0,.9), 0 10px 20px -12px rgba(0,0,0,.6); transition: transform .5s var(--ease), box-shadow .4s; }
+.mw-m:hover { transform: rotate(0deg) translateY(-10px) scale(1.04); box-shadow: 0 40px 70px -30px rgba(0,0,0,.95), 0 0 0 3px rgba(237,182,190,.45); z-index: 2; }
+.mw-m img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.mw-m figcaption { font: 400 clamp(20px, 1.8vw, 26px)/1 'Amatic SC', var(--display); color: #8b6b72; text-align: center; padding: 8px 0 10px; }
+@media (prefers-reduced-motion: reduce) { .mw-track { animation: none; } .mw-row { overflow-x: auto; } }
