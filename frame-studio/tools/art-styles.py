@@ -29,7 +29,6 @@ WORKS = [
     ('bluehorse', '', 'Franz Marc Blue Horse I 1911'),
     ('treeoflife', '', 'Klimt Tree of Life Stoclet Frieze'),
     ('lilies', '', 'Monet Water Lilies 1906 Art Institute Chicago'),
-    ('rhone', '', 'Van Gogh Starry Night Over the Rhone'),
     ('redfuji', '', 'Hokusai Fine Wind Clear Morning Red Fuji'),
     ('stainedglass', '', 'Chartres Cathedral rose window stained glass'),
     ('ravenna', '', 'Ravenna San Vitale mosaic Justinian'),
