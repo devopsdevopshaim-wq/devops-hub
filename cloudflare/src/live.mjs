@@ -104,6 +104,14 @@ export async function frameLive(storage, who, b, site) {
   const a = String(b.action || '');
   const biz = { name: clean(site && site.name, 60), google: clean(site && site.googleReviews && (site.googleReviews.url || site.googleReviews), 300) };
 
+  /* ---------- the studio's main QR: one printed code for every event; it leads to the event its owner points it at ---------- */
+  if (a === 'main-info') {
+    const m = String(b.m || ''); if (!/^[a-f0-9]{20}$/.test(m)) return out({ ok: false, error: 'not-found' }, 404);
+    const r = await storage.get('lmain:' + m), ev = r && r.e ? await getEv(storage, r.e) : null;
+    if (!ev || ev.purged || ev.owner !== r.owner) return out({ ok: false, error: 'no-event' }, 404);
+    return out({ ok: true, e: ev.id, k: ev.k, title: ev.title });
+  }
+
   /* ---------- guests (the QR code's key) ---------- */
   if (a === 'guest-info' || a === 'guest-up') {
     const ev = await getEv(storage, b.e);
@@ -208,6 +216,19 @@ export async function frameLive(storage, who, b, site) {
     await storage.put('lv:' + ev.id, ev);
     if (isNew) { idx[ev.id] = who.email; await storage.put('lvidx', idx); }
     return out({ ok: true, event: ownerView(ev) });
+  }
+
+  /* the main QR: its key (made once per studio) and the event it leads to; main-set points it at one of the owner's events */
+  if (a === 'main-get' || a === 'main-set') {
+    let m = await storage.get('lmainOf:' + who.email);
+    if (!m) { m = rid(10); await storage.put('lmainOf:' + who.email, m); await storage.put('lmain:' + m, { owner: who.email, e: '' }); }
+    const cur = (await storage.get('lmain:' + m)) || { owner: who.email, e: '' };
+    if (a === 'main-set') {
+      const target = b.e ? await getEv(storage, b.e) : null;
+      if (b.e && !isOwner(who, target)) return out({ ok: false, error: 'not-found' }, 404);
+      cur.e = target ? target.id : ''; cur.owner = who.email; await storage.put('lmain:' + m, cur);
+    }
+    return out({ ok: true, m, e: cur.e || '' });
   }
 
   const ev = await getEv(storage, b.e);

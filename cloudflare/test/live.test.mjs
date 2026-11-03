@@ -33,6 +33,25 @@ check('a licensed studio has its own events', r.body.ok);
 r = await call(LIC, { action: 'ev-list' });
 check('... and lists only its own', r.body.events.length === 1 && r.body.events[0].title === 'בר מצווה');
 
+/* the main QR: one permanent code per studio, pointed at an event by its owner only */
+r = await call(OWNER, { action: 'main-get' });
+check('the owner gets a permanent main code, pointing nowhere yet', r.body.ok && /^[a-f0-9]{20}$/.test(r.body.m) && r.body.e === '', r.body);
+const MAIN = r.body.m;
+r = await call(null, { action: 'main-info', m: MAIN });
+check('... and guests scanning it are told there is no event yet', r.code === 404);
+r = await call(OWNER, { action: 'main-set', e: ev.id });
+check('the owner points it at the event', r.body.ok && r.body.m === MAIN && r.body.e === ev.id, r.body);
+r = await call(null, { action: 'main-info', m: MAIN });
+check('guests scanning the main code reach the event (its guest key)', r.body.ok && r.body.e === ev.id && r.body.k === ev.k && !JSON.stringify(r.body).includes(ev.v), r.body);
+r = await call(LIC, { action: 'main-get' });
+check('another studio has its own main code', r.body.ok && r.body.m !== MAIN);
+r = await call(LIC, { action: 'main-set', e: ev.id });
+check('... and cannot point it at someone else\'s event', r.code === 404);
+r = await call(OWNER, { action: 'main-get' });
+check('the main code stays the same', r.body.m === MAIN && r.body.e === ev.id);
+r = await call(null, { action: 'main-info', m: 'zz' });
+check('a bad main code is refused', r.code === 404);
+
 r = await call(null, { action: 'guest-info', e: ev.id, k: ev.v });
 check('the viewing key does not open the guests\' upload', r.code === 404);
 r = await call(null, { action: 'guest-info', e: ev.id, k: ev.k });

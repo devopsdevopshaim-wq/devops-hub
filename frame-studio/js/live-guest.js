@@ -7,6 +7,15 @@
   var NAME = 'fs-live-name';
 
   function fail(t) { app.innerHTML = '<div class="card hero"><p class="brand">📸</p><p class="hello">' + esc(t) + '</p></div>'; }
+  /* the studio's main QR (live.html?m=…): the server says which event it leads to now */
+  if (!L.e && L.m) {
+    fail('פותח את האירוע…');
+    L.call({ action: 'main-info', m: L.m }).then(function (r) {
+      if (r && r.ok) location.replace('live.html?e=' + encodeURIComponent(r.e) + '&k=' + encodeURIComponent(r.k));
+      else fail(r && r.error === 'offline' ? 'אין חיבור לאינטרנט. מנסים שוב בעוד רגע.' : 'עוד אין אירוע פעיל בקוד הזה. שואלים את הצלם 📸');
+    });
+    return;
+  }
   if (!L.e || !L.k) { fail('הקישור לא שלם. סורקים שוב את הקוד שעל השולחן.'); return; }
 
   L.call({ action: 'guest-info', e: L.e, k: L.k }).then(function (r) {

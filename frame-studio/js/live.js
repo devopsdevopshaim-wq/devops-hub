@@ -14,6 +14,7 @@
   function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
   function keep(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } }
   var cfg = Object.assign({ ev: '', station: 'עמדה 1', auto: true, per: 'one', tpl: null }, load(KS, {}));
+  var main = null;   /* the studio's main QR: { m, e } (one printed code for every event) */
   var events = [], ev = null, run = { on: false, timer: 0, busy: false, queue: [], got: 0, printed: 0, waiting: 0, stations: {} };
 
   /* ---------- the server ---------- */
@@ -29,6 +30,7 @@
   if (window.FSDesktop) siteBase = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/';
   function link(page, keyName, key) { return ev ? siteBase + page + '?e=' + ev.id + '&' + keyName + '=' + key : ''; }
   function guestUrl() { return link('live.html', 'k', ev.k); }
+  function mainUrl() { return main && main.m ? siteBase + 'live.html?m=' + main.m : ''; }
   function wallUrl() { return link('wall.html', 'v', ev.v); }
   function albumUrl() { return link('album.html', 'v', ev.v); }
   function imgUrl(id) { return (FS.account && FS.account.apiBase ? FS.account.apiBase() : Promise.resolve('')).then(function (u) { return u + '/frame-live-img?e=' + ev.id + '&p=' + id + '&v=' + ev.v; }); }
@@ -54,6 +56,7 @@
     pane.innerHTML = '<h2>🎉 אירוע חי</h2>' +
       '<p class="hint">האורחים סורקים QR בשולחן, מצלמים, והתמונה מגיעה לכאן ומודפסת כמגנט. עם ברכה, מסך ענק באולם ואלבום דיגיטלי לזוג.</p>' +
       (due.length ? '<div class="lv-due lv-owner">' + due.map(function (e) { return '<p>⭐ האירוע "' + esc(e.title) + '" היה ' + (e.date === yesterday() ? 'אתמול' : 'לאחרונה') + '. <button class="btn small" data-review="' + e.id + '">💬 אלבום + בקשת המלצה לזוג</button></p>'; }).join('') + '</div>' : '') +
+      mainCard() +
       '<div class="field lv-owner"><label>האירוע</label><div class="lv-row"><select id="lv-ev">' + (events.length ? '' : '<option value="">אין עדיין אירועים</option>') +
         events.map(function (e) { return '<option value="' + e.id + '"' + (ev && ev.id === e.id ? ' selected' : '') + '>' + esc(e.title) + ' · ' + esc(e.date || '') + '</option>'; }).join('') + '</select>' +
         '<button class="btn small" id="lv-new">➕ חדש</button>' + (ev ? '<button class="btn small" id="lv-edit" title="עריכת פרטי האירוע">✏️</button>' : '') + '</div></div>' +
@@ -92,6 +95,9 @@
       (isAdmin() ? '<div class="lv-staff lv-owner"><button class="btn small" id="lv-dzl">🎨 עיצובים מאושרים של לקוחות</button></div>' : '') +
       '<div class="lv-staff"><button class="btn small" id="lv-staff">👷 מצב עובד (מסך פשוט לעובד באירוע)</button></div>';
     var sel = $('#lv-ev', pane); if (sel) sel.addEventListener('change', function () { pick(this.value); });
+    on('#lv-main-set', function () { if (!ev) return; api('main-set', { e: ev.id }).then(function (r) { if (!r.ok) return FS.toast('לא עודכן: ' + err(r), 4000); main = r; draw(); FS.toast('⭐ הקוד הראשי מוביל עכשיו אל "' + ev.title + '"', 4000); }); });
+    on('#lv-main-sign', function () { sign(true); });
+    on('#lv-main-copy', function () { if (mainUrl()) copy(mainUrl(), '🔗 הקישור של הקוד הראשי הועתק'); });
     $('#lv-new', pane).addEventListener('click', function () { editEvent(null); });
     on('#lv-edit', function () { editEvent(ev); });
     on('#lv-sign', sign); on('#lv-wall', function () { window.open(wallUrl(), '_blank', 'noopener'); });
@@ -147,6 +153,7 @@
   /* ---------- events ---------- */
   function refresh() {
     if (!token()) { draw(); return Promise.resolve(); }
+    api('main-get').then(function (r) { if (r && r.ok) { main = r; draw(); } });
     return api('ev-list').then(function (r) {
       if (!r.ok) { draw(); if (r.error !== 'signed-out') FS.toast('האירועים לא נטענו: ' + err(r), 4000); return; }
       events = r.events; ev = events.filter(function (e) { return e.id === cfg.ev; })[0] || (cfg.ev ? null : events.filter(function (e) { return e.date >= today(); }).pop() || events[0]) || null;
@@ -256,15 +263,26 @@
   }
 
   /* ---------- the sign for the tables ---------- */
-  function sign() {
+  /* the main QR card: what it leads to now, and pointing it at the event on screen */
+  function mainCard() {
+    if (!main) return '';
+    var to = events.filter(function (e) { return e.id === main.e; })[0];
+    return '<div class="card lv-main lv-owner"><h3>🔁 קוד QR ראשי <small>שלט אחד לכל האירועים: מדפיסים פעם אחת, והוא מוביל לאירוע שבוחרים כאן</small></h3>' +
+      '<p class="lv-meta">' + (to ? 'מוביל עכשיו אל: <b>' + esc(to.title) + '</b> · ' + esc(heDate(to.date)) : '<b class="no">עוד לא מוביל לאף אירוע</b>') + '</p>' +
+      '<div class="lv-links">' + (ev && (!to || to.id !== ev.id) ? '<button class="btn primary" id="lv-main-set">⭐ להפנות את הקוד הראשי ל"' + esc(ev.title) + '"</button>' : '') +
+      '<button class="btn" id="lv-main-sign">🖨️ שלט עם הקוד הראשי</button><button class="btn" id="lv-main-copy">🔗 העתקת הקישור</button></div></div>';
+  }
+  function sign(isMain) {
+    var url = isMain === true ? mainUrl() : guestUrl(); if (!url) return;
+    var title = isMain === true ? ((FS.BIZ && FS.BIZ.name) || 'פריים מגנטים') : ev.title;
     FS.busy('מכין שלט…');
-    FS.qrCanvas(guestUrl(), 900).then(function (c) {
+    FS.qrCanvas(url, 900).then(function (c) {
       FS.busy(); var B = FS.BIZ || {}, img = c.toDataURL();
-      var one = '<div class="lv-sign"><p class="ls-ev">' + esc(ev.title) + '</p><h1>צלמו אותנו 📸<br>והתמונה תודפס כמגנט!</h1><img src="' + img + '" alt=""><ol><li>סורקים את הקוד במצלמה של הטלפון</li><li>מצלמים או בוחרים תמונה, ואפשר להוסיף ברכה</li><li>אוספים את המגנט בעמדה 🧲</li></ol><p class="ls-biz"><b>' + esc(B.name || '') + '</b>' + (B.phone ? ' · ' + esc(B.phone) : '') + '</p></div>';
-      var body = FS.dialog('🖨️ שלט QR לשולחנות', '<div class="qr-box"><img src="' + img + '" alt="QR"><div><p><b>' + esc(ev.title) + '</b><br><small dir="ltr">' + esc(guestUrl()) + '</small></p>' +
+      var one = '<div class="lv-sign"><p class="ls-ev">' + esc(title) + '</p><h1>צלמו אותנו 📸<br>והתמונה תודפס כמגנט!</h1><img src="' + img + '" alt=""><ol><li>סורקים את הקוד במצלמה של הטלפון</li><li>מצלמים או בוחרים תמונה, ואפשר להוסיף ברכה</li><li>אוספים את המגנט בעמדה 🧲</li></ol><p class="ls-biz"><b>' + esc(B.name || '') + '</b>' + (B.phone ? ' · ' + esc(B.phone) : '') + '</p></div>';
+      var body = FS.dialog(isMain === true ? '🖨️ שלט עם הקוד הראשי' : '🖨️ שלט QR לשולחנות', '<div class="qr-box"><img src="' + img + '" alt="QR"><div><p><b>' + esc(title) + '</b><br><small dir="ltr">' + esc(url) + '</small></p>' +
         '<p class="hint">מדפיסים ומניחים על השולחנות. 2 שלטים בעמוד A4.</p><div class="inline"><button class="btn primary" id="ls-print">🖨️ הדפסה</button><button class="btn" id="ls-copy">🔗 העתקת הקישור</button></div></div></div>');
       $('#ls-print', body).addEventListener('click', function () { FS.printDoc('<div class="lv-signs">' + one + one + '</div>'); });
-      $('#ls-copy', body).addEventListener('click', function () { copy(guestUrl(), '🔗 הקישור הועתק'); });
+      $('#ls-copy', body).addEventListener('click', function () { copy(url, '🔗 הקישור הועתק'); });
     }, function () { FS.busy(); FS.toast('מחולל ה־QR לא נטען'); });
   }
 
