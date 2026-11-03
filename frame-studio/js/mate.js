@@ -39,7 +39,7 @@
       '<div class="mt-bar" data-b="size"><label>גודל:</label><select id="mt-size"></select><button class="mt-ic" id="mt-size-edit" title="ניהול הגדלים">✏️</button>' +
         '<div class="mt-seg" id="mt-fit"><button data-f="contain">להתאים</button><button data-f="cover">לחתוך</button></div>' +
         '<label class="mt-chk-l"><input type="checkbox" id="mt-orient"> לפי כיוון התמונה</label>' +
-        '<button class="mt-btn" id="mt-size-sel">החל על המסומנות</button><button class="mt-btn" id="mt-size-all">החל על כולן</button></div>' +
+        '<button class="mt-btn" id="mt-size-sel">החל על המסומנות</button><button class="mt-btn" id="mt-size-all">החל על כולן</button><span class="mt-hint mt-snew" id="mt-snew"></span></div>' +
       '<div class="mt-bar" data-b="files" hidden><button class="mt-btn" id="mt-all">✔ סימון הכל</button><button class="mt-btn" id="mt-none">ניקוי סימון</button><button class="mt-btn" id="mt-inv">היפוך</button>' +
         '<div class="mt-seg mt-ori"><button data-ori="all">הכל <i></i></button><button data-ori="tall">↕ לאורך <i></i></button><button data-ori="wide">↔ לרוחב <i></i></button></div>' +
         '<select id="mt-show"><option value="all">הכל</option><option value="sel">רק המסומנות</option><option value="todo">שלא הודפסו</option><option value="done">שהודפסו</option><option value="edited">שנערכו</option></select>' +
@@ -403,9 +403,15 @@
     var o = $('#mt-orient', root).checked;
     Promise.all(list.map(function (p) { return FS.loadImg(p.src).catch(function () {}); })).then(function () {
       list.forEach(function (p) { toSize(p, z, fit, o); });
+      FS.prefs.fmt = $('#mt-size', root).value; FS.prefs.fitNew = fit; FS.savePrefs(); snewTxt();
       FS.emit('doc'); buildGrid(); FS.toast('📐 ' + FS.sizeLabel(z) + ' · ' + (fit === 'cover' ? 'לחתוך' : 'להתאים') + ' · ' + list.length + ' תמונות');
     });
   }
+  /* new photos come in at the last size applied here (core.js reads FS.prefs.fmt), filling or fitting the same way */
+  function snewTxt() { var z = /^my:/.test(FS.prefs.fmt || '') && FS.sizeOf(FS.prefs.fmt), el = $('#mt-snew', root); if (el) el.textContent = z ? '📌 תמונות חדשות נכנסות ב־' + FS.sizeLabel(z) + (FS.prefs.fitNew === 'contain' ? ' (להתאים)' : '') : ''; }
+  (function () { var v = FS.prefs.fmt; if (/^my:/.test(v || '') && $('#mt-size option[value="' + v + '"]', root) && !ls('fs-mate-size')) $('#mt-size', root).value = v; snewTxt(); FS.on('sizes', snewTxt); })();
+  FS.afterAdd = FS.afterAdd || [];
+  FS.afterAdd.push(function (p) { if (FS.prefs.fitNew !== 'contain' || !/^my:/.test(FS.prefs.fmt || '')) return; var im = FS.img(p.src); if (im) { FS.fitPhoto(p.doc, im, 'contain'); p.fit = 'contain'; } });
   $('#mt-size-sel', root).addEventListener('click', function () { var l = marked(); if (!l.length) return FS.toast('מסמנים תמונות, או "החל על כולן"'); applySize(l); });
   $('#mt-size-all', root).addEventListener('click', function () { applySize(S.photos.slice()); });
 
@@ -1107,6 +1113,7 @@
     var printers = (pr.up ? pr.list : []).map(function (x) { return '<option value="' + esc(x.name) + '"' + (pr.chosen && pr.chosen.name === x.name ? ' selected' : '') + '>' + esc(x.name) + (x.default ? ' ★' : '') + '</option>'; }).join('') + '<option value=""' + (pr.chosen ? '' : ' selected') + '>חלון ההדפסה של המחשב</option>';
     var papers = FS.PAPERS.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + ' · ' + trim(x[2] / 25.4) + '×' + trim(x[3] / 25.4) + '״</option>'; }).join('');
     var b = FS.dialog('🖨️ הדפסה', '<div class="mp"><div class="mp-side">' +
+      '<label>⭐ ההגדרות השמורות שלי</label><div class="mp-my" id="mp-my"></div>' +
       '<label>מדפסת</label><select id="mp-printer">' + printers + '</select>' + (pr.up ? '' : '<p class="mt-hint">לבחירת מדפסת ישירה מפעילים את "מנהל המדפסות" (שמירה והדפסה ← המדפסות במחשב).</p>') +
       '<label>🧲 פריסה מוכנה</label><div class="mp-pre">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn" data-mpre="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' +
       '<label>גודל נייר</label><select id="mp-paper">' + papers + '</select>' +
@@ -1121,7 +1128,7 @@
       (only ? '' : '<label>אילו תמונות</label><select id="mp-which"><option value="auto">המסומנות (או כולן)</option><option value="all">כולן</option><option value="todo">שעוד לא הודפסו</option><option value="sel">רק המסומנות</option></select>') +
       '<div class="mp-sum" id="mp-sum"></div></div>' +
       '<div class="mp-pv"><div class="mp-cv" id="mp-cv"></div><div class="mp-nav"><button data-nav="first">|&lt;</button><button data-nav="prev">&lt;</button><b id="mp-pg">1 / 1</b><button data-nav="next">&gt;</button><button data-nav="last">&gt;|</button></div></div></div>' +
-      '<div class="mp-foot"><button class="mt-btn" id="mp-cur">הדפסת העמוד הנוכחי</button><button class="mt-btn primary" id="mp-go">🖨️ הדפסה</button><button class="mt-btn" id="mp-save">💾 שמירת הגדרות</button><button class="mt-btn" id="mp-cancel">ביטול</button></div>', true);
+      '<div class="mp-foot"><button class="mt-btn" id="mp-cur">הדפסת העמוד הנוכחי</button><button class="mt-btn primary" id="mp-go">🖨️ הדפסה</button><input id="mp-name" class="mp-name" placeholder="שם להגדרה, למשל: מגנטים 7.5×10" maxlength="40"><button class="mt-btn" id="mp-save">⭐ שמירה בשם</button><button class="mt-btn" id="mp-cancel">ביטול</button></div>', true);
     b.classList.add('mp-dlg');
     $('#mp-paper', b).value = PS.paper; $('#mp-msize', b).value = PS.msize || '';
     $$('[data-mpre]', b).forEach(function (btn) { btn.addEventListener('click', function () { var m = MPRESETS[Number(btn.dataset.mpre)]; $('#mp-paper', b).value = m[0]; $('#mp-msize', b).value = m[1]; $$('[name=mp-mode]', b).forEach(function (r) { r.checked = r.value === 'real'; }); $('#mp-mon', b).checked = false; paint(); }); }); $('#mp-dpi', b).value = String(PS.dpi); $('#mp-margin', b).value = String(PS.margin || 3); $('#mp-mon', b).checked = !!PS.marginOn; $('#mp-marks', b).value = PS.marks ? '1' : '0';
@@ -1139,7 +1146,27 @@
       $('#mp-pg', b).textContent = (plan.pages.length ? pg + 1 : 0) + ' / ' + plan.pages.length;
       $('#mp-sum', b).innerHTML = '<b>' + plan.total + '</b> הדפסים · <b>' + plan.pages.length + '</b> דפים' + (plan.pages[0] ? ' · ' + plan.pages[0].length + ' בדף' : '') + '<br>נייר ' + esc(plan.paper[1]) + ' (' + (plan.paper[2] / 10) + '×' + (plan.paper[3] / 10) + ' ס״מ)' + (o.msize ? ' · מגנט ' + o.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : '');
       $('#mp-go', b).disabled = $('#mp-cur', b).disabled = !plan.total;
+      PS = o; ls('fs-mate-print', JSON.stringify(PS));   /* remembered as it is, for the next time */
     }
+    function myList() { return lsj('fs-mate-print-my', []); }
+    function myDraw() {
+      var l = myList(), box = $('#mp-my', b);
+      box.innerHTML = l.length ? l.map(function (m, i) { return '<span class="mp-mi"><button type="button" class="mt-btn" data-my="' + i + '" title="' + esc(m.printer || 'חלון ההדפסה של המחשב') + '">' + esc(m.name) + '</button><button type="button" class="mp-mx" data-myx="' + i + '" title="מחיקה">×</button></span>'; }).join('') : '<p class="mt-hint">עוד אין. בוחרים הגדרות, נותנים שם למטה ולוחצים "⭐ שמירה בשם".</p>';
+    }
+    function setForm(o) {
+      $('#mp-paper', b).value = o.paper; $('#mp-msize', b).value = o.msize || ''; $('#mp-dpi', b).value = String(o.dpi || 300); $('#mp-margin', b).value = String(o.margin || 3); $('#mp-mon', b).checked = !!o.marginOn; $('#mp-marks', b).value = o.marks ? '1' : '0';
+      $$('[name=mp-mode]', b).forEach(function (r) { r.checked = r.value === (o.mode || 'real'); }); $$('[name=mp-fit]', b).forEach(function (r) { r.checked = r.value === (o.pfit || 'cover'); });
+      if ($('#mp-which', b) && o.which) $('#mp-which', b).value = o.which;
+    }
+    $('#mp-my', b).addEventListener('click', function (e) {
+      var x = e.target.closest('[data-myx]'), u = e.target.closest('[data-my]'), l = myList();
+      if (x) { l.splice(Number(x.dataset.myx), 1); ls('fs-mate-print-my', JSON.stringify(l)); myDraw(); return; }
+      if (!u) return; var m = l[Number(u.dataset.my)]; if (!m) return;
+      setForm(m.o); var sel = $('#mp-printer', b);
+      if (m.printer !== undefined && sel && $$('option', sel).some(function (op) { return op.value === m.printer; })) { sel.value = m.printer; if (FS.choosePrinter) FS.choosePrinter(m.printer); }
+      $$('[data-my]', b).forEach(function (y) { y.classList.toggle('on', y === u); }); pg = 0; paint(); FS.toast('⭐ ' + m.name);
+    });
+    myDraw();
     $$('select, input', $('.mp-side', b)).forEach(function (el) { el.addEventListener('change', function () { if (el.id === 'mp-printer' && FS.choosePrinter) FS.choosePrinter(el.value); paint(); }); });
     $('.mp-nav', b).addEventListener('click', function (e) { var n = e.target.closest('[data-nav]'); if (!n || !plan) return; var k = n.dataset.nav, L = plan.pages.length - 1; pg = k === 'first' ? 0 : k === 'last' ? L : FS.clamp(pg + (k === 'next' ? 1 : -1), 0, Math.max(0, L)); paint(); });
     function go(one) {
@@ -1148,7 +1175,12 @@
     }
     $('#mp-go', b).addEventListener('click', function () { go(false); });
     $('#mp-cur', b).addEventListener('click', function () { go(true); });
-    $('#mp-save', b).addEventListener('click', function () { PS = read(); ls('fs-mate-print', JSON.stringify(PS)); FS.toast('💾 ההגדרות נשמרו'); });
+    $('#mp-save', b).addEventListener('click', function () {
+      PS = read(); ls('fs-mate-print', JSON.stringify(PS));
+      var name = ($('#mp-name', b).value || '').trim(); if (!name) { $('#mp-name', b).focus(); return FS.toast('כותבים שם להגדרה'); }
+      var l = myList().filter(function (m) { return m.name !== name; }); l.push({ name: name, o: PS, printer: $('#mp-printer', b).value }); ls('fs-mate-print-my', JSON.stringify(l.slice(-12)));
+      $('#mp-name', b).value = ''; myDraw(); FS.toast('⭐ נשמר: ' + name);
+    });
     $('#mp-cancel', b).addEventListener('click', function () { FS.closeDialog(); });
     requestAnimationFrame(paint);
   }
