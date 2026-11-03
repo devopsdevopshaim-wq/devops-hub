@@ -35,7 +35,7 @@
     /* main */
     '<section class="mt-view" data-view="main">' +
       '<div class="mt-sub"><button data-bar="size" class="on">📐 גודל</button><button data-bar="files">📁 תמונות</button><button data-bar="copies">🧾 הדפסים</button><button data-bar="biz">🏷️ פרטי העסק</button>' +
-        '<span class="mt-sp"></span><button data-go="edit">🎚️ ערוך תמונה</button><button data-go="design">🖌️ עיצוב</button><button data-go="print" class="mt-pr-btn">🖨️ הדפסה</button></div>' +
+        '<span class="mt-sp"></span><button data-go="advise" class="mt-adv-btn" title="כמה עותקים לכל תמונה, לפי האנשים שמסתכלים למצלמה; עיניים עצומות לא יוצאות">🧮 כמה להדפיס?</button><button data-go="edit">🎚️ ערוך תמונה</button><button data-go="design">🖌️ עיצוב</button><button data-go="print" class="mt-pr-btn">🖨️ הדפסה</button></div>' +
       '<div class="mt-bar" data-b="size"><label>גודל:</label><select id="mt-size"></select><button class="mt-ic" id="mt-size-edit" title="ניהול הגדלים">✏️</button>' +
         '<div class="mt-seg" id="mt-fit"><button data-f="contain">להתאים</button><button data-f="cover">לחתוך</button></div>' +
         '<label class="mt-chk-l"><input type="checkbox" id="mt-orient"> לפי כיוון התמונה</label>' +
@@ -45,7 +45,7 @@
         '<select id="mt-show"><option value="all">הכל</option><option value="sel">רק המסומנות</option><option value="todo">שלא הודפסו</option><option value="done">שהודפסו</option><option value="edited">שנערכו</option></select>' +
         '<select id="mt-sort"><option value="">הסדר שנכנסו</option><option value="name">לפי שם</option></select><button class="mt-btn danger" id="mt-del">🗑 הסרה מהעבודה</button></div>' +
       '<div class="mt-bar" data-b="copies" hidden><label>הדפסים למסומנות:</label><button class="mt-ic" data-cpa="-1">−</button><b id="mt-cpn">1</b><button class="mt-ic" data-cpa="1">+</button>' +
-        '<button class="mt-btn" id="mt-cp-set">קביעה</button><button class="mt-btn" id="mt-cp-1">1 לכולן</button><button class="mt-btn" id="mt-cp-0">0 לכולן</button><span class="mt-hint">0 = לא מודפסת</span></div>' +
+        '<button class="mt-btn primary" id="mt-cadv">🧮 המלצה לפי האנשים בתמונה</button><button class="mt-btn" id="mt-cp-set">קביעה</button><button class="mt-btn" id="mt-cp-1">1 לכולן</button><button class="mt-btn" id="mt-cp-0">0 לכולן</button><span class="mt-hint">0 = לא מודפסת</span></div>' +
       '<div class="mt-bar" data-b="biz" hidden><span class="mt-hint" id="mt-biz-txt"></span><button class="mt-btn" id="mt-biz-on">➕ הוספה לתמונות</button><button class="mt-btn" id="mt-biz-off">➖ הסרה מהתמונות</button><button class="mt-btn" id="mt-biz-edit">✏️ עריכת הפרטים</button></div>' +
       '<div class="mt-grid" id="mt-grid"></div>' +
       '<div class="mt-empty" id="mt-empty"><h2>מתחילים</h2><p>בוחרים תמונות או תיקייה שלמה. כל תמונה מקבלת גודל הדפסה ומספר עותקים, ואפשר לערוך, לעצב ולהדפיס.</p>' +
@@ -117,6 +117,8 @@
         '<div class="mt-row"><button class="mt-btn" id="mt-ai-back">↶ ביטול ה־AI האחרון</button><button class="mt-btn" id="mt-ai-orig">↩ החזרת המקור</button></div></div>' +
     '</div></section>';
   document.body.appendChild(root);
+  root.insertAdjacentHTML('beforeend', '<button type="button" class="mt-fab" id="mt-fab" hidden><span>🖨️ להדפסה</span><b id="mt-fab-n"></b></button>');
+  root.querySelector('#mt-fab').addEventListener('click', function () { qpRun(); });
 
   /* line icons instead of emoji on the workspace's own buttons (24px grid, stroke 1.8, like the studio's tool rail) */
   var ICON = {
@@ -189,7 +191,7 @@
     br.classList.add('mt-bstrip'); dz.appendChild(br);
   })();
   $$('.mt-tabs [data-v]', root).forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.v); }); });
-  $$('[data-go]', root).forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
+  $$('[data-go]', root).forEach(function (b) { b.addEventListener('click', function () { if (b.dataset.go === 'advise') advise(); else show(b.dataset.go); }); });
 
 
   /* photos in */
@@ -293,11 +295,18 @@
     if ($('#mt-sort', root).value === 'name') l.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'he', { numeric: true }); });
     return byOri(l);
   }
+  /* what the copies advice (copies.js) found on this photo */
+  function advTag(p) {
+    var a = p.cadv; if (!a || a.verdict === 'error') return '';
+    if (a.verdict === 'closed') return '<em class="mt-adv bad" title="מישהו עוצם עיניים: לא להדפיס">😑 עיניים עצומות</em>';
+    if (a.verdict === 'none') return '';
+    return '<em class="mt-adv' + (a.doubt ? ' doubt' : '') + '" title="' + a.adults + ' מבוגרים מסתכלים' + (a.kids ? ', ' + a.kids + ' ילדים' : '') + (a.doubt ? '. כדאי לבדוק: אולי מישהו בחצי עצימה' : '') + '">' + (a.doubt ? '👀 ' : '👥 ') + a.copies + '</em>';
+  }
   function tileHTML(p, px) {
     return '<div class="mt-tile' + (S.marked[p.id] ? ' sel' : '') + (p.id === focusId ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + px + '"><div class="mt-th">' +
       '<button class="mt-chk" title="סימון">✓</button><button class="mt-zoomb" title="הגדלה">🔍</button>' +
       '<div class="mt-band"><b>' + sizeTxt(p) + '</b><span class="mt-cp"><button data-cp="-1" title="פחות">−</button><i>' + copies(p) + ' הדפסים</i><button data-cp="1" title="עוד">+</button></span>' +
-      (p.printed ? '<small>הודפסו ' + p.printed + '</small>' : '') + '</div></div><div class="mt-name" title="' + esc(p.name || '') + '">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '</div></div>';
+      (p.printed ? '<small>הודפסו ' + p.printed + '</small>' : '') + '</div>' + advTag(p) + '</div><div class="mt-name" title="' + esc(p.name || '') + '">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '</div></div>';
   }
   /* a rebuilt grid keeps the canvases already drawn (by photo and size); drawTile then redraws only photos that changed */
   /* the drawn part of a tile: its before|after pair, or its one canvas; it goes back only into a tile of the same kind
@@ -354,7 +363,14 @@
     var n = S.photos.length, m = marked().length, prints = S.photos.reduce(function (a, p) { return a + copies(p); }, 0), done = S.photos.filter(function (p) { return p.printed; }).length;
     $('#mt-foot', root).textContent = n + ' תמונות · ' + m + ' מסומנות · ' + prints + ' הדפסים · ' + done + ' הודפסו';
   }
-  function stat() { var m = marked().length; $('#mt-stat', root).textContent = S.photos.length ? (m ? m + ' מסומנות מתוך ' + S.photos.length : S.photos.length + ' תמונות') : ''; foot(); }
+  function stat() { var m = marked().length; $('#mt-stat', root).textContent = S.photos.length ? (m ? m + ' מסומנות מתוך ' + S.photos.length : S.photos.length + ' תמונות') : ''; foot(); fab(); }
+  /* 🖨️ always at hand: one button, in every view, prints the marked photos (or the one in focus) with their copies */
+  function fab() {
+    var b = $('#mt-fab', root); if (!b) return;
+    var l = S.photos.length ? qpList() : [], n = l.reduce(function (s, p) { return s + copies(p); }, 0);
+    b.hidden = !S.photos.length; $('#mt-fab-n', root).textContent = n ? n + (n === 1 ? ' מגנט' : ' מגנטים') : '';
+    b.title = marked().length ? 'הדפסת ' + marked().length + ' המסומנות (Ctrl+P)' : 'הדפסת התמונה שבפוקוס (Ctrl+P)';
+  }
 
   /* sub bars */
   function setBar(b) { bar = b; ls('fs-mate-bar', b); $$('.mt-sub [data-bar]', root).forEach(function (x) { x.classList.toggle('on', x.dataset.bar === b); }); $$('.mt-bar', root).forEach(function (x) { x.hidden = x.dataset.b !== b; }); if (b === 'biz') bizTxt(); }
@@ -421,6 +437,9 @@
   var cpn = 1;
   $$('[data-cpa]', root).forEach(function (b) { b.addEventListener('click', function () { cpn = FS.clamp(cpn + Number(b.dataset.cpa), 0, 999); $('#mt-cpn', root).textContent = cpn; }); });
   $('#mt-cp-set', root).addEventListener('click', function () { var l = marked(); if (!l.length) return FS.toast('מסמנים תמונות קודם'); l.forEach(function (p) { p.copies = cpn; }); buildGrid(); });
+  function advise() { var l = marked().length ? marked() : S.photos.slice(); if (FS.openCopiesAdvisor) FS.openCopiesAdvisor(l, function () { buildGrid(); stat(); }); }
+  $('#mt-cadv', root).addEventListener('click', advise);
+  FS.mateAdvise = advise;
   $('#mt-cp-1', root).addEventListener('click', function () { S.photos.forEach(function (p) { p.copies = 1; }); buildGrid(); });
   $('#mt-cp-0', root).addEventListener('click', function () { S.photos.forEach(function (p) { p.copies = 0; }); buildGrid(); FS.toast('כל התמונות על 0. מוסיפים + לתמונות שרוצים להדפיס.'); });
 
