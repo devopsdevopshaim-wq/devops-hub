@@ -79,18 +79,28 @@ FILMS['pro'] = {
     'palette': dict(GOLD='#EDB6BE', INK='#191D2C', CREAM='#F3F1EC', DARK='#0F1528'),
     'scenes': [
         ('photo', 4.4, dict(img='real/wedding-1.webp', lines=['300 אורחים.', 'כל אחד רוצה מגנט.'], accent=1, pos='bottom')),
-        ('screen', 4.8, dict(img='cap/pro-grid.webp', focus=(0.0, 0.0, 1.0, 1.0), lines=['אופטימוס'], sub='הסטודיו של עסקי המגנטים והאירועים', accent=0, title=True)),
-        ('screen', 5.4, dict(img='cap/pro-copies.webp', focus=(0.52, 0.04, 0.45, 0.56), lines=['כמה להדפיס?', 'ה־AI סופר את האורחים'], accent=1)),
-        ('screen', 5.0, dict(img='cap/pro-print.webp', focus=(0.36, 0.06, 0.34, 0.86), lines=['הדפסה בלחיצה', 'עם תצוגה לפני'], accent=0)),
-        ('ai', 6.6, dict(orig='e2e/original.jpg', outs=[('e2e/3d.png', 'אנימציה תלת־ממד'), ('e2e/anime.png', 'אנימה')],
+        ('screen', 4.6, dict(img='cap/pro-grid.webp', focus=(0.0, 0.0, 1.0, 1.0), lines=['אופטימוס'], sub='הסטודיו של עסקי המגנטים והאירועים', accent=0, title=True)),
+        # how it works, step by step
+        ('screen', 4.6, dict(img='cap/how-empty.webp', focus=(0.3, 0.25, 0.42, 0.55), lines=['1 · מכניסים תמונות', 'תיקייה, מצלמה או RAW'], accent=0)),
+        ('screen', 4.6, dict(img='cap/how-grid.webp', focus=(0.38, 0.09, 0.62, 0.22), lines=['2 · בוחרים גודל', '7.5×10, 10×15 ועוד'], accent=0)),
+        ('screen', 5.0, dict(img='cap/how-edit.webp', focus=(0.0, 0.07, 0.74, 0.9), lines=['3 · עורכים הכול יחד', 'כמה תמונות במסך אחד'], accent=0)),
+        ('screen', 5.0, dict(img='cap/pro-copies.webp', focus=(0.52, 0.04, 0.45, 0.56), lines=['4 · כמה להדפיס?', 'ה־AI סופר את האורחים'], accent=0)),
+        ('screen', 5.0, dict(img='cap/how-print.webp', focus=(0.36, 0.08, 0.6, 0.9), lines=['5 · מדפיסים', 'הגדרות שמורות, גודל מדויק'], accent=0)),
+        # and much more
+        ('screen', 4.6, dict(img='cap/pro-print.webp', focus=(0.36, 0.06, 0.34, 0.86), lines=['הדפסה מיידית', 'בלחיצה, עם תצוגה לפני'], accent=1)),
+        ('screen', 4.6, dict(img='cap/how-design.webp', focus=(0.0, 0.0, 0.6, 0.8), lines=['עורך מלא', 'מסגרת, טקסט ונעילת תמונה'], accent=0)),
+        ('fan', 6.4, dict(items=[('show/m0.webp', 'חתונה'), ('show/m1.webp', 'בר מצווה'), ('show/m4.webp', 'ברית'), ('show/m5.webp', 'חינה'),
+                                 ('show/m2.webp', 'אירוסין'), ('show/m6.webp', 'אירוע חברה')], lines=['מסגרת אישית', 'לכל אירוע'], accent=0)),
+        ('screen', 4.8, dict(img='cap/how-tools.webp', focus=(0.36, 0.1, 0.62, 0.42), lines=['כלים חכמים בלחיצה', 'רקע, פנים, עיניים וריטוש'], accent=0)),
+        ('ai', 6.4, dict(orig='e2e/original.jpg', outs=[('e2e/3d.png', 'אנימציה תלת־ממד'), ('e2e/anime.png', 'אנימה')],
                          lines=['אפקטים מהממים', 'גם בלי אינטרנט'], accent=0, badge='56 אפקטים · מנוע AI על המחשב')),
-        ('screen', 5.0, dict(img='cap/pro-wow.webp', focus=(0.35, 0.06, 0.62, 0.9), lines=['56 אפקטים', 'בקטגוריות מסודרות'], accent=0)),
-        ('screen', 5.2, dict(img='cap/pro-puzzle.webp', focus=(0.5, 0.05, 0.38, 0.92), lines=['פאזל מכל תמונה', 'מוכן לחיתוך'], accent=0)),
-        ('magnet', 5.2, dict(photo='real/wedding-3.webp', magnet='cap/pro-qrprint.jpg', lines=['QR על כל מגנט', 'כל תמונות האירוע'], accent=0)),
-        ('screen', 5.0, dict(img='cap/pro-live.webp', focus=(0.72, 0.0, 0.28, 0.62), lines=['אירוע חי', 'קוד לכל אירוע'], accent=0)),
-        ('screen', 5.4, dict(img='cap/pro-leads.webp', focus=(0.42, 0.13, 0.54, 0.5), lines=['כל אורח', 'הוא הלקוח הבא'], accent=1)),
-        ('screen', 5.0, dict(img='cap/pro-site.webp', focus=(0.45, 0.0, 0.55, 1.0), lines=['אתר מעוצב', 'מחירים מתעדכנים מיד'], accent=0)),
-        ('screen', 4.8, dict(img='cap/pro-wall.webp', focus=(0.0, 0.0, 1.0, 1.0), lines=['כל אירוע.', 'מגנט ביד.'], accent=1)),
+        ('screen', 4.6, dict(img='cap/pro-wow.webp', focus=(0.35, 0.06, 0.62, 0.9), lines=['56 אפקטים', 'בקטגוריות מסודרות'], accent=0)),
+        ('screen', 4.8, dict(img='cap/pro-puzzle.webp', focus=(0.5, 0.05, 0.38, 0.92), lines=['פאזל מכל תמונה', 'מוכן לחיתוך'], accent=0)),
+        ('magnet', 5.0, dict(photo='real/wedding-3.webp', magnet='cap/pro-qrprint.jpg', lines=['QR על כל מגנט', 'כל תמונות האירוע'], accent=0)),
+        ('screen', 4.8, dict(img='cap/pro-live.webp', focus=(0.72, 0.0, 0.28, 0.62), lines=['אירוע חי', 'קוד QR לכל אירוע'], accent=0)),
+        ('phone', 5.0, dict(img='cap/pro-guest.webp', lines=['האורחים שולחים', 'ישר מהטלפון'], accent=0)),
+        ('screen', 4.8, dict(img='cap/pro-site.webp', focus=(0.45, 0.0, 0.55, 1.0), lines=['אתר מעוצב', 'מחירים מתעדכנים מיד'], accent=0)),
+        ('screen', 4.6, dict(img='cap/pro-wall.webp', focus=(0.0, 0.0, 1.0, 1.0), lines=['כל אירוע.', 'מגנט ביד.'], accent=1)),
         ('end', 7.0, dict(name='אופטימוס', sub='פריים מגנטים · הסטודיו לאירועים · עובד גם בלי אינטרנט', cta='נסו את אופטימוס', foot='054-4979771')),
     ],
 }
@@ -442,9 +452,27 @@ def s_end(sc, f):
     sc.add(f'<div class="sub" style="left:0;right:0;text-align:center;bottom:{90 if v else 34}px;font-size:{22 if v else 18}px;color:rgba(233,220,198,.55);direction:ltr">Music: Kevin MacLeod (incompetech.com) · CC BY 4.0</div>')
 
 
-BUILD = dict(photo=s_photo, magnet=s_magnet, number=s_number, fan=s_fan, screen=s_screen, styles=s_styles, ai=s_ai, type=s_type, end=s_end)
+def s_phone(sc, f):
+    W, H, v = sc.W, sc.H, sc.v
+    sc.add(f'<div style="position:absolute;inset:0;background:radial-gradient(90% 70% at 30% 50%,#1d2745 0%,{DARK} 70%)"></div>')
+    pw = W * 0.5 if v else H * 0.42
+    ph = pw * 2.05
+    x = (W - pw) / 2 if v else W * 0.2
+    y = H * 0.36 if v else (H - ph) / 2
+    sc.add(f'<div id="{sc.sid}-ph" style="position:absolute;left:{x:.0f}px;top:{y:.0f}px;width:{pw:.0f}px;height:{ph:.0f}px;border-radius:{pw * 0.12:.0f}px;background:#0b0b0d;padding:{pw * 0.035:.0f}px;box-shadow:0 50px 100px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.08)">'
+           f'<div style="width:100%;height:100%;border-radius:{pw * 0.09:.0f}px;overflow:hidden;background:#f6f3ee"><img id="{sc.sid}-img" src="assets/{f["img"]}" alt="" style="width:100%;display:block"></div></div>')
+    sc.tw(f'tl.fromTo("#{sc.sid}-ph", {{y:{H * 0.25:.0f}, rotation:-4, opacity:0}}, {{y:0, rotation:0, opacity:1, duration:0.8, ease:"expo.out"}}, 0.1);')
+    sc.tw(f'tl.to("#{sc.sid}-img", {{yPercent:-38, duration:{max(1.5, sc.dur - 2.2):.2f}, ease:"power1.inOut"}}, 1.2);')
+    size = 104 if v else 100
+    if v:
+        sc.add(title(sc, f['lines'], f.get('accent'), 0, 200, size, '#fff', align='center', t0=0.4))
+    else:
+        sc.add(title(sc, f['lines'], f.get('accent'), 150, H * 0.36, size, '#fff', t0=0.4))
+
+
+BUILD = dict(phone=s_phone, photo=s_photo, magnet=s_magnet, number=s_number, fan=s_fan, screen=s_screen, styles=s_styles, ai=s_ai, type=s_type, end=s_end)
 ENTER = ['iris', 'whip', 'wipe', 'zoom', 'rise']
-GROUND = dict(photo=DARK, magnet=DARK, number=CREAM, fan=CREAM, screen=DARK, styles=DARK, ai=DARK, type=CREAM, end=DARK)
+GROUND = dict(phone=DARK, photo=DARK, magnet=DARK, number=CREAM, fan=CREAM, screen=DARK, styles=DARK, ai=DARK, type=CREAM, end=DARK)
 
 
 def copy_assets(dst):
@@ -473,7 +501,7 @@ def build(name, spec, suffix):
     global GOLD, INK, CREAM, DARK
     pal = spec.get('palette') or dict(GOLD='#D6B77E', INK='#1b1714', CREAM='#F5EEE2', DARK='#14110F')
     GOLD, INK, CREAM, DARK = pal['GOLD'], pal['INK'], pal['CREAM'], pal['DARK']
-    GROUND.update(photo=DARK, magnet=DARK, number=CREAM, fan=CREAM, screen=DARK, styles=DARK, ai=DARK, type=CREAM, end=DARK)
+    GROUND.update(phone=DARK, photo=DARK, magnet=DARK, number=CREAM, fan=CREAM, screen=DARK, styles=DARK, ai=DARK, type=CREAM, end=DARK)
     W, H = SIZES[suffix]
     dst = os.path.join(VID, f'promo-{name}{suffix}')
     os.makedirs(os.path.join(dst, 'compositions'), exist_ok=True)
