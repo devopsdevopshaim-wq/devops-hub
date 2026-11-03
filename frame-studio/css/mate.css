@@ -469,3 +469,13 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 .qv-go small { opacity: .7; font-size: 12px; margin-inline-start: 6px; }
 @media (max-width: 800px) { .qv { grid-template-columns: 1fr; } }
 .qv-nav .mt-ic { color: #fff; background: #3a3542; min-width: 38px; font-size: 16px; } .qv-nav .mt-ic:disabled { opacity: .35; }
+
+/* ⭐ saved print settings, and what new photos get */
+.mp-my { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.mp-mi { display: inline-flex; align-items: center; }
+.mp-mi .mt-btn { font-size: 12.5px; padding: 6px 10px; border-start-end-radius: 0; border-end-end-radius: 0; }
+.mp-mi .mt-btn.on { outline: 2px solid #e3c48a; }
+.mp-mx { border: 1px solid rgba(255,255,255,.15); border-inline-start: 0; background: transparent; color: inherit; padding: 6px 8px; border-start-end-radius: 8px; border-end-end-radius: 8px; cursor: pointer; opacity: .7; }
+.mp-mx:hover { opacity: 1; color: #ff8a8a; }
+.mp-name { min-width: 220px; padding: 8px 10px; border-radius: 8px; }
+.mt-snew { margin-inline-start: 8px; }
