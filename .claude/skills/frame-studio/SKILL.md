@@ -1494,3 +1494,19 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
   - **Light sections.** #videos, #how and #faq are paper; the ticker is quartz.
   - **Packages.** The ⭐ package is a white card.
   - **CSS gotcha.** A colour may only be the last background layer; `.pk.star` broke on that once.
+
+## 🎨 The AI paintings in a worker, 41 paintings, ready examples (Nov 3, v101)
+- The owner reported "the neural network doesn't work, the system gets stuck". The cause: v100 ran the network on the main thread and drew 28 previews on opening; without a strong graphics card that froze the program.
+- `js/ai-art-worker.js` now runs the network in a Web Worker. Order of engines:
+  1. WebGL through OffscreenCanvas, unless the card is software (SwiftShader, llvmpipe, basic render), and only after a warm-up plus a timed 128 px pass under 700 ms, raced against 8 s.
+  2. Otherwise WebAssembly (`vendor/tfjs/tf-backend-wasm.min.js` and three .wasm files; `tf.wasm.setWasmPaths`).
+  3. Then CPU.
+- Measured in Chromium here with WebAssembly: engine start plus first preview 3.7 s, a 224 px preview 1.1 s, a 768 px painting 8.8 s. The longest main-thread frame gap was 150 ms while painting.
+- `ai-art.js` talks to the worker:
+  - `FS.artRun(img, id, size, strength)` sends RGBA buffers as transferables.
+  - Timeouts: 90 s on WebGL, 180 s on WebAssembly, 400 s on CPU. A timeout resets the worker.
+  - `FS.artStop()` terminates the worker and is wired to ⏹. `FS.artBackend()` reports which engine runs.
+  - Sizes: 1024 px on WebGL, 768 px on WebAssembly, 448 px on CPU.
+- Nothing runs when the panel opens. Each tile shows `media/styles/pv/<id>.jpg`, made offline by the same network (WebAssembly in Node, on show/p-original.webp at 320 px, strength 0.8). Hovering for 300 ms draws the live preview on your own photo, one at a time, and the last tile hovered wins.
+- 41 paintings: 51 fetched (workflow), minus nudity (Danaë, Venus, Gauguin), weak sources (Lautrec, Seurat's Circus, The Night Watch) and four that ruin faces (Malevich, Mondrian, the Chartres glass, Hiroshige's shower).
+- To rebuild `vectors.json` and `pv/`, use the scratchpad `build.js` pattern: `@tensorflow/tfjs` 4.22 with tfjs-backend-wasm in Node, a fileIO handler, the predictor at 256 px, and the transformer.
