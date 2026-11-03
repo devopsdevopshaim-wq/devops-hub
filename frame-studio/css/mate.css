@@ -450,3 +450,22 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 /* ⚡ the instant print */
 #mt .mt-qp { display: inline-flex; gap: 4px; align-items: center; }
 #mt #mt-qprint { white-space: nowrap; }
+#mt .mt-wowc { border: 1px solid rgba(227,196,138,.45); background: linear-gradient(135deg, rgba(227,196,138,.08), rgba(120,80,200,.08)); }
+#mt .mt-wowc h3 small { font-weight: 500; font-size: 12px; color: var(--ivory-dim, #9E9A93); margin-inline-start: 6px; }
+
+/* 🖨️ the preview before printing (instant print) */
+#dlg:has(.qv-dlg), .qv-dlg { width: min(1100px, 96vw); max-width: 96vw; }
+.qv { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.qv-stage { display: grid; gap: 10px; justify-items: center; background: #d9d6d0; border-radius: 14px; padding: 16px; }
+.qv-cv { width: 100%; display: flex; justify-content: center; }
+.qv-cv canvas { display: block; max-width: 100%; height: auto; box-shadow: 0 10px 30px rgba(0,0,0,.35); background: #fff; }
+.qv-nav { display: flex; gap: 10px; align-items: center; color: #222; }
+.qv-side { display: grid; gap: 10px; align-content: start; }
+.qv-pr { margin: 0; padding: 8px 12px; border-radius: 10px; background: rgba(227,196,138,.12); }
+.qv-cp { display: flex; gap: 12px; align-items: center; }
+.qv-cp b { min-width: 2ch; text-align: center; font-size: 18px; }
+.qv-sum { line-height: 1.7; }
+.qv-go { font-size: 18px; padding: 12px; }
+.qv-go small { opacity: .7; font-size: 12px; margin-inline-start: 6px; }
+@media (max-width: 800px) { .qv { grid-template-columns: 1fr; } }
+.qv-nav .mt-ic { color: #fff; background: #3a3542; min-width: 38px; font-size: 16px; } .qv-nav .mt-ic:disabled { opacity: .35; }

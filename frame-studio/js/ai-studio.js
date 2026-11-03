@@ -401,6 +401,7 @@
     '<p class="ax-name" id="ax-name"></p><div class="row2"><button class="btn" id="ax-random">🎲 הפתעה</button><button class="btn primary" id="ax-go">✨ ליצור</button></div></div>' +
     '<p class="ax-cloud-note">🌐 העיצובים מכאן ולמטה נוצרים בשרת AI וצריכים אינטרנט' + (FS.localAI ? ' (או את מנוע ה־AI המקומי)' : '') + '.</p><h3>🦸 גיבורי על <small>על האנשים האמיתיים, כמו סצנה מסרט</small></h3><div class="ai-styles" id="ax-heroes"></div><h3>🧑 על אדם אמיתי <small>נשאר צילום אמיתי, משתנים הלבוש והמקום</small></h3><div class="ai-styles" id="ax-real"></div><h3>🪄 עריכות חכמות <small>התמונה נשארת, משתנה דבר אחד</small></h3><div class="ai-styles" id="ax-edits"></div><h3>🔥 טרנדים ויראליים</h3><div class="ai-styles" id="ax-viral"></div>' +
     '<h3>⭐ שילובים מוכנים</h3><div class="ai-styles" id="ax-combos"></div>' +
+    '<h3 class="ai-wow-h">✨ אפקטים מהממים <small>עובד גם בלי אינטרנט, במנוע המקומי</small></h3><div class="ai-styles" id="ai-wow"></div>' +
     '<h3>🎨 סגנונות</h3><div class="ai-styles" id="ai-styles"></div>' +
     '<h3>✍️ לתאר במילים</h3><div class="field"><textarea id="ai-custom" rows="2" placeholder="למשל: להלביש את כולם בתחפושות של פיראטים על ספינה בסערה"></textarea></div>' +
     '<button class="btn primary wide" id="ai-custom-go">✨ לעשות</button>';
@@ -436,6 +437,10 @@
     var o = { style: c[2], world: c[3], outfit: c[4], mood: c[5] }, b = document.createElement('button'); b.className = 'ai-style'; b.title = nameOf(o);
     b.innerHTML = '<i>' + c[1] + '</i><span>' + FS.esc(c[0]) + '</span>';
     b.addEventListener('click', function () { FS.runAI(promptOf(o), c[0]); }); $('#ax-combos').appendChild(b);
+  });
+  (FS.AI_WOW || []).forEach(function (s) {
+    var b = document.createElement('button'), box = $('#ai-wow'); if (!box) return; b.className = 'ai-style wow-st'; b.innerHTML = '<i>' + s[2] + '</i><span>' + FS.esc(s[1]) + '</span>';
+    b.addEventListener('click', function () { FS.runAI(s[3] + KEEP, s[1]); }); box.appendChild(b);
   });
   (FS.AI_STYLES || []).forEach(function (s) {
     var b = document.createElement('button'); b.className = 'ai-style'; b.innerHTML = '<i>' + s[2] + '</i><span>' + FS.esc(s[1]) + '</span>';

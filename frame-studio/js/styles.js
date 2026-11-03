@@ -181,6 +181,35 @@
 
   /* ---------- AI styles (image model through the hubs server) ---------- */
   var KEEP = ' IMPORTANT: this is a photo of real people at an event. Keep each person\'s identity: same face shape, features, skin tone, hair, expression and age, so family members recognize them instantly. Keep the same number of people, the same poses, positions and camera framing, and the same aspect ratio. Do not crop, do not add or remove people, no text, no watermark. Highly detailed, professional quality.';
+  /* ✨ the stunning pack: [id, name, icon, prompt]. Like every style it runs on the local engine with no internet (FS.askServer routes) */
+  FS.AI_WOW = [
+    ['fantasy-portrait', 'פורטרט פנטזיה', '🧝', 'Turn this photo into an epic fantasy portrait painting: ethereal glowing light, flowing fabrics, sparkling magic in the air, rich jewel colours, detailed digital painting.'],
+    ['galaxy', 'גלקסיה', '🌌', 'Place the people inside a breathtaking galaxy: purple and blue nebulae, glowing stars and cosmic dust swirling around them, their outlines softly lit by starlight.'],
+    ['double-exp', 'חשיפה כפולה', '🌲', 'Make an artistic double exposure: the people\'s silhouettes filled with a misty pine forest at sunrise, blended softly into a clean white background, fine-art poster.'],
+    ['crystal', 'פסל קריסטל', '💎', 'Turn the people into exquisite translucent crystal sculptures that refract rainbow light, on a dark velvet background with sparkling caustics.'],
+    ['ice', 'פסל קרח', '🧊', 'Turn the people into a magical ice sculpture glowing blue from within, with frost, snowflakes and soft winter light around them.'],
+    ['fire', 'אש ולהבות', '🔥', 'Surround the people with a spectacular swirl of golden fire and glowing embers, dramatic dark background, cinematic heat glow on their faces, epic movie poster.'],
+    ['steampunk', 'סטימפאנק', '⚙️', 'Restyle this photo in steampunk style: brass goggles, gears, Victorian costumes, copper machines and warm steam-filled light.'],
+    ['art-deco', 'ארט דקו', '🏛️', 'Redraw this photo as an elegant 1920s Art Deco poster: geometric gold lines, black and cream palette, glamorous stylised figures.'],
+    ['renaissance', 'ציור רנסנס', '🖼️', 'Repaint this photo as a Renaissance masterpiece oil painting: soft sfumato, rich velvet clothes, dramatic chiaroscuro and an ornate classical background.'],
+    ['aurora', 'זוהר צפוני', '🌠', 'Place the people under a spectacular northern lights sky, green and violet aurora ribbons over snowy mountains, their faces lit by the glow.'],
+    ['holo', 'הולוגרמה', '🔮', 'Turn the people into glowing futuristic holograms made of blue light lines and particles, floating in a dark sci-fi room.'],
+    ['vaporwave', 'וייפורוויב', '🌴', 'Restyle this photo as vaporwave art: pink and cyan gradients, palm trees, a retro sun, glitch lines and a dreamy 90s aesthetic.'],
+    ['paper-cut', 'חיתוכי נייר', '✂️', 'Recreate this photo as layered paper-cut art with depth, soft shadows between colourful paper layers, handcrafted look.'],
+    ['embroidery', 'רקמה', '🧵', 'Turn this photo into detailed embroidery stitched on linen fabric, visible threads and stitches, warm handmade craft.'],
+    ['ink-wash', 'ציור דיו', '🖌️', 'Repaint this photo as an East Asian ink wash painting: flowing black ink brush strokes, soft washes, a red seal stamp and lots of white space.'],
+    ['low-poly', 'לואו־פולי', '🔷', 'Turn this photo into colourful low-poly 3D art made of faceted triangles with soft gradient lighting.'],
+    ['storybook', 'ספר ילדים', '📖', 'Redraw this photo as a whimsical children\'s storybook illustration with soft watercolour and gouache, warm colours and a cosy magical setting.'],
+    ['euro-comic', 'קומיקס אירופאי', '💬', 'Redraw this photo as a classic European comic panel in clean ligne claire style: uniform black outlines, flat bright colours, a speech bubble.'],
+    ['enamel', 'שלט פח וינטג׳', '🪧', 'Turn this photo into a 1950s enamel tin sign advertisement with bold retro typography space, limited colours, worn edges and a cheerful vintage look.'],
+    ['neon-sign', 'שלט ניאון', '💡', 'Turn the people into glowing neon tube outlines on a dark brick wall, pink and cyan neon light with a soft reflection.'],
+    ['chalk', 'ציור גיר', '🖍️', 'Redraw this photo as colourful chalk art on a blackboard, dusty chalk texture and hand-drawn details.'],
+    ['candy', 'עולם ממתקים', '🍭', 'Place the people in a sweet candy world: lollipops, pastel cotton-candy clouds, gingerbread and sprinkles, dreamy and colourful.'],
+    ['balloons', 'בלונים ושמחה', '🎈', 'Surround the people with a burst of colourful balloons and golden confetti falling around them, joyful celebration light.'],
+    ['gold-dust', 'אבק זהב', '✨', 'Add magical golden dust and sparkling light particles swirling around the people, warm dreamy glow and soft bokeh, luxurious portrait.'],
+    ['oil-real', 'ציור שמן ריאליסטי', '🎨', 'Repaint this photo as a realistic oil portrait painting with visible brush strokes, warm museum lighting and a gilded frame mood.'],
+    ['cinematic', 'סרט אפי', '🎬', 'Make this a cinematic still from an epic movie: dramatic teal and orange colour grading, anamorphic lens flare, shallow depth of field, widescreen mood.']
+  ];
   FS.AI_STYLES = [
     ['3d', 'אנימציה תלת־ממד', '🧸', 'Redraw this photo as a still from a modern 3D animated family movie: soft cinematic light, expressive eyes, smooth stylized characters, rich colours.'],
     ['anime', 'אנימה', '🌸', 'Redraw this photo as a beautiful Japanese anime illustration with clean line art, cel shading and a dreamy background.'],
