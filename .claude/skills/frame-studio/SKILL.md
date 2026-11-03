@@ -1615,3 +1615,11 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
   - A "📞 פוטנציאל" tab lists name, phone, their own event and when, where they came from (the table code or the album) and the date. Rows with a coming event are marked.
   - 💬 opens WhatsApp with a ready opening line; 🗑 deletes on the guest's request.
   - The Excel file has a third sheet, "פוטנציאל".
+
+## The Optimus promo film (media/promo/optimus*.mp4)
+
+- Built from `videos/promo-src/build.py` (`FILMS['pro']`): `python3 build.py pro`, then `npx --yes hyperframes@0.9.8 render` in `videos/promo-pro` and `videos/promo-pro-v` (1920×1080 and 1080×1920, about 92 s).
+- The screens come from `capture/cap3.cjs` (pro-*) and `capture/cap4.cjs` (how-*), with a static server on :8765.
+- The film walks through the work in 5 steps (מכניסים תמונות, בוחרים גודל, עורכים הכול יחד, כמה להדפיס?, מדפיסים), then the features: instant print, the full editor, event frames, smart tools, 56 effects, puzzle, QR on every magnet, the live event, the guest's phone page, the site.
+- The owner asked to leave out his Excel record, the photo cube and the "כל אורח הוא הלקוח הבא" scene. Keep them out.
+- Music: Kevin MacLeod "Upbeat Forever" (CC BY 4.0), credited on the end card.
