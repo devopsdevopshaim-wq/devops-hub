@@ -44,7 +44,7 @@ WORKS = [
 
 
 def get(params):
-    q = urllib.parse.urlencode(dict(params, format='json', formatversion=2))
+    q = urllib.parse.urlencode(dict(params, action='query', format='json', formatversion=2))
     try:
         with urllib.request.urlopen(urllib.request.Request(API + '?' + q, headers=UA), timeout=40) as r:
             raw = r.read()
