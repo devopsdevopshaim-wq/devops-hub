@@ -157,7 +157,7 @@
     $$('.mt-tabs [data-v]', root).forEach(function (b) { b.classList.toggle('on', b.dataset.v === view); });
     $$('.mt-view', root).forEach(function (s) { s.hidden = s.dataset.view !== view; });
     if (view === 'main') buildGrid(); else if (view === 'edit') buildEdit(); else if (view === 'design') buildDesign(); else if (view === 'ai') buildAI();
-    stat();
+    stat(); FS.emit('mate-view', view);
   }
   function open(v) {
     root.hidden = false; document.body.classList.add('mt-on'); ls('fs-mate', 'on'); if (typeof sw === 'function') sw();
@@ -181,7 +181,8 @@
   function sw() { var slot = $('.mt-swslot', root), want = on() && slot ? slot : document.body; if (swEl.parentNode !== want) want.appendChild(swEl); $$('#mt-switch [data-sw]').forEach(function (b) { b.classList.toggle('on', (b.dataset.sw === 'mt') === on()); }); }
   swEl.addEventListener('click', function (e) { var b = e.target.closest('[data-sw]'); if (!b) return; if (b.dataset.sw === 'mt') { if (!on()) open(); } else if (on()) close(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'F2' && !document.body.classList.contains('gated')) { e.preventDefault(); toggle(); } });
-  FS.mate = { open: open, close: function () { close(); }, toggle: function () { toggle(); }, isOn: on, print: function () { openPrint(); } };
+  FS.mate = { open: open, close: function () { close(); }, toggle: function () { toggle(); }, isOn: on, print: function () { openPrint(); },
+    show: function (v) { if (!on()) open(v); else show(v); }, view: function () { return view; }, root: root };
   /* the full editor: the editing tools in a panel on the right, the photos in a strip along the bottom, the photo big in between */
   (function () {
     var dv = $('[data-view="design"]', root), br = dv && $('.mt-browser', dv), dz = dv && $('.mt-dz', dv), tools = dv && $('.mt-dtools', dv);
@@ -1124,6 +1125,10 @@
     $('#qp-save', b).addEventListener('click', function () { ls('fs-qprint', JSON.stringify({ printer: $('#qp-printer', b).value, paper: cur.paper, msize: cur.msize, noPreview: !$('#qp-pv', b).checked })); FS.closeDialog(); FS.toast('⚡ ההדפסה המיידית מוכנה'); qpBtn(); if (thenPrint) qpRun(); });
     show();
   }
+  /* for other parts of the program (the event hub's automatic line): these photos straight out with the instant print's
+     settings, each with its own copies; false when the instant print is not set up yet */
+  FS.mate.printList = function (list) { var q = qpGet(); if (!q) { qpSetup(); return false; } list = (list || []).filter(function (p) { return copies(p) > 0; }); if (!list.length) return false; qpSend(q, qpPlan(q, list, 1)); return true; };
+  FS.mate.quickReady = function () { return !!qpGet(); };
   function qpBtn() { var q = qpGet(), btn = $('#mt-qprint', root); if (btn) btn.title = q ? 'ישר ל' + (q.printer || 'חלון ההדפסה') + ' · ' + q.paper + ' · מגנט ' + q.msize + ' (Ctrl+P)' : 'הגדרה ראשונה, ואז ישר למדפסת'; }
   $('#mt-qprint', root).addEventListener('click', function () { qpRun(); });
   $('#mt-qset', root).addEventListener('click', function () { qpSetup(false); });
@@ -1232,6 +1237,8 @@
 
   /* ---------- keys, events, start ---------- */
   window.addEventListener('keydown', function (e) {
+    /* the command bar (hub.js) keeps its own keys: Ctrl+K, and everything typed in it */
+    if (((e.ctrlKey || e.metaKey) && e.code === 'KeyK') || (e.target && e.target.closest && e.target.closest('#cmdk'))) return;
     if (e.key === 'F2' || !on() || ($('#dlg') && $('#dlg').open) || document.body.classList.contains('gated') || document.body.classList.contains('fm-on')) return;
     var typing = /input|textarea|select/i.test(e.target.tagName || ''), k = (e.key || '').toLowerCase(), mod = e.ctrlKey || e.metaKey;
     if (typing) { e.stopImmediatePropagation(); return; }
