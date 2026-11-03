@@ -1,0 +1,24 @@
+# The public-domain paintings behind the AI art styles of פריים מגנטים (frame-studio/media/styles) and commits them. Run by hand.
+name: Frame Studio art styles
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  styles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the paintings
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 frame-studio/tools/art-styles.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frame-studio/media/styles
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -q -m "frame-studio: public-domain paintings for the AI art styles (tools/art-styles.py)"
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break || sleep 5; done
