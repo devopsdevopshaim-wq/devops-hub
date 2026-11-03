@@ -935,8 +935,8 @@
   var mk = $('#mt-keep', root); if (mk && FS.keepFacesOn) { mk.checked = FS.keepFacesOn(); mk.addEventListener('change', function () { FS.keepFacesOn(mk.checked); var k2 = document.getElementById('ax-keep'); if (k2) k2.checked = mk.checked; }); }
   $('#mt-ai-eng', root).addEventListener('click', function (e) { var b = e.target.closest('[data-eng]'); if (!b) return; if (b.dataset.eng === 'local' && !(FS.localAI && FS.localAI.isReady())) { FS.toast('מנוע ה־AI המקומי עוד לא מותקן'); if (FS.localAI) FS.localAI.open(); return; } FS.aiEngine(b.dataset.eng); engines(); });
   function after(list) { list.forEach(function (p) { p.cache = {}; p._mc = null; }); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); refreshAll(); }
-  /* ⚡ the instant effects (instant-fx.js): on the photos the AI view works on, the results show in the before | after pairs */
-  if (FS.fxPanel) FS.fxPanel($('#mt-ifx', root), { list: function () { return aiList(); }, preview: function () { return aiList()[0] || FS.cur(); }, done: function (l) { after(l); } });
+  /* 🎨 the AI art styles (ai-art.js): on the photos the AI view works on, the results show in the before | after pairs */
+  if (FS.artPanel) FS.artPanel($('#mt-ifx', root), { list: function () { return aiList(); }, preview: function () { return aiList()[0] || FS.cur(); }, done: function (l) { after(l); } });
   function runAI(prompt, label) {
     var l = aiList(); if (!l.length) return FS.toast('אין תמונות');
     $('.mt-aibac', root).scrollIntoView({ behavior: 'smooth', block: 'start' });
