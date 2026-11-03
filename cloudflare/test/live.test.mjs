@@ -33,6 +33,27 @@ check('a licensed studio has its own events', r.body.ok);
 r = await call(LIC, { action: 'ev-list' });
 check('... and lists only its own', r.body.events.length === 1 && r.body.events[0].title === 'בר מצווה');
 
+/* guests' details: only with consent, a real phone, one record per phone; the owner sees and deletes them */
+r = await call(null, { action: 'lead', e: ev.id, k: ev.k, phone: '050-1112233', name: 'דנה' });
+check('no consent, no details', r.code === 400 && r.body.error === 'no-consent');
+r = await call(null, { action: 'lead', e: ev.id, k: 'f'.repeat(24), phone: '050-1112233', consent: true });
+check('a wrong key cannot leave details', r.code === 404);
+r = await call(null, { action: 'lead', e: ev.id, k: ev.k, phone: '12', consent: true });
+check('a phone must be a phone', r.code === 400 && r.body.error === 'bad-phone');
+r = await call(null, { action: 'lead', e: ev.id, k: ev.k, phone: '050-1112233', name: 'דנה', soon: 'wedding', when: '2027-06', consent: true });
+check('a guest leaves a phone and a coming wedding', r.body.ok);
+r = await call(null, { action: 'lead', e: ev.id, v: ev.v, phone: '0501112233', consent: true, soon: 'nonsense' });
+check('... the same phone from the album updates the same record', r.body.ok);
+r = await call(OWNER, { action: 'leads' });
+check('the owner sees it, with the event, once', r.body.ok && r.body.leads.length === 1 && r.body.leads[0].soon === 'wedding' && r.body.leads[0].when === '2027-06' && r.body.leads[0].title === ev.title && r.body.leads[0].name === 'דנה', r.body);
+r = await call(LIC, { action: 'leads' });
+check('another studio does not', r.body.ok && r.body.leads.length === 0);
+r = await call(null, { action: 'guest-info', e: ev.id, k: ev.k });
+r = await call(OWNER, { action: 'ev-list' });
+check('entries and details are counted', (r.body.events.find((x) => x.id === ev.id).n.scans || 0) >= 1 && r.body.events.find((x) => x.id === ev.id).n.leads === 1);
+r = await call(OWNER, { action: 'lead-del', e: ev.id, phone: '050-1112233' });
+check('the owner deletes it', r.body.ok && (await call(OWNER, { action: 'leads' })).body.leads.length === 0);
+
 /* the main QR: one permanent code per studio, pointed at an event by its owner only */
 r = await call(OWNER, { action: 'main-get' });
 check('the owner gets a permanent main code, pointing nowhere yet', r.body.ok && /^[a-f0-9]{20}$/.test(r.body.m) && r.body.e === '', r.body);

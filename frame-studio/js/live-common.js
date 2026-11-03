@@ -22,6 +22,25 @@
       var el = document.getElementById('toast'); if (!el) return;
       el.textContent = t; el.classList.add('on'); clearTimeout(L._t); L._t = setTimeout(function () { el.classList.remove('on'); }, ms || 3200);
     },
+    /* 📲 a guest's details, only if they want: the phone (for the photos on WhatsApp), a coming event of their own, and a
+       clear consent. lead.html(id, title, sub) draws it; lead.read(root, id) reads it; lead.send(d) sends it with this page's key */
+    lead: {
+      SOON: [['', 'אין כרגע'], ['wedding', '💍 חתונה'], ['engagement', '💞 אירוסין'], ['henna', '🌿 חינה'], ['barmitzvah', '✡️ בר מצווה'], ['batmitzvah', '🎀 בת מצווה'], ['brit', '👶 ברית / בריתה'], ['birthday', '🎂 יום הולדת'], ['company', '🏢 אירוע חברה'], ['other', '✨ אחר']],
+      html: function (id, title, sub, biz) {
+        var y = new Date().getFullYear(), m = new Date().getMonth(), months = [];
+        for (var i = 0; i < 24; i++) { var d = new Date(y, m + i, 1); months.push([d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2), d.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' })]); }
+        return '<section class="card lv-lead" id="' + id + '"><h2>' + title + ' <small>(לא חובה)</small></h2>' + (sub ? '<p class="lv-lead-sub">' + sub + '</p>' : '') +
+          '<label class="lv-f">טלפון<input type="tel" inputmode="tel" autocomplete="tel" maxlength="20" data-l="phone" placeholder="050-0000000" dir="ltr"></label>' +
+          '<div class="lv-row2"><label class="lv-f">יש לכם אירוע בקרוב?<select data-l="soon">' + L.lead.SOON.map(function (s) { return '<option value="' + s[0] + '">' + s[1] + '</option>'; }).join('') + '</select></label>' +
+          '<label class="lv-f">מתי?<select data-l="when"><option value="">לא יודעים עדיין</option>' + months.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select></label></div>' +
+          '<label class="lv-consent"><input type="checkbox" data-l="consent"> אני מאשר/ת ל' + L.esc(biz || 'צלם המגנטים') + ' לשמור את הטלפון ולפנות אליי בוואטסאפ לגבי התמונות ולגבי אירועים. אפשר לבקש מחיקה בכל עת.</label></section>';
+      },
+      read: function (root) { var g = function (k) { var el = root.querySelector('[data-l="' + k + '"]'); return el ? (el.type === 'checkbox' ? el.checked : el.value.trim()) : ''; }; return { phone: g('phone'), soon: g('soon'), when: g('when'), consent: g('consent') === true }; },
+      send: function (d, name) {
+        if (!d.phone || !d.consent) return Promise.resolve({ ok: false, error: d.phone ? 'no-consent' : 'none' });
+        return L.call({ action: 'lead', e: L.e, k: L.k || undefined, v: L.k ? undefined : L.v, phone: d.phone, name: name || '', soon: d.soon, when: d.when, consent: true });
+      }
+    },
     heDate: function (iso) { var d = new Date(String(iso) + 'T12:00:00Z'); return isNaN(d) ? '' : d.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }); },
     /* a QR code as a canvas (vendor/qrcode.js, loaded on first use) */
     qr: function (text, px, dark, light) {

@@ -28,9 +28,17 @@
         '<button class="gbtn" id="share">💬 שיתוף בוואטסאפ</button></div>' +
       '<div id="body"></div>' +
       (B.google ? '<section class="card al-review"><h2>נהניתם מהמגנטים? 💛</h2><p>המלצה קצרה בגוגל עוזרת לנו מאוד, ולוקחת דקה.</p><a class="gbtn" href="' + esc(B.google) + '" target="_blank" rel="noopener">⭐ כתיבת המלצה</a></section>' : '') +
+      L.lead.html('al-lead', '📲 יש לכם אירוע בקרוב?', 'משאירים טלפון, ונחזור אליכם עם הצעה למגנטים באירוע שלכם (ונשלח לכם גם את האלבום הזה).', B.name) .replace('</section>', '<button class="gbtn main" id="al-lead-go">שליחה</button><p class="hint" id="al-lead-st"></p></section>') +
       '<section class="card cta"><h2>רוצים מגנטים גם באירוע שלכם? 🧲</h2><a class="gbtn main" href="./">' + esc(B.name || 'פריים מגנטים') + '</a></section>';
     Array.prototype.forEach.call(app.querySelectorAll('[data-t]'), function (b) { b.addEventListener('click', function () { tab = b.dataset.t; render(); }); });
     document.getElementById('zip').addEventListener('click', zipAll);
+    var lg = document.getElementById('al-lead-go');
+    if (lg) lg.addEventListener('click', function () {
+      var box = document.getElementById('al-lead'), d = L.lead.read(box), st = document.getElementById('al-lead-st');
+      if (!d.phone) { st.textContent = 'כותבים מספר טלפון'; return; }
+      if (!d.consent) { st.textContent = 'צריך לסמן את האישור'; return; }
+      lg.disabled = true; L.lead.send(d, '').then(function (x) { lg.disabled = false; st.textContent = x && x.ok ? '✓ תודה! נחזור אליכם בקרוב 💛' : x && x.error === 'bad-phone' ? 'מספר הטלפון לא נראה תקין' : 'לא נשלח, נסו שוב'; if (x && x.ok) box.querySelectorAll('input,select,button').forEach(function (el) { el.disabled = true; }); });
+    });
     document.getElementById('share').addEventListener('click', function () { window.open('https://wa.me/?text=' + encodeURIComponent('📸 התמונות והברכות מ' + data.title + ':\n' + location.href), '_blank', 'noopener'); });
     var pr = document.getElementById('print'); if (pr) pr.addEventListener('click', function () { window.print(); });
     var body = document.getElementById('body');

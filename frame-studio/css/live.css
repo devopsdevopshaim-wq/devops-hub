@@ -56,3 +56,11 @@
   .wish { box-shadow: none; border-color: #ddd; }
   .wish audio { display: none; }
 }
+
+/* 📲 the guest's details (only with consent) */
+.lv-lead h2 small { font-weight: 400; font-size: 13px; opacity: .65; }
+.lv-lead-sub { margin: -4px 0 10px; opacity: .8; font-size: 14px; }
+.lv-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lv-lead select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,.15); font: inherit; background: #fff; }
+.lv-consent { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.5; margin-top: 8px; opacity: .85; }
+.lv-consent input { margin-top: 3px; flex: none; width: 18px; height: 18px; }
