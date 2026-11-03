@@ -1623,3 +1623,30 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
 - The film walks through the work in 5 steps (מכניסים תמונות, בוחרים גודל, עורכים הכול יחד, כמה להדפיס?, מדפיסים), then the features: instant print, the full editor, event frames, smart tools, 56 effects, puzzle, QR on every magnet, the live event, the guest's phone page, the site.
 - The owner asked to leave out his Excel record, the photo cube and the "כל אורח הוא הלקוח הבא" scene. Keep them out.
 - Music: Kevin MacLeod "Upbeat Forever" (CC BY 4.0), credited on the end card.
+
+## מרכז האירוע (js/hub.js, css/hub.css) · v109
+
+A tab of its own in the quick workspace (after "הדפסה"), with three panels:
+
+- **⚡ קו אוטומטי (hot folder):**
+  - The owner picks the folder the camera saves into (`showDirectoryPicker`, works in the desktop program and Chrome/Edge). The folder is polled every 1.5 s.
+  - A file is taken only when its size and time stayed the same between two looks, so a file the camera is still writing is skipped.
+  - Each photo comes in through `FS.addPhotoFile` plus `photos-added`, so the event frame and the QR hooks apply as usual.
+  - Then `FS.copiesAdvice([p])` runs. Closed eyes are held, with the alternative from the same moment (⇄) when there is one. Nobody facing the camera (0 copies) is held. No faces found keeps the copies as they were.
+  - Print mode is "באישור שלי" or "אוטומטית". Automatic waits N seconds (3–40) for more photos and prints them together, to save paper.
+  - Printing goes through `FS.mate.printList(list)`, which uses the instant print's printer and layout, each photo with its own copies. It returns false and opens the instant-print setup when that isn't set.
+  - Settings are stored in `fs-hub-auto`.
+- **📡 לוח בקרה:**
+  - Gauges for magnets out of the guests, magnets per hour (last 30 min), waiting to print, paper left and when it runs out, ink %, and when every guest will have a magnet.
+  - A bar chart of magnets per quarter hour (last 4 h), alerts, and money: income, materials, extra costs and net profit (`fs-hub-money`).
+  - It reads `frame-studio-printlog` and `frame-studio-printer` (printlog.js) read-only.
+- **🎁 אחרי האירוע:**
+  - A highlights film made on the computer: canvas + `MediaRecorder` (MP4 with H.264 where available, as in the desktop program; otherwise WEBM), 30/60/90 s, portrait or landscape.
+  - The photos are the marked ones (3 or more), or else the best by `FS.scoreAll` (no duplicates, no closed eyes) in event order. It adds a title, an end card and the owner's own music file (fades in and out).
+  - Premium products with editable prices (`fs-hub-prods`) and an offer to the couple through a `wa.me` link (free) or copied text.
+
+**Command bar:**
+- Ctrl+K, or the "⌘ פקודות" button, opens a bar listing every action. Typing filters it, ↑↓ moves and Enter runs.
+- mate.js's window key handler lets Ctrl+K, and keys typed inside `#cmdk`, pass through.
+
+**mate.js now exposes:** `FS.mate.show(v)`, `FS.mate.view()`, `FS.mate.root`, `FS.mate.printList`, `FS.mate.quickReady`, and the `mate-view` event.
