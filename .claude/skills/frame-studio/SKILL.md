@@ -1549,3 +1549,17 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
   - The admin publishes packages, extras and the packages note to the server (`site-save`, on top of the published base) 1.5 s after the last change, so other drafts stay drafts.
   - The studio's 💰 editor publishes with `FS.publishLive` (it reads FS.siteData, applies the change, and calls site-save), falling back to GitHub.
   - The home page and l/*.html read /frame-site on every visit.
+
+## 🧮 How many to print (copies by the people in the photo), and print from anywhere (Nov 3, v104)
+- `js/copies.js` works on the face landmarker of faces.js (`FaceSig.detect`: 478 points plus blink blendshapes), on this computer. `FS.judgeFaces(faces)` judges one photo:
+  - **Front faces only.** Faces with height under 45% of the biggest face are guests far behind and do not count.
+  - **Closed eyes.** Closed = blink average > 0.5 or both eye openings < 0.12. Any closed front face → verdict 'closed', 0 copies. A 0.4–0.5 blink → `doubt` (👀 "כדאי לבדוק"); it still prints.
+  - **Child.** A front face that is not the biggest one, with rel < 0.6, or rel < 0.9 and lower in the frame (eye line > 0.18·h below the biggest face) and eye/face proportion ≥ 0.58. Calibrated on media/real: the mother and daughter photo gives a child, and a 5-adult group photo gives 5 adults. Children add no copies.
+  - **Facing.** Facing = nose within 0.32 interocular of the eyes' middle; faces turned away do not count.
+  - **Copies** = adults facing; at least 1 when anyone is there.
+- `FS.copiesAdvice(list)` looks for a replacement for a 'closed' photo: up to 6 photos either side, the same scene (9×8 difference hash, ≤ 16 bits apart), ±1 people, everyone open and no doubt.
+- `FS.openCopiesAdvisor(list, done)` shows the advice window: per photo, the reason, the number and the replacement. "✔ להחיל" sets `p.copies` (closed → 0; the replacement gets its copies and is marked).
+- In the quick workspace:
+  - "🧮 כמה להדפיס?" sits in the sub row, and "🧮 המלצה לפי האנשים בתמונה" in the 🧾 copies bar. Both work on the marked photos, else all.
+  - Tiles show `p.cadv`: 👥 n, 👀 n, or 😑 עיניים עצומות.
+- `#mt-fab` "🖨️ להדפסה · N מגנטים" floats in every view of the quick workspace and runs `qpRun()` (instant print with the preview) on the marked photos or the one in focus.
