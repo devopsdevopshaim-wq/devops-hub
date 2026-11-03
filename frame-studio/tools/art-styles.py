@@ -1,7 +1,7 @@
 """The paintings behind the AI art styles (js/ai-art.js): public-domain works from Wikimedia Commons, saved small
 (384 px, they only teach the AI the style) to frame-studio/media/styles/<id>.jpg, with credits.json (artist, title,
 licence, source). Run in CI (frame-art-styles.yml); a work that cannot be found is skipped and reported."""
-import io, json, os, sys, urllib.parse, urllib.request
+import io, json, os, sys, urllib.error, urllib.parse, urllib.request
 from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -44,9 +44,16 @@ WORKS = [
 
 
 def get(params):
-    q = urllib.parse.urlencode(dict(params, format='json', formatversion=2))
-    with urllib.request.urlopen(urllib.request.Request(API + '?' + q, headers=UA), timeout=40) as r:
-        return json.load(r)
+    q = urllib.parse.urlencode(dict(params, action='query', format='json', formatversion=2))
+    try:
+        with urllib.request.urlopen(urllib.request.Request(API + '?' + q, headers=UA), timeout=40) as r:
+            raw = r.read()
+    except urllib.error.HTTPError as e:
+        raw = e.read(); print('http', e.code, raw[:300])
+    try:
+        return json.loads(raw)
+    except ValueError:
+        print('not json:', raw[:300]); raise
 
 
 def info(page):
