@@ -1573,3 +1573,13 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
     - Tests are in test/live.test.mjs.
   - **Studio tab:** a "🔁 קוד QR ראשי" card at the top shows where it leads now, "⭐ להפנות … לאירוע הזה", "🖨️ שלט עם הקוד הראשי" (`sign(true)`, the same sign with the business name) and "🔗 העתקה".
   - **Guests:** live.html?m=… (FL.m in live-common.js) asks main-info and replaces itself with live.html?e=…&k=….
+
+## 🔗 A QR to the event's photos on every photo, bottom left (Nov 3, v106)
+- `FS.albumTag(p, e)` (live.js) puts an image layer (`albumQr: true`) with a QR for album.html?e=…&v=… (the event's album, viewing key) at the bottom left. `qrSpot(d, right)` chooses where: in the margin under or beside the frame's window when there is one, else inside the photo's corner. The QR is at least 14 mm wide (15% of the short side).
+  - A living magnet's QR (`magicQr`) moves to the bottom right when both are on, and `magicTag` itself goes right when an album QR is there.
+  - `p.albumEv` marks the photo: when it is printed it goes up to the album (studio-up) even with the station off or the album option off, so the code always finds it.
+  - `FS.albumUntag(p)` removes it.
+- The live tab has "🔗 QR לתמונות האירוע על כל תמונה (שמאל למטה)" (cfg.albumQr):
+  - the station's magnets get it;
+  - an `FS.afterAdd` hook gives it to new photos as they come in (not to puzzle or cube pages);
+  - "➕ להוסיף לתמונות שבפרויקט" and "✖ להסיר" act on the marked photos, else all.

@@ -76,6 +76,8 @@
         '<div class="row2"><div class="field"><label>שם העמדה</label><input id="lv-station" maxlength="30" value="' + esc(cfg.station) + '"></div>' +
         '<div class="field"><label>הדפסה</label><select id="lv-per"><option value="one">כל תמונה מיד</option><option value="2">2 בדף</option><option value="4">4 בדף</option><option value="fill">כמה שנכנס בדף</option></select></div></div>' +
         '<label class="check"><input type="checkbox" id="lv-auto"' + (cfg.auto ? ' checked' : '') + '> הדפסה אוטומטית כשמגיעה תמונה</label>' +
+        '<div class="lv-albqr"><label class="check"><input type="checkbox" id="lv-albqr"' + (cfg.albumQr ? ' checked' : '') + '> 🔗 QR לתמונות האירוע על כל תמונה (שמאל למטה). סורקים ורואים את כל התמונות של האירוע</label>' +
+          '<div class="inline"><button class="btn small" id="lv-albqr-all">➕ להוסיף לתמונות שבפרויקט</button><button class="btn small" id="lv-albqr-off">✖ להסיר מהתמונות</button></div></div>' +
         '<label class="check"><input type="checkbox" id="lv-magic"' + (cfg.magic !== false ? ' checked' : '') + '> ✨ מגנט חי: QR קטן על כל מגנט. בבית סורקים, והמגנט מתעורר עם הברכה, וקפסולת זמן לזוג</label>' +
         '<label class="check"><input type="checkbox" id="lv-wish"' + (cfg.wish ? ' checked' : '') + '> ✍️ הברכה של האורח בכתב יד על המגנט</label>' +
         '<p class="lv-copies">' + (ev.copies > 1 ? '🧲🧲 הדפסה כפולה: מגנט לאורח ועוד אחד לאלבום של הזוג' : '🧲 מגנט אחד לכל תמונה') + ' <button class="btn small lv-owner" id="lv-dbl">' + (ev.copies > 1 ? 'רק אחד' : 'הדפסה כפולה') + '</button></p>' +
@@ -110,6 +112,13 @@
     var per = $('#lv-per', pane); if (per) { per.value = cfg.per; per.addEventListener('change', function () { cfg.per = this.value; keep(KS, cfg); }); }
     on('#lv-auto', function () { cfg.auto = this.checked; keep(KS, cfg); if (cfg.auto) maybePrint(); }, 'change');
     on('#lv-magic', function () { cfg.magic = this.checked; keep(KS, cfg); }, 'change');
+    on('#lv-albqr', function () { cfg.albumQr = this.checked; keep(KS, cfg); if (this.checked) FS.toast('🔗 כל תמונה חדשה וכל מגנט מהעמדה יקבלו QR לתמונות האירוע. לתמונות שכבר בפרויקט: "➕ להוסיף לתמונות שבפרויקט".', 6000); }, 'change');
+    on('#lv-albqr-all', function () {
+      var l = FS.marked().length ? FS.marked() : S.photos.slice(); if (!l.length) return FS.toast('אין תמונות בפרויקט');
+      FS.busy('מוסיף QR לתמונות האירוע…');
+      l.reduce(function (ch, p) { return ch.then(function () { return FS.albumTag(p, ev); }); }, Promise.resolve()).then(function () { FS.busy(); FS.emit('doc'); FS.toast('🔗 נוסף QR ל־' + l.length + ' תמונות (שמאל למטה)'); }, function () { FS.busy(); FS.toast('מחולל ה־QR לא נטען'); });
+    });
+    on('#lv-albqr-off', function () { var l = FS.marked().length ? FS.marked() : S.photos.slice(); l.forEach(function (p) { FS.albumUntag(p); }); FS.emit('doc'); FS.render && FS.render(); FS.toast('ה־QR הוסר מ־' + l.length + ' תמונות'); });
     on('#lv-mirror', function () {
       var p = FS.cur(), F = null;
       if (p) { var k = Math.min(1, 1400 / Math.max(p.doc.w, p.doc.h)), c = FS.canvas(p.doc.w * k, p.doc.h * k), H = FS.hole(p.doc);
@@ -318,7 +327,7 @@
         try { var d = JSON.parse(JSON.stringify(cfg.tpl)); p.doc = d; FS.fitPhoto(p.doc, FS.img(p.src)); FS.snap(p); } catch (e) { /* keeps its own design */ }
       } else if (cfg.tplFrame && FS.USER_FRAMES && FS.USER_FRAMES[cfg.tplFrame]) putDesign(p, cfg.tplFrame);
       if (cfg.wish && (ph.text || '').trim()) addWish(p, ph.text, ph.name);
-      return (cfg.magic !== false ? FS.magicTag(p, ev) : Promise.resolve()).catch(function () { /* printed without the QR */ }).then(function () { return p; });
+      return (cfg.albumQr ? FS.albumTag(p, ev) : Promise.resolve()).then(function () { return cfg.magic !== false ? FS.magicTag(p, ev) : null; }).catch(function () { /* printed without the QR */ }).then(function () { return p; });
     }).then(function (p) {
       run.got++; run.queue.push(p);
       if (FS.faceIndex) FS.faceIndex(p, ev);   /* "find me": this photo's faces, in the background */
@@ -329,6 +338,38 @@
   /* ✨ the living magnet: a small QR with the magnet's own code. At home the guest scans it and the magnet wakes up (m.html):
      the person comes out of it in 3D, with their greeting, and a time capsule for the couple. The code goes up with the magnet. */
   function newCode() { var a = new Uint8Array(12); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (x) { return 'abcdefghijkmnpqrstuvwxyz23456789'[x % 32]; }).join(''); }
+  /* where a small QR goes on a page: the bottom left corner (or the right one), in the margin under or beside the photo's
+     window when the frame leaves one, else just inside the photo's corner. At least 14 mm wide, so a phone reads it. */
+  function qrSpot(d, right) {
+    var H = FS.hole(d), side = Math.min(d.w, d.h), mm = FS.mmOf ? FS.mmOf(d) : [d.w / 300 * 25.4], pxmm = d.w / (mm[0] || 1);
+    var q = Math.max(side * 0.15, 14 * pxmm), gap = side * 0.012, below = d.h - (H.y + H.h), left = right ? d.w - (H.x + H.w) : H.x, x, y, sz;
+    if (below >= q * 0.9) { sz = Math.min(q, below - gap * 2); x = gap + sz / 2 + Math.max(0, left - sz) / 2; y = H.y + H.h + below / 2; }
+    else if (left >= q * 0.9) { sz = Math.min(q, left - gap * 2); x = left / 2; y = d.h - gap - sz / 2; }
+    else { sz = q * 0.9; x = (right ? d.w - (H.x + H.w) : H.x) + gap + sz / 2; y = H.y + H.h - gap - sz / 2; }
+    return { x: right ? d.w - x : x, y: y, sz: sz };
+  }
+  /* 🔗 the event's photos: a QR on the photo, bottom left, that opens the event's album (every photo of the event).
+     A photo that carries it goes up to the album when it is printed, so the code always finds it. */
+  var albumQrCache = {};
+  FS.albumTag = function (p, e) {
+    e = e || ev; if (!p || !e || !e.v) return Promise.resolve();
+    var d = p.doc, url = siteBase + 'album.html?e=' + e.id + '&v=' + e.v;
+    d.layers = (d.layers || []).filter(function (L) { return !L.albumQr; });
+    var mk = albumQrCache[url] || (albumQrCache[url] = FS.qrCanvas(url, 700).then(function (qc) { return { src: qc.toDataURL('image/png'), w: qc.width }; }));
+    return mk.then(function (q) {
+      return FS.loadImg(q.src).then(function () {
+        var sp = qrSpot(d, false);
+        d.layers.push({ id: FS.uid(), type: 'image', src: q.src, s: sp.sz / q.w, x: sp.x, y: sp.y, r: 0, albumQr: true });
+        p.albumEv = e.id;
+        /* a living magnet's own QR moves to the bottom right */
+        d.layers.forEach(function (L) { if (L.magicQr) { var r = qrSpot(d, true); L.x = r.x; L.y = r.y; } });
+        p.cache = {}; if (FS.snap) FS.snap(p); if (FS.render) FS.render();
+      });
+    });
+  };
+  FS.albumUntag = function (p) { if (!p) return; p.doc.layers = (p.doc.layers || []).filter(function (L) { return !L.albumQr; }); delete p.albumEv; p.cache = {}; if (FS.snap) FS.snap(p); };
+  FS.afterAdd = FS.afterAdd || [];
+  FS.afterAdd.push(function (p) { if (cfg.albumQr && ev && !p.craft) FS.albumTag(p, ev).catch(function () { /* without the QR */ }); });
   FS.magicTag = function (p, e) {
     e = e || ev; if (!p || !e) return Promise.resolve();
     var d = p.doc; d.layers = (d.layers || []).filter(function (L) { return !L.magicQr; });
@@ -336,12 +377,9 @@
     return FS.qrCanvas(siteBase + 'm.html?e=' + e.id + '&c=' + p.magicCode, 700).then(function (qc) {
       var src = qc.toDataURL('image/png');
       return FS.loadImg(src).then(function () {
-        var H = FS.hole(d), side = Math.min(d.w, d.h), q = side * 0.15, gap = side * 0.012;
-        var below = d.h - (H.y + H.h), left = H.x, x, y, sz;
-        if (below >= q * 0.9) { sz = Math.min(q, below - gap * 2); x = gap + sz / 2 + Math.max(0, left - sz) / 2; y = H.y + H.h + below / 2; }
-        else if (left >= q * 0.9) { sz = Math.min(q, left - gap * 2); x = left / 2; y = d.h - gap - sz / 2; }
-        else { sz = q * 0.9; x = H.x + gap + sz / 2; y = H.y + H.h - gap - sz / 2; }
-        d.layers.push({ id: FS.uid(), type: 'image', src: src, s: sz / qc.width, x: x, y: y, r: 0, magicQr: true });
+        /* bottom left, or bottom right when the album's QR already sits on the left */
+        var sp = qrSpot(d, (d.layers || []).some(function (L) { return L.albumQr; }));
+        d.layers.push({ id: FS.uid(), type: 'image', src: src, s: sp.sz / qc.width, x: sp.x, y: sp.y, r: 0, magicQr: true });
         if (FS.render) FS.render();
       });
     });
@@ -409,7 +447,7 @@
     if (!ev) return;
     var seen = {}, uniq = [];
     (plan.pages || []).forEach(function (pg) { pg.forEach(function (it) { if (it.p && !seen[it.p.id]) { seen[it.p.id] = 1; uniq.push(it.p); } }); });
-    if (!run.on) uniq = uniq.filter(function (p) { return p.magicCode && p.magicEv === ev.id; });   /* the station is off: only the living magnets go up (their QR must work) */
+    if (!run.on) uniq = uniq.filter(function (p) { return (p.magicCode && p.magicEv === ev.id) || p.albumEv === ev.id; });   /* the station is off: only photos whose QR must find them go up */   /* the station is off: only the living magnets go up (their QR must work) */
     if (!uniq.length) return;
     if (run.on) {
       var ids = uniq.filter(function (p) { return p.liveId && p.liveEv === ev.id; }).map(function (p) { return p.liveId; });
@@ -418,7 +456,7 @@
       api('stat', { e: ev.id, station: cfg.station, prints: plan.total || 0 });
     }
     /* the magnets go up to the couple's album; a living magnet goes up anyway (its QR must find it), with its person mask */
-    uniq.filter(function (p) { return !p.albumUp && (ev.album !== false || (p.magicCode && p.magicEv === ev.id)); }).reduce(function (ch, p) {
+    uniq.filter(function (p) { return !p.albumUp && (ev.album !== false || (p.magicCode && p.magicEv === ev.id) || p.albumEv === ev.id); }).reduce(function (ch, p) {
       return ch.then(function () {
         p.albumUp = true;
         var k = Math.min(1, 1600 / Math.max(p.doc.w, p.doc.h)), c = FS.renderFull(p, k, false), magic = p.magicCode && p.magicEv === ev.id;
