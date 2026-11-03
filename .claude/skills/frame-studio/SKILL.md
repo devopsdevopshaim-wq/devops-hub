@@ -1563,3 +1563,13 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
   - "🧮 כמה להדפיס?" sits in the sub row, and "🧮 המלצה לפי האנשים בתמונה" in the 🧾 copies bar. Both work on the marked photos, else all.
   - Tiles show `p.cadv`: 👥 n, 👀 n, or 😑 עיניים עצומות.
 - `#mt-fab` "🖨️ להדפסה · N מגנטים" floats in every view of the quick workspace and runs `qpRun()` (instant print with the preview) on the marked photos or the one in focus.
+
+## 🎉 The live event is back, with a main QR (Nov 3, v105)
+- live.js and live-studio.css are back in studio.html (the rail tab "אירוע חי"); the owner asked for it back after v103. The home page's guest features stay off unless asked.
+- 🔁 Main QR: one printed code per studio for every event.
+  - **Server** (cloudflare/src/live.mjs):
+    - The owner's `main-get` makes the key once ('lmainOf:<email>' → 20-hex `m`; 'lmain:<m>' → {owner, e}). `main-set {e}` points it at one of the owner's own events (404 on someone else's).
+    - Public `main-info {m}` returns that event's guest key {e, k, title}, never the viewing key, and 404 when nothing is set.
+    - Tests are in test/live.test.mjs.
+  - **Studio tab:** a "🔁 קוד QR ראשי" card at the top shows where it leads now, "⭐ להפנות … לאירוע הזה", "🖨️ שלט עם הקוד הראשי" (`sign(true)`, the same sign with the business name) and "🔗 העתקה".
+  - **Guests:** live.html?m=… (FL.m in live-common.js) asks main-info and replaces itself with live.html?e=…&k=….

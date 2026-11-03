@@ -8,6 +8,7 @@
     .then(function (j) { var b = String((j && j.base) || '').replace(/\/+$/, ''); return /^https:\/\/[\w.-]+(:\d+)?$/.test(b) ? b : DEFAULT; }).catch(function () { return DEFAULT; });
   var q = new URLSearchParams(location.search);
   var L = window.FL = {
+    m: (q.get('m') || '').replace(/[^a-f0-9]/g, ''),
     e: (q.get('e') || '').replace(/[^a-z0-9]/g, ''), k: (q.get('k') || '').replace(/[^a-f0-9]/g, ''), v: (q.get('v') || '').replace(/[^a-f0-9]/g, ''), c: (q.get('c') || '').replace(/[^a-z0-9]/g, ''),
     base: base,
     call: function (body) {

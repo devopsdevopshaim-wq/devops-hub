@@ -60,3 +60,7 @@ body.staff-mode .sb-more, body.staff-mode .lv-owner, body.staff-mode .lv-staff, 
 .ef-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .ef-root { font-size: 13px; opacity: .85; overflow-wrap: anywhere; }
 .ef-st { margin: 0; font-size: 12px; opacity: .75; }
+
+/* 🔁 the main QR */
+.lv-main { border: 1px solid rgba(237,182,190,.35); background: linear-gradient(160deg, rgba(237,182,190,.10), rgba(255,255,255,.02)); }
+.lv-main h3 small { display: block; font-weight: 400; font-size: 12px; opacity: .75; margin-top: 2px; }
