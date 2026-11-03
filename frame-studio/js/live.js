@@ -59,7 +59,7 @@
       mainCard() +
       '<div class="field lv-owner"><label>האירוע</label><div class="lv-row"><select id="lv-ev">' + (events.length ? '' : '<option value="">אין עדיין אירועים</option>') +
         events.map(function (e) { return '<option value="' + e.id + '"' + (ev && ev.id === e.id ? ' selected' : '') + '>' + esc(e.title) + ' · ' + esc(e.date || '') + '</option>'; }).join('') + '</select>' +
-        '<button class="btn small" id="lv-new">➕ חדש</button>' + (ev ? '<button class="btn small" id="lv-edit" title="עריכת פרטי האירוע">✏️</button>' : '') + '</div></div>' +
+        '<button class="btn small" id="lv-new">➕ חדש</button><button class="btn small" id="lv-log" title="כל האירועים, הלקוחות והקודים של כל אירוע">📒 תיעוד</button>' + (ev ? '<button class="btn small" id="lv-edit" title="עריכת פרטי האירוע">✏️</button>' : '') + '</div></div>' +
       (!ev ? '<p class="hint">פותחים אירוע חדש (אפשר מתוך עסקה), ואז מדפיסים את שלט ה־QR לשולחנות.</p>' :
       '<div class="card lv-card"><h3>' + esc(ev.title) + '</h3><p class="lv-meta">' + esc(heDate(ev.date)) + (ev.couple && ev.couple.name ? ' · ' + esc(ev.couple.name) : '') + (ev.open ? ' · <b class="ok">פתוח להעלאות</b>' : ' · <b class="no">סגור להעלאות</b>') + '</p>' +
         '<div class="lv-links"><button class="btn primary" id="lv-sign">🖨️ שלט QR לשולחנות</button><button class="btn" id="lv-wall">📺 מסך ענק לאולם</button>' +
@@ -141,7 +141,7 @@
     on('#lv-tpl-x', function () { cfg.tpl = null; cfg.tplFrame = null; keep(KS, cfg); draw(); });
     on('#lv-run', function () { if (run.on) stop(); else start(); });
     on('#lv-print-now', function () { printQueue(true); });
-    on('#lv-month', monthly);
+    on('#lv-month', monthly); on('#lv-log', eventLog);
     on('#lv-staff', function () { staffOn(); });
     on('#lv-dzl', approvedList);
     on('#lv-finish', function () { if (run.on && confirm('לעצור את העמדה לפני סיום האירוע?')) stop(); FS.eventFolder.finish(); });
@@ -499,6 +499,81 @@
   }
 
   /* ---------- the monthly report ---------- */
+  /* 📒 the record: every event with its client, its own two codes (guests send photos / the event's photos, which is the QR
+     printed on the photos), what happened at it and the money; the clients gathered from the events; all of it to Excel */
+  function evLinks(e) { return { guest: siteBase + 'live.html?e=' + e.id + '&k=' + e.k, album: siteBase + 'album.html?e=' + e.id + '&v=' + e.v }; }
+  function clientsOf(list) {
+    var by = {};
+    list.forEach(function (e) {
+      var c = e.couple || {}, key = (c.phone || '').replace(/\D/g, '') || (c.email || '').toLowerCase() || (c.name || '').trim(); if (!key) return;
+      var r = by[key] = by[key] || { name: c.name || '', phone: c.phone || '', email: c.email || '', events: [], income: 0, last: '' };
+      r.events.push(e.title); r.income += e.price || 0; if ((e.date || '') > r.last) r.last = e.date || ''; if (!r.name && c.name) r.name = c.name; if (!r.email && c.email) r.email = c.email;
+    });
+    return Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return (b.last || '').localeCompare(a.last || ''); });
+  }
+  function eventLog() {
+    if (!events.length) return FS.toast('עוד אין אירועים');
+    var tab = 'ev', q = '';
+    var body = FS.dialog('📒 תיעוד האירועים והלקוחות', '<div class="lg"><div class="lg-top"><div class="lg-tabs"><button class="on" data-t="ev">🎉 אירועים (' + events.length + ')</button><button data-t="cl">👥 לקוחות (' + clientsOf(events).length + ')</button></div>' +
+      '<input id="lg-q" placeholder="חיפוש: שם, טלפון, תאריך…"><button class="btn primary" id="lg-xlsx">⬇️ הכול לאקסל</button></div><div id="lg-body"></div>' +
+      '<p class="hint">לכל אירוע שני קודים משלו: 📸 לאורחים (שולחים תמונות לעמדה) ו־🔗 לתמונות האירוע (הקוד שמודפס על התמונות). הקוד הראשי ⭐ מוביל לאירוע שבחרת.</p></div>', true);
+    body.classList.add('lg-dlg');
+    function match(e) { if (!q) return true; var c = e.couple || {}; return [e.title, e.date, c.name, c.phone, c.email].join(' ').toLowerCase().indexOf(q) > -1; }
+    function draw2() {
+      var box = $('#lg-body', body);
+      if (tab === 'ev') {
+        var l = events.filter(match);
+        box.innerHTML = '<table class="lv-table lg-t"><thead><tr><th>תאריך</th><th>אירוע</th><th>לקוח</th><th>תמונות מאורחים</th><th>מגנטים</th><th>מחיר</th><th>רווח</th><th>קודים</th></tr></thead><tbody>' +
+          l.map(function (e) {
+            var c = e.couple || {}, n = e.n || {}, isMain = main && main.e === e.id;
+            return '<tr><td>' + esc(heDate(e.date)) + '</td><td><b>' + esc(e.title) + '</b>' + (isMain ? ' <span class="lg-main">⭐ הקוד הראשי</span>' : '') + '</td>' +
+              '<td>' + esc(c.name || '') + (c.phone ? '<br><a href="tel:' + esc(c.phone) + '" dir="ltr">' + esc(c.phone) + '</a>' : '') + (c.email ? '<br><small dir="ltr">' + esc(c.email) + '</small>' : '') + '</td>' +
+              '<td>' + (n.in || 0) + (n.wishes ? ' · ' + n.wishes + ' ברכות' : '') + '</td><td>' + (n.prints || 0) + '</td><td>' + money(e.price || 0) + '</td><td>' + money((e.price || 0) - (n.prints || 0) * (e.cost || 0)) + '</td>' +
+              '<td><button class="btn small" data-qr="' + e.id + '">🔳 הקודים</button></td></tr>';
+          }).join('') + '</tbody></table>' + (l.length ? '' : '<p class="hint">לא נמצא.</p>');
+      } else {
+        var cl = clientsOf(events.filter(match));
+        box.innerHTML = '<table class="lv-table lg-t"><thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>אירועים</th><th>סה״כ</th><th>אחרון</th><th></th></tr></thead><tbody>' +
+          cl.map(function (r) {
+            return '<tr><td><b>' + esc(r.name) + '</b></td><td dir="ltr">' + esc(r.phone) + '</td><td dir="ltr"><small>' + esc(r.email) + '</small></td><td>' + r.events.map(esc).join('<br>') + '</td><td>' + money(r.income) + '</td><td>' + esc(heDate(r.last)) + '</td>' +
+              '<td>' + (r.phone ? '<button class="btn small" data-wa="' + esc(r.phone) + '">💬</button>' : '') + '</td></tr>';
+          }).join('') + '</tbody></table>' + (cl.length ? '' : '<p class="hint">לא נמצא. פרטי הלקוח נכנסים בפרטי האירוע (✏️).</p>');
+      }
+    }
+    body.addEventListener('click', function (e2) {
+      var t = e2.target.closest('[data-t]'); if (t) { tab = t.dataset.t; $$('[data-t]', body).forEach(function (x) { x.classList.toggle('on', x === t); }); draw2(); return; }
+      var qb = e2.target.closest('[data-qr]'); if (qb) return codes(events.filter(function (x) { return x.id === qb.dataset.qr; })[0]);
+      var w = e2.target.closest('[data-wa]'); if (w) wa(w.dataset.wa, 'שלום, ');
+    });
+    $('#lg-q', body).addEventListener('input', function () { q = this.value.trim().toLowerCase(); draw2(); });
+    $('#lg-xlsx', body).addEventListener('click', function () {
+      if (!FS.xlsx) return FS.toast('ייצוא האקסל לא נטען');
+      var evRows = [['תאריך', 'אירוע', 'לקוח', 'טלפון', 'אימייל', 'תמונות מאורחים', 'ברכות', 'מגנטים', 'מחיר', 'עלות', 'רווח', 'פתוח להעלאות', 'הקוד הראשי', 'קישור לאורחים (קוד 📸)', 'קישור לתמונות האירוע (קוד 🔗)', 'מזהה']].concat(events.map(function (e) {
+        var c = e.couple || {}, n = e.n || {}, L = evLinks(e), cost = (n.prints || 0) * (e.cost || 0);
+        return [e.date || '', e.title, c.name || '', c.phone || '', c.email || '', n.in || 0, n.wishes || 0, n.prints || 0, e.price || 0, cost, (e.price || 0) - cost, e.open ? 'כן' : 'לא', main && main.e === e.id ? '⭐' : '', L.guest, L.album, e.id];
+      }));
+      var clRows = [['שם', 'טלפון', 'אימייל', 'מספר אירועים', 'האירועים', 'סה״כ', 'אירוע אחרון']].concat(clientsOf(events).map(function (r) { return [r.name, r.phone, r.email, r.events.length, r.events.join(' · '), r.income, r.last]; }));
+      var blob = FS.xlsx([{ name: 'אירועים', rows: evRows }, { name: 'לקוחות', rows: clRows }]);
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'events-and-clients-' + today() + '.xlsx'; document.body.appendChild(a); a.click(); a.remove();
+      FS.toast('⬇️ קובץ האקסל ירד: אירועים ולקוחות');
+    });
+    draw2();
+  }
+  /* one event's two codes, big, to download or print */
+  function codes(e) {
+    if (!e) return; var L = evLinks(e);
+    FS.busy('מכין קודים…');
+    Promise.all([FS.qrCanvas(L.guest, 600), FS.qrCanvas(L.album, 600)]).then(function (c) {
+      FS.busy(); var g = c[0].toDataURL(), a = c[1].toDataURL();
+      var card = function (img, t, sub) { return '<figure class="lg-code"><img src="' + img + '" alt=""><figcaption><b>' + t + '</b><small>' + sub + '</small></figcaption></figure>'; };
+      var html = '<div class="lg-codes">' + card(g, '📸 לאורחים', 'שולחים תמונה לעמדה, היא מודפסת כמגנט') + card(a, '🔗 תמונות האירוע', 'הקוד שמודפס על התמונות: כל התמונות של האירוע') + '</div>';
+      var body = FS.dialog('🔳 הקודים של "' + e.title + '"', html + '<p class="hint">' + esc(heDate(e.date)) + (e.couple && e.couple.name ? ' · ' + esc(e.couple.name) : '') + '</p>' +
+        '<div class="inline"><button class="btn primary" id="lg-print">🖨️ הדפסה</button><button class="btn" id="lg-dl">⬇️ הורדת שני הקודים</button><button class="btn" id="lg-cp">🔗 העתקת הקישורים</button></div>', true);
+      $('#lg-print', body).addEventListener('click', function () { FS.printDoc('<div style="text-align:center;font-family:Assistant,sans-serif"><h2>' + esc(e.title) + '</h2>' + html + '</div>'); });
+      $('#lg-dl', body).addEventListener('click', function () { [[g, 'guests'], [a, 'photos']].forEach(function (x) { var l = document.createElement('a'); l.href = x[0]; l.download = 'qr-' + x[1] + '-' + e.date + '.png'; document.body.appendChild(l); l.click(); l.remove(); }); });
+      $('#lg-cp', body).addEventListener('click', function () { copy('📸 לאורחים: ' + L.guest + '\n🔗 תמונות האירוע: ' + L.album, '🔗 הקישורים הועתקו'); });
+    }, function () { FS.busy(); FS.toast('מחולל ה־QR לא נטען'); });
+  }
   function monthly() {
     var by = {};
     events.forEach(function (e) {
