@@ -104,6 +104,17 @@
       .catch(function (e) { FS.busy(); FS.toast(/401|403/.test(String(e.message)) ? 'מפתח GitHub לא תקין. בודקים ב"🔑 חיבור לאתר".' : 'העדכון לאתר לא הצליח. השינויים נשמרו אצלך.', 6000); });
   }
   FS.publishSite = publishSite;
+  /* the site reads the owner's content from the secure server (/frame-site) on every visit: saving it there shows at once.
+     The whole published content is read, the change applied, and saved back (the server keeps only the public fields). */
+  function publishLive(apply) {
+    if (!FS.account || !FS.account.call || !FS.siteData) return Promise.resolve(false);
+    FS.busy && FS.busy('מעדכן את האתר…');
+    return FS.siteData().then(function (b) {
+      var s = {}; Object.keys(b || {}).forEach(function (k) { if (k.indexOf('__') !== 0) s[k] = b[k]; });
+      apply(s); return FS.account.call('site-save', { site: s });
+    }).then(function (r) { FS.busy && FS.busy(); return !!(r && r.ok); }, function () { FS.busy && FS.busy(); return false; });
+  }
+  FS.publishLive = publishLive;
   function publish() {
     publishSite(function (base) { ['name', 'owner', 'phone', 'whatsapp', 'email', 'instagram', 'facebook', 'website', 'tagline', 'areas', 'hours', 'credit'].forEach(function (k) { base[k] = FS.BIZ[k]; }); },
       'frame-studio: business details', '🌐 האתר יתעדכן עם הפרטים החדשים תוך כשתי דקות');
@@ -157,7 +168,10 @@
       $('#pkg-save', body).addEventListener('click', function () { save(); FS.toast('💾 נשמר אצלך. "שמירה ופרסום באתר" מעדכן את האתר.'); });
       $('#pkg-publish', body).addEventListener('click', function () {
         save(); var extras = $('#pkg-extras', body).value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean), note = $('#pkg-note', body).value.trim();
-        publishSite(function (base) { base.packages = list; base.extras = extras; base.packagesNote = note; }, 'frame-studio: packages and prices', '🌐 החבילות יתעדכנו באתר תוך כשתי דקות');
+        publishLive(function (s) { s.packages = list; s.extras = extras; s.packagesNote = note; }).then(function (ok) {
+          if (ok) return FS.toast('🌐 המחירים החדשים כבר מופיעים באתר', 5000);
+          publishSite(function (base) { base.packages = list; base.extras = extras; base.packagesNote = note; }, 'frame-studio: packages and prices', '🌐 החבילות יתעדכנו באתר תוך כשתי דקות');
+        });
       });
     }
     function save() { list.forEach(function (p) { if (!p.id) p.id = 'p' + FS.uid(); }); try { localStorage.setItem(PKEY, JSON.stringify(list)); } catch (e) { /* ignore */ } }

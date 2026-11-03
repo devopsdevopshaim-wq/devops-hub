@@ -91,7 +91,7 @@
           '<div class="mt-dp" data-dp="gen"><div class="mt-dgrid">' +
             '<select id="mt-dframe" title="מסגרת"></select><button class="mt-btn" data-d="auto">רמה אוטומטית</button><button class="mt-btn" data-d="sharp">חידוד</button><button class="mt-btn" data-d="clear">הברקה</button>' +
             '<button class="mt-btn" data-d="back">תאורה אחורית</button><select id="mt-dfilm" title="אפקט פילם"></select><select id="mt-dpre" title="מסננים"></select><select id="mt-dsz" title="שינוי גודל"></select>' +
-            '<button class="mt-ic" data-d="rl" title="סיבוב שמאלה">⟲</button><button class="mt-ic" data-d="rr" title="סיבוב ימינה">⟳</button><button class="mt-ic" data-d="fh" title="היפוך">⇋</button><button class="mt-ic" data-d="fv" title="היפוך אנכי">⇵</button></div>' +
+            '<button class="mt-ic" data-d="lock" id="mt-dlock" title="נעילת התמונה במקומה">🔒</button><button class="mt-ic" data-d="keep" id="mt-dkeep" title="התמונה לא יוצאת מגבולות הדף">📐</button><button class="mt-ic" data-d="rl" title="סיבוב שמאלה">⟲</button><button class="mt-ic" data-d="rr" title="סיבוב ימינה">⟳</button><button class="mt-ic" data-d="fh" title="היפוך">⇋</button><button class="mt-ic" data-d="fv" title="היפוך אנכי">⇵</button></div>' +
             '<div class="mt-dsl" id="mt-dsl"></div></div>' +
           '<div class="mt-dp" data-dp="obj" hidden><div class="mt-row"><input id="mt-otext" placeholder="טקסט להוספה"><select id="mt-ofont"></select><input type="color" id="mt-ocol" value="#ffffff"><button class="mt-btn" id="mt-oadd">➕ טקסט</button></div>' +
             '<div class="mt-emo" id="mt-oemo"></div><div class="mt-row"><label class="mt-btn">🖼️ לוגו / תמונה<input type="file" id="mt-ologo" accept="image/*" hidden></label><button class="mt-btn" id="mt-odel">🗑 מחיקת העצם המסומן</button><span class="mt-hint">גוררים עצם על התמונה כדי להזיז, גלגלת משנה גודל</span></div></div>' +
@@ -773,6 +773,7 @@
   function drawDesign(fast) {
     if (view !== 'design' || !on()) return;
     var p = dcur(), wrap = $('#mt-cvw', root), W = wrap.clientWidth || 800, H = wrap.clientHeight || 500;
+    var lk = $('#mt-dlock', root), kp = $('#mt-dkeep', root); if (lk) { lk.textContent = FS.photoLocked(p) ? '🔓' : '🔒'; lk.classList.toggle('on', FS.photoLocked(p)); lk.title = FS.photoLocked(p) ? 'שחרור התמונה' : 'נעילת התמונה במקומה'; } if (kp) kp.classList.toggle('on', FS.prefs.keepIn !== false);
     $('#mt-dname', root).textContent = p ? (p.name || '') + ' · ' + (idx(p) + 1) + '/' + S.photos.length : 'אין תמונה. פותחים תיקייה או מוסיפים תמונות.';
     $('#mt-dnavp', root).disabled = !p || idx(p) <= 0; $('#mt-dnavn', root).disabled = !p || idx(p) >= S.photos.length - 1;
     $('#mt-dsize', root).textContent = p ? sizeTxt(p) + ' ס״מ' : '';
@@ -804,19 +805,21 @@
   function docXY(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / dk, y: (e.clientY - r.top) / dk }; }
   cv.addEventListener('pointerdown', function (e) {
     var p = dcur(); if (!p) return; var q = docXY(e), L = FS.hitLayer(p.doc, q.x, q.y);
+    if (!L && FS.photoLocked(p)) { selL = null; FS.lockToast(); drawDesign(true); return; }
     selL = L || null; drag = { x: q.x, y: q.y, L: L, px: p.doc.photo.x, py: p.doc.photo.y, lx: L ? L.x : 0, ly: L ? L.y : 0 };
     cv.setPointerCapture(e.pointerId); drawDesign(true);
   });
   cv.addEventListener('pointermove', function (e) {
     if (!drag) return; var p = dcur(), q = docXY(e), dx = q.x - drag.x, dy = q.y - drag.y;
-    if (drag.L) { drag.L.x = drag.lx + dx; drag.L.y = drag.ly + dy; } else { p.doc.photo.x = drag.px + dx; p.doc.photo.y = drag.py + dy; }
+    if (drag.L) { drag.L.x = drag.lx + dx; drag.L.y = drag.ly + dy; } else { p.doc.photo.x = drag.px + dx; p.doc.photo.y = drag.py + dy; FS.keepIn(p.doc, FS.img(p.src)); }
     drawDesign(true);
   });
   cv.addEventListener('pointerup', function () { if (!drag) return; drag = null; var p = dcur(); if (p) { FS.snap(p); drawDesign(); } });
   cv.addEventListener('wheel', function (e) {
     var p = dcur(); if (!p) return; e.preventDefault(); var f = e.deltaY < 0 ? 1.06 : 1 / 1.06;
     if (selL) { if (selL.type === 'text' || selL.type === 'emoji') selL.size = Math.max(6, selL.size * f); else if (selL.s) selL.s *= f; }
-    else p.doc.photo.s *= f;
+    else if (FS.photoLocked(p)) return FS.lockToast();
+    else { p.doc.photo.s *= f; FS.keepIn(p.doc, FS.img(p.src)); }
     drawDesign(true); clearTimeout(endT); endT = setTimeout(function () { FS.snap(p); drawDesign(); }, 300);
   }, { passive: false });
   function dchange(fn) { var p = dcur(); if (!p) return; return Promise.resolve(FS.loadImg(p.src)).then(function () { fn(p, p.doc.photo.adj); p.cache = {}; FS.snap(p); dsliders(); drawDesign(); }); }
@@ -829,6 +832,8 @@
       else if (k === 'clear') { a.clarity = Math.min(100, (a.clarity || 0) + 15); a.dehaze = Math.min(100, (a.dehaze || 0) + 10); }
       else if (k === 'back') { a.shadows = Math.min(100, (a.shadows || 0) + 35); a.highlights = Math.max(-100, (a.highlights || 0) - 20); a.exposure = Math.min(100, (a.exposure || 0) + 6); }
       else if (k === 'rl' || k === 'rr') { d.photo.r = ((d.photo.r || 0) + (k === 'rr' ? 90 : -90)) % 360; FS.fitPhoto(d, im, p.fit || dfit); }
+      else if (k === 'lock') { var on = !d.photo.lock; (marked().length ? marked() : [p]).forEach(function (q) { q.doc.photo.lock = on; if (q !== p) FS.snap(q); }); FS.toast(on ? '🔒 התמונה נעולה במקומה' : '🔓 התמונה משוחררת', 2200); }
+      else if (k === 'keep') { FS.prefs.keepIn = FS.prefs.keepIn === false; FS.savePrefs(); if (FS.prefs.keepIn) FS.keepIn(d, im); FS.toast(FS.prefs.keepIn ? '📐 התמונה לא תצא מגבולות הדף' : 'התמונה חופשית לצאת מהדף', 2500); }
       else if (k === 'fh') d.photo.fh = !d.photo.fh;
       else if (k === 'fv') d.photo.fv = !d.photo.fv;
     });
@@ -915,7 +920,10 @@
   }
   $('#mt-aiba', root).addEventListener('click', function (e) { var t = e.target.closest('.mt-tile'), p = t && byId(t.dataset.id); if (p) big(p); });
   FS.on('doc', function () { if (on() && view === 'ai') $$('#mt-aiba .mt-tile', root).forEach(function (el) { enqueue(el); }); });
+  /* every category of the AI view closes; a click on its heading opens it (fold.js) */
+  setTimeout(function () { if (FS.foldify) FS.foldify($('.mt-ai', root), 'mate-ai', '.mt-aibac'); }, 0);
   function buildAI() {
+    setTimeout(function () { if (FS.foldCount) FS.foldCount($('.mt-ai', root)); }, 50);
     aiTarget(); aiBA();
     $('#mt-ai-local', root).innerHTML = LOCAL.map(function (x) { return '<button data-la="' + x[0] + '">' + x[1] + '</button>'; }).join('');
     function cards(list, sel, kind) { $(sel, root).innerHTML = list.map(function (v, i) { return '<button data-ai="' + kind + ':' + i + '"><i>' + (kind === 'st' || kind === 'wo' ? v[2] : v[1]) + '</i><span>' + esc(kind === 'st' || kind === 'wo' ? v[1] : v[0]) + '</span></button>'; }).join(''); }

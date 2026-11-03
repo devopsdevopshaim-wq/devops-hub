@@ -406,6 +406,8 @@
     '<h3>🎨 סגנונות</h3><div class="ai-styles" id="ai-styles"></div>' +
     '<h3>✍️ לתאר במילים</h3><div class="field"><textarea id="ai-custom" rows="2" placeholder="למשל: להלביש את כולם בתחפושות של פיראטים על ספינה בסערה"></textarea></div>' +
     '<button class="btn primary wide" id="ai-custom-go">✨ לעשות</button>';
+  /* every category closes; a click on its heading opens it (fold.js), after the buttons are in */
+  setTimeout(function () { if (FS.foldify) FS.foldify(pane, 'studio-ai'); }, 0);
   function sync() { $$('.ax-chips', pane).forEach(function (g) { $$('button', g).forEach(function (b) { b.classList.toggle('on', cur[g.dataset.k] === b.dataset.v); }); }); $('#ax-name').textContent = nameOf(cur); }
   $$('.ax-chips', pane).forEach(function (g) { g.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; cur[g.dataset.k] = b.dataset.v; sync(); }); });
   function pick(l) { return l[Math.floor(Math.random() * l.length)][0]; }

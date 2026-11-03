@@ -784,3 +784,18 @@ body.clean-shell .app { grid-template-rows: 1fr; grid-template-areas: "tools pan
 .cr-thumbs img { width: 100%; height: 100%; object-fit: cover; }
 .cr-thumbs b { position: absolute; inset: auto 2px 2px auto; font-size: 10px; background: rgba(0,0,0,.6); color: #fff; border-radius: 6px; padding: 0 4px; }
 @media (max-width: 860px) { .cr { grid-template-columns: 1fr; } }
+
+/* ▾ categories that open on a click (fold.js) */
+.fold-h { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fold-h small { flex-basis: 100%; }
+.fold-h .fold-n { margin-inline-start: auto; order: 2; font: 600 11.5px 'IBM Plex Sans Hebrew', 'Assistant', sans-serif; min-width: 22px; padding: 2px 8px; border-radius: 999px; background: rgba(237,182,190,.14); color: #EDB6BE; text-align: center; }
+.fold-h .fold-n:empty { display: none; }
+.fold-h .fold-ch { order: 3; width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; background: rgba(255,255,255,.06); transition: transform .25s ease, background .2s; }
+.fold-h .fold-ch::before { content: '▾'; font-size: 14px; line-height: 1; }
+.fold:not(.closed) > .fold-h .fold-ch { transform: rotate(180deg); }
+.fold-h:hover .fold-ch { background: rgba(237,182,190,.22); }
+.fold.closed > .fold-body { display: none; }
+.fold:not(.closed) > .fold-body { animation: fold-in .25s ease both; }
+@keyframes fold-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.fold.closed { padding-bottom: 12px !important; }
+.fold-h small { order: 4; }

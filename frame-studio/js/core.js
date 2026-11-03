@@ -98,6 +98,40 @@
     d.photo.s = s; d.photo.x = h.x + h.w / 2; d.photo.y = h.y + h.h / 2;
   };
 
+  /* 📐 the photo stays inside the page (its window): changes are free, but never past the edge.
+     A photo at least as large as the window always covers it (no empty strip at an edge, also when turned a little);
+     a smaller one ("כל התמונה") stays whole inside it. On unless the owner turned it off (FS.prefs.keepIn === false). */
+  FS.keepIn = function (d, img) {
+    if (!d || !img || FS.prefs.keepIn === false) return;
+    var h = FS.hole(d), ph = d.photo, iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height; if (!iw || !ih) return;
+    var a = (ph.r || 0) * Math.PI / 180, c = Math.abs(Math.cos(a)), sn = Math.abs(Math.sin(a));
+    var W = iw * ph.s, H = ih * ph.s;                      /* the photo's size on the page */
+    var needW = h.w * c + h.h * sn, needH = h.w * sn + h.h * c; /* the window as the turned photo sees it */
+    var coverS = Math.max(needW / iw, needH / ih);
+    if (ph.s >= coverS * 0.999) {
+      /* cover: every corner of the window inside the turned photo; push the photo's centre where a corner sticks out */
+      for (var it = 0; it < 3; it++) {
+        var cx = ph.x, cy = ph.y, du = 0, dv = 0, ca = Math.cos(a), sa = Math.sin(a);
+        [[h.x, h.y], [h.x + h.w, h.y], [h.x, h.y + h.h], [h.x + h.w, h.y + h.h]].forEach(function (q) {
+          var dx = q[0] - cx, dy = q[1] - cy, u = dx * ca + dy * sa, v = -dx * sa + dy * ca;
+          var ou = Math.abs(u) - W / 2, ov = Math.abs(v) - H / 2;
+          if (ou > 0 && Math.abs(ou) > Math.abs(du)) du = ou * Math.sign(u);
+          if (ov > 0 && Math.abs(ov) > Math.abs(dv)) dv = ov * Math.sign(v);
+        });
+        if (!du && !dv) break;
+        ph.x += du * ca - dv * sa; ph.y += du * sa + dv * ca;
+      }
+    } else {
+      /* smaller than the window: the whole photo stays inside it */
+      var bx = (W * c + H * sn) / 2, by = (W * sn + H * c) / 2;
+      ph.x = bx * 2 >= h.w ? h.x + h.w / 2 : clamp(ph.x, h.x + bx, h.x + h.w - bx);
+      ph.y = by * 2 >= h.h ? h.y + h.h / 2 : clamp(ph.y, h.y + by, h.y + h.h - by);
+    }
+  };
+  /* 🔒 a locked photo does not move, grow or turn by hand (fit, rotate 90° and the AI still may) */
+  FS.photoLocked = function (p) { return !!(p && p.doc && p.doc.photo && p.doc.photo.lock); };
+  FS.lockToast = function () { FS.toast && FS.toast('🔒 התמונה נעולה. "🔓 שחרור" מאפשר להזיז אותה.', 2500); };
+
   /* ---------- images ---------- */
   var IMGS = FS.IMGS = {};
   FS.loadImg = function (src) {

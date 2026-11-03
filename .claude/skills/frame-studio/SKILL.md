@@ -1530,3 +1530,22 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
   - **Tokens.** Night `#0A0F1F`→`#26324F` re-points `--pro-*`, `#mt --g0..g4`, and `--gold`→quartz `#EDB6BE`; primary buttons get dark text.
   - **Fonts.** Karantina for card titles, the dialog title and the empty state; IBM Plex Sans Hebrew for numbers.
   - **The signature.** Grid photos look like printed magnets: a white border, deeper at the bottom, a shadow, and a slight tilt on hover.
+
+## 🔒 Lock and keep-in, foldable categories, 56 stunning effects, the magnet wall, no live event, minutes not seconds, live prices (Nov 3, v103)
+- `FS.keepIn(doc, img)` (core.js) keeps the photo inside its window. At least cover size, it always covers the window, also when turned (it pushes the centre where a window corner sticks out, in the photo's turned frame). Smaller ("כל התמונה"), it stays whole inside.
+  - It is on unless `FS.prefs.keepIn === false`.
+  - It is called on drag, wheel, pinch, the zoom and straighten sliders (studio ui.js) and on drag and wheel in the quick designer (mate.js).
+  - The toggle is "📐 התמונה לא יוצאת מגבולות הדף" (`#ph-keep`) in the studio, and 📐 `#mt-dkeep` in the designer.
+- `doc.photo.lock` and `FS.photoLocked(p)`: a locked photo ignores hand moves, zoom and straighten, and `FS.lockToast()` says why. The toggles are "🔒 נעילת התמונה" (`#ph-lock`, applies to the targets) and 🔒 `#mt-dlock` (applies to the marked photos).
+- `js/fold.js`: `FS.foldify(root, scope, skip)` closes every category of the AI tabs, and a click on the heading opens it. Open categories are remembered in 'fs-fold'. It works on cards (.mt-card / .card) and on h3 runs in the studio pane. `FS.foldCount` shows how many buttons are inside.
+- `FS.AI_WOW` now has 56 effects. The 30 new ones are event-oriented: petals, fireworks, Paris, beach, Santorini, Jerusalem, ballroom, red carpet, magazine cover, studio, B&W fashion, black-gold, clouds, butterflies, snow globe, underwater, hot-air balloons, disco, concert, carnival, luna park, Hanukkah, flower wreath, castle, prince and princess, city night, rain-neon, vintage wedding, golden hour, sparkle frame. Without internet they run only through the local engine.
+- **The site:**
+  - The hero magnets are real event photos: `media/real` wedding-1, henna-3 and birthday-3.
+  - `#mwall` "קיר המגנטים" (drawn by atelier.js) shows two rows of all 19 real photos as printed magnets drifting opposite ways; it stops on hover and is still with reduce-motion.
+  - The clock counts to 03:00, "כמה דקות". The owner: a magnet takes a few minutes, not 60 seconds; all such claims became "כמה דקות" in index, show, business.json, l/*.html and js texts. Server-side texts published in the admin may still say otherwise.
+- **Program:** atelier-studio.css is now neutral graphite (#0F0F11 → #2E2E33, three tiers, no tinted glows), as pro editors do, so a tinted interface does not skew colours. Quartz is kept only for actions and selection.
+- **The live event (אירוע חי) is off:** live.js and live-studio.css are out of studio.html, and the home page's guest-photo, big-screen, guestbook and album features were removed. The files remain.
+- **Prices are live:**
+  - The admin publishes packages, extras and the packages note to the server (`site-save`, on top of the published base) 1.5 s after the last change, so other drafts stay drafts.
+  - The studio's 💰 editor publishes with `FS.publishLive` (it reads FS.siteData, applies the change, and calls site-save), falling back to GitHub.
+  - The home page and l/*.html read /frame-site on every visit.

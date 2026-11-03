@@ -414,7 +414,7 @@
       var L0 = S.sel; drag = { mode: 'handle', L: L0, d0: Math.hypot(pt.x - L0.x, pt.y - L0.y), a0: Math.atan2(pt.y - L0.y, pt.x - L0.x), r0: L0.r || 0, snap: JSON.stringify({ size: L0.size, s: L0.s }) }; return; } }
     var hit = FS.hitLayer(d, pt.x, pt.y);
     if (hit) { S.sel = hit; drag = { mode: 'move', L: hit, ox: pt.x - hit.x, oy: pt.y - hit.y }; openLayerEditor(); }
-    else { S.sel = null; drag = { mode: 'photo', ox: pt.x - d.photo.x, oy: pt.y - d.photo.y }; closeLayerEditor(); }
+    else { S.sel = null; drag = FS.photoLocked(p) ? null : { mode: 'photo', ox: pt.x - d.photo.x, oy: pt.y - d.photo.y }; closeLayerEditor(); if (!drag && FS.photoLocked(p)) FS.lockToast(); }
     FS.render();
   });
   view.addEventListener('pointermove', function (e) {
@@ -426,14 +426,14 @@
       var ids = Object.keys(ptrs); if (ids.length < 2) return;
       var a = ptrs[ids[0]], b = ptrs[ids[1]], k = Math.hypot(a.x - b.x, a.y - b.y) / drag.d0, ang = (Math.atan2(b.y - a.y, b.x - a.x) - drag.a0) * 180 / Math.PI;
       if (drag.L) { var o = JSON.parse(drag.size0); drag.L.size = o.size; drag.L.s = o.s; scaleLayer(drag.L, k); drag.L.r = Math.round(o.r + ang); }
-      else { d.photo.s = drag.s0 * k; }
+      else if (!FS.photoLocked(p)) { d.photo.s = drag.s0 * k; FS.keepIn(d, FS.img(p.src)); }
       FS.render(); return;
     }
     if (drag.mode === 'move') {
       var nx = pt.x - drag.ox, ny = pt.y - drag.oy, snap = 10 / FS.viewScale;
       if (Math.abs(nx - d.w / 2) < snap) nx = d.w / 2; if (Math.abs(ny - d.h / 2) < snap) ny = d.h / 2;
       drag.L.x = nx; drag.L.y = ny;
-    } else if (drag.mode === 'photo') { d.photo.x = pt.x - drag.ox; d.photo.y = pt.y - drag.oy; }
+    } else if (drag.mode === 'photo') { d.photo.x = pt.x - drag.ox; d.photo.y = pt.y - drag.oy; FS.keepIn(d, FS.img(p.src)); }
     else if (drag.mode === 'handle') {
       var L = drag.L, o2 = JSON.parse(drag.snap); L.size = o2.size; L.s = o2.s;
       scaleLayer(L, Math.max(0.05, Math.hypot(pt.x - L.x, pt.y - L.y) / drag.d0));
@@ -453,7 +453,8 @@
     var p = FS.cur(); if (!p) return; e.preventDefault();
     var k = Math.exp(-e.deltaY * 0.0015);
     if (S.sel && S.sel !== 'photo') scaleLayer(S.sel, k);
-    else { var pt = docPt(e), d = p.doc; d.photo.x = pt.x + (d.photo.x - pt.x) * k; d.photo.y = pt.y + (d.photo.y - pt.y) * k; d.photo.s *= k; }
+    else if (FS.photoLocked(p)) { FS.lockToast(); return; }
+    else { var pt = docPt(e), d = p.doc; d.photo.x = pt.x + (d.photo.x - pt.x) * k; d.photo.y = pt.y + (d.photo.y - pt.y) * k; d.photo.s *= k; FS.keepIn(d, FS.img(p.src)); }
     FS.render(); FS.commitSoon(); syncPhotoControls();
     clearTimeout(FS._wheelT); var WL = S.sel; FS._wheelT = setTimeout(function () { if (WL && WL !== 'photo' && WL.link) syncLinked(WL, ['size']); }, 400);
   }, { passive: false });
@@ -501,12 +502,27 @@
     var z = Math.round(ph.s / cover * 100); $('#pzoom').value = z; $('#o-zoom').textContent = z + '%';
     $('#page-bg').value = d.bg;
   }
-  $('#straight').addEventListener('input', function () { var p = FS.cur(); if (!p) return; var ph = p.doc.photo; ph.r = Math.round(ph.r / 90) * 90 + Number(this.value); $('#o-straight').textContent = this.value + '°'; FS.render(true); FS.commitSoon(); });
+  $('#straight').addEventListener('input', function () { var p = FS.cur(); if (!p) return; if (FS.photoLocked(p)) { syncPhotoControls(); return FS.lockToast(); } var ph = p.doc.photo; ph.r = Math.round(ph.r / 90) * 90 + Number(this.value); FS.keepIn(p.doc, FS.img(p.src)); $('#o-straight').textContent = this.value + '°'; FS.render(true); FS.commitSoon(); });
   $('#pzoom').addEventListener('input', function () {
-    var p = FS.cur(); if (!p) return; var d = p.doc, im = FS.img(p.src), h = FS.hole(d), rot = Math.abs(Math.round(d.photo.r / 90)) % 2;
+    var p = FS.cur(); if (!p) return; if (FS.photoLocked(p)) { syncPhotoControls(); return FS.lockToast(); }
+    var d = p.doc, im = FS.img(p.src), h = FS.hole(d), rot = Math.abs(Math.round(d.photo.r / 90)) % 2;
     var cover = Math.max(h.w / (rot ? im.naturalHeight : im.naturalWidth), h.h / (rot ? im.naturalWidth : im.naturalHeight));
-    d.photo.s = cover * this.value / 100; $('#o-zoom').textContent = this.value + '%'; FS.render(true); FS.commitSoon();
+    d.photo.s = cover * this.value / 100; FS.keepIn(d, im); $('#o-zoom').textContent = this.value + '%'; FS.render(true); FS.commitSoon();
   });
+  /* 🔒 lock the photo (and every marked one); 📐 keep photos inside the page */
+  function lockSync() { var p = FS.cur(), b = $('#ph-lock'); if (b) { var on = FS.photoLocked(p); b.textContent = on ? '🔓 שחרור התמונה' : '🔒 נעילת התמונה'; b.classList.toggle('on', on); } var k = $('#ph-keep'); if (k) k.checked = FS.prefs.keepIn !== false; }
+  FS.lockSync = lockSync;
+  if ($('#ph-lock')) $('#ph-lock').addEventListener('click', function () {
+    var p = FS.cur(); if (!p) return; var on = !FS.photoLocked(p);
+    FS.targets().forEach(function (q) { q.doc.photo.lock = on; if (FS.snap) FS.snap(q); });
+    lockSync(); FS.toast(on ? '🔒 התמונה נעולה במקומה' : '🔓 התמונה משוחררת', 2200); FS.emit('doc');
+  });
+  if ($('#ph-keep')) $('#ph-keep').addEventListener('change', function () {
+    FS.prefs.keepIn = this.checked; FS.savePrefs();
+    if (this.checked) FS.state.photos.forEach(function (q) { var im = FS.img(q.src); if (im && !q.doc.photo.lock) { FS.keepIn(q.doc, im); q.cache = {}; } });
+    FS.render(); FS.emit('doc');
+  });
+  FS.on('history', lockSync); FS.on('doc', lockSync); setTimeout(lockSync, 0);
   $('#page-bg').addEventListener('input', function () { var p = FS.cur(); if (!p) return; p.doc.bg = this.value; var v = this.value; FS.targets().forEach(function (q) { q.doc.bg = v; q.cache = q === p ? q.cache : {}; }); FS.render(); FS.commitSoon(); });
 
   /* ---------- adjustments: Lightroom-style sections (light, colour, presence, mixer, grading, curve, effects) ---------- */

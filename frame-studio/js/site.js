@@ -133,7 +133,7 @@
     var types = (BIZ.events && BIZ.events.length ? BIZ.events : FS.EVENTS.map(function (e) { return e.name; }));
     $('#c-type').innerHTML = types.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('');
     var cp = $('#c-pkg'), keepPk = cp.value; cp.innerHTML = '<option value="">עוד לא יודעים</option>' + pks.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name) + (p.price ? ' · ' + esc(p.price) : '') + '</option>'; }).join(''); cp.value = keepPk;
-    $('#ticker').innerHTML = new Array(3).join(FS.EVENTS.map(function (e) { return '<span>' + e.icon + ' ' + e.name + '</span><i>✦</i>'; }).join('') + '<span>🧲 מגנט ביד תוך דקה</span><i>✦</i>');
+    $('#ticker').innerHTML = new Array(3).join(FS.EVENTS.map(function (e) { return '<span>' + e.icon + ' ' + e.name + '</span><i>✦</i>'; }).join('') + '<span>🧲 מגנט ביד תוך כמה דקות</span><i>✦</i>');
     $$('[data-wa]').forEach(function (a) { a.addEventListener('click', function (e) { if (waNumber()) { e.preventDefault(); openWa(a.dataset.wa); } }); });
     $('#wa-fab').addEventListener('click', function (e) { if (waNumber()) { e.preventDefault(); openWa('שלום! אשמח לשמוע על מגנטים לאירוע 🧲'); } });
   }
