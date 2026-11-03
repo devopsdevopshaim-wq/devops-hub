@@ -752,3 +752,5 @@ body.clean-shell .app { grid-template-rows: 1fr; grid-template-areas: "tools pan
 .pal-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .pal-sw { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
 .pal-c { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); box-shadow: 0 2px 6px rgba(0,0,0,.35); cursor: pointer; }
+.ai-wow-h { margin: 10px 0 6px; } .ai-wow-h small { font-weight: 500; font-size: 12px; opacity: .75; }
+.ai-style.wow-st { border-color: rgba(227,196,138,.55) !important; background: linear-gradient(135deg, rgba(227,196,138,.12), rgba(120,80,200,.1)) !important; }
