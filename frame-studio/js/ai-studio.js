@@ -439,7 +439,7 @@
     b.innerHTML = '<i>' + c[1] + '</i><span>' + FS.esc(c[0]) + '</span>';
     b.addEventListener('click', function () { FS.runAI(promptOf(o), c[0]); }); $('#ax-combos').appendChild(b);
   });
-  if (FS.fxPanel) FS.fxPanel($('#ax-fx'), { list: function () { return FS.targets(); }, preview: function () { return FS.cur(); } });
+  if (FS.artPanel) FS.artPanel($('#ax-fx'), { list: function () { return FS.targets(); }, preview: function () { return FS.cur(); } });
   (FS.AI_WOW || []).forEach(function (s) {
     var b = document.createElement('button'), box = $('#ai-wow'); if (!box) return; b.className = 'ai-style wow-st'; b.innerHTML = '<i>' + s[2] + '</i><span>' + FS.esc(s[1]) + '</span>';
     b.addEventListener('click', function () { FS.runAI(s[3] + KEEP, s[1]); }); box.appendChild(b);

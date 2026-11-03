@@ -1474,3 +1474,23 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
   - The light under the pointer on cards (`.sh`, only on cards whose `::after` is free), a soft 3D tilt (`.sh-tilt`), a gold sweep on the main buttons, and a gold scrollbar.
   - On the site only: a scroll line (`#sh-progress`), the gold line under section titles, and in the hero a moving aurora plus a stardust canvas. These are placed after `.hero-light`, which is opaque; the dust pauses off screen. The hero pictures also follow the pointer.
   - All of it is off with reduce-motion or on touch screens.
+
+## 🎨 Fast AI paintings on the computer, and the "flash & paper" site design (Nov 3, v100)
+- The 35 canvas effects (instant-fx.js) were removed at the owner's request ("זוועה").
+- Replaced by `js/ai-art.js`: Google Magenta's arbitrary style transfer (Apache 2.0) in TensorFlow.js 4.22 (`vendor/tfjs/tf.min.js`), WebGL first, CPU fallback.
+  - **Models.** `models/art/{predictor,transformer}`. These are the old tfjs 0.x frozen checkpoints from storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary, converted to graph-model `model.json` (the GraphDef decoded with protobufjs; scratchpad convert.js, same shards).
+  - **Paintings.** 28 public-domain works in `media/styles/<id>.jpg` with `credits.json`, fetched by `.github/workflows/frame-art-styles.yml` (`tools/art-styles.py`, Wikimedia API; run it on main, a branch run conflicts on push).
+  - **Style vectors.** Each painting's 100-d style bottleneck is precomputed in `media/styles/vectors.json`, so a photo needs one predictor pass (its own style, for "עוצמה") plus one transformer pass.
+  - **API.**
+    - `FS.AI_ART` is a list of `[id, name, artist]`.
+    - `FS.artCanvas(img, id, size, strength)` returns a canvas.
+    - `FS.applyArt(list, id, strength, done)`: 1024 px on the GPU (640 otherwise), then drawn back at the photo's own size. It works from `p.artBase` (re-basing like the effects did) and keeps origSrc / aiPrev.
+    - `FS.artPanel(box, {list, preview, done})`: each tile shows the painting, then the network's own preview on the photo, with the painting as a chip. Strength is stored in 'fs-art-strength' (default 80).
+  - **Where.** Studio `#ax-fx`, quick workspace `#mt-ifx`.
+  - **Testing.** Headless Chromium has only SwiftShader, so it is far too slow to judge speed; check correctness at 96 px by wrapping `FS.artCanvas`.
+- Site (index.html): `css/atelier.css` + `js/atelier.js` replace shine on the site (the studio keeps shine).
+  - **Tokens.** Night blue `#0F1528`, flash white `#F8F7F4`, paper `#ECEBF1`, quartz `#EDB6BE`, a gold thread `#CFAE74`. Fonts: Karantina for the big words, Assistant for body text, IBM Plex Sans Hebrew for small print.
+  - **The opening.** `.hero-art.dev`: a magnet print develops from the flash white while a clock counts to 00:47.
+  - **Light sections.** #videos, #how and #faq are paper; the ticker is quartz.
+  - **Packages.** The ⭐ package is a white card.
+  - **CSS gotcha.** A colour may only be the last background layer; `.pk.star` broke on that once.
