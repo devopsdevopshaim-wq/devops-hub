@@ -104,7 +104,7 @@
     '<section class="mt-view" data-view="ai" hidden><div class="mt-ai">' +
       '<p class="mt-hint" id="mt-ai-target"></p>' +
       '<div class="mt-card mt-aibac"><h3>◧ לפני | אחרי <small>התמונות שה־AI עובד עליהן: המקור מימין, התוצאה משמאל · לחיצה מגדילה</small></h3><div class="mt-aiba" id="mt-aiba"></div><p class="mt-hint" id="mt-aiba-more"></p></div>' +
-      '<div class="mt-card fx-card" id="mt-ifx"></div>' +
+      '<div class="mt-card cr-card-box" id="mt-crafts"></div>' +
       '<div class="mt-card"><h3>🖥️ מיד, על המחשב · עובד גם בלי אינטרנט</h3><div class="mt-chips" id="mt-ai-local"></div></div>' +
       '<div class="mt-card"><h3>⚙️ מנוע ה־AI</h3><div class="mt-chips" id="mt-ai-eng"></div><label class="mt-chk-l" style="margin-top:8px"><input type="checkbox" id="mt-keep"> 🙂 שמירת הפנים המקוריות (בלי עיוות) בעיצובים על אדם אמיתי</label><label class="mt-chk-l"><input type="checkbox" id="mt-one"> 👤 רק על אדם אחד: בתמונה עם כמה אנשים בוחרים את מי לעצב, והשאר נשארים כמו בצילום</label><label class="mt-chk-l"><input type="checkbox" id="mt-only"> 🎯 רק על הדמות: הרקע והמקום נשארים מהצילום המקורי, ה־AI משנה רק את האדם</label></div>' +
       '<div class="mt-card"><h3>🦸 גיבורי על <small>על האנשים האמיתיים, כמו סצנה מסרט</small></h3><div class="mt-ai-g" id="mt-ai-heroes"></div></div>' +
@@ -935,8 +935,8 @@
   var mk = $('#mt-keep', root); if (mk && FS.keepFacesOn) { mk.checked = FS.keepFacesOn(); mk.addEventListener('change', function () { FS.keepFacesOn(mk.checked); var k2 = document.getElementById('ax-keep'); if (k2) k2.checked = mk.checked; }); }
   $('#mt-ai-eng', root).addEventListener('click', function (e) { var b = e.target.closest('[data-eng]'); if (!b) return; if (b.dataset.eng === 'local' && !(FS.localAI && FS.localAI.isReady())) { FS.toast('מנוע ה־AI המקומי עוד לא מותקן'); if (FS.localAI) FS.localAI.open(); return; } FS.aiEngine(b.dataset.eng); engines(); });
   function after(list) { list.forEach(function (p) { p.cache = {}; p._mc = null; }); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); refreshAll(); }
-  /* 🎨 the AI art styles (ai-art.js): on the photos the AI view works on, the results show in the before | after pairs */
-  if (FS.artPanel) FS.artPanel($('#mt-ifx', root), { list: function () { return aiList(); }, preview: function () { return aiList()[0] || FS.cur(); }, done: function (l) { after(l); } });
+  /* 🧩 puzzles and cubes (crafts.js): from the photos the AI view works on; the pages join the project */
+  if (FS.craftsCard) FS.craftsCard($('#mt-crafts', root), { list: function () { return aiList(); }, one: function () { return aiList()[0] || FS.cur(); } });
   function runAI(prompt, label) {
     var l = aiList(); if (!l.length) return FS.toast('אין תמונות');
     $('.mt-aibac', root).scrollIntoView({ behavior: 'smooth', block: 'start' });

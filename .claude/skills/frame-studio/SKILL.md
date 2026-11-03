@@ -1510,3 +1510,23 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
 - Nothing runs when the panel opens. Each tile shows `media/styles/pv/<id>.jpg`, made offline by the same network (WebAssembly in Node, on show/p-original.webp at 320 px, strength 0.8). Hovering for 300 ms draws the live preview on your own photo, one at a time, and the last tile hovered wins.
 - 41 paintings: 51 fetched (workflow), minus nudity (Danaë, Venus, Gauguin), weak sources (Lautrec, Seurat's Circus, The Night Watch) and four that ruin faces (Malevich, Mondrian, the Chartres glass, Hiroshige's shower).
 - To rebuild `vectors.json` and `pv/`, use the scratchpad `build.js` pattern: `@tensorflow/tfjs` 4.22 with tfjs-backend-wasm in Node, a fileIO handler, the predictor at 256 px, and the transformer.
+
+## 🧩 Puzzles and cubes; the paintings removed; the program in the atelier identity (Nov 3, v102)
+- The owner said the AI paintings are not relevant to magnets, so they were removed entirely: ai-art.js and its worker, models/art, media/styles, vendor/tfjs, tools/art-styles.py and the frame-art-styles workflow. AI_WOW and AI_STYLES (the AI prompt styles) stay.
+- `js/crafts.js` is the "🧩 פאזלים וקוביות" card in both AI tabs: `#mt-crafts` in the quick workspace (photos = aiList) and `#ax-crafts` in the studio (photos = marked, else targets). It offers three things:
+  - `FS.openPuzzle(p)` — a puzzle from one photo:
+    - 6 to 108 pieces on A4, 20×30, 15×20, 10×15 or A3. The page turns to the photo's direction and the photo covers it (centred a little high, for faces).
+    - Pieces are classic (three cubic curves per edge, seeded by `o.seed`, "🔀 צורה אחרת" changes it) or straight squares.
+    - Cut lines in white, gold, dark, or none. Options: a gentle 3D bevel per piece, one "lifted" piece for display, and a separate cutting template page with crop marks.
+    - Settings in 'fs-puzzle'.
+  - `FS.openCube(list)` — cubes from up to 6 photos:
+    - A photo cube: a cross net with glue tabs on the middle row (6 edges plus back's right edge), cut lines solid, fold lines dashed. 5–6 cm fits A4; 7–9 cm needs A3, and it switches to A3 by itself.
+    - A picture-block puzzle, 3×3 or 4×3 cubes: every photo is cropped to the grid's shape and split; cube (i,j) gets tile (i,j) of each photo.
+    - Each face's picture is turned so it stands upright when every cube is rolled the same way: `BLOCK_Q` = {top 0, front 0, bottom 0, back 2, left 3 (90° counter-clockwise), right 1}.
+    - Nets are packed per page (they turn 90° when that fits more), each numbered with its row and column. Settings in 'fs-cube'.
+  - Pages are drawn at 300 dpi at the paper's true size. "➕ הוספה להדפסה" adds each page as a project photo with doc 'cm' = the paper (no frame, no layers, `p.craft = 1`), then emits 'photos-added'. "⬇️ הורדה" saves JPGs.
+  - `FS.crafts` exposes drawPuzzle, cubeSets and netPages for tests.
+- `css/atelier-studio.css` (loaded last in studio.html; shine.css and shine.js are no longer used in the studio) gives the program the site's identity:
+  - **Tokens.** Night `#0A0F1F`→`#26324F` re-points `--pro-*`, `#mt --g0..g4`, and `--gold`→quartz `#EDB6BE`; primary buttons get dark text.
+  - **Fonts.** Karantina for card titles, the dialog title and the empty state; IBM Plex Sans Hebrew for numbers.
+  - **The signature.** Grid photos look like printed magnets: a white border, deeper at the bottom, a shadow, and a slight tilt on hover.
