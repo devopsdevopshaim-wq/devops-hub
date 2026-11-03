@@ -783,11 +783,11 @@ body.clean-shell .app { grid-template-rows: 1fr; grid-template-areas: "tools pan
 .mt-card.fx-card .fx-grid { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
 @media (prefers-reduced-motion: reduce) { .fx-card::before { animation: none; } .fx-t:hover { transform: none; } }
 
-/* 🎨 AI art styles: the painting first, then the network's result on the photo, with the painting as a small chip */
-.art-t .fx-pv img.art-src { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity .4s, transform .6s; filter: saturate(1.05); }
-.art-t.pv .fx-pv img.art-src { opacity: 0; transform: scale(1.08); }
-.art-t .fx-pv img.art-chip { position: absolute; inset: auto 6px 6px auto; width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.85); box-shadow: 0 4px 10px rgba(0,0,0,.5); opacity: 0; transition: opacity .3s; }
-.art-t.pv .fx-pv img.art-chip { opacity: 1; }
+/* 🎨 AI paintings: a ready example made by the network, the painting as a chip, and on hover the preview on your photo */
+.art-t .fx-pv img.art-ex { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity .35s; }
+.art-t .fx-pv canvas { z-index: 1; }
+.art-t.pv .fx-pv img.art-ex { opacity: 0; }
+.art-t .fx-pv img.art-chip { position: absolute; z-index: 2; inset: auto 6px 6px auto; width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.9); box-shadow: 0 4px 10px rgba(0,0,0,.5); }
 .art-t .fx-n { display: grid; gap: 1px; }
 .art-t .fx-n b { font-weight: 700; font-size: 12.5px; }
 .art-t .fx-n small { font-size: 11px; color: #a9a2b6; }

@@ -65,29 +65,11 @@
   "licence": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project_(454045).jpg"
  },
- "mondrian": {
-  "title": "Piet Mondriaan, 1930 - Mondrian Composition II in Red, Blue, and Yellow.jpg",
-  "artist": "Piet Mondrian",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:Piet_Mondriaan,_1930_-_Mondrian_Composition_II_in_Red,_Blue,_and_Yellow.jpg"
- },
- "nightwatch": {
-  "title": "The Night Watch - HD.jpg",
-  "artist": "Rembrandt",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:The_Night_Watch_-_HD.jpg"
- },
  "pearl": {
   "title": "1665 Girl with a Pearl Earring.jpg",
   "artist": "Johannes Vermeer",
   "licence": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:1665_Girl_with_a_Pearl_Earring.jpg"
- },
- "hiroshige": {
-  "title": "Hiroshige, Sudden shower over Shin-Ōhashi bridge and Atake, 1857.jpg",
-  "artist": "Utagawa Hiroshige",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:Hiroshige,_Sudden_shower_over_Shin-%C5%8Chashi_bridge_and_Atake,_1857.jpg"
  },
  "yellow-red-blue": {
   "title": "Kandinsky - Jaune Rouge Bleu.jpg",
@@ -118,12 +100,6 @@
   "artist": "Katsushika Hokusai, published by Nishimuraya Yohachi (Eijudō) (1760 - 1849) – Artist (Japanese) Details on Google Art Pr",
   "licence": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:Katsushika_Hokusai,_published_by_Nishimuraya_Yohachi_(Eijud%C5%8D)_-_Fine_Wind,_Clear_Weather_(Gaif%C5%AB_kaisei),_also_known_as_Red_Fuji,_from_the_series_Thirty-six_Views_o..._-_Google_Art_Project_-_Cropped.jpg"
- },
- "stainedglass": {
-  "title": "Chartres - cathédrale - rosace nord.jpg",
-  "artist": "Eusebius",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:Chartres_-_cath%C3%A9drale_-_rosace_nord.jpg"
  },
  "almondblossom": {
   "title": "Amandelbloesem - s0176V1962 - Van Gogh Museum.jpg",
@@ -215,24 +191,6 @@
   "licence": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:Paul_Cezanne_-_Mont_Sainte-Victoire_and_Ch%C3%A2teau_Noir_-_Google_Art_Project.jpg"
  },
- "gauguin": {
-  "title": "Gauguin - Where Do We Come From? What Are We? Where Are We Going? (1897-98).jpg",
-  "artist": "Paul Gauguin",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:Gauguin_-_Where_Do_We_Come_From%3F_What_Are_We%3F_Where_Are_We_Going%3F_(1897-98).jpg"
- },
- "lautrec": {
-  "title": "(Albi) Moulin-rouge. La Goulue et Valentin le desossé - Toulouse-Lautrec 1891 - Inv.138.jpg",
-  "artist": "Didier Descouens",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:(Albi)_Moulin-rouge._La_Goulue_et_Valentin_le_desoss%C3%A9_-_Toulouse-Lautrec_1891_-_Inv.138.jpg"
- },
- "danae": {
-  "title": "Klimt - Danae - 1907-08.jpeg",
-  "artist": "Gustav Klimt",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:Klimt_-_Danae_-_1907-08.jpeg"
- },
  "circles": {
   "title": "Vassily Kandinsky, 1926 - Several Circles, Gugg 0910 25.jpg",
   "artist": "Wassily Kandinsky",
@@ -244,12 +202,6 @@
   "artist": "Paul Klee",
   "licence": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:Paul_Klee,_1922,_Senecio,_oil_on_gauze,_40.3_%C3%97_37.4_cm,_Kunstmuseum_Basel.jpg"
- },
- "venus": {
-  "title": "Sandro Botticelli 046.jpg",
-  "artist": "Sandro Botticelli",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:Sandro_Botticelli_046.jpg"
  },
  "waterfall": {
   "title": "Katsushika Hokusai, Japanese - Pilgrims at Kirifuri Waterfall on Mount Kurokami in Shimotsuke Province - Google Art Project.jpg",
@@ -275,23 +227,11 @@
   "licence": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:Marc_Tiger_PA291038.jpg"
  },
- "malevich": {
-  "title": "Suprematist Composition - Kazimir Malevich.jpg",
-  "artist": "Kazimir Malevich",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:Suprematist_Composition_-_Kazimir_Malevich.jpg"
- },
  "klimt-serpents": {
   "title": "Klimt - Wasserschlangen II (Freundinnen) - 1904.jpeg",
   "artist": "Gustav Klimt",
   "licence": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:Klimt_-_Wasserschlangen_II_(Freundinnen)_-_1904.jpeg"
- },
- "seurat-circus": {
-  "title": "Georges Seurat 065.jpg",
-  "artist": "Georges Seurat",
-  "licence": "Public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:Georges_Seurat_065.jpg"
  },
  "vangogh-night": {
   "title": "Vincent van Gogh - Starry Night - Google Art Project.jpg",
