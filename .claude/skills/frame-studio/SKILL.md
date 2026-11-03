@@ -1460,3 +1460,17 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
 ## The last size and the print settings are remembered (Nov 3, v98)
 - Quick workspace, size bar: applying a size ("החל על המסומנות/כולן") also sets `FS.prefs.fmt` (the `my:` size id) and `FS.prefs.fitNew` (cover/contain). `core.js` already brings new photos in at `FS.prefs.fmt`; an `FS.afterAdd` hook in `mate.js` fits them when `fitNew` is 'contain'. `#mt-snew` shows "📌 תמונות חדשות נכנסות ב־…". It survives a reload.
 - Print window (`openPrint`): every change is saved to 'fs-mate-print' as it happens (in `paint()`), so it opens the next time exactly as it was left. "⭐ ההגדרות השמורות שלי" (`#mp-my`, 'fs-mate-print-my', up to 12): a name in `#mp-name` + "⭐ שמירה בשם" saves the whole form plus the printer; one click on a chip puts it all back (`setForm`), × deletes it.
+
+## ⚡ Instant effects, faster local AI, saved settings in instant print, and "Shine" (Nov 3, v99)
+- `js/instant-fx.js`: `FS.INSTANT_FX` = 35 effects `[id, name, icon, group, fn(canvas)]` in three groups (light / magic / retro): colour grades, split tones, duotones, glow, bokeh, sparkles, hearts, snow, confetti, flare, light leaks, stars, fireworks, halo, VHS, pencil, comic, pop-art dots… Canvas only (ctx.filter blur when the browser has it, else a down/up-scale blur), seeded particles in units of the long side, so the small preview matches the photo. About 0.05–0.25 s for 900×1350. Pixels never move, so faces, masks and the crop stay.
+  - `FS.applyFx(list, id, strength, done)` works from `p.fxBase` (the photo before the last effect), so trying effects never stacks; keeps `origSrc` / `aiPrev` like the AI ("↩ ביטול AI").
+  - `FS.fxPanel(box, {list, preview, done})` draws the panel: group tabs, a strength slider ('fs-fx-strength'), and every effect previewed live on the current photo (chunked, redrawn on 'doc').
+  - It is in the studio's AI pane (`#ax-fx`) and the quick workspace AI view (`#mt-ifx`; `#mt-fx` was already taken by the edit view's presets).
+  - Don't put `overflow:hidden` on a card in `.mt-ai`: the before/after card spans every row, and the card collapses.
+- Local engine (`desktop/local-ai.js`): `--diffusion-fa` (flash attention) on graphics cards. If the engine build rejects the flag, it runs once more without it and stays off (`faOk`). Out of memory keeps it on and goes to the offload retry. Tested with the fake sd-cli (`FAKE_SD_NO_FA`). Without a graphics card the default size is now 512 (was 768).
+- Instant print: the print window's ⭐ saved settings ('fs-mate-print-my') show as chips in the instant-print preview (`#qv-my`) and setup (`#qp-my`). A click sets paper, magnet size and printer, and saves the profile.
+- The studio / quick switch (`#mt-switch`) now sits in `.mt-swslot` inside the quick workspace's top bar (it used to cover "⚡ הדפסה מיידית"); in the studio it floats as before (`sw()` moves it).
+- `css/shine.css` + `js/shine.js` (index.html and studio.html):
+  - The light under the pointer on cards (`.sh`, only on cards whose `::after` is free), a soft 3D tilt (`.sh-tilt`), a gold sweep on the main buttons, and a gold scrollbar.
+  - On the site only: a scroll line (`#sh-progress`), the gold line under section titles, and in the hero a moving aurora plus a stardust canvas. These are placed after `.hero-light`, which is opaque; the dust pauses off screen. The hero pictures also follow the pointer.
+  - All of it is off with reduce-motion or on touch screens.

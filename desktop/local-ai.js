@@ -227,6 +227,8 @@ function buildArgs(files, input, opt) {
   if (input.mode === 'restyle') args.push('-r', opt.ref);
   if (opt.offload) args.push('--offload-to-cpu');
   if (opt.vaeTiling) args.push('--vae-tiling');
+  // flash attention in the diffusion model: faster and lighter on a graphics card (left out if the engine build does not know it)
+  if (opt.fa) args.push('--diffusion-fa');
   return args;
 }
 
@@ -725,6 +727,7 @@ function createEngine(options) {
   }
 
   // ---------- running
+  let faOk = true;
   function setGpuHint(g) { gpuHint = g && typeof g === 'object' ? { name: String(g.name || ''), vramMB: Number(g.vramMB) || 0 } : null; }
 
   function runOnce(bin, m, input, onProgress, flags) {
@@ -735,7 +738,7 @@ function createEngine(options) {
       const ref = input.image ? path.join(dir, 'in' + input.ext) : '';
       if (ref) fs.writeFileSync(ref, input.image);
       const files = { diffusion: modelPath('diffusion', m), llm: modelPath('llm', m), vae: modelPath('vae', m) };
-      const args = buildArgs(files, input, { out, ref, offload: flags.offload, vaeTiling: flags.vaeTiling });
+      const args = buildArgs(files, input, { out, ref, offload: flags.offload, vaeTiling: flags.vaeTiling, fa: flags.fa });
       const feed = createProgressParser(STEPS);
       let tail = '';
       let child;
@@ -798,9 +801,15 @@ function createEngine(options) {
       const cpu = m.engine.variant === 'cpu';
       const vram = gpuHint ? gpuHint.vramMB : 0;
       // weights ~5 GB: keep them in RAM and move them in as needed unless the card clearly has room
-      const flags = { offload: !cpu && !(vram >= 10 * 1024), vaeTiling: !cpu && !(vram >= 8 * 1024) };
+      const flags = { offload: !cpu && !(vram >= 10 * 1024), vaeTiling: !cpu && !(vram >= 8 * 1024), fa: !cpu && faOk };
       try { onProgress && onProgress({ pct: 1, phase: 'start' }); } catch { /* ignore */ }
       let r = await runOnce(chk.bin, m, input, onProgress, flags);
+      if (!r.ok && flags.fa && r.error === 'local-failed' && gen === generation && !r.gpu && /diffusion-fa|unknown (argument|option)|invalid (argument|option)|unrecognized/i.test(r.detail || '')) {
+        // this engine build does not take flash attention: off from now on, and once more without it
+        faOk = false;
+        flags.fa = false;
+        r = await runOnce(chk.bin, m, input, onProgress, flags);
+      }
       if (!r.ok && r.gpu && !(flags.offload && flags.vaeTiling) && gen === generation) {
         // ran out of video memory: once more with everything that saves VRAM
         r = await runOnce(chk.bin, m, input, onProgress, { offload: true, vaeTiling: true });

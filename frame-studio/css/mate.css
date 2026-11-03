@@ -479,3 +479,8 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 .mp-mx:hover { opacity: 1; color: #ff8a8a; }
 .mp-name { min-width: 220px; padding: 8px 10px; border-radius: 8px; }
 .mt-snew { margin-inline-start: 8px; }
+
+/* the studio / quick switch inside the quick workspace's top bar */
+.mt-swslot { display: flex; }
+.mt-swslot:empty { display: none; }
+.mt-swslot #mt-switch { position: static; transform: none; top: auto; bottom: auto; }

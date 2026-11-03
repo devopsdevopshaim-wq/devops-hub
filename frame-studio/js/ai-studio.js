@@ -389,6 +389,7 @@
   }
   pane.innerHTML = '<h2>עריכות AI</h2>' +
     '<p class="hint">AI אמיתי בשרת מצייר את התמונה מחדש ושומר על האנשים. עד דקה לתמונה. חל על התמונה, או על כל המסומנות. אפשר לעצור באמצע עם ⏹.</p>' +
+    '<div class="card fx-card" id="ax-fx"></div>' +
     '<div class="card ax-off"><h3>🖥️ מובנה בתוכנה · עובד בלי אינטרנט</h3><p class="hint" id="ax-net"></p>' +
       '<div class="ai-styles" id="ax-offline"></div></div>' +
     '<div class="card ax-eng"><h3>⚙️ מנוע ה־AI</h3><div class="ax-chips" id="ax-eng"></div>' +
@@ -438,6 +439,7 @@
     b.innerHTML = '<i>' + c[1] + '</i><span>' + FS.esc(c[0]) + '</span>';
     b.addEventListener('click', function () { FS.runAI(promptOf(o), c[0]); }); $('#ax-combos').appendChild(b);
   });
+  if (FS.fxPanel) FS.fxPanel($('#ax-fx'), { list: function () { return FS.targets(); }, preview: function () { return FS.cur(); } });
   (FS.AI_WOW || []).forEach(function (s) {
     var b = document.createElement('button'), box = $('#ai-wow'); if (!box) return; b.className = 'ai-style wow-st'; b.innerHTML = '<i>' + s[2] + '</i><span>' + FS.esc(s[1]) + '</span>';
     b.addEventListener('click', function () { FS.runAI(s[3] + KEEP, s[1]); }); box.appendChild(b);

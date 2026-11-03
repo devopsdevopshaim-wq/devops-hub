@@ -14,8 +14,9 @@
   var st = null, gpu = null, prog = null, installing = null, lastResult = null, testImg = '';
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function mode() { var m = ls(KEY); return m === 'local' || m === 'cloud' || m === 'auto' ? m : 'auto'; }
-  /* the CPU build is slow (measured on a 4-core runner: ~24 min for 512x768), so it works at 768 unless 1024 was chosen */
-  function localSize() { var v = ls(SIZE_KEY); if (v === '512') return 512; if (v === '768') return 768; if (v === '1024') return 1024; return st && st.engine && st.engine.variant === 'cpu' ? 768 : 1024; }
+  /* the CPU build is slow (measured on a 4-core runner: ~24 min for 512x768), so without a graphics card it starts at 512
+     (about twice as fast as 768, enough for a magnet); a chosen size always wins */
+  function localSize() { var v = ls(SIZE_KEY); if (v === '512') return 512; if (v === '768') return 768; if (v === '1024') return 1024; return st && st.engine && st.engine.variant === 'cpu' ? 512 : 1024; }
   function gb(b) { return b ? (b / 1e9).toFixed(b >= 1e10 ? 0 : 1) + ' GB' : '—'; }
   function toast(m, ms) { if (FS.toast) FS.toast(m, ms); }
 
