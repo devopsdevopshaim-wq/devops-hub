@@ -238,7 +238,15 @@
     ['rain-neon', 'גשם וניאון', '☔', 'Place the people on a rainy street at night with neon reflections on the wet ground and a transparent umbrella, cinematic romantic mood.'],
     ['vintage-wedding', 'חתונה וינטג׳', '🎻', 'Make this look like a romantic vintage wedding photo from the 1950s: soft film grain, warm faded colours, lace and classic styling.'],
     ['golden-hour', 'שעת זהב', '🌇', 'Relight this photo with gorgeous golden hour sunlight: warm glowing rim light, soft lens flare and rich golden tones on the people.'],
-    ['sparkle-frame', 'מסגרת נצנצים', '✨', 'Add a glamorous sparkling frame of glitter and light around the edges, shimmering gold and silver particles, festive celebration portrait.']
+    ['sparkle-frame', 'מסגרת נצנצים', '✨', 'Add a glamorous sparkling frame of glitter and light around the edges, shimmering gold and silver particles, festive celebration portrait.'],
+    ['polaroid', 'פולארויד וינטג׳', '📷', 'Turn this photo into a genuine vintage instant photo from the 1970s: warm faded colours, soft film grain, gentle light leaks and the slightly creamy tones of old instant film.'],
+    ['watercolor', 'צבעי מים', '🖌️', 'Repaint this photo as a delicate watercolour painting: soft washes of colour bleeding into each other, white paper showing through, fine pencil lines, airy and romantic.'],
+    ['caricature', 'קריקטורה חגיגית', '😄', 'Redraw the people as a friendly, flattering caricature illustration: slightly bigger heads and big happy smiles, clean bold lines, bright cheerful colours, festive event mood.'],
+    ['charcoal', 'ציור פחם', '✏️', 'Redraw this photo as an expressive charcoal drawing on textured paper: rich blacks, soft smudged shadows, confident strokes, fine-art sketchbook look.'],
+    ['pop-art', 'פופ־ארט', '🟨', 'Turn this photo into a bold pop-art print: flat vivid colours, thick black outlines, halftone dots, bright yellow, pink and blue panels, gallery poster style.'],
+    ['stained-glass', 'ויטראז׳', '🪟', 'Turn this photo into a glowing stained-glass window: jewel-coloured glass pieces joined by dark lead lines, sunlight shining through, the people clearly recognisable.'],
+    ['clay', 'דמויות פלסטלינה', '🧸', 'Recreate this photo as a charming claymation scene: the people as handmade plasticine figures with visible fingerprints and soft studio lighting, the same pose and clothes.'],
+    ['gold-statue', 'פסל זהב', '🏆', 'Turn the people into a polished solid-gold statue on a marble pedestal, dramatic museum lighting, gleaming reflections, the faces and pose exactly the same.']
   ];
   FS.AI_STYLES = [
     ['3d', 'אנימציה תלת־ממד', '🧸', 'Redraw this photo as a still from a modern 3D animated family movie: soft cinematic light, expressive eyes, smooth stylized characters, rich colours.'],

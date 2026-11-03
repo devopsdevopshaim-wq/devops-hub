@@ -833,7 +833,40 @@ function createEngine(options) {
 
   function shutdown() { cancelInstall(); cancel(); }
 
-  return { status, install, cancelInstall, remove, run, cancel, shutdown, setGpuHint, paths: P, _discoverModel: discoverModel, _discoverEngine: discoverEngine };
+  // Warm-up: the engine starts again for every picture and reads several GB of model from the disk each time. Reading the
+  // files once, slowly, in the background puts them in the operating system's file cache, so the next loads come from
+  // memory. Only when the computer has room for them (RAM at least 1.6x the model files), never while a picture runs,
+  // and in 4 MB steps with a pause, so the computer stays responsive.
+  let warming = null;
+  function warm() {
+    if (warming) return warming;
+    const m = readManifest(); if (!checkInstalled(m).ok) return Promise.resolve({ ok: false, why: 'not-installed' });
+    const files = ['diffusion', 'llm', 'vae'].map((k) => modelPath(k, m));
+    let total = 0; for (const f of files) { try { total += fs.statSync(f).size; } catch { /* checked above */ } }
+    if (os.totalmem() < total * 1.6) return Promise.resolve({ ok: false, why: 'ram' });
+    const buf = Buffer.allocUnsafe(4 * 1024 * 1024);
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    warming = (async () => {
+      let read = 0;
+      for (const f of files) {
+        let fd;
+        try {
+          fd = await fsp.open(f, 'r');
+          for (;;) {
+            if (current) await pause(2000);   // a picture is running: it reads the files itself
+            const { bytesRead } = await fd.read(buf, 0, buf.length, null);
+            if (!bytesRead) break;
+            read += bytesRead; await pause(2);
+          }
+        } catch { /* a file that can't be read is simply not warmed */ } finally { if (fd) await fd.close().catch(() => {}); }
+      }
+      return { ok: true, bytes: read };
+    })();
+    warming.finally(() => { const t = setTimeout(() => { warming = null; }, 10 * 60 * 1000); if (t.unref) t.unref(); });
+    return warming;
+  }
+
+  return { status, install, cancelInstall, remove, run, cancel, shutdown, setGpuHint, warm, paths: P, _discoverModel: discoverModel, _discoverEngine: discoverEngine };
 }
 
 module.exports = {
