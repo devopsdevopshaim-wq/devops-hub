@@ -73,6 +73,30 @@ FILMS = {
     },
 }
 
+FILMS['pro'] = {
+    'title': 'אופטימוס',
+    'music': 'pro',
+    'palette': dict(GOLD='#EDB6BE', INK='#191D2C', CREAM='#F3F1EC', DARK='#0F1528'),
+    'scenes': [
+        ('photo', 4.4, dict(img='real/wedding-1.webp', lines=['300 אורחים.', 'כל אחד רוצה מגנט.'], accent=1, pos='bottom')),
+        ('screen', 4.8, dict(img='cap/pro-grid.webp', focus=(0.0, 0.0, 1.0, 1.0), lines=['אופטימוס'], sub='הסטודיו של עסקי המגנטים והאירועים', accent=0, title=True)),
+        ('screen', 5.4, dict(img='cap/pro-copies.webp', focus=(0.52, 0.04, 0.45, 0.56), lines=['כמה להדפיס?', 'ה־AI סופר את האורחים'], accent=1)),
+        ('screen', 5.0, dict(img='cap/pro-print.webp', focus=(0.36, 0.06, 0.34, 0.86), lines=['הדפסה בלחיצה', 'עם תצוגה לפני'], accent=0)),
+        ('ai', 6.6, dict(orig='e2e/original.jpg', outs=[('e2e/3d.png', 'אנימציה תלת־ממד'), ('e2e/anime.png', 'אנימה')],
+                         lines=['אפקטים מהממים', 'גם בלי אינטרנט'], accent=0, badge='56 אפקטים · מנוע AI על המחשב')),
+        ('screen', 5.0, dict(img='cap/pro-wow.webp', focus=(0.35, 0.06, 0.62, 0.9), lines=['56 אפקטים', 'בקטגוריות מסודרות'], accent=0)),
+        ('screen', 5.2, dict(img='cap/pro-puzzle.webp', focus=(0.5, 0.05, 0.38, 0.92), lines=['פאזל מכל תמונה', 'מוכן לחיתוך'], accent=0)),
+        ('screen', 5.0, dict(img='cap/pro-cube.webp', focus=(0.6, 0.12, 0.39, 0.62), lines=['קוביית תמונות', 'מתנה לכל אורח'], accent=0)),
+        ('magnet', 5.2, dict(photo='real/wedding-3.webp', magnet='cap/pro-qrprint.jpg', lines=['QR על כל מגנט', 'כל תמונות האירוע'], accent=0)),
+        ('screen', 5.0, dict(img='cap/pro-live.webp', focus=(0.72, 0.0, 0.28, 0.62), lines=['אירוע חי', 'קוד לכל אירוע'], accent=0)),
+        ('screen', 5.4, dict(img='cap/pro-leads.webp', focus=(0.42, 0.13, 0.54, 0.5), lines=['כל אורח', 'הוא הלקוח הבא'], accent=1)),
+        ('screen', 4.8, dict(img='cap/pro-record.webp', focus=(0.04, 0.08, 0.92, 0.5), lines=['תיעוד מלא', 'וייצוא לאקסל'], accent=0)),
+        ('screen', 5.0, dict(img='cap/pro-site.webp', focus=(0.45, 0.0, 0.55, 1.0), lines=['אתר מעוצב', 'מחירים מתעדכנים מיד'], accent=0)),
+        ('screen', 4.8, dict(img='cap/pro-wall.webp', focus=(0.0, 0.0, 1.0, 1.0), lines=['כל אירוע.', 'מגנט ביד.'], accent=1)),
+        ('end', 7.0, dict(name='אופטימוס', sub='פריים מגנטים · הסטודיו לאירועים · עובד גם בלי אינטרנט', cta='נסו את אופטימוס', foot='054-4979771')),
+    ],
+}
+
 SIZES = {'': (1920, 1080), '-v': (1080, 1920)}
 
 
@@ -413,7 +437,7 @@ def s_end(sc, f):
     sc.tw(f'tl.fromTo("#{sc.sid}-sub", {{opacity:0, filter:"blur(8px)"}}, {{opacity:1, filter:"blur(0px)", duration:0.35}}, 1.6);')
     cy2 = sy + (110 if v else 100)
     fs_ = 56 if v else 50
-    sc.add(f'<div class="chip" id="{sc.sid}-cta" style="left:50%;top:{cy2:.0f}px;font-size:{fs_}px;background:linear-gradient(180deg,#e7cd96,{GOLD});color:{INK};box-shadow:0 18px 40px rgba(214,183,126,.28);transform:translateX(-50%)">{esc(f["cta"])}</div>')
+    sc.add(f'<div class="chip" id="{sc.sid}-cta" style="left:50%;top:{cy2:.0f}px;font-size:{fs_}px;background:linear-gradient(180deg,#fff,{GOLD});color:{INK};box-shadow:0 18px 40px rgba(214,183,126,.28);transform:translateX(-50%)">{esc(f["cta"])}</div>')
     sc.tw(f'tl.fromTo("#{sc.sid}-cta", {{opacity:0, y:30}}, {{opacity:1, y:0, duration:0.5, ease:"expo.out"}}, 2.0);')
     sc.add(f'<div class="sub" id="{sc.sid}-foot" style="left:0;right:0;text-align:center;top:{cy2 + fs_ * 2.2:.0f}px;font-size:{40 if v else 36}px;color:{GOLD};direction:ltr">{esc(f["foot"])}</div>')
     sc.tw(f'tl.fromTo("#{sc.sid}-foot", {{opacity:0}}, {{opacity:1, duration:0.4}}, 2.4);')
@@ -448,6 +472,10 @@ def copy_assets(dst):
 
 
 def build(name, spec, suffix):
+    global GOLD, INK, CREAM, DARK
+    pal = spec.get('palette') or dict(GOLD='#D6B77E', INK='#1b1714', CREAM='#F5EEE2', DARK='#14110F')
+    GOLD, INK, CREAM, DARK = pal['GOLD'], pal['INK'], pal['CREAM'], pal['DARK']
+    GROUND.update(photo=DARK, magnet=DARK, number=CREAM, fan=CREAM, screen=DARK, styles=DARK, ai=DARK, type=CREAM, end=DARK)
     W, H = SIZES[suffix]
     dst = os.path.join(VID, f'promo-{name}{suffix}')
     os.makedirs(os.path.join(dst, 'compositions'), exist_ok=True)
