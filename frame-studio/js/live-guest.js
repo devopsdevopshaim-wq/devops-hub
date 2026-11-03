@@ -38,6 +38,7 @@
         '<label class="lv-f">השם שלכם<input id="nm" maxlength="40" autocomplete="name" value="' + esc(name) + '" placeholder="למשל: דודה מירי"></label>' +
         '<label class="lv-f">ברכה<textarea id="tx" maxlength="300" rows="3" placeholder="מזל טוב! שתזכו לאושר גדול…"></textarea></label>' +
         '<div class="lv-voice" id="voice"><button type="button" class="lv-mic" id="mic">🎤 ברכה קולית (עד 30 שניות)</button><span id="mic-t"></span><audio id="mic-a" controls hidden></audio><button type="button" class="lv-x small" id="mic-x" hidden aria-label="מחיקת ההקלטה">✕</button></div></section>' +
+      L.lead.html('lead', '📲 רוצים את כל התמונות מהאירוע לוואטסאפ?', 'משאירים טלפון ומקבלים את האלבום כשהוא מוכן.', info.biz && info.biz.name) +
       '<button class="lv-send" id="send" disabled>שליחה להדפסה 🧲</button>' +
       '<p class="lv-note">התמונה נשלחת רק לצלם המגנטים של האירוע ולאלבום של בעלי השמחה.</p>';
     ['cam', 'gal'].forEach(function (id) { document.getElementById(id).addEventListener('change', function () { if (this.files && this.files[0]) take(this.files[0]); this.value = ''; }); });
@@ -103,6 +104,9 @@
     L.call({ action: 'guest-up', e: L.e, k: L.k, img: photo.b64, name: name, text: text, audio: voice ? voice.b64 : '', amime: voice ? voice.mime : '' }).then(function (r) {
       if (!r.ok) { b.disabled = false; b.textContent = 'שליחה להדפסה 🧲'; L.toast(L.msg(r), 5000); return; }
       sent++; photo = null; voice = null;
+      var ld = L.lead.read(document.getElementById('lead') || document.body);
+      if (ld.phone && !ld.consent) L.toast('הטלפון לא נשמר: צריך לסמן את האישור.', 5000);
+      else if (ld.phone) L.lead.send(ld, name).then(function (x) { if (x && x.ok) L.toast('📲 תודה! נשלח לכם את התמונות לוואטסאפ', 4000); else if (x && x.error === 'bad-phone') L.toast('מספר הטלפון לא נראה תקין', 4000); });
       app.innerHTML = '<section class="card hero lv-done"><p class="lv-ok">✓</p><h1 class="lv-title">התמונה נשלחה!</h1><p class="hello">היא בתור להדפסה. גשו לעמדת המגנטים לאסוף אותה 🧲' +
         (text ? '<br>והברכה שלכם תחכה לבעלי השמחה באלבום 💌' : '') + '</p><button class="lv-send" id="again">📸 עוד תמונה</button></section>';
       document.getElementById('again').addEventListener('click', form);

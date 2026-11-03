@@ -112,10 +112,30 @@ export async function frameLive(storage, who, b, site) {
     return out({ ok: true, e: ev.id, k: ev.k, title: ev.title });
   }
 
+  /* ---------- a guest's details, only with their consent (the guests' key or the album's key): the photos on WhatsApp,
+     and their own coming event, for the studio's future work. One record per phone per event; the owner can delete it. ---------- */
+  if (a === 'lead') {
+    const ev = await getEv(storage, b.e);
+    const ok = ev && !ev.purged && ((KEY.test(String(b.k || '')) && b.k === ev.k) || (KEY.test(String(b.v || '')) && b.v === ev.v));
+    if (!ok) return out({ ok: false, error: 'not-found' }, 404);
+    if (b.consent !== true) return out({ ok: false, error: 'no-consent' }, 400);
+    const phone = clean(b.phone, 24).replace(/[^\d+]/g, ''), digits = phone.replace(/\D/g, '');
+    if (!/^\+?\d{9,15}$/.test(phone)) return out({ ok: false, error: 'bad-phone' }, 400);
+    const name = clean(b.name, 40).trim(), SOON = ['', 'wedding', 'barmitzvah', 'batmitzvah', 'brit', 'birthday', 'company', 'engagement', 'henna', 'other'];
+    const soon = SOON.includes(String(b.soon || '')) ? String(b.soon || '') : '', when = /^\d{4}-(0[1-9]|1[0-2])$/.test(String(b.when || '')) ? String(b.when) : '';
+    if (hasCard(name + ' ' + phone)) return out({ ok: false, error: 'card-number' }, 400);
+    const key = 'll:' + ev.id + ':' + digits, cur = await storage.get(key);
+    if (!cur && ((ev.n && ev.n.leads) || 0) >= 3000) return out({ ok: false, error: 'full' }, 413);
+    await storage.put(key, Object.assign(cur || { first: Date.now() }, { name: name || (cur && cur.name) || '', phone, soon: soon || (cur && cur.soon) || '', when: when || (cur && cur.when) || '', from: b.k ? 'guest' : 'album', at: Date.now() }));
+    if (!cur) { ev.n = ev.n || {}; ev.n.leads = (ev.n.leads || 0) + 1; await storage.put('lv:' + ev.id, ev); }
+    return out({ ok: true });
+  }
+
   /* ---------- guests (the QR code's key) ---------- */
   if (a === 'guest-info' || a === 'guest-up') {
     const ev = await getEv(storage, b.e);
     if (!ev || ev.purged || !KEY.test(String(b.k || '')) || b.k !== ev.k) return out({ ok: false, error: 'not-found' }, 404);
+    if (a === 'guest-info') { ev.n = ev.n || {}; ev.n.scans = (ev.n.scans || 0) + 1; await storage.put('lv:' + ev.id, ev); }
     if (a === 'guest-info') return out({ ok: true, title: ev.title, date: ev.date, open: ev.open !== false, biz: { name: ev.bizName || biz.name } });
     if (ev.open === false) return out({ ok: false, error: 'closed' }, 403);
     if ((ev.n && ev.n.in || 0) >= MAX_PHOTOS) return out({ ok: false, error: 'full' }, 413);
@@ -218,6 +238,20 @@ export async function frameLive(storage, who, b, site) {
     return out({ ok: true, event: ownerView(ev) });
   }
 
+  if (a === 'leads') {
+    const ids = b.e ? [String(b.e)] : mine(), list = [];
+    for (const id of ids) {
+      const e = await storage.get('lv:' + id); if (!isOwner(who, e)) continue;
+      for (const [k, m] of await storage.list({ prefix: 'll:' + id + ':' })) if (!k.includes('#') && m) list.push(Object.assign({}, m, { e: id, title: e.title, date: e.date }));
+    }
+    return out({ ok: true, leads: list.sort((x, y) => (y.at || 0) - (x.at || 0)) });
+  }
+  if (a === 'lead-del') {
+    const e = await storage.get('lv:' + String(b.e || '')); if (!isOwner(who, e)) return out({ ok: false, error: 'not-found' }, 404);
+    const digits = String(b.phone || '').replace(/\D/g, ''); if (!digits) return out({ ok: false, error: 'bad-input' }, 400);
+    if (await storage.get('ll:' + e.id + ':' + digits)) { await storage.delete('ll:' + e.id + ':' + digits); e.n = e.n || {}; e.n.leads = Math.max(0, (e.n.leads || 1) - 1); await storage.put('lv:' + e.id, e); }
+    return out({ ok: true });
+  }
   /* the main QR: its key (made once per studio) and the event it leads to; main-set points it at one of the owner's events */
   if (a === 'main-get' || a === 'main-set') {
     let m = await storage.get('lmainOf:' + who.email);
@@ -236,7 +270,7 @@ export async function frameLive(storage, who, b, site) {
   const station = clean(b.station, 30).trim() || 'עמדה';
 
   if (a === 'ev-del') {
-    await dropPhotos(storage, ev.id, true); await storage.delete('lv:' + ev.id); delete idx[ev.id]; await storage.put('lvidx', idx);
+    await dropPhotos(storage, ev.id, true); for (const [k] of await storage.list({ prefix: 'll:' + ev.id + ':' })) await storage.delete(k); await storage.delete('lv:' + ev.id); delete idx[ev.id]; await storage.put('lvidx', idx);
     return out({ ok: true });
   }
   if (a === 'ev-get') {

@@ -1595,3 +1595,23 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
   - 🔗 the event's photos (album.html?e&v): the code printed on the photos.
   - It can print, download both PNGs, or copy both links.
 - xlsx-lite.js is now loaded in studio.html too.
+
+## 📍 The QR where the owner wants it, guests' details for future events (Nov 3, v108)
+- **Where the QR goes, per event** (`cfg.qrAt[eventId]` = {at, x, y, mm}):
+  - `placeQr(d, e)` puts the QR in a corner: ↙ bl (default), ↘ br, ↖ tl, ↗ tr. A top corner goes in the margin above the window when there is one.
+  - '📌 כמו בתמונה שעל המסך' takes the position and size of the QR the owner dragged on the photo on screen, as a share of the page, and applies it to every photo.
+  - Sizes: 12, 14, 18 or 24 mm.
+  - Changing either one updates every photo of that event (`p.albumEv`). The living magnet's QR goes to the other side.
+- **Guests' details, only with explicit consent:**
+  - **The form.** `FL.lead` (live-common.js) draws the card: phone, "יש לכם אירוע בקרוב?" (type), month, and a consent checkbox naming the business. It sits on live.html (sent after the photo) and on album.html (its own "שליחה" button).
+  - **The server** (live.mjs `lead`):
+    - It needs the guests' key or the album key, `consent: true` and a 9–15 digit phone.
+    - One record per phone per event ('ll:<e>:<digits>'), up to 3000 per event; `ev.n.leads` counts them.
+    - `guest-info` counts entries (`ev.n.scans`).
+    - The owner's `leads` returns all of their events' records (or one event's), and `lead-del` removes one; deleting an event removes its records.
+    - Tests are in test/live.test.mjs.
+- **📒 The record:**
+  - Events show entries (כניסות) and phones (טלפונים).
+  - A "📞 פוטנציאל" tab lists name, phone, their own event and when, where they came from (the table code or the album) and the date. Rows with a coming event are marked.
+  - 💬 opens WhatsApp with a ready opening line; 🗑 deletes on the guest's request.
+  - The Excel file has a third sheet, "פוטנציאל".
