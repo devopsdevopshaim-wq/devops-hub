@@ -1583,3 +1583,15 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
   - the station's magnets get it;
   - an `FS.afterAdd` hook gives it to new photos as they come in (not to puzzle or cube pages);
   - "➕ להוסיף לתמונות שבפרויקט" and "✖ להסיר" act on the marked photos, else all.
+
+## 📒 The record of events and clients, each event's own codes (Nov 3, v107)
+- In the live tab, "📒 תיעוד" (next to "➕ חדש") opens `eventLog()`.
+  - **🎉 Events table:** date, the event (⭐ when the main QR leads to it), client (name, tel link, email), photos from guests and greetings, magnets, price, profit, and "🔳 הקודים".
+  - **👥 Clients:** gathered from the events by phone (digits only), else email, else name; it lists their events, the total and the last date, with a 💬 WhatsApp button.
+  - Search works over title, date, name, phone and email.
+  - "⬇️ הכול לאקסל" exports `FS.xlsx` with two sheets, "אירועים" (including both links and the id) and "לקוחות". The file is named events-and-clients-<date>.xlsx: Hebrew download names are dropped.
+- `codes(e)` shows the event's two QRs side by side:
+  - 📸 for guests (live.html?e&k): they send photos to the station;
+  - 🔗 the event's photos (album.html?e&v): the code printed on the photos.
+  - It can print, download both PNGs, or copy both links.
+- xlsx-lite.js is now loaded in studio.html too.
