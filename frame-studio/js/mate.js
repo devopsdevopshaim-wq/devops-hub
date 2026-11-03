@@ -28,7 +28,7 @@
   root.innerHTML =
     '<header class="mt-top"><nav class="mt-tabs" role="tablist">' +
       '<button data-v="main" class="on">🗂️ ראשי</button><button data-v="edit">🎚️ ערוך תמונה</button><button data-v="design">🖌️ עורך מלא</button><button data-v="ai">🤖 AI</button><button data-v="print">🖨️ הדפסה</button></nav>' +
-      '<div class="mt-qp"><button class="mt-btn primary" id="mt-qprint" title="ישר למדפסת, בלי חלונות (Ctrl+P)">⚡ הדפסה מיידית</button><button class="mt-ic" id="mt-qset" title="הגדרת ההדפסה המיידית">⚙</button></div>' +
+      '<div class="mt-qp"><button class="mt-btn primary" id="mt-qprint" title="ישר למדפסת, בלי חלונות (Ctrl+P)">⚡ הדפסה מיידית</button><button class="mt-ic" id="mt-qset" title="הגדרת ההדפסה המיידית">⚙</button></div><div class="mt-swslot"></div>' +
       '<div class="mt-stat" id="mt-stat"></div>' +
       '<div class="mt-acts"><label class="mt-btn">📂 תמונות<input type="file" id="mt-files" multiple hidden accept="image/*,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.raw,.pef,.srw,.x3f,.3fr,.erf,.kdc,.mrw,.rwl,.iiq,.heic,.heif"></label>' +
       '<button class="mt-btn" id="mt-folder">📁 תיקייה</button></div></header>' +
@@ -104,6 +104,7 @@
     '<section class="mt-view" data-view="ai" hidden><div class="mt-ai">' +
       '<p class="mt-hint" id="mt-ai-target"></p>' +
       '<div class="mt-card mt-aibac"><h3>◧ לפני | אחרי <small>התמונות שה־AI עובד עליהן: המקור מימין, התוצאה משמאל · לחיצה מגדילה</small></h3><div class="mt-aiba" id="mt-aiba"></div><p class="mt-hint" id="mt-aiba-more"></p></div>' +
+      '<div class="mt-card fx-card" id="mt-ifx"></div>' +
       '<div class="mt-card"><h3>🖥️ מיד, על המחשב · עובד גם בלי אינטרנט</h3><div class="mt-chips" id="mt-ai-local"></div></div>' +
       '<div class="mt-card"><h3>⚙️ מנוע ה־AI</h3><div class="mt-chips" id="mt-ai-eng"></div><label class="mt-chk-l" style="margin-top:8px"><input type="checkbox" id="mt-keep"> 🙂 שמירת הפנים המקוריות (בלי עיוות) בעיצובים על אדם אמיתי</label><label class="mt-chk-l"><input type="checkbox" id="mt-one"> 👤 רק על אדם אחד: בתמונה עם כמה אנשים בוחרים את מי לעצב, והשאר נשארים כמו בצילום</label><label class="mt-chk-l"><input type="checkbox" id="mt-only"> 🎯 רק על הדמות: הרקע והמקום נשארים מהצילום המקורי, ה־AI משנה רק את האדם</label></div>' +
       '<div class="mt-card"><h3>🦸 גיבורי על <small>על האנשים האמיתיים, כמו סצנה מסרט</small></h3><div class="mt-ai-g" id="mt-ai-heroes"></div></div>' +
@@ -174,7 +175,8 @@
   var swEl = document.createElement('div'); swEl.id = 'mt-switch'; swEl.setAttribute('dir', 'rtl');
   swEl.innerHTML = '<button data-sw="mt" title="סביבת עבודה מהירה (F2)">⚡ עבודה מהירה</button><button data-sw="studio" title="סטודיו עיצוב מלא (F2)">🎨 סטודיו עיצוב</button>';
   document.body.appendChild(swEl);
-  function sw() { $$('#mt-switch [data-sw]').forEach(function (b) { b.classList.toggle('on', (b.dataset.sw === 'mt') === on()); }); }
+  /* in the quick workspace the switch sits inside its top bar (so it never covers the instant print); in the studio it floats */
+  function sw() { var slot = $('.mt-swslot', root), want = on() && slot ? slot : document.body; if (swEl.parentNode !== want) want.appendChild(swEl); $$('#mt-switch [data-sw]').forEach(function (b) { b.classList.toggle('on', (b.dataset.sw === 'mt') === on()); }); }
   swEl.addEventListener('click', function (e) { var b = e.target.closest('[data-sw]'); if (!b) return; if (b.dataset.sw === 'mt') { if (!on()) open(); } else if (on()) close(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'F2' && !document.body.classList.contains('gated')) { e.preventDefault(); toggle(); } });
   FS.mate = { open: open, close: function () { close(); }, toggle: function () { toggle(); }, isOn: on, print: function () { openPrint(); } };
@@ -933,6 +935,8 @@
   var mk = $('#mt-keep', root); if (mk && FS.keepFacesOn) { mk.checked = FS.keepFacesOn(); mk.addEventListener('change', function () { FS.keepFacesOn(mk.checked); var k2 = document.getElementById('ax-keep'); if (k2) k2.checked = mk.checked; }); }
   $('#mt-ai-eng', root).addEventListener('click', function (e) { var b = e.target.closest('[data-eng]'); if (!b) return; if (b.dataset.eng === 'local' && !(FS.localAI && FS.localAI.isReady())) { FS.toast('מנוע ה־AI המקומי עוד לא מותקן'); if (FS.localAI) FS.localAI.open(); return; } FS.aiEngine(b.dataset.eng); engines(); });
   function after(list) { list.forEach(function (p) { p.cache = {}; p._mc = null; }); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); refreshAll(); }
+  /* ⚡ the instant effects (instant-fx.js): on the photos the AI view works on, the results show in the before | after pairs */
+  if (FS.fxPanel) FS.fxPanel($('#mt-ifx', root), { list: function () { return aiList(); }, preview: function () { return aiList()[0] || FS.cur(); }, done: function (l) { after(l); } });
   function runAI(prompt, label) {
     var l = aiList(); if (!l.length) return FS.toast('אין תמונות');
     $('.mt-aibac', root).scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1016,6 +1020,9 @@
   /* ⚡ the instant print: the printer and the layout are chosen once; then one click prints the marked photos (or the one on
      screen) straight to the printer, no window, at the exact size (the desktop program; a browser still shows its print window) */
   function qpGet() { return lsj('fs-qprint', null); }
+  /* the print window's ⭐ saved settings, offered in the instant print too: [{name, o:{paper, msize, …}, printer}] */
+  function myPrints() { return lsj('fs-mate-print-my', []).filter(function (m) { return m && m.o && m.o.paper; }); }
+  function myChips(id, q) { var l = myPrints(); return l.length ? '<label>⭐ ההגדרות השמורות שלי</label><div class="mp-my" id="' + id + '">' + l.map(function (m, i) { return '<button type="button" class="mt-btn' + (q && m.o.paper === q.paper && (m.o.msize || '') === (q.msize || '') && (m.printer || '') === (q.printer || '') ? ' on' : '') + '" data-qm="' + i + '" title="' + esc(m.printer || 'חלון ההדפסה של המחשב') + '">' + esc(m.name) + '</button>'; }).join('') + '</div>' : ''; }
   function qpList() { var m = marked(); if (m.length) return m; var f = focus(); return f ? [f] : []; }
   function qpPlan(q, list, copies) { return FS.planPrint({ list: list, paper: q.paper, layout: 'fill', margin: 0, gap: 0, copies: copies || 1, size: q.msize ? q.msize.split('x').map(Number) : null }); }
   function qpRun(direct) {
@@ -1028,7 +1035,7 @@
   function qpPreview(q, list) {
     var copies = 1, pg = 0, plan = null;
     var b = FS.dialog('🖨️ תצוגה לפני הדפסה', '<div class="qv"><div class="qv-stage"><div class="qv-cv" id="qv-cv"></div><div class="qv-nav"><button class="mt-ic" id="qv-prev" title="הדף הקודם">▶</button><b id="qv-pg"></b><button class="mt-ic" id="qv-next" title="הדף הבא">◀</button></div></div>' +
-      '<div class="qv-side"><p class="qv-pr">🖨️ <b>' + esc(q.printer || 'חלון ההדפסה של המחשב') + '</b></p><label>פריסה</label><div class="mp-pre" id="qv-lay">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn' + (m[0] === q.paper && m[1] === q.msize ? ' on' : '') + '" data-l="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' +
+      '<div class="qv-side"><p class="qv-pr">🖨️ <b>' + esc(q.printer || 'חלון ההדפסה של המחשב') + '</b></p><label>פריסה</label><div class="mp-pre" id="qv-lay">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn' + (m[0] === q.paper && m[1] === q.msize ? ' on' : '') + '" data-l="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' + myChips('qv-my', q) +
       '<label>עותקים מכל תמונה</label><div class="qv-cp"><button class="mt-ic" id="qv-minus">−</button><b id="qv-n">1</b><button class="mt-ic" id="qv-plus">+</button></div>' +
       '<div class="qv-sum" id="qv-sum"></div><label class="mt-chk-l"><input type="checkbox" id="qv-skip"> להדפיס מעכשיו בלי התצוגה הזו</label>' +
       '<button class="mt-btn primary qv-go" id="qv-go">🖨️ הדפסה <small>Enter</small></button><button class="mt-btn" id="qv-cancel">ביטול</button></div></div>', true);
@@ -1041,6 +1048,12 @@
       $('#qv-sum', b).innerHTML = '<b>' + plan.total + '</b> מגנטים · <b>' + plan.pages.length + '</b> דפים<br>נייר ' + esc(plan.paper[1]) + ' · מגנט ' + (q.msize ? q.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : 'בגודל התמונה');
     }
     $$('[data-l]', b).forEach(function (x) { x.addEventListener('click', function () { var m = MPRESETS[Number(x.dataset.l)]; q = Object.assign({}, q, { paper: m[0], msize: m[1] }); ls('fs-qprint', JSON.stringify(q)); qpBtn(); $$('[data-l]', b).forEach(function (y) { y.classList.toggle('on', y === x); }); pg = 0; paint(); }); });
+    $$('[data-qm]', b).forEach(function (x) { x.addEventListener('click', function () {
+      var m = myPrints()[Number(x.dataset.qm)]; if (!m) return;
+      q = Object.assign({}, q, { paper: m.o.paper, msize: m.o.msize || '', printer: m.printer || '' }); ls('fs-qprint', JSON.stringify(q)); qpBtn();
+      $$('[data-qm]', b).forEach(function (y) { y.classList.toggle('on', y === x); }); $$('[data-l]', b).forEach(function (y) { var mm = MPRESETS[Number(y.dataset.l)]; y.classList.toggle('on', mm[0] === q.paper && mm[1] === q.msize); });
+      $('.qv-pr b', b).textContent = q.printer || 'חלון ההדפסה של המחשב'; pg = 0; paint(); FS.toast('⭐ ' + m.name);
+    }); });
     $('#qv-minus', b).addEventListener('click', function () { copies = Math.max(1, copies - 1); paint(); });
     $('#qv-plus', b).addEventListener('click', function () { copies = Math.min(50, copies + 1); paint(); });
     $('#qv-prev', b).addEventListener('click', function () { pg--; paint(); });
@@ -1071,11 +1084,16 @@
       '<label>מדפסת</label><select id="qp-printer">' + (pr.up ? pr.list : []).map(function (x) { return '<option value="' + esc(x.name) + '">' + esc(x.name) + (x.default ? ' ★' : '') + '</option>'; }).join('') + '<option value="">חלון ההדפסה של המחשב</option></select>' +
       (pr.up ? '' : '<p class="mt-hint">⚠️ המדפסות מופיעות בתוכנה למחשב (Windows). בדפדפן ייפתח חלון ההדפסה.</p>') +
       '<label>פריסה</label><div class="mp-pre" id="qp-pre">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn" data-q="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' +
-      '<p class="mt-hint" id="qp-cur"></p><label class="mt-chk-l"><input type="checkbox" id="qp-pv"' + (q.noPreview ? '' : ' checked') + '> תצוגה מקדימה לפני כל הדפסה</label><div class="mt-row"><button class="mt-btn primary" id="qp-save">' + (thenPrint ? '💾 שמירה והדפסה' : '💾 שמירה') + '</button></div>');
+      myChips('qp-my', q) + '<p class="mt-hint" id="qp-cur"></p><label class="mt-chk-l"><input type="checkbox" id="qp-pv"' + (q.noPreview ? '' : ' checked') + '> תצוגה מקדימה לפני כל הדפסה</label><div class="mt-row"><button class="mt-btn primary" id="qp-save">' + (thenPrint ? '💾 שמירה והדפסה' : '💾 שמירה') + '</button></div>');
     var cur = { paper: q.paper, msize: q.msize };
     function show() { var m = MPRESETS.filter(function (x) { return x[0] === cur.paper && x[1] === cur.msize; })[0]; $('#qp-cur', b).textContent = m ? 'נבחר: ' + m[2] : 'נבחר: נייר ' + cur.paper + ', מגנט ' + cur.msize; $$('[data-q]', b).forEach(function (x) { var mm = MPRESETS[Number(x.dataset.q)]; x.classList.toggle('on', mm[0] === cur.paper && mm[1] === cur.msize); }); }
     $('#qp-printer', b).value = q.printer && (pr.list || []).some(function (x) { return x.name === q.printer; }) ? q.printer : (pr.chosen ? pr.chosen.name : ((pr.list || []).filter(function (x) { return x.default; })[0] || { name: '' }).name);
-    $$('[data-q]', b).forEach(function (x) { x.addEventListener('click', function () { var m = MPRESETS[Number(x.dataset.q)]; cur = { paper: m[0], msize: m[1] }; show(); }); });
+    $$('[data-q]', b).forEach(function (x) { x.addEventListener('click', function () { var m = MPRESETS[Number(x.dataset.q)]; cur = { paper: m[0], msize: m[1] }; $$('[data-qm]', b).forEach(function (y) { y.classList.remove('on'); }); show(); }); });
+    $$('[data-qm]', b).forEach(function (x) { x.addEventListener('click', function () {
+      var m = myPrints()[Number(x.dataset.qm)]; if (!m) return; cur = { paper: m.o.paper, msize: m.o.msize || '' };
+      var sel = $('#qp-printer', b); if ($$('option', sel).some(function (o) { return o.value === (m.printer || ''); })) sel.value = m.printer || '';
+      $$('[data-qm]', b).forEach(function (y) { y.classList.toggle('on', y === x); }); show();
+    }); });
     $('#qp-save', b).addEventListener('click', function () { ls('fs-qprint', JSON.stringify({ printer: $('#qp-printer', b).value, paper: cur.paper, msize: cur.msize, noPreview: !$('#qp-pv', b).checked })); FS.closeDialog(); FS.toast('⚡ ההדפסה המיידית מוכנה'); qpBtn(); if (thenPrint) qpRun(); });
     show();
   }

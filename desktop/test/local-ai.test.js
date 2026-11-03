@@ -346,6 +346,19 @@ test('install (discover, download, verify, extract, probe) and run with the fake
   const calls = fs.readFileSync(sdLog, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   assert.equal(calls.length, 2); assert.equal(calls[0].oom, true); assert.ok(calls[1].args.includes('--offload-to-cpu'));
 
+  // 5b. flash attention on a graphics card; an engine build that does not know it -> once more without, and off from then on
+  assert.ok(calls[0].args.includes('--diffusion-fa'), 'flash attention on the GPU');
+  process.env.FAKE_SD_NO_FA = '1';
+  fs.rmSync(sdLog, { force: true });
+  const nofa = await eng.run({ mode: 'image', prompt: 'a gold frame', w: 512, h: 512 });
+  delete process.env.FAKE_SD_NO_FA;
+  assert.equal(nofa.ok, true, JSON.stringify(nofa));
+  const fc = fs.readFileSync(sdLog, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(fc.length, 2); assert.equal(fc[0].nofa, true); assert.ok(!fc[1].args.includes('--diffusion-fa'));
+  fs.rmSync(sdLog, { force: true });
+  await eng.run({ mode: 'image', prompt: 'a gold frame', w: 512, h: 512 });
+  assert.ok(!JSON.parse(fs.readFileSync(sdLog, 'utf8').trim()).args.includes('--diffusion-fa'), 'stays off');
+
   // 6. one at a time
   process.env.FAKE_SD_SLOW = '400';
   fs.rmSync(sdLog, { force: true });

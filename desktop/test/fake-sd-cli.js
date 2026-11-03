@@ -19,6 +19,7 @@ for (const f of ['--diffusion-model', '--vae', '--llm']) if (!fs.existsSync(get(
 const ref = get('-r');
 if (ref && !fs.existsSync(ref)) { console.error('[ERROR] no ref image'); process.exit(4); }
 const offload = args.includes('--offload-to-cpu');
+if (process.env.FAKE_SD_NO_FA && args.includes('--diffusion-fa')) { console.error('error: unknown argument: --diffusion-fa'); if (log) fs.appendFileSync(log, JSON.stringify({ args, start: t0, end: Date.now(), nofa: true }) + '\n'); process.exit(1); }
 if (process.env.FAKE_SD_OOM_UNLESS_OFFLOAD && !offload) {
   console.error('[ERROR] ggml_vulkan: Device memory allocation of size 2147483648 failed.\n[ERROR] ggml_vulkan: vk::Device::allocateMemory: ErrorOutOfDeviceMemory');
   if (log) fs.appendFileSync(log, JSON.stringify({ args, start: t0, end: Date.now(), oom: true }) + '\n');
