@@ -298,6 +298,10 @@ test('install (discover, download, verify, extract, probe) and run with the fake
   const st = eng.status();
   assert.equal(st.state, 'ready');
   assert.equal(st.engine.variant, 'vulkan');
+  // the warm-up reads every model file once (the test files are small, so there is always room in memory)
+  const w = await eng.warm();
+  assert.equal(w.ok, true, JSON.stringify(w));
+  assert.equal(w.bytes, state.files.diff.size + state.files.llm.size + state.files.vae.size);
   assert.equal(st.files.vae.repo, 'Comfy-Org/flux2-dev', 'skipped the refused and the missing VAE repos');
   assert.equal(st.files.diffusion.path, 'flux-2-klein-4b-Q4_0.gguf');
   assert.equal(fs.readFileSync(path.join(root, 'models', 'flux-2-klein-4b-Q4_0.gguf')).equals(state.files.diff.data), true);

@@ -1650,3 +1650,30 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - mate.js's window key handler lets Ctrl+K, and keys typed inside `#cmdk`, pass through.
 
 **mate.js now exposes:** `FS.mate.show(v)`, `FS.mate.view()`, `FS.mate.root`, `FS.mate.printList`, `FS.mate.quickReady`, and the `mate-view` event.
+
+## Faster AI and new built-in effects (v110)
+
+**Speed:**
+- **onnxruntime-web 1.31.1** (`vendor/ort/ort.webgpu.min.js` + `ort-wasm-simd-threaded.asyncify.{mjs,wasm}`; 1.31 loads the *asyncify* file, not *jsep*).
+  - `FS.ortSession(path)` uses WebGPU only when `navigator.gpu.requestAdapter()` returns an adapter; otherwise it uses WASM. `FS.ortInfo()` reports `{gpu, threads, isolated}`.
+- **Threads need cross-origin isolation.** desktop/main.js sends `COOP: same-origin` + `COEP: credentialless` for studio.html **and every .js/.mjs**.
+  - The worker scripts must carry COEP too. Without it, the threaded worker is blocked (ERR_BLOCKED_BY_RESPONSE) and the session never resolves.
+  - A plain browser tab (GitHub Pages) stays on 1 thread.
+  - Measured on 4 cores: candy style 10.2 s → 6.7 s.
+- **Ahead of time:** `FS.restyleOffline` makes the same design for the next 2 photos (the marked ones, or the following ones) in the background. They are kept by design and source, at most 6. Measured: next photo 10 s → 2–3 s.
+- **Local FLUX engine warm-up:** `engine.warm()` in desktop/local-ai.js runs 30 s after start.
+  - It reads the model files once into the OS file cache, in 4 MB steps.
+  - It runs only if RAM ≥ 1.6× the files, and it pauses while a picture runs.
+  - Its 10-minute reset timer is unref'd (the tests hang otherwise). A test is in test/local-ai.test.js.
+
+**New buttons in "🖥️ מיד, על המחשב"** (`js/ai-plus.js`, `FS.LOCAL_PLUS` + `FS.localPlus`; mate.js `local()` calls them; `{single, run}` takes one photo):
+- **🔍 חדות ×2 (AI):**
+  - `FS.upscale2x`: UpscalerJS esrgan-medium x2 (RDN, MIT) on TensorFlow.js WebGL (`vendor/tfjs`, `SOFTWARE_WEBGL_ENABLED` on).
+  - Input up to 1800 px (900 on the plain CPU path), output ×2, 192 px tiles.
+  - Slow on a software GPU (a 480×640 photo took ~4 min in the headless test).
+- **💡 תאורת אולם:** grey-world white balance on the mid-tones (75%), face exposure toward 0.58 measured on `FS.findFaces`, highlights protected, and a wide unsharp mask (0.22).
+- **📸 עדשה מקצועית:** person sharp; a near and a far blur mixed by a spread of the mask; round bokeh lights from bright background spots; a vignette.
+- **✂️ הסרת רקע מדויקת:** `FS.maskPro(p)` with MODNet (`models/modnet/modnet-q.onnx`, Apache-2.0). It replaces `p.mask`, so the other background tools use it too.
+- **🎞️ תמונה חיה 3D:** opens wow.js `FS.livingPhoto(p)`, after a MODNet mask.
+
+**Also:** 8 more local-engine looks in `FS.AI_WOW`, now 64 in total: פולארויד, צבעי מים, קריקטורה, פחם, פופ־ארט, ויטראז׳, פלסטלינה, פסל זהב.

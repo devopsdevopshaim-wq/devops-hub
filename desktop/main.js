@@ -92,6 +92,10 @@ async function handleHttps(request) {
               'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream',
               'Content-Length': String(st.size),
               'Cache-Control': 'no-cache',
+              // the studio is cross-origin isolated, so the built-in AI (onnxruntime) can use every core of the processor;
+              // "credentialless" still lets pictures, fonts and the APIs from other sites load (without cookies)
+              // (the scripts carry it too: onnxruntime's worker threads are module workers, blocked without it)
+              ...(/\/studio\.html$|\.m?js$/.test(url.pathname) ? { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' } : {}),
             },
           });
         } catch {
@@ -241,6 +245,8 @@ function sendTo(event, channel, id, data) {
 
 function registerLocalAI() {
   ipcMain.handle('local-ai:status', (event) => { fromApp(event); return getLocalAI().status(); });
+  // the local AI's model files into the file cache, 30 s after start (and again after an install), so pictures start sooner
+  setTimeout(() => { try { getLocalAI().warm().catch(() => {}); } catch { /* no engine */ } }, 30 * 1000);
   ipcMain.handle('local-ai:gpu', async (event) => { fromApp(event); const g = await gpuInfo(); return { gpus: g.gpus.slice(0, 6), best: g.best, ramMB: g.ramMB, speed: g.speed }; });
   ipcMain.handle('local-ai:install', (event, o) => {
     fromApp(event);

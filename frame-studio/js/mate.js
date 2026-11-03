@@ -945,7 +945,7 @@
   function buildAI() {
     setTimeout(function () { if (FS.foldCount) FS.foldCount($('.mt-ai', root)); }, 50);
     aiTarget(); aiBA();
-    $('#mt-ai-local', root).innerHTML = LOCAL.map(function (x) { return '<button data-la="' + x[0] + '">' + x[1] + '</button>'; }).join('');
+    $('#mt-ai-local', root).innerHTML = LOCAL.concat(FS.LOCAL_PLUS || []).map(function (x) { return '<button data-la="' + x[0] + '">' + x[1] + '</button>'; }).join('');
     function cards(list, sel, kind) { $(sel, root).innerHTML = list.map(function (v, i) { return '<button data-ai="' + kind + ':' + i + '"><i>' + (kind === 'st' || kind === 'wo' ? v[2] : v[1]) + '</i><span>' + esc(kind === 'st' || kind === 'wo' ? v[1] : v[0]) + '</span></button>'; }).join(''); }
     cards(FS.AI_HEROES || [], '#mt-ai-heroes', 'he'); cards(FS.AI_REAL || [], '#mt-ai-real', 're'); cards(FS.AI_EDITS || [], '#mt-ai-edits', 'ed'); cards(FS.AI_VIRAL || [], '#mt-ai-viral', 'vi'); cards(FS.AI_STYLES || [], '#mt-ai-styles', 'st'); cards(FS.AI_WOW || [], '#mt-ai-wow', 'wo');
     $('#mt-dai', root).innerHTML = $('#mt-ai-local', root).innerHTML;
@@ -988,12 +988,14 @@
   function local(k, list) {
     if (!list.length) return FS.toast('אין תמונות');
     if (k === 'best') { if (!FS.scoreAll) return; FS.busy('בוחר את הטובות…'); return Promise.resolve(FS.scoreAll(list)).then(function () { FS.busy(); S.marked = {}; list.forEach(function (p) { if (p.rate && !(p.rate.why || []).length && p.rate.score >= 55) S.marked[p.id] = true; }); after(list); FS.toast('🏆 ' + marked().length + ' תמונות טובות סומנו'); }, function () { FS.busy(); }); }
+    var plus = FS.localPlus && FS.localPlus[k];
+    if (plus && plus.single) return plus.run(list[0]);   /* one photo at a time (the living photo opens its own viewer) */
     var stop = false, done = 0, bad = 0;
     return list.reduce(function (ch, p, i) {
       return ch.then(function () {
         if (stop) return;
         FS.busy('🖥️ ' + (i + 1) + ' מתוך ' + list.length + '…', function () { stop = true; });
-        return FS.loadImg(p.src).then(function () { return one(k, p); }).then(function (r) { if (r === false) bad++; else done++; }, function () { bad++; });
+        return FS.loadImg(p.src).then(function () { return plus ? plus(p, i, list.length, function () { return stop; }) : one(k, p); }).then(function (r) { if (r === false) bad++; else done++; }, function () { bad++; });
       });
     }, Promise.resolve()).then(function () {
       FS.busy(); after(list);

@@ -16,22 +16,37 @@
   ];
   var sessions = {}, rt = null;
   function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { no(new Error('ort')); }; document.head.appendChild(s); }); }
+  /* onnxruntime-web with WebGPU: on a graphics card when the computer has one (much faster), otherwise WebAssembly on
+     every core of the processor (the desktop program is cross-origin isolated for that; a plain browser tab gets one) */
   function runtime() {
     if (rt) return rt;
-    rt = (window.ort ? Promise.resolve() : loadScript(ORT + 'ort.wasm.min.js')).then(function () {
+    rt = (window.ort ? Promise.resolve() : loadScript(ORT + 'ort.webgpu.min.js')).then(function () {
       var ort = window.ort; ort.env.wasm.wasmPaths = ORT;
-      ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
+      ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.max(1, Math.min(8, (navigator.hardwareConcurrency || 2) - 1)) : 1;
       return ort;
     });
     rt.catch(function () { rt = null; });
     return rt;
   }
+  var gpuOk = null;   /* null: not tried yet; false: WebGPU failed once, WebAssembly from now on */
+  function hasGpu() { return gpuOk !== false && !!navigator.gpu && !/[?&]nogpu\b/.test(location.search); }
   function session(path) {
     if (sessions[path]) return sessions[path];
-    sessions[path] = runtime().then(function (ort) { return ort.InferenceSession.create(new URL(path, location.href).href, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' }); });
+    sessions[path] = runtime().then(function (ort) {
+      var url = new URL(path, location.href).href, base = { graphOptimizationLevel: 'all' };
+      function wasm() { return ort.InferenceSession.create(url, Object.assign({ executionProviders: ['wasm'] }, base)); }
+      if (!hasGpu()) return wasm();
+      /* only with a real adapter: without one onnxruntime quietly drops WebGPU, and we'd think it is on */
+      return (gpuOk ? Promise.resolve(true) : navigator.gpu.requestAdapter().then(function (ad) { return !!ad; }, function () { return false; })).then(function (has) {
+        if (!has) { gpuOk = false; return wasm(); }
+        return ort.InferenceSession.create(url, Object.assign({ executionProviders: ['webgpu', 'wasm'] }, base)).then(function (s) { gpuOk = true; return s; }, function () { gpuOk = false; return wasm(); });
+      });
+    });
     sessions[path].catch(function () { delete sessions[path]; });
     return sessions[path];
   }
+  FS.ortSession = session;
+  FS.ortInfo = function () { return { gpu: gpuOk === true, threads: window.ort ? window.ort.env.wasm.numThreads : 0, isolated: !!self.crossOriginIsolated }; };
   function data(t) { return t.data; }   /* a CPU tensor's values (getData() is async in onnxruntime-web 1.20) */
   var tick = function () { return new Promise(function (r) { setTimeout(r, 0); }); };
 
@@ -91,11 +106,31 @@
   FS.animeCanvas = function (img, size, progress) { return FS.offlineStyleCanvas('anime', img, size, progress && function (f) { progress(Math.round(f * 100), 100); }); };
 
   /* the studio: a built-in design on a photo, kept like a cloud AI design (undo, "back to the original") */
-  FS.restyleOffline = function (p, id, progress) {
+  /* ahead of time: while the owner looks at a result, the same design is made for the next photos in the background,
+     so when he gets to them it is already there (kept by the photo's source and the design, at most 6) */
+  var ahead = {}, aheadQ = Promise.resolve(), aheadN = 0;
+  function aheadKey(p, id) { return id + '|' + (p.origSrc || p.src); }
+  function make(p, id, progress) {
     var orig = FS.img(p.origSrc || p.src);
+    if (!orig) return Promise.reject(new Error('img'));
     return FS.offlineStyleCanvas(id, orig, 1024, progress).then(function (c) {
       return new Promise(function (ok, no) { c.toBlob(function (b) { if (b) ok(b); else no(new Error('jpeg')); }, 'image/jpeg', 0.93); });
-    }).then(function (b) { return FS.loadImg(URL.createObjectURL(b)); }).then(function (im) {
+    });
+  }
+  function prefetch(p, id) {
+    var L = FS.state.photos, marked = FS.marked ? FS.marked() : [], list = marked.length > 1 ? marked : L, i = list.indexOf(p);
+    list.slice(i + 1, i + 3).forEach(function (q) {
+      var k = aheadKey(q, id); if (ahead[k]) return;
+      aheadN++; ahead[k] = aheadQ = aheadQ.then(function () { return new Promise(function (r) { setTimeout(r, 300); }); }).then(function () { return make(q, id); });
+      ahead[k].catch(function () { delete ahead[k]; });
+      var keys = Object.keys(ahead); if (keys.length > 6) delete ahead[keys[0]];
+    });
+  }
+  FS.restyleOffline = function (p, id, progress) {
+    var k = aheadKey(p, id), ready = ahead[k]; delete ahead[k];
+    if (ready && progress) progress(1);
+    return (ready ? ready.catch(function () { return make(p, id, progress); }) : make(p, id, progress)).then(function (b) {
+      setTimeout(function () { prefetch(p, id); }, 50); return FS.loadImg(URL.createObjectURL(b)); }).then(function (im) {
       if (!p.origSrc) p.origSrc = p.src; else p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5);
       p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
       FS.fitPhoto(p.doc, im); FS.snap(p); return p;
