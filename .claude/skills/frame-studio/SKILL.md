@@ -1684,3 +1684,10 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **🎞️ תמונה חיה 3D:** opens wow.js `FS.livingPhoto(p)`, after a MODNet mask.
 
 **Also:** 8 more local-engine looks in `FS.AI_WOW`, now 64 in total: פולארויד, צבעי מים, קריקטורה, פחם, פופ־ארט, ויטראז׳, פלסטלינה, פסל זהב.
+- **Hebrew voice-over (woman's voice):**
+  - Run `GOOGLE_TTS_API_KEY=… python3 videos/promo-src/voice.py`. The key comes from the environment settings; never put it in chat or code.
+  - It reads `videos/promo-src/NARRATION.md` (25 timed lines) and makes each line with Google Text-to-Speech, trying he-IL Chirp3-HD Aoede, then Wavenet-A, then Standard-A.
+  - Each line goes at its scene time, sped up by at most 15% when it runs long.
+  - The music (Beauty Flow from 0:17) is ducked under the voice with a side-chain.
+  - It replaces the audio of `frame-studio/media/promo/optimus*.mp4`; the picture is untouched. The voice alone is kept in `music/voice.m4a`.
+  - `--test` checks the mix with tones, without a key.
