@@ -97,3 +97,26 @@
   #mt .mt-view[data-view=edit] .mt-estage { flex: none; height: 44vh; }
   #mt .mt-view[data-view=edit] .mt-panel { flex: 1; max-height: none; }
 }
+
+/* ---------- the full design studio on a phone (v116): the photo pinned at the top while the settings scroll under it,
+   the ten tools in a bottom bar that slides sideways, the switch a small corner button ---------- */
+@media (max-width: 700px) {
+  body:not(.mt-on) .tools { position: fixed; z-index: 60; left: 0; right: 0; bottom: 0; top: auto; display: flex; flex-direction: row; overflow-x: auto; gap: 2px;
+    padding: 4px 6px max(6px, env(safe-area-inset-bottom)); background: rgba(16,16,19,.97); border-top: 1px solid rgba(255,255,255,.08); box-shadow: 0 -10px 30px rgba(0,0,0,.45);
+    backdrop-filter: none; -webkit-backdrop-filter: none; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-mask-image: linear-gradient(to left, #000 88%, transparent); mask-image: linear-gradient(to left, #000 88%, transparent); }
+  body:not(.mt-on) .tools::-webkit-scrollbar { display: none; }
+  body:not(.mt-on) .tools button { flex: none; min-width: 66px; min-height: 54px; padding: 6px 4px 4px; font-size: 10.5px; scroll-snap-align: start; }
+  body:not(.mt-on) .tools button[aria-selected=true]::after { display: none; }
+  body:not(.mt-on) .tools button[aria-selected=true] { background: rgba(237,182,190,.14); color: var(--at-quartz, #EDB6BE); border-radius: 12px; }
+  /* the photo stays in view while the settings scroll (not in the photos-grid view, which is a page of its own) */
+  body:not(.mt-on):not(.grid-mode) .stage { position: sticky; top: 0; z-index: 8; min-height: 0; height: auto; background: var(--pro-stage, #0F0F11); box-shadow: 0 10px 24px -14px rgba(0,0,0,.9); }
+  body:not(.mt-on):not(.grid-mode) .stage .canvas-wrap { flex: none !important; min-height: 0 !important; height: 36vh !important; max-height: 36vh; }
+  body:not(.mt-on) .panel { padding: 16px 14px calc(96px + env(safe-area-inset-bottom)); }
+  body:not(.mt-on) .stagebar { padding-inline-end: 58px; }
+  /* the switch back to the quick workspace: a small corner button, never over the panel */
+  body:not(.mt-on) #mt-switch { top: max(6px, env(safe-area-inset-top)); bottom: auto; left: 8px; transform: none; padding: 2px; }
+  body:not(.mt-on) #mt-switch [data-sw="studio"] { display: none; }
+  body:not(.mt-on) #mt-switch [data-sw="mt"] { padding: 7px 10px; font-size: 12px; }
+  body:not(.mt-on) #fs-ver { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); font-size: 10px; opacity: .55; }
+  body:not(.mt-on) .pl-bar { bottom: calc(70px + env(safe-area-inset-bottom)); }
+}
