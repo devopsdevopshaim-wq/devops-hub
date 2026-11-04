@@ -1,0 +1,99 @@
+/* אופטימוס on a phone, like an app: the screens at the bottom (a tab bar with icons, as phone apps have), a slim top bar with
+   only the instant print and adding photos, every screen in one column at the phone's width, room for the notch and the
+   home bar (safe areas). Loaded last in studio.html; only below 700 px (and in the installed app in any width up to it). */
+@media (max-width: 700px) {
+  /* the top: one slim row */
+  #mt .mt-top { backdrop-filter: none; -webkit-backdrop-filter: none; flex-wrap: nowrap; gap: 6px; padding: max(6px, env(safe-area-inset-top)) 8px 6px; }
+  #mt .mt-stat, #mt .mt-mark { display: none; }
+  #mt .mt-qp { order: 1; flex: 1; display: flex; gap: 6px; }
+  #mt .mt-qp #mt-qprint { flex: 1; min-height: 40px; font-size: 14.5px; }
+  #mt .mt-swslot { order: 3; }
+  #mt .mt-swslot #mt-switch button { padding: 6px 8px; font-size: 11.5px; }
+  #mt .mt-swslot #mt-switch [data-sw="mt"] { display: none; }   /* we are in it already */
+  #mt .mt-acts { order: 2; flex-wrap: nowrap; gap: 4px; }
+  #mt .mt-acts > :not(label):not(#mt-folder):not(#mt-install) { display: none; }   /* commands, help: desktop extras */
+  #mt .mt-acts .mt-btn { padding: 6px 8px; min-height: 40px; font-size: 0; }
+  #mt .mt-acts .mt-btn .mt-i { width: 20px; height: 20px; }
+  #mt #mt-install { font-size: 13px; }
+
+  /* the screens: a tab bar at the bottom */
+  #mt .mt-tabs { position: fixed; z-index: 65; left: 0; right: 0; bottom: 0; margin: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 0;
+    padding: 4px 2px max(6px, env(safe-area-inset-bottom)); background: rgba(16,16,19,.97); border-top: 1px solid rgba(255,255,255,.08); border-radius: 0; box-shadow: 0 -10px 30px rgba(0,0,0,.45); }
+  #mt .mt-tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 0 4px; min-height: 52px;
+    font-size: 10.5px; line-height: 1.15; border: 0; border-radius: 12px; background: none; white-space: normal; text-align: center; }
+  #mt .mt-tabs button .mt-i { width: 22px; height: 22px; margin: 0; }
+  #mt .mt-tabs button.on { background: rgba(237,182,190,.14); color: var(--at-quartz, #EDB6BE); box-shadow: none; }
+  #mt .mt-tabs .hub-dot { top: 4px; inset-inline-end: 22%; }
+  #mt .mt-view { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  #mt .mt-grid, #mt .mt-egrid { padding-bottom: 150px; }
+  #mt .mt-fab { left: 12px; bottom: calc(72px + env(safe-area-inset-bottom)); padding: 12px 18px; }
+  #mt .mt-foot { display: none; }
+
+  /* main: the bars scroll sideways instead of wrapping into many rows */
+  #mt .mt-sub, #mt .mt-bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  #mt .mt-sub::-webkit-scrollbar, #mt .mt-bar::-webkit-scrollbar { display: none; }
+  #mt .mt-sub > *, #mt .mt-bar > * { flex-shrink: 0; }
+  #mt .mt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; padding: 10px 10px 150px; }
+
+  /* edit: the photos on top, the tools under them */
+  #mt .mt-view[data-view=edit] { flex-direction: column-reverse; }
+  #mt .mt-view[data-view=edit] .mt-panel { width: auto; max-height: 42vh; border-inline-end: 0; border-top: 1px solid var(--line); }
+  #mt .mt-ebar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  #mt .mt-ebar::-webkit-scrollbar { display: none; }
+  #mt .mt-ebar .mt-sel, #mt .mt-ebar .mt-ori, #mt .mt-ebar > label:first-child { display: none; }
+  #mt .mt-ework { min-height: 46vh; }
+  #mt .mt-nav { width: 38px; height: 38px; }
+
+  /* the full editor */
+  #mt .mt-dside { max-height: 44vh; }
+  #mt .mt-dtools .mt-ptabs { overflow-x: auto; flex-wrap: nowrap; }
+
+  /* the AI screen and the hub: one column */
+  #mt .mt-ai { padding: 10px 10px 150px; }
+  #mt .mt-ai-g { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .mt-view.hub { padding: 12px 10px calc(150px + env(safe-area-inset-bottom)); }
+  .hub-hero h2 { font-size: 30px; }
+  .hub-tabs { margin-inline-start: 0; width: 100%; overflow-x: auto; }
+  .hub-gauges { grid-template-columns: 1fr 1fr; }
+  .hub-g svg { width: 54px; height: 54px; }
+  .hub-g b { font-size: 21px; }
+  .hub-in { grid-template-columns: 1fr; }
+  .hub-pr { grid-template-columns: auto 1fr 80px auto; }
+
+  /* windows: full screen, with room for the home bar */
+  #dlg[open] { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; padding-bottom: env(safe-area-inset-bottom); }
+  .mp { grid-template-columns: 1fr; }
+  .mp-pv { order: -1; }
+  .mp-cv canvas { max-height: 46vh; }
+  .mp-side { max-height: none; overflow: visible; }
+  .mp-sum { position: static; }
+  .ck-box { width: calc(100vw - 20px); }
+  #cmdk { padding-top: max(16px, env(safe-area-inset-top)); }
+}
+/* the installed app (standalone): the system bar colour, no pull-to-refresh bounce on the workspace */
+@media (display-mode: standalone) {
+  body.mt-on { overscroll-behavior: none; }
+}
+@media (max-width: 700px) {
+  /* the version label sits above the tab bar, and the switch to the full desktop studio is left to the computer */
+  body.mt-on #fs-ver { bottom: calc(62px + env(safe-area-inset-bottom, 0px)); font-size: 10px; opacity: .6; }
+  #mt .mt-swslot { display: none; }
+  #mt .mt-top { overflow: hidden; }
+  #mt .mt-acts { flex-shrink: 0; }
+}
+@media (max-width: 700px) {
+  /* the copies control fits inside a half-width tile */
+  #mt .mt-grid .mt-cp { gap: 0; padding: 2px; font-size: 11.5px; }
+  #mt .mt-grid .mt-cp button { width: 24px; height: 24px; }
+  #mt .mt-grid .mt-cp i { padding: 0 3px; }
+  #mt .mt-grid .mt-tile { min-width: 0; }
+}
+@media (max-width: 700px) {
+  /* the copies control alone on the tile's foot (the print size is in the size bar above) */
+  #mt .mt-grid .mt-band b { display: none; }
+  #mt .mt-grid .mt-band { justify-content: center; }
+  /* the edit screen: the photo gets real height */
+  #mt .mt-view[data-view=edit] .mt-ework { flex: none; min-height: 0; }
+  #mt .mt-view[data-view=edit] .mt-estage { flex: none; height: 44vh; }
+  #mt .mt-view[data-view=edit] .mt-panel { flex: 1; max-height: none; }
+}
