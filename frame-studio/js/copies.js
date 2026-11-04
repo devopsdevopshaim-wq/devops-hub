@@ -87,6 +87,27 @@
     return '👥 ' + (parts.join(' · ') || r.people + ' אנשים') + (r.doubt ? ' · 👀 כדאי לבדוק: עיניים חצי סגורות?' : '');
   }
   /* the window: the advice per photo, then one click applies it */
+  /* automatic: new photos are checked one by one in the background; a photo whose copies were already changed by hand
+     (anything but the default 1) is left as it is; closed eyes -> 0 (its tile shows why) */
+  var autoQ = [], autoBusy = false, autoN = 0;
+  function autoOn() { try { return localStorage.getItem('fs-auto-copies') !== '0'; } catch (e) { return true; } }
+  function autoNext() {
+    if (autoBusy) return;
+    var p = autoQ.shift();
+    if (!p) { if (autoN) { FS.emit('doc'); FS.toast('🧮 העותקים נקבעו לפי האנשים ב־' + autoN + ' תמונות', 4000); autoN = 0; } return; }
+    if (p.cadv || FS.state.photos.indexOf(p) < 0) return autoNext();
+    autoBusy = true;
+    FS.copiesAdvice([p]).then(function (r) {
+      var a = r && r[0]; if (!a || (p.copies != null && p.copies !== 1)) return;
+      if (a.verdict === 'ok' && a.copies > 0) { p.copies = a.copies; autoN++; } else if (a.verdict === 'closed') { p.copies = 0; autoN++; }
+    }, function () {}).then(function () { autoBusy = false; if (autoN && autoN % 6 === 0) FS.emit('doc'); setTimeout(autoNext, 20); });
+  }
+  if (FS.on) FS.on('photos-added', function (d) {
+    if (!autoOn() || !window.FaceSig) return;
+    FS.state.photos.slice((d && d.from) || 0).forEach(function (p) { if (!p.cadv && autoQ.indexOf(p) < 0) autoQ.push(p); });
+    setTimeout(autoNext, 400);
+  });
+
   FS.openCopiesAdvisor = function (list, done) {
     list = (list || []).filter(Boolean); if (!list.length) return FS.toast('אין תמונות');
     var stop = false; FS.busy && FS.busy('🧮 בודק פנים ועיניים…', function () { stop = true; });

@@ -546,3 +546,6 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 .mp-nav b { min-width: 64px; text-align: center; font-size: 14px; }
 .mp-foot { margin-top: 8px; }
 @media (max-width: 900px) { .mp-side { max-height: none; } }
+
+/* the funny effects heading inside the AI tools (full editor) */
+#mt .mt-chsep { flex-basis: 100%; font-weight: 700; font-size: 13px; color: var(--at-quartz, #EDB6BE); margin: 8px 0 2px; }

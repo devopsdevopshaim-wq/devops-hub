@@ -104,14 +104,29 @@
       if (n === 0) {
         c.hidden = true; var f = $('flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
         var out = document.createElement('canvas'); out.width = hole.w; out.height = hole.h; var ox = out.getContext('2d'); ox.translate(-hole.x, -hole.y);
-        compose(ox, (performance.now() - t0) / 1000, false, false); shot = out;
+        compose(ox, (performance.now() - t0) / 1000, false, false); shot = out; shot0 = out; look = 'none'; looks();
         ctx.save(); ctx.drawImage(out, hole.x, hole.y); if (over && over.complete) ctx.drawImage(over, 0, 0, W, H); ctx.restore();
         $('after').hidden = false; return;
       }
       c.hidden = false; c.textContent = n; c.style.animation = 'none'; void c.offsetWidth; c.style.animation = ''; n--; setTimeout(tick, 900);
     })();
   });
-  $('again').addEventListener('click', function () { shot = null; $('after').hidden = true; $('bar').hidden = false; requestAnimationFrame(loop); });
+  /* after the photo: real edits on it before it goes to print (the funny effects on the faces, and the built-in AI styles) */
+  var shot0 = null, look = 'none', working = false;
+  var LOOKS = [['none', '✨ כמו שזה']].concat((window.FS && FS.FUN_FX) || []).concat([['anime', '🌸 אנימה'], ['candy', '🍬 פופ צבעוני'], ['rain', '🌧️ ציור גשם'], ['mosaic', '🔷 פסיפס']]);
+  function looks() { $('looks').innerHTML = LOOKS.map(function (l) { return '<button type="button" data-look="' + l[0] + '"' + (l[0] === look ? ' class="on"' : '') + '>' + l[1] + '</button>'; }).join(''); }
+  function showShot() { ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.drawImage(shot, hole.x, hole.y, hole.w, hole.h); if (over && over.complete) ctx.drawImage(over, 0, 0, W, H); ctx.restore(); }
+  $('looks').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-look]'); if (!b || working || !shot0) return;
+    var id = b.dataset.look; look = id; looks();
+    if (id === 'none') { shot = shot0; showShot(); return; }
+    working = true; $('send').disabled = true; msg('✨ מעצב…');
+    var job = FS.funFx && FS.FUN_FX.some(function (x) { return x[0] === id; }) ? FS.funFx(id, shot0)
+      : FS.offlineStyleCanvas(id, shot0, 1100).then(function (c) { var o = document.createElement('canvas'); o.width = shot0.width; o.height = shot0.height; var x = o.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, o.width, o.height); return o; });
+    job.then(function (c) { shot = c; showShot(); msg(''); }, function (er) { look = 'none'; looks(); shot = shot0; showShot(); msg(FS.funFxMsg ? FS.funFxMsg(er) : 'העיצוב לא הצליח'); setTimeout(function () { msg(''); }, 2500); })
+      .then(function () { working = false; $('send').disabled = false; });
+  });
+  $('again').addEventListener('click', function () { shot = null; shot0 = null; look = 'none'; $('after').hidden = true; $('bar').hidden = false; requestAnimationFrame(loop); });
   $('send').addEventListener('click', function () {
     var b = this; b.disabled = true; b.textContent = 'שולח…';
     var k = Math.min(1, 1600 / Math.max(shot.width, shot.height)), c = document.createElement('canvas'); c.width = Math.round(shot.width * k); c.height = Math.round(shot.height * k); c.getContext('2d').drawImage(shot, 0, 0, c.width, c.height);
