@@ -1824,3 +1824,9 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - print window: the preview first
   - Ctrl+K: full width
 - `#fs-ver` moves above the tab bar. The FAB sits above it too.
+- **The full design studio on a phone (v116, mobile-app.css, `body:not(.mt-on)`, ≤700 px):**
+  - `.tools` is a fixed bottom bar that slides sideways (66 px buttons, snap, a fade at the end that hints there is more).
+  - `.stage` is sticky at the top (not in grid-mode), so the photo stays in view while the panel scrolls under it. `.stage .canvas-wrap` gets an explicit height of 36vh (with !important: a desktop flex rule shrank it to ~98 px).
+  - `#mt-switch` becomes a small "⚡ עבודה מהירה" corner button at the top left. The studio button is hidden, since we're in the studio.
+  - `#fs-ver` and `.pl-bar` sit above the tool bar.
+  - Testing gotcha: `body.intro-on` sets `overflow: hidden`, which breaks sticky until the opening ends. Remove that class in tests.
