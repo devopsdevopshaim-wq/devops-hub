@@ -1623,6 +1623,13 @@ Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side 
 - The film walks through the work in 5 steps (מכניסים תמונות, בוחרים גודל, עורכים הכול יחד, כמה להדפיס?, מדפיסים), then the features: instant print, the full editor, event frames, smart tools, 56 effects, puzzle, QR on every magnet, the live event, the guest's phone page, the site.
 - The owner asked to leave out his Excel record, the photo cube and the "כל אורח הוא הלקוח הבא" scene. Keep them out.
 - Music: Kevin MacLeod "Upbeat Forever" (CC BY 4.0), credited on the end card.
+- v110 cut (~113 s, 25 scenes, music cut to 117 s). Added scenes:
+  - the event hub's automatic line and live board (focus without the money panel)
+  - the new AI on one photo (`cap/ai-*.jpg`: lens, hall light, precise cut-out)
+  - the summary film on a phone (`cap/hub-film.webp`)
+  - Ctrl+K
+  These come from `capture/cap5.cjs`.
+- The owner also asked to keep out the hub's premium-offers panel, the money and profit, the leads and potential customers, the Excel record and the cubes.
 
 ## מרכז האירוע (js/hub.js, css/hub.css) · v109
 
