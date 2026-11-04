@@ -1719,3 +1719,41 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - three numbered steps: 1 what to print (`#mp-which`), 2 printer, 3 size and layout (presets, with the active one highlighted, plus paper and magnet)
   - "⚙️ הגדרות מתקדמות" in a `<details>`: placement (real size with margins and cut marks, or whole page fit/cover), DPI, and save-as
 - Every element id is unchanged.
+
+## Funny effects, a real-editing mirror, automatic copies, sharper thumbnails (v113)
+
+**😜 Funny effects (`js/fun-fx.js`):**
+- `FS.funFx(id, img)` returns a canvas. It works on every face, using FaceSig landmarks scaled back to the picture, at most 2400 px. Each effect runs in 0.1–0.4 s.
+- The effects:
+  - bighead: an even zoom ×1.38 inside 58% of a circle of 1.45 × face height, with a Hermite blend to the edge
+  - bigeyes: a lens bulge p 2.1
+  - carica: head zoom, then eyes and mouth bulged at their zoomed spots
+  - swap: the two largest faces. Similarity transform on the eyes, the inner face oval feathered, colour matched by the oval means.
+  - disguise: drawn glasses and mustache on the eye line
+  - crown: a drawn crown
+  - clown: a red nose and blush
+- A plain "tiny head" was dropped: shrinking smears the background.
+- Errors: `no-face` and `two-faces`, with Hebrew text from `FS.funFxMsg`.
+- **In the quick workspace:**
+  - The AI screen has a "😜 אפקטים מצחיקים" card (`#mt-ai-fun`).
+  - The full editor's "כלים AI" tab holds the same effects (`[data-fun]`), after the local tools.
+  - `fun()` in mate.js applies an effect through `FS.putCanvas` (ai-plus.js), so undo and "back to the original" work.
+
+**Magic mirror (mirror.html):**
+- After the 3-2-1 a `#looks` bar offers "כמו שזה", the funny effects, and the built-in styles anime, candy, rain and mosaic (`FS.offlineStyleCanvas`).
+- The edits work on `shot0`, and the chosen result is what is sent.
+- The page loads faces.js, offline-ai.js and fun-fx.js after a tiny `window.FS = { canvas }` shim.
+
+**Full editor "כלים AI":**
+- It used to be filled only by the AI screen (`buildAI`), so it was empty when the editor was opened first.
+- Now `localChips()` fills it in `buildDesign` too.
+
+**Automatic copies (copies.js):**
+- On `photos-added`, new photos are queued and run through `FS.copiesAdvice` in the background.
+  - Copies are set only if they are still the default 1: an `ok` verdict gives its count, `closed` gives 0.
+  - A toast at the end shows how many photos were set.
+- The switch is "אוטומטי לכל תמונה חדשה" in the copies bar (`#mt-cauto`, `fs-auto-copies`, on by default).
+
+**Sharper thumbnails:**
+- `pageCanvas` and `origCanvas` draw at devicePixelRatio (up to 2) and set the CSS size.
+- The tiles, before/after, the big view and the print preview are sharp on 125–200% screens.

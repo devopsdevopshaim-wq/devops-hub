@@ -15,3 +15,9 @@ html, body { margin: 0; height: 100%; background: #07060b; color: #f3ecdc; font:
 .mr button { border: 1px solid rgba(243,221,166,.45); background: rgba(255,255,255,.06); color: #f3ecdc; border-radius: 999px; padding: 10px 16px; font: 600 16px 'Heebo', sans-serif; cursor: pointer; }
 .mr button.on { background: linear-gradient(135deg, #F3DDA6, #B8904F); color: #1A140B; }
 .mr .mr-shoot, .mr .mr-send { font-size: 22px; font-weight: 800; padding: 14px 30px; border: 0; background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); color: #1A140B; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+
+/* the edits after the photo */
+.mr-after { flex-direction: column; }
+.mr-looks { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 980px; }
+.mr-looks button { border: 1px solid rgba(255,255,255,.22); background: rgba(255,255,255,.08); color: #fff; border-radius: 999px; padding: 10px 16px; font: 600 16px 'Heebo', sans-serif; cursor: pointer; }
+.mr-looks button.on { background: #EDB6BE; color: #17130E; border-color: transparent; }

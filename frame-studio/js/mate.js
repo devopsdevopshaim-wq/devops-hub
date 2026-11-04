@@ -45,7 +45,7 @@
         '<select id="mt-show"><option value="all">הכל</option><option value="sel">רק המסומנות</option><option value="todo">שלא הודפסו</option><option value="done">שהודפסו</option><option value="edited">שנערכו</option></select>' +
         '<select id="mt-sort"><option value="">הסדר שנכנסו</option><option value="name">לפי שם</option></select><button class="mt-btn danger" id="mt-del">🗑 הסרה מהעבודה</button></div>' +
       '<div class="mt-bar" data-b="copies" hidden><label>הדפסים למסומנות:</label><button class="mt-ic" data-cpa="-1">−</button><b id="mt-cpn">1</b><button class="mt-ic" data-cpa="1">+</button>' +
-        '<button class="mt-btn primary" id="mt-cadv">🧮 המלצה לפי האנשים בתמונה</button><button class="mt-btn" id="mt-cp-set">קביעה</button><button class="mt-btn" id="mt-cp-1">1 לכולן</button><button class="mt-btn" id="mt-cp-0">0 לכולן</button><span class="mt-hint">0 = לא מודפסת</span></div>' +
+        '<button class="mt-btn primary" id="mt-cadv">🧮 המלצה לפי האנשים בתמונה</button><label class="mt-chk-l" title="כל תמונה חדשה מקבלת עותקים לפי המבוגרים שמסתכלים למצלמה; עיניים עצומות = 0"><input type="checkbox" id="mt-cauto"> אוטומטי לכל תמונה חדשה</label><button class="mt-btn" id="mt-cp-set">קביעה</button><button class="mt-btn" id="mt-cp-1">1 לכולן</button><button class="mt-btn" id="mt-cp-0">0 לכולן</button><span class="mt-hint">0 = לא מודפסת</span></div>' +
       '<div class="mt-bar" data-b="biz" hidden><span class="mt-hint" id="mt-biz-txt"></span><button class="mt-btn" id="mt-biz-on">➕ הוספה לתמונות</button><button class="mt-btn" id="mt-biz-off">➖ הסרה מהתמונות</button><button class="mt-btn" id="mt-biz-edit">✏️ עריכת הפרטים</button></div>' +
       '<div class="mt-grid" id="mt-grid"></div>' +
       '<div class="mt-empty" id="mt-empty"><h2>מתחילים</h2><p>בוחרים תמונות או תיקייה שלמה. כל תמונה מקבלת גודל הדפסה ומספר עותקים, ואפשר לערוך, לעצב ולהדפיס.</p>' +
@@ -106,6 +106,7 @@
       '<div class="mt-card mt-aibac"><h3>◧ לפני | אחרי <small>התמונות שה־AI עובד עליהן: המקור מימין, התוצאה משמאל · לחיצה מגדילה</small></h3><div class="mt-aiba" id="mt-aiba"></div><p class="mt-hint" id="mt-aiba-more"></p></div>' +
       '<div class="mt-card cr-card-box" id="mt-crafts"></div>' +
       '<div class="mt-card"><h3>🖥️ מיד, על המחשב · עובד גם בלי אינטרנט</h3><div class="mt-chips" id="mt-ai-local"></div></div>' +
+      '<div class="mt-card mt-func"><h3>😜 אפקטים מצחיקים <small>על הצילום האמיתי, לכל פרצוף בתמונה · על המחשב, בלי אינטרנט</small></h3><div class="mt-chips" id="mt-ai-fun"></div></div>' +
       '<div class="mt-card"><h3>⚙️ מנוע ה־AI</h3><div class="mt-chips" id="mt-ai-eng"></div><label class="mt-chk-l" style="margin-top:8px"><input type="checkbox" id="mt-keep"> 🙂 שמירת הפנים המקוריות (בלי עיוות) בעיצובים על אדם אמיתי</label><label class="mt-chk-l"><input type="checkbox" id="mt-one"> 👤 רק על אדם אחד: בתמונה עם כמה אנשים בוחרים את מי לעצב, והשאר נשארים כמו בצילום</label><label class="mt-chk-l"><input type="checkbox" id="mt-only"> 🎯 רק על הדמות: הרקע והמקום נשארים מהצילום המקורי, ה־AI משנה רק את האדם</label></div>' +
       '<div class="mt-card"><h3>🦸 גיבורי על <small>על האנשים האמיתיים, כמו סצנה מסרט</small></h3><div class="mt-ai-g" id="mt-ai-heroes"></div></div>' +
       '<div class="mt-card"><h3>🧑 על אדם אמיתי <small>נשאר צילום אמיתי של אותם אנשים, משתנים הלבוש והמקום</small></h3><div class="mt-ai-g" id="mt-ai-real"></div></div>' +
@@ -227,15 +228,18 @@
   $('#mt-folder2', root).addEventListener('click', pickFolder);
 
   /* ---------- thumbnails: a page drawn small, with its own small cache, a few per frame ---------- */
+  var DPR = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
   function pageCanvas(p, size, fast) {
-    var d = p.doc, k = size / Math.max(d.w, d.h), c = FS.canvas(d.w * k, d.h * k);
+    var d = p.doc, k = size / Math.max(d.w, d.h), c = FS.canvas(d.w * k * DPR, d.h * k * DPR);
     var proxy = { src: p.src, doc: d, cache: p._mc || {}, mask: p.mask, maskV: p.maskV };
-    FS.draw(c.getContext('2d'), proxy, { scale: k, max: Math.round(size * 1.5), fast: fast !== false, export: true });
+    FS.draw(c.getContext('2d'), proxy, { scale: k * DPR, max: Math.round(size * 1.5 * DPR), fast: fast !== false, export: true });
+    c.style.width = Math.round(d.w * k) + 'px'; c.style.height = Math.round(d.h * k) + 'px';
     p._mc = proxy.cache; return c;
   }
   /* "before": the photo as it came in (before AI and every edit), whole, in a box of the page's shape */
   function origCanvas(p, size) {
-    var im = FS.img(p.origSrc || p.src), d = p.doc, k = size / Math.max(d.w, d.h), c = FS.canvas(d.w * k, d.h * k), x = c.getContext('2d');
+    var im = FS.img(p.origSrc || p.src), d = p.doc, k = size / Math.max(d.w, d.h) * DPR, c = FS.canvas(d.w * k, d.h * k), x = c.getContext('2d');
+    c.style.width = Math.round(d.w * k / DPR) + 'px'; c.style.height = Math.round(d.h * k / DPR) + 'px';
     x.fillStyle = '#0c0d10'; x.fillRect(0, 0, c.width, c.height); if (!im) return c;
     var s = Math.min(c.width / im.naturalWidth, c.height / im.naturalHeight), w = im.naturalWidth * s, h = im.naturalHeight * s;
     x.imageSmoothingQuality = 'high'; x.drawImage(im, (c.width - w) / 2, (c.height - h) / 2, w, h); return c;
@@ -440,6 +444,7 @@
   $('#mt-cp-set', root).addEventListener('click', function () { var l = marked(); if (!l.length) return FS.toast('מסמנים תמונות קודם'); l.forEach(function (p) { p.copies = cpn; }); buildGrid(); });
   function advise() { var l = marked().length ? marked() : S.photos.slice(); if (FS.openCopiesAdvisor) FS.openCopiesAdvisor(l, function () { buildGrid(); stat(); }); }
   $('#mt-cadv', root).addEventListener('click', advise);
+  (function () { var c = $('#mt-cauto', root); if (!c) return; c.checked = ls('fs-auto-copies') !== '0'; c.addEventListener('change', function () { ls('fs-auto-copies', c.checked ? '1' : '0'); FS.toast(c.checked ? '🧮 כל תמונה חדשה תקבל עותקים לפי האנשים בה' : 'העותקים האוטומטיים כבויים'); }); })();
   FS.mateAdvise = advise;
   $('#mt-cp-1', root).addEventListener('click', function () { S.photos.forEach(function (p) { p.copies = 1; }); buildGrid(); });
   $('#mt-cp-0', root).addEventListener('click', function () { S.photos.forEach(function (p) { p.copies = 0; }); buildGrid(); FS.toast('כל התמונות על 0. מוסיפים + לתמונות שרוצים להדפיס.'); });
@@ -772,7 +777,9 @@
   /* ---------- עורך מלא: one photo, a folder browser, tools underneath ---------- */
   var cv = $('#mt-cv', root), cvx = cv.getContext('2d'), dk = 1, drag = null, selL = null, dfit = 'cover';
   function dcur() { return focus(); }
+  function localChips() { return LOCAL.concat(FS.LOCAL_PLUS || []).map(function (x) { return '<button data-la="' + x[0] + '">' + x[1] + '</button>'; }).join('') + (FS.FUN_FX ? '<span class="mt-chsep">😜 מצחיקים</span>' + FS.FUN_FX.map(function (x) { return '<button data-fun="' + x[0] + '">' + x[1] + '</button>'; }).join('') : ''); }
   function buildDesign() {
+    var dai = $('#mt-dai', root); if (dai && !dai.children.length) dai.innerHTML = localChips();
     var p = dcur(); if (p) { focusId = p.id; S.cur = idx(p); }
     $('#mt-dframe', root).innerHTML = frameOptions().map(function (f) { return '<option value="' + esc(f[0]) + '">' + esc(f[0] ? f[1] : 'מסגרת: בלי') + '</option>'; }).join('');
     var fr = p && p.doc.frame; $('#mt-dframe', root).value = !fr ? '' : (fr.kind === 'png' ? 'u:' : 'g:') + fr.id;
@@ -948,7 +955,8 @@
     $('#mt-ai-local', root).innerHTML = LOCAL.concat(FS.LOCAL_PLUS || []).map(function (x) { return '<button data-la="' + x[0] + '">' + x[1] + '</button>'; }).join('');
     function cards(list, sel, kind) { $(sel, root).innerHTML = list.map(function (v, i) { return '<button data-ai="' + kind + ':' + i + '"><i>' + (kind === 'st' || kind === 'wo' ? v[2] : v[1]) + '</i><span>' + esc(kind === 'st' || kind === 'wo' ? v[1] : v[0]) + '</span></button>'; }).join(''); }
     cards(FS.AI_HEROES || [], '#mt-ai-heroes', 'he'); cards(FS.AI_REAL || [], '#mt-ai-real', 're'); cards(FS.AI_EDITS || [], '#mt-ai-edits', 'ed'); cards(FS.AI_VIRAL || [], '#mt-ai-viral', 'vi'); cards(FS.AI_STYLES || [], '#mt-ai-styles', 'st'); cards(FS.AI_WOW || [], '#mt-ai-wow', 'wo');
-    $('#mt-dai', root).innerHTML = $('#mt-ai-local', root).innerHTML;
+    $('#mt-dai', root).innerHTML = localChips();
+    $('#mt-ai-fun', root).innerHTML = (FS.FUN_FX || []).map(function (x) { return '<button data-fun="' + x[0] + '">' + x[1] + '</button>'; }).join('');
     engines();
   }
   function engines() {
@@ -1021,7 +1029,28 @@
     return Promise.resolve(false);
   }
   $('#mt-ai-local', root).addEventListener('click', function (e) { var b = e.target.closest('[data-la]'); if (b) local(b.dataset.la, aiList()); });
-  $('#mt-dai', root).addEventListener('click', function (e) { var b = e.target.closest('[data-la]'); var p = dcur(); if (b && p) Promise.resolve(local(b.dataset.la, [p])).then(function () { drawDesign(); }); });
+  /* 😜 the funny effects: each marked photo (or the one on screen), the result in place of the photo (undo / back to the original) */
+  function fun(id, list) {
+    if (!list.length) return Promise.resolve(FS.toast('אין תמונות'));
+    if (!FS.funFx || !FS.putCanvas) return Promise.resolve();
+    var stop = false, done = 0, err = null;
+    return list.reduce(function (ch, p, i) {
+      return ch.then(function () {
+        if (stop) return;
+        FS.busy('😜 ' + (i + 1) + ' מתוך ' + list.length + '…', function () { stop = true; });
+        return FS.loadImg(p.src).then(function (im) { return FS.funFx(id, im); }).then(function (c) { return FS.putCanvas(p, c); }).then(function () { done++; }, function (e) { err = e; });
+      });
+    }, Promise.resolve()).then(function () {
+      FS.busy(); after(list);
+      FS.toast(done ? '😜 ' + done + ' תמונות' + (err ? ' · בחלק: ' + FS.funFxMsg(err) : '') : FS.funFxMsg(err), 5000);
+    });
+  }
+  $('#mt-ai-fun', root).addEventListener('click', function (e) { var b = e.target.closest('[data-fun]'); if (b) fun(b.dataset.fun, aiList()); });
+  $('#mt-dai', root).addEventListener('click', function (e) {
+    var p = dcur(); if (!p) return;
+    var f = e.target.closest('[data-fun]'); if (f) return fun(f.dataset.fun, [p]).then(function () { drawDesign(); });
+    var b = e.target.closest('[data-la]'); if (b) Promise.resolve(local(b.dataset.la, [p])).then(function () { drawDesign(); });
+  });
 
   /* ---------- print ---------- */
   var PS = Object.assign({ paper: '10x15', dpi: 300, mode: 'real', margin: 0, marginOn: false, marks: false, pfit: 'cover', which: 'auto', msize: '' }, lsj('fs-mate-print', {}));

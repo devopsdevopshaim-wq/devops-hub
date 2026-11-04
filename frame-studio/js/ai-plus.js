@@ -33,6 +33,8 @@
       });
   }
 
+  FS.putCanvas = put;
+
   /* ---------- 🔍 ×2 super-resolution (TensorFlow.js, WebGL) ---------- */
   var tfP = null;
   function upModel() {
