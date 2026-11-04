@@ -1,7 +1,10 @@
 """The promo's Hebrew voice-over (a woman's voice) from NARRATION.md, mixed over the music, into the finished films.
 
-    GOOGLE_TTS_API_KEY=… python3 videos/promo-src/voice.py           # make the voice and the films
-    python3 videos/promo-src/voice.py --test                          # the mix with tones instead of speech (no key)
+    python3 videos/promo-src/voice.py --from narration.mp3            # one recording of the whole text (any free tool)
+    GOOGLE_TTS_API_KEY=… python3 videos/promo-src/voice.py           # or: make the voice with Google
+    python3 videos/promo-src/voice.py --test                          # the mix with tones instead of speech
+- --from: one file with all 25 lines read in order, a short pause (half a second or more) between them. It is cut at
+  its 25 longest pauses into the lines and each line is placed at its scene.
 
 - The text is NARRATION.md: one line per scene, "N. [m:ss.s] text"; each line starts at its scene's time.
 - Google Cloud Text-to-Speech (the key from the environment, sent in a header and never printed). The first Hebrew
@@ -59,18 +62,45 @@ def tone(text, out):   # --test: a soft tone as long as the line would take to s
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i', f'sine=frequency=440:duration={d:.2f}', '-af', 'volume=0.3', '-ar', '48000', out], check=True)
 
 
+def split(src, n, tmp):
+    """One recording -> n line files, cut in the middle of its n-1 longest pauses."""
+    wav = os.path.join(tmp, 'all.wav')
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-ar', '48000', '-ac', '1', wav], check=True)
+    r = subprocess.run(['ffmpeg', '-i', wav, '-af', 'silencedetect=noise=-38dB:d=0.25', '-f', 'null', '-'], capture_output=True, text=True)
+    st = [float(x) for x in re.findall(r'silence_start: ([\d.]+)', r.stderr)]
+    en = [float(x) for x in re.findall(r'silence_end: ([\d.]+)', r.stderr)]
+    total = dur(wav)
+    gaps = [(e - s0, s0, e) for s0, e in zip(st, en) if s0 > 0.2 and e < total - 0.2]
+    if len(gaps) < n - 1:
+        sys.exit(f'Found {len(gaps)} pauses, need {n - 1}: leave a short pause between the lines.')
+    cuts = sorted((s0 + e) / 2 for _, s0, e in sorted(gaps, reverse=True)[:n - 1])
+    edges = [0.0] + cuts + [total]
+    out = []
+    for i in range(n):
+        f = os.path.join(tmp, f'{i:02d}.wav')
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{edges[i]:.3f}', '-to', f'{edges[i + 1]:.3f}', '-i', wav,
+                        '-af', 'silenceremove=start_periods=1:start_threshold=-40dB,areverse,silenceremove=start_periods=1:start_threshold=-40dB,areverse', f], check=True)
+        out.append(f)
+    return out
+
+
 def main():
     test = '--test' in sys.argv
+    src = sys.argv[sys.argv.index('--from') + 1] if '--from' in sys.argv else None
     key = os.environ.get('GOOGLE_TTS_API_KEY', '')
-    if not test and not key:
-        sys.exit('GOOGLE_TTS_API_KEY is not set (add it in the environment settings, then start a new session).')
+    if not test and not src and not key:
+        sys.exit('Give --from <recording>, or set GOOGLE_TTS_API_KEY.')
     L = lines()
     total = dur(FILMS[0])
     tmp = tempfile.mkdtemp(prefix='voice-')
     clips = []
+    given = split(src, len(L), tmp) if src else None
     for i, (t, text) in enumerate(L):
         raw = os.path.join(tmp, f'{i:02d}.wav')
-        (tone if test else lambda a, b: tts(a, b, key))(text, raw)
+        if given:
+            raw = given[i]
+        else:
+            (tone if test else lambda a, b: tts(a, b, key))(text, raw)
         room = (L[i + 1][0] if i + 1 < len(L) else total - 0.5) - t - 0.15
         d = dur(raw)
         speed = min(1.15, d / room) if d > room else 1.0
@@ -92,8 +122,8 @@ def main():
                     '[m][v1]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=400[duck];'
                     '[duck][v2]amix=inputs=2:normalize=0,alimiter=limit=0.95[out]',
                     '-map', '[out]', '-c:a', 'aac', '-b:a', '192k', mix], check=True)
-    if test:
-        print('test mix:', mix)
+    if test or '--dry' in sys.argv:
+        print('mix only:', mix)
         return
     for f in FILMS:
         out = f + '.new.mp4'
