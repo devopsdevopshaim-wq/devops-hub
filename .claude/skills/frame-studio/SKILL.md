@@ -1696,3 +1696,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Placement: in landscape at the bottom right, clear of the AI labels on the left. In portrait at the bottom, or over the foot of the picture in AI scenes so their label stays visible.
   - There are no captions on the fan and end scenes.
   - The music is Beauty Flow.
+- **On the home page (v111):** the film opens the "רואים בעיניים" section (`#videos`), as `#optimus-film`, full width above the grid.
+  - It plays lighter web cuts: `media/promo/optimus-web.mp4` (1280 px, about 6 MB) and `optimus-v-web.mp4` (720 px). An inline script picks the vertical one on a phone held upright, because Chromium ignores `<source media>`.
+  - The posters are `optimus.jpg` and `optimus-v.jpg`.
+  - The hero has a "▶ סרטון התדמית" button that jumps to it (`scroll-margin-top: 96px` keeps it clear of the menu).
+  - After re-rendering the film, remake the web cuts: `ffmpeg -vf scale=1280:-2 -crf 24 -movflags +faststart`.

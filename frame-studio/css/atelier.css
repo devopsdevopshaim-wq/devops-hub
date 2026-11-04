@@ -161,3 +161,12 @@ h1, h2 { font-family: var(--display); font-weight: 700; letter-spacing: 0; }
 .mw-m img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
 .mw-m figcaption { font: 400 clamp(20px, 1.8vw, 26px)/1 'Amatic SC', var(--display); color: #8b6b72; text-align: center; padding: 8px 0 10px; }
 @media (prefers-reduced-motion: reduce) { .mw-track { animation: none; } .mw-row { overflow-x: auto; } }
+
+/* the Optimus film, first in "רואים בעיניים": full width, the vertical cut on a phone held upright */
+.vid.feature { max-width: 1200px; margin: 0 auto clamp(18px, 2.4vw, 30px); scroll-margin-top: 96px; }
+.vid.feature video { aspect-ratio: 16 / 9; }
+.vid.feature figcaption { font-size: 15px; letter-spacing: 0; line-height: 1.5; }
+.vid.feature figcaption b { color: var(--at-quartz, #EDB6BE); margin-inline-end: 8px; }
+@media (max-width: 600px) and (orientation: portrait) {
+  .vid.feature video { aspect-ratio: 9 / 16; max-height: 82vh; margin: 0 auto; }
+}
