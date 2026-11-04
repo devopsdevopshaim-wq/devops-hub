@@ -1691,3 +1691,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The music (Beauty Flow from 0:17) is ducked under the voice with a side-chain.
   - It replaces the audio of `frame-studio/media/promo/optimus*.mp4`; the picture is untouched. The voice alone is kept in `music/voice.m4a`.
   - `--test` checks the mix with tones, without a key.
+- **Captions instead of a voice (the owner's choice):**
+  - `FILMS['pro']['captions']` holds the 25 narration lines, and `caption()` in build.py draws each one as a dark pill.
+  - Placement: in landscape at the bottom right, clear of the AI labels on the left. In portrait at the bottom, or over the foot of the picture in AI scenes so their label stays visible.
+  - There are no captions on the fan and end scenes.
+  - The music is Beauty Flow.

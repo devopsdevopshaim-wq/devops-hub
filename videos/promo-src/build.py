@@ -77,6 +77,33 @@ FILMS['pro'] = {
     'title': 'אופטימוס',
     'music': 'pro',
     'palette': dict(GOLD='#EDB6BE', INK='#191D2C', CREAM='#F3F1EC', DARK='#0F1528'),
+        'captions': [
+        'בכל אירוע יש מאות אורחים, וכל אחד רוצה מגנט.',
+        'הכירו את אופטימוס: הסטודיו לעסקי מגנטים ואירועים.',
+        'מכניסים את התמונות, מתיקייה, מהמצלמה או בקובצי RAW.',
+        'בוחרים גודל הדפסה, בלחיצה אחת.',
+        'ועורכים כמה תמונות יחד, באותו מסך.',
+        'הבינה המלאכותית סופרת את האורחים, וממליצה כמה עותקים להדפיס.',
+        'ומדפיסים, בגודל המדויק.',
+        'הקו האוטומטי קולט כל תמונה מהמצלמה, בודק אותה, ושולח להדפסה לבד.',
+        'לוח הבקרה מראה את קצב העבודה, את הנייר ואת הדיו, בזמן אמת.',
+        'הדפסה מיידית, עם תצוגה לפני.',
+        'עורך מלא, עם מסגרות, טקסט ונעילת תמונה.',
+        'ומסגרת אישית לכל אירוע: חתונה, בר מצווה, ברית וחינה.',
+        'וחדש: בינה מלאכותית שעובדת על המחשב, בלי אינטרנט. עדשה מקצועית, תאורת אולם, והסרת רקע מדויקת.',
+        'כלים חכמים בלחיצה: רקע, פנים, עיניים וריטוש.',
+        'ושישים וארבעה אפקטים מרהיבים.',
+        'מסודרים בקטגוריות.',
+        'פאזל מכל תמונה, מוכן לחיתוך.',
+        'על כל מגנט, קוד QR לכל תמונות האירוע.',
+        'קוד נפרד לכל אירוע.',
+        'והאורחים שולחים תמונות, ישר מהטלפון.',
+        'בסוף האירוע, סרטון סיכום נוצר לבד, מהתמונות הכי טובות.',
+        'וכל פעולה בתוכנה, במילה אחת.',
+        'אתר מעוצב, עם מחירים שמתעדכנים מיד.',
+        'כל אירוע, מגנט ביד.',
+        'אופטימוס. נסו עכשיו: 054-4979771.',
+    ],
     'scenes': [
         ('photo', 4.4, dict(img='real/wedding-1.webp', lines=['300 אורחים.', 'כל אחד רוצה מגנט.'], accent=1, pos='bottom')),
         ('screen', 4.6, dict(img='cap/pro-grid.webp', focus=(0.0, 0.0, 1.0, 1.0), lines=['אופטימוס'], sub='הסטודיו של עסקי המגנטים והאירועים', accent=0, title=True)),
@@ -477,6 +504,20 @@ def s_phone(sc, f):
         sc.add(title(sc, f['lines'], f.get('accent'), 150, H * 0.36, size, '#fff', t0=0.4))
 
 
+def caption(sc, text, kind=''):
+    """The narration as a caption: a dark pill at the bottom (in landscape on the right, clear of the pictures' labels;
+    in portrait over the foot of the AI picture, so its label below stays seen)."""
+    W, H, v = sc.W, sc.H, sc.v
+    low = int(H - (520 + H * 0.62) + 18) if (v and kind == 'ai') else 44
+    box = f'left:6%;right:6%;bottom:{low}px' if v else 'left:42%;right:4%;bottom:34px'
+    sc.add(f'<div id="{sc.sid}-cap" style="position:absolute;{box};display:flex;justify-content:center;z-index:50;pointer-events:none">'
+           f'<div style="direction:rtl;text-align:center;font-family:\'Heebo\',sans-serif;font-weight:600;font-size:{44 if v else 34}px;line-height:1.3;color:#fff;'
+           f'background:rgba(10,13,26,.72);border:1px solid rgba(237,182,190,.25);border-radius:18px;padding:0.32em 0.8em;max-width:100%;'
+           f'box-shadow:0 10px 30px rgba(0,0,0,.35)">{esc(text)}</div></div>')
+    sc.tw(f'tl.fromTo("#{sc.sid}-cap", {{opacity:0, y:14}}, {{opacity:1, y:0, duration:0.4, ease:"power2.out"}}, 0.55);')
+    sc.tw(f'tl.to("#{sc.sid}-cap", {{opacity:0, duration:0.3}}, {max(1.2, sc.dur - 0.55):.2f});')
+
+
 BUILD = dict(phone=s_phone, photo=s_photo, magnet=s_magnet, number=s_number, fan=s_fan, screen=s_screen, styles=s_styles, ai=s_ai, type=s_type, end=s_end)
 ENTER = ['iris', 'whip', 'wipe', 'zoom', 'rise']
 GROUND = dict(phone=DARK, photo=DARK, magnet=DARK, number=CREAM, fan=CREAM, screen=DARK, styles=DARK, ai=DARK, type=CREAM, end=DARK)
@@ -522,6 +563,9 @@ def build(name, spec, suffix):
         if i > 0:
             enter(sc, ENTER[(i - 1) % len(ENTER)])
         BUILD[kind](sc, f)
+        cap = (spec.get('captions') or [None] * (i + 1))[i] if i < len(spec.get('captions') or []) else None
+        if cap and kind not in ('end', 'fan'):
+            caption(sc, cap, kind)
         with open(os.path.join(dst, 'compositions', sid + '.html'), 'w', encoding='utf-8') as fh:
             fh.write(sc.html())
         hosts.append(f'      <div id="{sid}" data-composition-id="{sid}" data-composition-src="compositions/{sid}.html" data-start="{t:.2f}" data-duration="{dur:.2f}" data-track-index="{1 + i % 2}" data-track-kind="graphics" data-width="{W}" data-height="{H}" style="z-index:{i + 1}"></div>')
