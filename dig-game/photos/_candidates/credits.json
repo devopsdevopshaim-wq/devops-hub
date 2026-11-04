@@ -30,10 +30,10 @@
   "page": "https://commons.wikimedia.org/wiki/File:3900_Forged_iron_arrowhead_(FindID_417582).jpg"
  },
  "c_arrow-3.jpg": {
-  "title": "File:Medieval iron arrowhead (FindID 646649).jpg",
-  "license": "CC BY-SA 4.0",
-  "artist": "The Portable Antiquities Scheme, Dot Boughton, 2014-11-04 00:51:25",
-  "page": "https://commons.wikimedia.org/wiki/File:Medieval_iron_arrowhead_(FindID_646649).jpg"
+  "title": "File:Medieval iron arrowhead (FindID 508480).jpg",
+  "license": "CC BY-SA 2.0",
+  "artist": "The Portable Antiquities Scheme, Chris Edbury, 2012-06-19 16:03:12",
+  "page": "https://commons.wikimedia.org/wiki/File:Medieval_iron_arrowhead_(FindID_508480).jpg"
  },
  "c_sword-1.jpg": {
   "title": "File:Ristisõdijate mõõga koopia.jpg",
@@ -58,6 +58,24 @@
   "license": "CC BY-SA 2.0",
   "artist": "Museum of London, Kate Sumnall, 2013-10-16 09:44:44",
   "page": "https://commons.wikimedia.org/wiki/File:A_fragment_of_a_Roman_ceramic_amphora_probably_dating_5th_-_6th_century._(FindID_580740).jpg"
+ },
+ "r_glass-1.jpg": {
+  "title": "File:Glass unguentarium (perfume bottle) MET DP153949.jpg",
+  "license": "CC0",
+  "artist": "",
+  "page": "https://commons.wikimedia.org/wiki/File:Glass_unguentarium_(perfume_bottle)_MET_DP153949.jpg"
+ },
+ "r_glass-2.jpg": {
+  "title": "File:Glass unguentarium (perfume bottle) MET DP153390.jpg",
+  "license": "CC0",
+  "artist": "",
+  "page": "https://commons.wikimedia.org/wiki/File:Glass_unguentarium_(perfume_bottle)_MET_DP153390.jpg"
+ },
+ "r_glass-3.jpg": {
+  "title": "File:Glass unguentarium (perfume bottle) MET DP153395.jpg",
+  "license": "CC0",
+  "artist": "",
+  "page": "https://commons.wikimedia.org/wiki/File:Glass_unguentarium_(perfume_bottle)_MET_DP153395.jpg"
  },
  "s_shekel-1.jpg": {
   "title": "File:Stamp of Israel - Coins Doar Ivri 1948 - 1000mil.jpg",
@@ -125,6 +143,24 @@
   "artist": "York Museums Trust, Ellie Cox, 2012-08-01 11:09:36",
   "page": "https://commons.wikimedia.org/wiki/File:Axe_Head_,_Bronze_Age_(FindID_514561).jpg"
  },
+ "k_dagger-1.jpg": {
+  "title": "File:Sighnaghi Museum. Middle Bronze Age items from Kakheti, 2nd millennium BC.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Kober",
+  "page": "https://commons.wikimedia.org/wiki/File:Sighnaghi_Museum._Middle_Bronze_Age_items_from_Kakheti,_2nd_millennium_BC.jpg"
+ },
+ "k_dagger-2.jpg": {
+  "title": "File:Early - Middle Bronze Age dagger fragment (FindID 278614).jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Sussex Archaeological Society, Laura Burnett, 2009-11-27 13:42:59",
+  "page": "https://commons.wikimedia.org/wiki/File:Early_-_Middle_Bronze_Age_dagger_fragment_(FindID_278614).jpg"
+ },
+ "k_dagger-3.jpg": {
+  "title": "File:Middle Bronze Age ceremonial Dirk (FindID 551682).jpg",
+  "license": "CC BY-SA 2.0",
+  "artist": "Norfolk County Council, Garry Crace, 2015-04-24 12:51:01",
+  "page": "https://commons.wikimedia.org/wiki/File:Middle_Bronze_Age_ceremonial_Dirk_(FindID_551682).jpg"
+ },
  "k_figurine-1.jpg": {
   "title": "File:Bronze Figurine of Canaanite God Ba'al (10466643623).jpg",
   "license": "CC0",
@@ -142,6 +178,24 @@
   "license": "CC BY-SA 4.0",
   "artist": "Dosseman",
   "page": "https://commons.wikimedia.org/wiki/File:Bodrum_Museum_Uluburun_find_Bronze_Canaanite_figurine_partly_covered_with_gold_in_2015_3716.jpg"
+ },
+ "p_flint-1.jpg": {
+  "title": "File:Obsidian blades and flint blade, Tsoungiza, 6500-5800 BC, AM of Nemea, 201870.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Zde",
+  "page": "https://commons.wikimedia.org/wiki/File:Obsidian_blades_and_flint_blade,_Tsoungiza,_6500-5800_BC,_AM_of_Nemea,_201870.jpg"
+ },
+ "p_flint-2.jpg": {
+  "title": "File:Flint blades, Neolithic, City Prague Museum, 175551.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Zde",
+  "page": "https://commons.wikimedia.org/wiki/File:Flint_blades,_Neolithic,_City_Prague_Museum,_175551.jpg"
+ },
+ "p_flint-3.jpg": {
+  "title": "File:Neolithic flint serrated blade. (FindID 187115).jpg",
+  "license": "CC BY-SA 2.0",
+  "artist": "Derby Museums Trust, Rachel Atherton, 2007-08-02 14:12:35",
+  "page": "https://commons.wikimedia.org/wiki/File:Neolithic_flint_serrated_blade._(FindID_187115).jpg"
  },
  "r_helmet-1.jpg": {
   "title": "File:DSC 0600 (2) Life and Death in the Shadow of the Vesuvius from the collction of the Archaeological Museum Naples, Gladiator helmet, Pro Antica.jpg",
@@ -174,9 +228,9 @@
   "page": "https://commons.wikimedia.org/wiki/File:Dallah_Syria.jpg"
  },
  "o_dallah-3.jpg": {
-  "title": "File:A dallah of Arabic coffee.jpg",
-  "license": "CC BY 2.0",
-  "artist": "Abdulla Al Muhairi",
-  "page": "https://commons.wikimedia.org/wiki/File:A_dallah_of_Arabic_coffee.jpg"
+  "title": "File:A dallah a traditional Arabic coffee pot with cups and coffee beans.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Canbel",
+  "page": "https://commons.wikimedia.org/wiki/File:A_dallah_a_traditional_Arabic_coffee_pot_with_cups_and_coffee_beans.jpg"
  }
 }
