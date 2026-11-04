@@ -477,7 +477,8 @@
     var l = eSet.map(byId).filter(Boolean); if (!l.length) { eSet = 'all'; return byOri(S.photos.slice()); } return byOri(l);
   }
   /* the edit screen shows 4, 6 or 9 photos at a time, filling the screen; "together" makes every change reach all of them */
-  var eN = Number(ls('fs-mate-en2')) || 6, ePage = 0, eTog = ls('fs-mate-etog') !== '0';
+  /* photos per screen: 6 on a computer, one at a time on a phone (until the owner chooses otherwise) */
+  var eN = Number(ls('fs-mate-en2')) || (innerWidth < 700 ? 1 : 6), ePage = 0, eTog = ls('fs-mate-etog') !== '0';
   function eCols() { return eN === 1 ? 1 : eN <= 4 ? 2 : 3; }
   function ePages() { return Math.max(1, Math.ceil(editList().length / eN)); }
   function pageList() { var l = editList(); ePage = Math.min(ePage, ePages() - 1); return l.slice(ePage * eN, ePage * eN + eN); }

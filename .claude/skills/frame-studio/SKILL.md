@@ -1791,3 +1791,36 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - Every `_blank` link has rel=noopener.
 - Electron: contextIsolation, sandbox, no nodeIntegration, will-navigate guard.
 - A hostile-guest test: a script payload in every guest text (studio record and leads, album, guest page, wall, magnet). Nothing ran; the payload shows as text.
+
+## אופטימוס as a phone app (v115)
+
+**Installable (PWA):**
+- manifest.webmanifest:
+  - id `optimus-studio`, start_url studio.html, standalone, theme #151517
+  - PNG icons optimus-192/512, a maskable 512 with a 20% safe zone, and the SVG
+  - shortcuts
+- studio.html:
+  - apple-touch-icon optimus-apple-180.png
+  - apple-mobile-web-app-capable / title / status-bar meta
+- The icons are rendered from optimus.svg on #151517 (the scratchpad icons.js approach: Playwright screenshot of the SVG).
+- `js/pwa.js` adds a "📲 התקנה" button in the top bar:
+  - Android/Chrome: the browser's own prompt (beforeinstallprompt).
+  - iPhone/iPad: a two-step guide (Share → Add to Home Screen).
+  - Hidden when standalone and in the desktop program.
+
+**Phone layout (`css/mobile-app.css`, ≤700 px, loaded last):**
+- The `.mt-tabs` become a fixed bottom tab bar with icons (6 columns, safe-area padding).
+- The top bar is one slim row: instant print, gear, install, photos, folder. Hidden on phones: stat, mark, the switch to the full studio, and the desktop extras (commands, help).
+- `.mt-top` loses its backdrop-filter: it would trap the fixed tab bar inside it.
+- Main:
+  - the sub and option bars scroll sideways
+  - 2 tiles per row
+  - the size badge is hidden on tiles
+- Edit: the photo on top (44vh), the tools under it. One photo per screen by default (`eN` = 1 under 700 px unless chosen).
+- Other screens:
+  - AI: 2 per row
+  - hub: one column
+  - dialogs: full screen
+  - print window: the preview first
+  - Ctrl+K: full width
+- `#fs-ver` moves above the tab bar. The FAB sits above it too.

@@ -6,14 +6,32 @@
   "display": "standalone",
   "dir": "rtl",
   "lang": "he",
-  "background_color": "#100b1e",
-  "theme_color": "#1d1633",
+  "background_color": "#151517",
+  "theme_color": "#151517",
   "icons": [
+    {
+      "src": "optimus-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "optimus-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "optimus-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "optimus.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "file_handlers": [
@@ -31,12 +49,32 @@
   ],
   "shortcuts": [
     {
-      "name": "אתר העסק",
-      "url": "./"
+      "name": "עבודה מהירה",
+      "url": "studio.html",
+      "icons": [
+        {
+          "src": "optimus-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
-      "name": "הסטודיו",
-      "url": "studio.html"
+      "name": "אתר העסק",
+      "url": "./",
+      "icons": [
+        {
+          "src": "optimus-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
+  ],
+  "id": "optimus-studio",
+  "description": "אופטימוס: הסטודיו לעסקי מגנטים ואירועים. עריכה, AI והדפסה, גם בלי אינטרנט.",
+  "orientation": "any",
+  "categories": [
+    "photo",
+    "productivity",
+    "business"
   ]
 }
