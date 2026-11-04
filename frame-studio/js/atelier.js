@@ -8,7 +8,7 @@
   var P = [['wedding-1', 'חתונה'], ['barmitzvah-1', 'בר מצווה'], ['henna-3', 'חינה'], ['birthday-3', 'יום הולדת'], ['brit-2', 'ברית'], ['company-1', 'אירוע חברה'], ['engagement-1', 'אירוסין'], ['holiday-2', 'חג'], ['wedding-3', 'חתונה'], ['birthday-1', 'יום הולדת 30'],
     ['barmitzvah-3', 'בת מצווה'], ['brit-1', 'ברית'], ['wedding-2', 'חתונה'], ['company-3', 'כנס'], ['birthday-2', 'מסיבה'], ['engagement-2', 'אירוסין'], ['barmitzvah-2', 'בר מצווה'], ['brit-3', 'ברית'], ['company-2', 'אירוע חברה']];
   function row(list, cls) {
-    var one = list.map(function (x, i) { return '<figure class="mw-m" style="--t:' + (((i * 37) % 9) - 4) * 0.7 + 'deg"><img src="media/real/' + x[0] + '.webp" alt="' + x[1] + '" loading="lazy" width="900" height="1350"><figcaption>' + x[1] + '</figcaption></figure>'; }).join('');
+    var one = list.map(function (x, i) { return '<figure class="mw-m" style="--t:' + (((i * 37) % 9) - 4) * 0.7 + 'deg"><img src="media/real/thumb/' + x[0] + '.webp" alt="' + x[1] + '" loading="lazy" decoding="async" width="480" height="720"><figcaption>' + x[1] + '</figcaption></figure>'; }).join('');
     return '<div class="mw-row ' + cls + '"><div class="mw-track">' + one + one + '</div></div>';
   }
   wall.insertAdjacentHTML('beforeend', row(P.slice(0, 10), 'r1') + row(P.slice(9).concat(P.slice(0, 1)), 'r2'));

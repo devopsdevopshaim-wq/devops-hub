@@ -1164,23 +1164,27 @@
     var pr = FS.printers ? FS.printers() : { up: false, list: [] };
     var printers = (pr.up ? pr.list : []).map(function (x) { return '<option value="' + esc(x.name) + '"' + (pr.chosen && pr.chosen.name === x.name ? ' selected' : '') + '>' + esc(x.name) + (x.default ? ' ★' : '') + '</option>'; }).join('') + '<option value=""' + (pr.chosen ? '' : ' selected') + '>חלון ההדפסה של המחשב</option>';
     var papers = FS.PAPERS.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + ' · ' + trim(x[2] / 25.4) + '×' + trim(x[3] / 25.4) + '״</option>'; }).join('');
+    /* the window reads top to bottom: what comes out (and the print button), then 1-2-3, then the rarely used settings folded */
     var b = FS.dialog('🖨️ הדפסה', '<div class="mp"><div class="mp-side">' +
-      '<label>⭐ ההגדרות השמורות שלי</label><div class="mp-my" id="mp-my"></div>' +
-      '<label>מדפסת</label><select id="mp-printer">' + printers + '</select>' + (pr.up ? '' : '<p class="mt-hint">לבחירת מדפסת ישירה מפעילים את "מנהל המדפסות" (שמירה והדפסה ← המדפסות במחשב).</p>') +
-      '<label>🧲 פריסה מוכנה</label><div class="mp-pre">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn" data-mpre="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' +
-      '<label>גודל נייר</label><select id="mp-paper">' + papers + '</select>' +
-      '<label>גודל המגנט בהדפסה</label><select id="mp-msize">' + MSIZES.map(function (z) { return '<option value="' + z[0] + '">' + z[1] + '</option>'; }).join('') + '</select>' +
-      '<label>DPI</label><select id="mp-dpi"><option>300</option><option>600</option></select>' +
-      '<fieldset><legend>אפשרויות גודל</legend>' +
-        '<label class="mt-chk-l"><input type="radio" name="mp-mode" value="real"> גודל אמיתי</label>' +
-        '<div class="mp-in"><label class="mt-chk-l"><input type="checkbox" id="mp-mon"> שוליים</label><select id="mp-margin"><option value="2">2 מ״מ</option><option value="3">3 מ״מ</option><option value="5">5 מ״מ</option><option value="8">8 מ״מ</option></select>' +
-        '<label>סימוני חיתוך</label><select id="mp-marks"><option value="0">בלי</option><option value="1">קווי חיתוך</option></select></div>' +
-        '<label class="mt-chk-l"><input type="radio" name="mp-mode" value="page"> גודל עמוד</label>' +
-        '<div class="mp-in"><label class="mt-chk-l"><input type="radio" name="mp-fit" value="contain"> להתאים</label><label class="mt-chk-l"><input type="radio" name="mp-fit" value="cover"> לחתוך</label></div></fieldset>' +
-      (only ? '' : '<label>אילו תמונות</label><select id="mp-which"><option value="auto">המסומנות (או כולן)</option><option value="all">כולן</option><option value="todo">שעוד לא הודפסו</option><option value="sel">רק המסומנות</option></select>') +
-      '<div class="mp-sum" id="mp-sum"></div></div>' +
-      '<div class="mp-pv"><div class="mp-cv" id="mp-cv"></div><div class="mp-nav"><button data-nav="first">|&lt;</button><button data-nav="prev">&lt;</button><b id="mp-pg">1 / 1</b><button data-nav="next">&gt;</button><button data-nav="last">&gt;|</button></div></div></div>' +
-      '<div class="mp-foot"><button class="mt-btn" id="mp-cur">הדפסת העמוד הנוכחי</button><button class="mt-btn primary" id="mp-go">🖨️ הדפסה</button><input id="mp-name" class="mp-name" placeholder="שם להגדרה, למשל: מגנטים 7.5×10" maxlength="40"><button class="mt-btn" id="mp-save">⭐ שמירה בשם</button><button class="mt-btn" id="mp-cancel">ביטול</button></div>', true);
+      '<div class="mp-sum" id="mp-sum"></div>' +
+      '<div class="mp-gos"><button class="mt-btn primary mp-go" id="mp-go">🖨️ הדפסה</button><button class="mt-btn" id="mp-cur" title="רק הדף שבתצוגה">הדף הזה בלבד</button></div>' +
+      '<div class="mp-myrow"><span class="mp-k">⭐ ההגדרות שלי</span><div class="mp-my" id="mp-my"></div></div>' +
+      (only ? '' : '<section class="mp-step"><h4><i>1</i> מה מדפיסים</h4><select id="mp-which"><option value="auto">המסומנות (ואם אין, כולן)</option><option value="all">כל התמונות</option><option value="todo">רק מה שעוד לא הודפס</option><option value="sel">רק המסומנות</option></select></section>') +
+      '<section class="mp-step"><h4><i>' + (only ? 1 : 2) + '</i> מדפסת</h4><select id="mp-printer">' + printers + '</select>' + (pr.up ? '' : '<p class="mt-hint">המדפסות מופיעות בתוכנה למחשב. בדפדפן ייפתח חלון ההדפסה של המחשב.</p>') + '</section>' +
+      '<section class="mp-step"><h4><i>' + (only ? 2 : 3) + '</i> גודל ופריסה</h4><div class="mp-pre">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn" data-mpre="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' +
+        '<div class="mp-two"><label>נייר<select id="mp-paper">' + papers + '</select></label><label>מגנט<select id="mp-msize">' + MSIZES.map(function (z) { return '<option value="' + z[0] + '">' + z[1] + '</option>'; }).join('') + '</select></label></div></section>' +
+      '<details class="mp-adv"><summary>⚙️ הגדרות מתקדמות <small>שוליים, קווי חיתוך, התאמה לעמוד, איכות</small></summary>' +
+        '<fieldset><legend>איך התמונה יושבת על הדף</legend>' +
+          '<label class="mt-chk-l"><input type="radio" name="mp-mode" value="real"> בגודל המגנט האמיתי</label>' +
+          '<div class="mp-in"><label class="mt-chk-l"><input type="checkbox" id="mp-mon"> שוליים</label><select id="mp-margin"><option value="2">2 מ״מ</option><option value="3">3 מ״מ</option><option value="5">5 מ״מ</option><option value="8">8 מ״מ</option></select>' +
+          '<label>סימוני חיתוך</label><select id="mp-marks"><option value="0">בלי</option><option value="1">קווי חיתוך</option></select></div>' +
+          '<label class="mt-chk-l"><input type="radio" name="mp-mode" value="page"> על כל הדף</label>' +
+          '<div class="mp-in"><label class="mt-chk-l"><input type="radio" name="mp-fit" value="contain"> כל התמונה נכנסת</label><label class="mt-chk-l"><input type="radio" name="mp-fit" value="cover"> ממלאת את הדף (חיתוך קל)</label></div></fieldset>' +
+        '<label class="mp-dpil">איכות<select id="mp-dpi"><option value="300">300 DPI · רגילה</option><option value="600">600 DPI · גבוהה (איטית יותר)</option></select></label>' +
+        '<div class="mp-saverow"><input id="mp-name" class="mp-name" placeholder="שם להגדרה, למשל: מגנטים 7.5×10" maxlength="40"><button class="mt-btn" id="mp-save">⭐ שמירה</button></div>' +
+      '</details></div>' +
+      '<div class="mp-pv"><div class="mp-pvh"><b>תצוגה לפני הדפסה</b><span>כך ייצא הדף מהמדפסת</span></div><div class="mp-cv" id="mp-cv"></div><div class="mp-nav"><button data-nav="first" title="הדף הראשון">|&lt;</button><button data-nav="prev" title="הקודם">&lt;</button><b id="mp-pg">1 / 1</b><button data-nav="next" title="הבא">&gt;</button><button data-nav="last" title="האחרון">&gt;|</button></div></div></div>' +
+      '<div class="mp-foot"><button class="mt-btn" id="mp-cancel">סגירה</button></div>', true);
     b.classList.add('mp-dlg');
     $('#mp-paper', b).value = PS.paper; $('#mp-msize', b).value = PS.msize || '';
     $$('[data-mpre]', b).forEach(function (btn) { btn.addEventListener('click', function () { var m = MPRESETS[Number(btn.dataset.mpre)]; $('#mp-paper', b).value = m[0]; $('#mp-msize', b).value = m[1]; $$('[name=mp-mode]', b).forEach(function (r) { r.checked = r.value === 'real'; }); $('#mp-mon', b).checked = false; paint(); }); }); $('#mp-dpi', b).value = String(PS.dpi); $('#mp-margin', b).value = String(PS.margin || 3); $('#mp-mon', b).checked = !!PS.marginOn; $('#mp-marks', b).value = PS.marks ? '1' : '0';
@@ -1196,14 +1200,19 @@
       plan = makePlan(o, only); pg = Math.min(pg, Math.max(0, plan.pages.length - 1));
       var box = $('#mp-cv', b); box.innerHTML = ''; box.appendChild(drawPv(plan, plan.pages[pg], Math.max(260, box.clientWidth - 20 || 420), Math.max(320, (innerHeight * 0.62) | 0)));
       $('#mp-pg', b).textContent = (plan.pages.length ? pg + 1 : 0) + ' / ' + plan.pages.length;
-      $('#mp-sum', b).innerHTML = '<b>' + plan.total + '</b> הדפסים · <b>' + plan.pages.length + '</b> דפים' + (plan.pages[0] ? ' · ' + plan.pages[0].length + ' בדף' : '') + '<br>נייר ' + esc(plan.paper[1]) + ' (' + (plan.paper[2] / 10) + '×' + (plan.paper[3] / 10) + ' ס״מ)' + (o.msize ? ' · מגנט ' + o.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : '');
+      var prn = ($('#mp-printer', b).value || 'חלון ההדפסה של המחשב'), per = plan.pages[0] ? plan.pages[0].length : 0;
+      $('#mp-sum', b).innerHTML = plan.total ? '<div class="mp-nums"><div><b>' + plan.total + '</b><small>הדפסים</small></div><div><b>' + plan.pages.length + '</b><small>' + (plan.pages.length === 1 ? 'דף' : 'דפים') + '</small></div><div><b>' + per + '</b><small>בכל דף</small></div></div>' +
+        '<p>נייר ' + esc(plan.paper[1]) + (o.msize ? ' · מגנט ' + o.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : ' · בגודל התמונה') + '<br>🖨️ ' + esc(prn) + '</p>'
+        : '<p class="mp-none">אין מה להדפיס. בוחרים תמונות, או "כל התמונות" למטה.</p>';
+      $$('[data-mpre]', b).forEach(function (x) { var m = MPRESETS[Number(x.dataset.mpre)]; x.classList.toggle('on', m[0] === o.paper && m[1] === o.msize && o.mode === 'real'); });
+      $('#mp-go', b).textContent = plan.total ? '🖨️ הדפסה · ' + plan.pages.length + (plan.pages.length === 1 ? ' דף' : ' דפים') : '🖨️ הדפסה';
       $('#mp-go', b).disabled = $('#mp-cur', b).disabled = !plan.total;
       PS = o; ls('fs-mate-print', JSON.stringify(PS));   /* remembered as it is, for the next time */
     }
     function myList() { return lsj('fs-mate-print-my', []); }
     function myDraw() {
       var l = myList(), box = $('#mp-my', b);
-      box.innerHTML = l.length ? l.map(function (m, i) { return '<span class="mp-mi"><button type="button" class="mt-btn" data-my="' + i + '" title="' + esc(m.printer || 'חלון ההדפסה של המחשב') + '">' + esc(m.name) + '</button><button type="button" class="mp-mx" data-myx="' + i + '" title="מחיקה">×</button></span>'; }).join('') : '<p class="mt-hint">עוד אין. בוחרים הגדרות, נותנים שם למטה ולוחצים "⭐ שמירה בשם".</p>';
+      box.innerHTML = l.length ? l.map(function (m, i) { return '<span class="mp-mi"><button type="button" class="mt-btn" data-my="' + i + '" title="' + esc(m.printer || 'חלון ההדפסה של המחשב') + '">' + esc(m.name) + '</button><button type="button" class="mp-mx" data-myx="' + i + '" title="מחיקה">×</button></span>'; }).join('') : '<p class="mt-hint">עוד אין. בוחרים הגדרות, ושומרים אותן בשם תחת "⚙️ הגדרות מתקדמות".</p>';
     }
     function setForm(o) {
       $('#mp-paper', b).value = o.paper; $('#mp-msize', b).value = o.msize || ''; $('#mp-dpi', b).value = String(o.dpi || 300); $('#mp-margin', b).value = String(o.margin || 3); $('#mp-mon', b).checked = !!o.marginOn; $('#mp-marks', b).value = o.marks ? '1' : '0';

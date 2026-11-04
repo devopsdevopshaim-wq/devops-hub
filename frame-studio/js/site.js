@@ -19,7 +19,9 @@
   }
   function magnet(o, size) {
     var ev = FS.event(o.type);
-    return FS.photoFrom(o.photo || FS.realPhoto(o.type, o.seed || 3) || sceneSrc(o.scene || ev.scene, o.fmt || 'magnet', o.seed || 3), o.fmt || 'magnet').then(function (p) {
+    /* the site's magnets are drawn at most 720 px tall: the 480×720 copy of the sample photo is enough (a fifth of the bytes) */
+    var real = FS.realPhoto(o.type, o.seed || 3); if (real && size <= 360) real = real.replace('/media/real/', '/media/real/thumb/');
+    return FS.photoFrom(o.photo || real || sceneSrc(o.scene || ev.scene, o.fmt || 'magnet', o.seed || 3), o.fmt || 'magnet').then(function (p) {
       FS.buildMagnet(p, o);
       var d = p.doc, k = size / Math.max(d.w, d.h), c = FS.canvas(d.w * k * 2, d.h * k * 2);
       FS.draw(c.getContext('2d'), p, { scale: k * 2, max: 1200, export: true });
