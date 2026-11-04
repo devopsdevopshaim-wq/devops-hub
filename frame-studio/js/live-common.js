@@ -33,7 +33,7 @@
           '<label class="lv-f">טלפון<input type="tel" inputmode="tel" autocomplete="tel" maxlength="20" data-l="phone" placeholder="050-0000000" dir="ltr"></label>' +
           '<div class="lv-row2"><label class="lv-f">יש לכם אירוע בקרוב?<select data-l="soon">' + L.lead.SOON.map(function (s) { return '<option value="' + s[0] + '">' + s[1] + '</option>'; }).join('') + '</select></label>' +
           '<label class="lv-f">מתי?<select data-l="when"><option value="">לא יודעים עדיין</option>' + months.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select></label></div>' +
-          '<label class="lv-consent"><input type="checkbox" data-l="consent"> אני מאשר/ת ל' + L.esc(biz || 'צלם המגנטים') + ' לשמור את הטלפון ולפנות אליי בוואטסאפ לגבי התמונות ולגבי אירועים. אפשר לבקש מחיקה בכל עת.</label></section>';
+          '<label class="lv-consent"><input type="checkbox" data-l="consent"> אני מאשר/ת ל' + L.esc(biz || 'צלם המגנטים') + ' לשמור את הטלפון ולפנות אליי בוואטסאפ לגבי התמונות ולגבי אירועים. אפשר לבקש מחיקה בכל עת. <a href="privacy.html" target="_blank" rel="noopener">מדיניות פרטיות</a></label></section>';
       },
       read: function (root) { var g = function (k) { var el = root.querySelector('[data-l="' + k + '"]'); return el ? (el.type === 'checkbox' ? el.checked : el.value.trim()) : ''; }; return { phone: g('phone'), soon: g('soon'), when: g('when'), consent: g('consent') === true }; },
       send: function (d, name) {

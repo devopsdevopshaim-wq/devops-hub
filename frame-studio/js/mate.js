@@ -26,7 +26,7 @@
   /* ---------- the shell ---------- */
   var root = document.createElement('div'); root.id = 'mt'; root.hidden = true; root.setAttribute('dir', 'rtl');
   root.innerHTML =
-    '<header class="mt-top"><nav class="mt-tabs" role="tablist">' +
+    '<header class="mt-top"><nav class="mt-tabs" aria-label="מסכי העבודה המהירה">' +
       '<button data-v="main" class="on">🗂️ ראשי</button><button data-v="edit">🎚️ ערוך תמונה</button><button data-v="design">🖌️ עורך מלא</button><button data-v="ai">🤖 AI</button><button data-v="print">🖨️ הדפסה</button></nav>' +
       '<div class="mt-qp"><button class="mt-btn primary" id="mt-qprint" title="ישר למדפסת, בלי חלונות (Ctrl+P)">⚡ הדפסה מיידית</button><button class="mt-ic" id="mt-qset" title="הגדרת ההדפסה המיידית">⚙</button></div><div class="mt-swslot"></div>' +
       '<div class="mt-stat" id="mt-stat"></div>' +
