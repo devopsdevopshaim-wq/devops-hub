@@ -1701,3 +1701,21 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The posters are `optimus.jpg` and `optimus-v.jpg`.
   - The hero has a "▶ סרטון התדמית" button that jumps to it (`scroll-margin-top: 96px` keeps it clear of the menu).
   - After re-rendering the film, remake the web cuts: `ffmpeg -vf scale=1280:-2 -crf 24 -movflags +faststart`.
+
+## Speed and a clearer print window (v112)
+
+**Speed (home page measured locally):** 9.6 MB → 2.3 MB per load; first paint ~0.3 s without third parties.
+- **Google Fonts** in index.html and studio.html are loaded as `media="print" onload="this.media='all'"` (+ `<noscript>`), and fonts.gstatic.com is preconnected, so they no longer block the first paint. Text shows at once in the fallback font (display=swap).
+- **Magnet wall** (atelier.js) uses `media/real/thumb/*.webp` (480×720, 588 KB for all 19 instead of 1.8 MB).
+- **Site magnet previews** (site.js `magnet()`, sizes 250/360 drawn at ×2) use the thumb copy too.
+- **The home film** is `preload="none"`.
+- **New sample photos:** remake their thumbs the same way (PIL, 480 px wide, WEBP q80).
+
+**Print window (mate.js `openPrint`):**
+- Top to bottom:
+  - the summary card, sticky: prints / pages / per page, paper, magnet size, printer
+  - a big "🖨️ הדפסה · N דפים" button and "הדף הזה בלבד"
+  - ⭐ my saved settings
+  - three numbered steps: 1 what to print (`#mp-which`), 2 printer, 3 size and layout (presets, with the active one highlighted, plus paper and magnet)
+  - "⚙️ הגדרות מתקדמות" in a `<details>`: placement (real size with margins and cut marks, or whole page fit/cover), DPI, and save-as
+- Every element id is unchanged.
