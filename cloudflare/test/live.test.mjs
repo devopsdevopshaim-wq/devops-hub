@@ -129,6 +129,11 @@ await liveCron(S, Date.parse('2027-01-15T09:00:00Z'));
 check('after 60 days the photos are deleted', ![...S.m.keys()].some((k) => k.startsWith('li:' + ev.id) || k.startsWith('lp:' + ev.id)));
 r = await call(OWNER, { action: 'ev-list' });
 check('... and the report numbers stay', r.body.events[0].n.prints === 8 && r.body.events[0].purged === true);
+{ const e0 = S.m.get('lv:' + ev.id); e0.n = e0.n || {}; e0.n.leads = (e0.n.leads || 0) + 1; S.m.set('lv:' + ev.id, e0); S.m.set('ll:' + ev.id + ':0507778899', { phone: '0507778899', consent: true, at: Date.now() }); }
+await liveCron(S, Date.now() + 30 * 864e5);
+check('a phone a month old stays', [...S.m.keys()].some((k) => k.startsWith('ll:' + ev.id + ':')));
+await liveCron(S, Date.now() + 731 * 864e5);
+check('two years later the phones are deleted by themselves', ![...S.m.keys()].some((k) => k.startsWith('ll:' + ev.id + ':')));
 r = await call(OWNER, { action: 'ev-del', e: ev.id });
 r = await call(OWNER, { action: 'ev-list' });
 check('the owner deletes an event', r.body.events.length === 0);

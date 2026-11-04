@@ -1757,3 +1757,37 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 **Sharper thumbnails:**
 - `pageCanvas` and `origCanvas` draw at devicePixelRatio (up to 2) and set the CSS size.
 - The tiles, before/after, the big view and the print preview are sharp on 125–200% screens.
+
+## Accessibility, privacy and security (v114)
+
+**Accessibility (IS 5568 / WCAG 2.1 AA):**
+- The audit is axe-core 4.10.3 over every public page plus each quick-workspace view, the print window, the hub and Ctrl+K. Result: 0 violations.
+- `js/a11y.js` is on every page. It ties `.field` labels to their control, and names unnamed controls (title / placeholder / the text beside them) and icon-only buttons (their title). It gives `alt=""` to images without one. A MutationObserver covers windows that open later.
+- Fixes:
+  - show.html: inactive steps' opacity .38 → .74 (contrast).
+  - `.mt-tabs`: dropped role=tablist (its buttons aren't tabs).
+  - `.cr-h small`: opacity .82.
+- accessibility.html now covers the program and the guest pages, says how it was tested (axe + keyboard), and is dated November 2026.
+
+**Privacy (the Privacy Protection Law, Amendment 13):**
+- `privacy.html` covers:
+  - who is responsible
+  - what is collected and why: booking, event photos, "find me" face signatures (sensitive data; the selfie is processed on the device and its signature is not kept), leads with consent, capsules, first-party statistics, licensing, cloud AI
+  - how long it is kept: photos and face signatures 60 days, living magnets 400 days, capsules 120 days after opening, leads 2 years
+  - who it is shared with: Cloudflare, GitHub Pages, n8n, Google Fonts, external AI
+  - security, and the people's rights (respond within 30 days)
+- Links to it:
+  - every legal footer (index, show, agreement, download, accessibility)
+  - the lead consent box (live-common.js)
+  - a short notice under live.html and album.html
+
+**Server (cloudflare/src):**
+- Leads are deleted by `liveCron` after `LEAD_KEEP_DAYS = 730`, at most once a day per event (`ev.leadsAt`). A test was added.
+- `lead` joined the strict per-IP limit (with guest-up, capsule-put, find).
+- `npm test` live and frame pass. worker.test needs `wrangler dev` on :8787.
+
+**Security checks done:**
+- No keys or tokens in the repo (pattern scan).
+- Every `_blank` link has rel=noopener.
+- Electron: contextIsolation, sandbox, no nodeIntegration, will-navigate guard.
+- A hostile-guest test: a script payload in every guest text (studio record and leads, album, guest page, wall, magnet). Nothing ran; the payload shows as text.

@@ -17,6 +17,8 @@ const ID = /^[a-z0-9]{6,24}$/, KEY = /^[a-f0-9]{24}$/, PID = /^[a-z0-9]{6,24}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const EMAIL = /^[^@\s]{1,80}@[^@\s]{1,80}\.[^@\s]{1,20}$/;
 const MAX_IMG = 1700000, MAX_AUDIO = 700000, MAX_PHOTOS = 1500, MAX_EVENTS = 400, KEEP_DAYS = 60;
+// a guest's phone left for future events is kept two years, then deleted by itself (the privacy law: no longer than needed)
+const LEAD_KEEP_DAYS = 730;
 const CODE = /^[a-z0-9]{10,16}$/, MAX_MASK = 600000, MAX_CAPSULES = 3000, MAGIC_DAYS = 400, CAPSULE_KEEP_DAYS = 120, MAX_FACES = 12, DESC = /^[A-Za-z0-9+/]{40,400}={0,2}$/;
 const addYear = (iso) => { const [y, m, d] = String(iso).split('-').map(Number); return String(y + 1) + '-' + String(m).padStart(2, '0') + '-' + String(m === 2 && d === 29 ? 28 : d).padStart(2, '0'); };
 export const capsuleOpens = (ev) => addYear(ev.date || today());
@@ -366,6 +368,11 @@ export async function liveCron(storage, now) {
   const idx = (await storage.get('lvidx')) || {}, t = today(now), mails = [];
   for (const id of Object.keys(idx)) {
     const ev = await storage.get('lv:' + id); if (!ev) continue;
+    if (ev.n && ev.n.leads > 0 && ev.leadsAt !== t) {
+      const old = now - LEAD_KEEP_DAYS * 864e5; let gone = 0;
+      for (const [k, m] of await storage.list({ prefix: 'll:' + id + ':' })) if (!k.includes('#') && m && (m.at || 0) < old) { await storage.delete(k); gone++; }
+      ev.n.leads = Math.max(0, ev.n.leads - gone); ev.leadsAt = t; await storage.put('lv:' + id, ev);
+    }
     if (!ev.purged && ev.date && addDays(ev.date, KEEP_DAYS) < t) { await dropPhotos(storage, id); ev.purged = true; await storage.put('lv:' + id, ev); continue; }
     if (ev.date && !ev.magicGone && addDays(ev.date, MAGIC_DAYS) < t) { await dropPhotos(storage, id, false); for (const [k, m] of await storage.list({ prefix: 'lp:' + id + ':' })) if (!k.includes('#') && m && m.code) { const st = new FrameStore(storage), p = m.id; await st.delBig('li:' + id + ':' + p); await st.delBig('la:' + id + ':' + p); await st.delBig('lm:' + id + ':' + p); await storage.delete(k); await storage.delete('lcode:' + id + ':' + m.code); } ev.magicGone = true; await storage.put('lv:' + id, ev); }
     // the time capsule opens a year after the event: the couple gets an email that day (once); the messages go some months later

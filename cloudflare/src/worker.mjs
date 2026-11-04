@@ -368,7 +368,7 @@ export class State extends DurableObject {
   // the live event. Guests may send a photo every few seconds from one address (a table shares the venue's Wi-Fi, so not too few)
   async liveCall(who, b, ip) {
     const a = String(b.action || ''), t = Date.now();
-    if (a === 'guest-up' || a === 'capsule-put' || a === 'find') {
+    if (a === 'guest-up' || a === 'capsule-put' || a === 'find' || a === 'lead') {   /* what anyone with the QR can send: per address */
       this.lg = this.lg || new Map();
       const arr = (this.lg.get(ip) || []).filter((x) => t - x < 3600000), dn = Math.floor(t / 864e5), day = this.lgDay && this.lgDay.d === dn ? this.lgDay : (this.lgDay = { d: dn, n: 0 });
       if (arr.length >= 120 || day.n >= 20000) return { code: 429, body: { ok: false, error: 'rate-limited' } };

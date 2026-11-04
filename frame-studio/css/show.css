@@ -176,7 +176,7 @@ a { color: inherit; }
 .steps { list-style: none; margin: 0; padding: 0 30px 0 0; display: grid; gap: 22px; position: relative; counter-reset: st; }
 .steps::before { content: ''; position: absolute; right: 5px; top: 10px; bottom: 10px; width: 1px; background: var(--line); }
 .steps::after { content: ''; position: absolute; right: 5px; top: 10px; bottom: 10px; width: 1px; background: linear-gradient(var(--champagne), #F3DDA6); transform-origin: top; transform: scaleY(var(--fill, 1)); }
-.steps li { position: relative; opacity: .38; transition: opacity .5s var(--ease); counter-increment: st; }
+.steps li { position: relative; opacity: .74; transition: opacity .5s var(--ease); counter-increment: st; }
 .steps li::before { content: ''; position: absolute; right: -30px; top: 9px; width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--champagne); background: var(--velvet); z-index: 1; transition: background .4s, box-shadow .4s; }
 .steps li::after { content: '0' counter(st); position: absolute; left: 0; top: 6px; font: 500 12px var(--label); letter-spacing: .14em; color: var(--champagne); direction: ltr; }
 .steps li b { display: block; font: 500 28px/1.1 var(--display); letter-spacing: -.01em; color: var(--ivory); }
