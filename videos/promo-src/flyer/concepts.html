@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>אופטימוס · כיווני עיצוב לפלייר</title>
+<!-- Three flyer directions, A4, one at a time: ?c=a (clean light), ?c=b (photo poster), ?c=c (the AI before/after). Few words, one big picture. -->
+<style>
+@font-face { font-family: 'Heebo'; font-weight: 400; src: url('../../frame-explainer/assets/fonts/Heebo-400-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Heebo'; font-weight: 400; src: url('../../frame-explainer/assets/fonts/Heebo-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Heebo'; font-weight: 500; src: url('../../frame-explainer/assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Heebo'; font-weight: 500; src: url('../../frame-explainer/assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Heebo'; font-weight: 700; src: url('../../frame-explainer/assets/fonts/Heebo-700-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Heebo'; font-weight: 700; src: url('../../frame-explainer/assets/fonts/Heebo-700-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Heebo'; font-weight: 800; src: url('../../frame-explainer/assets/fonts/Heebo-800-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Heebo'; font-weight: 800; src: url('../../frame-explainer/assets/fonts/Heebo-800-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Heebo'; font-weight: 900; src: url('../../frame-explainer/assets/fonts/Heebo-900-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Heebo'; font-weight: 900; src: url('../../frame-explainer/assets/fonts/Heebo-900-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Frank'; font-weight: 900; src: url('../../frame-explainer/assets/fonts/FrankRuhlLibre-900-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Frank'; font-weight: 900; src: url('../../frame-explainer/assets/fonts/FrankRuhlLibre-900-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Frank'; font-weight: 500; src: url('../../frame-explainer/assets/fonts/FrankRuhlLibre-500-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+@page { size: A4; margin: 0; }
+body { font-family: 'Heebo', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { position: relative; width: 210mm; height: 297mm; overflow: hidden; display: none; }
+body[data-c="a"] #a, body[data-c="b"] #b, body[data-c="c"] #c { display: block; }
+.qr svg { width: 100%; height: 100%; display: block; }
+.logo { display: flex; align-items: center; gap: 2.6mm; }
+.logo img { width: 10mm; height: 10mm; }
+.logo b { font: 900 7mm/1 'Frank', serif; letter-spacing: .2mm; }
+
+/* ===== A · clean, light, premium: cream paper, one magnet on a fridge door, three words of promise ===== */
+#a { background: #F6F1EA; color: #1B1A22; padding: 16mm 16mm 0; }
+#a .logo b { color: #1B1A22; }
+#a h1 { margin-top: 14mm; font: 900 21mm/0.98 'Frank', serif; letter-spacing: -.6mm; }
+#a h1 em { font-style: normal; color: #C2697A; }
+#a .lead { margin-top: 6mm; font-size: 5.2mm; line-height: 1.45; color: #4b4852; max-width: 120mm; }
+#a .stage { position: absolute; left: -6mm; bottom: 56mm; width: 120mm; height: 140mm; }
+#a .fridge { position: absolute; inset: 0; border-radius: 0 6mm 6mm 0; background: linear-gradient(90deg, #e9e6e2, #fdfcfb 45%, #ece9e5); box-shadow: inset -1.2mm 0 0 #d8d3cd, 0 10mm 26mm rgba(60,40,30,.18); }
+#a .handle { position: absolute; right: 9mm; top: 26mm; width: 4mm; height: 52mm; border-radius: 2mm; background: linear-gradient(90deg, #c9c4be, #f4f2ef, #c2bdb7); }
+#a .mag { position: absolute; background: #fff; padding: 2.4mm 2.4mm 9mm; border-radius: 1.4mm; box-shadow: 0 3mm 8mm rgba(40,30,25,.25); }
+#a .mag img { display: block; width: 100%; }
+#a .mag.one { width: 56mm; left: 26mm; top: 20mm; transform: rotate(-4deg); }
+#a .mag.two { width: 38mm; left: 14mm; top: 92mm; transform: rotate(5deg); }
+#a .mag.three { width: 34mm; left: 64mm; top: 96mm; transform: rotate(-2deg); }
+#a .points { position: absolute; right: 16mm; top: 138mm; width: 70mm; display: grid; gap: 7mm; }
+#a .points div { border-top: .5mm solid #1B1A22; padding-top: 3mm; }
+#a .points b { display: block; font: 900 7.4mm/1.05 'Frank', serif; }
+#a .points span { display: block; margin-top: 1.6mm; font-size: 4mm; line-height: 1.4; color: #4b4852; }
+#a .foot { position: absolute; left: 0; right: 0; bottom: 0; height: 44mm; background: #1B1A22; color: #F6F1EA; display: flex; align-items: center; justify-content: space-between; padding: 0 16mm; }
+#a .foot .t b { display: block; font: 900 9mm/1 'Frank', serif; }
+#a .foot .t span { display: block; margin-top: 2mm; font: 800 6.6mm/1 'Heebo'; letter-spacing: .4mm; direction: ltr; text-align: right; color: #EDB6BE; }
+#a .foot .qrs { display: flex; gap: 5mm; }
+#a .foot figure { text-align: center; font-size: 3.2mm; font-weight: 700; }
+#a .foot .qr { width: 24mm; height: 24mm; background: #fff; padding: 1.6mm; border-radius: 1.6mm; margin-bottom: 1.4mm; }
+
+/* ===== B · a photo poster: the moment, full bleed; the promise big and white; the program in one line ===== */
+#b { background: #000; color: #fff; }
+#b .photo { position: absolute; inset: 0; background: url('../../../frame-studio/media/real/wedding-1.webp') center 30% / cover; }
+#b .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 26%, rgba(0,0,0,0) 46%, rgba(10,8,16,.86) 70%, #0b0910 100%); }
+#b .top { position: absolute; top: 14mm; right: 16mm; left: 16mm; display: flex; justify-content: space-between; align-items: center; }
+#b .top .logo b { color: #fff; }
+#b .top .tag { font-size: 3.6mm; font-weight: 700; letter-spacing: .8mm; padding: 1.6mm 4mm; border: .35mm solid rgba(255,255,255,.7); border-radius: 99px; }
+#b .copy { position: absolute; right: 16mm; left: 16mm; top: 168mm; }
+#b h1 { font: 900 22mm/0.95 'Frank', serif; letter-spacing: -.6mm; }
+#b h1 em { font-style: normal; color: #EDB6BE; }
+#b .lead { margin-top: 5mm; font-size: 5mm; line-height: 1.45; color: rgba(255,255,255,.85); max-width: 150mm; }
+#b .row { position: absolute; right: 16mm; left: 16mm; bottom: 16mm; display: flex; align-items: flex-end; justify-content: space-between; gap: 6mm; padding-top: 7mm; border-top: .4mm solid rgba(255,255,255,.25); }
+#b .row .t span { display: block; font-size: 4mm; color: rgba(255,255,255,.75); }
+#b .row .t b { display: block; margin-top: 1.6mm; font: 800 8mm/1 'Heebo'; letter-spacing: .4mm; direction: ltr; text-align: right; }
+#b .row .qrs { display: flex; gap: 4mm; }
+#b .row figure { text-align: center; font-size: 3mm; font-weight: 700; color: rgba(255,255,255,.85); }
+#b .row .qr { width: 23mm; height: 23mm; background: #fff; padding: 1.5mm; border-radius: 1.6mm; margin-bottom: 1.4mm; }
+
+/* ===== C · the magic: one photo, before and after, split down the middle ===== */
+#c { background: #12101A; color: #fff; padding: 16mm 16mm 0; }
+#c .logo b { color: #fff; }
+#c h1 { margin-top: 10mm; font: 900 17mm/1 'Frank', serif; letter-spacing: -.4mm; }
+#c h1 em { font-style: normal; background: linear-gradient(90deg, #FCE6E9, #EDB6BE 50%, #b9a6f0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#c .split { position: relative; margin-top: 10mm; height: 132mm; border-radius: 5mm; overflow: hidden; box-shadow: 0 12mm 30mm rgba(0,0,0,.6); }
+#c .split img { position: absolute; top: 0; height: 100%; width: 100%; object-fit: cover; object-position: center 22%; }
+#c .split .after { clip-path: inset(0 50% 0 0); }
+#c .split .line { position: absolute; top: 0; bottom: 0; left: 50%; width: 1mm; margin-left: -.5mm; background: #fff; box-shadow: 0 0 6mm rgba(255,255,255,.6); }
+#c .split .knob { position: absolute; top: 50%; left: 50%; width: 12mm; height: 12mm; margin: -6mm 0 0 -6mm; border-radius: 50%; background: #fff; color: #12101A; display: grid; place-items: center; font: 900 5mm/1 'Heebo'; }
+#c .split .lab { position: absolute; bottom: 5mm; font-size: 4mm; font-weight: 800; padding: 1.6mm 4mm; border-radius: 99px; background: rgba(0,0,0,.55); }
+#c .split .lab.l { left: 5mm; } #c .split .lab.r { right: 5mm; }
+#c .three { margin-top: 9mm; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; }
+#c .three b { display: block; font: 900 6.4mm/1.05 'Frank', serif; }
+#c .three span { display: block; margin-top: 1.6mm; font-size: 3.7mm; line-height: 1.4; color: #b9b6c6; }
+#c .foot { position: absolute; left: 0; right: 0; bottom: 0; height: 40mm; background: linear-gradient(90deg, #EDB6BE, #C98894); color: #17130E; display: flex; align-items: center; justify-content: space-between; padding: 0 16mm; }
+#c .foot .t b { display: block; font: 900 8.6mm/1 'Frank', serif; }
+#c .foot .t span { display: block; margin-top: 2mm; font: 800 6.6mm/1 'Heebo'; letter-spacing: .4mm; direction: ltr; text-align: right; }
+#c .foot .qrs { display: flex; gap: 5mm; }
+#c .foot figure { text-align: center; font-size: 3.1mm; font-weight: 800; }
+#c .foot .qr { width: 23mm; height: 23mm; background: #fff; padding: 1.5mm; border-radius: 1.6mm; margin-bottom: 1.2mm; }
+</style>
+</head>
+<body>
+<!-- A -->
+<div class="page" id="a">
+  <div class="logo"><img src="../../../frame-studio/optimus.svg" alt=""><b>אופטימוס</b></div>
+  <h1>כל אורח<br>יוצא עם <em>מגנט.</em></h1>
+  <p class="lead">התוכנה שמפעילה עמדת מגנטים באירוע: מהמצלמה, דרך העיצוב, עד ההדפסה.</p>
+  <div class="stage"><div class="fridge"></div><div class="handle"></div>
+    <div class="mag one"><img src="../../../frame-studio/show/m0.webp" alt=""></div>
+    <div class="mag two"><img src="../../../frame-studio/show/m5.webp" alt=""></div>
+    <div class="mag three"><img src="../../../frame-studio/show/m1.webp" alt=""></div></div>
+  <div class="points">
+    <div><b>אוטומטי</b><span>התמונה עוברת מהמצלמה להדפסה לבד</span></div>
+    <div><b>חכם</b><span>סופר את האורחים ופוסל עיניים עצומות</span></div>
+    <div><b>מרשים</b><span>אפקטי AI, קולאז׳ ואירוע חי</span></div>
+  </div>
+  <div class="foot"><div class="t"><b>נסו את אופטימוס</b><span>054-4979771</span></div>
+    <div class="qrs"><figure><div class="qr" data-qr="film"></div>סרטון</figure><figure><div class="qr" data-qr="site"></div>האתר</figure></div></div>
+</div>
+
+<!-- B -->
+<div class="page" id="b">
+  <div class="photo"></div><div class="shade"></div>
+  <div class="top"><div class="logo"><img src="../../../frame-studio/optimus.svg" alt=""><b>אופטימוס</b></div><span class="tag">סטודיו למגנטים ואירועים</span></div>
+  <div class="copy"><h1>הרגע הזה.<br><em>על המקרר שלהם.</em></h1>
+    <p class="lead">אופטימוס עושה את כל העבודה באירוע: קולטת מהמצלמה, מעצבת במסגרת של האירוע ומדפיסה מגנט לכל אורח.</p></div>
+  <div class="row"><div class="t"><span>לפרטים והדגמה</span><b>054-4979771</b></div>
+    <div class="qrs"><figure><div class="qr" data-qr="film"></div>הסרטון</figure><figure><div class="qr" data-qr="site"></div>האתר</figure></div></div>
+</div>
+
+<!-- C -->
+<div class="page" id="c">
+  <div class="logo"><img src="../../../frame-studio/optimus.svg" alt=""><b>אופטימוס</b></div>
+  <h1>צילום רגיל.<br><em>תוצאה שלא שוכחים.</em></h1>
+  <div class="split"><img src="../e2e/original.jpg" alt=""><img class="after" src="../e2e/anime.png" alt=""><div class="line"></div><div class="knob">⟷</div><span class="lab l">אחרי · AI</span><span class="lab r">לפני</span></div>
+  <div class="three">
+    <div><b>64 עיצובי AI</b><span>על המחשב, גם בלי אינטרנט</span></div>
+    <div><b>הדפסה מיידית</b><span>מגנט בגודל מדויק בלחיצה</span></div>
+    <div><b>אירוע חי</b><span>האורחים שולחים מהטלפון</span></div>
+  </div>
+  <div class="foot"><div class="t"><b>נסו את אופטימוס</b><span>054-4979771</span></div>
+    <div class="qrs"><figure><div class="qr" data-qr="film"></div>הסרטון</figure><figure><div class="qr" data-qr="site"></div>האתר</figure></div></div>
+</div>
+<script src="../../../frame-studio/vendor/qrcode.js"></script>
+<script>
+  document.body.dataset.c = (location.search.match(/[?&]c=([abc])/) || [0, 'a'])[1];
+  var BASE = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/';
+  [['film', BASE + 'media/promo/optimus-v-web.mp4'], ['site', BASE]].forEach(function (x) {
+    var q = qrcode(0, 'M'); q.addData(x[1]); q.make(); var svg = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    document.querySelectorAll('[data-qr="' + x[0] + '"]').forEach(function (e) { e.innerHTML = svg; });
+  });
+</script>
+</body>
+</html>
