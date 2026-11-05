@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: https:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#05040f">
+<title>SPIDER · מצב רכב</title>
+<link rel="manifest" href="car.webmanifest">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="img/icon-192.png">
+<link rel="stylesheet" href="css/car.css">
+<script src="js/car.js" defer></script>
+</head>
+<body>
+<main class="car" aria-label="מצב רכב">
+  <section class="top">
+    <div class="clock" aria-live="off"><b id="c-time">--:--</b><span id="c-date"></span></div>
+    <div class="now" aria-live="polite"><small>מנגן עכשיו</small><strong id="c-now">לחצו להתחלה</strong></div>
+    <a class="exit" href="index.html">לאתר ←</a>
+  </section>
+  <section class="player" aria-label="נגן">
+    <button type="button" class="big prev" id="c-prev" aria-label="תחנה קודמת">⏭</button>
+    <button type="button" class="big play" id="c-play" aria-label="נגן או עצור">▶</button>
+    <button type="button" class="big next" id="c-next" aria-label="תחנה הבאה">⏮</button>
+    <div class="vol"><button type="button" id="c-vd" aria-label="הנמכת קול">−</button><span id="c-vl">70%</span><button type="button" id="c-vu" aria-label="הגברת קול">+</button></div>
+  </section>
+  <section class="genres" id="c-genres" aria-label="סגנונות מוזיקה"></section>
+  <p class="warn">לשימוש בחניה או על ידי הנוסע. בנהיגה, הקשיבו בלבד.</p>
+  <div class="ticker" id="c-ticker" aria-label="חדשות" role="marquee"><div class="tk-label">חדשות</div><div class="tk-view"><div class="tk-track" id="c-track"></div></div></div>
+</main>
+</body>
+</html>
