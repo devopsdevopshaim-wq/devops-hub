@@ -322,7 +322,9 @@
       c.addEventListener('click', function () { playGen(g.id, false); });
       genChips.appendChild(c);
     });
+    var lastGroup = null;
     picks.forEach(function (s, i) {
+      if (s.group && s.group !== lastGroup) { lastGroup = s.group; ytChips.appendChild(el('p', { class: 'mu-sub mu-grp', style: 'flex-basis:100%;margin:8px 0 0', text: s.group })); }
       var c = el('button', { class: 'chip', type: 'button', text: s.style, title: s.title || s.style, 'aria-pressed': 'false' });
       c.addEventListener('click', function () { playYT(i); });
       ytChips.appendChild(c);
@@ -438,7 +440,9 @@
 
     // ----- YouTube picks
     function stopYT() { if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo(); frame.hidden = true; }
+    var ytSkips = 0;
     function playYT(i) {
+      ytSkips = 0;
       quiet();
       mode = 'yt'; yi = i;
       store('music-last', 'y:' + i);
@@ -460,6 +464,8 @@
                 else if (e.data === 2 || e.data === 0) setPlaying(false);
               },
               onError: function () {
+                // a video that may not be embedded: inside a playlist the next one is tried (a few times)
+                if (mode === 'yt' && ytPlayer && ytPlayer.getPlaylist && (ytPlayer.getPlaylist() || []).length && ytSkips++ < 4) { ytPlayer.nextVideo(); return; }
                 setPlaying(false);
                 say('הסרטון הזה חסום לניגון מחוץ ליוטיוב', 'בעל הסרטון לא מתיר הטמעה. נסו רדיו או מוזיקה מובנית.');
               }
@@ -881,10 +887,12 @@
     getJSON(base + 'media.json').catch(function () { return {}; }),
     getJSON(base + 'news.json').catch(function () { return null; }),
     getJSON(base + 'riddles.json').catch(function () { return null; }),
-    getJSON(base + 'radio.json').catch(function () { return null; })
+    getJSON(base + 'radio.json').catch(function () { return null; }),
+    getJSON(base + 'youtube.json').catch(function () { return null; })   // channels from their public feeds, no API (youtube-feed workflow)
   ]).then(function (r) {
     mediaCfg = r[0];
-    try { music(r[3], r[0].music); } catch (e) { console.warn('music', e); }
+    var yt = (r[0].music || []).concat(((r[4] && r[4].styles) || []).map(function (c) { return { group: c.group, style: c.style, title: c.title, url: c.url }; }));
+    try { music(r[3], yt); } catch (e) { console.warn('music', e); }
     try { if (!document.body.classList.contains('no-dock')) dock(r[1], r[2]); } catch (e) { console.warn('dock', e); }
     try { videos((r[0].showreel || []).concat(r[0].videos || [])); } catch (e) { console.warn('videos', e); }
   });
