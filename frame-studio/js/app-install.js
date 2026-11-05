@@ -13,14 +13,8 @@
   window.addEventListener('appinstalled', function () { deferred = null; ls(KEY, 'done'); var b = document.getElementById('app-bar'); if (b) b.remove(); render(); });
   function install() {
     if (deferred) { deferred.prompt(); deferred.userChoice.then(function () { deferred = null; render(); }); return; }
-    if (ios) return iosHelp();
+    if (window.FS && FS.installHelp) return FS.installHelp('פריים ניהול');
     location.href = 'app.html';
-  }
-  function iosHelp() {
-    var d = document.createElement('div'); d.className = 'app-sheet';
-    d.innerHTML = '<div class="app-sheet-in"><b>התקנה באייפון (2 לחיצות)</b><ol><li>פותחים את הדף הזה ב־<b>Safari</b>.</li><li>לוחצים על כפתור השיתוף <span class="app-ico">⬆︎</span> בתחתית המסך.</li><li>בוחרים <b>"הוסף למסך הבית"</b> ← "הוסף".</li></ol><p>האייקון "פריים ניהול" יופיע במסך הבית, ונפתח כמו אפליקציה.</p><button type="button">הבנתי</button></div>';
-    d.addEventListener('click', function (e) { if (e.target === d || e.target.tagName === 'BUTTON') d.remove(); });
-    document.body.appendChild(d);
   }
   /* the admin, on a phone, outside the app: a small bar once in a while */
   function bar() {
@@ -37,8 +31,9 @@
     var st = document.getElementById('app-state');
     if (standalone) { st.textContent = '✔ האפליקציה מותקנת ופתוחה עכשיו.'; go.textContent = 'כניסה לניהול ←'; go.onclick = function () { location.href = 'admin.html?app=1'; }; return; }
     if (deferred) { st.textContent = 'הטלפון מוכן להתקנה: לחיצה אחת.'; go.textContent = '📲 התקנת האפליקציה'; }
+    else if (window.FS && FS.installEnv && FS.installEnv.inApp) { st.textContent = 'הדף נפתח בתוך וואטסאפ או אפליקציה אחרת. קודם פותחים אותו בדפדפן, ושם מתקינים.'; go.textContent = '📲 איך מתקינים'; }
     else if (ios) { st.textContent = 'באייפון מתקינים מ־Safari, בשתי לחיצות:'; go.textContent = '📲 איך מתקינים באייפון'; }
-    else if (android) { st.textContent = 'אם לא מופיע חלון התקנה: בתפריט של Chrome (⋮) ← "התקנת אפליקציה" או "הוספה למסך הבית".'; go.textContent = '📲 התקנה'; }
+    else if (android) { st.textContent = 'אם לא מופיע חלון התקנה: בתפריט של Chrome (⋮) ← "התקנת אפליקציה" או "הוספה למסך הבית".'; go.textContent = '📲 איך מתקינים'; }
     else { st.textContent = 'זה מחשב. סורקים את הקוד עם מצלמת הטלפון, ומתקינים שם.'; go.textContent = 'פתיחת הניהול במחשב ←'; go.onclick = function () { location.href = 'admin.html'; }; return; }
     go.onclick = install;
   }

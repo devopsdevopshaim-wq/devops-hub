@@ -1830,3 +1830,17 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - `#mt-switch` becomes a small "⚡ עבודה מהירה" corner button at the top left. The studio button is hidden, since we're in the studio.
   - `#fs-ver` and `.pl-bar` sit above the tool bar.
   - Testing gotcha: `body.intro-on` sets `overflow: hidden`, which breaks sticky until the opening ends. Remove that class in tests.
+
+## Install on the phone, for every phone (v117)
+- `js/install-help.js` (loaded before `app-install.js` in app.html / admin.html and before `pwa.js` in studio.html; also in sw.js FILES):
+  - `FS.installEnv` = `{ ios, android, inApp, samsung, firefox, phone }` from the user agent.
+  - `FS.installHelp(name)` opens a bottom sheet (`.ih`, its own CSS `#ih-css`) with the exact steps for that phone:
+    - inside WhatsApp / Instagram / Facebook / Telegram / TikTok: open in the real browser first (Android: an `intent://…package=com.android.chrome` button; iOS: "open in Safari" steps), plus copy-link;
+    - iPhone Safari: Share ⬆ → "הוספה למסך הבית" → "הוסף"; iPhone Chrome etc.: the same Share, or Safari;
+    - Samsung Internet ≡ → "הוספת דף אל" → "מסך הבית"; Firefox ⋮ → "התקנה"; Android Chrome ⋮ → "התקנת אפליקציה";
+    - computer: the ⊕ icon at the end of the address bar.
+- When the browser sent `beforeinstallprompt`, the button still installs in one tap; the sheet is the fallback everywhere else.
+- `app-install.js`: `install()` no longer reloads app.html on Android without a prompt (the old "nothing happens" bug); app.html's status line names the in-app-browser case.
+- `pwa.js`: on every phone (not only iPhone) the `#mt-install` button is there from the start, and the studio start screen gets an `#ia-install` card.
+- `gate.js`: a `.gate-install` button ("📲 התקנה כאפליקציה בטלפון") on the entry gate, phones only (CSS max-width 760px, hidden in standalone).
+- Gotcha: `body.gated > :not(#gate)…` hides every other body child; `.ih` is exempted there, or the sheet opens invisible behind the gate.
