@@ -142,6 +142,8 @@ jobs:
             [ -f /tmp/old/portfolio/radio.json ] && cp /tmp/old/portfolio/radio.json /tmp/site/portfolio/radio.json
             # YouTube channels are checked by portfolio-youtube.yml; keep the last good list
             [ -f /tmp/old/portfolio/youtube.json ] && cp /tmp/old/portfolio/youtube.json /tmp/site/portfolio/youtube.json
+            # the car app (built by android-car.yml)
+            [ -d /tmp/old/portfolio/downloads ] && cp -r /tmp/old/portfolio/downloads /tmp/site/portfolio/downloads
             node .github/scripts/portfolio-news.mjs /tmp/site/portfolio/news.json || echo "news refresh failed; keeping the last headlines"
           fi
           touch /tmp/site/.nojekyll
