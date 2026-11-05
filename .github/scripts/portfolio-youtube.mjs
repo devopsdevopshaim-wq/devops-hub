@@ -14,16 +14,16 @@ const COOKIE = 'CONSENT=YES+cb; SOCS=CAI';
 // [group shown in the player, [@handles to try, best first]]
 const GROUPS = [
   ['לו־פיי וצ׳יל', ['LofiGirl', 'Chillhop', 'ChillNation', 'TheBootlegBoy', 'MrSuicideSheep', 'MajesticCasual', 'CafedelMar', 'SelectedBase']],
-  ['אמביינט ומדיטציה', ['MeditativeMind', 'YellowBrickCinema', 'SoothingRelaxation', 'MeditationRelaxMusic', 'RelaxationFilm', 'AmbientMusic']],
+  ['אמביינט ומדיטציה', ['MeditativeMind', 'YellowBrickCinema', 'SoothingRelaxation', 'MeditationRelaxMusic', 'RelaxationFilm']],
   ['ג׳אז ולאונג׳', ['bluenoterecords', 'Montreux', 'CafeMusicBGMchannel', 'JazzRelaxing', 'ECMRecords', 'VerveRecords']],
-  ['קלאסית ופסנתר', ['DeutscheGrammophon', 'BerlinPhil', 'HALIDONMUSIC', 'yiruma', 'LangLang', 'DecoMusic', 'Classicalfm']],
+  ['קלאסית ופסנתר', ['DeutscheGrammophon', 'BerlinPhil', 'HALIDONMUSIC', 'yiruma', 'LangLang', 'Classicalfm', 'ClassicFM']],
   ['טראנס ופסיטראנס', ['anjunabeats', 'aboveandbeyond', 'arminvanbuuren', 'IbogaRecords', 'DacruRecords', 'SuntripRecords', 'ArmadaMusic']],
   ['האוס, טכנו ואלקטרוני', ['Cercle', 'boilerroom', 'Mixmag', 'DefectedRecords', 'SpinninRecords', 'Tomorrowland', 'Monstercat', 'NoCopyrightSounds', 'Proximity']],
   ['הופעות ומוזיקה חיה', ['NPRMusic', 'KEXP', 'COLORSxSTUDIOS', 'AudioTree', 'sofarsounds', 'Glastonbury']],
   ['רוק וקלאסיקות', ['queenofficial', 'pinkfloyd', 'ledzeppelin', 'RhinoRecords', 'thebeatles', 'fleetwoodmac', 'ACDCVEVO']],
-  ['רגאיי', ['bobmarley', 'damianjrgongmarley', 'ReggaeVibes', 'Chronixx']],
-  ['ישראלי ומזרחי', ['galgalatz', 'kan88', 'EyalGolan', 'OmerAdamOfficial', 'StaticandBenEl', 'NoaKirel', 'idanraichel', 'SaritHadad', 'AvivGefen', 'ShlomoArtzi', 'ZoharArgov', 'ShirazTal']],
-  ['ניגונים, חסידות ותפילות', ['IshayRibo', 'AvrahamFried', 'Shwekey', 'BennyFriedman', 'MBDmusic', 'YonatanRazel', 'EitanKatz', 'ShlomoCarlebach', 'SimchaLeiner', 'Lipabentov']],
+  ['רגאיי', ['bobmarley', 'damianjrgongmarley', 'ProtoJay', 'ReggaeMusic']],
+  ['ישראלי ומזרחי', ['galgalatz', 'EyalGolanOfficial', 'OmerAdamOfficial', 'StaticandBenEl', 'NoaKirelOfficial', 'idanraichel', 'SaritHadadOfficial', 'MosheperetzOfficial', 'ivrilider', 'NinetTayeb', 'kerenpeles', 'ShlomiShabatOfficial', 'ZehavaBen', 'EdenBenZaken', 'KobiPeretz', 'ShlomoArtzi']],
+  ['ניגונים, חסידות ותפילות', ['IshayRibo', 'AvrahamFried', 'Shwekey', 'BennyFriedman', 'MBDmusic', 'MordechaiBenDavid', 'YonatanRazel', 'EitanKatz', 'ShlomoCarlebach', 'SimchaLeiner', 'Lipabentov']],
   ['מוזיקת עולם', ['putumayo', 'cafedeanatolia', 'WorldMusicNetwork', 'Hamsa']]
 ];
 
@@ -55,6 +55,10 @@ async function resolve(handle) {
   let feed = { name: '', entries: [] };
   try { feed = parseFeed(await get('https://www.youtube.com/feeds/videos.xml?channel_id=' + id)); } catch (e) { feed.error = 'feed ' + e.message; }
   const name = feed.name || decode((html.match(/<meta property="og:title" content="([^"]*)"/) || [])[1] || handle);
+  // a handle that leads to a different channel than the one meant is dropped (names are compared when both are in Latin letters)
+  const norm = (x) => String(x).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const nn = norm(name), hh = norm(handle);
+  if (nn.length >= 3 && hh.length >= 3 && !(nn.includes(hh.slice(0, 5)) || hh.includes(nn.slice(0, 5)))) throw new Error('name mismatch: ' + name);
   return { id, name, handle, latest: feed.entries.slice(0, 3).map((e) => e.title), updated: feed.entries[0] ? feed.entries[0].published : null, note: feed.error || '' };
 }
 
