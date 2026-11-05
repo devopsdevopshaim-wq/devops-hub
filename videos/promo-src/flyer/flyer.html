@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <title>אופטימוס · פלייר</title>
-<!-- The Optimus flyer. One page, two shapes: A4 for print (default) and a 1080×1350 social post (?fmt=post).
-     Rendered to PDF / PNG by render.cjs. Images are the program's real screens and examples. -->
+<!-- The Optimus flyer, one A4 page (the owner's pick: "the AI before / after" direction). On top the promise and the
+     magic split in half; under it what the program does, one real example each; at the foot the phone and two codes.
+     Rendered by render.cjs (PDF + 300 dpi PNG). Every picture is the program's own output or screen. -->
 <style>
 @font-face { font-family: 'Heebo'; font-weight: 400; src: url('../../frame-explainer/assets/fonts/Heebo-400-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
-@font-face { font-family: 'Heebo'; font-weight: 400; src: url('../../frame-explainer/assets/fonts/Heebo-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F, U+20AA; }
+@font-face { font-family: 'Heebo'; font-weight: 400; src: url('../../frame-explainer/assets/fonts/Heebo-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
 @font-face { font-family: 'Heebo'; font-weight: 500; src: url('../../frame-explainer/assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
 @font-face { font-family: 'Heebo'; font-weight: 500; src: url('../../frame-explainer/assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
 @font-face { font-family: 'Heebo'; font-weight: 700; src: url('../../frame-explainer/assets/fonts/Heebo-700-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
@@ -16,221 +17,90 @@
 @font-face { font-family: 'Heebo'; font-weight: 800; src: url('../../frame-explainer/assets/fonts/Heebo-800-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
 @font-face { font-family: 'Frank'; font-weight: 900; src: url('../../frame-explainer/assets/fonts/FrankRuhlLibre-900-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
 @font-face { font-family: 'Frank'; font-weight: 900; src: url('../../frame-explainer/assets/fonts/FrankRuhlLibre-900-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: 'Frank'; font-weight: 700; src: url('../../frame-explainer/assets/fonts/FrankRuhlLibre-700-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
-:root { --night: #0F1528; --night2: #18203a; --quartz: #EDB6BE; --quartz2: #C98894; --cream: #F3F1EC; --dim: #b9bccb; --gold: #e3c48a; }
+:root { --ink: #12101A; --quartz: #EDB6BE; --rose: #C98894; --lilac: #b9a6f0; --dim: #aaa6bb; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 @page { size: A4; margin: 0; }
-html, body { background: var(--night); }
-body { font-family: 'Heebo', sans-serif; color: var(--cream); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.page { position: relative; width: 210mm; height: 297mm; overflow: hidden; padding: 11mm 12mm 0;
-  background: radial-gradient(120mm 90mm at 85% 8%, rgba(237,182,190,.22), transparent 70%), radial-gradient(130mm 110mm at 0% 60%, rgba(120,140,220,.14), transparent 70%), var(--night); }
-.page::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .07;
-  background-image: radial-gradient(rgba(255,255,255,.9) .6px, transparent .7px); background-size: 4mm 4mm; }
-
-/* the top */
-.brand { display: flex; align-items: center; gap: 4mm; }
-.brand img { width: 15mm; height: 15mm; }
-.brand h1 { font: 900 18mm/0.9 'Frank', serif; letter-spacing: -0.5mm; background: linear-gradient(180deg, #fff 0%, var(--quartz) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.brand p { font-size: 4.2mm; color: var(--dim); margin-top: 1mm; }
-.head { margin-top: 5mm; font: 900 9.4mm/1.1 'Frank', serif; }
-.head em { font-style: normal; color: var(--quartz); }
-.sub { margin-top: 2mm; font-size: 3.8mm; line-height: 1.45; color: var(--dim); max-width: 125mm; }
-
-/* the picture: the program's screen with magnets around it */
-.hero { position: relative; height: 56mm; margin-top: 3mm; }
-.hero .screen { position: absolute; left: 0; top: 3mm; width: 98mm; border-radius: 3mm; overflow: hidden; box-shadow: 0 6mm 14mm rgba(0,0,0,.55), 0 0 0 .4mm rgba(255,255,255,.12); transform: rotate(-2deg); }
-.hero .screen img { width: 100%; display: block; }
-.mag { position: absolute; width: 22mm; padding: 1.2mm 1.2mm 4mm; background: #fff; border-radius: 1mm; box-shadow: 0 4mm 9mm rgba(0,0,0,.5); }
-.mag img { width: 100%; display: block; }
-.mag.a { right: 2mm; top: 0; transform: rotate(5deg); }
-.mag.b { right: 25mm; top: 14mm; transform: rotate(-6deg); z-index: 2; }
-.mag.c { right: 49mm; top: 2mm; transform: rotate(3deg); }
-
-/* features */
-.feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.4mm; margin-top: 4mm; }
-.f { padding: 2.2mm 3mm; border-radius: 3mm; background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025)); border: .3mm solid rgba(255,255,255,.09); }
-.f i { display: grid; place-items: center; width: 7mm; height: 7mm; border-radius: 50%; font-style: normal; font-size: 3.8mm; float: right; margin-inline-end: 2mm; background: rgba(237,182,190,.16); box-shadow: inset 0 0 0 .3mm rgba(237,182,190,.4); margin-bottom: 1.6mm; }
-.f b { display: block; font-size: 3.8mm; line-height: 7mm; font-weight: 800; color: #fff; }
-.f span { display: block; clear: both; font-size: 3mm; line-height: 1.35; color: var(--dim); margin-top: .8mm; }
-
-/* AI examples */
-.ai { margin-top: 4mm; }
-.ai h3 { font: 700 5.4mm/1 'Frank', serif; margin-bottom: 2mm; }
-.ai h3 small { font: 500 3.4mm 'Heebo', sans-serif; color: var(--dim); margin-inline-start: 2mm; }
-.ai-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2.4mm; }
-.ai-row figure { position: relative; border-radius: 2mm; overflow: hidden; aspect-ratio: 1 / 1; box-shadow: 0 2mm 5mm rgba(0,0,0,.45); }
-.ai-row img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; }
-.ai-row figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 4mm 1mm 1.2mm; text-align: center; font-size: 3mm; font-weight: 700; background: linear-gradient(transparent, rgba(0,0,0,.75)); }
-
-/* the call to action */
-.cta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 6mm; padding: 5mm 12mm 6mm;
-  background: linear-gradient(90deg, rgba(237,182,190,.95), rgba(201,136,148,.95)); color: #17130E; }
-.cta-t { flex: 1; min-width: 0; }
-.qrs { display: flex; gap: 4mm; flex: none; }
-.qrs figure { text-align: center; }
-.qrs figcaption { font-size: 3.4mm; font-weight: 800; margin-top: 1.4mm; }
-.cta .qr { width: 25mm; height: 25mm; padding: 1.5mm; background: #fff; border-radius: 2mm; }
-.cta .qr svg { width: 100%; height: 100%; display: block; }
-.cta h2 { font: 900 8mm/1 'Frank', serif; }
-.cta p { font-size: 4mm; font-weight: 500; margin-top: 1.6mm; line-height: 1.45; }
-.cta .tel { font: 800 6.6mm/1 'Heebo', sans-serif; direction: ltr; letter-spacing: .2mm; margin-top: 2.4mm; display: inline-block; }
-.cta .scan { font-size: 3.2mm; font-weight: 700; margin-top: 1.4mm; opacity: .8; }
-
-/* the social post (1080×1350): the same parts, set larger and fewer */
-body.post .page { width: 1080px; height: 1350px; padding: 64px 64px 0; }
-body.post .brand img { width: 84px; height: 84px; }
-body.post .brand h1 { font-size: 116px; }
-body.post .brand p { font-size: 26px; }
-body.post .head { font-size: 58px; margin-top: 30px; }
-body.post .sub { display: none; }
-body.post .hero { height: 360px; margin-top: 26px; }
-body.post .hero .screen { width: 610px; }
-body.post .mag { width: 128px; padding: 6px 6px 22px; }
-body.post .mag.b { right: 120px; top: 96px; }
-body.post .mag.c { right: 240px; top: 10px; }
-body.post .feats { grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 28px; }
-body.post .f { padding: 14px 16px; border-radius: 16px; }
-body.post .f i { width: 40px; height: 40px; font-size: 22px; margin-bottom: 0; margin-inline-end: 10px; }
-body.post .f b { font-size: 21px; line-height: 40px; }
-body.post .f span { display: none; }
-
-body.post .ai { display: none; }
-body.post .cta { padding: 30px 64px 36px; gap: 30px; }
-body.post .cta .qr { width: 138px; height: 138px; padding: 8px; border-radius: 12px; }
-body.post .qrs { gap: 22px; }
-body.post .qrs figcaption { font-size: 19px; margin-top: 8px; }
-body.post .cta h2 { font-size: 50px; }
-body.post .cta p { font-size: 22px; margin-top: 8px; }
-body.post .cta .tel { font-size: 40px; margin-top: 12px; }
-body.post .cta .scan { font-size: 17px; }
-
-/* ---------- the back: examples ---------- */
-.page + .page { break-before: page; page-break-before: always; }
-.back .bhead { display: flex; align-items: center; gap: 3.5mm; }
-.back .bhead img { width: 11mm; height: 11mm; }
-.back .bhead h2 { font: 900 10mm/1 'Frank', serif; }
-.back .bhead p { font-size: 3.6mm; color: var(--dim); margin-top: 1mm; }
-.back h3 { font: 700 5.2mm/1 'Frank', serif; margin: 3.6mm 0 2mm; display: flex; align-items: baseline; gap: 2mm; }
-.back h3 small { font: 500 3.2mm 'Heebo', sans-serif; color: var(--dim); }
-.gal { display: grid; gap: 2.2mm; }
-.gal.s6 { grid-template-columns: repeat(6, 1fr); }
-.gal figure { position: relative; aspect-ratio: 1 / 1; border-radius: 2mm; overflow: hidden; box-shadow: 0 1.6mm 4mm rgba(0,0,0,.45); }
-.gal img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.gal.faces img { object-position: 50% 28%; }
-.gal figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 3.2mm .6mm 1mm; text-align: center; font-size: 2.7mm; font-weight: 700; background: linear-gradient(transparent, rgba(0,0,0,.78)); }
-.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
-.duo .col h3 { margin-top: 4.2mm; }
-.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2.4mm; }
-.cols2 img { width: 100%; display: block; border-radius: 1.6mm; box-shadow: 0 1.6mm 4mm rgba(0,0,0,.45); }
-.live { display: grid; grid-template-columns: 30mm 1fr; gap: 3mm; align-items: start; }
-.phone { width: 29mm; height: 58mm; border-radius: 4.5mm; background: #0b0b0d; padding: 1.3mm; box-shadow: 0 2mm 6mm rgba(0,0,0,.55), 0 0 0 .3mm rgba(255,255,255,.1); }
-.phone div { width: 100%; height: 100%; border-radius: 3.4mm; overflow: hidden; background: #f6f3ee; }
-.phone img { width: 100%; display: block; }
-.live ul { list-style: none; display: grid; gap: 2.2mm; }
-.live li { font-size: 3.2mm; line-height: 1.35; padding: 1.8mm 2.2mm; border-radius: 2mm; background: rgba(255,255,255,.05); border: .3mm solid rgba(255,255,255,.08); }
-.live li b { color: #fff; display: block; font-size: 3.5mm; }
-.live .qrmag { margin-top: 2.4mm; width: 100%; aspect-ratio: 3 / 2; border-radius: 1.6mm; overflow: hidden; box-shadow: 0 1.6mm 4mm rgba(0,0,0,.45); }
-.live .qrmag img { width: 100%; height: 100%; object-fit: cover; object-position: 30% 85%; }
-.mags { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2.4mm; }
-.mags figure { background: #fff; padding: 1mm 1mm 0; border-radius: 1mm; box-shadow: 0 1.6mm 4mm rgba(0,0,0,.45); color: #17130E; text-align: center; }
-.mags figure:nth-child(odd) { transform: rotate(-2deg); } .mags figure:nth-child(even) { transform: rotate(2deg); }
-.mags img { width: 100%; display: block; }
-.mags figcaption { font-size: 2.7mm; font-weight: 700; padding: .8mm 0 1mm; }
-.back .cta { padding: 3.6mm 12mm 4mm; }
-.back .cta h2 { font-size: 6.4mm; }
-.back .cta p { font-size: 3.4mm; margin-top: 1mm; }
-.back .cta .tel { font-size: 5.4mm; margin-top: 1.4mm; }
-.back .cta .qr { width: 19mm; height: 19mm; padding: 1.1mm; }
-.back .qrs figcaption { font-size: 2.8mm; margin-top: 1mm; }
-body.post .page.back { display: none; }
-body.post2 .page:not(.back) { display: none; }
+body { font-family: 'Heebo', sans-serif; background: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { position: relative; width: 210mm; height: 297mm; overflow: hidden; color: #fff; padding: 13mm 14mm 0;
+  background: radial-gradient(110mm 80mm at 100% 0%, rgba(237,182,190,.20), transparent 70%), radial-gradient(120mm 90mm at 0% 55%, rgba(185,166,240,.14), transparent 70%), var(--ink); }
+.page::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background: radial-gradient(.5mm .5mm at 18% 9%, #fff, transparent), radial-gradient(.4mm .4mm at 62% 4%, #fff, transparent), radial-gradient(.6mm .6mm at 88% 30%, #ffe3ea, transparent), radial-gradient(.4mm .4mm at 8% 40%, #fff, transparent), radial-gradient(.5mm .5mm at 47% 31%, #e9e2ff, transparent); }
+.top { display: flex; align-items: center; justify-content: space-between; }
+.logo { display: flex; align-items: center; gap: 2.4mm; }
+.logo img { width: 9mm; height: 9mm; }
+.logo b { font: 900 6.6mm/1 'Frank', serif; }
+.chips { display: flex; gap: 1.6mm; }
+.chips span { font-size: 2.9mm; font-weight: 700; padding: 1.2mm 2.8mm; border-radius: 99px; border: .3mm solid rgba(255,255,255,.28); color: #e7e3f0; }
+.hero { display: grid; grid-template-columns: 1fr 86mm; gap: 7mm; align-items: center; margin-top: 7mm; }
+h1 { font: 900 13.6mm/1.02 'Frank', serif; letter-spacing: -.3mm; }
+h1 em { font-style: normal; background: linear-gradient(90deg, #FCE6E9, var(--quartz) 45%, var(--lilac)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p { margin-top: 4mm; font-size: 4.2mm; line-height: 1.5; color: var(--dim); }
+.split { position: relative; height: 86mm; border-radius: 5mm; overflow: hidden; box-shadow: 0 10mm 26mm rgba(0,0,0,.6), 0 0 0 .4mm rgba(255,255,255,.12); transform: rotate(-1.5deg); }
+.split img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
+.split .after { clip-path: inset(0 50% 0 0); }
+.split .line { position: absolute; top: 0; bottom: 0; left: 50%; width: .8mm; margin-left: -.4mm; background: #fff; box-shadow: 0 0 5mm rgba(255,255,255,.7); }
+.split .knob { position: absolute; top: 50%; left: 50%; width: 10mm; height: 10mm; margin: -5mm 0 0 -5mm; border-radius: 50%; background: #fff; color: var(--ink); display: grid; place-items: center; font: 900 4.4mm/1 'Heebo'; }
+.split .lab { position: absolute; bottom: 3.4mm; font-size: 3.1mm; font-weight: 800; padding: 1.2mm 3mm; border-radius: 99px; background: rgba(0,0,0,.6); }
+.split .lab.l { left: 3.4mm; } .split .lab.r { right: 3.4mm; }
+.sec { display: flex; align-items: baseline; justify-content: space-between; margin: 8mm 0 3.6mm; }
+.sec h2 { font: 900 6.4mm/1 'Frank', serif; }
+.sec span { font-size: 3.2mm; color: var(--dim); }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3.4mm; }
+.card { border-radius: 3.4mm; overflow: hidden; background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.02)); border: .3mm solid rgba(255,255,255,.10); }
+.ex { height: 27mm; background-color: #1d1a27; background-repeat: no-repeat; position: relative; }
+.ex i { position: absolute; top: 2mm; right: 2mm; width: 7mm; height: 7mm; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 3.6mm; background: rgba(18,16,26,.72); box-shadow: 0 0 0 .3mm rgba(237,182,190,.55); }
+.card .t { padding: 2.4mm 2.8mm 3mm; }
+.card b { display: block; font-size: 3.85mm; font-weight: 800; line-height: 1.2; }
+.card span { display: block; margin-top: .8mm; font-size: 2.95mm; line-height: 1.35; color: var(--dim); }
+.more { margin-top: 4.6mm; display: flex; flex-wrap: wrap; gap: 1.8mm 2.2mm; }
+.more span { font-size: 3.1mm; font-weight: 600; padding: 1.3mm 3mm; border-radius: 99px; background: rgba(237,182,190,.12); color: #f3dfe3; }
+.foot { position: absolute; left: 0; right: 0; bottom: 0; height: 36mm; display: flex; align-items: center; justify-content: space-between; padding: 0 14mm;
+  background: linear-gradient(90deg, #F4C9CF, var(--quartz) 40%, var(--rose)); color: #17130E; }
+.foot b { display: block; font: 900 8.2mm/1 'Frank', serif; }
+.foot .tel { display: block; margin-top: 2mm; font: 800 6.6mm/1 'Heebo'; letter-spacing: .4mm; direction: ltr; text-align: right; }
+.foot small { display: block; margin-top: 1.4mm; font-size: 3mm; font-weight: 600; opacity: .8; }
+.qrs { display: flex; gap: 4.6mm; }
+.qrs figure { text-align: center; font-size: 3mm; font-weight: 800; }
+.qr { width: 22mm; height: 22mm; background: #fff; padding: 1.4mm; border-radius: 1.6mm; margin-bottom: 1.2mm; }
+.qr svg { width: 100%; height: 100%; display: block; }
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="brand"><img src="../../../frame-studio/optimus.svg" alt=""><div><h1>אופטימוס</h1><p>הסטודיו של עסקי המגנטים והאירועים</p></div></div>
-  <h2 class="head">מצלמים. <em>התוכנה עושה את השאר.</em><br>וכל אורח יוצא עם מגנט.</h2>
-  <p class="sub">תוכנה אחת לכל האירוע: קליטת תמונות מהמצלמה, עיצוב עם מסגרת אישית, AI על המחשב והדפסה בגודל מדויק. עובדת גם בלי אינטרנט.</p>
-
+  <div class="top">
+    <div class="logo"><img src="../../../frame-studio/optimus.svg" alt=""><b>אופטימוס</b></div>
+    <div class="chips"><span>💻 Windows</span><span>📱 אפליקציה לטלפון</span><span>📴 גם בלי אינטרנט</span></div>
+  </div>
   <div class="hero">
-    <div class="screen"><img src="../cap/pro-grid.webp" alt=""></div>
-    <div class="mag a"><img src="../../../frame-studio/show/m0.webp" alt=""></div>
-    <div class="mag b"><img src="../../../frame-studio/show/m1.webp" alt=""></div>
-    <div class="mag c"><img src="../../../frame-studio/show/m5.webp" alt=""></div>
+    <div><h1>צילום רגיל.<br><em>תוצאה שלא<br>שוכחים.</em></h1>
+      <p>התוכנה שמפעילה עמדת מגנטים באירוע: מהמצלמה, דרך העיצוב וה־AI, עד מגנט ביד לכל אורח.</p></div>
+    <div class="split"><img src="../e2e/original.jpg" alt=""><img class="after" src="../e2e/anime.png" alt=""><div class="line"></div><div class="knob">⟷</div><span class="lab l">אחרי · AI</span><span class="lab r">לפני</span></div>
   </div>
-
-  <div class="feats">
-    <div class="f"><i>⚡</i><b>קו אוטומטי מהמצלמה</b><span>התמונה נכנסת, נבדקת ומודפסת לבד</span></div>
-    <div class="f"><i>🧮</i><b>כמה להדפיס?</b><span>עותק לכל אורח שמסתכל למצלמה. עיניים עצומות לא יוצאות</span></div>
-    <div class="f"><i>🖨️</i><b>הדפסה מיידית</b><span>בלחיצה, בגודל המגנט המדויק</span></div>
-    <div class="f"><i>✨</i><b>64 אפקטי AI</b><span>על המחשב, גם בלי אינטרנט</span></div>
-    <div class="f"><i>😜</i><b>אפקטים מצחיקים</b><span>ראש ענק, החלפת פנים, כתר ושפם</span></div>
-    <div class="f"><i>🖼️</i><b>מסגרת לכל אירוע</b><span>חתונה, בר מצווה, ברית, חינה ועוד</span></div>
-    <div class="f more"><i>🔳</i><b>QR על כל מגנט</b><span>האורחים מקבלים את כל תמונות האירוע</span></div>
-    <div class="f more"><i>🎬</i><b>סרטון סיכום</b><span>נוצר לבד מהתמונות הכי טובות</span></div>
-    <div class="f more"><i>📱</i><b>במחשב ובטלפון</b><span>תוכנה ל־Windows ואפליקציה לטלפון</span></div>
+  <div class="sec"><h2>מה אופטימוס עושה</h2><span>כל הדוגמאות נוצרו בתוכנה</span></div>
+  <div class="grid">
+    <div class="card"><div class="ex" style="background-image:url('../../../frame-studio/show/p-candy.webp');background-size:cover;background-position:50% 30%"><i>🎨</i></div><div class="t"><b>64 עיצובי AI</b><span>פופ, אנימה, ציור שמן, סקיצה ועוד</span></div></div>
+    <div class="card"><div class="ex" style="background-image:url('../cap/fun-bighead.jpg');background-size:cover;background-position:50% 30%"><i>😜</i></div><div class="t"><b>אפקטים מצחיקים</b><span>ראש ענק, החלפת פנים, כתר</span></div></div>
+    <div class="card"><div class="ex" style="background-image:url('../cap/collage-2.jpg');background-size:cover;background-position:50% 18%"><i>🧩</i></div><div class="t"><b>קולאז׳ בלחיצה</b><span>סידור אוטומטי, כותרת ורקע</span></div></div>
+    <div class="card"><div class="ex" style="background-image:url('../../../frame-studio/show/m4.webp');background-size:cover;background-position:50% 40%"><i>🖼️</i></div><div class="t"><b>מסגרת לכל אירוע</b><span>חתונה, ברית, בר מצווה, חינה</span></div></div>
+    <div class="card"><div class="ex" style="background-image:url('../cap/pro-guest.webp');background-size:100% auto;background-position:50% 0"><i>📡</i></div><div class="t"><b>אירוע חי</b><span>האורחים שולחים תמונות וברכות מהטלפון</span></div></div>
+    <div class="card"><div class="ex" style="background-image:url('../cap/hub-auto.webp');background-size:300% auto;background-position:30% 62%"><i>⚡</i></div><div class="t"><b>קו אוטומטי</b><span>מהמצלמה להדפסה, בלי לגעת</span></div></div>
+    <div class="card"><div class="ex" style="background-image:url('../cap/ai-cutpro.jpg');background-size:cover;background-position:85% 25%"><i>✂️</i></div><div class="t"><b>עדשה, תאורה, רקע</b><span>שיפור מקצועי בלחיצה</span></div></div>
+    <div class="card"><div class="ex" style="background-image:url('../cap/hub-film.webp');background-size:100% auto;background-position:50% 47%"><i>🎬</i></div><div class="t"><b>סרטון סיכום</b><span>נוצר לבד מהתמונות הכי טובות</span></div></div>
   </div>
-
-  <div class="ai">
-    <h3>AI שעובד על המחשב <small>אותה תמונה, בלחיצה</small></h3>
-    <div class="ai-row">
-      <figure><img src="../cap/ai-orig.jpg" alt=""><figcaption>המקור</figcaption></figure>
-      <figure><img src="../cap/ai-bokeh.jpg" alt=""><figcaption>עדשה מקצועית</figcaption></figure>
-      <figure><img src="../cap/ai-hall.jpg" alt=""><figcaption>תאורת אולם</figcaption></figure>
-      <figure><img src="../cap/ai-cutpro.jpg" alt=""><figcaption>הסרת רקע</figcaption></figure>
-      <figure><img src="../e2e/anime.png" alt=""><figcaption>אנימה</figcaption></figure>
-    </div>
+  <div class="more">
+    <span>🧮 כמה להדפיס לפי האורחים</span><span>😑 עיניים עצומות לא יוצאות</span><span>🖨️ הדפסה מיידית</span><span>🔳 QR על כל מגנט</span><span>🔍 "מצא אותי" בסלפי</span><span>📈 לוח בקרה חי</span><span>🪞 מראה קסם</span><span>🧩 פאזל מכל תמונה</span>
   </div>
-
-  <div class="cta">
-    <div class="cta-t">
-      <h2>נסו את אופטימוס</h2>
-      <p>הדגמה, הורדה ותמיכה בעברית · עובדת גם בלי אינטרנט</p>
-      <span class="tel">054-4979771</span>
-    </div>
-    <div class="qrs">
-      <figure><div class="qr" id="qr-film"></div><figcaption>▶ סרטון התדמית</figcaption></figure>
-      <figure><div class="qr" id="qr-site"></div><figcaption>🌐 לאתר</figcaption></figure>
-    </div>
-  </div>
-</div>
-
-<div class="page back">
-  <div class="bhead"><img src="../../../frame-studio/optimus.svg" alt=""><div><h2>מה עושים עם אופטימוס</h2><p>דוגמאות אמיתיות מהתוכנה, על תמונות מאירועים</p></div></div>
-  <h3>🎨 סגנונות AI <small>תמונה אחת, עשרות עיצובים · גם בלי אינטרנט</small></h3>
-  <div class="gal s6"><figure><img src="../../../frame-studio/show/p-original.webp" alt=""><figcaption>המקור</figcaption></figure><figure><img src="../../../frame-studio/show/p-anime.webp" alt=""><figcaption>אנימה</figcaption></figure><figure><img src="../../../frame-studio/show/p-manga.webp" alt=""><figcaption>מנגה</figcaption></figure><figure><img src="../../../frame-studio/show/p-cartoon.webp" alt=""><figcaption>קרטון</figcaption></figure><figure><img src="../../../frame-studio/show/p-sketch.webp" alt=""><figcaption>סקיצה</figcaption></figure><figure><img src="../../../frame-studio/show/p-oil.webp" alt=""><figcaption>ציור שמן</figcaption></figure><figure><img src="../../../frame-studio/show/p-rain.webp" alt=""><figcaption>ציור גשם</figcaption></figure><figure><img src="../../../frame-studio/show/p-candy.webp" alt=""><figcaption>פופ צבעוני</figcaption></figure><figure><img src="../../../frame-studio/show/p-noir.webp" alt=""><figcaption>נואר</figcaption></figure><figure><img src="../../../frame-studio/show/p-lomo.webp" alt=""><figcaption>לומו</figcaption></figure><figure><img src="../../../frame-studio/show/p-oldphoto.webp" alt=""><figcaption>תמונה ישנה</figcaption></figure><figure><img src="../e2e/3d.png" alt=""><figcaption>תלת־ממד</figcaption></figure></div>
-  <h3>😜 אפקטים מצחיקים <small>על הצילום האמיתי, לכל פרצוף בתמונה</small></h3>
-  <div class="gal s6 faces"><figure><img src="../cap/fun-bighead.jpg" alt=""><figcaption>ראש ענק</figcaption></figure><figure><img src="../cap/fun-bigeyes.jpg" alt=""><figcaption>עיניים ענקיות</figcaption></figure><figure><img src="../cap/fun-carica.jpg" alt=""><figcaption>קריקטורה</figcaption></figure><figure><img src="../cap/fun-swap.jpg" alt=""><figcaption>החלפת פנים</figcaption></figure><figure><img src="../cap/fun-disguise.jpg" alt=""><figcaption>שפם ומשקפיים</figcaption></figure><figure><img src="../cap/fun-crown.jpg" alt=""><figcaption>כתר</figcaption></figure></div>
-  <div class="duo">
-    <div class="col"><h3>🧩 קולאז׳ בלחיצה <small>סידור אוטומטי, כותרת ורקע</small></h3>
-      <div class="cols2"><img src="../cap/collage-1.jpg" alt=""><img src="../cap/collage-2.jpg" alt=""></div></div>
-    <div class="col"><h3>📡 אירוע חי <small>האורחים חלק מהחוויה</small></h3>
-      <div class="live"><div class="phone"><div><img src="../cap/pro-guest.webp" alt=""></div></div>
-        <div><ul><li><b>שולחים מהטלפון</b>האורחים סורקים קוד ושולחים תמונות וברכות להדפסה</li>
-          <li><b>QR על כל מגנט</b>כל תמונות האירוע באלבום אחד</li>
-          <li><b>"מצא אותי"</b>סלפי אחד, וכל התמונות שלך מהאירוע</li></ul></div></div></div>
-  </div>
-  <h3>🖼️ מסגרת אישית לכל אירוע <small>עורך מסגרות מלא · דוגמאות מוכנות</small></h3>
-  <div class="mags"><figure><img src="../../../frame-studio/show/m0.webp" alt=""><figcaption>חתונה</figcaption></figure><figure><img src="../../../frame-studio/show/m1.webp" alt=""><figcaption>בר מצווה</figcaption></figure><figure><img src="../../../frame-studio/show/m4.webp" alt=""><figcaption>ברית</figcaption></figure><figure><img src="../../../frame-studio/show/m5.webp" alt=""><figcaption>חינה</figcaption></figure><figure><img src="../../../frame-studio/show/m2.webp" alt=""><figcaption>אירוסין</figcaption></figure><figure><img src="../../../frame-studio/show/m3.webp" alt=""><figcaption>יום הולדת</figcaption></figure><figure><img src="../../../frame-studio/show/m6.webp" alt=""><figcaption>אירוע חברה</figcaption></figure></div>
-  <div class="cta">
-    <div class="cta-t"><h2>נסו את אופטימוס</h2><p>תוכנה ל־Windows ואפליקציה לטלפון · עובדת גם בלי אינטרנט</p><span class="tel">054-4979771</span></div>
-    <div class="qrs">
-      <figure><div class="qr" data-qr="film"></div><figcaption>▶ סרטון התדמית</figcaption></figure>
-      <figure><div class="qr" data-qr="site"></div><figcaption>🌐 לאתר</figcaption></figure>
-    </div>
+  <div class="foot">
+    <div><b>נסו את אופטימוס</b><span class="tel">054-4979771</span><small>הדגמה ותמיכה בעברית</small></div>
+    <div class="qrs"><figure><div class="qr" data-qr="film"></div>▶ הסרטון</figure><figure><div class="qr" data-qr="site"></div>🌐 האתר</figure></div>
   </div>
 </div>
 <script src="../../../frame-studio/vendor/qrcode.js"></script>
 <script>
-  if (/[?&]fmt=post\b/.test(location.search)) document.body.classList.add('post');
-  if (/[?&]fmt=post2\b/.test(location.search)) document.body.classList.add('post2');
-  /* two codes: the promo film (the vertical cut, made for a phone) and the website */
   var BASE = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/';
-  [['qr-film', BASE + 'media/promo/optimus-v-web.mp4'], ['qr-site', BASE]].forEach(function (x) {
-    var q = qrcode(0, 'M'); q.addData(x[1]); q.make();
-    var svg = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
-    document.getElementById(x[0]).innerHTML = svg;
-    document.querySelectorAll('[data-qr="' + x[0].slice(3) + '"]').forEach(function (e) { e.innerHTML = svg; });
+  [['film', BASE + 'media/promo/optimus-v-web.mp4'], ['site', BASE]].forEach(function (x) {
+    var q = qrcode(0, 'M'); q.addData(x[1]); q.make(); var svg = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    document.querySelectorAll('[data-qr="' + x[0] + '"]').forEach(function (e) { e.innerHTML = svg; });
   });
 </script>
 </body>
