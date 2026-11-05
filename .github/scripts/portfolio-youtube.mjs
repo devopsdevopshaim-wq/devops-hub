@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const OUT = process.argv[2] || 'portfolio/youtube.json';
-const KEEP = 5;                       // channels kept per group
+const KEEP = 12;                      // channels kept per group
 const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36';
 const COOKIE = 'CONSENT=YES+cb; SOCS=CAI';
 
@@ -22,8 +22,8 @@ const GROUPS = [
   ['הופעות ומוזיקה חיה', ['NPRMusic', 'KEXP', 'COLORSxSTUDIOS', 'AudioTree', 'sofarsounds', 'Glastonbury']],
   ['רוק וקלאסיקות', ['queenofficial', 'pinkfloyd', 'ledzeppelin', 'RhinoRecords', 'thebeatles', 'fleetwoodmac', 'ACDCVEVO']],
   ['רגאיי', ['bobmarley', 'damianjrgongmarley', 'ProtoJay', 'ReggaeMusic']],
-  ['ישראלי ומזרחי', ['galgalatz', 'EyalGolanOfficial', 'OmerAdamOfficial', 'StaticandBenEl', 'NoaKirelOfficial', 'idanraichel', 'SaritHadadOfficial', 'MosheperetzOfficial', 'ivrilider', 'NinetTayeb', 'kerenpeles', 'ShlomiShabatOfficial', 'ZehavaBen', 'EdenBenZaken', 'KobiPeretz', 'ShlomoArtzi']],
-  ['ניגונים, חסידות ותפילות', ['IshayRibo', 'AvrahamFried', 'Shwekey', 'BennyFriedman', 'MBDmusic', 'MordechaiBenDavid', 'YonatanRazel', 'EitanKatz', 'ShlomoCarlebach', 'SimchaLeiner', 'Lipabentov']],
+  ['ישראלי ומזרחי', ['galgalatz', 'GalgalatzOfficial', 'EyalGolanOfficial', 'OmerAdamOfficial', 'StaticandBenEl', 'NoaKirelOfficial', 'idanraichel', 'SaritHadadOfficial', 'MosheperetzOfficial', 'ivrilider', 'NinetTayeb', 'kerenpeles', 'ShlomiShabatOfficial', 'ZehavaBen', 'EdenBenZaken', 'KobiPeretz', 'ShlomoArtzi', 'HanniBenIsrael', 'EdenHason', 'ItayLevi', 'ItayLeviOfficial', 'TuckerMusic', 'AmirBenayoun', 'AvivGefenOfficial', 'MeirBanai', 'YehoramGaon', 'ShimonIsraeli', 'Mashina', 'Hadag Nahash', 'HadagNahash', 'ShlomoGronich', 'Sivan.Talmor', 'DorinaGoldenberg', 'EyalGolan', 'AriLesser', 'ZoharArgov', 'HaimMoshe', 'MosheYehoshua', 'ZionGolan', 'YardenHarel', 'Nathan Goshen', 'NathanGoshen', 'AgamBuhbut', 'ShimiTavori', 'MaayanOfficial', 'MoranMazor', 'Subliminal', 'Ravid Plotnik', 'RavidPlotnik', 'ShiraHaim', 'Netta', 'NettaBarzilai', 'EdenAlene', 'HovaOfficial', 'DudiBarOfficial', 'AlmogBoker', 'yossicohenmusic', 'IlanitOfficial', 'DanaInternational', 'YaffaYarkoni', 'ShulaChen', 'ChavaAlberstein', 'ArikEinstein', 'ArikLavie']],
+  ['ניגונים, חסידות ותפילות', ['IshayRibo', 'AvrahamFried', 'Shwekey', 'ShwekeyOfficial', 'BennyFriedman', 'MBDmusic', 'MordechaiBenDavid', 'MBDOfficial', 'YonatanRazel', 'EitanKatz', 'ShlomoCarlebach', 'SimchaLeiner', 'Lipabentov', 'LipaSchmeltzer', 'YishaiLapidot', 'Piamenta', 'DovLevBerkowitz', 'DovLevBerkowitzOfficial', 'MoshePerel', 'MosheMendelson', 'YosefKarduner', 'YoniBloch', 'DanielZamir', 'HillelPalei', 'BeriWeber', 'ShloimeDachs', 'MichaelSoloweichik', 'AbieRotenberg', 'ShmuelGelbfish', 'IsraelBakon', 'UriDavidi', 'ShalomLeKulam', 'HaimIsraeliOfficial', 'HaimIsraeli', 'MenachemHerman', 'Hazamir', 'YeshivaBoysChoir', 'Yeshiva Boys Choir', 'MiamiBoysChoir', 'NetanelHershtik', 'EliBeer', 'YaakovShwekey', 'MeirKay', 'MeirAdler', 'SimcheBlumenfeld', 'AyalaOfficial', 'SoulBeats', 'RabbiNachman', 'BreslovMusic', 'RebbeNachman', 'HaGaonHaRavDovLior', 'KolBramah', 'KolHaneshama', 'ShirHaMaalot', 'ChabadMusic', 'ChabadOrg', 'ChabadTV', 'KolIsrael', 'Hitbodedut', 'Lubavitch', 'ChassidusMusic', 'EmunaRadio', 'BreslevOfficial', 'SheleshArtists']],
   ['מוזיקת עולם', ['putumayo', 'cafedeanatolia', 'WorldMusicNetwork', 'Hamsa']]
 ];
 
