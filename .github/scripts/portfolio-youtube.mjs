@@ -47,12 +47,15 @@ export function parseFeed(xml) {
 function decode(s) { return String(s).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").trim(); }
 
 async function resolve(handle) {
-  const html = await get('https://www.youtube.com/@' + encodeURIComponent(handle));
+  let html;
+  try { html = await get('https://www.youtube.com/@' + encodeURIComponent(handle)); } catch (e) { throw new Error('page ' + e.message); }
   const id = channelIdOf(html);
   if (!id) throw new Error('no channel id');
-  const feed = parseFeed(await get('https://www.youtube.com/feeds/videos.xml?channel_id=' + id));
-  if (feed.entries.length < 3) throw new Error('feed too short');
-  return { id, name: feed.name || handle, handle, latest: feed.entries.slice(0, 3).map((e) => e.title), updated: feed.entries[0].published };
+  // the public feed lists the latest videos; when YouTube does not serve it to this machine the channel is still kept (its id is enough to play it)
+  let feed = { name: '', entries: [] };
+  try { feed = parseFeed(await get('https://www.youtube.com/feeds/videos.xml?channel_id=' + id)); } catch (e) { feed.error = 'feed ' + e.message; }
+  const name = feed.name || decode((html.match(/<meta property="og:title" content="([^"]*)"/) || [])[1] || handle);
+  return { id, name, handle, latest: feed.entries.slice(0, 3).map((e) => e.title), updated: feed.entries[0] ? feed.entries[0].published : null, note: feed.error || '' };
 }
 
 if (process.argv[2] === '--selftest') {
@@ -73,7 +76,7 @@ for (const [group, handles] of GROUPS) {
     try {
       const c = await resolve(h);
       styles.push({ group, style: c.name, title: c.latest[0] || c.name, url: 'https://www.youtube.com/playlist?list=UU' + c.id.slice(2), channel: c.id, handle: '@' + h, latest: c.latest, updated: c.updated });
-      kept++; console.log('ok   ', group, '·', c.name);
+      kept++; console.log('ok   ', group, '·', c.name, c.note ? '(' + c.note + ')' : '');
     } catch (e) { dead++; console.log('skip ', group, '·', '@' + h, '(' + e.message + ')'); }
     await sleep(400);
   }

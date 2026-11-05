@@ -36,6 +36,7 @@ jobs:
           cd /tmp/pages
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          [ -f portfolio/youtube.json ] || { echo "nothing new to publish"; exit 0; }
           git add portfolio/youtube.json
           if git diff --cached --quiet; then echo "no change"; exit 0; fi
           git commit -q -m "portfolio: youtube channels $(date -u +%F)"
