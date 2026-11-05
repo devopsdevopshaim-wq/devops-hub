@@ -103,6 +103,47 @@ body.post .cta h2 { font-size: 50px; }
 body.post .cta p { font-size: 22px; margin-top: 8px; }
 body.post .cta .tel { font-size: 40px; margin-top: 12px; }
 body.post .cta .scan { font-size: 17px; }
+
+/* ---------- the back: examples ---------- */
+.page + .page { break-before: page; page-break-before: always; }
+.back .bhead { display: flex; align-items: center; gap: 3.5mm; }
+.back .bhead img { width: 11mm; height: 11mm; }
+.back .bhead h2 { font: 900 10mm/1 'Frank', serif; }
+.back .bhead p { font-size: 3.6mm; color: var(--dim); margin-top: 1mm; }
+.back h3 { font: 700 5.2mm/1 'Frank', serif; margin: 3.6mm 0 2mm; display: flex; align-items: baseline; gap: 2mm; }
+.back h3 small { font: 500 3.2mm 'Heebo', sans-serif; color: var(--dim); }
+.gal { display: grid; gap: 2.2mm; }
+.gal.s6 { grid-template-columns: repeat(6, 1fr); }
+.gal figure { position: relative; aspect-ratio: 1 / 1; border-radius: 2mm; overflow: hidden; box-shadow: 0 1.6mm 4mm rgba(0,0,0,.45); }
+.gal img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gal.faces img { object-position: 50% 28%; }
+.gal figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 3.2mm .6mm 1mm; text-align: center; font-size: 2.7mm; font-weight: 700; background: linear-gradient(transparent, rgba(0,0,0,.78)); }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+.duo .col h3 { margin-top: 4.2mm; }
+.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2.4mm; }
+.cols2 img { width: 100%; display: block; border-radius: 1.6mm; box-shadow: 0 1.6mm 4mm rgba(0,0,0,.45); }
+.live { display: grid; grid-template-columns: 30mm 1fr; gap: 3mm; align-items: start; }
+.phone { width: 29mm; height: 58mm; border-radius: 4.5mm; background: #0b0b0d; padding: 1.3mm; box-shadow: 0 2mm 6mm rgba(0,0,0,.55), 0 0 0 .3mm rgba(255,255,255,.1); }
+.phone div { width: 100%; height: 100%; border-radius: 3.4mm; overflow: hidden; background: #f6f3ee; }
+.phone img { width: 100%; display: block; }
+.live ul { list-style: none; display: grid; gap: 2.2mm; }
+.live li { font-size: 3.2mm; line-height: 1.35; padding: 1.8mm 2.2mm; border-radius: 2mm; background: rgba(255,255,255,.05); border: .3mm solid rgba(255,255,255,.08); }
+.live li b { color: #fff; display: block; font-size: 3.5mm; }
+.live .qrmag { margin-top: 2.4mm; width: 100%; aspect-ratio: 3 / 2; border-radius: 1.6mm; overflow: hidden; box-shadow: 0 1.6mm 4mm rgba(0,0,0,.45); }
+.live .qrmag img { width: 100%; height: 100%; object-fit: cover; object-position: 30% 85%; }
+.mags { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2.4mm; }
+.mags figure { background: #fff; padding: 1mm 1mm 0; border-radius: 1mm; box-shadow: 0 1.6mm 4mm rgba(0,0,0,.45); color: #17130E; text-align: center; }
+.mags figure:nth-child(odd) { transform: rotate(-2deg); } .mags figure:nth-child(even) { transform: rotate(2deg); }
+.mags img { width: 100%; display: block; }
+.mags figcaption { font-size: 2.7mm; font-weight: 700; padding: .8mm 0 1mm; }
+.back .cta { padding: 3.6mm 12mm 4mm; }
+.back .cta h2 { font-size: 6.4mm; }
+.back .cta p { font-size: 3.4mm; margin-top: 1mm; }
+.back .cta .tel { font-size: 5.4mm; margin-top: 1.4mm; }
+.back .cta .qr { width: 19mm; height: 19mm; padding: 1.1mm; }
+.back .qrs figcaption { font-size: 2.8mm; margin-top: 1mm; }
+body.post .page.back { display: none; }
+body.post2 .page:not(.back) { display: none; }
 </style>
 </head>
 <body>
@@ -153,14 +194,43 @@ body.post .cta .scan { font-size: 17px; }
     </div>
   </div>
 </div>
+
+<div class="page back">
+  <div class="bhead"><img src="../../../frame-studio/optimus.svg" alt=""><div><h2>מה עושים עם אופטימוס</h2><p>דוגמאות אמיתיות מהתוכנה, על תמונות מאירועים</p></div></div>
+  <h3>🎨 סגנונות AI <small>תמונה אחת, עשרות עיצובים · גם בלי אינטרנט</small></h3>
+  <div class="gal s6"><figure><img src="../../../frame-studio/show/p-original.webp" alt=""><figcaption>המקור</figcaption></figure><figure><img src="../../../frame-studio/show/p-anime.webp" alt=""><figcaption>אנימה</figcaption></figure><figure><img src="../../../frame-studio/show/p-manga.webp" alt=""><figcaption>מנגה</figcaption></figure><figure><img src="../../../frame-studio/show/p-cartoon.webp" alt=""><figcaption>קרטון</figcaption></figure><figure><img src="../../../frame-studio/show/p-sketch.webp" alt=""><figcaption>סקיצה</figcaption></figure><figure><img src="../../../frame-studio/show/p-oil.webp" alt=""><figcaption>ציור שמן</figcaption></figure><figure><img src="../../../frame-studio/show/p-rain.webp" alt=""><figcaption>ציור גשם</figcaption></figure><figure><img src="../../../frame-studio/show/p-candy.webp" alt=""><figcaption>פופ צבעוני</figcaption></figure><figure><img src="../../../frame-studio/show/p-noir.webp" alt=""><figcaption>נואר</figcaption></figure><figure><img src="../../../frame-studio/show/p-lomo.webp" alt=""><figcaption>לומו</figcaption></figure><figure><img src="../../../frame-studio/show/p-oldphoto.webp" alt=""><figcaption>תמונה ישנה</figcaption></figure><figure><img src="../e2e/3d.png" alt=""><figcaption>תלת־ממד</figcaption></figure></div>
+  <h3>😜 אפקטים מצחיקים <small>על הצילום האמיתי, לכל פרצוף בתמונה</small></h3>
+  <div class="gal s6 faces"><figure><img src="../cap/fun-bighead.jpg" alt=""><figcaption>ראש ענק</figcaption></figure><figure><img src="../cap/fun-bigeyes.jpg" alt=""><figcaption>עיניים ענקיות</figcaption></figure><figure><img src="../cap/fun-carica.jpg" alt=""><figcaption>קריקטורה</figcaption></figure><figure><img src="../cap/fun-swap.jpg" alt=""><figcaption>החלפת פנים</figcaption></figure><figure><img src="../cap/fun-disguise.jpg" alt=""><figcaption>שפם ומשקפיים</figcaption></figure><figure><img src="../cap/fun-crown.jpg" alt=""><figcaption>כתר</figcaption></figure></div>
+  <div class="duo">
+    <div class="col"><h3>🧩 קולאז׳ בלחיצה <small>סידור אוטומטי, כותרת ורקע</small></h3>
+      <div class="cols2"><img src="../cap/collage-1.jpg" alt=""><img src="../cap/collage-2.jpg" alt=""></div></div>
+    <div class="col"><h3>📡 אירוע חי <small>האורחים חלק מהחוויה</small></h3>
+      <div class="live"><div class="phone"><div><img src="../cap/pro-guest.webp" alt=""></div></div>
+        <div><ul><li><b>שולחים מהטלפון</b>האורחים סורקים קוד ושולחים תמונות וברכות להדפסה</li>
+          <li><b>QR על כל מגנט</b>כל תמונות האירוע באלבום אחד</li>
+          <li><b>"מצא אותי"</b>סלפי אחד, וכל התמונות שלך מהאירוע</li></ul></div></div></div>
+  </div>
+  <h3>🖼️ מסגרת אישית לכל אירוע <small>עורך מסגרות מלא · דוגמאות מוכנות</small></h3>
+  <div class="mags"><figure><img src="../../../frame-studio/show/m0.webp" alt=""><figcaption>חתונה</figcaption></figure><figure><img src="../../../frame-studio/show/m1.webp" alt=""><figcaption>בר מצווה</figcaption></figure><figure><img src="../../../frame-studio/show/m4.webp" alt=""><figcaption>ברית</figcaption></figure><figure><img src="../../../frame-studio/show/m5.webp" alt=""><figcaption>חינה</figcaption></figure><figure><img src="../../../frame-studio/show/m2.webp" alt=""><figcaption>אירוסין</figcaption></figure><figure><img src="../../../frame-studio/show/m3.webp" alt=""><figcaption>יום הולדת</figcaption></figure><figure><img src="../../../frame-studio/show/m6.webp" alt=""><figcaption>אירוע חברה</figcaption></figure></div>
+  <div class="cta">
+    <div class="cta-t"><h2>נסו את אופטימוס</h2><p>תוכנה ל־Windows ואפליקציה לטלפון · עובדת גם בלי אינטרנט</p><span class="tel">054-4979771</span></div>
+    <div class="qrs">
+      <figure><div class="qr" data-qr="film"></div><figcaption>▶ סרטון התדמית</figcaption></figure>
+      <figure><div class="qr" data-qr="site"></div><figcaption>🌐 לאתר</figcaption></figure>
+    </div>
+  </div>
+</div>
 <script src="../../../frame-studio/vendor/qrcode.js"></script>
 <script>
   if (/[?&]fmt=post\b/.test(location.search)) document.body.classList.add('post');
+  if (/[?&]fmt=post2\b/.test(location.search)) document.body.classList.add('post2');
   /* two codes: the promo film (the vertical cut, made for a phone) and the website */
   var BASE = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/';
   [['qr-film', BASE + 'media/promo/optimus-v-web.mp4'], ['qr-site', BASE]].forEach(function (x) {
     var q = qrcode(0, 'M'); q.addData(x[1]); q.make();
-    document.getElementById(x[0]).innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    var svg = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    document.getElementById(x[0]).innerHTML = svg;
+    document.querySelectorAll('[data-qr="' + x[0].slice(3) + '"]').forEach(function (e) { e.innerHTML = svg; });
   });
 </script>
 </body>
