@@ -65,7 +65,11 @@ body { font-family: 'Heebo', sans-serif; color: var(--cream); -webkit-print-colo
 /* the call to action */
 .cta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 6mm; padding: 5mm 12mm 6mm;
   background: linear-gradient(90deg, rgba(237,182,190,.95), rgba(201,136,148,.95)); color: #17130E; }
-.cta .qr { width: 27mm; height: 27mm; padding: 1.6mm; background: #fff; border-radius: 2mm; flex: none; }
+.cta-t { flex: 1; min-width: 0; }
+.qrs { display: flex; gap: 4mm; flex: none; }
+.qrs figure { text-align: center; }
+.qrs figcaption { font-size: 3.4mm; font-weight: 800; margin-top: 1.4mm; }
+.cta .qr { width: 25mm; height: 25mm; padding: 1.5mm; background: #fff; border-radius: 2mm; }
 .cta .qr svg { width: 100%; height: 100%; display: block; }
 .cta h2 { font: 900 8mm/1 'Frank', serif; }
 .cta p { font-size: 4mm; font-weight: 500; margin-top: 1.6mm; line-height: 1.45; }
@@ -92,7 +96,9 @@ body.post .f span { display: none; }
 
 body.post .ai { display: none; }
 body.post .cta { padding: 30px 64px 36px; gap: 30px; }
-body.post .cta .qr { width: 150px; height: 150px; padding: 8px; border-radius: 12px; }
+body.post .cta .qr { width: 138px; height: 138px; padding: 8px; border-radius: 12px; }
+body.post .qrs { gap: 22px; }
+body.post .qrs figcaption { font-size: 19px; margin-top: 8px; }
 body.post .cta h2 { font-size: 50px; }
 body.post .cta p { font-size: 22px; margin-top: 8px; }
 body.post .cta .tel { font-size: 40px; margin-top: 12px; }
@@ -136,20 +142,26 @@ body.post .cta .scan { font-size: 17px; }
   </div>
 
   <div class="cta">
-    <div class="qr" id="qr"></div>
-    <div>
+    <div class="cta-t">
       <h2>נסו את אופטימוס</h2>
       <p>הדגמה, הורדה ותמיכה בעברית · עובדת גם בלי אינטרנט</p>
       <span class="tel">054-4979771</span>
-      <p class="scan">סורקים את הקוד ומתחילים</p>
+    </div>
+    <div class="qrs">
+      <figure><div class="qr" id="qr-film"></div><figcaption>▶ סרטון התדמית</figcaption></figure>
+      <figure><div class="qr" id="qr-site"></div><figcaption>🌐 לאתר</figcaption></figure>
     </div>
   </div>
 </div>
 <script src="../../../frame-studio/vendor/qrcode.js"></script>
 <script>
   if (/[?&]fmt=post\b/.test(location.search)) document.body.classList.add('post');
-  var q = qrcode(0, 'M'); q.addData('https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/download.html'); q.make();
-  document.getElementById('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  /* two codes: the promo film (the vertical cut, made for a phone) and the website */
+  var BASE = 'https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/';
+  [['qr-film', BASE + 'media/promo/optimus-v-web.mp4'], ['qr-site', BASE]].forEach(function (x) {
+    var q = qrcode(0, 'M'); q.addData(x[1]); q.make();
+    document.getElementById(x[0]).innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  });
 </script>
 </body>
 </html>
