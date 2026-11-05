@@ -1,5 +1,5 @@
 /* The studio's sign-in gate (js/gate.js): nothing of the studio shows until the owner is signed in. */
-body.gated > :not(#gate):not(script):not(.toast):not(#op-splash):not(#wow1) { visibility: hidden !important; }
+body.gated > :not(#gate):not(script):not(.toast):not(#op-splash):not(#wow1):not(.ih) { visibility: hidden !important; }
 #gate { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 20px; overflow-y: auto;
   background: radial-gradient(70% 55% at 50% 0%, rgba(214, 183, 126, .16), transparent 70%), #0D0B10; color: #F5EFE4; font-family: 'Assistant', 'Heebo', system-ui, sans-serif; }
 #gate::after { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .05;
@@ -23,6 +23,10 @@ body.gated > :not(#gate):not(script):not(.toast):not(#op-splash):not(#wow1) { vi
 #gate .hint { color: #BDB3A3; font-size: 14px; margin: 0; }
 .gate-back { display: inline-block; margin-top: 18px; color: #BDB3A3; font-size: 14px; text-decoration: none; }
 .gate-back:hover { color: #F5EFE4; }
+/* install link: phones only, and not inside the installed app */
+.gate-install { display: none; background: none; border: 1px solid #4a4336; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 15px; color: #E8D9B8; cursor: pointer; margin-inline-end: 12px; }
+@media (max-width: 760px) { .gate-install { display: inline-block; } }
+@media (display-mode: standalone) { .gate-install { display: none !important; } }
 #gate :focus-visible { outline: 2px solid #D6B77E; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { #gate .btn { transition: none; } }
 .gate-tabs { display: flex; gap: 4px; padding: 4px; margin: 0 0 18px; border-radius: 999px; border: 1px solid rgba(214, 183, 126, .25); }

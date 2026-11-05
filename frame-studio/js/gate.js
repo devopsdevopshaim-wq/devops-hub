@@ -46,7 +46,9 @@
           '<button class="btn" id="lic-go">הפעלה</button><p class="acc-note" id="lic-note" role="status">' + esc(note || '') + '</p></div>' +
           '<p class="gate-lead small">אין לכם קוד? פונים לחיים: <a href="https://wa.me/972544979771" target="_blank" rel="noopener">וואטסאפ 054-4979771</a></p>'
         : '<p class="gate-lead">נכנסים עם המייל והסיסמה של מסך הניהול.</p><div id="gate-box"></div>') +
+      '<button type="button" class="gate-back gate-install">📲 התקנה כאפליקציה בטלפון</button>' +
       '<a class="gate-back" href="./">← לאתר העסק</a></div>';
+    g.querySelector('.gate-install').addEventListener('click', function () { if (window.FS && FS.installHelp) FS.installHelp('אופטימוס'); });
     Array.prototype.forEach.call(g.querySelectorAll('[data-t]'), function (b) { b.addEventListener('click', function () { tab = b.dataset.t; lock(); }); });
     if (tab === 'admin') {
       if (!ACC) { document.getElementById('gate-box').innerHTML = '<p class="gate-lead">אין חיבור לשרת הכניסה. בודקים אינטרנט ומרעננים.</p>'; return; }
