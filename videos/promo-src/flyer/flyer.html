@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>אופטימוס · פלייר</title>
+<!-- The Optimus flyer. One page, two shapes: A4 for print (default) and a 1080×1350 social post (?fmt=post).
+     Rendered to PDF / PNG by render.cjs. Images are the program's real screens and examples. -->
+<style>
+@font-face { font-family: 'Heebo'; font-weight: 400; src: url('../../frame-explainer/assets/fonts/Heebo-400-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Heebo'; font-weight: 400; src: url('../../frame-explainer/assets/fonts/Heebo-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F, U+20AA; }
+@font-face { font-family: 'Heebo'; font-weight: 500; src: url('../../frame-explainer/assets/fonts/Heebo-500-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Heebo'; font-weight: 500; src: url('../../frame-explainer/assets/fonts/Heebo-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Heebo'; font-weight: 700; src: url('../../frame-explainer/assets/fonts/Heebo-700-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Heebo'; font-weight: 700; src: url('../../frame-explainer/assets/fonts/Heebo-700-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Heebo'; font-weight: 800; src: url('../../frame-explainer/assets/fonts/Heebo-800-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Heebo'; font-weight: 800; src: url('../../frame-explainer/assets/fonts/Heebo-800-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Frank'; font-weight: 900; src: url('../../frame-explainer/assets/fonts/FrankRuhlLibre-900-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+@font-face { font-family: 'Frank'; font-weight: 900; src: url('../../frame-explainer/assets/fonts/FrankRuhlLibre-900-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Frank'; font-weight: 700; src: url('../../frame-explainer/assets/fonts/FrankRuhlLibre-700-hebrew.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F; }
+:root { --night: #0F1528; --night2: #18203a; --quartz: #EDB6BE; --quartz2: #C98894; --cream: #F3F1EC; --dim: #b9bccb; --gold: #e3c48a; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+@page { size: A4; margin: 0; }
+html, body { background: var(--night); }
+body { font-family: 'Heebo', sans-serif; color: var(--cream); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { position: relative; width: 210mm; height: 297mm; overflow: hidden; padding: 11mm 12mm 0;
+  background: radial-gradient(120mm 90mm at 85% 8%, rgba(237,182,190,.22), transparent 70%), radial-gradient(130mm 110mm at 0% 60%, rgba(120,140,220,.14), transparent 70%), var(--night); }
+.page::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .07;
+  background-image: radial-gradient(rgba(255,255,255,.9) .6px, transparent .7px); background-size: 4mm 4mm; }
+
+/* the top */
+.brand { display: flex; align-items: center; gap: 4mm; }
+.brand img { width: 15mm; height: 15mm; }
+.brand h1 { font: 900 18mm/0.9 'Frank', serif; letter-spacing: -0.5mm; background: linear-gradient(180deg, #fff 0%, var(--quartz) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.brand p { font-size: 4.2mm; color: var(--dim); margin-top: 1mm; }
+.head { margin-top: 5mm; font: 900 9.4mm/1.1 'Frank', serif; }
+.head em { font-style: normal; color: var(--quartz); }
+.sub { margin-top: 2mm; font-size: 3.8mm; line-height: 1.45; color: var(--dim); max-width: 125mm; }
+
+/* the picture: the program's screen with magnets around it */
+.hero { position: relative; height: 56mm; margin-top: 3mm; }
+.hero .screen { position: absolute; left: 0; top: 3mm; width: 98mm; border-radius: 3mm; overflow: hidden; box-shadow: 0 6mm 14mm rgba(0,0,0,.55), 0 0 0 .4mm rgba(255,255,255,.12); transform: rotate(-2deg); }
+.hero .screen img { width: 100%; display: block; }
+.mag { position: absolute; width: 22mm; padding: 1.2mm 1.2mm 4mm; background: #fff; border-radius: 1mm; box-shadow: 0 4mm 9mm rgba(0,0,0,.5); }
+.mag img { width: 100%; display: block; }
+.mag.a { right: 2mm; top: 0; transform: rotate(5deg); }
+.mag.b { right: 25mm; top: 14mm; transform: rotate(-6deg); z-index: 2; }
+.mag.c { right: 49mm; top: 2mm; transform: rotate(3deg); }
+
+/* features */
+.feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.4mm; margin-top: 4mm; }
+.f { padding: 2.2mm 3mm; border-radius: 3mm; background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025)); border: .3mm solid rgba(255,255,255,.09); }
+.f i { display: grid; place-items: center; width: 7mm; height: 7mm; border-radius: 50%; font-style: normal; font-size: 3.8mm; float: right; margin-inline-end: 2mm; background: rgba(237,182,190,.16); box-shadow: inset 0 0 0 .3mm rgba(237,182,190,.4); margin-bottom: 1.6mm; }
+.f b { display: block; font-size: 3.8mm; line-height: 7mm; font-weight: 800; color: #fff; }
+.f span { display: block; clear: both; font-size: 3mm; line-height: 1.35; color: var(--dim); margin-top: .8mm; }
+
+/* AI examples */
+.ai { margin-top: 4mm; }
+.ai h3 { font: 700 5.4mm/1 'Frank', serif; margin-bottom: 2mm; }
+.ai h3 small { font: 500 3.4mm 'Heebo', sans-serif; color: var(--dim); margin-inline-start: 2mm; }
+.ai-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2.4mm; }
+.ai-row figure { position: relative; border-radius: 2mm; overflow: hidden; aspect-ratio: 1 / 1; box-shadow: 0 2mm 5mm rgba(0,0,0,.45); }
+.ai-row img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; }
+.ai-row figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 4mm 1mm 1.2mm; text-align: center; font-size: 3mm; font-weight: 700; background: linear-gradient(transparent, rgba(0,0,0,.75)); }
+
+/* the call to action */
+.cta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 6mm; padding: 5mm 12mm 6mm;
+  background: linear-gradient(90deg, rgba(237,182,190,.95), rgba(201,136,148,.95)); color: #17130E; }
+.cta .qr { width: 27mm; height: 27mm; padding: 1.6mm; background: #fff; border-radius: 2mm; flex: none; }
+.cta .qr svg { width: 100%; height: 100%; display: block; }
+.cta h2 { font: 900 8mm/1 'Frank', serif; }
+.cta p { font-size: 4mm; font-weight: 500; margin-top: 1.6mm; line-height: 1.45; }
+.cta .tel { font: 800 6.6mm/1 'Heebo', sans-serif; direction: ltr; letter-spacing: .2mm; margin-top: 2.4mm; display: inline-block; }
+.cta .scan { font-size: 3.2mm; font-weight: 700; margin-top: 1.4mm; opacity: .8; }
+
+/* the social post (1080×1350): the same parts, set larger and fewer */
+body.post .page { width: 1080px; height: 1350px; padding: 64px 64px 0; }
+body.post .brand img { width: 84px; height: 84px; }
+body.post .brand h1 { font-size: 116px; }
+body.post .brand p { font-size: 26px; }
+body.post .head { font-size: 58px; margin-top: 30px; }
+body.post .sub { display: none; }
+body.post .hero { height: 360px; margin-top: 26px; }
+body.post .hero .screen { width: 610px; }
+body.post .mag { width: 128px; padding: 6px 6px 22px; }
+body.post .mag.b { right: 120px; top: 96px; }
+body.post .mag.c { right: 240px; top: 10px; }
+body.post .feats { grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 28px; }
+body.post .f { padding: 14px 16px; border-radius: 16px; }
+body.post .f i { width: 40px; height: 40px; font-size: 22px; margin-bottom: 0; margin-inline-end: 10px; }
+body.post .f b { font-size: 21px; line-height: 40px; }
+body.post .f span { display: none; }
+
+body.post .ai { display: none; }
+body.post .cta { padding: 30px 64px 36px; gap: 30px; }
+body.post .cta .qr { width: 150px; height: 150px; padding: 8px; border-radius: 12px; }
+body.post .cta h2 { font-size: 50px; }
+body.post .cta p { font-size: 22px; margin-top: 8px; }
+body.post .cta .tel { font-size: 40px; margin-top: 12px; }
+body.post .cta .scan { font-size: 17px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="brand"><img src="../../../frame-studio/optimus.svg" alt=""><div><h1>אופטימוס</h1><p>הסטודיו של עסקי המגנטים והאירועים</p></div></div>
+  <h2 class="head">מצלמים. <em>התוכנה עושה את השאר.</em><br>וכל אורח יוצא עם מגנט.</h2>
+  <p class="sub">תוכנה אחת לכל האירוע: קליטת תמונות מהמצלמה, עיצוב עם מסגרת אישית, AI על המחשב והדפסה בגודל מדויק. עובדת גם בלי אינטרנט.</p>
+
+  <div class="hero">
+    <div class="screen"><img src="../cap/pro-grid.webp" alt=""></div>
+    <div class="mag a"><img src="../../../frame-studio/show/m0.webp" alt=""></div>
+    <div class="mag b"><img src="../../../frame-studio/show/m1.webp" alt=""></div>
+    <div class="mag c"><img src="../../../frame-studio/show/m5.webp" alt=""></div>
+  </div>
+
+  <div class="feats">
+    <div class="f"><i>⚡</i><b>קו אוטומטי מהמצלמה</b><span>התמונה נכנסת, נבדקת ומודפסת לבד</span></div>
+    <div class="f"><i>🧮</i><b>כמה להדפיס?</b><span>עותק לכל אורח שמסתכל למצלמה. עיניים עצומות לא יוצאות</span></div>
+    <div class="f"><i>🖨️</i><b>הדפסה מיידית</b><span>בלחיצה, בגודל המגנט המדויק</span></div>
+    <div class="f"><i>✨</i><b>64 אפקטי AI</b><span>על המחשב, גם בלי אינטרנט</span></div>
+    <div class="f"><i>😜</i><b>אפקטים מצחיקים</b><span>ראש ענק, החלפת פנים, כתר ושפם</span></div>
+    <div class="f"><i>🖼️</i><b>מסגרת לכל אירוע</b><span>חתונה, בר מצווה, ברית, חינה ועוד</span></div>
+    <div class="f more"><i>🔳</i><b>QR על כל מגנט</b><span>האורחים מקבלים את כל תמונות האירוע</span></div>
+    <div class="f more"><i>🎬</i><b>סרטון סיכום</b><span>נוצר לבד מהתמונות הכי טובות</span></div>
+    <div class="f more"><i>📱</i><b>במחשב ובטלפון</b><span>תוכנה ל־Windows ואפליקציה לטלפון</span></div>
+  </div>
+
+  <div class="ai">
+    <h3>AI שעובד על המחשב <small>אותה תמונה, בלחיצה</small></h3>
+    <div class="ai-row">
+      <figure><img src="../cap/ai-orig.jpg" alt=""><figcaption>המקור</figcaption></figure>
+      <figure><img src="../cap/ai-bokeh.jpg" alt=""><figcaption>עדשה מקצועית</figcaption></figure>
+      <figure><img src="../cap/ai-hall.jpg" alt=""><figcaption>תאורת אולם</figcaption></figure>
+      <figure><img src="../cap/ai-cutpro.jpg" alt=""><figcaption>הסרת רקע</figcaption></figure>
+      <figure><img src="../e2e/anime.png" alt=""><figcaption>אנימה</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="cta">
+    <div class="qr" id="qr"></div>
+    <div>
+      <h2>נסו את אופטימוס</h2>
+      <p>הדגמה, הורדה ותמיכה בעברית · עובדת גם בלי אינטרנט</p>
+      <span class="tel">054-4979771</span>
+      <p class="scan">סורקים את הקוד ומתחילים</p>
+    </div>
+  </div>
+</div>
+<script src="../../../frame-studio/vendor/qrcode.js"></script>
+<script>
+  if (/[?&]fmt=post\b/.test(location.search)) document.body.classList.add('post');
+  var q = qrcode(0, 'M'); q.addData('https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/download.html'); q.make();
+  document.getElementById('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+</script>
+</body>
+</html>
