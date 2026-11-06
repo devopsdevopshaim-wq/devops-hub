@@ -1,0 +1,25 @@
+# שרת אפליקציית רגעים ב-Cloudflare Workers (התוכנית החינמית).
+# נפרס אוטומטית מ-GitHub: .github/workflows/events-hub-deploy.yml, עם אותו חשבון Cloudflare של שרת הכניסה.
+# שרת נפרד משרת הכניסה (spider-auth), כך ששינוי כאן לא יכול לפגוע בו.
+name = "regaim-events"
+main = "src/worker.mjs"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "STATE"
+class_name = "EventsState"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["EventsState"]
+
+[vars]
+# כתובת האתר ב-GitHub Pages (קישורי QR ומעקב הזמנה)
+PAGES_URL = "https://devopsdevopshaim-wq.github.io/devops-hub/events-hub"
+# סודות (ב-GitHub → Settings → Secrets → Actions, ה-workflow מעביר אותם ל-Cloudflare):
+#   EVENTS_ADMIN_PASSWORD   סיסמת המנהל (חובה)
+#   EVENTS_REMOVE_BG_API_KEY  הסרת רקע (לא חובה)
+#   EVENTS_PAYMENT_PROVIDER (tranzila / cardcom / grow / payplus; בלי = מצב בדיקה)
+#   EVENTS_PAYMENT_TERMINAL / EVENTS_PAYMENT_API_KEY / EVENTS_PAYMENT_API_SECRET  כשתחברו חברת סליקה

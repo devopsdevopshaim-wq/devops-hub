@@ -3,3 +3,5 @@ data/db.json
 data/uploads/*
 !data/uploads/.gitkeep
 .env
+.dev.vars
+.wrangler/

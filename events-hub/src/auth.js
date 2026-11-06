@@ -1,20 +1,21 @@
-const crypto = require('crypto');
-const config = require('./config');
+// כניסת מנהל: אסימון חתום (HMAC) שנשמר בטלפון ונשלח בכותרת Authorization.
+// (עוגיות לא עובדות טוב בין github.io לשרת ב-Cloudflare, ולכן אסימון.)
+import crypto from 'node:crypto';
+import config from './config.js';
 
-const COOKIE = 'admin_session';
-const MAX_AGE_MS = 12 * 60 * 60 * 1000;
+export const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 יום - אפליקציית ניהול בטלפון
 
 function sign(value) {
   return crypto.createHmac('sha256', config.sessionSecret).update(value).digest('hex');
 }
 
-function createToken() {
+export function createToken() {
   const payload = `admin.${Date.now()}`;
   return `${payload}.${sign(payload)}`;
 }
 
-function verifyToken(token) {
-  if (!token) return false;
+export function verifyToken(token) {
+  if (!token || !config.sessionSecret) return false;
   const i = token.lastIndexOf('.');
   if (i < 0) return false;
   const payload = token.slice(0, i);
@@ -25,15 +26,14 @@ function verifyToken(token) {
   return Date.now() - ts < MAX_AGE_MS;
 }
 
-function checkPassword(pw) {
+export function checkPassword(pw) {
+  if (!config.adminPassword) return false;
   const a = crypto.createHash('sha256').update(String(pw || '')).digest();
   const b = crypto.createHash('sha256').update(config.adminPassword).digest();
   return crypto.timingSafeEqual(a, b);
 }
 
-function requireAdmin(req, res, next) {
-  if (verifyToken(req.cookies[COOKIE])) return next();
-  res.status(401).json({ error: 'נדרשת התחברות מנהל' });
+export function bearer(req) {
+  const h = req.headers.get('authorization') || '';
+  return h.startsWith('Bearer ') ? h.slice(7) : '';
 }
-
-module.exports = { COOKIE, MAX_AGE_MS, createToken, verifyToken, checkPassword, requireAdmin };

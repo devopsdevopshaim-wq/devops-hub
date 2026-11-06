@@ -1,5 +1,5 @@
 // נתוני התחלה: ערים לפי אזור, קטגוריות, מוצרים לדוגמה, קולקציות עונתיות, ספקים ושליחים לדוגמה.
-const db = require('./db');
+import db from './db.js';
 
 const CITIES = {
   'דרום': ['באר שבע', 'אשדוד', 'אשקלון', 'אילת', 'דימונה', 'נתיבות', 'אופקים', 'שדרות', 'קריית גת', 'ערד', 'רהט', 'ירוחם', 'מצפה רמון', 'עומר', 'להבים', 'מיתר'],
@@ -22,7 +22,7 @@ const CATEGORIES = [
 ];
 
 // סוגי הדפסה זמינים לאירוע (מנהל בוחר עד 3 לכל אירוע)
-const PRINT_TYPES = [
+export const PRINT_TYPES = [
   { type: 'magnet', name: 'מגנט', category: 'magnets', sizes: ['5x7.5', '6x9', '10x15'] },
   { type: 'block', name: 'בלוק עץ', category: 'blocks', sizes: ['10x10', '10x15', '15x15', '15x20'] },
   { type: 'frame', name: 'מסגרת קרטון', category: 'frames', sizes: ['10x15', '13x18', '15x20', '20x30'] },
@@ -89,7 +89,7 @@ const DEFAULT_SETTINGS = {
   paymentDashboardUrl: '',
 };
 
-function seedIfEmpty() {
+export function seedIfEmpty() {
   const s = db.state;
   if (!s.cities.length) {
     for (const [region, names] of Object.entries(CITIES)) {
@@ -101,8 +101,6 @@ function seedIfEmpty() {
   if (!s.collections.length) COLLECTIONS.forEach((x) => db.insert('collections', x));
   if (!s.suppliers.length) SUPPLIERS.forEach((x) => db.insert('suppliers', { id: db.id('s_'), active: true, notes: '', ...x }));
   if (!s.couriers.length) COURIERS.forEach((x) => db.insert('couriers', { id: db.id('k_'), active: true, notes: '', ...x }));
-  for (const [k, v] of Object.entries(DEFAULT_SETTINGS)) if (s.settings[k] === undefined) s.settings[k] = v;
-  db.touch();
+  const missing = Object.fromEntries(Object.entries(DEFAULT_SETTINGS).filter(([k]) => s.settings[k] === undefined));
+  if (Object.keys(missing).length) db.setSettings(missing);
 }
-
-module.exports = { seedIfEmpty, PRINT_TYPES };

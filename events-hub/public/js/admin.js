@@ -165,17 +165,48 @@
       <div class="grid">${list.map((e) => `<div class="card stack">
         <div class="row between"><h3 style="margin:0">${esc(e.name)}</h3>${ACTIVE(e.active)}</div>
         <div class="muted small">${esc(e.type || '')} · ${e.date ? new Date(e.date).toLocaleDateString('he-IL') : ''}</div>
-        <img src="${A}/events/${e.id}/qr.png" alt="QR" style="width:160px;margin:0 auto;background:#fff;border-radius:8px">
+        <canvas data-qr="${esc(e.link)}" aria-label="קוד QR לאירוע" style="width:160px;height:160px;margin:0 auto;background:#fff;border-radius:8px"></canvas>
         <div class="small">🔗 <a href="${esc(e.link)}" target="_blank">${esc(e.link)}</a></div>
         <div class="small">📸 ${e.photosPerGuest} תמונות לאורח · 👥 ${e.guests} אורחים · 🖨️ ${e.photos} הדפסות</div>
         <div class="small">${e.printOptions.map((o) => `<span class="badge primary">${esc(o.label)}</span>`).join(' ')}</div>
         <div class="row"><button class="btn sm" data-photos="${e.id}">תמונות להדפסה</button><button class="btn soft sm" data-edit="${e.id}">עריכה</button>
-        <a class="btn ghost sm" href="${A}/events/${e.id}/qr.png" download="qr-${esc(e.code)}.png">הורדת QR</a></div>
+        <button class="btn ghost sm" data-qrdl="${esc(e.link)}" data-name="qr-${esc(e.code)}.png">הורדת QR</button></div>
       </div>`).join('') || '<p class="muted">אין אירועים עדיין</p>'}</div>`;
     $('#new-ev').onclick = () => editEvent(null);
     $$('[data-edit]').forEach((b) => { b.onclick = () => editEvent(list.find((e) => e.id === b.dataset.edit)); });
     $$('[data-photos]').forEach((b) => { b.onclick = () => eventPhotos(list.find((e) => e.id === b.dataset.photos)); });
+    $$('canvas[data-qr]').forEach((c) => drawQR(c, c.dataset.qr));
   }
+
+  // ---------- QR (נוצר בדפדפן, js/qrcode.js) ----------
+  function drawQR(canvas, text, px = 800) {
+    const Q = window.qrcode(0, 'M');
+    Q.addData(text);
+    Q.make();
+    const n = Q.getModuleCount(); const margin = 4; const k = Math.max(4, Math.floor(px / (n + margin * 2)));
+    canvas.width = canvas.height = (n + margin * 2) * k;
+    const x = canvas.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, canvas.width, canvas.height); x.fillStyle = '#111';
+    for (let r = 0; r < n; r++) for (let col = 0; col < n; col++) if (Q.isDark(r, col)) x.fillRect((col + margin) * k, (r + margin) * k, k, k);
+    return canvas;
+  }
+
+  function saveBlob(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+
+  document.addEventListener('click', async (e) => {
+    const q = e.target.closest('[data-qrdl]');
+    if (q) drawQR(document.createElement('canvas'), q.dataset.qrdl, 1200).toBlob((b) => saveBlob(b, q.dataset.name));
+    const d = e.target.closest('[data-dl]');
+    if (d) {
+      try { saveBlob(await (await fetch(d.dataset.dl)).blob(), d.dataset.name); } catch { window.open(d.dataset.dl, '_blank', 'noopener'); }
+    }
+  });
 
   async function eventPhotos(ev) {
     const photos = await api(`${A}/events/${ev.id}/photos`);
@@ -183,10 +214,10 @@
     view.innerHTML = `<div class="row between"><h1>תמונות - ${esc(ev.name)}</h1><button class="btn ghost" id="back">← חזרה</button></div>
       <div class="tabs" style="margin-bottom:12px"><button class="tab active" data-f="all">הכול</button>${Object.entries(st).map(([k, v]) => `<button class="tab" data-f="${k}">${v}</button>`).join('')}<button class="tab" data-f="animation">אנימציות</button></div>
       <div class="grid" id="ph">${photos.map((p) => `<div class="card flat stack" data-st="${p.kind === 'animation' ? 'animation' : p.printStatus}">
-        <a href="${esc(p.url)}" target="_blank" class="photo-tile">${p.kind === 'animation' ? `<video src="${esc(p.url)}" muted loop autoplay playsinline></video>` : `<img src="${esc(p.url)}" loading="lazy" alt="">`}</a>
+        <a href="${esc(asset(p.url))}" target="_blank" rel="noopener" class="photo-tile">${p.kind === 'animation' ? `<video src="${esc(asset(p.url))}" muted loop autoplay playsinline></video>` : `<img src="${esc(asset(p.url))}" loading="lazy" alt="">`}</a>
         <div class="small"><b>${esc(p.guestName || '')}</b> ${esc(p.guestPhone || '')}<br>${esc(p.printOption)} · ${fmtDate(p.createdAt)}${p.editsApplied ? `<br><span class="muted">עריכות: ${esc(p.editsApplied)}</span>` : ''}</div>
         ${p.kind === 'print' ? `<select data-photo="${p.id}">${Object.entries(st).map(([k, v]) => `<option value="${k}" ${k === p.printStatus ? 'selected' : ''}>${v}</option>`).join('')}</select>
-        <a class="btn soft sm" href="${esc(p.url)}" download>⬇️ הורדה להדפסה</a>` : ''}
+        <button class="btn soft sm" data-dl="${esc(asset(p.url))}" data-name="${esc((p.guestName || 'photo') + '-' + p.id)}.jpg">⬇️ הורדה להדפסה</button>` : ''}
       </div>`).join('') || '<p class="muted">אין תמונות עדיין</p>'}</div>`;
     $('#back').onclick = events;
     $$('[data-photo]').forEach((s) => {
@@ -231,7 +262,7 @@
       <div class="fields"><div><b>${esc(o.customer.name)}</b><br>${esc(o.customer.phone)}<br>${esc(o.customer.email)}</div>
       <div>${esc(o.customer.address)}, <b>${esc(o.customer.city)}</b>${o.customer.notes ? `<br><span class="muted">הערת לקוח: ${esc(o.customer.notes)}</span>` : ''}</div></div>
       <h3 style="margin-top:12px">פריטים וספקים</h3>
-      ${o.items.map((i, idx) => `<div class="row" style="margin-bottom:6px">${i.photoUrl ? `<a href="${esc(i.photoUrl)}" target="_blank"><img src="${esc(i.photoUrl)}" style="width:48px;height:48px;object-fit:cover;border-radius:6px" alt=""></a>` : ''}
+      ${o.items.map((i, idx) => `<div class="row" style="margin-bottom:6px">${i.photoUrl ? `<a href="${esc(asset(i.photoUrl))}" target="_blank" rel="noopener"><img src="${esc(asset(i.photoUrl))}" style="width:48px;height:48px;object-fit:cover;border-radius:6px" alt=""></a>` : ''}
         <span style="flex:1">${esc(i.name)} × ${i.qty} · ${money(i.price * i.qty)}<div class="muted small">${catName(i.category)}</div></span>${supSel(idx, i)}</div>`).join('')}
       <div class="row"><label style="margin:0">שליח</label><select id="courier-sel" style="max-width:300px"><option value="">— ללא —</option>${ref.couriers.filter((k) => k.active !== false).map((k) => `<option value="${k.id}" ${k.id === o.courierId ? 'selected' : ''}>${esc(k.name)} ${esc(k.phone)}</option>`).join('')}</select>
         <button class="btn soft sm" id="save-assign">שמירת שיוך</button><button class="btn ghost sm" id="auto-assign">🔄 שיוך אוטומטי לפי עיר</button></div>
@@ -384,7 +415,7 @@
         <h2>💳 חברת סליקה</h2>
         <p>ספק פעיל: <b>${esc(d.payments.providers.find((p) => p.id === d.payments.active)?.name)}</b>
         ${d.payments.active === 'mock' ? '<span class="badge warn">מצב בדיקה - אין חיוב אמיתי</span>' : d.payments.configured ? '<span class="badge ok">מחובר</span>' : '<span class="badge bad">חסרים פרטי חיבור</span>'}</p>
-        <p class="muted small">התשתית מוכנה: הלקוח מועבר לדף תשלום מאובטח של חברת הסליקה, והאישור חוזר לשרת (webhook) לכתובת <code>${esc(d.publicUrl)}/api/payments/callback</code>. לחיבור ספק אמיתי: פתחו חשבון, הגדירו את PAYMENT_PROVIDER ופרטי המסוף בקובץ ‎.env והשלימו את המימוש ב-src/payments/index.js.</p>
+        <p class="muted small">התשתית מוכנה: הלקוח מועבר לדף תשלום מאובטח של חברת הסליקה, והאישור חוזר לשרת (webhook) לכתובת <code dir="ltr">${esc((API_BASE || location.origin) + '/api/payments/callback')}</code>. לחיבור ספק אמיתי: פתחו חשבון, הוסיפו ב-GitHub את פרטי המסוף כסודות (EVENTS_PAYMENT_PROVIDER, EVENTS_PAYMENT_TERMINAL, EVENTS_PAYMENT_API_KEY), והשלימו את המימוש ב-events-hub/src/payments/index.js.</p>
         <div class="grid">${d.payments.providers.filter((p) => p.id !== 'mock').map((p) => `<div class="card flat stack">
           <h3 style="margin:0">${esc(p.name)} ${p.id === d.payments.active ? '<span class="badge ok">פעיל</span>' : ''}</h3>
           <div class="muted small">${esc(p.notes)}</div>
@@ -446,7 +477,7 @@
   // תפריט "עוד" במובייל - כל המסכים
   $('#more-btn').onclick = () => openModal(`<div class="row between"><h2 style="margin:0">תפריט</h2><button class="icon-btn" data-close>✕</button></div>
     <div class="sheet-list" style="margin-top:12px">${$$('#nav [data-view]').map((t) => `<button class="btn soft" data-view="${t.dataset.view}">${esc(t.textContent)}</button>`).join('')}
-    <a class="btn soft" href="/" target="_blank">🛍️ אפליקציית הלקוח</a><button class="btn soft" data-install>📲 התקנת אפליקציית הניהול</button></div>`);
+    <a class="btn soft" href="../" target="_blank">🛍️ אפליקציית הלקוח</a><button class="btn soft" data-install>📲 התקנת אפליקציית הניהול</button></div>`);
   window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS[h] && h !== current) go(h); });
 
   async function loadRefs() {
@@ -469,9 +500,13 @@
 
   $('#login-form').onsubmit = async (e) => {
     e.preventDefault();
-    try { await api(`${A}/login`, { method: 'POST', body: { password: $('#pw').value } }); start(); } catch (err) { toast(err.message); }
+    try {
+      const r = await api(`${A}/login`, { method: 'POST', body: { password: $('#pw').value } });
+      adminToken.set(r.token);
+      start();
+    } catch (err) { toast(err.message); }
   };
-  $('#logout').onclick = async () => { await api(`${A}/logout`, { method: 'POST' }); showLogin(); };
+  $('#logout').onclick = () => { adminToken.set(''); showLogin(); };
 
   api(`${A}/me`).then(start).catch(showLogin);
 }());

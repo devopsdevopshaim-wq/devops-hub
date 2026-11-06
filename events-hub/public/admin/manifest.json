@@ -1,18 +1,18 @@
 {
-  "id": "/admin/?app=admin",
+  "id": "./?app=admin",
   "name": "רגעים - ניהול",
   "short_name": "רגעים ניהול",
   "description": "ניהול אירועים, הזמנות, ספקים, שליחים וסליקה",
   "lang": "he",
   "dir": "rtl",
-  "start_url": "/admin/",
-  "scope": "/admin/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#1f2433",
   "theme_color": "#1f2433",
   "icons": [
-    { "src": "/admin/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "/admin/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/admin/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }

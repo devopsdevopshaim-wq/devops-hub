@@ -86,7 +86,7 @@
     }
     $('#cart-items').innerHTML = cart.map((i, idx) => `
       <div class="row" style="align-items:flex-start">
-        <div class="photo-tile" style="width:64px;flex:none">${i.photoUrl ? `<img src="${esc(i.photoUrl)}" alt="">` : `<div style="font-size:2rem;display:grid;place-items:center;height:100%">${esc(i.icon)}</div>`}</div>
+        <div class="photo-tile" style="width:64px;flex:none">${i.photoUrl ? `<img src="${esc(asset(i.photoUrl))}" alt="">` : `<div style="font-size:2rem;display:grid;place-items:center;height:100%">${esc(i.icon)}</div>`}</div>
         <div style="flex:1"><b>${esc(i.name)}</b><div class="muted small">${money(i.price)} ליחידה</div>
           <div class="row" style="gap:6px;margin-top:4px"><button class="btn soft sm" data-q="${idx}" data-d="-1">−</button><b>${i.qty}</b><button class="btn soft sm" data-q="${idx}" data-d="1">+</button></div></div>
         <b>${money(i.price * i.qty)}</b>
@@ -149,7 +149,7 @@
     $('#photo-modal').classList.remove('hidden');
     $('#my-photos').innerHTML = '<p class="muted">טוען…</p>';
     const urls = [...new Set(await myPhotoUrls())];
-    $('#my-photos').innerHTML = urls.map((u) => `<button class="photo-tile" style="border:0;padding:0;cursor:pointer" data-photo="${esc(u)}"><img src="${esc(u)}" alt=""></button>`).join('') || '<p class="muted">אין עדיין תמונות - העלו תמונה</p>';
+    $('#my-photos').innerHTML = urls.map((u) => `<button class="photo-tile" style="border:0;padding:0;cursor:pointer" data-photo="${esc(u)}"><img src="${esc(asset(u))}" alt=""></button>`).join('') || '<p class="muted">אין עדיין תמונות - העלו תמונה</p>';
   }
   $('#photo-modal').addEventListener('click', (e) => {
     if (e.target.closest('[data-close]') || e.target.id === 'photo-modal') $('#photo-modal').classList.add('hidden');
@@ -160,9 +160,9 @@
     const f = e.target.files[0];
     e.target.value = '';
     if (!f) return;
-    const fd = new FormData();
-    fd.append('file', f);
     try {
+      const fd = new FormData();
+      fd.append('file', await shrinkImage(f), 'photo.jpg');
       const r = await api('/api/uploads', { method: 'POST', body: fd });
       store.set('uploadedPhotos', [r.url, ...store.get('uploadedPhotos', [])].slice(0, 30));
       addToCart(photoTarget, r.url);
@@ -174,11 +174,11 @@
   async function renderEvents() {
     const list = myEvents.all();
     if (!list.length) { $('#events-list').innerHTML = '<p class="muted">עוד לא סרקתם QR באירוע.</p>'; return; }
-    $('#events-list').innerHTML = list.map((e) => `<div class="card flat" id="ev-${esc(e.code)}"><div class="row between"><h3 style="margin:0">${esc(e.name)}</h3><a class="btn sm" href="/e/${esc(e.code)}">פתיחה</a></div><div class="grid sm" style="margin-top:10px"></div></div>`).join('');
+    $('#events-list').innerHTML = list.map((e) => `<div class="card flat" id="ev-${esc(e.code)}"><div class="row between"><h3 style="margin:0">${esc(e.name)}</h3><a class="btn sm" href="event.html?c=${esc(e.code)}">פתיחה</a></div><div class="grid sm" style="margin-top:10px"></div></div>`).join('');
     for (const e of list) {
       try {
         const d = await api(`/api/event/${e.code}/me`, { headers: { 'x-guest-id': e.guestId, 'x-guest-token': e.guestToken } });
-        $(`#ev-${e.code} .grid`).innerHTML = d.photos.map((p) => `<div class="photo-tile">${p.kind === 'animation' ? `<video src="${esc(p.url)}" muted loop autoplay playsinline></video>` : `<img src="${esc(p.url)}" alt="" loading="lazy">`}</div>`).join('');
+        $(`#ev-${e.code} .grid`).innerHTML = d.photos.map((p) => `<div class="photo-tile">${p.kind === 'animation' ? `<video src="${esc(asset(p.url))}" muted loop autoplay playsinline></video>` : `<img src="${esc(asset(p.url))}" alt="" loading="lazy">`}</div>`).join('');
       } catch { /* התעלמות */ }
     }
   }
@@ -187,7 +187,7 @@
   async function renderOrders() {
     const list = myOrders.all();
     if (!list.length) { $('#orders-list').innerHTML = '<p class="muted">אין הזמנות עדיין.</p>'; return; }
-    $('#orders-list').innerHTML = list.map((o) => `<a class="card flat row between" style="text-decoration:none;color:inherit" href="/track.html?id=${esc(o.id)}&t=${esc(o.t)}" data-o="${esc(o.id)}"><b>הזמנה #${esc(o.number)}</b><span class="muted small">${fmtDate(o.at)}</span><span class="badge" data-st>…</span></a>`).join('');
+    $('#orders-list').innerHTML = list.map((o) => `<a class="card flat row between" style="text-decoration:none;color:inherit" href="track.html?id=${esc(o.id)}&t=${esc(o.t)}" data-o="${esc(o.id)}"><b>הזמנה #${esc(o.number)}</b><span class="muted small">${fmtDate(o.at)}</span><span class="badge" data-st>…</span></a>`).join('');
     for (const o of list) {
       api(`/api/orders/${o.id}?t=${o.t}`).then((d) => { $(`[data-o="${o.id}"] [data-st]`).textContent = d.statusName; }).catch(() => {});
     }

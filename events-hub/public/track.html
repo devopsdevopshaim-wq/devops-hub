@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#b5476b">
   <title>מעקב הזמנה</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/css/app.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <header class="topbar"><div class="wrap"><a class="brand" href="/"><span class="logo">📸</span><span>רגעים</span></a><span class="spacer"></span><a class="btn ghost sm" href="/#orders">ההזמנות שלי</a></div></header>
+  <header class="topbar"><div class="wrap"><a class="brand" href="./"><span class="logo">📸</span><span>רגעים</span></a><span class="spacer"></span><a class="btn ghost sm" href="./#orders">ההזמנות שלי</a></div></header>
   <main class="wrap narrow stack" id="root"><p class="muted">טוען…</p></main>
-  <script src="/js/install-help.js"></script>
-  <script src="/js/common.js"></script>
+  <script src="js/install-help.js"></script>
+  <script src="js/common.js"></script>
   <script>
     (async () => {
       const q = new URLSearchParams(location.search);
@@ -24,7 +24,7 @@
         const ok = !['payment_failed', 'cancelled', 'issue'].includes(o.status);
         root.innerHTML = `
           ${q.get('new') && o.status !== 'payment_failed' ? '<div class="card"><h2>תודה! ההזמנה התקבלה 🎉</h2><p class="muted">נעדכן אתכם בכל שלב.</p></div>' : ''}
-          ${o.status === 'payment_failed' ? '<div class="card"><h2>התשלום לא הושלם</h2><p>אפשר לנסות שוב מהסל.</p><a class="btn" href="/">חזרה לחנות</a></div>' : ''}
+          ${o.status === 'payment_failed' ? '<div class="card"><h2>התשלום לא הושלם</h2><p>אפשר לנסות שוב מהסל.</p><a class="btn" href="./">חזרה לחנות</a></div>' : ''}
           <div class="card">
             <div class="row between"><h1 style="margin:0">הזמנה #${esc(o.number)}</h1><span class="badge ${ok ? 'primary' : 'bad'}">${esc(o.statusName)}</span></div>
             <p class="muted">משלוח ל${esc(o.city)} · ${fmtDate(o.createdAt)}</p>
