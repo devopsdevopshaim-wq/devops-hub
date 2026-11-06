@@ -1,0 +1,19 @@
+{
+  "name": "events-app",
+  "version": "1.0.0",
+  "description": "מערכת לאירועים: העלאת תמונות בזמן אירוע דרך QR, עריכה, הדפסה, חנות מתנות, ספקים, שליחים ומעקב משלוחים",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "cookie-parser": "1.4.7",
+    "express": "4.21.2",
+    "multer": "2.0.2",
+    "qrcode": "1.5.4"
+  }
+}

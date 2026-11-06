@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1f2433">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="רגעים ניהול">
+  <title>רגעים - ניהול</title>
+  <link rel="manifest" href="/admin/manifest.json">
+  <link rel="icon" href="/admin/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/admin/icon-192.png">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div id="login" class="wrap narrow hidden" style="margin-top:10vh">
+    <form class="card" id="login-form">
+      <img src="/admin/icon.svg" alt="" style="width:72px;margin:0 auto 12px">
+      <h1 style="text-align:center">רגעים - אפליקציית ניהול</h1>
+      <div class="field"><label for="pw">סיסמה</label><input id="pw" type="password" required autocomplete="current-password"></div>
+      <button class="btn block">כניסה</button>
+    </form>
+  </div>
+
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <div class="wrap">
+        <a class="brand" href="/admin/"><span class="logo">⚙️</span><span>ניהול</span></a>
+        <span class="spacer"></span>
+        <a class="btn sm" id="pay-shortcut" target="_blank" rel="noopener">💳 <span class="hide-sm">כניסה לחברת הסליקה</span><span class="show-sm">סליקה</span></a>
+        <button class="btn soft sm hidden hide-sm" data-install>📲 התקנה</button>
+        <a class="btn ghost sm hide-sm" href="/" target="_blank">אפליקציית הלקוח</a>
+        <button class="btn ghost sm" id="logout">יציאה</button>
+      </div>
+      <div class="wrap hide-sm" style="padding-top:0">
+        <nav class="tabs" id="nav">
+          <button class="tab active" data-view="dashboard">📊 לוח בקרה</button>
+          <button class="tab" data-view="events">📸 אירועים ו-QR</button>
+          <button class="tab" data-view="orders">📦 הזמנות ומשלוחים</button>
+          <button class="tab" data-view="products">🛍️ מוצרים</button>
+          <button class="tab" data-view="collections">🎁 קולקציות עונתיות</button>
+          <button class="tab" data-view="suppliers">🏭 ספקים</button>
+          <button class="tab" data-view="couriers">🛵 שליחים</button>
+          <button class="tab" data-view="cities">🏙️ ערים</button>
+          <button class="tab" data-view="guests">👥 אורחים</button>
+          <button class="tab" data-view="settings">💳 סליקה והגדרות</button>
+        </nav>
+      </div>
+    </header>
+    <main class="wrap" id="view"></main>
+
+    <!-- סרגל ניווט תחתון (אפליקציה) -->
+    <nav class="bottom-nav" aria-label="ניווט ראשי">
+      <button data-view="dashboard" class="active"><span class="ico">📊</span>בקרה</button>
+      <button data-view="events"><span class="ico">📸</span>אירועים</button>
+      <button data-view="orders"><span class="ico">📦</span>הזמנות</button>
+      <button data-view="suppliers"><span class="ico">🏭</span>ספקים</button>
+      <button id="more-btn"><span class="ico">☰</span>עוד</button>
+    </nav>
+  </div>
+
+  <div id="modal" class="modal hidden"><div class="card" id="modal-body"></div></div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

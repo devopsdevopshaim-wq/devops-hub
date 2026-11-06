@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#b5476b">
+  <title>מעקב הזמנה</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="topbar"><div class="wrap"><a class="brand" href="/"><span class="logo">📸</span><span>רגעים</span></a><span class="spacer"></span><a class="btn ghost sm" href="/#orders">ההזמנות שלי</a></div></header>
+  <main class="wrap narrow stack" id="root"><p class="muted">טוען…</p></main>
+  <script src="/js/common.js"></script>
+  <script>
+    (async () => {
+      const q = new URLSearchParams(location.search);
+      const root = $('#root');
+      try {
+        const o = await api(`/api/orders/${encodeURIComponent(q.get('id'))}?t=${encodeURIComponent(q.get('t'))}`);
+        myOrders.add({ id: o.id, number: o.number, t: q.get('t'), at: o.createdAt });
+        const ok = !['payment_failed', 'cancelled', 'issue'].includes(o.status);
+        root.innerHTML = `
+          ${q.get('new') && o.status !== 'payment_failed' ? '<div class="card"><h2>תודה! ההזמנה התקבלה 🎉</h2><p class="muted">נעדכן אתכם בכל שלב.</p></div>' : ''}
+          ${o.status === 'payment_failed' ? '<div class="card"><h2>התשלום לא הושלם</h2><p>אפשר לנסות שוב מהסל.</p><a class="btn" href="/">חזרה לחנות</a></div>' : ''}
+          <div class="card">
+            <div class="row between"><h1 style="margin:0">הזמנה #${esc(o.number)}</h1><span class="badge ${ok ? 'primary' : 'bad'}">${esc(o.statusName)}</span></div>
+            <p class="muted">משלוח ל${esc(o.city)} · ${fmtDate(o.createdAt)}</p>
+            <h3>מצב המשלוח</h3>
+            <ul class="timeline">${o.timeline.slice().reverse().map((t) => `<li class="${t.status ? '' : 'note'}"><b>${esc(t.statusName || 'עדכון')}</b>${t.note ? `<div>${esc(t.note)}</div>` : ''}<time>${fmtDate(t.at)}</time></li>`).join('')}</ul>
+          </div>
+          <div class="card">
+            <h3>פרטי ההזמנה</h3>
+            ${o.items.map((i) => `<div class="row between"><span>${esc(i.name)} × ${i.qty}</span><b>${money(i.price * i.qty)}</b></div>`).join('')}
+            <div class="row between muted"><span>משלוח</span><span>${o.shipping ? money(o.shipping) : 'חינם'}</span></div>
+            <div class="row between"><b>סה"כ</b><span class="price">${money(o.total)}</span></div>
+          </div>`;
+      } catch (e) {
+        root.innerHTML = `<div class="card"><h2>ההזמנה לא נמצאה</h2><p class="muted">${esc(e.message)}</p></div>`;
+      }
+    })();
+  </script>
+</body>
+</html>
