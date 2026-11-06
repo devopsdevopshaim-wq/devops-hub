@@ -16,12 +16,19 @@
     });
     return;
   }
+  /* the guests' app opened from the home screen (live.html?app=1): back to the last event saved on this phone */
+  if (!L.e && !L.m && window.FLApp) {
+    var last = FLApp.last();
+    if (last) { location.replace('live.html?e=' + encodeURIComponent(last.e) + '&k=' + encodeURIComponent(last.k)); return; }
+    fail('עוד לא סרקתם קוד באירוע. בפעם הבאה סורקים את הקוד שעל השולחן, והאירוע יישמר כאן 📸'); return;
+  }
   if (!L.e || !L.k) { fail('הקישור לא שלם. סורקים שוב את הקוד שעל השולחן.'); return; }
 
   L.call({ action: 'guest-info', e: L.e, k: L.k }).then(function (r) {
     if (!r.ok) return fail(L.msg(r));
     info = r; document.title = 'צלמו מגנט · ' + r.title;
-    if (!r.open) return fail('העלאת התמונות לאירוע הזה נסגרה. תודה שהייתם איתנו! 💛');
+    if (window.FLApp) FLApp.remember(r.title);
+    if (!r.open) { fail('העלאת התמונות לאירוע הזה נסגרה. תודה שהייתם איתנו! 💛'); if (window.FLApp) app.insertAdjacentHTML('beforeend', FLApp.storeHtml()); return; }
     form();
   });
 
@@ -108,8 +115,10 @@
       if (ld.phone && !ld.consent) L.toast('הטלפון לא נשמר: צריך לסמן את האישור.', 5000);
       else if (ld.phone) L.lead.send(ld, name).then(function (x) { if (x && x.ok) L.toast('📲 תודה! נשלח לכם את התמונות לוואטסאפ', 4000); else if (x && x.error === 'bad-phone') L.toast('מספר הטלפון לא נראה תקין', 4000); });
       app.innerHTML = '<section class="card hero lv-done"><p class="lv-ok">✓</p><h1 class="lv-title">התמונה נשלחה!</h1><p class="hello">היא בתור להדפסה. גשו לעמדת המגנטים לאסוף אותה 🧲' +
-        (text ? '<br>והברכה שלכם תחכה לבעלי השמחה באלבום 💌' : '') + '</p><button class="lv-send" id="again">📸 עוד תמונה</button></section>';
+        (text ? '<br>והברכה שלכם תחכה לבעלי השמחה באלבום 💌' : '') + '</p><button class="lv-send" id="again">📸 עוד תמונה</button>' +
+        (window.FLApp ? FLApp.storeHtml() : '') + '</section>';
       document.getElementById('again').addEventListener('click', form);
+      if (window.FLApp) FLApp.afterSend();
     });
   }
 })();

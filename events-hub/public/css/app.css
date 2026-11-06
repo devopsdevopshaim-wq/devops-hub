@@ -165,3 +165,12 @@ tr.stuck td { background: color-mix(in srgb, var(--bad) 7%, transparent); }
 }
 .sheet-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .sheet-list button { min-height: 64px; }
+
+/* פס התקנת האפליקציה - בתוך הדף, מתחת לסרגל העליון, לא מסתיר כלום */
+.install-bar {
+  display: flex; gap: 8px; align-items: center; background: var(--surface); color: var(--text);
+  border: 1px solid var(--primary); border-radius: 14px; padding: 10px 12px; margin: 12px 16px 0; font-weight: 600; font-size: .92rem;
+  max-width: 1068px; margin-inline: auto; box-shadow: var(--shadow);
+}
+@media (max-width: 1100px) { .install-bar { margin-inline: 16px; } }
+.install-bar span { flex: 1; line-height: 1.35; }

@@ -1,6 +1,6 @@
 // Service Worker - מאפשר לאפליקציה להיפתח מהמסך הראשי ולעבוד גם עם חיבור חלש
-const CACHE = 'regaim-v1';
-const SHELL = ['/', '/index.html', '/event.html', '/track.html', '/css/app.css', '/js/common.js', '/js/app.js', '/js/event.js', '/js/editor.js', '/manifest.json', '/icons/icon.svg'];
+const CACHE = 'regaim-v2';
+const SHELL = ['/', '/index.html', '/event.html', '/track.html', '/css/app.css', '/js/common.js', '/js/app.js', '/js/event.js', '/js/editor.js', '/js/install-help.js', '/manifest.json', '/icons/icon.svg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

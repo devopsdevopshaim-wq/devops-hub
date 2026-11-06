@@ -207,5 +207,6 @@
     const hash = location.hash.slice(1);
     // אם יש אירוע שמור והלקוח פתח את האפליקציה מהמסך הראשי - מציגים את האירועים
     go(['store', 'events', 'orders'].includes(hash) ? hash : 'store');
+    setTimeout(() => offerInstall(), 2500);
   })();
 }());
