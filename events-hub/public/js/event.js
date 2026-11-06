@@ -155,6 +155,7 @@
       me = { guestId: r.guestId, guestToken: r.guestToken };
       store.set(`guest:${code}`, me);
       await refresh();
+      offerInstall({ auto: true }); // מיד אחרי הסריקה וההרשמה: חלון התקנת האפליקציה נפתח לבד (פעם אחת)
     } catch (err) { toast(err.message); }
   });
 
@@ -170,5 +171,6 @@
     me = store.get(`guest:${code}`, null);
     if (me) await refresh();
     else if (ev.ended) { $('#error-msg').textContent = 'האירוע הסתיים. מוזמנים לחנות שלנו!'; show('error'); } else show('register');
+    setTimeout(() => offerInstall(), 2500);
   })();
 }());

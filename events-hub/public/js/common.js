@@ -65,19 +65,55 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register(location.pathname.startsWith('/admin') ? '/admin/sw.js' : '/sw.js').catch(() => {}));
 }
 let deferredInstall = null;
+const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const appName = () => (location.pathname.startsWith('/admin') ? 'רגעים ניהול' : 'רגעים');
+const isPhone = () => Boolean(window.FS && FS.installEnv && FS.installEnv.phone);
+
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstall = e;
   $$('[data-install]').forEach((b) => b.classList.remove('hidden'));
 });
-document.addEventListener('click', async (e) => {
-  const b = e.target.closest('[data-install]');
-  if (!b) return;
+window.addEventListener('appinstalled', () => { deferredInstall = null; store.set('installOffer', 'done'); $('#install-bar')?.remove(); });
+
+// התקנה: בלחיצה אחת כשהדפדפן מאפשר (אנדרואיד), אחרת הוראות מדויקות לפי הטלפון (אייפון, סמסונג, בתוך וואטסאפ...)
+function installApp() {
   if (deferredInstall) {
     deferredInstall.prompt();
+    deferredInstall.userChoice.then((c) => { if (c && c.outcome === 'accepted') store.set('installOffer', 'done'); });
     deferredInstall = null;
-    b.classList.add('hidden');
+  } else if (window.FS && FS.installHelp) {
+    FS.installHelp(appName());
   } else {
     toast('בדפדפן: תפריט ← "הוספה למסך הבית"');
   }
+}
+
+// הצעת התקנה אוטומטית אחרי סריקת QR: פס התקנה בתחתית, ו-auto=true פותח מיד את חלון ההתקנה (פעם אחת)
+function offerInstall({ auto = false } = {}) {
+  if (isStandalone() || !isPhone()) return;
+  const v = store.get('installOffer', '');
+  if (v === 'done' || (typeof v === 'number' && Date.now() - v < 3 * 864e5)) return;
+  if (auto) {
+    store.set('installOffer', Date.now());
+    $('#install-bar')?.remove();
+    setTimeout(installApp, 700);
+    return;
+  }
+  if ($('#install-bar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'install-bar';
+  bar.className = 'install-bar';
+  bar.innerHTML = '<span>📲 שמרו את האפליקציה בטלפון: התמונות וההזמנות שלכם תמיד בלחיצה</span><button class="btn sm" data-i>התקנה</button><button class="icon-btn" data-x aria-label="לא עכשיו">✕</button>';
+  bar.addEventListener('click', (e) => {
+    if (e.target.closest('[data-i]')) installApp();
+    if (e.target.closest('[data-x]')) { store.set('installOffer', Date.now()); bar.remove(); }
+  });
+  const top = $('.topbar');
+  if (top) top.after(bar); else document.body.prepend(bar);
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-install]');
+  if (b) installApp();
 });

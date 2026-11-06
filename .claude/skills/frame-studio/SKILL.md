@@ -35,6 +35,16 @@ A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, pre
 
 Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
 
+## The guests' QR page installs as an app (Nov 6, v118)
+- The event QR (`live.html?e=…&k=…`, and the main QR `?m=…`) now opens a page that is also the guests' app: `guest.webmanifest` (id `frame-guest`, "התמונות שלי", start_url `live.html?app=1`, icons `guest-192/512.png`), apart from the studio's Optimus manifest.
+- `js/live-app.js` (`window.FLApp`, loaded after `install-help.js`):
+  - remembers each event opened on the phone in `fs-live-events` (`{e, k, t, at}`, the 20 latest);
+  - `live-guest.js` sends a page opened without keys (from the home screen) to the last saved event;
+  - on phones, outside the installed app, a bar `#lv-app` shows after 2.5 s. Its button installs in one tap where the browser sent `beforeinstallprompt` (Android Chrome / Edge); elsewhere it opens `FS.installHelp` with the exact steps (iPhone, Samsung, inside WhatsApp…);
+  - after the first photo is sent, the install steps open by themselves once (`fs-live-app`: `done` / `later-<time>`, quiet for 3 days).
+- `guest-app.json` `{ storeUrl }`: when set to an https address (the Regaim app, `events-hub/`, once deployed), a 🛍️ store button shows on the bar, after sending, and on a closed event. Empty = no button.
+- A fully automatic install is not possible in any browser: it always needs one tap from the guest.
+
 ## One person stays one; "👤 רק על אדם אחד" (Oct 28, v70)
 - A photo of one man came back with two: the people were counted with every face the tiled detector found (lights and reflections too), so the prompt said "exactly 2 people" and the check compared against the same wrong number. Now `FS.detectFaces(im)` (ai.js) gives boxes and `FS.mainFaces` keeps the clear faces (score 0.6+, at least 40% as wide as the largest); `FS.countFaces` is that count. `restyleTry` counts the original this way, hands the count to the prompt (`p._n0`) and checks every answer with it (`guarded`).
 - **👤 רק על אדם אחד** (`FS.aiOnePerson`, 'fs-ai-one'; `#mt-one` in the workspace's AI engine card, `#ax-one` in the studio's AI tab): on a photo with 2+ main faces, `pickPerson` asks which (a picker of face crops in `#dlg`; in a batch, `FS.aiBatch(list.length > 1)` set by `FS.runAI`, the largest face; the pick is reused for 2 minutes so "3 versions" ask once). `onePerson` crops the area of that person (3.6 face widths × 7.5 face heights), sends only the crop (neighbours partly inside are counted and told to stay as they are), and lays back only the person: the answer's person mask × a falloff around the chosen face (full to 1.6 face widths, none by 2.2) × a border halfway to each neighbouring face × soft crop edges. Everyone else stays as shot.
