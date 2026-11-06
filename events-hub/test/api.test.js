@@ -132,3 +132,67 @@ test('stuck orders are flagged and notes are recorded', async () => {
   const track = await call('GET', `/api/orders/${order.id}?t=${order.trackToken}`);
   assert.ok(track.data.timeline.some((t) => t.note === 'תקוע אצל הספק'));
 });
+
+test('product images: uploaded from the admin app and saved on the product', async () => {
+  const fd = new FormData();
+  fd.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'p.jpg');
+  const up = await call('POST', '/api/admin/uploads', fd);
+  assert.equal(up.status, 200);
+  const p = db.get('products', 'gift-mug');
+  const r = await call('PUT', '/api/admin/products/gift-mug', { ...p, price: 64.9, images: [up.data.url, 'https://example.com/a.jpg', 'javascript:alert(1)'] });
+  assert.deepEqual(r.data.images, [up.data.url, 'https://example.com/a.jpg']);
+  assert.equal(r.data.price, 64.9);
+  const store = await call('GET', '/api/store');
+  assert.equal(store.data.products.find((x) => x.id === 'gift-mug').images[0], up.data.url);
+});
+
+test('promotions: best price per product, coupon codes and minimum order', async () => {
+  // 20% על כל המגנטים, פתוח לכולם
+  const a = await call('POST', '/api/admin/promotions', { name: 'מבצע מגנטים', badge: '20%-', kind: 'percent', value: 20, scope: 'category', categories: ['magnets'] });
+  assert.equal(a.status, 200);
+  // מחיר קבוע 10 ₪ למגנט 6x9 עם קוד
+  await call('POST', '/api/admin/promotions', { name: 'קופון חתונה', kind: 'price', value: 10, scope: 'products', productIds: ['mag-6x9'], code: 'wedding10' });
+  // 50 ₪ הנחה לחבילת חינה בהזמנה מעל 2000
+  await call('POST', '/api/admin/promotions', { name: 'חינה מעל 2000', kind: 'amount', value: 50, scope: 'products', productIds: ['pkg-henna'], minSubtotal: 2000 });
+  // מבצע שהסתיים לא חל
+  await call('POST', '/api/admin/promotions', { name: 'ישן', kind: 'percent', value: 90, scope: 'all', endDate: '2020-01-01' });
+
+  const store = (await call('GET', '/api/store')).data;
+  const mag = store.products.find((x) => x.id === 'mag-6x9');
+  assert.equal(mag.salePrice, 12);
+  assert.equal(mag.promo.badge, '20%-');
+  assert.ok(!store.promotions.some((p) => p.name === 'קופון חתונה'), 'coupon promos stay hidden');
+
+  let q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 2 }] })).data;
+  assert.equal(q.subtotal, 24);
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 2 }], code: ' Wedding10 ' })).data;
+  assert.equal(q.subtotal, 20);
+  assert.equal(q.codeUsed, true);
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 1 }], code: 'NOPE' })).data;
+  assert.equal(q.codeValid, false);
+
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-henna', qty: 1 }] })).data;
+  assert.equal(q.subtotal, 1490, 'below the minimum: no discount');
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-henna', qty: 1 }, { productId: 'pkg-mikveh', qty: 1 }] })).data;
+  assert.equal(q.discount, 50);
+
+  const bad = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', qty: 1 }], code: 'NOPE' });
+  assert.equal(bad.status, 400);
+  const o = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', qty: 3 }], code: 'wedding10' });
+  const order = db.get('orders', o.data.orderId);
+  assert.equal(order.subtotal, 30);
+  assert.equal(order.discount, 15);
+  assert.equal(order.coupon, 'WEDDING10');
+  assert.equal(order.total, 60);
+});
+
+test('a coupon applies on top of an automatic sale', async () => {
+  // הספל: 25% הנחה פתוחה + קופון של 10 ₪ על כל החנות
+  await call('POST', '/api/admin/promotions', { name: 'מתנות 25', kind: 'percent', value: 25, scope: 'category', categories: ['gifts'] });
+  await call('POST', '/api/admin/promotions', { name: 'קופון כלה', kind: 'amount', value: 10, scope: 'all', code: 'KALA' });
+  const mug = db.get('products', 'gift-mug').price; // 64.9 מהבדיקה הקודמת
+  const q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'gift-mug', qty: 1 }], code: 'kala' })).data;
+  assert.equal(q.lines[0].price, Math.round((mug * 0.75 - 10) * 100) / 100);
+  assert.equal(q.codeUsed, true);
+  assert.ok(q.lines[0].promo && q.lines[0].coupon);
+});

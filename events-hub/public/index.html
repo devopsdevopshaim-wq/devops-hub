@@ -10,13 +10,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="רגעים">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
   <header class="topbar">
     <div class="wrap">
-      <a class="brand" href="./"><span class="logo">📸</span><span id="brand-name">רגעים</span></a>
+      <a class="brand" href="./"><img class="logo" src="icons/icon.svg" alt=""><span id="brand-name">רגעים</span></a>
       <span class="spacer"></span>
       <button class="btn soft sm hidden hide-sm" data-install>📲 התקנה</button>
       <button class="icon-btn" id="cart-btn" aria-label="סל קניות">🛒<span class="count-dot hidden" id="cart-count">0</span></button>
@@ -32,6 +32,11 @@
 
   <main class="wrap">
     <section id="view-store">
+      <div class="store-hero">
+        <img src="icons/logo.svg" alt="רגעים - מזכרות שנשארות לתמיד">
+        <p>מגנטים, בלוקים, מסגרות, חבילות ומתנות לכל אירוע</p>
+      </div>
+      <div class="promo-strip" id="promo-strip"></div>
       <div id="collections"></div>
       <div class="tabs" id="cat-tabs" style="margin:12px 0"></div>
       <div class="grid" id="products"></div>
@@ -80,6 +85,9 @@
       <p class="muted small">התשלום מתבצע בדף מאובטח של חברת הסליקה. פרטי האשראי אינם נשמרים אצלנו.</p>
     </form>
   </aside>
+
+  <!-- דף מוצר -->
+  <div id="product-modal" class="modal hidden"><div class="card" id="product-body"></div></div>
 
   <!-- בחירת תמונה למוצר -->
   <div id="photo-modal" class="modal hidden">

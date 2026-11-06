@@ -5,7 +5,7 @@
 import crypto from 'node:crypto';
 
 export const COLLECTIONS = ['events', 'guests', 'photos', 'products', 'collections', 'categories',
-  'suppliers', 'couriers', 'cities', 'orders', 'payments'];
+  'suppliers', 'couriers', 'cities', 'orders', 'payments', 'promotions'];
 
 let state = null;
 let store = null;

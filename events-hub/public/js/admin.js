@@ -263,7 +263,8 @@
       <div>${esc(o.customer.address)}, <b>${esc(o.customer.city)}</b>${o.customer.notes ? `<br><span class="muted">הערת לקוח: ${esc(o.customer.notes)}</span>` : ''}</div></div>
       <h3 style="margin-top:12px">פריטים וספקים</h3>
       ${o.items.map((i, idx) => `<div class="row" style="margin-bottom:6px">${i.photoUrl ? `<a href="${esc(asset(i.photoUrl))}" target="_blank" rel="noopener"><img src="${esc(asset(i.photoUrl))}" style="width:48px;height:48px;object-fit:cover;border-radius:6px" alt=""></a>` : ''}
-        <span style="flex:1">${esc(i.name)} × ${i.qty} · ${money(i.price * i.qty)}<div class="muted small">${catName(i.category)}</div></span>${supSel(idx, i)}</div>`).join('')}
+        <span style="flex:1">${esc(i.name)} × ${i.qty} · ${money(i.price * i.qty)}${i.promo ? ` <span class="badge bad">🏷️ ${esc(i.promo)}</span>` : ''}<div class="muted small">${catName(i.category)}</div></span>${supSel(idx, i)}</div>`).join('')}
+      <p class="small">סכום: <b>${money(o.total)}</b>${o.discount ? ` (הנחה ${money(o.discount)}${o.coupon ? `, קופון <b dir="ltr">${esc(o.coupon)}</b>` : ''})` : ''} · משלוח ${o.shipping ? money(o.shipping) : 'חינם'}</p>
       <div class="row"><label style="margin:0">שליח</label><select id="courier-sel" style="max-width:300px"><option value="">— ללא —</option>${ref.couriers.filter((k) => k.active !== false).map((k) => `<option value="${k.id}" ${k.id === o.courierId ? 'selected' : ''}>${esc(k.name)} ${esc(k.phone)}</option>`).join('')}</select>
         <button class="btn soft sm" id="save-assign">שמירת שיוך</button><button class="btn ghost sm" id="auto-assign">🔄 שיוך אוטומטי לפי עיר</button></div>
       <p class="small">🔗 קישור מעקב ללקוח: <a href="${esc(o.trackUrl)}" target="_blank">פתיחה</a> <button class="btn ghost sm" id="copy-track">העתקה</button></p>
@@ -292,20 +293,126 @@
   }
 
   // ---------- מוצרים ----------
+  const productImgs = (p) => (p.images && p.images.length ? p.images : (p.image ? [p.image] : []));
+
+  // ניהול תמונות למוצר: העלאה (כמה בבת אחת), הסרה, וקביעת תמונה ראשית
+  function imagesEditor(list) {
+    return `<div class="card flat" style="margin-top:12px"><h3>📷 תמונות המוצר <small class="muted">(הראשונה מוצגת בחנות, עד 12)</small></h3>
+      <div class="img-edit" id="img-list">${list.map((u) => imgChip(u)).join('')}</div>
+      <div class="row" style="margin-top:8px">
+        <label class="btn soft sm" for="img-up" style="margin:0">⬆️ הוספת תמונות</label>
+        <input type="file" id="img-up" accept="image/*" multiple class="hidden">
+        <span class="muted small" id="img-busy"></span>
+      </div></div>`;
+  }
+  const imgChip = (u) => `<div class="img-chip" data-url="${esc(u)}"><img src="${esc(asset(u))}" alt="">
+    <button type="button" data-img="first" title="תמונה ראשית">⭐</button><button type="button" data-img="del" title="הסרה">✕</button></div>`;
+
+  function bindImages() {
+    const box = $('#img-list');
+    box.onclick = (e) => {
+      const b = e.target.closest('[data-img]');
+      if (!b) return;
+      const chip = b.closest('.img-chip');
+      if (b.dataset.img === 'del') chip.remove();
+      if (b.dataset.img === 'first') box.prepend(chip);
+    };
+    $('#img-up').onchange = async (e) => {
+      const files = [...e.target.files].slice(0, 12);
+      e.target.value = '';
+      for (const [i, f] of files.entries()) {
+        if ($$('.img-chip', box).length >= 12) { toast('עד 12 תמונות למוצר'); break; }
+        $('#img-busy').textContent = `מעלה ${i + 1}/${files.length}…`;
+        try {
+          const fd = new FormData();
+          fd.append('file', await shrinkImage(f, 1600, 0.86), 'product.jpg');
+          const r = await api(`${A}/uploads`, { method: 'POST', body: fd });
+          box.insertAdjacentHTML('beforeend', imgChip(r.url));
+        } catch (err) { toast(err.message); }
+      }
+      $('#img-busy').textContent = '';
+    };
+  }
+  const collectImages = (form) => ({ images: $$('#img-list .img-chip', form).map((c) => c.dataset.url) });
+
   async function products() {
-    const list = await api(`${A}/products`);
+    const [list, store] = await Promise.all([api(`${A}/products`), api('/api/store').catch(() => ({ products: [] }))]);
+    const sale = Object.fromEntries(store.products.filter((p) => p.promo).map((p) => [p.id, p]));
     const fields = [
-      { k: 'name', label: 'שם המוצר' }, { k: 'price', label: 'מחיר (₪)', type: 'number', step: '0.01' },
-      { k: 'category', label: 'קטגוריה', type: 'select', options: catOpts() }, { k: 'icon', label: 'אייקון (אימוג׳י)' },
-      { k: 'image', label: 'קישור לתמונה (אופציונלי)', full: true }, { k: 'description', label: 'תיאור', type: 'textarea', full: true },
+      { k: 'name', label: 'שם המוצר' }, { k: 'price', label: 'מחיר רגיל (₪)', type: 'number', step: '0.01' },
+      { k: 'category', label: 'קטגוריה', type: 'select', options: catOpts() }, { k: 'icon', label: 'אייקון (כשאין תמונה)' },
+      { k: 'description', label: 'תיאור', type: 'textarea', full: true },
       { k: 'collectionIds', label: 'שיוך לקולקציה עונתית (המוצר יוצג רק בזמן הקולקציה)', type: 'checks', options: ref.collections.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` })) },
       { k: 'needsPhoto', label: 'המוצר דורש תמונה מהלקוח', type: 'bool', def: false }, { k: 'active', label: 'פעיל', type: 'bool' },
     ];
-    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><button class="btn" id="new">➕ מוצר חדש</button></div>
-      <div class="card table-wrap"><table><thead><tr><th></th><th>שם</th><th>קטגוריה</th><th>מחיר</th><th>קולקציה</th><th>סטטוס</th></tr></thead><tbody>
-      ${list.map((p) => `<tr data-id="${p.id}" style="cursor:pointer"><td>${esc(p.icon)}</td><td>${esc(p.name)}</td><td>${catName(p.category)}</td><td>${money(p.price)}</td>
-        <td class="small">${(p.collectionIds || []).map((c) => esc(ref.collections.find((x) => x.id === c)?.name || c)).join(', ')}</td><td>${ACTIVE(p.active)}</td></tr>`).join('')}</tbody></table></div>`;
-    const open = (rec) => editForm({ title: rec ? 'עריכת מוצר' : 'מוצר חדש', fields, rec: rec ? { ...rec, needsPhoto: rec.needsPhoto || false } : { needsPhoto: false }, url: `${A}/products`, onSaved: products });
+    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" data-go-promos>🏷️ מבצעים</button><button class="btn" id="new">➕ מוצר חדש</button></div></div>
+      <p class="muted small">את המחיר אפשר לשנות ישר בטבלה. מחיר מבצע נקבע במסך "מבצעים".</p>
+      <div class="card table-wrap"><table><thead><tr><th></th><th>שם</th><th>קטגוריה</th><th>מחיר רגיל</th><th>במבצע</th><th>סטטוס</th></tr></thead><tbody>
+      ${list.map((p) => {
+        const img = productImgs(p)[0];
+        const s = sale[p.id];
+        return `<tr data-id="${p.id}" style="cursor:pointer">
+        <td>${img ? `<img src="${esc(asset(img))}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px">` : `<span style="font-size:1.6rem">${esc(p.icon)}</span>`}</td>
+        <td>${esc(p.name)}<div class="muted small">${productImgs(p).length} תמונות</div></td><td>${catName(p.category)}</td>
+        <td><input type="number" step="0.01" min="0" value="${p.price}" data-price="${p.id}" aria-label="מחיר" style="width:100px;min-height:36px;padding:4px 8px"></td>
+        <td>${s ? `<b style="color:var(--bad)">${money(s.salePrice)}</b><div class="small">${esc(s.promo.name)}</div>` : '<span class="muted">—</span>'}</td>
+        <td>${ACTIVE(p.active)}</td></tr>`;
+      }).join('')}</tbody></table></div>`;
+    const open = (rec) => {
+      editForm({
+        title: rec ? 'עריכת מוצר' : 'מוצר חדש', fields, rec: rec ? { ...rec, needsPhoto: rec.needsPhoto || false } : { needsPhoto: false },
+        url: `${A}/products`, onSaved: products, extraHtml: imagesEditor(rec ? productImgs(rec) : []), collectExtra: collectImages,
+      });
+      bindImages();
+    };
+    $('#new').onclick = () => open(null);
+    $('[data-go-promos]').onclick = () => go('promotions');
+    // עריכת מחיר ישר מהטבלה
+    $$('[data-price]').forEach((inp) => {
+      inp.onclick = (e) => e.stopPropagation();
+      inp.onchange = async () => {
+        const p = list.find((x) => x.id === inp.dataset.price);
+        try {
+          await api(`${A}/products/${p.id}`, { method: 'PUT', body: { ...p, price: Number(inp.value) } });
+          p.price = Number(inp.value);
+          toast(`המחיר של "${p.name}" עודכן ל-${money(p.price)}`);
+        } catch (err) { toast(err.message); }
+      };
+    });
+    $$('tr[data-id]').forEach((r) => { r.onclick = () => open(list.find((p) => p.id === r.dataset.id)); });
+  }
+
+  // ---------- מבצעים ----------
+  const KIND_TXT = { percent: (v) => `${v}% הנחה`, amount: (v) => `${money(v)} הנחה`, price: (v) => `מחיר מבצע ${money(v)}` };
+  const SCOPE_TXT = { all: 'כל החנות', category: 'קטגוריות', products: 'מוצרים נבחרים', collection: 'קולקציות' };
+
+  async function promotions() {
+    const [list, prods] = await Promise.all([api(`${A}/promotions`), api(`${A}/products`)]);
+    const today = new Date().toISOString().slice(0, 10);
+    const live = (p) => p.active !== false && (!p.startDate || p.startDate <= today) && (!p.endDate || p.endDate >= today);
+    const fields = [
+      { k: 'name', label: 'שם המבצע (למשל: מבצע ראש השנה, 1+1 מגנטים)' },
+      { k: 'badge', label: 'תווית על המוצר (למשל: 20%- או "מבצע!")' },
+      { k: 'kind', label: 'סוג ההנחה', type: 'select', options: [{ value: 'percent', label: 'אחוז הנחה (%)' }, { value: 'amount', label: 'סכום הנחה ליחידה (₪)' }, { value: 'price', label: 'מחיר מבצע קבוע ליחידה (₪)' }] },
+      { k: 'value', label: 'ערך (אחוז / ₪)', type: 'number', step: '0.01' },
+      { k: 'scope', label: 'על מה המבצע', type: 'select', options: Object.entries(SCOPE_TXT).map(([value, label]) => ({ value, label })) },
+      { k: 'categories', label: 'קטגוריות (כשבוחרים "קטגוריות")', type: 'checks', options: catOpts() },
+      { k: 'productIds', label: 'מוצרים (כשבוחרים "מוצרים נבחרים")', type: 'checks', options: prods.map((p) => ({ value: p.id, label: `${p.name} (${money(p.price)})` })) },
+      { k: 'collectionIds', label: 'קולקציות (כשבוחרים "קולקציות")', type: 'checks', options: ref.collections.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` })) },
+      { k: 'startDate', label: 'מתאריך (ריק = מעכשיו)', type: 'date' }, { k: 'endDate', label: 'עד תאריך (ריק = בלי סוף)', type: 'date' },
+      { k: 'code', label: 'קוד קופון (ריק = לכולם, בלי קוד)' }, { k: 'minSubtotal', label: 'מינימום הזמנה ב-₪ (0 = בלי)', type: 'number' },
+      { k: 'active', label: 'פעיל', type: 'bool' },
+    ];
+    view.innerHTML = `<div class="row between"><h1>🏷️ מבצעים</h1><button class="btn" id="new">➕ מבצע חדש</button></div>
+      <p class="muted">מבצע יכול להיות אחוז, סכום או מחיר קבוע; על כל החנות, קטגוריה, מוצרים או קולקציה; לפי תאריכים; עם קוד קופון או מינימום הזמנה.
+      כשכמה מבצעים פתוחים מתאימים, הלקוח מקבל את המחיר הנמוך ביותר. קופון חל בנוסף, על מחיר המבצע.</p>
+      <div class="grid">${list.map((p) => `<div class="card" data-id="${p.id}" style="cursor:pointer">
+        <div class="row between"><h3 style="margin:0">${esc(p.name)}</h3>${live(p) ? '<span class="badge ok">פעיל עכשיו</span>' : '<span class="badge">לא פעיל</span>'}</div>
+        <div style="margin-top:6px"><b>${KIND_TXT[p.kind] ? KIND_TXT[p.kind](p.value) : ''}</b> · ${SCOPE_TXT[p.scope] || ''}</div>
+        <div class="muted small">${p.startDate || 'מעכשיו'} ← ${p.endDate || 'בלי סוף'}${p.code ? ` · קופון <b dir="ltr">${esc(p.code)}</b>` : ''}${p.minSubtotal ? ` · מעל ${money(p.minSubtotal)}` : ''}</div>
+        ${p.badge ? `<span class="sale-badge" style="position:static;display:inline-block;margin-top:6px">${esc(p.badge)}</span>` : ''}
+      </div>`).join('') || '<p class="muted">אין מבצעים עדיין</p>'}</div>`;
+    const open = (rec) => editForm({ title: rec ? 'עריכת מבצע' : 'מבצע חדש', fields, rec: rec || { kind: 'percent', scope: 'all', value: 10 }, url: `${A}/promotions`, onSaved: promotions });
     $('#new').onclick = () => open(null);
     $$('[data-id]').forEach((r) => { r.onclick = () => open(list.find((p) => p.id === r.dataset.id)); });
   }
@@ -461,7 +568,7 @@
   }
 
   // ---------- ניווט ----------
-  const VIEWS = { dashboard, events, orders, products, collections, suppliers, couriers, cities, guests, settings };
+  const VIEWS = { dashboard, events, orders, products, promotions, collections, suppliers, couriers, cities, guests, settings };
   async function go(v, arg) {
     current = v;
     $$('[data-view]').forEach((t) => t.classList.toggle('active', t.dataset.view === v));

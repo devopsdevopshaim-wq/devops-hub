@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <header class="topbar"><div class="wrap"><a class="brand" href="./"><span class="logo">📸</span><span>רגעים</span></a><span class="spacer"></span><a class="btn ghost sm" href="./#orders">ההזמנות שלי</a></div></header>
+  <header class="topbar"><div class="wrap"><a class="brand" href="./"><img class="logo" src="icons/icon.svg" alt=""><span>רגעים</span></a><span class="spacer"></span><a class="btn ghost sm" href="./#orders">ההזמנות שלי</a></div></header>
   <main class="wrap narrow stack" id="root"><p class="muted">טוען…</p></main>
   <script src="js/install-help.js"></script>
   <script src="js/common.js"></script>
@@ -34,6 +34,7 @@
           <div class="card">
             <h3>פרטי ההזמנה</h3>
             ${o.items.map((i) => `<div class="row between"><span>${esc(i.name)} × ${i.qty}</span><b>${money(i.price * i.qty)}</b></div>`).join('')}
+            ${o.discount ? `<div class="row between" style="color:var(--bad);font-weight:700"><span>🏷️ הנחה${o.coupon ? ` (קופון ${esc(o.coupon)})` : ''}</span><span>−${money(o.discount)}</span></div>` : ''}
             <div class="row between muted"><span>משלוח</span><span>${o.shipping ? money(o.shipping) : 'חינם'}</span></div>
             <div class="row between"><b>סה"כ</b><span class="price">${money(o.total)}</span></div>
           </div>`;
