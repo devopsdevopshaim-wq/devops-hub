@@ -394,7 +394,7 @@ on('POST', '/api/ai/remove-bg', async (c) => {
 // ---------- ניהול (דורש כניסה) ----------
 on('POST', '/api/admin/login', async (c) => {
   if (limited(`login:${c.ip}`, 15 * 60_000, 10)) return err(429, 'יותר מדי ניסיונות. נסו שוב בעוד רבע שעה');
-  if (!config.adminPassword) return err(503, 'סיסמת המנהל עוד לא הוגדרה. מוסיפים ב-GitHub את הסוד EVENTS_ADMIN_PASSWORD ומריצים את הפריסה.');
+  if (!config.adminPassword) return err(503, 'סיסמת המנהל עוד לא הוגדרה. ב-GitHub צריך את הסוד ADMIN_PASSWORD (או EVENTS_ADMIN_PASSWORD), ואז מריצים את הפריסה.');
   const b = await body(c.req);
   if (!auth.checkPassword(b.password)) return err(401, 'סיסמה שגויה');
   return json({ ok: true, token: auth.createToken() });

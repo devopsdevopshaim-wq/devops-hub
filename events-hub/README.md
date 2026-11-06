@@ -93,7 +93,7 @@ GitHub Pages מגיש רק דפים, ולא מריץ שרת. האפליקציה 
 - **התחברות מנהל:** אסימון חתום שנשמר באפליקציית הניהול בטלפון, ל-30 יום.
 
 ### הקמה, פעם אחת
-1. ב-GitHub נכנסים ל-Settings ← Secrets and variables ← Actions, ומוסיפים את **`EVENTS_ADMIN_PASSWORD`**. זו הסיסמה לאפליקציית הניהול, כדאי לפחות 10 תווים.
+1. **סיסמת אפליקציית הניהול** היא אותה סיסמה של אתר הניהול הקיים: הסוד `ADMIN_PASSWORD` ב-GitHub. כדי לקבוע לרגעים סיסמה נפרדת, מוסיפים את הסוד `EVENTS_ADMIN_PASSWORD`.
 2. ב-Actions בוחרים **Deploy Regaim (events-hub) server to Cloudflare** ← Run workflow. מעכשיו זה קורה לבד בכל שינוי.
 3. נכנסים לאפליקציית הניהול עם הסיסמה, ומתקינים אותה בטלפון.
 
@@ -104,7 +104,7 @@ GitHub Pages מגיש רק דפים, ולא מריץ שרת. האפליקציה 
 
 | סוד | מה זה |
 |---|---|
-| `EVENTS_ADMIN_PASSWORD` | סיסמת אפליקציית הניהול (חובה) |
+| `ADMIN_PASSWORD` / `EVENTS_ADMIN_PASSWORD` | סיסמת אפליקציית הניהול: הסיסמה של אתר הניהול הקיים, או סיסמה נפרדת לרגעים |
 | `EVENTS_REMOVE_BG_API_KEY` | הסרת רקע בעורך (remove.bg) |
 | `EVENTS_PAYMENT_PROVIDER` | `tranzila` / `cardcom` / `grow` / `payplus`. בלי הסוד הזה המערכת במצב בדיקה |
 | `EVENTS_PAYMENT_TERMINAL`, `EVENTS_PAYMENT_API_KEY`, `EVENTS_PAYMENT_API_SECRET` | פרטי המסוף מחברת הסליקה |

@@ -4,7 +4,8 @@ name: Deploy Regaim (events-hub) server to Cloudflare
 # והשרת שלה נפרס מכאן ל-Cloudflare Workers בשם regaim-events - שרת נפרד משרת הכניסה (spider-auth).
 # משתמש באותו טוקן Cloudflare של שרת הכניסה (CLOUDFLARE_API_TOKEN, או הסוד CLOUDFLARE / SPIDER).
 # סודות של האפליקציה (Settings → Secrets and variables → Actions):
-#   EVENTS_ADMIN_PASSWORD (חובה, סיסמת אפליקציית הניהול), EVENTS_REMOVE_BG_API_KEY,
+#   סיסמת אפליקציית הניהול = ADMIN_PASSWORD (אותה סיסמה של אתר הניהול הקיים), או EVENTS_ADMIN_PASSWORD לסיסמה נפרדת;
+#   EVENTS_REMOVE_BG_API_KEY,
 #   EVENTS_PAYMENT_PROVIDER / EVENTS_PAYMENT_TERMINAL / EVENTS_PAYMENT_API_KEY / EVENTS_PAYMENT_API_SECRET
 on:
   push:
@@ -55,7 +56,8 @@ jobs:
       - name: Deploy
         if: steps.have.outputs.go == 'true'
         env:
-          EVENTS_ADMIN_PASSWORD: ${{ secrets.EVENTS_ADMIN_PASSWORD }}
+          # אותה סיסמה של אתר הניהול הקיים (ADMIN_PASSWORD), אלא אם הוגדרה סיסמה נפרדת לרגעים
+          EVENTS_ADMIN_PASSWORD: ${{ secrets.EVENTS_ADMIN_PASSWORD || secrets.ADMIN_PASSWORD }}
           EVENTS_REMOVE_BG_API_KEY: ${{ secrets.EVENTS_REMOVE_BG_API_KEY }}
           EVENTS_PAYMENT_PROVIDER: ${{ secrets.EVENTS_PAYMENT_PROVIDER }}
           EVENTS_PAYMENT_TERMINAL: ${{ secrets.EVENTS_PAYMENT_TERMINAL }}
@@ -87,5 +89,5 @@ jobs:
             echo "- אפליקציית הלקוח: https://devopsdevopshaim-wq.github.io/devops-hub/events-hub/"
             echo "- אפליקציית הניהול: https://devopsdevopshaim-wq.github.io/devops-hub/events-hub/admin/"
             echo "- השרת: $URL"
-            if [ -z "$EVENTS_ADMIN_PASSWORD" ]; then echo "- ⚠️ חסר הסוד EVENTS_ADMIN_PASSWORD: בלעדיו אי אפשר להיכנס לאפליקציית הניהול. מוסיפים אותו ומריצים שוב את ה-workflow."; fi
+            if [ -z "$EVENTS_ADMIN_PASSWORD" ]; then echo "- ⚠️ אין סיסמת מנהל (ADMIN_PASSWORD או EVENTS_ADMIN_PASSWORD): בלעדיה אי אפשר להיכנס לאפליקציית הניהול."; fi
           } >> "$GITHUB_STEP_SUMMARY"
