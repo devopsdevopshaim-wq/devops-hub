@@ -8,15 +8,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="רגעים ניהול">
   <title>רגעים - ניהול</title>
-  <link rel="manifest" href="/admin/manifest.json">
-  <link rel="icon" href="/admin/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/admin/icon-192.png">
-  <link rel="stylesheet" href="/css/app.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="../css/app.css">
 </head>
 <body>
   <div id="login" class="wrap narrow hidden" style="margin-top:10vh">
     <form class="card" id="login-form">
-      <img src="/admin/icon.svg" alt="" style="width:72px;margin:0 auto 12px">
+      <img src="icon.svg" alt="" style="width:72px;margin:0 auto 12px">
       <h1 style="text-align:center">רגעים - אפליקציית ניהול</h1>
       <div class="field"><label for="pw">סיסמה</label><input id="pw" type="password" required autocomplete="current-password"></div>
       <button class="btn block">כניסה</button>
@@ -26,11 +26,11 @@
   <div id="app" class="hidden">
     <header class="topbar">
       <div class="wrap">
-        <a class="brand" href="/admin/"><span class="logo">⚙️</span><span>ניהול</span></a>
+        <a class="brand" href="./"><span class="logo">⚙️</span><span>ניהול</span></a>
         <span class="spacer"></span>
         <a class="btn sm" id="pay-shortcut" target="_blank" rel="noopener">💳 <span class="hide-sm">כניסה לחברת הסליקה</span><span class="show-sm">סליקה</span></a>
         <button class="btn soft sm hidden hide-sm" data-install>📲 התקנה</button>
-        <a class="btn ghost sm hide-sm" href="/" target="_blank">אפליקציית הלקוח</a>
+        <a class="btn ghost sm hide-sm" href="../" target="_blank">אפליקציית הלקוח</a>
         <button class="btn ghost sm" id="logout">יציאה</button>
       </div>
       <div class="wrap hide-sm" style="padding-top:0">
@@ -62,8 +62,9 @@
 
   <div id="modal" class="modal hidden"><div class="card" id="modal-body"></div></div>
 
-  <script src="/js/install-help.js"></script>
-  <script src="/js/common.js"></script>
-  <script src="/js/admin.js"></script>
+  <script src="../js/install-help.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/qrcode.js"></script>
+  <script src="../js/admin.js"></script>
 </body>
 </html>

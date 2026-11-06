@@ -1,24 +1,23 @@
 // תשתית סליקה. כל ספק מממש:
-//   createPayment({ payment, order, successUrl, failUrl, notifyUrl }) -> { redirectUrl, providerRef }
-//   parseCallback(req) -> { paymentId, approved, providerRef, raw }
+//   createPayment({ payment, order, apiBase, successUrl, failUrl, notifyUrl }) -> { redirectUrl, providerRef }
+//   parseCallback(body) -> { paymentId, approved, providerRef, raw }   (body = שדות הטופס/JSON שחברת הסליקה שלחה)
 // פרטי כרטיס אשראי לעולם אינם עוברים בשרת שלנו - הלקוח מועבר לדף תשלום מאובטח (PCI) של חברת הסליקה.
-const config = require('../config');
-const PROVIDERS = require('./providers');
+import config from '../config.js';
+import PROVIDERS from './providers.js';
 
 function notConfigured(name) {
   return () => {
     throw new Error(`ספק הסליקה "${name}" עדיין לא חובר. יש להשלים את המימוש בקובץ src/payments/index.js ` +
-      'לפי התיעוד שתקבלו מחברת הסליקה, ולהגדיר PAYMENT_TERMINAL / PAYMENT_API_KEY בקובץ .env');
+      'לפי התיעוד שתקבלו מחברת הסליקה, ולהוסיף ב-GitHub את הסודות EVENTS_PAYMENT_TERMINAL / EVENTS_PAYMENT_API_KEY');
   };
 }
 
 const adapters = {
   mock: {
-    createPayment({ payment }) {
-      return { redirectUrl: `/pay/mock/${payment.id}`, providerRef: `MOCK-${payment.id}` };
+    createPayment({ payment, apiBase }) {
+      return { redirectUrl: `${apiBase}/pay/mock/${payment.id}`, providerRef: `MOCK-${payment.id}` };
     },
-    parseCallback(req) {
-      const body = { ...req.query, ...req.body };
+    parseCallback(body) {
       return { paymentId: body.paymentId, approved: body.result === 'approved', providerRef: `MOCK-${body.paymentId}`, raw: body };
     },
   },
@@ -29,15 +28,15 @@ const adapters = {
   payplus: { createPayment: notConfigured('payplus'), parseCallback: notConfigured('payplus') },
 };
 
-function activeProviderId() {
+export function activeProviderId() {
   return adapters[config.payment.provider] ? config.payment.provider : 'mock';
 }
 
-function adapter() {
+export function adapter() {
   return adapters[activeProviderId()];
 }
 
-function providerInfo() {
+export function providerInfo() {
   const id = activeProviderId();
   return {
     active: id,
@@ -46,4 +45,3 @@ function providerInfo() {
   };
 }
 
-module.exports = { adapter, activeProviderId, providerInfo };

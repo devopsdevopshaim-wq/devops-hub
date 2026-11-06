@@ -42,7 +42,7 @@ Printing: the browser cannot list printers, so the site builds pages at the exac
   - `live-guest.js` sends a page opened without keys (from the home screen) to the last saved event;
   - on phones, outside the installed app, a bar `#lv-app` shows after 2.5 s. Its button installs in one tap where the browser sent `beforeinstallprompt` (Android Chrome / Edge); elsewhere it opens `FS.installHelp` with the exact steps (iPhone, Samsung, inside WhatsApp…);
   - after the first photo is sent, the install steps open by themselves once (`fs-live-app`: `done` / `later-<time>`, quiet for 3 days).
-- `guest-app.json` `{ storeUrl }`: when set to an https address (the Regaim app, `events-hub/`, once deployed), a 🛍️ store button shows on the bar, after sending, and on a closed event. Empty = no button.
+- `guest-app.json` `{ storeUrl }`: the Regaim app (`events-hub/`, https://devopsdevopshaim-wq.github.io/devops-hub/events-hub/). When set to an https address, a 🛍️ store button shows on the bar, after sending, and on a closed event. Empty = no button.
 - A fully automatic install is not possible in any browser: it always needs one tap from the guest.
 
 ## One person stays one; "👤 רק על אדם אחד" (Oct 28, v70)

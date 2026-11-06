@@ -1,47 +1,27 @@
-// מאגר נתונים מבוסס קובץ JSON. ממשק פשוט שאפשר להחליף בעתיד ב-PostgreSQL/MongoDB.
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const config = require('./config');
+// שכבת הנתונים: כל הרשומות בזיכרון, וכל שינוי נכתב מיד לאחסון.
+// האחסון מתחלף: קובץ JSON בהרצה מקומית (store-file.js), או Durable Object של Cloudflare בענן (store-do.js).
+// ממשק אחסון: loadAll() -> {collections, settings}, put(col, rec), del(col, id), putSettings(obj),
+//             putBlob(key, bytes, type), getBlob(key) -> {bytes, type} | null
+import crypto from 'node:crypto';
 
-const DB_FILE = path.join(config.dataDir, 'db.json');
-const COLLECTIONS = ['events', 'guests', 'photos', 'products', 'collections', 'categories',
+export const COLLECTIONS = ['events', 'guests', 'photos', 'products', 'collections', 'categories',
   'suppliers', 'couriers', 'cities', 'orders', 'payments'];
 
 let state = null;
-let saveTimer = null;
-
-function load() {
-  fs.mkdirSync(config.dataDir, { recursive: true });
-  if (fs.existsSync(DB_FILE)) {
-    state = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  } else {
-    state = {};
-  }
-  for (const c of COLLECTIONS) state[c] = state[c] || [];
-  state.settings = state.settings || {};
-  return state;
-}
-
-function saveNow() {
-  clearTimeout(saveTimer);
-  saveTimer = null;
-  const tmp = DB_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
-  fs.renameSync(tmp, DB_FILE);
-}
-
-function save() {
-  if (!saveTimer) saveTimer = setTimeout(saveNow, 100);
-}
+let store = null;
 
 function id(prefix = '') {
   return prefix + crypto.randomBytes(6).toString('hex');
 }
 
 const db = {
-  load,
-  saveNow,
+  async init(adapter) {
+    store = adapter;
+    const loaded = await store.loadAll();
+    state = { settings: loaded.settings || {} };
+    for (const c of COLLECTIONS) state[c] = (loaded.collections && loaded.collections[c]) || [];
+    return db;
+  },
   id,
   get state() { return state; },
   all(col) { return state[col]; },
@@ -50,27 +30,30 @@ const db = {
   insert(col, obj) {
     const rec = { id: obj.id || id(), createdAt: new Date().toISOString(), ...obj };
     state[col].push(rec);
-    save();
+    store.put(col, rec);
     return rec;
   },
   update(col, idv, patch) {
     const rec = db.get(col, idv);
     if (!rec) return null;
     Object.assign(rec, patch, { updatedAt: new Date().toISOString() });
-    save();
+    store.put(col, rec);
     return rec;
   },
+  // שמירת רשומה ששונתה במקום (למשל הוספת אירוע לציר הזמן של הזמנה)
+  save(col, rec) { store.put(col, rec); return rec; },
   remove(col, idv) {
     const i = state[col].findIndex((x) => x.id === idv);
-    if (i >= 0) { state[col].splice(i, 1); save(); return true; }
-    return false;
+    if (i < 0) return false;
+    state[col].splice(i, 1);
+    store.del(col, idv);
+    return true;
   },
   settings() { return state.settings; },
-  setSettings(patch) { Object.assign(state.settings, patch); save(); return state.settings; },
-  touch: save,
+  setSettings(patch) { Object.assign(state.settings, patch); store.putSettings(state.settings); return state.settings; },
+  // קבצים (תמונות וסרטונים)
+  putBlob: (key, bytes, type) => store.putBlob(key, bytes, type),
+  getBlob: (key) => store.getBlob(key),
 };
 
-process.on('exit', () => { if (saveTimer) saveNow(); });
-['SIGINT', 'SIGTERM'].forEach((s) => process.on(s, () => { if (saveTimer) saveNow(); process.exit(0); }));
-
-module.exports = db;
+export default db;

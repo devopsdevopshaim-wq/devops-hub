@@ -1,34 +1,26 @@
-const fs = require('fs');
-const path = require('path');
-
-// טעינת .env פשוטה (ללא תלות חיצונית)
-const envPath = path.join(__dirname, '..', '.env');
-if (fs.existsSync(envPath)) {
-  for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2];
-  }
-}
-
+// הגדרות. בענן הן מגיעות מ-Cloudflare (משתנים וסודות שה-workflow ב-GitHub מגדיר), ובהרצה מקומית מקובץ .env.
 const config = {
-  port: Number(process.env.PORT || 3000),
-  publicUrl: (process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, ''),
-  adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
-  sessionSecret: process.env.SESSION_SECRET || 'dev-secret-change-me',
-  dataDir: process.env.DATA_DIR || path.join(__dirname, '..', 'data'),
-  payment: {
-    provider: process.env.PAYMENT_PROVIDER || 'mock',
-    terminal: process.env.PAYMENT_TERMINAL || '',
-    apiKey: process.env.PAYMENT_API_KEY || '',
-    apiSecret: process.env.PAYMENT_API_SECRET || '',
-  },
-  ai: {
-    removeBgKey: process.env.REMOVE_BG_API_KEY || '',
-  },
+  // כתובת אתר האפליקציה ב-GitHub Pages (ממנה נבנים קישורי ה-QR ומעקב ההזמנה)
+  pagesUrl: 'https://devopsdevopshaim-wq.github.io/devops-hub/events-hub',
+  adminPassword: '',
+  sessionSecret: '',
+  payment: { provider: 'mock', terminal: '', apiKey: '', apiSecret: '' },
+  ai: { removeBgKey: '' },
 };
 
-if (!process.env.ADMIN_PASSWORD) {
-  console.warn('[אזהרה] ADMIN_PASSWORD לא הוגדר - משתמש בסיסמת ברירת מחדל admin123. שנה לפני עלייה לאוויר!');
+export function configure(env = {}) {
+  const v = (k) => (env[k] === undefined || env[k] === null ? '' : String(env[k]));
+  if (v('PAGES_URL')) config.pagesUrl = v('PAGES_URL').replace(/\/$/, '');
+  config.adminPassword = v('ADMIN_PASSWORD');
+  config.sessionSecret = v('SESSION_SECRET') || (config.adminPassword ? `regaim:${config.adminPassword}:session` : '');
+  config.payment = {
+    provider: v('PAYMENT_PROVIDER') || 'mock',
+    terminal: v('PAYMENT_TERMINAL'),
+    apiKey: v('PAYMENT_API_KEY'),
+    apiSecret: v('PAYMENT_API_SECRET'),
+  };
+  config.ai = { removeBgKey: v('REMOVE_BG_API_KEY') };
+  return config;
 }
 
-module.exports = config;
+export default config;

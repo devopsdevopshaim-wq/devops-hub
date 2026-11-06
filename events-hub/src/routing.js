@@ -1,9 +1,9 @@
 // שיוך אוטומטי של ספק ושליח להזמנה לפי עיר הלקוח וקטגוריית המוצר.
-const db = require('./db');
+import db from './db.js';
 
-const OPEN_STATUSES = ['paid', 'sent_to_supplier', 'in_production', 'ready', 'picked_up', 'out_for_delivery', 'issue'];
+export const OPEN_STATUSES = ['paid', 'sent_to_supplier', 'in_production', 'ready', 'picked_up', 'out_for_delivery', 'issue'];
 
-function cityRegion(cityName) {
+export function cityRegion(cityName) {
   const c = db.all('cities').find((x) => x.name === cityName);
   return c ? c.region : null;
 }
@@ -19,7 +19,7 @@ function pickLeastLoaded(list, field) {
     .sort((a, b) => a.load - b.load)[0]?.x || null;
 }
 
-function findSupplier(category, city) {
+export function findSupplier(category, city) {
   const region = cityRegion(city);
   const active = db.all('suppliers').filter((s) => s.active && (s.categories || []).includes(category));
   const exact = active.filter((s) => (s.cities || []).includes(city));
@@ -30,7 +30,7 @@ function findSupplier(category, city) {
   return { supplier: null, match: 'none' };
 }
 
-function findCourier(city) {
+export function findCourier(city) {
   const region = cityRegion(city);
   const active = db.all('couriers').filter((k) => k.active);
   const exact = active.filter((k) => (k.cities || []).includes(city));
@@ -43,7 +43,7 @@ function findCourier(city) {
 const MATCH_HE = { city: 'באותה עיר', region: 'באותו אזור', none: 'לא נמצא - נדרש שיוך ידני' };
 
 // משייך ספק לכל פריט ושליח להזמנה, ומחזיר הערות שיוך לציר הזמן
-function assignOrder(order) {
+export function assignOrder(order) {
   const notes = [];
   for (const item of order.items) {
     const product = db.get('products', item.productId);
@@ -59,4 +59,3 @@ function assignOrder(order) {
   return notes;
 }
 
-module.exports = { assignOrder, findSupplier, findCourier, cityRegion, OPEN_STATUSES };

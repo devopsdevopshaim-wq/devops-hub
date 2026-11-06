@@ -6,13 +6,41 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// השרת: באתר ב-GitHub Pages הוא ב-Cloudflare; בהרצה מקומית (npm start) הוא באותה כתובת כמו האתר.
+// כתובת אחרת אפשר לקבוע ב-?api=https://... (נשמרת בטלפון), למשל לבדיקה.
+const API_CLOUD = 'https://regaim-events.devopsdevopshaim.workers.dev';
+const API_BASE = (() => {
+  const q = new URLSearchParams(location.search).get('api');
+  try { if (q && /^https:\/\/[\w.-]+$/.test(q)) localStorage.setItem('apiBase', q); } catch { /* מצב פרטי */ }
+  let saved = '';
+  try { saved = localStorage.getItem('apiBase') || ''; } catch { /* מצב פרטי */ }
+  if (saved) return saved;
+  return /\.github\.io$/.test(location.hostname) ? API_CLOUD : '';
+})();
+
+// כתובת מלאה לתמונה/סרטון שנשמרו בשרת ("/img/...")
+const asset = (u) => (/^\/img\/[a-f0-9]{24}$/.test(String(u || '')) ? API_BASE + u : String(u || ''));
+
+const adminToken = {
+  get() { try { return localStorage.getItem('adminToken') || ''; } catch { return ''; } },
+  set(t) { try { if (t) localStorage.setItem('adminToken', t); else localStorage.removeItem('adminToken'); } catch { /* מצב פרטי */ } },
+};
+
 async function api(url, opts = {}) {
   const o = { ...opts, headers: { ...(opts.headers || {}) } };
   if (o.body && !(o.body instanceof FormData) && typeof o.body !== 'string') {
     o.headers['Content-Type'] = 'application/json';
     o.body = JSON.stringify(o.body);
   }
-  const res = await fetch(url, o);
+  if (url.startsWith('/api/admin') && adminToken.get()) o.headers.Authorization = `Bearer ${adminToken.get()}`;
+  let res;
+  try {
+    res = await fetch(API_BASE + url, o);
+  } catch {
+    const err = new Error('אין חיבור לשרת. בודקים את האינטרנט ומנסים שוב.');
+    err.status = 0;
+    throw err;
+  }
   const type = res.headers.get('content-type') || '';
   const data = type.includes('json') ? await res.json() : await res.text();
   if (!res.ok) {
@@ -62,11 +90,32 @@ const myOrders = {
 
 // PWA - התקנה למסך הבית
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register(location.pathname.startsWith('/admin') ? '/admin/sw.js' : '/sw.js').catch(() => {}));
+  // sw.js שליד הדף: לאפליקציית הלקוח בתיקייה הראשית, ולאפליקציית הניהול בתיקיית admin/
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
+
+// הקטנת תמונה בטלפון לפני שליחה (הצד הארוך עד 2000 פיקסלים), כדי שתעלה מהר ותתאים לשרת
+function shrinkImage(file, maxSide = 2000, quality = 0.88) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * k);
+      c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob((b) => (b ? resolve(b) : reject(new Error('התמונה לא נקראה'))), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('התמונה לא נפתחה. נסו תמונה אחרת (JPG או PNG)')); };
+    img.src = url;
+  });
+}
+
 let deferredInstall = null;
 const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
-const appName = () => (location.pathname.startsWith('/admin') ? 'רגעים ניהול' : 'רגעים');
+const appName = () => (location.pathname.includes('/admin/') ? 'רגעים ניהול' : 'רגעים');
 const isPhone = () => Boolean(window.FS && FS.installEnv && FS.installEnv.phone);
 
 window.addEventListener('beforeinstallprompt', (e) => {

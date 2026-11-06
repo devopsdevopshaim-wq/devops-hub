@@ -1,99 +1,84 @@
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const cookieParser = require('cookie-parser');
-const config = require('./src/config');
-const db = require('./src/db');
-const { seedIfEmpty } = require('./src/seed');
-const payments = require('./src/payments');
-const { upload, rateLimit, UPLOAD_DIR } = require('./src/util');
+// הרצה מקומית במחשב (פיתוח ובדיקות): אותו שרת שרץ ב-Cloudflare, עם אחסון בקובץ, והאתר מתיקיית public/.
+// בענן האתר מתפרסם ב-GitHub Pages והשרת ב-Cloudflare - הקובץ הזה לא בשימוש שם.
+//   npm start            -> http://localhost:3000  (ניהול: /admin/)
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { Readable } from 'node:stream';
+import { fileURLToPath } from 'node:url';
+import { configure } from './src/config.js';
+import db from './src/db.js';
+import { fileStore } from './src/store-file.js';
+import { seedIfEmpty } from './src/seed.js';
+import { handle } from './src/app.js';
 
-db.load();
-seedIfEmpty();
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC = path.join(ROOT, 'public');
+const TYPES = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
+  '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.url': 'text/plain',
+};
 
-const { router: publicRouter, applyPaymentResult } = require('./src/routes/public');
-const adminRouter = require('./src/routes/admin');
-
-const app = express();
-app.disable('x-powered-by');
-app.set('trust proxy', 1);
-app.use((req, res, next) => {
-  res.set({
-    'X-Content-Type-Options': 'nosniff',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'X-Frame-Options': 'SAMEORIGIN',
-  });
-  next();
-});
-app.use(express.json({ limit: '1mb' }));
-app.use(cookieParser());
-
-app.use('/api/admin', adminRouter);
-app.use('/api', publicRouter);
-
-// ---------- AI: הסרת רקע (remove.bg) ----------
-app.post('/api/ai/remove-bg', rateLimit({ windowMs: 60_000, max: 10 }), upload.single('file'), async (req, res) => {
-  const cleanup = () => req.file && fs.unlink(req.file.path, () => {});
-  if (!config.ai.removeBgKey) { cleanup(); return res.status(501).json({ error: 'הסרת רקע AI לא הוגדרה (REMOVE_BG_API_KEY)' }); }
-  if (!req.file) return res.status(400).json({ error: 'לא התקבל קובץ' });
-  try {
-    const form = new FormData();
-    form.append('image_file', new Blob([fs.readFileSync(req.file.path)], { type: req.file.mimetype }), 'image');
-    form.append('size', 'auto');
-    const r = await fetch('https://api.remove.bg/v1.0/removebg', { method: 'POST', headers: { 'X-Api-Key': config.ai.removeBgKey }, body: form });
-    if (!r.ok) throw new Error(`remove.bg ${r.status}`);
-    res.type('image/png').send(Buffer.from(await r.arrayBuffer()));
-  } catch (e) {
-    res.status(502).json({ error: 'שירות ה-AI נכשל', detail: e.message });
-  } finally {
-    cleanup();
+function loadDotEnv() {
+  const p = path.join(ROOT, '.env');
+  const out = {};
+  if (fs.existsSync(p)) {
+    for (const line of fs.readFileSync(p, 'utf8').split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (m) out[m[1]] = m[2];
+    }
   }
-});
-
-// ---------- דפי תשלום ----------
-// דף סליקת בדיקה - פעיל רק כאשר PAYMENT_PROVIDER=mock
-app.get('/pay/mock/:paymentId', (req, res) => {
-  if (payments.activeProviderId() !== 'mock') return res.status(404).end();
-  const pay = db.get('payments', req.params.paymentId);
-  if (!pay) return res.status(404).send('תשלום לא נמצא');
-  res.send(`<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>סליקת בדיקה</title><link rel="stylesheet" href="/css/app.css"></head><body><main class="wrap narrow">
-<div class="card"><div class="badge warn">מצב בדיקה - אין חיוב אמיתי</div><h1>תשלום מאובטח</h1>
-<p>סכום לתשלום: <b>₪${pay.amount}</b></p>
-<p class="muted">כאן יוצג דף התשלום של חברת הסליקה לאחר החיבור. פרטי האשראי מוזנים אצל חברת הסליקה בלבד ולא נשמרים אצלנו.</p>
-<form method="post" action="/pay/mock/${pay.id}"><button class="btn" name="result" value="approved">אישור תשלום (בדיקה)</button>
-<button class="btn ghost" name="result" value="declined">דחיית תשלום (בדיקה)</button></form></div></main></body></html>`);
-});
-
-app.post('/pay/mock/:paymentId', express.urlencoded({ extended: false }), (req, res) => {
-  if (payments.activeProviderId() !== 'mock') return res.status(404).end();
-  const r = applyPaymentResult({ paymentId: req.params.paymentId, approved: req.body.result === 'approved', raw: { mock: true } });
-  if (!r) return res.status(404).send('תשלום לא נמצא');
-  res.redirect(`/pay/return?paymentId=${req.params.paymentId}`);
-});
-
-// חזרה מדף התשלום -> מעבר לדף מעקב ההזמנה
-app.get('/pay/return', (req, res) => {
-  const pay = db.get('payments', String(req.query.paymentId || ''));
-  if (!pay) return res.redirect('/');
-  const order = db.get('orders', pay.orderId);
-  res.redirect(`/track.html?id=${order.id}&t=${order.trackToken}&new=1`);
-});
-
-// ---------- קבצים סטטיים ----------
-app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true }));
-app.get('/admin.html', (req, res) => res.redirect(301, '/admin/'));
-app.get('/e/:code', (req, res) => res.sendFile(path.join(__dirname, 'public', 'event.html')));
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use('/api', (req, res) => res.status(404).json({ error: 'לא נמצא' }));
-app.use((err, req, res, _next) => {
-  const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : (err.status || 400);
-  res.status(status).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'הקובץ גדול מדי' : err.message });
-});
-
-if (require.main === module) {
-  app.listen(config.port, () => console.log(`השרת פועל: ${config.publicUrl}  |  ניהול: ${config.publicUrl}/admin/`));
+  return out;
 }
 
-module.exports = app;
+function serveStatic(pathname, res) {
+  let rel = decodeURIComponent(pathname);
+  if (rel.endsWith('/')) rel += 'index.html';
+  const file = path.normalize(path.join(PUBLIC, rel));
+  if (!file.startsWith(PUBLIC) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) { res.writeHead(301, { Location: pathname + '/' }); return res.end(); }
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('לא נמצא');
+  }
+  res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff' });
+  fs.createReadStream(file).pipe(res);
+}
+
+export async function start({ port = 3000, dataDir = path.join(ROOT, 'data'), env = {} } = {}) {
+  const vars = { ...loadDotEnv(), ...process.env, ...env };
+  if (!vars.ADMIN_PASSWORD) {
+    vars.ADMIN_PASSWORD = 'admin123';
+    console.warn('[אזהרה] ADMIN_PASSWORD לא הוגדר - בהרצה מקומית הסיסמה היא admin123');
+  }
+  await db.init(fileStore(vars.DATA_DIR || dataDir));
+  seedIfEmpty();
+
+  const server = http.createServer(async (req, res) => {
+    const base = `http://${req.headers.host}`;
+    const url = new URL(req.url, base);
+    try {
+      const request = new Request(url, {
+        method: req.method,
+        headers: Object.fromEntries(Object.entries(req.headers).filter(([, v]) => typeof v === 'string')),
+        body: req.method === 'GET' || req.method === 'HEAD' ? undefined : Readable.toWeb(req),
+        duplex: 'half',
+      });
+      const out = await handle(request, base);
+      if (!out) return serveStatic(url.pathname, res);
+      res.writeHead(out.status, Object.fromEntries(out.headers));
+      res.end(Buffer.from(await out.arrayBuffer()));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(e.message);
+    }
+  });
+  await new Promise((r) => server.listen(port, r));
+  // בהרצה מקומית האתר והשרת באותה כתובת
+  configure({ ...vars, PAGES_URL: vars.PAGES_URL || `http://localhost:${server.address().port}` });
+  return server;
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const port = Number(process.env.PORT || 3000);
+  start({ port }).then(() => console.log(`רגעים פועל: http://localhost:${port}  |  ניהול: http://localhost:${port}/admin/`));
+}

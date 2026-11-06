@@ -190,7 +190,7 @@
     const blob = await new Promise((r) => src.toBlob(r, 'image/jpeg', 0.92));
     const fd = new FormData();
     fd.append('file', blob, 'photo.jpg');
-    const res = await fetch('/api/ai/remove-bg', { method: 'POST', body: fd });
+    const res = await fetch(API_BASE + '/api/ai/remove-bg', { method: 'POST', body: fd });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
       throw new Error(j.error || 'הסרת רקע נכשלה');
@@ -420,7 +420,7 @@
       const c = document.createElement('canvas');
       [c.width, c.height] = this.outSize(longSide);
       this.paint(c.getContext('2d'), c.width, c.height, null);
-      return new Promise((r) => c.toBlob(r, 'image/jpeg', 0.92));
+      return new Promise((r) => c.toBlob(r, 'image/jpeg', 0.88));
     }
 
     async recordAnimation(seconds = 4) {
@@ -431,7 +431,7 @@
       const stream = c.captureStream(30);
       const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].find((t) => MediaRecorder.isTypeSupported(t));
       if (!mime) throw new Error('הדפדפן לא תומך ביצירת וידאו');
-      const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4e6 });
+      const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2.4e6 });
       const chunks = [];
       rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
       const done = new Promise((r) => { rec.onstop = r; });
