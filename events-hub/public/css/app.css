@@ -38,7 +38,7 @@ h1 { font-size: 1.6rem; } h2 { font-size: 1.25rem; } h3 { font-size: 1.05rem; }
 }
 .topbar .wrap { display: flex; align-items: center; gap: 12px; padding-top: 10px; padding-bottom: 10px; }
 .brand { font-weight: 800; font-size: 1.1rem; color: var(--text); text-decoration: none; display: flex; gap: 8px; align-items: center; }
-.brand .logo { width: 32px; height: 32px; border-radius: 10px; background: var(--primary); color: var(--primary-ink); display: grid; place-items: center; }
+.brand .logo { width: 36px; height: 36px; border-radius: 10px; display: block; box-shadow: 0 2px 8px rgba(42, 15, 61, .25); }
 .spacer { flex: 1; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
@@ -174,3 +174,34 @@ tr.stuck td { background: color-mix(in srgb, var(--bad) 7%, transparent); }
 }
 @media (max-width: 1100px) { .install-bar { margin-inline: 16px; } }
 .install-bar span { flex: 1; line-height: 1.35; }
+
+/* פתיח החנות עם הלוגו */
+.store-hero {
+  text-align: center; padding: 18px 12px 14px; margin-bottom: 14px; border-radius: 20px;
+  background: radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
+              linear-gradient(160deg, color-mix(in srgb, var(--primary) 14%, var(--surface)), var(--surface));
+  border: 1px solid var(--border);
+}
+.store-hero img { width: min(520px, 92%); height: auto; margin: 0 auto; }
+.store-hero p { margin: 6px 0 0; color: var(--muted); font-weight: 600; }
+
+/* תמונות מוצר בניהול */
+.img-edit { display: flex; flex-wrap: wrap; gap: 8px; }
+.img-chip { position: relative; width: 92px; height: 92px; border-radius: 10px; overflow: hidden; border: 2px solid var(--border); background: var(--surface-2); }
+.img-chip:first-child { border-color: var(--accent); }
+.img-chip img { width: 100%; height: 100%; object-fit: cover; }
+.img-chip button { position: absolute; top: 4px; border: 0; border-radius: 999px; width: 26px; height: 26px; cursor: pointer; background: rgba(0,0,0,.6); color: #fff; font-size: .8rem; }
+.img-chip [data-img="del"] { left: 4px; }
+.img-chip [data-img="first"] { right: 4px; }
+.img-chip:first-child [data-img="first"] { background: var(--accent); }
+
+/* מבצעים בחנות */
+.sale-badge { position: absolute; top: 8px; right: 8px; background: linear-gradient(135deg, #ff4f8b, #d9a441); color: #fff; font-weight: 800; font-size: .85rem; padding: 3px 10px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.old-price { color: var(--muted); text-decoration: line-through; font-weight: 600; font-size: .9rem; margin-inline-start: 6px; }
+.price.sale { color: var(--bad); }
+.promo-strip { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; }
+.promo-strip .chip { white-space: nowrap; padding: 8px 14px; border-radius: 999px; font-weight: 700; background: linear-gradient(135deg, color-mix(in srgb, #ff4f8b 18%, var(--surface)), color-mix(in srgb, var(--accent) 22%, var(--surface))); border: 1px solid var(--border); }
+.product .thumb { position: relative; cursor: pointer; }
+.gallery { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 8px; border-radius: 12px; }
+.gallery img { flex: 0 0 100%; width: 100%; aspect-ratio: 1; object-fit: cover; scroll-snap-align: center; border-radius: 12px; }
+.gallery-dots { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 4px; }

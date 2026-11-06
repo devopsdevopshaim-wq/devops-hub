@@ -8,6 +8,7 @@ import * as payments from './payments/index.js';
 import { PRINT_TYPES } from './seed.js';
 import { assignOrder, OPEN_STATUSES } from './routing.js';
 import { addEvent, stuckInfo, STATUS_NAME, STATUSES } from './shipping.js';
+import { priceFor, quote, publicPromotions, normCode, livePromotions } from './pricing.js';
 
 // ---------- עזר ----------
 const CORS = {
@@ -116,8 +117,8 @@ function activeCollections() {
 function publicOrder(o) {
   return {
     id: o.id, number: o.number, status: o.status, statusName: STATUS_NAME[o.status], createdAt: o.createdAt,
-    items: o.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price, photoUrl: i.photoUrl })),
-    subtotal: o.subtotal, shipping: o.shipping, total: o.total, city: o.customer.city,
+    items: o.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price, originalPrice: i.originalPrice || i.price, promo: i.promo || '', photoUrl: i.photoUrl })),
+    subtotal: o.subtotal, discount: o.discount || 0, coupon: o.coupon || '', shipping: o.shipping, total: o.total, city: o.customer.city,
     timeline: o.timeline.filter((t) => !t.internal).map((t) => ({ status: t.status, statusName: STATUS_NAME[t.status] || '', note: t.publicNote ? t.note : '', at: t.at })),
   };
 }
@@ -172,10 +173,27 @@ function orderView(o) {
   };
 }
 
+// תמונות מוצר: תמונות שהועלו לשרת (/img/...) או קישורי https, עד 12, הראשונה היא הראשית
+function productImages(b) {
+  const list = Array.isArray(b.images) ? b.images : (b.image ? [b.image] : []);
+  return list.map((u) => str(u, 300)).filter((u) => IMG_RE.test(u) || /^https:\/\/[^\s"'<>]+$/.test(u)).slice(0, 12);
+}
+
+const PROMO_KINDS = ['percent', 'amount', 'price'];
+const PROMO_SCOPES = ['all', 'category', 'products', 'collection'];
+
 const CRUD = {
+  promotions: ['pm_', (b) => ({
+    name: str(b.name, 80), badge: str(b.badge, 30),
+    kind: PROMO_KINDS.includes(b.kind) ? b.kind : 'percent', value: Math.max(0, num(b.value)),
+    scope: PROMO_SCOPES.includes(b.scope) ? b.scope : 'all',
+    categories: arr(b.categories), productIds: arr(b.productIds), collectionIds: arr(b.collectionIds),
+    startDate: str(b.startDate, 10), endDate: str(b.endDate, 10),
+    code: normCode(b.code), minSubtotal: Math.max(0, num(b.minSubtotal)), active: b.active !== false,
+  })],
   products: ['pr_', (b) => ({
     name: str(b.name, 120), category: str(b.category, 40), price: Math.max(0, num(b.price)), icon: str(b.icon, 10),
-    description: str(b.description, 600), image: /^https:\/\//.test(str(b.image, 300)) ? str(b.image, 300) : '', collectionIds: arr(b.collectionIds),
+    description: str(b.description, 1500), images: productImages(b), collectionIds: arr(b.collectionIds),
     needsPhoto: Boolean(b.needsPhoto), active: b.active !== false,
   })],
   collections: ['col_', (b) => ({
@@ -272,10 +290,16 @@ on('GET', '/api/store', () => {
   const activeIds = new Set(cols.map((x) => x.id));
   const products = db.all('products').filter((p) => p.active && (!(p.collectionIds || []).length || p.collectionIds.some((id) => activeIds.has(id))));
   const usedCats = new Set(products.map((p) => p.category));
+  const promos = livePromotions();
   return json({
     categories: db.all('categories').filter((x) => usedCats.has(x.id)),
     collections: cols.filter((x) => products.some((p) => (p.collectionIds || []).includes(x.id))),
-    products,
+    // מחיר המבצע מחושב כאן (מבצעים בלי קוד ובלי מינימום הזמנה)
+    products: products.map((p) => {
+      const pr = priceFor(p, { promos });
+      return { ...p, images: productImages(p), salePrice: pr.promo ? pr.price : null, promo: pr.promo };
+    }),
+    promotions: publicPromotions(),
   });
 });
 
@@ -283,6 +307,26 @@ on('POST', '/api/uploads', async (c) => {
   if (limited(`u:${c.ip}`, 60_000, 20)) return err(429, 'יותר מדי בקשות, נסו שוב בעוד דקה');
   const b = await body(c.req);
   return json({ url: (await saveFile(b.file, IMAGE_TYPES)).url });
+});
+
+function cartLines(items) {
+  const lines = [];
+  for (const it of (Array.isArray(items) ? items : []).slice(0, 50)) {
+    const product = db.get('products', it.productId);
+    if (!product || !product.active) throw Object.assign(new Error('מוצר לא זמין'), { status: 400 });
+    const photoUrl = str(it.photoUrl, 200);
+    if (photoUrl && !IMG_RE.test(photoUrl)) throw Object.assign(new Error('תמונה לא תקינה'), { status: 400 });
+    lines.push({ product, qty: Math.min(99, Math.max(1, Math.floor(num(it.qty, 1)))), photoUrl, note: str(it.note, 200) });
+  }
+  return lines;
+}
+
+// תמחור הסל לפני תשלום (הנחות, קופון, משלוח)
+on('POST', '/api/cart/quote', async (c) => {
+  if (limited(`q:${c.ip}`, 60_000, 60)) return err(429, 'יותר מדי בקשות, נסו שוב בעוד דקה');
+  const b = await body(c.req);
+  const q = quote(cartLines(b.items), { code: b.code });
+  return json({ ...q, lines: q.lines.map((l) => ({ productId: l.product.id, qty: l.qty, price: l.price, originalPrice: l.originalPrice, promo: l.promo, coupon: l.coupon })) });
 });
 
 // הזמנות
@@ -295,23 +339,18 @@ on('POST', '/api/orders', async (c) => {
   };
   if (!customer.name || !customer.phone || !customer.city || !customer.address) return err(400, 'נא למלא שם, טלפון, עיר וכתובת');
   if (!db.all('cities').some((x) => x.name === customer.city)) return err(400, 'עיר לא מוכרת - בחרו מהרשימה');
-  const items = [];
-  for (const it of (Array.isArray(b.items) ? b.items : []).slice(0, 50)) {
-    const product = db.get('products', it.productId);
-    if (!product || !product.active) return err(400, 'מוצר לא זמין');
-    const qty = Math.min(99, Math.max(1, Math.floor(num(it.qty, 1))));
-    const photoUrl = str(it.photoUrl, 200);
-    if (photoUrl && !IMG_RE.test(photoUrl)) return err(400, 'תמונה לא תקינה');
-    // המחיר נלקח תמיד מהשרת - לא סומכים על מחיר מהדפדפן
-    items.push({ productId: product.id, name: product.name, category: product.category, price: product.price, qty, photoUrl, note: str(it.note, 200) });
-  }
-  if (!items.length) return err(400, 'הסל ריק');
-  const s = db.settings();
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const shipping = subtotal >= s.freeShippingFrom ? 0 : s.shippingPrice;
+  // המחיר נלקח תמיד מהשרת (כולל מבצעים וקופון) - לא סומכים על מחיר מהדפדפן
+  const q = quote(cartLines(b.items), { code: b.code });
+  if (!q.lines.length) return err(400, 'הסל ריק');
+  if (q.code && !q.codeValid) return err(400, 'קוד הקופון לא תקף');
+  const items = q.lines.map((l) => ({
+    productId: l.product.id, name: l.product.name, category: l.product.category, price: l.price, originalPrice: l.originalPrice,
+    promo: [l.promo && l.promo.name, l.coupon && `קופון ${l.coupon.code}`].filter(Boolean).join(' + '), qty: l.qty, photoUrl: l.photoUrl, note: l.note,
+  }));
   const order = db.insert('orders', {
     id: db.id('o_'), number: 1000 + db.all('orders').length + 1, trackToken: token(8),
-    customer, items, subtotal, shipping, total: subtotal + shipping, status: 'pending_payment', timeline: [], eventCode: str(b.eventCode, 40) || null,
+    customer, items, subtotalBefore: q.subtotalBefore, discount: q.discount, coupon: q.codeUsed ? q.code : '',
+    subtotal: q.subtotal, shipping: q.shipping, total: q.total, status: 'pending_payment', timeline: [], eventCode: str(b.eventCode, 40) || null,
   });
   addEvent(order, 'pending_payment', 'הזמנה נוצרה');
   const payment = db.insert('payments', { id: db.id('pay_'), orderId: order.id, amount: order.total, currency: 'ILS', provider: payments.activeProviderId(), status: 'created' });
@@ -416,6 +455,12 @@ on('GET', '/api/admin/dashboard', () => {
 }, { admin: true });
 
 on('GET', '/api/admin/print-types', () => json(PRINT_TYPES), { admin: true });
+
+// העלאת תמונות מוצר מאפליקציית הניהול
+on('POST', '/api/admin/uploads', async (c) => {
+  const b = await body(c.req);
+  return json({ url: (await saveFile(b.file, IMAGE_TYPES)).url });
+}, { admin: true });
 
 on('GET', '/api/admin/events', () => json(db.all('events').map((e) => ({
   ...e,

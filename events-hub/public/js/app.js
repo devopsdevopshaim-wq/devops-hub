@@ -1,6 +1,8 @@
-/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders */
+/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders, asset, shrinkImage */
 (function () {
-  let catalog = { categories: [], collections: [], products: [] };
+  let catalog = { categories: [], collections: [], products: [], promotions: [] };
+  let coupon = store.get('coupon', '');
+  let lastQuote = null;
   let cfg = {};
   let activeCat = 'all';
   let cart = store.get('cart', []);
@@ -21,17 +23,58 @@
   });
 
   // ---------- חנות ----------
+  const imgs = (p) => (p.images && p.images.length ? p.images : (p.image ? [p.image] : []));
+  const priceHtml = (p) => (p.salePrice !== null && p.salePrice !== undefined && p.salePrice < p.price
+    ? `<span class="price sale">${money(p.salePrice)}</span><span class="old-price">${money(p.price)}</span>`
+    : `<span class="price">${money(p.price)}</span>`);
+
   function productCard(p) {
+    const im = imgs(p);
     return `<div class="card product">
-      <div class="thumb">${p.image ? `<img src="${esc(p.image)}" alt="">` : esc(p.icon || '🎁')}</div>
+      <div class="thumb" data-show="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)} - פרטים ותמונות">
+        ${im.length ? `<img src="${esc(asset(im[0]))}" alt="" loading="lazy">` : esc(p.icon || '🎁')}
+        ${p.promo ? `<span class="sale-badge">${esc(p.promo.badge || 'מבצע')}</span>` : ''}
+        ${im.length > 1 ? `<span class="badge" style="position:absolute;bottom:6px;left:6px">📷 ${im.length}</span>` : ''}
+      </div>
       <h3>${esc(p.name)}</h3>
-      <p class="muted small">${esc(p.description)}</p>
-      <div class="row between"><span class="price">${money(p.price)}</span>
+      <p class="muted small">${esc(String(p.description || '').slice(0, 110))}${String(p.description || '').length > 110 ? '…' : ''}</p>
+      <div class="row between"><span>${priceHtml(p)}</span>
       <button class="btn sm" data-add="${esc(p.id)}">${p.needsPhoto ? '📷 בחירת תמונה' : 'הוספה לסל'}</button></div>
     </div>`;
   }
 
+  // דף מוצר: כל התמונות (החלקה), תיאור מלא ומחיר
+  function showProduct(p) {
+    const im = imgs(p);
+    $('#product-body').innerHTML = `
+      <div class="row between"><h2 style="margin:0">${esc(p.name)}</h2><button class="icon-btn" data-pclose aria-label="סגירה">✕</button></div>
+      ${im.length ? `<div class="gallery" id="gallery">${im.map((u) => `<img src="${esc(asset(u))}" alt="">`).join('')}</div>
+        ${im.length > 1 ? `<div class="gallery-dots" id="gallery-dots">1 / ${im.length} · מחליקים לתמונה הבאה</div>` : ''}`
+        : `<div class="thumb" style="aspect-ratio:2/1;display:grid;place-items:center;font-size:4rem">${esc(p.icon || '🎁')}</div>`}
+      ${p.promo ? `<p style="margin:10px 0 0"><span class="sale-badge" style="position:static">${esc(p.promo.badge || 'מבצע')}</span> ${esc(p.promo.name)}</p>` : ''}
+      <p style="white-space:pre-line">${esc(p.description)}</p>
+      <div class="row between"><span>${priceHtml(p)}</span><button class="btn" data-add="${esc(p.id)}" data-pclose>${p.needsPhoto ? '📷 בחירת תמונה' : 'הוספה לסל 🛒'}</button></div>`;
+    $('#product-modal').classList.remove('hidden');
+    const g = $('#gallery');
+    if (g && im.length > 1) g.onscroll = () => { $('#gallery-dots').textContent = `${Math.round(Math.abs(g.scrollLeft) / g.clientWidth) + 1} / ${im.length}`; };
+  }
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-show]');
+    if (t) showProduct(catalog.products.find((x) => x.id === t.dataset.show));
+    if (e.target.closest('[data-pclose]') || e.target.id === 'product-modal') $('#product-modal').classList.add('hidden');
+  });
+  document.addEventListener('keydown', (e) => {
+    const t = e.target.closest && e.target.closest('[data-show]');
+    if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); showProduct(catalog.products.find((x) => x.id === t.dataset.show)); }
+  });
+
+  function promoText(p) {
+    const v = p.kind === 'percent' ? `${p.value}% הנחה` : p.kind === 'amount' ? `${money(p.value)} הנחה` : `ב-${money(p.value)} בלבד`;
+    return `🏷️ ${esc(p.name)}: ${v}${p.minSubtotal ? ` בהזמנה מעל ${money(p.minSubtotal)}` : ''}${p.endDate ? ` · עד ${new Date(p.endDate).toLocaleDateString('he-IL')}` : ''}`;
+  }
+
   function renderStore() {
+    $('#promo-strip').innerHTML = (catalog.promotions || []).map((p) => `<span class="chip">${promoText(p)}</span>`).join('');
     $('#collections').innerHTML = catalog.collections.map((c) => `
       <div class="card" style="margin-bottom:12px;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 20%,var(--surface)),var(--surface))">
         <div class="row between"><h2 style="margin:0">${esc(c.icon)} ${esc(c.name)}</h2>${c.endDate ? `<span class="badge warn">עד ${new Date(c.endDate).toLocaleDateString('he-IL')}</span>` : ''}</div>
@@ -62,8 +105,10 @@
   function addToCart(p, photoUrl = '') {
     const key = p.id + '|' + photoUrl;
     const ex = cart.find((i) => i.key === key);
-    if (ex) ex.qty++; else cart.push({ key, productId: p.id, name: p.name, price: p.price, icon: p.icon, qty: 1, photoUrl });
+    const img = imgs(p)[0] || '';
+    if (ex) ex.qty++; else cart.push({ key, productId: p.id, name: p.name, price: p.salePrice ?? p.price, icon: p.icon, img, qty: 1, photoUrl });
     saveCart();
+    lastQuote = null;
     toast(`נוסף לסל: ${p.name}`);
   }
 
@@ -84,21 +129,52 @@
       $('#checkout').classList.add('hidden');
       return;
     }
-    $('#cart-items').innerHTML = cart.map((i, idx) => `
+    const q = lastQuote && lastQuote.lines.length === cart.length ? lastQuote : null;
+    $('#cart-items').innerHTML = cart.map((i, idx) => {
+      const l = q && q.lines[idx];
+      const unit = l ? l.price : i.price;
+      const orig = l ? l.originalPrice : unit;
+      const thumb = i.photoUrl || i.img;
+      return `
       <div class="row" style="align-items:flex-start">
-        <div class="photo-tile" style="width:64px;flex:none">${i.photoUrl ? `<img src="${esc(asset(i.photoUrl))}" alt="">` : `<div style="font-size:2rem;display:grid;place-items:center;height:100%">${esc(i.icon)}</div>`}</div>
-        <div style="flex:1"><b>${esc(i.name)}</b><div class="muted small">${money(i.price)} ליחידה</div>
+        <div class="photo-tile" style="width:64px;flex:none">${thumb ? `<img src="${esc(asset(thumb))}" alt="">` : `<div style="font-size:2rem;display:grid;place-items:center;height:100%">${esc(i.icon)}</div>`}</div>
+        <div style="flex:1"><b>${esc(i.name)}</b><div class="muted small">${money(unit)} ליחידה${orig > unit ? ` <span class="old-price">${money(orig)}</span>` : ''}</div>
+          ${l && (l.promo || l.coupon) ? `<div class="small" style="color:var(--bad);font-weight:700">🏷️ ${[l.promo && esc(l.promo.name), l.coupon && `קופון ${esc(l.coupon.code)}`].filter(Boolean).join(' + ')}</div>` : ''}
           <div class="row" style="gap:6px;margin-top:4px"><button class="btn soft sm" data-q="${idx}" data-d="-1">−</button><b>${i.qty}</b><button class="btn soft sm" data-q="${idx}" data-d="1">+</button></div></div>
-        <b>${money(i.price * i.qty)}</b>
-      </div>`).join('');
-    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const shipping = subtotal >= cfg.freeShippingFrom ? 0 : cfg.shippingPrice;
+        <b>${money(unit * i.qty)}</b>
+      </div>`;
+    }).join('');
+    const local = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const t = q || { subtotalBefore: local, discount: 0, subtotal: local, shipping: local >= cfg.freeShippingFrom ? 0 : cfg.shippingPrice, total: 0 };
+    if (!q) t.total = t.subtotal + t.shipping;
     $('#cart-summary').innerHTML = `<div class="card flat">
-      <div class="row between"><span>סכום ביניים</span><b>${money(subtotal)}</b></div>
-      <div class="row between"><span>משלוח</span><b>${shipping ? money(shipping) : 'חינם'}</b></div>
-      ${shipping ? `<div class="muted small">משלוח חינם מעל ${money(cfg.freeShippingFrom)}</div>` : ''}
-      <hr style="border:0;border-top:1px solid var(--border)"><div class="row between"><span>סה"כ לתשלום</span><span class="price">${money(subtotal + shipping)}</span></div></div>`;
+      ${t.discount ? `<div class="row between"><span>לפני הנחות</span><span class="old-price" style="margin:0">${money(t.subtotalBefore)}</span></div>
+        <div class="row between" style="color:var(--bad);font-weight:700"><span>🏷️ חסכתם</span><span>−${money(t.discount)}</span></div>` : ''}
+      <div class="row between"><span>סכום ביניים</span><b>${money(t.subtotal)}</b></div>
+      <div class="row between"><span>משלוח</span><b>${t.shipping ? money(t.shipping) : 'חינם'}</b></div>
+      ${t.shipping ? `<div class="muted small">משלוח חינם מעל ${money(cfg.freeShippingFrom)}</div>` : ''}
+      <hr style="border:0;border-top:1px solid var(--border)"><div class="row between"><span>סה"כ לתשלום</span><span class="price">${money(t.total)}</span></div>
+      <form class="row" id="coupon-form" style="margin-top:10px;flex-wrap:nowrap"><input id="coupon" placeholder="קוד קופון" value="${esc(coupon)}" style="flex:1" autocomplete="off"><button class="btn soft sm">החלה</button></form>
+      ${q && q.code ? `<div class="small" style="margin-top:4px;color:${q.codeUsed ? 'var(--ok)' : 'var(--bad)'}">${q.codeUsed ? `✓ הקופון ${esc(q.code)} הופעל` : q.codeValid ? 'הקופון תקף, אבל לא חל על המוצרים בסל' : 'קוד הקופון לא תקף'}</div>` : ''}
+    </div>`;
+    $('#coupon-form').onsubmit = (e) => { e.preventDefault(); coupon = $('#coupon').value.trim(); store.set('coupon', coupon); refreshQuote(); };
     $('#checkout').classList.remove('hidden');
+    if (!q) refreshQuote();
+  }
+
+  // המחיר הסופי (מבצעים, קופון, משלוח) תמיד מהשרת
+  let quoting = 0;
+  async function refreshQuote() {
+    if (!cart.length) { lastQuote = null; return; }
+    const my = ++quoting;
+    try {
+      const q = await api('/api/cart/quote', { method: 'POST', body: { code: coupon, items: cart.map(({ productId, qty }) => ({ productId, qty })) } });
+      if (my !== quoting) return;
+      lastQuote = q;
+      if (!$('#cart').classList.contains('hidden')) renderCart();
+    } catch (err) {
+      if (/לא זמין/.test(err.message)) toast('אחד המוצרים בסל כבר לא זמין. הסירו אותו ונסו שוב.');
+    }
   }
 
   $('#cart-items').addEventListener('click', (e) => {
@@ -108,6 +184,7 @@
     i.qty += Number(b.dataset.d);
     if (i.qty <= 0) cart.splice(b.dataset.q, 1);
     saveCart();
+    lastQuote = null;
     renderCart();
   });
 
@@ -121,9 +198,11 @@
     const btn = $('#pay-btn');
     btn.disabled = true;
     try {
-      const r = await api('/api/orders', { method: 'POST', body: { customer, items: cart.map(({ productId, qty, photoUrl }) => ({ productId, qty, photoUrl })) } });
+      const r = await api('/api/orders', { method: 'POST', body: { customer, code: coupon, items: cart.map(({ productId, qty, photoUrl }) => ({ productId, qty, photoUrl })) } });
       myOrders.add({ id: r.orderId, number: r.number, t: r.trackToken, at: new Date().toISOString() });
       cart = [];
+      coupon = '';
+      store.set('coupon', '');
       saveCart();
       location.href = r.redirectUrl;
     } catch (err) {
