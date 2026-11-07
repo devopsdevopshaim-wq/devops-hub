@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#b5476b">
+  <title>שליחת תמונות מהאירוע</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="./"><img class="logo" src="icons/icon.svg" alt=""><span id="brand-name">רגעים</span></a>
+      <span class="spacer"></span>
+      <button class="btn soft sm hidden" data-install>📲 התקנת האפליקציה</button>
+      <a class="btn ghost sm" href="./#store">🛍️ חנות</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1 id="ev-name">טוען…</h1>
+    <p class="muted" id="ev-welcome"></p>
+  </section>
+
+  <main class="wrap narrow">
+    <!-- הרשמה -->
+    <div id="view-register" class="card hidden">
+      <h2>ברוכים הבאים! 👋</h2>
+      <p class="muted">הזינו את שמכם כדי לשלוח תמונות להדפסה באירוע.</p>
+      <form id="register-form">
+        <div class="field"><label for="g-name">שם מלא</label><input id="g-name" required maxlength="80" autocomplete="name"></div>
+        <div class="field"><label for="g-phone">טלפון (לעדכון כשהתמונה מוכנה)</label><input id="g-phone" type="tel" maxlength="20" autocomplete="tel" inputmode="tel"></div>
+        <label class="check"><input type="checkbox" id="g-consent"> אשמח לקבל מבצעים והטבות</label>
+        <button class="btn block" style="margin-top:12px">כניסה</button>
+      </form>
+    </div>
+
+    <!-- מסך ראשי -->
+    <div id="view-main" class="stack hidden">
+      <div class="card" id="quota-card" style="text-align:center">
+        <div class="muted">נותרו לך להדפסה</div>
+        <div class="counter" id="remaining">0</div>
+        <div class="muted small">תמונות</div>
+      </div>
+
+      <div class="card hidden" id="ended-card">
+        <h2>האירוע הסתיים 💐</h2>
+        <p>תודה שהשתתפתם! התמונות שלכם שמורות כאן. רוצים עוד מגנטים, בלוקים או מתנה מעוצבת מהתמונות? הזמינו בקלות מהחנות.</p>
+        <div class="row"><a class="btn" href="./#store">לחנות 🛍️</a><button class="btn soft hidden" data-install>📲 שמירת האפליקציה בטלפון</button></div>
+      </div>
+
+      <div class="card" id="choose-card">
+        <h2>1. בחרו סוג הדפסה</h2>
+        <div class="stack" id="print-options"></div>
+        <h2 style="margin-top:16px">2. בחרו תמונה</h2>
+        <div class="row">
+          <label class="btn" for="file-camera" style="margin:0">📷 צילום</label>
+          <label class="btn soft" for="file-gallery" style="margin:0">🖼️ מהגלריה</label>
+        </div>
+        <input type="file" id="file-camera" accept="image/*" capture="environment" class="hidden">
+        <input type="file" id="file-gallery" accept="image/*" class="hidden">
+      </div>
+
+      <div class="card" id="gallery-card">
+        <h2>התמונות שלי</h2>
+        <div class="grid sm" id="gallery"></div>
+        <p class="muted small" id="gallery-empty">עדיין לא שלחתם תמונות.</p>
+      </div>
+    </div>
+
+    <!-- עורך -->
+    <div id="view-editor" class="hidden"></div>
+
+    <!-- אישור -->
+    <div id="view-confirm" class="card hidden">
+      <h2>אישור שליחה להדפסה</h2>
+      <img id="confirm-img" alt="תצוגה מקדימה" style="margin:0 auto 12px;max-height:50vh;border-radius:8px">
+      <p>סוג הדפסה: <b id="confirm-opt"></b></p>
+      <div class="row">
+        <button class="btn ghost" id="confirm-back">חזרה לעריכה</button>
+        <span class="spacer"></span>
+        <button class="btn" id="confirm-send">שליחה להדפסה 🖨️</button>
+      </div>
+    </div>
+
+    <div id="view-error" class="card hidden"><h2>אופס</h2><p id="error-msg"></p><a class="btn" href="./">לדף הבית</a></div>
+  </main>
+
+  <script src="js/install-help.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/event.js"></script>
+</body>
+</html>

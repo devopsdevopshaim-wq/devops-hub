@@ -1,0 +1,705 @@
+{
+ "updatedAt": "2026-11-05T06:09:30.699Z",
+ "styles": [
+  {
+   "group": "לו־פיי וצ׳יל",
+   "style": "Lofi Girl",
+   "title": "Lofi Girl",
+   "url": "https://www.youtube.com/playlist?list=UUSJ4gkVC6NrvII8umztf0Ow",
+   "channel": "UCSJ4gkVC6NrvII8umztf0Ow",
+   "handle": "@LofiGirl",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "לו־פיי וצ׳יל",
+   "style": "Chill Nation",
+   "title": "Chill Nation",
+   "url": "https://www.youtube.com/playlist?list=UUM9KEEuzacwVlkt9JfJad7g",
+   "channel": "UCM9KEEuzacwVlkt9JfJad7g",
+   "handle": "@ChillNation",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "לו־פיי וצ׳יל",
+   "style": "the bootleg boy",
+   "title": "the bootleg boy",
+   "url": "https://www.youtube.com/playlist?list=UU0fiLCwTmAukotCXYnqfj0A",
+   "channel": "UC0fiLCwTmAukotCXYnqfj0A",
+   "handle": "@TheBootlegBoy",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "לו־פיי וצ׳יל",
+   "style": "MrSuicideSheep",
+   "title": "MrSuicideSheep",
+   "url": "https://www.youtube.com/playlist?list=UU5nc_ZtjKW1htCVZVRxlQAQ",
+   "channel": "UC5nc_ZtjKW1htCVZVRxlQAQ",
+   "handle": "@MrSuicideSheep",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "לו־פיי וצ׳יל",
+   "style": "Majestic Casual",
+   "title": "Majestic Casual",
+   "url": "https://www.youtube.com/playlist?list=UUXIyz409s7bNWVcM-vjfdVA",
+   "channel": "UCXIyz409s7bNWVcM-vjfdVA",
+   "handle": "@MajesticCasual",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "לו־פיי וצ׳יל",
+   "style": "Selected.",
+   "title": "Selected.",
+   "url": "https://www.youtube.com/playlist?list=UUFZ75Bg73NJnJgmeUX9l62g",
+   "channel": "UCFZ75Bg73NJnJgmeUX9l62g",
+   "handle": "@SelectedBase",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "אמביינט ומדיטציה",
+   "style": "Meditative Mind",
+   "title": "Meditative Mind",
+   "url": "https://www.youtube.com/playlist?list=UUM0YvsRfYfsniGAhjvYFOSA",
+   "channel": "UCM0YvsRfYfsniGAhjvYFOSA",
+   "handle": "@MeditativeMind",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "אמביינט ומדיטציה",
+   "style": "Yellow Brick Cinema - Relaxing Music",
+   "title": "Yellow Brick Cinema - Relaxing Music",
+   "url": "https://www.youtube.com/playlist?list=UUwobzUc3z-0PrFpoRxNszXQ",
+   "channel": "UCwobzUc3z-0PrFpoRxNszXQ",
+   "handle": "@YellowBrickCinema",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "אמביינט ומדיטציה",
+   "style": "Soothing Relaxation",
+   "title": "Soothing Relaxation",
+   "url": "https://www.youtube.com/playlist?list=UUjzHeG1KWoonmf9d5KBvSiw",
+   "channel": "UCjzHeG1KWoonmf9d5KBvSiw",
+   "handle": "@SoothingRelaxation",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "אמביינט ומדיטציה",
+   "style": "Relaxation Film",
+   "title": "Relaxation Film",
+   "url": "https://www.youtube.com/playlist?list=UUPotnGNahFjLWjfsq4KYvuQ",
+   "channel": "UCPotnGNahFjLWjfsq4KYvuQ",
+   "handle": "@RelaxationFilm",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ג׳אז ולאונג׳",
+   "style": "montreux",
+   "title": "montreux",
+   "url": "https://www.youtube.com/playlist?list=UUT8DocxEWDRx_28kne7ZvWg",
+   "channel": "UCT8DocxEWDRx_28kne7ZvWg",
+   "handle": "@Montreux",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ג׳אז ולאונג׳",
+   "style": "Cafe Music BGM channel",
+   "title": "Cafe Music BGM channel",
+   "url": "https://www.youtube.com/playlist?list=UUJhjE7wbdYAae1G25m0tHAA",
+   "channel": "UCJhjE7wbdYAae1G25m0tHAA",
+   "handle": "@CafeMusicBGMchannel",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ג׳אז ולאונג׳",
+   "style": "Jazz Relaxing",
+   "title": "Jazz Relaxing",
+   "url": "https://www.youtube.com/playlist?list=UUifWY5s7FCbSC-vBMV2P0wA",
+   "channel": "UCifWY5s7FCbSC-vBMV2P0wA",
+   "handle": "@JazzRelaxing",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ג׳אז ולאונג׳",
+   "style": "ECM Records",
+   "title": "ECM Records",
+   "url": "https://www.youtube.com/playlist?list=UUa1tsAqPfGsmOydOiDeIywQ",
+   "channel": "UCa1tsAqPfGsmOydOiDeIywQ",
+   "handle": "@ECMRecords",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ג׳אז ולאונג׳",
+   "style": "Verve Records",
+   "title": "Verve Records",
+   "url": "https://www.youtube.com/playlist?list=UUTfo_zdInq_QZJIt2Go2H5Q",
+   "channel": "UCTfo_zdInq_QZJIt2Go2H5Q",
+   "handle": "@VerveRecords",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "קלאסית ופסנתר",
+   "style": "Deutsche Grammophon - DG",
+   "title": "Deutsche Grammophon - DG",
+   "url": "https://www.youtube.com/playlist?list=UU34DbNyD_0t8tnOc5V38Big",
+   "channel": "UC34DbNyD_0t8tnOc5V38Big",
+   "handle": "@DeutscheGrammophon",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "קלאסית ופסנתר",
+   "style": "Berliner Philharmoniker",
+   "title": "Berliner Philharmoniker",
+   "url": "https://www.youtube.com/playlist?list=UUtRkmSO4PrhJ4TzNOmFIwjw",
+   "channel": "UCtRkmSO4PrhJ4TzNOmFIwjw",
+   "handle": "@BerlinPhil",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "קלאסית ופסנתר",
+   "style": "HALIDONMUSIC",
+   "title": "HALIDONMUSIC",
+   "url": "https://www.youtube.com/playlist?list=UUyOfqgtsQaM3S-VZnsYnHjQ",
+   "channel": "UCyOfqgtsQaM3S-VZnsYnHjQ",
+   "handle": "@HALIDONMUSIC",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "קלאסית ופסנתר",
+   "style": "Lang Lang",
+   "title": "Lang Lang",
+   "url": "https://www.youtube.com/playlist?list=UUkEZRZfqwPfv8JqQ3u1n2Ug",
+   "channel": "UCkEZRZfqwPfv8JqQ3u1n2Ug",
+   "handle": "@LangLang",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "קלאסית ופסנתר",
+   "style": "classicfm",
+   "title": "classicfm",
+   "url": "https://www.youtube.com/playlist?list=UUyUc9KYcprLje09obX43TmA",
+   "channel": "UCyUc9KYcprLje09obX43TmA",
+   "handle": "@ClassicFM",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "טראנס ופסיטראנס",
+   "style": "Anjunabeats",
+   "title": "Anjunabeats",
+   "url": "https://www.youtube.com/playlist?list=UUC1qRH2kSGu7AzBwqEPVnjg",
+   "channel": "UCC1qRH2kSGu7AzBwqEPVnjg",
+   "handle": "@anjunabeats",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "טראנס ופסיטראנס",
+   "style": "Above & Beyond",
+   "title": "Above & Beyond",
+   "url": "https://www.youtube.com/playlist?list=UUVE-ybBDg3UHSUylEVdPAsw",
+   "channel": "UCVE-ybBDg3UHSUylEVdPAsw",
+   "handle": "@aboveandbeyond",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "טראנס ופסיטראנס",
+   "style": "Armin van Buuren",
+   "title": "Armin van Buuren",
+   "url": "https://www.youtube.com/playlist?list=UUu5jfQcpRLm9xhmlSd5S8xw",
+   "channel": "UCu5jfQcpRLm9xhmlSd5S8xw",
+   "handle": "@arminvanbuuren",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "טראנס ופסיטראנס",
+   "style": "Suntrip Records & Classic Goa Trax",
+   "title": "Suntrip Records & Classic Goa Trax",
+   "url": "https://www.youtube.com/playlist?list=UUEjxeDgkB8mcu-hommZe_NA",
+   "channel": "UCEjxeDgkB8mcu-hommZe_NA",
+   "handle": "@SuntripRecords",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "האוס, טכנו ואלקטרוני",
+   "style": "Cercle",
+   "title": "Cercle",
+   "url": "https://www.youtube.com/playlist?list=UUPKT_csvP72boVX0XrMtagQ",
+   "channel": "UCPKT_csvP72boVX0XrMtagQ",
+   "handle": "@Cercle",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "האוס, טכנו ואלקטרוני",
+   "style": "Boiler Room",
+   "title": "Boiler Room",
+   "url": "https://www.youtube.com/playlist?list=UUGBpxWJr9FNOcFYA5GkKrMg",
+   "channel": "UCGBpxWJr9FNOcFYA5GkKrMg",
+   "handle": "@boilerroom",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "האוס, טכנו ואלקטרוני",
+   "style": "Mixmag",
+   "title": "Mixmag",
+   "url": "https://www.youtube.com/playlist?list=UUQdCIrTpkhEH5Z8KPsn7NvQ",
+   "channel": "UCQdCIrTpkhEH5Z8KPsn7NvQ",
+   "handle": "@Mixmag",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "האוס, טכנו ואלקטרוני",
+   "style": "DefectedRecords",
+   "title": "DefectedRecords",
+   "url": "https://www.youtube.com/playlist?list=UUJUSZH98MEv0Sa5KKeP-PPQ",
+   "channel": "UCJUSZH98MEv0Sa5KKeP-PPQ",
+   "handle": "@DefectedRecords",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "האוס, טכנו ואלקטרוני",
+   "style": "Spinnin' Records",
+   "title": "Spinnin' Records",
+   "url": "https://www.youtube.com/playlist?list=UUpDJl2EmP7Oh90Vylx0dZtA",
+   "channel": "UCpDJl2EmP7Oh90Vylx0dZtA",
+   "handle": "@SpinninRecords",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "האוס, טכנו ואלקטרוני",
+   "style": "Tomorrowland",
+   "title": "Tomorrowland",
+   "url": "https://www.youtube.com/playlist?list=UUsN8M73DMWa8SPp5o_0IAQQ",
+   "channel": "UCsN8M73DMWa8SPp5o_0IAQQ",
+   "handle": "@Tomorrowland",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "האוס, טכנו ואלקטרוני",
+   "style": "Monstercat Uncaged",
+   "title": "Monstercat Uncaged",
+   "url": "https://www.youtube.com/playlist?list=UUJ6td3C9QlPO9O_J5dF4ZzA",
+   "channel": "UCJ6td3C9QlPO9O_J5dF4ZzA",
+   "handle": "@Monstercat",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "האוס, טכנו ואלקטרוני",
+   "style": "NoCopyrightSounds",
+   "title": "NoCopyrightSounds",
+   "url": "https://www.youtube.com/playlist?list=UU_aEa8K-EOJ3D6gOs7HcyNg",
+   "channel": "UC_aEa8K-EOJ3D6gOs7HcyNg",
+   "handle": "@NoCopyrightSounds",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "האוס, טכנו ואלקטרוני",
+   "style": "Proximity",
+   "title": "Proximity",
+   "url": "https://www.youtube.com/playlist?list=UU3ifTl5zKiCAhHIBQYcaTeg",
+   "channel": "UC3ifTl5zKiCAhHIBQYcaTeg",
+   "handle": "@Proximity",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "הופעות ומוזיקה חיה",
+   "style": "NPR Music",
+   "title": "NPR Music",
+   "url": "https://www.youtube.com/playlist?list=UU4eYXhJI4-7wSWc8UNRwD4A",
+   "channel": "UC4eYXhJI4-7wSWc8UNRwD4A",
+   "handle": "@NPRMusic",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "הופעות ומוזיקה חיה",
+   "style": "KEXP",
+   "title": "KEXP",
+   "url": "https://www.youtube.com/playlist?list=UU3I2GFN_F8WudD_2jUZbojA",
+   "channel": "UC3I2GFN_F8WudD_2jUZbojA",
+   "handle": "@KEXP",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "הופעות ומוזיקה חיה",
+   "style": "COLORS",
+   "title": "COLORS",
+   "url": "https://www.youtube.com/playlist?list=UU2Qw1dzXDBAZPwS7zm37g8g",
+   "channel": "UC2Qw1dzXDBAZPwS7zm37g8g",
+   "handle": "@COLORSxSTUDIOS",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "הופעות ומוזיקה חיה",
+   "style": "Audiotree",
+   "title": "Audiotree",
+   "url": "https://www.youtube.com/playlist?list=UUWjmAUHmajb1-eo5WKk_22A",
+   "channel": "UCWjmAUHmajb1-eo5WKk_22A",
+   "handle": "@AudioTree",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "הופעות ומוזיקה חיה",
+   "style": "Sofar Sounds",
+   "title": "Sofar Sounds",
+   "url": "https://www.youtube.com/playlist?list=UURLZb8PpI9N7COmYqHiDH7A",
+   "channel": "UCRLZb8PpI9N7COmYqHiDH7A",
+   "handle": "@sofarsounds",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "רוק וקלאסיקות",
+   "style": "Pink Floyd",
+   "title": "Pink Floyd",
+   "url": "https://www.youtube.com/playlist?list=UUY2qt3dw2TQJxvBrDiYGHdQ",
+   "channel": "UCY2qt3dw2TQJxvBrDiYGHdQ",
+   "handle": "@pinkfloyd",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "רוק וקלאסיקות",
+   "style": "Led Zeppelin",
+   "title": "Led Zeppelin",
+   "url": "https://www.youtube.com/playlist?list=UUaKZA66vM_TUpetUNohmR0A",
+   "channel": "UCaKZA66vM_TUpetUNohmR0A",
+   "handle": "@ledzeppelin",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "רוק וקלאסיקות",
+   "style": "The Beatles",
+   "title": "The Beatles",
+   "url": "https://www.youtube.com/playlist?list=UUc4K7bAqpdBP8jh1j9XZAww",
+   "channel": "UCc4K7bAqpdBP8jh1j9XZAww",
+   "handle": "@thebeatles",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "רוק וקלאסיקות",
+   "style": "Fleetwood Mac",
+   "title": "Fleetwood Mac",
+   "url": "https://www.youtube.com/playlist?list=UUAb60rVrvVQVfSgrX1UWb0g",
+   "channel": "UCAb60rVrvVQVfSgrX1UWb0g",
+   "handle": "@fleetwoodmac",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "רוק וקלאסיקות",
+   "style": "acdcVEVO",
+   "title": "acdcVEVO",
+   "url": "https://www.youtube.com/playlist?list=UUmPuJ2BltKsGE2966jLgCnw",
+   "channel": "UCmPuJ2BltKsGE2966jLgCnw",
+   "handle": "@ACDCVEVO",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "רגאיי",
+   "style": "Bob Marley",
+   "title": "Bob Marley",
+   "url": "https://www.youtube.com/playlist?list=UUAlTDckOOQ2jREOvuCShGbw",
+   "channel": "UCAlTDckOOQ2jREOvuCShGbw",
+   "handle": "@bobmarley",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "EyalGolanOfficial",
+   "title": "EyalGolanOfficial",
+   "url": "https://www.youtube.com/playlist?list=UUrI0Slej0fiiwYPhR1EmFBw",
+   "channel": "UCrI0Slej0fiiwYPhR1EmFBw",
+   "handle": "@EyalGolanOfficial",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "עומר אדם - הערוץ הרשמי",
+   "title": "עומר אדם - הערוץ הרשמי",
+   "url": "https://www.youtube.com/playlist?list=UUo4y7A6EF2tZ1Q2Oxx64HNQ",
+   "channel": "UCo4y7A6EF2tZ1Q2Oxx64HNQ",
+   "handle": "@OmerAdamOfficial",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "static and ben el",
+   "title": "static and ben el",
+   "url": "https://www.youtube.com/playlist?list=UUG8IaT5ZU8UXeLImR_aAWMA",
+   "channel": "UCG8IaT5ZU8UXeLImR_aAWMA",
+   "handle": "@StaticandBenEl",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "Noa Kirel",
+   "title": "Noa Kirel",
+   "url": "https://www.youtube.com/playlist?list=UU7sHZrh1-mdwyBLq52m1MSw",
+   "channel": "UC7sHZrh1-mdwyBLq52m1MSw",
+   "handle": "@NoaKirelOfficial",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "SaritHadadOfficial",
+   "title": "SaritHadadOfficial",
+   "url": "https://www.youtube.com/playlist?list=UU0m-czKbg-tL7J61RDdU1rg",
+   "channel": "UC0m-czKbg-tL7J61RDdU1rg",
+   "handle": "@SaritHadadOfficial",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "MoshePeretzOfficial",
+   "title": "MoshePeretzOfficial",
+   "url": "https://www.youtube.com/playlist?list=UUL4V2McCoVa6VUZ-cxXFRuQ",
+   "channel": "UCL4V2McCoVa6VUZ-cxXFRuQ",
+   "handle": "@MosheperetzOfficial",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "shlomishabatofficiaI",
+   "title": "shlomishabatofficiaI",
+   "url": "https://www.youtube.com/playlist?list=UUGaHPMv8YIv_0HfRDQQ44cA",
+   "channel": "UCGaHPMv8YIv_0HfRDQQ44cA",
+   "handle": "@ShlomiShabatOfficial",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "kobiperetz",
+   "title": "kobiperetz",
+   "url": "https://www.youtube.com/playlist?list=UUZBaD7jlg9FNyJ6ECzWYDmQ",
+   "channel": "UCZBaD7jlg9FNyJ6ECzWYDmQ",
+   "handle": "@KobiPeretz",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "עדן חסון - Eden Hason",
+   "title": "עדן חסון - Eden Hason",
+   "url": "https://www.youtube.com/playlist?list=UUFmc1S3LEovsxhK73yi6_gg",
+   "channel": "UCFmc1S3LEovsxhK73yi6_gg",
+   "handle": "@EdenHason",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "איתי לוי",
+   "title": "איתי לוי",
+   "url": "https://www.youtube.com/playlist?list=UUh1uy78OxNZzuwenINzFxug",
+   "channel": "UCh1uy78OxNZzuwenINzFxug",
+   "handle": "@ItayLeviOfficial",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "מאיר בנאי – הערוץ הרשמי",
+   "title": "מאיר בנאי – הערוץ הרשמי",
+   "url": "https://www.youtube.com/playlist?list=UUHaf6dsn_DHwEsfzHYPnMXw",
+   "channel": "UCHaf6dsn_DHwEsfzHYPnMXw",
+   "handle": "@MeirBanai",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ישראלי ומזרחי",
+   "style": "YEHORAMGAON",
+   "title": "YEHORAMGAON",
+   "url": "https://www.youtube.com/playlist?list=UU5gu_KCvbw3MqG60rLLQUhw",
+   "channel": "UC5gu_KCvbw3MqG60rLLQUhw",
+   "handle": "@YehoramGaon",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "Yaakov Shwekey יעקב שוואקי",
+   "title": "Yaakov Shwekey יעקב שוואקי",
+   "url": "https://www.youtube.com/playlist?list=UU-iTQfrv8pVLjlErZquyJ6Q",
+   "channel": "UC-iTQfrv8pVLjlErZquyJ6Q",
+   "handle": "@ShwekeyOfficial",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "bennyfriedman",
+   "title": "bennyfriedman",
+   "url": "https://www.youtube.com/playlist?list=UUey5zz67lMTSPV9ZKgbyYUg",
+   "channel": "UCey5zz67lMTSPV9ZKgbyYUg",
+   "handle": "@BennyFriedman",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "MordechaiBenDavid",
+   "title": "MordechaiBenDavid",
+   "url": "https://www.youtube.com/playlist?list=UUmgxmw5H1Qx20NVNY1cvN_A",
+   "channel": "UCmgxmw5H1Qx20NVNY1cvN_A",
+   "handle": "@MordechaiBenDavid",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "MBD Official מרדכי בן דוד",
+   "title": "MBD Official מרדכי בן דוד",
+   "url": "https://www.youtube.com/playlist?list=UU_vOeqbvaSt_P5haPc03oNQ",
+   "channel": "UC_vOeqbvaSt_P5haPc03oNQ",
+   "handle": "@MBDOfficial",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "Eitan Katz",
+   "title": "Eitan Katz",
+   "url": "https://www.youtube.com/playlist?list=UUVpN7oNNlUuFiks4ZgUyQMA",
+   "channel": "UCVpN7oNNlUuFiks4ZgUyQMA",
+   "handle": "@EitanKatz",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "Shlomo Carlebach",
+   "title": "Shlomo Carlebach",
+   "url": "https://www.youtube.com/playlist?list=UUs2DBoMEWQgllBfnE036AXg",
+   "channel": "UCs2DBoMEWQgllBfnE036AXg",
+   "handle": "@ShlomoCarlebach",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "Lipa Schmeltzer",
+   "title": "Lipa Schmeltzer",
+   "url": "https://www.youtube.com/playlist?list=UUA5DZvGtE9DChiczMl_Q8sg",
+   "channel": "UCA5DZvGtE9DChiczMl_Q8sg",
+   "handle": "@LipaSchmeltzer",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "Chana Piamenta",
+   "title": "Chana Piamenta",
+   "url": "https://www.youtube.com/playlist?list=UUPHQ5j_9uIyb13C5J042qWQ",
+   "channel": "UCPHQ5j_9uIyb13C5J042qWQ",
+   "handle": "@Piamenta",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "Moshe Perel",
+   "title": "Moshe Perel",
+   "url": "https://www.youtube.com/playlist?list=UU6tK4NEuWqSgBi09j32THdw",
+   "channel": "UC6tK4NEuWqSgBi09j32THdw",
+   "handle": "@MoshePerel",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "Moshe Mendelson",
+   "title": "Moshe Mendelson",
+   "url": "https://www.youtube.com/playlist?list=UU_A2glkNhq5z4QbtpU0SzZA",
+   "channel": "UC_A2glkNhq5z4QbtpU0SzZA",
+   "handle": "@MosheMendelson",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "danielzamir",
+   "title": "danielzamir",
+   "url": "https://www.youtube.com/playlist?list=UUmlxa3WG_uDGwmmgwDRayxg",
+   "channel": "UCmlxa3WG_uDGwmmgwDRayxg",
+   "handle": "@DanielZamir",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "ניגונים, חסידות ותפילות",
+   "style": "Uri Davidi אורי דוידי",
+   "title": "Uri Davidi אורי דוידי",
+   "url": "https://www.youtube.com/playlist?list=UUNd-7PPfLsz6s2QCPqT23lA",
+   "channel": "UCNd-7PPfLsz6s2QCPqT23lA",
+   "handle": "@UriDavidi",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "מוזיקת עולם",
+   "style": "Cafe De Anatolia",
+   "title": "Cafe De Anatolia",
+   "url": "https://www.youtube.com/playlist?list=UU1Tr6S-XLBk1NzNX1jErWMg",
+   "channel": "UC1Tr6S-XLBk1NzNX1jErWMg",
+   "handle": "@cafedeanatolia",
+   "latest": [],
+   "updated": null
+  },
+  {
+   "group": "מוזיקת עולם",
+   "style": "World Music Network",
+   "title": "World Music Network",
+   "url": "https://www.youtube.com/playlist?list=UUE-hL7kiAdsGe7zc9ojKlIg",
+   "channel": "UCE-hL7kiAdsGe7zc9ojKlIg",
+   "handle": "@WorldMusicNetwork",
+   "latest": [],
+   "updated": null
+  }
+ ]
+}

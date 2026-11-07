@@ -1,0 +1,1865 @@
+---
+name: frame-studio
+description: "Work on the standalone site 'פריים מגנטים / פריים־סטודיו' (a business site for event photo magnets plus its editing and printing studio) (frame-studio/ in devops-hub, live at https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/): explain it, use it, change it, fix it or extend it. Use when the user mentions פריים סטודיו, עריכת תמונות, מסגרות PNG, מסגרת לתמונה, הדפסת תמונות, מדפסת תמונות, הסרת רקע, צלם אירועים, magnet / מגנטים לאירועים, frame studio, frame-studio, עריכה מרובה, סגנון קומיקס / מנגה / גרפיטי, גיבורי על, ספריית אירועים or תכנון הדפסה."
+---
+
+# פריים מגנטים + פריים־סטודיו (frame-studio)
+
+Two pages:
+- `index.html` — the public site of an event-magnets business (פריים מגנטים): a designer's portfolio hero, how it works, a gallery of designs per event type, a designer where a visitor picks event type, names, date, frame, colour and font (and may load their own photo, which stays on the device) and sends the request to WhatsApp, packages, the AI/tech section, FAQ and a contact form that opens WhatsApp. All business details (name, phone/WhatsApp, e-mail, social links, areas, hours, packages and prices, FAQ, event types) live in `business.json`; the prices there are examples until the owner sets real ones. With no WhatsApp number, links open WhatsApp's contact picker. Code: `js/site.js`, `css/site.css`.
+- `studio.html` — the working studio described below (it was `index.html` before; the PWA starts here).
+
+`js/events.js` (shared): `FS.EVENTS` (style per event type: frame, colour, font, palette, frames, greetings), `FS.buildMagnet(p, o)` (frame + names + date/hashtag + logo laid out in the frame's free band; `o.frameRef` for a user PNG frame), `FS.sampleScene` (drawn sample photos, no real people), `FS.photoFrom`.
+
+`js/event-studio.js` (studio): the "אירוע" tab — event form saved in prefs, "תבנית פעילה" applies the event to every new photo (`FS.afterAdd` hook in `core.js`), smart face centring, saved events (`localStorage` `frame-studio-events`), logo colours (k-means); the live event station — `showDirectoryPicker` on the camera folder, polled every 1.5s, a file is taken once its size is steady, template → quality check → queue → `FS.printNow({list, paper, layout, margin, marks})` when a sheet is full (Chrome `--kiosk-printing` prints with no dialog); counters (printed total in `localStorage`). Extra AI: magnet design from a description (Gemini through the hubs server, local keyword fallback), quality check (`FS.quality`: variance of the Laplacian for blur, MediaPipe FaceLandmarker blendshapes for closed eyes; badges on the strip; print can skip failed photos), skin retouch (`FS.smoothSkin`, edge-keeping blur in face ovals, `doc.photo.skin`), face light (exposure/shadows from face brightness), greetings (ready per event + AI). Magnet sizes in `FS.FORMATS`: 5×7.5, 7.5×5, 6×9, 7×10, 6×6. Extra frames: `classic`, `floral`, `boho`.
+
+The studio: a Hebrew (RTL) photo editor for photographers that runs in the browser and installs as an app on Mac, Windows and phones (PWA: `manifest.webmanifest`, `sw.js`). The user loads photos (several at once), edits them, puts frames on them (ready frames drawn in code, or their own PNG frames), adds text, stickers and AI effects, plays games with the photos, saves in several formats and prints on any printer installed on the computer.
+
+Live: https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/ · Code: `frame-studio/` in https://github.com/devopsdevopshaim-wq/devops-hub
+
+## How it is built
+Plain static files, no build step, no server. Photos never leave the computer, except the downsized picture the editing assistant sends when the user presses it.
+
+| File | Role |
+| --- | --- |
+| `studio.html` | the studio screen: tool rail (8 tabs), the panel, the canvas stage, the photo strip, a dialog, the hidden print area |
+| `js/core.js` | `window.FS`: state, page formats (300dpi px + paper mm), the photo pipeline (`FS.processed` → `FS.adjustPixels`: exposure, tone curve LUT, white balance, vibrance, hue matrix, clarity/sharpen by box blur, vignette, grain; `FS.pixelate` for face blur; `FS.replaceBackground` with the person mask), `FS.draw` (page → photo → frame → layers → selection), layers and hit testing, undo/redo (page JSON per photo), IndexedDB (`frame-studio` db: `frames`, `designs`) |
+| `js/frames.js` | `FS.GEN_FRAMES` (15 frames drawn at the page size with any colour/thickness; some add their own text layers), user PNG frames (`FS.detectHole` finds the transparent window by flood fill), `FS.setFrame` (a PNG frame of another shape changes the page to its shape) |
+| `js/ui.js` | tabs, photo strip, pointer drag / pinch / wheel / handle (scale+rotate), keyboard (Ctrl+Z/Y/S/P/D, Delete, arrows), sliders, presets (`FS.PRESETS`, my presets in `localStorage`), frames panel, text and sticker editor, layers list |
+| `js/ai.js` | MediaPipe tasks-vision 0.10.14 from jsDelivr, loaded on first use: selfie segmenter (background blur / colour / image / B&W / transparent) and BlazeFace (smart centring, face stickers, face blur). Pictures from a description: Pollinations (`image.pollinations.ai`, no key); Hebrew is first translated through the hubs server. Editing assistant: `{action:'ai', tag:'photo', prompt, image, mime}` to `hasadna-hubs` (Gemini), answers JSON with adjustments, captions and a frame |
+| `js/output.js` | JPG/PNG/WEBP, PDF written directly (`FS.pdf`, JPEG pages at true mm size), ZIP of all (`FS.zip`, stored), project file `.fstudio.json` (photos, pages, the PNG frames used), "my designs" in IndexedDB, save a design as a new PNG frame, share, print |
+| `js/games.js` | design roulette, sliding puzzle, scratch card (original over edited), guess the filter, sticker rain, memory |
+| `css/studio.css` | dark editor look; under 980px the stage goes on top and the tools become a sideways bar; print rules |
+
+A page: `{ fmt, w, h, bg, frame, layers:[], photo:{ x, y, s, r, fh, fv, adj, preset, bg:{mode,color,src,amount}, blurs } }`. Layers: `text` (font, size, colour, gradient, stroke, background, shadow, spacing), `emoji`, `image` (src data URL, `s`). Frame refs: `{kind:'gen', id, color, thick, opacity}` or `{kind:'png', id, tint, tintAmt, opacity, clip}`.
+
+Printing: the browser cannot list printers, so the site builds pages at the exact paper size (`@page size`) and opens the system print dialog, where the user picks any installed printer. Layouts: one per page (borderless fills the paper), as many as fit at true size, 2/4/9 per page, copies, cut marks.
+
+## The guests' QR page installs as an app (Nov 6, v118)
+- The event QR (`live.html?e=…&k=…`, and the main QR `?m=…`) now opens a page that is also the guests' app: `guest.webmanifest` (id `frame-guest`, "התמונות שלי", start_url `live.html?app=1`, icons `guest-192/512.png`), apart from the studio's Optimus manifest.
+- `js/live-app.js` (`window.FLApp`, loaded after `install-help.js`):
+  - remembers each event opened on the phone in `fs-live-events` (`{e, k, t, at}`, the 20 latest);
+  - `live-guest.js` sends a page opened without keys (from the home screen) to the last saved event;
+  - on phones, outside the installed app, a bar `#lv-app` shows after 2.5 s. Its button installs in one tap where the browser sent `beforeinstallprompt` (Android Chrome / Edge); elsewhere it opens `FS.installHelp` with the exact steps (iPhone, Samsung, inside WhatsApp…);
+  - after the first photo is sent, the install steps open by themselves once (`fs-live-app`: `done` / `later-<time>`, quiet for 3 days).
+- `guest-app.json` `{ storeUrl }`: the Regaim app (`events-hub/`, https://devopsdevopshaim-wq.github.io/devops-hub/events-hub/). When set to an https address, a 🛍️ store button shows on the bar, after sending, and on a closed event. Empty = no button.
+- A fully automatic install is not possible in any browser: it always needs one tap from the guest.
+
+## One person stays one; "👤 רק על אדם אחד" (Oct 28, v70)
+- A photo of one man came back with two: the people were counted with every face the tiled detector found (lights and reflections too), so the prompt said "exactly 2 people" and the check compared against the same wrong number. Now `FS.detectFaces(im)` (ai.js) gives boxes and `FS.mainFaces` keeps the clear faces (score 0.6+, at least 40% as wide as the largest); `FS.countFaces` is that count. `restyleTry` counts the original this way, hands the count to the prompt (`p._n0`) and checks every answer with it (`guarded`).
+- **👤 רק על אדם אחד** (`FS.aiOnePerson`, 'fs-ai-one'; `#mt-one` in the workspace's AI engine card, `#ax-one` in the studio's AI tab): on a photo with 2+ main faces, `pickPerson` asks which (a picker of face crops in `#dlg`; in a batch, `FS.aiBatch(list.length > 1)` set by `FS.runAI`, the largest face; the pick is reused for 2 minutes so "3 versions" ask once). `onePerson` crops the area of that person (3.6 face widths × 7.5 face heights), sends only the crop (neighbours partly inside are counted and told to stay as they are), and lays back only the person: the answer's person mask × a falloff around the chosen face (full to 1.6 face widths, none by 2.2) × a border halfway to each neighbouring face × soft crop edges. Everyone else stays as shot.
+
+## Without internet the AI looks always reach the local engine (Oct 28, v69)
+- A user with the local engine installed got "אין חיבור לשרת ה־AI" on every look: `FS.askServer` (ai.js) handed a failed cloud answer to this computer only for quota-like errors, never for `offline` / `timeout`, and never when a cloud engine was chosen in the engine bar or the mode was "cloud only".
+- Now, for pictures (`restyle` / `image`) with the local engine ready: any cloud failure (except a cancel) goes to `askLocal`, and `cloudOff` sends the next pictures straight there (10 minutes after a lost connection, 30 after a quota); a chosen cloud engine does the same (straight to local when offline or within `cloudOff`); "cloud only" still uses this computer when there is no connection. Without the local engine, the `offline` message now says how to install it (☰ ← 🖥️ AI מקומי).
+
+## 16 AI frame designs, in the program and on the site; a real showcase run (Oct 27, v68)
+- The design directions live in `FS.INV_FRAME_STYLES` (js/inv-frame.js, 16: classic, minimal luxury, corner bouquets, Art Deco gold, watercolour, names band, arch, round wreath, botanical, festive, gallery passe-partout, lace, dark luxury, designer instant photo, dried flowers, gilded carved frame); `FS.invFramePrompt` adds `o.extra` and asks for a breathtaking, top-stationery-designer result.
+- The program's frame editor uses them (`AI_DIRS`, "🤖 16 מסגרות AI"); the site's designer (design.html, "🤖 מסגרת AI כמו ההזמנה") has a gallery: "▯ 16 לאורך" / "▭ 16 לרוחב" (`aiSet`, three at a time, each joins `#ai-frames` with its name; a second click stops).
+- `.github/workflows/frame-showcase.yml` + `.github/scripts/frame-showcase.mjs`: the studio page in a browser on GitHub, the real hubs server (calls routed with the site's origin): an invitation (its art from the image AI, Hebrew words set on it; a drawn one when the AI cannot), every style as a see-through frame and with an event photo, `sheet.jpg` and `report.json`, pushed to the branch `ci-frame-showcase`. Runs by hand (shapes: portrait / landscape / both) or when those files change on the working branch.
+
+## Ten AI frames from the invitation; in front of or behind the photo; full text editing (Oct 27, v67)
+- **🤖 10 מסגרות AI** (examples tab, `#fm-ai10`, orientation `#fm-aior`: עומדות / שוכבות / שתיהן): `AI_DIRS` holds ten design directions (classic, minimal, floral, gold Art Deco, watercolour, wide names band, arch, oval, botanical, festive); each goes to `FS.aiFrameFromInvite` with `o.extra` (now appended by `FS.invFramePrompt` as "Design direction for this version"). Three at a time; each card (`#fm-aiex`, states wait / ok / err) fills the moment its frame is back; a failed card asks again on a click; the button stops the run (`FS.aiStop`). Choosing one (`useAI`) sets the design's size (portrait 10×15 / landscape 15×10, or the current size when it already has that direction), its picture and window, and the names under the window. The results stay while the program is open.
+- **In front of / behind the photo:** an element with `under: true` is drawn before the window is cut, so the photo covers it inside the window; `⇅` in the selection bar switches it (gold when behind).
+- **Texts:** `textCv(e)` draws a text with font, colour, weight, italic, an outline (`stroke`, `sw`) and letter spacing (`ls`); the text tab sets all of these on the selected text live, lists every text on the frame (`#fm-tlist`: change the words in place, 🎯 select, ✕ delete), and a double-click on a text on the frame opens it. Changing the words keeps the letters' size (the box grows with the words). A new text goes to a free height in the band under (or above) the window (`freeY`). Quick texts: names, date, hashtag, "תודה שבאתם", "מזל טוב".
+
+## The opening on the whole screen; the frame editor (Oct 27, v66)
+- **The opening** now fills the screen (`css/splash.css`, the v66 block; markup in studio.html): a camera shutter of eight blades (`svg.sp-shutter`, `preserveAspectRatio="xMidYMid slice"`, wedges along +x turned by 45°) covers the screen and opens (each `.sp-sh` slides out 250 units while `.sp-sh-g` twists −38°, 0.25–1.5 s), light rays turn behind (`.sp-rays`, a repeating conic gradient under a radial mask), a viewfinder draws in the four corners with two rules and its readouts (`.sp-vf`), and a diagonal light band crosses with the flash (`.sp-sweep`). The lens mark and the name are bigger (`clamp(…vmin…)`).
+- **The frame editor** (`js/frame-maker.js` + `css/frame-maker.css`, `FS.frameMaker.open()`; any `[data-fm-open]` button: the studio's frames tab and the workspace's frames panel). studio.html now also loads `js/invite.js` and `js/inv-frame.js` (pure functions).
+  - A design: `{ size, bg: { color, src, gen, dim }, win (shares), shape: rect|round|oval|arch, radius, line: { color, w, double }, els: [{ t: orn|text|img, key/text/src, color, font, weight, x, y, w (shares), rot, op, flip, shadow }] }`. `bg.gen` rebuilds the background from the invitation at any size: `magnet` (`FS.inviteAsMagnet` at `FS.invSmartWindow`), `border` (`FS.frameFromInvite`), `cover`; those set the window. `render(W, H, withPhoto)`: background, the line, the window cut, then the elements (so they may overlap the photo).
+  - Examples (`examples()`): with an invitation, six from it (itself with a round / oval / arch window, its border thick / fine, it as the background), then corners, minimal, floral, dark-gold, polaroid in its colours (`FS.invitePalette`, `FS.accentOf`); without one, the last five in ivory and gold. "🤖 מסגרת חדשה בעיצוב ההזמנה" = `FS.aiFrameFromInvite`; "🤖 קריאת ההזמנה" = `FS.readInvite` (names, date, font) and its ornaments cut out with `FS.cutPiece`; "✂️ חיתוך חלק מההזמנה" cuts any box by hand.
+  - Editing: drag to move, the round handle or the wheel to size, Shift+wheel to turn; the bar over the stage: colour, opacity, −/+, turn, mirror, duplicate (Ctrl+D), forward/back, delete (Delete); arrows nudge; Ctrl+Z / Ctrl+Y (60 steps). mate.js ignores keys while `body.fm-on`.
+  - Saving (💾, Ctrl+S): `FS.addUserFrame` (+ `FS.emit('frames')`), and to the folder chosen once (📁; its handle in IndexedDB 'fs-frame-maker' / 'h'): `name.png` and `name.optimus-frame.json` (opens again with 📂). Without the File System Access API both are downloaded. The last 30 designs are kept in 'fs-frame-maker' / 'd' ("העיצובים שלי").
+
+## Before|after tiles never go black; the AI's before|after in its own column (Oct 27, v65)
+- The edit screen showed black boxes: a rebuilt grid (`keepCanvases`/`reuse`, and `refreshTile`) put back the tile's first canvas straight into the new tile and kept its signature, so `drawTile` skipped the before|after pair. Now `drawn(el)` keeps either the whole `.mt-ba` pair (only once its "after" is drawn) or the single canvas, and `put(el, o, sig)` puts it back only into a tile of the same kind; otherwise the tile is drawn afresh.
+- The AI view on a screen ≥1100px is two columns: the looks on one side, the before|after card (`.mt-aibac`) in its own sticky column (`clamp(380px, 30vw, 560px)`, scrolling inside), so it never covers the styles. Narrower: on top, not sticky.
+
+## One person stays one person; "only on the person"; a finer look (Oct 27, v64)
+- The models added a partner or a figure to a photo of one girl (superhero looks). `restyleTry` now also throws away an answer with more faces than the photo (`extra-people`; a group of 5+ may gain one), and asks again as for `lost-people`.
+- `restyleOnce` writes the count into the prompt: for one face "each person / every person / the people / everyone" become "the person", plus "exactly ONE person … do not add any other person, partner, figure, silhouette, reflection or face"; for N faces "exactly these N people". Every restyle also asks for a high-end result: the face sharp, lit and fully visible (no mask, hood or shadow over it), cinematic grading.
+- **🎯 רק על הדמות** (`FS.aiOnlyPerson`, 'fs-ai-only', off by default; `#mt-only` in the workspace's AI engine card, `#ax-only` in the studio's AI tab): the person of the AI answer (its person mask, `FS.ensureMask` on a temporary photo, grey → alpha) is laid over the original photo, so the background and everyone else stay as they were.
+
+## An AI result without the people is never applied (Oct 27, v63)
+- A "שילוב משלך" (comic + magic forest + superheroes + sparkles) came back as a forest with nobody in it, from the free engine (Pollinations), with its name stamped in the corner.
+- `FS.restyleTry` (styles.js) now counts the faces of the original (`p.faces`, or `FS.countFaces`, ai.js: the whole picture, then 2x2 tiles) and of each answer. An answer with no face, or under half of a group of 3+, is thrown away and asked again: the same engine choice (or 'free' with a new seed), then the engine on this computer when installed. When every try loses the people the error is `lost-people` (its message in `FS.aiError`), and the photo stays as it was.
+- An answer from Pollinations has its bottom 6% left out (`matchShape(res, orig, trimBottom)`), where the free engine stamps its name.
+- The mix prompt (`promptOf`, ai-studio.js) now opens with: the same people stay the main subjects, as large and in the same poses; only the look around them changes.
+
+## Frames that load, the AI's before / after, saved edits (Oct 27, v62)
+- **Frames in the fast workspace** (edit → "מסגרות"): "➕ מסגרות משלי" takes many files at once (`multiple`), "📁 תיקיית מסגרות" a whole folder (`webkitdirectory`). `FS.addFrameFiles(files, { noUse })` (ui.js) now returns a promise of the frames added; a file that fails no longer stops the rest. One new frame goes straight onto the photos on screen. The chips show each frame's picture, mark the current one, and a ✕ deletes a frame of your own. `FS.emit('frames')` after the frames load from storage or are added, so the list is never stale.
+- **AI before / after:** the AI view opens with a sticky card `.mt-aibac` / `#mt-aiba`: the photos the AI works on (up to 6, `aiList()`), "לפני" beside "אחרי" (the same `.mt-ba` tiles as the edit screen). It redraws while `runAI` runs (every 0.9 s, and on `doc`), so each result shows the moment it is back; a click opens the big before/after.
+- **Saved edits** (edit → "💾 שמורים", and in the full editor):
+  - a "look" (`lookOf(p)`) is the colour correction, effect, instant style, background mode, frame, title and clipart (placed by share of the page), without what belongs to one picture (crop, faces, blur spots, AI);
+  - "📋 העתקת העריכה" / "📥 הדבקה" (Ctrl+Shift+C / V), kept in `fs-mate-clip`;
+  - "⤺ כמו התמונה הקודמת": each target gets the edit of the photo before it;
+  - named looks (up to 40) in `fs-mate-looks`, applied in one click next time. `lookOn(list, look)`; `FS.mateLooks`.
+
+## A luxurious opening and before / after side by side (Oct 27, v61)
+- **The opening** was rebuilt (`css/splash.css`, `sp-*` classes, about 5 s), like the first light through a lens:
+  - gold dust drifts up (a canvas `.sp-dust`, 90 particles, drawn by the inline script; skipped under reduced motion), a spotlight opens;
+  - the lens barrel's 72 ticks turn into place, two rings draw, the six blades turn open with a stagger;
+  - a metal shine runs over the blades (SVG gradient, SMIL from 1.9 s), the AI spark ignites with a camera flash and an anamorphic flare (`.sp-flare`, `.sp-flare.v`);
+  - "OPTIMUS" settles letter by letter out of a blur, then a gold glint runs across it; "אופטימוס" between two gold lines; the tag "STUDIO · AI · PRINT";
+  - the stage lifts away at 4.5 s, the splash leaves at 4.55 s. The inline script removes it on its own animationend, on a click (`op-out`), or at 6.2 s.
+  - An inline `<style>` in the head paints the page #050506 until `op-seen`, so there is no white flash before the CSS loads.
+- **Before / after in the fast workspace** (`js/mate.js`), on by default, saved as `fs-mate-cmp`:
+  - `origCanvas(p, size)` draws the photo as it came in (`p.origSrc || p.src`), whole, in a box of the page's shape.
+  - The edit screen's tiles get `.mt-ba` with "לפני" (`.mt-b`) and "אחרי" (`.mt-a`) side by side; the toggle is `#mt-cmp` "◧ לפני | אחרי" in the edit bar.
+  - The full editor shows `#mt-cv0` ("לפני") beside `#mt-cv` ("אחרי") in `#mt-cvw.two`; the toggle is `#mt-dcmp`.
+  - The big preview (`big(p)`) is `.mt-big2`, two figures.
+  - `setCmp(v)` saves and rebuilds; the "before" canvas is cached by its signature (`B._s`).
+
+## The program is called אופטימוס (Optimus), with an animated logo (Oct 27, v60)
+- **The name:** every user-facing "פריים־סטודיו" is now "אופטימוס". That covers the studio, the gate, the intro, the site, the download page, the agreement, the admin, the licence emails in `access-handle.js`, the NSIS texts, the dialogs in main.js, the shortcut (`shortcutName`) and the Windows apps list ("אופטימוס (Optimus)"). The business is still "פריים מגנטים".
+- **What did not change:** the internal `productName` "Frame Studio", the exe, `%APPDATA%\Frame Studio` (settings, licence vault, the 5.5 GB local AI), the appId and the installer file names (`FrameStudio-Setup*.exe`, which the update system downloads). So an update installs over the old program and keeps everything.
+- **The logo:** `optimus.svg`, a gold camera aperture of six blades (clipped to a ring, alternating gradients) with an AI spark in the middle, on graphite. It is the studio's favicon, the PWA icon (manifest), the workspace mark (`.mt-mark img`), and the desktop's `build/icon.png` / `icon.ico` (rendered from the SVG; 16 to 256 px).
+- **The opening** (`css/splash.css` + the `#op-splash` markup at the top of studio.html's body):
+  - the ring draws, the blades turn open with a stagger, the spark pops in with a glow, a light sweeps across;
+  - "OPTIMUS" rises letter by letter (the gradient is on each span, since background-clip text fails on transformed children), then "אופטימוס" and a tagline;
+  - it leaves at about 3.5 s, and a click skips it.
+- It shows once per session (`sessionStorage` "op-splash" → `html.op-seen`), so on every start of the desktop program. An inline script removes the element when it ends (or after 4.6 s at the latest), so it never stands over the program.
+- `gate.css` excludes `#op-splash` from the gated hiding.
+
+## The workspace's new look (Oct 27, v59)
+- At the end of `css/mate.css` ("the look, 2026"):
+  - deep graphite with soft champagne light (radial glows), scoped tokens on `#mt` (`--g0..--g4`, `--gold`, `--gold-grad`);
+  - a top bar with a gold hairline and the program's mark (no name);
+  - tabs as a pill group whose active tab is gold;
+  - sub-tabs with an underline; bars, cards and tiles with soft depth;
+  - tiles that lift on hover, a gold ring when marked, a gold size chip and a dark copies stepper on the photo;
+  - custom sliders; an empty state as a drop zone with a floating icon;
+  - views fading in and tiles rising in. `prefers-reduced-motion` turns the motion off.
+- `mate.js` swaps the emoji on its own buttons for line icons (`ICON`, `EMOJI` → `svg()`), adds the mark (`.mt-mark`) and the drop zone's icon.
+
+## Real faces kept, no distortion (Oct 26, v58)
+- `js/face-keep.js`, `FS.keepFaces(original, result)`: for prompts that must stay a photograph of the same people (`REAL_KEEP` "very same people", smart edits "Keep everything else exactly as it is"), `FS.restyleTry` lays every original face back into the AI result. It runs on this computer, with no internet:
+  - MediaPipe FaceLandmarker on both pictures;
+  - each face matched by place and size;
+  - a least-squares similarity fit on 15 stable points; a fit error above 7.5% of the face width leaves the model's face;
+  - the original warped onto the new head;
+  - colours moved 55% towards the new light (mean/std in the oval);
+  - laid in through the face oval pulled in a little and blurred.
+- Tried on the live comparison results: 2 faces restored per picture in about 0.3s (2.6s on the first, with the model loading). Results that redrew the people at another size are left as they are.
+- On/off: `fs-ai-keepfaces` (on by default), "🙂 שמירת הפנים המקוריות" in the AI tab and the workspace's engine card. Cartoon-style looks (the KEEP prompt) are never touched.
+
+## Free and faster: the cloud and this computer together (Oct 26, v57)
+- The owner wants no paid engine. So, in the desktop program with the local engine installed, auto mode online runs the free cloud (3 at once) **and** this computer (1 more lane, `engine: 'local'`) at the same time (`both` in `FS.runAI`; the busy sign says "כולל המחשב").
+- When the cloud answers quota / no-free-tier / rate-limited / engine-off / ai-failed, `askServer` sends pictures straight to the local engine for 30 minutes (`cloudOff`, `FS.cloudOff()`), so no time is lost waiting on a cloud that ran out. The local engine queues its runs, so parallel calls are safe.
+- Local speed: the reference photo is scaled down to the size of the picture being made (`fitRef` in js/local-ai.js; fewer tokens, much faster on a processor), and the panel offers 512 "⚡ הכי מהיר" beside 768 and 1024 (`fs-ai-local-size`).
+- What stays true: free cloud capacity is small (Workers AI ~8-20 pictures a day; Pollinations' anonymous limit). Free *and* fast all evening needs a graphics card in the event computer (the same FLUX.2 klein 4B then makes a picture in seconds).
+
+## Lifelike AI on real people (Oct 26, v56)
+- **Compared on the live server** (`frame-ai-compare.yml` + `.github/scripts/frame-ai-compare.mjs`, one event photo `.github/ai-compare/wedding-*.jpg`, the real-person looks, results with times on the branch `ci-ai-compare`):
+  - FLUX.2 klein 4B given the old 496px copy (`small`) drew new, generic people;
+  - given the 1024px photo it kept the same faces and framing and looked like a real photo (about 6-8s);
+  - FLUX.2 dev drifted further from the faces;
+  - Workers AI sometimes refuses real-person results (3030 "output flagged", then the next model is tried);
+  - the free daily neurons ran out after about 8 pictures, and Pollinations answered 402 FREE_LIMIT.
+- So `FS.restyleTry` sends the same 1024px JPEG as `image` and `small`. The real-person prompt (`REAL_KEEP`, also used by the heroes) asks to keep the framing, the camera angle and the people's size, and to change only clothes, look and surroundings.
+- The hubs server takes `fluxModel` (klein-4b / klein-9b / dev) to put one FLUX model first (default order unchanged).
+- Offline, the local engine runs the same klein 4B on the 1024px photo, so the quality matches; its speed depends on the graphics card.
+
+## Fast switch, 4/6/9 edit screen (Oct 25, v55)
+- `#mt-switch` (mate.js): one fixed switch "⚡ עבודה מהירה | 🎨 סטודיו עיצוב" on both screens (top centre in the workspace, bottom above the status line in the studio, bottom on phones), and F2 toggles (`FS.mate.toggle`). The old "⚡ סביבת עבודה" and "🎨 הסטודיו המלא" buttons are gone. A switch takes ~10–50 ms: grids keep their drawn canvases (`keepCanvases`/`reuse`, by photo and size; `drawTile` redraws only a photo whose doc changed), and closing selects the photo on the next frame only when it changed.
+- The edit view ("ערוך תמונה") shows a page of 4 (2×2), 6 (3×2) or 9 (3×3) photos filling the screen (`fs-mate-en`), with paging (◀ ▶, PageUp/PageDown). "🔗 עריכה של כל התמונות שבמסך יחד" (`fs-mate-etog`, on by default) makes every change (sliders, auto, reset, title, frames, effects, clipart) reach all the photos on the page, redrawn live while the slider moves.
+
+## Faster AI at events, photoreal looks (Oct 25, v53)
+- `FS.runAI` runs up to 3 photos at once (one at a time on the local engine); the busy sign counts the ready ones. The cloud photo is 1024px JPEG 0.86 (was 1280 at 0.9), and the server's per-address picture limit is 120 an hour (`IMG_IP_HOUR`).
+- Measured live on Oct 25 (`frame-ai-health.yml`, 512×768): auto 7s, FLUX on Cloudflare 8s, Pollinations gptimage 6s; Gemini still 429 (no billing). Once FLUX's free daily neurons run out, only Pollinations is left (one picture per 45s per address), so lasting speed at events needs billing on Gemini or Workers Paid.
+- `FS.AI_HEROES` (v54): 12 superhero looks on the real people (classic suit and cape, high-tech armour with the helmet open, night vigilante, lightning, fire, ice, flying over the city, a team, a warrior heroine, a kid hero, a movie poster, cosmic). Original costumes only: no known characters, logos or brands, the faces uncovered. "🦸 גיבורי על" in the AI tab and the workspace.
+- `FS.AI_REAL` (ai-studio.js): 30 looks that keep a real photograph of the same people (Hollywood, magazine cover, business headshot, wedding attire, gala, the 20s/50s/70s, wild west, knights, pilots, doctors, chefs, football, rock stars, runway, astronauts, Paris, New York, Venice, the Maldives, the Alps, safari, a yacht, the Western Wall, the Dead Sea, evening make-up, a family studio portrait, a lantern festival, 20 years younger). In the studio's AI tab ("🧑 על אדם אמיתי") and the workspace's AI view.
+
+## Paid program updates, managed by the owner (Oct 23, v52)
+- **Server** (`n8n/snippets/access-handle.js`, tests `[updates]` in `n8n/test/access.test.mjs`): a licence may run desktop versions ("1.0.N") up to `L.appVer`, set from the version it was first activated or checked with. `sd.appUpd = {versions:[{ver, notes, price, free, at}], price}`. `updFor(L, running)` rides on every `lic-activate` / `lic-check` answer as `upd`: `latest`, `allowed` (a download link only then), `locked` (running a version newer than approved and not covered by a free update), `back` (the approved version's installer), `req`. A page version like "52" (the online studio) is never locked.
+  - Licence holder: `upd-request {token, ver}` (4 a day) emails the owner.
+  - Admin: `upd-publish {ver, notes, price, free}`, `upd-unpublish`, `upd-settings {price}`, `upd-grant {email, ver, amount, method}` (adds a payment with `kind: 'update'`, raises `appVer`, clears the request). `lic-list` returns `upd`; each licence view has `appVer` and `updReq`.
+- **Studio** (`js/updates.js`, loaded right after account.js): wraps `FS.license.check/activate`, keeps `fs-upd`; "⬆️ עדכון גרסה" in ☰ (red dot when there is a newer one) and in the workspace; the dialog shows what's new and the price, "📨 בקשת העדכון", WhatsApp to Haim, or "⬇️ הורדה והתקנה" once approved. An unapproved version shows `#upd-lock` (remembered per version in `fs-upd-lock`, also offline) with the way back. The owner is never locked; in a browser nothing shows.
+- **Desktop** (`main.js` IPC `app:update`, preload `FSDesktop.update(ver, onProgress)`): downloads only `releases/download/desktop-v<ver>/FrameStudio-Setup-<ver>.exe`, checks it is an exe (MZ, >5MB), runs it with `--updated` (data and the local AI stay) and quits.
+- **Admin** (`js/admin-licenses.js`, "⬆️ עדכוני גרסה"): default price, publish a recent build (from the GitHub releases) with notes, price or free, the published list, open requests with WhatsApp and "✔ אישור", and ⬆️ per licence.
+- Every push still builds a new installer and moves `desktop-latest`; customers who install it without approval get the lock and the way back.
+
+## The fast workspace, no site name on photos, more AI (Oct 23, v51)
+- **`js/mate.js` + `css/mate.css`** (`FS.mate.open/close/print`): a full-screen workspace over the same photos, where the studio opens (`fs-mate` = on/off, remembered). Tabs:
+  - **ראשי**: a tile per photo with its print size ("10X15"), copies (− / + per tile, 0 = not printed; `p.copies`), ✓ mark (`S.marked`), 🔍 and the name. Bars: 📐 size (`FS.mySizes()`, להתאים/לחתוך = `FS.fitPhoto(d, img, 'contain'|'cover')`, turned to the photo's direction, on the marked photos or all), 📁 photos (mark all/none/invert, show filter, sort, remove), 🧾 copies, 🏷️ business details (add / remove the credit layer on request). Tiles draw from their own small cache (`p._mc`, a proxy object to `FS.draw`), lazily, a few per frame.
+  - **ערוך תמונה**: big tiles + a panel: colour correction (brightness, contrast, exposure, saturation, warmth, **R/G/B** = new adj fields `cr/cg/cb` in `FS.ADJ0`, sharpness), title (a linked `mt-title` layer), frames (base + user PNG), effects (the presets with previews, the pro styles), clipart (emoji, logo). Changes reach the marked photos (or the highlighted one); "החל את התיקון על כל התמונות".
+  - **עורך מלא**: one photo on a big canvas (drag to move the photo or an object, wheel to zoom), a folder browser (`showDirectoryPicker`, subfolders, thumbnails, click to bring a photo in), and tools underneath: general (frame, auto level, sharpen, clarity, backlight, film tone, filters, resize, rotate/flip, quick sliders), objects, crop (sizes, fit/crop, centre on faces), AI; save, print, undo/redo, undo all.
+  - **AI**: on-computer tools (auto, face light, skin, centre, full, background blur/white/B&W/remove, face blur, eyes & sharpness check, mark the best), the engine bar, smart edits (`FS.AI_EDITS`, 18: restore, colourise, enhance, studio light, smiles, open eyes, remove people, new backgrounds, confetti, snow, extend), viral and styles.
+  - **הדפסה** (dialog): printer (`FS.choosePrinter`, through the helper), paper (`FS.PAPERS`), DPI (`plan.dpi` → `FS.pageCanvas`), true size (margins, cut marks) or page size (fit / crop, one per sheet, turned to the sheet), which photos, a page-by-page preview, print the current page or all, saved settings (`fs-mate-print`).
+- **No site name**: the business line (`FS.BIZ.credit.on`) is off by default and was turned off once for everyone (`fs-credit-off-v1`); `business.json` credit.on is false. The studio's title and welcome say "סטודיו עריכה", and saved PDF/ZIP names are the date (`FS.outName()`).
+- **AI**: 80 `FS.AI_STYLES` (18 new: cinematic B&W, golden hour, bokeh, fashion cover, charcoal, pastel, stained glass, mosaic, ukiyo-e, impressionism, gold leaf, neon night, Mediterranean beach, garden, castle, 80s, polaroid, caricature) and the smart edits also sit in the studio's AI tab.
+
+## Offline, light, base frames (Oct 2026)
+- **Everything AI runs locally.** These are shipped with the site, and the service worker keeps them in their own cache (`frame-studio-ai-v1`):
+  - In `vendor/`: MediaPipe tasks-vision 0.10.14, onnxruntime-web 1.20.1 (WASM build), pdf.js 3.11.174 and qrcode-generator.
+  - In `models/`: the selfie multiclass and selfie segmenters, the BlazeFace detector, the face landmarker and the AnimeGAN ONNX model.
+  - The "עריכות AI" tab (`js/ai-studio.js`, data-tab `styles`) is real image AI only: a combination builder (`FS.AI_COMBOS`: 26 styles × 26 worlds × 21 outfits × 13 moods, 🎲 surprise), 30 ready combinations, the 36 `FS.AI_STYLES` and free text. `FS.runAI(prompt, label, list)` runs photo by photo; the busy sign's ⏹ (`FS.busy(msg, onStop)`, `FS.aiStop()` aborts the request in flight) stops it, and photos done so far keep their result. The photos screen's 🤖 AI menu runs the same on the picked photos. The drawing styles and the in-browser anime were removed at the owner's request (the pixel style engine stays so old projects render; `js/anime.js` is no longer loaded). Each restyle starts from the original (`p.origSrc`), sending a 1280px copy (`image`, for Gemini) and a 496px one (`small`, for FLUX).
+  - Server (`n8n/build-hubs-workflow.py`, generated into the Worker): restyle/image tries Gemini's image models first, then OpenAI `gpt-image-1` (edits / generations through `fetch`, when OPENAI_API_KEY is set), when GEMINI_API_KEY is set (a key without image allowance is skipped for 6 hours, `sd.gemImgOff`), then FLUX on Workers AI. A FLUX answer carries `skipped` (why the better models didn't answer), and the deploy log prints it; FLUX out of its daily 10,000 neurons stops at once and answers `quota`.
+- **Light files.**
+  - Photos over 3000px (`FS.PHOTO_MAX`), or JPEGs over 4MB, are re-encoded on arrival.
+  - Frame files are compacted to at most 2400px, WebP with alpha when that is smaller (`FS.compactFrame`); stored old frames are compacted once on load.
+  - The photos screen caches a small whole-photo thumbnail per photo (`p._gt`).
+- **Base frames.** `FS.BASE_FRAMES` holds six plain white frames (thin, classic, wide, band for text, rounded, oval), drawn in any colour. They are the only ready frames in the studio and come first in the designer. The decorated frames stay for the site's samples and the event templates.
+  - "🗑 מחיקת כל המסגרות השמורות" clears the user frames, and a one-time question (`fs-frames-clean-v1`) offers it.
+- **Photos screen** shows each whole photo uncropped by default ("🖼 כל התמונה"), or "🧲 כמו בהדפסה".
+- **Designer (`js/inv-frame.js`)**:
+  - **AI frame like the invitation (the main way, "🤖 מסגרת AI כמו ההזמנה"):** `FS.aiFrameFromInvite(img, W, H, {round, band})` sends the invitation, placed on a canvas of the frame's shape (image models answer in the shape they get), to the image AI (`restyle`). `FS.invFramePrompt` asks for a new frame in the invitation's exact colours, paper and ornaments, with a window of flat pure green (#00FF00) and no text. `FS.keyGreenWindow` cuts the green part holding the centre (or the biggest one), fills specks inside it and cleans the green fringe, giving a PNG frame. Every result stays as a thumbnail to pick from (`#ai-frames`). Names and date are added as text afterwards.
+  - **"✨ הכי איכותי: ליצור ב־ChatGPT או ב־Gemini" (`#ext`):** for the owner's own ChatGPT / Gemini account. It gives the invitation on a canvas of the chosen shape (`FS.invShot`), copies the instruction (`FS.invFramePrompt`), and links to chatgpt.com / gemini.google.com (plus Web Share to the apps on phones). "📥 העלאת המסגרת שקיבלתי" cuts the green window with `FS.keyGreenWindow`; when the answer's shape differs from the chosen one, the matching shape is used.
+  - The basic offline builder below is folded under "גרסה בסיסית, בלי אינטרנט": `FS.frameFromInvite(img, W, H, {border, band, text, accent})` rebuilds the invitation's own border around the photo at any size. It uses nine parts: corners kept, edges repeated mirrored, a names band in the invitation's paper colour, and the window cut see-through.
+  - Buttons make a portrait, landscape or square frame from it. The result is kept in the design as `D.invFrame` (WebP) and registered as a PNG frame.
+  - `FS.ELEMENTS` and `FS.elementCanvas` give 15 ornaments drawn in code, in any colour. `FS.textCanvas` adds free text.
+  - Elements are added on the 🧩 tab and deleted with 🗑 or the Delete key; "ניקוי כל האלמנטים" removes them all.
+- **Videos.** The site's `#videos` section holds the three promo films plus `media/explainer.mp4` (60s); show.html plays the studio film. The old `media/promo.mp4` (styles that are no longer offered) was removed.
+- **Promo films (Oct 22):** `media/promo/{site,studio,app}.mp4` (16:9, ~45s each) and `*-v.mp4` (9:16 for status, Reels and TikTok), with posters `*.jpg`. They are made by `videos/promo-src/build.py`, which generates six HyperFrames projects (`videos/promo-{site,studio,app}{,-v}`, git-ignored) from one scene spec. The pictures are real: screenshots taken with `videos/promo-src/capture/cap*.cjs`, the sample photos and show images, and the local-AI end-to-end pictures in `promo-src/e2e`. Render each project with `npx hyperframes@0.8.185 render -o renders/video.mp4`, then encode for the web (H.264 CRF 25/26, faststart, loudnorm -15 LUFS); the commands are in the PR that added them (#379).
+  - Music: Kevin MacLeod (incompetech.com), CC BY 4.0 ("Inspired", "Upbeat Forever", "Beauty Flow"), credited on each end card and under the site videos (`promo-src/music/CREDITS.md`). The tracks were fetched by `.github/workflows/ci-music-fetch.yml` (incompetech and FreePD are blocked from the sandbox); MusicGen was not used because its weights are non-commercial.
+  - The admin home has a "🎬 סרטוני תדמית" section: each film plays, with downloads in both shapes and a WhatsApp share (`PROMOS` in admin.js). The desktop bundle leaves `media/promo` out (streamed from the web).
+
+## Collages, choosing photos, slideshow; the look (Oct 2026)
+- **Look:** all four screens share one identity, a design studio for graphic and photo design.
+  - **Palette and type:** velvet black, champagne gold foil and ivory, in Frank Ruhl Libre, Assistant and Heebo.
+  - **Where it lives:** the studio in `css/lux-studio.css` (its `--ink` means ivory there; the near-black is `--lx-ink`), the admin in `css/lux-admin.css`, the main site in `css/lux-site.css` + `js/lux.js`, and the showcase in `show.*`.
+  - **No fridge or magnets theme:** magnets are one product among several.
+- **"קולאז׳" tab (`js/collage.js`):**
+  - `FS.collageLayouts(ars, W, H, gap, mode, seed)` tries up to 4000 guillotine trees. Split ratios follow the photos' aspects, and the cost is crop + small cells + uneven sizes, or the first photo at about 45% in `hero` mode; `grid` is a uniform grid. It returns up to 12 distinct layouts ("🔀 סידור אחר").
+  - `FS.drawCollage` cover-crops around `p.faces`, and adds margin, gap, corner radius, background and an optional title band.
+  - The result is added as a photo with `applyFormat('cm', W, H)` (`p.collage`).
+- **"בחירה ומצגת" tab (`js/curate.js`):**
+  - `FS.scorePhoto(p)` → `p.rate`, a score from 0 to 100: sharpness via Laplacian variance (40), exposure via histogram middle and clipping (25), faces with eyes open (20) and smiles (15), using `FS.getLandmarker()` blendshapes. Reasons: מטושטשת / חשוכה / שרופה / עיניים עצומות.
+  - `FS.scoreAll` adds near-duplicates (64-bit dHash, Hamming ≤ 6); in each group only the best stays good.
+  - Weak photos are listed with their reasons, and can be marked or removed.
+  - `FS.slideshow(list, sec, title)` plays the best N spread over the evening: a canvas with a blurred fill, a slow move towards the faces and dissolves. ⏺ records it with MediaRecorder (mp4 where supported, otherwise webm).
+  - **Transitions:**
+    - 14 transitions sit in the `TR` table (`FS.slideTransitions`). "אקראי (מתחלף)" is the default; it shuffles without repeating a transition twice in a row.
+    - Slides are prerendered once (`makeFrame`), with the blur made by drawing small and stretching back.
+    - Controls: a transition select with a live preview, transition length 0.4–2.5s, seconds per photo, and the same select in the player bar. They are saved under `fs-slide-prefs`.
+    - The recording captures the same transitions.
+  - `scoreAll` yields to the browser about every 14ms (requestIdleCallback), so scoring hundreds of photos doesn't freeze the page.
+- `FS.busy(msg, onStop)` shows ⏹ on the busy sign, which lives in `.stage` so it shows on the photos screen too.
+
+## Admin-only studio, calendar sync, the invitation as the magnet (Oct 2026)
+- **The studio opens only for the owner** (`js/gate.js`, `css/gate.css`). `<body class="gated">` hides everything until `FS.account.isAdmin()`. A device signed in as admin opens at once, even offline at an event. `FS.account.me()` then checks with the server, and a signed-out, revoked or non-admin session closes it. Anyone else gets `FS.account.form(..., { adminOnly: true })`.
+  - This hides the tool; the protection itself is on the server, since business data needs an admin token there. The public site no longer links to the studio.
+- **Two screens in the admin** (`js/admin-views.js`): "⚙️ מסך מנהל" and "👁 מסך לקוח". The customer screen shows the site as customers see it (main site, showcase or designer) in a frame, at desktop or phone width.
+- **Admin locked out:** the admin password comes from the GitHub secret ADMIN_PASSWORD. Never write the password in code or commits.
+  - When the secret's hash changes, the server resets the admin password to it and clears lock-outs.
+  - `RESET` in `.github/scripts/cloudflare-deploy.mjs` (now 'v2') changes that hash once for the same secret value. Bump it, then run the Cloudflare deploy after the owner sets the secret.
+  - The emailed "forgot password" needs BREVO_API_KEY or RESEND_API_KEY, and none is set.
+- **Calendar sync** (`admin-biz.js`, `#cal-link`): "📅 הוספה ל־Google Calendar" opens `calendar.google.com/calendar/render?cid=webcal://…/frame-cal?k=…`, which subscribes the private feed in the signed-in Gmail account. There is also an Apple/Outlook `webcal:` link, and the raw link sits under a fold. Google refreshes such feeds every few hours.
+- **The invitation itself as the magnet** (designer, invitation tab, "💌 מסגרת מההזמנה"), the main way to make a frame from an invitation. It is made automatically as soon as the invitation is uploaded (`imCreate('smart')` in `openInvite`), and "💌 יצירת המגנט מההזמנה" makes it again.
+  - `FS.inviteAsMagnet(img, W, H, rect, shape, edge)` keeps the invitation untouched (cover-fit) and cuts the window. It returns `{canvas, hole, map}`, where `map` is where the invitation sits on the page, so a window moved on the magnet maps back.
+  - Shapes: rect, round, oval, arch.
+  - Edges: `none`, `line` (a fine line in the invitation's darkest tone), `double`, and `mat` (a paper-coloured passe-partout inside the window).
+  - `FS.invSmartWindow(img, aspect, area)` finds the quietest spot on the invitation (the least edge detail, via an integral image on a ~96px map) for a photo-shaped window: 4:5 on a tall invitation, about 4:3 on a wide one.
+  - Placement buttons (`data-place`): smart, big, center, top, bottom. The magnet format is the one closest to the invitation's proportions, and the designer's names, date and line are cleared.
+  - The window stays editable (`IM`: format, rect, shape, edge, map, key):
+    - the sliders, ➖/➕ and the placement buttons;
+    - the `#inv-sel` box on the invitation (drag to move, corner handle to resize, or draw a new box);
+    - directly on the preview `#cv`, where the corners resize the window and its edge moves it. The move is shown live as an outline and rebuilt on release (`imFromPage`).
+  - Rebuilds drop the previous invitation frame from `FS.USER_FRAMES` and `FS.IMGS`, so memory doesn't grow.
+  - **Editing everything on the preview** (design.js, `overlay()` + the `#cv` pointer handlers):
+    - the photo is dragged inside the window and the wheel zooms it (`PZ`, preview only);
+    - texts with a stable key (`mg0…` from `buildMagnet`, `biz`, `line`) are dragged, resized with their round handle, or resized with the wheel when selected. The changes are kept in `D.lay[key] = {dx, dy, k}` and applied in `build()`;
+    - ornaments are dragged and resized with their handle.
+  - The other ways (AI frame, ChatGPT/Gemini, the basic offline frame, auto-design with ornaments, cutting pieces) are folded under "עוד דרכים" (`.dz-more`), because the owner found the ornament version tacky.
+
+## Showcase page (`show.html`, Oct 2026)
+A designed landing page for customers, linked from the site's nav ("✨ החוויה"). Its look: a fridge door at night, with enamel #EEF0F3, night #14101F, horseshoe-magnet red #E5383B, steel and foil gold. Type is Karantina for display, Assistant for body text and Rubik 900 for the letter magnets.
+- **Hero:** the headline "על המקרר" is coloured plastic letter magnets. A camera flash plays on arrival, and photo magnets (`show/m*.webp`, the site's sample magnets) snap on and can be dragged.
+- **"דקה אחת":** pinned and scrubbed by scroll (GSAP ScrollTrigger). A stopwatch runs 0:00 to 1:00 through flash, frame, print and in hand, and the card goes into the printer and comes out framed.
+- **Styles:** one photo in ten styles, with a clip-path wipe (`show/p-*.webp`).
+- **"המגנט שלכם" (`#yours`):** a live magnet. Names, date, event type, frame colour and the visitor's own photo (an object URL, never uploaded) update it as they type. "שולחים לנו את העיצוב בוואטסאפ" opens wa.me with the names, date, event and colour.
+- **The fridge wall:** a magnet per event type, each with a label-maker tape, linking to its page in `l/`.
+- **Packages and FAQ:** price tags held by magnets. Both are read from `business.json`, with a built-in fallback.
+- **The rest:** the promo film, the booking block (WhatsApp, phone, form, designer), and magnetic CTAs.
+- Page-to-page cross-fade with `@view-transition`. The shared mobile sheet's padding on `<main>` is cancelled here, so sections run edge to edge.
+- GSAP 3.14.2 is vendored in `vendor/gsap/`. Without it, or with reduced motion, every section shows its final state.
+
+## Clean editor, offline AI tab, printer and event summary (Oct 2026)
+- **No top row (`js/shell.js`).** `body.clean-shell` hides `.standalone-bar` and `.topbar`.
+  - Undo / redo, ◐ original and `#fmt` move into the stage bar (`.sb-quick`); 🖨️ print, 💾 save and ☰ (`#sb-menu`: business details, packages, deals, site admin, install, business site, invitation frame) go to `.sb-act`.
+  - The event, text & stickers and games tab buttons are removed. `FS.openTab('event'|'games')` falls back to photos; the text pane still opens when a layer is selected. The event template (`prefs.eventOn`) is forced off, and the intro's "אירוע חדש" is hidden.
+- **Undo.** `FS.undo` / `FS.redo` step every photo being batch-edited, not just the current one. `FS.resetEdits()` (⟲ איפוס in the stage bar) returns to the photo as it came in (first snapshot, AI restyle undone) and is itself undoable. The undo button shows the number of steps.
+- **The computer's printers (`helper/`).** A web page can't list printers, so a small local helper answers on `http://localhost:17777` only:
+  - Windows: `frame-print.ps1` + `start-frame-print.bat` (PowerShell HttpListener; `Win32_Printer` / `Win32_PrintJob` for state, Windows-reported problems such as no paper or low ink, and queue; prints a 300dpi sheet JPEG with `System.Drawing.Printing` on the printer's closest paper, from the paper's edge).
+  - Mac / Linux: `frame_print.py` + `frame-print-mac.command` (CUPS `lpstat` / `lpoptions` / `lp`).
+  - Both send CORS and `Access-Control-Allow-Private-Network`. The downloads are `helper/frame-print-windows.zip` and `frame-print-mac.zip`; rebuild them when the scripts change.
+  - In `printlog.js`, `poll()` reads `/printers` every 5s (15s while it's not running). "המדפסות במחשב" in the output tab lists each printer with its state and queue, plus "חלון ההדפסה של המחשב". The choice is kept in `frame-studio-printer-sel` (the default printer is picked once), and every printer keeps its own ink/paper counters (`frame-studio-printers`).
+  - When a printer is chosen, `FS.doPrint` goes through `FS.directPrint(plan)`: `FS.pageCanvas` per sheet is POSTed to `/print`, and the same `printed` / `print-job` events fire. The preview and the status line show the printer, its state and its queue.
+- **Printer and print log (`js/printlog.js`).** Most printers don't report ink to the computer, so:
+  - The owner sets a printer profile once (`localStorage` `frame-studio-printer`: name with a model list, type dye/inkjet/laser, prints per ink set and per paper roll, used counters, "החלפתי דיו" / "מילאתי נייר", a test page). The print preview shows it on top and asks for it on first print.
+  - `doPrint` emits `print-job` with the plan. Each job is logged (`frame-studio-printlog`: sheets, photos, per-size counts, paper, printer), photos get `p.printed`, and a toast shows sheets out and estimated ink/paper left.
+  - `#pl-bar`, fixed at the bottom left: printer, sheets sent, sheets still waiting (`FS.planPrint` over unprinted photos with the print panel's settings) and ink/paper estimates. A click opens `FS.printSummary()`: photos printed, by size and by paper, sheets, a jobs list, CSV, copy, and "סיום ואירוע חדש" (archived to `frame-studio-printlog-past`).
+
+## Pro workflow (filmstrip, batch, styles, print plan, library)
+- **The photos screen (`js/grid.js`, `#gv`).** Two or more photos added at once open the photos screen instead of the editor. Every photo is spread out on the main screen, and the tile size is a slider.
+  - Picking: a click picks a photo, Shift picks a range, Ctrl+A picks all, Esc clears. A double-click or ✏️ opens that one photo.
+  - Show filters: all, picked, edited, untouched or failed, plus a size filter.
+  - Actions on the picked photos, right on this screen: 🎨 filter (every preset and my presets), 🖌️ instant style, 📐 size (the formats, my saved sizes, or a new size in cm that can be saved with a name), copies and remove.
+  - "✏️ עריכת N התמונות" opens the editor with batch editing on. The strip then shows only those photos (`S.onlyMarked`), and "▦ כל התמונות" (`#to-grid`) goes back.
+  - Exposed: `FS.showGrid()`, `FS.gridMode()`, `FS.isEdited(p)` (the business credit line does not count) and `FS.select(i)`. `FS.emit('photos-added')` fires after files are added.
+- **Sizes.** Seven fixed base sizes (`FS.BASE_SIZES`: 7.5×10, 10×7.5, 10×10, 10×15, 15×10, 15×20, 20×15 cm, ids `b<w>x<h>` in mm) plus any number of the owner's own (`FS.prefs.sizes`, `[{id, name, w, h}]` in mm; `prefs.sizesV2` dropped the old seeded 5×7.5 sizes once).
+  - `FS.mySizes()` (base + own), `FS.userSizes()`, `FS.saveSize`, `FS.delSize`, `FS.sizeOf('my:<id>')`, `FS.sizeOfDoc(doc)` (matches a page by mm), `FS.sizeLabel(z)`, `FS.syncFmt()`, `FS.manageSizes()` (base sizes shown fixed, own sizes editable).
+  - Only these show in `#fmt` (two optgroups, plus "＋ הוספת גודל / ניהול" and a "נוכחי" entry when a page matches none), `#fmt-new` (with a 📐 גדלים button), the ☰ menu, the photos screen's 📐 menu and the print preview's per-photo size. Applied as `applyFormat(doc, 'cm', img, w, h)`. `FS.FORMATS` remains only for the site samples and the designer.
+- **Any number of photos.** Photos are blob URLs (`FS.addPhotoFile`), thumbnails are drawn only when they scroll into view (IntersectionObserver), and only the photo on screen keeps a big preview (`p.cache` is cleared on switching). 150 photos load in about 3s. Project files and "my designs" turn blobs into data URLs on save (`FS.toDataURL`, async `FS.projectOf`).
+- **Filmstrip (`ui.js`).** Each tile shows the frame name, the size in cm, `×copies`, 🎨 for a style, 🤖 for an AI restyle, and a quality badge. Click selects. Ctrl/⌘+click or the checkbox marks a tile, and Shift marks a range. The bar has mark all / clear / invert / "פסולות", copies for the marked photos (`p.copies`) and remove. **Batch is automatic**: marking two or more photos turns it on (`S.batch` is undefined = on, ✏️ toggles it off), and marking a photo brings a marked one onto the screen, so `FS.targets()` returns every marked photo, and `FS.batch(fn)` copies the change from the current photo to the rest. It covers sliders, tone, auto, reset, presets, frames and frame options, rotate/flip/fit, page size, background colour and styles. The event tab's "להחיל" applies to the marked photos, and "📋 העתקת הטקסט והמדבקות" copies layers to them.
+- **Linked layers.** Frame words (`link: 'ft<i>'`), magnet words (`'mg<i>'`, `'mglogo'`) and layers added or copied while photos are marked share a `link`. `FS.syncLinked(L, keys)` copies text, colour, font, size, position, rotation and toggles to the same layer on every marked photo. Deleting a linked layer deletes it on all of them.
+- **AI accuracy.** Person masks use MediaPipe's multiclass 256 model (with the selfie model as fallback), are brought up to 1024px and refined on the photo's edges with a guided filter. Faces are found on the whole photo plus five overlapping tiles and merged, so small faces in group photos are found too. AI restyles send 1536px and a prompt that keeps identity, the number of faces and the aspect ratio. The answer is centre-cropped back to the original's shape.
+- **Motion.** Line icons on the tool rail, a ripple on press, a gold sheen on primary buttons, panels and tiles that slide in, a spring on dialogs and toasts, custom sliders and a turning-lens loader. The site's sections rise in on scroll. All of it turns off with `prefers-reduced-motion`.
+- **Stage.** "▣ עריכה" or "◧ מקור | עריכה" (split: the untouched photo on the left, the page on the right). Zoom −/100%/+ (`S.zoom`). Info shows px, cm, 300dpi, zoom and copies. A histogram (RGB + luminance) sits in the adjust tab.
+- **Custom size.** "📐 גודל מותאם (ס״מ)…" in the size menu, or `cm` in the event tab: `FS.applyFormat(d, 'cm', img, wmm, hmm)` sets `d.mm`. `FS.mmOf(d)` is the true size used everywhere.
+- **Styles tab (`styles.js`).** 22 instant styles (also: old photo, soft pastel, colouring page, blueprint, mosaic, lomo, gold engraving, thermal), 11 in-browser AI looks (anime plus a style on top), 36 AI transformations. Instant styles run in the pipeline as `doc.photo.style = {id, amt}` (Kuwahara with integral images, Sobel ink, halftone, screentone, posterize…; at most 1400px, then mixed back): cartoon, comic, manga, pop, graffiti, sketch, oil, watercolor, stained, neon, pixel, glitch, duotone, noir. There are 20 AI transformations (3D animation, anime, manga, comic, superheroes, animals, graffiti, clay, oil, watercolor, pixel game, cyberpunk, fairy tale, astronauts, royalty, pop art, chibi sticker, caricature, 1920s, costumes) plus free text. Each sends a 1280px JPEG to the hubs server's `restyle` action (Gemini image model). The answer replaces `p.src`, and the original stays in `p.origSrc`; "↩ החזרת המקור" brings it back.
+- **Print plan (`output.js`).** `FS.planPrint(job)` gives pages of `{p, x, y, w, h, rot}` in mm. Items of the same size share sheets. Layouts: fill-at-true-size with a gap, or 1/2/4/6/9. `FS.printPreview()` opens the layout dialog: paper, layout, margins, gap, cut marks, totals (items, sheets, per sheet, paper use), and a row per photo for include, frame, size and copies, with live page previews. `FS.doPrint(plan)` prints. The station calls `FS.printNow(job)` and prints at once.
+- **Library (`library.js`).** "📤 פרסום לספריית האתר" renders the marked photos (1400px JPEG). It commits them with the git-data API (one commit) to `frame-studio/library/<album>/n.jpg` and prepends the album to `frame-studio/library/library.json`, using the owner's fine-grained token (Contents read/write on devops-hub) kept in `localStorage['fs-gh-token']`. Without a token, albums stay in IndexedDB (`designs` with `lib:true`). "ניהול הספרייה" removes an album from the site (one commit), and can publish local albums. The site's "אירועים" section reads `library/library.json`, shows albums by event type, and opens them in a lightbox.
+- **Server.** `n8n/build-hubs-workflow.py` has the `restyle` action, rate limited per address (12/hour) and per day (200). Tests are in `n8n/test/hubs.test.mjs`, and `n8n-deploy.yml` deploys it on push.
+
+## Deals, documents and payments (`js/deals.js`, `pay.html`)
+
+The studio's 📑 עסקאות button opens one file per client deal, stored in IndexedDB (`frame-studio` v2, store `deals`): client, event, package (its price fills in, with a 30% deposit), extras, discount, VAT mode (none / included / plus), deposit, balance date, terms, private notes, a payments log and two signature pads. "🤝 סגירת עסקה" gives the deal a number (`fs-no-deal` in localStorage, from 1001) and prints the deal-closure document. Each recorded payment gets a number (`fs-no-pay`) and a "📄 אישור" payment confirmation. Both documents print on A4 into `#print-root` (`body.printing-doc`, RTL) and can be saved as PDF from the print dialog. The ⚙️ tab keeps the owner's payment options (Bit, PayBox, card and PayPal links, which must be https; bank details; cash/check) and document details in `FS.BIZ.pay`.
+
+`pay.html` (`js/pay.js`, `css/pay.css`) is the client's payment page. The deal summary and payment options travel in the link (`pay.html#<base64url JSON>`, written by `FS.dealPayLink`); nothing is stored on a server. It escapes everything and only opens https links. A payment confirmation is not a tax invoice or receipt; official ones come from a licensed invoicing service.
+
+## Accounts and the business's data on the server (`cloudflare/src/frame.mjs`)
+
+- **Sign-in**: the admin and the customers use the sites' sign-in server (Cloudflare Worker `hasadna-auth`, the same one as SPIDER's): email and password (PBKDF2), an initial password by email, choosing one's own, lock-outs, new devices approved by email, and the owner's authenticator code when `ADMIN_TOTP_SECRET` is set. `js/account.js` (`FS.account`) wraps it.
+  - Customers sign up from `design.html` with `site: 'frame'`. That gives them `sites: ['frame']`, plan `frame`, no end date, and emails in the frame shop's name, open even when SPIDER's own sign-up is closed (`n8n/snippets/access-handle.js`, test `[frame]` in `n8n/test/access.test.mjs`).
+  - **Emails only go out when the Worker has `BREVO_API_KEY` or `RESEND_API_KEY`.** Without one, no initial password arrives.
+- **Data**: it lives in its own Durable Object (`frame`). The Worker resolves the session in the `main` object (`whoIs`) and passes `{role, email}`; a page can never set it.
+  - `GET /frame-site` returns the published site content (only the `PUBLIC` keys) and the owner's frames. `GET /frame-file?id=` serves a frame PNG.
+  - `POST /frame-biz` (text/plain JSON with `token`): a person's own designs (`designs`, `design-get`, `design-save`, `design-del`). Admin only: `all`, `site-save`, `settings-save` (card numbers refused by Luhn), `deal-save`, `deals-import` (newer wins), `deal-del`, `expense-save`, `expense-del`, `frame-add`, `frame-update`, `frame-del`, `designs-of`, `design-of`.
+  - Big values are split into 100KB chunks. Tests: `cloudflare/test/frame.test.mjs` (unit) and the `frame:` checks in `cloudflare/test/worker.test.mjs` (wrangler dev, in CI).
+- **Booking requests** (`frameBook`, `POST /frame-book`, anyone, from the site's origin only):
+  - Senders: the site's contact form (`#c-form`, now "שליחת בקשת הזמנה") and the chat, after it asks for a phone number.
+  - The server checks the date against the calendar and keeps the request as `rq:<id>` with status `pending` and a number `R-101…`.
+  - It answers `free` true or false. The calendar is the deals that hold a date (closed or with a payment), indexed in `cal`, plus the owner's `busy` dates, with `settings.perDay` events a day.
+  - The same phone asking for the same date updates the open request.
+  - Refused: a past date, a bad phone, or a card number. A hidden `website` field catches bots. The rate limit is 6 an hour per address and 300 a day.
+  - The owner gets an email, and a WhatsApp message through CallMeBot when `CALLMEBOT_APIKEY` and `CALLMEBOT_PHONE` are set. The customer gets an email when they gave one.
+  - **Only the owner approves.** Admin actions:
+    - `request-decide` `approve` makes a closed deal with the next number and the package price, and puts it in the calendar. A taken date answers 409 `date-taken` unless `force` is set.
+    - `request-decide` `decline` or `pending`, with an optional `answer` emailed to the customer.
+    - `request-del`, `date-state`, and `cal-key`. `cal-key` makes the secret for `GET /frame-cal?k=`, an iCalendar feed of the events plus the pending requests as tentative, for Google Calendar's "from URL".
+  - `/frame-site` returns `taken`, the full future dates only, and the site shows them as busy.
+  - A signed-in customer reads their own requests with `my-requests`, shown in design.html → "👤 החשבון שלי".
+- **Customers' accounts**: `all` also returns `accounts`, the frame customers from the sign-in data: name, email, phone, sign-up, last sign-in, online, active. `account-set` blocks or unblocks a frame-only customer and ends their sessions. Both are handled in the Worker against the main object.
+- **Pages**: `FS.siteData()` merges `business.json` with `/frame-site`, so whatever is published in the admin shows at once; the site, the designer, the studio and `l/*.html` use it.
+  - The studio's `FS.publishSite` and its deals (`deals.js`) go to the server when the owner is signed in. Each deal is saved locally at once and sent to the server after 2.5s. Studio links: `?deals`, `?deal=<id>`.
+  - `admin.html` has a CSP (scripts only from the site, connections to `*.workers.dev` and the n8n host) and no GitHub token.
+  - `js/admin-biz.js` holds these sections:
+    - 📥 requests: approve, decline, WhatsApp to the customer, add to Google Calendar.
+    - 🗓️ calendar: a month grid, events a day, and the private calendar link.
+    - Deals, and reports (month and year, print and CSV).
+    - Expenses.
+    - 👥 customers: everyone with an account, a request or a deal, each with their designs, requests and deals, contact buttons, and block or unblock.
+    - Payment and bank details.
+  - The side menu links to the site, the designer and the studio.
+  - `#requests` and the other hashes open a section. New requests are fetched every 90 seconds, with a count badge and a toast.
+
+## The three platforms: site, customers' designer, admin
+
+- **`design.html` (`js/design.js`, `css/design.css`)**: customers design their own frame.
+  - They pick an event type, a frame (the built-in frames minus `business.json` `hideFrames`, plus the owner's PNG frames from `frames/frames.json`) and a magnet size.
+  - They set names, date, hashtag, an extra line, font, frame colour and text colour.
+  - Ornaments are image layers that can be dragged on the preview and changed in size, rotation and opacity. They can be flipped, duplicated as a mirrored pair, or copied to all four corners.
+  - "📨 מההזמנה": an image or a PDF (pdf.js 3.11.174, first page). `js/invite.js` takes the colours locally (k-means) and asks the hubs server `ai` (tag `invite`) for names, date, venue, line, palette, font, frame and ornament boxes (0–1000). `FS.cutPiece` cuts those boxes with the edge colour flood-filled away, and the customer can cut a box by hand too. "✨ עיצוב מסגרת מההזמנה" applies all of it, with the biggest ornament placed in the corners.
+  - "✨ עיצוב עם AI": a request in plain words becomes a JSON patch (tag `design`). A new ornament comes from the `image` action (FLUX on Cloudflare) with its white background removed.
+  - PNG: "⬇️ שמירת המסגרת כ־PNG" (under the preview, and on the save tab) builds the page at 2x its 300dpi size (600dpi, e.g. 1182×1772 for 5×7.5). The frame is see-through where the photo goes, and "הדמיה" includes the photo.
+  - Saving: designs go to IndexedDB `mydesigns` (`frame-studio` v3). There are PNG downloads of the preview and of a see-through frame, and a WhatsApp send (files shared on phones). `?owner` adds "הוספה למסגרות שלי בסטודיו" (`FS.addUserFrame`).
+- **`admin.html` (`js/admin.js`, `js/admin-biz.js`, `css/admin.css`)**: the owner's business and content management, signed in with email and password (see above).
+  - Sections: business details, the site's texts, packages, FAQ, reviews, busy dates, event types, and frames for customers.
+  - Site texts: every element with `data-t` in `index.html` can be overridden from `business.json` `texts`, and `site.js` `texts()` applies them.
+  - The draft is kept in localStorage `fs-admin-draft` on every change, comes back by itself, and "💾 שמירה" confirms it. The packages are one draft shared with the studio's 💰 editor through `frame-studio-packages`: the latest save from either one wins, and publishing writes the published list back. "פרסום באתר" re-reads `business.json` and writes only the changed top-level keys.
+  - Preview: `index.html?preview` takes the draft by `postMessage` from the same origin.
+  - The owner's PNG frames are committed at once (git-data) to `frames/<id>.png` together with `frames/frames.json`.
+  - ✨ next to every text field asks the AI (tag `admin`) for 3 alternatives, and the FAQ section can suggest missing questions.
+- **Hubs server, text on Cloudflare**: when Gemini can't answer, `ai` falls back to Workers AI: Llama 3.3 70B for text, Llama 4 Scout for one picture (as a data URL). Tests are in `n8n/test/hubs-cloudflare.test.mjs`.
+
+## AI without Gemini
+
+- **In the browser** (`js/anime.js`): AnimeGANv2 "face paint 512 v2" (MIT, `models/face-paint-512-v2.onnx`, about 9MB) through onnxruntime-web 1.20.1 from jsDelivr. It uses WebGPU when present, WebAssembly otherwise, and works in 512px tiles with feathered overlaps. `FS.LOCAL_AI` (in `styles.js`) holds the anime result plus an optional instant style on top (comic, cartoon, oil, sketch). It is free, has no quota, and keeps faces. The Hayao and Shinkai weights are personal-use only and must not be used.
+- **On the server**: in the Cloudflare Worker, the hubs code sees `ENV.AI` (Workers AI). `image` uses FLUX.1 schnell, then FLUX.2 klein 4B. `restyle` uses FLUX.2 klein 4B, then 9B, then FLUX.2 dev, in a multipart form with `input_image_0` (the studio sends the photo under 512px, plus `w`/`h` for the output). It is free up to the daily neurons allowance. In n8n, which has no `ENV`, the old Gemini path stays.
+- Tests: `n8n/test/hubs-cloudflare.test.mjs`. The Cloudflare deploy runs whenever `n8n/hasadna-*.json` changes, and its summary shows one real text and one real picture.
+
+## Growth tools: chat, free dates, reviews, guest gallery, event pages
+
+- **Chat** (`js/chat.js`, styles in `css/site.css`) replaces the WhatsApp button on the site. Fixed answers come from `business.json`: packages, FAQ, areas and hours. Free text goes to the hubs server (`action: 'ai'`, `tag: 'frame-chat'`) with the business facts and asks for JSON `{reply, lead, handoff}`. When the server is down or busy, it falls back to keyword and FAQ matching, then to WhatsApp. It asks for a quote step by step (event, date, guests, venue, name), checks the date against `busy`, and hands off to the owner's WhatsApp. The message carries `studio.html#lead=<base64url>`, which `js/grow.js` opens as a new deal. "בדיקת תאריך פנוי" and the package buttons open the chat.
+- **Free dates**: in the deals list, "📢 עדכון תאריכים תפוסים באתר" writes the future dates of closed deals to `business.json` `busy` (dates only, no names). The contact form date shows free or busy.
+- **Reviews** live in `business.json` `reviews` [{name, type, stars, text}] and `googleReviews`, and are edited in the deals dialog's ⭐ tab (`js/grow.js`). The site section `#reviews` stays hidden until there are some. Never invent reviews. In a deal, "⭐ בקשת המלצה" asks the client for one on WhatsApp.
+- **WhatsApp Business replies**: the 💬 tab builds a greeting, an away message and quick replies from the real packages and payment options.
+- **Receipts**: when ⚙️ has "קישור לתוכנת הקבלות", each payment gets 🧾, which copies its details and opens that service.
+- **Guest gallery**: `gallery.html?a=<album id>` (`js/gallery.js`, `css/gallery.css`) shows a published album with save one and save all. In the studio's library dialog, "📱 QR לאורחים" draws a QR code (qrcode-generator 1.4.4 from jsDelivr, `FS.qrCanvas`) and prints a table sign.
+- **Event pages for Google**: `l/<event>.html` and `sitemap.xml` are generated by `python3 frame-studio/tools/build-landing.py`. Edit the texts there and rerun it. `js/landing.js` refreshes the packages from `business.json`. `index.html` carries LocalBusiness JSON-LD and og tags.
+- **Accessibility**: `accessibility.html` is the statement, linked from the footers. There is a skip link and visible focus.
+
+## Offline AI built in, realistic sample photos, sign-in that stays (Oct 2026, v44)
+
+**AI designs that need no internet** (`js/offline-ai.js`; the old `js/anime.js` is gone):
+- Quality pass (Oct 22): only what keeps faces clean is offered. `FS.PRO_STYLES` (11 of the 22 pixel styles: cartoon, oil, watercolor, sketch, lineart, noir, duotone, oldphoto, lomo, pastel, manga). Pointillism was removed (muddy).
+- With no internet (or a failed call with `offline`) and no local engine, a cloud design opens `FS.offlineChooser(label)`, which lists the built-in designs, instead of an error. `body.no-net` dims the cloud designs, and `.ax-cloud-note` says they need the internet.
+- `FS.OFFLINE_AI` lists the built-in designs. They are run with onnxruntime-web 1.20 from `vendor/ort` (WebAssembly, one thread unless cross-origin isolated):
+  - anime: AnimeGANv2 face paint, `models/face-paint-512-v2.onnx`, 512 tiles;
+  - mosaic, candy, rain, udnie, pointillism: fast neural style, `models/style/*.onnx`, the whole photo at once.
+- Read tensor values with `.data`: `getData()` is async in 1.20 and gave black pictures.
+- `FS.restyleOffline(p, id, progress)` replaces the photo like a cloud design: `origSrc`, `aiPrev`, and "↩ ביטול AI" undoes it. Output is 1024px on the long side.
+- The AI designs tab has a "🖥️ מובנה בתוכנה · עובד בלי אינטרנט" card at the top. It holds the neural styles, and the 22 instant pixel styles of `FS.LOCAL_STYLES`, applied as `p.doc.photo.style` (click again to remove).
+- `#ax-net` says what works offline; the local engine also runs the cloud designs when installed.
+- The desktop bundle now includes `vendor/ort` and the models (app content ~70 MB).
+- Measured in a one-core container: candy at 1024px takes ~16 s, anime at 768px ~36 s.
+
+**Realistic sample photos:**
+- `js/real-photos.js` holds `FS.REAL_PHOTOS` {event type: [media/real/*.webp]}. It is loaded before `events.js` on index, design, studio and admin.
+- `FS.realPhoto(type, seed)` feeds:
+  - `FS.magnetCanvas`;
+  - the site's `magnet()`;
+  - the designer's `sample()`;
+  - the studio's `#demo` and the event tab's demo photo.
+- When the list is empty, the drawn scenes stay.
+- The photos are AI-generated people, made in CI by `.github/workflows/frame-studio-photos.yml` (run by hand) with `frame-studio/tools/real-photos.mjs`. It tries the site's own image server first (`/hasadna-hubs` `action: image`, Gemini / FLUX on Cloudflare, no watermark), with Pollinations as the fallback (its watermark cropped), then sharp to 900×1350 WebP. Any file can be replaced by a real photo with the same name.
+- Look at every new set before keeping it. In v46, henna-1/2 (Indian bridal look, a bindi) and holiday-1 (a Christmas tree) were deleted from the list and the folder.
+- The homepage and show.html images (`show/p-*.webp`, `show/m0..m6.webp`, `show/mp.webp`) are rendered in a browser from these photos: `FS.magnetCanvas` for the magnets (m0 wedding, m1 bar mitzvah, m2 engagement, m3 birthday 6.6×6.6, m4 brit, m5 henna, m6 company; mp = wedding seed 5), and a 640px square crop of the wedding seed 5 photo run through `FS.applyStyle` / `FS.offlineStyleCanvas` for the styles. Show only styles that are still offered (PRO_STYLES and the built-in AI ones): original, oldphoto, noir, sketch, manga, cartoon, oil, lomo, anime, candy, rain.
+- The sketch filter lifts dark tones (`0.2 + 0.8·L`) before its colour dodge and darkens the lines ×2.3: without the lift, deep shadows turned JPEG/WebP block noise into black squares.
+
+**Sign-in that stays:**
+- Licence:
+  - `FS.license.check` has no 7-day limit: offline it is always ok;
+  - `signed-out` (the 30-day session ended) re-activates quietly with the email and code kept in the vault;
+  - only revoked, moved or unpaid closes it, and forgets the code.
+- `FS.vault` (`js/account.js`): in the desktop program it uses `FSDesktop.vault` (Electron `safeStorage`, DPAPI on Windows) in `userData/vault.json`, and keeps nothing without OS encryption. In a browser it uses `localStorage` `fs-vault-*`, for the licence code only.
+- The owner's email and password are kept only in the desktop program, after an admin login. `FS.account.relogin()` signs in again when `me` says the session ended.
+- `gate.js` opens at once when there is an admin session, a licence or a saved sign-in, and checks in the background.
+- "🚪 יציאה" (`FS.gateLogout`) forgets the vault.
+- Tested: a licence 40 days old with no internet opens; an expired session gets a new token through `lic-activate`; a revoked licence closes.
+
+## RAW developed for real, and the event folder on the computer (Oct 2026, v43)
+
+**RAW files:**
+- `FS.addPhotoFile` first uses the full-size JPEG the camera stored inside the RAW (fast).
+- When there is none, it is under 1500px (many DNG files), or `FS.prefs.rawMode === 'full'`, the RAW is developed by `FS.decodeRaw`:
+  - LibRaw through `vendor/libraw/` (libraw-wasm 1.6.0, ISC, ~1.4 MB wasm, its own module worker; it needs no cross-origin isolation);
+  - half size, the camera's white balance, 8-bit, JPEG 0.95.
+- Measured: a 26 MP Sony ARW opens from its preview in ~0.5 s; developed takes ~5–20 s.
+- RAW is accepted everywhere photos come in: the main inputs, the strip's "+", drag and drop, and the folder station (`isImg` uses `FS.RAW_EXT`).
+
+**The event folder (`js/folders.js`, card at the top of "שמירה והדפסה"):**
+- `showDirectoryPicker` (readwrite, `id: 'frame-studio-events'`). The handle is kept in IndexedDB `fs-folders`; permission is checked with `queryPermission` and asked again with "חיבור לתיקייה".
+- Each event gets a folder named after the event: the name field, or the live event's date + title, or the date + "אירוע". Inside it:
+  - "מגנטים מוכנים": `FS.renderFull(p, 1)` as JPEG 0.95, rewritten only when the photo changed (`sig`);
+  - "מקור": `p.origFile`, set by wrapping `FS.addPhotoFile`, with RAW bytes kept as they are.
+- Settings in `localStorage` `fs-folders`: auto-save on `print-job`, and whether to keep the originals.
+- "🏁 סיום האירוע" (also in the live tab, `#lv-finish`):
+  - saves everything missing;
+  - then **asks** whether to ZIP the event's folders;
+  - the ZIP is streamed to `<event>.zip` next to the folder: stored, UTF-8 names, DOS dates, stopped above 4 GB;
+  - the folders stay.
+- Browsers without the API (Firefox, Safari, phones) get a note to use "שמירת הכל (ZIP)".
+- It works in the Electron program too (checked: `showDirectoryPicker` exists, and LibRaw's worker and wasm load through the bundle).
+- Testing in this container: mock `showDirectoryPicker` with the browser's private storage (`navigator.storage.getDirectory()`), and launch Chromium with `LANG=C.UTF-8`. Without it, Hebrew folder names silently write into the parent folder.
+
+## The customer's design reaches the studio (Oct 2026, v42)
+
+**Designer (`design.html` / `js/design.js`):**
+- A "הבא ←" button (`.dz-next`) at the end of each step: frame → text → decorations → approve. The last tab is now "✅ אישור ושליחה".
+- "📏 בדיקת הדפסה" (`#guides`):
+  - It draws the cut line and the safe area 3 mm inside it (`safe(d)` from `FS.mmOf`).
+  - `printCheck` warns in `#warn` about texts (not the business credit) that cross it and decorations that leave the magnet.
+- **Approval** (`#approve`):
+  - Fields: event date, phone, a note, and a checkbox confirming names, date, spelling and the print check.
+  - It needs the customer's account; otherwise the account dialog opens, and the design is saved first.
+  - It sends `design-approve` with the see-through print frame (`snapshot(2400, true)`, or 1800 when the PNG is over 4.1 MB) and a JPEG preview.
+  - `#ap-st` shows when it was approved, and "my designs" mark it "✅ אושר".
+
+**Server (`frame.mjs`):**
+- Customer action `design-approve`:
+  - Stores `dzf:<email>:<id>` (the PNG, ≤ `MAX_FRAME`) and `dzp:…` (the preview), and sets `approved` on the design and its index row.
+  - Adds a row to `dzok` (newest first, at most 300).
+  - Notify `{design}` emails the owner (`frameNotify`).
+- Admin actions: `approved-list`, `approved-frame` {email, id}, `approved-del`.
+
+**Studio (`js/live.js`), for the admin:**
+- "🎨 עיצובים מאושרים של לקוחות" opens a list with these actions:
+  - "🎯 המגנט של האירוע": `useDesign` saves `design` {email, id, name} on the live event and sets the station's `cfg.tplFrame`;
+  - "🖼️ על התמונה שעל המסך";
+  - "⬇️ PNG להדפסה";
+  - "✏️ פתיחה בעורך" (`design.html?owner&open=`);
+  - "🗑".
+- `dzFrame` turns the PNG into one of the studio's own frames once (`FS.addUserFrame`, kept in `fs-live-dz`).
+- `putDesign` applies it with `FS.setFrame`, and sets `p.noCredit` and removes the credit layer, because the frame already carries the business line. `FS.applyCredit` respects `p.noCredit`.
+- When a station starts on an event with `design`, it loads that frame, and every guest photo arrives in it.
+
+## Live event: guests' photos, big screen, couple's album, stations, reports, staff mode (Oct 2026, v41)
+
+**Server:** `cloudflare/src/live.mjs` runs in the `frame` Durable Object through `State.liveCall`. Tests: `cloudflare/test/live.test.mjs` (unit), plus the `live:` checks in `test/worker.test.mjs`.
+
+**Routes:**
+- `POST /frame-live`: site origin only.
+- `GET /frame-live-img?e=&p=&v=[&a=1]`: one photo, or its voice message.
+
+**Event data:**
+- An event `lv:<id>` belongs to the signed-in studio that made it: the admin, or a licensed studio (`role: 'studio'`, the email is the owner). `lvidx` maps id to owner.
+- Each event has two random keys:
+  - `k` (the guests' key, in the QR code): uploads only;
+  - `v` (the viewing key): the big screen and the album, read-only.
+- Photos:
+  - meta `lp:<e>:<p>` = {st: new / claimed / printed / hidden, src: guest / studio, name, text, audio, station};
+  - image `li:<e>:<p>` and voice `la:<e>:<p>`, both chunked through `FrameStore.putBig`;
+  - limits: image ≤1.7 MB base64, voice ≤700 KB, 1500 guest photos per event.
+
+**Actions:**
+- Public:
+  - `guest-info` / `guest-up` (key `k`; card numbers refused; 120 an hour per IP);
+  - `feed` (key `v`; hidden photos left out; returns `k` only while uploads are open).
+- Owner:
+  - `ev-list`, `ev-save` (title, date, couple {name, phone, email}, open, copies 1–4, album, cost per magnet, price, bizName, google), `ev-del`, `ev-get`;
+  - `claim` (the shared queue: each photo goes to one station; a claim untouched for 10 minutes returns to the queue);
+  - `mark` (printed / hidden / new), `studio-up` (a printed magnet into the album), `stat` (prints for the report), `review-sent`.
+
+**Cron** (`State.liveTick`, every 2 hours):
+- Photos are deleted 60 days after the event (`purged`; the numbers stay).
+- One to four days after the event, the couple gets an email with the album link and the Google review link, once, when mail is configured.
+
+**Pages** (no sign-in; the keys are in the link; shared helper `js/live-common.js` → `window.FL`):
+- `live.html` + `js/live-guest.js`: the guest's phone page.
+  - Camera or gallery; the photo is scaled to 1600px JPEG on the phone.
+  - Name, a written greeting, and a voice greeting (MediaRecorder, up to 30 s).
+  - Styles: `css/live.css` on `pay.css`.
+- `wall.html` + `js/wall.js` + `css/wall.css`: the big screen.
+  - A slideshow with six transitions and Ken Burns; new photos jump the queue, marked "חדש".
+  - Greetings appear as captions; the QR code is in the corner.
+  - Polls every 6 s.
+- `album.html` + `js/album.js`: the couple's album.
+  - Tabs: everything, magnets, guests' photos, guest book with audio.
+  - Saved photos and the ZIP carry the business's name small in a corner; the ZIP adds `ספר הברכות.txt`.
+  - Print the guest book; review and CTA cards.
+
+**Studio** (`js/live.js` + `css/live-studio.css`, rail tab "אירוע חי", before קולאז׳):
+- The event: new, from a deal, edit, delete.
+- The table sign: two on an A4, through `FS.printDoc` and `FS.qrCanvas`.
+- Links: the wall (opens in a window), the guest link, the album link.
+- Managing photos: hide, show, back to the queue.
+- The open-for-uploads switch.
+- The station:
+  - Name, and print each photo at once or 2, 4 or "fill" on a sheet, with auto-print.
+  - Double print (`copies`, set as `p.copies`).
+  - "🎯 העיצוב של התמונה שעל המסך" stores `cfg.tpl` (a copy of the doc) and applies it to every guest photo with `FS.fitPhoto`.
+  - It polls `claim` every 4 s.
+  - On `print-job` it marks the photos printed, adds to `stat`, and uploads each printed magnet once to the album (`p.albumUp`).
+- The event report: guest photos, greetings, magnets, paper cost, income, profit. A monthly report with CSV.
+- Review reminders for events of the past week: a WhatsApp message to the couple with the album and the Google link.
+- Staff mode: `body.staff-mode`. The PIN is SHA-256 in `localStorage` `fs-staff`. Only these tabs stay: photos, adjust, frames, output, live. The ☰ menu and the owner blocks (`.lv-owner`) are hidden. A bar offers exit with the PIN.
+  - It is a convenience for an event worker, not a security boundary.
+
+**Main site:** `index.html` `#tech` has cards for these features.
+
+**Testing:**
+- Run `wrangler dev` on 8787.
+- Serve the repo on 8099.
+- In Playwright, route `spider-auth…workers.dev` to localhost with `Origin: https://devopsdevopshaim-wq.github.io`.
+- Put the admin session into `localStorage` `frame-session`.
+
+## Desktop program fixes, collage shapes, undoing AI (Oct 2026, v39)
+
+- **AI in the program**: Chromium no longer falls back to software WebGL by itself, so on a computer whose graphics driver it rejects, `getContext('webgl2')` is null and MediaPipe (faces, cut-outs, quality check, smart centring) failed with "רכיב ה־AI לא נטען" (`_glActiveTexture ... activeTexture`). `desktop/main.js` sets `app.commandLine.appendSwitch('enable-unsafe-swiftshader')`, which gives software WebGL only when the GPU is unavailable.
+- **Closing**: the studio's `beforeunload` (unsaved photos) made Electron cancel the close silently, so the X did nothing. `will-prevent-unload` now asks (יציאה / ביטול) with `dialog.showMessageBoxSync`. Desktop only: a ✕ `#app-close` in the stage bar and "✕ סגירת התוכנה" in ☰ call `FSDesktop.close()` (preload → IPC `app:close` → `win.close()`).
+- **Opening again**: `will-quit` shuts the local AI engine down and forces `app.exit(0)` after 4 s, so nothing keeps the single-instance lock. A second launch focuses the window, opens a new one if none is left, or relaunches if the old run is quitting.
+- **Removing the program**: `desktop/build/installer.nsh` (UTF-8 with BOM, `nsis.include`):
+  - `customCheckAppRunning` force-closes `Frame Studio.exe` and `sd-cli.exe` before installing or removing, because a stuck background run made the old uninstaller give up.
+  - `customUnInstall` (not on updates) offers to delete `%APPDATA%\Frame Studio` (settings and the local AI, up to ~6 GB).
+  - The program appears in Windows' apps list as "פריים־סטודיו (Frame Studio)".
+  - In the studio, ☰ → "🗑️ הסרת התוכנה מהמחשב" calls `FSDesktop.uninstall()` (IPC `app:uninstall`): it asks, starts `Uninstall *.exe` from the install folder, detached, and exits.
+  - `download.html` has a "how to remove" section.
+- **Undoing AI designs**: `FS.restyle` keeps up to 5 earlier AI results in `p.aiPrev`. `FS.unstyleStep(p)` goes back one step, and `FS.unstyle(p)` goes back to the original. A "↩ ביטול AI" `#ai-undo` button appears in the stage bar whenever the photo on screen has an AI design. The AI designs tab has `#style-back` (last design) and `#style-orig` (original), both for the photo or for all marked photos.
+- **Collage** (`js/collage.js`):
+  - Arrangements (`SPECIAL` in `FS.collageLayouts`):
+    - `polaroid`: rotated cards with a wide bottom;
+    - `film`: strips with sprocket holes, from `cells.under`;
+    - `heart`: a heart of small squares, where photos repeat;
+    - `circle`: a big round photo and a ring around it;
+    - `hex`: a honeycomb.
+  - Photo shapes `#cl-shape`: rect, circle, oval, heart, hex, arch, diamond (`shapeBox` / `shapePath`).
+  - Photo styles `#cl-deco`: none, white border, shadow, gold line, thin line.
+  - Background styles `#cl-bgs`: solid, soft glow, paper, dots, stripes, plus colour swatches `#cl-sw`.
+  - Cells may carry `shape`, `rot` and `card`.
+- **Testing the program locally**:
+  - Download Electron with `node node_modules/electron/install.js`.
+  - Run it under `xvfb-run` with `--remote-debugging-port`.
+  - Connect with Playwright `connectOverCDP`.
+  - For the server, map `spider-auth...workers.dev` to a local HTTPS mock with `--host-resolver-rules`, with the mock's CA added to `~/.pki/nssdb`.
+
+## Professional editor, richer edits, local AI (Oct 2026)
+- **Look:** a pro layer at the end of `css/lux-studio.css` makes the studio a neutral graphite workspace (#121214 / #1B1B1E / #232327, hairlines in black and white with alpha), with champagne for active states and the main actions.
+- **`js/pro.js`:**
+  - A status bar under the photo: name, i/n, px, cm, dpi, zoom, where the AI runs, and "? קיצורים". It mirrors the hidden `#stage-info`.
+  - A shortcuts sheet (`?`) and new shortcuts: `[` `]` previous/next photo, `0` fit, `+`/`−` zoom, `\` held to compare.
+- **Adjust pane (Lightroom-style):**
+  - Seven collapsible sections, each with a reset: אור, צבע, נוכחות, מיקסר צבעים, דירוג צבע, עקומה, אפקטים.
+  - One-row sliders with a number box; double-click resets a slider.
+  - New adj fields: `dehaze`, `texture`, `hsl` (8 bands), `grade` (shadows/mid/highlights hue+amount, balance), `curve` (points).
+    - The object ones are `null` unless used, and `FS.adjPlain(a)` tells whether the photo needs a pixel pass.
+    - `adjustPixels` stays a single pass with LUTs (a 33³ LUT for the mixer in fast preview).
+  - The styling is in `css/edits-x.css`.
+- **Filters:** 59 presets in category chips. Thumbnails come from one 132px copy and are drawn in chunks.
+- **Local AI, desktop only:**
+  - Code: `desktop/local-ai.js` (pure Node, tested by `cd desktop && node --test test/local-ai.test.js`), wired in `desktop/main.js` and `preload.js` as `window.FSDesktop.localAI`.
+  - Engine and model: stable-diffusion.cpp from GitHub releases (Vulkan by default, falling back to CPU) running FLUX.2 klein 4B, the same model as the cloud. Apache-2.0, so commercial use is fine. About 5.5 GB is downloaded from Hugging Face to userData/local-ai.
+  - Panel: `js/local-ai.js` and `css/local-ai.css`, reached from the AI tab and ☰.
+  - Mode in `fs-ai-mode`:
+    - auto: cloud when online, local when offline or when the cloud fails;
+    - local;
+    - cloud.
+  - `FS.askServer` in `js/ai.js` routes `restyle`/`image` through `askLocal` when the mode says so; text AI stays in the cloud.
+  - **Proven end to end (Oct 22)** by `.github/workflows/local-ai-e2e.yml` (`desktop/scripts/local-ai-e2e.mjs`, run by hand on windows-latest, pictures pushed to the branch `ci-local-ai-e2e`): the CPU build installed from the real GitHub/HF in 30 s (sd master-987, flux-2-klein-4b-Q4_0 2.46 GB, Qwen3-4B-Q4_K_M 2.5 GB, flux2-vae 336 MB), and 3d / anime / oil on a 512×768 wedding photo all came out at cloud quality with the faces kept, about **24 minutes each** on 4 EPYC cores. So the CPU build works at 768 by default (`localSize`) and the panel says 10–25 minutes; with a 6 GB+ graphics card (Vulkan) it should be tens of seconds (not measured).
+  - **The download is visible everywhere (v50):** a floating card (`#la-float`, `showFloat` in js/local-ai.js) on every screen with %, GB and time left; the taskbar button's progress bar (`FSDesktop.progress`, `app:progress` → `setProgressBar`; red when it fails); at the end "✅ ההתקנה הסתיימה" on the card and a Windows notification (`FSDesktop.notify`, `app:notify`; `setAppUserModelId('il.frame-magnets.studio')`). A page reloaded mid-download follows it again from `status()` (`followStatus`).
+  - **Installs itself:** the first opening with internet starts the download in the background (`fs-ai-local-auto`; stopping or removing it turns that off), the progress shows on the AI tab pill and the ☰ button, then `activate()` makes a 256×256 test picture and, if the graphics-card build fails, installs the CPU build and tests again. The NSIS installer says so (`customInstall`, new installs only) and runs the program at the end (`runAfterFinish`).
+  - The instant pixel filters are no longer offered in the AI tab or the no-internet dialog (the owner found them ugly); without internet the dialog points to the local engine. An experiment with Magenta arbitrary style transfer and more AnimeGAN weights was judged not professional and left out.
+
+## AI engines and more designs (Oct 22)
+- **Engine choice:** the hubs server (`n8n/build-hubs-workflow.py`) takes `engine` on `restyle`/`image`: `gemini`, `openai` (gpt-image-1, needs OPENAI_API_KEY), `flux` (Workers AI, Cloudflare only) or `free` (Pollinations). Empty means each in turn, as before. An engine the server lacks answers `engine-off` (503); an unknown one `bad-engine`. `action: 'engines'` lists what is on. Tests are in `n8n/test/hubs-cloudflare.test.mjs`.
+- **Studio:** the AI tab has a "⚙️ מנוע ה־AI" bar. It shows auto, the engines `FS.aiEngines()` reports, and "🖥️ מקומי" in the desktop program; the choice is stored in `fs-ai-engine` (`FS.aiEngine`). `FS.askServer` sends `engine: 'local'` to the local engine and any other engine straight to the cloud.
+- **3 versions:** "🎯 3 גרסאות לבחירה" (`fs-ai-variants`). For one photo, `runVariants` asks up to three engines at once (`FS.restyleTry`, which does not apply), then shows a chooser (`.ai-vars`); the picked one is applied with `FS.applyAI`. Failed engines are listed with their reason. With several photos, the chosen engine runs as usual.
+- **Live check (Oct 22, `.github/workflows/frame-ai-health.yml`, run by hand):** Gemini images answered 429 (no billing on the key), Workers AI was out of its 10,000 daily neurons, and Pollinations without POLLINATIONS_TOKEN opens only `gptimage` (kontext, nanobanana and seedream need a "pollen key"). The n8n hub answered "problem executing the workflow". So the free engine now asks `gptimage` first without a key, remembers key-only models for 6 hours (`sd.polKeyOnly`), waits once on its 429; `engines` drops FLUX for the rest of the day once the neurons run out (`sd.fluxOffDay`). For AI that always works, the owner needs billing on the Gemini key, a Pollinations key, Workers Paid, or an OpenAI key.
+- **26 more styles** in `FS.AI_STYLES` (62 now): Israel and the holidays (the Kotel, Jerusalem, Tel Aviv beach, Hanukkah, Seder, Rosh Hashana, a chuppah at sunset), travel (Paris, Santorini, a safari, underwater), looks (classic 2D animation, dreamy anime, fashion dolls, a 1950s wedding, classic Hollywood, a fashion shoot, a child's crayon drawing) and materials (marble, wood, origami), plus vikings, samurai, Egypt, a flower crown and a vintage circus.
+
+## Main site navigation and a lighter desktop program (Oct 2026)
+- **index.html's menu is short:** works, frames, how it works, design it yourself, packages, questions, contact. Then the studio download and "👤 כניסה".
+  - The full editor, the showcase, and the admin and studio links are in the footer.
+  - Under 1120px a "תפריט" button (`#menu-btn`, code in `js/lux.js`) opens a full-screen menu. The header drops its blur while open, so the fixed menu fills the viewport.
+- The hub strip (`.standalone-bar`) is hidden on the business site.
+- The events section (`#events`) stays hidden until there are albums.
+- **The desktop bundle leaves out:**
+  - the unused anime model and onnxruntime (`models/face-paint-512-v2.onnx`, `vendor/ort`);
+  - the 16 MB fine background model, which is fetched from the web when online, with the small one used offline;
+  - Electron locales other than `he`/`en-US` (`electronLanguages`).
+  - NSIS compression is `maximum`. The app content went from 52 MB to 17 MB.
+- `.github/workflows/portfolio-manage.yml` had invalid YAML (a `: ` in a plain `run:` line) and failed on every push; that step now uses a block scalar.
+
+## Paid licences, the purchase agreement, downloads (Oct 2026)
+- **A licence opens only after the owner records a payment.**
+  - `lic-activate` answers `license-unpaid` (402) until the licence is paid.
+  - `lic-check` closes the studio if the payment is removed.
+- **The owner's actions:**
+  - `lic-pay` {email, amount, date, method, ref, note} adds a payment and marks the licence paid. `undo: '1'` with the payment's `at` removes it.
+  - `lic-create` takes `price`, plus `paidNow`/`amount`/`method`/`ref`.
+  - `lic-settings` {price} sets the default price, kept in `sd.licSettings` (default 990 ₪). The public `lic-info` returns the price, which `download.html` shows through `js/download.js`.
+- **Purchase agreement:** `agreement.html`, version **v1**, held in `FS.license.AGREEMENT`.
+  - The gate has a required checkbox. `lic-activate` needs `agree: 'v1'` and stores `L.agreement = {ver, at, ip, ua}`.
+  - A new version: bump both the page and `AGREEMENT`, and everyone accepts again on their next activation.
+  - The text is a base draft and should be checked by a lawyer.
+- **Admin "🔑 רישיונות סטודיו":**
+  - Counts: downloads of the installer (GitHub releases API, public; admin.html's CSP allows `https://api.github.com`), licences, paid, installed, used this week, software income, this month, and money waiting.
+  - A price setting, and a payment form per licence (💰) with a payments list and delete.
+  - Each licence shows its payment status and whether the agreement was accepted.
+- **"🔥 טרנדים ויראליים":** in `js/ai-studio.js` (`VIRAL`, 22 complete prompts, e.g. action figure in a blister pack, snow globe, toy-brick minifigures, movie poster, trading card, toddlers, 50 years on). They use `KEEP_FREE`, which keeps the faces recognisable but doesn't lock the framing or age.
+
+## AI pictures that don't run out (Oct 2026)
+- **The server's image order** (`n8n/build-hubs-workflow.py`, `restyle` and `image`):
+  1. Gemini (this key has no image allowance, so it is skipped for 6h).
+  2. OpenAI (if OPENAI_API_KEY is set).
+  3. FLUX on Workers AI (the free daily allowance). Output is now at most 1024px, about 3× more pictures a day.
+  4. **Pollinations**: free, with no daily allowance.
+- **Pollinations, new picture:** `flux`, then `turbo`.
+- **Pollinations, photo edit:** `kontext`, then `nanobanana`, `seedream`, `gptimage`.
+  - Pollinations reads the photo from a link on the Worker, `GET /hubs-tmp?id=<40 hex>`. It lives 3 minutes in the hubs Durable Object's memory and is never stored (`ENV.TMP_PUT`, through a Proxy over env in `State.handle`).
+  - The optional secret `POLLINATIONS_TOKEN` (free at auth.pollinations.ai) lifts the anonymous limit and opens the edit models. The deploy passes it if set.
+  - Privacy: photos sent this way go to a third-party free service (`private=true`, no logo).
+- **Caps:** IMG_DAY is 800 and IMG_IP_HOUR is 60; the hubs test was updated to match.
+- **Combos in `js/ai-studio.js`:** 40 styles, 38 places, 29 outfits, 19 moods and 54 ready combos.
+
+## Studio licences and the desktop program (Oct 2026)
+- **Who can open the studio:** the owner (admin sign-in) or a licence holder. `js/gate.js` shows two tabs, "🔑 קוד הפעלה" (email + code) and "🔐 מנהל".
+  - A licence holder gets `body.studio-licensed`, which hides the owner's business screens and admin links (`css/gate.css`).
+  - ☰ has "🚪 יציאה".
+- **Server** (`n8n/snippets/access-handle.js`, the `lic-*` actions on `/hasadna-auth`):
+  - **One licence per email** in `sd.licenses`. The code is random, `FS-XXXX-XXXX-XXXX-XXXX` (31-letter alphabet, ~79 bits). It is kept in the server so the owner can see it; only an admin session can list it.
+  - **`lic-activate` {email, code, machine}** binds the licence to the first machine (`sha256('lic-machine:'+machine)`). Another machine gets `license-in-use`, an entry in the history, and an email alert to the owner. It allows 12 tries per IP per hour and locks the email for an hour after 6 wrong codes. It opens one `studio` session (30 days), ending any other for that licence.
+  - **`lic-check` {token, machine}** answers on every studio start. A revoked licence ends the session; so does a token used from another machine (`license-moved`). It renews the session while in use.
+  - **Admin actions:** `lic-list`, `lic-create` {email, name, phone, note, send}, `lic-set` {active}, `lic-release` (frees the computer), `lic-rotate` (new code; the old one stops), `lic-mail`, `lic-delete`.
+  - A `studio` session is not a site login (`me` refuses it).
+  - Local server test: `node /path/lic.mjs` against `wrangler dev`; the 20 checks are described in PR history.
+- **Page side** (`FS.license` in account.js):
+  - The machine id is `window.FSDesktop.machineId()` in the desktop program (a hash of the Windows MachineGuid), or the browser's device id.
+  - The licence is kept in localStorage `frame-license`.
+  - Offline, a licence checked in the last 7 days keeps working.
+- **Admin:** "🔑 רישיונות סטודיו" (`js/admin-licenses.js`).
+  - Counts: total, active, installed, in the desktop program, used this week.
+  - Issuing a code shows it in a card, with copy and WhatsApp.
+  - Per licence: copy, WhatsApp, email, release computer, new code, cancel/restore, history, delete.
+- **`download.html`** links the Windows installer `https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/desktop-latest/FrameStudio-Setup.exe` and explains SmartScreen and activation. The main site's nav has "⬇ הסטודיו למחשב"; the footer links download and studio.
+- **The desktop program** is in `desktop/` (Electron), built by `.github/workflows/desktop-build.yml`; see `desktop/README.md`.
+
+## Customers' way in, and RAW photos (Oct 2026)
+- **admin.html opens on "👤 כניסת לקוח"**, with no password: name plus phone or email (`FS.account.enterForm`). "🔐 כניסת מנהל" is the second tab; `admin.html?admin` opens on it.
+  - With an email, the server emails a 6-digit code (`frame-code`). The right code (`frame-code-verify`, 5 tries, 10 minutes) creates or opens a frame client (`sites: ['frame']`), approves the device as an emailed password would, and opens a client session.
+  - With a phone only, or when the code can't be emailed (`mail-failed`: no BREVO_API_KEY or RESEND_API_KEY), the customer enters as an unverified visitor (`frame-visit`).
+  - Every entry is recorded in `sd.frameVisitors` (name, email or phone, first and last visit, visits, verified). The admin's `all` call returns it as `visitors`, and the customers screen shows it in "🚪 מי נכנס למסך הלקוח", with counts for 24h, 7 days and verified.
+  - A customer gets the customer screen (`body.adm-client-mode`: only the client view of admin-views.js, with "שלום NAME" and a logout). The visitor is kept in localStorage `frame-visitor`.
+  - The main site's nav has "👤 כניסה" (admin.html), and the footer has links for customers and the owner.
+- **Server source:** the cases are in `n8n/snippets/access-handle.js`. Rebuild with `python3 n8n/build-access-workflow.py`, then `cd cloudflare && node build.mjs`. `frameVisitors()` is in `cloudflare/src/worker.mjs`.
+- **WhatsApp codes to customers** would need the WhatsApp Business Cloud API (Meta: a business account, an approved authentication template, paid per message). It isn't wired; CallMeBot only messages the owner's own phone.
+- **RAW** (`FS.RAW_EXT`: CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2, PEF and others):
+  - `FS.addPhotoFile` takes the biggest embedded JPEG in the file and applies the TIFF orientation tag 0x0112.
+  - The photo inputs' `accept` lists the RAW extensions, since Windows hides them under `image/*`.
+  - A RAW file with no embedded JPEG fails with a clear reason.
+
+## Speed (Oct 2026, the owner's computer is slow)
+Profile with Playwright, CPU throttling ×4 (CDP `Emulation.setCPUThrottlingRate`) and a longtask observer before changing anything heavy.
+- `FS.PHOTO_MAX` is 2400 (300dpi on the biggest 15×20 magnet).
+- `FS.processed` skips the getImageData/putImageData pass when the photo has no edits.
+- The grid's whole-photo tiles draw from `FS.smallOf(p, 720)`, a small copy made once.
+- While dragging or using a slider, the stage draws at most 640px.
+- Never use `toDataURL` on big canvases; use `FS.canvasURL(c, type, q)`, which goes through toBlob and FileReader. This is used for frames and the invitation frame.
+- Frame tiles (`buildFrames`) render on a ~320px copy of the page, are cached in `FP`, and are drawn a few at a time in idle time.
+- The studio has no `backdrop-filter`; it repainted every frame and every grid tile.
+- `#file-frames` accepts any image. A frame without transparency (JPG) gets its flat centre cut as the window by `FS.cutFlatWindow` (a flood fill from the centre with a soft edge).
+
+## Entry screen
+- `studio.html` opens on `#intro` (`js/intro.js`, `css/intro.css`). It is a design studio's portfolio wall: three columns of the studio's work (`show/p-*.webp`), matted like prints with a number and a name, drifting slowly. The motion is CSS transform only and pauses on hover. There is no WebGL, no three.js and no fridge, at the owner's request (the fridge and `js/fridge3d.js` were removed in Oct 2026).
+- The copy side has the date line, a gold-foil title and four ways in: new event, open photos, continue project and my designs. The owner asked for no link row under them; admin, the business details, packages, deals and the designer are all in the studio's ☰ menu. "לסטודיו Enter" sits in the top corner, and Enter or Esc closes the screen.
+- Its counts come from this browser only (saved events, magnets printed, my frames), and a zero is left out. Dropping files also closes it. `?skip` in the address skips it, which is what the tests use.
+
+Edit the files in place. Push to `main`: `.github/workflows/vacation-hub-pages.yml` publishes `frame-studio/` to GitHub Pages (about two minutes). If you add a file, add it to `FILES` in `sw.js` and bump `CACHE`. Every page loads its own `js/` and `css/` files with `?v=N` (now 38). Bump that number in all the `*.html` pages on each release, together with `CACHE`, so a new page never runs with old scripts from the browser cache. That mix froze the studio intro and the designer in Oct 2026. `sw.js` fetches with `cache: 'no-cache'` and, offline, falls back to the cache with `ignoreSearch`. Each page also has an inline self-heal script at the top of `<head>` (`window.FS_V`). It compares `FS_V` with `version.json` (fetched with no-store; the service worker skips it). On a mismatch it unregisters the service worker, deletes the caches except the AI models cache (`frame-studio-ai*`), and reloads once with `?fresh=`. Any script error from `/frame-studio/` shows a "🔄 רענון מלא" pill that calls `FS_HEAL`, and the ☰ menu has the same action. **On each release run `python3 frame-studio/tools/bump.py N`.** It sets `?v=`, `FS_V`, `version.json` and `CACHE` together, and recomputes the sha256 of the self-heal script in admin.html's CSP (`script-src 'self' 'sha256-…'`); without that the inline script is blocked there.
+- Opening photos (`addFiles` in ui.js) yields between photos and shows "טוען תמונות… i מתוך n" with the file name and size, plus a stop button. A photo that has not opened after 45s is skipped. `FS.addPhotoFile` first reads the file into memory, so an unreadable cloud placeholder fails at once; it recognises HEIC by its `ftyp` header (outside Safari). Every failure carries a Hebrew `err.why`, and a dialog lists the files that didn't open, with the reason and the version. The ☰ menu shows the version next to "רענון מלא". Decoding stays on the plain `<img>` path (`FS.addPhotoFile`); a createImageBitmap path hung on the owner's Windows Chrome app in Oct 2026, so don't bring it back. Business details change in `business.json` only.
+
+## Checking it
+Serve the repo root (`python3 -m http.server`) and open `/frame-studio/` (site: check `.mag`, `.g-item canvas`, the designer `#d-canvas` after changing `#d-type`/`#d-names`, no sideways scroll at 390px) and `/frame-studio/studio.html`. Studio, with Playwright: click `#demo` (a drawn sample photo), move `[data-adj]` sliders, click `#presets .tile`, `#gen-frames .tile`, set `#file-frames` with a PNG that has a transparent middle and check `FS.USER_FRAMES`, `#add-text`, drag on `#view`, Ctrl+Z, open each `[data-game]`, then `#save-one`, `#save-all` (ZIP), `#out-type [data-t=pdf]` (check with `pdfinfo`), `#save-project` and reopen it through `#file-project`, and `#print` with `window.print` stubbed (check `#print-root .pp` and `#page-size`). For AI, route `cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/**` to a local `npm pack` copy and load `portfolio/img/maya-full.jpg`. For the event flow: fill `#mg-prompt` and click `#mg-make` (mock `/webhook/hasadna-hubs` with `{ok:false,error:'no-key'}` to test the local fallback), `#qc-one` then read `FS.cur().quality`, `#face-all`, and the station by replacing `window.showDirectoryPicker` with a fake folder whose `values()` yields files, `#st-print` on and `window.print` stubbed. Check there is no horizontal scroll at 360px.
+
+## Rules
+- Answer in Hebrew unless the user writes in another language. The site is RTL.
+- Do not name or copy another company's product (for example MAGNETOTI); this is the user's own tool.
+- Do not add keys, accounts or personal data to the repo. Photos stay in the browser unless the user presses the editing assistant.
+
+## Wide stays wide, tall stays tall on import (Oct 28, v71)
+
+- New photos used to take the default size as is (10×15 portrait), so wide photos came in tall.
+- `FS.matchOrient(d, img)` (core.js) now turns the page to the photo's own direction right after import:
+  - saved and preset sizes swap their mm through `'cm'`;
+  - `orig` / `custom` swap the pixels;
+  - square photos or square pages are left alone.
+- It is on by default. It follows `FS.prefs.keepOrient`, which is the "לפי כיוון התמונה" checkbox (`#mt-orient`) in the size bar (mate.js); the checkbox is now saved.
+- The event template (`FS.applyEvent`) still forces its own size when it is on.
+
+## Tall and wide sections, a frame for each direction (Oct 28, v72)
+
+- mate.js has a direction filter: `ori` = all / tall / wide. It is saved as `fs-mate-ori` and shown as the `.mt-ori` segment, with counts, in two places: the "📁 תמונות" bar and the edit bar.
+  - `oriOf(p)` reads the page: wider than 1.02 is wide, taller than 1.02 is tall, anything else is square.
+  - `byOri` filters, or in "all" groups tall, then wide, then square, keeping the import order. Both `shown()` and `editList()` go through it.
+  - The main grid puts an `.mt-orih` heading before each group. Its "✔ סימון כולן" button marks or unmarks the whole group.
+- The frames panel has a "מסגרת לפי כיוון" box. It holds two selects, `#mt-ftall` and `#mt-fwide` (remembered as `fs-mate-f<o>`), and their `[data-fori]` "החל" buttons put the chosen frame on every photo of that direction.
+- A PNG frame has a direction (`frameOri` from `USER_FRAMES[id].aspect`). It is listed only in its own direction's select. Clicking it in the chips reaches only the targets of that direction, and a toast reports the rest as skipped. This matters because `FS.setFrame` reshapes the page to a PNG frame's aspect, which would otherwise flip a wide photo tall.
+
+## Friendlier edit screen: one whole photo, a strip, side arrows, slides (Oct 28, v73)
+
+- **Photos per screen** (edit view, mate.js): the choices are now 1, 2, 4, 6 and 9, with 1 as the default (`fs-mate-en2`).
+  - `eCols` gives 1 column for 1, 2 columns for 2 and 4, and 3 columns otherwise.
+  - The tile size is capped at 1600 for 1 or 2 per screen.
+  - Each tile shows its whole page (contain).
+- **Before | after** is off by default (`fs-mate-cmp2`), so the photo gets the whole space. Holding a tile for 260 ms shows the original over it (`.mt-peekw`), and letting go returns to the edit.
+- **Edit view navigation:**
+  - The grid sits in `.mt-estage` with big round side arrows `#mt-enavp` / `#mt-enavn` (SVG chevrons). In right-to-left the next page is on the left. The small top arrows are hidden.
+  - `#mt-estrip` is a strip of every photo in `editList()`, drawn lazily as `.mt-pj` tiles. The photos on screen are lit, and a click goes to that photo's page (`ePageGo(0, to)`).
+  - Swiping (more than 70 px horizontal within 700 ms) turns the page.
+  - ← and → turn the page as well as PageUp/PageDown; ← is next.
+  - `slide(el, n)` adds `.sl-n` or `.sl-p`, a 0.32 s slide-and-fade in from the side the page comes from. It respects reduced motion.
+  - The counter reads "2 מתוך 8".
+- **Design view** has the same side arrows on the canvas (`#mt-dnavp` / `#mt-dnavn`), and `step()` slides too.
+
+## Free trial, free tier, event pass and subscriptions (Oct 29, v74)
+
+**Server** (`n8n/snippets/access-handle.js`, built into `n8n/hasadna-access.json` with `python3 n8n/build-access-workflow.py`; Cloudflare builds from that JSON at deploy):
+- `TRIAL = { events: 2, days: 30, maxDays: 90, eventPrints: 20 }` and `PASS_HOURS = 48`.
+- `planOf(L)` returns one of:
+  - `pro`: paid, and `paidUntil` (if set) is still in the future;
+  - `pass`: `passUntil` is still in the future;
+  - `trial`: within 90 days of the start, and either fewer than 2 events or still within 30 days;
+  - `free`: anything else, with `was` set to trial or sub.
+- `licOpens(L)`: a licence opens when it is paid, on trial, or once had a period or a pass. A licence the owner issued and nobody paid for still answers 402.
+- New actions:
+  - `trial-start` (public): name, email, phone, machine and agreement. It allows one trial per email and one per computer (`sd.trialMachines`), creates a licence with `trial: {start, events}` and a code, returns a token, the code and the plan, and alerts the owner with the lead.
+  - `trial-event` (session): a day with at least 20 prints counts once.
+  - `plan-request` (session): pass / month / year / full. It sets `L.planReq` and alerts the owner with the price.
+- `lic-pay` takes `plan`:
+  - `full` (the default) sets `paid` and removes `paidUntil`;
+  - `month` / `year` set `paid` and add 30 / 365 days to `paidUntil`;
+  - `pass` adds 48 h to `passUntil` without setting `paid`, and its payments are tagged `kind:'pass'`.
+- `lic-settings` takes `passPrice` / `monthPrice` / `yearPrice` (defaults 79 / 89 / 790; full 990). `lic-info` returns them.
+- `lic-activate`, `lic-check` and the admin view all return `plan`.
+- Tests are in `n8n/test/access.test.mjs` (`studioTrial`); `node n8n/test/run-all.mjs` must pass.
+
+**Program:**
+- `account.js`:
+  - `FS.license.trialStart(name, email, phone)` keeps the code in the vault;
+  - `FS.license.plan()` / `setPlan()` read and write the plan cached with the licence, and emit `plan`.
+- `gate.js`: "🎁 ניסיון חינם" is the first, default tab, ahead of "🔑 קוד הפעלה" and "🔐 מנהל".
+- `js/plan.js` (loaded last):
+  - `FS.planTier()`: the owner and licences from before plans count as full. It ages the cached plan by the clock and by the events counted locally (`fs-plan-events`).
+  - `FS.can(what)` and `FS.planGate(what)`.
+  - The free tier:
+    - `FS.renderFull` adds a band "נערך באופטימוס · פריים מגנטים · גרסה חינמית" to every print and file;
+    - `FS.askServer` allows 3 restyle/image calls a day (`fs-plan-ai`), then returns `plan-limit`;
+    - `FS.openTab('collage')`, `[data-fm-open]` / `FS.frameMaker.open` and `FS.localAI.open` are gated;
+    - `ai.js` drops the local engine when `!FS.can('local-ai')`.
+  - `FS.on('printed')` totals the day's prints (`fs-plan-day`) and reports `trial-event`.
+  - `#plan-pill` sits in the workspace header and shows the trial (events and days left), the pass, the free tier, or a subscription ending within 7 days.
+  - `FS.upgrade(why)` opens a window comparing free with full and offering 4 plan cards. "📩 בקשה" sends `plan-request`, with WhatsApp as a fallback. The window opens by itself once, when the trial ends.
+- `admin-licenses.js`:
+  - a plan cell (trial events and end date, pass, subscription, free, 📩 request);
+  - the payment row has a plan select that is prefilled from the request;
+  - price fields for the plans;
+  - stats for trials and requests.
+- `download.html` advertises the trial, and `download.js` shows the subscription prices.
+
+## Verified registration, usage hours, the AI-focused free tier, tips and a guide (Oct 29, v75)
+
+**Registration (server, access-handle.js):**
+- `trial-start` is gone. Every entry to the trial is verified in two steps:
+  1. `trial-code` takes a full name (two words), a phone (`0\d{8,11}`), an email and `where` (`download` or `app`). It stores `sd.trialLeads[e]` and emails a 6-digit code, valid for 30 minutes with 5 tries.
+     - The mail is not soft, so a failed send answers `mail-failed`.
+     - The code is also kept in plain text (`code.plain`) so the owner can send it by WhatsApp from the admin.
+  2. `trial-verify` checks the code:
+     - with no machine (the download page), it marks the lead verified and returns the exe URL (`STUDIO_EXE`);
+     - with a machine (the program), it starts or re-signs the trial on that computer (one per email and one per computer);
+     - a buyer verifying their email gets their own licence.
+  - The owner is alerted once per new verified lead, with name, phone and email.
+- `usage` (session) takes `days` as JSON `{YYYY-MM-DD: minutes}` plus `prints` and `ai`, and adds them to `L.usage` (the last 120 days are kept).
+- `lic-list` returns `leads` (an unverified lead shows its live code). `lead-delete` removes one.
+- `lic-settings` and `lic-info` carry `promo` and `terms`.
+- Tests: `studioTrial` in `n8n/test/access.test.mjs` (423 checks).
+
+**Program:**
+- `gate.js`: the trial tab has two steps, details and then the code. It offers resend, fixing the details, and getting the code by WhatsApp; the WhatsApp link is the only option after `mail-failed`. `FS.license.trialCode` / `trialVerify` live in account.js.
+- `plan.js`:
+  - **Usage:** a minute counts while the program is visible and was used in the last 2 minutes (`fs-usage`). It is sent every 5 minutes, at start and on `online` (`FS.usageSend`), and only what was sent is subtracted.
+  - **Free tier = AI:** `FREE_AI` is 15 a day, and `FREE_PICK` opens the first 4 heroes, 3 real, 5 edits, 3 viral and 6 styles, plus editing in words. Everything else gets `.pl-lock` ⭐ (from a MutationObserver), and a click on it opens the upgrade.
+  - **Reliable AI:** `FS.askServer` always answers within `AI_WAIT` (150 s) and never throws. `FS.runAI` catches errors and shows a calm toast.
+  - The upgrade window shows `promo` and `terms`.
+- `js/help.js`:
+  - A floating tip (`#fs-tip`) after 450 ms on any tab or button. The text comes from `TIPS`, else from the element's title, which is moved to `data-tip`.
+  - `FS.helpGuide()`: a guide to every part of the program. It opens once (`fs-guide-seen`), right after the trial starts, and from "❓ עזרה" in the workspace header.
+
+**Pages:**
+- `download.html` has two panels:
+  - registration (name, phone, email, code, then the download starts);
+  - the full purchase (prices from `lic-info`, promotion, payment terms, what is included, WhatsApp).
+  - The script is `download.js`.
+- `admin-licenses.js`:
+  - a "📝 נרשמים להורדה ולניסיון" card (verified or not, the live code with a WhatsApp send, call, delete);
+  - a "⏱️ שימוש" column (total hours, this week, prints and AI);
+  - promotion and payment-terms fields.
+
+## Mail: the verification codes go out through Gmail (Oct 29)
+
+- **The problem:** codes never arrived because the Cloudflare server (which runs the site) had no mail provider. There was no BREVO_API_KEY, RESEND_API_KEY or GMAIL_APP_PASSWORD, so `sendMail` returned `no-mail-provider`, the trial code answered `mail-failed`, and only the WhatsApp fallback worked.
+- **`cloudflare/src/smtp.mjs`:** `smtpSend(open, {...})` is a small SMTP client:
+  - it uses `AUTH LOGIN` on smtp.gmail.com:465 over TLS;
+  - the subject is UTF-8 (B-encoded) and the body base64;
+  - `verifyOnly` signs in and stops.
+  - The Worker opens the socket with `cloudflare:sockets` `connect(..., {secureTransport:'on'})`.
+  - Tests: `cloudflare/test/smtp.test.mjs`, against a fake server; they run in the deploy.
+- **`sendMail` order:** Brevo, then Resend, then Gmail (`GMAIL_APP_PASSWORD` plus optional `GMAIL_USER`, default the admin's Gmail; the mail goes out from that address).
+- **The deploy** (`cloudflare-deploy.mjs`) takes `GMAIL_APP_PASSWORD` from its own secret or from the SPIDER bundle (`GMAIL_APP_PASSWORD xxxx xxxx xxxx xxxx`), masks it, sets it as a Worker secret, and signs in to Gmail once (sending nothing). Its log line is "✅ מיילים נשלחים דרך Gmail", or ❌ with the reason.
+- **The owner's one-time step when it is missing:** Google account → 2-Step Verification on → https://myaccount.google.com/apppasswords → create one (16 letters) → GitHub secret `GMAIL_APP_PASSWORD` → run "Deploy sign-in server to Cloudflare".
+
+## The version at the bottom, and checking mail for a given address (Oct 29, v76)
+
+- **Version label:** `gate.js` adds `#fs-ver` on every screen, including the sign-in. It reads "אופטימוס · גרסה {FS_V} · תוכנה {FSDesktop.version}", sits fixed at the bottom centre and doesn't take clicks.
+- **Mail check for one address:** the Cloudflare deploy's manual input `mailtest` takes an email address.
+  - The deploy signs in as the admin and logs what the server knows of that address: registered or not, verified or not, whether a live code exists, the licence, and the latest registrations with masked addresses.
+  - Then it sends that address a real code with its own name and phone.
+  - With `mailtest` = 1 it mails the owner's `+mailtest` address instead.
+
+## The code by SMS or WhatsApp (Oct 29, v77)
+
+**Server:**
+- `trial-code`'s mail carries `fallback: {phone, text}`. If the email fails and SMS is set up, the Worker sends the same code by SMS and answers `via: 'sms'`.
+- `trial-resend` {email, via: sms|whatsapp} sends the same live code, and only to the phone that registered. Limits: 4 an hour per email, 10 an hour per IP.
+- `cloudflare/src/text.mjs` (`sendText`, `textChannels`, `intlPhone`) talks to Twilio:
+  - SMS uses `TWILIO_SMS_FROM`;
+  - WhatsApp uses `TWILIO_WHATSAPP_FROM`, plus `TWILIO_WA_CONTENT_SID`, an approved template with {{1}} = the code, for messages outside a chat.
+- Every `step: 'code'` answer carries `alt`, the channels that are on.
+- Missing Twilio secrets mean `alt` is `[]` and resend answers `channel-off`.
+- The deploy checks the Twilio account.
+- Tests: `cloudflare/test/text.test.mjs` and `studioTrial` (426 checks).
+
+**Gate and download page:**
+- "לא הגיע? לקבל את הקוד לטלפון: 📱 ב־SMS / 💬 בוואטסאפ" appears when `alt` is not empty.
+- The text says where the code was sent.
+- The manual "קבלת הקוד בוואטסאפ" (to Haim) stays.
+
+**Mail:**
+- No custom Message-ID any more (Gmail sets its own).
+- The text asks people to look in spam and promotions too.
+
+## SMS / WhatsApp removed (Oct 29, v78)
+
+- The owner doesn't want a paid provider, so all of v77's phone channels are gone:
+  - Twilio, `text.mjs` and its test;
+  - `trial-resend`;
+  - the SMS fallback;
+  - `alt`;
+  - the gate and download buttons.
+- The code goes by email only, from the owner's Gmail.
+- The free manual ways stay:
+  - the customer's link "קבלת הקוד בוואטסאפ" (a message to Haim);
+  - the admin's "💬 קוד" button, which sends the live code by WhatsApp from Haim's phone.
+
+## Code mails out of spam (Oct 29)
+
+- Codes landed in the recipient's spam folder. Three changes:
+  - the sender name is now "אופטימוס · פריים מגנטים" (`fromName` on trial-code), not SPIDER;
+  - every Gmail SMTP mail is multipart/alternative: a text part plus an HTML part from `mailHtml(mail)` in worker.mjs (RTL card, the 6-digit code large);
+  - there is no custom Message-ID.
+- A first mail to a new recipient can still be filtered. Once the person marks it "not spam" (or adds the sender to contacts), the next ones arrive in the inbox.
+- Real sender authority needs an own domain with SPF/DKIM/DMARC.
+
+## No lock-outs for the owner, a live view and a daily summary (Oct 29, v79)
+
+**Login** (access-handle.js):
+- A trusted admin device (`sd.adminDevices`, now up to 30) skips:
+  - the per-IP login rate limit;
+  - the `email|IP` lock and the email lock;
+  - the admin-guess lock.
+- A wrong password from a trusted device answers `bad-login` and never locks.
+- Unknown devices are still stopped after 10 guesses an hour.
+- Test: `adminNoLock`.
+
+**Deploy:**
+- It signs in as the admin with one fixed device, `DEPLOY_DEV` (an HMAC of ADMIN_PASSWORD). Random devices used to push the owner's real devices out of the list of 10.
+- Its wrong-password check uses `deploy-check@example.com`, never the admin's address.
+
+**Live view:**
+- `lic-list` returns `activity`: studio log lines (registration, codes, trials, upgrades, events, payments, updates).
+- `admin-licenses.js` opens with "📊 מצב עכשיו":
+  - who is online;
+  - registered today and this week;
+  - verified this week;
+  - downloads;
+  - hours of use today and this week;
+  - trial, free and paying counts;
+  - open upgrade requests with phones;
+  - a "🕘 מה קרה לאחרונה" feed.
+- It refreshes every minute, but not while a row is open or a field has focus.
+
+**Daily summary:**
+- The Worker cron (every 2 h) calls `studioDigest()` on the main object.
+- After 20:00 Israel time, once a day (`sd.digestDay`), it emails the owner a summary: new leads with phones, verified, trials started, events, open requests, payments, who worked today with hours, and trials not used yet.
+- It is skipped on a day with no activity.
+
+## Offers on the left, the owner's to-do list, and lifting the admin lock (Oct 29, v80)
+
+**Admin lock:**
+- The deploy's `RESET` is bumped to v3. A new seed hash lifts every admin lock-out (the password stays the secret's).
+- While `admin-guess` holds unknown devices back, the emailed initial password ("שכחתי סיסמה") still signs in; a guessed password never does.
+
+**Offers panel:**
+- `#pl-offers` in plan.js is a drawer fixed to the left edge. It shows on trial, free and pass, and never on the gate.
+- It holds the promotion, the 4 plans with prices, "אני מעוניין/ת", what is included and the terms.
+- "אני מעוניין/ת" sends `plan-request` with a note ("מתוך חלון המבצעים בתוכנה"). The owner gets the alert email.
+- ✕ collapses it to a "💎 מבצעים" tab, remembered as `fs-offers-min`.
+
+**Owner's to-do list:**
+- "📋 משימות לביצוע" is worked out in admin-licenses.js from the leads and licences:
+  - ⏳ unverified, with the live code to send;
+  - 📞 every registration (an intro call);
+  - 📩 upgrade request, with 💰 to the payment row;
+  - ⌛ trial ending in 3 days or less;
+  - 😴 trial not used after a day;
+  - 🔁 trial ended, now on free;
+  - 📅 subscription ended.
+- Each task has 💬, 📞 and "✔ בוצע".
+- The server keeps only what was done (`sd.tasksDone`, admin action `task-done`, returned by `lic-list`).
+- A badge counts the open tasks, and a checkbox shows the done ones.
+
+## One trial per email, computer, phone and network; the owner releases (Oct 29, v81)
+
+**Blocking** (`trial-verify`, the program path):
+- A new trial is refused when any of these already had one:
+  - **computer:** `sd.trialMachines`;
+  - **phone:** `sd.trialPhones`;
+  - **network:** `sd.trialIps`, a sha256 of the IP;
+  - **email:** an existing trial on another computer.
+- A refusal answers `trial-used` with `why`, records `sd.trialBlocked[e]` (name, phone, why, prev), and alerts the owner at most once a day per email.
+- Reinstalling on the same computer with the same email signs back into the same trial. It never starts a new one.
+
+**Release** (admin action `trial-release`):
+- For a blocked person it sets `sd.trialAllow[e]`: one trial that bypasses the indexes.
+- For an existing trial it unbinds the computer, and with `fresh` it restarts the trial (start = now, events = []) and ends its sessions.
+- `lic-list` returns `blocked`.
+
+**Admin:**
+- A 🚫 task with "🔓 שחרור".
+- A 🔄 button on trial licences (a fresh trial).
+
+**Customer:** the `trial-used` message says Haim got word and can release.
+
+**Offers:** the drawer re-reads prices and the promotion every 10 minutes and on `online` (`freshOffers`).
+
+Tests: 434.
+
+## Update requests reach the owner, and the pulse on every admin screen (Oct 29, v82)
+
+**Update requests:**
+- **The bug:** `upd-request` answered 404 for a version the owner had not published. That is usually the installed build on the lock screen, so no email went out and nothing showed in the admin.
+- **The fix:** any valid version is now recorded. An unpublished one gets the default price and the note "(עוד לא פורסמה)".
+- **The alert** reads "⬆️ בקשת עדכון לאופטימוס {ver}: {name}", with email, phone, the installed and approved versions, and the price.
+- The customer's WhatsApp texts in `updates.js` add name, email, installed version and approved version.
+- **Admin task:** ⬆️ with "✔ אישור עדכון", which calls `grant(L)`.
+
+**`lic-pulse`** (admin only) returns:
+- counts: online, leads today, trials, paying, plan requests, update requests, blocked;
+- the latest 40 items: upd, plan, blocked, lead, trial.
+
+**`js/admin-pulse.js`** (admin.html):
+- polls every 45 s and when the tab becomes visible;
+- `#adm-pulse` is a status bar fixed bottom-left that links to #licenses, with requests highlighted;
+- `#adm-pops` shows a pop-up per new item (keys remembered in `adm-pulse-shown`), with "לטיפול", WhatsApp and call;
+- leads and trials older than the first visit don't pop up;
+- the title shows the number of open requests.
+
+Tests: 437.
+
+## Secure payment links, and security events with alerts (Oct 30, v83)
+
+**Payments:**
+- The owner pastes his own payment pages (Morning / חשבונית ירוקה, Grow, PayBox business …), one per plan, in admin "💰 מחיר ותנאים". They are stored as `licSettings.payLinks` (https only) and returned by `lic-info`.
+- Where the "💳 לתשלום מאובטח" buttons appear:
+  - the offers drawer (`.plo-pay`);
+  - the upgrade window;
+  - the download page (`[data-pay]`).
+- A click also sends `plan-request` with the note "עבר/ה לדף התשלום המאובטח", so the owner gets the lead and the alert.
+- The provider issues the invoice or receipt and emails it: the original to the customer and a copy to the owner.
+- Opening the plan is still the owner's 💰. Full automation (a provider webhook, then the plan opens by itself) waits for the owner's provider account and API key.
+- The code already has Morning invoice support (`INVOICE`, MORNING_CLIENT_ID / MORNING_CLIENT_SECRET, unset).
+
+**Security** (access-handle.js):
+- `secEvent(kind, text, who)` keeps `sd.sec` (300 entries) and emails "🛡️ התראת אבטחה" at most once an hour per kind.
+- Events recorded:
+  - a foreign origin (403);
+  - a wrong admin password from an unknown device;
+  - an admin-only action without the admin;
+  - an admin sign-in from a new device (recorded, not emailed separately; every admin sign-in already emails).
+- `lic-pulse` returns `counts.sec` (24 h) and `sec` items.
+- `lic-list` returns `sec` and `security` {twoFactor, adminDevices}.
+
+**Admin:**
+- The "🛡️ אבטחה" card lists the protections and warns (with a link to portfolio/admin-2fa.html) when 2-step verification is off.
+- It shows the event feed.
+- The pulse bar shows "🛡️ מאובטח" or the count of today's events, and pops up security items.
+
+Tests: 439.
+
+## Bank transfer or standing order by the owner, receipts, and the licences screen never stuck (Oct 30, v84)
+
+The owner does not want card clearing: every purchase goes through him, by bank transfer or standing order (הוראת קבע). The v83 payment links are gone.
+
+**Payments:**
+- `lic-info` no longer returns `payLinks`, and `lic-settings` deletes any that were stored. No "💳 לתשלום מאובטח" buttons remain (offers drawer, upgrade window, download page).
+- "אני מעוניין/ת" sends `plan-request`. The owner gets a 📩 task, an alert and a pop-up.
+- The owner's bank details live in `licSettings.bankInfo` {holder, bank, branch, account, standing}, saved through `lic-settings` as `bank_*`. The business on the receipt lives in `licSettings.biz` {name, kind, id, address}, saved as `biz_*`. Neither is ever returned to customers.
+- When empty, the admin form prefills them from the site's "🏦 תשלום ובנק" (`settings.pay`).
+- Admin action `pay-details` {email, want, amount}:
+  - returns `no-bank` (400) when there is no account;
+  - otherwise emails the customer the amount, a reference `OPT-xxxx-MMDD`, the account and the standing-order text;
+  - stores `L.payDetails` (shown in `view`);
+  - returns `text` so the admin can also send it by WhatsApp.
+- The mail has `keep: true`: when it fails, AFTER_MAIL still answers, with `mailed: false`.
+- The 📩 task has "🏦 פרטי תשלום". It asks for the amount, sends, then shows the text with WhatsApp and copy. Once sent, the task says so.
+- `lic-pay` numbers receipts (`sd.receiptNo` from 1001; `payment.receipt`):
+  - `mail` is the original to the customer;
+  - `mail2` is the copy to the owner (worker.mjs sends `h.mail2` after `cur.mail`).
+- The admin shows "🧾 קבלה N" per payment.
+- Payment methods now start with "העברה בנקאית" and "הוראת קבע".
+- Whether a receipt is legally valid depends on the business status (עוסק פטור / מורשה). The receipt carries the details the owner fills in.
+
+**Licences screen:**
+- An expired token returns `signed-out` (401) with no security event.
+- `load()`:
+  - on `signed-out` / `admin-only`, tries `ACC.relogin()` once;
+  - otherwise every card shows "🔑 החיבור כמנהל פג … כניסה מחדש" (logout and reload to the sign-in);
+  - other errors, and no answer within 20 s, show "↻ לנסות שוב".
+- The deploy checks `lic-list` and `lic-pulse` with the admin session ("✅ מסך הרישיונות עונה").
+
+Tests: 445.
+
+## The accountant and taxes: monthly package, VAT and advances, the year and declarations, deadlines (Oct 30, v85)
+
+New admin section "🧮 רואה חשבון ומיסים" (`js/admin-tax.js`, `FS.adminTax(m, ctx)`, `VIEWS.tax`). Its settings are `settings.tax`, saved with `settings-save`:
+- accountant: `cpaName`, `cpaEmail`, `cpaPhone`;
+- reporting: `vatFreq` and `advFreq` (1 or 2 months), `advPct`, `niMonthly`, `ceiling` (default 120000; the owner checks it each year);
+- `close[ym]` (the month-close checklist) and `paid[]` (payments to the authorities: kind, period, date, amount, ref).
+
+**Where the income comes from:** magnet deal payments (`FS.adminBiz.month`) plus the אופטימוס licence payments from `lic-list`, which carry their receipt numbers. Each income row has `src`.
+- For עוסק מורשה / חברה, VAT is taken out of income. `net` is the turnover without VAT, and advances = `net × advPct`.
+
+**Tabs:**
+1. 📦 Monthly package (default: last month):
+   - summary, income by source and method, expenses with a "missing document" marker, expenses by category;
+   - VAT, advances, payments to the authorities, open customer balances;
+   - the month-close checklist.
+2. 🏛️ VAT and advances per period of the year, with the due date (the 15th after the period) and "לא נרשם" when a payment is late. Payments are recorded here.
+3. 📑 Year:
+   - a P&L summary for the annual report;
+   - the עוסק פטור turnover declaration (draft; due 31 January), with a check against the ceiling;
+   - a general income declaration (for a bank or ביטוח לאומי).
+4. 📅 Deadlines and settings: upcoming deadlines, the last 6 months' close status, reports sent, accountant and tax settings, and guidance on proper bookkeeping.
+
+**Output:**
+- Every document can be printed (`FS.adminBiz.printHtml`) or exported to CSV.
+- "✉️ שליחה לרואה החשבון" calls the new `report-mail` action in `frame.mjs`:
+  - owner only; at most 40 a day;
+  - the HTML is stripped of scripts, handlers and `javascript:`;
+  - up to 3 CSV attachments of 1 MB; card numbers are refused;
+  - each send is logged in `sentReports` (its own key, returned by `all`).
+- `bizCall` sends `r.mail` with `sendMail`, and the body says `mailed` / `why`.
+- `sendMail` and `smtpSend` now take `html` and `attachments` (SMTP builds multipart/mixed; Brevo and Resend use their attachment fields).
+
+**Other changes:** expense categories gained טלפון ואינטרנט, ביטוחים, רואה חשבון ושירותים מקצועיים and עמלות בנק. `FS.adminBiz` exports printHtml, csv, totals, MONTHS, METHODS, CATS, heDate, num and pay.
+
+Everything is labelled a draft for the accountant; official filing is the accountant's or on the tax authority's site.
+
+Tests: frame +5 (report-mail), smtp +1 (attachment).
+
+## Suppliers, purchases with receipt photos, the price list, and the weekly Excel backup (Oct 30, v86)
+
+New file `js/admin-buy.js` (`FS.adminBuy`). It replaces the old `V.expenses` view (`VIEWS.expenses`) and adds the `VIEWS.suppliers` and `VIEWS.backup` screens.
+
+**Server** (`frame.mjs`):
+- `expense-save` also keeps `supId`, `item`, `qty`, `unit`, `unitPrice`, `printer` and `note`. It keeps `photo` from the stored row.
+- `supplier-save` / `supplier-del` work on `sup:<id>`: max 500 suppliers, https-only site, card numbers refused.
+- `receipt-put` / `receipt-get` / `receipt-del` work on `rcpt:<id>` through `putBig`. Images only (data URL jpeg/png/webp), up to 2.5 MB; `expense-del` also deletes the photo.
+- `backup-mark` stores `backupAt`.
+- `all` now also returns `suppliers` and `backupAt`.
+
+**Expenses and purchases (💸 הוצאות ורכישות):**
+- Form fields:
+  - supplier (with "＋ ספק חדש…"), category, item (datalist), quantity, unit, unit price, total (auto = qty × unit price);
+  - a printer field that appears for ribbon, ink, toner or printer;
+  - invoice number, VAT included, description.
+- A 📷 receipt photo: camera capture, shrunk to 1600 px JPEG of at most about 2.3 MB.
+- ✏️ editing (and adding a photo later).
+- Filters: month or all months, category, supplier, search.
+- Totals by category and by supplier.
+- 🏷️ price list per item (+ printer): purchases, quantity, average unit price, last price and supplier, cheapest supplier.
+
+**Suppliers (🏪 ספקים):**
+- Cards with contact, phone, WhatsApp, mail, site, items, terms and notes.
+- Purchases count, this year's total, overall total, the last purchase and the items bought.
+- 🧾 opens the expenses filtered by that supplier (`supFilter`).
+
+**Backup (💾 גיבוי וייצוא לאקסל):**
+- `FS.xlsx(sheets)` in `js/xlsx-lite.js` writes a real .xlsx with no library: inline strings, RTL, frozen header, autofilter, widths, and a stored ZIP with CRC32. `FS.zip` and `FS.saveBlob` live in the same file.
+- 11 tabs: סיכום חודשי, הכנסות (magnets + Optimus receipts), הוצאות ורכישות, לפי קטגוריה (× year), לפי ספק, מחירון פריטים, ספקים, עסקאות, רישיונות אופטימוס, תשלומים לרשויות, בקשות הזמנה.
+- The full ZIP holds the xlsx, `קבלות/<date>_<supplier>_<amount>_<id>.jpg` and a full-data JSON.
+- Downloaded file names are ASCII (`frame-magnets-YYYY-MM-DD.xlsx`, `backup-frame-magnets-….zip`): headless Chromium ignored a Hebrew `download` name.
+- The home screen shows "💾 … הגיע הזמן לגיבוי השבועי" after 7 days.
+
+**Other changes:** new menu items 🏪 ספקים and 💾 גיבוי וייצוא לאקסל; "הוצאות" renamed "הוצאות ורכישות".
+
+Tests: frame +10 (suppliers, purchase fields, receipt photos, backup mark). The xlsx was checked with openpyxl (no warnings).
+
+## Maton alerts, the Saturday-night summary, the Google Calendar, documents, and the phone (Oct 31, v87)
+
+New file `cloudflare/src/notify.mjs` (tests in `cloudflare/test/notify.test.mjs`, which runs in the deploy workflow). The owner's Maton key is the `MATON_API_KEY` secret: its own GitHub secret, or a `MATON_API_KEY …` line in SPIDER. The deploy masks it and passes it to the Worker. It is never in code or pages.
+
+**Maton:**
+- `maton(env, path, init)` calls `https://api.maton.ai` + `/app/...` with `Authorization: Bearer`, and tries `gateway.maton.ai` on 404 / 5xx / network failure.
+- Apps:
+  - Gmail: `/google-mail/gmail/v1/users/me/messages/send` with `raw` (base64url RFC 2822);
+  - Telegram: `/telegram/:token/sendMessage`; `getUpdates` finds the chat after the owner sends `/start`;
+  - Google Calendar: `/google-calendar/calendar/v3/calendars/primary/events`.
+- WhatsApp Business through Maton is paid (Meta), so it is not used (the owner refused paid messaging).
+
+**The two messages:**
+- `frameDaily(S, now)` is null when there is nothing worth sending. It covers:
+  - events today, tomorrow and in 7 days (time, venue, phone, balance);
+  - pending booking requests ("the date is not held until you approve"), with days to the event and days waited (⚠️ within a week);
+  - open quotes (no deposit) within 21 days;
+  - balances to collect within 7 days;
+  - documents expiring at 30, 14, 7, 3, 1 or 0 days;
+  - a backup more than 7 days old.
+- `frameWeekly(S, now, lic)`:
+  - the week that ended (Sunday … Saturday): events held, income from magnets + Optimus (`licWeek` on the main object), expenses, profit, new requests by status, Optimus leads, trials and open requests;
+  - the week ahead: events with balances, the total to collect, pending requests, open quotes, the 15th tax date (when relevant), and the backup.
+- `dealTotals` matches `admin-biz.js` (VAT only when `vatMode === 'plus'`).
+
+**Delivery and schedule:**
+- `notifyOwner` sends by Telegram (when `chatId` is set) and Gmail through Maton. When neither goes out, it falls back to the server's own `sendMail`.
+- `State.frameWatch(kind, preview)` on the frame object runs from the cron (every 2 h):
+  - the morning message at the first tick from 07:00 Israel time (`notifyMeta.day`);
+  - the weekly summary on Saturday from 20:00 (`notifyMeta.week`);
+  - the calendar every 6 h.
+- `calendarSync` keeps `calMap` (dealId → Google event id + hash): it creates events for deals that hold a date (from yesterday to 180 days ahead), patches changed ones, deletes cancelled or quote ones, and keeps past ones. Reminders are popups at 1440 and 180 minutes. Timed events use the Asia/Jerusalem time zone.
+- Admin actions reach `bizCall` as `notify-*`, owner only:
+  - `notify-status` (key set? and which apps answer);
+  - `notify-tg-find`;
+  - `notify-preview {kind}`;
+  - `notify-send {kind: daily | weekly | calendar}`.
+- Settings live in `settings.notify` {daily, weekly, calendar, gmail, telegram, email, chatId, chatName}.
+
+**Documents:**
+- `frame.mjs` actions `doc-save` / `doc-get` / `doc-del`:
+  - `doc:<id>` holds title, cat, date, expiry, note and size; `docimg:<id>` holds the image through `putBig`;
+  - images only, up to 2.5 MB, max 1500;
+  - renaming keeps the photo.
+- `all` returns `docs` and `notifyState`; `frameSnapshot(storage)` feeds the messages.
+
+**Admin** (`js/admin-notify.js`, `FS.adminNotify`):
+- 📁 מסמכים: camera or file, category, expiry, view, edit, delete.
+- 🔔 התראות וסיכום שבועי:
+  - Maton status per app and the connection steps;
+  - toggles, the email and Telegram "🔎 מציאת הצ׳אט שלי";
+  - preview and send-now for both messages, and calendar sync now.
+- The backup ZIP adds a `מסמכים/` folder, and `docs` is added to the JSON.
+
+**Phone** (≤ 820 px):
+- A floating 📷 button (`#adm-cam`) on every admin screen opens "🧾 קבלה / הוצאה" or "📁 מסמך" and starts the camera in the same tap.
+- The pulse bar shows only urgent items, or nothing.
+- No horizontal overflow on any screen at 390 px.
+
+Tests: notify 21, frame +7 (documents).
+
+## The manager app for the phone (PWA), photos shared to it, and no Windows download on a phone (Nov 1, v88)
+
+The owner tried to open `FrameStudio-Setup.exe` (over 100 MB) on the phone. Instead, the admin is an installable app: no store, no big file, it updates itself.
+- **Install page:** `app.html` + `css/app.css` (https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/app.html):
+  - Android: the `beforeinstallprompt` button;
+  - iPhone: a Safari "הוסף למסך הבית" sheet;
+  - computer: a QR code (`vendor/qrcode.js`) to open the page on the phone.
+- **Manifest:** `admin.webmanifest`:
+  - "פריים ניהול", start `admin.html?app=1`, scope `./`, standalone, RTL;
+  - PNG icons `app-192.png`, `app-512.png`, `app-maskable-512.png`, plus `apple-touch-icon.png`;
+  - shortcuts to expenses, requests, documents and licences;
+  - `share_target` (POST multipart `photo`, image/*).
+- **Install bar:** `js/app-install.js`, on admin.html and app.html:
+  - registers `sw.js` (https only), handles the install prompt and the iOS help;
+  - on a phone outside the app, shows a small "📲 התקנה" bar after 4 s; ✕ hides it for 7 days;
+  - admin.html links the manifest and app.css, with apple meta tags (no inline script: the page's CSP allows only the self-heal hash).
+- **Share to app** (`sw.js`):
+  - a POST to `share-in.html` stores the file in cache `frame-share` (kept on activate) and redirects 303 to `admin.html?app=1&shared=1#expenses`;
+  - the expenses view takes it as the receipt photo (`shrink`), deletes it and cleans the URL;
+  - `share-in.html` itself only redirects (when the worker is not installed).
+- **Download page:** on a phone, `download.js` shows that Optimus is for Windows and, after the code, does not start the .exe download.
+- **Admin menu:** new link "📲 אפליקציה לטלפון".
+
+Checked with Chrome DevTools Protocol: `getAppManifest` and `getInstallabilityErrors` report no errors. On a Pixel 7 emulation, the share POST got the redirect and the photo arrived in the expense form.
+
+## ✨ The living photo: 3D from a still, out of the frame, a video for the couple (Nov 1, v89)
+
+New file `js/wow.js` (`FS.livingPhoto(p)`; `FS.livingPrepare` and `FS.livingFrame` are exposed for tests). Buttons `[data-wow]` "✨ תמונה חיה תלת־ממד" sit at the top of the filters, AI and output panes, styled `.wow-btn` with a passing sheen.
+
+**Preparing the layers** (`prepare`; everything local, nothing online):
+- The person mask is `FS.ensureMask`; under 2 % cover it says there is no person.
+- The person layer is the processed photo (`FS.processed(p, 1600)`) cut by the mask.
+- The background behind the person is filled by push-pull over a canvas pyramid: the mask is widened (blur ×3), punched out, and transparent pixels take their neighbours' colour.
+- The page without the photo (`FS.draw` with `noPhoto` + `transparent`) stays on top, still: the frame, texts and stickers.
+
+**Each frame** (`frame(S, ctx, t, mode, tilt)`):
+- Both layers use the photo's own matrix (`FS.photoMatrix`), scaled about the person's centroid and clipped to the frame window (`FS.frameOf(...).clip`).
+- The loop goes there and back with a cubic ease, so it is seamless (6 s).
+- Gold bokeh dots float behind the person and (every 4th) in front; a soft-light sheen passes once per loop.
+- On the free tier, a "נוצר באופטימוס" band is drawn.
+
+**Modes:**
+- `dolly`: the camera moves in; the person comes forward faster than the background.
+- `pop`: the person grows in front of the frame, out of the magnet. It is clipped to the frame window's bottom, so it breaks over the top and sides only.
+- `tilt`: follows the mouse or the phone's tilt (`deviceorientation`, with the iOS permission). While recording it moves in a circle.
+
+**The viewer** (full screen, `.wow`): mode buttons, ✕, and 🎬 which records 2 loops (12 s) with MediaRecorder from `captureStream(30)`, as mp4 (avc1) where supported, else webm, 9 Mbps. The file is `living-photo-<name>.mp4`.
+
+Checked in Chromium on `media/real/wedding-2.webp`: the layers separate cleanly, the pop-out works with the `w-wide` frame, and a 12 s MP4 of 7.4 MB was saved.
+
+## Eight wow features: the living magnet, the time capsule, the magic mirror, find me, open eyes, the live mosaic, the spoken greeting, colours from the invitation (Nov 1, v90)
+
+**Server** (`cloudflare/src/live.mjs`; tests in `cloudflare/test/magic.test.mjs`, which runs in the deploy workflow):
+
+Codes and files:
+- `studio-up` also takes:
+  - `code` (/^[a-z0-9]{10,16}$/, once per event; index `lcode:<e>:<code>` → magnet id);
+  - `mask` (the page's person mask, JPEG/PNG ≤600 KB → `lm:`);
+  - `from` (the guest photo: its name, text and voice are copied onto the magnet, so they outlive the 60-day purge).
+- `liveFile(storage, e, p, v, kind, c, k)`:
+  - by viewing key with kind '' / audio / mask / hero / cap;
+  - or by the magnet's own code with k = img / mask / audio.
+- The worker reads `frame-live-img` with `a=1`, `m=1`, `h=1`, `cap=1`, or `c=&k=`.
+
+Public actions:
+- `magic` {e, c} gives the magnet's guest name, text, audio and mask flag (or `pending`), the title, `capsuleOpens` and the business. No event key is ever returned.
+- `capsule-put` {e, c, name, text, audio}:
+  - needs a real code; closed once the capsule opens;
+  - stored as `lc:` + `lca:`; at most 3000 per event; rate-limited like `guest-up`.
+- `capsules` {e, v}: before `capsuleOpens(ev)` (event date + 1 year) only the count; after it, every message, with voice via `cap=1`.
+- `find` {e, v, d}: ranks the photos by their closest face signature (RMS over int8) and returns up to 40, skipping hidden ones.
+
+Owner actions:
+- `ev-hero` (`lh:`, `ev.hero`; `feed` reports `hero` and `faces`).
+- `faces` {items: [{p, f: [sig…]}]} → `lf:<e>` JSON via `putBig`, `ev.n.faces`.
+- `ev-get` returns `faced`.
+
+Keeping and deleting:
+- The 60-day purge (`dropPhotos(…, false)`) keeps magnets that have a code. They go after `MAGIC_DAYS` = 400.
+- On the capsule's day the couple gets the email "💌 שנה לאירוע" (cron `kind: 'capsule'`, sent by `liveTick`) linking `capsule.html?e=&v=`. Capsules are deleted 120 days after opening.
+- `ev-del` removes everything (`dropPhotos(…, true)` + capsules + hero).
+
+**Shared craft:** `js/magic-core.js` (`window.MagicCore`): alpha, fillBehind (push-pull), cut, centroid, dots, sheen, swing, `layers(img, mask)`, `magnetFrame(ctx, L, t, tilt)`. `wow.js` now uses it.
+
+**1. The living magnet**
+- In the station, the option "✨ מגנט חי" (`cfg.magic`, on by default) calls `FS.magicTag(p, ev)`:
+  - a new code, and an `image` layer `magicQr` with the QR for `m.html?e=&c=` (`siteBase`);
+  - placed in the frame's bottom margin, else the left margin, else inside the photo's corner (15 % of the short side).
+- On `print-job`, a living magnet always goes up, even when the station is off. Its `pageMask` is the person mask on the page, black under the frame (`noPhoto` overlay), JPEG 0.8.
+- The button "✨ QR חי לתמונה הזו" tags the current photo.
+- `m.html` + `js/magic.js` + `css/magic.css`:
+  - "✨ לחצו כדי להעיר את המגנט": the person comes forward with gold light and the guest's voice plays;
+  - 3D by tilt or mouse; 🎬 a 12 s video, shared with `navigator.share` when possible;
+  - the capsule form (text or voice up to 30 s); a call to action for the business.
+- `live-common.js` now reads `c` from the URL.
+- The QR decodes at full print resolution (checked with jsQR).
+
+**2. The time capsule:** `capsule.html` + `js/capsule.js`. Before the date it shows the count; after it, the messages with their voices.
+
+**3. The magic mirror:** `mirror.html` + `js/mirror.js` + `css/mirror.css`.
+- The camera, with live selfie segmentation (VIDEO mode, GPU then CPU).
+- Backgrounds: none, blurred, gold lights, night, pastel, or your own photo.
+- The magnet frame comes from the studio's photo: `localStorage` `fs-mirror-frame`, and `postMessage({mirrorFrame})` for the desktop program's other origin.
+- 3-2-1 and a flash. The photo is saved unmirrored and without the frame (the station applies the event's design), then sent with `guest-up` named "🪞 מראה קסם".
+- Studio button "🪞 מראה קסם".
+
+**4. Find me:**
+- `js/faces.js` (`window.FaceSig`): FaceLandmarker with 12 faces. The signature is 150 log-ratios of 3D distances between 21 rigid points (rotation-invariant), plus 12 colour bytes (forehead, cheek, hair, lips) = 162 bytes in base64.
+- Studio:
+  - `FS.faceIndex(p, ev, id)` runs after each guest photo is taken and after each `studio-up`;
+  - "🔍 מצא אותי" (`FS.faceIndexEvent`) indexes the rest of the event.
+- The album has a "🔍 מצא אותי" tab when `feed.faces` is set: a selfie → `FaceSig.selfie` → `find`.
+- Test: 20 transformed probes all matched their own photo first (distance 1–3 against 3–10).
+
+**5. Open eyes:** `js/eyes.js`, `FS.openEyes(p, donors)`, button `[data-open-eyes]` in the AI pane.
+- An eye counts as closed when the lid gap is under 13 % of the eye's width.
+- The same person in a donor is found by a similarity fit on 9 stable points (residual < 0.12 of the eye distance), and the donor's eye must be open (> 0.2).
+- The donor is warped with a least-squares similarity on corners, brow, nose bridge and cheek, colour-matched to the skin under the eye, and blended through a feathered ellipse.
+- Donors are the marked photos, or the strip neighbours ±4. The original stays in `origSrc` / `aiPrev`, so "↩ ביטול AI" undoes it.
+
+**6. The live mosaic:**
+- `js/mosaic.js` on `wall.html?…&mosaic=1` (`wall.js` steps aside).
+- The grid follows the hero photo's shape. Early photos take several cells; every new photo flies in.
+- The hero shows through as the grid fills. The reveal comes on "R" / "💞 חשיפה", or automatically when the grid is full with at least 20 photos, with the title and a sheen.
+- Studio buttons: "💞 תמונת הזוג לפסיפס" (`ev-hero` from the current photo) and "🧩 פסיפס חי".
+
+**7. The spoken greeting:**
+- `live-guest.js` runs `SpeechRecognition` (he-IL) while recording the voice greeting, and fills the text if it is empty.
+- The station option "✍️ הברכה של האורח בכתב יד על המגנט" (`cfg.wish`, `addWish`) adds an Amatic SC text layer `wishLayer`, up to 3 lines plus the name.
+
+**8. Colours from the invitation:** `js/palette.js`, under "צבע המסגרת".
+- From the invitation file or the current photo, k-means finds 6 swatches.
+- A tap sets the generated frame's colour (through `#frame-color`'s input handler) and, optionally, the texts (not `wishLayer`).
+
+## The edit screen ("ערוך תמונה") made for several photos at once (Nov 1, v91)
+
+`js/mate.js` + `css/mate.css`:
+- Six photos on screen by default (`fs-mate-en2` defaults to 6, not 1).
+- **The photos stay put.** The set of the edit screen is decided when it opens (`eSet`): the marked photos, or all of them. ✓ marks on the edit screen no longer shrink the grid. Before, ticking a photo turned the list into only the ticked ones on the next rebuild, which broke paging and the arrow keys. "📚 כל התמונות" (`#mt-eall`) appears when the screen opened with only the marked photos.
+- **What a change reaches** (`targets()`):
+  1. the photos with ✓ (on any page);
+  2. else, with "🔗 כל המסך יחד", the whole screen;
+  3. else the focused photo.
+  The live redraw follows the same list, and `#mt-target` says which one applies.
+- **The selection bar** in the edit bar (`.mt-sel`): the count "✓ N מסומנות", "✓ המסך", "✓ הכל" (Ctrl+A) and "✕ ניקוי" (Esc). The bottom strip shows a gold ✓ on marked photos (`.mt-pj.sel`), so marks on other pages are visible.
+- **Paging** reads "1–6 מתוך 12".
+- **Keyboard on the edit screen** (`FS.mateKeys`):
+  - ←/→ move between photos, on to the next or previous page (right to left: ← is next);
+  - ↑/↓ move by a row; Home/End go to the first or last photo;
+  - Space marks or unmarks the focused photo; Enter opens it in the full editor;
+  - PageUp/PageDown turn pages.
+- The bar stays on one line: the labels are shorter ("🔗 כל המסך יחד", "◧ לפני|אחרי"), and the grid has less padding so the photos are bigger.
+
+## An AI style is no longer thrown away when the people are small or drawn (Nov 1, v92)
+
+The owner's case: a full-length couple, far away (small faces), in a drawn style. The guard (v63) found no faces in the answer, tried every engine and refused with 'lost-people' every time. The drawn faces and small faces fooled the face finder; the people were there.
+
+`js/styles.js` `guarded()` now:
+- counts faces in the answer with `FS.countFaces(im, true)` (loose: +0.2 on each detection's score, for drawn faces);
+- before calling an answer "lost", looks for the people as bodies (`bodiesKept`): `FS.personCover(answer)` must be ≥ max(1 %, 35 % of the original's cover). If so, the answer is applied;
+- when the last try still looks wrong and it is not a batch, shows the answer in a dialog: "🤔 לא בטוח שהאנשים נשמרו" with "✔ להחיל בכל זאת" / "✕ לא להחיל". A batch still skips it as before. Only the last try asks.
+
+`js/ai.js`: new `FS.personCover(im)` (person-mask share, segmenter at 512 px); `FS.countFaces(im, loose)`.
+
+Checked on a synthetic far couple:
+- the original: 0 faces strict, 1 loose, cover 0.05;
+- posterised "drawn": cover 0.081, so it is kept;
+- an empty scene: cover 0, so it is caught.
+
+## Printing: the computer's printers in the desktop program, magnet sizes, real-size preview (Nov 1, v93)
+
+The owner could not print "4 on a sheet" at 7.5×10, did not see his printer, and wanted a true preview.
+
+**Desktop program** (`desktop/main.js`, `desktop/preload.js`):
+- `FSDesktop.print.printers()` (`print:printers`) returns {name, label, default} from `webContents.getPrintersAsync()`.
+- `FSDesktop.print.run({deviceName, wMm, hMm})` (`print:run`) calls `webContents.print` with these settings:
+  - silent to the named printer;
+  - `pageSize` in microns from the sheet's size, margins `none`, 300 dpi, `printBackground`.
+  - With no printer named, Windows' own print window opens.
+
+**`js/printlog.js`:** in the desktop program the printer list comes from `FSDesktop.print`, so no helper is needed (`FS.printers()` and the `mp-printer` select fill themselves). `FS.directPrint` hands the job to `FS.doPrint(plan, true)`.
+
+**`js/output.js`:**
+- `FS.doPrint(plan, viaDesktop)` lays the sheets out in `#print-root`, then calls `FSDesktop.print.run` with `FS.printerChoice()` (the same `frame-studio-printer-sel` key as printlog). Otherwise it calls `window.print()`.
+- `FS.planPrint(job)`:
+  - `job.size` = [w, h] mm forces the magnet's printed size; the photo fills it (`cover`);
+  - the grid layouts (2/4/6/9) print at the real size whenever it fits the cell;
+  - each item carries `want` (the wanted size).
+- The preview's `plan.labels` draws "7.5×10 ס״מ" on each item, and "⚠️ מוקטן" in red when it came out smaller than wanted.
+- The print planner (`FS.printPreview`) has:
+  - ready magnet layouts (`MAGNET_PRESETS`): 4 × 7.5×10 on 15×20; 2 × 7.5×10 on 10×15; 4 × 7.5×10 on A4; 4 × 5×7.5 on 10×15;
+  - a 🖨️ printer select (desktop only; in a browser, a note that the computer's print window chooses).
+
+**Quick workspace print** (`js/mate.js` `openPrint`):
+- "🧲 פריסה מוכנה" buttons (`MPRESETS`).
+- "גודל המגנט בהדפסה" (`PS.msize`: 7.5×10, 5×7.5, 6×9, 10×15, 10×10, or the photo's own size), passed to `planPrint` as `size`.
+- The preview labels each item's real size, and the summary names the paper and the magnet size.
+
+Checked: 4 photos sized 10×15 with "4 × 7.5×10 on 15×20" plan as 1 sheet of 4, each 75×100 mm; the same photos on 10×15 paper make 2 sheets of 2.
+
+## The business line ("LMagnet · 054-…") only when the owner adds it (Nov 1, v94)
+
+The owner saw his name and phone on every framed or printed photo without having asked for it.
+
+**Cause:** the business details loaded from the site (`business.js`, `design.js`, `site.js`, which merge `b.credit`) carried `credit.on` from the published data, and switched the line back on after the local v1 reset turned it off.
+
+**Fix** (`js/events.js`):
+- `FS.creditOn()` reads the local key `fs-credit-on` ('1' only when the owner turned it on on this computer). `FS.BIZ.credit.on` starts from it.
+- `FS.saveBiz` writes it.
+- All three merges now force `credit.on` from `FS.creditOn()`. The site's other details (name, phone, items, position) still come through.
+- `FS.applyCredit` still removes `biz` layers when the line is off, so new photos and frame changes come out clean.
+- The quick workspace's "🏷️ הוספת הפרטים" (explicit, on chosen photos) works as before.
+
+Checked: an old saved setting that was on, with no local choice, gives no line; turning it on adds the line; turning it off and reloading removes it.
+
+## The full editor: tools on the right, photos along the bottom (Nov 1, v95)
+
+The owner asked, in the quick workspace's "🖌️ עורך מלא", to swap the photo browser and the tools: the photos go down, the editing goes to the right side.
+
+`js/mate.js`: right after the workspace is built, an IIFE moves `.mt-dtools` (the tabs כללי / עצמים / חיתוך / כלים AI, the buttons, the sliders, save / print / undo) into a new `aside.mt-dside`, placed first in the design view (the right side in RTL). The `.mt-browser` (folder, tree, files, the "בעבודה" photos `#mt-proj`) moves to the end of `.mt-dz`, under the canvas and the info bar, as `.mt-bstrip`. No ids or handlers changed.
+
+`css/mate.css` (v95 block):
+- `.mt-dside` is 330 px wide, scrolls, has a 2-column button grid, sliders one per row, and the actions sticky at the bottom.
+- `.mt-bstrip` is a horizontal scrolling strip of 86 px thumbnails, with the "בעבודה" title hidden and room left for the version label.
+- Below 900 px the panel goes under the canvas.
+
+Checked: clicking the 3rd photo in the strip shows "3/12"; a slider in the side panel edits and enables undo.
+
+## ⚡ Instant print, and the first opening (Nov 2, v96)
+
+**⚡ Instant print** (`js/mate.js`):
+- The buttons `#mt-qprint` "⚡ הדפסה מיידית" and `#mt-qset` ⚙ sit in the workspace header.
+- The profile `fs-qprint` holds {printer, paper, msize}. It is chosen once in `qpSetup` (the computer's printers through `FS.printers()`, the `MPRESETS` layouts), and the setup can print right away.
+- `qpRun` prints the marked photos (or the focused one) through `FS.planPrint({ layout: 'fill', margin: 0, gap: 0, size: msize })`, then `FS.choosePrinter(printer)`, then `FS.doPrint`. In the desktop program that goes straight to the printer through `FSDesktop.print.run` (silent, exact sheet size); in a browser the print window opens.
+- Ctrl+P runs the instant print once a profile exists; Ctrl+Shift+P opens the print window.
+- "Straight to the printer" still goes through the printer's Windows driver, as in any professional program; only the dialogs are skipped.
+- Checked with a simulated desktop program: the setup listed DNP / HP with the default chosen; save sent `{deviceName: 'DNP DS620', wMm: 152, hMm: 203}`; Ctrl+P printed again with no dialog.
+
+**✨ The first opening** (`js/firstrun.js` + `css/firstrun.css`, `FS.showWow()` replays it):
+- It shows once (`fs-wow-v1`), after the logo splash `#op-splash` has gone (it polls up to about 9 s).
+- The sequence:
+  1. gold sparks gather, then a soft flash;
+  2. a white wedding magnet appears, and the couple steps out of it over the top and the sides (MagicCore layers built from the prepared `media/demo/couple.jpg` + `couple-mask.png`, made once with the studio's own mask, so nothing has to load);
+  3. "אופטימוס" in moving gold with "התמונה שלכם. חיה.";
+  4. five feature cards fly in; "✨ בואו נתחיל" pulses.
+- Enter / Esc / Space / either button closes it. "Reduce motion" shows the end state.
+- `css/gate.css`: `body.gated` no longer hides `#wow1` (it was hidden behind the sign-in at first).
+
+## ✨ Stunning effects offline, and a preview before printing (Nov 3, v97)
+- `FS.AI_WOW` in `js/styles.js`: 26 eye-catching styles (fantasy portrait, galaxy, double exposure, crystal, ice, fire, steampunk, art deco, renaissance, aurora, holographic, vaporwave, paper cut, embroidery, ink wash, low poly, storybook, comic, enamel, neon sign, chalk, candy, balloons, gold dust, oil painting, cinematic). Same `[id, name, icon, prompt]` shape as `AI_STYLES`; the prompt gets `FS.AI_KEEP`. They go through `FS.runAI`/`FS.askServer`, so with the local engine installed (🖥️ מנוע מקומי, FLUX.2 klein) they run with no internet. Shown in the quick workspace's AI view (`#mt-ai-wow`, key `wo`) and in the studio's AI pane (`#ai-wow`, built in `ai-studio.js`'s pane template, not in studio.html, because the pane is rebuilt from JS).
+- Instant print (`mate.js`): `qpRun(direct)` now opens `qpPreview(q, list)` first unless the profile has `noPreview`. The preview (`.qv-dlg` on `#dlg-body`, removed on close) draws each sheet with `drawPv` (sizes labelled), page nav (◀ ▶ and arrow keys), the layout chips (`MPRESETS`; choosing one saves the profile), copies − / +, a summary (magnets, sheets, paper, magnet size), "להדפיס מעכשיו בלי התצוגה הזו", and Enter prints. `qpSend(q, plan)` does the actual send; `qpPlan(q, list, copies)` builds the plan. The setup dialog has "תצוגה מקדימה לפני כל הדפסה" (`#qp-pv`) to turn it back on.
+
+## The last size and the print settings are remembered (Nov 3, v98)
+- Quick workspace, size bar: applying a size ("החל על המסומנות/כולן") also sets `FS.prefs.fmt` (the `my:` size id) and `FS.prefs.fitNew` (cover/contain). `core.js` already brings new photos in at `FS.prefs.fmt`; an `FS.afterAdd` hook in `mate.js` fits them when `fitNew` is 'contain'. `#mt-snew` shows "📌 תמונות חדשות נכנסות ב־…". It survives a reload.
+- Print window (`openPrint`): every change is saved to 'fs-mate-print' as it happens (in `paint()`), so it opens the next time exactly as it was left. "⭐ ההגדרות השמורות שלי" (`#mp-my`, 'fs-mate-print-my', up to 12): a name in `#mp-name` + "⭐ שמירה בשם" saves the whole form plus the printer; one click on a chip puts it all back (`setForm`), × deletes it.
+
+## ⚡ Instant effects, faster local AI, saved settings in instant print, and "Shine" (Nov 3, v99)
+- `js/instant-fx.js`: `FS.INSTANT_FX` = 35 effects `[id, name, icon, group, fn(canvas)]` in three groups (light / magic / retro): colour grades, split tones, duotones, glow, bokeh, sparkles, hearts, snow, confetti, flare, light leaks, stars, fireworks, halo, VHS, pencil, comic, pop-art dots… Canvas only (ctx.filter blur when the browser has it, else a down/up-scale blur), seeded particles in units of the long side, so the small preview matches the photo. About 0.05–0.25 s for 900×1350. Pixels never move, so faces, masks and the crop stay.
+  - `FS.applyFx(list, id, strength, done)` works from `p.fxBase` (the photo before the last effect), so trying effects never stacks; keeps `origSrc` / `aiPrev` like the AI ("↩ ביטול AI").
+  - `FS.fxPanel(box, {list, preview, done})` draws the panel: group tabs, a strength slider ('fs-fx-strength'), and every effect previewed live on the current photo (chunked, redrawn on 'doc').
+  - It is in the studio's AI pane (`#ax-fx`) and the quick workspace AI view (`#mt-ifx`; `#mt-fx` was already taken by the edit view's presets).
+  - Don't put `overflow:hidden` on a card in `.mt-ai`: the before/after card spans every row, and the card collapses.
+- Local engine (`desktop/local-ai.js`): `--diffusion-fa` (flash attention) on graphics cards. If the engine build rejects the flag, it runs once more without it and stays off (`faOk`). Out of memory keeps it on and goes to the offload retry. Tested with the fake sd-cli (`FAKE_SD_NO_FA`). Without a graphics card the default size is now 512 (was 768).
+- Instant print: the print window's ⭐ saved settings ('fs-mate-print-my') show as chips in the instant-print preview (`#qv-my`) and setup (`#qp-my`). A click sets paper, magnet size and printer, and saves the profile.
+- The studio / quick switch (`#mt-switch`) now sits in `.mt-swslot` inside the quick workspace's top bar (it used to cover "⚡ הדפסה מיידית"); in the studio it floats as before (`sw()` moves it).
+- `css/shine.css` + `js/shine.js` (index.html and studio.html):
+  - The light under the pointer on cards (`.sh`, only on cards whose `::after` is free), a soft 3D tilt (`.sh-tilt`), a gold sweep on the main buttons, and a gold scrollbar.
+  - On the site only: a scroll line (`#sh-progress`), the gold line under section titles, and in the hero a moving aurora plus a stardust canvas. These are placed after `.hero-light`, which is opaque; the dust pauses off screen. The hero pictures also follow the pointer.
+  - All of it is off with reduce-motion or on touch screens.
+
+## 🎨 Fast AI paintings on the computer, and the "flash & paper" site design (Nov 3, v100)
+- The 35 canvas effects (instant-fx.js) were removed at the owner's request ("זוועה").
+- Replaced by `js/ai-art.js`: Google Magenta's arbitrary style transfer (Apache 2.0) in TensorFlow.js 4.22 (`vendor/tfjs/tf.min.js`), WebGL first, CPU fallback.
+  - **Models.** `models/art/{predictor,transformer}`. These are the old tfjs 0.x frozen checkpoints from storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary, converted to graph-model `model.json` (the GraphDef decoded with protobufjs; scratchpad convert.js, same shards).
+  - **Paintings.** 28 public-domain works in `media/styles/<id>.jpg` with `credits.json`, fetched by `.github/workflows/frame-art-styles.yml` (`tools/art-styles.py`, Wikimedia API; run it on main, a branch run conflicts on push).
+  - **Style vectors.** Each painting's 100-d style bottleneck is precomputed in `media/styles/vectors.json`, so a photo needs one predictor pass (its own style, for "עוצמה") plus one transformer pass.
+  - **API.**
+    - `FS.AI_ART` is a list of `[id, name, artist]`.
+    - `FS.artCanvas(img, id, size, strength)` returns a canvas.
+    - `FS.applyArt(list, id, strength, done)`: 1024 px on the GPU (640 otherwise), then drawn back at the photo's own size. It works from `p.artBase` (re-basing like the effects did) and keeps origSrc / aiPrev.
+    - `FS.artPanel(box, {list, preview, done})`: each tile shows the painting, then the network's own preview on the photo, with the painting as a chip. Strength is stored in 'fs-art-strength' (default 80).
+  - **Where.** Studio `#ax-fx`, quick workspace `#mt-ifx`.
+  - **Testing.** Headless Chromium has only SwiftShader, so it is far too slow to judge speed; check correctness at 96 px by wrapping `FS.artCanvas`.
+- Site (index.html): `css/atelier.css` + `js/atelier.js` replace shine on the site (the studio keeps shine).
+  - **Tokens.** Night blue `#0F1528`, flash white `#F8F7F4`, paper `#ECEBF1`, quartz `#EDB6BE`, a gold thread `#CFAE74`. Fonts: Karantina for the big words, Assistant for body text, IBM Plex Sans Hebrew for small print.
+  - **The opening.** `.hero-art.dev`: a magnet print develops from the flash white while a clock counts to 00:47.
+  - **Light sections.** #videos, #how and #faq are paper; the ticker is quartz.
+  - **Packages.** The ⭐ package is a white card.
+  - **CSS gotcha.** A colour may only be the last background layer; `.pk.star` broke on that once.
+
+## 🎨 The AI paintings in a worker, 41 paintings, ready examples (Nov 3, v101)
+- The owner reported "the neural network doesn't work, the system gets stuck". The cause: v100 ran the network on the main thread and drew 28 previews on opening; without a strong graphics card that froze the program.
+- `js/ai-art-worker.js` now runs the network in a Web Worker. Order of engines:
+  1. WebGL through OffscreenCanvas, unless the card is software (SwiftShader, llvmpipe, basic render), and only after a warm-up plus a timed 128 px pass under 700 ms, raced against 8 s.
+  2. Otherwise WebAssembly (`vendor/tfjs/tf-backend-wasm.min.js` and three .wasm files; `tf.wasm.setWasmPaths`).
+  3. Then CPU.
+- Measured in Chromium here with WebAssembly: engine start plus first preview 3.7 s, a 224 px preview 1.1 s, a 768 px painting 8.8 s. The longest main-thread frame gap was 150 ms while painting.
+- `ai-art.js` talks to the worker:
+  - `FS.artRun(img, id, size, strength)` sends RGBA buffers as transferables.
+  - Timeouts: 90 s on WebGL, 180 s on WebAssembly, 400 s on CPU. A timeout resets the worker.
+  - `FS.artStop()` terminates the worker and is wired to ⏹. `FS.artBackend()` reports which engine runs.
+  - Sizes: 1024 px on WebGL, 768 px on WebAssembly, 448 px on CPU.
+- Nothing runs when the panel opens. Each tile shows `media/styles/pv/<id>.jpg`, made offline by the same network (WebAssembly in Node, on show/p-original.webp at 320 px, strength 0.8). Hovering for 300 ms draws the live preview on your own photo, one at a time, and the last tile hovered wins.
+- 41 paintings: 51 fetched (workflow), minus nudity (Danaë, Venus, Gauguin), weak sources (Lautrec, Seurat's Circus, The Night Watch) and four that ruin faces (Malevich, Mondrian, the Chartres glass, Hiroshige's shower).
+- To rebuild `vectors.json` and `pv/`, use the scratchpad `build.js` pattern: `@tensorflow/tfjs` 4.22 with tfjs-backend-wasm in Node, a fileIO handler, the predictor at 256 px, and the transformer.
+
+## 🧩 Puzzles and cubes; the paintings removed; the program in the atelier identity (Nov 3, v102)
+- The owner said the AI paintings are not relevant to magnets, so they were removed entirely: ai-art.js and its worker, models/art, media/styles, vendor/tfjs, tools/art-styles.py and the frame-art-styles workflow. AI_WOW and AI_STYLES (the AI prompt styles) stay.
+- `js/crafts.js` is the "🧩 פאזלים וקוביות" card in both AI tabs: `#mt-crafts` in the quick workspace (photos = aiList) and `#ax-crafts` in the studio (photos = marked, else targets). It offers three things:
+  - `FS.openPuzzle(p)` — a puzzle from one photo:
+    - 6 to 108 pieces on A4, 20×30, 15×20, 10×15 or A3. The page turns to the photo's direction and the photo covers it (centred a little high, for faces).
+    - Pieces are classic (three cubic curves per edge, seeded by `o.seed`, "🔀 צורה אחרת" changes it) or straight squares.
+    - Cut lines in white, gold, dark, or none. Options: a gentle 3D bevel per piece, one "lifted" piece for display, and a separate cutting template page with crop marks.
+    - Settings in 'fs-puzzle'.
+  - `FS.openCube(list)` — cubes from up to 6 photos:
+    - A photo cube: a cross net with glue tabs on the middle row (6 edges plus back's right edge), cut lines solid, fold lines dashed. 5–6 cm fits A4; 7–9 cm needs A3, and it switches to A3 by itself.
+    - A picture-block puzzle, 3×3 or 4×3 cubes: every photo is cropped to the grid's shape and split; cube (i,j) gets tile (i,j) of each photo.
+    - Each face's picture is turned so it stands upright when every cube is rolled the same way: `BLOCK_Q` = {top 0, front 0, bottom 0, back 2, left 3 (90° counter-clockwise), right 1}.
+    - Nets are packed per page (they turn 90° when that fits more), each numbered with its row and column. Settings in 'fs-cube'.
+  - Pages are drawn at 300 dpi at the paper's true size. "➕ הוספה להדפסה" adds each page as a project photo with doc 'cm' = the paper (no frame, no layers, `p.craft = 1`), then emits 'photos-added'. "⬇️ הורדה" saves JPGs.
+  - `FS.crafts` exposes drawPuzzle, cubeSets and netPages for tests.
+- `css/atelier-studio.css` (loaded last in studio.html; shine.css and shine.js are no longer used in the studio) gives the program the site's identity:
+  - **Tokens.** Night `#0A0F1F`→`#26324F` re-points `--pro-*`, `#mt --g0..g4`, and `--gold`→quartz `#EDB6BE`; primary buttons get dark text.
+  - **Fonts.** Karantina for card titles, the dialog title and the empty state; IBM Plex Sans Hebrew for numbers.
+  - **The signature.** Grid photos look like printed magnets: a white border, deeper at the bottom, a shadow, and a slight tilt on hover.
+
+## 🔒 Lock and keep-in, foldable categories, 56 stunning effects, the magnet wall, no live event, minutes not seconds, live prices (Nov 3, v103)
+- `FS.keepIn(doc, img)` (core.js) keeps the photo inside its window. At least cover size, it always covers the window, also when turned (it pushes the centre where a window corner sticks out, in the photo's turned frame). Smaller ("כל התמונה"), it stays whole inside.
+  - It is on unless `FS.prefs.keepIn === false`.
+  - It is called on drag, wheel, pinch, the zoom and straighten sliders (studio ui.js) and on drag and wheel in the quick designer (mate.js).
+  - The toggle is "📐 התמונה לא יוצאת מגבולות הדף" (`#ph-keep`) in the studio, and 📐 `#mt-dkeep` in the designer.
+- `doc.photo.lock` and `FS.photoLocked(p)`: a locked photo ignores hand moves, zoom and straighten, and `FS.lockToast()` says why. The toggles are "🔒 נעילת התמונה" (`#ph-lock`, applies to the targets) and 🔒 `#mt-dlock` (applies to the marked photos).
+- `js/fold.js`: `FS.foldify(root, scope, skip)` closes every category of the AI tabs, and a click on the heading opens it. Open categories are remembered in 'fs-fold'. It works on cards (.mt-card / .card) and on h3 runs in the studio pane. `FS.foldCount` shows how many buttons are inside.
+- `FS.AI_WOW` now has 56 effects. The 30 new ones are event-oriented: petals, fireworks, Paris, beach, Santorini, Jerusalem, ballroom, red carpet, magazine cover, studio, B&W fashion, black-gold, clouds, butterflies, snow globe, underwater, hot-air balloons, disco, concert, carnival, luna park, Hanukkah, flower wreath, castle, prince and princess, city night, rain-neon, vintage wedding, golden hour, sparkle frame. Without internet they run only through the local engine.
+- **The site:**
+  - The hero magnets are real event photos: `media/real` wedding-1, henna-3 and birthday-3.
+  - `#mwall` "קיר המגנטים" (drawn by atelier.js) shows two rows of all 19 real photos as printed magnets drifting opposite ways; it stops on hover and is still with reduce-motion.
+  - The clock counts to 03:00, "כמה דקות". The owner: a magnet takes a few minutes, not 60 seconds; all such claims became "כמה דקות" in index, show, business.json, l/*.html and js texts. Server-side texts published in the admin may still say otherwise.
+- **Program:** atelier-studio.css is now neutral graphite (#0F0F11 → #2E2E33, three tiers, no tinted glows), as pro editors do, so a tinted interface does not skew colours. Quartz is kept only for actions and selection.
+- **The live event (אירוע חי) is off:** live.js and live-studio.css are out of studio.html, and the home page's guest-photo, big-screen, guestbook and album features were removed. The files remain.
+- **Prices are live:**
+  - The admin publishes packages, extras and the packages note to the server (`site-save`, on top of the published base) 1.5 s after the last change, so other drafts stay drafts.
+  - The studio's 💰 editor publishes with `FS.publishLive` (it reads FS.siteData, applies the change, and calls site-save), falling back to GitHub.
+  - The home page and l/*.html read /frame-site on every visit.
+
+## 🧮 How many to print (copies by the people in the photo), and print from anywhere (Nov 3, v104)
+- `js/copies.js` works on the face landmarker of faces.js (`FaceSig.detect`: 478 points plus blink blendshapes), on this computer. `FS.judgeFaces(faces)` judges one photo:
+  - **Front faces only.** Faces with height under 45% of the biggest face are guests far behind and do not count.
+  - **Closed eyes.** Closed = blink average > 0.5 or both eye openings < 0.12. Any closed front face → verdict 'closed', 0 copies. A 0.4–0.5 blink → `doubt` (👀 "כדאי לבדוק"); it still prints.
+  - **Child.** A front face that is not the biggest one, with rel < 0.6, or rel < 0.9 and lower in the frame (eye line > 0.18·h below the biggest face) and eye/face proportion ≥ 0.58. Calibrated on media/real: the mother and daughter photo gives a child, and a 5-adult group photo gives 5 adults. Children add no copies.
+  - **Facing.** Facing = nose within 0.32 interocular of the eyes' middle; faces turned away do not count.
+  - **Copies** = adults facing; at least 1 when anyone is there.
+- `FS.copiesAdvice(list)` looks for a replacement for a 'closed' photo: up to 6 photos either side, the same scene (9×8 difference hash, ≤ 16 bits apart), ±1 people, everyone open and no doubt.
+- `FS.openCopiesAdvisor(list, done)` shows the advice window: per photo, the reason, the number and the replacement. "✔ להחיל" sets `p.copies` (closed → 0; the replacement gets its copies and is marked).
+- In the quick workspace:
+  - "🧮 כמה להדפיס?" sits in the sub row, and "🧮 המלצה לפי האנשים בתמונה" in the 🧾 copies bar. Both work on the marked photos, else all.
+  - Tiles show `p.cadv`: 👥 n, 👀 n, or 😑 עיניים עצומות.
+- `#mt-fab` "🖨️ להדפסה · N מגנטים" floats in every view of the quick workspace and runs `qpRun()` (instant print with the preview) on the marked photos or the one in focus.
+
+## 🎉 The live event is back, with a main QR (Nov 3, v105)
+- live.js and live-studio.css are back in studio.html (the rail tab "אירוע חי"); the owner asked for it back after v103. The home page's guest features stay off unless asked.
+- 🔁 Main QR: one printed code per studio for every event.
+  - **Server** (cloudflare/src/live.mjs):
+    - The owner's `main-get` makes the key once ('lmainOf:<email>' → 20-hex `m`; 'lmain:<m>' → {owner, e}). `main-set {e}` points it at one of the owner's own events (404 on someone else's).
+    - Public `main-info {m}` returns that event's guest key {e, k, title}, never the viewing key, and 404 when nothing is set.
+    - Tests are in test/live.test.mjs.
+  - **Studio tab:** a "🔁 קוד QR ראשי" card at the top shows where it leads now, "⭐ להפנות … לאירוע הזה", "🖨️ שלט עם הקוד הראשי" (`sign(true)`, the same sign with the business name) and "🔗 העתקה".
+  - **Guests:** live.html?m=… (FL.m in live-common.js) asks main-info and replaces itself with live.html?e=…&k=….
+
+## 🔗 A QR to the event's photos on every photo, bottom left (Nov 3, v106)
+- `FS.albumTag(p, e)` (live.js) puts an image layer (`albumQr: true`) with a QR for album.html?e=…&v=… (the event's album, viewing key) at the bottom left. `qrSpot(d, right)` chooses where: in the margin under or beside the frame's window when there is one, else inside the photo's corner. The QR is at least 14 mm wide (15% of the short side).
+  - A living magnet's QR (`magicQr`) moves to the bottom right when both are on, and `magicTag` itself goes right when an album QR is there.
+  - `p.albumEv` marks the photo: when it is printed it goes up to the album (studio-up) even with the station off or the album option off, so the code always finds it.
+  - `FS.albumUntag(p)` removes it.
+- The live tab has "🔗 QR לתמונות האירוע על כל תמונה (שמאל למטה)" (cfg.albumQr):
+  - the station's magnets get it;
+  - an `FS.afterAdd` hook gives it to new photos as they come in (not to puzzle or cube pages);
+  - "➕ להוסיף לתמונות שבפרויקט" and "✖ להסיר" act on the marked photos, else all.
+
+## 📒 The record of events and clients, each event's own codes (Nov 3, v107)
+- In the live tab, "📒 תיעוד" (next to "➕ חדש") opens `eventLog()`.
+  - **🎉 Events table:** date, the event (⭐ when the main QR leads to it), client (name, tel link, email), photos from guests and greetings, magnets, price, profit, and "🔳 הקודים".
+  - **👥 Clients:** gathered from the events by phone (digits only), else email, else name; it lists their events, the total and the last date, with a 💬 WhatsApp button.
+  - Search works over title, date, name, phone and email.
+  - "⬇️ הכול לאקסל" exports `FS.xlsx` with two sheets, "אירועים" (including both links and the id) and "לקוחות". The file is named events-and-clients-<date>.xlsx: Hebrew download names are dropped.
+- `codes(e)` shows the event's two QRs side by side:
+  - 📸 for guests (live.html?e&k): they send photos to the station;
+  - 🔗 the event's photos (album.html?e&v): the code printed on the photos.
+  - It can print, download both PNGs, or copy both links.
+- xlsx-lite.js is now loaded in studio.html too.
+
+## 📍 The QR where the owner wants it, guests' details for future events (Nov 3, v108)
+- **Where the QR goes, per event** (`cfg.qrAt[eventId]` = {at, x, y, mm}):
+  - `placeQr(d, e)` puts the QR in a corner: ↙ bl (default), ↘ br, ↖ tl, ↗ tr. A top corner goes in the margin above the window when there is one.
+  - '📌 כמו בתמונה שעל המסך' takes the position and size of the QR the owner dragged on the photo on screen, as a share of the page, and applies it to every photo.
+  - Sizes: 12, 14, 18 or 24 mm.
+  - Changing either one updates every photo of that event (`p.albumEv`). The living magnet's QR goes to the other side.
+- **Guests' details, only with explicit consent:**
+  - **The form.** `FL.lead` (live-common.js) draws the card: phone, "יש לכם אירוע בקרוב?" (type), month, and a consent checkbox naming the business. It sits on live.html (sent after the photo) and on album.html (its own "שליחה" button).
+  - **The server** (live.mjs `lead`):
+    - It needs the guests' key or the album key, `consent: true` and a 9–15 digit phone.
+    - One record per phone per event ('ll:<e>:<digits>'), up to 3000 per event; `ev.n.leads` counts them.
+    - `guest-info` counts entries (`ev.n.scans`).
+    - The owner's `leads` returns all of their events' records (or one event's), and `lead-del` removes one; deleting an event removes its records.
+    - Tests are in test/live.test.mjs.
+- **📒 The record:**
+  - Events show entries (כניסות) and phones (טלפונים).
+  - A "📞 פוטנציאל" tab lists name, phone, their own event and when, where they came from (the table code or the album) and the date. Rows with a coming event are marked.
+  - 💬 opens WhatsApp with a ready opening line; 🗑 deletes on the guest's request.
+  - The Excel file has a third sheet, "פוטנציאל".
+
+## The Optimus promo film (media/promo/optimus*.mp4)
+
+- Built from `videos/promo-src/build.py` (`FILMS['pro']`): `python3 build.py pro`, then `npx --yes hyperframes@0.9.8 render` in `videos/promo-pro` and `videos/promo-pro-v` (1920×1080 and 1080×1920, about 92 s).
+- The screens come from `capture/cap3.cjs` (pro-*) and `capture/cap4.cjs` (how-*), with a static server on :8765.
+- The film walks through the work in 5 steps (מכניסים תמונות, בוחרים גודל, עורכים הכול יחד, כמה להדפיס?, מדפיסים), then the features: instant print, the full editor, event frames, smart tools, 56 effects, puzzle, QR on every magnet, the live event, the guest's phone page, the site.
+- The owner asked to leave out his Excel record, the photo cube and the "כל אורח הוא הלקוח הבא" scene. Keep them out.
+- Music: Kevin MacLeod "Upbeat Forever" (CC BY 4.0), credited on the end card.
+- v110 cut (~113 s, 25 scenes, music cut to 117 s). Added scenes:
+  - the event hub's automatic line and live board (focus without the money panel)
+  - the new AI on one photo (`cap/ai-*.jpg`: lens, hall light, precise cut-out)
+  - the summary film on a phone (`cap/hub-film.webp`)
+  - Ctrl+K
+  These come from `capture/cap5.cjs`.
+- The owner also asked to keep out the hub's premium-offers panel, the money and profit, the leads and potential customers, the Excel record and the cubes.
+
+## מרכז האירוע (js/hub.js, css/hub.css) · v109
+
+A tab of its own in the quick workspace (after "הדפסה"), with three panels:
+
+- **⚡ קו אוטומטי (hot folder):**
+  - The owner picks the folder the camera saves into (`showDirectoryPicker`, works in the desktop program and Chrome/Edge). The folder is polled every 1.5 s.
+  - A file is taken only when its size and time stayed the same between two looks, so a file the camera is still writing is skipped.
+  - Each photo comes in through `FS.addPhotoFile` plus `photos-added`, so the event frame and the QR hooks apply as usual.
+  - Then `FS.copiesAdvice([p])` runs. Closed eyes are held, with the alternative from the same moment (⇄) when there is one. Nobody facing the camera (0 copies) is held. No faces found keeps the copies as they were.
+  - Print mode is "באישור שלי" or "אוטומטית". Automatic waits N seconds (3–40) for more photos and prints them together, to save paper.
+  - Printing goes through `FS.mate.printList(list)`, which uses the instant print's printer and layout, each photo with its own copies. It returns false and opens the instant-print setup when that isn't set.
+  - Settings are stored in `fs-hub-auto`.
+- **📡 לוח בקרה:**
+  - Gauges for magnets out of the guests, magnets per hour (last 30 min), waiting to print, paper left and when it runs out, ink %, and when every guest will have a magnet.
+  - A bar chart of magnets per quarter hour (last 4 h), alerts, and money: income, materials, extra costs and net profit (`fs-hub-money`).
+  - It reads `frame-studio-printlog` and `frame-studio-printer` (printlog.js) read-only.
+- **🎁 אחרי האירוע:**
+  - A highlights film made on the computer: canvas + `MediaRecorder` (MP4 with H.264 where available, as in the desktop program; otherwise WEBM), 30/60/90 s, portrait or landscape.
+  - The photos are the marked ones (3 or more), or else the best by `FS.scoreAll` (no duplicates, no closed eyes) in event order. It adds a title, an end card and the owner's own music file (fades in and out).
+  - Premium products with editable prices (`fs-hub-prods`) and an offer to the couple through a `wa.me` link (free) or copied text.
+
+**Command bar:**
+- Ctrl+K, or the "⌘ פקודות" button, opens a bar listing every action. Typing filters it, ↑↓ moves and Enter runs.
+- mate.js's window key handler lets Ctrl+K, and keys typed inside `#cmdk`, pass through.
+
+**mate.js now exposes:** `FS.mate.show(v)`, `FS.mate.view()`, `FS.mate.root`, `FS.mate.printList`, `FS.mate.quickReady`, and the `mate-view` event.
+
+## Faster AI and new built-in effects (v110)
+
+**Speed:**
+- **onnxruntime-web 1.31.1** (`vendor/ort/ort.webgpu.min.js` + `ort-wasm-simd-threaded.asyncify.{mjs,wasm}`; 1.31 loads the *asyncify* file, not *jsep*).
+  - `FS.ortSession(path)` uses WebGPU only when `navigator.gpu.requestAdapter()` returns an adapter; otherwise it uses WASM. `FS.ortInfo()` reports `{gpu, threads, isolated}`.
+- **Threads need cross-origin isolation.** desktop/main.js sends `COOP: same-origin` + `COEP: credentialless` for studio.html **and every .js/.mjs**.
+  - The worker scripts must carry COEP too. Without it, the threaded worker is blocked (ERR_BLOCKED_BY_RESPONSE) and the session never resolves.
+  - A plain browser tab (GitHub Pages) stays on 1 thread.
+  - Measured on 4 cores: candy style 10.2 s → 6.7 s.
+- **Ahead of time:** `FS.restyleOffline` makes the same design for the next 2 photos (the marked ones, or the following ones) in the background. They are kept by design and source, at most 6. Measured: next photo 10 s → 2–3 s.
+- **Local FLUX engine warm-up:** `engine.warm()` in desktop/local-ai.js runs 30 s after start.
+  - It reads the model files once into the OS file cache, in 4 MB steps.
+  - It runs only if RAM ≥ 1.6× the files, and it pauses while a picture runs.
+  - Its 10-minute reset timer is unref'd (the tests hang otherwise). A test is in test/local-ai.test.js.
+
+**New buttons in "🖥️ מיד, על המחשב"** (`js/ai-plus.js`, `FS.LOCAL_PLUS` + `FS.localPlus`; mate.js `local()` calls them; `{single, run}` takes one photo):
+- **🔍 חדות ×2 (AI):**
+  - `FS.upscale2x`: UpscalerJS esrgan-medium x2 (RDN, MIT) on TensorFlow.js WebGL (`vendor/tfjs`, `SOFTWARE_WEBGL_ENABLED` on).
+  - Input up to 1800 px (900 on the plain CPU path), output ×2, 192 px tiles.
+  - Slow on a software GPU (a 480×640 photo took ~4 min in the headless test).
+- **💡 תאורת אולם:** grey-world white balance on the mid-tones (75%), face exposure toward 0.58 measured on `FS.findFaces`, highlights protected, and a wide unsharp mask (0.22).
+- **📸 עדשה מקצועית:** person sharp; a near and a far blur mixed by a spread of the mask; round bokeh lights from bright background spots; a vignette.
+- **✂️ הסרת רקע מדויקת:** `FS.maskPro(p)` with MODNet (`models/modnet/modnet-q.onnx`, Apache-2.0). It replaces `p.mask`, so the other background tools use it too.
+- **🎞️ תמונה חיה 3D:** opens wow.js `FS.livingPhoto(p)`, after a MODNet mask.
+
+**Also:** 8 more local-engine looks in `FS.AI_WOW`, now 64 in total: פולארויד, צבעי מים, קריקטורה, פחם, פופ־ארט, ויטראז׳, פלסטלינה, פסל זהב.
+- **Hebrew voice-over (woman's voice):**
+  - Run `GOOGLE_TTS_API_KEY=… python3 videos/promo-src/voice.py`. The key comes from the environment settings; never put it in chat or code.
+  - It reads `videos/promo-src/NARRATION.md` (25 timed lines) and makes each line with Google Text-to-Speech, trying he-IL Chirp3-HD Aoede, then Wavenet-A, then Standard-A.
+  - Each line goes at its scene time, sped up by at most 15% when it runs long.
+  - The music (Beauty Flow from 0:17) is ducked under the voice with a side-chain.
+  - It replaces the audio of `frame-studio/media/promo/optimus*.mp4`; the picture is untouched. The voice alone is kept in `music/voice.m4a`.
+  - `--test` checks the mix with tones, without a key.
+- **Captions instead of a voice (the owner's choice):**
+  - `FILMS['pro']['captions']` holds the 25 narration lines, and `caption()` in build.py draws each one as a dark pill.
+  - Placement: in landscape at the bottom right, clear of the AI labels on the left. In portrait at the bottom, or over the foot of the picture in AI scenes so their label stays visible.
+  - There are no captions on the fan and end scenes.
+  - The music is Beauty Flow.
+- **On the home page (v111):** the film opens the "רואים בעיניים" section (`#videos`), as `#optimus-film`, full width above the grid.
+  - It plays lighter web cuts: `media/promo/optimus-web.mp4` (1280 px, about 6 MB) and `optimus-v-web.mp4` (720 px). An inline script picks the vertical one on a phone held upright, because Chromium ignores `<source media>`.
+  - The posters are `optimus.jpg` and `optimus-v.jpg`.
+  - The hero has a "▶ סרטון התדמית" button that jumps to it (`scroll-margin-top: 96px` keeps it clear of the menu).
+  - After re-rendering the film, remake the web cuts: `ffmpeg -vf scale=1280:-2 -crf 24 -movflags +faststart`.
+
+## Speed and a clearer print window (v112)
+
+**Speed (home page measured locally):** 9.6 MB → 2.3 MB per load; first paint ~0.3 s without third parties.
+- **Google Fonts** in index.html and studio.html are loaded as `media="print" onload="this.media='all'"` (+ `<noscript>`), and fonts.gstatic.com is preconnected, so they no longer block the first paint. Text shows at once in the fallback font (display=swap).
+- **Magnet wall** (atelier.js) uses `media/real/thumb/*.webp` (480×720, 588 KB for all 19 instead of 1.8 MB).
+- **Site magnet previews** (site.js `magnet()`, sizes 250/360 drawn at ×2) use the thumb copy too.
+- **The home film** is `preload="none"`.
+- **New sample photos:** remake their thumbs the same way (PIL, 480 px wide, WEBP q80).
+
+**Print window (mate.js `openPrint`):**
+- Top to bottom:
+  - the summary card, sticky: prints / pages / per page, paper, magnet size, printer
+  - a big "🖨️ הדפסה · N דפים" button and "הדף הזה בלבד"
+  - ⭐ my saved settings
+  - three numbered steps: 1 what to print (`#mp-which`), 2 printer, 3 size and layout (presets, with the active one highlighted, plus paper and magnet)
+  - "⚙️ הגדרות מתקדמות" in a `<details>`: placement (real size with margins and cut marks, or whole page fit/cover), DPI, and save-as
+- Every element id is unchanged.
+
+## Funny effects, a real-editing mirror, automatic copies, sharper thumbnails (v113)
+
+**😜 Funny effects (`js/fun-fx.js`):**
+- `FS.funFx(id, img)` returns a canvas. It works on every face, using FaceSig landmarks scaled back to the picture, at most 2400 px. Each effect runs in 0.1–0.4 s.
+- The effects:
+  - bighead: an even zoom ×1.38 inside 58% of a circle of 1.45 × face height, with a Hermite blend to the edge
+  - bigeyes: a lens bulge p 2.1
+  - carica: head zoom, then eyes and mouth bulged at their zoomed spots
+  - swap: the two largest faces. Similarity transform on the eyes, the inner face oval feathered, colour matched by the oval means.
+  - disguise: drawn glasses and mustache on the eye line
+  - crown: a drawn crown
+  - clown: a red nose and blush
+- A plain "tiny head" was dropped: shrinking smears the background.
+- Errors: `no-face` and `two-faces`, with Hebrew text from `FS.funFxMsg`.
+- **In the quick workspace:**
+  - The AI screen has a "😜 אפקטים מצחיקים" card (`#mt-ai-fun`).
+  - The full editor's "כלים AI" tab holds the same effects (`[data-fun]`), after the local tools.
+  - `fun()` in mate.js applies an effect through `FS.putCanvas` (ai-plus.js), so undo and "back to the original" work.
+
+**Magic mirror (mirror.html):**
+- After the 3-2-1 a `#looks` bar offers "כמו שזה", the funny effects, and the built-in styles anime, candy, rain and mosaic (`FS.offlineStyleCanvas`).
+- The edits work on `shot0`, and the chosen result is what is sent.
+- The page loads faces.js, offline-ai.js and fun-fx.js after a tiny `window.FS = { canvas }` shim.
+
+**Full editor "כלים AI":**
+- It used to be filled only by the AI screen (`buildAI`), so it was empty when the editor was opened first.
+- Now `localChips()` fills it in `buildDesign` too.
+
+**Automatic copies (copies.js):**
+- On `photos-added`, new photos are queued and run through `FS.copiesAdvice` in the background.
+  - Copies are set only if they are still the default 1: an `ok` verdict gives its count, `closed` gives 0.
+  - A toast at the end shows how many photos were set.
+- The switch is "אוטומטי לכל תמונה חדשה" in the copies bar (`#mt-cauto`, `fs-auto-copies`, on by default).
+
+**Sharper thumbnails:**
+- `pageCanvas` and `origCanvas` draw at devicePixelRatio (up to 2) and set the CSS size.
+- The tiles, before/after, the big view and the print preview are sharp on 125–200% screens.
+
+## Accessibility, privacy and security (v114)
+
+**Accessibility (IS 5568 / WCAG 2.1 AA):**
+- The audit is axe-core 4.10.3 over every public page plus each quick-workspace view, the print window, the hub and Ctrl+K. Result: 0 violations.
+- `js/a11y.js` is on every page. It ties `.field` labels to their control, and names unnamed controls (title / placeholder / the text beside them) and icon-only buttons (their title). It gives `alt=""` to images without one. A MutationObserver covers windows that open later.
+- Fixes:
+  - show.html: inactive steps' opacity .38 → .74 (contrast).
+  - `.mt-tabs`: dropped role=tablist (its buttons aren't tabs).
+  - `.cr-h small`: opacity .82.
+- accessibility.html now covers the program and the guest pages, says how it was tested (axe + keyboard), and is dated November 2026.
+
+**Privacy (the Privacy Protection Law, Amendment 13):**
+- `privacy.html` covers:
+  - who is responsible
+  - what is collected and why: booking, event photos, "find me" face signatures (sensitive data; the selfie is processed on the device and its signature is not kept), leads with consent, capsules, first-party statistics, licensing, cloud AI
+  - how long it is kept: photos and face signatures 60 days, living magnets 400 days, capsules 120 days after opening, leads 2 years
+  - who it is shared with: Cloudflare, GitHub Pages, n8n, Google Fonts, external AI
+  - security, and the people's rights (respond within 30 days)
+- Links to it:
+  - every legal footer (index, show, agreement, download, accessibility)
+  - the lead consent box (live-common.js)
+  - a short notice under live.html and album.html
+
+**Server (cloudflare/src):**
+- Leads are deleted by `liveCron` after `LEAD_KEEP_DAYS = 730`, at most once a day per event (`ev.leadsAt`). A test was added.
+- `lead` joined the strict per-IP limit (with guest-up, capsule-put, find).
+- `npm test` live and frame pass. worker.test needs `wrangler dev` on :8787.
+
+**Security checks done:**
+- No keys or tokens in the repo (pattern scan).
+- Every `_blank` link has rel=noopener.
+- Electron: contextIsolation, sandbox, no nodeIntegration, will-navigate guard.
+- A hostile-guest test: a script payload in every guest text (studio record and leads, album, guest page, wall, magnet). Nothing ran; the payload shows as text.
+
+## אופטימוס as a phone app (v115)
+
+**Installable (PWA):**
+- manifest.webmanifest:
+  - id `optimus-studio`, start_url studio.html, standalone, theme #151517
+  - PNG icons optimus-192/512, a maskable 512 with a 20% safe zone, and the SVG
+  - shortcuts
+- studio.html:
+  - apple-touch-icon optimus-apple-180.png
+  - apple-mobile-web-app-capable / title / status-bar meta
+- The icons are rendered from optimus.svg on #151517 (the scratchpad icons.js approach: Playwright screenshot of the SVG).
+- `js/pwa.js` adds a "📲 התקנה" button in the top bar:
+  - Android/Chrome: the browser's own prompt (beforeinstallprompt).
+  - iPhone/iPad: a two-step guide (Share → Add to Home Screen).
+  - Hidden when standalone and in the desktop program.
+
+**Phone layout (`css/mobile-app.css`, ≤700 px, loaded last):**
+- The `.mt-tabs` become a fixed bottom tab bar with icons (6 columns, safe-area padding).
+- The top bar is one slim row: instant print, gear, install, photos, folder. Hidden on phones: stat, mark, the switch to the full studio, and the desktop extras (commands, help).
+- `.mt-top` loses its backdrop-filter: it would trap the fixed tab bar inside it.
+- Main:
+  - the sub and option bars scroll sideways
+  - 2 tiles per row
+  - the size badge is hidden on tiles
+- Edit: the photo on top (44vh), the tools under it. One photo per screen by default (`eN` = 1 under 700 px unless chosen).
+- Other screens:
+  - AI: 2 per row
+  - hub: one column
+  - dialogs: full screen
+  - print window: the preview first
+  - Ctrl+K: full width
+- `#fs-ver` moves above the tab bar. The FAB sits above it too.
+- **The full design studio on a phone (v116, mobile-app.css, `body:not(.mt-on)`, ≤700 px):**
+  - `.tools` is a fixed bottom bar that slides sideways (66 px buttons, snap, a fade at the end that hints there is more).
+  - `.stage` is sticky at the top (not in grid-mode), so the photo stays in view while the panel scrolls under it. `.stage .canvas-wrap` gets an explicit height of 36vh (with !important: a desktop flex rule shrank it to ~98 px).
+  - `#mt-switch` becomes a small "⚡ עבודה מהירה" corner button at the top left. The studio button is hidden, since we're in the studio.
+  - `#fs-ver` and `.pl-bar` sit above the tool bar.
+  - Testing gotcha: `body.intro-on` sets `overflow: hidden`, which breaks sticky until the opening ends. Remove that class in tests.
+
+## Install on the phone, for every phone (v117)
+- `js/install-help.js` (loaded before `app-install.js` in app.html / admin.html and before `pwa.js` in studio.html; also in sw.js FILES):
+  - `FS.installEnv` = `{ ios, android, inApp, samsung, firefox, phone }` from the user agent.
+  - `FS.installHelp(name)` opens a bottom sheet (`.ih`, its own CSS `#ih-css`) with the exact steps for that phone:
+    - inside WhatsApp / Instagram / Facebook / Telegram / TikTok: open in the real browser first (Android: an `intent://…package=com.android.chrome` button; iOS: "open in Safari" steps), plus copy-link;
+    - iPhone Safari: Share ⬆ → "הוספה למסך הבית" → "הוסף"; iPhone Chrome etc.: the same Share, or Safari;
+    - Samsung Internet ≡ → "הוספת דף אל" → "מסך הבית"; Firefox ⋮ → "התקנה"; Android Chrome ⋮ → "התקנת אפליקציה";
+    - computer: the ⊕ icon at the end of the address bar.
+- When the browser sent `beforeinstallprompt`, the button still installs in one tap; the sheet is the fallback everywhere else.
+- `app-install.js`: `install()` no longer reloads app.html on Android without a prompt (the old "nothing happens" bug); app.html's status line names the in-app-browser case.
+- `pwa.js`: on every phone (not only iPhone) the `#mt-install` button is there from the start, and the studio start screen gets an `#ia-install` card.
+- `gate.js`: a `.gate-install` button ("📲 התקנה כאפליקציה בטלפון") on the entry gate, phones only (CSS max-width 760px, hidden in standalone).
+- Gotcha: `body.gated > :not(#gate)…` hides every other body child; `.ih` is exempted there, or the sheet opens invisible behind the gate.
+
+## Customers: everyone in one list (v119)
+- The admin "👥 לקוחות" screen (`V.customers` in `js/admin-biz.js`) now merges every source into one list, matched by email, else by phone (`phoneKey`: digits, 972→0):
+  - Optimus sign-ups (download page / trial in the program) and licenses: loaded with `FS.license.admin('lic-list')` (`leads`, `licenses`), the same call the licenses screen uses;
+  - people who came in to the customer screen (`c.visitors()`), accounts in the frame editor (`c.accounts()`), booking requests, deals.
+- Each row shows where the person came from (`.cu-tags`), and chips above the list filter by source (`#cu-src`) with counts.
+- "🆕 חדשים מאז הביקור הקודם": people whose first arrival is after the admin's previous visit to this screen (`localStorage['fs-cu-seen']`, per browser).
+- The single-customer card adds the Optimus state (registered / installed / verified), the license code, visits and first arrival.
+- Before v119 Optimus sign-ups appeared only under "🔑 רישיונות סטודיו", which is why the customers screen looked empty.

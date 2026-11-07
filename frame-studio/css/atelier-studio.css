@@ -1,0 +1,96 @@
+/* ==========================================================================
+   Atelier for the program: the same identity as the site (css/atelier.css), "flash & paper", tuned for long work.
+   The deep blue of a hall at night as the desk, quartz pink for what is chosen and what acts, flash white for prints.
+   The signature: every photo in the grid lies on the desk as a printed magnet, with its white border and a soft shadow.
+   Karantina for the big words, Assistant to read, IBM Plex Sans Hebrew for numbers. Loaded last in studio.html.
+   ========================================================================== */
+:root {
+  /* a neutral graphite desk, like the pro editors (a tinted interface skews how the photo's colours look); three tiers
+     of lightness give the depth; quartz only where something acts or is chosen */
+  --at-night0: #0F0F11; --at-night1: #151517; --at-night2: #1C1C1F; --at-night3: #242428; --at-night4: #2E2E33;
+  --at-flash: #F8F7F4; --at-quartz: #EDB6BE; --at-quartz-deep: #C98894; --at-thread: #CFAE74;
+  --at-grad: linear-gradient(135deg, #FCE6E9 0%, #EDB6BE 48%, #C98894 100%);
+  /* the studio's own names */
+  --lx-ink: var(--at-night0); --velvet: var(--at-night2); --velvet2: var(--at-night3);
+  --ivory: #F3F1EC; --ivory-dim: #A3AAC0; --champagne: var(--at-quartz); --champagne-deep: var(--at-quartz-deep); --rose: var(--at-quartz);
+  --line: rgba(255,255,255,.08); --line-soft: rgba(255,255,255,.05); --line-strong: rgba(237,182,190,.55);
+  --foil: var(--at-grad);
+  --pro-stage: var(--at-night0); --pro-panel: var(--at-night1); --pro-raise: var(--at-night3); --pro-hover: var(--at-night4);
+  --f-display: 'Karantina', 'Frank Ruhl Libre', serif; --f-num: 'IBM Plex Sans Hebrew', 'Assistant', sans-serif;
+}
+::selection { background: rgba(237,182,190,.4); color: #fff; }
+
+/* ---------- the quick workspace ---------- */
+#mt {
+  --g0: var(--at-night0); --g1: var(--at-night1); --g2: var(--at-night2); --g3: var(--at-night3); --g4: var(--at-night4);
+  --gold: var(--at-quartz); --gold2: var(--at-quartz-deep); --gold-grad: var(--at-grad);
+  --ink: #F3F1EC; --dim: #A3AAC0; --hair: rgba(255,255,255,.07); --hair2: rgba(255,255,255,.11);
+  background: var(--at-night0);
+}
+#mt .mt-top { background: rgba(21,21,23,.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+#mt .mt-top::after { background: linear-gradient(90deg, transparent, rgba(237,182,190,.55), rgba(207,174,116,.4), transparent); animation: none; }
+#mt .mt-mark { background: var(--at-grad); color: var(--at-night1); box-shadow: 0 6px 18px -6px rgba(237,182,190,.6); }
+#mt .mt-tabs { background: rgba(0,0,0,.28); }
+#mt .mt-tabs button.on, #mt .mt-btn.primary, #mt .mt-sub .mt-pr-btn, #mt .mt-empty label.mt-btn.big, #mt .mt-band b, #mt .mt-tile.sel .mt-chk, #mt .mt-drop-ic { color: var(--at-night1); }
+#mt .mt-tabs button.on { box-shadow: 0 6px 18px -6px rgba(237,182,190,.6), inset 0 1px 0 rgba(255,255,255,.5); }
+#mt .mt-tabs button[data-v=print] { color: var(--at-quartz); }
+#mt .mt-btn:hover, #mt .mt-ic:hover { box-shadow: inset 0 0 0 1px rgba(237,182,190,.5), 0 8px 20px -10px rgba(0,0,0,.9); }
+#mt .mt-btn.primary { box-shadow: 0 10px 26px -10px rgba(237,182,190,.65), inset 0 1px 0 rgba(255,255,255,.5); }
+#mt select:focus, #mt input:focus, #mt textarea:focus { box-shadow: inset 0 0 0 1.5px var(--at-quartz); }
+#mt .mt-seg button.on, #mt .mt-ptabs button.on { color: var(--at-quartz); box-shadow: inset 0 0 0 1px rgba(237,182,190,.4); }
+#mt input[type=range]::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(237,182,190,.18), 0 2px 6px rgba(0,0,0,.6); }
+#mt .mt-stat, #mt .mt-foot, #mt .mt-band b, #mt .mt-cp i, #mt .mt-dinfo { font-family: var(--f-num); }
+
+/* the signature: photos as printed magnets on the night desk */
+#mt .mt-tile { background: transparent; box-shadow: none; padding: 8px 8px 6px; border-radius: 18px; }
+#mt .mt-tile:hover { background: rgba(255,255,255,.035); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); transform: translateY(-3px); }
+#mt .mt-tile .mt-th { background: transparent; border-radius: 0; overflow: visible; }
+#mt .mt-tile .mt-th canvas { border-radius: 2px; border: 5px solid var(--at-flash); border-bottom-width: 14px; box-sizing: content-box; box-shadow: 0 2px 0 rgba(0,0,0,.05), 0 18px 34px -14px rgba(0,0,0,.95), 0 6px 12px -6px rgba(0,0,0,.6); background: #fff; transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .3s; }
+#mt .mt-tile:nth-child(3n+1):hover .mt-th canvas { transform: rotate(-1.4deg) scale(1.03); }
+#mt .mt-tile:nth-child(3n+2):hover .mt-th canvas { transform: rotate(1.2deg) scale(1.03); }
+#mt .mt-tile:nth-child(3n):hover .mt-th canvas { transform: rotate(-.6deg) scale(1.03); }
+#mt .mt-tile.sel { background: rgba(237,182,190,.07); box-shadow: inset 0 0 0 2px var(--at-quartz), 0 18px 40px -20px rgba(237,182,190,.55); }
+#mt .mt-tile.focus:not(.sel) { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3); }
+#mt .mt-name { font-size: 12.5px; }
+#mt .mt-tile.sel .mt-name { color: var(--at-quartz); }
+
+/* cards and headings */
+#mt .mt-card { background: var(--at-night2); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+#mt .mt-card h3 { font-family: var(--f-display); font-weight: 700; font-size: 30px; line-height: 1; letter-spacing: .01em; }
+#mt .mt-card h3 small { font-family: 'Assistant', sans-serif; font-size: 12.5px; font-weight: 400; color: var(--dim); letter-spacing: 0; }
+#mt .mt-ai-g button:hover { box-shadow: inset 0 0 0 1px rgba(237,182,190,.5), 0 16px 30px -16px rgba(237,182,190,.4); }
+#mt .mt-chips button:hover, #mt .mt-chips button.on { box-shadow: inset 0 0 0 1px rgba(237,182,190,.55); color: var(--at-quartz); }
+#mt .mt-empty { border-color: rgba(237,182,190,.4); background: radial-gradient(600px 300px at 50% 30%, rgba(237,182,190,.10), transparent 70%), rgba(255,255,255,.015); }
+#mt .mt-empty h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(56px, 6vw, 92px); line-height: .95; background: linear-gradient(180deg, #fff, #F2D3D8); -webkit-background-clip: text; background-clip: text; }
+#mt .mt-cvw { background: #121214; }
+#mt-switch { background: rgba(21,21,23,.94); box-shadow: 0 0 0 1px rgba(237,182,190,.45), 0 14px 34px -12px rgba(0,0,0,.9); }
+#mt-switch button.on { background: var(--at-grad); color: var(--at-night1); }
+
+/* the puzzles and cubes card */
+.cr-h { font-family: var(--f-display); font-weight: 700; font-size: 32px; line-height: 1; }
+.cr-h small { font-family: 'Assistant', sans-serif; }
+.cr-card { background: linear-gradient(160deg, rgba(237,182,190,.14), rgba(255,255,255,.02) 60%); }
+
+/* ---------- the studio (full designer) ---------- */
+.app { background: var(--at-night0); }
+.topbar, .tools, .stagebar, .stripbar, .strip { background: var(--at-night1) !important; }
+.panel { background: var(--at-night1); }
+.panel .card { background: var(--at-night2); }
+.stage { background: #121214; }
+.tools button[aria-selected=true] { background: var(--at-night3); box-shadow: inset 0 0 0 1px rgba(237,182,190,.45); color: var(--at-quartz); }
+.btn.primary, .btn.gold { background: var(--at-grad); color: var(--at-night1); border-color: transparent; }
+
+/* dialogs */
+#dlg { background: var(--at-night1); border: 1px solid rgba(255,255,255,.08); box-shadow: 0 40px 120px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(237,182,190,.12); }
+#dlg-title { font-family: var(--f-display); font-weight: 700; font-size: 34px; letter-spacing: .01em; }
+@media (prefers-reduced-motion: reduce) { #mt .mt-tile .mt-th canvas { transition: none; } #mt .mt-tile:hover .mt-th canvas { transform: none !important; } }
+
+/* the quiet chrome: panels and bars one step lighter than the desk, no coloured glows */
+#mt .mt-panel, #mt .mt-browser, #mt .mt-ebar, #mt .mt-dinfo, #mt .mt-dtools, #mt .mt-foot { background: var(--at-night1); }
+#mt .mt-bar { background: var(--at-night2); }
+#mt .mt-btn { background: var(--at-night3); }
+#mt .mt-tile .mt-th canvas { box-shadow: 0 1px 0 rgba(0,0,0,.2), 0 14px 26px -12px rgba(0,0,0,.95); }
+/* the lock and keep-in buttons in the designer */
+#mt .mt-ic.on { background: rgba(237,182,190,.18); box-shadow: inset 0 0 0 1px rgba(237,182,190,.6); }
+#ph-lock.on { background: rgba(237,182,190,.18); border-color: rgba(237,182,190,.6); }
+.lock-row { align-items: center; }

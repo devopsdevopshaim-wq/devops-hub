@@ -1,0 +1,99 @@
+/* עין הרע וחלומות — על גבי style.css ו־premium.css (הצבעים מהטוקנים של האתר) */
+.ah-wrap { padding-bottom: 60px; }
+.ah-note { margin: 14px 0; padding: 14px 18px; border-radius: var(--radius-card, 14px); line-height: 1.8; }
+.ah-note a { color: var(--brass-soft); }
+
+.ah-tabs { position: sticky; top: 52px; z-index: 20; display: flex; gap: 6px; flex-wrap: wrap; margin: 18px 0 8px; padding: 8px;
+  border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--surface-2) 92%, transparent); backdrop-filter: blur(10px); }
+.ah-tabs button { flex: 1 1 auto; padding: 9px 14px; border: 0; border-radius: 999px; background: transparent; color: var(--cream-dim);
+  font: 600 15px var(--font-body); cursor: pointer; transition: background .2s, color .2s; white-space: nowrap; }
+.ah-tabs button:hover { color: var(--cream); }
+.ah-tabs button.on { background: color-mix(in srgb, var(--brass) 24%, transparent); color: var(--brass-soft); }
+
+.ah-pane { display: none; animation: ah-in .3s ease; }
+.ah-pane.on { display: block; }
+@keyframes ah-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.ah-intro { margin: 18px 0 8px; }
+.ah-intro p { max-width: 75ch; line-height: 1.9; color: color-mix(in srgb, var(--cream) 88%, transparent); }
+.ah-group { margin: 26px 0 10px; color: var(--brass-soft); font-family: var(--font-display); }
+.ah-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.ah-card { padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius-card, 14px); background: var(--surface); }
+.ah-card h4 { margin: 0 0 6px; font: 700 18px/1.4 var(--font-display); color: var(--cream); }
+.ah-card p { margin: 0 0 10px; line-height: 1.75; color: color-mix(in srgb, var(--cream) 84%, transparent); }
+.ah-small { font-size: 14px; color: var(--cream-dim); }
+.ah-verse { font-family: var(--font-display); color: var(--brass-soft) !important; }
+
+.ah-src { display: inline-flex; align-items: center; gap: 6px; margin: 2px 0 2px 6px; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: color-mix(in srgb, var(--brass) 10%, transparent); color: var(--brass-soft); font: 600 13px var(--font-body); }
+.ah-src:hover { background: color-mix(in srgb, var(--brass) 22%, transparent); }
+.ah-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 10px; }
+.ah-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin: 10px 0; }
+.ah-row label { display: grid; gap: 4px; flex: 1 1 180px; font-size: 14px; color: var(--cream-dim); }
+.ah-row input, .ah-filter, .ah-dream-box textarea {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--lux-ink, #000) 60%, transparent); color: var(--cream); font: 16px var(--font-body); }
+.ah-dream-box textarea { min-height: 120px; resize: vertical; line-height: 1.7; }
+.ah-filter { margin-bottom: 12px; }
+.ah-bad { display: inline-flex; gap: 8px; align-items: center; }
+
+/* הסדר */
+.ah-progress { height: 6px; border-radius: 6px; background: var(--line-soft); overflow: hidden; margin-top: 8px; max-width: 420px; }
+.ah-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--brass), var(--brass-soft)); transition: width .4s; }
+.ah-steps { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 12px; }
+.ah-step { display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-card, 14px); background: var(--surface); }
+.ah-step.done { border-color: color-mix(in srgb, var(--brass) 60%, transparent); }
+.ah-step h4 { margin: 0 0 4px; font: 700 18px var(--font-display); }
+.ah-step p { margin: 0 0 8px; line-height: 1.75; }
+.ah-check { position: relative; cursor: pointer; }
+.ah-check input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.ah-check span { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); font-weight: 700; color: var(--brass-soft); }
+.ah-step.done .ah-check span { background: var(--brass); color: #1a1408; }
+.ah-step.done .ah-check span::after { content: "✓"; position: absolute; }
+.ah-step.done .ah-check span { font-size: 0; }
+.ah-step.done .ah-check span::after { font-size: 18px; }
+.ah-check input:focus-visible + span { outline: 2px solid var(--brass-soft); outline-offset: 2px; }
+.ah-formula-box { margin: 8px 0 12px; padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--brass) 7%, transparent); }
+.ah-formula { margin: 8px 0; padding: 14px 18px; border-inline-start: 3px solid var(--brass); font: 500 20px/1.9 var(--font-display); color: var(--cream); }
+.ah-custom { margin-top: 22px; padding: 16px 18px; border: 1px dashed var(--line); border-radius: var(--radius-card, 14px); }
+.ah-custom p { line-height: 1.85; }
+
+/* חלומות */
+.ah-dream-box { padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-card, 14px); background: var(--surface); }
+.ah-sym-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ah-tone { flex: none; padding: 3px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); color: var(--cream-dim); }
+.ah-sym.tone-good .ah-tone { color: #9fe3b0; border-color: rgba(159, 227, 176, .4); }
+.ah-sym.tone-mixed .ah-tone { color: #f0c27a; border-color: rgba(240, 194, 122, .4); }
+.ah-advice { margin-top: 14px; border-color: color-mix(in srgb, var(--brass) 55%, transparent); }
+.ah-advice ol { margin: 6px 0 12px; padding-inline-start: 22px; line-height: 1.85; }
+.ah-ai-out { line-height: 1.85; }
+
+/* הטבת חלום */
+.ah-hatava { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 12px; counter-reset: h; }
+.ah-hatava li { position: relative; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius-card, 14px); background: var(--surface); }
+.ah-hatava h4 { margin: 0 0 8px; font: 700 18px var(--font-display); }
+.ah-who { position: absolute; inset-inline-end: 14px; top: 14px; font-size: 12px; padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--brass) 18%, transparent); color: var(--brass-soft); }
+.ah-nusach { font: 400 21px/2 var(--font-display) !important; color: var(--cream) !important; }
+.ah-faq summary { cursor: pointer; font: 700 17px var(--font-display); list-style-position: inside; }
+.ah-faq p { margin-top: 10px; }
+.ah-faq + .ah-faq { margin-top: 10px; }
+
+/* חלון המקור */
+.ah-dialog { width: min(720px, calc(100vw - 32px)); max-height: 82vh; padding: 0; border: 1px solid var(--line); border-radius: 18px;
+  background: var(--lux-ink-2, #1b1020); color: var(--cream); box-shadow: 0 40px 80px -30px rgba(0,0,0,.9); }
+.ah-dialog::backdrop { background: rgba(0, 0, 0, .6); backdrop-filter: blur(3px); }
+.ah-dlg-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: inherit; }
+.ah-dlg-body { padding: 8px 20px; max-height: 62vh; overflow: auto; }
+.ah-dlg-body p { font: 19px/1.95 var(--font-display); margin: 0 0 10px; }
+.ah-dlg-body p.hit { padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--brass) 20%, transparent); }
+.ah-dlg-ref { margin: 14px 0 6px; color: var(--brass-soft); }
+.ah-dlg-link { display: block; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--brass-soft); text-decoration: none; }
+
+@media (max-width: 640px) {
+  .ah-tabs { position: static; flex-wrap: nowrap; overflow-x: auto; border-radius: 16px; scrollbar-width: none; }
+  .ah-tabs button { flex: 0 0 auto; font-size: 14px; padding: 8px 12px; }
+  .ah-step { grid-template-columns: 1fr; }
+  .ah-who { position: static; display: inline-block; margin-bottom: 6px; }
+  .ah-nusach { font-size: 19px !important; }
+}
+@media print { .standalone-bar, .ah-tabs, .lux-hero { display: none !important; } .ah-pane { display: block !important; } }

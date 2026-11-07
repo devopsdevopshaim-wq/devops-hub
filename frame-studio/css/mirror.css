@@ -1,0 +1,23 @@
+/* the magic mirror (mirror.html): a camera station at the event */
+:root { color-scheme: dark; }
+* { box-sizing: border-box; } [hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; background: #07060b; color: #f3ecdc; font: 16px 'Heebo', Arial, sans-serif; direction: rtl; overflow: hidden; }
+.mr { height: 100%; display: grid; grid-template-rows: 1fr auto; }
+.mr-stage { position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; padding: 12px; }
+#cv { max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.7); background: #111; }
+.mr-msg { position: absolute; bottom: 24px; background: rgba(0,0,0,.55); padding: 8px 16px; border-radius: 999px; }
+.mr-count { position: absolute; font: 900 min(40vw, 40vh)/1 'Heebo', sans-serif; color: #fff; text-shadow: 0 0 40px rgba(243,221,166,.9); animation: mrPop .9s ease-out; }
+@keyframes mrPop { from { transform: scale(1.6); opacity: 0; } 30% { opacity: 1; } to { transform: scale(.8); opacity: .2; } }
+.mr-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.mr-flash.on { animation: mrFlash .5s ease-out; } @keyframes mrFlash { from { opacity: .95; } to { opacity: 0; } }
+.mr-bar, .mr-after { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 12px 16px max(14px, env(safe-area-inset-bottom)); background: rgba(255,255,255,.04); }
+.mr-bgs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.mr button { border: 1px solid rgba(243,221,166,.45); background: rgba(255,255,255,.06); color: #f3ecdc; border-radius: 999px; padding: 10px 16px; font: 600 16px 'Heebo', sans-serif; cursor: pointer; }
+.mr button.on { background: linear-gradient(135deg, #F3DDA6, #B8904F); color: #1A140B; }
+.mr .mr-shoot, .mr .mr-send { font-size: 22px; font-weight: 800; padding: 14px 30px; border: 0; background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); color: #1A140B; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+
+/* the edits after the photo */
+.mr-after { flex-direction: column; }
+.mr-looks { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 980px; }
+.mr-looks button { border: 1px solid rgba(255,255,255,.22); background: rgba(255,255,255,.08); color: #fff; border-radius: 999px; padding: 10px 16px; font: 600 16px 'Heebo', sans-serif; cursor: pointer; }
+.mr-looks button.on { background: #EDB6BE; color: #17130E; border-color: transparent; }
