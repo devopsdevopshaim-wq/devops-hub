@@ -330,41 +330,60 @@
 
   /* ---------- customers: everyone who opened an account, with their designs, requests and deals ---------- */
   V.customers = function (m, c) {
-    c.head(m, '👥 לקוחות', 'כל מי שנרשם באתר (עורך המסגרות או בקשת הזמנה), ומי שהשאיר בקשה בלי חשבון. הכול שמור בשרת ולא נמחק.');
-    var q = '';
-    m.insertAdjacentHTML('beforeend', '<div class="adm-row"><a class="btn gold small" href="./" target="_blank" rel="noopener">🌐 האתר ללקוחות</a><a class="btn line small" href="design.html" target="_blank" rel="noopener">🎨 עורך המסגרות (הרשמה וכניסה ללקוחות)</a><input id="cu-q" placeholder="חיפוש לפי שם, מייל או טלפון…"></div><div id="cu-list"></div><div id="cu-one"></div>');
+    c.head(m, '👥 לקוחות', 'כל מי שנרשם או השאיר פרטים, במקום אחד: נרשמים לאופטימוס (ניסיון והורדה), בעלי רישיון, מי שנכנס למסך הלקוח, חשבונות בעורך המסגרות, בקשות הזמנה ועסקאות.');
+    var q = '', src = '', LEADS = [], LICS = [], SEEN_KEY = 'fs-cu-seen', seenBefore = 0;
+    try { seenBefore = Number(localStorage.getItem(SEEN_KEY) || 0); localStorage.setItem(SEEN_KEY, String(Date.now())); } catch (e) { /* private mode */ }
+    /* where each person came from: a tag on the row and a filter chip above the list */
+    var SRC = { lead: ['⬇', 'נרשם לאופטימוס'], lic: ['🔑', 'רישיון אופטימוס'], visit: ['🚪', 'נכנס למסך הלקוח'], account: ['🎨', 'חשבון בעורך'], request: ['📥', 'בקשת הזמנה'], deal: ['📑', 'עסקה'] };
+    function ms(x) { return typeof x === 'number' ? x : (Date.parse(x || '') || 0); }
+    m.insertAdjacentHTML('beforeend', '<div class="adm-row"><a class="btn gold small" href="./" target="_blank" rel="noopener">🌐 האתר ללקוחות</a><a class="btn line small" href="design.html" target="_blank" rel="noopener">🎨 עורך המסגרות (הרשמה וכניסה ללקוחות)</a><input id="cu-q" placeholder="חיפוש לפי שם, מייל או טלפון…"></div><div class="cu-src" id="cu-src" role="toolbar" aria-label="סינון לפי מקור"></div><div id="cu-list"></div><div id="cu-one"></div>');
     function phoneKey(p) { return String(p || '').replace(/\D/g, '').replace(/^972/, '0'); }
     function people() {
       var map = {};
-      function get(key, seed) { if (!map[key]) map[key] = Object.assign({ email: '', name: '', phone: '', designs: 0, requests: [], deals: [], account: null }, seed || {}); return map[key]; }
-      (c.accounts() || []).forEach(function (a) { var p = get(a.email, { email: a.email, name: a.name, phone: a.phone }); p.account = a; });
+      function get(key, seed) { if (!map[key]) map[key] = Object.assign({ email: '', name: '', phone: '', designs: 0, requests: [], deals: [], account: null, src: {}, first: 0, at: 0 }, seed || {}); return map[key]; }
+      function mark(p, s, first, last) { p.src[s] = 1; var f = ms(first); if (f && (!p.first || f < p.first)) p.first = f; p.at = Math.max(p.at, ms(last) || f); }
+      function fill(p, name, phone) { if (!p.name && name) p.name = name; if (!p.phone && phone) p.phone = phone; }
+      (c.accounts() || []).forEach(function (a) { var p = get(a.email, { email: a.email, name: a.name, phone: a.phone }); p.account = a; mark(p, 'account', a.createdAt, a.lastSeen || a.lastLogin); });
       c.customers().forEach(function (x) { var p = get(x.email, { email: x.email }); p.designs = x.designs; p.last = x.last; });
       function byContact(email, phone, name) {
         if (email && map[email]) return map[email];
         var pk = phoneKey(phone); if (pk) for (var k in map) if (phoneKey(map[k].phone) === pk) return map[k];
         return get(email || ('tel:' + pk), { email: email || '', name: name || '', phone: phone || '' });
       }
-      c.requests().forEach(function (r) { var p = byContact(r.email || r.by, r.phone, r.name); p.requests.push(r); if (!p.phone) p.phone = r.phone; if (!p.name) p.name = r.name; });
-      c.deals().forEach(function (d) { var cl = d.client || {}; if (!cl.email && !cl.phone) return; var p = byContact(String(cl.email || '').toLowerCase(), cl.phone, cl.name); p.deals.push(d); if (!p.name) p.name = cl.name; });
-      return Object.keys(map).map(function (k) { var p = map[k]; p.key = k; p.seen = Math.max(p.last || 0, Date.parse((p.account || {}).lastSeen || '') || 0, Date.parse((p.account || {}).lastLogin || '') || 0, p.requests.reduce(function (mx, r) { return Math.max(mx, r.at || 0); }, 0)); return p; })
+      c.requests().forEach(function (r) { var p = byContact(r.email || r.by, r.phone, r.name); p.requests.push(r); fill(p, r.name, r.phone); mark(p, 'request', r.at, r.at); });
+      c.deals().forEach(function (d) { var cl = d.client || {}; if (!cl.email && !cl.phone) return; var p = byContact(String(cl.email || '').toLowerCase(), cl.phone, cl.name); p.deals.push(d); fill(p, cl.name, cl.phone); mark(p, 'deal', d.createdAt || d.date, d.updatedAt || d.createdAt); });
+      ((c.visitors && c.visitors()) || []).forEach(function (v) { if (!v.email && !v.phone) return; var p = byContact(String(v.email || '').toLowerCase(), v.phone, v.name); fill(p, v.name, v.phone); p.visits = v.visits || 0; p.verified = p.verified || v.verified; mark(p, 'visit', v.firstAt, v.lastAt); });
+      LEADS.forEach(function (x) { if (!x.email && !x.phone) return; var p = byContact(String(x.email || '').toLowerCase(), x.phone, x.name); fill(p, x.name, x.phone); p.lead = x; if (x.verified) p.verified = true; mark(p, 'lead', x.firstAt || x.at || x.lastAt, x.lastAt); });
+      LICS.forEach(function (L) { if (!L.email && !L.phone) return; var p = byContact(String(L.email || '').toLowerCase(), L.phone, L.name); fill(p, L.name, L.phone); p.lic = L; mark(p, 'lic', L.createdAt || (L.trial || {}).start, L.lastSeen || L.lastUse || L.createdAt); });
+      return Object.keys(map).map(function (k) { var p = map[k]; p.key = k; p.seen = Math.max(p.at || 0, p.last || 0, ms((p.account || {}).lastSeen), ms((p.account || {}).lastLogin), p.requests.reduce(function (mx, r) { return Math.max(mx, r.at || 0); }, 0)); p.isNew = !!(seenBefore && p.first > seenBefore); return p; })
         .sort(function (a, b) { return b.seen - a.seen; });
     }
     function draw() {
-      var l = people().filter(function (p) { return !q || (p.name + ' ' + p.email + ' ' + p.phone + ' ' + phoneKey(p.phone)).toLowerCase().indexOf(q.toLowerCase()) > -1; });
-      $('#cu-list').innerHTML = l.length ? '<table class="adm-tbl"><thead><tr><th>לקוח</th><th>חשבון</th><th>פעילות אחרונה</th><th>עיצובים</th><th>בקשות</th><th>עסקאות</th><th></th></tr></thead><tbody>' + l.map(function (p) {
+      var all = people(), cnt = {}; all.forEach(function (p) { for (var s in p.src) cnt[s] = (cnt[s] || 0) + 1; });
+      var fresh = all.filter(function (p) { return p.isNew; }).length;
+      $('#cu-src').innerHTML = '<button type="button" data-src=""' + (src ? '' : ' class="on"') + '>הכול <b>' + all.length + '</b></button>' + (fresh ? '<button type="button" data-src="new"' + (src === 'new' ? ' class="on"' : '') + '>🆕 חדשים מאז הביקור הקודם <b>' + fresh + '</b></button>' : '') +
+        Object.keys(SRC).filter(function (s) { return cnt[s]; }).map(function (s) { return '<button type="button" data-src="' + s + '"' + (src === s ? ' class="on"' : '') + '>' + SRC[s][0] + ' ' + SRC[s][1] + ' <b>' + cnt[s] + '</b></button>'; }).join('');
+      $$('#cu-src [data-src]').forEach(function (b) { b.addEventListener('click', function () { src = b.dataset.src; draw(); }); });
+      var l = all.filter(function (p) { return (!src || (src === 'new' ? p.isNew : p.src[src])) && (!q || (p.name + ' ' + p.email + ' ' + p.phone + ' ' + phoneKey(p.phone)).toLowerCase().indexOf(q.toLowerCase()) > -1); });
+      $('#cu-list').innerHTML = l.length ? '<div class="vis-scroll"><table class="adm-tbl"><thead><tr><th>לקוח</th><th>מאיפה</th><th>חשבון</th><th>פעילות אחרונה</th><th>עיצובים</th><th>בקשות</th><th>עסקאות</th><th></th></tr></thead><tbody>' + l.map(function (p) {
         var a = p.account;
-        return '<tr data-k="' + esc(p.key) + '"><td><b>' + esc(p.name || '—') + '</b><small dir="ltr">' + esc(p.email || '') + '</small><small>' + esc(p.phone || '') + '</small></td>' +
+        return '<tr data-k="' + esc(p.key) + '"><td><b>' + esc(p.name || '—') + '</b>' + (p.isNew ? ' <span class="cu-new">חדש</span>' : '') + '<small dir="ltr">' + esc(p.email || '') + '</small><small>' + esc(p.phone || '') + '</small></td>' +
+          '<td class="cu-tags">' + Object.keys(SRC).filter(function (s) { return p.src[s]; }).map(function (s) { return '<span title="' + SRC[s][1] + '">' + SRC[s][0] + ' ' + SRC[s][1] + '</span>'; }).join('') + (p.verified ? '<span>✔ אימת מייל</span>' : '') + '</td>' +
           '<td>' + (a ? (a.active ? (a.online ? '<span class="dot on"></span>מחובר' : '✔ פעיל') : '⛔ חסום') + '<small>נרשם ' + (a.createdAt ? new Date(a.createdAt).toLocaleDateString('he-IL') : '') + '</small>' : '<small>בלי חשבון</small>') + '</td>' +
           '<td>' + (p.seen ? new Date(p.seen).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—') + '</td><td>' + (p.designs || 0) + '</td><td>' + p.requests.length + (p.requests.some(function (r) { return r.status === 'pending'; }) ? ' ⏳' : '') + '</td><td>' + p.deals.length + '</td>' +
           '<td class="act"><button data-a="open" title="הכול על הלקוח">👁</button>' + (p.phone ? '<a target="_blank" rel="noopener" href="' + esc(waLink(p.phone, 'שלום ' + (p.name || '') + ',')) + '" title="וואטסאפ">💬</a>' : '') + (p.email ? '<a href="mailto:' + esc(p.email) + '" title="מייל">✉️</a>' : '') + '</td></tr>';
-      }).join('') + '</tbody></table>' : '<p class="hint">' + (q ? 'לא נמצא.' : 'עוד אין לקוחות. לקוחות נרשמים בעורך המסגרות (design.html ← "👤 החשבון שלי") או שולחים בקשת הזמנה באתר.') + '</p>';
+      }).join('') + '</tbody></table></div>' : '<p class="hint">' + (q || src ? 'לא נמצא.' : 'עוד אין לקוחות. כל מי שנרשם לאופטימוס, נכנס למסך הלקוח, פותח חשבון בעורך או שולח בקשת הזמנה יופיע כאן.') + '</p>';
       $$('#cu-list tr[data-k]').forEach(function (tr) { $('[data-a=open]', tr).addEventListener('click', function () { one(people().filter(function (p) { return p.key === tr.dataset.k; })[0]); }); });
     }
     function one(p) {
       var a = p.account, box = $('#cu-one');
       box.innerHTML = '<section class="adm-card cu-one"><div class="adm-card-h"><h3>' + esc(p.name || p.email || p.phone) + '</h3><button class="btn line small" id="cu-x">✕</button></div>' +
         '<dl class="cu-dl"><dt>מייל</dt><dd dir="ltr">' + esc(p.email || '—') + '</dd><dt>טלפון</dt><dd>' + esc(p.phone || '—') + '</dd>' +
-        (a ? '<dt>חשבון</dt><dd>' + (a.active ? '✔ פעיל' : '⛔ חסום') + (a.online ? ' · מחובר עכשיו' : '') + '</dd><dt>נרשם</dt><dd>' + (a.createdAt ? new Date(a.createdAt).toLocaleString('he-IL') : '—') + '</dd><dt>כניסה אחרונה</dt><dd>' + (a.lastLogin ? new Date(a.lastLogin).toLocaleString('he-IL') : '—') + '</dd>' : '<dt>חשבון</dt><dd>לא נרשם (השאיר בקשה)</dd>') + '</dl>' +
+        (a ? '<dt>חשבון</dt><dd>' + (a.active ? '✔ פעיל' : '⛔ חסום') + (a.online ? ' · מחובר עכשיו' : '') + '</dd><dt>נרשם</dt><dd>' + (a.createdAt ? new Date(a.createdAt).toLocaleString('he-IL') : '—') + '</dd><dt>כניסה אחרונה</dt><dd>' + (a.lastLogin ? new Date(a.lastLogin).toLocaleString('he-IL') : '—') + '</dd>' : '<dt>חשבון</dt><dd>אין חשבון בעורך</dd>') +
+        (p.lead ? '<dt>אופטימוס</dt><dd>' + (p.lead.app ? '💻 התקין ונכנס לתוכנה' : '⬇ נרשם בדף ההורדה') + (p.lead.verified ? ' · ✔ אימת מייל' : ' · ⏳ לא אימת') + '</dd>' : '') +
+        (p.lic ? '<dt>רישיון</dt><dd dir="ltr">' + esc(p.lic.code || '') + '</dd>' : '') +
+        (p.visits ? '<dt>מסך הלקוח</dt><dd>' + p.visits + ' כניסות</dd>' : '') +
+        (p.first ? '<dt>הגיע לראשונה</dt><dd>' + new Date(p.first).toLocaleString('he-IL') + '</dd>' : '') + '</dl>' +
         '<div class="act-row">' + (p.phone ? '<a class="btn gold small" target="_blank" rel="noopener" href="' + esc(waLink(p.phone, 'שלום ' + (p.name || '') + ',')) + '">💬 וואטסאפ</a><a class="btn line small" href="tel:' + esc(p.phone) + '">📞 חיוג</a>' : '') + (p.email ? '<a class="btn line small" href="mailto:' + esc(p.email) + '">✉️ מייל</a>' : '') +
         (a && a.only ? '<button class="btn line small" id="cu-block">' + (a.active ? '⛔ חסימת החשבון' : '✔ הפעלת החשבון') + '</button>' : '') + '</div>' +
         '<h4>📥 בקשות הזמנה</h4>' + (p.requests.length ? '<ul class="adm-hist">' + p.requests.map(function (r) { return '<li><b>' + esc(r.ref) + ' · ' + esc(longDate(r.date)) + ' · ' + esc(r.typeName || '') + '</b><small>' + (STATUS[r.status] || STATUS.pending)[1] + '</small></li>'; }).join('') + '</ul>' : '<p class="hint">אין.</p>') +
@@ -394,8 +413,12 @@
             '<td class="act">' + (v.phone ? '<a target="_blank" rel="noopener" href="' + esc(waLink(v.phone, 'שלום ' + (v.name || '') + ',')) + '" title="וואטסאפ">💬</a>' : '') + (v.email ? '<a href="mailto:' + esc(v.email) + '" title="מייל">✉️</a>' : '') + '</td></tr>';
         }).join('') + '</tbody></table></div>' : '<p class="hint">עוד אף אחד לא נכנס. הקישור ללקוחות: <a href="admin.html" target="_blank" rel="noopener">admin.html</a> (גם בתפריט של האתר, "👤 כניסה").</p>');
     }
-    c.onRefresh(function () { draw(); visits(); });
-    draw(); visits();
+    function loadLic() {
+      var LIC = FS.license; if (!LIC || !LIC.admin) return;
+      LIC.admin('lic-list').then(function (r) { if (!r || !r.ok) return; LEADS = r.leads || []; LICS = r.licenses || []; draw(); }, function () { /* offline: the rest of the list still shows */ });
+    }
+    c.onRefresh(function () { draw(); visits(); loadLic(); });
+    draw(); visits(); loadLic();
   };
 
   /* ---------- payment and bank details ---------- */

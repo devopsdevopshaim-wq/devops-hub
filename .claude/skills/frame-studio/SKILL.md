@@ -1854,3 +1854,12 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - `pwa.js`: on every phone (not only iPhone) the `#mt-install` button is there from the start, and the studio start screen gets an `#ia-install` card.
 - `gate.js`: a `.gate-install` button ("📲 התקנה כאפליקציה בטלפון") on the entry gate, phones only (CSS max-width 760px, hidden in standalone).
 - Gotcha: `body.gated > :not(#gate)…` hides every other body child; `.ih` is exempted there, or the sheet opens invisible behind the gate.
+
+## Customers: everyone in one list (v119)
+- The admin "👥 לקוחות" screen (`V.customers` in `js/admin-biz.js`) now merges every source into one list, matched by email, else by phone (`phoneKey`: digits, 972→0):
+  - Optimus sign-ups (download page / trial in the program) and licenses: loaded with `FS.license.admin('lic-list')` (`leads`, `licenses`), the same call the licenses screen uses;
+  - people who came in to the customer screen (`c.visitors()`), accounts in the frame editor (`c.accounts()`), booking requests, deals.
+- Each row shows where the person came from (`.cu-tags`), and chips above the list filter by source (`#cu-src`) with counts.
+- "🆕 חדשים מאז הביקור הקודם": people whose first arrival is after the admin's previous visit to this screen (`localStorage['fs-cu-seen']`, per browser).
+- The single-customer card adds the Optimus state (registered / installed / verified), the license code, visits and first arrival.
+- Before v119 Optimus sign-ups appeared only under "🔑 רישיונות סטודיו", which is why the customers screen looked empty.

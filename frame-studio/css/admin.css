@@ -245,3 +245,11 @@ body.pv-on .adm { grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 42%)
   #adm-pulse:not(:has(.hot)) { display: none; }
   #adm-pops { max-width: calc(100vw - 24px); }
 }
+
+/* customers: one list from every source, a chip per source */
+.cu-src { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.cu-src button { border: 1px solid var(--line, #ddd); background: transparent; color: inherit; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; min-height: 36px; }
+.cu-src button b { margin-inline-start: 4px; }
+.cu-src button.on { background: #d9b46a; border-color: #d9b46a; color: #17130e; font-weight: 700; }
+.cu-tags span { display: inline-block; font-size: 12px; padding: 1px 7px; margin: 1px 2px; border-radius: 999px; background: rgba(127, 127, 127, .14); white-space: nowrap; }
+.cu-new { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 6px; background: #d4f5df; color: #145c2e; }
