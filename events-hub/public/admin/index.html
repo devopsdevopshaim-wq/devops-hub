@@ -11,7 +11,11 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700;800&family=Rubik:wght@500;700&display=swap">
   <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 <body>
   <div id="login" class="wrap narrow hidden" style="margin-top:10vh">
@@ -53,11 +57,11 @@
 
     <!-- סרגל ניווט תחתון (אפליקציה) -->
     <nav class="bottom-nav" aria-label="ניווט ראשי">
-      <button data-view="dashboard" class="active"><span class="ico">📊</span>בקרה</button>
-      <button data-view="events"><span class="ico">📸</span>אירועים</button>
-      <button data-view="orders"><span class="ico">📦</span>הזמנות</button>
-      <button data-view="suppliers"><span class="ico">🏭</span>ספקים</button>
-      <button id="more-btn"><span class="ico">☰</span>עוד</button>
+      <button data-view="dashboard" class="active"><span class="ico" data-icon="chart" data-icon-class=""></span>בקרה</button>
+      <button data-view="events"><span class="ico" data-icon="camera" data-icon-class=""></span>אירועים</button>
+      <button data-view="orders"><span class="ico" data-icon="box" data-icon-class=""></span>הזמנות</button>
+      <button data-view="suppliers"><span class="ico" data-icon="factory" data-icon-class=""></span>ספקים</button>
+      <button id="more-btn"><span class="ico" data-icon="menu" data-icon-class=""></span>עוד</button>
     </nav>
   </div>
 

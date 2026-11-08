@@ -1,4 +1,4 @@
-/* global $, $$, api, esc, toast, money, fmtDate */
+/* global $, $$, api, esc, toast, money, fmtDate, icon, asset, adminToken, shrinkImage */
 (function () {
   const A = '/api/admin';
   const ref = { cities: [], categories: [], collections: [], printTypes: [], statuses: [], suppliers: [], couriers: [], settings: {}, payments: {} };
@@ -83,15 +83,21 @@
   // ---------- לוח בקרה ----------
   async function dashboard() {
     const d = await api(`${A}/dashboard`);
-    const stat = (label, val, cls = '', go = '') => `<div class="card" ${go ? `data-go="${go}" style="cursor:pointer"` : ''}><div class="muted">${label}</div><div class="stat ${cls}">${val}</div></div>`;
-    view.innerHTML = `<h1>לוח בקרה</h1><div class="grid">
-      ${stat('הזמנות פתוחות', d.ordersOpen, '', 'orders')}
-      ${stat('משלוחים תקועים ⚠️', d.ordersStuck, d.ordersStuck ? 'bad' : '', 'orders:stuck')}
-      ${stat('דורשות שיוך ידני', d.needsAssignment, d.needsAssignment ? 'bad' : '', 'orders')}
-      ${stat('תמונות ממתינות להדפסה', d.photosPending, '', 'events')}
-      ${stat('אירועים', d.events, '', 'events')}
-      ${stat('אורחים רשומים', d.guests, '', 'guests')}
-      ${stat('הכנסות (הזמנות ששולמו)', money(d.revenue))}
+    const stat = (ico, label, val, cls = '', go = '') => `<div class="card stat-card${cls ? ' alert' : ''}" ${go ? `data-go="${go}" style="cursor:pointer" role="button" tabindex="0"` : ''}>
+      <div class="stat-ico">${icon(ico, '')}</div><div class="muted">${label}</div><div class="stat ${cls}">${val}</div></div>`;
+    view.innerHTML = `<div class="stage" style="grid-template-columns:1fr"><div>
+        <span class="eyebrow"><img src="icon.svg" alt="">רגעים · ניהול</span>
+        <h1>${(() => { const h = new Date().getHours(); return h < 12 ? 'בוקר טוב' : h < 18 ? 'צהריים טובים' : 'ערב טוב'; })()}, <em>הנה מה שקורה היום</em></h1>
+        <div class="row"><button class="btn gold" data-go="events:new">${icon('plus')}אירוע חדש</button><button class="btn ghost light" data-go="promotions">${icon('tag')}מבצעים</button></div>
+      </div></div>
+      <div class="stat-grid">
+      ${stat('box', 'הזמנות פתוחות', d.ordersOpen, '', 'orders')}
+      ${stat('alert', 'משלוחים תקועים', d.ordersStuck, d.ordersStuck ? 'bad' : '', 'orders:stuck')}
+      ${stat('truck', 'דורשות שיוך ספק/שליח', d.needsAssignment, d.needsAssignment ? 'bad' : '', 'orders')}
+      ${stat('print', 'תמונות ממתינות להדפסה', d.photosPending, '', 'events')}
+      ${stat('calendar', 'אירועים', d.events, '', 'events')}
+      ${stat('users', 'אורחים רשומים', d.guests, '', 'guests')}
+      ${stat('coins', 'הכנסות (הזמנות ששולמו)', money(d.revenue))}
     </div>`;
     $$('[data-go]').forEach((c) => { c.onclick = () => { const [v, f] = c.dataset.go.split(':'); go(v, f); }; });
   }
@@ -159,7 +165,7 @@
     bindPrintOptions();
   }
 
-  async function events() {
+  async function events(arg) {
     const list = await api(`${A}/events`);
     view.innerHTML = `<div class="row between"><h1>אירועים ו-QR</h1><button class="btn" id="new-ev">➕ אירוע חדש</button></div>
       <div class="grid">${list.map((e) => `<div class="card stack">
@@ -173,6 +179,7 @@
         <button class="btn ghost sm" data-qrdl="${esc(e.link)}" data-name="qr-${esc(e.code)}.png">הורדת QR</button></div>
       </div>`).join('') || '<p class="muted">אין אירועים עדיין</p>'}</div>`;
     $('#new-ev').onclick = () => editEvent(null);
+    if (arg === 'new') editEvent(null);
     $$('[data-edit]').forEach((b) => { b.onclick = () => editEvent(list.find((e) => e.id === b.dataset.edit)); });
     $$('[data-photos]').forEach((b) => { b.onclick = () => eventPhotos(list.find((e) => e.id === b.dataset.photos)); });
     $$('canvas[data-qr]').forEach((c) => drawQR(c, c.dataset.qr));
