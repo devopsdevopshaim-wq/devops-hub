@@ -5,7 +5,7 @@ import db from './db.js';
 import config from './config.js';
 import * as auth from './auth.js';
 import * as payments from './payments/index.js';
-import { PRINT_TYPES } from './seed.js';
+import { PRINT_TYPES, EVENT_TYPES } from './seed.js';
 import { assignOrder, OPEN_STATUSES } from './routing.js';
 import { addEvent, stuckInfo, STATUS_NAME, STATUSES } from './shipping.js';
 import { priceFor, quote, publicPromotions, normCode, livePromotions } from './pricing.js';
@@ -182,7 +182,22 @@ function productImages(b) {
 const PROMO_KINDS = ['percent', 'amount', 'price'];
 const PROMO_SCOPES = ['all', 'category', 'products', 'collection'];
 
+// גדלים/אפשרויות למוצר: [{ name, price }], עד 8
+function productVariants(b) {
+  const list = Array.isArray(b.variants) ? b.variants : [];
+  return list.map((v) => ({ name: str(v && v.name, 40), price: Math.max(0, num(v && v.price)) })).filter((v) => v.name).slice(0, 8);
+}
+const EVENT_IDS = EVENT_TYPES.map((e) => e.id);
+const LINK_TYPES = ['none', 'category', 'event', 'product', 'url'];
+
 const CRUD = {
+  banners: ['bn_', (b) => ({
+    name: str(b.name, 80), subtitle: str(b.subtitle, 160), cta: str(b.cta, 40),
+    image: (IMG_RE.test(str(b.image, 300)) || /^https:\/\/[^\s"'<>]+$/.test(str(b.image, 300))) ? str(b.image, 300) : '',
+    linkType: LINK_TYPES.includes(b.linkType) ? b.linkType : 'none',
+    linkValue: b.linkType === 'url' && !/^https:\/\//.test(str(b.linkValue, 300)) ? '' : str(b.linkValue, 300),
+    startDate: str(b.startDate, 10), endDate: str(b.endDate, 10), order: Math.floor(num(b.order, 0)), active: b.active !== false,
+  })],
   promotions: ['pm_', (b) => ({
     name: str(b.name, 80), badge: str(b.badge, 30),
     kind: PROMO_KINDS.includes(b.kind) ? b.kind : 'percent', value: Math.max(0, num(b.value)),
@@ -195,6 +210,7 @@ const CRUD = {
     name: str(b.name, 120), category: str(b.category, 40), price: Math.max(0, num(b.price)), icon: str(b.icon, 10),
     description: str(b.description, 1500), images: productImages(b), collectionIds: arr(b.collectionIds),
     needsPhoto: Boolean(b.needsPhoto), active: b.active !== false,
+    variants: productVariants(b), eventTypes: arr(b.eventTypes).filter((e) => EVENT_IDS.includes(e)), upsell: Boolean(b.upsell),
   })],
   collections: ['col_', (b) => ({
     name: str(b.name, 80), icon: str(b.icon, 10), kind: str(b.kind, 20) || 'special',
@@ -291,13 +307,22 @@ on('GET', '/api/store', () => {
   const products = db.all('products').filter((p) => p.active && (!(p.collectionIds || []).length || p.collectionIds.some((id) => activeIds.has(id))));
   const usedCats = new Set(products.map((p) => p.category));
   const promos = livePromotions();
+  const sold = soldCounts();
+  const today = new Date().toISOString().slice(0, 10);
   return json({
     categories: db.all('categories').filter((x) => usedCats.has(x.id)),
     collections: cols.filter((x) => products.some((p) => (p.collectionIds || []).includes(x.id))),
-    // מחיר המבצע מחושב כאן (מבצעים בלי קוד ובלי מינימום הזמנה)
+    events: EVENT_TYPES,
+    banners: db.all('banners').filter((x) => x.active !== false && x.image && (!x.startDate || x.startDate <= today) && (!x.endDate || x.endDate >= today))
+      .sort((a, b) => (a.order || 0) - (b.order || 0)),
+    // מחיר המבצע מחושב כאן (מבצעים בלי קוד ובלי מינימום הזמנה), גם לכל גודל
     products: products.map((p) => {
       const pr = priceFor(p, { promos });
-      return { ...p, images: productImages(p), salePrice: pr.promo ? pr.price : null, promo: pr.promo };
+      const variants = (p.variants || []).map((v) => {
+        const vp = priceFor({ ...p, price: v.price }, { promos });
+        return { name: v.name, price: v.price, salePrice: vp.promo ? vp.price : null };
+      });
+      return { ...p, images: productImages(p), salePrice: pr.promo ? pr.price : null, promo: pr.promo, variants, eventTypes: p.eventTypes || [], sold: sold[p.id] || 0 };
     }),
     promotions: publicPromotions(),
   });
@@ -309,14 +334,31 @@ on('POST', '/api/uploads', async (c) => {
   return json({ url: (await saveFile(b.file, IMAGE_TYPES)).url });
 });
 
+// כמה יחידות נמכרו מכל מוצר (הזמנות ששולמו)
+const PAID = ['paid', 'sent_to_supplier', 'in_production', 'ready', 'picked_up', 'out_for_delivery', 'delivered', 'issue'];
+function soldCounts() {
+  const out = {};
+  for (const o of db.all('orders')) if (PAID.includes(o.status)) for (const i of o.items) out[i.productId] = (out[i.productId] || 0) + i.qty;
+  return out;
+}
+
 function cartLines(items) {
   const lines = [];
   for (const it of (Array.isArray(items) ? items : []).slice(0, 50)) {
-    const product = db.get('products', it.productId);
+    let product = db.get('products', it.productId);
     if (!product || !product.active) throw Object.assign(new Error('מוצר לא זמין'), { status: 400 });
     const photoUrl = str(it.photoUrl, 200);
     if (photoUrl && !IMG_RE.test(photoUrl)) throw Object.assign(new Error('תמונה לא תקינה'), { status: 400 });
-    lines.push({ product, qty: Math.min(99, Math.max(1, Math.floor(num(it.qty, 1)))), photoUrl, note: str(it.note, 200) });
+    // גודל: המחיר של הגודל שנבחר (מהשרת). למוצר עם גדלים חייבים לבחור גודל
+    const vs = product.variants || [];
+    let variant = '';
+    if (vs.length) {
+      const v = vs.find((x) => x.name === str(it.variant, 40));
+      if (!v) throw Object.assign(new Error(`בחרו גודל ל"${product.name}"`), { status: 400 });
+      variant = v.name;
+      product = { ...product, price: v.price };
+    }
+    lines.push({ product, variant, qty: Math.min(99, Math.max(1, Math.floor(num(it.qty, 1)))), photoUrl, note: str(it.note, 200) });
   }
   return lines;
 }
@@ -326,7 +368,7 @@ on('POST', '/api/cart/quote', async (c) => {
   if (limited(`q:${c.ip}`, 60_000, 60)) return err(429, 'יותר מדי בקשות, נסו שוב בעוד דקה');
   const b = await body(c.req);
   const q = quote(cartLines(b.items), { code: b.code });
-  return json({ ...q, lines: q.lines.map((l) => ({ productId: l.product.id, qty: l.qty, price: l.price, originalPrice: l.originalPrice, promo: l.promo, coupon: l.coupon })) });
+  return json({ ...q, lines: q.lines.map((l) => ({ productId: l.product.id, variant: l.variant, qty: l.qty, price: l.price, originalPrice: l.originalPrice, promo: l.promo, coupon: l.coupon })) });
 });
 
 // הזמנות
@@ -344,7 +386,7 @@ on('POST', '/api/orders', async (c) => {
   if (!q.lines.length) return err(400, 'הסל ריק');
   if (q.code && !q.codeValid) return err(400, 'קוד הקופון לא תקף');
   const items = q.lines.map((l) => ({
-    productId: l.product.id, name: l.product.name, category: l.product.category, price: l.price, originalPrice: l.originalPrice,
+    productId: l.product.id, name: l.variant ? `${l.product.name} (${l.variant})` : l.product.name, variant: l.variant, category: l.product.category, price: l.price, originalPrice: l.originalPrice,
     promo: [l.promo && l.promo.name, l.coupon && `קופון ${l.coupon.code}`].filter(Boolean).join(' + '), qty: l.qty, photoUrl: l.photoUrl, note: l.note,
   }));
   const order = db.insert('orders', {
@@ -455,6 +497,32 @@ on('GET', '/api/admin/dashboard', () => {
 }, { admin: true });
 
 on('GET', '/api/admin/print-types', () => json(PRINT_TYPES), { admin: true });
+on('GET', '/api/admin/event-types', () => json(EVENT_TYPES), { admin: true });
+
+// סטטיסטיקה: מכירות ב-30 הימים האחרונים, נמכרים ביותר, ביצועי מבצעים
+on('GET', '/api/admin/stats', () => {
+  const paid = db.all('orders').filter((o) => PAID.includes(o.status));
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
+    const list = paid.filter((o) => String(o.createdAt).slice(0, 10) === d);
+    days.push({ date: d, orders: list.length, revenue: list.reduce((s, o) => s + o.total, 0) });
+  }
+  const byProduct = {};
+  for (const o of paid) for (const i of o.items) {
+    const x = (byProduct[i.productId] = byProduct[i.productId] || { productId: i.productId, name: (db.get('products', i.productId) || i).name, qty: 0, revenue: 0 });
+    x.qty += i.qty; x.revenue += i.price * i.qty;
+  }
+  const withDiscount = paid.filter((o) => o.discount > 0);
+  const coupons = {};
+  for (const o of withDiscount) if (o.coupon) coupons[o.coupon] = (coupons[o.coupon] || 0) + 1;
+  const revenue = paid.reduce((s, o) => s + o.total, 0);
+  return json({
+    days, revenue, orders: paid.length, avgOrder: paid.length ? Math.round((revenue / paid.length) * 100) / 100 : 0,
+    top: Object.values(byProduct).sort((a, b) => b.revenue - a.revenue).slice(0, 5),
+    promo: { orders: withDiscount.length, discount: withDiscount.reduce((s, o) => s + o.discount, 0), revenue: withDiscount.reduce((s, o) => s + o.total, 0), coupons },
+  });
+}, { admin: true });
 
 // העלאת תמונות מוצר מאפליקציית הניהול
 on('POST', '/api/admin/uploads', async (c) => {

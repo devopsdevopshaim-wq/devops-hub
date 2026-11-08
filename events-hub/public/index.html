@@ -48,10 +48,30 @@
         </div>
         <div class="fan" id="hero-fan" aria-hidden="true"></div>
       </section>
+      <div class="banners-wrap hidden" id="banners-wrap">
+        <div class="banners" id="banners" aria-label="מבצעים וקולקציות"></div>
+        <div class="banner-dots" id="banner-dots"></div>
+      </div>
+
+      <div class="section-head"><h2>קנו לפי אירוע</h2><span class="muted small">מה חוגגים?</span></div>
+      <div class="events-row" id="events-row"></div>
+
       <div class="promo-strip" id="promo-strip"></div>
       <div id="collections"></div>
+
       <div class="section-head" id="shop"><h2>מה מדפיסים היום?</h2><span class="muted small" id="shop-count"></span></div>
       <div class="prints" id="cat-tabs" role="tablist" aria-label="קטגוריות"></div>
+      <div class="shop-tools">
+        <label class="search"><span data-icon="search" data-icon-class="" aria-hidden="true"></span><input type="search" id="q" placeholder="חיפוש: מגנט, חינה, מסגרת…" aria-label="חיפוש מוצר" autocomplete="off"></label>
+        <select id="sort" aria-label="מיון">
+          <option value="recommended">מומלצים</option>
+          <option value="sold">הנמכרים ביותר</option>
+          <option value="low">מחיר: מהנמוך</option>
+          <option value="high">מחיר: מהגבוה</option>
+          <option value="sale">רק מבצעים</option>
+        </select>
+      </div>
+      <div class="filters" id="filters"></div>
       <div class="grid" id="products"></div>
     </section>
 
@@ -86,6 +106,7 @@
     <div class="row between"><h2 style="margin:0">הסל שלי</h2><button class="icon-btn" id="cart-close" aria-label="סגירה">✕</button></div>
     <div id="cart-items" class="stack" style="margin:12px 0"></div>
     <div id="cart-summary"></div>
+    <div id="cart-extra"></div>
     <form id="checkout" class="hidden" style="margin-top:16px">
       <h3>פרטי משלוח</h3>
       <div class="field"><label for="c-name">שם מלא</label><input id="c-name" required autocomplete="name"></div>
@@ -108,7 +129,7 @@
       <div class="row between"><h2 style="margin:0">בחירת תמונה למוצר</h2><button class="icon-btn" data-close aria-label="סגירה">✕</button></div>
       <p class="muted">בחרו תמונה מהאירועים שלכם או העלו תמונה חדשה.</p>
       <div class="grid sm" id="my-photos"></div>
-      <label class="btn soft" for="store-upload" style="margin-top:12px">⬆️ העלאת תמונה</label>
+      <label class="btn gold" for="store-upload" style="margin-top:12px"><span data-icon="image"></span>העלאת תמונה מהטלפון</label>
       <input type="file" id="store-upload" accept="image/*" class="hidden">
     </div>
   </div>

@@ -90,7 +90,7 @@ test('uploads refuse non-image files', async () => {
 test('order from Beer Sheva is routed to Beer Sheva supplier and courier after payment', async () => {
   const r = await call('POST', '/api/orders', {
     customer: { name: 'לקוח', phone: '0500000000', city: 'באר שבע', address: 'רגר 1' },
-    items: [{ productId: 'mag-6x9', qty: 2, price: 1 }],
+    items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 2, price: 1 }],
   });
   assert.equal(r.status, 200);
   const order = db.get('orders', r.data.orderId);
@@ -113,7 +113,7 @@ test('order from Beer Sheva is routed to Beer Sheva supplier and courier after p
 
 test('city with no local supplier falls back to region', async () => {
   const r = await call('POST', '/api/orders', {
-    customer: { name: 'לקוח', phone: '050', city: 'אילת', address: 'x' }, items: [{ productId: 'block-15x15', qty: 1 }],
+    customer: { name: 'לקוח', phone: '050', city: 'אילת', address: 'x' }, items: [{ productId: 'block-15x15', variant: '15x15 ס\"מ', qty: 1 }],
   });
   const payId = r.data.redirectUrl.split('/').pop();
   await call('POST', `/pay/mock/${payId}`, 'result=approved', { 'content-type': 'application/x-www-form-urlencoded' });
@@ -163,12 +163,12 @@ test('promotions: best price per product, coupon codes and minimum order', async
   assert.equal(mag.promo.badge, '20%-');
   assert.ok(!store.promotions.some((p) => p.name === 'קופון חתונה'), 'coupon promos stay hidden');
 
-  let q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 2 }] })).data;
+  let q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 2 }] })).data;
   assert.equal(q.subtotal, 24);
-  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 2 }], code: ' Wedding10 ' })).data;
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 2 }], code: ' Wedding10 ' })).data;
   assert.equal(q.subtotal, 20);
   assert.equal(q.codeUsed, true);
-  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 1 }], code: 'NOPE' })).data;
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 1 }], code: 'NOPE' })).data;
   assert.equal(q.codeValid, false);
 
   q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-henna', qty: 1 }] })).data;
@@ -176,9 +176,9 @@ test('promotions: best price per product, coupon codes and minimum order', async
   q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-henna', qty: 1 }, { productId: 'pkg-mikveh', qty: 1 }] })).data;
   assert.equal(q.discount, 50);
 
-  const bad = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', qty: 1 }], code: 'NOPE' });
+  const bad = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 1 }], code: 'NOPE' });
   assert.equal(bad.status, 400);
-  const o = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', qty: 3 }], code: 'wedding10' });
+  const o = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 3 }], code: 'wedding10' });
   const order = db.get('orders', o.data.orderId);
   assert.equal(order.subtotal, 30);
   assert.equal(order.discount, 15);
@@ -206,4 +206,42 @@ test('category photo can be replaced from the admin app and reset', async () => 
   const store = (await call('GET', '/api/store')).data;
   assert.equal(store.categories.find((c) => c.id === 'magnets').image, up.url);
   assert.equal((await call('PUT', '/api/admin/categories/magnets', { image: '' })).data.image, '');
+});
+
+test('sizes: each size has its own price, chosen on the server', async () => {
+  const store = (await call('GET', '/api/store')).data;
+  const mag = store.products.find((p) => p.id === 'mag-6x9');
+  assert.deepEqual(mag.variants.map((v) => v.price), [12, 15, 22]);
+  const no = await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 1 }] });
+  assert.equal(no.status, 400);
+  const fake = await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '1x1', qty: 1 }] });
+  assert.equal(fake.status, 400);
+  const big = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '10x15 ס"מ', qty: 2 }] })).data;
+  // מבצע 20% על מגנטים מהבדיקה הקודמת: 22 * 0.8 = 17.6
+  assert.equal(big.lines[0].price, 17.6);
+  const o = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', variant: '10x15 ס"מ', qty: 1 }] });
+  assert.equal(db.get('orders', o.data.orderId).items[0].name, 'מגנט תמונה 6x9 (10x15 ס"מ)');
+});
+
+test('shop by event, banners, best sellers and admin stats', async () => {
+  const store = (await call('GET', '/api/store')).data;
+  assert.ok(store.events.some((e) => e.id === 'henna'));
+  assert.deepEqual(store.products.find((p) => p.id === 'pkg-henna').eventTypes, ['henna']);
+  assert.ok(store.banners.length >= 3);
+  assert.ok(store.products.find((p) => p.id === 'mag-6x9').sold > 0, 'paid orders count as sold');
+  const bn = await call('POST', '/api/admin/banners', { name: 'מבצע חנוכה', image: 'javascript:alert(1)', linkType: 'url', linkValue: 'http://x' });
+  assert.equal(bn.data.image, '');
+  assert.equal(bn.data.linkValue, '');
+  const st = (await call('GET', '/api/admin/stats')).data;
+  assert.equal(st.days.length, 30);
+  assert.ok(st.revenue > 0 && st.top.length > 0);
+  assert.equal(st.promo.orders, 0, 'unpaid orders with a discount do not count');
+  // הזמנה עם מבצע ששולמה נספרת בביצועי המבצעים
+  const o = (await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', variant: '6x9 ס"מ', qty: 4 }] })).data;
+  await call('POST', `/pay/mock/${o.redirectUrl.split('/').pop()}`, 'result=approved', { 'content-type': 'application/x-www-form-urlencoded' });
+  const st2 = (await call('GET', '/api/admin/stats')).data;
+  assert.equal(st2.promo.orders, 1);
+  assert.ok(st2.promo.discount > 0);
+  const pe = await call('PUT', '/api/admin/products/pkg-henna', { ...db.get('products', 'pkg-henna'), eventTypes: ['henna', 'nope'] });
+  assert.deepEqual(pe.data.eventTypes, ['henna']);
 });

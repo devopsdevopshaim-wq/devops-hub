@@ -42,7 +42,7 @@ const img = await fetch(base + up.data.photo.url);
 assert.equal(Buffer.from(await img.arrayBuffer()).length, JPEG.length);
 step('guest upload + photo served from the Durable Object');
 
-const o = (await call('POST', '/api/orders', { customer: { name: 'לקוח', phone: '050', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', qty: 1 }] })).data;
+const o = (await call('POST', '/api/orders', { customer: { name: 'לקוח', phone: '050', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', variant: '6x9 ס"מ', qty: 1 }] })).data;
 const payId = o.redirectUrl.split('/').pop();
 await call('POST', `/pay/mock/${payId}`, 'result=approved', { 'content-type': 'application/x-www-form-urlencoded' });
 const t = (await call('GET', `/api/orders/${o.orderId}?t=${o.trackToken}`)).data;

@@ -1,4 +1,4 @@
-/* global $, $$, api, esc, toast, store, myEvents, PhotoEditor */
+/* global $, $$, api, esc, toast, store, myEvents, PhotoEditor, icon, asset, PHOTOS, offerInstall */
 (function () {
   // הקוד מה-QR: event.html?c=XXXX
   const code = (new URLSearchParams(location.search).get('c') || '').replace(/[^a-f0-9]/g, '');
@@ -54,7 +54,8 @@
     $('#gallery').innerHTML = data.photos.map((p) => `
       <div class="photo-tile">${p.kind === 'animation'
         ? `<video src="${esc(asset(p.url))}" muted loop playsinline autoplay></video><span class="badge primary">🎬 אנימציה</span>`
-        : `<img src="${esc(asset(p.url))}" alt="" loading="lazy"><span class="badge ${p.printStatus === 'printed' || p.printStatus === 'delivered' ? 'ok' : ''}">${statusName[p.printStatus] || ''}</span>`}
+        : `<img src="${esc(asset(p.url))}" alt="" loading="lazy"><span class="badge ${p.printStatus === 'printed' || p.printStatus === 'delivered' ? 'ok' : ''}">${statusName[p.printStatus] || ''}</span>
+          <a class="order-photo top" href="./?photo=${encodeURIComponent(p.url)}#store" aria-label="להזמין מוצר מהתמונה">${icon('cart')}עוד עותק</a>`}
       </div>`).join('');
     $('#gallery-empty').classList.toggle('hidden', data.photos.length > 0);
     myEvents.save({ code: ev.code, name: ev.name, date: ev.date, guestId: me.guestId, guestToken: me.guestToken, guestName: data.guest?.name });

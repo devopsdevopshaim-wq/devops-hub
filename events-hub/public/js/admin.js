@@ -81,6 +81,32 @@
   const ACTIVE = (a) => (a === false ? '<span class="badge">לא פעיל</span>' : '<span class="badge ok">פעיל</span>');
 
   // ---------- לוח בקרה ----------
+  // גרף עמודות של 30 הימים האחרונים (SVG)
+  function salesChart(days) {
+    const W = 600; const H = 160; const max = Math.max(1, ...days.map((d) => d.revenue)); const bw = W / days.length;
+    return `<svg viewBox="0 0 ${W} ${H + 18}" class="chart" role="img" aria-label="מכירות ב-30 הימים האחרונים">
+      ${days.map((d, i) => {
+        const h = Math.round((d.revenue / max) * H);
+        const x = W - (i + 1) * bw; // מימין לשמאל: היום מצד שמאל
+        return `<rect x="${x + 2}" y="${H - h}" width="${bw - 4}" height="${Math.max(h, d.revenue ? 2 : 0)}" rx="3"><title>${new Date(d.date).toLocaleDateString('he-IL')}: ${money(d.revenue)} · ${d.orders} הזמנות</title></rect>`;
+      }).join('')}
+      <line x1="0" x2="${W}" y1="${H}" y2="${H}" class="axis"/>
+      <text x="${W - 2}" y="${H + 14}" text-anchor="start">לפני 30 יום</text><text x="2" y="${H + 14}" text-anchor="end">היום</text>
+    </svg>`;
+  }
+  function renderStats(st) {
+    $('#stats').innerHTML = `<div class="grid" style="margin-top:14px">
+      <div class="card" style="grid-column:1/-1"><div class="row between"><h2 style="margin:0">מכירות ב-30 יום</h2>
+        <span class="muted">${money(st.revenue)} · ${st.orders} הזמנות · ממוצע ${money(st.avgOrder)}</span></div>${salesChart(st.days)}</div>
+      <div class="card"><h2>הנמכרים ביותר</h2>${st.top.length ? `<ol class="top-list">${st.top.map((t) => `<li><b>${esc(t.name)}</b><span>${t.qty} יח׳ · ${money(t.revenue)}</span></li>`).join('')}</ol>` : '<p class="muted">עוד אין מכירות</p>'}</div>
+      <div class="card"><h2>ביצועי מבצעים</h2>
+        <p>${st.promo.orders} הזמנות עם הנחה · ${money(st.promo.revenue)} הכנסות</p><p class="muted">סה"כ הנחות שניתנו: ${money(st.promo.discount)}</p>
+        ${Object.keys(st.promo.coupons).length ? `<p>קופונים: ${Object.entries(st.promo.coupons).map(([c, n]) => `<span class="badge primary" dir="ltr">${esc(c)} × ${n}</span>`).join(' ')}</p>` : ''}
+        <button class="btn soft sm" data-go="promotions">${icon('tag')}למבצעים</button></div>
+    </div>`;
+    $$('#stats [data-go]').forEach((c) => { c.onclick = () => go(c.dataset.go); });
+  }
+
   async function dashboard() {
     const d = await api(`${A}/dashboard`);
     const stat = (ico, label, val, cls = '', go = '') => `<div class="card stat-card${cls ? ' alert' : ''}" ${go ? `data-go="${go}" style="cursor:pointer" role="button" tabindex="0"` : ''}>
@@ -98,7 +124,9 @@
       ${stat('calendar', 'אירועים', d.events, '', 'events')}
       ${stat('users', 'אורחים רשומים', d.guests, '', 'guests')}
       ${stat('coins', 'הכנסות (הזמנות ששולמו)', money(d.revenue))}
-    </div>`;
+    </div>
+    <div id="stats" class="stats-area"><p class="muted">טוען נתוני מכירות…</p></div>`;
+    api(`${A}/stats`).then(renderStats).catch(() => { $('#stats').innerHTML = ''; });
     $$('[data-go]').forEach((c) => { c.onclick = () => { const [v, f] = c.dataset.go.split(':'); go(v, f); }; });
   }
 
@@ -258,6 +286,14 @@
     $$('[data-order]').forEach((r) => { r.onclick = () => orderDetail(r.dataset.order, () => orders(filter)); });
   }
 
+  // הודעת וואטסאפ מוכנה ללקוח, עם הסטטוס וקישור המעקב
+  function waLink(o) {
+    const d = String(o.customer.phone || '').replace(/\D/g, '');
+    const phone = d.startsWith('0') ? `972${d.slice(1)}` : d;
+    const text = `שלום ${o.customer.name}, כאן ${ref.settings.businessName || 'רגעים'} 💐\nהזמנה #${o.number}: ${o.statusName}.\nאפשר לעקוב כאן: ${o.trackUrl}`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  }
+
   async function orderDetail(id, back) {
     const o = await api(`${A}/orders/${id}`);
     const supSel = (idx, i) => {
@@ -274,7 +310,8 @@
       <p class="small">סכום: <b>${money(o.total)}</b>${o.discount ? ` (הנחה ${money(o.discount)}${o.coupon ? `, קופון <b dir="ltr">${esc(o.coupon)}</b>` : ''})` : ''} · משלוח ${o.shipping ? money(o.shipping) : 'חינם'}</p>
       <div class="row"><label style="margin:0">שליח</label><select id="courier-sel" style="max-width:300px"><option value="">— ללא —</option>${ref.couriers.filter((k) => k.active !== false).map((k) => `<option value="${k.id}" ${k.id === o.courierId ? 'selected' : ''}>${esc(k.name)} ${esc(k.phone)}</option>`).join('')}</select>
         <button class="btn soft sm" id="save-assign">שמירת שיוך</button><button class="btn ghost sm" id="auto-assign">🔄 שיוך אוטומטי לפי עיר</button></div>
-      <p class="small">🔗 קישור מעקב ללקוח: <a href="${esc(o.trackUrl)}" target="_blank">פתיחה</a> <button class="btn ghost sm" id="copy-track">העתקה</button></p>
+      <p class="small">🔗 קישור מעקב ללקוח: <a href="${esc(o.trackUrl)}" target="_blank">פתיחה</a> <button class="btn ghost sm" id="copy-track">העתקה</button>
+        <a class="btn sm wa" target="_blank" rel="noopener" href="${esc(waLink(o))}">${icon('whatsapp')}וואטסאפ ללקוח</a></p>
       <h3>עדכון סטטוס / הערה</h3>
       <div class="fields"><select id="ev-status"><option value="">— הערה בלבד —</option>${ref.statuses.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
       <input id="ev-note" placeholder="הערה (למשל: תקוע אצל הספק - חסר חומר)"></div>
@@ -342,6 +379,23 @@
   }
   const collectImages = (form) => ({ images: $$('#img-list .img-chip', form).map((c) => c.dataset.url) });
 
+  // גדלים/אפשרויות: לכל גודל מחיר משלו (למשל מגנט 5x7.5 / 6x9 / 10x15)
+  const variantRow = (v = {}) => `<div class="fields var-row" style="align-items:end;margin-bottom:6px">
+    <div><label>גודל / אפשרות</label><input class="var-name" value="${esc(v.name || '')}" placeholder='למשל 10x15 ס"מ' maxlength="40"></div>
+    <div><label>מחיר (₪)</label><input class="var-price" type="number" step="0.01" min="0" value="${v.price ?? ''}"></div>
+    <div><button type="button" class="btn ghost sm var-del">הסרה</button></div></div>`;
+  function variantsEditor(list) {
+    return `<div class="card flat" style="margin-top:12px"><h3>📐 גדלים ומחירים <small class="muted">(לא חובה: בלי גדלים יש מחיר אחד)</small></h3>
+      <div id="var-list">${list.map(variantRow).join('')}</div><button type="button" class="btn soft sm" id="var-add">${icon('plus')}הוספת גודל</button></div>`;
+  }
+  function bindVariants() {
+    $('#var-add').onclick = () => { if ($$('.var-row').length < 8) $('#var-list').insertAdjacentHTML('beforeend', variantRow()); };
+    $('#var-list').onclick = (e) => { if (e.target.closest('.var-del')) e.target.closest('.var-row').remove(); };
+  }
+  const collectVariants = (form) => ({
+    variants: $$('.var-row', form).map((r) => ({ name: $('.var-name', r).value.trim(), price: Number($('.var-price', r).value) })).filter((v) => v.name),
+  });
+
   async function products() {
     const [list, store] = await Promise.all([api(`${A}/products`), api('/api/store').catch(() => ({ products: [] }))]);
     const sale = Object.fromEntries(store.products.filter((p) => p.promo).map((p) => [p.id, p]));
@@ -350,7 +404,9 @@
       { k: 'category', label: 'קטגוריה', type: 'select', options: catOpts() }, { k: 'icon', label: 'אייקון (כשאין תמונה)' },
       { k: 'description', label: 'תיאור', type: 'textarea', full: true },
       { k: 'collectionIds', label: 'שיוך לקולקציה עונתית (המוצר יוצג רק בזמן הקולקציה)', type: 'checks', options: ref.collections.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` })) },
-      { k: 'needsPhoto', label: 'המוצר דורש תמונה מהלקוח', type: 'bool', def: false }, { k: 'active', label: 'פעיל', type: 'bool' },
+      { k: 'eventTypes', label: 'מתאים לאירועים (בלי סימון = לכל האירועים)', type: 'checks', options: (ref.eventTypes || []).map((e) => ({ value: e.id, label: e.name })) },
+      { k: 'needsPhoto', label: 'המוצר דורש תמונה מהלקוח', type: 'bool', def: false }, { k: 'upsell', label: 'להציע בסל ("אולי תאהבו גם")', type: 'bool', def: false },
+      { k: 'active', label: 'פעיל', type: 'bool' },
     ];
     view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" id="cat-photos">${icon('image')}תמונות קטגוריות</button><button class="btn soft" data-go-promos>${icon('tag')}מבצעים</button><button class="btn" id="new">${icon('plus')}מוצר חדש</button></div></div>
       <p class="muted small">את המחיר אפשר לשנות ישר בטבלה. מחיר מבצע נקבע במסך "מבצעים".</p>
@@ -360,17 +416,20 @@
         const s = sale[p.id];
         return `<tr data-id="${p.id}" style="cursor:pointer">
         <td>${img ? `<img src="${esc(asset(img))}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px">` : `<span style="font-size:1.6rem">${esc(p.icon)}</span>`}</td>
-        <td>${esc(p.name)}<div class="muted small">${productImgs(p).length} תמונות</div></td><td>${catName(p.category)}</td>
+        <td>${esc(p.name)}<div class="muted small">${productImgs(p).length} תמונות${(p.variants || []).length ? ` · ${p.variants.length} גדלים` : ''}${p.upsell ? ' · מוצע בסל' : ''}</div></td><td>${catName(p.category)}</td>
         <td><input type="number" step="0.01" min="0" value="${p.price}" data-price="${p.id}" aria-label="מחיר" style="width:100px;min-height:36px;padding:4px 8px"></td>
         <td>${s ? `<b style="color:var(--bad)">${money(s.salePrice)}</b><div class="small">${esc(s.promo.name)}</div>` : '<span class="muted">—</span>'}</td>
         <td>${ACTIVE(p.active)}</td></tr>`;
       }).join('')}</tbody></table></div>`;
     const open = (rec) => {
       editForm({
-        title: rec ? 'עריכת מוצר' : 'מוצר חדש', fields, rec: rec ? { ...rec, needsPhoto: rec.needsPhoto || false } : { needsPhoto: false },
-        url: `${A}/products`, onSaved: products, extraHtml: imagesEditor(rec ? productImgs(rec) : []), collectExtra: collectImages,
+        title: rec ? 'עריכת מוצר' : 'מוצר חדש', fields, rec: rec ? { ...rec, needsPhoto: rec.needsPhoto || false, upsell: rec.upsell || false } : { needsPhoto: false, upsell: false },
+        url: `${A}/products`, onSaved: products,
+        extraHtml: variantsEditor(rec ? rec.variants || [] : []) + imagesEditor(rec ? productImgs(rec) : []),
+        collectExtra: (form) => ({ ...collectImages(form), ...collectVariants(form) }),
       });
       bindImages();
+      bindVariants();
     };
     $('#new').onclick = () => open(null);
     $('[data-go-promos]').onclick = () => go('promotions');
@@ -419,6 +478,58 @@
     $$('[data-cat-reset]').forEach((b) => {
       b.onclick = async () => { await api(`${A}/categories/${b.dataset.catReset}`, { method: 'PUT', body: { image: '' } }); categoryPhotos(); };
     });
+  }
+
+  // ---------- באנרים (הפתיח המתחלף בחנות) ----------
+  async function banners() {
+    const [list, prods] = await Promise.all([api(`${A}/banners`), api(`${A}/products`)]);
+    const LINK = { none: 'בלי כפתור', category: 'לקטגוריה', event: 'לסוג אירוע', product: 'למוצר', url: 'לקישור חיצוני' };
+    const fields = [
+      { k: 'name', label: 'כותרת (למשל: עונת החתונות)' }, { k: 'subtitle', label: 'משפט משנה' }, { k: 'cta', label: 'טקסט הכפתור (למשל: לכל מוצרי החתונה)' },
+      { k: 'linkType', label: 'לאן הכפתור מוביל', type: 'select', options: Object.entries(LINK).map(([value, label]) => ({ value, label })) },
+      { k: 'linkValue', label: 'יעד', type: 'select', options: [{ value: '', label: '—' }]
+        .concat(ref.categories.map((c) => ({ value: c.id, label: `קטגוריה: ${c.name}` })))
+        .concat((ref.eventTypes || []).map((e) => ({ value: e.id, label: `אירוע: ${e.name}` })))
+        .concat(prods.map((p) => ({ value: p.id, label: `מוצר: ${p.name}` }))) },
+      { k: 'url', label: 'קישור חיצוני (כשבוחרים "לקישור חיצוני")', type: 'url' },
+      { k: 'startDate', label: 'מתאריך (ריק = מעכשיו)', type: 'date' }, { k: 'endDate', label: 'עד תאריך (ריק = בלי סוף)', type: 'date' },
+      { k: 'order', label: 'סדר הופעה (מספר קטן = ראשון)', type: 'number' }, { k: 'active', label: 'פעיל', type: 'bool' },
+    ];
+    const today = new Date().toISOString().slice(0, 10);
+    const live = (b) => b.active !== false && (!b.startDate || b.startDate <= today) && (!b.endDate || b.endDate >= today);
+    view.innerHTML = `<div class="row between"><h1>באנרים</h1><button class="btn" id="new">${icon('plus')}באנר חדש</button></div>
+      <p class="muted">הבאנרים מתחלפים בראש החנות. מתאים למבצעים, חגים וקולקציות חדשות. מומלץ תמונה רחבה ואיכותית.</p>
+      <div class="grid">${list.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map((b) => `<div class="card" data-id="${b.id}" style="cursor:pointer;padding:0;overflow:hidden">
+        <div class="banner" style="--img:url('${esc(asset(b.image))}');min-height:150px"><div class="banner-text"><h3>${esc(b.name)}</h3>${b.subtitle ? `<p>${esc(b.subtitle)}</p>` : ''}</div></div>
+        <div class="row between" style="padding:10px 14px">${live(b) ? '<span class="badge ok">מוצג עכשיו</span>' : '<span class="badge">לא מוצג</span>'}<span class="muted small">${LINK[b.linkType] || ''}</span></div>
+      </div>`).join('') || '<p class="muted">אין באנרים עדיין</p>'}</div>`;
+    const open = (rec) => {
+      const r0 = rec ? { ...rec, url: rec.linkType === 'url' ? rec.linkValue : '', linkValue: rec.linkType === 'url' ? '' : rec.linkValue } : { linkType: 'category', order: list.length + 1 };
+      editForm({
+        title: rec ? 'עריכת באנר' : 'באנר חדש', fields, rec: r0, url: `${A}/banners`, onSaved: banners,
+        extraHtml: `<div class="card flat" style="margin-top:12px"><h3>📷 תמונת הבאנר</h3>
+          <div class="banner" id="bn-preview" style="--img:url('${esc(asset(rec ? rec.image : ''))}');min-height:140px;border-radius:14px"><div class="banner-text"><h3>תצוגה מקדימה</h3></div></div>
+          <input type="hidden" id="bn-image" value="${esc(rec ? rec.image : '')}">
+          <label class="btn soft sm" style="margin-top:8px">${icon('image')}העלאת תמונה<input type="file" accept="image/*" id="bn-up" class="hidden"></label></div>`,
+        collectExtra: (form) => {
+          const t = $('[name="linkType"]', form).value;
+          return { image: $('#bn-image').value, linkValue: t === 'url' ? $('[name="url"]', form).value : $('[name="linkValue"]', form).value };
+        },
+      });
+      $('#bn-up').onchange = async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        try {
+          const fd = new FormData();
+          fd.append('file', await shrinkImage(f, 1800, 0.85), 'banner.jpg');
+          const up = await api(`${A}/uploads`, { method: 'POST', body: fd });
+          $('#bn-image').value = up.url;
+          $('#bn-preview').style.setProperty('--img', `url('${asset(up.url)}')`);
+        } catch (err) { toast(err.message); }
+      };
+    };
+    $('#new').onclick = () => open(null);
+    $$('[data-id]').forEach((c) => { c.onclick = () => open(list.find((b) => b.id === c.dataset.id)); });
   }
 
   // ---------- מבצעים ----------
@@ -607,7 +718,7 @@
   }
 
   // ---------- ניווט ----------
-  const VIEWS = { dashboard, events, orders, products, promotions, collections, suppliers, couriers, cities, guests, settings };
+  const VIEWS = { dashboard, events, orders, products, promotions, banners, collections, suppliers, couriers, cities, guests, settings };
   async function go(v, arg) {
     current = v;
     $$('[data-view]').forEach((t) => t.classList.toggle('active', t.dataset.view === v));
@@ -627,11 +738,11 @@
   window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS[h] && h !== current) go(h); });
 
   async function loadRefs() {
-    const [cfg, citiesL, cats, cols, pts, sups, kurs, st] = await Promise.all([
+    const [cfg, citiesL, cats, cols, pts, sups, kurs, st, evTypes] = await Promise.all([
       api('/api/config'), api(`${A}/cities`), api(`${A}/categories`), api(`${A}/collections`), api(`${A}/print-types`),
-      api(`${A}/suppliers`), api(`${A}/couriers`), api(`${A}/settings`),
+      api(`${A}/suppliers`), api(`${A}/couriers`), api(`${A}/settings`), api(`${A}/event-types`),
     ]);
-    Object.assign(ref, { statuses: cfg.statuses, cities: citiesL, categories: cats, collections: cols, printTypes: pts, suppliers: sups, couriers: kurs, settings: st.settings, payments: st.payments });
+    Object.assign(ref, { eventTypes: evTypes, statuses: cfg.statuses, cities: citiesL, categories: cats, collections: cols, printTypes: pts, suppliers: sups, couriers: kurs, settings: st.settings, payments: st.payments });
     updateShortcut();
   }
 
