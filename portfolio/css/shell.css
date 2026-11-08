@@ -5,16 +5,16 @@
 /* ---------- the grid ---------- */
 .shell { display: grid; grid-template-columns: var(--side-r) minmax(0, 1fr) var(--side-l); column-gap: var(--gap); align-items: start;
   max-width: 1840px; margin-inline: auto; padding-inline: var(--rail-w) 24px; padding-bottom: 28px; }
-.shell > .wl { grid-column: 1 / -1; grid-row: 1; }
-.shell > .td-band { grid-column: 2; grid-row: 3; padding: 0; margin-top: 18px; position: relative; z-index: 30; }
-.shell > .hero { grid-column: 2; grid-row: 4; padding: 10px 0 14px; }
-.shell > #all { grid-column: 2; grid-row: 5; }
-.shell > .day-dock { grid-column: 1; grid-row: 2 / 6; align-self: start; position: sticky; top: calc(var(--nav-h) + 14px); margin-top: 22px;
+.shell > .wl { grid-column: 1 / -1; grid-row: 2; }
+.shell > .td-band { grid-column: 2; grid-row: 4; padding: 0; margin-top: 18px; position: relative; z-index: 30; }
+.shell > .hero { grid-column: 2; grid-row: 5; padding: 10px 0 14px; }
+.shell > #all { grid-column: 2; grid-row: 6; }
+.shell > .day-dock { grid-column: 1; grid-row: 3 / 7; align-self: start; position: sticky; top: calc(var(--nav-h) + 14px); margin-top: 22px;
   max-height: calc(100vh - var(--nav-h) - var(--tk-h) - 30px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(241, 238, 252, .22) transparent; }
-.shell > .cats { grid-column: 3; grid-row: 2 / 6; align-self: start; position: sticky; top: calc(var(--nav-h) + 14px); margin-top: 22px;
+.shell > .cats { grid-column: 3; grid-row: 3 / 7; align-self: start; position: sticky; top: calc(var(--nav-h) + 14px); margin-top: 22px;
   max-height: calc(100vh - var(--nav-h) - var(--tk-h) - 100px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(241, 238, 252, .22) transparent; }
 .shell > #extra-wrap, .shell > #videos, .shell > #add, .shell > #how { grid-column: 1 / -1; }
-.shell > #extra-wrap { grid-row: 6; } .shell > #videos { grid-row: 7; } .shell > #add { grid-row: 8; } .shell > #how { grid-row: 9; }
+.shell > #extra-wrap { grid-row: 7; } .shell > #videos { grid-row: 8; } .shell > #add { grid-row: 9; } .shell > #how { grid-row: 10; }
 .shell .wrap { max-width: none; padding-inline: 0; }
 .shell > .section { padding: 28px 0; }
 .shell .sec-head { margin-bottom: 18px; }
@@ -111,7 +111,7 @@ html.has-ticker .wa-fab, html.has-ticker .a11y-fab { bottom: calc(22px + var(--t
 }
 @media (max-width: 1000px) {
   .shell { display: flex; flex-direction: column; padding-inline: 14px; gap: 0; }
-  .shell > .wl { order: 0; } .shell > .reel { order: 1; } .shell > .td-band { order: 1; margin-top: 14px; } .shell > .day-dock { order: 4; position: static; max-height: none; overflow: visible; margin-top: 8px; }
+  .shell > .wl { order: 1; } .shell > .reel { order: 0; } .shell > .td-band { order: 1; margin-top: 14px; } .shell > .day-dock { order: 4; position: static; max-height: none; overflow: visible; margin-top: 8px; }
   .shell > .cats { order: 2; position: sticky; top: var(--nav-h); z-index: 22; max-height: none; overflow: visible; margin: 10px -14px 0; padding: 8px 14px; border-radius: 0; border-inline: 0; background: rgba(15, 13, 36, .94); }
   .shell > #all { order: 3; } .shell > .hero { order: 5; } .shell > #extra-wrap { order: 6; } .shell > #videos { order: 7; } .shell > #add { order: 8; } .shell > #how { order: 9; }
   .cats .side-eyebrow { display: none; }
@@ -215,7 +215,7 @@ html.has-ticker .wa-fab, html.has-ticker .a11y-fab { bottom: calc(22px + var(--t
 #all { scroll-margin-top: calc(var(--nav-h) + 10px); }
 
 /* ---------- the film at the top of the page, always running ---------- */
-.shell > .reel { grid-column: 2; grid-row: 2; margin: 18px auto 0; width: min(100%, 980px); }
+.shell > .reel { grid-column: 1 / -1; grid-row: 1; margin: 18px auto 0; width: min(100%, 980px); }
 .reel[hidden] { display: none; }
 .reel-card { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 26px; align-items: center; padding: 18px; border-radius: 26px; border: 1px solid rgba(224, 178, 90, .32);
   background: radial-gradient(520px 260px at 100% 0%, rgba(139, 123, 255, .22), transparent 70%), linear-gradient(160deg, rgba(34, 29, 84, .8), rgba(12, 10, 32, .88)); box-shadow: 0 30px 70px -40px #000, inset 0 1px 0 rgba(255, 255, 255, .06); }
