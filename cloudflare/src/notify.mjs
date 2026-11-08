@@ -160,3 +160,49 @@ export async function calendarSync(env, S, map, now, f) {
   }
   return { map, done };
 }
+
+// WhatsApp to the owner through CallMeBot (free; a message to his own number). The key and the number are secrets of the
+// Worker (CALLMEBOT_APIKEY, CALLMEBOT_PHONE) and never reach a page.
+export async function callMeBot(env, msg) {
+  if (!env.CALLMEBOT_APIKEY || !env.CALLMEBOT_PHONE) return { error: 'not-set' };
+  try {
+    const r = await fetch('https://api.callmebot.com/whatsapp.php?phone=' + encodeURIComponent(env.CALLMEBOT_PHONE) + '&text=' + encodeURIComponent(String(msg).slice(0, 900)) + '&apikey=' + encodeURIComponent(env.CALLMEBOT_APIKEY), { signal: AbortSignal.timeout(10000) });
+    return r.ok ? {} : { error: 'callmebot ' + r.status };
+  } catch (e) { return { error: 'callmebot' }; }
+}
+// who signed up or signed in, from a sign-in action that succeeded: one short WhatsApp line for the owner, or null.
+// The same person and kind is not repeated within 20 minutes (a page that signs in twice in a row is one message).
+const ilTime = (t) => new Date(t).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+export function waNote(sd, b, now, ADMIN_EMAIL) {
+  const a = String((b && b.action) || ''), e = String(b.email || b.contact || '').trim().toLowerCase();
+  const tl = (sd.trialLeads || {})[e];
+  const who = (o) => [o && o.name, o && o.phone, o && o.email].filter(Boolean).join(' · ');
+  const ADM = ADMIN + '?app=1';
+  let kind = '', msg = '';
+  if (a === 'trial-code' && tl) {
+    kind = 'reg';
+    msg = (tl.firstAt === tl.lastAt ? '🆕 נרשם חדש לאופטימוס' : '🔁 נרשם שוב לאופטימוס') + (tl.where === 'app' ? ' (בתוכנה)' : ' (דף ההורדה)') + '\n' + who(tl);
+  } else if (a === 'trial-verify' && tl) {
+    kind = 'verify'; msg = '✔ אימת מייל ' + (tl.where === 'app' ? 'והתחיל ניסיון באופטימוס' : 'בדף ההורדה של אופטימוס') + '\n' + who(tl);
+  } else if (a === 'lic-activate') {
+    const L = (sd.licenses || {})[e]; if (!L) return null;
+    kind = 'lic-in'; msg = '💻 התחברות לאופטימוס' + (L.trial && !L.paid ? ' (ניסיון)' : '') + '\n' + who(L);
+  } else if (a === 'frame-visit' || a === 'frame-code') {
+    const ph = String(b.phone || b.contact || '').replace(/\D/g, ''), V = sd.frameVisitors || {}, v = V[e] || V['tel:' + ph] || V['tel:' + String(b.contact || '').trim()];
+    if (!v) return null;
+    kind = v.visits <= 1 ? 'visit-new' : 'visit'; msg = (v.visits <= 1 ? '🆕 לקוח חדש נכנס למסך הלקוח' : '🚪 כניסה למסך הלקוח (' + v.visits + ')') + '\n' + who(v);
+  } else if (a === 'frame-code-verify') {
+    const v = (sd.frameVisitors || {})[e]; kind = 'visit-ok'; msg = '🔑 לקוח אימת קוד ונכנס' + '\n' + who(v || { email: e });
+  } else if (a === 'signup') {
+    const c = (sd.clients || {})[e]; if (!c || !(c.sites || []).includes('frame')) return null;
+    kind = 'signup'; msg = '🆕 חשבון חדש בעורך המסגרות\n' + who(c);
+  } else if (a === 'login') {
+    if (e === ADMIN_EMAIL) { kind = 'admin'; msg = '🔐 כניסה לניהול (המייל שלך). אם זה לא אתה: מסך הניהול ← אבטחה וחשבון.'; }
+    else { const c = (sd.clients || {})[e]; if (!c || !(c.sites || []).includes('frame')) return null; kind = 'login'; msg = '👤 לקוח התחבר לחשבון\n' + who(c); }
+  } else return null;
+  sd.waSent = sd.waSent || {};
+  for (const [k, t] of Object.entries(sd.waSent)) if (now - t > 20 * 60000) delete sd.waSent[k];
+  const key = kind + ':' + e; if (sd.waSent[key]) return null;
+  sd.waSent[key] = now;
+  return msg + '\n' + ilTime(now) + '\n' + ADM + (/visit|signup|login/.test(kind) ? '#customers' : '#requests');
+}

@@ -1872,3 +1872,23 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Reloads with the screen's refresh and the admin's auto-refresh.
 - They are not date bookings, so they are not mixed into the approve/decline list.
 - The phone admin app (app.html → admin.html?app=1) gets every change at once: sw.js is network-first for the site's own files.
+
+## WhatsApp to the owner, and the studio on the phone admin (v121)
+- **WhatsApp (CallMeBot, free):** `cloudflare/src/notify.mjs` exports `callMeBot(env, msg)` and `waNote(sd, body, now, ADMIN_EMAIL)`.
+  - `worker.mjs` calls `waNote` after every successful sign-in action (before the state is saved) and sends in the background (`this.ctx.waitUntil`).
+  - Messages for:
+    - `trial-code` (new / repeat Optimus registration) and `trial-verify`;
+    - `lic-activate` (sign-in to Optimus);
+    - `frame-visit` / `frame-code` (customer screen, new or returning) and `frame-code-verify`;
+    - `signup` and `login` of frame customers (other sites' accounts are skipped), and the owner's own admin login.
+  - The same person and kind is sent at most once in 20 minutes (`sd.waSent`).
+  - Each message ends with a link to `admin.html?app=1#requests` or `#customers`.
+  - Booking requests use the same sender.
+  - Needs the GitHub secrets `CALLMEBOT_APIKEY` and `CALLMEBOT_PHONE` (already wired in cloudflare-deploy). Without them nothing is sent.
+  - The admin's notifications screen has a "💬 הודעות וואטסאפ אליך" card with the status (`waReady` from the `all` call), a test button (`wa-test`, owner only, handled in worker.mjs) and the setup steps.
+  - Test: `cloudflare/test/wa.test.mjs` (part of `npm test`).
+- **Studio → phone admin:** `js/studio-sync.js` (studio.html, after printlog.js; in sw.js FILES).
+  - When the owner is signed in (`FS.account.isAdmin()`), it sends `studio-sync` with names, dates and counts only: device id/kind/version, open event, photos in work, prints today and in this event (print log jobs use `t` for time), printer ink/paper estimates, saved events. No photos or logos.
+  - Sent on change (at most once a minute), every 15 minutes, after prints, and when the page is hidden.
+  - Server: `frame.mjs` `studio-sync` keeps the last 5 devices in storage `studios`; `all` returns `studios`.
+  - Admin home: `studiosCard()` in `js/admin.js` ("🖥️ מה קורה בתוכנה"), redrawn on the 90-second refresh.
