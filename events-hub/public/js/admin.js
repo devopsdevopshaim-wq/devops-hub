@@ -307,6 +307,7 @@
       <h3 style="margin-top:12px">פריטים וספקים</h3>
       ${o.items.map((i, idx) => `<div class="row" style="margin-bottom:6px">${i.photoUrl ? `<a href="${esc(asset(i.photoUrl))}" target="_blank" rel="noopener"><img src="${esc(asset(i.photoUrl))}" style="width:48px;height:48px;object-fit:cover;border-radius:6px" alt=""></a>` : ''}
         <span style="flex:1">${esc(i.name)} × ${i.qty} · ${money(i.price * i.qty)}${i.promo ? ` <span class="badge bad">🏷️ ${esc(i.promo)}</span>` : ''}<div class="muted small">${catName(i.category)}</div></span>${supSel(idx, i)}</div>`).join('')}
+      ${o.reward ? `<p class="small">💎 מימוש נקודות: <b>${esc(o.reward.name)}</b> (${o.reward.points} נק׳)</p>` : ''}${o.loyaltyEarned ? `<p class="small">💎 נצברו ${o.loyaltyEarned} נקודות</p>` : ''}
       <p class="small">סכום: <b>${money(o.total)}</b>${o.discount ? ` (הנחה ${money(o.discount)}${o.coupon ? `, קופון <b dir="ltr">${esc(o.coupon)}</b>` : ''})` : ''} · משלוח ${o.shipping ? money(o.shipping) : 'חינם'}</p>
       <div class="row"><label style="margin:0">שליח</label><select id="courier-sel" style="max-width:300px"><option value="">— ללא —</option>${ref.couriers.filter((k) => k.active !== false).map((k) => `<option value="${k.id}" ${k.id === o.courierId ? 'selected' : ''}>${esc(k.name)} ${esc(k.phone)}</option>`).join('')}</select>
         <button class="btn soft sm" id="save-assign">שמירת שיוך</button><button class="btn ghost sm" id="auto-assign">🔄 שיוך אוטומטי לפי עיר</button></div>
@@ -477,6 +478,59 @@
     });
     $$('[data-cat-reset]').forEach((b) => {
       b.onclick = async () => { await api(`${A}/categories/${b.dataset.catReset}`, { method: 'PUT', body: { image: '' } }); categoryPhotos(); };
+    });
+  }
+
+  // ---------- מועדון נקודות ----------
+  async function clubView() {
+    const [data, rewards, prods] = await Promise.all([api(`${A}/loyalty`), api(`${A}/rewards`), api(`${A}/products`)]);
+    const s = data.settings;
+    const rewardFields = [
+      { k: 'name', label: 'שם ההטבה (למשל: ₪30 הנחה, מגנט מתנה)' }, { k: 'description', label: 'תיאור קצר' },
+      { k: 'kind', label: 'סוג', type: 'select', options: [{ value: 'discount', label: 'הנחה בשקלים על ההזמנה' }, { value: 'gift', label: 'מתנה: מוצר בחינם' }] },
+      { k: 'amount', label: 'סכום ההנחה ב-₪ (להנחה)', type: 'number' },
+      { k: 'productId', label: 'המוצר במתנה (למתנה)', type: 'select', options: [{ value: '', label: '—' }].concat(prods.map((p) => ({ value: p.id, label: p.name }))) },
+      { k: 'points', label: 'עלות בנקודות', type: 'number' }, { k: 'active', label: 'פעיל', type: 'bool' },
+    ];
+    view.innerHTML = `<div class="stage" style="grid-template-columns:1fr"><div>
+        <span class="eyebrow"><img src="icon.svg" alt="">מועדון רגעים</span>
+        <h1>💎 נקודות, <em>הנחות ומתנות</em></h1>
+        <p>על כל הזמנה ששולמה הלקוח צובר ${s.earnPercent}% מסכום המוצרים בנקודות (נקודה = ₪1). מ-${s.minPoints} נקודות הוא מממש אותן בהטבות שתגדירו כאן.</p>
+      </div></div>
+      <form class="card" id="club-settings"><h2>הגדרות</h2><div class="fields">
+        <div class="field"><label class="check" style="margin-top:28px"><input type="checkbox" name="enabled" ${s.enabled ? 'checked' : ''}> המועדון פעיל</label></div>
+        <div class="field"><label>אחוז צבירה מכל קנייה</label><input type="number" name="earnPercent" min="0" max="100" step="0.5" value="${s.earnPercent}"></div>
+        <div class="field"><label>מינימום נקודות למימוש</label><input type="number" name="minPoints" min="0" value="${s.minPoints}"></div>
+      </div><button class="btn">שמירה</button></form>
+      <div class="row between" style="margin-top:18px"><h2 style="margin:0">הטבות למימוש</h2><button class="btn" id="new-reward">${icon('plus')}הטבה חדשה</button></div>
+      <div class="grid" style="margin-top:10px">${rewards.sort((a, b) => a.points - b.points).map((r) => `<div class="card" data-reward="${r.id}" style="cursor:pointer">
+        <div class="row between"><h3 style="margin:0">${r.kind === 'gift' ? '🎁' : '🏷️'} ${esc(r.name)}</h3>${ACTIVE(r.active)}</div>
+        <p class="muted small">${esc(r.description || '')}</p><b class="stat" style="font-size:1.4rem">${r.points} נק׳</b></div>`).join('') || '<p class="muted">אין הטבות עדיין</p>'}</div>
+      <h2 style="margin-top:22px">חברי המועדון (${data.members.length})</h2>
+      <div class="card table-wrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>יתרה</th><th>נצבר</th><th>מומש</th><th>פעילות אחרונה</th><th></th></tr></thead><tbody>
+      ${data.members.map((m) => `<tr><td>${esc(m.name)}</td><td dir="ltr">${esc(m.phone)}</td><td><b>${m.points}</b></td><td>${m.earned}</td><td>${m.spent}</td><td class="small">${fmtDate(m.lastAt)}</td>
+        <td><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn soft sm" data-adjust="${m.id}">± נקודות</button>
+        <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${'972' + m.phone.slice(1)}?text=${encodeURIComponent(`שלום ${m.name}, יש לך ${m.points} נקודות במועדון ${ref.settings.businessName || 'רגעים'} 💎\nהכרטיס שלך: ${m.clubLink}`)}">${icon('whatsapp')}</a></div></td></tr>`).join('') || '<tr><td colspan="7" class="muted">עוד אין חברים. החשבון נפתח אוטומטית בהזמנה הראשונה של כל לקוח.</td></tr>'}
+      </tbody></table></div>`;
+    $('#club-settings').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      try {
+        ref.settings = await api(`${A}/settings`, { method: 'PUT', body: { ...ref.settings, loyalty: { enabled: f.enabled.checked, earnPercent: Number(f.earnPercent.value), minPoints: Number(f.minPoints.value) } } });
+        toast('הגדרות המועדון נשמרו');
+        clubView();
+      } catch (err) { toast(err.message); }
+    };
+    const openReward = (rec) => editForm({ title: rec ? 'עריכת הטבה' : 'הטבה חדשה', fields: rewardFields, rec: rec || { kind: 'discount', points: s.minPoints || 100, amount: 20 }, url: `${A}/rewards`, onSaved: clubView });
+    $('#new-reward').onclick = () => openReward(null);
+    $$('[data-reward]').forEach((c) => { c.onclick = () => openReward(rewards.find((r) => r.id === c.dataset.reward)); });
+    $$('[data-adjust]').forEach((b) => {
+      b.onclick = async () => {
+        const v = prompt('כמה נקודות להוסיף? (מספר שלילי מוריד נקודות)');
+        if (!v) return;
+        const note = prompt('סיבה (תופיע ללקוח בהיסטוריה):', 'בונוס') || '';
+        try { await api(`${A}/loyalty/${b.dataset.adjust}/adjust`, { method: 'POST', body: { points: Number(v), note } }); toast('עודכן'); clubView(); } catch (err) { toast(err.message); }
+      };
     });
   }
 
@@ -718,7 +772,7 @@
   }
 
   // ---------- ניווט ----------
-  const VIEWS = { dashboard, events, orders, products, promotions, banners, collections, suppliers, couriers, cities, guests, settings };
+  const VIEWS = { dashboard, events, orders, products, promotions, banners, club: clubView, collections, suppliers, couriers, cities, guests, settings };
   async function go(v, arg) {
     current = v;
     $$('[data-view]').forEach((t) => t.classList.toggle('active', t.dataset.view === v));

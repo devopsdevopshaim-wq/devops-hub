@@ -83,6 +83,13 @@ const myEvents = {
   get: (code) => myEvents.all().find((e) => e.code === code),
 };
 
+// מפתח מועדון הנקודות של הלקוח (מגיע בהזמנה הראשונה או בקישור מהעסק: ?club=...)
+const club = {
+  get: () => store.get('clubToken', ''),
+  set(t) { if (/^[a-f0-9]{32}$/.test(t || '')) store.set('clubToken', t); },
+};
+(() => { const t = new URLSearchParams(location.search).get('club'); if (t) club.set(t); })();
+
 const myOrders = {
   all: () => store.get('myOrders', []),
   add(o) { store.set('myOrders', [o, ...myOrders.all().filter((x) => x.id !== o.id)].slice(0, 50)); },

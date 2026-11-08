@@ -138,6 +138,14 @@ export function seedIfEmpty() {
     if (prod.upsell === undefined) patch.upsell = DEFAULT_UPSELL.includes(prod.id);
     if (Object.keys(patch).length) db.update('products', prod.id, patch);
   }
+  if (!s.settings.rewardsSeeded) {
+    [
+      { name: '₪20 הנחה', kind: 'discount', amount: 20, points: 100, description: 'הנחה של 20 ₪ על ההזמנה' },
+      { name: 'מארז שוקולדים מתנה', kind: 'gift', productId: 'sweet-box', amount: 0, points: 150, description: 'מארז שוקולדים ממותג בחינם עם ההזמנה' },
+      { name: '₪50 הנחה', kind: 'discount', amount: 50, points: 220, description: 'הנחה של 50 ₪ על ההזמנה' },
+    ].forEach((r) => db.insert('rewards', { id: db.id('rw_'), active: true, ...r }));
+    db.setSettings({ rewardsSeeded: true });
+  }
   if (!s.settings.bannersSeeded) {
     DEFAULT_BANNERS.forEach((b) => db.insert('banners', { id: db.id('bn_'), active: true, startDate: '', endDate: '', ...b }));
     db.setSettings({ bannersSeeded: true });

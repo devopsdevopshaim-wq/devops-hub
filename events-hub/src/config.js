@@ -6,6 +6,8 @@ const config = {
   sessionSecret: '',
   payment: { provider: 'mock', terminal: '', apiKey: '', apiSecret: '' },
   ai: { removeBgKey: '' },
+  // מגבלת קצב פעילה תמיד בענן; RATE_LIMIT=off רק לבדיקות אוטומטיות במחשב
+  rateLimit: true,
 };
 
 export function configure(env = {}) {
@@ -20,6 +22,7 @@ export function configure(env = {}) {
     apiSecret: v('PAYMENT_API_SECRET'),
   };
   config.ai = { removeBgKey: v('REMOVE_BG_API_KEY') };
+  config.rateLimit = v('RATE_LIMIT') !== 'off';
   return config;
 }
 

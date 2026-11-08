@@ -1,4 +1,4 @@
-/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders, asset, shrinkImage, PHOTOS, icon, offerInstall */
+/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders, asset, shrinkImage, PHOTOS, icon, offerInstall, club */
 (function () {
   let catalog = { categories: [], collections: [], products: [], promotions: [], events: [], banners: [] };
   let coupon = store.get('coupon', '');
@@ -10,6 +10,7 @@
   let sort = 'recommended';
   let cart = store.get('cart', []).filter((i) => i && i.productId);
   let pending = null; // { product, variant } שממתין לבחירת תמונה
+  let rewardId = ''; // הטבת נקודות שנבחרה בסל
   // "להזמנה מהתמונה": תמונה מהאירוע שהלקוח בחר, ממתינה למוצר
   let photoPick = (new URLSearchParams(location.search).get('photo') || '').match(/^\/img\/[a-f0-9]{24}$/) ? new URLSearchParams(location.search).get('photo') : '';
 
@@ -27,6 +28,8 @@
     if (e.target.closest('[data-open-cart]')) openCart();
   });
   const toShop = () => $('#shop').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // מעבר מסך לפי הכתובת (קישורים עם #store / #events / #orders, וכפתור "חזרה")
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (['store', 'events', 'orders'].includes(h)) go(h); });
 
   // ---------- מוצרים ----------
   const imgs = (p) => (p.images && p.images.length ? p.images : (p.image ? [p.image] : []));
@@ -176,6 +179,10 @@
 
   function renderStore() {
     $('#promo-strip').innerHTML = (catalog.promotions || []).map((p) => `<span class="chip">${promoText(p)}</span>`).join('');
+    const cl = catalog.club || {};
+    $('#club-strip').innerHTML = cl.enabled ? `<button class="club-strip" data-view="orders">
+      <span class="gem">💎</span><span><b>מועדון רגעים:</b> ${cl.earnPercent}% מכל קנייה חוזרים אליכם בנקודות, ומ-${cl.minPoints} נקודות מקבלים הנחות ומתנות</span>
+      <span class="club-bal" id="club-bal">${store.get('clubPoints', null) !== null && club.get() ? `${store.get('clubPoints')} נק׳` : 'לפרטים'}</span></button>` : '';
     $('#collections').innerHTML = query || activeEvent || photoPick ? '' : catalog.collections.map((c) => `
       <div class="card" style="margin-bottom:12px">
         <div class="row between"><h2 style="margin:0">${esc(c.icon)} ${esc(c.name)}</h2>${c.endDate ? `<span class="badge warn">עד ${new Date(c.endDate).toLocaleDateString('he-IL')}</span>` : ''}</div>
@@ -299,12 +306,27 @@
       <form class="row" id="coupon-form" style="margin-top:10px;flex-wrap:nowrap"><input id="coupon" placeholder="קוד קופון" value="${esc(coupon)}" style="flex:1" autocomplete="off" aria-label="קוד קופון"><button class="btn soft sm">החלה</button></form>
       ${q && q.code ? `<div class="small" style="margin-top:4px;color:${q.codeUsed ? 'var(--ok)' : 'var(--bad)'}">${q.codeUsed ? `✓ הקופון ${esc(q.code)} הופעל` : q.codeValid ? 'הקופון תקף, אבל לא חל על המוצרים בסל' : 'קוד הקופון לא תקף'}</div>` : ''}
     </div>`;
+    // מועדון: כמה נקודות יצברו, ומימוש הטבה כשיש מספיק
+    const cq = q && q.club;
+    const rewards = (catalog.club && catalog.club.rewards) || [];
+    const clubBox = cq && cq.enabled ? `<div class="club-box">
+      <div class="row between"><b>💎 מועדון רגעים</b>${cq.member ? `<span>יש לכם <b>${cq.points}</b> נקודות</span>` : ''}</div>
+      <div class="small">בהזמנה הזו תצברו <b>${cq.earn}</b> נקודות${cq.member ? '' : ' (החשבון נפתח אוטומטית עם ההזמנה)'}</div>
+      ${cq.member && cq.canRedeem ? `<div class="rewards" role="radiogroup" aria-label="מימוש נקודות">
+        <label class="reward-opt"><input type="radio" name="reward" value=""${rewardId ? '' : ' checked'}> בלי מימוש הפעם</label>
+        ${rewards.map((r) => `<label class="reward-opt${cq.points < r.points ? ' off' : ''}"><input type="radio" name="reward" value="${esc(r.id)}"${rewardId === r.id ? ' checked' : ''}${cq.points < r.points ? ' disabled' : ''}>
+          <span>${r.kind === 'gift' ? '🎁' : '🏷️'} ${esc(r.name)}</span><span class="cost">${r.points} נק׳</span></label>`).join('')}</div>`
+      : cq.member ? `<div class="small muted">מימוש נקודות מ-${cq.minPoints} נקודות. חסרות לכם ${Math.max(0, cq.minPoints - cq.points)}.</div>` : ''}
+      ${cq.reward ? `<div class="small" style="color:var(--ok);font-weight:700">✓ ${esc(cq.reward.name)} (${cq.reward.points} נקודות ירדו אחרי התשלום)</div>` : ''}
+      ${cq.rewardError ? `<div class="small" style="color:var(--bad)">${esc(cq.rewardError)}</div>` : ''}
+    </div>` : '';
     // אולי תאהבו גם: מוצרים שסומנו "הצעה בסל" ועוד לא בסל
     const inCart = new Set(cart.map((i) => i.productId));
     const ups = catalog.products.filter((p) => p.upsell && !inCart.has(p.id)).slice(0, 2);
-    $('#cart-extra').innerHTML = ups.length ? `<h3 style="margin:14px 0 8px">אולי תאהבו גם</h3><div class="upsell">${ups.map((p) => `
+    $('#cart-extra').innerHTML = clubBox + (ups.length ? `<h3 style="margin:14px 0 8px">אולי תאהבו גם</h3><div class="upsell">${ups.map((p) => `
       <div class="up-card"><div class="photo-tile">${thumb(p, 240, 240)}</div><div><b>${esc(p.name)}</b><div>${cardPrice(p)}</div></div>
-      <button class="btn soft sm" data-add="${esc(p.id)}" aria-label="הוספה: ${esc(p.name)}">${icon('plus')}</button></div>`).join('')}</div>` : '';
+      <button class="btn soft sm" data-add="${esc(p.id)}" aria-label="הוספה: ${esc(p.name)}">${icon('plus')}</button></div>`).join('')}</div>` : '');
+    $$('#cart-extra input[name="reward"]').forEach((r) => { r.onchange = () => { rewardId = r.value; lastQuote = null; refreshQuote(); }; });
     $('#coupon-form').onsubmit = (e) => { e.preventDefault(); coupon = $('#coupon').value.trim(); store.set('coupon', coupon); refreshQuote(); };
     $('#checkout').classList.remove('hidden');
     if (!q) refreshQuote();
@@ -316,7 +338,8 @@
     if (!cart.length) { lastQuote = null; return; }
     const my = ++quoting;
     try {
-      const q = await api('/api/cart/quote', { method: 'POST', body: { code: coupon, items: cart.map(({ productId, variant, qty }) => ({ productId, variant, qty })) } });
+      const q = await api('/api/cart/quote', { method: 'POST', body: { code: coupon, clubToken: club.get(), rewardId, items: cart.map(({ productId, variant, qty }) => ({ productId, variant, qty })) } });
+      if (q.club && q.club.member) store.set('clubPoints', q.club.points);
       if (my !== quoting) return;
       lastQuote = q;
       if (!$('#cart').classList.contains('hidden')) renderCart();
@@ -346,7 +369,9 @@
     const btn = $('#pay-btn');
     btn.disabled = true;
     try {
-      const r = await api('/api/orders', { method: 'POST', body: { customer, code: coupon, items: cart.map(({ productId, variant, qty, photoUrl }) => ({ productId, variant, qty, photoUrl })) } });
+      const r = await api('/api/orders', { method: 'POST', body: { customer, code: coupon, clubToken: club.get(), rewardId, items: cart.map(({ productId, variant, qty, photoUrl }) => ({ productId, variant, qty, photoUrl })) } });
+      if (r.clubToken) club.set(r.clubToken);
+      rewardId = '';
       myOrders.add({ id: r.orderId, number: r.number, t: r.trackToken, at: new Date().toISOString() });
       cart = [];
       coupon = '';
@@ -413,7 +438,35 @@
   }
 
   // ---------- ההזמנות שלי ----------
+  async function renderClub() {
+    const cl = catalog.club || {};
+    if (!cl.enabled) { $('#club-card').innerHTML = ''; return; }
+    const rewardsHtml = (pts) => `<div class="reward-list">${(cl.rewards || []).map((r) => `<div class="reward-item${pts >= r.points && pts >= cl.minPoints ? ' ok' : ''}">
+      <span class="ri-ico">${r.kind === 'gift' ? '🎁' : '🏷️'}</span><div><b>${esc(r.name)}</b>${r.description ? `<div class="small muted">${esc(r.description)}</div>` : ''}</div><span class="cost">${r.points} נק׳</span></div>`).join('')}</div>`;
+    if (!club.get()) {
+      $('#club-card').innerHTML = `<div class="club-card"><h2>💎 מועדון רגעים</h2>
+        <p>על כל קנייה <b>${cl.earnPercent}%</b> מהסכום חוזר אליכם בנקודות (נקודה = ₪1). מ-<b>${cl.minPoints}</b> נקודות מממשים אותן בהנחות ובמתנות.</p>
+        <p class="small">החשבון נפתח אוטומטית עם ההזמנה הראשונה, לפי מספר הטלפון.</p>${rewardsHtml(0)}</div>`;
+      return;
+    }
+    try {
+      const me = await api(`/api/club/me?t=${club.get()}`);
+      store.set('clubPoints', me.points);
+      const pct = me.minPoints ? Math.min(100, Math.round((me.points / me.minPoints) * 100)) : 100;
+      $('#club-card').innerHTML = `<div class="club-card"><div class="row between"><h2>💎 מועדון רגעים</h2><span class="small">${esc(me.phone)}</span></div>
+        <div class="club-points"><span class="big">${me.points}</span><span>נקודות</span></div>
+        ${me.canRedeem ? '<p class="club-ok">✓ אפשר לממש! בוחרים הטבה בסל, לפני התשלום.</p>'
+          : `<div class="ship-track" style="margin:8px 0"><span style="width:${pct}%"></span></div><p class="small">עוד ${me.minPoints - me.points} נקודות עד המימוש הראשון</p>`}
+        ${rewardsHtml(me.points)}
+        ${me.history.length ? `<details><summary>היסטוריית נקודות</summary><ul class="club-hist">${me.history.map((h) => `<li><span>${esc(h.note)}</span><b class="${h.points > 0 ? 'plus' : 'minus'}">${h.points > 0 ? '+' : ''}${h.points}</b><time>${fmtDate(h.at)}</time></li>`).join('')}</ul></details>` : ''}
+      </div>`;
+    } catch {
+      $('#club-card').innerHTML = '';
+    }
+  }
+
   async function renderOrders() {
+    renderClub();
     const list = myOrders.all();
     if (!list.length) { $('#orders-list').innerHTML = '<p class="muted">אין הזמנות עדיין.</p>'; return; }
     $('#orders-list').innerHTML = list.map((o) => `<a class="card flat row between" style="text-decoration:none;color:inherit" href="track.html?id=${esc(o.id)}&t=${esc(o.t)}" data-o="${esc(o.id)}"><b>הזמנה #${esc(o.number)}</b><span class="muted small">${fmtDate(o.at)}</span><span class="badge" data-st>…</span></a>`).join('');

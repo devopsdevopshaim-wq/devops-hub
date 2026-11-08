@@ -13,7 +13,7 @@ let server;
 
 test.before(async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'events-hub-'));
-  server = await start({ port: 0, env: { DATA_DIR: dataDir, ADMIN_PASSWORD: 'test-pass', PAYMENT_PROVIDER: 'mock' } });
+  server = await start({ port: 0, env: { DATA_DIR: dataDir, ADMIN_PASSWORD: 'test-pass', PAYMENT_PROVIDER: 'mock', RATE_LIMIT: 'off' } });
   base = `http://127.0.0.1:${server.address().port}`;
 });
 test.after(() => server.close());
@@ -244,4 +244,66 @@ test('shop by event, banners, best sellers and admin stats', async () => {
   assert.ok(st2.promo.discount > 0);
   const pe = await call('PUT', '/api/admin/products/pkg-henna', { ...db.get('products', 'pkg-henna'), eventTypes: ['henna', 'nope'] });
   assert.deepEqual(pe.data.eventTypes, ['henna']);
+});
+
+test('points club: earn 10% on paid orders, redeem above the minimum, protected by the club key', async () => {
+  const cust = { name: 'נועה', phone: '054-777-8899', city: 'באר שבע', address: 'x' };
+  const buy = async (items, extra = {}) => {
+    const r = await call('POST', '/api/orders', { customer: cust, items, ...extra });
+    if (r.status !== 200) return r;
+    await call('POST', `/pay/mock/${r.data.redirectUrl.split('/').pop()}`, 'result=approved', { 'content-type': 'application/x-www-form-urlencoded' });
+    return r;
+  };
+  // הזמנה ראשונה: נפתח חשבון והמפתח חוזר ללקוח
+  const first = await buy([{ productId: 'pkg-birthday', qty: 1 }]); // 790
+  const tokenKey = first.data.clubToken;
+  assert.match(tokenKey, /^[a-f0-9]{32}$/);
+  let me = (await call('GET', `/api/club/me?t=${tokenKey}`)).data;
+  assert.equal(me.points, 79, '10% of 790');
+  assert.equal(me.canRedeem, false, 'below the 100 minimum');
+  // מימוש מתחת למינימום נדחה
+  const rewards = (await call('GET', '/api/store')).data.club.rewards;
+  const r20 = rewards.find((r) => r.kind === 'discount' && r.amount === 20);
+  let q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'gift-mug', qty: 1 }], clubToken: tokenKey, rewardId: r20.id })).data;
+  assert.match(q.club.rewardError, /100/);
+  // עוד קנייה: 790 נוספים -> 158 נקודות
+  await buy([{ productId: 'pkg-birthday', qty: 1 }], { clubToken: tokenKey });
+  me = (await call('GET', `/api/club/me?t=${tokenKey}`)).data;
+  assert.equal(me.points, 158);
+  assert.equal(me.canRedeem, true);
+  // מישהו אחר עם אותו טלפון אבל בלי המפתח: לא מקבל מפתח ולא יכול לממש
+  const thief = await call('POST', '/api/orders', { customer: { ...cust, name: 'גנב' }, items: [{ productId: 'gift-mug', qty: 1 }], rewardId: r20.id });
+  assert.equal(thief.status, 400);
+  const thief2 = await call('POST', '/api/orders', { customer: { ...cust, name: 'גנב' }, items: [{ productId: 'gift-mug', qty: 1 }] });
+  assert.equal(thief2.data.clubToken, '', 'the key is not handed to someone else');
+  // מפתח נכון אבל טלפון אחר: נדחה
+  const other = await call('POST', '/api/orders', { customer: { ...cust, phone: '0500000001' }, items: [{ productId: 'gift-mug', qty: 1 }], clubToken: tokenKey, rewardId: r20.id });
+  assert.equal(other.status, 400);
+  // מימוש תקין: 20 ₪ הנחה, 100 נקודות יורדות, ונצברות נקודות על הסכום אחרי ההנחה
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-mikveh', qty: 1 }], clubToken: tokenKey, rewardId: r20.id })).data;
+  assert.equal(q.club.reward.amount, 20);
+  const used = await buy([{ productId: 'pkg-mikveh', qty: 1 }], { clubToken: tokenKey, rewardId: r20.id }); // 690 - 20 = 670
+  const order = db.get('orders', used.data.orderId);
+  assert.equal(order.subtotal, 670);
+  me = (await call('GET', `/api/club/me?t=${tokenKey}`)).data;
+  assert.equal(me.points, 158 - 100 + 67);
+  // מתנה מהנקודות נוספת כשורה בחינם
+  await call('POST', '/api/admin/loyalty/ph_0547778899/adjust', { points: 200, note: 'בונוס' });
+  const gift = rewards.find((r) => r.kind === 'gift');
+  const g = await buy([{ productId: 'gift-mug', qty: 1 }], { clubToken: tokenKey, rewardId: gift.id });
+  const go = db.get('orders', g.data.orderId);
+  assert.ok(go.items.some((i) => i.price === 0 && i.productId === 'sweet-box'));
+  // ביטול הזמנה מחזיר את המצב
+  const before = (await call('GET', `/api/club/me?t=${tokenKey}`)).data.points;
+  await call('POST', `/api/admin/orders/${go.id}/events`, { status: 'cancelled', note: 'בוטל' });
+  const after = (await call('GET', `/api/club/me?t=${tokenKey}`)).data.points;
+  assert.equal(after, before - go.loyaltyEarned + gift.points);
+  // הגדרות: אחוז ומינימום לפי בחירת המנהל
+  const st = (await call('GET', '/api/admin/settings')).data.settings;
+  await call('PUT', '/api/admin/settings', { ...st, loyalty: { enabled: true, earnPercent: 5, minPoints: 300 } });
+  const club = (await call('GET', '/api/store')).data.club;
+  assert.equal(club.earnPercent, 5);
+  assert.equal(club.minPoints, 300);
+  const members = (await call('GET', '/api/admin/loyalty')).data.members;
+  assert.ok(members.some((m) => m.phone === '0547778899' && m.clubLink.includes('?club=')));
 });
