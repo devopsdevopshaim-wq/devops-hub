@@ -49,7 +49,7 @@ async function mocks(page) {
   await page.addInitScript(() => {
     // a visible pointer for the film (the headless browser draws none), and a ripple on every click
     const st = document.createElement('style');
-    st.textContent = '#reel{display:none!important}[data-cat="lotto"],.card.cat-lotto,#p-insurance-analysis{display:none!important}.scene,.future-bg{display:none!important}.cur-dot,.cur-ring{display:none!important}#__ptr{position:fixed;z-index:2147483647;left:0;top:0;width:26px;height:26px;margin:-4px 0 0 -4px;pointer-events:none;transition:transform .06s linear;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6))}#__rip{position:fixed;z-index:2147483646;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:3px solid #f3d596;pointer-events:none;opacity:0}#__rip.go{animation:__r .55s ease-out}@keyframes __r{from{opacity:.95;transform:scale(.4)}to{opacity:0;transform:scale(3.4)}}';
+    st.textContent = '#reel,#a11y-btn,#a11y-panel{display:none!important}[data-cat="lotto"],.card.cat-lotto,#p-insurance-analysis{display:none!important}.scene,.future-bg{display:none!important}.cur-dot,.cur-ring{display:none!important}#__ptr{position:fixed;z-index:2147483647;left:0;top:0;width:26px;height:26px;margin:-4px 0 0 -4px;pointer-events:none;transition:transform .06s linear;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6))}#__rip{position:fixed;z-index:2147483646;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:3px solid #f3d596;pointer-events:none;opacity:0}#__rip.go{animation:__r .55s ease-out}@keyframes __r{from{opacity:.95;transform:scale(.4)}to{opacity:0;transform:scale(3.4)}}';
     document.addEventListener('DOMContentLoaded', () => {
       document.head.appendChild(st);
       new MutationObserver(() => document.querySelectorAll('option').forEach((o) => { if (o.textContent.trim() === 'לוטו') o.remove(); })).observe(document.body, { childList: true, subtree: true });
@@ -119,6 +119,18 @@ const SCENES = {
     await page.mouse.wheel(0, 380); await sleep(1500);
     await click(page, '.tile[data-cat="all"]'); await sleep(900);
   },
+  async sites(page) {
+    await sleep(500);
+    await click(page, '.tile[data-cat="all"]'); await sleep(900);
+    await page.evaluate(() => document.getElementById('all').scrollIntoView());
+    await sleep(1200);
+    mark('scroll');
+    for (let i = 0; i < 58; i++) { await page.mouse.wheel(0, 150); await sleep(150); }
+    mark('new1');
+    await page.evaluate(() => document.getElementById('p-events-hub').scrollIntoView({ block: 'center', behavior: 'smooth' })); await sleep(2600);
+    mark('new2');
+    await page.evaluate(() => document.getElementById('p-dig-game').scrollIntoView({ block: 'center', behavior: 'smooth' })); await sleep(2600);
+  },
   async plan(page) {
     await sleep(500);
     mark('plan'); await mv(page, '.td-rows > li.now', { fy: 0.5 }); await sleep(1700);
@@ -157,7 +169,7 @@ const SCENES = {
 (async () => {
   browser = await chromium.launch();
   const want = process.argv.slice(2);
-  const OPTS = { maya: { maya: true }, admin: {}, rail: {}, domains: {}, plan: {}, overview: {} };
+  const OPTS = { maya: { maya: true }, admin: {}, rail: {}, domains: {}, sites: {}, plan: {}, overview: {} };
   for (const k of Object.keys(SCENES)) { if (want.length && !want.includes(k)) continue; await record(k, SCENES[k], OPTS[k]); }
   await browser.close();
 })();

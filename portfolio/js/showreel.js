@@ -35,7 +35,7 @@
     });
     var card = el('div', { class: 'reel-card' }, [
       el('div', { class: 'reel-vid' }, [v, snd]),
-      el('div', { class: 'reel-txt' }, [el('p', { class: 'eyebrow', text: 'הדמיה · 1:19' }), title, desc, langs, el('div', { class: 'reel-acts' }, [go, dl, full, cp])])
+      el('div', { class: 'reel-txt' }, [el('p', { class: 'eyebrow', text: 'הדמיה · 1:39' }), title, desc, langs, el('div', { class: 'reel-acts' }, [go, dl, full, cp])])
     ]);
     box.replaceChildren(card); box.hidden = false;
     load(cur, false);
