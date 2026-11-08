@@ -260,10 +260,51 @@
         });
       });
     }
+    /* Optimus: who signed up (download page / trial in the program), who started a trial and who asked to upgrade.
+       They are not date bookings, so they get their own card here, above the bookings, with the newest first. */
+    var rqRow = $('#rq-f') && $('#rq-f').closest('.adm-row');
+    (rqRow || m).insertAdjacentHTML(rqRow ? 'beforebegin' : 'afterbegin', '<section class="adm-card rq-opt" id="rq-opt"><h3>🎁 אופטימוס: נרשמים, ניסיון ובקשות שדרוג</h3><p class="hint">טוען…</p></section>');
+    var OPT_DAYS = 30, optAll = false;
+    function optDraw(leads, lics) {
+      var box = $('#rq-opt'); if (!box) return;
+      var map = {}, now = Date.now();
+      function ms(x) { return typeof x === 'number' ? x : (Date.parse(x || '') || 0); }
+      function get(e, seed) { var k = String(e || '').toLowerCase() || ('tel:' + (seed.phone || '')); if (!map[k]) map[k] = { email: e || '', name: '', phone: '', at: 0 }; var o = map[k]; if (!o.name) o.name = seed.name || ''; if (!o.phone) o.phone = seed.phone || ''; return o; }
+      leads.forEach(function (x) { var o = get(x.email, x); o.lead = x; o.at = Math.max(o.at, ms(x.lastAt), ms(x.firstAt)); });
+      lics.forEach(function (L) { var o = get(L.email, L); o.lic = L; o.at = Math.max(o.at, ms(L.createdAt), ms((L.trial || {}).start), ms((L.planReq || {}).at), ms(L.lastSeen)); });
+      var all = Object.keys(map).map(function (k) { return map[k]; });
+      all.forEach(function (o) {
+        var L = o.lic, x = o.lead;
+        o.req = !!(L && L.planReq);
+        o.kind = o.req ? ['hot', '📩 ביקש לשדרג: ' + esc(({ full: '💎 רישיון מלא', month: '📅 חודש', year: '📆 שנה', pass: '🎟️ כרטיס אירוע' })[(L.planReq || {}).want] || (L.planReq || {}).want || '')] :
+          L && L.paid ? ['ok', '💰 לקוח משלם'] :
+          L && L.trial ? ['wait', '🎁 בניסיון חינם' + (L.trial.events && L.trial.events.length ? ' · ' + L.trial.events.length + ' אירועים' : '')] :
+          x && x.app ? ['wait', '💻 התקין ונכנס לתוכנה'] :
+          x ? ['wait', '⬇ נרשם בדף ההורדה' + (x.verified ? ' · ✔ אימת' : ' · ⏳ לא אימת')] : ['wait', '🔑 רישיון'];
+      });
+      var l = all.filter(function (o) { return optAll || o.req || now - o.at < OPT_DAYS * 864e5; })
+        .sort(function (a, b) { return (b.req - a.req) || (b.at - a.at); });
+      var reqs = all.filter(function (o) { return o.req; }).length, recent = all.filter(function (o) { return now - o.at < 7 * 864e5; }).length;
+      var when = function (t) { return t ? new Date(t).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''; };
+      box.innerHTML = '<h3>🎁 אופטימוס: נרשמים, ניסיון ובקשות שדרוג</h3><p class="hint">' + all.length + ' בסך הכול · ' + recent + ' השבוע' + (reqs ? ' · <b>' + reqs + ' בקשות שדרוג ממתינות</b>' : '') + '</p>' +
+        (l.length ? '<div class="vis-scroll"><table class="adm-tbl"><tbody>' + l.map(function (o) {
+          var hi = 'שלום ' + (o.name || '') + ', כאן ' + owner + ' מאופטימוס. ראיתי שנרשמת, אשמח לעזור בהתחלה 🙂';
+          return '<tr class="rq-o-' + o.kind[0] + '"><td><b>' + esc(o.name || '—') + '</b><small dir="ltr">' + esc(o.email) + '</small><small dir="ltr">' + esc(o.phone) + '</small></td><td>' + o.kind[1] + '</td><td>' + when(o.at) + '</td>' +
+            '<td class="act">' + (o.phone ? '<a target="_blank" rel="noopener" href="' + esc(waLink(o.phone, hi)) + '" title="וואטסאפ">💬</a><a href="tel:' + esc(o.phone) + '" title="שיחה">📞</a>' : '') + (o.email ? '<a href="mailto:' + esc(o.email) + '" title="מייל">✉️</a>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : '<p class="hint">אין נרשמים ב־' + OPT_DAYS + ' הימים האחרונים.</p>') +
+        '<div class="act-row">' + (all.length > l.length || optAll ? '<button class="btn line small" id="rq-opt-all">' + (optAll ? 'רק 30 הימים האחרונים' : 'הצגת כולם (' + all.length + ')') + '</button>' : '') + '<button class="btn line small" id="rq-opt-lic">🔑 לניהול הרישיונות והתשלומים</button></div>';
+      var b1 = $('#rq-opt-all'); if (b1) b1.addEventListener('click', function () { optAll = !optAll; optDraw(leads, lics); });
+      $('#rq-opt-lic').addEventListener('click', function () { if (c.go) c.go('licenses'); else location.hash = 'licenses'; });
+    }
+    function optLoad() {
+      var LIC = FS.license; if (!LIC || !LIC.admin) { var b = $('#rq-opt'); if (b) b.remove(); return; }
+      LIC.admin('lic-list').then(function (r) { if (!r || !r.ok) { $('#rq-opt').innerHTML = '<h3>🎁 אופטימוס</h3><p class="hint">לא נטען עכשיו (' + esc(ACC.msg(r || {})) + '). אפשר לנסות שוב ברענון.</p>'; return; } optDraw(r.leads || [], r.licenses || []); },
+        function () { $('#rq-opt').innerHTML = '<h3>🎁 אופטימוס</h3><p class="hint">אין חיבור כרגע. נסו שוב ברענון.</p>'; });
+    }
     $$('#rq-f button').forEach(function (b) { b.addEventListener('click', function () { filter = b.dataset.f; $$('#rq-f button').forEach(function (x) { x.classList.toggle('on', x === b); }); draw(); }); });
-    $('#rq-refresh').addEventListener('click', function () { c.refresh().then(draw); });
-    c.onRefresh(draw);
-    draw();
+    $('#rq-refresh').addEventListener('click', function () { c.refresh().then(draw); optLoad(); });
+    c.onRefresh(function () { draw(); optLoad(); });
+    draw(); optLoad();
   };
 
   /* ---------- the calendar: events, requests and busy dates by month; the Google Calendar link ---------- */
