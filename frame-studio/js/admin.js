@@ -80,7 +80,7 @@
   function poll() { clearInterval(pollT); pollT = setInterval(function () { if (!document.hidden && ACC.isAdmin()) refresh(); }, 90000); }
   function badge() {
     var n = REQUESTS.filter(function (r) { return r.status === 'pending'; }).length, b = $('#side [data-s=requests] i');
-    if (b) b.setAttribute('data-n', n || ''); document.title = (n ? '(' + n + ') ' : '') + 'ניהול · ' + (draft && draft.name || 'פריים מגנטים');
+    if (b) b.setAttribute('data-n', n || ''); APP.badge(n); document.title = (n ? '(' + n + ') ' : '') + 'ניהול · ' + (draft && draft.name || 'פריים מגנטים');
   }
   window.addEventListener('hashchange', function () { var h = location.hash.slice(1); if (VIEWS[h] && h !== sec && draft) show(h); });
   $('#logout-top').addEventListener('click', function () { ACC.logout(); ACC.setVisitor(null); location.reload(); });
@@ -118,7 +118,7 @@
   function state() {
     var n = Object.keys(dirty).length; $('#publish').disabled = !n;
     $('#state').textContent = n ? '💾 טיוטה נשמרה ' + (savedAt ? new Date(savedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '') + ' · ' + n + ' שינויים עוד לא באתר' : '✔ הכול שמור ומפורסם';
-    $('#state').className = 'adm-state' + (n ? ' warn' : '');
+    $('#state').className = 'adm-state' + (n ? ' warn' : ''); APP.dirty(n);
   }
   $('#save').addEventListener('click', function () { persist(); state(); FS.toast(Object.keys(dirty).length ? '💾 נשמר. כדי שיופיע באתר לוחצים "פרסום באתר".' : '💾 הכול כבר שמור ומפורסם'); });
   $('#publish').addEventListener('click', function () {
@@ -180,7 +180,7 @@
     }).join('');
     $$('#side button').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.s); }); });
   }
-  function show(s) { sec = s; onRefresh = null; if (location.hash.slice(1) !== s) history.replaceState(null, '', s === 'home' ? location.pathname + location.search : '#' + s); $$('#side button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === s); }); var m = $('#main'); m.innerHTML = ''; VIEWS[s](m); m.scrollTop = 0; window.scrollTo(0, 0); }
+  function show(s) { sec = s; onRefresh = null; if (location.hash.slice(1) !== s) history.replaceState(null, '', s === 'home' ? location.pathname + location.search : '#' + s); $$('#side button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === s); }); var m = $('#main'); m.innerHTML = ''; VIEWS[s](m); m.scrollTop = 0; window.scrollTo(0, 0); APP.shown(s); }
   function head(m, title, sub) { m.insertAdjacentHTML('beforeend', '<header class="adm-h"><h1>' + title + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</header>'); }
   function input(label, val, onIn, opt) {
     opt = opt || {};
@@ -218,11 +218,12 @@
   }
   VIEWS.home = function (m) {
     onRefresh = function () { var el = m.querySelector('.st-sync'); if (el) el.outerHTML = studiosCard(); };
-    head(m, 'שלום ' + esc(String(draft.owner || '').split(' ')[0] || '') + ' 👋', 'העסק והאתר במקום אחד, שמור בשרת המאובטח.');
+    head(m, 'שלום ' + esc(String(draft.owner || '').split(' ')[0] || '') + (APP.on ? '' : ' 👋'), APP.on ? '' : 'העסק והאתר במקום אחד, שמור בשרת המאובטח.');
+    if (APP.on) APP.home(m);
     var B = FS.adminBiz, now = new Date(), ym = now.toISOString().slice(0, 7), mon = B.month(DEALS, EXPENSES, SETTINGS, ym);
     var pend = REQUESTS.filter(function (r) { return r.status === 'pending'; });
     var stats = [['📥', pend.length, 'בקשות ממתינות'], ['💵', B.money(mon.income), 'הכנסות החודש'], ['💸', B.money(mon.expTotal), 'הוצאות החודש'], ['📑', DEALS.filter(function (d) { return d.date >= now.toISOString().slice(0, 10); }).length, 'אירועים קרובים'], ['⏳', B.money(B.openBalance(DEALS, SETTINGS)), 'יתרות פתוחות'], ['👥', ACCOUNTS.length, 'לקוחות רשומים']];
-    m.insertAdjacentHTML('beforeend', '<div class="adm-stats">' + stats.map(function (s) { return '<div><i>' + s[0] + '</i><b>' + s[1] + '</b><small>' + s[2] + '</small></div>'; }).join('') + '</div>' +
+    m.insertAdjacentHTML('beforeend', '<div class="adm-stats">' + stats.map(function (s) { return '<div><i>' + APP.statIcon(s[0]) + '</i><b>' + s[1] + '</b><small>' + s[2] + '</small></div>'; }).join('') + '</div>' +
       studiosCard() +
       (Date.now() - BACKUPAT > 7 * 864e5 ? '<section class="adm-card rq-home"><div class="adm-card-h"><h3>💾 ' + (BACKUPAT ? 'הגיבוי האחרון: ' + new Date(BACKUPAT).toLocaleDateString('he-IL') + '. הגיע הזמן לגיבוי השבועי' : 'עוד לא הורדת גיבוי למחשב') + '</h3><button class="btn gold small" id="go-bk">לגיבוי ←</button></div><p class="hint">קובץ אקסל עם כל הנתונים בלשוניות, וצילומי הקבלות, נשמרים במחשב שלך.</p></section>' : '') +
       (pend.length ? '<section class="adm-card rq-home"><div class="adm-card-h"><h3>📥 ' + pend.length + ' בקשות הזמנה מחכות לאישור שלך</h3><button class="btn gold small" id="go-rq">לבקשות ←</button></div><ul class="adm-hist">' + pend.slice(0, 5).map(function (r) { var st = B.dayState(ctx, r.date, r.id); return '<li><b>' + esc(r.ref) + ' · ' + esc(r.name) + ' · ' + esc(B.longDate(r.date)) + '</b><small>' + esc(r.typeName || '') + ' · ' + (st.free ? '✔ פנוי ביומן' : '⚠️ תפוס') + '</small></li>'; }).join('') + '</ul></section>' : '') +
@@ -460,6 +461,227 @@
     });
   })();
   ['requests', 'calendar', 'deals', 'reports', 'customers', 'payset'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminBiz.view(k, m, ctx); }; });
+
+  /* ---------- the phone app (≤ 820 px): a thin top bar, tabs at the bottom, a home that says what matters now ----------
+     The same admin underneath: every screen, every action. Only how it is reached and how it looks changes. */
+  var APP = { on: false, ic: function () { return ''; }, shown: function () {}, badge: function () {}, dirty: function () {}, home: function () {} };
+  (function () {
+    var mq = window.matchMedia ? matchMedia('(max-width: 820px)') : { matches: false };
+    /* one set of line icons (24×24, the current colour), instead of mixed emoji */
+    var P = {
+      home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+      inbox: '<path d="M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/><path d="M3 13h5l1 3h6l1-3h5"/>',
+      users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .7 3.2 2.5 3.5 5.2"/>',
+      deal: '<path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+      grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
+      cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+      calx: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9.5 13.5l5 5M14.5 13.5l-5 5"/>',
+      coin: '<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.6-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.8 3 2 3 .9 3 2-1.3 2-3 2c-1.3 0-2.4-.5-3-1.5M12 6.5v11"/>',
+      receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+      hourglass: '<path d="M7 3h10M7 21h10M8 3c0 5 8 6 8 9s-8 4-8 9M16 3c0 5-8 6-8 9s8 4 8 9"/>',
+      bell: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+      user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.3-7 8-7s7 2.5 8 7"/>',
+      printer: '<path d="M7 9V3h10v6M7 17H4v-7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v7h-3"/><path d="M7 14h10v7H7z"/>',
+      cam: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>',
+      photo: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+      drop: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+      sheet: '<path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6"/>',
+      spark: '<path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+      chat: '<path d="M4 20l1.4-4.2A8 8 0 1 1 8.6 19z"/>',
+      check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+      chart: '<path d="M4 20V11M10 20V5M16 20v-8M3 20h18"/>',
+      calc: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>',
+      truck: '<path d="M3 6h11v10H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+      folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+      key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>',
+      bank: '<path d="M3 10l9-6 9 6M5 10v8M9.7 10v8M14.3 10v8M19 10v8M3 20h18"/>',
+      tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+      pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
+      box: '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+      help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7M12 17h.01"/>',
+      star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+      party: '<path d="M4 20l5-14 9 9z"/><path d="M14 4l1 2M19 6l-2 1M20 11l-2-.5"/>',
+      save: '<path d="M12 4v11M7 10l5 5 5-5M4 20h16"/>',
+      lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+      globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
+      eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+      phone: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
+      out: '<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4M6 12h10"/>',
+      x: '<path d="M6 6l12 12M18 6L6 18"/>',
+      arrow: '<path d="M15 6l-6 6 6 6"/>'
+    };
+    var SEC_IC = { home: 'home', requests: 'inbox', calendar: 'cal', deals: 'deal', reports: 'chart', tax: 'calc', expenses: 'receipt', suppliers: 'truck', docs: 'folder', notify: 'bell', customers: 'users', licenses: 'key', payset: 'bank',
+      biz: 'tag', texts: 'pen', packages: 'box', faq: 'help', reviews: 'star', busy: 'calx', frames: 'photo', events: 'party', backup: 'save', account: 'lock',
+      '@./': 'globe', '@design.html': 'pen', '@studio.html': 'spark', '@download.html': 'save', '@app.html': 'phone' };
+    function ic(k) { return '<svg class="ai" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (P[k] || P.deal) + '</svg>'; }
+    APP.ic = ic;
+    var TABS = [['home', 'home', 'בית'], ['requests', 'inbox', 'בקשות'], ['customers', 'users', 'לקוחות'], ['deals', 'deal', 'עסקאות'], ['more', 'grid', 'עוד']];
+    function buzz() { try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* no vibration here */ } }
+    function wa(phone, text) { return 'https://wa.me/' + String(phone || '').replace(/\D/g, '').replace(/^0/, '972') + '?text=' + encodeURIComponent(text || ''); }
+
+    /* the bottom tabs */
+    function tabs() {
+      if ($('#adm-tabs')) return;
+      var t = document.createElement('nav'); t.id = 'adm-tabs'; t.setAttribute('aria-label', 'ניווט ראשי');
+      t.innerHTML = TABS.map(function (x) { return '<button type="button" data-tab="' + x[0] + '">' + ic(x[1]) + '<span>' + x[2] + '</span><b class="tb-n" hidden></b></button>'; }).join('');
+      t.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-tab]'); if (!b) return; buzz();
+        if (b.dataset.tab === 'more') return more(); closeMore();
+        if (b.dataset.tab === sec) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+        show(b.dataset.tab);
+      });
+      document.body.appendChild(t);
+      /* unsaved site changes: one pill above the tabs, instead of the desktop's save / publish bar */
+      var d = document.createElement('div'); d.id = 'adm-dirty'; d.hidden = true; d.innerHTML = '<span></span><button type="button" class="btn gold small">' + ic('globe') + ' פרסום באתר</button>';
+      d.querySelector('button').addEventListener('click', function () { var p = $('#publish'); if (p && !p.disabled) p.click(); });
+      document.body.appendChild(d);
+    }
+    function mark(s) {
+      var k = TABS.some(function (x) { return x[0] === s; }) ? s : 'more';
+      $$('#adm-tabs [data-tab]').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === k); if (b.dataset.tab === k) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    }
+    /* "עוד": every other screen as tiles, and the site actions */
+    function more() {
+      var o = $('#adm-more'); if (o) { closeMore(); return; }
+      o = document.createElement('div'); o.id = 'adm-more'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true'); o.setAttribute('aria-label', 'כל המסכים');
+      var html = '<div class="am-in"><div class="am-h"><b>כל המסכים</b><button type="button" class="am-x" aria-label="סגירה">' + ic('x') + '</button></div>', open = false;
+      SECTIONS.forEach(function (s) {
+        if (s[0] === '-') { if (!s[2]) return; html += (open ? '</div>' : '') + '<small class="am-g">' + s[2] + '</small><div class="am-tiles">'; open = true; return; }
+        if (s[0] === 'home') return;
+        var icon = ic(SEC_IC[s[0]] || 'deal');
+        html += s[0].charAt(0) === '@' ? '<a class="am-t" href="' + s[0].slice(1) + '" target="_blank" rel="noopener">' + icon + '<span>' + s[2] + '</span></a>'
+          : '<button type="button" class="am-t' + (s[0] === sec ? ' on' : '') + '" data-s="' + s[0] + '">' + icon + '<span>' + s[2] + '</span></button>';
+      });
+      html += (open ? '</div>' : '') + '<small class="am-g">האתר</small><div class="am-acts">' +
+        '<button type="button" data-act="client">' + ic('eye') + 'מסך לקוח</button><button type="button" data-act="preview">' + ic('eye') + 'תצוגה מקדימה</button>' +
+        '<button type="button" data-act="save">' + ic('save') + 'שמירת טיוטה</button><button type="button" data-act="publish">' + ic('globe') + 'פרסום באתר</button>' +
+        '<button type="button" data-act="logout" class="am-out">' + ic('out') + 'יציאה</button></div></div>';
+      o.innerHTML = html;
+      o.addEventListener('click', function (e) {
+        if (e.target === o || e.target.closest('.am-x')) return closeMore();
+        var b = e.target.closest('[data-s]'); if (b) { buzz(); closeMore(); show(b.dataset.s); return; }
+        var a = e.target.closest('[data-act]'); if (!a) return; buzz(); closeMore();
+        var id = { preview: '#preview-btn', save: '#save', publish: '#publish', logout: '#logout-top' }[a.dataset.act];
+        if (a.dataset.act === 'client') { var v = $('.adm-views [data-v=client]'); if (v) v.click(); return; }
+        var el = id && $(id); if (el && !el.disabled) el.click(); else if (a.dataset.act === 'publish') FS.toast('✔ אין שינויים שמחכים לפרסום');
+      });
+      document.body.appendChild(o); requestAnimationFrame(function () { o.classList.add('open'); });
+      mark('more');
+    }
+    function closeMore() { var o = $('#adm-more'); if (!o) return; o.remove(); mark(sec); }
+    /* the thin top bar: the name, a bell (what waits) and the account */
+    function topbar() {
+      if ($('#adm-topx')) return;
+      var x = document.createElement('div'); x.id = 'adm-topx';
+      x.innerHTML = '<button type="button" class="tx-b tx-cam" aria-label="צילום קבלה או מסמך">' + ic('cam') + '</button><button type="button" data-go="requests" class="tx-b" aria-label="מה מחכה לך">' + ic('bell') + '<b class="tb-n" hidden></b></button><button type="button" data-go="account" class="tx-b tx-me" aria-label="החשבון"></button>';
+      x.addEventListener('click', function (e) { if (e.target.closest('.tx-cam')) { buzz(); var cb = $('#adm-cam .adm-cam-b'); if (cb) cb.click(); return; } var b = e.target.closest('[data-go]'); if (b) { buzz(); closeMore(); show(b.dataset.go); } });
+      $('.dz-top').appendChild(x);
+    }
+    function me() { var b = $('#adm-topx .tx-me'); if (!b) return; var n = String((draft && draft.owner) || (ACC.session() || {}).email || '').trim(); b.textContent = n ? n.charAt(0).toUpperCase() : '•'; }
+    /* numbers that count up when a screen opens */
+    function countUp(root) {
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      $$('.adm-stats b, .ah-n', root).forEach(function (el) {
+        var t = el.textContent, m = /^(\D*)([\d,]+(?:\.\d+)?)(\D*)$/.exec(t); if (!m) return;
+        var to = Number(m[2].replace(/,/g, '')); if (!(to > 0) || to > 1e8) return;
+        var t0 = performance.now(), dur = 700;
+        (function step(now) { var k = Math.min(1, (now - t0) / dur), v = Math.round(to * (1 - Math.pow(1 - k, 3))); el.textContent = m[1] + v.toLocaleString('he-IL') + m[3]; if (k < 1) requestAnimationFrame(step); else el.textContent = t; })(t0);
+      });
+    }
+    /* pull down at the top to refresh */
+    function pull() {
+      var y0 = null, dy = 0, ind = document.createElement('div'); ind.id = 'adm-pull'; ind.innerHTML = ic('arrow'); document.body.appendChild(ind);
+      window.addEventListener('touchstart', function (e) { y0 = APP.on && window.scrollY <= 0 && !$('#adm-more') ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
+      window.addEventListener('touchmove', function (e) { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); ind.style.transform = 'translate(-50%,' + Math.min(dy, 110) / 1.6 + 'px) rotate(' + (dy > 80 ? -90 : 90) + 'deg)'; ind.style.opacity = Math.min(1, dy / 80); }, { passive: true });
+      window.addEventListener('touchend', function () {
+        if (y0 == null) return; var go = dy > 80; y0 = null; ind.style.transform = ''; ind.style.opacity = 0;
+        if (!go) return; buzz(); ind.classList.add('spin'); ind.style.opacity = 1;
+        Promise.resolve(refresh()).then(function () { ind.classList.remove('spin'); ind.style.opacity = 0; show(sec); FS.toast('✔ עודכן'); }, function () { ind.classList.remove('spin'); ind.style.opacity = 0; });
+      });
+    }
+    /* the opening screen, once a session */
+    function splash() {
+      var seen = false; try { seen = sessionStorage.getItem('adm-splash'); sessionStorage.setItem('adm-splash', '1'); } catch (e) { /* private mode */ }
+      if (seen) return;
+      var s = document.createElement('div'); s.id = 'adm-splash'; s.innerHTML = '<div><i>' + ic('spark') + '</i><b>' + esc($('.dz-brand b') ? $('.dz-brand b').textContent : 'פריים מגנטים') + '</b><small>ניהול העסק</small></div>';
+      document.body.appendChild(s); setTimeout(function () { s.classList.add('out'); setTimeout(function () { s.remove(); }, 500); }, 900);
+    }
+
+    /* home: today, then what waits for you */
+    var LIC_CACHE = null, LIC_AT = 0;
+    APP.home = function (m) {
+      var today = new Date().toISOString().slice(0, 10), B = FS.adminBiz;
+      var days = function (iso) { return Math.round((Date.parse(iso + 'T12:00:00') - Date.parse(today + 'T12:00:00')) / 864e5); };
+      var when = function (iso) { var n = days(iso); return n === 0 ? 'היום' : n === 1 ? 'מחר' : n < 7 ? 'בעוד ' + n + ' ימים' : new Date(iso + 'T12:00').toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' }); };
+      var holds = function (d) { return d && /^\d{4}-\d{2}-\d{2}$/.test(d.date || '') && !d.cancelled && (d.closed || (d.payments || []).length > 0); };
+      var up = DEALS.filter(function (d) { return holds(d) && d.date >= today; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      var st = STUDIOS[0], live = st && Date.now() - st.at < 20 * 60000;
+      var h = new Date().getHours(), hi = h < 5 ? 'לילה טוב' : h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : h < 21 ? 'ערב טוב' : 'לילה טוב';
+      var html = '<div class="ah-date">' + hi + ' · ' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div>';
+      /* the hero: the studio working now, else the next event */
+      if (live) {
+        var ev = st.event || {}, p = st.print || {}, pr = st.printer || {};
+        html += '<section class="ah-hero live"><div class="ah-k"><span class="ah-dot"></span>עכשיו בתוכנה</div><h2>' + esc(ev.names || 'עבודה פתוחה') + '</h2>' +
+          '<div class="ah-chips"><span>' + ic('photo') + '<b class="ah-n">' + (st.photos || 0) + '</b> תמונות</span><span>' + ic('printer') + '<b class="ah-n">' + (p.todayItems || 0) + '</b> הודפסו היום</span>' +
+          (pr.ink != null ? '<span class="' + (pr.ink < 15 ? 'warn' : '') + '">' + ic('drop') + '<b>' + pr.ink + '%</b> דיו</span>' : '') + (pr.paper != null ? '<span class="' + (pr.paper < 40 ? 'warn' : '') + '">' + ic('sheet') + '<b>' + pr.paper + '</b> נייר</span>' : '') + '</div></section>';
+      } else if (up.length) {
+        var d = up[0], cl = d.client || {}, t = B.totals(d, SETTINGS);
+        html += '<section class="ah-hero"><div class="ah-k">' + ic('cal') + 'האירוע הבא · ' + when(d.date) + '</div><h2>' + esc(cl.name || d.title || 'אירוע') + '</h2>' +
+          '<div class="ah-chips">' + (d.venue ? '<span>' + esc(d.venue) + '</span>' : '') + '<span>' + (t.balance > 0.5 ? ic('hourglass') + 'לגבות ' + B.money(t.balance) : ic('check') + 'שולם') + '</span>' + (up.length > 1 ? '<span>+' + (up.length - 1) + ' אירועים אחריו</span>' : '') + '</div>' +
+          '<div class="ah-acts">' + (cl.phone ? '<a class="ah-b" target="_blank" rel="noopener" href="' + esc(wa(cl.phone, 'שלום ' + (cl.name || '') + ',')) + '">' + ic('chat') + 'וואטסאפ</a>' : '') + '<button type="button" class="ah-b" data-go="deals">' + ic('deal') + 'לעסקה</button></div></section>';
+      } else {
+        html += '<section class="ah-hero calm"><div class="ah-k">' + ic('cal') + 'האירועים הקרובים</div><h2>אין אירועים סגורים כרגע</h2><div class="ah-acts"><button type="button" class="ah-b" data-go="requests">' + ic('inbox') + 'לבקשות</button><a class="ah-b" href="studio.html" target="_blank" rel="noopener">' + ic('spark') + 'לסטודיו</a></div></section>';
+      }
+      /* what waits for you */
+      var rows = [];
+      REQUESTS.filter(function (r) { return r.status === 'pending'; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).slice(0, 4).forEach(function (r) {
+        rows.push('<li><i class="hot">' + ic('inbox') + '</i><div><b>' + esc(r.name) + ' · ' + esc(r.typeName || 'אירוע') + '</b><small>בקשת הזמנה ל' + when(r.date) + ' · מחכה לאישור</small></div><button type="button" class="ah-go" data-go="requests">לטיפול</button></li>');
+      });
+      up.filter(function (d) { return days(d.date) <= 7 && B.totals(d, SETTINGS).balance > 0.5; }).slice(0, 3).forEach(function (d) {
+        var cl = d.client || {};
+        rows.push('<li><i>' + ic('coin') + '</i><div><b>לגבות ' + B.money(B.totals(d, SETTINGS).balance) + '</b><small>' + esc(cl.name || 'עסקה') + ' · האירוע ' + when(d.date) + '</small></div>' + (cl.phone ? '<a class="ah-go" target="_blank" rel="noopener" href="' + esc(wa(cl.phone, 'שלום ' + (cl.name || '') + ', לגבי התשלום לאירוע ' + when(d.date) + ':')) + '">וואטסאפ</a>' : '<button type="button" class="ah-go" data-go="deals">לעסקה</button>') + '</li>');
+      });
+      if (Date.now() - BACKUPAT > 7 * 864e5) rows.push('<li><i>' + ic('save') + '</i><div><b>גיבוי שבועי למחשב</b><small>' + (BACKUPAT ? 'האחרון לפני ' + Math.floor((Date.now() - BACKUPAT) / 864e5) + ' ימים' : 'עוד לא בוצע') + '</small></div><button type="button" class="ah-go" data-go="backup">לגיבוי</button></li>');
+      html += '<section class="ah-wait"><h3>מחכה לך</h3><ul id="ah-list">' + rows.join('') + '<li class="ah-lic" hidden></li></ul>' + (rows.length ? '' : '<p class="ah-ok">' + ic('check') + 'הכול מטופל. אין שום דבר שמחכה לך.</p>') + '</section>';
+      m.insertAdjacentHTML('beforeend', '<div class="ah">' + html + '</div>');
+      $$('.ah [data-go]', m).forEach(function (b) { b.addEventListener('click', function () { buzz(); show(b.dataset.go); }); });
+      /* Optimus: sign-ups this week and upgrade requests (from the licenses server, kept 5 minutes) */
+      function lic(r) {
+        var li = $('.ah-lic', m); if (!li || !r || !r.ok) return;
+        var wk = Date.now() - 7 * 864e5, n = (r.leads || []).filter(function (x) { return Date.parse(x.firstAt || 0) > wk; }).length, q = (r.licenses || []).filter(function (L) { return L.planReq; }).length;
+        if (!n && !q) return;
+        li.hidden = false; li.innerHTML = '<i class="hot">' + ic('spark') + '</i><div><b>' + (q ? q + ' בקשות שדרוג לאופטימוס' : n + ' נרשמו לאופטימוס השבוע') + '</b><small>' + (q && n ? n + ' נרשמו השבוע · ' : '') + 'וואטסאפ ושיחה מהרשימה</small></div><button type="button" class="ah-go">' + (q ? 'לרישיונות' : 'ללקוחות') + '</button>';
+        li.querySelector('button').addEventListener('click', function () { buzz(); show(q ? 'licenses' : 'customers'); });
+        var ok = $('.ah-ok', m); if (ok) ok.remove();
+      }
+      if (LIC_CACHE && Date.now() - LIC_AT < 5 * 60000) lic(LIC_CACHE);
+      else if (FS.license && FS.license.admin) FS.license.admin('lic-list').then(function (r) { if (r && r.ok) { LIC_CACHE = r; LIC_AT = Date.now(); } lic(r); }, function () {});
+    };
+    /* the stats icons on home */
+    var STAT_IC = { '📥': 'inbox', '💵': 'coin', '💸': 'receipt', '📑': 'deal', '⏳': 'hourglass', '👥': 'users' };
+    APP.statIcon = function (e) { return APP.on && STAT_IC[e] ? ic(STAT_IC[e]) : e; };
+
+    APP.shown = function (s) {
+      if (!APP.on) return; mark(s);
+      /* the screen's title: the same line icon as its tile, instead of the emoji */
+      var h1 = $('#main .adm-h h1');
+      if (h1 && SEC_IC[s] && s !== 'home' && !h1.querySelector('.ai')) { var t = h1.textContent.replace(/^[^\u0590-\u05FFA-Za-z0-9]+/, ''); h1.innerHTML = ic(SEC_IC[s]) + '<span>' + esc(t) + '</span>'; }
+      var m = $('#main'); m.classList.remove('adm-enter'); void m.offsetWidth; m.classList.add('adm-enter'); countUp(m); me();
+    };
+    APP.badge = function (n) {
+      $$('#adm-tabs [data-tab=requests] .tb-n, #adm-topx .tb-n').forEach(function (b) { b.hidden = !n; b.textContent = n > 9 ? '9+' : n; });
+    };
+    APP.dirty = function (n) { var d = $('#adm-dirty'); if (!d) return; d.hidden = !APP.on || !n; d.querySelector('span').textContent = n + ' שינויים באתר עוד לא פורסמו'; };
+    function apply() {
+      var was = APP.on; APP.on = !!mq.matches; document.body.classList.toggle('adm-app', APP.on);
+      if (APP.on) { tabs(); topbar(); me(); } else closeMore();
+      if (was !== APP.on && draft) show(sec);
+    }
+    apply();
+    if (APP.on) splash();
+    pull();
+    if (mq.addEventListener) mq.addEventListener('change', apply); else if (mq.addListener) mq.addListener(apply);
+  })();
 
   signIn();
 })();
