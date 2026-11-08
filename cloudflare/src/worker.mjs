@@ -25,7 +25,7 @@ import statusRender from './gen/status-render.mjs';
 import { mailHandle, mailCallback, who as sessionOf } from './mail.mjs';
 import { localGuide } from './guide-local.mjs';
 import { frameSite, frameFile, frameBiz, frameBook, frameCal, frameSnapshot, FrameStore } from './frame.mjs';
-import { frameDaily, frameWeekly, notifyOwner, telegramFind, calendarSync, maton, ilDate, ilHour, ilWeekday } from './notify.mjs';
+import { callMeBot, waNote, frameDaily, frameWeekly, notifyOwner, telegramFind, calendarSync, maton, ilDate, ilHour, ilWeekday } from './notify.mjs';
 import { frameLive, liveFile, liveCron } from './live.mjs';
 import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
 
@@ -152,8 +152,13 @@ export default {
       if (rt.kind === 'frame-book') { const r = await fr.bookCall(who, b, ip); return reply(r.body, r.code); }
       // the customers' accounts live with the sign-in (main object): the owner sees them and may block or unblock one
       if (who && who.role === 'admin' && b.action === 'account-set') return reply(await main.frameAccountSet(String(b.email || ''), !!b.active));
+      if (who && who.role === 'admin' && b.action === 'wa-test') {
+        if (!env.CALLMEBOT_APIKEY || !env.CALLMEBOT_PHONE) return reply({ ok: false, error: 'wa-not-set' });
+        const r = await callMeBot(env, '✅ בדיקה מפריים מגנטים: הודעות הוואטסאפ על נרשמים והתחברויות עובדות.\n' + FRAME_ADMIN + '?app=1');
+        return reply(r.error ? { ok: false, error: 'wa-failed', why: r.error } : { ok: true });
+      }
       const r = await fr.bizCall(who, b, ip);
-      if (who && who.role === 'admin' && b.action === 'all' && r.body && r.body.ok) { r.body.accounts = await main.frameAccounts(); r.body.visitors = await main.frameVisitors(); }
+      if (who && who.role === 'admin' && b.action === 'all' && r.body && r.body.ok) { r.body.accounts = await main.frameAccounts(); r.body.visitors = await main.frameVisitors(); r.body.waReady = !!(env.CALLMEBOT_APIKEY && env.CALLMEBOT_PHONE); }
       return reply(r.body, r.code);
     }
     const id = env.STATE.idFromName(rt.svc);
@@ -222,11 +227,7 @@ async function frameNotify(env, n) {
     const text = 'בקשת הזמנה חדשה מהאתר 🧲\n\n' + bookLines(q).join('\n') + '\n\n' + cal + more + '\n\nאת ההזמנה סוגרים רק אחרי האישור שלך. לאישור או לדחייה:\n' + FRAME_ADMIN + '#requests' + '\n\nוואטסאפ ללקוח: ' + waOf(q.phone);
     sent.owner = await sendMail(env, { to: ADMIN_EMAIL, fromName: FRAME_NAME, replyTo: q.email || undefined, subject: '🧲 בקשת הזמנה ' + q.ref + ' · ' + (q.typeName || q.type || 'אירוע') + ' · ' + q.date + (s.free ? ' · פנוי' : ' · תפוס'), text });
     if (env.CALLMEBOT_APIKEY && env.CALLMEBOT_PHONE) {
-      try {
-        const msg = '🧲 בקשת הזמנה ' + q.ref + '\n' + q.name + ' · ' + q.phone + '\n' + (q.typeName || q.type || '') + ' · ' + q.date + '\n' + (s.free ? '✔ פנוי' : '⚠️ תפוס') + '\n' + FRAME_ADMIN + '#requests';
-        const r = await fetch('https://api.callmebot.com/whatsapp.php?phone=' + encodeURIComponent(env.CALLMEBOT_PHONE) + '&text=' + encodeURIComponent(msg) + '&apikey=' + encodeURIComponent(env.CALLMEBOT_APIKEY), { signal: AbortSignal.timeout(10000) });
-        sent.wa = r.ok ? {} : { error: 'callmebot ' + r.status };
-      } catch (e) { sent.wa = { error: 'callmebot' }; }
+      sent.wa = await callMeBot(env, '🧲 בקשת הזמנה ' + q.ref + '\n' + q.name + ' · ' + q.phone + '\n' + (q.typeName || q.type || '') + ' · ' + q.date + '\n' + (s.free ? '✔ פנוי' : '⚠️ תפוס') + '\n' + FRAME_ADMIN + '#requests');
     }
     if (q.email) sent.client = await sendMail(env, { to: q.email, fromName: FRAME_NAME, replyTo: ADMIN_EMAIL, subject: 'קיבלנו את בקשת ההזמנה שלך (' + q.ref + ')',
       text: 'שלום ' + q.name + ',\n\nתודה! קיבלנו את הבקשה שלך:\n' + bookLines(q).join('\n') + '\n\nהבקשה ממתינה לאישור. נבדוק את היומן ונחזור אליך בהקדם עם אישור סופי. התאריך נשמר רק אחרי האישור.\n\n' + FRAME_NAME });
@@ -711,7 +712,11 @@ export class State extends DurableObject {
       }
       // a second mail with the same answer: the owner's copy of a receipt
       if (h.mail2) await sendMail(env, h.mail2).catch(() => {});
+      // the owner hears on WhatsApp who signed up and who signed in (never blocks the answer)
+      let waMsg = null;
+      if (env.CALLMEBOT_APIKEY && env.CALLMEBOT_PHONE && cur.body && cur.body.ok && body && typeof body === 'object') { try { waMsg = waNote(st.sd, body, Date.now(), ADMIN_EMAIL); } catch (e) { waMsg = null; } }
       await this.save(st);
+      if (waMsg) { const p = callMeBot(env, waMsg); try { this.ctx.waitUntil(p); } catch (e) { await p; } }
       return reply(cur.body, cur.code || 200);
     } catch (e) {
       // nothing is kept from a failed request

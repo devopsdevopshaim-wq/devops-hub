@@ -259,3 +259,9 @@ body.pv-on .adm { grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 42%)
 .rq-opt tr.rq-o-hot td:first-child { box-shadow: inset -4px 0 0 #e0a43a; }
 .rq-opt tr.rq-o-hot td:nth-child(2) { color: #e0a43a; font-weight: 700; }
 .rq-opt tr.rq-o-ok td:nth-child(2) { color: #3fae6a; }
+
+/* home: what the studio is doing, per computer */
+.st-sync .st-dev + .st-dev { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(127, 127, 127, .2); }
+.st-sync .st-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.st-sync .st-dot { width: 9px; height: 9px; border-radius: 50%; background: #888; } .st-sync .st-dot.on { background: #3fae6a; box-shadow: 0 0 0 3px rgba(63, 174, 106, .25); }
+.st-sync .vis-stats > div.warn b { color: #d9822b; }

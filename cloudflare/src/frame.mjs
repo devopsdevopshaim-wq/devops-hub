@@ -241,7 +241,7 @@ export async function frameBiz(storage, who, b) {
     return out({ ok: true, site, siteAt: (await storage.get('siteAt')) || null, settings: (await storage.get('settings')) || {}, deals: deals.filter((x) => x && x.id),
       expenses, frames: (await storage.get('frames')) || [], customers, requests: requests.sort((x, y) => y.at - x.at), calKey: (await storage.get('calKey')) || '', sentReports: (await storage.get('sentReports')) || [],
       suppliers: (await st.list('sup:')).map(([, v]) => v).filter(Boolean), backupAt: (await storage.get('backupAt')) || 0,
-      docs: (await st.list('doc:')).map(([, v]) => v).filter(Boolean), notifyState: (await storage.get('notifyMeta')) || {} });
+      docs: (await st.list('doc:')).map(([, v]) => v).filter(Boolean), notifyState: (await storage.get('notifyMeta')) || {}, studios: Object.values((await storage.get('studios')) || {}).sort((p, q) => q.at - p.at) });
   }
   // the owner's report by email (to the accountant, or to himself): html and text from the admin page, with up to 3 CSV files.
   // Only the owner, at most 40 a day; the html loses scripts and handlers; card numbers are refused as everywhere.
@@ -384,6 +384,16 @@ export async function frameBiz(storage, who, b) {
   if (a === 'doc-get') { const id = String(b.id || ''); if (!ID.test(id)) return out({ ok: false, error: 'bad-input' }, 400); const d = await st.getBig('docimg:' + id); return d ? out({ ok: true, data: d }) : out({ ok: false, error: 'not-found' }, 404); }
   if (a === 'doc-del') { const id = String(b.id || ''); if (!ID.test(id)) return out({ ok: false, error: 'bad-input' }, 400); await st.delBig('docimg:' + id); await storage.delete('doc:' + id); return out({ ok: true }); }
   // the weekly backup: when the owner last downloaded one
+  // what the studio is doing now, from each of the owner's computers (names, dates and counts only): for the phone admin
+  if (a === 'studio-sync') {
+    const x = b.studio && typeof b.studio === 'object' ? b.studio : null, id = String((x && x.device) || '');
+    if (!x || !/^d[a-z0-9]{4,20}$/.test(id) || JSON.stringify(x).length > 20000) return out({ ok: false, error: 'bad-input' }, 400);
+    const all = (await storage.get('studios')) || {};
+    all[id] = Object.assign({}, x, { at: Date.now() });
+    const ids = Object.keys(all).sort((p, q) => all[q].at - all[p].at); ids.slice(5).forEach((k) => delete all[k]);
+    await storage.put('studios', all);
+    return out({ ok: true });
+  }
   if (a === 'backup-mark') { const t = Date.now(); await storage.put('backupAt', t); return out({ ok: true, backupAt: t }); }
   if (a === 'frame-add') {
     const data = String(b.data || '').replace(/^data:image\/png;base64,/, '');
