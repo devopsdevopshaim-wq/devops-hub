@@ -9,7 +9,7 @@
   var DRAFT = 'fs-admin-draft';
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   FS.busy = FS.busy || function (msg) { var b = $('#busy'); if (msg) { $('#busy-msg').textContent = msg; b.hidden = false; } else b.hidden = true; };
-  var base = null, draft = null, dirty = {}, sec = 'home', TEXTS = [], FRAMES = [], DEALS = [], EXPENSES = [], SETTINGS = {}, CUSTOMERS = [], REQUESTS = [], ACCOUNTS = [], VISITORS = [], CALKEY = '', SENT = [], SUPS = [], BACKUPAT = 0, DOCS = [], NSTATE = {}, onRefresh = null;
+  var base = null, draft = null, dirty = {}, sec = 'home', TEXTS = [], FRAMES = [], DEALS = [], EXPENSES = [], SETTINGS = {}, CUSTOMERS = [], REQUESTS = [], ACCOUNTS = [], VISITORS = [], WAREADY = null, STUDIOS = [], CALKEY = '', SENT = [], SUPS = [], BACKUPAT = 0, DOCS = [], NSTATE = {}, onRefresh = null;
 
   /* ---------- sign-in (the sites' server: email + password, PBKDF2, lock-outs, device checks, authenticator) ---------- */
   /* two ways in: customers (name + phone or email, no password) see the customer screen; the owner signs in as admin */
@@ -45,7 +45,7 @@
       if (!all || !all.ok) { if (all && (all.error === 'signed-out' || all.error === 'admin-only')) return showLogin(ACC.msg(all)); FS.toast(ACC.msg(all), 6000); return; }
       var fromFile = r[1] || {}; delete fromFile.__frames; delete fromFile.__live; delete fromFile.__taken;
       base = all.site || fromFile; FRAMES = all.frames || []; DEALS = all.deals || []; EXPENSES = all.expenses || []; SETTINGS = all.settings || {}; CUSTOMERS = all.customers || [];
-      REQUESTS = all.requests || []; ACCOUNTS = all.accounts || []; VISITORS = all.visitors || []; CALKEY = all.calKey || ''; SENT = all.sentReports || []; SUPS = all.suppliers || []; BACKUPAT = all.backupAt || 0; DOCS = all.docs || []; NSTATE = all.notifyState || {};
+      REQUESTS = all.requests || []; WAREADY = 'waReady' in all ? !!all.waReady : WAREADY; STUDIOS = all.studios || []; ACCOUNTS = all.accounts || []; VISITORS = all.visitors || []; CALKEY = all.calKey || ''; SENT = all.sentReports || []; SUPS = all.suppliers || []; BACKUPAT = all.backupAt || 0; DOCS = all.docs || []; NSTATE = all.notifyState || {};
       readTexts(r[2]);
       var saved = null; try { saved = JSON.parse(localStorage.getItem(DRAFT) || 'null'); } catch (e) { /* ignore */ }
       draft = clone(base); dirty = {};
@@ -71,7 +71,7 @@
     return ACC.call('all').then(function (a) {
       if (!a || !a.ok) return;
       var before = REQUESTS.filter(function (r) { return r.status === 'pending'; }).map(function (r) { return r.id; });
-      DEALS = a.deals || DEALS; EXPENSES = a.expenses || EXPENSES; SETTINGS = a.settings || SETTINGS; CUSTOMERS = a.customers || CUSTOMERS; REQUESTS = a.requests || REQUESTS; ACCOUNTS = a.accounts || ACCOUNTS; VISITORS = a.visitors || VISITORS; CALKEY = a.calKey || CALKEY; SENT = a.sentReports || SENT; SUPS = a.suppliers || SUPS; BACKUPAT = a.backupAt || BACKUPAT; DOCS = a.docs || DOCS; NSTATE = a.notifyState || NSTATE;
+      DEALS = a.deals || DEALS; EXPENSES = a.expenses || EXPENSES; SETTINGS = a.settings || SETTINGS; CUSTOMERS = a.customers || CUSTOMERS; REQUESTS = a.requests || REQUESTS; ACCOUNTS = a.accounts || ACCOUNTS; if ('waReady' in a) WAREADY = !!a.waReady; STUDIOS = a.studios || STUDIOS; VISITORS = a.visitors || VISITORS; CALKEY = a.calKey || CALKEY; SENT = a.sentReports || SENT; SUPS = a.suppliers || SUPS; BACKUPAT = a.backupAt || BACKUPAT; DOCS = a.docs || DOCS; NSTATE = a.notifyState || NSTATE;
       var fresh = REQUESTS.filter(function (r) { return r.status === 'pending' && before.indexOf(r.id) < 0; });
       if (fresh.length) FS.toast('📥 בקשת הזמנה חדשה: ' + fresh.map(function (r) { return r.name + ' · ' + r.date; }).join(', '), 7000);
       badge(); if (onRefresh) onRefresh();
@@ -196,12 +196,34 @@
   /* the promo films (videos/promo-src/build.py): [file, title, line, download name] */
   var PROMOS = [['site', 'פריים מגנטים', 'מגנט אישי לכל אורח · 45 שניות', 'frame-magnets'], ['studio', 'אופטימוס', 'עריכה, מסגרות ו־AI · 45 שניות', 'frame-studio'], ['app', 'התוכנה לווינדוס', 'AI גם בלי אינטרנט · 41 שניות', 'frame-studio-windows']];
   var VIEWS = {};
+  /* 🖥️ what the studio is doing (js/studio-sync.js on each of the owner's computers): event, photos, prints, ink and paper */
+  function studiosCard() {
+    if (!STUDIOS.length) return '<section class="adm-card st-sync"><h3>🖥️ מה קורה בתוכנה</h3><p class="hint">עוד לא התקבל עדכון מהתוכנה. פותחים את אופטימוס במחשב, נכנסים כמנהל (🔐), ומכאן רואים את האירוע, התמונות וההדפסות בזמן אמת.</p></section>';
+    var ago = function (t) { var mn = Math.round((Date.now() - t) / 60000); return mn < 2 ? 'עכשיו' : mn < 60 ? 'לפני ' + mn + ' דק׳' : mn < 1440 ? 'לפני ' + Math.round(mn / 60) + ' שע׳' : new Date(t).toLocaleDateString('he-IL'); };
+    var KIND = { desktop: '💻 התוכנה במחשב', phone: '📱 בטלפון', browser: '🌐 בדפדפן' }, today = new Date().toISOString().slice(0, 10);
+    return '<section class="adm-card st-sync"><h3>🖥️ מה קורה בתוכנה</h3>' + STUDIOS.map(function (x) {
+      var live = Date.now() - x.at < 20 * 60000, ev = x.event || {}, p = x.print || {}, pr = x.printer || {};
+      var next = (x.events || []).filter(function (e) { return e.date && e.date >= today; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).slice(0, 3);
+      return '<div class="st-dev"><div class="st-h"><b>' + (KIND[x.kind] || KIND.browser) + '</b><span class="st-dot' + (live ? ' on' : '') + '"></span><small>' + (live ? 'פתוחה · ' : '') + 'עדכון ' + ago(x.at) + (x.ver ? ' · ' + esc(x.ver) : '') + '</small></div>' +
+        '<div class="vis-stats">' +
+        '<div><b>' + esc(ev.names || '—') + '</b><span>האירוע הפתוח' + (ev.date ? ' · ' + new Date(ev.date + 'T12:00').toLocaleDateString('he-IL') : '') + '</span></div>' +
+        '<div><b>' + (x.photos || 0) + '</b><span>תמונות בעבודה</span></div>' +
+        '<div><b>' + (p.todayItems || 0) + '</b><span>הודפסו היום (' + (p.todaySheets || 0) + ' דפים)</span></div>' +
+        '<div><b>' + (p.items || 0) + '</b><span>באירוע הזה (' + (p.sheets || 0) + ' דפים)</span></div>' +
+        (pr.ink != null ? '<div class="' + (pr.ink < 15 ? 'warn' : '') + '"><b>' + pr.ink + '%</b><span>דיו (הערכה)</span></div>' : '') +
+        (pr.paper != null ? '<div class="' + (pr.paper < 40 ? 'warn' : '') + '"><b>' + pr.paper + '</b><span>נייר שנשאר</span></div>' : '') +
+        '</div>' + (pr.name ? '<p class="hint">🖨️ ' + esc(pr.name) + (p.lastAt ? ' · הדפסה אחרונה ' + ago(p.lastAt) : '') + '</p>' : '') +
+        (next.length ? '<p class="hint">🗓️ אירועים שמורים בתוכנה: ' + next.map(function (e) { return esc(e.names || 'אירוע') + ' (' + new Date(e.date + 'T12:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' }) + ')'; }).join(' · ') + '</p>' : '') + '</div>';
+    }).join('') + '</section>';
+  }
   VIEWS.home = function (m) {
+    onRefresh = function () { var el = m.querySelector('.st-sync'); if (el) el.outerHTML = studiosCard(); };
     head(m, 'שלום ' + esc(String(draft.owner || '').split(' ')[0] || '') + ' 👋', 'העסק והאתר במקום אחד, שמור בשרת המאובטח.');
     var B = FS.adminBiz, now = new Date(), ym = now.toISOString().slice(0, 7), mon = B.month(DEALS, EXPENSES, SETTINGS, ym);
     var pend = REQUESTS.filter(function (r) { return r.status === 'pending'; });
     var stats = [['📥', pend.length, 'בקשות ממתינות'], ['💵', B.money(mon.income), 'הכנסות החודש'], ['💸', B.money(mon.expTotal), 'הוצאות החודש'], ['📑', DEALS.filter(function (d) { return d.date >= now.toISOString().slice(0, 10); }).length, 'אירועים קרובים'], ['⏳', B.money(B.openBalance(DEALS, SETTINGS)), 'יתרות פתוחות'], ['👥', ACCOUNTS.length, 'לקוחות רשומים']];
     m.insertAdjacentHTML('beforeend', '<div class="adm-stats">' + stats.map(function (s) { return '<div><i>' + s[0] + '</i><b>' + s[1] + '</b><small>' + s[2] + '</small></div>'; }).join('') + '</div>' +
+      studiosCard() +
       (Date.now() - BACKUPAT > 7 * 864e5 ? '<section class="adm-card rq-home"><div class="adm-card-h"><h3>💾 ' + (BACKUPAT ? 'הגיבוי האחרון: ' + new Date(BACKUPAT).toLocaleDateString('he-IL') + '. הגיע הזמן לגיבוי השבועי' : 'עוד לא הורדת גיבוי למחשב') + '</h3><button class="btn gold small" id="go-bk">לגיבוי ←</button></div><p class="hint">קובץ אקסל עם כל הנתונים בלשוניות, וצילומי הקבלות, נשמרים במחשב שלך.</p></section>' : '') +
       (pend.length ? '<section class="adm-card rq-home"><div class="adm-card-h"><h3>📥 ' + pend.length + ' בקשות הזמנה מחכות לאישור שלך</h3><button class="btn gold small" id="go-rq">לבקשות ←</button></div><ul class="adm-hist">' + pend.slice(0, 5).map(function (r) { var st = B.dayState(ctx, r.date, r.id); return '<li><b>' + esc(r.ref) + ' · ' + esc(r.name) + ' · ' + esc(B.longDate(r.date)) + '</b><small>' + esc(r.typeName || '') + ' · ' + (st.free ? '✔ פנוי ביומן' : '⚠️ תפוס') + '</small></li>'; }).join('') + '</ul></section>' : '') +
       '<h2>הפלטפורמות</h2><div class="adm-links">' +
@@ -419,7 +441,7 @@
     deals: function () { return DEALS; }, setDeals: function (l) { DEALS = l; }, expenses: function () { return EXPENSES; }, setExpenses: function (l) { EXPENSES = l; },
     settings: function () { return SETTINGS; }, setSettings: function (s2) { SETTINGS = s2; }, customers: function () { return CUSTOMERS; }, site: function () { return draft; },
     head: head, input: input, esc: esc, reload: function () { show(sec); }, touchBusy: function (list) { draft.busy = list; touch('busy'); },
-    requests: function () { return REQUESTS; }, setRequests: function (l) { REQUESTS = l; }, accounts: function () { return ACCOUNTS; }, visitors: function () { return VISITORS; }, calKey: function () { return CALKEY; }, setCalKey: function (k) { CALKEY = k; }, sent: function () { return SENT; }, setSent: function (l) { SENT = l; }, suppliers: function () { return SUPS; }, setSuppliers: function (l) { SUPS = l; }, backupAt: function () { return BACKUPAT; }, setBackupAt: function (t) { BACKUPAT = t; }, docs: function () { return DOCS; }, setDocs: function (l) { DOCS = l; }, notifyState: function () { return NSTATE; },
+    requests: function () { return REQUESTS; }, setRequests: function (l) { REQUESTS = l; }, accounts: function () { return ACCOUNTS; }, visitors: function () { return VISITORS; }, waReady: function () { return WAREADY; }, studios: function () { return STUDIOS; }, calKey: function () { return CALKEY; }, setCalKey: function (k) { CALKEY = k; }, sent: function () { return SENT; }, setSent: function (l) { SENT = l; }, suppliers: function () { return SUPS; }, setSuppliers: function (l) { SUPS = l; }, backupAt: function () { return BACKUPAT; }, setBackupAt: function (t) { BACKUPAT = t; }, docs: function () { return DOCS; }, setDocs: function (l) { DOCS = l; }, notifyState: function () { return NSTATE; },
     refresh: refresh, onRefresh: function (fn) { onRefresh = fn; }, badge: function () { badge(); }, go: function (s2) { show(s2); }
   };
   VIEWS.licenses = function (m) { FS.adminLicenses(m, ctx); };
