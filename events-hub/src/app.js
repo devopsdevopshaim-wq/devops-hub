@@ -5,10 +5,11 @@ import db from './db.js';
 import config from './config.js';
 import * as auth from './auth.js';
 import * as payments from './payments/index.js';
-import { PRINT_TYPES } from './seed.js';
+import { PRINT_TYPES, EVENT_TYPES } from './seed.js';
 import { assignOrder, OPEN_STATUSES } from './routing.js';
 import { addEvent, stuckInfo, STATUS_NAME, STATUSES } from './shipping.js';
 import { priceFor, quote, publicPromotions, normCode, livePromotions } from './pricing.js';
+import * as loyalty from './loyalty.js';
 
 // ---------- עזר ----------
 const CORS = {
@@ -37,6 +38,7 @@ const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;
 // מגביל קצב פשוט (בענן כל הבקשות עוברות במופע אחד, ולכן זה עובד)
 const hits = new Map();
 function limited(key, windowMs, max) {
+  if (!config.rateLimit) return false;
   const now = Date.now();
   const list = (hits.get(key) || []).filter((t) => now - t < windowMs);
   list.push(now);
@@ -119,6 +121,7 @@ function publicOrder(o) {
     id: o.id, number: o.number, status: o.status, statusName: STATUS_NAME[o.status], createdAt: o.createdAt,
     items: o.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price, originalPrice: i.originalPrice || i.price, promo: i.promo || '', photoUrl: i.photoUrl })),
     subtotal: o.subtotal, discount: o.discount || 0, coupon: o.coupon || '', shipping: o.shipping, total: o.total, city: o.customer.city,
+    loyaltyEarned: o.loyaltyEarned || 0, reward: o.reward ? { name: o.reward.name, points: o.reward.points } : null, clubToken: o.clubTokenNew || '',
     timeline: o.timeline.filter((t) => !t.internal).map((t) => ({ status: t.status, statusName: STATUS_NAME[t.status] || '', note: t.publicNote ? t.note : '', at: t.at })),
   };
 }
@@ -131,6 +134,8 @@ export function applyPaymentResult({ paymentId, approved, providerRef, raw }) {
   db.update('payments', pay.id, { status: approved ? 'approved' : 'declined', providerRef: providerRef || pay.providerRef, raw });
   if (approved) {
     addEvent(order, 'paid', `התשלום אושר (${pay.provider})`);
+    loyalty.settle(order);
+    if (order.loyaltyEarned) addEvent(order, null, `נצברו ${order.loyaltyEarned} נקודות מועדון`, 'loyalty', { internal: true });
     const notes = assignOrder(order);
     addEvent(order, null, notes.join(' | '), 'routing', { internal: true });
   } else {
@@ -182,7 +187,27 @@ function productImages(b) {
 const PROMO_KINDS = ['percent', 'amount', 'price'];
 const PROMO_SCOPES = ['all', 'category', 'products', 'collection'];
 
+// גדלים/אפשרויות למוצר: [{ name, price }], עד 8
+function productVariants(b) {
+  const list = Array.isArray(b.variants) ? b.variants : [];
+  return list.map((v) => ({ name: str(v && v.name, 40), price: Math.max(0, num(v && v.price)) })).filter((v) => v.name).slice(0, 8);
+}
+const EVENT_IDS = EVENT_TYPES.map((e) => e.id);
+const LINK_TYPES = ['none', 'category', 'event', 'product', 'url'];
+
 const CRUD = {
+  rewards: ['rw_', (b) => ({
+    name: str(b.name, 80), description: str(b.description, 200), kind: b.kind === 'gift' ? 'gift' : 'discount',
+    amount: Math.max(0, num(b.amount)), productId: b.kind === 'gift' ? str(b.productId, 40) : '',
+    points: Math.max(1, Math.floor(num(b.points, 1))), active: b.active !== false,
+  })],
+  banners: ['bn_', (b) => ({
+    name: str(b.name, 80), subtitle: str(b.subtitle, 160), cta: str(b.cta, 40),
+    image: (IMG_RE.test(str(b.image, 300)) || /^https:\/\/[^\s"'<>]+$/.test(str(b.image, 300))) ? str(b.image, 300) : '',
+    linkType: LINK_TYPES.includes(b.linkType) ? b.linkType : 'none',
+    linkValue: b.linkType === 'url' && !/^https:\/\//.test(str(b.linkValue, 300)) ? '' : str(b.linkValue, 300),
+    startDate: str(b.startDate, 10), endDate: str(b.endDate, 10), order: Math.floor(num(b.order, 0)), active: b.active !== false,
+  })],
   promotions: ['pm_', (b) => ({
     name: str(b.name, 80), badge: str(b.badge, 30),
     kind: PROMO_KINDS.includes(b.kind) ? b.kind : 'percent', value: Math.max(0, num(b.value)),
@@ -195,6 +220,7 @@ const CRUD = {
     name: str(b.name, 120), category: str(b.category, 40), price: Math.max(0, num(b.price)), icon: str(b.icon, 10),
     description: str(b.description, 1500), images: productImages(b), collectionIds: arr(b.collectionIds),
     needsPhoto: Boolean(b.needsPhoto), active: b.active !== false,
+    variants: productVariants(b), eventTypes: arr(b.eventTypes).filter((e) => EVENT_IDS.includes(e)), upsell: Boolean(b.upsell),
   })],
   collections: ['col_', (b) => ({
     name: str(b.name, 80), icon: str(b.icon, 10), kind: str(b.kind, 20) || 'special',
@@ -291,15 +317,25 @@ on('GET', '/api/store', () => {
   const products = db.all('products').filter((p) => p.active && (!(p.collectionIds || []).length || p.collectionIds.some((id) => activeIds.has(id))));
   const usedCats = new Set(products.map((p) => p.category));
   const promos = livePromotions();
+  const sold = soldCounts();
+  const today = new Date().toISOString().slice(0, 10);
   return json({
     categories: db.all('categories').filter((x) => usedCats.has(x.id)),
     collections: cols.filter((x) => products.some((p) => (p.collectionIds || []).includes(x.id))),
-    // מחיר המבצע מחושב כאן (מבצעים בלי קוד ובלי מינימום הזמנה)
+    events: EVENT_TYPES,
+    banners: db.all('banners').filter((x) => x.active !== false && x.image && (!x.startDate || x.startDate <= today) && (!x.endDate || x.endDate >= today))
+      .sort((a, b) => (a.order || 0) - (b.order || 0)),
+    // מחיר המבצע מחושב כאן (מבצעים בלי קוד ובלי מינימום הזמנה), גם לכל גודל
     products: products.map((p) => {
       const pr = priceFor(p, { promos });
-      return { ...p, images: productImages(p), salePrice: pr.promo ? pr.price : null, promo: pr.promo };
+      const variants = (p.variants || []).map((v) => {
+        const vp = priceFor({ ...p, price: v.price }, { promos });
+        return { name: v.name, price: v.price, salePrice: vp.promo ? vp.price : null };
+      });
+      return { ...p, images: productImages(p), salePrice: pr.promo ? pr.price : null, promo: pr.promo, variants, eventTypes: p.eventTypes || [], sold: sold[p.id] || 0 };
     }),
     promotions: publicPromotions(),
+    club: { ...clubInfo(), rewards: loyalty.publicRewards() },
   });
 });
 
@@ -309,24 +345,70 @@ on('POST', '/api/uploads', async (c) => {
   return json({ url: (await saveFile(b.file, IMAGE_TYPES)).url });
 });
 
+// כמה יחידות נמכרו מכל מוצר (הזמנות ששולמו)
+const PAID = ['paid', 'sent_to_supplier', 'in_production', 'ready', 'picked_up', 'out_for_delivery', 'delivered', 'issue'];
+function soldCounts() {
+  const out = {};
+  for (const o of db.all('orders')) if (PAID.includes(o.status)) for (const i of o.items) out[i.productId] = (out[i.productId] || 0) + i.qty;
+  return out;
+}
+
 function cartLines(items) {
   const lines = [];
   for (const it of (Array.isArray(items) ? items : []).slice(0, 50)) {
-    const product = db.get('products', it.productId);
+    let product = db.get('products', it.productId);
     if (!product || !product.active) throw Object.assign(new Error('מוצר לא זמין'), { status: 400 });
     const photoUrl = str(it.photoUrl, 200);
     if (photoUrl && !IMG_RE.test(photoUrl)) throw Object.assign(new Error('תמונה לא תקינה'), { status: 400 });
-    lines.push({ product, qty: Math.min(99, Math.max(1, Math.floor(num(it.qty, 1)))), photoUrl, note: str(it.note, 200) });
+    // גודל: המחיר של הגודל שנבחר (מהשרת). למוצר עם גדלים חייבים לבחור גודל
+    const vs = product.variants || [];
+    let variant = '';
+    if (vs.length) {
+      const v = vs.find((x) => x.name === str(it.variant, 40));
+      if (!v) throw Object.assign(new Error(`בחרו גודל ל"${product.name}"`), { status: 400 });
+      variant = v.name;
+      product = { ...product, price: v.price };
+    }
+    lines.push({ product, variant, qty: Math.min(99, Math.max(1, Math.floor(num(it.qty, 1)))), photoUrl, note: str(it.note, 200) });
   }
   return lines;
 }
 
-// תמחור הסל לפני תשלום (הנחות, קופון, משלוח)
+const clubInfo = () => { const s = loyalty.settings(); return { enabled: s.enabled, earnPercent: s.earnPercent, minPoints: s.minPoints }; };
+
+// מימוש הטבת נקודות על הסל: הנחה בשקלים או מתנה. משנה את q במקום ומחזיר את ההטבה שחלה
+function applyReward(q, reward) {
+  if (!reward) return null;
+  if (reward.kind === 'discount') {
+    const amount = Math.min(reward.amount, q.subtotal);
+    q.subtotal = Math.round((q.subtotal - amount) * 100) / 100;
+    q.discount = Math.round((q.discount + amount) * 100) / 100;
+    q.total = Math.round((q.subtotal + q.shipping) * 100) / 100;
+    return { id: reward.id, name: reward.name, kind: 'discount', amount, points: reward.points };
+  }
+  const gift = db.get('products', reward.productId);
+  return { id: reward.id, name: reward.name, kind: 'gift', amount: 0, points: reward.points, productId: gift ? gift.id : '', productName: gift ? gift.name : reward.name };
+}
+
+// תמחור הסל לפני תשלום (הנחות, קופון, משלוח, נקודות)
 on('POST', '/api/cart/quote', async (c) => {
   if (limited(`q:${c.ip}`, 60_000, 60)) return err(429, 'יותר מדי בקשות, נסו שוב בעוד דקה');
   const b = await body(c.req);
   const q = quote(cartLines(b.items), { code: b.code });
-  return json({ ...q, lines: q.lines.map((l) => ({ productId: l.product.id, qty: l.qty, price: l.price, originalPrice: l.originalPrice, promo: l.promo, coupon: l.coupon })) });
+  const acc = loyalty.byToken(str(b.clubToken, 40));
+  const chk = loyalty.checkReward(acc, str(b.rewardId, 40));
+  const reward = chk.error ? null : applyReward(q, chk.reward);
+  const club = { ...clubInfo(), member: Boolean(acc), points: acc ? acc.points : 0, canRedeem: Boolean(acc) && acc.points >= clubInfo().minPoints,
+    earn: clubInfo().enabled ? loyalty.pointsFor(q.subtotal) : 0, reward, rewardError: chk.error || '' };
+  return json({ ...q, club, lines: q.lines.map((l) => ({ productId: l.product.id, variant: l.variant, qty: l.qty, price: l.price, originalPrice: l.originalPrice, promo: l.promo, coupon: l.coupon })) });
+});
+
+// מועדון: היתרה וההיסטוריה של הלקוח
+on('GET', '/api/club/me', (c) => {
+  if (limited(`club:${c.ip}`, 60_000, 60)) return err(429, 'יותר מדי בקשות, נסו שוב בעוד דקה');
+  const acc = loyalty.byToken(str(c.query.get('t'), 40));
+  if (!acc) return err(404, 'חשבון מועדון לא נמצא');
+  return json({ ...loyalty.publicAccount(acc), rewards: loyalty.publicRewards() });
 });
 
 // הזמנות
@@ -339,16 +421,33 @@ on('POST', '/api/orders', async (c) => {
   };
   if (!customer.name || !customer.phone || !customer.city || !customer.address) return err(400, 'נא למלא שם, טלפון, עיר וכתובת');
   if (!db.all('cities').some((x) => x.name === customer.city)) return err(400, 'עיר לא מוכרת - בחרו מהרשימה');
-  // המחיר נלקח תמיד מהשרת (כולל מבצעים וקופון) - לא סומכים על מחיר מהדפדפן
+  // המחיר נלקח תמיד מהשרת (כולל מבצעים, קופון ונקודות) - לא סומכים על מחיר מהדפדפן
   const q = quote(cartLines(b.items), { code: b.code });
   if (!q.lines.length) return err(400, 'הסל ריק');
   if (q.code && !q.codeValid) return err(400, 'קוד הקופון לא תקף');
-  const items = q.lines.map((l) => ({
-    productId: l.product.id, name: l.product.name, category: l.product.category, price: l.price, originalPrice: l.originalPrice,
+  // נקודות: מימוש רק עם מפתח המועדון של אותו מספר טלפון
+  const phone = loyalty.normPhone(customer.phone);
+  const acc = loyalty.byToken(str(b.clubToken, 40));
+  let reward = null;
+  if (b.rewardId) {
+    if (!acc || acc.phone !== phone) return err(400, 'מימוש נקודות אפשרי רק עם מספר הטלפון של חשבון המועדון');
+    const chk = loyalty.checkReward(acc, str(b.rewardId, 40));
+    if (chk.error) return err(400, chk.error);
+    reward = applyReward(q, chk.reward);
+  }
+  const items0 = q.lines.map((l) => ({
+    productId: l.product.id, name: l.variant ? `${l.product.name} (${l.variant})` : l.product.name, variant: l.variant, category: l.product.category, price: l.price, originalPrice: l.originalPrice,
     promo: [l.promo && l.promo.name, l.coupon && `קופון ${l.coupon.code}`].filter(Boolean).join(' + '), qty: l.qty, photoUrl: l.photoUrl, note: l.note,
   }));
+  const items = reward && reward.kind === 'gift' && reward.productId
+    ? [...items0, { productId: reward.productId, name: `🎁 ${reward.productName} (מתנה מהנקודות)`, category: (db.get('products', reward.productId) || {}).category, price: 0, originalPrice: 0, promo: 'מתנת מועדון', qty: 1, photoUrl: '', note: '' }]
+    : items0;
+  // חשבון מועדון: נוצר בהזמנה הראשונה של הטלפון; המפתח חוזר רק למי שיצר אותו או למי שכבר מחזיק בו
+  const club = clubInfo().enabled && phone ? loyalty.ensure(phone, customer.name) : { acc: null, created: false };
+  const clubToken = club.acc && (club.created || (acc && acc.id === club.acc.id)) ? club.acc.token : '';
   const order = db.insert('orders', {
     id: db.id('o_'), number: 1000 + db.all('orders').length + 1, trackToken: token(8),
+    loyaltyPhone: club.acc ? phone : '', reward, clubTokenNew: club.created ? club.acc.token : '',
     customer, items, subtotalBefore: q.subtotalBefore, discount: q.discount, coupon: q.codeUsed ? q.code : '',
     subtotal: q.subtotal, shipping: q.shipping, total: q.total, status: 'pending_payment', timeline: [], eventCode: str(b.eventCode, 40) || null,
   });
@@ -362,7 +461,7 @@ on('POST', '/api/orders', async (c) => {
       notifyUrl: `${c.base}/api/payments/callback`,
     });
     db.update('payments', payment.id, { providerRef: result.providerRef, status: 'redirected' });
-    return json({ orderId: order.id, number: order.number, trackToken: order.trackToken, redirectUrl: result.redirectUrl });
+    return json({ orderId: order.id, number: order.number, trackToken: order.trackToken, redirectUrl: result.redirectUrl, clubToken });
   } catch (e) {
     db.update('payments', payment.id, { status: 'error', error: e.message });
     return err(503, 'מערכת התשלום אינה זמינה כרגע', { detail: e.message });
@@ -455,6 +554,32 @@ on('GET', '/api/admin/dashboard', () => {
 }, { admin: true });
 
 on('GET', '/api/admin/print-types', () => json(PRINT_TYPES), { admin: true });
+on('GET', '/api/admin/event-types', () => json(EVENT_TYPES), { admin: true });
+
+// סטטיסטיקה: מכירות ב-30 הימים האחרונים, נמכרים ביותר, ביצועי מבצעים
+on('GET', '/api/admin/stats', () => {
+  const paid = db.all('orders').filter((o) => PAID.includes(o.status));
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
+    const list = paid.filter((o) => String(o.createdAt).slice(0, 10) === d);
+    days.push({ date: d, orders: list.length, revenue: list.reduce((s, o) => s + o.total, 0) });
+  }
+  const byProduct = {};
+  for (const o of paid) for (const i of o.items) {
+    const x = (byProduct[i.productId] = byProduct[i.productId] || { productId: i.productId, name: (db.get('products', i.productId) || i).name, qty: 0, revenue: 0 });
+    x.qty += i.qty; x.revenue += i.price * i.qty;
+  }
+  const withDiscount = paid.filter((o) => o.discount > 0);
+  const coupons = {};
+  for (const o of withDiscount) if (o.coupon) coupons[o.coupon] = (coupons[o.coupon] || 0) + 1;
+  const revenue = paid.reduce((s, o) => s + o.total, 0);
+  return json({
+    days, revenue, orders: paid.length, avgOrder: paid.length ? Math.round((revenue / paid.length) * 100) / 100 : 0,
+    top: Object.values(byProduct).sort((a, b) => b.revenue - a.revenue).slice(0, 5),
+    promo: { orders: withDiscount.length, discount: withDiscount.reduce((s, o) => s + o.discount, 0), revenue: withDiscount.reduce((s, o) => s + o.total, 0), coupons },
+  });
+}, { admin: true });
 
 // העלאת תמונות מוצר מאפליקציית הניהול
 on('POST', '/api/admin/uploads', async (c) => {
@@ -556,6 +681,7 @@ on('POST', '/api/admin/orders/:id/events', async (c) => {
   if (!status && !note) return err(400, 'נא לבחור סטטוס או לכתוב הערה');
   const publicNote = Boolean(b.publicNote);
   addEvent(o, status, note, 'admin', { publicNote, internal: !status && !publicNote });
+  if (status === 'cancelled') loyalty.reverse(o);
   return json(orderView(o));
 }, { admin: true });
 
@@ -584,7 +710,30 @@ on('PUT', '/api/admin/settings', async (c) => {
     businessName: str(b.businessName, 120), shippingPrice: Math.max(0, num(b.shippingPrice)),
     freeShippingFrom: Math.max(0, num(b.freeShippingFrom)), paymentDashboardUrl: /^https:\/\//.test(str(b.paymentDashboardUrl, 300)) ? str(b.paymentDashboardUrl, 300) : '',
     slaHours: sla,
+    loyalty: {
+      enabled: b.loyalty ? b.loyalty.enabled !== false : loyalty.settings().enabled,
+      earnPercent: Math.min(100, Math.max(0, num(b.loyalty && b.loyalty.earnPercent, loyalty.settings().earnPercent))),
+      minPoints: Math.max(0, Math.floor(num(b.loyalty && b.loyalty.minPoints, loyalty.settings().minPoints))),
+    },
   }));
+}, { admin: true });
+
+// מועדון הנקודות: חברים, עדכון ידני, הגדרות
+on('GET', '/api/admin/loyalty', () => json({
+  settings: loyalty.settings(),
+  members: db.all('loyalty').map((a) => ({ id: a.id, phone: a.phone, name: a.name, points: a.points, earned: a.earned, spent: a.spent,
+    lastAt: (a.history && a.history[0] && a.history[0].at) || a.createdAt, clubLink: `${config.pagesUrl}/?club=${a.token}#orders` }))
+    .sort((x, y) => y.points - x.points),
+}), { admin: true });
+
+on('POST', '/api/admin/loyalty/:id/adjust', async (c) => {
+  const acc = db.get('loyalty', c.params.id);
+  if (!acc) return err(404, 'לא נמצא');
+  const b = await body(c.req);
+  const pts = Math.trunc(num(b.points));
+  if (!pts) return err(400, 'נא להזין מספר נקודות (אפשר גם שלילי)');
+  loyalty.adjust(acc, pts, str(b.note, 120));
+  return json({ ok: true, points: acc.points });
 }, { admin: true });
 
 on('GET', '/api/admin/payments', () => json(db.all('payments').slice().reverse().slice(0, 200)), { admin: true });

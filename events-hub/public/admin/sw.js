@@ -1,6 +1,6 @@
 // Service Worker של אפליקציית הניהול - מאפשר התקנה כאפליקציה נפרדת.
 // נתוני ניהול תמיד נטענים מהשרת (ללא מטמון) כדי להציג מידע עדכני.
-const CACHE = 'regaim-admin-v6';
+const CACHE = 'regaim-admin-v8';
 const SHELL = ['./', '../css/app.css', '../css/theme.css', '../js/common.js', '../js/admin.js', '../js/install-help.js', '../js/qrcode.js', '../js/photos.js', 'manifest.json', 'icon.svg', '../icons/logo.svg'];
 
 self.addEventListener('install', (e) => {

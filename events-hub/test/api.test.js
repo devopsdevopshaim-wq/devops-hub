@@ -13,7 +13,7 @@ let server;
 
 test.before(async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'events-hub-'));
-  server = await start({ port: 0, env: { DATA_DIR: dataDir, ADMIN_PASSWORD: 'test-pass', PAYMENT_PROVIDER: 'mock' } });
+  server = await start({ port: 0, env: { DATA_DIR: dataDir, ADMIN_PASSWORD: 'test-pass', PAYMENT_PROVIDER: 'mock', RATE_LIMIT: 'off' } });
   base = `http://127.0.0.1:${server.address().port}`;
 });
 test.after(() => server.close());
@@ -90,7 +90,7 @@ test('uploads refuse non-image files', async () => {
 test('order from Beer Sheva is routed to Beer Sheva supplier and courier after payment', async () => {
   const r = await call('POST', '/api/orders', {
     customer: { name: 'לקוח', phone: '0500000000', city: 'באר שבע', address: 'רגר 1' },
-    items: [{ productId: 'mag-6x9', qty: 2, price: 1 }],
+    items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 2, price: 1 }],
   });
   assert.equal(r.status, 200);
   const order = db.get('orders', r.data.orderId);
@@ -113,7 +113,7 @@ test('order from Beer Sheva is routed to Beer Sheva supplier and courier after p
 
 test('city with no local supplier falls back to region', async () => {
   const r = await call('POST', '/api/orders', {
-    customer: { name: 'לקוח', phone: '050', city: 'אילת', address: 'x' }, items: [{ productId: 'block-15x15', qty: 1 }],
+    customer: { name: 'לקוח', phone: '050', city: 'אילת', address: 'x' }, items: [{ productId: 'block-15x15', variant: '15x15 ס\"מ', qty: 1 }],
   });
   const payId = r.data.redirectUrl.split('/').pop();
   await call('POST', `/pay/mock/${payId}`, 'result=approved', { 'content-type': 'application/x-www-form-urlencoded' });
@@ -163,12 +163,12 @@ test('promotions: best price per product, coupon codes and minimum order', async
   assert.equal(mag.promo.badge, '20%-');
   assert.ok(!store.promotions.some((p) => p.name === 'קופון חתונה'), 'coupon promos stay hidden');
 
-  let q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 2 }] })).data;
+  let q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 2 }] })).data;
   assert.equal(q.subtotal, 24);
-  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 2 }], code: ' Wedding10 ' })).data;
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 2 }], code: ' Wedding10 ' })).data;
   assert.equal(q.subtotal, 20);
   assert.equal(q.codeUsed, true);
-  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 1 }], code: 'NOPE' })).data;
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 1 }], code: 'NOPE' })).data;
   assert.equal(q.codeValid, false);
 
   q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-henna', qty: 1 }] })).data;
@@ -176,9 +176,9 @@ test('promotions: best price per product, coupon codes and minimum order', async
   q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-henna', qty: 1 }, { productId: 'pkg-mikveh', qty: 1 }] })).data;
   assert.equal(q.discount, 50);
 
-  const bad = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', qty: 1 }], code: 'NOPE' });
+  const bad = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 1 }], code: 'NOPE' });
   assert.equal(bad.status, 400);
-  const o = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', qty: 3 }], code: 'wedding10' });
+  const o = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', variant: '6x9 ס\"מ', qty: 3 }], code: 'wedding10' });
   const order = db.get('orders', o.data.orderId);
   assert.equal(order.subtotal, 30);
   assert.equal(order.discount, 15);
@@ -206,4 +206,104 @@ test('category photo can be replaced from the admin app and reset', async () => 
   const store = (await call('GET', '/api/store')).data;
   assert.equal(store.categories.find((c) => c.id === 'magnets').image, up.url);
   assert.equal((await call('PUT', '/api/admin/categories/magnets', { image: '' })).data.image, '');
+});
+
+test('sizes: each size has its own price, chosen on the server', async () => {
+  const store = (await call('GET', '/api/store')).data;
+  const mag = store.products.find((p) => p.id === 'mag-6x9');
+  assert.deepEqual(mag.variants.map((v) => v.price), [12, 15, 22]);
+  const no = await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', qty: 1 }] });
+  assert.equal(no.status, 400);
+  const fake = await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '1x1', qty: 1 }] });
+  assert.equal(fake.status, 400);
+  const big = (await call('POST', '/api/cart/quote', { items: [{ productId: 'mag-6x9', variant: '10x15 ס"מ', qty: 2 }] })).data;
+  // מבצע 20% על מגנטים מהבדיקה הקודמת: 22 * 0.8 = 17.6
+  assert.equal(big.lines[0].price, 17.6);
+  const o = await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', variant: '10x15 ס"מ', qty: 1 }] });
+  assert.equal(db.get('orders', o.data.orderId).items[0].name, 'מגנט תמונה 6x9 (10x15 ס"מ)');
+});
+
+test('shop by event, banners, best sellers and admin stats', async () => {
+  const store = (await call('GET', '/api/store')).data;
+  assert.ok(store.events.some((e) => e.id === 'henna'));
+  assert.deepEqual(store.products.find((p) => p.id === 'pkg-henna').eventTypes, ['henna']);
+  assert.ok(store.banners.length >= 3);
+  assert.ok(store.products.find((p) => p.id === 'mag-6x9').sold > 0, 'paid orders count as sold');
+  const bn = await call('POST', '/api/admin/banners', { name: 'מבצע חנוכה', image: 'javascript:alert(1)', linkType: 'url', linkValue: 'http://x' });
+  assert.equal(bn.data.image, '');
+  assert.equal(bn.data.linkValue, '');
+  const st = (await call('GET', '/api/admin/stats')).data;
+  assert.equal(st.days.length, 30);
+  assert.ok(st.revenue > 0 && st.top.length > 0);
+  assert.equal(st.promo.orders, 0, 'unpaid orders with a discount do not count');
+  // הזמנה עם מבצע ששולמה נספרת בביצועי המבצעים
+  const o = (await call('POST', '/api/orders', { customer: { name: 'x', phone: '1', city: 'באר שבע', address: 'x' }, items: [{ productId: 'mag-6x9', variant: '6x9 ס"מ', qty: 4 }] })).data;
+  await call('POST', `/pay/mock/${o.redirectUrl.split('/').pop()}`, 'result=approved', { 'content-type': 'application/x-www-form-urlencoded' });
+  const st2 = (await call('GET', '/api/admin/stats')).data;
+  assert.equal(st2.promo.orders, 1);
+  assert.ok(st2.promo.discount > 0);
+  const pe = await call('PUT', '/api/admin/products/pkg-henna', { ...db.get('products', 'pkg-henna'), eventTypes: ['henna', 'nope'] });
+  assert.deepEqual(pe.data.eventTypes, ['henna']);
+});
+
+test('points club: earn 10% on paid orders, redeem above the minimum, protected by the club key', async () => {
+  const cust = { name: 'נועה', phone: '054-777-8899', city: 'באר שבע', address: 'x' };
+  const buy = async (items, extra = {}) => {
+    const r = await call('POST', '/api/orders', { customer: cust, items, ...extra });
+    if (r.status !== 200) return r;
+    await call('POST', `/pay/mock/${r.data.redirectUrl.split('/').pop()}`, 'result=approved', { 'content-type': 'application/x-www-form-urlencoded' });
+    return r;
+  };
+  // הזמנה ראשונה: נפתח חשבון והמפתח חוזר ללקוח
+  const first = await buy([{ productId: 'pkg-birthday', qty: 1 }]); // 790
+  const tokenKey = first.data.clubToken;
+  assert.match(tokenKey, /^[a-f0-9]{32}$/);
+  let me = (await call('GET', `/api/club/me?t=${tokenKey}`)).data;
+  assert.equal(me.points, 79, '10% of 790');
+  assert.equal(me.canRedeem, false, 'below the 100 minimum');
+  // מימוש מתחת למינימום נדחה
+  const rewards = (await call('GET', '/api/store')).data.club.rewards;
+  const r20 = rewards.find((r) => r.kind === 'discount' && r.amount === 20);
+  let q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'gift-mug', qty: 1 }], clubToken: tokenKey, rewardId: r20.id })).data;
+  assert.match(q.club.rewardError, /100/);
+  // עוד קנייה: 790 נוספים -> 158 נקודות
+  await buy([{ productId: 'pkg-birthday', qty: 1 }], { clubToken: tokenKey });
+  me = (await call('GET', `/api/club/me?t=${tokenKey}`)).data;
+  assert.equal(me.points, 158);
+  assert.equal(me.canRedeem, true);
+  // מישהו אחר עם אותו טלפון אבל בלי המפתח: לא מקבל מפתח ולא יכול לממש
+  const thief = await call('POST', '/api/orders', { customer: { ...cust, name: 'גנב' }, items: [{ productId: 'gift-mug', qty: 1 }], rewardId: r20.id });
+  assert.equal(thief.status, 400);
+  const thief2 = await call('POST', '/api/orders', { customer: { ...cust, name: 'גנב' }, items: [{ productId: 'gift-mug', qty: 1 }] });
+  assert.equal(thief2.data.clubToken, '', 'the key is not handed to someone else');
+  // מפתח נכון אבל טלפון אחר: נדחה
+  const other = await call('POST', '/api/orders', { customer: { ...cust, phone: '0500000001' }, items: [{ productId: 'gift-mug', qty: 1 }], clubToken: tokenKey, rewardId: r20.id });
+  assert.equal(other.status, 400);
+  // מימוש תקין: 20 ₪ הנחה, 100 נקודות יורדות, ונצברות נקודות על הסכום אחרי ההנחה
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-mikveh', qty: 1 }], clubToken: tokenKey, rewardId: r20.id })).data;
+  assert.equal(q.club.reward.amount, 20);
+  const used = await buy([{ productId: 'pkg-mikveh', qty: 1 }], { clubToken: tokenKey, rewardId: r20.id }); // 690 - 20 = 670
+  const order = db.get('orders', used.data.orderId);
+  assert.equal(order.subtotal, 670);
+  me = (await call('GET', `/api/club/me?t=${tokenKey}`)).data;
+  assert.equal(me.points, 158 - 100 + 67);
+  // מתנה מהנקודות נוספת כשורה בחינם
+  await call('POST', '/api/admin/loyalty/ph_0547778899/adjust', { points: 200, note: 'בונוס' });
+  const gift = rewards.find((r) => r.kind === 'gift');
+  const g = await buy([{ productId: 'gift-mug', qty: 1 }], { clubToken: tokenKey, rewardId: gift.id });
+  const go = db.get('orders', g.data.orderId);
+  assert.ok(go.items.some((i) => i.price === 0 && i.productId === 'sweet-box'));
+  // ביטול הזמנה מחזיר את המצב
+  const before = (await call('GET', `/api/club/me?t=${tokenKey}`)).data.points;
+  await call('POST', `/api/admin/orders/${go.id}/events`, { status: 'cancelled', note: 'בוטל' });
+  const after = (await call('GET', `/api/club/me?t=${tokenKey}`)).data.points;
+  assert.equal(after, before - go.loyaltyEarned + gift.points);
+  // הגדרות: אחוז ומינימום לפי בחירת המנהל
+  const st = (await call('GET', '/api/admin/settings')).data.settings;
+  await call('PUT', '/api/admin/settings', { ...st, loyalty: { enabled: true, earnPercent: 5, minPoints: 300 } });
+  const club = (await call('GET', '/api/store')).data.club;
+  assert.equal(club.earnPercent, 5);
+  assert.equal(club.minPoints, 300);
+  const members = (await call('GET', '/api/admin/loyalty')).data.members;
+  assert.ok(members.some((m) => m.phone === '0547778899' && m.clubLink.includes('?club=')));
 });

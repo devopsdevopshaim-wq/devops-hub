@@ -25,6 +25,7 @@
       try {
         const o = await api(`/api/orders/${encodeURIComponent(q.get('id'))}?t=${encodeURIComponent(q.get('t'))}`);
         myOrders.add({ id: o.id, number: o.number, t: q.get('t'), at: o.createdAt });
+        if (o.clubToken) club.set(o.clubToken);
         const ok = !['payment_failed', 'cancelled', 'issue'].includes(o.status);
         root.innerHTML = `
           ${q.get('new') && o.status !== 'payment_failed' ? '<div class="card"><h2>תודה! ההזמנה התקבלה 🎉</h2><p class="muted">נעדכן אתכם בכל שלב.</p></div>' : ''}
@@ -40,8 +41,10 @@
             ${o.items.map((i) => `<div class="row between"><span>${esc(i.name)} × ${i.qty}</span><b>${money(i.price * i.qty)}</b></div>`).join('')}
             ${o.discount ? `<div class="row between" style="color:var(--bad);font-weight:700"><span>🏷️ הנחה${o.coupon ? ` (קופון ${esc(o.coupon)})` : ''}</span><span>−${money(o.discount)}</span></div>` : ''}
             <div class="row between muted"><span>משלוח</span><span>${o.shipping ? money(o.shipping) : 'חינם'}</span></div>
+            ${o.reward ? `<div class="row between" style="color:var(--ok);font-weight:700"><span>💎 ${esc(o.reward.name)}</span><span>−${o.reward.points} נק׳</span></div>` : ''}
             <div class="row between"><b>סה"כ</b><span class="price">${money(o.total)}</span></div>
-          </div>`;
+          </div>
+          ${o.loyaltyEarned ? `<div class="card club-card"><h3 style="margin:0">💎 צברתם ${o.loyaltyEarned} נקודות במועדון רגעים</h3><p class="small" style="margin:6px 0 0">אפשר לראות את היתרה ולממש ב"ההזמנות שלי".</p></div>` : ''}`;
       } catch (e) {
         root.innerHTML = `<div class="card"><h2>ההזמנה לא נמצאה</h2><p class="muted">${esc(e.message)}</p></div>`;
       }

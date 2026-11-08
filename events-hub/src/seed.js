@@ -21,6 +21,35 @@ const CATEGORIES = [
   { id: 'decor', name: 'עיצוב ודקורציה', icon: '🎈' },
 ];
 
+// סוגי אירועים ל"קנו לפי אירוע". מוצר בלי eventTypes מתאים לכל האירועים.
+const U = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=900&h=640&q=70`;
+export const EVENT_TYPES = [
+  { id: 'wedding', name: 'חתונה', image: U('photo-1620315472787-52921e5f88a0') },
+  { id: 'henna', name: 'חינה', image: U('photo-1771992228898-79342c9c1c39') },
+  { id: 'barmitzvah', name: 'בר מצווה', image: U('photo-1792587152427-ae423afc92ab') },
+  { id: 'batmitzvah', name: 'בת מצווה', image: U('photo-1792587716357-32a29eca7629') },
+  { id: 'brit', name: 'ברית ובריתה', image: U('photo-1555252333-9f8e92e65df9') },
+  { id: 'birthday', name: 'יום הולדת', image: U('photo-1464349153735-7db50ed83c84') },
+  { id: 'mikveh', name: 'מקווה', image: U('photo-1584126467121-0db1e6bb47a7') },
+  { id: 'company', name: 'אירוע חברה וכנס', image: U('photo-1773829020694-413e879d2957') },
+];
+
+// התאמות ברירת מחדל למוצרים הקיימים (רק כשעוד לא נקבעו בניהול)
+const DEFAULT_EVENT_TYPES = {
+  'pkg-henna': ['henna'], 'pkg-wedding': ['wedding'], 'pkg-mikveh': ['mikveh'], 'pkg-barmitzvah': ['barmitzvah', 'batmitzvah'],
+  'pkg-brit': ['brit'], 'pkg-birthday': ['birthday', 'barmitzvah', 'batmitzvah'], 'conf-kit': ['company'],
+};
+const DEFAULT_VARIANTS = {
+  'mag-6x9': [{ name: '5x7.5 ס"מ', price: 12 }, { name: '6x9 ס"מ', price: 15 }, { name: '10x15 ס"מ', price: 22 }],
+  'block-15x15': [{ name: '10x10 ס"מ', price: 59 }, { name: '15x15 ס"מ', price: 79 }, { name: '15x20 ס"מ', price: 99 }],
+};
+const DEFAULT_UPSELL = ['mag-set-10', 'gift-mug', 'sweet-box'];
+const DEFAULT_BANNERS = [
+  { name: 'מגנטים מהאירוע שלכם', subtitle: 'מעלים תמונה, בוחרים גודל, ומקבלים עד הבית', image: U('photo-1684741940768-c40eca4ac4ab'), cta: 'להזמנת מגנטים', linkType: 'category', linkValue: 'magnets', order: 1 },
+  { name: 'עונת החתונות', subtitle: 'חבילות, מסגרות ומתנות לזוג ולאורחים', image: U('photo-1620315472787-52921e5f88a0'), cta: 'לכל מוצרי החתונה', linkType: 'event', linkValue: 'wedding', order: 2 },
+  { name: 'מתנה עם רגע בפנים', subtitle: 'בלוקי עץ, ספלים וכריות עם התמונה שלכם', image: U('photo-1513201099705-a9746e1e201f'), cta: 'למתנות', linkType: 'category', linkValue: 'gifts', order: 3 },
+];
+
 // סוגי הדפסה זמינים לאירוע (מנהל בוחר עד 3 לכל אירוע)
 export const PRINT_TYPES = [
   { type: 'magnet', name: 'מגנט', category: 'magnets', sizes: ['5x7.5', '6x9', '10x15'] },
@@ -101,6 +130,26 @@ export function seedIfEmpty() {
   if (!s.collections.length) COLLECTIONS.forEach((x) => db.insert('collections', x));
   if (!s.suppliers.length) SUPPLIERS.forEach((x) => db.insert('suppliers', { id: db.id('s_'), active: true, notes: '', ...x }));
   if (!s.couriers.length) COURIERS.forEach((x) => db.insert('couriers', { id: db.id('k_'), active: true, notes: '', ...x }));
+  // שדרוג נתונים קיימים: אירועים, גדלים והצעות בסל למוצרים שעוד לא הוגדרו להם
+  for (const prod of s.products) {
+    const patch = {};
+    if (prod.eventTypes === undefined) patch.eventTypes = DEFAULT_EVENT_TYPES[prod.id] || [];
+    if (prod.variants === undefined) patch.variants = DEFAULT_VARIANTS[prod.id] || [];
+    if (prod.upsell === undefined) patch.upsell = DEFAULT_UPSELL.includes(prod.id);
+    if (Object.keys(patch).length) db.update('products', prod.id, patch);
+  }
+  if (!s.settings.rewardsSeeded) {
+    [
+      { name: '₪20 הנחה', kind: 'discount', amount: 20, points: 100, description: 'הנחה של 20 ₪ על ההזמנה' },
+      { name: 'מארז שוקולדים מתנה', kind: 'gift', productId: 'sweet-box', amount: 0, points: 150, description: 'מארז שוקולדים ממותג בחינם עם ההזמנה' },
+      { name: '₪50 הנחה', kind: 'discount', amount: 50, points: 220, description: 'הנחה של 50 ₪ על ההזמנה' },
+    ].forEach((r) => db.insert('rewards', { id: db.id('rw_'), active: true, ...r }));
+    db.setSettings({ rewardsSeeded: true });
+  }
+  if (!s.settings.bannersSeeded) {
+    DEFAULT_BANNERS.forEach((b) => db.insert('banners', { id: db.id('bn_'), active: true, startDate: '', endDate: '', ...b }));
+    db.setSettings({ bannersSeeded: true });
+  }
   const missing = Object.fromEntries(Object.entries(DEFAULT_SETTINGS).filter(([k]) => s.settings[k] === undefined));
   if (Object.keys(missing).length) db.setSettings(missing);
 }
