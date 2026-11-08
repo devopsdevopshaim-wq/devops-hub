@@ -1,4 +1,4 @@
-/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders, asset, shrinkImage */
+/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders, asset, shrinkImage, PHOTOS, icon, fillIcons */
 (function () {
   let catalog = { categories: [], collections: [], products: [], promotions: [] };
   let coupon = store.get('coupon', '');
@@ -32,14 +32,14 @@
     const im = imgs(p);
     return `<div class="card product">
       <div class="thumb" data-show="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)} - פרטים ותמונות">
-        ${im.length ? `<img src="${esc(asset(im[0]))}" alt="" loading="lazy">` : esc(p.icon || '🎁')}
+        ${im.length ? `<img src="${esc(asset(im[0]))}" alt="" loading="lazy">` : PHOTOS.img(p.category, p.name)}
         ${p.promo ? `<span class="sale-badge">${esc(p.promo.badge || 'מבצע')}</span>` : ''}
         ${im.length > 1 ? `<span class="badge" style="position:absolute;bottom:6px;left:6px">📷 ${im.length}</span>` : ''}
       </div>
       <h3>${esc(p.name)}</h3>
       <p class="muted small">${esc(String(p.description || '').slice(0, 110))}${String(p.description || '').length > 110 ? '…' : ''}</p>
       <div class="row between"><span>${priceHtml(p)}</span>
-      <button class="btn sm" data-add="${esc(p.id)}">${p.needsPhoto ? '📷 בחירת תמונה' : 'הוספה לסל'}</button></div>
+      <button class="btn sm" data-add="${esc(p.id)}">${p.needsPhoto ? `${icon('camera')}בחירת תמונה` : `${icon('cart')}לסל`}</button></div>
     </div>`;
   }
 
@@ -50,7 +50,7 @@
       <div class="row between"><h2 style="margin:0">${esc(p.name)}</h2><button class="icon-btn" data-pclose aria-label="סגירה">✕</button></div>
       ${im.length ? `<div class="gallery" id="gallery">${im.map((u) => `<img src="${esc(asset(u))}" alt="">`).join('')}</div>
         ${im.length > 1 ? `<div class="gallery-dots" id="gallery-dots">1 / ${im.length} · מחליקים לתמונה הבאה</div>` : ''}`
-        : `<div class="thumb" style="aspect-ratio:2/1;display:grid;place-items:center;font-size:4rem">${esc(p.icon || '🎁')}</div>`}
+        : `<div style="border-radius:14px;overflow:hidden;aspect-ratio:4/3">${PHOTOS.img(p.category, p.name, 1000, 750)}</div>`}
       ${p.promo ? `<p style="margin:10px 0 0"><span class="sale-badge" style="position:static">${esc(p.promo.badge || 'מבצע')}</span> ${esc(p.promo.name)}</p>` : ''}
       <p style="white-space:pre-line">${esc(p.description)}</p>
       <div class="row between"><span>${priceHtml(p)}</span><button class="btn" data-add="${esc(p.id)}" data-pclose>${p.needsPhoto ? '📷 בחירת תמונה' : 'הוספה לסל 🛒'}</button></div>`;
@@ -80,13 +80,32 @@
         <div class="row between"><h2 style="margin:0">${esc(c.icon)} ${esc(c.name)}</h2>${c.endDate ? `<span class="badge warn">עד ${new Date(c.endDate).toLocaleDateString('he-IL')}</span>` : ''}</div>
         <div class="grid" style="margin-top:12px">${catalog.products.filter((p) => (p.collectionIds || []).includes(c.id)).map(productCard).join('')}</div>
       </div>`).join('');
-    $('#cat-tabs').innerHTML = [`<button class="tab${activeCat === 'all' ? ' active' : ''}" data-cat="all">הכול</button>`]
-      .concat(catalog.categories.map((c) => `<button class="tab${activeCat === c.id ? ' active' : ''}" data-cat="${esc(c.id)}">${esc(c.icon)} ${esc(c.name)}</button>`)).join('');
+    const tile = (id, label, art) => `<button class="print-tile${activeCat === id ? ' active' : ''}" data-cat="${esc(id)}" role="tab" aria-selected="${activeCat === id}">
+        <span class="pin"></span><span class="art">${art}</span><span class="label">${esc(label)}</span></button>`;
+    $('#cat-tabs').innerHTML = [tile('all', 'הכול', '<img src="icons/icon.svg" alt="">')]
+      .concat(catalog.categories.map((c) => tile(c.id, c.name, PHOTOS.img(c.id, c.name, 400, 300)))).join('');
     const list = catalog.products.filter((p) => !(p.collectionIds || []).length && (activeCat === 'all' || p.category === activeCat));
     $('#products').innerHTML = list.map(productCard).join('') || '<p class="muted">אין מוצרים בקטגוריה זו</p>';
+    $('#shop-count').textContent = `${list.length} מוצרים`;
   }
 
-  $('#cat-tabs').addEventListener('click', (e) => { const t = e.target.closest('[data-cat]'); if (t) { activeCat = t.dataset.cat; renderStore(); } });
+  $('#cat-tabs').addEventListener('click', (e) => {
+    const t = e.target.closest('[data-cat]');
+    if (!t) return;
+    activeCat = t.dataset.cat;
+    renderStore();
+    const now = $(`#cat-tabs [data-cat="${activeCat}"]`);
+    now.classList.add('flash'); // הבזק מצלמה
+    setTimeout(() => now.classList.remove('flash'), 500);
+  });
+  // פתיח: תמונת רקע אמיתית ושלוש "הדפסות" במניפה (מגנטים, בלוקים, מסגרות)
+  function renderHero() {
+    $('.stage').style.setProperty('--hero-photo', `url("${PHOTOS.hero}")`);
+    $('.stage').classList.add('has-photo');
+    $('#hero-fan').innerHTML = [['magnets', 'מגנטים'], ['blocks', 'בלוקים'], ['frames', 'מסגרות']]
+      .map(([k, l]) => `<div class="print-tile"><span class="pin"></span><span class="art">${PHOTOS.img(k, l, 480, 360)}</span><span class="label">${l}</span></div>`).join('');
+  }
+  renderHero();
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-add]');
     if (!b) return;
@@ -98,8 +117,7 @@
   function saveCart() {
     store.set('cart', cart);
     const n = cart.reduce((s, i) => s + i.qty, 0);
-    $('#cart-count').textContent = n;
-    $('#cart-count').classList.toggle('hidden', !n);
+    ['#cart-count', '#cart-count-nav'].forEach((sel) => { $(sel).textContent = n; $(sel).classList.toggle('hidden', !n); });
   }
 
   function addToCart(p, photoUrl = '') {
@@ -279,6 +297,8 @@
       [cfg, catalog] = await Promise.all([api('/api/config'), api('/api/store')]);
       $('#brand-name').textContent = cfg.businessName;
       document.title = cfg.businessName;
+      PHOTOS.setCustom(catalog.categories);
+      renderHero();
       renderStore();
       const cities = await api('/api/cities');
       $('#cities').innerHTML = cities.map((c) => `<option value="${esc(c.name)}">`).join('');

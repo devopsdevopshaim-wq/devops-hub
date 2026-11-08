@@ -2,7 +2,6 @@
 (function () {
   // הקוד מה-QR: event.html?c=XXXX
   const code = (new URLSearchParams(location.search).get('c') || '').replace(/[^a-f0-9]/g, '');
-  const ICONS = { magnet: '🧲', block: '🟫', frame: '🖼️' };
   let ev = null;
   let me = null; // { guestId, guestToken }
   let selectedOption = null;
@@ -32,7 +31,7 @@
     document.title = `${ev.name} - שליחת תמונות`;
     $('#print-options').innerHTML = ev.printOptions.map((o) => `
       <div class="option-card" data-opt="${esc(o.id)}" role="radio" tabindex="0">
-        <span class="ico">${ICONS[o.type] || '🖨️'}</span><div><b>${esc(o.label)}</b><div class="muted small">גודל ${esc(o.size)} ס"מ</div></div>
+        <span class="opt-art">${PHOTOS.img(PHOTOS.forPrint(o.type), o.label, 240, 180)}</span><div><b>${esc(o.label)}</b><div class="muted small">גודל ${esc(o.size)} ס"מ</div></div>
       </div>`).join('');
     if (ev.printOptions.length === 1) selectOption(ev.printOptions[0].id);
   }

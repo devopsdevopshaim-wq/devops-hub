@@ -196,3 +196,14 @@ test('a coupon applies on top of an automatic sale', async () => {
   assert.equal(q.codeUsed, true);
   assert.ok(q.lines[0].promo && q.lines[0].coupon);
 });
+
+test('category photo can be replaced from the admin app and reset', async () => {
+  const fd = new FormData();
+  fd.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'c.jpg');
+  const up = (await call('POST', '/api/admin/uploads', fd)).data;
+  assert.equal((await call('PUT', '/api/admin/categories/magnets', { image: up.url })).data.image, up.url);
+  assert.equal((await call('PUT', '/api/admin/categories/magnets', { image: 'https://evil.example/x.jpg' })).status, 400);
+  const store = (await call('GET', '/api/store')).data;
+  assert.equal(store.categories.find((c) => c.id === 'magnets').image, up.url);
+  assert.equal((await call('PUT', '/api/admin/categories/magnets', { image: '' })).data.image, '');
+});

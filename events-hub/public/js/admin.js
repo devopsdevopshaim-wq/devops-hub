@@ -1,4 +1,4 @@
-/* global $, $$, api, esc, toast, money, fmtDate */
+/* global $, $$, api, esc, toast, money, fmtDate, icon, asset, adminToken, shrinkImage, PHOTOS */
 (function () {
   const A = '/api/admin';
   const ref = { cities: [], categories: [], collections: [], printTypes: [], statuses: [], suppliers: [], couriers: [], settings: {}, payments: {} };
@@ -83,15 +83,21 @@
   // ---------- לוח בקרה ----------
   async function dashboard() {
     const d = await api(`${A}/dashboard`);
-    const stat = (label, val, cls = '', go = '') => `<div class="card" ${go ? `data-go="${go}" style="cursor:pointer"` : ''}><div class="muted">${label}</div><div class="stat ${cls}">${val}</div></div>`;
-    view.innerHTML = `<h1>לוח בקרה</h1><div class="grid">
-      ${stat('הזמנות פתוחות', d.ordersOpen, '', 'orders')}
-      ${stat('משלוחים תקועים ⚠️', d.ordersStuck, d.ordersStuck ? 'bad' : '', 'orders:stuck')}
-      ${stat('דורשות שיוך ידני', d.needsAssignment, d.needsAssignment ? 'bad' : '', 'orders')}
-      ${stat('תמונות ממתינות להדפסה', d.photosPending, '', 'events')}
-      ${stat('אירועים', d.events, '', 'events')}
-      ${stat('אורחים רשומים', d.guests, '', 'guests')}
-      ${stat('הכנסות (הזמנות ששולמו)', money(d.revenue))}
+    const stat = (ico, label, val, cls = '', go = '') => `<div class="card stat-card${cls ? ' alert' : ''}" ${go ? `data-go="${go}" style="cursor:pointer" role="button" tabindex="0"` : ''}>
+      <div class="stat-ico">${icon(ico, '')}</div><div class="muted">${label}</div><div class="stat ${cls}">${val}</div></div>`;
+    view.innerHTML = `<div class="stage" style="grid-template-columns:1fr"><div>
+        <span class="eyebrow"><img src="icon.svg" alt="">רגעים · ניהול</span>
+        <h1>${(() => { const h = new Date().getHours(); return h < 12 ? 'בוקר טוב' : h < 18 ? 'צהריים טובים' : 'ערב טוב'; })()}, <em>הנה מה שקורה היום</em></h1>
+        <div class="row"><button class="btn gold" data-go="events:new">${icon('plus')}אירוע חדש</button><button class="btn ghost light" data-go="promotions">${icon('tag')}מבצעים</button></div>
+      </div></div>
+      <div class="stat-grid">
+      ${stat('box', 'הזמנות פתוחות', d.ordersOpen, '', 'orders')}
+      ${stat('alert', 'משלוחים תקועים', d.ordersStuck, d.ordersStuck ? 'bad' : '', 'orders:stuck')}
+      ${stat('truck', 'דורשות שיוך ספק/שליח', d.needsAssignment, d.needsAssignment ? 'bad' : '', 'orders')}
+      ${stat('print', 'תמונות ממתינות להדפסה', d.photosPending, '', 'events')}
+      ${stat('calendar', 'אירועים', d.events, '', 'events')}
+      ${stat('users', 'אורחים רשומים', d.guests, '', 'guests')}
+      ${stat('coins', 'הכנסות (הזמנות ששולמו)', money(d.revenue))}
     </div>`;
     $$('[data-go]').forEach((c) => { c.onclick = () => { const [v, f] = c.dataset.go.split(':'); go(v, f); }; });
   }
@@ -159,7 +165,7 @@
     bindPrintOptions();
   }
 
-  async function events() {
+  async function events(arg) {
     const list = await api(`${A}/events`);
     view.innerHTML = `<div class="row between"><h1>אירועים ו-QR</h1><button class="btn" id="new-ev">➕ אירוע חדש</button></div>
       <div class="grid">${list.map((e) => `<div class="card stack">
@@ -173,6 +179,7 @@
         <button class="btn ghost sm" data-qrdl="${esc(e.link)}" data-name="qr-${esc(e.code)}.png">הורדת QR</button></div>
       </div>`).join('') || '<p class="muted">אין אירועים עדיין</p>'}</div>`;
     $('#new-ev').onclick = () => editEvent(null);
+    if (arg === 'new') editEvent(null);
     $$('[data-edit]').forEach((b) => { b.onclick = () => editEvent(list.find((e) => e.id === b.dataset.edit)); });
     $$('[data-photos]').forEach((b) => { b.onclick = () => eventPhotos(list.find((e) => e.id === b.dataset.photos)); });
     $$('canvas[data-qr]').forEach((c) => drawQR(c, c.dataset.qr));
@@ -345,7 +352,7 @@
       { k: 'collectionIds', label: 'שיוך לקולקציה עונתית (המוצר יוצג רק בזמן הקולקציה)', type: 'checks', options: ref.collections.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` })) },
       { k: 'needsPhoto', label: 'המוצר דורש תמונה מהלקוח', type: 'bool', def: false }, { k: 'active', label: 'פעיל', type: 'bool' },
     ];
-    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" data-go-promos>🏷️ מבצעים</button><button class="btn" id="new">➕ מוצר חדש</button></div></div>
+    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" id="cat-photos">${icon('image')}תמונות קטגוריות</button><button class="btn soft" data-go-promos>${icon('tag')}מבצעים</button><button class="btn" id="new">${icon('plus')}מוצר חדש</button></div></div>
       <p class="muted small">את המחיר אפשר לשנות ישר בטבלה. מחיר מבצע נקבע במסך "מבצעים".</p>
       <div class="card table-wrap"><table><thead><tr><th></th><th>שם</th><th>קטגוריה</th><th>מחיר רגיל</th><th>במבצע</th><th>סטטוס</th></tr></thead><tbody>
       ${list.map((p) => {
@@ -367,6 +374,7 @@
     };
     $('#new').onclick = () => open(null);
     $('[data-go-promos]').onclick = () => go('promotions');
+    $('#cat-photos').onclick = categoryPhotos;
     // עריכת מחיר ישר מהטבלה
     $$('[data-price]').forEach((inp) => {
       inp.onclick = (e) => e.stopPropagation();
@@ -380,6 +388,37 @@
       };
     });
     $$('tr[data-id]').forEach((r) => { r.onclick = () => open(list.find((p) => p.id === r.dataset.id)); });
+  }
+
+  // תמונות הקטגוריות בחנות: תמונה משלכם במקום תמונת ברירת המחדל
+  async function categoryPhotos() {
+    const cats = await api(`${A}/categories`);
+    PHOTOS.setCustom(cats);
+    openModal(`<div class="row between"><h2 style="margin:0">תמונות קטגוריות</h2><button class="icon-btn" data-close aria-label="סגירה">✕</button></div>
+      <p class="muted">אלה התמונות שעל כפתורי הקטגוריות ועל מוצרים בלי תמונה. אפשר להעלות צילום משלכם לכל קטגוריה.</p>
+      <div class="grid sm">${cats.map((c) => `<div class="card flat stack" style="padding:10px">
+        <div class="photo-tile" style="aspect-ratio:4/3">${PHOTOS.img(c.id, c.name, 400, 300)}</div>
+        <b>${esc(c.icon)} ${esc(c.name)}</b>
+        <label class="btn soft sm" style="margin:0">${icon('image')}החלפת תמונה<input type="file" accept="image/*" data-cat-up="${esc(c.id)}" class="hidden"></label>
+        ${c.image ? `<button class="btn ghost sm" data-cat-reset="${esc(c.id)}">חזרה לתמונה המקורית</button>` : ''}
+      </div>`).join('')}</div>`);
+    $$('[data-cat-up]').forEach((inp) => {
+      inp.onchange = async () => {
+        const f = inp.files[0];
+        if (!f) return;
+        try {
+          const fd = new FormData();
+          fd.append('file', await shrinkImage(f, 1200, 0.86), 'category.jpg');
+          const up = await api(`${A}/uploads`, { method: 'POST', body: fd });
+          await api(`${A}/categories/${inp.dataset.catUp}`, { method: 'PUT', body: { image: up.url } });
+          toast('התמונה הוחלפה');
+          categoryPhotos();
+        } catch (err) { toast(err.message); }
+      };
+    });
+    $$('[data-cat-reset]').forEach((b) => {
+      b.onclick = async () => { await api(`${A}/categories/${b.dataset.catReset}`, { method: 'PUT', body: { image: '' } }); categoryPhotos(); };
+    });
   }
 
   // ---------- מבצעים ----------
