@@ -1892,3 +1892,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Sent on change (at most once a minute), every 15 minutes, after prints, and when the page is hidden.
   - Server: `frame.mjs` `studio-sync` keeps the last 5 devices in storage `studios`; `all` returns `studios`.
   - Admin home: `studiosCard()` in `js/admin.js` ("🖥️ מה קורה בתוכנה"), redrawn on the 90-second refresh.
+
+## The admin as a phone app (v122)
+- `body.adm-app` at ≤ 820 px (matchMedia in `js/admin.js`, "the phone app" block near the end; styles in `css/admin-app.css`, linked from admin.html and in sw.js FILES). The computer layout is unchanged.
+- Thin sticky top bar: name, 📷 camera (opens the existing `#adm-cam` menu: receipt / document; the round FAB is hidden in app mode), 🔔 bell with the pending-requests count (→ requests), and an initial avatar (→ account). The desktop save / publish / preview bar (`.dz-nav`) is hidden.
+- Bottom tabs `#adm-tabs`: בית, בקשות (badge), לקוחות, עסקאות, עוד. "עוד" opens `#adm-more`: every SECTIONS screen as tiles, plus מסך לקוח / תצוגה מקדימה / שמירת טיוטה / פרסום / יציאה (they click the hidden desktop buttons).
+- Unsaved site changes: a pill `#adm-dirty` above the tabs with "פרסום באתר" (`APP.dirty(n)` from `state()`).
+- Home (`APP.home(m)`, called from `VIEWS.home` in app mode):
+  - a greeting and the date;
+  - a gold hero: the studio working now (from `STUDIOS`, live < 20 min: event, photos, printed today, ink, paper), else the next held event (when, venue, balance, WhatsApp, to the deal), else a calm card;
+  - "מחכה לך": pending requests, balances due within 7 days, a late backup, and Optimus sign-ups / upgrade requests (lic-list, cached 5 minutes);
+  - the stats become one sideways-scrolling row with line icons; the desktop studio card is hidden on the phone.
+- One set of inline line icons (`P` / `ic(k)`, `SEC_IC` per section); screen titles get their section's icon in app mode (`APP.shown`).
+- Feel: screens slide in (`.adm-enter`), numbers count up, pull down to refresh (`#adm-pull`), a light vibration on taps, an opening screen once a session (`#adm-splash`, sessionStorage `adm-splash`). All honour prefers-reduced-motion.
+- The app install bar (`#app-bar`, app-install.js) sits above the tabs in app mode, not over the top bar.
+- Hooks in admin.js: `show()` → `APP.shown(s)`, `badge()` → `APP.badge(n)`, `state()` → `APP.dirty(n)`, stats icons → `APP.statIcon`.
