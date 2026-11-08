@@ -253,3 +253,9 @@ body.pv-on .adm { grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 42%)
 .cu-src button.on { background: #d9b46a; border-color: #d9b46a; color: #17130e; font-weight: 700; }
 .cu-tags span { display: inline-block; font-size: 12px; padding: 1px 7px; margin: 1px 2px; border-radius: 999px; background: rgba(127, 127, 127, .14); white-space: nowrap; }
 .cu-new { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 6px; background: #d4f5df; color: #145c2e; }
+
+/* booking requests: the Optimus card (sign-ups, trials, upgrade requests) */
+.rq-opt h3 { margin: 0 0 4px; }
+.rq-opt tr.rq-o-hot td:first-child { box-shadow: inset -4px 0 0 #e0a43a; }
+.rq-opt tr.rq-o-hot td:nth-child(2) { color: #e0a43a; font-weight: 700; }
+.rq-opt tr.rq-o-ok td:nth-child(2) { color: #3fae6a; }

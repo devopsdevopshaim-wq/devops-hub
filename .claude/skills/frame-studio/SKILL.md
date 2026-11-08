@@ -1863,3 +1863,12 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - "🆕 חדשים מאז הביקור הקודם": people whose first arrival is after the admin's previous visit to this screen (`localStorage['fs-cu-seen']`, per browser).
 - The single-customer card adds the Optimus state (registered / installed / verified), the license code, visits and first arrival.
 - Before v119 Optimus sign-ups appeared only under "🔑 רישיונות סטודיו", which is why the customers screen looked empty.
+
+## Booking requests: Optimus sign-ups too (v120)
+- The admin "📥 בקשות הזמנה" screen (`V.requests` in `js/admin-biz.js`) has a card `#rq-opt` under the title, above the bookings: "🎁 אופטימוס: נרשמים, ניסיון ובקשות שדרוג".
+  - Loaded with `FS.license.admin('lic-list')` (leads + licenses), merged by email.
+  - Each person's state: 📩 asked to upgrade (planReq, highlighted, always on top), 💰 paying, 🎁 in a free trial (with events used), 💻 installed and signed in, ⬇ registered on the download page (verified or not).
+  - Shows the last 30 days plus every pending upgrade request; "הצגת כולם" shows everyone. WhatsApp / call / email per row, and a button to the licenses screen.
+  - Reloads with the screen's refresh and the admin's auto-refresh.
+- They are not date bookings, so they are not mixed into the approve/decline list.
+- The phone admin app (app.html → admin.html?app=1) gets every change at once: sw.js is network-first for the site's own files.
