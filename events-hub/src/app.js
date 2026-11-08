@@ -523,6 +523,15 @@ for (const [col, [prefix, fields]] of Object.entries(CRUD)) {
 }
 on('GET', '/api/admin/categories', () => json(db.all('categories')), { admin: true });
 
+// תמונה לקטגוריה (מחליפה את תמונת ברירת המחדל בחנות). image ריק = חזרה לברירת המחדל
+on('PUT', '/api/admin/categories/:id', async (c) => {
+  const b = await body(c.req);
+  const image = str(b.image, 300);
+  if (image && !IMG_RE.test(image)) return err(400, 'תמונה לא תקינה');
+  const rec = db.update('categories', c.params.id, { image });
+  return rec ? json(rec) : err(404, 'לא נמצא');
+}, { admin: true });
+
 on('GET', '/api/admin/orders', (c) => {
   let list = db.all('orders').map(orderView);
   const f = c.query.get('filter');

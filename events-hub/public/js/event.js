@@ -31,7 +31,7 @@
     document.title = `${ev.name} - שליחת תמונות`;
     $('#print-options').innerHTML = ev.printOptions.map((o) => `
       <div class="option-card" data-opt="${esc(o.id)}" role="radio" tabindex="0">
-        <span class="opt-art">${ART.svg(ART.forPrint(o.type))}</span><div><b>${esc(o.label)}</b><div class="muted small">גודל ${esc(o.size)} ס"מ</div></div>
+        <span class="opt-art">${PHOTOS.img(PHOTOS.forPrint(o.type), o.label, 240, 180)}</span><div><b>${esc(o.label)}</b><div class="muted small">גודל ${esc(o.size)} ס"מ</div></div>
       </div>`).join('');
     if (ev.printOptions.length === 1) selectOption(ev.printOptions[0].id);
   }

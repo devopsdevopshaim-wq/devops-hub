@@ -1,4 +1,4 @@
-/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders, asset, shrinkImage, ART, icon, fillIcons */
+/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders, asset, shrinkImage, PHOTOS, icon, fillIcons */
 (function () {
   let catalog = { categories: [], collections: [], products: [], promotions: [] };
   let coupon = store.get('coupon', '');
@@ -32,7 +32,7 @@
     const im = imgs(p);
     return `<div class="card product">
       <div class="thumb" data-show="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)} - פרטים ותמונות">
-        ${im.length ? `<img src="${esc(asset(im[0]))}" alt="" loading="lazy">` : `${ART.svg(p.category)}<span class="emoji-chip">${esc(p.icon || '🎁')}</span>`}
+        ${im.length ? `<img src="${esc(asset(im[0]))}" alt="" loading="lazy">` : PHOTOS.img(p.category, p.name)}
         ${p.promo ? `<span class="sale-badge">${esc(p.promo.badge || 'מבצע')}</span>` : ''}
         ${im.length > 1 ? `<span class="badge" style="position:absolute;bottom:6px;left:6px">📷 ${im.length}</span>` : ''}
       </div>
@@ -50,7 +50,7 @@
       <div class="row between"><h2 style="margin:0">${esc(p.name)}</h2><button class="icon-btn" data-pclose aria-label="סגירה">✕</button></div>
       ${im.length ? `<div class="gallery" id="gallery">${im.map((u) => `<img src="${esc(asset(u))}" alt="">`).join('')}</div>
         ${im.length > 1 ? `<div class="gallery-dots" id="gallery-dots">1 / ${im.length} · מחליקים לתמונה הבאה</div>` : ''}`
-        : `<div style="border-radius:14px;overflow:hidden;aspect-ratio:4/3">${ART.svg(p.category)}</div>`}
+        : `<div style="border-radius:14px;overflow:hidden;aspect-ratio:4/3">${PHOTOS.img(p.category, p.name, 1000, 750)}</div>`}
       ${p.promo ? `<p style="margin:10px 0 0"><span class="sale-badge" style="position:static">${esc(p.promo.badge || 'מבצע')}</span> ${esc(p.promo.name)}</p>` : ''}
       <p style="white-space:pre-line">${esc(p.description)}</p>
       <div class="row between"><span>${priceHtml(p)}</span><button class="btn" data-add="${esc(p.id)}" data-pclose>${p.needsPhoto ? '📷 בחירת תמונה' : 'הוספה לסל 🛒'}</button></div>`;
@@ -83,7 +83,7 @@
     const tile = (id, label, art) => `<button class="print-tile${activeCat === id ? ' active' : ''}" data-cat="${esc(id)}" role="tab" aria-selected="${activeCat === id}">
         <span class="pin"></span><span class="art">${art}</span><span class="label">${esc(label)}</span></button>`;
     $('#cat-tabs').innerHTML = [tile('all', 'הכול', '<img src="icons/icon.svg" alt="">')]
-      .concat(catalog.categories.map((c) => tile(c.id, c.name, ART.svg(c.id)))).join('');
+      .concat(catalog.categories.map((c) => tile(c.id, c.name, PHOTOS.img(c.id, c.name, 400, 300)))).join('');
     const list = catalog.products.filter((p) => !(p.collectionIds || []).length && (activeCat === 'all' || p.category === activeCat));
     $('#products').innerHTML = list.map(productCard).join('') || '<p class="muted">אין מוצרים בקטגוריה זו</p>';
     $('#shop-count').textContent = `${list.length} מוצרים`;
@@ -98,9 +98,14 @@
     now.classList.add('flash'); // הבזק מצלמה
     setTimeout(() => now.classList.remove('flash'), 500);
   });
-  // פתיח: שלוש "הדפסות" במניפה
-  $('#hero-fan').innerHTML = [['magnets', 'מגנטים'], ['blocks', 'בלוקים'], ['frames', 'מסגרות']]
-    .map(([k, l]) => `<div class="print-tile"><span class="pin"></span><span class="art">${ART.svg(k)}</span><span class="label">${l}</span></div>`).join('');
+  // פתיח: תמונת רקע אמיתית ושלוש "הדפסות" במניפה (מגנטים, בלוקים, מסגרות)
+  function renderHero() {
+    $('.stage').style.setProperty('--hero-photo', `url("${PHOTOS.hero}")`);
+    $('.stage').classList.add('has-photo');
+    $('#hero-fan').innerHTML = [['magnets', 'מגנטים'], ['blocks', 'בלוקים'], ['frames', 'מסגרות']]
+      .map(([k, l]) => `<div class="print-tile"><span class="pin"></span><span class="art">${PHOTOS.img(k, l, 480, 360)}</span><span class="label">${l}</span></div>`).join('');
+  }
+  renderHero();
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-add]');
     if (!b) return;
@@ -292,6 +297,8 @@
       [cfg, catalog] = await Promise.all([api('/api/config'), api('/api/store')]);
       $('#brand-name').textContent = cfg.businessName;
       document.title = cfg.businessName;
+      PHOTOS.setCustom(catalog.categories);
+      renderHero();
       renderStore();
       const cities = await api('/api/cities');
       $('#cities').innerHTML = cities.map((c) => `<option value="${esc(c.name)}">`).join('');

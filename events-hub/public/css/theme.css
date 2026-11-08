@@ -192,3 +192,13 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .stat-card .stat { font-size: 1.9rem; line-height: 1.1; }
 .stat-card .muted { font-size: .88rem; line-height: 1.3; min-height: 2.3em; }
 @media (max-width: 640px) { .stat-grid { grid-template-columns: 1fr 1fr; } .stat-card .stat-ico { width: 36px; height: 36px; } }
+
+/* פתיח עם תמונה אמיתית מתחת לשכבת שזיף */
+.stage.has-photo {
+  background:
+    linear-gradient(100deg, rgba(36, 17, 47, .96) 0%, rgba(58, 18, 60, .86) 45%, rgba(107, 29, 92, .45) 100%),
+    var(--hero-photo) center / cover no-repeat, #2A0F3D;
+}
+@media (max-width: 700px) { .stage.has-photo { background: linear-gradient(180deg, rgba(36, 17, 47, .55) 0%, rgba(36, 17, 47, .92) 45%, #2A0F3D 100%), var(--hero-photo) center top / cover no-repeat, #2A0F3D; } }
+.print-tile .art img, .product .thumb img, .option-card .opt-art img { background: var(--surface-2); }
+.option-card .opt-art img { width: 100%; height: 100%; object-fit: cover; display: block; }

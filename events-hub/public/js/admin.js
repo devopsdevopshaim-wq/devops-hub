@@ -1,4 +1,4 @@
-/* global $, $$, api, esc, toast, money, fmtDate, icon, asset, adminToken, shrinkImage */
+/* global $, $$, api, esc, toast, money, fmtDate, icon, asset, adminToken, shrinkImage, PHOTOS */
 (function () {
   const A = '/api/admin';
   const ref = { cities: [], categories: [], collections: [], printTypes: [], statuses: [], suppliers: [], couriers: [], settings: {}, payments: {} };
@@ -352,7 +352,7 @@
       { k: 'collectionIds', label: 'שיוך לקולקציה עונתית (המוצר יוצג רק בזמן הקולקציה)', type: 'checks', options: ref.collections.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` })) },
       { k: 'needsPhoto', label: 'המוצר דורש תמונה מהלקוח', type: 'bool', def: false }, { k: 'active', label: 'פעיל', type: 'bool' },
     ];
-    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" data-go-promos>🏷️ מבצעים</button><button class="btn" id="new">➕ מוצר חדש</button></div></div>
+    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" id="cat-photos">${icon('image')}תמונות קטגוריות</button><button class="btn soft" data-go-promos>${icon('tag')}מבצעים</button><button class="btn" id="new">${icon('plus')}מוצר חדש</button></div></div>
       <p class="muted small">את המחיר אפשר לשנות ישר בטבלה. מחיר מבצע נקבע במסך "מבצעים".</p>
       <div class="card table-wrap"><table><thead><tr><th></th><th>שם</th><th>קטגוריה</th><th>מחיר רגיל</th><th>במבצע</th><th>סטטוס</th></tr></thead><tbody>
       ${list.map((p) => {
@@ -374,6 +374,7 @@
     };
     $('#new').onclick = () => open(null);
     $('[data-go-promos]').onclick = () => go('promotions');
+    $('#cat-photos').onclick = categoryPhotos;
     // עריכת מחיר ישר מהטבלה
     $$('[data-price]').forEach((inp) => {
       inp.onclick = (e) => e.stopPropagation();
@@ -387,6 +388,37 @@
       };
     });
     $$('tr[data-id]').forEach((r) => { r.onclick = () => open(list.find((p) => p.id === r.dataset.id)); });
+  }
+
+  // תמונות הקטגוריות בחנות: תמונה משלכם במקום תמונת ברירת המחדל
+  async function categoryPhotos() {
+    const cats = await api(`${A}/categories`);
+    PHOTOS.setCustom(cats);
+    openModal(`<div class="row between"><h2 style="margin:0">תמונות קטגוריות</h2><button class="icon-btn" data-close aria-label="סגירה">✕</button></div>
+      <p class="muted">אלה התמונות שעל כפתורי הקטגוריות ועל מוצרים בלי תמונה. אפשר להעלות צילום משלכם לכל קטגוריה.</p>
+      <div class="grid sm">${cats.map((c) => `<div class="card flat stack" style="padding:10px">
+        <div class="photo-tile" style="aspect-ratio:4/3">${PHOTOS.img(c.id, c.name, 400, 300)}</div>
+        <b>${esc(c.icon)} ${esc(c.name)}</b>
+        <label class="btn soft sm" style="margin:0">${icon('image')}החלפת תמונה<input type="file" accept="image/*" data-cat-up="${esc(c.id)}" class="hidden"></label>
+        ${c.image ? `<button class="btn ghost sm" data-cat-reset="${esc(c.id)}">חזרה לתמונה המקורית</button>` : ''}
+      </div>`).join('')}</div>`);
+    $$('[data-cat-up]').forEach((inp) => {
+      inp.onchange = async () => {
+        const f = inp.files[0];
+        if (!f) return;
+        try {
+          const fd = new FormData();
+          fd.append('file', await shrinkImage(f, 1200, 0.86), 'category.jpg');
+          const up = await api(`${A}/uploads`, { method: 'POST', body: fd });
+          await api(`${A}/categories/${inp.dataset.catUp}`, { method: 'PUT', body: { image: up.url } });
+          toast('התמונה הוחלפה');
+          categoryPhotos();
+        } catch (err) { toast(err.message); }
+      };
+    });
+    $$('[data-cat-reset]').forEach((b) => {
+      b.onclick = async () => { await api(`${A}/categories/${b.dataset.catReset}`, { method: 'PUT', body: { image: '' } }); categoryPhotos(); };
+    });
   }
 
   // ---------- מבצעים ----------
