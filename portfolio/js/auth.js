@@ -262,7 +262,7 @@
         '<p class="gate-sent" id="gate-info" role="status" hidden></p>' +
         '<p class="add-error" id="gate-err" role="alert"' + (msg ? '' : ' hidden') + '>' + (msg || '') + '</p>' +
         '<div class="gate-promo">' +
-          '<p class="gate-promo-title">הדמיה של האתר · 1:19</p>' +
+          '<p class="gate-promo-title">הדמיה של האתר · 1:39</p>' +
           '<div class="gate-promo-btns">' +
             '<button class="g-btn ghost" type="button" data-promo="he">▶ עברית</button>' +
             '<button class="g-btn ghost" type="button" data-promo="en" lang="en" dir="ltr">▶ English</button>' +

@@ -37,27 +37,34 @@ SCENES = [
   co=[('open', 0.6, 2.2, 150, 160, 'כל התחומים בלחיצה', 'Every domain, one click'),
       ('ai', 0.9, 2.0, 540, 190, 'סוכני AI', 'AI agents'),
       ('tools', 0.9, 2.0, 540, 190, 'כלים ומחשבונים', 'Tools and calculators')]),
- dict(id='plan', n=3, dur=12.0, push=(1.0, 1.1, 0.8, 0.3),
+ dict(id='sites', n=3, dur=20.0, push=(1.0, 1.06, 0.5, 0.3),
+  he_eye='כל האתרים', en_eye='EVERY SITE',
+  he_t=f'כל {NP} האתרים, כולל החדשים', en_t=f'All {words_en(NP)} sites, including the new ones',
+  he_s='ספרייה חיה: עוזרי AI, תכנון, בית, לימוד ועוד. מתעדכנת כל הזמן.', en_s='A living library: AI agents, planning, home, study and more. Always growing.',
+  co=[('scroll', 0.6, 2.6, 640, 150, 'כל האתרים במקום אחד', 'Every site in one place'),
+      ('new1', 0.5, 2.8, 640, 150, 'חדש: רגעים, אפליקציה לאירועים', 'New: Rega\'im, an app for events'),
+      ('new2', 0.5, 2.8, 640, 150, 'חדש: שכבות, הרפתקה ארכיאולוגית', 'New: Layers, an archaeology adventure')]),
+ dict(id='plan', n=4, dur=12.0, push=(1.0, 1.1, 0.8, 0.3),
   he_eye='תורה ויום', en_eye='TORAH & DAY',
   he_t='סדר יום ופירושים מגדולי המפרשים', en_t='A day plan, and commentary from the great scholars',
   he_s='רש״י, רמב״ן, אבן עזרא, ספורנו ועוד. הנוסח האמיתי, ישר מהמקור.', en_s='Rashi, Ramban, Ibn Ezra, Sforno and more. The real text, straight from the source.',
   co=[('plan', 0.8, 2.6, 960, 300, 'השעה עכשיו מודגשת', 'The current hour is highlighted'),
       ('comm', 0.9, 2.2, 960, 130, 'פירושים בלחיצה', 'Commentary on demand'),
       ('snip', 1.3, 3.0, 960, 360, 'ניסוחים אמיתיים מספריא', 'Real wording from Sefaria')]),
- dict(id='maya', n=4, dur=13.0, push=(1.0, 1.08, 0.2, 0.6),
+ dict(id='maya', n=5, dur=13.0, push=(1.0, 1.08, 0.2, 0.6),
   he_eye='מאיה', en_eye='MAYA',
   he_t='מאיה, עוזרת AI שעונה כמו אדם', en_t='Maya, an AI assistant that answers like a person',
   he_s='שואלים בעברית חופשית, מקבלים תשובה, וקובעים שיחה עם חיים.', en_s='Ask in plain language, get an answer, and book a call with Haim.',
   co=[('open', 0.9, 2.4, 330, 150, 'העוזרת האישית של חיים', "Haim's personal assistant"),
       ('answer', 1.2, 3.4, 330, 390, 'תשובה מיידית, בכל שעה', 'An instant answer, any hour')]),
- dict(id='admin', n=5, dur=12.0, push=(1.0, 1.1, 0.12, 0.4),
+ dict(id='admin', n=6, dur=12.0, push=(1.0, 1.1, 0.12, 0.4),
   he_eye='ניהול', en_eye='ADMIN',
   he_t='המנהל מסדר. כולם רואים.', en_t='The admin arranges. Everyone sees.',
   he_s='לשוניות חדשות, העברת אתרים בין תחומים וסדר לפי הצורך.', en_s='New tabs, sites moved between domains, ordered your way.',
   co=[('edit', 0.8, 2.2, 150, 150, 'מצב עריכה, למנהל בלבד', 'Edit mode, admin only'),
       ('add', 0.8, 2.0, 150, 190, 'לשונית חדשה', 'A new tab'),
       ('move', 0.9, 2.4, 560, 560, 'העברה בין תחומים', 'Move between domains')]),
- dict(id='rail', n=6, dur=8.5, push=(1.0, 1.08, 0.85, 0.5),
+ dict(id='rail', n=7, dur=8.5, push=(1.0, 1.08, 0.85, 0.5),
   he_eye='תמיד בהישג יד', en_eye='ALWAYS AT HAND',
   he_t='מוזיקה, חדשות ונגישות', en_t='Music, news and accessibility',
   he_s='רדיו ישראלי ותפילות, כותרות טכנולוגיה חיות ופס חדשות בתחתית.', en_s='Israeli radio and prayers, live tech headlines and a ticker along the bottom.',
@@ -162,7 +169,7 @@ html,body{{width:{W}px;height:{H}px;overflow:hidden;background:#0F0D24}}
     # captions per scene
     for i, s in enumerate(plan):
         body += (f'<div class="clip cap" id="cap-{i}" data-start="{s["start"]:.2f}" data-duration="{s["dur"]:.2f}" data-track-index="2">'
-                 f'<div class="eye"><i></i><span>{tx(s["he_eye"], s["en_eye"])}</span><b>{s["n"]:02d} / 06</b></div>'
+                 f'<div class="eye"><i></i><span>{tx(s["he_eye"], s["en_eye"])}</span><b>{s["n"]:02d} / {len(SCENES):02d}</b></div>'
                  f'<div class="h1" id="h1-{i}">{words(tx(s["he_t"], s["en_t"]), "hw" + str(i))}</div></div>\n')
         body += (f'<div class="clip sub" id="sub-{i}" data-start="{s["start"]:.2f}" data-duration="{s["dur"]:.2f}" data-track-index="3">{tx(s["he_s"], s["en_s"])}</div>\n')
     # closing card
@@ -253,6 +260,7 @@ window.__timelines['main'] = tl;
         N, D = words_en(NP).capitalize(), words_en(ND)
         say = {'overview': 'One hover shows the weekly portion, the Shabbat times, and a proverb for the day.',
                'domains': f'{D.capitalize()} domains, {words_en(NP)} projects. Open the list, pick one, and everything falls into place.',
+               'sites': f'All {words_en(NP)} sites in one place, including the newest: an app for events, and an archaeology adventure.',
                'plan': 'A daily plan with the current hour highlighted, and commentary from Rashi, Ramban, Ibn Ezra and more, straight from the source.',
                'maya': 'Maya is an AI assistant. Ask in plain language, get an answer at any hour, and book a call with Haim.',
                'admin': 'The admin arranges the tabs and the sites, and everyone sees it instantly.',
