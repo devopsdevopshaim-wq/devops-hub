@@ -3,24 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#b5476b">
+  <meta name="theme-color" content="#24112F">
   <title>שליחת תמונות מהאירוע</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700;800&family=Rubik:wght@500;700&display=swap">
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/theme.css">
 </head>
 <body>
   <header class="topbar">
     <div class="wrap">
       <a class="brand" href="./"><img class="logo" src="icons/icon.svg" alt=""><span id="brand-name">רגעים</span></a>
       <span class="spacer"></span>
-      <button class="btn soft sm hidden" data-install>📲 התקנת האפליקציה</button>
-      <a class="btn ghost sm" href="./#store">🛍️ חנות</a>
+      <button class="btn soft sm hidden" data-install><span data-icon="install"></span>התקנה</button>
+      <a class="btn ghost sm" href="./#store"><span data-icon="store"></span>חנות</a>
     </div>
   </header>
 
-  <section class="hero">
+  <section class="hero event-stage">
     <h1 id="ev-name">טוען…</h1>
     <p class="muted" id="ev-welcome"></p>
   </section>
@@ -34,7 +38,7 @@
         <div class="field"><label for="g-name">שם מלא</label><input id="g-name" required maxlength="80" autocomplete="name"></div>
         <div class="field"><label for="g-phone">טלפון (לעדכון כשהתמונה מוכנה)</label><input id="g-phone" type="tel" maxlength="20" autocomplete="tel" inputmode="tel"></div>
         <label class="check"><input type="checkbox" id="g-consent"> אשמח לקבל מבצעים והטבות</label>
-        <button class="btn block" style="margin-top:12px">כניסה</button>
+        <button class="btn gold lg block" style="margin-top:12px">כניסה לאירוע</button>
       </form>
     </div>
 
@@ -49,16 +53,16 @@
       <div class="card hidden" id="ended-card">
         <h2>האירוע הסתיים 💐</h2>
         <p>תודה שהשתתפתם! התמונות שלכם שמורות כאן. רוצים עוד מגנטים, בלוקים או מתנה מעוצבת מהתמונות? הזמינו בקלות מהחנות.</p>
-        <div class="row"><a class="btn" href="./#store">לחנות 🛍️</a><button class="btn soft hidden" data-install>📲 שמירת האפליקציה בטלפון</button></div>
+        <div class="row"><a class="btn gold" href="./#store"><span data-icon="store"></span>לחנות</a><button class="btn soft hidden" data-install><span data-icon="install"></span>שמירת האפליקציה בטלפון</button></div>
       </div>
 
       <div class="card" id="choose-card">
         <h2>1. בחרו סוג הדפסה</h2>
         <div class="stack" id="print-options"></div>
         <h2 style="margin-top:16px">2. בחרו תמונה</h2>
-        <div class="row">
-          <label class="btn" for="file-camera" style="margin:0">📷 צילום</label>
-          <label class="btn soft" for="file-gallery" style="margin:0">🖼️ מהגלריה</label>
+        <div class="shoot">
+          <label class="btn gold lg" for="file-camera"><span data-icon="camera" data-icon-class=""></span>צילום עכשיו</label>
+          <label class="btn lg" for="file-gallery"><span data-icon="image" data-icon-class=""></span>מהגלריה</label>
         </div>
         <input type="file" id="file-camera" accept="image/*" capture="environment" class="hidden">
         <input type="file" id="file-gallery" accept="image/*" class="hidden">
@@ -82,7 +86,7 @@
       <div class="row">
         <button class="btn ghost" id="confirm-back">חזרה לעריכה</button>
         <span class="spacer"></span>
-        <button class="btn" id="confirm-send">שליחה להדפסה 🖨️</button>
+        <button class="btn gold lg" id="confirm-send">שליחה להדפסה 🖨️</button>
       </div>
     </div>
 
@@ -92,6 +96,7 @@
   <script src="js/install-help.js"></script>
   <script src="js/common.js"></script>
   <script src="js/editor.js"></script>
+  <script src="js/art.js"></script>
   <script src="js/event.js"></script>
 </body>
 </html>
