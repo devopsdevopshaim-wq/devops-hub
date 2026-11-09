@@ -460,3 +460,8 @@ input:focus, select:focus, textarea:focus { border-color: #C9A04A; box-shadow: 0
 .ev-frame-slot { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 1px #EADDCB; }
 .ev-frame-prev { width: 64px; height: 92px; flex: none; }
 .ev-frame-prev.land { width: 92px; height: 64px; }
+
+/* קודי QR לכל משימה */
+.qr-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.qr-preview { border-radius: 12px; overflow: hidden; box-shadow: 0 10px 24px -16px rgba(80, 56, 30, .55); }
+.qr-card.qr-ev { background: linear-gradient(160deg, #FFFCF4, #fff); }
