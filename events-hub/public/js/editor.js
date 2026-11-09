@@ -37,9 +37,10 @@
 
   const STICKERS = ['❤️', '💍', '🎉', '🥂', '🌸', '⭐', '👑', '🕊️', '🎂', '💐', '✡️', '🌿', '😍', '🎈', '💃', '🕺'];
 
-  function loadImage(src) {
+  function loadImage(src, cors = false) {
     return new Promise((resolve, reject) => {
       const img = new Image();
+      if (cors) img.crossOrigin = 'anonymous'; // מסגרת מהשרת: בלי זה התמונה הסופית לא נשמרת
       img.onload = () => resolve(img);
       img.onerror = reject;
       img.src = src;
@@ -205,7 +206,7 @@
   class PhotoEditor {
     constructor(root, opts) {
       this.root = root;
-      this.opts = opts; // { file, aspect (w/h או 'free'), allowAnimations, tools, ai, doneLabel, title, onCancel, onPrint(blob, edits), onAnimation(blob) }
+      this.opts = opts; // { file, aspect (w/h או 'free'), overlay (מסגרת האירוע, PNG שקוף), allowAnimations, tools, ai, doneLabel, title, onCancel, onPrint(blob, edits), onAnimation(blob) }
       // המנהל קובע אילו כלים פתוחים ללקוח (הגדרות > עורך התמונות)
       this.tools = Object.assign({}, opts.tools || {});
       this.aiList = Object.fromEntries(Object.entries(AI_EFFECTS).filter(([k]) => k === 'none' || !opts.ai || opts.ai[k] !== false));
@@ -232,12 +233,17 @@
         URL.revokeObjectURL(url);
       }
       this.state.landscape = this.original.width > this.original.height;
+      // מסגרת האירוע שהמנהל העלה: התמונה נכנסת לתוכה, והגודל והכיוון הם של המסגרת
+      if (this.opts.overlay) {
+        try { this.overlayImg = await loadImage(this.opts.overlay, true); } catch { this.overlayImg = null; toast('מסגרת האירוע לא נטענה, ממשיכים בלעדיה'); }
+      }
       this.processed = this.original;
       this.renderUI();
       this.rebuildBase();
     }
 
     get aspect() {
+      if (this.overlayImg) return this.overlayImg.naturalWidth / this.overlayImg.naturalHeight;
       // 'free' = היחס של התמונה עצמה (מוצר בלי מידת הדפסה, כמו ספל או אלבום)
       const a = this.opts.aspect === 'free' ? this.original.width / this.original.height : (this.opts.aspect || 2 / 3); // רוחב/גובה
       const portrait = a <= 1 ? a : 1 / a;
@@ -320,6 +326,7 @@
       ctx.restore();
 
       this.paintFrame(ctx, W, H, m);
+      if (this.overlayImg) ctx.drawImage(this.overlayImg, 0, 0, W, H); // מסגרת האירוע
 
       // טקסט
       if (s.text) {
@@ -457,7 +464,7 @@
 
     edits() {
       const s = this.state;
-      return [s.ai !== 'none' && `ai:${s.ai}`, s.preset !== 'none' && `filter:${s.preset}`, s.frame !== 'none' && `frame:${s.frame}`,
+      return [this.overlayImg && 'event-frame', s.ai !== 'none' && `ai:${s.ai}`, s.preset !== 'none' && `filter:${s.preset}`, s.frame !== 'none' && `frame:${s.frame}`,
         s.text && 'text', s.stickers.length && `stickers:${s.stickers.length}`].filter(Boolean).join(',');
     }
 
@@ -465,7 +472,7 @@
     renderUI() {
       const tabs = [['crop', '✂️ חיתוך'], ['adjust', '🎚️ כיוונון'], ['filters', '🎨 פילטרים'], ['ai', '🤖 AI'],
         ['text', '🔤 טקסט'], ['stickers', '😍 מדבקות'], ['frames', '🖼️ מסגרת'], ['anim', '🎬 אנימציה']]
-        .filter(([id]) => this.tools[id] !== false && (id !== 'anim' || this.opts.allowAnimations));
+        .filter(([id]) => this.tools[id] !== false && (id !== 'anim' || this.opts.allowAnimations) && !(id === 'frames' && this.overlayImg));
       if (!tabs.find(([id]) => id === this.tab)) this.tab = tabs.length ? tabs[0][0] : null;
       this.root.innerHTML = `
         <div class="stack">${this.opts.title ? `<h2 style="margin:0">${esc(this.opts.title)}</h2>` : ''}
@@ -533,10 +540,10 @@
       const tools = (map, cur, attr) => `<div class="tool-grid">${Object.entries(map).map(([id, v]) =>
         `<button class="tool${id === cur ? ' active' : ''}" data-${attr}="${id}"><span class="ico">${v.ico || ''}</span>${esc(v.name || v)}</button>`).join('')}</div>`;
       const html = {
-        crop: `<p class="muted small">גררו את התמונה כדי למקם אותה במסגרת ההדפסה.</p>
+        crop: `<p class="muted small">${this.overlayImg ? '🖼️ התמונה בתוך המסגרת של האירוע. גררו והגדילו כדי למקם אותה.' : 'גררו את התמונה כדי למקם אותה במסגרת ההדפסה.'}</p>
           ${this.slider('zoom', 'זום', 1, 3, 0.01)}
           <div class="row"><button class="btn soft sm" data-act="rotate">↻ סיבוב</button>
-          <button class="btn soft sm" data-act="orient">${s.landscape ? '▯ לאורך' : '▭ לרוחב'}</button>
+          ${this.overlayImg ? '' : `<button class="btn soft sm" data-act="orient">${s.landscape ? '▯ לאורך' : '▭ לרוחב'}</button>`}
           <button class="btn soft sm" data-act="reset">איפוס</button></div>`,
         adjust: this.slider('brightness', 'בהירות', 50, 150) + this.slider('contrast', 'ניגודיות', 50, 150) + this.slider('saturation', 'רוויה', 0, 200),
         filters: tools(Object.fromEntries(Object.entries(PRESETS).map(([k, v]) => [k, { name: v.name, ico: '🎨' }])), s.preset, 'preset'),

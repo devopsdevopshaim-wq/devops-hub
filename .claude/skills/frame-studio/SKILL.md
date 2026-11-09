@@ -1931,3 +1931,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - On `print-job`, every printed photo with `p.regaim` is marked `printed` (`PATCH /api/admin/customer-photos/:id`), which the customer sees in the app.
 - Automatic mode polls every 20s; new waiting photos come into the project by themselves, and can print at once (`FS.printNow`, layout fill, the paper in `#paper`).
 - The tab shows a dot with the number of waiting photos. The Regaim login is rate limited (10 per 15 min per address).
+
+## Who sent each photo, in order (Nov 9, v125)
+- Live event → "🗂️ ניהול התמונות" (`managePhotos` in `js/live.js`): every guest photo is numbered by send order (`at`; #1 came first) with the sender's name and time. Two views (`mp.view`): "🕒 לפי סדר השליחה" and "👥 לפי אורח" (one group per name, with the count and first–last time; studio magnets in their own group). A guest select, a status select (waiting / printed / hidden) and a search over names and greetings. The choices stay while the dialog is reopened (`mp`).
+- Customer photos tab (`js/customers.js`): the same idea for the Frame Events app. `cfg.view` 'order' | 'who' (grouped by phone, else name, with "📥 כל התמונות של הלקוח"), `cfg.where` filters one event or order, every photo carries its send number per event (`it.no`), and photos always come into the project oldest first.
+- Frame Events (events-hub) now lets the admin upload a PNG frame per print option of an event (`printOptions[].frame`); the guest edits inside it (`PhotoEditor` `overlay`), so the photos that reach this tab already carry the event's frame.

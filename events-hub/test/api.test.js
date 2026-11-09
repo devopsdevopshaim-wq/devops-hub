@@ -373,3 +373,14 @@ test('event type photos: the admin sets their own and can go back to the default
   await call('PUT', '/api/admin/event-types/batmitzvah', { image: '' });
   assert.equal((await call('GET', '/api/store')).data.events.find((e) => e.id === 'batmitzvah').image, before.image);
 });
+
+test('an event frame per print option reaches the guest page (only a real uploaded image)', async () => {
+  const up = new FormData(); up.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'f.jpg');
+  const frame = (await call('POST', '/api/admin/uploads', up)).data.url;
+  const e = (await call('POST', '/api/admin/events', { name: 'חתונה עם מסגרת', photosPerGuest: 2,
+    printOptions: [{ type: 'magnet', size: '6x9', frame }, { type: 'block', size: '10x10', frame: 'https://evil.example/f.png' }] })).data;
+  assert.equal(e.printOptions[0].frame, frame);
+  assert.equal(e.printOptions[1].frame, '');
+  const pub = (await call('GET', `/api/event/${e.code}`)).data;
+  assert.equal(pub.printOptions[0].frame, frame);
+});

@@ -491,20 +491,65 @@
   });
 
   /* ---------- the photos of the event (hide one from the screen and the album) ---------- */
+  /* 🗂️ the event's photos: who sent each one and in what order. Two views: by send order (numbered, with the time it came
+     in) or by guest (one group per sender, in the order they sent); a guest filter, a status filter and a search */
+  var mp = { view: 'order', who: '', st: 'all', q: '' };
+  function hm(t) { return t ? new Date(t).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : ''; }
   function managePhotos() {
     api('ev-get', { e: ev.id }).then(function (r) {
       if (!r.ok) return FS.toast(err(r));
-      var list = r.photos.slice().reverse();
-      var body = FS.dialog('🗂️ התמונות של האירוע (' + list.length + ')', list.length ? '<p class="hint">תמונה מוסתרת לא מופיעה במסך הענק ובאלבום. "להדפסה שוב" מחזיר אותה לתור.</p><div class="lv-grid">' + list.map(function (p) {
-        return '<figure data-id="' + p.id + '" class="' + (p.st === 'hidden' ? 'off' : '') + '"><img alt="" loading="lazy"><figcaption>' + (p.src === 'studio' ? '🧲 מגנט' : '🤳 ' + esc(p.name || 'אורח')) + (p.text ? '<br><small>' + esc(p.text) + '</small>' : '') + (p.audio ? ' 🎙️' : '') +
-          '<span>' + ({ new: 'בתור', claimed: 'בעמדה ' + esc(p.station), printed: 'הודפס', hidden: 'מוסתר' })[p.st] + '</span>' +
+      var all = r.photos.slice().sort(function (a, b) { return (a.at || 0) - (b.at || 0); });
+      var n = 0; all.forEach(function (p) { if (p.src !== 'studio') p.no = ++n; });   /* the guest photos' send number: #1 is the first that came in */
+      var who = function (p) { return p.src === 'studio' ? '🧲 מגנטים מהעמדה' : (p.name || '').trim() || 'אורח בלי שם'; };
+      var names = {}; all.forEach(function (p) { var k = who(p); names[k] = (names[k] || 0) + 1; });
+      var body = FS.dialog('🗂️ התמונות של האירוע (' + all.length + ')', '', true);
+      function card(p) {
+        return '<figure data-id="' + p.id + '" class="' + (p.st === 'hidden' ? 'off' : '') + '"><img alt="" loading="lazy">' +
+          (p.no ? '<i class="lv-no">#' + p.no + '</i>' : '') + '<figcaption><b>' + (p.src === 'studio' ? '🧲 מגנט' : '🤳 ' + esc(who(p))) + '</b>' +
+          '<span>🕒 נשלחה ' + hm(p.at) + '</span>' + (p.text ? '<small>💌 ' + esc(p.text) + '</small>' : '') + (p.audio ? '<small>🎙️ ברכה קולית</small>' : '') +
+          '<span>' + ({ new: '⏳ בתור', claimed: '🖥️ בעמדה ' + esc(p.station), printed: '✅ הודפסה', hidden: '🙈 מוסתרת' })[p.st] + '</span>' +
           '<button class="btn small" data-st="' + (p.st === 'hidden' ? 'printed' : 'hidden') + '">' + (p.st === 'hidden' ? '👁 החזרה' : '🙈 הסתרה') + '</button>' + (p.src === 'guest' ? '<button class="btn small" data-st="new">🖨️ להדפסה שוב</button>' : '') + '</figcaption></figure>';
-      }).join('') + '</div>' : '<p class="hint">עוד אין תמונות.</p>', true);
-      $$('figure', body).forEach(function (f) {
-        imgUrl(f.dataset.id).then(function (u) { $('img', f).src = u; });
-        $$('[data-st]', f).forEach(function (b) { b.addEventListener('click', function () { api('mark', { e: ev.id, ids: [f.dataset.id], st: b.dataset.st }).then(function (x) { if (x.ok) managePhotos(); }); }); });
-      });
-      $$('figure.off img', body).forEach(function (im) { im.removeAttribute('loading'); });
+      }
+      function paint() {
+        var q = mp.q.trim().toLowerCase();
+        var list = all.filter(function (p) {
+          if (mp.who && who(p) !== mp.who) return false;
+          if (mp.st === 'wait' && !(p.st === 'new' || p.st === 'claimed')) return false;
+          if (mp.st === 'printed' && p.st !== 'printed') return false;
+          if (mp.st === 'hidden' && p.st !== 'hidden') return false;
+          return !q || (who(p) + ' ' + (p.text || '')).toLowerCase().indexOf(q) >= 0;
+        });
+        var html;
+        if (!list.length) html = '<p class="hint">אין תמונות כאן.</p>';
+        else if (mp.view === 'who') {
+          var groups = {}, order = [];
+          list.forEach(function (p) { var k = who(p); if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(p); });
+          html = order.map(function (k) {
+            var g = groups[k];
+            return '<section class="lv-who"><h3>' + esc(k) + ' <small>' + g.length + ' תמונות · ' + hm(g[0].at) + (g.length > 1 ? '–' + hm(g[g.length - 1].at) : '') + '</small></h3><div class="lv-grid">' + g.map(card).join('') + '</div></section>';
+          }).join('');
+        } else html = '<div class="lv-grid">' + list.map(card).join('') + '</div>';
+        $('#mp-list', body).innerHTML = html;
+        $('#mp-n', body).textContent = list.length + ' מתוך ' + all.length;
+        $$('#mp-list figure', body).forEach(function (f) {
+          imgUrl(f.dataset.id).then(function (u) { $('img', f).src = u; });
+          $$('[data-st]', f).forEach(function (b) { b.addEventListener('click', function () { api('mark', { e: ev.id, ids: [f.dataset.id], st: b.dataset.st }).then(function (x) { if (x.ok) managePhotos(); }); }); });
+        });
+      }
+      body.innerHTML = all.length ? '<div class="lv-mp-bar">' +
+        '<div class="seg lv-seg" id="mp-view"><button type="button" data-v="order" class="' + (mp.view === 'order' ? 'on' : '') + '">🕒 לפי סדר השליחה</button><button type="button" data-v="who" class="' + (mp.view === 'who' ? 'on' : '') + '">👥 לפי אורח</button></div>' +
+        '<select id="mp-who"><option value="">כל האורחים (' + Object.keys(names).length + ')</option>' + Object.keys(names).sort(function (a, b) { return a.localeCompare(b, 'he'); }).map(function (k) { return '<option value="' + esc(k) + '"' + (mp.who === k ? ' selected' : '') + '>' + esc(k) + ' (' + names[k] + ')</option>'; }).join('') + '</select>' +
+        '<select id="mp-st"><option value="all">כל הסטטוסים</option><option value="wait">⏳ מחכות להדפסה</option><option value="printed">✅ הודפסו</option><option value="hidden">🙈 מוסתרות</option></select>' +
+        '<input id="mp-q" type="search" placeholder="🔎 שם או ברכה" value="' + esc(mp.q) + '"><span class="hint" id="mp-n"></span></div>' +
+        '<p class="hint">כל תמונה עם השם של מי ששלח אותה ומספר לפי הסדר שבו הגיעה (#1 הגיעה ראשונה). תמונה מוסתרת לא מופיעה במסך הענק ובאלבום. "להדפסה שוב" מחזיר אותה לתור.</p><div id="mp-list"></div>'
+        : '<p class="hint">עוד אין תמונות.</p>';
+      if (!all.length) return;
+      $('#mp-st', body).value = mp.st;
+      $('#mp-view', body).addEventListener('click', function (e) { var b = e.target.closest('[data-v]'); if (!b) return; mp.view = b.dataset.v; $$('#mp-view [data-v]', body).forEach(function (x) { x.classList.toggle('on', x === b); }); paint(); });
+      $('#mp-who', body).addEventListener('change', function () { mp.who = this.value; paint(); });
+      $('#mp-st', body).addEventListener('change', function () { mp.st = this.value; paint(); });
+      $('#mp-q', body).addEventListener('input', function () { mp.q = this.value; paint(); });
+      paint();
     });
   }
 
