@@ -29,9 +29,10 @@
     $('#ev-name').textContent = ev.name;
     $('#ev-welcome').textContent = ev.welcomeText || (ev.date ? new Date(ev.date).toLocaleDateString('he-IL') : '');
     document.title = `${ev.name} - שליחת תמונות`;
+    const evFrame = ev.framePortrait || ev.frameLandscape;
     $('#print-options').innerHTML = ev.printOptions.map((o) => `
       <div class="option-card" data-opt="${esc(o.id)}" role="radio" tabindex="0">
-        <span class="opt-art${o.frame ? ' has-frame' : ''}">${o.frame ? `<img src="${esc(asset(o.frame))}" alt="מסגרת האירוע">` : PHOTOS.img(PHOTOS.forPrint(o.type), o.label, 240, 180)}</span><div><b>${esc(o.label)}</b><div class="muted small">גודל ${esc(o.size)} ס"מ</div>${o.frame ? '<div class="small" style="color:#9C7424;font-weight:700">🖼️ עם המסגרת של האירוע</div>' : ''}</div>
+        <span class="opt-art${o.frame || evFrame ? ' has-frame' : ''}">${o.frame || evFrame ? `<img src="${esc(asset(o.frame || evFrame))}" alt="מסגרת האירוע">` : PHOTOS.img(PHOTOS.forPrint(o.type), o.label, 240, 180)}</span><div><b>${esc(o.label)}</b><div class="muted small">גודל ${esc(o.size)} ס"מ</div>${o.frame || evFrame ? '<div class="small" style="color:#9C7424;font-weight:700">🖼️ עם המסגרת של האירוע</div>' : ''}</div>
       </div>`).join('');
     if (ev.printOptions.length === 1) selectOption(ev.printOptions[0].id);
   }
@@ -78,6 +79,7 @@
       file,
       aspect: PhotoEditor.aspectFromSize(selectedOption.size),
       overlay: selectedOption.frame ? asset(selectedOption.frame) : '',
+      overlays: !selectedOption.frame && (ev.framePortrait || ev.frameLandscape) ? { portrait: ev.framePortrait ? asset(ev.framePortrait) : '', landscape: ev.frameLandscape ? asset(ev.frameLandscape) : '' } : null,
       allowAnimations: ev.allowAnimations,
       tools: ev.editor && ev.editor.tools, ai: ev.editor && ev.editor.ai,
       onCancel: () => show('main'),

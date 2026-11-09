@@ -51,9 +51,9 @@
     $$(`[data-checklist="${name}"] [data-label]`).forEach((l) => { l.style.display = !q || l.dataset.label.includes(q) ? '' : 'none'; });
   });
 
-  function editForm({ title, fields, rec, url, onSaved, extraHtml = '', collectExtra }) {
+  function editForm({ title, fields, rec, url, onSaved, extraHtml = '', topHtml = '', collectExtra }) {
     openModal(`<div class="row between"><h2 style="margin:0">${esc(title)}</h2><button class="icon-btn" data-close>✕</button></div>
-      <form id="edit-form" style="margin-top:12px">${formHtml(fields, rec || {})}${extraHtml}
+      <form id="edit-form" style="margin-top:12px">${topHtml}${formHtml(fields, rec || {})}${extraHtml}
       <div class="row" style="margin-top:12px"><button class="btn">שמירה</button><button type="button" class="btn ghost" data-close>ביטול</button>
       ${rec?.id ? '<span class="spacer"></span><button type="button" class="btn danger sm" id="del-btn">מחיקה</button>' : ''}</div></form>`);
     const form = $('#edit-form');
@@ -154,7 +154,7 @@
         <div><label>גודל (ס"מ) - כל מידה שתרצו</label><input class="po-size" dir="ltr" list="sizes-${t.type}" value="${esc(o.size || t.sizes[0])}" placeholder="למשל 7x10" required></div>
         <div><label>שם לתצוגה</label><input class="po-label" value="${esc(o.label || '')}" placeholder="אוטומטי"></div>
         <input type="hidden" class="po-id" value="${esc(o.id || '')}"><input type="hidden" class="po-frame" value="${esc(o.frame || '')}">
-        <div class="po-frame-box"><label>מסגרת האירוע (PNG שקוף)</label><div class="row" style="gap:6px;flex-wrap:nowrap">
+        <div class="po-frame-box"><label>מסגרת מיוחדת לאפשרות הזו (לא חובה)</label><div class="row" style="gap:6px;flex-wrap:nowrap">
           <span class="po-frame-prev">${o.frame ? `<img src="${esc(asset(o.frame))}" alt="">` : '—'}</span>
           <label class="btn soft sm" style="margin:0">${o.frame ? 'החלפה' : '🖼️ העלאה'}<input type="file" accept="image/png,image/webp" class="hidden po-frame-file"></label>
           ${o.frame ? '<button type="button" class="btn ghost sm po-frame-del">✕</button>' : ''}</div></div>
@@ -165,7 +165,7 @@
   function printOptionsEditor(list = []) {
     return `${ref.printTypes.map((t) => `<datalist id="sizes-${t.type}">${t.sizes.map((z) => `<option value="${esc(z)}">`).join('')}</datalist>`).join('')}
       <div class="card flat" style="margin-top:12px"><h3>אפשרויות הדפסה לאורחים (עד 3)</h3>
-      <p class="muted small">🖼️ לכל אפשרות אפשר להעלות מסגרת של האירוע (PNG עם חלון שקוף, באותו יחס כמו המידה): האורח עורך את התמונה כבר בתוך המסגרת, והיא נשלחת להדפסה איתה.</p>
+      <p class="muted small">מסגרת האירוע (למעלה) חלה על כל האפשרויות. אפשר לתת לאפשרות מסוימת מסגרת אחרת משלה.</p>
       <p class="muted small">קובעים סוג, מידה ושם לכל אפשרות. המידה חופשית (רוחב x גובה בס"מ); הרשימה המוצעת נערכת ב"סליקה והגדרות" ← מידות הדפסה.</p><div id="po-list">${list.map((o) => poRow(o)).join('')}</div>
       <button type="button" class="btn soft sm" id="po-add">➕ הוספת אפשרות</button></div>`;
   }
@@ -224,13 +224,49 @@
     });
   }
 
-  function editEvent(ev) {
+  // 🖼️ מסגרת האירוע בעריכת פרטי האירוע: מסגרת לתמונה לאורך ומסגרת לתמונה לרוחב
+  function frameSlot(key, label, url) {
+    return `<div class="ev-frame-slot" data-slot="${key}"><div class="po-frame-prev ev-frame-prev ${key === 'frameLandscape' ? 'land' : ''}">${url ? `<img src="${esc(asset(url))}" alt="">` : '<span>אין</span>'}</div>
+      <div><b>${label}</b><input type="hidden" name="${key}" value="${esc(url || '')}">
+      <div class="row" style="gap:6px;margin-top:6px"><label class="btn ${url ? 'soft' : 'gold'} sm" style="margin:0">${url ? 'החלפה' : '⬆️ העלאה'}<input type="file" accept="image/png,image/webp" class="hidden" data-ev-frame="${key}"></label>
+      ${url ? `<button type="button" class="btn ghost sm" data-ev-frame-del="${key}">הסרה</button>` : ''}</div></div></div>`;
+  }
+  function eventFrameSection(ev) {
+    return `<div class="card flat ev-frames" id="ev-frames"><h3 style="margin:0 0 4px">🖼️ מסגרת האירוע</h3>
+      <p class="muted small" style="margin:0 0 10px">מעלים PNG של המסגרת עם חלון שקוף. כל תמונה של אורח נכנסת ישירות למסגרת לפי הכיוון שלה: תמונה לאורך למסגרת לאורך, תמונה לרוחב למסגרת לרוחב. המסגרת מותאמת לגודל ההדפסה (למשל מגנט 6×9: PNG של 1200×1800 לאורך, 1800×1200 לרוחב). מספיקה גם מסגרת אחת.</p>
+      <div class="ev-frame-grid">${frameSlot('framePortrait', '📱 לתמונה לאורך', ev?.framePortrait)}${frameSlot('frameLandscape', '🖥️ לתמונה לרוחב', ev?.frameLandscape)}</div></div>`;
+  }
+  function bindEventFrames() {
+    const box = $('#ev-frames');
+    box.addEventListener('change', async (e) => {
+      const key = e.target.dataset.evFrame; const f = e.target.files && e.target.files[0];
+      if (!key || !f) return;
+      try {
+        toast('מעלה את המסגרת…');
+        const fd = new FormData();
+        fd.append('file', f.size > 1.8e6 ? await shrinkPng(f) : f, 'frame.png');
+        const up = await api(`${A}/uploads`, { method: 'POST', body: fd });
+        const slot = e.target.closest('.ev-frame-slot');
+        slot.outerHTML = frameSlot(key, key === 'framePortrait' ? '📱 לתמונה לאורך' : '🖥️ לתמונה לרוחב', up.url);
+        toast('המסגרת נוספה. לחצו "שמירה" כדי לשמור את האירוע.');
+      } catch (err) { toast(err.message); }
+    });
+    box.addEventListener('click', (e) => {
+      const key = e.target.dataset && e.target.dataset.evFrameDel;
+      if (!key) return;
+      e.target.closest('.ev-frame-slot').outerHTML = frameSlot(key, key === 'framePortrait' ? '📱 לתמונה לאורך' : '🖥️ לתמונה לרוחב', '');
+    });
+  }
+  function editEvent(ev, focusFrame) {
     editForm({
-      title: ev ? 'עריכת אירוע' : 'אירוע חדש', fields: EVENT_FIELDS, rec: ev ? { ...ev, endsAt: (ev.endsAt || '').slice(0, 16) } : null,
-      url: `${A}/events`, onSaved: events,
-      extraHtml: printOptionsEditor(ev?.printOptions || [{ type: 'magnet', size: '6x9' }]), collectExtra: collectPrintOptions,
+      title: ev ? 'עריכת פרטי האירוע' : 'אירוע חדש', fields: EVENT_FIELDS, rec: ev ? { ...ev, endsAt: (ev.endsAt || '').slice(0, 16) } : null,
+      url: `${A}/events`, onSaved: events, topHtml: eventFrameSection(ev),
+      extraHtml: printOptionsEditor(ev?.printOptions || [{ type: 'magnet', size: '6x9' }]),
+      collectExtra: (form) => ({ ...collectPrintOptions(form), framePortrait: form.framePortrait.value, frameLandscape: form.frameLandscape.value }),
     });
     bindPrintOptions();
+    bindEventFrames();
+    if (focusFrame) $('#ev-frames').scrollIntoView({ block: 'center' });
   }
 
   async function events(arg) {
@@ -242,7 +278,8 @@
         <canvas data-qr="${esc(e.link)}" aria-label="קוד QR לאירוע" style="width:160px;height:160px;margin:0 auto;background:#fff;border-radius:8px"></canvas>
         <div class="small">🔗 <a href="${esc(e.link)}" target="_blank">${esc(e.link)}</a></div>
         <div class="small">📸 ${e.photosPerGuest} תמונות לאורח · 👥 ${e.guests} אורחים · 🖨️ ${e.photos} הדפסות</div>
-        <div class="small">${e.printOptions.map((o) => `<span class="badge primary">${esc(o.label)}</span>`).join(' ')}</div>
+        <div class="small">${e.printOptions.map((o) => `<span class="badge primary">${o.frame || e.framePortrait || e.frameLandscape ? '🖼️ ' : ''}${esc(o.label)}</span>`).join(' ')}</div>
+        <button class="btn gold sm" data-frame="${e.id}">🖼️ ${e.framePortrait || e.frameLandscape || e.printOptions.some((o) => o.frame) ? 'מסגרת האירוע ✓ (החלפה)' : 'מסגרת לאירוע'}</button>
         <div class="row"><button class="btn sm" data-photos="${e.id}">תמונות להדפסה</button><button class="btn soft sm" data-edit="${e.id}">עריכה</button>
         <button class="btn ghost sm" data-qrdl="${esc(e.link)}" data-name="qr-${esc(e.code)}.png">הורדת QR</button></div>
       </div>`).join('') || '<p class="muted">אין אירועים עדיין</p>'}</div>`;
@@ -250,6 +287,7 @@
     if (arg === 'new') editEvent(null);
     $$('[data-edit]').forEach((b) => { b.onclick = () => editEvent(list.find((e) => e.id === b.dataset.edit)); });
     $$('[data-photos]').forEach((b) => { b.onclick = () => eventPhotos(list.find((e) => e.id === b.dataset.photos)); });
+    $$('[data-frame]').forEach((b) => { b.onclick = () => editEvent(list.find((e) => e.id === b.dataset.frame), true); });
     $$('canvas[data-qr]').forEach((c) => drawQR(c, c.dataset.qr));
   }
 

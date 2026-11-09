@@ -101,6 +101,7 @@ function publicEvent(ev) {
     code: ev.code, name: ev.name, type: ev.type, date: ev.date, endsAt: ev.endsAt,
     welcomeText: ev.welcomeText, photosPerGuest: ev.photosPerGuest, printOptions: ev.printOptions,
     allowAnimations: ev.allowAnimations !== false, ended: eventEnded(ev), editor: editorSettings(),
+    framePortrait: ev.framePortrait || '', frameLandscape: ev.frameLandscape || '',
   };
 }
 
@@ -181,6 +182,9 @@ function eventFields(b) {
     photosPerGuest: Math.max(0, Math.min(100, Math.floor(num(b.photosPerGuest, 3)))),
     totalPhotoLimit: Math.max(0, Math.floor(num(b.totalPhotoLimit, 0))),
     printOptions: sanitizePrintOptions(b.printOptions), welcomeText: str(b.welcomeText, 400),
+    // מסגרת האירוע: PNG לתמונה לאורך ו-PNG לתמונה לרוחב. התמונה של האורח נכנסת לזו שמתאימה לכיוון שלה
+    framePortrait: IMG_RE.test(String(b.framePortrait || '')) ? b.framePortrait : '',
+    frameLandscape: IMG_RE.test(String(b.frameLandscape || '')) ? b.frameLandscape : '',
     allowAnimations: b.allowAnimations !== false, active: b.active !== false,
     clientName: str(b.clientName, 80), clientPhone: str(b.clientPhone, 20), notes: str(b.notes, 1000),
   };

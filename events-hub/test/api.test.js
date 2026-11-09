@@ -384,3 +384,15 @@ test('an event frame per print option reaches the guest page (only a real upload
   const pub = (await call('GET', `/api/event/${e.code}`)).data;
   assert.equal(pub.printOptions[0].frame, frame);
 });
+
+test('event frames for portrait and landscape photos are saved and reach the guest page', async () => {
+  const up = new FormData(); up.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'f.jpg');
+  const p = (await call('POST', '/api/admin/uploads', up)).data.url;
+  const e = (await call('POST', '/api/admin/events', { name: 'מסגרת לפי כיוון', photosPerGuest: 2, printOptions: [{ type: 'magnet', size: '6x9' }],
+    framePortrait: p, frameLandscape: 'javascript:alert(1)' })).data;
+  assert.equal(e.framePortrait, p);
+  assert.equal(e.frameLandscape, '');
+  const pub = (await call('GET', `/api/event/${e.code}`)).data;
+  assert.equal(pub.framePortrait, p);
+  assert.equal(pub.frameLandscape, '');
+});
