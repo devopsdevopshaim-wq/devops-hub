@@ -129,7 +129,7 @@ jobs:
             mkdir -p /tmp/site/dig-game
             cp -r dig-game/. /tmp/site/dig-game/
           fi
-          # events-hub (רגעים): רק האתר (public/); השרת נפרס ל-Cloudflare ע"י events-hub-deploy.yml
+          # events-hub (פריים אירועים): רק האתר (public/); השרת נפרס ל-Cloudflare ע"י events-hub-deploy.yml
           if [ -d events-hub/public ]; then
             mkdir -p /tmp/site/events-hub
             cp -r events-hub/public/. /tmp/site/events-hub/

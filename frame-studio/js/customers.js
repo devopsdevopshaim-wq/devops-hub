@@ -20,7 +20,7 @@
     opt = opt || {};
     return fetch(cfg.api + path, { method: opt.method || 'GET', headers: Object.assign({ 'Content-Type': 'application/json' }, cfg.token ? { Authorization: 'Bearer ' + cfg.token } : {}), body: opt.body ? JSON.stringify(opt.body) : undefined })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { var e = new Error(d.error || ('שגיאה ' + r.status)); e.status = r.status; throw e; } return d; }); },
-        function () { var e = new Error('אין חיבור לשרת של רגעים'); e.status = 0; throw e; });
+        function () { var e = new Error('אין חיבור לשרת של פריים אירועים'); e.status = 0; throw e; });
   }
   function imgUrl(u) { return /^https?:/.test(u) ? u : cfg.api + u; }
   function setStatus(it, st) {
@@ -41,7 +41,7 @@
   /* the quick workspace (⚡ עבודה מהירה): a tab of its own in the top bar, next to "מרכז האירוע" */
   var mroot = FS.mate && FS.mate.root, mview = null;
   if (mroot && $('.mt-tabs', mroot)) {
-    $('.mt-tabs', mroot).insertAdjacentHTML('beforeend', '<button data-v="customers" class="mt-cutab" title="התמונות שהלקוחות שלחו מאפליקציית רגעים, עם שם וטלפון">👥 תמונות לקוחות<i class="cu-dot" hidden></i></button>');
+    $('.mt-tabs', mroot).insertAdjacentHTML('beforeend', '<button data-v="customers" class="mt-cutab" title="התמונות שהלקוחות שלחו מאפליקציית פריים אירועים, עם שם וטלפון">👥 תמונות לקוחות<i class="cu-dot" hidden></i></button>');
     $('.mt-cutab', mroot).addEventListener('click', function () { FS.mate.show('customers'); });
     mview = document.createElement('section'); mview.className = 'mt-view cu-mt'; mview.dataset.view = 'customers'; mview.hidden = true;
     mroot.appendChild(mview);
@@ -64,8 +64,8 @@
 
   function draw() {
     if (!cfg.token) {
-      box.innerHTML = '<h2>👥 תמונות לקוחות</h2><p class="hint">כל התמונות שלקוחות אפליקציית רגעים שלחו להדפסה: מהאירוע (QR) ומהחנות. עם שם הלקוח, הטלפון, האירוע או ההזמנה, המוצר והגודל.</p>' +
-        '<form class="card lv-card" id="cu-login"><h3>חיבור לרגעים</h3><div class="field"><label>סיסמת הניהול (כמו באתר הניהול)</label><input type="password" id="cu-pw" autocomplete="current-password" required></div>' +
+      box.innerHTML = '<h2>👥 תמונות לקוחות</h2><p class="hint">כל התמונות שלקוחות אפליקציית פריים אירועים שלחו להדפסה: מהאירוע (QR) ומהחנות. עם שם הלקוח, הטלפון, האירוע או ההזמנה, המוצר והגודל.</p>' +
+        '<form class="card lv-card" id="cu-login"><h3>חיבור לפריים אירועים</h3><div class="field"><label>סיסמת הניהול (כמו באתר הניהול)</label><input type="password" id="cu-pw" autocomplete="current-password" required></div>' +
         '<button class="btn primary">🔐 התחברות</button><p class="hint" id="cu-msg">' + esc(lastErr) + '</p>' +
         '<details><summary class="hint">כתובת השרת</summary><input id="cu-api" dir="ltr" value="' + esc(cfg.api) + '"></details></form>';
       $('#cu-login', box).addEventListener('submit', function (e) {
@@ -73,7 +73,7 @@
         cfg.api = ($('#cu-api', box).value || API_DEF).trim().replace(/\/+$/, '');
         $('#cu-msg', box).textContent = 'מתחבר…';
         api('/api/admin/login', { method: 'POST', body: { password: $('#cu-pw', box).value } }).then(function (r) {
-          cfg.token = r.token; lastErr = ''; keep(); FS.toast('✔ מחובר לרגעים'); refresh();
+          cfg.token = r.token; lastErr = ''; keep(); FS.toast('✔ מחובר לפריים אירועים'); refresh();
         }, function (er) { $('#cu-msg', box).textContent = '⚠️ ' + er.message; });
       });
       return;

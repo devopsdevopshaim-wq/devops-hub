@@ -146,7 +146,7 @@
   // ---------- קנו לפי אירוע ----------
   function renderEventsRow() {
     $('#events-row').innerHTML = (catalog.events || []).map((ev) => `<button class="event-card${activeEvent === ev.id ? ' active' : ''}" data-event="${esc(ev.id)}" aria-pressed="${activeEvent === ev.id}">
-      <img src="${esc(ev.image)}" alt="" loading="lazy" decoding="async"><span>${esc(ev.name)}</span></button>`).join('');
+      <img src="${esc(asset(ev.image))}" alt="" loading="lazy" decoding="async"><span>${esc(ev.name)}</span></button>`).join('');
   }
   $('#events-row').addEventListener('click', (e) => {
     const b = e.target.closest('[data-event]');
@@ -181,7 +181,7 @@
     $('#promo-strip').innerHTML = (catalog.promotions || []).map((p) => `<span class="chip">${promoText(p)}</span>`).join('');
     const cl = catalog.club || {};
     $('#club-strip').innerHTML = cl.enabled ? `<button class="club-strip" data-view="orders">
-      <span class="gem">💎</span><span><b>מועדון רגעים:</b> ${cl.earnPercent}% מכל קנייה חוזרים אליכם בנקודות, ומ-${cl.minPoints} נקודות מקבלים הנחות ומתנות</span>
+      <span class="gem">💎</span><span><b>מועדון פריים:</b> ${cl.earnPercent}% מכל קנייה חוזרים אליכם בנקודות, ומ-${cl.minPoints} נקודות מקבלים הנחות ומתנות</span>
       <span class="club-bal" id="club-bal">${store.get('clubPoints', null) !== null && club.get() ? `${store.get('clubPoints')} נק׳` : 'לפרטים'}</span></button>` : '';
     $('#collections').innerHTML = query || activeEvent || photoPick ? '' : catalog.collections.map((c) => `
       <div class="card" style="margin-bottom:12px">
@@ -311,7 +311,7 @@
     const cq = q && q.club;
     const rewards = (catalog.club && catalog.club.rewards) || [];
     const clubBox = cq && cq.enabled ? `<div class="club-box">
-      <div class="row between"><b>💎 מועדון רגעים</b>${cq.member ? `<span>יש לכם <b>${cq.points}</b> נקודות</span>` : ''}</div>
+      <div class="row between"><b>💎 מועדון פריים</b>${cq.member ? `<span>יש לכם <b>${cq.points}</b> נקודות</span>` : ''}</div>
       <div class="small">בהזמנה הזו תצברו <b>${cq.earn}</b> נקודות${cq.member ? '' : ' (החשבון נפתח אוטומטית עם ההזמנה)'}</div>
       ${cq.member && cq.canRedeem ? `<div class="rewards" role="radiogroup" aria-label="מימוש נקודות">
         <label class="reward-opt"><input type="radio" name="reward" value=""${rewardId ? '' : ' checked'}> בלי מימוש הפעם</label>
@@ -504,7 +504,7 @@
     const rewardsHtml = (pts) => `<div class="reward-list">${(cl.rewards || []).map((r) => `<div class="reward-item${pts >= r.points && pts >= cl.minPoints ? ' ok' : ''}">
       <span class="ri-ico">${r.kind === 'gift' ? '🎁' : '🏷️'}</span><div><b>${esc(r.name)}</b>${r.description ? `<div class="small muted">${esc(r.description)}</div>` : ''}</div><span class="cost">${r.points} נק׳</span></div>`).join('')}</div>`;
     if (!club.get()) {
-      $('#club-card').innerHTML = `<div class="club-card"><h2>💎 מועדון רגעים</h2>
+      $('#club-card').innerHTML = `<div class="club-card"><h2>💎 מועדון פריים</h2>
         <p>על כל קנייה <b>${cl.earnPercent}%</b> מהסכום חוזר אליכם בנקודות (נקודה = ₪1). מ-<b>${cl.minPoints}</b> נקודות מממשים אותן בהנחות ובמתנות.</p>
         <p class="small">החשבון נפתח אוטומטית עם ההזמנה הראשונה, לפי מספר הטלפון.</p>${rewardsHtml(0)}</div>`;
       return;
@@ -513,7 +513,7 @@
       const me = await api(`/api/club/me?t=${club.get()}`);
       store.set('clubPoints', me.points);
       const pct = me.minPoints ? Math.min(100, Math.round((me.points / me.minPoints) * 100)) : 100;
-      $('#club-card').innerHTML = `<div class="club-card"><div class="row between"><h2>💎 מועדון רגעים</h2><span class="small">${esc(me.phone)}</span></div>
+      $('#club-card').innerHTML = `<div class="club-card"><div class="row between"><h2>💎 מועדון פריים</h2><span class="small">${esc(me.phone)}</span></div>
         <div class="club-points"><span class="big">${me.points}</span><span>נקודות</span></div>
         ${me.canRedeem ? '<p class="club-ok">✓ אפשר לממש! בוחרים הטבה בסל, לפני התשלום.</p>'
           : `<div class="ship-track" style="margin:8px 0"><span style="width:${pct}%"></span></div><p class="small">עוד ${me.minPoints - me.points} נקודות עד המימוש הראשון</p>`}
@@ -540,7 +540,7 @@
     saveCart();
     try {
       [cfg, catalog] = await Promise.all([api('/api/config'), api('/api/store')]);
-      $('#brand-name').textContent = cfg.businessName;
+      $('#brand-name').textContent = String(cfg.businessName || '').split(' - ')[0];
       document.title = cfg.businessName;
       PHOTOS.setCustom(catalog.categories);
       renderHero();

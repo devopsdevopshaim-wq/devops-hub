@@ -1,4 +1,4 @@
-# שרת אפליקציית רגעים ב-Cloudflare Workers (התוכנית החינמית).
+# שרת אפליקציית פריים אירועים ב-Cloudflare Workers (התוכנית החינמית).
 # נפרס אוטומטית מ-GitHub: .github/workflows/events-hub-deploy.yml, עם אותו חשבון Cloudflare של שרת הכניסה.
 # שרת נפרד משרת הכניסה (spider-auth), כך ששינוי כאן לא יכול לפגוע בו.
 name = "regaim-events"

@@ -122,7 +122,7 @@ function shrinkImage(file, maxSide = 2000, quality = 0.88) {
 
 let deferredInstall = null;
 const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
-const appName = () => (location.pathname.includes('/admin/') ? 'רגעים ניהול' : 'רגעים');
+const appName = () => (location.pathname.includes('/admin/') ? 'פריים אירועים · ניהול' : 'פריים אירועים');
 const isPhone = () => Boolean(window.FS && FS.installEnv && FS.installEnv.phone);
 
 window.addEventListener('beforeinstallprompt', (e) => {

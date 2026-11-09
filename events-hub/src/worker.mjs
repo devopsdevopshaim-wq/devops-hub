@@ -1,4 +1,4 @@
-// שרת אפליקציית רגעים ב-Cloudflare Workers. נפרס אוטומטית מ-GitHub
+// שרת אפליקציית פריים אירועים ב-Cloudflare Workers. נפרס אוטומטית מ-GitHub
 // (.github/workflows/events-hub-deploy.yml) בכל שינוי ב-events-hub/.
 // כל הבקשות עוברות ל-Durable Object אחד ("main") שמחזיק את הנתונים ב-SQLite, כמו שרת הכניסה הקיים.
 import { DurableObject } from 'cloudflare:workers';

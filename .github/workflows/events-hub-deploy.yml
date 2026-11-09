@@ -1,6 +1,6 @@
 name: Deploy Regaim (events-hub) server to Cloudflare
 
-# אפליקציית רגעים: האתר מתפרסם ב-GitHub Pages (vacation-hub-pages.yml, תחת /events-hub/),
+# אפליקציית פריים אירועים: האתר מתפרסם ב-GitHub Pages (vacation-hub-pages.yml, תחת /events-hub/),
 # והשרת שלה נפרס מכאן ל-Cloudflare Workers בשם regaim-events - שרת נפרד משרת הכניסה (spider-auth).
 # משתמש באותו טוקן Cloudflare של שרת הכניסה (CLOUDFLARE_API_TOKEN, או הסוד CLOUDFLARE / SPIDER).
 # סודות של האפליקציה (Settings → Secrets and variables → Actions):
@@ -56,7 +56,7 @@ jobs:
       - name: Deploy
         if: steps.have.outputs.go == 'true'
         env:
-          # אותה סיסמה של אתר הניהול הקיים (ADMIN_PASSWORD), אלא אם הוגדרה סיסמה נפרדת לרגעים
+          # אותה סיסמה של אתר הניהול הקיים (ADMIN_PASSWORD), אלא אם הוגדרה סיסמה נפרדת לפריים אירועים
           EVENTS_ADMIN_PASSWORD: ${{ secrets.EVENTS_ADMIN_PASSWORD || secrets.ADMIN_PASSWORD }}
           EVENTS_REMOVE_BG_API_KEY: ${{ secrets.EVENTS_REMOVE_BG_API_KEY }}
           EVENTS_PAYMENT_PROVIDER: ${{ secrets.EVENTS_PAYMENT_PROVIDER }}
@@ -85,7 +85,7 @@ jobs:
           for i in $(seq 1 30); do curl -sf "$URL/api/config" >/dev/null && break; sleep 5; done
           curl -sf "$URL/api/config" >/dev/null && echo "server answers ✓"
           {
-            echo "### רגעים: השרת נפרס ✓"
+            echo "### פריים אירועים: השרת נפרס ✓"
             echo "- אפליקציית הלקוח: https://devopsdevopshaim-wq.github.io/devops-hub/events-hub/"
             echo "- אפליקציית הניהול: https://devopsdevopshaim-wq.github.io/devops-hub/events-hub/admin/"
             echo "- השרת: $URL"

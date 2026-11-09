@@ -1,4 +1,4 @@
-// השרת של אפליקציית רגעים: כל הנתיבים במקום אחד, עם Request/Response סטנדרטיים של הדפדפן,
+// השרת של אפליקציית פריים אירועים: כל הנתיבים במקום אחד, עם Request/Response סטנדרטיים של הדפדפן,
 // כך שאותו קוד רץ ב-Cloudflare (worker.mjs) ובהרצה מקומית (server.js).
 import crypto from 'node:crypto';
 import db from './db.js';
@@ -211,6 +211,11 @@ function productVariants(b) {
   return list.map((v) => ({ name: str(v && v.name, 40), price: Math.max(0, num(v && v.price)) })).filter((v) => v.name).slice(0, 8);
 }
 const EVENT_IDS = EVENT_TYPES.map((e) => e.id);
+// סוגי האירועים עם התמונה שהמנהל בחר (או תמונת ברירת המחדל)
+function eventTypes() {
+  const imgs = db.settings().eventImages || {};
+  return EVENT_TYPES.map((e) => ({ ...e, image: imgs[e.id] || e.image, custom: Boolean(imgs[e.id]) }));
+}
 const LINK_TYPES = ['none', 'category', 'event', 'product', 'url'];
 
 const CRUD = {
@@ -340,7 +345,7 @@ on('GET', '/api/store', () => {
   return json({
     categories: db.all('categories').filter((x) => usedCats.has(x.id)),
     collections: cols.filter((x) => products.some((p) => (p.collectionIds || []).includes(x.id))),
-    events: EVENT_TYPES,
+    events: eventTypes(),
     banners: db.all('banners').filter((x) => x.active !== false && x.image && (!x.startDate || x.startDate <= today) && (!x.endDate || x.endDate >= today))
       .sort((a, b) => (a.order || 0) - (b.order || 0)),
     // מחיר המבצע מחושב כאן (מבצעים בלי קוד ובלי מינימום הזמנה), גם לכל גודל
@@ -572,7 +577,17 @@ on('GET', '/api/admin/dashboard', () => {
 }, { admin: true });
 
 on('GET', '/api/admin/print-types', () => json(printTypes()), { admin: true });
-on('GET', '/api/admin/event-types', () => json(EVENT_TYPES), { admin: true });
+on('GET', '/api/admin/event-types', () => json(eventTypes()), { admin: true });
+// תמונה לסוג אירוע ("קנו לפי אירוע"). image ריק = חזרה לתמונת ברירת המחדל
+on('PUT', '/api/admin/event-types/:id', async (c) => {
+  if (!EVENT_IDS.includes(c.params.id)) return err(404, 'לא נמצא');
+  const image = str((await body(c.req)).image, 300);
+  if (image && !IMG_RE.test(image)) return err(400, 'תמונה לא תקינה');
+  const imgs = { ...(db.settings().eventImages || {}) };
+  if (image) imgs[c.params.id] = image; else delete imgs[c.params.id];
+  db.setSettings({ eventImages: imgs });
+  return json(eventTypes().find((e) => e.id === c.params.id));
+}, { admin: true });
 
 // סטטיסטיקה: מכירות ב-30 הימים האחרונים, נמכרים ביותר, ביצועי מבצעים
 on('GET', '/api/admin/stats', () => {

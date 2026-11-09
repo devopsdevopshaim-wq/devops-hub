@@ -112,7 +112,7 @@
     const stat = (ico, label, val, cls = '', go = '') => `<div class="card stat-card${cls ? ' alert' : ''}" ${go ? `data-go="${go}" style="cursor:pointer" role="button" tabindex="0"` : ''}>
       <div class="stat-ico">${icon(ico, '')}</div><div class="muted">${label}</div><div class="stat ${cls}">${val}</div></div>`;
     view.innerHTML = `<div class="stage" style="grid-template-columns:1fr"><div>
-        <span class="eyebrow"><img src="icon.svg" alt="">רגעים · ניהול</span>
+        <span class="eyebrow"><img src="icon.svg" alt="">פריים אירועים · ניהול</span>
         <h1>${(() => { const h = new Date().getHours(); return h < 12 ? 'בוקר טוב' : h < 18 ? 'צהריים טובים' : 'ערב טוב'; })()}, <em>הנה מה שקורה היום</em></h1>
         <div class="row"><button class="btn gold" data-go="events:new">${icon('plus')}אירוע חדש</button><button class="btn ghost light" data-go="promotions">${icon('tag')}מבצעים</button></div>
       </div></div>
@@ -294,7 +294,7 @@
   function waLink(o) {
     const d = String(o.customer.phone || '').replace(/\D/g, '');
     const phone = d.startsWith('0') ? `972${d.slice(1)}` : d;
-    const text = `שלום ${o.customer.name}, כאן ${ref.settings.businessName || 'רגעים'} 💐\nהזמנה #${o.number}: ${o.statusName}.\nאפשר לעקוב כאן: ${o.trackUrl}`;
+    const text = `שלום ${o.customer.name}, כאן ${ref.settings.businessName || 'פריים אירועים'} 💐\nהזמנה #${o.number}: ${o.statusName}.\nאפשר לעקוב כאן: ${o.trackUrl}`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
   }
 
@@ -413,7 +413,7 @@
       { k: 'needsPhoto', label: 'המוצר דורש תמונה מהלקוח', type: 'bool', def: false }, { k: 'upsell', label: 'להציע בסל ("אולי תאהבו גם")', type: 'bool', def: false },
       { k: 'active', label: 'פעיל', type: 'bool' },
     ];
-    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" id="cat-photos">${icon('image')}תמונות קטגוריות</button><button class="btn soft" data-go-promos>${icon('tag')}מבצעים</button><button class="btn" id="new">${icon('plus')}מוצר חדש</button></div></div>
+    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" id="cat-photos">${icon('image')}תמונות קטגוריות</button><button class="btn soft" id="ev-photos">${icon('image')}תמונות אירועים</button><button class="btn soft" data-go-promos>${icon('tag')}מבצעים</button><button class="btn" id="new">${icon('plus')}מוצר חדש</button></div></div>
       <p class="muted small">את המחיר אפשר לשנות ישר בטבלה. מחיר מבצע נקבע במסך "מבצעים".</p>
       <div class="card table-wrap"><table><thead><tr><th></th><th>שם</th><th>קטגוריה</th><th>מחיר רגיל</th><th>במבצע</th><th>סטטוס</th></tr></thead><tbody>
       ${list.map((p) => {
@@ -439,6 +439,7 @@
     $('#new').onclick = () => open(null);
     $('[data-go-promos]').onclick = () => go('promotions');
     $('#cat-photos').onclick = categoryPhotos;
+    $('#ev-photos').onclick = eventTypePhotos;
     // עריכת מחיר ישר מהטבלה
     $$('[data-price]').forEach((inp) => {
       inp.onclick = (e) => e.stopPropagation();
@@ -485,6 +486,37 @@
     });
   }
 
+  // תמונות "קנו לפי אירוע": לכל סוג אירוע תמונה משלכם
+  async function eventTypePhotos() {
+    const list = await api(`${A}/event-types`);
+    ref.eventTypes = list;
+    openModal(`<div class="row between"><h2 style="margin:0">תמונות אירועים</h2><button class="icon-btn" data-close aria-label="סגירה">✕</button></div>
+      <p class="muted">התמונות של "קנו לפי אירוע" בחנות. מעלים צילום משלכם לכל סוג אירוע (חתונה, בת מצווה, חינה…).</p>
+      <div class="grid sm">${list.map((e) => `<div class="card flat stack" style="padding:10px">
+        <div class="photo-tile" style="aspect-ratio:4/5"><img src="${esc(asset(e.image))}" alt="${esc(e.name)}" loading="lazy"></div>
+        <b>${esc(e.name)}</b>
+        <label class="btn soft sm" style="margin:0">${icon('image')}החלפת תמונה<input type="file" accept="image/*" data-ev-up="${esc(e.id)}" class="hidden"></label>
+        ${e.custom ? `<button class="btn ghost sm" data-ev-reset="${esc(e.id)}">חזרה לתמונה המקורית</button>` : ''}
+      </div>`).join('')}</div>`);
+    $$('[data-ev-up]').forEach((inp) => {
+      inp.onchange = async () => {
+        const f = inp.files[0];
+        if (!f) return;
+        try {
+          const fd = new FormData();
+          fd.append('file', await shrinkImage(f, 1200, 0.86), 'event.jpg');
+          const up = await api(`${A}/uploads`, { method: 'POST', body: fd });
+          await api(`${A}/event-types/${inp.dataset.evUp}`, { method: 'PUT', body: { image: up.url } });
+          toast('התמונה הוחלפה');
+          eventTypePhotos();
+        } catch (err) { toast(err.message); }
+      };
+    });
+    $$('[data-ev-reset]').forEach((b) => {
+      b.onclick = async () => { await api(`${A}/event-types/${b.dataset.evReset}`, { method: 'PUT', body: { image: '' } }); eventTypePhotos(); };
+    });
+  }
+
   // ---------- מועדון נקודות ----------
   async function clubView() {
     const [data, rewards, prods] = await Promise.all([api(`${A}/loyalty`), api(`${A}/rewards`), api(`${A}/products`)]);
@@ -497,7 +529,7 @@
       { k: 'points', label: 'עלות בנקודות', type: 'number' }, { k: 'active', label: 'פעיל', type: 'bool' },
     ];
     view.innerHTML = `<div class="stage" style="grid-template-columns:1fr"><div>
-        <span class="eyebrow"><img src="icon.svg" alt="">מועדון רגעים</span>
+        <span class="eyebrow"><img src="icon.svg" alt="">מועדון פריים</span>
         <h1>💎 נקודות, <em>הנחות ומתנות</em></h1>
         <p>על כל הזמנה ששולמה הלקוח צובר ${s.earnPercent}% מסכום המוצרים בנקודות (נקודה = ₪1). מ-${s.minPoints} נקודות הוא מממש אותן בהטבות שתגדירו כאן.</p>
       </div></div>
@@ -514,7 +546,7 @@
       <div class="card table-wrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>יתרה</th><th>נצבר</th><th>מומש</th><th>פעילות אחרונה</th><th></th></tr></thead><tbody>
       ${data.members.map((m) => `<tr><td>${esc(m.name)}</td><td dir="ltr">${esc(m.phone)}</td><td><b>${m.points}</b></td><td>${m.earned}</td><td>${m.spent}</td><td class="small">${fmtDate(m.lastAt)}</td>
         <td><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn soft sm" data-adjust="${m.id}">± נקודות</button>
-        <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${'972' + m.phone.slice(1)}?text=${encodeURIComponent(`שלום ${m.name}, יש לך ${m.points} נקודות במועדון ${ref.settings.businessName || 'רגעים'} 💎\nהכרטיס שלך: ${m.clubLink}`)}">${icon('whatsapp')}</a></div></td></tr>`).join('') || '<tr><td colspan="7" class="muted">עוד אין חברים. החשבון נפתח אוטומטית בהזמנה הראשונה של כל לקוח.</td></tr>'}
+        <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${'972' + m.phone.slice(1)}?text=${encodeURIComponent(`שלום ${m.name}, יש לך ${m.points} נקודות במועדון ${ref.settings.businessName || 'פריים אירועים'} 💎\nהכרטיס שלך: ${m.clubLink}`)}">${icon('whatsapp')}</a></div></td></tr>`).join('') || '<tr><td colspan="7" class="muted">עוד אין חברים. החשבון נפתח אוטומטית בהזמנה הראשונה של כל לקוח.</td></tr>'}
       </tbody></table></div>`;
     $('#club-settings').onsubmit = async (e) => {
       e.preventDefault();

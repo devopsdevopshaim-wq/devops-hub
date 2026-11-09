@@ -331,7 +331,7 @@ test('admin controls the photo editor tools and the print sizes (any size)', asy
   const pub = (await call('GET', `/api/event/${r.data.code}`)).data;
   assert.equal(pub.editor.tools.stickers, false);
   // שמירת הגדרות כלליות בלי העורך לא מוחקת אותו
-  await call('PUT', '/api/admin/settings', { businessName: 'רגעים', shippingPrice: 30, freeShippingFrom: 300, slaHours: {} });
+  await call('PUT', '/api/admin/settings', { businessName: 'פריים אירועים', shippingPrice: 30, freeShippingFrom: 300, slaHours: {} });
   assert.equal((await call('GET', '/api/config')).data.editor.tools.stickers, false);
   assert.equal((await call('GET', '/api/admin/print-types')).data.find((t) => t.type === 'magnet').sizes[0], '7x10');
 });
@@ -359,4 +359,17 @@ test('customer photos for the studio: who, phone, where, size, and marking them 
   const after = (await call('GET', '/api/admin/customer-photos')).data;
   assert.equal(after.find((x) => x.id === ph.id).status, 'printed');
   assert.equal(after.find((x) => x.id === oi.id).status, 'printed');
+});
+
+test('event type photos: the admin sets their own and can go back to the default', async () => {
+  const before = (await call('GET', '/api/store')).data.events.find((e) => e.id === 'batmitzvah');
+  assert.match(before.image, /^https:\/\/images\.unsplash\.com\//);
+  const up = new FormData(); up.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'e.jpg');
+  const url = (await call('POST', '/api/admin/uploads', up)).data.url;
+  assert.equal((await call('PUT', '/api/admin/event-types/batmitzvah', { image: 'https://evil.example/x.jpg' })).status, 400);
+  assert.equal((await call('PUT', '/api/admin/event-types/nope', { image: url })).status, 404);
+  assert.equal((await call('PUT', '/api/admin/event-types/batmitzvah', { image: url })).data.custom, true);
+  assert.equal((await call('GET', '/api/store')).data.events.find((e) => e.id === 'batmitzvah').image, url);
+  await call('PUT', '/api/admin/event-types/batmitzvah', { image: '' });
+  assert.equal((await call('GET', '/api/store')).data.events.find((e) => e.id === 'batmitzvah').image, before.image);
 });

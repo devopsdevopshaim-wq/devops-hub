@@ -1,7 +1,7 @@
 // Service Worker של אפליקציית הלקוח: האפליקציה נפתחת מהמסך הראשי ועובדת גם עם חיבור חלש.
 // כתובות יחסיות, כי האתר יושב בתת-תיקייה ב-GitHub Pages (/devops-hub/events-hub/).
 // השרת (Cloudflare) בכתובת אחרת, ולכן בקשות אליו לא נשמרות במטמון.
-const CACHE = 'regaim-v9';
+const CACHE = 'regaim-v10';
 const SHELL = ['./', 'index.html', 'event.html', 'track.html', 'css/app.css', 'css/theme.css', 'js/photos.js', 'js/common.js', 'js/app.js', 'js/event.js', 'js/editor.js', 'js/install-help.js', 'manifest.json', 'icons/icon.svg', 'icons/logo.svg'];
 const BASE = new URL('./', self.location).pathname;
 

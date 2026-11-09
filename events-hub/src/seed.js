@@ -27,7 +27,7 @@ export const EVENT_TYPES = [
   { id: 'wedding', name: 'חתונה', image: U('photo-1620315472787-52921e5f88a0') },
   { id: 'henna', name: 'חינה', image: U('photo-1771992228898-79342c9c1c39') },
   { id: 'barmitzvah', name: 'בר מצווה', image: U('photo-1792587152427-ae423afc92ab') },
-  { id: 'batmitzvah', name: 'בת מצווה', image: U('photo-1792587716357-32a29eca7629') },
+  { id: 'batmitzvah', name: 'בת מצווה', image: U('photo-1741969494307-55394e3e4071') }, // חגיגה מעוצבת בבלונים
   { id: 'brit', name: 'ברית ובריתה', image: U('photo-1555252333-9f8e92e65df9') },
   { id: 'birthday', name: 'יום הולדת', image: U('photo-1464349153735-7db50ed83c84') },
   { id: 'mikveh', name: 'מקווה', image: U('photo-1584126467121-0db1e6bb47a7') },
@@ -110,7 +110,7 @@ const COURIERS = [
 ];
 
 const DEFAULT_SETTINGS = {
-  businessName: 'רגעים - מזכרות לאירועים',
+  businessName: 'פריים אירועים - מזכרות לאירועים',
   // זמני SLA בשעות - מעבר להם המשלוח מסומן "תקוע"
   slaHours: { paid: 4, sent_to_supplier: 24, in_production: 48, ready: 12, picked_up: 6, out_for_delivery: 8 },
   shippingPrice: 30,
@@ -150,6 +150,8 @@ export function seedIfEmpty() {
     DEFAULT_BANNERS.forEach((b) => db.insert('banners', { id: db.id('bn_'), active: true, startDate: '', endDate: '', ...b }));
     db.setSettings({ bannersSeeded: true });
   }
+  // השם החדש של העסק (היה "רגעים"); שם שהמנהל כתב בעצמו נשאר כמו שהוא
+  if (/^רגעים( - מזכרות לאירועים)?$/.test(s.settings.businessName || '')) db.setSettings({ businessName: DEFAULT_SETTINGS.businessName });
   const missing = Object.fromEntries(Object.entries(DEFAULT_SETTINGS).filter(([k]) => s.settings[k] === undefined));
   if (Object.keys(missing).length) db.setSettings(missing);
 }
