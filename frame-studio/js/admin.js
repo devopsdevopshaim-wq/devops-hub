@@ -167,7 +167,7 @@
 
   /* ---------- the sections ---------- */
   var SECTIONS = [
-    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['requests', '📥', 'בקשות הזמנה'], ['calendar', '🗓️', 'יומן'], ['deals', '📑', 'עסקאות ותשלומים'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['tax', '🧮', 'רואה חשבון ומיסים'], ['expenses', '💸', 'הוצאות ורכישות'], ['suppliers', '🏪', 'ספקים'], ['docs', '📁', 'מסמכים'], ['notify', '🔔', 'התראות וסיכום שבועי'], ['customers', '👥', 'לקוחות'], ['licenses', '🔑', 'רישיונות סטודיו'], ['payset', '🏦', 'תשלום ובנק'],
+    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['requests', '📥', 'בקשות הזמנה'], ['calendar', '🗓️', 'יומן'], ['deals', '📑', 'עסקאות ותשלומים'], ['framer', '🎨', 'עיצוב מסגרת'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['tax', '🧮', 'רואה חשבון ומיסים'], ['expenses', '💸', 'הוצאות ורכישות'], ['suppliers', '🏪', 'ספקים'], ['docs', '📁', 'מסמכים'], ['notify', '🔔', 'התראות וסיכום שבועי'], ['customers', '👥', 'לקוחות'], ['licenses', '🔑', 'רישיונות סטודיו'], ['payset', '🏦', 'תשלום ובנק'],
     ['-', '', 'האתר'], ['biz', '🏷️', 'פרטי העסק'], ['texts', '✍️', 'טקסטים באתר'], ['packages', '💰', 'חבילות ומחירים'], ['faq', '❓', 'שאלות נפוצות'],
     ['reviews', '⭐', 'המלצות'], ['busy', '📅', 'תאריכים תפוסים'], ['frames', '🖼️', 'מסגרות ללקוחות'], ['events', '🎉', 'סוגי אירועים'],
     ['-', '', 'קישורים'], ['@./', '🌐', 'האתר ללקוחות'], ['@design.html', '🎨', 'עורך המסגרות ללקוחות'], ['@studio.html', '🖼️', 'הסטודיו'], ['@download.html', '⬇', 'דף ההורדה'], ['@app.html', '📲', 'אפליקציה לטלפון'], ['-', '', ''], ['backup', '💾', 'גיבוי וייצוא לאקסל'], ['account', '🔐', 'אבטחה וחשבון']
@@ -446,6 +446,7 @@
     refresh: refresh, onRefresh: function (fn) { onRefresh = fn; }, badge: function () { badge(); }, go: function (s2) { show(s2); }
   };
   VIEWS.licenses = function (m) { FS.adminLicenses(m, ctx); };
+  VIEWS.framer = function (m) { FS.frameAuto(m, ctx); };
   VIEWS.tax = function (m) { FS.adminTax(m, ctx); };
   ['expenses', 'suppliers', 'backup'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminBuy[k](m, ctx); }; });
   ['docs', 'notify'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminNotify[k](m, ctx); }; });
@@ -508,9 +509,10 @@
       phone: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
       out: '<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4M6 12h10"/>',
       x: '<path d="M6 6l12 12M18 6L6 18"/>',
-      arrow: '<path d="M15 6l-6 6 6 6"/>'
+      arrow: '<path d="M15 6l-6 6 6 6"/>',
+      brush: '<path d="M14 4l6 6-8.5 8.5a3 3 0 0 1-2.1.9H6v-3.4a3 3 0 0 1 .9-2.1z"/><path d="M12 6l6 6M4 21c1.5 0 2-1 2-2"/>'
     };
-    var SEC_IC = { home: 'home', requests: 'inbox', calendar: 'cal', deals: 'deal', reports: 'chart', tax: 'calc', expenses: 'receipt', suppliers: 'truck', docs: 'folder', notify: 'bell', customers: 'users', licenses: 'key', payset: 'bank',
+    var SEC_IC = { framer: 'brush', home: 'home', requests: 'inbox', calendar: 'cal', deals: 'deal', reports: 'chart', tax: 'calc', expenses: 'receipt', suppliers: 'truck', docs: 'folder', notify: 'bell', customers: 'users', licenses: 'key', payset: 'bank',
       biz: 'tag', texts: 'pen', packages: 'box', faq: 'help', reviews: 'star', busy: 'calx', frames: 'photo', events: 'party', backup: 'save', account: 'lock',
       '@./': 'globe', '@design.html': 'pen', '@studio.html': 'spark', '@download.html': 'save', '@app.html': 'phone' };
     function ic(k) { return '<svg class="ai" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (P[k] || P.deal) + '</svg>'; }
@@ -628,7 +630,7 @@
         var d = up[0], cl = d.client || {}, t = B.totals(d, SETTINGS);
         html += '<section class="ah-hero"><div class="ah-k">' + ic('cal') + 'האירוע הבא · ' + when(d.date) + '</div><h2>' + esc(cl.name || d.title || 'אירוע') + '</h2>' +
           '<div class="ah-chips">' + (d.venue ? '<span>' + esc(d.venue) + '</span>' : '') + '<span>' + (t.balance > 0.5 ? ic('hourglass') + 'לגבות ' + B.money(t.balance) : ic('check') + 'שולם') + '</span>' + (up.length > 1 ? '<span>+' + (up.length - 1) + ' אירועים אחריו</span>' : '') + '</div>' +
-          '<div class="ah-acts">' + (cl.phone ? '<a class="ah-b" target="_blank" rel="noopener" href="' + esc(wa(cl.phone, 'שלום ' + (cl.name || '') + ',')) + '">' + ic('chat') + 'וואטסאפ</a>' : '') + '<button type="button" class="ah-b" data-go="deals">' + ic('deal') + 'לעסקה</button></div></section>';
+          '<div class="ah-acts">' + (cl.phone ? '<a class="ah-b" target="_blank" rel="noopener" href="' + esc(wa(cl.phone, 'שלום ' + (cl.name || '') + ',')) + '">' + ic('chat') + 'וואטסאפ</a>' : '') + '<button type="button" class="ah-b" data-frame="' + esc(d.id) + '">' + ic('brush') + 'מסגרת</button><button type="button" class="ah-b" data-go="deals">' + ic('deal') + 'לעסקה</button></div></section>';
       } else {
         html += '<section class="ah-hero calm"><div class="ah-k">' + ic('cal') + 'האירועים הקרובים</div><h2>אין אירועים סגורים כרגע</h2><div class="ah-acts"><button type="button" class="ah-b" data-go="requests">' + ic('inbox') + 'לבקשות</button><a class="ah-b" href="studio.html" target="_blank" rel="noopener">' + ic('spark') + 'לסטודיו</a></div></section>';
       }
@@ -645,6 +647,7 @@
       html += '<section class="ah-wait"><h3>מחכה לך</h3><ul id="ah-list">' + rows.join('') + '<li class="ah-lic" hidden></li></ul>' + (rows.length ? '' : '<p class="ah-ok">' + ic('check') + 'הכול מטופל. אין שום דבר שמחכה לך.</p>') + '</section>';
       m.insertAdjacentHTML('beforeend', '<div class="ah">' + html + '</div>');
       $$('.ah [data-go]', m).forEach(function (b) { b.addEventListener('click', function () { buzz(); show(b.dataset.go); }); });
+      $$('.ah [data-frame]', m).forEach(function (b) { b.addEventListener('click', function () { buzz(); FS.frameAutoPick = b.dataset.frame; show('framer'); }); });
       /* Optimus: sign-ups this week and upgrade requests (from the licenses server, kept 5 minutes) */
       function lic(r) {
         var li = $('.ah-lic', m); if (!li || !r || !r.ok) return;

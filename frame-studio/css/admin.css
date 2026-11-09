@@ -265,3 +265,32 @@ body.pv-on .adm { grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 42%)
 .st-sync .st-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .st-sync .st-dot { width: 9px; height: 9px; border-radius: 50%; background: #888; } .st-sync .st-dot.on { background: #3fae6a; box-shadow: 0 0 0 3px rgba(63, 174, 106, .25); }
 .st-sync .vis-stats > div.warn b { color: #d9822b; }
+
+/* 🎨 עיצוב מסגרת (js/frame-auto.js) */
+.fa-evs { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scrollbar-width: thin; }
+.fa-evs button { flex: 0 0 auto; min-width: 150px; display: grid; gap: 2px; text-align: start; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(227, 196, 138, .22); background: rgba(255, 255, 255, .03); color: inherit; font: inherit; cursor: pointer; }
+.fa-evs button b { font-size: 15px; } .fa-evs button small { font-size: 12px; opacity: .7; }
+.fa-evs button.on { border-color: #D9B677; background: rgba(217, 182, 119, .14); box-shadow: 0 0 0 1px #D9B677 inset; }
+.fa-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 10px; }
+.fa-fields label { display: grid; gap: 4px; font-size: 13px; opacity: .9; }
+.fa-fields input, .fa-fields select { min-height: 42px; border-radius: 10px; padding: 0 10px; font: inherit; font-size: 15px; }
+.fa-inv-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fa-up { cursor: pointer; }
+#fa-inv-th { display: flex; align-items: center; gap: 8px; } #fa-inv-th img { height: 64px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, .3); }
+.fa-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; } .fa-bar h3 { margin: 0; }
+.fa-pals { display: flex; gap: 6px; overflow-x: auto; margin: 12px 0; padding-bottom: 4px; }
+.fa-pals button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border-radius: 999px; border: 1px solid rgba(227, 196, 138, .25); background: none; color: inherit; font: inherit; font-size: 13px; cursor: pointer; min-height: 36px; }
+.fa-pals button i { width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, .15) inset; }
+.fa-pals button.on { border-color: #D9B677; background: rgba(217, 182, 119, .16); font-weight: 700; }
+.fa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.fa-t { display: grid; gap: 6px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; text-align: center; }
+.fa-t .fa-cv { display: block; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 22px rgba(0, 0, 0, .35); background: rgba(255, 255, 255, .04); min-height: 120px; transition: transform .2s; }
+.fa-t:hover .fa-cv, .fa-t:active .fa-cv { transform: translateY(-3px) scale(1.02); }
+.fa-t canvas, #fa-cv canvas { display: block; width: 100%; height: auto; }
+.fa-t b { font-size: 14px; }
+.fa-stage { display: grid; grid-template-columns: minmax(0, 360px) 1fr; gap: 18px; align-items: start; margin-top: 10px; }
+#fa-cv { border-radius: 12px; overflow: hidden; box-shadow: 0 14px 34px rgba(0, 0, 0, .45); }
+.fa-side { display: grid; gap: 10px; align-content: start; }
+.fa-chk { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.fa-acts { display: grid; gap: 8px; margin-top: 6px; } .fa-acts .btn { min-height: 46px; }
+@media (max-width: 700px) { .fa-stage { grid-template-columns: 1fr; } .fa-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }

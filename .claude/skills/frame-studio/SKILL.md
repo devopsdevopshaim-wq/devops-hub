@@ -1907,3 +1907,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - Feel: screens slide in (`.adm-enter`), numbers count up, pull down to refresh (`#adm-pull`), a light vibration on taps, an opening screen once a session (`#adm-splash`, sessionStorage `adm-splash`). All honour prefers-reduced-motion.
 - The app install bar (`#app-bar`, app-install.js) sits above the tabs in app mode, not over the top bar.
 - Hooks in admin.js: `show()` → `APP.shown(s)`, `badge()` → `APP.badge(n)`, `state()` → `APP.dirty(n)`, stats icons → `APP.statIcon`.
+
+## 🎨 עיצוב מסגרת in the admin (v123)
+- `js/frame-auto.js` → `FS.frameAuto(m, ctx)`, the admin view `framer` (SECTIONS "העסק", after deals; a tile in the phone's "עוד"; the home hero's "מסגרת" button sets `FS.frameAutoPick = deal id`). admin.html also loads `js/inv-frame.js` and the fonts Amatic SC + Secular One.
+- Steps:
+  1. Pick the event: upcoming deals (`d-<id>`) and open booking requests without a deal (`r-<id>`), or type it in. Fields: names, date, event type (FS.EVENTS), greeting line (from the type's `greet`).
+  2. Optional invitation photo: `FS.invitePalette` gives the first palette ("מההזמנה"), and adds the design `invite` (`FS.frameFromInvite`, names and date drawn in the band it leaves).
+  3. Eight designs drawn in code (no AI): classic gold, modern, evening black-gold, floral arch, party, polaroid, magazine, from the invitation. They are previewed at 0.32 scale over `media/demo/couple.jpg`, one per frame tick.
+- Palettes: from the invitation, from the event type, gold, blush, navy, sage.
+- Sizes: 10×15, 15×10, 13×18 at 300 dpi.
+- Open one: window shape (rectangle / arch / oval, per design), show date / greeting, then:
+  - "🖼️ שליחה לסטודיו": `design-save` (id `fa-<event key>`, one per event, so it is replaced) then `design-approve` with the full PNG (scaled down only if over ~4 MB) and a preview. It appears in the studio under "🎉 אירוע חי" ← "🎨 עיצובים מאושרים של לקוחות". No server change was needed.
+  - "💬 שליחה ללקוח": Web Share with the JPEG preview; else it downloads and opens WhatsApp to the client's phone.
+  - "⬇ הורדה PNG": 300 dpi with a see-through window.
+- Gotcha: `cut()` must set an opaque fillStyle; destination-out uses the source alpha (a gradient fill left the window half-white).
+- Also fixed: in the phone app, the tabs, the top-bar buttons and the publish pill are hidden while signed out (`body.adm-app:has(#app[hidden])`).
