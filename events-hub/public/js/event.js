@@ -78,6 +78,7 @@
       file,
       aspect: PhotoEditor.aspectFromSize(selectedOption.size),
       allowAnimations: ev.allowAnimations,
+      tools: ev.editor && ev.editor.tools, ai: ev.editor && ev.editor.ai,
       onCancel: () => show('main'),
       onPrint: (blob, edits) => {
         pendingBlob = blob;

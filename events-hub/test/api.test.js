@@ -307,3 +307,69 @@ test('points club: earn 10% on paid orders, redeem above the minimum, protected 
   const members = (await call('GET', '/api/admin/loyalty')).data.members;
   assert.ok(members.some((m) => m.phone === '0547778899' && m.clubLink.includes('?club=')));
 });
+
+test('admin controls the photo editor tools and the print sizes (any size)', async () => {
+  let cfg = (await call('GET', '/api/config')).data;
+  assert.equal(cfg.editor.store, true);
+  assert.equal(cfg.editor.tools.ai, true);
+  const st = (await call('GET', '/api/admin/settings')).data.settings;
+  await call('PUT', '/api/admin/settings', { ...st,
+    editor: { store: true, tools: { stickers: false, anim: false }, ai: { removebg: false } },
+    printSizes: { magnet: ['7 x 10', '6×9', 'junk', '5x5'] } });
+  cfg = (await call('GET', '/api/config')).data;
+  assert.equal(cfg.editor.tools.stickers, false);
+  assert.equal(cfg.editor.tools.crop, true);
+  assert.equal(cfg.editor.ai.removebg, false);
+  assert.equal(cfg.editor.ai.cartoon, true);
+  const types = (await call('GET', '/api/admin/print-types')).data;
+  assert.deepEqual(types.find((t) => t.type === 'magnet').sizes, ['7x10', '6x9', '5x5']);
+  // באירוע: כל מידה שהמנהל קובע, והאורח מקבל את הגדרות העורך
+  const r = await call('POST', '/api/admin/events', { name: 'מידות שלי', photosPerGuest: 2,
+    printOptions: [{ type: 'magnet', size: '7x10' }, { type: 'block', size: '12 x 12' }, { type: 'frame', size: 'bad' }] });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.data.printOptions.map((o) => o.size), ['7x10', '12x12', '10x15']);
+  const pub = (await call('GET', `/api/event/${r.data.code}`)).data;
+  assert.equal(pub.editor.tools.stickers, false);
+  // שמירת הגדרות כלליות בלי העורך לא מוחקת אותו
+  await call('PUT', '/api/admin/settings', { businessName: 'פריים אירועים', shippingPrice: 30, freeShippingFrom: 300, slaHours: {} });
+  assert.equal((await call('GET', '/api/config')).data.editor.tools.stickers, false);
+  assert.equal((await call('GET', '/api/admin/print-types')).data.find((t) => t.type === 'magnet').sizes[0], '7x10');
+});
+
+test('customer photos for the studio: who, phone, where, size, and marking them printed', async () => {
+  const e2 = (await call('POST', '/api/admin/events', { name: 'חינה של שירה', photosPerGuest: 3, printOptions: [{ type: 'magnet', size: '6x9' }] })).data;
+  const g = (await call('POST', `/api/event/${e2.code}/guest`, { name: 'רותי כהן', phone: '052-1112222' })).data;
+  const fd = new FormData();
+  fd.append('kind', 'print'); fd.append('printOptionId', e2.printOptions[0].id);
+  fd.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'a.jpg');
+  await call('POST', `/api/event/${e2.code}/photos`, fd, { 'x-guest-id': g.guestId, 'x-guest-token': g.guestToken });
+  const up = new FormData(); up.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'b.jpg');
+  const photoUrl = (await call('POST', '/api/uploads', up)).data.url;
+  const r = await call('POST', '/api/orders', { customer: { name: 'משה לוי', phone: '0503334444', city: 'באר שבע', address: 'הרצל 1' }, items: [{ productId: 'mag-6x9', variant: '10x15 ס"מ', qty: 2, photoUrl }] });
+  await call('POST', `/pay/mock/${r.data.redirectUrl.split('/').pop()}`, 'result=approved', { 'content-type': 'application/x-www-form-urlencoded' });
+  assert.equal((await fetch(base + '/api/admin/customer-photos')).status, 401);
+  const list = (await call('GET', '/api/admin/customer-photos')).data;
+  const ph = list.find((x) => x.name === 'רותי כהן');
+  assert.equal(ph.phone, '052-1112222'); assert.equal(ph.where, 'חינה של שירה'); assert.equal(ph.size, '6x9'); assert.equal(ph.source, 'event');
+  const oi = list.find((x) => x.name === 'משה לוי');
+  assert.equal(oi.source, 'order'); assert.equal(oi.size, '10x15'); assert.equal(oi.qty, 2); assert.equal(oi.url, photoUrl); assert.match(oi.where, /הזמנה #/);
+  assert.equal((await call('PATCH', `/api/admin/customer-photos/${encodeURIComponent(ph.id)}`, { status: 'printed' })).status, 200);
+  assert.equal((await call('PATCH', `/api/admin/customer-photos/${encodeURIComponent(oi.id)}`, { status: 'printed' })).status, 200);
+  assert.equal((await call('PATCH', `/api/admin/customer-photos/${encodeURIComponent(oi.id)}`, { status: 'nope' })).status, 400);
+  const after = (await call('GET', '/api/admin/customer-photos')).data;
+  assert.equal(after.find((x) => x.id === ph.id).status, 'printed');
+  assert.equal(after.find((x) => x.id === oi.id).status, 'printed');
+});
+
+test('event type photos: the admin sets their own and can go back to the default', async () => {
+  const before = (await call('GET', '/api/store')).data.events.find((e) => e.id === 'batmitzvah');
+  assert.match(before.image, /^https:\/\/images\.unsplash\.com\//);
+  const up = new FormData(); up.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'e.jpg');
+  const url = (await call('POST', '/api/admin/uploads', up)).data.url;
+  assert.equal((await call('PUT', '/api/admin/event-types/batmitzvah', { image: 'https://evil.example/x.jpg' })).status, 400);
+  assert.equal((await call('PUT', '/api/admin/event-types/nope', { image: url })).status, 404);
+  assert.equal((await call('PUT', '/api/admin/event-types/batmitzvah', { image: url })).data.custom, true);
+  assert.equal((await call('GET', '/api/store')).data.events.find((e) => e.id === 'batmitzvah').image, url);
+  await call('PUT', '/api/admin/event-types/batmitzvah', { image: '' });
+  assert.equal((await call('GET', '/api/store')).data.events.find((e) => e.id === 'batmitzvah').image, before.image);
+});

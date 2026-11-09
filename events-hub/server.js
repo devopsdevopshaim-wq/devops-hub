@@ -80,5 +80,5 @@ export async function start({ port = 3000, dataDir = path.join(ROOT, 'data'), en
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 3000);
-  start({ port }).then(() => console.log(`רגעים פועל: http://localhost:${port}  |  ניהול: http://localhost:${port}/admin/`));
+  start({ port }).then(() => console.log(`פריים אירועים פועל: http://localhost:${port}  |  ניהול: http://localhost:${port}/admin/`));
 }

@@ -112,7 +112,7 @@
     const stat = (ico, label, val, cls = '', go = '') => `<div class="card stat-card${cls ? ' alert' : ''}" ${go ? `data-go="${go}" style="cursor:pointer" role="button" tabindex="0"` : ''}>
       <div class="stat-ico">${icon(ico, '')}</div><div class="muted">${label}</div><div class="stat ${cls}">${val}</div></div>`;
     view.innerHTML = `<div class="stage" style="grid-template-columns:1fr"><div>
-        <span class="eyebrow"><img src="icon.svg" alt="">רגעים · ניהול</span>
+        <span class="eyebrow"><img src="icon.svg" alt="">פריים אירועים · ניהול</span>
         <h1>${(() => { const h = new Date().getHours(); return h < 12 ? 'בוקר טוב' : h < 18 ? 'צהריים טובים' : 'ערב טוב'; })()}, <em>הנה מה שקורה היום</em></h1>
         <div class="row"><button class="btn gold" data-go="events:new">${icon('plus')}אירוע חדש</button><button class="btn ghost light" data-go="promotions">${icon('tag')}מבצעים</button></div>
       </div></div>
@@ -151,7 +151,7 @@
       const t = ref.printTypes.find((x) => x.type === o.type) || ref.printTypes[0];
       return `<div class="fields po-row" style="align-items:end;margin-bottom:6px">
         <div><label>סוג</label><select class="po-type">${ref.printTypes.map((x) => `<option value="${x.type}" ${x.type === t.type ? 'selected' : ''}>${x.name}</option>`).join('')}</select></div>
-        <div><label>גודל (ס"מ)</label><select class="po-size">${t.sizes.map((s) => `<option ${s === o.size ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div><label>גודל (ס"מ) - כל מידה שתרצו</label><input class="po-size" dir="ltr" list="sizes-${t.type}" value="${esc(o.size || t.sizes[0])}" placeholder="למשל 7x10" required></div>
         <div><label>שם לתצוגה</label><input class="po-label" value="${esc(o.label || '')}" placeholder="אוטומטי"></div>
         <input type="hidden" class="po-id" value="${esc(o.id || '')}">
         <div><button type="button" class="btn ghost sm po-del">הסרה</button></div></div>`;
@@ -159,7 +159,9 @@
   }
 
   function printOptionsEditor(list = []) {
-    return `<div class="card flat" style="margin-top:12px"><h3>אפשרויות הדפסה לאורחים (עד 3)</h3><div id="po-list">${list.map((o) => poRow(o)).join('')}</div>
+    return `${ref.printTypes.map((t) => `<datalist id="sizes-${t.type}">${t.sizes.map((z) => `<option value="${esc(z)}">`).join('')}</datalist>`).join('')}
+      <div class="card flat" style="margin-top:12px"><h3>אפשרויות הדפסה לאורחים (עד 3)</h3>
+      <p class="muted small">קובעים סוג, מידה ושם לכל אפשרות. המידה חופשית (רוחב x גובה בס"מ); הרשימה המוצעת נערכת ב"סליקה והגדרות" ← מידות הדפסה.</p><div id="po-list">${list.map((o) => poRow(o)).join('')}</div>
       <button type="button" class="btn soft sm" id="po-add">➕ הוספת אפשרות</button></div>`;
   }
 
@@ -167,7 +169,9 @@
     const list = $('#po-list');
     const refreshSizes = (r) => {
       const t = ref.printTypes.find((x) => x.type === $('.po-type', r).value);
-      $('.po-size', r).innerHTML = t.sizes.map((s) => `<option>${s}</option>`).join('');
+      const inp = $('.po-size', r);
+      inp.setAttribute('list', `sizes-${t.type}`);
+      if (!t.sizes.includes(inp.value)) inp.value = t.sizes[0] || '';
     };
     const updateAdd = () => { $('#po-add').disabled = $$('.po-row', list).length >= 3; };
     $('#po-add').onclick = () => {
@@ -290,7 +294,7 @@
   function waLink(o) {
     const d = String(o.customer.phone || '').replace(/\D/g, '');
     const phone = d.startsWith('0') ? `972${d.slice(1)}` : d;
-    const text = `שלום ${o.customer.name}, כאן ${ref.settings.businessName || 'רגעים'} 💐\nהזמנה #${o.number}: ${o.statusName}.\nאפשר לעקוב כאן: ${o.trackUrl}`;
+    const text = `שלום ${o.customer.name}, כאן ${ref.settings.businessName || 'פריים אירועים'} 💐\nהזמנה #${o.number}: ${o.statusName}.\nאפשר לעקוב כאן: ${o.trackUrl}`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
   }
 
@@ -409,7 +413,7 @@
       { k: 'needsPhoto', label: 'המוצר דורש תמונה מהלקוח', type: 'bool', def: false }, { k: 'upsell', label: 'להציע בסל ("אולי תאהבו גם")', type: 'bool', def: false },
       { k: 'active', label: 'פעיל', type: 'bool' },
     ];
-    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" id="cat-photos">${icon('image')}תמונות קטגוריות</button><button class="btn soft" data-go-promos>${icon('tag')}מבצעים</button><button class="btn" id="new">${icon('plus')}מוצר חדש</button></div></div>
+    view.innerHTML = `<div class="row between"><h1>מוצרים</h1><div class="row"><button class="btn soft" id="cat-photos">${icon('image')}תמונות קטגוריות</button><button class="btn soft" id="ev-photos">${icon('image')}תמונות אירועים</button><button class="btn soft" data-go-promos>${icon('tag')}מבצעים</button><button class="btn" id="new">${icon('plus')}מוצר חדש</button></div></div>
       <p class="muted small">את המחיר אפשר לשנות ישר בטבלה. מחיר מבצע נקבע במסך "מבצעים".</p>
       <div class="card table-wrap"><table><thead><tr><th></th><th>שם</th><th>קטגוריה</th><th>מחיר רגיל</th><th>במבצע</th><th>סטטוס</th></tr></thead><tbody>
       ${list.map((p) => {
@@ -435,6 +439,7 @@
     $('#new').onclick = () => open(null);
     $('[data-go-promos]').onclick = () => go('promotions');
     $('#cat-photos').onclick = categoryPhotos;
+    $('#ev-photos').onclick = eventTypePhotos;
     // עריכת מחיר ישר מהטבלה
     $$('[data-price]').forEach((inp) => {
       inp.onclick = (e) => e.stopPropagation();
@@ -481,6 +486,37 @@
     });
   }
 
+  // תמונות "קנו לפי אירוע": לכל סוג אירוע תמונה משלכם
+  async function eventTypePhotos() {
+    const list = await api(`${A}/event-types`);
+    ref.eventTypes = list;
+    openModal(`<div class="row between"><h2 style="margin:0">תמונות אירועים</h2><button class="icon-btn" data-close aria-label="סגירה">✕</button></div>
+      <p class="muted">התמונות של "קנו לפי אירוע" בחנות. מעלים צילום משלכם לכל סוג אירוע (חתונה, בת מצווה, חינה…).</p>
+      <div class="grid sm">${list.map((e) => `<div class="card flat stack" style="padding:10px">
+        <div class="photo-tile" style="aspect-ratio:4/5"><img src="${esc(asset(e.image))}" alt="${esc(e.name)}" loading="lazy"></div>
+        <b>${esc(e.name)}</b>
+        <label class="btn soft sm" style="margin:0">${icon('image')}החלפת תמונה<input type="file" accept="image/*" data-ev-up="${esc(e.id)}" class="hidden"></label>
+        ${e.custom ? `<button class="btn ghost sm" data-ev-reset="${esc(e.id)}">חזרה לתמונה המקורית</button>` : ''}
+      </div>`).join('')}</div>`);
+    $$('[data-ev-up]').forEach((inp) => {
+      inp.onchange = async () => {
+        const f = inp.files[0];
+        if (!f) return;
+        try {
+          const fd = new FormData();
+          fd.append('file', await shrinkImage(f, 1200, 0.86), 'event.jpg');
+          const up = await api(`${A}/uploads`, { method: 'POST', body: fd });
+          await api(`${A}/event-types/${inp.dataset.evUp}`, { method: 'PUT', body: { image: up.url } });
+          toast('התמונה הוחלפה');
+          eventTypePhotos();
+        } catch (err) { toast(err.message); }
+      };
+    });
+    $$('[data-ev-reset]').forEach((b) => {
+      b.onclick = async () => { await api(`${A}/event-types/${b.dataset.evReset}`, { method: 'PUT', body: { image: '' } }); eventTypePhotos(); };
+    });
+  }
+
   // ---------- מועדון נקודות ----------
   async function clubView() {
     const [data, rewards, prods] = await Promise.all([api(`${A}/loyalty`), api(`${A}/rewards`), api(`${A}/products`)]);
@@ -493,7 +529,7 @@
       { k: 'points', label: 'עלות בנקודות', type: 'number' }, { k: 'active', label: 'פעיל', type: 'bool' },
     ];
     view.innerHTML = `<div class="stage" style="grid-template-columns:1fr"><div>
-        <span class="eyebrow"><img src="icon.svg" alt="">מועדון רגעים</span>
+        <span class="eyebrow"><img src="icon.svg" alt="">מועדון פריים</span>
         <h1>💎 נקודות, <em>הנחות ומתנות</em></h1>
         <p>על כל הזמנה ששולמה הלקוח צובר ${s.earnPercent}% מסכום המוצרים בנקודות (נקודה = ₪1). מ-${s.minPoints} נקודות הוא מממש אותן בהטבות שתגדירו כאן.</p>
       </div></div>
@@ -510,7 +546,7 @@
       <div class="card table-wrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>יתרה</th><th>נצבר</th><th>מומש</th><th>פעילות אחרונה</th><th></th></tr></thead><tbody>
       ${data.members.map((m) => `<tr><td>${esc(m.name)}</td><td dir="ltr">${esc(m.phone)}</td><td><b>${m.points}</b></td><td>${m.earned}</td><td>${m.spent}</td><td class="small">${fmtDate(m.lastAt)}</td>
         <td><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn soft sm" data-adjust="${m.id}">± נקודות</button>
-        <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${'972' + m.phone.slice(1)}?text=${encodeURIComponent(`שלום ${m.name}, יש לך ${m.points} נקודות במועדון ${ref.settings.businessName || 'רגעים'} 💎\nהכרטיס שלך: ${m.clubLink}`)}">${icon('whatsapp')}</a></div></td></tr>`).join('') || '<tr><td colspan="7" class="muted">עוד אין חברים. החשבון נפתח אוטומטית בהזמנה הראשונה של כל לקוח.</td></tr>'}
+        <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${'972' + m.phone.slice(1)}?text=${encodeURIComponent(`שלום ${m.name}, יש לך ${m.points} נקודות במועדון ${ref.settings.businessName || 'פריים אירועים'} 💎\nהכרטיס שלך: ${m.clubLink}`)}">${icon('whatsapp')}</a></div></td></tr>`).join('') || '<tr><td colspan="7" class="muted">עוד אין חברים. החשבון נפתח אוטומטית בהזמנה הראשונה של כל לקוח.</td></tr>'}
       </tbody></table></div>`;
     $('#club-settings').onsubmit = async (e) => {
       e.preventDefault();
@@ -716,11 +752,14 @@
   }
 
   // ---------- סליקה והגדרות ----------
+  const TOOL_NAMES = { crop: '✂️ חיתוך וסיבוב', adjust: '🎚️ בהירות וניגודיות', filters: '🎨 פילטרים', ai: '🤖 אפקטי AI', text: '🔤 טקסט וברכה', stickers: '😍 מדבקות', frames: '🖼️ מסגרות', anim: '🎬 אנימציה' };
+  const AI_NAMES = { enhance: '✨ שיפור אוטומטי', cartoon: '🎭 קריקטורה', sketch: '✏️ ציור עיפרון', popart: '🟨 פופ ארט', oil: '🖌️ ציור שמן', removebg: '🪄 הסרת רקע' };
   async function settings() {
     const d = await api(`${A}/settings`);
     ref.settings = d.settings; ref.payments = d.payments;
     const s = d.settings;
     const pays = await api(`${A}/payments`);
+    const ed = (await api('/api/config')).editor;
     view.innerHTML = `<h1>סליקה והגדרות</h1>
       <div class="card stack">
         <h2>💳 חברת סליקה</h2>
@@ -745,8 +784,35 @@
         <div class="fields">${Object.entries(s.slaHours || {}).map(([k, v]) => `<div class="field"><label>${esc(ref.statuses.find((x) => x.id === k)?.name || k)}</label><input type="number" data-sla="${k}" value="${v}"></div>`).join('')}</div>
         <button class="btn">שמירה</button>
       </form>
+      <form class="card" id="editor-form" style="margin-top:16px">
+        <h2>🎨 עורך התמונות ללקוחות</h2>
+        <p class="muted small">אתם קובעים מה הלקוח יכול לעשות בתמונה, גם באירוע וגם בחנות: חיתוך לגודל המוצר, אפקטי AI, פילטרים, טקסט, מדבקות, מסגרות ואנימציה.</p>
+        <label class="check"><input type="checkbox" name="store" ${ed.store ? 'checked' : ''}> עריכת תמונה גם בחנות (לפני הוספה לסל, וגם מתוך הסל)</label>
+        <h3>כלים פתוחים</h3>
+        <div class="tool-toggles">${Object.entries(TOOL_NAMES).map(([k, n]) => `<label class="check"><input type="checkbox" data-tool="${k}" ${ed.tools[k] ? 'checked' : ''}> ${n}</label>`).join('')}</div>
+        <h3>אפקטי AI</h3>
+        <div class="tool-toggles">${Object.entries(AI_NAMES).map(([k, n]) => `<label class="check"><input type="checkbox" data-ai="${k}" ${ed.ai[k] ? 'checked' : ''}> ${n}</label>`).join('')}</div>
+        <p class="muted small">אנימציה באירוע נקבעת גם לכל אירוע בנפרד ("לאפשר יצירת אנימציות"). הסרת רקע עובדת רק כשמחובר שירות AI לשרת${ref.aiRemoveBg ? ' ✓ מחובר' : ' (כרגע לא מחובר)'}.</p>
+        <h2 style="margin-top:18px">📏 מידות הדפסה</h2>
+        <p class="muted small">המידות שאתם מציעים (בס"מ, רוחב x גובה, מופרדות בפסיק). מהן בוחרים את 3 האפשרויות לכל אירוע, ואפשר גם להקליד מידה אחרת. המידה קובעת את יחס החיתוך בעורך. מידות ומחירים של מוצרי החנות נקבעים בכל מוצר (מוצרים ← עריכה ← מידות ומחירים).</p>
+        <div class="fields">${ref.printTypes.map((t) => `<div class="field"><label>${esc(t.name)}</label><input dir="ltr" data-sizes="${t.type}" value="${esc(t.sizes.join(', '))}" placeholder="5x7.5, 6x9, 10x15"></div>`).join('')}</div>
+        <button class="btn">שמירה</button>
+      </form>
       <div class="card table-wrap" style="margin-top:16px"><h2>תשלומים אחרונים</h2><table><thead><tr><th>תאריך</th><th>הזמנה</th><th>סכום</th><th>ספק</th><th>סטטוס</th></tr></thead><tbody>
       ${pays.slice(0, 30).map((p) => `<tr><td class="small">${fmtDate(p.createdAt)}</td><td class="small">${esc(p.orderId)}</td><td>${money(p.amount)}</td><td>${esc(p.provider)}</td><td><span class="badge ${p.status === 'approved' ? 'ok' : p.status === 'declined' || p.status === 'error' ? 'bad' : ''}">${esc(p.status)}</span></td></tr>`).join('')}</tbody></table></div>`;
+    $('#editor-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const sizes = Object.fromEntries($$('[data-sizes]', f).map((i) => [i.dataset.sizes, i.value.split(/[,،\n]+/).map((x) => x.trim()).filter(Boolean)]));
+      try {
+        ref.settings = await api(`${A}/settings`, { method: 'PUT', body: { ...ref.settings,
+          editor: { store: f.store.checked, tools: Object.fromEntries($$('[data-tool]', f).map((i) => [i.dataset.tool, i.checked])), ai: Object.fromEntries($$('[data-ai]', f).map((i) => [i.dataset.ai, i.checked])) },
+          printSizes: sizes } });
+        ref.printTypes = await api(`${A}/print-types`);
+        toast('הגדרות העורך והמידות נשמרו ✓');
+        settings();
+      } catch (err) { toast(err.message); }
+    };
     $$('[data-shortcut]').forEach((b) => { b.onclick = () => { $('#dash-url').value = b.dataset.shortcut; toast('לחצו "שמירה" כדי לקבוע'); }; });
     $('#settings-form').onsubmit = async (e) => {
       e.preventDefault();
@@ -796,7 +862,7 @@
       api('/api/config'), api(`${A}/cities`), api(`${A}/categories`), api(`${A}/collections`), api(`${A}/print-types`),
       api(`${A}/suppliers`), api(`${A}/couriers`), api(`${A}/settings`), api(`${A}/event-types`),
     ]);
-    Object.assign(ref, { eventTypes: evTypes, statuses: cfg.statuses, cities: citiesL, categories: cats, collections: cols, printTypes: pts, suppliers: sups, couriers: kurs, settings: st.settings, payments: st.payments });
+    Object.assign(ref, { aiRemoveBg: cfg.aiRemoveBg, eventTypes: evTypes, statuses: cfg.statuses, cities: citiesL, categories: cats, collections: cols, printTypes: pts, suppliers: sups, couriers: kurs, settings: st.settings, payments: st.payments });
     updateShortcut();
   }
 

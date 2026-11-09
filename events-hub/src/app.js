@@ -1,4 +1,4 @@
-// השרת של אפליקציית רגעים: כל הנתיבים במקום אחד, עם Request/Response סטנדרטיים של הדפדפן,
+// השרת של אפליקציית פריים אירועים: כל הנתיבים במקום אחד, עם Request/Response סטנדרטיים של הדפדפן,
 // כך שאותו קוד רץ ב-Cloudflare (worker.mjs) ובהרצה מקומית (server.js).
 import crypto from 'node:crypto';
 import db from './db.js';
@@ -74,6 +74,24 @@ async function body(req) {
   return {};
 }
 
+// ---------- עורך התמונות ומידות ההדפסה (המנהל שולט בהכול) ----------
+export const EDITOR_TOOLS = ['crop', 'adjust', 'filters', 'ai', 'text', 'stickers', 'frames', 'anim'];
+export const AI_EFFECTS = ['enhance', 'cartoon', 'sketch', 'popart', 'oil', 'removebg'];
+function editorSettings() {
+  const e = db.settings().editor || {};
+  return {
+    store: e.store !== false, // עריכה גם בחנות (לא רק באירוע)
+    tools: Object.fromEntries(EDITOR_TOOLS.map((k) => [k, !e.tools || e.tools[k] !== false])),
+    ai: Object.fromEntries(AI_EFFECTS.map((k) => [k, !e.ai || e.ai[k] !== false])),
+  };
+}
+// "6 X 9" / "6×9" -> "6x9"
+const normSize = (v) => { const m = String(v || '').replace(/[×X*]/g, 'x').replace(/\s+/g, '').match(/^(\d{1,3}(?:\.\d{1,2})?)x(\d{1,3}(?:\.\d{1,2})?)$/); return m ? `${m[1]}x${m[2]}` : ''; };
+function printTypes() {
+  const custom = db.settings().printSizes || {};
+  return PRINT_TYPES.map((t) => ({ ...t, sizes: Array.isArray(custom[t.type]) && custom[t.type].length ? custom[t.type] : t.sizes }));
+}
+
 // ---------- אירוע / אורחים ----------
 const eventEnded = (ev) => !ev.active || (ev.endsAt && Date.now() > new Date(ev.endsAt).getTime());
 const eventLink = (ev) => `${config.pagesUrl}/event.html?c=${ev.code}`;
@@ -82,7 +100,7 @@ function publicEvent(ev) {
   return {
     code: ev.code, name: ev.name, type: ev.type, date: ev.date, endsAt: ev.endsAt,
     welcomeText: ev.welcomeText, photosPerGuest: ev.photosPerGuest, printOptions: ev.printOptions,
-    allowAnimations: ev.allowAnimations !== false, ended: eventEnded(ev),
+    allowAnimations: ev.allowAnimations !== false, ended: eventEnded(ev), editor: editorSettings(),
   };
 }
 
@@ -148,9 +166,9 @@ export function applyPaymentResult({ paymentId, approved, providerRef, raw }) {
 function sanitizePrintOptions(list) {
   const out = [];
   for (const o of (Array.isArray(list) ? list : []).slice(0, 3)) { // לכל היותר 3 אפשרויות הדפסה
-    const t = PRINT_TYPES.find((x) => x.type === o.type);
+    const t = printTypes().find((x) => x.type === o.type);
     if (!t) continue;
-    const size = t.sizes.includes(o.size) ? o.size : t.sizes[0];
+    const size = normSize(o.size) || t.sizes[0]; // כל מידה שהמנהל קבע, לא רק מהרשימה
     out.push({ id: o.id || db.id('po_'), type: t.type, size, label: str(o.label, 60) || `${t.name} ${size}` });
   }
   return out;
@@ -193,6 +211,11 @@ function productVariants(b) {
   return list.map((v) => ({ name: str(v && v.name, 40), price: Math.max(0, num(v && v.price)) })).filter((v) => v.name).slice(0, 8);
 }
 const EVENT_IDS = EVENT_TYPES.map((e) => e.id);
+// סוגי האירועים עם התמונה שהמנהל בחר (או תמונת ברירת המחדל)
+function eventTypes() {
+  const imgs = db.settings().eventImages || {};
+  return EVENT_TYPES.map((e) => ({ ...e, image: imgs[e.id] || e.image, custom: Boolean(imgs[e.id]) }));
+}
 const LINK_TYPES = ['none', 'category', 'event', 'product', 'url'];
 
 const CRUD = {
@@ -251,7 +274,7 @@ on('GET', '/api/config', () => {
   const s = db.settings();
   return json({
     businessName: s.businessName, shippingPrice: s.shippingPrice, freeShippingFrom: s.freeShippingFrom,
-    paymentProvider: payments.activeProviderId(), aiRemoveBg: Boolean(config.ai.removeBgKey), statuses: STATUSES,
+    paymentProvider: payments.activeProviderId(), aiRemoveBg: Boolean(config.ai.removeBgKey), statuses: STATUSES, editor: editorSettings(),
   });
 });
 on('GET', '/api/cities', () => json(db.all('cities').map((c) => ({ name: c.name, region: c.region })).sort((a, b) => a.name.localeCompare(b.name, 'he'))));
@@ -322,7 +345,7 @@ on('GET', '/api/store', () => {
   return json({
     categories: db.all('categories').filter((x) => usedCats.has(x.id)),
     collections: cols.filter((x) => products.some((p) => (p.collectionIds || []).includes(x.id))),
-    events: EVENT_TYPES,
+    events: eventTypes(),
     banners: db.all('banners').filter((x) => x.active !== false && x.image && (!x.startDate || x.startDate <= today) && (!x.endDate || x.endDate >= today))
       .sort((a, b) => (a.order || 0) - (b.order || 0)),
     // מחיר המבצע מחושב כאן (מבצעים בלי קוד ובלי מינימום הזמנה), גם לכל גודל
@@ -553,8 +576,18 @@ on('GET', '/api/admin/dashboard', () => {
   });
 }, { admin: true });
 
-on('GET', '/api/admin/print-types', () => json(PRINT_TYPES), { admin: true });
-on('GET', '/api/admin/event-types', () => json(EVENT_TYPES), { admin: true });
+on('GET', '/api/admin/print-types', () => json(printTypes()), { admin: true });
+on('GET', '/api/admin/event-types', () => json(eventTypes()), { admin: true });
+// תמונה לסוג אירוע ("קנו לפי אירוע"). image ריק = חזרה לתמונת ברירת המחדל
+on('PUT', '/api/admin/event-types/:id', async (c) => {
+  if (!EVENT_IDS.includes(c.params.id)) return err(404, 'לא נמצא');
+  const image = str((await body(c.req)).image, 300);
+  if (image && !IMG_RE.test(image)) return err(400, 'תמונה לא תקינה');
+  const imgs = { ...(db.settings().eventImages || {}) };
+  if (image) imgs[c.params.id] = image; else delete imgs[c.params.id];
+  db.setSettings({ eventImages: imgs });
+  return json(eventTypes().find((e) => e.id === c.params.id));
+}, { admin: true });
 
 // סטטיסטיקה: מכירות ב-30 הימים האחרונים, נמכרים ביותר, ביצועי מבצעים
 on('GET', '/api/admin/stats', () => {
@@ -626,6 +659,49 @@ on('PATCH', '/api/admin/photos/:id', async (c) => {
   if (!['pending', 'printing', 'printed', 'delivered', 'rejected'].includes(b.printStatus)) return err(400, 'סטטוס לא תקין');
   const p = db.update('photos', c.params.id, { printStatus: b.printStatus });
   return p ? json(p) : err(404, 'לא נמצא');
+}, { admin: true });
+
+// ---------- תמונות הלקוחות (לתוכנת פריים־סטודיו ולמסך הניהול) ----------
+// כל תמונה להדפסה: מאורחים באירוע וממוצרים בהזמנות ששולמו, עם שם, טלפון, איפה, מה ובאיזה גודל
+const sizeIn = (t) => { const m = String(t || '').match(/(\d{1,3}(?:\.\d{1,2})?)\s*[x×X]\s*(\d{1,3}(?:\.\d{1,2})?)/); return m ? `${m[1]}x${m[2]}` : ''; };
+function customerPhotos() {
+  const events = Object.fromEntries(db.all('events').map((e) => [e.id, e]));
+  const guests = Object.fromEntries(db.all('guests').map((g) => [g.id, g]));
+  const out = [];
+  for (const p of db.all('photos')) {
+    if (p.kind !== 'print') continue;
+    const ev = events[p.eventId] || {}; const g = guests[p.guestId] || {};
+    const opt = (ev.printOptions || []).find((o) => o.id === p.printOptionId) || {};
+    out.push({ id: `ph:${p.id}`, source: 'event', url: p.url, name: g.name || '', phone: g.phone || '', where: ev.name || '', whereId: ev.id || '',
+      product: opt.label || '', type: opt.type || '', size: opt.size || '', qty: 1, status: p.printStatus || 'pending', edits: p.editsApplied || '', createdAt: p.createdAt });
+  }
+  for (const o of db.all('orders')) {
+    if (!PAID.includes(o.status)) continue;
+    o.items.forEach((i, idx) => {
+      if (!i.photoUrl) return;
+      out.push({ id: `oi:${o.id}:${idx}`, source: 'order', url: i.photoUrl, name: o.customer.name, phone: o.customer.phone, city: o.customer.city,
+        where: `הזמנה #${o.number}`, whereId: o.id, product: i.name, type: i.category || '', size: sizeIn(i.variant) || sizeIn(i.name), qty: i.qty,
+        status: i.printStatus || 'pending', orderStatus: STATUS_NAME[o.status], createdAt: o.createdAt });
+    });
+  }
+  return out.sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
+}
+const PRINT_STATUSES = ['pending', 'printing', 'printed', 'delivered', 'rejected'];
+on('GET', '/api/admin/customer-photos', () => json(customerPhotos()), { admin: true });
+on('PATCH', '/api/admin/customer-photos/:id', async (c) => {
+  const b = await body(c.req);
+  if (!PRINT_STATUSES.includes(b.status)) return err(400, 'סטטוס לא תקין');
+  const [kind, id, idx] = decodeURIComponent(c.params.id).split(':');
+  if (kind === 'ph') {
+    const p = db.update('photos', id, { printStatus: b.status });
+    return p ? json({ ok: true }) : err(404, 'לא נמצא');
+  }
+  const o = kind === 'oi' && db.get('orders', id);
+  const item = o && o.items[Number(idx)];
+  if (!item || !item.photoUrl) return err(404, 'לא נמצא');
+  item.printStatus = b.status;
+  db.update('orders', o.id, { items: o.items });
+  return json({ ok: true });
 }, { admin: true });
 
 on('GET', '/api/admin/guests', () => {
@@ -715,6 +791,14 @@ on('PUT', '/api/admin/settings', async (c) => {
       earnPercent: Math.min(100, Math.max(0, num(b.loyalty && b.loyalty.earnPercent, loyalty.settings().earnPercent))),
       minPoints: Math.max(0, Math.floor(num(b.loyalty && b.loyalty.minPoints, loyalty.settings().minPoints))),
     },
+    editor: b.editor && typeof b.editor === 'object' ? {
+      store: b.editor.store !== false,
+      tools: Object.fromEntries(EDITOR_TOOLS.map((k) => [k, !(b.editor.tools && b.editor.tools[k] === false)])),
+      ai: Object.fromEntries(AI_EFFECTS.map((k) => [k, !(b.editor.ai && b.editor.ai[k] === false)])),
+    } : editorSettings(),
+    printSizes: b.printSizes && typeof b.printSizes === 'object'
+      ? Object.fromEntries(PRINT_TYPES.map((t) => [t.type, [...new Set((Array.isArray(b.printSizes[t.type]) ? b.printSizes[t.type] : []).map(normSize).filter(Boolean))].slice(0, 12)]))
+      : (db.settings().printSizes || {}),
   }));
 }, { admin: true });
 

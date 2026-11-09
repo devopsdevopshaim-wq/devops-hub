@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#24112F">
+  <meta name="theme-color" content="#FBF7F0">
   <title>מעקב הזמנה</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/theme.css">
 </head>
 <body>
-  <header class="topbar"><div class="wrap"><a class="brand" href="./"><img class="logo" src="icons/icon.svg" alt=""><span>רגעים</span></a><span class="spacer"></span><a class="btn ghost sm" href="./#orders">ההזמנות שלי</a></div></header>
+  <header class="topbar"><div class="wrap"><a class="brand" href="./"><img class="logo" src="icons/icon.svg" alt=""><span>פריים אירועים</span></a><span class="spacer"></span><a class="btn ghost sm" href="./#orders">ההזמנות שלי</a></div></header>
   <main class="wrap narrow stack" id="root"><p class="muted">טוען…</p></main>
   <script src="js/install-help.js"></script>
   <script src="js/common.js"></script>
@@ -44,7 +44,7 @@
             ${o.reward ? `<div class="row between" style="color:var(--ok);font-weight:700"><span>💎 ${esc(o.reward.name)}</span><span>−${o.reward.points} נק׳</span></div>` : ''}
             <div class="row between"><b>סה"כ</b><span class="price">${money(o.total)}</span></div>
           </div>
-          ${o.loyaltyEarned ? `<div class="card club-card"><h3 style="margin:0">💎 צברתם ${o.loyaltyEarned} נקודות במועדון רגעים</h3><p class="small" style="margin:6px 0 0">אפשר לראות את היתרה ולממש ב"ההזמנות שלי".</p></div>` : ''}`;
+          ${o.loyaltyEarned ? `<div class="card club-card"><h3 style="margin:0">💎 צברתם ${o.loyaltyEarned} נקודות במועדון פריים</h3><p class="small" style="margin:6px 0 0">אפשר לראות את היתרה ולממש ב"ההזמנות שלי".</p></div>` : ''}`;
       } catch (e) {
         root.innerHTML = `<div class="card"><h2>ההזמנה לא נמצאה</h2><p class="muted">${esc(e.message)}</p></div>`;
       }
