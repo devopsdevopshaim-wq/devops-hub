@@ -318,3 +318,12 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .reward-opt { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: var(--surface); font-weight: 600; cursor: pointer; margin: 0; }
 .reward-opt span:first-of-type { flex: 1; }
 .reward-opt.off { opacity: .5; cursor: not-allowed; }
+
+/* ---------- עורך התמונות בחנות ---------- */
+.editor-modal { z-index: 80; align-items: stretch; }
+.editor-modal > .card { width: min(720px, 100%); max-height: 100%; overflow-y: auto; margin: auto; }
+.editor-modal .editor-stage canvas { max-height: 46vh; max-width: 100%; }
+.editor-modal #ed-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+body.no-scroll { overflow: hidden; }
+.tool-toggles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.tool-toggles .check { background: var(--surface-2, #f6eef0); border-radius: 12px; padding: 10px 12px; margin: 0; }

@@ -307,3 +307,31 @@ test('points club: earn 10% on paid orders, redeem above the minimum, protected 
   const members = (await call('GET', '/api/admin/loyalty')).data.members;
   assert.ok(members.some((m) => m.phone === '0547778899' && m.clubLink.includes('?club=')));
 });
+
+test('admin controls the photo editor tools and the print sizes (any size)', async () => {
+  let cfg = (await call('GET', '/api/config')).data;
+  assert.equal(cfg.editor.store, true);
+  assert.equal(cfg.editor.tools.ai, true);
+  const st = (await call('GET', '/api/admin/settings')).data.settings;
+  await call('PUT', '/api/admin/settings', { ...st,
+    editor: { store: true, tools: { stickers: false, anim: false }, ai: { removebg: false } },
+    printSizes: { magnet: ['7 x 10', '6×9', 'junk', '5x5'] } });
+  cfg = (await call('GET', '/api/config')).data;
+  assert.equal(cfg.editor.tools.stickers, false);
+  assert.equal(cfg.editor.tools.crop, true);
+  assert.equal(cfg.editor.ai.removebg, false);
+  assert.equal(cfg.editor.ai.cartoon, true);
+  const types = (await call('GET', '/api/admin/print-types')).data;
+  assert.deepEqual(types.find((t) => t.type === 'magnet').sizes, ['7x10', '6x9', '5x5']);
+  // באירוע: כל מידה שהמנהל קובע, והאורח מקבל את הגדרות העורך
+  const r = await call('POST', '/api/admin/events', { name: 'מידות שלי', photosPerGuest: 2,
+    printOptions: [{ type: 'magnet', size: '7x10' }, { type: 'block', size: '12 x 12' }, { type: 'frame', size: 'bad' }] });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.data.printOptions.map((o) => o.size), ['7x10', '12x12', '10x15']);
+  const pub = (await call('GET', `/api/event/${r.data.code}`)).data;
+  assert.equal(pub.editor.tools.stickers, false);
+  // שמירת הגדרות כלליות בלי העורך לא מוחקת אותו
+  await call('PUT', '/api/admin/settings', { businessName: 'רגעים', shippingPrice: 30, freeShippingFrom: 300, slaHours: {} });
+  assert.equal((await call('GET', '/api/config')).data.editor.tools.stickers, false);
+  assert.equal((await call('GET', '/api/admin/print-types')).data.find((t) => t.type === 'magnet').sizes[0], '7x10');
+});

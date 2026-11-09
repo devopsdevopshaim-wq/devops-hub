@@ -205,14 +205,18 @@
   class PhotoEditor {
     constructor(root, opts) {
       this.root = root;
-      this.opts = opts; // { file, aspect (w/h), allowAnimations, onCancel, onPrint(blob, edits), onAnimation(blob) }
+      this.opts = opts; // { file, aspect (w/h או 'free'), allowAnimations, tools, ai, doneLabel, title, onCancel, onPrint(blob, edits), onAnimation(blob) }
+      // המנהל קובע אילו כלים פתוחים ללקוח (הגדרות > עורך התמונות)
+      this.tools = Object.assign({}, opts.tools || {});
+      this.aiList = Object.fromEntries(Object.entries(AI_EFFECTS).filter(([k]) => k === 'none' || !opts.ai || opts.ai[k] !== false));
+      if (Object.keys(this.aiList).length <= 1) this.tools.ai = false;
       this.state = {
         rotation: 0, zoom: 1, offX: 0, offY: 0, preset: 'none', ai: 'none',
         brightness: 100, contrast: 100, saturation: 100,
         frame: 'none', text: '', textColor: '#ffffff', textPos: 'bottom', textSize: 7,
         stickers: [], animation: 'hearts', landscape: false,
       };
-      this.tab = 'crop';
+      this.tab = null;
       this.init();
     }
 
@@ -234,7 +238,8 @@
     }
 
     get aspect() {
-      const a = this.opts.aspect || 2 / 3; // רוחב/גובה לאורך
+      // 'free' = היחס של התמונה עצמה (מוצר בלי מידת הדפסה, כמו ספל או אלבום)
+      const a = this.opts.aspect === 'free' ? this.original.width / this.original.height : (this.opts.aspect || 2 / 3); // רוחב/גובה
       const portrait = a <= 1 ? a : 1 / a;
       return this.state.landscape ? 1 / portrait : portrait;
     }
@@ -459,10 +464,11 @@
     // ---------- ממשק ----------
     renderUI() {
       const tabs = [['crop', '✂️ חיתוך'], ['adjust', '🎚️ כיוונון'], ['filters', '🎨 פילטרים'], ['ai', '🤖 AI'],
-        ['text', '🔤 טקסט'], ['stickers', '😍 מדבקות'], ['frames', '🖼️ מסגרת']];
-      if (this.opts.allowAnimations) tabs.push(['anim', '🎬 אנימציה']);
+        ['text', '🔤 טקסט'], ['stickers', '😍 מדבקות'], ['frames', '🖼️ מסגרת'], ['anim', '🎬 אנימציה']]
+        .filter(([id]) => this.tools[id] !== false && (id !== 'anim' || this.opts.allowAnimations));
+      if (!tabs.find(([id]) => id === this.tab)) this.tab = tabs.length ? tabs[0][0] : null;
       this.root.innerHTML = `
-        <div class="stack">
+        <div class="stack">${this.opts.title ? `<h2 style="margin:0">${esc(this.opts.title)}</h2>` : ''}
           <div class="editor-stage" id="ed-stage"><canvas id="ed-canvas"></canvas></div>
           <div id="ed-busy" class="hidden badge primary">מעבד… ⏳</div>
           <div class="tabs" id="ed-tabs">${tabs.map(([id, n]) => `<button class="tab${id === this.tab ? ' active' : ''}" data-tab="${id}">${n}</button>`).join('')}</div>
@@ -470,7 +476,7 @@
           <div class="row">
             <button class="btn ghost" id="ed-cancel">ביטול</button>
             <span class="spacer"></span>
-            <button class="btn" id="ed-done">המשך ✓</button>
+            <button class="btn" id="ed-done">${esc(this.opts.doneLabel || 'המשך ✓')}</button>
           </div>
         </div>`;
       $('#ed-tabs', this.root).addEventListener('click', (e) => {
@@ -522,6 +528,8 @@
     renderPanel() {
       const p = $('#ed-panel', this.root);
       const s = this.state;
+      p.classList.toggle('hidden', !this.tab);
+      if (!this.tab) return;
       const tools = (map, cur, attr) => `<div class="tool-grid">${Object.entries(map).map(([id, v]) =>
         `<button class="tool${id === cur ? ' active' : ''}" data-${attr}="${id}"><span class="ico">${v.ico || ''}</span>${esc(v.name || v)}</button>`).join('')}</div>`;
       const html = {
@@ -532,7 +540,7 @@
           <button class="btn soft sm" data-act="reset">איפוס</button></div>`,
         adjust: this.slider('brightness', 'בהירות', 50, 150) + this.slider('contrast', 'ניגודיות', 50, 150) + this.slider('saturation', 'רוויה', 0, 200),
         filters: tools(Object.fromEntries(Object.entries(PRESETS).map(([k, v]) => [k, { name: v.name, ico: '🎨' }])), s.preset, 'preset'),
-        ai: `<p class="muted small">אפקטים חכמים שמעבדים את התמונה. "הסרת רקע" דורשת חיבור לשירות AI בהגדרות השרת.</p>${tools(AI_EFFECTS, s.ai, 'ai')}`,
+        ai: `<p class="muted small">אפקטים חכמים שמעבדים את התמונה. "הסרת רקע" דורשת חיבור לשירות AI בהגדרות השרת.</p>${tools(this.aiList, s.ai, 'ai')}`,
         text: `<div class="field"><label>טקסט / ברכה</label><input id="ed-text" maxlength="60" value="${esc(s.text)}" placeholder="לדוגמה: מזל טוב! 💍"></div>
           <div class="fields"><div class="field"><label>צבע</label><input type="color" id="ed-color" value="${s.textColor}"></div>
           <div class="field"><label>מיקום</label><select id="ed-pos"><option value="top">למעלה</option><option value="middle">באמצע</option><option value="bottom">למטה</option></select></div></div>

@@ -74,6 +74,24 @@ async function body(req) {
   return {};
 }
 
+// ---------- עורך התמונות ומידות ההדפסה (המנהל שולט בהכול) ----------
+export const EDITOR_TOOLS = ['crop', 'adjust', 'filters', 'ai', 'text', 'stickers', 'frames', 'anim'];
+export const AI_EFFECTS = ['enhance', 'cartoon', 'sketch', 'popart', 'oil', 'removebg'];
+function editorSettings() {
+  const e = db.settings().editor || {};
+  return {
+    store: e.store !== false, // עריכה גם בחנות (לא רק באירוע)
+    tools: Object.fromEntries(EDITOR_TOOLS.map((k) => [k, !e.tools || e.tools[k] !== false])),
+    ai: Object.fromEntries(AI_EFFECTS.map((k) => [k, !e.ai || e.ai[k] !== false])),
+  };
+}
+// "6 X 9" / "6×9" -> "6x9"
+const normSize = (v) => { const m = String(v || '').replace(/[×X*]/g, 'x').replace(/\s+/g, '').match(/^(\d{1,3}(?:\.\d{1,2})?)x(\d{1,3}(?:\.\d{1,2})?)$/); return m ? `${m[1]}x${m[2]}` : ''; };
+function printTypes() {
+  const custom = db.settings().printSizes || {};
+  return PRINT_TYPES.map((t) => ({ ...t, sizes: Array.isArray(custom[t.type]) && custom[t.type].length ? custom[t.type] : t.sizes }));
+}
+
 // ---------- אירוע / אורחים ----------
 const eventEnded = (ev) => !ev.active || (ev.endsAt && Date.now() > new Date(ev.endsAt).getTime());
 const eventLink = (ev) => `${config.pagesUrl}/event.html?c=${ev.code}`;
@@ -82,7 +100,7 @@ function publicEvent(ev) {
   return {
     code: ev.code, name: ev.name, type: ev.type, date: ev.date, endsAt: ev.endsAt,
     welcomeText: ev.welcomeText, photosPerGuest: ev.photosPerGuest, printOptions: ev.printOptions,
-    allowAnimations: ev.allowAnimations !== false, ended: eventEnded(ev),
+    allowAnimations: ev.allowAnimations !== false, ended: eventEnded(ev), editor: editorSettings(),
   };
 }
 
@@ -148,9 +166,9 @@ export function applyPaymentResult({ paymentId, approved, providerRef, raw }) {
 function sanitizePrintOptions(list) {
   const out = [];
   for (const o of (Array.isArray(list) ? list : []).slice(0, 3)) { // לכל היותר 3 אפשרויות הדפסה
-    const t = PRINT_TYPES.find((x) => x.type === o.type);
+    const t = printTypes().find((x) => x.type === o.type);
     if (!t) continue;
-    const size = t.sizes.includes(o.size) ? o.size : t.sizes[0];
+    const size = normSize(o.size) || t.sizes[0]; // כל מידה שהמנהל קבע, לא רק מהרשימה
     out.push({ id: o.id || db.id('po_'), type: t.type, size, label: str(o.label, 60) || `${t.name} ${size}` });
   }
   return out;
@@ -251,7 +269,7 @@ on('GET', '/api/config', () => {
   const s = db.settings();
   return json({
     businessName: s.businessName, shippingPrice: s.shippingPrice, freeShippingFrom: s.freeShippingFrom,
-    paymentProvider: payments.activeProviderId(), aiRemoveBg: Boolean(config.ai.removeBgKey), statuses: STATUSES,
+    paymentProvider: payments.activeProviderId(), aiRemoveBg: Boolean(config.ai.removeBgKey), statuses: STATUSES, editor: editorSettings(),
   });
 });
 on('GET', '/api/cities', () => json(db.all('cities').map((c) => ({ name: c.name, region: c.region })).sort((a, b) => a.name.localeCompare(b.name, 'he'))));
@@ -553,7 +571,7 @@ on('GET', '/api/admin/dashboard', () => {
   });
 }, { admin: true });
 
-on('GET', '/api/admin/print-types', () => json(PRINT_TYPES), { admin: true });
+on('GET', '/api/admin/print-types', () => json(printTypes()), { admin: true });
 on('GET', '/api/admin/event-types', () => json(EVENT_TYPES), { admin: true });
 
 // סטטיסטיקה: מכירות ב-30 הימים האחרונים, נמכרים ביותר, ביצועי מבצעים
@@ -715,6 +733,14 @@ on('PUT', '/api/admin/settings', async (c) => {
       earnPercent: Math.min(100, Math.max(0, num(b.loyalty && b.loyalty.earnPercent, loyalty.settings().earnPercent))),
       minPoints: Math.max(0, Math.floor(num(b.loyalty && b.loyalty.minPoints, loyalty.settings().minPoints))),
     },
+    editor: b.editor && typeof b.editor === 'object' ? {
+      store: b.editor.store !== false,
+      tools: Object.fromEntries(EDITOR_TOOLS.map((k) => [k, !(b.editor.tools && b.editor.tools[k] === false)])),
+      ai: Object.fromEntries(AI_EFFECTS.map((k) => [k, !(b.editor.ai && b.editor.ai[k] === false)])),
+    } : editorSettings(),
+    printSizes: b.printSizes && typeof b.printSizes === 'object'
+      ? Object.fromEntries(PRINT_TYPES.map((t) => [t.type, [...new Set((Array.isArray(b.printSizes[t.type]) ? b.printSizes[t.type] : []).map(normSize).filter(Boolean))].slice(0, 12)]))
+      : (db.settings().printSizes || {}),
   }));
 }, { admin: true });
 

@@ -1,4 +1,4 @@
-/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders, asset, shrinkImage, PHOTOS, icon, offerInstall, club */
+/* global $, $$, api, esc, toast, store, money, fmtDate, myEvents, myOrders, asset, shrinkImage, PHOTOS, icon, offerInstall, club, PhotoEditor */
 (function () {
   let catalog = { categories: [], collections: [], products: [], promotions: [], events: [], banners: [] };
   let coupon = store.get('coupon', '');
@@ -92,7 +92,7 @@
   }
   // אחרי בחירת גודל: תמונה (אם צריך) ואז לסל
   function choose(p, variant) {
-    if (p.needsPhoto && photoPick) return addToCart(p, variant, photoPick);
+    if (p.needsPhoto && photoPick) return editPhoto(p, variant, photoPick);
     if (p.needsPhoto) return openPhotoModal(p, variant);
     return addToCart(p, variant);
   }
@@ -285,7 +285,8 @@
         <div class="photo-tile" style="width:64px;flex:none">${pic ? `<img src="${esc(asset(pic))}" alt="">` : PHOTOS.img(i.category || 'packages', '', 160, 160)}</div>
         <div style="flex:1"><b>${esc(i.name)}</b><div class="muted small">${money(unit)} ליחידה${orig > unit ? ` <span class="old-price">${money(orig)}</span>` : ''}</div>
           ${l && (l.promo || l.coupon) ? `<div class="small" style="color:var(--bad);font-weight:700">🏷️ ${[l.promo && esc(l.promo.name), l.coupon && `קופון ${esc(l.coupon.code)}`].filter(Boolean).join(' + ')}</div>` : ''}
-          <div class="row" style="gap:6px;margin-top:4px"><button class="btn soft sm" data-q="${idx}" data-d="-1" aria-label="פחות">−</button><b>${i.qty}</b><button class="btn soft sm" data-q="${idx}" data-d="1" aria-label="עוד אחד">+</button></div></div>
+          <div class="row" style="gap:6px;margin-top:4px"><button class="btn soft sm" data-q="${idx}" data-d="-1" aria-label="פחות">−</button><b>${i.qty}</b><button class="btn soft sm" data-q="${idx}" data-d="1" aria-label="עוד אחד">+</button>
+          ${i.photoUrl && editorOn() ? `<button class="btn ghost sm" data-edit="${idx}">✏️ עריכת התמונה</button>` : ''}</div></div>
         <b>${money(unit * i.qty)}</b>
       </div>`;
     }).join('');
@@ -349,6 +350,13 @@
   }
 
   $('#cart-items').addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-edit]');
+    if (ed) {
+      const i = cart[ed.dataset.edit];
+      const p = catalog.products.find((x) => x.id === i.productId);
+      if (p) { closeCart(); editPhoto(p, i.variant, i.photoUrl, i.key); }
+      return;
+    }
     const b = e.target.closest('[data-q]');
     if (!b) return;
     const i = cart[b.dataset.q];
@@ -406,21 +414,73 @@
   $('#photo-modal').addEventListener('click', (e) => {
     if (e.target.closest('[data-close]') || e.target.id === 'photo-modal') $('#photo-modal').classList.add('hidden');
     const t = e.target.closest('[data-photo]');
-    if (t) { addToCart(pending.product, pending.variant, t.dataset.photo); $('#photo-modal').classList.add('hidden'); }
+    if (t) { $('#photo-modal').classList.add('hidden'); editPhoto(pending.product, pending.variant, t.dataset.photo); }
   });
   $('#store-upload').addEventListener('change', async (e) => {
     const f = e.target.files[0];
     e.target.value = '';
     if (!f) return;
-    try {
-      const fd = new FormData();
-      fd.append('file', await shrinkImage(f), 'photo.jpg');
-      const r = await api('/api/uploads', { method: 'POST', body: fd });
-      store.set('uploadedPhotos', [r.url, ...store.get('uploadedPhotos', [])].slice(0, 30));
-      addToCart(pending.product, pending.variant, r.url);
-      $('#photo-modal').classList.add('hidden');
-    } catch (err) { toast(err.message); }
+    $('#photo-modal').classList.add('hidden');
+    if (editorOn()) return editPhoto(pending.product, pending.variant, f);
+    try { addToCart(pending.product, pending.variant, await uploadPhoto(await shrinkImage(f))); } catch (err) { toast(err.message); }
   });
+
+  // ---------- עריכת התמונה לפני ההזמנה ----------
+  // הלקוח עורך כרצונו: חיתוך לגודל המוצר, AI, פילטרים, טקסט, מדבקות ומסגרות. המנהל קובע אילו כלים פתוחים.
+  const editorOn = () => Boolean(window.PhotoEditor) && !(cfg.editor && cfg.editor.store === false);
+  async function uploadPhoto(blob) {
+    const fd = new FormData();
+    fd.append('file', blob, 'photo.jpg');
+    const r = await api('/api/uploads', { method: 'POST', body: fd });
+    store.set('uploadedPhotos', [r.url, ...store.get('uploadedPhotos', [])].slice(0, 30));
+    return r.url;
+  }
+  // יחס החיתוך לפי המידה שנבחרה ("6x9 ס"מ") או שם המוצר; מוצר בלי מידה - היחס של התמונה
+  const aspectFor = (p, variant) => {
+    const src = /\d\s*[x×]\s*\d/i.test(variant || '') ? variant : p.name;
+    return /\d\s*[x×]\s*\d/i.test(src || '') ? PhotoEditor.aspectFromSize(String(src).replace('×', 'x')) : 'free';
+  };
+  function closeEditor() { $('#editor-modal').classList.add('hidden'); $('#store-editor').innerHTML = ''; document.body.classList.remove('no-scroll'); }
+  // src: קובץ מהטלפון או כתובת של תמונה שכבר במערכת. replaceKey: עריכה מחדש של פריט שכבר בסל
+  async function editPhoto(p, variant, src, replaceKey = '') {
+    if (!editorOn()) { if (typeof src === 'string') addToCart(p, variant, src); return; }
+    let file = src;
+    if (typeof src === 'string') {
+      try {
+        const res = await fetch(asset(src));
+        if (!res.ok) throw new Error();
+        file = await res.blob();
+      } catch { toast('לא הצלחנו לפתוח את התמונה לעריכה'); return addToCart(p, variant, src); }
+    }
+    $('#editor-modal').classList.remove('hidden');
+    document.body.classList.add('no-scroll');
+    const ed = cfg.editor || {};
+    // eslint-disable-next-line no-new
+    new PhotoEditor($('#store-editor'), {
+      file, aspect: aspectFor(p, variant), allowAnimations: true, tools: ed.tools, ai: ed.ai,
+      title: `עיצוב התמונה: ${p.name}${variant ? ` (${variant})` : ''}`, doneLabel: replaceKey ? 'שמירת השינויים ✓' : 'הוספה לסל ✓',
+      onCancel: closeEditor,
+      onPrint: async (blob) => {
+        const btn = $('#ed-done');
+        if (btn) { btn.disabled = true; btn.textContent = 'שומר…'; }
+        try {
+          const url = await uploadPhoto(blob);
+          if (replaceKey) {
+            const item = cart.find((i) => i.key === replaceKey);
+            if (item) { item.photoUrl = url; item.key = `${item.productId}|${item.variant}|${url}`; saveCart(); renderCart(); toast('התמונה עודכנה ✓'); }
+          } else addToCart(p, variant, url);
+          closeEditor();
+        } catch (err) { toast(err.message); if (btn) { btn.disabled = false; btn.textContent = 'נסו שוב'; } }
+      },
+      onAnimation: (blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${p.name}.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`;
+        a.click();
+        toast('הסרטון נשמר בטלפון 🎬');
+      },
+    });
+  }
 
   // ---------- האירועים שלי ----------
   async function renderEvents() {
