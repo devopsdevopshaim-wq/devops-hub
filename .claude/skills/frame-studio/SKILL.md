@@ -1936,3 +1936,12 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - Live event → "🗂️ ניהול התמונות" (`managePhotos` in `js/live.js`): every guest photo is numbered by send order (`at`; #1 came first) with the sender's name and time. Two views (`mp.view`): "🕒 לפי סדר השליחה" and "👥 לפי אורח" (one group per name, with the count and first–last time; studio magnets in their own group). A guest select, a status select (waiting / printed / hidden) and a search over names and greetings. The choices stay while the dialog is reopened (`mp`).
 - Customer photos tab (`js/customers.js`): the same idea for the Frame Events app. `cfg.view` 'order' | 'who' (grouped by phone, else name, with "📥 כל התמונות של הלקוח"), `cfg.where` filters one event or order, every photo carries its send number per event (`it.no`), and photos always come into the project oldest first.
 - Frame Events (events-hub) now lets the admin upload a PNG frame per print option of an event (`printOptions[].frame`); the guest edits inside it (`PhotoEditor` `overlay`), so the photos that reach this tab already carry the event's frame.
+
+## 🔳 QR codes for the tasks (v124)
+- Admin view `qr` (`VIEWS.qr` in `js/admin.js`; SECTIONS "העסק", after framer; a tile in the phone's "עוד").
+  - One QR per task (`QR_TASKS`): the app page, then the admin screens through `admin.html?app=1#<view>` (home, requests, framer, customers, deals, calendar, expenses, docs, licenses, reports, notify, backup), then studio.html, the site, download.html.
+  - Links open the screen on first load (`location.hash`) and while the app is open (`hashchange`).
+  - QR drawn with `vendor/qrcode.js` (loaded on demand).
+  - "🖨️ הדפסה": prints only the sheet (`body.qr-printing`, @media print, 4 columns).
+  - "⬇ הורדה כתמונה": an A4 PNG drawn on a canvas.
+- A ready sheet in the repo: `frame-studio/media/qr/qr-tasks-a4.pdf` and `.png`, with the live site's addresses. Made from a scratchpad script with Playwright; every code was decoded with jsQR (16/16).

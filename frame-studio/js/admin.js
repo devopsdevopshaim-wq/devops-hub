@@ -167,7 +167,7 @@
 
   /* ---------- the sections ---------- */
   var SECTIONS = [
-    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['requests', '📥', 'בקשות הזמנה'], ['calendar', '🗓️', 'יומן'], ['deals', '📑', 'עסקאות ותשלומים'], ['framer', '🎨', 'עיצוב מסגרת'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['tax', '🧮', 'רואה חשבון ומיסים'], ['expenses', '💸', 'הוצאות ורכישות'], ['suppliers', '🏪', 'ספקים'], ['docs', '📁', 'מסמכים'], ['notify', '🔔', 'התראות וסיכום שבועי'], ['customers', '👥', 'לקוחות'], ['licenses', '🔑', 'רישיונות סטודיו'], ['payset', '🏦', 'תשלום ובנק'],
+    ['home', '🏠', 'סקירה'], ['-', '', 'העסק'], ['requests', '📥', 'בקשות הזמנה'], ['calendar', '🗓️', 'יומן'], ['deals', '📑', 'עסקאות ותשלומים'], ['framer', '🎨', 'עיצוב מסגרת'], ['qr', '🔳', 'קודי QR למשימות'], ['reports', '📊', 'דוחות חודשי ושנתי'], ['tax', '🧮', 'רואה חשבון ומיסים'], ['expenses', '💸', 'הוצאות ורכישות'], ['suppliers', '🏪', 'ספקים'], ['docs', '📁', 'מסמכים'], ['notify', '🔔', 'התראות וסיכום שבועי'], ['customers', '👥', 'לקוחות'], ['licenses', '🔑', 'רישיונות סטודיו'], ['payset', '🏦', 'תשלום ובנק'],
     ['-', '', 'האתר'], ['biz', '🏷️', 'פרטי העסק'], ['texts', '✍️', 'טקסטים באתר'], ['packages', '💰', 'חבילות ומחירים'], ['faq', '❓', 'שאלות נפוצות'],
     ['reviews', '⭐', 'המלצות'], ['busy', '📅', 'תאריכים תפוסים'], ['frames', '🖼️', 'מסגרות ללקוחות'], ['events', '🎉', 'סוגי אירועים'],
     ['-', '', 'קישורים'], ['@./', '🌐', 'האתר ללקוחות'], ['@design.html', '🎨', 'עורך המסגרות ללקוחות'], ['@studio.html', '🖼️', 'הסטודיו'], ['@download.html', '⬇', 'דף ההורדה'], ['@app.html', '📲', 'אפליקציה לטלפון'], ['-', '', ''], ['backup', '💾', 'גיבוי וייצוא לאקסל'], ['account', '🔐', 'אבטחה וחשבון']
@@ -447,6 +447,67 @@
   };
   VIEWS.licenses = function (m) { FS.adminLicenses(m, ctx); };
   VIEWS.framer = function (m) { FS.frameAuto(m, ctx); };
+  /* 🔳 QR codes: one for every task. Scanned with the phone's camera, each opens that screen in the admin app (or the
+     page itself). Printed on one A4 sheet to hang by the desk or the printer. vendor/qrcode.js, drawn here. */
+  var QR_TASKS = [
+    ['app', '📲', 'פתיחת האפליקציה', 'דף ההתקנה בטלפון', 'app.html'],
+    ['home', '🏠', 'סקירה', 'מה מחכה לי היום', '#home'],
+    ['requests', '📥', 'בקשות הזמנה', 'אישור ודחייה', '#requests'],
+    ['framer', '🎨', 'עיצוב מסגרת', 'מסגרת מההזמנה', '#framer'],
+    ['customers', '👥', 'לקוחות', 'כל הנרשמים', '#customers'],
+    ['deals', '📑', 'עסקאות ותשלומים', 'מקדמות ויתרות', '#deals'],
+    ['calendar', '🗓️', 'יומן', 'אירועים ותאריכים', '#calendar'],
+    ['expenses', '💸', 'קבלה / הוצאה', 'צילום ורישום', '#expenses'],
+    ['docs', '📁', 'מסמכים', 'חוזים ואישורים', '#docs'],
+    ['licenses', '🔑', 'רישיונות אופטימוס', 'ניסיון, שדרוג, תשלום', '#licenses'],
+    ['reports', '📊', 'דוחות', 'חודשי ושנתי', '#reports'],
+    ['notify', '🔔', 'התראות', 'וואטסאפ וסיכום שבועי', '#notify'],
+    ['backup', '💾', 'גיבוי', 'גיבוי וייצוא לאקסל', '#backup'],
+    ['studio', '🖼️', 'הסטודיו', 'אופטימוס בדפדפן', 'studio.html'],
+    ['site', '🌐', 'האתר ללקוחות', 'מה הלקוחות רואים', './'],
+    ['download', '⬇', 'הורדת אופטימוס', 'התוכנה למחשב', 'download.html']
+  ];
+  function qrLib() {
+    if (window.qrcode) return Promise.resolve(window.qrcode);
+    return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = 'vendor/qrcode.js'; s.onload = function () { ok(window.qrcode); }; s.onerror = no; document.head.appendChild(s); });
+  }
+  function qrCanvas(q, text, px) {
+    var Q = q(0, 'M'); Q.addData(text); Q.make();
+    var n = Q.getModuleCount(), c = document.createElement('canvas'); c.width = c.height = (n + 4) * px;
+    var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.fillStyle = '#111';
+    for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (Q.isDark(r, k)) g.fillRect((k + 2) * px, (r + 2) * px, px, px);
+    return c;
+  }
+  VIEWS.qr = function (m) {
+    head(m, '🔳 קודי QR למשימות', 'סורקים במצלמה של הטלפון, והמסך הנכון נפתח באפליקציה. מדפיסים דף אחד ותולים ליד השולחן או ליד המדפסת.');
+    var base = new URL('admin.html?app=1', location.href).href;
+    m.insertAdjacentHTML('beforeend', '<div class="adm-row"><button class="btn gold" id="qr-print">🖨️ הדפסת דף הקודים</button><button class="btn line" id="qr-png">⬇ הורדה כתמונה</button></div>' +
+      '<div class="qr-sheet" id="qr-sheet"><header><b>' + esc(draft && draft.name || 'פריים מגנטים') + ' · קודי QR למשימות</b><small>סורקים במצלמה, והמסך נפתח באפליקציה</small></header><div class="qr-grid">' +
+      QR_TASKS.map(function (t) { var url = t[4].charAt(0) === '#' ? base + t[4] : new URL(t[4], location.href).href; return '<a class="qr-c" href="' + esc(url) + '" target="_blank" rel="noopener" data-url="' + esc(url) + '"><span class="qr-i">…</span><b>' + t[1] + ' ' + esc(t[2]) + '</b><small>' + esc(t[3]) + '</small></a>'; }).join('') + '</div></div>');
+    qrLib().then(function (q) {
+      $$('#qr-sheet .qr-c').forEach(function (a) { var i = $('.qr-i', a); i.textContent = ''; i.appendChild(qrCanvas(q, a.dataset.url, 6)); });
+    }, function () { FS.toast('ספריית ה־QR לא נטענה. בודקים חיבור ומרעננים.'); });
+    $('#qr-print').addEventListener('click', function () { document.body.classList.add('qr-printing'); setTimeout(function () { window.print(); setTimeout(function () { document.body.classList.remove('qr-printing'); }, 500); }, 50); });
+    $('#qr-png').addEventListener('click', function () {
+      /* one A4 sheet (150 dpi) drawn on a canvas: 4 columns × 4 rows */
+      qrLib().then(function (q) {
+        var W = 1240, H = 1754, c = document.createElement('canvas'); c.width = W; c.height = H; var g = c.getContext('2d');
+        g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.direction = 'rtl'; g.textAlign = 'center'; g.fillStyle = '#17130e';
+        g.font = '800 44px Heebo, sans-serif'; g.fillText((draft && draft.name || 'פריים מגנטים') + ' · קודי QR למשימות', W / 2, 90);
+        g.font = '400 26px Heebo, sans-serif'; g.fillStyle = '#6b6357'; g.fillText('סורקים במצלמה של הטלפון, והמסך הנכון נפתח באפליקציה', W / 2, 135);
+        var cw = W / 4, ch = (H - 190) / 4;
+        $$('#qr-sheet .qr-c').forEach(function (a, i) {
+          var t = QR_TASKS[i], col = 3 - (i % 4), row = Math.floor(i / 4), x0 = col * cw, y0 = 180 + row * ch, qc = qrCanvas(q, a.dataset.url, 6), s = 230;
+          g.strokeStyle = '#e6dcc6'; g.lineWidth = 2; g.strokeRect(x0 + 14, y0 + 8, cw - 28, ch - 20);
+          g.drawImage(qc, x0 + (cw - s) / 2, y0 + 30, s, s);
+          g.fillStyle = '#17130e'; g.font = '700 28px Heebo, sans-serif'; g.fillText(t[1] + ' ' + t[2], x0 + cw / 2, y0 + s + 78);
+          g.fillStyle = '#8a8172'; g.font = '400 21px Heebo, sans-serif'; g.fillText(t[3], x0 + cw / 2, y0 + s + 112);
+        });
+        c.toBlob(function (b) { var l = document.createElement('a'); l.href = URL.createObjectURL(b); l.download = 'קודי-QR-למשימות.png'; l.click(); setTimeout(function () { URL.revokeObjectURL(l.href); }, 4000); }, 'image/png');
+      });
+    });
+  };
+
   VIEWS.tax = function (m) { FS.adminTax(m, ctx); };
   ['expenses', 'suppliers', 'backup'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminBuy[k](m, ctx); }; });
   ['docs', 'notify'].forEach(function (k) { VIEWS[k] = function (m) { FS.adminNotify[k](m, ctx); }; });
@@ -510,9 +571,10 @@
       out: '<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4M6 12h10"/>',
       x: '<path d="M6 6l12 12M18 6L6 18"/>',
       arrow: '<path d="M15 6l-6 6 6 6"/>',
+      qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>',
       brush: '<path d="M14 4l6 6-8.5 8.5a3 3 0 0 1-2.1.9H6v-3.4a3 3 0 0 1 .9-2.1z"/><path d="M12 6l6 6M4 21c1.5 0 2-1 2-2"/>'
     };
-    var SEC_IC = { framer: 'brush', home: 'home', requests: 'inbox', calendar: 'cal', deals: 'deal', reports: 'chart', tax: 'calc', expenses: 'receipt', suppliers: 'truck', docs: 'folder', notify: 'bell', customers: 'users', licenses: 'key', payset: 'bank',
+    var SEC_IC = { qr: 'qr', framer: 'brush', home: 'home', requests: 'inbox', calendar: 'cal', deals: 'deal', reports: 'chart', tax: 'calc', expenses: 'receipt', suppliers: 'truck', docs: 'folder', notify: 'bell', customers: 'users', licenses: 'key', payset: 'bank',
       biz: 'tag', texts: 'pen', packages: 'box', faq: 'help', reviews: 'star', busy: 'calx', frames: 'photo', events: 'party', backup: 'save', account: 'lock',
       '@./': 'globe', '@design.html': 'pen', '@studio.html': 'spark', '@download.html': 'save', '@app.html': 'phone' };
     function ic(k) { return '<svg class="ai" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (P[k] || P.deal) + '</svg>'; }
