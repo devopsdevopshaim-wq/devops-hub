@@ -446,3 +446,9 @@ input:focus, select:focus, textarea:focus { border-color: #C9A04A; box-shadow: 0
 .chart rect { fill: #C9A04A; }
 .chart rect:hover { fill: #3A2440; }
 .tool-toggles .check { background: #F5EDE1; }
+
+/* מסגרת האירוע: בניהול ובדף האורח */
+.po-frame-prev { display: inline-grid; place-items: center; width: 44px; height: 56px; border-radius: 6px; background: repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 0 0/10px 10px; overflow: hidden; font-size: .8rem; color: var(--muted); }
+.po-frame-prev img { width: 100%; height: 100%; object-fit: contain; }
+.opt-art.has-frame { background: linear-gradient(135deg, #F5E6D8, #EAD3C7); }
+.opt-art.has-frame img { width: 100%; height: 100%; object-fit: contain; }

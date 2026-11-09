@@ -153,7 +153,11 @@
         <div><label>סוג</label><select class="po-type">${ref.printTypes.map((x) => `<option value="${x.type}" ${x.type === t.type ? 'selected' : ''}>${x.name}</option>`).join('')}</select></div>
         <div><label>גודל (ס"מ) - כל מידה שתרצו</label><input class="po-size" dir="ltr" list="sizes-${t.type}" value="${esc(o.size || t.sizes[0])}" placeholder="למשל 7x10" required></div>
         <div><label>שם לתצוגה</label><input class="po-label" value="${esc(o.label || '')}" placeholder="אוטומטי"></div>
-        <input type="hidden" class="po-id" value="${esc(o.id || '')}">
+        <input type="hidden" class="po-id" value="${esc(o.id || '')}"><input type="hidden" class="po-frame" value="${esc(o.frame || '')}">
+        <div class="po-frame-box"><label>מסגרת האירוע (PNG שקוף)</label><div class="row" style="gap:6px;flex-wrap:nowrap">
+          <span class="po-frame-prev">${o.frame ? `<img src="${esc(asset(o.frame))}" alt="">` : '—'}</span>
+          <label class="btn soft sm" style="margin:0">${o.frame ? 'החלפה' : '🖼️ העלאה'}<input type="file" accept="image/png,image/webp" class="hidden po-frame-file"></label>
+          ${o.frame ? '<button type="button" class="btn ghost sm po-frame-del">✕</button>' : ''}</div></div>
         <div><button type="button" class="btn ghost sm po-del">הסרה</button></div></div>`;
     }
   }
@@ -161,6 +165,7 @@
   function printOptionsEditor(list = []) {
     return `${ref.printTypes.map((t) => `<datalist id="sizes-${t.type}">${t.sizes.map((z) => `<option value="${esc(z)}">`).join('')}</datalist>`).join('')}
       <div class="card flat" style="margin-top:12px"><h3>אפשרויות הדפסה לאורחים (עד 3)</h3>
+      <p class="muted small">🖼️ לכל אפשרות אפשר להעלות מסגרת של האירוע (PNG עם חלון שקוף, באותו יחס כמו המידה): האורח עורך את התמונה כבר בתוך המסגרת, והיא נשלחת להדפסה איתה.</p>
       <p class="muted small">קובעים סוג, מידה ושם לכל אפשרות. המידה חופשית (רוחב x גובה בס"מ); הרשימה המוצעת נערכת ב"סליקה והגדרות" ← מידות הדפסה.</p><div id="po-list">${list.map((o) => poRow(o)).join('')}</div>
       <button type="button" class="btn soft sm" id="po-add">➕ הוספת אפשרות</button></div>`;
   }
@@ -180,13 +185,44 @@
       updateAdd();
     };
     list.addEventListener('change', (e) => { if (e.target.classList.contains('po-type')) refreshSizes(e.target.closest('.po-row')); });
-    list.addEventListener('click', (e) => { if (e.target.classList.contains('po-del')) { e.target.closest('.po-row').remove(); updateAdd(); } });
+    list.addEventListener('click', (e) => {
+      if (e.target.classList.contains('po-del')) { e.target.closest('.po-row').remove(); updateAdd(); }
+      if (e.target.classList.contains('po-frame-del')) { const r = e.target.closest('.po-row'); $('.po-frame', r).value = ''; r.outerHTML = poRow(rowData(r)); }
+    });
+    // מסגרת לאפשרות ההדפסה: PNG עם חלון שקוף. נשמרת כ-PNG (שקיפות), ומוקטנת רק אם היא גדולה מדי
+    list.addEventListener('change', async (e) => {
+      if (!e.target.classList.contains('po-frame-file')) return;
+      const f = e.target.files[0]; const r = e.target.closest('.po-row');
+      if (!f) return;
+      try {
+        toast('מעלה את המסגרת…');
+        const fd = new FormData();
+        fd.append('file', f.size > 1.8e6 ? await shrinkPng(f) : f, 'frame.png');
+        const up = await api(`${A}/uploads`, { method: 'POST', body: fd });
+        $('.po-frame', r).value = up.url;
+        r.outerHTML = poRow(rowData(r));
+        toast('המסגרת נוספה. לחצו "שמירה" באירוע.');
+      } catch (err) { toast(err.message); }
+    });
     updateAdd();
   }
 
-  const collectPrintOptions = (form) => ({
-    printOptions: $$('.po-row', form).map((r) => ({ id: $('.po-id', r).value || undefined, type: $('.po-type', r).value, size: $('.po-size', r).value, label: $('.po-label', r).value })),
-  });
+  const rowData = (r) => ({ id: $('.po-id', r).value || undefined, type: $('.po-type', r).value, size: $('.po-size', r).value, label: $('.po-label', r).value, frame: $('.po-frame', r).value });
+  const collectPrintOptions = (form) => ({ printOptions: $$('.po-row', form).map(rowData) });
+  // PNG גדול מדי: מקטינים בדפדפן ושומרים על השקיפות
+  function shrinkPng(file, maxSide = 2000) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file); const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        c.toBlob((b) => (b ? resolve(b) : reject(new Error('המסגרת לא נקראה'))), 'image/png');
+      };
+      img.onerror = () => reject(new Error('המסגרת לא נקראה'));
+      img.src = url;
+    });
+  }
 
   function editEvent(ev) {
     editForm({

@@ -169,7 +169,8 @@ function sanitizePrintOptions(list) {
     const t = printTypes().find((x) => x.type === o.type);
     if (!t) continue;
     const size = normSize(o.size) || t.sizes[0]; // כל מידה שהמנהל קבע, לא רק מהרשימה
-    out.push({ id: o.id || db.id('po_'), type: t.type, size, label: str(o.label, 60) || `${t.name} ${size}` });
+    const frame = IMG_RE.test(String(o.frame || '')) ? o.frame : ''; // מסגרת PNG של האירוע לאפשרות הזו
+    out.push({ id: o.id || db.id('po_'), type: t.type, size, label: str(o.label, 60) || `${t.name} ${size}`, frame });
   }
   return out;
 }

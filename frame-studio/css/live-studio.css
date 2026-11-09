@@ -113,3 +113,26 @@ body.staff-mode .sb-more, body.staff-mode .lv-owner, body.staff-mode .lv-staff, 
 .cu-mt .cu-list { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
 .cu-mt #cu-q, .cu-mt .cu-sum { max-width: 520px; }
 .mt-cutab { position: relative; }
+
+/* 🗂️ the event's photos: by send order or by guest */
+.lv-mp-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+.lv-mp-bar select, .lv-mp-bar input { width: auto; min-width: 150px; }
+.lv-seg { display: inline-flex; gap: 4px; }
+.lv-seg button { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(214,183,126,.35); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.lv-seg button.on { background: var(--champagne, #D6B77E); color: #1b1410; border-color: transparent; font-weight: 700; }
+.lv-grid figure { position: relative; }
+.lv-no { position: absolute; top: 6px; inset-inline-start: 6px; padding: 1px 8px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; font: 700 12px/18px sans-serif; font-style: normal; }
+.lv-who { margin: 14px 0; }
+.lv-who h3 { margin: 0 0 8px; font-size: 15px; }
+.lv-who h3 small { font-weight: 400; opacity: .7; margin-inline-start: 6px; }
+
+/* customer photos: numbered in send order, grouped by customer */
+.cu-item { position: relative; }
+.cu-no { position: absolute; top: 12px; inset-inline-start: 12px; padding: 0 7px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; font: 700 11px/18px sans-serif; font-style: normal; z-index: 1; }
+#cu-where { width: 100%; margin-bottom: 6px; }
+.cu-who { display: grid; gap: 8px; padding: 10px; border-radius: 16px; background: rgba(214,183,126,.07); border: 1px solid rgba(214,183,126,.25); }
+.cu-who header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.cu-who header a { color: inherit; }
+.cu-who header .btn { margin-inline-start: auto; }
+.cu-mt .cu-who { grid-column: 1 / -1; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+.cu-mt .cu-who header { grid-column: 1 / -1; }

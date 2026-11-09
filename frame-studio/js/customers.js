@@ -10,7 +10,7 @@
   var FS = window.FS, $ = FS.$, $$ = FS.$$, S = FS.state, esc = FS.esc;
   var KS = 'fs-regaim', API_DEF = 'https://regaim-events.devopsdevopshaim.workers.dev';
   function load(d) { try { return JSON.parse(localStorage.getItem(KS)) || d; } catch (e) { return d; } }
-  var cfg = Object.assign({ token: '', api: API_DEF, src: 'all', st: 'pending', auto: false, print: false, seen: [] }, load({}));
+  var cfg = Object.assign({ token: '', api: API_DEF, src: 'all', st: 'pending', view: 'order', where: '', auto: false, print: false, seen: [] }, load({}));
   function keep() { try { localStorage.setItem(KS, JSON.stringify(cfg)); } catch (e) { /* storage blocked */ } }
   var list = [], q = '', loading = false, timer = 0, lastErr = '';
   var ST = { pending: 'ממתינה', printing: 'בהדפסה', printed: 'הודפסה', delivered: 'נמסרה', rejected: 'נדחתה' };
@@ -53,11 +53,31 @@
     var s = q.trim().toLowerCase(), digits = s.replace(/\D/g, '');
     return list.filter(function (it) {
       if (cfg.src !== 'all' && it.source !== cfg.src) return false;
+      if (cfg.where && it.where !== cfg.where) return false;
       if (cfg.st === 'pending' && !(it.status === 'pending' || it.status === 'printing')) return false;
       if (cfg.st === 'done' && !(it.status === 'printed' || it.status === 'delivered')) return false;
       if (!s) return true;
       return (it.name + ' ' + it.where + ' ' + it.product + ' ' + (it.city || '')).toLowerCase().indexOf(s) >= 0 || (digits.length > 2 && String(it.phone).replace(/\D/g, '').indexOf(digits) >= 0);
     });
+  }
+  /* the send order: #1 is the first photo that reached the server, per event (or per order) */
+  function number() {
+    var per = {};
+    list.slice().sort(function (a, b) { return String(a.createdAt).localeCompare(String(b.createdAt)); }).forEach(function (it) { per[it.where] = (per[it.where] || 0) + 1; it.no = per[it.where]; });
+  }
+  var whoKey = function (it) { return String(it.phone || '').replace(/\D/g, '') || (it.name || '').trim() || 'ללא שם'; };
+  function listHtml(items) {
+    if (!items.length) return '<p class="hint">אין תמונות כאן.</p>';
+    items = items.slice().sort(function (a, b) { return String(a.createdAt).localeCompare(String(b.createdAt)); });
+    if (cfg.view !== 'who') return items.map(card).join('');
+    var groups = {}, order = [];
+    items.forEach(function (it) { var k = whoKey(it); if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(it); });
+    return order.map(function (k) {
+      var g = groups[k], f = g[0];
+      return '<section class="cu-who" data-who="' + esc(k) + '"><header><b>👤 ' + esc(f.name || 'ללא שם') + '</b>' + (f.phone ? ' <a dir="ltr" href="tel:' + esc(f.phone) + '">' + esc(f.phone) + '</a>' : '') +
+        '<span class="hint">' + g.length + ' תמונות · ' + esc(when(f.createdAt)) + (g.length > 1 ? ' עד ' + esc(when(g[g.length - 1].createdAt)) : '') + '</span>' +
+        '<button class="btn small primary" data-who-all="' + esc(k) + '">📥 כל התמונות של הלקוח</button></header>' + g.map(card).join('') + '</section>';
+    }).join('');
   }
   function when(iso) { var d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }); }
   function wa(it) { var p = String(it.phone || '').replace(/\D/g, '').replace(/^0/, '972'); return p ? 'https://wa.me/' + p + '?text=' + encodeURIComponent('שלום ' + it.name + ', ') : ''; }
@@ -84,20 +104,25 @@
       '<div class="cu-sum"><span>ממתינות <b>' + waiting + '</b></span><span>מאירועים <b>' + list.filter(function (it) { return it.source === 'event'; }).length + '</b></span><span>מהחנות <b>' + list.filter(function (it) { return it.source === 'order'; }).length + '</b></span><span>לקוחות <b>' + Object.keys(list.reduce(function (o, it) { o[it.phone || it.name] = 1; return o; }, {})).length + '</b></span></div>' +
       '<input id="cu-q" type="search" placeholder="🔎 שם, טלפון, אירוע או מוצר" value="' + esc(q) + '">' +
       '<div class="cu-seg" data-k="src">' + [['all', 'הכול'], ['event', '📸 מאירועים'], ['order', '🛍️ מהחנות']].map(function (x) { return '<button type="button" class="btn small' + (cfg.src === x[0] ? ' on' : '') + '" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="cu-seg" data-k="view">' + [['order', '🕒 לפי סדר השליחה'], ['who', '👥 לפי לקוח']].map(function (x) { return '<button type="button" class="btn small' + (cfg.view === x[0] ? ' on' : '') + '" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      '<select id="cu-where"><option value="">כל האירועים וההזמנות</option>' + Object.keys(list.reduce(function (o, it) { o[it.where] = 1; return o; }, {})).map(function (w) { return '<option' + (cfg.where === w ? ' selected' : '') + ' value="' + esc(w) + '">' + esc(w) + '</option>'; }).join('') + '</select>' +
       '<div class="cu-seg" data-k="st">' + [['pending', 'ממתינות'], ['done', 'הודפסו'], ['all', 'הכול']].map(function (x) { return '<button type="button" class="btn small' + (cfg.st === x[0] ? ' on' : '') + '" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       '<div class="row2"><button class="btn primary" id="cu-all"' + (items.length ? '' : ' disabled') + '>📥 כל המוצגות לעריכה (' + items.length + ')</button><button class="btn" id="cu-ref">🔄 רענון</button></div>' +
       '<label class="check"><input type="checkbox" id="cu-auto"' + (cfg.auto ? ' checked' : '') + '> קליטה אוטומטית: כל תמונה חדשה נכנסת לפרויקט לבד</label>' +
       '<label class="check"><input type="checkbox" id="cu-print"' + (cfg.print ? ' checked' : '') + (cfg.auto ? '' : ' disabled') + '> 🖨️ ולהדפיס אותה מיד (בגודל שהלקוח בחר)</label>' +
-      '<div class="cu-list">' + (loading && !list.length ? '<p class="hint">טוען…</p>' : items.map(card).join('') || '<p class="hint">אין תמונות כאן.</p>') + '</div>' +
+      '<div class="cu-list">' + (loading && !list.length ? '<p class="hint">טוען…</p>' : listHtml(items)) + '</div>' +
       '<p class="hint">' + (lastErr ? '⚠️ ' + esc(lastErr) + ' · ' : '') + 'מה שמודפס מהסטודיו מסומן "הודפסה" אצל הלקוח באפליקציה. <button class="btn small" id="cu-out">יציאה</button></p>';
     $('#cu-q', box).addEventListener('input', function () { q = this.value; var pos = this.selectionStart; draw(); var i = $('#cu-q', box); i.focus(); i.setSelectionRange(pos, pos); });
     $$('.cu-seg', box).forEach(function (g) { g.addEventListener('click', function (e) { var b = e.target.closest('[data-v]'); if (!b) return; cfg[g.dataset.k] = b.dataset.v; keep(); draw(); }); });
     $('#cu-ref', box).addEventListener('click', refresh);
     $('#cu-out', box).addEventListener('click', signOut);
     $('#cu-all', box).addEventListener('click', function () { bring(items); });
+    $('#cu-where', box).addEventListener('change', function () { cfg.where = this.value; keep(); draw(); });
     $('#cu-auto', box).addEventListener('change', function () { cfg.auto = this.checked; if (cfg.auto) cfg.seen = list.map(function (it) { return it.id; }); keep(); cfg.auto ? startAuto() : stopAuto(); draw(); if (cfg.auto) FS.toast('🔴 קליטה אוטומטית: תמונות חדשות ייכנסו לבד', 4000); });
     $('#cu-print', box).addEventListener('change', function () { cfg.print = this.checked; keep(); });
     $('.cu-list', box).addEventListener('click', function (e) {
+      var wb = e.target.closest('[data-who-all]');
+      if (wb) { bring(items.filter(function (it) { return whoKey(it) === wb.dataset.whoAll; }).sort(function (a, b) { return String(a.createdAt).localeCompare(String(b.createdAt)); })); return; }
       var b = e.target.closest('[data-act]'); if (!b) return;
       var it = list.filter(function (x) { return x.id === b.closest('[data-id]').dataset.id; })[0]; if (!it) return;
       if (b.dataset.act === 'edit') bring([it]);
@@ -107,7 +132,7 @@
   function card(it) {
     var w = wa(it);
     return '<div class="cu-item" data-id="' + esc(it.id) + '"><img src="' + esc(imgUrl(it.url)) + '" alt="" loading="lazy" crossorigin="anonymous">' +
-      '<div class="cu-info"><b>' + esc(it.name || 'ללא שם') + '</b>' +
+      '<i class="cu-no">#' + (it.no || '') + '</i><div class="cu-info"><b>' + esc(it.name || 'ללא שם') + '</b>' +
       (it.phone ? '<a dir="ltr" href="tel:' + esc(it.phone) + '">' + esc(it.phone) + '</a>' : '<span class="hint">אין טלפון</span>') +
       '<span>' + (it.source === 'event' ? '📸 ' : '🛍️ ') + esc(it.where) + (it.city ? ' · ' + esc(it.city) : '') + '</span>' +
       '<span>' + esc(it.product) + (it.size ? ' · <b>' + esc(it.size.replace('x', '×')) + ' ס״מ</b>' : '') + (it.qty > 1 ? ' · ×' + it.qty : '') + '</span>' +
@@ -121,7 +146,7 @@
     if (!cfg.token) { draw(); return Promise.resolve(); }
     loading = true;
     return api('/api/admin/customer-photos').then(function (d) {
-      loading = false; lastErr = ''; list = d; draw();
+      loading = false; lastErr = ''; list = d; number(); draw();
       if (cfg.auto) pullNew();
     }, function (e) { loading = false; lastErr = e.message; if (e.status === 401) { lastErr = 'צריך להתחבר מחדש'; signOut(); } else draw(); });
   }
@@ -143,6 +168,7 @@
   }
   function bring(items) {
     if (!items.length) return Promise.resolve([]);
+    items = items.slice().sort(function (a, b) { return String(a.createdAt).localeCompare(String(b.createdAt)); });
     var got = [], i = 0;
     FS.busy('מוריד תמונות לקוחות…');
     return items.reduce(function (ch, it) {
