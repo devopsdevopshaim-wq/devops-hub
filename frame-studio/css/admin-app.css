@@ -167,3 +167,6 @@ body.adm-app:has(#adm-dirty:not([hidden])) .adm-main { padding-bottom: 90px; }
 .adm-app #app-bar { top: auto !important; bottom: calc(var(--ap-tabs) + 10px) !important; }
 body.adm-app:has(#app-bar) #adm-dirty { bottom: calc(var(--ap-tabs) + 96px); }
 body.adm-app:has(#app-bar) .adm-main { padding-bottom: 100px; }
+/* signed out (the login screen): no tabs, no top-bar buttons */
+body.adm-app:has(#app[hidden]) #adm-tabs, body.adm-app:has(#app[hidden]) #adm-topx, body.adm-app:has(#app[hidden]) #adm-dirty { display: none !important; }
+body.adm-app:has(#app[hidden]) { padding-bottom: 0; }
