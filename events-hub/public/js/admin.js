@@ -242,7 +242,8 @@
         <canvas data-qr="${esc(e.link)}" aria-label="קוד QR לאירוע" style="width:160px;height:160px;margin:0 auto;background:#fff;border-radius:8px"></canvas>
         <div class="small">🔗 <a href="${esc(e.link)}" target="_blank">${esc(e.link)}</a></div>
         <div class="small">📸 ${e.photosPerGuest} תמונות לאורח · 👥 ${e.guests} אורחים · 🖨️ ${e.photos} הדפסות</div>
-        <div class="small">${e.printOptions.map((o) => `<span class="badge primary">${esc(o.label)}</span>`).join(' ')}</div>
+        <div class="small">${e.printOptions.map((o) => `<span class="badge primary">${o.frame ? '🖼️ ' : ''}${esc(o.label)}</span>`).join(' ')}</div>
+        <button class="btn gold sm" data-frame="${e.id}">🖼️ ${e.printOptions.some((o) => o.frame) ? 'מסגרת האירוע ✓ (החלפה)' : 'מסגרת לאירוע'}</button>
         <div class="row"><button class="btn sm" data-photos="${e.id}">תמונות להדפסה</button><button class="btn soft sm" data-edit="${e.id}">עריכה</button>
         <button class="btn ghost sm" data-qrdl="${esc(e.link)}" data-name="qr-${esc(e.code)}.png">הורדת QR</button></div>
       </div>`).join('') || '<p class="muted">אין אירועים עדיין</p>'}</div>`;
@@ -250,7 +251,48 @@
     if (arg === 'new') editEvent(null);
     $$('[data-edit]').forEach((b) => { b.onclick = () => editEvent(list.find((e) => e.id === b.dataset.edit)); });
     $$('[data-photos]').forEach((b) => { b.onclick = () => eventPhotos(list.find((e) => e.id === b.dataset.photos)); });
+    $$('[data-frame]').forEach((b) => { b.onclick = () => eventFrames(list.find((e) => e.id === b.dataset.frame)); });
     $$('canvas[data-qr]').forEach((c) => drawQR(c, c.dataset.qr));
+    if (arg && arg.frameFor) { const ev = list.find((e) => e.id === arg.frameFor); if (ev) eventFrames(ev); }
+  }
+
+  // 🖼️ מסגרת האירוע: PNG עם חלון שקוף לכל אפשרות הדפסה. האורח שסורק את ה-QR עורך את התמונה כבר בתוך המסגרת
+  function eventFrames(ev) {
+    const px = (size) => { const m = String(size).match(/([\d.]+)x([\d.]+)/); return m ? `${Math.round(m[1] * 200)}×${Math.round(m[2] * 200)}` : ''; };
+    openModal(`<div class="row between"><h2 style="margin:0">🖼️ מסגרת לאירוע: ${esc(ev.name)}</h2><button class="icon-btn" data-close aria-label="סגירה">✕</button></div>
+      <p class="muted">מעלים קובץ PNG של המסגרת, עם חלון שקוף במקום שבו תהיה התמונה. האורחים שסורקים את ה-QR יערכו את התמונה כבר בתוך המסגרת, והיא תודפס איתה.</p>
+      <div class="stack">${ev.printOptions.map((o, i) => `<div class="card flat row" style="align-items:center;gap:14px">
+        <span class="po-frame-prev" style="width:84px;height:112px">${o.frame ? `<img src="${esc(asset(o.frame))}" alt="">` : 'אין'}</span>
+        <div style="flex:1;min-width:180px"><b>${esc(o.label)}</b><div class="muted small">גודל ${esc(o.size)} ס"מ · מומלץ PNG בגודל ${px(o.size)} פיקסלים (אותו יחס)</div></div>
+        <div class="row" style="gap:6px"><label class="btn ${o.frame ? 'soft' : 'gold'} sm" style="margin:0">${o.frame ? 'החלפת מסגרת' : '⬆️ העלאת מסגרת'}<input type="file" accept="image/png,image/webp" class="hidden" data-fr-up="${i}"></label>
+        ${o.frame ? `<button class="btn ghost sm" data-fr-del="${i}">הסרה</button>` : ''}</div></div>`).join('')}</div>`);
+    const save = async (opts, msg) => {
+      try {
+        await api(`${A}/events/${ev.id}`, { method: 'PUT', body: { ...ev, printOptions: opts } });
+        toast(msg);
+        events({ frameFor: ev.id });
+      } catch (err) { toast(err.message); }
+    };
+    $$('[data-fr-up]').forEach((inp) => {
+      inp.onchange = async () => {
+        const f = inp.files[0]; const i = Number(inp.dataset.frUp); const o = ev.printOptions[i];
+        if (!f) return;
+        try {
+          toast('מעלה את המסגרת…');
+          const dims = await new Promise((res) => { const u = URL.createObjectURL(f); const im = new Image(); im.onload = () => { res([im.naturalWidth, im.naturalHeight]); URL.revokeObjectURL(u); }; im.onerror = () => res(null); im.src = u; });
+          const m = String(o.size).match(/([\d.]+)x([\d.]+)/);
+          if (dims && m) {
+            const want = m[1] / m[2]; const got = dims[0] / dims[1];
+            if (Math.abs(got - want) > 0.03 && Math.abs(got - 1 / want) > 0.03) toast(`שימו לב: המסגרת ביחס ${dims[0]}×${dims[1]} ולא ${o.size}. היא תימתח לגודל ההדפסה.`);
+          }
+          const fd = new FormData();
+          fd.append('file', f.size > 1.8e6 ? await shrinkPng(f) : f, 'frame.png');
+          const up = await api(`${A}/uploads`, { method: 'POST', body: fd });
+          await save(ev.printOptions.map((x, j) => (j === i ? { ...x, frame: up.url } : x)), 'המסגרת נשמרה ✓ האורחים כבר רואים אותה');
+        } catch (err) { toast(err.message); }
+      };
+    });
+    $$('[data-fr-del]').forEach((b) => { b.onclick = () => save(ev.printOptions.map((x, j) => (j === Number(b.dataset.frDel) ? { ...x, frame: '' } : x)), 'המסגרת הוסרה'); });
   }
 
   // ---------- QR (נוצר בדפדפן, js/qrcode.js) ----------
