@@ -304,6 +304,72 @@
     return canvas;
   }
 
+  // ---------- 📲 קודי QR לכל משימה ----------
+  // שלט מעוצב להדפסה: כותרת, QR, הסבר, שם העסק. 1200×1600 (מתאים ל-A5/A6 וגם לשולחן)
+  function qrSign({ title, sub, url, icon: ico = '' }) {
+    const c = document.createElement('canvas'); c.width = 1200; c.height = 1600;
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 1200, 1600); g.addColorStop(0, '#FFFDF8'); g.addColorStop(1, '#F1E4D0');
+    x.fillStyle = g; x.fillRect(0, 0, 1200, 1600);
+    const gold = x.createLinearGradient(0, 0, 1200, 0); gold.addColorStop(0, '#E9C878'); gold.addColorStop(0.5, '#B8872E'); gold.addColorStop(1, '#E9C878');
+    x.strokeStyle = gold; x.lineWidth = 14; x.strokeRect(40, 40, 1120, 1520); x.lineWidth = 3; x.strokeRect(66, 66, 1068, 1468);
+    x.direction = 'rtl'; x.textAlign = 'center'; x.fillStyle = '#2B1B30';
+    x.font = '700 46px Heebo, Arial, sans-serif'; x.fillStyle = '#9C7424';
+    x.fillText((ref.settings.businessName || 'פריים אירועים').split(' - ')[0], 600, 170);
+    x.fillStyle = '#2B1B30'; x.font = '900 92px "Frank Ruhl Libre", serif';
+    x.fillText(`${ico ? ico + ' ' : ''}${title}`, 600, 300);
+    const q = drawQR(document.createElement('canvas'), url, 760);
+    x.fillStyle = '#fff'; x.fillRect(200, 360, 800, 800);
+    x.drawImage(q, 220, 380, 760, 760);
+    x.fillStyle = '#5C4A3E'; x.font = '500 46px Heebo, Arial, sans-serif';
+    String(sub || '').split('\n').forEach((line, i) => x.fillText(line, 600, 1260 + i * 62));
+    x.fillStyle = gold; x.fillRect(480, 1420, 240, 4);
+    x.fillStyle = '#8A6F5E'; x.font = '400 26px Heebo, Arial, sans-serif'; x.direction = 'ltr';
+    x.fillText(url.replace(/^https:\/\//, ''), 600, 1475);
+    return c;
+  }
+  window.FrameQR = { sign: qrSign };
+  function qrTasks(evList) {
+    const base = new URL('../', location.href).href; // כתובת אפליקציית הלקוח
+    const studio = new URL('../../frame-studio/', location.href).href;
+    const list = [
+      { id: 'app', icon: '📲', title: 'האפליקציה שלנו', sub: 'סורקים, מתקינים בטלפון\nומקבלים חנות, תמונות והטבות', url: base, use: 'כרטיס ביקור, פלאייר, שלט בדוכן: התקנת האפליקציה ללקוחות' },
+      { id: 'store', icon: '🛍️', title: 'החנות', sub: 'מגנטים, בלוקים, מסגרות ומתנות\nמהתמונות שלכם', url: `${base}#store`, use: 'פרסום, וואטסאפ, אינסטגרם: ישר לקנייה' },
+      { id: 'photos', icon: '📸', title: 'התמונות שלי', sub: 'כל התמונות שלכם מהאירועים\nולהזמין מהן עוד עותקים', url: `${base}#events`, use: 'אחרי האירוע: לאורחים שרוצים את התמונות ולהזמין מהן' },
+      { id: 'orders', icon: '💎', title: 'ההזמנות והמועדון', sub: 'מעקב אחרי ההזמנה\nוהנקודות במועדון פריים', url: `${base}#orders`, use: 'על אריזת המשלוח: מעקב הזמנה ונקודות' },
+      { id: 'admin', icon: '⚙️', title: 'אפליקציית הניהול', sub: 'רק בשבילך: להתקין את הניהול\nבטלפון', url: `${base}admin/`, use: 'לך ולצוות (עם הסיסמה)' },
+      { id: 'studio', icon: '🖼️', title: 'תוכנת פריים־סטודיו', sub: 'העריכה וההדפסה\nבמחשב או בטאבלט', url: `${studio}studio.html`, use: 'לפתוח את התוכנה במכשיר נוסף' },
+    ];
+    evList.filter((e) => e.active !== false).forEach((e) => list.push({ id: `ev-${e.id}`, icon: '🎉', title: e.name, sub: 'סורקים, מצלמים או בוחרים תמונה\nומקבלים אותה מודפסת!', url: e.link, use: `שלט לשולחנות באירוע (${e.photosPerGuest} תמונות לאורח)`, event: true }));
+    return list;
+  }
+  async function qrView() {
+    const evs = await api(`${A}/events`);
+    if (document.fonts) await Promise.all(['900 92px "Frank Ruhl Libre"', '700 46px Heebo', '500 46px Heebo', '400 26px Heebo'].map((f) => document.fonts.load(f, 'אבג').catch(() => null))); // הגופנים של השלט
+    const tasks = qrTasks(evs);
+    view.innerHTML = `<div class="row between"><h1>📲 קודי QR לכל משימה</h1><button class="btn soft" id="qr-print">🖨️ הדפסת כל השלטים</button></div>
+      <p class="muted">לכל קוד יש שלט מעוצב להדפסה ו-QR נקי (לעיצוב משלכם). כל קוד פותח את האפליקציה במקום הנכון, והטלפון מציע להתקין אותה.</p>
+      <div class="grid qr-grid">${tasks.map((t) => `<div class="card stack qr-card${t.event ? ' qr-ev' : ''}" data-qr-id="${esc(t.id)}">
+        <div class="qr-preview"></div>
+        <h3 style="margin:0">${t.icon} ${esc(t.title)}</h3>
+        <div class="muted small">${esc(t.use)}</div>
+        <div class="small" dir="ltr" style="word-break:break-all"><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.url)}</a></div>
+        <div class="row" style="gap:6px"><button class="btn gold sm" data-qr-sign="${esc(t.id)}">⬇️ שלט להדפסה</button><button class="btn soft sm" data-qr-png="${esc(t.id)}">⬇️ QR בלבד</button>
+        <button class="btn ghost sm" data-qr-copy="${esc(t.id)}">🔗 העתקה</button></div></div>`).join('')}</div>`;
+    const byId = (id) => tasks.find((t) => t.id === id);
+    $$('.qr-card').forEach((card) => { const t = byId(card.dataset.qrId); const cv = qrSign(t); cv.style.width = '100%'; cv.style.height = 'auto'; $('.qr-preview', card).appendChild(cv); });
+    const fileName = (t) => `qr-${t.id}.png`;
+    $$('[data-qr-sign]').forEach((b) => { b.onclick = () => qrSign(byId(b.dataset.qrSign)).toBlob((bl) => saveBlob(bl, `שלט-${fileName(byId(b.dataset.qrSign))}`)); });
+    $$('[data-qr-png]').forEach((b) => { b.onclick = () => drawQR(document.createElement('canvas'), byId(b.dataset.qrPng).url, 1200).toBlob((bl) => saveBlob(bl, fileName(byId(b.dataset.qrPng)))); });
+    $$('[data-qr-copy]').forEach((b) => { b.onclick = () => { navigator.clipboard.writeText(byId(b.dataset.qrCopy).url).then(() => toast('הקישור הועתק'), () => prompt('העתקה:', byId(b.dataset.qrCopy).url)); }; });
+    $('#qr-print').onclick = () => {
+      const w = window.open('', '_blank');
+      if (!w) { toast('הדפדפן חסם חלון חדש'); return; }
+      w.document.write(`<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>שלטי QR</title><style>@page{size:A5;margin:0}body{margin:0}img{width:100%;height:100vh;object-fit:contain;page-break-after:always;display:block}</style></head><body>${tasks.map((t) => `<img src="${qrSign(t).toDataURL('image/png')}">`).join('')}</body></html>`);
+      w.document.close(); setTimeout(() => w.print(), 600);
+    };
+  }
+
   function saveBlob(blob, name) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -912,7 +978,7 @@
   }
 
   // ---------- ניווט ----------
-  const VIEWS = { dashboard, events, orders, products, promotions, banners, club: clubView, collections, suppliers, couriers, cities, guests, settings };
+  const VIEWS = { dashboard, events, qr: qrView, orders, products, promotions, banners, club: clubView, collections, suppliers, couriers, cities, guests, settings };
   async function go(v, arg) {
     current = v;
     $$('[data-view]').forEach((t) => t.classList.toggle('active', t.dataset.view === v));
