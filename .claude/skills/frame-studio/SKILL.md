@@ -1922,3 +1922,12 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - "⬇ הורדה PNG": 300 dpi with a see-through window.
 - Gotcha: `cut()` must set an opaque fillStyle; destination-out uses the source alpha (a gradient fill left the window half-white).
 - Also fixed: in the phone app, the tabs, the top-bar buttons and the publish pill are hidden while signed out (`body.adm-app:has(#app[hidden])`).
+
+## 👥 Customer photos from the Regaim app (Nov 9, v124)
+- `js/customers.js` (loaded after `hub.js`) adds "👥 תמונות לקוחות" in both places: a tab in the quick workspace's top bar (`.mt-cutab`, view `customers` in `FS.mate.root`) and a rail tab in the design studio (`[data-tab=customers]`). One screen (`.cu-box`) moves to whichever is open.
+- It signs in to the Regaim server (events-hub, `https://regaim-events.devopsdevopshaim.workers.dev`) with the admin password (`POST /api/admin/login`); the token and choices are in `localStorage` `fs-regaim` {token, api, src, st, auto, print, seen}.
+- `GET /api/admin/customer-photos` lists every photo to print: guests' event photos (`id: ph:<photo>`) and photos in paid shop orders (`id: oi:<order>:<item>`), with name, phone, event/order, city, product, size (`6x9`), qty, status and date. Filters: source (event/shop), waiting/printed, search by name, phone, event or product.
+- "📥 לעריכה" downloads the photo into the project as a page of the customer's size (`FS.applyFormat(doc, 'cm', …)` + `FS.matchOrient`), named "name · phone · size", `p.copies = qty`, `p.regaim = {id, name, phone, …}`, and sets the status to printing. In the quick workspace it then shows the main grid.
+- On `print-job`, every printed photo with `p.regaim` is marked `printed` (`PATCH /api/admin/customer-photos/:id`), which the customer sees in the app.
+- Automatic mode polls every 20s; new waiting photos come into the project by themselves, and can print at once (`FS.printNow`, layout fill, the paper in `#paper`).
+- The tab shows a dot with the number of waiting photos. The Regaim login is rate limited (10 per 15 min per address).

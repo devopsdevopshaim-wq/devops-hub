@@ -335,3 +335,28 @@ test('admin controls the photo editor tools and the print sizes (any size)', asy
   assert.equal((await call('GET', '/api/config')).data.editor.tools.stickers, false);
   assert.equal((await call('GET', '/api/admin/print-types')).data.find((t) => t.type === 'magnet').sizes[0], '7x10');
 });
+
+test('customer photos for the studio: who, phone, where, size, and marking them printed', async () => {
+  const e2 = (await call('POST', '/api/admin/events', { name: 'חינה של שירה', photosPerGuest: 3, printOptions: [{ type: 'magnet', size: '6x9' }] })).data;
+  const g = (await call('POST', `/api/event/${e2.code}/guest`, { name: 'רותי כהן', phone: '052-1112222' })).data;
+  const fd = new FormData();
+  fd.append('kind', 'print'); fd.append('printOptionId', e2.printOptions[0].id);
+  fd.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'a.jpg');
+  await call('POST', `/api/event/${e2.code}/photos`, fd, { 'x-guest-id': g.guestId, 'x-guest-token': g.guestToken });
+  const up = new FormData(); up.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'b.jpg');
+  const photoUrl = (await call('POST', '/api/uploads', up)).data.url;
+  const r = await call('POST', '/api/orders', { customer: { name: 'משה לוי', phone: '0503334444', city: 'באר שבע', address: 'הרצל 1' }, items: [{ productId: 'mag-6x9', variant: '10x15 ס"מ', qty: 2, photoUrl }] });
+  await call('POST', `/pay/mock/${r.data.redirectUrl.split('/').pop()}`, 'result=approved', { 'content-type': 'application/x-www-form-urlencoded' });
+  assert.equal((await fetch(base + '/api/admin/customer-photos')).status, 401);
+  const list = (await call('GET', '/api/admin/customer-photos')).data;
+  const ph = list.find((x) => x.name === 'רותי כהן');
+  assert.equal(ph.phone, '052-1112222'); assert.equal(ph.where, 'חינה של שירה'); assert.equal(ph.size, '6x9'); assert.equal(ph.source, 'event');
+  const oi = list.find((x) => x.name === 'משה לוי');
+  assert.equal(oi.source, 'order'); assert.equal(oi.size, '10x15'); assert.equal(oi.qty, 2); assert.equal(oi.url, photoUrl); assert.match(oi.where, /הזמנה #/);
+  assert.equal((await call('PATCH', `/api/admin/customer-photos/${encodeURIComponent(ph.id)}`, { status: 'printed' })).status, 200);
+  assert.equal((await call('PATCH', `/api/admin/customer-photos/${encodeURIComponent(oi.id)}`, { status: 'printed' })).status, 200);
+  assert.equal((await call('PATCH', `/api/admin/customer-photos/${encodeURIComponent(oi.id)}`, { status: 'nope' })).status, 400);
+  const after = (await call('GET', '/api/admin/customer-photos')).data;
+  assert.equal(after.find((x) => x.id === ph.id).status, 'printed');
+  assert.equal(after.find((x) => x.id === oi.id).status, 'printed');
+});

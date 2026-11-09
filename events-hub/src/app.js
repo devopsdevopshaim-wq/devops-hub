@@ -646,6 +646,49 @@ on('PATCH', '/api/admin/photos/:id', async (c) => {
   return p ? json(p) : err(404, 'לא נמצא');
 }, { admin: true });
 
+// ---------- תמונות הלקוחות (לתוכנת פריים־סטודיו ולמסך הניהול) ----------
+// כל תמונה להדפסה: מאורחים באירוע וממוצרים בהזמנות ששולמו, עם שם, טלפון, איפה, מה ובאיזה גודל
+const sizeIn = (t) => { const m = String(t || '').match(/(\d{1,3}(?:\.\d{1,2})?)\s*[x×X]\s*(\d{1,3}(?:\.\d{1,2})?)/); return m ? `${m[1]}x${m[2]}` : ''; };
+function customerPhotos() {
+  const events = Object.fromEntries(db.all('events').map((e) => [e.id, e]));
+  const guests = Object.fromEntries(db.all('guests').map((g) => [g.id, g]));
+  const out = [];
+  for (const p of db.all('photos')) {
+    if (p.kind !== 'print') continue;
+    const ev = events[p.eventId] || {}; const g = guests[p.guestId] || {};
+    const opt = (ev.printOptions || []).find((o) => o.id === p.printOptionId) || {};
+    out.push({ id: `ph:${p.id}`, source: 'event', url: p.url, name: g.name || '', phone: g.phone || '', where: ev.name || '', whereId: ev.id || '',
+      product: opt.label || '', type: opt.type || '', size: opt.size || '', qty: 1, status: p.printStatus || 'pending', edits: p.editsApplied || '', createdAt: p.createdAt });
+  }
+  for (const o of db.all('orders')) {
+    if (!PAID.includes(o.status)) continue;
+    o.items.forEach((i, idx) => {
+      if (!i.photoUrl) return;
+      out.push({ id: `oi:${o.id}:${idx}`, source: 'order', url: i.photoUrl, name: o.customer.name, phone: o.customer.phone, city: o.customer.city,
+        where: `הזמנה #${o.number}`, whereId: o.id, product: i.name, type: i.category || '', size: sizeIn(i.variant) || sizeIn(i.name), qty: i.qty,
+        status: i.printStatus || 'pending', orderStatus: STATUS_NAME[o.status], createdAt: o.createdAt });
+    });
+  }
+  return out.sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
+}
+const PRINT_STATUSES = ['pending', 'printing', 'printed', 'delivered', 'rejected'];
+on('GET', '/api/admin/customer-photos', () => json(customerPhotos()), { admin: true });
+on('PATCH', '/api/admin/customer-photos/:id', async (c) => {
+  const b = await body(c.req);
+  if (!PRINT_STATUSES.includes(b.status)) return err(400, 'סטטוס לא תקין');
+  const [kind, id, idx] = decodeURIComponent(c.params.id).split(':');
+  if (kind === 'ph') {
+    const p = db.update('photos', id, { printStatus: b.status });
+    return p ? json({ ok: true }) : err(404, 'לא נמצא');
+  }
+  const o = kind === 'oi' && db.get('orders', id);
+  const item = o && o.items[Number(idx)];
+  if (!item || !item.photoUrl) return err(404, 'לא נמצא');
+  item.printStatus = b.status;
+  db.update('orders', o.id, { items: o.items });
+  return json({ ok: true });
+}, { admin: true });
+
 on('GET', '/api/admin/guests', () => {
   const events = Object.fromEntries(db.all('events').map((e) => [e.id, e.name]));
   return json(db.all('guests').map(({ token: _t, ...g }) => ({ ...g, eventName: events[g.eventId] })).reverse());
