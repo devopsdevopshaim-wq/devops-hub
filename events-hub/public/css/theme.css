@@ -452,3 +452,11 @@ input:focus, select:focus, textarea:focus { border-color: #C9A04A; box-shadow: 0
 .po-frame-prev img { width: 100%; height: 100%; object-fit: contain; }
 .opt-art.has-frame { background: linear-gradient(135deg, #F5E6D8, #EAD3C7); }
 .opt-art.has-frame img { width: 100%; height: 100%; object-fit: contain; }
+
+/* מסגרת האירוע בעריכת פרטי האירוע */
+.ev-frames { margin-bottom: 14px; background: linear-gradient(150deg, #FFFCF4, #F7EBD2); border-color: #E8D3A6; }
+.ev-frame-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .ev-frame-grid { grid-template-columns: 1fr; } }
+.ev-frame-slot { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 1px #EADDCB; }
+.ev-frame-prev { width: 64px; height: 92px; flex: none; }
+.ev-frame-prev.land { width: 92px; height: 64px; }
