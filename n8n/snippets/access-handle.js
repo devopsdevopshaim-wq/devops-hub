@@ -439,6 +439,53 @@ switch (b.action) {
     const token = newSession(e, 'studio', now + 30 * DAY, { lic: e, mh });
     return out({ ok: true, token, role: 'studio', name: line(L.name, 60), email: e, exp: new Date(now + 30 * DAY).toISOString(), plan: planOf(L), upd: updFor(L, b.version) });
   }
+  // ---- the licence holder moves the licence to this computer by himself (a new computer, or one that replaced a broken one).
+  // The email and the licence code prove the licence; a 6-digit code to the licence's email proves the person. The computer
+  // that worked least lately gives up its place; at most one move in 30 days (more: the owner releases it in the admin), and
+  // the owner hears of every move. After the move the program signs in as usual (lic-activate).
+  case 'lic-move-code':
+  case 'lic-move': {
+    const e = email(b.email), code = String(b.code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''), mach = String(b.machine || '').toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || code.length < 10 || !/^[a-f0-9]{32,64}$/.test(mach)) return out({ ok: false, error: 'bad-input' }, 400);
+    if (!hit('lm-ip', IPK, 10, HOUR) || !hit('lm-mail', e, 6, HOUR)) return out({ ok: false, error: 'rate-limited' }, 429);
+    sd.licenses = sd.licenses || {};
+    if (sd.lock['lic:' + e] > now) return out({ ok: false, error: 'too-many' }, 429);
+    const L = sd.licenses[e], good = L && sha256hex('lic-code:' + code) === sha256hex('lic-code:' + String(L.code).replace(/[^A-Z0-9]/g, ''));
+    if (!good) {
+      const f = (sd.fails['lic:' + e] = (sd.fails['lic:' + e] || []).filter((t) => now - t < HOUR).concat(now));
+      if (f.length >= 6) sd.lock['lic:' + e] = now + HOUR;
+      return out({ ok: false, error: 'bad-license' }, 401);
+    }
+    if (!L.active) return out({ ok: false, error: 'license-revoked' }, 403);
+    if (!licOpens(L)) return out({ ok: false, error: 'license-unpaid' }, 402);
+    const mh = sha256hex('lic-machine:' + mach), iso = new Date(now).toISOString();
+    if (L.machine === mh || L.machine2 === mh) return out({ ok: true, already: true });
+    const moves = (L.moves || []).filter((t) => now - t < 30 * DAY);
+    if (moves.length) return out({ ok: false, error: 'move-limit', next: new Date(moves[0] + 30 * DAY).toISOString() }, 429);
+    sd.moveCodes = sd.moveCodes || {};
+    for (const [k, c] of Object.entries(sd.moveCodes)) if (c.exp < now) delete sd.moveCodes[k];
+    if (b.action === 'lic-move-code') {
+      const mc = String(parseInt(rnd(4), 16) % 1000000).padStart(6, '0');
+      sd.moveCodes[e] = { h: sha256hex('lm:' + e + ':' + mh + ':' + mc), exp: now + 15 * 60000, tries: 0 };
+      log('קוד העברת מחשב נשלח', e);
+      return out({ ok: true, step: 'code' }, 200, { to: e, subject: 'אופטימוס · קוד להעברת הרישיון למחשב חדש: ' + mc,
+        text: `שלום ${L.name || ''},\n\nביקשת להעביר את רישיון אופטימוס למחשב חדש.\nהקוד: ${mc}\n\nהקוד תקף ל־15 דקות. אם לא ביקשת, אפשר להתעלם מההודעה: הרישיון נשאר במחשבים שלך.\n\nאופטימוס` });
+    }
+    const mc = String(b.mailCode || '').replace(/\D/g, ''), want = sd.moveCodes[e];
+    if (!want || want.exp < now || ++want.tries > 5) { delete sd.moveCodes[e]; return out({ ok: false, error: 'code-expired' }, 400); }
+    if (sha256hex('lm:' + e + ':' + mh + ':' + mc) !== want.h) return out({ ok: false, error: 'bad-code' }, 400);
+    delete sd.moveCodes[e];
+    // the place given up: a free one; else the computer that worked least lately (never the one working right now)
+    const slot = !L.machine ? 1 : (L.paid && !L.machine2) ? 2 : (L.machine2 && (L.activeMh === L.machine || (L.activeMh !== L.machine2 && Date.parse(L.boundAt2 || 0) < Date.parse(L.boundAt || 0)))) ? 2 : 1;
+    const gone = slot === 1 ? L.machine : L.machine2;
+    if (slot === 1) { L.machine = mh; L.boundAt = iso; L.platform = line(b.platform, 20); } else { L.machine2 = mh; L.boundAt2 = iso; L.platform2 = line(b.platform, 20); }
+    if (gone) for (const [h, x] of Object.entries(sd.sessions)) if (x && x.lic === e && x.mh === gone) delete sd.sessions[h];
+    if (L.activeMh === gone) L.activeMh = null;
+    L.moves = moves.concat(now);
+    L.history = [{ at: iso, what: 'הרישיון הועבר על ידי הלקוח למחשב חדש (' + (slot === 1 ? 'במקום הראשי' : 'במקום הגיבוי') + ')', ip: maskIp(IP), ua: line(UA, 90) }].concat(L.history || []).slice(0, 30);
+    log('רישיון סטודיו הועבר למחשב חדש על ידי הלקוח', e);
+    return [{ json: { code: 200, body: { ok: true, moved: true, slot }, mail: alert('לקוח העביר את הרישיון למחשב חדש', `${L.name || e} (${e}) העביר/ה את רישיון אופטימוס למחשב חדש, ${slot === 1 ? 'במקום המחשב הראשי' : 'במקום מחשב הגיבוי'}.\nהמחשב הקודם נותק.\nהעברה עצמית הבאה אפשרית בעוד 30 יום. אם זה לא הלקוח: מסך הניהול ← רישיונות ← 🔓 שחרור, וקוד חדש.`) } }];
+  }
   case 'lic-check': {
     const s = session(), mach = String(b.machine || '').toLowerCase();
     if (!s || s.role !== 'studio') return out({ ok: false, error: 'signed-out' }, 401);
@@ -590,7 +637,7 @@ switch (b.action) {
     const iso = new Date(now).toISOString(); L.history = (L.history || []).slice(0, 29);
     let receipt = null, receiptCopy = null;
     if (b.action === 'lic-set') { L.active = b.active === '1' || b.active === true; if (!L.active) endSessions(e); L.history.unshift({ at: iso, what: L.active ? 'הופעל מחדש על ידי המנהל' : 'בוטל על ידי המנהל' }); log(L.active ? 'רישיון סטודיו הופעל' : 'רישיון סטודיו בוטל', e); }
-    else if (b.action === 'lic-release') { L.machine = null; L.boundAt = null; L.machine2 = null; L.boundAt2 = null; L.activeMh = null; endSessions(e); L.history.unshift({ at: iso, what: 'המחשב שוחרר על ידי המנהל' }); log('רישיון סטודיו שוחרר ממחשב', e); }
+    else if (b.action === 'lic-release') { L.machine = null; L.boundAt = null; L.machine2 = null; L.boundAt2 = null; L.activeMh = null; L.moves = []; endSessions(e); L.history.unshift({ at: iso, what: 'המחשב שוחרר על ידי המנהל' }); log('רישיון סטודיו שוחרר ממחשב', e); }
     else if (b.action === 'lic-rotate') { L.code = newCode(); L.machine = null; L.boundAt = null; L.machine2 = null; L.boundAt2 = null; L.activeMh = null; endSessions(e); L.history.unshift({ at: iso, what: 'קוד חדש הונפק' }); log('קוד סטודיו חדש הונפק', e); }
     else if (b.action === 'lic-pay') {
       // the owner records a payment (or takes one back); the licence opens once it is marked paid

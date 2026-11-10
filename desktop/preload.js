@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
     printers: () => ipcRenderer.invoke('print:printers'),
     settings: (name) => ipcRenderer.invoke('print:settings', String(name || '')),
     queue: (name) => ipcRenderer.invoke('print:queue', String(name || '')),
+    status: (names) => ipcRenderer.invoke('print:status', (Array.isArray(names) ? names : [names]).map((n) => String(n || '')).slice(0, 4)),
     clear: (name) => ipcRenderer.invoke('print:clear', String(name || '')),
     run: (o) => ipcRenderer.invoke('print:run', { deviceName: o && o.deviceName ? String(o.deviceName) : '', wMm: Number(o && o.wMm) || 0, hMm: Number(o && o.hMm) || 0, copies: Number(o && o.copies) || 1 , driverSize: !!(o && o.driverSize) }),
   }),

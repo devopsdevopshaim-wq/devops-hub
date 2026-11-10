@@ -110,3 +110,10 @@ body.studio-licensed .sb-menu a[href="admin.html"] { display: none !important; }
 #lic-away .la-st { min-height: 1.4em; color: #F3DDA6; }
 body.lic-away > :not(#lic-away):not(script) { visibility: hidden !important; }
 #lic-away::backdrop { background: #0b0b10; }
+
+/* moving the licence to this computer (gate.js moveOffer) */
+.gate-move { margin-top: 14px; padding: 14px; border-radius: 14px; border: 1px solid rgba(227, 196, 138, .35); background: rgba(227, 196, 138, .06); display: grid; gap: 8px; }
+.gate-move p { margin: 0; font-size: 14px; color: #CFC7B8; line-height: 1.6; }
+.gate-move label { display: grid; gap: 4px; font-size: 14px; }
+.gate-move input { min-height: 46px; border-radius: 12px; font-size: 22px; letter-spacing: 6px; text-align: center; }
+#gm-step { display: grid; gap: 8px; } #gm-step[hidden] { display: none; }

@@ -809,3 +809,6 @@ body.clean-shell .app { grid-template-rows: 1fr; grid-template-areas: "tools pan
 .pd-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; } .pd-acts .btn { min-height: 44px; }
 .pd-st { min-height: 1.4em; color: #c9a45c; font-weight: 600; }
 @media (max-width: 560px) { .pd-acts { grid-template-columns: 1fr; } }
+
+.pp-rep { margin: 10px 0; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(201, 164, 92, .3); background: rgba(201, 164, 92, .06); font-size: 14px; }
+.pp-rep ul { margin: 6px 0 0; padding-inline-start: 18px; line-height: 1.7; }

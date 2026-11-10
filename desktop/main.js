@@ -415,6 +415,37 @@ app.whenReady().then(() => {
     const jobs = Array.isArray(r.jobs) ? r.jobs : r.jobs ? [r.jobs] : [];
     return { ok: true, status: String(r.status || ''), jobs: jobs.map((j) => ({ id: Number(j.id) || 0, status: String(j.status || ''), name: String(j.name || '').slice(0, 80) })) };
   });
+  // the state of up to four printers in one pass, as Windows and their drivers report it: Get-Printer's status, WMI's
+  // detected error (3 low paper, 4 no paper, 5 low ink, 6 no ink, 7 door open, 8 jam, 9 offline, 10 service, 11 output full),
+  // whether it is set to work offline, the driver and port, the paper names the driver offers, and the driver's own properties
+  // about ribbon, media, ink, paper or counts (photo printers such as Mitsubishi and DNP publish some of these). The names
+  // pass in an environment variable, one per line, never into the command.
+  ipcMain.handle('print:status', async (event, names) => {
+    fromApp(event);
+    if (process.platform !== 'win32') return { ok: false, printers: {} };
+    const list = await event.sender.getPrintersAsync(), known = new Set(list.map((x) => x.name));
+    const want = (Array.isArray(names) ? names : [names]).map((n) => String(n || '').slice(0, 200)).filter((n) => known.has(n)).slice(0, 4);
+    if (!want.length) return { ok: true, printers: {} };
+    const script = "$out = @{}; foreach ($n in ($env:FS_PRN -split \"`n\")) { if (-not $n) { continue }; " +
+      "$w = Get-CimInstance Win32_Printer -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq $n } | Select-Object -First 1; " +
+      "$g = Get-Printer -Name $n -ErrorAction SilentlyContinue; " +
+      "$pr = @(Get-PrinterProperty -PrinterName $n -ErrorAction SilentlyContinue | Where-Object { $_.PropertyName -match 'ribbon|media|paper|ink|remain|count|life|kit' } | Select-Object -First 15 | ForEach-Object { @{ k = [string]$_.PropertyName; v = [string]$_.Value } }); " +
+      "$out[$n] = @{ status = [string]$g.PrinterStatus; detected = [int]$w.DetectedErrorState; offline = [bool]$w.WorkOffline; driver = [string]$g.DriverName; port = [string]$g.PortName; papers = @($w.PrinterPaperNames | Select-Object -First 14); props = $pr } }; " +
+      "$out | ConvertTo-Json -Depth 4 -Compress";
+    const r = await psJson(script, want.join('\n'));
+    const ERR = { 3: 'low-paper', 4: 'no-paper', 5: 'low-ink', 6: 'no-ink', 7: 'door-open', 8: 'jam', 9: 'offline', 10: 'service', 11: 'output-full' };
+    const out = {};
+    for (const n of want) {
+      const x = (r && r[n]) || null; if (!x) continue;
+      const st = String(x.status || ''), det = Number(x.detected) || 0;
+      let error = ERR[det] || '';
+      if (!error) error = /paperout/i.test(st) ? 'no-paper' : /notoner/i.test(st) ? 'no-ink' : /tonerlow/i.test(st) ? 'low-ink' : /dooropen/i.test(st) ? 'door-open' : /paperjam/i.test(st) ? 'jam' : /offline|notavailable/i.test(st) || x.offline ? 'offline' : /paperproblem/i.test(st) ? 'paper-problem' : /error/i.test(st) ? 'error' : '';
+      const props = (Array.isArray(x.props) ? x.props : x.props ? [x.props] : []).map((p) => ({ k: String(p.k || '').slice(0, 60), v: String(p.v || '').slice(0, 80) })).filter((p) => p.k && p.v);
+      out[n] = { status: st, error, state: error === 'offline' ? 'offline' : /printing|busy|processing/i.test(st) ? 'printing' : 'ready', driver: String(x.driver || '').slice(0, 80), port: String(x.port || '').slice(0, 60),
+        papers: (Array.isArray(x.papers) ? x.papers : x.papers ? [x.papers] : []).map((v) => String(v).slice(0, 40)).slice(0, 14), props };
+    }
+    return { ok: true, printers: out };
+  });
   // clears the printer's queue (stuck jobs after an error)
   ipcMain.handle('print:clear', async (event, name) => {
     fromApp(event);

@@ -1971,3 +1971,19 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - `js/print-doctor.js` `KINDS`: mismatch (paper size ≠ ribbon), paperout, ribbon (NoToner/TonerLow), jam, door, offline (Offline/NotAvailable), busy, error, failed. Each has a title, the cause, numbered steps and a tip; photo printers (Mitsubishi/DNP/Citizen) get the "paper and ribbon are one kit" line. "לפי הדרייבר" shows only for mismatch.
 - `classify(text, dev)` maps Windows' PrinterStatus / JobStatus words to a kind ('' = fine: Normal, Printing, Spooling, Paused…). A plain Error/Blocked on a Mitsubishi counts as mismatch.
 - `precheck(dev, go)` before every desktop print (output.js) reads the queue (4 s limit). Off, out of paper or ribbon, jammed or open stops the print and opens the window, and "להדפיס שוב" there sends it. A plain error does not stop it; `watch()` after the print catches it.
+
+## Self-service move, printers that connect by themselves, ink and paper from the printer (v129)
+- **Move the licence (server `lic-move-code` / `lic-move` in `n8n/snippets/access-handle.js`):**
+  - The email and the licence code prove the licence; a 6-digit code to the licence email (15 minutes, 5 tries) proves the person.
+  - The place given up: a free slot, else the computer not working now / bound longest ago. Its sessions end.
+  - At most once in 30 days (`L.moves`; `move-limit` gives the date of the next one). The owner's 🔓 release clears it.
+  - The owner gets an alert mail on every move.
+  - In the program (`gate.js` `moveOffer`): after `license-in-use`, "🔄 החלפת מחשב?" → code to the mail → move → activate. `FS.license.moveCode` / `move`.
+  - Tested in `cloudflare/test/license.test.mjs`.
+- **Printer status (desktop `print:status`, up to 4 printers in one PowerShell pass; names in env `FS_PRN`, one per line):** Get-Printer status, WMI `DetectedErrorState` (3 low paper … 11 output full), WorkOffline, driver, port, `PrinterPaperNames`, and `Get-PrinterProperty` entries matching ribbon/media/paper/ink/remain/count/life/kit. It answers `{state, error, papers, props}`.
+- **printlog.js:**
+  - The desktop poll reads the status of the chosen printer and the photo printers every ~10 s.
+  - `plugged()`: a printer new to Windows' list (`fs-prn-known`), or one back from offline, is chosen at once when it is a photo printer, or when the current one is missing or offline (toast). With nothing chosen, a photo printer is preferred over the default.
+  - `kitWatch()`: on no-paper/no-ink after ≥30 sheets, the sheets counted become the kit size (`pr.learned`); ready again after running out → new kit, the counters reset (`pr.kitAt`).
+  - "⚙️ דיו ונייר" shows "מה המדפסת מדווחת עכשיו" (state, learnt kit, driver properties, paper names). `FS.printerMedia()`.
+  - Models: Mitsubishi CP-D90DW and CP-M1 added (400 until learnt).
