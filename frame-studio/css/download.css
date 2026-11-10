@@ -72,3 +72,5 @@ a:focus-visible { outline: 2px solid var(--champ); outline-offset: 3px; }
 @media (max-width: 760px) { .dl-two { grid-template-columns: 1fr; } }
 
 .dl-mobile { background: rgba(227,196,138,.12); border: 1px solid rgba(227,196,138,.45); border-radius: 14px; padding: 12px 14px; margin: 0 0 16px; font-weight: 500; }
+
+.dl-film video { display: block; width: 100%; margin-top: 14px; border-radius: 16px; background: #000; aspect-ratio: 16 / 9; }

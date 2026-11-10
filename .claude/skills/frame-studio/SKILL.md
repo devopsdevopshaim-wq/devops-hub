@@ -1987,3 +1987,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - `kitWatch()`: on no-paper/no-ink after ≥30 sheets, the sheets counted become the kit size (`pr.learned`); ready again after running out → new kit, the counters reset (`pr.kitAt`).
   - "⚙️ דיו ונייר" shows "מה המדפסת מדווחת עכשיו" (state, learnt kit, driver properties, paper names). `FS.printerMedia()`.
   - Models: Mitsubishi CP-D90DW and CP-M1 added (400 until learnt).
+
+## The tutorial film "אופטימוס · המדריך" (v130)
+- Sources in `videos/promo-src/`:
+  - `capture/cap-guide.cjs` → `optimus-guide/cap/*.webp`: the start screen; the quick workspace views main / edit / design / ai / print / hub; the 11 studio tabs (photos, adjust, filters, frames, styles, ai, live, collage, curate, customers, output), with event photos loaded.
+  - `optimus-guide/script.json`: 22 scenes of Hebrew narration.
+  - `guide.py`: the builder, reusing tutorial.py's screen box, text column and captions. It adds a chip naming the part of the program, example cards (cap/fun-*, e2e/*, cap/ai-*, cap/collage-*, cap/pro-guest) and the tips card.
+- Voice: `.github/workflows/frame-tts.yml` (workflow_dispatch, `film=optimus-guide`) runs on GitHub, where the voices are reachable (the sandbox blocks them). The clips land on the branch `ci-tts` under `optimus-guide/` and are copied to `optimus-guide/voice/`.
+  - `script.json` sets `providers: ["edge"]`, `voices.edge.he = he-IL-HilaNeural` (free, Microsoft, female; not Google) and `langs: ["he"]`; `frame-tts.mjs` reads these three keys.
+  - Cancel the push-triggered run (it speaks app-tutorial into the same branch).
+- Build and render: `python3 videos/promo-src/guide.py`, then in `videos/promo-optimus-guide`: `npx --yes hyperframes@0.8.185 render --quality looks --output renders/guide.mp4` (~262 s, 7868 frames). The web copy is `frame-studio/media/promo/guide.mp4` (720p) with the poster `guide.jpg`.
+- Shown in:
+  - the program's ❓ guide: "▶ סרטון הדרכה" → `FS.helpFilm()`;
+  - download.html, a `.dl-film` section;
+  - the admin's promo films (PROMOS `guide`).
+- Fixed: `build.py copy_assets` copies files only (media/real/thumb is a folder and broke every film build). download.html now states the two-computer licence and the self-service move.

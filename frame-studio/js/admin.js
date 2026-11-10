@@ -194,7 +194,7 @@
   }
 
   /* the promo films (videos/promo-src/build.py): [file, title, line, download name] */
-  var PROMOS = [['site', 'פריים מגנטים', 'מגנט אישי לכל אורח · 45 שניות', 'frame-magnets'], ['studio', 'אופטימוס', 'עריכה, מסגרות ו־AI · 45 שניות', 'frame-studio'], ['app', 'התוכנה לווינדוס', 'AI גם בלי אינטרנט · 41 שניות', 'frame-studio-windows']];
+  var PROMOS = [['site', 'פריים מגנטים', 'מגנט אישי לכל אורח · 45 שניות', 'frame-magnets'], ['studio', 'אופטימוס', 'עריכה, מסגרות ו־AI · 45 שניות', 'frame-studio'], ['app', 'התוכנה לווינדוס', 'AI גם בלי אינטרנט · 41 שניות', 'frame-studio-windows'], ['guide', 'מדריך אופטימוס', 'כל לשונית עם הסבר ודוגמה · 4.5 דקות', 'optimus-guide']];
   var VIEWS = {};
   /* 🖥️ what the studio is doing (js/studio-sync.js on each of the owner's computers): event, photos, prints, ink and paper */
   function studiosCard() {

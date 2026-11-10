@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='129';(function(){
+window.FS_V='130';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -17,7 +17,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" />
-<link rel="stylesheet" href="css/download.css?v=129" />
+<link rel="stylesheet" href="css/download.css?v=130" />
 </head>
 <body>
 <header class="dl-top"><a href="./" class="dl-brand"><img src="icon.svg" alt="" width="34" height="34" /><span>פריים מגנטים</span></a><a href="./" class="dl-back">← לאתר</a></header>
@@ -68,13 +68,19 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
     <p class="dl-note">🔒 רכשתם? ההפעלה בקוד אישי שעובד במחשב אחד. <a href="agreement.html">הסכם הרכישה והשימוש</a></p>
   </section>
 
+  <section class="dl-steps dl-film" aria-labelledby="dl-film-h">
+    <h2 id="dl-film-h">🎬 סרטון הדרכה: כל לשונית בתוכנה</h2>
+    <p>ארבע וחצי דקות, עם הסבר ודוגמה אמיתית לכל חלק: עבודה מהירה, מסגרות, עריכה, AI, אירוע חי, קולאז׳ והדפסה.</p>
+    <video src="media/promo/guide.mp4" poster="media/promo/guide.jpg" controls playsinline preload="none"></video>
+  </section>
+
   <section class="dl-steps">
     <h2>איך מתקינים</h2>
     <ol>
       <li><b>מורידים</b> את קובץ ההתקנה (הכפתור למעלה) ופותחים אותו.</li>
       <li><b>אם Windows מציג "Windows protected your PC"</b>: לוחצים "More info" ואז "Run anyway". זו אזהרה רגילה לתוכנה חדשה שעוד לא חתומה בתעודה בתשלום.</li>
       <li><b>מסיימים את ההתקנה.</b> מופיע קיצור דרך "אופטימוס" על שולחן העבודה.</li>
-      <li><b>בפתיחה הראשונה</b> מזינים את המייל ואת קוד ההפעלה שקיבלתם (FS-XXXX-XXXX-XXXX-XXXX). מאותו רגע הקוד נעול למחשב הזה.</li>
+      <li><b>בפתיחה הראשונה</b> מזינים את המייל ואת קוד ההפעלה שקיבלתם (FS-XXXX-XXXX-XXXX-XXXX). רישיון בתשלום עובד בשני מחשבים (ראשי וגיבוי), אחד בכל רגע.</li>
     </ol>
   </section>
 
@@ -89,7 +95,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
   </section>
 
   <section class="dl-grid">
-    <article><h3>🔑 קוד הפעלה אישי</h3><p>כל משתמש מקבל קוד משלו, קבוע, למייל שלו. הקוד עובד במחשב אחד בלבד: הזנה במחשב נוסף נחסמת.</p></article>
+    <article><h3>🔑 קוד הפעלה אישי</h3><p>כל משתמש מקבל קוד משלו, קבוע, למייל שלו. רישיון בתשלום עובד בשני מחשבים שלכם, ראשי וגיבוי, ורק אחד מהם פעיל בכל רגע: "💻 להפעיל כאן" מעביר את העבודה. מחליפים מחשב? מעבירים את הרישיון לבד, עם קוד למייל, פעם בחודש. הניסיון החינמי: מחשב אחד.</p></article>
     <article><h3>💻 החלפת מחשב</h3><p>עוברים למחשב חדש? פונים אלינו, אנחנו משחררים את המחשב הישן, ומפעילים בחדש עם אותו קוד.</p></article>
     <article><h3>📶 גם בלי אינטרנט</h3><p>באירוע אפשר לעבוד בלי רשת. פעם בשבוע התוכנה צריכה חיבור קצר לאימות הרישיון.</p></article>
     <article><h3>🛡️ מאובטח</h3><p>הקודים נשמרים בשרת מאובטח, ניסיונות שגויים ננעלים, ורישיון שבוטל נסגר מיד בחיבור הבא.</p></article>
@@ -113,7 +119,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
   </section>
 </main>
 <footer class="dl-foot"><a href="./">פריים מגנטים</a> · <a href="agreement.html">הסכם רכישה</a> · <a href="accessibility.html">הצהרת נגישות</a> · <a href="privacy.html">מדיניות פרטיות</a></footer>
-<script src="js/download.js?v=129"></script>
-<script src="js/a11y.js?v=129" defer></script>
+<script src="js/download.js?v=130"></script>
+<script src="js/a11y.js?v=130" defer></script>
 </body>
 </html>
