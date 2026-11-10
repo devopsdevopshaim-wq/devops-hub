@@ -120,6 +120,9 @@ jobs:
           if [ -d frame-studio ]; then
             mkdir -p /tmp/site/frame-studio
             cp -r frame-studio/. /tmp/site/frame-studio/
+            # the studio published as a few bundles instead of ~75 files (frame-studio/tools/bundle.mjs); on any failure the
+            # separate files are published as they are
+            node frame-studio/tools/bundle.mjs /tmp/site/frame-studio || echo "::warning::studio bundle failed; publishing the separate files"
           fi
           if [ -d legal-hub ]; then
             mkdir -p /tmp/site/legal-hub

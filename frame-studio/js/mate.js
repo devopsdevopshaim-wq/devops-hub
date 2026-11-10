@@ -135,15 +135,41 @@
     tag: '<path d="M12.6 2.6A2 2 0 0011.2 2H4a2 2 0 00-2 2v7.2a2 2 0 00.6 1.4l8.7 8.7a2.4 2.4 0 003.4 0l6.6-6.6a2.4 2.4 0 000-3.4z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
     pencil: '<path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5z"/>',
     trash: '<path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
-    upload: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>'
+    upload: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+    bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    palette: '<path d="M12 22a10 10 0 110-20c5.5 0 10 4 10 8.5 0 3-2.5 4.5-5 4.5h-1.5a1.5 1.5 0 00-1 2.6A1.5 1.5 0 0112 22z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="16.5" cy="10.5" r="1"/>',
+    help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3M12 17h.01"/>',
+    film: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3z"/>',
+    feather: '<path d="M20.2 12.2a6 6 0 00-8.5-8.5L5 10.5V19h8.5z"/><path d="M16 8L2 22M17.5 15H9"/>',
+    phone: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.6a3.5 3.5 0 010 6.8M18 14.8c2 .7 3.2 2.5 3.5 5.2"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 010-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 014 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 010 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
+    save: '<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
+    camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.5"/>',
+    frame: '<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    cmd: '<path d="M18 3a3 3 0 00-3 3v12a3 3 0 103-3H6a3 3 0 103 3V6a3 3 0 10-3 3h12a3 3 0 000-6z"/>',
+    calc: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h8"/>'
   };
-  var EMOJI = { '🗂️': 'grid', '🎚️': 'sliders', '🖌️': 'brush', '🤖': 'spark', '🖨️': 'print', '📂': 'image', '📁': 'folder', '📐': 'ruler', '🧾': 'copies', '🏷️': 'tag', '✏️': 'pencil', '🗑': 'trash' };
+  var EMOJI = { '🗂️': 'grid', '🎚️': 'sliders', '🖌️': 'brush', '🤖': 'spark', '🖨️': 'print', '📂': 'image', '📁': 'folder', '📐': 'ruler', '🧾': 'copies', '🏷️': 'tag', '✏️': 'pencil', '🗑': 'trash',
+    '⚡': 'bolt', '🎨': 'palette', '❓': 'help', '🎬': 'film', '🪶': 'feather', '📲': 'phone', '🎯': 'target', '👥': 'users', '⚙️': 'gear', '⚙': 'gear', '💾': 'save', '📷': 'camera', '🖼️': 'frame', '🔍': 'search', '⌘': 'cmd', '✨': 'spark', '🧮': 'calc' };
   function svg(n) { return '<svg class="mt-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>'; }
-  $$('.mt-tabs button, .mt-sub button, .mt-acts .mt-btn, .mt-empty .mt-btn, #mt-size-edit, #mt-del', root).forEach(function (b) {
-    var t = b.firstChild; if (!t || t.nodeType !== 3) return;
-    var m = /^\s*(\S+?)\s+/.exec(t.nodeValue); if (!m || !EMOJI[m[1]]) { if (b.id === 'mt-size-edit') b.innerHTML = svg('pencil'); return; }
+  /* one look: an emoji at the start of a button becomes the same thin line icon as the rest, also on buttons added later
+     (help, the film, light mode, install, the hub, customer photos, instant print, the studio) */
+  var ICON_SEL = '.mt-tabs button, .mt-sub button, .mt-acts .mt-btn, .mt-acts button, .mt-top > button, .mt-top .mt-btn, .mt-top button, #mt-switch button, .mt-qp button, .mt-bar .mt-btn, .mt-empty .mt-btn, #mt-size-edit, #mt-del';
+  function iconize(b) {
+    if (b._ic) return; b._ic = 1;
+    var t = b.firstChild; if (!t) return;
+    /* an emoji in its own <span> at the start (the command bar's ⌘) */
+    if (t.nodeType === 1 && t.tagName === 'SPAN' && EMOJI[t.textContent.trim()]) { t.outerHTML = svg(EMOJI[t.textContent.trim()]); return; }
+    if (t.nodeType !== 3) return;
+    var m = /^\s*(\S+?)(?:\s+|$)/.exec(t.nodeValue); if (!m || !EMOJI[m[1]]) { if (b.id === 'mt-size-edit') b.innerHTML = svg('pencil'); return; }
     t.nodeValue = t.nodeValue.slice(m[0].length); b.insertAdjacentHTML('afterbegin', svg(EMOJI[m[1]]));
-  });
+  }
+  $$(ICON_SEL, root).forEach(iconize);
+  if (window.MutationObserver) new MutationObserver(function () { $$(ICON_SEL, root).forEach(iconize); }).observe($('.mt-top', root) || root, { childList: true, subtree: true });
+  FS.lineIcon = svg;
   /* a mark of the program (no name) at the start of the top bar, and the drop zone's icon */
   $('.mt-top', root).insertAdjacentHTML('afterbegin', '<div class="mt-mark" title="אופטימוס"><img src="optimus.svg" alt="אופטימוס"></div>');
   $('.mt-empty', root).insertAdjacentHTML('afterbegin', '<div class="mt-drop-ic">' + svg('upload') + '</div>');

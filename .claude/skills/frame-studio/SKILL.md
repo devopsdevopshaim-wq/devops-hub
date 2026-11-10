@@ -2020,3 +2020,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The "👥 N" tag (`data-advset`) sets the photo back to the people count.
   - The copies bar has the tips.
 - **🪶 Light mode (`js/lite.js`, `css/lite.css`, studio.html; sw.js):** `html.fs-lite` turns off animations, transitions, backdrop blur, the heavy shadows and the intro wall. It turns on by itself once on a weak computer (≤4 threads or ≤4 GB), and the "🪶 קליל" button beside Help toggles it (`fs-lite`). Bigger −/+ and a visible keyboard focus in the workspace.
+
+## Lighter and more professional: bundles, smaller images, one icon language (v133)
+- **Bundles at publish (`frame-studio/tools/bundle.mjs`, run by vacation-hub-pages.yml on the published copy `/tmp/site/frame-studio`):**
+  - Every run of consecutive `<script src="js/…">` tags in studio.html becomes one file, and every run of consecutive local `<link rel="stylesheet" href="css/…">` too, in the same order and place. Runs only: an outside link or inline style between them keeps its place, so the cascade is unchanged.
+  - Minified by esbuild (whitespace and syntax only; names stay, the scripts share globals), else just joined.
+  - Named by content (`dist/studio-N-<hash>.js|css`) and added to sw.js FILES.
+  - The repository keeps the separate files; on failure the deploy publishes them as they are (a ::warning).
+  - Measured: 75 → 11 js/css requests, with the same behaviour in a full walk (both views, every tab, no errors).
+- **Opening wall:** `show/thumb/*.webp` (420 px), used by intro.js. 19 images, 1211 → 500 KB.
+- **One icon language in the top bar (mate.js):** `iconize()` turns a leading emoji into the line icon set (`ICON`/`EMOJI`: bolt, palette, help, film, feather, phone, target, users, gear, save, camera, frame, search, cmd, calc…), also on buttons added later (MutationObserver on `.mt-top`), on emoji-only buttons and on an emoji `<span>` (⌘). `FS.lineIcon(name)`.
