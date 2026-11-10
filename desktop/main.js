@@ -379,7 +379,48 @@ app.whenReady().then(() => {
     const opts = { silent: !!(o && o.deviceName), printBackground: true, margins: { marginType: 'none' }, copies: Math.max(1, Math.min(99, Number(o && o.copies) || 1)),
       pageSize: { width: Math.round(mm(o && o.wMm) * 1000), height: Math.round(mm(o && o.hMm) * 1000) }, dpi: { horizontal: 300, vertical: 300 } };
     if (o && o.deviceName) opts.deviceName = String(o.deviceName).slice(0, 200);
+    // "לפי הדרייבר": the paper size the printer's own settings hold (photo printers such as the Mitsubishi CP-D90 refuse a size
+    // that does not match the ribbon loaded, "Paper size of printer driver and Ink Ribbon type do not match")
+    if (o && o.driverSize) delete opts.pageSize;
     return new Promise((ok) => { event.sender.print(opts, (success, reason) => ok({ ok: !!success, reason: success ? '' : String(reason || 'failed') })); });
+  });
+  // the printer's own settings window (Windows "Printing preferences": paper size, ribbon, quality), for the printer named;
+  // the name must be one of the installed printers, and it goes to Windows as one argument (no shell)
+  async function knownPrinter(event, name) {
+    const n = String(name || '').slice(0, 200);
+    const list = await event.sender.getPrintersAsync();
+    return list.some((x) => x.name === n) ? n : '';
+  }
+  ipcMain.handle('print:settings', async (event, name) => {
+    fromApp(event);
+    const n = await knownPrinter(event, name); if (!n) return { ok: false, error: 'unknown-printer' };
+    if (process.platform !== 'win32') return { ok: false, error: 'not-windows' };
+    spawn('rundll32.exe', ['printui.dll,PrintUIEntry', '/e', '/n', n], { detached: true, stdio: 'ignore', windowsHide: false }).unref();
+    return { ok: true };
+  });
+  // the printer's queue and state, read from Windows (PowerShell; the printer's name goes in an environment variable, never
+  // into the command): the jobs with their status (Error, Blocked, Paused…) and the printer's own status
+  function psJson(script, name) {
+    return new Promise((resolve) => {
+      execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
+        { windowsHide: true, timeout: 12000, env: Object.assign({}, process.env, { FS_PRN: name }) },
+        (err, stdout) => { if (err) return resolve(null); try { resolve(JSON.parse(String(stdout || 'null'))); } catch { resolve(null); } });
+    });
+  }
+  ipcMain.handle('print:queue', async (event, name) => {
+    fromApp(event);
+    const n = await knownPrinter(event, name); if (!n || process.platform !== 'win32') return { ok: false, jobs: [], status: '' };
+    const r = await psJson("$p = Get-Printer -Name $env:FS_PRN -ErrorAction SilentlyContinue; $j = @(Get-PrintJob -PrinterName $env:FS_PRN -ErrorAction SilentlyContinue | ForEach-Object { @{ id = $_.Id; status = [string]$_.JobStatus; name = [string]$_.DocumentName } }); @{ status = [string]$p.PrinterStatus; jobs = $j } | ConvertTo-Json -Depth 3 -Compress", n);
+    if (!r) return { ok: false, jobs: [], status: '' };
+    const jobs = Array.isArray(r.jobs) ? r.jobs : r.jobs ? [r.jobs] : [];
+    return { ok: true, status: String(r.status || ''), jobs: jobs.map((j) => ({ id: Number(j.id) || 0, status: String(j.status || ''), name: String(j.name || '').slice(0, 80) })) };
+  });
+  // clears the printer's queue (stuck jobs after an error)
+  ipcMain.handle('print:clear', async (event, name) => {
+    fromApp(event);
+    const n = await knownPrinter(event, name); if (!n || process.platform !== 'win32') return { ok: false };
+    await psJson("Get-PrintJob -PrinterName $env:FS_PRN -ErrorAction SilentlyContinue | Remove-PrintJob -ErrorAction SilentlyContinue; 'true'", n);
+    return { ok: true };
   });
 
   // the local AI engine's download, shown on the program's taskbar button (a number 0..1, or -1 to clear it)

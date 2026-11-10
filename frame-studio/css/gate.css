@@ -99,3 +99,14 @@ body.studio-licensed .sb-menu a[href="admin.html"] { display: none !important; }
 #pl-offers .plo-terms, #pl-offers .plo-note { margin: 0; font-size: 12px; opacity: .85; } #pl-offers .plo-note a { color: #F3DDA6; }
 @media (max-width: 900px) { #pl-offers .plo-in { width: 220px; } }
 .pl-card a.btn { text-decoration: none; }
+
+/* a licence on two computers: this one waits while the other works (gate.js away()) */
+#lic-away { position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: none; max-height: none; margin: 0; border: 0; z-index: 2147483000; display: grid; place-items: center; padding: 20px; background: radial-gradient(circle at 50% 35%, #241f17, #0b0b10 70%); color: #F5EFE4; font-family: Heebo, sans-serif; direction: rtl; }
+#lic-away .la-in { width: min(460px, 100%); text-align: center; display: grid; gap: 12px; justify-items: center; }
+#lic-away .la-ic { font-size: 40px; letter-spacing: 6px; }
+#lic-away h2 { margin: 0; font: 800 26px 'Frank Ruhl Libre', Heebo, serif; color: #F3DDA6; }
+#lic-away p { margin: 0; color: #CFC7B8; line-height: 1.7; font-size: 16px; }
+#lic-away .btn { min-height: 50px; padding: 0 28px; font-size: 17px; }
+#lic-away .la-st { min-height: 1.4em; color: #F3DDA6; }
+body.lic-away > :not(#lic-away):not(script) { visibility: hidden !important; }
+#lic-away::backdrop { background: #0b0b10; }
