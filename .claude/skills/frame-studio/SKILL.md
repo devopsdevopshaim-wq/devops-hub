@@ -2004,3 +2004,19 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - Fixed: `build.py copy_assets` copies files only (media/real/thumb is a folder and broke every film build). download.html now states the two-computer licence and the self-service move.
 
 - v131: a "🎬 סרטון הדרכה" button (`#film-btn`, help.js `button()`) beside "❓ עזרה" in the top bar of the program (quick workspace and studio) opens `FS.helpFilm()`.
+
+## Faces more accurate and faster; copies made quick; light mode (v132)
+- **`js/faces.js`:**
+  - The landmarker runs on the GPU (`delegate: 'GPU'`, CPU fallback; `FaceSig.engine`), with numFaces 20 and detection/presence confidence 0.4.
+  - The model shrinks its input to a small square, so small faces in a wide group are lost: a test group photo of 15 event photos on 4500 px found 0 of 26 faces in one pass.
+  - Now, when the picture is ≥1600 px and its faces are small (smallest eye distance ≤34 px), none were found, or there are ≥6, it is looked at again at ≤2880 px in 720 px parts overlapping by a fifth. The same test now finds 28.
+  - A face cut by a part's inner edge is skipped (it is whole in the neighbour), and duplicates are merged by eye centre (<0.6 × eye distance).
+  - One pass takes ~70 ms; the parts pass runs only in that case.
+- **`js/copies.js`:** "closed eyes" needs *both* eyes closed (the min of eyeBlinkLeft/Right, not the average), with a higher cut when the person laughs (mouthSmile > 0.6). A wink or a squinting smile is no longer a rejected photo.
+- **Copies in the quick workspace (`js/mate.js`):**
+  - Click the number on a tile to type it (`.mt-cpin`; Enter / Escape / blur).
+  - 0–9, + and − set the photo under the mouse (or in focus), via `copyKey()` called from the workspace's capture-phase key handler. That handler stops every key; the copies field is let through.
+  - − / + on a *marked* tile change all the marked ones (`group()`).
+  - The "👥 N" tag (`data-advset`) sets the photo back to the people count.
+  - The copies bar has the tips.
+- **🪶 Light mode (`js/lite.js`, `css/lite.css`, studio.html; sw.js):** `html.fs-lite` turns off animations, transitions, backdrop blur, the heavy shadows and the intro wall. It turns on by itself once on a weak computer (≤4 threads or ≤4 GB), and the "🪶 קליל" button beside Help toggles it (`fs-lite`). Bigger −/+ and a visible keyboard focus in the workspace.

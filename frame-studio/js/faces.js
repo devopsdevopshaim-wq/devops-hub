@@ -9,11 +9,14 @@
   var RIGID = [33, 133, 362, 263, 1, 6, 98, 327, 2, 152, 234, 454, 172, 397, 70, 300, 105, 334, 10, 116, 345];
   var PAIRS = []; for (var i = 0; i < RIGID.length; i++) for (var j = i + 1; j < RIGID.length; j++) PAIRS.push([RIGID[i], RIGID[j]]);
   PAIRS = PAIRS.slice(0, 150);
+  /* the landmarker on the graphics card when there is one (several times faster), else on the processor; up to 20 faces,
+     and a little more willing to see a small or half-turned face (a group at an event) */
   function load() {
     if (lm) return lm;
     lm = import(MP + '/vision_bundle.mjs').then(function (m) {
       return m.FilesetResolver.forVisionTasks(MP + '/wasm').then(function (fs) {
-        return m.FaceLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: new URL('models/face_landmarker.task', location.href).href }, runningMode: 'IMAGE', numFaces: 12, outputFaceBlendshapes: true });
+        var o = function (dev) { return { baseOptions: { modelAssetPath: new URL('models/face_landmarker.task', location.href).href, delegate: dev }, runningMode: 'IMAGE', numFaces: 20, outputFaceBlendshapes: true, minFaceDetectionConfidence: 0.4, minFacePresenceConfidence: 0.4 }; };
+        return m.FaceLandmarker.createFromOptions(fs, o('GPU')).then(function (L) { FaceSig.engine = 'gpu'; return L; }, function () { FaceSig.engine = 'cpu'; return m.FaceLandmarker.createFromOptions(fs, o('CPU')); });
       });
     });
     lm.catch(function () { lm = null; });
@@ -23,14 +26,46 @@
     var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, k = Math.min(1, max / Math.max(w, h)), c = document.createElement('canvas');
     c.width = Math.round(w * k); c.height = Math.round(h * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c;
   }
-  /* every face in a picture: points in pixels (x, y, z), the blendshapes, and the picture it was found on */
+  /* the faces of one picture, in the coordinates of the canvas c (the picture drawn at c's size), from the canvas src
+     drawn at (ox, oy) with the scale k (src pixels per c pixel) */
+  function faces(L, src, c, ox, oy, k) {
+    var r = L.detect(src), W = src.width, H = src.height;
+    return (r.faceLandmarks || []).map(function (pts, i) {
+      var bs = {}; ((r.faceBlendshapes || [])[i] || { categories: [] }).categories.forEach(function (x) { bs[x.categoryName] = x.score; });
+      return { pts: pts.map(function (p) { return { x: (ox + p.x * W) / k, y: (oy + p.y * H) / k, z: p.z * W / k }; }), bs: bs, canvas: c };
+    });
+  }
+  function eyes(f) { var a = f.pts[33], b = f.pts[263]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) }; }
+  /* every face in a picture: points in pixels (x, y, z), the blendshapes, and the picture it was found on.
+     The face model looks for faces near the camera; in a large group photo the faces at the back are small and some are
+     missed. So when the picture is big and its faces are small (or none were found), it is looked at again in four
+     overlapping parts at twice the size, and the faces found there join, each face once. */
   function detect(img, max) {
     return load().then(function (L) {
-      var c = small(img, max || 1280), r = L.detect(c), W = c.width, H = c.height;
-      return (r.faceLandmarks || []).map(function (pts, k) {
-        var bs = {}; ((r.faceBlendshapes || [])[k] || { categories: [] }).categories.forEach(function (x) { bs[x.categoryName] = x.score; });
-        return { pts: pts.map(function (p) { return { x: p.x * W, y: p.y * H, z: p.z * W }; }), bs: bs, canvas: c };
-      });
+      var c = small(img, max || 1280), out = faces(L, c, c, 0, 0, 1);
+      var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, long = Math.max(iw, ih);
+      var minEye = out.length ? Math.min.apply(null, out.map(function (f) { return eyes(f).d; })) : 0;
+      if (long < 1600 || (out.length && minEye > 34 && out.length < 6)) return out;
+      /* the model shrinks what it is shown to a small square, so the parts are small too (about 720 pixels, overlapping by
+         a fifth): a face of 60 pixels stays big enough in its part to be found */
+      var big = small(img, Math.min(2880, long)), k = big.width / c.width, T = 720, step = Math.round(T * 0.8);
+      var xs = [], ys = [];
+      for (var x = 0; x < big.width; x += step) { xs.push(Math.min(x, Math.max(0, big.width - T))); if (x + T >= big.width) break; }
+      for (var y = 0; y < big.height; y += step) { ys.push(Math.min(y, Math.max(0, big.height - T))); if (y + T >= big.height) break; }
+      ys.forEach(function (oy) { xs.forEach(function (ox) {
+        var tw = Math.min(T, big.width), th = Math.min(T, big.height), t = document.createElement('canvas'); t.width = tw; t.height = th;
+        t.getContext('2d').drawImage(big, ox, oy, tw, th, 0, 0, tw, th);
+        faces(L, t, c, ox, oy, k).forEach(function (f) {
+          var e = eyes(f);
+          if (e.d < 4) return;
+          /* a face cut by the edge of this part (not the picture's own edge) is whole in the overlapping part next to it */
+          var bx = f.pts.map(function (q) { return q.x * k - ox; }), by = f.pts.map(function (q) { return q.y * k - oy; }), m = 3;
+          if ((ox > 0 && Math.min.apply(null, bx) < m) || (oy > 0 && Math.min.apply(null, by) < m) || (ox + tw < big.width && Math.max.apply(null, bx) > tw - m) || (oy + th < big.height && Math.max.apply(null, by) > th - m)) return;
+          var dup = out.some(function (g) { var q = eyes(g); return Math.hypot(q.x - e.x, q.y - e.y) < Math.max(q.d, e.d) * 0.6; });
+          if (!dup) out.push(f);
+        });
+      }); });
+      return out;
     });
   }
   function d3(a, b) { var x = a.x - b.x, y = a.y - b.y, z = a.z - b.z; return Math.sqrt(x * x + y * y + z * z); }
