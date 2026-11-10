@@ -2002,3 +2002,5 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - download.html, a `.dl-film` section;
   - the admin's promo films (PROMOS `guide`).
 - Fixed: `build.py copy_assets` copies files only (media/real/thumb is a folder and broke every film build). download.html now states the two-computer licence and the self-service move.
+
+- v131: a "🎬 סרטון הדרכה" button (`#film-btn`, help.js `button()`) beside "❓ עזרה" in the top bar of the program (quick workspace and studio) opens `FS.helpFilm()`.
