@@ -1945,3 +1945,24 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - "🖨️ הדפסה": prints only the sheet (`body.qr-printing`, @media print, 4 columns).
   - "⬇ הורדה כתמונה": an A4 PNG drawn on a canvas.
 - A ready sheet in the repo: `frame-studio/media/qr/qr-tasks-a4.pdf` and `.png`, with the live site's addresses. Made from a scratchpad script with Playwright; every code was decoded with jsQR (16/16).
+
+## One licence, two computers, one at a time; the printer doctor (v127)
+- **Licence (server, `n8n/snippets/access-handle.js` → `python3 n8n/build-access-workflow.py` → `cloudflare/node build.mjs`):**
+  - A *paid* licence binds up to two computers: `L.machine` and `L.machine2` (the backup, bound on its first activation). A trial stays on one computer.
+  - `L.activeMh` / `L.activeAt` say which computer works now; it counts as working for `ACTIVE_MS` = 4 minutes after its last `lic-check`.
+  - `lic-check` from the other computer answers `license-elsewhere` (409), unless `takeover=1`, which moves the work there and writes it to the history.
+  - `lic-activate` no longer drops the other computer's session (only this computer's).
+  - `lic-release` / `lic-rotate` clear both computers.
+  - The admin view gives `bound2`, `boundAt2`, `activeOn` (1/2), `activeAt`.
+  - Test: `cloudflare/test/license.test.mjs`, run in the deploy workflow and `npm test`.
+- **Program:**
+  - `FS.license.check` keeps the licence on `license-elsewhere`; `FS.license.takeover()` calls lic-check with takeover.
+  - `gate.js`: `licWatch()` checks every 90 seconds; `away()` shows a modal `<dialog id="lic-away">` "אופטימוס פעיל עכשיו במחשב השני" with "💻 להפעיל כאן". It closes any other open `<dialog>` every 400 ms, since a modal opened later would take the clicks unseen. Escape is blocked.
+  - Admin licenses row: "➕ מחשב גיבוי" and "🟢 עובד עכשיו ב...".
+- **Printer doctor (`js/print-doctor.js`, studio.html after printlog.js; sw.js):** after every desktop print, `FS.printDoctor.watch(dev, result, retry)` reads the Windows queue for ~20 s. A job or printer in error, or a failed print, opens a window explaining it: for photo printers, the driver paper size must match the ribbon (Mitsubishi "Paper size of printer driver and Ink Ribbon type do not match"). Its buttons:
+  - ⚙️ הגדרות המדפסת: Windows printing preferences, `rundll32 printui.dll,PrintUIEntry /e /n <printer>`;
+  - 🧹 ניקוי תור;
+  - 🖨️ שוב לפי הדרייבר: prints without a forced pageSize, remembered per printer in `localStorage['fs-prn-driver-size']`;
+  - 🖨️ שוב.
+  The print preview has the same settings button and the "גודל הנייר לפי הדרייבר" checkbox.
+- **Desktop (`desktop/main.js`, `preload.js`):** `print:settings`, `print:queue` (PowerShell Get-Printer/Get-PrintJob; the printer name passes in env `FS_PRN`, never in the command), `print:clear`, and `driverSize` on `print:run`. The printer must be one of the installed printers. Older installs still get the explanation, without the queue or the settings button.

@@ -47,7 +47,10 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
   // the printers installed on this computer, and printing the laid-out sheets to one of them at the exact paper size
   print: Object.freeze({
     printers: () => ipcRenderer.invoke('print:printers'),
-    run: (o) => ipcRenderer.invoke('print:run', { deviceName: o && o.deviceName ? String(o.deviceName) : '', wMm: Number(o && o.wMm) || 0, hMm: Number(o && o.hMm) || 0, copies: Number(o && o.copies) || 1 }),
+    settings: (name) => ipcRenderer.invoke('print:settings', String(name || '')),
+    queue: (name) => ipcRenderer.invoke('print:queue', String(name || '')),
+    clear: (name) => ipcRenderer.invoke('print:clear', String(name || '')),
+    run: (o) => ipcRenderer.invoke('print:run', { deviceName: o && o.deviceName ? String(o.deviceName) : '', wMm: Number(o && o.wMm) || 0, hMm: Number(o && o.hMm) || 0, copies: Number(o && o.copies) || 1 , driverSize: !!(o && o.driverSize) }),
   }),
   // the taskbar button's progress (0..1, -1 clears, 2 = failed) and a Windows notification
   progress: (f) => ipcRenderer.send('app:progress', Number(f)),
