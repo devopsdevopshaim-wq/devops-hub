@@ -81,16 +81,27 @@
   FS.helpGuide = function () {
     if (!FS.dialog) return;
     FS.dialog('❓ איך עובדים עם אופטימוס',
+      '<div class="hp-film"><button type="button" class="btn gold" id="hp-film">▶ סרטון הדרכה: כל לשונית עם הסבר ודוגמה (4.5 דקות)</button></div>' +
       '<div class="hp-g">' + GUIDE.map(function (g) { return '<div class="hp-i"><i>' + g[0] + '</i><div><b>' + g[1] + '</b><p>' + g[2] + '</p></div></div>'; }).join('') + '</div>' +
       '<p class="hp-f">אפשר לפתוח את ההסבר שוב בכל רגע בכפתור ❓ למעלה.</p><div class="hp-a"><button class="btn" id="hp-go">✔ הבנתי, מתחילים</button></div>', true);
     var b = document.getElementById('hp-go'); if (b) b.addEventListener('click', function () { FS.closeDialog(); });
+    var f = document.getElementById('hp-film'); if (f) f.addEventListener('click', function () { FS.helpFilm(); });
     try { localStorage.setItem('fs-guide-seen', '1'); } catch (e) { /* private mode */ }
+  };
+  /* the tutorial film (videos/promo-src/guide.py → media/promo/guide.mp4): every part of the program, with examples */
+  FS.helpFilm = function () {
+    if (!FS.dialog) return;
+    FS.dialog('🎬 סרטון הדרכה · אופטימוס', '<video class="hp-video" src="media/promo/guide.mp4" poster="media/promo/guide.jpg" controls autoplay playsinline preload="auto"></video>' +
+      '<p class="hp-f">עוצרים בכל רגע ומנסים בתוכנה. הסרטון תמיד זמין בכפתור 🎬 סרטון הדרכה למעלה, ליד ❓ עזרה.</p>', true);
   };
   FS.helpWelcome = function () { var seen = null; try { seen = localStorage.getItem('fs-guide-seen'); } catch (e) { /* private mode */ } if (!seen && !document.body.classList.contains('gated')) FS.helpGuide(); };
   function button() {
     var host = document.querySelector('#mt .mt-acts'); if (!host || document.getElementById('help-btn')) return;
     var b = document.createElement('button'); b.id = 'help-btn'; b.type = 'button'; b.className = 'mt-btn'; b.textContent = '❓ עזרה';
     b.addEventListener('click', FS.helpGuide); host.appendChild(b);
+    /* the tutorial film, right beside the help */
+    var v = document.createElement('button'); v.id = 'film-btn'; v.type = 'button'; v.className = 'mt-btn'; v.textContent = '🎬 סרטון הדרכה'; v.title = 'סרטון הדרכה: כל לשונית בתוכנה, עם הסבר ודוגמה';
+    v.addEventListener('click', function () { FS.helpFilm(); }); host.appendChild(v);
   }
   setTimeout(function () { button(); FS.helpWelcome(); }, 2000);
 })();

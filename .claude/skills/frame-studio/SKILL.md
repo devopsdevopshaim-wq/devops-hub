@@ -1945,3 +1945,62 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - "🖨️ הדפסה": prints only the sheet (`body.qr-printing`, @media print, 4 columns).
   - "⬇ הורדה כתמונה": an A4 PNG drawn on a canvas.
 - A ready sheet in the repo: `frame-studio/media/qr/qr-tasks-a4.pdf` and `.png`, with the live site's addresses. Made from a scratchpad script with Playwright; every code was decoded with jsQR (16/16).
+
+## One licence, two computers, one at a time; the printer doctor (v127)
+- **Licence (server, `n8n/snippets/access-handle.js` → `python3 n8n/build-access-workflow.py` → `cloudflare/node build.mjs`):**
+  - A *paid* licence binds up to two computers: `L.machine` and `L.machine2` (the backup, bound on its first activation). A trial stays on one computer.
+  - `L.activeMh` / `L.activeAt` say which computer works now; it counts as working for `ACTIVE_MS` = 4 minutes after its last `lic-check`.
+  - `lic-check` from the other computer answers `license-elsewhere` (409), unless `takeover=1`, which moves the work there and writes it to the history.
+  - `lic-activate` no longer drops the other computer's session (only this computer's).
+  - `lic-release` / `lic-rotate` clear both computers.
+  - The admin view gives `bound2`, `boundAt2`, `activeOn` (1/2), `activeAt`.
+  - Test: `cloudflare/test/license.test.mjs`, run in the deploy workflow and `npm test`.
+- **Program:**
+  - `FS.license.check` keeps the licence on `license-elsewhere`; `FS.license.takeover()` calls lic-check with takeover.
+  - `gate.js`: `licWatch()` checks every 90 seconds; `away()` shows a modal `<dialog id="lic-away">` "אופטימוס פעיל עכשיו במחשב השני" with "💻 להפעיל כאן". It closes any other open `<dialog>` every 400 ms, since a modal opened later would take the clicks unseen. Escape is blocked.
+  - Admin licenses row: "➕ מחשב גיבוי" and "🟢 עובד עכשיו ב...".
+- **Printer doctor (`js/print-doctor.js`, studio.html after printlog.js; sw.js):** after every desktop print, `FS.printDoctor.watch(dev, result, retry)` reads the Windows queue for ~20 s. A job or printer in error, or a failed print, opens a window explaining it: for photo printers, the driver paper size must match the ribbon (Mitsubishi "Paper size of printer driver and Ink Ribbon type do not match"). Its buttons:
+  - ⚙️ הגדרות המדפסת: Windows printing preferences, `rundll32 printui.dll,PrintUIEntry /e /n <printer>`;
+  - 🧹 ניקוי תור;
+  - 🖨️ שוב לפי הדרייבר: prints without a forced pageSize, remembered per printer in `localStorage['fs-prn-driver-size']`;
+  - 🖨️ שוב.
+  The print preview has the same settings button and the "גודל הנייר לפי הדרייבר" checkbox.
+- **Desktop (`desktop/main.js`, `preload.js`):** `print:settings`, `print:queue` (PowerShell Get-Printer/Get-PrintJob; the printer name passes in env `FS_PRN`, never in the command), `print:clear`, and `driverSize` on `print:run`. The printer must be one of the installed printers. Older installs still get the explanation, without the queue or the settings button.
+
+## Printer doctor: every common error, and a check before printing (v128)
+- `js/print-doctor.js` `KINDS`: mismatch (paper size ≠ ribbon), paperout, ribbon (NoToner/TonerLow), jam, door, offline (Offline/NotAvailable), busy, error, failed. Each has a title, the cause, numbered steps and a tip; photo printers (Mitsubishi/DNP/Citizen) get the "paper and ribbon are one kit" line. "לפי הדרייבר" shows only for mismatch.
+- `classify(text, dev)` maps Windows' PrinterStatus / JobStatus words to a kind ('' = fine: Normal, Printing, Spooling, Paused…). A plain Error/Blocked on a Mitsubishi counts as mismatch.
+- `precheck(dev, go)` before every desktop print (output.js) reads the queue (4 s limit). Off, out of paper or ribbon, jammed or open stops the print and opens the window, and "להדפיס שוב" there sends it. A plain error does not stop it; `watch()` after the print catches it.
+
+## Self-service move, printers that connect by themselves, ink and paper from the printer (v129)
+- **Move the licence (server `lic-move-code` / `lic-move` in `n8n/snippets/access-handle.js`):**
+  - The email and the licence code prove the licence; a 6-digit code to the licence email (15 minutes, 5 tries) proves the person.
+  - The place given up: a free slot, else the computer not working now / bound longest ago. Its sessions end.
+  - At most once in 30 days (`L.moves`; `move-limit` gives the date of the next one). The owner's 🔓 release clears it.
+  - The owner gets an alert mail on every move.
+  - In the program (`gate.js` `moveOffer`): after `license-in-use`, "🔄 החלפת מחשב?" → code to the mail → move → activate. `FS.license.moveCode` / `move`.
+  - Tested in `cloudflare/test/license.test.mjs`.
+- **Printer status (desktop `print:status`, up to 4 printers in one PowerShell pass; names in env `FS_PRN`, one per line):** Get-Printer status, WMI `DetectedErrorState` (3 low paper … 11 output full), WorkOffline, driver, port, `PrinterPaperNames`, and `Get-PrinterProperty` entries matching ribbon/media/paper/ink/remain/count/life/kit. It answers `{state, error, papers, props}`.
+- **printlog.js:**
+  - The desktop poll reads the status of the chosen printer and the photo printers every ~10 s.
+  - `plugged()`: a printer new to Windows' list (`fs-prn-known`), or one back from offline, is chosen at once when it is a photo printer, or when the current one is missing or offline (toast). With nothing chosen, a photo printer is preferred over the default.
+  - `kitWatch()`: on no-paper/no-ink after ≥30 sheets, the sheets counted become the kit size (`pr.learned`); ready again after running out → new kit, the counters reset (`pr.kitAt`).
+  - "⚙️ דיו ונייר" shows "מה המדפסת מדווחת עכשיו" (state, learnt kit, driver properties, paper names). `FS.printerMedia()`.
+  - Models: Mitsubishi CP-D90DW and CP-M1 added (400 until learnt).
+
+## The tutorial film "אופטימוס · המדריך" (v130)
+- Sources in `videos/promo-src/`:
+  - `capture/cap-guide.cjs` → `optimus-guide/cap/*.webp`: the start screen; the quick workspace views main / edit / design / ai / print / hub; the 11 studio tabs (photos, adjust, filters, frames, styles, ai, live, collage, curate, customers, output), with event photos loaded.
+  - `optimus-guide/script.json`: 22 scenes of Hebrew narration.
+  - `guide.py`: the builder, reusing tutorial.py's screen box, text column and captions. It adds a chip naming the part of the program, example cards (cap/fun-*, e2e/*, cap/ai-*, cap/collage-*, cap/pro-guest) and the tips card.
+- Voice: `.github/workflows/frame-tts.yml` (workflow_dispatch, `film=optimus-guide`) runs on GitHub, where the voices are reachable (the sandbox blocks them). The clips land on the branch `ci-tts` under `optimus-guide/` and are copied to `optimus-guide/voice/`.
+  - `script.json` sets `providers: ["edge"]`, `voices.edge.he = he-IL-HilaNeural` (free, Microsoft, female; not Google) and `langs: ["he"]`; `frame-tts.mjs` reads these three keys.
+  - Cancel the push-triggered run (it speaks app-tutorial into the same branch).
+- Build and render: `python3 videos/promo-src/guide.py`, then in `videos/promo-optimus-guide`: `npx --yes hyperframes@0.8.185 render --quality looks --output renders/guide.mp4` (~262 s, 7868 frames). The web copy is `frame-studio/media/promo/guide.mp4` (720p) with the poster `guide.jpg`.
+- Shown in:
+  - the program's ❓ guide: "▶ סרטון הדרכה" → `FS.helpFilm()`;
+  - download.html, a `.dl-film` section;
+  - the admin's promo films (PROMOS `guide`).
+- Fixed: `build.py copy_assets` copies files only (media/real/thumb is a folder and broke every film build). download.html now states the two-computer licence and the self-service move.
+
+- v131: a "🎬 סרטון הדרכה" button (`#film-btn`, help.js `button()`) beside "❓ עזרה" in the top bar of the program (quick workspace and studio) opens `FS.helpFilm()`.

@@ -225,16 +225,26 @@
             licKeep(null); VAULT.del('lic'); return x;
           });
         });
+        if (r.error === 'license-elsewhere') return r;   /* the other computer works now: keep everything, offer "להפעיל כאן" */
         licKeep(null); VAULT.del('lic'); return r;
       });
     },
+    /* "להפעיל כאן": this computer becomes the one that works (a paid licence on two computers; the other one stops at its next check) */
+    takeover: function () {
+      var L = licLoad(); if (!L || !L.token) return Promise.resolve({ ok: false, error: 'no-license' });
+      return machine().then(function (m) { return auth('lic-check', { token: L.token, machine: m, takeover: '1', version: (window.FSDesktop && window.FSDesktop.version) || (window.FS_V || '') }); })
+        .then(function (r) { if (r.ok) { L.checkedAt = Date.now(); if (r.plan) L.plan = r.plan; licKeep(L); planNews(); } return r; });
+    },
+    /* moving the licence to this computer by the licence holder: a code to the licence's email, then the move (then activate) */
+    moveCode: function (email, code) { return machine().then(function (m) { return auth('lic-move-code', { email: email, code: code, machine: m }); }); },
+    move: function (email, code, mailCode) { return machine().then(function (m) { return auth('lic-move', { email: email, code: code, mailCode: mailCode, machine: m, platform: (window.FSDesktop && window.FSDesktop.platform) || 'web' }); }); },
     forget: function () { licKeep(null); VAULT.del('lic'); },
     /* a licence holder's own call (an update request) */
     call: function (action, data) { return auth(action, data || {}); },
     /* the owner's licence management (an admin session) */
     admin: function (action, data) { var s = load(); return auth(action, Object.assign({}, data || {}, { token: s && s.token })); }
   };
-  Object.assign(MSG, { 'bad-license': 'המייל או קוד ההפעלה לא נכונים.', 'license-in-use': 'הקוד הזה כבר מופעל במחשב אחר. כל קוד עובד במחשב אחד בלבד. להחלפת מחשב פונים לבעל העסק.',
+  Object.assign(MSG, { 'bad-license': 'המייל או קוד ההפעלה לא נכונים.', 'license-in-use': 'הקוד הזה כבר רשום במחשבים אחרים (רישיון בתשלום: עד שני מחשבים, ראשי וגיבוי; ניסיון: מחשב אחד). להחלפת מחשב פונים לחיים: 054-4979771.', 'license-elsewhere': 'אופטימוס פעיל עכשיו במחשב השני. רק מחשב אחד עובד בכל רגע.', 'move-limit': 'הרישיון כבר הועבר החודש. העברה נוספת: פונים לחיים, 054-4979771.', 'bad-code': 'הקוד מהמייל לא נכון.', 'code-expired': 'הקוד פג. שולחים קוד חדש.',
     'license-revoked': 'הרישיון בוטל. פונים לבעל העסק.', 'license-moved': 'הרישיון שייך למחשב אחר. מפעילים מחדש עם הקוד.', 'license-exists': 'כבר יש רישיון למייל הזה.',
     'bad-details': 'שם מלא (פרטי ומשפחה), טלפון ומייל תקינים.', 'bad-code': 'הקוד לא נכון.', 'code-expired': 'הקוד פג או נוצל. מבקשים קוד חדש.', 'mail-failed': 'המייל לא יצא כרגע.', 'trial-used': 'כבר היה ניסיון חינם במייל, בטלפון, במחשב או ברשת הזו. חיים קיבל הודעה ויכול לאשר ניסיון נוסף; אפשר גם לכתוב לו בוואטסאפ 054-4979771.', 'license-offline-too-long': 'צריך חיבור לאינטרנט פעם בשבוע כדי לאמת את הרישיון.', 'license-unpaid': 'הרישיון יופעל אחרי קבלת התשלום. פונים לבעל העסק.', 'agreement-needed': 'צריך לאשר את הסכם הרכישה.', 'bad-amount': 'סכום לא תקין.', 'not-found': 'לא נמצא.' });
 

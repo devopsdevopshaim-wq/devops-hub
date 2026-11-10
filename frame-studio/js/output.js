@@ -297,9 +297,16 @@
       var dev = viaDesktop ? FS.printerChoice() : '';
       if (window.FSDesktop && FSDesktop.print && dev) {
         FS.busy('שולח ל' + dev + '…');
-        return FSDesktop.print.run({ deviceName: dev, wMm: plan.paper[2], hMm: plan.paper[3] }).then(function (r) {
+        var PD = FS.printDoctor, drv = !!(PD && PD.driverSize(dev));
+        /* the printer first: off, out of paper or ribbon, jammed or open is shown before anything is sent */
+        return (PD && PD.precheck ? PD.precheck(dev, function () { FS.doPrint(plan, viaDesktop); }) : Promise.resolve(true)).then(function (go) {
+          if (!go) { FS.busy(); document.body.classList.remove('printing'); $('#print-root').innerHTML = ''; return; }
+          return FSDesktop.print.run({ deviceName: dev, wMm: plan.paper[2], hMm: plan.paper[3], driverSize: drv });
+        }).then(function (r) { if (r === undefined) return;
           FS.busy(); document.body.classList.remove('printing'); $('#print-root').innerHTML = '';
-          FS.toast(r && r.ok ? '🖨️ נשלח ל' + dev + ' · ' + plan.pages.length + ' דפים ' + plan.paper[1] : '⚠️ ההדפסה לא יצאה (' + ((r && r.reason) || '') + '). בודקים שהמדפסת דלוקה ומחוברת.', 6000);
+          FS.toast(r && r.ok ? '🖨️ נשלח ל' + dev + ' · ' + plan.pages.length + ' דפים ' + plan.paper[1] + (drv ? ' (לפי גודל הנייר שבדרייבר)' : '') : '⚠️ ההדפסה לא יצאה (' + ((r && r.reason) || '') + ').', 6000);
+          /* the printer's queue for a few seconds: a driver error (paper size and ribbon do not match, no paper…) opens the fix */
+          if (PD) PD.watch(dev, r, function () { FS.doPrint(plan, viaDesktop); });
         });
       }
       setTimeout(function () { window.print(); }, 60);
@@ -361,6 +368,14 @@
         sel.innerHTML += l.map(function (x) { return '<option value="' + FS.esc(x.name) + '">' + FS.esc(x.label) + (x.default ? ' (ברירת מחדל)' : '') + '</option>'; }).join('');
         var was = FS.printerChoice(); if (was && l.some(function (x) { return x.name === was; })) sel.value = was;
         ph.textContent = l.length ? 'נמצאו ' + l.length + ' מדפסות. ההדפסה יוצאת ישר אליה, בגודל הנייר המדויק ובלי שוליים.' : 'לא נמצאו מדפסות מותקנות במחשב.';
+        /* the printer's own settings (paper size, ribbon) one click away, and printing at the size the driver holds */
+        if (l.length && FS.printDoctor && !$('#pv-prn-set', body)) {
+          ph.insertAdjacentHTML('afterend', '<div class="pv-prn-x"><button type="button" class="btn line small" id="pv-prn-set">⚙️ הגדרות המדפסת</button><label class="pv-prn-drv"><input type="checkbox" id="pv-prn-drv"> גודל הנייר לפי הדרייבר <small>(למדפסות תמונות: Mitsubishi, DNP)</small></label></div>');
+          var drvBox = $('#pv-prn-drv', body), syncDrv = function () { drvBox.checked = !!sel.value && FS.printDoctor.driverSize(sel.value); drvBox.disabled = !sel.value; };
+          $('#pv-prn-set', body).addEventListener('click', function () { if (!sel.value) return FS.toast('בוחרים קודם מדפסת.'); FS.printDoctor.settings(sel.value); });
+          drvBox.addEventListener('change', function () { if (sel.value) FS.printDoctor.driverSize(sel.value, drvBox.checked); });
+          sel.addEventListener('change', syncDrv); syncDrv();
+        }
       }).catch(function () { ph.textContent = 'לא הצלחתי לקרוא את המדפסות. ייפתח חלון ההדפסה של המחשב.'; });
       sel.addEventListener('change', function () { FS.printerChoice(sel.value); });
     })();

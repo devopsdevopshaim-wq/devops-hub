@@ -97,11 +97,36 @@
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || c.replace(/[^A-Za-z0-9]/g, '').length < 10) { document.getElementById('lic-note').textContent = 'מייל וקוד הפעלה מלאים.'; return; }
       if (!document.getElementById('lic-agree').checked) { document.getElementById('lic-note').textContent = 'מסמנים את האישור להסכם הרכישה.'; return; }
       go.disabled = true; go.textContent = '…';
-      LIC.activate(e, c).then(function (r) { if (r.ok) return unlock('license'); lock(ACC ? ACC.msg(r) : 'שגיאה'); });
+      LIC.activate(e, c).then(function (r) { if (r.ok) { unlock('license'); licWatch(); LIC.check().then(licAnswer, function () {}); return; } lock(ACC ? ACC.msg(r) : 'שגיאה'); if (r.error === 'license-in-use') moveOffer(e, c); });
     }
     go.addEventListener('click', submit);
     [em, cd].forEach(function (i) { i.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); submit(); } }); });
     setTimeout(function () { (em.value ? cd : em).focus(); }, 30);
+  }
+  /* the licence is on other computers: the holder moves it here by himself (a code to the licence's email; once in 30 days) */
+  function moveOffer(e, c) {
+    var note = document.getElementById('lic-note'); if (!note || !LIC.moveCode) return;
+    note.insertAdjacentHTML('afterend', '<div class="gate-move" id="gate-move"><b>🔄 החלפת מחשב?</b><p>אפשר להעביר את הרישיון למחשב הזה בעצמכם. המחשב שעבד הכי מזמן מתנתק. פעם בחודש, בלי לחכות לנו.</p>' +
+      '<button type="button" class="btn gold" id="gm-send">📩 שליחת קוד למייל הרישיון</button><div id="gm-step" hidden><label>הקוד מהמייל<input id="gm-code" inputmode="numeric" maxlength="6" dir="ltr" autocomplete="one-time-code"></label><button type="button" class="btn gold" id="gm-go">🔄 העברת הרישיון למחשב הזה</button></div><p class="acc-note" id="gm-note" role="status"></p></div>');
+    var gn = document.getElementById('gm-note');
+    document.getElementById('gm-send').addEventListener('click', function () {
+      var b = this; b.disabled = true; gn.textContent = 'שולח…';
+      LIC.moveCode(e, c).then(function (r) {
+        b.disabled = false;
+        if (r.ok && r.already) { gn.textContent = 'המחשב הזה כבר רשום. נכנסים שוב.'; return; }
+        if (!r.ok) { gn.textContent = r.error === 'move-limit' ? ACC.msg(r) + (r.next ? ' (העברה עצמית אפשרית מ־' + new Date(r.next).toLocaleDateString('he-IL') + ')' : '') : ACC.msg(r); return; }
+        gn.textContent = '📩 הקוד נשלח ל־' + e + '. תקף ל־15 דקות.'; b.hidden = true; document.getElementById('gm-step').hidden = false; document.getElementById('gm-code').focus();
+      });
+    });
+    document.getElementById('gm-go').addEventListener('click', function () {
+      var mc = String(document.getElementById('gm-code').value || '').replace(/\D/g, ''); if (mc.length !== 6) { gn.textContent = 'הקוד בן 6 ספרות.'; return; }
+      var b = this; b.disabled = true; gn.textContent = 'מעביר…';
+      LIC.move(e, c, mc).then(function (r) {
+        if (!r.ok) { b.disabled = false; gn.textContent = ACC.msg(r); return; }
+        gn.textContent = '✔ הרישיון הועבר. נכנס…';
+        LIC.activate(e, c).then(function (x) { if (x.ok) { unlock('license'); licWatch(); LIC.check().then(licAnswer, function () {}); if (FS.toast) FS.toast('✔ הרישיון הועבר למחשב הזה'); } else { b.disabled = false; gn.textContent = ACC.msg(x); } });
+      });
+    });
   }
   /* the version, always at the bottom of the screen (also on this sign-in screen): the page's number and the installed program's */
   (function () {
@@ -124,10 +149,39 @@
       });
     }, function () {});
   }
+  /* One licence, two computers (main and backup), one working at a time: the server says which one works now. The other
+     one shows this screen; "להפעיל כאן" moves the work here, and the first computer stops at its next check (90 seconds). */
+  function away() {
+    if (document.getElementById('lic-away')) return;
+    /* a modal <dialog>: above every other window (one open as modal would leave a plain overlay unclickable), Escape does not close it */
+    var d = document.createElement('dialog'); d.id = 'lic-away'; d.setAttribute('aria-labelledby', 'la-h');
+    d.addEventListener('cancel', function (e) { e.preventDefault(); });
+    d.innerHTML = '<div class="la-in"><div class="la-ic" aria-hidden="true">💻 ⇄ 💻</div><h2 id="la-h">אופטימוס פעיל עכשיו במחשב השני</h2>' +
+      '<p>הרישיון עובד במחשב אחד בכל רגע. אפשר לעבור לעבוד כאן: המחשב השני יינעל תוך דקה וחצי, ומה שפתוח בו נשאר שמור בו.</p>' +
+      '<button type="button" class="btn gold" id="la-go">💻 להפעיל כאן</button><p class="la-st" id="la-st" role="status"></p></div>';
+    Array.prototype.forEach.call(document.querySelectorAll('dialog[open]'), function (x) { try { x.close(); } catch (e) { /* closed already */ } });
+    body.appendChild(d); body.classList.add('lic-away'); try { d.showModal(); } catch (e) { d.setAttribute('open', ''); }
+    /* a window that opens later (what's new, a tip) would sit above this one, unseen, and take the clicks: closed while this waits */
+    awayT = setInterval(function () { Array.prototype.forEach.call(document.querySelectorAll('dialog[open]'), function (x) { if (x !== d) try { x.close(); } catch (e) { /* closed */ } }); }, 400);
+    document.getElementById('la-go').addEventListener('click', function () {
+      var st = document.getElementById('la-st'); st.textContent = 'מעביר…';
+      LIC.takeover().then(function (r) { if (r.ok) { back(); if (FS.toast) FS.toast('✔ אופטימוס עובד עכשיו במחשב הזה'); } else st.textContent = ACC.msg(r); });
+    });
+    setTimeout(function () { var g = document.getElementById('la-go'); if (g) g.focus(); }, 30);
+  }
+  var awayT = null;
+  function back() { clearInterval(awayT); awayT = null; var d = document.getElementById('lic-away'); if (d) { try { d.close(); } catch (e) { /* not open */ } d.remove(); } body.classList.remove('lic-away'); }
+  function licAnswer(r) {
+    if (r.ok) { back(); return; }
+    if (r.error === 'license-elsewhere') { away(); return; }
+    if (r.error !== 'no-license') { back(); lock(ACC.msg(r)); }
+  }
+  var licTimer = null;
+  function licWatch() { if (licTimer) return; licTimer = setInterval(function () { if (LIC.get() && !ACC.isAdmin()) LIC.check().then(licAnswer, function () {}); }, 90000); }
   if (ACC.isAdmin()) { unlock('admin'); adminCheck(); }
   else if (LIC.get()) {
-    unlock('license');
-    LIC.check().then(function (r) { if (r.ok) unlock('license'); else lock(ACC.msg(r)); });
+    unlock('license'); licWatch();
+    LIC.check().then(function (r) { if (r.ok) { unlock('license'); back(); } else licAnswer(r); });
   } else {
     /* nothing signed in here, but the desktop program remembers the owner (or a licence): open, and sign in quietly */
     ACC.hasSaved().then(function (has) {
@@ -135,7 +189,7 @@
       return LIC.saved().then(function (v) {
         if (!v || !v.code) return lock();
         LIC.activate(v.email, v.code).then(function (r) {
-          if (r.ok) unlock('license');
+          if (r.ok) { unlock('license'); licWatch(); LIC.check().then(licAnswer, function () {}); }
           else if (r.error === 'offline' || /^http-5|rate-limited/.test(r.error || '')) unlock('license');
           else lock(ACC.msg(r));
         });
