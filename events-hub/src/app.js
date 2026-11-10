@@ -219,7 +219,9 @@ const EVENT_IDS = EVENT_TYPES.map((e) => e.id);
 // סוגי האירועים עם התמונה שהמנהל בחר (או תמונת ברירת המחדל)
 function eventTypes() {
   const imgs = db.settings().eventImages || {};
-  return EVENT_TYPES.map((e) => ({ ...e, image: imgs[e.id] || e.image, custom: Boolean(imgs[e.id]) }));
+  // תמונה שנמצאת באתר עצמו (img/...) מקבלת את כתובת האתר המלאה, כדי שתעבוד גם מאפליקציית הניהול
+  const full = (u) => (/^img\//.test(u) ? `${config.pagesUrl}/${u}` : u);
+  return EVENT_TYPES.map((e) => ({ ...e, image: imgs[e.id] || full(e.image), custom: Boolean(imgs[e.id]) }));
 }
 const LINK_TYPES = ['none', 'category', 'event', 'product', 'url'];
 
