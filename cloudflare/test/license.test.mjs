@@ -11,8 +11,9 @@ const requireShim = (m) => { if (m === 'crypto') return nodeCrypto; throw new Er
 let ip = 1;
 async function call(body) {
   const ctx = { $json: { body, headers: { 'x-forwarded-for': '10.0.0.' + (ip++ % 200), 'user-agent': 'test' } }, $getWorkflowStaticData: () => sd, require: requireShim, $: () => ({ first: () => ({ json: {} }), all: () => [] }), ENV: {}, helpers: {} };
-  const r = (await handle(ctx))[0].json; return r.body || r;
+  const r = (await handle(ctx))[0].json; last = r; return r.body || r;
 }
+let last = null;
 const M = { A: 'a'.repeat(32), B: 'b'.repeat(32), C: 'c'.repeat(32), D: 'd'.repeat(32), E: 'e'.repeat(32) };
 const CODE = 'FS-ABCD-EFGH-JKMN-PQRS';
 // first call makes the state; then the licences go in
@@ -38,6 +39,25 @@ r = await chk(b.token, M.B); check('and computer 2 is then the one told', !r.ok 
 let t1 = await act('trial@x.com', 'FS-TTTT-TTTT-TTTT-TTTT', M.D); check('a trial activates on one computer', t1.ok, t1);
 let t2 = await act('trial@x.com', 'FS-TTTT-TTTT-TTTT-TTTT', M.E); check('a trial gets no second computer', !t2.ok && t2.error === 'license-in-use', t2);
 r = await chk(a.token, M.B); check('a token cannot be used from the other computer', !r.ok && r.error === 'license-moved', r);
+
+// ---- the customer moves the licence to a new computer by himself
+shift = 6 * 60000;
+r = await chk(b.token, M.B, { takeover: '1' }); check('computer 2 works (setup for the move)', r.ok, r);
+let mv = await call({ action: 'lic-move-code', email: 'pro@x.com', code: CODE, machine: M.C });
+const sent = last.mail || {}, mailed = (/(\d{6})/.exec(sent.subject || '') || [])[1];
+check('a move code goes to the licence email', mv.ok && sent.to === 'pro@x.com' && !!mailed, { mv, sent });
+mv = await call({ action: 'lic-move', email: 'pro@x.com', code: CODE, machine: M.C, mailCode: '000000' === mailed ? '111111' : '000000' });
+check('a wrong mail code is refused', !mv.ok && mv.error === 'bad-code', mv);
+mv = await call({ action: 'lic-move', email: 'pro@x.com', code: CODE, machine: M.C, mailCode: mailed });
+check('the right code moves the licence', mv.ok && mv.moved, mv);
+check('the owner hears of it', last.mail && /העביר/.test(last.mail.subject || ''), last.mail);
+check('the computer not working now gave its place (computer 1), computer 2 stays', sd.licenses['pro@x.com'].machine !== undefined && mv.slot === 1, mv);
+let cc = await act('pro@x.com', CODE, M.C); check('the new computer signs in as usual', cc.ok, cc);
+r = await chk(a.token, M.A); check('the old computer is out', !r.ok && (r.error === 'license-moved' || r.error === 'signed-out'), r);
+mv = await call({ action: 'lic-move-code', email: 'pro@x.com', code: CODE, machine: M.A });
+check('a second move within 30 days is refused', !mv.ok && mv.error === 'move-limit', mv);
+mv = await call({ action: 'lic-move-code', email: 'pro@x.com', code: 'FS-XXXX-XXXX-XXXX-XXXX', machine: M.D });
+check('a wrong licence code gets no move code', !mv.ok && mv.error === 'bad-license', mv);
 Date.now = realNow;
 console.log(bad ? bad + ' failed' : 'all passed');
 process.exit(bad ? 1 : 0);

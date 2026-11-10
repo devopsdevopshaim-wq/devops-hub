@@ -97,11 +97,36 @@
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || c.replace(/[^A-Za-z0-9]/g, '').length < 10) { document.getElementById('lic-note').textContent = 'מייל וקוד הפעלה מלאים.'; return; }
       if (!document.getElementById('lic-agree').checked) { document.getElementById('lic-note').textContent = 'מסמנים את האישור להסכם הרכישה.'; return; }
       go.disabled = true; go.textContent = '…';
-      LIC.activate(e, c).then(function (r) { if (r.ok) { unlock('license'); licWatch(); LIC.check().then(licAnswer, function () {}); return; } lock(ACC ? ACC.msg(r) : 'שגיאה'); });
+      LIC.activate(e, c).then(function (r) { if (r.ok) { unlock('license'); licWatch(); LIC.check().then(licAnswer, function () {}); return; } lock(ACC ? ACC.msg(r) : 'שגיאה'); if (r.error === 'license-in-use') moveOffer(e, c); });
     }
     go.addEventListener('click', submit);
     [em, cd].forEach(function (i) { i.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); submit(); } }); });
     setTimeout(function () { (em.value ? cd : em).focus(); }, 30);
+  }
+  /* the licence is on other computers: the holder moves it here by himself (a code to the licence's email; once in 30 days) */
+  function moveOffer(e, c) {
+    var note = document.getElementById('lic-note'); if (!note || !LIC.moveCode) return;
+    note.insertAdjacentHTML('afterend', '<div class="gate-move" id="gate-move"><b>🔄 החלפת מחשב?</b><p>אפשר להעביר את הרישיון למחשב הזה בעצמכם. המחשב שעבד הכי מזמן מתנתק. פעם בחודש, בלי לחכות לנו.</p>' +
+      '<button type="button" class="btn gold" id="gm-send">📩 שליחת קוד למייל הרישיון</button><div id="gm-step" hidden><label>הקוד מהמייל<input id="gm-code" inputmode="numeric" maxlength="6" dir="ltr" autocomplete="one-time-code"></label><button type="button" class="btn gold" id="gm-go">🔄 העברת הרישיון למחשב הזה</button></div><p class="acc-note" id="gm-note" role="status"></p></div>');
+    var gn = document.getElementById('gm-note');
+    document.getElementById('gm-send').addEventListener('click', function () {
+      var b = this; b.disabled = true; gn.textContent = 'שולח…';
+      LIC.moveCode(e, c).then(function (r) {
+        b.disabled = false;
+        if (r.ok && r.already) { gn.textContent = 'המחשב הזה כבר רשום. נכנסים שוב.'; return; }
+        if (!r.ok) { gn.textContent = r.error === 'move-limit' ? ACC.msg(r) + (r.next ? ' (העברה עצמית אפשרית מ־' + new Date(r.next).toLocaleDateString('he-IL') + ')' : '') : ACC.msg(r); return; }
+        gn.textContent = '📩 הקוד נשלח ל־' + e + '. תקף ל־15 דקות.'; b.hidden = true; document.getElementById('gm-step').hidden = false; document.getElementById('gm-code').focus();
+      });
+    });
+    document.getElementById('gm-go').addEventListener('click', function () {
+      var mc = String(document.getElementById('gm-code').value || '').replace(/\D/g, ''); if (mc.length !== 6) { gn.textContent = 'הקוד בן 6 ספרות.'; return; }
+      var b = this; b.disabled = true; gn.textContent = 'מעביר…';
+      LIC.move(e, c, mc).then(function (r) {
+        if (!r.ok) { b.disabled = false; gn.textContent = ACC.msg(r); return; }
+        gn.textContent = '✔ הרישיון הועבר. נכנס…';
+        LIC.activate(e, c).then(function (x) { if (x.ok) { unlock('license'); licWatch(); LIC.check().then(licAnswer, function () {}); if (FS.toast) FS.toast('✔ הרישיון הועבר למחשב הזה'); } else { b.disabled = false; gn.textContent = ACC.msg(x); } });
+      });
+    });
   }
   /* the version, always at the bottom of the screen (also on this sign-in screen): the page's number and the installed program's */
   (function () {

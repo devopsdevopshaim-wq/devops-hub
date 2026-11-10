@@ -13,7 +13,7 @@
   var TYPES = { dye: 'סובלימציה (דיו ונייר בגליל)', inkjet: 'הזרקת דיו', laser: 'לייזר' };
   /* common event printers and what one roll / ink set gives, in prints of the usual size */
   var MODELS = [
-    ['DNP DS620', 'dye', 400], ['DNP DS-RX1HS', 'dye', 700], ['DNP QW410', 'dye', 300], ['Mitsubishi CP-D70DW', 'dye', 400], ['Mitsubishi CP-D80DW', 'dye', 400],
+    ['DNP DS620', 'dye', 400], ['DNP DS-RX1HS', 'dye', 700], ['DNP QW410', 'dye', 300], ['Mitsubishi CP-D70DW', 'dye', 400], ['Mitsubishi CP-D80DW', 'dye', 400], ['Mitsubishi CP-D90DW', 'dye', 400], ['Mitsubishi CP-M1', 'dye', 400],
     ['Citizen CX-02', 'dye', 400], ['HiTi P525L', 'dye', 500], ['Canon SELPHY CP1500', 'dye', 54], ['Epson EcoTank L8050', 'inkjet', 2100],
     ['Epson SureColor P700', 'inkjet', 120], ['Canon PIXMA G650', 'inkjet', 3700], ['HP Smart Tank', 'inkjet', 3000], ['מדפסת לייזר צבעונית', 'laser', 1500]
   ];
@@ -83,6 +83,18 @@
   setInterval(refresh, 4000);
 
   /* the printer profile */
+  /* what the printer itself reports (the desktop program reads it from Windows and the driver): its state now, the kit
+     learnt, and the driver's ribbon / media details when it publishes them */
+  function reported() {
+    var d = chosen(); if (!d || !window.FSDesktop || !FSDesktop.print || !FSDesktop.print.status) return '';
+    var md = d.media || {}, props = (md.props || []).filter(function (x) { return x.v && !/^(0|false|none)$/i.test(x.v); });
+    var st = d.error ? '⚠️ ' + (ERR[d.error] || d.error) : d.state === 'offline' ? '⚠️ לא מחוברת' : d.state === 'printing' ? '🖨️ מדפיסה' : '✔ מוכנה, יש נייר ודיו';
+    return '<div class="pp-rep"><b>מה המדפסת מדווחת עכשיו</b><ul><li>מצב: ' + st + '</li>' +
+      (pr && pr.learned ? '<li>📏 ערכה (נלמד): כ־' + pr.paperCap + ' דפים' + (pr.kitAt ? ' · הוחלפה ' + new Date(pr.kitAt).toLocaleDateString('he-IL') : '') + '</li>' : '<li>📏 גודל הערכה ייִלמד לבד בפעם הראשונה שהנייר ייגמר.</li>') +
+      props.slice(0, 8).map(function (x) { return '<li><span dir="ltr">' + FS.esc(x.k.replace(/^Config:/, '')) + '</span>: <b dir="ltr">' + FS.esc(x.v) + '</b></li>'; }).join('') +
+      ((md.papers || []).length ? '<li>גדלי נייר בדרייבר: <span dir="ltr">' + md.papers.slice(0, 8).map(FS.esc).join(' · ') + '</span></li>' : '') + '</ul>' +
+      (props.length ? '' : '<p class="hint">הדרייבר של המדפסת הזאת לא מוסר את כמות הדיו והנייר. המצב (אין נייר, אין דיו, מכסה פתוח, תקיעה) כן מדווח, והספירה כאן מחושבת מההדפסות.</p>') + '</div>';
+  }
   FS.printerSetup = function (after) {
     var p = pr || { name: '', type: 'dye', inkCap: 400, paperCap: 400, inkUsed: 0, paperUsed: 0 };
     var body = FS.dialog('🖨️ המדפסת שלי',
@@ -92,6 +104,7 @@
       '<div class="row2"><div class="field"><label>הדפסות לגליל / מחסנית דיו</label><input type="number" id="pp-ink" min="1" max="100000" value="' + (p.inkCap || '') + '"></div><div class="field"><label>דפים בגליל / במגש</label><input type="number" id="pp-paper" min="0" max="100000" value="' + (p.paperCap || '') + '"></div></div>' +
       '<div class="stats"><div><b>' + (inkLeft() != null ? inkLeft() + '%' : '—') + '</b><small>דיו משוער</small></div><div><b>' + (paperLeft() != null ? paperLeft() : '—') + '</b><small>דפים נשארו</small></div><div><b>' + Math.round(p.paperUsed || 0) + '</b><small>מאז ההחלפה</small></div><div><b>' + totals().sheets + '</b><small>באירוע</small></div></div>' +
       '<div class="row2"><button class="btn" id="pp-new-ink">🔄 החלפתי דיו / גליל</button><button class="btn" id="pp-new-paper">📄 מילאתי נייר</button></div>' +
+      reported() +
       '<button class="btn wide" id="pp-test">🧪 דף בדיקה למדפסת</button>' +
       '<button class="btn primary wide" id="pp-save">💾 שמירה</button>');
     $('#pp-type', body).value = p.type || 'dye';
@@ -174,7 +187,7 @@
   var H = { up: false, printers: [], checked: false };
   var sel = (function () { try { return localStorage.getItem(KSEL) || ''; } catch (e) { return ''; } })();
   var STATE = { ready: ['מוכנה', 'ok'], printing: ['מדפיסה…', 'busy'], offline: ['לא מחוברת', 'bad'], unknown: ['מצב לא ידוע', ''] };
-  var ERR = { 'low-paper': 'הנייר עומד להיגמר', 'no-paper': 'אין נייר', 'low-ink': 'דיו נמוך', 'no-ink': 'הדיו נגמר', 'door-open': 'מכסה פתוח', jam: 'תקיעת נייר', offline: 'לא מחוברת', service: 'דרוש טיפול', 'output-full': 'מגש היציאה מלא' };
+  var ERR = { 'low-paper': 'הנייר עומד להיגמר', 'no-paper': 'אין נייר', 'low-ink': 'דיו נמוך', 'no-ink': 'הדיו נגמר', 'door-open': 'מכסה פתוח', jam: 'תקיעת נייר', offline: 'לא מחוברת', service: 'דרוש טיפול', 'output-full': 'מגש היציאה מלא', 'paper-problem': 'גודל הנייר לא מתאים לגליל', error: 'תקלה במדפסת' };
   function chosen() { if (!H.up || !sel) return null; return H.printers.filter(function (x) { return x.name === sel; })[0] || null; }
   function stateChip(d) { var st = STATE[d.state] || STATE.unknown, e = d.error && ERR[d.error]; return '<span class="pc-st ' + (e ? 'bad' : st[1]) + '">' + (e ? '⚠️ ' + e : st[0]) + '</span>'; }
   function guessType(drv) { drv = String(drv || '').toLowerCase(); return /dnp|ds620|ds-rx|ds80|qw410|mitsubishi|cp-d|citizen|cx-0|hiti|selphy|sinfonia|kodak 6|dye/.test(drv) ? 'dye' : /laser|laserjet|mfc|brother|xerox|ricoh|kyocera/.test(drv) ? 'laser' : 'inkjet'; }
@@ -202,14 +215,56 @@
   function poll() {
     clearTimeout(pt);
     /* the desktop program sees the computer's printers itself: no helper needed */
-    var desk = window.FSDesktop && FSDesktop.print ? FSDesktop.print.printers().then(function (l) { return { ok: true, printers: l.map(function (x) { return { name: x.name, default: x.default, state: 'ready', driver: x.label }; }) }; }) : null;
+    var desk = window.FSDesktop && FSDesktop.print ? FSDesktop.print.printers().then(function (l) {
+      var list = l.map(function (x) { var was = H.printers.filter(function (y) { return y.name === x.name; })[0] || {}; return { name: x.name, default: x.default, state: was.state || 'ready', error: was.error || '', media: was.media || null, driver: was.driver || x.label }; });
+      /* the real state, from Windows and the driver (program v128+): the chosen printer and the photo printers, every 10 seconds */
+      if (!FSDesktop.print.status || Date.now() - (H.stAt || 0) < 9000) return { ok: true, printers: list };
+      H.stAt = Date.now();
+      var names = list.filter(function (x) { return x.name === sel || guessType(x.name + ' ' + x.driver) === 'dye'; }).map(function (x) { return x.name; }).slice(0, 4);
+      if (!names.length) return { ok: true, printers: list };
+      return FSDesktop.print.status(names).then(function (r) {
+        var m = (r && r.printers) || {};
+        list.forEach(function (x) { var y = m[x.name]; if (!y) return; x.state = y.state || 'ready'; x.error = y.error || ''; x.driver = y.driver || x.driver; x.media = { papers: y.papers || [], props: y.props || [], port: y.port || '' }; });
+        return { ok: true, printers: list };
+      }, function () { return { ok: true, printers: list }; });
+    }) : null;
     return (desk || get('/printers')).then(function (j) {
       var was = JSON.stringify([H.up, H.printers]), before = chosen(); H.up = !!(j && j.ok); H.printers = (j && j.printers) || [];
       var now = chosen(); if (now && now.error && (!before || before.error !== now.error)) FS.toast('⚠️ ' + now.name + ': ' + (ERR[now.error] || now.error), 8000);
-      if (H.up && !sel) { var def = H.printers.filter(function (x) { return x.default; })[0]; if (def && !load(KSEL + '-asked', 0)) { save(KSEL + '-asked', 1); choose(def.name); } }
+      if (now && before && before.name === now.name) kitWatch(before, now);
+      plugged();
+      if (H.up && !sel) { var photo = H.printers.filter(function (x) { return guessType(x.name + ' ' + x.driver) === 'dye'; })[0], def = photo || H.printers.filter(function (x) { return x.default; })[0]; if (def && !load(KSEL + '-asked', 0)) { save(KSEL + '-asked', 1); choose(def.name); if (photo) FS.toast('🖨️ נבחרה מדפסת התמונות ' + photo.name + '. ההדפסה יוצאת אליה ישר.', 6000); } }
       if (was !== JSON.stringify([H.up, H.printers])) { refresh(); drawCard(); }
     }, function () { if (H.up || !H.checked) { H.up = false; refresh(); drawCard(); } }).then(function () { H.checked = true; pt = setTimeout(poll, H.up ? 5000 : 15000); });
   }
+  /* a printer plugged in (a new one in Windows' list, or one coming back from offline): a photo printer, or any printer when
+     none works now, becomes the one printed to, at once */
+  function plugged() {
+    if (!H.up) return;
+    var names = H.printers.map(function (x) { return x.name; }), known = load('fs-prn-known', null);
+    var cur = chosen(), curBad = !cur || cur.state === 'offline';
+    if (known) {
+      var fresh = H.printers.filter(function (x) { return known.indexOf(x.name) < 0; });
+      var back = H.printers.filter(function (x) { return H.seen && H.seen[x.name] === 'offline' && x.state !== 'offline'; });
+      var pick = fresh.concat(back).sort(function (a, b) { return (guessType(b.name + ' ' + b.driver) === 'dye') - (guessType(a.name + ' ' + a.driver) === 'dye'); })[0];
+      if (pick && pick.name !== sel && (guessType(pick.name + ' ' + pick.driver) === 'dye' || curBad)) { choose(pick.name); FS.toast('🖨️ ' + (fresh.indexOf(pick) >= 0 ? 'חוברה מדפסת חדשה' : 'המדפסת חזרה') + ': ' + pick.name + '. נבחרה, וההדפסה יוצאת אליה ישר.', 7000); }
+      else if (pick && pick.name === sel) FS.toast('🖨️ ' + pick.name + ' מחוברת ומוכנה.', 4000);
+    }
+    save('fs-prn-known', names.concat((known || []).filter(function (n) { return names.indexOf(n) < 0; })).slice(0, 40));
+    H.seen = {}; H.printers.forEach(function (x) { H.seen[x.name] = x.state; });
+  }
+  /* the ink and paper kit of a photo printer: when it runs out, the prints counted since the last change are its size (learnt
+     once and kept); when it is ready again after running out, a new kit went in and the counters start again */
+  function kitWatch(was, now) {
+    if (!pr || pr.name !== now.name) return;
+    var out = /^(no-paper|no-ink)$/.test(now.error || ''), wasOut = /^(no-paper|no-ink)$/.test(was.error || '');
+    if (out && !wasOut && pr.type === 'dye' && (pr.paperUsed || 0) >= 30) {
+      var n = pr.paperUsed; if (!pr.learned || Math.abs(n - pr.paperCap) > 10) { pr.paperCap = n; pr.inkCap = n; pr.learned = Date.now(); save(KP, pr); FS.toast('📏 למדתי: ערכה במדפסת ' + now.name + ' מספיקה לכ־' + n + ' דפים. מעכשיו "כמה נשאר" מדויק יותר.', 9000); }
+    }
+    if (wasOut && !out && now.state !== 'offline') { pr.inkUsed = 0; pr.paperUsed = 0; pr.kitAt = Date.now(); save(KP, pr); refresh(); FS.toast('🎞️ זוהתה החלפת ערכה ב־' + now.name + ': הדיו והנייר מתחילים מחדש (' + (pr.paperCap || '?') + ' דפים).', 8000); }
+  }
+  /* what the driver says about the ribbon and the paper (photo printers publish some of it), for the printer card */
+  FS.printerMedia = function () { var d = chosen(); return d && d.media || null; };
   FS.printers = function () { return { up: H.up, list: H.printers.slice(), chosen: chosen() }; };
   FS.choosePrinter = function (name) { choose(name); };
 
