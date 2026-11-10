@@ -363,7 +363,7 @@ test('customer photos for the studio: who, phone, where, size, and marking them 
 
 test('event type photos: the admin sets their own and can go back to the default', async () => {
   const before = (await call('GET', '/api/store')).data.events.find((e) => e.id === 'batmitzvah');
-  assert.match(before.image, /^https:\/\/images\.unsplash\.com\//);
+  assert.match(before.image, /\/img\/events\/batmitzvah\.jpg$/); // the site's own photo, with the site's full address
   const up = new FormData(); up.append('file', new Blob([JPEG], { type: 'image/jpeg' }), 'e.jpg');
   const url = (await call('POST', '/api/admin/uploads', up)).data.url;
   assert.equal((await call('PUT', '/api/admin/event-types/batmitzvah', { image: 'https://evil.example/x.jpg' })).status, 400);

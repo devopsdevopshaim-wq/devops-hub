@@ -27,7 +27,7 @@ export const EVENT_TYPES = [
   { id: 'wedding', name: 'חתונה', image: U('photo-1620315472787-52921e5f88a0') },
   { id: 'henna', name: 'חינה', image: U('photo-1771992228898-79342c9c1c39') },
   { id: 'barmitzvah', name: 'בר מצווה', image: U('photo-1792587152427-ae423afc92ab') },
-  { id: 'batmitzvah', name: 'בת מצווה', image: U('photo-1741969494307-55394e3e4071') }, // חגיגה מעוצבת בבלונים
+  { id: 'batmitzvah', name: 'בת מצווה', image: 'img/events/batmitzvah.jpg' }, // ילדה עם כתר ועוגה (התמונה באתר עצמו)
   { id: 'brit', name: 'ברית ובריתה', image: U('photo-1555252333-9f8e92e65df9') },
   { id: 'birthday', name: 'יום הולדת', image: U('photo-1464349153735-7db50ed83c84') },
   { id: 'mikveh', name: 'מקווה', image: U('photo-1584126467121-0db1e6bb47a7') },
