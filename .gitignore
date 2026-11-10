@@ -40,4 +40,5 @@ desktop/dist/
 desktop/node_modules/
 !desktop/package-lock.json
 videos/promo-pro/
+videos/promo-optimus-guide/
 videos/promo-pro-v/

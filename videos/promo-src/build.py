@@ -535,7 +535,8 @@ def copy_assets(dst):
     for sub, src in (('real', os.path.join(FS, 'media', 'real')), ('show', os.path.join(FS, 'show')), ('cap', CAP), ('e2e', os.path.join(ROOT, 'e2e'))):
         if os.path.isdir(src):
             for f in os.listdir(src):
-                shutil.copy2(os.path.join(src, f), os.path.join(a, sub, f))
+                if os.path.isfile(os.path.join(src, f)):   # files only (media/real has a thumb/ folder)
+                    shutil.copy2(os.path.join(src, f), os.path.join(a, sub, f))
     for f in ('whoosh.mp3', 'whoosh-short.mp3', 'whoosh-cinematic.mp3', 'pop.mp3', 'riser.mp3', 'impact-bass-1.mp3', 'click-soft.mp3'):
         shutil.copy2(os.path.join(SFX, f), os.path.join(a, 'sfx', f))
     mdir = os.path.join(ROOT, 'music')
