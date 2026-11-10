@@ -16,9 +16,11 @@
       var P = f.pts, eye = d(P[33], P[263]), h = d(P[10], P[152]), mid = { x: (P[33].x + P[263].x) / 2, y: (P[33].y + P[263].y) / 2 };
       var yaw = Math.abs(P[1].x - mid.x) / Math.max(1, eye);                    /* nose off the middle of the eyes: turned away */
       var openL = d(P[159], P[145]) / Math.max(1, d(P[33], P[133])), openR = d(P[386], P[374]) / Math.max(1, d(P[362], P[263]));
-      var bl = f.bs || {}, blink = ((bl.eyeBlinkLeft || 0) + (bl.eyeBlinkRight || 0)) / 2;
-      var closed = blink > 0.5 || (openL < 0.12 && openR < 0.12);
-      return { h: h, eye: eye, prop: eye / Math.max(1, h), facing: yaw < 0.32, closed: closed, doubt: !closed && blink > 0.4, cx: (P[33].x + P[263].x) / 2, cy: mid.y };
+      /* closed: both eyes, not the average of the two (a wink or a big smile narrows one eye, and that is a good photo) */
+      var bl = f.bs || {}, blink = Math.min(bl.eyeBlinkLeft || 0, bl.eyeBlinkRight || 0);
+      var smile = Math.max(bl.mouthSmileLeft || 0, bl.mouthSmileRight || 0), cut = smile > 0.6 ? 0.62 : 0.52;   /* a laugh squints the eyes */
+      var closed = blink > cut || (openL < 0.1 && openR < 0.1);
+      return { h: h, eye: eye, prop: eye / Math.max(1, h), facing: yaw < 0.34, closed: closed, doubt: !closed && blink > cut - 0.14, cx: (P[33].x + P[263].x) / 2, cy: mid.y };
     });
     if (!F.length) return { faces: 0, people: 0, adults: 0, kids: 0, away: 0, closed: 0, copies: 0, verdict: 'none' };
     var big = Math.max.apply(null, F.map(function (x) { return x.h; }));

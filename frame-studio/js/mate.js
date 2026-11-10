@@ -44,7 +44,7 @@
         '<div class="mt-seg mt-ori"><button data-ori="all">הכל <i></i></button><button data-ori="tall">↕ לאורך <i></i></button><button data-ori="wide">↔ לרוחב <i></i></button></div>' +
         '<select id="mt-show"><option value="all">הכל</option><option value="sel">רק המסומנות</option><option value="todo">שלא הודפסו</option><option value="done">שהודפסו</option><option value="edited">שנערכו</option></select>' +
         '<select id="mt-sort"><option value="">הסדר שנכנסו</option><option value="name">לפי שם</option></select><button class="mt-btn danger" id="mt-del">🗑 הסרה מהעבודה</button></div>' +
-      '<div class="mt-bar" data-b="copies" hidden><label>הדפסים למסומנות:</label><button class="mt-ic" data-cpa="-1">−</button><b id="mt-cpn">1</b><button class="mt-ic" data-cpa="1">+</button>' +
+      '<div class="mt-bar" data-b="copies" hidden><span class="mt-cptip">💡 עכבר על תמונה ומקלידים 0–9 · לחיצה על המספר מקלידה · − / + על תמונה מסומנת משנים את כל המסומנות · 👥 על התמונה: לפי האנשים</span><label>הדפסים למסומנות:</label><button class="mt-ic" data-cpa="-1">−</button><b id="mt-cpn">1</b><button class="mt-ic" data-cpa="1">+</button>' +
         '<button class="mt-btn primary" id="mt-cadv">🧮 המלצה לפי האנשים בתמונה</button><label class="mt-chk-l" title="כל תמונה חדשה מקבלת עותקים לפי המבוגרים שמסתכלים למצלמה; עיניים עצומות = 0"><input type="checkbox" id="mt-cauto"> אוטומטי לכל תמונה חדשה</label><button class="mt-btn" id="mt-cp-set">קביעה</button><button class="mt-btn" id="mt-cp-1">1 לכולן</button><button class="mt-btn" id="mt-cp-0">0 לכולן</button><span class="mt-hint">0 = לא מודפסת</span></div>' +
       '<div class="mt-bar" data-b="biz" hidden><span class="mt-hint" id="mt-biz-txt"></span><button class="mt-btn" id="mt-biz-on">➕ הוספה לתמונות</button><button class="mt-btn" id="mt-biz-off">➖ הסרה מהתמונות</button><button class="mt-btn" id="mt-biz-edit">✏️ עריכת הפרטים</button></div>' +
       '<div class="mt-grid" id="mt-grid"></div>' +
@@ -305,12 +305,12 @@
     var a = p.cadv; if (!a || a.verdict === 'error') return '';
     if (a.verdict === 'closed') return '<em class="mt-adv bad" title="מישהו עוצם עיניים: לא להדפיס">😑 עיניים עצומות</em>';
     if (a.verdict === 'none') return '';
-    return '<em class="mt-adv' + (a.doubt ? ' doubt' : '') + '" title="' + a.adults + ' מבוגרים מסתכלים' + (a.kids ? ', ' + a.kids + ' ילדים' : '') + (a.doubt ? '. כדאי לבדוק: אולי מישהו בחצי עצימה' : '') + '">' + (a.doubt ? '👀 ' : '👥 ') + a.copies + '</em>';
+    return '<em class="mt-adv' + (a.doubt ? ' doubt' : '') + '" data-advset="' + a.copies + '" role="button" tabindex="0" title="לחיצה: ' + a.copies + ' הדפסים לפי האנשים · ' + a.adults + ' מבוגרים מסתכלים' + (a.kids ? ', ' + a.kids + ' ילדים' : '') + (a.doubt ? '. כדאי לבדוק: אולי מישהו בחצי עצימה' : '') + '">' + (a.doubt ? '👀 ' : '👥 ') + a.copies + '</em>';
   }
   function tileHTML(p, px) {
     return '<div class="mt-tile' + (S.marked[p.id] ? ' sel' : '') + (p.id === focusId ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + px + '"><div class="mt-th">' +
       '<button class="mt-chk" title="סימון">✓</button><button class="mt-zoomb" title="הגדלה">🔍</button>' +
-      '<div class="mt-band"><b>' + sizeTxt(p) + '</b><span class="mt-cp"><button data-cp="-1" title="פחות">−</button><i>' + copies(p) + ' הדפסים</i><button data-cp="1" title="עוד">+</button></span>' +
+      '<div class="mt-band"><b>' + sizeTxt(p) + '</b><span class="mt-cp"><button data-cp="-1" title="פחות (על כל המסומנות, כשהתמונה מסומנת)" aria-label="פחות הדפסים">−</button><i data-cpn title="לחיצה: להקליד מספר · או מקלידים 0–9 כשהעכבר על התמונה">' + copies(p) + ' הדפסים</i><button data-cp="1" title="עוד (על כל המסומנות, כשהתמונה מסומנת)" aria-label="עוד הדפסים">+</button></span>' +
       (p.printed ? '<small>הודפסו ' + p.printed + '</small>' : '') + '</div>' + advTag(p) + '</div><div class="mt-name" title="' + esc(p.name || '') + '">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '</div></div>';
   }
   /* a rebuilt grid keeps the canvases already drawn (by photo and size); drawTile then redraws only photos that changed */
@@ -347,11 +347,40 @@
   }
   function refreshAll() { if (!on()) return; if (view === 'main') buildGrid(); else if (view === 'edit') buildEdit(); else if (view === 'design') drawDesign(); else if (view === 'ai') { aiTarget(); aiBA(); } stat(); }
   function mark(p, v) { if (v) S.marked[p.id] = true; else delete S.marked[p.id]; }
+  /* copies made quick: a marked photo speaks for all the marked ones; the number is typed in place; 0–9 on the keyboard */
+  function group(p) { var m = marked(); return S.marked[p.id] && m.length > 1 ? m : [p]; }
+  function setCopies(list, f) {
+    list.forEach(function (q) { q.copies = FS.clamp(Math.round(Number(f(q)) || 0), 0, 999); refreshTile(q); });
+    foot(); stat(); FS.emit('doc');
+    if (list.length > 1) FS.toast('🧾 ' + list.length + ' תמונות מסומנות עודכנו', 2000);
+  }
+  function typeCopies(p, el) {
+    var inp = document.createElement('input'); inp.type = 'number'; inp.min = '0'; inp.max = '999'; inp.value = copies(p); inp.className = 'mt-cpin'; inp.setAttribute('aria-label', 'מספר הדפסים');
+    el.replaceWith(inp); inp.focus(); inp.select();
+    var done = false, end = function (save) { if (done) return; done = true; if (save && inp.value !== '') setCopies(group(p), function () { return inp.value; }); else refreshTile(p); };
+    inp.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') end(true); if (e.key === 'Escape') end(false); });
+    inp.addEventListener('blur', function () { end(true); });
+    inp.addEventListener('click', function (e) { e.stopPropagation(); });
+  }
+  var hoverId = null;
+  $('#mt-grid', root).addEventListener('mouseover', function (e) { var t = e.target.closest('.mt-tile'); hoverId = t ? t.dataset.id : null; });
+  $('#mt-grid', root).addEventListener('mouseleave', function () { hoverId = null; });
+  /* 0–9, + and − on the photo under the mouse (or the one in focus): called from the workspace's key handler below */
+  function copyKey(e) {
+    if (view !== 'main' || e.ctrlKey || e.metaKey || e.altKey) return false;
+    var p = byId(hoverId || focusId); if (!p) return false;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); setCopies(group(p), function () { return Number(e.key); }); return true; }
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); setCopies(group(p), function (q) { return copies(q) + 1; }); return true; }
+    if (e.key === '-') { e.preventDefault(); setCopies(group(p), function (q) { return copies(q) - 1; }); return true; }
+    return false;
+  }
   $('#mt-grid', root).addEventListener('click', function (e) {
     var os = e.target.closest('[data-orisel]'); if (os) { var all = S.photos.filter(function (p) { return oriOf(p) === os.dataset.orisel; }), on = all.some(function (p) { return !S.marked[p.id]; }); all.forEach(function (p) { mark(p, on); }); buildGrid(); return; }
     var t = e.target.closest('.mt-tile'); if (!t) return; var p = byId(t.dataset.id); if (!p) return;
     var cp = e.target.closest('[data-cp]');
-    if (cp) { p.copies = FS.clamp(copies(p) + Number(cp.dataset.cp), 0, 999); refreshTile(p); foot(); return; }
+    if (cp) { setCopies(group(p), function (q) { return copies(q) + Number(cp.dataset.cp); }); return; }
+    if (e.target.closest('[data-cpn]')) { typeCopies(p, e.target.closest('[data-cpn]')); return; }
+    var av = e.target.closest('[data-advset]'); if (av) { setCopies([p], function () { return Number(av.dataset.advset); }); FS.toast('👥 ' + av.dataset.advset + ' הדפסים, לפי האנשים בתמונה', 2500); return; }
     if (e.target.closest('.mt-zoomb')) { big(p); return; }
     var l = shown(), i = l.indexOf(p);
     if (e.shiftKey && lastClick >= 0) { var a = Math.min(i, lastClick), b = Math.max(i, lastClick); for (var k = a; k <= b; k++) mark(l[k], true); buildGrid(); }
@@ -1282,7 +1311,8 @@
     if (((e.ctrlKey || e.metaKey) && e.code === 'KeyK') || (e.target && e.target.closest && e.target.closest('#cmdk'))) return;
     if (e.key === 'F2' || !on() || ($('#dlg') && $('#dlg').open) || document.body.classList.contains('gated') || document.body.classList.contains('fm-on')) return;
     var typing = /input|textarea|select/i.test(e.target.tagName || ''), k = (e.key || '').toLowerCase(), mod = e.ctrlKey || e.metaKey;
-    if (typing) { e.stopImmediatePropagation(); return; }
+    if (typing) { if (e.target.classList && e.target.classList.contains('mt-cpin')) return; e.stopImmediatePropagation(); return; }   /* the copies field handles its own keys */
+    if (copyKey(e)) { e.stopImmediatePropagation(); return; }
     if (mod && k === 'a') { e.preventDefault(); shown().forEach(function (p) { mark(p, true); }); refreshAll(); }
     else if (mod && k === 'p') { e.preventDefault(); if (e.shiftKey || !qpGet()) openPrint(); else qpRun(); }
     else if (mod && e.shiftKey && k === 'c') { e.preventDefault(); $('#mt-lcopy', root).click(); }
