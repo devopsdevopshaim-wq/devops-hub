@@ -42,7 +42,7 @@
     var cols = [[], [], []];
     WORK.forEach(function (w, i) { cols[i % 3].push([w[0], w[1], i + 1]); });
     folio.innerHTML = cols.map(function (c, ci) {
-      var items = c.map(function (w, i) { var n = String(w[2]).padStart(2, '0'); return '<figure><img src="show/' + w[0] + '.webp" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async" width="640" height="640" /><figcaption><i>' + n + '</i>' + w[1] + '</figcaption></figure>'; }).join('');
+      var items = c.map(function (w, i) { var n = String(w[2]).padStart(2, '0'); return '<figure><img src="show/thumb/' + w[0] + '.webp" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '" decoding="async" width="640" height="640" /><figcaption><i>' + n + '</i>' + w[1] + '</figcaption></figure>'; }).join('');
       return '<div class="fcol" style="--dur:' + (46 + ci * 9) + 's"><div class="ftrack">' + items + items + '</div></div>';
     }).join('');
   }
