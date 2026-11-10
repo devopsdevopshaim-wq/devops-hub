@@ -140,7 +140,8 @@ for (const lang of ['he', 'en', 'he-edge', 'en-edge'].filter((l) => !Array.isArr
       try {
         let best = null;
         for (let a = 0; a < (p === 'edge' ? 1 : 4); a++) {
-          const tryWav = wav + '.' + a + '.wav', v = await PROVIDERS[p](sc[base], base, tryWav), c = await check(sc[base], base, tryWav);
+          const say = (sc.say && sc.say[base]) || sc[base];   // what is spoken (spelled for the ear), when it differs from the captions
+          const tryWav = wav + '.' + a + '.wav', v = await PROVIDERS[p](say, base, tryWav), c = await check(say, base, tryWav);
           console.log(lang, sc.id, 'try', a + 1, v, 'match', c.score, 'chars/s', c.cps);
           const rank = (c.score == null ? 0.9 : c.score) - (c.pace ? 0 : 0.3);
           if (!best || rank > best.rank) { if (best) fs.rmSync(best.f); best = { f: tryWav, v, c, rank }; } else fs.rmSync(tryWav);
