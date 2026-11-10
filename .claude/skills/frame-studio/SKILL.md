@@ -1966,3 +1966,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - 🖨️ שוב.
   The print preview has the same settings button and the "גודל הנייר לפי הדרייבר" checkbox.
 - **Desktop (`desktop/main.js`, `preload.js`):** `print:settings`, `print:queue` (PowerShell Get-Printer/Get-PrintJob; the printer name passes in env `FS_PRN`, never in the command), `print:clear`, and `driverSize` on `print:run`. The printer must be one of the installed printers. Older installs still get the explanation, without the queue or the settings button.
+
+## Printer doctor: every common error, and a check before printing (v128)
+- `js/print-doctor.js` `KINDS`: mismatch (paper size ≠ ribbon), paperout, ribbon (NoToner/TonerLow), jam, door, offline (Offline/NotAvailable), busy, error, failed. Each has a title, the cause, numbered steps and a tip; photo printers (Mitsubishi/DNP/Citizen) get the "paper and ribbon are one kit" line. "לפי הדרייבר" shows only for mismatch.
+- `classify(text, dev)` maps Windows' PrinterStatus / JobStatus words to a kind ('' = fine: Normal, Printing, Spooling, Paused…). A plain Error/Blocked on a Mitsubishi counts as mismatch.
+- `precheck(dev, go)` before every desktop print (output.js) reads the queue (4 s limit). Off, out of paper or ribbon, jammed or open stops the print and opens the window, and "להדפיס שוב" there sends it. A plain error does not stop it; `watch()` after the print catches it.
