@@ -77,7 +77,11 @@ async function edge(text, lang, file) {
   if (r.status || !fs.existsSync(mp3)) throw new Error('edge-tts ' + String(r.stderr).slice(0, 200));
   ffmpeg(['-i', mp3, file]); fs.rmSync(mp3); return 'edge/' + v;
 }
-const PROVIDERS = { gemini, azure, eleven, edge };
+const ALL_PROVIDERS = { gemini, azure, eleven, edge };
+// a film may name its voice per provider (script.voices, e.g. { edge: { he: 'he-IL-HilaNeural' } }), keep to some providers
+// (script.providers, e.g. ['edge'] for a free Microsoft voice only) and to some languages (script.langs, e.g. ['he'])
+for (const [p, v] of Object.entries(script.voices || {})) if (VOICES[p] && v && typeof v === 'object') Object.assign(VOICES[p], v);
+const PROVIDERS = Object.fromEntries(Object.entries(ALL_PROVIDERS).filter(([k]) => !Array.isArray(script.providers) || script.providers.includes(k)));
 
 /* Every clip is heard back: Gemini transcribes it, and the words are compared with the script (letters, after dropping
    punctuation and vowel marks; numbers as words). A clip under 0.82, or read too fast or too slow for its text, is
@@ -119,7 +123,7 @@ async function check(text, lang, wav) {
 // spoken with the Edge voice into <out>/<lang>-edge, so a film whose main voice ran out of quota can still use one voice.
 const old = fs.existsSync(path.join(out, 'report.json')) ? JSON.parse(fs.readFileSync(path.join(out, 'report.json'), 'utf8')) : { langs: {} };
 const report = { made: new Date().toISOString(), langs: {} };
-for (const lang of ['he', 'en', 'he-edge', 'en-edge']) {
+for (const lang of ['he', 'en', 'he-edge', 'en-edge'].filter((l) => !Array.isArray(script.langs) || script.langs.includes(l.slice(0, 2))).filter((l) => !(l.endsWith('-edge') && Array.isArray(script.providers) && script.providers.length === 1 && script.providers[0] === 'edge'))) {
   const base = lang.slice(0, 2), only = lang.endsWith('-edge') ? 'edge' : '';
   const prev = Object.fromEntries(((old.langs[lang] || {}).scenes || []).filter((x) => x.voice).map((x) => [x.id, x]));
   fs.mkdirSync(path.join(out, lang), { recursive: true });
