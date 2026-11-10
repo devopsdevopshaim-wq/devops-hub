@@ -298,7 +298,11 @@
       if (window.FSDesktop && FSDesktop.print && dev) {
         FS.busy('שולח ל' + dev + '…');
         var PD = FS.printDoctor, drv = !!(PD && PD.driverSize(dev));
-        return FSDesktop.print.run({ deviceName: dev, wMm: plan.paper[2], hMm: plan.paper[3], driverSize: drv }).then(function (r) {
+        /* the printer first: off, out of paper or ribbon, jammed or open is shown before anything is sent */
+        return (PD && PD.precheck ? PD.precheck(dev, function () { FS.doPrint(plan, viaDesktop); }) : Promise.resolve(true)).then(function (go) {
+          if (!go) { FS.busy(); document.body.classList.remove('printing'); $('#print-root').innerHTML = ''; return; }
+          return FSDesktop.print.run({ deviceName: dev, wMm: plan.paper[2], hMm: plan.paper[3], driverSize: drv });
+        }).then(function (r) { if (r === undefined) return;
           FS.busy(); document.body.classList.remove('printing'); $('#print-root').innerHTML = '';
           FS.toast(r && r.ok ? '🖨️ נשלח ל' + dev + ' · ' + plan.pages.length + ' דפים ' + plan.paper[1] + (drv ? ' (לפי גודל הנייר שבדרייבר)' : '') : '⚠️ ההדפסה לא יצאה (' + ((r && r.reason) || '') + ').', 6000);
           /* the printer's queue for a few seconds: a driver error (paper size and ribbon do not match, no paper…) opens the fix */
