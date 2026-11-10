@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 """Builds the Frame Events explainer: index.html (root, music, sound) + one scene file per shot in compositions/.
 Edit the SCENES table (copy, screens, taps, timing) and run: python3 gen.py"""
-import json, os
+import json, os, re, subprocess
 
 W, H, FPS = 1080, 1920, 30
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.makedirs('compositions', exist_ok=True)
+
+# ---------- the narration: each scene lasts at least as long as its line (assets/voice/he/<scene>.m4a) ----------
+LEAD, TAIL = 0.3, 0.55   # the voice starts LEAD s into its scene and leaves TAIL s of air before the cut
+def _len(f):
+    try: return float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f], capture_output=True, text=True).stdout.strip())
+    except Exception: return 0.0
+VOICE = {f[:-4]: _len(f'assets/voice/he/{f}') for f in (os.listdir('assets/voice/he') if os.path.isdir('assets/voice/he') else []) if f.endswith('.m4a')}
+FACTOR = {}   # scene id -> how much its timeline was stretched
+def fit(sid, base):
+    v = VOICE.get(sid, 0)
+    new = round(max(base, v + LEAD + TAIL), 2) if v else base
+    FACTOR[sid] = new / base
+    return new
 
 FONTS = ''.join(
     f"@font-face{{font-family:'{fam}';font-weight:{w};src:url('assets/fonts/{file}-{w}-hebrew.woff2') format('woff2');unicode-range:U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}}"
@@ -65,6 +78,12 @@ def tap(sid, k, x, y, at):
             f'tl.fromTo("#{sid}-t{k}",{{scale:.3,opacity:1}},{{scale:1.5,opacity:0,duration:.55,ease:"power2.out"}},{at});\n')
 
 def scene(sid, dur, body, js, extra_css=''):
+    # stretch every position on the scene's timeline with its narration (tween lengths stay, so the motion keeps its speed)
+    new = fit(sid, dur)
+    if new != dur:
+        k = new / dur
+        js = re.sub(r',\s*(\d+(?:\.\d+)?)\);', lambda m: ',%s);' % round(float(m.group(1)) * k, 3), js)
+    dur = new
     html = f'''<template>
   <style>{BASE_CSS}{extra_css}</style>
   <div id="root" data-composition-id="{sid}" data-width="{W}" data-height="{H}">
@@ -83,7 +102,10 @@ def scene(sid, dur, body, js, extra_css=''):
 SCENES = []  # (id, start, duration, [sfx (file, t)])
 
 def add(sid, start, dur, sfx):
-    SCENES.append((sid, start, dur, sfx))
+    # scenes follow each other; with narration their lengths (and the effects inside them) follow the voice
+    k = FACTOR.get(sid, 1)
+    start = round(SCENES[-1][1] + SCENES[-1][2], 2) if SCENES else 0
+    SCENES.append((sid, start, round(dur * k, 2), [(f, round(t * k, 3)) for f, t in sfx]))
 
 # s1 hook: the finished magnet, already on screen at frame 0
 L = ['התמונה מהאירוע,', '<em>מודפסת</em> עם המסגרת שלכם']
@@ -205,13 +227,20 @@ js = ('tl.fromTo("#s11-logo",{y:30,opacity:0},{y:0,opacity:1,duration:.6,ease:"p
 scene('s11', 5, body, js); add('s11', 55, 5, [('impact-bass-1', 0.0)])
 
 # ---------------- the root ----------------
-TOTAL = 60
+TOTAL = round(SCENES[-1][1] + SCENES[-1][2], 2)
 hosts = ''.join(
     f'      <div id="{sid}" data-composition-id="{sid}" data-composition-src="compositions/{sid}.html" data-start="{st}" data-duration="{du}" '
     f'data-track-index="1" data-track-kind="graphics" data-width="{W}" data-height="{H}"></div>\n' for sid, st, du, _ in SCENES)
 take = {}
-audio = (f'      <audio id="bed1" class="clip" src="assets/music/bed.m4a" data-start="0" data-duration="48.35" data-track-index="10" data-volume="0.55" data-fade-in="0.4" data-fade-out="0.8"></audio>\n'
-         f'      <audio id="bed2" class="clip" src="assets/music/bed.m4a" data-start="47.6" data-duration="12.4" data-media-start="6" data-track-index="11" data-volume="0.55" data-fade-in="0.8" data-fade-out="1.5"></audio>\n')
+# the music sits low under the voice (0.16) and rises a little on the end card; looped once from 6 s
+BED = 48.35
+MV = 0.16 if VOICE else 0.55
+audio = (f'      <audio id="bed1" class="clip" src="assets/music/bed.m4a" data-start="0" data-duration="{min(BED, TOTAL)}" data-track-index="10" data-volume="{MV}" data-fade-in="0.4" data-fade-out="0.8"></audio>\n')
+if TOTAL > BED - .8:
+    audio += f'      <audio id="bed2" class="clip" src="assets/music/bed.m4a" data-start="{BED - .8}" data-duration="{round(TOTAL - BED + .8, 2)}" data-media-start="6" data-track-index="11" data-volume="{MV}" data-fade-in="0.8" data-fade-out="1.5"></audio>\n'
+for sid, st, du, _ in SCENES:
+    if sid in VOICE:
+        audio += f'      <audio id="v-{sid}" class="clip" src="assets/voice/he/{sid}.m4a" data-start="{round(st + LEAD, 2)}" data-duration="{round(VOICE[sid], 3)}" data-track-index="9" data-volume="1"></audio>\n'
 # each effect: (peak, tail end) measured with `hyperframes audio`; its peak lands one frame after the picture it belongs to
 FX = {'whoosh': (.162, .367), 'whoosh-short': (.16, .4), 'whoosh-cinematic': (2.503, 4.344), 'pop': (.12, .262),
       'click-soft': (.073, .188), 'riser': (3.472, 4.296), 'impact-bass-1': (.073, 1.99)}
