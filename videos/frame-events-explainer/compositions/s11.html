@@ -1,0 +1,32 @@
+<template>
+  <style>@font-face{font-family:'Frank';font-weight:700;src:url('assets/fonts/FrankRuhlLibre-700-hebrew.woff2') format('woff2');unicode-range:U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}@font-face{font-family:'Frank';font-weight:700;src:url('assets/fonts/FrankRuhlLibre-700-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+20AC;}@font-face{font-family:'Frank';font-weight:900;src:url('assets/fonts/FrankRuhlLibre-900-hebrew.woff2') format('woff2');unicode-range:U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}@font-face{font-family:'Frank';font-weight:900;src:url('assets/fonts/FrankRuhlLibre-900-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+20AC;}@font-face{font-family:'Heebo';font-weight:400;src:url('assets/fonts/Heebo-400-hebrew.woff2') format('woff2');unicode-range:U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}@font-face{font-family:'Heebo';font-weight:400;src:url('assets/fonts/Heebo-400-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+20AC;}@font-face{font-family:'Heebo';font-weight:500;src:url('assets/fonts/Heebo-500-hebrew.woff2') format('woff2');unicode-range:U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}@font-face{font-family:'Heebo';font-weight:500;src:url('assets/fonts/Heebo-500-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+20AC;}@font-face{font-family:'Heebo';font-weight:700;src:url('assets/fonts/Heebo-700-hebrew.woff2') format('woff2');unicode-range:U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}@font-face{font-family:'Heebo';font-weight:700;src:url('assets/fonts/Heebo-700-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+20AC;}@font-face{font-family:'Heebo';font-weight:800;src:url('assets/fonts/Heebo-800-hebrew.woff2') format('woff2');unicode-range:U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}@font-face{font-family:'Heebo';font-weight:800;src:url('assets/fonts/Heebo-800-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+20AC;}
+#root{position:absolute;inset:0;overflow:hidden;direction:rtl;
+  background:radial-gradient(1500px 1000px at 85% -12%,#FFF1D6 0%,rgba(255,241,214,0) 60%),#FBF7F0;}
+.ttl{position:absolute;top:226px;right:96px;left:96px;text-align:right;}
+.ln{display:block;font:900 86px/1.1 'Frank',serif;color:#2B1B30;letter-spacing:-.5px;}
+.ln em{font-style:normal;color:#A47622;}
+.sub{display:block;margin-top:20px;font:500 44px/1.38 'Heebo',sans-serif;color:#6B584D;}
+.phone{position:absolute;left:220px;top:640px;width:640px;height:1064px;border-radius:76px;background:#1B1218;padding:18px;
+  box-shadow:0 50px 90px -30px rgba(80,56,30,.55),inset 0 0 0 2px #3A2A30;}
+.scr{position:relative;width:604px;height:1028px;border-radius:60px;overflow:hidden;background:#FBF7F0;}
+.scr img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;object-position:top;}
+.tap{position:absolute;width:130px;height:130px;margin:-65px 0 0 -65px;border-radius:50%;border:7px solid #D9AE52;background:rgba(217,174,82,.22);}
+</style>
+  <div id="root" data-composition-id="s11" data-width="1080" data-height="1920">
+
+<img id="s11-logo" src="assets/img/logo.svg" alt="פריים אירועים" style="position:absolute;left:90px;top:300px;width:900px;height:auto">
+<div id="s11-qr" style="position:absolute;left:300px;top:780px;width:480px;height:480px;padding:22px;background:#fff;border-radius:28px;box-shadow:0 30px 60px -30px rgba(80,56,30,.55),inset 0 0 0 4px #D9AE52">
+  <img src="assets/img/qr-app.png" alt="" style="width:100%;height:100%"></div>
+<div id="s11-cta" style="position:absolute;left:0;right:0;top:1310px;text-align:center;font:900 72px 'Frank';color:#2B1B30">סורקים <span style="color:#A47622">ומתקינים</span></div>
+<div id="s11-url" style="position:absolute;left:0;right:0;top:1420px;text-align:center;direction:ltr;font:500 34px 'Heebo';color:#7D6A5E">devopsdevopshaim-wq.github.io/devops-hub/events-hub</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+tl.fromTo("#s11-logo",{y:30,opacity:0},{y:0,opacity:1,duration:.6,ease:"power3.out"},0);
+tl.fromTo("#s11-qr",{scale:.85,opacity:0},{scale:1,opacity:1,duration:.5,ease:"back.out(1.5)"},.45);
+tl.fromTo("#s11-cta",{clipPath:"inset(0 0 0 100%)"},{clipPath:"inset(0 0 0 0%)",duration:.45,ease:"power3.out"},.9);
+tl.fromTo("#s11-url",{opacity:0},{opacity:1,duration:.4},1.3);
+    tl.to({}, { duration: 0 }, 4.99);
+    window.__timelines["s11"] = tl;
+  </script>
+</template>
