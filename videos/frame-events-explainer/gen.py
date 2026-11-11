@@ -84,6 +84,8 @@ def scene(sid, dur, body, js, extra_css=''):
         k = new / dur
         js = re.sub(r',\s*(\d+(?:\.\d+)?)\);', lambda m: ',%s);' % round(float(m.group(1)) * k, 3), js)
     dur = new
+    # the phone's slow push lasts the whole scene, so a long narration line never leaves the frame frozen
+    js = js.replace('{scale:1.04,duration:5,ease:"none"}', '{scale:1.05,duration:%s,ease:"none"}' % round(dur, 2))
     html = f'''<template>
   <style>{BASE_CSS}{extra_css}</style>
   <div id="root" data-composition-id="{sid}" data-width="{W}" data-height="{H}">

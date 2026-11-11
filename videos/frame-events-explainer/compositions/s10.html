@@ -17,23 +17,23 @@
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
-tl.fromTo("#s10-l0",{clipPath:"inset(0 0 0 100%)"},{clipPath:"inset(0 0 0 0%)",duration:.45,ease:"power3.out"},0.15);
-tl.fromTo("#s10-ph",{y:90,rotation:3,opacity:0},{y:0,rotation:0,opacity:1,duration:.55,ease:"power3.out"},0);
-tl.fromTo("#s10-ph",{scale:1},{scale:1.04,duration:5,ease:"none"},0);
-tl.set("#s10-s1",{opacity:0},0);
-tl.set("#s10-s2",{opacity:0},0);
-tl.fromTo("#s10-t0",{scale:.3,opacity:1},{scale:1.5,opacity:0,duration:.55,ease:"power2.out"},1.8);
-tl.to("#s10-s0",{y:-40,opacity:0,duration:.35,ease:"power2.in"},2.4);
-tl.fromTo("#s10-s1",{y:60,opacity:0},{y:0,opacity:1,duration:.35,ease:"power2.out"},2.4499999999999997);
-tl.to("#s10-s1",{y:-40,opacity:0,duration:.35,ease:"power2.in"},4.7);
-tl.fromTo("#s10-s2",{y:60,opacity:0},{y:0,opacity:1,duration:.35,ease:"power2.out"},4.75);
-tl.set(".s10sub",{opacity:0},0);
-tl.fromTo("#s10-x0",{opacity:0,y:14},{opacity:1,y:0,duration:.35,ease:"power2.out"},0.55);
-tl.to("#s10-x0",{opacity:0,duration:.2,ease:"power2.in"},2.1999999999999997);
-tl.fromTo("#s10-x1",{opacity:0,y:14},{opacity:1,y:0,duration:.35,ease:"power2.out"},2.4);
-tl.to("#s10-x1",{opacity:0,duration:.2,ease:"power2.in"},4.5);
-tl.fromTo("#s10-x2",{opacity:0,y:14},{opacity:1,y:0,duration:.35,ease:"power2.out"},4.7);
-    tl.to({}, { duration: 0 }, 7.99);
+tl.fromTo("#s10-l0",{clipPath:"inset(0 0 0 100%)"},{clipPath:"inset(0 0 0 0%)",duration:.45,ease:"power3.out"},0.249);
+tl.fromTo("#s10-ph",{y:90,rotation:3,opacity:0},{y:0,rotation:0,opacity:1,duration:.55,ease:"power3.out"},0.0);
+tl.fromTo("#s10-ph",{scale:1},{scale:1.05,duration:13.3,ease:"none"},0.0);
+tl.set("#s10-s1",{opacity:0},0.0);
+tl.set("#s10-s2",{opacity:0},0.0);
+tl.fromTo("#s10-t0",{scale:.3,opacity:1},{scale:1.5,opacity:0,duration:.55,ease:"power2.out"},2.993);
+tl.to("#s10-s0",{y:-40,opacity:0,duration:.35,ease:"power2.in"},3.99);
+tl.fromTo("#s10-s1",{y:60,opacity:0},{y:0,opacity:1,duration:.35,ease:"power2.out"},4.073);
+tl.to("#s10-s1",{y:-40,opacity:0,duration:.35,ease:"power2.in"},7.814);
+tl.fromTo("#s10-s2",{y:60,opacity:0},{y:0,opacity:1,duration:.35,ease:"power2.out"},7.897);
+tl.set(".s10sub",{opacity:0},0.0);
+tl.fromTo("#s10-x0",{opacity:0,y:14},{opacity:1,y:0,duration:.35,ease:"power2.out"},0.914);
+tl.to("#s10-x0",{opacity:0,duration:.2,ease:"power2.in"},3.657);
+tl.fromTo("#s10-x1",{opacity:0,y:14},{opacity:1,y:0,duration:.35,ease:"power2.out"},3.99);
+tl.to("#s10-x1",{opacity:0,duration:.2,ease:"power2.in"},7.481);
+tl.fromTo("#s10-x2",{opacity:0,y:14},{opacity:1,y:0,duration:.35,ease:"power2.out"},7.814);
+    tl.to({}, { duration: 0 }, 13.290000000000001);
     window.__timelines["s10"] = tl;
   </script>
 </template>
