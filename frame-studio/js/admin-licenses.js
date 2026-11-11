@@ -101,7 +101,7 @@
           (L.agreement ? '<small>📄 הסכם ' + esc(L.agreement.ver) + ' אושר ' + when(L.agreement.at) + '</small>' : '') + '</td>' +
         '<td>' + useCell(L) + '</td>' +
         '<td>' + st + (L.session ? '<small><span class="dot on"></span>מחובר</small>' : '') + '</td>' +
-        '<td>' + (L.bound ? '<small>' + (L.desktop ? '💻 תוכנה' : '🌐 דפדפן') + (L.platform ? ' · ' + esc(L.platform) : '') + '</small><small>מאז ' + when(L.boundAt) + '</small>' + (L.bound2 ? '<small>➕ מחשב גיבוי מאז ' + when(L.boundAt2) + '</small>' : '') + (L.activeAt && Date.now() - L.activeAt < 4 * 60000 ? '<small>🟢 עובד עכשיו ב' + (L.activeOn === 2 ? 'מחשב הגיבוי' : 'מחשב הראשי') + '</small>' : '') : '—') + (L.appVer ? '<small>⬆️ מאושר עד <span dir="ltr">' + esc(L.appVer) + '</span>' + (L.version && L.version !== L.appVer ? ' · מותקן <span dir="ltr">' + esc(L.version) + '</span>' : '') + '</small>' : '') + (L.updReq ? '<small class="lic-st wait">📨 ביקש עדכון ' + esc(L.updReq.ver) + '</small>' : '') + '</td>' +
+        '<td>' + (L.bound ? '<small>' + (L.desktop ? '💻 תוכנה' : '🌐 דפדפן') + (L.platform ? ' · ' + esc(L.platform) : '') + '</small><small>מאז ' + when(L.boundAt) + '</small>' + (L.bound2 ? '<small>➕ מחשב גיבוי מאז ' + when(L.boundAt2) + '</small>' : '') + (L.activeAt && Date.now() - L.activeAt < 4 * 60000 ? '<small>🟢 עובד עכשיו ב' + (L.activeOn === 2 ? 'מחשב הגיבוי' : 'מחשב הראשי') + '</small>' : '') : '—') + (L.appVer ? '<small>⬆️ מאושר עד <span dir="ltr">' + esc(L.appVer) + '</span>' + (L.version && L.version !== L.appVer ? ' · מותקן <span dir="ltr">' + esc(L.version) + '</span>' : '') + '</small>' : '') + (L.updReq ? '<small class="lic-st wait">' + (L.updReq.paid ? '💰 שילם על עדכון ' : '📨 ביקש עדכון ') + esc(L.updReq.ver) + '</small>' : '') + '</td>' +
         '<td>' + when(L.lastSeen) + (L.lastIp ? '<small dir="ltr">' + esc(L.lastIp) + '</small>' : '') + '</td>' +
         '<td class="act lic-act">' +
           '<button data-a="pay" title="רישום תשלום">💰</button><button data-a="upd" title="אישור עדכון גרסה">⬆️</button><button data-a="copy" title="העתקת הקוד וההוראות">📋</button>' +
@@ -179,7 +179,7 @@
       });
       ALL.forEach(function (L) {
         var p = L.plan || {}, used = L.usage && L.usage.min;
-        if (L.updReq) out.push({ key: 'upd:' + L.email + ':' + L.updReq.at, at: L.updReq.at, icon: '⬆️', who: L, what: 'מבקש/ת עדכון לגרסה ' + L.updReq.ver + ' (מאושר עד ' + (L.appVer || '—') + '). אחרי התשלום: אישור', upd: L.email, hot: true });
+        if (L.updReq) out.push({ key: 'upd:' + L.email + ':' + L.updReq.at, at: L.updReq.at, icon: '⬆️', who: L, what: (L.updReq.paid ? '💰 דיווח/ה ששילם/ה על העדכון לגרסה ' + L.updReq.ver + ' (' + (L.updReq.paid.method || '—') + (L.updReq.paid.ref ? ', אסמכתא ' + L.updReq.paid.ref : '') + '). בודקים שהכסף נכנס ומאשרים: קבלה יוצאת במייל' : L.updReq.agreed ? 'אישר/ה עדכון לגרסה ' + L.updReq.ver + ' ותשלום ' + nis(L.updReq.price) + ' (פרטי התשלום נשלחו אליו). מחכים לתשלום' : 'מבקש/ת עדכון לגרסה ' + L.updReq.ver + ' (מאושר עד ' + (L.appVer || '—') + '). אחרי התשלום: אישור'), upd: L.email, hot: true });
         if (L.planReq) out.push({ key: 'req:' + L.email + ':' + L.planReq.at, at: L.planReq.at, icon: '📩', who: L, what: 'ביקש/ה ' + (PLAN_NAMES[L.planReq.want] || L.planReq.want) + (L.planReq.note ? ' (' + L.planReq.note + ')' : '') + (L.payDetails && L.payDetails.at > L.planReq.at ? '. 🏦 נשלחו פרטי תשלום (' + nis(L.payDetails.amount) + ', אסמכתא ' + L.payDetails.ref + '). כשהכסף נכנס: 💰 רישום תשלום' : '. שולחים פרטי תשלום (🏦), וכשהכסף נכנס רושמים תשלום (💰)'), pay: L.email, bank: L.email, want: L.planReq.want, hot: true });
         if (p.tier === 'trial' && p.ends && Date.parse(p.ends) - t < 3 * DAY && Date.parse(p.ends) > t) out.push({ key: 'end:' + L.email + ':' + p.ends, at: new Date(Date.parse(p.ends) - 3 * DAY).toISOString(), icon: '⌛', who: L, what: 'הניסיון נגמר בעוד ' + Math.max(1, Math.ceil((Date.parse(p.ends) - t) / DAY)) + ' ימים. להציע מבצע' });
         if (p.tier === 'trial' && !used && L.createdAt && t - Date.parse(L.createdAt) > DAY) out.push({ key: 'idle:' + L.email, at: new Date(Date.parse(L.createdAt) + DAY).toISOString(), icon: '😴', who: L, what: 'בניסיון ועוד לא עבד/ה עם התוכנה. לעזור בהתחלה' });
@@ -285,9 +285,10 @@
       if (!v) return FS.toast('קודם מפרסמים עדכון');
       v = window.prompt('לאשר ל־' + L.name + ' עדכון לגרסה:', v); if (!v) return;
       var pub = (UPD.versions || []).filter(function (x) { return x.ver === v; })[0];
-      var amt = window.prompt('כמה שולם על העדכון? (₪, 0 = בלי תשלום)', pub && !pub.free ? pub.price : 0); if (amt == null) return;
-      var method = Number(amt) > 0 ? window.prompt('איך שולם? (ביט, פייבוקס, העברה, מזומן…)', 'ביט') || '' : '';
-      LIC.admin('upd-grant', { email: L.email, ver: v.trim(), amount: amt, method: method }).then(function (r) { done(r, '⬆️ העדכון לגרסה ' + v + ' אושר ל־' + L.name + '. אצלו בתוכנה: "⬆️ עדכון גרסה" ← הורדה והתקנה.'); });
+      var rq = L.updReq || {}, pd = rq.paid || null;
+      var amt = window.prompt((pd ? 'הלקוח דיווח: שילם ב' + (pd.method || '—') + (pd.ref ? ', אסמכתא ' + pd.ref : '') + '. בודקים שהכסף נכנס.\n' : '') + 'כמה שולם על העדכון? (₪, 0 = בלי תשלום. עם סכום נשלחת קבלה במייל ללקוח, והעתק אליך)', rq.price != null ? rq.price : (pub && !pub.free ? pub.price : 0)); if (amt == null) return;
+      var method = Number(amt) > 0 ? window.prompt('איך שולם? (ביט, פייבוקס, העברה, מזומן…)', (pd && pd.method) || 'העברה בנקאית') || '' : '';
+      LIC.admin('upd-grant', { email: L.email, ver: v.trim(), amount: amt, method: method, ref: (pd && pd.ref) || '' }).then(function (r) { done(r, '⬆️ העדכון לגרסה ' + v + ' אושר ל־' + L.name + (r.receipt ? '. 🧾 קבלה מס׳ ' + r.receipt + ' נשלחה אליו במייל, והעתק אליך' : '') + '. אצלו בתוכנה העדכון קופץ מעצמו.'); });
     }
     function act(a, L) {
       if (a === 'pay') { var pr = $('#lic-list tr[data-p="' + L.email.replace(/"/g, '') + '"]'); if (pr) pr.hidden = !pr.hidden; return; }

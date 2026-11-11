@@ -2037,3 +2037,28 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Free-tier quota:** Gemini allows only a few clips per run. Re-run `frame-tts.yml -f film=optimus-guide` until the report has every scene; finished clips are kept between runs.
 - **Film:** 352 s, rendered 1080p, encoded to `media/promo/guide.mp4` at 720p (crf 30, aac 112k, faststart, 9.6 MB) + `guide.jpg`.
 - **Cache-busting:** `help.js` and `download.html` link it with `?v=2`, so the old film is not served from a cache. Bump this number when the film changes.
+
+## v135: who pays for program updates, approval and payment in the program, receipt by mail
+
+- **Who pays (server `updWho`/`updFor`):**
+  - `full`: the licence bought for good (`paid` with no `paidUntil`). Only this one pays for an update.
+  - `sub`: a running monthly or yearly subscription. Every update is included.
+  - `free`: trial, event pass, free tier. Updates are included too.
+  - When an update is included, `L.appVer` follows the running version, so it is kept if the licence later becomes a full one.
+  - `upd` now carries `who` and `incl`.
+- **`upd-request`:**
+  - `agree=1`: "✔ מאשר/ת עדכון ותשלום". Stores `updReq.agreed`, `price` and a reference `UPD-<code4>-<N>`. Returns `pay` (amount, ref, bank details from `licSettings.bankInfo`), mails the same details to the licence holder (`mail`) and alerts the owner (`mail2`). With no bank details saved, the owner is told to send them on WhatsApp.
+  - `paid=1&method&ref`: "💰 שילמתי". Stores `updReq.paid` and alerts the owner with the method and reference.
+  - Rate limit: 6 a day.
+- **`upd-grant` with an amount:** records the payment (`kind: 'update'`) and sends a receipt through the shared `makeReceipt()` (also used by `lic-pay`): the original to the customer, a copy to the owner. The reference falls back to the one the customer gave.
+- **Fix:** undoing a payment no longer counts update payments as buying the licence.
+- **Program (`js/updates.js`):**
+  - A newer published version opens the update dialog by itself once per version (`fs-upd-asked`), and again when it opens after the payment.
+  - Included: "⬇️ עדכון עכשיו".
+  - Full licence: a confirm checkbox, then "✔ מאשר/ת עדכון ותשלום", then the payment box (kept in `fs-upd-pay`), then method + reference and "💰 שילמתי", then waiting for the owner.
+  - CSS: `.upd-agree`, `.upd-pay`, `.upd-paid` in mate.css.
+- **Admin:**
+  - The task and the licence row show "💰 שילם" with the method and reference.
+  - "✔ אישור עדכון" fills in the amount, method and reference, and confirms the receipt number.
+- **Note:** the studio itself loads live from the site, so its web features reach every licence. Paid updates are installer versions (1.0.N: the printer connection and the desktop parts).
+- **Tests:** cloudflare/test/license.test.mjs (subscriber included, full locked, agree → pay mail, paid → alert, grant → receipt + copy, unlock).

@@ -58,6 +58,31 @@ mv = await call({ action: 'lic-move-code', email: 'pro@x.com', code: CODE, machi
 check('a second move within 30 days is refused', !mv.ok && mv.error === 'move-limit', mv);
 mv = await call({ action: 'lic-move-code', email: 'pro@x.com', code: 'FS-XXXX-XXXX-XXXX-XXXX', machine: M.D });
 check('a wrong licence code gets no move code', !mv.ok && mv.error === 'bad-license', mv);
+
+// ---- updates: only a licence bought for good pays for one; a subscriber (month / year) and a trial get it included
+const ADM = 'f'.repeat(48);
+sd.sessions[nodeCrypto.createHash('sha256').update(ADM).digest('hex')] = { role: 'admin', email: 'devopsdevopshaim@gmail.com', exp: Date.now() + 86400000 };
+sd.appUpd = { price: 49, versions: [{ ver: '1.0.12', notes: 'חדש', price: 49, at: new Date().toISOString() }] };
+sd.licSettings = Object.assign(sd.licSettings || {}, { bankInfo: { holder: 'חיים', bank: '12', branch: '345', account: '678901' } });
+sd.licenses['sub@x.com'] = { email: 'sub@x.com', name: 'Sub', code: 'FS-SSSS-SSSS-SSSS-SSSS', active: true, paid: true, paidUntil: new Date(Date.now() + 20 * 86400000).toISOString(), appVer: '1.0.9', createdAt: new Date().toISOString(), history: [] };
+let sa = await act('sub@x.com', 'FS-SSSS-SSSS-SSSS-SSSS', M.D, { version: '1.0.9' });
+check('a subscriber sees the update as included, ready to install', sa.ok && sa.upd.who === 'sub' && sa.upd.incl && sa.upd.allowed && !!sa.upd.latest.url, sa.upd);
+r = await call({ action: 'lic-check', token: sa.token, machine: M.D, version: '1.0.12' });
+check('... and the new version runs without a lock', r.ok && !r.upd.locked && sd.licenses['sub@x.com'].appVer === '1.0.12', r.upd);
+r = await call({ action: 'lic-check', token: cc.token, machine: M.C, version: '1.0.9', takeover: '1' });
+check('the full licence (bought for good) sees the update with its price, not yet open', r.ok && r.upd.who === 'full' && !r.upd.allowed && r.upd.latest.price === 49, r.upd);
+r = await call({ action: 'lic-check', token: cc.token, machine: M.C, version: '1.0.12', takeover: '1' });
+check('... and the unpaid version is locked', r.ok && r.upd.locked, r.upd);
+r = await call({ action: 'upd-request', token: cc.token, ver: '1.0.12', version: '1.0.9', agree: '1' });
+check('approving the update and the payment gives the payment details', r.ok && r.pay && r.pay.amount === 49 && r.pay.account === '678901' && /^UPD-/.test(r.pay.ref), r);
+check('... mailed to the licence holder, the owner told', last.mail && last.mail.to === 'pro@x.com' && /פרטי תשלום/.test(last.mail.subject) && last.mail2 && /אישור עדכון ותשלום/.test(last.mail2.subject), { m: last.mail && last.mail.subject, m2: last.mail2 && last.mail2.subject });
+r = await call({ action: 'upd-request', token: cc.token, ver: '1.0.12', version: '1.0.9', paid: '1', method: 'ביט', ref: '7788' });
+check('"שילמתי" tells the owner how and the reference', r.ok && /שולם/.test(last.mail.subject) && /7788/.test(last.mail.text) && sd.licenses['pro@x.com'].updReq.paid.ref === '7788', last.mail);
+r = await call({ action: 'upd-grant', token: ADM, email: 'pro@x.com', ver: '1.0.12', amount: '49', method: 'ביט' });
+check('the owner approves: a receipt to the customer and a copy to the owner', r.ok && r.receipt && last.mail.to === 'pro@x.com' && /קבלה/.test(last.mail.subject) && /עדכון לגרסה 1.0.12/.test(last.mail.text) && /7788/.test(last.mail.text) && last.mail2 && /העתק/.test(last.mail2.subject), { r, m: last.mail });
+r = await call({ action: 'lic-check', token: cc.token, machine: M.C, version: '1.0.12', takeover: '1' });
+check('... and the update opens for him', r.ok && !r.upd.locked && !sd.licenses['pro@x.com'].updReq, r.upd);
+check('an update payment does not count as buying a licence', sd.licenses['pro@x.com'].payments.filter((p) => p.kind === 'update').length === 1);
 Date.now = realNow;
 console.log(bad ? bad + ' failed' : 'all passed');
 process.exit(bad ? 1 : 0);

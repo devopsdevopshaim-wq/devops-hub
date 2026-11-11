@@ -549,3 +549,12 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 
 /* the funny effects heading inside the AI tools (full editor) */
 #mt .mt-chsep { flex-basis: 100%; font-weight: 700; font-size: 13px; color: var(--at-quartz, #EDB6BE); margin: 8px 0 2px; }
+/* update approval and payment (js/updates.js) */
+.upd-dlg .upd-agree { display: flex; gap: 8px; align-items: center; margin: 10px 0; font-weight: 600; cursor: pointer; }
+.upd-dlg .upd-agree input { width: 20px; height: 20px; accent-color: #D9B677; }
+.upd-dlg .upd-pay { border: 1px solid rgba(217, 182, 119, .45); background: rgba(217, 182, 119, .08); border-radius: 12px; padding: 10px 14px; margin: 10px 0; }
+.upd-dlg .upd-pay h4 { margin: 0 0 6px; }
+.upd-dlg .upd-pay p { margin: 4px 0; }
+.upd-dlg .upd-paid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 8px; }
+.upd-dlg .upd-paid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.upd-dlg .upd-paid select, .upd-dlg .upd-paid input { min-height: 34px; border-radius: 8px; padding: 0 8px; }

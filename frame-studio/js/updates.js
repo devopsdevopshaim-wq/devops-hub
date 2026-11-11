@@ -6,6 +6,11 @@
      local AI stay).
    - A version installed without approval opens a lock screen with the way back to the approved version, and the request button.
      The lock is remembered for that version, also without internet.
+   Who pays (the server's upd.who): only a licence bought for good ('full'). A monthly / yearly subscriber ('sub') and every licence
+   never bought for good ('free': trial, pass, free tier) get each update included, and install it at once.
+   A new update is offered by itself once per version (and again when the owner approved it after the payment). For a full licence:
+   "✔ מאשר/ת עדכון ותשלום" → the payment details (shown here and mailed) → "💰 שילמתי" with the method and reference → the owner
+   approves in the admin, a receipt is mailed to the customer (a copy to the owner), and the install button opens here.
    The owner (an admin session) is never locked. In a browser the studio is always the current one, so none of this shows. */
 (function () {
   'use strict';
@@ -29,10 +34,21 @@
   /* the server's answer comes with every licence check and activation */
   function keep(r) {
     if (!r || !r.ok || !r.upd || !RUN) return r;
+    var was = (state() || {}).upd;
     ls(K, JSON.stringify({ upd: r.upd, at: Date.now(), run: RUN }));
+    offer(r.upd, was);
     if (r.upd.locked) { ls(KL, RUN); lock(r.upd); } else { if (ls(KL) === RUN) ls(KL, null); unlock(); }
     badge();
     return r;
+  }
+  /* a new update shows by itself: once per version, and once more when it opens after the payment */
+  var KA = 'fs-upd-asked', offered = false;
+  function offer(u, was) {
+    if (offered || admin() || u.locked || !newer(u)) return;
+    var ver = u.latest.ver, opened = u.allowed && was && was.latest && was.latest.ver === ver && !was.allowed;
+    if (!opened && ls(KA) === ver) return;
+    offered = true; ls(KA, ver);
+    setTimeout(function () { if (!document.querySelector('dialog[open]')) open(); else offered = false; }, 2500);
   }
   var check = LIC.check, activate = LIC.activate;
   LIC.check = function () { return check.apply(LIC, arguments).then(keep); };
@@ -63,6 +79,8 @@
     else if (b.dataset.u === 'req') request(u.locked ? RUN : u.latest && u.latest.ver, st);
     else if (b.dataset.u === 'back' && u.back) install(u.back.ver, st);
     else if (b.dataset.u === 'install' && u.latest) install(u.latest.ver, st);
+    else if (b.dataset.u === 'agree' && u.latest) agree(u.latest.ver, wrap, st);
+    else if (b.dataset.u === 'paid' && u.latest) paid(u.latest.ver, wrap, st);
   });
   function request(ver, st) {
     var L = LIC.get(); if (!ver || !L || !L.token) return;
@@ -70,6 +88,40 @@
     LIC.call('upd-request', { token: L.token, ver: ver, version: RUN }).then(function (r) {
       if (r && r.ok) { keep({ ok: true, upd: r.upd }); if (st) st.textContent = '✔ הבקשה נשלחה לחיים. אחרי התשלום הוא מאשר, ואז העדכון נפתח כאן.'; }
       else if (st) st.textContent = r && r.error === 'rate-limited' ? 'כבר נשלחו כמה בקשות היום. אפשר גם בוואטסאפ.' : 'השליחה לא הצליחה. אפשר בוואטסאפ.';
+    });
+  }
+  function payBox(p) {
+    return '<div class="upd-pay"><h4>🏦 פרטי התשלום</h4><p>סכום: <b>₪' + esc(p.amount) + '</b> · אסמכתא לציון בהעברה: <b dir="ltr">' + esc(p.ref) + '</b></p>' +
+      '<p>שם החשבון: ' + esc(p.holder) + ' · בנק ' + esc(p.bank) + ' · סניף ' + esc(p.branch) + ' · חשבון <b dir="ltr">' + esc(p.account) + '</b></p>' +
+      '<p class="hint">הפרטים נשלחו גם למייל שלך. אחרי ההעברה ממלאים כאן ולוחצים "💰 שילמתי".</p></div>';
+  }
+  function paidForm() {
+    return '<div class="upd-paid"><label>איך שילמת <select class="upd-m"><option>העברה בנקאית</option><option>ביט</option><option>פייבוקס</option><option>מזומן</option><option>אחר</option></select></label>' +
+      '<label>אסמכתא (מספר ההעברה) <input class="upd-r" dir="ltr" maxlength="60"></label>' +
+      '<button class="btn primary" data-u="paid">💰 שילמתי</button></div>';
+  }
+  function agree(ver, wrap, st) {
+    var c = wrap && wrap.querySelector('.upd-ok');
+    if (c && !c.checked) { if (st) st.textContent = 'מסמנים קודם "אני מאשר/ת".'; c.focus(); return; }
+    var L = LIC.get(); if (!L || !L.token) return;
+    if (st) st.textContent = 'שולח…';
+    LIC.call('upd-request', { token: L.token, ver: ver, version: RUN, agree: '1' }).then(function (r) {
+      if (!r || !r.ok) { if (st) st.textContent = r && r.error === 'rate-limited' ? 'כבר נשלחו כמה בקשות היום. אפשר בוואטסאפ.' : 'השליחה לא הצליחה. בודקים חיבור לאינטרנט, או בוואטסאפ.'; return; }
+      keep({ ok: true, upd: r.upd });
+      var box = wrap.querySelector('.upd-step'); if (r.pay) ls('fs-upd-pay', JSON.stringify(r.pay));
+      if (box) box.innerHTML = (r.pay ? payBox(r.pay) : '<p>✔ האישור נשלח לחיים. פרטי התשלום יגיעו אליך ממנו (במייל או בוואטסאפ).</p>') + paidForm();
+      if (st) st.textContent = '✔ האישור נשלח.';
+    });
+  }
+  function paid(ver, wrap, st) {
+    var L = LIC.get(); if (!L || !L.token) return;
+    var m = wrap.querySelector('.upd-m'), rf = wrap.querySelector('.upd-r');
+    if (st) st.textContent = 'שולח…';
+    LIC.call('upd-request', { token: L.token, ver: ver, version: RUN, paid: '1', method: m ? m.value : '', ref: rf ? rf.value.trim() : '' }).then(function (r) {
+      if (!r || !r.ok) { if (st) st.textContent = 'השליחה לא הצליחה. אפשר לשלוח צילום אסמכתא בוואטסאפ.'; return; }
+      keep({ ok: true, upd: r.upd });
+      var box = wrap.querySelector('.upd-step'); if (box) box.innerHTML = '<p>✔ תודה! חיים קיבל הודעה על התשלום. כשהוא מאשר, נשלחת אליך קבלה במייל והעדכון נפתח כאן מעצמו (גם הודעה תקפוץ).</p>';
+      if (st) st.textContent = '';
     });
   }
   function install(ver, st) {
@@ -89,13 +141,19 @@
     else if (!u) h = '<p>גרסה מותקנת: <b dir="ltr">' + esc(RUN) + '</b>.</p><p>עוד לא נבדק מול השרת. מתחברים לאינטרנט ולוחצים "בדיקה שוב".</p><div class="upd-acts"><button class="btn" data-u="again">🔄 בדיקה שוב</button></div>';
     else if (!newer(u)) h = '<p>✔ מותקנת הגרסה העדכנית: <b dir="ltr">' + esc(RUN) + '</b>.</p><p class="hint">נבדק ' + new Date(s.at).toLocaleString('he-IL') + '</p><div class="upd-acts"><button class="btn" data-u="again">🔄 בדיקה שוב</button></div>';
     else {
-      var L = u.latest, req = u.req && u.req.ver === L.ver;
-      h = '<p>גרסה חדשה: <b dir="ltr">' + esc(L.ver) + '</b> · מותקנת אצלך: <b dir="ltr">' + esc(RUN) + '</b></p>' +
+      var L = u.latest, req = u.req && u.req.ver === L.ver ? u.req : null, pay = null;
+      try { pay = JSON.parse(ls('fs-upd-pay') || 'null'); } catch (e) { pay = null; }
+      if (pay && !(req && pay.ref === req.ref)) pay = null;
+      var step;
+      if (u.allowed) step = '<p>' + (u.incl ? (u.who === 'sub' ? '✔ כלול במנוי שלך, בלי תשלום.' : '✔ העדכון בלי תשלום.') : '✔ העדכון מאושר לרישיון שלך.') + '</p><div class="upd-acts"><button class="btn primary" data-u="install">⬇️ עדכון עכשיו</button></div><p class="hint">התוכנה תיסגר, ההתקנה תיפתח, ובסיום התוכנה נפתחת מחדש. ההגדרות, הרישיון ומנוע ה־AI נשארים.</p>';
+      else if (req && req.paid) step = '<p>✔ דיווחת על התשלום (' + esc(req.paid.method || '') + (req.paid.ref ? ', אסמכתא ' + esc(req.paid.ref) : '') + '). מחכים לאישור של חיים: אז תגיע קבלה במייל והעדכון ייפתח כאן.</p><div class="upd-acts"><button class="btn" data-u="again">🔄 בדיקה שוב</button></div>';
+      else if (req && req.agreed) step = (pay ? payBox(pay) : '<p>✔ אישרת את העדכון. פרטי התשלום נשלחו אליך במייל.</p>') + paidForm();
+      else step = '<p>' + (L.free ? 'העדכון בחינם.' : 'הרישיון שלך נקנה לתמיד, ולכן עדכון גרסה בתשלום: <b>₪' + esc(L.price) + '</b>, פעם אחת לעדכון הזה. (במנוי חודשי או שנתי העדכונים כלולים.)') + '</p>' +
+        '<label class="upd-agree"><input type="checkbox" class="upd-ok"> אני מאשר/ת את העדכון לגרסה <b dir="ltr">' + esc(L.ver) + '</b>' + (L.free ? '' : ' ואת התשלום של ₪' + esc(L.price)) + '</label>' +
+        '<div class="upd-acts"><button class="btn primary" data-u="agree">✔ מאשר/ת עדכון ותשלום</button><a class="btn" target="_blank" rel="noopener" href="' + esc(wa(u, 'שלום, אני רוצה את עדכון אופטימוס לגרסה ' + L.ver + '.')) + '">💬 וואטסאפ לחיים</a></div>';
+      h = '<p>🎉 יש עדכון: גרסה <b dir="ltr">' + esc(L.ver) + '</b> · מותקנת אצלך: <b dir="ltr">' + esc(RUN) + '</b></p>' +
         (L.notes ? '<div class="upd-notes"><h4>מה חדש</h4><p>' + esc(L.notes).replace(/\n/g, '<br>') + '</p></div>' : '') +
-        (u.allowed ? '<p>✔ העדכון מאושר לרישיון שלך.</p><div class="upd-acts"><button class="btn primary" data-u="install">⬇️ הורדה והתקנה</button></div><p class="hint">התוכנה תיסגר, ההתקנה תיפתח, ובסיום התוכנה נפתחת מחדש. ההגדרות, הרישיון ומנוע ה־AI נשארים.</p>'
-          : '<p>' + (L.free ? 'העדכון בחינם.' : 'עדכון גרסה: <b>₪' + esc(L.price) + '</b> (תשלום סמלי, פעם אחת לעדכון הזה).') + ' אחרי התשלום חיים מאשר, והכפתור להתקנה נפתח כאן.</p>' +
-            '<div class="upd-acts"><button class="btn primary" data-u="req">' + (req ? '✔ הבקשה נשלחה · לשלוח שוב' : '📨 בקשת העדכון') + '</button>' +
-            '<a class="btn" target="_blank" rel="noopener" href="' + esc(wa(u, 'שלום, אני רוצה את עדכון אופטימוס לגרסה ' + L.ver + '.')) + '">💬 וואטסאפ לחיים</a><button class="btn" data-u="again">🔄 בדיקה שוב</button></div>');
+        '<div class="upd-step">' + step + '</div>';
     }
     FS.dialog('⬆️ עדכון גרסה', '<div class="upd-dlg">' + h + '<p class="upd-st" id="upd-st2"></p></div>');
   }
