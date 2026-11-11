@@ -67,13 +67,18 @@ const when = () => new Date(now).toLocaleString('he-IL', { timeZone: 'Asia/Jerus
 const vparse = (v) => /^\d{1,4}\.\d{1,4}\.\d{1,6}$/.test(String(v || '')) ? String(v).split('.').map(Number) : null;
 const vcmp = (a, z) => { const x = vparse(a), y = vparse(z); if (!x || !y) return 0; for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1; return 0; };
 const UPD_DL = (v) => `https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/desktop-v${v}/FrameStudio-Setup-${v}.exe`;
+// Who pays for an update: only the full licence bought for good (paid, with no end date). A monthly or yearly subscriber gets every
+// update while the subscription runs, and so does every licence that was never bought for good (trial, event pass, free tier).
+const lifetime = (L) => !!L.paid && !L.paidUntil;
+const updWho = (L) => lifetime(L) ? 'full' : L.paidUntil && Date.parse(L.paidUntil) > now ? 'sub' : 'free';
 const updFor = (L, running) => {
   const U = sd.appUpd || { versions: [] }, pubs = (U.versions || []).slice().sort((a, z) => vcmp(z.ver, a.ver)), latest = pubs[0] || null;
-  const freeTop = pubs.filter((x) => x.free).map((x) => x.ver)[0] || '';
-  const may = (v) => !!vparse(v) && (!L.appVer || vcmp(v, L.appVer) <= 0 || (!!freeTop && vcmp(v, freeTop) <= 0));
+  const freeTop = pubs.filter((x) => x.free).map((x) => x.ver)[0] || '', who = updWho(L), incl = who !== 'full';
+  const may = (v) => !!vparse(v) && (incl || !L.appVer || vcmp(v, L.appVer) <= 0 || (!!freeTop && vcmp(v, freeTop) <= 0));
   if (vparse(running) && freeTop && L.appVer && vcmp(running, L.appVer) > 0 && vcmp(running, freeTop) <= 0) L.appVer = String(running);   // a free update: approved by being free
+  if (incl && vparse(running) && (!L.appVer || vcmp(running, L.appVer) > 0)) L.appVer = String(running);   // included: what runs is what was approved (kept if it later becomes a full licence)
   const locked = !!vparse(running) && !may(running);
-  const r = { cur: L.appVer || '', locked, running: vparse(running) ? String(running) : '', req: L.updReq || null, price: U.price || 49, phone: '054-4979771' };
+  const r = { cur: L.appVer || '', locked, running: vparse(running) ? String(running) : '', req: L.updReq || null, price: U.price || 49, phone: '054-4979771', who, incl };
   if (locked && L.appVer) r.back = { ver: L.appVer, url: UPD_DL(L.appVer) };
   if (latest) { r.latest = { ver: latest.ver, notes: latest.notes || '', price: latest.free ? 0 : (latest.price || U.price || 49), free: !!latest.free, at: latest.at }; r.allowed = may(latest.ver); if (r.allowed) r.latest.url = UPD_DL(latest.ver); }
   return r;
@@ -512,11 +517,27 @@ switch (b.action) {
     // any version may be asked for: one the owner published, or one installed before it was published (the owner decides)
     const U = sd.appUpd || { versions: [] }, v = line(b.ver, 20), pub = (U.versions || []).filter((x) => x.ver === v)[0] || { ver: v, price: U.price || 49, unpublished: true };
     if (!vparse(v)) return out({ ok: false, error: 'bad-input' }, 400);
-    if (!hit('upd-req', s.lic, 4, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
-    L.updReq = { ver: v, at: new Date(now).toISOString(), note: line(b.note, 200) };
-    L.history = [{ at: L.updReq.at, what: 'ביקש עדכון לגרסה ' + v }].concat(L.history || []).slice(0, 30);
+    if (!hit('upd-req', s.lic, 6, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
+    const iso = new Date(now).toISOString(), price = pub.free ? 0 : (pub.price || U.price || 49);
+    // "שילמתי": the licence holder says how and with which reference; the owner checks the account and approves (a receipt then goes out)
+    if (b.paid === '1' || b.paid === true) {
+      L.updReq = Object.assign({ ver: v, at: iso }, L.updReq && L.updReq.ver === v ? L.updReq : {}, { paid: { at: iso, method: line(b.method, 30), ref: line(b.ref, 60) } });
+      L.history = [{ at: iso, what: 'דיווח על תשלום לעדכון ' + v + (L.updReq.paid.method ? ' (' + L.updReq.paid.method + ')' : '') }].concat(L.history || []).slice(0, 30);
+      log('דיווח תשלום לעדכון ' + v, s.lic);
+      return out({ ok: true, upd: updFor(L, b.version) }, 200, alert('💰 שולם עדכון אופטימוס ' + v + ': ' + (L.name || s.lic), `${L.name || s.lic}\nמייל: ${s.lic}${L.phone ? '\nטלפון: ' + L.phone : ''}\nמדווח/ת ששילם/ה ${price} ₪ על העדכון לגרסה ${v}.\nאמצעי: ${L.updReq.paid.method || '—'}\nאסמכתא: ${L.updReq.paid.ref || '—'}${L.updReq.ref ? '\nאסמכתא שנתנו לו: ' + L.updReq.ref : ''}\n\nכשהכסף נכנס: מסך הניהול ← רישיונות סטודיו ← משימות לביצוע ← "✔ אישור עדכון". הקבלה נשלחת אליו במייל מיד, והעתק אליך.`));
+    }
+    const ref = 'UPD-' + (L.code || '').replace(/\W/g, '').slice(-4) + '-' + v.split('.').pop();
+    L.updReq = { ver: v, at: iso, note: line(b.note, 200), agreed: b.agree === '1' || b.agree === true ? iso : null, price, ref };
+    L.history = [{ at: iso, what: (L.updReq.agreed ? 'אישר/ה עדכון ותשלום לגרסה ' : 'ביקש עדכון לגרסה ') + v }].concat(L.history || []).slice(0, 30);
     log('בקשת עדכון סטודיו ' + v, s.lic);
-    return out({ ok: true, upd: updFor(L, b.version) }, 200, alert('⬆️ בקשת עדכון לאופטימוס ' + v + ': ' + (L.name || s.lic), `${L.name || s.lic}\nמייל: ${s.lic}${L.phone ? '\nטלפון: ' + L.phone : ''}\nמבקש/ת עדכון לגרסה ${v} (מאושר עד היום: ${L.appVer || '—'}, מותקן: ${line(b.version, 20) || '—'}).\nמחיר: ${pub.free ? 'חינם' : (pub.price || U.price || 49) + ' ₪'}${pub.unpublished ? ' (הגרסה עוד לא פורסמה כעדכון)' : ''}.${L.updReq.note ? '\nהערה: ' + L.updReq.note : ''}\n\nלאישור: מסך הניהול ← רישיונות סטודיו ← משימות לביצוע ← "✔ אישור עדכון".`));
+    // the payment details (the owner's bank account from the admin settings), shown in the program and mailed to the licence holder
+    const BI = (sd.licSettings || {}).bankInfo || {};
+    const pay = price && BI.account ? { amount: price, ref, holder: BI.holder || '', bank: BI.bank || '', branch: BI.branch || '', account: BI.account, phone: '054-4979771' } : null;
+    const payText = pay ? `שלום ${L.name || ''},\n\nאישרת את העדכון של אופטימוס לגרסה ${v}. אלה פרטי התשלום:\n\nסכום: ${price} ₪\nאסמכתא לציון בהעברה: ${ref}\n\n🏦 העברה בנקאית:\nשם החשבון: ${pay.holder}\nבנק: ${pay.bank}\nסניף: ${pay.branch}\nחשבון: ${pay.account}\n\nאחרי ההעברה לוחצים בתוכנה "💰 שילמתי" (או שולחים צילום אסמכתא בוואטסאפ 054-4979771). כשהתשלום מתקבל העדכון נפתח אצלך בתוכנה, וקבלה נשלחת אליך במייל.\n\nחיים קריספין · פריים מגנטים · אופטימוס` : '';
+    const admin = alert('⬆️ ' + (L.updReq.agreed ? 'אישור עדכון ותשלום' : 'בקשת עדכון') + ' לאופטימוס ' + v + ': ' + (L.name || s.lic), `${L.name || s.lic}\nמייל: ${s.lic}${L.phone ? '\nטלפון: ' + L.phone : ''}\n${L.updReq.agreed ? 'אישר/ה את העדכון ואת התשלום' : 'מבקש/ת עדכון'} לגרסה ${v} (מאושר עד היום: ${L.appVer || '—'}, מותקן: ${line(b.version, 20) || '—'}).\nמחיר: ${price ? price + ' ₪' : 'חינם'}${pub.unpublished ? ' (הגרסה עוד לא פורסמה כעדכון)' : ''}.${pay ? '\nפרטי התשלום נשלחו אליו במייל (אסמכתא ' + ref + ').' : price ? '\n⚠️ פרטי החשבון עוד לא מולאו (מסך הניהול ← מחיר ותנאים ← 🏦), אז שולחים לו אותם בוואטסאפ.' : ''}${L.updReq.note ? '\nהערה: ' + L.updReq.note : ''}\n\nכשהכסף נכנס: מסך הניהול ← רישיונות סטודיו ← משימות לביצוע ← "✔ אישור עדכון".`);
+    const body = { ok: true, upd: updFor(L, b.version), pay };
+    if (payText) return [{ json: { code: 200, body, mail: { to: s.lic, fromName: 'אופטימוס · פריים מגנטים', replyTo: ADMIN_EMAIL, subject: 'אופטימוס · פרטי תשלום לעדכון ' + v + ' (' + price + ' ₪)', text: payText, soft: true }, mail2: admin } }];
+    return out(body, 200, admin);
   }
   case 'lic-list':
   case 'lic-create':
@@ -568,7 +589,7 @@ switch (b.action) {
     if (b.action === 'lic-pulse') {
       const L = Object.values(sd.licenses), T = Object.values(sd.trialLeads || {}), on = (iso, ms) => iso && now - Date.parse(iso) < ms;
       const items = [].concat(
-        L.filter((x) => x.updReq).map((x) => ({ kind: 'upd', at: x.updReq.at, name: x.name, email: x.email, phone: x.phone || '', text: 'מבקש/ת עדכון לגרסה ' + x.updReq.ver })),
+        L.filter((x) => x.updReq).map((x) => ({ kind: 'upd', at: x.updReq.at, name: x.name, email: x.email, phone: x.phone || '', text: (x.updReq.paid ? '💰 דיווח/ה ששילם/ה על העדכון לגרסה ' + x.updReq.ver + ' (' + (x.updReq.paid.method || '') + (x.updReq.paid.ref ? ', אסמכתא ' + x.updReq.paid.ref : '') + '): בודקים ומאשרים' : x.updReq.agreed ? 'אישר/ה עדכון ותשלום לגרסה ' + x.updReq.ver + ', מחכים לתשלום' : 'מבקש/ת עדכון לגרסה ' + x.updReq.ver) })),
         L.filter((x) => x.planReq).map((x) => ({ kind: 'plan', at: x.planReq.at, name: x.name, email: x.email, phone: x.phone || '', text: 'מבקש/ת ' + ({ pass: 'כרטיס אירוע', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' }[x.planReq.want] || x.planReq.want) })),
         Object.values(sd.trialBlocked || {}).map((x) => ({ kind: 'blocked', at: x.at, name: x.name, email: x.email, phone: x.phone || '', text: 'ניסה/תה ניסיון נוסף ונחסם/ה' })),
         T.filter((x) => on(x.firstAt, 7 * DAY)).map((x) => ({ kind: 'lead', at: x.firstAt, name: x.name, email: x.email, phone: x.phone || '', text: 'נרשם/ה' + (x.verified ? ' ואימת/ה' : '') })),
@@ -636,13 +657,22 @@ switch (b.action) {
     if (!L) return out({ ok: false, error: 'not-found' }, 404);
     const iso = new Date(now).toISOString(); L.history = (L.history || []).slice(0, 29);
     let receipt = null, receiptCopy = null;
+    // a receipt for the payment just added to L.payments: the original to the licence holder, a copy to the owner
+    const makeReceipt = (L, amt, what, method, ref, tail) => {
+      sd.receiptNo = (sd.receiptNo || 1000) + 1;
+      const rno = sd.receiptNo, BZ = (sd.licSettings || {}).biz || {};
+      L.payments[L.payments.length - 1].receipt = rno;
+      const rtext = (copy) => `${copy ? 'העתק' : 'מקור'}\nקבלה מס׳ ${rno}\n\n${BZ.name || 'פריים מגנטים · חיים קריספין'}${BZ.kind ? ' · ' + BZ.kind : ''}${BZ.id ? ' ' + BZ.id : ''}${BZ.address ? '\n' + BZ.address : ''}\n\nתאריך: ${new Date(now).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' })}\nהתקבל מ: ${L.name || ''} (${L.email})\nעבור: אופטימוס · ${what}\nסכום: ${amt} ₪\nאמצעי תשלום: ${line(method, 30) || 'העברה בנקאית'}${ref ? '\nאסמכתא: ' + line(ref, 60) : ''}\n\nתודה! ${tail}\nחיים קריספין · 054-4979771`;
+      receipt = { to: L.email, fromName: 'אופטימוס · פריים מגנטים', replyTo: ADMIN_EMAIL, subject: 'אופטימוס · קבלה מס׳ ' + rno + ' (' + amt + ' ₪)', text: rtext(false), soft: true };
+      receiptCopy = { to: ADMIN_EMAIL, fromName: 'אופטימוס', subject: 'העתק · קבלה מס׳ ' + rno + ' · ' + (L.name || L.email) + ' · ' + amt + ' ₪', text: rtext(true), soft: true };
+    };
     if (b.action === 'lic-set') { L.active = b.active === '1' || b.active === true; if (!L.active) endSessions(e); L.history.unshift({ at: iso, what: L.active ? 'הופעל מחדש על ידי המנהל' : 'בוטל על ידי המנהל' }); log(L.active ? 'רישיון סטודיו הופעל' : 'רישיון סטודיו בוטל', e); }
     else if (b.action === 'lic-release') { L.machine = null; L.boundAt = null; L.machine2 = null; L.boundAt2 = null; L.activeMh = null; L.moves = []; endSessions(e); L.history.unshift({ at: iso, what: 'המחשב שוחרר על ידי המנהל' }); log('רישיון סטודיו שוחרר ממחשב', e); }
     else if (b.action === 'lic-rotate') { L.code = newCode(); L.machine = null; L.boundAt = null; L.machine2 = null; L.boundAt2 = null; L.activeMh = null; endSessions(e); L.history.unshift({ at: iso, what: 'קוד חדש הונפק' }); log('קוד סטודיו חדש הונפק', e); }
     else if (b.action === 'lic-pay') {
       // the owner records a payment (or takes one back); the licence opens once it is marked paid
       // the plan paid for: the full licence (default), a month or a year (paid until a date), or an event pass (open for PASS_HOURS)
-      if (b.undo === '1' || b.undo === true) { L.payments = (L.payments || []).filter((p) => p.at !== String(b.at || '')); L.paid = L.payments.some((p) => p.kind !== 'pass'); if (!licOpens(L)) endSessions(e); L.history.unshift({ at: iso, what: 'תשלום נמחק' }); }
+      if (b.undo === '1' || b.undo === true) { L.payments = (L.payments || []).filter((p) => p.at !== String(b.at || '')); L.paid = L.payments.some((p) => p.kind !== 'pass' && p.kind !== 'update'); if (!licOpens(L)) endSessions(e); L.history.unshift({ at: iso, what: 'תשלום נמחק' }); }
       else {
         const amt = money(b.amount); if (!amt) return out({ ok: false, error: 'bad-amount' }, 400);
         const plan = ['pass', 'month', 'year'].indexOf(String(b.plan)) >= 0 ? String(b.plan) : 'full';
@@ -653,12 +683,8 @@ switch (b.action) {
         else if (plan === 'month' || plan === 'year') { L.paid = true; L.paidUntil = new Date(from(L.paidUntil) + (plan === 'month' ? 30 : 365) * DAY).toISOString(); }
         else { L.paid = true; delete L.paidUntil; }
         if (L.planReq) delete L.planReq;
-        sd.receiptNo = (sd.receiptNo || 1000) + 1;
-        const rno = sd.receiptNo, BZ = (sd.licSettings || {}).biz || {}, PN = { pass: 'כרטיס אירוע (48 שעות)', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' };
-        L.payments[L.payments.length - 1].receipt = rno;
-        const rtext = (copy) => `${copy ? 'העתק' : 'מקור'}\nקבלה מס׳ ${rno}\n\n${BZ.name || 'פריים מגנטים · חיים קריספין'}${BZ.kind ? ' · ' + BZ.kind : ''}${BZ.id ? ' ' + BZ.id : ''}${BZ.address ? '\n' + BZ.address : ''}\n\nתאריך: ${new Date(now).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' })}\nהתקבל מ: ${L.name || ''} (${L.email})\nעבור: אופטימוס · ${PN[plan] || plan}\nסכום: ${amt} ₪\nאמצעי תשלום: ${line(b.method, 30) || 'העברה בנקאית'}${b.ref ? '\nאסמכתא: ' + line(b.ref, 60) : ''}\n\nתודה! הכל כבר פתוח אצלך בתוכנה (בחיבור הבא לאינטרנט).\nחיים קריספין · 054-4979771`;
-        receipt = { to: L.email, fromName: 'אופטימוס · פריים מגנטים', replyTo: ADMIN_EMAIL, subject: 'אופטימוס · קבלה מס׳ ' + rno + ' (' + amt + ' ₪)', text: rtext(false), soft: true };
-        receiptCopy = { to: ADMIN_EMAIL, fromName: 'אופטימוס', subject: 'העתק · קבלה מס׳ ' + rno + ' · ' + (L.name || L.email) + ' · ' + amt + ' ₪', text: rtext(true), soft: true };
+        const PN = { pass: 'כרטיס אירוע (48 שעות)', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' };
+        makeReceipt(L, amt, PN[plan] || plan, b.method, b.ref, 'הכל כבר פתוח אצלך בתוכנה (בחיבור הבא לאינטרנט).');
         L.history.unshift({ at: iso, what: 'נרשם תשלום ' + amt + ({ pass: ' (כרטיס אירוע)', month: ' (חודש)', year: ' (שנה)', full: '' })[plan] });
       }
       log('תשלום סטודיו עודכן', e);
@@ -670,6 +696,7 @@ switch (b.action) {
         const v = line(b.ver, 20); if (!vparse(v)) return out({ ok: false, error: 'bad-input' }, 400);
         const amt = money(b.amount);
         if (amt) L.payments = (L.payments || []).concat({ at: iso, date: iso.slice(0, 10), amount: amt, method: line(b.method, 30), ref: line(b.ref, 60), note: 'עדכון לגרסה ' + v, kind: 'update' }).slice(-50);
+        if (amt) makeReceipt(L, amt, 'עדכון לגרסה ' + v, b.method, b.ref || (L.updReq && L.updReq.paid && L.updReq.paid.ref), 'העדכון לגרסה ' + v + ' נפתח אצלך בתוכנה: "⬆️ עדכון גרסה" ← הורדה והתקנה.');
         if (!L.appVer || vcmp(v, L.appVer) > 0) L.appVer = v;
         if (L.updReq && vcmp(L.updReq.ver, L.appVer) <= 0) delete L.updReq;
         L.history.unshift({ at: iso, what: 'עדכון לגרסה ' + v + ' אושר' + (amt ? ' (שולם ' + amt + ')' : ' (בלי תשלום)') });
