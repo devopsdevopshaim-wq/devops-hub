@@ -558,3 +558,8 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 .upd-dlg .upd-paid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 8px; }
 .upd-dlg .upd-paid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .upd-dlg .upd-paid select, .upd-dlg .upd-paid input { min-height: 34px; border-radius: 8px; padding: 0 8px; }
+/* rotation modes in the print window (mate.js openPrint) */
+.mp-turn { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0 10px; }
+.mp-turn .mp-k { font-size: 12.5px; color: var(--ivory-dim, #A3AAC0); margin-inline-end: 4px; }
+.mp-turn .mt-btn { min-height: 32px; padding: 4px 14px; border-radius: 999px; }
+.mp-turn .mt-btn.on { background: linear-gradient(135deg, #F6D2D7, #E6A8B2 55%, #CFAE74); color: #191D2C; border-color: transparent; font-weight: 700; }

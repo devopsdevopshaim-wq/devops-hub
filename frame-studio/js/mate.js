@@ -480,7 +480,7 @@
   $('#mt-turn', root).addEventListener('change', function () {
     FS.prefs.autoTurn = this.checked; FS.savePrefs();
     /* the photos already in come along: each one is fitted again in its window */
-    S.photos.forEach(function (p) { var im = FS.img(p.src); if (!im || !p.doc) return; if (!this.checked && p.doc.photo.autoTurn) { p.doc.photo.r = 0; delete p.doc.photo.autoTurn; } FS.fitPhoto(p.doc, im, p.fit); p.cache = {}; p._pt = null; p._gt = null; }, this);
+    FS.applyTurn(S.photos);
     FS.emit('doc'); buildGrid(); FS.toast(this.checked ? '🔄 תמונות לרוחב במסגרת לאורך מסתובבות ונכנסות שלמות' : 'הסיבוב האוטומטי כבוי');
   });
   function applySize(list) {
@@ -1131,7 +1131,7 @@
   function pagePlan(list, paperId, pfit, marks) {
     var paper = FS.PAPERS.filter(function (x) { return x[0] === paperId; })[0] || FS.PAPERS[0], pw = paper[2], ph = paper[3], pages = [], total = 0;
     list.forEach(function (p) {
-      var n = copies(p), mm = FS.mmOf(p.doc), rot = (mm[0] > mm[1]) !== (pw > ph) && Math.abs(mm[0] - mm[1]) > 1, iw = rot ? mm[1] : mm[0], ih = rot ? mm[0] : mm[1];
+      var n = copies(p), mm = FS.mmOf(p.doc), rot = FS.prefs.autoTurn !== false && (mm[0] > mm[1]) !== (pw > ph) && Math.abs(mm[0] - mm[1]) > 1, iw = rot ? mm[1] : mm[0], ih = rot ? mm[0] : mm[1];
       for (var i = 0; i < n; i++) {
         var w = pw, h = ph, cover = pfit === 'cover';
         if (!cover) { var k = Math.min(pw / iw, ph / ih); w = iw * k; h = ih * k; }
@@ -1265,6 +1265,7 @@
       (only ? '' : '<section class="mp-step"><h4><i>1</i> מה מדפיסים</h4><select id="mp-which"><option value="auto">המסומנות (ואם אין, כולן)</option><option value="all">כל התמונות</option><option value="todo">רק מה שעוד לא הודפס</option><option value="sel">רק המסומנות</option></select></section>') +
       '<section class="mp-step"><h4><i>' + (only ? 1 : 2) + '</i> מדפסת</h4><select id="mp-printer">' + printers + '</select>' + (pr.up ? '' : '<p class="mt-hint">המדפסות מופיעות בתוכנה למחשב. בדפדפן ייפתח חלון ההדפסה של המחשב.</p>') + '</section>' +
       '<section class="mp-step"><h4><i>' + (only ? 2 : 3) + '</i> גודל ופריסה</h4><div class="mp-pre">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn" data-mpre="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' +
+        '<div class="mp-turn" role="group" aria-label="סיבוב התמונות"><span class="mp-k">סיבוב התמונות</span><button type="button" class="mt-btn" data-turn="1" title="תמונה לרוחב במסגרת או בדף לאורך (או להפך) מסתובבת ונכנסת שלמה, בלי חיתוך">🔄 אוטומטי</button><button type="button" class="mt-btn" data-turn="0" title="התמונות נשארות ישרות, כמו שעוצבו">רגיל</button></div>' +
         '<div class="mp-two"><label>נייר<select id="mp-paper">' + papers + '</select></label><label>מגנט<select id="mp-msize">' + MSIZES.map(function (z) { return '<option value="' + z[0] + '">' + z[1] + '</option>'; }).join('') + '</select></label></div></section>' +
       '<details class="mp-adv"><summary>⚙️ הגדרות מתקדמות <small>שוליים, קווי חיתוך, התאמה לעמוד, איכות</small></summary>' +
         '<fieldset><legend>איך התמונה יושבת על הדף</legend>' +
@@ -1336,6 +1337,13 @@
       $('#mp-name', b).value = ''; myDraw(); FS.toast('⭐ נשמר: ' + name);
     });
     $('#mp-cancel', b).addEventListener('click', function () { FS.closeDialog(); });
+    /* rotation: one setting with the workspace switch; put on the photos at once, so the preview shows what will print */
+    function turnSeg() { var on = FS.prefs.autoTurn !== false; $$('[data-turn]', b).forEach(function (x) { var me = (x.dataset.turn === '1') === on; x.classList.toggle('on', me); x.setAttribute('aria-pressed', String(me)); }); var w = $('#mt-turn'); if (w) w.checked = on; }
+    $$('[data-turn]', b).forEach(function (x) { x.addEventListener('click', function () {
+      FS.prefs.autoTurn = x.dataset.turn === '1'; FS.savePrefs(); var n = FS.applyTurn(S.photos); turnSeg(); paint(); buildGrid(); FS.emit('doc');
+      FS.toast(FS.prefs.autoTurn ? '🔄 סיבוב אוטומטי' + (n ? ': ' + n + ' תמונות סובבו ונכנסו שלמות' : '') : 'רגיל: התמונות ישרות כמו שעוצבו');
+    }); });
+    turnSeg(); if (FS.applyTurn(S.photos)) { buildGrid(); FS.emit('doc'); }
     requestAnimationFrame(paint);
   }
 

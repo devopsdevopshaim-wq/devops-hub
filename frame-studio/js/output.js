@@ -236,7 +236,7 @@
           if (cov) {
             var real = mmOf(p.doc), da = rot ? real[1] / real[0] : real[0] / real[1], sa = w / h;
             if (Math.abs(Math.log(da / sa)) > 0.03) {
-              if ((da > 1.02 && sa < 0.98) || (da < 0.98 && sa > 1.02)) { rot = !rot; da = 1 / da; }   /* turned, it fills the slot better */
+              if (FS.prefs.autoTurn !== false && ((da > 1.02 && sa < 0.98) || (da < 0.98 && sa > 1.02))) { rot = !rot; da = 1 / da; }   /* turned, it fills the slot better */
               cov = false; var bw = w, bh = h, cx0 = cell.x + (cell.w - bw) / 2, cy0 = cell.y + (cell.h - bh) / 2;
               w = bw; h = bw / da; if (h > bh) { h = bh; w = bh * da; }
               page.push({ p: p, x: cx0 + (bw - w) / 2, y: cy0 + (bh - h) / 2, w: w, h: h, rot: rot, cover: false, want: [mm[0], mm[1]] });
