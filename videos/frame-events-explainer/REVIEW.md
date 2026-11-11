@@ -1,4 +1,4 @@
-# Review — Frame Events explainer (9:16, 60 s)
+# Review — Frame Events explainer (9:16, 89 s, narrated)
 
 **Creative calls.** Storyline "one photo's journey" (the worked example): one wedding photo goes from the table QR, into the event
 frame, through editing, to print and the magnet; then the app stays on the phone (store, club) and the owner's side (frames, QR
@@ -22,3 +22,15 @@ photo arriving would be stronger.
 
 **Deliverables.** renders/פריים-אירועים-הסבר.mp4 (1080×1920, ~32 MB) and renders/פריים-אירועים-הסבר-וואטסאפ.mp4 (720×1280, ~7 MB).
 Rebuild: `python3 gen.py && npx hyperframes render`.
+
+## Narration (Nov 11)
+
+- Hebrew narration, one line per scene (videos/promo-src/frame-events/script.json), spoken by frame-tts.yml in the owner's chosen
+  Gemini voice (Sulafat) in a warm, spoken style; QR is spelled "קיו־אר" for the ear. Clips: ci-tts branch, frame-events-v1/he.
+  The free Gemini quota spoke 2-3 lines a run, so the 11 lines took five runs over two days; all eleven are the same voice.
+- gen.py stretches every scene to its line (voice starts 0.3 s in, 0.55 s of air before the cut), scales the positions on the
+  scene's timeline with it (tween lengths stay), and runs the phone's slow push over the whole scene. Music sits at 0.16 under
+  the voice. Length 60 s -> 89.2 s.
+- Measured: check clean (no errors or warnings); final file -14.9 LUFS, true peak -2.8 dB, no clipping, the only silence is the
+  last 0.5 s fade. The transcription check in frame-tts could not run (quota), so the words were not heard back; listen once.
+- Files: renders/פריים-אירועים-הסבר-עם-קריינות.mp4 (1080x1920, ~43 MB) and ...-וואטסאפ.mp4 (720x1280, ~10 MB).
