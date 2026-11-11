@@ -18,12 +18,12 @@
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
-tl.set("#s1-l0,#s1-l1",{clipPath:"inset(0 0 0 0%)"},0);
+tl.set("#s1-l0,#s1-l1",{clipPath:"inset(0 0 0 0%)"},0.0);
 tl.fromTo("#s1-sub",{opacity:0},{opacity:1,duration:.4},.5);
-tl.fromTo("#s1-mag",{rotation:-4,scale:1},{rotation:-2,scale:1.05,duration:3.5,ease:"none"},0);
-tl.to("#s1-mag",{x:420,y:-260,rotation:12,scale:.4,opacity:0,duration:.4,ease:"power2.in"},3.55);
-tl.to(".ttl",{opacity:0,duration:.25},3.7);
-    tl.to({}, { duration: 0 }, 3.99);
+tl.fromTo("#s1-mag",{rotation:-4,scale:1},{rotation:-2,scale:1.05,duration:3.5,ease:"none"},0.0);
+tl.to("#s1-mag",{x:420,y:-260,rotation:12,scale:.4,opacity:0,duration:.4,ease:"power2.in"},6.124);
+tl.to(".ttl",{opacity:0,duration:.25},6.383);
+    tl.to({}, { duration: 0 }, 6.890000000000001);
     window.__timelines["s1"] = tl;
   </script>
 </template>

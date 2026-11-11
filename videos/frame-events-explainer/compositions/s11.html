@@ -22,11 +22,11 @@
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
-tl.fromTo("#s11-logo",{y:30,opacity:0},{y:0,opacity:1,duration:.6,ease:"power3.out"},0);
+tl.fromTo("#s11-logo",{y:30,opacity:0},{y:0,opacity:1,duration:.6,ease:"power3.out"},0.0);
 tl.fromTo("#s11-qr",{scale:.85,opacity:0},{scale:1,opacity:1,duration:.5,ease:"back.out(1.5)"},.45);
 tl.fromTo("#s11-cta",{clipPath:"inset(0 0 0 100%)"},{clipPath:"inset(0 0 0 0%)",duration:.45,ease:"power3.out"},.9);
-tl.fromTo("#s11-url",{opacity:0},{opacity:1,duration:.4},1.3);
-    tl.to({}, { duration: 0 }, 4.99);
+tl.fromTo("#s11-url",{opacity:0},{opacity:1,duration:.4},1.612);
+    tl.to({}, { duration: 0 }, 6.19);
     window.__timelines["s11"] = tl;
   </script>
 </template>

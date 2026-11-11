@@ -17,15 +17,15 @@
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
-tl.fromTo("#s3-l0",{clipPath:"inset(0 0 0 100%)"},{clipPath:"inset(0 0 0 0%)",duration:.45,ease:"power3.out"},0.15);
-tl.fromTo("#s3-sub",{opacity:0,y:14},{opacity:1,y:0,duration:.4,ease:"power2.out"},0.42000000000000004);
-tl.fromTo("#s3-ph",{y:90,rotation:3,opacity:0},{y:0,rotation:0,opacity:1,duration:.55,ease:"power3.out"},0);
-tl.fromTo("#s3-ph",{scale:1},{scale:1.04,duration:5,ease:"none"},0);
-tl.set("#s3-s1",{opacity:0},0);
-tl.fromTo("#s3-t0",{scale:.3,opacity:1},{scale:1.5,opacity:0,duration:.55,ease:"power2.out"},1.25);
-tl.to("#s3-s0",{y:-40,opacity:0,duration:.35,ease:"power2.in"},1.75);
-tl.fromTo("#s3-s1",{y:60,opacity:0},{y:0,opacity:1,duration:.35,ease:"power2.out"},1.8);
-    tl.to({}, { duration: 0 }, 5.49);
+tl.fromTo("#s3-l0",{clipPath:"inset(0 0 0 100%)"},{clipPath:"inset(0 0 0 0%)",duration:.45,ease:"power3.out"},0.188);
+tl.fromTo("#s3-sub",{opacity:0,y:14},{opacity:1,y:0,duration:.4,ease:"power2.out"},0.527);
+tl.fromTo("#s3-ph",{y:90,rotation:3,opacity:0},{y:0,rotation:0,opacity:1,duration:.55,ease:"power3.out"},0.0);
+tl.fromTo("#s3-ph",{scale:1},{scale:1.04,duration:5,ease:"none"},0.0);
+tl.set("#s3-s1",{opacity:0},0.0);
+tl.fromTo("#s3-t0",{scale:.3,opacity:1},{scale:1.5,opacity:0,duration:.55,ease:"power2.out"},1.568);
+tl.to("#s3-s0",{y:-40,opacity:0,duration:.35,ease:"power2.in"},2.195);
+tl.fromTo("#s3-s1",{y:60,opacity:0},{y:0,opacity:1,duration:.35,ease:"power2.out"},2.258);
+    tl.to({}, { duration: 0 }, 6.890000000000001);
     window.__timelines["s3"] = tl;
   </script>
 </template>
