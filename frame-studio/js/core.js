@@ -92,6 +92,15 @@
   };
   FS.fitPhoto = function (d, img, mode) {
     var h = FS.hole(d), iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    /* 🔄 a wide photo in a tall window (or the other way round), e.g. a portrait PNG frame that sets the page's shape: the photo
+       turns a quarter by itself and goes in whole instead of being cut to the window. Only a photo standing straight (or one turned
+       here before) is turned; the owner's own turn is kept. Off with FS.prefs.autoTurn === false. */
+    if (FS.prefs.autoTurn !== false && iw && ih && h.w && h.h && (!d.photo.r || d.photo.autoTurn)) {
+      var wideP = iw / ih > 1.08, tallP = ih / iw > 1.08, wideH = h.w / h.h > 1.08, tallH = h.h / h.w > 1.08;
+      if ((wideP && tallH) || (tallP && wideH)) { d.photo.r = 90; d.photo.autoTurn = true; }
+      else if (d.photo.autoTurn) { d.photo.r = 0; delete d.photo.autoTurn; }
+    }
+    if (d.photo.autoTurn && mode !== 'cover') mode = 'contain';   /* turned to fit: the whole photo, nothing cut */
     var rot = Math.abs(Math.round(d.photo.r / 90)) % 2 === 1;
     if (rot) { var t = iw; iw = ih; ih = t; }
     var s = mode === 'contain' ? Math.min(h.w / iw, h.h / ih) : Math.max(h.w / iw, h.h / ih);

@@ -2096,3 +2096,15 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - A MutationObserver follows the active class. The marker is re-inserted when site.js rebuilds a row with innerHTML.
   - On a phone the menu's marker is hidden, and `.nav .links` stays unpositioned there, because it is the dropdown.
 - **Quiet modes:** no movement with "reduce motion" or light mode.
+
+## v138: landscape photos are turned, not cropped (frames and printing)
+
+- **The cause:** `FS.setFrame` gives the page a PNG frame's shape. With a portrait frame, a landscape photo was cut to the portrait window (the owner's 7.5×10 magnets with a "Talya ♡ Aviv" frame).
+- **`FS.fitPhoto` (core.js):**
+  - When the photo is wide and the window tall (or the other way round, by more than 8%), the photo turns 90° (`photo.r = 90`, `photo.autoTurn`) and is fitted whole (`contain`, unless 'cover' is asked for explicitly).
+  - It touches only a photo standing straight, or one it turned itself. When the shapes match again, its own turn is undone.
+  - Off with `FS.prefs.autoTurn === false`: the switch "🔄 סיבוב אוטומטי במסגרת" next to "לפי כיוון התמונה" in the workspace (mate.js). Toggling it refits the photos already in.
+- **Printing (`FS.planPrint`):**
+  - Edge to edge (layout "one" with no margin, or a preset print size) still covers, but only when the picture's real shape (`mmOf(p.doc)`) is within 3% of the slot.
+  - Otherwise the whole picture is fitted inside the slot, turned when the slot is the other way round.
+- **Tested in a browser:** a 3:2 landscape photo in a 3:4 PNG frame turns, and both of its edges show. On 10×15 "one" with no margin the whole picture prints.
