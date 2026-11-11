@@ -230,7 +230,20 @@
           /* the real size whenever it fits (4 magnets of 7.5×10 on a 15×20 sheet print at 7.5×10, not stretched to the cell) */
           var fits = iw <= cell.w + 1.5 && ih <= cell.h + 1.5;
           if (cell.exact || (fits && job.layout !== 'one' && job.layout !== '1')) { w = iw; h = ih; } else if ((job.layout === 'one' || job.layout === '1') && !mg) { w = cell.w; h = cell.h; } else { w = cell.w; h = cell.w / ar; if (h > cell.h) { h = cell.h; w = cell.h * ar; } }
-          page.push({ p: p, x: cell.x + (cell.w - w) / 2, y: cell.y + (cell.h - h) / 2, w: w, h: h, rot: rot, cover: ((job.layout === 'one' || job.layout === '1') && !mg) || !!job.size, want: [mm[0], mm[1]] });
+          /* filling the sheet edge to edge cuts only when the shapes are practically the same (a 10×15 photo on 10×15 paper);
+             otherwise the whole picture is fitted inside, turned when that is the better way */
+          var cov = ((job.layout === 'one' || job.layout === '1') && !mg) || !!job.size;
+          if (cov) {
+            var real = mmOf(p.doc), da = rot ? real[1] / real[0] : real[0] / real[1], sa = w / h;
+            if (Math.abs(Math.log(da / sa)) > 0.03) {
+              if ((da > 1.02 && sa < 0.98) || (da < 0.98 && sa > 1.02)) { rot = !rot; da = 1 / da; }   /* turned, it fills the slot better */
+              cov = false; var bw = w, bh = h, cx0 = cell.x + (cell.w - bw) / 2, cy0 = cell.y + (cell.h - bh) / 2;
+              w = bw; h = bw / da; if (h > bh) { h = bh; w = bh * da; }
+              page.push({ p: p, x: cx0 + (bw - w) / 2, y: cy0 + (bh - h) / 2, w: w, h: h, rot: rot, cover: false, want: [mm[0], mm[1]] });
+              total++; return;
+            }
+          }
+          page.push({ p: p, x: cell.x + (cell.w - w) / 2, y: cell.y + (cell.h - h) / 2, w: w, h: h, rot: rot, cover: cov, want: [mm[0], mm[1]] });
           total++;
         });
         pages.push(page);

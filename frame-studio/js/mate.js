@@ -39,6 +39,7 @@
       '<div class="mt-bar" data-b="size"><label>גודל:</label><select id="mt-size"></select><button class="mt-ic" id="mt-size-edit" title="ניהול הגדלים">✏️</button>' +
         '<div class="mt-seg" id="mt-fit"><button data-f="contain">להתאים</button><button data-f="cover">לחתוך</button></div>' +
         '<label class="mt-chk-l"><input type="checkbox" id="mt-orient"> לפי כיוון התמונה</label>' +
+        '<label class="mt-chk-l" title="תמונה לרוחב במסגרת לאורך (או להפך) מסתובבת בעצמה ונכנסת שלמה, בלי חיתוך"><input type="checkbox" id="mt-turn"> 🔄 סיבוב אוטומטי במסגרת</label>' +
         '<button class="mt-btn" id="mt-size-sel">החל על המסומנות</button><button class="mt-btn" id="mt-size-all">החל על כולן</button><span class="mt-hint mt-snew" id="mt-snew"></span></div>' +
       '<div class="mt-bar" data-b="files" hidden><button class="mt-btn" id="mt-all">✔ סימון הכל</button><button class="mt-btn" id="mt-none">ניקוי סימון</button><button class="mt-btn" id="mt-inv">היפוך</button>' +
         '<div class="mt-seg mt-ori"><button data-ori="all">הכל <i></i></button><button data-ori="tall">↕ לאורך <i></i></button><button data-ori="wide">↔ לרוחב <i></i></button></div>' +
@@ -475,6 +476,13 @@
   /* also how new photos come in: wide stays wide, tall stays tall (on unless turned off) */
   $('#mt-orient', root).checked = FS.prefs.keepOrient !== false;
   $('#mt-orient', root).addEventListener('change', function () { FS.prefs.keepOrient = this.checked; FS.savePrefs(); });
+  $('#mt-turn', root).checked = FS.prefs.autoTurn !== false;
+  $('#mt-turn', root).addEventListener('change', function () {
+    FS.prefs.autoTurn = this.checked; FS.savePrefs();
+    /* the photos already in come along: each one is fitted again in its window */
+    S.photos.forEach(function (p) { var im = FS.img(p.src); if (!im || !p.doc) return; if (!this.checked && p.doc.photo.autoTurn) { p.doc.photo.r = 0; delete p.doc.photo.autoTurn; } FS.fitPhoto(p.doc, im, p.fit); p.cache = {}; p._pt = null; p._gt = null; }, this);
+    FS.emit('doc'); buildGrid(); FS.toast(this.checked ? '🔄 תמונות לרוחב במסגרת לאורך מסתובבות ונכנסות שלמות' : 'הסיבוב האוטומטי כבוי');
+  });
   function applySize(list) {
     var z = FS.sizeOf($('#mt-size', root).value); if (!z) return FS.toast('בוחרים גודל');
     if (!list.length) return FS.toast('אין תמונות');
