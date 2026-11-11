@@ -1,0 +1,161 @@
+{
+  "made": "2026-11-11T08:20:56.027Z",
+  "langs": {
+    "he": {
+      "scenes": [
+        {
+          "id": "s1",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 6.05,
+          "match": null,
+          "heard": null,
+          "pace": 9.4
+        },
+        {
+          "id": "s2",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 5.95,
+          "match": null,
+          "heard": null,
+          "pace": 9.6
+        },
+        {
+          "id": "s3",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 6.05,
+          "match": null,
+          "heard": null,
+          "pace": 9
+        },
+        {
+          "id": "s4",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 6.95,
+          "match": null,
+          "heard": null,
+          "pace": 9
+        },
+        {
+          "id": "s5",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 7.15,
+          "match": null,
+          "heard": null,
+          "pace": 6.7
+        },
+        {
+          "id": "s6",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 8.55,
+          "match": null,
+          "heard": null,
+          "pace": 7.9
+        },
+        {
+          "id": "s7",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 7.45,
+          "match": null,
+          "heard": null,
+          "pace": 8.4
+        },
+        {
+          "id": "s8",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 6.05,
+          "match": null,
+          "heard": null,
+          "pace": 8
+        },
+        {
+          "id": "s9",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 7.75,
+          "match": null,
+          "heard": null,
+          "pace": 8.6
+        },
+        {
+          "id": "s10",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 12.45,
+          "match": null,
+          "heard": null,
+          "pace": 8.2
+        },
+        {
+          "id": "s11",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 5.35,
+          "match": null,
+          "heard": null,
+          "pace": 8.2
+        }
+      ],
+      "provider": "gemini",
+      "tried": []
+    },
+    "he-edge": {
+      "scenes": [
+        {
+          "id": "s1",
+          "error": "no voice"
+        },
+        {
+          "id": "s2",
+          "error": "no voice"
+        },
+        {
+          "id": "s3",
+          "error": "no voice"
+        },
+        {
+          "id": "s4",
+          "error": "no voice"
+        },
+        {
+          "id": "s5",
+          "error": "no voice"
+        },
+        {
+          "id": "s6",
+          "error": "no voice"
+        },
+        {
+          "id": "s7",
+          "error": "no voice"
+        },
+        {
+          "id": "s8",
+          "error": "no voice"
+        },
+        {
+          "id": "s9",
+          "error": "no voice"
+        },
+        {
+          "id": "s10",
+          "error": "no voice"
+        },
+        {
+          "id": "s11",
+          "error": "no voice"
+        }
+      ],
+      "provider": null,
+      "tried": [
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function"
+      ]
+    }
+  }
+}

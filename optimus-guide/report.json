@@ -1,0 +1,187 @@
+{
+  "made": "2026-11-10T11:17:18.473Z",
+  "langs": {
+    "he": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 14.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.2
+        },
+        {
+          "id": "start",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 10.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.9
+        },
+        {
+          "id": "main",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 15.15,
+          "match": null,
+          "heard": null,
+          "pace": 9.9
+        },
+        {
+          "id": "frames",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 11.75,
+          "match": null,
+          "heard": null,
+          "pace": 10.1
+        },
+        {
+          "id": "edit",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 13.85,
+          "match": null,
+          "heard": null,
+          "pace": 10
+        },
+        {
+          "id": "design",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 10.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.5
+        },
+        {
+          "id": "ai",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 12.35,
+          "match": null,
+          "heard": null,
+          "pace": 9.9
+        },
+        {
+          "id": "print",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 13.75,
+          "match": null,
+          "heard": null,
+          "pace": 9.6
+        },
+        {
+          "id": "hub",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 15.25,
+          "match": null,
+          "heard": null,
+          "pace": 9.1
+        },
+        {
+          "id": "studio",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 11.35,
+          "match": null,
+          "heard": null,
+          "pace": 9.9
+        },
+        {
+          "id": "adjust",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 10.45,
+          "match": null,
+          "heard": null,
+          "pace": 8.9
+        },
+        {
+          "id": "filters",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 6.05,
+          "match": null,
+          "heard": null,
+          "pace": 10
+        },
+        {
+          "id": "sframes",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 9.25,
+          "match": null,
+          "heard": null,
+          "pace": 9.8
+        },
+        {
+          "id": "styles",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 9.05,
+          "match": null,
+          "heard": null,
+          "pace": 9.1
+        },
+        {
+          "id": "tools",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 9.35,
+          "match": null,
+          "heard": null,
+          "pace": 9.3
+        },
+        {
+          "id": "live",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 11.35,
+          "match": null,
+          "heard": null,
+          "pace": 10.6
+        },
+        {
+          "id": "collage",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 7.85,
+          "match": null,
+          "heard": null,
+          "pace": 10.1
+        },
+        {
+          "id": "curate",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 9.55,
+          "match": null,
+          "heard": null,
+          "pace": 10.2
+        },
+        {
+          "id": "customers",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 7.65,
+          "match": null,
+          "heard": null,
+          "pace": 10.8
+        },
+        {
+          "id": "output",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 10.35,
+          "match": null,
+          "heard": null,
+          "pace": 9.5
+        },
+        {
+          "id": "tips",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 14.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.5
+        },
+        {
+          "id": "end",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 7.35,
+          "match": null,
+          "heard": null,
+          "pace": 8.3
+        }
+      ],
+      "provider": "edge",
+      "tried": []
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "made": "2026-11-10T13:50:52.835Z",
+  "langs": {
+    "he": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.25,
+          "match": null,
+          "heard": null,
+          "pace": 8.7
+        },
+        {
+          "id": "start",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 11.55,
+          "match": null,
+          "heard": null,
+          "pace": 10.3
+        },
+        {
+          "id": "ai",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.65,
+          "match": null,
+          "heard": null,
+          "pace": 8.8
+        }
+      ],
+      "provider": "gemini",
+      "tried": []
+    },
+    "he-edge": {
+      "scenes": [
+        {
+          "id": "intro",
+          "error": "no voice"
+        },
+        {
+          "id": "start",
+          "error": "no voice"
+        },
+        {
+          "id": "ai",
+          "error": "no voice"
+        }
+      ],
+      "provider": null,
+      "tried": [
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function"
+      ]
+    }
+  }
+}

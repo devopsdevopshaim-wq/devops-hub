@@ -1,0 +1,294 @@
+{
+  "made": "2026-11-11T08:38:19.585Z",
+  "langs": {
+    "he": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 16.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.7
+        },
+        {
+          "id": "start",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 11.85,
+          "match": null,
+          "heard": null,
+          "pace": 10
+        },
+        {
+          "id": "main",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 17.65,
+          "match": null,
+          "heard": null,
+          "pace": 9.4
+        },
+        {
+          "id": "frames",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.85,
+          "match": null,
+          "heard": null,
+          "pace": 9.2
+        },
+        {
+          "id": "edit",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.35,
+          "match": null,
+          "heard": null,
+          "pace": 9.6
+        },
+        {
+          "id": "design",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 14.05,
+          "match": null,
+          "heard": null,
+          "pace": 8.3
+        },
+        {
+          "id": "ai",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 21.45,
+          "match": null,
+          "heard": null,
+          "pace": 7.8
+        },
+        {
+          "id": "print",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 17.95,
+          "match": null,
+          "heard": null,
+          "pace": 8.8
+        },
+        {
+          "id": "hub",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.55,
+          "match": null,
+          "heard": null,
+          "pace": 10
+        },
+        {
+          "id": "studio",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 13.75,
+          "match": null,
+          "heard": null,
+          "pace": 9
+        },
+        {
+          "id": "adjust",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.65,
+          "match": null,
+          "heard": null,
+          "pace": 6.8
+        },
+        {
+          "id": "filters",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 11.05,
+          "match": null,
+          "heard": null,
+          "pace": 8.2
+        },
+        {
+          "id": "sframes",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 12.45,
+          "match": null,
+          "heard": null,
+          "pace": 8.4
+        },
+        {
+          "id": "styles",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.15,
+          "match": null,
+          "heard": null,
+          "pace": 8.5
+        },
+        {
+          "id": "tools",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.05,
+          "match": null,
+          "heard": null,
+          "pace": 8.5
+        },
+        {
+          "id": "live",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 17.85,
+          "match": null,
+          "heard": null,
+          "pace": 9.7
+        },
+        {
+          "id": "collage",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 11.25,
+          "match": null,
+          "heard": null,
+          "pace": 8.3
+        },
+        {
+          "id": "curate",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 14.75,
+          "match": null,
+          "heard": null,
+          "pace": 9
+        },
+        {
+          "id": "customers",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 10.85,
+          "match": null,
+          "heard": null,
+          "pace": 8.6
+        },
+        {
+          "id": "output",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.05,
+          "match": null,
+          "heard": null,
+          "pace": 8
+        },
+        {
+          "id": "tips",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.8
+        },
+        {
+          "id": "end",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 8.55,
+          "match": null,
+          "heard": null,
+          "pace": 9.1
+        }
+      ],
+      "provider": "gemini",
+      "tried": []
+    },
+    "he-edge": {
+      "scenes": [
+        {
+          "id": "intro",
+          "error": "no voice"
+        },
+        {
+          "id": "start",
+          "error": "no voice"
+        },
+        {
+          "id": "main",
+          "error": "no voice"
+        },
+        {
+          "id": "frames",
+          "error": "no voice"
+        },
+        {
+          "id": "edit",
+          "error": "no voice"
+        },
+        {
+          "id": "design",
+          "error": "no voice"
+        },
+        {
+          "id": "ai",
+          "error": "no voice"
+        },
+        {
+          "id": "print",
+          "error": "no voice"
+        },
+        {
+          "id": "hub",
+          "error": "no voice"
+        },
+        {
+          "id": "studio",
+          "error": "no voice"
+        },
+        {
+          "id": "adjust",
+          "error": "no voice"
+        },
+        {
+          "id": "filters",
+          "error": "no voice"
+        },
+        {
+          "id": "sframes",
+          "error": "no voice"
+        },
+        {
+          "id": "styles",
+          "error": "no voice"
+        },
+        {
+          "id": "tools",
+          "error": "no voice"
+        },
+        {
+          "id": "live",
+          "error": "no voice"
+        },
+        {
+          "id": "collage",
+          "error": "no voice"
+        },
+        {
+          "id": "curate",
+          "error": "no voice"
+        },
+        {
+          "id": "customers",
+          "error": "no voice"
+        },
+        {
+          "id": "output",
+          "error": "no voice"
+        },
+        {
+          "id": "tips",
+          "error": "no voice"
+        },
+        {
+          "id": "end",
+          "error": "no voice"
+        }
+      ],
+      "provider": null,
+      "tried": [
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function"
+      ]
+    }
+  }
+}
