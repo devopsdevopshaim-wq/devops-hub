@@ -90,6 +90,25 @@
     if (d.frame) { var fr = FS.frameOf(d.frame, d); if (fr && fr.hole) return { x: fr.hole.x * d.w, y: fr.hole.y * d.h, w: fr.hole.w * d.w, h: fr.hole.h * d.h }; }
     return { x: 0, y: 0, w: d.w, h: d.h };
   };
+  /* does this photo stand the other way from its window (a wide photo in a tall window, or the other way round)? */
+  FS.turnNeeded = function (d, img) {
+    var h = FS.hole(d), iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    if (!iw || !ih || !h.w || !h.h) return false;
+    return (iw / ih > 1.08 && h.h / h.w > 1.08) || (ih / iw > 1.08 && h.w / h.h > 1.08);
+  };
+  /* the rotation mode (FS.prefs.autoTurn) put on photos already in: on, a photo standing the other way from its window is
+     turned and fitted whole; off, a photo turned here goes back upright. Photos that need nothing keep their place and zoom. */
+  FS.applyTurn = function (list) {
+    var on = FS.prefs.autoTurn !== false, n = 0;
+    (list || FS.state.photos).forEach(function (p) {
+      var im = FS.img(p.src), d = p.doc; if (!im || !d) return;
+      if (on && !d.photo.autoTurn && !d.photo.r && FS.turnNeeded(d, im)) { FS.fitPhoto(d, im, p.fit === 'cover' ? 'contain' : p.fit); n++; }
+      else if (!on && d.photo.autoTurn) { d.photo.r = 0; delete d.photo.autoTurn; FS.fitPhoto(d, im, p.fit); n++; }
+      else return;
+      p.cache = {}; p._pt = null; p._gt = null; p._pv = null; if (FS.snap) FS.snap(p);
+    });
+    return n;
+  };
   FS.fitPhoto = function (d, img, mode) {
     var h = FS.hole(d), iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
     /* 🔄 a wide photo in a tall window (or the other way round), e.g. a portrait PNG frame that sets the page's shape: the photo

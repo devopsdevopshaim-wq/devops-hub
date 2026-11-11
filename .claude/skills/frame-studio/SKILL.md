@@ -2108,3 +2108,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Edge to edge (layout "one" with no margin, or a preset print size) still covers, but only when the picture's real shape (`mmOf(p.doc)`) is within 3% of the slot.
   - Otherwise the whole picture is fitted inside the slot, turned when the slot is the other way round.
 - **Tested in a browser:** a 3:2 landscape photo in a 3:4 PNG frame turns, and both of its edges show. On 10×15 "one" with no margin the whole picture prints.
+
+## v139: rotation modes in the print window (🔄 אוטומטי / רגיל)
+
+- **Why v138 was not enough:** pictures already in the program kept their old crop, because `fitPhoto` runs only when a picture is fitted again.
+- **`FS.turnNeeded(d, img)`:** does the photo stand the other way from its window (more than 8%)?
+- **`FS.applyTurn(list)` (core.js) puts the mode on pictures already in:**
+  - On: a straight photo that stands the other way from its window turns and is fitted whole.
+  - Off: a photo turned automatically goes back upright.
+  - Pictures that need nothing keep their place and zoom.
+  - It returns how many pictures changed.
+- **The print window (mate.js `openPrint`):** a "סיבוב התמונות: 🔄 אוטומטי | רגיל" switch (`.mp-turn`, `[data-turn]`) under size and layout.
+  - It is one setting (`FS.prefs.autoTurn`) shared with the workspace switch "🔄 סיבוב אוטומטי במסגרת".
+  - Opening the window applies the mode to all pictures, and a click applies it at once, with the preview redrawn and a toast saying how many turned.
+- **Turning the whole picture on the sheet** (`planPrint` for a magnet or print size, `pagePlan` for a whole page) happens only in auto mode. In normal mode pictures stay upright as designed.
+- **Tested:** two landscape photos cut into a portrait PNG frame, 4 × 7.5×10 on a 15×20 sheet. In auto mode they turn and are whole; in normal mode they are upright as before.
