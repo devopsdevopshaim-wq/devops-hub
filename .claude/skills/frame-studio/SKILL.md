@@ -2062,3 +2062,22 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - "✔ אישור עדכון" fills in the amount, method and reference, and confirms the receipt number.
 - **Note:** the studio itself loads live from the site, so its web features reach every licence. Paid updates are installer versions (1.0.N: the printer connection and the desktop parts).
 - **Tests:** cloudflare/test/license.test.mjs (subscriber included, full locked, agree → pay mail, paid → alert, grant → receipt + copy, unlock).
+
+## v136: a more impressive business homepage (showcase layer)
+
+- **Files:** `css/showcase.css` + `js/showcase.js` (deferred), loaded last on index.html after atelier.css / atelier.js.
+- **Top bar:**
+  - Five links (עבודות, איך זה עובד, חבילות, שאלות, צור קשר) + 👤 כניסה. Frames, "עצבו בעצמכם" and the download stay in the page and the footer.
+  - Tightens into glass on scroll (`.nav.sc-tight`) and marks the current section (`a.sc-on`, gold underline).
+- **Opening:**
+  - Drifting hall lights (`.sc-lights`) and a light under the pointer (`.sc-spot`).
+  - The headline rises line by line; the second line is in moving foil.
+  - The text, buttons and badges come in staggered, with a shine on the main button.
+  - The prints tilt in 3D with the pointer: showcase.js wraps the `.hero-art.dev` children in `.sc-tilt`, and atelier.js still finds them.
+  - A scroll cue.
+- **Phone:**
+  - The magnet comes first (`.hero-art` order −1, 74vw high), then the headline. Main button full width, two secondary buttons side by side, badges in three columns.
+  - The chat button is hidden on the opening screen (`body.sc-past`).
+  - A bottom bar (`.sc-bar`) appears after the opening and hides at the contact form: "📅 בדיקת תאריך פנוי" goes to #contact, and WhatsApp clicks the top bar's `[data-wa]` button.
+- **Between sections:** a hairline of light; steps and tech cards lift on hover. The headings' rise-in stays site.js `.reveal`.
+- **Quiet modes:** everything stops with "reduce motion" and in light mode (`html.fs-lite`). No horizontal overflow (checked at 1440 and 390).
