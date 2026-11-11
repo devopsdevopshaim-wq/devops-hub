@@ -2081,3 +2081,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - A bottom bar (`.sc-bar`) appears after the opening and hides at the contact form: "📅 בדיקת תאריך פנוי" goes to #contact, and WhatsApp clicks the top bar's `[data-wa]` button.
 - **Between sections:** a hairline of light; steps and tech cards lift on hover. The headings' rise-in stays site.js `.reveal`.
 - **Quiet modes:** everything stops with "reduce motion" and in light mode (`html.fs-lite`). No horizontal overflow (checked at 1440 and 390).
+
+## v137: animated tabs and sliding markers on the business homepage
+
+- **Tabs (showcase.js):**
+  - `#work` (סגנונות), `#gallery` (מסגרות), `#events` (אירועים) and `#designer` (עצבו בעצמכם) are moved into one `<section class="sc-tabwrap" id="explore">` with a sticky glass tab bar (`.sc-tabs`, ARIA tablist; arrow, Home and End keys, RTL-aware).
+  - The sections keep their ids and content (`.sc-pane`; the one shown is `.sc-cur`). The page is about 3,500 px shorter on a computer.
+  - The events tab shows only when site.js shows `#events` (it has albums).
+  - A link to any of the four (the opening's buttons, the menu, the footer, an address with #gallery…) opens its tab and scrolls to the tab bar.
+  - Panes fade in, and their cards come in staggered.
+  - On a switch a `resize` event is fired, so the markers inside the shown pane are measured again.
+- **Sliding marker (`slider(box, activeSel)`):**
+  - A gradient pill (`.sc-ind`) slides under the active button: the gallery, events and packages filters (`button.on`), the tabs (`[aria-selected=true]`), and the top bar on a computer (`a.sc-on`, which replaces the underline).
+  - A MutationObserver follows the active class. The marker is re-inserted when site.js rebuilds a row with innerHTML.
+  - On a phone the menu's marker is hidden, and `.nav .links` stays unpositioned there, because it is the dropdown.
+- **Quiet modes:** no movement with "reduce motion" or light mode.
