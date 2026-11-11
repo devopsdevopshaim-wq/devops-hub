@@ -2030,3 +2030,10 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Measured: 75 → 11 js/css requests, with the same behaviour in a full walk (both views, every tab, no errors).
 - **Opening wall:** `show/thumb/*.webp` (420 px), used by intro.js. 19 images, 1211 → 500 KB.
 - **One icon language in the top bar (mate.js):** `iconize()` turns a leading emoji into the line icon set (`ICON`/`EMOJI`: bolt, palette, help, film, feather, phone, target, users, gear, save, camera, frame, search, cmd, calc…), also on buttons added later (MutationObserver on `.mt-top`), on emoji-only buttons and on an emoji `<span>` (⌘). `FS.lineIcon(name)`.
+
+## v134 — tutorial film with the Gemini voice
+
+- **Narration:** `videos/promo-src/optimus-guide/voice/` now holds the Gemini clips (voice Sulafat, slug `optimus-guide-v2` on ci-tts, 22/22, 332 s of speech). They replace the Microsoft Hila clips. `guide.py` reads them unchanged (same report format).
+- **Free-tier quota:** Gemini allows only a few clips per run. Re-run `frame-tts.yml -f film=optimus-guide` until the report has every scene; finished clips are kept between runs.
+- **Film:** 352 s, rendered 1080p, encoded to `media/promo/guide.mp4` at 720p (crf 30, aac 112k, faststart, 9.6 MB) + `guide.jpg`.
+- **Cache-busting:** `help.js` and `download.html` link it with `?v=2`, so the old film is not served from a cache. Bump this number when the film changes.

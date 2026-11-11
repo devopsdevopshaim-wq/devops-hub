@@ -91,7 +91,7 @@
   /* the tutorial film (videos/promo-src/guide.py → media/promo/guide.mp4): every part of the program, with examples */
   FS.helpFilm = function () {
     if (!FS.dialog) return;
-    FS.dialog('🎬 סרטון הדרכה · אופטימוס', '<video class="hp-video" src="media/promo/guide.mp4" poster="media/promo/guide.jpg" controls autoplay playsinline preload="auto"></video>' +
+    FS.dialog('🎬 סרטון הדרכה · אופטימוס', '<video class="hp-video" src="media/promo/guide.mp4?v=2" poster="media/promo/guide.jpg?v=2" controls autoplay playsinline preload="auto"></video>' +
       '<p class="hp-f">עוצרים בכל רגע ומנסים בתוכנה. הסרטון תמיד זמין בכפתור 🎬 סרטון הדרכה למעלה, ליד ❓ עזרה.</p>', true);
   };
   FS.helpWelcome = function () { var seen = null; try { seen = localStorage.getItem('fs-guide-seen'); } catch (e) { /* private mode */ } if (!seen && !document.body.classList.contains('gated')) FS.helpGuide(); };
