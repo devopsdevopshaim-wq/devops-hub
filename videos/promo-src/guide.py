@@ -4,7 +4,7 @@
   python3 videos/promo-src/guide.py          -> videos/promo-optimus-guide/   (then: npx hyperframes render)
 
 Sources: optimus-guide/script.json (the narration, Hebrew), optimus-guide/voice/he/<id>.m4a (spoken by the workflow
-frame-tts.yml with the free Microsoft voice Hila), optimus-guide/cap/*.webp (the program's screens, capture/cap-guide.cjs),
+frame-tts.yml with the Gemini voice Sulafat (slug optimus-guide-v2)), optimus-guide/cap/*.webp (the program's screens, capture/cap-guide.cjs),
 and examples from the promo captures (cap/) and e2e/. Each scene lasts as long as its narration. The layout, the camera
 moves over the screen and the captions come from tutorial.py; this adds a chip naming the part of the program, example
 cards that rise over the screen, and the tips card.

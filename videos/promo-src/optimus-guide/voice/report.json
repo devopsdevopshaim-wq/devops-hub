@@ -1,187 +1,294 @@
 {
-  "made": "2026-11-10T11:17:18.473Z",
+  "made": "2026-11-11T08:38:19.585Z",
   "langs": {
     "he": {
       "scenes": [
         {
           "id": "intro",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 14.45,
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 16.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.7
+        },
+        {
+          "id": "start",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 11.85,
+          "match": null,
+          "heard": null,
+          "pace": 10
+        },
+        {
+          "id": "main",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 17.65,
+          "match": null,
+          "heard": null,
+          "pace": 9.4
+        },
+        {
+          "id": "frames",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.85,
           "match": null,
           "heard": null,
           "pace": 9.2
         },
         {
-          "id": "start",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 10.45,
-          "match": null,
-          "heard": null,
-          "pace": 9.9
-        },
-        {
-          "id": "main",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 15.15,
-          "match": null,
-          "heard": null,
-          "pace": 9.9
-        },
-        {
-          "id": "frames",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 11.75,
-          "match": null,
-          "heard": null,
-          "pace": 10.1
-        },
-        {
           "id": "edit",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 13.85,
-          "match": null,
-          "heard": null,
-          "pace": 10
-        },
-        {
-          "id": "design",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 10.45,
-          "match": null,
-          "heard": null,
-          "pace": 9.5
-        },
-        {
-          "id": "ai",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 12.35,
-          "match": null,
-          "heard": null,
-          "pace": 9.9
-        },
-        {
-          "id": "print",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 13.75,
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.35,
           "match": null,
           "heard": null,
           "pace": 9.6
         },
         {
+          "id": "design",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 14.05,
+          "match": null,
+          "heard": null,
+          "pace": 8.3
+        },
+        {
+          "id": "ai",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 21.45,
+          "match": null,
+          "heard": null,
+          "pace": 7.8
+        },
+        {
+          "id": "print",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 17.95,
+          "match": null,
+          "heard": null,
+          "pace": 8.8
+        },
+        {
           "id": "hub",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 15.25,
-          "match": null,
-          "heard": null,
-          "pace": 9.1
-        },
-        {
-          "id": "studio",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 11.35,
-          "match": null,
-          "heard": null,
-          "pace": 9.9
-        },
-        {
-          "id": "adjust",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 10.45,
-          "match": null,
-          "heard": null,
-          "pace": 8.9
-        },
-        {
-          "id": "filters",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 6.05,
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.55,
           "match": null,
           "heard": null,
           "pace": 10
         },
         {
+          "id": "studio",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 13.75,
+          "match": null,
+          "heard": null,
+          "pace": 9
+        },
+        {
+          "id": "adjust",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.65,
+          "match": null,
+          "heard": null,
+          "pace": 6.8
+        },
+        {
+          "id": "filters",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 11.05,
+          "match": null,
+          "heard": null,
+          "pace": 8.2
+        },
+        {
           "id": "sframes",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 9.25,
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 12.45,
+          "match": null,
+          "heard": null,
+          "pace": 8.4
+        },
+        {
+          "id": "styles",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.15,
+          "match": null,
+          "heard": null,
+          "pace": 8.5
+        },
+        {
+          "id": "tools",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.05,
+          "match": null,
+          "heard": null,
+          "pace": 8.5
+        },
+        {
+          "id": "live",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 17.85,
+          "match": null,
+          "heard": null,
+          "pace": 9.7
+        },
+        {
+          "id": "collage",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 11.25,
+          "match": null,
+          "heard": null,
+          "pace": 8.3
+        },
+        {
+          "id": "curate",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 14.75,
+          "match": null,
+          "heard": null,
+          "pace": 9
+        },
+        {
+          "id": "customers",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 10.85,
+          "match": null,
+          "heard": null,
+          "pace": 8.6
+        },
+        {
+          "id": "output",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.05,
+          "match": null,
+          "heard": null,
+          "pace": 8
+        },
+        {
+          "id": "tips",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 15.45,
           "match": null,
           "heard": null,
           "pace": 9.8
         },
         {
-          "id": "styles",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 9.05,
+          "id": "end",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 8.55,
           "match": null,
           "heard": null,
           "pace": 9.1
+        }
+      ],
+      "provider": "gemini",
+      "tried": []
+    },
+    "he-edge": {
+      "scenes": [
+        {
+          "id": "intro",
+          "error": "no voice"
+        },
+        {
+          "id": "start",
+          "error": "no voice"
+        },
+        {
+          "id": "main",
+          "error": "no voice"
+        },
+        {
+          "id": "frames",
+          "error": "no voice"
+        },
+        {
+          "id": "edit",
+          "error": "no voice"
+        },
+        {
+          "id": "design",
+          "error": "no voice"
+        },
+        {
+          "id": "ai",
+          "error": "no voice"
+        },
+        {
+          "id": "print",
+          "error": "no voice"
+        },
+        {
+          "id": "hub",
+          "error": "no voice"
+        },
+        {
+          "id": "studio",
+          "error": "no voice"
+        },
+        {
+          "id": "adjust",
+          "error": "no voice"
+        },
+        {
+          "id": "filters",
+          "error": "no voice"
+        },
+        {
+          "id": "sframes",
+          "error": "no voice"
+        },
+        {
+          "id": "styles",
+          "error": "no voice"
         },
         {
           "id": "tools",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 9.35,
-          "match": null,
-          "heard": null,
-          "pace": 9.3
+          "error": "no voice"
         },
         {
           "id": "live",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 11.35,
-          "match": null,
-          "heard": null,
-          "pace": 10.6
+          "error": "no voice"
         },
         {
           "id": "collage",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 7.85,
-          "match": null,
-          "heard": null,
-          "pace": 10.1
+          "error": "no voice"
         },
         {
           "id": "curate",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 9.55,
-          "match": null,
-          "heard": null,
-          "pace": 10.2
+          "error": "no voice"
         },
         {
           "id": "customers",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 7.65,
-          "match": null,
-          "heard": null,
-          "pace": 10.8
+          "error": "no voice"
         },
         {
           "id": "output",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 10.35,
-          "match": null,
-          "heard": null,
-          "pace": 9.5
+          "error": "no voice"
         },
         {
           "id": "tips",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 14.45,
-          "match": null,
-          "heard": null,
-          "pace": 9.5
+          "error": "no voice"
         },
         {
           "id": "end",
-          "voice": "edge/he-IL-HilaNeural",
-          "seconds": 7.35,
-          "match": null,
-          "heard": null,
-          "pace": 8.3
+          "error": "no voice"
         }
       ],
-      "provider": "edge",
-      "tried": []
+      "provider": null,
+      "tried": [
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function"
+      ]
     }
   }
 }
