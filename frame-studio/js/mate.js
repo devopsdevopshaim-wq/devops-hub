@@ -1129,7 +1129,7 @@
   }
   /* page size: each copy alone on a sheet, filling it (crop) or whole inside it (fit); turned to the sheet's direction */
   function pagePlan(list, paperId, pfit, marks) {
-    var paper = FS.PAPERS.filter(function (x) { return x[0] === paperId; })[0] || FS.PAPERS[0], pw = paper[2], ph = paper[3], pages = [], total = 0;
+    var paper = FS.orientPaper(FS.PAPERS.filter(function (x) { return x[0] === paperId; })[0] || FS.PAPERS[0]), pw = paper[2], ph = paper[3], pages = [], total = 0;
     list.forEach(function (p) {
       var n = copies(p), mm = FS.mmOf(p.doc), rot = FS.prefs.autoTurn !== false && (mm[0] > mm[1]) !== (pw > ph) && Math.abs(mm[0] - mm[1]) > 1, iw = rot ? mm[1] : mm[0], ih = rot ? mm[0] : mm[1];
       for (var i = 0; i < n; i++) {
@@ -1240,7 +1240,7 @@
     (page || []).forEach(function (it) {
       var t = it.p._pv && it.p._pvs === sig(it.p, 360) ? it.p._pv : (it.p._pv = pageCanvas(it.p, 360), it.p._pvs = sig(it.p, 360), it.p._pv);
       x.save(); x.beginPath(); x.rect(it.x * k, it.y * k, it.w * k, it.h * k); x.clip();
-      x.translate((it.x + it.w / 2) * k, (it.y + it.h / 2) * k); if (it.rot) x.rotate(Math.PI / 2);
+      x.translate((it.x + it.w / 2) * k, (it.y + it.h / 2) * k); if (it.rot) x.rotate(FS.turnSign() * Math.PI / 2);
       var w = (it.rot ? it.h : it.w) * k, h = (it.rot ? it.w : it.h) * k;
       if (it.cover) { var s = Math.max(w / t.width, h / t.height); x.drawImage(t, -t.width * s / 2, -t.height * s / 2, t.width * s, t.height * s); } else x.drawImage(t, -w / 2, -h / 2, w, h);
       x.restore();
@@ -1259,6 +1259,7 @@
     var papers = FS.PAPERS.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + ' · ' + trim(x[2] / 25.4) + '×' + trim(x[3] / 25.4) + '״</option>'; }).join('');
     /* the window reads top to bottom: what comes out (and the print button), then 1-2-3, then the rarely used settings folded */
     var b = FS.dialog('🖨️ הדפסה', '<div class="mp"><div class="mp-side">' +
+      '<div class="mp-tabs" role="tablist"><button type="button" role="tab" class="on" aria-selected="true" data-mptab="main">🖨️ הדפסה</button><button type="button" role="tab" aria-selected="false" data-mptab="set">⚙️ הגדרות</button></div><div class="mp-main">' +
       '<div class="mp-sum" id="mp-sum"></div>' +
       '<div class="mp-gos"><button class="mt-btn primary mp-go" id="mp-go">🖨️ הדפסה</button><button class="mt-btn" id="mp-cur" title="רק הדף שבתצוגה">הדף הזה בלבד</button></div>' +
       '<div class="mp-myrow"><span class="mp-k">⭐ ההגדרות שלי</span><div class="mp-my" id="mp-my"></div></div>' +
@@ -1277,6 +1278,21 @@
         '<label class="mp-dpil">איכות<select id="mp-dpi"><option value="300">300 DPI · רגילה</option><option value="600">600 DPI · גבוהה (איטית יותר)</option></select></label>' +
         '<div class="mp-saverow"><input id="mp-name" class="mp-name" placeholder="שם להגדרה, למשל: מגנטים 7.5×10" maxlength="40"><button class="mt-btn" id="mp-save">⭐ שמירה</button></div>' +
       '</details></div>' +
+      '<div class="mp-set" hidden>' +
+        '<section class="mp-step"><h4>↕️ כיוונים</h4>' +
+          '<div class="mp-turn" role="group" aria-label="סיבוב התמונות"><span class="mp-k">סיבוב התמונות</span><button type="button" class="mt-btn" data-turn="1">🔄 אוטומטי</button><button type="button" class="mt-btn" data-turn="0">רגיל</button></div>' +
+          '<p class="mt-hint">אוטומטי: תמונה לרוחב במסגרת או בדף לאורך (או להפך) מסתובבת ונכנסת שלמה. רגיל: התמונות ישרות כמו שעוצבו.</p>' +
+          '<div class="mp-turn" role="group" aria-label="כיוון הסיבוב"><span class="mp-k">כיוון הסיבוב</span><button type="button" class="mt-btn" data-tdir="1">↻ עם כיוון השעון</button><button type="button" class="mt-btn" data-tdir="-1">↺ נגד כיוון השעון</button></div>' +
+          '<div class="mp-turn" role="group" aria-label="כיוון הדף"><span class="mp-k">כיוון הדף</span><button type="button" class="mt-btn" data-porient="portrait">▯ לאורך</button><button type="button" class="mt-btn" data-porient="landscape">▭ לרוחב</button></div>' +
+          '<p class="mt-hint">כיוון הדף כמו שהוא נכנס למדפסת. רוב מדפסות המגנטים (מיצובישי, DNP) מקבלות לאורך.</p>' +
+        '</section>' +
+        '<section class="mp-step"><h4>🧩 מדפסות ודרייברים</h4><div id="mp-drv"></div>' +
+          '<p class="mp-k" style="margin-top:10px">📥 הורדת דרייבר לפי יצרן</p><div class="mp-brands">' +
+            [['Mitsubishi', 'Mitsubishi CP-D90DW CP-D80DW photo printer driver download Windows'], ['DNP', 'DNP DS-RX1HS DS620 photo printer driver download Windows'], ['Citizen', 'Citizen CX-02 CY-02 photo printer driver download Windows'], ['HiTi', 'HiTi P525L photo printer driver download Windows'], ['Canon SELPHY', 'Canon SELPHY CP1500 driver download Windows'], ['Epson', 'Epson SureLab photo printer driver download Windows']]
+              .map(function (z) { return '<a class="mt-btn" target="_blank" rel="noopener" href="https://www.google.com/search?q=' + encodeURIComponent(z[1]) + '">' + esc(z[0]) + '</a>'; }).join('') +
+          '</div><p class="mt-hint">מורידים רק מהאתר הרשמי של היצרן. אחרי ההורדה: "📂 התקנה מקובץ שהורדתי".</p>' +
+        '</section></div>' +
+      '</div>' +
       '<div class="mp-pv"><div class="mp-pvh"><b>תצוגה לפני הדפסה</b><span>כך ייצא הדף מהמדפסת</span></div><div class="mp-cv" id="mp-cv"></div><div class="mp-nav"><button data-nav="first" title="הדף הראשון">|&lt;</button><button data-nav="prev" title="הקודם">&lt;</button><b id="mp-pg">1 / 1</b><button data-nav="next" title="הבא">&gt;</button><button data-nav="last" title="האחרון">&gt;|</button></div></div></div>' +
       '<div class="mp-foot"><button class="mt-btn" id="mp-cancel">סגירה</button></div>', true);
     b.classList.add('mp-dlg');
@@ -1344,6 +1360,45 @@
       FS.toast(FS.prefs.autoTurn ? '🔄 סיבוב אוטומטי' + (n ? ': ' + n + ' תמונות סובבו ונכנסו שלמות' : '') : 'רגיל: התמונות ישרות כמו שעוצבו');
     }); });
     turnSeg(); if (FS.applyTurn(S.photos)) { buildGrid(); FS.emit('doc'); }
+    /* ⚙️ the settings tab: directions, and the printers' drivers */
+    $$('[data-mptab]', b).forEach(function (t) { t.addEventListener('click', function () {
+      var set = t.dataset.mptab === 'set'; $$('[data-mptab]', b).forEach(function (x) { x.classList.toggle('on', x === t); x.setAttribute('aria-selected', String(x === t)); });
+      $('.mp-main', b).hidden = set; $('.mp-set', b).hidden = !set; if (set) drvDraw();
+    }); });
+    function dirSeg() {
+      $$('[data-tdir]', b).forEach(function (x) { var me = Number(x.dataset.tdir) === FS.turnSign(); x.classList.toggle('on', me); x.setAttribute('aria-pressed', String(me)); });
+      $$('[data-porient]', b).forEach(function (x) { var me = x.dataset.porient === (FS.prefs.paperOrient === 'landscape' ? 'landscape' : 'portrait'); x.classList.toggle('on', me); x.setAttribute('aria-pressed', String(me)); });
+    }
+    $$('[data-tdir]', b).forEach(function (x) { x.addEventListener('click', function () { FS.prefs.turnDir = Number(x.dataset.tdir); FS.savePrefs(); FS.applyTurn(S.photos); S.photos.forEach(function (p) { p._pv = null; }); dirSeg(); paint(); buildGrid(); FS.emit('doc'); FS.toast(FS.turnSign() > 0 ? '↻ מסתובבות עם כיוון השעון' : '↺ מסתובבות נגד כיוון השעון'); }); });
+    $$('[data-porient]', b).forEach(function (x) { x.addEventListener('click', function () { FS.prefs.paperOrient = x.dataset.porient; FS.savePrefs(); dirSeg(); paint(); FS.toast(x.dataset.porient === 'landscape' ? '▭ הדף לרוחב' : '▯ הדף לאורך'); }); });
+    dirSeg();
+    /* the printers on this computer with their drivers, and Windows' tools to add a printer or a driver (the desktop program) */
+    var DP = window.FSDesktop && FSDesktop.print;
+    function drvDraw() {
+      var box = $('#mp-drv', b); if (!box) return;
+      if (!DP) { box.innerHTML = '<p class="mt-hint">הוספת מדפסות ודרייברים עובדת בתוכנה למחשב (Windows). בדפדפן: הגדרות Windows ← מדפסות וסורקים.</p>'; return; }
+      if (!DP.drivers) { box.innerHTML = '<p class="mt-hint">⬆️ צריך את הגרסה החדשה של התוכנה למחשב כדי לנהל דרייברים מכאן.</p><a class="mt-btn" target="_blank" rel="noopener" href="https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/desktop-latest/FrameStudio-Setup.exe">⬇️ הורדת הגרסה החדשה</a>'; return; }
+      box.innerHTML = '<div class="mp-tools">' +
+        '<button type="button" class="mt-btn" data-ptool="add-printer">➕ הוספת מדפסת</button><button type="button" class="mt-btn" data-ptool="add-driver">🧩 התקנת דרייבר (אשף Windows)</button>' +
+        '<button type="button" class="mt-btn" data-ptool="file">📂 התקנה מקובץ שהורדתי</button><button type="button" class="mt-btn" data-ptool="drivers">🗂️ הדרייברים המותקנים</button>' +
+        '<button type="button" class="mt-btn" data-ptool="settings">⚙️ מדפסות במחשב</button><button type="button" class="mt-btn" data-ptool="refresh">🔄 רענון</button></div><div class="mp-dlist">טוען…</div>';
+      DP.drivers().then(function (r) {
+        var l = $('.mp-dlist', box); if (!l) return;
+        if (!r || !r.ok) { l.innerHTML = '<p class="mt-hint">לא הצלחתי לקרוא את המדפסות מ־Windows.</p>'; return; }
+        var dv = {}; (r.drivers || []).forEach(function (d) { dv[d.name] = d; });
+        l.innerHTML = (r.printers || []).length ? '<table class="mp-dtbl"><tbody>' + r.printers.map(function (p) { var d = dv[p.driver] || {};
+          return '<tr><td><b>' + esc(p.name) + '</b><small>' + esc(p.driver || 'בלי דרייבר') + (d.ver ? ' · ' + esc(d.ver) : '') + '</small></td><td class="act"><a class="mt-btn" target="_blank" rel="noopener" title="חיפוש דרייבר עדכני" href="https://www.google.com/search?q=' + encodeURIComponent((p.driver || p.name) + ' driver download Windows') + '">🔎 דרייבר</a></td></tr>'; }).join('') + '</tbody></table>'
+          : '<p class="mt-hint">עוד אין מדפסות במחשב. מחברים את המדפסת ולוחצים "➕ הוספת מדפסת".</p>';
+      });
+    }
+    $('.mp-set', b).addEventListener('click', function (e) {
+      var t = e.target.closest('[data-ptool]'); if (!t || !DP || !DP.tool) return;
+      if (t.dataset.ptool === 'refresh') { drvDraw(); if (FS.refreshPrinters) FS.refreshPrinters(); return; }
+      DP.tool(t.dataset.ptool).then(function (r) {
+        if (r && r.ok) FS.toast(t.dataset.ptool === 'file' ? (r.kind === 'inf' ? '🧩 ההתקנה של ' + r.file + ' התחילה. Windows יבקש אישור.' : '📂 ההתקנה של ' + r.file + ' נפתחה. ממשיכים בה, ואחר כך "🔄 רענון".') : 'נפתח חלון של Windows. בסיום: "🔄 רענון".', 6000);
+        else if (!r || r.error !== 'cancelled') FS.toast('⚠️ לא הצלחתי לפתוח את הכלי של Windows', 5000);
+      });
+    });
     requestAnimationFrame(paint);
   }
 

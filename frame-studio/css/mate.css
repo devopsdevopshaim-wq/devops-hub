@@ -563,3 +563,16 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 .mp-turn .mp-k { font-size: 12.5px; color: var(--ivory-dim, #A3AAC0); margin-inline-end: 4px; }
 .mp-turn .mt-btn { min-height: 32px; padding: 4px 14px; border-radius: 999px; }
 .mp-turn .mt-btn.on { background: linear-gradient(135deg, #F6D2D7, #E6A8B2 55%, #CFAE74); color: #191D2C; border-color: transparent; font-weight: 700; }
+/* the print window tabs: printing / settings (directions, printers and drivers) */
+.mp-tabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 999px; background: rgba(255,255,255,.05); border: 1px solid rgba(237,182,190,.18); }
+.mp-tabs button { flex: 1; border: 0; background: transparent; color: var(--ivory-dim, #A3AAC0); font: 600 14px var(--body, sans-serif); padding: 9px 10px; border-radius: 999px; cursor: pointer; transition: background .3s, color .3s; }
+.mp-tabs button.on { background: linear-gradient(135deg, #F6D2D7, #E6A8B2 55%, #CFAE74); color: #191D2C; }
+.mp-set .mp-step h4 { margin-bottom: 8px; }
+.mp-tools, .mp-brands { display: flex; flex-wrap: wrap; gap: 6px; }
+.mp-tools .mt-btn, .mp-brands .mt-btn { font-size: 13px; min-height: 32px; padding: 4px 12px; text-decoration: none; }
+.mp-dlist { margin-top: 10px; }
+.mp-dtbl { width: 100%; border-collapse: collapse; }
+.mp-dtbl td { padding: 7px 4px; border-top: 1px solid rgba(255,255,255,.08); vertical-align: middle; }
+.mp-dtbl td b { display: block; font-size: 13.5px; }
+.mp-dtbl td small { display: block; font-size: 11.5px; color: var(--ivory-dim, #A3AAC0); direction: ltr; text-align: right; }
+.mp-dtbl td.act { text-align: left; white-space: nowrap; }

@@ -2123,3 +2123,22 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Opening the window applies the mode to all pictures, and a click applies it at once, with the preview redrawn and a toast saying how many turned.
 - **Turning the whole picture on the sheet** (`planPrint` for a magnet or print size, `pagePlan` for a whole page) happens only in auto mode. In normal mode pictures stay upright as designed.
 - **Tested:** two landscape photos cut into a portrait PNG frame, 4 × 7.5×10 on a 15×20 sheet. In auto mode they turn and are whole; in normal mode they are upright as before.
+
+## v140: a settings tab in the print window: directions, printers and drivers
+
+- **Tabs:** the print window (mate.js `openPrint`) has "🖨️ הדפסה | ⚙️ הגדרות" (`.mp-tabs`, `[data-mptab]`). The existing form is `.mp-main`, the new tab is `.mp-set`.
+- **↕️ Directions:**
+  - Photo rotation, auto or normal (`FS.prefs.autoTurn`; the same buttons as in step 3).
+  - Which way photos turn: `FS.prefs.turnDir`, 1 clockwise (default) or -1 counter-clockwise, read through `FS.turnSign()`. `fitPhoto` sets `photo.r = ±90`, and `applyTurn` re-turns photos already turned when the direction changes. The sheet-level turn (`rotated()`, `drawPage`, the `drawPv` preview) follows it too.
+  - Paper orientation: `FS.prefs.paperOrient`, portrait (default) or landscape, through `FS.orientPaper(paper)` in `planPrint` and `pagePlan`. The desktop print gets `plan.paper` with its sides swapped.
+- **🧩 Printers and drivers** (the desktop program, new IPC in desktop/main.js + preload.js):
+  - `print:drivers`: PowerShell `Get-PrinterDriver` + `Get-Printer` → drivers (name, maker, version decoded from the 64-bit number) and printers with their driver.
+  - `print:tool(kind)` runs fixed commands only:
+    - `add-printer`: `printui /il`.
+    - `add-driver`: `printui /id`, the Add Printer Driver wizard.
+    - `drivers`: `printui /s /t2`, Print Server Properties on the Drivers tab.
+    - `settings`: `ms-settings:printers`.
+    - `file`: an open dialog. An `.inf` is installed with `pnputil /add-driver … /install` through `Start-Process -Verb RunAs`, so Windows asks for permission; the path goes in env `FS_DRV`, never into the command. An `.exe` or `.msi` is opened with `shell.openPath`.
+  - The tab lists each printer with its driver and version, with a 🔎 search for a newer driver, plus links by maker (Mitsubishi, DNP, Citizen, HiTi, Canon SELPHY, Epson) and the advice to download only from the official site.
+  - In a browser it explains that this works in the desktop program. On an older installer (no `print.drivers`) it offers the download.
+- **Tested in a browser** with a mocked FSDesktop: the tab, the directions taking effect in the preview (a landscape 20×15 sheet), and the tool call. desktop/main.js and preload.js pass `node --check`.

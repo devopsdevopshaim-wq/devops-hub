@@ -446,6 +446,45 @@ app.whenReady().then(() => {
     }
     return { ok: true, printers: out };
   });
+  // printer drivers: what is installed (drivers, and which printer uses which), and Windows' own tools for adding a printer or a
+  // driver. Fixed commands only; a driver file the owner picks goes to Windows as one argument through an environment variable.
+  ipcMain.handle('print:drivers', async (event) => {
+    fromApp(event);
+    if (process.platform !== 'win32') return { ok: false, error: 'not-windows', drivers: [], printers: [] };
+    const r = await psJson("$d = @(Get-PrinterDriver -ErrorAction SilentlyContinue | ForEach-Object { @{ name = [string]$_.Name; maker = [string]$_.Manufacturer; ver = [string]$_.DriverVersion; env = [string]$_.PrinterEnvironment } }); " +
+      "$p = @(Get-Printer -ErrorAction SilentlyContinue | ForEach-Object { @{ name = [string]$_.Name; driver = [string]$_.DriverName; port = [string]$_.PortName; status = [string]$_.PrinterStatus } }); @{ d = $d; p = $p } | ConvertTo-Json -Depth 3 -Compress", '');
+    if (!r) return { ok: false, error: 'read-failed', drivers: [], printers: [] };
+    const arr = (v) => Array.isArray(v) ? v : v ? [v] : [];
+    // a driver version from Windows is a 64-bit number (four 16-bit parts)
+    const ver = (v) => { try { const n = BigInt(String(v || '0')); return n ? [48n, 32n, 16n, 0n].map((k) => String((n >> k) & 0xFFFFn)).join('.') : ''; } catch { return String(v || '').slice(0, 30); } };
+    return { ok: true,
+      drivers: arr(r.d).map((x) => ({ name: String(x.name || '').slice(0, 120), maker: String(x.maker || '').slice(0, 60), ver: ver(x.ver), env: String(x.env || '').slice(0, 30) })).filter((x) => x.name).slice(0, 80),
+      printers: arr(r.p).map((x) => ({ name: String(x.name || '').slice(0, 120), driver: String(x.driver || '').slice(0, 120), port: String(x.port || '').slice(0, 60), status: String(x.status || '').slice(0, 30) })).filter((x) => x.name).slice(0, 40) };
+  });
+  ipcMain.handle('print:tool', async (event, kind) => {
+    fromApp(event);
+    if (process.platform !== 'win32') return { ok: false, error: 'not-windows' };
+    const run = (args) => { spawn('rundll32.exe', ['printui.dll,PrintUIEntry'].concat(args), { detached: true, stdio: 'ignore', windowsHide: false }).unref(); return { ok: true }; };
+    if (kind === 'add-printer') return run(['/il']);          // Windows' "Add a printer" wizard
+    if (kind === 'add-driver') return run(['/id']);           // the "Add Printer Driver" wizard (a driver from Windows Update or a disk)
+    if (kind === 'drivers') return run(['/s', '/t2']);        // Print Server Properties, on the Drivers tab (installed drivers, remove)
+    if (kind === 'settings') { await shell.openExternal('ms-settings:printers'); return { ok: true }; }
+    if (kind === 'file') {
+      // a driver the owner downloaded: an .inf is installed with pnputil (Windows asks for permission), an installer is opened
+      const w = BrowserWindow.fromWebContents(event.sender);
+      const pick = await dialog.showOpenDialog(w || undefined, { title: 'בחירת קובץ דרייבר', properties: ['openFile'], filters: [{ name: 'דרייבר או התקנה', extensions: ['inf', 'exe', 'msi'] }] });
+      if (pick.canceled || !pick.filePaths[0]) return { ok: false, error: 'cancelled' };
+      const f = pick.filePaths[0];
+      if (/\.inf$/i.test(f)) {
+        spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', "Start-Process -FilePath 'pnputil.exe' -ArgumentList @('/add-driver', ('\"' + $env:FS_DRV + '\"'), '/install') -Verb RunAs"],
+          { detached: true, stdio: 'ignore', windowsHide: true, env: Object.assign({}, process.env, { FS_DRV: f }) }).unref();
+        return { ok: true, kind: 'inf', file: require('path').basename(f) };
+      }
+      const e = await shell.openPath(f);
+      return e ? { ok: false, error: 'open-failed' } : { ok: true, kind: 'setup', file: require('path').basename(f) };
+    }
+    return { ok: false, error: 'unknown' };
+  });
   // clears the printer's queue (stuck jobs after an error)
   ipcMain.handle('print:clear', async (event, name) => {
     fromApp(event);
