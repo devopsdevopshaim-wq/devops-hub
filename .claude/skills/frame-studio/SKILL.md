@@ -2192,3 +2192,21 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - 💬 WhatsApp: the photo is copied to the clipboard as a PNG and wa.me opens the customer's chat with a message; one Ctrl+V. A link cannot carry a file.
   - 💾 Save.
 - **Tests:** frame.test.mjs (photo-mail by a studio holder, refused for a customer, a bad address and a non-image), and a browser check of the dialog.
+
+## v145: rights protection (proprietary licence) and a security pass
+
+- **The finding:** the repository is public, and its root held webhint's Apache-2.0 LICENSE.txt (the repo began as the webhint monorepo), so GitHub showed the whole repository as Apache: free to copy and sell.
+- **Now:**
+  - Root `LICENSE` is proprietary: all rights reserved to the owner, no licence granted, no competing product, no AI training. It names the third-party parts.
+  - webhint's licence is `LICENSE-webhint.txt` (root) and `packages/LICENSE.txt`, covering packages/, @types/, scripts/, release/, azure-pipelines*, the root package.json and tsconfig.json.
+  - A short proprietary `LICENSE` in frame-studio/, desktop/, cloudflare/, events-hub/ and n8n/. cloudflare and events-hub package.json are `UNLICENSED` + private. The desktop copyright string is ASCII, kept that way for the installer build.
+  - A notice at the top of the root README, and `SECURITY.md` (report privately through the site's contact form).
+  - agreement.html §3 adds: no use of the code, designs or content, even though visible online, for a competing product or AI training.
+  - `<meta name="copyright">` and `<meta name="robots" content="noai, noimageai">` on index, studio, download and agreement.
+- **Checked:**
+  - No real keys in the code: only deliberately wrong test passwords and placeholders. A self-signed test key exists inside webhint's packages.
+  - The desktop program is hardened: contextIsolation, sandbox, no nodeIntegration, navigation and new windows restricted, fixed IPC commands only.
+  - The server has admin-only actions with rate limits and security alerts.
+- **Left to the owner:** 2FA on GitHub, Gmail and Cloudflare, checking collaborators, and deciding on a private repository.
+  - A private repository needs GitHub Pro for Pages.
+  - Installers would then need to be published to a separate public releases repository, because release downloads from a private repository need sign-in.
