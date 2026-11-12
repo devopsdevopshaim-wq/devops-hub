@@ -11,8 +11,12 @@
     "worker:dev": "wrangler dev --local",
     "deploy": "wrangler deploy"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "wrangler": "4.158.0"
-  }
+  },
+  "license": "UNLICENSED",
+  "author": "חיים קריספין · פריים מגנטים"
 }

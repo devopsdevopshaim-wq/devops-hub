@@ -1,0 +1,25 @@
+Copyright (c) 2025-2026 חיים קריספין · פריים מגנטים (Frame Magnets). All rights reserved.
+כל הזכויות שמורות.
+
+This repository is proprietary. The software, sites, applications, servers, designs, texts, images, videos,
+names and logos in it (among them פריים מגנטים, the studio program אופטימוס, the desktop program, the
+sign-in and business servers, the events app and every other project folder) are the property of the
+owner above and are protected by copyright.
+
+No licence is granted. Without the owner's prior written permission, no part of this repository may be
+copied, reproduced, modified, published, distributed, sublicensed, sold, used to build a competing product,
+used to train or fine-tune a machine-learning model, or deployed, in whole or in part. Viewing this
+repository on GitHub does not grant any right to use it. Licences to use the program are sold separately
+by the owner and are governed by the program's terms of use.
+
+ללא אישור מראש ובכתב מבעל הזכויות אין להעתיק, לשכפל, לשנות, לפרסם, להפיץ, למכור, להשתמש לבניית מוצר
+מתחרה, לאמן מודל בינה מלאכותית, או להפעיל חלק כלשהו מהמאגר הזה. רישיון שימוש בתוכנה נמכר בנפרד ובכפוף
+לתנאי השימוש שלה.
+
+Third-party components keep their own licences and are not covered by the notice above:
+  - webhint (Microsoft / the webhint contributors): the folders packages/, @types/, scripts/ and release/,
+    and the files azure-pipelines.yml, azure-pipelines/, package.json and tsconfig.json at the root,
+    under the Apache License 2.0 (see LICENSE-webhint.txt).
+  - Libraries inside vendor/ folders and node_modules/, each under the licence that ships with it.
+
+Contact: through the business site, https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/

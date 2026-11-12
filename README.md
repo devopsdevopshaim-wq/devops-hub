@@ -1,3 +1,7 @@
+> **© חיים קריספין · פריים מגנטים. כל הזכויות שמורות. All rights reserved.**
+> המאגר הזה קנייני: אין להעתיק, להפיץ או להשתמש בקוד, באתרים ובתוכנות שבו בלי אישור בכתב. ראו [LICENSE](LICENSE).
+> This repository is proprietary; see [LICENSE](LICENSE). Only the bundled webhint packages (packages/, @types/, scripts/, release/) are under the Apache License 2.0 ([LICENSE-webhint.txt](LICENSE-webhint.txt)).
+
 # webhint
 
 [![Build Status](https://dev.azure.com/webhint/webhint/_apis/build/status/webhintio.hint?branchName=main)](https://dev.azure.com/webhint/webhint/_build/latest?definitionId=3&branchName=main)
@@ -120,7 +124,7 @@ The code is available under the [Apache 2.0 license][license].
 [contrib vscode]: ./packages/extension-vscode/CONTRIBUTING.md
 [contributor guide]: https://webhint.io/docs/contributor-guide/
 [Governance]: ./packages/hint/docs/about/GOVERNANCE.md
-[license]: LICENSE.txt
+[license]: LICENSE-webhint.txt
 [local contributor guide]: ./packages/hint/docs/contributor-guide/index.md
 [local user guide]: ./packages/hint/docs/user-guide/index.md
 [node]: https://nodejs.org/en/download/current/
