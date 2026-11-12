@@ -186,6 +186,8 @@
   $('#paper').value = FS.prefs.paper || '10x15';
   ['paper', 'layout', 'margin'].forEach(function (k) { if (FS.prefs['print_' + k]) $('#' + k).value = FS.prefs['print_' + k]; $('#' + k).addEventListener('change', function () { FS.prefs['print_' + k] = this.value; FS.savePrefs(); }); });
 
+  /* "⚙️ הגדרות הדפסה" in this tab opens the print window on its settings: directions, printers and drivers (mate.js) */
+  var psBtn = $('#print-settings'); if (psBtn) psBtn.addEventListener('click', function () { if (!FS.cur() && !S.photos.length) return FS.toast('קודם מוסיפים תמונות'); if (FS.mate && FS.mate.print) FS.mate.print({ tab: 'set' }); });
   function rotated(c) { var r = FS.canvas(c.height, c.width), x = r.getContext('2d'); if (FS.turnSign() < 0) { x.translate(0, r.height); x.rotate(-Math.PI / 2); } else { x.translate(r.width, 0); x.rotate(Math.PI / 2); } x.drawImage(c, 0, 0); return r; }
   /* ---------- print: plan the sheets, show them, then print ---------- */
   function paperOf(id) { return PAPERS.filter(function (p) { return p[0] === id; })[0] || PAPERS[0]; }
