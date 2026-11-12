@@ -469,6 +469,9 @@ app.whenReady().then(() => {
     if (kind === 'add-driver') return run(['/id']);           // the "Add Printer Driver" wizard (a driver from Windows Update or a disk)
     if (kind === 'drivers') return run(['/s', '/t2']);        // Print Server Properties, on the Drivers tab (installed drivers, remove)
     if (kind === 'settings') { await shell.openExternal('ms-settings:printers'); return { ok: true }; }
+    // the screen's colour: Windows' Display Color Calibration, Color Management (monitor and printer profiles), display settings
+    if (kind === 'calibrate' || kind === 'colormgmt') { spawn(kind === 'calibrate' ? 'dccw.exe' : 'colorcpl.exe', [], { detached: true, stdio: 'ignore', windowsHide: false }).unref(); return { ok: true }; }
+    if (kind === 'display') { await shell.openExternal('ms-settings:display'); return { ok: true }; }
     if (kind === 'file') {
       // a driver the owner downloaded: an .inf is installed with pnputil (Windows asks for permission), an installer is opened
       const w = BrowserWindow.fromWebContents(event.sender);

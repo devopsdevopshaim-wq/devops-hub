@@ -52,7 +52,7 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
     status: (names) => ipcRenderer.invoke('print:status', (Array.isArray(names) ? names : [names]).map((n) => String(n || '')).slice(0, 4)),
     clear: (name) => ipcRenderer.invoke('print:clear', String(name || '')),
     drivers: () => ipcRenderer.invoke('print:drivers'),
-    tool: (kind) => ipcRenderer.invoke('print:tool', ['add-printer', 'add-driver', 'drivers', 'settings', 'file'].indexOf(kind) >= 0 ? kind : ''),
+    tool: (kind) => ipcRenderer.invoke('print:tool', ['add-printer', 'add-driver', 'drivers', 'settings', 'file', 'calibrate', 'colormgmt', 'display'].indexOf(kind) >= 0 ? kind : ''),
     run: (o) => ipcRenderer.invoke('print:run', { deviceName: o && o.deviceName ? String(o.deviceName) : '', wMm: Number(o && o.wMm) || 0, hMm: Number(o && o.hMm) || 0, copies: Number(o && o.copies) || 1 , driverSize: !!(o && o.driverSize) }),
   }),
   // the taskbar button's progress (0..1, -1 clears, 2 = failed) and a Windows notification

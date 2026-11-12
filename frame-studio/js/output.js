@@ -278,7 +278,7 @@
     x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingQuality = 'high';
     page.forEach(function (it) {
       var key = it.p.id + (it.rot ? 'r' : '');
-      if (!cache[key]) { var s = Math.min(1, 3600 / Math.max(it.p.doc.w, it.p.doc.h)), r = FS.renderFull(it.p, s, false); cache[key] = it.rot ? rotated(r) : r; }
+      if (!cache[key]) { var s = Math.min(1, 3600 / Math.max(it.p.doc.w, it.p.doc.h)), r = FS.renderFull(it.p, s, false); cache[key] = it.rot ? rotated(r) : r; if (FS.printCorrect) cache[key] = FS.printCorrect(cache[key], plan.printer); }
       var im = cache[key], dx = it.x * k, dy = it.y * k, dw = it.w * k, dh = it.h * k;
       if (it.cover) { var ar = im.width / im.height, sw = im.width, sh = im.height, sx = 0, sy = 0; if (ar > dw / dh) { sw = im.height * dw / dh; sx = (im.width - sw) / 2; } else { sh = im.width * dh / dw; sy = (im.height - sh) / 2; } x.drawImage(im, sx, sy, sw, sh, dx, dy, dw, dh); }
       else x.drawImage(im, dx, dy, dw, dh);
@@ -296,7 +296,7 @@
         html += '<div class="pp" style="width:' + pw + 'mm;height:' + ph + 'mm">';
         page.forEach(function (it) {
           var key = it.p.id + (it.rot ? 'r' : '');
-          if (!cache[key]) { var k = Math.min(1, 3600 / Math.max(it.p.doc.w, it.p.doc.h)), c = FS.renderFull(it.p, k, false); if (it.rot) c = rotated(c); cache[key] = URL.createObjectURL(dataBlob(c.toDataURL('image/jpeg', 0.95))); }
+          if (!cache[key]) { var k = Math.min(1, 3600 / Math.max(it.p.doc.w, it.p.doc.h)), c = FS.renderFull(it.p, k, false); if (it.rot) c = rotated(c); if (FS.printCorrect) c = FS.printCorrect(c, viaDesktop ? FS.printerChoice() : plan.printer); cache[key] = URL.createObjectURL(dataBlob(c.toDataURL('image/jpeg', 0.95))); }
           html += '<img src="' + cache[key] + '" style="left:' + it.x + 'mm;top:' + it.y + 'mm;width:' + it.w + 'mm;height:' + it.h + 'mm;' + (it.cover ? 'object-fit:cover;' : '') + (plan.marks ? 'outline:0.2mm dashed #999;' : '') + '">';
         });
         html += '</div>';

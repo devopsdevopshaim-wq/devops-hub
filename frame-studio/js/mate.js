@@ -1281,7 +1281,8 @@
         '<div class="mp-saverow"><input id="mp-name" class="mp-name" placeholder="שם להגדרה, למשל: מגנטים 7.5×10" maxlength="40"><button class="mt-btn" id="mp-save">⭐ שמירה</button></div>' +
       '</details></div>' +
       '<div class="mp-set" hidden>' +
-        '<section class="mp-step"><h4>↕️ כיוונים</h4>' +
+        '<section class="mp-step"><h4>🎨 כיול צבע: מסך, מדפסת ומצלמה</h4><div id="mp-cc"></div></section>' +
+        '<section class="mp-step"><h4>🔄 סיבוב התמונות וכיוון הדף</h4>' +
           '<div class="mp-turn" role="group" aria-label="סיבוב התמונות"><span class="mp-k">סיבוב התמונות</span><button type="button" class="mt-btn" data-turn="1">🔄 אוטומטי</button><button type="button" class="mt-btn" data-turn="0">רגיל</button></div>' +
           '<p class="mt-hint">אוטומטי: תמונה לרוחב במסגרת או בדף לאורך (או להפך) מסתובבת ונכנסת שלמה. רגיל: התמונות ישרות כמו שעוצבו.</p>' +
           '<div class="mp-turn" role="group" aria-label="כיוון הסיבוב"><span class="mp-k">כיוון הסיבוב</span><button type="button" class="mt-btn" data-tdir="1">↻ עם כיוון השעון</button><button type="button" class="mt-btn" data-tdir="-1">↺ נגד כיוון השעון</button></div>' +
@@ -1320,6 +1321,7 @@
       $('#mp-go', b).textContent = plan.total ? '🖨️ הדפסה · ' + plan.pages.length + (plan.pages.length === 1 ? ' דף' : ' דפים') : '🖨️ הדפסה';
       $('#mp-go', b).disabled = $('#mp-cur', b).disabled = !plan.total;
       PS = o; ls('fs-mate-print', JSON.stringify(PS));   /* remembered as it is, for the next time */
+      window.__mpPaper = plan.paper ? [plan.paper[2], plan.paper[3]] : null; plan.printer = $('#mp-printer', b).value;   /* the colour test sheet's size; the printer's colour correction */
     }
     function myList() { return lsj('fs-mate-print-my', []); }
     function myDraw() {
@@ -1343,7 +1345,7 @@
     $$('select, input', $('.mp-side', b)).forEach(function (el) { el.addEventListener('change', function () { if (el.id === 'mp-printer' && FS.choosePrinter) FS.choosePrinter(el.value); paint(); }); });
     $('.mp-nav', b).addEventListener('click', function (e) { var n = e.target.closest('[data-nav]'); if (!n || !plan) return; var k = n.dataset.nav, L = plan.pages.length - 1; pg = k === 'first' ? 0 : k === 'last' ? L : FS.clamp(pg + (k === 'next' ? 1 : -1), 0, Math.max(0, L)); paint(); });
     function go(one) {
-      var o = read(); PS = o; var pl = plan; if (one) pl = { paper: plan.paper, pages: [plan.pages[pg]], total: plan.pages[pg].length, marks: plan.marks, dpi: plan.dpi };
+      var o = read(); PS = o; var pl = plan; if (one) pl = { paper: plan.paper, pages: [plan.pages[pg]], total: plan.pages[pg].length, marks: plan.marks, dpi: plan.dpi, printer: plan.printer };
       FS.closeDialog(); Promise.resolve(FS.doPrint(pl)).then(function () { setTimeout(refreshAll, 400); });
     }
     $('#mp-go', b).addEventListener('click', function () { go(false); });
@@ -1366,7 +1368,7 @@
     /* ⚙️ the settings tab: directions, and the printers' drivers */
     $$('[data-mptab]', b).forEach(function (t) { t.addEventListener('click', function () {
       var set = t.dataset.mptab === 'set'; $$('[data-mptab]', b).forEach(function (x) { x.classList.toggle('on', x === t); x.setAttribute('aria-selected', String(x === t)); });
-      $('.mp-main', b).hidden = set; $('.mp-set', b).hidden = !set; if (set) drvDraw();
+      $('.mp-main', b).hidden = set; $('.mp-set', b).hidden = !set; if (set) { drvDraw(); ccDraw(); }
     }); });
     function dirSeg() {
       $$('[data-tdir]', b).forEach(function (x) { var me = Number(x.dataset.tdir) === FS.turnSign(); x.classList.toggle('on', me); x.setAttribute('aria-pressed', String(me)); });
@@ -1377,6 +1379,7 @@
     dirSeg();
     /* the printers on this computer with their drivers, and Windows' tools to add a printer or a driver (the desktop program) */
     var DP = window.FSDesktop && FSDesktop.print;
+    function ccDraw() { var box = $('#mp-cc', b); if (box && FS.colorCalPanel) FS.colorCalPanel(box, function () { var s = $('#mp-printer', b); return s ? s.value : ''; }, function () { S.photos.forEach(function (p) { p._pv = null; }); paint(); }); }
     function drvDraw() {
       var box = $('#mp-drv', b); if (!box) return;
       if (!DP) { box.innerHTML = '<p class="mt-hint">הוספת מדפסות ודרייברים עובדת בתוכנה למחשב (Windows). בדפדפן: הגדרות Windows ← מדפסות וסורקים.</p>'; return; }
