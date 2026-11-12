@@ -183,13 +183,13 @@ async function sendMail(env, mail) {
     if (env.BREVO_API_KEY) {
       const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': env.BREVO_API_KEY, 'Content-Type': 'application/json', accept: 'application/json' },
         body: JSON.stringify({ sender: { name: mail.fromName || FROM_NAME, email: from }, replyTo: mail.replyTo ? { email: mail.replyTo } : undefined, to: [{ email: mail.to }], subject: mail.subject, textContent: mail.text, htmlContent: mail.html || undefined,
-          attachment: (mail.attachments || []).length ? mail.attachments.map((f) => ({ name: f.name, content: b64u(f.content) })) : undefined }) });
+          attachment: (mail.attachments || []).length ? mail.attachments.map((f) => ({ name: f.name, content: f.b64 || b64u(f.content) })) : undefined }) });
       return r.ok ? {} : { error: 'brevo ' + r.status };
     }
     if (env.RESEND_API_KEY) {
       const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: env.MAIL_FROM_RESEND || `${mail.fromName || FROM_NAME} <onboarding@resend.dev>`, to: [mail.to], reply_to: mail.replyTo || undefined, subject: mail.subject, text: mail.text, html: mail.html || undefined,
-          attachments: (mail.attachments || []).length ? mail.attachments.map((f) => ({ filename: f.name, content: b64u(f.content) })) : undefined }) });
+          attachments: (mail.attachments || []).length ? mail.attachments.map((f) => ({ filename: f.name, content: f.b64 || b64u(f.content) })) : undefined }) });
       return r.ok ? {} : { error: 'resend ' + r.status };
     }
     // Gmail with an app password (GMAIL_APP_PASSWORD): the mail goes out from the owner's own Gmail

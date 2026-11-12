@@ -228,6 +228,22 @@ export async function frameBiz(storage, who, b) {
     return out({ ok: true, requests: list.sort((x, y) => y.at - x.at) });
   }
 
+  // ---- an edited photo to its customer by email (the owner, or a studio licence holder sending to their own customer):
+  // one JPEG or PNG up to ~4 MB as an attachment, a short note, the sender as reply-to; at most 80 a day per sender
+  if (a === 'photo-mail') {
+    if (!admin && who.role !== 'studio') return out({ ok: false, error: 'admin-only' }, 403);
+    const to = String(b.to || '').trim().toLowerCase(), name = clean(b.name, 60), note = clean(b.note, 500), biz = clean(b.biz, 60);
+    const m = /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/=]+)$/.exec(String(b.image || ''));
+    if (!EMAIL.test(to) || !m) return out({ ok: false, error: 'bad-input' }, 400);
+    if (m[2].length > 5600000) return out({ ok: false, error: 'too-big' }, 413);
+    if (hasCard(note)) return out({ ok: false, error: 'card-number' }, 400);
+    const dk = 'pmail:' + me + ':' + today(), n = (await storage.get(dk)) || 0; if (n >= 80) return out({ ok: false, error: 'rate-limited' }, 429);
+    await storage.put(dk, n + 1);
+    const text = 'שלום' + (name ? ' ' + name : '') + ',\n\nמצורפת התמונה שלך' + (biz ? ' מ' + biz : '') + ' 📸' + (note ? '\n\n' + note : '') + '\n\nאפשר לשמור אותה, להדפיס או לשתף.\n';
+    return { code: 200, body: { ok: true, sent: n + 1 }, mail: { to, subject: '📸 התמונה שלך' + (biz ? ' · ' + biz : ''), text, replyTo: me, fromName: biz || undefined,
+      attachments: [{ name: 'photo.' + (m[1] === 'png' ? 'png' : 'jpg'), type: 'image/' + m[1], b64: m[2] }] } };
+  }
+
   // ---- everything below is the owner's
   if (!admin) return out({ ok: false, error: 'admin-only' }, 403);
 

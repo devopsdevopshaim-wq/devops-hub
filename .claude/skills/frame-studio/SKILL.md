@@ -2177,3 +2177,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - App installs by kind, total and this week.
   - Store downloads stay in the store's own console.
 - **Test:** license.test.mjs, installs by kind seen by the admin.
+
+## v144: the lifetime licence at 1500 ₪; an edited photo sent to its customer
+
+- **Price:** the full licence (bought for good) defaults to 1500 ₪ in the server (lic-info, new licences, plan-request, pay-details, the settings default), admin-licenses.js, plan.js and download.html.
+  - A one-time migration in access-handle.js (`sd.licSettings.price1500`) moves a saved price still at the old 990, and unpaid licences priced at 990, to 1500.
+  - A price the owner set to anything else stays.
+- **📨 Send to the customer (js/sendcust.js, `FS.sendToCustomer(p)`):** "📨 שליחה ללקוח" in "שמירה והדפסה" (`#send-cust`) and "📨 ללקוח" in the workspace photo drawer (`#mt-dsend`).
+  - The photo is rendered as it is (a JPEG, at most 2400 px).
+  - The name, email and phone come from the photo's customer: `p.regaim` from the customers tab. events-hub now also returns the order's email, and customers.js keeps it.
+  - Otherwise they are typed and remembered: per photo, and the last 40 recipients as a list.
+  - ✉️ Email: frame-biz `photo-mail` (frame.mjs), for the owner or a studio licence holder. One JPEG or PNG up to ~4 MB as an attachment, the business name and a note, the sender as reply-to, at most 80 a day per sender, card numbers refused.
+  - The worker's Brevo and Resend and the SMTP mail now carry binary attachments (`f.b64`).
+  - 💬 WhatsApp: the photo is copied to the clipboard as a PNG and wa.me opens the customer's chat with a message; one Ctrl+V. A link cannot carry a file.
+  - 💾 Save.
+- **Tests:** frame.test.mjs (photo-mail by a studio holder, refused for a customer, a bad address and a non-image), and a browser check of the dialog.

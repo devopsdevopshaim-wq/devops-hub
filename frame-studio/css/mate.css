@@ -587,3 +587,12 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 .cc-sl output { text-align: center; font-variant-numeric: tabular-nums; opacity: .8; }
 .cc-sample { width: 90px; height: 135px; border-radius: 6px; box-shadow: 0 6px 16px -8px rgba(0,0,0,.8); flex: none; background: #fff; }
 .cc-sl input, .cc-sl output { direction: ltr; }
+
+/* send to the customer (js/sendcust.js) */
+.sc-send { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 16px; align-items: start; }
+.sc-send .sc-prev img { display: block; width: 100%; border-radius: 8px; box-shadow: 0 10px 24px -12px rgba(0,0,0,.8); background: #fff; }
+.sc-send .sc-form { display: grid; gap: 8px; }
+.sc-send label { display: grid; gap: 4px; font-size: 13px; }
+.sc-send input, .sc-send textarea { min-height: 36px; border-radius: 8px; padding: 6px 10px; font: inherit; }
+.sc-send .sc-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+@media (max-width: 640px) { .sc-send { grid-template-columns: 1fr; } .sc-send .sc-prev { max-width: 220px; margin: auto; } }
