@@ -187,6 +187,8 @@
     return Promise.resolve(device());
   }
   function planNews() { if (FS.emit) try { FS.emit('plan'); } catch (e) { /* no listeners yet */ } }
+  /* an app installed from the browser, counted for the owner's admin (track → sd.installs); never the owner's own */
+  FS.trackInstall = function (kind) { try { var s = load(); if (s && s.role === 'admin') return; auth('track', { ev: 'install', app: String(kind || 'site') }); } catch (e) { /* offline */ } };
   FS.license = {
     AGREEMENT: 'v1',   /* agreement.html's version; a new version asks everyone to accept again */
     get: licLoad,

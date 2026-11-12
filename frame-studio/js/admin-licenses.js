@@ -36,14 +36,21 @@
   /* how many times the installer was downloaded: GitHub counts every release asset (public, no key) */
   function downloads() {
     return fetch('https://api.github.com/repos/devopsdevopshaim-wq/devops-hub/releases?per_page=100', { headers: { Accept: 'application/vnd.github+json' } }).then(function (r) { return r.ok ? r.json() : []; }).then(function (rels) {
-      var n = 0, week = 0, latest = '', builds = [];
+      var n = 0, week = 0, latest = '', builds = [], latestN = 0;
       (rels || []).filter(function (r) { return /^desktop-/.test(r.tag_name); }).forEach(function (r) {
         var m = /^desktop-v(\d+\.\d+\.\d+)$/.exec(r.tag_name); if (m) builds.push({ ver: m[1], at: r.published_at || r.created_at });
         if (r.tag_name === 'desktop-latest') latest = (r.name || '').replace(/^.*latest:\s*/, '').replace(/\)$/, '');
-        (r.assets || []).forEach(function (a) { if (/\.exe$/i.test(a.name)) n += a.download_count || 0; });
+        var c = 0; (r.assets || []).forEach(function (a) { if (/\.exe$/i.test(a.name)) { n += a.download_count || 0; c += a.download_count || 0; } });
+        if (m) builds[builds.length - 1].n = c; else if (r.tag_name === 'desktop-latest') latestN = c;
       });
       builds.sort(function (a, z) { return vcmp(z.ver, a.ver); });
-      return { n: n, latest: latest, builds: builds };
+      /* the week: a snapshot of the total kept here each day, so the admin sees how many were added in the last 7 days */
+      var snaps = {}; try { snaps = JSON.parse(localStorage.getItem('fs-dl-snaps') || '{}'); } catch (e) {}
+      var today = new Date().toISOString().slice(0, 10); if (snaps[today] == null) snaps[today] = n;
+      Object.keys(snaps).forEach(function (d) { if (Date.now() - Date.parse(d) > 60 * 86400000) delete snaps[d]; });
+      try { localStorage.setItem('fs-dl-snaps', JSON.stringify(snaps)); } catch (e) {}
+      var old = Object.keys(snaps).filter(function (d) { return Date.now() - Date.parse(d) >= 6.5 * 86400000; }).sort().pop();
+      return { n: n, latest: latest, latestN: latestN, builds: builds, week: old != null ? n - snaps[old] : null };
     }).catch(function () { return null; });
   }
 
@@ -53,7 +60,7 @@
       '<section class="adm-card lic-tasks" id="lic-tasks"><div class="adm-row"><h3 style="margin:0">📋 משימות לביצוע <span class="lic-badge" id="lic-tasks-n"></span></h3><label class="adm-chk" style="margin-inline-start:auto"><input type="checkbox" id="lic-tasks-done"> להציג גם מה שבוצע</label></div><div id="lic-tasks-body"><p class="hint">טוען…</p></div></section>' +
       '<section class="adm-card" id="lic-sec"><h3>🛡️ אבטחה</h3><div id="lic-sec-body"><p class="hint">טוען…</p></div></section>' +
       '<section class="adm-card lic-now" id="lic-now"><div class="adm-row"><h3 style="margin:0">📊 מצב עכשיו</h3><small id="lic-now-at" class="hint" style="margin-inline-start:auto"></small></div><div id="lic-now-body"><p class="hint">טוען…</p></div></section>' +
-      '<section class="adm-card" id="lic-stats"></section>' +
+      '<section class="adm-card" id="lic-stats"></section><section class="adm-card" id="lic-dls"></section>' +
       '<section class="adm-card"><h3>➕ רישיון חדש</h3><div class="adm-grid lic-new">' +
       '<label class="adm-f"><span>שם</span><div class="adm-in"><input id="ln-name" maxlength="60"></div></label>' +
       '<label class="adm-f"><span>מייל</span><div class="adm-in"><input id="ln-email" type="email" dir="ltr"></div></label>' +
@@ -75,7 +82,7 @@
       '<section class="adm-card"><h3>📝 נרשמים להורדה ולניסיון</h3><p class="hint">כל מי שנרשם בדף ההורדה או בתוכנה: שם מלא, טלפון ומייל. "✔ אומת" = הזין את הקוד שהגיע למייל. מי שלא קיבל מייל: הקוד שלו מופיע כאן (30 דקות), ושולחים לו בוואטסאפ בלחיצה.</p><div id="lead-list"><p class="hint">טוען…</p></div></section>' +
       '<section class="adm-card"><div class="adm-row"><h3 style="margin:0">רשימת הרישיונות</h3><input id="lic-q" placeholder="חיפוש שם / מייל / טלפון" style="margin-inline-start:auto"></div><div id="lic-list"><p class="hint">טוען…</p></div></section>');
     var ALL = [], q = '';
-    var SET = { price: 990 }, DLS = null, PRICE = { full: 990, month: 89, year: 790, pass: 79 };
+    var SET = { price: 990 }, DLS = null, INST = null, PRICE = { full: 990, month: 89, year: 790, pass: 79 };
     function prices() { PRICE = { full: SET.price || 990, month: SET.monthPrice || 89, year: SET.yearPrice || 790, pass: SET.passPrice || 79 }; $('#ls-price').value = PRICE.full; $('#ls-pass').value = PRICE.pass; $('#ls-month').value = PRICE.month; $('#ls-year').value = PRICE.year; $('#ls-promo').value = SET.promo || ''; $('#ls-terms').value = SET.terms || ''; var BI = SET.bankInfo || {}, BZ = SET.biz || {}, P = ((c.settings && c.settings()) || {}).pay || {};   /* empty: what the owner already set in "🏦 תשלום ובנק" */
       if (!BI.account && P.account) BI = { holder: P.holder, bank: [P.bankName, P.bankNo ? '(' + P.bankNo + ')' : ''].filter(Boolean).join(' '), branch: P.branch, account: P.account };
       if (!BZ.id && P.bizId) BZ = { name: '', kind: P.bizType === 'חברה' ? 'חברה בע״מ' : P.bizType ? 'עוסק ' + P.bizType : '', id: P.bizId, address: P.address }; ['holder', 'bank', 'branch', 'account', 'standing'].forEach(function (k) { $('#ls-bank-' + k).value = BI[k] || ''; }); ['name', 'kind', 'id', 'address'].forEach(function (k) { $('#ls-biz-' + k).value = BZ[k] || ''; }); }
@@ -85,6 +92,17 @@
       var rev = 0, mon = 0, ym = new Date().toISOString().slice(0, 7);
       ALL.forEach(function (l) { (l.payments || []).forEach(function (p) { rev += p.amount || 0; if (String(p.date || '').slice(0, 7) === ym) mon += p.amount || 0; }); });
       var open = ALL.filter(function (l) { return !l.paid && l.active && !l.trial; }).reduce(function (t, l) { return t + (l.price || 0); }, 0);
+      var I = INST || { total: {}, days: {} }, it = I.total || {}, iw = { studio: 0, phone: 0, live: 0 };
+      Object.keys(I.days || {}).forEach(function (d) { if (Date.now() - Date.parse(d) < 7 * 86400000) Object.keys(iw).forEach(function (k) { iw[k] += (I.days[d][k] || 0); }); });
+      $('#lic-dls').innerHTML = '<h4>⬇️ הורדות והתקנות</h4><div class="vis-stats">' +
+        '<div><b>' + (DLS ? DLS.n : '…') + '</b><span>💻 הורדות התוכנה למחשב (סה״כ)</span></div>' +
+        '<div><b>' + (DLS && DLS.week != null ? '+' + DLS.week : '—') + '</b><span>השבוע' + (DLS && DLS.week == null ? ' (נספר מהיום)' : '') + '</span></div>' +
+        '<div><b>' + (DLS ? (DLS.latestN || 0) : '…') + '</b><span>מהגרסה האחרונה' + (DLS && DLS.latest ? ' ' + esc(DLS.latest) : '') + '</span></div>' +
+        '<div><b>' + (it.studio || 0) + '</b><span>📲 התקנות הסטודיו מהדפדפן' + (iw.studio ? ' · השבוע ' + iw.studio : '') + '</span></div>' +
+        '<div><b>' + (it.phone || 0) + '</b><span>📱 התקנות אפליקציית הניהול' + (iw.phone ? ' · השבוע ' + iw.phone : '') + '</span></div>' +
+        '<div><b>' + (it.live || 0) + '</b><span>🎉 התקנות אפליקציית האורחים' + (iw.live ? ' · השבוע ' + iw.live : '') + '</span></div></div>' +
+        (DLS && DLS.builds && DLS.builds.length ? '<details><summary>לפי גרסה</summary><table class="adm-tbl"><tbody>' + DLS.builds.slice(0, 12).map(function (x) { return '<tr><td dir="ltr">' + esc(x.ver) + '</td><td>' + when(x.at) + '</td><td><b>' + (x.n || 0) + '</b> הורדות</td></tr>'; }).join('') + '</tbody></table></details>' : '') +
+        '<p class="hint">הורדות מחנויות האפליקציות (כשיעלו לחנות) מופיעות בלוח של החנות עצמה.</p>';
       $('#lic-stats').innerHTML = '<div class="vis-stats">' +
         '<div><b>' + (DLS ? DLS.n : '…') + '</b><span>הורדות של התוכנה' + (DLS && DLS.latest ? ' (גרסה ' + esc(DLS.latest) + ')' : '') + '</span></div>' +
         '<div><b>' + ALL.filter(function (l) { return l.plan && l.plan.tier === 'trial'; }).length + '</b><span>🎁 בניסיון חינם</span></div><div><b>' + ALL.filter(function (l) { return l.planReq; }).length + '</b><span>📩 בקשות שדרוג</span></div>' +
@@ -329,7 +347,7 @@
       var answered = false; setTimeout(function () { if (!answered) failed({ error: 'offline' }); }, 20000);
       LIC.admin('lic-list').then(function (r) { answered = true;
       if (!r.ok && (r.error === 'signed-out' || r.error === 'admin-only') && !again && ACC.relogin) return ACC.relogin().then(function (x) { if (x && x.ok) load(true); else failed(r); }, function () { failed(r); });
-      if (!r.ok) return failed(r); ALL = r.licenses; LEADS = r.leads || []; ACT = r.activity || []; DONE = r.tasksDone || DONE; BLOCKED = r.blocked || []; SEC = r.sec || []; SECST = r.security || {}; secDraw(); leadsDraw(); nowDraw(); tasksDraw(); if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; prices(); if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }, function () { answered = true; failed({ error: 'offline' }); }); }
+      if (!r.ok) return failed(r); ALL = r.licenses; INST = r.installs || null; LEADS = r.leads || []; ACT = r.activity || []; DONE = r.tasksDone || DONE; BLOCKED = r.blocked || []; SEC = r.sec || []; SECST = r.security || {}; secDraw(); leadsDraw(); nowDraw(); tasksDraw(); if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; prices(); if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }, function () { answered = true; failed({ error: 'offline' }); }); }
     $('#ln-paid').addEventListener('change', function () { $('.ln-pay').hidden = !this.checked; if (this.checked && !$('#ln-amount').value) $('#ln-amount').value = $('#ln-price').value; });
     $('#ls-save').addEventListener('click', function () { var d = { price: $('#ls-price').value.trim(), passPrice: $('#ls-pass').value.trim(), monthPrice: $('#ls-month').value.trim(), yearPrice: $('#ls-year').value.trim(), promo: $('#ls-promo').value.trim(), terms: $('#ls-terms').value.trim() };
       ['holder', 'bank', 'branch', 'account', 'standing'].forEach(function (k) { d['bank_' + k] = $('#ls-bank-' + k).value.trim(); }); ['name', 'kind', 'id', 'address'].forEach(function (k) { d['biz_' + k] = $('#ls-biz-' + k).value.trim(); });

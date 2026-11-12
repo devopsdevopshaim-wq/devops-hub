@@ -83,6 +83,10 @@ check('the owner approves: a receipt to the customer and a copy to the owner', r
 r = await call({ action: 'lic-check', token: cc.token, machine: M.C, version: '1.0.12', takeover: '1' });
 check('... and the update opens for him', r.ok && !r.upd.locked && !sd.licenses['pro@x.com'].updReq, r.upd);
 check('an update payment does not count as buying a licence', sd.licenses['pro@x.com'].payments.filter((p) => p.kind === 'update').length === 1);
+// ---- installs of the apps are counted for the owner
+await call({ action: 'track', ev: 'install', app: 'phone' }); await call({ action: 'track', ev: 'install', app: 'studio' }); await call({ action: 'track', ev: 'install', app: 'nonsense' });
+r = await call({ action: 'lic-list', token: ADM });
+check('the admin sees app installs by kind', r.ok && r.installs && r.installs.total.phone === 1 && r.installs.total.studio === 1 && r.installs.total.site === 1, r.installs);
 Date.now = realNow;
 console.log(bad ? bad + ' failed' : 'all passed');
 process.exit(bad ? 1 : 0);

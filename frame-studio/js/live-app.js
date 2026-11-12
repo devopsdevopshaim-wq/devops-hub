@@ -30,7 +30,7 @@
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
   window.addEventListener('beforeinstallprompt', function (ev) { ev.preventDefault(); deferred = ev; });
-  window.addEventListener('appinstalled', function () { deferred = null; ls(NAG, 'done'); var b = document.getElementById('lv-app'); if (b) b.remove(); });
+  window.addEventListener('appinstalled', function () { if (window.FS && FS.trackInstall) FS.trackInstall('live'); deferred = null; ls(NAG, 'done'); var b = document.getElementById('lv-app'); if (b) b.remove(); });
 
   function install() {
     if (deferred) { deferred.prompt(); deferred.userChoice.then(function (c) { deferred = null; if (c && c.outcome === 'accepted') ls(NAG, 'done'); }); return; }
