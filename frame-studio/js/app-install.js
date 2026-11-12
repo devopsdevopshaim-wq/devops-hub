@@ -10,7 +10,7 @@
   var deferred = null, KEY = 'fs-app-nag';
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; render(); });
-  window.addEventListener('appinstalled', function () { deferred = null; ls(KEY, 'done'); var b = document.getElementById('app-bar'); if (b) b.remove(); render(); });
+  window.addEventListener('appinstalled', function () { if (window.FS && FS.trackInstall) FS.trackInstall('phone'); deferred = null; ls(KEY, 'done'); var b = document.getElementById('app-bar'); if (b) b.remove(); render(); });
   function install() {
     if (deferred) { deferred.prompt(); deferred.userChoice.then(function () { deferred = null; render(); }); return; }
     if (window.FS && FS.installHelp) return FS.installHelp('פריים ניהול');

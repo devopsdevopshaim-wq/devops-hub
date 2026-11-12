@@ -2166,3 +2166,14 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - With "להחיל על כל תמונה חדשה" on, every new photo gets it in its own adjustments (`FS.afterAdd`). `p.camCal` remembers what was added, so applying again replaces it rather than adding twice.
   - "להחיל על התמונות שכבר בתוכנה", and a reset.
 - Photo rotation and paper orientation moved under "🔄 סיבוב התמונות וכיוון הדף".
+
+## v143: downloads and installs in the admin
+
+- **Server (`track`):** `ev: "install"` with `app` set to studio, phone, live or site counts in `sd.installs = { total: {kind: n}, days: {date: {kind: n}} }` (120 days). `lic-list` returns `installs`.
+- **Program:** `FS.trackInstall(kind)` (account.js) is sent from the `appinstalled` handlers: pwa.js (studio), app-install.js (phone, the manager app) and live-app.js (live, the guests' app). It is never sent from an admin session.
+- **Admin (licences, `#lic-dls` "⬇️ הורדות והתקנות"):**
+  - Installer downloads from GitHub releases: total, latest version, and per version in a folded table (`builds[].n`).
+  - The last 7 days, from a daily snapshot of the total kept in the admin's browser (`fs-dl-snaps`); "נספר מהיום" until a week of snapshots exists.
+  - App installs by kind, total and this week.
+  - Store downloads stay in the store's own console.
+- **Test:** license.test.mjs, installs by kind seen by the admin.

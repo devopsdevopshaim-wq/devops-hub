@@ -23,7 +23,7 @@
     if (FS.dialog) FS.dialog('📲 התקנה', '<p style="line-height:1.7">אייפון: Safari ← שיתוף ⬆︎ ← "הוספה למסך הבית". אנדרואיד: Chrome ← ⋮ ← "התקנת אפליקציה".</p>');
   }
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; button(); });
-  window.addEventListener('appinstalled', function () { var b = document.getElementById('mt-install'); if (b) b.remove(); if (FS.toast) FS.toast('📲 אופטימוס הותקן. אפשר לפתוח אותו ממסך הבית.'); });
+  window.addEventListener('appinstalled', function () { if (window.FS && FS.trackInstall) FS.trackInstall('studio'); var b = document.getElementById('mt-install'); if (b) b.remove(); if (FS.toast) FS.toast('📲 אופטימוס הותקן. אפשר לפתוח אותו ממסך הבית.'); });
   /* on every phone the button is there from the start: Safari never sends the prompt, and Android may not (yet) */
   function ready() {
     if (!(ios || (FS.installEnv && FS.installEnv.phone))) return;

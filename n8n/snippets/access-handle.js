@@ -233,6 +233,15 @@ switch (b.action) {
     if (b.events) { try { const j = JSON.parse(b.events); if (Array.isArray(j)) evs = j.slice(0, 20); } catch (x) {} }
     for (const e1 of evs) {
       if (!e1 || typeof e1 !== 'object') continue;
+      // an app installed from the browser (the studio, the manager's phone app, the guests' live app): counted by kind and day
+      if (e1.ev === 'install') {
+        const kind = ['studio', 'phone', 'live', 'site'].indexOf(String(e1.app)) >= 0 ? String(e1.app) : 'site', d0 = new Date(now + 3 * HOUR).toISOString().slice(0, 10);
+        sd.installs = sd.installs || { total: {}, days: {} };
+        sd.installs.total[kind] = (sd.installs.total[kind] || 0) + 1;
+        const dd = sd.installs.days[d0] = sd.installs.days[d0] || {}; dd[kind] = (dd[kind] || 0) + 1;
+        for (const d of Object.keys(sd.installs.days)) if (now - Date.parse(d) > 120 * DAY) delete sd.installs.days[d];
+        continue;
+      }
       const ev = e1.ev === 'open' ? 'open' : 'view';
       const key = (v) => line(v, 70).replace(/[?#].*$/, '').replace(/^https?:\/\/[^/]+/, '').replace(/[.$]/g, '_');
       const page = key(e1.page) || '/', app = key(e1.app);
@@ -603,7 +612,7 @@ switch (b.action) {
         plan: L.filter((x) => x.planReq).length, upd: L.filter((x) => x.updReq).length, blocked: Object.keys(sd.trialBlocked || {}).length,
         sec: (sd.sec || []).filter((x) => on(x.at, DAY) && x.kind !== 'admin-new').length } });
     }
-    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, leads: leads(), activity: activity(), tasksDone: sd.tasksDone, blocked: Object.values(sd.trialBlocked || {}),
+    if (b.action === 'lic-list') return out({ ok: true, licenses: list(), settings: sd.licSettings, upd: U, installs: sd.installs || null, leads: leads(), activity: activity(), tasksDone: sd.tasksDone, blocked: Object.values(sd.trialBlocked || {}),
       sec: (sd.sec || []).slice(0, 60), security: { twoFactor: set(ADMIN_TOTP), adminDevices: (sd.adminDevices || []).length } });
     // the owner's release: a blocked person may start a trial (once), or an existing trial starts over on any computer
     if (b.action === 'trial-release') {
