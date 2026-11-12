@@ -334,8 +334,17 @@
     if (a.verdict === 'none') return '';
     return '<em class="mt-adv' + (a.doubt ? ' doubt' : '') + '" data-advset="' + a.copies + '" role="button" tabindex="0" title="לחיצה: ' + a.copies + ' הדפסים לפי האנשים · ' + a.adults + ' מבוגרים מסתכלים' + (a.kids ? ', ' + a.kids + ' ילדים' : '') + (a.doubt ? '. כדאי לבדוק: אולי מישהו בחצי עצימה' : '') + '">' + (a.doubt ? '👀 ' : '👥 ') + a.copies + '</em>';
   }
+  /* not worth editing: someone's eyes are closed, or nobody looks at the camera (the face check, copies.js / curate.js) */
+  function warnOf(p) {
+    var a = p.cadv;
+    if ((a && a.verdict === 'closed') || (p.quality && p.quality.closed > 0)) return '😑 עיניים עצומות · לא מומלץ לערוך';
+    if (a && a.verdict === 'ok' && a.faces > 0 && a.adults === 0 && a.away > 0) return '↪️ לא מסתכלים למצלמה · לא מומלץ';
+    return '';
+  }
+  FS.photoWarn = warnOf;
   function tileHTML(p, px) {
-    return '<div class="mt-tile' + (S.marked[p.id] ? ' sel' : '') + (p.id === focusId ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + px + '"><div class="mt-th">' +
+    var w = warnOf(p);
+    return '<div class="mt-tile' + (S.marked[p.id] ? ' sel' : '') + (w ? ' warn' : '') + (p.id === focusId ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + px + '"' + (w ? ' title="' + esc(w) + '"' : '') + '><div class="mt-th">' + (w ? '<span class="mt-warn">' + esc(w) + '</span>' : '') +
       '<button class="mt-chk" title="סימון">✓</button><button class="mt-zoomb" title="הגדלה">🔍</button>' +
       '<div class="mt-band"><b>' + sizeTxt(p) + '</b><span class="mt-cp"><button data-cp="-1" title="פחות (על כל המסומנות, כשהתמונה מסומנת)" aria-label="פחות הדפסים">−</button><i data-cpn title="לחיצה: להקליד מספר · או מקלידים 0–9 כשהעכבר על התמונה">' + copies(p) + ' הדפסים</i><button data-cp="1" title="עוד (על כל המסומנות, כשהתמונה מסומנת)" aria-label="עוד הדפסים">+</button></span>' +
       (p.printed ? '<small>הודפסו ' + p.printed + '</small>' : '') + '</div>' + advTag(p) + '</div><div class="mt-name" title="' + esc(p.name || '') + '">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '</div></div>';
@@ -361,6 +370,17 @@
     g.innerHTML = l.map(function (p) { var o = oriOf(p), h = ''; if (o !== last) { last = o; h = '<h3 class="mt-orih" data-orih="' + o + '">' + ORI_NAME[o] + ' <i>' + cnt[o] + ' תמונות</i><button class="mt-btn" data-orisel="' + o + '">✔ סימון כולן</button></h3>'; } return h + tileHTML(p, zoom); }).join('');
     reuse(g, k);
     oriSync(); foot(); stat();
+    setTimeout(faceCheck, 1500);
+  }
+  /* the face check runs by itself in the background, one photo at a time, so a photo with closed eyes or nobody looking at
+     the camera turns red without asking; off with FS.prefs.autoFaceCheck === false */
+  var fcBusy = false;
+  function faceCheck() {
+    if (fcBusy || FS.prefs.autoFaceCheck === false || !window.FaceSig || !FS.judgeFaces || !on()) return;
+    var p = S.photos.filter(function (x) { return !x.cadv && !x._fcq; })[0]; if (!p) return;
+    fcBusy = true; p._fcq = true;
+    FS.loadImg(p.src).then(function (im) { return FaceSig.detect(im, 1280); }).then(function (faces) { p.cadv = FS.judgeFaces(faces); p.cadv.auto = true; }, function () {})
+      .then(function () { fcBusy = false; if (warnOf(p)) refreshTile(p); setTimeout(faceCheck, 150); });
   }
   function refreshTile(p) {
     $$('.mt-tile[data-id="' + p.id + '"]', root).forEach(function (el) {

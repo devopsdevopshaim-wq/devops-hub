@@ -2210,3 +2210,15 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Left to the owner:** 2FA on GitHub, Gmail and Cloudflare, checking collaborators, and deciding on a private repository.
   - A private repository needs GitHub Pro for Pages.
   - Installers would then need to be published to a separate public releases repository, because release downloads from a private repository need sign-in.
+
+## v146: the ivory look (white and gold), green for marked, a blue tick, red for photos not worth editing
+
+- **Ivory (css/ivory.css + js/ivory.js, `html.fs-ivory`, the default):** the program in white with gold touches.
+  - It overrides the variables the dark layers read: `--at-night*`, `--bg`/`--panel`/`--ink`/`--dim`/`--line`, `--pro-*`, and the workspace's `--g0..g4`/`--ink`/`--hair`/`--shadow`.
+  - It fixes the places that had a dark colour written in: selects, `.seg`, `.pro-status`, `#fs-ver`, `.pl-bar`, `#mt-switch`, the toast, `.mt-zoomb`, the stage, panels, buttons, dialogs, the print window and the opening screen with its buttons.
+  - "🌙 כהה / ☀️ בהיר" (`#ivory-btn`, next to 🪶 in `.mt-acts`) switches the look, remembered in `fs-ivory`. `FS.ivory(on)`.
+- **Marked (both looks):** `.mt-tile.sel` gets a green wrap around the photo and its frame (outline, ring and glow, a pale green tile) and a blue tick (`.mt-chk` #2563EB, white ✓).
+- **Not worth editing:** `FS.photoWarn(p)` is set for closed eyes (`p.cadv.verdict` closed, or `p.quality.closed`) or nobody looking at the camera (faces, no adults facing, some turned away).
+  - Such a tile gets `.warn`: a red tile and a red label at the top of the photo (`.mt-warn`). The copies advice's own closed-eyes tag is hidden there.
+- **The face check runs by itself:** after the grid is built, `faceCheck()` in mate.js goes through the photos without `p.cadv`, one at a time in the background (FaceSig.detect 1280 + `FS.judgeFaces`), and refreshes a tile that turns red. Off with `FS.prefs.autoFaceCheck === false`.
+- **Checked:** a scan for dark backgrounds left in the ivory look, and screenshots of the workspace, the studio and the opening, in ivory and in dark.
