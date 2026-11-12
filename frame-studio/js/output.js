@@ -186,7 +186,7 @@
   $('#paper').value = FS.prefs.paper || '10x15';
   ['paper', 'layout', 'margin'].forEach(function (k) { if (FS.prefs['print_' + k]) $('#' + k).value = FS.prefs['print_' + k]; $('#' + k).addEventListener('change', function () { FS.prefs['print_' + k] = this.value; FS.savePrefs(); }); });
 
-  function rotated(c) { var r = FS.canvas(c.height, c.width), x = r.getContext('2d'); x.translate(r.width, 0); x.rotate(Math.PI / 2); x.drawImage(c, 0, 0); return r; }
+  function rotated(c) { var r = FS.canvas(c.height, c.width), x = r.getContext('2d'); if (FS.turnSign() < 0) { x.translate(0, r.height); x.rotate(-Math.PI / 2); } else { x.translate(r.width, 0); x.rotate(Math.PI / 2); } x.drawImage(c, 0, 0); return r; }
   /* ---------- print: plan the sheets, show them, then print ---------- */
   function paperOf(id) { return PAPERS.filter(function (p) { return p[0] === id; })[0] || PAPERS[0]; }
   function jobFromPanel() {
@@ -215,7 +215,7 @@
   }
   /* pages: [[{p, x, y, w, h, rot}]] in mm; items of the same size share sheets */
   FS.planPrint = function (job) {
-    var paper = paperOf(job.paper), pw = paper[2], ph = paper[3], mg = job.margin || 0, gap = job.layout === 'fill' ? (job.gap != null ? job.gap : 2) : (mg ? 2 : 0);
+    var paper = FS.orientPaper(paperOf(job.paper)), pw = paper[2], ph = paper[3], mg = job.margin || 0, gap = job.layout === 'fill' ? (job.gap != null ? job.gap : 2) : (mg ? 2 : 0);
     var groups = {}, order = [];
     job.list.forEach(function (p) { var mm = job.size || mmOf(p.doc), key = job.layout === 'fill' ? mm.map(function (v) { return v.toFixed(1); }).join('x') : 'all'; if (!groups[key]) { groups[key] = { mm: mm, items: [] }; order.push(key); }
       var n = (job.copies || 1) * (p.copies == null ? 1 : p.copies); for (var i = 0; i < n; i++) groups[key].items.push(p); });
@@ -257,7 +257,7 @@
     x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
     page.forEach(function (it) {
       var t = it.p._pt || (it.p._pt = FS.thumbOf(it.p, 360));
-      x.save(); x.translate((it.x + it.w / 2) * pxPerMm, (it.y + it.h / 2) * pxPerMm); if (it.rot) x.rotate(Math.PI / 2);
+      x.save(); x.translate((it.x + it.w / 2) * pxPerMm, (it.y + it.h / 2) * pxPerMm); if (it.rot) x.rotate(FS.turnSign() * Math.PI / 2);
       var w = (it.rot ? it.h : it.w) * pxPerMm, h = (it.rot ? it.w : it.h) * pxPerMm; x.drawImage(t, -w / 2, -h / 2, w, h); x.restore();
       if (plan.marks) { x.strokeStyle = '#9aa'; x.setLineDash([3, 3]); x.strokeRect(it.x * pxPerMm, it.y * pxPerMm, it.w * pxPerMm, it.h * pxPerMm); x.setLineDash([]); }
       if (plan.labels) {   /* the preview says each item's real printed size; smaller than wanted is marked */

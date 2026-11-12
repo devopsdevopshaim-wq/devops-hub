@@ -91,6 +91,13 @@
     return { x: 0, y: 0, w: d.w, h: d.h };
   };
   /* does this photo stand the other way from its window (a wide photo in a tall window, or the other way round)? */
+  /* the way photos turn (⚙️ in the print window): clockwise (1, the default) or counter-clockwise (-1) */
+  FS.turnSign = function () { return FS.prefs.turnDir === -1 ? -1 : 1; };
+  /* the paper the way it goes into the printer (⚙️ in the print window): portrait as the size is written (default) or landscape */
+  FS.orientPaper = function (paper) {
+    if (!paper) return paper; var land = FS.prefs.paperOrient === 'landscape', w = paper[2], h = paper[3];
+    return land === (w > h) || w === h ? paper : [paper[0], paper[1], h, w];
+  };
   FS.turnNeeded = function (d, img) {
     var h = FS.hole(d), iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
     if (!iw || !ih || !h.w || !h.h) return false;
@@ -103,6 +110,7 @@
     (list || FS.state.photos).forEach(function (p) {
       var im = FS.img(p.src), d = p.doc; if (!im || !d) return;
       if (on && !d.photo.autoTurn && !d.photo.r && FS.turnNeeded(d, im)) { FS.fitPhoto(d, im, p.fit === 'cover' ? 'contain' : p.fit); n++; }
+      else if (on && d.photo.autoTurn && d.photo.r !== FS.turnSign() * 90) { d.photo.r = FS.turnSign() * 90; n++; }   /* the direction changed */
       else if (!on && d.photo.autoTurn) { d.photo.r = 0; delete d.photo.autoTurn; FS.fitPhoto(d, im, p.fit); n++; }
       else return;
       p.cache = {}; p._pt = null; p._gt = null; p._pv = null; if (FS.snap) FS.snap(p);
@@ -116,7 +124,7 @@
        here before) is turned; the owner's own turn is kept. Off with FS.prefs.autoTurn === false. */
     if (FS.prefs.autoTurn !== false && iw && ih && h.w && h.h && (!d.photo.r || d.photo.autoTurn)) {
       var wideP = iw / ih > 1.08, tallP = ih / iw > 1.08, wideH = h.w / h.h > 1.08, tallH = h.h / h.w > 1.08;
-      if ((wideP && tallH) || (tallP && wideH)) { d.photo.r = 90; d.photo.autoTurn = true; }
+      if ((wideP && tallH) || (tallP && wideH)) { d.photo.r = FS.turnSign() * 90; d.photo.autoTurn = true; }
       else if (d.photo.autoTurn) { d.photo.r = 0; delete d.photo.autoTurn; }
     }
     if (d.photo.autoTurn && mode !== 'cover') mode = 'contain';   /* turned to fit: the whole photo, nothing cut */
