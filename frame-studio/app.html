@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='145';(function(){
+window.FS_V='146';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -24,7 +24,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" />
-<link rel="stylesheet" href="css/app.css?v=145" />
+<link rel="stylesheet" href="css/app.css?v=146" />
 </head>
 <body>
 <main class="ap">
@@ -44,8 +44,8 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
   <p class="ap-note">התוכנה אופטימוס (עריכה והדפסה) מותקנת על מחשב Windows. האפליקציה הזאת היא לניהול העסק מהטלפון.</p>
   <a class="ap-link" href="admin.html">פתיחה בדפדפן בלי התקנה ←</a>
 </main>
-<script src="js/install-help.js?v=145"></script>
-<script src="js/app-install.js?v=145"></script>
-<script src="js/a11y.js?v=145" defer></script>
+<script src="js/install-help.js?v=146"></script>
+<script src="js/app-install.js?v=146"></script>
+<script src="js/a11y.js?v=146" defer></script>
 </body>
 </html>
