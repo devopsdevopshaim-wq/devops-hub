@@ -2150,3 +2150,19 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - "⚙️ כיוונים, מדפסות ודרייברים" (`#qp-dirs`) in the instant-print setup (the ⚙️ gear next to "הדפסה מיידית").
   - The tab inside the print window.
 - `FS.mate.print({ tab: "set" })` and `openPrint(only, opt)` open the window on its settings tab.
+
+## v142: colour calibration of the screen, the printer and the camera
+
+- **The owner's ask:** "directions" meant the screen's colour against the printer (and the camera), with a reset. The settings tab of the print window now opens with "🎨 כיול צבע: מסך, מדפסת ומצלמה" (js/colorcal.js, `FS.colorCalPanel`).
+- **🖥️ The screen:**
+  - Windows tools through `print:tool`: `calibrate` (dccw.exe, Display Color Calibration), `colormgmt` (colorcpl.exe, Color Management) and `display` (ms-settings:display). These need the new installer.
+  - "👁️ דף בדיקה על המסך": `FS.colorChart(w,h)` draws 11 grey steps, primaries and secondaries, six skin tones, a spectrum, a grey ramp and brand colours.
+- **🖨️ The printer:**
+  - `FS.printCal.get/set/reset(printer)` keeps brightness, contrast, saturation, warmth and tint (each −50..50) per printer in localStorage `fs-printcal`.
+  - `FS.printCorrect(canvas, printer)` puts it on every printed sheet: a canvas filter for brightness, contrast and saturation, then soft-light washes for warmth and tint. It is called in `FS.pageCanvas` (direct print) and in `doPrint`'s rendered images. `plan.printer` comes from the print window.
+  - A live sample on the chart, quick presets (prints dark / too warm / faded), a reset, and "🧪 הדפסת דף בדיקה": `FS.printChart` prints the corrected chart at the window's paper size, straight to the printer in the desktop program or through the print window.
+- **📷 The camera:**
+  - `FS.cameraCal` (localStorage `fs-camcal`) keeps exposure, warmth, tint, contrast and saturation.
+  - With "להחיל על כל תמונה חדשה" on, every new photo gets it in its own adjustments (`FS.afterAdd`). `p.camCal` remembers what was added, so applying again replaces it rather than adding twice.
+  - "להחיל על התמונות שכבר בתוכנה", and a reset.
+- Photo rotation and paper orientation moved under "🔄 סיבוב התמונות וכיוון הדף".
