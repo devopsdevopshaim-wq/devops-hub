@@ -229,5 +229,17 @@ check('... and a wrong key of the same length gets nothing', (await frameCal(S2,
   check('approve: the owner removes it', r.code === 404 && ![...S3.m.keys()].some((k) => k.startsWith('dzf:')));
 }
 
+// ---- an edited photo to its customer by email
+{
+  const STUDIO = { role: 'studio', email: 'photog@example.com' }, IMG = 'data:image/jpeg;base64,' + Buffer.from('fake-jpeg-bytes').toString('base64');
+  let m = await frameBiz(S, STUDIO, { action: 'photo-mail', to: 'guest@example.com', name: 'נועה', image: IMG, biz: 'סטודיו אור', note: 'תודה שבאתם' });
+  check('a studio licence holder mails an edited photo: the photo attached, the sender as reply-to', m.body.ok && m.mail.to === 'guest@example.com' && m.mail.replyTo === 'photog@example.com' && m.mail.attachments[0].b64 && m.mail.attachments[0].type === 'image/jpeg' && /נועה/.test(m.mail.text), m.mail && { ...m.mail, attachments: undefined });
+  m = await frameBiz(S, DANA, { action: 'photo-mail', to: 'guest@example.com', image: IMG });
+  check('a customer cannot use it', m.code === 403);
+  m = await frameBiz(S, STUDIO, { action: 'photo-mail', to: 'not-an-email', image: IMG });
+  check('a bad address is refused', m.code === 400);
+  m = await frameBiz(S, STUDIO, { action: 'photo-mail', to: 'guest@example.com', image: 'data:text/html;base64,PHNjcmlwdD4=' });
+  check('only a JPEG or PNG goes', m.code === 400);
+}
 console.log(bad ? `\n${bad} failed` : '\nframe: all passed');
 process.exit(bad ? 1 : 0);

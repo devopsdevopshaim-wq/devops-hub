@@ -55,7 +55,7 @@
     if (Date.now() - upOpen < 1500) return; upOpen = Date.now();
     var t = FS.planTier(), L = LIC.get() || {};
     prices().then(function (pr) {
-      var P = { pass: pr.passPrice || 79, month: pr.monthPrice || 89, year: pr.yearPrice || 790, full: pr.price || 990 }, cur = pr.currency || '₪', h = pr.passHours || 48;
+      var P = { pass: pr.passPrice || 79, month: pr.monthPrice || 89, year: pr.yearPrice || 790, full: pr.price || 1500 }, cur = pr.currency || '₪', h = pr.passHours || 48;
       var cards = [['pass', '🎟️ כרטיס אירוע', P.pass, 'הכל פתוח ל־' + h + ' שעות. מושלם לאירוע אחד.'], ['month', '📅 מנוי חודשי', P.month, 'הכל פתוח לחודש. מתחדש כשמשלמים שוב.'],
         ['year', '📆 מנוי שנתי', P.year, 'הכל פתוח לשנה, במחיר של פחות מ־9 חודשים.'], ['full', '💎 רישיון מלא', P.full, 'קונים פעם אחת, פתוח לתמיד.']];
       var b = FS.dialog('⭐ שדרוג אופטימוס',
@@ -219,7 +219,7 @@
     el.hidden = false; el.classList.toggle('min', ls('fs-offers-min') === '1');
     if (el._drawn) return; el._drawn = true;
     prices().then(function (pr) {
-      var P = { pass: pr.passPrice || 79, month: pr.monthPrice || 89, year: pr.yearPrice || 790, full: pr.price || 990 }, cur = ' ' + (pr.currency || '₪'), h = pr.passHours || 48;
+      var P = { pass: pr.passPrice || 79, month: pr.monthPrice || 89, year: pr.yearPrice || 790, full: pr.price || 1500 }, cur = ' ' + (pr.currency || '₪'), h = pr.passHours || 48;
       var cards = [['pass', '🎟️ כרטיס אירוע', P.pass, 'הכל פתוח ל־' + h + ' שעות'], ['month', '📅 מנוי חודשי', P.month, 'הכל פתוח לחודש'], ['year', '📆 מנוי שנתי', P.year, 'הכי משתלם'], ['full', '💎 רישיון מלא', P.full, 'פעם אחת, לתמיד']];
       el.innerHTML = '<button class="plo-tab" data-pl-toggle title="מבצעים לרכישה">💎 מבצעים</button><div class="plo-in"><div class="plo-head"><b>💎 אופטימוס המלא</b><button data-pl-toggle title="הסתרה">✕</button></div>' +
         (pr.promo ? '<p class="plo-promo">🏷️ ' + FS.esc(pr.promo) + '</p>' : '') +

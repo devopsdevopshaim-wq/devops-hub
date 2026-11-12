@@ -35,7 +35,7 @@ export async function smtpSend(open, { host = 'smtp.gmail.com', port = 465, user
       const part = (v) => b64(v).replace(/.{1,76}/g, '$&\r\n');
       const bound = 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2), mixed = 'm' + bound;
       // the message: text, or text + html (multipart/alternative); with attachments (a CSV for the accountant) all of it inside multipart/mixed
-      const files = (attachments || []).filter((f) => f && f.name && f.content != null);
+      const files = (attachments || []).filter((f) => f && f.name && (f.content != null || f.b64));   // f.b64: binary (a photo), already base64
       const alt = !html ? null : ['--' + bound, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', part(text) + '--' + bound,
         'Content-Type: text/html; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', part(html) + '--' + bound + '--', ''].join('\r\n');
       const inner = html ? { type: 'multipart/alternative; boundary="' + bound + '"', body: alt } : { type: 'text/plain; charset=UTF-8', enc: 'base64', body: part(text) };
@@ -43,8 +43,8 @@ export async function smtpSend(open, { host = 'smtp.gmail.com', port = 465, user
       const head = ['From: ' + (fromName ? header(fromName) + ' ' : '') + '<' + addr(from || user) + '>', 'To: <' + addr(to) + '>', replyTo ? 'Reply-To: <' + addr(replyTo) + '>' : '',
         'Subject: ' + header(subject), 'Date: ' + new Date().toUTCString(), 'MIME-Version: 1.0'].concat(contentHead).filter(Boolean).join('\r\n');
       const body = !files.length ? inner.body : ['--' + mixed, 'Content-Type: ' + inner.type].concat(inner.enc ? ['Content-Transfer-Encoding: ' + inner.enc] : []).concat(['', inner.body])
-        .concat(files.map((f) => ['--' + mixed, 'Content-Type: ' + (f.type || 'text/csv') + '; charset=UTF-8; name="' + header(f.name) + '"', 'Content-Disposition: attachment; filename="' + header(f.name) + '"',
-          'Content-Transfer-Encoding: base64', '', part(f.content)].join('\r\n'))).concat(['--' + mixed + '--', '']).join('\r\n');
+        .concat(files.map((f) => ['--' + mixed, 'Content-Type: ' + (f.type || 'text/csv') + (f.b64 ? '' : '; charset=UTF-8') + '; name="' + header(f.name) + '"', 'Content-Disposition: attachment; filename="' + header(f.name) + '"',
+          'Content-Transfer-Encoding: base64', '', f.b64 ? String(f.b64).replace(/.{1,76}/g, '$&\r\n') : part(f.content)].join('\r\n'))).concat(['--' + mixed + '--', '']).join('\r\n');
       await step(head + '\r\n\r\n' + body + '.', [250]);
     }
     await send('QUIT').catch(() => {});

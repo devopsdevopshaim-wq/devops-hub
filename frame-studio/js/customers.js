@@ -160,7 +160,7 @@
     }).then(function (p) {
       var mm = sizeMm(it), img = FS.img(p.src);
       if (mm && img) { FS.applyFormat(p.doc, 'cm', img, mm[0], mm[1]); FS.matchOrient(p.doc, img); p.cache = {}; FS.snap(p); }
-      p.regaim = { id: it.id, name: it.name, phone: it.phone, where: it.where, product: it.product, size: it.size };
+      p.regaim = { id: it.id, name: it.name, phone: it.phone, email: it.email || '', where: it.where, product: it.product, size: it.size };
       p.copies = it.qty || 1;
       if (it.status === 'pending') setStatus(it, 'printing').catch(function () {});
       return p;

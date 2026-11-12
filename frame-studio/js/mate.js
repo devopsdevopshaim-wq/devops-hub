@@ -98,7 +98,7 @@
             '<div class="mt-emo" id="mt-oemo"></div><div class="mt-row"><label class="mt-btn">🖼️ לוגו / תמונה<input type="file" id="mt-ologo" accept="image/*" hidden></label><button class="mt-btn" id="mt-odel">🗑 מחיקת העצם המסומן</button><span class="mt-hint">גוררים עצם על התמונה כדי להזיז, גלגלת משנה גודל</span></div></div>' +
           '<div class="mt-dp" data-dp="crop" hidden><div class="mt-chips" id="mt-crops"></div><div class="mt-row"><div class="mt-seg" id="mt-cfit"><button data-f="contain">להתאים</button><button data-f="cover" class="on">לחתוך</button></div><button class="mt-btn" id="mt-cface">🎯 מרכוז לפי הפנים</button><span class="mt-hint">גוררים את התמונה כדי לבחור מה נכנס, גלגלת לזום</span></div></div>' +
           '<div class="mt-dp" data-dp="ai" hidden><div class="mt-chips" id="mt-dai"></div></div>' +
-          '<div class="mt-dacts"><button class="mt-btn" id="mt-dsave">💾 שמירה</button><button class="mt-btn" id="mt-dprint">🖨️ הדפסה</button><button class="mt-btn" id="mt-dundo">↶ ביטול</button><button class="mt-btn" id="mt-dredo">↷ חזרה</button><button class="mt-btn" id="mt-dall">↺ ביטול הכל</button><button class="mt-btn" id="mt-dcopy" title="Ctrl+Shift+C">📋 העתקת העריכה</button><button class="mt-btn" id="mt-dpaste" title="Ctrl+Shift+V">📥 הדבקה</button></div>' +
+          '<div class="mt-dacts"><button class="mt-btn" id="mt-dsave">💾 שמירה</button><button class="mt-btn" id="mt-dprint">🖨️ הדפסה</button><button class="mt-btn" id="mt-dsend" title="למייל או לוואטסאפ של הלקוח">📨 ללקוח</button><button class="mt-btn" id="mt-dundo">↶ ביטול</button><button class="mt-btn" id="mt-dredo">↷ חזרה</button><button class="mt-btn" id="mt-dall">↺ ביטול הכל</button><button class="mt-btn" id="mt-dcopy" title="Ctrl+Shift+C">📋 העתקת העריכה</button><button class="mt-btn" id="mt-dpaste" title="Ctrl+Shift+V">📥 הדבקה</button></div>' +
         '</div></div>' +
     '</section>' +
     /* AI */
@@ -949,6 +949,7 @@
   $$('.mt-dtools [data-dt]', root).forEach(function (b) { b.addEventListener('click', function () { $$('.mt-dtools [data-dt]', root).forEach(function (x) { x.classList.toggle('on', x === b); }); $$('[data-dp]', root).forEach(function (x) { x.hidden = x.dataset.dp !== b.dataset.dt; }); }); });
   $('#mt-dsave', root).addEventListener('click', function () { var p = dcur(); if (p) saveOne(p); });
   $('#mt-dprint', root).addEventListener('click', function () { var p = dcur(); if (p) openPrint([p]); });
+  $('#mt-dsend', root).addEventListener('click', function () { var p = dcur(); if (p && FS.sendToCustomer) FS.sendToCustomer(p); });
   function hist(fn) { var p = dcur(); if (!p) return; var keep = S.marked; S.marked = {}; S.cur = idx(p); try { fn(); } finally { S.marked = keep; } selL = null; dsliders(); drawDesign(); }
   $('#mt-dundo', root).addEventListener('click', function () { hist(FS.undo); });
   $('#mt-dredo', root).addEventListener('click', function () { hist(FS.redo); });

@@ -686,7 +686,7 @@ function customerPhotos() {
     if (!PAID.includes(o.status)) continue;
     o.items.forEach((i, idx) => {
       if (!i.photoUrl) return;
-      out.push({ id: `oi:${o.id}:${idx}`, source: 'order', url: i.photoUrl, name: o.customer.name, phone: o.customer.phone, city: o.customer.city,
+      out.push({ id: `oi:${o.id}:${idx}`, source: 'order', url: i.photoUrl, name: o.customer.name, phone: o.customer.phone, email: o.customer.email || '', city: o.customer.city,
         where: `הזמנה #${o.number}`, whereId: o.id, product: i.name, type: i.category || '', size: sizeIn(i.variant) || sizeIn(i.name), qty: i.qty,
         status: i.printStatus || 'pending', orderStatus: STATUS_NAME[o.status], createdAt: o.createdAt });
     });

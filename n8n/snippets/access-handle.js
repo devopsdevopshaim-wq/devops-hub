@@ -47,6 +47,8 @@ sd.sessions = sd.sessions || {};
 sd.lock = sd.lock || {};
 sd.fails = sd.fails || {};
 sd.log = sd.log || [];
+// the full licence (bought for good) is 1500 ₪ since v144: a price still at the old default moves once; one the owner set stays
+if (sd.licSettings && !sd.licSettings.price1500) { if (sd.licSettings.price === 990) sd.licSettings.price = 1500; for (const L0 of Object.values(sd.licenses || {})) if (!L0.paid && L0.price === 990) L0.price = 1500; sd.licSettings.price1500 = true; }
 const now = Date.now();
 const DAY = 86400000, HOUR = 3600000;
 const ACTIVE_MS = 4 * 60000;   // a licensed computer counts as working this long after its last check (the program checks every 90 seconds)
@@ -285,7 +287,7 @@ switch (b.action) {
   // can see, revoke, free or replace it. Codes are random (16 characters, ~79 bits), activation is rate-limited and locks after
   // repeated failures, and every activation from another computer is refused and reported to the owner.
   // the studio's price, for the download page (public)
-  case 'lic-info': { const ls = sd.licSettings || { price: 990, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS, promo: ls.promo || '', terms: ls.terms || '' }); }
+  case 'lic-info': { const ls = sd.licSettings || { price: 1500, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS, promo: ls.promo || '', terms: ls.terms || '' }); }
   // ---- a free trial, registered and verified: full name, phone and email; a 6-digit code goes to the email (and, if the email
   // can't go out, the owner sees the code in the admin and sends it by WhatsApp). The right code proves the person: on the download
   // page it opens the download; in the program it starts the trial on that computer (one trial per email and per computer). The
@@ -351,7 +353,7 @@ switch (b.action) {
     if (fresh) {
       L = sd.licenses[e] = { email: e, name: T0.name, phone: T0.phone, note: 'ניסיון חינם', code: licCode(), createdAt: iso, active: true, machine: mh, boundAt: iso,
         platform: line(b.platform, 20), desktop: b.desktop === '1' || b.desktop === true, history: [{ at: iso, what: 'התחיל ניסיון חינם (המייל אומת)', ip: maskIp(IP), ua: line(UA, 90) }],
-        price: (sd.licSettings || {}).price || 990, paid: false, payments: [], trial: { start: iso, events: [] }, agreement: { ver: agreeVer, at: iso, ip: maskIp(IP), ua: line(UA, 90) } };
+        price: (sd.licSettings || {}).price || 1500, paid: false, payments: [], trial: { start: iso, events: [] }, agreement: { ver: agreeVer, at: iso, ip: maskIp(IP), ua: line(UA, 90) } };
       sd.trialMachines[mh] = e; if (T0.phone) sd.trialPhones[T0.phone] = e; sd.trialIps[iph] = e; delete sd.trialAllow[e]; delete sd.trialBlocked[e];
       for (const ix of [sd.trialPhones, sd.trialIps]) { const kx = Object.keys(ix); if (kx.length > 5000) for (const k of kx.slice(0, kx.length - 5000)) delete ix[k]; }
       const km = Object.keys(sd.trialMachines); if (km.length > 5000) for (const k of km.slice(0, km.length - 5000)) delete sd.trialMachines[k];
@@ -406,7 +408,7 @@ switch (b.action) {
     if (!want) return out({ ok: false, error: 'bad-input' }, 400);
     if (!hit('plan-req', s.lic, 6, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
     const ls = sd.licSettings || {}, NAMES = { pass: 'כרטיס אירוע (' + PASS_HOURS + ' שעות)', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' };
-    const PRICE = { pass: ls.passPrice || 79, month: ls.monthPrice || 89, year: ls.yearPrice || 790, full: ls.price || 990 }[want];
+    const PRICE = { pass: ls.passPrice || 79, month: ls.monthPrice || 89, year: ls.yearPrice || 790, full: ls.price || 1500 }[want];
     L.planReq = { want, at: new Date(now).toISOString(), note: line(b.note, 200) };
     L.history = [{ at: L.planReq.at, what: 'ביקש ' + NAMES[want] }].concat(L.history || []).slice(0, 30);
     log('בקשת שדרוג: ' + want, s.lic);
@@ -575,7 +577,7 @@ switch (b.action) {
       boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10),
       price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null, appVer: L.appVer || '', updReq: L.updReq || null,
       plan: planOf(L), trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null, payDetails: L.payDetails || null });
-    sd.licSettings = sd.licSettings || { price: 990, currency: '₪' };
+    sd.licSettings = sd.licSettings || { price: 1500, currency: '₪' };
     const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
     const mailCode = (L) => mailTo(L.email, 'אופטימוס · קוד ההפעלה האישי שלך', `שלום ${L.name || ''},\n\nקוד ההפעלה האישי שלך לאופטימוס:\n${L.code}\n\nהורדה והתקנה: ${STUDIO_DL}\nבהפעלה הראשונה מזינים את המייל הזה (${L.email}) ואת הקוד.\n\nהקוד אישי ומתאים למחשב אחד בלבד: אחרי ההפעלה הוא ננעל למחשב הזה. החלפת מחשב: פונים לחיים, 054-4979771.\nאין להעביר את הקוד לאחרים.\n\nפריים מגנטים`);
@@ -628,7 +630,7 @@ switch (b.action) {
       const e = email(b.email), L = sd.licenses[e]; if (!L) return out({ ok: false, error: 'not-found' }, 404);
       const BI = (sd.licSettings || {}).bankInfo || {}; if (!BI.account) return out({ ok: false, error: 'no-bank' }, 400);
       const NAMES = { pass: 'כרטיס אירוע', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' }, want = NAMES[b.want] ? b.want : (L.planReq && L.planReq.want) || 'full';
-      const ls = sd.licSettings || {}, amount = money(b.amount) || { pass: ls.passPrice || 79, month: ls.monthPrice || 89, year: ls.yearPrice || 790, full: ls.price || 990 }[want];
+      const ls = sd.licSettings || {}, amount = money(b.amount) || { pass: ls.passPrice || 79, month: ls.monthPrice || 89, year: ls.yearPrice || 790, full: ls.price || 1500 }[want];
       const ref = 'OPT-' + (L.code || '').replace(/\W/g, '').slice(-4) + '-' + new Date(now).toISOString().slice(5, 10).replace('-', '');
       L.payDetails = { want, amount, ref, at: new Date(now).toISOString() };
       L.history = [{ at: L.payDetails.at, what: 'נשלחו פרטי תשלום: ' + NAMES[want] + ' ' + amount + ' ₪' }].concat(L.history || []).slice(0, 30);
