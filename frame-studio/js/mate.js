@@ -209,7 +209,7 @@
   function sw() { var slot = $('.mt-swslot', root), want = on() && slot ? slot : document.body; if (swEl.parentNode !== want) want.appendChild(swEl); $$('#mt-switch [data-sw]').forEach(function (b) { b.classList.toggle('on', (b.dataset.sw === 'mt') === on()); }); }
   swEl.addEventListener('click', function (e) { var b = e.target.closest('[data-sw]'); if (!b) return; if (b.dataset.sw === 'mt') { if (!on()) open(); } else if (on()) close(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'F2' && !document.body.classList.contains('gated')) { e.preventDefault(); toggle(); } });
-  FS.mate = { open: open, close: function () { close(); }, toggle: function () { toggle(); }, isOn: on, print: function () { openPrint(); },
+  FS.mate = { open: open, close: function () { close(); }, toggle: function () { toggle(); }, isOn: on, print: function (o) { openPrint(null, o); },
     show: function (v) { if (!on()) open(v); else show(v); }, view: function () { return view; }, root: root };
   /* the full editor: the editing tools in a panel on the right, the photos in a strip along the bottom, the photo big in between */
   (function () {
@@ -1206,6 +1206,7 @@
     var b = FS.dialog('⚡ הגדרת הדפסה מיידית', '<p class="mt-hint">בוחרים פעם אחת: מדפסת ופריסה. מעכשיו "⚡ הדפסה מיידית" (או Ctrl+P) מדפיס ישר, בלי חלונות.</p>' +
       '<label>מדפסת</label><select id="qp-printer">' + (pr.up ? pr.list : []).map(function (x) { return '<option value="' + esc(x.name) + '">' + esc(x.name) + (x.default ? ' ★' : '') + '</option>'; }).join('') + '<option value="">חלון ההדפסה של המחשב</option></select>' +
       (pr.up ? '' : '<p class="mt-hint">⚠️ המדפסות מופיעות בתוכנה למחשב (Windows). בדפדפן ייפתח חלון ההדפסה.</p>') +
+      '<button type="button" class="mt-btn" id="qp-dirs" style="margin:6px 0">⚙️ כיוונים, מדפסות ודרייברים</button>' +
       '<label>פריסה</label><div class="mp-pre" id="qp-pre">' + MPRESETS.map(function (m, i) { return '<button type="button" class="mt-btn" data-q="' + i + '">' + m[2] + '</button>'; }).join('') + '</div>' +
       myChips('qp-my', q) + '<p class="mt-hint" id="qp-cur"></p><label class="mt-chk-l"><input type="checkbox" id="qp-pv"' + (q.noPreview ? '' : ' checked') + '> תצוגה מקדימה לפני כל הדפסה</label><div class="mt-row"><button class="mt-btn primary" id="qp-save">' + (thenPrint ? '💾 שמירה והדפסה' : '💾 שמירה') + '</button></div>');
     var cur = { paper: q.paper, msize: q.msize };
@@ -1218,6 +1219,7 @@
       $$('[data-qm]', b).forEach(function (y) { y.classList.toggle('on', y === x); }); show();
     }); });
     $('#qp-save', b).addEventListener('click', function () { ls('fs-qprint', JSON.stringify({ printer: $('#qp-printer', b).value, paper: cur.paper, msize: cur.msize, noPreview: !$('#qp-pv', b).checked })); FS.closeDialog(); FS.toast('⚡ ההדפסה המיידית מוכנה'); qpBtn(); if (thenPrint) qpRun(); });
+    $('#qp-dirs', b).addEventListener('click', function () { FS.closeDialog(); if (!S.photos.length) return FS.toast('קודם מוסיפים תמונות, ואז ההגדרות נפתחות בחלון ההדפסה'); openPrint(null, { tab: 'set' }); });
     show();
   }
   /* for other parts of the program (the event hub's automatic line): these photos straight out with the instant print's
@@ -1252,7 +1254,7 @@
     x.strokeStyle = 'rgba(0,0,0,.25)'; x.strokeRect(0.5, 0.5, c.width - 1, c.height - 1);
     return c;
   }
-  function openPrint(only) {
+  function openPrint(only, opt) {
     if (!S.photos.length) return FS.toast('אין תמונות להדפסה');
     var pr = FS.printers ? FS.printers() : { up: false, list: [] };
     var printers = (pr.up ? pr.list : []).map(function (x) { return '<option value="' + esc(x.name) + '"' + (pr.chosen && pr.chosen.name === x.name ? ' selected' : '') + '>' + esc(x.name) + (x.default ? ' ★' : '') + '</option>'; }).join('') + '<option value=""' + (pr.chosen ? '' : ' selected') + '>חלון ההדפסה של המחשב</option>';
@@ -1360,6 +1362,7 @@
       FS.toast(FS.prefs.autoTurn ? '🔄 סיבוב אוטומטי' + (n ? ': ' + n + ' תמונות סובבו ונכנסו שלמות' : '') : 'רגיל: התמונות ישרות כמו שעוצבו');
     }); });
     turnSeg(); if (FS.applyTurn(S.photos)) { buildGrid(); FS.emit('doc'); }
+    if (opt && opt.tab === 'set') setTimeout(function () { var t = $('[data-mptab=set]', b); if (t) t.click(); }, 0);   /* opened from "⚙️ הגדרות הדפסה" */
     /* ⚙️ the settings tab: directions, and the printers' drivers */
     $$('[data-mptab]', b).forEach(function (t) { t.addEventListener('click', function () {
       var set = t.dataset.mptab === 'set'; $$('[data-mptab]', b).forEach(function (x) { x.classList.toggle('on', x === t); x.setAttribute('aria-selected', String(x === t)); });

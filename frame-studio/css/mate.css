@@ -576,3 +576,4 @@ body:not(.mt-on) #mt-switch { top: auto; bottom: 40px; }
 .mp-dtbl td b { display: block; font-size: 13.5px; }
 .mp-dtbl td small { display: block; font-size: 11.5px; color: var(--ivory-dim, #A3AAC0); direction: ltr; text-align: right; }
 .mp-dtbl td.act { text-align: left; white-space: nowrap; }
+.mp-brands a.mt-btn, .mp-dtbl a.mt-btn, .mp-set a.mt-btn { color: inherit; }

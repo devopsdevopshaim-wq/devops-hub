@@ -2142,3 +2142,11 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The tab lists each printer with its driver and version, with a 🔎 search for a newer driver, plus links by maker (Mitsubishi, DNP, Citizen, HiTi, Canon SELPHY, Epson) and the advice to download only from the official site.
   - In a browser it explains that this works in the desktop program. On an older installer (no `print.drivers`) it offers the download.
 - **Tested in a browser** with a mocked FSDesktop: the tab, the directions taking effect in the preview (a landscape 20×15 sheet), and the tool call. desktop/main.js and preload.js pass `node --check`.
+
+## v141: the print settings are reachable from everywhere
+
+- The settings tab (directions, printers and drivers) was only inside the workspace print window, so the owner could not find it. It now opens from three places:
+  - "⚙️ הגדרות הדפסה: כיוונים, מדפסות ודרייברים" (`#print-settings`) in the "שמירה והדפסה" tab, under the print button.
+  - "⚙️ כיוונים, מדפסות ודרייברים" (`#qp-dirs`) in the instant-print setup (the ⚙️ gear next to "הדפסה מיידית").
+  - The tab inside the print window.
+- `FS.mate.print({ tab: "set" })` and `openPrint(only, opt)` open the window on its settings tab.
