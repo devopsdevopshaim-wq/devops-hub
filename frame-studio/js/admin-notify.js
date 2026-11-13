@@ -80,7 +80,7 @@
     /* WhatsApp to the owner (CallMeBot, free): new sign-ups, every sign-in, booking requests */
     var wr = c.waReady ? c.waReady() : null;
     m.insertAdjacentHTML('beforeend', '<section class="adm-card" id="wa-card"><h3>💬 הודעות וואטסאפ אליך</h3>' +
-      '<p class="hint">כל נרשם חדש (אופטימוס, מסך הלקוח, עורך המסגרות), כל התחברות של לקוח, כל כניסה שלך לניהול, וכל בקשת הזמנה: הודעה קצרה לוואטסאפ שלך, עם קישור למסך הנכון. אותו אדם לא נשלח פעמיים בתוך 20 דקות.</p>' +
+      '<p class="hint">כל נרשם חדש (אופטימוס, מסך הלקוח, עורך המסגרות), כל התחברות של לקוח ושל התוכנה, כל כניסה שלך לניהול, כל בקשת הזמנה, וכל בקשה מהתוכנה (רכישה, עדכון, דיווח תשלום, מעבר מחשב): הודעה קצרה לוואטסאפ שלך, עם קישור למסך הנכון. אותו אדם לא נשלח פעמיים בתוך 20 דקות.</p>' +
       '<p id="wa-st">' + (wr === true ? '✅ מחובר.' : wr === false ? '⚠️ עוד לא מחובר: חסרים שני הסודות CALLMEBOT_APIKEY ו־CALLMEBOT_PHONE בהגדרות של GitHub (הסבר למטה).' : '') + '</p>' +
       '<div class="act-row"><button class="btn gold small" id="wa-test">📲 שליחת הודעת בדיקה</button></div>' +
       '<details><summary>איך מחברים (פעם אחת, בחינם)</summary><ol><li>בטלפון, באתר <b dir="ltr">callmebot.com</b>, בעמוד של WhatsApp: שומרים את מספר הבוט שמופיע שם באנשי הקשר, ושולחים לו בוואטסאפ את המשפט שכתוב שם.</li><li>הבוט עונה עם מפתח אישי (apikey).</li><li>ב־GitHub: המאגר ← Settings ← Secrets and variables ← Actions ← New repository secret: <b dir="ltr">CALLMEBOT_APIKEY</b> = המפתח, ו־<b dir="ltr">CALLMEBOT_PHONE</b> = המספר שלך בפורמט <span dir="ltr">972544979771</span>.</li><li>מפעילים מחדש את הפרסום של השרת (Actions ← Deploy Cloudflare Worker ← Run workflow), ולוחצים כאן על "שליחת הודעת בדיקה".</li></ol></details></section>');

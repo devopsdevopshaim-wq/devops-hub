@@ -21,5 +21,13 @@ m = waNote(sd, { action: 'login', email: 'rina@x.com' }, now, ADMIN); check('a c
 check('another site\'s login is not ours', waNote(sd, { action: 'login', email: 'other@x.com' }, now, ADMIN) === null);
 m = waNote(sd, { action: 'login', email: ADMIN }, now, ADMIN); check('the owner\'s own login', /כניסה לניהול/.test(m), m);
 check('other actions say nothing', waNote(sd, { action: 'me' }, now, ADMIN) === null);
+// requests from inside the program
+sd.licenses = { 'pro@x.com': { email: 'pro@x.com', name: 'Pro', phone: '0521234567', planReq: { want: 'year', at: new Date(now).toISOString() }, updReq: { ver: '1.0.140', at: new Date(now).toISOString(), agreed: true, price: 49 } } };
+m = waNote(sd, { action: 'plan-request', token: 'x' }, now, ADMIN); check('a purchase request', /בקשת רכישה/.test(m) && /מנוי שנתי/.test(m) && /Pro/.test(m), m);
+m = waNote(sd, { action: 'upd-request', token: 'x' }, now, ADMIN); check('an update approved with its payment', /אישר עדכון ותשלום/.test(m) && /1\.0\.140/.test(m), m);
+sd.licenses['pro@x.com'].updReq.paid = { at: new Date(now + 5000).toISOString(), method: 'ביט', ref: '7788' };
+m = waNote(sd, { action: 'upd-request', token: 'x' }, now + 5000, ADMIN); check('a payment report', /דיווח תשלום/.test(m) && /7788/.test(m), m);
+m = waNote(sd, { action: 'lic-move', email: 'pro@x.com' }, now, ADMIN); check('a move to a new computer', /מחשב חדש/.test(m), m);
+check('an old request says nothing', waNote({ licenses: { 'q@x.com': { email: 'q@x.com', planReq: { want: 'full', at: new Date(now - 600000).toISOString() } } } }, { action: 'plan-request' }, now, ADMIN) === null);
 console.log(bad ? bad + ' failed' : 'all passed');
 process.exit(bad ? 1 : 0);

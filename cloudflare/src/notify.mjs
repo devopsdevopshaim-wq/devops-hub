@@ -174,7 +174,7 @@ export async function callMeBot(env, msg) {
 // The same person and kind is not repeated within 20 minutes (a page that signs in twice in a row is one message).
 const ilTime = (t) => new Date(t).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
 export function waNote(sd, b, now, ADMIN_EMAIL) {
-  const a = String((b && b.action) || ''), e = String(b.email || b.contact || '').trim().toLowerCase();
+  const a = String((b && b.action) || ''); let e = String(b.email || b.contact || '').trim().toLowerCase();
   const tl = (sd.trialLeads || {})[e];
   const who = (o) => [o && o.name, o && o.phone, o && o.email].filter(Boolean).join(' · ');
   const ADM = ADMIN + '?app=1';
@@ -187,6 +187,20 @@ export function waNote(sd, b, now, ADMIN_EMAIL) {
   } else if (a === 'lic-activate') {
     const L = (sd.licenses || {})[e]; if (!L) return null;
     kind = 'lic-in'; msg = '💻 התחברות לאופטימוס' + (L.trial && !L.paid ? ' (ניסיון)' : '') + '\n' + who(L);
+  } else if (a === 'plan-request' || a === 'upd-request') {
+    // a request from inside the program (the body carries a session, not an email): the licence whose request is newest, now
+    const k = a === 'plan-request' ? 'planReq' : 'updReq';
+    const L = Object.values(sd.licenses || {}).filter((x) => x && x[k] && now - (Date.parse(x[k].paid ? x[k].paid.at : x[k].at) || 0) < 120000)
+      .sort((x, y) => String((y[k].paid || y[k]).at).localeCompare(String((x[k].paid || x[k]).at)))[0];
+    if (!L) return null;
+    e = String(L.email || '').toLowerCase(); const r = L[k];
+    const NAMES = { pass: 'כרטיס אירוע', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון לתמיד' };
+    if (a === 'plan-request') { kind = 'plan'; msg = '📩 בקשת רכישה באופטימוס: ' + (NAMES[r.want] || r.want || '') + '\n' + who(L); }
+    else if (r.paid) { kind = 'upd-paid'; msg = '💰 דיווח תשלום על עדכון ' + r.ver + (r.paid.method ? ' · ' + r.paid.method : '') + (r.paid.ref ? ' · אסמכתא ' + r.paid.ref : '') + '\n' + who(L) + '\nכשהכסף נכנס: ✔ אישור עדכון (קבלה יוצאת לבד)'; }
+    else { kind = r.agreed ? 'upd-ok' : 'upd'; msg = (r.agreed ? '⬆️ אישר עדכון ותשלום לגרסה ' : '⬆️ בקשת עדכון לגרסה ') + r.ver + (r.price ? ' (' + r.price + ' ₪)' : '') + '\n' + who(L); }
+  } else if (a === 'lic-move') {
+    const L = (sd.licenses || {})[e]; if (!L) return null;
+    kind = 'move'; msg = '🔁 העביר את רישיון אופטימוס למחשב חדש\n' + who(L);
   } else if (a === 'frame-visit' || a === 'frame-code') {
     const ph = String(b.phone || b.contact || '').replace(/\D/g, ''), V = sd.frameVisitors || {}, v = V[e] || V['tel:' + ph] || V['tel:' + String(b.contact || '').trim()];
     if (!v) return null;
@@ -204,5 +218,5 @@ export function waNote(sd, b, now, ADMIN_EMAIL) {
   for (const [k, t] of Object.entries(sd.waSent)) if (now - t > 20 * 60000) delete sd.waSent[k];
   const key = kind + ':' + e; if (sd.waSent[key]) return null;
   sd.waSent[key] = now;
-  return msg + '\n' + ilTime(now) + '\n' + ADM + (/visit|signup|login/.test(kind) ? '#customers' : '#requests');
+  return msg + '\n' + ilTime(now) + '\n' + ADM + (/visit|signup|login/.test(kind) ? '#customers' : /plan|upd|move|lic-in/.test(kind) ? '#licenses' : '#requests');
 }
