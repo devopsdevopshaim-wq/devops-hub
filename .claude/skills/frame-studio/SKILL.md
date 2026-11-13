@@ -2222,3 +2222,16 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Such a tile gets `.warn`: a red tile and a red label at the top of the photo (`.mt-warn`). The copies advice's own closed-eyes tag is hidden there.
 - **The face check runs by itself:** after the grid is built, `faceCheck()` in mate.js goes through the photos without `p.cadv`, one at a time in the background (FaceSig.detect 1280 + `FS.judgeFaces`), and refreshes a tile that turns red. Off with `FS.prefs.autoFaceCheck === false`.
 - **Checked:** a scan for dark backgrounds left in the ivory look, and screenshots of the workspace, the studio and the opening, in ivory and in dark.
+
+## v147: the desktop program updates itself from the site
+
+- **Before:** the installed program served the studio only from the copy bundled in the installer (desktop/main.js protocol handler), so every change needed a new installer. The owner asked that it update by itself.
+- **Now (`liveFile()` in main.js):** every GET/HEAD under /devops-hub/ on the site's host is fetched from the live site first.
+  - `net.fetch` with `bypassCustomProtocolHandlers`; `cache: no-cache` for .html, .json and directories; a 6 s timeout.
+  - The response keeps the site's origin. content-encoding and content-length are dropped, because the body is already decoded.
+  - studio.html and scripts get the same COOP/COEP headers the bundled copy gets (cross-origin isolation for onnxruntime).
+  - A 404 or a server error falls back to the bundled copy. A network failure or timeout also falls back, and leaves the network alone for 60 s, so working offline does not wait on every file.
+  - `/frame-studio/(models|vendor|media|library)/` skip this: the AI stays bundled; videos and the library go to the network as before (range requests).
+- **What still needs an installer:** desktop-level changes (main.js, preload: printers, drivers, colour tools).
+- **Consequence the owner accepted:** studio features reach every licence for free, including licences bought for good. Paid updates now apply only to installer versions.
+- **This change itself needs one install of the new installer.**

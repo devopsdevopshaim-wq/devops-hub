@@ -1,8 +1,9 @@
 // Frame Studio desktop shell.
 // The window loads https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/studio.html, and an https
-// protocol handler serves everything under /devops-hub/ on that host from the bundled copy in ./app/devops-hub.
-// So the pages run offline, but keep the real site's origin (the server checks Origin on sign-in and business
-// routes). Every other https request (fonts, the API server, CDNs) goes to the network unchanged.
+// protocol handler serves everything under /devops-hub/ on that host: from the live site first (so every update of the
+// site reaches the program by itself, without a new installer), and from the bundled copy in ./app/devops-hub when there
+// is no internet or the site does not answer. Either way the pages keep the real site's origin (the server checks Origin
+// on sign-in and business routes). Every other https request (fonts, the API server, CDNs) goes to the network unchanged.
 'use strict';
 
 const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain, dialog, safeStorage, Notification } = require('electron');
@@ -68,15 +69,40 @@ function passThrough(request) {
   return net.fetch(request, { bypassCustomProtocolHandlers: true });
 }
 
+// The live site first: a fresh copy of the page and its files, with the same isolation headers the bundled copy gets. The
+// AI models and libraries (big, never changing) stay bundled. A failed or slow answer (6 s) falls back to the bundled copy,
+// and the network is then left alone for a minute, so working offline does not wait on every file.
+const LIVE_SKIP = /\/frame-studio\/(models|vendor|media|library)\//;   // the AI kept bundled; videos and the library go straight to the network (range requests)
+let liveDownUntil = 0;
+async function liveFile(request, url) {
+  if (LIVE_SKIP.test(url.pathname) || Date.now() < liveDownUntil) return null;
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 6000);
+  try {
+    const page = /\.(html|json)$|\/$/.test(url.pathname);
+    const res = await net.fetch(request.url, { method: request.method, headers: request.headers, signal: ctl.signal, bypassCustomProtocolHandlers: true, cache: page ? 'no-cache' : 'default' });
+    if (res.status !== 200) return null;   // a file only in the bundle (404), or a server error: the bundled copy
+    const h = new Headers(res.headers);
+    h.delete('content-encoding'); h.delete('content-length');   // the body is already decoded
+    h.set('Cache-Control', 'no-cache');
+    if (/\/studio\.html$|\.m?js$/.test(url.pathname)) { h.set('Cross-Origin-Opener-Policy', 'same-origin'); h.set('Cross-Origin-Embedder-Policy', 'credentialless'); }
+    return new Response(request.method === 'HEAD' ? null : res.body, { status: 200, headers: h });
+  } catch {
+    liveDownUntil = Date.now() + 60000;
+    return null;
+  } finally { clearTimeout(timer); }
+}
+
 async function handleHttps(request) {
   const url = new URL(request.url);
 
   if (url.hostname === HOST && url.pathname.startsWith(PREFIX)) {
-    // The service worker is disabled in the desktop app so updates come only with a new installer.
+    // The service worker is disabled in the desktop app: the program itself keeps the offline copy (the bundle).
     // register() then rejects, and the pages already catch that.
     if (/\/sw\.js$/.test(url.pathname)) return new Response('', { status: 404, headers: { 'Content-Type': 'text/plain' } });
 
     if (request.method === 'GET' || request.method === 'HEAD') {
+      const live = await liveFile(request, url);
+      if (live) return live;
       const file = bundledFile(url.pathname);
       if (file) {
         try {
