@@ -2345,3 +2345,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **`editedMode` defaults to `manual`.** A one-time migration (`editedClickV`) moves an earlier automatic choice to manual. The automatic modes stay in ⚙.
 - **Closing in manual mode** with unsaved edits: "💾 לשמור לפני יציאה?" with save-and-exit / exit / cancel. Otherwise it closes at once (`FS.savedOnce` stops the old question).
 - **Tested in a browser** with a mocked FSDesktop: no saving in the background, a click saved 2 photos as 4 files, and the close question.
+
+## v156: the face check never stalls; "💾 שמירה" makes a new ערוכות folder
+
+- **Copies missing on the owner's wide photos:** a detection that never answered kept `fcBusy` set, so every photo after it stayed unchecked (no count, copies 1).
+  - Each detection now races a 25 s timeout. A failure is retried (4, 8, 12 s), from the third try at 960 px.
+  - Tiles show "👥 …" while waiting (pulsing `.mt-ppl.wait`), "👥 ?" after four failures, and "👥 0" when there are no faces.
+- **Saving by click:** the Windows window opens at the photos' own folder (`files:choose-dir {defaultPath}`, the first photo's `srcPath` folder).
+  - The chosen place gets a new folder "ערוכות" (`save-edited {sub:true}`; in a browser, `getDirectoryHandle("ערוכות", {create})`).
+  - "📂 פתיחת התיקייה" opens it (`files:open-dir {sub:true}`).
+- **Tested in a browser:** a first photo that never answers, then all three photos got copies 3. The save window offered `C:\Events\Tal` and wrote with `sub`.

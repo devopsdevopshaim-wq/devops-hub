@@ -63,10 +63,10 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
   // 💾 edited photos written by the program: the real path of a picked file, the folder choice, the write, and the close hand-shake
   files: Object.freeze({
     pathOf: (file) => { try { return webUtils && webUtils.getPathForFile ? webUtils.getPathForFile(file) || '' : ''; } catch { return ''; } },
-    chooseDir: () => ipcRenderer.invoke('files:choose-dir'),
+    chooseDir: (o) => ipcRenderer.invoke('files:choose-dir', { defaultPath: String((o && o.defaultPath) || '') }),
     editedDir: () => ipcRenderer.invoke('files:edited-dir'),
-    openDir: () => ipcRenderer.invoke('files:open-dir'),
-    saveEdited: (o) => ipcRenderer.invoke('files:save-edited', { mode: o && o.mode === 'custom' ? 'custom' : 'source', srcPath: String((o && o.srcPath) || ''), name: String((o && o.name) || ''), copies: Number(o && o.copies) || 1, data: o && o.data }),
+    openDir: (o) => ipcRenderer.invoke('files:open-dir', { sub: !!(o && o.sub) }),
+    saveEdited: (o) => ipcRenderer.invoke('files:save-edited', { sub: !!(o && o.sub), mode: o && o.mode === 'custom' ? 'custom' : 'source', srcPath: String((o && o.srcPath) || ''), name: String((o && o.name) || ''), copies: Number(o && o.copies) || 1, data: o && o.data }),
   }),
   onFlush: (fn) => { ipcRenderer.removeAllListeners('app:flush'); ipcRenderer.on('app:flush', () => { try { fn(); } catch { ipcRenderer.send('app:flushed'); } }); },
   flushed: () => ipcRenderer.send('app:flushed'),

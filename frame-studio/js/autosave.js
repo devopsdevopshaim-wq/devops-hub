@@ -138,8 +138,10 @@
   FS.saveEditedByClick = function () {
     var marked = FS.marked ? FS.marked() : [], list = (marked.length ? marked : FS.state.photos).filter(edited);
     if (!list.length) { FS.toast('אין עדיין תמונות ערוכות לשמירה (עם מסגרת או עריכה)', 4000); return Promise.resolve(0); }
-    var pick = NAT ? D.files.chooseDir().then(function (r) { if (!r || !r.ok) return null; natDir = r.name; return r.name; })
-      : window.showDirectoryPicker ? window.showDirectoryPicker({ id: 'frame-studio-edited', mode: 'readwrite' }).then(function (d) { keepDir(d); return d.name; }, function () { return null; })
+    /* the window opens at the photos' own folder: "שמירה כאן" there makes a new folder ערוכות beside them */
+    var from = (list.filter(function (q) { return q.srcPath; })[0] || {}).srcPath || '', fromDir = from ? from.replace(/[\\/][^\\/]*$/, '') : '', target = null;
+    var pick = NAT ? D.files.chooseDir({ defaultPath: fromDir }).then(function (r) { if (!r || !r.ok) return null; natDir = r.name; return r.name; })
+      : window.showDirectoryPicker ? window.showDirectoryPicker({ id: 'frame-studio-edited', mode: 'readwrite' }).then(function (d) { keepDir(d); return d.getDirectoryHandle(DIR, { create: true }).then(function (sub) { target = sub; return d.name; }); }, function () { return null; })
       : Promise.resolve(null);
     return pick.then(function (name) {
       if (!name) return null;
@@ -148,16 +150,16 @@
         return ch.then(function () {
           FS.busy && FS.busy('💾 שומר… ' + (i + 1) + '/' + list.length);
           var s = sig(p), c = nCopies(p);
-          var w = NAT ? blobOf(p).then(function (bl) { return bl.arrayBuffer(); }).then(function (ab) { return D.files.saveEdited({ mode: 'custom', name: p.srcName || p.name, copies: c, data: new Uint8Array(ab) }); }).then(function (r) { if (!r || !r.ok) throw new Error((r && (r.detail || r.error)) || 'save'); })
-            : blobOf(p).then(function (blob) { var chain = Promise.resolve(); for (var k = 1; k <= c; k++) (function (k) { chain = chain.then(function () { return custom.getFileHandle(safe(p.srcName || p.name) + (k > 1 ? ' (' + k + ')' : '') + '.jpg', { create: true }); }).then(function (fh) { return fh.createWritable(); }).then(function (wr) { return wr.write(blob).then(function () { return wr.close(); }); }); })(k); return chain; });
+          var w = NAT ? blobOf(p).then(function (bl) { return bl.arrayBuffer(); }).then(function (ab) { return D.files.saveEdited({ mode: 'custom', sub: true, name: p.srcName || p.name, copies: c, data: new Uint8Array(ab) }); }).then(function (r) { if (!r || !r.ok) throw new Error((r && (r.detail || r.error)) || 'save'); })
+            : blobOf(p).then(function (blob) { var chain = Promise.resolve(); for (var k = 1; k <= c; k++) (function (k) { chain = chain.then(function () { return target.getFileHandle(safe(p.srcName || p.name) + (k > 1 ? ' (' + k + ')' : '') + '.jpg', { create: true }); }).then(function (fh) { return fh.createWritable(); }).then(function (wr) { return wr.write(blob).then(function () { return wr.close(); }); }); })(k); return chain; });
           return w.then(function () { p._savedSig = s; p.savedEdited = Date.now(); n++; files += c; }, function () { bad++; });
         });
       }, Promise.resolve()).then(function () {
         FS.busy && FS.busy();
         if (FS.dialog) {
-          var b = FS.dialog('💾 נשמר', '<p>✔ נשמרו <b>' + n + '</b> תמונות (' + files + ' קבצים, קובץ לכל הדפסה) בתיקייה <b>"' + FS.esc(name) + '"</b>.' + (bad ? '<br>⚠️ ' + bad + ' לא נשמרו.' : '') + '</p>' +
+          var b = FS.dialog('💾 נשמר', '<p>✔ נשמרו <b>' + n + '</b> תמונות (' + files + ' קבצים, קובץ לכל הדפסה) בתיקייה חדשה <b>"' + FS.esc(name) + '/ערוכות"</b>.' + (bad ? '<br>⚠️ ' + bad + ' לא נשמרו.' : '') + '</p>' +
             '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (NAT && D.files.openDir ? '<button class="mt-btn primary" id="as-open">📂 פתיחת התיקייה</button>' : '') + '<button class="mt-btn" id="as-ok2">סגירה</button></div>');
-          var o = b.querySelector('#as-open'); if (o) o.addEventListener('click', function () { D.files.openDir(); FS.closeDialog(); });
+          var o = b.querySelector('#as-open'); if (o) o.addEventListener('click', function () { D.files.openDir({ sub: true }); FS.closeDialog(); });
           b.querySelector('#as-ok2').addEventListener('click', function () { FS.closeDialog(); });
         }
         return n;
