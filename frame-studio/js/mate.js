@@ -985,7 +985,7 @@
   var dirRoot = null;
   $('#mt-dir', root).addEventListener('click', function () {
     if (!window.showDirectoryPicker) { pickFolder(); return; }
-    window.showDirectoryPicker({ id: 'frame-studio-photos' }).then(function (d) { dirRoot = d; $('#mt-tree', root).innerHTML = ''; tree($('#mt-tree', root), d, 0); listDir(d); }).catch(function () {});
+    window.showDirectoryPicker({ id: 'frame-studio-photos', mode: 'readwrite' }).then(function (d) { dirRoot = d; $('#mt-tree', root).innerHTML = ''; tree($('#mt-tree', root), d, 0); listDir(d); }).catch(function () {});
   });
   function tree(box, dir, depth) {
     var row = document.createElement('div'); row.className = 'mt-node'; row.style.paddingInlineStart = depth * 14 + 'px';
