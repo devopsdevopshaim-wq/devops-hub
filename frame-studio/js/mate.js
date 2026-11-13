@@ -231,7 +231,7 @@
       var i = document.createElement('input'); i.type = 'file'; i.multiple = true; i.webkitdirectory = true;
       i.addEventListener('change', function () { addFiles(i.files); }); i.click(); return;
     }
-    window.showDirectoryPicker({ id: 'frame-studio-photos' }).then(function (dir) { return filesOf(dir, true); }).then(addFiles).catch(function () {});
+    window.showDirectoryPicker({ id: 'frame-studio-photos', mode: 'readwrite' }).then(function (dir) { return filesOf(dir, true); }).then(addFiles).catch(function () {});
   }
   var IMG_RE = /\.(jpe?g|png|webp|gif|bmp|heic|heif|avif)$/i;
   function isImg(n) { return IMG_RE.test(n) || FS.RAW_EXT.test(n); }
@@ -243,8 +243,8 @@
       return step().then(function () {
         return all.reduce(function (ch, h) {
           return ch.then(function () {
-            if (h.kind === 'file' && isImg(h.name)) return h.getFile().then(function (f) { out.push(f); });
-            if (h.kind === 'directory' && deep && depth < 2) return walk(h, depth + 1);
+            if (h.kind === 'file' && isImg(h.name)) return h.getFile().then(function (f) { try { f._dir = d; } catch (e) { /* frozen */ } out.push(f); });
+            if (h.kind === 'directory' && deep && depth < 2 && h.name !== 'ערוכות') return walk(h, depth + 1);
           });
         }, Promise.resolve());
       });
@@ -344,7 +344,8 @@
   FS.photoWarn = warnOf;
   function tileHTML(p, px) {
     var w = warnOf(p);
-    return '<div class="mt-tile' + (S.marked[p.id] ? ' sel' : '') + (w ? ' warn' : '') + (p.id === focusId ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + px + '"' + (w ? ' title="' + esc(w) + '"' : '') + '><div class="mt-th">' + (w ? '<span class="mt-warn">' + esc(w) + '</span>' : '') +
+    var a = p.cadv, ppl = a && a.verdict !== 'error' && a.faces ? '<span class="mt-ppl" title="אנשים בתמונה · מסתכלים עם עיניים פתוחות">👥 ' + (a.people || a.faces) + ' · 👀 ' + (a.looking != null ? a.looking : a.adults) + '</span>' : '';
+    return '<div class="mt-tile' + (S.marked[p.id] ? ' sel' : '') + (w ? ' warn' : '') + (p.id === focusId ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + px + '"' + (w ? ' title="' + esc(w) + '"' : '') + '><div class="mt-th">' + (w ? '<span class="mt-warn">' + esc(w) + '</span>' : '') + ppl +
       '<button class="mt-chk" title="סימון">✓</button><button class="mt-zoomb" title="הגדלה">🔍</button>' +
       '<div class="mt-band"><b>' + sizeTxt(p) + '</b><span class="mt-cp"><button data-cp="-1" title="פחות (על כל המסומנות, כשהתמונה מסומנת)" aria-label="פחות הדפסים">−</button><i data-cpn title="לחיצה: להקליד מספר · או מקלידים 0–9 כשהעכבר על התמונה">' + copies(p) + ' הדפסים</i><button data-cp="1" title="עוד (על כל המסומנות, כשהתמונה מסומנת)" aria-label="עוד הדפסים">+</button></span>' +
       (p.printed ? '<small>הודפסו ' + p.printed + '</small>' : '') + '</div>' + advTag(p) + '</div><div class="mt-name" title="' + esc(p.name || '') + '">' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '</div></div>';
@@ -377,10 +378,11 @@
   var fcBusy = false;
   function faceCheck() {
     if (fcBusy || FS.prefs.autoFaceCheck === false || !window.FaceSig || !FS.judgeFaces || !on()) return;
+    if (Date.now() - (FS._lastInput || 0) < 1500) return void setTimeout(faceCheck, 800);   /* the owner is working: later, so nothing slows down */
     var p = S.photos.filter(function (x) { return !x.cadv && !x._fcq; })[0]; if (!p) return;
     fcBusy = true; p._fcq = true;
     FS.loadImg(p.src).then(function (im) { return FaceSig.detect(im, 1280); }).then(function (faces) { p.cadv = FS.judgeFaces(faces); p.cadv.auto = true; }, function () {})
-      .then(function () { fcBusy = false; if (warnOf(p)) refreshTile(p); setTimeout(faceCheck, 150); });
+      .then(function () { fcBusy = false; refreshTile(p); setTimeout(faceCheck, 150); });
   }
   function refreshTile(p) {
     $$('.mt-tile[data-id="' + p.id + '"]', root).forEach(function (el) {

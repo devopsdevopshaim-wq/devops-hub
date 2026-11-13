@@ -37,7 +37,8 @@
     var copies = closed ? 0 : Math.max(adults, kids && !adults ? 1 : 0, front.length ? 1 : 0);
     if (!closed && adults === 0 && away > 0) copies = 1;
     var doubt = !closed && front.some(function (x) { return x.doubt; });
-    return { faces: F.length, people: front.length, adults: adults, kids: kids, away: away, closed: closed, doubt: doubt, copies: copies, verdict: closed ? 'closed' : 'ok' };
+    var looking = front.filter(function (x) { return x.facing && !x.closed; }).length;
+    return { faces: F.length, people: front.length, adults: adults, kids: kids, away: away, closed: closed, looking: looking, doubt: doubt, copies: copies, verdict: closed ? 'closed' : 'ok' };
   }
   FS.judgeFaces = judge;
   function dhash(im) {

@@ -310,7 +310,13 @@
       p.doc = FS.newDoc(im, my ? 'magnet' : fmt);
       if (my) FS.applyFormat(p.doc, 'cm', im, my.w, my.h);
       if (FS.prefs.keepOrient !== false) FS.matchOrient(p.doc, im);   /* a wide photo stays wide, a tall one stays tall */
-      if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
+      if (file && file._dir) { p.srcDir = file._dir; p.srcName = file.name; }   /* opened from a folder: edited copies go back to it (autosave.js) */
+      /* the last frame used on a page of this orientation (a tall one and a wide one are kept apart) goes on by itself */
+      var land = p.doc.w > p.doc.h, oref = FS.prefs.autoFrame !== false && (land ? FS.prefs.lastFrameLand : FS.prefs.lastFramePort);
+      if (!oref && FS.prefs.autoFrame !== false) { var other = land ? FS.prefs.lastFramePort : FS.prefs.lastFrameLand; if (other && other.kind !== 'png') oref = other; }   /* a drawn frame fits any shape */
+      if (oref && FS.setFrame) FS.setFrame(p, JSON.parse(JSON.stringify(oref)), { quiet: true, keepPrefs: true });
+      else if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
+      p._base = JSON.stringify(p.doc);   /* what it looked like when it came in: an edit is anything after this */
       FS.state.photos.push(p);
       (FS.afterAdd || []).forEach(function (f) { try { f(p); } catch (e) { console.warn(e); } });
       return p;
