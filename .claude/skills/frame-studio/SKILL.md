@@ -2309,3 +2309,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - Sign-ups, verifications, the program's sign-ins (`lic-activate`), customer sign-ins and booking requests were already sent.
 - **All of it needs the two secrets `CALLMEBOT_APIKEY` and `CALLMEBOT_PHONE`** (GitHub Secrets, deployed to the Worker). The admin's "🔔 התראות" → "💬 הודעות וואטסאפ אליך" has the steps and "📲 שליחת הודעת בדיקה".
 - **Tests:** wa.test.mjs (purchase, update, payment report, move, an old request silent).
+
+## v153: automatic all the way (people retried, the page filled, auto enhance), and the owner gives the save place
+
+- **The face check retries:** a photo whose check failed (the face model still loading) was left without a count and without copies, as with the owner's 5-person photos. It is tried again after 4, 8 and 12 s (`p._fcErr`).
+- **The page filled:** an automatically framed photo is fitted with cover (`p.fit = "cover"`), unless it was turned to fit. The `fitNew === "contain"` hook skips `p._autoFramed` photos.
+- **Automatic editing:** every new photo gets `FS.autoAdjust` (levels, white balance, a little colour) into its own adjustments (`p._autoEnhanced`), so a touch-up is still possible. Off with `FS.prefs.autoEnhance === false`.
+- **Saving:** `FS.prefs.editedMode` now defaults to `custom`. The first time something is ready, "💾 איפה לשמור" opens once ("📍 לאן לשמור…"), and from then on it all goes to that folder. "ליד התמונות" stays a choice.
+- **Closing:** the "לסגור? יש תמונות שעוד לא נשמרו" question (ui.js beforeunload) is skipped when `FS.allEditedSaved()`, which is the case after the close flush.
+- **WhatsApp:** the deploy log shows `CALLMEBOT_APIKEY` and `CALLMEBOT_PHONE` empty, so no WhatsApp goes out until the owner adds them to GitHub Secrets and the Cloudflare deploy runs.
+- **Tested in a browser** with a mocked FSDesktop: a failed first detection then 5 people and copies 5, cover, enhanced, the place asked.

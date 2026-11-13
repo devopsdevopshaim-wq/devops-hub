@@ -321,7 +321,11 @@
         var omm = oref === FS.prefs.lastFrameLand ? FS.prefs.lastFrameLandMm : oref === FS.prefs.lastFramePort ? FS.prefs.lastFramePortMm : null;
         if (omm && omm[0] > 0 && omm[1] > 0) { var lo = Math.max(omm[0], omm[1]), sh = Math.min(omm[0], omm[1]); FS.applyFormat(p.doc, 'cm', im, land ? lo : sh, land ? sh : lo); }
         FS.setFrame(p, JSON.parse(JSON.stringify(oref)), { quiet: true, keepPrefs: true });   /* the photo is fitted into the frame's window */
+        if (!p.doc.photo.autoTurn) { FS.fitPhoto(p.doc, im, 'cover'); p.fit = 'cover'; }   /* the whole window filled (a photo turned to fit stays whole) */
+        p._autoFramed = true;
       }
+      /* ✨ automatic editing: light, contrast and colour set by the photo itself (a touch-up afterwards is always possible) */
+      if (FS.prefs.autoEnhance !== false && FS.autoAdjust) { try { p.doc.photo.adj = Object.assign({}, p.doc.photo.adj, FS.autoAdjust(p)); p._autoEnhanced = true; } catch (e) { /* left as shot */ } }
       else if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
       p._base = JSON.stringify(p.doc);   /* what it looked like when it came in: an edit is anything after this */
       FS.state.photos.push(p);

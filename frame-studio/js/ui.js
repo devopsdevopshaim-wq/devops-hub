@@ -1116,7 +1116,7 @@
   openTab(FS.prefs.tab && FS.prefs.tab !== 'games' ? FS.prefs.tab : 'photos');
   if (document.fonts) document.fonts.ready.then(function () { FS.render(); });
   FS.render();
-  window.addEventListener('beforeunload', function (e) { if (S.photos.length && !FS.savedOnce) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', function (e) { if (S.photos.length && !FS.savedOnce && !(FS.allEditedSaved && FS.allEditedSaved())) { e.preventDefault(); e.returnValue = ''; } });   /* saved by autosave.js: nothing to ask */
   var deferredInstall = null;
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; $('#install').hidden = false; });
   $('#install').addEventListener('click', function () { if (deferredInstall) { deferredInstall.prompt(); deferredInstall = null; $('#install').hidden = true; } });
