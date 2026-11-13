@@ -2297,3 +2297,15 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - In a browser with a mocked FSDesktop: framed on arrival → saved; copies 4 → saved again; the close flush → `flushed`.
   - The browser path still writes ערוכות.
   - `node --check` on main and preload.
+
+## v152: requests from the program to the owner's WhatsApp too
+
+- **`waNote` (notify.mjs)** also speaks for:
+  - `plan-request`: "📩 בקשת רכישה" with the plan.
+  - `upd-request`: "⬆️ בקשת עדכון" / "אישר עדכון ותשלום", and "💰 דיווח תשלום" with the method and reference.
+  - `lic-move`: "🔁 העביר רישיון למחשב חדש".
+- Requests carry a session rather than an email, so the licence is found by its request from the last 2 minutes.
+- Links go to the admin's licences. The 20-minute once-per-person-and-kind rule applies.
+- Sign-ups, verifications, the program's sign-ins (`lic-activate`), customer sign-ins and booking requests were already sent.
+- **All of it needs the two secrets `CALLMEBOT_APIKEY` and `CALLMEBOT_PHONE`** (GitHub Secrets, deployed to the Worker). The admin's "🔔 התראות" → "💬 הודעות וואטסאפ אליך" has the steps and "📲 שליחת הודעת בדיקה".
+- **Tests:** wa.test.mjs (purchase, update, payment report, move, an old request silent).
