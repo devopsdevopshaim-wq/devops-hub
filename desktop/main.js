@@ -647,11 +647,14 @@ app.whenReady().then(() => {
   ipcMain.handle('files:choose-dir', async (event) => {
     fromApp(event);
     const w = BrowserWindow.fromWebContents(event.sender);
-    const r = await dialog.showOpenDialog(w || undefined, { title: 'איפה לשמור את התמונות הערוכות', properties: ['openDirectory', 'createDirectory'] });
+    const last = chosenDir();
+    const r = await dialog.showOpenDialog(w || undefined, { title: 'איפה לשמור את התמונות הערוכות', buttonLabel: 'שמירה כאן', properties: ['openDirectory', 'createDirectory'], ...(last && fs.existsSync(last) ? { defaultPath: last } : {}) });
     if (r.canceled || !r.filePaths[0]) return { ok: false };
     try { fs.writeFileSync(editedPref(), JSON.stringify({ dir: r.filePaths[0] })); } catch { /* kept for this run only */ }
     return { ok: true, dir: r.filePaths[0], name: path.basename(r.filePaths[0]) };
   });
+  // the folder the edited photos were just saved to, opened in Windows Explorer (only the folder chosen here)
+  ipcMain.handle('files:open-dir', async (event) => { fromApp(event); const d = chosenDir(); if (!d) return { ok: false }; const e = await shell.openPath(d); return { ok: !e }; });
   ipcMain.handle('files:edited-dir', (event) => { fromApp(event); const d = chosenDir(); return { dir: d, name: d ? path.basename(d) : '' }; });
   ipcMain.handle('files:save-edited', async (event, o) => {
     fromApp(event);

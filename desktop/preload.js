@@ -65,6 +65,7 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
     pathOf: (file) => { try { return webUtils && webUtils.getPathForFile ? webUtils.getPathForFile(file) || '' : ''; } catch { return ''; } },
     chooseDir: () => ipcRenderer.invoke('files:choose-dir'),
     editedDir: () => ipcRenderer.invoke('files:edited-dir'),
+    openDir: () => ipcRenderer.invoke('files:open-dir'),
     saveEdited: (o) => ipcRenderer.invoke('files:save-edited', { mode: o && o.mode === 'custom' ? 'custom' : 'source', srcPath: String((o && o.srcPath) || ''), name: String((o && o.name) || ''), copies: Number(o && o.copies) || 1, data: o && o.data }),
   }),
   onFlush: (fn) => { ipcRenderer.removeAllListeners('app:flush'); ipcRenderer.on('app:flush', () => { try { fn(); } catch { ipcRenderer.send('app:flushed'); } }); },
