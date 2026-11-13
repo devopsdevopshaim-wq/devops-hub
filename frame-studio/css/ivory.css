@@ -86,3 +86,29 @@ html.fs-ivory .intro p, html.fs-ivory .intro small, html.fs-ivory .intro .lead {
 #mt .mt-tile.warn .mt-adv.bad { display: none; }
 html.fs-ivory .intro-actions button, html.fs-ivory .intro-actions a, html.fs-ivory .intro-actions b, html.fs-ivory .intro-actions strong { color: #241E15 !important; }
 html.fs-ivory .intro-actions small, html.fs-ivory .intro-actions span { color: #6F6758 !important; }
+
+/* ---------- tabs as clear buttons: the active one stands out (both looks) ---------- */
+#mt .mt-tabs { display: flex; gap: 6px; padding: 5px; border-radius: 16px; background: rgba(128, 110, 80, .10); box-shadow: inset 0 0 0 1px rgba(128, 110, 80, .18); }
+#mt .mt-tabs button[data-v], #mt .mt-sub button[data-bar] {
+  position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 7px 16px; border-radius: 12px;
+  border: 1px solid transparent; background: transparent; font-weight: 600; cursor: pointer; transition: background .2s, color .2s, box-shadow .2s, transform .15s;
+}
+#mt .mt-tabs button[data-v]:hover, #mt .mt-sub button[data-bar]:hover { background: rgba(201, 160, 79, .14); transform: translateY(-1px); }
+#mt .mt-tabs button[data-v].on, #mt .mt-sub button[data-bar].on {
+  background: linear-gradient(135deg, #F7E8C6, #DDBB79 55%, #C9A04F); color: #241E15; border-color: rgba(142, 107, 46, .55);
+  box-shadow: 0 6px 16px -8px rgba(142, 107, 46, .75), inset 0 1px 0 rgba(255, 255, 255, .6); font-weight: 800;
+}
+#mt .mt-tabs button[data-v].on::after, #mt .mt-sub button[data-bar].on::after {
+  content: ''; position: absolute; inset-inline: 22%; bottom: -7px; height: 3px; border-radius: 3px; background: #8E6B2E;
+}
+#mt .mt-sub { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#mt .mt-sub button[data-bar] { background: #FFFFFF0d; box-shadow: inset 0 0 0 1px rgba(128, 110, 80, .22); }
+html.fs-ivory #mt .mt-sub button[data-bar]:not(.on), html.fs-ivory #mt .mt-tabs button[data-v]:not(.on) { color: #4A4130; }
+html.fs-ivory #mt .mt-sub button[data-bar]:not(.on) { background: #FFFFFF; }
+#mt .mt-seg button.on { box-shadow: 0 4px 12px -6px rgba(142, 107, 46, .8); font-weight: 800; }
+/* the studio's side rail: the open tab stands out */
+.tools button[aria-selected="true"] { box-shadow: inset 0 0 0 2px #C9A04F, 0 6px 14px -8px rgba(142, 107, 46, .7) !important; font-weight: 800; }
+html.fs-ivory .tools button[aria-selected="true"] { background: linear-gradient(135deg, #FBF1DC, #EBD3A0) !important; color: #241E15 !important; }
+
+/* ---------- people on each photo: how many, and how many look with their eyes open ---------- */
+#mt .mt-ppl { position: absolute; z-index: 3; top: auto; bottom: 36px; inset-inline-start: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(36, 30, 21, .78); color: #fff; font: 700 11.5px var(--f-body, 'Assistant', sans-serif); pointer-events: none; }

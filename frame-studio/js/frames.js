@@ -289,6 +289,6 @@
     }
     if (im) FS.fitPhoto(d, im);
     if (FS.applyCredit && !opts.noCredit) FS.applyCredit(p);
-    if (ref) { FS.prefs.lastFrame = ref; FS.savePrefs(); }
+    if (ref && !opts.keepPrefs) { FS.prefs.lastFrame = ref; FS.prefs[d.w > d.h ? 'lastFrameLand' : 'lastFramePort'] = ref; FS.savePrefs(); }
   };
 })();

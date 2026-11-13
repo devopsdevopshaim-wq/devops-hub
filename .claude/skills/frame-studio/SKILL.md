@@ -2235,3 +2235,17 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **What still needs an installer:** desktop-level changes (main.js, preload: printers, drivers, colour tools).
 - **Consequence the owner accepted:** studio features reach every licence for free, including licences bought for good. Paid updates now apply only to installer versions.
 - **This change itself needs one install of the new installer.**
+
+## v148: frames per orientation, people on each photo, edited copies saved to "ערוכות", clear tabs
+
+- **Frames per orientation:** `FS.setFrame` remembers the last frame of a tall page (`FS.prefs.lastFramePort`) and of a wide one (`lastFrameLand`).
+  - Every new photo (core.js `addPhotoFile`) gets the frame of its own orientation by itself, through `setFrame(..., { quiet, keepPrefs })` so the page takes a PNG frame's shape.
+  - A drawn (gen) frame of the other orientation is used when there is none for this one, because it fits any shape.
+  - Off with `FS.prefs.autoFrame === false`. The old "frame for all" stays as the fallback.
+- **People:** `judgeFaces` (copies.js) now returns `looking` (front faces facing the camera with open eyes). Each tile shows "👥 people · 👀 looking" (`.mt-ppl`). The background face check refreshes every tile, and waits while the owner is working (`FS._lastInput` within 1.5 s).
+- **"ערוכות" (js/autosave.js):**
+  - 📁 תיקייה now opens the folder read-write. Each file remembers its folder (`file._dir` → `p.srcDir`, `p.srcName`).
+  - After an edit settles (2.5 s after `FS.snap`), a photo that changed since it came in (`p._base`) is written as a JPEG (≤4000 px, q .93) into `<its folder>/ערוכות/<name>.jpg`.
+  - The original is never touched, and "ערוכות" is skipped when folders are read. Off with `FS.prefs.autoSaveEdited === false`. `FS.saveEditedNow(list)`.
+- **Tabs:** the workspace screens (`.mt-tabs [data-v]`), its sub-tabs (`.mt-sub [data-bar]`) and the segmented choices are buttons; the active one is gold with an underline. The studio's side rail marks its open tab.
+- **Tested in a browser:** the frame per orientation, the write into ערוכות (a mock folder), the badges and the tabs.
