@@ -16,8 +16,10 @@
   ['pointerdown', 'keydown', 'wheel'].forEach(function (t) { window.addEventListener(t, function () { FS._lastInput = Date.now(); }, { passive: true, capture: true }); });
   var D = window.FSDesktop, NAT = !!(D && D.files && D.files.saveEdited);
   var DIR = 'ערוכות', queue = [], since = {}, busy = false, told = false, warned = false, asked = false, askDir = null, natDir = '';
-  function mode() { return FS.prefs.autoSaveEdited === false ? 'off' : (FS.prefs.editedMode || 'custom'); }   /* the owner gives the place, once */
-  function off() { return mode() === 'off'; }
+  /* the owner saves with a click (💾 שמירה) unless he turned the automatic saving on in its settings */
+  if (!FS.prefs.editedClickV) { FS.prefs.editedMode = 'manual'; FS.prefs.autoSaveEdited = true; FS.prefs.editedClickV = 1; FS.savePrefs(); }   /* the owner asked for a click, once over an earlier choice */
+  function mode() { return FS.prefs.autoSaveEdited === false ? 'off' : (FS.prefs.editedMode || 'manual'); }
+  function off() { return mode() === 'off' || mode() === 'manual'; }
   if (NAT && D.files.editedDir) D.files.editedDir().then(function (r) { natDir = (r && r.name) || ''; }, function () {});
   /* the browser's chosen folder, kept between openings (a folder handle is stored as it is in IndexedDB) */
   var custom = null;
@@ -33,7 +35,7 @@
   function want(p) { if (off() || !p) return; if (queue.indexOf(p.id) < 0) { queue.push(p.id); since[p.id] = since[p.id] || Date.now(); } setTimeout(run, 2500); }
   FS.saveEditedNow = function (list) { (list || FS.state.photos).forEach(want); };
   /* everything edited is already written (the program may close without asking) */
-  FS.allEditedSaved = function () { return !off() && !FS.state.photos.some(ready); };
+  FS.allEditedSaved = function () { return !FS.state.photos.some(ready); };
   setInterval(function () { if (!off()) FS.state.photos.forEach(function (p) { if (ready(p)) want(p); }); }, 15000);   /* copies changed, a late frame… */
 
   function blobOf(p) {
@@ -118,9 +120,50 @@
       .then(function () { FS.busy && FS.busy(); return n; }, function () { FS.busy && FS.busy(); return n; });
   };
   if (D && D.onFlush) D.onFlush(function () {
+    if (mode() === 'manual') {
+      var waiting = FS.state.photos.filter(ready).length;
+      if (!waiting || !FS.dialog) return D.flushed();
+      var b = FS.dialog('💾 לשמור לפני יציאה?', '<p>יש <b>' + waiting + '</b> תמונות ערוכות שעוד לא נשמרו.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="mt-btn primary" id="as-x-save">💾 לשמור ולצאת</button><button class="mt-btn" id="as-x-go">יציאה בלי לשמור</button><button class="mt-btn" id="as-x-stay">ביטול</button></div>');
+      b.querySelector('#as-x-save').addEventListener('click', function () { FS.closeDialog(); FS.saveEditedByClick().then(function (n) { if (n != null) { FS.savedOnce = true; D.flushed(); } }); });
+      b.querySelector('#as-x-go').addEventListener('click', function () { FS.closeDialog(); FS.savedOnce = true; D.flushed(); });
+      b.querySelector('#as-x-stay').addEventListener('click', function () { FS.closeDialog(); });
+      return;
+    }
     var t = setTimeout(function () { D.flushed(); }, 22000);
     FS.saveAllEdited().then(function () { clearTimeout(t); D.flushed(); }, function () { clearTimeout(t); D.flushed(); });
   });
+
+  /* 💾 שמירה: a click, a folder (Windows' own window; the last folder offered first), and every edited photo (or only the
+     marked ones) written there, one file per copy. Resolves to the number saved, or null when no folder was chosen. */
+  FS.saveEditedByClick = function () {
+    var marked = FS.marked ? FS.marked() : [], list = (marked.length ? marked : FS.state.photos).filter(edited);
+    if (!list.length) { FS.toast('אין עדיין תמונות ערוכות לשמירה (עם מסגרת או עריכה)', 4000); return Promise.resolve(0); }
+    var pick = NAT ? D.files.chooseDir().then(function (r) { if (!r || !r.ok) return null; natDir = r.name; return r.name; })
+      : window.showDirectoryPicker ? window.showDirectoryPicker({ id: 'frame-studio-edited', mode: 'readwrite' }).then(function (d) { keepDir(d); return d.name; }, function () { return null; })
+      : Promise.resolve(null);
+    return pick.then(function (name) {
+      if (!name) return null;
+      var n = 0, files = 0, bad = 0;
+      return list.reduce(function (ch, p, i) {
+        return ch.then(function () {
+          FS.busy && FS.busy('💾 שומר… ' + (i + 1) + '/' + list.length);
+          var s = sig(p), c = nCopies(p);
+          var w = NAT ? blobOf(p).then(function (bl) { return bl.arrayBuffer(); }).then(function (ab) { return D.files.saveEdited({ mode: 'custom', name: p.srcName || p.name, copies: c, data: new Uint8Array(ab) }); }).then(function (r) { if (!r || !r.ok) throw new Error((r && (r.detail || r.error)) || 'save'); })
+            : blobOf(p).then(function (blob) { var chain = Promise.resolve(); for (var k = 1; k <= c; k++) (function (k) { chain = chain.then(function () { return custom.getFileHandle(safe(p.srcName || p.name) + (k > 1 ? ' (' + k + ')' : '') + '.jpg', { create: true }); }).then(function (fh) { return fh.createWritable(); }).then(function (wr) { return wr.write(blob).then(function () { return wr.close(); }); }); })(k); return chain; });
+          return w.then(function () { p._savedSig = s; p.savedEdited = Date.now(); n++; files += c; }, function () { bad++; });
+        });
+      }, Promise.resolve()).then(function () {
+        FS.busy && FS.busy();
+        if (FS.dialog) {
+          var b = FS.dialog('💾 נשמר', '<p>✔ נשמרו <b>' + n + '</b> תמונות (' + files + ' קבצים, קובץ לכל הדפסה) בתיקייה <b>"' + FS.esc(name) + '"</b>.' + (bad ? '<br>⚠️ ' + bad + ' לא נשמרו.' : '') + '</p>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (NAT && D.files.openDir ? '<button class="mt-btn primary" id="as-open">📂 פתיחת התיקייה</button>' : '') + '<button class="mt-btn" id="as-ok2">סגירה</button></div>');
+          var o = b.querySelector('#as-open'); if (o) o.addEventListener('click', function () { D.files.openDir(); FS.closeDialog(); });
+          b.querySelector('#as-ok2').addEventListener('click', function () { FS.closeDialog(); });
+        }
+        return n;
+      });
+    });
+  };
 
   /* the browser asks again for the chosen folder (after the program was closed): one click gives it back */
   var regranting = false;
@@ -135,6 +178,8 @@
     if (!FS.dialog) return;
     var m = mode(), can = NAT || !!window.showDirectoryPicker, cur = NAT ? natDir : custom ? custom.name : '';
     var b = FS.dialog('💾 איפה לשמור את הערוכות', '<div class="as-set">' +
+      '<label class="mt-chk-l"><input type="radio" name="as-m" value="manual"' + (m === 'manual' ? ' checked' : '') + '> 👆 בלחיצה על "💾 שמירה" (בוחרים תיקייה בכל פעם)</label>' +
+      '<p class="mt-hint" style="margin:2px 0 8px">או שמירה אוטומטית:</p>' +
       '<label class="mt-chk-l"><input type="radio" name="as-m" value="source"' + (m === 'source' ? ' checked' : '') + '> 📁 בתיקייה "ערוכות" ליד התמונות (בתוך התיקייה שלהן)</label>' +
       '<label class="mt-chk-l"><input type="radio" name="as-m" value="custom"' + (m === 'custom' ? ' checked' : '') + '> 📌 בתיקייה שאני בוחר: <b id="as-name">' + (cur ? FS.esc(cur) : 'עוד לא נבחרה') + '</b></label>' +
       '<div style="margin:4px 26px 8px"><button class="mt-btn" id="as-choose"' + (can ? '' : ' disabled') + '>📁 בחירת תיקייה…</button></div>' +
@@ -146,8 +191,8 @@
     function chosen(name) { setMode('custom'); b.querySelector('#as-name').textContent = name; b.querySelector('[name=as-m][value=custom]').checked = true; FS.toast('📌 הערוכות יישמרו בתיקייה "' + name + '"', 5000); asked = false; FS.saveEditedNow(); }
     Array.prototype.forEach.call(b.querySelectorAll('[name=as-m]'), function (r) { r.addEventListener('change', function () {
       setMode(r.value); if (r.value === 'custom' && !(NAT ? natDir : custom)) b.querySelector('#as-choose').click();
-      FS.toast(r.value === 'off' ? '⏸️ השמירה האוטומטית כבויה' : r.value === 'custom' ? '📌 הערוכות יישמרו בתיקייה שבחרת' : '📁 הערוכות יישמרו ב"ערוכות" ליד התמונות');
-      if (r.value !== 'off') FS.saveEditedNow();
+      FS.toast(r.value === 'manual' ? '👆 שומרים בלחיצה על "💾 שמירה"' : r.value === 'off' ? '⏸️ השמירה האוטומטית כבויה' : r.value === 'custom' ? '📌 הערוכות יישמרו בתיקייה שבחרת' : '📁 הערוכות יישמרו ב"ערוכות" ליד התמונות');
+      if (r.value !== 'off' && r.value !== 'manual') FS.saveEditedNow();
     }); });
     b.querySelector('#as-choose').addEventListener('click', function () {
       if (NAT) return D.files.chooseDir().then(function (r) { if (r && r.ok) { natDir = r.name; chosen(r.name); } });
@@ -159,8 +204,11 @@
   function button() {
     var host = document.querySelector('#mt .mt-acts'); if (!host) return setTimeout(button, 1500);
     if (document.getElementById('as-btn')) return;
-    var bt = document.createElement('button'); bt.id = 'as-btn'; bt.type = 'button'; bt.className = 'mt-btn'; bt.textContent = '💾 ערוכות'; bt.title = 'איפה לשמור את התמונות הערוכות';
-    bt.addEventListener('click', function () { FS.editedSettings(); }); host.appendChild(bt);
+    var bt = document.createElement('button'); bt.id = 'as-btn'; bt.type = 'button'; bt.className = 'mt-btn primary'; bt.textContent = '💾 שמירה'; bt.title = 'שמירת התמונות הערוכות (או המסומנות) לתיקייה שבוחרים, קובץ לכל הדפסה';
+    bt.addEventListener('click', function () { FS.saveEditedByClick(); });
+    var gs = document.createElement('button'); gs.id = 'as-set-btn'; gs.type = 'button'; gs.className = 'mt-btn'; gs.textContent = '⚙'; gs.title = 'הגדרות השמירה (גם שמירה אוטומטית)';
+    gs.addEventListener('click', function () { FS.editedSettings(); });
+    host.insertBefore(gs, host.firstChild); host.insertBefore(bt, host.firstChild);
   }
   setTimeout(button, 2400);
 

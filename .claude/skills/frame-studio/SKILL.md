@@ -2335,3 +2335,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **The workspace size bar:** "✨ עריכה: טבעי מקצועי | 🎬 קולנועי | בלי" (`#mt-look`) switches the look and re-applies it to the photos already in.
 - The ✨ button's `FS.autoAdjust` is unchanged.
 - **Measured** on two dark-hall flash photos (the middle of the frame): old 3.6% / 10.3% clipped, natural 1.5% / 1.5%, cinema 1.5% / 1.4%.
+
+## v155: save with a click (the owner's choice)
+
+- **"💾 שמירה"** (`#as-btn`, primary, in `.mt-acts`; ⚙ beside it for the settings) → `FS.saveEditedByClick()`:
+  - Windows' folder window opens (`files:choose-dir`, "שמירה כאן", the last folder offered first). In a browser, showDirectoryPicker.
+  - Every edited photo (frame or edit), or only the marked ones, is written there, one file per copy.
+  - Then "✔ נשמרו N תמונות (M קבצים)" with "📂 פתיחת התיקייה" (`files:open-dir`, shell.openPath of the chosen folder only).
+- **`editedMode` defaults to `manual`.** A one-time migration (`editedClickV`) moves an earlier automatic choice to manual. The automatic modes stay in ⚙.
+- **Closing in manual mode** with unsaved edits: "💾 לשמור לפני יציאה?" with save-and-exit / exit / cancel. Otherwise it closes at once (`FS.savedOnce` stops the old question).
+- **Tested in a browser** with a mocked FSDesktop: no saving in the background, a click saved 2 photos as 4 files, and the close question.
