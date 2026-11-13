@@ -16,7 +16,7 @@
   ['pointerdown', 'keydown', 'wheel'].forEach(function (t) { window.addEventListener(t, function () { FS._lastInput = Date.now(); }, { passive: true, capture: true }); });
   var D = window.FSDesktop, NAT = !!(D && D.files && D.files.saveEdited);
   var DIR = 'ערוכות', queue = [], since = {}, busy = false, told = false, warned = false, asked = false, askDir = null, natDir = '';
-  function mode() { return FS.prefs.autoSaveEdited === false ? 'off' : (FS.prefs.editedMode || 'source'); }
+  function mode() { return FS.prefs.autoSaveEdited === false ? 'off' : (FS.prefs.editedMode || 'custom'); }   /* the owner gives the place, once */
   function off() { return mode() === 'off'; }
   if (NAT && D.files.editedDir) D.files.editedDir().then(function (r) { natDir = (r && r.name) || ''; }, function () {});
   /* the browser's chosen folder, kept between openings (a folder handle is stored as it is in IndexedDB) */
@@ -32,6 +32,8 @@
   function ready(p) { return edited(p) && p._savedSig !== sig(p); }
   function want(p) { if (off() || !p) return; if (queue.indexOf(p.id) < 0) { queue.push(p.id); since[p.id] = since[p.id] || Date.now(); } setTimeout(run, 2500); }
   FS.saveEditedNow = function (list) { (list || FS.state.photos).forEach(want); };
+  /* everything edited is already written (the program may close without asking) */
+  FS.allEditedSaved = function () { return !off() && !FS.state.photos.some(ready); };
   setInterval(function () { if (!off()) FS.state.photos.forEach(function (p) { if (ready(p)) want(p); }); }, 15000);   /* copies changed, a late frame… */
 
   function blobOf(p) {
@@ -47,6 +49,7 @@
   /* the desktop program writes the files itself */
   function writeNative(p) {
     var s = sig(p), m = mode();
+    if (m === 'custom' && !natDir) { if (!asked) { asked = true; FS.editedSettings(true); } return Promise.resolve(); }
     if (m === 'source' && !p.srcPath && !natDir) { askNative(); return Promise.resolve(); }
     return blobOf(p).then(function (b) { return b.arrayBuffer(); }).then(function (ab) {
       return D.files.saveEdited({ mode: m === 'custom' || !p.srcPath ? 'custom' : 'source', srcPath: p.srcPath || '', name: p.srcName || p.name, copies: nCopies(p), data: new Uint8Array(ab) });
@@ -92,7 +95,7 @@
     if (!ready(p)) return Promise.resolve();
     if (NAT) return writeNative(p);
     if (mode() === 'custom') {
-      if (!custom) { FS.editedSettings(true); return Promise.resolve(); }
+      if (!custom) { if (!asked) { asked = true; FS.editedSettings(true); } return Promise.resolve(); }
       return granted(custom).then(function (ok) { if (!ok) { regrant(); return; } return writeWeb(p); });
     }
     if (!p.srcDir) { if (askDir) p.srcDir = askDir; else { askWeb(); return Promise.resolve(); } }
@@ -137,7 +140,7 @@
       '<div style="margin:4px 26px 8px"><button class="mt-btn" id="as-choose"' + (can ? '' : ' disabled') + '>📁 בחירת תיקייה…</button></div>' +
       '<label class="mt-chk-l"><input type="radio" name="as-m" value="off"' + (m === 'off' ? ' checked' : '') + '> ⏸️ לא לשמור לבד</label>' +
       '<p class="mt-hint">נשמרת כל תמונה עם מסגרת או עם עריכה, כקובץ JPG באותו שם, וקובץ לכל הדפסה (שם (2), שם (3)…) לפי הכפילויות. המקור לא משתנה. השמירה קורית תוך כדי עבודה וגם לפני שהתוכנה נסגרת.</p>' +
-      (needFolder ? '<p class="mt-hint" style="color:#B91C1C">כדי לשמור צריך לבחור תיקייה.</p>' : '') +
+      (needFolder ? '<p class="mt-hint" style="color:#B91C1C">📍 לאן לשמור את התמונות הערוכות? בוחרים תיקייה פעם אחת, ומשם הכל נשמר לבד.</p>' : '') +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="mt-btn primary" id="as-now">💾 לשמור עכשיו את כל הערוכות</button></div></div>');
     function setMode(v) { FS.prefs.editedMode = v; FS.prefs.autoSaveEdited = v !== 'off'; FS.savePrefs(); }
     function chosen(name) { setMode('custom'); b.querySelector('#as-name').textContent = name; b.querySelector('[name=as-m][value=custom]').checked = true; FS.toast('📌 הערוכות יישמרו בתיקייה "' + name + '"', 5000); asked = false; FS.saveEditedNow(); }

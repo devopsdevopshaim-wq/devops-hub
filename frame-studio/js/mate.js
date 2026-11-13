@@ -391,7 +391,7 @@
       /* the copies follow the people (one for every adult looking at the camera; none for closed eyes), unless set by hand */
       if (!p.copiesHand && FS.prefs.autoCopies !== false) { if (p.cadv.verdict === 'ok' && p.cadv.copies > 0) p.copies = p.cadv.copies; else if (p.cadv.verdict === 'closed') p.copies = 0; stat(); foot(); }
     }, function () {})
-      .then(function () { fcBusy = false; refreshTile(p); setTimeout(faceCheck, 150); });
+      .then(function () { fcBusy = false; if (!p.cadv) { p._fcErr = (p._fcErr || 0) + 1; if (p._fcErr < 4) setTimeout(function () { p._fcq = false; faceCheck(); }, 4000 * p._fcErr); } refreshTile(p); setTimeout(faceCheck, 150); });   /* the face model still loading: again soon */
   }
   function refreshTile(p) {
     $$('.mt-tile[data-id="' + p.id + '"]', root).forEach(function (el) {
@@ -528,7 +528,7 @@
   function snewTxt() { var z = /^my:/.test(FS.prefs.fmt || '') && FS.sizeOf(FS.prefs.fmt), el = $('#mt-snew', root); if (el) el.textContent = z ? '📌 תמונות חדשות נכנסות ב־' + FS.sizeLabel(z) + (FS.prefs.fitNew === 'contain' ? ' (להתאים)' : '') : ''; }
   (function () { var v = FS.prefs.fmt; if (/^my:/.test(v || '') && $('#mt-size option[value="' + v + '"]', root) && !ls('fs-mate-size')) $('#mt-size', root).value = v; snewTxt(); FS.on('sizes', snewTxt); })();
   FS.afterAdd = FS.afterAdd || [];
-  FS.afterAdd.push(function (p) { if (FS.prefs.fitNew !== 'contain' || !/^my:/.test(FS.prefs.fmt || '')) return; var im = FS.img(p.src); if (im) { FS.fitPhoto(p.doc, im, 'contain'); p.fit = 'contain'; } });
+  FS.afterAdd.push(function (p) { if (p._autoFramed || FS.prefs.fitNew !== 'contain' || !/^my:/.test(FS.prefs.fmt || '')) return; var im = FS.img(p.src); if (im) { FS.fitPhoto(p.doc, im, 'contain'); p.fit = 'contain'; } });
   $('#mt-size-sel', root).addEventListener('click', function () { var l = marked(); if (!l.length) return FS.toast('מסמנים תמונות, או "החל על כולן"'); applySize(l); });
   $('#mt-size-all', root).addEventListener('click', function () { applySize(S.photos.slice()); });
 
