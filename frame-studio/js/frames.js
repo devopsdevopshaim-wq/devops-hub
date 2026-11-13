@@ -289,6 +289,6 @@
     }
     if (im) FS.fitPhoto(d, im);
     if (FS.applyCredit && !opts.noCredit) FS.applyCredit(p);
-    if (ref && !opts.keepPrefs) { FS.prefs.lastFrame = ref; FS.prefs[d.w > d.h ? 'lastFrameLand' : 'lastFramePort'] = ref; FS.savePrefs(); }
+    if (ref && !opts.keepPrefs) { var k = d.w > d.h ? 'lastFrameLand' : 'lastFramePort'; FS.prefs.lastFrame = ref; FS.prefs[k] = ref; FS.prefs[k + 'Mm'] = FS.mmOf(d).map(function (v) { return Math.round(v * 10) / 10; }); FS.savePrefs(); }   /* the frame with its page size */
   };
 })();

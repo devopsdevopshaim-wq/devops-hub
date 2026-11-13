@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script>/* self-heal: if the server has a newer version than this page, clear the old offline copy once and reload; any script error offers a full refresh */
-window.FS_V='148';(function(){
+window.FS_V='149';(function(){
 window.FS_HEAL=function(){var a=[];try{if(navigator.serviceWorker)a.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));if(window.caches)a.push(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf('frame-studio-ai')<0;}).map(function(k){return caches.delete(k);}));}));}catch(e){}
 Promise.all(a).catch(function(){}).then(function(){var u=location.href.replace(/([?&])fresh=\d+&?/,'$1').replace(/[?&]$/,'');location.replace(u+(u.indexOf('?')<0?'?':'&')+'fresh='+Date.now());});};
 try{fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){if(j&&j.v&&j.v!==window.FS_V){var k='fs-heal-'+j.v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');window.FS_HEAL();}}}).catch(function(){});}catch(e){}
@@ -16,7 +16,7 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Amatic+SC:wght@700&display=swap" />
-<link rel="stylesheet" href="css/magic.css?v=148" />
+<link rel="stylesheet" href="css/magic.css?v=149" />
 </head>
 <body>
 <main class="mg" id="app" aria-live="polite">
@@ -34,9 +34,9 @@ var shown=0;window.addEventListener('error',function(ev){if(shown||!ev.filename|
   <a class="mg-cta" id="cta" href="./" hidden></a>
 </main>
 <div class="toast" id="toast" role="status"></div>
-<script src="js/live-common.js?v=148"></script>
-<script src="js/magic-core.js?v=148"></script>
-<script src="js/magic.js?v=148"></script>
-<script src="js/a11y.js?v=148" defer></script>
+<script src="js/live-common.js?v=149"></script>
+<script src="js/magic-core.js?v=149"></script>
+<script src="js/magic.js?v=149"></script>
+<script src="js/a11y.js?v=149" defer></script>
 </body>
 </html>

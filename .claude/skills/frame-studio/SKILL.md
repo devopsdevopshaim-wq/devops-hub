@@ -2249,3 +2249,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The original is never touched, and "ערוכות" is skipped when folders are read. Off with `FS.prefs.autoSaveEdited === false`. `FS.saveEditedNow(list)`.
 - **Tabs:** the workspace screens (`.mt-tabs [data-v]`), its sub-tabs (`.mt-sub [data-bar]`) and the segmented choices are buttons; the active one is gold with an underline. The studio's side rail marks its open tab.
 - **Tested in a browser:** the frame per orientation, the write into ערוכות (a mock folder), the badges and the tabs.
+
+## v149: copies follow the people by themselves, people counted more strictly, the last frame comes with its size
+
+- **People (`judgeFaces`, copies.js):** a face counts as part of the photo only from 60% of the biggest face's height (was 45%), so a guest standing behind is no longer counted (the owner's photo of 4 counted 5).
+  - Results carry `v: 2`. The background check (`faceCheck`) also re-runs photos checked by the older version.
+- **Copies:** when the background check finishes, a photo's copies are set by the advice (one per adult looking at the camera; 0 for closed eyes), unless they were set by hand. `p.copiesHand` is set by −/+, typing a number, "החל" and the advice tag. Off with `FS.prefs.autoCopies === false`.
+- **The last frame:**
+  - With no frame kept per orientation yet (frames set before v148), `FS.prefs.lastFrame` itself goes on new photos.
+  - `setFrame` keeps the page size with each orientation's frame (`lastFramePortMm` / `lastFrameLandMm`). A new photo of that orientation gets that size (long side the photo's way) before the frame, and is fitted into the frame's window.
+- **Tested in a browser:** a new wide photo got the 10×7.5 frame with its size, and copies 4 from a stubbed check.
