@@ -2259,3 +2259,20 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - With no frame kept per orientation yet (frames set before v148), `FS.prefs.lastFrame` itself goes on new photos.
   - `setFrame` keeps the page size with each orientation's frame (`lastFramePortMm` / `lastFrameLandMm`). A new photo of that orientation gets that size (long side the photo's way) before the frame, and is fitted into the frame's window.
 - **Tested in a browser:** a new wide photo got the 10×7.5 frame with its size, and copies 4 from a stubbed check.
+
+## v150: edited photos really saved, and a choice of where
+
+- **Why nothing was saved:**
+  - Photos chosen one by one have no folder.
+  - The folder browser's "📁 פתיחת תיקייה" opened read-only.
+  - A photo that only got its frame automatically did not count as edited.
+- **Now (js/autosave.js, rewritten):**
+  - Every photo with a frame, or changed since it came in, is written when its picture changed since the last write (`p._savedSig`). That includes photos framed on arrival (`FS.afterAdd`).
+  - A background queue writes one photo at a time, only while the owner is not touching the program.
+  - Photos without a folder: the first time, a dialog asks once to choose their folder (read-write), and every photo without one goes there.
+  - Both folder openers are read-write. `p.srcName` is always the file name.
+- **"💾 ערוכות" (button next to 🪶 in `.mt-acts`, `FS.editedSettings()`):**
+  - `FS.prefs.editedMode` is `source` ("ערוכות" inside the photos' folder, the default), `custom` (a folder the owner picks; every edited photo goes straight into it) or `off`.
+  - The picked folder handle is kept in IndexedDB (`fs-edited`). When Windows asks again after a restart, a one-click dialog re-grants it (`requestPermission`) or offers another folder.
+  - "💾 לשמור עכשיו את כל הערוכות".
+- **Tested in a browser** with mock folders: a photo framed on arrival written into its folder's ערוכות, the dialog for a folderless photo, and a chosen folder getting the edited photo. No page errors.
