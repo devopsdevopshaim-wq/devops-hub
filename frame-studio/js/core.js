@@ -310,7 +310,8 @@
       p.doc = FS.newDoc(im, my ? 'magnet' : fmt);
       if (my) FS.applyFormat(p.doc, 'cm', im, my.w, my.h);
       if (FS.prefs.keepOrient !== false) FS.matchOrient(p.doc, im);   /* a wide photo stays wide, a tall one stays tall */
-      if (file) p.srcName = file.name; if (file && file._dir) p.srcDir = file._dir;   /* opened from a folder: edited copies go back to it (autosave.js) */
+      if (file) p.srcName = file.name; if (file && file._dir) p.srcDir = file._dir;
+      if (file && window.FSDesktop && FSDesktop.files && FSDesktop.files.pathOf) { var sp = FSDesktop.files.pathOf(file); if (sp) p.srcPath = sp; }   /* the desktop program: the file's real place on the disk */   /* opened from a folder: edited copies go back to it (autosave.js) */
       /* the last frame used on a page of this orientation (a tall one and a wide one are kept apart) goes on by itself */
       var land = p.doc.w > p.doc.h, oref = FS.prefs.autoFrame !== false && (land ? FS.prefs.lastFrameLand : FS.prefs.lastFramePort);
       if (!oref && FS.prefs.autoFrame !== false) { var other = land ? FS.prefs.lastFramePort : FS.prefs.lastFrameLand; if (other && other.kind !== 'png') oref = other; }   /* a drawn frame fits any shape */
