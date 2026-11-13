@@ -350,7 +350,9 @@
   FS.photoWarn = warnOf;
   function tileHTML(p, px) {
     var w = warnOf(p);
-    var a = p.cadv, ppl = a && a.verdict !== 'error' && a.faces ? '<span class="mt-ppl" title="אנשים בתמונה · מסתכלים עם עיניים פתוחות">👥 ' + (a.people || a.faces) + ' · 👀 ' + (a.looking != null ? a.looking : a.adults) + '</span>' : '';
+    var a = p.cadv, ppl = a && a.verdict !== 'error' && a.faces ? '<span class="mt-ppl" title="אנשים בתמונה · מסתכלים עם עיניים פתוחות">👥 ' + (a.people || a.faces) + ' · 👀 ' + (a.looking != null ? a.looking : a.adults) + '</span>'
+      : a && a.verdict === 'none' ? '<span class="mt-ppl" title="לא נמצאו פנים בתמונה">👥 0</span>'
+      : !a && FS.prefs.autoFaceCheck !== false ? '<span class="mt-ppl wait" title="' + ((p._fcErr || 0) >= 4 ? 'לא הצלחתי לבדוק את התמונה' : 'בודק כמה אנשים בתמונה…') + '">👥 ' + ((p._fcErr || 0) >= 4 ? '?' : '…') + '</span>' : '';
     return '<div class="mt-tile' + (S.marked[p.id] ? ' sel' : '') + (w ? ' warn' : '') + (p.id === focusId ? ' focus' : '') + '" data-id="' + p.id + '" data-px="' + px + '"' + (w ? ' title="' + esc(w) + '"' : '') + '><div class="mt-th">' + (w ? '<span class="mt-warn">' + esc(w) + '</span>' : '') + ppl +
       '<button class="mt-chk" title="סימון">✓</button><button class="mt-zoomb" title="הגדלה">🔍</button>' +
       '<div class="mt-band"><b>' + sizeTxt(p) + '</b><span class="mt-cp"><button data-cp="-1" title="פחות (על כל המסומנות, כשהתמונה מסומנת)" aria-label="פחות הדפסים">−</button><i data-cpn title="לחיצה: להקליד מספר · או מקלידים 0–9 כשהעכבר על התמונה">' + copies(p) + ' הדפסים</i><button data-cp="1" title="עוד (על כל המסומנות, כשהתמונה מסומנת)" aria-label="עוד הדפסים">+</button></span>' +
@@ -387,7 +389,8 @@
     if (Date.now() - (FS._lastInput || 0) < 1500) return void setTimeout(faceCheck, 800);   /* the owner is working: later, so nothing slows down */
     var p = S.photos.filter(function (x) { return (!x.cadv || (x.cadv.auto && x.cadv.v !== 2)) && !x._fcq; })[0]; if (!p) return;   /* new photos, and ones counted by an older check */
     fcBusy = true; p._fcq = true;
-    FS.loadImg(p.src).then(function (im) { return FaceSig.detect(im, 1280); }).then(function (faces) {
+    /* a photo the face model does not answer in 25 s is left for later, so one photo never holds back all the others */
+    Promise.race([FS.loadImg(p.src).then(function (im) { return FaceSig.detect(im, (p._fcErr || 0) >= 2 ? 960 : 1280); }), new Promise(function (_, no) { setTimeout(function () { no(new Error('timeout')); }, 25000); })]).then(function (faces) {
       p.cadv = FS.judgeFaces(faces); p.cadv.auto = true;
       /* the copies follow the people (one for every adult looking at the camera; none for closed eyes), unless set by hand */
       if (!p.copiesHand && FS.prefs.autoCopies !== false) { if (p.cadv.verdict === 'ok' && p.cadv.copies > 0) p.copies = p.cadv.copies; else if (p.cadv.verdict === 'closed') p.copies = 0; stat(); foot(); }

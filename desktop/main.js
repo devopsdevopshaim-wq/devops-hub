@@ -644,23 +644,24 @@ app.whenReady().then(() => {
   // from a higher count are removed.
   const editedPref = () => path.join(app.getPath('userData'), 'edited-dir.json');
   function chosenDir() { try { const j = JSON.parse(fs.readFileSync(editedPref(), 'utf8')); return j && typeof j.dir === 'string' && path.isAbsolute(j.dir) ? j.dir : ''; } catch { return ''; } }
-  ipcMain.handle('files:choose-dir', async (event) => {
+  ipcMain.handle('files:choose-dir', async (event, o) => {
     fromApp(event);
+    const want = o && typeof o.defaultPath === 'string' && path.isAbsolute(o.defaultPath) && fs.existsSync(o.defaultPath) ? o.defaultPath : '';
     const w = BrowserWindow.fromWebContents(event.sender);
     const last = chosenDir();
-    const r = await dialog.showOpenDialog(w || undefined, { title: 'איפה לשמור את התמונות הערוכות', buttonLabel: 'שמירה כאן', properties: ['openDirectory', 'createDirectory'], ...(last && fs.existsSync(last) ? { defaultPath: last } : {}) });
+    const r = await dialog.showOpenDialog(w || undefined, { title: 'איפה לשמור את התמונות הערוכות', buttonLabel: 'שמירה כאן', properties: ['openDirectory', 'createDirectory'], ...(want ? { defaultPath: want } : last && fs.existsSync(last) ? { defaultPath: last } : {}) });
     if (r.canceled || !r.filePaths[0]) return { ok: false };
     try { fs.writeFileSync(editedPref(), JSON.stringify({ dir: r.filePaths[0] })); } catch { /* kept for this run only */ }
     return { ok: true, dir: r.filePaths[0], name: path.basename(r.filePaths[0]) };
   });
   // the folder the edited photos were just saved to, opened in Windows Explorer (only the folder chosen here)
-  ipcMain.handle('files:open-dir', async (event) => { fromApp(event); const d = chosenDir(); if (!d) return { ok: false }; const e = await shell.openPath(d); return { ok: !e }; });
+  ipcMain.handle('files:open-dir', async (event, o) => { fromApp(event); let d = chosenDir(); if (!d) return { ok: false }; if (o && o.sub) d = path.join(d, 'ערוכות'); const e = await shell.openPath(d); return { ok: !e }; });
   ipcMain.handle('files:edited-dir', (event) => { fromApp(event); const d = chosenDir(); return { dir: d, name: d ? path.basename(d) : '' }; });
   ipcMain.handle('files:save-edited', async (event, o) => {
     fromApp(event);
     o = o || {};
     let dir = '';
-    if (o.mode === 'custom') dir = chosenDir();
+    if (o.mode === 'custom') { dir = chosenDir(); if (dir && o.sub) dir = path.join(dir, 'ערוכות'); }   // a click: a new folder ערוכות in the place chosen
     else if (typeof o.srcPath === 'string' && path.isAbsolute(o.srcPath)) dir = path.join(path.dirname(o.srcPath), 'ערוכות');
     if (!dir) return { ok: false, error: o.mode === 'custom' ? 'no-dir' : 'no-path' };
     const data = o.data instanceof Uint8Array ? o.data : o.data ? new Uint8Array(o.data) : null;

@@ -112,3 +112,6 @@ html.fs-ivory .tools button[aria-selected="true"] { background: linear-gradient(
 
 /* ---------- people on each photo: how many, and how many look with their eyes open ---------- */
 #mt .mt-ppl { position: absolute; z-index: 3; top: auto; bottom: 36px; inset-inline-start: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(36, 30, 21, .78); color: #fff; font: 700 11.5px var(--f-body, 'Assistant', sans-serif); pointer-events: none; }
+
+#mt .mt-ppl.wait { background: rgba(36, 30, 21, .5); animation: mt-ppl-wait 1.4s ease-in-out infinite; }
+@keyframes mt-ppl-wait { 50% { opacity: .55; } }
