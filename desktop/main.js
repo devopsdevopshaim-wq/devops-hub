@@ -368,6 +368,16 @@ app.on('web-contents-created', (_e, contents) => {
 function createWindow() {
   const win = new BrowserWindow(windowOptions());
   win.once('ready-to-show', () => { win.maximize(); win.show(); });
+  // before the window closes, the studio writes its edited photos (autosave.js answers app:flush with app:flushed);
+  // a page that does not answer within 25 s does not hold the close
+  let flushed = false;
+  win.on('close', (e) => {
+    if (flushed || quitting) return;
+    e.preventDefault();
+    try { win.webContents.send('app:flush'); } catch { flushed = true; win.close(); return; }
+    setTimeout(() => { flushed = true; if (!win.isDestroyed()) win.close(); }, 25000);
+  });
+  win.__flushed = () => { flushed = true; if (!win.isDestroyed()) win.close(); };
   win.loadURL(START_URL);
   return win;
 }
@@ -619,6 +629,47 @@ app.whenReady().then(() => {
     if (localAI) { try { localAI.shutdown(); } catch { /* closing anyway */ } }
     setTimeout(() => app.exit(0), 400);
     return { ok: true };
+  });
+
+  ipcMain.on('app:flushed', (event) => {
+    const frameUrl = event.senderFrame ? event.senderFrame.url : '';
+    if (!isAppUrl(frameUrl)) return;
+    const w = BrowserWindow.fromWebContents(event.sender);
+    if (w && w.__flushed) w.__flushed();
+  });
+
+  // 💾 the edited photos written by the program itself (no browser folder permission): next to the photo, in "ערוכות", or in
+  // the one folder the owner chose here. Writes go only into a folder named ערוכות beside a photo, or the chosen folder;
+  // only JPEG data; the name is cleaned. Copies: "name.jpg", "name (2).jpg" … one file for each print, and extra ones left
+  // from a higher count are removed.
+  const editedPref = () => path.join(app.getPath('userData'), 'edited-dir.json');
+  function chosenDir() { try { const j = JSON.parse(fs.readFileSync(editedPref(), 'utf8')); return j && typeof j.dir === 'string' && path.isAbsolute(j.dir) ? j.dir : ''; } catch { return ''; } }
+  ipcMain.handle('files:choose-dir', async (event) => {
+    fromApp(event);
+    const w = BrowserWindow.fromWebContents(event.sender);
+    const r = await dialog.showOpenDialog(w || undefined, { title: 'איפה לשמור את התמונות הערוכות', properties: ['openDirectory', 'createDirectory'] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false };
+    try { fs.writeFileSync(editedPref(), JSON.stringify({ dir: r.filePaths[0] })); } catch { /* kept for this run only */ }
+    return { ok: true, dir: r.filePaths[0], name: path.basename(r.filePaths[0]) };
+  });
+  ipcMain.handle('files:edited-dir', (event) => { fromApp(event); const d = chosenDir(); return { dir: d, name: d ? path.basename(d) : '' }; });
+  ipcMain.handle('files:save-edited', async (event, o) => {
+    fromApp(event);
+    o = o || {};
+    let dir = '';
+    if (o.mode === 'custom') dir = chosenDir();
+    else if (typeof o.srcPath === 'string' && path.isAbsolute(o.srcPath)) dir = path.join(path.dirname(o.srcPath), 'ערוכות');
+    if (!dir) return { ok: false, error: o.mode === 'custom' ? 'no-dir' : 'no-path' };
+    const data = o.data instanceof Uint8Array ? o.data : o.data ? new Uint8Array(o.data) : null;
+    if (!data || data.length < 100 || data[0] !== 0xFF || data[1] !== 0xD8) return { ok: false, error: 'bad-data' };   // a JPEG only
+    const base = String(o.name || 'תמונה').replace(/\.[^.]+$/, '').replace(/[\\/:*?"<>|\x00-\x1f]+/g, '_').replace(/^\.+/, '').slice(0, 80) || 'תמונה';
+    const n = Math.max(1, Math.min(50, Math.round(Number(o.copies) || 1)));
+    try {
+      await fs.promises.mkdir(dir, { recursive: true });
+      for (let i = 1; i <= n; i++) await fs.promises.writeFile(path.join(dir, i === 1 ? base + '.jpg' : base + ' (' + i + ').jpg'), data);
+      for (let i = n + 1; i <= 50; i++) { const f = path.join(dir, base + ' (' + i + ').jpg'); if (!fs.existsSync(f)) break; await fs.promises.unlink(f).catch(() => {}); }
+      return { ok: true, dir, files: n };
+    } catch (e) { return { ok: false, error: 'write-failed', detail: String(e && e.message || e).slice(0, 160) }; }
   });
 
   ipcMain.on('app:close', (event) => {

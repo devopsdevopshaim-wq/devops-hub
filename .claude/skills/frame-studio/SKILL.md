@@ -2276,3 +2276,24 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The picked folder handle is kept in IndexedDB (`fs-edited`). When Windows asks again after a restart, a one-click dialog re-grants it (`requestPermission`) or offers another folder.
   - "💾 לשמור עכשיו את כל הערוכות".
 - **Tested in a browser** with mock folders: a photo framed on arrival written into its folder's ערוכות, the dialog for a folderless photo, and a chosen folder getting the edited photo. No page errors.
+
+## v151: edited photos written by the desktop program itself, one file per copy, and saved before closing
+
+- **Why v150 still saved nothing for the owner:** in the Electron program the browser folder API (showDirectoryPicker, read-write) is not reliable, and photos picked one by one have no folder.
+- **Now, in the desktop program (new IPC, needs the new installer):**
+  - preload `FSDesktop.files.pathOf(file)` (webUtils.getPathForFile): core.js keeps `p.srcPath`.
+  - 📁 תיקייה in the desktop opens through Windows (`<input webkitdirectory>`), so files keep their paths. Files under a "ערוכות" folder are skipped.
+  - `files:save-edited` {mode, srcPath, name, copies, data}: main writes JPEG data only.
+    - Where: `<photo folder>/ערוכות` (source), or the folder chosen with `files:choose-dir` (custom, kept in userData `edited-dir.json`).
+    - Files: "name.jpg", "name (2).jpg" … one per copy (at most 50); leftover higher copies are deleted.
+  - A photo without a path asks once for a folder.
+- **Before closing:** the window's `close` is held. Main sends `app:flush`, the page saves everything (`FS.saveAllEdited`) and answers `app:flushed` (25 s cap).
+- **The page (autosave.js, rewritten):**
+  - The signature includes the copies, so a change of copies writes again.
+  - A sweep every 15 s. The background queue never waits more than 15 s behind the owner's work.
+  - "💾 לשמור עכשיו" saves everything at once.
+  - The browser path (folder handles) stays, with copies too.
+- **Tested:**
+  - In a browser with a mocked FSDesktop: framed on arrival → saved; copies 4 → saved again; the close flush → `flushed`.
+  - The browser path still writes ערוכות.
+  - `node --check` on main and preload.

@@ -227,6 +227,11 @@
   function addFiles(fl) { if (fl && fl.length) FS.addFiles(fl); }
   ['#mt-files', '#mt-files2'].forEach(function (s) { $(s, root).addEventListener('change', function () { addFiles(this.files); this.value = ''; }); });
   function pickFolder() {
+    /* the desktop program opens folders through Windows, so every photo keeps its real path (its edited copies go beside it) */
+    if (window.FSDesktop && FSDesktop.files && FSDesktop.files.pathOf) {
+      var di = document.createElement('input'); di.type = 'file'; di.multiple = true; di.webkitdirectory = true;
+      di.addEventListener('change', function () { addFiles(Array.prototype.filter.call(di.files, function (f) { return !/(^|[\\/])ערוכות[\\/]/.test(f.webkitRelativePath || ''); })); }); di.click(); return;
+    }
     if (!window.showDirectoryPicker) {
       var i = document.createElement('input'); i.type = 'file'; i.multiple = true; i.webkitdirectory = true;
       i.addEventListener('change', function () { addFiles(i.files); }); i.click(); return;

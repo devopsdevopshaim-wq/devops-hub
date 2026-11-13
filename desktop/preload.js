@@ -1,7 +1,7 @@
 // Runs in the sandboxed renderer before the page. Exposes a small, read-only API as window.FSDesktop.
 'use strict';
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const arg = (process.argv || []).find((a) => a.startsWith('--fs-desktop-version='));
 const version = arg ? arg.slice('--fs-desktop-version='.length) : '';
@@ -60,6 +60,15 @@ contextBridge.exposeInMainWorld('FSDesktop', Object.freeze({
   notify: (title, body) => ipcRenderer.send('app:notify', String(title || ''), String(body || '')),
   // closes the program (same as the window's X; unsaved photos are asked about first)
   close: () => ipcRenderer.send('app:close'),
+  // 💾 edited photos written by the program: the real path of a picked file, the folder choice, the write, and the close hand-shake
+  files: Object.freeze({
+    pathOf: (file) => { try { return webUtils && webUtils.getPathForFile ? webUtils.getPathForFile(file) || '' : ''; } catch { return ''; } },
+    chooseDir: () => ipcRenderer.invoke('files:choose-dir'),
+    editedDir: () => ipcRenderer.invoke('files:edited-dir'),
+    saveEdited: (o) => ipcRenderer.invoke('files:save-edited', { mode: o && o.mode === 'custom' ? 'custom' : 'source', srcPath: String((o && o.srcPath) || ''), name: String((o && o.name) || ''), copies: Number(o && o.copies) || 1, data: o && o.data }),
+  }),
+  onFlush: (fn) => { ipcRenderer.removeAllListeners('app:flush'); ipcRenderer.on('app:flush', () => { try { fn(); } catch { ipcRenderer.send('app:flushed'); } }); },
+  flushed: () => ipcRenderer.send('app:flushed'),
   // removes the program from this computer (asks first, then opens Windows' uninstaller and closes)
   uninstall: () => ipcRenderer.invoke('app:uninstall'),
   // installs an approved update (a version "1.0.N"): downloads its installer with progress {done, total}, starts it and closes
