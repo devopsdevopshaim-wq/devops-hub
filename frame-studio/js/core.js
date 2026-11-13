@@ -314,7 +314,13 @@
       /* the last frame used on a page of this orientation (a tall one and a wide one are kept apart) goes on by itself */
       var land = p.doc.w > p.doc.h, oref = FS.prefs.autoFrame !== false && (land ? FS.prefs.lastFrameLand : FS.prefs.lastFramePort);
       if (!oref && FS.prefs.autoFrame !== false) { var other = land ? FS.prefs.lastFramePort : FS.prefs.lastFrameLand; if (other && other.kind !== 'png') oref = other; }   /* a drawn frame fits any shape */
-      if (oref && FS.setFrame) FS.setFrame(p, JSON.parse(JSON.stringify(oref)), { quiet: true, keepPrefs: true });
+      if (!oref && FS.prefs.autoFrame !== false && FS.prefs.lastFrame) oref = FS.prefs.lastFrame;   /* a frame used before there were two (or the only one): the photo turns into it */
+      if (oref && FS.setFrame) {
+        /* the page size used with that frame (a 10×7.5 magnet stays 10×7.5), its long side the same way as this photo */
+        var omm = oref === FS.prefs.lastFrameLand ? FS.prefs.lastFrameLandMm : oref === FS.prefs.lastFramePort ? FS.prefs.lastFramePortMm : null;
+        if (omm && omm[0] > 0 && omm[1] > 0) { var lo = Math.max(omm[0], omm[1]), sh = Math.min(omm[0], omm[1]); FS.applyFormat(p.doc, 'cm', im, land ? lo : sh, land ? sh : lo); }
+        FS.setFrame(p, JSON.parse(JSON.stringify(oref)), { quiet: true, keepPrefs: true });   /* the photo is fitted into the frame's window */
+      }
       else if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
       p._base = JSON.stringify(p.doc);   /* what it looked like when it came in: an edit is anything after this */
       FS.state.photos.push(p);

@@ -24,7 +24,7 @@
     });
     if (!F.length) return { faces: 0, people: 0, adults: 0, kids: 0, away: 0, closed: 0, copies: 0, verdict: 'none' };
     var big = Math.max.apply(null, F.map(function (x) { return x.h; }));
-    var front = F.filter(function (x) { return x.h >= big * 0.45; });              /* guests far behind do not count */
+    var front = F.filter(function (x) { return x.h >= big * 0.6; });               /* guests behind (a face well under the biggest) do not count */
     var ref = front.reduce(function (a, x) { return x.h > a.h ? x : a; }, front[0]);
     front.forEach(function (x) {
       var rel = x.h / ref.h, lower = x.cy - ref.cy > ref.h * 0.18;
@@ -38,7 +38,7 @@
     if (!closed && adults === 0 && away > 0) copies = 1;
     var doubt = !closed && front.some(function (x) { return x.doubt; });
     var looking = front.filter(function (x) { return x.facing && !x.closed; }).length;
-    return { faces: F.length, people: front.length, adults: adults, kids: kids, away: away, closed: closed, looking: looking, doubt: doubt, copies: copies, verdict: closed ? 'closed' : 'ok' };
+    return { v: 2, faces: F.length, people: front.length, adults: adults, kids: kids, away: away, closed: closed, looking: looking, doubt: doubt, copies: copies, verdict: closed ? 'closed' : 'ok' };
   }
   FS.judgeFaces = judge;
   function dhash(im) {

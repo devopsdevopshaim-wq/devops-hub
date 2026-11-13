@@ -379,9 +379,13 @@
   function faceCheck() {
     if (fcBusy || FS.prefs.autoFaceCheck === false || !window.FaceSig || !FS.judgeFaces || !on()) return;
     if (Date.now() - (FS._lastInput || 0) < 1500) return void setTimeout(faceCheck, 800);   /* the owner is working: later, so nothing slows down */
-    var p = S.photos.filter(function (x) { return !x.cadv && !x._fcq; })[0]; if (!p) return;
+    var p = S.photos.filter(function (x) { return (!x.cadv || (x.cadv.auto && x.cadv.v !== 2)) && !x._fcq; })[0]; if (!p) return;   /* new photos, and ones counted by an older check */
     fcBusy = true; p._fcq = true;
-    FS.loadImg(p.src).then(function (im) { return FaceSig.detect(im, 1280); }).then(function (faces) { p.cadv = FS.judgeFaces(faces); p.cadv.auto = true; }, function () {})
+    FS.loadImg(p.src).then(function (im) { return FaceSig.detect(im, 1280); }).then(function (faces) {
+      p.cadv = FS.judgeFaces(faces); p.cadv.auto = true;
+      /* the copies follow the people (one for every adult looking at the camera; none for closed eyes), unless set by hand */
+      if (!p.copiesHand && FS.prefs.autoCopies !== false) { if (p.cadv.verdict === 'ok' && p.cadv.copies > 0) p.copies = p.cadv.copies; else if (p.cadv.verdict === 'closed') p.copies = 0; stat(); foot(); }
+    }, function () {})
       .then(function () { fcBusy = false; refreshTile(p); setTimeout(faceCheck, 150); });
   }
   function refreshTile(p) {
@@ -399,7 +403,7 @@
   /* copies made quick: a marked photo speaks for all the marked ones; the number is typed in place; 0–9 on the keyboard */
   function group(p) { var m = marked(); return S.marked[p.id] && m.length > 1 ? m : [p]; }
   function setCopies(list, f) {
-    list.forEach(function (q) { q.copies = FS.clamp(Math.round(Number(f(q)) || 0), 0, 999); refreshTile(q); });
+    list.forEach(function (q) { q.copies = FS.clamp(Math.round(Number(f(q)) || 0), 0, 999); q.copiesHand = true; refreshTile(q); });
     foot(); stat(); FS.emit('doc');
     if (list.length > 1) FS.toast('🧾 ' + list.length + ' תמונות מסומנות עודכנו', 2000);
   }
@@ -526,7 +530,7 @@
   /* copies */
   var cpn = 1;
   $$('[data-cpa]', root).forEach(function (b) { b.addEventListener('click', function () { cpn = FS.clamp(cpn + Number(b.dataset.cpa), 0, 999); $('#mt-cpn', root).textContent = cpn; }); });
-  $('#mt-cp-set', root).addEventListener('click', function () { var l = marked(); if (!l.length) return FS.toast('מסמנים תמונות קודם'); l.forEach(function (p) { p.copies = cpn; }); buildGrid(); });
+  $('#mt-cp-set', root).addEventListener('click', function () { var l = marked(); if (!l.length) return FS.toast('מסמנים תמונות קודם'); l.forEach(function (p) { p.copies = cpn; p.copiesHand = true; }); buildGrid(); });
   function advise() { var l = marked().length ? marked() : S.photos.slice(); if (FS.openCopiesAdvisor) FS.openCopiesAdvisor(l, function () { buildGrid(); stat(); }); }
   $('#mt-cadv', root).addEventListener('click', advise);
   (function () { var c = $('#mt-cauto', root); if (!c) return; c.checked = ls('fs-auto-copies') !== '0'; c.addEventListener('change', function () { ls('fs-auto-copies', c.checked ? '1' : '0'); FS.toast(c.checked ? '🧮 כל תמונה חדשה תקבל עותקים לפי האנשים בה' : 'העותקים האוטומטיים כבויים'); }); })();
