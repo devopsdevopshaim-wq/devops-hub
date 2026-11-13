@@ -2319,3 +2319,19 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Closing:** the "לסגור? יש תמונות שעוד לא נשמרו" question (ui.js beforeunload) is skipped when `FS.allEditedSaved()`, which is the case after the close flush.
 - **WhatsApp:** the deploy log shows `CALLMEBOT_APIKEY` and `CALLMEBOT_PHONE` empty, so no WhatsApp goes out until the owner adds them to GitHub Secrets and the Cloudflare deploy runs.
 - **Tested in a browser** with a mocked FSDesktop: a failed first detection then 5 people and copies 5, cover, enhanced, the place asked.
+
+## v154: a professional automatic edit (natural / cinematic), no more burnt photos
+
+- **The owner:** the v153 automatic edit (`FS.autoAdjust` on every new photo) burnt event photos. It measured the whole frame, so a dark hall pushed exposure, whites and shadows up on flash-lit people. In a test, 10% of the faces and dress came out clipped.
+- **`FS.proAdjust(p, look)` (core.js) measures like a photographer:**
+  - The middle of the frame weighs four times the edges.
+  - Exposure never goes up when the bright part is already near white, and is pulled back when skin or a dress is clipped (>1.5%).
+  - Highlights −22…−38, gentle whites, shadows and blacks, contrast +6.
+  - White balance corrected by a quarter, so the hall keeps its warmth.
+  - Vibrance +8…14; clarity, texture and output sharpening.
+- **`cinema`** adds: contrast 12, highlights ≤ −40, fade 6, saturation −6, warmer skin, a light vignette, and a grade (teal shadows 195°, warm highlights 36°).
+- **`FS.applyAutoLook(p, look)`:** puts the look on or takes it off. It keeps the adjustments from before the look (`p._preAuto`) and touches only a photo whose adjustments are still what the look left (`p._postAuto`), so a hand edit stays.
+- **New photos:** `FS.prefs.autoLook` (natural by default), or off with `autoEnhance === false`.
+- **The workspace size bar:** "✨ עריכה: טבעי מקצועי | 🎬 קולנועי | בלי" (`#mt-look`) switches the look and re-applies it to the photos already in.
+- The ✨ button's `FS.autoAdjust` is unchanged.
+- **Measured** on two dark-hall flash photos (the middle of the frame): old 3.6% / 10.3% clipped, natural 1.5% / 1.5%, cinema 1.5% / 1.4%.

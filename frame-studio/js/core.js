@@ -325,7 +325,8 @@
         p._autoFramed = true;
       }
       /* ✨ automatic editing: light, contrast and colour set by the photo itself (a touch-up afterwards is always possible) */
-      if (FS.prefs.autoEnhance !== false && FS.autoAdjust) { try { p.doc.photo.adj = Object.assign({}, p.doc.photo.adj, FS.autoAdjust(p)); p._autoEnhanced = true; } catch (e) { /* left as shot */ } }
+      var look = FS.prefs.autoEnhance === false ? 'off' : (FS.prefs.autoLook || 'natural');
+      if (look !== 'off' && FS.applyAutoLook) { try { FS.applyAutoLook(p, look); } catch (e) { /* left as shot */ } }
       else if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
       p._base = JSON.stringify(p.doc);   /* what it looked like when it came in: an edit is anything after this */
       FS.state.photos.push(p);
@@ -630,7 +631,66 @@
   function hexRgb(h) { h = String(h).replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&'); var v = parseInt(h, 16) || 0; return [v >> 16 & 255, v >> 8 & 255, v & 255]; }
   FS.hexRgb = hexRgb;
 
-  /* ---------- auto enhance: levels, white balance and a little colour, from the photo's own histogram ---------- */
+
+  /* ---------- ✨ the automatic edit of every new photo, the way a working photographer does it ----------
+     Measured on the people (the middle of the frame counts four times the edges: a dark hall around a flash-lit couple must
+     not pull the exposure up), highlights and faces protected first (no exposure up when the bright part is already near
+     white; clipped skin is pulled back), small moves only, white balance corrected halfway (the warmth of the hall stays).
+     'natural' (טבעי מקצועי): clean, true colour, a little depth and crispness. 'cinema' (קולנועי): the same base with softer
+     highlights, deeper contrast, a touch of fade, teal in the shadows and warm skin, and a light vignette.
+     Returns only the adjustments it sets (merged into the photo's own, so every one can still be changed by hand). */
+  FS.proAdjust = function (p, look) {
+    var im = FS.img(p.src); if (!im) return {};
+    var W = im.naturalWidth || im.width, H = im.naturalHeight || im.height, k = Math.min(1, 320 / Math.max(W, H));
+    var c = FS.canvas(Math.max(1, W * k), Math.max(1, H * k)), x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(im, 0, 0, c.width, c.height);
+    var d = x.getImageData(0, 0, c.width, c.height).data, cw = c.width, ch = c.height, hist = new Float64Array(256), tot = 0, clip = 0, sr = 0, sg = 0, sb = 0, ss = 0;
+    for (var i = 0, px = 0; i < d.length; i += 4, px++) {
+      var xx = px % cw, yy = (px / cw) | 0, inner = xx > cw * 0.2 && xx < cw * 0.8 && yy > ch * 0.12 && yy < ch * 0.85, w = inner ? 4 : 1;
+      var L = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0; hist[L] += w; tot += w;
+      if (inner && L >= 250) clip += w;
+      sr += d[i] * w; sg += d[i + 1] * w; sb += d[i + 2] * w;
+      var mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]); ss += (mx - mn) / 255 * w;
+    }
+    function pct(q) { var t = tot * q, acc = 0; for (var v = 0; v < 256; v++) { acc += hist[v]; if (acc >= t) return v; } return 255; }
+    var lo = pct(0.01), hi = pct(0.99), mid = pct(0.5), clipF = clip / Math.max(1, tot);
+    var r = (sr / tot), g = (sg / tot), b = (sb / tot), sat = ss / tot;
+    var e = (122 - mid) / 3;
+    if (hi > 232) e = Math.min(e, 0);                 /* the bright part is already near white: never brighter */
+    if (clipF > 0.015) e = Math.min(e, -6 - clipF * 120);   /* burnt skin or dress: pulled back */
+    var a = {
+      exposure: clamp(Math.round(e), -25, 14),
+      highlights: hi > 230 || clipF > 0.01 ? -38 : -22,
+      whites: hi > 245 ? -16 : hi < 212 ? clamp(Math.round((226 - hi) / 2), 0, 14) : 0,
+      shadows: lo < 18 && mid < 110 ? 14 : 6,
+      blacks: -6,
+      contrast: 6,
+      temp: clamp(Math.round((b - r) / 4), -12, 12),
+      tint: clamp(Math.round((g - (r + b) / 2) / 4), -8, 8),
+      vibrance: sat < 0.2 ? 14 : 8,
+      clarity: 6, texture: 4, sharpen: 14
+    };
+    if (look === 'cinema') {
+      a.contrast = 12; a.highlights = Math.min(a.highlights, -40); a.shadows += 4; a.fade = 6; a.saturation = -6; a.vibrance += 4;
+      a.temp = clamp(a.temp + 4, -12, 16); a.vignette = 12;
+      a.grade = { sh: { h: 195, s: 20 }, mid: { h: 30, s: 4 }, hi: { h: 36, s: 14 }, bal: 0 };
+    }
+    return a;
+  };
+  /* the look put on (or taken off) a photo: only while its adjustments are still what the look left; a photo touched by hand stays */
+  FS.applyAutoLook = function (p, look) {
+    look = look || FS.prefs.autoLook || 'natural';
+    var adj = p.doc.photo.adj;
+    if (p._postAuto && JSON.stringify(adj) !== p._postAuto) return false;
+    var base = p._preAuto ? JSON.parse(p._preAuto) : JSON.parse(JSON.stringify(adj));
+    p._preAuto = JSON.stringify(base);
+    p.doc.photo.adj = look === 'off' ? base : Object.assign({}, base, FS.proAdjust(p, look));
+    p._postAuto = JSON.stringify(p.doc.photo.adj); p._autoEnhanced = look !== 'off';
+    p.cache = {}; p._pt = null; p._gt = null; p._pv = null;
+    return true;
+  };
+
+  /* ---------- auto enhance (the ✨ button): levels, white balance and a little colour, from the photo's own histogram ---------- */
   FS.autoAdjust = function (p) {
     var im = FS.img(p.src), k = Math.min(1, 320 / Math.max(im.naturalWidth, im.naturalHeight));
     var c = FS.canvas(im.naturalWidth * k, im.naturalHeight * k), x = c.getContext('2d', { willReadFrequently: true });
