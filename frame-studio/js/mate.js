@@ -40,6 +40,7 @@
         '<div class="mt-seg" id="mt-fit"><button data-f="contain">להתאים</button><button data-f="cover">לחתוך</button></div>' +
         '<label class="mt-chk-l"><input type="checkbox" id="mt-orient"> לפי כיוון התמונה</label>' +
         '<label class="mt-chk-l" title="תמונה לרוחב במסגרת לאורך (או להפך) מסתובבת בעצמה ונכנסת שלמה, בלי חיתוך"><input type="checkbox" id="mt-turn"> 🔄 סיבוב אוטומטי במסגרת</label>' +
+        '<span class="mt-k">✨ עריכה:</span><div class="mt-seg" id="mt-look" title="העריכה האוטומטית של כל תמונה חדשה (אפשר תמיד לגעת ידנית)"><button data-look="natural">טבעי מקצועי</button><button data-look="cinema">🎬 קולנועי</button><button data-look="off">בלי</button></div>' +
         '<button class="mt-btn" id="mt-size-sel">החל על המסומנות</button><button class="mt-btn" id="mt-size-all">החל על כולן</button><span class="mt-hint mt-snew" id="mt-snew"></span></div>' +
       '<div class="mt-bar" data-b="files" hidden><button class="mt-btn" id="mt-all">✔ סימון הכל</button><button class="mt-btn" id="mt-none">ניקוי סימון</button><button class="mt-btn" id="mt-inv">היפוך</button>' +
         '<div class="mt-seg mt-ori"><button data-ori="all">הכל <i></i></button><button data-ori="tall">↕ לאורך <i></i></button><button data-ori="wide">↔ לרוחב <i></i></button></div>' +
@@ -507,6 +508,17 @@
   /* also how new photos come in: wide stays wide, tall stays tall (on unless turned off) */
   $('#mt-orient', root).checked = FS.prefs.keepOrient !== false;
   $('#mt-orient', root).addEventListener('change', function () { FS.prefs.keepOrient = this.checked; FS.savePrefs(); });
+  /* ✨ the automatic edit: natural professional, cinematic, or none; put on every photo still as the look left it */
+  function lookNow() { return FS.prefs.autoEnhance === false ? 'off' : (FS.prefs.autoLook || 'natural'); }
+  function lookSeg() { $$('#mt-look [data-look]', root).forEach(function (b) { b.classList.toggle('on', b.dataset.look === lookNow()); }); }
+  $('#mt-look', root).addEventListener('click', function (e) {
+    var b = e.target.closest('[data-look]'); if (!b) return;
+    var v = b.dataset.look; FS.prefs.autoLook = v === 'off' ? FS.prefs.autoLook : v; FS.prefs.autoEnhance = v !== 'off'; FS.savePrefs(); lookSeg();
+    var n = 0, kept = 0; S.photos.forEach(function (p) { if (!FS.img(p.src)) return; if (FS.applyAutoLook(p, v)) n++; else kept++; });
+    FS.emit('doc'); buildGrid();
+    FS.toast((v === 'off' ? 'בלי עריכה אוטומטית' : v === 'cinema' ? '🎬 עריכה קולנועית' : '✨ עריכה טבעית מקצועית') + (n ? ' · ' + n + ' תמונות' : '') + (kept ? ' · ' + kept + ' שנערכו ביד נשארו' : ''), 4000);
+  });
+  lookSeg();
   $('#mt-turn', root).checked = FS.prefs.autoTurn !== false;
   $('#mt-turn', root).addEventListener('change', function () {
     FS.prefs.autoTurn = this.checked; FS.savePrefs();
