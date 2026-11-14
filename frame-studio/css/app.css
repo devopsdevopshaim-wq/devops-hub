@@ -1,0 +1,21 @@
+/* the manager app's install page (app.html) */
+:root { color-scheme: dark; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(120% 80% at 50% 0%, #2a2140 0%, #0D0B10 60%); color: #EDEAE4; font: 16px/1.6 'Heebo', Arial, sans-serif; }
+.ap { max-width: 520px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 20px 40px; text-align: center; }
+.ap-ico { border-radius: 26px; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
+.ap h1 { margin: 14px 0 4px; font-size: 32px; font-weight: 800; color: #F3DDA6; }
+.ap-lead { color: #cfc8da; margin: 0 0 16px; }
+.ap-state { min-height: 1.6em; color: #E3C48A; font-weight: 500; }
+.ap-go { width: 100%; max-width: 360px; border: 0; border-radius: 999px; padding: 16px 20px; font: 800 19px 'Heebo', sans-serif; color: #1A140B; background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); box-shadow: 0 10px 28px rgba(0,0,0,.45); cursor: pointer; }
+.ap-qr { margin: 18px auto 0; } .ap-qr canvas { border-radius: 12px; width: 220px; height: 220px; }
+.ap-list { list-style: none; padding: 0; margin: 24px 0 14px; display: grid; gap: 8px; text-align: right; }
+.ap-list li { background: rgba(255,255,255,.05); border: 1px solid rgba(227,196,138,.18); border-radius: 14px; padding: 10px 14px; }
+.ap-note { color: #a79fb5; font-size: 14px; } .ap-link { color: #E3C48A; }
+/* the install bar and the iPhone help, on admin.html too */
+#app-bar { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 8px; right: 8px; z-index: 990; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: #16171d; color: #EDEAE4; border: 1px solid rgba(227,196,138,.45); box-shadow: 0 10px 28px rgba(0,0,0,.5); font: 500 14px/1.4 'Heebo', sans-serif; direction: rtl; }
+#app-bar span { flex: 1; } #app-bar button { border: 0; border-radius: 999px; padding: 7px 14px; font: 700 14px 'Heebo', sans-serif; cursor: pointer; }
+#app-bar [data-i] { background: linear-gradient(135deg, #F3DDA6, #B8904F); color: #1A140B; } #app-bar [data-x] { background: transparent; color: #EDEAE4; padding: 7px 9px; }
+.app-sheet { position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; direction: rtl; }
+.app-sheet-in { background: #16171d; color: #EDEAE4; width: 100%; max-width: 520px; border-radius: 20px 20px 0 0; padding: 20px 20px max(20px, env(safe-area-inset-bottom)); font: 16px/1.7 'Heebo', sans-serif; text-align: right; }
+.app-sheet-in ol { padding-inline-start: 22px; } .app-sheet-in button { width: 100%; border: 0; border-radius: 999px; padding: 12px; font: 700 16px 'Heebo', sans-serif; background: linear-gradient(135deg, #F3DDA6, #B8904F); color: #1A140B; }
+.app-ico { display: inline-block; border: 1px solid #888; border-radius: 6px; padding: 0 6px; }

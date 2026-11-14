@@ -1,0 +1,18 @@
+/* ✨ the first opening (firstrun.js) */
+#wow1 { position: fixed; inset: 0; z-index: 99999; background: radial-gradient(120% 90% at 50% 40%, #1d1530 0%, #07060b 62%); color: #f3ecdc; overflow: hidden; direction: rtl; font-family: 'Heebo', Arial, sans-serif; transition: opacity .6s, transform .6s; }
+#wow1.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+#wow1 .w1-cv { position: absolute; inset: 0; }
+#wow1 .w1-txt { position: absolute; left: 0; right: 0; top: 4vh; text-align: center; pointer-events: none; }
+#wow1 .w1-name { margin: 0; font: 900 clamp(40px, 7vw, 92px)/1 'Heebo', sans-serif; letter-spacing: .02em; background: linear-gradient(100deg, #8a6d36, #F3DDA6 35%, #fff6dc 50%, #D9B677 65%, #8a6d36); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; opacity: 0; transform: translateY(14px); transition: opacity 1s, transform 1s; animation: w1Shine 4s linear infinite; }
+#wow1 .w1-tag { margin: 8px 0 0; font: 500 clamp(16px, 2vw, 22px) 'Heebo', sans-serif; color: #cfc6dd; opacity: 0; transition: opacity 1s .4s; }
+#wow1.s2 .w1-name { opacity: 1; transform: none; } #wow1.s2 .w1-tag { opacity: 1; }
+@keyframes w1Shine { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+#wow1 .w1-feat { position: absolute; left: 0; right: 0; bottom: 15vh; display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; list-style: none; padding: 0 16px; margin: 0; pointer-events: none; }
+#wow1 .w1-feat li { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 10px 16px; border-radius: 16px; background: rgba(255,255,255,.06); border: 1px solid rgba(243,221,166,.3); backdrop-filter: blur(8px); opacity: 0; transform: translateY(30px) scale(.9); transition: opacity .6s calc(var(--i) * .35s), transform .6s calc(var(--i) * .35s) cubic-bezier(.2,1.4,.4,1); }
+#wow1 .w1-feat i { grid-row: span 2; font-style: normal; font-size: 26px; } #wow1 .w1-feat b { font-size: 15px; color: #F3DDA6; } #wow1 .w1-feat small { font-size: 12px; color: #bdb3cf; }
+#wow1.s3 .w1-feat li { opacity: 1; transform: none; }
+#wow1 .w1-go { position: absolute; left: 50%; bottom: 5vh; transform: translateX(-50%) scale(.8); opacity: 0; border: 0; border-radius: 999px; padding: 16px 38px; font: 800 20px 'Heebo', sans-serif; color: #1A140B; background: linear-gradient(135deg, #F3DDA6, #D9B677 45%, #B8904F); cursor: pointer; transition: opacity .5s, transform .5s; box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 0 0 0 rgba(243,221,166,.5); }
+#wow1.s4 .w1-go { opacity: 1; transform: translateX(-50%) scale(1); animation: w1Pulse 1.8s ease-out infinite; }
+@keyframes w1Pulse { 0% { box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 0 0 0 rgba(243,221,166,.5); } 100% { box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 0 0 26px rgba(243,221,166,0); } }
+#wow1 .w1-skip { position: absolute; top: 18px; left: 18px; border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.3); color: #cfc6dd; border-radius: 999px; padding: 7px 14px; font: 500 14px 'Heebo', sans-serif; cursor: pointer; }
+@media (max-height: 640px) { #wow1 .w1-feat { bottom: 12vh; } #wow1 .w1-feat small { display: none; } }

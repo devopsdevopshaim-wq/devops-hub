@@ -1,0 +1,138 @@
+/* The live event panel in the studio (js/live.js), its QR sign for the tables, and staff mode. */
+.tools [data-tab=live] { position: relative; }
+.lv-dot { position: absolute; top: 6px; inset-inline-end: 10px; width: 9px; height: 9px; border-radius: 50%; background: #e5484d; box-shadow: 0 0 0 0 rgba(229,72,77,.7); animation: lvp 1.6s infinite; }
+@keyframes lvp { 70% { box-shadow: 0 0 0 8px rgba(229,72,77,0); } 100% { box-shadow: 0 0 0 0 rgba(229,72,77,0); } }
+[data-pane=live] .lv-row { display: flex; gap: 6px; align-items: center; }
+[data-pane=live] .lv-row select { flex: 1; min-width: 0; }
+.lv-card { display: grid; gap: 10px; margin: 12px 0; padding: 14px; border-radius: 16px; border: 1px solid rgba(214,183,126,.22); background: rgba(255,255,255,.03); }
+.lv-card h3 { margin: 0; font-size: 16px; }
+.lv-meta { margin: 0; font-size: 13px; opacity: .8; }
+.lv-meta .ok { color: #46c38b; } .lv-meta .no { color: #e5a14d; }
+.lv-links { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.lv-links .btn { font-size: 13px; padding-inline: 8px; }
+.lv-copies { margin: 0; font-size: 13px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lv-tpl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.lv-tpl .hint { margin: 0; }
+.lv-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; font-size: 11px; opacity: .9; }
+.lv-stats span { display: grid; padding: 6px 2px; border-radius: 10px; background: rgba(0,0,0,.25); }
+.lv-stats b { font-size: 18px; color: var(--champagne, #D6B77E); font-variant-numeric: tabular-nums; }
+.lv-status { margin: 0; font-size: 13px; }
+.lv-st ul { margin: 0; padding: 0; list-style: none; font-size: 13px; display: grid; gap: 2px; }
+.lv-st .hint { margin: 0; }
+.lv-rep { margin: 0; display: grid; gap: 4px; font-size: 14px; }
+.lv-rep div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed rgba(214,183,126,.18); padding-bottom: 3px; }
+.lv-rep dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lv-rep .sum { border: 0; font-size: 16px; } .lv-rep .sum dd { color: var(--champagne, #D6B77E); }
+.lv-due { border: 1px solid var(--champagne, #D6B77E); border-radius: 14px; padding: 8px 12px; background: rgba(214,183,126,.08); font-size: 13px; }
+.lv-due p { margin: 4px 0; }
+.lv-staff { margin-top: 10px; }
+.lv-form { display: grid; gap: 8px; }
+.lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.lv-grid figure { margin: 0; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,.25); display: grid; }
+.lv-grid figure.off { opacity: .45; }
+.lv-grid img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block; background: #222; }
+.lv-grid figcaption { padding: 6px; font-size: 12px; display: grid; gap: 4px; }
+.lv-grid figcaption span { opacity: .7; }
+.lv-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 10px; }
+.lv-table th, .lv-table td { padding: 6px 8px; border-bottom: 1px solid rgba(214,183,126,.18); text-align: start; font-variant-numeric: tabular-nums; }
+
+/* the sign for the tables (printed through FS.printDoc, two on an A4) */
+.lv-signs { display: grid; grid-template-rows: 1fr 1fr; height: 268mm; gap: 6mm; }
+.lv-sign { border: 0.6mm solid #c9a45c; border-radius: 6mm; padding: 6mm 10mm; text-align: center; display: grid; align-content: center; gap: 2mm; font-family: Heebo, sans-serif; color: #1d1633; break-inside: avoid; }
+.lv-sign h1 { margin: 0; font-family: 'Frank Ruhl Libre', serif; font-size: 22pt; line-height: 1.15; }
+.lv-sign img { width: 52mm; height: 52mm; margin: 0 auto; }
+.lv-sign ol { margin: 0 auto; padding-inline-start: 6mm; text-align: start; font-size: 11pt; line-height: 1.5; }
+.ls-ev { margin: 0; font-size: 12pt; color: #8a6d35; font-weight: 700; }
+.ls-biz { margin: 0; font-size: 10pt; color: #555; }
+
+/* staff mode */
+body.staff-mode .tools [role=tab]:not([data-tab=photos]):not([data-tab=frames]):not([data-tab=output]):not([data-tab=live]):not([data-tab=adjust]),
+body.staff-mode .sb-more, body.staff-mode .lv-owner, body.staff-mode .lv-staff, body.staff-mode #biz-btn, body.staff-mode #pkg-btn, body.staff-mode #deals-btn, body.staff-mode a[href="admin.html"] { display: none !important; }
+#staff-bar { position: fixed; top: 108px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; gap: 10px; align-items: center; padding: 6px 8px 6px 14px; border-radius: 999px;
+  background: #2b2033; color: #F5EFE4; border: 1px solid var(--champagne, #D6B77E); font: 600 14px Heebo, sans-serif; box-shadow: 0 10px 30px -12px #000; }
+.lv-dz { margin: 0; font-size: 13px; }
+.lv-grid figcaption small { display: block; opacity: .75; }
+.lv-grid figcaption .btn { width: 100%; }
+/* the event folder on the computer (js/folders.js) */
+.ef-card { display: grid; gap: 8px; margin: 0 0 12px; padding: 14px; border-radius: 16px; border: 1px solid rgba(214,183,126,.3); background: rgba(214,183,126,.05); }
+.ef-card h3 { margin: 0; font-size: 16px; }
+.ef-card .hint { margin: 0; }
+.ef-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ef-root { font-size: 13px; opacity: .85; overflow-wrap: anywhere; }
+.ef-st { margin: 0; font-size: 12px; opacity: .75; }
+
+/* 🔁 the main QR */
+.lv-main { border: 1px solid rgba(237,182,190,.35); background: linear-gradient(160deg, rgba(237,182,190,.10), rgba(255,255,255,.02)); }
+.lv-main h3 small { display: block; font-weight: 400; font-size: 12px; opacity: .75; margin-top: 2px; }
+.lv-albqr { display: grid; gap: 6px; padding: 10px 12px; margin: 8px 0; border-radius: 12px; background: rgba(237,182,190,.08); box-shadow: inset 0 0 0 1px rgba(237,182,190,.25); }
+
+/* 📒 the record of events and clients */
+.lg-dlg { width: min(1180px, 96vw); }
+.lg-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+.lg-top input { flex: 1; min-width: 200px; }
+.lg-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.05); }
+.lg-tabs button { border: 0; background: transparent; color: inherit; padding: 7px 14px; border-radius: 999px; cursor: pointer; font: inherit; }
+.lg-tabs button.on { background: #EDB6BE; color: #15151a; font-weight: 700; }
+#lg-body { max-height: 58vh; overflow: auto; }
+.lg-t td, .lg-t th { vertical-align: top; }
+.lg-main { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(237,182,190,.2); color: #EDB6BE; white-space: nowrap; }
+.lg-codes { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; }
+.lg-code { margin: 0; display: grid; gap: 6px; justify-items: center; text-align: center; }
+.lg-code img { width: 200px; height: 200px; background: #fff; padding: 8px; border-radius: 10px; }
+.lg-code b { display: block; } .lg-code small { opacity: .75; font-size: 12px; }
+
+.lv-qrpos { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lv-qrpos span { font-size: 12.5px; opacity: .8; }
+.lv-qrpos .btn.on { background: rgba(237,182,190,.22); border-color: rgba(237,182,190,.7); color: #F3C9CF; }
+.lg-sum { margin: 4px 0 10px; } .lg-hot { color: #EDB6BE; }
+.lg-hotrow td:first-child { box-shadow: inset 3px 0 0 #EDB6BE; }
+.lg-act { white-space: nowrap; }
+.lg-t a { color: #F3C9CF; }
+
+/* 👥 customer photos (js/customers.js) */
+.tools [data-tab=customers] { position: relative; }
+.cu-dot { position: absolute; top: 2px; inset-inline-end: 4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9px; background: #e0719a; color: #fff; font: 700 10px/16px sans-serif; font-style: normal; }
+.cu-sum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; font-size: 11px; margin: 8px 0; }
+.cu-sum span { display: grid; padding: 6px 2px; border-radius: 10px; background: rgba(0,0,0,.25); }
+.cu-sum b { font-size: 18px; color: var(--champagne, #D6B77E); font-variant-numeric: tabular-nums; }
+#cu-q { width: 100%; margin: 4px 0 8px; }
+.cu-seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.cu-seg .on, .lv-qrpos .on { outline: 2px solid var(--champagne, #D6B77E); }
+.cu-list { display: grid; gap: 8px; margin: 10px 0; }
+.cu-item { display: grid; grid-template-columns: 78px 1fr; gap: 10px; padding: 8px; border-radius: 14px; border: 1px solid rgba(214,183,126,.22); background: rgba(255,255,255,.03); }
+.cu-item img { width: 78px; height: 104px; object-fit: cover; border-radius: 8px; background: rgba(0,0,0,.3); }
+.cu-info { display: grid; gap: 2px; font-size: 12.5px; min-width: 0; }
+.cu-info > b { font-size: 14px; }
+.cu-info a[href^="tel"] { color: inherit; justify-self: start; }
+.cu-st { justify-self: start; padding: 1px 8px; border-radius: 9px; font-size: 11px; background: rgba(255,255,255,.08); }
+.cu-pending { background: rgba(224,113,154,.25); } .cu-printing { background: rgba(214,183,126,.25); } .cu-printed, .cu-delivered { background: rgba(80,180,120,.25); }
+.cu-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+/* the same screen in the quick workspace */
+.mt-view.cu-mt { overflow-y: auto; padding: 18px clamp(14px, 3vw, 36px) 40px; }
+.cu-mt .cu-box { max-width: 1280px; width: 100%; margin: 0 auto; display: grid; gap: 8px; }
+.cu-mt .cu-list { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+.cu-mt #cu-q, .cu-mt .cu-sum { max-width: 520px; }
+.mt-cutab { position: relative; }
+
+/* 🗂️ the event's photos: by send order or by guest */
+.lv-mp-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+.lv-mp-bar select, .lv-mp-bar input { width: auto; min-width: 150px; }
+.lv-seg { display: inline-flex; gap: 4px; }
+.lv-seg button { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(214,183,126,.35); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.lv-seg button.on { background: var(--champagne, #D6B77E); color: #1b1410; border-color: transparent; font-weight: 700; }
+.lv-grid figure { position: relative; }
+.lv-no { position: absolute; top: 6px; inset-inline-start: 6px; padding: 1px 8px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; font: 700 12px/18px sans-serif; font-style: normal; }
+.lv-who { margin: 14px 0; }
+.lv-who h3 { margin: 0 0 8px; font-size: 15px; }
+.lv-who h3 small { font-weight: 400; opacity: .7; margin-inline-start: 6px; }
+
+/* customer photos: numbered in send order, grouped by customer */
+.cu-item { position: relative; }
+.cu-no { position: absolute; top: 12px; inset-inline-start: 12px; padding: 0 7px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; font: 700 11px/18px sans-serif; font-style: normal; z-index: 1; }
+#cu-where { width: 100%; margin-bottom: 6px; }
+.cu-who { display: grid; gap: 8px; padding: 10px; border-radius: 16px; background: rgba(214,183,126,.07); border: 1px solid rgba(214,183,126,.25); }
+.cu-who header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.cu-who header a { color: inherit; }
+.cu-who header .btn { margin-inline-start: auto; }
+.cu-mt .cu-who { grid-column: 1 / -1; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+.cu-mt .cu-who header { grid-column: 1 / -1; }
