@@ -2439,3 +2439,28 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Workspace (`mate.js`):**
   - In the AI view, the card "🛡️ סינון AI" has the on/off switch, the level, "🩺 לבדוק את כל עריכות ה־AI" and "↩ להחזיר למקור את הלא תקינות".
   - `warnOf` shows `p.aiBad` first, as a red tile.
+
+## v162: one undo for everything (↶ ביטול · ↷ חזרה)
+- **Why:** the owner could not find the AI undo. It lived only in the old studio (shell.js #ai-undo) and in the workspace AI view (#mt-ai-orig), and the main screen had no undo at all.
+- **`js/undo-all.js`** (last script in studio.html; in sw FILES) keeps one journal of actions, in order:
+  - `FS.snap` → 'doc'
+  - `FS.applyAI` → 'ai'
+  - `FS.unstyle` / `FS.unstyleStep` → 'back'
+  - `FS.resetEdits` → 'reset'
+- **Journal entries:**
+  - Each entry keeps, per photo id, the state before it: doc JSON, src, origSrc, aiPrev.
+  - Same-kind actions within 600 ms merge into one step: a slider drag, or a batch on many photos.
+  - At most 80 steps; a new action clears redo.
+  - Undo restores the before state and saves the current state for redo, then emits 'doc', 'history', 'undo-all' and 'undo-step'.
+- **Baseline:** a new photo gets a quiet snap in afterAdd, with the frame and auto look already on, so its first edit is undoable. If `p.undo` is empty, `p._base` is used.
+- **API:** `FS.undo` and `FS.redo` now point at `FS.undoAll` and `FS.redoAll`. The old per-photo `stepAll` is no longer reached from the buttons or keys.
+- **UI:**
+  - Workspace top bar: `.mt-undo` (#mt-undo "↶ ביטול", #mt-redo "↷") before `.mt-qp`, on every screen. The button title names the step.
+  - Ctrl+Z, Ctrl+Y and Ctrl+Shift+Z in mate.js call `undoAll` / `redoAll`. ui.js skips Ctrl+Z/Y while body.mt-on, so a step isn't taken twice.
+  - mate.js redraws on 'undo-step': the design view via dsliders + drawDesign, the others via refreshAll.
+- **Tested:**
+  - A slider 0→86 was undone to 0.
+  - AI on 2 photos was undone in one step.
+  - unstyle was undoable.
+  - Redo chains worked.
+  - The buttons were visible on all 5 screens.

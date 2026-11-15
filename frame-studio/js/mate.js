@@ -1003,8 +1003,10 @@
   $('#mt-dprint', root).addEventListener('click', function () { var p = dcur(); if (p) openPrint([p]); });
   $('#mt-dsend', root).addEventListener('click', function () { var p = dcur(); if (p && FS.sendToCustomer) FS.sendToCustomer(p); });
   function hist(fn) { var p = dcur(); if (!p) return; var keep = S.marked; S.marked = {}; S.cur = idx(p); try { fn(); } finally { S.marked = keep; } selL = null; dsliders(); drawDesign(); }
-  $('#mt-dundo', root).addEventListener('click', function () { hist(FS.undo); });
-  $('#mt-dredo', root).addEventListener('click', function () { hist(FS.redo); });
+  $('#mt-dundo', root).addEventListener('click', function () { (FS.undoAll || FS.undo)(); });
+  $('#mt-dredo', root).addEventListener('click', function () { (FS.redoAll || FS.redo)(); });
+  /* after any undo or redo (the top bar's ↶ ↷, the keys, the editor's buttons): the screen shows the photos as they are now */
+  FS.on('undo-step', function () { if (view === 'design') { selL = null; dsliders(); drawDesign(); } else refreshAll(); });
   $('#mt-dall', root).addEventListener('click', function () { if (confirm('לבטל את כל העריכות של התמונה?')) hist(FS.resetEdits); });
 
   /* the folder browser: subfolders open in place, the photos in a folder show as thumbnails; a click brings one in */
@@ -1496,8 +1498,8 @@
     else if (mod && k === 'p') { e.preventDefault(); if (e.shiftKey || !qpGet()) openPrint(); else qpRun(); }
     else if (mod && e.shiftKey && k === 'c') { e.preventDefault(); $('#mt-lcopy', root).click(); }
     else if (mod && e.shiftKey && k === 'v') { e.preventDefault(); $(view === 'design' ? '#mt-dpaste' : '#mt-lpaste', root).click(); }
-    else if (mod && k === 'z') { e.preventDefault(); if (view === 'design') hist(FS.undo); else { FS.undo(); refreshAll(); } }
-    else if (mod && k === 'y') { e.preventDefault(); if (view === 'design') hist(FS.redo); else { FS.redo(); refreshAll(); } }
+    else if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); (FS.undoAll || FS.undo)(); }   /* one undo for everything (undo-all.js): the screens redraw on 'undo-step' */
+    else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); (FS.redoAll || FS.redo)(); }
     else if (k === 'escape') { S.marked = {}; refreshAll(); if (view === 'edit') targetTxt(); }
     else if (view === 'edit' && (k === 'pagedown' || k === 'pageup')) { e.preventDefault(); ePageGo(k === 'pagedown' ? 1 : -1); }
     else if (view === 'edit' && FS.mateKeys && FS.mateKeys(k, e)) { /* handled */ }
