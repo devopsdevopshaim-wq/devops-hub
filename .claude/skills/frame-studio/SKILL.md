@@ -2378,3 +2378,23 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The build fails if a skipped path is still in the bundle.
   - Locally the copy is 95.8 MB / 296 files.
 - The program loads from the site when online (v147), and skipped files fall back to the network.
+
+## v159 — site design upgrade (couture) and floating buttons step aside while designing
+- New `css/couture.css`, loaded last on index.html (after showcase.css).
+  - Paper bands (#videos, #how, #faq) float as rounded sheets on the night.
+  - The hero's second line keeps showcase's rise and foil sweep; only the foil changed (quartz to gold, `--cx-shine`).
+  - Buttons get a passing flash on hover; outline buttons get glass.
+  - Work grid and frames lift on hover.
+  - Tech: separate cards, and the first spans 2 columns, so 5 cards fill the 3-column grid with no empty cell.
+  - How it works: white cards, numbered circles, and a dashed line joining them (vertical on a phone).
+  - The featured package glows with a turning conic ring (`@property --cx-a`).
+  - FAQ: cards; the open one is marked.
+  - Designer preview is sticky on a computer.
+  - The contact form gets a glow; the footer gets a gold thread.
+  - A reading-progress line (`.cx-progress`) runs along the top.
+  - All of it is quiet with reduced motion and in fs-lite.
+- `.cx-card` (tech, packages) adds a lit edge (masked gradient) and a light under the pointer (`--mx/--my`). It uses ::before/::after, so it must NOT go on `.steps li`, whose ::before is the number.
+- `js/showcase.js`: `body.cx-busy` is on while #d-form, #d-canvas or #c-form is in the middle 40% of the screen.
+  - It hides `.sc-bar`, the chat button, the chat nudge and `.wa-fab`.
+  - It is measured on scroll/resize/click and looks the elements up by id each time.
+  - It does not use IntersectionObserver, which missed the designer after its tab opened, and keeps no stored element (the designer replaces its canvas).

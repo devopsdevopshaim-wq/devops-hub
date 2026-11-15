@@ -106,6 +106,28 @@
   bar.querySelector('.sc-wa').addEventListener('click', function (e) { if (cta) { e.preventDefault(); cta.click(); } });
   onScroll();
 
+  /* ---------- couture (css/couture.css): reading progress, the floating buttons step aside while designing, lit cards ---------- */
+  var prog = document.createElement('div'); prog.className = 'cx-progress'; prog.setAttribute('aria-hidden', 'true'); document.body.appendChild(prog);
+  var pTick = false;
+  function progress() { pTick = false; var h = document.documentElement.scrollHeight - innerHeight; prog.style.setProperty('--p', h > 0 ? Math.min(1, scrollY / h).toFixed(4) : 0); }
+  window.addEventListener('scroll', function () { if (!pTick) { pTick = true; requestAnimationFrame(progress); } }, { passive: true }); progress();
+  // the designer and the contact form: on a phone the bottom bar, the chat and WhatsApp would cover what the customer is doing
+  // (measured on scroll: an IntersectionObserver missed the designer once its tab opened)
+  var bTick = false;   // the elements are looked up each time: the designer replaces its canvas
+  function busyNow() {
+    bTick = false; var top = innerHeight * 0.3, bot = innerHeight * 0.7;
+    var on = ['d-form', 'd-canvas', 'c-form'].some(function (id) { var el = document.getElementById(id); if (!el || !el.offsetParent) return false; var r = el.getBoundingClientRect(); return r.bottom > top && r.top < bot; });
+    document.body.classList.toggle('cx-busy', on);
+  }
+  ['scroll', 'resize', 'click'].forEach(function (ev) { window.addEventListener(ev, function () { if (!bTick) { bTick = true; requestAnimationFrame(busyNow); } }, { passive: true }); });
+  busyNow();
+  function litCards() { document.querySelectorAll('.tech article, .pk').forEach(function (c) { c.classList.add('cx-card'); }); }
+  litCards(); new MutationObserver(litCards).observe(document.getElementById('pk') || document.body, { childList: true });
+  document.addEventListener('pointermove', function (e) {
+    var c = e.target.closest && e.target.closest('.cx-card'); if (!c) return;
+    var r = c.getBoundingClientRect(); c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  }, { passive: true });
+
   if (still) return;
 
   /* the opening: hall lights, a light under the pointer, prints that tilt with it */
