@@ -234,6 +234,8 @@ check('... and a wrong key of the same length gets nothing', (await frameCal(S2,
   const STUDIO = { role: 'studio', email: 'photog@example.com' }, IMG = 'data:image/jpeg;base64,' + Buffer.from('fake-jpeg-bytes').toString('base64');
   let m = await frameBiz(S, STUDIO, { action: 'photo-mail', to: 'guest@example.com', name: 'נועה', image: IMG, biz: 'סטודיו אור', note: 'תודה שבאתם' });
   check('a studio licence holder mails an edited photo: the photo attached, the sender as reply-to', m.body.ok && m.mail.to === 'guest@example.com' && m.mail.replyTo === 'photog@example.com' && m.mail.attachments[0].b64 && m.mail.attachments[0].type === 'image/jpeg' && /נועה/.test(m.mail.text), m.mail && { ...m.mail, attachments: undefined });
+  m = await frameBiz(S, STUDIO, { action: 'photo-mail', to: 'guest@example.com', images: [IMG, IMG, IMG], name: 'נועה' });
+  check('three photos in one mail', m.body.ok && m.mail.attachments.length === 3 && /3 התמונות/.test(m.mail.text) && m.mail.attachments[2].name === 'photo-3.jpg', m.mail && m.mail.attachments && m.mail.attachments.length);
   m = await frameBiz(S, DANA, { action: 'photo-mail', to: 'guest@example.com', image: IMG });
   check('a customer cannot use it', m.code === 403);
   m = await frameBiz(S, STUDIO, { action: 'photo-mail', to: 'not-an-email', image: IMG });
