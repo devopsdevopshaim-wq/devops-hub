@@ -461,8 +461,9 @@
   document.addEventListener('keydown', function (e) {
     if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
     var ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
-    if (ctrl && k === 'z' && !e.shiftKey) { e.preventDefault(); FS.undo(); }
-    else if (ctrl && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); FS.redo(); }
+    /* the workspace (mate.js) takes Ctrl+Z / Ctrl+Y itself when it is open: one step, not two */
+    if (ctrl && k === 'z' && !e.shiftKey) { if (document.body.classList.contains('mt-on')) return; e.preventDefault(); FS.undo(); }
+    else if (ctrl && (k === 'y' || (k === 'z' && e.shiftKey))) { if (document.body.classList.contains('mt-on')) return; e.preventDefault(); FS.redo(); }
     else if (ctrl && k === 's') { e.preventDefault(); FS.saveCurrent && FS.saveCurrent(); }
     else if (ctrl && k === 'p') { e.preventDefault(); FS.printNow && FS.printNow(); }
     else if (ctrl && k === 'd' && S.sel && S.sel !== 'photo') { e.preventDefault(); dupLayer(); }
@@ -474,7 +475,7 @@
       FS.render(); FS.commitSoon();
     }
   });
-  $('#undo').addEventListener('click', FS.undo); $('#redo').addEventListener('click', FS.redo);
+  $('#undo').addEventListener('click', function () { FS.undo(); }); $('#redo').addEventListener('click', function () { FS.redo(); });
   var cmp = $('#compare');
   ['pointerdown'].forEach(function (ev) { cmp.addEventListener(ev, function () { S.showOriginal = true; FS.render(); }); });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { cmp.addEventListener(ev, function () { if (S.showOriginal) { S.showOriginal = false; FS.render(); } }); });
