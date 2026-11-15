@@ -1164,7 +1164,10 @@
   });
 
   /* ---------- print ---------- */
-  var PS = Object.assign({ paper: '10x15', dpi: 300, mode: 'real', margin: 0, marginOn: false, marks: false, pfit: 'cover', which: 'auto', msize: '' }, lsj('fs-mate-print', {}));
+  /* the sheet is 15×20 by default (a photo printer's 6×8 media: two 10×15 photos on a sheet). A 10×15 kept from before v160
+     moves to 15×20 once; choosing 10×15 again afterwards stays. */
+  var PS = Object.assign({ paper: '15x20', dpi: 300, mode: 'real', margin: 0, marginOn: false, marks: false, pfit: 'cover', which: 'auto', msize: '' }, lsj('fs-mate-print', {}));
+  try { if (!localStorage.getItem('fs-paper-15x20')) { localStorage.setItem('fs-paper-15x20', '1'); if (PS.paper === '10x15') { PS.paper = '15x20'; ls('fs-mate-print', JSON.stringify(PS)); } } } catch (e) { /* private mode */ }
   /* the magnet's printed size (mm), whatever the photo's own size; '' = the photo's size */
   var MSIZES = [['', 'לפי גודל התמונה'], ['75x100', '7.5×10 ס״מ'], ['50x75', '5×7.5 ס״מ'], ['60x90', '6×9 ס״מ'], ['100x150', '10×15 ס״מ'], ['100x100', '10×10 ס״מ']];
   /* ready layouts: [paper, magnet size, label] */

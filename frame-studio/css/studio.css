@@ -182,9 +182,12 @@ canvas.burst { position: absolute; inset: 0; pointer-events: none; width: 100%; 
 
 @media print {
   body.printing > *:not(#print-root) { display: none !important; }
-  body.printing { background: #fff; display: block; }
-  body.printing #print-root { display: block; direction: ltr; }
-  .pp { position: relative; overflow: hidden; page-break-after: always; break-after: page; }
+  /* white and edge to edge: with the backgrounds printed, the program's dark page colour came out as a black sheet after
+     every photo when the sheet ran a hair past the printer's page (DNP, Mitsubishi) */
+  html:has(body.printing), body.printing { background: #fff !important; margin: 0 !important; padding: 0 !important; height: auto !important; min-height: 0 !important; overflow: visible !important; }
+  body.printing { display: block; }
+  body.printing #print-root { display: block; direction: ltr; margin: 0; padding: 0; }
+  .pp { position: relative; overflow: hidden; page-break-after: always; break-after: page; background: #fff; box-sizing: border-box; margin: 0; }
   .pp:last-child { page-break-after: auto; break-after: auto; }
   .pp img { position: absolute; display: block; max-width: none; }
 }
