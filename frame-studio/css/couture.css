@@ -1,0 +1,121 @@
+/* ==========================================================================
+   Couture — the finishing layer of the business site (loaded last on index.html, after showcase.css).
+   Same world (the hall at night, the flash, the quartz pink), finished: the paper bands float as rounded sheets on the
+   night, a thread of gold joins the quartz, every card gets a lit edge and a light that follows the pointer, the steps
+   are joined by a line, the opening's words shimmer once, a thin line at the top tells how far down the page you are.
+   Quiet with "reduce motion" and in light mode (html.fs-lite).
+   ========================================================================== */
+:root {
+  --cx-gold: #D9B979; --cx-gold2: #F4E2B8;
+  --cx-shine: linear-gradient(100deg, #EDB6BE 0%, #FCE7EA 30%, #F4E2B8 55%, #D9B979 75%, #EDB6BE 100%);
+  --cx-edge: linear-gradient(140deg, rgba(244,226,184,.55), rgba(237,182,190,.18) 35%, rgba(255,255,255,.04) 60%, rgba(217,185,121,.4));
+  --cx-sheet: clamp(26px, 3.4vw, 52px);
+}
+
+/* ---------- reading progress ---------- */
+.cx-progress { position: fixed; z-index: 120; inset: 0 0 auto; height: 3px; transform-origin: right; transform: scaleX(var(--p, 0)); background: var(--cx-shine); pointer-events: none; }
+
+/* ---------- headings: an ornament before the eyebrow, a shimmer in the opening ---------- */
+.sec > .eyebrow::before, .hero .eyebrow::before { background: linear-gradient(90deg, var(--cx-gold), var(--quartz)); }
+.sec > .eyebrow.center::after, .sec > p.eyebrow.center::before { content: none; }
+/* the second line keeps showcase.css's rise and its slow foil sweep; only the foil turns quartz-to-gold */
+.hero h1 > span:not(.t1) { background-image: var(--cx-shine); }
+.mwall > h2, #tech > h2, #packages > h2, #gallery > h2 { text-wrap: balance; }
+
+/* ---------- buttons: the white pill gets a passing flash; the outline gets a little glass ---------- */
+.btn { position: relative; overflow: hidden; transition: transform .35s var(--ease), box-shadow .35s, background .35s, color .35s, border-color .35s; }
+.btn.gold::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.85) 50%, transparent 70%); transform: translateX(120%); transition: transform .9s var(--ease); pointer-events: none; }
+.btn.gold:hover::after { transform: translateX(-120%); }
+.btn.gold:hover, .btn.line:hover { transform: translateY(-2px); }
+.btn.line { background: rgba(255,255,255,.03); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.btn:active { transform: translateY(0) scale(.98); }
+
+/* ---------- the paper bands float as sheets on the night ---------- */
+#videos, #how, #faq { margin-inline: clamp(8px, 1.6vw, 26px); border-radius: var(--cx-sheet); background: radial-gradient(60% 50% at 85% 0%, rgba(237,182,190,.22), transparent 70%), radial-gradient(50% 60% at 0% 100%, rgba(217,185,121,.16), transparent 70%), #F3F1F6; box-shadow: 0 50px 120px -60px rgba(0,0,0,.9); position: relative; }
+#how, #faq { margin-block: clamp(10px, 1.4vw, 22px); }
+#videos { margin-block: clamp(10px, 1.4vw, 22px); }
+html, body { background: var(--night); }
+
+/* ---------- prints in the work grid: a lift, the photo comes closer, the caption rises ---------- */
+.work-grid .w { border-radius: 14px; overflow: hidden; box-shadow: 0 30px 60px -36px rgba(0,0,0,.85); transition: transform .6s var(--ease), box-shadow .6s; }
+.work-grid .w img { transition: transform 1.2s var(--ease), filter .6s; }
+.work-grid .w:hover { transform: translateY(-6px); box-shadow: 0 0 0 1px rgba(244,226,184,.45), 0 44px 80px -36px rgba(0,0,0,.95); }
+.work-grid .w:hover img { transform: scale(1.06); }
+.work-grid .w figcaption { transition: transform .6s var(--ease); }
+.work-grid .w:hover figcaption { transform: translateY(-4px); }
+.g-item { border-radius: 14px; transition: transform .5s var(--ease), box-shadow .5s; }
+.g-item:hover { transform: translateY(-5px); box-shadow: 0 0 0 1px rgba(237,182,190,.4), 0 36px 70px -36px rgba(0,0,0,.9); }
+
+/* ---------- cards with a lit edge and a light under the pointer (tech, packages) ---------- */
+.cx-card { position: relative; isolation: isolate; }
+.cx-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: var(--cx-edge); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); pointer-events: none; z-index: 1; }
+.cx-card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(237,182,190,.14), transparent 70%); opacity: 0; transition: opacity .4s; pointer-events: none; z-index: -1; }
+.cx-card:hover::before { opacity: 1; }
+
+/* the studio: cards apart, the first one wide, so five fill the grid with no empty place */
+.tech { background: transparent; border: 0; gap: clamp(14px, 1.6vw, 22px); overflow: visible; border-radius: 0; }
+.tech article, .tech article:hover { background: linear-gradient(165deg, rgba(255,255,255,.05), rgba(255,255,255,.012)); border-radius: 22px; transition: opacity .8s var(--ease), transform .5s var(--ease), box-shadow .5s; }
+.tech article:hover { transform: translateY(-4px); box-shadow: 0 40px 70px -40px rgba(0,0,0,.95); }
+.tech article:first-child { grid-column: span 2; background: radial-gradient(70% 90% at 100% 0%, rgba(237,182,190,.16), transparent 70%), linear-gradient(165deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); }
+.tech article:first-child b { font-size: clamp(34px, 3vw, 44px); }
+.tech .ic { background: radial-gradient(circle at 30% 30%, rgba(244,226,184,.25), rgba(237,182,190,.06)); border-color: rgba(244,226,184,.35); color: var(--cx-gold2); box-shadow: 0 10px 30px -12px rgba(237,182,190,.5); }
+
+/* how it works: four cards on the sheet, joined by a line through the numbers */
+#how .steps { border: 0; gap: clamp(14px, 1.6vw, 22px); position: relative; counter-reset: s; }
+#how .steps::before { content: ''; position: absolute; top: 74px; inset-inline: 8%; height: 2px; background: repeating-linear-gradient(90deg, rgba(185,112,125,.5) 0 8px, transparent 8px 16px); z-index: 0; }
+#how .steps li, #how .steps li:hover { background: rgba(255,255,255,.78); border-radius: 22px; box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 30px 60px -40px rgba(25,29,44,.45); border: 0; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); position: relative; z-index: 1; transition: opacity .8s var(--ease), transform .5s var(--ease), box-shadow .5s; }
+#how .steps li + li { border: 0; }
+#how .steps li:hover { transform: translateY(-6px); box-shadow: 0 0 0 1px rgba(185,112,125,.25), 0 40px 70px -40px rgba(25,29,44,.6); }
+#how .steps li::before { display: inline-grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; margin-bottom: 18px; background: linear-gradient(150deg, #fff, #F6E6E9); color: var(--quartz-deep); -webkit-text-stroke: 0; font: 700 34px/1 var(--display); box-shadow: 0 0 0 1px rgba(185,112,125,.25), 0 14px 30px -14px rgba(185,112,125,.6); }
+
+/* packages: the chosen one breathes */
+.pk { transition: opacity .8s var(--ease), transform .5s var(--ease), box-shadow .5s; }
+.pk.star { box-shadow: 0 0 0 1px rgba(244,226,184,.6), 0 50px 100px -40px rgba(237,182,190,.55); }
+.pk.star::before { content: ''; position: absolute; inset: -2px; border-radius: inherit; background: conic-gradient(from var(--cx-a, 0deg), #EDB6BE, #F4E2B8, #D9B979, #EDB6BE); z-index: -1; filter: blur(14px); opacity: .55; animation: cx-spin 8s linear infinite; }
+.pk.star { position: relative; isolation: isolate; }
+@property --cx-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes cx-spin { to { --cx-a: 360deg; } }
+.pk .price { font-variant-numeric: tabular-nums; }
+
+/* the questions: soft cards, the open one marked */
+#faq .faq { border: 0; display: grid; gap: 10px; }
+#faq .faq details { background: rgba(255,255,255,.7); border: 0; border-radius: 18px; padding: 0 clamp(16px, 2vw, 26px); box-shadow: 0 20px 40px -34px rgba(25,29,44,.5); transition: background .3s, box-shadow .3s; }
+#faq .faq details[open] { background: #fff; box-shadow: inset 4px 0 0 var(--quartz-deep), 0 30px 60px -36px rgba(25,29,44,.55); }
+#faq .faq summary { padding: 20px 0; }
+
+/* the designer: the preview stays in view next to the form (computer), the form is a lit card */
+@media (min-width: 901px) { .designer .d-preview { position: sticky; top: 96px; align-self: start; } }
+.d-form, .c-form { position: relative; background: linear-gradient(165deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); border-color: rgba(244,226,184,.22); border-radius: 26px; }
+.fridge-mini { box-shadow: 0 0 0 1px rgba(244,226,184,.25), inset 0 1px 0 rgba(255,255,255,.06), 0 60px 110px -50px rgba(237,182,190,.35); }
+input:focus, select:focus, textarea:focus { outline-color: rgba(237,182,190,.6); border-color: var(--quartz); box-shadow: 0 0 0 4px rgba(237,182,190,.12); }
+
+/* the contact: a soft glow behind the form */
+.contact { position: relative; overflow: hidden; }
+.contact::before { content: ''; position: absolute; width: 60vw; height: 60vw; max-width: 760px; max-height: 760px; inset-inline-end: -12vw; top: -10vw; background: radial-gradient(circle, rgba(237,182,190,.16), transparent 65%); pointer-events: none; }
+.contact > * { position: relative; }
+
+/* the footer: a gold thread on top */
+.foot { position: relative; background: radial-gradient(60% 120% at 50% 0%, rgba(237,182,190,.08), transparent 70%), #080B16; }
+.foot::before { content: ''; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, var(--cx-gold), var(--quartz), transparent); }
+
+/* ---------- phone ---------- */
+@media (max-width: 900px) {
+  .tech article:first-child { grid-column: auto; }
+  #how .steps::before { top: 0; bottom: 0; inset-inline: auto 52px; width: 2px; height: auto; background: repeating-linear-gradient(180deg, rgba(185,112,125,.5) 0 8px, transparent 8px 16px); }
+  #how .steps li::before { width: 60px; height: 60px; font-size: 28px; }
+}
+@media (max-width: 600px) {
+  #videos, #how, #faq { margin-inline: 6px; border-radius: 26px; }
+}
+/* while the customer designs the magnet or fills the form, the floating buttons step aside so nothing covers the work */
+body.cx-busy .sc-bar { transform: translateY(140%) !important; }
+body.cx-busy .chat-fab, body.cx-busy #chat-fab, body.cx-busy .chat-nudge, body.cx-busy .wa-fab { opacity: 0 !important; pointer-events: none !important; transform: scale(.8); }
+.wa-fab, .chat-nudge { transition: opacity .3s, transform .3s; }
+
+/* ---------- quiet ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .pk.star::before { animation: none; }
+  .btn.gold::after { display: none; }
+}
+html.fs-lite .pk.star::before { animation: none; }
+html.fs-lite .cx-card::before { display: none; }
