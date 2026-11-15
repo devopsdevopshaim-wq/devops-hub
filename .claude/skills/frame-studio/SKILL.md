@@ -2367,3 +2367,14 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - "📨 ללקוח" in the photo panel, and "📨 שליחה ללקוח" in "שמירה והדפסה".
   - A green round WhatsApp button always on screen (`#wa-fab`, bottom left): with photos at hand it opens the send window, without any it opens WhatsApp. Hidden while signed out or printing.
 - **Tests:** frame.test.mjs (three photos in one mail); a browser check (3 photos in 1 mail, the WhatsApp steps, the button).
+
+## v158: the installer about 110 MB lighter
+
+- **The bug:** desktop/scripts/copy-app.mjs's SKIP list did not work on the Windows build. `relative(src, p)` between the paths cpSync passes did not give a frame-studio-relative path there, so nothing matched.
+  - The bundle carried media/promo (96 MB of films), media/explainer.mp4 and the 16 MB tflite: 225.5 MB / 322 files on CI, against 107.7 MB / 298 locally.
+- **Now:**
+  - The relative path is taken after the last `/frame-studio/` (case-insensitive, `/` everywhere).
+  - SKIP also leaves out media/flyer (12 MB).
+  - The build fails if a skipped path is still in the bundle.
+  - Locally the copy is 95.8 MB / 296 files.
+- The program loads from the site when online (v147), and skipped files fall back to the network.

@@ -16,7 +16,8 @@ const SKIP = [
   'sitemap.xml',
   'models/selfie_multiclass_256x256.tflite',    // the fine background cut-out (16 MB): read from the web when online; offline the small one is used
   'media/explainer.mp4',
-  'media/promo',      // the promo films (videos/promo-src), ~30 MB with the vertical ones; streamed from the web
+  'media/promo',      // the promo films (videos/promo-src), ~96 MB with the vertical ones and the tutorial; streamed from the web
+  'media/flyer',      // the A4 flyer (12 MB), for print, not used by the program
 ];
 
 // Files outside frame-studio/ that its pages reference via ../portfolio/...
@@ -31,7 +32,11 @@ if (!existsSync(join(src, 'studio.html'))) throw new Error('frame-studio/studio.
 cpSync(src, join(out, 'frame-studio'), {
   recursive: true,
   filter: (p) => {
-    const rel = relative(src, p).split(sep).join('/');
+    // the path below frame-studio/, written with "/". (On Windows relative() between the two paths cpSync passes could
+    // come out as "..\..\D:\…" — a drive letter in another case — so nothing matched and every skipped file went in:
+    // the installer carried the 96 MB of films. The part after the last "/frame-studio/" is the same on every system.)
+    const norm = String(p).split(sep).join('/').replace(/\\/g, '/'), at = norm.toLowerCase().lastIndexOf('/frame-studio/');
+    const rel = at >= 0 ? norm.slice(at + '/frame-studio/'.length) : (norm.toLowerCase().endsWith('/frame-studio') ? '' : relative(src, p).split(sep).join('/'));
     if (!rel) return true;
     return !SKIP.some((s) => rel === s || rel.startsWith(s + '/'));
   },
@@ -56,4 +61,5 @@ let files = 0, bytes = 0;
     if (s.isDirectory()) walk(p); else { files++; bytes += s.size; }
   }
 })(out);
+for (const s of SKIP) if (existsSync(join(out, 'frame-studio', ...s.split('/')))) throw new Error('left in the bundle although skipped: ' + s);
 console.log(`copied ${files} files, ${(bytes / 1048576).toFixed(1)} MB into ${relative(repo, out)} (site version ${siteVersion || '?'})`);
