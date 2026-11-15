@@ -382,14 +382,27 @@
       if (!FS.personCover) return Promise.resolve(false);
       return Promise.all([origCover(), FS.personCover(im).catch(function () { return 0; })]).then(function (c) { return c[0] > 0.01 && c[1] >= Math.max(0.01, c[0] * 0.35); });
     }
+    /* v161: the same people and the same picture (js/ai-guard.js, on this computer): an answer with other faces, or that is
+       not the shot, is asked again from the next engine; when every engine fails, the photo keeps its original */
+    var photoLook = /very same people|Keep everything else exactly as it is|photograph|photo-?realistic/i.test(prompt);
+    function same(im, i) {
+      if (!FS.aiCheck || !FS.aiGuardOn()) return Promise.resolve(im);
+      return FS.aiCheck(orig, im, { photo: photoLook }).then(function (r) {
+        im.aiCheck = r; im.aiPhoto = photoLook;
+        if (r.ok) return im;
+        if (window.console) console.warn('AI guard: ' + r.why + ' (score ' + r.score + '), from ' + (im.aiSource || '?'));
+        if (i + 1 < plan.length) return go(i + 1);
+        return ask(im, false, r);
+      });
+    }
     function go(i) {
       return restyleOnce(p, prompt, plan[i]).then(function (im) {
-        if (!n0 || !FS.countFaces) return im;
+        if (!n0 || !FS.countFaces) return same(im, i);
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
           var lost = !(n >= 1 && (n0 < 3 || n >= n0 * 0.5)), extra = n > (n0 <= 4 ? n0 : n0 + 1);
-          if (!lost && !extra) return im;
+          if (!lost && !extra) return same(im, i);
           return (lost ? bodiesKept(im) : Promise.resolve(false)).then(function (kept) {
-            if (kept) return im;
+            if (kept) return same(im, i);
             if (window.console) console.warn('AI: the answer ' + (lost ? 'lost the people' : 'added people') + ' (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
             if (i + 1 < plan.length) return go(i + 1);
             return ask(im, lost);
@@ -398,16 +411,17 @@
       });
     }
     /* not sure: the owner sees the answer and decides (in a batch, it is skipped as before) */
-    function ask(im, lost) {
-      if (batch || !FS.dialog) return Promise.reject(new Error(lost ? 'lost-people' : 'extra-people'));
+    function ask(im, lost, chk) {
+      var code = chk ? 'not-same' : lost ? 'lost-people' : 'extra-people';
+      if (batch || !FS.dialog) return Promise.reject(new Error(code));
       return new Promise(function (ok, no) {
-        var body = FS.dialog('🤔 לא בטוח שהאנשים נשמרו', '<p>' + (lost ? 'לא זיהיתי בבירור את האנשים בתוצאה (קורה בסגנונות מצוירים ובתמונות שבהן האנשים קטנים).' : 'נראה שה־AI הוסיף אנשים לתמונה.') + ' הנה התוצאה. מחליטים בעצמכם:</p>' +
+        var body = FS.dialog(chk ? '🛡️ העריכה לא נראית כמו המקור' : '🤔 לא בטוח שהאנשים נשמרו', '<p>' + (chk ? 'בדיקת ה־AI מצאה: <b>' + FS.esc(chk.why) + '</b> (התאמה ' + chk.score + '%). ניסיתי את כל המנועים. מומלץ לא להחיל ולהשאיר את המקור.' : lost ? 'לא זיהיתי בבירור את האנשים בתוצאה (קורה בסגנונות מצוירים ובתמונות שבהן האנשים קטנים).' : 'נראה שה־AI הוסיף אנשים לתמונה.') + ' הנה התוצאה. מחליטים בעצמכם:</p>' +
           '<img src="' + im.src + '" alt="" style="display:block;max-width:100%;max-height:58vh;margin:8px auto;border-radius:10px">' +
           '<div class="row2" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" data-ai-ok>✔ להחיל בכל זאת</button><button class="btn" data-ai-no>✕ לא להחיל</button></div>', true);
         var done = false, dlg = document.getElementById('dlg');
         body.querySelector('[data-ai-ok]').addEventListener('click', function () { done = true; FS.closeDialog(); ok(im); });
-        body.querySelector('[data-ai-no]').addEventListener('click', function () { done = true; FS.closeDialog(); no(new Error(lost ? 'lost-people' : 'extra-people')); });
-        if (dlg) dlg.addEventListener('close', function () { if (!done) no(new Error(lost ? 'lost-people' : 'extra-people')); }, { once: true });
+        body.querySelector('[data-ai-no]').addEventListener('click', function () { done = true; FS.closeDialog(); no(new Error(code)); });
+        if (dlg) dlg.addEventListener('close', function () { if (!done) no(new Error(code)); }, { once: true });
       });
     }
     return go(0);
@@ -508,10 +522,11 @@
   FS.applyAI = function (p, im) {
     if (!p.origSrc) p.origSrc = p.src; else { p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5); }
     p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
+    delete p.aiBad; if (im.aiPhoto !== undefined) p.aiPhoto = im.aiPhoto; if (im.aiCheck) p.aiScore = im.aiCheck.score;
     FS.fitPhoto(p.doc, im); FS.snap(p); return p;
   };
   FS.unstyle = function (p) {
-    if (!p.origSrc) return false; p.src = p.origSrc; delete p.origSrc; delete p.aiPrev; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
+    if (!p.origSrc) return false; p.src = p.origSrc; delete p.origSrc; delete p.aiPrev; delete p.aiBad; delete p.aiScore; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
     FS.fitPhoto(p.doc, FS.img(p.src)); p.doc.photo.style = null; FS.snap(p); return true;
   };
   /* one AI design back: the previous AI result, or the original photo when there was only one */

@@ -106,6 +106,11 @@
     '<section class="mt-view" data-view="ai" hidden><div class="mt-ai">' +
       '<p class="mt-hint" id="mt-ai-target"></p>' +
       '<div class="mt-card mt-aibac"><h3>◧ לפני | אחרי <small>התמונות שה־AI עובד עליהן: המקור מימין, התוצאה משמאל · לחיצה מגדילה</small></h3><div class="mt-aiba" id="mt-aiba"></div><p class="mt-hint" id="mt-aiba-more"></p></div>' +
+      '<div class="mt-card mt-guard"><h3>🛡️ סינון AI <small>כל עריכה נבדקת מול המקור על המחשב (בלי אינטרנט): אותן פנים, אותה תמונה. עריכה שלא עוברת לא נשמרת על התמונה</small></h3>' +
+        '<div class="mt-chips"><label class="mt-chk-l"><input type="checkbox" id="mt-guard-on"> הסינון פעיל</label>' +
+        '<label class="mt-chk-l">רמה <select id="mt-guard-lv"><option value="strict">קפדנית (מומלץ לאירוע)</option><option value="normal">רגילה (סגנונות מצוירים חופשיים יותר)</option></select></label></div>' +
+        '<div class="mt-chips" style="margin-top:8px"><button class="mt-btn primary" id="mt-guard-check" type="button">🩺 לבדוק את כל עריכות ה־AI</button><button class="mt-btn" id="mt-guard-revert" type="button" hidden>↩ להחזיר למקור את הלא תקינות</button></div>' +
+        '<p class="mt-hint" id="mt-guard-st" aria-live="polite"></p></div>' +
       '<div class="mt-card cr-card-box" id="mt-crafts"></div>' +
       '<div class="mt-card"><h3>🖥️ מיד, על המחשב · עובד גם בלי אינטרנט</h3><div class="mt-chips" id="mt-ai-local"></div></div>' +
       '<div class="mt-card mt-func"><h3>😜 אפקטים מצחיקים <small>על הצילום האמיתי, לכל פרצוף בתמונה · על המחשב, בלי אינטרנט</small></h3><div class="mt-chips" id="mt-ai-fun"></div></div>' +
@@ -343,6 +348,7 @@
   /* not worth editing: someone's eyes are closed, or nobody looks at the camera (the face check, copies.js / curate.js) */
   function warnOf(p) {
     var a = p.cadv;
+    if (p.aiBad) return '🛡️ ' + p.aiBad;
     if ((a && a.verdict === 'closed') || (p.quality && p.quality.closed > 0)) return '😑 עיניים עצומות · לא מומלץ לערוך';
     if (a && a.verdict === 'ok' && a.faces > 0 && a.adults === 0 && a.away > 0) return '↪️ לא מסתכלים למצלמה · לא מומלץ';
     return '';
@@ -1079,6 +1085,26 @@
   }
   var m1 = $('#mt-one', root); if (m1 && FS.aiOnePerson) { m1.checked = FS.aiOnePerson(); m1.addEventListener('change', function () { FS.aiOnePerson(m1.checked); var o2 = document.getElementById('ax-one'); if (o2) o2.checked = m1.checked; }); }
   var mo = $('#mt-only', root); if (mo && FS.aiOnlyPerson) { mo.checked = FS.aiOnlyPerson(); mo.addEventListener('change', function () { FS.aiOnlyPerson(mo.checked); var o2 = document.getElementById('ax-only'); if (o2) o2.checked = mo.checked; }); }
+  /* the AI filter (js/ai-guard.js) */
+  (function () {
+    var on = $('#mt-guard-on', root), lv = $('#mt-guard-lv', root), ck = $('#mt-guard-check', root), rv = $('#mt-guard-revert', root), st = $('#mt-guard-st', root);
+    if (!on || !FS.aiCheck) { var card = root.querySelector('.mt-guard'); if (card) card.hidden = true; return; }
+    on.checked = FS.aiGuardOn(); lv.value = FS.aiGuardLevel();
+    on.addEventListener('change', function () { FS.aiGuardOn(on.checked); FS.toast(on.checked ? '🛡️ סינון ה־AI פעיל' : '⚠️ סינון ה־AI כבוי: כל תוצאה תיכנס לתמונה', 4000); });
+    lv.addEventListener('change', function () { FS.aiGuardLevel(lv.value); });
+    function redraw() { buildGrid(); }
+    ck.addEventListener('click', function () {
+      var n = FS.state.photos.filter(function (p) { return p.origSrc && p.origSrc !== p.src; }).length;
+      if (!n) { st.textContent = 'אין עדיין תמונות עם עריכת AI.'; rv.hidden = true; return; }
+      ck.disabled = true;
+      FS.aiHealth(null, function (i, all) { st.textContent = '🩺 בודק ' + i + ' מתוך ' + all + '…'; }).then(function (r) {
+        ck.disabled = false; rv.hidden = !r.bad.length;
+        st.textContent = r.bad.length ? '⚠️ ' + r.bad.length + ' מתוך ' + r.checked + ' עריכות לא נראות כמו המקור (מסומנות באדום).' : '✔ כל ' + r.checked + ' העריכות תקינות: אותן פנים ואותה תמונה.';
+        redraw();
+      });
+    });
+    rv.addEventListener('click', function () { var n = FS.aiRevertBad(); rv.hidden = true; st.textContent = '↩ ' + n + ' תמונות חזרו למקור.'; redraw(); });
+  })();
   var mk = $('#mt-keep', root); if (mk && FS.keepFacesOn) { mk.checked = FS.keepFacesOn(); mk.addEventListener('change', function () { FS.keepFacesOn(mk.checked); var k2 = document.getElementById('ax-keep'); if (k2) k2.checked = mk.checked; }); }
   $('#mt-ai-eng', root).addEventListener('click', function (e) { var b = e.target.closest('[data-eng]'); if (!b) return; if (b.dataset.eng === 'local' && !(FS.localAI && FS.localAI.isReady())) { FS.toast('מנוע ה־AI המקומי עוד לא מותקן'); if (FS.localAI) FS.localAI.open(); return; } FS.aiEngine(b.dataset.eng); engines(); });
   function after(list) { list.forEach(function (p) { p.cache = {}; p._mc = null; }); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); refreshAll(); }

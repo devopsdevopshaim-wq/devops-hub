@@ -2408,3 +2408,34 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The quick print already defaulted to 15x20.
 - **Print CSS** (`studio.css` @media print): html and body are white with no margin, and `.pp` is white. With `printBackground`, a dark page colour must never reach a sheet.
 - **Check:** a Chromium PDF of 2 photos on 15x20 gives 1 page (152×203) with both photos.
+
+## v161: AI filter. An AI edit that isn't the same people is never applied
+- **Why:** at an event about 60 of 100 AI edits came back with other faces, or a picture that didn't match the shot.
+- **`js/ai-guard.js`** (studio.html after face-keep.js; in sw FILES):
+  - `FS.aiCheck(orig, res, {photo})` runs on this computer with no internet, using `FS.getLandmarker`, on a copy of at most 768px (~100 ms).
+    - Every clear face of the original (w ≥ 4.5% of the image and ≥ 40% of the largest) must be found in the result at the same place and size.
+    - Face shape: the mean relative difference of the distances between 19 rigid landmarks, over the inter-ocular distance.
+    - For photographic looks also: the face upright at 40×40 in grey (NCC) and the scene (64px edge map, NCC).
+    - In a drawn look, a face the landmarker can't see does not fail; the people count covers it.
+  - **Limits** (strict, the default / normal):
+    - Photo: shape .085/.11, face NCC .5/.38, scene .45/.32.
+    - Drawn: shape .12/.14.
+  - **Calibration** (show/p-original against its 12 looks, other people's faces swapped on via keepFaces, and other photos):
+    - Same people, photo looks: shape ≤ .061 (graded about .01).
+    - Swaps: .143–.159. Other people: .14–.47, or the faces are missing.
+    - The rain painting's bride is .134: it fails strict and passes normal.
+  - **Settings and health:**
+    - `FS.aiGuardOn()` ('fs-ai-guard') and `FS.aiGuardLevel()` ('fs-ai-guard-level').
+    - `FS.aiHealth(list, onStep)` sets `p.aiBad` on edits already applied; `FS.aiRevertBad()` puts the original back.
+  - **Warm-up:** the landmarker loads at idle 1.5 s after load, so the first check doesn't wait. Models are shipped and cached by sw, so the check works offline.
+- **`styles.js` `guarded()`:**
+  - After the people count, `same(im, i)` runs aiCheck. Photo look = the prompt mentions very same people / Keep everything else / photograph / photo-realistic.
+  - A fail goes to the next engine. When every engine fails, `ask(im, false, chk)` shows "🛡️ העריכה לא נראית כמו המקור"; in a batch it rejects 'not-same'.
+  - `applyAI` stores `p.aiPhoto` and `p.aiScore` and clears `p.aiBad`; `unstyle` clears them.
+- **`ai-studio.js` batch:**
+  - not-same / lost-people / extra-people no longer stop the event. That photo stays as shot and gets `p.aiBad`, and the count shows "🛡️ N נשארו מקור".
+  - Other errors still stop the batch.
+- **`ai.js` aiError:** a message for 'not-same'.
+- **Workspace (`mate.js`):**
+  - In the AI view, the card "🛡️ סינון AI" has the on/off switch, the level, "🩺 לבדוק את כל עריכות ה־AI" and "↩ להחזיר למקור את הלא תקינות".
+  - `warnOf` shows `p.aiBad` first, as a red tile.

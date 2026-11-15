@@ -277,7 +277,7 @@
     if (FS.aiBatch) FS.aiBatch(list.length > 1);
     if ((navigator.onLine === false || noNet) && !localReady()) return FS.offlineChooser(label);
     if (variantsOn() && list.length === 1 && navigator.onLine !== false) return runVariants(list[0], prompt, label);
-    var done = 0, stop = false, failed = null, next = 0;
+    var done = 0, stop = false, failed = null, next = 0, kept = 0;   /* kept: answers the guard turned down, the photo stays as shot */
     function onStop() { stop = true; FS.aiStop && FS.aiStop(); }
     /* several photos at once (the server answers each on its own), so an event's batch takes the time of a few photos, not of all;
        the engine on this computer runs one picture at a time */
@@ -287,19 +287,24 @@
     var lanes = local ? 1 : Math.min(3, list.length), engines = [];
     for (var ei = 0; ei < lanes; ei++) engines.push(undefined);
     if (both) { engines.push('local'); lanes++; }
-    function msg() { FS.busy('🤖 ' + label + ' · ' + done + ' מתוך ' + list.length + ' מוכנות' + (lanes > 1 ? ' (' + lanes + ' במקביל' + (both ? ', כולל המחשב' : '') + ')' : ''), onStop); }
+    function msg() { FS.busy('🤖 ' + label + ' · ' + done + ' מתוך ' + list.length + ' מוכנות' + (kept ? ' · 🛡️ ' + kept + ' נשארו מקור' : '') + (lanes > 1 ? ' (' + lanes + ' במקביל' + (both ? ', כולל המחשב' : '') + ')' : ''), onStop); }
     function lane(eng) {
       if (stop || failed || next >= list.length) return Promise.resolve();
       var p = list[next++];
       return FS.findFaces(p, true).catch(function () {}).then(function () { if (!stop) return FS.restyle(p, prompt, eng).then(function () { done++; if (!stop) msg(); }); })
-        .catch(function (e) { if (!stop) failed = e; }).then(function () { return lane(eng); });
+        .catch(function (e) {
+          if (stop) return;
+          /* an answer that is not the same people is not a reason to stop the event: that photo stays as shot, the rest go on */
+          if (/not-same|lost-people|extra-people/.test(String(e && e.message))) { kept++; p.aiBad = String(e.message) === 'not-same' ? 'ה־AI לא נשמר: פנים שונות מהמקור' : 'ה־AI לא נשמר: אנשים חסרים או נוספים'; return; }
+          failed = e;
+        }).then(function () { return lane(eng); });
     }
     msg();
     var lanesP = engines.map(function (eng) { return lane(eng); });
     return Promise.all(lanesP).then(function () {
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.gridMode && FS.gridMode() && FS.buildGrid();
       if (stop) FS.toast('⏹ העריכה נעצרה' + (done ? '. ' + done + ' תמונות כבר עודכנו ("↩ החזרת המקור" מבטל).' : '. התמונות לא השתנו.'), 5000);
-      else if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות. "↩ החזרת המקור" מבטל.', 4500);
+      else if (done || kept) FS.toast('✨ ' + label + ': ' + done + ' תמונות' + (kept ? ' · 🛡️ ' + kept + ' לא נראו כמו המקור ונשארו כמו שצולמו' : '') + '. "↩ החזרת המקור" מבטל.', kept ? 8000 : 4500);
       if (failed && !stop && /offline/.test(String(failed.message)) && !localReady()) { noNet = true; setTimeout(function () { noNet = false; }, 60000); FS.offlineChooser(label); }
       else if (failed && !stop) FS.toast(FS.aiError(String(failed.message)) + (/timeout/.test(String(failed.message)) ? ' בלי אינטרנט עובדים העיצובים ב"🖥️ מובנה בתוכנה" שבראש הלשונית.' : ''), 9000);
     });
