@@ -183,7 +183,8 @@
     ['A6', 'A6', 105, 148], ['A5', 'A5', 148, 210], ['A4', 'A4', 210, 297], ['A3', 'A3', 297, 420], ['Letter', 'Letter', 215.9, 279.4], ['sq15', 'ריבוע 15×15', 152, 152], ['10x10', 'ריבוע 10×10', 102, 102], ['card', 'כרטיס 5.4×8.6', 54, 86]];
   FS.PAPERS = PAPERS;
   $('#paper').innerHTML = PAPERS.map(function (p) { return '<option value="' + p[0] + '">' + p[1] + ' (' + p[2] + '×' + p[3] + ' מ"מ)</option>'; }).join('');
-  $('#paper').value = FS.prefs.paper || '10x15';
+  if (!FS.prefs.paper15x20) { if (FS.prefs.paper === '10x15') FS.prefs.paper = '15x20'; FS.prefs.paper15x20 = 1; if (FS.savePrefs) FS.savePrefs(); }   /* 15×20 by default (v160), once */
+  $('#paper').value = FS.prefs.paper || '15x20';
   ['paper', 'layout', 'margin'].forEach(function (k) { if (FS.prefs['print_' + k]) $('#' + k).value = FS.prefs['print_' + k]; $('#' + k).addEventListener('change', function () { FS.prefs['print_' + k] = this.value; FS.savePrefs(); }); });
 
   /* "⚙️ הגדרות הדפסה" in this tab opens the print window on its settings: directions, printers and drivers (mate.js) */

@@ -2398,3 +2398,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - It hides `.sc-bar`, the chat button, the chat nudge and `.wa-fab`.
   - It is measured on scroll/resize/click and looks the elements up by id each time.
   - It does not use IntersectionObserver, which missed the designer after its tab opened, and keeps no stored element (the designer replaces its canvas).
+
+## v160: 15×20 is the default sheet (DNP)
+- **Problem:** a DNP loaded with 6×8 (15×20) media got 10×15 pages. Two 10×15 photos came out as 2 sheets plus 2 black prints.
+- **Change:** the default sheet is now 15×20. Two 10×15 photos (true size) fit on one sheet, turned as needed.
+  - The workspace print window (`mate.js` `PS.paper`) defaults to '15x20'.
+  - A stored '10x15' moves to 15×20 once (`localStorage fs-paper-15x20`). Choosing 10×15 again afterwards is kept.
+  - The studio's output tab (`output.js` `#paper`) defaults the same way, once, via `FS.prefs.paper15x20`.
+  - The quick print already defaulted to 15x20.
+- **Print CSS** (`studio.css` @media print): html and body are white with no margin, and `.pp` is white. With `printBackground`, a dark page colour must never reach a sheet.
+- **Check:** a Chromium PDF of 2 photos on 15x20 gives 1 page (152×203) with both photos.
