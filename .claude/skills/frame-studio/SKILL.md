@@ -2355,3 +2355,15 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The chosen place gets a new folder "ערוכות" (`save-edited {sub:true}`; in a browser, `getDirectoryHandle("ערוכות", {create})`).
   - "📂 פתיחת התיקייה" opens it (`files:open-dir {sub:true}`).
 - **Tested in a browser:** a first photo that never answers, then all three photos got copies 3. The save window offered `C:\Events\Tal` and wrote with `sub`.
+
+## v157: send edited photos from anywhere: several at once, WhatsApp always at hand
+
+- **`FS.sendToCustomer(p | list)` (sendcust.js, rewritten):** one photo or several (the marked ones).
+  - ✉️ Email: a few photos per mail (≤8, about 4.2 MB per mail), through frame-biz `photo-mail` with `images[]`. The server takes up to 8 images, ~5.6 MB in all, named photo-1.jpg…
+  - 💬 WhatsApp: the chat opens, the customer's if there is a phone, otherwise WhatsApp's contact list (wa.me with no number). Each photo then goes to the clipboard in turn ("📋 התמונה הבאה (2/5)").
+  - 💾 Save: every JPEG to this computer.
+- **Ways in:**
+  - "📤 שליחה" in the workspace top bar (`#send-btn`): the marked photos, or the one in focus.
+  - "📨 ללקוח" in the photo panel, and "📨 שליחה ללקוח" in "שמירה והדפסה".
+  - A green round WhatsApp button always on screen (`#wa-fab`, bottom left): with photos at hand it opens the send window, without any it opens WhatsApp. Hidden while signed out or printing.
+- **Tests:** frame.test.mjs (three photos in one mail); a browser check (3 photos in 1 mail, the WhatsApp steps, the button).
