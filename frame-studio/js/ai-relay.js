@@ -74,10 +74,19 @@
     var localHere = FS.localAI && FS.localAI.isReady && FS.localAI.isReady();
     if (!pic || HOST || localHere || FS.relayMode() === 'off' || navigator.onLine === false) return ask0(body);
     var mode = FS.relayMode(), wantLocal = body.engine === 'local';
+    /* v172: the studio's computer first whenever it is on (free, no daily limit, a graphics card); the cloud's small free
+       allowance is kept for when the computer is off. A cloud engine chosen by name still goes to the cloud. */
+    if (mode === 'auto' && !body.engine) {
+      return FS.relayState().then(function (s) {
+        if (!s.online) return cloudThenComputer();
+        return FS.relayRun(body).then(function (r) { return r && r.ok ? r : /relay-offline|relay-failed|relay-busy/.test(String(r && r.error)) ? ask0(body) : r; });
+      });
+    }
     if (mode === 'computer' || wantLocal || relayFirst > Date.now()) {
       return FS.relayState(true).then(function (s) { return s.online ? FS.relayRun(body) : wantLocal ? { ok: false, error: 'relay-offline' } : ask0(body); });
     }
-    return ask0(body).then(function (r) {
+    return cloudThenComputer();
+    function cloudThenComputer() { return ask0(body).then(function (r) {
       if ((r && r.ok && r.image) || (r && r.error === 'cancelled')) return r;
       var er = String((r && r.error) || '');
       if (!/quota|no-free-tier|rate-limited|ai-failed|engine-off|timeout|http-5/.test(er)) return r;
@@ -87,7 +96,7 @@
         if (/quota|no-free-tier|rate-limited/.test(er)) relayFirst = Date.now() + 30 * 60000;   /* the cloud is done for a while */
         return FS.relayRun(body);
       });
-    });
+    }); }
   };
   var aiError = FS.aiError;
   FS.aiError = function (m) {
@@ -114,14 +123,14 @@
     }
     var m = FS.relayMode();
     return '<div class="mt-relay"><b>📡 המחשב בעמדה:</b> <span id="mt-relay-st">בודק…</span>' +
-      '<label class="mt-chk-l">עיצובי AI <select id="mt-relay-mode"><option value="auto"' + (m === 'auto' ? ' selected' : '') + '>מהענן, וכשהוא לא יכול: מהמחשב</option><option value="computer"' + (m === 'computer' ? ' selected' : '') + '>תמיד מהמחשב בעמדה</option><option value="off"' + (m === 'off' ? ' selected' : '') + '>רק מהענן</option></select></label></div>';
+      '<label class="mt-chk-l">עיצובי AI <select id="mt-relay-mode"><option value="auto"' + (m === 'auto' ? ' selected' : '') + '>מהמחשב כשהוא מחובר, אחרת מהענן (מומלץ)</option><option value="computer"' + (m === 'computer' ? ' selected' : '') + '>תמיד מהמחשב בעמדה</option><option value="off"' + (m === 'off' ? ' selected' : '') + '>רק מהענן</option></select></label></div>';
   };
   FS.relayBind = function (box) {
     var hb = box.querySelector('#mt-relay-host'); if (hb) hb.addEventListener('change', function () { FS.relayHostOn(hb.checked); });
     var ms = box.querySelector('#mt-relay-mode'); if (ms) ms.addEventListener('change', function () { FS.relayMode(ms.value); });
     var st = box.querySelector('#mt-relay-st');
     if (st) FS.relayState(true).then(function (s) {
-      st.textContent = s.online ? '✅ מחובר (' + (s.name || 'המחשב') + '): כשהענן לא יכול, העיצובים נעשים שם, בלי הגבלה' : '⬜ לא מחובר. פותחים את התוכנה במחשב עם מנוע ה־AI המקומי, באותו חשבון.';
+      st.textContent = s.online ? '✅ מחובר (' + (s.name || 'המחשב') + '): עיצובי ה־AI נעשים שם, בחינם ובלי הגבלה' : '⬜ לא מחובר. פותחים את התוכנה במחשב עם מנוע ה־AI המקומי, באותו חשבון.';
     });
   };
 })();
