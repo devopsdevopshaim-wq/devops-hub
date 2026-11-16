@@ -17,8 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
-      - run: node .github/scripts/frame-ai-e2e.cjs "$RUNNER_TEMP/e2e"
+      - run: mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null && npm i playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: NODE_PATH="$RUNNER_TEMP/pw/node_modules" node .github/scripts/frame-ai-e2e.cjs "$RUNNER_TEMP/e2e"
       - name: Push to ci-ai-e2e
         if: always()
         run: |
