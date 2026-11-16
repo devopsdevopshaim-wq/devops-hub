@@ -72,6 +72,11 @@
     },
     coin() { tone(988, 0.07, { type: 'square', vol: 0.08 }); tone(1319, 0.16, { type: 'square', vol: 0.08, at: 0.07 }); },
     boom() { noise(0.9, { freq: 260, vol: 0.9, attack: 0.005 }); tone(70, 0.6, { type: 'sine', vol: 0.6, slide: 0.4 }); },
+    // the cannon game
+    cannon() { noise(0.45, { freq: 420, vol: 0.7, attack: 0.003 }); tone(90, 0.35, { type: 'sine', vol: 0.55, slide: 0.45 }); noise(0.25, { type: 'highpass', freq: 3000, vol: 0.12, at: 0.02 }); },
+    impact() { noise(0.35, { freq: 520, vol: 0.55 }); tone(120, 0.25, { type: 'triangle', vol: 0.3, slide: 0.5 }); },
+    shatter() { noise(0.3, { type: 'highpass', freq: 2600, vol: 0.35 }); for (let i = 0; i < 4; i++) tone(1800 + Math.random() * 2200, 0.08, { type: 'triangle', vol: 0.06, at: i * 0.025 }); noise(0.25, { type: 'bandpass', freq: 700, q: 1, vol: 0.25, at: 0.02 }); },
+    star(i = 0) { tone([784, 988, 1319][i] || 1319, 0.35, { type: 'triangle', vol: 0.2 }); tone(([784, 988, 1319][i] || 1319) * 2, 0.25, { vol: 0.06, at: 0.04 }); },
     sonar() { tone(660, 0.6, { vol: 0.18, slide: 1.6 }); tone(990, 0.5, { vol: 0.08, at: 0.25 }); },
     water() { tone(500, 0.12, { vol: 0.15, slide: 1.8 }); tone(700, 0.12, { vol: 0.12, at: 0.1, slide: 1.6 }); },
     levelup() { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, 0.25, { type: 'triangle', vol: 0.2, at: i * 0.1 })); },

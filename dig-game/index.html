@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>שכבות — הרפתקה ארכיאולוגית</title>
-<meta name="description" content="משחק חפירות ארכיאולוגיות בדפדפן: חופרים שכבה אחרי שכבה בעכו, בקיסריה, בעיר דוד, במגידו ובמערות הכרמל, חושפים ממצאים אמיתיים מההיסטוריה של הארץ ובונים מוזיאון." />
+<meta name="description" content="משחק ארכיאולוגיה בדפדפן: יורים בתותח על מגדלים עתיקים של כדים ואריחים, מוצאים ממצאים אמיתיים מההיסטוריה של הארץ בתיבות האוצר, חופרים באתרים אמיתיים ובונים מוזיאון." />
 <meta name="theme-color" content="#1a110a" />
 <meta property="og:title" content="שכבות — הרפתקה ארכיאולוגית" />
 <meta property="og:description" content="כל שכבה היא אלף שנה. מה אתם תגלו?" />
@@ -38,13 +38,39 @@
         <p class="kicker">הרפתקה ארכיאולוגית בתלת־ממד</p>
         <h1 data-text="שכבות">שכבות</h1>
         <p class="tag">כל שכבה היא אלף שנה. מה אתם תגלו?</p>
-        <button class="btn gold xl" id="play">להתחיל לחפור ⛏️</button>
+        <button class="btn gold xl" id="play">לשחק 💥</button>
         <ul class="how">
-          <li><i data-ico="pick"></i><span><b>חופרים</b> עם מכוש, כף ומברשת</span></li>
-          <li><i data-ico="vase"></i><span><b>חושפים</b> 41 ממצאים אמיתיים מ־8 תקופות</span></li>
-          <li><i data-ico="museum"></i><span><b>בונים</b> מוזיאון ומשדרגים את המשלחת</span></li>
+          <li><i data-ico="dyn"></i><span><b>יורים</b> בתותח על מגדלים עתיקים</span></li>
+          <li><i data-ico="vase"></i><span><b>מוצאים</b> 41 ממצאים אמיתיים בתיבות האוצר</span></li>
+          <li><i data-ico="pick"></i><span><b>חופרים</b> באתרים אמיתיים ובונים מוזיאון</span></li>
         </ul>
       </div>
+    </div>
+  </section>
+
+  <!-- the cannon game: level map -->
+  <section class="screen" id="scr-levels" hidden>
+    <div class="lv-head">
+      <div class="lv-total"><i>★</i><b id="lv-stars">0</b><small>כוכבים</small></div>
+      <div class="lv-inv"><span>💣 <b id="lv-bomb">0</b></span><span>☄️ <b id="lv-triple">0</b></span></div>
+    </div>
+    <div class="lv-path" id="lv-path"></div>
+  </section>
+
+  <!-- the cannon game: a level -->
+  <section class="screen" id="scr-smash" hidden>
+    <div class="smash3d" id="smash3d" aria-label="מגדל עתיק על במה ותותח מולו: הקישו על המגדל כדי לירות"></div>
+    <div class="sm-top">
+      <div class="sm-balls"><small>כדורים</small><b id="sm-balls">0</b><span class="sm-rate" id="sm-rate"><i class="on">★</i><i class="on">★</i><i class="on">★</i></span></div>
+      <div class="sm-mid"><b id="sm-title">שלב 1</b><small id="sm-site"></small><div class="sm-bar"><i id="sm-fill"></i></div></div>
+      <button class="sm-gear" id="sm-pause" aria-label="הפסקה">⚙</button>
+    </div>
+    <div class="sm-coins"><i data-ico="coin"></i><b id="sm-coins">0</b></div>
+    <div class="sm-combo" id="sm-combo" aria-live="polite"></div>
+    <p class="sm-hint" id="sm-hint" role="status"></p>
+    <div class="sm-boosts">
+      <button class="boost" data-b="bomb" aria-label="פצצה"><span class="bi">💣</span><em id="b-bomb">0</em><small>פצצה</small></button>
+      <button class="boost" data-b="triple" aria-label="שלישייה"><span class="bi">☄️</span><em id="b-triple">0</em><small>שלישייה</small></button>
     </div>
   </section>
 
@@ -104,7 +130,8 @@
 </main>
 
 <nav class="tabbar" aria-label="ניווט">
-  <button data-go="map"><span data-ico="map"></span>אתרים</button>
+  <button data-go="levels"><span data-ico="star"></span>שלבים</button>
+  <button data-go="map"><span data-ico="pick"></span>חפירות</button>
   <button data-go="museum"><span data-ico="museum"></span>מוזיאון</button>
   <button data-go="camp"><span data-ico="camp"></span>מחנה</button>
 </nav>
@@ -120,7 +147,9 @@
 <script src="js/hero.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/game.js"></script>
+<script src="js/smash.js"></script>
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
+<script type="module" src="js/smash3d.js"></script>
 <script type="module" src="js/dig3d.js"></script>
 </body>
 </html>
