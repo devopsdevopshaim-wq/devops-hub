@@ -367,7 +367,7 @@
     var det = FS.detectFaces ? FS.detectFaces(orig).catch(function () { return []; }) : Promise.resolve([]);
     return det.then(function (all) {
       var main = FS.mainFaces ? FS.mainFaces(all) : all;
-      p._nAll = main.length;
+      p._nAll = main.length; p._all = main.slice();
       if (main.length && FS.posingFaces) main = FS.posingFaces(all);
       if (main.length || !FS.countFacesLm) return main;
       /* the face finder saw nobody: the landmarker counts again, so the people are still counted and checked (v174) */
@@ -424,13 +424,27 @@
       });
       return miss;
     }
+    function placedExtra(im) {
+      var F0 = p._all, F1 = im.aiRaw && FS.posingFaces ? FS.posingFaces(im.aiRaw) : null;
+      if (!F0 || !F0.length || !F1 || F0[0].fake) return 0;
+      var kx = im.naturalWidth / orig.naturalWidth, used = {}, add = 0;
+      F1.forEach(function (g) {
+        var gx = g.x + g.w / 2, gy = g.y + g.h / 2, hit = -1;
+        F0.forEach(function (f, j) { if (used[j] || hit >= 0) return; var d = Math.hypot((f.x + f.w / 2) * kx - gx, (f.y + f.h / 2) * kx - gy); if (d < Math.max(f.w * kx, g.w) * 0.8) hit = j; });
+        if (hit < 0) add++; else used[hit] = 1;
+      });
+      return add;
+    }
     function go(i) {
       return restyleOnce(p, prompt, plan[i]).then(function (im) {
         if (!n0 || !FS.countFaces) return same(im, i);
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
           /* v174: every person of the original must be there. Up to 5 people, exactly as many; a bigger group may lose one
              face to the finder (a turned head). Was "at least one" for one or two people, so 2 → 1 got through (owner report). */
-          var lost = n0 <= 5 ? n < n0 : n < n0 - 1, extra = n > Math.max(n0 <= 4 ? n0 : n0 + 1, (p._nAll || 0) + 1);   /* v183: people further back may stay */
+          var nA = Math.max(n0, p._nAll || 0), lost = n0 <= 5 ? n < n0 : n < n0 - 1, extra = n > (nA <= 4 ? nA : nA + 1);   /* v183: people further back may stay; v184: never one more */
+          /* v184: a big face in the answer where nobody stood in the photo is an added person (an extra woman beside a couple) */
+          var add = placedExtra(im);
+          if (add > (nA <= 5 ? 0 : 1)) { if (window.console) console.warn('AI: ' + add + ' added people, from ' + (im.aiSource || '?')); extra = true; }
           /* v181: in a group, every person posing must be the AI's own figure where the person stood (a face at about the same
              place and size in the raw answer), so one invented figure with real faces laid on it never passes */
           var miss = placedMiss(im);
@@ -636,8 +650,9 @@
      and between people the lower of the neighbours, so a head is never cut; the seam is soft. The kept part takes a little of
      the new place's colour so it sits in it. Was: the people cut out alone into the place, so a table group floated. */
   function keepGround(orig, im) {
-    var tmp = { src: orig.src, doc: null };
-    return FS.ensureMask(tmp).then(function (m) {
+    var tmp = { src: orig.src, doc: null }, faces = null;
+    var det = FS.detectFaces ? FS.detectFaces(orig).then(function (l) { faces = FS.mainFaces ? FS.mainFaces(l) : l; }, function () {}) : Promise.resolve();
+    return det.then(function () { return FS.ensureMask(tmp); }).then(function (m) {
       if (!m || (tmp.maskCover || 0) < 0.02) return im;
       var W = im.naturalWidth, H = im.naturalHeight, q = Math.max(1, Math.round(Math.max(W, H) / 400)), w = Math.ceil(W / q), h = Math.ceil(H / q);
       var sc = FS.canvas(w, h), sx = sc.getContext('2d', { willReadFrequently: true }); sx.drawImage(m, 0, 0, w, h);
@@ -651,6 +666,18 @@
       last = -1; for (x = w - 1; x >= 0; x--) { if (top[x] >= 0) last = top[x]; R[x] = last; }
       var cut = new Float32Array(w);
       for (x = 0; x < w; x++) cut[x] = top[x] >= 0 ? top[x] : Math.max(L[x] < 0 ? med : L[x], R[x] < 0 ? med : R[x]);
+      /* v184: the line never goes deeper than the heads: the top of the hair of the faces (from left to right, joined straight
+         between them, flat past the ends). A column with only a hand or legs low in it (between people at a table) made a
+         deep notch, and the place showed through the table. */
+      if (faces && faces.length) {
+        var kq = W / orig.naturalWidth / q, hd = faces.map(function (f) { return { x: (f.x + f.w / 2) * kq, y: (f.y - f.h * 0.55) * kq }; }).sort(function (a, b) { return a.x - b.x; });
+        for (x = 0; x < w; x++) {
+          var ly;
+          if (x <= hd[0].x) ly = hd[0].y; else if (x >= hd[hd.length - 1].x) ly = hd[hd.length - 1].y;
+          else for (var t = 0; t < hd.length - 1; t++) if (x >= hd[t].x && x <= hd[t + 1].x) { ly = hd[t].y + (hd[t + 1].y - hd[t].y) * (x - hd[t].x) / Math.max(1, hd[t + 1].x - hd[t].x); break; }
+          cut[x] = Math.min(cut[x], Math.max(0, ly));
+        }
+      } else { for (x = 0; x < w; x++) cut[x] = Math.min(cut[x], med + h * 0.08); }
       /* never above a head: the smallest within a few columns, then a soft smoothing */
       var r = Math.max(2, Math.round(w * 0.02)), c2 = new Float32Array(w);
       for (x = 0; x < w; x++) { var mn = 1e9; for (var k = -r; k <= r; k++) { var xx = Math.min(w - 1, Math.max(0, x + k)); mn = Math.min(mn, cut[xx]); } c2[x] = mn; }
