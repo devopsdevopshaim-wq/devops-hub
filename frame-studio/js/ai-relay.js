@@ -42,7 +42,7 @@
   if (HOST) setTimeout(hostLoop, 4000);
 
   /* ---------- the phone: sends to the computer ---------- */
-  var stP = null, stAt = 0, relayFirst = 0;
+  var stP = null, stAt = 0, relayFirst = 0, relayLast = null;
   FS.relayState = function (fresh) {
     if (HOST) return Promise.resolve({ online: false, host: true });
     if (!stP || fresh || Date.now() - stAt > 10000) { stAt = Date.now(); stP = call('relay-state').then(function (r) { return r && r.ok ? r : { online: false }; }); }
@@ -82,6 +82,7 @@
       var er = String((r && r.error) || '');
       if (!/quota|no-free-tier|rate-limited|ai-failed|engine-off|timeout|http-5/.test(er)) return r;
       return FS.relayState(true).then(function (s) {
+        relayLast = s;
         if (!s.online) return r;
         if (/quota|no-free-tier|rate-limited/.test(er)) relayFirst = Date.now() + 30 * 60000;   /* the cloud is done for a while */
         return FS.relayRun(body);
@@ -94,7 +95,14 @@
     if (m === 'relay-busy') return '🖥️ המחשב בעמדה עמוס (24 עיצובים בתור). מחכים כמה דקות.';
     if (m === 'relay-timeout') return '🖥️ המחשב בעמדה לא סיים בזמן. מנסים שוב.';
     if (m === 'relay-failed') return '🖥️ השליחה למחשב בעמדה לא הצליחה. מנסים שוב.';
-    return aiError ? aiError(m) : m;
+    var t = aiError ? aiError(m) : m;
+    /* on a phone, when the cloud could not: say why the studio's computer did not take over */
+    if (!HOST && relayLast && !relayLast.online && FS.relayMode() !== 'off' && /quota|no-free-tier|rate-limited/.test(String(m))) {
+      var seen = relayLast.seen ? Math.round((Date.now() - relayLast.seen) / 60000) : -1;
+      t = 'המכסה החינמית של ה־AI בענן נגמרה, ו📡 המחשב בעמדה לא מחובר' + (seen >= 0 ? ' (נראה לאחרונה לפני ' + seen + ' דקות)' : ' (עוד לא התחבר אף פעם)') +
+        '. במחשב: פותחים את התוכנה (גרסה 170 ומעלה) באותו חשבון, ומתקינים את מנוע ה־AI המקומי (🤖 AI ← "⬇️ התקנת מנוע ה־AI המקומי"). אחרי זה העיצובים מהטלפון נעשים שם.';
+    }
+    return t;
   };
 
   /* ---------- the lines in "📶 מה עובד בלי אינטרנט" ---------- */
