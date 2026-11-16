@@ -109,7 +109,7 @@
       '<div class="mt-card mt-guard"><h3>🛡️ סינון AI <small>כל עריכה נבדקת מול המקור על המחשב (בלי אינטרנט): אותן פנים, אותה תמונה. עריכה שלא עוברת לא נשמרת על התמונה</small></h3>' +
         '<div class="mt-chips"><label class="mt-chk-l"><input type="checkbox" id="mt-guard-on"> הסינון פעיל</label>' +
         '<label class="mt-chk-l">רמה <select id="mt-guard-lv"><option value="strict">קפדנית (מומלץ לאירוע)</option><option value="normal">רגילה (סגנונות מצוירים חופשיים יותר)</option></select></label></div>' +
-        '<div class="mt-chips" style="margin-top:8px"><button class="mt-btn primary" id="mt-guard-check" type="button">🩺 לבדוק את כל עריכות ה־AI</button><button class="mt-btn" id="mt-guard-revert" type="button" hidden>↩ להחזיר למקור את הלא תקינות</button></div>' +
+        '<div class="mt-chips" style="margin-top:8px"><button class="mt-btn primary" id="mt-guard-check" type="button">🩺 לבדוק את כל עריכות ה־AI</button><button class="mt-btn" id="mt-guard-revert" type="button" hidden>↩ להחזיר למקור את הלא תקינות</button><button class="mt-btn" id="mt-guard-redo" type="button">🔴 לסמן רק את האדומות (לנסות שוב)</button></div>' +
         '<p class="mt-hint" id="mt-guard-st" aria-live="polite"></p></div>' +
       '<div class="mt-card cr-card-box" id="mt-crafts"></div>' +
       '<div class="mt-card"><h3>🖥️ מיד, על המחשב · עובד גם בלי אינטרנט</h3><div class="mt-chips" id="mt-ai-local"></div></div>' +
@@ -1124,6 +1124,12 @@
         st.textContent = r.bad.length ? '⚠️ ' + r.bad.length + ' מתוך ' + r.checked + ' עריכות לא נראות כמו המקור (מסומנות באדום).' : '✔ כל ' + r.checked + ' העריכות תקינות: אותן פנים ואותה תמונה.';
         redraw();
       });
+    });
+    $('#mt-guard-redo', root).addEventListener('click', function () {
+      var bad = FS.state.photos.filter(function (p) { return p.aiBad; });
+      if (!bad.length) { st.textContent = 'אין תמונות אדומות.'; return; }
+      S.marked = {}; bad.forEach(function (p) { S.marked[p.id] = true; }); redraw(); aiTarget && aiTarget();
+      st.textContent = '🔴 סומנו ' + bad.length + ' תמונות. בוחרים עיצוב, והוא ירוץ רק עליהן.';
     });
     rv.addEventListener('click', function () { var n = FS.aiRevertBad(); rv.hidden = true; st.textContent = '↩ ' + n + ' תמונות חזרו למקור.'; redraw(); });
   })();

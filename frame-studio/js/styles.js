@@ -514,10 +514,18 @@
        on an eighth-size copy, soft), so new clothes or a new place get none of the old detail;
      - then an unsharp mask of the size of the enlargement, so edges are clean and not haloed.
      'fs-ai-crisp' = '0' turns it off. */
+  /* never a reason for a design to fail: any error (a phone out of memory on a big picture) leaves the enlarged picture as is.
+     On a phone or a small computer (≤ 4 GB) the work is kept to about 4 megapixels, where it is safe. */
   function crisp(im, orig, keep) {
+    try { return crisp0(im, orig, keep).catch(function (e) { if (window.console) console.warn('crisp', e); return im; }); }
+    catch (e) { if (window.console) console.warn('crisp', e); return Promise.resolve(im); }
+  }
+  function crisp0(im, orig, keep) {
     try { if (localStorage.getItem('fs-ai-crisp') === '0') return Promise.resolve(im); } catch (e) { /* on */ }
     var W = im.naturalWidth, H = im.naturalHeight, up = Math.max(W, H) / 1024;
     if (up < 1.25) return Promise.resolve(im);
+    var small = (navigator.deviceMemory && navigator.deviceMemory <= 4) || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
+    if (W * H > (small ? 4.2e6 : 9.5e6)) return Promise.resolve(im);
     var c = FS.canvas(W, H), x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0);
     var R = x.getImageData(0, 0, W, H), r = R.data;
     function blurred(src, rad) { var b = FS.canvas(W, H), bx = b.getContext('2d', { willReadFrequently: true }); bx.filter = 'blur(' + rad.toFixed(2) + 'px)'; bx.drawImage(src, 0, 0, W, H); return bx.getImageData(0, 0, W, H).data; }
