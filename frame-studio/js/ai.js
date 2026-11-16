@@ -304,7 +304,9 @@
     if (m === 'rate-limited') return 'יותר מדי בקשות ברצף. מחכים דקה ומנסים שוב.';
     if (m === 'timeout') return 'ה־AI לא ענה בזמן. נסו שוב.';
     if (m === 'offline') return FS.localAI && FS.localAI.isReady && FS.localAI.isReady() ? 'אין חיבור לשרת ה־AI, ומנוע ה־AI שבמחשב לא הצליח הפעם. מנסים שוב.' : 'אין חיבור לשרת ה־AI. כדי שהעיצובים יעבדו גם בלי אינטרנט, מתקינים את מנוע ה־AI שבמחשב: ☰ ← 🖥️ AI מקומי.';
-    return 'ה־AI לא הצליח הפעם.' + (FS.lastAiDetail ? ' (' + FS.lastAiDetail.slice(0, 140) + ')' : ' נסו שוב או ניסוח אחר.');
+    /* an error of this program (not a code from the server) says what it was, so it can be found and fixed */
+    var own = m && !/^[a-z0-9-]+$/.test(m) ? ' (' + m.slice(0, 100) + ')' : '';
+    return 'ה־AI לא הצליח הפעם.' + (FS.lastAiDetail ? ' (' + FS.lastAiDetail.slice(0, 140) + ')' : own || ' נסו שוב או ניסוח אחר.');
   };
   function toEnglish(text) {
     if (!hasHeb(text)) return Promise.resolve(text);

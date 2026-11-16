@@ -2548,3 +2548,17 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The mail still goes out: `any` ignores tgbot.
   - `frameWatch` (the morning message and the Saturday summary, in the frame object) looks the chat up with `tgChatOf` (the main object) and passes it on.
   - The deploy (`cloudflare-deploy.mjs`) runs `getMe`, finds the chat (`getUpdates`) and sends a test line. The result goes to the summary.
+
+## v167: an AI batch always finishes (phone report: 5 photos, "ה־AI לא הצליח הפעם", the batch stopped)
+- **What the owner saw:** the generic message with no detail. That means a client-side exception, not a server code.
+- **Likely cause:** `crisp()` (v163) working at full size on a phone (getImageData out of memory), or another throw in the chain. One failure set `failed` and stopped every lane.
+- **`ai-studio.js` batch lanes:**
+  - A failed photo is tried once more on the next engine (`eng = undefined`).
+  - After that, only 'offline' or 'cancelled' stop the event. Any other failure leaves that photo as shot with `p.aiBad`, counts in `kept`, and the batch goes on.
+  - The final toast says how many stayed as shot.
+- **`styles.js` `crisp()`:** wraps `crisp0()` in try/catch (sync and async), so a sharpen error never fails a design.
+  - It skips pictures over 9.5 MP, or over 4.2 MP on a phone or a ≤4 GB device (`navigator.deviceMemory`, `pointer: coarse`).
+- **`ai.js` `aiError`:** an unknown non-code message (an exception) is shown in parentheses, so a report says what failed.
+- **`mate.js` guard card:** "🔴 לסמן רק את האדומות (לנסות שוב)" marks the `p.aiBad` photos, so the next design runs only on them.
+- **Test:** Pixel 7 emulation, 5 photos, one server failure and one thrown error → 4 applied, 1 red, and the batch finished.
+- **Open risk:** `aiCheck` fails open (`ok:true`, skipped) when the landmarker can't load, as can happen on some phones. Then a different face can pass. Seen once in the report's screenshot.

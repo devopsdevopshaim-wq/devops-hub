@@ -277,7 +277,7 @@
     if (FS.aiBatch) FS.aiBatch(list.length > 1);
     if ((navigator.onLine === false || noNet) && !localReady()) return FS.offlineChooser(label);
     if (variantsOn() && list.length === 1 && navigator.onLine !== false) return runVariants(list[0], prompt, label);
-    var done = 0, stop = false, failed = null, next = 0, kept = 0;   /* kept: answers the guard turned down, the photo stays as shot */
+    var done = 0, stop = false, failed = null, next = 0, kept = 0, lastErr = '';   /* kept: answers the guard turned down, the photo stays as shot */
     function onStop() { stop = true; FS.aiStop && FS.aiStop(); }
     /* several photos at once (the server answers each on its own), so an event's batch takes the time of a few photos, not of all;
        the engine on this computer runs one picture at a time */
@@ -291,12 +291,17 @@
     function lane(eng) {
       if (stop || failed || next >= list.length) return Promise.resolve();
       var p = list[next++];
-      return FS.findFaces(p, true).catch(function () {}).then(function () { if (!stop) return FS.restyle(p, prompt, eng).then(function () { done++; if (!stop) msg(); }); })
+      var once = function () { return FS.findFaces(p, true).catch(function () {}).then(function () { if (!stop) return FS.restyle(p, prompt, eng).then(function () { done++; if (!stop) msg(); }); }); };
+      return once()
+        /* one more try for this photo (a busy engine, a slow answer, a hiccup on the phone), on the next engine in turn */
+        .catch(function (e) { if (stop || /not-same|lost-people|extra-people|cancelled|offline/.test(String(e && e.message))) throw e; if (window.console) console.warn('AI: photo ' + (p.name || p.id) + ' again after', e); eng = undefined; return once(); })
         .catch(function (e) {
           if (stop) return;
-          /* an answer that is not the same people is not a reason to stop the event: that photo stays as shot, the rest go on */
-          if (/not-same|lost-people|extra-people/.test(String(e && e.message))) { kept++; p.aiBad = String(e.message) === 'not-same' ? 'ה־AI לא נשמר: פנים שונות מהמקור' : 'ה־AI לא נשמר: אנשים חסרים או נוספים'; return; }
-          failed = e;
+          var m = String(e && e.message || e || '');
+          /* only no connection at all stops the event; any other failure leaves that one photo as shot and the rest go on (v167) */
+          if (/^offline$|^cancelled$/.test(m)) { failed = e; return; }
+          kept++; lastErr = m;
+          p.aiBad = m === 'not-same' ? 'ה־AI לא נשמר: פנים שונות מהמקור' : /lost-people|extra-people/.test(m) ? 'ה־AI לא נשמר: אנשים חסרים או נוספים' : 'ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)';
         }).then(function () { return lane(eng); });
     }
     msg();
@@ -304,7 +309,7 @@
     return Promise.all(lanesP).then(function () {
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.gridMode && FS.gridMode() && FS.buildGrid();
       if (stop) FS.toast('⏹ העריכה נעצרה' + (done ? '. ' + done + ' תמונות כבר עודכנו ("↩ החזרת המקור" מבטל).' : '. התמונות לא השתנו.'), 5000);
-      else if (done || kept) FS.toast('✨ ' + label + ': ' + done + ' תמונות' + (kept ? ' · 🛡️ ' + kept + ' לא נראו כמו המקור ונשארו כמו שצולמו' : '') + '. "↩ החזרת המקור" מבטל.', kept ? 8000 : 4500);
+      else if (done || kept) FS.toast('✨ ' + label + ': ' + done + ' תמונות' + (kept ? ' · ' + kept + ' נשארו כמו שצולמו (מסומנות באדום; אפשר לנסות שוב רק עליהן)' : '') + '. "↩ החזרת המקור" מבטל.', kept ? 8000 : 4500);
       if (failed && !stop && /offline/.test(String(failed.message)) && !localReady()) { noNet = true; setTimeout(function () { noNet = false; }, 60000); FS.offlineChooser(label); }
       else if (failed && !stop) FS.toast(FS.aiError(String(failed.message)) + (/timeout/.test(String(failed.message)) ? ' בלי אינטרנט עובדים העיצובים ב"🖥️ מובנה בתוכנה" שבראש הלשונית.' : ''), 9000);
     });
