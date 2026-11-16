@@ -21,20 +21,7 @@ WORDS = ['stone', 'rock', 'brick', 'castle', 'sand', 'desert', 'dry', 'ground', 
          'mosaic', 'cannon', 'rope', 'leather', 'fabric', 'tree', 'olive', 'palm', 'bush', 'shrub']
 
 # filled in after looking at the catalog: (type, id, resolution)
-WANT = [
-    ('hdri', 'goegap', '2k'), ('hdri', 'circus_maximus_2', '2k'), ('hdri', 'roofless_ruins', '2k'), ('hdri', 'qwantani_noon', '2k'),
-    ('texture', 'large_sandstone_blocks', '1k'), ('texture', 'medieval_blocks_02', '1k'), ('texture', 'castle_brick_07', '1k'),
-    ('texture', 'sandstone_blocks_08', '1k'), ('texture', 'marble_01', '1k'), ('texture', 'dry_ground_rocks', '1k'),
-    ('texture', 'aerial_rocks_02', '1k'), ('texture', 'excavated_soil_wall', '1k'), ('texture', 'sandy_gravel', '1k'),
-    ('texture', 'weathered_planks', '1k'), ('texture', 'sandstone_cracks', '1k'), ('texture', 'old_stone_wall', '1k'),
-    ('texture', 'clay_plaster', '1k'), ('texture', 'patterned_clay_plaster', '1k'),
-    ('model', 'cannon_01', '1k'), ('model', 'treasure_chest', '1k'), ('model', 'antique_ceramic_vase_01', '1k'),
-    ('model', 'ceramic_vase_01', '1k'), ('model', 'ceramic_vase_02', '1k'), ('model', 'ceramic_vase_03', '1k'),
-    ('model', 'ceramic_vase_04', '1k'), ('model', 'planter_pot_clay', '1k'), ('model', 'jug_01', '1k'),
-    ('model', 'boulder_01', '1k'), ('model', 'namaqualand_boulder_02', '1k'), ('model', 'wooden_crate_01', '1k'),
-    ('model', 'quiver_tree_01', '1k'), ('model', 'shrub_01', '1k'), ('model', 'rock_moss_set_01', '1k'),
-    ('model', 'picke_dirty_01', '1k'), ('model', 'wooden_bucket_01', '1k'), ('model', 'wicker_basket_01', '1k'),
-]
+WANT = [('model', 'cannon_01', '1k')]  # earlier run: skies, textures and props (see git history)
 
 
 def get(url):
