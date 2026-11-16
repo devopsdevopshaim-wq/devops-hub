@@ -2659,3 +2659,17 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - So every local design came back 'timeout' and was retried, and that retry timed out too. Every photo stayed as shot while the engine kept working.
   - The phone's relay (it polls for up to 14 min) was cut the same way.
 - **Fix:** picture calls get 25 min when `FS.localAI` is ready or the relay mode isn't 'off'. Cloud calls keep their own 115 s fetch abort.
+
+## v177: costumes first, a clean scene as the fallback (owner: "where is the AI? leftovers of drawn figures around the people")
+- **What went wrong in v173–176:** with keep-people, the prompt asked to change only the surroundings, but the model still drew costumed figures. The real people were pasted over them, and red suits and fire hands showed around them. The people weren't dressed either.
+- **Now:**
+  1. **The look as written:** costumes; for photographic looks keepFaces puts each real face back. The guard checks count, faces and the scene for smart edits. If it passes, that's the result.
+  2. **The plate:** on lost-people, extra-people or not-same with `FS.aiKeepPeople()` and people in the photo, `restyleTry` catches the error and calls `plate(p, prompt, orig)`.
+     - The request is an 'image' action (a new picture: FLUX schnell on Cloudflare, cheap): "An empty background scene with no people…: <the look's scene words>".
+     - Then matchShape → `keepPeople` (posing people only) → crisp. `im.aiPlate = true`.
+  - The `ask()` dialog ("apply anyway?") is skipped when the plate will follow.
+- **The keep-people prefix is gone** (`keepPpl = false`).
+- **mate.js label:** "🧍 אף אחד לא נעלם: …".
+- **Test:**
+  - A good costume answer → one restyle call, no plate.
+  - An answer with one person of two → restyle ×2 (the engines) and then image; applied as a plate with both real people.
