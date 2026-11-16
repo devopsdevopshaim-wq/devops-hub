@@ -658,7 +658,7 @@ The studio's 📑 עסקאות button opens one file per client deal, stored in 
 - **Pollinations, new picture:** `flux`, then `turbo`.
 - **Pollinations, photo edit:** `kontext`, then `nanobanana`, `seedream`, `gptimage`.
   - Pollinations reads the photo from a link on the Worker, `GET /hubs-tmp?id=<40 hex>`. It lives 3 minutes in the hubs Durable Object's memory and is never stored (`ENV.TMP_PUT`, through a Proxy over env in `State.handle`).
-  - The optional secret `POLLINATIONS_TOKEN` (free at auth.pollinations.ai) lifts the anonymous limit and opens the edit models. The deploy passes it if set.
+  - The optional secret `POLLINATIONS_TOKEN` (free at enter.pollinations.ai, a key "sk_…"; auth.pollinations.ai closed) lifts the anonymous limit and opens the edit models. The deploy passes it if set.
   - Privacy: photos sent this way go to a third-party free service (`private=true`, no logo).
 - **Caps:** IMG_DAY is 800 and IMG_IP_HOUR is 60; the hubs test was updated to match.
 - **Combos in `js/ai-studio.js`:** 40 styles, 38 places, 29 outfits, 19 moods and 54 ready combos.
@@ -2484,7 +2484,7 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Gemini: 429, no free image tier.
   - OpenAI: off.
   - Pollinations gptimage works (5–44 s).
-  - POLLINATIONS_TOKEN is empty in the deploy. A free token (auth.pollinations.ai) opens kontext, nanobanana and seedream and lifts the speed limit; the owner adds it as a GitHub secret.
+  - POLLINATIONS_TOKEN is empty in the deploy. A free key (enter.pollinations.ai; auth.pollinations.ai no longer resolves) opens kontext, nanobanana and seedream and lifts the speed limit; the owner adds it as a GitHub secret.
 
 ## v164: 🧸 kids and 🐉 fantasy packs, and "📶 what works without internet"
 - **`ai-studio.js`: `FS.AI_KIDS` (20) and `FS.AI_FANTASY` (16).**
@@ -2517,3 +2517,10 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Print of 20 photos 19.1 s → 5.8 s; renderFull 2.0 s → 0.46 s.
 - **`FS.processed` cache key** now includes `p.src`. A second cache slot was tried and dropped: it doubled the memory per photo and didn't speed up batch print.
 - **Server (`n8n/build-hubs-workflow.py`):** `IMG_IP_HOUR` 120 → 300. With the guard's retries, a batch of ~100 photos could hit the hourly cap mid-event.
+
+## Pollinations keys (16 Nov)
+- auth.pollinations.ai is closed (NXDOMAIN). Keys come from enter.pollinations.ai and look like "sk_…" (server) or "pk_…".
+- The hubs server (`n8n/build-hubs-workflow.py`) sends a new-style key to `https://gen.pollinations.ai/image/<prompt>?…&key=…` (plus Bearer).
+  - On a network error, 404 or 5xx it falls back to `image.pollinations.ai/prompt/…`.
+  - An old token, or no key, goes to the old address as before.
+- Some editing models (kontext, seedream, nanobanana) may need purchased "pollen". The order still ends with gptimage.
