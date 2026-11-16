@@ -127,21 +127,44 @@
   /* how many faces a picture has (an AI result, before it is put on the photo): the whole picture, then 2x2 tiles when none */
   /* the faces of a picture (an AI answer, or the original before it is sent), as boxes in its pixels: the whole picture, then
      2x2 tiles when none; overlapping boxes merged */
+  var faceMemo = {};
   FS.detectFaces = function (im) {
+    var key = im && im.src && im.src.length < 200 ? im.src : null;   /* blob: and file urls; a data: url is not kept */
+    if (key && faceMemo[key]) return faceMemo[key].then(function (l) { return l.map(function (f) { return Object.assign({}, f); }); });
+    var pr = detectFaces0(im); if (key) { faceMemo[key] = pr; pr.catch(function () { delete faceMemo[key]; }); }
+    return pr.then(function (l) { return l.map(function (f) { return Object.assign({}, f); }); });
+  };
+  function detectFaces0(im) {
     return getFaces().then(function (det) {
       var W = im.naturalWidth || im.width, H = im.naturalHeight || im.height, out = [];
+      var tile = 0;
       function run(sx, sy, sw, sh) {
         var k = Math.min(1, 1024 / Math.max(sw, sh)), c = FS.canvas(sw * k, sh * k); c.getContext('2d').drawImage(im, sx, sy, sw, sh, 0, 0, c.width, c.height);
-        (det.detect(c).detections || []).forEach(function (d) { var b = d.boundingBox, sc = (d.categories && d.categories[0] && d.categories[0].score) || 0.5; out.push({ x: sx + b.originX / k, y: sy + b.originY / k, w: b.width / k, h: b.height / k, score: sc }); });
+        (det.detect(c).detections || []).forEach(function (d) { var b = d.boundingBox, sc = (d.categories && d.categories[0] && d.categories[0].score) || 0.5; out.push({ x: sx + b.originX / k, y: sy + b.originY / k, w: b.width / k, h: b.height / k, score: sc, tile: tile }); });
       }
       run(0, 0, W, H);
-      if (!out.length) { var tw = W * 0.6, th = H * 0.6; [[0, 0], [W - tw, 0], [0, H - th], [W - tw, H - th]].forEach(function (o) { run(o[0], o[1], tw, th); }); }
+      /* v182: the finder reads a small copy (128 px), so the faces of a table group, small in the frame, were missed: the
+         picture is also read in overlapping pieces (half-step) at three sizes, each piece about four to eight faces wide */
+      tile = 1;
+      [0.5, 0.3, 0.18].forEach(function (g) {
+        var tw = Math.max(W, H) * g, sw = Math.min(W, tw), sh = Math.min(H, tw), nx = Math.max(1, Math.ceil((W - sw) / (sw / 2)) + 1), ny = Math.max(1, Math.ceil((H - sh) / (sh / 2)) + 1);
+        for (var a = 0; a < nx; a++) for (var b = 0; b < ny; b++) run(nx > 1 ? (W - sw) * a / (nx - 1) : 0, ny > 1 ? (H - sh) * b / (ny - 1) : 0, sw, sh);
+      });
+      /* a face found only in the pieces must be sure (0.75+) and found again in another piece or size: a pattern on a dress
+         or a lamp seen up close is not a face */
+      var ov = function (f, g) { var ix = Math.max(0, Math.min(f.x + f.w, g.x + g.w) - Math.max(f.x, g.x)), iy = Math.max(0, Math.min(f.y + f.h, g.y + g.h) - Math.max(f.y, g.y)); return ix * iy / Math.min(f.w * f.h, g.w * g.h); };
+      out = out.filter(function (f) {
+        if (!f.tile) return true;
+        if (out.some(function (g) { return !g.tile && ov(f, g) > 0.35; })) return true;
+        if (f.score < 0.75) return false;
+        return out.filter(function (g) { return g !== f && g.tile && ov(f, g) > 0.5; }).length >= 1;
+      }).map(function (f) { delete f.tile; return f; });
       out.sort(function (a, b) { return b.score - a.score; });
       var keep = [];
       out.forEach(function (f) { if (!keep.some(function (g) { var ix = Math.max(0, Math.min(f.x + f.w, g.x + g.w) - Math.max(f.x, g.x)), iy = Math.max(0, Math.min(f.y + f.h, g.y + g.h) - Math.max(f.y, g.y)); return ix * iy / Math.min(f.w * f.h, g.w * g.h) > 0.35; })) keep.push(f); });
       return keep;
     });
-  };
+  }
   /* the people the picture is about: clear faces (score 0.6+) at least 40% as wide as the largest one; small faces in the
      background and false faces (lights, reflections) are left out. This count goes to the AI and checks its answer. */
   /* v175: the people posing for the photo; people behind them (smaller faces: under half the width of the largest) are the
