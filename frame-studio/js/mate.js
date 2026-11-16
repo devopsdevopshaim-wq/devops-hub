@@ -115,6 +115,9 @@
       '<div class="mt-card"><h3>🖥️ מיד, על המחשב · עובד גם בלי אינטרנט</h3><div class="mt-chips" id="mt-ai-local"></div></div>' +
       '<div class="mt-card mt-func"><h3>😜 אפקטים מצחיקים <small>על הצילום האמיתי, לכל פרצוף בתמונה · על המחשב, בלי אינטרנט</small></h3><div class="mt-chips" id="mt-ai-fun"></div></div>' +
       '<div class="mt-card"><h3>⚙️ מנוע ה־AI</h3><div class="mt-chips" id="mt-ai-eng"></div><label class="mt-chk-l" style="margin-top:8px"><input type="checkbox" id="mt-keep"> 🙂 שמירת הפנים המקוריות (בלי עיוות) בעיצובים על אדם אמיתי</label><label class="mt-chk-l"><input type="checkbox" id="mt-one"> 👤 רק על אדם אחד: בתמונה עם כמה אנשים בוחרים את מי לעצב, והשאר נשארים כמו בצילום</label><label class="mt-chk-l"><input type="checkbox" id="mt-only"> 🎯 רק על הדמות: הרקע והמקום נשארים מהצילום המקורי, ה־AI משנה רק את האדם</label></div>' +
+      '<div class="mt-card mt-offline" id="mt-ai-offline"></div>' +
+      '<div class="mt-card"><h3>🧸 ילדים <small>הילדים האמיתיים בעולם קסום: נסיכות, חלל, דינוזאורים, בתולות ים, סרט מצויר ועוד</small></h3><div class="mt-ai-g" id="mt-ai-kids"></div></div>' +
+      '<div class="mt-card"><h3>🐉 פנטזיה <small>דרקונים, אלפים, טירות בעננים, ממלכות קסם</small></h3><div class="mt-ai-g" id="mt-ai-fantasy"></div></div>' +
       '<div class="mt-card"><h3>🦸 גיבורי על <small>על האנשים האמיתיים, כמו סצנה מסרט</small></h3><div class="mt-ai-g" id="mt-ai-heroes"></div></div>' +
       '<div class="mt-card"><h3>🧑 על אדם אמיתי <small>נשאר צילום אמיתי של אותם אנשים, משתנים הלבוש והמקום</small></h3><div class="mt-ai-g" id="mt-ai-real"></div></div>' +
       '<div class="mt-card"><h3>🪄 עריכות חכמות <small>התמונה נשארת, משתנה דבר אחד</small></h3><div class="mt-ai-g" id="mt-ai-edits"></div></div>' +
@@ -1073,11 +1076,28 @@
     aiTarget(); aiBA();
     $('#mt-ai-local', root).innerHTML = LOCAL.concat(FS.LOCAL_PLUS || []).map(function (x) { return '<button data-la="' + x[0] + '">' + x[1] + '</button>'; }).join('');
     function cards(list, sel, kind) { $(sel, root).innerHTML = list.map(function (v, i) { return '<button data-ai="' + kind + ':' + i + '"><i>' + (kind === 'st' || kind === 'wo' ? v[2] : v[1]) + '</i><span>' + esc(kind === 'st' || kind === 'wo' ? v[1] : v[0]) + '</span></button>'; }).join(''); }
+    cards(FS.AI_KIDS || [], '#mt-ai-kids', 'ki'); cards(FS.AI_FANTASY || [], '#mt-ai-fantasy', 'fa'); offlineCard();
     cards(FS.AI_HEROES || [], '#mt-ai-heroes', 'he'); cards(FS.AI_REAL || [], '#mt-ai-real', 're'); cards(FS.AI_EDITS || [], '#mt-ai-edits', 'ed'); cards(FS.AI_VIRAL || [], '#mt-ai-viral', 'vi'); cards(FS.AI_STYLES || [], '#mt-ai-styles', 'st'); cards(FS.AI_WOW || [], '#mt-ai-wow', 'wo');
     $('#mt-dai', root).innerHTML = localChips();
     $('#mt-ai-fun', root).innerHTML = (FS.FUN_FX || []).map(function (x) { return '<button data-fun="' + x[0] + '">' + x[1] + '</button>'; }).join('');
     engines();
   }
+  /* 📶 what works here without internet: the designs built into the studio always; every design (the cards) only with the AI
+     engine installed on this computer (the desktop program, local-ai.js) */
+  function offlineCard() {
+    var box = $('#mt-ai-offline', root); if (!box) return;
+    var built = (FS.OFFLINE_AI || []).length, fx = (FS.FUN_FX || []).length, local = LOCAL.concat(FS.LOCAL_PLUS || []).length;
+    var all = ['AI_KIDS', 'AI_FANTASY', 'AI_HEROES', 'AI_REAL', 'AI_EDITS', 'AI_VIRAL', 'AI_STYLES', 'AI_WOW'].reduce(function (n, k) { return n + ((FS[k] || []).length); }, 0);
+    var L = FS.localAI, ready = !!(L && L.isReady && L.isReady()), desk = !!L, online = navigator.onLine !== false;
+    box.innerHTML = '<h3>📶 מה עובד בלי אינטרנט <small>' + (online ? 'יש עכשיו אינטרנט' : '⚠️ אין עכשיו אינטרנט') + '</small></h3>' +
+      '<ul class="mt-offl">' +
+      '<li>✅ <b>' + (built + local + fx) + ' עיצובים מובנים</b> (🖥️ "מיד, על המחשב": אנימה, סגנונות ציור, אפקטים מצחיקים ועוד): תמיד, בלי אינטרנט, תוך שניות.</li>' +
+      '<li>' + (ready ? '✅' : '⬜') + ' <b>כל ' + all + ' העיצובים</b> (ילדים, פנטזיה, גיבורי על, על אדם אמיתי ועוד): ' +
+        (ready ? 'גם בלי אינטרנט, במנוע ה־AI שמותקן במחשב הזה (איטי יותר מהענן: מומלץ כרטיס מסך).' : desk ? 'בלי אינטרנט רק אחרי התקנת מנוע ה־AI המקומי (פעם אחת, כמה GB; מומלץ כרטיס מסך עם 6GB ומעלה).' : 'בלי אינטרנט רק בתוכנה למחשב, עם מנוע ה־AI המקומי.') + '</li></ul>' +
+      (desk && !ready ? '<button class="mt-btn primary" id="mt-ai-install" type="button">⬇️ התקנת מנוע ה־AI המקומי</button>' : '');
+    var ib = $('#mt-ai-install', box); if (ib) ib.addEventListener('click', function () { L.open && L.open(); });
+  }
+  window.addEventListener('online', function () { offlineCard(); }); window.addEventListener('offline', function () { offlineCard(); });
   function engines() {
     var box = $('#mt-ai-eng', root);
     (FS.aiEngines ? FS.aiEngines() : Promise.resolve({})).then(function (av) {
@@ -1122,6 +1142,8 @@
   $('.mt-ai', root).addEventListener('click', function (e) {
     var b = e.target.closest('[data-ai]'); if (!b) return; var k = b.dataset.ai.split(':'), i = Number(k[1]);
     if (k[0] === 'he') runAI(FS.AI_HEROES[i][2], FS.AI_HEROES[i][0]);
+    else if (k[0] === 'ki') runAI(FS.AI_KIDS[i][2], FS.AI_KIDS[i][0]);
+    else if (k[0] === 'fa') runAI(FS.AI_FANTASY[i][2], FS.AI_FANTASY[i][0]);
     else if (k[0] === 're') runAI(FS.AI_REAL[i][2], FS.AI_REAL[i][0]);
     else if (k[0] === 'ed') runAI(FS.AI_EDITS[i][2], FS.AI_EDITS[i][0]);
     else if (k[0] === 'vi') runAI(FS.AI_VIRAL[i][2] + '.' + (FS.AI_KEEP_FREE || ''), FS.AI_VIRAL[i][0]);

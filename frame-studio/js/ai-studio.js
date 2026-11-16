@@ -385,6 +385,52 @@
     ['מגן החלל', '🌌', 'Dress each person in a cosmic hero suit with glowing star patterns, floating in space with planets and a nebula behind']
   ];
   FS.AI_HEROES = HEROES.map(function (e) { return [e[0], e[1], e[2] + '.' + HERO_KEEP]; });
+  /* 🧸 kids and 🐉 fantasy (v164): the same children, faces kept, in a world made for them. Original designs only: no existing
+     characters, films, brands or logos. 'd' = drawn (a picture-book or animated-film look, the face redrawn in that style but
+     still the child); the rest stay a photograph of the very same people. */
+  var MAGIC_KEEP = ' Original designs only: no existing characters, films, brands or logos. Joyful, magical and fit for children, rich detail, the faces uncovered and clearly visible.';
+  var KIDS = [
+    ['נסיכה בארמון', '👑', 'Dress each child as a little princess or prince in a sparkling gown or royal suit with a small crown, in a pastel fairytale palace hall with chandeliers and soft magical light'],
+    ['אסטרונאוט קטן', '🚀', 'Dress each child in a white astronaut suit with the helmet held under the arm, standing on the moon with Earth and stars behind'],
+    ['חוקר דינוזאורים', '🦖', 'Make each child a young explorer in khaki with a hat and binoculars, friendly giant dinosaurs in a lush jungle behind'],
+    ['חד־קרן בענני ורוד', '🦄', 'Place each child riding a gentle white unicorn with a rainbow mane over pink candy clouds, rainbows and sparkles around'],
+    ['בתולת ים', '🧜', 'Show each child as a mermaid or merman with a shimmering tail under a turquoise sea, coral, colourful fish and light rays from above'],
+    ['פיה בגן הפרחים', '🧚', 'Give each child delicate glowing fairy wings among giant flowers and mushrooms, fireflies and soft golden light'],
+    ['פיראט קטן', '🏴‍☠️', 'Dress each child as a little pirate captain with a hat and a toy telescope on a wooden ship deck, a treasure island at sunset behind'],
+    ['גיבור על קטן', '🦸', 'Dress each child in a bright colourful superhero costume of original design with a little cape, a playful flying pose over a sunny city'],
+    ['בית ספר לקוסמים', '🪄', 'Dress each child in an original wizard school robe with a scarf and a glowing wand, floating candles and an old stone castle hall'],
+    ['ספארי בג׳ונגל', '🦁', 'Make each child a safari explorer in a jeep with friendly lions, giraffes and elephants on a golden savanna'],
+    ['ארץ הממתקים', '🍭', 'Place each child in a candy land of lollipop trees, chocolate rivers and gingerbread houses, bright and sweet colours'],
+    ['רופא חיות', '🐶', 'Make each child a little vet in a white coat cuddling puppies and kittens in a bright cosy clinic'],
+    ['כבאי קטן', '🚒', 'Dress each child as a firefighter with a helmet beside a shiny red fire truck, a proud heroic pose'],
+    ['רקדנית בלט', '🩰', 'Dress each child as a ballet dancer in a tutu on a grand theatre stage with spotlights and rose petals'],
+    ['כוכב כדורגל', '⚽', 'Make each child a football star in an original team kit lifting a golden trophy in a full stadium with confetti'],
+    ['סרט מצויר בתלת־ממד', '🎞️', 'd', 'Turn the picture into a still from a modern 3D animated family film: big expressive eyes, soft rounded shapes, glossy colourful rendering, the child clearly recognisable'],
+    ['ספר ילדים מאויר', '📖', 'd', 'Turn the picture into a warm watercolour children\'s picture-book illustration, soft pencil lines and gentle colours, the child clearly recognisable'],
+    ['בובת פלסטלינה', '🧱', 'd', 'Turn the picture into a claymation scene: the child as a charming plasticine figure with fingerprints in the clay, a handmade miniature set'],
+    ['צעצוע מבלוקים', '🟦', 'd', 'Turn the picture into a scene built from toy building bricks: the child as a cheerful brick minifigure in a colourful brick world'],
+    ['קומיקס ילדים', '💥', 'd', 'Turn the picture into a bright children\'s comic book panel with bold outlines, halftone dots and a big POW burst, no words']
+  ];
+  var FANTASY = [
+    ['רוכב דרקונים', '🐉', 'Show each person riding a majestic dragon above misty mountains and a castle at sunset, wind in their hair'],
+    ['אלף ביער הקסום', '🧝', 'Make each person an elegant elf with pointed ears and leaf-woven clothes in a glowing enchanted forest with floating lights'],
+    ['ממלכת הקרח', '❄️', 'Dress each person in royal ice-blue robes with a crown of frost in a palace of ice and snow, snowflakes sparkling'],
+    ['אביר ונסיכה', '🏰', 'Dress the people as a noble knight in shining armour and a royal princess before a fairytale castle with banners'],
+    ['קוסם עתיק', '🧙', 'Dress each person as a powerful wizard in a starry robe holding a staff with a glowing crystal, magic runes in the air'],
+    ['טירה בעננים', '☁️', 'Place the people on a floating island with a castle in the clouds, waterfalls falling into the sky, golden light'],
+    ['עולם תת־ימי', '🐚', 'Place the people in a glowing underwater kingdom with a coral palace, sea creatures and shimmering light'],
+    ['ציידת כוכבים', '✨', 'Surround each person with swirling stardust and constellations in a deep blue night, a magical cosmic glow on their faces'],
+    ['פניקס של אש', '🔥', 'Show a great fiery phoenix spreading its wings behind the people, embers and warm golden light'],
+    ['יער פטריות זוהרות', '🍄', 'Place the people in a forest of giant glowing mushrooms, fireflies and soft blue and purple light'],
+    ['שומרי הפורטל', '🌀', 'Show the people stepping out of a glowing magic portal into a new world of floating rocks and two moons'],
+    ['מלכות המדבר', '🏜️', 'Dress the people in rich desert-kingdom robes with gold jewellery among sand dunes and a palace at dusk, a flying carpet behind'],
+    ['גן עדן של פרפרים', '🦋', 'Surround the people with hundreds of glowing butterflies in a blooming magical garden at golden hour'],
+    ['לוחמי אגדה', '⚔️', 'Dress each person as a legendary warrior in ornate original armour with a glowing sword, a dramatic stormy sky'],
+    ['ציור פנטזיה קלאסי', '🖼️', 'd', 'Turn the picture into an epic fantasy oil painting with rich colours and dramatic light, the people clearly recognisable'],
+    ['אנימה פנטזיה', '🌸', 'd', 'Turn the picture into a beautiful hand-drawn fantasy anime film still with lush painted backgrounds, the people clearly recognisable']
+  ];
+  function magic(e) { var drawn = e[2] === 'd'; return [e[0], e[1], (drawn ? e[3] + '.' + MAGIC_KEEP + ' ' + (KEEP_FREE || '') : e[2] + '.' + MAGIC_KEEP + REAL_KEEP)]; }
+  FS.AI_KIDS = KIDS.map(magic); FS.AI_FANTASY = FANTASY.map(magic);
   FS.AI_VIRAL = VIRAL; FS.AI_KEEP_FREE = KEEP_FREE;
 
   var pane = $('[data-pane=styles]'); if (!pane) return;

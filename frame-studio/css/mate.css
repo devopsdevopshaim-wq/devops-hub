@@ -608,3 +608,6 @@ body.gated #wa-fab, body.printing #wa-fab { display: none; }
 /* ↶ ביטול · ↷ חזרה (undo-all.js), in the top bar of every screen */
 #mt .mt-undo { display: inline-flex; gap: 4px; align-items: center; }
 #mt .mt-undo .mt-btn:disabled { opacity: .45; cursor: default; }
+/* 📶 what works without internet (mate.js offlineCard) */
+#mt .mt-offline .mt-offl { margin: 6px 0 10px; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 14px; line-height: 1.5; }
+#mt .mt-offline .mt-offl li { padding: 8px 10px; border-radius: 10px; background: rgba(201, 164, 92, .08); }
