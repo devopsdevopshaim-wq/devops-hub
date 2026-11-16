@@ -384,11 +384,13 @@
     }
     /* v161: the same people and the same picture (js/ai-guard.js, on this computer): an answer with other faces, or that is
        not the shot, is asked again from the next engine; when every engine fails, the photo keeps its original */
-    var photoLook = /very same people|Keep everything else exactly as it is|photograph|photo-?realistic/i.test(prompt);
+    /* the same faces checked closely only where the real faces are laid back (keepFaces); the whole picture only where the
+       edit keeps the place ("Keep everything else"): a look that dresses the people anew or moves them elsewhere changes it */
+    var photoLook = /very same people|Keep everything else exactly as it is/.test(prompt), sameScene = /Keep everything else exactly as it is/.test(prompt);
     function same(im, i) {
       if (!FS.aiCheck || !FS.aiGuardOn()) return Promise.resolve(im);
-      return FS.aiCheck(orig, im, { photo: photoLook }).then(function (r) {
-        im.aiCheck = r; im.aiPhoto = photoLook;
+      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene }).then(function (r) {
+        im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene;
         if (r.ok) return im;
         if (window.console) console.warn('AI guard: ' + r.why + ' (score ' + r.score + '), from ' + (im.aiSource || '?'));
         if (i + 1 < plan.length) return go(i + 1);
@@ -501,8 +503,46 @@
       /* looks that must stay a photograph of the same people: the real faces are laid back in (js/face-keep.js, on this computer) */
       if (!FS.keepFaces || !/very same people|Keep everything else exactly as it is/.test(prompt)) return im;
       return FS.keepFaces(orig, im).then(function (k) { return k || im; }, function () { return im; });
-    }).then(function (im) { return FS.aiOnlyPerson() ? onlyPerson(orig, im) : im; }).then(function (im) { im.aiSource = src; return im; });
+    }).then(function (im) { return FS.aiOnlyPerson() ? onlyPerson(orig, im) : im; })
+      .then(function (im) { return crisp(im, orig, /very same people|Keep everything else exactly as it is/.test(prompt)).catch(function () { return im; }); })
+      .then(function (im) { im.aiSource = src; return im; });
   };
+  /* sharp enough to print (v163): the engines answer at about 1024px and the picture is enlarged to the photo's size (up to
+     3000px), which looked soft on a 15×20 print. Two steps on the enlarged picture:
+     - where the look keeps the photograph (the same people, the same place), the fine detail of the original (the original
+       minus its own blur: skin, eyes, hair, lace) is added back wherever the AI picture still matches it in light (a mask made
+       on an eighth-size copy, soft), so new clothes or a new place get none of the old detail;
+     - then an unsharp mask of the size of the enlargement, so edges are clean and not haloed.
+     'fs-ai-crisp' = '0' turns it off. */
+  function crisp(im, orig, keep) {
+    try { if (localStorage.getItem('fs-ai-crisp') === '0') return Promise.resolve(im); } catch (e) { /* on */ }
+    var W = im.naturalWidth, H = im.naturalHeight, up = Math.max(W, H) / 1024;
+    if (up < 1.25) return Promise.resolve(im);
+    var c = FS.canvas(W, H), x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0);
+    var R = x.getImageData(0, 0, W, H), r = R.data;
+    function blurred(src, rad) { var b = FS.canvas(W, H), bx = b.getContext('2d', { willReadFrequently: true }); bx.filter = 'blur(' + rad.toFixed(2) + 'px)'; bx.drawImage(src, 0, 0, W, H); return bx.getImageData(0, 0, W, H).data; }
+    var br = blurred(im, Math.max(0.8, up * 0.55)), i, k;
+    if (keep) {
+      var oc = FS.canvas(W, H), ox = oc.getContext('2d', { willReadFrequently: true }); ox.imageSmoothingQuality = 'high'; ox.drawImage(orig, 0, 0, W, H);
+      var O = ox.getImageData(0, 0, W, H).data, bo = blurred(oc, Math.max(0.8, up * 0.7));
+      /* where the AI picture still looks like the photo: eighth-size light compared, then laid back soft over the whole size */
+      var sw = Math.max(8, Math.round(W / 8)), sh = Math.max(8, Math.round(H / 8)), a = FS.canvas(sw, sh), ax = a.getContext('2d', { willReadFrequently: true }), b2 = FS.canvas(sw, sh), bx2 = b2.getContext('2d', { willReadFrequently: true });
+      ax.drawImage(orig, 0, 0, sw, sh); bx2.drawImage(im, 0, 0, sw, sh);
+      var la = ax.getImageData(0, 0, sw, sh).data, lb = bx2.getImageData(0, 0, sw, sh).data, mc = FS.canvas(sw, sh), mx = mc.getContext('2d'), md = mx.createImageData(sw, sh);
+      for (i = 0; i < la.length; i += 4) {
+        var d = Math.abs((la[i] * .3 + la[i + 1] * .59 + la[i + 2] * .11) - (lb[i] * .3 + lb[i + 1] * .59 + lb[i + 2] * .11)) + (Math.abs(la[i] - lb[i]) + Math.abs(la[i + 2] - lb[i + 2])) * 0.25;
+        var m = Math.max(0, Math.min(1, 1 - (d - 10) / 30)); md.data[i] = md.data[i + 1] = md.data[i + 2] = Math.round(m * 255); md.data[i + 3] = 255;
+      }
+      mx.putImageData(md, 0, 0);
+      var big = FS.canvas(W, H), gx = big.getContext('2d', { willReadFrequently: true }); gx.imageSmoothingQuality = 'high'; gx.filter = 'blur(' + Math.max(2, up * 3).toFixed(1) + 'px)'; gx.drawImage(mc, 0, 0, W, H);
+      var M = gx.getImageData(0, 0, W, H).data;
+      for (i = 0; i < r.length; i += 4) { var mm = M[i] / 255 * 0.85; if (mm < 0.02) continue; for (k = 0; k < 3; k++) r[i + k] = r[i + k] + (O[i + k] - bo[i + k]) * mm * 0.8; }
+    }
+    var amt = keep ? Math.min(0.25, 0.08 + (up - 1) * 0.06) : Math.min(0.9, 0.35 + (up - 1) * 0.25);   /* with the original's detail back, only a touch */
+    for (i = 0; i < r.length; i += 4) for (k = 0; k < 3; k++) { var v = r[i + k] + (r[i + k] - br[i + k]) * amt; r[i + k] = v < 0 ? 0 : v > 255 ? 255 : v; }
+    x.putImageData(R, 0, 0);
+    return new Promise(function (ok) { c.toBlob(function (bl) { ok(bl ? FS.loadImg(URL.createObjectURL(bl)) : im); }, 'image/jpeg', 0.95); }).then(function (o) { if (im.facesKept) o.facesKept = im.facesKept; return o; });
+  }
   /* "only on the person" ('fs-ai-only'): the AI's person is laid over the original photo, so the background, the place and
      everyone else stay exactly as they were (the person mask of the answer, on this computer) */
   FS.aiOnlyPerson = function (v) { try { if (v !== undefined) localStorage.setItem('fs-ai-only', v ? '1' : '0'); return localStorage.getItem('fs-ai-only') === '1'; } catch (e) { return false; } };
@@ -519,22 +559,27 @@
     }).catch(function () { return im; });
   }
   /* put an AI result on the photo: the original stays in origSrc; earlier AI results are kept too (a few), so "ביטול AI" can go back one step at a time */
+  /* the AI picture has the shape of the photo it replaces (matchShape): it takes the photo's place in the frame as it was (the
+     same crop, zoom, turn and position) instead of being fitted anew, which moved it, cut it or left it small in the frame */
+  function sameShape(a, b) { var aw = a && (a.naturalWidth || a.width), ah = a && (a.naturalHeight || a.height), bw = b.naturalWidth || b.width, bh = b.naturalHeight || b.height; return aw && ah && bw && bh && Math.abs(aw / ah - bw / bh) < 0.02; }
+  function keepPlace(p, prevIm, im) { if (!sameShape(prevIm, im)) FS.fitPhoto(p.doc, im); }
   FS.applyAI = function (p, im) {
+    var prevIm = FS.img(p.src);
     if (!p.origSrc) p.origSrc = p.src; else { p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5); }
     p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
-    delete p.aiBad; if (im.aiPhoto !== undefined) p.aiPhoto = im.aiPhoto; if (im.aiCheck) p.aiScore = im.aiCheck.score;
-    FS.fitPhoto(p.doc, im); FS.snap(p); return p;
+    delete p.aiBad; if (im.aiPhoto !== undefined) { p.aiPhoto = im.aiPhoto; p.aiScene = im.aiScene; } if (im.aiCheck) p.aiScore = im.aiCheck.score;
+    keepPlace(p, prevIm, im); FS.snap(p); return p;
   };
   FS.unstyle = function (p) {
-    if (!p.origSrc) return false; p.src = p.origSrc; delete p.origSrc; delete p.aiPrev; delete p.aiBad; delete p.aiScore; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
-    FS.fitPhoto(p.doc, FS.img(p.src)); p.doc.photo.style = null; FS.snap(p); return true;
+    if (!p.origSrc) return false; var prevIm = FS.img(p.src); p.src = p.origSrc; delete p.origSrc; delete p.aiPrev; delete p.aiBad; delete p.aiScore; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
+    keepPlace(p, prevIm, FS.img(p.src)); p.doc.photo.style = null; FS.snap(p); return true;
   };
   /* one AI design back: the previous AI result, or the original photo when there was only one */
   FS.unstyleStep = function (p) {
     if (!p || !p.origSrc) return false;
     if (!p.aiPrev || !p.aiPrev.length) return FS.unstyle(p);
-    p.src = p.aiPrev.pop(); p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
-    FS.fitPhoto(p.doc, FS.img(p.src)); FS.snap(p); return true;
+    var prevIm = FS.img(p.src); p.src = p.aiPrev.pop(); p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1;
+    keepPlace(p, prevIm, FS.img(p.src)); FS.snap(p); return true;
   };
 
 })();
