@@ -618,3 +618,5 @@ body.gated #wa-fab, body.printing #wa-fab { display: none; }
   #mt .mt-aiba { grid-template-columns: minmax(0, 1fr) !important; }
   #mt .mt-aiba .mt-th { height: auto !important; aspect-ratio: 4 / 3 !important; }   /* two upright photos side by side */
 }
+/* 📡 the studio's computer answering the phone (ai-relay.js) */
+#mt .mt-relay { margin-top: 10px; padding: 9px 11px; border-radius: 10px; background: rgba(120, 160, 220, .09); font-size: 14px; line-height: 1.55; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
