@@ -1,0 +1,197 @@
+{
+  "report": [
+    {
+      "look": "נסיכה בארמון",
+      "seconds": 12,
+      "toast": "המכסה החינמית של ה־AI בענן נגמרה, ו📡 המחשב בעמדה לא מחובר (עוד לא התחבר אף פעם). במחשב: פותחים את התוכנה (גרסה 170 ומעלה) באותו חשבון, ומתקינים את מנוע ה־AI המקומי (🤖 AI ← \"⬇️ התקנת מנוע ה־AI המקומי\"). אחרי זה העיצובים מהטלפון נעשים שם.",
+      "res": [
+        {
+          "name": "company-1",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 2
+        },
+        {
+          "name": "birthday-1",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 3
+        },
+        {
+          "name": "wedding-3",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 2
+        },
+        {
+          "name": "brit-2",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 1
+        },
+        {
+          "name": "barmitzvah-2",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 1
+        }
+      ]
+    },
+    {
+      "look": "אנימה פנטזיה",
+      "seconds": 9,
+      "toast": "המכסה החינמית של ה־AI בענן נגמרה, ו📡 המחשב בעמדה לא מחובר (עוד לא התחבר אף פעם). במחשב: פותחים את התוכנה (גרסה 170 ומעלה) באותו חשבון, ומתקינים את מנוע ה־AI המקומי (🤖 AI ← \"⬇️ התקנת מנוע ה־AI המקומי\"). אחרי זה העיצובים מהטלפון נעשים שם.",
+      "res": [
+        {
+          "name": "company-1",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 2
+        },
+        {
+          "name": "birthday-1",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 3
+        },
+        {
+          "name": "wedding-3",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 2
+        },
+        {
+          "name": "brit-2",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 1
+        },
+        {
+          "name": "barmitzvah-2",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 1
+        }
+      ]
+    },
+    {
+      "look": "חתן וכלה בהוליווד",
+      "seconds": 8,
+      "toast": "המכסה החינמית של ה־AI בענן נגמרה, ו📡 המחשב בעמדה לא מחובר (עוד לא התחבר אף פעם). במחשב: פותחים את התוכנה (גרסה 170 ומעלה) באותו חשבון, ומתקינים את מנוע ה־AI המקומי (🤖 AI ← \"⬇️ התקנת מנוע ה־AI המקומי\"). אחרי זה העיצובים מהטלפון נעשים שם.",
+      "res": [
+        {
+          "name": "company-1",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 2
+        },
+        {
+          "name": "birthday-1",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 3
+        },
+        {
+          "name": "wedding-3",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 2
+        },
+        {
+          "name": "brit-2",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 1
+        },
+        {
+          "name": "barmitzvah-2",
+          "applied": false,
+          "red": "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)",
+          "n0": 1
+        }
+      ]
+    }
+  ],
+  "logs": [
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo brit-2 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 1)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo company-1 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 0)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo birthday-1 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 1)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo wedding-3 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 2)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo brit-2 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 0)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo barmitzvah-2 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 2)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo birthday-1 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 1)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo company-1 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 0)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo wedding-3 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 2)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo brit-2 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 1)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "AI: photo barmitzvah-2 again after Error: quota\n    at http://localhost:8099/frame-studio/js/styles.js?v=175:514:42\n    at async Promise.all (index 2)\n    at async eval (eval at evaluate (:234:30), <anonymous>:5:36)\n    at async <anonymous>:260:30",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "AI: quota flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  ]
+}
