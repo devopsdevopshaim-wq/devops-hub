@@ -2500,3 +2500,20 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
     - All the card designs (262 today) only with the desktop's local engine (`FS.localAI.isReady()`).
   - In the desktop program the card shows "⬇️ התקנת מנוע ה־AI המקומי" → `FS.localAI.open()`.
   - The card redraws on online/offline.
+
+## v165: editing speed at events (measured on 20 camera photos, 24MP)
+- **Profile before:**
+  - Load: ~0.17 s a photo; the photo is kept at 2400px.
+  - People check: ~0.8 s a photo, in the background, one at a time.
+  - Print or save: ~1–2 s a photo; printing 20 photos took 19.1 s.
+  - ~95% of the print/save time was the detail stages of the automatic look (texture, clarity, sharpen) in JS box blurs: 3 s of 3.1 s on 1600×2400. The colour pass is ~0.1 s.
+- **`core.js` `gBlur(px, w, h, sigma)`:** the canvas's own gaussian (`ctx.filter = 'blur()'`), with sigma matched to the box passes it replaces: n passes of radius b give σ² = n·((2b+1)² − 1)/12 (`boxSigma`).
+  - Used for texture (2 passes), sharpen (1 pass) and `FS.blur` (3 passes: clarity, skin, background blur).
+  - It falls back to the box passes when canvas filters are missing, or when `FS._noGBlur` is set (for tests).
+  - Edges: outside the picture is transparent, and the read-back un-premultiplies.
+  - Output against the old code on strong settings: mean difference 0.3/255, max 9.
+- **Results:**
+  - adjustPixels 2.2–2.6 s → 0.55–0.6 s (software GPU in CI; faster on a real card).
+  - Print of 20 photos 19.1 s → 5.8 s; renderFull 2.0 s → 0.46 s.
+- **`FS.processed` cache key** now includes `p.src`. A second cache slot was tried and dropped: it doubled the memory per photo and didn't speed up batch print.
+- **Server (`n8n/build-hubs-workflow.py`):** `IMG_IP_HOUR` 120 → 300. With the guard's retries, a batch of ~100 photos could hit the hourly cap mid-event.
