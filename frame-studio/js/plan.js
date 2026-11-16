@@ -101,7 +101,11 @@
     if (free && !FS.can('ai')) { gate('ai'); return Promise.resolve({ ok: false, error: 'plan-limit' }); }
     var run;
     try { run = Promise.resolve(ask.apply(self, args)); } catch (e) { run = Promise.resolve({ ok: false, error: 'failed' }); }
-    var t, wait = new Promise(function (ok) { t = setTimeout(function () { ok({ ok: false, error: 'timeout' }); }, AI_WAIT); });
+    /* the engine on this computer, or the studio's computer for a phone, makes pictures one after another (the first one also
+       loads the model): a batch waits its turn for many minutes, so their calls get 25 minutes, not 2.5 (v176; the 2.5-minute
+       cut made every local design "fail" while the engine was still working on it) */
+    var longWait = pic && ((FS.localAI && FS.localAI.isReady && FS.localAI.isReady()) || (FS.relayMode && FS.relayMode() !== 'off'));
+    var t, wait = new Promise(function (ok) { t = setTimeout(function () { ok({ ok: false, error: 'timeout' }); }, longWait ? 25 * 60000 : AI_WAIT); });
     return Promise.race([run.catch(function () { return { ok: false, error: 'failed' }; }), wait]).then(function (r) {
       clearTimeout(t); if (r && r.ok && pic) { if (free) aiCount(); use.ai++; keep(); } return r;
     });
