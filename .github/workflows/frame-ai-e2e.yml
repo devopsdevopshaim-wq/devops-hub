@@ -1,0 +1,28 @@
+name: Frame Studio AI end-to-end
+# The studio itself against the live AI server: 5 event photos, a kids, a fantasy and a real-person design, as the owner runs them.
+# The before/after pictures and the report go to the branch ci-ai-e2e. Run by hand, or when these files change on the working branch.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: ['.github/scripts/frame-ai-e2e.cjs', '.github/workflows/frame-ai-e2e.yml']
+permissions:
+  contents: write
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null && npm i playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: NODE_PATH="$RUNNER_TEMP/pw/node_modules" node .github/scripts/frame-ai-e2e.cjs "$RUNNER_TEMP/e2e"
+      - name: Push to ci-ai-e2e
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/e2e" || exit 0
+          git init -q && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b ci-ai-e2e && git add -A && git commit -q -m "AI e2e, run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-ai-e2e

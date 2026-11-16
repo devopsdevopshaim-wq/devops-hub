@@ -497,6 +497,8 @@
     /* the people in the photo, by count: one person stays one person (the models like to add a partner or a figure) */
     if (faces === 1) prompt = prompt.replace(/\b(each|every) person\b/gi, 'the person').replace(/\bthe people\b/gi, 'the person').replace(/\beveryone\b/gi, 'the person') +
       ' There is exactly ONE person in this photo. The result must show only this one person: do not add any other person, partner, figure, silhouette, reflection or face.';
+    if (faces) prompt += ' Remove every bystander and every person in the background (people who are not posing in front); only the ' + (faces === 1 ? 'person' : faces + ' people') + ' posing in front stay.';
+    if (faces === 1) { /* above */ }
     else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces.';
     prompt += ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
     /* 🧍 the real people kept (v173, on by default): the AI makes only the world around them, and the people of the photo are
@@ -569,8 +571,11 @@
   /* the people of the original over the AI's world: the person mask of the original (on this computer), soft at the edge, and
      their colours brought a third of the way to the new scene's light, so they sit in it rather than look pasted */
   function keepPeople(orig, im) {
-    var tmp = { src: orig.src, doc: null };
-    return FS.ensureMask(tmp).then(function (m) {
+    var tmp = { src: orig.src, doc: null }, subj = [];
+    /* only the people posing are laid back (v175): the area of each of their faces, down to the bottom of the picture; people
+       behind them stay out and go with the old background */
+    var det = FS.detectFaces ? FS.detectFaces(orig).then(function (all) { subj = FS.mainFaces ? FS.mainFaces(all) : all; }, function () {}) : Promise.resolve();
+    return det.then(function () { return FS.ensureMask(tmp); }).then(function (m) {
       if (!m || (tmp.maskCover || 0) < 0.02) return im;
       var W = im.naturalWidth, H = im.naturalHeight, c = FS.canvas(W, H), x = c.getContext('2d', { willReadFrequently: true });
       x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, W, H);
@@ -582,7 +587,37 @@
       if (na && nb) { var O = [0, 0, 0]; for (k = 0; k < 3; k++) { A[k] /= na; B[k] /= nb; } var la = (A[0] + A[1] + A[2]) / 3, lb = (B[0] + B[1] + B[2]) / 3;
         for (k = 0; k < 3; k++) O[k] = ((B[k] - lb) - (A[k] - la)) * 0.3 + (lb - la) * 0.15;   /* a third of the scene's colour cast, a little of its light */
         for (i = 0; i < pd.length; i += 4) { if (!md[i]) continue; for (k = 0; k < 3; k++) pd[i + k] = pd[i + k] + O[k]; } }
-      for (i = 0; i < pd.length; i += 4) pd[i + 3] = md[i];
+      /* the people posing: the pieces of the person mask that hold one of their faces (connected pieces, on a quarter-size
+         copy); a person standing apart behind them is another piece and stays out. Without a face found, everyone stays. */
+      var keepA = null;
+      if (subj.length) {
+        var q4 = 4, w4 = Math.ceil(W / q4), h4 = Math.ceil(H / q4), lab = new Int32Array(w4 * h4), on = new Uint8Array(w4 * h4), xx, yy, j;
+        for (yy = 0; yy < h4; yy++) for (xx = 0; xx < w4; xx++) { var mi = (Math.min(H - 1, yy * q4) * W + Math.min(W - 1, xx * q4)) * 4; on[yy * w4 + xx] = md[mi] > 90 ? 1 : 0; }
+        var comp = 0, stack = [];
+        for (j = 0; j < on.length; j++) {
+          if (!on[j] || lab[j]) continue; comp++; lab[j] = comp; stack.push(j);
+          while (stack.length) { var c0 = stack.pop(), cx0 = c0 % w4, cy0 = (c0 / w4) | 0;
+            if (cx0 > 0 && on[c0 - 1] && !lab[c0 - 1]) { lab[c0 - 1] = comp; stack.push(c0 - 1); }
+            if (cx0 < w4 - 1 && on[c0 + 1] && !lab[c0 + 1]) { lab[c0 + 1] = comp; stack.push(c0 + 1); }
+            if (cy0 > 0 && on[c0 - w4] && !lab[c0 - w4]) { lab[c0 - w4] = comp; stack.push(c0 - w4); }
+            if (cy0 < h4 - 1 && on[c0 + w4] && !lab[c0 + w4]) { lab[c0 + w4] = comp; stack.push(c0 + w4); } }
+        }
+        var sx = W / (orig.naturalWidth || W), sy = H / (orig.naturalHeight || H), want = {};
+        subj.forEach(function (f) {   /* a few points inside each face: the piece under them is kept */
+          for (var a1 = 0.25; a1 <= 0.75; a1 += 0.25) for (var b1 = 0.3; b1 <= 0.9; b1 += 0.3) {
+            var fx = Math.floor((f.x + f.w * a1) * sx / q4), fy = Math.floor((f.y + f.h * b1) * sy / q4);
+            if (fx >= 0 && fy >= 0 && fx < w4 && fy < h4 && lab[fy * w4 + fx]) want[lab[fy * w4 + fx]] = 1;
+          }
+        });
+        if (Object.keys(want).length) {
+          var kc = FS.canvas(w4, h4), kx = kc.getContext('2d'), kd = kx.createImageData(w4, h4);
+          for (j = 0; j < lab.length; j++) { var v = want[lab[j]] ? 255 : 0; kd.data[j * 4] = kd.data[j * 4 + 1] = kd.data[j * 4 + 2] = v; kd.data[j * 4 + 3] = 255; }
+          kx.putImageData(kd, 0, 0);
+          var KC = FS.canvas(W, H), KX = KC.getContext('2d', { willReadFrequently: true }); KX.imageSmoothingQuality = 'high'; KX.filter = 'blur(' + q4 + 'px)'; KX.drawImage(kc, 0, 0, W, H);
+          keepA = KX.getImageData(0, 0, W, H).data;
+        }
+      }
+      for (var ii = 0; ii < pd.length; ii += 4) { var mv = md[ii]; pd[ii + 3] = !mv ? 0 : keepA ? Math.min(mv, Math.min(255, keepA[ii] * 1.4)) : mv; }
       px.putImageData(P, 0, 0); x.drawImage(pc, 0, 0);
       return new Promise(function (ok) { c.toBlob(function (b) { ok(b ? FS.loadImg(URL.createObjectURL(b)) : im); }, 'image/jpeg', 0.94); });
     }).catch(function (e) { if (window.console) console.warn('keepPeople', e); return im; });
