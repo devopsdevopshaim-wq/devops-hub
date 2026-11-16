@@ -9,7 +9,15 @@ const srv = http.createServer((q, r) => { const f = path.join(root, decodeURICom
   p.on('console', (m) => { const t = m.text(); if (/AI|guard|crisp|keepPeople|lost|extra|not-same/i.test(t)) logs.push(t.slice(0, 300)); });
   p.on('pageerror', (e) => logs.push('PAGEERROR ' + e.message));
   // the live server, as the published site calls it
-  await p.route(/workers\.dev|n8n\.cloud/, async (route) => { const h = Object.assign({}, route.request().headers(), { origin: 'https://devopsdevopshaim-wq.github.io' }); route.continue({ headers: h }); });
+  await p.route(/workers\.dev|n8n\.cloud/, async (route) => {
+    const rq = route.request();
+    if (rq.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, GET, OPTIONS' } });
+    try {
+      const res = await route.fetch({ headers: Object.assign({}, rq.headers(), { origin: 'https://devopsdevopshaim-wq.github.io' }), timeout: 120000 });
+      const h = Object.assign({}, res.headers(), { 'access-control-allow-origin': '*' });
+      route.fulfill({ response: res, headers: h });
+    } catch (e) { route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'offline' }) }); }
+  });
   await p.addInitScript(() => { localStorage.setItem('fs-wow-v1', '1'); localStorage.setItem('fs-guide-seen', '1'); });
   await p.goto('http://localhost:8099/frame-studio/studio.html'); await p.waitForTimeout(4000);
   const photos = ['company-1', 'birthday-1', 'wedding-3', 'brit-2', 'barmitzvah-2'];
