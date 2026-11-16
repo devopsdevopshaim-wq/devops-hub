@@ -2565,3 +2565,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Pollinations with a key (16 Nov, later):** kontext answered "Insufficient balance (~$0.03)", and nanobanana and seedream answered "requires Paid Pollen". The key's free credit is small.
   - The server remembers such models for 12 h (`sd.polPaid`) and skips them with the key.
   - When every keyed model answers 402, it tries `gptimage` once more without the key (`anon`), as before the key.
+
+## v168: photos never squashed in tiles (phone report: thin, stretched before | after pairs)
+- **Cause:**
+  - JS sets the tile canvas's inline width and height.
+  - `.mt-tile .mt-th canvas` caps them with `max-width` / `max-height: 100%` while absolutely positioned. When only one cap applies, the aspect breaks.
+  - On a phone, `#mt .mt-aiba` (the later rule, `repeat(var(--n,3), minmax(0,460px))`) still put 3 pairs in a row, and the fixed `.mt-th` height squashed them.
+- **`mate.css` (end):**
+  - `#mt .mt-th canvas, img { object-fit: contain }` everywhere.
+  - ≤760px: `.mt-aiba` is one column (`!important`), and `.mt-aiba .mt-th` is `aspect-ratio: 4/3` (two upright pages side by side).
+- **Checked:** Pixel 7 emulation with 4 marked photos. The canvases are 171×262 against 429×644 pixels, the same shape.

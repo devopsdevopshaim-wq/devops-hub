@@ -611,3 +611,10 @@ body.gated #wa-fab, body.printing #wa-fab { display: none; }
 /* 📶 what works without internet (mate.js offlineCard) */
 #mt .mt-offline .mt-offl { margin: 6px 0 10px; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 14px; line-height: 1.5; }
 #mt .mt-offline .mt-offl li { padding: 8px 10px; border-radius: 10px; background: rgba(201, 164, 92, .08); }
+/* v168: a photo is never stretched or squashed in a tile (it is fitted whole into its box), and on a phone the before | after
+   pairs come one to a row (three to a row squeezed every photo into a thin strip) */
+#mt .mt-th canvas, #mt .mt-th img { object-fit: contain; }   /* the JS sets width and height, CSS caps them with max-width / max-height: contain keeps the picture's shape when only one is capped */
+@media (max-width: 760px) {
+  #mt .mt-aiba { grid-template-columns: minmax(0, 1fr) !important; }
+  #mt .mt-aiba .mt-th { height: auto !important; aspect-ratio: 4 / 3 !important; }   /* two upright photos side by side */
+}
