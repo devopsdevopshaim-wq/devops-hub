@@ -290,13 +290,14 @@ if (b.action === 'restyle' || b.action === 'image') {
     // without a key only some models answer ("isn't part of the Classic API" for the rest): those are remembered for 6 hours and skipped
     // (an old "classic" token does not open them either, so this is remembered with or without POLLINATIONS_TOKEN)
     const keyOnly = sd.polKeyOnly && sd.polKeyOnlyAt > now - 6 * 3600000 ? sd.polKeyOnly : [];
-    const all = fresh ? ['flux', 'turbo'] : src ? (PTOK && !keyOnly.length ? ['kontext', 'nanobanana', 'seedream', 'gptimage'] : ['gptimage', 'kontext', 'nanobanana', 'seedream']) : [];
+    // a photo edit only with the models that read the photo (kontext, nanobanana, seedream; they want a key with paid credit).
+    // gptimage was dropped from edits (16 Nov): it ignored the photo and drew a new picture from the words, with no people.
+    const all = fresh ? ['flux', 'turbo'] : src && PTOK ? ['kontext', 'nanobanana', 'seedream'] : [];
     // models that want paid credit with this key ("Insufficient balance", "requires Paid Pollen") are skipped for 12 hours
     const paidOnly = sd.polPaid && sd.polPaidAt > now - 12 * 3600000 ? sd.polPaid : [];
     let tries = all.filter((m) => !keyOnly.includes(m) && !(PTOK && paidOnly.includes(m)));
     // with a key, and every editing model wanting paid credit: the free model without the key, as before the key
-    let anon = false;
-    if (PTOK && src && !tries.length) { tries = ['gptimage']; anon = true; }
+    let anon = false;   // (no fallback without the key for edits: the open models do not read the photo)
     let waited = false;
     for (let ti = 0; ti < tries.length; ti++) {
       const model = tries[ti];
@@ -334,7 +335,7 @@ if (b.action === 'restyle' || b.action === 'image') {
       } catch (e) { errs.push('pollinations ' + model + ': ' + why(e)); }
       clearTimeout(tm);
       // the key's models all wanted paid credit: once more, the free model without the key
-      if (ti === tries.length - 1 && PTOK && src && !anon && errs.slice(-tries.length).every((x) => / 402 /.test(x))) { tries = tries.concat('gptimage'); anon = true; }
+      // (no fallback without the key: see above)
     }
   }
   if (ENG && !errs.length) return out({ ok: false, error: 'engine-off', detail: ENG }, 503);

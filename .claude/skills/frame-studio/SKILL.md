@@ -2575,3 +2575,17 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - `#mt .mt-th canvas, img { object-fit: contain }` everywhere.
   - ≤760px: `.mt-aiba` is one column (`!important`), and `.mt-aiba .mt-th` is `aspect-ratio: 4/3` (two upright pages side by side).
 - **Checked:** Pixel 7 emulation with 4 marked photos. The canvases are 171×262 against 429×644 pixels, the same shape.
+
+## v169: the free AI capacity, measured (16 Nov), and no more junk fallbacks
+- **frame-ai-compare** (the studio's own prompts for portal, dragon and princess, on an upright and a wide photo):
+  - Cloudflare FLUX's free 10k neurons/day ran out after a few dozen designs (the owner's tests), so every engine answered 'quota'.
+  - Pollinations gptimage without a key took 45–50 s and sometimes 503. It **ignored the photo**: a castle landscape, dolls in a hall, a portal with no people, plus a pollinations.ai mark. The guard rightly rejected them, which is why "3 stayed as shot" at the owner's test.
+- **Server:** a photo edit asks Pollinations only with a key, and only the models that read the photo (kontext, nanobanana, seedream; paid credit). gptimage and the no-key fallback are gone from edits. Tests updated (hubs-cloudflare 28/28).
+- **Client:**
+  - 'quota' now says the daily free allowance ran out (it resets every night), and points to the built-in offline designs and the desktop's local engine.
+  - A batch where every photo hit the quota shows that message.
+- **Options for events (the owner decides; nothing was bought):**
+  - Cloudflare Workers Paid ($5/month; FLUX beyond 10k neurons costs about $0.011 per 1k neurons, a few agorot a design).
+  - Pollinations paid credit (~$0.03 a design).
+  - Gemini billing (~$0.04 a design).
+  - The local engine on a computer with a 6 GB+ graphics card (free, unlimited, offline).
