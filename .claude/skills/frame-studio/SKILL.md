@@ -2616,3 +2616,4 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - On the computer, the on/off switch and how many it has served.
   - On the phone, online/offline with the computer's name, and the mode select.
 - **E2E** (Playwright: a phone context and a desktop context with a fake local engine, sharing a route that runs `relayCall`): the cloud answered quota, both photos were made by the "computer" and applied on the phone in ~9 s, with no page errors.
+- **v171:** on a phone, when the cloud's quota stops a design and the studio's computer isn't online, the 'quota' message (`ai-relay.js` `aiError`) says why: when the computer was last seen (or never), and what to do (open v170+ on the same account, install the local engine). The owner's first try didn't reach the computer, most likely because the local engine wasn't installed yet, so it beat as not ready.
