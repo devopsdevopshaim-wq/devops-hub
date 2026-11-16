@@ -22,7 +22,7 @@ jobs:
       - name: Push to ci-ai-compare
         if: always()
         run: |
-          cp .github/ai-compare/wedding-1024.jpg "$RUNNER_TEMP/cmp/original.jpg" 2>/dev/null || true
+          cp .github/ai-compare/wedding-1024.jpg "$RUNNER_TEMP/cmp/original.jpg" 2>/dev/null || true; cp .github/ai-compare/land-1024.jpg "$RUNNER_TEMP/cmp/original-land.jpg" 2>/dev/null || true
           cd "$RUNNER_TEMP/cmp" || exit 0
           git init -q && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -q -b ci-ai-compare && git add -A && git commit -q -m "AI compare, run ${{ github.run_id }}"
