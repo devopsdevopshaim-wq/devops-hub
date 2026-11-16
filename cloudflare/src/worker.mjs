@@ -25,6 +25,7 @@ import statusRender from './gen/status-render.mjs';
 import { mailHandle, mailCallback, who as sessionOf } from './mail.mjs';
 import { localGuide } from './guide-local.mjs';
 import { frameSite, frameFile, frameBiz, frameBook, frameCal, frameSnapshot, FrameStore } from './frame.mjs';
+import { relayCall } from './relay.mjs';
 import { callMeBot, tgApi, tgFindChat, tgSendText, waNote, frameDaily, frameWeekly, notifyOwner, telegramFind, calendarSync, maton, ilDate, ilHour, ilWeekday } from './notify.mjs';
 import { frameLive, liveFile, liveCron } from './live.mjs';
 import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
@@ -363,6 +364,16 @@ export class State extends DurableObject {
     return { code: 400, body: { ok: false, error: 'bad-input' } };
   }
   async bizCall(who, b, ip) {
+    // the phone's AI jobs for the studio's computer (relay.mjs): their own limit (the computer asks every few seconds), one at a time
+    if (/^relay-/.test(String(b.action || ''))) {
+      this.rr = this.rr || new Map();
+      const rk = (who && who.email) || ip, rt = Date.now(), ra = (this.rr.get(rk) || []).filter((x) => rt - x < 600000);
+      if (ra.length >= 1500) return { code: 429, body: { ok: false, error: 'rate-limited' } };
+      ra.push(rt); this.rr.set(rk, ra); if (this.rr.size > 2000) this.rr.delete(this.rr.keys().next().value);
+      const rr = this.q.then(() => relayCall(this.ctx.storage, who, b));
+      this.q = rr.catch(() => {});
+      try { return await rr; } catch (e) { return { code: 500, body: { ok: false, error: 'server-error' } }; }
+    }
     // a few hundred calls per 10 minutes per person or address; one at a time, so a save never overlaps another
     this.rl = this.rl || new Map();
     const k = (who && who.email) || ip, t = Date.now(), arr = (this.rl.get(k) || []).filter((x) => t - x < 600000);

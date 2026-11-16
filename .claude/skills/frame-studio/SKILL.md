@@ -2589,3 +2589,30 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Pollinations paid credit (~$0.03 a design).
   - Gemini billing (~$0.04 a design).
   - The local engine on a computer with a 6 GB+ graphics card (free, unlimited, offline).
+
+## v170: 📡 the phone's AI designs made by the studio's computer (free, through the server)
+- **Why:** a phone has no AI engine, and the cloud's free allowance runs out at an event. The owner's computer has a good card and the local engine.
+- **Server `cloudflare/src/relay.mjs` (`relayCall`):** a per-account job queue in the frame object, reached through `/frame-biz`.
+  - Actions:
+    - `relay-beat` / `relay-take` (the computer, with `{name, ready}`; take also beats)
+    - `relay-state` (online = a beat within 20 s and ready)
+    - `relay-put {body}` (restyle/image only, ≤ 6.5 MB, ≤ 24 waiting)
+    - `relay-done {id, result}` (≤ 9 MB; source becomes "המחשב בעמדה")
+    - `relay-get {id}` (the answer once there; then the job and its payloads are removed)
+  - Payloads go through FrameStore putBig/getBig (100 KB chunks).
+  - Jobs live 15 min; a job taken but unanswered for 6 min is offered again.
+  - Admin or studio role only.
+  - `worker.mjs` `bizCall` handles `relay-*` before the usual limit: its own 1500 per 10 min, serialized on `this.q`.
+  - Test: `cloudflare/test/relay.test.mjs` (21 checks).
+- **Client `js/ai-relay.js`** (after undo-all.js; in sw FILES):
+  - **Computer** (FSDesktop + FS.localAI, signed in): `hostLoop` runs `relay-take` every 3 s while the engine is ready, then `FS.localAI.run(body)` → `relay-done`. One job at a time. `FS.relayHostOn()` ('fs-relay-host').
+  - **Phone** (no ready local engine): `FS.askServer` is wrapped.
+    - 'auto' (default): the cloud first; on quota / no-free-tier / rate-limited / ai-failed / engine-off / timeout / 5xx, the computer if it's online. After a quota, the computer goes first for 30 min.
+    - 'computer': always the computer when online. The engine 'local' chosen on a phone means the computer too.
+    - 'off': cloud only.
+  - `FS.relayRun` polls `relay-get` every 2.5 s for up to 14 min, and gives up if the computer is quiet for ~50 s.
+  - `aiError` texts: relay-offline, relay-busy, relay-timeout, relay-failed.
+- **UI:** `FS.relayCard` / `relayBind` add a line to "📶 מה עובד בלי אינטרנט" (mate.js `offlineCard`):
+  - On the computer, the on/off switch and how many it has served.
+  - On the phone, online/offline with the computer's name, and the mode select.
+- **E2E** (Playwright: a phone context and a desktop context with a fake local engine, sharing a route that runs `relayCall`): the cloud answered quota, both photos were made by the "computer" and applied on the phone in ~9 s, with no page errors.

@@ -1094,7 +1094,9 @@
       '<li>✅ <b>' + (built + local + fx) + ' עיצובים מובנים</b> (🖥️ "מיד, על המחשב": אנימה, סגנונות ציור, אפקטים מצחיקים ועוד): תמיד, בלי אינטרנט, תוך שניות.</li>' +
       '<li>' + (ready ? '✅' : '⬜') + ' <b>כל ' + all + ' העיצובים</b> (ילדים, פנטזיה, גיבורי על, על אדם אמיתי ועוד): ' +
         (ready ? 'גם בלי אינטרנט, במנוע ה־AI שמותקן במחשב הזה (איטי יותר מהענן: מומלץ כרטיס מסך).' : desk ? 'בלי אינטרנט רק אחרי התקנת מנוע ה־AI המקומי (פעם אחת, כמה GB; מומלץ כרטיס מסך עם 6GB ומעלה).' : 'בלי אינטרנט רק בתוכנה למחשב, עם מנוע ה־AI המקומי.') + '</li></ul>' +
-      (desk && !ready ? '<button class="mt-btn primary" id="mt-ai-install" type="button">⬇️ התקנת מנוע ה־AI המקומי</button>' : '');
+      (desk && !ready ? '<button class="mt-btn primary" id="mt-ai-install" type="button">⬇️ התקנת מנוע ה־AI המקומי</button>' : '') +
+      (FS.relayCard ? FS.relayCard() : '');
+    if (FS.relayBind) FS.relayBind(box);
     var ib = $('#mt-ai-install', box); if (ib) ib.addEventListener('click', function () { L.open && L.open(); });
   }
   window.addEventListener('online', function () { offlineCard(); }); window.addEventListener('offline', function () { offlineCard(); });
