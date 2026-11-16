@@ -2697,3 +2697,7 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - wedding-1 with a graded, slightly shifted and blurred answer → applied with `headsKept`.
   - engagement-2 with an answer missing one person → lost-people, then the plate (both real people).
   - A good costume answer → one call.
+
+## v180: people further back count as posing; the plate never outputs an invented person
+- `FS.mainFaces` (ai.js) and the big-face thresholds in `aiCheck` / `countFacesLm` (ai-guard.js) take faces from a third of the biggest face (was a half). At a table, the people sitting further back were counted as background, so a group of 7 counted as 1 and an answer with one invented figure passed the count.
+- `plate()` (styles.js): strips person/clothing words from the look and asks for an empty place; if the answer draws people it asks once more, then fails `not-same`. `keepPeople` sets `_peopleLaid`; without the real people laid in, the plate fails (never the place alone, never an invented person). On failure the photo stays as shot (red mark).

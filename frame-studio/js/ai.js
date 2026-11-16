@@ -148,7 +148,7 @@
      background, are removed by the AI and never stop a design (the owner's rule) */
   FS.mainFaces = function (faces) {
     var l = (faces || []).filter(function (f) { return (f.score == null ? 1 : f.score) >= 0.6; }), w0 = l.reduce(function (m, f) { return Math.max(m, f.w); }, 0);
-    return l.filter(function (f) { return f.w >= w0 * 0.5; });
+    return l.filter(function (f) { return f.w >= w0 * 0.33; });   /* v180: a third (half dropped people sitting further back at a table) */
   };
   FS.countFaces = function (im, loose) {
     return FS.detectFaces(im).then(function (l) {
