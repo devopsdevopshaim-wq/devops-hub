@@ -2714,3 +2714,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 ## v183: posing vs further back; the plate goes only behind the people
 - `FS.posingFaces` (ai.js): of the main faces (⅓+), those ≥ 45% of the widest. `restyleTry` checks and prompts with the posing faces (`p._main`, n0) and keeps `p._nAll` = every main face. The AI may keep or drop the people further back: `extra` allows up to `_nAll + 1`. keepPeople lays back only the posing faces' pieces.
 - `keepGround(orig, im)` replaces keepPeople in `plate()`. Everything from the top of the people down stays from the photo: the people, the table, the chairs. The top line is taken from the person mask per column; columns with no person take the higher-numbered (lower) of the nearest people's tops, then a min-filter and a smoothing, so no head is ever cut. A soft seam, and the kept part gets 25% of the plate's colour cast and 10% of its light. Before this, a table group was cut out and floated over an empty place (owner report, DSC05791).
+
+## v184: no added person; the backdrop line follows the heads
+- `extra` is checked against `max(n0, _nAll)` again, with no +1 for groups of 4 or fewer. v183's +1 let an invented woman stand beside a couple and their baby (owner report, DSC05777).
+- `placedExtra(im)`: a posing-size face in the raw answer with no original face (`p._all`) within 0.8 face-widths is an added person. Allowed: 0 for 5 people or fewer, else 1.
+- `keepGround`: the cut line is also capped by a line through the top of the hair of each main face (face top − 0.55·h), joined straight from face to face and flat past the ends. A column holding only a hand or legs low down made a deep notch, and the place showed through the table as a "flame column" (DSC05791).
