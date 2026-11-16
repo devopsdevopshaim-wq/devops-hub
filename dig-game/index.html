@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Orbitron:wght@600;800&family=Suez+One&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/game.css?v=20261116" />
+<link rel="stylesheet" href="css/game.css?v=20261116b" />
 </head>
 <body data-screen="home">
 <canvas id="bg-cv" aria-hidden="true"></canvas>
@@ -61,13 +61,18 @@
   <section class="screen" id="scr-smash" hidden>
     <div class="smash3d" id="smash3d" aria-label="מגדל עתיק על במה ותותח מולו: הקישו על המגדל כדי לירות"></div>
     <div class="sm-top">
-      <div class="sm-balls"><small>כדורים</small><b id="sm-balls">0</b><span class="sm-rate" id="sm-rate"><i class="on">★</i><i class="on">★</i><i class="on">★</i></span></div>
+      <div class="sm-balls"><small>יריות</small><b id="sm-balls">0</b><span class="sm-rate" id="sm-rate"><i class="on">★</i><i class="on">★</i><i class="on">★</i></span></div>
       <div class="sm-mid"><b id="sm-title">שלב 1</b><small id="sm-site"></small><div class="sm-bar"><i id="sm-fill"></i></div></div>
       <button class="sm-gear" id="sm-pause" aria-label="הפסקה">⚙</button>
     </div>
     <div class="sm-coins"><i data-ico="coin"></i><b id="sm-coins">0</b></div>
     <div class="sm-combo" id="sm-combo" aria-live="polite"></div>
     <p class="sm-hint" id="sm-hint" role="status"></p>
+    <div class="sm-weapons" role="group" aria-label="במה יורים">
+      <button class="weapon on" data-w="cannon" aria-label="תותח"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="17" cy="34" r="9" fill="#ff3d5a" stroke="#ffd23a" stroke-width="3"/><path d="M12 28 L36 12 L41 19 L18 35 Z" fill="#6a2bd6" stroke="#ffd23a" stroke-width="2.5" stroke-linejoin="round"/><circle cx="39" cy="15" r="4.5" fill="#ffd23a"/></svg><small>תותח</small></button>
+      <button class="weapon" data-w="sling" aria-label="קלע"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 44 V27 M24 28 L13 9 M24 28 L35 9" stroke="#a8692f" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M13 10 Q24 24 35 10" stroke="#ff3d5a" stroke-width="3" fill="none"/><circle cx="24" cy="18" r="5" fill="#d8d0c2" stroke="#6b3a1a" stroke-width="2"/></svg><small>קלע</small><em class="lock"></em></button>
+      <button class="weapon" data-w="catapult" aria-label="קטפולטה"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 38 H42" stroke="#b5743a" stroke-width="6" stroke-linecap="round"/><path d="M16 38 L30 8" stroke="#7a4a22" stroke-width="5" stroke-linecap="round"/><circle cx="31" cy="8" r="6" fill="#ff8a1c" stroke="#ffd23a" stroke-width="2"/><circle cx="12" cy="41" r="4" fill="#ff3d5a"/><circle cx="36" cy="41" r="4" fill="#ff3d5a"/><path d="M26 38 L33 22" stroke="#b5743a" stroke-width="4" stroke-linecap="round"/></svg><small>קטפולטה</small><em class="lock"></em></button>
+    </div>
     <div class="sm-boosts">
       <button class="boost" data-b="bomb" aria-label="פצצה"><span class="bi">💣</span><em id="b-bomb">0</em><small>פצצה</small></button>
       <button class="boost" data-b="triple" aria-label="שלישייה"><span class="bi">☄️</span><em id="b-triple">0</em><small>שלישייה</small></button>
@@ -141,15 +146,15 @@
 <div class="fx" id="fx" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
 
-<script src="js/art.js?v=20261116"></script>
-<script src="js/photos.js?v=20261116"></script>
-<script src="js/icons.js?v=20261116"></script>
-<script src="js/hero.js?v=20261116"></script>
-<script src="js/audio.js?v=20261116"></script>
-<script src="js/game.js?v=20261116"></script>
-<script src="js/smash.js?v=20261116"></script>
+<script src="js/art.js?v=20261116b"></script>
+<script src="js/photos.js?v=20261116b"></script>
+<script src="js/icons.js?v=20261116b"></script>
+<script src="js/hero.js?v=20261116b"></script>
+<script src="js/audio.js?v=20261116b"></script>
+<script src="js/game.js?v=20261116b"></script>
+<script src="js/smash.js?v=20261116b"></script>
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
-<script type="module" src="js/smash3d.js?v=20261116"></script>
-<script type="module" src="js/dig3d.js?v=20261116"></script>
+<script type="module" src="js/smash3d.js?v=20261116b"></script>
+<script type="module" src="js/dig3d.js?v=20261116b"></script>
 </body>
 </html>

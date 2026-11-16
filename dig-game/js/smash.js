@@ -13,15 +13,23 @@
   function state() {
     const s = S();
     if (!s.smash) s.smash = { lvl: 1, stars: {}, boost: { bomb: 2, triple: 2 } };
+    if (!s.smash.weapon) s.smash.weapon = 'cannon';
+    if (!s.smash.seen) s.smash.seen = { cannon: 1 };
     return s.smash;
   }
   const chapterOf = (n) => Math.floor((n - 1) / PER_CHAPTER);
   const siteOf = (n) => SITES[chapterOf(n) % SITES.length];
   const totalStars = () => Object.values(state().stars).reduce((a, b) => a + b, 0);
   const starsFor = (left, start) => (left / start >= 0.34 ? 3 : left / start >= 0.15 ? 2 : 1);
+  // what the player can throw with, and the level each one opens at
+  const WEAPON = {
+    cannon: { name: 'תותח', from: 1, hint: 'כדור אש מהיר: טוב לכל דבר' },
+    sling: { name: 'הקלע של דוד', from: 2, hint: 'אבן קטנה, מהירה ומדויקת: מנפצת כל כד שהיא נוגעת בו' },
+    catapult: { name: 'קטפולטה', from: 3, hint: 'סלע בוער וכבד שנופל על המגדל מלמעלה ומרסק אותו' },
+  };
   const BOOST = {
     bomb: { name: 'פצצה', icon: '💣', price: 120, hint: 'הכדור הבא מתפוצץ ומעיף את כל מה שסביבו' },
-    triple: { name: 'שלישייה', icon: '☄️', price: 90, hint: 'הירייה הבאה שולחת שלושה כדורים בבת אחת' },
+    triple: { name: 'שלישייה', icon: '☄️', price: 90, hint: 'הירייה הבאה יוצאת שלוש פעמים בבת אחת' },
   };
 
   /* ---------- the level map ---------- */
@@ -67,10 +75,45 @@
     $('#sm-coins').textContent = '0';
     $('#sm-fill').style.width = '0%';
     hudBoost();
-    const info = SMASH3D.start($('#smash3d'), n, handlers);
+    const st = state();
+    if (WEAPON[st.weapon].from > st.lvl) st.weapon = 'cannon';
+    hudWeapons();
+    const info = SMASH3D.start($('#smash3d'), n, handlers, { weapon: st.weapon });
     run.start = info.balls;
-    hint(n === 1 ? 'הקישו על המגדל כדי לירות 💥 צריך להפיל הכול מהבמה' : `צריך להפיל הכול מהבמה · ${info.balls} כדורים`, n === 1 ? 6000 : 3200);
+    hint(n === 1 ? 'הקישו על המגדל כדי לירות 💥 צריך להפיל הכול מהבמה' : `צריך להפיל הכול מהבמה · ${info.balls} יריות`, n === 1 ? 6000 : 3200);
+    // a launcher that has just opened is introduced once
+    const fresh = Object.keys(WEAPON).find((k) => WEAPON[k].from <= st.lvl && !st.seen[k]);
+    if (fresh) {
+      st.seen[fresh] = 1; A.save();
+      setTimeout(() => A.modal(`<div class="sm-win"><div class="sm-ribbon">כלי חדש!</div>
+        <div class="sm-newweapon">${$(`.weapon[data-w="${fresh}"] svg`).outerHTML}</div>
+        <h2>${WEAPON[fresh].name}</h2><p class="sub">${WEAPON[fresh].hint}</p>
+        <p class="sub">בוחרים במה לירות בכפתורים שלמטה, ואפשר להחליף לפני כל ירייה.</p></div>
+        <div class="m-actions"><button class="btn gold" id="m-try">לנסות עכשיו</button><button class="btn ghost" id="m-later">אחר כך</button></div>`, (root) => {
+        $('#m-try', root).onclick = () => { A.closeModal(); pickWeapon(fresh); };
+        $('#m-later', root).onclick = A.closeModal;
+      }), 700);
+    }
   }
+  function hudWeapons() {
+    const st = state();
+    $$('.weapon').forEach((b) => {
+      const W = WEAPON[b.dataset.w], open = W.from <= st.lvl;
+      b.classList.toggle('on', b.dataset.w === st.weapon);
+      b.classList.toggle('locked', !open);
+      const lock = $('.lock', b);
+      if (lock) lock.textContent = open ? '' : `שלב ${W.from}`;
+    });
+  }
+  function pickWeapon(k) {
+    const st = state(), W = WEAPON[k];
+    if (W.from > st.lvl) { SFX.deny(); A.toast(`🔒 ${W.name} נפתח בשלב ${W.from}`); return; }
+    st.weapon = k; A.save();
+    if (window.SMASH3D) SMASH3D.weapon(k);
+    SFX.click(); hudWeapons();
+    hint(`${W.name}: ${W.hint}`, 2600);
+  }
+  $$('.weapon').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); pickWeapon(b.dataset.w); }));
   let hintT = 0;
   function hint(text, ms) {
     const el = $('#sm-hint'); el.textContent = text; el.classList.add('on');
@@ -179,7 +222,7 @@
         <p class="sm-found">${isNew ? '<em class="new">חדש למוזיאון!</em> ' : ''}בתיבה: <b>${f.name}</b> <span style="color:${r.color}">${r.name}</span></p>
         <ul class="sm-sum">
           <li><span>ניפוצים</span><b>${A.fmt(run.coins)}</b></li>
-          <li><span>כדורים שנשארו ×${ballsLeft}</span><b>${A.fmt(ballBonus)}</b></li>
+          <li><span>יריות שנשארו ×${ballsLeft}</span><b>${A.fmt(ballBonus)}</b></li>
           ${starBonus ? `<li><span>כוכבים חדשים</span><b>${starBonus}</b></li>` : ''}
           <li><span>הממצא</span><b>${A.fmt(findValue)}</b></li>
           <li class="tot"><span>סה״כ</span><b>${A.fmt(total)} ${A.ico('coin', 'ico md')}</b></li>
@@ -207,12 +250,12 @@
     SFX.end();
     A.modal(`
       <div class="sm-win fail">
-        <div class="sm-ribbon blue">נגמרו הכדורים</div>
+        <div class="sm-ribbon blue">נגמרו היריות</div>
         <div class="sm-pct"><b>${Math.round(progress * 100)}%</b><span>מהמגדל נפל</span></div>
         <p class="sub">${progress > 0.7 ? 'עוד קצת והוא היה כולו על הדשא!' : 'כוונו לבסיס: מה שנופל מלמטה מפיל את מה שמעליו'}</p>
       </div>
       <div class="m-actions">
-        <button class="btn gold" id="m-more" ${S().coins < price ? 'disabled' : ''}>+5 כדורים · ${price} ${A.ico('coin', 'ico md')}</button>
+        <button class="btn gold" id="m-more" ${S().coins < price ? 'disabled' : ''}>+5 יריות · ${price} ${A.ico('coin', 'ico md')}</button>
         <button class="btn ghost" id="m-retry">לנסות שוב</button>
         <button class="btn ghost" id="m-lv">למפה</button>
       </div>`, (root) => {

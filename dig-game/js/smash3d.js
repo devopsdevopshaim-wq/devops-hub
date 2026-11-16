@@ -13,11 +13,20 @@ const PT = 2.0;          // height of the pedestal top
 const PR = 2.75;         // pedestal radius
 const CANNON_Z = 6.6;    // the cannon stands well in front of the pedestal
 const G = 9.82;
-const GROUP = { piece: 1, ground: 2, stage: 4, ball: 8 };
 const BALL_R = 0.34;
+const GROUP = { piece: 1, ground: 2, stage: 4, ball: 8 };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+// three ways to throw: each has its own projectile, flight and burst
+const WEAPONS = {
+  cannon: { r: BALL_R, mass: 9, flight: (d) => clamp(d / 24, 0.3, 0.7), blast: [1.25, 6, 0.6], trail: 'fire', sound: 'cannon', shake: 0.12, wait: 0.28 },
+  // David's sling: a small stone, very fast and straight; it shatters any jar it touches but barely bursts
+  sling: { r: 0.2, mass: 6, flight: (d) => clamp(d / 36, 0.2, 0.45), blast: [0.75, 4, 0.45], trail: 'dust', sound: 'sling', shake: 0.04, wait: 0.2 },
+  // the catapult lobs a heavy, burning boulder that comes down on the building from above
+  catapult: { r: 0.5, mass: 32, flight: () => 1.15, blast: [2.2, 10, 1.15], trail: 'fire', sound: 'catapult', shake: 0.32, wait: 0.75 },
+};
 
 let renderer, composer, scene, camera, clock, world, raf = 0, host = null, H = {}, mode = 'off';
-let pieces = [], balls = [], shards = [], removeQ = [], clouds = [], cannon = null, pedestal = null;
+let pieces = [], balls = [], shards = [], removeQ = [], clouds = [], rig = null, launchers = {}, weapon = 'cannon', pedestal = null;
 let simT = 0, ballsLeft = 0, armed = null, lastShot = -9, settleT = 0, done = false, combo = 0, comboT = 0, autoT = 0, showT = 0, levelNum = 1;
 let FX = null, FXA = null, flashLight = null, shake = 0, ro = null;
 const camBase = new THREE.Vector3(), camLook = new THREE.Vector3();
@@ -281,6 +290,114 @@ function makeWorld() {
   world.addBody(pole);
 }
 
+/* ---------- the launchers ---------- */
+function makeCannon() {
+  // a bronze-purple barrel painted with flames, on red wheels
+  const g = new THREE.Group();
+  const barrelProf = [[0, -1.1], [0.42, -1.1], [0.48, -1.0], [0.46, -0.8], [0.4, -0.4], [0.36, 0.4], [0.34, 0.9], [0.42, 0.98], [0.44, 1.1], [0.3, 1.12], [0.28, 1.0], [0.0, 1.0]];
+  const barrel = new THREE.Mesh(new THREE.LatheGeometry(barrelProf.map(([r, y]) => new THREE.Vector2(r, y)), 40), new THREE.MeshPhysicalMaterial({ map: TEX.flames, roughness: 0.3, clearcoat: 1, metalness: 0.2 }));
+  barrel.rotation.x = Math.PI / 2; barrel.castShadow = true;
+  const muzzleRing = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 12, 32), MAT.gold); muzzleRing.position.z = 1.04;
+  const breech = new THREE.Mesh(new THREE.SphereGeometry(0.46, 24, 16), MAT.gold); breech.position.z = -1.08; breech.scale.z = 0.6;
+  const pitch = new THREE.Group(); pitch.add(barrel, muzzleRing, breech);
+  const muzzle = new THREE.Object3D(); muzzle.position.z = 1.15; pitch.add(muzzle);
+  const yaw = new THREE.Group(); yaw.add(pitch); pitch.position.y = 0.95;
+  const wheelM = new THREE.MeshPhysicalMaterial({ color: '#ff2f48', roughness: 0.3, clearcoat: 1 });
+  for (const sd of [-1, 1]) {
+    const w = new THREE.Group();
+    const tyre = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.12, 12, 32), wheelM);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.24, 16), MAT.gold); hub.rotation.x = Math.PI / 2;
+    w.add(tyre, hub);
+    for (let i = 0; i < 8; i++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.15, 0.06), MAT.gold); sp.rotation.z = (i / 8) * Math.PI; w.add(sp); }
+    w.rotation.y = Math.PI / 2; w.position.set(sd * 0.68, 0.7, -0.2); yaw.add(w);
+  }
+  const carriage = new THREE.Mesh(new RoundedBoxGeometry(1.1, 0.4, 1.6, 2, 0.08), new THREE.MeshPhysicalMaterial({ color: '#5b23c4', roughness: 0.35, clearcoat: 1 }));
+  carriage.position.set(0, 0.55, -0.2); yaw.add(carriage);
+  g.add(yaw);
+  g.userData = { yaw, pitch, muzzle, anim: 0 };
+  return g;
+}
+// a cylinder stretched between two points (the sling's bands)
+const UP = new THREE.Vector3(0, 1, 0);
+function stretch(m, a, b) {
+  const d = b.clone().sub(a);
+  m.position.copy(a).addScaledVector(d, 0.5);
+  m.scale.set(1, d.length(), 1);
+  m.quaternion.setFromUnitVectors(UP, d.normalize());
+}
+function makeSling() {
+  // David's sling as a big shepherd's slingshot: an olive-wood fork with leather bands and a pouch
+  const g = new THREE.Group(), yaw = new THREE.Group(); g.add(yaw);
+  const wood = new THREE.MeshPhysicalMaterial({ color: '#a8692f', roughness: 0.45, clearcoat: 0.6 });
+  const leather = new THREE.MeshStandardMaterial({ color: '#6b3a1a', roughness: 0.7 });
+  const band = new THREE.MeshPhysicalMaterial({ color: '#ff3d5a', roughness: 0.4, clearcoat: 0.8 });
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 1.0, 14), wood); trunk.position.y = 0.8; trunk.castShadow = true;
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.17, 14, 10), wood); knot.position.y = 1.3;
+  yaw.add(trunk, knot);
+  const tips = [];
+  for (const sd of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.75, 12), wood);
+    arm.position.set(sd * 0.22, 1.62, 0); arm.rotation.z = -sd * 0.55; arm.castShadow = true;
+    const wrap = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.14, 12), MAT.gold); wrap.position.copy(arm.position); wrap.rotation.copy(arm.rotation);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), wood); cap.position.set(sd * 0.42, 1.94, 0);
+    yaw.add(arm, wrap, cap);
+    tips.push(new THREE.Vector3(sd * 0.42, 1.94, 0));
+  }
+  const pouch = new THREE.Mesh(new RoundedBoxGeometry(0.34, 0.24, 0.14, 2, 0.05), leather); pouch.castShadow = true;
+  const stone = new THREE.Mesh(new THREE.IcosahedronGeometry(0.15, 1), new THREE.MeshStandardMaterial({ color: '#cfc6b8', roughness: 0.8, flatShading: true }));
+  pouch.add(stone); stone.position.z = 0.04;
+  yaw.add(pouch);
+  const bands = tips.map(() => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1, 8), band); m.castShadow = true; yaw.add(m); return m; });
+  const muzzle = new THREE.Object3D(); muzzle.position.set(0, 1.9, 0.3); yaw.add(muzzle);
+  g.scale.setScalar(1.2);
+  g.userData = { yaw, muzzle, pouch, stone, tips, bands, anim: 0, t: 9 };
+  return g;
+}
+function makeCatapult() {
+  // a wooden siege catapult on wheels, with a throwing arm and a bucket for the boulder
+  const g = new THREE.Group(), yaw = new THREE.Group(); g.add(yaw);
+  const wood = new THREE.MeshPhysicalMaterial({ color: '#b5743a', roughness: 0.5, clearcoat: 0.5 });
+  const dark = new THREE.MeshPhysicalMaterial({ color: '#7a4a22', roughness: 0.6, clearcoat: 0.3 });
+  const beam = (w, h, d, x, y, z, m = wood) => { const b = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, 0.03), m); b.position.set(x, y, z); b.castShadow = true; yaw.add(b); return b; };
+  for (const sd of [-1, 1]) {
+    beam(0.18, 0.18, 2.3, sd * 0.55, 0.55, -0.2);
+    const up = beam(0.16, 1.25, 0.16, sd * 0.55, 1.15, 0.35); up.rotation.x = -0.12;
+    for (const z of [-1.1, 0.7]) {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.12, 22), new THREE.MeshPhysicalMaterial({ color: '#ff2f48', roughness: 0.3, clearcoat: 1 }));
+      w.rotation.z = Math.PI / 2; w.position.set(sd * 0.72, 0.42, z); yaw.add(w);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.16, 12), MAT.gold); hub.rotation.z = Math.PI / 2; hub.position.copy(w.position); yaw.add(hub);
+    }
+  }
+  beam(1.28, 0.16, 0.18, 0, 0.55, -1.2); beam(1.28, 0.16, 0.18, 0, 0.55, 0.8);
+  beam(1.3, 0.2, 0.22, 0, 1.78, 0.42, MAT.gold); // the stop bar the arm strikes
+  const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.2, 12), dark); axle.rotation.z = Math.PI / 2; axle.position.set(0, 0.68, -0.25); yaw.add(axle);
+  const arm = new THREE.Group(); arm.position.set(0, 0.68, -0.25); yaw.add(arm);
+  const pole = new THREE.Mesh(new RoundedBoxGeometry(0.14, 2.1, 0.14, 2, 0.03), dark); pole.position.y = 1.0; pole.castShadow = true; arm.add(pole);
+  const bucket = new THREE.Mesh(new THREE.SphereGeometry(0.34, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), wood); bucket.rotation.x = Math.PI; bucket.position.y = 2.05;
+  bucket.material = new THREE.MeshPhysicalMaterial({ color: '#b5743a', roughness: 0.5, side: THREE.DoubleSide });
+  arm.add(bucket);
+  const rock = new THREE.Mesh(boulderGeo(0.3), new THREE.MeshStandardMaterial({ color: '#d9b77a', roughness: 0.85, flatShading: true, emissive: '#ff5a10', emissiveIntensity: 0.35 }));
+  rock.position.y = 2.25; arm.add(rock);
+  const cw = new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.4, 0.4, 2, 0.05), new THREE.MeshPhysicalMaterial({ color: '#5b23c4', roughness: 0.4, clearcoat: 1 })); cw.position.y = -0.1; arm.add(cw);
+  const REST = -1.05; arm.rotation.x = REST; // lying back, the bucket behind
+  const muzzle = new THREE.Object3D(); muzzle.position.set(0, 2.7, 0.35); yaw.add(muzzle);
+  g.userData = { yaw, muzzle, arm, rock, REST, anim: 0, t: 9 };
+  return g;
+}
+function boulderGeo(r) {
+  const geo = new THREE.IcosahedronGeometry(r, 1);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) { const k = 1 + (Math.sin(p.getX(i) * 17 + p.getY(i) * 11) * 0.5 + Math.random() * 0.5 - 0.25) * 0.18; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k, p.getZ(i) * k); }
+  geo.computeVertexNormals();
+  return geo;
+}
+function setWeapon(k) {
+  if (!WEAPONS[k]) return weapon;
+  weapon = k;
+  for (const [name, L] of Object.entries(launchers)) L.visible = name === k;
+  return weapon;
+}
+
 function makeScene(el) {
   kit();
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -376,35 +493,18 @@ function makeScene(el) {
   pedestal.add(drum, lid, rim, rim2, pole, foot);
   scene.add(pedestal);
 
-  // the cannon in the foreground: bronze-purple barrel painted with flames, on red wheels
-  cannon = new THREE.Group();
-  const barrelProf = [[0, -1.1], [0.42, -1.1], [0.48, -1.0], [0.46, -0.8], [0.4, -0.4], [0.36, 0.4], [0.34, 0.9], [0.42, 0.98], [0.44, 1.1], [0.3, 1.12], [0.28, 1.0], [0.0, 1.0]];
-  const barrel = new THREE.Mesh(new THREE.LatheGeometry(barrelProf.map(([r, y]) => new THREE.Vector2(r, y)), 40), new THREE.MeshPhysicalMaterial({ map: TEX.flames, roughness: 0.3, clearcoat: 1, metalness: 0.2 }));
-  barrel.rotation.x = Math.PI / 2; barrel.castShadow = true;
-  const muzzleRing = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 12, 32), MAT.gold); muzzleRing.position.z = 1.04;
-  const breech = new THREE.Mesh(new THREE.SphereGeometry(0.46, 24, 16), MAT.gold); breech.position.z = -1.08; breech.scale.z = 0.6;
-  const pitch = new THREE.Group(); pitch.add(barrel, muzzleRing, breech);
-  const muzzle = new THREE.Object3D(); muzzle.position.z = 1.15; pitch.add(muzzle);
-  const yaw = new THREE.Group(); yaw.add(pitch); pitch.position.y = 0.95;
-  const wheelM = new THREE.MeshPhysicalMaterial({ color: '#ff2f48', roughness: 0.3, clearcoat: 1 });
-  for (const s of [-1, 1]) {
-    const w = new THREE.Group();
-    const tyre = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.12, 12, 32), wheelM);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.24, 16), MAT.gold); hub.rotation.x = Math.PI / 2;
-    w.add(tyre, hub);
-    for (let i = 0; i < 8; i++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.15, 0.06), MAT.gold); sp.rotation.z = (i / 8) * Math.PI; w.add(sp); }
-    w.rotation.y = Math.PI / 2; w.position.set(s * 0.68, 0.7, -0.2); yaw.add(w);
-  }
-  const carriage = new THREE.Mesh(new RoundedBoxGeometry(1.1, 0.4, 1.6, 2, 0.08), new THREE.MeshPhysicalMaterial({ color: '#5b23c4', roughness: 0.35, clearcoat: 1 }));
-  carriage.position.set(0, 0.55, -0.2); yaw.add(carriage);
+  // the launchers stand on one painted stand in the foreground; only the chosen one shows
+  rig = new THREE.Group();
   const plate = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.9, 0.3, 40), new THREE.MeshPhysicalMaterial({ color: '#ffcf3a', roughness: 0.35, clearcoat: 1, metalness: 0.3 }));
   plate.position.y = 0.15; plate.receiveShadow = true;
   const stand = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.7, 8, 32), new THREE.MeshPhysicalMaterial({ color: '#7a3be0', roughness: 0.4, clearcoat: 0.6 }));
   stand.position.y = -4;
-  cannon.add(plate, stand, yaw);
-  cannon.rotation.y = Math.PI; // its own +z, where the barrel points, faces the building
-  cannon.userData = { yaw, pitch, muzzle, recoil: 0 };
-  scene.add(cannon);
+  rig.add(plate, stand);
+  launchers = { cannon: makeCannon(), sling: makeSling(), catapult: makeCatapult() };
+  for (const L of Object.values(launchers)) rig.add(L);
+  rig.rotation.y = Math.PI; // the launchers' own +z, where they shoot, faces the building
+  scene.add(rig);
+  setWeapon(weapon);
 
   // particles: a glowing set (fire, sparks) and a coloured set (splashes, dust)
   FXA = particles(700, true);
@@ -475,8 +575,10 @@ function resize() {
   // the barrel's pivot sits just above the bottom edge of the picture at the cannon's depth
   const near = dist - CANNON_Z, tilt = Math.atan2(camLook.y - camBase.y, dist);
   const bottom = camBase.y - near * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2) - tilt);
-  cannon.scale.setScalar(0.85);
-  cannon.position.set(0, bottom + 0.42 - 0.95 * 0.85, CANNON_Z);
+  // the launchers keep the same size on screen whatever the camera distance
+  const k = clamp(0.85 * near / 8.3, 0.62, 0.85);
+  rig.scale.setScalar(k);
+  rig.position.set(0, bottom + 0.42 * k / 0.85 - 0.95 * k, CANNON_Z);
   FX.points.material.uniforms.scale.value = FXA.points.material.uniforms.scale.value = h / 2;
 }
 
@@ -599,43 +701,54 @@ function aimAt(clientX, clientY) {
   return ray.ray.intersectPlane(plane, p) ? p : null;
 }
 function fire(target, kind = 'ball') {
-  const C = cannon.userData;
-  // aim the barrel first so the ball leaves from where the muzzle points
-  const d = cannon.worldToLocal(target.clone());
+  const W = WEAPONS[weapon], L = launchers[weapon], C = L.userData;
+  // turn the launcher first so the shot leaves from where it points
+  const d = L.worldToLocal(target.clone());
   C.yaw.rotation.y = Math.atan2(d.x, d.z);
-  C.pitch.rotation.x = -Math.atan2(d.y - C.pitch.position.y, Math.hypot(d.x, d.z)) - 0.06;
-  cannon.updateMatrixWorld(true);
+  if (C.pitch) C.pitch.rotation.x = -Math.atan2(d.y - C.pitch.position.y, Math.hypot(d.x, d.z)) - 0.06;
+  rig.updateMatrixWorld(true);
   const start = new THREE.Vector3(); C.muzzle.getWorldPosition(start);
-  // the fastest flight that still clears the front rim of the pedestal
-  // a fast, nearly flat shot; balls pass over the stage's lip (they only meet the pieces and the lawn)
-  const T = Math.min(0.7, Math.max(0.3, start.distanceTo(target) / 24));
+  // balls pass over the stage's lip: they only meet the pieces and the lawn
+  const T = W.flight(start.distanceTo(target));
   const v = target.clone().sub(start).divideScalar(T); v.y += 0.5 * G * T;
-  const body = new CANNON.Body({ mass: kind === 'bomb' ? 12 : 9, shape: new CANNON.Sphere(BALL_R), position: new CANNON.Vec3(start.x, start.y, start.z) });
+  const bomb = kind === 'bomb';
+  const body = new CANNON.Body({ mass: W.mass * (bomb ? 1.3 : 1), shape: new CANNON.Sphere(W.r), position: new CANNON.Vec3(start.x, start.y, start.z) });
   body.velocity.set(v.x, v.y, v.z);
+  if (weapon === 'catapult') body.angularVelocity.set(-6, 0, 0);
   body.linearDamping = 0.01; body.allowSleep = false;
   body.collisionFilterGroup = GROUP.ball; body.collisionFilterMask = GROUP.piece | GROUP.ground;
   body.userData = { ball: true };
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 28, 18), kind === 'bomb'
-    ? new THREE.MeshPhysicalMaterial({ color: '#2a2a3a', roughness: 0.25, clearcoat: 1, emissive: '#ff4a1a', emissiveIntensity: 0.6 })
-    : new THREE.MeshPhysicalMaterial({ map: TEX.ball, roughness: 0.25, clearcoat: 1, emissive: '#ff3a1a', emissiveIntensity: 0.25 }));
+  let mat, geo;
+  if (bomb) { geo = new THREE.SphereGeometry(W.r, 28, 18); mat = new THREE.MeshPhysicalMaterial({ color: '#2a2a3a', roughness: 0.25, clearcoat: 1, emissive: '#ff4a1a', emissiveIntensity: 0.6 }); }
+  else if (weapon === 'cannon') { geo = new THREE.SphereGeometry(W.r, 28, 18); mat = new THREE.MeshPhysicalMaterial({ map: TEX.ball, roughness: 0.25, clearcoat: 1, emissive: '#ff3a1a', emissiveIntensity: 0.25 }); }
+  else if (weapon === 'sling') { geo = new THREE.IcosahedronGeometry(W.r, 1); mat = new THREE.MeshStandardMaterial({ color: '#d8d0c2', roughness: 0.8, flatShading: true }); }
+  else { geo = boulderGeo(W.r); mat = new THREE.MeshStandardMaterial({ color: '#d9b77a', roughness: 0.85, flatShading: true, emissive: '#ff5a10', emissiveIntensity: 0.45 }); }
+  const mesh = new THREE.Mesh(geo, mat);
   mesh.castShadow = true; scene.add(mesh);
-  const B = { body, mesh, t: 0, kind, hit: false };
+  const B = { body, mesh, t: 0, kind, hit: false, trail: W.trail };
   body.addEventListener('collide', (e) => {
     if (B.hit) return;
     if (e.body.userData && e.body.userData.ground) return;
     B.hit = true;
     const at = new THREE.Vector3(body.position.x, body.position.y, body.position.z);
     B.hitT = B.t;
-    removeQ.push(() => { boom(at, kind === 'bomb'); if (kind === 'bomb') explode(at, 2.8, 14, 1.7); else explode(at, 1.25, 6, 0.6); sfx(kind === 'bomb' ? 'boom' : 'impact'); });
+    removeQ.push(() => {
+      boom(at, bomb || weapon === 'catapult');
+      if (bomb) explode(at, 2.8, 14, 1.7); else explode(at, ...W.blast);
+      sfx(bomb || weapon === 'catapult' ? 'boom' : 'impact');
+    });
   });
   world.addBody(body); balls.push(B);
-  // muzzle flash, smoke and recoil
-  for (let i = 0; i < 26; i++) emit(FXA, start.x, start.y, start.z, v.x * 0.08 + (Math.random() - 0.5) * 3, v.y * 0.05 + Math.random() * 2, v.z * 0.08 + (Math.random() - 0.5) * 3, i % 3 ? '#ffb02e' : '#fff2a0', 0.5 + Math.random() * 0.5, 0.25 + Math.random() * 0.2, 0, 0.15);
-  for (let i = 0; i < 12; i++) emit(FX, start.x, start.y, start.z, (Math.random() - 0.5) * 2, 0.5 + Math.random() * 1.5, -Math.random() * 1.5, '#f4f1ea', 0.9 + Math.random() * 0.6, 1 + Math.random() * 0.6, -0.08, 0.35);
-  flashLight.position.copy(start); flashLight.intensity = 60;
-  C.recoil = 1; shake = Math.max(shake, 0.12);
+  // flash and smoke at the cannon's muzzle; the others just let go
+  if (weapon === 'cannon') {
+    for (let i = 0; i < 26; i++) emit(FXA, start.x, start.y, start.z, v.x * 0.08 + (Math.random() - 0.5) * 3, v.y * 0.05 + Math.random() * 2, v.z * 0.08 + (Math.random() - 0.5) * 3, i % 3 ? '#ffb02e' : '#fff2a0', 0.5 + Math.random() * 0.5, 0.25 + Math.random() * 0.2, 0, 0.15);
+    for (let i = 0; i < 12; i++) emit(FX, start.x, start.y, start.z, (Math.random() - 0.5) * 2, 0.5 + Math.random() * 1.5, -Math.random() * 1.5, '#f4f1ea', 0.9 + Math.random() * 0.6, 1 + Math.random() * 0.6, -0.08, 0.35);
+    flashLight.position.copy(start); flashLight.intensity = 60;
+  } else dust(start, 5, '#f6efe2');
+  C.anim = 1; C.t = 0;
+  shake = Math.max(shake, W.shake);
   lastShot = simT;
-  sfx('cannon');
+  sfx(W.sound);
 }
 // every ball bursts where it lands, a bomb much harder: pieces nearby are thrown back and outward
 function explode(at, R, F, breakR) {
@@ -651,7 +764,7 @@ function explode(at, R, F, breakR) {
 }
 function shoot(clientX, clientY) {
   if (mode !== 'play' || done) return;
-  if (simT - lastShot < 0.28) return;
+  if (simT - lastShot < WEAPONS[weapon].wait) return;
   if (ballsLeft <= 0) { H.onEmpty && H.onEmpty(); return; }
   const target = aimAt(clientX, clientY);
   if (!target) return;
@@ -667,6 +780,29 @@ function shoot(clientX, clientY) {
 }
 
 /* ---------- the loop ---------- */
+const tmpA = new THREE.Vector3();
+function animateLaunchers(dt, t) {
+  const idle = t - lastShot > 2;
+  // the cannon kicks back
+  const C = launchers.cannon.userData;
+  C.anim *= Math.pow(0.004, dt);
+  C.pitch.position.z = -C.anim * 0.45;
+  if (idle) C.pitch.rotation.x += (-0.32 - C.pitch.rotation.x) * (1 - Math.pow(0.3, dt));
+  // the sling's pouch snaps forward and wobbles; its stone shows again once it has settled
+  const S = launchers.sling.userData;
+  S.t += dt;
+  const wob = S.t < 1.2 ? Math.exp(-5 * S.t) * Math.sin(S.t * 22) * 0.35 : 0;
+  S.pouch.position.set(0, 1.86 + wob * 0.2, -0.12 + wob);
+  S.stone.visible = S.t > 0.45;
+  S.bands.forEach((m, i) => stretch(m, S.tips[i], tmpA.copy(S.pouch.position).add(new THREE.Vector3(i ? 0.15 : -0.15, 0, 0))));
+  // the catapult's arm whips up to the stop bar, then winds back down slowly
+  const K = launchers.catapult.userData;
+  K.t += dt;
+  const up = K.t < 0.18 ? K.t / 0.18 : K.t < 0.5 ? 1 : Math.max(0, 1 - (K.t - 0.5) / 1.2);
+  K.arm.rotation.x = K.REST + (0.25 - K.REST) * (up * up * (3 - 2 * up));
+  K.rock.visible = K.t > 1.6;
+  for (const L of Object.values(launchers)) if (idle) L.userData.yaw.rotation.y *= Math.pow(0.4, dt);
+}
 function tick() {
   raf = requestAnimationFrame(tick);
   const dt = Math.min(clock.getDelta(), 1 / 20);
@@ -696,7 +832,11 @@ function tick() {
     const B = balls[i];
     B.t += dt;
     B.mesh.position.copy(B.body.position); B.mesh.quaternion.copy(B.body.quaternion);
-    if (!B.hit || B.t < 0.6) for (let k = 0; k < 3; k++) emit(FXA, B.mesh.position.x, B.mesh.position.y, B.mesh.position.z, (Math.random() - 0.5) * 0.8, (Math.random() - 0.5) * 0.8, (Math.random() - 0.5) * 0.8, k ? '#ff7a1a' : '#ffe26a', 0.42, 0.28, 0, 0.3);
+    const bp = B.mesh.position;
+    if (!B.hit || B.t < 0.6) {
+      if (B.trail === 'fire' || B.kind === 'bomb') for (let k = 0; k < 3; k++) emit(FXA, bp.x, bp.y, bp.z, (Math.random() - 0.5) * 0.8, (Math.random() - 0.5) * 0.8, (Math.random() - 0.5) * 0.8, k ? '#ff7a1a' : '#ffe26a', 0.42, 0.28, 0, 0.3);
+      else emit(FX, bp.x, bp.y, bp.z, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3, '#ffffff', 0.18, 0.3, 0, 0.3);
+    }
     // a spent ball shrinks away so it doesn't hold up the pieces
     if (B.hit && B.t - B.hitT > 1.1) B.mesh.scale.multiplyScalar(Math.pow(0.02, dt));
     if (B.t > 3.5 || B.body.position.y < -2 || (B.hit && B.t - B.hitT > 1.6)) { world.removeBody(B.body); scene.remove(B.mesh); balls.splice(i, 1); }
@@ -713,11 +853,7 @@ function tick() {
   stepParticles(FX, dt); stepParticles(FXA, dt);
   flashLight.intensity *= Math.pow(0.002, dt);
   for (const c of clouds) { c.position.x += dt * 0.8; if (c.position.x > 80) c.position.x = -80; }
-  // cannon recoil and idle sway
-  const C = cannon.userData;
-  C.recoil *= Math.pow(0.004, dt);
-  C.pitch.position.z = -C.recoil * 0.45;
-  if (t - lastShot > 2) { C.yaw.rotation.y *= Math.pow(0.4, dt); C.pitch.rotation.x += (-0.32 - C.pitch.rotation.x) * (1 - Math.pow(0.3, dt)); }
+  animateLaunchers(dt, t);
   // camera shake
   shake *= Math.pow(0.02, dt);
   camera.position.copy(camBase).add(new THREE.Vector3((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, 0));
@@ -736,7 +872,8 @@ function tick() {
     const standing = pieces.filter((p) => !p.cleared && p.body);
     if (autoT <= 0 && standing.length) {
       const pick = standing[Math.floor(Math.random() * standing.length)];
-      fire(pick.mesh.position.clone().add(new THREE.Vector3(0, 0.1, 0)), Math.random() < 0.15 ? 'bomb' : 'ball');
+      if (Math.random() < 0.3) setWeapon(['cannon', 'sling', 'catapult'][Math.floor(Math.random() * 3)]);
+      fire(pick.mesh.position.clone().add(new THREE.Vector3(0, 0.1, 0)), Math.random() < 0.12 ? 'bomb' : 'ball');
       autoT = 1.6 + Math.random() * 1.2;
     }
     if ((standing.length <= 2 && showT > 6) || showT > 22) { showT = 0; autoT = 1.2; loadLevel(1 + Math.floor(Math.random() * 20)); }
@@ -754,8 +891,9 @@ function boot(el) {
   renderer.domElement.addEventListener('pointerdown', onDown);
 }
 
-function start(el, n, handlers) {
+function start(el, n, handlers, opts = {}) {
   boot(el);
+  if (opts.weapon) setWeapon(opts.weapon);
   H = handlers || {};
   mode = 'play';
   const L = loadLevel(n);
@@ -788,6 +926,7 @@ window.SMASH3D = {
   info: (n) => { const L = buildLevel(n); return { balls: L.balls, pieces: L.pieces.length, plan: L.plan }; },
   addBalls: (k) => { ballsLeft += k; done = false; settleT = 0; H.onBalls && H.onBalls(ballsLeft); },
   arm: (kind) => { armed = armed === kind ? null : kind; return armed; },
+  weapon: (k) => (k ? setWeapon(k) : weapon),
   armed: () => armed,
   balls: () => ballsLeft,
   progress,
