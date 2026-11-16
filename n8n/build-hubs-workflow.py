@@ -291,7 +291,12 @@ if (b.action === 'restyle' || b.action === 'image') {
     // (an old "classic" token does not open them either, so this is remembered with or without POLLINATIONS_TOKEN)
     const keyOnly = sd.polKeyOnly && sd.polKeyOnlyAt > now - 6 * 3600000 ? sd.polKeyOnly : [];
     const all = fresh ? ['flux', 'turbo'] : src ? (PTOK && !keyOnly.length ? ['kontext', 'nanobanana', 'seedream', 'gptimage'] : ['gptimage', 'kontext', 'nanobanana', 'seedream']) : [];
-    const tries = all.filter((m) => !keyOnly.includes(m));
+    // models that want paid credit with this key ("Insufficient balance", "requires Paid Pollen") are skipped for 12 hours
+    const paidOnly = sd.polPaid && sd.polPaidAt > now - 12 * 3600000 ? sd.polPaid : [];
+    let tries = all.filter((m) => !keyOnly.includes(m) && !(PTOK && paidOnly.includes(m)));
+    // with a key, and every editing model wanting paid credit: the free model without the key, as before the key
+    let anon = false;
+    if (PTOK && src && !tries.length) { tries = ['gptimage']; anon = true; }
     let waited = false;
     for (let ti = 0; ti < tries.length; ti++) {
       const model = tries[ti];
@@ -302,7 +307,7 @@ if (b.action === 'restyle' || b.action === 'image') {
       const ctl = typeof AbortController === 'function' ? new AbortController() : null;
       const tm = setTimeout(() => { if (ctl) ctl.abort(); }, Math.min(left - 5000, 95000));
       try {
-        const newKey = /^(sk|pk)_/.test(PTOK), enc = encodeURIComponent(prompt.slice(0, 1600)), hdr = { signal: ctl ? ctl.signal : undefined, headers: PTOK ? { Authorization: 'Bearer ' + PTOK } : {} };
+        const useKey = PTOK && !anon, newKey = useKey && /^(sk|pk)_/.test(PTOK), enc = encodeURIComponent(prompt.slice(0, 1600)), hdr = { signal: ctl ? ctl.signal : undefined, headers: useKey ? { Authorization: 'Bearer ' + PTOK } : {} };
         let r = null;
         if (newKey) {
           const q2 = new URLSearchParams(q); q2.set('key', PTOK);
@@ -321,12 +326,15 @@ if (b.action === 'restyle' || b.action === 'image') {
         }
         const txt = String(await r.text().catch(() => ''));
         if (r.status === 403 && /Classic API|pollen key/i.test(txt)) { sd.polKeyOnly = Array.from(new Set((sd.polKeyOnly || []).concat(model))); sd.polKeyOnlyAt = now; }
+        if (useKey && r.status === 402 && /Insufficient balance|Paid Pollen/i.test(txt)) { sd.polPaid = Array.from(new Set((sd.polPaid || []).concat(model))); sd.polPaidAt = now; }
         // the free speed limit (429, or 402 FREE_LIMIT "Retry after Ns"): one wait and the same model again
         const ra = Number((/Retry after (\d+)\s*s/i.exec(txt) || [])[1] || 8);
         if ((r.status === 429 || (r.status === 402 && /FREE_LIMIT/.test(txt))) && !waited && ra <= 50 && 118000 - (Date.now() - now) > (ra + 25) * 1000) { waited = true; clearTimeout(tm); await new Promise((ok) => setTimeout(ok, (ra + 1) * 1000)); ti--; continue; }
-        errs.push('pollinations ' + model + ': ' + r.status + ' ' + txt.slice(0, 140));
+        errs.push('pollinations ' + model + (anon ? ' (no key)' : '') + ': ' + r.status + ' ' + txt.slice(0, 100));
       } catch (e) { errs.push('pollinations ' + model + ': ' + why(e)); }
       clearTimeout(tm);
+      // the key's models all wanted paid credit: once more, the free model without the key
+      if (ti === tries.length - 1 && PTOK && src && !anon && errs.slice(-tries.length).every((x) => / 402 /.test(x))) { tries = tries.concat('gptimage'); anon = true; }
     }
   }
   if (ENG && !errs.length) return out({ ok: false, error: 'engine-off', detail: ENG }, 503);
