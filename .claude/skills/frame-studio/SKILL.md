@@ -2651,3 +2651,11 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **The prompt** (restyleOnce): when faces > 0, "Remove every bystander and every person in the background…; only the N people posing in front stay."
 - **`keepPeople`:** the original's person mask is split into connected pieces (a quarter-size copy, threshold 90, BFS labels). Only the pieces under a few points of each posing face (`FS.detectFaces` → `mainFaces`) are laid back, blurred up to full size and capped by the soft mask. Without a face found, the whole mask is used as before.
 - **Test:** the couple in front and a small girl pasted apart on the left. FS.detectFaces → 2 posing. The design was applied with n0 = 2, the prompt asks to remove bystanders, and the output has the couple in the palace without the girl.
+
+## v176: local designs no longer time out (owner: "nothing happened, it's local on the computer")
+- **Cause:** `plan.js` wraps `FS.askServer` with a race against `AI_WAIT` = 150 s.
+  - The local engine runs one picture at a time (desktop/local-ai.js queues).
+  - The first run loads the model, and the batch's 3–4 lanes queue behind each other.
+  - So every local design came back 'timeout' and was retried, and that retry timed out too. Every photo stayed as shot while the engine kept working.
+  - The phone's relay (it polls for up to 14 min) was cut the same way.
+- **Fix:** picture calls get 25 min when `FS.localAI` is ready or the relay mode isn't 'off'. Cloud calls keep their own 115 s fetch abort.
