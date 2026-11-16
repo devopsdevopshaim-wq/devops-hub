@@ -2485,3 +2485,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - OpenAI: off.
   - Pollinations gptimage works (5–44 s).
   - POLLINATIONS_TOKEN is empty in the deploy. A free token (auth.pollinations.ai) opens kontext, nanobanana and seedream and lifts the speed limit; the owner adds it as a GitHub secret.
+
+## v164: 🧸 kids and 🐉 fantasy packs, and "📶 what works without internet"
+- **`ai-studio.js`: `FS.AI_KIDS` (20) and `FS.AI_FANTASY` (16).**
+  - Entries are `[name, emoji, prompt]`, or `[name, emoji, 'd', prompt]` for drawn looks: 3D animated film, picture book, claymation, brick toy, kids comic, fantasy oil, fantasy anime.
+  - `magic(e)`:
+    - Photo looks get `MAGIC_KEEP` + `REAL_KEEP`, so keepFaces and the guard's face check apply.
+    - Drawn looks get `MAGIC_KEEP` + `KEEP_FREE`.
+  - `MAGIC_KEEP` asks for original designs only: no existing characters, films, brands or logos.
+- **`mate.js` AI view:**
+  - New cards `#mt-ai-kids` (kind 'ki') and `#mt-ai-fantasy` ('fa').
+  - `#mt-ai-offline` (`offlineCard`) says what works offline:
+    - The built-in designs (`FS.OFFLINE_AI` + LOCAL + LOCAL_PLUS + FUN_FX, 30 today) always.
+    - All the card designs (262 today) only with the desktop's local engine (`FS.localAI.isReady()`).
+  - In the desktop program the card shows "⬇️ התקנת מנוע ה־AI המקומי" → `FS.localAI.open()`.
+  - The card redraws on online/offline.
