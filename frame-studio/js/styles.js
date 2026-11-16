@@ -371,7 +371,7 @@
       /* the face finder saw nobody: the landmarker counts again, so the people are still counted and checked (v174) */
       return FS.countFacesLm(orig).then(function (n) { var a = []; for (var i = 0; i < n; i++) a.push({ x: 0, y: 0, w: 1, h: 1, score: 1, fake: 1 }); return a; });
     }).then(function (main) {
-      var n0 = main.length;
+      var n0 = main.length; p._main = main[0] && main[0].fake ? null : main;
       if (FS.aiOnePerson() && n0 >= 2 && !main[0].fake) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
       return guarded(p, prompt, engine, n0).catch(function (e) {
         if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message))) {
@@ -411,6 +411,17 @@
         return ask(im, false, r);
       });
     }
+    function placedMiss(im) {
+      var F0 = p._main, F1 = im.aiRaw;
+      if (!F0 || F0.length < 2 || !F1) return 0;
+      var kx = im.naturalWidth / orig.naturalWidth, used = {}, miss = 0;
+      F0.forEach(function (f) {
+        var cx = (f.x + f.w / 2) * kx, cy = (f.y + f.h / 2) * kx, w = f.w * kx, best = -1, bd = 1e9;
+        F1.forEach(function (g, j) { if (used[j]) return; var d = Math.hypot(g.x + g.w / 2 - cx, g.y + g.h / 2 - cy), r = g.w / w; if (d < w * 0.6 && r > 0.5 && r < 2 && d < bd) { bd = d; best = j; } });
+        if (best < 0) miss++; else used[best] = 1;
+      });
+      return miss;
+    }
     function go(i) {
       return restyleOnce(p, prompt, plan[i]).then(function (im) {
         if (!n0 || !FS.countFaces) return same(im, i);
@@ -418,10 +429,15 @@
           /* v174: every person of the original must be there. Up to 5 people, exactly as many; a bigger group may lose one
              face to the finder (a turned head). Was "at least one" for one or two people, so 2 → 1 got through (owner report). */
           var lost = n0 <= 5 ? n < n0 : n < n0 - 1, extra = n > (n0 <= 4 ? n0 : n0 + 1);
+          /* v181: in a group, every person posing must be the AI's own figure where the person stood (a face at about the same
+             place and size in the raw answer), so one invented figure with real faces laid on it never passes */
+          var miss = placedMiss(im);
+          if (miss > (n0 <= 5 ? 0 : 1)) { if (window.console) console.warn('AI: ' + miss + ' of ' + n0 + ' people not where they stood, from ' + (im.aiSource || '?')); lost = true; n = Math.min(n, n0 - miss); }
+          var bodyOk = !miss;
           if (!lost && !extra) return same(im, i);
           /* bodies instead of faces only when no face at all was found (a drawn style can hide every face); fewer faces than
              people is a person missing */
-          return (lost && n === 0 ? bodiesKept(im) : Promise.resolve(false)).then(function (kept) {
+          return (lost && n === 0 && bodyOk ? bodiesKept(im) : Promise.resolve(false)).then(function (kept) {
             if (kept) return same(im, i);
             if (window.console) console.warn('AI: the answer ' + (lost ? 'lost the people' : 'added people') + ' (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
             if (i + 1 < plan.length) return go(i + 1);
@@ -499,7 +515,7 @@
     });
   }
   function restyleOnce(p, prompt, engine) {
-    var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight, src = '';
+    var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight, src = '', raw = null;
     if (engine === undefined) engine = FS.aiEngine();
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
     var faces = p._n0 != null ? p._n0 : (p.faces ? p.faces.length : 0);
@@ -507,6 +523,7 @@
     if (faces === 1) prompt = prompt.replace(/\b(each|every) person\b/gi, 'the person').replace(/\bthe people\b/gi, 'the person').replace(/\beveryone\b/gi, 'the person') +
       ' There is exactly ONE person in this photo. The result must show only this one person: do not add any other person, partner, figure, silhouette, reflection or face.';
     if (faces) prompt += ' Remove every bystander and every person in the background (people who are not posing in front); only the ' + (faces === 1 ? 'person' : faces + ' people') + ' posing in front stay.';
+    if (faces >= 2 && /\bportrait\b/i.test(prompt)) prompt = prompt.replace(/\bportrait\b/i, 'group portrait') + ' The group portrait shows all ' + faces + ' people of the photo, each one as themselves, side by side where they stand; never one figure.';
     if (faces === 1) { /* above */ }
     else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces.';
     prompt += ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
@@ -524,6 +541,10 @@
       var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
       return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
     }).then(function (res) { return matchShape(res, orig, /pollinations/i.test(src) ? 0.06 : 0); }).then(function (im) {
+      /* v181: the AI's own figures, before any real face or head is laid in: the people check reads these (a real face pasted
+         on one invented figure made 2 → 2 look right) */
+      return (FS.detectFaces ? FS.detectFaces(im).catch(function () { return null; }) : Promise.resolve(null)).then(function (f) { raw = f; return im; });
+    }).then(function (im) {
       /* looks that must stay a photograph of the same people: the real faces are laid back in (js/face-keep.js, on this computer) */
       if (!/very same people|Keep everything else exactly as it is/.test(prompt)) return im;
       var faceKeep = function () { return FS.keepFaces ? FS.keepFaces(orig, im).then(function (k) { return k || im; }, function () { return im; }) : im; };
@@ -531,7 +552,7 @@
       return keepHeads(orig, im).then(function (h) { return h || faceKeep(); });
     }).then(function (im) { return keepPpl ? keepPeople(orig, im) : FS.aiOnlyPerson() ? onlyPerson(orig, im) : im; })
       .then(function (im) { return crisp(im, orig, /very same people|Keep everything else exactly as it is/.test(prompt)).catch(function () { return im; }); })
-      .then(function (im) { im.aiSource = src; return im; });
+      .then(function (im) { im.aiSource = src; im.aiRaw = raw; return im; });
   };
   /* sharp enough to print (v163): the engines answer at about 1024px and the picture is enlarged to the photo's size (up to
      3000px), which looked soft on a 15×20 print. Two steps on the enlarged picture:

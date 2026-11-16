@@ -2701,3 +2701,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 ## v180: people further back count as posing; the plate never outputs an invented person
 - `FS.mainFaces` (ai.js) and the big-face thresholds in `aiCheck` / `countFacesLm` (ai-guard.js) take faces from a third of the biggest face (was a half). At a table, the people sitting further back were counted as background, so a group of 7 counted as 1 and an answer with one invented figure passed the count.
 - `plate()` (styles.js): strips person/clothing words from the look and asks for an empty place; if the answer draws people it asks once more, then fails `not-same`. `keepPeople` sets `_peopleLaid`; without the real people laid in, the plate fails (never the place alone, never an invented person). On failure the photo stays as shot (red mark).
+
+## v181: the people check reads the AI's own figures
+- `restyleOnce` runs `FS.detectFaces` on the raw answer (after matchShape, before keepHeads/keepFaces) and carries it as `im.aiRaw`. Before this, a real face pasted onto one invented figure made a 2-person photo count as 2 (owner report: a woman with the man's face and a second head).
+- `guarded()` → `placedMiss(im)`: for 2+ posing faces (`p._main`, set in restyleTry), each needs a raw face within 0.6 face-widths and 0.5–2× size. Misses (more than 1 when the group is over 5) count as lost and skip the bodies-kept rescue. Then the next engine, then the plate.
+- Prompt: with 2+ people, "portrait" becomes "group portrait", plus "shows all N people… never one figure" (the ✨ fantasy portrait drew one woman for 7 people).
