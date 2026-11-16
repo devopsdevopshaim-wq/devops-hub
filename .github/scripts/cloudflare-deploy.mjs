@@ -117,6 +117,23 @@ for (let i = 0; i < 16 && info.status !== 200; i++) { await new Promise((r) => s
 if (info.status === 200) note('- ✅ השרת עונה'); else { note('- ❌ השרת לא עונה (' + info.status + ')'); ok = false; }
 // on request (a manual run with mailtest): one real code through the live server, to the owner's Gmail (+mailtest) or to the
 // address given; for an address, first what the server knows of it (registration, verified, a live code, licence), as the admin
+// Telegram: the bot answers, and a short message goes to the owner's chat (the newest private chat that wrote to the bot), so a
+// deploy right after the owner adds TELEGRAM_BOT_TOKEN proves the alerts reach his phone. Nothing secret is printed.
+if (secrets.TELEGRAM_BOT_TOKEN) {
+  const tg = async (m, body) => { try { const r = await fetch('https://api.telegram.org/bot' + secrets.TELEGRAM_BOT_TOKEN + '/' + m, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); return await r.json(); } catch (e) { return { ok: false, description: String(e && e.message || e) }; } };
+  const me = await tg('getMe');
+  if (!me.ok) notes.push('- ⚠️ טלגרם: הבוט לא עונה (' + String(me.description || '').slice(0, 80) + '). בודקים שהטוקן הועתק במלואו.');
+  else {
+    let chat = secrets.TELEGRAM_CHAT_ID || '';
+    if (!chat) { const up = await tg('getUpdates', { limit: 100 }); const c = ((up && up.result) || []).map((u) => (u.message || u.edited_message || {}).chat).filter((x) => x && x.type === 'private').pop(); chat = c ? String(c.id) : ''; }
+    if (!chat) notes.push('- ⚠️ טלגרם: הבוט @' + me.result.username + ' תקין, אבל עוד לא קיבל ממך הודעה. פותחים אותו בטלגרם, שולחים "שלום", ומפרסמים שוב (או לוחצים "שליחת הודעת בדיקה" בניהול).');
+    else {
+      const sent = await tg('sendMessage', { chat_id: chat, text: '✅ פריים מגנטים: ההתראות לטלגרם מחוברות. מעכשיו יגיעו לכאן נרשמים, התחברויות ובקשות הזמנה.' });
+      notes.push(sent.ok ? '- ✅ טלגרם: הבוט @' + me.result.username + ' שלח הודעת בדיקה לצ׳אט שלך.' : '- ⚠️ טלגרם: ההודעה לא יצאה (' + String(sent.description || '').slice(0, 80) + ').');
+    }
+  }
+  console.log(notes.filter((n) => /טלגרם/.test(n)).join('\n'));
+}
 if (process.env.MAILTEST) {
   const to = /@/.test(process.env.MAILTEST) ? process.env.MAILTEST.trim().toLowerCase() : 'devopsdevopshaim+mailtest@gmail.com';
   let name = 'בדיקת מערכת', phone = '0500000000';
