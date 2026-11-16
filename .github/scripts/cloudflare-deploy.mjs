@@ -38,6 +38,10 @@ const secrets = {
   LIVEAVATAR_AVATAR_ID: (process.env.LIVEAVATAR_AVATAR_ID || '').trim(), LIVEAVATAR_SANDBOX: (process.env.LIVEAVATAR_SANDBOX || '').trim(),
   // פריים מגנטים: a WhatsApp message to the owner on a new booking request (CallMeBot, free; the key comes from their bot)
   CALLMEBOT_APIKEY: (process.env.CALLMEBOT_APIKEY || '').trim(), CALLMEBOT_PHONE: (process.env.CALLMEBOT_PHONE || '').trim(),
+  // פריים מגנטים: the same alerts on Telegram, from the owner's own bot (free, @BotFather); the chat is found by the server unless set.
+  // A pasted line with words around the token is tolerated: the part that looks like a bot token wins.
+  TELEGRAM_BOT_TOKEN: (((process.env.TELEGRAM_BOT_TOKEN || '').match(/\d{6,12}:[A-Za-z0-9_-]{30,50}/) || [''])[0]),
+  TELEGRAM_CHAT_ID: (process.env.TELEGRAM_CHAT_ID || '').trim(),
   // free AI pictures with no daily allowance (Pollinations); the token (free, auth.pollinations.ai) lifts the anonymous limit and opens photo editing
   POLLINATIONS_TOKEN: (process.env.POLLINATIONS_TOKEN || '').trim(),
   // פריים מגנטים: the owner's alerts, weekly summary and calendar through Maton (apps he connected at maton.ai: Gmail, Telegram, Google Calendar)
@@ -51,7 +55,7 @@ if (ADMIN_PASSWORD.length >= 8) {
   const salt = crypto.createHmac('sha256', ADMIN_PASSWORD).update('spider-admin-salt-' + RESET).digest('hex').slice(0, 32);
   secrets.ADMIN_PASSWORD_HASH = `p1$${ITER}$${salt}$` + crypto.pbkdf2Sync(ADMIN_PASSWORD, Buffer.from(salt, 'hex'), ITER, 32, 'sha256').toString('hex');
 }
-for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.GMAIL_APP_PASSWORD, secrets.POLLINATIONS_TOKEN, secrets.MATON_API_KEY, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
+for (const v of [ADMIN_PASSWORD, TOTP, SHARED, secrets.ANTHROPIC_API_KEY, secrets.GEMINI_API_KEY, secrets.OPENAI_API_KEY, secrets.AZURE_SPEECH_KEY, secrets.ELEVENLABS_API_KEY, secrets.BREVO_API_KEY, secrets.RESEND_API_KEY, secrets.GMAIL_APP_PASSWORD, secrets.POLLINATIONS_TOKEN, secrets.MATON_API_KEY, secrets.MORNING_CLIENT_SECRET, secrets.GOOGLE_CLIENT_SECRET, secrets.MAIL_KEY, secrets.LIVEAVATAR_API_KEY, secrets.CALLMEBOT_APIKEY, secrets.TELEGRAM_BOT_TOKEN]) if (v && v.length >= 6) console.log(`::add-mask::${v}`);
 
 const notes = [];
 const note = (s) => { notes.push(s); console.log(s); };

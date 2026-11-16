@@ -25,7 +25,7 @@ import statusRender from './gen/status-render.mjs';
 import { mailHandle, mailCallback, who as sessionOf } from './mail.mjs';
 import { localGuide } from './guide-local.mjs';
 import { frameSite, frameFile, frameBiz, frameBook, frameCal, frameSnapshot, FrameStore } from './frame.mjs';
-import { callMeBot, waNote, frameDaily, frameWeekly, notifyOwner, telegramFind, calendarSync, maton, ilDate, ilHour, ilWeekday } from './notify.mjs';
+import { callMeBot, tgApi, tgFindChat, tgSendText, waNote, frameDaily, frameWeekly, notifyOwner, telegramFind, calendarSync, maton, ilDate, ilHour, ilWeekday } from './notify.mjs';
 import { frameLive, liveFile, liveCron } from './live.mjs';
 import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
 
@@ -153,12 +153,14 @@ export default {
       // the customers' accounts live with the sign-in (main object): the owner sees them and may block or unblock one
       if (who && who.role === 'admin' && b.action === 'account-set') return reply(await main.frameAccountSet(String(b.email || ''), !!b.active));
       if (who && who.role === 'admin' && b.action === 'wa-test') {
-        if (!env.CALLMEBOT_APIKEY || !env.CALLMEBOT_PHONE) return reply({ ok: false, error: 'wa-not-set' });
-        const r = await callMeBot(env, '✅ בדיקה מפריים מגנטים: הודעות הוואטסאפ על נרשמים והתחברויות עובדות.\n' + FRAME_ADMIN + '?app=1');
-        return reply(r.error ? { ok: false, error: 'wa-failed', why: r.error } : { ok: true });
+        const ready = phoneReady(env);
+        if (!ready.wa && !ready.tg) return reply({ ok: false, error: 'wa-not-set' });
+        const r = await ownerPing(env, '✅ בדיקה מפריים מגנטים: ההתראות על נרשמים, התחברויות ובקשות מגיעות לטלפון שלך.\n' + FRAME_ADMIN + '?app=1');
+        const wa = r.wa ? !r.wa.error : null, tg = r.tg ? !!r.tg.ok : null;
+        return reply(wa || tg ? { ok: true, wa, tg, tgWhy: r.tg && !r.tg.ok ? r.tg.error : undefined } : { ok: false, error: 'wa-failed', why: [r.wa && r.wa.error, r.tg && r.tg.error].filter(Boolean).join(' · ') });
       }
       const r = await fr.bizCall(who, b, ip);
-      if (who && who.role === 'admin' && b.action === 'all' && r.body && r.body.ok) { r.body.accounts = await main.frameAccounts(); r.body.visitors = await main.frameVisitors(); r.body.waReady = !!(env.CALLMEBOT_APIKEY && env.CALLMEBOT_PHONE); }
+      if (who && who.role === 'admin' && b.action === 'all' && r.body && r.body.ok) { r.body.accounts = await main.frameAccounts(); r.body.visitors = await main.frameVisitors(); const pr = phoneReady(env); r.body.waReady = pr.wa || pr.tg; r.body.phoneReady = pr; }
       return reply(r.body, r.code);
     }
     const id = env.STATE.idFromName(rt.svc);
@@ -202,6 +204,25 @@ async function sendMail(env, mail) {
   return { error: 'no-mail-provider' };
 }
 
+// ---- the owner's phone: WhatsApp (CallMeBot) and Telegram (his own bot), whichever is set; both when both are ----
+// the Telegram chat: TELEGRAM_CHAT_ID, or the one the server found and kept (main object), or found now from the bot's messages
+async function tgChatOf(env) {
+  if (env.TELEGRAM_CHAT_ID) return String(env.TELEGRAM_CHAT_ID);
+  if (!env.TELEGRAM_BOT_TOKEN) return '';
+  const main = env.STATE.get(env.STATE.idFromName('main'));
+  let id = ''; try { id = await main.tgChat(); } catch (e) { id = ''; }
+  if (id) return id;
+  const f = await tgFindChat(env); if (f.ok) { try { await main.tgChatSet(f.chatId); } catch (e) { /* next time */ } return f.chatId; }
+  return '';
+}
+export const phoneReady = (env) => ({ wa: !!(env.CALLMEBOT_APIKEY && env.CALLMEBOT_PHONE), tg: !!env.TELEGRAM_BOT_TOKEN });
+async function ownerPing(env, text, chat) {
+  const out = {}, ready = phoneReady(env);
+  if (ready.wa) out.wa = await callMeBot(env, text);
+  if (ready.tg) { const id = chat !== undefined ? chat : await tgChatOf(env);   /* chat given (even '') = already looked up: inside the main object, which must not call itself */ out.tg = id ? await tgSendText(env, id, text) : { ok: false, error: 'tg-no-chat' }; }
+  return out;
+}
+
 // ---- פריים מגנטים: the owner hears about a booking request by email (and WhatsApp through CallMeBot when set); the customer
 // gets an email that it arrived, and another when the owner approves or declines. Nothing here can approve anything.
 const heDay = (iso) => { const d = new Date(iso + 'T12:00:00Z'); return isNaN(d) ? iso : d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }); };
@@ -226,8 +247,8 @@ async function frameNotify(env, n) {
     const more = s.pending && s.pending.length ? '\nיש עוד ' + s.pending.length + ' בקשות ממתינות לאותו תאריך.' : '';
     const text = 'בקשת הזמנה חדשה מהאתר 🧲\n\n' + bookLines(q).join('\n') + '\n\n' + cal + more + '\n\nאת ההזמנה סוגרים רק אחרי האישור שלך. לאישור או לדחייה:\n' + FRAME_ADMIN + '#requests' + '\n\nוואטסאפ ללקוח: ' + waOf(q.phone);
     sent.owner = await sendMail(env, { to: ADMIN_EMAIL, fromName: FRAME_NAME, replyTo: q.email || undefined, subject: '🧲 בקשת הזמנה ' + q.ref + ' · ' + (q.typeName || q.type || 'אירוע') + ' · ' + q.date + (s.free ? ' · פנוי' : ' · תפוס'), text });
-    if (env.CALLMEBOT_APIKEY && env.CALLMEBOT_PHONE) {
-      sent.wa = await callMeBot(env, '🧲 בקשת הזמנה ' + q.ref + '\n' + q.name + ' · ' + q.phone + '\n' + (q.typeName || q.type || '') + ' · ' + q.date + '\n' + (s.free ? '✔ פנוי' : '⚠️ תפוס') + '\n' + FRAME_ADMIN + '#requests');
+    if (phoneReady(env).wa || phoneReady(env).tg) {
+      sent.wa = await ownerPing(env, '🧲 בקשת הזמנה ' + q.ref + '\n' + q.name + ' · ' + q.phone + '\n' + (q.typeName || q.type || '') + ' · ' + q.date + '\n' + (s.free ? '✔ פנוי' : '⚠️ תפוס') + '\n' + FRAME_ADMIN + '#requests');
     }
     if (q.email) sent.client = await sendMail(env, { to: q.email, fromName: FRAME_NAME, replyTo: ADMIN_EMAIL, subject: 'קיבלנו את בקשת ההזמנה שלך (' + q.ref + ')',
       text: 'שלום ' + q.name + ',\n\nתודה! קיבלנו את הבקשה שלך:\n' + bookLines(q).join('\n') + '\n\nהבקשה ממתינה לאישור. נבדוק את היומן ונחזור אליך בהקדם עם אישור סופי. התאריך נשמר רק אחרי האישור.\n\n' + FRAME_NAME });
@@ -291,6 +312,9 @@ export class State extends DurableObject {
     this.tmp.set(id, { u, mime: /^image\/(jpeg|png|webp)$/.test(mime) ? mime : 'image/jpeg', exp: t + 180000 });
     return origin + '/hubs-tmp?id=' + id;
   }
+  // the owner's Telegram chat, found once from his bot's messages (tgChatOf)
+  async tgChat() { return (await this.ctx.storage.get('tgChat')) || ''; }
+  async tgChatSet(id) { await this.ctx.storage.put('tgChat', String(id || '')); return true; }
   async whoIs(token) { const st = await this.load(); return sessionOf(st.sd, token); }
   siteData() { return frameSite(this.ctx.storage); }
   fileData(id) { return frameFile(this.ctx.storage, id); }
@@ -714,9 +738,17 @@ export class State extends DurableObject {
       if (h.mail2) await sendMail(env, h.mail2).catch(() => {});
       // the owner hears on WhatsApp who signed up and who signed in (never blocks the answer)
       let waMsg = null;
-      if (env.CALLMEBOT_APIKEY && env.CALLMEBOT_PHONE && cur.body && cur.body.ok && body && typeof body === 'object') { try { waMsg = waNote(st.sd, body, Date.now(), ADMIN_EMAIL); } catch (e) { waMsg = null; } }
+      const pr = phoneReady(env);
+      if ((pr.wa || pr.tg) && cur.body && cur.body.ok && body && typeof body === 'object') { try { waMsg = waNote(st.sd, body, Date.now(), ADMIN_EMAIL); } catch (e) { waMsg = null; } }
       await this.save(st);
-      if (waMsg) { const p = callMeBot(env, waMsg); try { this.ctx.waitUntil(p); } catch (e) { await p; } }
+      if (waMsg) {
+        const p = (async () => {
+          let id = env.TELEGRAM_CHAT_ID ? String(env.TELEGRAM_CHAT_ID) : ((await this.ctx.storage.get('tgChat')) || '');
+          if (!id && pr.tg) { const f = await tgFindChat(env); if (f.ok) { id = f.chatId; await this.ctx.storage.put('tgChat', id); } }
+          return ownerPing(env, waMsg, id);
+        })();
+        try { this.ctx.waitUntil(p); } catch (e) { await p; }
+      }
       return reply(cur.body, cur.code || 200);
     } catch (e) {
       // nothing is kept from a failed request

@@ -2524,3 +2524,22 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - On a network error, 404 or 5xx it falls back to `image.pollinations.ai/prompt/…`.
   - An old token, or no key, goes to the old address as before.
 - Some editing models (kontext, seedream, nanobanana) may need purchased "pollen". The order still ends with gptimage.
+
+## v166: owner alerts on Telegram, direct
+- **Why:** the CallMeBot WhatsApp bot is full (its number is hidden on its site), so the owner couldn't get a key.
+- **`notify.mjs`:**
+  - `tgApi(env, method, body)` calls api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/… directly. Maton isn't needed.
+  - `tgFindChat` returns the newest private chat from getUpdates. `tgSendText` sends text cut to 4000.
+- **`worker.mjs`:**
+  - `phoneReady(env)` → `{wa, tg}`.
+  - `ownerPing(env, text, chat?)` sends to WhatsApp and/or Telegram, whichever is set.
+  - `tgChatOf(env)` looks for the chat in this order: `TELEGRAM_CHAT_ID`, the main object's stored 'tgChat' (`State.tgChat` / `tgChatSet`), then `tgFindChat` (and stores it).
+  - Inside the main object (the waNote path) the chat is looked up in its own storage and passed in, so the object never calls itself.
+  - These all go through ownerPing: 'wa-test', booking requests (frameNotify) and waNote.
+  - 'all' returns `waReady` (wa or tg) and `phoneReady`.
+- **Deploy:**
+  - Secrets `TELEGRAM_BOT_TOKEN` (the part matching `\d{6,12}:[A-Za-z0-9_-]{30,50}` is kept; it is masked) and the optional `TELEGRAM_CHAT_ID`, wired in the workflow and the script.
+- **Admin (admin-notify.js):** the card "💬 הודעות לטלפון שלך (טלגרם / וואטסאפ)" has the Telegram steps, open by default:
+  - @BotFather → /newbot → the token → the GitHub secret → send the bot any message → redeploy → test.
+  - The test result says which channel got it, and what to do when the bot has had no message yet.
+- **Test:** `cloudflare/test/tg.test.mjs` (fake fetch).
