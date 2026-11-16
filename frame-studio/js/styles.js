@@ -400,6 +400,9 @@
     var photoLook = /very same people|Keep everything else exactly as it is/.test(prompt), sameScene = /Keep everything else exactly as it is/.test(prompt);
     function same(im, i) {
       if (!FS.aiCheck || !FS.aiGuardOn()) return Promise.resolve(im);
+      /* the heads are the photo's own pixels, laid back where they were (keepHeads): the faces are the same by construction; the
+         people count above has already been checked (v179) */
+      if (im.headsKept) { im.aiPhoto = photoLook; im.aiScene = sameScene; return Promise.resolve(im); }
       return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene }).then(function (r) {
         im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene;
         if (r.ok) return im;
@@ -522,8 +525,10 @@
       return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' })));
     }).then(function (res) { return matchShape(res, orig, /pollinations/i.test(src) ? 0.06 : 0); }).then(function (im) {
       /* looks that must stay a photograph of the same people: the real faces are laid back in (js/face-keep.js, on this computer) */
-      if (!FS.keepFaces || !/very same people|Keep everything else exactly as it is/.test(prompt)) return im;
-      return FS.keepFaces(orig, im).then(function (k) { return k || im; }, function () { return im; });
+      if (!/very same people|Keep everything else exactly as it is/.test(prompt)) return im;
+      var faceKeep = function () { return FS.keepFaces ? FS.keepFaces(orig, im).then(function (k) { return k || im; }, function () { return im; }) : im; };
+      if (!(faces > 0) || /Keep everything else exactly as it is/.test(prompt)) return faceKeep();
+      return keepHeads(orig, im).then(function (h) { return h || faceKeep(); });
     }).then(function (im) { return keepPpl ? keepPeople(orig, im) : FS.aiOnlyPerson() ? onlyPerson(orig, im) : im; })
       .then(function (im) { return crisp(im, orig, /very same people|Keep everything else exactly as it is/.test(prompt)).catch(function () { return im; }); })
       .then(function (im) { im.aiSource = src; return im; });
@@ -570,7 +575,7 @@
     var amt = keep ? Math.min(0.25, 0.08 + (up - 1) * 0.06) : Math.min(0.9, 0.35 + (up - 1) * 0.25);   /* with the original's detail back, only a touch */
     for (i = 0; i < r.length; i += 4) for (k = 0; k < 3; k++) { var v = r[i + k] + (r[i + k] - br[i + k]) * amt; r[i + k] = v < 0 ? 0 : v > 255 ? 255 : v; }
     x.putImageData(R, 0, 0);
-    return new Promise(function (ok) { c.toBlob(function (bl) { ok(bl ? FS.loadImg(URL.createObjectURL(bl)) : im); }, 'image/jpeg', 0.95); }).then(function (o) { if (im.facesKept) o.facesKept = im.facesKept; return o; });
+    return new Promise(function (ok) { c.toBlob(function (bl) { ok(bl ? FS.loadImg(URL.createObjectURL(bl)) : im); }, 'image/jpeg', 0.95); }).then(function (o) { if (im.facesKept) o.facesKept = im.facesKept; if (im.headsKept) o.headsKept = true; return o; });
   }
   /* 🧍 v177: when the AI did not keep every person posing (lost, added, or other faces), the design still comes out: the AI
      draws only the place of the look, empty of people (a new picture from the words, cheap and quick), and the people of the
@@ -590,6 +595,54 @@
         .then(function (im) { im.aiSource = src; im.aiPlate = true; return im; });
     });
   }
+  /* 👔 v179: new clothes, real heads. The AI dressed the people (and changed the place); the heads of the photo (hair and face,
+     cut by the multiclass model, not moved, not stretched) are laid back exactly where they were. Only when the AI kept the
+     people where they stood: the people's outlines must overlap (IoU ≥ 0.55), else null and the design goes on as before. */
+  function keepHeads(orig, im) {
+    if (!FS.peopleParts) return Promise.resolve(null);
+    return Promise.all([FS.peopleParts(orig, 512), FS.peopleParts(im, 512)]).then(function (pp) {
+      var A = pp[0], B = pp[1]; if (!A || !B) return null;
+      /* the same grid for both: B is read at A's size */
+      var inter = 0, uni = 0, i, x0, y0;
+      for (y0 = 0; y0 < A.h; y0++) for (x0 = 0; x0 < A.w; x0++) {
+        i = y0 * A.w + x0; var j = Math.min(B.h - 1, Math.round(y0 * B.h / A.h)) * B.w + Math.min(B.w - 1, Math.round(x0 * B.w / A.w));
+        var a = A.person[i] > 0.5, b = B.person[j] > 0.5; if (a && b) inter++; if (a || b) uni++;
+      }
+      var iou = uni ? inter / uni : 0;
+      if (iou < 0.55) { if (window.console) console.warn('keepHeads: the people moved (IoU ' + iou.toFixed(2) + ')'); return null; }
+      /* and each face posing stands where it stood: a face in the answer at the same place and about the same size, for every
+         face of the photo (else a head would be laid on someone else's body) */
+      if (!FS.detectFaces) return null;
+      return Promise.all([FS.detectFaces(orig), FS.detectFaces(im)]).then(function (ff) {
+        var F0 = FS.mainFaces(ff[0]), F1 = ff[1], kx = (im.naturalWidth) / (orig.naturalWidth), used = {};
+        if (!F0.length) return null;
+        var all = F0.every(function (f) {
+          var cx = (f.x + f.w / 2) * kx, cy = (f.y + f.h / 2) * kx, w = f.w * kx;
+          for (var j = 0; j < F1.length; j++) { if (used[j]) continue; var g = F1[j], d = Math.hypot(g.x + g.w / 2 - cx, g.y + g.h / 2 - cy), r = g.w / w; if (d < w * 0.35 && r > 0.7 && r < 1.4) { used[j] = 1; return true; } }
+          return false;
+        });
+        if (!all) { if (window.console) console.warn('keepHeads: a face is not where it was'); return null; }
+        return pasteHeads();
+      });
+      function pasteHeads() {
+      var W = im.naturalWidth, H = im.naturalHeight, mc = FS.canvas(A.w, A.h), mx = mc.getContext('2d'), md = mx.createImageData(A.w, A.h), any = 0;
+      for (i = 0; i < A.head.length; i++) { var v = A.head[i] > 0.35 ? 255 : Math.round(A.head[i] / 0.35 * 255); md.data[i * 4] = md.data[i * 4 + 1] = md.data[i * 4 + 2] = v; md.data[i * 4 + 3] = 255; if (v > 200) any++; }
+      if (any < A.head.length * 0.002) return null;
+      mx.putImageData(md, 0, 0);
+      /* the head mask a little wider (the hair's edge, the jaw) and soft */
+      var big = FS.canvas(W, H), bx = big.getContext('2d', { willReadFrequently: true }); bx.imageSmoothingQuality = 'high';
+      bx.filter = 'blur(' + Math.max(2, Math.round(Math.max(W, H) / 400)) + 'px)'; bx.drawImage(mc, 0, 0, W, H);
+      var M = bx.getImageData(0, 0, W, H).data;
+      var c = FS.canvas(W, H), cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(im, 0, 0, W, H);
+      var oc = FS.canvas(W, H), ox = oc.getContext('2d', { willReadFrequently: true }); ox.imageSmoothingQuality = 'high'; ox.drawImage(orig, 0, 0, W, H);
+      var O = ox.getImageData(0, 0, W, H); for (i = 0; i < O.data.length; i += 4) O.data[i + 3] = Math.min(255, M[i] * 1.25);
+      ox.putImageData(O, 0, 0); cx.drawImage(oc, 0, 0);
+      return new Promise(function (ok) { c.toBlob(function (b) { ok(b ? FS.loadImg(URL.createObjectURL(b)) : null); }, 'image/jpeg', 0.95); })
+        .then(function (r) { if (r) r.headsKept = true; return r; });
+      }
+    }).catch(function (e) { if (window.console) console.warn('keepHeads', e); return null; });
+  }
+  FS._keepHeads = keepHeads;
   FS.aiKeepPeople = function (v) { try { if (v !== undefined) localStorage.setItem('fs-ai-keep-people', v ? '1' : '0'); return localStorage.getItem('fs-ai-keep-people') !== '0'; } catch (e) { return true; } };
   /* the people of the original over the AI's world: the person mask of the original (on this computer), soft at the edge, and
      their colours brought a third of the way to the new scene's light, so they sit in it rather than look pasted */
@@ -669,7 +722,7 @@
     var prevIm = FS.img(p.src);
     if (!p.origSrc) p.origSrc = p.src; else { p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5); }
     p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
-    delete p.aiBad; if (im.aiPhoto !== undefined) { p.aiPhoto = im.aiPhoto; p.aiScene = im.aiScene; } if (im.aiCheck) p.aiScore = im.aiCheck.score;
+    delete p.aiBad; p.aiHeads = !!im.headsKept; if (im.aiPhoto !== undefined) { p.aiPhoto = im.aiPhoto; p.aiScene = im.aiScene; } if (im.aiCheck) p.aiScore = im.aiCheck.score;
     keepPlace(p, prevIm, im); FS.snap(p); return p;
   };
   FS.unstyle = function (p) {
