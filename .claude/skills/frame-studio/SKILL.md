@@ -2562,3 +2562,6 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **`mate.js` guard card:** "🔴 לסמן רק את האדומות (לנסות שוב)" marks the `p.aiBad` photos, so the next design runs only on them.
 - **Test:** Pixel 7 emulation, 5 photos, one server failure and one thrown error → 4 applied, 1 red, and the batch finished.
 - **Open risk:** `aiCheck` fails open (`ok:true`, skipped) when the landmarker can't load, as can happen on some phones. Then a different face can pass. Seen once in the report's screenshot.
+- **Pollinations with a key (16 Nov, later):** kontext answered "Insufficient balance (~$0.03)", and nanobanana and seedream answered "requires Paid Pollen". The key's free credit is small.
+  - The server remembers such models for 12 h (`sd.polPaid`) and skips them with the key.
+  - When every keyed model answers 402, it tries `gptimage` once more without the key (`anon`), as before the key.
