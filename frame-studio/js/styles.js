@@ -367,6 +367,8 @@
     var det = FS.detectFaces ? FS.detectFaces(orig).catch(function () { return []; }) : Promise.resolve([]);
     return det.then(function (all) {
       var main = FS.mainFaces ? FS.mainFaces(all) : all;
+      p._nAll = main.length;
+      if (main.length && FS.posingFaces) main = FS.posingFaces(all);
       if (main.length || !FS.countFacesLm) return main;
       /* the face finder saw nobody: the landmarker counts again, so the people are still counted and checked (v174) */
       return FS.countFacesLm(orig).then(function (n) { var a = []; for (var i = 0; i < n; i++) a.push({ x: 0, y: 0, w: 1, h: 1, score: 1, fake: 1 }); return a; });
@@ -428,7 +430,7 @@
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
           /* v174: every person of the original must be there. Up to 5 people, exactly as many; a bigger group may lose one
              face to the finder (a turned head). Was "at least one" for one or two people, so 2 → 1 got through (owner report). */
-          var lost = n0 <= 5 ? n < n0 : n < n0 - 1, extra = n > (n0 <= 4 ? n0 : n0 + 1);
+          var lost = n0 <= 5 ? n < n0 : n < n0 - 1, extra = n > Math.max(n0 <= 4 ? n0 : n0 + 1, (p._nAll || 0) + 1);   /* v183: people further back may stay */
           /* v181: in a group, every person posing must be the AI's own figure where the person stood (a face at about the same
              place and size in the raw answer), so one invented figure with real faces laid on it never passes */
           var miss = placedMiss(im);
@@ -621,12 +623,57 @@
     return ask().then(function (res) {
       return clean(res).then(function (n) { if (!n) return res; if (window.console) console.warn('AI plate: ' + n + ' drawn people, asked again'); return ask('Nobody at all: only the place. ').then(function (r2) { return clean(r2).then(function (n2) { if (n2) throw new Error('not-same'); return r2; }); }); });
     }).then(function (res) { src = res.aiSource; return matchShape(res, orig, /pollinations/i.test(src) ? 0.06 : 0); })
-      .then(function (im) { return keepPeople(orig, im); })
+      .then(function (im) { return keepGround(orig, im); })
       .then(function (im) {
         if (!im._peopleLaid) throw new Error('not-same');   /* never the place alone */
         return crisp(im, orig, true).catch(function () { return im; });
       })
       .then(function (im) { im.aiSource = src; im.aiPlate = true; im.headsKept = true; return im; });
+  }
+  /* v183: the plate goes only behind the people. Everything of the photo from the top of the people down (the people, the
+     table they sit at, the chairs, the floor in front) stays where it was; the AI's place replaces what is above and behind
+     them (walls, curtains, windows, ceiling). The line is the top of the people in each column (the person mask), smoothed,
+     and between people the lower of the neighbours, so a head is never cut; the seam is soft. The kept part takes a little of
+     the new place's colour so it sits in it. Was: the people cut out alone into the place, so a table group floated. */
+  function keepGround(orig, im) {
+    var tmp = { src: orig.src, doc: null };
+    return FS.ensureMask(tmp).then(function (m) {
+      if (!m || (tmp.maskCover || 0) < 0.02) return im;
+      var W = im.naturalWidth, H = im.naturalHeight, q = Math.max(1, Math.round(Math.max(W, H) / 400)), w = Math.ceil(W / q), h = Math.ceil(H / q);
+      var sc = FS.canvas(w, h), sx = sc.getContext('2d', { willReadFrequently: true }); sx.drawImage(m, 0, 0, w, h);
+      var md = sx.getImageData(0, 0, w, h).data, top = new Float32Array(w), x, y, any = 0;
+      for (x = 0; x < w; x++) { top[x] = -1; for (y = 0; y < h; y++) if (md[(y * w + x) * 4] > 110) { top[x] = y; any++; break; } }
+      if (any < w * 0.05) return im;
+      /* columns without a person: the lower of the nearest people's tops on each side (the table between them stays) */
+      var tops = Array.prototype.filter.call(top, function (v) { return v >= 0; }).sort(function (a, b) { return a - b; }), med = tops[tops.length >> 1];
+      var L = new Float32Array(w), R = new Float32Array(w), last = -1;
+      for (x = 0; x < w; x++) { if (top[x] >= 0) last = top[x]; L[x] = last; }
+      last = -1; for (x = w - 1; x >= 0; x--) { if (top[x] >= 0) last = top[x]; R[x] = last; }
+      var cut = new Float32Array(w);
+      for (x = 0; x < w; x++) cut[x] = top[x] >= 0 ? top[x] : Math.max(L[x] < 0 ? med : L[x], R[x] < 0 ? med : R[x]);
+      /* never above a head: the smallest within a few columns, then a soft smoothing */
+      var r = Math.max(2, Math.round(w * 0.02)), c2 = new Float32Array(w);
+      for (x = 0; x < w; x++) { var mn = 1e9; for (var k = -r; k <= r; k++) { var xx = Math.min(w - 1, Math.max(0, x + k)); mn = Math.min(mn, cut[xx]); } c2[x] = mn; }
+      for (x = 0; x < w; x++) { var s0 = 0, n0 = 0; for (k = -r; k <= r; k++) { xx = Math.min(w - 1, Math.max(0, x + k)); s0 += c2[xx]; n0++; } cut[x] = Math.min(c2[x], s0 / n0); }
+      var feather = Math.max(2, h * 0.035), kc = FS.canvas(w, h), kx = kc.getContext('2d'), kd = kx.createImageData(w, h);
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        var a = Math.max(0, Math.min(1, (y - (cut[x] - feather * 1.5)) / feather)), pv = md[(y * w + x) * 4] / 255;
+        var v = Math.max(a, pv); kd.data[(y * w + x) * 4] = kd.data[(y * w + x) * 4 + 1] = kd.data[(y * w + x) * 4 + 2] = 255; kd.data[(y * w + x) * 4 + 3] = Math.round(v * 255);
+      }
+      kx.putImageData(kd, 0, 0);
+      var c = FS.canvas(W, H), cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(im, 0, 0, W, H);
+      var oc = FS.canvas(W, H), ox = oc.getContext('2d', { willReadFrequently: true }); ox.imageSmoothingQuality = 'high'; ox.drawImage(orig, 0, 0, W, H);
+      var big = FS.canvas(W, H), bx = big.getContext('2d', { willReadFrequently: true }); bx.imageSmoothingQuality = 'high'; bx.drawImage(kc, 0, 0, W, H);
+      var A = bx.getImageData(0, 0, W, H).data, O = ox.getImageData(0, 0, W, H), od = O.data, P = cx.getImageData(0, 0, W, H).data, i, j;
+      /* a little of the place's colour on the kept part (its average against the kept part's average) */
+      var sa = [0, 0, 0], sb = [0, 0, 0], na = 0, nb = 0;
+      for (i = 0; i < od.length; i += 32) { if (A[i + 3] > 200) { for (j = 0; j < 3; j++) sa[j] += od[i + j]; na++; } else if (A[i + 3] < 40) { for (j = 0; j < 3; j++) sb[j] += P[i + j]; nb++; } }
+      var sh = [0, 0, 0];
+      if (na && nb) { var la = 0, lb = 0; for (j = 0; j < 3; j++) { sa[j] /= na; sb[j] /= nb; la += sa[j] / 3; lb += sb[j] / 3; } for (j = 0; j < 3; j++) sh[j] = ((sb[j] - lb) - (sa[j] - la)) * 0.25 + (lb - la) * 0.1; }
+      for (i = 0; i < od.length; i += 4) { for (j = 0; j < 3; j++) od[i + j] = od[i + j] + sh[j]; od[i + 3] = A[i + 3]; }
+      ox.putImageData(O, 0, 0); cx.drawImage(oc, 0, 0);
+      return new Promise(function (ok) { c.toBlob(function (b) { ok(b ? FS.loadImg(URL.createObjectURL(b)) : im); }, 'image/jpeg', 0.94); }).then(function (o) { if (o !== im) o._peopleLaid = true; return o; });
+    }).catch(function (e) { if (window.console) console.warn('keepGround', e); return im; });
   }
   /* 👔 v179: new clothes, real heads. The AI dressed the people (and changed the place); the heads of the photo (hair and face,
      cut by the multiclass model, not moved, not stretched) are laid back exactly where they were. Only when the AI kept the
@@ -683,7 +730,7 @@
     var tmp = { src: orig.src, doc: null }, subj = [];
     /* only the people posing are laid back (v175): the area of each of their faces, down to the bottom of the picture; people
        behind them stay out and go with the old background */
-    var det = FS.detectFaces ? FS.detectFaces(orig).then(function (all) { subj = FS.mainFaces ? FS.mainFaces(all) : all; }, function () {}) : Promise.resolve();
+    var det = FS.detectFaces ? FS.detectFaces(orig).then(function (all) { subj = FS.posingFaces ? FS.posingFaces(all) : FS.mainFaces ? FS.mainFaces(all) : all; }, function () {}) : Promise.resolve();
     return det.then(function () { return FS.ensureMask(tmp); }).then(function (m) {
       if (!m || (tmp.maskCover || 0) < 0.02) return im;
       im._peopleLaid = false;
