@@ -276,7 +276,9 @@ if (b.action === 'restyle' || b.action === 'image') {
   }
   // free and with no daily allowance: Pollinations. A new picture is drawn by FLUX; a photo is edited by Kontext, which reads the
   // photo from a link that lives three minutes on this server (ENV.TMP_PUT, on Cloudflare). POLLINATIONS_TOKEN (free, from
-  // auth.pollinations.ai) lifts the anonymous speed limit and opens the photo-editing models; without it, what is open anonymously.
+  // enter.pollinations.ai, a key "sk_…") lifts the anonymous speed limit and opens the photo-editing models; without it, what is open
+  // anonymously. A new key ("sk_" / "pk_") is sent to the new address gen.pollinations.ai/image/… (as ?key= and Bearer); an old
+  // token, or no key, to image.pollinations.ai/prompt/…; when the new address does not answer, the old one is tried.
   if (want('free') && typeof fetch === 'function') {
     const pk = 1024 / Math.max(Number(b.w) || 1024, Number(b.h) || 1024, 1);
     const pd = (v) => Math.max(256, Math.round(((Number(v) || 1024) * Math.min(1, pk)) / 16) * 16);
@@ -300,7 +302,14 @@ if (b.action === 'restyle' || b.action === 'image') {
       const ctl = typeof AbortController === 'function' ? new AbortController() : null;
       const tm = setTimeout(() => { if (ctl) ctl.abort(); }, Math.min(left - 5000, 95000));
       try {
-        const r = await fetch('https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt.slice(0, 1600)) + '?' + q.toString(), { signal: ctl ? ctl.signal : undefined, headers: PTOK ? { Authorization: 'Bearer ' + PTOK } : {} });
+        const newKey = /^(sk|pk)_/.test(PTOK), enc = encodeURIComponent(prompt.slice(0, 1600)), hdr = { signal: ctl ? ctl.signal : undefined, headers: PTOK ? { Authorization: 'Bearer ' + PTOK } : {} };
+        let r = null;
+        if (newKey) {
+          const q2 = new URLSearchParams(q); q2.set('key', PTOK);
+          try { r = await fetch('https://gen.pollinations.ai/image/' + enc + '?' + q2.toString(), hdr); } catch (e) { r = null; errs.push('pollinations gen: ' + why(e)); }
+          if (r && (r.status === 404 || r.status >= 500)) { errs.push('pollinations gen ' + model + ': ' + r.status); r = null; }
+        }
+        if (!r) r = await fetch('https://image.pollinations.ai/prompt/' + enc + '?' + q.toString(), hdr);
         const ct = (r.headers.get('content-type') || '').split(';')[0];
         if (r.ok && /^image\//.test(ct)) {
           const u = new Uint8Array(await r.arrayBuffer());
