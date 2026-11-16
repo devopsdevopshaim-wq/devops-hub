@@ -71,6 +71,9 @@ const why = (e) => {
   const code = (e && (e.httpCode || e.statusCode || (e.response && e.response.status))) || '';
   return (String(code) + ' ' + String(msg)).replace(/AIza[\w-]{20,}/g, '…').replace(/\s+/g, ' ').trim().slice(0, 180);
 };
+// Gemini refused pictures with this key (no billing yet): skipped for 20 minutes, and at once tried again with another key
+const keyMark = (k) => { let h = 7; for (const c of String(k || '')) h = (h * 31 + c.charCodeAt(0)) | 0; return String(h); };
+const gemOff = () => !!(sd.gemImgOff && sd.gemImgOff > now - 20 * 60000 && sd.gemImgOffKey === keyMark(GEMINI_KEY));
 const failed = (errs) => {
   const all = errs.join(' | ');
   const error = /limit: 0|free[_ ]tier|billing|FreeTier/i.test(all) ? 'no-free-tier' : /quota|exhausted|429|neurons|allocation/i.test(all) ? 'quota' : 'ai-failed';
@@ -97,7 +100,7 @@ if (sd.day !== day) { sd.day = day; sd.asked = 0; }
 
 if (b.action === 'status') return out({ ok: true, ai: set(GEMINI_KEY), left: Math.max(0, DAY_CAP - (sd.asked || 0)), imageModels: sd.imgModels || null });
 // which picture engines this server has: the studio shows only these in its engine choice (free = Pollinations, always there)
-if (b.action === 'engines') return out({ ok: true, engines: { gemini: set(GEMINI_KEY) && !(sd.gemImgOff > now - 6 * 3600000), openai: set(OPENAI_KEY), flux: !!WAI && sd.fluxOffDay !== day, free: typeof fetch === 'function' } });
+if (b.action === 'engines') return out({ ok: true, engines: { gemini: set(GEMINI_KEY) && !gemOff(), openai: set(OPENAI_KEY), flux: !!WAI && sd.fluxOffDay !== day, free: typeof fetch === 'function' } });
 
 if (b.action === 'fetch') {
   if (!hit('hubs-fetch', ipKey(), FETCH_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
@@ -196,7 +199,7 @@ if (b.action === 'restyle' || b.action === 'image') {
   sd.imgs = (sd.imgs || 0) + 1;
   const errs = [];
   // Gemini first when there is a key (it keeps faces and the scene best); a key with no image allowance is skipped for 6 hours
-  if (want('gemini') && set(GEMINI_KEY) && !(ENG !== 'gemini' && sd.gemImgOff > now - 6 * 3600000)) {
+  if (want('gemini') && set(GEMINI_KEY) && !(ENG !== 'gemini' && gemOff())) {
     const gerrs = [];
     for (const m of await imageModels()) {
       const left = 112000 - (Date.now() - now);
@@ -216,7 +219,7 @@ if (b.action === 'restyle' || b.action === 'image') {
         gerrs.push(m + ': no picture in the answer ' + parts.map((p) => p.text || '').join(' ').slice(0, 120));
       } catch (e) { gerrs.push(m + ': ' + why(e)); }
     }
-    if (gerrs.length && gerrs.every((e) => /limit: 0|free[_ ]tier|billing|FreeTier|PERMISSION_DENIED|403/i.test(e))) sd.gemImgOff = now;
+    if (gerrs.length && gerrs.every((e) => /limit: 0|free[_ ]tier|billing|FreeTier|PERMISSION_DENIED|403|exceeded your current quota/i.test(e))) { sd.gemImgOff = now; sd.gemImgOffKey = keyMark(GEMINI_KEY); } else if (!gerrs.length) { sd.gemImgOff = 0; }
     errs.push(...gerrs);
   }
   // OpenAI's image model when its key is set (the same model ChatGPT draws with): an edit of the photo, or a new picture
