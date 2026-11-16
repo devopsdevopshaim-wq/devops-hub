@@ -696,8 +696,10 @@
     $$('.screen').forEach((s) => { s.hidden = s.id !== 'scr-' + name; });
     document.body.dataset.screen = name;
     $$('.tabbar button').forEach((b) => b.classList.toggle('on', b.dataset.go === name));
-    if (name !== 'dig' && name !== 'home' && G3()) G3().stop();
+    if (name !== 'dig' && G3()) G3().stop();
+    if (name !== 'home' && name !== 'smash' && window.SMASH3D) SMASH3D.stop();
     if (name === 'home') homeScene(); else SHCHAVOT_HERO.stop();
+    if (window.SHCHAVOT_SMASH) SHCHAVOT_SMASH.onShow(name);
     SHCHAVOT_HERO.bg(name === 'map' || name === 'museum' || name === 'camp');
     if (name === 'map') renderMap();
     if (name === 'museum') renderMuseum();
@@ -837,24 +839,26 @@
   }
 
   /* ---------- home ---------- */
-  $('#play').addEventListener('click', () => { SFX.unlock(); SFX.click(); show('map'); });
-  if (S.stats.digs > 0) $('#play').textContent = 'להמשיך לחפור';
+  $('#play').addEventListener('click', () => { SFX.unlock(); SFX.click(); show('levels'); });
+  if (S.smash && S.smash.lvl > 1) $('#play').textContent = `להמשיך · שלב ${S.smash.lvl}`;
   $$('[data-ico]').forEach((el) => { el.innerHTML = ico(el.dataset.ico); });
 
-  // the opening screen: a half-dug trench at Megiddo with its finds showing, in 3D when the engine is ready
+  // the opening screen: the cannon firing at an ancient tower by itself, in 3D when the engine is ready
   function homeScene() {
     const go = () => {
       if (document.body.dataset.screen !== 'home') return;
-      const demo = genDig(SITES[5], 5, { seed: 20260, lo: loadout(true) });
-      demo.arts = demo.arts.filter((a) => RARITY[a.f.rarity].rank >= 1).slice(0, 6);
-      if (G3() && G3().showcase($('#hero3d'), demo, SITES[5])) { SHCHAVOT_HERO.stop(); document.body.classList.add('has3d'); }
+      if (window.SMASH3D && SMASH3D.supported && SMASH3D.showcase($('#hero3d'))) { SHCHAVOT_HERO.stop(); document.body.classList.add('has3d'); }
       else SHCHAVOT_HERO.start();
     };
-    if (G3()) go(); else { SHCHAVOT_HERO.start(); window.addEventListener('dig3d-ready', go, { once: true }); }
+    if (window.SMASH3D) go(); else { SHCHAVOT_HERO.start(); window.addEventListener('smash3d-ready', go, { once: true }); }
   }
+
+  // shared with the cannon game (smash.js), which keeps its own rules but the same save, museum and coins
+  window.SHCHAVOT_GAME = {
+    state: () => S, dig: () => dig, startDig, endDig, MATS,
+    api: { S: () => S, save, addXP, toast, modal, closeModal, confetti, show, topbar, showFind, ico, fmt, esc, rng, hashStr, artUrl, ERA, ERA_COLOR, PH, scene, pendingLevels: () => pendingLevels, clearLevels: () => { pendingLevels = []; }, xpFor },
+  };
   topbar();
   show('home');
 
-  // exposed for checks in the browser console
-  window.SHCHAVOT_GAME = { state: () => S, dig: () => dig, startDig, endDig, MATS };
 })();
