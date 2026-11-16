@@ -142,29 +142,34 @@ const PIC = btoa('JPEGDATA');
   check('engine off: FLUX without Workers AI says engine-off', r.code === 503 && r.body.error === 'engine-off', JSON.stringify(r));
 }
 {
-  // the free engine without a key: gptimage (open anonymously) first; key-only models are remembered and skipped; one wait on 429
+  // the free engine (16 Nov): a photo edit is never sent to a model that does not read the photo. Without a key nothing is asked
+  // (the open gptimage drew a new picture from the words); with a key, kontext first, one wait on 429, and a model that wants
+  // paid credit (402) is skipped next time.
   const sd = {}, asked = [];
   let n = 0;
   globalThis.__WAI = { run: async () => { throw new Error('4006: daily free allocation of 10,000 neurons'); } };
   const realFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
     const m = /model=([a-z]+)/.exec(String(url)); const model = m && m[1]; asked.push(model);
-    if (model === 'gptimage' && n++ === 0) return new Response('{"error":"rate limited"}', { status: 429 });
-    if (model === 'gptimage') return new Response(new Uint8Array(5000).fill(7), { status: 200, headers: { 'content-type': 'image/jpeg' } });
-    return new Response('{"error":{"message":"' + model + ' isn\'t part of the Classic API. Use it with a pollen key"}}', { status: 403 });
+    if (model === 'kontext' && n++ === 0) return new Response('{"error":"rate limited"}', { status: 429 });
+    if (model === 'kontext') return new Response(new Uint8Array(5000).fill(7), { status: 200, headers: { 'content-type': 'image/jpeg' } });
+    return new Response('{"error":{"message":"This model requires Paid Pollen"}}', { status: 402 });
   };
   const code = 'const ENV = { AI: globalThis.__WAI, TMP_PUT: async () => "https://tmp.example/p.jpg" };\n' + code0;
-  const call = async (b, ip) => (await run(code, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': ip, origin: SITE } }, sd, helpers: { httpRequest: async () => { throw new Error('no'); } } }))[0].json;
+  const codeKey = 'const ENV = { AI: globalThis.__WAI, TMP_PUT: async () => "https://tmp.example/p.jpg", POLLINATIONS_TOKEN: "sk_test123" };\n' + code0;
+  const call = async (b, ip, c) => (await run(c || code, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': ip, origin: SITE } }, sd, helpers: { httpRequest: async () => { throw new Error('no'); } } }))[0].json;
   let r = await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg' }, '4.4.7.1');
-  check('free engine: gptimage is asked first, waits once on 429 and answers', r.code === 200 && r.body.source === 'Pollinations' && r.body.model === 'gptimage' && asked[0] === 'gptimage' && asked[1] === 'gptimage', JSON.stringify({ r, asked }));
+  check('free engine without a key: a photo edit asks no open model (they ignore the photo), and says the allowance is used up', r.code === 502 && r.body.error === 'quota' && asked.length === 0, JSON.stringify({ r, asked }));
+  r = await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg' }, '4.4.7.5', codeKey);
+  check('free engine with a key: kontext is asked first, waits once on 429 and answers', r.code === 200 && r.body.source === 'Pollinations' && r.body.model === 'kontext' && asked[0] === 'kontext' && asked[1] === 'kontext', JSON.stringify({ r, asked }));
   r = await call({ action: 'engines' }, '4.4.7.2');
   check('engines: FLUX is off for the rest of the day once its allowance is used up', r.body.engines.flux === false && r.body.engines.free === true, JSON.stringify(r));
-  asked.length = 0; n = 5;
-  globalThis.fetch = async (url) => { const model = (/model=([a-z]+)/.exec(String(url)) || [])[1]; asked.push(model); return new Response('{"error":{"message":"' + model + ' isn\'t part of the Classic API"}}', { status: 403 }); };
-  await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg', engine: 'free' }, '4.4.7.3');
+  asked.length = 0;
+  globalThis.fetch = async (url) => { const model = (/model=([a-z]+)/.exec(String(url)) || [])[1]; asked.push(model); return new Response('{"success":false,"error":{"message":"Insufficient balance"}}', { status: 402 }); };
+  await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg', engine: 'free' }, '4.4.7.3', codeKey);
   const first = asked.slice();
   asked.length = 0;
-  await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg', engine: 'free' }, '4.4.7.4');
-  check('free engine: models that need a key are skipped next time', first.length === 4 && asked.length === 0, JSON.stringify({ first, asked }));
+  await call({ action: 'restyle', prompt: 'oil', image: btoa('p'), mime: 'image/jpeg', engine: 'free' }, '4.4.7.4', codeKey);
+  check('free engine: models that want paid credit are skipped next time', first.length === 3 && asked.length === 0, JSON.stringify({ first, asked }));
   globalThis.fetch = realFetch;
 }

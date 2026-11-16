@@ -309,6 +309,7 @@
     return Promise.all(lanesP).then(function () {
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.gridMode && FS.gridMode() && FS.buildGrid();
       if (stop) FS.toast('⏹ העריכה נעצרה' + (done ? '. ' + done + ' תמונות כבר עודכנו ("↩ החזרת המקור" מבטל).' : '. התמונות לא השתנו.'), 5000);
+      else if (kept && !done && /quota|no-free-tier/.test(lastErr)) FS.toast(FS.aiError('quota'), 12000);
       else if (done || kept) FS.toast('✨ ' + label + ': ' + done + ' תמונות' + (kept ? ' · ' + kept + ' נשארו כמו שצולמו (מסומנות באדום; אפשר לנסות שוב רק עליהן)' : '') + '. "↩ החזרת המקור" מבטל.', kept ? 8000 : 4500);
       if (failed && !stop && /offline/.test(String(failed.message)) && !localReady()) { noNet = true; setTimeout(function () { noNet = false; }, 60000); FS.offlineChooser(label); }
       else if (failed && !stop) FS.toast(FS.aiError(String(failed.message)) + (/timeout/.test(String(failed.message)) ? ' בלי אינטרנט עובדים העיצובים ב"🖥️ מובנה בתוכנה" שבראש הלשונית.' : ''), 9000);

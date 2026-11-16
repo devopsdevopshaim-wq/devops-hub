@@ -10,17 +10,22 @@ const O = { Origin: 'https://devopsdevopshaim-wq.github.io', 'Content-Type': 'te
 const img = (n) => fs.readFileSync(path.join('.github/ai-compare', n)).toString('base64');
 const big = img('wedding-1024.jpg'), small = img('wedding-496.jpg');
 const KEEP = ' This must stay a real photograph of the very same people: identical faces, features, skin tone, age, body and expression, so their family recognises them at once. Photorealistic, natural skin texture, professional camera and lighting. No cartoon, no painting, no text, no watermark.';
+// the studio's own prompts (v164 kids/fantasy, as restyleOnce sends them: look + MAGIC_KEEP + REAL_KEEP + shape + people + quality)
+const MAGIC = ' Original designs only: no existing characters, films, brands or logos. Joyful, magical and fit for children, rich detail, the faces uncovered and clearly visible.';
+const REAL = ' This must stay a real photograph of the very same people: identical faces, features, skin tone, age, body and expression, so their family recognises them at once. Photorealistic, natural skin texture, professional camera and lighting. Keep the same framing, camera angle and the people\'s size in the picture; change only the clothes, the look and the surroundings. No cartoon, no painting, no text, no watermark.';
+const tail = (land, n) => ' The output image must have the same ' + (land ? 'landscape' : 'portrait') + ' aspect ratio.' + (n ? ' There are exactly ' + n + ' people in the photo. The result must show exactly these ' + n + ' people: do not add or remove anyone, no extra figures or faces.' : '') + ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
 const LOOKS = {
-  hollywood: 'Dress the people as glamorous Hollywood stars on a red carpet with flashing cameras and velvet ropes.' + KEEP,
-  gala: 'Dress the people in black-tie evening wear at a luxurious gala with chandeliers and warm light.' + KEEP,
-  hero: 'Dress each person in a heroic superhero suit with a flowing cape and a bold emblem, standing proudly on a city rooftop at sunset. Original costume design, no logos, the faces uncovered and clearly visible. Like a still from a big-budget superhero movie.' + KEEP,
+  portal: 'Show the people stepping out of a glowing magic portal into a new world of floating rocks and two moons.' + MAGIC + REAL,
+  dragon: 'Show each person riding a majestic dragon above misty mountains and a castle at sunset, wind in their hair.' + MAGIC + REAL,
+  princess: 'Dress each child as a little princess or prince in a sparkling gown or royal suit with a small crown, in a pastel fairytale palace hall with chandeliers and soft magical light.' + MAGIC + REAL
 };
+const land = img('land-1024.jpg');
 const VARIANTS = {
-  'klein4b-496': { engine: 'flux', fluxModel: 'klein-4b', small },
-  'dev-496': { engine: 'flux', fluxModel: 'dev', small },
-  'dev-1024': { engine: 'flux', fluxModel: 'dev', small: big },
-  'klein9b-1024': { engine: 'flux', fluxModel: 'klein-9b', small: big },
-  'free': { engine: 'free' },
+  'auto-port': { image: big, w: 683, h: 1024, land: false, n: 2 },
+  'auto-land': { image: land, w: 1024, h: 683, land: true, n: 2 },
+  'k9b-land': { image: land, w: 1024, h: 683, land: true, n: 2, engine: 'flux', fluxModel: 'klein-9b' },
+  'dev-land': { image: land, w: 1024, h: 683, land: true, n: 2, engine: 'flux', fluxModel: 'dev' },
+  'free-land': { image: land, w: 1024, h: 683, land: true, n: 2, engine: 'free' },
 };
 const report = [];
 for (const [look, prompt] of Object.entries(LOOKS)) {
@@ -28,7 +33,8 @@ for (const [look, prompt] of Object.entries(LOOKS)) {
     const t0 = Date.now();
     let r = {};
     try {
-      const res = await fetch(S, { method: 'POST', headers: O, body: JSON.stringify({ action: 'restyle', prompt, image: big, mime: 'image/jpeg', w: 683, h: 1024, ...extra }) });
+      const { land: L, n, image, ...rest } = extra;
+      const res = await fetch(S, { method: 'POST', headers: O, body: JSON.stringify({ action: 'restyle', prompt: prompt + tail(L, n), image, small: image, mime: 'image/jpeg', ...rest }) });
       r = await res.json().catch(() => ({ ok: false, error: 'http-' + res.status }));
     } catch (e) { r = { ok: false, error: String(e.message || e) }; }
     const s = Math.round((Date.now() - t0) / 100) / 10;
