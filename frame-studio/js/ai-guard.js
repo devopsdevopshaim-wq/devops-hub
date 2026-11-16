@@ -92,6 +92,15 @@
     }).catch(function (e) { if (window.console) console.warn('aiCheck', e); return { ok: true, score: 100, faces: 0, bad: 0, why: '', skipped: true }; });
   };
 
+  /* how many clear faces a picture has, by the face landmarker (a second count when the face finder sees none) */
+  FS.countFacesLm = function (im) {
+    if (!FS.getLandmarker) return Promise.resolve(0);
+    return FS.getLandmarker().then(function (lm) {
+      var d = dims(im), k = Math.min(1, MAX / Math.max(d[0], d[1])), W = Math.round(d[0] * k), H = Math.round(d[1] * k), c = canvasOf(im, W, H);
+      var F = faces(lm, c).map(function (P) { return box(P); }), top = F.reduce(function (m, b) { return Math.max(m, b.w); }, 0);
+      return F.filter(function (b) { return b.w >= Math.max(W * 0.04, top * 0.4); }).length;
+    }).catch(function () { return 0; });
+  };
   /* the edits already on the photos: the original (origSrc) against what is on the photo now */
   FS.aiHealth = function (list, onStep) {
     list = (list || FS.state.photos).filter(function (p) { return p.origSrc && p.origSrc !== p.src; });

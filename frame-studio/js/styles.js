@@ -366,8 +366,13 @@
     var orig = FS.img(p.origSrc || p.src);
     var det = FS.detectFaces ? FS.detectFaces(orig).catch(function () { return []; }) : Promise.resolve([]);
     return det.then(function (all) {
-      var main = FS.mainFaces ? FS.mainFaces(all) : all, n0 = main.length;
-      if (FS.aiOnePerson() && n0 >= 2) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
+      var main = FS.mainFaces ? FS.mainFaces(all) : all;
+      if (main.length || !FS.countFacesLm) return main;
+      /* the face finder saw nobody: the landmarker counts again, so the people are still counted and checked (v174) */
+      return FS.countFacesLm(orig).then(function (n) { var a = []; for (var i = 0; i < n; i++) a.push({ x: 0, y: 0, w: 1, h: 1, score: 1, fake: 1 }); return a; });
+    }).then(function (main) {
+      var n0 = main.length;
+      if (FS.aiOnePerson() && n0 >= 2 && !main[0].fake) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
       return guarded(p, prompt, engine, n0);
     });
   };
@@ -401,9 +406,13 @@
       return restyleOnce(p, prompt, plan[i]).then(function (im) {
         if (!n0 || !FS.countFaces) return same(im, i);
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
-          var lost = !(n >= 1 && (n0 < 3 || n >= n0 * 0.5)), extra = n > (n0 <= 4 ? n0 : n0 + 1);
+          /* v174: every person of the original must be there. Up to 5 people, exactly as many; a bigger group may lose one
+             face to the finder (a turned head). Was "at least one" for one or two people, so 2 → 1 got through (owner report). */
+          var lost = n0 <= 5 ? n < n0 : n < n0 - 1, extra = n > (n0 <= 4 ? n0 : n0 + 1);
           if (!lost && !extra) return same(im, i);
-          return (lost ? bodiesKept(im) : Promise.resolve(false)).then(function (kept) {
+          /* bodies instead of faces only when no face at all was found (a drawn style can hide every face); fewer faces than
+             people is a person missing */
+          return (lost && n === 0 ? bodiesKept(im) : Promise.resolve(false)).then(function (kept) {
             if (kept) return same(im, i);
             if (window.console) console.warn('AI: the answer ' + (lost ? 'lost the people' : 'added people') + ' (' + n0 + ' faces → ' + n + '), from ' + (im.aiSource || '?'));
             if (i + 1 < plan.length) return go(i + 1);
@@ -493,7 +502,7 @@
     /* 🧍 the real people kept (v173, on by default): the AI makes only the world around them, and the people of the photo are
        laid back over it, cut out on this computer. Models redraw faces, and in a group they swap people; this way every face
        and every person stays the one in the photo. */
-    var keepPpl = faces > 0 && FS.aiKeepPeople();
+    var keepPpl = faces > 0 && FS.aiKeepPeople() && /very same people|Keep everything else exactly as it is/.test(prompt);   /* photographic looks; a drawn look draws the people (and the count check guards them) */
     if (keepPpl) prompt = 'Keep the people exactly where and how they are in the photo (same position, size and pose). Change only the background and the surroundings behind and around them into this scene: ' + prompt;
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
     /* FLUX gets the same 1024px photo (compared Oct 26, frame-ai-compare.yml: from a 496px copy it drew new faces; from 1024 it keeps the people) */

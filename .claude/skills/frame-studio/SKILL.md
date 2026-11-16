@@ -2633,3 +2633,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Test:** a group of 3 on a wide photo, a mock answer of a palace hall with no people.
   - With keep: applied, aiCheck ok (2 clear faces, 89).
   - Without keep: rejected 'lost-people'.
+
+## v174: nobody may go missing (owner report: 2 girls → 1 in a drawn fantasy look, accepted)
+- **The count rule in `guarded()` was too loose:** `lost = !(n >= 1 && (n0 < 3 || n >= n0*0.5))` accepted any n ≥ 1 for one or two people.
+  - Now `lost = n0 <= 5 ? n < n0 : n < n0 - 1`.
+  - `bodiesKept` (person-mask coverage) stands in only when no face at all was found (n === 0); fewer faces than people counts as a person missing.
+- **When the face finder sees nobody in the original,** `FS.countFacesLm(orig)` (ai-guard.js; landmarker, clear faces ≥ 4% of width and ≥ 40% of the largest) supplies n0. Fake boxes are marked `fake`, so one-person mode is skipped.
+- **`keepPeople` (v173) now applies only to photographic looks** (very same people / Keep everything else). Drawn looks draw the people, and the count guards them.
+- **Test:** the couple, a drawn fantasy look.
+  - An answer with only the bride → rejected 'lost-people'.
+  - An answer with both → applied.
