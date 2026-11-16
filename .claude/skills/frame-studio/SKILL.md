@@ -2643,3 +2643,11 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Test:** the couple, a drawn fantasy look.
   - An answer with only the bride → rejected 'lost-people'.
   - An answer with both → applied.
+
+## v175: only the people posing are edited; people behind them are removed and never stop a design (the owner's rule)
+- **`ai.js` `FS.mainFaces`:** clear faces (score ≥ 0.6) at least **50%** as wide as the largest (was 40%). Smaller faces are the background.
+  - `ai-guard.js` uses the same 50% in `aiCheck`'s "big" faces and in `countFacesLm`.
+  - The count and extra-people checks therefore look only at the people posing.
+- **The prompt** (restyleOnce): when faces > 0, "Remove every bystander and every person in the background…; only the N people posing in front stay."
+- **`keepPeople`:** the original's person mask is split into connected pieces (a quarter-size copy, threshold 90, BFS labels). Only the pieces under a few points of each posing face (`FS.detectFaces` → `mainFaces`) are laid back, blurred up to full size and capped by the soft mask. Without a face found, the whole mask is used as before.
+- **Test:** the couple in front and a small girl pasted apart on the left. FS.detectFaces → 2 posing. The design was applied with n0 = 2, the prompt asks to remove bystanders, and the output has the couple in the palace without the girl.

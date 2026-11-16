@@ -144,9 +144,11 @@
   };
   /* the people the picture is about: clear faces (score 0.6+) at least 40% as wide as the largest one; small faces in the
      background and false faces (lights, reflections) are left out. This count goes to the AI and checks its answer. */
+  /* v175: the people posing for the photo; people behind them (smaller faces: under half the width of the largest) are the
+     background, are removed by the AI and never stop a design (the owner's rule) */
   FS.mainFaces = function (faces) {
     var l = (faces || []).filter(function (f) { return (f.score == null ? 1 : f.score) >= 0.6; }), w0 = l.reduce(function (m, f) { return Math.max(m, f.w); }, 0);
-    return l.filter(function (f) { return f.w >= w0 * 0.4; });
+    return l.filter(function (f) { return f.w >= w0 * 0.5; });
   };
   FS.countFaces = function (im, loose) {
     return FS.detectFaces(im).then(function (l) {
