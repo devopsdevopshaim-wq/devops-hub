@@ -2673,3 +2673,10 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Test:**
   - A good costume answer → one restyle call, no plate.
   - An answer with one person of two → restyle ×2 (the engines) and then image; applied as a plate with both real people.
+
+## v178: the full editor works on the marked photos
+- **`mate.js` `dlist()`:** the marked photos when any are marked, else all.
+- **`dcur()`:** the focused photo if it's in the list, else the list's first.
+- **`proj()`:** the strip shows only `dlist()`, with a "✓ N המסומנות מתוך M" note.
+- **`step()` and the ‹ › buttons:** move within `dlist()`.
+- **Test:** 5 photos, 2 marked → the strip shows those 2, › goes to the second, and unmarking shows all 5 again.

@@ -896,7 +896,9 @@
 
   /* ---------- עורך מלא: one photo, a folder browser, tools underneath ---------- */
   var cv = $('#mt-cv', root), cvx = cv.getContext('2d'), dk = 1, drag = null, selL = null, dfit = 'cover';
-  function dcur() { return focus(); }
+  /* the full editor works on the marked photos when some are marked (v178), otherwise on all of them */
+  function dlist() { var m = S.photos.filter(function (p) { return S.marked[p.id]; }); return m.length ? m : S.photos; }
+  function dcur() { var f = focus(), l = dlist(); if (f && l.indexOf(f) >= 0) return f; if (l[0]) { focusId = l[0].id; return l[0]; } return f; }
   function localChips() { return LOCAL.concat(FS.LOCAL_PLUS || []).map(function (x) { return '<button data-la="' + x[0] + '">' + x[1] + '</button>'; }).join('') + (FS.FUN_FX ? '<span class="mt-chsep">😜 מצחיקים</span>' + FS.FUN_FX.map(function (x) { return '<button data-fun="' + x[0] + '">' + x[1] + '</button>'; }).join('') : ''); }
   function buildDesign() {
     var dai = $('#mt-dai', root); if (dai && !dai.children.length) dai.innerHTML = localChips();
@@ -922,7 +924,7 @@
     var p = dcur(), wrap = $('#mt-cvw', root), W = wrap.clientWidth || 800, H = wrap.clientHeight || 500;
     var lk = $('#mt-dlock', root), kp = $('#mt-dkeep', root); if (lk) { lk.textContent = FS.photoLocked(p) ? '🔓' : '🔒'; lk.classList.toggle('on', FS.photoLocked(p)); lk.title = FS.photoLocked(p) ? 'שחרור התמונה' : 'נעילת התמונה במקומה'; } if (kp) kp.classList.toggle('on', FS.prefs.keepIn !== false);
     $('#mt-dname', root).textContent = p ? (p.name || '') + ' · ' + (idx(p) + 1) + '/' + S.photos.length : 'אין תמונה. פותחים תיקייה או מוסיפים תמונות.';
-    $('#mt-dnavp', root).disabled = !p || idx(p) <= 0; $('#mt-dnavn', root).disabled = !p || idx(p) >= S.photos.length - 1;
+    var dl = dlist(), di = p ? dl.indexOf(p) : -1; $('#mt-dnavp', root).disabled = di <= 0; $('#mt-dnavn', root).disabled = di < 0 || di >= dl.length - 1;
     $('#mt-dsize', root).textContent = p ? sizeTxt(p) + ' ס״מ' : '';
     if (!p) { cv.width = 10; cv.height = 10; return; }
     if (!FS.img(p.src)) { FS.loadImg(p.src).then(function () { drawDesign(); }); return; }
@@ -938,11 +940,12 @@
   }
   function proj() {
     var box = $('#mt-proj', root), f = dcur();
-    box.innerHTML = S.photos.map(function (p) { return '<button class="mt-pj' + (f === p ? ' on' : '') + '" data-id="' + p.id + '" data-px="96"><span class="mt-th"></span><i>' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '</i></button>'; }).join('');
+    var l = dlist();
+    box.innerHTML = (l !== S.photos ? '<p class="mt-hint mt-pjnote">✓ ' + l.length + ' המסומנות מתוך ' + S.photos.length + '</p>' : '') + l.map(function (p) { return '<button class="mt-pj' + (f === p ? ' on' : '') + '" data-id="' + p.id + '" data-px="96"><span class="mt-th"></span><i>' + esc(String(p.name || '').replace(/\.[^.]+$/, '')) + '</i></button>'; }).join('');
     $$('.mt-pj', box).forEach(function (b) { b.classList.add('mt-tile'); watch(b); });
   }
   $('#mt-proj', root).addEventListener('click', function (e) { var b = e.target.closest('.mt-pj'); if (!b) return; focusId = b.dataset.id; selL = null; buildDesign(); });
-  function step(n) { var p = dcur(), i = idx(p) + n; if (i < 0 || i >= S.photos.length) return; focusId = S.photos[i].id; selL = null; buildDesign(); slide($('#mt-cvw', root), n); }
+  function step(n) { var l = dlist(), p = dcur(), i = l.indexOf(p) + n; if (i < 0 || i >= l.length) return; focusId = l[i].id; selL = null; buildDesign(); slide($('#mt-cvw', root), n); }
   $('#mt-dnavp', root).addEventListener('click', function () { step(-1); });
   $('#mt-dnavn', root).addEventListener('click', function () { step(1); });
   $('#mt-dcmp', root).addEventListener('click', function () { setCmp(!cmp); });
