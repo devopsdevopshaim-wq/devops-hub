@@ -2618,3 +2618,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **E2E** (Playwright: a phone context and a desktop context with a fake local engine, sharing a route that runs `relayCall`): the cloud answered quota, both photos were made by the "computer" and applied on the phone in ~9 s, with no page errors.
 - **v171:** on a phone, when the cloud's quota stops a design and the studio's computer isn't online, the 'quota' message (`ai-relay.js` `aiError`) says why: when the computer was last seen (or never), and what to do (open v170+ on the same account, install the local engine). The owner's first try didn't reach the computer, most likely because the local engine wasn't installed yet, so it beat as not ready.
 - **v172:** the phone's 'auto' relay mode (the default) is now "the studio's computer first whenever it is online, else the cloud". A cloud engine chosen by name still goes to the cloud. If the computer fails (relay-offline / relay-failed / relay-busy), the cloud is asked; with the computer off, cloud-then-computer as before. The free cloud allowance is kept as the backup. E2E: with the computer online, no restyle reached the cloud, and both photos were made by the computer.
+
+## v173: 🧍 the real people kept (on by default)
+- **Why:** an owner report of a bat-mitzvah photo with three girls. The castle design came back with a man, two girls and none of the faces. Image models redraw people, and in a group they swap them.
+- **`styles.js`:**
+  - `FS.aiKeepPeople()` ('fs-ai-keep-people', on unless '0').
+  - When on and the photo has faces, the prompt is prefixed with "Keep the people exactly where and how they are… change only the background and the surroundings…".
+  - After the answer (matchShape, keepFaces), `keepPeople(orig, im)` lays the original's people over the AI picture:
+    - the mask comes from `FS.ensureMask({src: orig.src})` (MediaPipe multiclass, on this computer), blurred ≈ max/900 px;
+    - the people are moved 30% of the way to the scene's colour cast and 15% of its light;
+    - then crisp.
+  - The guard then passes, since the faces are the original's.
+- **`mate.js`:** the guard card has "🧍 לשמור את האנשים המקוריים…" (`#mt-keep-ppl`). Off lets the AI dress the people (costumes) with the guard as before.
+- **Test:** a group of 3 on a wide photo, a mock answer of a palace hall with no people.
+  - With keep: applied, aiCheck ok (2 clear faces, 89).
+  - Without keep: rejected 'lost-people'.
