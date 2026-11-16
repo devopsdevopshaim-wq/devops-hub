@@ -173,6 +173,12 @@
     var l = (faces || []).filter(function (f) { return (f.score == null ? 1 : f.score) >= 0.6; }), w0 = l.reduce(function (m, f) { return Math.max(m, f.w); }, 0);
     return l.filter(function (f) { return f.w >= w0 * 0.33; });   /* v180: a third (half dropped people sitting further back at a table) */
   };
+  /* v183: the people posing (the photo is about them): faces at least 45% as wide as the largest of the main ones. The others
+     of FS.mainFaces (a third up) are people further back: the AI may keep them or leave them out, neither stops a design */
+  FS.posingFaces = function (faces) {
+    var m = FS.mainFaces(faces), w0 = m.reduce(function (a, f) { return Math.max(a, f.w); }, 0);
+    return m.filter(function (f) { return f.w >= w0 * 0.45; });
+  };
   FS.countFaces = function (im, loose) {
     return FS.detectFaces(im).then(function (l) {
       /* loose (an AI answer in a drawn style): drawn faces score lower, so a lower bar */
