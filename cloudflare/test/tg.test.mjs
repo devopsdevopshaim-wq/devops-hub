@@ -1,5 +1,5 @@
 // Telegram to the owner (notify.mjs tgApi / tgFindChat / tgSendText), with a fake fetch: no network.
-import { tgApi, tgFindChat, tgSendText } from '../src/notify.mjs';
+import { tgApi, tgFindChat, tgSendText, notifyOwner } from '../src/notify.mjs';
 let fails = 0; const check = (n, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + n + (ok ? '' : ' ' + JSON.stringify(x))); if (!ok) fails++; };
 const calls = [];
 const fake = async (url, init) => { calls.push({ url, body: JSON.parse(init.body) }); const m = url.split('/').pop();
@@ -13,4 +13,13 @@ const s = await tgSendText(env, '4242', 'x'.repeat(5000), fake); const last = ca
 check('a message is sent to the chat, cut to 4000', s.ok && last.body.chat_id === '4242' && last.body.text.length === 4000 && /bot123456789:/.test(last.url), last.url);
 const bad = await tgApi(env, 'nope', {}, fake); check('an error says why', !bad.ok && /telegram 404/.test(bad.error), bad);
 const none = await tgFindChat(env, async () => ({ status: 200, json: async () => ({ ok: true, result: [] }) })); check('no message to the bot yet: no chat', none.error === 'tg-no-chat');
+// the morning message / weekly summary: to the owner's bot and by mail as well
+let mailed = null; const sendMail = async (e, m) => { mailed = m; return {}; };
+calls.length = 0;
+const n1 = await notifyOwner(env, { email: 'o@x.com' }, { subject: '☀️ בוקר', text: 'גוף' }, sendMail, fake, '4242');
+check('a summary goes to Telegram', calls.some((c) => /sendMessage$/.test(c.url) && c.body.chat_id === '4242' && /☀️ בוקר/.test(c.body.text)), calls);
+check('and the mail still goes out', !!mailed && mailed.to === 'o@x.com' && n1.sent, n1);
+calls.length = 0; mailed = null;
+await notifyOwner(env, { email: 'o@x.com', telegram: false }, { subject: 's', text: 't' }, sendMail, fake, '4242');
+check('Telegram off in the settings: mail only', !calls.length && !!mailed);
 if (fails) process.exit(1);

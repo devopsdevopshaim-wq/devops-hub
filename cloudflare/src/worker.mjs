@@ -333,7 +333,8 @@ export class State extends DurableObject {
       out.push(frameWeekly(S, now, lic)); if (!kind) meta.week = today;
     }
     if (preview) return { ok: true, messages: out };
-    for (const m of out) { res[m.kind] = await notifyOwner(this.env, n, Object.assign({ to: ADMIN_EMAIL }, m), sendMail); meta['last_' + m.kind] = { at: now, via: res[m.kind].via, errors: res[m.kind].errors }; }
+    const tgc = out.length && this.env.TELEGRAM_BOT_TOKEN ? await tgChatOf(this.env).catch(() => '') : '';
+    for (const m of out) { res[m.kind] = await notifyOwner(this.env, n, Object.assign({ to: ADMIN_EMAIL }, m), sendMail, undefined, tgc); meta['last_' + m.kind] = { at: now, via: res[m.kind].via, errors: res[m.kind].errors }; }
     // the calendar: at most every 6 hours from the cron, at once when the owner asks
     let cal = null;
     if (this.env.MATON_API_KEY && n.calendar && (kind === 'calendar' || (!kind && now - (meta.calAt || 0) > 6 * 3600e3))) {

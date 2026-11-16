@@ -2543,3 +2543,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - @BotFather → /newbot → the token → the GitHub secret → send the bot any message → redeploy → test.
   - The test result says which channel got it, and what to do when the bot has had no message yet.
 - **Test:** `cloudflare/test/tg.test.mjs` (fake fetch).
+- **v166 follow-ups (summaries and the deploy check):**
+  - `notifyOwner(env, n, msg, sendMail, f, tgChat)` also sends to the owner's own bot when `TELEGRAM_BOT_TOKEN` and a chat are given (`res.tgbot`), unless `n.telegram === false`.
+  - The mail still goes out: `any` ignores tgbot.
+  - `frameWatch` (the morning message and the Saturday summary, in the frame object) looks the chat up with `tgChatOf` (the main object) and passes it on.
+  - The deploy (`cloudflare-deploy.mjs`) runs `getMe`, finds the chat (`getUpdates`) and sends a test line. The result goes to the summary.

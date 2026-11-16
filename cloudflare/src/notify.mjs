@@ -120,11 +120,13 @@ export async function telegramFind(env, f) {
 }
 
 /* the owner hears it: Telegram and Gmail through Maton (as he chose), the server's own mail when neither went out */
-export async function notifyOwner(env, n, msg, sendMail, f) {
+export async function notifyOwner(env, n, msg, sendMail, f, tgChat) {
   n = n || {}; const res = {};
+  /* the owner's own Telegram bot (TELEGRAM_BOT_TOKEN), with the mail as well: the morning message and the weekly summary reach the phone */
+  if (env.TELEGRAM_BOT_TOKEN && tgChat && n.telegram !== false) { const t = await tgSendText(env, tgChat, msg.subject + '\n\n' + msg.text, f); res.tgbot = t.ok ? { ok: true } : { ok: false, error: t.error }; }
   if (env.MATON_API_KEY && n.telegram !== false && n.chatId) res.telegram = await telegramSend(env, n.chatId, msg.subject + '\n\n' + msg.text, f);
   if (env.MATON_API_KEY && n.gmail !== false) res.gmail = await gmailSend(env, { to: n.email || msg.to, subject: msg.subject, text: msg.text, fromName: 'פריים מגנטים' }, f);
-  const any = Object.values(res).some((r) => r && r.ok);
+  const any = Object.entries(res).some(([k, r]) => k !== 'tgbot' && r && r.ok);   /* the mail goes out unless Gmail did; Telegram is extra */
   if (!any && sendMail) res.mail = await sendMail(env, { to: n.email || msg.to, fromName: 'פריים מגנטים', subject: msg.subject, text: msg.text });
   return { sent: any || !!(res.mail && !res.mail.error), via: Object.keys(res).filter((k) => res[k] && (res[k].ok || (k === 'mail' && !res[k].error))), errors: Object.fromEntries(Object.entries(res).filter(([k, r]) => r && !(r.ok || (k === 'mail' && !r.error))).map(([k, r]) => [k, r.error || 'failed'])) };
 }
