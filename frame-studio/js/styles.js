@@ -582,18 +582,30 @@
      photo are laid into it (keepPeople). The faces and the people are the photo's own; nothing of the AI's figures is left. */
   function plate(p, prompt, orig) {
     var W0 = orig.naturalWidth, H0 = orig.naturalHeight, ar = W0 / H0, L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
-    var scene = String(prompt).split(/ IMPORTANT:| Original designs only| This must stay| Original costume design| Keep everything else/)[0]
-      .replace(/\b(dress|make|show|place|give|turn|surround)\b[^.]*?\b(each person|each child|the people|the person|the couple|everyone)\b/i, 'Show');
-    var body = { action: 'image', prompt: 'An empty background scene with no people, no person, no figure and no character in it, for a photo backdrop: ' + scene + '. Nobody in the picture. Photorealistic, cinematic light, rich detail, wide and clear in the middle.', w: w, h: h };
-    return FS.askServer(body).then(function (r) {
-      if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
-      var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-      var src = r.source || '';
-      return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' }))).then(function (res) { return matchShape(res, orig, /pollinations/i.test(src) ? 0.06 : 0); })
-        .then(function (im) { return keepPeople(orig, im); })
-        .then(function (im) { return crisp(im, orig, true).catch(function () { return im; }); })
-        .then(function (im) { im.aiSource = src; im.aiPlate = true; return im; });
-    });
+    /* the place of the look, without its people: the look's first sentence, the words about people and what they wear taken out */
+    var look = String(prompt).split(/ IMPORTANT:| Original designs only| This must stay| Original costume design| Keep everything else| The output image| There (is|are) exactly| Remove every bystander/)[0];
+    var place = look.replace(/\b(dress|make|show|place|give|turn|surround)\b[^,.;]*?\b(person|people|child|children|couple|everyone|them)\b[^,.;]*[,.;]?/gi, ' ')
+      .replace(/\b(each|every)\s+(person|child)\b|\bthe\s+(people|person|couple|children|child)\b|\b(they|them|their|his|her)\b/gi, ' ')
+      .replace(/\b(suit|suits|dress|dresses|gown|costume|outfit|armou?r|cape|hands?|face|faces|wearing|holding|riding)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+    var ask = function (extra) {
+      return FS.askServer({ action: 'image', prompt: 'An empty place, a background plate for a photo, with absolutely no people, no person, no face, no body, no hands and no character anywhere in it' + (place ? ': ' + place : '') + '. ' + (extra || '') + 'Photorealistic, cinematic light, rich detail, open and clear in the middle.', w: w, h: h }).then(function (r) {
+        if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
+        var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+        return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' }))).then(function (res) { res.aiSource = r.source || ''; return res; });
+      });
+    };
+    var src = '';
+    /* a place with a drawn person in it is asked once more; a second one is not used (the photo stays as shot) */
+    var clean = function (res) { return FS.countFaces ? FS.countFaces(res, true).catch(function () { return 0; }) : Promise.resolve(0); };
+    return ask().then(function (res) {
+      return clean(res).then(function (n) { if (!n) return res; if (window.console) console.warn('AI plate: ' + n + ' drawn people, asked again'); return ask('Nobody at all: only the place. ').then(function (r2) { return clean(r2).then(function (n2) { if (n2) throw new Error('not-same'); return r2; }); }); });
+    }).then(function (res) { src = res.aiSource; return matchShape(res, orig, /pollinations/i.test(src) ? 0.06 : 0); })
+      .then(function (im) { return keepPeople(orig, im); })
+      .then(function (im) {
+        if (!im._peopleLaid) throw new Error('not-same');   /* never the place alone */
+        return crisp(im, orig, true).catch(function () { return im; });
+      })
+      .then(function (im) { im.aiSource = src; im.aiPlate = true; im.headsKept = true; return im; });
   }
   /* 👔 v179: new clothes, real heads. The AI dressed the people (and changed the place); the heads of the photo (hair and face,
      cut by the multiclass model, not moved, not stretched) are laid back exactly where they were. Only when the AI kept the
@@ -653,6 +665,7 @@
     var det = FS.detectFaces ? FS.detectFaces(orig).then(function (all) { subj = FS.mainFaces ? FS.mainFaces(all) : all; }, function () {}) : Promise.resolve();
     return det.then(function () { return FS.ensureMask(tmp); }).then(function (m) {
       if (!m || (tmp.maskCover || 0) < 0.02) return im;
+      im._peopleLaid = false;
       var W = im.naturalWidth, H = im.naturalHeight, c = FS.canvas(W, H), x = c.getContext('2d', { willReadFrequently: true });
       x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, W, H);
       var pc = FS.canvas(W, H), px = pc.getContext('2d', { willReadFrequently: true }); px.imageSmoothingQuality = 'high'; px.drawImage(orig, 0, 0, W, H);
@@ -695,7 +708,7 @@
       }
       for (var ii = 0; ii < pd.length; ii += 4) { var mv = md[ii]; pd[ii + 3] = !mv ? 0 : keepA ? Math.min(mv, Math.min(255, keepA[ii] * 1.4)) : mv; }
       px.putImageData(P, 0, 0); x.drawImage(pc, 0, 0);
-      return new Promise(function (ok) { c.toBlob(function (b) { ok(b ? FS.loadImg(URL.createObjectURL(b)) : im); }, 'image/jpeg', 0.94); });
+      return new Promise(function (ok) { c.toBlob(function (b) { ok(b ? FS.loadImg(URL.createObjectURL(b)) : im); }, 'image/jpeg', 0.94); }).then(function (o) { if (o !== im) o._peopleLaid = true; return o; });
     }).catch(function (e) { if (window.console) console.warn('keepPeople', e); return im; });
   }
   /* "only on the person" ('fs-ai-only'): the AI's person is laid over the original photo, so the background, the place and
