@@ -1,0 +1,10 @@
+dig-game/assets: textures, the desert sky photo and the 3D models from Poly Haven (https://polyhaven.com),
+all released under CC0 1.0 (public domain): no attribution required, free for any use.
+
+sky/goegap_*.jpg          Goegap HDRI (tonemapped, resized)
+tex/*.webp                large_sandstone_blocks, medieval_blocks_02, castle_brick_07, sandstone_blocks_08, marble_01,
+                          dry_ground_rocks, aerial_rocks_02, excavated_soil_wall, sandy_gravel, weathered_planks,
+                          sandstone_cracks, old_stone_wall, clay_plaster, patterned_clay_plaster (resized to 512 px)
+models/*.glb              antique_ceramic_vase_01, ceramic_vase_01-04, jug_01, planter_pot_clay, treasure_chest,
+                          namaqualand_boulder_02, quiver_tree_01, shrub_01, wooden_crate_01, wooden_bucket_01,
+                          picke_dirty_01, wicker_basket_01 (textures resized to 512 px WebP, some meshes simplified)
