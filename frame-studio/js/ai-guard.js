@@ -103,7 +103,7 @@
   };
   /* the edits already on the photos: the original (origSrc) against what is on the photo now */
   FS.aiHealth = function (list, onStep) {
-    list = (list || FS.state.photos).filter(function (p) { return p.origSrc && p.origSrc !== p.src; });
+    list = (list || FS.state.photos).filter(function (p) { return p.origSrc && p.origSrc !== p.src && !p.aiHeads; });   /* real heads laid back: the same faces by construction */
     var bad = [], i = 0;
     function next() {
       if (i >= list.length) return Promise.resolve({ checked: list.length, bad: bad });

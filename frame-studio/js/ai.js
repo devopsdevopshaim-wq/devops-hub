@@ -157,6 +157,20 @@
       return FS.mainFaces(l).length;
     });
   };
+  /* the parts of the people in a picture (v179), from the multiclass model: head = hair + face skin, person = not background;
+     each a w×h Float32Array (0..1) on a copy at most `max` px long. null when only the plain person model is there. */
+  FS.peopleParts = function (im, max) {
+    return getSegmenter().then(function (seg) {
+      if (!seg.multi) return null;
+      var w0 = im.naturalWidth || im.width, h0 = im.naturalHeight || im.height, k = Math.min(1, (max || 768) / Math.max(w0, h0)), c = FS.canvas(Math.round(w0 * k), Math.round(h0 * k));
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      var res = seg.segment(c), cm = res.confidenceMasks, mw = cm[0].width, mh = cm[0].height;
+      var bg = cm[0].getAsFloat32Array(), hair = cm[1].getAsFloat32Array(), face = cm[3].getAsFloat32Array(), n = mw * mh, head = new Float32Array(n), person = new Float32Array(n);
+      for (var i = 0; i < n; i++) { head[i] = Math.min(1, hair[i] + face[i]); person[i] = 1 - bg[i]; }
+      if (res.close) res.close();
+      return { w: mw, h: mh, head: head, person: person };
+    });
+  };
   /* how much of a picture is people (0..1), from the person mask: a second opinion when a drawn answer's faces are not found */
   FS.personCover = function (im) {
     return getSegmenter().then(function (seg) {

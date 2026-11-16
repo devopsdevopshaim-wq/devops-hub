@@ -2683,3 +2683,17 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Gemini (16 Nov):** the owner put a new key in `GEMINI_API_KEY`. Images still answer 429 "exceeded your current quota, check your plan and billing", so billing isn't on for that key's project yet.
   - The hubs server now skips Gemini after such a refusal for 20 min (was 6 h), and only for the same key (`sd.gemImgOffKey` = a hash, never the key).
   - A new key, or billing turned on, is tried at once.
+
+## v179: new clothes, real heads (owner: "change the clothes too, but don't distort")
+- **`ai.js` `FS.peopleParts(im, max)`:** from selfie_multiclass, head = hair + face-skin and person = 1 − background, as Float32 w×h. null with the plain model.
+- **`styles.js` `keepHeads(orig, im)`** (`FS._keepHeads` for tests), for photographic looks with people (not "Keep everything else" smart edits):
+  1. The people's outlines must overlap (IoU of person > 0.5, ≥ 0.55).
+  2. Every posing face of the photo must have a face in the answer within 0.35 face-widths and 0.7–1.4× its size (`FS.detectFaces`). Else null, and keepFaces then the guard and the plate.
+  3. The original's head mask is widened (≥ 0.35 → full), blurred ≈ max/400 px, and laid back at the same place, not moved and not stretched. `im.headsKept`.
+  - crisp carries `headsKept`.
+  - `same()` skips aiCheck for `headsKept` (faces are the original pixels; the people count has already run), as does `FS.aiHealth` (`p.aiHeads`).
+- **Order in restyleOnce:** keepHeads → keepFaces → (onlyPerson) → crisp.
+- **Tests:**
+  - wedding-1 with a graded, slightly shifted and blurred answer → applied with `headsKept`.
+  - engagement-2 with an answer missing one person → lost-people, then the plate (both real people).
+  - A good costume answer → one call.
