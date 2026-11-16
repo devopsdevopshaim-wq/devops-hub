@@ -373,7 +373,13 @@
     }).then(function (main) {
       var n0 = main.length;
       if (FS.aiOnePerson() && n0 >= 2 && !main[0].fake) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
-      return guarded(p, prompt, engine, n0);
+      return guarded(p, prompt, engine, n0).catch(function (e) {
+        if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message))) {
+          if (window.console) console.warn('AI: ' + e.message + ', the real people go into a clean scene');
+          return plate(p, prompt, orig);
+        }
+        throw e;
+      });
     });
   };
   function guarded(p, prompt, engine, n0) {
@@ -424,7 +430,7 @@
     /* not sure: the owner sees the answer and decides (in a batch, it is skipped as before) */
     function ask(im, lost, chk) {
       var code = chk ? 'not-same' : lost ? 'lost-people' : 'extra-people';
-      if (batch || !FS.dialog) return Promise.reject(new Error(code));
+      if (batch || !FS.dialog || (n0 > 0 && FS.aiKeepPeople && FS.aiKeepPeople())) return Promise.reject(new Error(code));
       return new Promise(function (ok, no) {
         var body = FS.dialog(chk ? '🛡️ העריכה לא נראית כמו המקור' : '🤔 לא בטוח שהאנשים נשמרו', '<p>' + (chk ? 'בדיקת ה־AI מצאה: <b>' + FS.esc(chk.why) + '</b> (התאמה ' + chk.score + '%). ניסיתי את כל המנועים. מומלץ לא להחיל ולהשאיר את המקור.' : lost ? 'לא זיהיתי בבירור את האנשים בתוצאה (קורה בסגנונות מצוירים ובתמונות שבהן האנשים קטנים).' : 'נראה שה־AI הוסיף אנשים לתמונה.') + ' הנה התוצאה. מחליטים בעצמכם:</p>' +
           '<img src="' + im.src + '" alt="" style="display:block;max-width:100%;max-height:58vh;margin:8px auto;border-radius:10px">' +
@@ -504,8 +510,7 @@
     /* 🧍 the real people kept (v173, on by default): the AI makes only the world around them, and the people of the photo are
        laid back over it, cut out on this computer. Models redraw faces, and in a group they swap people; this way every face
        and every person stays the one in the photo. */
-    var keepPpl = faces > 0 && FS.aiKeepPeople() && /very same people|Keep everything else exactly as it is/.test(prompt);   /* photographic looks; a drawn look draws the people (and the count check guards them) */
-    if (keepPpl) prompt = 'Keep the people exactly where and how they are in the photo (same position, size and pose). Change only the background and the surroundings behind and around them into this scene: ' + prompt;
+    var keepPpl = false;   /* v177: the real people go into a clean scene only as the fallback (plate below), never over the AI's own figures */
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
     /* FLUX gets the same 1024px photo (compared Oct 26, frame-ai-compare.yml: from a 496px copy it drew new faces; from 1024 it keeps the people) */
     var b64 = photoB64(p, 1024), body = { action: 'restyle', prompt: prompt, image: b64, small: b64, mime: 'image/jpeg', w: w, h: h };
@@ -566,6 +571,24 @@
     for (i = 0; i < r.length; i += 4) for (k = 0; k < 3; k++) { var v = r[i + k] + (r[i + k] - br[i + k]) * amt; r[i + k] = v < 0 ? 0 : v > 255 ? 255 : v; }
     x.putImageData(R, 0, 0);
     return new Promise(function (ok) { c.toBlob(function (bl) { ok(bl ? FS.loadImg(URL.createObjectURL(bl)) : im); }, 'image/jpeg', 0.95); }).then(function (o) { if (im.facesKept) o.facesKept = im.facesKept; return o; });
+  }
+  /* 🧍 v177: when the AI did not keep every person posing (lost, added, or other faces), the design still comes out: the AI
+     draws only the place of the look, empty of people (a new picture from the words, cheap and quick), and the people of the
+     photo are laid into it (keepPeople). The faces and the people are the photo's own; nothing of the AI's figures is left. */
+  function plate(p, prompt, orig) {
+    var W0 = orig.naturalWidth, H0 = orig.naturalHeight, ar = W0 / H0, L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
+    var scene = String(prompt).split(/ IMPORTANT:| Original designs only| This must stay| Original costume design| Keep everything else/)[0]
+      .replace(/\b(dress|make|show|place|give|turn|surround)\b[^.]*?\b(each person|each child|the people|the person|the couple|everyone)\b/i, 'Show');
+    var body = { action: 'image', prompt: 'An empty background scene with no people, no person, no figure and no character in it, for a photo backdrop: ' + scene + '. Nobody in the picture. Photorealistic, cinematic light, rich detail, wide and clear in the middle.', w: w, h: h };
+    return FS.askServer(body).then(function (r) {
+      if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
+      var bin = atob(r.image), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      var src = r.source || '';
+      return FS.loadImg(URL.createObjectURL(new Blob([u8], { type: r.mime || 'image/png' }))).then(function (res) { return matchShape(res, orig, /pollinations/i.test(src) ? 0.06 : 0); })
+        .then(function (im) { return keepPeople(orig, im); })
+        .then(function (im) { return crisp(im, orig, true).catch(function () { return im; }); })
+        .then(function (im) { im.aiSource = src; im.aiPlate = true; return im; });
+    });
   }
   FS.aiKeepPeople = function (v) { try { if (v !== undefined) localStorage.setItem('fs-ai-keep-people', v ? '1' : '0'); return localStorage.getItem('fs-ai-keep-people') !== '0'; } catch (e) { return true; } };
   /* the people of the original over the AI's world: the person mask of the original (on this computer), soft at the edge, and

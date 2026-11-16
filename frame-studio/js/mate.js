@@ -107,7 +107,7 @@
       '<p class="mt-hint" id="mt-ai-target"></p>' +
       '<div class="mt-card mt-aibac"><h3>◧ לפני | אחרי <small>התמונות שה־AI עובד עליהן: המקור מימין, התוצאה משמאל · לחיצה מגדילה</small></h3><div class="mt-aiba" id="mt-aiba"></div><p class="mt-hint" id="mt-aiba-more"></p></div>' +
       '<div class="mt-card mt-guard"><h3>🛡️ סינון AI <small>כל עריכה נבדקת מול המקור על המחשב (בלי אינטרנט): אותן פנים, אותה תמונה. עריכה שלא עוברת לא נשמרת על התמונה</small></h3>' +
-        '<div class="mt-chips"><label class="mt-chk-l"><input type="checkbox" id="mt-keep-ppl"> 🧍 לשמור את האנשים המקוריים (ה־AI משנה רק את מה שמסביבם; מומלץ לאירוע)</label></div>' +
+        '<div class="mt-chips"><label class="mt-chk-l"><input type="checkbox" id="mt-keep-ppl"> 🧍 אף אחד לא נעלם: כשה־AI לא שומר על כל המצטלמים, נבנה מקום חדש והאנשים האמיתיים מונחים בו (מומלץ לאירוע)</label></div>' +
         '<div class="mt-chips"><label class="mt-chk-l"><input type="checkbox" id="mt-guard-on"> הסינון פעיל</label>' +
         '<label class="mt-chk-l">רמה <select id="mt-guard-lv"><option value="strict">קפדנית (מומלץ לאירוע)</option><option value="normal">רגילה (סגנונות מצוירים חופשיים יותר)</option></select></label></div>' +
         '<div class="mt-chips" style="margin-top:8px"><button class="mt-btn primary" id="mt-guard-check" type="button">🩺 לבדוק את כל עריכות ה־AI</button><button class="mt-btn" id="mt-guard-revert" type="button" hidden>↩ להחזיר למקור את הלא תקינות</button><button class="mt-btn" id="mt-guard-redo" type="button">🔴 לסמן רק את האדומות (לנסות שוב)</button></div>' +
@@ -1115,7 +1115,7 @@
     var on = $('#mt-guard-on', root), lv = $('#mt-guard-lv', root), ck = $('#mt-guard-check', root), rv = $('#mt-guard-revert', root), st = $('#mt-guard-st', root);
     if (!on || !FS.aiCheck) { var card = root.querySelector('.mt-guard'); if (card) card.hidden = true; return; }
     on.checked = FS.aiGuardOn(); lv.value = FS.aiGuardLevel();
-    var kp = $('#mt-keep-ppl', root); if (kp && FS.aiKeepPeople) { kp.checked = FS.aiKeepPeople(); kp.addEventListener('change', function () { FS.aiKeepPeople(kp.checked); FS.toast(kp.checked ? '🧍 האנשים המקוריים נשמרים: ה־AI משנה רק את מה שמסביב' : 'ה־AI ישנה גם את האנשים (בגדים, מראה)', 4000); }); }
+    var kp = $('#mt-keep-ppl', root); if (kp && FS.aiKeepPeople) { kp.checked = FS.aiKeepPeople(); kp.addEventListener('change', function () { FS.aiKeepPeople(kp.checked); FS.toast(kp.checked ? '🧍 אף אחד לא נעלם: אם ה־AI לא שומר על כולם, האנשים האמיתיים נכנסים למקום חדש' : 'בלי גיבוי: עיצוב שלא שמר על כולם נשאר כמו שצולם', 4000); }); }
     on.addEventListener('change', function () { FS.aiGuardOn(on.checked); FS.toast(on.checked ? '🛡️ סינון ה־AI פעיל' : '⚠️ סינון ה־AI כבוי: כל תוצאה תיכנס לתמונה', 4000); });
     lv.addEventListener('change', function () { FS.aiGuardLevel(lv.value); });
     function redraw() { buildGrid(); }
