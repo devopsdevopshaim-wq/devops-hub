@@ -2680,3 +2680,6 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **`proj()`:** the strip shows only `dlist()`, with a "✓ N המסומנות מתוך M" note.
 - **`step()` and the ‹ › buttons:** move within `dlist()`.
 - **Test:** 5 photos, 2 marked → the strip shows those 2, › goes to the second, and unmarking shows all 5 again.
+- **Gemini (16 Nov):** the owner put a new key in `GEMINI_API_KEY`. Images still answer 429 "exceeded your current quota, check your plan and billing", so billing isn't on for that key's project yet.
+  - The hubs server now skips Gemini after such a refusal for 20 min (was 6 h), and only for the same key (`sd.gemImgOffKey` = a hash, never the key).
+  - A new key, or billing turned on, is tried at once.
