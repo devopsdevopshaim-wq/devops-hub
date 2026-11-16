@@ -490,6 +490,11 @@
       ' There is exactly ONE person in this photo. The result must show only this one person: do not add any other person, partner, figure, silhouette, reflection or face.';
     else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces.';
     prompt += ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
+    /* 🧍 the real people kept (v173, on by default): the AI makes only the world around them, and the people of the photo are
+       laid back over it, cut out on this computer. Models redraw faces, and in a group they swap people; this way every face
+       and every person stays the one in the photo. */
+    var keepPpl = faces > 0 && FS.aiKeepPeople();
+    if (keepPpl) prompt = 'Keep the people exactly where and how they are in the photo (same position, size and pose). Change only the background and the surroundings behind and around them into this scene: ' + prompt;
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
     /* FLUX gets the same 1024px photo (compared Oct 26, frame-ai-compare.yml: from a 496px copy it drew new faces; from 1024 it keeps the people) */
     var b64 = photoB64(p, 1024), body = { action: 'restyle', prompt: prompt, image: b64, small: b64, mime: 'image/jpeg', w: w, h: h };
@@ -503,7 +508,7 @@
       /* looks that must stay a photograph of the same people: the real faces are laid back in (js/face-keep.js, on this computer) */
       if (!FS.keepFaces || !/very same people|Keep everything else exactly as it is/.test(prompt)) return im;
       return FS.keepFaces(orig, im).then(function (k) { return k || im; }, function () { return im; });
-    }).then(function (im) { return FS.aiOnlyPerson() ? onlyPerson(orig, im) : im; })
+    }).then(function (im) { return keepPpl ? keepPeople(orig, im) : FS.aiOnlyPerson() ? onlyPerson(orig, im) : im; })
       .then(function (im) { return crisp(im, orig, /very same people|Keep everything else exactly as it is/.test(prompt)).catch(function () { return im; }); })
       .then(function (im) { im.aiSource = src; return im; });
   };
@@ -550,6 +555,28 @@
     for (i = 0; i < r.length; i += 4) for (k = 0; k < 3; k++) { var v = r[i + k] + (r[i + k] - br[i + k]) * amt; r[i + k] = v < 0 ? 0 : v > 255 ? 255 : v; }
     x.putImageData(R, 0, 0);
     return new Promise(function (ok) { c.toBlob(function (bl) { ok(bl ? FS.loadImg(URL.createObjectURL(bl)) : im); }, 'image/jpeg', 0.95); }).then(function (o) { if (im.facesKept) o.facesKept = im.facesKept; return o; });
+  }
+  FS.aiKeepPeople = function (v) { try { if (v !== undefined) localStorage.setItem('fs-ai-keep-people', v ? '1' : '0'); return localStorage.getItem('fs-ai-keep-people') !== '0'; } catch (e) { return true; } };
+  /* the people of the original over the AI's world: the person mask of the original (on this computer), soft at the edge, and
+     their colours brought a third of the way to the new scene's light, so they sit in it rather than look pasted */
+  function keepPeople(orig, im) {
+    var tmp = { src: orig.src, doc: null };
+    return FS.ensureMask(tmp).then(function (m) {
+      if (!m || (tmp.maskCover || 0) < 0.02) return im;
+      var W = im.naturalWidth, H = im.naturalHeight, c = FS.canvas(W, H), x = c.getContext('2d', { willReadFrequently: true });
+      x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, W, H);
+      var pc = FS.canvas(W, H), px = pc.getContext('2d', { willReadFrequently: true }); px.imageSmoothingQuality = 'high'; px.drawImage(orig, 0, 0, W, H);
+      var mc = FS.canvas(W, H), mx = mc.getContext('2d', { willReadFrequently: true }); mx.imageSmoothingQuality = 'high'; mx.filter = 'blur(' + Math.max(1, Math.round(Math.max(W, H) / 900)) + 'px)'; mx.drawImage(m, 0, 0, W, H);
+      var P = px.getImageData(0, 0, W, H), pd = P.data, md = mx.getImageData(0, 0, W, H).data, rd = x.getImageData(0, 0, W, H).data, i, k;
+      var A = [0, 0, 0], B = [0, 0, 0], na = 0, nb = 0;
+      for (i = 0; i < pd.length; i += 16) { if (md[i] > 160) { A[0] += pd[i]; A[1] += pd[i + 1]; A[2] += pd[i + 2]; na++; } else if (md[i] < 40) { B[0] += rd[i]; B[1] += rd[i + 1]; B[2] += rd[i + 2]; nb++; } }
+      if (na && nb) { var O = [0, 0, 0]; for (k = 0; k < 3; k++) { A[k] /= na; B[k] /= nb; } var la = (A[0] + A[1] + A[2]) / 3, lb = (B[0] + B[1] + B[2]) / 3;
+        for (k = 0; k < 3; k++) O[k] = ((B[k] - lb) - (A[k] - la)) * 0.3 + (lb - la) * 0.15;   /* a third of the scene's colour cast, a little of its light */
+        for (i = 0; i < pd.length; i += 4) { if (!md[i]) continue; for (k = 0; k < 3; k++) pd[i + k] = pd[i + k] + O[k]; } }
+      for (i = 0; i < pd.length; i += 4) pd[i + 3] = md[i];
+      px.putImageData(P, 0, 0); x.drawImage(pc, 0, 0);
+      return new Promise(function (ok) { c.toBlob(function (b) { ok(b ? FS.loadImg(URL.createObjectURL(b)) : im); }, 'image/jpeg', 0.94); });
+    }).catch(function (e) { if (window.console) console.warn('keepPeople', e); return im; });
   }
   /* "only on the person" ('fs-ai-only'): the AI's person is laid over the original photo, so the background, the place and
      everyone else stay exactly as they were (the person mask of the answer, on this computer) */
