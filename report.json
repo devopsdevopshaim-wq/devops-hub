@@ -1,0 +1,152 @@
+[
+  {
+    "look": "portal",
+    "variant": "auto-port",
+    "ok": true,
+    "seconds": 4.8,
+    "model": "gptimage",
+    "source": "Pollinations",
+    "error": "",
+    "detail": "flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "portal",
+    "variant": "auto-land",
+    "ok": true,
+    "seconds": 48.6,
+    "model": "gptimage",
+    "source": "Pollinations",
+    "error": "",
+    "detail": "flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "portal",
+    "variant": "k9b-land",
+    "ok": false,
+    "seconds": 0.6,
+    "model": "",
+    "source": "",
+    "error": "quota",
+    "detail": "flux-2-klein-9b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "portal",
+    "variant": "dev-land",
+    "ok": false,
+    "seconds": 0.7,
+    "model": "",
+    "source": "",
+    "error": "quota",
+    "detail": "flux-2-dev: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "portal",
+    "variant": "free-land",
+    "ok": true,
+    "seconds": 44.8,
+    "model": "gptimage",
+    "source": "Pollinations",
+    "error": "",
+    "detail": ""
+  },
+  {
+    "look": "dragon",
+    "variant": "auto-port",
+    "ok": true,
+    "seconds": 47.5,
+    "model": "gptimage",
+    "source": "Pollinations",
+    "error": "",
+    "detail": "flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "dragon",
+    "variant": "auto-land",
+    "ok": false,
+    "seconds": 42.6,
+    "model": "",
+    "source": "",
+    "error": "quota",
+    "detail": "flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. | pollinations gptimage (no key): 503 {\"status\":503,\"success\":false,\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"The Classic"
+  },
+  {
+    "look": "dragon",
+    "variant": "k9b-land",
+    "ok": false,
+    "seconds": 0.6,
+    "model": "",
+    "source": "",
+    "error": "quota",
+    "detail": "flux-2-klein-9b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "dragon",
+    "variant": "dev-land",
+    "ok": false,
+    "seconds": 0.6,
+    "model": "",
+    "source": "",
+    "error": "quota",
+    "detail": "flux-2-dev: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "dragon",
+    "variant": "free-land",
+    "ok": true,
+    "seconds": 48,
+    "model": "gptimage",
+    "source": "Pollinations",
+    "error": "",
+    "detail": ""
+  },
+  {
+    "look": "princess",
+    "variant": "auto-port",
+    "ok": true,
+    "seconds": 47.5,
+    "model": "gptimage",
+    "source": "Pollinations",
+    "error": "",
+    "detail": "flux-2-klein-4b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "princess",
+    "variant": "auto-land",
+    "ok": false,
+    "seconds": 46.5,
+    "model": "",
+    "source": "",
+    "error": "server-error",
+    "detail": ""
+  },
+  {
+    "look": "princess",
+    "variant": "k9b-land",
+    "ok": false,
+    "seconds": 0.8,
+    "model": "",
+    "source": "",
+    "error": "quota",
+    "detail": "flux-2-klein-9b: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "princess",
+    "variant": "dev-land",
+    "ok": false,
+    "seconds": 0.6,
+    "model": "",
+    "source": "",
+    "error": "quota",
+    "detail": "flux-2-dev: 4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage."
+  },
+  {
+    "look": "princess",
+    "variant": "free-land",
+    "ok": false,
+    "seconds": 0.6,
+    "model": "",
+    "source": "",
+    "error": "engine-off",
+    "detail": "free"
+  }
+]
