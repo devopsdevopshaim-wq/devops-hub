@@ -79,14 +79,20 @@
     c.head(m, '🔔 התראות וסיכום שבועי', 'כל בוקר: מה מחכה לך. במוצאי שבת: סיכום השבוע שעבר ומה צפוי בשבוע הבא. והאירועים ביומן גוגל עם תזכורת בטלפון.');
     /* WhatsApp to the owner (CallMeBot, free): new sign-ups, every sign-in, booking requests */
     var wr = c.waReady ? c.waReady() : null;
-    m.insertAdjacentHTML('beforeend', '<section class="adm-card" id="wa-card"><h3>💬 הודעות וואטסאפ אליך</h3>' +
+    m.insertAdjacentHTML('beforeend', '<section class="adm-card" id="wa-card"><h3>💬 הודעות לטלפון שלך (טלגרם / וואטסאפ)</h3>' +
       '<p class="hint">כל נרשם חדש (אופטימוס, מסך הלקוח, עורך המסגרות), כל התחברות של לקוח ושל התוכנה, כל כניסה שלך לניהול, כל בקשת הזמנה, וכל בקשה מהתוכנה (רכישה, עדכון, דיווח תשלום, מעבר מחשב): הודעה קצרה לוואטסאפ שלך, עם קישור למסך הנכון. אותו אדם לא נשלח פעמיים בתוך 20 דקות.</p>' +
-      '<p id="wa-st">' + (wr === true ? '✅ מחובר.' : wr === false ? '⚠️ עוד לא מחובר: חסרים שני הסודות CALLMEBOT_APIKEY ו־CALLMEBOT_PHONE בהגדרות של GitHub (הסבר למטה).' : '') + '</p>' +
+      '<p id="wa-st">' + (wr === true ? '✅ מחובר.' : wr === false ? '⚠️ עוד לא מחובר: מחברים טלגרם (הכי פשוט) או וואטסאפ, הסבר למטה.' : '') + '</p>' +
       '<div class="act-row"><button class="btn gold small" id="wa-test">📲 שליחת הודעת בדיקה</button></div>' +
-      '<details><summary>איך מחברים (פעם אחת, בחינם)</summary><ol><li>בטלפון, באתר <b dir="ltr">callmebot.com</b>, בעמוד של WhatsApp: שומרים את מספר הבוט שמופיע שם באנשי הקשר, ושולחים לו בוואטסאפ את המשפט שכתוב שם.</li><li>הבוט עונה עם מפתח אישי (apikey).</li><li>ב־GitHub: המאגר ← Settings ← Secrets and variables ← Actions ← New repository secret: <b dir="ltr">CALLMEBOT_APIKEY</b> = המפתח, ו־<b dir="ltr">CALLMEBOT_PHONE</b> = המספר שלך בפורמט <span dir="ltr">972544979771</span>.</li><li>מפעילים מחדש את הפרסום של השרת (Actions ← Deploy Cloudflare Worker ← Run workflow), ולוחצים כאן על "שליחת הודעת בדיקה".</li></ol></details></section>');
+      '<details open><summary>✈️ טלגרם: איך מחברים (פעם אחת, בחינם, 2 דקות)</summary><ol><li>מתקינים טלגרם בטלפון (אם עוד אין).</li><li>בטלגרם מחפשים <b dir="ltr">@BotFather</b> (עם וי כחול), לוחצים Start ושולחים <b dir="ltr">/newbot</b>.</li><li>נותנים שם לבוט (למשל "פריים התראות") ושם משתמש שמסתיים ב־bot (למשל <span dir="ltr">frame_alerts_bot</span>).</li><li>BotFather עונה עם <b>טוקן</b> (מספרים, נקודתיים ואותיות).</li><li>ב־GitHub: המאגר ← Settings ← Secrets and variables ← Actions ← New repository secret: <b dir="ltr">TELEGRAM_BOT_TOKEN</b> = הטוקן.</li><li>בטלגרם פותחים את הבוט החדש ושולחים לו הודעה כלשהי (למשל "שלום"): כך השרת יודע לאן לשלוח.</li><li>מפעילים מחדש את הפרסום של השרת, ולוחצים כאן על "שליחת הודעת בדיקה".</li></ol></details>' +
+      '<details><summary>💬 וואטסאפ (CallMeBot): איך מחברים</summary><ol><li>בטלפון, באתר <b dir="ltr">callmebot.com</b>, בעמוד של WhatsApp: שומרים את מספר הבוט שמופיע שם באנשי הקשר, ושולחים לו בוואטסאפ את המשפט שכתוב שם.</li><li>הבוט עונה עם מפתח אישי (apikey).</li><li>ב־GitHub: המאגר ← Settings ← Secrets and variables ← Actions ← New repository secret: <b dir="ltr">CALLMEBOT_APIKEY</b> = המפתח, ו־<b dir="ltr">CALLMEBOT_PHONE</b> = המספר שלך בפורמט <span dir="ltr">972544979771</span>.</li><li>מפעילים מחדש את הפרסום של השרת (Actions ← Deploy Cloudflare Worker ← Run workflow), ולוחצים כאן על "שליחת הודעת בדיקה".</li></ol></details></section>');
     $('#wa-test').addEventListener('click', function () {
       var st = $('#wa-st'); st.textContent = 'שולח…';
-      ACC.call('wa-test', {}).then(function (r) { st.textContent = r.ok ? '✅ נשלחה הודעת בדיקה לוואטסאפ שלך.' : r.error === 'wa-not-set' ? '⚠️ עוד לא מחובר: חסרים הסודות CALLMEBOT_APIKEY ו־CALLMEBOT_PHONE (הסבר למטה).' : '⚠️ ההודעה לא יצאה (' + (r.why || ACC.msg(r)) + '). בודקים שהמפתח והמספר נכונים.'; });
+      ACC.call('wa-test', {}).then(function (r) {
+        st.textContent = r.ok ? '✅ נשלחה הודעת בדיקה' + (r.tg ? ' לטלגרם' : '') + (r.tg && r.wa ? ' ו' : '') + (r.wa ? 'לוואטסאפ' : '') + '.' + (r.tgWhy === 'tg-no-chat' ? ' בטלגרם: שולחים לבוט הודעה כלשהי ולוחצים שוב.' : '')
+          : r.error === 'wa-not-set' ? '⚠️ עוד לא מחובר: מחברים טלגרם או וואטסאפ (הסבר למטה).'
+          : /tg-no-chat/.test(r.why || '') ? '⚠️ הבוט בטלגרם עוד לא קיבל ממך הודעה: פותחים אותו בטלגרם, שולחים "שלום" ולוחצים שוב.'
+          : '⚠️ ההודעה לא יצאה (' + (r.why || ACC.msg(r)) + '). בודקים שהטוקן או המפתח נכונים.';
+      });
     });
     m.insertAdjacentHTML('beforeend', '<section class="adm-card"><h3>🔗 החיבור ל־Maton</h3><div id="nt-st"><p class="hint">בודק…</p></div>' +
       '<details class="nt-how"><summary>איך מחברים (פעם אחת)</summary><ol>' +

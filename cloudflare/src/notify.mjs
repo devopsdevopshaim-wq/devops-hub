@@ -170,6 +170,24 @@ export async function callMeBot(env, msg) {
     return r.ok ? {} : { error: 'callmebot ' + r.status };
   } catch (e) { return { error: 'callmebot' }; }
 }
+// Telegram to the owner straight from Telegram's own bot API (free, no other service): the bot's token is a secret of the Worker
+// (TELEGRAM_BOT_TOKEN, from @BotFather). The chat is TELEGRAM_CHAT_ID when set; otherwise the owner sends any message to his bot
+// once and the chat is found with getUpdates (the newest private chat) and kept by the server.
+export async function tgApi(env, method, body, f) {
+  if (!env.TELEGRAM_BOT_TOKEN) return { ok: false, error: 'tg-not-set' };
+  try {
+    const r = await (f || fetch)('https://api.telegram.org/bot' + env.TELEGRAM_BOT_TOKEN + '/' + method, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}), signal: AbortSignal.timeout(10000) });
+    const j = await r.json().catch(() => ({}));
+    return j && j.ok ? { ok: true, result: j.result } : { ok: false, error: 'telegram ' + r.status + ' ' + String((j && j.description) || '').slice(0, 80) };
+  } catch (e) { return { ok: false, error: 'telegram' }; }
+}
+export async function tgFindChat(env, f) {
+  const r = await tgApi(env, 'getUpdates', { limit: 100 }, f); if (!r.ok) return r;
+  const chats = (r.result || []).map((u) => (u.message || u.edited_message || {}).chat).filter((c) => c && c.type === 'private');
+  const c = chats.pop(); return c ? { ok: true, chatId: String(c.id), name: [c.first_name, c.last_name].filter(Boolean).join(' ') || c.username || '' } : { ok: false, error: 'tg-no-chat' };
+}
+export const tgSendText = (env, chatId, text, f) => tgApi(env, 'sendMessage', { chat_id: chatId, text: String(text).slice(0, 4000), disable_web_page_preview: true }, f);
+
 // who signed up or signed in, from a sign-in action that succeeded: one short WhatsApp line for the owner, or null.
 // The same person and kind is not repeated within 20 minutes (a page that signs in twice in a row is one message).
 const ilTime = (t) => new Date(t).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
