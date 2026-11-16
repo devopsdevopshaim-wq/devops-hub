@@ -50,4 +50,4 @@ The container can't reach Wikimedia, so photos come in through `.github/workflow
 Serve the repo root statically and open `/dig-game/`. `window.SHCHAVOT_GAME` exposes `state()`, `dig()`, `startDig(i, daily)` and `endDig()` for scripted checks. Headless Chromium needs `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader` to render WebGL. A bot can aim at a find with `DIG3D.project(DIG3D.artCenter(a))`. To look at the archaeologist up close, `DIG3D.view(x, y, z, dist, pitch, yaw)` locks the camera and `DIG3D._person()` gives his state (`pos`, `goal`, `act`, `seq`, `model`). Check at 390px and 1360px (no horizontal scroll), play a dig to its summary, and look at the museum and the camp. To view all the art, put every id in `museum` in localStorage.
 
 ## Deploy
-Push to `main`: `.github/workflows/vacation-hub-pages.yml` copies `dig-game/` to Pages.
+Push to `main`: `.github/workflows/vacation-hub-pages.yml` copies `dig-game/` to Pages. Browsers keep Pages files for about 10 minutes, so the CSS and scripts in `index.html` carry `?v=<date>`. Bump it whenever a script or the stylesheet changes, so a phone never mixes an old file with a new one.
