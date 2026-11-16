@@ -2464,3 +2464,24 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - unstyle was undoable.
   - Redo chains worked.
   - The buttons were visible on all 5 screens.
+
+## v163: AI designs sharp, in place, and no longer blocked by the filter
+- **Blocked edits (a v161 regression):** aiCheck compared the whole scene for every "photograph" prompt, so looks that change the clothes or the place (on the real person, heroes) were rejected.
+  - Now `photo` (face NCC, missing faces fail) applies only to keepFaces looks (/very same people|Keep everything else exactly as it is/).
+  - The new `scene` option is only for "Keep everything else exactly as it is" (smart edits).
+  - `p.aiScene` is stored for aiHealth.
+- **Sharpness:** `styles.js crisp(im, orig, keep)` runs after keepFaces and onlyPerson. Engines answer at ~1024px and matchShape enlarges to the photo's size (≤3000).
+  - keep looks: the original's high frequencies (orig − blur(orig, up·0.7)) are added ×0.68, under a mask of where the AI picture still matches the photo in light (1/8 size, 10–40 levels, blurred up), then a light unsharp mask (0.08 + (up−1)·0.06, ≤ 0.25).
+  - Other looks: unsharp mask only (0.35 + (up−1)·0.25, ≤ 0.9), radius up·0.55.
+  - It is skipped when up < 1.25. Off with localStorage 'fs-ai-crisp' = '0'.
+  - **Test** (a 1600×2400 photo, a 683×1024 graded answer):
+    - Laplacian variance: original 47, enlarged 21, crisp 50.
+    - Mean difference to the original: 6.3 (enlarged 6.2).
+    - About 1.4 s.
+- **Place in the frame:** `applyAI`, `unstyle` and `unstyleStep` keep `p.doc.photo` (crop, zoom, turn, position) when the new picture has the same shape (`keepPlace` / `sameShape`, aspect within 0.02), instead of `FS.fitPhoto` refitting it.
+- **Engines on 16 Nov** (frame-ai-health):
+  - Cloudflare FLUX: daily 10k neurons used up (an event of ~100 photos uses it).
+  - Gemini: 429, no free image tier.
+  - OpenAI: off.
+  - Pollinations gptimage works (5–44 s).
+  - POLLINATIONS_TOKEN is empty in the deploy. A free token (auth.pollinations.ai) opens kontext, nanobanana and seedream and lifts the speed limit; the owner adds it as a GitHub secret.

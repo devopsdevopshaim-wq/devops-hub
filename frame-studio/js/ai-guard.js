@@ -63,7 +63,7 @@
   FS.aiCheck = function (orig, res, o) {
     o = o || {};
     if (!FS.getLandmarker) return Promise.resolve({ ok: true, score: 100, faces: 0, bad: 0, why: '', skipped: true });
-    var photo = o.photo !== false, lim = limits(photo);
+    var photo = o.photo !== false, sceneOn = !!o.scene, lim = limits(photo);   /* scene: only for edits that keep the place (a look may change it) */
     return FS.getLandmarker().then(function (lm) {
       var od = dims(orig), k = Math.min(1, MAX / Math.max(od[0], od[1])), W = Math.round(od[0] * k), H = Math.round(od[1] * k);
       var oc = canvasOf(orig, W, H), rc = canvasOf(res, W, H);
@@ -85,9 +85,9 @@
         else if (photo && sim < lim.face) { bad++; why.push('פנים שונות מהמקור'); }
       });
       var scene = 1;
-      if (photo) { var a = edges(orig, od[0], od[1]), b = edges(res, od[0], od[1]); scene = ncc(a, b); if (scene < lim.scene) why.push('התמונה לא תואמת למקור'); }
-      var ok = !bad && !(photo && scene < lim.scene);
-      var score = Math.round(100 * Math.min(n ? worst : 1, photo ? Math.max(0, Math.min(1, (scene + 0.2) / 1.0)) : 1));
+      if (sceneOn) { var a = edges(orig, od[0], od[1]), b = edges(res, od[0], od[1]); scene = ncc(a, b); if (scene < lim.scene) why.push('התמונה לא תואמת למקור'); }
+      var ok = !bad && !(sceneOn && scene < lim.scene);
+      var score = Math.round(100 * Math.min(n ? worst : 1, sceneOn ? Math.max(0, Math.min(1, (scene + 0.2) / 1.0)) : 1));
       return { ok: ok, score: score, faces: n, bad: bad, scene: Math.round(scene * 100) / 100, detail: detail, why: why.filter(function (w, i) { return why.indexOf(w) === i; }).join(' · ') };
     }).catch(function (e) { if (window.console) console.warn('aiCheck', e); return { ok: true, score: 100, faces: 0, bad: 0, why: '', skipped: true }; });
   };
@@ -100,7 +100,7 @@
       if (i >= list.length) return Promise.resolve({ checked: list.length, bad: bad });
       var p = list[i++]; if (onStep) onStep(i, list.length);
       return Promise.all([FS.loadImg(p.origSrc), FS.loadImg(p.src)]).then(function (ims) {
-        return FS.aiCheck(ims[0], ims[1], { photo: p.aiPhoto !== false });
+        return FS.aiCheck(ims[0], ims[1], { photo: p.aiPhoto !== false, scene: !!p.aiScene });
       }).then(function (r) { if (r.ok) delete p.aiBad; else { p.aiBad = r.why || 'עריכת AI לא תקינה'; bad.push(p); } }, function () {}).then(next);
     }
     return next();
