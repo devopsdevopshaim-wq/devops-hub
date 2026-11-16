@@ -2706,3 +2706,7 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - `restyleOnce` runs `FS.detectFaces` on the raw answer (after matchShape, before keepHeads/keepFaces) and carries it as `im.aiRaw`. Before this, a real face pasted onto one invented figure made a 2-person photo count as 2 (owner report: a woman with the man's face and a second head).
 - `guarded()` → `placedMiss(im)`: for 2+ posing faces (`p._main`, set in restyleTry), each needs a raw face within 0.6 face-widths and 0.5–2× size. Misses (more than 1 when the group is over 5) count as lost and skip the bodies-kept rescue. Then the next engine, then the plate.
 - Prompt: with 2+ people, "portrait" becomes "group portrait", plus "shows all N people… never one figure" (the ✨ fantasy portrait drew one woman for 7 people).
+
+## v182: faces of a table group are found (tiled face finder)
+- `FS.detectFaces` (ai.js): BlazeFace short-range reads a 128px copy, so the small faces of a table group were missed: 6 of 14 in a test mosaic. The owner's 7-person table was counted as 1, so one invented figure passed every check. Now the whole picture plus overlapping half-step tiles at 0.5 / 0.3 / 0.18 of the long side. A tile-only face needs score ≥ 0.75 and a second sighting in another tile (a dress pattern was a "face"). Overlaps merge as before. The test mosaic now gives 14 of 14 with no false faces.
+- Results are memoised per `im.src` (blob/file urls under 200 chars), and copies are returned. About 2.5 s for a 24 MP photo in headless; cached after that.
