@@ -6,6 +6,8 @@ import { RenderPass } from '../vendor/three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from '../vendor/three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/three/addons/postprocessing/OutputPass.js';
 import { GTAOPass } from '../vendor/three/addons/postprocessing/GTAOPass.js';
+import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from '../vendor/three/addons/utils/SkeletonUtils.js';
 
 const D = window.SHCHAVOT;
 const PH = window.SHCHAVOT_PHOTOS || { sites: {}, finds: {} };
@@ -22,7 +24,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /* ---------- renderer ---------- */
 let renderer, scene, camera, composer, bloom, clock, host = null, overlay = null, ro = null;
-let running = false, mode = 'idle', aoPass = null, slow = 0, showcaseHits = [], showSpot = null;
+let viewLock = false, running = false, mode = 'idle', aoPass = null, slow = 0, showcaseHits = [], showSpot = null;
 function initRenderer() {
   if (renderer) return true;
   try {
@@ -317,6 +319,71 @@ function addProps() {
 
 /* ---------- the tool in your hand ---------- */
 /* ---------- the archaeologist ---------- */
+// a professionally made, rigged character with motion-captured style animations (KayKit Adventurers, free for commercial use);
+// the figure built in code below stays as a fallback if the model cannot load
+const heroGLTF = new Promise((res) => new GLTFLoader().load('models/explorer.glb', res, undefined, () => res(null)));
+const CLIPS = { idle: 'Idle', ready: '2H_Melee_Idle', walk: 'Walking_A', run: 'Running_A', chop: '2H_Melee_Attack_Chop', pickup: 'PickUp', cheer: 'Cheer' };
+function lowestHandTime(mixer, root, action, hand) {
+  // the moment the tool meets the ground: when the hand is lowest in the clip
+  const clip = action.getClip(); let best = 0, by = Infinity; const v = new THREE.Vector3();
+  action.reset().play();
+  for (let t = 0; t <= clip.duration; t += clip.duration / 40) { mixer.setTime(t); root.updateMatrixWorld(true); hand.getWorldPosition(v); if (v.y < by) { by = v.y; best = t; } }
+  action.stop(); mixer.setTime(0);
+  return best;
+}
+function attachModel(P, g) {
+  // each digger (opening screen, dig) gets its own copy of the rig
+  const m = SkeletonUtils.clone(g.scene);
+  ['Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Knife', 'Throwable', 'Rogue_Cape'].forEach((n) => { const o = m.getObjectByName(n); if (o) o.visible = false; });
+  m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
+  m.scale.setScalar(1); m.position.set(0, 0, 0); m.rotation.set(0, 0, 0);
+  const box = new THREE.Box3().setFromObject(m), k = 1.75 / PS / (box.max.y - box.min.y); // 1.75 m in the world
+  m.scale.setScalar(k);
+  P.body.visible = false;
+  P.root.add(m);
+  const slot = m.getObjectByName('handslotr') || m.getObjectByName('handr');
+  for (const [name, t] of Object.entries(P.tools)) {
+    t.parent && t.parent.remove(t);
+    t.scale.setScalar(1 / k); t.position.set(0, 0, 0);
+    // the slot holds weapons along its own y axis, blade up: turn our tools to match
+    t.rotation.set(Math.PI, 0, 0);
+    if (name === 'pick') t.position.y = 0.45 / k;
+    slot.add(t);
+  }
+  const head = m.getObjectByName('head');
+  if (head && !head.getObjectByName('fedora')) {
+    const hatM = new THREE.MeshStandardMaterial({ color: '#c9b386', roughness: 0.85 }), bandM = new THREE.MeshStandardMaterial({ color: '#4a3622' });
+    const hat = new THREE.Group(); hat.name = 'fedora';
+    // sizes in the rig's own units: the head runs about 1.0 up from its bone and 0.55 out to each side
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.86, 0.05, 40), hatM);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 0.42, 32), hatM); crown.position.y = 0.22;
+    const dent = new THREE.Mesh(new THREE.SphereGeometry(0.5, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), hatM); dent.scale.set(1, 0.25, 0.8); dent.position.y = 0.42;
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.605, 0.605, 0.1, 32), bandM); band.position.y = 0.07;
+    hat.add(brim, crown, dent, band); hat.traverse((o) => { o.castShadow = true; });
+    hat.position.set(0, 0.86, 0.02); hat.rotation.x = -0.1;
+    head.add(hat);
+  }
+  const mixer = new THREE.AnimationMixer(m), actions = {};
+  for (const [key, name] of Object.entries(CLIPS)) { const c = THREE.AnimationClip.findByName(g.animations, name); if (c) actions[key] = mixer.clipAction(c); }
+  for (const key of ['chop', 'pickup', 'cheer']) if (actions[key]) { actions[key].setLoop(THREE.LoopOnce); actions[key].clampWhenFinished = true; }
+  const hand = m.getObjectByName('handr') || slot;
+  const imp = {};
+  // time the blows: the chop lands at about 0.3 s, a bend reaches the ground at about 0.35 s
+  if (actions.chop) { const tr = lowestHandTime(mixer, P.root, actions.chop, hand); actions.chop.timeScale = Math.max(0.8, tr / 0.3); imp.pick = tr / actions.chop.timeScale; }
+  if (actions.pickup) { const tr = lowestHandTime(mixer, P.root, actions.pickup, hand); actions.pickup.timeScale = Math.max(0.8, tr / 0.35); imp.brush = imp.trowel = tr / actions.pickup.timeScale; }
+  Object.assign(IMPACT, imp);
+  P.model = { m, mixer, actions, cur: null, played: -1 };
+  playClip(P, 'idle', 0);
+}
+function playClip(P, key, fade = 0.18, restart = false) {
+  const M = P.model, a = M.actions[key];
+  if (!a) return;
+  if (M.cur === key && !restart) return;
+  const prev = M.cur && M.actions[M.cur];
+  a.reset(); a.enabled = true; a.setEffectiveWeight(1); a.play();
+  if (prev && prev !== a && fade > 0) prev.crossFadeTo(a, fade, false); else if (prev && prev !== a) prev.stop();
+  M.cur = key;
+}
 let person = null, toolKind = 'pick', holdUntil = 0, pendingFx = [], focus = null;
 // effects of a strike wait for the moment the tool meets the ground
 function later(fn) { if (clock && clock.elapsedTime < holdUntil) pendingFx.push(fn); else fn(); }
@@ -401,6 +468,8 @@ function buildPerson() {
   P.cur = { ...POSES.stand }; P.pos = new THREE.Vector3(0, 0, HALF + 1.2); P.goal = P.pos.clone(); P.face = Math.PI; P.act = 'idle'; P.t = 0; P.walk = 0; P.aim = null;
   P.root.position.copy(P.pos); P.root.scale.setScalar(PS);
   scene.add(P.root);
+  P.seq = 0;
+  heroGLTF.then((g) => { if (g && person === P) { try { attachModel(P, g); } catch (e) { console.warn('model', e); P.body.visible = true; } } });
   return P;
 }
 
@@ -440,10 +509,10 @@ function act(kind, p) {
   P.goal.copy(goal); P.aim = p.clone(); P.kind = kind;
   const walkT = dist > 0.12 ? Math.min(0.9, dist / 3.2) : 0;
   P.walkLeft = walkT;
-  P.act = kind; P.t = -walkT;
+  P.act = kind; P.t = -walkT; P.seq = (P.seq || 0) + 1;
   return walkT + IMPACT[kind];
 }
-function cheer() { if (person) { person.act = 'cheer'; person.t = 0; } }
+function cheer() { if (person) { person.act = 'cheer'; person.t = 0; person.seq = (person.seq || 0) + 1; } }
 const lerpPose = (a, b, k) => { const o = {}; for (const key in a) o[key] = a[key] + (b[key] - a[key]) * k; return o; };
 const ease = (x) => (x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x));
 function updatePerson(dt, t) {
@@ -465,6 +534,20 @@ function updatePerson(dt, t) {
   let da = P.face - P.root.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
   P.root.rotation.y += da * (1 - Math.pow(0.0002, dt));
   P.t += dt;
+  if (P.model) {
+    const M = P.model;
+    M.mixer.update(dt);
+    if (walking && P.t < 0) playClip(P, dist > 1.5 ? 'run' : 'walk', 0.15);
+    else if (P.t >= 0 && M.played !== P.seq && (P.act === 'pick' || P.act === 'brush' || P.act === 'trowel' || P.act === 'cheer')) {
+      M.played = P.seq;
+      playClip(P, P.act === 'pick' ? 'chop' : P.act === 'cheer' ? 'cheer' : 'pickup', 0.08, true);
+    } else if (M.cur && ['chop', 'pickup', 'cheer'].includes(M.cur)) {
+      const a = M.actions[M.cur];
+      if (!a.isRunning() || a.time >= a.getClip().duration - 0.02) playClip(P, toolKind === 'pick' ? 'ready' : 'idle', 0.25);
+    } else if (!walking) playClip(P, toolKind === 'pick' ? 'ready' : 'idle', 0.25);
+    P.root.position.set(P.pos.x, P.pos.y, P.pos.z);
+    return;
+  }
   // the pose for this moment
   let target = POSES.stand, k = 1 - Math.pow(0.001, dt);
   const breathe = Math.sin(t * 1.8) * 0.02;
@@ -802,7 +885,7 @@ const camT = new THREE.Vector3(0, -0.6, 0), camLook = new THREE.Vector3(0, -0.6,
 function updateCamera(dt, t) {
   if (mode === 'showcase') camYaw = 0.5 + Math.sin(t * 0.08) * 0.6;
   // follow the pit down a little
-  if (dig && target && mode === 'dig') {
+  if (dig && target && mode === 'dig' && !viewLock) {
     let s = 0, n = 0;
     for (let i = 0; i < target.length; i += 23) { if (target[i] < -0.05) { s += target[i]; n++; } }
     camT.y = n ? Math.max(-2.4, (s / n) * 0.5) - 0.4 : -0.5;
@@ -1031,6 +1114,10 @@ window.DIG3D = {
   artCenter(z) { const o = arts.find((a) => a.z === z) || items.find((a) => a.z === z); return o ? new THREE.Vector3((o.x0 + o.x1) / 2, -o.top + 0.1, (o.z0 + o.z1) / 2) : new THREE.Vector3(); },
   rotate(dir) { camYaw += dir * Math.PI / 4; },
   setTool(kind) { showTool(kind); },
+  // point the camera somewhere (used by checks and by close-ups)
+  view(x, y, z, dist, pitch, yaw) { camT.set(x, y, z); camLook.set(x, y, z); camDist = dist; camPitch = pitch; camYaw = yaw; mode = mode === 'dig' ? 'dig' : mode; viewLock = true; },
+  personAt: () => person && person.pos.clone(),
+  _person: () => person,
   vec: (x, y, z) => new THREE.Vector3(x, y, z),
   supported: !!window.WebGL2RenderingContext,
 };
