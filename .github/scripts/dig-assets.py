@@ -38,11 +38,11 @@ def catalog():
         for aid, a in data.items():
             text = ' '.join([aid, a.get('name', '')] + a.get('categories', []) + a.get('tags', [])).lower()
             if t == 'hdris' or any(w in text for w in WORDS):
-                rows.append({'id': aid, 'name': a.get('name'), 'cat': a.get('categories', []), 'tags': a.get('tags', [])[:8]})
-        out[t] = sorted(rows, key=lambda r: r['id'])
+                rows.append([aid, a.get('name'), ','.join(a.get('categories', []))])
+        out[t] = sorted(rows, key=lambda r: r[0])
         print(t, len(rows))
     # what files one HDRI offers, to choose formats and sizes
-    sample = out['hdris'][0]['id'] if out['hdris'] else None
+    sample = out['hdris'][0][0] if out['hdris'] else None
     if sample:
         files = json.loads(get(f'{API}/files/{sample}'))
         out['hdri_file_keys'] = {k: list(v.keys()) if isinstance(v, dict) else v for k, v in files.items()}
