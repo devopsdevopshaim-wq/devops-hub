@@ -21,6 +21,10 @@ const KEYS = {
   azure: label('AZURE_SPEECH_KEY', '[A-Za-z0-9]{32,100}'), region: label('AZURE_SPEECH_REGION', '[a-z0-9]{4,30}') || 'westeurope',
   eleven: label('ELEVENLABS_API_KEY', '(?:sk_)?[A-Za-z0-9]{32,80}') || pick(/\bsk_[a-f0-9]{40,}\b/),
 };
+/* where each key came from and its shape, never its value (a wrong secret is found without showing it) */
+for (const [k, n] of [['eleven', 'ELEVENLABS_API_KEY'], ['gemini', 'GEMINI_API_KEY']]) {
+  const v = KEYS[k]; console.log('key', k + ':', !v ? 'none' : (process.env[n] ? 'from the secret ' + n : 'from SPIDER/HAIM_WEB_KEY') + ', ' + v.length + ' chars' + (k === 'eleven' ? ', starts with sk_: ' + v.startsWith('sk_') : ''));
+}
 const ffmpeg = (args) => { const r = spawnSync('ffmpeg', ['-v', 'error', '-y', ...args]); if (r.status) throw new Error('ffmpeg: ' + String(r.stderr).slice(0, 300)); };
 const dur = (f) => Number(String(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).stdout).trim());
 
@@ -67,9 +71,16 @@ async function azure(text, lang, file) {
 }
 async function eleven(text, lang, file) {
   if (!KEYS.eleven) throw new Error('no key');
-  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICES.eleven[lang]}`, { method: 'POST', headers: { 'xi-api-key': KEYS.eleven, 'Content-Type': 'application/json', Accept: 'audio/mpeg' }, body: JSON.stringify({ text, model_id: 'eleven_v3' }) });
-  if (!r.ok) throw new Error('elevenlabs ' + r.status);
-  const mp3 = file + '.mp3'; fs.writeFileSync(mp3, Buffer.from(await r.arrayBuffer())); ffmpeg(['-i', mp3, file]); fs.rmSync(mp3); return 'elevenlabs/eleven_v3';
+  /* eleven_v3 first (the most natural), then the multilingual v2 when the account cannot use v3; the error's own message
+     is kept in the report (it never holds the key) */
+  let last = '';
+  for (const model of ['eleven_v3', 'eleven_multilingual_v2']) {
+    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICES.eleven[lang]}`, { method: 'POST', headers: { 'xi-api-key': KEYS.eleven, 'Content-Type': 'application/json', Accept: 'audio/mpeg' }, body: JSON.stringify({ text, model_id: model, language_code: lang, voice_settings: { stability: 0.5, similarity_boost: 0.75 } }) });
+    if (r.ok) { const mp3 = file + '.mp3'; fs.writeFileSync(mp3, Buffer.from(await r.arrayBuffer())); ffmpeg(['-i', mp3, file]); fs.rmSync(mp3); return 'elevenlabs/' + model; }
+    const body = await r.text().catch(() => ''); last = 'elevenlabs ' + model + ' ' + r.status + ' ' + body.replace(/\s+/g, ' ').slice(0, 220);
+    console.log(last);
+  }
+  throw new Error(last);
 }
 async function edge(text, lang, file) {
   const mp3 = file + '.mp3', v = VOICES.edge[lang];
