@@ -2739,3 +2739,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Each cell is a cover crop centred on the faces (`FS.mainFaces` box).
   - Background swatches (`fs-strip-bg`); a caption line (default: the live event's title) and the date.
   - "➕ כדפים" adds the strips as pages (`p.strip`, `p.collage`, no frame or layers). "🖨️" adds them, then `FS.printNow({paper:'15x20', layout:'fill', margin:0, gap:0, size:[75,200]})`, two side by side, each twice by default (`fs-strip-twice`).
+
+## v186: the booth shows what will print
+- **Size chips** (`#bo-sizes`): the instant print's magnet size (`fs-qprint.msize`) first, then 5×7.5, 7.5×10, 10×15, 13×18 and 15×20, limited to what fits the paper.
+  - A chip calls `FS.applyFormat(p.doc, 'cm', …)` in the photo's own direction, so the page on screen is what prints. The choice is kept in `fs-booth-size` and applied to the next guest.
+  - On "the photographer's latest photo", this changes that photo's page size too.
+- **Live line** (`#bo-info`): size in cm, how many photos, paper, how many per sheet, sheets. It comes from `FS.planPrint({list:[p], paper, layout:'fill', margin:0, gap:0, size: mmOf(p.doc)})` with `p.copies = n`.
+- **"🖨️ להדפסה"** now opens `data-s="check"` ("🧾 לפני ההדפסה"), which shows:
+  - the summary (design, size of each photo, how many, paper and its cm, per sheet, sheets, printer);
+  - the sheet itself (`FS.pageCanvas(plan, page, 60)`, with dashed cut lines and page navigation).
+  - "✔ להדפיס" chooses the instant print's printer on the desktop, then `FS.doPrint(plan)`. "↩ חזרה לשינויים" goes back. The paper is `fs-qprint.paper`, else `FS.prefs.paper`.
