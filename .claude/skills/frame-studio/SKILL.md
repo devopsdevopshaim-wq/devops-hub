@@ -2749,3 +2749,9 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - the summary (design, size of each photo, how many, paper and its cm, per sheet, sheets, printer);
   - the sheet itself (`FS.pageCanvas(plan, page, 60)`, with dashed cut lines and page navigation).
   - "✔ להדפיס" chooses the instant print's printer on the desktop, then `FS.doPrint(plan)`. "↩ חזרה לשינויים" goes back. The paper is `fs-qprint.paper`, else `FS.prefs.paper`.
+
+## v187: the modes bar on top
+- `#fs-modebar` (home.js): a fixed 44 px bar at the top with "🏠 ראשי" and the six modes; the current mode is lit (`lit()`, called from setMode). Owner report: he could not find the way back to home or between the modes.
+- With the bar shown (`body.has-modebar`): `#mt` starts at `top: 44px`; the studio gets `padding-top: 44px`; the floating `#fs-home-btn` is hidden. The bar is hidden while the home screen, the booth, the gate or the intro is up.
+- On phones only the icons show.
+- Booth: the exit is now a labelled pill, "🏠 יציאה לראשי · להחזיק". You still hold it for 1.5 s.

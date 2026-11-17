@@ -41,7 +41,7 @@
   function hide() { el.hidden = true; document.body.classList.remove('hm-on'); }
   function setMode(m) {
     mode = m; ls('fs-home-mode', m); document.body.dataset.mode = m;
-    document.getElementById('hm-mode-name').textContent = nameOf(m);
+    document.getElementById('hm-mode-name').textContent = nameOf(m); if (typeof lit === 'function') lit();
   }
   function go(m) {
     hide();
@@ -53,6 +53,13 @@
   }
   el.addEventListener('click', function (e) { var t = e.target.closest('[data-mode]'); if (t) go(t.dataset.mode); });
   btn.addEventListener('click', show);
+  /* v187: the modes bar, always at the top (over the workspace and the studio): 🏠 and the six, the current one lit, so the
+     owner moves between them in one click and always sees how to get back */
+  var bar = document.createElement('nav'); bar.id = 'fs-modebar'; bar.setAttribute('dir', 'rtl'); bar.setAttribute('aria-label', 'מצבי עבודה');
+  bar.innerHTML = '<button type="button" data-go="home" class="mb-home">🏠 ראשי</button>' + MODES.map(function (m) { return '<button type="button" data-go="' + m[0] + '">' + m[1] + ' <span>' + m[2] + '</span></button>'; }).join('');
+  document.body.appendChild(bar); document.body.classList.add('has-modebar');
+  bar.addEventListener('click', function (e) { var b = e.target.closest('[data-go]'); if (!b) return; if (b.dataset.go === 'home') show(); else go(b.dataset.go); });
+  function lit() { Array.prototype.forEach.call(bar.querySelectorAll('[data-go]'), function (b) { b.classList.toggle('on', b.dataset.go === mode); }); }
   document.addEventListener('keydown', function (e) {
     if (document.body.classList.contains('gated') || (document.getElementById('intro') && !document.getElementById('intro').hidden && document.body.classList.contains('intro-on'))) return;
     var tag = (e.target && e.target.tagName) || '';
