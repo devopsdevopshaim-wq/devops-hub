@@ -2759,3 +2759,6 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 ## v188: the kept heads take the design's light (keepHeads → pasteHeads)
 - `FS.peopleParts` also returns `face` and `hair` separately. The paste mask is the face at full strength and the hair at 0.85. It is pulled in about a grid pixel (blur, then threshold) and blurred by max(W,H)/320. The alpha is M itself (it was M×1.25). Before this, a halo of the photo's old background showed around the hair.
 - Colour transfer inside the mask: each channel's mean moves to the AI head's mean, and its spread moves 35% of the way to the AI's. Blended at 0.72, so the real head takes the design's light and colour instead of looking pasted. Owner report: superheroes with photo-real heads.
+
+## v189: the home screen's QR works
+- `FS.qrCanvas` (grow.js) returns a Promise of a canvas, because it loads qrcode-generator lazily. home.js had used it as a canvas, so "📱 QR לאפליקציה" threw on `appendChild`. Now `draw`, `full` and `sign` wait for it, and if the library cannot load the dialog says so.
