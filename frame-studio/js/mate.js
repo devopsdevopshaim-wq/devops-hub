@@ -1339,6 +1339,7 @@
      settings, each with its own copies; false when the instant print is not set up yet */
   FS.mate.printList = function (list) { var q = qpGet(); if (!q) { qpSetup(); return false; } list = (list || []).filter(function (p) { return copies(p) > 0; }); if (!list.length) return false; qpSend(q, qpPlan(q, list, 1)); return true; };
   FS.mate.quickReady = function () { return !!qpGet(); };
+  FS.mate.qpSetup = function (then) { qpSetup(then); };
   function qpBtn() { var q = qpGet(), btn = $('#mt-qprint', root); if (btn) btn.title = q ? 'ישר ל' + (q.printer || 'חלון ההדפסה') + ' · ' + q.paper + ' · מגנט ' + q.msize + ' (Ctrl+P)' : 'הגדרה ראשונה, ואז ישר למדפסת'; }
   $('#mt-qprint', root).addEventListener('click', function () { qpRun(); });
   $('#mt-qset', root).addEventListener('click', function () { qpSetup(false); });
