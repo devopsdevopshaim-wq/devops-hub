@@ -2774,3 +2774,6 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - `runBody` → `runSized`: a failed run that is not cancelled, a timeout, missing or on the CPU build steps down (1024 → 768 → 512). The reference photo is refitted from its original. The step is kept in `fs-ai-local-cap`, so the rest of the event starts at a size that works.
   - Choosing a size by hand in the panel clears the cap.
 - Tested with a fake `FSDesktop.localAI`: a 6 GB card runs [768] the first time; a card that fails at 1024 and 768 runs [1024, 768, 512] and keeps 512.
+
+## v192: a photo the local engine cannot make goes to the cloud
+- ai-studio.js `runAI` lane: when the first try of a photo fails with a `local-*` or `relay-*` error, the retry uses engine `'free'` (the cloud) if the machine is online, else the local engine again. Owner report: on the RTX 4050 laptop (6 GB), a photo stayed red with "allocated capacity check". The retry had gone back to the chosen local engine, while the same batch's cloud photo came out fine. The 768 → 512 step-down (v191) did not make it fit, so the card cannot hold the FLUX.2 klein model as installed. A smaller quantized model or the CUDA build (desktop/local-ai.js) is the open fix.

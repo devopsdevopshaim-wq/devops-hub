@@ -294,7 +294,10 @@
       var once = function () { return FS.findFaces(p, true).catch(function () {}).then(function () { if (!stop) return FS.restyle(p, prompt, eng).then(function () { done++; if (!stop) msg(); }); }); };
       return once()
         /* one more try for this photo (a busy engine, a slow answer, a hiccup on the phone), on the next engine in turn */
-        .catch(function (e) { if (stop || /not-same|lost-people|extra-people|cancelled|offline/.test(String(e && e.message))) throw e; if (window.console) console.warn('AI: photo ' + (p.name || p.id) + ' again after', e); eng = undefined; return once(); })
+        .catch(function (e) { if (stop || /not-same|lost-people|extra-people|cancelled|offline/.test(String(e && e.message))) throw e; if (window.console) console.warn('AI: photo ' + (p.name || p.id) + ' again after', e);
+          /* v192: the engine on this computer failed (its graphics card, an install): with internet the photo goes to the cloud,
+             so an event never stops on it; without internet it is tried once more here */
+          eng = /^local-|^relay-/.test(String(e && e.message)) && navigator.onLine !== false ? 'free' : undefined; return once(); })
         .catch(function (e) {
           if (stop) return;
           var m = String(e && e.message || e || '');
