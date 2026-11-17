@@ -841,7 +841,13 @@
 
   /* ---------- home ---------- */
   $('#play').addEventListener('click', () => { SFX.unlock(); SFX.click(); show('levels'); });
-  if (S.smash && S.smash.lvl > 1) $('#play').textContent = `להמשיך · שלב ${S.smash.lvl}`;
+  if (S.smash && S.smash.lvl > 1) $('#play small').textContent = `ממשיכים משלב ${S.smash.lvl}`;
+  $('#how').addEventListener('click', () => { SFX.click(); modal(`<h2>❓ איך משחקים</h2><div class="howto">
+      <div><span>🌍</span><p><b>משלחת עולמית.</b> בוחרים אתר על כדור הארץ וקוראים את המקורות. אחר כך עומדים בשטח האמיתי ומחפשים: חרסים על הקרקע מראים שמתקרבים, וגלאי המתכות מצפצף מהר מעל מתכת. חופרים במכוש, חושפים במברשת, ומנקים את הממצא במעבדה.</p></div>
+      <div><span>💥</span><p><b>ניפוץ מגדלים.</b> מקישים על המגדל כדי לירות. צריך להפיל מהבמה את כל מה שעליה. כמה שיותר יריות נשארות, יותר כוכבים.</p></div>
+      <div><span>⛏️</span><p><b>חפירה בארץ.</b> מקישים על הקרקע כדי לחפור. ליד ממצא עוברים למברשת, כי מכה חזקה שוברת אותו.</p></div>
+      <div><span>🏛️</span><p><b>המוזיאון והמחנה.</b> כל ממצא נכנס למוזיאון. במטבעות קונים ציוד טוב יותר.</p></div></div>
+      <div class="m-actions"><button class="btn gold" id="m-hw">הבנתי, יוצאים!</button></div>`, (r) => { $('#m-hw', r).onclick = closeModal; }); });
   $$('[data-ico]').forEach((el) => { el.innerHTML = ico(el.dataset.ico); });
 
   // the opening screen: the cannon firing at an ancient tower by itself, in 3D when the engine is ready

@@ -150,7 +150,7 @@
   };
   let ex = null;
   function expedition(s) {
-    ex = { s, sherds: 0, near: 0, hints: 1, smalls: [], coins: 0, found: false, detector: false, mult: isDaily(s) ? 2 : 1 };
+    ex = { s, sherds: 0, near: 0, hints: 1, smalls: [], coins: 0, found: false, detector: false, mult: isDaily(s) ? 2 : 1, hot: 0, dug: false, revealed: false };
     const g = state().gear;
     Object.assign(handlers, { detector: 1 + g.detector * 0.3, brush: 1 + g.brush * 0.35, pick: 1 + g.pick * 0.25, energy: 80 + g.crew * 20 });
     A.show('site');
@@ -163,10 +163,34 @@
       SITE3D.start($('#site3d'), s, handlers).then((ok) => {
         if (!ok) return;
         energyBar(SITE3D.energy());
-        A.toast('🧭 אתם בשטח. גררו כדי להסתכל מסביב, הקישו על הקרקע כדי ללכת לשם (במחשב גם W A S D). חפשו חרסים, הפעילו את הגלאי, ואז חפרו.', 'gold', 7000);
+        task();
+        if (!state().seen.site) { state().seen.site = 1; A.save(); siteGuide(); }
       });
     };
     if (window.SITE3D) go(); else addEventListener('site3d-ready', go, { once: true });
+  }
+  // the next thing to do, always in view
+  function task() {
+    if (!ex) return;
+    const steps = [
+      [ex.near >= 2, '🔍 חפשו חרסים על הקרקע (הם מנצנצים). הקישו על חרס כדי להרים אותו. חרסים מהתקופה אומרים שאתם קרובים.'],
+      [ex.hot > 0.6, '📡 הפעילו את גלאי המתכות והלכו לאט. איפה שהוא מצפצף הכי מהר, מתחת יש מתכת.'],
+      [ex.dug, '⛏️ הגלאי צורח? עמדו שם ולחצו "לחפור כאן". שטח החפירה ייפתח ממש מולכם.'],
+      [ex.revealed, '⛏️ הקישו בתוך הבור כדי לחפור עם המכוש, עד שמשהו בולט מהאדמה (בערך מטר עומק).'],
+      [ex.found, '🖌️ עברו למברשת והקישו ליד הממצא כדי לנקות סביבו בעדינות. מכוש עליו ישבור אותו!'],
+    ];
+    const i = steps.findIndex(([ok]) => !ok);
+    $('#st-step').textContent = i < 0 ? '✓' : `${i + 1}/${steps.length}`;
+    $('#st-do').textContent = i < 0 ? '🏆 מצאתם את האוצר! אפשר להמשיך לחפש ממצאים קטנים, או לסיים את המשלחת (✕ למעלה).' : steps[i][1];
+  }
+  function siteGuide() {
+    A.modal(`<h2>🧭 ככה עובדים בשטח</h2><div class="howto">
+      <div><span>👆</span><p><b>להסתכל וללכת:</b> גוררים את המסך כדי להסתכל מסביב, ומקישים על הקרקע כדי ללכת לשם.</p></div>
+      <div><span>🏺</span><p><b>לחפש סימנים:</b> חרסים על הקרקע מנצנצים. הרימו אותם: חרס מהתקופה אומר שאתם קרובים, ופותח רמז ביומן 📜.</p></div>
+      <div><span>📡</span><p><b>הגלאי:</b> מצפצף מהר יותר מעל מתכת קבורה. כשהוא כמעט צורח, חופרים שם.</p></div>
+      <div><span>⛏️🖌️</span><p><b>לחפור:</b> מכוש עד שמשהו בולט, ואז מברשת. הממצא עובר למעבדה לניקוי.</p></div></div>
+      <p class="sub">השורה הצהובה למעלה תמיד אומרת מה הצעד הבא.</p>
+      <div class="m-actions"><button class="btn gold" id="m-gd">יוצאים לשטח</button></div>`, (r) => { $('#m-gd', r).onclick = A.closeModal; });
   }
   function energyBar(e) { $('#st-en').style.width = Math.max(0, Math.min(100, e / (handlers.energy || 80) * 100)) + '%'; $('#st-en-n').textContent = Math.max(0, Math.round(e)); }
   function setSiteMode(m) {
@@ -177,6 +201,7 @@
   const handlers = {
     onSherd(near) {
       ex.sherds++; if (near) ex.near++;
+      task();
       gainXp(near ? 3 : 1);
       SFX.reveal();
       A.toast(near ? `🏺 שבר חרס מ${ex.s.era}! השרידים של התקופה קרובים.` : '🏺 שבר חרס מתקופה מאוחרת יותר.', near ? 'gold' : '', 2600);
@@ -186,8 +211,11 @@
     },
     onBeep(x) { SFX.beep(x); },
     onStep() { SFX.step(); },
-    onSignal(x) { $('#st-signal').style.width = Math.round(x * 100) + '%'; $('#st-signal').parentElement.classList.toggle('hot', x > 0.55); },
-    onReveal(kind) { SFX.reveal(); A.toast(kind === 'main' ? '✨ משהו גדול בולט מהאדמה! עברו למברשת ונקו סביבו בזהירות.' : '🪶 משהו קטן בולט מהאדמה. מברשת!', kind === 'main' ? 'gold' : '', 4200); },
+    onSignal(x) {
+      $('#st-signal').style.width = Math.round(x * 100) + '%'; $('#st-meter').classList.toggle('hot', x > 0.55);
+      if (ex && x > ex.hot) { ex.hot = x; if (x > 0.6) task(); }
+    },
+    onReveal(kind) { if (kind === 'main') { ex.revealed = true; task(); } SFX.reveal(); A.toast(kind === 'main' ? '✨ משהו גדול בולט מהאדמה! עברו למברשת ונקו סביבו בזהירות.' : '🪶 משהו קטן בולט מהאדמה. מברשת!', kind === 'main' ? 'gold' : '', 4200); },
     onExpose(kind, x) { $('#st-expose').style.width = Math.round(x * 100) + '%'; },
     onDamage(cond) { SFX.crack(); A.toast(`💥 המכוש פגע בממצא! מצב ${cond}%. ליד ממצאים עובדים עם מברשת.`, '', 3000); },
     onEnergy(e, empty) {
@@ -197,7 +225,7 @@
     onDig() { SFX.hit(0.3); },
     onFind(b) {
       if (b.kind === 'main') {
-        ex.found = true;
+        ex.found = true; task();
         const f = treasureFind(ex.s), a = { f, cond: b.cond };
         lab(a, 0, true, false, (cond) => treasure(f, cond));
       } else {
@@ -312,6 +340,7 @@
     const res = SITE3D.digHere();
     if (res && res.steep) { SFX.deny(); A.toast('⛰️ כאן תלול מדי לחפור. מצאו משטח ישר יותר, או עמדו מול פתח המערה.', '', 3500); return; }
     SITE3D.addEnergy(-5); energyBar(SITE3D.energy());
+    ex.dug = true; task();
     setSiteMode('dig'); pickTool('pick');
     $('#st-expose').style.width = '0%';
     A.toast('⛏️ פתחתם שטח חפירה של 3×3 מטרים. הקישו בתוכו כדי לחפור. הממצאים מהתקופה נמצאים בעומק של כמטר.', 'gold', 5200);
@@ -539,7 +568,17 @@
 
   window.SHCHAVOT_WORLDGAME = {
     onShow(name) {
-      if (name === 'world') { renderWorld(); startGlobe(); } else if (window.GLOBE3D) GLOBE3D.stop();
+      if (name === 'world') {
+        renderWorld(); startGlobe();
+        if (!state().seen.globe) {
+          state().seen.globe = 1; A.save();
+          setTimeout(() => A.modal(`<h2>🌍 משלחת עולמית</h2><div class="howto">
+            <div><span>📍</span><p>כל סיכה על כדור הארץ היא <b>אתר אמיתי</b> שבו נמצא אוצר אמיתי. סובבו את הכדור באצבע, או בחרו מהרשימה למטה.</p></div>
+            <div><span>📜</span><p>בכל אתר קוראים קודם <b>מה אומרים המקורות</b>: התנ״ך, היסטוריונים קדומים, דוחות חפירה. מהם מבינים איפה לחפש.</p></div>
+            <div><span>⭐</span><p><b>משלחת היום</b> חינם ונותנת פי 2 מטבעות. כדאי להתחיל בה, או בקומראן.</p></div></div>
+            <div class="m-actions"><button class="btn gold" id="m-g1">בואו נתחיל</button></div>`, (r) => { $('#m-g1', r).onclick = A.closeModal; }), 900);
+        }
+      } else if (window.GLOBE3D) GLOBE3D.stop();
       if (name !== 'site' && window.SITE3D) SITE3D.stop();
     },
     lab, sieve, treasureDone, state,

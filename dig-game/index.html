@@ -38,8 +38,12 @@
         <p class="kicker">הרפתקה ארכיאולוגית בתלת־ממד</p>
         <h1 data-text="שכבות">שכבות</h1>
         <p class="tag">כל שכבה היא אלף שנה. מה אתם תגלו?</p>
-        <button class="btn gold xl" id="play">לשחק 💥</button>
-        <button class="btn ghost w-go" data-go="world">🌍 משלחת עולמית: אוצרות אמיתיים מכל העולם</button>
+        <div class="modes">
+          <button class="mode gold" data-go="world"><span>🌍</span><b>משלחת עולמית</b><small>הולכים באתרים אמיתיים בעולם, מחפשים ומוצאים אוצרות אמיתיים</small></button>
+          <button class="mode" id="play"><span>💥</span><b>ניפוץ מגדלים</b><small>יורים בתותח, בקלע ובקטפולטה על מבנים עתיקים, שלב אחרי שלב</small></button>
+          <button class="mode" data-go="map"><span>⛏️</span><b>חפירה בארץ</b><small>חופרים שכבה אחרי שכבה בעכו, בקיסריה ובמגידו</small></button>
+        </div>
+        <button class="link-btn how-btn" id="how">❓ איך משחקים?</button>
         <ul class="how">
           <li><i data-ico="dyn"></i><span><b>יורים</b> בתותח על מגדלים עתיקים</span></li>
           <li><i data-ico="vase"></i><span><b>מוצאים</b> 41 ממצאים אמיתיים בתיבות האוצר</span></li>
@@ -108,6 +112,7 @@
       <button class="st-btn" id="st-map">🗺️<small>מפה</small></button>
       <button class="st-btn" id="st-photo">📷<small>המקום</small></button>
     </div>
+    <div class="st-task" id="st-task" role="status"><b id="st-step">1/5</b><span id="st-do"></span></div>
     <div class="st-meter" id="st-meter" hidden><span>📡</span><div class="st-bar"><i id="st-signal"></i></div></div>
     <div class="st-tools">
       <button class="st-big st-walk" id="st-detector">📡<small>גלאי מתכות</small></button>
