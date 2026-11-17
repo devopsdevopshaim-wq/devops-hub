@@ -16,7 +16,16 @@
   function mode() { var m = ls(KEY); return m === 'local' || m === 'cloud' || m === 'auto' ? m : 'auto'; }
   /* the CPU build is slow (measured on a 4-core runner: ~24 min for 512x768), so without a graphics card it starts at 512
      (about twice as fast as 768, enough for a magnet); a chosen size always wins */
-  function localSize() { var v = ls(SIZE_KEY); if (v === '512') return 512; if (v === '768') return 768; if (v === '1024') return 1024; return st && st.engine && st.engine.variant === 'cpu' ? 512 : 1024; }
+  /* v191: a graphics card under 8 GB (an RTX 4050 laptop has 6) ran out of memory at 1024 ("allocated capacity check"), so it
+     starts at 768; and the size a failed run stepped down to is kept ('fs-ai-local-cap'), so the next photos of the event start
+     at a size that works instead of failing first */
+  var CAP_KEY = 'fs-ai-local-cap';
+  function vramMB() { return gpu && gpu.best && gpu.best.vramMB || 0; }
+  function localSize() {
+    var v = ls(SIZE_KEY), want = v === '512' ? 512 : v === '768' ? 768 : v === '1024' ? 1024 : st && st.engine && st.engine.variant === 'cpu' ? 512 : (vramMB() && vramMB() < 8 * 1024 ? 768 : 1024);
+    var cap = Number(ls(CAP_KEY)) || 0; return cap && cap < want ? cap : want;
+  }
+  function memErr(d) { return /memory|capacity|alloc|VK_ERROR|execution_engine|ggml_vulkan|cudaMalloc|device lost/i.test(String(d || '')); }
   function gb(b) { return b ? (b / 1e9).toFixed(b >= 1e10 ? 0 : 1) + ' GB' : '—'; }
   function toast(m, ms) { if (FS.toast) FS.toast(m, ms); }
 
@@ -24,6 +33,7 @@
     return API.status().then(function (s) { st = s; paint(); pill(); return s; }).catch(function () { st = null; return null; });
   }
   var first = refresh();
+  setTimeout(function () { loadGpu(); }, 1500);   /* the card's memory decides the starting size (v191) */
   function loadGpu() { if (!gpu) API.gpuInfo().then(function (g) { gpu = g; paint(); }).catch(function () { gpu = { gpus: [], best: null }; paint(); }); }
 
   /* ---------- what ai.js calls ---------- */
@@ -52,7 +62,18 @@
     });
   }
   function runBody(body) {
-    if (body.action === 'restyle' && body.image && !body._fit) return fitRef(body.image, Math.max(sizeFor(body).w, sizeFor(body).h)).then(function (b) { return runBody(Object.assign({}, body, { image: b, _fit: 1 })); });
+    /* a run that fails on the graphics card is run again smaller (768, then 512) and that size is kept for the next photos */
+    return runSized(body).then(function (r) {
+      if (r.ok || r.error === 'cancelled' || r.error === 'timeout' || r.error === 'local-missing' || (st && st.engine && st.engine.variant === 'cpu')) return r;
+      var now = localSize(), next = now > 768 ? 768 : now > 512 ? 512 : 0;
+      if (!next || !(memErr(r.detail) || r.error === 'local-failed')) return r;
+      if (window.console) console.warn('local AI: failed at ' + now + ', again at ' + next + ' (' + String(r.detail || '').slice(-120) + ')');
+      ls(CAP_KEY, String(next)); busyText('AI מקומי… מנסה שוב בגודל ' + next);
+      return runBody(Object.assign({}, body, { _fit: 0, image: body._orig || body.image, _orig: body._orig || body.image }));
+    });
+  }
+  function runSized(body) {
+    if (body.action === 'restyle' && body.image && !body._fit) return fitRef(body.image, Math.max(sizeFor(body).w, sizeFor(body).h)).then(function (b) { return runSized(Object.assign({}, body, { _orig: body._orig || body.image, image: b, _fit: 1 })); });
     var sz = sizeFor(body), prev = $('#busy-msg') ? $('#busy-msg').textContent : '';
     busyText('AI מקומי… מתחיל');
     return API.run({ mode: body.action === 'restyle' ? 'restyle' : 'image', prompt: String(body.prompt || '').slice(0, 2000), imageB64: body.action === 'restyle' ? body.image : undefined, w: sz.w, h: sz.h },
@@ -233,7 +254,7 @@
   function onClick(e) {
     var t = e.target.closest('[data-la],[data-mode],[data-size]'); if (!t || !body()) return;
     if (t.dataset.mode) { ls(KEY, t.dataset.mode); paint(); pill(); toast(t.querySelector('b').textContent); return; }
-    if (t.dataset.size) { ls(SIZE_KEY, t.dataset.size); paint(); return; }
+    if (t.dataset.size) { ls(SIZE_KEY, t.dataset.size); ls(CAP_KEY, null); paint(); return; }   /* a size chosen by hand starts over (the kept step-down is cleared) */
     var a = t.dataset.la;
     if (a === 'install') install();
     else if (a === 'cpu') install('cpu');
