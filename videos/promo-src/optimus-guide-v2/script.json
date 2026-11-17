@@ -1,6 +1,6 @@
 {
  "_note": "The narration of the Optimus guide video (videos/optimus-guide), made by videos/optimus-guide/narration.mjs.",
- "slug": "optimus-guide-v2",
+ "slug": "optimus-guide-2026-11",
  "langs": [
   "he"
  ],
@@ -10,7 +10,7 @@
  ],
  "voices": {
   "gemini": {
-   "he": "Kore"
+   "he": "Sulafat"
   },
   "edge": {
    "he": "he-IL-HilaNeural"

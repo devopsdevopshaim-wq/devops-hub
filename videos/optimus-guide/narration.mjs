@@ -18,8 +18,8 @@ const end = (s) => /[.!?]$/.test(s) ? s : s + '.';
 export const SPOKEN = SCENES.map((s) => [end(ear(s.title)), ...s.lines.map((l) => end(ear(l.t)))]);
 if (process.argv[1] && process.argv[1].endsWith('narration.mjs')) {
   const scenes = [{ id: 'intro', he: INTRO }, ...SCENES.map((s, k) => ({ id: 's' + String(k).padStart(2, '0') + '-' + s.id, he: SPOKEN[k].join(' ') })), { id: 'outro', he: OUTRO }];
-  const out = { _note: 'The narration of the Optimus guide video (videos/optimus-guide), made by videos/optimus-guide/narration.mjs.', slug: 'optimus-guide-v2', langs: ['he'], providers: ['gemini', 'edge'],
-    voices: { gemini: { he: 'Kore' }, edge: { he: 'he-IL-HilaNeural' } },
+  const out = { _note: 'The narration of the Optimus guide video (videos/optimus-guide), made by videos/optimus-guide/narration.mjs.', slug: 'optimus-guide-2026-11', langs: ['he'], providers: ['gemini', 'edge'],
+    voices: { gemini: { he: 'Sulafat' }, edge: { he: 'he-IL-HilaNeural' } },
     style: { he: 'את קריינית של סרטון הדרכה. קראי בעברית ברורה, חמה ונעימה, בקצב רגוע ומקצועי, עם הגייה מדויקת: ' }, scenes };
   fs.mkdirSync('../promo-src/optimus-guide-v2', { recursive: true });
   fs.writeFileSync('../promo-src/optimus-guide-v2/script.json', JSON.stringify(out, null, 1));
