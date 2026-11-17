@@ -144,9 +144,44 @@
     bus.gain.cancelScheduledValues(ctx.currentTime); bus.gain.setValueAtTime(bus.gain.value, ctx.currentTime); bus.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.8);
     setTimeout(() => { bus._drone.forEach(([o, l]) => { try { o.stop(); l.stop(); } catch (e) { /* already stopped */ } }); bus.disconnect(); }, 1000);
   }
+  // recorded music for each part of the game (Kevin MacLeod, incompetech.com, CC BY 4.0), with a crossfade between
+  // them; the generative hijaz music above plays only if the recordings can't
+  const MOODS = {
+    menu: ['audio/lost-frontier.mp3'],
+    explore: ['audio/desert-city.mp3', 'audio/mystery-bazaar.mp3'],
+    dig: ['audio/mystery-bazaar.mp3', 'audio/desert-city.mp3'],
+    battle: ['audio/heroic-age.mp3', 'audio/volatile-reaction.mp3'],
+  };
+  const VOL = 0.42;
+  let mood = 'menu', track = null, trackFail = false;
+  function fadeTo(el, to, ms, done) {
+    // a newer fade on the same track replaces an older one
+    const from = el.volume, t0 = performance.now(), id = (el._fade = (el._fade || 0) + 1);
+    const step = (now) => { if (el._fade !== id) return; const k = Math.min(1, (now - t0) / ms); el.volume = Math.max(0, Math.min(1, from + (to - from) * k)); if (k < 1) requestAnimationFrame(step); else if (done) done(); };
+    requestAnimationFrame(step);
+  }
+  function playMood() {
+    if (!musicOn || trackFail) return;
+    const list = MOODS[mood] || MOODS.menu;
+    if (track && list.includes(track.dataset.src) && !track.paused) return;
+    const src = list[Math.floor(Math.random() * list.length)];
+    const el = new Audio(src);
+    el.dataset.src = src; el.volume = 0; el.preload = 'auto';
+    // when a track ends, the next one of the same mood starts
+    el.addEventListener('ended', () => { if (track === el) { track = null; playMood(); } });
+    el.addEventListener('error', () => { if (track === el) { trackFail = true; track = null; musicStart(); } });
+    const old = track; track = el;
+    el.play().then(() => { musicStop(); fadeTo(el, VOL, 1600); }).catch(() => { /* waits for the first tap */ if (track === el) track = null; });
+    if (old) fadeTo(old, 0, 1200, () => old.pause());
+  }
   window.MUSIC = {
-    set(on) { musicOn = !!on; if (musicOn && ctx) musicStart(); if (!musicOn) musicStop(); },
-    kick() { if (musicOn) { ensure(true); musicStart(); } },
+    set(on) {
+      musicOn = !!on;
+      if (!musicOn) { musicStop(); if (track) { const t = track; track = null; fadeTo(t, 0, 500, () => t.pause()); } }
+      else if (trackFail) { if (ctx) musicStart(); } else playMood();
+    },
+    kick() { if (!musicOn) return; if (trackFail) { ensure(true); musicStart(); } else if (!track || track.paused) playMood(); },
+    mood(m) { if (m === mood && track && !track.paused) return; mood = m; if (musicOn && !trackFail && track) playMood(); },
     get on() { return musicOn; },
   };
 

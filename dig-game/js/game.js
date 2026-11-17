@@ -699,6 +699,7 @@
     if (name !== 'dig' && G3()) G3().stop();
     if (name !== 'home' && name !== 'smash' && window.SMASH3D) SMASH3D.stop();
     if (name === 'home') homeScene(); else SHCHAVOT_HERO.stop();
+    MUSIC.mood({ levels: 'battle', smash: 'battle', site: 'explore', world: 'menu', survey: 'explore', dig: 'dig', map: 'dig', museum: 'menu', camp: 'menu', home: 'menu' }[name] || 'menu');
     if (window.SHCHAVOT_SMASH) SHCHAVOT_SMASH.onShow(name);
     if (window.SHCHAVOT_WORLDGAME) SHCHAVOT_WORLDGAME.onShow(name);
     SHCHAVOT_HERO.bg(name === 'map' || name === 'museum' || name === 'camp');
@@ -812,7 +813,7 @@
   }
   $('#credits').addEventListener('click', () => {
     const rows = [...Object.values(PH.sites), ...Object.values(PH.finds)].map((p) => `<li><img src="${p.src}" alt="" loading="lazy"><span><b>${esc(p.caption)}</b><small>${credit(p)}</small></span></li>`).join('');
-    modal(`<h2>קרדיטים לצילומים</h2><p class="sub">כל הצילומים מוויקישיתוף, ברישיונות חופשיים. תודה לצלמים.</p><ul class="creds">${rows}</ul><p class="sub">משחק התותח: צילום המדבר (Goegap), חומרי האבן, השיש והחרס, הכדים, תיבת האוצר, העצים, הסלעים וכלי החפירה מ־<a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a> ברישיון CC0. הארכיאולוג: KayKit מאת Kay Lousberg. מנוע פיזיקלי: cannon-es.</p><div class="m-actions"><button class="btn gold" id="m-cr">סגירה</button></div>`, (root) => { $('#m-cr', root).onclick = closeModal; });
+    modal(`<h2>קרדיטים לצילומים</h2><p class="sub">כל הצילומים מוויקישיתוף, ברישיונות חופשיים. תודה לצלמים.</p><ul class="creds">${rows}</ul><p class="sub">משחק התותח: צילום המדבר (Goegap), חומרי האבן, השיש והחרס, הכדים, תיבת האוצר, העצים, הסלעים וכלי החפירה מ־<a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a> ברישיון CC0. הארכיאולוג: KayKit מאת Kay Lousberg. מנוע פיזיקלי: cannon-es. נתוני הגובה של האתרים: AWS Terrain Tiles (Mapzen). מוזיקה: Kevin MacLeod (incompetech.com), ברישיון CC BY 4.0: Lost Frontier, Desert City, Mystery Bazaar, Heroic Age, Volatile Reaction.</p><div class="m-actions"><button class="btn gold" id="m-cr">סגירה</button></div>`, (root) => { $('#m-cr', root).onclick = closeModal; });
   });
   $('#reset').addEventListener('click', () => {
     modal(`<div class="m-ico">⚠️</div><h2>לאפס את כל ההתקדמות?</h2><p>המוזיאון, המטבעות והשדרוגים יימחקו לגמרי.</p><div class="m-actions"><button class="btn danger" id="m-yes">כן, לאפס</button><button class="btn ghost" id="m-no">ביטול</button></div>`, (root) => {
