@@ -2719,3 +2719,23 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - `extra` is checked against `max(n0, _nAll)` again, with no +1 for groups of 4 or fewer. v183's +1 let an invented woman stand beside a couple and their baby (owner report, DSC05777).
 - `placedExtra(im)`: a posing-size face in the raw answer with no original face (`p._all`) within 0.8 face-widths is an added person. Allowed: 0 for 5 people or fewer, else 1.
 - `keepGround`: the cut line is also capped by a line through the top of the hair of each main face (face top − 0.55·h), joined straight from face to face and flat past the ends. A column holding only a hand or legs low down made a deep notch, and the place showed through the table as a "flame column" (DSC05791).
+
+## v185: home screen with six modes (js/home.js, js/booth.js, js/strips.js, css/home.css)
+- **🏠 Home** (`#fs-home`, `FS.home.show/go/mode`): the studio opens on six tiles. Keys 1–6 choose a tile, and Home (or the fixed `#fs-home-btn`, bottom right, which shows the current mode) comes back. Photos and marks are `FS.state`, so switching modes loses nothing. The mode is kept in `fs-home-mode` and set as `body[data-mode]`.
+  1. `magnets`: the workspace on 'main'; CSS hides the AI tab.
+  2. `ai`: the workspace on 'ai'.
+  3. `booth`: `FS.booth` (below).
+  4. `qr`: a dialog with `FS.liveLinks()` / `FS.liveMainGet()` (added in live.js). It shows the main QR, or else this event's guests' page. Buttons: full screen (`.hm-qrfull`), an A5 sign in a print window, copy, and the live tab.
+  5. `strips`: `FS.strips.open()`.
+  6. `settings`: tiles that call the existing functions: `FS.printerSetup`, `FS.mate.qpSetup` (new export), `FS.printDoctor.show`, the size bar, `FS.printSummary`, the business bar, the AI tab, and the full studio.
+- **📸 Booth** (`#booth`, z 46): the guest's screen.
+  - Photo: the camera with a 3-2-1 (mirrored capture), the photographer's latest photo (not booth/collage/strip), or a file. It goes in with `FS.addPhotoFile` and is tagged `p.booth`. It does not emit 'photos-added', because that opens the workspace over the booth.
+  - Designs, as tabs: ✨ AI_WOW, 🐉 AI_FANTASY, 🧸 AI_KIDS, 🦸 AI_HEROES, 🎨 AI_STYLES, 🔥 AI_VIRAL. The prompts are built the same way mate builds them. They run through `FS.restyle` under `FS.aiBatch(true)`, so the people checks apply and no dialog opens. A rejection shows a toast and asks the guest to choose another design.
+  - "⚡ מהירים": 5 ONNX + 15 instant styles, with live thumbnails.
+  - Copies 1–10, then print. That uses `FS.mate.printList` when instant print is set up, else `FS.printNow` on `FS.prefs.paper`. A thank-you screen follows, and the booth resets after 6 s.
+  - Exit: hold ✕ for 1.5 s, or Esc. "↺ צילום חוזר" removes the booth photo (the new `FS.removePhoto(i)` in ui.js).
+- **🎞️ Strips**: 75×200 mm, 2 or 3 cells (`fs-strip-n`).
+  - Photos: the marked ones, else all. A short last strip repeats its own photos.
+  - Each cell is a cover crop centred on the faces (`FS.mainFaces` box).
+  - Background swatches (`fs-strip-bg`); a caption line (default: the live event's title) and the date.
+  - "➕ כדפים" adds the strips as pages (`p.strip`, `p.collage`, no frame or layers). "🖨️" adds them, then `FS.printNow({paper:'15x20', layout:'fill', margin:0, gap:0, size:[75,200]})`, two side by side, each twice by default (`fs-strip-twice`).

@@ -707,5 +707,8 @@
   draw();
   FS.liveRefresh = refresh;
   FS.liveCurrent = function () { return ev; };
+  /* the home screen's "📱 QR לאפליקציה" (home.js): the studio's main QR when there is one, else this event's guests' page */
+  FS.liveLinks = function () { return { main: mainUrl(), guest: ev ? guestUrl() : '', event: ev ? ev.title : '' }; };
+  FS.liveMainGet = function () { return api('main-get').then(function (r) { if (r && r.ok) main = r; return mainUrl(); }); };
   setTimeout(function () { if (token()) refresh(); }, 1200);
 })();
