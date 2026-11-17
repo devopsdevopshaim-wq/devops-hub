@@ -41,8 +41,10 @@
     '<section class="bo-step" data-s="cam"><h1>📸 מצטלמים!</h1><div class="bo-cam"><video id="bo-v" playsinline muted></video><div class="bo-count" id="bo-count" hidden></div><p class="bo-nocam" id="bo-nocam" hidden>אין מצלמה במכשיר הזה. בוחרים תמונה מהצלם או מהמחשב.</p></div>' +
       '<div class="bo-row"><button type="button" class="bo-big primary" id="bo-shot">📸 צילום (3, 2, 1)</button><button type="button" class="bo-big" id="bo-last">🖼️ התמונה האחרונה של הצלם</button><label class="bo-big">📂 תמונה מהמחשב<input type="file" id="bo-file" accept="image/*" hidden></label></div></section>' +
     '<section class="bo-step" data-s="style" hidden><h1>בוחרים סגנון וכמה עותקים</h1><div class="bo-main"><div class="bo-pv"><canvas id="bo-pv"></canvas><div class="bo-wait" id="bo-wait" hidden>מעצב…</div></div>' +
-      '<div class="bo-side"><div class="bo-tabs" id="bo-tabs"></div><div class="bo-styles" id="bo-styles"></div><div class="bo-copies"><span>עותקים</span><button type="button" id="bo-minus">−</button><b id="bo-n">1</b><button type="button" id="bo-plus">+</button></div>' +
+      '<div class="bo-side"><div class="bo-tabs" id="bo-tabs"></div><div class="bo-styles" id="bo-styles"></div><div class="bo-sizes" id="bo-sizes"></div><div class="bo-copies"><span>עותקים</span><button type="button" id="bo-minus">−</button><b id="bo-n">1</b><button type="button" id="bo-plus">+</button></div><div class="bo-info" id="bo-info"></div>' +
       '<div class="bo-row"><button type="button" class="bo-big" id="bo-again">↺ צילום חוזר</button><button type="button" class="bo-big primary" id="bo-print">🖨️ להדפסה</button></div></div></div></section>' +
+    '<section class="bo-step" data-s="check" hidden><h1>🧾 לפני ההדפסה</h1><div class="bo-main"><div class="bo-pv bo-sheet"><canvas id="bo-sheet"></canvas><div class="bo-sheetnav" id="bo-sheetnav"></div></div>' +
+      '<div class="bo-side"><dl class="bo-sum" id="bo-sum"></dl><div class="bo-row"><button type="button" class="bo-big" id="bo-back">↩ חזרה לשינויים</button><button type="button" class="bo-big primary" id="bo-go">✔ להדפיס</button></div></div></div></section>' +
     '<section class="bo-step" data-s="done" hidden><h1>✅ תודה! ההדפסה בדרך</h1><p class="bo-thanks" id="bo-thanks"></p></section>';
   document.body.appendChild(root);
   var $ = function (s) { return root.querySelector(s); };
@@ -102,7 +104,9 @@
     step('style'); n = p.copies || 1; $('#bo-n').textContent = n;
     var T = aiTabs(); if (!T.some(function (x) { return x[0] === tab; })) tab = T[0][0];
     $('#bo-tabs').innerHTML = T.map(function (x) { return '<button type="button" data-tab="' + x[0] + '"' + (x[0] === tab ? ' class="on"' : '') + '>' + x[1] + '</button>'; }).join('');
-    grid(); preview();
+    var want = ls('fs-booth-size'), m = mmNow();
+    if (want) { var v = want.split('x').map(Number); if (Math.abs(v[0] - m[0]) > 2 || Math.abs(v[1] - m[1]) > 2) { setSize(v[0], v[1]); } }
+    sizeRow(); grid(); preview(); info();
   }
   function grid() {
     var box = $('#bo-styles'), T = aiTabs(), cur0 = T.filter(function (x) { return x[0] === tab; })[0];
@@ -146,16 +150,62 @@
       Array.prototype.forEach.call(root.querySelectorAll('.bo-st'), function (b) { b.classList.toggle('on', b.dataset.k === ''); }); cur = ''; preview(); })
       .then(function () { busy = false; $('#bo-wait').hidden = true; });
   }
+  /* 📐 the size, the paper and how many: what will come out, before it is printed (v186). The sizes on offer: the instant print's
+     magnet size first, then the usual ones; a size is set on the photo's page in the photo's own direction (tall or wide), so
+     what is on the screen is what prints. The paper is the instant print's (else the print settings'). */
+  var SIZES = [[50, 75, '5×7.5'], [75, 100, '7.5×10'], [100, 150, '10×15'], [130, 180, '13×18'], [150, 200, '15×20']];
+  function qp() { try { return JSON.parse(localStorage.getItem('fs-qprint') || 'null'); } catch (e) { return null; } }
+  function paperId() { var q = qp(); return (q && q.paper) || FS.prefs.paper || '15x20'; }
+  function mmNow() { var m = FS.mmOf(p.doc); return [Math.min(m[0], m[1]), Math.max(m[0], m[1])]; }
+  function sizes() {
+    var q = qp(), l = SIZES.slice(), m = q && q.msize ? q.msize.split('x').map(Number) : null;
+    if (m && m[0] && !l.some(function (s) { return s[0] === Math.min(m[0], m[1]) && s[1] === Math.max(m[0], m[1]); })) l.unshift([Math.min(m[0], m[1]), Math.max(m[0], m[1]), (Math.min(m[0], m[1]) / 10) + '×' + (Math.max(m[0], m[1]) / 10)]);
+    var P = (FS.PAPERS || []).filter(function (x) { return x[0] === paperId(); })[0], pw = P ? Math.max(P[2], P[3]) : 999, pm = P ? Math.min(P[2], P[3]) : 999;
+    return l.filter(function (s) { return s[0] <= pm + 1 && s[1] <= pw + 1; });
+  }
+  function setSize(w, h) {
+    var im = FS.img(p.src), tall = !im || im.naturalHeight >= im.naturalWidth;
+    FS.applyFormat(p.doc, 'cm', im, tall ? w : h, tall ? h : w); p.cache = {}; if (FS.snap) FS.snap(p);
+    ls('fs-booth-size', w + 'x' + h); sizeRow(); preview(); info();
+  }
+  function ls(k, v) { try { if (v !== undefined) localStorage.setItem(k, v); return localStorage.getItem(k); } catch (e) { return null; } }
+  function sizeRow() {
+    var m = mmNow();
+    $('#bo-sizes').innerHTML = '<span>גודל התמונה</span>' + sizes().map(function (s) { return '<button type="button" data-sz="' + s[0] + 'x' + s[1] + '"' + (Math.abs(s[0] - m[0]) < 2 && Math.abs(s[1] - m[1]) < 2 ? ' class="on"' : '') + '>' + s[2] + '</button>'; }).join('');
+  }
+  $('#bo-sizes').addEventListener('click', function (e) { var b = e.target.closest('[data-sz]'); if (!b || busy) return; var v = b.dataset.sz.split('x').map(Number); setSize(v[0], v[1]); });
+  function plan() { p.copies = n; return FS.planPrint({ list: [p], paper: paperId(), layout: 'fill', margin: 0, gap: 0, size: FS.mmOf(p.doc) }); }
+  function cm(v) { return String(Math.round(v) / 10).replace(/\.0$/, ''); }
+  function info() {
+    if (!p) return; var pl = plan(), m = FS.mmOf(p.doc), per = pl.pages[0] ? pl.pages[0].length : 0, P = pl.paper;
+    $('#bo-info').innerHTML = '📐 <b>' + cm(m[0]) + '×' + cm(m[1]) + ' ס״מ</b> · 🧾 <b>' + n + '</b> ' + (n > 1 ? 'תמונות' : 'תמונה') + ' · 📄 נייר ' + P[1] + ' · ' + (per > 1 ? per + ' בדף · ' : '') + '<b>' + pl.pages.length + '</b> ' + (pl.pages.length > 1 ? 'דפים' : 'דף');
+  }
+  var pi = 0, pln = null;
+  function sheet() {
+    var c = $('#bo-sheet'), pg = FS.pageCanvas(pln, pln.pages[pi], 60); c.width = pg.width; c.height = pg.height; c.getContext('2d').drawImage(pg, 0, 0);
+    var x = c.getContext('2d'); x.strokeStyle = 'rgba(0,0,0,.35)'; x.setLineDash([6, 6]); x.lineWidth = 1; pln.pages[pi].forEach(function (it) { var k = 60 / 25.4; x.strokeRect(it.x * k, it.y * k, it.w * k, it.h * k); });
+    $('#bo-sheetnav').innerHTML = pln.pages.length > 1 ? '<button type="button" data-pg="-1">▶</button><span>דף ' + (pi + 1) + ' מתוך ' + pln.pages.length + '</span><button type="button" data-pg="1">◀</button>' : '';
+  }
+  $('#bo-sheetnav').addEventListener('click', function (e) { var b = e.target.closest('[data-pg]'); if (!b) return; pi = Math.max(0, Math.min(pln.pages.length - 1, pi + Number(b.dataset.pg))); sheet(); });
+  function check() {
+    pln = plan(); pi = 0; var m = FS.mmOf(p.doc), P = pln.paper, per = pln.pages[0] ? pln.pages[0].length : 0, q = qp();
+    var printer = (q && q.printer) || (FS.printerChoice && FS.printerChoice()) || 'חלון ההדפסה של המחשב';
+    $('#bo-sum').innerHTML = '<dt>🎨 עיצוב</dt><dd>' + styleName() + '</dd><dt>📐 גודל כל תמונה</dt><dd>' + cm(m[0]) + '×' + cm(m[1]) + ' ס״מ</dd><dt>🧾 כמה תמונות</dt><dd>' + n + '</dd>' +
+      '<dt>📄 נייר</dt><dd>' + P[1] + ' (' + cm(P[2]) + '×' + cm(P[3]) + ' ס״מ)</dd><dt>▦ בכל דף</dt><dd>' + per + '</dd><dt>🗂️ דפים</dt><dd>' + pln.pages.length + '</dd><dt>🖨️ מדפסת</dt><dd>' + (FS.esc ? FS.esc(printer) : printer) + '</dd>';
+    step('check'); sheet();
+  }
+  function styleName() { var nm = 'רגיל'; if (cur.indexOf('a:') === 0) { var k = cur.split(':'), T = aiTabs().filter(function (x) { return x[0] === k[1]; })[0]; nm = T && T[2][Number(k[2])] ? T[2][Number(k[2])][0] : 'AI'; } else if (cur) nm = (STYLES.filter(function (s) { return s[0] === cur; })[0] || ['', ''])[1]; return nm; }
+  $('#bo-back').addEventListener('click', function () { step('style'); });
   $('#bo-styles').addEventListener('click', function (e) { var b = e.target.closest('[data-k]'); if (b && !b.classList.contains('bo-off')) apply(b.dataset.k); });
-  $('#bo-minus').addEventListener('click', function () { n = Math.max(1, n - 1); $('#bo-n').textContent = n; });
-  $('#bo-plus').addEventListener('click', function () { n = Math.min(10, n + 1); $('#bo-n').textContent = n; });
+  $('#bo-minus').addEventListener('click', function () { n = Math.max(1, n - 1); $('#bo-n').textContent = n; info(); });
+  $('#bo-plus').addEventListener('click', function () { n = Math.min(10, n + 1); $('#bo-n').textContent = n; info(); });
   $('#bo-again').addEventListener('click', function () { if (p && p.booth) { var i = FS.state.photos.indexOf(p); if (i >= 0 && FS.removePhoto) FS.removePhoto(i); } reset(); });
-  $('#bo-print').addEventListener('click', function () {
-    if (!p || busy) return; p.copies = n; if (FS.snap) FS.snap(p);
-    var ok = FS.mate && FS.mate.quickReady && FS.mate.quickReady() ? FS.mate.printList([p]) : (FS.printNow({ list: [p], paper: FS.prefs.paper || '15x20', layout: 'fill', margin: 0, gap: 0 }), true);
-    if (ok === false) return;
-    var nm = 'רגיל'; if (cur.indexOf('a:') === 0) { var k = cur.split(':'), T = aiTabs().filter(function (x) { return x[0] === k[1]; })[0]; nm = T && T[2][Number(k[2])] ? T[2][Number(k[2])][0] : 'AI'; } else if (cur) nm = (STYLES.filter(function (s) { return s[0] === cur; })[0] || ['', ''])[1];
-    $('#bo-thanks').textContent = n + (n > 1 ? ' עותקים' : ' עותק') + ' · ' + nm;
+  $('#bo-print').addEventListener('click', function () { if (!p || busy) return; check(); });
+  $('#bo-go').addEventListener('click', function () {
+    if (!p) return; p.copies = n; if (FS.snap) FS.snap(p);
+    var q = qp(); if (window.FSDesktop && FSDesktop.print && q && q.printer) { if (FS.choosePrinter) FS.choosePrinter(q.printer); else if (FS.printerChoice) FS.printerChoice(q.printer); }
+    FS.doPrint(plan());
+    $('#bo-thanks').textContent = n + (n > 1 ? ' תמונות' : ' תמונה') + ' · ' + styleName();
     step('done'); back = setTimeout(reset, 6000);
   });
   root.addEventListener('click', function (e) { if (e.target.closest('[data-s="done"]')) reset(); });
