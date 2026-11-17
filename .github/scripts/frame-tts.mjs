@@ -21,6 +21,10 @@ const KEYS = {
   azure: label('AZURE_SPEECH_KEY', '[A-Za-z0-9]{32,100}'), region: label('AZURE_SPEECH_REGION', '[a-z0-9]{4,30}') || 'westeurope',
   eleven: label('ELEVENLABS_API_KEY', '(?:sk_)?[A-Za-z0-9]{32,80}') || pick(/\bsk_[a-f0-9]{40,}\b/),
 };
+/* where each key came from and its shape, never its value (a wrong secret is found without showing it) */
+for (const [k, n] of [['eleven', 'ELEVENLABS_API_KEY'], ['gemini', 'GEMINI_API_KEY']]) {
+  const v = KEYS[k]; console.log('key', k + ':', !v ? 'none' : (process.env[n] ? 'from the secret ' + n : 'from SPIDER/HAIM_WEB_KEY') + ', ' + v.length + ' chars' + (k === 'eleven' ? ', starts with sk_: ' + v.startsWith('sk_') : ''));
+}
 const ffmpeg = (args) => { const r = spawnSync('ffmpeg', ['-v', 'error', '-y', ...args]); if (r.status) throw new Error('ffmpeg: ' + String(r.stderr).slice(0, 300)); };
 const dur = (f) => Number(String(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).stdout).trim());
 
