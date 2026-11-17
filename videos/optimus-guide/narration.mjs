@@ -2,6 +2,7 @@
 // .github/workflows/frame-tts.yml speaks (Gemini, a woman's voice; Microsoft "Hila" as the free stand-in).
 import fs from 'node:fs';
 import { SCENES } from './scenes.mjs';
+import { TALK, TALK_INTRO, TALK_OUTRO } from './talk.mjs';
 const W = { '1': 'אחת', '2': 'שתיים', '3': 'שלוש', '4': 'ארבע', '5': 'חמש', '6': 'שש', '7': 'שבע', '8': 'שמונה', '9': 'תשע', '10': 'עשר', '13': 'שלוש עשרה', '15': 'חמש עשרה', '18': 'שמונה עשרה', '20': 'עשרים', '7.5': 'שבע וחצי' };
 const num = (n) => W[n] || n;
 export function ear(t) {
@@ -12,15 +13,16 @@ export function ear(t) {
     .replace(/1, 2, 4, 6 או 9/g, 'אחת, שתיים, ארבע, שש או תשע').replace(/3, 2, 1/g, 'שלוש, שתיים, אחת').replace(/4 מגנטים/g, 'ארבעה מגנטים')
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}↩✔⚡]/gu, '').replace(/["״]/g, '').replace(/\s*:\s*/g, ': ').replace(/\s{2,}/g, ' ').trim();
 }
-export const INTRO = 'ברוכים הבאים לאופטימוס, הסטודיו לעריכה ולהדפסה של מגנטים לאירועים. בסרטון הזה נעבור יחד על כל הלשוניות, עם דוגמאות מהמערכת עצמה.';
-export const OUTRO = 'וזהו, אתם מוכנים לאירוע. אם יש שאלה, לחצן העזרה בסטודיו תמיד שם. בהצלחה!';
+export const INTRO_OLD = 'ברוכים הבאים לאופטימוס, הסטודיו לעריכה ולהדפסה של מגנטים לאירועים. בסרטון הזה נעבור יחד על כל הלשוניות, עם דוגמאות מהמערכת עצמה.';
+export const OUTRO_OLD = 'וזהו, אתם מוכנים לאירוע. אם יש שאלה, לחצן העזרה בסטודיו תמיד שם. בהצלחה!';
 const end = (s) => /[.!?]$/.test(s) ? s : s + '.';
-export const SPOKEN = SCENES.map((s) => [end(ear(s.title)), ...s.lines.map((l) => end(ear(l.t)))]);
+export const SPOKEN = TALK;   /* v2: spoken Hebrew written for the ear (talk.mjs); the caption-based wording read like a list */
+export const INTRO = TALK_INTRO, OUTRO = TALK_OUTRO;
 if (process.argv[1] && process.argv[1].endsWith('narration.mjs')) {
   const scenes = [{ id: 'intro', he: INTRO }, ...SCENES.map((s, k) => ({ id: 's' + String(k).padStart(2, '0') + '-' + s.id, he: SPOKEN[k].join(' ') })), { id: 'outro', he: OUTRO }];
-  const out = { _note: 'The narration of the Optimus guide video (videos/optimus-guide), made by videos/optimus-guide/narration.mjs.', slug: 'optimus-guide-2026-11', langs: ['he'], providers: ['gemini', 'edge'],
+  const out = { _note: 'The narration of the Optimus guide video (videos/optimus-guide), made by videos/optimus-guide/narration.mjs.', slug: 'optimus-guide-talk', langs: ['he'], providers: ['gemini', 'edge'],
     voices: { gemini: { he: 'Sulafat' }, edge: { he: 'he-IL-HilaNeural' } },
-    style: { he: 'את קריינית של סרטון הדרכה. קראי בעברית ברורה, חמה ונעימה, בקצב רגוע ומקצועי, עם הגייה מדויקת: ' }, scenes };
+    style: { he: 'את מדריכה ישראלית חמה וברורה, שמסבירה לחבר שיושב לידך מול המחשב. דברי בעברית ישראלית טבעית ושוטפת, במבטא ישראלי, עם הדגשים והאינטונציה של שיחה אמיתית: חיוך בקול, התלהבות קטנה כשמשהו כיף, הפסקה קצרה אחרי נקודה ואחרי פסיק. קצב רגוע, לא מהיר, לא מוקרא. הנה הטקסט: ' }, scenes };
   fs.mkdirSync('../promo-src/optimus-guide-v2', { recursive: true });
   fs.writeFileSync('../promo-src/optimus-guide-v2/script.json', JSON.stringify(out, null, 1));
   console.log(scenes.length, 'clips'); scenes.slice(0, 4).forEach((x) => console.log(x.id, '|', x.he));
