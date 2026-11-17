@@ -37,7 +37,7 @@
 
   var root = document.createElement('div'); root.id = 'booth'; root.hidden = true; root.setAttribute('dir', 'rtl');
   root.innerHTML =
-    '<button type="button" class="bo-x" id="bo-x" title="יציאה: להחזיק לחוץ">✕</button>' +
+    '<button type="button" class="bo-x" id="bo-x" title="יציאה: להחזיק לחוץ שנייה וחצי">🏠 <span>יציאה לראשי · להחזיק</span></button>' +
     '<section class="bo-step" data-s="cam"><h1>📸 מצטלמים!</h1><div class="bo-cam"><video id="bo-v" playsinline muted></video><div class="bo-count" id="bo-count" hidden></div><p class="bo-nocam" id="bo-nocam" hidden>אין מצלמה במכשיר הזה. בוחרים תמונה מהצלם או מהמחשב.</p></div>' +
       '<div class="bo-row"><button type="button" class="bo-big primary" id="bo-shot">📸 צילום (3, 2, 1)</button><button type="button" class="bo-big" id="bo-last">🖼️ התמונה האחרונה של הצלם</button><label class="bo-big">📂 תמונה מהמחשב<input type="file" id="bo-file" accept="image/*" hidden></label></div></section>' +
     '<section class="bo-step" data-s="style" hidden><h1>בוחרים סגנון וכמה עותקים</h1><div class="bo-main"><div class="bo-pv"><canvas id="bo-pv"></canvas><div class="bo-wait" id="bo-wait" hidden>מעצב…</div></div>' +
