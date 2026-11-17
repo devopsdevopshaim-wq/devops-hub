@@ -67,9 +67,16 @@ async function azure(text, lang, file) {
 }
 async function eleven(text, lang, file) {
   if (!KEYS.eleven) throw new Error('no key');
-  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICES.eleven[lang]}`, { method: 'POST', headers: { 'xi-api-key': KEYS.eleven, 'Content-Type': 'application/json', Accept: 'audio/mpeg' }, body: JSON.stringify({ text, model_id: 'eleven_v3' }) });
-  if (!r.ok) throw new Error('elevenlabs ' + r.status);
-  const mp3 = file + '.mp3'; fs.writeFileSync(mp3, Buffer.from(await r.arrayBuffer())); ffmpeg(['-i', mp3, file]); fs.rmSync(mp3); return 'elevenlabs/eleven_v3';
+  /* eleven_v3 first (the most natural), then the multilingual v2 when the account cannot use v3; the error's own message
+     is kept in the report (it never holds the key) */
+  let last = '';
+  for (const model of ['eleven_v3', 'eleven_multilingual_v2']) {
+    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICES.eleven[lang]}`, { method: 'POST', headers: { 'xi-api-key': KEYS.eleven, 'Content-Type': 'application/json', Accept: 'audio/mpeg' }, body: JSON.stringify({ text, model_id: model, language_code: lang, voice_settings: { stability: 0.5, similarity_boost: 0.75 } }) });
+    if (r.ok) { const mp3 = file + '.mp3'; fs.writeFileSync(mp3, Buffer.from(await r.arrayBuffer())); ffmpeg(['-i', mp3, file]); fs.rmSync(mp3); return 'elevenlabs/' + model; }
+    const body = await r.text().catch(() => ''); last = 'elevenlabs ' + model + ' ' + r.status + ' ' + body.replace(/\s+/g, ' ').slice(0, 220);
+    console.log(last);
+  }
+  throw new Error(last);
 }
 async function edge(text, lang, file) {
   const mp3 = file + '.mp3', v = VOICES.edge[lang];
