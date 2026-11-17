@@ -2766,3 +2766,11 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 ## v190: a failed AI photo says why
 - ai-studio.js `runAI` lane: when an error is not not-same, lost-people or extra-people, `p.aiBad` is now "ה־AI לא הצליח: " plus the first 150 characters of `FS.aiError(m)`, plus `[code]`. For the local engine that includes `FS.lastAiDetail`. It was a blanket "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)", which hid whether the cause was the local engine (local-failed, local-missing, timeout) or something else. The owner reported three photos failing on the local engine.
 - The console gets `AI failed on <photo>: <code> · <detail>`.
+
+## v191: the local engine fits the graphics card's memory
+- Owner report: an RTX 4050 laptop (6 GB) failed every local edit with "failed during allocated capacity check --- execution_engine.cpp:59". That is video memory at 1024, even with offload and VAE tiling on. desktop/local-ai.js did not flag it as a GPU error, so it did not retry.
+- `frame-studio/js/local-ai.js`:
+  - `localSize()`: with no size chosen, a card under 8 GB (`gpu.best.vramMB`, now loaded 1.5 s after start) starts at 768. Otherwise 1024, or 512 for the CPU build.
+  - `runBody` → `runSized`: a failed run that is not cancelled, a timeout, missing or on the CPU build steps down (1024 → 768 → 512). The reference photo is refitted from its original. The step is kept in `fs-ai-local-cap`, so the rest of the event starts at a size that works.
+  - Choosing a size by hand in the panel clears the cap.
+- Tested with a fake `FSDesktop.localAI`: a 6 GB card runs [768] the first time; a card that fails at 1024 and 768 runs [1024, 768, 512] and keeps 512.
