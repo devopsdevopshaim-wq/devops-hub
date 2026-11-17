@@ -226,6 +226,9 @@ function buildArgs(files, input, opt) {
   ];
   if (input.mode === 'restyle') args.push('-r', opt.ref);
   if (opt.offload) args.push('--offload-to-cpu');
+  // the text encoder (Qwen3 4B, run once per picture) on the processor, so the image model fits the graphics card and runs
+  // there without its weights coming in from RAM at every step (--offload-to-cpu keeps every weight in RAM: 15 minutes a picture)
+  if (opt.clipCpu && !opt.offload) args.push('--clip-on-cpu');
   if (opt.vaeTiling) args.push('--vae-tiling');
   // flash attention in the diffusion model: faster and lighter on a graphics card (left out if the engine build does not know it)
   if (opt.fa) args.push('--diffusion-fa');
@@ -743,7 +746,7 @@ function createEngine(options) {
       const ref = input.image ? path.join(dir, 'in' + input.ext) : '';
       if (ref) fs.writeFileSync(ref, input.image);
       const files = { diffusion: modelPath('diffusion', m), llm: modelPath('llm', m), vae: modelPath('vae', m) };
-      const args = buildArgs(files, input, { out, ref, offload: flags.offload, vaeTiling: flags.vaeTiling, fa: flags.fa, maxVram: flags.maxVram, stream: flags.stream });
+      const args = buildArgs(files, input, { out, ref, offload: flags.offload, clipCpu: flags.clipCpu, vaeTiling: flags.vaeTiling, fa: flags.fa, maxVram: flags.maxVram, stream: flags.stream });
       const feed = createProgressParser(STEPS);
       let tail = '', head = '';
       let child;
@@ -800,7 +803,7 @@ function createEngine(options) {
     });
   }
 
-  let cutOk = true, streamOk = true;   // the engine takes --max-vram / --stream-layers (false after a build refused one)
+  let cutOk = true, streamOk = true, clipOk = true, slowOnly = false;   // the engine takes --max-vram / --stream-layers (false after a build refused one)
   function run(o, onProgress) {
     const input = validateRunInput(o);
     if (input.error) return Promise.resolve({ ok: false, error: input.error, detail: input.detail });
@@ -816,7 +819,10 @@ function createEngine(options) {
       const cpu = m.engine.variant === 'cpu';
       const vram = gpuHint ? gpuHint.vramMB : 0;
       // weights ~5 GB: keep them in RAM and move them in as needed unless the card clearly has room
-      const flags = { offload: !cpu && !(vram >= 10 * 1024), vaeTiling: !cpu && !(vram >= 8 * 1024), fa: !cpu && faOk };
+      // a card under 10 GB: the fast placement first (image model on the card, text encoder on the processor); everything in RAM
+      // (--offload-to-cpu, slow) only after that ran out of memory on this computer (kept for the session in slowOnly)
+      const small = !cpu && !(vram >= 10 * 1024);
+      const flags = { offload: small && slowOnly, clipCpu: small && !slowOnly && clipOk, vaeTiling: !cpu && !(vram >= 8 * 1024), fa: !cpu && faOk };
       // a memory budget below the card's size (2 GB kept for the driver and the engine's own context), as unsloth does
       const budget = vram > 0 ? Math.max(1, Math.floor((vram / 1024 - 2) * 100) / 100) : -1;
       if (!cpu && cutOk) { flags.maxVram = budget; flags.stream = streamOk; }
@@ -832,10 +838,16 @@ function createEngine(options) {
       // newer one first when the engine did not say which), and once more
       for (let k = 0; k < 2 && !r.ok && r.argError && gen === generation; k++) {
         const name = typeof r.argError === 'string' ? r.argError : '';
-        if (flags.stream && (!name || /stream-layers/.test(name))) { streamOk = false; delete flags.stream; }
+        if (flags.clipCpu && /clip-on-cpu/.test(name)) { clipOk = false; delete flags.clipCpu; }
+        else if (flags.stream && (!name || /stream-layers/.test(name))) { streamOk = false; delete flags.stream; }
         else if (flags.maxVram != null && (!name || /max-vram|^-\d/.test(name))) { cutOk = false; delete flags.maxVram; delete flags.stream; }
         else break;
         r = await runOnce(chk.bin, m, input, onProgress, flags);
+      }
+      if (!r.ok && r.gpu && flags.clipCpu && gen === generation) {
+        // the fast placement does not fit this card: the slow one from now on, and once more with it
+        slowOnly = true;
+        r = await runOnce(chk.bin, m, input, onProgress, { offload: true, vaeTiling: true, fa: flags.fa, maxVram: flags.maxVram, stream: flags.stream });
       }
       // ran out of video memory: again with everything that saves VRAM and a smaller budget (3/4, then 1/2 of it)
       for (const scale of [0.75, 0.5]) {

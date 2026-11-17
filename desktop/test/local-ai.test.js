@@ -326,7 +326,7 @@ test('install (discover, download, verify, extract, probe) and run with the fake
   assert.equal(val('-W'), '1024'); assert.equal(val('-H'), '768'); assert.equal(val('--seed'), '123');
   assert.equal(val('-p'), 'turn into a watercolor painting');
   assert.ok(a.includes('-r'));
-  assert.ok(a.includes('--offload-to-cpu'), 'unknown VRAM -> offload');
+  assert.ok(!a.includes('--offload-to-cpu') && a.includes('--clip-on-cpu'), JSON.stringify(a) + ' unknown VRAM -> the fast placement first (text encoder on the CPU, no offload)');
   assert.ok(a.includes('--vae-tiling'));
   assert.ok(val('--diffusion-model').startsWith(path.join(root, 'models')));
   assert.ok(!fs.existsSync(val('-r')), 'temp input removed');
@@ -372,8 +372,10 @@ test('install (discover, download, verify, extract, probe) and run with the fake
   assert.equal(cap.ok, true, JSON.stringify(cap));
   const cc = fs.readFileSync(sdLog, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   const mv = (c) => c.args[c.args.indexOf('--max-vram') + 1];
-  assert.equal(cc.length, 2); assert.equal(cc[0].cap, true); assert.equal(mv(cc[0]), '4'); assert.equal(mv(cc[1]), '3');
-  assert.ok(cc[1].args.includes('--stream-layers') && cc[1].args.includes('--offload-to-cpu'));
+  // the fast placement (4 GiB, text encoder on the CPU) fails, then the slow one at 4, then at 3 works
+  assert.equal(cc.length, 3); assert.equal(cc[0].cap, true); assert.ok(cc[0].args.includes('--clip-on-cpu') && !cc[0].args.includes('--offload-to-cpu'));
+  assert.equal(mv(cc[0]), '4'); assert.equal(mv(cc[1]), '4'); assert.ok(cc[1].args.includes('--offload-to-cpu')); assert.equal(mv(cc[2]), '3');
+  assert.ok(cc[2].args.includes('--stream-layers') && cc[2].args.includes('--offload-to-cpu'));
 
   // 5d. a build without --stream-layers: found in the start of its output (before the usage), dropped, and the run goes on
   process.env.FAKE_SD_NO_STREAM = '1';
