@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Orbitron:wght@600;800&family=Suez+One&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/game.css?v=20261117" />
+<link rel="stylesheet" href="css/game.css?v=20261117b" />
 </head>
 <body data-screen="home">
 <canvas id="bg-cv" aria-hidden="true"></canvas>
@@ -93,20 +93,27 @@
     </div>
   </section>
 
-  <!-- the world expedition: the survey of a site -->
-  <section class="screen" id="scr-survey" hidden>
-    <div class="sv-head">
-      <button class="icon-btn" id="sv-back" aria-label="חזרה לכדור הארץ"><i data-ico="close"></i></button>
-      <div><b id="sv-title"></b><small id="sv-sub"></small></div>
+  <!-- the world expedition: walking the site -->
+  <section class="screen" id="scr-site" hidden>
+    <div class="site3d" id="site3d" aria-label="האתר בתלת־ממד: הקישו על הקרקע כדי ללכת, גררו כדי להסתובב"></div>
+    <div class="st-head">
+      <button class="icon-btn" id="st-end" aria-label="סיום המשלחת"><i data-ico="close"></i></button>
+      <div class="st-title"><b id="st-name"></b><small id="st-sub"></small></div>
+      <div class="st-energy" title="כוח הצוות"><span>⚡</span><div class="st-bar"><i id="st-en"></i></div><b id="st-en-n">80</b></div>
     </div>
-    <div class="sv-body">
-      <div class="sv-mapwrap"><canvas id="sv-map" aria-label="מפת סקר של האתר, 5 על 5 משבצות"></canvas></div>
-      <div class="sv-side">
-        <div class="sv-modes"><button class="sv-mode on" data-m="probe">🔍 בור ניסיון <em>×<b id="sv-probes">3</b></em></button><button class="sv-mode" data-m="dig">⛏️ לפתוח חפירה</button></div>
-        <p class="sv-help" id="sv-help"></p>
-        <h4>🧭 רמזים מהשטח ומהדוחות</h4><ul class="sv-hints" id="sv-hints"></ul>
-        <h4>📜 המקורות</h4><ul class="sv-sources" id="sv-sources"></ul>
-      </div>
+    <div class="st-side">
+      <button class="st-btn" id="st-notes">📜<small>יומן</small></button>
+      <button class="st-btn" id="st-map">🗺️<small>מפה</small></button>
+      <button class="st-btn" id="st-photo">📷<small>המקום</small></button>
+    </div>
+    <div class="st-meter" id="st-meter" hidden><span>📡</span><div class="st-bar"><i id="st-signal"></i></div></div>
+    <div class="st-tools">
+      <button class="st-big st-walk" id="st-detector">📡<small>גלאי מתכות</small></button>
+      <button class="st-big st-walk gold" id="st-dighere">⛏️<small>לחפור כאן</small></button>
+      <button class="st-big st-dig st-tool on" data-t="pick" hidden>⛏️<small>מכוש</small></button>
+      <button class="st-big st-dig st-tool" data-t="brush" hidden>🖌️<small>מברשת</small></button>
+      <div class="st-dig st-exp" hidden><small>חשיפה</small><div class="st-bar"><i id="st-expose"></i></div></div>
+      <button class="st-big st-dig" id="st-leave" hidden>🚶<small>לצאת מהבור</small></button>
     </div>
   </section>
 
@@ -194,19 +201,20 @@
 <div class="fx" id="fx" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
 
-<script src="js/art.js?v=20261117"></script>
-<script src="js/photos.js?v=20261117"></script>
-<script src="js/icons.js?v=20261117"></script>
-<script src="js/hero.js?v=20261117"></script>
-<script src="js/audio.js?v=20261117"></script>
-<script src="js/world.js?v=20261117"></script>
-<script src="js/world-photos.js?v=20261117"></script>
-<script src="js/game.js?v=20261117"></script>
-<script src="js/smash.js?v=20261117"></script>
-<script src="js/world-game.js?v=20261117"></script>
+<script src="js/art.js?v=20261117b"></script>
+<script src="js/photos.js?v=20261117b"></script>
+<script src="js/icons.js?v=20261117b"></script>
+<script src="js/hero.js?v=20261117b"></script>
+<script src="js/audio.js?v=20261117b"></script>
+<script src="js/world.js?v=20261117b"></script>
+<script src="js/world-photos.js?v=20261117b"></script>
+<script src="js/game.js?v=20261117b"></script>
+<script src="js/smash.js?v=20261117b"></script>
+<script src="js/world-game.js?v=20261117b"></script>
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
-<script type="module" src="js/smash3d.js?v=20261117"></script>
-<script type="module" src="js/dig3d.js?v=20261117"></script>
-<script type="module" src="js/globe3d.js?v=20261117"></script>
+<script type="module" src="js/smash3d.js?v=20261117b"></script>
+<script type="module" src="js/dig3d.js?v=20261117b"></script>
+<script type="module" src="js/globe3d.js?v=20261117b"></script>
+<script type="module" src="js/site3d.js?v=20261117b"></script>
 </body>
 </html>

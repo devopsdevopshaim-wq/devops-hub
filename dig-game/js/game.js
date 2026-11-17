@@ -212,12 +212,7 @@
         if (free(x, y, f.w, f.h)) { arts.push({ f, x, y, w: f.w, h: f.h, cond: 100, done: false, exposed: 0, seed: Math.floor(R() * 1e9) }); mark(arts, arts.length - 1, 'art', { x, y }, f.w, f.h); break; }
       }
     }
-    // a world expedition brings its own finds: the treasure deep down (if the square is right) and small finds
-    if (opts.world) {
-      if (opts.world.main) addArt(opts.world.main, eras.length - 1, true);
-      opts.world.smalls.forEach((f) => addArt(f, eras.indexOf(f.era) < 0 ? 0 : eras.indexOf(f.era)));
-    }
-    const count = opts.world ? 0 : opts.daily ? 7 : 4 + lo.funding + Math.floor(siteIdx * 0.5);
+    const count = opts.daily ? 7 : 4 + lo.funding + Math.floor(siteIdx * 0.5);
     for (let i = 0; i < count; i++) {
       const eraIdx = i < eras.length ? i : Math.floor(R() * eras.length);
       const f = pickFind(R, eras[eraIdx], rollRarity(R, lo, eraIdx));
@@ -387,19 +382,6 @@
     save(); hud();
     const eraNowDone = isNew && eraComplete(a.f.era);
     pendingFinds++;
-    const WG = window.SHCHAVOT_WORLDGAME;
-    if (a.f.world && a.f.world !== 'small' && WG) {
-      // a world treasure comes out as a lump of earth: it is cleaned in the lab, then its real face shows
-      setTimeout(() => WG.lab(a, value, isNew, perfect, (cond) => {
-        pendingFinds--;
-        const m2 = S.museum[a.f.id]; if (m2) m2.best = Math.max(m2.best, cond);
-        WG.treasureDone(a, cond);
-        save();
-        showFind(a.f, cond, value, isNew, cond >= 100);
-        if (dig && !dig.over && dig.arts.every((z) => z.done)) setTimeout(() => endDig('cleared'), 50);
-      }), 1100);
-      return;
-    }
     setTimeout(() => {
       pendingFinds--;
       if (isNew || rar.rank >= 2) showFind(a.f, a.cond, value, isNew, perfect);
@@ -577,34 +559,8 @@
     });
   }
 
-  function startWorldDig(site, w) {
-    const lo = loadout(false);
-    lo.energy += 15; // an expedition brings more hands
-    dig = genDig(site, 3, { seed: (Math.random() * 2 ** 32) >>> 0, lo, world: w });
-    dig.world = site.world;
-    save();
-    tool = 'pick'; lastTool = 'pick';
-    pendingLevels = [];
-    show('dig');
-    $('#dig-site').textContent = site.name;
-    const sp = window.SHCHAVOT_WORLD_PHOTOS && window.SHCHAVOT_WORLD_PHOTOS.sites[site.world];
-    $('#scr-dig').style.setProperty('--bgphoto', sp && sp.site ? `url("${sp.site.src}")` : 'none');
-    $('#dig-place').textContent = site.place;
-    requestAnimationFrame(() => {
-      hud();
-      if (G3() && G3().setTool) G3().setTool('pick');
-      if (!G3() || !G3().start($('#pit3d'), dig, site, digHandlers)) { toast('הדפדפן הזה לא תומך בתלת־ממד (WebGL).', '', 6000); return; }
-      tip('world', '🧭 <b>זה שטח החפירה שבחרתם.</b> חפרו לעומק: הממצאים מהתקופה שחיפשתם נמצאים בשכבה התחתונה. בסוף ננפה את העפר.', 6500);
-    });
-  }
-
   function endDig(reason) {
     if (!dig || dig.over) return;
-    if (dig.world && !dig.sieved && window.SHCHAVOT_WORLDGAME) {
-      dig.sieved = true; held = false; clearInterval(holdTimer);
-      window.SHCHAVOT_WORLDGAME.sieve(dig, () => endDig(reason));
-      return;
-    }
     dig.over = true;
     held = false; clearInterval(holdTimer);
     S.stats.digs++;
@@ -646,17 +602,14 @@
       <div class="total"><span>סה״כ</span><b>${fmt(dig.coins)} ${ico('coin', 'ico md')}</b><span>+${dig.xp} XP</span></div>
       ${lv}${missHtml}
       <div class="m-actions">
-        ${dig.world ? '<button class="btn gold" id="m-world">🌍 למפת העולם</button>' : dig.daily ? '<button class="btn gold" id="m-share">📤 שתפו את התוצאה</button>' : '<button class="btn gold" id="m-again">⛏️ עוד חפירה כאן</button>'}
-        ${dig.world ? '' : '<button class="btn ghost" id="m-map">למפת האתרים</button>'}
+        ${dig.daily ? '<button class="btn gold" id="m-share">📤 שתפו את התוצאה</button>' : '<button class="btn gold" id="m-again">⛏️ עוד חפירה כאן</button>'}
+        <button class="btn ghost" id="m-map">למפת האתרים</button>
       </div>`, (root) => {
       const again = $('#m-again', root);
       if (again) again.onclick = () => { closeModal(); startDig(dig.siteIdx, false); };
       const sh = $('#m-share', root);
       if (sh) sh.onclick = () => shareDaily();
-      const mm = $('#m-map', root);
-      if (mm) mm.onclick = () => { closeModal(); show('map'); };
-      const mw = $('#m-world', root);
-      if (mw) mw.onclick = () => { closeModal(); show('world'); };
+      $('#m-map', root).onclick = () => { closeModal(); show('map'); };
     }, false);
   }
 
@@ -757,7 +710,7 @@
   }
   $$('[data-go]').forEach((b) => b.addEventListener('click', () => { SFX.unlock(); SFX.click(); show(b.dataset.go); }));
   $('#dig-exit').addEventListener('click', () => {
-    if (!dig || dig.over) return show(dig && dig.world ? 'world' : 'map');
+    if (!dig || dig.over) return show('map');
     modal(`<div class="m-ico">${ico('camp', 'big')}</div><h2>לסיים את החפירה?</h2><p>הממצאים שכבר אספתם נשמרים. מה שעוד באדמה יישאר שם.</p>
       <div class="m-actions"><button class="btn gold" id="m-stay">להמשיך לחפור</button><button class="btn ghost" id="m-quit">סיום</button></div>`, (root) => {
       $('#m-stay', root).onclick = closeModal;
@@ -904,8 +857,7 @@
   // shared with the cannon game (smash.js), which keeps its own rules but the same save, museum and coins
   window.SHCHAVOT_GAME = {
     state: () => S, dig: () => dig, startDig, endDig, MATS,
-    api: { S: () => S, save, addXP, toast, modal, closeModal, confetti, show, topbar, showFind, ico, fmt, esc, rng, hashStr, artUrl, ERA, ERA_COLOR, PH, scene, pendingLevels: () => pendingLevels, clearLevels: () => { pendingLevels = []; }, xpFor,
-      startWorldDig, registerEra: (id, e) => { ERA[id] = { id, ...e }; ERA_COLOR[id] = ERA_COLOR[id] || '#c9a063'; } },
+    api: { S: () => S, save, addXP, toast, modal, closeModal, confetti, show, topbar, showFind, ico, fmt, esc, rng, hashStr, artUrl, ERA, ERA_COLOR, PH, scene, pendingLevels: () => pendingLevels, clearLevels: () => { pendingLevels = []; }, xpFor },
   };
   topbar();
   show('home');

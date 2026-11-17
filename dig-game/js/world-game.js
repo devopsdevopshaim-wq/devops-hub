@@ -96,122 +96,184 @@
       $('#m-go', root).onclick = () => {
         if (S().coins < s.cost) { SFX.deny(); A.toast(`למשלחת לכאן צריך ${s.cost} מטבעות. אפשר להרוויח בשלבי התותח או בחפירות בארץ 🪙`, '', 4500); return; }
         S().coins -= s.cost; A.save(); A.topbar();
-        A.closeModal(); survey(s);
+        A.closeModal(); expedition(s);
       };
       $('#m-close', root).onclick = A.closeModal;
     });
   }
 
-  /* ---------- the survey: a map of the site, the clues, and test pits ---------- */
+  /* ---------- on site: walking, searching, digging (site3d.js) ---------- */
   const N = 5;
-  let sv = null;
   const TERRAIN = {
     desert: ['#d9b77f', '#c49a5e', '#e8cfa0'], hills: ['#bfa679', '#9c8a5c', '#d4c39a'], green: ['#8fae6a', '#6f8f4e', '#a9c485'],
     sea: ['#2f6f99', '#1f5577', '#4c8bb3'], jungle: ['#4f7d45', '#365f33', '#6c9a5a'],
   };
-  function survey(s) {
-    sv = { s, probes: 3, done: {}, mode: 'probe' };
-    A.show('survey');
-    $('#sv-title').textContent = `${s.flag} ${s.name}`;
-    $('#sv-sub').textContent = `סקר שטח · ${s.country}`;
-    $('#sv-hints').innerHTML = s.hints.map((h, i) => `<li class="${i === 0 ? '' : 'locked'}">${i === 0 ? esc(h) : '🔒 רמז נוסף ייפתח אחרי בור ניסיון'}</li>`).join('');
-    $('#sv-sources').innerHTML = s.sources.map((x) => `<li><b>${esc(x.ref)}</b> ${esc(x.text)}</li>`).join('');
-    setMode('probe');
-    drawMap();
+  let ex = null;
+  function expedition(s) {
+    ex = { s, sherds: 0, near: 0, hints: 1, smalls: [], coins: 0, found: false, detector: false };
+    A.show('site');
+    $('#st-name').textContent = `${s.flag} ${s.name}`;
+    $('#st-sub').textContent = s.country;
+    $('#st-signal').style.width = '0%';
+    setSiteMode('walk');
+    const go = () => {
+      if (document.body.dataset.screen !== 'site' || !window.SITE3D) return;
+      SITE3D.start($('#site3d'), s, handlers).then((ok) => {
+        if (!ok) return;
+        energyBar(SITE3D.energy());
+        A.toast('🧭 הקישו על הקרקע כדי ללכת. חפשו חרסים על הקרקע, הפעילו את הגלאי, ואז חפרו.', 'gold', 6500);
+      });
+    };
+    if (window.SITE3D) go(); else addEventListener('site3d-ready', go, { once: true });
   }
-  function setMode(m) {
-    sv.mode = m;
-    $$('.sv-mode').forEach((b) => b.classList.toggle('on', b.dataset.m === m));
-    $('#sv-probes').textContent = sv.probes;
-    $('#sv-help').textContent = m === 'probe' ? 'הקישו על משבצת כדי לחפור בור ניסיון קטן ולראות מה יש באדמה.' : 'הקישו על המשבצת שבה תפתחו את שטח החפירה.';
+  function energyBar(e) { $('#st-en').style.width = Math.max(0, Math.min(100, e / 80 * 100)) + '%'; $('#st-en-n').textContent = Math.max(0, Math.round(e)); }
+  function setSiteMode(m) {
+    document.body.dataset.sitemode = m;
+    $$('.st-walk').forEach((b) => { b.hidden = m !== 'walk'; });
+    $$('.st-dig').forEach((b) => { b.hidden = m !== 'dig'; });
   }
-  $$('.sv-mode').forEach((b) => b.addEventListener('click', () => { SFX.click(); setMode(b.dataset.m); }));
-  $('#sv-back').addEventListener('click', () => { SFX.click(); A.show('world'); });
-
-  function drawMap() {
-    const cv = $('#sv-map'), dpr = Math.min(devicePixelRatio || 1, 2);
-    const size = Math.min(cv.parentElement.clientWidth, 520);
+  const handlers = {
+    onSherd(near) {
+      ex.sherds++; if (near) ex.near++;
+      SFX.reveal();
+      A.toast(near ? `🏺 שבר חרס מ${ex.s.era}! השרידים של התקופה קרובים.` : '🏺 שבר חרס מתקופה מאוחרת יותר.', near ? 'gold' : '', 2600);
+      // sherds of the right period open more of the excavation reports
+      const want = ex.near >= 4 ? 3 : ex.near >= 1 ? 2 : 1;
+      if (want > ex.hints) { ex.hints = want; setTimeout(() => A.toast(`🧭 רמז חדש: ${ex.s.hints[want - 1]}`, 'gold', 6500), 900); }
+    },
+    onBeep(x) { SFX.beep(x); },
+    onSignal(x) { $('#st-signal').style.width = Math.round(x * 100) + '%'; $('#st-signal').parentElement.classList.toggle('hot', x > 0.55); },
+    onReveal(kind) { SFX.reveal(); A.toast(kind === 'main' ? '✨ משהו גדול בולט מהאדמה! עברו למברשת ונקו סביבו בזהירות.' : '🪶 משהו קטן בולט מהאדמה. מברשת!', kind === 'main' ? 'gold' : '', 4200); },
+    onExpose(kind, x) { $('#st-expose').style.width = Math.round(x * 100) + '%'; },
+    onDamage(cond) { SFX.crack(); A.toast(`💥 המכוש פגע בממצא! מצב ${cond}%. ליד ממצאים עובדים עם מברשת.`, '', 3000); },
+    onEnergy(e, empty) {
+      energyBar(e);
+      if (empty) outOfEnergy();
+    },
+    onDig() { SFX.hit(0.3); },
+    onFind(b) {
+      if (b.kind === 'main') {
+        ex.found = true;
+        const f = treasureFind(ex.s), a = { f, cond: b.cond };
+        lab(a, 0, true, false, (cond) => treasure(f, cond));
+      } else {
+        const sm = W.SMALL[Math.floor(Math.random() * W.SMALL.length)];
+        ex.smalls.push(sm); ex.coins += sm.value * 2;
+        const st = state(); st.small[sm.id] = (st.small[sm.id] || 0) + 1;
+        S().coins += sm.value * 2; S().stats.finds++; A.save(); A.topbar();
+        SFX.coin(); A.toast(`${sm.icon} ${sm.name} · +${sm.value * 2} 🪙`, 'gold', 2600);
+      }
+    },
+  };
+  function treasure(f, cond) {
+    const s = ex.s, t = s.treasure, r = D.RARITY[t.rarity];
+    const value = Math.round(t.value * (0.25 + 0.75 * cond / 100) * (cond >= 100 ? 1.5 : 1));
+    const m = S().museum[f.id] || { n: 0, best: 0 };
+    const isNew = !m.n;
+    m.n++; m.best = Math.max(m.best, cond); S().museum[f.id] = m;
+    S().coins += value; S().stats.finds++; if (cond >= 100) S().stats.perfect++;
+    ex.coins += value;
+    A.addXP(r.xp);
+    treasureDone({ f }, cond);
+    A.save(); A.topbar();
+    A.showFind(f, cond, value, isNew, cond >= 100);
+    setTimeout(() => A.toast('🏛️ הסיפור האמיתי של הגילוי נפתח בתיק האתר', 'gold', 4000), 600);
+  }
+  function outOfEnergy() {
+    const price = 60;
+    A.modal(`<div class="m-ico">😮‍💨</div><h2>הצוות עייף</h2><p class="sub">נגמר הכוח לחפור היום. אפשר לשכור עוד פועלים, או לסיים את המשלחת ולנפות את העפר.</p>
+      <div class="m-actions"><button class="btn gold" id="m-more" ${S().coins < price ? 'disabled' : ''}>+30 ⚡ · ${price} ${A.ico('coin', 'ico md')}</button><button class="btn ghost" id="m-end">לסיים את המשלחת</button></div>`, (root) => {
+      $('#m-more', root).onclick = () => { S().coins -= price; A.save(); A.topbar(); SITE3D.addEnergy(30); energyBar(SITE3D.energy()); A.closeModal(); };
+      $('#m-end', root).onclick = () => { A.closeModal(); endExpedition(); };
+    }, false);
+  }
+  function endExpedition() {
+    if (!ex) return;
+    const e = ex;
+    sieve({ arts: e.found ? [{ done: true, f: { world: e.s.id } }] : [], coins: 0 }, () => {
+      const t = e.s.treasure;
+      A.modal(`<div class="m-ico">${e.found ? '🏆' : '🧭'}</div><h2>${e.found ? 'משלחת מוצלחת!' : 'המשלחת הסתיימה'}</h2>
+        <p class="sub">${e.s.flag} ${e.s.name} · ${e.sherds} חרסים · ${e.smalls.length} ממצאים קטנים</p>
+        ${e.found ? `<p>מצאתם את <b>${t.name}</b>. הסיפור האמיתי נפתח בתיק האתר.</p>` : `<p class="sub">${t.name} עדיין באדמה. חזרו עם עוד רמזים: חרסים מהתקופה מראים איפה חיו האנשים, והגלאי מצפצף מעל מתכת.</p>`}
+        <div class="total"><span>הרווחתם</span><b>${A.fmt(e.coins)} ${A.ico('coin', 'ico md')}</b></div>
+        <div class="m-actions"><button class="btn gold" id="m-world">🌍 למפת העולם</button></div>`, (root) => { $('#m-world', root).onclick = () => { A.closeModal(); A.show('world'); }; }, false);
+    });
+    ex = null;
+  }
+  // the site's survey map, with the archaeologist on it
+  function drawMap(cv) {
+    const s = ex.s, dpr = Math.min(devicePixelRatio || 1, 2);
+    const size = Math.min(innerWidth - 60, 420);
     cv.style.width = cv.style.height = size + 'px'; cv.width = cv.height = size * dpr;
     const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const s = sv.s, cell = size / N, T = TERRAIN[s.terrain] || TERRAIN.desert;
-    // the ground, drawn like an old survey map
+    const cell = size / N, T = TERRAIN[s.terrain] || TERRAIN.desert;
     g.fillStyle = T[0]; g.fillRect(0, 0, size, size);
     let seed = s.id.length * 131;
     const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
-    for (let i = 0; i < 260; i++) { g.fillStyle = rnd() < 0.5 ? T[1] : T[2]; g.globalAlpha = 0.25; g.beginPath(); g.arc(rnd() * size, rnd() * size, 3 + rnd() * 18, 0, 7); g.fill(); }
+    for (let i = 0; i < 220; i++) { g.fillStyle = rnd() < 0.5 ? T[1] : T[2]; g.globalAlpha = 0.25; g.beginPath(); g.arc(rnd() * size, rnd() * size, 3 + rnd() * 16, 0, 7); g.fill(); }
     g.globalAlpha = 1;
-    // contour lines
-    g.strokeStyle = 'rgba(60,40,20,.18)'; g.lineWidth = 1;
-    for (let k = 1; k < 6; k++) { g.beginPath(); for (let a = 0; a <= 64; a++) { const t = (a / 64) * Math.PI * 2, r = k * size * 0.09 * (1 + Math.sin(t * 3 + k) * 0.08); const x = size * 0.55 + Math.cos(t) * r, y = size * 0.45 + Math.sin(t) * r * 0.8; a ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
-    // the grid
-    g.strokeStyle = 'rgba(40,24,10,.55)'; g.setLineDash([4, 4]);
+    g.strokeStyle = 'rgba(40,24,10,.45)'; g.setLineDash([4, 4]);
     for (let i = 1; i < N; i++) { g.beginPath(); g.moveTo(i * cell, 0); g.lineTo(i * cell, size); g.stroke(); g.beginPath(); g.moveTo(0, i * cell); g.lineTo(size, i * cell); g.stroke(); }
-    g.setLineDash([]);
-    g.font = `700 ${Math.max(10, cell * 0.13)}px Heebo, sans-serif`; g.fillStyle = 'rgba(40,24,10,.6)'; g.textAlign = 'center';
-    for (let c = 0; c < N; c++) g.fillText('אבגדה'[c], (c + 0.5) * cell, 12);
-    for (let r = 0; r < N; r++) g.fillText(String(r + 1), 8, (r + 0.5) * cell + 4);
-    // landmarks
+    g.setLineDash([]); g.textAlign = 'center'; g.textBaseline = 'middle';
     for (const [em, c, r, label] of s.map.marks) {
       const x = (c + 0.5) * cell, y = (r + 0.5) * cell;
-      g.font = `${cell * 0.38}px serif`; g.textBaseline = 'middle'; g.fillText(em, x, y - cell * 0.08);
-      g.font = `800 ${Math.max(10, cell * 0.12)}px Heebo, sans-serif`;
+      g.font = `${cell * 0.34}px serif`; g.fillText(em, x, y - cell * 0.08);
+      g.font = `800 ${Math.max(10, cell * 0.11)}px Heebo, sans-serif`;
       const tw = g.measureText(label).width + 8;
-      g.fillStyle = 'rgba(255,248,230,.86)'; g.fillRect(x - tw / 2, y + cell * 0.18, tw, cell * 0.17);
-      g.fillStyle = '#3a2410'; g.fillText(label, x, y + cell * 0.27);
+      g.fillStyle = 'rgba(255,248,230,.86)'; g.fillRect(x - tw / 2, y + cell * 0.16, tw, cell * 0.16);
+      g.fillStyle = '#3a2410'; g.fillText(label, x, y + cell * 0.24);
     }
-    // what the test pits showed
-    for (const key of Object.keys(sv.done)) {
-      const [c, r] = key.split(',').map(Number), d = sv.done[key];
-      g.fillStyle = ['rgba(200,40,20,.55)', 'rgba(230,140,30,.45)', 'rgba(240,210,80,.35)', 'rgba(120,120,120,.35)'][d];
-      g.fillRect(c * cell + 3, r * cell + 3, cell - 6, cell - 6);
-      g.font = `${cell * 0.3}px serif`; g.fillStyle = '#000'; g.fillText(['🔥', '🏺', '·', '✕'][d], (c + 0.5) * cell, (r + 0.25) * cell);
+    g.font = `700 11px Heebo, sans-serif`; g.fillStyle = '#3a2410'; g.fillText('צפון ↑', size - 26, 12);
+    const w = window.SITE3D && SITE3D.where();
+    if (w) {
+      const x = w.col * cell, y = w.row * cell;
+      g.fillStyle = '#c0392b'; g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 8, 0, 7); g.fill(); g.stroke();
+      g.fillStyle = '#3a2410'; g.font = '800 12px Heebo, sans-serif'; g.fillText('אתם כאן', x, y - 16);
     }
-    g.textBaseline = 'alphabetic';
   }
-  $('#sv-map').addEventListener('click', (e) => {
-    if (!sv) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    const c = Math.floor(((e.clientX - r.left) / r.width) * N), row = Math.floor(((e.clientY - r.top) / r.height) * N);
-    if (c < 0 || c >= N || row < 0 || row >= N) return;
-    const [tc, tr] = sv.s.map.t;
-    const d = Math.max(Math.abs(c - tc), Math.abs(row - tr));
-    if (sv.mode === 'probe') {
-      const key = c + ',' + row;
-      if (sv.done[key] !== undefined) return;
-      if (sv.probes <= 0) { SFX.deny(); A.toast('נגמרו בורות הניסיון. בחרו איפה לחפור ⛏️'); setMode('dig'); return; }
-      sv.probes--; SFX.trowel();
-      const lvl = Math.min(3, d);
-      sv.done[key] = lvl;
-      A.toast(['🔥 שכבה עשירה: חרסים, פחם ושברי מתכת מהתקופה!', '🏺 כמה חרסים מהתקופה. קרוב.', '· כמעט כלום: מעט חרסים שנסחפו.', '✕ אדמה נקייה, בלי שרידים.'][lvl], lvl === 0 ? 'gold' : '', 3400);
-      // every test pit opens another clue
-      const opened = 3 - sv.probes;
-      $$('#sv-hints li').forEach((li, i) => { if (i <= opened && li.classList.contains('locked')) { li.classList.remove('locked'); li.textContent = sv.s.hints[i]; } });
-      $('#sv-probes').textContent = sv.probes;
-      if (!sv.probes) setMode('dig');
-      drawMap();
-    } else {
-      SFX.click();
-      A.modal(`<div class="m-ico">⛏️</div><h2>לפתוח שטח חפירה במשבצת ${'אבגדה'[c]}${row + 1}?</h2><p class="sub">אחרי שפותחים שטח אי אפשר להזיז אותו. בחרו לפי המקורות ולפי בורות הניסיון.</p>
-        <div class="m-actions"><button class="btn gold" id="m-dig">לחפור כאן</button><button class="btn ghost" id="m-no">עוד לחשוב</button></div>`, (root) => {
-        $('#m-dig', root).onclick = () => { A.closeModal(); startDig(sv.s, d); };
-        $('#m-no', root).onclick = A.closeModal;
-      });
-    }
+  $('#st-map').addEventListener('click', () => {
+    if (!ex) return; SFX.click();
+    A.modal(`<h2>🗺️ מפת הסקר</h2><p class="sub">כל משבצת היא 10 על 10 מטרים.</p><canvas id="m-mapcv" style="border-radius:10px;box-shadow:0 0 0 2px #6b4a1c"></canvas><div class="m-actions"><button class="btn gold" id="m-ok2">חזרה לשטח</button></div>`, (root) => { drawMap($('#m-mapcv', root)); $('#m-ok2', root).onclick = A.closeModal; });
   });
-
-  /* ---------- the dig ---------- */
-  function startDig(s, d) {
-    A.registerEra('w_' + s.id, { name: s.era, short: s.era, years: s.years });
-    A.registerEra('w_late', { name: 'שכבות מאוחרות', short: 'מאוחר', years: 'אחרי התקופה' });
-    const hit = d === 0;
-    const main = treasureFind(s);
-    const smalls = [0, 1, 2, 3].map((i) => smallFind(Math.floor(Math.random() * 8) + i, i % 2 ? 'w_' + s.id : 'w_late'));
-    A.startWorldDig({
-      id: 'world-' + s.id, name: s.name, place: `${s.flag} ${s.country}`, eras: ['w_late', 'w_' + s.id], mult: 1 + s.cost / 120,
-      sky: ['#9fc8f0', '#f3dcb0'], world: s.id,
-    }, { main: hit ? main : null, smalls, near: d });
-    if (!hit) setTimeout(() => A.toast(d === 1 ? '🧭 קרוב! אבל לפי השכבות, הממצא הגדול לא בדיוק כאן.' : '🧭 בשטח הזה יש בעיקר שכבות מאוחרות. אולי הקשבתם פחות למקורות…', '', 5200), 1500);
-  }
+  $('#st-notes').addEventListener('click', () => {
+    if (!ex) return; SFX.click();
+    const s = ex.s;
+    A.modal(`<div class="dossier"><h2>📜 יומן המשלחת</h2><p class="sub">${s.flag} ${s.name}</p>
+      <div class="d-sec"><h4>🧭 רמזים מהשטח ומהדוחות</h4>${s.hints.map((h, i) => `<p>${i < ex.hints ? esc(h) : '🔒 מצאו עוד חרסים מהתקופה כדי לפתוח רמז'}</p>`).join('')}</div>
+      <div class="d-sec"><h4>📜 המקורות</h4>${s.sources.map((x) => `<blockquote><b>${esc(x.ref)}</b>${esc(x.text)}</blockquote>`).join('')}</div>
+      <div class="d-sec"><h4>🎯 מה מחפשים</h4><p>${s.treasure.name}</p><p class="sub">חרסים שמצאתם: ${ex.sherds} (מהתקופה: ${ex.near})</p></div></div>
+      <div class="m-actions"><button class="btn gold" id="m-ok3">חזרה לשטח</button></div>`, (root) => { $('#m-ok3', root).onclick = A.closeModal; });
+  });
+  $('#st-photo').addEventListener('click', () => {
+    if (!ex) return; SFX.click();
+    const ph = photo(ex.s.id, 'site');
+    if (!ph) { A.toast('לאתר הזה אין עדיין צילום חופשי בוויקישיתוף'); return; }
+    A.modal(`<figure class="d-photo"><img src="${ph.src}" alt="${esc(ph.caption)}"><figcaption>${esc(ph.caption)} · <small>${credit(ph)}</small></figcaption></figure><p class="sub">כך נראה המקום באמת היום.</p><div class="m-actions"><button class="btn gold" id="m-ok4">חזרה לשטח</button></div>`, (root) => { $('#m-ok4', root).onclick = A.closeModal; });
+  });
+  $('#st-detector').addEventListener('click', (e) => {
+    SFX.click();
+    ex.detector = SITE3D.detector(!ex.detector);
+    e.currentTarget.classList.toggle('on', ex.detector);
+    $('#st-meter').hidden = !ex.detector;
+    if (ex.detector) A.toast('📡 הגלאי פועל: הוא מצפצף מהר יותר ככל שמתקרבים למתכת קבורה.', '', 3500);
+  });
+  $('#st-dighere').addEventListener('click', () => {
+    if (!ex || !window.SITE3D) return;
+    if (SITE3D.energy() < 5) { outOfEnergy(); return; }
+    SFX.trowel();
+    SITE3D.addEnergy(-5); energyBar(SITE3D.energy());
+    SITE3D.digHere();
+    setSiteMode('dig'); pickTool('pick');
+    $('#st-expose').style.width = '0%';
+    A.toast('⛏️ פתחתם שטח חפירה של 3×3 מטרים. הקישו בתוכו כדי לחפור. הממצאים מהתקופה נמצאים בעומק של כמטר.', 'gold', 5200);
+  });
+  $('#st-leave').addEventListener('click', () => { SFX.click(); SITE3D.leaveTrench(); setSiteMode('walk'); });
+  function pickTool(t) { SITE3D.setTool(t); $$('.st-tool').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); }
+  $$('.st-tool').forEach((b) => b.addEventListener('click', () => { SFX.click(); pickTool(b.dataset.t); }));
+  $('#st-end').addEventListener('click', () => {
+    SFX.click();
+    A.modal(`<h2>לסיים את המשלחת?</h2><p class="sub">העפר מהחפירות יעבור ניפוי, ותחזרו למפת העולם.</p><div class="m-actions"><button class="btn gold" id="m-y">לסיים</button><button class="btn ghost" id="m-n">להמשיך לחפש</button></div>`, (root) => { $('#m-y', root).onclick = () => { A.closeModal(); endExpedition(); }; $('#m-n', root).onclick = A.closeModal; });
+  });
 
   /* ---------- the lab: cleaning a find ---------- */
   let soilImg = null;
@@ -429,10 +491,9 @@
   window.SHCHAVOT_WORLDGAME = {
     onShow(name) {
       if (name === 'world') { renderWorld(); startGlobe(); } else if (window.GLOBE3D) GLOBE3D.stop();
-      if (name === 'survey' && sv) requestAnimationFrame(drawMap);
+      if (name !== 'site' && window.SITE3D) SITE3D.stop();
     },
     lab, sieve, treasureDone, state,
-    _survey: () => sv,
+    _ex: () => ex,
   };
-  addEventListener('resize', () => { if (document.body.dataset.screen === 'survey' && sv) drawMap(); });
 })();
