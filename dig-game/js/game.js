@@ -699,6 +699,7 @@
     if (name !== 'dig' && G3()) G3().stop();
     if (name !== 'home' && name !== 'smash' && window.SMASH3D) SMASH3D.stop();
     if (name === 'home') homeScene(); else SHCHAVOT_HERO.stop();
+    MUSIC.mood({ levels: 'battle', smash: 'battle', site: 'explore', world: 'menu', survey: 'explore', dig: 'dig', map: 'dig', museum: 'menu', camp: 'menu', home: 'menu' }[name] || 'menu');
     if (window.SHCHAVOT_SMASH) SHCHAVOT_SMASH.onShow(name);
     if (window.SHCHAVOT_WORLDGAME) SHCHAVOT_WORLDGAME.onShow(name);
     SHCHAVOT_HERO.bg(name === 'map' || name === 'museum' || name === 'camp');
@@ -812,7 +813,7 @@
   }
   $('#credits').addEventListener('click', () => {
     const rows = [...Object.values(PH.sites), ...Object.values(PH.finds)].map((p) => `<li><img src="${p.src}" alt="" loading="lazy"><span><b>${esc(p.caption)}</b><small>${credit(p)}</small></span></li>`).join('');
-    modal(`<h2>קרדיטים לצילומים</h2><p class="sub">כל הצילומים מוויקישיתוף, ברישיונות חופשיים. תודה לצלמים.</p><ul class="creds">${rows}</ul><p class="sub">משחק התותח: צילום המדבר (Goegap), חומרי האבן, השיש והחרס, הכדים, תיבת האוצר, העצים, הסלעים וכלי החפירה מ־<a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a> ברישיון CC0. הארכיאולוג: KayKit מאת Kay Lousberg. מנוע פיזיקלי: cannon-es.</p><div class="m-actions"><button class="btn gold" id="m-cr">סגירה</button></div>`, (root) => { $('#m-cr', root).onclick = closeModal; });
+    modal(`<h2>קרדיטים לצילומים</h2><p class="sub">כל הצילומים מוויקישיתוף, ברישיונות חופשיים. תודה לצלמים.</p><ul class="creds">${rows}</ul><p class="sub">משחק התותח: צילום המדבר (Goegap), חומרי האבן, השיש והחרס, הכדים, תיבת האוצר, העצים, הסלעים וכלי החפירה מ־<a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a> ברישיון CC0. הארכיאולוג: KayKit מאת Kay Lousberg. מנוע פיזיקלי: cannon-es. נתוני הגובה של האתרים: AWS Terrain Tiles (Mapzen). מוזיקה: Kevin MacLeod (incompetech.com), ברישיון CC BY 4.0: Lost Frontier, Desert City, Mystery Bazaar, Heroic Age, Volatile Reaction.</p><div class="m-actions"><button class="btn gold" id="m-cr">סגירה</button></div>`, (root) => { $('#m-cr', root).onclick = closeModal; });
   });
   $('#reset').addEventListener('click', () => {
     modal(`<div class="m-ico">⚠️</div><h2>לאפס את כל ההתקדמות?</h2><p>המוזיאון, המטבעות והשדרוגים יימחקו לגמרי.</p><div class="m-actions"><button class="btn danger" id="m-yes">כן, לאפס</button><button class="btn ghost" id="m-no">ביטול</button></div>`, (root) => {
@@ -841,7 +842,13 @@
 
   /* ---------- home ---------- */
   $('#play').addEventListener('click', () => { SFX.unlock(); SFX.click(); show('levels'); });
-  if (S.smash && S.smash.lvl > 1) $('#play').textContent = `להמשיך · שלב ${S.smash.lvl}`;
+  if (S.smash && S.smash.lvl > 1) $('#play small').textContent = `ממשיכים משלב ${S.smash.lvl}`;
+  $('#how').addEventListener('click', () => { SFX.click(); modal(`<h2>❓ איך משחקים</h2><div class="howto">
+      <div><span>🌍</span><p><b>משלחת עולמית.</b> בוחרים אתר על כדור הארץ וקוראים את המקורות. אחר כך עומדים בשטח האמיתי ומחפשים: חרסים על הקרקע מראים שמתקרבים, וגלאי המתכות מצפצף מהר מעל מתכת. חופרים במכוש, חושפים במברשת, ומנקים את הממצא במעבדה.</p></div>
+      <div><span>💥</span><p><b>ניפוץ מגדלים.</b> מקישים על המגדל כדי לירות. צריך להפיל מהבמה את כל מה שעליה. כמה שיותר יריות נשארות, יותר כוכבים.</p></div>
+      <div><span>⛏️</span><p><b>חפירה בארץ.</b> מקישים על הקרקע כדי לחפור. ליד ממצא עוברים למברשת, כי מכה חזקה שוברת אותו.</p></div>
+      <div><span>🏛️</span><p><b>המוזיאון והמחנה.</b> כל ממצא נכנס למוזיאון. במטבעות קונים ציוד טוב יותר.</p></div></div>
+      <div class="m-actions"><button class="btn gold" id="m-hw">הבנתי, יוצאים!</button></div>`, (r) => { $('#m-hw', r).onclick = closeModal; }); });
   $$('[data-ico]').forEach((el) => { el.innerHTML = ico(el.dataset.ico); });
 
   // the opening screen: the cannon firing at an ancient tower by itself, in 3D when the engine is ready

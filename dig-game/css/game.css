@@ -738,6 +738,27 @@ body.has3d .hero::after { background: linear-gradient(180deg, rgba(14, 9, 5, .6)
 body.has3d .how { background: rgba(20, 12, 6, .6); border-color: rgba(201,160,99,.35); }
 #scr-smash { background: #a9c1dd; }
 
+/* the opening screen: three ways to play */
+.modes { display: grid; gap: 8px; width: min(440px, 100%); margin: 0 auto; opacity: 0; animation: rise .8s .75s forwards; }
+.mode { display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; text-align: right; padding: 10px 14px; border-radius: 16px; border: 1px solid rgba(242,193,78,.45); background: rgba(20, 12, 6, .72); color: var(--text); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.mode span { grid-row: span 2; font-size: 30px; text-align: center; }
+.mode b { font-family: var(--display); font-weight: 400; font-size: 21px; color: var(--gold2); line-height: 1.1; }
+.mode small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.mode.gold { background: linear-gradient(180deg, #f6d27a, #c48a26); border-color: #ffe7a0; box-shadow: 0 5px 0 #7a4c0c, 0 10px 26px rgba(242,182,50,.3); }
+.mode.gold b { color: #3a2205; }
+.mode.gold small { color: #4a2c08; }
+.mode:active { transform: translateY(2px); }
+.how-btn { margin-top: 10px !important; opacity: .9; color: #ffe9b0; }
+body.has3d .how { display: none; }
+.howto { display: grid; gap: 10px; text-align: right; margin: 10px 0; }
+.howto div { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 12px; background: rgba(0,0,0,.22); border: 1px solid var(--line); }
+.howto span { font-size: 26px; line-height: 1; }
+.howto p { color: var(--text) !important; font-size: 14px; line-height: 1.5; margin: 0; }
+/* the next step of an expedition */
+.st-task { position: absolute; z-index: 6; top: calc(max(10px, env(safe-area-inset-top)) + 62px); inset-inline: 76px 12px; display: flex; gap: 8px; align-items: flex-start; padding: 8px 12px; border-radius: 12px; background: rgba(60, 40, 8, .82); border: 1px solid #f2c14e; color: #fff4d6; font-size: 13.5px; line-height: 1.4; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+.st-task b { flex: 0 0 auto; padding: 1px 7px; border-radius: 8px; background: #f2c14e; color: #3a2205; font-family: var(--num); font-size: 12px; }
+.st-meter { top: auto !important; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 84px); }
+
 /* ===== the world expedition ===== */
 .w-go { display: block; margin: 14px auto 0; background: rgba(10, 20, 40, .55); border-color: rgba(127,200,255,.45); color: #e6f4ff; opacity: 0; animation: rise .8s .95s forwards; }
 body[data-screen="world"] { overflow: hidden; background: #03060d; }

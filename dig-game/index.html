@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Orbitron:wght@600;800&family=Suez+One&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/game.css?v=20261117d" />
+<link rel="stylesheet" href="css/game.css?v=20261117e" />
 </head>
 <body data-screen="home">
 <canvas id="bg-cv" aria-hidden="true"></canvas>
@@ -38,8 +38,12 @@
         <p class="kicker">הרפתקה ארכיאולוגית בתלת־ממד</p>
         <h1 data-text="שכבות">שכבות</h1>
         <p class="tag">כל שכבה היא אלף שנה. מה אתם תגלו?</p>
-        <button class="btn gold xl" id="play">לשחק 💥</button>
-        <button class="btn ghost w-go" data-go="world">🌍 משלחת עולמית: אוצרות אמיתיים מכל העולם</button>
+        <div class="modes">
+          <button class="mode gold" data-go="world"><span>🌍</span><b>משלחת עולמית</b><small>הולכים באתרים אמיתיים בעולם, מחפשים ומוצאים אוצרות אמיתיים</small></button>
+          <button class="mode" id="play"><span>💥</span><b>ניפוץ מגדלים</b><small>יורים בתותח, בקלע ובקטפולטה על מבנים עתיקים, שלב אחרי שלב</small></button>
+          <button class="mode" data-go="map"><span>⛏️</span><b>חפירה בארץ</b><small>חופרים שכבה אחרי שכבה בעכו, בקיסריה ובמגידו</small></button>
+        </div>
+        <button class="link-btn how-btn" id="how">❓ איך משחקים?</button>
         <ul class="how">
           <li><i data-ico="dyn"></i><span><b>יורים</b> בתותח על מגדלים עתיקים</span></li>
           <li><i data-ico="vase"></i><span><b>מוצאים</b> 41 ממצאים אמיתיים בתיבות האוצר</span></li>
@@ -108,6 +112,7 @@
       <button class="st-btn" id="st-map">🗺️<small>מפה</small></button>
       <button class="st-btn" id="st-photo">📷<small>המקום</small></button>
     </div>
+    <div class="st-task" id="st-task" role="status"><b id="st-step">1/5</b><span id="st-do"></span></div>
     <div class="st-meter" id="st-meter" hidden><span>📡</span><div class="st-bar"><i id="st-signal"></i></div></div>
     <div class="st-tools">
       <button class="st-big st-walk" id="st-detector">📡<small>גלאי מתכות</small></button>
@@ -203,20 +208,20 @@
 <div class="fx" id="fx" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
 
-<script src="js/art.js?v=20261117d"></script>
-<script src="js/photos.js?v=20261117d"></script>
-<script src="js/icons.js?v=20261117d"></script>
-<script src="js/hero.js?v=20261117d"></script>
-<script src="js/audio.js?v=20261117d"></script>
-<script src="js/world.js?v=20261117d"></script>
-<script src="js/world-photos.js?v=20261117d"></script>
-<script src="js/game.js?v=20261117d"></script>
-<script src="js/smash.js?v=20261117d"></script>
-<script src="js/world-game.js?v=20261117d"></script>
+<script src="js/art.js?v=20261117e"></script>
+<script src="js/photos.js?v=20261117e"></script>
+<script src="js/icons.js?v=20261117e"></script>
+<script src="js/hero.js?v=20261117e"></script>
+<script src="js/audio.js?v=20261117e"></script>
+<script src="js/world.js?v=20261117e"></script>
+<script src="js/world-photos.js?v=20261117e"></script>
+<script src="js/game.js?v=20261117e"></script>
+<script src="js/smash.js?v=20261117e"></script>
+<script src="js/world-game.js?v=20261117e"></script>
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
-<script type="module" src="js/smash3d.js?v=20261117d"></script>
-<script type="module" src="js/dig3d.js?v=20261117d"></script>
-<script type="module" src="js/globe3d.js?v=20261117d"></script>
-<script type="module" src="js/site3d.js?v=20261117d"></script>
+<script type="module" src="js/smash3d.js?v=20261117e"></script>
+<script type="module" src="js/dig3d.js?v=20261117e"></script>
+<script type="module" src="js/globe3d.js?v=20261117e"></script>
+<script type="module" src="js/site3d.js?v=20261117e"></script>
 </body>
 </html>
