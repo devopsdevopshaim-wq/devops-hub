@@ -1,0 +1,25 @@
+name: Guide video release
+# Publishes Optimus-Guide.mp4 (this branch, ci-video) as the release guide-video:
+#   https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/guide-video/Optimus-Guide.mp4
+on:
+  push:
+    branches: [ci-video]
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release guide-video
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="המדריך המלא לסטודיו אופטימוס: כל שש הלשוניות, עם כתוביות בעברית, קריינות בקול נשי ונעימה ברקע. Full HD.
+          קישור קבוע: https://github.com/$GITHUB_REPOSITORY/releases/download/guide-video/Optimus-Guide.mp4"
+          if gh release view guide-video --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload guide-video Optimus-Guide.mp4 --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit guide-video --repo "$GITHUB_REPOSITORY" --notes "$NOTES"
+          else
+            gh release create guide-video Optimus-Guide.mp4 --repo "$GITHUB_REPOSITORY" --title "סרטון הדרכה: אופטימוס" --notes "$NOTES" --target "$GITHUB_SHA"
+          fi
