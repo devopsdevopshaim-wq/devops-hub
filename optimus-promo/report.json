@@ -1,0 +1,314 @@
+{
+  "made": "2026-10-27T12:39:41.798Z",
+  "langs": {
+    "he": {
+      "scenes": [
+        {
+          "id": "s1",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 6.35,
+          "match": null,
+          "heard": null,
+          "pace": 6.7
+        },
+        {
+          "id": "s2",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 3.55,
+          "match": null,
+          "heard": null,
+          "pace": 7.1
+        },
+        {
+          "id": "s3",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 3.85,
+          "match": null,
+          "heard": null,
+          "pace": 9.4
+        },
+        {
+          "id": "s4",
+          "voice": "gemini-2.5-flash-preview-tts/Charon",
+          "seconds": 5.75,
+          "match": null,
+          "heard": null,
+          "pace": 9.8
+        },
+        {
+          "id": "s5",
+          "error": "no voice"
+        },
+        {
+          "id": "s6",
+          "error": "no voice"
+        },
+        {
+          "id": "s7",
+          "error": "no voice"
+        },
+        {
+          "id": "s8",
+          "error": "no voice"
+        },
+        {
+          "id": "s9",
+          "error": "no voice"
+        }
+      ],
+      "provider": "gemini",
+      "tried": [
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key"
+      ]
+    },
+    "en": {
+      "scenes": [
+        {
+          "id": "s1",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 3.65,
+          "match": null,
+          "heard": null,
+          "pace": 14.7
+        },
+        {
+          "id": "s2",
+          "error": "no voice"
+        },
+        {
+          "id": "s3",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 3.65,
+          "match": null,
+          "heard": null,
+          "pace": 13.2
+        },
+        {
+          "id": "s4",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 5.35,
+          "match": null,
+          "heard": null,
+          "pace": 14.1
+        },
+        {
+          "id": "s5",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 6.85,
+          "match": null,
+          "heard": null,
+          "pace": 13.2
+        },
+        {
+          "id": "s6",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 4.45,
+          "match": null,
+          "heard": null,
+          "pace": 13.1
+        },
+        {
+          "id": "s7",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 2.5,
+          "match": null,
+          "heard": null,
+          "pace": 13
+        },
+        {
+          "id": "s8",
+          "error": "no voice"
+        },
+        {
+          "id": "s9",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 3.25,
+          "match": null,
+          "heard": null,
+          "pace": 10.5
+        }
+      ],
+      "provider": "edge",
+      "tried": [
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key",
+        "edge: edge-tts Traceback (most recent call last):\n  File \"/opt/pipx_bin/edge-tts\", line 6, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/opt/pipx/venvs/edge-tts/lib/python3.12/site-packages/",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key",
+        "edge: edge-tts Traceback (most recent call last):\n  File \"/opt/pipx_bin/edge-tts\", line 6, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/opt/pipx/venvs/edge-tts/lib/python3.12/site-packages/",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/",
+        "azure: no key",
+        "eleven: no key"
+      ]
+    },
+    "he-edge": {
+      "scenes": [
+        {
+          "id": "s1",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 5.45,
+          "match": null,
+          "heard": null,
+          "pace": 7.2
+        },
+        {
+          "id": "s2",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 3.02,
+          "match": null,
+          "heard": null,
+          "pace": 6.7
+        },
+        {
+          "id": "s3",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 3.45,
+          "match": null,
+          "heard": null,
+          "pace": 8.8
+        },
+        {
+          "id": "s4",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 5.75,
+          "match": null,
+          "heard": null,
+          "pace": 8.8
+        },
+        {
+          "id": "s5",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 9.65,
+          "match": null,
+          "heard": null,
+          "pace": 8
+        },
+        {
+          "id": "s6",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 6.15,
+          "match": null,
+          "heard": null,
+          "pace": 8.7
+        },
+        {
+          "id": "s7",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 3.13,
+          "match": null,
+          "heard": null,
+          "pace": 6.2
+        },
+        {
+          "id": "s8",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 4.15,
+          "match": null,
+          "heard": null,
+          "pace": 8.3
+        },
+        {
+          "id": "s9",
+          "voice": "edge/he-IL-AvriNeural",
+          "seconds": 4.65,
+          "match": null,
+          "heard": null,
+          "pace": 6
+        }
+      ],
+      "provider": "edge",
+      "tried": []
+    },
+    "en-edge": {
+      "scenes": [
+        {
+          "id": "s1",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 3.65,
+          "match": null,
+          "heard": null,
+          "pace": 14.7
+        },
+        {
+          "id": "s2",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 2.46,
+          "match": null,
+          "heard": null,
+          "pace": 14.2
+        },
+        {
+          "id": "s3",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 3.65,
+          "match": null,
+          "heard": null,
+          "pace": 13.2
+        },
+        {
+          "id": "s4",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 5.35,
+          "match": null,
+          "heard": null,
+          "pace": 14.1
+        },
+        {
+          "id": "s5",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 6.85,
+          "match": null,
+          "heard": null,
+          "pace": 13.2
+        },
+        {
+          "id": "s6",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 4.45,
+          "match": null,
+          "heard": null,
+          "pace": 13.1
+        },
+        {
+          "id": "s7",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 2.5,
+          "match": null,
+          "heard": null,
+          "pace": 13
+        },
+        {
+          "id": "s8",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 3.65,
+          "match": null,
+          "heard": null,
+          "pace": 15.2
+        },
+        {
+          "id": "s9",
+          "voice": "edge/en-US-AndrewNeural",
+          "seconds": 3.25,
+          "match": null,
+          "heard": null,
+          "pace": 10.5
+        }
+      ],
+      "provider": "edge",
+      "tried": []
+    }
+  }
+}

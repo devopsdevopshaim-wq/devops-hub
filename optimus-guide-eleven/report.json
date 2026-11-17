@@ -1,0 +1,258 @@
+{
+  "made": "2026-11-17T15:19:32.835Z",
+  "langs": {
+    "he": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 10.05,
+          "match": null,
+          "heard": null,
+          "pace": 11
+        },
+        {
+          "id": "s00-home",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 24.25,
+          "match": null,
+          "heard": null,
+          "pace": 10.5
+        },
+        {
+          "id": "s01-bar",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 16.95,
+          "match": null,
+          "heard": null,
+          "pace": 9.2
+        },
+        {
+          "id": "s02-magnets",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 34.85,
+          "match": null,
+          "heard": null,
+          "pace": 10.3
+        },
+        {
+          "id": "s03-copies",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 23.25,
+          "match": null,
+          "heard": null,
+          "pace": 10.2
+        },
+        {
+          "id": "s04-edit",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 26.95,
+          "match": null,
+          "heard": null,
+          "pace": 9.6
+        },
+        {
+          "id": "s05-design",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 17.55,
+          "match": null,
+          "heard": null,
+          "pace": 9.3
+        },
+        {
+          "id": "s06-print",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 27.95,
+          "match": null,
+          "heard": null,
+          "pace": 9.8
+        },
+        {
+          "id": "s07-ai",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 23.45,
+          "match": null,
+          "heard": null,
+          "pace": 10
+        },
+        {
+          "id": "s08-ai-ba",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 19.85,
+          "match": null,
+          "heard": null,
+          "pace": 9.8
+        },
+        {
+          "id": "s09-booth1",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 26.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.7
+        },
+        {
+          "id": "s10-booth2",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 19.45,
+          "match": null,
+          "heard": null,
+          "pace": 10.1
+        },
+        {
+          "id": "s11-booth3",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 24.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.7
+        },
+        {
+          "id": "s12-booth4",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 21.35,
+          "match": null,
+          "heard": null,
+          "pace": 9.3
+        },
+        {
+          "id": "s13-qr",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 19.35,
+          "match": null,
+          "heard": null,
+          "pace": 11.8
+        },
+        {
+          "id": "s14-strips",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 31.25,
+          "match": null,
+          "heard": null,
+          "pace": 10.2
+        },
+        {
+          "id": "s15-settings",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 18.85,
+          "match": null,
+          "heard": null,
+          "pace": 9.2
+        },
+        {
+          "id": "s16-studio",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 19.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.9
+        },
+        {
+          "id": "outro",
+          "voice": "elevenlabs/eleven_v3",
+          "seconds": 8.25,
+          "match": null,
+          "heard": null,
+          "pace": 10.9
+        }
+      ],
+      "provider": "eleven",
+      "tried": []
+    },
+    "he-edge": {
+      "scenes": [
+        {
+          "id": "intro",
+          "error": "no voice"
+        },
+        {
+          "id": "s00-home",
+          "error": "no voice"
+        },
+        {
+          "id": "s01-bar",
+          "error": "no voice"
+        },
+        {
+          "id": "s02-magnets",
+          "error": "no voice"
+        },
+        {
+          "id": "s03-copies",
+          "error": "no voice"
+        },
+        {
+          "id": "s04-edit",
+          "error": "no voice"
+        },
+        {
+          "id": "s05-design",
+          "error": "no voice"
+        },
+        {
+          "id": "s06-print",
+          "error": "no voice"
+        },
+        {
+          "id": "s07-ai",
+          "error": "no voice"
+        },
+        {
+          "id": "s08-ai-ba",
+          "error": "no voice"
+        },
+        {
+          "id": "s09-booth1",
+          "error": "no voice"
+        },
+        {
+          "id": "s10-booth2",
+          "error": "no voice"
+        },
+        {
+          "id": "s11-booth3",
+          "error": "no voice"
+        },
+        {
+          "id": "s12-booth4",
+          "error": "no voice"
+        },
+        {
+          "id": "s13-qr",
+          "error": "no voice"
+        },
+        {
+          "id": "s14-strips",
+          "error": "no voice"
+        },
+        {
+          "id": "s15-settings",
+          "error": "no voice"
+        },
+        {
+          "id": "s16-studio",
+          "error": "no voice"
+        },
+        {
+          "id": "outro",
+          "error": "no voice"
+        }
+      ],
+      "provider": null,
+      "tried": [
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function"
+      ]
+    }
+  }
+}

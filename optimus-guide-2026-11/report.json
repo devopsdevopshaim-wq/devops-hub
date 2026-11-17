@@ -1,0 +1,301 @@
+{
+  "made": "2026-11-17T12:16:17.451Z",
+  "langs": {
+    "he": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 11.05,
+          "match": null,
+          "heard": null,
+          "pace": 10.9
+        },
+        {
+          "id": "s00-home",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 22.05,
+          "match": null,
+          "heard": null,
+          "pace": 9
+        },
+        {
+          "id": "s01-bar",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.35,
+          "match": null,
+          "heard": null,
+          "pace": 7.5
+        },
+        {
+          "id": "s02-magnets",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 32.95,
+          "match": null,
+          "heard": null,
+          "pace": 9.3
+        },
+        {
+          "id": "s03-copies",
+          "error": "no voice"
+        },
+        {
+          "id": "s04-edit",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 28.85,
+          "match": null,
+          "heard": null,
+          "pace": 6.9
+        },
+        {
+          "id": "s05-design",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.05,
+          "match": null,
+          "heard": null,
+          "pace": 6.5
+        },
+        {
+          "id": "s06-print",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 23.65,
+          "match": null,
+          "heard": null,
+          "pace": 8.4
+        },
+        {
+          "id": "s07-ai",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 23.45,
+          "match": null,
+          "heard": null,
+          "pace": 7.9
+        },
+        {
+          "id": "s08-ai-ba",
+          "error": "no voice"
+        },
+        {
+          "id": "s09-booth1",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 20.05,
+          "match": null,
+          "heard": null,
+          "pace": 8.5
+        },
+        {
+          "id": "s10-booth2",
+          "error": "no voice"
+        },
+        {
+          "id": "s11-booth3",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 27.05,
+          "match": null,
+          "heard": null,
+          "pace": 7.7
+        },
+        {
+          "id": "s12-booth4",
+          "error": "no voice"
+        },
+        {
+          "id": "s13-qr",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 17.05,
+          "match": null,
+          "heard": null,
+          "pace": 9.6
+        },
+        {
+          "id": "s14-strips",
+          "error": "no voice"
+        },
+        {
+          "id": "s15-settings",
+          "voice": "gemini-2.5-flash-preview-tts/Sulafat",
+          "seconds": 18.05,
+          "match": null,
+          "heard": null,
+          "pace": 8.2
+        },
+        {
+          "id": "s16-studio",
+          "error": "no voice"
+        },
+        {
+          "id": "outro",
+          "error": "no voice"
+        }
+      ],
+      "provider": "gemini",
+      "tried": [
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+        "gemini: gemini 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-"
+      ]
+    },
+    "he-edge": {
+      "scenes": [
+        {
+          "id": "intro",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 10.95,
+          "match": null,
+          "heard": null,
+          "pace": 10.3
+        },
+        {
+          "id": "s00-home",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 20.95,
+          "match": null,
+          "heard": null,
+          "pace": 9.2
+        },
+        {
+          "id": "s01-bar",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 16.75,
+          "match": null,
+          "heard": null,
+          "pace": 7.8
+        },
+        {
+          "id": "s02-magnets",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 32.55,
+          "match": null,
+          "heard": null,
+          "pace": 9.2
+        },
+        {
+          "id": "s03-copies",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 23.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.1
+        },
+        {
+          "id": "s04-edit",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 25.45,
+          "match": null,
+          "heard": null,
+          "pace": 7.5
+        },
+        {
+          "id": "s05-design",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 16.55,
+          "match": null,
+          "heard": null,
+          "pace": 6.8
+        },
+        {
+          "id": "s06-print",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 22.15,
+          "match": null,
+          "heard": null,
+          "pace": 8.6
+        },
+        {
+          "id": "s07-ai",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 21.95,
+          "match": null,
+          "heard": null,
+          "pace": 8
+        },
+        {
+          "id": "s08-ai-ba",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 16.25,
+          "match": null,
+          "heard": null,
+          "pace": 8.3
+        },
+        {
+          "id": "s09-booth1",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 19.45,
+          "match": null,
+          "heard": null,
+          "pace": 8.4
+        },
+        {
+          "id": "s10-booth2",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 20.35,
+          "match": null,
+          "heard": null,
+          "pace": 8.1
+        },
+        {
+          "id": "s11-booth3",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 25.15,
+          "match": null,
+          "heard": null,
+          "pace": 8
+        },
+        {
+          "id": "s12-booth4",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 19.85,
+          "match": null,
+          "heard": null,
+          "pace": 7.2
+        },
+        {
+          "id": "s13-qr",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 15.45,
+          "match": null,
+          "heard": null,
+          "pace": 10.1
+        },
+        {
+          "id": "s14-strips",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 24.45,
+          "match": null,
+          "heard": null,
+          "pace": 9.4
+        },
+        {
+          "id": "s15-settings",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 17.05,
+          "match": null,
+          "heard": null,
+          "pace": 8.2
+        },
+        {
+          "id": "s16-studio",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 17.65,
+          "match": null,
+          "heard": null,
+          "pace": 8.4
+        },
+        {
+          "id": "outro",
+          "voice": "edge/he-IL-HilaNeural",
+          "seconds": 8.45,
+          "match": null,
+          "heard": null,
+          "pace": 7.1
+        }
+      ],
+      "provider": "edge",
+      "tried": []
+    }
+  }
+}

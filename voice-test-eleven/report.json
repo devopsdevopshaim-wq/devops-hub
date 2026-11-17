@@ -1,0 +1,49 @@
+{
+  "made": "2026-11-10T13:49:13.576Z",
+  "langs": {
+    "he": {
+      "scenes": [
+        {
+          "id": "intro",
+          "error": "no voice"
+        },
+        {
+          "id": "start",
+          "error": "no voice"
+        },
+        {
+          "id": "ai",
+          "error": "no voice"
+        }
+      ],
+      "provider": null,
+      "tried": [
+        "eleven: no key",
+        "eleven: no key",
+        "eleven: no key"
+      ]
+    },
+    "he-edge": {
+      "scenes": [
+        {
+          "id": "intro",
+          "error": "no voice"
+        },
+        {
+          "id": "start",
+          "error": "no voice"
+        },
+        {
+          "id": "ai",
+          "error": "no voice"
+        }
+      ],
+      "provider": null,
+      "tried": [
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function",
+        "edge: PROVIDERS[p] is not a function"
+      ]
+    }
+  }
+}
