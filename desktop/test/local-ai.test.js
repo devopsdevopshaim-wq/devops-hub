@@ -375,6 +375,15 @@ test('install (discover, download, verify, extract, probe) and run with the fake
   assert.equal(cc.length, 2); assert.equal(cc[0].cap, true); assert.equal(mv(cc[0]), '4'); assert.equal(mv(cc[1]), '3');
   assert.ok(cc[1].args.includes('--stream-layers') && cc[1].args.includes('--offload-to-cpu'));
 
+  // 5d. a build without --stream-layers: found in the start of its output (before the usage), dropped, and the run goes on
+  process.env.FAKE_SD_NO_STREAM = '1';
+  fs.rmSync(sdLog, { force: true });
+  const ns = await eng.run({ mode: 'restyle', prompt: 'a storybook', imageB64: JPEG, w: 768, h: 512 });
+  delete process.env.FAKE_SD_NO_STREAM;
+  assert.equal(ns.ok, true, JSON.stringify(ns));
+  const nc = fs.readFileSync(sdLog, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(nc.length, 2); assert.equal(nc[0].nostream, true); assert.ok(!nc[1].args.includes('--stream-layers') && nc[1].args.includes('--max-vram'));
+
   // 6. one at a time
   process.env.FAKE_SD_SLOW = '400';
   fs.rmSync(sdLog, { force: true });

@@ -25,6 +25,13 @@ if (process.env.FAKE_SD_OOM_UNLESS_OFFLOAD && !offload) {
   if (log) fs.appendFileSync(log, JSON.stringify({ args, start: t0, end: Date.now(), oom: true }) + '\n');
   process.exit(1);
 }
+// FAKE_SD_NO_STREAM=1: a build without --stream-layers (it says so, then prints its usage, as sd-cli does)
+if (process.env.FAKE_SD_NO_STREAM && args.includes('--stream-layers')) {
+  console.error('error: unknown argument: --stream-layers');
+  console.log('usage: sd-cli [arguments]\n' + '  --vae-tile-size  a target tile count (overrides --vae-tile-size; requires --vae-tiling)\n'.repeat(120));
+  if (log) fs.appendFileSync(log, JSON.stringify({ args, start: t0, end: Date.now(), nostream: true }) + '\n');
+  process.exit(1);
+}
 // FAKE_SD_CAP_GIB=<n>: the graph-cut executor fails when the budget (--max-vram) is missing or above n GiB, as a 6 GB laptop card did
 if (process.env.FAKE_SD_CAP_GIB && !(Number(get('--max-vram')) > 0 && Number(get('--max-vram')) <= Number(process.env.FAKE_SD_CAP_GIB))) {
   console.error('[ERROR] ggml_runner.cpp:686 - flux2 segment 3/9 failed during allocated capacity check --- execution_engine.cpp:59');

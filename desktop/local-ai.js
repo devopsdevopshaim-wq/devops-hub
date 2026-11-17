@@ -745,7 +745,7 @@ function createEngine(options) {
       const files = { diffusion: modelPath('diffusion', m), llm: modelPath('llm', m), vae: modelPath('vae', m) };
       const args = buildArgs(files, input, { out, ref, offload: flags.offload, vaeTiling: flags.vaeTiling, fa: flags.fa, maxVram: flags.maxVram, stream: flags.stream });
       const feed = createProgressParser(STEPS);
-      let tail = '';
+      let tail = '', head = '';
       let child;
       try {
         child = spawn(bin, args, { cwd: path.dirname(bin), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], shell: false });
@@ -759,6 +759,7 @@ function createEngine(options) {
       const onData = (d) => {
         const s = d.toString('utf8');
         tail = (tail + s).slice(-6000);
+        if (head.length < 3000) head = (head + s).slice(0, 3000);   // an argument error is printed first, before the long usage text
         const p = feed(s);
         if (p) { try { onProgress && onProgress(p); } catch { /* ignore */ } }
       };
@@ -780,6 +781,14 @@ function createEngine(options) {
           } else {
             const clean = tail.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').split(/[\r\n]+/).filter((l) => l.trim() && !/\d+\/\d+\s*-\s*[\d.]+/.test(l)).slice(-8).join('\n');
             res = { ok: false, error: 'local-failed', detail: (err ? String(err.message || err) + '\n' : '') + clean, code };
+            // the engine refused an argument (it then prints its whole usage): which one, from the start of the output
+            const all = (head + '\n' + tail).replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
+            const bad = /(?:unknown|invalid|unrecognized)\s+(?:argument|option)[:\s'"]*(--?[\w-]+)/i.exec(all);
+            if (bad || /^usage:|\busage:/im.test(all) || /--vae-tile-size/.test(clean)) {
+              res.argError = bad ? bad[1] : true;
+              const line = (all.split(/[\r\n]+/).find((l) => /error|unknown|invalid|unrecognized/i.test(l)) || '').trim();
+              if (line) res.detail = line + '\n' + res.detail;
+            }
             if (/out of memory|ErrorOutOfDeviceMemory|VK_ERROR|alloc(ate)?.*fail|failed to allocate|cudaMalloc|ggml_vulkan|capacity check|workspace allocation|weight preparation|not enough memory/i.test(clean)) res.gpu = true;
           }
         }
@@ -791,7 +800,7 @@ function createEngine(options) {
     });
   }
 
-  let cutOk = true;   // the engine takes --max-vram / --stream-layers (false after an older build refused them)
+  let cutOk = true, streamOk = true;   // the engine takes --max-vram / --stream-layers (false after a build refused one)
   function run(o, onProgress) {
     const input = validateRunInput(o);
     if (input.error) return Promise.resolve({ ok: false, error: input.error, detail: input.detail });
@@ -810,7 +819,7 @@ function createEngine(options) {
       const flags = { offload: !cpu && !(vram >= 10 * 1024), vaeTiling: !cpu && !(vram >= 8 * 1024), fa: !cpu && faOk };
       // a memory budget below the card's size (2 GB kept for the driver and the engine's own context), as unsloth does
       const budget = vram > 0 ? Math.max(1, Math.floor((vram / 1024 - 2) * 100) / 100) : -1;
-      if (!cpu && cutOk) { flags.maxVram = budget; flags.stream = true; }
+      if (!cpu && cutOk) { flags.maxVram = budget; flags.stream = streamOk; }
       try { onProgress && onProgress({ pct: 1, phase: 'start' }); } catch { /* ignore */ }
       let r = await runOnce(chk.bin, m, input, onProgress, flags);
       if (!r.ok && flags.fa && r.error === 'local-failed' && gen === generation && !r.gpu && /diffusion-fa|unknown (argument|option)|invalid (argument|option)|unrecognized/i.test(r.detail || '')) {
@@ -819,16 +828,20 @@ function createEngine(options) {
         flags.fa = false;
         r = await runOnce(chk.bin, m, input, onProgress, flags);
       }
-      if (!r.ok && cutOk && flags.maxVram != null && r.error === 'local-failed' && gen === generation && /max-vram|stream-layers/i.test(r.detail || '') && /unknown|invalid|unrecognized/i.test(r.detail || '')) {
-        // an engine build from before the graph-cut executor: without the budget from now on
-        cutOk = false; delete flags.maxVram; delete flags.stream;
+      // an engine build that does not know --stream-layers or --max-vram: without it from now on (the named one, or the
+      // newer one first when the engine did not say which), and once more
+      for (let k = 0; k < 2 && !r.ok && r.argError && gen === generation; k++) {
+        const name = typeof r.argError === 'string' ? r.argError : '';
+        if (flags.stream && (!name || /stream-layers/.test(name))) { streamOk = false; delete flags.stream; }
+        else if (flags.maxVram != null && (!name || /max-vram|^-\d/.test(name))) { cutOk = false; delete flags.maxVram; delete flags.stream; }
+        else break;
         r = await runOnce(chk.bin, m, input, onProgress, flags);
       }
       // ran out of video memory: again with everything that saves VRAM and a smaller budget (3/4, then 1/2 of it)
       for (const scale of [0.75, 0.5]) {
         if (r.ok || !r.gpu || gen !== generation) break;
         const b = cutOk ? (budget > 0 ? Math.max(1, Math.floor(budget * scale * 100) / 100) : -1) : undefined;
-        r = await runOnce(chk.bin, m, input, onProgress, { offload: true, vaeTiling: true, fa: flags.fa, maxVram: b, stream: cutOk });
+        r = await runOnce(chk.bin, m, input, onProgress, { offload: true, vaeTiling: true, fa: flags.fa, maxVram: b, stream: cutOk && streamOk });
       }
       if (!r.ok && r.error === 'local-failed' && m.engine.variant === 'vulkan') r.suggestCpu = true;
       return r;
