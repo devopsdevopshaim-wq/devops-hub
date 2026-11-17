@@ -2755,3 +2755,7 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - With the bar shown (`body.has-modebar`): `#mt` starts at `top: 44px`; the studio gets `padding-top: 44px`; the floating `#fs-home-btn` is hidden. The bar is hidden while the home screen, the booth, the gate or the intro is up.
 - On phones only the icons show.
 - Booth: the exit is now a labelled pill, "🏠 יציאה לראשי · להחזיק". You still hold it for 1.5 s.
+
+## v188: the kept heads take the design's light (keepHeads → pasteHeads)
+- `FS.peopleParts` also returns `face` and `hair` separately. The paste mask is the face at full strength and the hair at 0.85. It is pulled in about a grid pixel (blur, then threshold) and blurred by max(W,H)/320. The alpha is M itself (it was M×1.25). Before this, a halo of the photo's old background showed around the hair.
+- Colour transfer inside the mask: each channel's mean moves to the AI head's mean, and its spread moves 35% of the way to the AI's. Blended at 0.72, so the real head takes the design's light and colour instead of looking pasted. Owner report: superheroes with photo-real heads.
