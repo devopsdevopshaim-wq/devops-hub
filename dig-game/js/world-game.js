@@ -15,7 +15,41 @@
   function state() {
     const s = S();
     if (!s.world) s.world = { found: {}, small: {}, seen: {} };
+    if (!s.world.gear) s.world.gear = { detector: 0, brush: 0, pick: 0, crew: 0 };
+    if (!s.world.xp) s.world.xp = 0;
     return s.world;
+  }
+
+  /* ---------- the archaeologist's career: rank, equipment, the site of the day ---------- */
+  const RANKS = [[0, 'מתנדב בחפירה'], [60, 'סטודנט לארכיאולוגיה'], [180, 'ארכיאולוג שטח'], [400, 'ראש שטח'], [800, 'מנהל משלחת'], [1500, 'פרופסור לארכיאולוגיה'], [3000, 'אגדה בעולם הארכיאולוגיה']];
+  const rankOf = (xp) => { let i = 0; while (i < RANKS.length - 1 && xp >= RANKS[i + 1][0]) i++; return i; };
+  function gainXp(n) {
+    const st = state(), before = rankOf(st.xp);
+    st.xp += n;
+    const after = rankOf(st.xp);
+    if (after > before) { SFX.levelup(); A.confetti(60); setTimeout(() => A.toast(`🎓 קודמתם: ${RANKS[after][1]}!`, 'gold', 5000), 300); }
+    A.save();
+  }
+  const GEAR = {
+    detector: { name: 'גלאי מתכות', icon: '📡', per: 'טווח +30%', base: 150 },
+    brush: { name: 'מברשות ומחטים', icon: '🖌️', per: 'חשיפה +35%', base: 120 },
+    pick: { name: 'מכושים', icon: '⛏️', per: 'חפירה +25%', base: 120 },
+    crew: { name: 'פועלים', icon: '👷', per: '+20 ⚡ בכל משלחת', base: 180 },
+  };
+  const gearPrice = (k) => Math.round(GEAR[k].base * Math.pow(1.8, state().gear[k]));
+  // the site of the day: the same for everyone today, double the reward and no fee
+  function today() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+  function dailySite() { let h = 0; for (const ch of today()) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return W.SITES[h % W.SITES.length]; }
+  const isDaily = (s) => s.id === dailySite().id && state().dailyDone !== today();
+  function gearPanel() {
+    const st = state();
+    A.modal(`<h2>🎒 ציוד המשלחת</h2><p class="sub">ציוד טוב יותר מוצא יותר, מהר יותר, ושובר פחות.</p>
+      <div class="gear">${Object.entries(GEAR).map(([k, g]) => `<div class="gear-row"><span class="gi">${g.icon}</span><div><b>${g.name} · דרגה ${st.gear[k]}</b><small>${g.per}</small></div>
+        <button class="btn gold sm" data-g="${k}" ${S().coins < gearPrice(k) || st.gear[k] >= 5 ? 'disabled' : ''}>${st.gear[k] >= 5 ? 'מקסימום' : `${A.fmt(gearPrice(k))} 🪙`}</button></div>`).join('')}</div>
+      <div class="m-actions"><button class="btn ghost" id="m-gx">סגירה</button></div>`, (root) => {
+      $$('[data-g]', root).forEach((b) => b.onclick = () => { const k = b.dataset.g, pr = gearPrice(k); if (S().coins < pr) return; S().coins -= pr; st.gear[k]++; A.save(); A.topbar(); SFX.coin(); A.closeModal(); setTimeout(gearPanel, 200); renderWorld(); });
+      $('#m-gx', root).onclick = A.closeModal;
+    });
   }
   const isFound = (id) => !!state().found[id];
   const photo = (id, kind) => WP.sites[id] && WP.sites[id][kind];
@@ -52,6 +86,11 @@
     const st = state();
     const n = W.SITES.filter((s) => isFound(s.id)).length;
     $('#w-found').textContent = `${n}/${W.SITES.length}`;
+    const ri = rankOf(st.xp), next = RANKS[ri + 1];
+    $('#w-rank').innerHTML = `<b>🎓 ${RANKS[ri][1]}</b><div class="w-xp"><i style="width:${next ? Math.round((st.xp - RANKS[ri][0]) / (next[0] - RANKS[ri][0]) * 100) : 100}%"></i></div><small>${next ? `${st.xp}/${next[0]} נק׳ ניסיון` : 'הדרגה הגבוהה ביותר'}</small>`;
+    const ds = dailySite();
+    $('#w-daily').innerHTML = isDaily(ds) ? `⭐ משלחת היום: <b>${ds.flag} ${ds.name}</b> · בחינם ופי 2 מטבעות` : `✓ משלחת היום הושלמה. מחר אתר חדש!`;
+    $('#w-daily').onclick = () => { if (window.GLOBE3D) GLOBE3D.focus(ds.id); dossier(ds); };
     $('#w-regions').innerHTML = [['all', 'כל העולם']].concat(Object.entries(W.REGIONS)).map(([id, name]) => `<button class="chip ${region === id ? 'on' : ''}" data-r="${id}">${name}</button>`).join('');
     $$('#w-regions .chip').forEach((b) => b.onclick = () => { region = b.dataset.r; SFX.click(); renderWorld(); });
     const list = W.SITES.filter((s) => region === 'all' || s.region === region);
@@ -60,7 +99,7 @@
       return `<button class="w-card ${isFound(s.id) ? 'found' : ''}" data-id="${s.id}">
         <div class="w-pic">${ph ? `<img src="${ph.src}" alt="" loading="lazy">` : `<span>${s.flag}</span>`}</div>
         <b>${s.flag} ${s.name}</b><small>${s.country}</small>
-        <em>${isFound(s.id) ? '✓ נמצא' : s.cost ? `${s.cost} 🪙` : 'חינם'}</em></button>`;
+        <em>${isDaily(s) ? '⭐ משלחת היום' : isFound(s.id) ? '✓ נמצא' : s.cost ? `${s.cost} 🪙` : 'חינם'}</em></button>`;
     }).join('');
     $$('#w-list .w-card').forEach((b) => b.onclick = () => { SFX.click(); const s = W.BY[b.dataset.id]; if (window.GLOBE3D) GLOBE3D.focus(s.id); dossier(s); });
     st.seen.world = 1;
@@ -90,12 +129,13 @@
           <p class="sub">מצאתם אותו במצב ${st.cond}%</p></div>` : `<p class="sub">איך התגלה האוצר באמת? הסיפור נפתח אחרי שתמצאו אותו.</p>`}
       </div>
       <div class="m-actions">
-        <button class="btn gold" id="m-go">${done ? '⛏️ לחפור שוב באתר' : '🧭 לצאת למשלחת'}${s.cost ? ` · ${s.cost} ${A.ico('coin', 'ico md')}` : ''}</button>
+        <button class="btn gold" id="m-go">${done ? '⛏️ לחפור שוב באתר' : '🧭 לצאת למשלחת'}${isDaily(s) ? ' · ⭐ חינם, פי 2' : s.cost ? ` · ${s.cost} ${A.ico('coin', 'ico md')}` : ''}</button>
         <button class="btn ghost" id="m-close">סגירה</button>
       </div>`, (root) => {
       $('#m-go', root).onclick = () => {
-        if (S().coins < s.cost) { SFX.deny(); A.toast(`למשלחת לכאן צריך ${s.cost} מטבעות. אפשר להרוויח בשלבי התותח או בחפירות בארץ 🪙`, '', 4500); return; }
-        S().coins -= s.cost; A.save(); A.topbar();
+        const cost = isDaily(s) ? 0 : s.cost;
+        if (S().coins < cost) { SFX.deny(); A.toast(`למשלחת לכאן צריך ${cost} מטבעות. אפשר להרוויח באתרים בארץ ישראל, בשלבי התותח או בחפירות 🪙`, '', 4500); return; }
+        S().coins -= cost; A.save(); A.topbar();
         A.closeModal(); expedition(s);
       };
       $('#m-close', root).onclick = A.closeModal;
@@ -110,7 +150,9 @@
   };
   let ex = null;
   function expedition(s) {
-    ex = { s, sherds: 0, near: 0, hints: 1, smalls: [], coins: 0, found: false, detector: false };
+    ex = { s, sherds: 0, near: 0, hints: 1, smalls: [], coins: 0, found: false, detector: false, mult: isDaily(s) ? 2 : 1 };
+    const g = state().gear;
+    Object.assign(handlers, { detector: 1 + g.detector * 0.3, brush: 1 + g.brush * 0.35, pick: 1 + g.pick * 0.25, energy: 80 + g.crew * 20 });
     A.show('site');
     $('#st-name').textContent = `${s.flag} ${s.name}`;
     $('#st-sub').textContent = s.country;
@@ -121,12 +163,12 @@
       SITE3D.start($('#site3d'), s, handlers).then((ok) => {
         if (!ok) return;
         energyBar(SITE3D.energy());
-        A.toast('🧭 הקישו על הקרקע כדי ללכת. חפשו חרסים על הקרקע, הפעילו את הגלאי, ואז חפרו.', 'gold', 6500);
+        A.toast('🧭 אתם בשטח. גררו כדי להסתכל מסביב, הקישו על הקרקע כדי ללכת לשם (במחשב גם W A S D). חפשו חרסים, הפעילו את הגלאי, ואז חפרו.', 'gold', 7000);
       });
     };
     if (window.SITE3D) go(); else addEventListener('site3d-ready', go, { once: true });
   }
-  function energyBar(e) { $('#st-en').style.width = Math.max(0, Math.min(100, e / 80 * 100)) + '%'; $('#st-en-n').textContent = Math.max(0, Math.round(e)); }
+  function energyBar(e) { $('#st-en').style.width = Math.max(0, Math.min(100, e / (handlers.energy || 80) * 100)) + '%'; $('#st-en-n').textContent = Math.max(0, Math.round(e)); }
   function setSiteMode(m) {
     document.body.dataset.sitemode = m;
     $$('.st-walk').forEach((b) => { b.hidden = m !== 'walk'; });
@@ -135,6 +177,7 @@
   const handlers = {
     onSherd(near) {
       ex.sherds++; if (near) ex.near++;
+      gainXp(near ? 3 : 1);
       SFX.reveal();
       A.toast(near ? `🏺 שבר חרס מ${ex.s.era}! השרידים של התקופה קרובים.` : '🏺 שבר חרס מתקופה מאוחרת יותר.', near ? 'gold' : '', 2600);
       // sherds of the right period open more of the excavation reports
@@ -142,6 +185,7 @@
       if (want > ex.hints) { ex.hints = want; setTimeout(() => A.toast(`🧭 רמז חדש: ${ex.s.hints[want - 1]}`, 'gold', 6500), 900); }
     },
     onBeep(x) { SFX.beep(x); },
+    onStep() { SFX.step(); },
     onSignal(x) { $('#st-signal').style.width = Math.round(x * 100) + '%'; $('#st-signal').parentElement.classList.toggle('hot', x > 0.55); },
     onReveal(kind) { SFX.reveal(); A.toast(kind === 'main' ? '✨ משהו גדול בולט מהאדמה! עברו למברשת ונקו סביבו בזהירות.' : '🪶 משהו קטן בולט מהאדמה. מברשת!', kind === 'main' ? 'gold' : '', 4200); },
     onExpose(kind, x) { $('#st-expose').style.width = Math.round(x * 100) + '%'; },
@@ -157,17 +201,20 @@
         const f = treasureFind(ex.s), a = { f, cond: b.cond };
         lab(a, 0, true, false, (cond) => treasure(f, cond));
       } else {
-        const sm = W.SMALL[Math.floor(Math.random() * W.SMALL.length)];
-        ex.smalls.push(sm); ex.coins += sm.value * 2;
+        const sm = W.SMALL[Math.floor(Math.random() * W.SMALL.length)], v = sm.value * 2 * ex.mult;
+        ex.smalls.push(sm); ex.coins += v;
         const st = state(); st.small[sm.id] = (st.small[sm.id] || 0) + 1;
-        S().coins += sm.value * 2; S().stats.finds++; A.save(); A.topbar();
-        SFX.coin(); A.toast(`${sm.icon} ${sm.name} · +${sm.value * 2} 🪙`, 'gold', 2600);
+        S().coins += v; S().stats.finds++; A.save(); A.topbar();
+        gainXp(8);
+        SFX.coin(); A.toast(`${sm.icon} ${sm.name} · +${v} 🪙`, 'gold', 2600);
       }
     },
   };
   function treasure(f, cond) {
     const s = ex.s, t = s.treasure, r = D.RARITY[t.rarity];
-    const value = Math.round(t.value * (0.25 + 0.75 * cond / 100) * (cond >= 100 ? 1.5 : 1));
+    const value = Math.round(t.value * (0.25 + 0.75 * cond / 100) * (cond >= 100 ? 1.5 : 1) * ex.mult);
+    gainXp(Math.round(40 + t.value / 10));
+    if (ex.mult > 1) state().dailyDone = today();
     const m = S().museum[f.id] || { n: 0, best: 0 };
     const isNew = !m.n;
     m.n++; m.best = Math.max(m.best, cond); S().museum[f.id] = m;
@@ -231,6 +278,7 @@
       g.fillStyle = '#3a2410'; g.font = '800 12px Heebo, sans-serif'; g.fillText('אתם כאן', x, y - 16);
     }
   }
+  $('#w-gear').addEventListener('click', () => { SFX.click(); gearPanel(); });
   $('#st-map').addEventListener('click', () => {
     if (!ex) return; SFX.click();
     A.modal(`<h2>🗺️ מפת הסקר</h2><p class="sub">כל משבצת היא 10 על 10 מטרים.</p><canvas id="m-mapcv" style="border-radius:10px;box-shadow:0 0 0 2px #6b4a1c"></canvas><div class="m-actions"><button class="btn gold" id="m-ok2">חזרה לשטח</button></div>`, (root) => { drawMap($('#m-mapcv', root)); $('#m-ok2', root).onclick = A.closeModal; });
@@ -261,8 +309,9 @@
     if (!ex || !window.SITE3D) return;
     if (SITE3D.energy() < 5) { outOfEnergy(); return; }
     SFX.trowel();
+    const res = SITE3D.digHere();
+    if (res && res.steep) { SFX.deny(); A.toast('⛰️ כאן תלול מדי לחפור. מצאו משטח ישר יותר, או עמדו מול פתח המערה.', '', 3500); return; }
     SITE3D.addEnergy(-5); energyBar(SITE3D.energy());
-    SITE3D.digHere();
     setSiteMode('dig'); pickTool('pick');
     $('#st-expose').style.width = '0%';
     A.toast('⛏️ פתחתם שטח חפירה של 3×3 מטרים. הקישו בתוכו כדי לחפור. הממצאים מהתקופה נמצאים בעומק של כמטר.', 'gold', 5200);

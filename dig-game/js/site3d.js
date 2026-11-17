@@ -1,16 +1,16 @@
-/* שכבות — walking a real site of the world expedition. The ground is shaped from the site's landmarks (cliffs,
-   caves, mounds, walls, water), the archaeologist walks where you tap, a metal detector beeps faster near metal,
-   potsherds lie on the surface more thickly near what is buried, and a trench is dug right there in the ground. */
+/* שכבות — standing on a real site of the world expedition, in first person. The ground is the real terrain of the place
+   (elevation data from AWS Terrain Tiles, about 2 km around the site), with scanned rock and soil materials that change
+   with the slope. You walk where you tap, look around by dragging, hold a metal detector, pick up potsherds, and dig a
+   trench right in the ground with a pick and a brush. */
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
-import * as SkeletonUtils from '../vendor/three/addons/utils/SkeletonUtils.js';
 import { RoundedBoxGeometry } from '../vendor/three/addons/geometries/RoundedBoxGeometry.js';
 
-const SIZE = 110, SEG = 176, CELL = 10;
+const CELL = 10, NEAR = 72, WALK = 62, EYE = 1.62;
 let renderer, scene, camera, clock, raf = 0, host = null, ro = null, H = {}, site = null;
-let terrain = null, holeU = null, water = null, labels = [], sherds = [], buried = [], trench = null;
-let player = null, mode = 'walk', tool = 'pick', detectorOn = false, beepT = 0, energy = 0;
-let camYaw = 0, camPitch = 0.3, camDist = 13, lastFrame = 0, bumps = [];
+let dem = null, mats = null, holeU = null, sun = null;
+let labels = [], sherds = [], buried = [], trench = null, spoil = null;
+let me = null, mode = 'walk', tool = 'pick', detectorOn = false, beepT = 0, energy = 0, view = null, swingT = 9, keys = {};
 const R0 = Math.random;
 
 /* ---------- assets ---------- */
@@ -28,17 +28,31 @@ function pbr(name, rep = [1, 1], extra = {}) {
 const gltf = new GLTFLoader();
 const MODELS = {};
 const load = (url) => new Promise((res) => gltf.load(url, (g) => res(g), undefined, () => res(null)));
-const ready = Promise.all([
-  load('models/explorer.glb').then((g) => { MODELS.hero = g; }),
-  ...['quiver_tree_01', 'shrub_01', 'namaqualand_boulder_02', 'wooden_crate_01', 'wooden_bucket_01', 'wicker_basket_01', 'antique_ceramic_vase_01', 'jug_01']
-    .map((n) => load(`assets/models/${n}.glb`).then((g) => { if (g) { g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); MODELS[n] = g.scene; } })),
-]);
+let ready = null;
+function loadModels() {
+  if (!ready) ready = Promise.all(['quiver_tree_01', 'shrub_01', 'namaqualand_boulder_02', 'wooden_crate_01', 'wooden_bucket_01', 'wicker_basket_01', 'antique_ceramic_vase_01', 'jug_01', 'picke_dirty_01']
+    .map((n) => load(`assets/models/${n}.glb`).then((g) => { if (g) { g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); MODELS[n] = g.scene; } })));
+  return ready;
+}
 function fit(name, w, h) {
   const src = MODELS[name]; if (!src) return null;
   const m = src.clone(true), box = new THREE.Box3().setFromObject(m), s = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
   const k = Math.min(h / s.y, w / Math.max(s.x, s.z));
   m.scale.setScalar(k); m.position.set(-c.x * k, -box.min.y * k, -c.z * k);
   const g = new THREE.Group(); g.add(m); return g;
+}
+let demMeta = null;
+async function loadDem(id) {
+  if (!demMeta) demMeta = await fetch('assets/terrain/terrain.json').then((r) => r.json()).catch(() => ({}));
+  const m = demMeta[id];
+  if (!m) return null;
+  const img = await new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = `assets/terrain/${id}.png`; });
+  if (!img) return null;
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+  const px = g.getImageData(0, 0, c.width, c.height).data, n = c.width, data = new Float32Array(n * n);
+  for (let i = 0; i < n * n; i++) data[i] = m.min + ((px[i * 4] * 256 + px[i * 4 + 1]) / 65535) * (m.max - m.min) - m.centre;
+  return { n, data, span: m.span };
 }
 
 /* ---------- the ground ---------- */
@@ -50,11 +64,79 @@ function vnoise(x, y) {
   return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 }
 const fbm = (x, y) => vnoise(x, y) * 0.55 + vnoise(x * 2.1, y * 2.1) * 0.28 + vnoise(x * 4.3, y * 4.3) * 0.17;
-// grid cell (column west→east, row north→south) to the middle of its 10 m square
 const cellPos = (c, r) => new THREE.Vector2((c - 2) * CELL, (r - 2) * CELL);
+function demAt(x, z) {
+  const n = dem.n, f = (v) => Math.max(0, Math.min(n - 1.001, (v / dem.span + 0.5) * (n - 1)));
+  const u = f(x), v = f(z), i = Math.floor(u), j = Math.floor(v), a = u - i, b = v - j, d = dem.data;
+  return (d[j * n + i] * (1 - a) + d[j * n + i + 1] * a) * (1 - b) + (d[(j + 1) * n + i] * (1 - a) + d[(j + 1) * n + i + 1] * a) * b;
+}
+// on a sea site there is no elevation data: the sea floor is shaped from the map's landmarks
+let bumps = [];
+function hAt(x, z) {
+  const r = Math.max(Math.abs(x), Math.abs(z));
+  const near = 1 - Math.min(1, Math.max(0, (r - NEAR + 10) / 10));
+  const detail = ((fbm(x * 0.22 + 3, z * 0.22 + 7) - 0.5) * 0.7 + (fbm(x * 1.4, z * 1.4) - 0.5) * 0.09) * near;
+  if (dem) return demAt(x, z) + detail;
+  let h = (fbm(x * 0.05 + 3, z * 0.05 + 7) - 0.5) * 1.6 + detail;
+  for (const b of bumps) { const dx = x - b.x, dz = z - b.z, d2 = (dx * dx + dz * dz) / (b.s * b.s); h += b.h * Math.exp(-d2); }
+  const rr = Math.hypot(x, z);
+  h += Math.max(0, (rr - 40) / 14) ** 2 * 4 * (0.6 + fbm(x * 0.06, z * 0.06) * 0.8);
+  return h;
+}
+const GROUND = { desert: ['sandy_gravel', '#d9c3a2'], hills: ['dry_ground_rocks', '#ffffff'], green: ['dry_ground_rocks', '#aebd8c'], sea: ['sandy_gravel', '#c9d8d0'], jungle: ['dry_ground_rocks', '#94ad7c'] };
+// soil on the flats, bare rock on the slopes, and a square opened where a trench is dug
+function groundMat(rep, far) {
+  const [tx, tint] = GROUND[site.terrain] || GROUND.desert;
+  const mat = pbr(tx, [rep, rep], { color: tint });
+  const rock = tex('aerial_rocks_02', 'diff', [rep * 0.6, rep * 0.6]);
+  if (far) { mat.polygonOffset = true; mat.polygonOffsetFactor = 2; mat.polygonOffsetUnits = 4; }
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uHole = holeU; sh.uniforms.uRock = { value: rock }; sh.uniforms.uInner = { value: far ? NEAR - 3 : -1 };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN; uniform vec4 uHole; uniform sampler2D uRock; uniform float uInner;')
+      .replace('void main() {', 'void main() {\n if (uHole.w > 0.5 && abs(vWP.x - uHole.x) < uHole.z && abs(vWP.z - uHole.y) < uHole.z) discard;\n if (uInner > 0. && max(abs(vWP.x), abs(vWP.z)) < uInner) discard;')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+ // bare rock on the slopes, and broad patches of lighter and darker ground so the texture never looks tiled
+ float steep = smoothstep(0.9, 0.6, vWN.y);
+ vec3 rockC = texture2D(uRock, vMapUv * 0.73).rgb * vec3(0.92, 0.84, 0.74);
+ diffuseColor.rgb = mix(diffuseColor.rgb, rockC, steep);
+ float macro = sin(vWP.x * 0.021 + sin(vWP.z * 0.017) * 2.0) * 0.5 + sin(vWP.z * 0.043 + vWP.x * 0.011) * 0.5;
+ float macro2 = sin(vWP.x * 0.0041 + vWP.z * 0.0033) * 0.5 + 0.5;
+ diffuseColor.rgb *= 0.86 + macro * 0.08 - macro2 * 0.1;
+ diffuseColor.rgb *= mix(1.0, 0.72, smoothstep(0.75, 0.35, vWN.y));`);
+  };
+  return mat;
+}
+function makeTerrain() {
+  const span = dem ? Math.min(dem.span, 2000) : 260;
+  // the far ground: the real valleys and hills all around, to the horizon
+  const far = new THREE.PlaneGeometry(span, span, 220, 220); far.rotateX(-Math.PI / 2);
+  // the near ground: a metre-fine mesh where you walk and dig
+  const near = new THREE.PlaneGeometry(NEAR * 2, NEAR * 2, NEAR * 2, NEAR * 2); near.rotateX(-Math.PI / 2);
+  for (const geo of [far, near]) { const p = geo.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, hAt(p.getX(i), p.getZ(i))); geo.computeVertexNormals(); }
+  holeU = { value: new THREE.Vector4(0, 0, 0, 0) };
+  const fm = new THREE.Mesh(far, groundMat(span / 40, true)); fm.receiveShadow = true;
+  const nm = new THREE.Mesh(near, groundMat(NEAR / 2.5, false)); nm.receiveShadow = true;
+  scene.add(fm, nm);
+  return nm;
+}
+let ground = null;
+
+/* ---------- landmarks from the site's map ---------- */
+function MAT() {
+  if (mats) return mats;
+  mats = {
+    wall: pbr('old_stone_wall', [1.2, 0.6]), blocks: pbr('large_sandstone_blocks', [1, 1]), marble: pbr('marble_01', [0.5, 1.5]),
+    rock: pbr('aerial_rocks_02', [1, 1]), wood: pbr('weathered_planks', [1, 1]), clay: pbr('clay_plaster', [1, 1], { color: '#c07a50' }),
+    brick: pbr('castle_brick_07', [1, 1]), cave: new THREE.MeshBasicMaterial({ color: '#0b0805' }), cloth: new THREE.MeshStandardMaterial({ color: '#cdb991', roughness: 0.95, side: THREE.DoubleSide }),
+    iron: new THREE.MeshStandardMaterial({ color: '#5e6266', metalness: 0.85, roughness: 0.4 }), handle: new THREE.MeshStandardMaterial({ color: '#7a5030', roughness: 0.65 }),
+  };
+  return mats;
+}
 function kindOf(em, label) {
-  if (/צוק|הר |הרי|פסגת|פסגה|גבעה|גבעת|הגבעה|התל|תל |רכס|מצוק|⛰️/.test(label + em) && !/🕳️/.test(em)) return /צוק|מצוק|הר |הרי|רכס/.test(label) ? 'cliff' : 'mound';
   if (em === '🕳️') return 'cave';
+  if (em === '⛰️') return /צוק|מצוק|הר |רכס/.test(label) ? 'cliff' : 'mound';
   if (em === '🌊' || em === '🔵') return 'water';
   if (em === '🏞️') return 'river';
   if (em === '💧') return 'well';
@@ -72,100 +154,57 @@ function kindOf(em, label) {
   if ('🏭🏡🏘️🏠⛪'.includes(em)) return 'houses';
   return 'ruins';
 }
-function shapeGround() {
-  bumps = [];
-  for (const [em, c, r, label] of site.map.marks) {
-    const p = cellPos(c, r), k = kindOf(em, label);
-    if (k === 'cliff') bumps.push({ x: p.x, z: p.y, h: 10, s: 7.5, sharp: 1.6 });
-    else if (k === 'mound') bumps.push({ x: p.x, z: p.y, h: 4.2, s: 6.5, sharp: 1 });
-    else if (k === 'cave') bumps.push({ x: p.x, z: p.y - 3, h: 7, s: 5, sharp: 1.5 });
-    else if (k === 'water') bumps.push({ x: p.x, z: p.y, h: -2.6, s: 11, sharp: 1, water: true });
-    else if (k === 'river') bumps.push({ x: p.x, z: p.y, h: -1.2, s: 4, sharp: 1, line: true });
-    else if (k === 'pyramid') bumps.push({ x: p.x, z: p.y, h: 2, s: 6, sharp: 1 });
-    else if (k === 'island') bumps.push({ x: p.x, z: p.y, h: 2.5, s: 7, sharp: 1 });
-  }
-}
-function hAt(x, z) {
-  let h = (fbm(x * 0.05 + 3, z * 0.05 + 7) - 0.5) * 1.6 + (fbm(x * 0.4, z * 0.4) - 0.5) * 0.15;
-  for (const b of bumps) {
-    const dx = x - b.x, dz = b.line ? 0 : z - b.z, d2 = (dx * dx + dz * dz) / (b.s * b.s);
-    h += b.h * Math.exp(-Math.pow(d2, b.sharp)) * (b.h > 4 ? 0.85 + fbm(x * 0.3, z * 0.3) * 0.3 : 1);
-  }
-  // hills close the horizon all around
-  const r = Math.hypot(x, z);
-  h += Math.max(0, (r - 38) / 14) ** 2 * 4 * (0.6 + fbm(x * 0.06, z * 0.06) * 0.8);
-  return h;
-}
-const GROUND = { desert: ['sandy_gravel', '#e6d2b0'], hills: ['dry_ground_rocks', '#ffffff'], green: ['dry_ground_rocks', '#b9c79a'], sea: ['sandy_gravel', '#c9d8d0'], jungle: ['dry_ground_rocks', '#9fb486'] };
-function makeTerrain() {
-  const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG); geo.rotateX(-Math.PI / 2);
-  const p = geo.attributes.position;
-  for (let i = 0; i < p.count; i++) p.setY(i, hAt(p.getX(i), p.getZ(i)));
-  geo.computeVertexNormals();
-  const [tx, tint] = GROUND[site.terrain] || GROUND.desert;
-  const mat = pbr(tx, [SIZE / 4, SIZE / 4], { color: tint });
-  holeU = { value: new THREE.Vector4(0, 0, 0, 0) };
-  // the ground opens where a trench is dug
-  mat.onBeforeCompile = (sh) => {
-    sh.uniforms.uHole = holeU;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;').replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;\nuniform vec4 uHole;').replace('void main() {', 'void main() {\n if (uHole.w > 0.5 && abs(vWP.x - uHole.x) < uHole.z && abs(vWP.z - uHole.y) < uHole.z) discard;');
-  };
-  terrain = new THREE.Mesh(geo, mat); terrain.receiveShadow = true;
-  scene.add(terrain);
-  if (bumps.some((b) => b.water)) {
-    water = new THREE.Mesh(new THREE.PlaneGeometry(SIZE, SIZE), new THREE.MeshStandardMaterial({ color: '#3d6f86', roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.86 }));
-    water.rotation.x = -Math.PI / 2; water.position.y = -0.9; scene.add(water);
-  }
-}
-
-/* ---------- landmarks from the site's map ---------- */
-let MAT = null;
-function mats() {
-  if (MAT) return MAT;
-  MAT = {
-    wall: pbr('old_stone_wall', [1.2, 0.6]), blocks: pbr('large_sandstone_blocks', [1, 1]), marble: pbr('marble_01', [0.5, 1.5]),
-    rock: pbr('aerial_rocks_02', [1, 1]), wood: pbr('weathered_planks', [1, 1]), clay: pbr('clay_plaster', [1, 1], { color: '#c07a50' }),
-    brick: pbr('castle_brick_07', [1, 1]), cave: new THREE.MeshBasicMaterial({ color: '#0d0905' }), cloth: new THREE.MeshStandardMaterial({ color: '#c9b48a', roughness: 0.95, side: THREE.DoubleSide }),
-    soil: pbr('excavated_soil_wall', [1, 1]),
-  };
-  return MAT;
-}
-function place(obj, x, z, ry = 0) { obj.position.set(x, hAt(x, z), z); obj.rotation.y = ry; obj.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); scene.add(obj); return obj; }
+let decor = [];
+function place(obj, x, z, ry = 0) { obj.position.set(x, hAt(x, z), z); obj.rotation.y = ry; obj.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); scene.add(obj); decor.push(obj); return obj; }
 function box(w, h, d, m) { return new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, 0.04), m); }
+// a cave belongs in a cliff: look around the mapped spot for the steepest real slope
+function steepNear(x, z) {
+  let best = { x, z, s: -1, dir: 0 };
+  for (let a = 0; a < 24; a++) for (const r of [0, 6, 12, 18, 24]) {
+    const px = x + Math.cos(a / 24 * Math.PI * 2) * r, pz = z + Math.sin(a / 24 * Math.PI * 2) * r;
+    if (Math.max(Math.abs(px), Math.abs(pz)) > WALK - 4) continue;
+    const gx = hAt(px + 1, pz) - hAt(px - 1, pz), gz = hAt(px, pz + 1) - hAt(px, pz - 1), s = Math.hypot(gx, gz) / 2;
+    if (s > best.s) best = { x: px, z: pz, s, dir: Math.atan2(-gx, -gz) };
+  }
+  return best;
+}
+const markPos = {};
 function buildMark(em, c, r, label, R) {
-  const M = mats(), p = cellPos(c, r), k = kindOf(em, label), g = new THREE.Group();
-  const x = p.x, z = p.y;
+  const M = MAT(), p = cellPos(c, r), k = kindOf(em, label), g = new THREE.Group();
+  let x = p.x, z = p.y;
+  if (dem && (k === 'water' || k === 'river' || k === 'cliff' || k === 'mound')) { markPos[c + ',' + r] = { x, z }; return addLabel(label, x, z, 3); }
   if (k === 'ruins' || k === 'houses') {
-    // the stubs of walls of a building, a few courses high, with a doorway
     const w = k === 'houses' ? 5 : 7, d = k === 'houses' ? 4 : 6, hh = k === 'houses' ? 1.6 : 1.1 + R() * 0.8;
-    const walls = [[0, -d / 2, w, 0], [0, d / 2, w * 0.4, -w * 0.3], [0, d / 2, w * 0.4, w * 0.3], [-w / 2, 0, d, 'v'], [w / 2, 0, d, 'v']];
-    for (const [wx, wz, len, off] of walls) {
+    for (const [wx, wz, len, off] of [[0, -d / 2, w, 0], [0, d / 2, w * 0.4, -w * 0.3], [0, d / 2, w * 0.4, w * 0.3], [-w / 2, 0, d, 'v'], [w / 2, 0, d, 'v']]) {
       const b = box(off === 'v' ? 0.6 : len, hh * (0.6 + R() * 0.5), off === 'v' ? len : 0.6, M.wall);
-      b.position.set(wx + (off === 'v' ? 0 : off), b.geometry.parameters.height / 2, wz); g.add(b);
+      b.position.set(wx + (off === 'v' ? 0 : off), b.geometry.parameters.height / 2 - 0.2, wz); g.add(b);
     }
-    if ('🏛️🛕⛩️'.includes(em)) for (let i = 0; i < 4; i++) { const col = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 2.2 + R() * 2.4, 16), M.marble); col.position.set(-w / 2 + 1 + i * (w - 2) / 3, col.geometry.parameters.height / 2, -d / 2 - 1); g.add(col); }
-    if (em === '🚪' || em === '🦁') { for (const s of [-1, 1]) { const pi = box(1, 3.4, 1, M.blocks); pi.position.set(s * 1.4, 1.7, 0); g.add(pi); } const li = box(4, 0.7, 1.1, M.blocks); li.position.y = 3.6; g.add(li); }
-    if (em === '🏰' || em === '🏯') { const tw = box(3, 4.5, 3, M.blocks); tw.position.set(w / 2, 2.25, -d / 2); g.add(tw); }
-    if (em === '⛪' || em === '🏭' || em === '🏡') { const roof = new THREE.Mesh(new THREE.ConeGeometry(w * 0.72, 2, 4), M.brick); roof.rotation.y = Math.PI / 4; roof.position.y = hh + 1; roof.scale.z = d / w; g.add(roof); }
+    if ('🏛️🛕⛩️'.includes(em)) for (let i = 0; i < 4; i++) { const col = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 2.2 + R() * 2.4, 16), M.marble); col.position.set(-w / 2 + 1 + i * (w - 2) / 3, col.geometry.parameters.height / 2 - 0.2, -d / 2 - 1); g.add(col); }
+    if (em === '🚪' || em === '🦁') { for (const s of [-1, 1]) { const pi = box(1, 3.4, 1, M.blocks); pi.position.set(s * 1.4, 1.5, 0); g.add(pi); } const li = box(4, 0.7, 1.1, M.blocks); li.position.y = 3.4; g.add(li); }
+    if (em === '🏰' || em === '🏯') { const tw = box(3, 4.5, 3, M.blocks); tw.position.set(w / 2, 2, -d / 2); g.add(tw); }
+    if (em === '⛪' || em === '🏭' || em === '🏡') { const roof = new THREE.Mesh(new THREE.ConeGeometry(w * 0.72, 2, 4), M.brick); roof.rotation.y = Math.PI / 4; roof.position.y = hh + 0.8; roof.scale.z = d / w; g.add(roof); }
     place(g, x, z, R() * 0.6 - 0.3);
   } else if (k === 'cave') {
-    // a dark opening in a rocky face that looks south, towards the camp
-    const mouth = new THREE.Mesh(new THREE.CircleGeometry(1.4, 24, 0, Math.PI), M.cave);
-    const y = hAt(x, z + 1.5);
-    mouth.position.set(x, y + 0.05, z + 1.3); mouth.scale.set(1, 1.3, 1); scene.add(mouth);
-    for (let i = 0; i < 5; i++) { const rk = fit('namaqualand_boulder_02', 2 + R() * 2, 1 + R() * 1.4); if (rk) place(rk, x + (R() - 0.5) * 6, z + 2 + R() * 2.5, R() * 6); }
+    if (dem) { const s = steepNear(x, z); x = s.x; z = s.z; }
+    const y = hAt(x, z);
+    const face = dem ? steepNear(x, z).dir : 0;
+    // the mouth: a dark hollow sunk into the slope, framed by rock
+    const hollow = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#120c08', roughness: 1, side: THREE.BackSide }));
+    hollow.scale.set(1.1, 1.3, 1.5); hollow.rotation.set(-Math.PI / 2, face, 0, 'YXZ');
+    hollow.position.set(x, y + 0.9, z); scene.add(hollow);
+    for (let i = 0; i < 3; i++) { const a = face + Math.PI / 2 + (i - 1) * 0.9; const rk = fit('namaqualand_boulder_02', 1.4 + R(), 0.8 + R() * 0.6); if (rk) place(rk, x + Math.sin(a) * 1.8, z + Math.cos(a) * 1.8, R() * 6); }
+    markPos.caveFace = face;
   } else if (k === 'trees') {
-    for (let i = 0; i < 3; i++) { const t = fit(site.terrain === 'jungle' || site.terrain === 'green' ? 'shrub_01' : 'quiver_tree_01', 4, site.terrain === 'jungle' ? 3.5 : 4.5 + R() * 2); if (t) { t.scale.multiplyScalar(site.terrain === 'jungle' ? 2.2 : 1); place(t, x + (R() - 0.5) * 7, z + (R() - 0.5) * 7, R() * 6); } }
+    for (let i = 0; i < 3; i++) { const jungle = site.terrain === 'jungle' || site.terrain === 'green'; const t = fit(jungle ? 'shrub_01' : 'quiver_tree_01', 4, jungle ? 3.5 : 4.5 + R() * 2); if (t) { if (jungle) t.scale.multiplyScalar(2.2); place(t, x + (R() - 0.5) * 7, z + (R() - 0.5) * 7, R() * 6); } }
   } else if (k === 'tent') {
     const t = new THREE.Mesh(new THREE.ConeGeometry(2.2, 2.4, 4, 1, true), M.cloth); t.position.y = 1.2; t.rotation.y = Math.PI / 4; g.add(t);
-    const cr = fit('wooden_crate_01', 0.8, 0.7); if (cr) { cr.position.set(2.2, 0, 1); g.add(cr); }
     place(g, x, z);
   } else if (k === 'circle') {
-    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; const st = box(0.8, 1.2 + R() * 1.2, 0.5, M.rock); st.position.set(Math.cos(a) * 4, st.geometry.parameters.height / 2, Math.sin(a) * 4); st.rotation.y = -a; g.add(st); }
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; const st = box(0.8, 1.2 + R() * 1.2, 0.5, M.rock); st.position.set(Math.cos(a) * 4, st.geometry.parameters.height / 2 - 0.2, Math.sin(a) * 4); st.rotation.y = -a; g.add(st); }
     place(g, x, z);
   } else if (k === 'pyramid') {
-    const py = new THREE.Mesh(new THREE.ConeGeometry(6, em === '🔺' ? 7 : 3.2, 4), M.brick); py.rotation.y = Math.PI / 4; py.position.y = (em === '🔺' ? 7 : 3.2) / 2 - 0.4; g.add(py);
+    const hgt = em === '🔺' ? 7 : 3.2;
+    const py = new THREE.Mesh(new THREE.ConeGeometry(6, hgt, 4), M.brick); py.rotation.y = Math.PI / 4; py.position.y = hgt / 2 - 0.6; g.add(py);
     place(g, x, z);
   } else if (k === 'wreck') {
     for (let i = 0; i < 9; i++) { const pl = box(0.3, 0.2, 4 + R() * 3, M.wood); pl.position.set((R() - 0.5) * 4, 0.15, (R() - 0.5) * 3); pl.rotation.set(R() * 0.3, R() * 0.6, R() * 0.3); g.add(pl); }
@@ -174,149 +213,161 @@ function buildMark(em, c, r, label, R) {
   } else if (k === 'rocks' || k === 'island') {
     for (let i = 0; i < 4; i++) { const rk = fit('namaqualand_boulder_02', 2 + R() * 3, 1 + R() * 2); if (rk) place(rk, x + (R() - 0.5) * 7, z + (R() - 0.5) * 7, R() * 6); }
   } else if (k === 'field') {
-    for (let i = 0; i < 7; i++) { const f = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 0.35), new THREE.MeshStandardMaterial({ color: em === '🍇' ? '#5f7a3a' : '#a89a5a', roughness: 1 })); f.position.set(0, 0.06, -3 + i); g.add(f); }
+    for (let i = 0; i < 7; i++) { const f = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 0.35), new THREE.MeshStandardMaterial({ color: em === '🍇' ? '#5f7a3a' : '#a89a5a', roughness: 1 })); f.position.set(0, 0.03, -3 + i); g.add(f); }
     place(g, x, z);
   } else if (k === 'road') {
-    const rd = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 12), new THREE.MeshStandardMaterial({ color: '#cbb592', roughness: 1, transparent: true, opacity: 0.7 })); rd.rotation.x = -Math.PI / 2; rd.position.y = 0.05; g.add(rd);
+    const rd = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 12, 1, 12), new THREE.MeshStandardMaterial({ color: '#cbb592', roughness: 1, transparent: true, opacity: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }));
+    rd.rotation.x = -Math.PI / 2; rd.position.y = 0.06; g.add(rd);
     place(g, x, z, 0.4);
   } else if (k === 'well') {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.35, 10, 24), M.wall); ring.rotation.x = Math.PI / 2; ring.position.y = 0.35; g.add(ring);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.35, 10, 24), M.wall); ring.rotation.x = Math.PI / 2; ring.position.y = 0.3; g.add(ring);
     const wtr = new THREE.Mesh(new THREE.CircleGeometry(0.8, 20), new THREE.MeshStandardMaterial({ color: '#2a4a55', roughness: 0.1 })); wtr.rotation.x = -Math.PI / 2; wtr.position.y = 0.2; g.add(wtr);
     place(g, x, z);
   } else if (k === 'obelisk') {
-    for (let i = 0; i < 3; i++) { const ob = box(0.9, 5 + R() * 6, 0.6, M.blocks); ob.position.set(-3 + i * 3, ob.geometry.parameters.height / 2, R() * 2); g.add(ob); }
+    for (let i = 0; i < 3; i++) { const ob = box(0.9, 5 + R() * 6, 0.6, M.blocks); ob.position.set(-3 + i * 3, ob.geometry.parameters.height / 2 - 0.3, R() * 2); g.add(ob); }
     place(g, x, z);
   } else if (k === 'tombs') {
-    for (let i = 0; i < 4; i++) { const sl = box(2, 0.5, 1, M.blocks); sl.position.set(-2.5 + (i % 2) * 3, 0.25, -1.5 + Math.floor(i / 2) * 2.5); g.add(sl); }
+    for (let i = 0; i < 4; i++) { const sl = box(2, 0.5, 1, M.blocks); sl.position.set(-2.5 + (i % 2) * 3, 0.15, -1.5 + Math.floor(i / 2) * 2.5); g.add(sl); }
     place(g, x, z);
+  } else if (k === 'water' && !dem) {
+    const w = new THREE.Mesh(new THREE.CircleGeometry(14, 32), new THREE.MeshStandardMaterial({ color: '#3d6f86', roughness: 0.08, transparent: true, opacity: 0.85 }));
+    w.rotation.x = -Math.PI / 2; w.position.set(x, -0.9, z); scene.add(w);
   }
-  // the name of the place floats above it
-  const el = document.createElement('div'); el.className = 'site-label'; el.textContent = label;
+  markPos[c + ',' + r] = { x, z };
+  addLabel(label, x, z, k === 'cave' ? 3.4 : 3.2);
+}
+function addLabel(text, x, z, up) {
+  const el = document.createElement('div'); el.className = 'site-label'; el.textContent = text;
   host.appendChild(el);
-  const top = Math.max(hAt(x, z), k === 'cliff' ? 6 : 0) + (k === 'cliff' ? 3 : 3.2);
-  labels.push({ el, p: new THREE.Vector3(x, top, z) });
+  labels.push({ el, p: new THREE.Vector3(x, hAt(x, z) + up, z) });
 }
 
 /* ---------- what lies on and under the ground ---------- */
 function scatter(R) {
-  const [tc, tr] = site.map.t, T = cellPos(tc, tr);
-  // the find lies about a metre down, somewhere in its square
-  const tx = T.x + (R() - 0.5) * 5, tz = T.y + (R() - 0.5) * 5;
+  const [tc, tr] = site.map.t, mp = markPos[tc + ',' + tr], T = mp ? new THREE.Vector2(mp.x, mp.z) : cellPos(tc, tr);
+  let tx = T.x + (R() - 0.5) * (mp ? 3 : 5), tz = T.y + (R() - 0.5) * (mp ? 3 : 5);
+  if (markPos.caveFace !== undefined && site.map.marks.some(([em, c, r]) => em === '🕳️' && c === tc && r === tr)) { tx = T.x + Math.sin(markPos.caveFace) * 2.6; tz = T.y + Math.cos(markPos.caveFace) * 2.6; }
   buried = [{ kind: 'main', x: tx, z: tz, depth: 1.05, metal: true, found: false, exposed: 0, cond: 100 }];
-  for (let i = 0; i < 14; i++) {
-    const a = R() * Math.PI * 2, d = 4 + R() * 30;
-    buried.push({ kind: 'small', x: Math.cos(a) * d, z: Math.sin(a) * d - 4, depth: 0.35 + R() * 0.6, metal: R() < 0.35, found: false, exposed: 0, cond: 100 });
+  for (let i = 0; i < 16; i++) {
+    const a = R() * Math.PI * 2, d = 4 + R() * 40;
+    buried.push({ kind: 'small', x: Math.cos(a) * d, z: Math.sin(a) * d - 4, depth: 0.3 + R() * 0.6, metal: R() < 0.4, found: false, exposed: 0, cond: 100 });
   }
-  // potsherds on the surface: thick around the old settlement, scattered elsewhere
-  const geo = new THREE.TetrahedronGeometry(0.13), M = mats();
-  for (let i = 0; i < 90; i++) {
-    const near = i < 40;
-    const x = near ? tx + (R() + R() + R() - 1.5) * 7 : (R() - 0.5) * 70, z = near ? tz + (R() + R() + R() - 1.5) * 7 : (R() - 0.5) * 70;
-    if (hAt(x, z) < -0.6 || Math.hypot(x, z) > 45) continue;
-    const m = new THREE.Mesh(geo, M.clay); m.scale.set(1.4, 0.35, 1); m.rotation.y = R() * 6;
-    m.position.set(x, hAt(x, z) + 0.03, z); m.castShadow = true;
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.3, 16), new THREE.MeshBasicMaterial({ color: '#fff3c8', transparent: true, opacity: 0.0, depthWrite: false }));
+  const M = MAT();
+  const geos = [new THREE.TetrahedronGeometry(0.13), new THREE.DodecahedronGeometry(0.08)];
+  for (let i = 0; i < 110; i++) {
+    const nearT = i < 45;
+    const x = nearT ? tx + (R() + R() + R() - 1.5) * 7 : (R() - 0.5) * 110, z = nearT ? tz + (R() + R() + R() - 1.5) * 7 : (R() - 0.5) * 110;
+    if (Math.max(Math.abs(x), Math.abs(z)) > WALK) continue;
+    const m = new THREE.Mesh(geos[i % 2], M.clay); m.scale.set(1.4, 0.35, 1); m.rotation.y = R() * 6;
+    m.position.set(x, hAt(x, z) + 0.02, z); m.castShadow = true;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.27, 16), new THREE.MeshBasicMaterial({ color: '#fff3c8', transparent: true, opacity: 0, depthWrite: false }));
     ring.rotation.x = -Math.PI / 2; ring.position.set(x, hAt(x, z) + 0.05, z);
     scene.add(m, ring);
     sherds.push({ m, ring, near: Math.hypot(x - tx, z - tz) < 10 });
   }
 }
 
-/* ---------- the archaeologist ---------- */
-const CLIPS = { idle: 'Idle', walk: 'Walking_A', run: 'Running_A', chop: '2H_Melee_Attack_Chop', pickup: 'PickUp', cheer: 'Cheer', use: 'Use_Item' };
-function makePlayer(x, z) {
-  player = { pos: new THREE.Vector3(x, hAt(x, z), z), goal: null, face: Math.PI, root: new THREE.Group(), mixer: null, actions: {}, cur: null, busy: 0, after: null };
-  player.root.position.copy(player.pos);
-  scene.add(player.root);
-  const g = MODELS.hero;
-  if (g) {
-    const m = SkeletonUtils.clone(g.scene);
-    ['Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Knife', 'Throwable', 'Rogue_Cape'].forEach((n) => { const o = m.getObjectByName(n); if (o) o.visible = false; });
-    m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
-    const b = new THREE.Box3().setFromObject(m), k = 1.75 / (b.max.y - b.min.y);
-    m.scale.setScalar(k); player.root.add(m);
-    // a fedora and a pick
-    const head = m.getObjectByName('head');
-    if (head) {
-      const hatM = new THREE.MeshStandardMaterial({ color: '#b9a27a', roughness: 0.9 }), bandM = new THREE.MeshStandardMaterial({ color: '#4a3622' });
-      const hat = new THREE.Group();
-      hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.86, 0.05, 32), hatM));
-      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 0.42, 28), hatM); crown.position.y = 0.22; hat.add(crown);
-      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.605, 0.605, 0.1, 28), bandM); band.position.y = 0.07; hat.add(band);
-      hat.position.set(0, 0.86, 0.02); head.add(hat);
-    }
-    const slot = m.getObjectByName('handslotr');
-    if (slot) {
-      const tool = new THREE.Group();
-      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.028, 0.9, 8), new THREE.MeshStandardMaterial({ color: '#7a5030', roughness: 0.7 })); handle.position.y = 0.3;
-      const headM = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.5), new THREE.MeshStandardMaterial({ color: '#8a8f96', metalness: 0.8, roughness: 0.35 })); headM.position.y = 0.72;
-      tool.add(handle, headM); tool.scale.setScalar(1 / k); slot.add(tool);
-    }
-    player.mixer = new THREE.AnimationMixer(m);
-    for (const [key, name] of Object.entries(CLIPS)) { const c = THREE.AnimationClip.findByName(g.animations, name); if (c) player.actions[key] = player.mixer.clipAction(c); }
-    for (const key of ['chop', 'pickup', 'cheer', 'use']) if (player.actions[key]) { player.actions[key].setLoop(THREE.LoopOnce); player.actions[key].clampWhenFinished = true; }
-    play('idle', 0);
-  } else {
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 1.1, 6, 12), new THREE.MeshStandardMaterial({ color: '#b49c74' })); body.position.y = 0.85; player.root.add(body);
+/* ---------- you, and the tools in your hands ---------- */
+function makeView() {
+  const M = MAT();
+  view = new THREE.Group(); camera.add(view);
+  const pick = new THREE.Group();
+  const ph = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.028, 0.95, 10), M.handle); ph.position.y = -0.1;
+  const head = new THREE.Group(); head.position.y = 0.36;
+  const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.032, 0.34, 8), M.iron); blade.rotation.x = Math.PI / 2; blade.position.z = 0.17;
+  const adze = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.016, 0.22), M.iron); adze.position.z = -0.11;
+  const eye = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.08, 0.075), M.iron);
+  head.add(blade, adze, eye); pick.add(ph, head);
+  const brush = new THREE.Group();
+  const bh = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.02, 0.24, 10), M.handle);
+  const fer = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.04, 12), new THREE.MeshStandardMaterial({ color: '#b8923a', metalness: 0.8, roughness: 0.3 })); fer.position.y = -0.14;
+  const bristle = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.024), new THREE.MeshStandardMaterial({ color: '#d8c49a', roughness: 1 })); bristle.position.y = -0.19;
+  brush.add(bh, fer, bristle);
+  const det = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1.2, 8), M.iron); pole.rotation.x = -0.9; pole.position.set(0, -0.25, -0.35);
+  const coil = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.022, 8, 28), new THREE.MeshStandardMaterial({ color: '#1f2a33', roughness: 0.5 })); coil.rotation.x = Math.PI / 2 - 0.3; coil.position.set(0, -0.7, -0.8);
+  const boxD = box(0.12, 0.06, 0.16, new THREE.MeshStandardMaterial({ color: '#2a2f33', roughness: 0.5 })); boxD.position.set(0, 0.05, 0.05);
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.09, 0.05), new THREE.MeshBasicMaterial({ color: '#3a5a2a' })); scr.position.set(0, 0.082, 0.06); scr.rotation.x = -Math.PI / 2;
+  det.add(pole, coil, boxD, scr);
+  view.userData = { pick, brush, det, scr };
+  view.add(pick, brush, det);
+  for (const o of [pick, brush, det]) o.traverse((m) => { if (m.isMesh) { m.castShadow = false; m.renderOrder = 10; } });
+}
+function poseView(dt, t) {
+  const V = view.userData, walking = !!me.goal;
+  V.det.visible = detectorOn && mode === 'walk';
+  V.pick.visible = !V.det.visible && (mode === 'walk' || tool === 'pick');
+  V.brush.visible = mode === 'dig' && tool === 'brush';
+  const bob = walking ? Math.sin(t * 9) * 0.012 : Math.sin(t * 1.6) * 0.004;
+  // rest poses, low in the right of the view
+  V.pick.position.set(0.32, -0.42 + bob, -0.62); V.pick.rotation.set(-0.35, 0.25, -0.35);
+  V.brush.position.set(0.26, -0.3 + bob, -0.5); V.brush.rotation.set(-0.9, 0, -0.2);
+  V.det.position.set(0.18, -0.34 + bob, -0.45); V.det.rotation.set(0.12 + Math.sin(t * 2.2) * 0.03, Math.sin(t * 1.3) * 0.18, 0);
+  // a swing: up, then down into the ground
+  swingT += dt;
+  if (swingT < 0.42) {
+    const k = swingT / 0.42;
+    if (tool === 'pick') { const up = k < 0.45 ? k / 0.45 : 1 - (k - 0.45) / 0.55; V.pick.rotation.x = -0.35 - up * 1.1 + (k > 0.45 ? (k - 0.45) * 2.6 : 0); V.pick.position.y += up * 0.18; V.pick.position.z += (k > 0.45 ? -0.15 : 0); }
+    else { V.brush.position.x += Math.sin(k * Math.PI * 4) * 0.08; V.brush.position.z -= 0.08; }
   }
-}
-function play(key, fade = 0.2, restart = false) {
-  const a = player.actions[key]; if (!a) return;
-  if (player.cur === key && !restart) return;
-  const prev = player.cur && player.actions[player.cur];
-  a.reset(); a.enabled = true; a.setEffectiveWeight(1); a.play();
-  if (prev && prev !== a) prev.crossFadeTo(a, fade, false);
-  player.cur = key;
-}
-function walkTo(x, z, after) {
-  if (hAt(x, z) < -0.6) { H.onStatus && H.onStatus('אי אפשר ללכת לתוך המים.'); return; }
-  player.goal = new THREE.Vector3(x, 0, z); player.after = after || null;
 }
 
 /* ---------- the trench ---------- */
-const TH = 1.6, TSEG = 40, MAXD = 2.2;
+const TH = 1.5, TSEG = 48, MAXD = 2.2;
 function openTrench() {
+  const fx = -Math.sin(me.yaw), fz = -Math.cos(me.yaw);
+  const cx = me.pos.x + fx * 2.4, cz = me.pos.z + fz * 2.4;
+  const slope = Math.max(Math.abs(hAt(cx + TH, cz) - hAt(cx - TH, cz)), Math.abs(hAt(cx, cz + TH) - hAt(cx, cz - TH))) / (TH * 2);
+  if (slope > 0.55) return { steep: true };
   if (trench) closeTrench();
-  const cx = player.pos.x + Math.sin(player.face) * 2.2, cz = player.pos.z + Math.cos(player.face) * 2.2;
   const geo = new THREE.PlaneGeometry(TH * 2, TH * 2, TSEG, TSEG); geo.rotateX(-Math.PI / 2);
   const n = (TSEG + 1) * (TSEG + 1), base = new Float32Array(n), depth = new Float32Array(n), cols = new Float32Array(n * 3);
   const p = geo.attributes.position;
-  for (let i = 0; i < n; i++) { const x = p.getX(i) + cx, z = p.getZ(i) + cz; base[i] = hAt(x, z); p.setY(i, base[i] + 0.01); }
+  for (let i = 0; i < n; i++) { const x = p.getX(i) + cx, z = p.getZ(i) + cz; base[i] = hAt(x, z); p.setY(i, base[i] + 0.012); }
   geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, map: tex('excavated_soil_wall', 'diff', [2, 2]), normalMap: tex('excavated_soil_wall', 'nor', [2, 2]) }));
-  mesh.position.set(cx, 0, cz); mesh.receiveShadow = true; mesh.castShadow = false;
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, map: tex('excavated_soil_wall', 'diff', [1.5, 1.5]), normalMap: tex('excavated_soil_wall', 'nor', [1.5, 1.5]) }));
+  mesh.position.set(cx, 0, cz); mesh.receiveShadow = true;
   scene.add(mesh);
-  // pegs and string around the square
-  const pegs = new THREE.Group(), M = mats();
-  for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { const pg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.6, 6), M.wood); pg.position.set(cx + sx * TH, hAt(cx + sx * TH, cz + sz * TH) + 0.25, cz + sz * TH); pegs.add(pg); }
-  scene.add(pegs);
-  trench = { mesh, geo, base, depth, cx, cz, pegs, finds: [] };
-  holeU.value.set(cx, cz, TH - 0.02, 1);
-  // what lies inside the square comes up as lumps of earth
+  // pegs and a string around the square, a sieve and a bucket beside it
+  const extra = new THREE.Group(), M = MAT();
+  const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => new THREE.Vector3(cx + sx * TH, hAt(cx + sx * TH, cz + sz * TH) + 0.18, cz + sz * TH));
+  for (const c of corners) { const pg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6), M.wood); pg.position.copy(c).add(new THREE.Vector3(0, 0.05, 0)); extra.add(pg); }
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([...corners, corners[0]].map((v) => v.clone().add(new THREE.Vector3(0, 0.2, 0)))), new THREE.LineBasicMaterial({ color: '#f2e6c8' }));
+  extra.add(line);
+  const bk = fit('wooden_bucket_01', 0.45, 0.42); if (bk) { bk.position.set(cx + TH + 0.6, hAt(cx + TH + 0.6, cz - 0.6), cz - 0.6); extra.add(bk); }
+  const sv = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.12, 24, 1, true), M.wood); sv.position.set(cx - TH - 0.7, hAt(cx - TH - 0.7, cz + 0.4) + 0.3, cz + 0.4); sv.rotation.z = 0.3; extra.add(sv);
+  scene.add(extra);
+  spoil = new THREE.Mesh(new THREE.ConeGeometry(1, 0.6, 20), new THREE.MeshStandardMaterial({ color: '#9a7a54', roughness: 1, map: tex('dry_ground_rocks', 'diff', [1, 1]) }));
+  spoil.position.set(cx + TH + 1.4, hAt(cx + TH + 1.4, cz + 1) - 0.25, cz + 1); spoil.scale.set(0.3, 0.1, 0.3); spoil.receiveShadow = true; spoil.castShadow = true; scene.add(spoil);
+  for (const o of decor) { const d = Math.max(Math.abs(o.position.x - cx), Math.abs(o.position.z - cz)); o.visible = d > TH + 1; }
+  trench = { mesh, geo, base, depth, cx, cz, extra, finds: [], removed: 0 };
+  holeU.value.set(cx, cz, TH - 0.03, 1);
   for (const b of buried) if (!b.found && Math.abs(b.x - cx) < TH - 0.3 && Math.abs(b.z - cz) < TH - 0.3) {
-    const g = new THREE.Mesh(new THREE.DodecahedronGeometry(b.kind === 'main' ? 0.32 : 0.12, 1), new THREE.MeshStandardMaterial({ color: b.kind === 'main' ? '#6e5236' : '#7d6448', roughness: 1 }));
+    const g = new THREE.Mesh(new THREE.DodecahedronGeometry(b.kind === 'main' ? 0.32 : 0.12, 1), new THREE.MeshStandardMaterial({ color: b.kind === 'main' ? '#6e5236' : '#7d6448', roughness: 1, map: tex('dry_ground_rocks', 'diff', [0.5, 0.5]) }));
     g.scale.y = 0.6; g.position.set(b.x, hAt(b.x, b.z) - b.depth, b.z); g.visible = false; g.castShadow = true;
+    // a glint of what's inside the lump
+    if (b.kind === 'main') { const gl = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshStandardMaterial({ color: '#d9b25a', metalness: 1, roughness: 0.25, emissive: '#6a4a10', emissiveIntensity: 0.4 })); gl.position.set(0.18, 0.12, 0.12); g.add(gl); }
     scene.add(g); trench.finds.push({ b, g });
   }
   colourTrench();
-  mode = 'dig'; camDist = 6.5; camPitch = 0.9; camYaw = Math.atan2(cx - player.pos.x, cz - player.pos.z); // across the trench, facing the digger
-  player.goal = null;
+  mode = 'dig';
+  me.goal = null; me.pitch = -0.75;
   return { inside: trench.finds.length };
 }
 function closeTrench() {
   if (!trench) return;
-  scene.remove(trench.mesh, trench.pegs); trench.geo.dispose();
+  scene.remove(trench.mesh, trench.extra, spoil); trench.geo.dispose();
   for (const f of trench.finds) scene.remove(f.g);
-  trench = null; holeU.value.w = 0;
+  trench = null; spoil = null; holeU.value.w = 0;
 }
-// the walls show the layers: topsoil, later layers, and the layer of the period sought
+// the walls show the layers: topsoil, later layers, an ashy line, and the layer of the period sought
 function colourTrench() {
   const t = trench, c = t.geo.attributes.color, p = t.geo.attributes.position;
-  const top = new THREE.Color('#8a6a48'), mid = new THREE.Color('#c9a77a'), old = new THREE.Color(site.terrain === 'sea' ? '#9aa6a0' : '#8e5a3c'), tmp = new THREE.Color();
+  const top = new THREE.Color('#8a6a48'), mid = new THREE.Color('#c9a77a'), ash = new THREE.Color('#5b5048'), old = new THREE.Color(site.terrain === 'sea' ? '#9aa6a0' : '#a0603c'), tmp = new THREE.Color();
   for (let i = 0; i < t.depth.length; i++) {
-    const d = t.depth[i], w = fbm(p.getX(i) * 3 + 5, p.getZ(i) * 3) * 0.2;
-    if (d < 0.3 + w) tmp.copy(top); else if (d < 0.85 + w) tmp.copy(mid); else tmp.copy(old);
-    tmp.multiplyScalar(1.15 - d * 0.18);
+    const d = t.depth[i], w = (fbm(p.getX(i) * 3 + 5, p.getZ(i) * 3) - 0.5) * 0.18;
+    if (d < 0.28 + w) tmp.copy(top); else if (d < 0.78 + w) tmp.copy(mid); else if (d < 0.88 + w) tmp.copy(ash); else tmp.copy(old);
+    tmp.multiplyScalar(1.2 - d * 0.16);
     c.setXYZ(i, tmp.r, tmp.g, tmp.b);
   }
   c.needsUpdate = true;
@@ -327,17 +378,17 @@ function carve(px, pz, power, radius) {
   for (let gz = 1; gz < TSEG; gz++) for (let gx = 1; gx < TSEG; gx++) {
     const i = gz * (TSEG + 1) + gx, x = p.getX(i) + t.cx, z = p.getZ(i) + t.cz;
     const d = Math.hypot(x - px, z - pz); if (d > radius) continue;
-    // the walls of a trench stay straight: the edge rows never sink
     const edge = Math.min(gx, gz, TSEG - gx, TSEG - gz) * step;
-    const lim = Math.min(MAXD, edge * 6);
-    // a find stops the tool: dig down to it, not through it
-    let floor = lim;
-    for (const f of t.finds) { const fd = Math.hypot(x - f.b.x, z - f.b.z); if (fd < (f.b.kind === 'main' ? 0.36 : 0.15)) floor = Math.min(floor, f.b.depth - (f.b.kind === 'main' ? 0.18 : 0.06)); }
-    const add = power * (1 - d / radius);
-    const nd = Math.min(floor, t.depth[i] + add);
-    if (nd > t.depth[i]) { removed += nd - t.depth[i]; t.depth[i] = nd; p.setY(i, t.base[i] - nd + 0.01); }
+    let floor = Math.min(MAXD, edge * 7);
+    for (const f of t.finds) { if (f.b.found) continue; const fd = Math.hypot(x - f.b.x, z - f.b.z); if (fd < (f.b.kind === 'main' ? 0.36 : 0.15)) floor = Math.min(floor, f.b.depth - (f.b.kind === 'main' ? 0.18 : 0.06)); }
+    const nd = Math.min(floor, t.depth[i] + power * (1 - d / radius));
+    if (nd > t.depth[i]) { removed += nd - t.depth[i]; t.depth[i] = nd; p.setY(i, t.base[i] - nd + 0.012); }
   }
   p.needsUpdate = true; t.geo.computeVertexNormals(); colourTrench();
+  // the earth goes onto the spoil heap
+  t.removed += removed * step * step * 6;
+  const s = Math.min(1.3, 0.3 + Math.cbrt(t.removed) * 0.35);
+  spoil.scale.set(s, s * 0.55, s);
   return removed;
 }
 function depthAt(x, z) {
@@ -353,6 +404,10 @@ function rayAt(e) {
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
 }
+function walkTo(x, z, after, stop = 0.2) {
+  if (Math.max(Math.abs(x), Math.abs(z)) > WALK) { H.onStatus && H.onStatus('זה מחוץ לשטח הסקר.'); return; }
+  me.goal = new THREE.Vector3(x, 0, z); me.after = after || null; me.stop = stop;
+}
 function tap(e) {
   rayAt(e);
   if (mode === 'dig' && trench) {
@@ -360,35 +415,32 @@ function tap(e) {
     if (h) { strike(h.point); return; }
   }
   const sh = ray.intersectObjects(sherds.map((s) => s.m))[0];
-  if (sh) {
+  if (sh && sh.distance < 25) {
     const s = sherds.find((q) => q.m === sh.object);
-    const go = () => pickSherd(s);
-    if (player.pos.distanceTo(s.m.position) < 2.2) go(); else walkTo(s.m.position.x, s.m.position.z, go);
+    if (me.pos.distanceTo(s.m.position) < 2.6) pickSherd(s); else walkTo(s.m.position.x, s.m.position.z, () => pickSherd(s), 1.2);
     return;
   }
   if (mode === 'dig') return;
-  const g = ray.intersectObject(terrain)[0];
+  const g = ray.intersectObject(ground)[0];
   if (g) walkTo(g.point.x, g.point.z);
 }
 function pickSherd(s) {
   if (!sherds.includes(s)) return;
-  play('pickup', 0.1, true); player.busy = 0.9;
   scene.remove(s.m, s.ring); sherds.splice(sherds.indexOf(s), 1);
   H.onSherd && H.onSherd(s.near);
 }
+let busy = 0;
 function strike(pt) {
-  if (player.busy > 0) return;
+  if (busy > 0) return;
   if (energy <= 0) { H.onEnergy && H.onEnergy(0, true); return; }
   energy -= tool === 'pick' ? 1 : 0.34;
   H.onEnergy && H.onEnergy(energy);
-  // face the spot and swing
-  player.face = Math.atan2(pt.x - player.pos.x, pt.z - player.pos.z);
-  play(tool === 'pick' ? 'chop' : 'pickup', 0.08, true);
-  player.busy = tool === 'pick' ? 0.55 : 0.4;
+  swingT = 0; busy = tool === 'pick' ? 0.42 : 0.26;
   setTimeout(() => {
     if (!trench) return;
-    const removed = carve(pt.x, pt.z, tool === 'pick' ? 0.2 : 0.05, tool === 'pick' ? 0.55 : 0.35);
+    const removed = carve(pt.x, pt.z, (tool === 'pick' ? 0.2 : 0.05) * (tool === 'pick' ? H.pick || 1 : 1), tool === 'pick' ? 0.55 : 0.35);
     dust(pt, removed);
+    if (tool === 'pick') shake = 0.05;
     H.onDig && H.onDig(tool, removed);
     for (const f of trench.finds) {
       if (f.b.found) continue;
@@ -398,24 +450,24 @@ function strike(pt) {
       if (!show) continue;
       if (tool === 'pick' && dist < 0.5) { f.b.cond = Math.max(30, f.b.cond - 7); H.onDamage && H.onDamage(f.b.cond); }
       if (tool === 'brush' && dist < (f.b.kind === 'main' ? 0.7 : 0.4)) {
-        f.b.exposed = Math.min(1, f.b.exposed + (f.b.kind === 'main' ? 0.12 : 0.34));
+        f.b.exposed = Math.min(1, f.b.exposed + (f.b.kind === 'main' ? 0.12 : 0.34) * (H.brush || 1));
         H.onExpose && H.onExpose(f.b.kind, f.b.exposed);
-        if (f.b.exposed >= 1) { f.b.found = true; scene.remove(f.g); play('cheer', 0.15, true); player.busy = 1.4; H.onFind && H.onFind(f.b); }
+        if (f.b.exposed >= 1) { f.b.found = true; scene.remove(f.g); H.onFind && H.onFind(f.b); }
       }
     }
-  }, tool === 'pick' ? 330 : 220);
+  }, tool === 'pick' ? 210 : 140);
 }
 
 /* ---------- effects ---------- */
-let dustPts = null, dustP = [];
+let dustPts = null, dustP = [], shake = 0;
 function dust(pt, amt) {
-  const n = 6 + Math.min(20, Math.round(amt * 60));
-  for (let i = 0; i < n; i++) dustP.push({ x: pt.x, y: pt.y + 0.1, z: pt.z, vx: (Math.random() - 0.5) * 1.6, vy: 0.6 + Math.random() * 1.6, vz: (Math.random() - 0.5) * 1.6, life: 0.8 + Math.random() * 0.5 });
+  const n = 8 + Math.min(26, Math.round(amt * 70));
+  for (let i = 0; i < n; i++) dustP.push({ x: pt.x, y: pt.y + 0.05, z: pt.z, vx: (Math.random() - 0.5) * 1.4, vy: 0.5 + Math.random() * 1.4, vz: (Math.random() - 0.5) * 1.4, life: 0.7 + Math.random() * 0.5 });
 }
 function stepDust(dt) {
   if (!dustPts) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(600 * 3), 3));
-    dustPts = new THREE.Points(g, new THREE.PointsMaterial({ color: '#c9ad85', size: 0.035, transparent: true, opacity: 0.75, depthWrite: false })); dustPts.frustumCulled = false; scene.add(dustPts);
+    dustPts = new THREE.Points(g, new THREE.PointsMaterial({ color: '#b39674', size: 0.018, transparent: true, opacity: 0.7, depthWrite: false })); dustPts.frustumCulled = false; scene.add(dustPts);
   }
   const a = dustPts.geometry.attributes.position.array; let k = 0;
   for (let i = dustP.length - 1; i >= 0; i--) { const q = dustP[i]; q.life -= dt; if (q.life <= 0) { dustP.splice(i, 1); continue; } q.vy -= 4 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; }
@@ -425,49 +477,50 @@ function stepDust(dt) {
 }
 
 /* ---------- the loop ---------- */
-const tmpV = new THREE.Vector3();
+let stepT = 0;
 function tick() {
   raf = requestAnimationFrame(tick);
   const dt = Math.min(clock.getDelta(), 1 / 20), t = clock.elapsedTime;
-  // walking
-  if (player.goal && player.busy <= 0) {
-    const dx = player.goal.x - player.pos.x, dz = player.goal.z - player.pos.z, d = Math.hypot(dx, dz);
-    if (d > 0.15) {
-      const sp = d > 6 ? 4.2 : 2.4, step = Math.min(d, sp * dt);
-      const nx = player.pos.x + (dx / d) * step, nz = player.pos.z + (dz / d) * step;
-      if (hAt(nx, nz) < -0.6 || Math.hypot(nx, nz) > 44) { player.goal = null; play('idle'); }
-      else { player.pos.x = nx; player.pos.z = nz; player.face = Math.atan2(dx, dz); play(d > 6 ? 'run' : 'walk', 0.15); }
-    } else { player.goal = null; play('idle'); const f = player.after; player.after = null; if (f) f(); }
-  } else if (player.busy > 0) { player.busy -= dt; if (player.busy <= 0) play(mode === 'dig' ? 'idle' : 'idle', 0.25); }
-  player.pos.y = hAt(player.pos.x, player.pos.z);
-  player.root.position.copy(player.pos);
-  let da = player.face - player.root.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
-  player.root.rotation.y += da * (1 - Math.pow(0.0005, dt));
-  if (player.mixer) player.mixer.update(dt);
-  // the camera follows from behind and above
-  const focus = mode === 'dig' && trench ? tmpV.set(trench.cx, hAt(trench.cx, trench.cz) - 0.5, trench.cz) : tmpV.copy(player.pos).add(new THREE.Vector3(0, 1.8, 0));
-  const cx = focus.x + Math.sin(camYaw) * Math.cos(camPitch) * camDist, cz = focus.z + Math.cos(camYaw) * Math.cos(camPitch) * camDist;
-  const cy = Math.max(focus.y + Math.sin(camPitch) * camDist, hAt(cx, cz) + 0.6);
-  camera.position.lerp(new THREE.Vector3(cx, cy, cz), 1 - Math.pow(0.002, dt));
-  camera.lookAt(focus);
+  busy -= dt;
+  // keys on a computer: W/S/A/D or the arrows
+  const kf = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0), ks = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+  if ((kf || ks) && mode === 'walk') { const fx = -Math.sin(me.yaw), fz = -Math.cos(me.yaw); me.goal = new THREE.Vector3(me.pos.x + (fx * kf + -fz * ks) * 2, 0, me.pos.z + (fz * kf + fx * ks) * 2); me.after = null; me.stop = 0.1; }
+  if (me.goal) {
+    const dx = me.goal.x - me.pos.x, dz = me.goal.z - me.pos.z, d = Math.hypot(dx, dz);
+    if (d > (me.stop || 0.2)) {
+      const sp = d > 8 ? 4.4 : 2.6, step = Math.min(d, sp * dt);
+      me.pos.x += (dx / d) * step; me.pos.z += (dz / d) * step;
+      // turn gently towards where you walk
+      const want = Math.atan2(-dx, -dz); let da = want - me.yaw; da = Math.atan2(Math.sin(da), Math.cos(da));
+      if (!(kf || ks)) me.yaw += da * (1 - Math.pow(0.02, dt));
+      stepT -= dt; if (stepT <= 0) { stepT = d > 8 ? 0.3 : 0.45; H.onStep && H.onStep(); }
+    } else { me.goal = null; const f = me.after; me.after = null; if (f) f(); }
+  }
+  me.pos.y = hAt(me.pos.x, me.pos.z);
+  const walking = !!me.goal, bob = walking ? Math.abs(Math.sin(t * 9)) * 0.045 : 0;
+  shake *= Math.pow(0.001, dt);
+  camera.position.set(me.pos.x + (Math.random() - 0.5) * shake, me.pos.y + EYE + bob, me.pos.z + (Math.random() - 0.5) * shake);
+  camera.rotation.set(me.pitch, me.yaw, 0, 'YXZ');
+  poseView(dt, t);
+  sun.position.set(me.pos.x + 30, me.pos.y + 45, me.pos.z + 26); sun.target.position.copy(me.pos);
   // the metal detector
   if (detectorOn && mode === 'walk') {
     let best = 0;
-    for (const b of buried) if (b.metal && !b.found) best = Math.max(best, Math.exp(-Math.hypot(b.x - player.pos.x, b.z - player.pos.z) / (b.kind === 'main' ? 6 : 2.5)) * (b.kind === 'main' ? 1 : 0.7));
+    const cx = me.pos.x - Math.sin(me.yaw) * 1.1, cz = me.pos.z - Math.cos(me.yaw) * 1.1; // the coil is a step ahead
+    const reach = H.detector || 1;
+    for (const b of buried) if (b.metal && !b.found) best = Math.max(best, Math.exp(-Math.hypot(b.x - cx, b.z - cz) / ((b.kind === 'main' ? 5 : 2.2) * reach)) * (b.kind === 'main' ? 1 : 0.7));
     beepT -= dt;
-    const every = 1.4 - best * 1.32;
-    if (beepT <= 0) { beepT = every; H.onBeep && H.onBeep(best); }
+    if (beepT <= 0) { beepT = 1.4 - best * 1.32; H.onBeep && H.onBeep(best); }
     H.onSignal && H.onSignal(best);
+    view.userData.scr.material.color.setHSL(0.3 - best * 0.3, 0.8, 0.25 + best * 0.3);
   }
-  // sherds glint a little so they can be spotted
-  for (const s of sherds) s.ring.material.opacity = Math.max(0, Math.sin(t * 2 + s.m.position.x) * 0.35) * (player.pos.distanceTo(s.m.position) < 16 ? 1 : 0);
+  for (const s of sherds) s.ring.material.opacity = Math.max(0, Math.sin(t * 2 + s.m.position.x)) * 0.4 * (me.pos.distanceTo(s.m.position) < 14 ? 1 : 0);
   stepDust(dt);
-  // labels over the landmarks
   const r = renderer.domElement.getBoundingClientRect();
   for (const L of labels) {
     const v = L.p.clone().project(camera), far = camera.position.distanceTo(L.p);
-    const vis = v.z < 1 && far < 60 && mode === 'walk';
-    L.el.style.opacity = vis ? Math.min(1, (60 - far) / 20) : 0;
+    const vis = v.z < 1 && far < 70 && far > 4 && mode === 'walk';
+    L.el.style.opacity = vis ? Math.min(1, (70 - far) / 20) : 0;
     L.el.style.transform = `translate(${(v.x * 0.5 + 0.5) * r.width}px, ${(-v.y * 0.5 + 0.5) * r.height}px) translate(-50%, -100%)`;
   }
   renderer.render(scene, camera);
@@ -475,22 +528,19 @@ function tick() {
 
 function bind() {
   const c = renderer.domElement, pts = new Map();
-  let down = null, moved = 0, pinch0 = 0, d0 = camDist;
-  c.addEventListener('pointerdown', (e) => {
-    c.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    down = { t: performance.now() }; moved = 0;
-    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); d0 = camDist; }
-  });
+  let down = null, moved = 0;
+  c.addEventListener('pointerdown', (e) => { c.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); down = { t: performance.now() }; moved = 0; });
   c.addEventListener('pointermove', (e) => {
     const p = pts.get(e.pointerId); if (!p) return;
-    if (pts.size === 2) { p.x = e.clientX; p.y = e.clientY; const [a, b] = [...pts.values()]; camDist = THREE.MathUtils.clamp(d0 * pinch0 / Math.max(20, Math.hypot(a.x - b.x, a.y - b.y)), 3, 22); return; }
     const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
-    if (moved > 8) { camYaw -= dx * 0.006; camPitch = THREE.MathUtils.clamp(camPitch + dy * 0.004, 0.15, 1.35); }
+    // drag to look around
+    if (moved > 8) { me.yaw += dx * 0.005; me.pitch = THREE.MathUtils.clamp(me.pitch + dy * 0.004, -1.35, 0.9); }
   });
-  const up = (e) => { const wasTap = down && moved < 8 && pts.size === 1 && performance.now() - down.t < 450; pts.delete(e.pointerId); if (wasTap) tap(e); down = null; };
+  const up = (e) => { const wasTap = down && moved < 8 && performance.now() - down.t < 450; pts.delete(e.pointerId); if (wasTap) tap(e); down = null; };
   c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
-  c.addEventListener('wheel', (e) => { e.preventDefault(); camDist = THREE.MathUtils.clamp(camDist * (1 + Math.sign(e.deltaY) * 0.1), 3, 22); }, { passive: false });
+  addEventListener('keydown', onKey); addEventListener('keyup', onKey);
 }
+const onKey = (e) => { if (!renderer) return; keys[e.code] = e.type === 'keydown'; };
 function resize() {
   if (!renderer || !host) return;
   const w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight;
@@ -500,6 +550,9 @@ function resize() {
 async function start(el, s, handlers = {}) {
   stop();
   host = el; site = s; H = handlers;
+  const sea = s.terrain === 'sea';
+  [dem] = await Promise.all([sea ? null : loadDem(s.id), loadModels()]);
+  if (host !== el) return false;
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.95;
@@ -507,38 +560,47 @@ async function start(el, s, handlers = {}) {
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   el.appendChild(renderer.domElement);
   scene = new THREE.Scene(); clock = new THREE.Clock();
-  camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
-  const sea = s.terrain === 'sea';
-  // the sky: the real desert sky photo; under water, a blue haze
-  if (sea) { scene.background = new THREE.Color('#1d5a73'); scene.fog = new THREE.FogExp2('#1d5a73', 0.035); }
+  camera = new THREE.PerspectiveCamera(62, 1, 0.05, 4000); scene.add(camera);
+  if (sea) { scene.background = new THREE.Color('#1d5a73'); scene.fog = new THREE.FogExp2('#1d5a73', 0.04); }
   else {
-    const sky = texLoader.load('assets/sky/goegap_2k.jpg', (t) => { const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(t).texture; });
-    sky.mapping = THREE.EquirectangularReflectionMapping; sky.colorSpace = THREE.SRGBColorSpace;
-    scene.background = sky; scene.backgroundRotation.y = -0.38; scene.environmentRotation.y = -0.38;
-    scene.fog = new THREE.Fog(s.terrain === 'green' || s.terrain === 'jungle' ? '#c9d6d8' : '#d8c8a8', 45, 140);
+    // only the sky of the desert photo: its own hills belong to another place, the real ones here are the terrain
+    const haze = s.terrain === 'green' || s.terrain === 'jungle' ? '#aebfcc' : '#c9bfae';
+    const img = new Image();
+    img.onload = () => {
+      if (!renderer) return;
+      const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+      const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      const cut = Math.round(img.height * 0.3), gr = g.createLinearGradient(0, cut - img.height * 0.04, 0, img.height * 0.5);
+      gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, haze);
+      g.fillStyle = gr; g.fillRect(0, cut - img.height * 0.04, img.width, img.height); g.fillStyle = haze; g.fillRect(0, img.height * 0.5, img.width, img.height);
+      const t = new THREE.CanvasTexture(c); t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace;
+      scene.background = t; scene.backgroundRotation.y = -0.38; scene.environmentRotation.y = -0.38;
+      scene.environment = new THREE.PMREMGenerator(renderer).fromEquirectangular(t).texture;
+    };
+    img.src = 'assets/sky/goegap_2k.jpg';
+    scene.background = new THREE.Color(haze);
+    scene.fog = new THREE.Fog(haze, 350, 2600);
   }
-  scene.add(new THREE.HemisphereLight(sea ? '#9fd6e6' : '#dbe6f2', sea ? '#2a4a3a' : '#a5845a', sea ? 1.2 : 0.7));
-  const sun = new THREE.DirectionalLight(sea ? '#cfefff' : '#fff1dc', sea ? 1.6 : 3);
-  sun.position.set(20, 32, 24); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
-  Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 120 }); sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.04;
+  scene.add(new THREE.HemisphereLight(sea ? '#9fd6e6' : '#dbe6f2', sea ? '#2a4a3a' : '#a5845a', sea ? 1.2 : 0.75));
+  sun = new THREE.DirectionalLight(sea ? '#cfefff' : '#fff1dc', sea ? 1.6 : 3.1);
+  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 140 }); sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.04;
   scene.add(sun, sun.target);
-  shapeGround();
-  makeTerrain();
-  await ready;
-  if (!renderer) return false;
+  bumps = [];
+  if (!dem) for (const [em, c, r, label] of s.map.marks) { const p = cellPos(c, r), k = kindOf(em, label); if (k === 'cliff' || k === 'cave') bumps.push({ x: p.x, z: p.y - 3, h: 7, s: 6 }); else if (k === 'mound' || k === 'island') bumps.push({ x: p.x, z: p.y, h: 3, s: 6 }); else if (k === 'water') bumps.push({ x: p.x, z: p.y, h: -2.6, s: 11 }); }
+  ground = makeTerrain();
   let seed = s.id.length * 977 + (s.lat * 100 | 0);
   const R = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
   for (const [em, c, r, label] of s.map.marks) buildMark(em, c, r, label, R);
-  // shrubs and stones all around
-  for (let i = 0; i < 40; i++) { const x = (R() - 0.5) * 80, z = (R() - 0.5) * 80; if (hAt(x, z) < -0.5 || Math.hypot(x, z) > 42) continue; const m = fit(R() < 0.7 ? 'shrub_01' : 'namaqualand_boulder_02', 1.4, 0.5 + R() * 0.8); if (m) place(m, x, z, R() * 6); }
+  for (let i = 0; i < 70; i++) { const x = (R() - 0.5) * 130, z = (R() - 0.5) * 130; const m = fit(R() < 0.75 ? 'shrub_01' : 'namaqualand_boulder_02', 1.4, 0.4 + R() * 0.8); if (m) place(m, x, z, R() * 6); }
   scatter(Math.random);
   // the camp at the south edge, where the expedition starts
-  const camp = new THREE.Group(), M = mats();
-  const tent = new THREE.Mesh(new THREE.ConeGeometry(2, 2.2, 4, 1, true), M.cloth); tent.position.y = 1.1; tent.rotation.y = Math.PI / 4; camp.add(tent);
-  for (const [n, x, z, w, h] of [['wooden_crate_01', 2.3, 0.4, 0.8, 0.7], ['wooden_bucket_01', 2.1, 1.4, 0.45, 0.42], ['wicker_basket_01', -2.2, 1, 0.7, 0.5]]) { const m = fit(n, w, h); if (m) { m.position.set(x, 0, z); camp.add(m); } }
-  place(camp, -4, 30);
-  makePlayer(0, 28);
-  camYaw = 0; camPitch = 0.3; camDist = 13;
+  const camp = new THREE.Group(), M = MAT();
+  const tent = new THREE.Mesh(new THREE.ConeGeometry(2, 2.2, 4, 1, true), M.cloth); tent.position.y = 1.0; tent.rotation.y = Math.PI / 4; camp.add(tent);
+  for (const [n, x, z, w, h] of [['wooden_crate_01', 2.3, 0.4, 0.8, 0.7], ['wooden_bucket_01', 2.1, 1.4, 0.45, 0.42], ['wicker_basket_01', -2.2, 1, 0.7, 0.5], ['picke_dirty_01', 1.2, -1.4, 1.2, 0.3]]) { const m = fit(n, w, h); if (m) { m.position.set(x, 0, z); camp.add(m); } }
+  place(camp, -4, 38);
+  me = { pos: new THREE.Vector3(0, 0, 30), yaw: 0, pitch: -0.12, goal: null, after: null };
+  makeView();
   bind(); resize();
   ro = new ResizeObserver(resize); ro.observe(el);
   energy = handlers.energy || 80;
@@ -548,9 +610,10 @@ async function start(el, s, handlers = {}) {
 function stop() {
   cancelAnimationFrame(raf); raf = 0;
   if (ro) { ro.disconnect(); ro = null; }
+  removeEventListener('keydown', onKey); removeEventListener('keyup', onKey);
   for (const L of labels) L.el.remove();
   if (renderer) { renderer.domElement.remove(); renderer.dispose(); }
-  renderer = null; scene = null; host = null; labels = []; sherds = []; buried = []; trench = null; player = null; dustPts = null; dustP = []; water = null; mode = 'walk';
+  renderer = null; scene = null; host = null; labels = []; decor = []; for (const k in markPos) delete markPos[k]; sherds = []; buried = []; trench = null; me = null; dustPts = null; dustP = []; mode = 'walk'; keys = {}; dem = null;
 }
 
 window.SITE3D = {
@@ -558,12 +621,13 @@ window.SITE3D = {
   setTool: (t) => { tool = t; },
   detector: (on) => { detectorOn = on; return detectorOn; },
   digHere: () => openTrench(),
-  leaveTrench: () => { mode = 'walk'; camDist = 12; camPitch = 0.36; closeTrench(); },
-  where: () => player && { x: player.pos.x, z: player.pos.z, col: player.pos.x / CELL + 2.5, row: player.pos.z / CELL + 2.5 },
+  leaveTrench: () => { mode = 'walk'; me.pitch = -0.12; closeTrench(); },
+  where: () => me && { x: me.pos.x, z: me.pos.z, col: me.pos.x / CELL + 2.5, row: me.pos.z / CELL + 2.5 },
   energy: () => energy, addEnergy: (k) => { energy += k; },
   mode: () => mode,
   // for scripted checks
-  _buried: () => buried, _walk: (x, z) => walkTo(x, z), _teleport: (x, z) => { player.pos.set(x, hAt(x, z), z); player.goal = null; }, _strike: (x, z) => { player.busy = 0; strike(new THREE.Vector3(x, hAt(x, z), z)); }, _trench: () => trench && { cx: trench.cx, cz: trench.cz },
+  _buried: () => buried, _walk: (x, z) => walkTo(x, z), _teleport: (x, z, yaw = 0) => { me.pos.set(x, hAt(x, z), z); me.goal = null; me.yaw = yaw; }, _look: (yaw, pitch) => { me.yaw = yaw; me.pitch = pitch; },
+  _strike: (x, z) => { busy = 0; strike(new THREE.Vector3(x, hAt(x, z), z)); }, _trench: () => trench && { cx: trench.cx, cz: trench.cz },
   supported: !!window.WebGL2RenderingContext,
 };
 window.dispatchEvent(new Event('site3d-ready'));
