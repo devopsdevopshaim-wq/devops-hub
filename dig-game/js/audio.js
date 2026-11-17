@@ -76,6 +76,7 @@
     cannon() { noise(0.45, { freq: 420, vol: 0.7, attack: 0.003 }); tone(90, 0.35, { type: 'sine', vol: 0.55, slide: 0.45 }); noise(0.25, { type: 'highpass', freq: 3000, vol: 0.12, at: 0.02 }); },
     sling() { noise(0.22, { type: 'bandpass', freq: 1400, q: 0.8, vol: 0.35, attack: 0.01 }); tone(220, 0.12, { type: 'triangle', vol: 0.25, slide: 2.2 }); },
     catapult() { tone(70, 0.3, { type: 'sawtooth', vol: 0.12, slide: 1.4 }); noise(0.35, { freq: 300, vol: 0.5, at: 0.12 }); tone(110, 0.25, { type: 'triangle', vol: 0.35, at: 0.14, slide: 0.5 }); },
+    beep(x = 0) { tone(900 + x * 900, 0.06, { type: 'square', vol: 0.05 + x * 0.06 }); },
     impact() { noise(0.35, { freq: 520, vol: 0.55 }); tone(120, 0.25, { type: 'triangle', vol: 0.3, slide: 0.5 }); },
     shatter() { noise(0.3, { type: 'highpass', freq: 2600, vol: 0.35 }); for (let i = 0; i < 4; i++) tone(1800 + Math.random() * 2200, 0.08, { type: 'triangle', vol: 0.06, at: i * 0.025 }); noise(0.25, { type: 'bandpass', freq: 700, q: 1, vol: 0.25, at: 0.02 }); },
     star(i = 0) { tone([784, 988, 1319][i] || 1319, 0.35, { type: 'triangle', vol: 0.2 }); tone(([784, 988, 1319][i] || 1319) * 2, 0.25, { vol: 0.06, at: 0.04 }); },

@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Orbitron:wght@600;800&family=Suez+One&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/game.css?v=20261116c" />
+<link rel="stylesheet" href="css/game.css?v=20261117b" />
 </head>
 <body data-screen="home">
 <canvas id="bg-cv" aria-hidden="true"></canvas>
@@ -39,6 +39,7 @@
         <h1 data-text="שכבות">שכבות</h1>
         <p class="tag">כל שכבה היא אלף שנה. מה אתם תגלו?</p>
         <button class="btn gold xl" id="play">לשחק 💥</button>
+        <button class="btn ghost w-go" data-go="world">🌍 משלחת עולמית: אוצרות אמיתיים מכל העולם</button>
         <ul class="how">
           <li><i data-ico="dyn"></i><span><b>יורים</b> בתותח על מגדלים עתיקים</span></li>
           <li><i data-ico="vase"></i><span><b>מוצאים</b> 41 ממצאים אמיתיים בתיבות האוצר</span></li>
@@ -76,6 +77,43 @@
     <div class="sm-boosts">
       <button class="boost" data-b="bomb" aria-label="פצצה"><span class="bi">💣</span><em id="b-bomb">0</em><small>פצצה</small></button>
       <button class="boost" data-b="triple" aria-label="שלישייה"><span class="bi">☄️</span><em id="b-triple">0</em><small>שלישייה</small></button>
+    </div>
+  </section>
+
+  <!-- the world expedition: the globe -->
+  <section class="screen" id="scr-world" hidden>
+    <div class="world3d" id="world3d" aria-label="כדור הארץ עם האתרים: גררו כדי לסובב, הקישו על סיכה כדי לבחור"></div>
+    <div class="w-head">
+      <div><h2>🌍 משלחת עולמית</h2><p>אתרים אמיתיים, מקורות אמיתיים, אוצרות שנמצאו באמת. בחרו אתר, קראו את המקורות, סקרו את השטח וחפרו.</p></div>
+      <div class="w-count"><b id="w-found">0/0</b><small>אוצרות באוסף</small></div>
+    </div>
+    <div class="w-bottom">
+      <div class="chips-row" id="w-regions"></div>
+      <div class="w-list" id="w-list"></div>
+    </div>
+  </section>
+
+  <!-- the world expedition: walking the site -->
+  <section class="screen" id="scr-site" hidden>
+    <div class="site3d" id="site3d" aria-label="האתר בתלת־ממד: הקישו על הקרקע כדי ללכת, גררו כדי להסתובב"></div>
+    <div class="st-head">
+      <button class="icon-btn" id="st-end" aria-label="סיום המשלחת"><i data-ico="close"></i></button>
+      <div class="st-title"><b id="st-name"></b><small id="st-sub"></small></div>
+      <div class="st-energy" title="כוח הצוות"><span>⚡</span><div class="st-bar"><i id="st-en"></i></div><b id="st-en-n">80</b></div>
+    </div>
+    <div class="st-side">
+      <button class="st-btn" id="st-notes">📜<small>יומן</small></button>
+      <button class="st-btn" id="st-map">🗺️<small>מפה</small></button>
+      <button class="st-btn" id="st-photo">📷<small>המקום</small></button>
+    </div>
+    <div class="st-meter" id="st-meter" hidden><span>📡</span><div class="st-bar"><i id="st-signal"></i></div></div>
+    <div class="st-tools">
+      <button class="st-big st-walk" id="st-detector">📡<small>גלאי מתכות</small></button>
+      <button class="st-big st-walk gold" id="st-dighere">⛏️<small>לחפור כאן</small></button>
+      <button class="st-big st-dig st-tool on" data-t="pick" hidden>⛏️<small>מכוש</small></button>
+      <button class="st-big st-dig st-tool" data-t="brush" hidden>🖌️<small>מברשת</small></button>
+      <div class="st-dig st-exp" hidden><small>חשיפה</small><div class="st-bar"><i id="st-expose"></i></div></div>
+      <button class="st-big st-dig" id="st-leave" hidden>🚶<small>לצאת מהבור</small></button>
     </div>
   </section>
 
@@ -135,26 +173,48 @@
 </main>
 
 <nav class="tabbar" aria-label="ניווט">
+  <button data-go="world"><span data-ico="map"></span>עולם</button>
   <button data-go="levels"><span data-ico="star"></span>שלבים</button>
   <button data-go="map"><span data-ico="pick"></span>חפירות</button>
   <button data-go="museum"><span data-ico="museum"></span>מוזיאון</button>
   <button data-go="camp"><span data-ico="camp"></span>מחנה</button>
 </nav>
 
+<!-- the conservation lab and the sieve -->
+<div class="lab" id="lab" hidden role="dialog" aria-modal="true" aria-labelledby="lab-title">
+  <h2 id="lab-title">מעבדת השימור</h2><p class="sub" id="lab-sub"></p>
+  <canvas id="lab-cv"></canvas>
+  <div class="lab-bars"><span>נקי <b id="lab-pct">0%</b></span><div class="lab-bar"><i id="lab-clean"></i></div><span>מצב <b id="lab-cond">100%</b></span></div>
+  <p class="lab-tip" id="lab-tip"></p>
+  <div class="lab-tools"><button class="lab-tool on" data-t="brush">🖌️<small>מברשת</small></button><button class="lab-tool" data-t="needle">🪡<small>מחט</small></button><button class="lab-tool" id="lab-tool-water" data-t="water">💧<small>מים וספוג</small></button><button class="lab-skip" id="lab-skip">לדלג (−10% מצב)</button></div>
+</div>
+<div class="lab" id="sieve" hidden role="dialog" aria-modal="true" aria-labelledby="sieve-title">
+  <h2 id="sieve-title">ניפוי העפר</h2><p class="sub">כל דלי עפר מהחפירה עובר במסננת. כך מוצאים חרוזים, מטבעות וזרעים קטנים.</p>
+  <canvas id="sieve-cv"></canvas>
+  <div class="lab-bars"><span>עפר שעבר</span><div class="lab-bar"><i id="sieve-pct"></i></div></div>
+  <p class="lab-tip" id="sieve-tip"></p>
+  <div class="lab-tools"><button class="btn gold" id="sieve-done">סיום הניפוי</button></div>
+</div>
+
 <div class="modal" id="modal" role="dialog" aria-modal="true"><div class="modal-card" id="modal-card"></div></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="fx" id="fx" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
 
-<script src="js/art.js?v=20261116c"></script>
-<script src="js/photos.js?v=20261116c"></script>
-<script src="js/icons.js?v=20261116c"></script>
-<script src="js/hero.js?v=20261116c"></script>
-<script src="js/audio.js?v=20261116c"></script>
-<script src="js/game.js?v=20261116c"></script>
-<script src="js/smash.js?v=20261116c"></script>
+<script src="js/art.js?v=20261117b"></script>
+<script src="js/photos.js?v=20261117b"></script>
+<script src="js/icons.js?v=20261117b"></script>
+<script src="js/hero.js?v=20261117b"></script>
+<script src="js/audio.js?v=20261117b"></script>
+<script src="js/world.js?v=20261117b"></script>
+<script src="js/world-photos.js?v=20261117b"></script>
+<script src="js/game.js?v=20261117b"></script>
+<script src="js/smash.js?v=20261117b"></script>
+<script src="js/world-game.js?v=20261117b"></script>
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
-<script type="module" src="js/smash3d.js?v=20261116c"></script>
-<script type="module" src="js/dig3d.js?v=20261116c"></script>
+<script type="module" src="js/smash3d.js?v=20261117b"></script>
+<script type="module" src="js/dig3d.js?v=20261117b"></script>
+<script type="module" src="js/globe3d.js?v=20261117b"></script>
+<script type="module" src="js/site3d.js?v=20261117b"></script>
 </body>
 </html>

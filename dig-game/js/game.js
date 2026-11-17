@@ -700,6 +700,7 @@
     if (name !== 'home' && name !== 'smash' && window.SMASH3D) SMASH3D.stop();
     if (name === 'home') homeScene(); else SHCHAVOT_HERO.stop();
     if (window.SHCHAVOT_SMASH) SHCHAVOT_SMASH.onShow(name);
+    if (window.SHCHAVOT_WORLDGAME) SHCHAVOT_WORLDGAME.onShow(name);
     SHCHAVOT_HERO.bg(name === 'map' || name === 'museum' || name === 'camp');
     if (name === 'map') renderMap();
     if (name === 'museum') renderMuseum();
