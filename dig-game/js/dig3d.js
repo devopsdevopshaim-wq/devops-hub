@@ -630,7 +630,8 @@ function prepareDig(dg) {
     }
     const top = 0.22 + z.y * ROWD + R() * 0.12;
     const svg = isItem ? z.it.svg : z.f.svg;
-    const ph = !isItem && PH.finds[z.f.id];
+    // a find of the world expedition is a lump of earth until it is cleaned in the lab
+    const ph = !isItem && !z.f.world && PH.finds[z.f.id];
     const SLABS = { r_pilate: 1, s_scroll: 1, b_mosaic: 1 };
     const url = ph && (ph.cut || (SLABS[z.f.id] ? ph.src : null));
     const mesh = spriteMesh(svg, w - 0.12, h - 0.12, isItem ? null : D.RARITY[z.f.rarity], url, R);
