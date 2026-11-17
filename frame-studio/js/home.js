@@ -84,7 +84,7 @@
     function draw(u, what) {
       url = u; var box = body.querySelector('#hm-qr-c');
       if (!u) { box.innerHTML = '<p class="hint">עוד אין אירוע חי. פותחים אירוע בלשונית 🎉 אירוע חי, ומשם הקוד מוכן.</p>'; body.querySelector('#hm-qr-what').textContent = ''; return; }
-      box.innerHTML = ''; var c = FS.qrCanvas ? FS.qrCanvas(u, 520) : null; if (c) { c.className = 'hm-qr-img'; box.appendChild(c); }
+      var mine = u; Promise.resolve(FS.qrCanvas ? FS.qrCanvas(u, 520) : null).then(function (c) { if (!c || url !== mine) return; box.innerHTML = ''; c.className = 'hm-qr-img'; box.appendChild(c); }, function () { box.innerHTML = '<p class="hint">הקוד לא נטען (אין אינטרנט?). אפשר להעתיק את הקישור.</p>'; });
       body.querySelector('#hm-qr-what').innerHTML = esc(what);
     }
     var first = L.main || L.guest;
@@ -98,14 +98,16 @@
   function full(u) {
     var o = document.createElement('div'); o.className = 'hm-qrfull'; o.setAttribute('dir', 'rtl');
     var name = (FS.business && FS.business.name) || ''; o.innerHTML = '<h2>📸 סורקים ומקבלים את התמונות</h2><div class="hm-qrbig"></div><p>' + esc(name) + '</p><small>לחיצה בכל מקום סוגרת</small>';
-    var c = FS.qrCanvas(u, 900); o.querySelector('.hm-qrbig').appendChild(c); o.addEventListener('click', function () { o.remove(); });
+    FS.qrCanvas(u, 900).then(function (c) { o.querySelector('.hm-qrbig').appendChild(c); }); o.addEventListener('click', function () { o.remove(); });
     document.body.appendChild(o);
   }
   function sign(u) {
     var w = window.open('', '_blank'); if (!w) return FS.toast('הדפדפן חסם חלון. מאשרים חלונות קופצים ומנסים שוב.');
-    var src = FS.qrCanvas(u, 800).toDataURL('image/png');
-    w.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>QR לאורחים</title><style>@page{size:A5;margin:12mm}body{font-family:Assistant,Arial,sans-serif;text-align:center;color:#222}h1{font-size:30px;margin:6mm 0}img{width:105mm;height:105mm}p{font-size:18px}</style></head><body><h1>📸 סורקים ומקבלים את התמונות</h1><img src="' + src + '"><p>מתקינים את "התמונות שלי", מעלים תמונות ומשאירים ברכה</p></body></html>');
-    w.document.close(); setTimeout(function () { w.focus(); w.print(); }, 400);
+    FS.qrCanvas(u, 800).then(function (c) {
+      var src = c.toDataURL('image/png');
+      w.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>QR לאורחים</title><style>@page{size:A5;margin:12mm}body{font-family:Assistant,Arial,sans-serif;text-align:center;color:#222}h1{font-size:30px;margin:6mm 0}img{width:105mm;height:105mm}p{font-size:18px}</style></head><body><h1>📸 סורקים ומקבלים את התמונות</h1><img src="' + src + '"><p>מתקינים את "התמונות שלי", מעלים תמונות ומשאירים ברכה</p></body></html>');
+      w.document.close(); setTimeout(function () { w.focus(); w.print(); }, 400);
+    }, function () { w.close(); FS.toast('הקוד לא נטען. בודקים חיבור לאינטרנט.'); });
   }
 
   /* ---------- ⚙️ settings in one place ---------- */
