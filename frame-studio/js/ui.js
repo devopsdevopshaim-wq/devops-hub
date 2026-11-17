@@ -375,6 +375,7 @@
     if (S.cur >= S.photos.length) S.cur = S.photos.length - 1;
     S.sel = null; buildStrip(); FS.emit('doc'); FS.emit('history');
   }
+  FS.removePhoto = function (i) { if (S.photos[i]) removePhoto(i); };
   FS.select = function (i) { select(i); };
   function select(i) {
     var prev = FS.cur(); if (prev && prev !== S.photos[i]) prev.cache = {}; /* only the photo on screen keeps its big preview in memory */

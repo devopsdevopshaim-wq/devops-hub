@@ -197,7 +197,7 @@
       var bg = cm[0].getAsFloat32Array(), hair = cm[1].getAsFloat32Array(), face = cm[3].getAsFloat32Array(), n = mw * mh, head = new Float32Array(n), person = new Float32Array(n);
       for (var i = 0; i < n; i++) { head[i] = Math.min(1, hair[i] + face[i]); person[i] = 1 - bg[i]; }
       if (res.close) res.close();
-      return { w: mw, h: mh, head: head, person: person };
+      return { w: mw, h: mh, head: head, person: person, face: face.slice(0), hair: hair.slice(0) };
     });
   };
   /* how much of a picture is people (0..1), from the person mask: a second opinion when a drawn answer's faces are not found */

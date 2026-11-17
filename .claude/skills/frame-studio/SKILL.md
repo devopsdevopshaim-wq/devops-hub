@@ -2719,3 +2719,46 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - `extra` is checked against `max(n0, _nAll)` again, with no +1 for groups of 4 or fewer. v183's +1 let an invented woman stand beside a couple and their baby (owner report, DSC05777).
 - `placedExtra(im)`: a posing-size face in the raw answer with no original face (`p._all`) within 0.8 face-widths is an added person. Allowed: 0 for 5 people or fewer, else 1.
 - `keepGround`: the cut line is also capped by a line through the top of the hair of each main face (face top − 0.55·h), joined straight from face to face and flat past the ends. A column holding only a hand or legs low down made a deep notch, and the place showed through the table as a "flame column" (DSC05791).
+
+## v185: home screen with six modes (js/home.js, js/booth.js, js/strips.js, css/home.css)
+- **🏠 Home** (`#fs-home`, `FS.home.show/go/mode`): the studio opens on six tiles. Keys 1–6 choose a tile, and Home (or the fixed `#fs-home-btn`, bottom right, which shows the current mode) comes back. Photos and marks are `FS.state`, so switching modes loses nothing. The mode is kept in `fs-home-mode` and set as `body[data-mode]`.
+  1. `magnets`: the workspace on 'main'; CSS hides the AI tab.
+  2. `ai`: the workspace on 'ai'.
+  3. `booth`: `FS.booth` (below).
+  4. `qr`: a dialog with `FS.liveLinks()` / `FS.liveMainGet()` (added in live.js). It shows the main QR, or else this event's guests' page. Buttons: full screen (`.hm-qrfull`), an A5 sign in a print window, copy, and the live tab.
+  5. `strips`: `FS.strips.open()`.
+  6. `settings`: tiles that call the existing functions: `FS.printerSetup`, `FS.mate.qpSetup` (new export), `FS.printDoctor.show`, the size bar, `FS.printSummary`, the business bar, the AI tab, and the full studio.
+- **📸 Booth** (`#booth`, z 46): the guest's screen.
+  - Photo: the camera with a 3-2-1 (mirrored capture), the photographer's latest photo (not booth/collage/strip), or a file. It goes in with `FS.addPhotoFile` and is tagged `p.booth`. It does not emit 'photos-added', because that opens the workspace over the booth.
+  - Designs, as tabs: ✨ AI_WOW, 🐉 AI_FANTASY, 🧸 AI_KIDS, 🦸 AI_HEROES, 🎨 AI_STYLES, 🔥 AI_VIRAL. The prompts are built the same way mate builds them. They run through `FS.restyle` under `FS.aiBatch(true)`, so the people checks apply and no dialog opens. A rejection shows a toast and asks the guest to choose another design.
+  - "⚡ מהירים": 5 ONNX + 15 instant styles, with live thumbnails.
+  - Copies 1–10, then print. That uses `FS.mate.printList` when instant print is set up, else `FS.printNow` on `FS.prefs.paper`. A thank-you screen follows, and the booth resets after 6 s.
+  - Exit: hold ✕ for 1.5 s, or Esc. "↺ צילום חוזר" removes the booth photo (the new `FS.removePhoto(i)` in ui.js).
+- **🎞️ Strips**: 75×200 mm, 2 or 3 cells (`fs-strip-n`).
+  - Photos: the marked ones, else all. A short last strip repeats its own photos.
+  - Each cell is a cover crop centred on the faces (`FS.mainFaces` box).
+  - Background swatches (`fs-strip-bg`); a caption line (default: the live event's title) and the date.
+  - "➕ כדפים" adds the strips as pages (`p.strip`, `p.collage`, no frame or layers). "🖨️" adds them, then `FS.printNow({paper:'15x20', layout:'fill', margin:0, gap:0, size:[75,200]})`, two side by side, each twice by default (`fs-strip-twice`).
+
+## v186: the booth shows what will print
+- **Size chips** (`#bo-sizes`): the instant print's magnet size (`fs-qprint.msize`) first, then 5×7.5, 7.5×10, 10×15, 13×18 and 15×20, limited to what fits the paper.
+  - A chip calls `FS.applyFormat(p.doc, 'cm', …)` in the photo's own direction, so the page on screen is what prints. The choice is kept in `fs-booth-size` and applied to the next guest.
+  - On "the photographer's latest photo", this changes that photo's page size too.
+- **Live line** (`#bo-info`): size in cm, how many photos, paper, how many per sheet, sheets. It comes from `FS.planPrint({list:[p], paper, layout:'fill', margin:0, gap:0, size: mmOf(p.doc)})` with `p.copies = n`.
+- **"🖨️ להדפסה"** now opens `data-s="check"` ("🧾 לפני ההדפסה"), which shows:
+  - the summary (design, size of each photo, how many, paper and its cm, per sheet, sheets, printer);
+  - the sheet itself (`FS.pageCanvas(plan, page, 60)`, with dashed cut lines and page navigation).
+  - "✔ להדפיס" chooses the instant print's printer on the desktop, then `FS.doPrint(plan)`. "↩ חזרה לשינויים" goes back. The paper is `fs-qprint.paper`, else `FS.prefs.paper`.
+
+## v187: the modes bar on top
+- `#fs-modebar` (home.js): a fixed 44 px bar at the top with "🏠 ראשי" and the six modes; the current mode is lit (`lit()`, called from setMode). Owner report: he could not find the way back to home or between the modes.
+- With the bar shown (`body.has-modebar`): `#mt` starts at `top: 44px`; the studio gets `padding-top: 44px`; the floating `#fs-home-btn` is hidden. The bar is hidden while the home screen, the booth, the gate or the intro is up.
+- On phones only the icons show.
+- Booth: the exit is now a labelled pill, "🏠 יציאה לראשי · להחזיק". You still hold it for 1.5 s.
+
+## v188: the kept heads take the design's light (keepHeads → pasteHeads)
+- `FS.peopleParts` also returns `face` and `hair` separately. The paste mask is the face at full strength and the hair at 0.85. It is pulled in about a grid pixel (blur, then threshold) and blurred by max(W,H)/320. The alpha is M itself (it was M×1.25). Before this, a halo of the photo's old background showed around the hair.
+- Colour transfer inside the mask: each channel's mean moves to the AI head's mean, and its spread moves 35% of the way to the AI's. Blended at 0.72, so the real head takes the design's light and colour instead of looking pasted. Owner report: superheroes with photo-real heads.
+
+## v189: the home screen's QR works
+- `FS.qrCanvas` (grow.js) returns a Promise of a canvas, because it loads qrcode-generator lazily. home.js had used it as a canvas, so "📱 QR לאפליקציה" threw on `appendChild`. Now `draw`, `full` and `sign` wait for it, and if the library cannot load the dialog says so.

@@ -732,17 +732,36 @@
         return pasteHeads();
       });
       function pasteHeads() {
+      /* v188: the head is part of the design, not a cut-out: the face fully, the hair a little less (its edge is the AI's, so
+         no halo of the old background around it), the mask pulled in a touch and soft; and the head takes the design's light
+         and colour (its colours brought most of the way to the AI's own head at the same place, as face-keep.js does) */
       var W = im.naturalWidth, H = im.naturalHeight, mc = FS.canvas(A.w, A.h), mx = mc.getContext('2d'), md = mx.createImageData(A.w, A.h), any = 0;
-      for (i = 0; i < A.head.length; i++) { var v = A.head[i] > 0.35 ? 255 : Math.round(A.head[i] / 0.35 * 255); md.data[i * 4] = md.data[i * 4 + 1] = md.data[i * 4 + 2] = v; md.data[i * 4 + 3] = 255; if (v > 200) any++; }
+      var F = A.face || A.head, Hr = A.hair || null;
+      for (i = 0; i < A.head.length; i++) {
+        var f = F[i] > 0.4 ? 1 : F[i] / 0.4, hr = Hr ? (Hr[i] > 0.5 ? 1 : Hr[i] / 0.5) * 0.85 : 0, v = Math.round(Math.max(f, hr) * 255);
+        md.data[i * 4] = md.data[i * 4 + 1] = md.data[i * 4 + 2] = v; md.data[i * 4 + 3] = 255; if (v > 200) any++;
+      }
       if (any < A.head.length * 0.002) return null;
       mx.putImageData(md, 0, 0);
-      /* the head mask a little wider (the hair's edge, the jaw) and soft */
+      /* pulled in by about a pixel of the mask grid (the hair's outer edge carries the old background), then soft */
+      var er = FS.canvas(A.w, A.h), ex = er.getContext('2d'); ex.filter = 'blur(1px)'; ex.drawImage(mc, 0, 0);
+      var ed = ex.getImageData(0, 0, A.w, A.h); for (i = 0; i < ed.data.length; i += 4) { var e2 = Math.max(0, (ed.data[i] - 70) / 185 * 255); ed.data[i] = ed.data[i + 1] = ed.data[i + 2] = e2; } ex.putImageData(ed, 0, 0);
       var big = FS.canvas(W, H), bx = big.getContext('2d', { willReadFrequently: true }); bx.imageSmoothingQuality = 'high';
-      bx.filter = 'blur(' + Math.max(2, Math.round(Math.max(W, H) / 400)) + 'px)'; bx.drawImage(mc, 0, 0, W, H);
+      bx.filter = 'blur(' + Math.max(2, Math.round(Math.max(W, H) / 320)) + 'px)'; bx.drawImage(er, 0, 0, W, H);
       var M = bx.getImageData(0, 0, W, H).data;
       var c = FS.canvas(W, H), cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(im, 0, 0, W, H);
       var oc = FS.canvas(W, H), ox = oc.getContext('2d', { willReadFrequently: true }); ox.imageSmoothingQuality = 'high'; ox.drawImage(orig, 0, 0, W, H);
-      var O = ox.getImageData(0, 0, W, H); for (i = 0; i < O.data.length; i += 4) O.data[i + 3] = Math.min(255, M[i] * 1.25);
+      var O = ox.getImageData(0, 0, W, H), od = O.data, R = cx.getImageData(0, 0, W, H).data, k;
+      /* the design's light on the head: mean and spread of each colour, the photo's head against the AI's head */
+      var S0 = [0, 0, 0], Q0 = [0, 0, 0], S1 = [0, 0, 0], Q1 = [0, 0, 0], nn = 0;
+      for (i = 0; i < od.length; i += 16) { if (M[i] < 200) continue; for (k = 0; k < 3; k++) { S0[k] += od[i + k]; Q0[k] += od[i + k] * od[i + k]; S1[k] += R[i + k]; Q1[k] += R[i + k] * R[i + k]; } nn++; }
+      if (nn > 50) {
+        var mu0 = [], sd0 = [], mu1 = [], sd1 = [];
+        for (k = 0; k < 3; k++) { mu0[k] = S0[k] / nn; mu1[k] = S1[k] / nn; sd0[k] = Math.sqrt(Math.max(1, Q0[k] / nn - mu0[k] * mu0[k])); sd1[k] = Math.sqrt(Math.max(1, Q1[k] / nn - mu1[k] * mu1[k])); }
+        /* the spread only partly (the AI's head may be flat), the light and colour mostly */
+        for (i = 0; i < od.length; i += 4) { if (!M[i]) continue; for (k = 0; k < 3; k++) { var v0 = od[i + k], sp = sd0[k] * (1 + (sd1[k] / sd0[k] - 1) * 0.35), t = (v0 - mu0[k]) / sd0[k] * sp + mu1[k]; od[i + k] = v0 + (t - v0) * 0.72; } }
+      }
+      for (i = 0; i < od.length; i += 4) od[i + 3] = M[i];
       ox.putImageData(O, 0, 0); cx.drawImage(oc, 0, 0);
       return new Promise(function (ok) { c.toBlob(function (b) { ok(b ? FS.loadImg(URL.createObjectURL(b)) : null); }, 'image/jpeg', 0.95); })
         .then(function (r) { if (r) r.headsKept = true; return r; });
