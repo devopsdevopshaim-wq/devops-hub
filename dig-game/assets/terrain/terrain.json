@@ -1,0 +1,248 @@
+{
+"qumran": {
+"min": -401.0,
+"max": -61.2,
+"span": 2080.2,
+"centre": -329.0
+},
+"mishmar": {
+"min": -378.0,
+"max": -40.3,
+"span": 2088.2,
+"centre": -303.5
+},
+"siloam": {
+"min": 566.6,
+"max": 810.2,
+"span": 2079.5,
+"centre": 643.4
+},
+"dan": {
+"min": 154.8,
+"max": 232.7,
+"span": 2045.6,
+"centre": 199.9
+},
+"hinnom": {
+"min": 597.4,
+"max": 815.3,
+"span": 2079.5,
+"centre": 754.4
+},
+"masada": {
+"min": -336.0,
+"max": 92.5,
+"span": 2089.6,
+"centre": 48.6
+},
+"valley": {
+"min": 83.7,
+"max": 473.5,
+"span": 2203.3,
+"centre": 222.2
+},
+"amarna": {
+"min": -86.6,
+"max": 75.3,
+"span": 2166.7,
+"centre": 57.1
+},
+"tanis": {
+"min": -4.0,
+"max": 26.1,
+"span": 2097.2,
+"centre": 3.0
+},
+"ur": {
+"min": -1.2,
+"max": 22.4,
+"span": 2097.4,
+"centre": 19.6
+},
+"nineveh": {
+"min": 200.0,
+"max": 246.0,
+"span": 1969.8,
+"centre": 236.3
+},
+"nimrud": {
+"min": 188.7,
+"max": 221.0,
+"span": 1976.4,
+"centre": 210.1
+},
+"persepolis": {
+"min": 1599.4,
+"max": 1864.6,
+"span": 2119.7,
+"centre": 1629.1
+},
+"troy": {
+"min": 8.6,
+"max": 50.6,
+"span": 1874.9,
+"centre": 36.2
+},
+"hattusa": {
+"min": -32768.0,
+"max": 1161.7,
+"span": 1873.2,
+"centre": 1048.5
+},
+"gobekli": {
+"min": 651.3,
+"max": 779.7,
+"span": 1947.7,
+"centre": 772.7
+},
+"mycenae": {
+"min": 108.6,
+"max": 689.5,
+"span": 1934.5,
+"centre": 223.0
+},
+"vergina": {
+"min": 89.3,
+"max": 379.7,
+"span": 1860.5,
+"centre": 160.0
+},
+"knossos": {
+"min": 55.0,
+"max": 263.9,
+"span": 1996.3,
+"centre": 96.5
+},
+"pompeii": {
+"min": 3.6,
+"max": 52.6,
+"span": 1853.0,
+"centre": 37.3
+},
+"varna": {
+"min": -4.2,
+"max": 36.6,
+"span": 1782.8,
+"centre": 3.5
+},
+"panagyurishte": {
+"min": 517.0,
+"max": 592.8,
+"span": 1803.2,
+"centre": 536.9
+},
+"suttonhoo": {
+"min": -1.0,
+"max": 36.1,
+"span": 1502.9,
+"centre": 33.0
+},
+"staffordshire": {
+"min": 117.1,
+"max": 158.6,
+"span": 1483.6,
+"centre": 133.1
+},
+"hoxne": {
+"min": 19.3,
+"max": 38.7,
+"span": 1494.1,
+"centre": 24.6
+},
+"oseberg": {
+"min": 7.4,
+"max": 64.9,
+"span": 1248.6,
+"centre": 48.9
+},
+"spillings": {
+"min": 18.4,
+"max": 32.2,
+"span": 1301.6,
+"centre": 25.7
+},
+"nebra": {
+"min": 129.8,
+"max": 256.6,
+"span": 1529.9,
+"centre": 252.1
+},
+"pietroasele": {
+"min": 161.2,
+"max": 418.9,
+"span": 1726.6,
+"centre": 282.7
+},
+"xian": {
+"min": 447.0,
+"max": 567.6,
+"span": 2018.6,
+"centre": 493.2
+},
+"sanxingdui": {
+"min": 477.0,
+"max": 498.0,
+"span": 2096.6,
+"centre": 488.3
+},
+"tillyatepe": {
+"min": 340.7,
+"max": 357.4,
+"span": 1961.4,
+"centre": 349.9
+},
+"mohenjodaro": {
+"min": 44.0,
+"max": 61.0,
+"span": 2173.1,
+"centre": 53.0
+},
+"mapungubwe": {
+"min": 515.0,
+"max": 537.0,
+"span": 2264.8,
+"centre": 525.7
+},
+"igboukwu": {
+"min": 313.0,
+"max": 379.0,
+"span": 2432.5,
+"centre": 355.6
+},
+"zimbabwe": {
+"min": 1057.5,
+"max": 1208.8,
+"span": 2294.5,
+"centre": 1157.1
+},
+"aksum": {
+"min": 2119.9,
+"max": 2315.0,
+"span": 2372.0,
+"centre": 2150.0
+},
+"sipan": {
+"min": 73.7,
+"max": 189.8,
+"span": 2428.8,
+"centre": 94.0
+},
+"chichen": {
+"min": 15.9,
+"max": 49.0,
+"span": 2288.3,
+"centre": 42.2
+},
+"guatavita": {
+"min": 2849.6,
+"max": 3213.0,
+"span": 2436.8,
+"centre": 2983.8
+},
+"machu": {
+"min": 1809.6,
+"max": 2945.7,
+"span": 2381.7,
+"centre": 2440.8
+}
+}
