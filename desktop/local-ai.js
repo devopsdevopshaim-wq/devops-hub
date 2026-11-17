@@ -229,6 +229,11 @@ function buildArgs(files, input, opt) {
   if (opt.vaeTiling) args.push('--vae-tiling');
   // flash attention in the diffusion model: faster and lighter on a graphics card (left out if the engine build does not know it)
   if (opt.fa) args.push('--diffusion-fa');
+  // the graph-cut executor of current sd.cpp: how much video memory it may plan for (GiB; -1 = what the driver says is free),
+  // and the diffusion layers streamed in from RAM. Without a budget it planned for the whole card and failed on a 6 GB laptop
+  // card ("failed during allocated capacity check").
+  if (opt.maxVram != null) args.push('--max-vram', String(opt.maxVram));
+  if (opt.stream && opt.offload) args.push('--stream-layers');
   return args;
 }
 
@@ -738,7 +743,7 @@ function createEngine(options) {
       const ref = input.image ? path.join(dir, 'in' + input.ext) : '';
       if (ref) fs.writeFileSync(ref, input.image);
       const files = { diffusion: modelPath('diffusion', m), llm: modelPath('llm', m), vae: modelPath('vae', m) };
-      const args = buildArgs(files, input, { out, ref, offload: flags.offload, vaeTiling: flags.vaeTiling, fa: flags.fa });
+      const args = buildArgs(files, input, { out, ref, offload: flags.offload, vaeTiling: flags.vaeTiling, fa: flags.fa, maxVram: flags.maxVram, stream: flags.stream });
       const feed = createProgressParser(STEPS);
       let tail = '';
       let child;
@@ -775,7 +780,7 @@ function createEngine(options) {
           } else {
             const clean = tail.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').split(/[\r\n]+/).filter((l) => l.trim() && !/\d+\/\d+\s*-\s*[\d.]+/.test(l)).slice(-8).join('\n');
             res = { ok: false, error: 'local-failed', detail: (err ? String(err.message || err) + '\n' : '') + clean, code };
-            if (/out of memory|ErrorOutOfDeviceMemory|VK_ERROR|alloc(ate)?.*fail|failed to allocate|cudaMalloc|ggml_vulkan/i.test(clean)) res.gpu = true;
+            if (/out of memory|ErrorOutOfDeviceMemory|VK_ERROR|alloc(ate)?.*fail|failed to allocate|cudaMalloc|ggml_vulkan|capacity check|workspace allocation|weight preparation|not enough memory/i.test(clean)) res.gpu = true;
           }
         }
         try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* temp dir */ }
@@ -786,6 +791,7 @@ function createEngine(options) {
     });
   }
 
+  let cutOk = true;   // the engine takes --max-vram / --stream-layers (false after an older build refused them)
   function run(o, onProgress) {
     const input = validateRunInput(o);
     if (input.error) return Promise.resolve({ ok: false, error: input.error, detail: input.detail });
@@ -802,6 +808,9 @@ function createEngine(options) {
       const vram = gpuHint ? gpuHint.vramMB : 0;
       // weights ~5 GB: keep them in RAM and move them in as needed unless the card clearly has room
       const flags = { offload: !cpu && !(vram >= 10 * 1024), vaeTiling: !cpu && !(vram >= 8 * 1024), fa: !cpu && faOk };
+      // a memory budget below the card's size (2 GB kept for the driver and the engine's own context), as unsloth does
+      const budget = vram > 0 ? Math.max(1, Math.floor((vram / 1024 - 2) * 100) / 100) : -1;
+      if (!cpu && cutOk) { flags.maxVram = budget; flags.stream = true; }
       try { onProgress && onProgress({ pct: 1, phase: 'start' }); } catch { /* ignore */ }
       let r = await runOnce(chk.bin, m, input, onProgress, flags);
       if (!r.ok && flags.fa && r.error === 'local-failed' && gen === generation && !r.gpu && /diffusion-fa|unknown (argument|option)|invalid (argument|option)|unrecognized/i.test(r.detail || '')) {
@@ -810,9 +819,16 @@ function createEngine(options) {
         flags.fa = false;
         r = await runOnce(chk.bin, m, input, onProgress, flags);
       }
-      if (!r.ok && r.gpu && !(flags.offload && flags.vaeTiling) && gen === generation) {
-        // ran out of video memory: once more with everything that saves VRAM
-        r = await runOnce(chk.bin, m, input, onProgress, { offload: true, vaeTiling: true });
+      if (!r.ok && cutOk && flags.maxVram != null && r.error === 'local-failed' && gen === generation && /max-vram|stream-layers/i.test(r.detail || '') && /unknown|invalid|unrecognized/i.test(r.detail || '')) {
+        // an engine build from before the graph-cut executor: without the budget from now on
+        cutOk = false; delete flags.maxVram; delete flags.stream;
+        r = await runOnce(chk.bin, m, input, onProgress, flags);
+      }
+      // ran out of video memory: again with everything that saves VRAM and a smaller budget (3/4, then 1/2 of it)
+      for (const scale of [0.75, 0.5]) {
+        if (r.ok || !r.gpu || gen !== generation) break;
+        const b = cutOk ? (budget > 0 ? Math.max(1, Math.floor(budget * scale * 100) / 100) : -1) : undefined;
+        r = await runOnce(chk.bin, m, input, onProgress, { offload: true, vaeTiling: true, fa: flags.fa, maxVram: b, stream: cutOk });
       }
       if (!r.ok && r.error === 'local-failed' && m.engine.variant === 'vulkan') r.suggestCpu = true;
       return r;

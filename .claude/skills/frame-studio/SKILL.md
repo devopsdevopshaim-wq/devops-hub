@@ -2777,3 +2777,13 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 
 ## v192: a photo the local engine cannot make goes to the cloud
 - ai-studio.js `runAI` lane: when the first try of a photo fails with a `local-*` or `relay-*` error, the retry uses engine `'free'` (the cloud) if the machine is online, else the local engine again. Owner report: on the RTX 4050 laptop (6 GB), a photo stayed red with "allocated capacity check". The retry had gone back to the chosen local engine, while the same batch's cloud photo came out fine. The 768 → 512 step-down (v191) did not make it fit, so the card cannot hold the FLUX.2 klein model as installed. A smaller quantized model or the CUDA build (desktop/local-ai.js) is the open fix.
+
+## Desktop: a video memory budget for the local engine (sd.cpp graph-cut executor)
+- The "failed during allocated capacity check --- execution_engine.cpp:59" error comes from current stable-diffusion.cpp's graph-cut executor. Without a budget it plans for the whole card, and on a 6 GB laptop RTX 4050 it fails. unsloth's studio handles the same error with `--max-vram <GiB>` (free memory minus 2 GiB, 0.75× on retry) and `--stream-layers`.
+- `desktop/local-ai.js`:
+  - `buildArgs` takes `maxVram` and `stream`. `--stream-layers` is added only with `--offload-to-cpu`.
+  - `run()`: on a GPU build the budget is `vramMB/1024 − 2` (at least 1 GiB, or −1 = the driver's free memory when the card is unknown), with stream layers on.
+  - GPU errors now include `capacity check`, `workspace allocation`, `weight preparation` and `not enough memory`. After one, it runs again with offload, VAE tiling and the budget ×0.75, then ×0.5.
+  - An engine build that refuses `--max-vram` / `--stream-layers` (unknown argument) drops them for good (`cutOk`).
+- Tests: `test/fake-sd-cli.js` has `FAKE_SD_CAP_GIB`. Case 5c checks a 6 GB card: budget 4, then 3.
+- Reaches the owner only through a new desktop build ("⬆️ עדכון גרסה"). The page side (v191 step-down, v192 cloud fallback) covers him until then.
