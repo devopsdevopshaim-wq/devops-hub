@@ -25,5 +25,9 @@ if (process.argv[1] && process.argv[1].endsWith('narration.mjs')) {
     style: { he: 'את מדריכה ישראלית חמה וברורה, שמסבירה לחבר שיושב לידך מול המחשב. דברי בעברית ישראלית טבעית ושוטפת, במבטא ישראלי, עם הדגשים והאינטונציה של שיחה אמיתית: חיוך בקול, התלהבות קטנה כשמשהו כיף, הפסקה קצרה אחרי נקודה ואחרי פסיק. קצב רגוע, לא מהיר, לא מוקרא. הנה הטקסט: ' }, scenes };
   fs.mkdirSync('../promo-src/optimus-guide-v2', { recursive: true });
   fs.writeFileSync('../promo-src/optimus-guide-v2/script.json', JSON.stringify(out, null, 1));
+  /* the same narration with ElevenLabs (eleven_v3, the most human Hebrew; the owner's free account) */
+  const el = Object.assign({}, out, { slug: 'optimus-guide-eleven', providers: ['eleven'], voices: { eleven: { he: 'EXAVITQu4vr4xnSDxMaL' } } });
+  fs.mkdirSync('../promo-src/optimus-guide-eleven', { recursive: true });
+  fs.writeFileSync('../promo-src/optimus-guide-eleven/script.json', JSON.stringify(el, null, 1));
   console.log(scenes.length, 'clips'); scenes.slice(0, 4).forEach((x) => console.log(x.id, '|', x.he));
 }
