@@ -283,7 +283,7 @@
        the engine on this computer runs one picture at a time */
     var local = FS.aiEngine() === 'local' || (FS.localAI && FS.localAI.mode && FS.localAI.mode() === 'local') || navigator.onLine === false;
     /* auto, online, with the engine installed here: the free cloud (3 at once) and this computer (1) work at the same time */
-    var both = !local && !FS.aiEngine() && localReady() && list.length > 1 && !(FS.localAI.mode && FS.localAI.mode() === 'cloud');
+    var both = !local && !FS.aiEngine() && localReady() && list.length > 1 && !(FS.localAI.mode && FS.localAI.mode() === 'cloud') && !(FS.localSlow && FS.localSlow());   /* a slow computer does not hold a photo for minutes (v193) */
     var lanes = local ? 1 : Math.min(3, list.length), engines = [];
     for (var ei = 0; ei < lanes; ei++) engines.push(undefined);
     if (both) { engines.push('local'); lanes++; }

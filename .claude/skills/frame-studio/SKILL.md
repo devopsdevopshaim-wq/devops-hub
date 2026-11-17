@@ -2788,3 +2788,10 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - Tests: `test/fake-sd-cli.js` has `FAKE_SD_CAP_GIB`. Case 5c checks a 6 GB card: budget 4, then 3.
 - Reaches the owner only through a new desktop build ("⬆️ עדכון גרסה"). The page side (v191 step-down, v192 cloud fallback) covers him until then.
 - Follow-up (owner report on 1.0.178): his engine build printed its usage, so it had refused an argument. The tail showed only usage lines, which the old check did not recognise. `runOnce` now also keeps the first 3000 characters of output (`head`). On "unknown/invalid/unrecognized argument <flag>", or a usage text, it sets `res.argError` and puts the error line first in `detail`. `run()` then drops `--stream-layers` first (`streamOk = false`), then `--max-vram` (`cutOk = false`; also when the refused token is a number such as "-1"), and runs again. Test 5d (`FAKE_SD_NO_STREAM`).
+
+## v193: speed first: a slow local engine hands over to the cloud
+- Owner report: a local edit ran 15 minutes on the RTX 4050 laptop. The weights stream in from RAM at each step, and failed runs and step-downs add up.
+- ai.js `askLocalFast(body)`: online, a local run not done within `LOCAL_FAST` (100 s; `fs-ai-local-fast` overrides it, for tests) is cancelled (`FS.localAI.cancel`), and the picture goes to `askCloud`. A run over 100 s, or a successful one over 60 s, sets `slowUntil` = now + 60 min. While `FS.localSlow()` holds (online), the 'local' mode and the engine 'local' ask the cloud first and fall back to the computer only if the cloud fails. Offline the computer always runs, with no time cap.
+- ai-studio.js: batches add no local lane while `FS.localSlow()`.
+- local-ai.js: a card under 8 GB now starts at 512 (was 768).
+- Test (fake engine, 4 s per run, cap 1.5 s): the first picture is cancelled at 1.5 s and comes from the cloud; the second goes straight to the cloud; size 512.

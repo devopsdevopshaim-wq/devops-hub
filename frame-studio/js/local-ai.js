@@ -17,12 +17,12 @@
   /* the CPU build is slow (measured on a 4-core runner: ~24 min for 512x768), so without a graphics card it starts at 512
      (about twice as fast as 768, enough for a magnet); a chosen size always wins */
   /* v191: a graphics card under 8 GB (an RTX 4050 laptop has 6) ran out of memory at 1024 ("allocated capacity check"), so it
-     starts at 768; and the size a failed run stepped down to is kept ('fs-ai-local-cap'), so the next photos of the event start
+     starts at 512 (v193: 768 took many minutes there); and the size a failed run stepped down to is kept ('fs-ai-local-cap'), so the next photos of the event start
      at a size that works instead of failing first */
   var CAP_KEY = 'fs-ai-local-cap';
   function vramMB() { return gpu && gpu.best && gpu.best.vramMB || 0; }
   function localSize() {
-    var v = ls(SIZE_KEY), want = v === '512' ? 512 : v === '768' ? 768 : v === '1024' ? 1024 : st && st.engine && st.engine.variant === 'cpu' ? 512 : (vramMB() && vramMB() < 8 * 1024 ? 768 : 1024);
+    var v = ls(SIZE_KEY), want = v === '512' ? 512 : v === '768' ? 768 : v === '1024' ? 1024 : st && st.engine && st.engine.variant === 'cpu' ? 512 : (vramMB() && vramMB() < 8 * 1024 ? 512 : 1024);
     var cap = Number(ls(CAP_KEY)) || 0; return cap && cap < want ? cap : want;
   }
   function memErr(d) { return /memory|capacity|alloc|VK_ERROR|execution_engine|ggml_vulkan|cudaMalloc|device lost/i.test(String(d || '')); }
