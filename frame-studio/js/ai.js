@@ -284,10 +284,34 @@
       FS.lastAiDetail = r && !r.ok ? String(r.detail || '') : ''; return r;
     });
   }
+  /* v193: speed first at an event. A local run that is not done in 100 s while there is internet is stopped and the picture goes
+     to the cloud (seconds), and for the next hour (or until the connection drops) pictures go to the cloud first; the computer
+     takes them only when the cloud cannot. A 6 GB laptop card took 15 minutes (the weights stream in from RAM at each step). */
+  var LOCAL_FAST = (function () { try { return Number(localStorage.getItem('fs-ai-local-fast')) || 100000; } catch (e) { return 100000; } })(), slowUntil = 0;
+  function localSlow() { return slowUntil > Date.now() && navigator.onLine !== false; }
+  function askLocalFast(body) {
+    if (navigator.onLine === false) return askLocal(body);
+    var done = false, t0 = Date.now();
+    return new Promise(function (ok) {
+      var timer = setTimeout(function () {
+        if (done) return; done = true; slowUntil = Date.now() + 60 * 60000;
+        if (window.console) console.warn('AI: the local engine is slow (over ' + LOCAL_FAST / 1000 + ' s), this one goes to the cloud');
+        if (FS.toast) FS.toast('🖥️ המחשב איטי בעיצוב הזה, אז הוא עובר לענן (מהיר). בלי אינטרנט המחשב ממשיך לבד.', 6000);
+        try { FS.localAI.cancel(); } catch (e) { /* gone */ }
+        ok(askCloud(body));
+      }, LOCAL_FAST);
+      askLocal(body).then(function (r) {
+        if (done) return; done = true; clearTimeout(timer);
+        if (r && r.ok && Date.now() - t0 > 60000) slowUntil = Date.now() + 60 * 60000;   /* it worked, but slowly: the cloud first for a while */
+        ok(r);
+      });
+    });
+  }
+  FS.localSlow = localSlow;
   FS.askServer = function (body) {
     var L = FS.can && !FS.can('local-ai') ? null : FS.localAI;   /* the free tier has no local AI (plan.js) */
     /* a chosen engine (the AI tab's engine bar, or one of the "3 versions"): 'local' is this computer, the others one cloud engine */
-    if (body && body.engine === 'local') { var bl = Object.assign({}, body); delete bl.engine; return L && L.isReady && L.isReady() ? askLocal(bl) : Promise.resolve({ ok: false, error: 'local-missing' }); }
+    if (body && body.engine === 'local') { var bl = Object.assign({}, body); delete bl.engine; return L && L.isReady && L.isReady() ? (localSlow() ? askCloud(bl).then(function (r) { return r && r.ok ? r : askLocal(bl); }) : askLocalFast(bl)) : Promise.resolve({ ok: false, error: 'local-missing' }); }
     /* a chosen cloud engine that fails (no connection, quota, timeout) hands the picture to this computer when its engine is installed */
     var pic = body && (body.action === 'restyle' || body.action === 'image'), here = function () { return !!(pic && L && L.isReady && L.isReady()); };
     var toLocal = function () { var bl = Object.assign({}, body); delete bl.engine; return askLocal(bl); };
@@ -307,7 +331,8 @@
     if (!L || !pic) return askCloud(body);
     return L.whenReady().then(function (ready) {
       if (!ready) return askCloud(body);
-      if (L.mode() === 'local' || navigator.onLine === false || cloudOff > Date.now()) return askLocal(body);
+      if (L.mode() === 'local' && localSlow()) return askCloud(body).then(function (r) { return r && r.ok ? r : askLocal(body); });
+      if (L.mode() === 'local' || navigator.onLine === false || cloudOff > Date.now()) return askLocalFast(body);
       return askCloud(body).then(function (r) {
         if ((r && r.ok && r.image) || (r && r.error === 'cancelled')) return r;
         /* any failure of the cloud (no connection, a timeout, the free allowance ran out, a refusal): this picture goes to this
