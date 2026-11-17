@@ -1,0 +1,28 @@
+name: Fetch dig game music
+
+# One-off: downloads free background music (CC BY) into dig-game/audio/_incoming on the branch that changed the script.
+
+on:
+  push:
+    branches-ignore: [main]   # downloads land on the work branch, never on main
+    paths: ['.github/scripts/dig-music.py']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y ffmpeg >/dev/null
+      - run: python .github/scripts/dig-music.py
+      - name: Commit what was fetched
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dig-game/audio
+          git diff --cached --quiet || git commit -m "dig-game: background music (CC BY)"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push
