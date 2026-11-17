@@ -301,7 +301,8 @@
           /* only no connection at all stops the event; any other failure leaves that one photo as shot and the rest go on (v167) */
           if (/^offline$|^cancelled$/.test(m)) { failed = e; return; }
           kept++; lastErr = m;
-          p.aiBad = m === 'not-same' ? 'ה־AI לא נשמר: פנים שונות מהמקור' : /lost-people|extra-people/.test(m) ? 'ה־AI לא נשמר: אנשים חסרים או נוספים' : 'ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)';
+          p.aiBad = m === 'not-same' ? 'ה־AI לא נשמר: פנים שונות מהמקור' : /lost-people|extra-people/.test(m) ? 'ה־AI לא נשמר: אנשים חסרים או נוספים' : 'ה־AI לא הצליח: ' + String(FS.aiError ? FS.aiError(m) : m).replace(/\s+/g, ' ').slice(0, 150) + ' [' + m + ']';   /* v190: the reason itself (local engine error, timeout, not installed…), not a blanket line */
+          if (window.console) console.warn('AI failed on ' + (p.name || p.id) + ': ' + m + (FS.lastAiDetail ? ' · ' + FS.lastAiDetail : ''));
         }).then(function () { return lane(eng); });
     }
     msg();

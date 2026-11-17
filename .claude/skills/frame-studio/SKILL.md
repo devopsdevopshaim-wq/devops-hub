@@ -2762,3 +2762,7 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 
 ## v189: the home screen's QR works
 - `FS.qrCanvas` (grow.js) returns a Promise of a canvas, because it loads qrcode-generator lazily. home.js had used it as a canvas, so "📱 QR לאפליקציה" threw on `appendChild`. Now `draw`, `full` and `sign` wait for it, and if the library cannot load the dialog says so.
+
+## v190: a failed AI photo says why
+- ai-studio.js `runAI` lane: when an error is not not-same, lost-people or extra-people, `p.aiBad` is now "ה־AI לא הצליח: " plus the first 150 characters of `FS.aiError(m)`, plus `[code]`. For the local engine that includes `FS.lastAiDetail`. It was a blanket "ה־AI לא הצליח בתמונה הזאת (נשארה כמו שצולמה)", which hid whether the cause was the local engine (local-failed, local-missing, timeout) or something else. The owner reported three photos failing on the local engine.
+- The console gets `AI failed on <photo>: <code> · <detail>`.
