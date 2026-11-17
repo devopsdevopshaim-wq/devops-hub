@@ -33,5 +33,26 @@
   "s14-strips": 24.45,
   "s15-settings": 17.05,
   "s16-studio": 17.65
+ },
+ "eleven": {
+  "intro": 10.05,
+  "outro": 8.25,
+  "s00-home": 24.25,
+  "s01-bar": 16.95,
+  "s02-magnets": 34.85,
+  "s03-copies": 23.25,
+  "s04-edit": 26.95,
+  "s05-design": 17.55,
+  "s06-print": 27.95,
+  "s07-ai": 23.45,
+  "s08-ai-ba": 19.85,
+  "s09-booth1": 26.45,
+  "s10-booth2": 19.45,
+  "s11-booth3": 24.45,
+  "s12-booth4": 21.35,
+  "s13-qr": 19.35,
+  "s14-strips": 31.25,
+  "s15-settings": 18.85,
+  "s16-studio": 19.45
  }
 }
