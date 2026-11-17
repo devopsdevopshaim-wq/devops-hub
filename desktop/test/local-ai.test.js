@@ -363,6 +363,18 @@ test('install (discover, download, verify, extract, probe) and run with the fake
   await eng.run({ mode: 'image', prompt: 'a gold frame', w: 512, h: 512 });
   assert.ok(!JSON.parse(fs.readFileSync(sdLog, 'utf8').trim()).args.includes('--diffusion-fa'), 'stays off');
 
+  // 5c. a 6 GB laptop card: a video memory budget under its size (4 GiB), and after "allocated capacity check" a smaller one (3)
+  eng.setGpuHint({ name: 'NVIDIA GeForce RTX 4050 Laptop GPU', vramMB: 6144 });
+  process.env.FAKE_SD_CAP_GIB = '3.5';
+  fs.rmSync(sdLog, { force: true });
+  const cap = await eng.run({ mode: 'restyle', prompt: 'a storybook', imageB64: JPEG, w: 768, h: 512 });
+  delete process.env.FAKE_SD_CAP_GIB;
+  assert.equal(cap.ok, true, JSON.stringify(cap));
+  const cc = fs.readFileSync(sdLog, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  const mv = (c) => c.args[c.args.indexOf('--max-vram') + 1];
+  assert.equal(cc.length, 2); assert.equal(cc[0].cap, true); assert.equal(mv(cc[0]), '4'); assert.equal(mv(cc[1]), '3');
+  assert.ok(cc[1].args.includes('--stream-layers') && cc[1].args.includes('--offload-to-cpu'));
+
   // 6. one at a time
   process.env.FAKE_SD_SLOW = '400';
   fs.rmSync(sdLog, { force: true });
