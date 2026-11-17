@@ -2,9 +2,17 @@
 // lit), an outro, a progress bar and the music bed. node build.mjs
 import fs from 'node:fs';
 import { SCENES } from './scenes.mjs';
+import { SPOKEN, INTRO as INTRO_SAY, OUTRO as OUTRO_SAY } from './narration.mjs';
+/* the narration: one clip per scene (voices.json, made from the clips the narration workflow spoke); VOICE=he (Gemini) or
+   he-edge (Microsoft Hila). A scene lasts as long as its clip; each line appears when the voice reaches it (by the share of
+   the spoken letters before it). */
+const VOICE = process.env.VOICE || 'he-edge', VD = JSON.parse(fs.readFileSync('voices.json', 'utf8'))[VOICE];
+const clipId = (k) => 's' + String(k).padStart(2, '0') + '-' + SCENES[k].id;
+let audio = '';
 
 const VW = 1180, VH = 663.75, FX = 70, FY = 196;
-const INTRO = 10, LINE = 5.3, HEAD = 2.4, TAIL = 1.2, XF = 0.7, OUTRO = 12;
+const LEAD = 0.9, TAIL = 1.3, XF = 0.7;
+const INTRO = Math.max(9, LEAD + 0.6 + VD.intro + 1.0), OUTRO = Math.max(10, LEAD + VD.outro + 3.5);
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const r2 = (v) => Math.round(v * 1000) / 1000;
 
@@ -19,7 +27,10 @@ function cam(r) {
 let t = INTRO - XF, html = '', js = '';
 const times = [];
 SCENES.forEach((s, k) => {
-  const D = HEAD + s.lines.length * LINE + TAIL, T = r2(t);
+  const id = clipId(k), sd = VD[id]; if (!sd) throw new Error('no clip ' + id);
+  const T = r2(t), D = LEAD + sd + TAIL, sp = SPOKEN[k], tot = sp.join(' ').length;
+  const at0 = (i) => { const before = sp.slice(0, i + 1).join(' ').length + 1; return T + LEAD + sd * Math.min(1, before / tot); };
+  audio += `<audio class="clip" id="vo${k}" src="assets/voice/${VOICE}/${id}.m4a" data-start="${r2(T + LEAD)}" data-duration="${r2(sd)}" data-track-index="8" data-volume="1"></audio>\n      `;
   times.push([T, D]);
   html += `
     <section class="clip scene" id="s${k}" data-start="${T}" data-duration="${r2(D)}" data-track-index="${1 + (k % 2)}">
@@ -42,7 +53,7 @@ SCENES.forEach((s, k) => {
   tl.set('#s${k} .hl', { opacity: 0 }, ${T});
   tl.set('#cam${k}', { x: 0, y: 0, scale: 1 }, ${T});`;
   s.lines.forEach((l, i) => {
-    const at = r2(T + HEAD + i * LINE - 0.6), c = cam(l.r);
+    const at = r2(at0(i) - 0.45), c = cam(l.r);
     if (i > 0) js += `
   tl.to('#ln${k}_${i - 1}', { opacity: 0.42, duration: 0.4 }, ${at});
   tl.to('#hl${k}_${i - 1}', { opacity: 0, duration: 0.4 }, ${at});`;
@@ -123,7 +134,9 @@ const page = `<!doctype html>
       </section>
       <div class="clip brand" id="brand" data-start="${INTRO - XF}" data-duration="${r2(OT - INTRO + XF + 0.5)}" data-track-index="4">אופטימוס<small>· מדריך</small></div>
       <div class="clip bar" id="bar" data-start="0" data-duration="${TOTAL}" data-track-index="5" style="inset:auto 0 0 0"><i id="barfill"></i></div>
-      <audio id="bgm" class="clip" src="assets/audio/bgm.mp3" data-start="0" data-duration="${TOTAL}" data-track-index="9" data-volume="0.85" data-fade-out="4"></audio>
+      <audio id="bgm" class="clip" src="assets/audio/bgm.mp3" data-start="0" data-duration="${TOTAL}" data-track-index="9" data-volume="0.3" data-fade-out="4"></audio>
+      <audio class="clip" id="vo-intro" src="assets/voice/${VOICE}/intro.m4a" data-start="${r2(LEAD + 0.6)}" data-duration="${VD.intro}" data-track-index="8"></audio>
+      ${audio}<audio class="clip" id="vo-outro" src="assets/voice/${VOICE}/outro.m4a" data-start="${r2(OT + LEAD)}" data-duration="${VD.outro}" data-track-index="8"></audio>
     </div>
     <script>
       window.__timelines = window.__timelines || {};
