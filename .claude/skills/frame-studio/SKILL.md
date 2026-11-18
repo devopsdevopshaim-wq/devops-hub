@@ -2819,3 +2819,9 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 ## v197: six photos at once in the cloud
 - The owner moved the Cloudflare account to a paid plan (Workers Paid), which removes the daily Workers AI allowance stop. `runAI` lanes for the cloud go from 3 to 6 at once. The server caps stay (IMG_DAY 800, IMG_IP_HOUR 300).
 - `.github/workflows/local-turbo-test.yml` + `.github/scripts/turbo-test.sh` try SDXL Turbo and DreamShaper XL Lightning in stable-diffusion.cpp on a runner (CPU): the engine's help, 2 photos × 4 looks each, with timings, pushed to branch `ci-turbo`. This is groundwork for a fast local model on 6 GB cards.
+
+## v198: online, the cloud always first
+- Owner report: on v197, 5 photos ran 15 minutes on "AI מקומי". The mode was "auto", but the cloud had failed with quota before the paid plan, so `cloudOff` was set and every picture went to the computer for 30 minutes.
+- ai.js `FS.cloudFirst()` is true when online and `fs-ai-cloud-first` is not '0'. Then `askServer` sends every restyle or image to the cloud first, with a chosen 'local' engine dropped to the cloud. The computer (`askLocal`) runs only when the cloud fails for that picture. The old routing (cloudOff, local mode, slow guard) applies only offline or with the switch off.
+- ai-studio.js: online, `local` is false (6 cloud lanes) and there is no extra local lane.
+- Test: mode and engine set to local, a local engine that never answers, a cloud answering in 2 s. 5 photos done in 15 s, 0 local runs, 8 cloud calls (incl. the people checks' retries).

@@ -308,8 +308,23 @@
     });
   }
   FS.localSlow = localSlow;
+  /* v198: the cloud first whenever there is internet. The Cloudflare account is on the paid plan (Nov 18), so the cloud has no
+     daily stop: a few seconds a picture, six at once. The computer draws only without internet, or when the cloud fails for this
+     picture. A studio left on "🖥️ מקומי" waited 100 s on the slow local engine for every photo (5 photos took 15 minutes).
+     'fs-ai-cloud-first' = '0' gives the old order back. */
+  function cloudFirst() { try { return localStorage.getItem('fs-ai-cloud-first') !== '0'; } catch (e) { return true; } }
+  FS.cloudFirst = function () { return cloudFirst() && navigator.onLine !== false; };
   FS.askServer = function (body) {
     var L = FS.can && !FS.can('local-ai') ? null : FS.localAI;   /* the free tier has no local AI (plan.js) */
+    var picture = body && (body.action === 'restyle' || body.action === 'image');
+    if (picture && FS.cloudFirst()) {
+      var bc = Object.assign({}, body); if (bc.engine === 'local') delete bc.engine;
+      return askCloud(bc).then(function (r) {
+        if ((r && r.ok && r.image) || (r && r.error === 'cancelled') || !(L && L.isReady && L.isReady())) return r;
+        if (window.console) console.warn('AI: the cloud failed (' + (r && r.error) + '), this picture on the computer');
+        var bl = Object.assign({}, body); delete bl.engine; return askLocal(bl);
+      });
+    }
     /* a chosen engine (the AI tab's engine bar, or one of the "3 versions"): 'local' is this computer, the others one cloud engine */
     if (body && body.engine === 'local') { var bl = Object.assign({}, body); delete bl.engine; return L && L.isReady && L.isReady() ? (localSlow() ? askCloud(bl).then(function (r) { return r && r.ok ? r : askLocal(bl); }) : askLocalFast(bl)) : Promise.resolve({ ok: false, error: 'local-missing' }); }
     /* a chosen cloud engine that fails (no connection, quota, timeout) hands the picture to this computer when its engine is installed */
