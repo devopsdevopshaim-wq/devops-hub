@@ -289,9 +289,9 @@
     function onStop() { stop = true; FS.aiStop && FS.aiStop(); }
     /* several photos at once (the server answers each on its own), so an event's batch takes the time of a few photos, not of all;
        the engine on this computer runs one picture at a time */
-    var local = FS.aiEngine() === 'local' || (FS.localAI && FS.localAI.mode && FS.localAI.mode() === 'local') || navigator.onLine === false;
+    var local = navigator.onLine === false || (!(FS.cloudFirst && FS.cloudFirst()) && (FS.aiEngine() === 'local' || (FS.localAI && FS.localAI.mode && FS.localAI.mode() === 'local')));   /* v198: online, the cloud's six lanes */
     /* auto, online, with the engine installed here: the free cloud (3 at once) and this computer (1) work at the same time */
-    var both = !local && !FS.aiEngine() && localReady() && list.length > 1 && !(FS.localAI.mode && FS.localAI.mode() === 'cloud') && !(FS.localSlow && FS.localSlow());   /* a slow computer does not hold a photo for minutes (v193) */
+    var both = !(FS.cloudFirst && FS.cloudFirst()) && !local && !FS.aiEngine() && localReady() && list.length > 1 && !(FS.localAI.mode && FS.localAI.mode() === 'cloud') && !(FS.localSlow && FS.localSlow());   /* a slow computer does not hold a photo for minutes (v193) */
     var lanes = local ? 1 : Math.min(6, list.length), engines = [];
     for (var ei = 0; ei < lanes; ei++) engines.push(undefined);
     if (both) { engines.push('local'); lanes++; }
