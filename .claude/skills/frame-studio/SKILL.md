@@ -2825,3 +2825,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - ai.js `FS.cloudFirst()` is true when online and `fs-ai-cloud-first` is not '0'. Then `askServer` sends every restyle or image to the cloud first, with a chosen 'local' engine dropped to the cloud. The computer (`askLocal`) runs only when the cloud fails for that picture. The old routing (cloudOff, local mode, slow guard) applies only offline or with the switch off.
 - ai-studio.js: online, `local` is false (6 cloud lanes) and there is no extra local lane.
 - Test: mode and engine set to local, a local engine that never answers, a cloud answering in 2 s. 5 photos done in 15 s, 0 local runs, 8 cloud calls (incl. the people checks' retries).
+
+## v199: three tries on the good cloud engine
+- Owner report on v198: 3 of 5 anime photos came out beautifully, and 2 stayed as shot. The people check turned the first answer down, and `guarded()`'s next engines were `'free'` (Pollinations, which ignores the photo) and then the local engine.
+- styles.js `guarded()`: with `FS.cloudFirst()` on and no chosen 'local' engine, `plan = [engine, engine, engine]`, so there are 3 calls to the same cloud engine. Cloudflare FLUX draws with a new seed each call. After that the plate fallback applies as before. Offline, or with the switch off, the old plan stays.
+- Test: a first answer that loses a person and a second that keeps both: applied after 2 calls.

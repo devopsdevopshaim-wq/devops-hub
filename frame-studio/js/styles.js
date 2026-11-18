@@ -386,7 +386,11 @@
   };
   function guarded(p, prompt, engine, n0) {
     var local = FS.localAI && FS.localAI.isReady && FS.localAI.isReady(), plan = [engine];
-    if (engine !== 'local') { plan.push(engine || 'free'); if (local) plan.push('local'); }
+    /* v199: online, the cloud (paid, no daily stop) answers a turned-down picture again: each call draws anew (a new random seed),
+       so 3 tries on the good engine instead of 1 and then the free engine (which ignores the photo) or the slow computer.
+       2 of 5 photos had stayed as shot. */
+    if (FS.cloudFirst && FS.cloudFirst() && engine !== 'local') plan = [engine, engine, engine];
+    else if (engine !== 'local') { plan.push(engine || 'free'); if (local) plan.push('local'); }
     p._n0 = n0;
     var orig = FS.img(p.origSrc || p.src), cover0 = null;
     function origCover() { if (cover0 == null) cover0 = FS.personCover ? FS.personCover(orig).catch(function () { return 0; }) : Promise.resolve(0); return cover0; }
