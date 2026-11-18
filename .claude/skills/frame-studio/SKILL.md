@@ -2815,3 +2815,7 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 ## v196: the built-in anime twin is off by default
 - The owner found the AnimeGANv2 results on event photos ugly: faces bent, and small faces in a group smeared. A per-face pass with partial blending was tried and not shipped. The twin of v194 now needs `fs-ai-twin` = '1'; by default an anime look goes the usual way (cloud first, then the local engine).
 - The limits: the free cloud allowance is a few dozen edits a day, and the local FLUX.2 klein on a 6 GB laptop card takes minutes a picture. Fast, good-looking and unlimited needs a paid cloud engine or a 12 GB+ card. That decision is the owner's.
+
+## v197: six photos at once in the cloud
+- The owner moved the Cloudflare account to a paid plan (Workers Paid), which removes the daily Workers AI allowance stop. `runAI` lanes for the cloud go from 3 to 6 at once. The server caps stay (IMG_DAY 800, IMG_IP_HOUR 300).
+- `.github/workflows/local-turbo-test.yml` + `.github/scripts/turbo-test.sh` try SDXL Turbo and DreamShaper XL Lightning in stable-diffusion.cpp on a runner (CPU): the engine's help, 2 photos × 4 looks each, with timings, pushed to branch `ci-turbo`. This is groundwork for a fast local model on 6 GB cards.
