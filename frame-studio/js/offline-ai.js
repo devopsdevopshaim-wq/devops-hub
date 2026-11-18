@@ -98,10 +98,18 @@
     });
   }
   /* a photo element -> a canvas in the style (about `size` px on the long side) */
+  /* v195: one model run at a time. The background "ahead" design of the next photo and the batch's own call ran on the same
+     session together, and on a graphics card (WebGPU) that hung: a batch of 6 stood at photo 2 for 25 minutes. */
+  var gate = Promise.resolve();
   FS.offlineStyleCanvas = function (id, img, size, progress) {
     var st = FS.OFFLINE_AI.filter(function (x) { return x[0] === id; })[0]; if (!st) return Promise.reject(new Error('style'));
-    return session(st[3]).then(function (s) { return id === 'anime' ? anime(s, img, size || 1280, progress) : neural(s, img, size || 1280, progress); });
+    var run = gate.then(function () { return session(st[3]); }).then(function (s) { return id === 'anime' ? anime(s, img, size || 1280, progress) : neural(s, img, size || 1280, progress); });
+    gate = run.catch(function () {});
+    return run;
   };
+  var batchOn = false; FS.offlineBatch = function (v) { batchOn = !!v; };
+  /* a run that never came back: a fresh session for the next photo, and the queue no longer waits on the stuck one */
+  FS.offlineReset = function () { sessions = {}; gate = Promise.resolve(); ahead = {}; aheadQ = Promise.resolve(); };
   FS.offlineReady = function (id) { var st = FS.OFFLINE_AI.filter(function (x) { return x[0] === (id || 'anime'); })[0]; return session(st[3]); };
   FS.animeCanvas = function (img, size, progress) { return FS.offlineStyleCanvas('anime', img, size, progress && function (f) { progress(Math.round(f * 100), 100); }); };
 
@@ -118,6 +126,7 @@
     });
   }
   function prefetch(p, id) {
+    if (batchOn) return;   /* a batch makes every photo itself, in turn */
     var L = FS.state.photos, marked = FS.marked ? FS.marked() : [], list = marked.length > 1 ? marked : L, i = list.indexOf(p);
     list.slice(i + 1, i + 3).forEach(function (q) {
       var k = aheadKey(q, id); if (ahead[k]) return;

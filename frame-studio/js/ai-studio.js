@@ -527,17 +527,27 @@
   });
   function runOffline(id, label, given) {
     var list = given || FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
-    var done = 0, stop = false, failed = null;
+    /* v195: one photo after another, none in the background; a photo not done in 3 minutes is left as shot (red) and the batch
+       goes on, so one stuck photo never holds an event */
+    var done = 0, stop = false, bad = 0, lastErr = '';
+    if (FS.offlineBatch) FS.offlineBatch(list.length > 1);
     list.reduce(function (ch, p, i) {
       return ch.then(function () {
-        if (stop || failed) return;
-        var base = '🖥️ ' + label + ' · תמונה ' + (i + 1) + ' מתוך ' + list.length + ' (על המחשב, בלי אינטרנט)';
+        if (stop) return;
+        var base = '🖥️ ' + label + ' · תמונה ' + (i + 1) + ' מתוך ' + list.length + ' (על המחשב, בלי אינטרנט)', t0 = Date.now();
         FS.busy(base, function () { stop = true; });
-        return FS.restyleOffline(p, id, function (f) { if (!stop) FS.busy(base + ' · ' + Math.round(f * 100) + '%', function () { stop = true; }); }).then(function () { done++; }, function (e) { failed = e; });
+        var job = FS.restyleOffline(p, id, function (f) { if (!stop) FS.busy(base + ' · ' + Math.round(f * 100) + '%', function () { stop = true; }); });
+        var cap = new Promise(function (ok, no) { setTimeout(function () { no(new Error('timeout')); }, 180000); });
+        return Promise.race([job, cap]).then(function () { done++; delete p.aiBad; }, function (e) {
+          bad++; lastErr = String(e && e.message || e); if (/timeout/.test(lastErr) && FS.offlineReset) FS.offlineReset(); p.aiBad = 'העיצוב המובנה לא הצליח בתמונה הזאת (' + lastErr.slice(0, 60) + ')';
+          if (window.console) console.warn('offline style failed on ' + (p.name || p.id) + ' after ' + Math.round((Date.now() - t0) / 1000) + ' s', e);
+        });
       });
     }, Promise.resolve()).then(function () {
+      if (FS.offlineBatch) FS.offlineBatch(false);
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip();
-      if (failed) FS.toast('העיצוב המובנה לא הצליח: ' + ((failed && failed.message) || '') + '. "🔄 רענון מלא" ומנסים שוב.', 7000);
+      if (stop) FS.toast('⏹ נעצר · ' + done + ' תמונות עוצבו', 4000);
+      else if (bad) FS.toast('✨ ' + label + ': ' + done + ' תמונות · ' + bad + ' לא הצליחו ונשארו כמו שצולמו (מסומנות באדום). ' + (/timeout/.test(lastErr) ? 'אם זה חוזר: "🔄 רענון מלא".' : ''), 8000);
       else if (done) FS.toast('✨ ' + label + ': ' + done + ' תמונות, בלי אינטרנט. "↩ ביטול AI" מחזיר.', 4500);
     });
   }
