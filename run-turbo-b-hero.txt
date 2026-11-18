@@ -1,0 +1,53 @@
+load_backend: loaded CPU backend from /home/runner/work/_temp/turbo/sd/libggml-cpu-haswell.so
+[I] loading model from 'turbo.safetensors' --- diffusion_engine.cpp:690
+[I] load turbo.safetensors using safetensors format --- model_loader.cpp:226
+[I] Version: SDXL  --- diffusion_engine.cpp:982
+[W] auto-fit: no GPU devices; using the default backend --- backend_fit.cpp:456
+[I] Weight type stat:                      f16: 2515  --- diffusion_engine.cpp:1560
+[I] Conditioner weight type stat:          f16: 586   --- diffusion_engine.cpp:1561
+[I] Diffusion model weight type stat:      f16: 1680  --- diffusion_engine.cpp:1562
+[I] VAE weight type stat:                  f16: 248   --- diffusion_engine.cpp:1563
+[I] using VAE for encoding / decoding --- model_builders.cpp:226
+[I] vae decoder: ch = 128 --- auto_encoder_kl.hpp:529
+[W] No valid VAE specified with --vae or --force-sdxl-vae-conv-scale flag set, using Conv2D scale 0.031 --- sd.cpp:13
+[I] flash attention auto: CPU -> on (CPU) --- flash_attn.cpp:70
+[I] conv2d direct auto: CPU -> off (no implicit GEMM path) --- conv_direct.cpp:90
+[I] conv3d direct auto: CPU -> off (no implicit GEMM path) --- conv_direct.cpp:90
+[I] total params memory size = 6624.11MB (VRAM 0.00MB, RAM 6624.11MB): text_encoders 1564.36MB(RAM), diffusion_model 4900.07MB(RAM), vae 159.68MB(RAM), controlnet 0.00MB(N/A), extensions 0.00MB(N/A) --- diffusion_engine.cpp:1430
+[I] running in eps-prediction mode --- diffusion_engine.cpp:1474
+[I] preprocess init[0]: 768x1152 crop=(0,0,768,1152) resize=768x1152 pad=(0,0) output=768x1152 filter=auto(0) antialias=false --- image_preprocess.cpp:302
+[I] generate_image 768x1152 --- image.cpp:954
+[I] get_sigmas with discrete scheduler --- denoiser.hpp:1132
+[I] sampling using Euler A method --- request.cpp:478
+[I] IMG2IMG --- image.cpp:201
+[I] target t_enc is 2 steps --- image.cpp:245
+[I] vae build cached graph cut plan done (taking 0 ms) --- ggml_graph_cut.cpp:1032
+  |##################################################| 108/108 - 321.00MB/s[K
+[I] loading tensors completed, taking 0.20s (read: 0.03s, memcpy: 0.00s, convert: 0.00s, copy_to_backend: 0.00s) --- model_loader.cpp:1437
+[I] encode_first_stage completed, taking 76.31s --- image.cpp:509
+[I] clip build cached graph cut plan done (taking 1 ms) --- ggml_graph_cut.cpp:1032
+  |###########################################       | 153/178 - 956.51MB/s[K  |##################################################| 178/178 - 548.88MB/s[K
+[I] loading tensors completed, taking 0.40s (read: 0.26s, memcpy: 0.00s, convert: 0.00s, copy_to_backend: 0.00s) --- model_loader.cpp:1437
+[I] clip build cached graph cut plan done (taking 2 ms) --- ggml_graph_cut.cpp:1032
+  |#####                                             |  36/374 - 432.42MB/s[K  |#######                                           |  50/374 - 608.76MB/s[K  |###########                                       |  78/374 - 572.87MB/s[K  |##############                                    |  98/374 - 492.62MB/s[K  |#################                                 | 123/374 - 481.70MB/s[K  |######################                            | 158/374 - 484.82MB/s[K  |########################                          | 174/374 - 460.30MB/s[K  |###########################                       | 197/374 - 449.71MB/s[K  |###############################                   | 230/374 - 448.40MB/s[K  |##################################                | 254/374 - 441.11MB/s[K  |######################################            | 281/374 - 446.28MB/s[K  |#########################################         | 302/374 - 429.98MB/s[K  |############################################      | 326/374 - 425.78MB/s[K  |################################################  | 354/374 - 431.10MB/s[K  |##################################################| 374/374 - 427.39MB/s[K
+[I] loading tensors completed, taking 3.01s (read: 2.99s, memcpy: 0.00s, convert: 0.00s, copy_to_backend: 0.00s) --- model_loader.cpp:1437
+[I] clip build cached graph cut plan done (taking 1 ms) --- ggml_graph_cut.cpp:1032
+  |##################################################| 15/15 - 201.30MB/s[K
+[I] loading tensors completed, taking 0.20s (read: 0.01s, memcpy: 0.00s, convert: 0.00s, copy_to_backend: 0.00s) --- model_loader.cpp:1437
+[I] get_learned_condition completed, taking 6.18s --- image.cpp:664
+[I] generating image: 1/1 - seed 7 --- image.cpp:1005
+[I] unet build cached graph cut plan done (taking 12 ms) --- ggml_graph_cut.cpp:1032
+  |#####                                             |  164/1680 - 923.92MB/s[K  |######                                            |  192/1680 - 678.03MB/s[K  |#######                                           |  212/1680 - 563.08MB/s[K  |#######                                           |  232/1680 - 505.39MB/s[K  |########                                          |  262/1680 - 489.42MB/s[K  |#########                                         |  283/1680 - 465.76MB/s[K  |##########                                        |  308/1680 - 472.45MB/s[K  |##########                                        |  332/1680 - 459.65MB/s[K  |###########                                       |  352/1680 - 445.44MB/s[K  |############                                      |  375/1680 - 450.91MB/s[K  |############                                      |  400/1680 - 445.74MB/s[K  |#############                                     |  423/1680 - 439.61MB/s[K  |##############                                    |  447/1680 - 435.63MB/s[K  |##############                                    |  468/1680 - 428.21MB/s[K  |###############                                   |  488/1680 - 421.76MB/s[K  |################                                  |  517/1680 - 420.88MB/s[K  |#################                                 |  544/1680 - 428.11MB/s[K  |#################                                 |  565/1680 - 423.61MB/s[K  |##################                                |  588/1680 - 415.98MB/s[K  |###################                               |  608/1680 - 418.00MB/s[K  |###################                               |  628/1680 - 413.88MB/s[K  |####################                              |  662/1680 - 421.50MB/s[K  |#####################                             |  682/1680 - 417.59MB/s[K  |######################                            |  706/1680 - 416.35MB/s[K  |######################                            |  728/1680 - 413.87MB/s[K  |#######################                           |  748/1680 - 410.71MB/s[K  |########################                          |  775/1680 - 410.09MB/s[K  |########################                          |  804/1680 - 412.30MB/s[K  |#########################                         |  818/1680 - 408.34MB/s[K  |#########################                         |  830/1680 - 402.54MB/s[K  |##########################                        |  855/1680 - 411.13MB/s[K  |###########################                       |  880/1680 - 410.40MB/s[K  |###########################                       |  900/1680 - 408.01MB/s[K  |############################                      |  920/1680 - 405.70MB/s[K  |#############################                     |  956/1680 - 411.88MB/s[K  |##############################                    |  978/1680 - 410.09MB/s[K  |##############################                    | 1000/1680 - 408.64MB/s[K  |###############################                   | 1020/1680 - 406.61MB/s[K  |###############################                   | 1036/1680 - 401.40MB/s[K  |################################                  | 1058/1680 - 407.07MB/s[K  |#################################                 | 1085/1680 - 406.75MB/s[K  |#################################                 | 1105/1680 - 404.96MB/s[K  |##################################                | 1127/1680 - 403.57MB/s[K  |###################################               | 1151/1680 - 405.83MB/s[K  |####################################              | 1178/1680 - 405.99MB/s[K  |####################################              | 1198/1680 - 404.37MB/s[K  |#####################################             | 1218/1680 - 402.82MB/s[K  |######################################            | 1250/1680 - 402.96MB/s[K  |######################################            | 1265/1680 - 405.58MB/s[K  |#######################################           | 1286/1680 - 402.23MB/s[K  |########################################          | 1316/1680 - 405.46MB/s[K  |########################################          | 1336/1680 - 404.04MB/s[K  |#########################################         | 1356/1680 - 402.67MB/s[K  |##########################################        | 1383/1680 - 402.51MB/s[K  |###########################################       | 1413/1680 - 405.65MB/s[K  |###########################################       | 1436/1680 - 404.77MB/s[K  |#############################################     | 1480/1680 - 409.86MB/s[K  |##################################################| 1680/1680 - 421.83MB/s[K
+[I] loading tensors completed, taking 11.61s (read: 11.42s, memcpy: 0.00s, convert: 0.04s, copy_to_backend: 0.00s) --- model_loader.cpp:1437
+  |================>                                 | 1/3 -  88.02s/it - ETA 02:56[K  |=================================>                | 2/3 -  75.66s/it - ETA 01:21[K  |==================================================| 3/3 -  75.42s/it[K
+[I] sampling completed, taking 239.17s --- image.cpp:1038
+[I] generating 1 latent images completed, taking 239.17s --- image.cpp:1050
+[I] decoding 1 latents --- image.cpp:689
+[I] vae build cached graph cut plan done (taking 0 ms) --- ggml_graph_cut.cpp:1032
+  |##################################################| 140/140 - 465.00MB/s[K
+[I] loading tensors completed, taking 0.20s (read: 0.03s, memcpy: 0.00s, convert: 0.00s, copy_to_backend: 0.00s) --- model_loader.cpp:1437
+[I] latent 1 decoded, taking 172.54s --- image.cpp:755
+[I] decode_first_stage completed, taking 172.54s --- image.cpp:759
+[I] generate_image completed in 494.32s --- image.cpp:1227
+[I] save result image 0 to '/home/runner/work/_temp/out/turbo-b-hero.png' (success) --- main.cpp:501
+[I] 1/1 images saved --- main.cpp:579

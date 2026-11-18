@@ -1,0 +1,79 @@
+engine: https://github.com/leejet/stable-diffusion.cpp/releases/download/master-1106-532d2c1/sd-master-532d2c1-bin-Linux-Ubuntu-26.04-x86_64.zip
+help: 314 lines
+  --image <string>                   path to the image or video to inspect (for metadata mode)
+  --preview-interval <int>           preview interval: in each sampling pass, positive N updates every Nth denoiser step
+                                           Ideogram4 CFG
+  --tensor-type-rules <string>             weight type per tensor pattern (example: "^vae\.=f16,model\.=q8_0")
+                                           qwen_image_2_1_prefix_cache, qwen_image_2_1_prefix_cache_type (auto or a type
+                                           name from --type)
+  --disable-prefetch                       disable asynchronous next-segment weight prefetch (defaults to false)
+  --batched-cfg                            on|off (default: on). Run the conditional and unconditional CFG branches in
+  --type                                   weight type (examples: f32, f16, q4_0, q4_1, q5_0, q5_1, q8_0, q2_K, q3_K,
+                                           q4_K). If not specified, the default is the type of the weight file
+  --sampler-rng                            sampler RNG, one of [std_default, cuda, cpu]. If not specified, use --rng
+  --prediction                             prediction type override, one of [eps, v, edm_v, sd3_flow, flux_flow,
+                                           sefi_flow, minit2i_flow, sensenova_u1_flow, flux3_flow, h3_av_flow,
+                                           inpaint_padding, inpaint_width, inpaint_height, denoising_strength, steps,
+                                           cfg_scale, sample_method, scheduler, sort_by
+  -i, --init-img <string>                  path to the init image, or a single input image for vid_upscale
+  --ip-adapter-image <string>              path to the IP-Adapter reference image
+  --control-type <string>                  kind of the control image, one of [openpose, depth, scribble, canny, normal,
+  --extra-sample-args <string>             extra sampler/scheduler/guidance args, key=value list. CFG supports
+                                           guidance_schedule; APG supports apg_eta, apg_momentum, apg_norm_threshold,
+                                           supports gamma; beta scheduler supports alpha, beta; logit_normal supports
+                                           noise-injecting samplers support noise_sampler with value iid (default except
+                                           (default), cuda, std_default or sampler_rng
+  --ref-image-args <string>                Key-value list to set up the way the reference images are processed (empty =
+  --image-preprocess <string>              Image preprocessing rule:
+                                           target=init|end|mask|control|ref|ip-adapter|id|control-frame,index=N,mode=aut
+  --steps <int>                            number of sample steps (default: 20)
+  --high-noise-steps <int>                 (high noise) number of sample steps (default: -1 = auto)
+  --hires-steps <int>                      highres fix second pass sample steps, 0 to reuse --steps (default: 0)
+  --cfg-scale <float>                      unconditional guidance scale: (default: 7.0)
+  --img-cfg-scale <float>                  image guidance scale for inpaint or image edit models: (default: same as
+                                           --cfg-scale)
+  --high-noise-cfg-scale <float>           (high noise) unconditional guidance scale: (default: 7.0)
+  --high-noise-img-cfg-scale <float>       (high noise) image guidance scale for inpaint or image edit models (default:
+                                           same as --cfg-scale)
+  --strength <float>                       strength for noising/unnoising (default: 0.75)
+  --pm-style-strength <float>              
+  --pulid-id-weight <float>                strength of PuLID identity injection
+  --control-strength <float>               strength to apply Control Net (default: 0.9). 1.0 corresponds to full
+                                           destruction of information in init image
+  --ip-adapter-strength <float>            strength to apply IP-Adapter (default: 1.0)
+                                           `--high-noise-steps` is set to -1
+  --vace-strength <float>                  wan vace strength
+  --hires-denoising-strength <float>       highres fix second pass denoising strength (default: 0.7)
+  --increase-ref-index                     automatically increase the indices of references images based on the order
+  --sampling-method                        sampling method, one of [euler, euler_a, heun, dpm2, dpm++2s_a, dpm++2m,
+                                           er_sde, euler_cfg_pp, euler_a_cfg_pp, euler_ge, dpm++2m_sde, dpm++2m_sde_bt,
+  --high-noise-sampling-method             (high noise) sampling method, one of [euler, euler_a, heun, dpm2, dpm++2s_a,
+                                           res_2s, er_sde, euler_cfg_pp, euler_a_cfg_pp, euler_ge, dpm++2m_sde,
+  --scheduler                              denoiser sigma scheduler, one of [discrete, karras, exponential, ays, gits,
+  --sigmas                                 custom sigma values for the sampler, comma-separated (e.g.,
+  --skip-layers                            layers to skip for SLG steps; unset uses the library default
+  --high-noise-skip-layers                 (high noise) layers to skip for SLG steps; unset uses the library default
+  -r, --ref-image                          reference image for Flux Kontext or MiniMax-H3 Ref2VA (can be used multiple
+  --ref-video                              MiniMax-H3 Ref2VA reference video frame directory at 24 fps (can be used
+  --ref-video-audio                        WAV soundtrack paired by index with --ref-video (can be used multiple times)
+  --ref-audio                              standalone WAV reference for MiniMax-H3 Ref2VA (can be used multiple times)
+  --scm-mask                               SCM steps mask for cache-dit: comma-separated 0/1 (e.g.,
+model turbo: stabilityai/sdxl-turbo / sd_xl_turbo_1.0_fp16.safetensors
+-rw-r--r-- 1 runner runner 6938081905 Nov 18 18:27 turbo.safetensors
+model lightning: Lykon/dreamshaper-xl-lightning / DreamShaperXL_Lightning.safetensors
+-rw-r--r-- 1 runner runner 6939220250 Nov 18 18:28 lightning.safetensors
+turbo a anime steps=4 cfg=1.0 strength=0.6 -> ok 496 s
+turbo a hero steps=4 cfg=1.0 strength=0.6 -> ok 495 s
+turbo a oil steps=4 cfg=1.0 strength=0.6 -> ok 483 s
+turbo a pixar steps=4 cfg=1.0 strength=0.6 -> ok 495 s
+turbo b anime steps=4 cfg=1.0 strength=0.6 -> ok 494 s
+turbo b hero steps=4 cfg=1.0 strength=0.6 -> ok 495 s
+turbo b oil steps=4 cfg=1.0 strength=0.6 -> ok 483 s
+turbo b pixar steps=4 cfg=1.0 strength=0.6 -> ok 494 s
+lightning a anime steps=6 cfg=1.5 strength=0.6 -> ok 862 s
+lightning a hero steps=6 cfg=1.5 strength=0.6 -> ok 862 s
+lightning a oil steps=6 cfg=1.5 strength=0.6 -> ok 876 s
+lightning a pixar steps=6 cfg=1.5 strength=0.6 -> ok 877 s
+lightning b anime steps=6 cfg=1.5 strength=0.6 -> ok 863 s
+lightning b hero steps=6 cfg=1.5 strength=0.6 -> ok 863 s
+lightning b oil steps=6 cfg=1.5 strength=0.6 -> ok 875 s
