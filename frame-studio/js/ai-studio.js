@@ -283,7 +283,7 @@
        came back with 1 done. 'fs-ai-twin' = '0' turns it off. */
     var twin = /anime|animated film/i.test(prompt) && (FS.OFFLINE_AI || []).some(function (o) { return o[0] === 'anime'; }) ? 'anime' : '';
     var computer = navigator.onLine === false || (FS.cloudOff && FS.cloudOff()) || (FS.localSlow && FS.localSlow()) || FS.aiEngine() === 'local' || (FS.localAI && FS.localAI.mode && FS.localAI.mode() === 'local');
-    var twinOn = true; try { twinOn = localStorage.getItem('fs-ai-twin') !== '0'; } catch (e) { /* on */ }
+    var twinOn = false; try { twinOn = localStorage.getItem('fs-ai-twin') === '1'; } catch (e) { /* off */ }   /* v196: off by default (the owner found the built-in anime ugly on event photos); 'fs-ai-twin' = '1' turns it on */
     if (twin && computer && twinOn) { FS.toast('⚡ ' + label + ' מהירה על המחשב: כמה שניות לתמונה, וכל האנשים נשמרים', 4000); return runOffline(twin, label, list); }
     var done = 0, stop = false, failed = null, next = 0, kept = 0, lastErr = '';   /* kept: answers the guard turned down, the photo stays as shot */
     function onStop() { stop = true; FS.aiStop && FS.aiStop(); }

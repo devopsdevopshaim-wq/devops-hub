@@ -2811,3 +2811,7 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - `FS.offlineReset()` drops the sessions, the gate and the prefetch queue.
 - ai-studio.js `runOffline`: each photo races a 3-minute cap. A failure or timeout sets `p.aiBad` and the batch goes on (it used to stop the whole batch). A timeout also calls `FS.offlineReset()`. The closing toast counts done and failed photos.
 - Test (headless, CPU WASM): 3 photos via the anime twin, all done in 161 s, with 0 local FLUX runs.
+
+## v196: the built-in anime twin is off by default
+- The owner found the AnimeGANv2 results on event photos ugly: faces bent, and small faces in a group smeared. A per-face pass with partial blending was tried and not shipped. The twin of v194 now needs `fs-ai-twin` = '1'; by default an anime look goes the usual way (cloud first, then the local engine).
+- The limits: the free cloud allowance is a few dozen edits a day, and the local FLUX.2 klein on a 6 GB laptop card takes minutes a picture. Fast, good-looking and unlimited needs a paid cloud engine or a 12 GB+ card. That decision is the owner's.
