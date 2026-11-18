@@ -2802,3 +2802,12 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - `FS.runAI` (ai-studio.js) switches to the built-in anime when the prompt matches /anime|animated film/ and the computer would make it. "The computer would make it" means any of: offline, `FS.cloudOff()`, `FS.localSlow()`, engine 'local', or local mode. In that case the batch runs `runOffline('anime', label, list)` (AnimeGANv2 in offline-ai.js): seconds a photo on WebGPU, with every person kept by construction. The batch starts with a toast. `fs-ai-twin` = '0' turns this off.
 - `runOffline(id, label, given)` now takes a list.
 - Test (headless, CPU WASM, mode local, cloud answering quota): both photos came out in anime, with 0 local FLUX runs.
+
+## v195: built-in styles run one at a time, and a stuck photo never holds a batch
+- Owner report: a batch of 6 in the built-in anime stood at "תמונה 2 מתוך 6" for 25 minutes. The cause: the "ahead" prefetch for the next photos (setTimeout after each result) and the batch's own call for the same photo ran on the same onnxruntime session at once, and on WebGPU that hung.
+- offline-ai.js:
+  - `FS.offlineStyleCanvas` runs behind a `gate` promise, one model run at a time.
+  - `FS.offlineBatch(v)` turns prefetch off during a batch.
+  - `FS.offlineReset()` drops the sessions, the gate and the prefetch queue.
+- ai-studio.js `runOffline`: each photo races a 3-minute cap. A failure or timeout sets `p.aiBad` and the batch goes on (it used to stop the whole batch). A timeout also calls `FS.offlineReset()`. The closing toast counts done and failed photos.
+- Test (headless, CPU WASM): 3 photos via the anime twin, all done in 161 s, with 0 local FLUX runs.
