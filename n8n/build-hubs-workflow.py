@@ -100,7 +100,7 @@ if (sd.day !== day) { sd.day = day; sd.asked = 0; }
 
 if (b.action === 'status') return out({ ok: true, ai: set(GEMINI_KEY), left: Math.max(0, DAY_CAP - (sd.asked || 0)), imageModels: sd.imgModels || null });
 // which picture engines this server has: the studio shows only these in its engine choice (free = Pollinations, always there)
-if (b.action === 'engines') return out({ ok: true, engines: { gemini: set(GEMINI_KEY) && !gemOff(), openai: set(OPENAI_KEY), flux: !!WAI && sd.fluxOffDay !== day, free: typeof fetch === 'function' } });
+if (b.action === 'engines') return out({ ok: true, engines: { gemini: set(GEMINI_KEY) && !gemOff(), openai: set(OPENAI_KEY), flux: !!WAI && !(sd.fluxOffUntil > Date.now()), free: typeof fetch === 'function' } });
 
 if (b.action === 'fetch') {
   if (!hit('hubs-fetch', ipKey(), FETCH_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
@@ -274,7 +274,7 @@ if (b.action === 'restyle' || b.action === 'image') {
     if (fm && !fresh) plan.sort((x, y) => (y[0].endsWith(fm) ? 1 : 0) - (x[0].endsWith(fm) ? 1 : 0));
     for (const [m, input] of plan) {
       try { const img = await toB64(await WAI.run(m, input())); return out({ ok: true, image: img, mime: 'image/jpeg', source: 'Cloudflare', model: m.split('/').pop(), skipped: errs.length ? errs.join(' | ').slice(0, 400) : undefined }); }
-      catch (e) { errs.push(m.split('/').pop() + ': ' + why(e)); if (/4006|neurons|allocation/i.test(String(e && e.message || e))) { sd.fluxOffDay = day; break; } }
+      catch (e) { errs.push(m.split('/').pop() + ': ' + why(e)); if (/4006|neurons|allocation/i.test(String(e && e.message || e))) { sd.fluxOffUntil = Date.now() + 20 * 60000; break; }   /* the allowance ran out: 20 minutes, not the whole day (the account is on the paid plan since Nov 18; a free one gets 4006 again and waits again) */ }
     }
   }
   // free and with no daily allowance: Pollinations. A new picture is drawn by FLUX; a photo is edited by Kontext, which reads the
