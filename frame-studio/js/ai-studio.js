@@ -277,6 +277,14 @@
     if (FS.aiBatch) FS.aiBatch(list.length > 1);
     if ((navigator.onLine === false || noNet) && !localReady()) return FS.offlineChooser(label);
     if (variantsOn() && list.length === 1 && navigator.onLine !== false) return runVariants(list[0], prompt, label);
+    /* v194: an anime look when the computer would draw it (no internet, the cloud's free allowance used up, the local engine
+       chosen or slow): the built-in anime of this computer (AnimeGANv2, offline-ai.js) instead, a few seconds a photo and every
+       person kept by construction. The local image model took minutes a photo on a 6 GB laptop card, so a batch of 5 at an event
+       came back with 1 done. 'fs-ai-twin' = '0' turns it off. */
+    var twin = /anime|animated film/i.test(prompt) && (FS.OFFLINE_AI || []).some(function (o) { return o[0] === 'anime'; }) ? 'anime' : '';
+    var computer = navigator.onLine === false || (FS.cloudOff && FS.cloudOff()) || (FS.localSlow && FS.localSlow()) || FS.aiEngine() === 'local' || (FS.localAI && FS.localAI.mode && FS.localAI.mode() === 'local');
+    var twinOn = true; try { twinOn = localStorage.getItem('fs-ai-twin') !== '0'; } catch (e) { /* on */ }
+    if (twin && computer && twinOn) { FS.toast('⚡ ' + label + ' מהירה על המחשב: כמה שניות לתמונה, וכל האנשים נשמרים', 4000); return runOffline(twin, label, list); }
     var done = 0, stop = false, failed = null, next = 0, kept = 0, lastErr = '';   /* kept: answers the guard turned down, the photo stays as shot */
     function onStop() { stop = true; FS.aiStop && FS.aiStop(); }
     /* several photos at once (the server answers each on its own), so an event's batch takes the time of a few photos, not of all;
@@ -517,8 +525,8 @@
     b.innerHTML = '<i>' + o[2] + '</i><span>' + FS.esc(o[1]) + '</span>';
     b.addEventListener('click', function () { runOffline(o[0], o[1]); }); $('#ax-offline').appendChild(b);
   });
-  function runOffline(id, label) {
-    var list = FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
+  function runOffline(id, label, given) {
+    var list = given || FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
     var done = 0, stop = false, failed = null;
     list.reduce(function (ch, p, i) {
       return ch.then(function () {
