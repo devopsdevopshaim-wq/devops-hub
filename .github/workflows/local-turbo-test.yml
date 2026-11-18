@@ -1,0 +1,27 @@
+name: Local fast model test
+# Tries SDXL Turbo / Lightning for the desktop program's local engine on 6 GB cards (.github/scripts/turbo-test.sh) and pushes
+# the pictures, the engine's help and the timings to the branch ci-turbo for review.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: ['.github/scripts/turbo-test.sh', '.github/workflows/local-turbo-test.yml']
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: sudo apt-get -qq update && sudo apt-get -qq install -y ffmpeg unzip >/dev/null; bash .github/scripts/turbo-test.sh "$RUNNER_TEMP/out"
+      - name: Push to ci-turbo
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/out" || exit 0
+          git init -q && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b ci-turbo && git add -A && git commit -q -m "turbo test, run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-turbo
