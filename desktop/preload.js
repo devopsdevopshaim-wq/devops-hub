@@ -23,10 +23,12 @@ const localAI = Object.freeze({
   gpuInfo: () => ipcRenderer.invoke('local-ai:gpu'),
   install: (onProgress, opts) => withProgress('local-ai:install', 'local-ai:install-progress',
     { variant: opts && (opts.variant === 'cpu' || opts.variant === 'vulkan') ? opts.variant : undefined }, onProgress),
+  installFast: (onProgress) => withProgress('local-ai:install-fast', 'local-ai:install-progress', {}, onProgress),
+  removeFast: () => ipcRenderer.invoke('local-ai:remove-fast'),
   cancelInstall: () => ipcRenderer.invoke('local-ai:cancel-install'),
   remove: () => ipcRenderer.invoke('local-ai:remove'),
   run: (o, onProgress) => withProgress('local-ai:run', 'local-ai:run-progress', {
-    mode: o && o.mode, prompt: o && o.prompt, imageB64: o && o.imageB64, w: o && o.w, h: o && o.h, seed: o && o.seed,
+    mode: o && o.mode, prompt: o && o.prompt, imageB64: o && o.imageB64, w: o && o.w, h: o && o.h, seed: o && o.seed, fast: !!(o && o.fast),
   }, onProgress),
   cancel: () => ipcRenderer.invoke('local-ai:cancel'),
 });

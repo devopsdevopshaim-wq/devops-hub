@@ -471,3 +471,50 @@ test('offline install is reported as offline', async () => {
   // every HF candidate failed with a network error -> not-found listing "(network)" for each
   assert.equal(r.error, 'offline', JSON.stringify(r));
 });
+
+// ---------------------------------------------------------------- ⚡ the fast model (DreamShaper XL Lightning)
+
+test('fast model: exact sd-cli arguments (one file, the photo with -i and --strength, 8-bit on a small card)', () => {
+  const a = L.buildFastArgs('/m/fast.safetensors', { mode: 'restyle', prompt: 'anime', w: 768, h: 512, seed: 7 }, { out: '/t/o.png', ref: '/t/i.jpg', q8: true, clipCpu: true, vaeTiling: true, maxVram: 4.5 });
+  const get = (f) => a[a.indexOf(f) + 1];
+  assert.equal(get('-m'), '/m/fast.safetensors'); assert.equal(get('-i'), '/t/i.jpg'); assert.equal(get('--strength'), '0.6');
+  assert.equal(get('--steps'), '6'); assert.equal(get('--cfg-scale'), '1.5'); assert.equal(get('--type'), 'q8_0'); assert.equal(get('--max-vram'), '4.5');
+  assert.ok(a.includes('--clip-on-cpu') && a.includes('--vae-tiling') && !a.includes('--diffusion-model') && !a.includes('-r'));
+  const b = L.buildFastArgs('/m/f', { mode: 'image', prompt: 'x', w: 512, h: 512, seed: 1 }, { out: '/o' });
+  assert.ok(!b.includes('-i') && !b.includes('--strength') && !b.includes('--type'));
+});
+
+test('fast model: picks the Lightning checkpoint, not other files', () => {
+  const tree = [{ type: 'file', path: 'DreamShaperXL_Lightning.safetensors', size: 6.9e9 }, { type: 'file', path: 'DreamShaperXL_Lightning-inpainting.safetensors', size: 6.9e9 }, { type: 'file', path: 'README.md', size: 10 }, { type: 'file', path: 'unet/diffusion_pytorch_model.safetensors', size: 5e9 }];
+  assert.equal(L.pickFile('fast', tree).path, 'DreamShaperXL_Lightning.safetensors');
+});
+
+test('fast model: install alone (engine + one file), run a photo, FLUX untouched; then FLUX install keeps it', { skip: process.platform === 'win32' }, async (t) => {
+  const state = mockState();
+  const fast = Object.assign(makeFile('f', 900 * 1024), { path: 'DreamShaperXL_Lightning.safetensors' });
+  state.repos['Lykon/dreamshaper-xl-lightning'] = [fast];
+  const { server } = await startMock(state);
+  t.after(() => server.close());
+  const sdLog = path.join(TMP, 'sd-log-fast.jsonl'); process.env.FAKE_SD_LOG = sdLog;
+  const root = path.join(TMP, 'root-fast');
+  const eng = L.createEngine({ root, hfBase: state.base + '/hf', ghApi: state.base + '/gh', platform: 'linux', anySize: true });
+  assert.equal(eng.status().fast.ready, false);
+  const r = await eng.installFast(() => {});
+  assert.equal(r.ok, true, JSON.stringify(r));
+  const st = eng.status();
+  assert.equal(st.fast.ready, true); assert.equal(st.ready, false, 'FLUX is not installed by the fast install');
+  eng.setGpuHint({ name: 'RTX 4050 Laptop', vramMB: 6144 });
+  const out = await eng.run({ mode: 'restyle', prompt: 'anime', imageB64: JPEG, w: 768, h: 512, fast: true });
+  assert.equal(out.ok, true, JSON.stringify(out)); assert.equal(out.model, 'dreamshaper-xl-lightning');
+  const last = fs.readFileSync(sdLog, 'utf8').trim().split('\n').map((l) => JSON.parse(l)).pop().args;
+  assert.ok(last.includes('-m') && last.includes('-i') && last.includes('--type') && last.includes('--clip-on-cpu'), last.join(' '));
+  // FLUX asked without it installed: still not-installed
+  assert.equal((await eng.run({ mode: 'image', prompt: 'x', w: 512, h: 512 })).error, 'not-installed');
+  // installing FLUX afterwards keeps the fast model
+  const r2 = await eng.install(() => {});
+  assert.equal(r2.ok, true, JSON.stringify(r2));
+  assert.equal(eng.status().fast.ready, true); assert.equal(eng.status().ready, true);
+  // removing only the fast model keeps FLUX
+  await eng.removeFast();
+  assert.equal(eng.status().fast.ready, false); assert.equal(eng.status().ready, true);
+});

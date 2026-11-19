@@ -280,12 +280,19 @@ function registerLocalAI() {
     const variant = o && (o.variant === 'cpu' || o.variant === 'vulkan') ? o.variant : undefined;
     return getLocalAI().install((p) => sendTo(event, 'local-ai:install-progress', id, p), { variant });
   });
+  // ⚡ the fast model (DreamShaper XL Lightning): its own install and removal; FLUX stays as it is
+  ipcMain.handle('local-ai:install-fast', (event, o) => {
+    fromApp(event);
+    const id = jobId(o && o.id);
+    return getLocalAI().installFast((p) => sendTo(event, 'local-ai:install-progress', id, p));
+  });
+  ipcMain.handle('local-ai:remove-fast', (event) => { fromApp(event); return getLocalAI().removeFast(); });
   ipcMain.handle('local-ai:cancel-install', (event) => { fromApp(event); return getLocalAI().cancelInstall(); });
   ipcMain.handle('local-ai:remove', (event) => { fromApp(event); return getLocalAI().remove(); });
   ipcMain.handle('local-ai:run', (event, o) => {
     fromApp(event);
     const id = jobId(o && o.id);
-    const input = o && typeof o === 'object' ? { mode: o.mode, prompt: o.prompt, imageB64: o.imageB64, w: o.w, h: o.h, seed: o.seed } : null;
+    const input = o && typeof o === 'object' ? { mode: o.mode, prompt: o.prompt, imageB64: o.imageB64, w: o.w, h: o.h, seed: o.seed, fast: o.fast === true } : null;
     return getLocalAI().run(input, (p) => sendTo(event, 'local-ai:run-progress', id, p));
   });
   ipcMain.handle('local-ai:cancel', (event) => { fromApp(event); return getLocalAI().cancel(); });

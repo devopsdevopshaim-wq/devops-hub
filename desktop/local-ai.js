@@ -67,7 +67,18 @@ const SOURCES = {
     match: (p) => /\.safetensors$/i.test(p) && (/(^|\/)vae\//i.test(p) || /(^|[-_/])(ae|vae)\.safetensors$/i.test(p) || /flux2[-_]?(vae|ae)/i.test(path.basename(p))) && !/small[-_]?decoder|taef|tae[-_]/i.test(p),
     minSize: 50e6, maxSize: 1.2e9,
   },
+  // the fast model (⚡ מקומי מהיר): DreamShaper XL Lightning, one SDXL file (model, text encoders and VAE in one), photo-to-photo
+  // in 6 steps. Seconds on a graphics card instead of minutes. Open licence (CreativeML Open RAIL++-M) that allows commercial use.
+  fast: {
+    label: 'המודל המהיר DreamShaper XL Lightning',
+    candidates: [{ repo: 'Lykon/dreamshaper-xl-lightning' }],
+    prefer: ['DreamShaperXL_Lightning', 'fp16'],
+    match: (p) => /\.safetensors$/i.test(p) && !p.includes('/') && /lightning/i.test(p) && !/inpaint|lora/i.test(p),
+    minSize: 2e9, maxSize: 8e9,
+  },
 };
+// the fast model's run: 6 steps of which 60% re-drawn (the CI test, .github/scripts/turbo-test.sh: steps 6, cfg 1.5, strength 0.6)
+const FAST = { steps: 6, cfg: '1.5', strength: '0.6', sampler: 'euler_a', neg: 'deformed face, distorted, extra people, extra fingers, blurry, lowres, bad anatomy, text, watermark' };
 
 // stable-diffusion.cpp release zips (names from .github/workflows/build.yml):
 //   sd-master-<sha>-bin-win-vulkan-x64.zip, -bin-win-cpu-x64.zip (older: -bin-win-avx2-x64.zip), -bin-win-cuda12-x64.zip
@@ -237,6 +248,21 @@ function buildArgs(files, input, opt) {
   // card ("failed during allocated capacity check").
   if (opt.maxVram != null) args.push('--max-vram', String(opt.maxVram));
   if (opt.stream && opt.offload) args.push('--stream-layers');
+  return args;
+}
+
+// The fast model's sd-cli arguments: one SDXL file, the photo as the starting image (-i) re-drawn by --strength.
+function buildFastArgs(file, input, opt) {
+  const args = ['-m', file, '-p', input.prompt, '-n', FAST.neg, '--cfg-scale', FAST.cfg, '--sampling-method', FAST.sampler, '--steps', String(FAST.steps),
+    '-W', String(input.w), '-H', String(input.h), '--seed', String(input.seed), '-o', opt.out];
+  if (input.mode === 'restyle') args.push('-i', opt.ref, '--strength', FAST.strength);
+  // a card under 10 GB: the weights made 8-bit while loading (about 3.5 GB instead of 7), the text encoders on the processor
+  if (opt.q8) args.push('--type', 'q8_0');
+  if (opt.offload) args.push('--offload-to-cpu');
+  if (opt.clipCpu && !opt.offload) args.push('--clip-on-cpu');
+  if (opt.vaeTiling) args.push('--vae-tiling');
+  if (opt.fa) args.push('--diffusion-fa');
+  if (opt.maxVram != null) args.push('--max-vram', String(opt.maxVram));
   return args;
 }
 
@@ -434,6 +460,16 @@ function createEngine(options) {
     return { ok: true, bin };
   }
 
+  // the fast model: ready when the engine and its one file are there (it does not need the FLUX files)
+  function checkFast(m) {
+    if (!m || !m.fast || !m.engine || !m.engine.bin) return { ok: false };
+    const bin = path.join(P.engine, m.engine.bin);
+    if (!bin.startsWith(P.engine + path.sep) || !fs.existsSync(bin)) return { ok: false };
+    try { const st = fs.statSync(path.join(P.models, path.basename(m.fast.local))); if (m.fast.size && st.size !== m.fast.size) return { ok: false }; } catch { return { ok: false }; }
+    return { ok: true, bin, file: path.join(P.models, path.basename(m.fast.local)) };
+  }
+  function fastStatus(m) { const c = checkFast(m); return { ready: c.ok && !installing, size: (m && m.fast && m.fast.size) || 0, installing: !!(installing && installing.fast) }; }
+
   function status() {
     const m = readManifest();
     const chk = checkInstalled(m);
@@ -456,6 +492,7 @@ function createEngine(options) {
       files: m ? Object.fromEntries(Object.entries(m.files).map(([k, f]) => [k, { repo: f.repo, path: f.path, size: f.size }])) : null,
       bytes,
       model: MODEL_ID,
+      fast: fastStatus(m),
       platform,
       supported: !!ASSET_PATTERNS[platform] && (platform !== 'win32' || process.arch === 'x64' || opt.anyArch === true),
     };
@@ -703,6 +740,7 @@ function createEngine(options) {
         if (files[k] && files[k].local !== old.files[k].local) await fsp.rm(path.join(P.models, path.basename(old.files[k].local)), { force: true });
       }
       const manifest = { version: MANIFEST_VERSION, model: MODEL_ID, engine, files, installedAt: new Date().toISOString() };
+      if (old && old.fast) { manifest.fast = old.fast; manifest.fastAt = old.fastAt; }   // the fast model stays installed
       await fsp.writeFile(P.manifest + '.tmp', JSON.stringify(manifest, null, 2));
       await fsp.rename(P.manifest + '.tmp', P.manifest);
       await fsp.rm(P.downloads, { recursive: true, force: true });
@@ -716,6 +754,78 @@ function createEngine(options) {
       installing = null;
       return { ok: false, error: cancelled ? 'cancelled' : e && e.code === 'not-found' ? 'not-found' : e && e.code === 'disk-full' ? 'disk-full' : e && e.code === 'offline' ? 'offline' : e && !e.status && /fetch failed|ENOTFOUND|EAI_AGAIN|ECONN|ETIMEDOUT|network|ERR_INTERNET|ERR_NAME/i.test(String(e.message) + ' ' + String(e.cause && e.cause.code)) ? 'offline' : 'install-failed', detail: lastError, status: status() };
     }
+  }
+
+  // ⚡ the fast model: the engine (when it is not there yet) and one file; the FLUX files are not needed and are kept as they are
+  async function installFast(onProgress) {
+    if (installing) throw Object.assign(new Error('already installing'), { code: 'busy' });
+    if (current) throw Object.assign(new Error('a picture is being made'), { code: 'busy' });
+    const ctl = new AbortController();
+    installing = { ctl, cancelled: false, fast: true, progress: { phase: 'plan', files: [], done: 0, total: 0, fast: true } };
+    lastError = '';
+    const prog = installing.progress;
+    let lastEmit = 0;
+    const emit = (force) => {
+      const now = Date.now(); if (!force && now - lastEmit < 250) return; lastEmit = now;
+      prog.done = prog.files.reduce((s, f) => s + f.done, 0); prog.total = prog.files.reduce((s, f) => s + (f.total || 0), 0);
+      try { onProgress && onProgress(JSON.parse(JSON.stringify(prog))); } catch { /* renderer gone */ }
+    };
+    const report = {
+      add(item) { if (!prog.files.find((f) => f.key === item.key)) prog.files.push({ key: item.key, label: item.label, total: item.size || 0, done: 0, name: item.local }); emit(true); },
+      bytes(key, b) { const f = prog.files.find((x) => x.key === key); if (f) f.done = b; emit(false); },
+      phase(p, key) { prog.phase = p; prog.current = key || ''; emit(true); },
+    };
+    const signal = ctl.signal;
+    try {
+      await fsp.mkdir(P.models, { recursive: true });
+      const old = readManifest();
+      report.phase('plan');
+      const prev = old && old.fast;
+      const have = prev && fs.existsSync(path.join(P.models, path.basename(prev.local))) && fs.statSync(path.join(P.models, path.basename(prev.local))).size === prev.size;
+      const f = have ? Object.assign({ key: 'fast', label: SOURCES.fast.label, keep: true }, prev) : await discoverModel('fast', signal);
+      const keepEngine = !!(old && old.engine && old.engine.bin && fs.existsSync(path.join(P.engine, old.engine.bin)));
+      report.add(f); if (f.keep) report.bytes('fast', f.size);
+      const need = (f.keep ? 0 : f.size || 0) + 1e9 + (keepEngine ? 0 : 3e8);
+      if (fsp.statfs) {
+        try {
+          const sf = await fsp.statfs(root); const free = Number(sf.bavail) * Number(sf.bsize);
+          if (free && free < need) throw Object.assign(new Error('disk-full: need ' + Math.ceil(need / 1e9) + ' GB, free ' + (free / 1e9).toFixed(1) + ' GB'), { code: 'disk-full' });
+        } catch (e) { if (e.code === 'disk-full') throw e; }
+      }
+      let engine = old && old.engine;
+      if (!keepEngine) {
+        report.phase('download', 'engine');
+        engine = await installEngine(platform === 'darwin' ? 'cpu' : 'vulkan', signal, report);
+        if (engine.variant === 'vulkan' && platform !== 'darwin') {
+          report.phase('probe', 'engine');
+          const pr = await probeVulkan(path.join(P.engine, engine.bin));
+          if (!pr.ok) { prog.files = prog.files.filter((x) => x.key !== 'engine'); engine = await installEngine('cpu', signal, report); engine.fellBack = true; }
+          else engine.gpuSeen = !pr.unknown;
+        }
+      }
+      if (!f.keep) { report.phase('download', 'fast'); await download(f, path.join(P.models, f.local), signal, (b) => report.bytes('fast', b)); }
+      const fast = { repo: f.repo, path: f.path, size: f.size || fs.statSync(path.join(P.models, f.local)).size, sha256: f.sha256 || '', local: f.local };
+      const manifest = Object.assign({ version: MANIFEST_VERSION, model: MODEL_ID, files: {} }, old || {}, { engine, fast, fastAt: new Date().toISOString() });
+      await fsp.writeFile(P.manifest + '.tmp', JSON.stringify(manifest, null, 2));
+      await fsp.rename(P.manifest + '.tmp', P.manifest);
+      await fsp.rm(P.downloads, { recursive: true, force: true });
+      report.phase('done'); emit(true);
+      return { ok: true, status: (installing = null, status()) };
+    } catch (e) {
+      const cancelled = installing && installing.cancelled;
+      lastError = cancelled ? '' : String(e && e.message || e);
+      log('local-ai fast install: ' + (cancelled ? 'cancelled' : lastError));
+      installing = null;
+      return { ok: false, error: cancelled ? 'cancelled' : e && ['not-found', 'disk-full', 'offline'].includes(e.code) ? e.code : 'install-failed', detail: lastError };
+    }
+  }
+  // only the fast model's file goes; the engine and the FLUX files stay
+  async function removeFast() {
+    const m = readManifest(); if (!m || !m.fast) return { ok: true, status: status() };
+    await fsp.rm(path.join(P.models, path.basename(m.fast.local)), { force: true });
+    delete m.fast; delete m.fastAt;
+    await fsp.writeFile(P.manifest + '.tmp', JSON.stringify(m, null, 2)); await fsp.rename(P.manifest + '.tmp', P.manifest);
+    return { ok: true, status: status() };
   }
 
   function cancelInstall() {
@@ -745,9 +855,11 @@ function createEngine(options) {
       const out = path.join(dir, 'out.png');
       const ref = input.image ? path.join(dir, 'in' + input.ext) : '';
       if (ref) fs.writeFileSync(ref, input.image);
-      const files = { diffusion: modelPath('diffusion', m), llm: modelPath('llm', m), vae: modelPath('vae', m) };
-      const args = buildArgs(files, input, { out, ref, offload: flags.offload, clipCpu: flags.clipCpu, vaeTiling: flags.vaeTiling, fa: flags.fa, maxVram: flags.maxVram, stream: flags.stream });
-      const feed = createProgressParser(STEPS);
+      const args = flags.fastFile
+        ? buildFastArgs(flags.fastFile, input, { out, ref, q8: flags.q8, offload: flags.offload, clipCpu: flags.clipCpu, vaeTiling: flags.vaeTiling, fa: flags.fa, maxVram: flags.maxVram })
+        : buildArgs({ diffusion: modelPath('diffusion', m), llm: modelPath('llm', m), vae: modelPath('vae', m) }, input, { out, ref, offload: flags.offload, clipCpu: flags.clipCpu, vaeTiling: flags.vaeTiling, fa: flags.fa, maxVram: flags.maxVram, stream: flags.stream });
+      // photo-to-photo re-draws only part of the steps (6 × 0.6 → 4 shown by the engine)
+      const feed = createProgressParser(flags.fastFile ? (input.mode === 'restyle' ? Math.ceil(FAST.steps * Number(FAST.strength)) : FAST.steps) : STEPS);
       let tail = '', head = '';
       let child;
       try {
@@ -780,7 +892,7 @@ function createEngine(options) {
           let png = null;
           try { png = fs.readFileSync(out); } catch { png = null; }
           if (code === 0 && png && png.length > 8 && png.readUInt32BE(0) === 0x89504e47) {
-            res = { ok: true, image: png.toString('base64'), mime: 'image/png', ms: Date.now() - t0, model: MODEL_ID, seed: input.seed };
+            res = { ok: true, image: png.toString('base64'), mime: 'image/png', ms: Date.now() - t0, model: flags.fastFile ? 'dreamshaper-xl-lightning' : MODEL_ID, seed: input.seed };
           } else {
             const clean = tail.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').split(/[\r\n]+/).filter((l) => l.trim() && !/\d+\/\d+\s*-\s*[\d.]+/.test(l)).slice(-8).join('\n');
             res = { ok: false, error: 'local-failed', detail: (err ? String(err.message || err) + '\n' : '') + clean, code };
@@ -814,6 +926,7 @@ function createEngine(options) {
       if (gen !== generation) return { ok: false, error: 'cancelled' };
       if (installing) return { ok: false, error: 'busy', detail: 'installing' };
       const m = readManifest();
+      if (o.fast === true) return runFast(m, input, onProgress, gen);
       const chk = checkInstalled(m);
       if (!chk.ok) return { ok: false, error: 'not-installed', detail: chk.why };
       const cpu = m.engine.variant === 'cpu';
@@ -862,6 +975,31 @@ function createEngine(options) {
     return p;
   }
 
+  // ⚡ the fast model: 8-bit weights and the text encoders on the processor on a card under 10 GB; out of memory → again with
+  // everything in RAM (slower, still far faster than FLUX)
+  async function runFast(m, input, onProgress, gen) {
+    const fc = checkFast(m);
+    if (!fc.ok) return { ok: false, error: 'not-installed', detail: 'fast-missing' };
+    const cpu = m.engine.variant === 'cpu', vram = gpuHint ? gpuHint.vramMB : 0, small = !cpu && !(vram >= 10 * 1024);
+    const budget = vram > 0 ? Math.max(1, Math.floor((vram / 1024 - 1.5) * 100) / 100) : -1;
+    const flags = { fastFile: fc.file, q8: small, clipCpu: small && clipOk, vaeTiling: !cpu && !(vram >= 8 * 1024), fa: !cpu && faOk };
+    if (!cpu && cutOk) flags.maxVram = budget;
+    try { onProgress && onProgress({ pct: 1, phase: 'start' }); } catch { /* ignore */ }
+    let r = await runOnce(fc.bin, m, input, onProgress, flags);
+    for (let k = 0; k < 3 && !r.ok && r.argError && gen === generation; k++) {
+      const name = typeof r.argError === 'string' ? r.argError : '';
+      if (flags.fa && /diffusion-fa/.test(name)) { faOk = false; delete flags.fa; }
+      else if (flags.clipCpu && /clip-on-cpu/.test(name)) { clipOk = false; delete flags.clipCpu; }
+      else if (flags.maxVram != null && (!name || /max-vram/.test(name))) { cutOk = false; delete flags.maxVram; }
+      else if (flags.q8 && /type/.test(name)) delete flags.q8;
+      else break;
+      r = await runOnce(fc.bin, m, input, onProgress, flags);
+    }
+    if (!r.ok && r.gpu && gen === generation) r = await runOnce(fc.bin, m, input, onProgress, Object.assign({}, flags, { offload: true, vaeTiling: true, clipCpu: false, maxVram: flags.maxVram != null && budget > 0 ? Math.max(1, Math.floor(budget * 0.6 * 100) / 100) : flags.maxVram }));
+    if (!r.ok && r.error === 'local-failed' && m.engine.variant === 'vulkan') r.suggestCpu = true;
+    return r;
+  }
+
   function cancel() {
     generation++;
     if (current) {
@@ -907,12 +1045,12 @@ function createEngine(options) {
     return warming;
   }
 
-  return { status, install, cancelInstall, remove, run, cancel, shutdown, setGpuHint, warm, paths: P, _discoverModel: discoverModel, _discoverEngine: discoverEngine };
+  return { status, install, installFast, removeFast, cancelInstall, remove, run, cancel, shutdown, setGpuHint, warm, paths: P, _discoverModel: discoverModel, _discoverEngine: discoverEngine };
 }
 
 module.exports = {
   createEngine,
   // exported for tests
-  pickFile, pickReleaseAsset, normalizeTree, quantRank, createProgressParser, validateRunInput, buildArgs,
+  pickFile, pickReleaseAsset, normalizeTree, quantRank, createProgressParser, validateRunInput, buildArgs, buildFastArgs, FAST,
   extractZip, findBinary, parseRegGpus, parseNvidiaSmi, speedFor, crc32, SOURCES, ASSET_PATTERNS, MODEL_ID, STEPS,
 };

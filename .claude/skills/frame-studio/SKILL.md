@@ -2864,3 +2864,21 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The live view adds three tiles (`aiTiles`): designs this month, AI cost this month, events this month.
   - The worker keeps by-month history in `aiUse[key].m` (13 months) and the total in `.t`. An entry is kept 400 days.
   - Events: a day with 20+ prints. `trial-event` is now sent on every plan (`plan.js` `report`), and the server keeps `L.evDays` (last 500). The licence view merges it with the trial's events.
+
+## ⚡ The fast local engine and AI Horde (v203)
+
+- **The fast local model** (desktop `local-ai.js`) is DreamShaper XL Lightning: one SDXL file from `Lykon/dreamshaper-xl-lightning` (SOURCES `fast`, ~7 GB, CreativeML Open RAIL++-M).
+  - It has its own install, `installFast` (the engine too, when missing), and its own removal, `removeFast`. The manifest keeps it under `fast`, and the FLUX install keeps it.
+  - Run: `run({..., fast: true})` → `runFast` → `buildFastArgs`, with `-m file -i photo --strength 0.6 --steps 6 --cfg-scale 1.5 --sampling-method euler_a` (the values tested in `.github/scripts/turbo-test.sh`).
+    - On a card under 10 GB it adds `--type q8_0 --clip-on-cpu --max-vram`.
+    - Out of memory: again with `--offload-to-cpu`.
+  - IPC: `local-ai:install-fast` and `local-ai:remove-fast`; `run` passes `fast`.
+  - Tests: `desktop/test/local-ai.test.js`, 18 pass. The fake sd-cli accepts `-m` / `-i`.
+- **The studio side** (`frame-studio/js/local-ai.js`):
+  - The panel has a "⚡ מנוע מקומי מהיר" card: install, test, remove, and a choice between ⚡ מהיר and 🎨 FLUX (`fs-ai-local-model`).
+  - When the fast model is installed, it is used for every local edit at 768 px, and `FS.localAI.isReady()` is true with it alone.
+  - An older desktop program (no `installFast`) is told to update.
+- **AI Horde** (`n8n/build-hubs-workflow.py`) is the hubs server's last free fallback.
+  - It is used only when everything else failed with time left, and only with the `AI_HORDE_KEY` secret (a free key from aihorde.net).
+  - It sends the photo as img2img (`shared: false`), polls for up to ~110 s, and cancels a request still in the queue. Engine `horde`.
+  - Tested anonymously on CI (`.github/workflows/horde-test.yml`): the request was accepted, but the anonymous queue took longer than 110 s. A registered key goes before anonymous requests.

@@ -13,10 +13,13 @@ if (args[0] === '--list-devices') {
   process.exit(0);
 }
 const get = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : undefined; };
-const need = ['--diffusion-model', '--vae', '--llm', '-p', '--cfg-scale', '--sampling-method', '--steps', '-W', '-H', '--seed', '-o'];
+// the fast model (one SDXL file with -m; the photo with -i and --strength) or FLUX (three files, the photo with -r)
+const one = get('-m') !== undefined;
+const need = one ? ['-m', '-p', '--cfg-scale', '--sampling-method', '--steps', '-W', '-H', '--seed', '-o'] : ['--diffusion-model', '--vae', '--llm', '-p', '--cfg-scale', '--sampling-method', '--steps', '-W', '-H', '--seed', '-o'];
 for (const f of need) if (get(f) === undefined) { console.error('[ERROR] missing ' + f); process.exit(2); }
-for (const f of ['--diffusion-model', '--vae', '--llm']) if (!fs.existsSync(get(f))) { console.error('[ERROR] no file ' + get(f)); process.exit(3); }
-const ref = get('-r');
+for (const f of one ? ['-m'] : ['--diffusion-model', '--vae', '--llm']) if (!fs.existsSync(get(f))) { console.error('[ERROR] no file ' + get(f)); process.exit(3); }
+if (one && get('-i') && !(Number(get('--strength')) > 0)) { console.error('[ERROR] -i without --strength'); process.exit(5); }
+const ref = get('-r') || get('-i');
 if (ref && !fs.existsSync(ref)) { console.error('[ERROR] no ref image'); process.exit(4); }
 const offload = args.includes('--offload-to-cpu');
 if (process.env.FAKE_SD_NO_FA && args.includes('--diffusion-fa')) { console.error('error: unknown argument: --diffusion-fa'); if (log) fs.appendFileSync(log, JSON.stringify({ args, start: t0, end: Date.now(), nofa: true }) + '\n'); process.exit(1); }
