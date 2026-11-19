@@ -51,6 +51,11 @@
   function prices() { if (info) return Promise.resolve(info); return LIC.info().then(function (r) { if (r && r.ok) info = r; return info || {}; }, function () { return {}; }); }
   function wa(text) { return 'https://wa.me/' + WA + '?text=' + encodeURIComponent(text); }
   var upOpen = 0;
+  /* the AI design packages a month (cloud designs), as the owner set them */
+  function aiPackLine(pr) {
+    var P = (pr && pr.aiPacks) || [{ name: 'בסיסי', designs: 1500, price: 0 }, { name: 'פרו', designs: 4000, price: 49 }, { name: 'עסקי', designs: 10000, price: 119 }], cur = (pr && pr.currency) || '₪';
+    return P.map(function (x) { return FS.esc(x.name) + ': ' + Number(x.designs).toLocaleString('he-IL') + ' עיצובי AI בענן בחודש' + (x.price ? ' (+' + x.price + ' ' + cur + ')' : ' (כלול)'); }).join(' · ');
+  }
   FS.upgrade = function (why) {
     if (Date.now() - upOpen < 1500) return; upOpen = Date.now();
     var t = FS.planTier(), L = LIC.get() || {};
@@ -61,7 +66,7 @@
       var b = FS.dialog('⭐ שדרוג אופטימוס',
         '<div class="pl-up">' + (why ? '<p class="pl-why">' + why + '</p>' : '') +
         '<div class="pl-cmp"><div><h4>גרסה חינמית</h4><ul><li>עריכה, תיקון צבע, מסגרות והדפסה</li><li>פס קטן "נערך באופטימוס" על כל הדפסה וקובץ</li><li>🤖 AI: ' + FREE_AI + ' תמונות ביום, מבחר עיצובים (גיבורי על, על אדם אמיתי, עריכות חכמות, טרנדים, סגנונות, ועריכה במילים)</li><li>בלי קולאז׳, עורך מסגרות מקצועי ו־AI מקומי</li></ul></div>' +
-        '<div class="on"><h4>אופטימוס מלא</h4><ul><li>הדפסות וקבצים נקיים, בלי שום סימן</li><li>כל עיצובי ה־AI בלי הגבלה, גם מקומי בלי אינטרנט</li><li>קולאז׳, 16 מסגרות AI מההזמנה ועורך מקצועי</li><li>כל העדכונים לתוכנית שלך</li></ul></div></div>' +
+        '<div class="on"><h4>אופטימוס מלא</h4><ul><li>הדפסות וקבצים נקיים, בלי שום סימן</li><li>🤖 ' + aiPackLine(pr) + ', ועיצובי AI על המחשב בלי הגבלה</li><li>קולאז׳, 16 מסגרות AI מההזמנה ועורך מקצועי</li><li>כל העדכונים לתוכנית שלך</li></ul></div></div>' +
         (pr.promo ? '<p class="pl-promo">🏷️ ' + FS.esc(pr.promo) + '</p>' : '') +
         '<div class="pl-cards">' + cards.map(function (c) { return '<div class="pl-card' + (c[0] === 'year' ? ' best' : '') + '"><h4>' + c[1] + '</h4><b>' + c[2] + ' ' + cur + '</b><p>' + c[3] + '</p>' + '<button class="btn" data-want="' + c[0] + '">📩 אני מעוניין/ת</button></div>'; }).join('') + '</div>' +
         (pr.terms ? '<p class="pl-terms">💳 ' + FS.esc(pr.terms) + '</p>' : '') +
@@ -144,7 +149,7 @@
   /* ---------- a trial's events: a day with enough prints counts once; told to the server when there is a connection ---------- */
   function report() {
     var L = LIC.get(), p = LIC.plan(), d = jget('fs-plan-day', null);
-    if (!L || !p || !d || d.sent || FS.planTier() !== 'trial' || d.n < (p.eventPrints || 20)) return;
+    if (!L || !p || !d || d.sent || owner() || d.n < (p.eventPrints || 20)) return;   /* every plan: the owner sees each studio's events */
     var evs = jget('fs-plan-events', []); if (evs.indexOf(d.day) < 0) { evs.push(d.day); ls('fs-plan-events', JSON.stringify(evs.slice(-10))); }
     LIC.call('trial-event', { token: L.token, day: d.day, prints: d.n }).then(function (r) {
       if (!r || !r.ok) return;

@@ -2850,3 +2850,17 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - In the admin's licences, 🤖 on a row asks how many cloud AI designs a month that licence gets. Empty means the plan's number, and 0 means no cloud AI (the on-computer designs still work).
   - It's the server action `lic-ai` (`aiMax`, admin only), which writes the licence field `aiMax`. A licence with its own number counts by the month (`ai-quota.mjs`).
   - The row shows "🤖 used / max" (`aiLine`) from the licence view's `ai: {max, use}`.
+- **AI packages, cost and events (v202):**
+  - Packages: `licSettings.aiPacks`, a list of `{id, name, designs, price}` that the owner edits in admin → licences → 💰 מחיר ותנאים. The defaults are `AI_PACKS` in `access-handle.js`:
+    - בסיסי: 1500 a month, included;
+    - פרו: 4000, +49;
+    - עסקי: 10000, +119.
+  - `lic-info` sends the packages, and the customer's upgrade dialog lists them (`aiPackLine` in `plan.js`).
+  - 🤖 on a licence opens a small window (`popup`): pick a package (`lic-ai` `pack` sets `aiPack` + `aiMax`) or type a number.
+  - Each licence row shows three lines (`aiLine`):
+    - this month's designs out of its allowance;
+    - an estimated cost: `AI_COST` = $0.0012 × 3.7 per cloud design (≈110 neurons of FLUX.2 klein 4B), shown this month and in all;
+    - the events.
+  - The live view adds three tiles (`aiTiles`): designs this month, AI cost this month, events this month.
+  - The worker keeps by-month history in `aiUse[key].m` (13 months) and the total in `.t`. An entry is kept 400 days.
+  - Events: a day with 20+ prints. `trial-event` is now sent on every plan (`plan.js` `report`), and the server keeps `L.evDays` (last 500). The licence view merges it with the trial's events.

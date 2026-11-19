@@ -44,7 +44,9 @@ sd.licenses['trial@x'].aiMax = 50; { const g2 = aiGate(sd, tok('c'), now); ok(g2
 sd.licenses['pro@x'].owner = true; ok(aiGate(sd, tok('b'), now).owner, "the owner's own licence: unlimited"); delete sd.licenses['pro@x'].owner;
 // a month resets the pro count
 aiCount(sd, aiGate(sd, tok('b'), now), now); ok(aiGate(sd, tok('b'), now).used === 1 && aiGate(sd, tok('b'), now + 15 * DAY).used === 0, 'the month resets');
+// the month history
+ok(sd.aiUse['u:free@x'].t === 15 && sd.aiUse['u:free@x'].m['2026-11'] === 15, 'designs by month and in all');
 // old entries are dropped
-aiCount(sd, aiGate(sd, tok('c'), now + 80 * DAY), now + 80 * DAY); ok(!sd.aiUse['u:free@x'], 'entries older than 70 days go');
+aiCount(sd, aiGate(sd, tok('c'), now + 420 * DAY), now + 420 * DAY); ok(!sd.aiUse['u:free@x'], 'entries older than 400 days go');
 ok(tierOf(null, now) === 'free' && tierOf({ active: false, paid: true }, now) === 'free', 'no or blocked licence → free');
 console.log('ai-quota:', n, 'passed');

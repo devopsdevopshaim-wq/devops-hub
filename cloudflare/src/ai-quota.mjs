@@ -59,9 +59,12 @@ function used(sd, key, period) { const u = (sd.aiUse || {})[key]; return u && u.
 export function aiCount(sd, g, now) {
   if (!g || g.owner || !g.key) return sd;
   const m = sd.aiUse = sd.aiUse || {};
-  const u = m[g.key] && m[g.key].p === g.period ? m[g.key] : { p: g.period, n: 0 };
-  m[g.key] = { p: g.period, n: u.n + 1, at: now };
-  for (const k of Object.keys(m)) if (!(m[k].at > now - 70 * DAY)) delete m[k];
+  const old = m[g.key] || {}, u = old.p === g.period ? old : { p: g.period, n: 0 };
+  // and the history the owner's admin shows: designs by month (13 months) and in all
+  const ym = ilDay(now).slice(0, 7), mo = Object.assign({}, old.m || {}); mo[ym] = (mo[ym] || 0) + 1;
+  for (const k of Object.keys(mo).sort().slice(0, -13)) delete mo[k];
+  m[g.key] = { p: g.period, n: u.n + 1, at: now, m: mo, t: (old.t || 0) + 1 };
+  for (const k of Object.keys(m)) if (!(m[k].at > now - 400 * DAY)) delete m[k];
   return sd;
 }
 
