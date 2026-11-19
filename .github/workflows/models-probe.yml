@@ -1,0 +1,26 @@
+name: Models probe
+on:
+  workflow_dispatch:
+    inputs:
+      picks: { description: 'model URLs to download and describe (comma separated)', required: false, default: '' }
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: [.github/workflows/models-probe.yml, .github/scripts/models-probe.py]
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q onnx
+      - name: Find and describe the models
+        env:
+          PICKS: ${{ inputs.picks || 'https://huggingface.co/facefusion/models-3.0.0/resolve/main/real_esrgan_x2.onnx,https://huggingface.co/facefusion/models-3.0.0/resolve/main/gfpgan_1.4.onnx' }}
+        run: python3 .github/scripts/models-probe.py
+      - name: Keep the small models on the ci-models branch
+        run: |
+          cd models-out 2>/dev/null || exit 0
+          find . -size +95M -delete; ls -la
+          git config --global user.name ci && git config --global user.email ci@users.noreply.github.com
+          git init -q && git checkout -q -b ci-models && git add -A && git commit -qm "probed models" && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-models

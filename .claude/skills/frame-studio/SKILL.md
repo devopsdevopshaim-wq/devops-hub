@@ -2903,3 +2903,23 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - Both test photos were still in the queue after ~108 s.
   - So it is never an automatic fallback: only `engine: 'horde'`, chosen by hand in the engine bar ("AI Horde (חינם, איטי מאוד)").
   - Polling skips dropped connections (6 in a row end it), and the result and the picture are fetched again when a connection drops.
+
+## 🔍 Real-ESRGAN and 🙂 GFPGAN (v206)
+
+- `js/ai-restore.js` adds three buttons to the quick workspace's "🖥️ מיד, על המחשב" row (`FS.LOCAL_PLUS`; the old `sharp2x` button is hidden, its function stays):
+  - 🖨️ איכות הדפסה (faces, then ×4);
+  - 🔍 הגדלה מקצועית ×4;
+  - 🙂 שחזור פנים.
+- **Real-ESRGAN** (`FS.realEsrgan`): realesr-general-x4v3 (4.9 MB, BSD-3, `models/realesrgan/`), in tiles of 192 (GPU) or 128 (CPU) with a 12 px pad.
+  - The result is about 4000 px (at least ×2). A photo of 3000 px or more is left as it is.
+  - CPU test: a 300 px photo → 2400 px in 32 s.
+- **GFPGAN 1.4** (`FS.restoreFaces`):
+  - The model is 340 MB from `facefusion/models-3.0.0` on HF. It is downloaded after a confirm and kept in Cache Storage `fs-models-v1`.
+  - Faces come from `FaceSig.detect` (MediaPipe 478 points). Five points (eye centres 33/133 and 362/263, nose 4, mouth corners 61/291) are fitted to FFHQ-512 by a least-squares similarity.
+  - The restored face goes back with an elliptic feathered mask at 85%.
+  - It skips eyes under 10 px or over 190 px apart.
+  - One ORT run at a time (`serial`).
+- CI tests:
+  - `.github/workflows/gfpgan-test.yml`: the real download and three photos on a CPU runner (15–56 s; pictures on branch `ci-gfpgan`).
+  - `models-probe.yml`: lists and describes the ONNX candidates.
+- Known: on a very blurry face with half-closed eyes, GFPGAN may open the eyes a little.
