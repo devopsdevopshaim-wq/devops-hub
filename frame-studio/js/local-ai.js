@@ -20,6 +20,12 @@
      starts at 512 (v193: 768 took many minutes there); and the size a failed run stepped down to is kept ('fs-ai-local-cap'), so the next photos of the event start
      at a size that works instead of failing first */
   var CAP_KEY = 'fs-ai-local-cap';
+  /* ⚡ the fast model (DreamShaper XL Lightning, in the desktop program from this version on): seconds a photo instead of minutes. When it is installed it is
+     used for every local edit, unless the owner chose FLUX ('fs-ai-local-model' = 'flux'). */
+  var MODEL_KEY = 'fs-ai-local-model';
+  function fastReady() { return !!(st && st.fast && st.fast.ready); }
+  function fullReady() { return !!(st && st.ready); }
+  function useFast() { return fastReady() && (ls(MODEL_KEY) !== 'flux' || !fullReady()); }
   function vramMB() { return gpu && gpu.best && gpu.best.vramMB || 0; }
   function localSize() {
     var v = ls(SIZE_KEY), want = v === '512' ? 512 : v === '768' ? 768 : v === '1024' ? 1024 : st && st.engine && st.engine.variant === 'cpu' ? 512 : (vramMB() && vramMB() < 8 * 1024 ? 512 : 1024);
@@ -44,7 +50,8 @@
       var m = /\((\d{2,5})\s*[x×]\s*(\d{2,5})\)/.exec(String(body.prompt || ''));
       w = m ? Number(m[1]) : 1024; h = m ? Number(m[2]) : 1024;
     }
-    var k = localSize() / Math.max(w, h);
+    var cap = Number(ls(CAP_KEY)) || 0, long = useFast() ? (cap && cap < 768 ? cap : 768) : localSize();
+    var k = long / Math.max(w, h);
     return { w: fit16(w * k), h: fit16(h * k) };
   }
   /* the busy sign is the caller's: only its text changes, and only while it is showing */
@@ -65,7 +72,7 @@
     /* a run that fails on the graphics card is run again smaller (768, then 512) and that size is kept for the next photos */
     return runSized(body).then(function (r) {
       if (r.ok || r.error === 'cancelled' || r.error === 'timeout' || r.error === 'local-missing' || (st && st.engine && st.engine.variant === 'cpu')) return r;
-      var now = localSize(), next = now > 768 ? 768 : now > 512 ? 512 : 0;
+      var now = useFast() ? Math.max(sizeFor(body).w, sizeFor(body).h) : localSize(), next = now > 768 ? 768 : now > 512 ? 512 : 0;
       if (!next || !(memErr(r.detail) || r.error === 'local-failed')) return r;
       if (window.console) console.warn('local AI: failed at ' + now + ', again at ' + next + ' (' + String(r.detail || '').slice(-120) + ')');
       ls(CAP_KEY, String(next)); busyText('AI מקומי… מנסה שוב בגודל ' + next);
@@ -76,11 +83,11 @@
     if (body.action === 'restyle' && body.image && !body._fit) return fitRef(body.image, Math.max(sizeFor(body).w, sizeFor(body).h)).then(function (b) { return runSized(Object.assign({}, body, { _orig: body._orig || body.image, image: b, _fit: 1 })); });
     var sz = sizeFor(body), prev = $('#busy-msg') ? $('#busy-msg').textContent : '';
     busyText('AI מקומי… מתחיל');
-    return API.run({ mode: body.action === 'restyle' ? 'restyle' : 'image', prompt: String(body.prompt || '').slice(0, 2000), imageB64: body.action === 'restyle' ? body.image : undefined, w: sz.w, h: sz.h },
+    return API.run({ mode: body.action === 'restyle' ? 'restyle' : 'image', prompt: String(body.prompt || '').slice(0, 2000), imageB64: body.action === 'restyle' ? body.image : undefined, w: sz.w, h: sz.h, fast: useFast() },
       function (p) { if (p && p.pct != null) busyText('AI מקומי… ' + p.pct + '%'); })
       .then(function (r) {
         lastResult = r;
-        if (r && r.ok && r.image) return { ok: true, image: r.image, mime: r.mime || 'image/png', source: 'מקומי', model: 'flux-2-klein-4b', ms: r.ms };
+        if (r && r.ok && r.image) return { ok: true, image: r.image, mime: r.mime || 'image/png', source: 'מקומי', model: r.model || 'flux-2-klein-4b', ms: r.ms };
         if (r && r.suggestCpu) { st && (st.suggestCpu = true); }
         return { ok: false, error: r && (r.error === 'cancelled' || r.error === 'timeout' || r.error === 'not-installed') ? r.error === 'not-installed' ? 'local-missing' : r.error : 'local-failed', detail: r && r.detail ? String(r.detail).slice(-300) : '' };
       }, function (e) { return { ok: false, error: 'local-failed', detail: String(e && e.message || e) }; })
@@ -88,8 +95,9 @@
   }
   FS.localAI = {
     mode: mode,
-    isReady: function () { return !!(st && st.ready); },
-    whenReady: function () { return (st ? Promise.resolve(st) : first).then(function (s) { return !!(s && s.ready); }); },
+    isReady: function () { return fullReady() || fastReady(); },
+    isFast: useFast,
+    whenReady: function () { return (st ? Promise.resolve(st) : first).then(function (s) { return !!(s && (s.ready || (s.fast && s.fast.ready))); }); },
     run: runBody,
     cancel: function () { return API.cancel(); },
     open: open
@@ -111,7 +119,7 @@
     'install-failed': 'ההתקנה נכשלה.',
     busy: 'רגע, משהו אחר רץ עכשיו.'
   };
-  var FILE_ICON = { engine: '⚙️', diffusion: '🎨', llm: '🔤', vae: '🖼️' };
+  var FILE_ICON = { engine: '⚙️', diffusion: '🎨', llm: '🔤', vae: '🖼️', fast: '⚡' };
 
   function speedText() {
     if (!gpu) return '<span class="la-dim">בודק את כרטיס המסך…</span>';
@@ -133,7 +141,7 @@
       }).join('');
   }
   function html() {
-    var s = st || { state: 'none' }, S = STATE[s.state] || STATE.none, ready = !!s.ready, m = mode();
+    var s = st || { state: 'none' }, S = STATE[s.state === 'partial' && fastReady() && !s.error ? 'none' : s.state] || STATE.none, ready = !!s.ready, anyReady = ready || fastReady(), m = mode();
     var h = '<div class="la" dir="rtl">' +
       '<p class="la-lead">התמונות נערכות במחשב שלך עם <b>FLUX.2 klein</b>, גם בלי אינטרנט. מתקינים פעם אחת (בערך <b>5.5 GB</b>), ומאז כל עריכות ה־AI של התמונות עובדות גם כשאין רשת.</p>' +
       '<div class="la-card"><div class="la-row"><h3>מצב</h3><span class="la-badge ' + S[1] + '">' + S[0] + '</span></div>';
@@ -150,10 +158,11 @@
     h += '</div>';
     if (testImg) h += '<img class="la-test" alt="תמונת ניסיון" src="' + testImg + '">';
     h += '</div>';
+    h += fastCard(s);
     h += '<div class="la-card"><h3>כרטיס מסך ומהירות</h3>' + speedText() + '</div>';
-    h += '<div class="la-card' + (ready ? '' : ' off') + '"><h3>מתי להשתמש בו</h3><div class="la-modes" role="radiogroup">' +
+    h += '<div class="la-card' + (anyReady ? '' : ' off') + '"><h3>מתי להשתמש בו</h3><div class="la-modes" role="radiogroup">' +
       [['auto', '✨ אוטומטי', 'ענן כשיש אינטרנט, מקומי כשאין או כשהענן נכשל'], ['local', '🖥️ תמיד מקומי', 'פרטי לגמרי, לא יוצא מהמחשב'], ['cloud', '☁️ תמיד ענן', 'כמו קודם']].map(function (o) {
-        return '<button role="radio" aria-checked="' + (m === o[0]) + '" class="la-mode' + (m === o[0] ? ' on' : '') + '" data-mode="' + o[0] + '"' + (ready || o[0] === 'cloud' ? '' : ' disabled') + '><b>' + o[1] + '</b><small>' + o[2] + '</small></button>';
+        return '<button role="radio" aria-checked="' + (m === o[0]) + '" class="la-mode' + (m === o[0] ? ' on' : '') + '" data-mode="' + o[0] + '"' + (anyReady || o[0] === 'cloud' ? '' : ' disabled') + '><b>' + o[1] + '</b><small>' + o[2] + '</small></button>';
       }).join('') + '</div>' +
       '<div class="la-row la-size"><span>גודל התמונה במחשב</span><span class="la-seg"><button data-size="1024" class="' + (localSize() === 1024 ? 'on' : '') + '">1024 · איכות</button><button data-size="768" class="' + (localSize() === 768 ? 'on' : '') + '">768 · מאוזן</button><button data-size="512" class="' + (localSize() === 512 ? 'on' : '') + '">512 · ⚡ הכי מהיר</button></span></div>' +
       '<p class="hint">בלי כרטיס מסך: 512 מהיר בערך פי 2 מ־768 (מתאים למגנט קטן). עם כרטיס מסך: 1024.</p></div>';
@@ -164,6 +173,48 @@
     }
     h += '<p class="la-legal">FLUX.2 klein 4B ו־Qwen3 ברישיון Apache-2.0, stable-diffusion.cpp ברישיון MIT. הקבצים יורדים מ־Hugging Face ומ־GitHub ונשמרים בתיקיית התוכנה.</p></div>';
     return h;
+  }
+  /* ⚡ the fast model's card: install it (~7 GB once), choose it or FLUX, remove it */
+  function fastCard(s) {
+    if (!API.installFast) return '<div class="la-card"><h3>⚡ מנוע מקומי מהיר</h3><p class="la-dim">צריך את הגרסה החדשה של התוכנה למחשב: ☰ ← ⬆️ עדכון גרסה.</p></div>';
+    var f = s.fast || {}, busy = s.state === 'installing' && prog && prog.fast, both = f.ready && fullReady(), pick = useFast() ? 'fast' : 'flux';
+    var h = '<div class="la-card"><div class="la-row"><h3>⚡ מנוע מקומי מהיר</h3><span class="la-badge ' + (f.ready ? 'on' : busy ? 'act' : 'off') + '">' + (f.ready ? 'מותקן' : busy ? 'מתקין…' : 'לא מותקן') + '</span></div>' +
+      '<p class="la-dim">DreamShaper XL Lightning: עיצוב של תמונה תוך שניות על כרטיס מסך, במקום דקות. מצוין לפיקסאר, ציור, גיבורי על ואנימה; הפנים המקוריות מוחזרות על העיצוב כמו תמיד. בלי אינטרנט ובלי עלות.</p>';
+    if (busy) h += bars();
+    else if (!f.ready) h += '<div class="la-actions"><button class="btn primary la-gold" data-la="fast-install">⚡ להתקין את המנוע המהיר (~7 GB)</button></div>';
+    else {
+      if (both) h += '<div class="la-modes" role="radiogroup">' + [['fast', '⚡ מהיר', 'שניות לתמונה (מומלץ באירוע)'], ['flux', '🎨 FLUX', 'מדויק יותר, אבל דקות לתמונה']].map(function (o) {
+        return '<button role="radio" aria-checked="' + (pick === o[0]) + '" class="la-mode' + (pick === o[0] ? ' on' : '') + '" data-lm="' + o[0] + '"><b>' + o[1] + '</b><small>' + o[2] + '</small></button>'; }).join('') + '</div>';
+      h += '<div class="la-actions"><button class="btn" data-la="fast-test">🧪 תמונת ניסיון מהירה</button><button class="btn ghost" data-la="fast-remove">🗑️ להסיר את המנוע המהיר</button></div>';
+    }
+    return h + '<p class="la-legal">DreamShaper XL Lightning ברישיון CreativeML Open RAIL++-M (מותר לשימוש מסחרי).</p></div>';
+  }
+  function installFast() {
+    if (installing === true) return;
+    installing = true; prog = { phase: 'plan', files: [], fast: true };
+    if (st) st.state = 'installing'; paint(); showFloat('dl', prog);
+    var t = 0;
+    API.installFast(function (p) { prog = p; prog.fast = true; var n = Date.now(); if (n - t > 200 || p.phase !== 'download') { t = n; if (st) st.state = 'installing'; paint(); pill(); showFloat('dl', p); } })
+      .then(function (r) {
+        installing = r && r.ok ? null : 'failed'; prog = null;
+        if (r && r.status) st = r.status;
+        if (r && r.ok) { if (!ls(KEY)) ls(KEY, 'auto'); ls(MODEL_KEY, 'fast'); fastTest(true); }
+        else if (r && r.error === 'cancelled') { installing = null; hideFloat(); toast('ההורדה נעצרה. אפשר להמשיך מאותה נקודה.'); }
+        else { toast('⚠️ ' + (ERR[r && r.error] || ERR['install-failed']), 6000); showFloat('fail', ERR[r && r.error] || ERR['install-failed']); }
+        paint(); pill();
+      }, function (e) { installing = 'failed'; prog = null; toast('⚠️ ' + String(e && e.message || e)); refresh(); });
+  }
+  /* one small picture with the fast model: proves it runs here and tells how long a photo takes */
+  function fastTest(afterInstall) {
+    if (afterInstall) showFloat('check');
+    var b = body(), btn = b && b.querySelector('[data-la=fast-test]'); if (btn) { btn.disabled = true; btn.textContent = '🧪 0%'; }
+    API.run({ mode: 'image', prompt: 'an ornate gold picture frame on dark velvet, studio light, photorealistic', w: 512, h: 512, seed: 1, fast: true }, function (p) {
+      var x = body() && body().querySelector('[data-la=fast-test]'); if (x && p) x.textContent = '🧪 ' + p.pct + '%';
+    }).then(function (r) {
+      if (r && r.ok) { testImg = 'data:image/png;base64,' + r.image; if (afterInstall) showFloat('ok', r.ms); else toast('✅ המנוע המהיר עבד (' + Math.max(1, Math.round(r.ms / 1000)) + ' שניות)'); }
+      else { toast('⚠️ הניסיון המהיר לא הצליח' + (r && r.detail ? ': ' + String(r.detail).slice(-160) : ''), 9000); if (afterInstall) showFloat('fail', 'הבדיקה לא הצליחה'); }
+      refresh();
+    });
   }
   function body() { var b = $('#dlg-body'), d = $('#dlg'); return b && d && d.open && b.querySelector('.la') ? b : null; }
   function paint() { var b = body(); if (b) { b.innerHTML = html(); } }
@@ -252,7 +303,8 @@
     });
   }
   function onClick(e) {
-    var t = e.target.closest('[data-la],[data-mode],[data-size]'); if (!t || !body()) return;
+    var t = e.target.closest('[data-la],[data-mode],[data-size],[data-lm]'); if (!t || !body()) return;
+    if (t.dataset.lm) { ls(MODEL_KEY, t.dataset.lm); ls(CAP_KEY, null); paint(); toast(t.querySelector('b').textContent); return; }
     if (t.dataset.mode) { ls(KEY, t.dataset.mode); paint(); pill(); toast(t.querySelector('b').textContent); return; }
     if (t.dataset.size) { ls(SIZE_KEY, t.dataset.size); ls(CAP_KEY, null); paint(); return; }   /* a size chosen by hand starts over (the kept step-down is cleared) */
     var a = t.dataset.la;
@@ -261,6 +313,12 @@
     else if (a === 'gpu') install('vulkan');
     else if (a === 'cancel') API.cancelInstall();
     else if (a === 'test') test();
+    else if (a === 'fast-install') installFast();
+    else if (a === 'fast-test') fastTest(false);
+    else if (a === 'fast-remove') {
+      if (!confirm('להסיר את המנוע המהיר? (משתחררים כ־7GB. FLUX נשאר)')) return;
+      t.disabled = true; API.removeFast().then(function (r) { if (r && r.status) st = r.status; ls(MODEL_KEY, null); paint(); pill(); toast('המנוע המהיר הוסר.'); });
+    }
     else if (a === 'remove') {
       if (!confirm('להסיר את ה־AI המקומי מהמחשב? (משתחררים כ־5.5GB. אפשר להתקין שוב מתי שרוצים)')) return;
       t.disabled = true; API.remove().then(function (s) { st = s; installing = null; testImg = ''; ls(AUTO, 'off'); paint(); pill(); toast('הוסר.'); });
@@ -279,9 +337,10 @@
   function pill() {
     var el = document.getElementById('la-pill'); if (!el) return;
     var s = st || {}, m = mode();
-    el.className = 'la-badge ' + (s.ready ? 'on' : s.state === 'installing' || installing === true ? 'act' : 'off');
+    var rd = s.ready || (s.fast && s.fast.ready);
+    el.className = 'la-badge ' + (rd ? 'on' : s.state === 'installing' || installing === true ? 'act' : 'off');
     var pct = installing === true && prog && prog.total ? ' ' + Math.floor((prog.done || 0) / prog.total * 100) + '%' : '';
-    el.textContent = s.ready ? (m === 'local' ? 'תמיד מקומי' : m === 'cloud' ? 'כבוי (ענן)' : 'אוטומטי') : installing === true ? 'מוריד…' + pct : 'לא מותקן';
+    el.textContent = rd ? (m === 'local' ? 'תמיד מקומי' : m === 'cloud' ? 'כבוי (ענן)' : 'אוטומטי') : installing === true ? 'מוריד…' + pct : 'לא מותקן';
     var mb = document.getElementById('la-menu'); if (mb) mb.textContent = TITLE + (installing === true ? ' · מוריד' + pct : '');
   }
   var pane = document.querySelector('[data-pane=ai]');
@@ -306,7 +365,7 @@
      Stopping the download or removing the engine turns this off (fs-ai-local-auto = off); installing again turns it back on. */
   var AUTO = 'fs-ai-local-auto';
   first.then(function (s) {
-    if (!s || s.ready || s.state === 'installing' || !s.supported || ls(AUTO) === 'off') return;
+    if (!s || s.ready || (s.fast && s.fast.ready) || s.state === 'installing' || !s.supported || ls(AUTO) === 'off') return;
     function go() {
       if (installing === true || (st && st.ready)) return;
       install();   /* the floating card says it (showFloat) */

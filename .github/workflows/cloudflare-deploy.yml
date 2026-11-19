@@ -87,6 +87,7 @@ jobs:
           LIVEAVATAR_SANDBOX: ${{ secrets.LIVEAVATAR_SANDBOX }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
           POLLINATIONS_TOKEN: ${{ secrets.POLLINATIONS_TOKEN }}
+          AI_HORDE_KEY: ${{ secrets.AI_HORDE_KEY }}
           MATON_API_KEY: ${{ secrets.MATON_API_KEY }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

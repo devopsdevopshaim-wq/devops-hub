@@ -173,3 +173,33 @@ const PIC = btoa('JPEGDATA');
   check('free engine: models that want paid credit are skipped next time', first.length === 3 && asked.length === 0, JSON.stringify({ first, asked }));
   globalThis.fetch = realFetch;
 }
+{
+  // AI Horde: the last free fallback, only with its key; FLUX out, Pollinations down → Horde draws it (img2img, not shared)
+  const realFetch = globalThis.fetch, realTimeout = globalThis.setTimeout, posted = [];
+  globalThis.setTimeout = (f) => realTimeout(f, 0);
+  globalThis.__WAI = { run: async () => { throw new Error('4006: daily free allocation of 10,000 neurons'); } };
+  globalThis.fetch = async (url, o = {}) => {
+    const u = String(url);
+    if (/pollinations/.test(u)) return new Response('busy', { status: 503 });
+    if (u.endsWith('/generate/async')) { posted.push({ h: o.headers, b: JSON.parse(o.body) }); return Response.json({ id: 'h1' }, { status: 202 }); }
+    if (/\/generate\/check\/h1$/.test(u)) return Response.json({ done: true });
+    if (/\/generate\/status\/h1$/.test(u)) return Response.json({ generations: [{ img: 'https://r2.example/x.webp', model: 'AlbedoBase XL (SDXL)' }] });
+    if (u === 'https://r2.example/x.webp') return new Response(new TextEncoder().encode('WEBP'), { headers: { 'content-type': 'image/webp' } });
+    return new Response('?', { status: 404 });
+  };
+  const sd = {};
+  const code = 'const ENV = { AI: globalThis.__WAI, AI_HORDE_KEY: "hk-1" };\n' + code0;
+  const call = async (b) => (await run(code, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': '6.6.6.6', origin: SITE } }, sd, helpers: {} }))[0].json;
+  let r = await call({ action: 'restyle', prompt: 'anime', image: btoa('photo'), mime: 'image/jpeg', w: 1200, h: 900 });
+  const p = posted[0] || { b: { params: {} }, h: {} };
+  check('horde: when FLUX and Pollinations cannot, AI Horde draws it', r.code === 200 && r.body.source === 'AI Horde' && atob(r.body.image) === 'WEBP' && r.body.mime === 'image/webp', JSON.stringify(r.body).slice(0, 300));
+  check('horde: img2img with the photo, the key, not shared, sizes in 64s', p.h.apikey === 'hk-1' && p.b.source_processing === 'img2img' && p.b.source_image === btoa('photo') && p.b.shared === false && p.b.params.width === 1024 && p.b.params.height === 768, JSON.stringify(p.b.params));
+  r = await call({ action: 'engines' });
+  check('horde: listed as an engine when its key is set', r.body.engines.horde === true);
+  // without the key it is never asked
+  posted.length = 0;
+  const call2 = async (b) => (await run('const ENV = { AI: globalThis.__WAI };\n' + code0, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': '6.6.6.7', origin: SITE } }, sd: {}, helpers: {} }))[0].json;
+  await call2({ action: 'restyle', prompt: 'anime', image: btoa('photo'), mime: 'image/jpeg' });
+  check('horde: without its key it is not used', posted.length === 0);
+  globalThis.fetch = realFetch; globalThis.setTimeout = realTimeout;
+}

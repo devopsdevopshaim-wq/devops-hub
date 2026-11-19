@@ -250,7 +250,7 @@
   /* "3 versions": the same design from up to three engines at once; the person picks the one they like */
   function runVariants(p, prompt, label) {
     return FS.aiEngines().then(function (av) {
-      var order = ['gemini', 'flux', 'free', 'openai'].filter(function (k) { return av[k]; }).slice(0, 3);
+      var order = ['gemini', 'flux', 'free', 'openai', 'horde'].filter(function (k) { return av[k]; }).slice(0, 3);
       if (order.length < 2) return FS.restyle(p, prompt).then(function () { FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.toast('✨ ' + label + ' (רק מנוע אחד פעיל בשרת, אז גרסה אחת)'); });
       var stop = false, got = 0;
       function msg() { FS.busy('🎯 ' + label + ' · ' + order.length + ' גרסאות ממנועים שונים · ' + got + ' מוכנות (עד דקה)', function () { stop = true; FS.aiStop && FS.aiStop(); }); }
