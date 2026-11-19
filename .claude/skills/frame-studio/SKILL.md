@@ -2882,3 +2882,19 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - It is used only when everything else failed with time left, and only with the `AI_HORDE_KEY` secret (a free key from aihorde.net).
   - It sends the photo as img2img (`shared: false`), polls for up to ~110 s, and cancels a request still in the queue. Engine `horde`.
   - Tested anonymously on CI (`.github/workflows/horde-test.yml`): the request was accepted, but the anonymous queue took longer than 110 s. A registered key goes before anonymous requests.
+
+## 📸 HDR מקצועי: the default automatic edit (v204)
+
+- `FS.proAdjust(p, 'hdr')` in `core.js`:
+  - The exposure is set from the people's skin. Skin tones are found by YCbCr, and their median is aimed at ~150 of 255. A face brighter than 168 is brought down. Without faces it falls back to the frame's middle, and holds when the photo is already bright.
+  - The other adjustments:
+    - shadows +18..42 (more on a dark photo);
+    - highlights −24..−55 (more when clipped);
+    - whites lowered near white;
+    - blacks −4/−10;
+    - clarity 16, texture 8, dehaze 3/8;
+    - vibrance 8/14, sharpen 16.
+- Tuned on test photos. The first, stronger version (highlights −42..−75, clarity 24, vibrance 14+) made faces darker and orange, so keep the pull on highlights soft.
+- It is the new default for every new photo (`FS.prefs.autoLook || 'hdr'`).
+  - A one-time migration (`prefs.lookV204`) turns the old default 'natural' into 'hdr'; a choice made after that stays.
+  - The quick-work bar (`mate.js` `#mt-look`): 📸 HDR מקצועי · טבעי · 🎬 קולנועי · בלי.

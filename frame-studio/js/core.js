@@ -325,7 +325,7 @@
         p._autoFramed = true;
       }
       /* ✨ automatic editing: light, contrast and colour set by the photo itself (a touch-up afterwards is always possible) */
-      var look = FS.prefs.autoEnhance === false ? 'off' : (FS.prefs.autoLook || 'natural');
+      var look = FS.prefs.autoEnhance === false ? 'off' : (FS.prefs.autoLook || 'hdr');
       if (look !== 'off' && FS.applyAutoLook) { try { FS.applyAutoLook(p, look); } catch (e) { /* left as shot */ } }
       else if (FS.prefs.frameForAll && FS.prefs.lastFrame) { p.doc.frame = JSON.parse(JSON.stringify(FS.prefs.lastFrame)); FS.fitPhoto(p.doc, im); }
       p._base = JSON.stringify(p.doc);   /* what it looked like when it came in: an edit is anything after this */
@@ -335,6 +335,8 @@
     });
   };
   FS.prefs = (function () { try { return JSON.parse(localStorage.getItem('frame-studio-prefs') || '{}'); } catch (e) { return {}; } })();
+  /* v204: the new default automatic edit is 📸 HDR מקצועי; once, 'natural' (the old default) becomes HDR, and a choice made after that stays */
+  if (!FS.prefs.lookV204) { if (!FS.prefs.autoLook || FS.prefs.autoLook === 'natural') FS.prefs.autoLook = 'hdr'; FS.prefs.lookV204 = 1; try { localStorage.setItem('frame-studio-prefs', JSON.stringify(FS.prefs)); } catch (e) { /* private mode */ } }
   FS.savePrefs = function () { try { localStorage.setItem('frame-studio-prefs', JSON.stringify(FS.prefs)); } catch (e) { /* private mode */ } };
 
   /* ---------- the photo pipeline ---------- */
@@ -664,9 +666,13 @@
     var c = FS.canvas(Math.max(1, W * k), Math.max(1, H * k)), x = c.getContext('2d', { willReadFrequently: true });
     x.drawImage(im, 0, 0, c.width, c.height);
     var d = x.getImageData(0, 0, c.width, c.height).data, cw = c.width, ch = c.height, hist = new Float64Array(256), tot = 0, clip = 0, sr = 0, sg = 0, sb = 0, ss = 0;
+    var skin = new Float64Array(256), skinN = 0, allClip = 0;   /* skin tones (YCbCr): the people's light, for the HDR look */
     for (var i = 0, px = 0; i < d.length; i += 4, px++) {
       var xx = px % cw, yy = (px / cw) | 0, inner = xx > cw * 0.2 && xx < cw * 0.8 && yy > ch * 0.12 && yy < ch * 0.85, w = inner ? 4 : 1;
       var L = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0; hist[L] += w; tot += w;
+      if (L >= 250) allClip++;
+      var Cb = 128 - 0.1687 * d[i] - 0.3313 * d[i + 1] + 0.5 * d[i + 2], Cr = 128 + 0.5 * d[i] - 0.4187 * d[i + 1] - 0.0813 * d[i + 2];
+      if (L > 35 && L < 252 && Cb >= 77 && Cb <= 127 && Cr >= 135 && Cr <= 172 && d[i] > d[i + 2]) { skin[L] += w; skinN += w; }
       if (inner && L >= 250) clip += w;
       sr += d[i] * w; sg += d[i + 1] * w; sb += d[i + 2] * w;
       var mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]); ss += (mx - mn) / 255 * w;
@@ -689,6 +695,26 @@
       vibrance: sat < 0.2 ? 14 : 8,
       clarity: 6, texture: 4, sharpen: 14
     };
+    if (look === 'hdr') {
+      /* 📸 HDR מקצועי: the exposure from the people's skin (a pleasant ~150 of 255), deep shadows opened, highlights held back so
+         nothing is burnt (a soft pull: a strong one greys the faces), local contrast for depth, colour lively but true. Measured
+         on test photos (v204): the strong first version darkened and oranged the faces. */
+      var skinMid = -1;
+      if (skinN > tot * 0.004) { var st = skinN * 0.5, sa = 0; for (var sv = 0; sv < 256; sv++) { sa += skin[sv]; if (sa >= st) { skinMid = sv; break; } } }
+      var eh = skinMid > 0 ? (150 - skinMid) / 3 : (124 - mid) / 3.4;
+      if (skinMid > 0) { if (skinMid > 168) eh = Math.min(eh, -(skinMid - 158) / 2.6); }   /* faces too bright (flash): down */
+      else if (hi > 236 || clipF > 0.006) eh = Math.min(eh, 2);                              /* no faces, already bright: hold */
+      if (clipF > 0.02) eh = Math.min(eh, 4 - clipF * 100);                                  /* burnt people: never brighter */
+      a.exposure = clamp(Math.round(eh), -24, 18);
+      a.highlights = clamp(Math.round(-26 - clipF * 300 - (hi > 242 ? 10 : 0)), -55, -24);
+      a.whites = hi > 246 ? -14 : hi > 234 ? -6 : clamp(Math.round((222 - hi) / 2.5), 0, 8);
+      a.shadows = clamp(Math.round(20 + (mid < 110 ? (110 - mid) * 0.3 : 0) + (lo < 14 ? 6 : 0)), 18, 42);
+      a.blacks = lo > 26 ? -10 : -4;
+      a.contrast = 2;
+      a.clarity = 16; a.texture = 8; a.dehaze = lo > 30 ? 8 : 3; a.sharpen = 16;
+      a.vibrance = sat < 0.2 ? 14 : 8; a.saturation = 0;
+      return a;
+    }
     if (look === 'cinema') {
       a.contrast = 12; a.highlights = Math.min(a.highlights, -40); a.shadows += 4; a.fade = 6; a.saturation = -6; a.vibrance += 4;
       a.temp = clamp(a.temp + 4, -12, 16); a.vignette = 12;
@@ -698,7 +724,7 @@
   };
   /* the look put on (or taken off) a photo: only while its adjustments are still what the look left; a photo touched by hand stays */
   FS.applyAutoLook = function (p, look) {
-    look = look || FS.prefs.autoLook || 'natural';
+    look = look || FS.prefs.autoLook || 'hdr';
     var adj = p.doc.photo.adj;
     if (p._postAuto && JSON.stringify(adj) !== p._postAuto) return false;
     var base = p._preAuto ? JSON.parse(p._preAuto) : JSON.parse(JSON.stringify(adj));
