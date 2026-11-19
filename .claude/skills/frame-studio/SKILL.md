@@ -2830,3 +2830,19 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - Owner report on v198: 3 of 5 anime photos came out beautifully, and 2 stayed as shot. The people check turned the first answer down, and `guarded()`'s next engines were `'free'` (Pollinations, which ignores the photo) and then the local engine.
 - styles.js `guarded()`: with `FS.cloudFirst()` on and no chosen 'local' engine, `plan = [engine, engine, engine]`, so there are 3 calls to the same cloud engine. Cloudflare FLUX draws with a new seed each call. After that the plate fallback applies as before. Offline, or with the switch off, the old plan stays.
 - Test: a first answer that loses a person and a second that keeps both: applied after 2 calls.
+
+## AI allowance per licence (v200)
+
+- AI designs in the cloud (`restyle` / `image` on `/hasadna-hubs`) cost the owner's Cloudflare account, so the worker counts them per licence: `cloudflare/src/ai-quota.mjs`, kept in the main object (`aiUse`) next to the sessions and licences. Only a design that came back counts.
+- The studio sends its sign-in with every picture request (`FS.aiToken()` in `ai.js`: the licence token in a licensed studio, else the account session).
+- Allowances (`AI_PLANS`):
+  - the owner (an admin session, or a licence with `owner: true`): no limit, not even the hubs IP/day caps (`ENV.AI_GATE = 'owner'`);
+  - free: 15 a day;
+  - trial: 150 for the whole trial;
+  - pass: 300 for the pass;
+  - pro (month / year / full): 1500 a month.
+  - A licence field `aiMax` overrides its number (0 stops it).
+- Signed-out callers share one pool of 300 a day (`AI_ANON_DAY`) plus the old `IMG_DAY`. A licence skips `IMG_DAY`, so customers can't use up each other's designs or the owner's.
+- When an allowance is used up, the server answers `429 quota-plan` with `ai: {tier, max, used, left, per}`. The studio explains it and the designs go on with the on-computer engines.
+- `action: 'ai-left'` tells how many are left. The AI tab shows "☁️ נשארו X מתוך Y" next to the engine bar (`#ax-left`), and nothing for the owner.
+- Tests: `cloudflare/test/ai-quota.test.mjs`.

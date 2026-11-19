@@ -321,7 +321,7 @@
     return Promise.all(lanesP).then(function () {
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.gridMode && FS.gridMode() && FS.buildGrid();
       if (stop) FS.toast('⏹ העריכה נעצרה' + (done ? '. ' + done + ' תמונות כבר עודכנו ("↩ החזרת המקור" מבטל).' : '. התמונות לא השתנו.'), 5000);
-      else if (kept && !done && /quota|no-free-tier/.test(lastErr)) FS.toast(FS.aiError('quota'), 12000);
+      else if (kept && !done && /quota|no-free-tier/.test(lastErr)) FS.toast(FS.aiError(/quota-plan/.test(lastErr) ? 'quota-plan' : 'quota'), 12000);
       else if (done || kept) FS.toast('✨ ' + label + ': ' + done + ' תמונות' + (kept ? ' · ' + kept + ' נשארו כמו שצולמו (מסומנות באדום; אפשר לנסות שוב רק עליהן)' : '') + '. "↩ החזרת המקור" מבטל.', kept ? 8000 : 4500);
       if (failed && !stop && /offline/.test(String(failed.message)) && !localReady()) { noNet = true; setTimeout(function () { noNet = false; }, 60000); FS.offlineChooser(label); }
       else if (failed && !stop) FS.toast(FS.aiError(String(failed.message)) + (/timeout/.test(String(failed.message)) ? ' בלי אינטרנט עובדים העיצובים ב"🖥️ מובנה בתוכנה" שבראש הלשונית.' : ''), 9000);
@@ -573,6 +573,17 @@
   var vbox = $('#ax-var'); try { vbox.checked = localStorage.getItem('fs-ai-variants') === '1'; } catch (e) {}
   vbox.addEventListener('change', function () { try { localStorage.setItem('fs-ai-variants', vbox.checked ? '1' : '0'); } catch (e) {} FS.toast(vbox.checked ? '🎯 כל עיצוב יגיע ב־3 גרסאות לבחירה' : 'גרסה אחת לכל עיצוב'); });
   engBar(); window.addEventListener('online', engBar);
+  /* how many cloud designs this licence has left (counted on the server; the owner: no limit, nothing shown) */
+  function leftBar(a) {
+    var eng = $('#ax-eng'); if (!eng || !a) return;
+    var el = $('#ax-left'); if (!el) { el = document.createElement('span'); el.id = 'ax-left'; el.className = 'hint'; el.style.marginInlineStart = '8px'; eng.parentNode.insertBefore(el, eng.nextSibling); }
+    if (a.unlimited) { el.textContent = ''; el.hidden = true; return; }
+    var per = a.per === 'month' ? 'החודש' : a.per === 'day' ? 'היום' : a.per === 'pass' ? 'בכרטיס' : 'בניסיון';
+    el.hidden = false; el.textContent = '☁️ נשארו ' + a.left + ' מתוך ' + a.max + ' עיצובים בענן ' + per;
+    el.style.color = a.left ? '' : '#e66';
+  }
+  FS.on('ai-left', leftBar);
+  if (FS.aiLeft && navigator.onLine !== false) FS.aiLeft().catch(function () {});
   /* without the internet: say what still works */
   function net() {
     document.body.classList.toggle('no-net', navigator.onLine === false && !localReady());

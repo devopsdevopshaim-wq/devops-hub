@@ -360,13 +360,23 @@
       });
     });
   };
+  /* AI designs are counted per licence on the server (the owner: no limit), so a picture request carries the sign-in */
+  FS.aiToken = function () {
+    var L = FS.license && FS.license.get ? FS.license.get() : null, s = FS.account && FS.account.session ? FS.account.session() : null;
+    if (document.body && document.body.classList.contains('studio-licensed') && L && L.token) return L.token;
+    return (s && s.token) || (L && L.token) || '';
+  };
+  FS.aiLeftInfo = null;
+  function aiNews(a) { if (!a) return; FS.aiLeftInfo = a; if (FS.emit) try { FS.emit('ai-left', a); } catch (e) { /* no listeners */ } }
+  FS.aiLeft = function () { var t = FS.aiToken(); return askCloud({ action: 'ai-left', token: t }).then(function (r) { if (r && r.ok) aiNews(r.ai); return r && r.ai; }); };
   function askCloud(body) {
+    if (body && (body.action === 'restyle' || body.action === 'image') && !body.token) { var tk = FS.aiToken(); if (tk) body = Object.assign({}, body, { token: tk }); }
     var ctl = window.AbortController ? new AbortController() : null, me = { ctl: ctl, stopped: false }, to = setTimeout(function () { if (ctl) ctl.abort(); }, body.action === 'ai' && !body.image ? 45000 : 115000);
     live.push(me);
     return fetch(HUB, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'http-' + r.status }; }); })
       .catch(function (e) { return { ok: false, error: me.stopped ? 'cancelled' : e && e.name === 'AbortError' ? 'timeout' : 'offline' }; })
-      .then(function (r) { clearTimeout(to); live.splice(live.indexOf(me), 1); if (me.stopped) r = { ok: false, error: 'cancelled' }; FS.lastAiDetail = r && !r.ok ? String(r.detail || '') : ''; if (r && !r.ok && r.detail && window.console) console.warn('AI:', r.error, r.detail); return r; });
+      .then(function (r) { clearTimeout(to); live.splice(live.indexOf(me), 1); if (me.stopped) r = { ok: false, error: 'cancelled' }; FS.lastAiDetail = r && !r.ok ? String(r.detail || '') : ''; if (r && !r.ok && r.detail && window.console) console.warn('AI:', r.error, r.detail); if (r && r.ai) aiNews(r.ai); return r; });
   }
   /* the picture engines this server has ({gemini, openai, flux, free}); an older server without the list: the usual three */
   var engP = null;
@@ -385,6 +395,10 @@
     if (m === 'extra-people') return 'ה־AI הוסיף לתמונה אנשים שלא היו בה, אז היא לא הוחלה. כדאי לנסות שוב, או להדליק "🎯 רק על הדמות".';
     if (m === 'not-same') return '🛡️ העריכה לא הוחלה: הפנים או התמונה לא נראו כמו המקור (בדיקת ה־AI). התמונה נשארה כמו שצולמה.';
     if (m === 'lost-people') return 'ה־AI החזיר תמונה בלי האנשים שבצילום, אז היא לא הוחלה. כדאי לנסות שוב, לבחור מנוע אחר בראש הלשונית, או להשתמש במנוע שבמחשב.';
+    if (m === 'quota-plan') {
+      var a = FS.aiLeftInfo || {}, per = a.per === 'month' ? 'החודש' : a.per === 'day' ? 'היום' : a.per === 'pass' ? 'בכרטיס האירוע' : 'בתקופת הניסיון';
+      return 'נוצלו כל ' + (a.max || '') + ' עיצובי ה־AI בענן שכלולים בתוכנית ' + per + '. ' + (a.per === 'day' || a.per === 'month' ? 'המכסה מתחדשת ' + (a.per === 'day' ? 'מחר' : 'בתחילת החודש') + '. ' : '') + 'בינתיים עובדים העיצובים ב"🖥️ מיד, על המחשב" ומנוע ה־AI שבמחשב, בלי הגבלה. לעוד עיצובים בענן: ⭐ שדרוג התוכנית.';
+    }
     if (m === 'quota') return 'המכסה החינמית היומית של עיצובי ה־AI בענן נגמרה (בערך כמה עשרות עיצובים ביום; מתאפסת כל לילה). בינתיים עובדים העיצובים ב"🖥️ מיד, על המחשב", ובתוכנה למחשב עם כרטיס מסך: מנוע ה־AI המקומי, בלי הגבלה.';
     if (m === 'rate-limited') return 'יותר מדי בקשות ברצף. מחכים דקה ומנסים שוב.';
     if (m === 'timeout') return 'ה־AI לא ענה בזמן. נסו שוב.';

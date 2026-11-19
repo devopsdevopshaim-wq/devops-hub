@@ -176,9 +176,13 @@ if (b.action === 'ai') {
 }
 if (b.action === 'restyle' || b.action === 'image') {
   const fresh = b.action === 'image';
-  if (!hit('hubs-img-ip', ipKey(), IMG_IP_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
+  // on Cloudflare the worker counts each licence's own allowance first (cloudflare/src/ai-quota.mjs): the owner has no limit
+  // here at all, a licence only the hourly one; the shared daily pool is left to callers who are not signed in (and n8n)
+  const GATE = (typeof ENV !== 'undefined' && ENV && ENV.AI_GATE) || '';
+  if (GATE !== 'owner' && !hit('hubs-img-ip', ipKey(), IMG_IP_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
   if (!WAI && !set(GEMINI_KEY) && typeof fetch !== 'function') return out({ ok: false, error: 'no-key' }, 503);
-  if ((sd.imgs || 0) >= IMG_DAY || sd.imgDay !== day) { if (sd.imgDay !== day) { sd.imgDay = day; sd.imgs = 0; } else return out({ ok: false, error: 'quota' }, 429); }
+  if (sd.imgDay !== day) { sd.imgDay = day; sd.imgs = 0; }
+  if (!GATE || GATE === 'anon') { if ((sd.imgs || 0) >= IMG_DAY) return out({ ok: false, error: 'quota' }, 429); }
   const prompt = String(b.prompt || '').replace(/\u0000/g, ' ').trim();
   if (!prompt) return out({ ok: false, error: 'empty' }, 400);
   if (prompt.length > 2000) return out({ ok: false, error: 'too-big' }, 413);
