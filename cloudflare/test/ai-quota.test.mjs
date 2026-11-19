@@ -40,6 +40,7 @@ aiCount(sd, aiGate(sd, tok('a'), now), now); ok(!sd.aiUse['u:owner@x'], 'the own
 ok(aiGate(sd, tok('b'), now).used === 0, 'another licence is untouched');
 // a licence the owner set to 0 has no AI; a bigger one gets more
 sd.licenses['pro@x'].aiMax = 0; ok(aiGate(sd, tok('b'), now).max === 0, 'aiMax 0 stops it'); delete sd.licenses['pro@x'].aiMax;
+sd.licenses['trial@x'].aiMax = 50; { const g2 = aiGate(sd, tok('c'), now); ok(g2.max === 50 && g2.per === 'month' && g2.period === 'm2026-11', "the owner's own number counts a month"); } delete sd.licenses['trial@x'].aiMax;
 sd.licenses['pro@x'].owner = true; ok(aiGate(sd, tok('b'), now).owner, "the owner's own licence: unlimited"); delete sd.licenses['pro@x'].owner;
 // a month resets the pro count
 aiCount(sd, aiGate(sd, tok('b'), now), now); ok(aiGate(sd, tok('b'), now).used === 1 && aiGate(sd, tok('b'), now + 15 * DAY).used === 0, 'the month resets');

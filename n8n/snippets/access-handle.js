@@ -553,6 +553,7 @@ switch (b.action) {
   case 'lic-list':
   case 'lic-create':
   case 'lic-set':
+  case 'lic-ai':
   case 'lic-release':
   case 'lic-rotate':
   case 'lic-mail':
@@ -576,7 +577,7 @@ switch (b.action) {
     const view = (L) => ({ email: L.email, name: L.name || '', phone: L.phone || '', note: L.note || '', code: L.code, active: L.active !== false, createdAt: L.createdAt, bound: !!L.machine, bound2: !!L.machine2, boundAt2: L.boundAt2 || null, activeOn: L.activeMh ? (L.activeMh === L.machine2 ? 2 : 1) : 0, activeAt: L.activeAt || 0,
       boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10),
       price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null, appVer: L.appVer || '', updReq: L.updReq || null,
-      plan: planOf(L), trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null, payDetails: L.payDetails || null });
+      plan: planOf(L), ai: { max: Number.isFinite(L.aiMax) ? L.aiMax : null, use: (sd.aiUse || {})['u:' + L.email] || null }, trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null, payDetails: L.payDetails || null });
     sd.licSettings = sd.licSettings || { price: 1500, currency: '₪' };
     const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
@@ -678,6 +679,13 @@ switch (b.action) {
       receiptCopy = { to: ADMIN_EMAIL, fromName: 'אופטימוס', subject: 'העתק · קבלה מס׳ ' + rno + ' · ' + (L.name || L.email) + ' · ' + amt + ' ₪', text: rtext(true), soft: true };
     };
     if (b.action === 'lic-set') { L.active = b.active === '1' || b.active === true; if (!L.active) endSessions(e); L.history.unshift({ at: iso, what: L.active ? 'הופעל מחדש על ידי המנהל' : 'בוטל על ידי המנהל' }); log(L.active ? 'רישיון סטודיו הופעל' : 'רישיון סטודיו בוטל', e); }
+    // AI designs in the cloud a month for this licence (cloudflare/src/ai-quota.mjs counts them); empty = the plan's own number
+    else if (b.action === 'lic-ai') {
+      const v = String(b.aiMax == null ? '' : b.aiMax).trim();
+      if (v === '') { delete L.aiMax; L.history.unshift({ at: iso, what: 'עיצובי AI: לפי התוכנית' }); }
+      else { const n = Math.round(Number(v)); if (!Number.isFinite(n) || n < 0 || n > 100000) return out({ ok: false, error: 'bad-input' }, 400); L.aiMax = n; L.history.unshift({ at: iso, what: 'עיצובי AI בחודש: ' + n }); }
+      log('מכסת AI עודכנה', e);
+    }
     else if (b.action === 'lic-release') { L.machine = null; L.boundAt = null; L.machine2 = null; L.boundAt2 = null; L.activeMh = null; L.moves = []; endSessions(e); L.history.unshift({ at: iso, what: 'המחשב שוחרר על ידי המנהל' }); log('רישיון סטודיו שוחרר ממחשב', e); }
     else if (b.action === 'lic-rotate') { L.code = newCode(); L.machine = null; L.boundAt = null; L.machine2 = null; L.boundAt2 = null; L.activeMh = null; endSessions(e); L.history.unshift({ at: iso, what: 'קוד חדש הונפק' }); log('קוד סטודיו חדש הונפק', e); }
     else if (b.action === 'lic-pay') {

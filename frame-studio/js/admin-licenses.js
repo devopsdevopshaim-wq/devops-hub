@@ -27,10 +27,18 @@
   }
   /* hours of use: total, the last 7 days, and the day it was last used */
   function hrs(m) { m = Math.round(m || 0); return m < 60 ? m + ' דק׳' : (Math.round(m / 6) / 10).toLocaleString('he-IL') + ' שעות'; }
+  /* AI designs in the cloud: used out of how many (the licence's own number a month, or the plan's) */
+  var AI_DEF = { free: [15, 'ביום'], trial: [150, 'בניסיון'], pass: [300, 'בכרטיס'], pro: [1500, 'בחודש'] };
+  function aiLine(L) {
+    var a = L.ai || {}, own = a.max != null, d = AI_DEF[(L.plan || {}).tier] || AI_DEF.free, max = own ? a.max : d[0], per = own ? 'בחודש' : d[1];
+    var u = a.use, n = 0, mk = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 7);
+    if (u) n = own ? (u.p === 'm' + mk ? u.n : 0) : u.n;
+    return '<small class="lic-ai" title="עיצובי AI בענן. 🤖 קובע כמה בחודש">🤖 ' + n + ' / ' + max + ' ' + per + (own ? ' (הוגדר)' : '') + '</small>';
+  }
   function useCell(L) {
-    var u = L.usage; if (!u || !u.min) return '<small>עוד לא נמדד</small>';
+    var u = L.usage; if (!u || !u.min) return '<small>עוד לא נמדד</small>' + aiLine(L);
     var wk = 0, d = new Date(); for (var i = 0; i < 7; i++) { var k = new Date(d - i * 864e5).toISOString().slice(0, 10); wk += (u.days || {})[k] || 0; }
-    return '<b>' + hrs(u.min) + '</b><small>השבוע ' + hrs(wk) + '</small><small>' + (u.prints || 0) + ' הדפסות · ' + (u.ai || 0) + ' AI</small>';
+    return '<b>' + hrs(u.min) + '</b><small>השבוע ' + hrs(wk) + '</small><small>' + (u.prints || 0) + ' הדפסות · ' + (u.ai || 0) + ' AI</small>' + aiLine(L);
   }
   var nis = function (v) { return '₪' + Number(v || 0).toLocaleString('he-IL'); };
   /* how many times the installer was downloaded: GitHub counts every release asset (public, no key) */
@@ -124,7 +132,7 @@
         '<td class="act lic-act">' +
           '<button data-a="pay" title="רישום תשלום">💰</button><button data-a="upd" title="אישור עדכון גרסה">⬆️</button><button data-a="copy" title="העתקת הקוד וההוראות">📋</button>' +
           (L.phone ? '<a target="_blank" rel="noopener" href="' + esc(wa(L.phone, codeText(L))) + '" title="שליחה בוואטסאפ">💬</a>' : '') +
-          '<button data-a="mail" title="שליחה למייל">✉️</button>' +
+          '<button data-a="mail" title="שליחה למייל">✉️</button><button data-a="ai" title="כמה עיצובי AI בענן בחודש">🤖</button>' +
           (L.bound ? '<button data-a="release" title="שחרור המחשבים (מעבר למחשב חדש; גם מחשב הגיבוי)">🔓</button>' : '') +
           '<button data-a="rotate" title="קוד חדש (הישן מפסיק לעבוד)">♻️</button>' +
           (L.trial ? '<button data-a="trelease" title="ניסיון חדש מההתחלה (גם במחשב אחר)">🔄</button>' : '') +
@@ -312,6 +320,13 @@
       if (a === 'pay') { var pr = $('#lic-list tr[data-p="' + L.email.replace(/"/g, '') + '"]'); if (pr) pr.hidden = !pr.hidden; return; }
       if (a === 'upd') return grant(L);
       if (a === 'copy') return copy(codeText(L));
+      if (a === 'ai') {
+        var cur = L.ai && L.ai.max != null ? String(L.ai.max) : '';
+        var v = window.prompt('כמה עיצובי AI בענן בחודש ל־' + (L.name || L.email) + '?\n(ריק = לפי התוכנית: חינמי 15 ביום, ניסיון 150, כרטיס 300, מנוי 1500 בחודש. 0 = בלי AI בענן; העיצובים שעל המחשב תמיד עובדים)', cur);
+        if (v === null) return;
+        v = v.trim(); if (v !== '' && !/^\d{1,6}$/.test(v)) return FS.toast('מספר בלבד, או ריק');
+        return LIC.admin('lic-ai', { email: L.email, aiMax: v }).then(function (r) { done(r, '🤖 ' + (L.name || L.email) + ': ' + (v === '' ? 'עיצובי AI לפי התוכנית' : v + ' עיצובי AI בחודש')); });
+      }
       if (a === 'history') { var h = $('#lic-list tr[data-h="' + L.email.replace(/"/g, '') + '"]'); if (h) h.hidden = !h.hidden; return; }
       if (a === 'mail') return LIC.admin('lic-mail', { email: L.email }).then(function (r) { done(r, '✉️ נשלח למייל ' + L.email + ' (אם שירות המיילים מחובר).'); });
       if (a === 'release') { if (!confirm('לשחרר את המחשב של ' + L.name + '? הקוד יופעל מחדש במחשב הבא שבו יוזן, והמחשב הנוכחי ינותק.')) return; return LIC.admin('lic-release', { email: L.email }).then(function (r) { done(r, '🔓 המחשב שוחרר.'); }); }
