@@ -100,7 +100,7 @@ if (sd.day !== day) { sd.day = day; sd.asked = 0; }
 
 if (b.action === 'status') return out({ ok: true, ai: set(GEMINI_KEY), left: Math.max(0, DAY_CAP - (sd.asked || 0)), imageModels: sd.imgModels || null });
 // which picture engines this server has: the studio shows only these in its engine choice (free = Pollinations, always there)
-if (b.action === 'engines') return out({ ok: true, engines: { gemini: set(GEMINI_KEY) && !gemOff(), openai: set(OPENAI_KEY), flux: !!WAI && !(sd.fluxOffUntil > Date.now()), free: typeof fetch === 'function' } });
+if (b.action === 'engines') return out({ ok: true, engines: { gemini: set(GEMINI_KEY) && !gemOff(), openai: set(OPENAI_KEY), flux: !!WAI && !(sd.fluxOffUntil > Date.now()), free: typeof fetch === 'function', horde: !!((typeof ENV !== 'undefined' && ENV && ENV.AI_HORDE_KEY)) } });
 
 if (b.action === 'fetch') {
   if (!hit('hubs-fetch', ipKey(), FETCH_HOUR, 3600000)) return out({ ok: false, error: 'rate-limited' }, 429);
@@ -198,7 +198,7 @@ if (b.action === 'restyle' || b.action === 'image') {
   }
   // b.engine picks one engine (gemini / openai / flux / free); empty = each in turn until one answers
   const ENG = String(b.engine || '').toLowerCase();
-  if (ENG && !['gemini', 'openai', 'flux', 'free'].includes(ENG)) return out({ ok: false, error: 'bad-engine' }, 400);
+  if (ENG && !['gemini', 'openai', 'flux', 'free', 'horde'].includes(ENG)) return out({ ok: false, error: 'bad-engine' }, 400);
   const want = (k) => !ENG || ENG === k;
   sd.imgs = (sd.imgs || 0) + 1;
   const errs = [];
@@ -343,6 +343,54 @@ if (b.action === 'restyle' || b.action === 'image') {
       clearTimeout(tm);
       // the key's models all wanted paid credit: once more, the free model without the key
       // (no fallback without the key: see above)
+    }
+  }
+  // the last, free fallback: AI Horde (aihorde.net), a community of volunteers' graphics cards. Free with no allowance, but a queue
+  // (seconds to minutes), so only when everything above failed and there is time left; only with the owner's free key
+  // (AI_HORDE_KEY: a registered key goes before anonymous requests). The photo is sent for img2img and is not shared.
+  const HKEY = (typeof ENV !== 'undefined' && ENV && ENV.AI_HORDE_KEY) || '';
+  if (want('horde') && HKEY && typeof fetch === 'function' && (fresh || data) && Date.now() - now < 60000) {
+    const HB = 'https://aihorde.net/api/v2', HH = { apikey: HKEY, 'Client-Agent': 'optimus-frame-studio:1:frame-magnets', 'Content-Type': 'application/json' };
+    const hk = 1024 / Math.max(Number(b.w) || 1024, Number(b.h) || 1024, 1);
+    const hd = (v) => Math.max(512, Math.min(1024, Math.round(((Number(v) || 1024) * Math.min(1, hk)) / 64) * 64));
+    const end = now + 110000;
+    let hid = '';
+    try {
+      const params = { sampler_name: 'k_euler_a', cfg_scale: 6, steps: 24, width: hd(b.w), height: hd(b.h), n: 1, karras: true };
+      if (!fresh) params.denoising_strength = 0.55;
+      const body = { prompt: prompt.slice(0, 900) + ' ### deformed, extra people, extra fingers, blurry, text, watermark', params, nsfw: false, censor_nsfw: true, r2: true, shared: false, models: (sd.hordeModels && sd.hordeModelsAt > now - 6 * 3600000) ? sd.hordeModels : ['AlbedoBase XL (SDXL)'] };
+      if (!fresh) { body.source_image = data; body.source_processing = 'img2img'; }
+      let r = await fetch(HB + '/generate/async', { method: 'POST', headers: HH, body: JSON.stringify(body) });
+      let j = await r.json().catch(() => ({}));
+      // a model that has no workers now: any SDXL model that has (asked once, kept for 6 hours)
+      if (!j.id && /model|worker/i.test(String(j.message || ''))) {
+        const ms = await (await fetch(HB + '/status/models?type=image', { headers: HH })).json().catch(() => []);
+        const xl = (Array.isArray(ms) ? ms : []).filter((m) => /XL|SDXL/i.test(m.name) && m.count > 0).sort((a, z) => z.count - a.count).slice(0, 3).map((m) => m.name);
+        if (xl.length) { sd.hordeModels = xl; sd.hordeModelsAt = now; body.models = xl; r = await fetch(HB + '/generate/async', { method: 'POST', headers: HH, body: JSON.stringify(body) }); j = await r.json().catch(() => ({})); }
+      }
+      if (!j.id) throw new Error(r.status + ' ' + String(j.message || '').slice(0, 120));
+      hid = j.id;
+      let done = false;
+      while (!done && Date.now() < end - 4000) {
+        await new Promise((ok) => setTimeout(ok, 3000));
+        const c = await (await fetch(HB + '/generate/check/' + hid, { headers: HH })).json().catch(() => ({}));
+        if (c.faulted || c.is_possible === false) throw new Error('horde: ' + (c.faulted ? 'faulted' : 'no worker can do it'));
+        done = !!c.done;
+      }
+      if (!done) throw new Error('horde: still waiting in the queue');
+      const st = await (await fetch(HB + '/generate/status/' + hid, { headers: HH })).json().catch(() => ({}));
+      const g = (st.generations || [])[0]; hid = '';
+      if (!g || !g.img || g.censored) throw new Error('horde: ' + (g && g.censored ? 'censored' : 'no image'));
+      let b64 = g.img, mt = 'image/webp';
+      if (/^https:\/\//.test(g.img)) {
+        const ir = await fetch(g.img); mt = (ir.headers.get('content-type') || 'image/webp').split(';')[0];
+        const u = new Uint8Array(await ir.arrayBuffer()); let s2 = ''; for (let i = 0; i < u.length; i += 0x8000) s2 += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); b64 = btoa(s2);
+      }
+      return out({ ok: true, image: b64, mime: mt, source: 'AI Horde', model: g.model || 'horde', skipped: errs.length ? errs.join(' | ').slice(0, 400) : undefined });
+    } catch (e) {
+      errs.push('horde: ' + why(e));
+      // a request still in the queue is taken back, so it does not use the volunteers' cards for nothing
+      if (hid) { try { await fetch(HB + '/generate/status/' + hid, { method: 'DELETE', headers: HH }); } catch (x) { /* gone */ } }
     }
   }
   if (ENG && !errs.length) return out({ ok: false, error: 'engine-off', detail: ENG }, 503);

@@ -1,0 +1,26 @@
+name: AI Horde test
+on:
+  workflow_dispatch:
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: [.github/workflows/horde-test.yml, .github/scripts/horde-test.mjs]
+permissions:
+  contents: write
+jobs:
+  horde:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Restyle a photo through AI Horde (the hubs server's own code)
+        env:
+          AI_HORDE_KEY: ${{ secrets.AI_HORDE_KEY }}
+        run: node .github/scripts/horde-test.mjs
+      - name: Keep the pictures on the ci-horde branch
+        if: always()
+        run: |
+          ls horde-out || exit 0
+          git config user.name ci && git config user.email ci@users.noreply.github.com
+          git checkout --orphan ci-horde && git rm -rq --cached . && git add horde-out && git commit -qm "AI Horde test pictures" && git push -qf origin ci-horde
