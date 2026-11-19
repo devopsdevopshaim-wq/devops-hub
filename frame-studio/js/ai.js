@@ -385,7 +385,7 @@
     engP.then(function (e) { if (navigator.onLine === false) engP = null; });
     return engP;
   };
-  FS.ENGINE_NAMES = { '': '✨ אוטומטי', gemini: 'Gemini', flux: 'FLUX', free: 'Pollinations', openai: 'GPT‑Image', horde: 'AI Horde (חינם, איטי)', local: '🖥️ מקומי' };
+  FS.ENGINE_NAMES = { '': '✨ אוטומטי', gemini: 'Gemini', flux: 'FLUX', free: 'Pollinations', openai: 'GPT‑Image', horde: 'AI Horde (חינם, איטי מאוד)', local: '🖥️ מקומי' };
   FS.aiError = function (m) {
     m = String(m || '');
     if (m === 'engine-off') return 'המנוע שנבחר לא מופעל בשרת. בוחרים "אוטומטי" או מנוע אחר בראש לשונית ה־AI.';

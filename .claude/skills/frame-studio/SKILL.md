@@ -2898,3 +2898,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - It is the new default for every new photo (`FS.prefs.autoLook || 'hdr'`).
   - A one-time migration (`prefs.lookV204`) turns the old default 'natural' into 'hdr'; a choice made after that stays.
   - The quick-work bar (`mate.js` `#mt-look`): 📸 HDR מקצועי · טבעי · 🎬 קולנועי · בלי.
+- **AI Horde, measured with the owner's key (v205):**
+  - A real run (19 Nov) with `.github/scripts/horde-probe.mjs`: 20 image workers for 1051 queued requests, SDXL ETA 169–587 s. The new account has 25 kudos.
+  - Both test photos were still in the queue after ~108 s.
+  - So it is never an automatic fallback: only `engine: 'horde'`, chosen by hand in the engine bar ("AI Horde (חינם, איטי מאוד)").
+  - Polling skips dropped connections (6 in a row end it), and the result and the picture are fetched again when a connection drops.
