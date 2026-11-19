@@ -47,10 +47,10 @@ export function aiGate(sd, token, now) {
   if (s.role === 'admin') return { owner: true };
   const email = String(s.lic || s.email || '').toLowerCase(), L = (sd.licenses || {})[email];
   if (L && L.owner) return { owner: true };
-  const tier = s.role === 'studio' ? tierOf(L, now) : 'free', plan = AI_PLANS[tier], period = periodOf(tier, L, now);
-  // the owner may give one licence a different allowance (licence field aiMax); 0 stops its AI
-  const max = L && Number.isFinite(L.aiMax) ? L.aiMax : plan.max;
-  return { key: 'u:' + email, tier, period, per: plan.per, max, used: used(sd, 'u:' + email, period) };
+  const tier = s.role === 'studio' ? tierOf(L, now) : 'free', plan = AI_PLANS[tier];
+  // the owner sets a licence's own number a month in the admin's licences (licence field aiMax); 0 stops its AI
+  const own = !!(L && Number.isFinite(L.aiMax)), per = own ? 'month' : plan.per, period = own ? 'm' + ilDay(now).slice(0, 7) : periodOf(tier, L, now);
+  return { key: 'u:' + email, tier, period, per, max: own ? L.aiMax : plan.max, used: used(sd, 'u:' + email, period) };
 }
 
 function used(sd, key, period) { const u = (sd.aiUse || {})[key]; return u && u.p === period ? u.n : 0; }

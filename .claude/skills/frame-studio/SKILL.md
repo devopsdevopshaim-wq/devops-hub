@@ -2846,3 +2846,7 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - When an allowance is used up, the server answers `429 quota-plan` with `ai: {tier, max, used, left, per}`. The studio explains it and the designs go on with the on-computer engines.
 - `action: 'ai-left'` tells how many are left. The AI tab shows "☁️ נשארו X מתוך Y" next to the engine bar (`#ax-left`), and nothing for the owner.
 - Tests: `cloudflare/test/ai-quota.test.mjs`.
+- **The owner sets it per licence (v201):**
+  - In the admin's licences, 🤖 on a row asks how many cloud AI designs a month that licence gets. Empty means the plan's number, and 0 means no cloud AI (the on-computer designs still work).
+  - It's the server action `lic-ai` (`aiMax`, admin only), which writes the licence field `aiMax`. A licence with its own number counts by the month (`ai-quota.mjs`).
+  - The row shows "🤖 used / max" (`aiLine`) from the licence view's `ai: {max, use}`.
