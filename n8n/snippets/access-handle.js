@@ -89,6 +89,9 @@ const updFor = (L, running) => {
 // tier (watermark, a little cloud AI, no collage / pro frame editor / local AI). An event pass opens everything for 48 hours; a month,
 // a year or the full licence (paid) keep it open. The program enforces the tier; the server only says which tier a licence is in.
 const TRIAL = { events: 2, days: 30, maxDays: 90, eventPrints: 20 }, PASS_HOURS = 48;
+// AI design packages a month (cloud designs; the on-computer ones are always free). The owner edits names, numbers and prices.
+const AI_PACKS = [{ id: 'basic', name: 'בסיסי', designs: 1500, price: 0 }, { id: 'pro', name: 'פרו', designs: 4000, price: 49 }, { id: 'biz', name: 'עסקי', designs: 10000, price: 119 }];
+const aiPacks = () => (sd.licSettings && Array.isArray(sd.licSettings.aiPacks) && sd.licSettings.aiPacks.length ? sd.licSettings.aiPacks : AI_PACKS);
 const planOf = (L) => {
   const pass = L.passUntil && Date.parse(L.passUntil) > now ? L.passUntil : null;
   if (L.paid && (!L.paidUntil || Date.parse(L.paidUntil) > now)) return { tier: 'pro', until: L.paidUntil || null, pass };
@@ -287,7 +290,7 @@ switch (b.action) {
   // can see, revoke, free or replace it. Codes are random (16 characters, ~79 bits), activation is rate-limited and locks after
   // repeated failures, and every activation from another computer is refused and reported to the owner.
   // the studio's price, for the download page (public)
-  case 'lic-info': { const ls = sd.licSettings || { price: 1500, currency: '₪' }; return out({ ok: true, price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS, promo: ls.promo || '', terms: ls.terms || '' }); }
+  case 'lic-info': { const ls = sd.licSettings || { price: 1500, currency: '₪' }; return out({ ok: true, aiPacks: aiPacks(), price: ls.price, currency: ls.currency || '₪', passPrice: ls.passPrice || 79, monthPrice: ls.monthPrice || 89, yearPrice: ls.yearPrice || 790, trial: TRIAL, passHours: PASS_HOURS, promo: ls.promo || '', terms: ls.terms || '' }); }
   // ---- a free trial, registered and verified: full name, phone and email; a 6-digit code goes to the email (and, if the email
   // can't go out, the owner sees the code in the admin and sends it by WhatsApp). The right code proves the person: on the download
   // page it opens the download; in the program it starts the trial on that computer (one trial per email and per computer). The
@@ -393,6 +396,8 @@ switch (b.action) {
     const L = (sd.licenses || {})[s.lic]; if (!L || !L.active) return out({ ok: false, error: 'license-revoked' }, 403);
     if (!hit('trial-ev', s.lic, 20, DAY)) return out({ ok: false, error: 'rate-limited' }, 429);
     const day = /^\d{4}-\d{2}-\d{2}$/.test(String(b.day || '')) ? String(b.day) : new Date(now).toISOString().slice(0, 10), n = Math.max(0, Math.min(100000, Number(b.prints) || 0));
+    // every plan: a day of real work is one event of this studio (the owner sees how many events each customer did)
+    if (n >= TRIAL.eventPrints && (L.evDays || []).indexOf(day) < 0) L.evDays = (L.evDays || []).concat(day).sort().slice(-500);
     if (L.trial && planOf(L).tier === 'trial' && n >= TRIAL.eventPrints && (L.trial.events || []).indexOf(day) < 0) {
       L.trial.events = (L.trial.events || []).concat(day).slice(-10);
       L.history = [{ at: new Date(now).toISOString(), what: 'אירוע בניסיון (' + n + ' הדפסות, ' + day + ')' }].concat(L.history || []).slice(0, 30);
@@ -577,7 +582,7 @@ switch (b.action) {
     const view = (L) => ({ email: L.email, name: L.name || '', phone: L.phone || '', note: L.note || '', code: L.code, active: L.active !== false, createdAt: L.createdAt, bound: !!L.machine, bound2: !!L.machine2, boundAt2: L.boundAt2 || null, activeOn: L.activeMh ? (L.activeMh === L.machine2 ? 2 : 1) : 0, activeAt: L.activeAt || 0,
       boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10),
       price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null, appVer: L.appVer || '', updReq: L.updReq || null,
-      plan: planOf(L), ai: { max: Number.isFinite(L.aiMax) ? L.aiMax : null, use: (sd.aiUse || {})['u:' + L.email] || null }, trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null, payDetails: L.payDetails || null });
+      plan: planOf(L), ai: { max: Number.isFinite(L.aiMax) ? L.aiMax : null, pack: L.aiPack || null, use: (sd.aiUse || {})['u:' + L.email] || null }, evDays: Array.from(new Set([].concat(L.evDays || [], (L.trial && L.trial.events) || []))).sort(), trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null, payDetails: L.payDetails || null });
     sd.licSettings = sd.licSettings || { price: 1500, currency: '₪' };
     const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
@@ -653,6 +658,9 @@ switch (b.action) {
     if (b.action === 'lic-settings') { sd.licSettings.price = money(b.price) || sd.licSettings.price; for (const k of ['passPrice', 'monthPrice', 'yearPrice']) if (money(b[k])) sd.licSettings[k] = money(b[k]); if (b.promo != null) sd.licSettings.promo = line(b.promo, 400);
       for (const k of ['holder', 'bank', 'branch', 'account', 'standing']) if (b['bank_' + k] != null) { sd.licSettings.bankInfo = sd.licSettings.bankInfo || {}; sd.licSettings.bankInfo[k] = line(b['bank_' + k], k === 'standing' ? 400 : 80); }
       for (const k of ['name', 'id', 'address', 'kind']) if (b['biz_' + k] != null) { sd.licSettings.biz = sd.licSettings.biz || {}; sd.licSettings.biz[k] = line(b['biz_' + k], 120); }
+      if (b.aiPacks != null) { let P = []; try { P = JSON.parse(String(b.aiPacks)); } catch (x) { P = []; }
+        P = (Array.isArray(P) ? P : []).slice(0, 6).map((x, i) => ({ id: /^[a-z0-9]{1,12}$/.test(String(x && x.id || '')) ? String(x.id) : 'p' + i, name: line(x && x.name, 30) || ('חבילה ' + (i + 1)), designs: Math.max(0, Math.min(100000, Math.round(Number(x && x.designs) || 0))), price: money(x && x.price) })).filter((x) => x.designs > 0);
+        if (P.length) sd.licSettings.aiPacks = P; }
       delete sd.licSettings.payLinks; if (b.terms != null) sd.licSettings.terms = line(b.terms, 600); log('מחיר הסטודיו עודכן: ' + sd.licSettings.price, ADMIN_EMAIL); return out({ ok: true, settings: sd.licSettings, licenses: list() }); }
     if (b.action === 'lic-create') {
       const e = email(b.email), nm = line(b.name, 60);
@@ -681,8 +689,9 @@ switch (b.action) {
     if (b.action === 'lic-set') { L.active = b.active === '1' || b.active === true; if (!L.active) endSessions(e); L.history.unshift({ at: iso, what: L.active ? 'הופעל מחדש על ידי המנהל' : 'בוטל על ידי המנהל' }); log(L.active ? 'רישיון סטודיו הופעל' : 'רישיון סטודיו בוטל', e); }
     // AI designs in the cloud a month for this licence (cloudflare/src/ai-quota.mjs counts them); empty = the plan's own number
     else if (b.action === 'lic-ai') {
-      const v = String(b.aiMax == null ? '' : b.aiMax).trim();
-      if (v === '') { delete L.aiMax; L.history.unshift({ at: iso, what: 'עיצובי AI: לפי התוכנית' }); }
+      const v = String(b.aiMax == null ? '' : b.aiMax).trim(), pk = aiPacks().find((x) => x.id === String(b.pack || ''));
+      if (pk) { L.aiPack = pk.id; L.aiMax = pk.designs; L.history.unshift({ at: iso, what: 'חבילת AI: ' + pk.name + ' (' + pk.designs + ' עיצובים בחודש)' }); }
+      else if ((delete L.aiPack, v === '')) { delete L.aiMax; L.history.unshift({ at: iso, what: 'עיצובי AI: לפי התוכנית' }); }
       else { const n = Math.round(Number(v)); if (!Number.isFinite(n) || n < 0 || n > 100000) return out({ ok: false, error: 'bad-input' }, 400); L.aiMax = n; L.history.unshift({ at: iso, what: 'עיצובי AI בחודש: ' + n }); }
       log('מכסת AI עודכנה', e);
     }

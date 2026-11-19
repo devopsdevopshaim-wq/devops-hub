@@ -29,11 +29,33 @@
   function hrs(m) { m = Math.round(m || 0); return m < 60 ? m + ' דק׳' : (Math.round(m / 6) / 10).toLocaleString('he-IL') + ' שעות'; }
   /* AI designs in the cloud: used out of how many (the licence's own number a month, or the plan's) */
   var AI_DEF = { free: [15, 'ביום'], trial: [150, 'בניסיון'], pass: [300, 'בכרטיס'], pro: [1500, 'בחודש'] };
+  /* what a cloud design costs the owner: about 110 Workers AI neurons (FLUX.2 klein 4B, up to 1024px) at $0.011 per 1,000,
+     after the free 10,000 a day. Shown in shekels; an estimate (retries and the bigger models cost more). */
+  var AI_COST = 0.0012 * 3.7, PACKS_NOW = [];
+  /* a small window of its own (the admin page has no studio dialogs) */
+  function popup(title, html) {
+    popClose();
+    var o = document.createElement('div'); o.id = 'lic-pop'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+    o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+    o.innerHTML = '<div class="adm-card" style="max-width:520px;width:100%;max-height:90vh;overflow:auto;position:relative;background:#1d1b22;color:#f3ead7"><button class="btn line small" data-pop-x style="position:absolute;inset-inline-end:10px;top:10px">✕</button><h3>' + title + '</h3>' + html + '</div>';
+    o.addEventListener('click', function (e) { if (e.target === o || e.target.closest('[data-pop-x]')) popClose(); });
+    document.body.appendChild(o); return o;
+  }
+  function popClose() { var o = document.getElementById('lic-pop'); if (o) o.remove(); }
+  var ymNow = function () { return new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 7); };
+  function aiStat(L) {
+    var a = L.ai || {}, u = a.use || {}, mo = u.m || {}, ym = ymNow(), ev = L.evDays || [];
+    return { month: mo[ym] || 0, total: u.t || 0, evTotal: ev.length, evMonth: ev.filter(function (d) { return d.slice(0, 7) === ym; }).length };
+  }
+  var ils = function (v) { return '₪' + (v < 10 ? v.toFixed(2) : Math.round(v).toLocaleString('he-IL')); };
   function aiLine(L) {
     var a = L.ai || {}, own = a.max != null, d = AI_DEF[(L.plan || {}).tier] || AI_DEF.free, max = own ? a.max : d[0], per = own ? 'בחודש' : d[1];
-    var u = a.use, n = 0, mk = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 7);
+    var u = a.use, n = 0, mk = ymNow(), st = aiStat(L);
     if (u) n = own ? (u.p === 'm' + mk ? u.n : 0) : u.n;
-    return '<small class="lic-ai" title="עיצובי AI בענן. 🤖 קובע כמה בחודש">🤖 ' + n + ' / ' + max + ' ' + per + (own ? ' (הוגדר)' : '') + '</small>';
+    var pk = a.pack && PACKS_NOW.filter(function (x) { return x.id === a.pack; })[0];
+    return '<small class="lic-ai" title="עיצובי AI בענן. 🤖 בוחרים חבילה או כמות בחודש">🤖 ' + n + ' / ' + max + ' ' + per + (pk ? ' · ' + esc(pk.name) : own ? ' (הוגדר)' : '') + '</small>' +
+      '<small class="lic-ai" title="עלות העיצובים לך (הערכה, לפני המכסה החינמית היומית של Cloudflare) ומספר האירועים (יום עם 20 הדפסות ומעלה)">📊 החודש: ' + st.month + ' עיצובים ≈ ' + ils(st.month * AI_COST) + ' · סה״כ ' + st.total + ' ≈ ' + ils(st.total * AI_COST) + '</small>' +
+      '<small class="lic-ai">🎉 אירועים: ' + st.evMonth + ' החודש · ' + st.evTotal + ' סה״כ</small>';
   }
   function useCell(L) {
     var u = L.usage; if (!u || !u.min) return '<small>עוד לא נמדד</small>' + aiLine(L);
@@ -80,6 +102,7 @@
       '<p class="hint">💡 התוכנה נפתחת רק אחרי שרשמת תשלום. אפשר להנפיק קוד עכשיו ולרשום את התשלום כשמתקבל.</p>' +
       '<p class="hint">הקוד נוצר אקראית בשרת ונשמר רק אצלך. בהפעלה הראשונה הוא ננעל למחשב של אותו אדם, ומחשב נוסף עם אותו קוד נחסם (ואתה מקבל התראה).</p></section>' +
       '<section class="adm-card"><h3>💰 מחיר ותנאים</h3><div class="adm-row"><label class="adm-f" style="max-width:240px"><span>מחיר ברירת מחדל לרישיון (₪)</span><div class="adm-in"><input id="ls-price" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>🎟️ כרטיס אירוע</span><div class="adm-in"><input id="ls-pass" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>📅 חודש</span><div class="adm-in"><input id="ls-month" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>📆 שנה</span><div class="adm-in"><input id="ls-year" inputmode="decimal" dir="ltr"></div></label><button class="btn line small" id="ls-save">שמירה</button></div><div class="adm-grid"><label class="adm-f"><span>🏷️ מבצע (מופיע בדף ההורדה ובחלון השדרוג)</span><div class="adm-in"><input id="ls-promo" maxlength="400" placeholder="למשל: מחיר מייסדים: 20% הנחה ל־100 הרוכשים הראשונים"></div></label><label class="adm-f"><span>💳 תנאי תשלום</span><div class="adm-in"><input id="ls-terms" maxlength="600" placeholder="למשל: העברה בנקאית או הוראת קבע. קבלה למייל על כל תשלום."></div></label></div>' +
+      '<h4>🤖 חבילות עיצובי AI בחודש</h4><p class="hint">החבילות שמופיעות ללקוחות בחלון השדרוג, ושבוחרים לכל לקוח ב־🤖. מחיר 0 = כלול במנוי. עלות לך: בערך ₪0.0045 לעיצוב, ועד כ־90 עיצובים ביום בחינם בתוכנית של Cloudflare.</p><div class="adm-grid" id="ls-packs"></div>' +
       '<h4>🏦 פרטי חשבון להעברה בנקאית / הוראת קבע</h4><p class="hint">בלי סליקה ובלי חברת תשלומים: הפרטים האלה לא מוצגים לאף אחד. כשמגיעה בקשת רכישה (📩 במשימות), אתה לוחץ "🏦 פרטי תשלום", והלקוח מקבל במייל (או בוואטסאפ) את הסכום, אסמכתא ואת פרטי החשבון. כשהכסף נכנס, רושמים 💰 תשלום: הכל נפתח אצלו, וקבלה ממוספרת נשלחת אליו (מקור) ואליך (העתק).</p><div class="adm-grid">' +
       [['bank-holder', 'שם בעל החשבון', 'חיים קריספין'], ['bank-bank', 'בנק', 'למשל: לאומי (10)'], ['bank-branch', 'סניף', '123'], ['bank-account', 'מספר חשבון', '123456']].map(function (k) { return '<label class="adm-f"><span>' + k[1] + '</span><div class="adm-in"><input id="ls-' + k[0] + '" maxlength="80" placeholder="' + k[2] + '"></div></label>'; }).join('') +
       '<label class="adm-f" style="grid-column:1/-1"><span>🔁 הוראת קבע (מה הלקוח עושה)</span><div class="adm-in"><input id="ls-bank-standing" maxlength="400" placeholder="למשל: למנוי חודשי: שולחים לי טופס הרשאה לחיוב חשבון חתום, ואני מקים את ההוראה בבנק."></div></label></div>' +
@@ -91,7 +114,12 @@
       '<section class="adm-card"><div class="adm-row"><h3 style="margin:0">רשימת הרישיונות</h3><input id="lic-q" placeholder="חיפוש שם / מייל / טלפון" style="margin-inline-start:auto"></div><div id="lic-list"><p class="hint">טוען…</p></div></section>');
     var ALL = [], q = '';
     var SET = { price: 1500 }, DLS = null, INST = null, PRICE = { full: 1500, month: 89, year: 790, pass: 79 };
-    function prices() { PRICE = { full: SET.price || 1500, month: SET.monthPrice || 89, year: SET.yearPrice || 790, pass: SET.passPrice || 79 }; $('#ls-price').value = PRICE.full; $('#ls-pass').value = PRICE.pass; $('#ls-month').value = PRICE.month; $('#ls-year').value = PRICE.year; $('#ls-promo').value = SET.promo || ''; $('#ls-terms').value = SET.terms || ''; var BI = SET.bankInfo || {}, BZ = SET.biz || {}, P = ((c.settings && c.settings()) || {}).pay || {};   /* empty: what the owner already set in "🏦 תשלום ובנק" */
+    var PACKS_DEF = [{ id: 'basic', name: 'בסיסי', designs: 1500, price: 0 }, { id: 'pro', name: 'פרו', designs: 4000, price: 49 }, { id: 'biz', name: 'עסקי', designs: 10000, price: 119 }];
+    function packsDraw() {
+      var box = $('#ls-packs'); if (!box) return; SET.aiPacks = SET.aiPacks && SET.aiPacks.length ? SET.aiPacks : PACKS_DEF; PACKS_NOW = SET.aiPacks;
+      box.innerHTML = SET.aiPacks.map(function (x, i) { return '<div class="adm-row" data-pi="' + i + '" data-id="' + esc(x.id) + '"><label class="adm-f"><span>שם</span><div class="adm-in"><input data-k="name" maxlength="30" value="' + esc(x.name) + '"></div></label><label class="adm-f" style="max-width:130px"><span>עיצובים בחודש</span><div class="adm-in"><input data-k="designs" inputmode="numeric" dir="ltr" value="' + x.designs + '"></div></label><label class="adm-f" style="max-width:120px"><span>תוספת לחודש (₪)</span><div class="adm-in"><input data-k="price" inputmode="decimal" dir="ltr" value="' + (x.price || 0) + '"></div></label><small>עלות לך עד ≈ ' + ils(x.designs * AI_COST) + '</small></div>'; }).join('');
+    }
+    function prices() { packsDraw(); PRICE = { full: SET.price || 1500, month: SET.monthPrice || 89, year: SET.yearPrice || 790, pass: SET.passPrice || 79 }; $('#ls-price').value = PRICE.full; $('#ls-pass').value = PRICE.pass; $('#ls-month').value = PRICE.month; $('#ls-year').value = PRICE.year; $('#ls-promo').value = SET.promo || ''; $('#ls-terms').value = SET.terms || ''; var BI = SET.bankInfo || {}, BZ = SET.biz || {}, P = ((c.settings && c.settings()) || {}).pay || {};   /* empty: what the owner already set in "🏦 תשלום ובנק" */
       if (!BI.account && P.account) BI = { holder: P.holder, bank: [P.bankName, P.bankNo ? '(' + P.bankNo + ')' : ''].filter(Boolean).join(' '), branch: P.branch, account: P.account };
       if (!BZ.id && P.bizId) BZ = { name: '', kind: P.bizType === 'חברה' ? 'חברה בע״מ' : P.bizType ? 'עוסק ' + P.bizType : '', id: P.bizId, address: P.address }; ['holder', 'bank', 'branch', 'account', 'standing'].forEach(function (k) { $('#ls-bank-' + k).value = BI[k] || ''; }); ['name', 'kind', 'id', 'address'].forEach(function (k) { $('#ls-biz-' + k).value = BZ[k] || ''; }); }
     function stats() {
@@ -259,12 +287,16 @@
       box.innerHTML = '<div class="vis-stats">' +
         tile(online.length, '🟢 מחוברים עכשיו', online.length ? 'on' : '') + tile(reg24 + ' / ' + reg7, '📝 נרשמו היום / השבוע') + tile(ver7, '✔ אימתו השבוע') + tile(DLS ? DLS.n : '…', '⬇ הורדות (סה״כ)') +
         tile(hrs(todayMin) + ' / ' + hrs(weekMin), '⏱️ שימוש היום / השבוע') + tile(cnt.trial, '🎁 בניסיון') + tile(cnt.free, 'חינמי') + tile((cnt.pro || 0) + (cnt.pass || 0), '💎 משלמים') +
-        tile(reqs.length, '📩 בקשות שדרוג', reqs.length ? 'warn' : '') + '</div>' +
+        tile(reqs.length, '📩 בקשות שדרוג', reqs.length ? 'warn' : '') + aiTiles(tile) + '</div>' +
         (online.length ? '<p class="hint">🟢 ' + online.map(function (L) { return esc(L.name || L.email); }).join(' · ') + '</p>' : '') +
         (reqs.length ? '<p class="lic-req">📩 מחכים לך: ' + reqs.map(function (L) { return esc(L.name || L.email) + ' (' + esc(PLAN_NAMES[L.planReq.want] || L.planReq.want) + (L.phone ? ', <a href="tel:' + esc(L.phone) + '">' + esc(L.phone) + '</a>' : '') + ')'; }).join(' · ') + '</p>' : '') +
         '<h4>🕘 מה קרה לאחרונה</h4>' + (ACT.length ? '<ul class="lic-act-feed">' + ACT.slice(0, 25).map(function (a) { return '<li><small>' + when(a.at) + '</small> ' + esc(a.what) + (a.who ? ' · <span dir="ltr">' + esc(a.who) + '</span>' : '') + '</li>'; }).join('') + '</ul>' : '<p class="hint">עוד אין פעילות.</p>') +
         '<p class="hint">📧 כל ערב בשמונה מגיע אליך במייל סיכום היום: מי נרשם, מי עבד, בקשות ותשלומים.</p>';
       var at = $('#lic-now-at'); if (at) at.textContent = 'עודכן ' + new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) + ' · מתעדכן כל דקה';
+    }
+    function aiTiles(tile) {
+      var m = 0, ev = 0; ALL.forEach(function (L) { var st = aiStat(L); m += st.month; ev += st.evMonth; });
+      return tile(m.toLocaleString('he-IL'), '🤖 עיצובי AI של לקוחות החודש') + tile(ils(m * AI_COST), '💸 עלות AI החודש (הערכה)') + tile(ev, '🎉 אירועים של לקוחות החודש');
     }
     function payDetails(email, want) {
       var L = ALL.filter(function (x) { return x.email === email; })[0]; if (!L) return;
@@ -321,11 +353,19 @@
       if (a === 'upd') return grant(L);
       if (a === 'copy') return copy(codeText(L));
       if (a === 'ai') {
-        var cur = L.ai && L.ai.max != null ? String(L.ai.max) : '';
-        var v = window.prompt('כמה עיצובי AI בענן בחודש ל־' + (L.name || L.email) + '?\n(ריק = לפי התוכנית: חינמי 15 ביום, ניסיון 150, כרטיס 300, מנוי 1500 בחודש. 0 = בלי AI בענן; העיצובים שעל המחשב תמיד עובדים)', cur);
-        if (v === null) return;
-        v = v.trim(); if (v !== '' && !/^\d{1,6}$/.test(v)) return FS.toast('מספר בלבד, או ריק');
-        return LIC.admin('lic-ai', { email: L.email, aiMax: v }).then(function (r) { done(r, '🤖 ' + (L.name || L.email) + ': ' + (v === '' ? 'עיצובי AI לפי התוכנית' : v + ' עיצובי AI בחודש')); });
+        var cur = L.ai && L.ai.max != null && !L.ai.pack ? String(L.ai.max) : '', P = SET.aiPacks || [];
+        var dl = popup('🤖 עיצובי AI בענן ל־' + esc(L.name || L.email),
+          '<p class="hint">בוחרים חבילה, או כותבים כמות משלכם בחודש. העיצובים שעל המחשב תמיד עובדים, בלי הגבלה.</p><div class="lic-packs">' +
+          P.map(function (x) { return '<button style="display:block;width:100%;margin:6px 0;text-align:start" class="btn' + (L.ai && L.ai.pack === x.id ? '' : ' line') + '" data-pk="' + esc(x.id) + '"><b>' + esc(x.name) + '</b> · ' + Number(x.designs).toLocaleString('he-IL') + ' בחודש' + (x.price ? ' · +₪' + x.price : ' · כלול') + '<br><small>עלות לך עד ≈ ' + ils(x.designs * AI_COST) + ' בחודש</small></button>'; }).join('') +
+          '</div><label class="adm-f"><span>או כמות משלכם בחודש (0 = בלי AI בענן)</span><div class="adm-in"><input id="lic-ai-n" inputmode="numeric" dir="ltr" value="' + esc(cur) + '"></div></label>' +
+          '<p><button class="btn small" id="lic-ai-go">שמירת הכמות</button> <button class="btn line small" id="lic-ai-def">לפי התוכנית</button></p>');
+        var save = function (d, msg) { popClose(); LIC.admin('lic-ai', Object.assign({ email: L.email }, d)).then(function (r) { done(r, '🤖 ' + (L.name || L.email) + ': ' + msg); }); };
+        dl.addEventListener('click', function (e) {
+          var k = e.target.closest('[data-pk]'); if (k) { var x = P.filter(function (y) { return y.id === k.dataset.pk; })[0]; return save({ pack: x.id }, 'חבילת ' + x.name + ' (' + x.designs + ' בחודש)'); }
+          if (e.target.closest('#lic-ai-def')) return save({ aiMax: '' }, 'עיצובי AI לפי התוכנית');
+          if (e.target.closest('#lic-ai-go')) { var v = dl.querySelector('#lic-ai-n').value.trim(); if (!/^\d{1,6}$/.test(v)) return FS.toast('כותבים מספר'); save({ aiMax: v }, v + ' עיצובי AI בחודש'); }
+        });
+        return;
       }
       if (a === 'history') { var h = $('#lic-list tr[data-h="' + L.email.replace(/"/g, '') + '"]'); if (h) h.hidden = !h.hidden; return; }
       if (a === 'mail') return LIC.admin('lic-mail', { email: L.email }).then(function (r) { done(r, '✉️ נשלח למייל ' + L.email + ' (אם שירות המיילים מחובר).'); });
@@ -365,6 +405,7 @@
       if (!r.ok) return failed(r); ALL = r.licenses; INST = r.installs || null; LEADS = r.leads || []; ACT = r.activity || []; DONE = r.tasksDone || DONE; BLOCKED = r.blocked || []; SEC = r.sec || []; SECST = r.security || {}; secDraw(); leadsDraw(); nowDraw(); tasksDraw(); if (r.upd) UPD = r.upd; if (r.settings) { SET = r.settings; prices(); if (!$('#ln-price').value) $('#ln-price').value = SET.price; } draw(); updDraw(); }, function () { answered = true; failed({ error: 'offline' }); }); }
     $('#ln-paid').addEventListener('change', function () { $('.ln-pay').hidden = !this.checked; if (this.checked && !$('#ln-amount').value) $('#ln-amount').value = $('#ln-price').value; });
     $('#ls-save').addEventListener('click', function () { var d = { price: $('#ls-price').value.trim(), passPrice: $('#ls-pass').value.trim(), monthPrice: $('#ls-month').value.trim(), yearPrice: $('#ls-year').value.trim(), promo: $('#ls-promo').value.trim(), terms: $('#ls-terms').value.trim() };
+      d.aiPacks = JSON.stringify(Array.prototype.map.call(document.querySelectorAll('#ls-packs [data-pi]'), function (r) { var g = function (k) { return r.querySelector('[data-k="' + k + '"]').value.trim(); }; return { id: r.dataset.id, name: g('name'), designs: g('designs'), price: g('price') }; }));
       ['holder', 'bank', 'branch', 'account', 'standing'].forEach(function (k) { d['bank_' + k] = $('#ls-bank-' + k).value.trim(); }); ['name', 'kind', 'id', 'address'].forEach(function (k) { d['biz_' + k] = $('#ls-biz-' + k).value.trim(); });
       LIC.admin('lic-settings', d).then(function (r) { if (!r.ok) return FS.toast(ACC.msg(r)); SET = r.settings; prices(); $('#ln-price').value = SET.price; FS.toast('✔ המחירים ופרטי החשבון נשמרו.'); }); });
     downloads().then(function (d) { DLS = d || { n: '—' }; if (ALL) { stats(); updDraw(); nowDraw(); } });
