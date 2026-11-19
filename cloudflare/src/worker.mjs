@@ -26,6 +26,7 @@ import { mailHandle, mailCallback, who as sessionOf } from './mail.mjs';
 import { localGuide } from './guide-local.mjs';
 import { frameSite, frameFile, frameBiz, frameBook, frameCal, frameSnapshot, FrameStore } from './frame.mjs';
 import { relayCall } from './relay.mjs';
+import { aiGate, aiCount, aiLeft } from './ai-quota.mjs';
 import { callMeBot, tgApi, tgFindChat, tgSendText, waNote, frameDaily, frameWeekly, notifyOwner, telegramFind, calendarSync, maton, ilDate, ilHour, ilWeekday } from './notify.mjs';
 import { frameLive, liveFile, liveCron } from './live.mjs';
 import { jarvisAsk, askChain, jarvisInput, allowed as jarvisAllowed, NO_ANSWER } from './jarvis.mjs';
@@ -317,6 +318,12 @@ export class State extends DurableObject {
   async tgChat() { return (await this.ctx.storage.get('tgChat')) || ''; }
   async tgChatSet(id) { await this.ctx.storage.put('tgChat', String(id || '')); return true; }
   async whoIs(token) { const st = await this.load(); return sessionOf(st.sd, token); }
+  // AI designs: each licence's own allowance (ai-quota.mjs); the owner has none. Counted one at a time, in order.
+  aiCheck(token) { const run = this.q.then(async () => aiGate((await this.load()).sd, token, Date.now())); this.q = run.catch(() => {}); return run; }
+  aiDone(token) {
+    const run = this.q.then(async () => { const st = await this.load(), g = aiGate(st.sd, token, Date.now()); aiCount(st.sd, g, Date.now()); await this.save(st); return aiLeft(aiGate(st.sd, token, Date.now())); });
+    this.q = run.catch(() => {}); return run;
+  }
   siteData() { return frameSite(this.ctx.storage); }
   fileData(id) { return frameFile(this.ctx.storage, id); }
   // ---- פריים מגנטים: the owner's morning message, the Saturday-night summary and the calendar (the cron, every two hours) ----
@@ -715,9 +722,20 @@ export class State extends DurableObject {
         await this.save(st);
         return reply({ answer: r.answer, project: r.project, next: r.next });
       }
+      // a picture costs the owner money: the caller's licence must have designs left (the owner: always)
+      let aiTok = null, aiG = null;
+      if (rt.svc === 'hubs') {
+        let hb = {}; try { hb = typeof body === 'string' ? JSON.parse(body || '{}') : (body || {}); } catch (e) { hb = {}; }
+        if (hb && (hb.action === 'restyle' || hb.action === 'image' || hb.action === 'ai-left')) {
+          aiTok = String(hb.token || ''); aiG = await env.STATE.get(env.STATE.idFromName('main')).aiCheck(aiTok);
+          if (hb.action === 'ai-left') return reply({ ok: true, ai: aiLeft(aiG) });
+          if (!aiG.owner && aiG.used >= aiG.max) return reply({ ok: false, error: aiG.key === 'anon' ? 'quota' : 'quota-plan', ai: aiLeft(aiG) }, 429);
+        }
+      }
       if (rt.fn) {
         // a one-node flow: run it, keep the state, answer (a new lead also sends an email to the admin)
-        const r = (await rt.fn(ctx({ body, headers })))[0].json;
+        const r = (await rt.fn(aiG ? Object.assign(ctx({ body, headers }), { ENV: new Proxy(ENVX, { get: (t, k) => (k === 'AI_GATE' ? (aiG.owner ? 'owner' : aiG.key === 'anon' ? 'anon' : 'lic') : t[k]) }) }) : ctx({ body, headers })))[0].json;
+        if (aiG && r.body && r.body.ok && r.body.image) { try { r.body.ai = await env.STATE.get(env.STATE.idFromName('main')).aiDone(aiTok); } catch (e) { /* the design is already made */ } }
         if (rt.lead && r.notify && r.lead) {
           const l = r.lead;
           await sendMail(env, { to: ADMIN_EMAIL, subject: 'ליד חדש: ' + l.name + (l.service ? ' · ' + l.service : ''),
