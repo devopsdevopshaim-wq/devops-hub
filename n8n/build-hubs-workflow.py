@@ -345,11 +345,13 @@ if (b.action === 'restyle' || b.action === 'image') {
       // (no fallback without the key: see above)
     }
   }
-  // the last, free fallback: AI Horde (aihorde.net), a community of volunteers' graphics cards. Free with no allowance, but a queue
+  // AI Horde (aihorde.net), only when chosen by hand in the engine bar (engine 'horde'): measured 19 Nov, 20 cards for 1051
+  // requests in the queue, 3-10 minutes for an SDXL picture with a new key (25 kudos), far too slow to be an automatic fallback.
+  // Was meant as the last, free fallback:, a community of volunteers' graphics cards. Free with no allowance, but a queue
   // (seconds to minutes), so only when everything above failed and there is time left; only with the owner's free key
   // (AI_HORDE_KEY: a registered key goes before anonymous requests). The photo is sent for img2img and is not shared.
   const HKEY = (typeof ENV !== 'undefined' && ENV && ENV.AI_HORDE_KEY) || '';
-  if (want('horde') && HKEY && typeof fetch === 'function' && (fresh || data) && Date.now() - now < 60000) {
+  if (ENG === 'horde' && HKEY && typeof fetch === 'function' && (fresh || data) && Date.now() - now < 60000) {
     const HB = 'https://aihorde.net/api/v2', HH = { apikey: HKEY, 'Client-Agent': 'optimus-frame-studio:1:frame-magnets', 'Content-Type': 'application/json' };
     const hk = 1024 / Math.max(Number(b.w) || 1024, Number(b.h) || 1024, 1);
     const hd = (v) => Math.max(512, Math.min(1024, Math.round(((Number(v) || 1024) * Math.min(1, hk)) / 64) * 64));

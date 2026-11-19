@@ -190,16 +190,18 @@ const PIC = btoa('JPEGDATA');
   const sd = {};
   const code = 'const ENV = { AI: globalThis.__WAI, AI_HORDE_KEY: "hk-1" };\n' + code0;
   const call = async (b) => (await run(code, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': '6.6.6.6', origin: SITE } }, sd, helpers: {} }))[0].json;
-  let r = await call({ action: 'restyle', prompt: 'anime', image: btoa('photo'), mime: 'image/jpeg', w: 1200, h: 900 });
+  let r0 = await call({ action: 'restyle', prompt: 'anime', image: btoa('photo'), mime: 'image/jpeg', w: 1200, h: 900 });
+  check('horde: not used on its own (only when chosen)', r0.body.source !== 'AI Horde' && posted.length === 0, JSON.stringify(r0.body).slice(0, 200));
+  let r = await call({ action: 'restyle', prompt: 'anime', image: btoa('photo'), mime: 'image/jpeg', w: 1200, h: 900, engine: 'horde' });
   const p = posted[0] || { b: { params: {} }, h: {} };
-  check('horde: when FLUX and Pollinations cannot, AI Horde draws it', r.code === 200 && r.body.source === 'AI Horde' && atob(r.body.image) === 'WEBP' && r.body.mime === 'image/webp', JSON.stringify(r.body).slice(0, 300));
+  check('horde: chosen by hand, AI Horde draws it', r.code === 200 && r.body.source === 'AI Horde' && atob(r.body.image) === 'WEBP' && r.body.mime === 'image/webp', JSON.stringify(r.body).slice(0, 300));
   check('horde: img2img with the photo, the key, not shared, sizes in 64s', p.h.apikey === 'hk-1' && p.b.source_processing === 'img2img' && p.b.source_image === btoa('photo') && p.b.shared === false && p.b.params.width === 1024 && p.b.params.height === 768, JSON.stringify(p.b.params));
   r = await call({ action: 'engines' });
   check('horde: listed as an engine when its key is set', r.body.engines.horde === true);
   // without the key it is never asked
   posted.length = 0;
   const call2 = async (b) => (await run('const ENV = { AI: globalThis.__WAI };\n' + code0, { json: { body: JSON.stringify(b), headers: { 'x-forwarded-for': '6.6.6.7', origin: SITE } }, sd: {}, helpers: {} }))[0].json;
-  await call2({ action: 'restyle', prompt: 'anime', image: btoa('photo'), mime: 'image/jpeg' });
+  await call2({ action: 'restyle', prompt: 'anime', image: btoa('photo'), mime: 'image/jpeg', engine: 'horde' });
   check('horde: without its key it is not used', posted.length === 0);
   globalThis.fetch = realFetch; globalThis.setTimeout = realTimeout;
 }
