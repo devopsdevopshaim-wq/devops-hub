@@ -68,7 +68,12 @@
         '<div class="pl-cmp"><div><h4>גרסה חינמית</h4><ul><li>עריכה, תיקון צבע, מסגרות והדפסה</li><li>פס קטן "נערך באופטימוס" על כל הדפסה וקובץ</li><li>🤖 AI: ' + FREE_AI + ' תמונות ביום, מבחר עיצובים (גיבורי על, על אדם אמיתי, עריכות חכמות, טרנדים, סגנונות, ועריכה במילים)</li><li>בלי קולאז׳, עורך מסגרות מקצועי ו־AI מקומי</li></ul></div>' +
         '<div class="on"><h4>אופטימוס מלא</h4><ul><li>הדפסות וקבצים נקיים, בלי שום סימן</li><li>🤖 ' + aiPackLine(pr) + ', ועיצובי AI על המחשב בלי הגבלה</li><li>קולאז׳, 16 מסגרות AI מההזמנה ועורך מקצועי</li><li>כל העדכונים לתוכנית שלך</li></ul></div></div>' +
         (pr.promo ? '<p class="pl-promo">🏷️ ' + FS.esc(pr.promo) + '</p>' : '') +
-        '<div class="pl-cards">' + cards.map(function (c) { return '<div class="pl-card' + (c[0] === 'year' ? ' best' : '') + '"><h4>' + c[1] + '</h4><b>' + c[2] + ' ' + cur + '</b><p>' + c[3] + '</p>' + '<button class="btn" data-want="' + c[0] + '">📩 אני מעוניין/ת</button></div>'; }).join('') + '</div>' +
+        '<div class="pl-cards">' + cards.map(function (c) {
+          var O = jget('fs-offers', []).filter(function (o) { return (o.plan === c[0] || o.plan === 'any') && (!o.until || Date.parse(o.until) > Date.now()); });
+          var pc = O.filter(function (o) { return o.kind === 'percent'; }).sort(function (a, z) { return z.pct - a.pct; })[0], one = O.filter(function (o) { return o.kind === '1+1'; })[0];
+          var price = pc ? '<s style="opacity:.6">' + c[2] + '</s> ' + Math.round(c[2] * (100 - pc.pct) / 100) : c[2];
+          var tag = (one ? '<p class="pl-promo">🏷️ 1+1: משלמים על אחד, מקבלים עוד אחד חינם' + (one.title ? ' · ' + FS.esc(one.title) : '') + '</p>' : '') + (pc ? '<p class="pl-promo">🏷️ ' + pc.pct + '% הנחה' + (pc.title ? ' · ' + FS.esc(pc.title) : '') + '</p>' : '');
+          return '<div class="pl-card' + (c[0] === 'year' ? ' best' : '') + '"><h4>' + c[1] + '</h4><b>' + price + ' ' + cur + '</b><p>' + c[3] + '</p>' + tag + '<button class="btn" data-want="' + c[0] + '">📩 אני מעוניין/ת</button></div>'; }).join('') + '</div>' +
         (pr.terms ? '<p class="pl-terms">💳 ' + FS.esc(pr.terms) + '</p>' : '') +
         '<p class="pl-note" id="pl-note">לוחצים "אני מעוניין/ת": הבקשה מגיעה ישר לחיים, והוא שולח לך פרטים להעברה בנקאית או הוראת קבע. מיד כשהתשלום מתקבל הכל נפתח לבד בתוכנה, וקבלה נשלחת למייל. אפשר גם ישר <a target="_blank" rel="noopener" href="' + wa('שלום חיים, אני רוצה לשדרג את אופטימוס (' + (L.email || '') + ')') + '">בוואטסאפ</a>.</p></div>', true);
       b.addEventListener('click', function (e) {
@@ -182,7 +187,18 @@
       Object.keys(sent.days).forEach(function (k) { use.days[k] = Math.max(0, (use.days[k] || 0) - sent.days[k]); if (!use.days[k]) delete use.days[k]; });
       use.prints = Math.max(0, use.prints - sent.prints); use.ai = Math.max(0, use.ai - sent.ai); keep();
       if (r.plan) LIC.setPlan(r.plan);
+      if (r.offers) offersNews(r.offers);
     }, function () { sending = false; });
+  }
+  /* 🎁 the owner's offers for this studio (1+1, a discount): kept, shown in the upgrade window, and told once when new */
+  function offersNews(list) {
+    ls('fs-offers', JSON.stringify(list || []));
+    var seen = jget('fs-offers-seen', []), fresh = (list || []).filter(function (o) { return seen.indexOf(o.id) < 0; });
+    if (fresh.length) {
+      ls('fs-offers-seen', JSON.stringify(seen.concat(fresh.map(function (o) { return o.id; })).slice(-50)));
+      var o = fresh[0], PNm = { month: 'מנוי חודשי', year: 'מנוי שנתי', pass: 'כרטיס אירוע', full: 'רישיון מלא', any: 'כל התוכניות' };
+      if (FS.toast) FS.toast('🏷️ מבצע בשבילך: ' + (o.title ? o.title + ' · ' : '') + (o.kind === '1+1' ? '1+1 על ' + PNm[o.plan] : o.pct + '% הנחה על ' + PNm[o.plan]) + (o.until ? ' (עד ' + new Date(o.until).toLocaleDateString('he-IL') + ')' : '') + '. ⭐ שדרוג לפרטים', 12000);
+    }
   }
   FS.usageSend = sendUse;
   setInterval(sendUse, 5 * 60000); window.addEventListener('online', function () { setTimeout(sendUse, 3000); report(); }); setTimeout(sendUse, 8000);
@@ -196,6 +212,7 @@
     if (t === 'trial') { var ev = Math.max(0, (p.eventsMax || 2) - Math.max(p.events || 0, jget('fs-plan-events', []).length)), dl = left(p.ends); txt = '🎁 ניסיון חינם · ' + (ev ? (ev === 1 ? 'עוד אירוע אחד' : 'עוד ' + ev + ' אירועים') + (dl ? ' או ' + (dl === 1 ? 'יום אחד' : dl + ' ימים') : '') : dl === 1 ? 'יום אחרון' : 'עוד ' + dl + ' ימים'); }
     else if (t === 'pass') txt = '🎟️ כרטיס אירוע עד ' + hm(p.until);
     else if (t === 'free') txt = 'גרסה חינמית · ⭐ שדרוג';
+    else if (t === 'pro' && p.gift) txt = '🎁 מתנה: אופטימוס המלא עוד ' + left(p.until) + ' ימים';
     else if (t === 'pro' && p.until && left(p.until) <= 7) txt = '📅 המנוי נגמר בעוד ' + left(p.until) + ' ימים · חידוש';
     if (!txt) { if (el) el.hidden = true; return; }
     if (!el) { el = document.createElement('button'); el.id = 'plan-pill'; el.type = 'button'; el.addEventListener('click', function () { FS.upgrade(); }); }

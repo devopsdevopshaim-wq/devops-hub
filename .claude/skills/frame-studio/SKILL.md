@@ -2938,3 +2938,25 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The first test picture failing on CUDA → Vulkan.
 - Tests: `desktop/test/local-ai.test.js`, 20 pass. The new ones: picking the assets, and an install with the runtime next to sd-cli plus the fallback to Vulkan (`FAKE_SD_CUDA`).
 - `.github/workflows/sd-assets.yml` lists the release files (run by hand).
+
+## 🎁 Gifts and offers (v208)
+
+- **Server** (`n8n/snippets/access-handle.js`, admin only):
+  - `lic-gift {days 1-365, to: 'all' | JSON emails, note}`: sets `L.giftUntil` (added after a gift or a paid month still running). `planOf` gives `{tier:'pro', gift:true, until}` until then. A lifetime licence is skipped. Kept in `L.gifts` and the history.
+  - `lic-offer`:
+    - add: `{kind:'1+1'|'percent', plan:month|year|pass|full|any (1+1 only month/year/pass), pct 1-90, to, until, title}`;
+    - `op:'stop'|'delete'` with an `id`;
+    - stored in `licSettings.offers`.
+  - `offersFor(L)` gives the live offers meant for a licence and not used yet. It is sent in `usage` replies and in the licence view (`offers`).
+  - `lic-pay` for a month, a year or a pass with a 1+1 for that plan gives the period twice, and marks `L.offersUsed[id]` (once).
+  - `cloudflare/src/ai-quota.mjs` `tierOf`: `giftUntil` counts as pro.
+- **Admin** (`admin-licenses.js`): the "🎁 מבצעים ומתנות" card.
+  - למי: כל הלקוחות / לקוחות שאבחר (a checkbox list with "בחירת כולם").
+  - Gifts: שבוע / שבועיים / חודש / N ימים.
+  - An offer: type, plan, %, until, title; the list has ⏹ stop and 🗑 delete.
+  - The licence row shows "🎁 מתנה" and the 🏷️ offers.
+- **Customer** (`plan.js`):
+  - `usage` → `offersNews`, kept in `fs-offers`, with a toast once per new offer.
+  - The upgrade window shows the % price (the old price struck through) and a 1+1 tag on the plan's card.
+  - The pill: "🎁 מתנה: אופטימוס המלא עוד N ימים".
+- Tests: `n8n/test/promos.test.mjs` (19). It signs in the owner by a seeded session; the owner's address comes from the workflow code, not the test file.

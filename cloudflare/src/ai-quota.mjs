@@ -22,6 +22,7 @@ export const AI_ANON_DAY = 300;
 export function tierOf(L, now) {
   if (!L || L.active === false) return 'free';
   if (L.paid && (!L.paidUntil || Date.parse(L.paidUntil) > now)) return 'pro';
+  if (L.giftUntil && Date.parse(L.giftUntil) > now) return 'pro';   // the owner's gift (lic-gift): the full program
   if (L.passUntil && Date.parse(L.passUntil) > now) return 'pass';
   if (L.trial) {
     const st = Date.parse(L.trial.start) || now, ev = (L.trial.events || []).length;
