@@ -8,7 +8,8 @@ const args = process.argv.slice(2);
 const log = process.env.FAKE_SD_LOG;
 const t0 = Date.now();
 if (args[0] === '--list-devices') {
-  if (process.env.FAKE_SD_NO_GPU) process.stdout.write('CPU\tAMD Ryzen 5 (fake)\n');
+  if (process.env.FAKE_SD_CUDA) process.stdout.write('CUDA0\tNVIDIA GeForce RTX 4050 (fake)\nCPU\tFake CPU\n');
+  else if (process.env.FAKE_SD_NO_GPU) process.stdout.write('CPU\tAMD Ryzen 5 (fake)\n');
   else process.stdout.write('Vulkan0\tFake GPU 8GB\nCPU\tFake CPU\n');
   process.exit(0);
 }

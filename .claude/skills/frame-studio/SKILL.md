@@ -2923,3 +2923,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - `.github/workflows/gfpgan-test.yml`: the real download and three photos on a CPU runner (15–56 s; pictures on branch `ci-gfpgan`).
   - `models-probe.yml`: lists and describes the ONNX candidates.
 - Known: on a very blurry face with half-closed eyes, GFPGAN may open the eyes a little.
+
+## 🟩 NVIDIA CUDA engine (v207)
+
+- **Desktop** (`desktop/local-ai.js`):
+  - Engine variant `cuda`: `ASSET_PATTERNS.win32.cuda` picks `sd-master-…-bin-win-cuda12-x64.zip` (~0.41 GB). `CUDART.win32` picks `cudart-sd-bin-win-cu12-x64.zip` (~0.56 GB: cublas64_12, cublasLt64_12, cudart64_12). The runtime DLLs are extracted next to sd-cli.
+  - After the install, `--list-devices` must show CUDA. If not (an old driver or no NVIDIA card), the Vulkan build is installed instead (`engine.cudaFellBack`). A CUDA run that fails sets `suggestGeneral`.
+  - IPC `local-ai:install` takes `variant: 'cuda'`. The preload exposes `localAI.variants = ['cpu','vulkan','cuda']`, which is how the page knows the program can do it.
+- **Studio** (`frame-studio/js/local-ai.js`):
+  - Before the install, an NVIDIA card (`gpu.best.name` ~ nvidia/geforce/rtx/quadro) and a program that can do it get a choice: 🟩 NVIDIA CUDA (recommended, default), 🎮 Vulkan, 🐢 CPU (`varPick`, `chosenVariant`).
+  - The first-run automatic install also picks `cuda` for an NVIDIA card (it waits for `gpuInfo`).
+  - Installed on Vulkan with an NVIDIA card: a "🟩 לעבור למנוע NVIDIA" card (`data-la=cuda`; the models stay).
+  - Installed on CUDA: "לחזור למנוע הכללי (Vulkan)".
+  - The first test picture failing on CUDA → Vulkan.
+- Tests: `desktop/test/local-ai.test.js`, 20 pass. The new ones: picking the assets, and an install with the runtime next to sd-cli plus the fallback to Vulkan (`FAKE_SD_CUDA`).
+- `.github/workflows/sd-assets.yml` lists the release files (run by hand).

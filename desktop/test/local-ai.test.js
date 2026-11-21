@@ -518,3 +518,49 @@ test('fast model: install alone (engine + one file), run a photo, FLUX untouched
   await eng.removeFast();
   assert.equal(eng.status().fast.ready, false); assert.equal(eng.status().ready, true);
 });
+
+// ---------------------------------------------------------------- 🟩 NVIDIA (CUDA) build
+
+test('cuda: the Windows CUDA 12 build and its runtime are picked from the release', () => {
+  const rel = { tag_name: 'master-1106-532d2c1', assets: [
+    'cudart-sd-bin-win-cu12-x64.zip', 'sd-master-532d2c1-bin-win-cpu-x64.zip', 'sd-master-532d2c1-bin-win-cuda12-x64.zip',
+    'sd-master-532d2c1-bin-win-rocm-10.1.0-x64.zip', 'sd-master-532d2c1-bin-win-vulkan-x64.zip'].map((name) => ({ name, size: 10, browser_download_url: 'https://x/' + name })) };
+  assert.equal(L.pickReleaseAsset(rel, 'win32', 'cuda').name, 'sd-master-532d2c1-bin-win-cuda12-x64.zip');
+  assert.equal(L.pickReleaseAsset(rel, 'win32', 'cudart').name, 'cudart-sd-bin-win-cu12-x64.zip');
+  assert.equal(L.pickReleaseAsset(rel, 'win32', 'vulkan').name, 'sd-master-532d2c1-bin-win-vulkan-x64.zip');
+  assert.equal(L.pickReleaseAsset(rel, 'linux', 'cuda'), null);
+});
+
+function runtimeZip(name) {
+  const dir = fs.mkdtempSync(path.join(TMP, 'rt-'));
+  fs.writeFileSync(path.join(dir, 'cudart64_12.dll'), 'fake cudart'); fs.writeFileSync(path.join(dir, 'cublas64_12.dll'), 'fake cublas');
+  const z = path.join(dir, name); execFileSync('zip', ['-qj', z, path.join(dir, 'cudart64_12.dll'), path.join(dir, 'cublas64_12.dll')]);
+  const data = fs.readFileSync(z); return { name, data, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex') };
+}
+
+test('cuda: install puts NVIDIA\'s runtime next to sd-cli; a build that sees no NVIDIA card falls back to Vulkan', { skip: process.platform === 'win32' }, async (t) => {
+  // the Linux test platform stands in for Windows (the fake engine is a Node script)
+  L.ASSET_PATTERNS.linux.cuda = [/-bin-linux-test-cuda\.zip$/i]; L.CUDART.linux = [/^cudart-test\.zip$/i];
+  t.after(() => { delete L.ASSET_PATTERNS.linux.cuda; delete L.CUDART.linux; delete process.env.FAKE_SD_CUDA; });
+  const state = mockState();
+  state.engines.push(engineZip('sd-master-test-bin-linux-test-cuda.zip'), runtimeZip('cudart-test.zip'));
+  const { server } = await startMock(state);
+  t.after(() => server.close());
+  process.env.FAKE_SD_CUDA = '1';
+  const root = path.join(TMP, 'root-cuda');
+  const eng = L.createEngine({ root, hfBase: state.base + '/hf', ghApi: state.base + '/gh', platform: 'linux', anySize: true });
+  const r = await eng.install(() => {}, { variant: 'cuda' });
+  assert.equal(r.ok, true, JSON.stringify(r));
+  const st = eng.status();
+  assert.equal(st.engine.variant, 'cuda'); assert.equal(st.engine.cudaFellBack, false);
+  const binDir = path.join(root, 'engine', 'bin');
+  assert.ok(fs.existsSync(path.join(binDir, 'cudart64_12.dll')) && fs.existsSync(path.join(binDir, 'cublas64_12.dll')), 'runtime next to sd-cli');
+  const out = await eng.run({ mode: 'image', prompt: 'x', w: 256, h: 256 });
+  assert.equal(out.ok, true, JSON.stringify(out));
+  // a computer where the CUDA build sees no NVIDIA card: the general build instead, the models kept
+  delete process.env.FAKE_SD_CUDA;
+  const r2 = await eng.install(() => {}, { variant: 'cuda' });
+  assert.equal(r2.ok, true, JSON.stringify(r2));
+  assert.equal(eng.status().engine.variant, 'vulkan'); assert.equal(eng.status().engine.cudaFellBack, true);
+  assert.equal(eng.status().ready, true);
+});

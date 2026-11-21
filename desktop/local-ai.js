@@ -87,6 +87,8 @@ const ASSET_PATTERNS = {
   win32: {
     vulkan: [/-bin-win-vulkan-x64\.zip$/i],
     cpu: [/-bin-win-cpu-x64\.zip$/i, /-bin-win-avx2-x64\.zip$/i, /-bin-win-avx-x64\.zip$/i, /-bin-win-noavx-x64\.zip$/i],
+    // NVIDIA's own compute (CUDA 12): the engine (~0.4 GB) and, beside it, NVIDIA's runtime DLLs (cublas, cudart; ~0.56 GB)
+    cuda: [/-bin-win-cuda12-x64\.zip$/i, /-bin-win-cuda[\d.]*-x64\.zip$/i],
   },
   linux: {
     vulkan: [/-bin-linux-[^/]*x86_64-vulkan\.zip$/i],
@@ -98,6 +100,9 @@ const ASSET_PATTERNS = {
     cpu: [/-bin-darwin-[^/]*arm64\.zip$/i],
   },
 };
+
+// the CUDA runtime that the CUDA build needs next to it (cudart-sd-bin-win-cu12-x64.zip in the same release)
+const CUDART = { win32: [/^cudart-.*-win-cu12-x64\.zip$/i, /^cudart-.*-win-cu[\d.]*-x64\.zip$/i] };
 
 // ---------------------------------------------------------------- discovery (pure, tested with fixtures)
 
@@ -149,7 +154,7 @@ function pickFile(kind, tree, dir, anySize) {
 
 function pickReleaseAsset(release, platform, variant) {
   const assets = release && Array.isArray(release.assets) ? release.assets : [];
-  const pats = (ASSET_PATTERNS[platform] || {})[variant] || [];
+  const pats = variant === 'cudart' ? (CUDART[platform] || []) : ((ASSET_PATTERNS[platform] || {})[variant] || []);
   for (const re of pats) {
     const a = assets.find((x) => x && typeof x.name === 'string' && re.test(x.name) && typeof x.browser_download_url === 'string');
     if (a) {
@@ -488,7 +493,7 @@ function createEngine(options) {
       progress: installing ? installing.progress : null,
       running: !!current,
       queued,
-      engine: m ? { variant: m.engine.variant, tag: m.engine.tag, asset: m.engine.asset } : null,
+      engine: m && m.engine ? { variant: m.engine.variant, tag: m.engine.tag, asset: m.engine.asset, cudaFellBack: !!m.engine.cudaFellBack } : null,
       files: m ? Object.fromEntries(Object.entries(m.files).map(([k, f]) => [k, { repo: f.repo, path: f.path, size: f.size }])) : null,
       bytes,
       model: MODEL_ID,
@@ -561,7 +566,13 @@ function createEngine(options) {
       const e = new Error('not-found:engine-' + variant + ': no release asset for ' + platform + ' in ' + (json && json.tag_name));
       e.code = 'not-found'; e.kind = 'engine'; throw e;
     }
-    return { key: 'engine', label: 'מנוע stable-diffusion.cpp (' + (variant === 'cpu' ? 'מעבד' : 'כרטיס מסך') + ')', url: a.url, size: a.size, sha256: a.sha256, local: a.name, tag: a.tag, variant };
+    const item = { key: 'engine', label: 'מנוע stable-diffusion.cpp (' + (variant === 'cpu' ? 'מעבד' : variant === 'cuda' ? 'NVIDIA CUDA' : 'כרטיס מסך') + ')', url: a.url, size: a.size, sha256: a.sha256, local: a.name, tag: a.tag, variant };
+    if (variant === 'cuda') {
+      const rt = pickReleaseAsset(json, platform, 'cudart');
+      if (!rt) { const e = new Error('not-found:cudart: no CUDA runtime in ' + (json && json.tag_name)); e.code = 'not-found'; e.kind = 'engine'; throw e; }
+      item.runtime = { key: 'cudart', label: 'ספריות NVIDIA CUDA', url: rt.url, size: rt.size, sha256: rt.sha256, local: rt.name };
+    }
+    return item;
   }
 
   // Resumable download into downloads/<name>.part, then verified (size, sha256 when known) and moved to dest.
@@ -650,6 +661,20 @@ function createEngine(options) {
     await extractZip(zip, tmp);
     const bin = findBinary(tmp, platform);
     if (!bin) throw new Error('engine: sd-cli not found in ' + item.local);
+    if (item.runtime) {
+      // NVIDIA's runtime DLLs go next to sd-cli, where Windows looks for them first
+      report.add(item.runtime);
+      const rz = path.join(P.downloads, path.basename(item.runtime.local));
+      report.phase('download', 'cudart');
+      await download(item.runtime, rz, signal, (b) => report.bytes('cudart', b));
+      report.phase('extract', 'cudart');
+      const rtmp = path.join(root, 'cudart.new');
+      await fsp.rm(rtmp, { recursive: true, force: true });
+      await extractZip(rz, rtmp);
+      for (const f of await fsp.readdir(rtmp)) await fsp.rename(path.join(rtmp, f), path.join(path.dirname(bin), f));
+      await fsp.rm(rtmp, { recursive: true, force: true });
+      await fsp.rm(rz, { force: true });
+    }
     if (platform !== 'win32') await fsp.chmod(bin, 0o755).catch(() => {});
     await fsp.rm(P.engine, { recursive: true, force: true });
     await fsp.rename(tmp, P.engine);
@@ -660,7 +685,7 @@ function createEngine(options) {
   async function install(onProgress, o) {
     if (installing) throw Object.assign(new Error('already installing'), { code: 'busy' });
     if (current) throw Object.assign(new Error('a picture is being made'), { code: 'busy' });
-    const want = o && o.variant === 'cpu' ? 'cpu' : (o && o.variant) === 'vulkan' ? 'vulkan' : '';
+    const want = o && ['cpu', 'vulkan', 'cuda'].includes(o.variant) ? o.variant : '';
     const ctl = new AbortController();
     installing = { ctl, cancelled: false, progress: { phase: 'plan', files: [], done: 0, total: 0 } };
     lastError = '';
@@ -713,6 +738,17 @@ function createEngine(options) {
       if (!keepEngine) {
         report.phase('download', 'engine');
         engine = await installEngine(variant, signal, report);
+        // NVIDIA (CUDA) that does not see the card (an old driver, no NVIDIA card): the general graphics card build instead
+        if (engine.variant === 'cuda') {
+          report.phase('probe', 'engine');
+          const pr = await probeVulkan(path.join(P.engine, engine.bin));
+          if (!pr.ok || (!pr.unknown && !/cuda/i.test(pr.out))) {
+            log('local-ai: the CUDA build saw no NVIDIA card, installing the Vulkan build: ' + pr.out.slice(-400));
+            prog.files = prog.files.filter((f) => f.key !== 'engine' && f.key !== 'cudart');
+            engine = await installEngine('vulkan', signal, report);
+            engine.cudaFellBack = true;
+          } else engine.gpuSeen = !pr.unknown;
+        }
         if (engine.variant === 'vulkan' && platform !== 'darwin') {
           report.phase('probe', 'engine');
           const pr = await probeVulkan(path.join(P.engine, engine.bin));
@@ -969,6 +1005,7 @@ function createEngine(options) {
         r = await runOnce(chk.bin, m, input, onProgress, { offload: true, vaeTiling: true, fa: flags.fa, maxVram: b, stream: cutOk && streamOk });
       }
       if (!r.ok && r.error === 'local-failed' && m.engine.variant === 'vulkan') r.suggestCpu = true;
+      if (!r.ok && r.error === 'local-failed' && m.engine.variant === 'cuda') r.suggestGeneral = true;   // NVIDIA build failed: the general one
       return r;
     });
     queue = p.catch(() => {});
@@ -997,6 +1034,7 @@ function createEngine(options) {
     }
     if (!r.ok && r.gpu && gen === generation) r = await runOnce(fc.bin, m, input, onProgress, Object.assign({}, flags, { offload: true, vaeTiling: true, clipCpu: false, maxVram: flags.maxVram != null && budget > 0 ? Math.max(1, Math.floor(budget * 0.6 * 100) / 100) : flags.maxVram }));
     if (!r.ok && r.error === 'local-failed' && m.engine.variant === 'vulkan') r.suggestCpu = true;
+      if (!r.ok && r.error === 'local-failed' && m.engine.variant === 'cuda') r.suggestGeneral = true;   // NVIDIA build failed: the general one
     return r;
   }
 
@@ -1052,5 +1090,5 @@ module.exports = {
   createEngine,
   // exported for tests
   pickFile, pickReleaseAsset, normalizeTree, quantRank, createProgressParser, validateRunInput, buildArgs, buildFastArgs, FAST,
-  extractZip, findBinary, parseRegGpus, parseNvidiaSmi, speedFor, crc32, SOURCES, ASSET_PATTERNS, MODEL_ID, STEPS,
+  extractZip, findBinary, parseRegGpus, parseNvidiaSmi, speedFor, crc32, SOURCES, ASSET_PATTERNS, CUDART, MODEL_ID, STEPS,
 };
