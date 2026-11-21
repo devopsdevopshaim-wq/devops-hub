@@ -1,0 +1,117 @@
+/* ==========================================================================
+   ☀️ Ivory: the program in white with gold touches (js/ivory.js, html.fs-ivory; the default). Loaded last. The dark layers
+   (studio, lux, atelier, the workspace) all read their colours from variables, so most of the change is here in the
+   variables; the rest are the few places that had a dark colour written in.
+   Also, in both looks: a marked photo is wrapped in green with its frame, its tick is blue; a photo not worth editing
+   (closed eyes, nobody looking at the camera) lies on red.
+   ========================================================================== */
+html.fs-ivory {
+  --at-night0: #FBF8F2; --at-night1: #FFFFFF; --at-night2: #F6F1E7; --at-night3: #EFE7D7; --at-night4: #E6DBC5;
+  --at-quartz: #B8904F; --at-quartz-deep: #8E6B2E; --at-thread: #C9A04F;
+  --at-grad: linear-gradient(135deg, #F7E8C6 0%, #DDBB79 48%, #B8904F 100%);
+  --bg: #FBF8F2; --bg2: #F6F1E7; --panel: #FFFFFF; --panel2: #F6F1E7; --ink: #241E15; --dim: #6F6758;
+  --ivory: #241E15; --ivory-dim: #6F6758; --champagne: #B8904F; --champagne-deep: #8E6B2E; --rose: #B8904F; --gold: #B8904F;
+  --line: rgba(80, 60, 25, .14); --line-soft: rgba(80, 60, 25, .08); --line-strong: rgba(184, 144, 79, .6);
+  --pro-stage: #F4EEE3; --pro-panel: #FFFFFF; --pro-raise: #F8F3EA; --pro-hover: #EFE6D4;
+  color-scheme: light;
+}
+html.fs-ivory body { background: #FBF8F2; color: #241E15; }
+html.fs-ivory ::selection { background: rgba(201, 160, 79, .35); color: #241E15; }
+
+/* ---------- the workspace ---------- */
+html.fs-ivory #mt {
+  --g0: #FBF8F2; --g1: #FFFFFF; --g2: #FFFFFF; --g3: #F4EEE3; --g4: #EBE1CE;
+  --gold: #B8904F; --gold2: #8E6B2E; --gold-grad: linear-gradient(135deg, #F7E8C6 0%, #DDBB79 48%, #B8904F 100%);
+  --ink: #241E15; --dim: #6F6758; --hair: rgba(80, 60, 25, .11); --hair2: rgba(80, 60, 25, .18);
+  --shadow: 0 1px 2px rgba(80, 60, 25, .06), 0 12px 30px -16px rgba(80, 60, 25, .35);
+  background: radial-gradient(1100px 480px at 85% -10%, rgba(221, 187, 121, .22), transparent 60%), radial-gradient(900px 600px at -10% 110%, rgba(221, 187, 121, .12), transparent 60%), #FBF8F2;
+  color: #241E15;
+}
+html.fs-ivory #mt .mt-top { background: rgba(255, 255, 255, .92); box-shadow: 0 1px 0 rgba(184, 144, 79, .35), 0 10px 28px -20px rgba(80, 60, 25, .45); }
+html.fs-ivory #mt .mt-btn { background: #FFFFFF; color: #3A3122; border-color: rgba(80, 60, 25, .16); box-shadow: 0 1px 2px rgba(80, 60, 25, .06); }
+html.fs-ivory #mt .mt-btn:hover { background: #FBF4E6; border-color: rgba(184, 144, 79, .55); }
+html.fs-ivory #mt .mt-btn.primary, html.fs-ivory #mt .mt-btn.on { background: linear-gradient(135deg, #F7E8C6, #DDBB79 55%, #C9A04F); color: #241E15; border-color: transparent; }
+html.fs-ivory #mt .mt-tile { background: linear-gradient(180deg, #FFFFFF, #FBF7EF); box-shadow: var(--shadow), inset 0 0 0 1px var(--hair); }
+html.fs-ivory #mt .mt-tile:hover { box-shadow: 0 18px 36px -18px rgba(80, 60, 25, .45), inset 0 0 0 1px rgba(184, 144, 79, .45); }
+html.fs-ivory #mt .mt-tile .mt-th { background: radial-gradient(circle at 50% 40%, #FFFFFF, #EFE7D7); }
+html.fs-ivory #mt .mt-tile .mt-th canvas { box-shadow: 0 6px 16px -8px rgba(60, 45, 20, .55); }
+html.fs-ivory #mt .mt-name { color: #4A4130; }
+html.fs-ivory #mt input, html.fs-ivory #mt select, html.fs-ivory #mt textarea, html.fs-ivory dialog input, html.fs-ivory dialog select, html.fs-ivory dialog textarea { background: #FFFFFF; color: #241E15; border-color: rgba(80, 60, 25, .2); }
+html.fs-ivory #mt .mt-chk { border-color: rgba(80, 60, 25, .45); background: rgba(255, 255, 255, .85); }
+
+/* ---------- the studio and the dialogs ---------- */
+html.fs-ivory .stage { background: radial-gradient(80% 70% at 50% 45%, #FFFFFF 0%, #F1EADD 80%); }
+html.fs-ivory .panel, html.fs-ivory .tools { background: #FFFFFF; border-color: rgba(80, 60, 25, .12); box-shadow: inset 1px 0 0 rgba(80, 60, 25, .06); }
+html.fs-ivory .btn { background: #FFFFFF; color: #3A3122; border-color: rgba(80, 60, 25, .18); }
+html.fs-ivory .btn:hover:not(:disabled) { background: #FBF4E6; }
+html.fs-ivory .btn.primary { background: linear-gradient(135deg, #F7E8C6, #DDBB79 55%, #C9A04F); color: #241E15; border-color: transparent; }
+html.fs-ivory dialog, html.fs-ivory .dlg, html.fs-ivory .modal { background: #FFFFFF; color: #241E15; border-color: rgba(184, 144, 79, .35); box-shadow: 0 30px 80px -30px rgba(60, 45, 20, .5); }
+html.fs-ivory .mp-step, html.fs-ivory .mp-sum, html.fs-ivory .mt-card { background: #FFFFFF; border-color: rgba(80, 60, 25, .12); }
+html.fs-ivory .mp-pv { background: #F1EADD; }
+html.fs-ivory .mp-tabs { background: #F6F1E7; border-color: rgba(184, 144, 79, .35); }
+html.fs-ivory .mp-tabs button { color: #6F6758; }
+html.fs-ivory .mp-tabs button.on, html.fs-ivory .mp-turn .mt-btn.on { color: #241E15; }
+html.fs-ivory .mt-hint, html.fs-ivory .hint { color: #6F6758; }
+
+/* ---------- marked: green around the photo and its frame, a blue tick (both looks) ---------- */
+#mt .mt-tile.sel, html.fs-ivory #mt .mt-tile.sel {
+  background: linear-gradient(180deg, #ECFDF3, #D9F7E5);
+  box-shadow: 0 0 0 3px #16A34A, 0 0 0 8px rgba(22, 163, 74, .18), 0 16px 34px -16px rgba(22, 163, 74, .55);
+}
+#mt .mt-tile.sel .mt-th { outline: 3px solid #22C55E; outline-offset: -3px; }
+#mt .mt-tile.sel .mt-name, html.fs-ivory #mt .mt-tile.sel .mt-name { color: #15803D; font-weight: 700; }
+#mt .mt-chk { color: transparent; }
+#mt .mt-tile.sel .mt-chk, html.fs-ivory #mt .mt-tile.sel .mt-chk { background: #2563EB; border-color: #2563EB; color: #FFFFFF; font-weight: 900; box-shadow: 0 0 0 3px rgba(37, 99, 235, .25); }
+
+/* ---------- not worth editing: closed eyes, nobody looking at the camera (mate.js marks .warn) ---------- */
+#mt .mt-tile.warn, html.fs-ivory #mt .mt-tile.warn { background: linear-gradient(180deg, #FEF2F2, #FECACA); box-shadow: 0 0 0 2px #DC2626, 0 14px 30px -16px rgba(220, 38, 38, .5); }
+#mt .mt-tile.warn .mt-th { background: radial-gradient(circle at 50% 40%, #FEE2E2, #FCA5A5) !important; }
+#mt .mt-tile.warn .mt-name { color: #B91C1C; }
+#mt .mt-tile.warn.sel { box-shadow: 0 0 0 3px #16A34A, 0 0 0 7px rgba(220, 38, 38, .45); }
+#mt .mt-warn { position: absolute; z-index: 3; inset-inline: 6px; bottom: 34px; padding: 3px 8px; border-radius: 999px; background: #DC2626; color: #FFFFFF; font: 700 11.5px var(--f-body, 'Assistant', sans-serif); text-align: center; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .5); pointer-events: none; }
+
+/* ---------- the leftovers that had a dark colour written in ---------- */
+html.fs-ivory select, html.fs-ivory .seg, html.fs-ivory input[type="number"], html.fs-ivory input[type="text"], html.fs-ivory input:not([type]) { background-color: #FFFFFF; color: #241E15; border-color: rgba(80, 60, 25, .2); }
+html.fs-ivory .seg button, html.fs-ivory .seg a { color: #4A4130; }
+html.fs-ivory .seg .on, html.fs-ivory .seg [aria-pressed="true"], html.fs-ivory .seg [aria-selected="true"] { background: linear-gradient(135deg, #F7E8C6, #DDBB79 55%, #C9A04F); color: #241E15; }
+html.fs-ivory .pro-status, html.fs-ivory #fs-ver, html.fs-ivory .pl-bar { background: #FFFFFF; color: #4A4130; border-color: rgba(80, 60, 25, .14); box-shadow: 0 -1px 0 rgba(184, 144, 79, .3); }
+html.fs-ivory #mt-switch { background: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(184, 144, 79, .45), 0 6px 18px -10px rgba(80, 60, 25, .4); }
+html.fs-ivory #mt-switch button { color: #4A4130; }
+html.fs-ivory .toast { background: #241E15; color: #FBF8F2; border: 1px solid rgba(221, 187, 121, .6); }
+html.fs-ivory #mt .mt-zoomb { background: rgba(255, 255, 255, .9); color: #241E15; }
+html.fs-ivory .intro { background: radial-gradient(900px 500px at 80% 0%, rgba(221, 187, 121, .28), transparent 60%), linear-gradient(180deg, #FBF8F2, #F1E8D8) !important; color: #241E15; }
+html.fs-ivory .intro p, html.fs-ivory .intro small, html.fs-ivory .intro .lead { color: #4A4130 !important; }
+/* the red label sits at the top of a photo, under the tick, so the size and copies band stays readable */
+#mt .mt-warn { top: 38px; bottom: auto; }
+#mt .mt-tile.warn .mt-adv.bad { display: none; }
+html.fs-ivory .intro-actions button, html.fs-ivory .intro-actions a, html.fs-ivory .intro-actions b, html.fs-ivory .intro-actions strong { color: #241E15 !important; }
+html.fs-ivory .intro-actions small, html.fs-ivory .intro-actions span { color: #6F6758 !important; }
+
+/* ---------- tabs as clear buttons: the active one stands out (both looks) ---------- */
+#mt .mt-tabs { display: flex; gap: 6px; padding: 5px; border-radius: 16px; background: rgba(128, 110, 80, .10); box-shadow: inset 0 0 0 1px rgba(128, 110, 80, .18); }
+#mt .mt-tabs button[data-v], #mt .mt-sub button[data-bar] {
+  position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 7px 16px; border-radius: 12px;
+  border: 1px solid transparent; background: transparent; font-weight: 600; cursor: pointer; transition: background .2s, color .2s, box-shadow .2s, transform .15s;
+}
+#mt .mt-tabs button[data-v]:hover, #mt .mt-sub button[data-bar]:hover { background: rgba(201, 160, 79, .14); transform: translateY(-1px); }
+#mt .mt-tabs button[data-v].on, #mt .mt-sub button[data-bar].on {
+  background: linear-gradient(135deg, #F7E8C6, #DDBB79 55%, #C9A04F); color: #241E15; border-color: rgba(142, 107, 46, .55);
+  box-shadow: 0 6px 16px -8px rgba(142, 107, 46, .75), inset 0 1px 0 rgba(255, 255, 255, .6); font-weight: 800;
+}
+#mt .mt-tabs button[data-v].on::after, #mt .mt-sub button[data-bar].on::after {
+  content: ''; position: absolute; inset-inline: 22%; bottom: -7px; height: 3px; border-radius: 3px; background: #8E6B2E;
+}
+#mt .mt-sub { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#mt .mt-sub button[data-bar] { background: #FFFFFF0d; box-shadow: inset 0 0 0 1px rgba(128, 110, 80, .22); }
+html.fs-ivory #mt .mt-sub button[data-bar]:not(.on), html.fs-ivory #mt .mt-tabs button[data-v]:not(.on) { color: #4A4130; }
+html.fs-ivory #mt .mt-sub button[data-bar]:not(.on) { background: #FFFFFF; }
+#mt .mt-seg button.on { box-shadow: 0 4px 12px -6px rgba(142, 107, 46, .8); font-weight: 800; }
+/* the studio's side rail: the open tab stands out */
+.tools button[aria-selected="true"] { box-shadow: inset 0 0 0 2px #C9A04F, 0 6px 14px -8px rgba(142, 107, 46, .7) !important; font-weight: 800; }
+html.fs-ivory .tools button[aria-selected="true"] { background: linear-gradient(135deg, #FBF1DC, #EBD3A0) !important; color: #241E15 !important; }
+
+/* ---------- people on each photo: how many, and how many look with their eyes open ---------- */
+#mt .mt-ppl { position: absolute; z-index: 3; top: auto; bottom: 36px; inset-inline-start: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(36, 30, 21, .78); color: #fff; font: 700 11.5px var(--f-body, 'Assistant', sans-serif); pointer-events: none; }
+
+#mt .mt-ppl.wait { background: rgba(36, 30, 21, .5); animation: mt-ppl-wait 1.4s ease-in-out infinite; }
+@keyframes mt-ppl-wait { 50% { opacity: .55; } }

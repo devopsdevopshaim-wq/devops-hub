@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>פשר — פתרון חלומות לפי המקורות</title>
+<meta name="description" content="פתרון חלומות לפי התלמוד, הזוהר, התורה וספרי הקבלה: פירוש לכל סמל עם מקור, פסוקים להקדים, סדר הטבת חלום והמלצות מעשיות." />
+<meta name="theme-color" content="#0b0f1f" />
+<link rel="icon" href="img/mark.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;400;500;700;900&family=Heebo:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/dreams.css" />
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<div class="topbar">
+  <span>יהדות · <b>פשר</b> — פתרון חלומות לפי המקורות</span>
+  <a href="../portfolio/">כל האתרים שלי ←</a>
+</div>
+
+<header class="nav">
+  <a class="brand" href="#top">
+    <img src="img/mark.svg" alt="" width="40" height="40" />
+    <span><b>פשר</b><small>פתרון חלומות · חז״ל · זוהר · קבלה</small></span>
+  </a>
+  <nav>
+    <a href="#interpret">פתרון חלום</a>
+    <a href="#symbols">מילון הסמלים</a>
+    <a href="#sources">מקורות ועקרונות</a>
+    <a href="#hatava">הטבת חלום</a>
+    <a href="#journal">יומן חלומות</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="moon" aria-hidden="true"></div>
+    <p class="eyebrow">״חֶלְמָא דְּלָא מְפַשַּׁר — כְּאִגַּרְתָּא דְּלָא מְקַרְיָא״</p>
+    <h1>כל חלום<br /><em>הולך אחר הפה</em></h1>
+    <p class="lead">ספרו את החלום וקבלו פתרון מלא וכתוב: לב החלום, המסר, המימד הפנימי לפי הקבלה,
+      פירוש כל פרט לפי מסכת ברכות, התורה והזוהר — ותוכנית טיפול מעשית מהבוקר ועד הלילה.</p>
+    <div class="hero-cta">
+      <a class="btn gold" href="#interpret">לפתרון החלום</a>
+      <a class="btn ghost" href="#hatava">סדר הטבת חלום</a>
+    </div>
+    <ul class="pillars">
+      <li><b id="countSymbols">—</b><span>סמלים עם מקור</span></li>
+      <li><b>9 נושאים</b><span>פרנסה · משפחה · בריאות · נשמה…</span></li>
+      <li><b>ברכות נה–נז</b><span>סוגיית החלומות</span></li>
+      <li><b>תוכנית טיפול</b><span>בוקר · יום · לילה · שבוע</span></li>
+    </ul>
+  </section>
+
+  <!-- ======================= פתרון ======================= -->
+  <section id="interpret" class="panel">
+    <div class="sec-head">
+      <span class="num">א</span>
+      <div><h2>ספרו את החלום</h2><p>כתבו בחופשיות, בעברית, כמה שיותר פרטים: מי היה שם, איפה, מה קרה, צבעים, חפצים, ומה הרגשתם. המערכת תזהה את הסמלים והנושא, תשאל שאלות הבהרה כשהגמרא מבחינה בין מצבים, ותכתוב פתרון מלא.</p></div>
+    </div>
+
+    <form id="dreamForm" class="dream-form" autocomplete="off">
+      <label class="field full">
+        <span>החלום</span>
+        <textarea id="dreamText" rows="6" placeholder="לדוגמה: חלמתי שאני עולה על הר גבוה, ולמטה זורם נהר. פתאום עף מעליי יונה לבנה, ומצאתי באר עם מים צלולים…" required></textarea>
+      </label>
+
+      <fieldset class="field">
+        <legend>מתי חלמתם?</legend>
+        <div class="chips" data-name="time">
+          <label><input type="radio" name="time" value="night" checked /><span>בלילה</span></label>
+          <label><input type="radio" name="time" value="dawn" /><span>לפנות בוקר</span></label>
+          <label><input type="radio" name="time" value="day" /><span>בשנת יום</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>איך התעוררתם?</legend>
+        <div class="chips" data-name="feel">
+          <label><input type="radio" name="feel" value="joy" /><span>בשמחה</span></label>
+          <label><input type="radio" name="feel" value="calm" checked /><span>רגוע</span></label>
+          <label><input type="radio" name="feel" value="worry" /><span>מוטרד</span></label>
+          <label><input type="radio" name="feel" value="fear" /><span>מפוחד</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>האם החלום חוזר?</legend>
+        <div class="chips" data-name="repeat">
+          <label><input type="radio" name="repeat" value="no" checked /><span>פעם ראשונה</span></label>
+          <label><input type="radio" name="repeat" value="yes" /><span>חוזר שוב</span></label>
+          <label><input type="radio" name="repeat" value="friend" /><span>חבר חלם עליי</span></label>
+        </div>
+      </fieldset>
+
+      <div class="form-actions full">
+        <button class="btn gold" type="submit">פתרו את החלום</button>
+        <button class="btn ghost" type="button" id="sampleBtn">דוגמה לחלום</button>
+      </div>
+    </form>
+
+    <div id="result" class="result" hidden></div>
+  </section>
+
+  <!-- ======================= מילון ======================= -->
+  <section id="symbols" class="panel">
+    <div class="sec-head">
+      <span class="num">ב</span>
+      <div><h2>מילון הסמלים</h2><p>כל הסמלים שבמערכת, עם הפירוש והמקור. סמל המסומן ״רוח הדברים״ אינו מפורש בגמרא ונשען על עקרונות המקורות.</p></div>
+    </div>
+    <div class="dict-tools">
+      <input id="dictSearch" type="search" placeholder="חיפוש סמל… (נחש, מים, תפילין)" />
+      <div id="dictCats" class="chips solo"></div>
+    </div>
+    <div id="dictGrid" class="dict-grid"></div>
+  </section>
+
+  <!-- ======================= מקורות ======================= -->
+  <section id="sources" class="panel">
+    <div class="sec-head">
+      <span class="num">ג</span>
+      <div><h2>מקורות ועקרונות</h2><p>היסודות שעליהם נבנה כל פתרון במערכת. כל מקור מקושר לטקסט המלא בספריא.</p></div>
+    </div>
+    <div id="principles" class="principles"></div>
+
+    <div class="gem-tool">
+      <h3>מחשבון גימטריה</h3>
+      <p class="small">כתבו מילה מן החלום — המחשבון יחשב את המניין, ויציג שוויון מוכר מן המקורות אם יש (למשל נחש, יין, סולם).</p>
+      <div class="gem-row"><input id="gemInput" type="search" placeholder="מילה מן החלום…" /><div id="gemOut" class="gem-out"></div></div>
+    </div>
+
+    <div class="library">
+      <h3>הספרייה</h3>
+      <div class="lib-grid">
+        <a class="lib" href="https://www.sefaria.org/Berakhot.55a?lang=he" target="_blank" rel="noopener"><b>תלמוד בבלי, ברכות נה.–נז:</b><span>״סוגיית החלומות״ — העיקרון שהחלום הולך אחר הפה, הטבת חלום, ופירוש מאות סמלים.</span></a>
+        <a class="lib" href="https://www.sefaria.org/Genesis.37?lang=he" target="_blank" rel="noopener"><b>חלומות התורה</b><span>יעקב (כח), יוסף (לז), שר המשקים והאופים (מ), פרעה (מא) — דרך הפתרון של יוסף.</span></a>
+        <a class="lib" href="https://www.sefaria.org/search?q=%D7%97%D7%9C%D7%9E%D7%90%20%D7%93%D7%9C%D7%90%20%D7%90%D7%AA%D7%A4%D7%A9%D7%A8&tab=text" target="_blank" rel="noopener"><b>זוהר, פרשת מקץ וויחי</b><span>עליית הנשמה בשינה, מדרגות החלום, ומדוע החלום תלוי בפותר.</span></a>
+        <a class="lib" href="https://www.sefaria.org/Shulchan_Arukh,_Orach_Chayim.220?lang=he" target="_blank" rel="noopener"><b>שולחן ערוך, אורח חיים רכ</b><span>הלכות הטבת חלום ותענית חלום, עם המשנה ברורה.</span></a>
+        <a class="lib" href="https://www.sefaria.org/Shulchan_Arukh,_Orach_Chayim.288?lang=he" target="_blank" rel="noopener"><b>שולחן ערוך, אורח חיים רפח</b><span>תענית חלום בשבת — מתי ואיך (רק בהוראת רב).</span></a>
+        <a class="lib" href="https://www.sefaria.org/Mishneh_Torah,_Foundations_of_the_Torah.7?lang=he" target="_blank" rel="noopener"><b>רמב״ם, יסודי התורה ז</b><span>חלום כמדרגה של נבואה, ומה בין חלום נבואי לחלום רגיל.</span></a>
+        <a class="lib" href="https://www.sefaria.org/search?q=%D7%A4%D7%AA%D7%A8%D7%95%D7%9F%20%D7%97%D7%9C%D7%95%D7%9E%D7%95%D7%AA&tab=sheet" target="_blank" rel="noopener"><b>״פתרון חלומות״ — ר׳ שלמה אלמולי</b><span>חיבור קלאסי משנת ה׳רע״ו, המסכם את שיטות הפתרון של חז״ל והראשונים.</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= הטבת חלום ======================= -->
+  <section id="hatava" class="panel">
+    <div class="sec-head">
+      <span class="num">ד</span>
+      <div><h2>סדר הטבת חלום</h2><p>מי שראה חלום ונפשו עגומה — יפתרנו בפני שלושה אוהבים (ברכות נה:). אומרים בבוקר, אחרי שחרית, ולא בשבת (אלא אם חלם בליל שבת).</p></div>
+    </div>
+    <div class="hatava">
+      <ol class="steps">
+        <li><b>אוספים שלושה</b> — חברים או בני משפחה שאוהבים אתכם. החולם יושב מולם.</li>
+        <li><b>החולם אומר שבע פעמים:</b> <q>חֶלְמָא טָבָא חֲזַאי</q> (חלום טוב ראיתי).</li>
+        <li><b>השלושה עונים בכל פעם:</b> <q>טָבָא הוּא וְטָבָא לֶהֱוֵי, רַחֲמָנָא לְשַׁוְיֵהּ לְטָב, שֶׁבַע זִמְנִין לִגְזְרוּ עֲלָךְ מִן שְׁמַיָּא דְּלֶהֱוֵי טָבָא, וְטָבָא הוּא וְטָבָא לֶהֱוֵי.</q></li>
+        <li><b>שלושה פסוקי ״הפוכים״</b> — אומרים השלושה.</li>
+        <li><b>שלושה פסוקי ״פדויים״</b>.</li>
+        <li><b>שלושה פסוקי ״שלום״</b>.</li>
+        <li><b>חותמים:</b> <q>לֵךְ אֱכֹל בְּשִׂמְחָה לַחְמֶךָ וּשְׁתֵה בְלֶב טוֹב יֵינֶךָ, כִּי כְבָר רָצָה הָאֱלֹקִים אֶת מַעֲשֶׂיךָ.</q> ומוסיפים צדקה, תשובה ותפילה.</li>
+      </ol>
+      <div class="verses">
+        <div class="verse-group"><h4>הפוכים</h4>
+          <p>הָפַכְתָּ מִסְפְּדִי לְמָחוֹל לִי, פִּתַּחְתָּ שַׂקִּי וַתְּאַזְּרֵנִי שִׂמְחָה. <cite>תהילים ל:יב</cite></p>
+          <p>וְלֹא אָבָה ה׳ אֱלֹקֶיךָ לִשְׁמֹעַ אֶל בִּלְעָם, וַיַּהֲפֹךְ ה׳ אֱלֹקֶיךָ לְּךָ אֶת הַקְּלָלָה לִבְרָכָה, כִּי אֲהֵבְךָ ה׳ אֱלֹקֶיךָ. <cite>דברים כג:ו</cite></p>
+          <p>אָז תִּשְׂמַח בְּתוּלָה בְּמָחוֹל וּבַחֻרִים וּזְקֵנִים יַחְדָּו, וְהָפַכְתִּי אֶבְלָם לְשָׂשׂוֹן וְנִחַמְתִּים וְשִׂמַּחְתִּים מִיגוֹנָם. <cite>ירמיה לא:יב</cite></p>
+        </div>
+        <div class="verse-group"><h4>פדויים</h4>
+          <p>פָּדָה בְשָׁלוֹם נַפְשִׁי מִקְּרָב לִי, כִּי בְרַבִּים הָיוּ עִמָּדִי. <cite>תהילים נה:יט</cite></p>
+          <p>וַיִּפְדּוּ הָעָם אֶת יוֹנָתָן וְלֹא מֵת. <cite>שמואל א יד:מה</cite></p>
+          <p>וּפְדוּיֵי ה׳ יְשֻׁבוּן וּבָאוּ צִיּוֹן בְּרִנָּה, וְשִׂמְחַת עוֹלָם עַל רֹאשָׁם, שָׂשׂוֹן וְשִׂמְחָה יַשִּׂיגוּ וְנָסוּ יָגוֹן וַאֲנָחָה. <cite>ישעיה לה:י</cite></p>
+        </div>
+        <div class="verse-group"><h4>שלום</h4>
+          <p>בּוֹרֵא נִיב שְׂפָתָיִם, שָׁלוֹם שָׁלוֹם לָרָחוֹק וְלַקָּרוֹב אָמַר ה׳ וּרְפָאתִיו. <cite>ישעיה נז:יט</cite></p>
+          <p>וְרוּחַ לָבְשָׁה אֶת עֲמָשַׂי רֹאשׁ הַשָּׁלִישִׁים, לְךָ דָוִיד וְעִמְּךָ בֶן יִשַׁי, שָׁלוֹם שָׁלוֹם לְךָ וְשָׁלוֹם לְעֹזְרֶךָ, כִּי עֲזָרְךָ אֱלֹקֶיךָ. <cite>דברי הימים א יב:יט</cite></p>
+          <p>וַאֲמַרְתֶּם כֹּה לֶחָי, וְאַתָּה שָׁלוֹם וּבֵיתְךָ שָׁלוֹם וְכֹל אֲשֶׁר לְךָ שָׁלוֹם. <cite>שמואל א כה:ו</cite></p>
+        </div>
+      </div>
+
+      <div class="prayer">
+        <h4>תפילה בשעת ברכת כהנים</h4>
+        <p class="small">מי שראה חלום ואינו יודע מה ראה — יעמוד לפני הכהנים בשעה שפורשים כפיהם ויאמר (ברכות נה:):</p>
+        <blockquote>רִבּוֹנוֹ שֶׁל עוֹלָם, אֲנִי שֶׁלָּךְ וַחֲלוֹמוֹתַי שֶׁלָּךְ. חֲלוֹם חָלַמְתִּי וְאֵינִי יוֹדֵעַ מַה הוּא. בֵּין שֶׁחָלַמְתִּי אֲנִי לְעַצְמִי, וּבֵין שֶׁחָלְמוּ לִי חֲבֵרַי, וּבֵין שֶׁחָלַמְתִּי עַל אֲחֵרִים — אִם טוֹבִים הֵם, חַזְּקֵם וְאַמְּצֵם כַּחֲלוֹמוֹתָיו שֶׁל יוֹסֵף; וְאִם צְרִיכִים רְפוּאָה, רְפָאֵם כְּמֵי מָרָה עַל יְדֵי מֹשֶׁה רַבֵּנוּ, וּכְמִרְיָם מִצָּרַעְתָּהּ, וּכְחִזְקִיָּהוּ מֵחָלְיוֹ, וּכְמֵי יְרִיחוֹ עַל יְדֵי אֱלִישָׁע. וּכְשֵׁם שֶׁהָפַכְתָּ קִלְלַת בִּלְעָם הָרָשָׁע לִבְרָכָה, כֵּן תַּהֲפֹךְ כָּל חֲלוֹמוֹתַי עָלַי לְטוֹבָה.</blockquote>
+        <p class="small">ומסיים יחד עם הכהנים, כדי שהציבור יענה ״אמן״.</p>
+      </div>
+      <div class="hatava-actions">
+        <button class="btn ghost" type="button" onclick="window.print()">הדפסת הסדר</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= יומן ======================= -->
+  <section id="journal" class="panel">
+    <div class="sec-head">
+      <span class="num">ה</span>
+      <div><h2>יומן חלומות</h2><p>חלומות שפתרתם נשמרים כאן, בדפדפן שלכם בלבד. כך אפשר לזהות חלום חוזר — שלפי חז״ל יש לתת עליו את הדעת.</p></div>
+    </div>
+    <div id="journalList" class="journal"></div>
+  </section>
+
+  <section class="disclaimer">
+    <p><b>לתשומת לבכם:</b> המערכת מציגה את דברי המקורות ופותרת לטובה, כדרכם של חז״ל. אין היא תחליף לשאלת רב בענייני הלכה (כגון תענית חלום), ואין היא ייעוץ רפואי או נפשי. חלומות קשים שחוזרים ופוגעים בשינה או ביום־יום — כדאי לשתף בהם איש מקצוע.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <img src="img/mark.svg" alt="" width="28" height="28" />
+  <span>פשר · פתרון חלומות לפי המקורות · הטקסטים המקוריים מקושרים ל־<a href="https://www.sefaria.org" target="_blank" rel="noopener">ספריא</a></span>
+</footer>
+
+<script src="js/symbols.js"></script>
+<script src="js/knowledge.js"></script>
+<script src="js/dreams.js"></script>
+</body>
+</html>

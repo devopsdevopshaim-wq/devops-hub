@@ -1,0 +1,18 @@
+{
+  "id": "frame-guest",
+  "name": "פריים מגנטים — התמונות שלי",
+  "short_name": "התמונות שלי",
+  "description": "התמונות שלכם מהאירוע: צילום, שליחה להדפסה כמגנט וברכה לבעלי השמחה.",
+  "start_url": "live.html?app=1",
+  "scope": "./",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "he",
+  "background_color": "#1d1633",
+  "theme_color": "#1d1633",
+  "icons": [
+    { "src": "guest-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "guest-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

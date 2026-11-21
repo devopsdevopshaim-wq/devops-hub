@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://utteranc.es; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:*; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://utteranc.es 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https:">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#05040f">
+<title>SPIDER · מצב רכב</title>
+<link rel="manifest" href="car.webmanifest">
+<link rel="icon" href="img/spider.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="img/icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/extras.css?v=lite4">
+<link rel="stylesheet" href="css/future.css">
+<link rel="stylesheet" href="css/car.css?v=3">
+<script src="js/future.js" defer></script>
+<script src="js/extras.js" defer></script>
+<script src="js/car.js" defer></script>
+</head>
+<body class="car-page no-dock has-scene">
+<header class="car-top">
+  <div class="clock"><b id="c-time">--:--</b><span id="c-date"></span></div>
+  <p class="car-warn">לשימוש בחניה או על ידי הנוסע. בנהיגה, הקשיבו בלבד.</p>
+  <a class="exit" href="index.html">לאתר ←</a>
+</header>
+<div class="ticker" id="c-ticker" aria-label="חדשות"><div class="tk-label">חדשות</div><div class="tk-view"><div class="tk-track" id="c-track"></div></div></div>
+</body>
+</html>

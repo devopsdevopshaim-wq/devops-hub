@@ -1,0 +1,31 @@
+{
+  "id": "admin.html?app=manager",
+  "name": "פריים מגנטים · ניהול העסק",
+  "short_name": "פריים ניהול",
+  "description": "ניהול העסק מהטלפון: הזמנות, יומן, עסקאות, הוצאות וקבלות, מסמכים, דוחות לרואה החשבון, רישיונות אופטימוס והתראות.",
+  "start_url": "admin.html?app=1",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "he",
+  "background_color": "#0D0B10",
+  "theme_color": "#0D0B10",
+  "icons": [
+    { "src": "app-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "app-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "📷 קבלה / הוצאה", "short_name": "קבלה", "url": "admin.html?app=1#expenses", "icons": [{ "src": "app-192.png", "sizes": "192x192" }] },
+    { "name": "📥 בקשות הזמנה", "short_name": "בקשות", "url": "admin.html?app=1#requests", "icons": [{ "src": "app-192.png", "sizes": "192x192" }] },
+    { "name": "📁 מסמכים", "short_name": "מסמכים", "url": "admin.html?app=1#docs", "icons": [{ "src": "app-192.png", "sizes": "192x192" }] },
+    { "name": "🔑 רישיונות אופטימוס", "short_name": "רישיונות", "url": "admin.html?app=1#licenses", "icons": [{ "src": "app-192.png", "sizes": "192x192" }] }
+  ],
+  "share_target": {
+    "action": "share-in.html",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": { "title": "title", "text": "text", "files": [{ "name": "photo", "accept": ["image/*"] }] }
+  }
+}

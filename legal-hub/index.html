@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>מצפן משפטי — מענה משפטי ראשוני</title>
+<meta name="description" content="שאלו כל שאלה משפטית בעברית חופשית וקבלו מענה ראשוני מסודר: מה הדין, מה הזכויות, מה עושים עכשיו, מועדים, מסמכים ולאן פונים. עבודה, משפחה, שכירות, צרכנות, חובות, ביטוח לאומי, פלילי ועוד." />
+<meta name="theme-color" content="#13233f" />
+<link rel="icon" href="img/mark.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Assistant:wght@400;500;600;700&family=David+Libre:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/legal.css" />
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן</a>
+
+<div class="utility" role="region" aria-label="נגישות">
+  <div class="wrap">
+    <span class="u-note">מידע משפטי כללי · לא ייעוץ משפטי · אינו גוף ממשלתי</span>
+    <div class="u-tools">
+      <span class="u-lbl" id="fsLbl">גודל טקסט</span>
+      <div class="seg" role="group" aria-labelledby="fsLbl">
+        <button type="button" data-fs="0" aria-pressed="true">א</button>
+        <button type="button" data-fs="1" aria-pressed="false" class="f1">א</button>
+        <button type="button" data-fs="2" aria-pressed="false" class="f2">א</button>
+      </div>
+      <button type="button" class="u-btn" id="contrastBtn" aria-pressed="false">ניגודיות גבוהה</button>
+      <a class="u-btn" href="../portfolio/">כל האתרים</a>
+    </div>
+  </div>
+</div>
+
+<header class="mast">
+  <div class="wrap mast-in">
+    <a class="brand" href="#/">
+      <img src="img/mark.svg" alt="" width="46" height="46" />
+      <span><b>מצפן משפטי</b><small>מענה משפטי ראשוני לכל שאלה</small></span>
+    </a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav">תפריט</button>
+    <nav id="nav" aria-label="ניווט ראשי">
+      <a href="#/" data-nav="home">שאלה חדשה</a>
+      <a href="#/areas" data-nav="areas">תחומי משפט</a>
+      <a href="#/tools" data-nav="tools">מחשבונים</a>
+      <a href="#/letters" data-nav="letters">מכתבים</a>
+      <a href="#/courts" data-nav="courts">בתי המשפט</a>
+      <a href="#/help" data-nav="help">לאן פונים</a>
+      <a href="#/glossary" data-nav="glossary">מילון</a>
+      <a href="#/saved" data-nav="saved">השאלות שלי</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- ============================================================ בית -->
+  <section class="view" data-view="home">
+    <div class="hero">
+      <div class="wrap hero-in">
+        <div class="hero-main">
+          <p class="eyebrow">מענה ראשוני · 26 תחומי משפט · מבוסס על החקיקה בישראל</p>
+          <h1>ספרו מה קרה.<br /><span>נגיד לכם מה הדין ומה עושים עכשיו.</span></h1>
+          <form id="askForm" class="ask" autocomplete="off">
+            <label for="q" class="sr">השאלה המשפטית שלך</label>
+            <textarea id="q" rows="4" maxlength="3000" placeholder="לדוגמה: עבדתי שלוש שנים במסעדה, פיטרו אותי בלי שימוע ולא שילמו לי פיצויים. מה מגיע לי?"></textarea>
+            <div class="ask-bar">
+              <span class="ask-hint">כתבו בחופשיות. בלי שמות ופרטים מזהים.</span>
+              <button class="btn primary" type="submit">לקבלת מענה</button>
+            </div>
+          </form>
+          <div class="examples" aria-label="שאלות לדוגמה">
+            <span>שאלות נפוצות:</span>
+            <button type="button" class="chip">בעל הדירה לא מחזיר לי את הפיקדון</button>
+            <button type="button" class="chip">קיבלתי אזהרה מההוצאה לפועל</button>
+            <button type="button" class="chip">הזמנתי באינטרנט ורוצה לבטל</button>
+            <button type="button" class="chip">זימנו אותי לחקירה במשטרה</button>
+            <button type="button" class="chip">איך מגישים בקשה לצו ירושה?</button>
+            <button type="button" class="chip">הטיסה שלי בוטלה</button>
+          </div>
+        </div>
+        <aside class="urgent-card" aria-label="עזרה דחופה">
+          <h2>מצב חירום?</h2>
+          <p>אם יש סכנה לחיים או לגוף — אל תחכו למענה משפטי.</p>
+          <ul>
+            <li><a href="tel:100"><b>100</b><span>משטרה</span></a></li>
+            <li><a href="tel:118"><b>118</b><span>מוקד הרווחה — אלימות במשפחה</span></a></li>
+            <li><a href="tel:1202"><b>1202</b><span>נפגעות תקיפה מינית</span></a></li>
+            <li><a href="tel:1203"><b>1203</b><span>נפגעי תקיפה מינית</span></a></li>
+            <li><a href="tel:1201"><b>1201</b><span>ער״ן — עזרה נפשית</span></a></li>
+            <li><a href="tel:105"><b>105</b><span>פגיעה ברשת</span></a></li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <section class="block">
+        <div class="block-head">
+          <h2>המועדים שהכי קל לפספס</h2>
+          <p>בהרבה מקרים, מה שמכריע את התיק הוא לא מי צודק אלא מי פעל בזמן.</p>
+        </div>
+        <ol class="ledger" id="ledger"></ol>
+        <p class="ledger-foot"><a href="#/tools/limit">חשבו מועד לפי התאריך שלכם ←</a></p>
+      </section>
+
+      <section class="block">
+        <div class="block-head row">
+          <div><h2>תחומי משפט</h2><p>בחרו תחום כדי לראות את המצבים הנפוצים בו.</p></div>
+          <a class="more" href="#/areas">לכל התחומים ←</a>
+        </div>
+        <div class="areas" id="areasHome"></div>
+      </section>
+
+      <section class="block tools-strip">
+        <a href="#/tools/severance" class="tool-link"><b>פיצויי פיטורים</b><span>כמה מגיע לפי שכר וותק</span></a>
+        <a href="#/tools/notice" class="tool-link"><b>הודעה מוקדמת</b><span>כמה ימים לפי החוק</span></a>
+        <a href="#/tools/limit" class="tool-link"><b>מחשבון מועדים</b><span>עד מתי אפשר לפעול</span></a>
+        <a href="#/letters" class="tool-link"><b>מכתב התראה</b><span>תבניות מוכנות לשליחה</span></a>
+      </section>
+    </div>
+  </section>
+
+  <!-- ============================================================ תחומים -->
+  <section class="view" data-view="areas" hidden>
+    <div class="page-head"><div class="wrap">
+      <nav class="crumbs" aria-label="מיקום"><a href="#/">ראשי</a><span>תחומי משפט</span></nav>
+      <h1>תחומי משפט</h1>
+      <p>כל תחום מחולק למצבים נפוצים. בכל מצב: התשובה בקצרה, הזכויות, הצעדים, המועדים, המסמכים ולאן פונים.</p>
+      <label class="search"><span class="sr">חיפוש</span><input id="areaFilter" type="search" placeholder="חיפוש מצב או נושא, למשל: פיקדון, מזונות, דוח" /></label>
+    </div></div>
+    <div class="wrap"><div class="areas" id="areasAll"></div><div id="areaFilterOut"></div></div>
+  </section>
+
+  <section class="view" data-view="area" hidden>
+    <div class="page-head"><div class="wrap" id="areaHead"></div></div>
+    <div class="wrap"><div class="issue-list" id="areaIssues"></div></div>
+  </section>
+
+  <!-- ============================================================ מענה -->
+  <section class="view" data-view="answer" hidden>
+    <div class="wrap answer-wrap">
+      <nav class="crumbs" aria-label="מיקום" id="ansCrumbs"></nav>
+      <div id="flags"></div>
+      <article class="opinion" id="opinion" aria-live="polite"></article>
+      <div class="followup" id="followup" hidden>
+        <h2>שאלת המשך</h2>
+        <form id="fuForm" class="fu-form">
+          <label for="fuQ" class="sr">שאלת המשך</label>
+          <input id="fuQ" type="text" maxlength="1000" placeholder="לדוגמה: ומה אם חתמתי על מסמך ויתור?" />
+          <button class="btn primary" type="submit">שאלו</button>
+        </form>
+        <div id="fuThread"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ מחשבונים -->
+  <section class="view" data-view="tools" hidden>
+    <div class="page-head"><div class="wrap">
+      <nav class="crumbs" aria-label="מיקום"><a href="#/">ראשי</a><span>מחשבונים</span></nav>
+      <h1>מחשבונים משפטיים</h1>
+      <p>הערכה ראשונית לפי הכללים שבחוק. הסכומים המדויקים תלויים בהסכם, בצווי הרחבה ובנסיבות.</p>
+    </div></div>
+    <div class="wrap">
+      <div class="tabs" role="tablist" id="toolTabs">
+        <button role="tab" data-tool="severance">פיצויי פיטורים</button>
+        <button role="tab" data-tool="notice">הודעה מוקדמת</button>
+        <button role="tab" data-tool="recup">דמי הבראה</button>
+        <button role="tab" data-tool="limit">מחשבון מועדים</button>
+        <button role="tab" data-tool="birth">חופשת לידה</button>
+      </div>
+
+      <div class="tool" data-tool="severance" role="tabpanel">
+        <form class="calc" data-calc="severance">
+          <label>שכר חודשי אחרון (ברוטו, ₪)<input name="sal" type="number" min="0" step="1" inputmode="numeric" required /></label>
+          <label>תחילת העבודה<input name="from" type="date" required /></label>
+          <label>סיום העבודה<input name="to" type="date" required /></label>
+          <button class="btn primary" type="submit">חישוב</button>
+        </form>
+        <div class="calc-out" aria-live="polite"></div>
+        <p class="calc-note">לפי חוק פיצויי פיטורים: משכורת אחת לכל שנת עבודה, אחרי שנה רצופה לפחות. בעובד שכרו משתנה (שעתי, עמלות) הבסיס הוא ממוצע. אם חל ״סעיף 14״ — כספי הפיצויים בקרן הפנסיה באים במקום התשלום (בהיקף ההפרשה).</p>
+      </div>
+
+      <div class="tool" data-tool="notice" role="tabpanel" hidden>
+        <form class="calc" data-calc="notice">
+          <label>סוג שכר<select name="type"><option value="m">חודשי (משכורת)</option><option value="h">שעתי / יומי</option></select></label>
+          <label>תחילת העבודה<input name="from" type="date" required /></label>
+          <label>מועד מתן ההודעה<input name="to" type="date" required /></label>
+          <button class="btn primary" type="submit">חישוב</button>
+        </form>
+        <div class="calc-out" aria-live="polite"></div>
+        <p class="calc-note">לפי חוק הודעה מוקדמת לפיטורים ולהתפטרות. חל גם על עובד שמתפטר. הסכם קיבוצי או חוזה יכולים לקבוע תקופה ארוכה יותר.</p>
+      </div>
+
+      <div class="tool" data-tool="recup" role="tabpanel" hidden>
+        <form class="calc" data-calc="recup">
+          <label>שנות ותק (שלמות)<input name="years" type="number" min="1" max="50" required /></label>
+          <label>היקף משרה (%)<input name="scope" type="number" min="1" max="100" value="100" required /></label>
+          <label>ערך יום הבראה (₪)<input name="rate" type="number" min="1" step="0.01" value="418" required /></label>
+          <button class="btn primary" type="submit">חישוב</button>
+        </form>
+        <div class="calc-out" aria-live="polite"></div>
+        <p class="calc-note">לפי צו ההרחבה במגזר הפרטי. ערך יום ההבראה מתעדכן — בדקו את הערך העדכני (במגזר הציבורי הוא גבוה יותר). הזכאות מתחילה אחרי שנת עבודה, ומשולמת גם לשנה האחרונה באופן יחסי.</p>
+      </div>
+
+      <div class="tool" data-tool="limit" role="tabpanel" hidden>
+        <form class="calc" data-calc="limit">
+          <label>על מה המועד?<select name="kind" id="limitKind"></select></label>
+          <label>מתי קרה האירוע / התקבל המסמך?<input name="from" type="date" required /></label>
+          <button class="btn primary" type="submit">חישוב</button>
+        </form>
+        <div class="calc-out" aria-live="polite"></div>
+        <p class="calc-note">המועד נספר מהיום שאחרי האירוע. יש חריגים: קטינות, גילוי מאוחר של הנזק, הודאה בחוב, ומועדים מיוחדים בחוזה או בפוליסה. כשהמועד קרוב — אל תסתמכו על המחשבון, פנו לייעוץ.</p>
+      </div>
+
+      <div class="tool" data-tool="birth" role="tabpanel" hidden>
+        <form class="calc" data-calc="birth">
+          <label>תאריך הלידה (או הצפוי)<input name="from" type="date" required /></label>
+          <button class="btn primary" type="submit">חישוב</button>
+        </form>
+        <div class="calc-out" aria-live="polite"></div>
+        <p class="calc-note">חופשת לידה מלאה (26 שבועות) למי שעבדה 12 חודשים לפחות אצל אותו מעסיק; 15 שבועות בתשלום דמי לידה למי שצברה תקופת אכשרה. אפשר לצאת לחופשה עד 7 שבועות לפני הלידה (על חשבון החופשה).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ מכתבים -->
+  <section class="view" data-view="letters" hidden>
+    <div class="page-head"><div class="wrap">
+      <nav class="crumbs" aria-label="מיקום"><a href="#/">ראשי</a><span>מכתבים</span></nav>
+      <h1>מכתבים מוכנים</h1>
+      <p>מכתב בכתב, עם מועד ברור, פותר חלק גדול מהסכסוכים — ואם לא, הוא הראיה הראשונה בתביעה. מלאו את הפרטים, העתיקו ושלחו בדואר רשום, במייל או בוואטסאפ.</p>
+    </div></div>
+    <div class="wrap letters">
+      <div class="letter-pick" id="letterPick" role="list"></div>
+      <div class="letter-work">
+        <form id="letterForm" class="letter-form"></form>
+        <div class="letter-paper" id="letterOut" aria-live="polite"></div>
+        <div class="letter-acts">
+          <button class="btn primary" type="button" id="letterCopy">העתקת המכתב</button>
+          <button class="btn ghost" type="button" id="letterPrint">הדפסה</button>
+          <a class="btn ghost" id="letterMail" href="#">פתיחה במייל</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ בתי משפט -->
+  <section class="view" data-view="courts" hidden>
+    <div class="page-head"><div class="wrap">
+      <nav class="crumbs" aria-label="מיקום"><a href="#/">ראשי</a><span>בתי המשפט</span></nav>
+      <h1>מדריך לבתי המשפט</h1>
+      <p>איזה בית משפט דן במה, איך מתנהל הליך אזרחי, ומה אפשר לעשות לבד.</p>
+    </div></div>
+    <div class="wrap">
+      <section class="block">
+        <h2 class="h2">מבנה מערכת השיפוט</h2>
+        <div class="courts" id="courtsMap"></div>
+      </section>
+      <section class="block">
+        <h2 class="h2">שלבי הליך אזרחי</h2>
+        <ol class="steps-line" id="civilSteps"></ol>
+      </section>
+      <section class="block">
+        <h2 class="h2">לאן מגישים?</h2>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th scope="col">העניין</th><th scope="col">הערכאה</th><th scope="col">עו״ד?</th></tr></thead>
+            <tbody>
+              <tr><td>תביעה כספית עד תקרת התביעות הקטנות (כ־39 אלף ₪)</td><td>תביעות קטנות (בבית משפט השלום)</td><td>לא — ככלל אסור</td></tr>
+              <tr><td>תביעה כספית עד 2.5 מיליון ₪, פינוי מושכר</td><td>בית משפט השלום</td><td>מומלץ</td></tr>
+              <tr><td>תביעה מעל 2.5 מיליון ₪, מקרקעין (בעלות)</td><td>בית המשפט המחוזי</td><td>מומלץ מאוד</td></tr>
+              <tr><td>שכר, פיטורים, ביטוח לאומי, קופת חולים</td><td>בית הדין האזורי לעבודה</td><td>לא חובה</td></tr>
+              <tr><td>גירושין, מזונות, משמורת, ירושה, צו הגנה</td><td>בית המשפט לענייני משפחה / בית דין דתי</td><td>מומלץ</td></tr>
+              <tr><td>דוח תנועה, עבירת תעבורה</td><td>בית המשפט לתעבורה</td><td>לא חובה</td></tr>
+              <tr><td>ארנונה, חניה, עבירות עירוניות</td><td>בית משפט לעניינים מקומיים / ועדת ערר</td><td>לא חובה</td></tr>
+              <tr><td>החלטה של רשות (רישיון, מכרז, חינוך)</td><td>בית משפט לעניינים מנהליים / בג״ץ</td><td>מומלץ מאוד</td></tr>
+              <tr><td>סכסוך בבית משותף</td><td>המפקח על רישום מקרקעין</td><td>לא חובה</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ============================================================ לאן פונים -->
+  <section class="view" data-view="help" hidden>
+    <div class="page-head"><div class="wrap">
+      <nav class="crumbs" aria-label="מיקום"><a href="#/">ראשי</a><span>לאן פונים</span></nav>
+      <h1>לאן פונים</h1>
+      <p>גופים שמסייעים בחינם או בעלות נמוכה, ורשויות שמקבלות תלונות. הקישורים מובילים לחיפוש העמוד העדכני של כל גוף.</p>
+    </div></div>
+    <div class="wrap"><div class="where-grid" id="whereAll"></div></div>
+  </section>
+
+  <!-- ============================================================ מילון -->
+  <section class="view" data-view="glossary" hidden>
+    <div class="page-head"><div class="wrap">
+      <nav class="crumbs" aria-label="מיקום"><a href="#/">ראשי</a><span>מילון מונחים</span></nav>
+      <h1>מילון מונחים משפטיים</h1>
+      <p>המילים שמופיעות במכתבים מבית המשפט, בהוצאה לפועל ובביטוח לאומי — בעברית פשוטה.</p>
+      <label class="search"><span class="sr">חיפוש מונח</span><input id="glossFilter" type="search" placeholder="חיפוש מונח" /></label>
+    </div></div>
+    <div class="wrap"><dl class="gloss" id="glossList"></dl></div>
+  </section>
+
+  <!-- ============================================================ שמורות -->
+  <section class="view" data-view="saved" hidden>
+    <div class="page-head"><div class="wrap">
+      <nav class="crumbs" aria-label="מיקום"><a href="#/">ראשי</a><span>השאלות שלי</span></nav>
+      <h1>השאלות שלי</h1>
+      <p>השאלות נשמרות רק בדפדפן הזה, במכשיר הזה. אף אחד אחר לא רואה אותן.</p>
+    </div></div>
+    <div class="wrap"><div id="savedList"></div></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div>
+      <b>מצפן משפטי</b>
+      <p>מידע משפטי כללי וראשוני, לפי החקיקה בישראל. המידע אינו ייעוץ משפטי ואינו תחליף לעורך דין שבחן את המקרה שלכם. סכומים, תקרות ומועדים מתעדכנים מעת לעת — ודאו מול המקור הרשמי. האתר אינו קשור לרשות השופטת או לגוף ממשלתי כלשהו.</p>
+    </div>
+    <div class="foot-links">
+      <a href="#/help">לאן פונים</a>
+      <a href="#/courts">מדריך לבתי המשפט</a>
+      <a href="#/glossary">מילון מונחים</a>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/law.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

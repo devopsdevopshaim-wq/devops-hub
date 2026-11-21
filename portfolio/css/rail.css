@@ -1,0 +1,101 @@
+/* Quick-action rail (js/rail.js) and the custom pointer (js/cursor.js). Loaded after the other stylesheets. */
+
+/* ---------- the rail ---------- */
+.rail { position: fixed; z-index: 45; inset-inline-start: max(18px, env(safe-area-inset-left)); bottom: max(18px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 10px; padding: 8px; border-radius: 34px; }
+.rail::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, rgba(31, 27, 74, .72), rgba(15, 13, 36, .78)); border: 1px solid rgba(224, 178, 90, .22);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, .95), inset 0 1px 0 rgba(255, 255, 255, .06);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3); }
+.rail-slot { position: relative; display: block; }
+.rail-slot[hidden] { display: none; }
+
+/* every widget sits in its slot instead of floating on its own */
+html.has-rail .rail .music, html.has-rail .rail .dock { position: static; max-width: none; z-index: auto; }
+html.has-rail .rail .wa-fab, html.has-rail .rail .a11y-fab, html.has-rail .rail #future-switch { position: relative; inset: auto; bottom: auto; z-index: auto; opacity: 1; pointer-events: auto; }
+
+/* one button style for all of them */
+html.has-rail .rail .rail-btn { position: relative; display: grid; place-items: center; width: 48px; height: 48px; min-height: 0; padding: 0; margin: 0;
+  border-radius: 50%; border: 1px solid rgba(241, 238, 252, .14); cursor: pointer; text-decoration: none; overflow: hidden;
+  color: var(--porcelain, #f1eefc); font-size: 0; line-height: 0;
+  background: radial-gradient(120% 120% at 30% 15%, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0) 55%), linear-gradient(160deg, #2a2463, #16133a);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 8px 18px -10px rgba(0, 0, 0, .9);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  transition: transform .35s cubic-bezier(.2, .9, .3, 1.4), border-color .25s, box-shadow .3s, color .25s; }
+/* a slow light that sweeps across on hover */
+html.has-rail .rail .rail-btn::after { content: ""; position: absolute; inset: -40%; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: conic-gradient(from 0deg, transparent 0 70%, rgba(243, 213, 150, .55) 80%, transparent 90%); animation: rail-spin 2.4s linear infinite; }
+@keyframes rail-spin { to { transform: rotate(1turn); } }
+html.has-rail .rail .rail-btn:hover, html.has-rail .rail .rail-btn:focus-visible { transform: translateY(-3px) scale(1.06); border-color: rgba(224, 178, 90, .75); color: #f3d596;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 0 0 4px rgba(224, 178, 90, .12), 0 14px 28px -12px rgba(224, 178, 90, .55); }
+html.has-rail .rail .rail-btn:hover::after { opacity: 1; }
+html.has-rail .rail .rail-btn:active { transform: scale(.94); transition-duration: .1s; }
+html.has-rail .rail .rail-btn:focus-visible { outline: 2px solid var(--brass, #e0b25a); outline-offset: 3px; }
+/* open = filled brass */
+html.has-rail .rail .open > .rail-btn, html.has-rail .rail .rail-btn[aria-expanded="true"] { color: #1b1405; border-color: transparent;
+  background: linear-gradient(135deg, var(--brass-2, #f3d596), var(--brass, #e0b25a)); }
+
+.rail-ico { position: relative; z-index: 1; display: grid; place-items: center; }
+.rail-ico svg { width: 22px; height: 22px; }
+html.has-rail .rail .dk-ico, html.has-rail .rail .dk-tick, html.has-rail .rail .mu-label, html.has-rail .rail #future-switch > span:not(.rail-ico), html.has-rail .rail #future-name { display: none !important; }
+html.has-rail .rail .mu-pill .eq { position: relative; z-index: 1; height: 18px; gap: 3px; }
+html.has-rail .rail .mu-pill .eq i { width: 3px; }
+html.has-rail .rail .open > .mu-pill .eq i { background: #1b1405; }
+html.has-rail .rail .wa-fab { color: #25d366; }
+html.has-rail .rail .wa-fab svg { position: relative; z-index: 1; width: 24px; height: 24px; }
+html.has-rail .rail .wa-fab:hover { color: #3ee07f; border-color: rgba(37, 211, 102, .8); box-shadow: 0 0 0 4px rgba(37, 211, 102, .14), 0 14px 28px -12px rgba(37, 211, 102, .6); }
+html.has-rail .rail .wa-fab:hover::after { background: conic-gradient(from 0deg, transparent 0 70%, rgba(62, 224, 127, .5) 80%, transparent 90%); }
+html.has-rail .rail #future-switch .rail-ico { color: var(--fa, #22d3ee); }
+html.has-rail .rail #future-switch.rail-btn { border-color: rgba(241, 238, 252, .14); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 8px 18px -10px rgba(0, 0, 0, .9); }
+html.has-rail .rail #future-switch.rail-btn:hover { border-color: var(--fa, #22d3ee); box-shadow: 0 0 0 4px rgba(255, 255, 255, .06), 0 14px 28px -12px var(--fa, #22d3ee); }
+/* music: a note at rest, the equalizer while it plays */
+html.has-rail .rail .music:not(.playing) .mu-pill .eq { display: none; }
+html.has-rail .rail .music.playing .mu-pill .rail-ico { display: none; }
+/* admin sits apart from the public buttons */
+.rail-slot[data-k="admin"] { margin-top: 4px; padding-top: 12px; }
+.rail-slot[data-k="admin"]::before { content: ""; position: absolute; top: 0; inset-inline: 10px; height: 1px; background: rgba(241, 238, 252, .14); }
+
+/* name tags slide out toward the page */
+.rail-slot::after { content: attr(data-tip); position: absolute; top: 50%; inset-inline-start: calc(100% + 16px); z-index: 2; pointer-events: none; white-space: nowrap;
+  padding: 7px 12px; border-radius: 10px; font: 600 13px/1 var(--body, sans-serif); color: var(--porcelain, #f1eefc);
+  background: rgba(15, 13, 36, .94); border: 1px solid rgba(224, 178, 90, .35); box-shadow: 0 10px 24px -10px #000;
+  opacity: 0; transform: translate(0, -50%) scale(.92); transition: opacity .2s, transform .25s cubic-bezier(.2, .9, .3, 1.3); }
+.rail-slot:hover::after, .rail-slot:focus-within::after { opacity: 1; transform: translate(0, -50%) scale(1); }
+.rail-slot:has(.open)::after, .rail-slot:has([aria-expanded="true"])::after { opacity: 0; }
+
+/* the panels open beside the rail, not inside it */
+html.has-rail .rail .mu-panel, html.has-rail .rail .dk-panel { position: fixed; z-index: 5; inset-inline-start: calc(max(18px, env(safe-area-inset-left)) + 80px); inset-inline-end: auto;
+  bottom: max(18px, env(safe-area-inset-bottom)); max-height: calc(100vh - 36px); max-height: calc(100dvh - 36px); overflow-y: auto; overscroll-behavior: contain; transform-origin: bottom; }
+html.has-rail .a11y-panel { inset-inline-start: calc(max(18px, env(safe-area-inset-left)) + 80px); bottom: max(18px, env(safe-area-inset-bottom)); }
+
+@media (max-width: 640px) {
+  .rail { inset-inline-start: max(10px, env(safe-area-inset-left)); bottom: max(10px, env(safe-area-inset-bottom)); gap: 7px; padding: 6px; border-radius: 30px; }
+  html.has-rail .rail .rail-btn { width: 44px; height: 44px; }
+  .rail-ico svg { width: 20px; height: 20px; }
+  .rail-slot::after { display: none; }
+  .rail-slot[data-k="admin"] { padding-top: 9px; margin-top: 2px; }
+  /* beside the rail, so its buttons stay reachable to close them */
+  html.has-rail .rail .mu-panel, html.has-rail .rail .dk-panel, html.has-rail .a11y-panel { inset-inline-start: calc(max(10px, env(safe-area-inset-left)) + 64px); inset-inline-end: 10px; width: auto; bottom: max(10px, env(safe-area-inset-bottom)); max-height: calc(100dvh - 20px); }
+}
+@media (prefers-reduced-motion: reduce) { html.has-rail .rail .rail-btn::after { animation: none; } }
+html.a11y-calm .rail .rail-btn::after { display: none; }
+@media print { .rail { display: none; } }
+
+/* ---------- custom pointer ---------- */
+.cur-dot, .cur-ring { position: fixed; top: 0; left: 0; z-index: 2147483646; pointer-events: none; opacity: 0; will-change: transform; }
+.cur-dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #f3d596; box-shadow: 0 0 10px rgba(243, 213, 150, .9); transition: opacity .2s, width .2s, height .2s, margin .2s; }
+.cur-ring { width: 34px; height: 34px; border-radius: 17px; border: 1.5px solid rgba(224, 178, 90, .6); box-sizing: border-box;
+  transition: opacity .25s, background-color .25s, border-color .25s; }
+.cur-ring.hot { background: rgba(224, 178, 90, .1); border-color: rgba(243, 213, 150, .95); box-shadow: 0 0 22px -4px rgba(224, 178, 90, .55); }
+.cur-ring.hot + .cur-dot { width: 4px; height: 4px; margin: -2px 0 0 -2px; }
+.cur-ring.down { background: rgba(224, 178, 90, .22); }
+html.has-cursor.cur-in .cur-dot, html.has-cursor.cur-in .cur-ring { opacity: 1; }
+html.has-cursor.cur-text .cur-dot, html.has-cursor.cur-text .cur-ring { opacity: 0; }
+html.has-cursor, html.has-cursor * { cursor: none !important; }
+html.has-cursor input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]), html.has-cursor textarea, html.has-cursor [contenteditable="true"] { cursor: text !important; }
+/* a real fullscreen element hides the page's own layers, so the normal cursor comes back there */
+html.has-cursor :fullscreen, html.has-cursor :fullscreen * { cursor: auto !important; }
+/* on the sign-in gate only accessibility and the scene stay, as before */
+.locked .rail-slot:is([data-k="news"], [data-k="music"], [data-k="wa"], [data-k="admin"]) { display: none !important; }
+.locked .rail { z-index: 75; }
+.locked .a11y-panel { z-index: 76; }

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>שכבות — הרפתקה ארכיאולוגית</title>
+<meta name="description" content="משחק ארכיאולוגיה בדפדפן: יורים בתותח על מגדלים עתיקים של כדים ואריחים, מוצאים ממצאים אמיתיים מההיסטוריה של הארץ בתיבות האוצר, חופרים באתרים אמיתיים ובונים מוזיאון." />
+<meta name="theme-color" content="#1a110a" />
+<meta property="og:title" content="שכבות — הרפתקה ארכיאולוגית" />
+<meta property="og:description" content="כל שכבה היא אלף שנה. מה אתם תגלו?" />
+<link rel="icon" href="img/icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Orbitron:wght@600;800&family=Suez+One&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/game.css?v=20261117e" />
+</head>
+<body data-screen="home">
+<canvas id="bg-cv" aria-hidden="true"></canvas>
+
+<header class="topbar">
+  <a class="brand" href="#" data-go="home" aria-label="שכבות, מסך הפתיחה"><img src="img/icon.svg" alt="" width="30" height="30" /><b>שכבות</b></a>
+  <div class="stats">
+    <div class="lvl" title="רמת חוקר"><span class="badge"><i data-ico="star"></i><b id="lvl">1</b></span><div class="xp"><i id="xp-fill"></i></div></div>
+    <span class="pill" title="מטבעות"><i data-ico="coin"></i><b id="coins">0</b></span>
+    <span class="pill" title="קרעי מפת אוצר"><i data-ico="map"></i><b id="frags">0/3</b></span>
+    <button class="icon-btn" id="mus" aria-label="מוזיקה"></button>
+    <button class="icon-btn" id="snd" aria-label="צלילים"></button>
+  </div>
+</header>
+
+<main>
+  <!-- home -->
+  <section class="screen" id="scr-home">
+    <div class="hero">
+      <canvas id="hero-cv" aria-hidden="true"></canvas>
+      <div class="hero3d" id="hero3d" aria-hidden="true"></div>
+      <div class="hero-text">
+        <p class="kicker">הרפתקה ארכיאולוגית בתלת־ממד</p>
+        <h1 data-text="שכבות">שכבות</h1>
+        <p class="tag">כל שכבה היא אלף שנה. מה אתם תגלו?</p>
+        <div class="modes">
+          <button class="mode gold" data-go="world"><span>🌍</span><b>משלחת עולמית</b><small>הולכים באתרים אמיתיים בעולם, מחפשים ומוצאים אוצרות אמיתיים</small></button>
+          <button class="mode" id="play"><span>💥</span><b>ניפוץ מגדלים</b><small>יורים בתותח, בקלע ובקטפולטה על מבנים עתיקים, שלב אחרי שלב</small></button>
+          <button class="mode" data-go="map"><span>⛏️</span><b>חפירה בארץ</b><small>חופרים שכבה אחרי שכבה בעכו, בקיסריה ובמגידו</small></button>
+        </div>
+        <button class="link-btn how-btn" id="how">❓ איך משחקים?</button>
+        <ul class="how">
+          <li><i data-ico="dyn"></i><span><b>יורים</b> בתותח על מגדלים עתיקים</span></li>
+          <li><i data-ico="vase"></i><span><b>מוצאים</b> 41 ממצאים אמיתיים בתיבות האוצר</span></li>
+          <li><i data-ico="pick"></i><span><b>חופרים</b> באתרים אמיתיים ובונים מוזיאון</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- the cannon game: level map -->
+  <section class="screen" id="scr-levels" hidden>
+    <div class="lv-head">
+      <div class="lv-total"><i>★</i><b id="lv-stars">0</b><small>כוכבים</small></div>
+      <div class="lv-inv"><span>💣 <b id="lv-bomb">0</b></span><span>☄️ <b id="lv-triple">0</b></span></div>
+    </div>
+    <div class="lv-path" id="lv-path"></div>
+  </section>
+
+  <!-- the cannon game: a level -->
+  <section class="screen" id="scr-smash" hidden>
+    <div class="smash3d" id="smash3d" aria-label="מגדל עתיק על במה ותותח מולו: הקישו על המגדל כדי לירות"></div>
+    <div class="sm-top">
+      <div class="sm-balls"><small>יריות</small><b id="sm-balls">0</b><span class="sm-rate" id="sm-rate"><i class="on">★</i><i class="on">★</i><i class="on">★</i></span></div>
+      <div class="sm-mid"><b id="sm-title">שלב 1</b><small id="sm-site"></small><div class="sm-bar"><i id="sm-fill"></i></div></div>
+      <button class="sm-gear" id="sm-pause" aria-label="הפסקה">⚙</button>
+    </div>
+    <div class="sm-coins"><i data-ico="coin"></i><b id="sm-coins">0</b></div>
+    <div class="sm-combo" id="sm-combo" aria-live="polite"></div>
+    <p class="sm-hint" id="sm-hint" role="status"></p>
+    <div class="sm-weapons" role="group" aria-label="במה יורים">
+      <button class="weapon on" data-w="cannon" aria-label="תותח"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="17" cy="34" r="9" fill="#ff3d5a" stroke="#ffd23a" stroke-width="3"/><path d="M12 28 L36 12 L41 19 L18 35 Z" fill="#6a2bd6" stroke="#ffd23a" stroke-width="2.5" stroke-linejoin="round"/><circle cx="39" cy="15" r="4.5" fill="#ffd23a"/></svg><small>תותח</small></button>
+      <button class="weapon" data-w="sling" aria-label="קלע"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 44 V27 M24 28 L13 9 M24 28 L35 9" stroke="#a8692f" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M13 10 Q24 24 35 10" stroke="#ff3d5a" stroke-width="3" fill="none"/><circle cx="24" cy="18" r="5" fill="#d8d0c2" stroke="#6b3a1a" stroke-width="2"/></svg><small>קלע</small><em class="lock"></em></button>
+      <button class="weapon" data-w="catapult" aria-label="קטפולטה"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 38 H42" stroke="#b5743a" stroke-width="6" stroke-linecap="round"/><path d="M16 38 L30 8" stroke="#7a4a22" stroke-width="5" stroke-linecap="round"/><circle cx="31" cy="8" r="6" fill="#ff8a1c" stroke="#ffd23a" stroke-width="2"/><circle cx="12" cy="41" r="4" fill="#ff3d5a"/><circle cx="36" cy="41" r="4" fill="#ff3d5a"/><path d="M26 38 L33 22" stroke="#b5743a" stroke-width="4" stroke-linecap="round"/></svg><small>קטפולטה</small><em class="lock"></em></button>
+    </div>
+    <div class="sm-boosts">
+      <button class="boost" data-b="bomb" aria-label="פצצה"><span class="bi">💣</span><em id="b-bomb">0</em><small>פצצה</small></button>
+      <button class="boost" data-b="triple" aria-label="שלישייה"><span class="bi">☄️</span><em id="b-triple">0</em><small>שלישייה</small></button>
+    </div>
+  </section>
+
+  <!-- the world expedition: the globe -->
+  <section class="screen" id="scr-world" hidden>
+    <div class="world3d" id="world3d" aria-label="כדור הארץ עם האתרים: גררו כדי לסובב, הקישו על סיכה כדי לבחור"></div>
+    <div class="w-head">
+      <div><h2>🌍 משלחת עולמית</h2><p>אתרים אמיתיים, מקורות אמיתיים, אוצרות שנמצאו באמת. בחרו אתר, קראו את המקורות, סקרו את השטח וחפרו.</p></div>
+      <div class="w-count"><b id="w-found">0/0</b><small>אוצרות באוסף</small></div>
+    </div>
+    <div class="w-career"><div class="w-rank" id="w-rank"></div><button class="btn ghost sm" id="w-gear">🎒 ציוד</button></div>
+    <button class="w-daily" id="w-daily"></button>
+    <div class="w-bottom">
+      <div class="chips-row" id="w-regions"></div>
+      <div class="w-list" id="w-list"></div>
+    </div>
+  </section>
+
+  <!-- the world expedition: walking the site -->
+  <section class="screen" id="scr-site" hidden>
+    <div class="site3d" id="site3d" aria-label="האתר בתלת־ממד: הקישו על הקרקע כדי ללכת, גררו כדי להסתובב"></div>
+    <div class="st-head">
+      <button class="icon-btn" id="st-end" aria-label="סיום המשלחת"><i data-ico="close"></i></button>
+      <div class="st-title"><b id="st-name"></b><small id="st-sub"></small></div>
+      <div class="st-energy" title="כוח הצוות"><span>⚡</span><div class="st-bar"><i id="st-en"></i></div><b id="st-en-n">80</b></div>
+    </div>
+    <div class="st-side">
+      <button class="st-btn" id="st-notes">📜<small>יומן</small></button>
+      <button class="st-btn" id="st-map">🗺️<small>מפה</small></button>
+      <button class="st-btn" id="st-photo">📷<small>המקום</small></button>
+    </div>
+    <div class="st-task" id="st-task" role="status"><b id="st-step">1/5</b><span id="st-do"></span></div>
+    <div class="st-meter" id="st-meter" hidden><span>📡</span><div class="st-bar"><i id="st-signal"></i></div></div>
+    <div class="st-tools">
+      <button class="st-big st-walk" id="st-detector">📡<small>גלאי מתכות</small></button>
+      <button class="st-big st-walk gold" id="st-dighere">⛏️<small>לחפור כאן</small></button>
+      <button class="st-big st-dig st-tool on" data-t="pick" hidden>⛏️<small>מכוש</small></button>
+      <button class="st-big st-dig st-tool" data-t="brush" hidden>🖌️<small>מברשת</small></button>
+      <div class="st-dig st-exp" hidden><small>חשיפה</small><div class="st-bar"><i id="st-expose"></i></div></div>
+      <button class="st-big st-dig" id="st-leave" hidden>🚶<small>לצאת מהבור</small></button>
+    </div>
+  </section>
+
+  <!-- map -->
+  <section class="screen" id="scr-map" hidden>
+    <div class="daily" id="daily"></div>
+    <div class="quests" id="quests"></div>
+    <p class="maps-note" id="maps-note"></p>
+    <h2 class="sec">אתרי חפירה</h2>
+    <div class="sites" id="sites"></div>
+  </section>
+
+  <!-- dig -->
+  <section class="screen" id="scr-dig" hidden>
+    <div class="pit3d" id="pit3d" aria-label="אתר החפירה בתלת־ממד: הקישו על הקרקע כדי לחפור"></div>
+    <div class="dig-head hud">
+      <button class="icon-btn" id="dig-exit" aria-label="יציאה מהחפירה"><i data-ico="close"></i></button>
+      <div class="dig-title"><b id="dig-site"></b><small id="dig-place"></small></div>
+      <div class="dig-stats"><span title="ממצאים"><i data-ico="vase"></i><b id="finds-num">0/0</b></span><span title="מטבעות בחפירה"><i data-ico="coin"></i><b id="dig-coins">0</b></span></div>
+      <div class="energy" title="אנרגיה"><i data-ico="bolt"></i><div class="en-bar"><i id="en-fill"></i></div><b id="en-num">0</b></div>
+    </div>
+    <aside class="gauge hud" id="gauge" aria-live="polite">
+      <small>עומק</small><b id="g-depth">0.0 מ׳</b>
+      <div class="g-bar"><i id="g-fill"></i></div>
+      <span id="g-era">הקישו על הקרקע</span><small id="g-years"></small>
+    </aside>
+    <div class="combo" id="combo" aria-hidden="true"></div>
+    <div class="cam-ctl hud"><button id="rot-l" aria-label="סיבוב שמאלה">⟲</button><button id="rot-r" aria-label="סיבוב ימינה">⟳</button></div>
+    <div class="tip" id="tip" role="status"></div>
+    <div class="tools hud">
+      <div class="tool-row">
+        <button class="tool" data-t="pick"><span class="ti" data-ico="pick"></span><span>מכוש</span><em class="dmg">💥<b id="t-pick-n">4</b></em></button>
+        <button class="tool" data-t="trowel"><span class="ti" data-ico="trowel"></span><span>כף</span><em class="dmg">💥3</em></button>
+        <button class="tool" data-t="brush"><span class="ti" data-ico="brush"></span><span>מברשת</span><em class="dmg">🪶</em></button>
+        <button class="tool special" data-t="sonar"><span class="ti" data-ico="sonar"></span><span>סונאר</span><em class="cnt">×<b id="t-sonar-n">1</b></em></button>
+        <button class="tool special" data-t="dyn"><span class="ti" data-ico="dyn"></span><span>פיצוץ</span><em class="cnt">×<b id="t-dyn-n">0</b></em></button>
+      </div>
+      <p class="tool-hint" id="tool-hint"></p>
+    </div>
+  </section>
+
+  <!-- museum -->
+  <section class="screen" id="scr-museum" hidden>
+    <div class="mus-head" id="mus-head"></div>
+    <div class="chips-row" id="mus-tabs"></div>
+    <div class="mus-grid" id="mus-grid"></div>
+    <div class="stats-row" id="stats"></div>
+    <button class="link-btn" id="credits">קרדיטים לצילומים</button>
+    <button class="link-btn" id="reset">איפוס התקדמות</button>
+  </section>
+
+  <!-- camp -->
+  <section class="screen" id="scr-camp" hidden>
+    <div class="camp-head"><div class="m-ico" data-ico="camp"></div><div><h2>המחנה</h2><p>משקיעים את המטבעות במשלחת: כלים טובים יותר, יותר כוח ויותר מזל.</p></div></div>
+    <div class="ups" id="ups"></div>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="ניווט">
+  <button data-go="world"><span data-ico="map"></span>עולם</button>
+  <button data-go="levels"><span data-ico="star"></span>שלבים</button>
+  <button data-go="map"><span data-ico="pick"></span>חפירות</button>
+  <button data-go="museum"><span data-ico="museum"></span>מוזיאון</button>
+  <button data-go="camp"><span data-ico="camp"></span>מחנה</button>
+</nav>
+
+<!-- the conservation lab and the sieve -->
+<div class="lab" id="lab" hidden role="dialog" aria-modal="true" aria-labelledby="lab-title">
+  <h2 id="lab-title">מעבדת השימור</h2><p class="sub" id="lab-sub"></p>
+  <canvas id="lab-cv"></canvas>
+  <div class="lab-bars"><span>נקי <b id="lab-pct">0%</b></span><div class="lab-bar"><i id="lab-clean"></i></div><span>מצב <b id="lab-cond">100%</b></span></div>
+  <p class="lab-tip" id="lab-tip"></p>
+  <div class="lab-tools"><button class="lab-tool on" data-t="brush">🖌️<small>מברשת</small></button><button class="lab-tool" data-t="needle">🪡<small>מחט</small></button><button class="lab-tool" id="lab-tool-water" data-t="water">💧<small>מים וספוג</small></button><button class="lab-skip" id="lab-skip">לדלג (−10% מצב)</button></div>
+</div>
+<div class="lab" id="sieve" hidden role="dialog" aria-modal="true" aria-labelledby="sieve-title">
+  <h2 id="sieve-title">ניפוי העפר</h2><p class="sub">כל דלי עפר מהחפירה עובר במסננת. כך מוצאים חרוזים, מטבעות וזרעים קטנים.</p>
+  <canvas id="sieve-cv"></canvas>
+  <div class="lab-bars"><span>עפר שעבר</span><div class="lab-bar"><i id="sieve-pct"></i></div></div>
+  <p class="lab-tip" id="sieve-tip"></p>
+  <div class="lab-tools"><button class="btn gold" id="sieve-done">סיום הניפוי</button></div>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="modal-card" id="modal-card"></div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="fx" id="fx" aria-hidden="true"></div>
+<div class="flash" id="flash" aria-hidden="true"></div>
+
+<script src="js/art.js?v=20261117e"></script>
+<script src="js/photos.js?v=20261117e"></script>
+<script src="js/icons.js?v=20261117e"></script>
+<script src="js/hero.js?v=20261117e"></script>
+<script src="js/audio.js?v=20261117e"></script>
+<script src="js/world.js?v=20261117e"></script>
+<script src="js/world-photos.js?v=20261117e"></script>
+<script src="js/game.js?v=20261117e"></script>
+<script src="js/smash.js?v=20261117e"></script>
+<script src="js/world-game.js?v=20261117e"></script>
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
+<script type="module" src="js/smash3d.js?v=20261117e"></script>
+<script type="module" src="js/dig3d.js?v=20261117e"></script>
+<script type="module" src="js/globe3d.js?v=20261117e"></script>
+<script type="module" src="js/site3d.js?v=20261117e"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+/* Guests' event gallery (reached from the QR sign). */
+.gwrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; display: grid; gap: 16px; }
+.ghead { text-align: center; }
+.ghead h1 { font-family: var(--display); font-size: clamp(26px, 6vw, 40px); margin: 6px 0 2px; color: var(--plum); }
+.ghead p { margin: 0; color: var(--dim); }
+.gtools { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+.gbtn { border: 1px solid var(--gold); background: #fff; color: var(--plum); border-radius: 999px; padding: 9px 18px; font: 600 15px var(--body); cursor: pointer; text-decoration: none; }
+.gbtn.main { background: linear-gradient(135deg, var(--plum), var(--plum2)); color: #fff; border-color: transparent; }
+.ggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ggrid button { border: 0; padding: 0; background: #fff; border-radius: 14px; overflow: hidden; cursor: zoom-in; box-shadow: var(--shadow); aspect-ratio: 3 / 4; }
+.ggrid img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; }
+.ggrid button:hover img { transform: scale(1.04); }
+.galbums { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.galbums a { display: grid; gap: 6px; text-decoration: none; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 10px; box-shadow: var(--shadow); }
+.galbums img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; }
+.gview { border: 0; padding: 0; background: #0d0a16; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; }
+.gview::backdrop { background: #0d0a16; }
+.gview img { width: 100%; height: calc(100% - 70px); object-fit: contain; display: block; }
+.gview-bar { height: 70px; display: flex; gap: 10px; justify-content: center; align-items: center; }
+.gview-bar button { width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: transparent; color: #fff; font-size: 22px; cursor: pointer; }
+.btn-dl { background: var(--gold); color: var(--plum); font-weight: 800; padding: 11px 20px; border-radius: 999px; text-decoration: none; }
+.cta { text-align: center; }
+.cta h2 { margin-bottom: 4px; }
