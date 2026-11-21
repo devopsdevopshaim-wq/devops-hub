@@ -23,6 +23,11 @@
   /* ⚡ the fast model (DreamShaper XL Lightning, in the desktop program from this version on): seconds a photo instead of minutes. When it is installed it is
      used for every local edit, unless the owner chose FLUX ('fs-ai-local-model' = 'flux'). */
   var MODEL_KEY = 'fs-ai-local-model';
+  /* NVIDIA's own engine build (CUDA): offered when the card is NVIDIA and the desktop program can install it */
+  function isNvidia() { var b = gpu && gpu.best; return !!(b && /nvidia|geforce|rtx|quadro/i.test(b.name || '')); }
+  function canCuda() { return !!(API.variants && API.variants.indexOf('cuda') >= 0) && (!D.platform || D.platform === 'win32'); }
+  var pickVar = '';
+  function chosenVariant() { return pickVar || (isNvidia() && canCuda() ? 'cuda' : 'vulkan'); }
   function fastReady() { return !!(st && st.fast && st.fast.ready); }
   function fullReady() { return !!(st && st.ready); }
   function useFast() { return fastReady() && (ls(MODEL_KEY) !== 'flux' || !fullReady()); }
@@ -119,7 +124,7 @@
     'install-failed': 'ההתקנה נכשלה.',
     busy: 'רגע, משהו אחר רץ עכשיו.'
   };
-  var FILE_ICON = { engine: '⚙️', diffusion: '🎨', llm: '🔤', vae: '🖼️', fast: '⚡' };
+  var FILE_ICON = { engine: '⚙️', diffusion: '🎨', llm: '🔤', vae: '🖼️', fast: '⚡', cudart: '🟩' };
 
   function speedText() {
     if (!gpu) return '<span class="la-dim">בודק את כרטיס המסך…</span>';
@@ -152,7 +157,7 @@
     }
     h += '<div class="la-actions">';
     if (s.state === 'installing') h += '<button class="btn danger" data-la="cancel">⏹ לעצור את ההורדה</button>';
-    else if (!ready) h += '<button class="btn primary la-gold" data-la="install">⬇️ ' + (s.state === 'partial' || s.state === 'error' ? 'להמשיך את ההתקנה' : 'להתקין (~5.5 GB)') + '</button>';
+    else if (!ready) h += varPick() + '<button class="btn primary la-gold" data-la="install">⬇️ ' + (s.state === 'partial' || s.state === 'error' ? 'להמשיך את ההתקנה' : 'להתקין (~' + (chosenVariant() === 'cuda' ? '6.5' : '5.5') + ' GB)') + '</button>';
     else h += '<button class="btn" data-la="test">🧪 תמונת ניסיון</button>';
     if (s.state !== 'none' && s.state !== 'installing') h += '<button class="btn ghost" data-la="remove">🗑️ להסיר</button>';
     h += '</div>';
@@ -166,7 +171,12 @@
       }).join('') + '</div>' +
       '<div class="la-row la-size"><span>גודל התמונה במחשב</span><span class="la-seg"><button data-size="1024" class="' + (localSize() === 1024 ? 'on' : '') + '">1024 · איכות</button><button data-size="768" class="' + (localSize() === 768 ? 'on' : '') + '">768 · מאוזן</button><button data-size="512" class="' + (localSize() === 512 ? 'on' : '') + '">512 · ⚡ הכי מהיר</button></span></div>' +
       '<p class="hint">בלי כרטיס מסך: 512 מהיר בערך פי 2 מ־768 (מתאים למגנט קטן). עם כרטיס מסך: 1024.</p></div>';
-    if (s.state !== 'installing' && (s.suggestCpu || (s.engine && s.engine.variant === 'vulkan' && ready))) {
+    if (s.state !== 'installing' && ready && s.engine && s.engine.variant !== 'cuda' && canCuda() && isNvidia()) {
+      h += '<div class="la-card"><h3>🟩 מנוע NVIDIA (CUDA)</h3><p class="la-dim">יש לך כרטיס NVIDIA. המנוע של נבידיה עצמה רץ עליו בדרך כלל מהר יותר מהמנוע הכללי. יורד פעם אחת (בערך 1 GB), והמודלים נשארים.' + (s.engine.cudaFellBack ? ' <b>בניסיון הקודם הכרטיס לא הגיב למנוע של NVIDIA, אז הותקן הכללי. כדאי לעדכן את הדרייבר (NVIDIA App) ולנסות שוב.</b>' : '') + '</p><button class="btn primary" data-la="cuda">🟩 לעבור למנוע NVIDIA</button></div>';
+    }
+    if (s.state !== 'installing' && ready && s.engine && s.engine.variant === 'cuda') {
+      h += '<details class="la-more"><summary>🟩 רץ על מנוע NVIDIA (CUDA)</summary><p class="la-dim">אם העריכות נכשלות, אפשר לחזור למנוע הכללי של כרטיס המסך. המודלים נשארים.</p><button class="btn small" data-la="gpu">לחזור למנוע הכללי (Vulkan)</button></details>';
+    } else if (s.state !== 'installing' && (s.suggestCpu || (s.engine && s.engine.variant === 'vulkan' && ready))) {
       h += '<details class="la-more"><summary>הכרטיס לא מסתדר?</summary><p class="la-dim">אם העריכה נכשלת, אפשר לעבור לגרסה שרצה על המעבד בלבד (איטית יותר, אבל עובדת בכל מחשב). המודלים נשארים.</p><button class="btn small" data-la="cpu">להתקין גרסת מעבד</button></details>';
     } else if (s.state !== 'installing' && s.engine && s.engine.variant === 'cpu') {
       h += '<details class="la-more"><summary>גרסת כרטיס מסך</summary><button class="btn small" data-la="gpu">לנסות שוב את גרסת כרטיס המסך</button></details>';
@@ -216,6 +226,18 @@
       refresh();
     });
   }
+  /* which engine to install: NVIDIA (CUDA), any graphics card (Vulkan), or the processor */
+  function varPick() {
+    var opts = [];
+    if (canCuda() && isNvidia()) opts.push(['cuda', '🟩 NVIDIA CUDA (מומלץ לכרטיס שלך)', 'החישוב של נבידיה עצמה, בדרך כלל המהיר ביותר על כרטיס GeForce / RTX. עוד בערך 1 GB להורדה, פעם אחת']);
+    opts.push(['vulkan', '🎮 כרטיס מסך כללי (Vulkan)', 'עובד על כל כרטיס מסך: NVIDIA, AMD ו־Intel']);
+    opts.push(['cpu', '🐢 מעבד בלבד', 'בלי כרטיס מסך. איטי מאוד, רק כשאין ברירה']);
+    if (opts.length < 3 && !pickVar) return '';
+    var cur = chosenVariant();
+    return '<div class="la-modes la-var" role="radiogroup" style="margin-bottom:10px">' + opts.map(function (o) {
+      return '<button role="radio" aria-checked="' + (cur === o[0]) + '" class="la-mode' + (cur === o[0] ? ' on' : '') + '" data-var="' + o[0] + '"><b>' + o[1] + '</b><small>' + o[2] + '</small></button>';
+    }).join('') + '</div>';
+  }
   function body() { var b = $('#dlg-body'), d = $('#dlg'); return b && d && d.open && b.querySelector('.la') ? b : null; }
   function paint() { var b = body(); if (b) { b.innerHTML = html(); } }
 
@@ -243,6 +265,7 @@
     showFloat('check');
     API.run({ mode: 'image', prompt: 'an ornate gold picture frame on dark velvet, studio light, photorealistic', w: 256, h: 256, seed: 1 }).then(function (r) {
       if (r && r.ok) { ls('fs-ai-local-ok', String(Date.now())); showFloat('ok', r.ms); refresh(); return; }
+      if (st && st.engine && st.engine.variant === 'cuda') { toast('המנוע של NVIDIA לא הסתדר במחשב הזה. עובר למנוע הכללי של כרטיס המסך…', 7000); install('vulkan'); return; }
       if (variant !== 'cpu' && st && st.engine && st.engine.variant !== 'cpu') { toast('כרטיס המסך לא הסתדר עם המנוע. עובר לגרסת המעבד (איטית יותר, עובדת בכל מחשב)…', 7000); install('cpu'); return; }
       toast('⚠️ מנוע ה־AI הותקן אבל הבדיקה לא הצליחה' + (r && r.detail ? ': ' + String(r.detail).slice(-160) : '') + '. ☰ ← AI מקומי ← תמונת ניסיון.', 10000); showFloat('fail', 'הבדיקה לא הצליחה'); refresh();
     });
@@ -303,12 +326,14 @@
     });
   }
   function onClick(e) {
-    var t = e.target.closest('[data-la],[data-mode],[data-size],[data-lm]'); if (!t || !body()) return;
+    var t = e.target.closest('[data-la],[data-mode],[data-size],[data-lm],[data-var]'); if (!t || !body()) return;
+    if (t.dataset.var) { pickVar = t.dataset.var; paint(); return; }
     if (t.dataset.lm) { ls(MODEL_KEY, t.dataset.lm); ls(CAP_KEY, null); paint(); toast(t.querySelector('b').textContent); return; }
     if (t.dataset.mode) { ls(KEY, t.dataset.mode); paint(); pill(); toast(t.querySelector('b').textContent); return; }
     if (t.dataset.size) { ls(SIZE_KEY, t.dataset.size); ls(CAP_KEY, null); paint(); return; }   /* a size chosen by hand starts over (the kept step-down is cleared) */
     var a = t.dataset.la;
-    if (a === 'install') install();
+    if (a === 'install') { var cv = chosenVariant(); install(cv === 'vulkan' && !pickVar ? undefined : cv); }   /* the general build unchosen: the program may still fall back to the processor */
+    else if (a === 'cuda') { if (confirm('לעבור למנוע של NVIDIA (CUDA)? יורד פעם אחת בערך 1 GB. המודלים נשארים.')) install('cuda'); }
     else if (a === 'cpu') install('cpu');
     else if (a === 'gpu') install('vulkan');
     else if (a === 'cancel') API.cancelInstall();
@@ -368,7 +393,11 @@
     if (!s || s.ready || (s.fast && s.fast.ready) || s.state === 'installing' || !s.supported || ls(AUTO) === 'off') return;
     function go() {
       if (installing === true || (st && st.ready)) return;
-      install();   /* the floating card says it (showFloat) */
+      /* the graphics card is known first: an NVIDIA card gets NVIDIA's own engine (CUDA), the program falls back to the general one by itself */
+      API.gpuInfo().then(function (g) { gpu = gpu || g; }, function () {}).then(function () {
+        if (installing === true || (st && st.ready)) return;
+        var v = isNvidia() && canCuda() ? 'cuda' : undefined; install(v);   /* the floating card says it (showFloat) */
+      });
     }
     if (navigator.onLine === false) window.addEventListener('online', function on() { window.removeEventListener('online', on); setTimeout(go, 3000); });
     else setTimeout(go, 3000);

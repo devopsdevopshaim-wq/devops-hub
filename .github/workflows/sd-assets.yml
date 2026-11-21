@@ -1,0 +1,17 @@
+name: sd.cpp release assets
+on:
+  workflow_dispatch:
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: [.github/workflows/sd-assets.yml]
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    steps:
+      - name: The newest stable-diffusion.cpp release, its Windows files
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/leejet/stable-diffusion.cpp/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print('TAG', d['tag_name']); [print('ASSET', a['name'], a['size']) for a in d['assets']]"
+          U=$(curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/leejet/stable-diffusion.cpp/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print([a['browser_download_url'] for a in d['assets'] if 'cuda' in a['name'].lower() and 'win' in a['name'].lower()][0])")
+          curl -sL -o c.zip "$U" && unzip -l c.zip | sed 's/^/ZIP /' | head -40
+          for n in $(curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/leejet/stable-diffusion.cpp/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print(' '.join(a['browser_download_url'] for a in d['assets'] if 'cudart' in a['name'].lower()))"); do curl -sL -o r.zip "$n" && unzip -l r.zip | sed 's/^/CUDART /'; done

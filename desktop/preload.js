@@ -22,9 +22,11 @@ const localAI = Object.freeze({
   status: () => ipcRenderer.invoke('local-ai:status'),
   gpuInfo: () => ipcRenderer.invoke('local-ai:gpu'),
   install: (onProgress, opts) => withProgress('local-ai:install', 'local-ai:install-progress',
-    { variant: opts && (opts.variant === 'cpu' || opts.variant === 'vulkan') ? opts.variant : undefined }, onProgress),
+    { variant: opts && (opts.variant === 'cpu' || opts.variant === 'vulkan' || opts.variant === 'cuda') ? opts.variant : undefined }, onProgress),
   installFast: (onProgress) => withProgress('local-ai:install-fast', 'local-ai:install-progress', {}, onProgress),
   removeFast: () => ipcRenderer.invoke('local-ai:remove-fast'),
+  // the engine builds this program can install (cuda: NVIDIA's own, from this version on)
+  variants: Object.freeze(['cpu', 'vulkan', 'cuda']),
   cancelInstall: () => ipcRenderer.invoke('local-ai:cancel-install'),
   remove: () => ipcRenderer.invoke('local-ai:remove'),
   run: (o, onProgress) => withProgress('local-ai:run', 'local-ai:run-progress', {

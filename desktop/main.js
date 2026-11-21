@@ -277,7 +277,7 @@ function registerLocalAI() {
   ipcMain.handle('local-ai:install', (event, o) => {
     fromApp(event);
     const id = jobId(o && o.id);
-    const variant = o && (o.variant === 'cpu' || o.variant === 'vulkan') ? o.variant : undefined;
+    const variant = o && (o.variant === 'cpu' || o.variant === 'vulkan' || o.variant === 'cuda') ? o.variant : undefined;
     return getLocalAI().install((p) => sendTo(event, 'local-ai:install-progress', id, p), { variant });
   });
   // ⚡ the fast model (DreamShaper XL Lightning): its own install and removal; FLUX stays as it is
