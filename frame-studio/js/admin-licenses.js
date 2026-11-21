@@ -21,9 +21,10 @@
     var p = L.plan || {}, d = function (x) { return x ? new Date(x).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' }) : ''; };
     var t = p.tier === 'trial' ? '<span class="lic-st wait">🎁 ניסיון</span><small>' + (p.events || 0) + '/' + (p.eventsMax || 2) + ' אירועים · עד ' + d(p.ends) + '</small>'
       : p.tier === 'pass' ? '<span class="lic-st on">🎟️ כרטיס אירוע</span><small>עד ' + when(p.until) + '</small>'
-      : p.tier === 'pro' ? '<span class="lic-st on">' + (p.until ? '📅 מנוי' : '💎 מלא') + '</span>' + (p.until ? '<small>עד ' + d(p.until) + '</small>' : '')
+      : p.tier === 'pro' ? '<span class="lic-st on">' + (p.gift ? '🎁 מתנה' : p.until ? '📅 מנוי' : '💎 מלא') + '</span>' + (p.until ? '<small>עד ' + d(p.until) + '</small>' : '')
       : p.tier === 'free' ? '<span class="lic-st off">חינמי</span><small>' + (p.was === 'trial' ? 'הניסיון הסתיים' : p.was === 'sub' ? 'המנוי הסתיים' : '') + '</small>' : '';
-    return t + (L.planReq ? '<small class="lic-req">📩 ביקש ' + esc(PLAN_NAMES[L.planReq.want] || L.planReq.want) + ' · ' + when(L.planReq.at) + '</small>' : '');
+    var off = (L.offers || []).length ? '<small class="lic-req">🏷️ ' + L.offers.map(function (o) { return o.kind === '1+1' ? '1+1' : o.pct + '%'; }).join(', ') + '</small>' : '';
+    return t + off + (L.planReq ? '<small class="lic-req">📩 ביקש ' + esc(PLAN_NAMES[L.planReq.want] || L.planReq.want) + ' · ' + when(L.planReq.at) + '</small>' : '');
   }
   /* hours of use: total, the last 7 days, and the day it was last used */
   function hrs(m) { m = Math.round(m || 0); return m < 60 ? m + ' דק׳' : (Math.round(m / 6) / 10).toLocaleString('he-IL') + ' שעות'; }
@@ -101,6 +102,18 @@
       '<div class="adm-row"><label class="adm-chk"><input type="checkbox" id="ln-send" checked> לשלוח את הקוד גם למייל</label><button class="btn gold" id="ln-go">🔑 הנפקת קוד</button></div>' +
       '<p class="hint">💡 התוכנה נפתחת רק אחרי שרשמת תשלום. אפשר להנפיק קוד עכשיו ולרשום את התשלום כשמתקבל.</p>' +
       '<p class="hint">הקוד נוצר אקראית בשרת ונשמר רק אצלך. בהפעלה הראשונה הוא ננעל למחשב של אותו אדם, ומחשב נוסף עם אותו קוד נחסם (ואתה מקבל התראה).</p></section>' +
+      '<section class="adm-card" id="lic-promo"><h3>🎁 מבצעים ומתנות</h3><p class="hint">מתנה = ימים חינם של התוכנה המלאה (נפתח אצל הלקוח מיד, בחיבור הבא לאינטרנט). מבצע = 1+1 או הנחה באחוזים על תוכנית: הלקוח רואה אותו בחלון השדרוג, ו־1+1 מוחל לבד כשאתה רושם 💰 תשלום.</p>' +
+        '<div class="adm-row"><span>למי:</span><label><input type="radio" name="pr-to" value="all" checked> כל הלקוחות</label><label><input type="radio" name="pr-to" value="some"> לקוחות שאבחר</label></div>' +
+        '<div id="pr-pick" hidden style="max-height:220px;overflow:auto;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px;margin:6px 0"></div>' +
+        '<h4>🎁 מתנה: מנוי חינם</h4><div class="adm-row" style="flex-wrap:wrap;gap:10px;align-items:flex-end"><button class="btn line small" data-gift="7">שבוע חינם</button><button class="btn line small" data-gift="14">שבועיים חינם</button><button class="btn line small" data-gift="30">חודש חינם</button>' +
+        '<span style="display:inline-flex;gap:6px;align-items:center">או <input id="pr-days" inputmode="numeric" dir="ltr" placeholder="10" style="width:70px"> ימים <button class="btn small" id="pr-gift">🎁 לתת</button></span>' +
+        '<label class="adm-f" style="flex:0 0 260px;max-width:260px"><span>הערה (לא חובה)</span><div class="adm-in"><input id="pr-note" maxlength="120" placeholder="למשל: מבצע פתיחה"></div></label></div>' +
+        '<h4>🏷️ מבצע</h4><div class="adm-row" style="flex-wrap:wrap;gap:10px;align-items:flex-end"><label class="adm-f" style="flex:0 0 170px;max-width:170px"><span>סוג</span><div class="adm-in"><select id="pr-kind"><option value="1+1">1+1 (עוד אחד חינם)</option><option value="percent">הנחה באחוזים</option></select></div></label>' +
+        '<label class="adm-f" style="flex:0 0 170px;max-width:170px"><span>על</span><div class="adm-in"><select id="pr-plan"><option value="month">מנוי חודשי</option><option value="year">מנוי שנתי</option><option value="pass">כרטיס אירוע</option><option value="full" data-pct>רישיון מלא</option><option value="any" data-pct>כל התוכניות</option></select></div></label>' +
+        '<span id="pr-pct-f" hidden style="display:inline-flex;gap:6px;align-items:center"><input id="pr-pct" inputmode="numeric" dir="ltr" placeholder="20" style="width:60px"> %</span>' +
+        '<span style="display:inline-flex;gap:6px;align-items:center">עד <input id="pr-until" type="date" dir="ltr" style="width:150px"></span>' +
+        '<label class="adm-f" style="flex:0 0 220px;max-width:220px"><span>כותרת ללקוח</span><div class="adm-in"><input id="pr-title" maxlength="80" placeholder="למשל: מבצע חנוכה"></div></label><button class="btn small" id="pr-offer">🏷️ לפרסם מבצע</button></div>' +
+        '<div id="pr-list"></div></section>' +
       '<section class="adm-card"><h3>💰 מחיר ותנאים</h3><div class="adm-row"><label class="adm-f" style="max-width:240px"><span>מחיר ברירת מחדל לרישיון (₪)</span><div class="adm-in"><input id="ls-price" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>🎟️ כרטיס אירוע</span><div class="adm-in"><input id="ls-pass" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>📅 חודש</span><div class="adm-in"><input id="ls-month" inputmode="decimal" dir="ltr"></div></label><label class="adm-f" style="max-width:150px"><span>📆 שנה</span><div class="adm-in"><input id="ls-year" inputmode="decimal" dir="ltr"></div></label><button class="btn line small" id="ls-save">שמירה</button></div><div class="adm-grid"><label class="adm-f"><span>🏷️ מבצע (מופיע בדף ההורדה ובחלון השדרוג)</span><div class="adm-in"><input id="ls-promo" maxlength="400" placeholder="למשל: מחיר מייסדים: 20% הנחה ל־100 הרוכשים הראשונים"></div></label><label class="adm-f"><span>💳 תנאי תשלום</span><div class="adm-in"><input id="ls-terms" maxlength="600" placeholder="למשל: העברה בנקאית או הוראת קבע. קבלה למייל על כל תשלום."></div></label></div>' +
       '<h4>🤖 חבילות עיצובי AI בחודש</h4><p class="hint">החבילות שמופיעות ללקוחות בחלון השדרוג, ושבוחרים לכל לקוח ב־🤖. מחיר 0 = כלול במנוי. עלות לך: בערך ₪0.0045 לעיצוב, ועד כ־90 עיצובים ביום בחינם בתוכנית של Cloudflare.</p><div class="adm-grid" id="ls-packs"></div>' +
       '<h4>🏦 פרטי חשבון להעברה בנקאית / הוראת קבע</h4><p class="hint">בלי סליקה ובלי חברת תשלומים: הפרטים האלה לא מוצגים לאף אחד. כשמגיעה בקשת רכישה (📩 במשימות), אתה לוחץ "🏦 פרטי תשלום", והלקוח מקבל במייל (או בוואטסאפ) את הסכום, אסמכתא ואת פרטי החשבון. כשהכסף נכנס, רושמים 💰 תשלום: הכל נפתח אצלו, וקבלה ממוספרת נשלחת אליו (מקור) ואליך (העתק).</p><div class="adm-grid">' +
@@ -119,7 +132,53 @@
       var box = $('#ls-packs'); if (!box) return; SET.aiPacks = SET.aiPacks && SET.aiPacks.length ? SET.aiPacks : PACKS_DEF; PACKS_NOW = SET.aiPacks;
       box.innerHTML = SET.aiPacks.map(function (x, i) { return '<div class="adm-row" data-pi="' + i + '" data-id="' + esc(x.id) + '"><label class="adm-f"><span>שם</span><div class="adm-in"><input data-k="name" maxlength="30" value="' + esc(x.name) + '"></div></label><label class="adm-f" style="max-width:130px"><span>עיצובים בחודש</span><div class="adm-in"><input data-k="designs" inputmode="numeric" dir="ltr" value="' + x.designs + '"></div></label><label class="adm-f" style="max-width:120px"><span>תוספת לחודש (₪)</span><div class="adm-in"><input data-k="price" inputmode="decimal" dir="ltr" value="' + (x.price || 0) + '"></div></label><small>עלות לך עד ≈ ' + ils(x.designs * AI_COST) + '</small></div>'; }).join('');
     }
-    function prices() { packsDraw(); PRICE = { full: SET.price || 1500, month: SET.monthPrice || 89, year: SET.yearPrice || 790, pass: SET.passPrice || 79 }; $('#ls-price').value = PRICE.full; $('#ls-pass').value = PRICE.pass; $('#ls-month').value = PRICE.month; $('#ls-year').value = PRICE.year; $('#ls-promo').value = SET.promo || ''; $('#ls-terms').value = SET.terms || ''; var BI = SET.bankInfo || {}, BZ = SET.biz || {}, P = ((c.settings && c.settings()) || {}).pay || {};   /* empty: what the owner already set in "🏦 תשלום ובנק" */
+    /* ---------- 🎁 gifts and offers ---------- */
+    var PN = { month: 'מנוי חודשי', year: 'מנוי שנתי', pass: 'כרטיס אירוע', full: 'רישיון מלא', any: 'כל התוכניות' };
+    function prTo() { var all = document.querySelector('[name=pr-to]:checked').value === 'all'; if (all) return 'all'; return JSON.stringify(Array.prototype.map.call(document.querySelectorAll('#pr-pick input:checked'), function (x) { return x.value; })); }
+    function prPick() {
+      var box = $('#pr-pick'); if (!box) return; var was = {}; Array.prototype.forEach.call(box.querySelectorAll('input:checked'), function (x) { was[x.value] = 1; });
+      box.innerHTML = '<label style="display:block;margin-bottom:6px"><input type="checkbox" id="pr-allbox"> <b>בחירת כולם</b></label>' + (ALL || []).map(function (L) {
+        var p = L.plan || {}, tier = { pro: L.plan && L.plan.gift ? '🎁 מתנה' : '💎 משלם', pass: '🎟️ כרטיס', trial: '🎁 ניסיון', free: 'חינמי' }[p.tier] || '';
+        return '<label style="display:block;padding:2px 0"><input type="checkbox" value="' + esc(L.email) + '"' + (was[L.email] ? ' checked' : '') + '> ' + esc(L.name || L.email) + ' <small class="hint">' + esc(L.email) + ' · ' + tier + '</small></label>';
+      }).join('');
+    }
+    function prList() {
+      var box = $('#pr-list'); if (!box) return; var O = (SET.offers || []).filter(function (o) { return !o.until || Date.parse(o.until) > Date.now() - 864e5 * 60; });
+      box.innerHTML = !O.length ? '<p class="hint">אין מבצעים עדיין.</p>' : '<h4>מבצעים</h4><ul class="lic-task-list">' + O.slice().reverse().map(function (o) {
+        var live = o.active !== false && (!o.until || Date.parse(o.until) > Date.now()), used = (ALL || []).filter(function (L) { return L.offers && false; }).length;
+        return '<li><i>' + (o.kind === '1+1' ? '1+1' : o.pct + '%') + '</i><div><b>' + esc(o.title || (o.kind === '1+1' ? '1+1 על ' : o.pct + '% הנחה על ') + PN[o.plan]) + '</b><p>' + (o.kind === '1+1' ? 'משלמים על ' + PN[o.plan] + ', מקבלים עוד אחד חינם' : o.pct + '% הנחה על ' + PN[o.plan]) + ' · ' + (o.to === 'all' ? 'לכל הלקוחות' : 'ל־' + (o.to || []).length + ' לקוחות') + (o.until ? ' · עד ' + esc(o.until.slice(0, 10)) : '') + '</p><small>' + (live ? '🟢 פעיל' : '⏹ הסתיים') + '</small></div><span class="lic-task-act">' +
+          (live ? '<button data-pstop="' + esc(o.id) + '">⏹ לעצור</button>' : '') + '<button data-pdel="' + esc(o.id) + '">🗑</button></span></li>';
+      }).join('') + '</ul>';
+    }
+    function prDone(r, msg) { if (!r.ok) return FS.toast(ACC.msg(r), 6000); if (r.licenses) ALL = r.licenses; if (r.settings) SET = r.settings; draw(); prPick(); prList(); FS.toast(msg, 6000); }
+    (function () {
+      var root = $('#lic-promo'); if (!root) return;
+      root.addEventListener('change', function (e) {
+        if (e.target.name === 'pr-to') { $('#pr-pick').hidden = e.target.value === 'all'; if (e.target.value !== 'all') prPick(); }
+        if (e.target.id === 'pr-allbox') Array.prototype.forEach.call(document.querySelectorAll('#pr-pick input[value]'), function (x) { x.checked = e.target.checked; });
+        if (e.target.id === 'pr-kind') { var pct = e.target.value === 'percent'; $('#pr-pct-f').hidden = !pct; $('#pr-pct-f').style.display = pct ? 'inline-flex' : 'none'; Array.prototype.forEach.call(document.querySelectorAll('#pr-plan [data-pct]'), function (o) { o.disabled = !pct; }); if (!pct && /full|any/.test($('#pr-plan').value)) $('#pr-plan').value = 'month'; }
+      });
+      $('#pr-kind').dispatchEvent(new Event('change', { bubbles: true }));
+      function gift(days) {
+        var to = prTo(); if (to !== 'all' && to === '[]') return FS.toast('בוחרים לקוחות ברשימה, או "כל הלקוחות".');
+        var who = to === 'all' ? 'לכל הלקוחות' : 'ל־' + JSON.parse(to).length + ' לקוחות';
+        if (!confirm('לתת ' + days + ' ימים חינם של אופטימוס המלא ' + who + '?\n(רישיון מלא לא צריך מתנה ולא משתנה)')) return;
+        LIC.admin('lic-gift', { days: String(days), to: to, note: $('#pr-note').value.trim() }).then(function (r) { prDone(r, '🎁 ניתנו ' + days + ' ימים חינם ל־' + (r.given || 0) + ' לקוחות.'); });
+      }
+      root.addEventListener('click', function (e) {
+        var g = e.target.closest('[data-gift]'); if (g) return gift(Number(g.dataset.gift));
+        if (e.target.closest('#pr-gift')) { var d = Math.round(Number($('#pr-days').value)); if (!(d >= 1 && d <= 365)) return FS.toast('כותבים מספר ימים (1 עד 365).'); return gift(d); }
+        if (e.target.closest('#pr-offer')) {
+          var to = prTo(); if (to !== 'all' && to === '[]') return FS.toast('בוחרים לקוחות ברשימה, או "כל הלקוחות".');
+          var k = $('#pr-kind').value, pl = $('#pr-plan').value, pct = $('#pr-pct').value.trim();
+          if (k === 'percent' && !(Number(pct) >= 1 && Number(pct) <= 90)) return FS.toast('אחוז הנחה בין 1 ל־90.');
+          LIC.admin('lic-offer', { kind: k, plan: pl, pct: pct, to: to, until: $('#pr-until').value, title: $('#pr-title').value.trim() }).then(function (r) { prDone(r, '🏷️ המבצע פורסם. הלקוחות יראו אותו בחלון השדרוג בתוכנה.'); });
+        }
+        var st = e.target.closest('[data-pstop]'); if (st) LIC.admin('lic-offer', { op: 'stop', id: st.dataset.pstop }).then(function (r) { prDone(r, '⏹ המבצע נעצר.'); });
+        var dl = e.target.closest('[data-pdel]'); if (dl && confirm('למחוק את המבצע?')) LIC.admin('lic-offer', { op: 'delete', id: dl.dataset.pdel }).then(function (r) { prDone(r, '🗑 נמחק.'); });
+      });
+    })();
+    function prices() { packsDraw(); prList(); PRICE = { full: SET.price || 1500, month: SET.monthPrice || 89, year: SET.yearPrice || 790, pass: SET.passPrice || 79 }; $('#ls-price').value = PRICE.full; $('#ls-pass').value = PRICE.pass; $('#ls-month').value = PRICE.month; $('#ls-year').value = PRICE.year; $('#ls-promo').value = SET.promo || ''; $('#ls-terms').value = SET.terms || ''; var BI = SET.bankInfo || {}, BZ = SET.biz || {}, P = ((c.settings && c.settings()) || {}).pay || {};   /* empty: what the owner already set in "🏦 תשלום ובנק" */
       if (!BI.account && P.account) BI = { holder: P.holder, bank: [P.bankName, P.bankNo ? '(' + P.bankNo + ')' : ''].filter(Boolean).join(' '), branch: P.branch, account: P.account };
       if (!BZ.id && P.bizId) BZ = { name: '', kind: P.bizType === 'חברה' ? 'חברה בע״מ' : P.bizType ? 'עוסק ' + P.bizType : '', id: P.bizId, address: P.address }; ['holder', 'bank', 'branch', 'account', 'standing'].forEach(function (k) { $('#ls-bank-' + k).value = BI[k] || ''; }); ['name', 'kind', 'id', 'address'].forEach(function (k) { $('#ls-biz-' + k).value = BZ[k] || ''; }); }
     function stats() {

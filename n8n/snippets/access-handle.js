@@ -91,10 +91,16 @@ const updFor = (L, running) => {
 const TRIAL = { events: 2, days: 30, maxDays: 90, eventPrints: 20 }, PASS_HOURS = 48;
 // AI design packages a month (cloud designs; the on-computer ones are always free). The owner edits names, numbers and prices.
 const AI_PACKS = [{ id: 'basic', name: 'בסיסי', designs: 1500, price: 0 }, { id: 'pro', name: 'פרו', designs: 4000, price: 49 }, { id: 'biz', name: 'עסקי', designs: 10000, price: 119 }];
+// 🎁 the owner's offers (lic-offer): '1+1' (pay a month / year / pass, the same again free) or 'percent' (a discount on a plan),
+// for every customer or for chosen ones, until a date. Each customer sees the ones meant for them (usage -> offers).
+const offersFor = (L) => ((sd.licSettings && sd.licSettings.offers) || []).filter((o) => o && o.active !== false && (!o.until || Date.parse(o.until) > now) && (o.to === 'all' || (Array.isArray(o.to) && o.to.includes(L.email))) && !((L.offersUsed || {})[o.id]))
+  .map((o) => ({ id: o.id, kind: o.kind, plan: o.plan, pct: o.pct || 0, title: o.title || '', until: o.until || null }));
 const aiPacks = () => (sd.licSettings && Array.isArray(sd.licSettings.aiPacks) && sd.licSettings.aiPacks.length ? sd.licSettings.aiPacks : AI_PACKS);
 const planOf = (L) => {
   const pass = L.passUntil && Date.parse(L.passUntil) > now ? L.passUntil : null;
   if (L.paid && (!L.paidUntil || Date.parse(L.paidUntil) > now)) return { tier: 'pro', until: L.paidUntil || null, pass };
+  // 🎁 the owner's gift: the full program free until a date (lic-gift); after it, back to what the licence was
+  if (L.giftUntil && Date.parse(L.giftUntil) > now) return { tier: 'pro', until: L.giftUntil, gift: true, pass };
   if (pass) return { tier: 'pass', until: pass };
   if (L.trial) {
     const st = Date.parse(L.trial.start) || now, ev = (L.trial.events || []).length, ends = st + TRIAL.days * DAY, hard = st + TRIAL.maxDays * DAY;
@@ -388,7 +394,7 @@ switch (b.action) {
     const dk = Object.keys(U.days).sort(); if (dk.length > 120) for (const k of dk.slice(0, dk.length - 120)) delete U.days[k];
     U.min += add; U.prints += Math.max(0, Math.min(100000, Math.round(Number(b.prints) || 0))); U.ai += Math.max(0, Math.min(10000, Math.round(Number(b.ai) || 0)));
     U.lastAt = new Date(now).toISOString(); L.lastSeen = U.lastAt;
-    return out({ ok: true, plan: planOf(L) });
+    return out({ ok: true, plan: planOf(L), offers: offersFor(L) });
   }
   // the program reports a day of real work (TRIAL.eventPrints prints or more): it counts as one of the trial's events
   case 'trial-event': {
@@ -559,6 +565,8 @@ switch (b.action) {
   case 'lic-create':
   case 'lic-set':
   case 'lic-ai':
+  case 'lic-gift':
+  case 'lic-offer':
   case 'lic-release':
   case 'lic-rotate':
   case 'lic-mail':
@@ -582,7 +590,7 @@ switch (b.action) {
     const view = (L) => ({ email: L.email, name: L.name || '', phone: L.phone || '', note: L.note || '', code: L.code, active: L.active !== false, createdAt: L.createdAt, bound: !!L.machine, bound2: !!L.machine2, boundAt2: L.boundAt2 || null, activeOn: L.activeMh ? (L.activeMh === L.machine2 ? 2 : 1) : 0, activeAt: L.activeAt || 0,
       boundAt: L.boundAt || null, platform: L.platform || '', desktop: !!L.desktop, lastSeen: L.lastSeen || null, lastIp: L.lastIp || '', ua: L.ua || '', version: L.version || '', session: !!online[L.email], history: (L.history || []).slice(0, 10),
       price: L.price || 0, paid: !!L.paid, payments: L.payments || [], agreement: L.agreement || null, appVer: L.appVer || '', updReq: L.updReq || null,
-      plan: planOf(L), ai: { max: Number.isFinite(L.aiMax) ? L.aiMax : null, pack: L.aiPack || null, use: (sd.aiUse || {})['u:' + L.email] || null }, evDays: Array.from(new Set([].concat(L.evDays || [], (L.trial && L.trial.events) || []))).sort(), trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null, payDetails: L.payDetails || null });
+      plan: planOf(L), giftUntil: L.giftUntil || null, gifts: L.gifts || [], offers: offersFor(L), ai: { max: Number.isFinite(L.aiMax) ? L.aiMax : null, pack: L.aiPack || null, use: (sd.aiUse || {})['u:' + L.email] || null }, evDays: Array.from(new Set([].concat(L.evDays || [], (L.trial && L.trial.events) || []))).sort(), trial: L.trial || null, usage: L.usage ? { min: L.usage.min, prints: L.usage.prints, ai: L.usage.ai, lastAt: L.usage.lastAt, days: L.usage.days } : null, paidUntil: L.paidUntil || null, passUntil: L.passUntil || null, planReq: L.planReq || null, payDetails: L.payDetails || null });
     sd.licSettings = sd.licSettings || { price: 1500, currency: '₪' };
     const money = (v) => Math.max(0, Math.min(1000000, Math.round(Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')) * 100) / 100 || 0));
     const list = () => Object.values(sd.licenses).sort((a, z) => Date.parse(z.createdAt) - Date.parse(a.createdAt)).map(view);
@@ -673,6 +681,39 @@ switch (b.action) {
       log('רישיון סטודיו נוצר', e);
       return out({ ok: true, license: view(L), licenses: list() }, 200, b.send === '1' || b.send === true ? mailCode(L) : null);
     }
+    // 🎁 a gift: N days of the full program, free, to chosen customers or to all (a lifetime licence needs none)
+    if (b.action === 'lic-gift') {
+      const days = Math.round(Number(b.days) || 0); if (!(days >= 1 && days <= 365)) return out({ ok: false, error: 'bad-input' }, 400);
+      let to = []; if (b.to === 'all') to = Object.keys(sd.licenses); else { try { to = JSON.parse(String(b.to || '[]')); } catch (x) { to = []; } }
+      const iso = new Date(now).toISOString(), note = line(b.note, 120); let n = 0;
+      for (const e0 of (Array.isArray(to) ? to : []).slice(0, 2000)) {
+        const L0 = sd.licenses[email(e0)]; if (!L0 || L0.active === false) continue;
+        if (L0.paid && !L0.paidUntil) continue;   // a lifetime licence: nothing to add
+        const from = Math.max(now, Date.parse(L0.giftUntil || '') || 0, L0.paid && L0.paidUntil ? Date.parse(L0.paidUntil) || 0 : 0);
+        L0.giftUntil = new Date(from + days * DAY).toISOString();
+        L0.gifts = (L0.gifts || []).concat({ at: iso, days, note }).slice(-20);
+        L0.history = [{ at: iso, what: '🎁 מתנה: ' + days + ' ימים חינם' + (note ? ' (' + note + ')' : '') + ', עד ' + L0.giftUntil.slice(0, 10) }].concat(L0.history || []).slice(0, 30);
+        n++;
+      }
+      log('🎁 מתנה של ' + days + ' ימים ל־' + n + ' לקוחות', ADMIN_EMAIL);
+      return out({ ok: true, given: n, licenses: list(), settings: sd.licSettings });
+    }
+    // 🎁 offers: add (1+1 / percent, a plan, for all or chosen, until a date), stop or delete one
+    if (b.action === 'lic-offer') {
+      const O = sd.licSettings.offers = (sd.licSettings.offers || []).filter((o) => !o.until || Date.parse(o.until) > now - 60 * DAY).slice(-40);
+      if (b.op === 'delete') sd.licSettings.offers = O.filter((o) => o.id !== String(b.id || ''));
+      else if (b.op === 'stop') { const o = O.find((x) => x.id === String(b.id || '')); if (o) o.active = false; }
+      else {
+        const kind = ['1+1', 'percent'].includes(String(b.kind)) ? String(b.kind) : '';
+        const plan = ['month', 'year', 'pass', 'full', 'any'].includes(String(b.plan)) ? String(b.plan) : '';
+        const pct = Math.round(Number(b.pct) || 0), until = /^\d{4}-\d{2}-\d{2}$/.test(String(b.until || '')) ? String(b.until) + 'T23:59:59+02:00' : null;
+        if (!kind || !plan || (kind === 'percent' && !(pct >= 1 && pct <= 90)) || (kind === '1+1' && !['month', 'year', 'pass'].includes(plan))) return out({ ok: false, error: 'bad-input' }, 400);
+        let to = 'all'; if (b.to !== 'all') { try { to = JSON.parse(String(b.to || '[]')).map(email).filter((x) => sd.licenses[x]).slice(0, 2000); } catch (x) { to = []; } if (!to.length) return out({ ok: false, error: 'bad-input' }, 400); }
+        O.push({ id: rnd(6), kind, plan, pct: kind === 'percent' ? pct : 0, to, until, title: line(b.title, 80), at: new Date(now).toISOString(), active: true });
+        log('🎁 מבצע חדש: ' + kind + ' ' + plan + (to === 'all' ? ' לכולם' : ' ל־' + to.length), ADMIN_EMAIL);
+      }
+      return out({ ok: true, settings: sd.licSettings, licenses: list() });
+    }
     const e = email(b.email), L = sd.licenses[e];
     if (!L) return out({ ok: false, error: 'not-found' }, 404);
     const iso = new Date(now).toISOString(); L.history = (L.history || []).slice(0, 29);
@@ -707,9 +748,13 @@ switch (b.action) {
         L.payments = (L.payments || []).concat({ at: iso, date: /^\d{4}-\d{2}-\d{2}$/.test(String(b.date || '')) ? String(b.date) : iso.slice(0, 10), amount: amt, method: line(b.method, 30), ref: line(b.ref, 60), note: line(b.note, 200), ...(plan === 'full' ? {} : { kind: plan }) }).slice(-50);
         if (b.price) L.price = money(b.price) || L.price;
         const from = (v) => Math.max(now, Date.parse(v || '') || 0);
-        if (plan === 'pass') L.passUntil = new Date(from(L.passUntil) + PASS_HOURS * HOUR).toISOString();
-        else if (plan === 'month' || plan === 'year') { L.paid = true; L.paidUntil = new Date(from(L.paidUntil) + (plan === 'month' ? 30 : 365) * DAY).toISOString(); }
+        // 🎁 a 1+1 offer this customer has for this plan: the same period again, free (once)
+        const one = offersFor(L).find((o) => o.kind === '1+1' && o.plan === plan), k2 = one ? 2 : 1;
+        if (one) { L.offersUsed = Object.assign({}, L.offersUsed, { [one.id]: new Date(now).toISOString() }); }
+        if (plan === 'pass') L.passUntil = new Date(from(L.passUntil) + k2 * PASS_HOURS * HOUR).toISOString();
+        else if (plan === 'month' || plan === 'year') { L.paid = true; L.paidUntil = new Date(from(L.paidUntil) + k2 * (plan === 'month' ? 30 : 365) * DAY).toISOString(); }
         else { L.paid = true; delete L.paidUntil; }
+        if (one) L.history.unshift({ at: iso, what: '🎁 מבצע 1+1: עוד ' + ({ pass: 'כרטיס', month: 'חודש', year: 'שנה' })[plan] + ' חינם' });
         if (L.planReq) delete L.planReq;
         const PN = { pass: 'כרטיס אירוע (48 שעות)', month: 'מנוי חודשי', year: 'מנוי שנתי', full: 'רישיון מלא' };
         makeReceipt(L, amt, PN[plan] || plan, b.method, b.ref, 'הכל כבר פתוח אצלך בתוכנה (בחיבור הבא לאינטרנט).');
