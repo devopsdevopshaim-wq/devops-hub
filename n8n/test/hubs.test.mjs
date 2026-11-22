@@ -68,7 +68,7 @@ function world({ key = true, ai = null, http = null } = {}) {
   n = sent.length;
   r = await call({ action: 'image', prompt: '' });
   check('hubs: an image needs a description', r.code === 400 && sent.length === n);
-  r = await call({ action: 'image', prompt: 'x'.repeat(2001) });
+  r = await call({ action: 'image', prompt: 'x'.repeat(4001) });
   check('hubs: an image description has a size limit', r.code === 413 && sent.length === n);
   r = await call({ action: 'restyle', prompt: 'x', image: 'QUJD', mime: 'application/pdf' });
   check('hubs: a restyle refuses a non-image', r.code === 400 && sent.length === n);

@@ -2971,3 +2971,20 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - the bar mitzvah photo came out right;
   - a person half out of the frame can lend features to a neighbour.
 - It is a drawn look, so no face-keeping. The people check (`aiCheck`) still runs.
+
+## 👥 Nobody added, nobody left out (v210)
+
+- The owner's rule: everyone in the photo is in the design, nobody added and nobody left out.
+- `FS.restyleTry` counts every main face (`FS.mainFaces`, a third of the largest and up), not only the posing ones.
+- The prompt no longer tells the AI to remove bystanders. It now says:
+  - keep everyone, also people at the edges or partly cut off; only a far blurry crowd may become scenery;
+  - each person keeps their own age, gender, face, hair and clothes.
+- **who-is-who** (`whoIsWho`), for looks that redraw people (not `very same people` / `Keep everything else`):
+  - Once per photo it asks the `ai` action with the photo (640 px) for one line per person, left to right (gender, age, hair, only what they really wear on the head or face). Cached in `p._who`, 12 s at most.
+  - The answer is added as "The people of the photo, from left to right: … nobody turned into someone else".
+- A design turned down is drawn again on the server by `fluxModel` `klein-9b` (2nd try), then `dev` (3rd).
+- The restyle prompt limit is now 4000 on the server (it was 2000 and the who-line went over). The client trims at 3900.
+- `big-head` no longer says "very same people", which had made it a photo look: real faces were pasted onto the drawing.
+- End-to-end test: `.github/workflows/people-test.yml`.
+  - It runs the studio page in Chromium against the live worker: `FS.restyleTry`, the counts, before/after pictures on branch `ci-people`.
+  - On 3 event photos the counts were exact. One answer that added a person was turned down and drawn again.

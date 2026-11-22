@@ -185,7 +185,7 @@ if (b.action === 'restyle' || b.action === 'image') {
   if (!GATE || GATE === 'anon') { if ((sd.imgs || 0) >= IMG_DAY) return out({ ok: false, error: 'quota' }, 429); }
   const prompt = String(b.prompt || '').replace(/\u0000/g, ' ').trim();
   if (!prompt) return out({ ok: false, error: 'empty' }, 400);
-  if (prompt.length > 2000) return out({ ok: false, error: 'too-big' }, 413);
+  if (prompt.length > 4000) return out({ ok: false, error: 'too-big' }, 413);   // v210: 4000 (the who-is-who line made 2000 too short)
   const mime = String(b.mime || 'image/jpeg').toLowerCase();
   const data = String(b.image || '').replace(/^data:[^,]{0,80},/, '').replace(/\s+/g, '');
   // the studio may send a big photo for Gemini and a small copy (under 512px) for FLUX

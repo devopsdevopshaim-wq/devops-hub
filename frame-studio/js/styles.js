@@ -574,6 +574,7 @@
     var keepPpl = false;   /* v177: the real people go into a clean scene only as the fallback (plate below), never over the AI's own figures */
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
     /* FLUX gets the same 1024px photo (compared Oct 26, frame-ai-compare.yml: from a 496px copy it drew new faces; from 1024 it keeps the people) */
+    if (prompt.length > 3900) prompt = prompt.replace(/ High-end professional result:[^.]*\./, '').slice(0, 3900);   /* the server takes 4000 */
     var b64 = photoB64(p, 1024), body = { action: 'restyle', prompt: prompt, image: b64, small: b64, mime: 'image/jpeg', w: w, h: h };
     if (engine) body.engine = engine;
     /* v210: a design turned down (a person missing, added or changed) is drawn again by a bigger FLUX on the server: the 9B,
