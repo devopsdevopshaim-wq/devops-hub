@@ -1229,7 +1229,14 @@
   /* ---------- print ---------- */
   /* the sheet is 15×20 by default (a photo printer's 6×8 media: two 10×15 photos on a sheet). A 10×15 kept from before v160
      moves to 15×20 once; choosing 10×15 again afterwards stays. */
-  var PS = Object.assign({ paper: '15x20', dpi: 300, mode: 'real', margin: 0, marginOn: false, marks: false, pfit: 'cover', which: 'auto', msize: '' }, lsj('fs-mate-print', {}));
+  var PS = Object.assign({ paper: '15x20', dpi: 300, mode: 'real', margin: 0, marginOn: false, marks: false, pfit: 'cover', which: 'auto', msize: '75x100' }, lsj('fs-mate-print', {}));
+  /* v212: the owner's default for every studio: 4 magnets of 7.5×10 filling a 15×20 sheet. Once, whatever was kept before
+     (customers printed one photo per sheet, or 10×15 paper); a change made after this stays. The instant print too. */
+  try { if (!localStorage.getItem('fs-print-v212')) {
+    localStorage.setItem('fs-print-v212', '1');
+    PS.paper = '15x20'; PS.msize = '75x100'; PS.mode = 'real'; PS.marginOn = false; PS.margin = 0; ls('fs-mate-print', JSON.stringify(PS));
+    var q0 = lsj('fs-qprint', null); if (q0) { q0.paper = '15x20'; q0.msize = '75x100'; ls('fs-qprint', JSON.stringify(q0)); }
+  } } catch (e) { /* private mode */ }
   try { if (!localStorage.getItem('fs-paper-15x20')) { localStorage.setItem('fs-paper-15x20', '1'); if (PS.paper === '10x15') { PS.paper = '15x20'; ls('fs-mate-print', JSON.stringify(PS)); } } } catch (e) { /* private mode */ }
   /* the magnet's printed size (mm), whatever the photo's own size; '' = the photo's size */
   var MSIZES = [['', 'לפי גודל התמונה'], ['75x100', '7.5×10 ס״מ'], ['50x75', '5×7.5 ס״מ'], ['60x90', '6×9 ס״מ'], ['100x150', '10×15 ס״מ'], ['100x100', '10×10 ס״מ']];
@@ -1256,6 +1263,8 @@
   /* ⚡ the instant print: the printer and the layout are chosen once; then one click prints the marked photos (or the one on
      screen) straight to the printer, no window, at the exact size (the desktop program; a browser still shows its print window) */
   function qpGet() { return lsj('fs-qprint', null); }
+  /* the printer must hold the same paper: a 15×20 sheet sent to a printer set to 10×15 comes out shrunk or cut */
+  function paperTip(id) { var t = { '15x20': '6x8 (15×20)', '10x15': '4x6 (10×15)', '13x18': '5x7 (13×18)', '20x30': '8x12 (20×30)', A4: 'A4' }[id]; return t ? '<br><small>🖨️ בהגדרות המדפסת (הדרייבר) בוחרים נייר <b>' + t + '</b>, בלי שוליים</small>' : ''; }
   /* the print window's ⭐ saved settings, offered in the instant print too: [{name, o:{paper, msize, …}, printer}] */
   function myPrints() { return lsj('fs-mate-print-my', []).filter(function (m) { return m && m.o && m.o.paper; }); }
   function myChips(id, q) { var l = myPrints(); return l.length ? '<label>⭐ ההגדרות השמורות שלי</label><div class="mp-my" id="' + id + '">' + l.map(function (m, i) { return '<button type="button" class="mt-btn' + (q && m.o.paper === q.paper && (m.o.msize || '') === (q.msize || '') && (m.printer || '') === (q.printer || '') ? ' on' : '') + '" data-qm="' + i + '" title="' + esc(m.printer || 'חלון ההדפסה של המחשב') + '">' + esc(m.name) + '</button>'; }).join('') + '</div>' : ''; }
@@ -1281,7 +1290,7 @@
       var box = $('#qv-cv', b); box.innerHTML = ''; box.appendChild(drawPv(plan, plan.pages[pg], Math.max(300, box.clientWidth - 10 || 520), Math.max(360, (innerHeight * 0.66) | 0)));
       $('#qv-pg', b).textContent = 'דף ' + (plan.pages.length ? pg + 1 : 0) + ' מתוך ' + plan.pages.length; $('#qv-n', b).textContent = copies;
       $('#qv-prev', b).disabled = pg <= 0; $('#qv-next', b).disabled = pg >= plan.pages.length - 1;
-      $('#qv-sum', b).innerHTML = '<b>' + plan.total + '</b> מגנטים · <b>' + plan.pages.length + '</b> דפים<br>נייר ' + esc(plan.paper[1]) + ' · מגנט ' + (q.msize ? q.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : 'בגודל התמונה');
+      $('#qv-sum', b).innerHTML = '<b>' + plan.total + '</b> מגנטים · <b>' + plan.pages.length + '</b> דפים<br>נייר ' + esc(plan.paper[1]) + ' · מגנט ' + (q.msize ? q.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : 'בגודל התמונה') + paperTip(q.paper);
     }
     $$('[data-l]', b).forEach(function (x) { x.addEventListener('click', function () { var m = MPRESETS[Number(x.dataset.l)]; q = Object.assign({}, q, { paper: m[0], msize: m[1] }); ls('fs-qprint', JSON.stringify(q)); qpBtn(); $$('[data-l]', b).forEach(function (y) { y.classList.toggle('on', y === x); }); pg = 0; paint(); }); });
     $$('[data-qm]', b).forEach(function (x) { x.addEventListener('click', function () {
@@ -1358,7 +1367,7 @@
       x.save(); x.beginPath(); x.rect(it.x * k, it.y * k, it.w * k, it.h * k); x.clip();
       x.translate((it.x + it.w / 2) * k, (it.y + it.h / 2) * k); if (it.rot) x.rotate(FS.turnSign() * Math.PI / 2);
       var w = (it.rot ? it.h : it.w) * k, h = (it.rot ? it.w : it.h) * k;
-      if (it.cover) { var s = Math.max(w / t.width, h / t.height); x.drawImage(t, -t.width * s / 2, -t.height * s / 2, t.width * s, t.height * s); } else x.drawImage(t, -w / 2, -h / 2, w, h);
+      if (it.cover) { var s = Math.max(w / t.width, h / t.height), oy = (t.height * s - h) * ((FS.CROP_Y || 0.5) - 0.5); x.save(); x.beginPath(); x.rect(-w / 2, -h / 2, w, h); x.clip(); x.drawImage(t, -t.width * s / 2, -t.height * s / 2 - oy, t.width * s, t.height * s); x.restore(); } else x.drawImage(t, -w / 2, -h / 2, w, h);
       x.restore();
       if (plan.marks) { x.strokeStyle = '#8a8a8a'; x.setLineDash([4, 3]); x.strokeRect(it.x * k, it.y * k, it.w * k, it.h * k); x.setLineDash([]); }
       /* the real printed size on each one, so what comes out is clear before printing */
@@ -1429,7 +1438,7 @@
       $('#mp-pg', b).textContent = (plan.pages.length ? pg + 1 : 0) + ' / ' + plan.pages.length;
       var prn = ($('#mp-printer', b).value || 'חלון ההדפסה של המחשב'), per = plan.pages[0] ? plan.pages[0].length : 0;
       $('#mp-sum', b).innerHTML = plan.total ? '<div class="mp-nums"><div><b>' + plan.total + '</b><small>הדפסים</small></div><div><b>' + plan.pages.length + '</b><small>' + (plan.pages.length === 1 ? 'דף' : 'דפים') + '</small></div><div><b>' + per + '</b><small>בכל דף</small></div></div>' +
-        '<p>נייר ' + esc(plan.paper[1]) + (o.msize ? ' · מגנט ' + o.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : ' · בגודל התמונה') + '<br>🖨️ ' + esc(prn) + '</p>'
+        '<p>נייר ' + esc(plan.paper[1]) + (o.msize ? ' · מגנט ' + o.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : ' · בגודל התמונה') + '<br>🖨️ ' + esc(prn) + paperTip(o.paper) + '</p>'
         : '<p class="mp-none">אין מה להדפיס. בוחרים תמונות, או "כל התמונות" למטה.</p>';
       $$('[data-mpre]', b).forEach(function (x) { var m = MPRESETS[Number(x.dataset.mpre)]; x.classList.toggle('on', m[0] === o.paper && m[1] === o.msize && o.mode === 'real'); });
       $('#mp-go', b).textContent = plan.total ? '🖨️ הדפסה · ' + plan.pages.length + (plan.pages.length === 1 ? ' דף' : ' דפים') : '🖨️ הדפסה';
