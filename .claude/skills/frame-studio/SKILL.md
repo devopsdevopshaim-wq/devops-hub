@@ -2991,3 +2991,14 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - v211: who-is-who waits up to 20 s and accepts any list that names people (man, woman, boy, girl, child, teen, baby, person). It had answered after 12 s, or not as "1.", and was dropped.
   - Live run on 5 photos: bar mitzvah, birthday and company came out with exact counts.
   - The wedding was turned down by the face check after 3 tries and stays as shot, which is the intended safe end.
+
+## 🖨️ 4 × 7.5×10 on 15×20, filled (v212)
+
+- The owner's default for every studio: a 15×20 sheet with 4 magnets of 7.5×10. Customers had printed one photo per sheet or on 10×15.
+  - Once (`fs-print-v212`), the quick-work print window (`PS`) and the instant print (`fs-qprint`) are set to `15x20` + `75x100`, real size, no margin.
+  - Once (`prefs.printV212`), the studio print tab is set to 15×20, `fill`, margin 0. No margin now also means no gap (`jobFromPanel`).
+- **Full sheet** (`output.js`):
+  - `cellsFor` `fill` with no margin and no gap shares the whole sheet among the cells (`bleed`; 4 × 7.6×10.15 on 15×20). No white edges; a hair of bleed for the cutter.
+  - A set magnet size (`job.size`) is always covered: cropped, never shrunk inside with white strips. The crop sits at `FS.CROP_Y` = 0.4, a little above the middle, where the faces are. This is used by `pageCanvas`, the HTML print (`object-position`), `drawPage` (it used to stretch a covered item) and the mate preview.
+- The print windows say which paper to choose in the printer's driver (`paperTip`): 15×20 = 6x8, borderless. A sheet sent to a printer set to 10×15 comes out shrunk or cut.
+- Checked in a browser: 6 mixed photos → 2 sheets (4 + 2), each cell 76×101.5 mm, covered, 0.09% white pixels.

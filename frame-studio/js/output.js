@@ -185,6 +185,8 @@
   $('#paper').innerHTML = PAPERS.map(function (p) { return '<option value="' + p[0] + '">' + p[1] + ' (' + p[2] + '×' + p[3] + ' מ"מ)</option>'; }).join('');
   if (!FS.prefs.paper15x20) { if (FS.prefs.paper === '10x15') FS.prefs.paper = '15x20'; FS.prefs.paper15x20 = 1; if (FS.savePrefs) FS.savePrefs(); }   /* 15×20 by default (v160), once */
   $('#paper').value = FS.prefs.paper || '15x20';
+  /* v212: the studio's print tab too: a 15×20 sheet, as many as fit, no margin (no white lines between the magnets), once */
+  if (!FS.prefs.printV212) { FS.prefs.printV212 = 1; FS.prefs.paper = '15x20'; FS.prefs.print_paper = '15x20'; FS.prefs.print_layout = 'fill'; FS.prefs.print_margin = '0'; if (FS.savePrefs) FS.savePrefs(); }
   ['paper', 'layout', 'margin'].forEach(function (k) { if (FS.prefs['print_' + k]) $('#' + k).value = FS.prefs['print_' + k]; $('#' + k).addEventListener('change', function () { FS.prefs['print_' + k] = this.value; FS.savePrefs(); }); });
 
   /* "⚙️ הגדרות הדפסה" in this tab opens the print window on its settings: directions, printers and drivers (mate.js) */
@@ -195,9 +197,11 @@
   function jobFromPanel() {
     var list = $('#print-all').checked ? S.photos.slice() : FS.marked().length > 1 ? FS.marked() : FS.cur() ? [FS.cur()] : [];
     if ($('#print-ok').checked) list = list.filter(function (p) { return !p.quality || p.quality.ok; });
-    return { list: list, paper: $('#paper').value, layout: $('#layout').value, margin: Number($('#margin').value), copies: FS.clamp(Number($('#copies').value) || 1, 1, 50), marks: $('#print-marks').checked, gap: Number($('#gap') ? $('#gap').value : 2) };
+    return { list: list, paper: $('#paper').value, layout: $('#layout').value, margin: Number($('#margin').value), copies: FS.clamp(Number($('#copies').value) || 1, 1, 50), marks: $('#print-marks').checked, gap: $('#gap') ? Number($('#gap').value) : Number($('#margin').value) ? 2 : 0 };   /* no margin: no gap either (v212) */
   }
   /* the cells of one page for one item size (mm), by layout */
+  /* where a filled magnet is cropped from top to bottom: 0.4 = a little above the middle (faces are in the upper part) */
+  FS.CROP_Y = 0.4;
   function cellsFor(layout, pw, ph, mg, gap, mm) {
     var cells = [];
     function grid(cols, rows) { var cw = (pw - mg * 2 - gap * (cols - 1)) / cols, chh = (ph - mg * 2 - gap * (rows - 1)) / rows; for (var r = 0; r < rows; r++) for (var q = 0; q < cols; q++) cells.push({ x: mg + q * (cw + gap), y: mg + r * (chh + gap), w: cw, h: chh }); }
@@ -211,6 +215,10 @@
       var c1 = Math.floor((aw + gap) / (a + gap)), r1 = Math.floor((ah + gap) / (b + gap)), c2 = Math.floor((aw + gap) / (b + gap)), r2 = Math.floor((ah + gap) / (a + gap));
       var useA = c1 * r1 >= c2 * r2, cols = useA ? c1 : c2, rows = useA ? r1 : r2, cw = useA ? a : b, chh = useA ? b : a;
       if (cols * rows < 1) grid(1, 1);
+      /* v212: no margin and no gap (the magnets' layout): the cells share the whole sheet, so nothing white is left at the
+         edges (4 × 7.5×10 on 15×20 become 7.6×10.15: a hair of bleed for the cutter instead of 1-1.5 mm white strips) */
+      else if (!mg && !gap && aw - cols * cw < 6 && ah - rows * chh < 6) { var bw = aw / cols, bh = ah / rows;
+        for (var r3 = 0; r3 < rows; r3++) for (var q3 = 0; q3 < cols; q3++) cells.push({ x: q3 * bw, y: r3 * bh, w: bw, h: bh, exact: true, bleed: true }); }
       else { var ox = (pw - cols * cw - (cols - 1) * gap) / 2, oy = (ph - rows * chh - (rows - 1) * gap) / 2;
         for (var r = 0; r < rows; r++) for (var q = 0; q < cols; q++) cells.push({ x: ox + q * (cw + gap), y: oy + r * (chh + gap), w: cw, h: chh, exact: true }); }
     }
@@ -232,13 +240,17 @@
           var iw = rot ? mm[1] : mm[0], ih = rot ? mm[0] : mm[1], ar = iw / ih, w, h;
           /* the real size whenever it fits (4 magnets of 7.5×10 on a 15×20 sheet print at 7.5×10, not stretched to the cell) */
           var fits = iw <= cell.w + 1.5 && ih <= cell.h + 1.5;
-          if (cell.exact || (fits && job.layout !== 'one' && job.layout !== '1')) { w = iw; h = ih; } else if ((job.layout === 'one' || job.layout === '1') && !mg) { w = cell.w; h = cell.h; } else { w = cell.w; h = cell.w / ar; if (h > cell.h) { h = cell.h; w = cell.h * ar; } }
+          if (cell.bleed) { w = cell.w; h = cell.h; }
+          else if (cell.exact || (fits && job.layout !== 'one' && job.layout !== '1')) { w = iw; h = ih; } else if ((job.layout === 'one' || job.layout === '1') && !mg) { w = cell.w; h = cell.h; } else { w = cell.w; h = cell.w / ar; if (h > cell.h) { h = cell.h; w = cell.h * ar; } }
           /* filling the sheet edge to edge cuts only when the shapes are practically the same (a 10×15 photo on 10×15 paper);
              otherwise the whole picture is fitted inside, turned when that is the better way */
           var cov = ((job.layout === 'one' || job.layout === '1') && !mg) || !!job.size;
           if (cov) {
             var real = mmOf(p.doc), da = rot ? real[1] / real[0] : real[0] / real[1], sa = w / h;
-            if (Math.abs(Math.log(da / sa)) > 0.03) {
+            /* v212: a magnet of a set size is always filled: the photo is cropped (a little above the middle, where the faces
+               are), never shrunk inside with white strips (owners' customers: "the pages don't print well") */
+            if (job.size) { if (FS.prefs.autoTurn !== false && ((da > 1.02 && sa < 0.98) || (da < 0.98 && sa > 1.02))) rot = !rot; }
+            else if (Math.abs(Math.log(da / sa)) > 0.03) {
               if (FS.prefs.autoTurn !== false && ((da > 1.02 && sa < 0.98) || (da < 0.98 && sa > 1.02))) { rot = !rot; da = 1 / da; }   /* turned, it fills the slot better */
               cov = false; var bw = w, bh = h, cx0 = cell.x + (cell.w - bw) / 2, cy0 = cell.y + (cell.h - bh) / 2;
               w = bw; h = bw / da; if (h > bh) { h = bh; w = bh * da; }
@@ -261,7 +273,10 @@
     page.forEach(function (it) {
       var t = it.p._pt || (it.p._pt = FS.thumbOf(it.p, 360));
       x.save(); x.translate((it.x + it.w / 2) * pxPerMm, (it.y + it.h / 2) * pxPerMm); if (it.rot) x.rotate(FS.turnSign() * Math.PI / 2);
-      var w = (it.rot ? it.h : it.w) * pxPerMm, h = (it.rot ? it.w : it.h) * pxPerMm; x.drawImage(t, -w / 2, -h / 2, w, h); x.restore();
+      var w = (it.rot ? it.h : it.w) * pxPerMm, h = (it.rot ? it.w : it.h) * pxPerMm;
+      if (it.cover) { var ca = t.width / t.height, csw = t.width, csh = t.height, csx = 0, csy = 0; if (ca > w / h) { csw = t.height * w / h; csx = (t.width - csw) / 2; } else { csh = t.width * h / w; csy = (t.height - csh) * FS.CROP_Y; } x.drawImage(t, csx, csy, csw, csh, -w / 2, -h / 2, w, h); }
+      else x.drawImage(t, -w / 2, -h / 2, w, h);
+      x.restore();
       if (plan.marks) { x.strokeStyle = '#9aa'; x.setLineDash([3, 3]); x.strokeRect(it.x * pxPerMm, it.y * pxPerMm, it.w * pxPerMm, it.h * pxPerMm); x.setLineDash([]); }
       if (plan.labels) {   /* the preview says each item's real printed size; smaller than wanted is marked */
         var a = Math.min(it.w, it.h) / 10, b = Math.max(it.w, it.h) / 10, small = it.want && Math.max(it.w, it.h) < Math.max(it.want[0], it.want[1]) - 2;
@@ -281,7 +296,7 @@
       var key = it.p.id + (it.rot ? 'r' : '');
       if (!cache[key]) { var s = Math.min(1, 3600 / Math.max(it.p.doc.w, it.p.doc.h)), r = FS.renderFull(it.p, s, false); cache[key] = it.rot ? rotated(r) : r; if (FS.printCorrect) cache[key] = FS.printCorrect(cache[key], plan.printer); }
       var im = cache[key], dx = it.x * k, dy = it.y * k, dw = it.w * k, dh = it.h * k;
-      if (it.cover) { var ar = im.width / im.height, sw = im.width, sh = im.height, sx = 0, sy = 0; if (ar > dw / dh) { sw = im.height * dw / dh; sx = (im.width - sw) / 2; } else { sh = im.width * dh / dw; sy = (im.height - sh) / 2; } x.drawImage(im, sx, sy, sw, sh, dx, dy, dw, dh); }
+      if (it.cover) { var ar = im.width / im.height, sw = im.width, sh = im.height, sx = 0, sy = 0; if (ar > dw / dh) { sw = im.height * dw / dh; sx = (im.width - sw) / 2; } else { sh = im.width * dh / dw; sy = (im.height - sh) * FS.CROP_Y; } x.drawImage(im, sx, sy, sw, sh, dx, dy, dw, dh); }
       else x.drawImage(im, dx, dy, dw, dh);
       if (plan.marks) { x.strokeStyle = '#999'; x.lineWidth = 1; x.setLineDash([8, 8]); x.strokeRect(dx, dy, dw, dh); x.setLineDash([]); }
     });
@@ -298,7 +313,7 @@
         page.forEach(function (it) {
           var key = it.p.id + (it.rot ? 'r' : '');
           if (!cache[key]) { var k = Math.min(1, 3600 / Math.max(it.p.doc.w, it.p.doc.h)), c = FS.renderFull(it.p, k, false); if (it.rot) c = rotated(c); if (FS.printCorrect) c = FS.printCorrect(c, viaDesktop ? FS.printerChoice() : plan.printer); cache[key] = URL.createObjectURL(dataBlob(c.toDataURL('image/jpeg', 0.95))); }
-          html += '<img src="' + cache[key] + '" style="left:' + it.x + 'mm;top:' + it.y + 'mm;width:' + it.w + 'mm;height:' + it.h + 'mm;' + (it.cover ? 'object-fit:cover;' : '') + (plan.marks ? 'outline:0.2mm dashed #999;' : '') + '">';
+          html += '<img src="' + cache[key] + '" style="left:' + it.x + 'mm;top:' + it.y + 'mm;width:' + it.w + 'mm;height:' + it.h + 'mm;' + (it.cover ? 'object-fit:cover;object-position:50% ' + Math.round(FS.CROP_Y * 100) + '%;' : '') + (plan.marks ? 'outline:0.2mm dashed #999;' : '') + '">';
         });
         html += '</div>';
       });
