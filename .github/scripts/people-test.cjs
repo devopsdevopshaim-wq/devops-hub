@@ -27,11 +27,11 @@ const PHOTOS = (process.env.PHOTOS || 'real/barmitzvah-1.webp,real/birthday-2.we
         const out = await FS.restyleTry(ph, st[3]);
         const after = FS.mainFaces(await FS.detectFaces(out)).length;
         const c = FS.canvas(out.naturalWidth, out.naturalHeight); c.getContext('2d').drawImage(out, 0, 0);
-        return { before, after, n0: ph._n0, ms: Date.now() - t, src: out.aiSource, a: im.src, b: c.toDataURL('image/jpeg', 0.9) };
+        return { before, after, n0: ph._n0, who: ph._who, ms: Date.now() - t, src: out.aiSource, a: im.src, b: c.toDataURL('image/jpeg', 0.9) };
       } catch (e) { return { before, n0: ph._n0, ms: Date.now() - t, err: String(e && e.message || e) }; }
     }, { f, STYLE });
     const name = f.split('/').pop().replace(/\.\w+$/, '');
-    console.log(name, '| people in the photo:', r.n0, '(main ' + r.before + ') | in the design:', r.after, '|', r.err || 'ok ' + r.src, '|', Math.round(r.ms / 1000) + 's');
+    console.log(name, '| who:', r.who || '-'); console.log(name, '| people in the photo:', r.n0, '(main ' + r.before + ') | in the design:', r.after, '|', r.err || 'ok ' + r.src, '|', Math.round(r.ms / 1000) + 's');
     if (r.b) { const q = await b.newPage({ viewport: { width: 1400, height: 700 } }); await q.setContent(`<body style="margin:0;display:flex;gap:8px;background:#222"><img src="${new URL(r.a, 'http://localhost:8099').href}" style="height:690px"><img src="${r.b}" style="height:690px">`); await q.waitForTimeout(800); await q.screenshot({ path: 'out/' + name + '.png' }); await q.close(); }
   }
   console.log('page:', logs.slice(0, 25).join('\n  '));

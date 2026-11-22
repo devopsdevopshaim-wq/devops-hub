@@ -377,7 +377,7 @@
     }).then(function (main) {
       var n0 = main.length; p._main = main[0] && main[0].fake ? null : main;
       if (FS.aiOnePerson() && n0 >= 2 && !main[0].fake) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
-      return guarded(p, prompt, engine, n0).catch(function (e) {
+      return whoIsWho(p, orig, n0, prompt).then(function (who) { return guarded(p, prompt + who, engine, n0); }).catch(function (e) {
         if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message))) {
           if (window.console) console.warn('AI: ' + e.message + ', the real people go into a clean scene');
           return plate(p, prompt, orig);
@@ -386,6 +386,25 @@
       });
     });
   };
+  /* v210: who is who, for a look that redraws the people (a drawing, a costume): a short line per person, left to right
+     (gender, age, hair, what is really on the head or face), asked once per photo from the AI that reads pictures and added
+     to the design's words. A drawn style turned a young man at the edge into a woman, and moved a braid to the next person.
+     Looks that keep the real faces need none. At most 12 seconds; without an answer the design goes on as before. */
+  function whoIsWho(p, orig, n0, prompt) {
+    if (!(n0 >= 1) || /very same people|Keep everything else exactly as it is/.test(prompt) || !FS.askServer) return Promise.resolve('');
+    var key = p.origSrc || p.src; if (p._whoKey === key) return Promise.resolve(p._who || '');
+    var k = Math.min(1, 640 / Math.max(orig.naturalWidth, orig.naturalHeight)), c = FS.canvas(Math.round(orig.naturalWidth * k), Math.round(orig.naturalHeight * k));
+    c.getContext('2d').drawImage(orig, 0, 0, c.width, c.height);
+    var ask = FS.askServer({ action: 'ai', tag: 'photo', image: c.toDataURL('image/jpeg', 0.85).split(',')[1], mime: 'image/jpeg',
+      prompt: 'List every person whose face is visible in this photo, from left to right, also anyone partly cut off at the edges. One short line each: gender, rough age (child, teen, young adult, adult, older), hair (colour and length), and only what they really have on the head or face (glasses, beard, kippah, hat). Nothing else. Answer only the list, like: 1. man, about 30, short black hair, beard | 2. girl, about 8, long brown hair' })
+      .then(function (r) { return r && r.ok && r.text ? String(r.text) : ''; }, function () { return ''; });
+    return Promise.race([ask, new Promise(function (ok) { setTimeout(function () { ok(''); }, 12000); })]).then(function (t) {
+      t = t.replace(/[\r\n]+/g, ' | ').replace(/\s+/g, ' ').replace(/[^\w\s.,|()\-:'\u0590-\u05FF]/g, '').trim().slice(0, 500);
+      var who = t && /\d\./.test(t) ? ' The people of the photo, from left to right: ' + t + '. Draw each of them as exactly this person, in this order: nobody turned into someone else, no features moved between people.' : '';
+      p._whoKey = key; p._who = who;
+      return who;
+    });
+  }
   function guarded(p, prompt, engine, n0) {
     var local = FS.localAI && FS.localAI.isReady && FS.localAI.isReady(), plan = [engine];
     /* v199: online, the cloud (paid, no daily stop) answers a turned-down picture again: each call draws anew (a new random seed),
