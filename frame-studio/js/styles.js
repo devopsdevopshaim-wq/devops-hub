@@ -442,7 +442,7 @@
       return add;
     }
     function go(i) {
-      return restyleOnce(p, prompt, plan[i]).then(function (im) {
+      return restyleOnce(p, prompt, plan[i], i).then(function (im) {
         if (!n0 || !FS.countFaces) return same(im, i);
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
           /* v174: every person of the original must be there. Up to 5 people, exactly as many; a bigger group may lose one
@@ -536,7 +536,7 @@
       });
     });
   }
-  function restyleOnce(p, prompt, engine) {
+  function restyleOnce(p, prompt, engine, tryN) {
     var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight, src = '', raw = null;
     if (engine === undefined) engine = FS.aiEngine();
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
@@ -557,6 +557,9 @@
     /* FLUX gets the same 1024px photo (compared Oct 26, frame-ai-compare.yml: from a 496px copy it drew new faces; from 1024 it keeps the people) */
     var b64 = photoB64(p, 1024), body = { action: 'restyle', prompt: prompt, image: b64, small: b64, mime: 'image/jpeg', w: w, h: h };
     if (engine) body.engine = engine;
+    /* v210: a design turned down (a person missing, added or changed) is drawn again by a bigger FLUX on the server: the 9B,
+       then dev, which hold every person better (a man at the edge of a bar mitzvah photo was dropped three times by the 4B) */
+    if (tryN >= 1 && engine !== 'local') body.fluxModel = tryN === 1 ? 'klein-9b' : 'dev';
     return FS.askServer(body).then(function (r) {
       if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
       src = r.source || (engine === 'local' ? 'מקומי' : '');
