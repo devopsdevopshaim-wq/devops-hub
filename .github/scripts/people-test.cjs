@@ -19,7 +19,7 @@ const PHOTOS = (process.env.PHOTOS || 'real/barmitzvah-1.webp,real/birthday-2.we
     const r = await p.evaluate(async ({ f, STYLE }) => {
       const st = (FS.AI_WOW || []).concat(FS.AI_STYLES || []).find((x) => x[0] === STYLE); if (!st) return { err: 'no style' };
       const im = await FS.loadImg('/frame-studio/media/' + f);
-      const doc = FS.newDoc(im), ph = { id: 't' + Math.random(), src: im.src, doc, cache: {} };
+      const doc = FS.newDoc(im), ph = { id: 't' + Math.random(), src: '/frame-studio/media/' + f, doc, cache: {} };
       FS.aiBatch(true);
       const before = FS.mainFaces(await FS.detectFaces(im)).length;
       const t = Date.now();
