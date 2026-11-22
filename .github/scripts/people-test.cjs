@@ -9,9 +9,12 @@ const PHOTOS = (process.env.PHOTOS || 'real/barmitzvah-1.webp,real/birthday-2.we
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1300, height: 900 } });
   const logs = []; p.on('console', (m) => { if (/AI|people|faces/i.test(m.text())) logs.push(m.text()); }); p.on('pageerror', (e) => logs.push('ERR ' + e));
   // the studio's server calls go to the live worker, with the site's own origin (the worker only answers the site)
+  let drops = 0;
   await p.route(/hasadna-hubs/, async (r) => {
-    const res = await r.fetch({ url: WORKER + '/hasadna-hubs', headers: { ...r.request().headers(), origin: SITE } });
-    r.fulfill({ response: res, headers: { ...res.headers(), 'access-control-allow-origin': '*' } });
+    try {
+      const res = await r.fetch({ url: WORKER + '/hasadna-hubs', headers: { ...r.request().headers(), origin: SITE } });
+      await r.fulfill({ response: res, headers: { ...res.headers(), 'access-control-allow-origin': '*' } });
+    } catch (e) { drops++; console.log('a dropped connection (#' + drops + '): ' + String(e.message || e).split('\n')[0]); try { await r.abort('connectionreset'); } catch (x) { /* page gone */ } }
   });
   await p.goto('http://localhost:8099/frame-studio/studio.html'); await p.waitForTimeout(4000);
   fs.mkdirSync('out', { recursive: true });
