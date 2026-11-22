@@ -285,7 +285,7 @@
     var computer = navigator.onLine === false || (FS.cloudOff && FS.cloudOff()) || (FS.localSlow && FS.localSlow()) || FS.aiEngine() === 'local' || (FS.localAI && FS.localAI.mode && FS.localAI.mode() === 'local');
     var twinOn = false; try { twinOn = localStorage.getItem('fs-ai-twin') === '1'; } catch (e) { /* off */ }   /* v196: off by default (the owner found the built-in anime ugly on event photos); 'fs-ai-twin' = '1' turns it on */
     if (twin && computer && twinOn) { FS.toast('⚡ ' + label + ' מהירה על המחשב: כמה שניות לתמונה, וכל האנשים נשמרים', 4000); return runOffline(twin, label, list); }
-    var done = 0, stop = false, failed = null, next = 0, kept = 0, lastErr = '';   /* kept: answers the guard turned down, the photo stays as shot */
+    var done = 0, stop = false, failed = null, next = 0, kept = 0, lastErr = '', retryLater = [];   /* kept: answers the guard turned down, the photo stays as shot */
     function onStop() { stop = true; FS.aiStop && FS.aiStop(); }
     /* several photos at once (the server answers each on its own), so an event's batch takes the time of a few photos, not of all;
        the engine on this computer runs one picture at a time */
@@ -309,8 +309,11 @@
         .catch(function (e) {
           if (stop) return;
           var m = String(e && e.message || e || '');
-          /* only no connection at all stops the event; any other failure leaves that one photo as shot and the rest go on (v167) */
-          if (/^offline$|^cancelled$/.test(m)) { failed = e; return; }
+          /* only no connection at all stops the event; any other failure leaves that one photo as shot and the rest go on (v167).
+             v214: "offline" while the computer is online is a dropped answer (a busy server), not the internet gone: one photo
+             with it stopped the whole batch, and 3 of 7 photos were never sent. That photo goes to the second round below. */
+          if (/^cancelled$/.test(m) || (/^offline$/.test(m) && navigator.onLine === false)) { failed = e; return; }
+          if (/^offline$|timeout/.test(m)) { retryLater.push(p); return; }
           kept++; lastErr = m;
           p.aiBad = m === 'not-same' ? 'ה־AI לא נשמר: פנים שונות מהמקור' : /lost-people|extra-people/.test(m) ? 'ה־AI לא נשמר: אנשים חסרים או נוספים' : 'ה־AI לא הצליח: ' + String(FS.aiError ? FS.aiError(m) : m).replace(/\s+/g, ' ').slice(0, 150) + ' [' + m + ']';   /* v190: the reason itself (local engine error, timeout, not installed…), not a blanket line */
           if (window.console) console.warn('AI failed on ' + (p.name || p.id) + ': ' + m + (FS.lastAiDetail ? ' · ' + FS.lastAiDetail : ''));
@@ -318,7 +321,26 @@
     }
     msg();
     var lanesP = engines.map(function (eng) { return lane(eng); });
-    return Promise.all(lanesP).then(function () {
+    /* v214: a second round for the photos that did not come out (the owner: "every photo must be edited"): one at a time,
+       each with its own three tries again (on the bigger FLUX models), so a busy moment or an unlucky answer does not leave it */
+    function secondRound() {
+      if (stop || failed) return Promise.resolve();
+      var again = list.filter(function (p) { return p.aiBad || retryLater.indexOf(p) >= 0; });
+      if (!again.length) return Promise.resolve();
+      kept = 0; retryLater = [];
+      FS.busy('🔁 ' + label + ' · סבב נוסף ל־' + again.length + ' תמונות שלא יצאו…', onStop);
+      return again.reduce(function (ch, p) {
+        return ch.then(function () {
+          if (stop) return;
+          return FS.findFaces(p, true).catch(function () {}).then(function () { return FS.restyle(p, prompt); })
+            .then(function () { delete p.aiBad; done++; }, function (e) {
+              var m = String(e && e.message || e || ''); kept++; lastErr = m;
+              p.aiBad = m === 'not-same' ? 'ה־AI לא נשמר: פנים שונות מהמקור' : /lost-people|extra-people/.test(m) ? 'ה־AI לא נשמר: אנשים חסרים או נוספים' : 'ה־AI לא הצליח: ' + String(FS.aiError ? FS.aiError(m) : m).replace(/\s+/g, ' ').slice(0, 80);
+            });
+        });
+      }, Promise.resolve());
+    }
+    return Promise.all(lanesP).then(secondRound).then(function () {
       FS.busy(); FS.emit('doc'); FS.refreshStrip && FS.refreshStrip(); FS.buildGrid && FS.gridMode && FS.gridMode() && FS.buildGrid();
       if (stop) FS.toast('⏹ העריכה נעצרה' + (done ? '. ' + done + ' תמונות כבר עודכנו ("↩ החזרת המקור" מבטל).' : '. התמונות לא השתנו.'), 5000);
       else if (kept && !done && /quota|no-free-tier/.test(lastErr)) FS.toast(FS.aiError(/quota-plan/.test(lastErr) ? 'quota-plan' : 'quota'), 12000);

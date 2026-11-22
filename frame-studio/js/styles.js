@@ -378,7 +378,7 @@
       var n0 = main.length; p._main = main[0] && main[0].fake ? null : main;
       if (FS.aiOnePerson() && n0 >= 2 && !main[0].fake) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
       return whoIsWho(p, orig, n0, prompt).then(function (who) { return guarded(p, prompt + who, engine, n0); }).catch(function (e) {
-        if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message))) {
+        if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message)) && !/caricature|oversized heads|illustration|drawing|painting|cartoon|anime|watercolou?r|sketch/i.test(prompt)) {
           if (window.console) console.warn('AI: ' + e.message + ', the real people go into a clean scene');
           return plate(p, prompt, orig);
         }
@@ -430,8 +430,8 @@
       /* the heads are the photo's own pixels, laid back where they were (keepHeads): the faces are the same by construction; the
          people count above has already been checked (v179) */
       if (im.headsKept) { im.aiPhoto = photoLook; im.aiScene = sameScene; return Promise.resolve(im); }
-      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene }).then(function (r) {
-        im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene;
+      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt) }).then(function (r) {
+        im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene; im.aiLoose = !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt);
         if (r.ok) return im;
         if (window.console) console.warn('AI guard: ' + r.why + ' (score ' + r.score + '), from ' + (im.aiSource || '?'));
         if (i + 1 < plan.length) return go(i + 1);
@@ -878,7 +878,7 @@
     var prevIm = FS.img(p.src);
     if (!p.origSrc) p.origSrc = p.src; else { p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5); }
     p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
-    delete p.aiBad; p.aiHeads = !!im.headsKept; if (im.aiPhoto !== undefined) { p.aiPhoto = im.aiPhoto; p.aiScene = im.aiScene; } if (im.aiCheck) p.aiScore = im.aiCheck.score;
+    delete p.aiBad; p.aiHeads = !!im.headsKept; if (im.aiPhoto !== undefined) { p.aiPhoto = im.aiPhoto; p.aiScene = im.aiScene; p.aiLoose = !!im.aiLoose; } if (im.aiCheck) p.aiScore = im.aiCheck.score;
     keepPlace(p, prevIm, im); FS.snap(p); return p;
   };
   FS.unstyle = function (p) {
