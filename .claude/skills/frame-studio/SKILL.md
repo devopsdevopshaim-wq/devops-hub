@@ -3002,3 +3002,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - A set magnet size (`job.size`) is always covered: cropped, never shrunk inside with white strips. The crop sits at `FS.CROP_Y` = 0.4, a little above the middle, where the faces are. This is used by `pageCanvas`, the HTML print (`object-position`), `drawPage` (it used to stretch a covered item) and the mate preview.
 - The print windows say which paper to choose in the printer's driver (`paperTip`): 15×20 = 6x8, borderless. A sheet sent to a printer set to 10×15 comes out shrunk or cut.
 - Checked in a browser: 6 mixed photos → 2 sheets (4 + 2), each cell 76×101.5 mm, covered, 0.09% white pixels.
+- **v213: framed photos are never cropped.** In v212 the "always fill the magnet" rule cut the frame of framed photos (the owner's screenshot).
+  - Now `planPrint` covers only photos without a frame (`!p.doc.frame`), and a framed photo is not scaled into the bleed cell.
+  - A frame made for the magnet's shape prints at exactly 7.5×10. A frame of another shape (10×15) prints whole, fitted, with white at the sides.
+  - The print windows warn about it (`frameTip`): "בעריכה בוחרים לה גודל 7.5×10".
+  - Checked: plain 10×15 → 76×101.5 filled; framed 10×15 → 66.7×100 whole; framed 7.5×10 → 75×100.

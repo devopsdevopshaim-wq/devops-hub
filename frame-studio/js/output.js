@@ -240,7 +240,8 @@
           var iw = rot ? mm[1] : mm[0], ih = rot ? mm[0] : mm[1], ar = iw / ih, w, h;
           /* the real size whenever it fits (4 magnets of 7.5×10 on a 15×20 sheet print at 7.5×10, not stretched to the cell) */
           var fits = iw <= cell.w + 1.5 && ih <= cell.h + 1.5;
-          if (cell.bleed) { w = cell.w; h = cell.h; }
+          if (cell.bleed && !(p.doc && p.doc.frame)) { w = cell.w; h = cell.h; }   /* a frame is printed at its exact size: no bleed cuts its border */
+          else if (cell.bleed) { w = iw; h = ih; }
           else if (cell.exact || (fits && job.layout !== 'one' && job.layout !== '1')) { w = iw; h = ih; } else if ((job.layout === 'one' || job.layout === '1') && !mg) { w = cell.w; h = cell.h; } else { w = cell.w; h = cell.w / ar; if (h > cell.h) { h = cell.h; w = cell.h * ar; } }
           /* filling the sheet edge to edge cuts only when the shapes are practically the same (a 10×15 photo on 10×15 paper);
              otherwise the whole picture is fitted inside, turned when that is the better way */
@@ -249,7 +250,10 @@
             var real = mmOf(p.doc), da = rot ? real[1] / real[0] : real[0] / real[1], sa = w / h;
             /* v212: a magnet of a set size is always filled: the photo is cropped (a little above the middle, where the faces
                are), never shrunk inside with white strips (owners' customers: "the pages don't print well") */
-            if (job.size) { if (FS.prefs.autoTurn !== false && ((da > 1.02 && sa < 0.98) || (da < 0.98 && sa > 1.02))) rot = !rot; }
+            /* v213: but a photo with a frame is never cropped: the frame stays whole (the owner: "the frame is cut"). It is fitted
+               inside the magnet like before; a frame made for this shape fills it anyway. */
+            var framed = !!(p.doc && p.doc.frame);
+            if (job.size && !framed) { if (FS.prefs.autoTurn !== false && ((da > 1.02 && sa < 0.98) || (da < 0.98 && sa > 1.02))) rot = !rot; }
             else if (Math.abs(Math.log(da / sa)) > 0.03) {
               if (FS.prefs.autoTurn !== false && ((da > 1.02 && sa < 0.98) || (da < 0.98 && sa > 1.02))) { rot = !rot; da = 1 / da; }   /* turned, it fills the slot better */
               cov = false; var bw = w, bh = h, cx0 = cell.x + (cell.w - bw) / 2, cy0 = cell.y + (cell.h - bh) / 2;

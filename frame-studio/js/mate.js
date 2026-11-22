@@ -1264,6 +1264,12 @@
      screen) straight to the printer, no window, at the exact size (the desktop program; a browser still shows its print window) */
   function qpGet() { return lsj('fs-qprint', null); }
   /* the printer must hold the same paper: a 15×20 sheet sent to a printer set to 10×15 comes out shrunk or cut */
+  /* framed photos of another shape than the magnet: printed whole (never cropped), so with white at the sides; the owner is told how to make them fill */
+  function frameTip(plan) {
+    var ids = {}; (plan && plan.pages || []).forEach(function (pg) { pg.forEach(function (it) { if (!it.cover && it.p && it.p.doc && it.p.doc.frame) ids[it.p.id] = 1; }); });
+    var n = Object.keys(ids).length;
+    return n ? '<br><small style="color:#e8a33d">⚠️ ' + (n === 1 ? 'תמונה אחת עם מסגרת' : n + ' תמונות עם מסגרת') + ' בגודל אחר מהמגנט: המסגרת תודפס שלמה, עם רווח לבן בצדדים. כדי שתמלא את המגנט: בעריכה בוחרים לה גודל 7.5×10 ומחילים.</small>' : '';
+  }
   function paperTip(id) { var t = { '15x20': '6x8 (15×20)', '10x15': '4x6 (10×15)', '13x18': '5x7 (13×18)', '20x30': '8x12 (20×30)', A4: 'A4' }[id]; return t ? '<br><small>🖨️ בהגדרות המדפסת (הדרייבר) בוחרים נייר <b>' + t + '</b>, בלי שוליים</small>' : ''; }
   /* the print window's ⭐ saved settings, offered in the instant print too: [{name, o:{paper, msize, …}, printer}] */
   function myPrints() { return lsj('fs-mate-print-my', []).filter(function (m) { return m && m.o && m.o.paper; }); }
@@ -1290,7 +1296,7 @@
       var box = $('#qv-cv', b); box.innerHTML = ''; box.appendChild(drawPv(plan, plan.pages[pg], Math.max(300, box.clientWidth - 10 || 520), Math.max(360, (innerHeight * 0.66) | 0)));
       $('#qv-pg', b).textContent = 'דף ' + (plan.pages.length ? pg + 1 : 0) + ' מתוך ' + plan.pages.length; $('#qv-n', b).textContent = copies;
       $('#qv-prev', b).disabled = pg <= 0; $('#qv-next', b).disabled = pg >= plan.pages.length - 1;
-      $('#qv-sum', b).innerHTML = '<b>' + plan.total + '</b> מגנטים · <b>' + plan.pages.length + '</b> דפים<br>נייר ' + esc(plan.paper[1]) + ' · מגנט ' + (q.msize ? q.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : 'בגודל התמונה') + paperTip(q.paper);
+      $('#qv-sum', b).innerHTML = '<b>' + plan.total + '</b> מגנטים · <b>' + plan.pages.length + '</b> דפים<br>נייר ' + esc(plan.paper[1]) + ' · מגנט ' + (q.msize ? q.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : 'בגודל התמונה') + paperTip(q.paper) + frameTip(plan);
     }
     $$('[data-l]', b).forEach(function (x) { x.addEventListener('click', function () { var m = MPRESETS[Number(x.dataset.l)]; q = Object.assign({}, q, { paper: m[0], msize: m[1] }); ls('fs-qprint', JSON.stringify(q)); qpBtn(); $$('[data-l]', b).forEach(function (y) { y.classList.toggle('on', y === x); }); pg = 0; paint(); }); });
     $$('[data-qm]', b).forEach(function (x) { x.addEventListener('click', function () {
@@ -1438,7 +1444,7 @@
       $('#mp-pg', b).textContent = (plan.pages.length ? pg + 1 : 0) + ' / ' + plan.pages.length;
       var prn = ($('#mp-printer', b).value || 'חלון ההדפסה של המחשב'), per = plan.pages[0] ? plan.pages[0].length : 0;
       $('#mp-sum', b).innerHTML = plan.total ? '<div class="mp-nums"><div><b>' + plan.total + '</b><small>הדפסים</small></div><div><b>' + plan.pages.length + '</b><small>' + (plan.pages.length === 1 ? 'דף' : 'דפים') + '</small></div><div><b>' + per + '</b><small>בכל דף</small></div></div>' +
-        '<p>נייר ' + esc(plan.paper[1]) + (o.msize ? ' · מגנט ' + o.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : ' · בגודל התמונה') + '<br>🖨️ ' + esc(prn) + paperTip(o.paper) + '</p>'
+        '<p>נייר ' + esc(plan.paper[1]) + (o.msize ? ' · מגנט ' + o.msize.split('x').map(function (v) { return Number(v) / 10; }).join('×') + ' ס״מ' : ' · בגודל התמונה') + '<br>🖨️ ' + esc(prn) + paperTip(o.paper) + frameTip(plan) + '</p>'
         : '<p class="mp-none">אין מה להדפיס. בוחרים תמונות, או "כל התמונות" למטה.</p>';
       $$('[data-mpre]', b).forEach(function (x) { var m = MPRESETS[Number(x.dataset.mpre)]; x.classList.toggle('on', m[0] === o.paper && m[1] === o.msize && o.mode === 'real'); });
       $('#mp-go', b).textContent = plan.total ? '🖨️ הדפסה · ' + plan.pages.length + (plan.pages.length === 1 ? ' דף' : ' דפים') : '🖨️ הדפסה';
