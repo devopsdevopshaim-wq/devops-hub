@@ -241,7 +241,7 @@
     ['sparkle-frame', 'מסגרת נצנצים', '✨', 'Add a glamorous sparkling frame of glitter and light around the edges, shimmering gold and silver particles, festive celebration portrait.'],
     ['polaroid', 'פולארויד וינטג׳', '📷', 'Turn this photo into a genuine vintage instant photo from the 1970s: warm faded colours, soft film grain, gentle light leaks and the slightly creamy tones of old instant film.'],
     ['watercolor', 'צבעי מים', '🖌️', 'Repaint this photo as a delicate watercolour painting: soft washes of colour bleeding into each other, white paper showing through, fine pencil lines, airy and romantic.'],
-    ['big-head', 'ציור משפחתי – ראש גדול', '👨‍👩‍👧', 'Turn this exact photo into a hand-drawn caricature illustration of the very same people. Draw each person exactly as they are in the photo: the same age (a child stays a child, a teenager stays a teenager), the same gender, the same face, hair and skin tone, and only the accessories they really wear. Every person in the photo appears once, in the same place and order, with nobody added and nobody left out. Style: oversized heads, about a third of the body height, on small cute bodies, big glossy eyes, warm smiles, rosy cheeks, soft coloured-pencil and marker texture with clean dark outlines, the same clothes and colours. Background: bright festive backdrop of white flowers with green leaves, soft white drapes and warm golden light. No text.'],
+    ['big-head', 'ציור משפחתי – ראש גדול', '👨‍👩‍👧', 'Turn this exact photo into a hand-drawn caricature illustration of these same people, every face redrawn in the drawing style (never a photo face pasted in). Draw each person exactly as they are in the photo: the same age (a child stays a child, a teenager stays a teenager), the same gender, the same face, hair and skin tone, and only the accessories they really wear. Every person in the photo appears once, in the same place and order, with nobody added and nobody left out. Style: oversized heads, about a third of the body height, on small cute bodies, big glossy eyes, warm smiles, rosy cheeks, soft coloured-pencil and marker texture with clean dark outlines, the same clothes and colours. Background: bright festive backdrop of white flowers with green leaves, soft white drapes and warm golden light. No text.'],
     ['caricature', 'קריקטורה חגיגית', '😄', 'Redraw the people as a friendly, flattering caricature illustration: slightly bigger heads and big happy smiles, clean bold lines, bright cheerful colours, festive event mood.'],
     ['charcoal', 'ציור פחם', '✏️', 'Redraw this photo as an expressive charcoal drawing on textured paper: rich blacks, soft smudged shadows, confident strokes, fine-art sketchbook look.'],
     ['pop-art', 'פופ־ארט', '🟨', 'Turn this photo into a bold pop-art print: flat vivid colours, thick black outlines, halftone dots, bright yellow, pink and blue panels, gallery poster style.'],
@@ -369,14 +369,15 @@
     return det.then(function (all) {
       var main = FS.mainFaces ? FS.mainFaces(all) : all;
       p._nAll = main.length; p._all = main.slice();
-      if (main.length && FS.posingFaces) main = FS.posingFaces(all);
+      /* v210: everyone in the photo is kept, not only the people posing in front (the owner: nobody added, nobody left out;
+         a man at the edge of a bar mitzvah photo had disappeared). Only faces under a third of the largest (a far crowd) may go. */
       if (main.length || !FS.countFacesLm) return main;
       /* the face finder saw nobody: the landmarker counts again, so the people are still counted and checked (v174) */
       return FS.countFacesLm(orig).then(function (n) { var a = []; for (var i = 0; i < n; i++) a.push({ x: 0, y: 0, w: 1, h: 1, score: 1, fake: 1 }); return a; });
     }).then(function (main) {
       var n0 = main.length; p._main = main[0] && main[0].fake ? null : main;
       if (FS.aiOnePerson() && n0 >= 2 && !main[0].fake) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
-      return guarded(p, prompt, engine, n0).catch(function (e) {
+      return whoIsWho(p, orig, n0, prompt).then(function (who) { return guarded(p, prompt + who, engine, n0); }).catch(function (e) {
         if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message))) {
           if (window.console) console.warn('AI: ' + e.message + ', the real people go into a clean scene');
           return plate(p, prompt, orig);
@@ -385,6 +386,25 @@
       });
     });
   };
+  /* v210: who is who, for a look that redraws the people (a drawing, a costume): a short line per person, left to right
+     (gender, age, hair, what is really on the head or face), asked once per photo from the AI that reads pictures and added
+     to the design's words. A drawn style turned a young man at the edge into a woman, and moved a braid to the next person.
+     Looks that keep the real faces need none. At most 12 seconds; without an answer the design goes on as before. */
+  function whoIsWho(p, orig, n0, prompt) {
+    if (!(n0 >= 1) || /very same people|Keep everything else exactly as it is/.test(prompt) || !FS.askServer) return Promise.resolve('');
+    var key = p.origSrc || p.src; if (p._whoKey === key) return Promise.resolve(p._who || '');
+    var k = Math.min(1, 640 / Math.max(orig.naturalWidth, orig.naturalHeight)), c = FS.canvas(Math.round(orig.naturalWidth * k), Math.round(orig.naturalHeight * k));
+    c.getContext('2d').drawImage(orig, 0, 0, c.width, c.height);
+    var ask = FS.askServer({ action: 'ai', tag: 'photo', image: c.toDataURL('image/jpeg', 0.85).split(',')[1], mime: 'image/jpeg',
+      prompt: 'List every person whose face is visible in this photo, from left to right, also anyone partly cut off at the edges. One short line each: gender, rough age (child, teen, young adult, adult, older), hair (colour and length), and only what they really have on the head or face (glasses, beard, kippah, hat). Nothing else. Answer only the list, like: 1. man, about 30, short black hair, beard | 2. girl, about 8, long brown hair' })
+      .then(function (r) { return r && r.ok && r.text ? String(r.text) : ''; }, function () { return ''; });
+    return Promise.race([ask, new Promise(function (ok) { setTimeout(function () { ok(''); }, 12000); })]).then(function (t) {
+      t = t.replace(/[\r\n]+/g, ' | ').replace(/\s+/g, ' ').replace(/[^\w\s.,|()\-:'\u0590-\u05FF]/g, '').trim().slice(0, 500);
+      var who = t && /\d\./.test(t) ? ' The people of the photo, from left to right: ' + t + '. Draw each of them as exactly this person, in this order: nobody turned into someone else, no features moved between people.' : '';
+      p._whoKey = key; p._who = who;
+      return who;
+    });
+  }
   function guarded(p, prompt, engine, n0) {
     var local = FS.localAI && FS.localAI.isReady && FS.localAI.isReady(), plan = [engine];
     /* v199: online, the cloud (paid, no daily stop) answers a turned-down picture again: each call draws anew (a new random seed),
@@ -441,7 +461,7 @@
       return add;
     }
     function go(i) {
-      return restyleOnce(p, prompt, plan[i]).then(function (im) {
+      return restyleOnce(p, prompt, plan[i], i).then(function (im) {
         if (!n0 || !FS.countFaces) return same(im, i);
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
           /* v174: every person of the original must be there. Up to 5 people, exactly as many; a bigger group may lose one
@@ -535,7 +555,7 @@
       });
     });
   }
-  function restyleOnce(p, prompt, engine) {
+  function restyleOnce(p, prompt, engine, tryN) {
     var orig = FS.img(p.origSrc || p.src), ar = orig.naturalWidth / orig.naturalHeight, src = '', raw = null;
     if (engine === undefined) engine = FS.aiEngine();
     prompt += ' The output image must have the same ' + (ar > 1.05 ? 'landscape' : ar < 0.95 ? 'portrait' : 'square') + ' aspect ratio (' + orig.naturalWidth + 'x' + orig.naturalHeight + ').';
@@ -543,10 +563,10 @@
     /* the people in the photo, by count: one person stays one person (the models like to add a partner or a figure) */
     if (faces === 1) prompt = prompt.replace(/\b(each|every) person\b/gi, 'the person').replace(/\bthe people\b/gi, 'the person').replace(/\beveryone\b/gi, 'the person') +
       ' There is exactly ONE person in this photo. The result must show only this one person: do not add any other person, partner, figure, silhouette, reflection or face.';
-    if (faces) prompt += ' Remove every bystander and every person in the background (people who are not posing in front); only the ' + (faces === 1 ? 'person' : faces + ' people') + ' posing in front stay.';
+    if (faces >= 2) prompt += ' Keep every person of the photo, also anyone at the edges or partly cut off by the frame: they stay where they are, cut off the same way. Only a far-away blurry crowd in the deep background may become scenery.';
     if (faces >= 2 && /\bportrait\b/i.test(prompt)) prompt = prompt.replace(/\bportrait\b/i, 'group portrait') + ' The group portrait shows all ' + faces + ' people of the photo, each one as themselves, side by side where they stand; never one figure.';
     if (faces === 1) { /* above */ }
-    else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces.';
+    else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces. Each person keeps their own age, gender, face, hair and clothes: never mix features between people.';
     prompt += ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
     /* 🧍 the real people kept (v173, on by default): the AI makes only the world around them, and the people of the photo are
        laid back over it, cut out on this computer. Models redraw faces, and in a group they swap people; this way every face
@@ -554,8 +574,12 @@
     var keepPpl = false;   /* v177: the real people go into a clean scene only as the fallback (plate below), never over the AI's own figures */
     var L = 1024, w = ar >= 1 ? L : Math.round(L * ar / 16) * 16, h = ar >= 1 ? Math.round(L / ar / 16) * 16 : L;
     /* FLUX gets the same 1024px photo (compared Oct 26, frame-ai-compare.yml: from a 496px copy it drew new faces; from 1024 it keeps the people) */
+    if (prompt.length > 3900) prompt = prompt.replace(/ High-end professional result:[^.]*\./, '').slice(0, 3900);   /* the server takes 4000 */
     var b64 = photoB64(p, 1024), body = { action: 'restyle', prompt: prompt, image: b64, small: b64, mime: 'image/jpeg', w: w, h: h };
     if (engine) body.engine = engine;
+    /* v210: a design turned down (a person missing, added or changed) is drawn again by a bigger FLUX on the server: the 9B,
+       then dev, which hold every person better (a man at the edge of a bar mitzvah photo was dropped three times by the 4B) */
+    if (tryN >= 1 && engine !== 'local') body.fluxModel = tryN === 1 ? 'klein-9b' : 'dev';
     return FS.askServer(body).then(function (r) {
       if (!r || !r.ok || !r.image) throw new Error(r && r.error || 'ai-failed');
       src = r.source || (engine === 'local' ? 'מקומי' : '');

@@ -1,0 +1,30 @@
+name: AI people test
+on:
+  workflow_dispatch:
+    inputs:
+      style: { description: 'style id', required: false, default: 'big-head' }
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: [.github/workflows/people-test.yml, .github/scripts/people-test.cjs]
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright@1.48.2 && npx playwright install --with-deps chromium
+      - name: The studio's AI on event photos, through the live server
+        env: { STYLE: '${{ inputs.style || ''big-head'' }}' }
+        run: |
+          (python3 -m http.server 8099 > /dev/null 2>&1 &) ; sleep 2
+          NODE_PATH=/tmp/pw/node_modules node .github/scripts/people-test.cjs
+      - name: Keep the pictures on the ci-people branch
+        if: always()
+        run: |
+          cd out 2>/dev/null || exit 0
+          git config --global user.name ci && git config --global user.email ci@users.noreply.github.com
+          git init -q && git checkout -q -b ci-people && git add -A && git commit -qm "people test" && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-people
