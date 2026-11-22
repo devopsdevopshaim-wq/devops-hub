@@ -3007,3 +3007,17 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - A frame made for the magnet's shape prints at exactly 7.5×10. A frame of another shape (10×15) prints whole, fitted, with white at the sides.
   - The print windows warn about it (`frameTip`): "בעריכה בוחרים לה גודל 7.5×10".
   - Checked: plain 10×15 → 76×101.5 filled; framed 10×15 → 66.7×100 whole; framed 7.5×10 → 75×100.
+
+## 🔁 Every photo of a batch is edited (v214)
+
+- The owner's report: 7 photos, 2 edited. Two were marked "פנים שונות", three were never sent.
+- **A dropped answer no longer stops the batch** (`FS.runAI` lane).
+  - "offline" while `navigator.onLine` is true is a dropped answer from a busy server, not the internet gone. It had set `failed` and every lane stopped taking photos.
+  - Now only `cancelled`, or offline with the computer really offline, stops the batch. An `offline` or `timeout` photo goes to `retryLater`.
+- **A second round** (`secondRound`): after the lanes, every photo with `aiBad` or in `retryLater` is tried once more, one at a time, with its own 3 tries (9B and dev on retries).
+- **Caricatures** (`/caricature|oversized heads|chibi|cartoon/`, not a photo look):
+  - `aiCheck` gets `loose`, so the face-shape ratios are not compared (exaggerated on purpose). `p.aiLoose` is kept for `aiHealth`.
+  - The people count also takes `countFacesLm` (the face finder misses drawn faces), and `placedMiss` is skipped (big heads sit a little off).
+  - The plate fallback (real people pasted into a scene) is never used for drawn looks.
+- Live test (`people-test.yml`, `STYLE=caricature`): 5 of 5 event photos, every person kept, no crash on a dropped connection.
+- Every design's prompt now says "No Christmas trees or Christmas decorations" (a brit came back with Christmas trees).

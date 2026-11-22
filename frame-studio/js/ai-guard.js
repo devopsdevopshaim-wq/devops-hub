@@ -81,7 +81,8 @@
         var Q = RF[best], sd = shapeDiff(shape(f.P), shape(Q)), sim = photo ? ncc(patch(oc, f.P), patch(rc, Q)) : 1;
         var s = Math.max(0, Math.min(1, 1 - sd / (lim.shape * 2))) * (photo ? Math.max(0, Math.min(1, (sim + 0.1) / 1.1)) : 1);
         worst = Math.min(worst, s); detail.push({ sd: Math.round(sd * 1000) / 1000, sim: Math.round(sim * 100) / 100 });
-        if (sd > lim.shape) { bad++; why.push('צורת פנים אחרת'); }
+        /* a caricature changes the face's proportions on purpose (big eyes, a round face): its shape is not compared (o.loose) */
+        if (sd > lim.shape && !o.loose) { bad++; why.push('צורת פנים אחרת'); }
         else if (photo && sim < lim.face) { bad++; why.push('פנים שונות מהמקור'); }
       });
       var scene = 1;
@@ -109,7 +110,7 @@
       if (i >= list.length) return Promise.resolve({ checked: list.length, bad: bad });
       var p = list[i++]; if (onStep) onStep(i, list.length);
       return Promise.all([FS.loadImg(p.origSrc), FS.loadImg(p.src)]).then(function (ims) {
-        return FS.aiCheck(ims[0], ims[1], { photo: p.aiPhoto !== false, scene: !!p.aiScene });
+        return FS.aiCheck(ims[0], ims[1], { photo: p.aiPhoto !== false, scene: !!p.aiScene, loose: !!p.aiLoose });
       }).then(function (r) { if (r.ok) delete p.aiBad; else { p.aiBad = r.why || 'עריכת AI לא תקינה'; bad.push(p); } }, function () {}).then(next);
     }
     return next();

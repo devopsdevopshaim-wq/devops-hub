@@ -378,7 +378,7 @@
       var n0 = main.length; p._main = main[0] && main[0].fake ? null : main;
       if (FS.aiOnePerson() && n0 >= 2 && !main[0].fake) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
       return whoIsWho(p, orig, n0, prompt).then(function (who) { return guarded(p, prompt + who, engine, n0); }).catch(function (e) {
-        if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message))) {
+        if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message)) && !/caricature|oversized heads|illustration|drawing|painting|cartoon|anime|watercolou?r|sketch/i.test(prompt)) {
           if (window.console) console.warn('AI: ' + e.message + ', the real people go into a clean scene');
           return plate(p, prompt, orig);
         }
@@ -430,8 +430,8 @@
       /* the heads are the photo's own pixels, laid back where they were (keepHeads): the faces are the same by construction; the
          people count above has already been checked (v179) */
       if (im.headsKept) { im.aiPhoto = photoLook; im.aiScene = sameScene; return Promise.resolve(im); }
-      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene }).then(function (r) {
-        im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene;
+      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt) }).then(function (r) {
+        im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene; im.aiLoose = !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt);
         if (r.ok) return im;
         if (window.console) console.warn('AI guard: ' + r.why + ' (score ' + r.score + '), from ' + (im.aiSource || '?'));
         if (i + 1 < plan.length) return go(i + 1);
@@ -463,7 +463,13 @@
     function go(i) {
       return restyleOnce(p, prompt, plan[i], i).then(function (im) {
         if (!n0 || !FS.countFaces) return same(im, i);
+        /* v214: a caricature (big drawn heads) is counted twice (the face finder misses drawn faces; the landmarker sees more) and
+           its heads may sit a little off where the people stood: the count decides, not the exact place */
+        var loose = /caricature|oversized heads|chibi|cartoon/i.test(prompt) && !/very same people|Keep everything else exactly as it is/.test(prompt);
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
+          if (!loose || n >= n0 || !FS.countFacesLm) return n;
+          return FS.countFacesLm(im).then(function (m) { return Math.max(n, m); }, function () { return n; });
+        }).then(function (n) {
           /* v174: every person of the original must be there. Up to 5 people, exactly as many; a bigger group may lose one
              face to the finder (a turned head). Was "at least one" for one or two people, so 2 → 1 got through (owner report). */
           var nA = Math.max(n0, p._nAll || 0), lost = n0 <= 5 ? n < n0 : n < n0 - 1, extra = n > (nA <= 4 ? nA : nA + 1);   /* v183: people further back may stay; v184: never one more */
@@ -472,7 +478,7 @@
           if (add > (nA <= 5 ? 0 : 1)) { if (window.console) console.warn('AI: ' + add + ' added people, from ' + (im.aiSource || '?')); extra = true; }
           /* v181: in a group, every person posing must be the AI's own figure where the person stood (a face at about the same
              place and size in the raw answer), so one invented figure with real faces laid on it never passes */
-          var miss = placedMiss(im);
+          var miss = loose ? 0 : placedMiss(im);
           if (miss > (n0 <= 5 ? 0 : 1)) { if (window.console) console.warn('AI: ' + miss + ' of ' + n0 + ' people not where they stood, from ' + (im.aiSource || '?')); lost = true; n = Math.min(n, n0 - miss); }
           var bodyOk = !miss;
           if (!lost && !extra) return same(im, i);
@@ -567,6 +573,7 @@
     if (faces >= 2 && /\bportrait\b/i.test(prompt)) prompt = prompt.replace(/\bportrait\b/i, 'group portrait') + ' The group portrait shows all ' + faces + ' people of the photo, each one as themselves, side by side where they stand; never one figure.';
     if (faces === 1) { /* above */ }
     else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces. Each person keeps their own age, gender, face, hair and clothes: never mix features between people.';
+    prompt += ' No Christmas trees or Christmas decorations.';   /* v214: Israeli events (a brit came back with Christmas trees behind) */
     prompt += ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
     /* 🧍 the real people kept (v173, on by default): the AI makes only the world around them, and the people of the photo are
        laid back over it, cut out on this computer. Models redraw faces, and in a group they swap people; this way every face
@@ -878,7 +885,7 @@
     var prevIm = FS.img(p.src);
     if (!p.origSrc) p.origSrc = p.src; else { p.aiPrev = (p.aiPrev || []).concat(p.src).slice(-5); }
     p.src = im.src; p.cache = {}; p.mask = null; p.faces = null; p.maskV = (p.maskV || 0) + 1; p.quality = null; p._gt = null; p._pt = null;
-    delete p.aiBad; p.aiHeads = !!im.headsKept; if (im.aiPhoto !== undefined) { p.aiPhoto = im.aiPhoto; p.aiScene = im.aiScene; } if (im.aiCheck) p.aiScore = im.aiCheck.score;
+    delete p.aiBad; p.aiHeads = !!im.headsKept; if (im.aiPhoto !== undefined) { p.aiPhoto = im.aiPhoto; p.aiScene = im.aiScene; p.aiLoose = !!im.aiLoose; } if (im.aiCheck) p.aiScore = im.aiCheck.score;
     keepPlace(p, prevIm, im); FS.snap(p); return p;
   };
   FS.unstyle = function (p) {
