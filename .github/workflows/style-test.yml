@@ -1,0 +1,27 @@
+name: AI style test
+on:
+  workflow_dispatch:
+    inputs:
+      style: { description: 'style id in styles.js', required: false, default: 'big-head' }
+  push:
+    branches: [ccr-eb804aa8-aja6m4]
+    paths: [.github/workflows/style-test.yml, .github/scripts/style-test.mjs]
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: pip install -q pillow
+      - name: Two photos in the style, through the live server
+        env: { STYLE: '${{ inputs.style || ''big-head'' }}' }
+        run: node .github/scripts/style-test.mjs
+      - name: Keep the pictures on the ci-style branch
+        if: always()
+        run: |
+          cd out 2>/dev/null || exit 0
+          git config --global user.name ci && git config --global user.email ci@users.noreply.github.com
+          git init -q && git checkout -q -b ci-style && git add -A && git commit -qm "style test" && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-style

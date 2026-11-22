@@ -2960,3 +2960,14 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The upgrade window shows the % price (the old price struck through) and a 1+1 tag on the plan's card.
   - The pill: "🎁 מתנה: אופטימוס המלא עוד N ימים".
 - Tests: `n8n/test/promos.test.mjs` (19). It signs in the owner by a seeded session; the owner's address comes from the workflow code, not the test file.
+
+## 👨‍👩‍👧 The "big head" family caricature style (v209)
+
+- `FS.AI_WOW` has `big-head` (ציור משפחתי – ראש גדול), the popular event illustration style the owner showed:
+  - big heads on small bodies, glossy eyes, coloured-pencil and marker texture;
+  - a white-flowers, drapes and golden-light backdrop.
+- The prompt names no accessories. The first version listed "glasses, beards and hats" to keep, and FLUX added them (a boy became two bearded men with glasses). It now says: each person as they are (age, gender, only what they wear), every person once, nobody added.
+- Tested live with `.github/workflows/style-test.yml` (`STYLE=<id>`; pictures on branch `ci-style`):
+  - the bar mitzvah photo came out right;
+  - a person half out of the frame can lend features to a neighbour.
+- It is a drawn look, so no face-keeping. The people check (`aiCheck`) still runs.
