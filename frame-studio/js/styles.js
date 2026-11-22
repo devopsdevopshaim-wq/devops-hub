@@ -369,7 +369,8 @@
     return det.then(function (all) {
       var main = FS.mainFaces ? FS.mainFaces(all) : all;
       p._nAll = main.length; p._all = main.slice();
-      if (main.length && FS.posingFaces) main = FS.posingFaces(all);
+      /* v210: everyone in the photo is kept, not only the people posing in front (the owner: nobody added, nobody left out;
+         a man at the edge of a bar mitzvah photo had disappeared). Only faces under a third of the largest (a far crowd) may go. */
       if (main.length || !FS.countFacesLm) return main;
       /* the face finder saw nobody: the landmarker counts again, so the people are still counted and checked (v174) */
       return FS.countFacesLm(orig).then(function (n) { var a = []; for (var i = 0; i < n; i++) a.push({ x: 0, y: 0, w: 1, h: 1, score: 1, fake: 1 }); return a; });
@@ -543,10 +544,10 @@
     /* the people in the photo, by count: one person stays one person (the models like to add a partner or a figure) */
     if (faces === 1) prompt = prompt.replace(/\b(each|every) person\b/gi, 'the person').replace(/\bthe people\b/gi, 'the person').replace(/\beveryone\b/gi, 'the person') +
       ' There is exactly ONE person in this photo. The result must show only this one person: do not add any other person, partner, figure, silhouette, reflection or face.';
-    if (faces) prompt += ' Remove every bystander and every person in the background (people who are not posing in front); only the ' + (faces === 1 ? 'person' : faces + ' people') + ' posing in front stay.';
+    if (faces >= 2) prompt += ' Keep every person of the photo, also anyone at the edges or partly cut off by the frame: they stay where they are, cut off the same way. Only a far-away blurry crowd in the deep background may become scenery.';
     if (faces >= 2 && /\bportrait\b/i.test(prompt)) prompt = prompt.replace(/\bportrait\b/i, 'group portrait') + ' The group portrait shows all ' + faces + ' people of the photo, each one as themselves, side by side where they stand; never one figure.';
     if (faces === 1) { /* above */ }
-    else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces.';
+    else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces. Each person keeps their own age, gender, face, hair and clothes: never mix features between people.';
     prompt += ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
     /* 🧍 the real people kept (v173, on by default): the AI makes only the world around them, and the people of the photo are
        laid back over it, cut out on this computer. Models redraw faces, and in a group they swap people; this way every face
