@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const SITE = 'https://devopsdevopshaim-wq.github.io', WORKER = 'https://spider-auth.devopsdevopshaim.workers.dev';
 const STYLE = process.env.STYLE || 'big-head';
-const PHOTOS = (process.env.PHOTOS || 'real/barmitzvah-1.webp,real/birthday-2.webp,real/company-1.webp').split(',');
+const PHOTOS = (process.env.PHOTOS || 'real/barmitzvah-1.webp,real/birthday-2.webp,real/company-1.webp,real/wedding-1.webp,real/brit-1.webp').split(',');
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1300, height: 900 } });
   const logs = []; p.on('console', (m) => { if (/AI|people|faces/i.test(m.text())) logs.push(m.text()); }); p.on('pageerror', (e) => logs.push('ERR ' + e));
