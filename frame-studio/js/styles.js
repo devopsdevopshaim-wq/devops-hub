@@ -463,7 +463,13 @@
     function go(i) {
       return restyleOnce(p, prompt, plan[i], i).then(function (im) {
         if (!n0 || !FS.countFaces) return same(im, i);
+        /* v214: a caricature (big drawn heads) is counted twice (the face finder misses drawn faces; the landmarker sees more) and
+           its heads may sit a little off where the people stood: the count decides, not the exact place */
+        var loose = /caricature|oversized heads|chibi|cartoon/i.test(prompt) && !/very same people|Keep everything else exactly as it is/.test(prompt);
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
+          if (!loose || n >= n0 || !FS.countFacesLm) return n;
+          return FS.countFacesLm(im).then(function (m) { return Math.max(n, m); }, function () { return n; });
+        }).then(function (n) {
           /* v174: every person of the original must be there. Up to 5 people, exactly as many; a bigger group may lose one
              face to the finder (a turned head). Was "at least one" for one or two people, so 2 → 1 got through (owner report). */
           var nA = Math.max(n0, p._nAll || 0), lost = n0 <= 5 ? n < n0 : n < n0 - 1, extra = n > (nA <= 4 ? nA : nA + 1);   /* v183: people further back may stay; v184: never one more */
@@ -472,7 +478,7 @@
           if (add > (nA <= 5 ? 0 : 1)) { if (window.console) console.warn('AI: ' + add + ' added people, from ' + (im.aiSource || '?')); extra = true; }
           /* v181: in a group, every person posing must be the AI's own figure where the person stood (a face at about the same
              place and size in the raw answer), so one invented figure with real faces laid on it never passes */
-          var miss = placedMiss(im);
+          var miss = loose ? 0 : placedMiss(im);
           if (miss > (n0 <= 5 ? 0 : 1)) { if (window.console) console.warn('AI: ' + miss + ' of ' + n0 + ' people not where they stood, from ' + (im.aiSource || '?')); lost = true; n = Math.min(n, n0 - miss); }
           var bodyOk = !miss;
           if (!lost && !extra) return same(im, i);
