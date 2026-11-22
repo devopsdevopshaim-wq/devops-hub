@@ -2988,3 +2988,6 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - End-to-end test: `.github/workflows/people-test.yml`.
   - It runs the studio page in Chromium against the live worker: `FS.restyleTry`, the counts, before/after pictures on branch `ci-people`.
   - On 3 event photos the counts were exact. One answer that added a person was turned down and drawn again.
+- v211: who-is-who waits up to 20 s and accepts any list that names people (man, woman, boy, girl, child, teen, baby, person). It had answered after 12 s, or not as "1.", and was dropped.
+  - Live run on 5 photos: bar mitzvah, birthday and company came out with exact counts.
+  - The wedding was turned down by the face check after 3 tries and stays as shot, which is the intended safe end.
