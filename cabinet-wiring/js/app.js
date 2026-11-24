@@ -133,7 +133,7 @@ function showView(v) {
   if (ps) { $('#siteBack').href = '#site/' + ps.id; $('#siteBack').textContent = '→ ' + ps.name; }
   updateCabSwitch();
   updatePill();
-  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, rec: renderRec, conn: renderConn, cfg: renderCfg, three: renderThree, wiring: renderWiring, assembly: renderAssembly, lab: renderLab, export: renderExport }[v] || renderPlan)();
+  ({ plan: renderPlan, parts: renderParts, wires: renderWires, cabinet: renderCabinet, rec: renderRec, conn: renderConn, cfg: renderCfg, ask: renderAsk, three: renderThree, wiring: renderWiring, assembly: renderAssembly, lab: renderLab, export: renderExport }[v] || renderPlan)();
   renderVHead(v);
 }
 
@@ -144,6 +144,7 @@ const VHEAD = {
   parts: ['רכיבים וחלקים', 'כל רכיב בלוח, עם יצרן ומק"ט אמיתי ורשימת הזמנה.'],
   wires: ['רשימת חוטים', 'כל חוט מנקודה לנקודה: צבע, חתך, סוג, אורך והסבר.'],
   cabinet: ['פריסת ארון', 'הארון כפי שהוא מוגדר בשרטוטים: מסילות, סדר רכיבים, סדר הדקים ואנטיגרונים.'],
+  ask: ['שאלות על התכנית', 'שואלים על רכיב, אות או מעגל — ומקבלים את המסלול החשמלי ואת העמודים מהשרטוט.'],
   cfg: ['הגדרות בקרים וציוד', 'הבקר ומפת ה-I/O, הרשת, הראוטר, הדרייברים והציוד החכם — לפי השרטוטים והחיווט.'],
   rec: ['המלצת הרכבה', 'הפריסה שהמערכת ממליצה עליה, לצד הארון שבשרטוט — להשוואה.'],
   conn: ['חיבורים ומהדקים', 'לכל הדק: מה מחובר אליו מבפנים, ומה יוצא לשטח או לארון אחר.'],
@@ -3234,12 +3235,110 @@ function bindCfg() {
   });
 }
 
+
+/* ---------- שאלות על התכנית: מסלול חשמלי של כל אות, והעמודים מהשרטוט עם החוטים מסומנים ---------- */
+const WA = window.WAsk;
+const askHist = [];
+let askView = null;
+function askExamples() {
+  const ex = [];
+  const has = (re) => P.wires.some((w) => re.test((w.desc || '') + ' ' + (w.explain || '')));
+  if (has(/gate|שער/i)) ex.push('לאן מחובר חיישן שער 1 במצב פתוח ובמצב סגור?');
+  if (P.components.some((c) => /estop/.test(c.type) || /safety|חירום|בטיחות|KSFT|PSR/i.test(c.name + ' ' + c.tag))) ex.push('מה התכנית רושמת על הסייפטי?');
+  if (P.components.some((c) => c.type === 'plc')) ex.push('איך מוזן הבקר?');
+  if (has(/traffic|מגדל|רמזור|light tower/i)) ex.push('מה מפעיל את מגדל האור?');
+  const k = P.components.find((c) => /contactor|relay/.test(c.type));
+  if (k) ex.push(`לאן מחובר ${k.tag}?`);
+  const m = P.components.find((c) => c.type === 'motor');
+  if (m) ex.push(`מה מפעיל את המנוע ${m.tag}?`);
+  return ex.slice(0, 6);
+}
+function renderAsk() {
+  $('#askEx').innerHTML = askExamples().map((q) => `<button type="button" class="chip" data-askq="${esc(q)}">${esc(q)}</button>`).join('');
+  if (!askHist.length || askHist[0].pid !== raw.id) { $('#askOut').innerHTML = `<div class="card ask-empty"><p>אפשר לשאול על כל רכיב, אות או מעגל בתכנית — המערכת מוצאת אותם בשרטוטים ומראה את המסלול החשמלי המלא, מההזנה ועד הבקר, ואת העמודים מה-PDF עם החוטים מסומנים.</p>${claudeAi ? '<p class="muted small">בגרסת Claude אפשר גם לשאול שאלה חופשית: Claude יקרא את העמודים הרלוונטיים ויענה.</p>' : ''}</div>`; return; }
+  drawAnswer(askHist[0]);
+}
+function stepHtml(st, i, last) {
+  const zone = st.zone === 'field' ? '<span class="zb fld">בשטח</span>' : st.zone === 'door' ? '<span class="zb door">בדלת</span>' : '';
+  const via = st.via ? (st.via.wire ? (() => { const w = wireById(st.via.wire); const col = w && C.COLORS[w.color]; return `<div class="hop wire"><span class="sw" style="${col ? swStyle(col) : ''}"></span><b class="mono">חוט ${esc(st.via.no)}</b>${w ? ` <span class="muted small">${esc(C.fmtSection(w.section))} ממ"ר · ${esc(col ? col.he : '')}</span>` : ''}${st.via.desc ? ` <span class="small">${isoTags(st.via.desc)}</span>` : ''}${st.via.page ? ` <button type="button" class="pg-link" data-askpage="${st.via.page}">עמ׳ ${st.via.page}</button>` : ''}</div>`; })() : `<div class="hop inside">${esc(st.via.inside)}</div>`) : '';
+  return `${via}<div class="node ${i === 0 ? 'first' : ''} ${last ? 'last' : ''}"><button type="button" class="ep-link mono" data-comp="${esc(st.tag)}" dir="ltr">${esc(st.tag)}:${esc(st.term)}</button> <span class="nm">${esc(st.name)}</span> ${zone}</div>`;
+}
+function drawAnswer(r) {
+  const out = $('#askOut');
+  if (!r.ok) { out.innerHTML = `<div class="card ask-ans"><h3>${esc(r.question)}</h3><p>${esc(r.summary)}</p></div>`; return; }
+  const wires = r.wires.map(wireById).filter(Boolean);
+  const pgImgs = r.pages.map((n) => pages.find((x) => x.page === n)).filter(Boolean);
+  const circ = r.circuits.map((c) => `<article class="circ ${c.out ? 'out' : 'in'}">
+      <h4><span class="dirb">${c.out ? 'יציאה מהבקר' : 'כניסה לבקר'}</span> ${isoTags(c.signal || c.pin)}</h4>
+      <div class="chain">${c.steps.map((st, i) => stepHtml(st, i, i === c.steps.length - 1)).join('')}</div>
+      ${c.complete ? '' : '<p class="muted small">המסלול ממשיך מחוץ לארון (בשטח או בארון אחר) — הצד השני לא מופיע בשרטוטים של הארון הזה.</p>'}
+      ${c.contacts && c.contacts.length ? `<div class="contacts"><b>המגעים של ${esc(c.contacts[0].tag)} מפעילים:</b><ul>${c.contacts.map((x) => `<li><span class="mono" dir="ltr">${esc(x.tag)}:${esc(x.term)}</span> → חוט <b class="mono">${esc(x.no)}</b> → <button type="button" class="ep-link mono" data-comp="${esc(x.to.split(':')[0])}" dir="ltr">${esc(x.to)}</button> <span class="muted small">${esc(x.toName)}</span>${x.page ? ` <button type="button" class="pg-link" data-askpage="${x.page}">עמ׳ ${x.page}</button>` : ''}</li>`).join('')}</ul></div>` : ''}
+    </article>`).join('');
+  out.innerHTML = `<div class="card ask-ans">
+      <div class="card-head"><h2>${esc(r.question)}</h2><span class="muted small">${r.circuits.length} מסלולים · ${wires.length} חוטים${r.pages.length ? ' · עמודים ' + r.pages.join(', ') : ''}</span></div>
+      <p class="ask-sum">${isoTags(r.summary)}</p>
+      ${claudeAi && pgImgs.length ? '<button class="btn ghost small" type="button" id="askClaude">לשאול את Claude על העמודים האלה</button><div id="askAi"></div>' : ''}
+    </div>
+    ${r.circuits.length ? `<h3 class="ask-h">המסלול החשמלי לפי השרטוטים</h3><div class="circ-grid">${circ}</div>` : ''}
+    <h3 class="ask-h">השרטוטים החשמליים ${pgImgs.length ? `<span class="muted small">החוטים של התשובה מסומנים</span>` : ''}</h3>
+    ${pgImgs.length ? `<div class="ask-pages">${pgImgs.map((pg) => {
+      const mk = [];
+      wires.forEach((w) => pageMatches(w, pg).forEach((it) => mk.push(it)));
+      return `<figure class="ask-page" id="askpg-${pg.page}"><figcaption>עמוד ${pg.page} <span class="muted small">${mk.length} סימונים</span> <button type="button" class="btn ghost small" data-askzoom="${pg.page}">הגדלה</button></figcaption><div class="page"><img src="${pg.url}" alt="עמוד ${pg.page} של התכנית" loading="lazy"><div class="marks">${mk.map((it) => `<div class="mark ${it.kind === 'no' ? 'no' : ''}" style="left:${(it.x * 100).toFixed(2)}%;top:${(it.y * 100).toFixed(2)}%;width:${Math.max(0.6, it.w * 100).toFixed(2)}%;height:${Math.max(0.6, it.h * 100).toFixed(2)}%"></div>`).join('')}</div></div></figure>`;
+    }).join('')}</div>` : `<p class="muted">${pages.length ? 'לחוטים האלה לא נשמר מספר עמוד.' : 'בפרויקט אין PDF, ולכן אין עמודים להראות. העלו את התכנית כדי לראות את השרטוטים עם החוטים מסומנים.'}${r.pages.length && !pages.length ? ' לפי הקריאה הם בעמודים ' + r.pages.join(', ') + '.' : ''}</p>`}
+    <h3 class="ask-h">בארון <span class="muted small">החוטים של התשובה מודגשים</span></h3>
+    <div class="cab-host ask-host" id="askHost"></div>
+    <h3 class="ask-h">כל החוטים בתשובה <span class="muted small">${wires.length}</span></h3>
+    <div class="table-wrap"><table class="tbl wires ask-wires"><thead><tr><th>מס׳</th><th>מ-</th><th>אל-</th><th>צבע</th><th>ממ"ר</th><th>תיאור</th><th>עמ׳</th></tr></thead><tbody>${wires.map((w) => { const col = C.COLORS[w.color]; return `<tr data-id="${esc(w.id)}"><td class="mono">${esc(w.no)}</td><td class="ep" translate="no">${esc(w.from.tag)}:${esc(w.from.term)}</td><td class="ep" translate="no">${esc(w.to.tag)}:${esc(w.to.term)}</td><td style="white-space:nowrap"><span class="sw" style="${col ? swStyle(col) : ''}"></span>${esc(col ? col.he : '')}</td><td>${esc(C.fmtSection(w.section))}</td><td class="small">${isoTags(w.desc || '')}</td><td>${w.page ? `<button type="button" class="pg-link" data-askpage="${w.page}">${w.page}</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div>`;
+  askView = new CabinetView($('#askHost'), { onHover: (id, ev) => showTip(id, ev), onSelect: (id) => { if (id) openDrawer(id); }, onComp: (tag) => openComp(tag) });
+  askView.layoutMode = false;
+  askView.render(P, L, { C });
+  askView.setLayout(false);
+  askView.highlight(r.wires);
+}
+async function askRun(q) {
+  q = String(q || '').trim();
+  if (!q) { toast('כתבו שאלה.'); return; }
+  const r = WA.ask(P, q);
+  r.pid = raw.id;
+  askHist.unshift(r);
+  drawAnswer(r);
+  $('#askOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+async function askClaude() {
+  const r = askHist[0];
+  if (!r || !claudeAi) return;
+  const box = $('#askAi');
+  const imgs = [];
+  for (const n of r.pages.slice(0, Math.max(1, claudeAi.maxImages))) { const pg = pages.find((x) => x.page === n); if (pg) imgs.push(await pageCrop(pg.img, 0, 0, 1, 1)); }
+  const wl = r.wires.map(wireById).filter(Boolean).slice(0, 160).map((w) => `${w.no}: ${w.from.tag}:${w.from.term} -> ${w.to.tag}:${w.to.term} | ${w.desc || ''} | עמ' ${w.page || '?'}`).join('\n');
+  const prompt = `אתה מהנדס חשמל שעוזר לחשמלאי למצוא תקלות חיווט בארון פיקוד. ענה בעברית, קצר ומדויק, רק לפי השרטוטים המצורפים והחוטים ברשימה. ציין תגים, הדקים ומספרי חוטים, ואת העמוד. אם משהו לא מופיע בשרטוטים — אמור זאת.\n\nהשאלה: ${r.question}\n\nהמסלולים שהמערכת מצאה:\n${r.circuits.map((c) => c.steps.map((s) => s.tag + ':' + s.term).join(' → ')).join('\n')}\n\nחוטים רלוונטיים:\n${wl}\n\nמצורפים העמודים ${r.pages.slice(0, imgs.length).join(', ')} מה-PDF, בסדר הזה.`;
+  box.innerHTML = '<p class="muted">Claude קורא את העמודים…</p>';
+  try {
+    const res = await claudeAi.fn(prompt, { images: imgs, modelTier: 'complex' });
+    box.innerHTML = `<div class="ai-ans">${esc(res.text).replace(/\n/g, '<br>')}</div>`;
+  } catch (e) { box.innerHTML = `<p class="muted">${esc((e && SAMPLE_ERR[e.code]) || 'Claude לא ענה. נסו שוב.')}</p>`; }
+}
+function bindAsk() {
+  $('#askForm').addEventListener('submit', (e) => { e.preventDefault(); askRun($('#askQ').value); });
+  $('#askQ').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askRun($('#askQ').value); } });
+  $('#askEx').addEventListener('click', (e) => { const b = e.target.closest('[data-askq]'); if (b) { $('#askQ').value = b.dataset.askq; askRun(b.dataset.askq); } });
+  $('#askOut').addEventListener('click', (e) => {
+    const c = e.target.closest('[data-comp]'); if (c) { openComp(c.dataset.comp); return; }
+    const pg = e.target.closest('[data-askpage]'); if (pg) { const f = document.getElementById('askpg-' + pg.dataset.askpage); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); else { curPage = Number(pg.dataset.askpage); location.hash = '#p/plan'; } return; }
+    const z = e.target.closest('[data-askzoom]'); if (z) { const f = document.getElementById('askpg-' + z.dataset.askzoom); if (f) { f.classList.toggle('big'); z.textContent = f.classList.contains('big') ? 'הקטנה' : 'הגדלה'; } return; }
+    if (e.target.closest('#askClaude')) { askClaude(); return; }
+    const tr = e.target.closest('.ask-wires tr[data-id]'); if (tr) openDrawer(tr.dataset.id);
+  });
+}
+
 /* ---------- התחלה ---------- */
 async function start() {
   /* קודם מחברים את הכפתורים, כדי שהאתר יגיב גם אם האחסון בדפדפן איטי או חסום */
   bind();
   bindLab();
   bindCfg();
+  bindAsk();
   bindHomePhotos();
   try { state = await loadAllAsync(); } catch { /* נשארים עם localStorage */ }
   /* פסי הלבן-כחול בחוטי ‎0V של קטע הפתיחה מופיעים אחרי שהחוטים נמתחו */
