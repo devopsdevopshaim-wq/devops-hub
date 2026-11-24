@@ -71,6 +71,8 @@
       /* the clear faces of the original: not the small ones far behind */
       var big = OF.map(function (P) { return { P: P, b: box(P) }; }), top = big.reduce(function (m, f) { return Math.max(m, f.b.w); }, 0);
       big = big.filter(function (f) { return f.b.w >= Math.max(W * 0.035, top * 0.33); });   /* the people posing; people behind are background */
+      /* v215: a photo split from a group (o.solo): only the person in the middle; the neighbours' edges were removed on purpose */
+      if (o.solo && big.length > 1) big = [big.slice().sort(function (a, b) { return Math.hypot(a.b.cx - W / 2, a.b.cy - H / 3) - Math.hypot(b.b.cx - W / 2, b.b.cy - H / 3); })[0]];
       big.forEach(function (f) {
         n++;
         var best = -1, bd = 1e9;
@@ -110,7 +112,7 @@
       if (i >= list.length) return Promise.resolve({ checked: list.length, bad: bad });
       var p = list[i++]; if (onStep) onStep(i, list.length);
       return Promise.all([FS.loadImg(p.origSrc), FS.loadImg(p.src)]).then(function (ims) {
-        return FS.aiCheck(ims[0], ims[1], { photo: p.aiPhoto !== false, scene: !!p.aiScene, loose: !!p.aiLoose });
+        return FS.aiCheck(ims[0], ims[1], { photo: p.aiPhoto !== false, scene: !!p.aiScene, loose: !!p.aiLoose, solo: !!p.solo });
       }).then(function (r) { if (r.ok) delete p.aiBad; else { p.aiBad = r.why || 'עריכת AI לא תקינה'; bad.push(p); } }, function () {}).then(next);
     }
     return next();

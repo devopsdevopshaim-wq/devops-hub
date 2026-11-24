@@ -437,7 +437,7 @@
       /* the heads are the photo's own pixels, laid back where they were (keepHeads): the faces are the same by construction; the
          people count above has already been checked (v179) */
       if (im.headsKept) { im.aiPhoto = photoLook; im.aiScene = sameScene; return Promise.resolve(im); }
-      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt) }).then(function (r) {
+      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt), solo: !!p.solo }).then(function (r) {
         im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene; im.aiLoose = !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt);
         if (r.ok) return im;
         if (window.console) console.warn('AI guard: ' + r.why + ' (score ' + r.score + '), from ' + (im.aiSource || '?'));
