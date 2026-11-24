@@ -1207,3 +1207,47 @@ ul.setup li { padding: 8px 10px; border-radius: 6px; background: var(--surface-2
 .dz-rw li .op { font-weight: 700; font-size: .74rem; padding: 1px 6px; border-radius: 3px; margin-inline-end: 4px; }
 .dz-rw li.remove .op { background: #f7dedb; color: var(--danger); }
 .dz-rw li.add .op { background: var(--ok-soft); color: var(--ok); }
+.dz-rw li.keep .op { background: var(--surface-2); color: var(--muted); }
+/* חיווט חי */
+.lv-card { margin-top: 14px; border-top: 3px solid var(--danger); }
+.lv-ctl { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
+.lv-tg { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 12px; border: 1px solid var(--line-2); border-radius: 20px; background: #fff; color: var(--ink); font: inherit; font-size: .9rem; cursor: pointer; }
+.lv-tg.on { border-color: var(--ok); background: var(--ok-soft); }
+.lv-tg:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.lv-panel { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px; min-width: 0; }
+.lv-svgs { display: flex; flex-wrap: wrap; gap: 4px 8px; direction: ltr; }
+.lv-svg.a { flex: 1 1 260px; max-width: 420px; }
+.lv-svg.c { flex: 1 1 190px; max-width: 300px; }
+.lv-panel.after { border-color: var(--ok); }
+.lv-panel h5 { margin: 0 0 6px; font-size: .9rem; }
+.lv-svg { width: 100%; height: auto; display: block; direction: ltr; min-width: 0; }
+.lv-rail { stroke-width: 3; }
+.lv-rail.p24 { stroke: #c0392b; }
+.lv-rail.p0 { stroke: #1f4e8c; }
+.lv-rl { font: 700 11px var(--mono); fill: #c0392b; }
+.lv-rl.z { fill: #1f4e8c; }
+.lv-w { fill: none; stroke: #9aa3a8; stroke-width: 2; }
+.lv-w.live { stroke: #e0392b; stroke-width: 2.6; stroke-dasharray: 7 5; animation: lvflow .7s linear infinite; }
+.lv-w.live0 { stroke: #1f4e8c; stroke-width: 2.2; }
+@keyframes lvflow { to { stroke-dashoffset: -12; } }
+@media (prefers-reduced-motion: reduce) { .lv-w.live { animation: none; stroke-dasharray: none; } }
+.lv-sw { stroke: #1c2126; stroke-width: 2.4; }
+.lv-sw.on { stroke: #e0392b; }
+.lv-dot { fill: #1c2126; }
+.lv-term { fill: #fff; stroke: #1c2126; stroke-width: 1.6; }
+.lv-coil { fill: #fff; stroke: #1c2126; stroke-width: 2; }
+.lv-coil.on { fill: #ffd9d4; stroke: #e0392b; }
+.lv-t { font: 11px Arial, sans-serif; fill: #3b434b; direction: ltr; unicode-bidi: plaintext; }
+.lv-t.b { font-weight: 700; fill: #1c2126; font-family: var(--mono); }
+.lv-t.s { font-size: 10px; }
+.lv-t.pin { font-family: var(--mono); fill: #a85a26; }
+.okc { color: var(--ok); fill: var(--ok); }
+.errc { color: var(--danger); fill: var(--danger); }
+.lv-res { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: .86rem; }
+.lv-res li { display: flex; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 6px; background: var(--surface-2); }
+.lv-res li.ok { background: var(--ok-soft); }
+.lv-wires { margin-top: 14px; }
+.lv-tbl tr.rm td { text-decoration: line-through; color: var(--danger); }
+.lv-tbl tr.rm td:last-child { text-decoration: none; }
+.lv-tbl tr.add td { background: var(--ok-soft); }

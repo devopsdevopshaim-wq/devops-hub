@@ -179,24 +179,54 @@ test('שאלות על התכנית: מסלול האות של שער 1 פתוח /
   assert.equal(A.ask(P, 'קשקוש בלי שום קשר').ok, false);
 });
 
-test('שאלת תכנון (L-RO): השער ייפתח רק כשהמעלית למעלה וגם הגג — מקביל ← טור', () => {
+test('שאלת תכנון (L-RO): השער ייפתח רק כשהמעלית למעלה וגם הגג — כל ממסר היתר ממקור אחד', () => {
   const A = require('../js/ask.js');
   const P = E.enrich(require('./fixtures/lobby-ro.cjs')());
   const q = 'אני רוצה שהשער יפתח רק כאשר המעלית למעלה ויש לי אינדיקציה של גג למעלה';
   assert.ok(A.isDesign(q) && !A.isDesign('לאן מחובר K1?'));
   assert.deepEqual(A.splitDesign(q).conds, ['המעלית למעלה', 'גג למעלה']);
   const r = A.design(P, q);
-  assert.deepEqual(r.action.outputs.map((o) => o.pin), ['-PLC1.3:QX0.1']);
-  assert.deepEqual(r.action.targets, ['-GC1']);
+  assert.deepEqual(r.action.outputs.map((o) => o.pin), ['-PLC1.3:1']);
+  assert.deepEqual(r.action.targets, ['-X5 L1…L5']);
   assert.deepEqual(r.permits.map((p) => p.tag).sort(), ['-RS1', '-RS2']);
   assert.ok(r.permits.every((p) => p.parallel));
-  assert.equal(r.conds[0].inputs[0].pin, '-PLC1.1:I1.0');
-  assert.equal(r.conds[1].inputs[0].pin, '-PLC1.1:I1.1');
+  assert.equal(r.conds[0].inputs[0].pin, '-PLC1.1:8');
+  assert.equal(r.conds[1].inputs[0].pin, '-PLC1.1:9');
   assert.ok(r.conds[1].inputs[0].nc && /גג סגור/.test(r.conds[1].warn));
-  const rs1 = r.plan.rewire.find((w) => w.relay === '-RS1');
-  assert.deepEqual(rs1.order, ['-SR3:14', '-SR2:33', '-SR2:34', '-RS1:A1']);
-  assert.equal(rs1.steps.filter((s) => s.op === 'remove').length, 3);
-  assert.ok(r.pages.includes(16) && r.pages.includes(10));
+  /* המגעים כבר בטור ב-STO: מפרידים את ההזנה — RS2 רק מ-SR3, RS1 רק מ-SR2 (או להפך) */
+  assert.equal(r.plan.mode, 'split');
+  assert.deepEqual(r.chains[0].pins, ['-X5:L4', '-RS2:11', '-RS2:14', '-RS1:11', '-RS1:14', '-X5:L5']);
+  const feeds = r.plan.rewire.map((w) => w.feed.split(':')[0]).sort();
+  assert.deepEqual(feeds, ['-SR2', '-SR3']);
+  assert.ok(r.plan.rewire.every((w) => w.steps.some((s) => s.op === 'remove')));
+  /* חי: היום מספיק תנאי אחד, אחרי השינוי צריך את שניהם */
+  const { evaluate } = { evaluate: (L, st, mode) => {
+    const on = (c) => c < 0 || !!st.cond[c];
+    const rel = {}; L.permits.forEach((p) => { const src = mode === 'after' ? p.after : p.today; rel[p.tag] = src.some((s) => on(s.cond)); });
+    return L.chains.every((ch) => ch.relays.every((t) => rel[t]));
+  } };
+  assert.equal(evaluate(r.live, { cond: [true, false] }, 'today'), true);
+  assert.equal(evaluate(r.live, { cond: [true, false] }, 'after'), false);
+  assert.equal(evaluate(r.live, { cond: [true, true] }, 'after'), true);
+  assert.ok(r.pages.includes(21) && r.pages.includes(23));
+});
+
+test('רשימת חיבורים של EPLAN בשני טורים, ושמות האותות מעמודי הבקר', () => {
+  const it = (s, x, y) => ({ s, x, y, w: 0.03, h: 0.01 });
+  const row = (y, a, b) => [it(a[0], 0.06, y), it(a[1], 0.12, y), it(a[2], 0.25, y), it('אפור', 0.36, y), it('0,5', 0.42, y), it(b[0], 0.53, y), it(b[1], 0.6, y), it(b[2], 0.68, y), it('כתום', 0.8, y), it('0,5', 0.9, y)];
+  const list = { page: 21, items: [it('Connection', 0.06, 0.1), it('Target 1', 0.12, 0.1), it('Target 2', 0.25, 0.1),
+    ...row(0.14, ['I1.0', '-PLC1.1:8', '-SR3:13'], ['RS1', '-RS1:A1', '-SR3:2']),
+    ...row(0.18, ['I1.1', '-PLC1.1:9', '-SR2:11'], ['RS1', '-SR2:6', '-SR3:2']),
+    ...row(0.22, ['24V+', '-X9:5:2', '-XS1:24V:2'], ['FGO1', '-RS2:11', '-X5:L4:2'])] };
+  const io = { page: 4, items: [it('I1.0', 0.1, 0.18), it('מיקום רכב קדימה', 0.09, 0.3), it('I1.0', 0.1, 0.45), it('אפור', 0.11, 0.44), it('מעלית ב0', 0.09, 0.62),
+    it('I1.1', 0.2, 0.18), it('I1.1', 0.2, 0.45), it('גג סגור', 0.19, 0.62)] };
+  const ex = E.extractFromText([io, list]);
+  const k = (w) => `${w.no}|${w.from.tag}:${w.from.term}|${w.to.tag}:${w.to.term}`;
+  const got = ex.wires.map(k);
+  ['I1.0|-PLC1.1:8|-SR3:13', 'RS1|-RS1:A1|-SR3:2', 'I1.1|-PLC1.1:9|-SR2:11', 'RS1|-SR2:6|-SR3:2', '24V+|-X9:5|-XS1:24V', 'FGO1|-RS2:11|-X5:L4'].forEach((x) => assert.ok(got.includes(x), x + ' — ' + got.join(', ')));
+  assert.equal(ex.wires.length, 6);
+  assert.equal(ex.wires.find((w) => w.no === 'I1.0').desc, 'מעלית ב0');
+  assert.equal(ex.wires.find((w) => w.no === 'I1.1').desc, 'גג סגור');
 });
 
 console.log(`\n${n} בדיקות עברו`);
