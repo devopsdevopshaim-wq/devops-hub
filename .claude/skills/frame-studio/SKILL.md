@@ -3021,3 +3021,12 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - The plate fallback (real people pasted into a scene) is never used for drawn looks.
 - Live test (`people-test.yml`, `STYLE=caricature`): 5 of 5 event photos, every person kept, no crash on a dropped connection.
 - Every design's prompt now says "No Christmas trees or Christmas decorations" (a brit came back with Christmas trees).
+
+## Removed: each person apart and the hero team (v216)
+
+- v215 (✂️ כל אחד בנפרד, 🦸 צוות גיבורים – לכל אחד גיבור אחר) was reverted in full.
+- The owner's test and a reproduction through `FS.runAI` on the live server showed:
+  - a person could be left out of the split (the man beside two women disappeared);
+  - the real face laid onto a hero body came out smeared and blurry;
+  - a couple in profile failed both split photos.
+- Judging AI results by the people count alone is not enough: look at every result as the owner will, before calling it good.
