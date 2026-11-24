@@ -495,5 +495,278 @@
     };
   }
 
-  return { ask: ask, design: design, isDesign: isDesign, splitDesign: splitDesign, terms: terms, graph: graph, trace: trace };
+  /* ---------- "מה התכנית של X" — חיפוש בכל התכניות, שלבי ביצוע ובדיקות לכל שלב ---------- */
+  var HOWTO_RE = /מה\s+(?:ה)?תכנית\s+(?:של|ל|עבור)|מה\s+(?:ה)?תוכנית\s+(?:של|ל|עבור)|איך\s+(?:לחבר|לחווט|לטפל|מחברים|מחווטים|להתקין|מתקינים)|תכנית\s+(?:ה)?חיווט\s+(?:של|ל)|how\s+(?:to|do\s+i)\s+(?:wire|connect|install)|wiring\s+(?:plan|of|for)/i;
+  function isHowto(q) { return HOWTO_RE.test(String(q || '')) && !isDesign(q); }
+  var LIMIT_RE = /לימיט|לימט|גבול|limit|קצה\s*מהלך|סוף\s*מהלך|end\s*switch|\bLS\d|מפסק\s*גבול/i;
+  var UPPER_RE = /עליון|עליונה|למעלה|\btop\b|upper|\bup\b|גבוה|מעלה/i;
+  var LOWER_RE = /תחתון|תחתונה|למטה|bottom|lower|\bdown\b|נמוך|ב-?0\b|קומה\s*0/i;
+  var STOPW = /^(מה|של|את|עם|על|כל|איך|לחבר|לחווט|לטפל|תכנית|תוכנית|התכנית|התוכנית|חיווט|החיווט|הזו|הזה|זה|לי|אני|רוצה|צריך|בבקשה|ה?לימיט|ה?גבול|ה?עליון|ה?עליונה|ה?תחתון|ה?תחתונה|למעלה|למטה|plan|wiring|of|the|for|how|to|wire|limit|upper|lower|top|switch)$/i;
+  function subjectOf(q) {
+    var t = String(q || '').replace(HOWTO_RE, ' ').replace(/[?!.,"׳״']/g, ' ');
+    var objs = t.split(/\s+/).filter(function (w) { return w && !STOPW.test(w) && !LIMIT_RE.test(w) && !UPPER_RE.test(w) && !LOWER_RE.test(w); }).map(function (w) { return w.replace(/^(?:ו?ה|של|ל|ב|מה)(?=[א-ת]{3,})/, ''); }).filter(function (w) { return w.length >= 3 && !STOPW.test(w); });
+    var kind = LIMIT_RE.test(q) ? 'limit' : /חיישן|sensor/i.test(q) ? 'sensor' : /לחצן|כפתור|button/i.test(q) ? 'button' : 'signal';
+    var level = UPPER_RE.test(q) ? 'upper' : LOWER_RE.test(q) ? 'lower' : '';
+    return { kind: kind, level: level, objects: objs, text: String(q || '').replace(HOWTO_RE, '').replace(/[?]/g, '').trim() };
+  }
+  var LEVEL_HE = { upper: 'עליון', lower: 'תחתון', '': '' };
+  var KIND_HE = { limit: 'מפסק גבול (לימיט)', sensor: 'חיישן', button: 'לחצן', signal: 'אות' };
+
+  /* שרשרת: צמתים ומקטעים (חוט / מגע) מההזנה עד כניסת הבקר */
+  function chainFromSteps(st) {
+    var nodes = [], segs = [];
+    st.forEach(function (x, i) {
+      nodes.push({ pin: x.pin, tag: x.tag, term: x.term, name: x.name || '', type: x.type || '', zone: x.zone || '' });
+      if (!i) return;
+      var v = x.via || {};
+      if (v.wire) segs.push({ kind: 'wire', wire: v.wire, no: v.no || '', color: v.color || '', page: v.page || null, desc: v.desc || '' });
+      else {
+        var lab = v.inside || '';
+        var sw = /מגע|חיישן|דרך המגע|contact/.test(lab);
+        segs.push({ kind: sw ? 'switch' : 'inside', label: lab, nc: /\(NC\)/.test(lab) });
+      }
+    });
+    return { nodes: nodes, segs: segs };
+  }
+
+  function wireInfo(P, id) { var w = P.wires.find(function (x) { return x.id === id; }); return w || null; }
+
+  function howto(projects, question, opt) {
+    opt = opt || {};
+    var q = String(question || '').trim();
+    var sub = subjectOf(q);
+    var objRe = sub.objects.length ? new RegExp(sub.objects.map(function (o) { return o.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'i') : null;
+    var found = [], related = [], searched = [];
+    projects.forEach(function (pr) {
+      var P = pr.P, by = {};
+      P.components.forEach(function (c) { by[c.tag] = c; });
+      searched.push({ id: pr.id, name: pr.name, wires: P.wires.length, pages: pr.pages || 0 });
+      P.wires.forEach(function (w) {
+        var a = by[w.from.tag] || {}, b = by[w.to.tag] || {};
+        var text = [w.desc, w.no, a.name, b.name, w.explain].join(' ');
+        var io = /plc|io/.test(a.type || '') ? w.from : /plc|io/.test(b.type || '') ? w.to : null;
+        if (!io) return;
+        var obj = objRe ? objRe.test(text) : true, lim = sub.kind === 'limit' ? LIMIT_RE.test(text) : true;
+        var lev = sub.level === 'upper' ? UPPER_RE.test(text) : sub.level === 'lower' ? LOWER_RE.test(text) : true;
+        var hit = { pid: pr.id, project: pr.name, pin: K(io.tag, io.term), signal: w.desc || w.no || '', no: w.no || '', page: w.page || null };
+        if (obj && lim && lev) found.push(hit);
+        else if (obj && (objRe || lim)) related.push(hit);
+      });
+    });
+    var uniq = function (arr) { var seen = {}; return arr.filter(function (h) { var k = h.pid + h.pin; if (seen[k]) return false; seen[k] = 1; return true; }); };
+    found = uniq(found); related = uniq(related).filter(function (h) { return !found.some(function (f) { return f.pid === h.pid && f.pin === h.pin; }); });
+    var title = KIND_HE[sub.kind] + (sub.level ? ' ' + LEVEL_HE[sub.level] : '') + (sub.objects.length ? ' של ה' + sub.objects.join(' ').replace(/^ה/, '') : '');
+
+    var chain = null, src = '', home = null, plan = { stages: [], notes: [] };
+    if (found.length) {
+      /* מהשרטוט: המסלול של האות כפי שהוא בתכנית */
+      var f = found[0];
+      home = projects.find(function (p) { return p.id === f.pid; });
+      var G = graph(home.P);
+      var tr = trace(G, f.pin, isFeed);
+      var st = steps(G, tr, true);
+      chain = chainFromSteps(st);
+      src = 'drawing';
+    } else {
+      /* לא בתכנית: המלצה לפי הנתונים של הפרויקט — כניסה פנויה, מהדקים ומוסכמות הצבע */
+      home = projects.find(function (p) { return objRe && p.P.wires.some(function (w) { return objRe.test(w.desc || ''); }); }) || projects.find(function (p) { return p.current; }) || projects[0];
+      if (!home) return { ok: false, mode: 'howto', question: q, summary: 'אין תכניות בפרויקט.', circuits: [], wires: [], comps: [], pages: [] };
+      chain = recommendChain(home.P, sub, title);
+      src = 'recommended';
+    }
+    var stages = buildStages(home.P, chain, sub, src, title);
+    var tests = [];
+    stages.forEach(function (sg) { sg.tests.forEach(function (t) { tests.push(t); }); });
+    var wires = chain.segs.filter(function (s) { return s.kind === 'wire' && s.wire && !s.isNew; }).map(function (s) { return s.wire; });
+    /* מסלול לתכנית החיווט המסודרת (כולל החוטים והרכיב החדשים) */
+    var newWires = [], newComps = [];
+    var stepsOut = chain.nodes.map(function (n, i) {
+      var sg = i ? chain.segs[i - 1] : null, via = null;
+      if (sg && sg.kind === 'wire') {
+        var id = sg.wire || ('new-' + i);
+        if (!sg.wire) newWires.push({ id: id, no: sg.no || '', from: { tag: chain.nodes[i - 1].tag, term: chain.nodes[i - 1].term }, to: { tag: n.tag, term: n.term }, color: sg.color || '', section: sg.section || null, desc: (sg.text || 'חדש') + ' — חדש', page: null });
+        var w0 = sg.wire ? wireInfo(home.P, sg.wire) : null;
+        via = { wire: id, no: sg.no || (w0 && w0.no) || '', color: sg.color || (w0 && w0.color) || '', desc: (w0 && w0.desc) || sg.text || '', page: sg.page || (w0 && w0.page) || null };
+      } else if (sg) via = { inside: sg.label || 'דרך הרכיב' };
+      if (n.isNew && !home.P.components.some(function (c) { return c.tag === n.tag; }) && !newComps.some(function (c) { return c.tag === n.tag; })) newComps.push({ tag: n.tag, type: n.type === 'terminal' ? 'terminal' : 'sensor', name: n.type === 'terminal' ? 'מהדק' : title + ' (חדש)', zone: n.zone, location: n.zone === 'field' ? 'field' : 'cabinet' });
+      return { pin: n.pin, tag: n.tag, term: n.term, name: n.name, type: n.type, zone: n.zone, via: via };
+    });
+    var circuits = [{ title: title, signal: title + (src === 'recommended' ? ' (מומלץ)' : ''), pin: chain.nodes[chain.nodes.length - 1].pin, out: false, complete: true, steps: stepsOut, wires: wires, contacts: [] }];
+    var pages = {};
+    wires.forEach(function (id) { var w = wireInfo(home.P, id); if (w && w.page) pages[w.page] = 1; });
+    related.forEach(function (h) { if (h.pid === home.id && h.page) pages[h.page] = 1; });
+    return {
+      ok: true, mode: 'howto', question: q, subject: sub, title: title, source: src,
+      searched: searched, found: found, related: related.slice(0, 12), home: { id: home.id, name: home.name },
+      chain: chain, stages: stages, notes: chain.notes || [],
+      circuits: circuits, newWires: newWires, newComps: newComps, wires: wires, comps: chain.nodes.map(function (n) { return n.tag; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; }),
+      pages: Object.keys(pages).map(Number).sort(function (a, b) { return a - b; }), summary: ''
+    };
+  }
+
+  /* המלצה: איפה לחבר, לפי מה שכבר יש בתכנית */
+  function recommendChain(P, sub, title) {
+    var by = {}, used = {};
+    P.components.forEach(function (c) { by[c.tag] = c; });
+    P.wires.forEach(function (w) { [w.from, w.to].forEach(function (e) { (used[e.tag] = used[e.tag] || {})[up(e.term)] = w; }); });
+    var notes = [];
+    /* 1. כניסה פנויה: מסומנת SPARE / ספייר, או ערוץ בלי חוט בכרטיס כניסות */
+    var inCards = P.components.filter(function (c) { return /plc|io/.test(c.type) && /input|כניסות|\bDI\b|GT-1\dDF/i.test([c.name, c.partNo].join(' ')) && !/output/i.test(c.name || ''); });
+    var spare = null;
+    P.wires.forEach(function (w) {
+      if (spare) return;
+      [[w.from, w.to], [w.to, w.from]].forEach(function (pr) {
+        if (spare || !inCards.some(function (c) { return c.tag === pr[0].tag; })) return;
+        if (/^(spare|reserve|ספייר|רזרבה)$/i.test(String(w.desc || '').trim())) spare = { pin: K(pr[0].tag, pr[0].term), addr: w.no || '', wire: w, other: pr[1] };
+      });
+    });
+    if (!spare) inCards.some(function (c) {
+      var n = /\b(8|16|32)\s*(?:pt|DI|points?)/i.exec(c.name || '');
+      var cnt = n ? Number(n[1]) : 16;
+      for (var i = 0; i < cnt; i++) if (!(used[c.tag] || {})[String(i)]) { spare = { pin: c.tag + ':' + i, addr: 'ערוץ ' + i + ' ב-' + c.tag, wire: null, other: null }; return true; }
+      return false;
+    });
+    if (!spare) { spare = { pin: '?', addr: 'כניסה פנויה', wire: null, other: null }; notes.push('לא נמצאה כניסה פנויה בכרטיסי הכניסות בתכנית — צריך כרטיס כניסות נוסף, או לפנות כניסה.'); }
+    /* 2. מהדק לאות: אם הכניסה הפנויה כבר יוצאת למהדק — הוא; אחרת המהדק הבא בפס של החיישנים */
+    var sigT = spare.other && (by[spare.other.tag] || {}).type === 'terminal' ? K(spare.other.tag, spare.other.term) : null;
+    var strip = sigT ? tagOf(sigT) : null;
+    if (!strip) {
+      var cnt2 = {};
+      P.wires.forEach(function (w) { var a = by[w.from.tag] || {}, b = by[w.to.tag] || {}; if (/plc|io/.test(a.type) && b.type === 'terminal') cnt2[b.tag] = (cnt2[b.tag] || 0) + 1; if (/plc|io/.test(b.type) && a.type === 'terminal') cnt2[a.tag] = (cnt2[a.tag] || 0) + 1; });
+      strip = Object.keys(cnt2).sort(function (a, b) { return cnt2[b] - cnt2[a]; })[0] || '-X1';
+    }
+    var nums = Object.keys(used[strip] || {}).map(Number).filter(function (n) { return !isNaN(n); });
+    var next = (nums.length ? Math.max.apply(null, nums) : 0) + 1;
+    var newSig = !sigT;
+    if (!sigT) { sigT = strip + ':' + next; next++; }
+    /* 3. הזנה ‎+24V באותו פס: מהדק שכבר מחובר ל-24V, אחרת מהדק חדש עם חוט מפס ההזנה */
+    var supply = null;
+    P.wires.some(function (w) { var e = [w.from, w.to].find(function (x) { return (by[x.tag] || {}).type === 'terminal' && /^\+?24V?P?$/i.test(x.term) && x.tag !== strip; }); if (e) { supply = K(e.tag, e.term); return true; } return false; });
+    var feedT = null, feedWire = null;
+    Object.keys(used[strip] || {}).some(function (t) { var w = used[strip][t]; var o = up(w.from.tag) === up(strip) ? w.to : w.from; if (/^\+?24V?P?$/i.test(o.term) && (by[o.tag] || {}).type === 'terminal') { feedT = strip + ':' + t; feedWire = w; return true; } return false; });
+    var newFeed = !feedT;
+    if (!feedT) feedT = strip + ':' + next;
+    /* צבעים וחתך לפי מה שכבר בתכנית */
+    var colIn = (spare.wire && spare.wire.color) || mostColor(P, function (w) { return /^I\d/.test(w.no || ''); }) || 'GY';
+    var col24 = (feedWire && feedWire.color) || mostColor(P, function (w) { return /^24V\+?$|^\+24/.test(w.no || ''); }) || 'RD';
+    var secIn = (spare.wire && spare.wire.section) || 0.5;
+    /* תג חדש למפסק */
+    var tagN = 1; while (by['-SQ' + tagN]) tagN++;
+    var dev = '-SQ' + tagN;
+    var nodes = [], segs = [];
+    var push = function (n, s) { if (s) segs.push(s); nodes.push(n); };
+    if (newFeed) {
+      push({ pin: supply || '-XS1:24V', tag: tagOf(supply || '-XS1:24V'), term: '24V', name: 'פס הזנה ‎+24V', type: 'terminal', zone: 'cabinet' });
+      push({ pin: feedT, tag: strip, term: feedT.split(':')[1], name: 'מהדק הזנה לשטח (חדש)', type: 'terminal', zone: 'cabinet', isNew: true }, { kind: 'wire', isNew: true, no: '24V+', color: col24, section: secIn, text: 'חוט חדש בארון' });
+    } else {
+      var o = up(feedWire.from.tag) === up(strip) ? feedWire.to : feedWire.from;
+      push({ pin: K(o.tag, o.term), tag: o.tag, term: o.term, name: 'פס הזנה ‎+24V', type: 'terminal', zone: 'cabinet' });
+      push({ pin: feedT, tag: strip, term: feedT.split(':')[1], name: 'מהדק ‎+24V לשטח (קיים)', type: 'terminal', zone: 'cabinet' }, { kind: 'wire', wire: feedWire.id, no: feedWire.no || '', color: feedWire.color || col24, page: feedWire.page || null });
+    }
+    push({ pin: dev + ':11', tag: dev, term: '11', name: title + ' — COM', type: 'sensor', zone: 'field', isNew: true }, { kind: 'wire', isNew: true, field: true, no: 'גיד 1', color: 'BN', section: 0.75, text: 'כבל לשטח, גיד 1' });
+    push({ pin: dev + ':12', tag: dev, term: '12', name: title + ' — NC', type: 'sensor', zone: 'field', isNew: true }, { kind: 'switch', nc: true, label: 'מגע NC 11-12 של ' + dev });
+    push({ pin: sigT, tag: tagOf(sigT), term: sigT.split(':')[1], name: newSig ? 'מהדק אות (חדש)' : 'מהדק אות (קיים, ' + (spare.addr || '') + ')', type: 'terminal', zone: 'cabinet', isNew: newSig }, { kind: 'wire', isNew: true, field: true, no: 'גיד 2', color: 'BK', section: 0.75, text: 'כבל לשטח, גיד 2' });
+    if (spare.wire && !newSig) push({ pin: spare.pin, tag: tagOf(spare.pin), term: termOf(spare.pin), name: 'כניסת בקר ' + (spare.addr || ''), type: 'io', zone: 'cabinet' }, { kind: 'wire', wire: spare.wire.id, no: spare.wire.no || '', color: spare.wire.color || colIn, page: spare.wire.page || null });
+    else push({ pin: spare.pin, tag: tagOf(spare.pin), term: termOf(spare.pin), name: 'כניסת בקר ' + (spare.addr || ''), type: 'io', zone: 'cabinet' }, { kind: 'wire', isNew: true, no: spare.addr || 'I?', color: colIn, section: secIn, text: 'חוט חדש בארון' });
+    return { nodes: nodes, segs: segs, device: dev, input: spare.pin, addr: spare.addr, notes: notes, supply: supply };
+  }
+  function mostColor(P, pred) {
+    var c = {};
+    P.wires.forEach(function (w) { if (pred(w) && w.color) c[w.color] = (c[w.color] || 0) + 1; });
+    return Object.keys(c).sort(function (a, b) { return c[b] - c[a]; })[0] || '';
+  }
+
+  /* שלבי ביצוע, ולכל שלב בדיקות. כל בדיקה מתייחסת למקטע או לצומת בשרשרת — כך המעבדה מחשבת מה אמור להימדד */
+  function buildStages(P, chain, sub, src, title) {
+    var N = chain.nodes, S = chain.segs, stages = [];
+    var swIdx = S.findIndex(function (s) { return s.kind === 'switch'; });
+    var lastN = N.length - 1;
+    var pinL = function (i) { return N[i] ? N[i].pin : ''; };
+    var test = function (o) { o.id = 't' + (stages.length + 1) + '-' + (o.k || 0); return o; };
+    var seg = function (i, sg) {
+      var w = sg.wire ? wireInfo(P, sg.wire) : null;
+      return { i: i, from: pinL(i), to: pinL(i + 1), no: sg.no || (w && w.no) || '', color: sg.color || (w && w.color) || '', section: sg.section || (w && w.section) || null, page: sg.page || (w && w.page) || null, isNew: !!sg.isNew, field: !!sg.field, text: sg.text || '' };
+    };
+    var cab = [], fld = [];
+    S.forEach(function (sg, i) { if (sg.kind === 'wire') (sg.field || N[i].zone === 'field' || N[i + 1].zone === 'field' ? fld : cab).push(seg(i, sg)); });
+    var limitWord = sub.kind === 'limit';
+    /* 0. מה נמצא בתכניות */
+    stages.push({ key: 'plan', title: src === 'drawing' ? 'מה יש בתכנית' : 'החלטות לפני העבודה', items: [], text: src === 'drawing'
+      ? ['האות נמצא בשרטוטים: ' + N.map(function (n) { return n.pin; }).join(' → ') + '.']
+      : ['בתכניות של הפרויקט אין ' + title + '. התכנית למטה היא המלצה, לפי מה שכבר קיים בארון:',
+        'כניסה לבקר: ' + chain.input + (chain.addr ? ' (' + chain.addr + ')' : '') + '.',
+        'בשטח: ' + chain.device + ' — ' + (limitWord ? 'מפסק גבול עם מגע NC (סגור במצב רגיל, נפתח כשהמעלית מגיעה לגבול). NC כדי שחוט קטוע ייראה כמו "הגיעה לגבול" — עצירה בטוחה.' : 'רכיב בשטח.'),
+        'הזנה: ' + N[0].pin + ' → ' + N[1].pin + '.'].concat(chain.notes || []), tests: [] });
+    /* 1. בארון */
+    if (cab.length) stages.push({ key: 'cab', title: 'בארון — חוטים', items: cab, text: ['לכל חוט: שרוול קצה בצבע לפי החתך, סימון מספר החוט בשני הקצוות, הידוק לפי המומנט של ההדק.'], tests: cab.map(function (x, k) { return test({ k: k, kind: 'ohm', seg: x.i, power: false, title: 'רציפות ' + x.from + ' ↔ ' + x.to, how: 'מתח מנותק. מולטימטר על Ω / צפצוף, בין ' + x.from + ' ל-' + x.to + '.' }); }) });
+    /* 2. בשטח */
+    var devI = swIdx >= 0 ? swIdx : -1;
+    var devTests = [];
+    if (devI >= 0) {
+      devTests.push(test({ k: 0, kind: 'ohm', seg: devI, power: false, act: false, title: 'המגע במצב רגיל (' + (S[devI].nc ? 'NC — סגור' : 'NO — פתוח') + ')', how: 'מתח מנותק, הכבל מנותק מהמהדקים. Ω בין ' + pinL(devI) + ' ל-' + pinL(devI + 1) + ', המפסק לא לחוץ.' }));
+      devTests.push(test({ k: 1, kind: 'ohm', seg: devI, power: false, act: true, title: 'המגע כשהמפסק לחוץ', how: 'לוחצים ידנית על הגלגלת / הזרוע של המפסק ומודדים שוב.' }));
+    }
+    stages.push({ key: 'field', title: 'בשטח — ' + (limitWord ? 'התקנת מפסק הגבול' : 'הרכיב'), items: [], text: limitWord ? [
+      'להרכיב את המפסק ' + (sub.level === 'upper' ? 'בראש המהלך' : sub.level === 'lower' ? 'בתחתית המהלך' : 'בקצה המהלך') + ' כך שהמעלית לוחצת עליו לפני הגבול המכני, עם מרווח עצירה.',
+      'כיוון הלחיצה: הזרוע נלחצת רק בתנועה ' + (sub.level === 'upper' ? 'למעלה' : 'למטה') + ', ולא ניתן לעבור אותה (מעצור / פלטת הפעלה ארוכה).',
+      'לחבר את מגע ה-NC (11-12) — לא NO. אטם כבל ו-IP65 לפחות בפיר.'
+    ] : ['להתקין את הרכיב לפי הוראות היצרן.'], tests: devTests });
+    if (fld.length) stages.push({ key: 'cable', title: 'כבל מהשטח לארון', items: fld, text: ['כבל 2×0.75 (או 3×0.75 עם גיד שמור), מתוח בתעלה נפרדת מכבלי הכוח של המנוע. בכניסה לארון — אנטיגרון.'], tests: fld.map(function (x, k) { return test({ k: k, kind: 'ohm', seg: x.i, power: false, title: 'רציפות הגיד ' + x.no + ': ' + x.from + ' ↔ ' + x.to, how: 'מתח מנותק. בודקים כל גיד מקצה לקצה (אפשר לגשר בצד אחד ולמדוד בצד השני).' }); }) });
+    /* 3. הפעלה — מתחים */
+    var vt = [];
+    vt.push(test({ k: 0, kind: 'volt', node: 0, power: true, act: false, title: 'יש ‎24V בהזנה ' + pinL(0), how: 'מחברים מתח. מולטימטר על DC V, בין ' + pinL(0) + ' ל-0V.' }));
+    if (devI >= 0) vt.push(test({ k: 1, kind: 'volt', node: devI, power: true, act: false, title: 'המתח מגיע למפסק ' + pinL(devI), how: 'DC V בין ' + pinL(devI) + ' ל-0V.' }));
+    vt.push(test({ k: 2, kind: 'volt', node: lastN, power: true, act: false, title: 'כניסת הבקר ' + pinL(lastN) + ' — המפסק לא לחוץ', how: 'DC V בין ' + pinL(lastN) + ' ל-0V של הכרטיס.' }));
+    vt.push(test({ k: 3, kind: 'volt', node: lastN, power: true, act: true, title: 'כניסת הבקר ' + pinL(lastN) + ' — המפסק לחוץ', how: 'לוחצים על המפסק ומודדים שוב.' }));
+    stages.push({ key: 'power', title: 'הפעלה — מדידות מתח', items: [], text: ['מחברים מתח ‎24V. כל המדידות מול 0V של הארון.'], tests: vt });
+    /* 4. בבקר */
+    var pt = [];
+    pt.push(test({ k: 0, kind: 'plc', node: lastN, power: true, act: false, title: 'נורית הכניסה ובתוכנה = 1 (לא בגבול)', how: 'מסתכלים על נורית הערוץ בכרטיס ועל הערך בתוכנה.' }));
+    pt.push(test({ k: 1, kind: 'plc', node: lastN, power: true, act: true, title: 'לוחצים: נורית כבויה ובתוכנה = 0 (בגבול)', how: 'לוחצים על המפסק ביד.' }));
+    stages.push({ key: 'plc', title: 'בבקר — התוכנה', items: [], text: limitWord ? [
+      'הכניסה ' + (chain.addr ? chain.addr + ' (' + pinL(lastN) + ')' : pinL(lastN)) + ' = ' + title + '. 1 = לא בגבול, 0 = בגבול (או חוט קטוע).',
+      (sub.level === 'upper' ? 'פקודת התנועה למעלה = בקשה AND ' : 'פקודת התנועה = בקשה AND ') + (chain.addr || pinL(lastN)) + '. תנועה בכיוון ההפוך מותרת גם כשהמפסק לחוץ.',
+      'התראה: אם הגבול העליון והתחתון שניהם 0 — תקלה בחיווט, לעצור את המעלית.'
+    ] : ['להגדיר בתוכנה את הכניסה ' + pinL(lastN) + '.'], tests: pt });
+    /* 5. בטיחות */
+    var stoW = P.wires.filter(function (w) { return /STO/i.test(w.no || '') && (/^-?X/.test(w.to.tag) || /^-?X/.test(w.from.tag)); }).slice(0, 4);
+    if (limitWord) stages.push({ key: 'safety', title: 'גבול סופי (בטיחות)', items: [], text: [
+      'המפסק הזה הוא גבול תפעולי דרך הבקר. בנוסף — מפסק גבול סופי שני, מעט אחריו, עם מגע NC שמנתק בחומרה את התנועה ' + (sub.level === 'upper' ? 'למעלה' : '') + ' (בטור למעגל העצירה / STO של הממיר של המעלית), בלי לעבור דרך הבקר.',
+      stoW.length ? 'בתכנית הזו קווי העצירה (STO) של ההנעה יוצאים במהדקים ' + stoW.map(function (w) { return /X/.test(w.to.tag) ? w.to.tag + ':' + w.to.term : w.from.tag + ':' + w.from.term; }).join(', ') + '. את הגבול הסופי מחברים לפי השרטוט של ארון ההנעה של המעלית, או עם המתכנן.' : 'לחבר לפי השרטוט של ארון ההנעה של המעלית, או עם המתכנן.',
+      'בדיקה: להעביר את המעלית ידנית מעבר לגבול התפעולי — ההנעה חייבת להיעצר בגבול הסופי גם בלי הבקר.'
+    ], tests: [] });
+    return stages;
+  }
+
+  /* המעבדה: מה המכשיר אמור להראות, לפי מצב (מתח, לחיצה) ותקלה מדומה */
+  function labRead(chain, t, st) {
+    var S = chain.segs, f = st.fault || {};
+    var closed = function (i) {
+      var s = S[i];
+      if (f.kind === 'break' && f.seg === i) return false;
+      if (s.kind !== 'switch') return true;
+      var nc = f.kind === 'swap' ? !s.nc : s.nc;
+      return nc ? !t.act : !!t.act;
+    };
+    if (t.kind === 'ohm') {
+      if (st.power === false || !t.power) return closed(t.seg) ? { v: 0.2, text: '≈0 Ω (צפצוף)', ok: true } : { v: Infinity, text: 'OL (פתוח)', ok: false };
+    }
+    var volt = function (node) { for (var i = 0; i < node; i++) if (!closed(i)) return 0; return 24; };
+    if (t.kind === 'volt') { var v = volt(t.node); return { v: v, text: v ? '≈24 V' : '0 V', ok: v > 0 }; }
+    if (t.kind === 'plc') { var on = volt(t.node) > 15; return { v: on ? 1 : 0, text: on ? 'נורית דולקת · 1' : 'נורית כבויה · 0', ok: on }; }
+    return { v: null, text: '—' };
+  }
+  function labDiag(chain, t) {
+    var N = chain.nodes, S = chain.segs;
+    var pin = function (i) { return N[i] ? N[i].pin : ''; };
+    if (t.kind === 'ohm') {
+      var s = S[t.seg];
+      if (s.kind === 'switch') return 'המגע לא מתנהג כמו ' + (s.nc ? 'NC' : 'NO') + ': אולי חובר למגע ההפוך (11-14 במקום 11-12), או שהמפסק פגום / לא מכוון.';
+      return 'החוט ' + pin(t.seg) + ' → ' + pin(t.seg + 1) + ' קטוע, או שההדק לא מהודק על הנחושת (בדקו שרוול, בידוד שנתפס בהדק, מומנט).';
+    }
+    if (t.kind === 'volt') return t.node === 0 ? 'אין הזנה: בדקו את ספק הכוח, הנתיך / המא"ז של ה-24V ואת פס ההזנה.' : 'אין מתח ב-' + pin(t.node) + ': חפשו את הנקודה האחרונה בשרשרת שבה יש ‎24V — התקלה בקטע שאחריה' + (t.act ? ' (כשהמפסק לחוץ ו-NC — 0V הוא התקין).' : '.');
+    return 'הכניסה לא נקלטת: בדקו את הכתובת בתוכנה, את ה-COM של הכרטיס (חיבור ל-0V), ושהכרטיס מוזן.';
+  }
+
+  return { howto: howto, isHowto: isHowto, subjectOf: subjectOf, labRead: labRead, labDiag: labDiag, ask: ask, design: design, isDesign: isDesign, splitDesign: splitDesign, terms: terms, graph: graph, trace: trace };
 });

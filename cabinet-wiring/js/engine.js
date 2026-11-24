@@ -174,6 +174,11 @@
         var sec = SEC_RE.exec(s), awg = AWG_RE.exec(s), ty = TYPE_RE.exec(s);
         var section = sec ? parseFloat(sec[1].replace(',', '.')) : awg ? AWG_TO_MM[Number(awg[1] || awg[2])] || null : null;
         var colors = colorsInText(rest);
+        /* טבלת חיבורים: צבע ואחריו מספר בלי יחידה (עמודת Cross-section) */
+        if (section == null && colors.length) {
+          var tail = /(?:^|\s)(0[.,](?:14|25|34|5|75)|1|1[.,]5|2[.,]5|4|6|10|16|25|35)\s*$/.exec(s.slice(b.end));
+          if (tail) section = parseFloat(tail[1].replace(',', '.'));
+        }
         var no = '';
         /* בטבלת חיבורים: הטוקן שלפני הקצה הראשון הוא שם החיבור (מספר החוט / האות) */
         var lead = s.slice(0, a.at).trim();
@@ -225,6 +230,7 @@
     var out = {};
     var isLabel = function (s) {
       s = String(s).trim();
+      if (/^(spare|reserve)$/i.test(s)) return true;
       if (!/[\u05d0-\u05ea]/.test(s) || s.length > 40) return false;
       if (/^(גשר|ספייר|ספיר)$/.test(s)) return false;
       return !C.colorCode(s);
