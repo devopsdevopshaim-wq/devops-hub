@@ -391,6 +391,10 @@
      to the design's words. A drawn style turned a young man at the edge into a woman, and moved a braid to the next person.
      Looks that keep the real faces need none. At most 20 seconds; without an answer the design goes on as before. */
   var WHO_LIST = false;
+  /* v217: drawn looks change the face's proportions on purpose (big anime eyes, a comic jaw): the face shape is not compared and the
+     people count decides, not the exact place. Only caricatures were loose before, so a good anime design of 3 people was
+     turned down ("צורת פנים אחרת", score 44-49) and the photo was not edited (owner report). */
+  var DRAWN = /caricature|oversized heads|chibi|cartoon|anime|manga|comic|illustration|animation|animated|drawing|drawn|painting|painted|sketch|watercolou?r|pastel|charcoal|crayon|ink |clay|plush|doll|toy brick|pixel art|mosaic|origami|stained glass|paper.?cut|embroider|low.?poly|ukiyo|pop.?art|graffiti/i;
   function whoIsWho(p, orig, n0, prompt) {
     /* v217: off. The written list (a vision model's words) was often wrong (a young man called a woman, brown curls called
        blonde) and the drawing followed the words over the photo: a man came out a blonde woman. The photo itself is the truth. */
@@ -433,8 +437,8 @@
       /* the heads are the photo's own pixels, laid back where they were (keepHeads): the faces are the same by construction; the
          people count above has already been checked (v179) */
       if (im.headsKept) { im.aiPhoto = photoLook; im.aiScene = sameScene; return Promise.resolve(im); }
-      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt) }).then(function (r) {
-        im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene; im.aiLoose = !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt);
+      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && DRAWN.test(prompt) }).then(function (r) {
+        im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene; im.aiLoose = !photoLook && DRAWN.test(prompt);
         if (r.ok) return im;
         if (window.console) console.warn('AI guard: ' + r.why + ' (score ' + r.score + '), from ' + (im.aiSource || '?'));
         if (i + 1 < plan.length) return go(i + 1);
@@ -468,7 +472,7 @@
         if (!n0 || !FS.countFaces) return same(im, i);
         /* v214: a caricature (big drawn heads) is counted twice (the face finder misses drawn faces; the landmarker sees more) and
            its heads may sit a little off where the people stood: the count decides, not the exact place */
-        var loose = /caricature|oversized heads|chibi|cartoon/i.test(prompt) && !/very same people|Keep everything else exactly as it is/.test(prompt);
+        var loose = DRAWN.test(prompt) && !/very same people|Keep everything else exactly as it is/.test(prompt);
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
           if (!loose || n >= n0 || !FS.countFacesLm) return n;
           return FS.countFacesLm(im).then(function (m) { return Math.max(n, m); }, function () { return n; });
