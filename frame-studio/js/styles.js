@@ -390,8 +390,11 @@
      (gender, age, hair, what is really on the head or face), asked once per photo from the AI that reads pictures and added
      to the design's words. A drawn style turned a young man at the edge into a woman, and moved a braid to the next person.
      Looks that keep the real faces need none. At most 20 seconds; without an answer the design goes on as before. */
+  var WHO_LIST = false;
   function whoIsWho(p, orig, n0, prompt) {
-    if (!(n0 >= 1) || /very same people|Keep everything else exactly as it is/.test(prompt) || !FS.askServer) return Promise.resolve('');
+    /* v217: off. The written list (a vision model's words) was often wrong (a young man called a woman, brown curls called
+       blonde) and the drawing followed the words over the photo: a man came out a blonde woman. The photo itself is the truth. */
+    if (!WHO_LIST || !(n0 >= 1) || /very same people|Keep everything else exactly as it is/.test(prompt) || !FS.askServer) return Promise.resolve('');
     var key = p.origSrc || p.src; if (p._whoKey === key) return Promise.resolve(p._who || '');
     var k = Math.min(1, 640 / Math.max(orig.naturalWidth, orig.naturalHeight)), c = FS.canvas(Math.round(orig.naturalWidth * k), Math.round(orig.naturalHeight * k));
     c.getContext('2d').drawImage(orig, 0, 0, c.width, c.height);
@@ -573,7 +576,11 @@
     if (faces >= 2 && /\bportrait\b/i.test(prompt)) prompt = prompt.replace(/\bportrait\b/i, 'group portrait') + ' The group portrait shows all ' + faces + ' people of the photo, each one as themselves, side by side where they stand; never one figure.';
     if (faces === 1) { /* above */ }
     else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces. Each person keeps their own age, gender, face, hair and clothes: never mix features between people.';
-    prompt += ' No Christmas trees or Christmas decorations.';   /* v214: Israeli events (a brit came back with Christmas trees behind) */
+    /* v217: the people as the photo shows them, each one looked at in the photo (not guessed from a style's typical look) */
+    if (faces) prompt += ' Copy every person from the photo itself: the same gender, age, face shape, skin tone, hair colour, hair length and hairstyle, beard, glasses, kippah and clothes as in the photo. A man stays a man, a woman stays a woman, dark hair stays dark, curly hair stays curly.';
+    /* v217: said as what to draw, not what to leave out: FLUX does not read "no …" and naming Christmas trees drew them (a brit came
+       back with a Christmas tree and snow) */
+    if (!/snow|winter|frost|ice\b|christmas|hanukkah/i.test(prompt)) prompt += ' The season is a warm, sunny Israeli spring.';
     prompt += ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
     /* 🧍 the real people kept (v173, on by default): the AI makes only the world around them, and the people of the photo are
        laid back over it, cut out on this computer. Models redraw faces, and in a group they swap people; this way every face
