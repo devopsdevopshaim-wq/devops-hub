@@ -60,6 +60,7 @@
   }
 
   /* גרף של הדקים: חוטים, ומעברים בתוך רכיבים (מגע, סליל, עומס) */
+  var isSafety = function (c) { return /safety\s*relay|ממסר\s*בטיחות|\bOSSD|RLY3|PNOZ|\b3SK\d|ReLy\b|sicherheitsschalt/i.test([c.name, c.desc, c.partNo].join(' ')); };
   function graph(P) {
     var by = {}, adj = {}, termsOf = {};
     P.components.forEach(function (c) { by[c.tag] = c; });
@@ -75,6 +76,8 @@
       var has = function (t) { return ts.indexOf(t) >= 0; };
       var link = function (a, b, label) { if (has(a) && has(b)) add(c.tag + ':' + a, c.tag + ':' + b, { kind: 'inside', tag: c.tag, label: label }); };
       if (/plc|io|terminal|pe_bar/.test(c.type)) return;
+      /* ממסר בטיחות (SICK ReLy, PNOZ…): המספור שלו אינו מגעים רגילים — הוא מקור של אותות, בלי מעברים פנימיים */
+      if (isSafety(c)) return;
       if (/relay|contactor|timer|button|estop|selector|thermostat|overload|mcb|mpcb|fuse|main_switch|rcd|other/.test(c.type)) {
         ts.forEach(function (t) {
           var n = num(t);
@@ -109,7 +112,8 @@
     }) || (function () { var tag = key.split(':')[0], c = G.by[tag]; return c && c.type === 'psu' && /^(\+|L\+|V\+|24V)/.test(key.split(':')[1]); })();
   };
   var isReturn = function (G, key) {
-    return (G.adj[key] || []).some(function (x) { return x.e.kind === 'wire' && (/^0V|^N$|^M$/.test(potOf(x.e.wire)) || /^0V/.test(up(x.e.wire.no))); });
+    if (/^(0V|0VP|M|GND|24V-|-24V?)$/i.test(key.split(':').slice(1).join(':'))) { var c0 = G.by[key.split(':')[0]]; if (c0 && /terminal|psu/.test(c0.type)) return true; }
+    return (G.adj[key] || []).some(function (x) { return x.e.kind === 'wire' && (/^0V|^N$|^M$/.test(potOf(x.e.wire)) || /^0V|^24V-|^-24V|^GND$/.test(up(x.e.wire.no))); });
   };
 
   var isPsu = function (G, key) { var c = G.by[key.split(':')[0]]; return Boolean(c && (c.type === 'psu' || c.type === 'transformer')); };
@@ -295,6 +299,9 @@
   var tagOf = function (k) { return k.split(':')[0]; };
   var termOf = function (k) { return k.slice(k.indexOf(':') + 1); };
 
+  var SUPPLY_T = /^(\+?24V?P?|24VP|0V|0VP|12V|\+12V?|M|L\+|L-|GND|PE|N|\+|-)$/i;
+  var gateGroup = function (term) { var m = /^([A-Z]+)\d+$/i.exec(String(term)); return m ? m[1].toUpperCase() : ''; };
+
   function design(P, question) {
     var q = String(question || '').trim();
     var sp = splitDesign(q);
@@ -302,46 +309,68 @@
     var G = graph(P), by = G.by;
     var act = ask(P, sp.action);
     var outs = (act.circuits || []).filter(function (c) { return c.out; });
-    /* ממסרי הפקודה של הפעולה, והציוד שהם מפעילים */
-    var cmdRelays = {}, targets = {};
-    outs.forEach(function (c) {
-      c.steps.forEach(function (st) { var cc = by[st.tag]; if (cc && /relay|contactor/.test(cc.type) && st.term === 'A1') cmdRelays[st.tag] = 1; });
-      (c.contacts || []).forEach(function (x) {
-        netPins(G, x.to.split(':')[0] + ':' + String(x.to.split(':').slice(1).join(':')).toUpperCase()).forEach(function (k) {
-          var cc = by[tagOf(k)]; if (cc && cc.type !== 'terminal' && cc.tag !== x.tag && !/plc|io/.test(cc.type)) targets[cc.tag] = 1;
-        });
-      });
-    });
     /* ממסרים שהבקר מפעיל ישירות (פקודות) — לא היתרים */
     var plcDriven = {};
     P.components.forEach(function (c) {
       if (!/relay|contactor/.test(c.type)) return;
       if (netPins(G, c.tag + ':A1').some(function (k) { var cc = by[tagOf(k)]; return cc && /plc|io/.test(cc.type); })) plcDriven[c.tag] = 1;
     });
-    Object.keys(targets).forEach(function (t) { if (plcDriven[t]) delete targets[t]; });
-    /* היתרים קיימים: מגעים של ממסרים אחרים במעגלים של הציוד המופעל */
-    var permits = {};
-    Object.keys(targets).forEach(function (tg) {
-      Object.keys(G.adj).filter(function (k) { return tagOf(k) === tg; }).forEach(function (start) {
-        var seen = {}, q2 = [start]; seen[start] = 1;
-        while (q2.length) {
-          var k = q2.shift();
-          (G.adj[k] || []).forEach(function (x) {
-            if (seen[x.to]) return;
-            var cc = by[tagOf(x.to)] || {};
-            if (x.e.kind === 'inside') { if (/סליל/.test(x.e.label) || !/relay|contactor|timer/.test((by[tagOf(k)] || {}).type || '')) return; if (!cmdRelays[tagOf(k)] && !plcDriven[tagOf(k)]) permits[tagOf(k)] = (permits[tagOf(k)] || []).concat([termOf(k) + '-' + termOf(x.to)]); }
-            if (/plc|io|psu/.test(cc.type || '')) return;
-            seen[x.to] = 1; q2.push(x.to);
-          });
-        }
+    /* ממסרי הפקודה של הפעולה, והציוד שהם מפעילים (רכיב בשטח, או קבוצת מהדקים כמו X5:L1…L5) */
+    var cmdRelays = {}, targets = {}, targetPins = {};
+    var addTarget = function (k) {
+      var tg = tagOf(k), cc = by[tg];
+      if (!cc || cc.tag === undefined || /plc|io|psu/.test(cc.type) || plcDriven[tg]) return;
+      if (cc.type === 'terminal') {
+        var grp = gateGroup(termOf(k));
+        if (!grp || SUPPLY_T.test(termOf(k))) return;
+        var ps = Object.keys(G.adj).filter(function (p) { return tagOf(p) === tg && gateGroup(termOf(p)) === grp; });
+        var ns = ps.map(function (p) { return Number(termOf(p).slice(grp.length)); }).sort(function (a, b) { return a - b; });
+        var name = tg + ' ' + grp + ns[0] + (ns.length > 1 ? '…' + grp + ns[ns.length - 1] : '');
+        targets[name] = 1;
+        ps.forEach(function (p) { targetPins[p] = name; });
+      } else {
+        targets[tg] = 1;
+        Object.keys(G.adj).forEach(function (p) { if (tagOf(p) === tg) targetPins[p] = tg; });
+      }
+    };
+    outs.forEach(function (c) {
+      var first = c.steps.find(function (st) { var cc = by[st.tag]; return cc && /relay|contactor/.test(cc.type) && st.term === 'A1'; });
+      if (first) cmdRelays[first.tag] = 1;
+      (c.contacts || []).forEach(function (x) {
+        netPins(G, x.to.split(':')[0] + ':' + String(x.to.split(':').slice(1).join(':')).toUpperCase()).forEach(function (k) { if (tagOf(k) !== x.tag) addTarget(k); });
       });
     });
-    /* מי מפעיל כל ממסר היתר: המגעים שמזינים את הסליל — יותר ממקור אחד = מקביל (או) */
+    /* היתרים קיימים: מגעים של ממסרים אחרים במעגלים של הציוד המופעל (בלי לעבור דרך פסי ההזנה) */
+    var permits = {}, chains = [];
+    var stopAt = function (k) { var cc = by[tagOf(k)] || {}; return /plc|io|psu/.test(cc.type || '') || (cc.type === 'terminal' && SUPPLY_T.test(termOf(k))); };
+    Object.keys(targetPins).forEach(function (start) {
+      var seen = {}, prev = {}, q2 = [start]; seen[start] = 1;
+      while (q2.length) {
+        var k = q2.shift();
+        (G.adj[k] || []).forEach(function (x) {
+          if (seen[x.to] || stopAt(x.to)) return;
+          if (x.e.kind === 'inside') {
+            var t0 = tagOf(k);
+            if (/סליל/.test(x.e.label) || !/relay|contactor|timer/.test((by[t0] || {}).type || '')) return;
+            if (!cmdRelays[t0] && !plcDriven[t0]) permits[t0] = (permits[t0] || []).concat([termOf(k) + '-' + termOf(x.to)]);
+          }
+          seen[x.to] = 1; prev[x.to] = k; q2.push(x.to);
+          /* שרשרת: ממהדק של הציוד, דרך מגעי היתר, למהדק אחר של אותו ציוד (למשל STO) */
+          if (targetPins[x.to] && x.to !== start && targetPins[x.to] === targetPins[start]) {
+            var path = [x.to], p = x.to;
+            while (prev[p]) { p = prev[p]; path.unshift(p); }
+            var tags = path.map(tagOf).filter(function (t) { return permits[t]; });
+            if (tags.length && !chains.some(function (ch) { return ch.pins.join() === path.slice().reverse().join() || ch.pins.join() === path.join(); })) chains.push({ target: targetPins[start], pins: path, relays: tags.filter(function (v, i, a) { return a.indexOf(v) === i; }) });
+          }
+        });
+      }
+    });
+    /* מי מפעיל כל ממסר היתר: מה שמחובר לסליל — יותר ממקור אחד = מקביל (או) */
     var permitInfo = Object.keys(permits).map(function (tag) {
       var a1 = tag + ':A1';
       var pins = netPins(G, a1);
-      var drivers = pins.filter(function (k) { var cc = by[tagOf(k)]; return k !== a1 && cc && cc.type !== 'terminal' && partnerOf(G, k); });
-      return { tag: tag, name: (by[tag] || {}).name || '', contacts: permits[tag].filter(function (v, i, a) { return a.indexOf(v) === i; }), drivers: drivers, parallel: new Set(drivers.map(tagOf)).size > 1, netWires: wiresOfNet(G, pins) };
+      var drivers = pins.filter(function (k) { var cc = by[tagOf(k)]; return k !== a1 && cc && cc.type !== 'terminal' && !/^A[12]$/.test(termOf(k)); });
+      return { tag: tag, name: (by[tag] || {}).name || '', contacts: permits[tag].map(function (v) { return v.split('-').sort(function (a, b) { return Number(a) - Number(b) || (a < b ? -1 : 1); }).join('-'); }).filter(function (v, i, a) { return a.indexOf(v) === i; }), drivers: drivers, parallel: new Set(drivers.map(tagOf)).size > 1, netWires: wiresOfNet(G, pins) };
     });
     /* התנאים */
     var conds = sp.conds.map(function (ct) {
@@ -352,32 +381,66 @@
         return { pin: c.pin, signal: c.signal, from: src.tag ? src.tag + ':' + src.term : '', nc: nc };
       });
       var names = r.ok ? r.comps.map(function (t) { return t + ' ' + ((by[t] || {}).name || ''); }).concat(ins.map(function (x) { return x.signal; })).join(' ') : '';
-      var want = stateOf(ct), have = stateOf(names);
+      var want = stateOf(ct), have = stateOf(ins.length ? ins.map(function (x) { return x.signal; }).join(' ') : names);
       var shown = ins.length ? ins[0].signal : r.comps.length ? ((by[r.comps[0]] || {}).name || r.comps[0]) : '';
-      return { text: ct, ok: r.ok && (r.comps.length > 0 || ins.length > 0), comps: r.ok ? r.comps : [], inputs: ins, warn: want && have && want !== have ? 'בשאלה כתוב "' + ct + '", ובתכנית האות הוא "' + shown + '". לוודא שזה אותו מצב, או להוסיף חיישן למצב שביקשת.' : '', circuits: r.circuits || [] };
+      var tags = (r.ok ? r.comps : []).concat(ins.map(function (x) { return x.from ? tagOf(x.from) : ''; })).filter(Boolean);
+      return { text: ct, ok: r.ok && (r.comps.length > 0 || ins.length > 0), comps: r.ok ? r.comps : [], tags: tags, inputs: ins, warn: want && have && want !== have ? 'בשאלה כתוב "' + ct + '", ובתכנית האות הוא "' + shown + '". לוודא שזה אותו מצב, או להוסיף חיישן למצב שביקשת.' : '', circuits: r.circuits || [] };
     });
+    var condOf = function (tag) { for (var i = 0; i < conds.length; i++) if (conds[i].tags.indexOf(tag) >= 0) return i; return -1; };
     /* התוכנית */
-    var plan = { logic: [], rewire: [], add: [], notes: [] };
+    var plan = { logic: [], rewire: [], add: [], notes: [], mode: '' };
     var condIns = conds.map(function (c) { return c.inputs[0]; }).filter(Boolean);
     outs.forEach(function (c) {
       plan.logic.push({ out: c.pin, signal: c.signal, inputs: condIns.map(function (x) { return { pin: x.pin, signal: x.signal, nc: x.nc }; }) });
     });
-    permitInfo.forEach(function (pi) {
-      if (!pi.parallel) return;
-      /* מקביל → טור: רק אם המקורות הם הרכיבים של התנאים */
-      var condTags = {};
-      conds.forEach(function (c, i) { c.comps.forEach(function (t) { condTags[t] = i; }); });
-      var ds = pi.drivers.slice().sort(function (a, b) { return (condTags[tagOf(a)] == null ? 99 : condTags[tagOf(a)]) - (condTags[tagOf(b)] == null ? 99 : condTags[tagOf(b)]); });
-      if (ds.filter(function (d) { return condTags[tagOf(d)] != null; }).length < 2) return;
-      var d1 = ds[0], d2 = ds[1], p2 = partnerOf(G, d2);
-      var feed2 = p2 ? wiresOfNet(G, [p2]).filter(function (w) { return /^\+?24|^L[123]$|^12/i.test(String(w.potential || w.no || '')); }) : [];
-      var steps2 = [];
-      pi.netWires.forEach(function (w) { steps2.push({ op: 'remove', text: 'חוט ' + (w.no || '') + ': ' + w.from.tag + ':' + w.from.term + ' ↔ ' + w.to.tag + ':' + w.to.term, wire: w.id }); });
-      feed2.forEach(function (w) { steps2.push({ op: 'remove', text: 'ההזנה ל-' + p2 + ' (חוט ' + (w.no || '') + ' מ-' + (w.from.tag + ':' + w.from.term === p2 ? w.to.tag + ':' + w.to.term : w.from.tag + ':' + w.from.term) + ')', wire: w.id }); });
-      steps2.push({ op: 'add', text: d1 + ' → ' + p2 });
-      steps2.push({ op: 'add', text: d2 + ' → ' + pi.tag + ':A1' });
-      plan.rewire.push({ relay: pi.tag, name: pi.name, from: 'מקביל', steps: steps2, order: [d1, p2, d2, pi.tag + ':A1'] });
-    });
+    var wireText = function (w) { return 'חוט ' + (w.no || '') + ': ' + w.from.tag + ':' + w.from.term + ' ↔ ' + w.to.tag + ':' + w.to.term; };
+    var par = permitInfo.filter(function (pi) { return pi.parallel && pi.drivers.filter(function (d) { return condOf(tagOf(d)) >= 0; }).length >= 2; });
+    var chainRelays = {};
+    chains.forEach(function (ch) { ch.relays.forEach(function (t) { chainRelays[t] = 1; }); });
+    var inChain = par.filter(function (pi) { return chainRelays[pi.tag]; });
+    /* map: לכל ממסר היתר — המקור שיזין אותו אחרי השינוי */
+    var feeds = {};
+    if (inChain.length >= 2 && inChain.length >= conds.filter(function (c) { return c.ok; }).length) {
+      /* כמה ממסרי היתר כבר בטור בשרשרת: מפרידים — כל ממסר מקבל מקור של תנאי אחד בלבד */
+      plan.mode = 'split';
+      var used = {};
+      var direct = function (pi, d) { return pi.netWires.find(function (w) { var a = K(w.from.tag, w.from.term), b = K(w.to.tag, w.to.term); return (a === d && b === pi.tag + ':A1') || (b === d && a === pi.tag + ':A1'); }); };
+      /* קודם מי שמחובר ישירות למקור, אחר כך השאר */
+      var order = inChain.slice().sort(function (a, b) { return (a.drivers.some(function (d) { return direct(a, d); }) ? 0 : 1) - (b.drivers.some(function (d) { return direct(b, d); }) ? 0 : 1); });
+      order.forEach(function (pi) {
+        var cands = pi.drivers.filter(function (d) { var ci = condOf(tagOf(d)); return ci >= 0 && !used[ci]; });
+        var d = cands.find(function (x) { return direct(pi, x); }) || cands[0];
+        if (!d) return;
+        used[condOf(tagOf(d))] = 1;
+        feeds[pi.tag] = d;
+        var keep = direct(pi, d);
+        var st = [];
+        pi.netWires.forEach(function (w) { if (w !== keep) st.push({ op: 'remove', text: wireText(w), wire: w.id }); });
+        if (!keep) st.push({ op: 'add', text: d + ' → ' + pi.tag + ':A1' });
+        else st.push({ op: 'keep', text: wireText(keep) + ' — נשאר', wire: keep.id });
+        plan.rewire.push({ relay: pi.tag, name: pi.name, from: 'מקביל', to: 'מקור אחד', cond: conds[condOf(tagOf(d))].text, feed: d, steps: st, order: [d, pi.tag + ':A1'] });
+      });
+      var ch = chains[0];
+      if (ch) plan.notes.unshift('המגעים של ' + ch.relays.join(' ו') + ' כבר מחוברים בטור במעגל של ' + ch.target + ' (' + ch.pins.join(' → ') + '). אחרי ההפרדה כל ממסר נדלק רק מהתנאי שלו, ולכן ' + ch.target + ' מקבל היתר רק כששני התנאים מתקיימים.');
+      var freed = [];
+      inChain.forEach(function (pi) { pi.drivers.forEach(function (d) { if (feeds[pi.tag] !== d && !Object.keys(feeds).some(function (t) { return feeds[t] === d; }) && freed.indexOf(d) < 0) freed.push(d); }); });
+      if (freed.length) plan.notes.push('יציאות שמתפנות אחרי השינוי: ' + freed.join(', ') + ' — לסמן בשרטוט כפנויות או לבודד.');
+    } else {
+      par.forEach(function (pi) {
+        /* ממסר היתר אחד במקביל משני מגעים: להעביר את המגעים לטור */
+        var ds = pi.drivers.slice().sort(function (a, b) { return condOf(tagOf(a)) - condOf(tagOf(b)); }).filter(function (d) { return condOf(tagOf(d)) >= 0; });
+        var d1 = ds[0], d2 = ds[1], p2 = partnerOf(G, d2);
+        if (!p2) return;
+        plan.mode = 'series';
+        var feed2 = wiresOfNet(G, [p2]).filter(function (w) { return /^\+?24|^L[123]$|^12/i.test(String(w.potential || w.no || '')); });
+        var steps2 = [];
+        pi.netWires.forEach(function (w) { steps2.push({ op: 'remove', text: wireText(w), wire: w.id }); });
+        feed2.forEach(function (w) { steps2.push({ op: 'remove', text: 'ההזנה ל-' + p2 + ' (חוט ' + (w.no || '') + ' מ-' + (w.from.tag + ':' + w.from.term === p2 ? w.to.tag + ':' + w.to.term : w.from.tag + ':' + w.from.term) + ')', wire: w.id }); });
+        steps2.push({ op: 'add', text: d1 + ' → ' + p2 });
+        steps2.push({ op: 'add', text: d2 + ' → ' + pi.tag + ':A1' });
+        plan.rewire.push({ relay: pi.tag, name: pi.name, from: 'מקביל', to: 'טור', steps: steps2, order: [d1, p2, d2, pi.tag + ':A1'] });
+      });
+    }
     conds.forEach(function (c) { if (!c.ok) plan.add.push('התנאי "' + c.text + '" לא נמצא בתכנית: צריך להוסיף חיישן (ואם זו פונקציית בטיחות — ממסר בטיחות משלו) ולחבר אותו לכניסה פנויה בבקר.'); });
     var spare = P.components.filter(function (c) { return /relay/.test(c.type) && /ספייר|spare|רזרבה/i.test(c.name || ''); }).map(function (c) { return c.tag; });
     if (permitInfo.length) plan.notes.push('ההיתר בחומרה (' + permitInfo.map(function (x) { return x.tag; }).join(', ') + ') מנתק את כל התנועה של ' + Object.keys(targets).join(', ') + ', לא רק את הפעולה. אם רוצים להגביל רק אותה — לעשות את ההתניה בבקר, או להכניס מגע בטור לקו הפקודה' + (spare.length ? ' (ממסרים פנויים: ' + spare.join(', ') + ')' : '') + '.');
@@ -398,13 +461,36 @@
     var wires = {};
     circuits.forEach(function (c) { c.wires.forEach(function (id) { wires[id] = 1; }); (c.contacts || []).forEach(function (x) { wires[x.wire] = 1; }); });
     permitInfo.forEach(function (pi) { pi.netWires.forEach(function (w) { wires[w.id] = 1; }); });
+    /* חוטי השרשרת */
+    var chainWires = [];
+    chains.forEach(function (ch) {
+      for (var i = 1; i < ch.pins.length; i++) {
+        var a = ch.pins[i - 1], b = ch.pins[i];
+        var w = P.wires.find(function (x) { var p = K(x.from.tag, x.from.term), r2 = K(x.to.tag, x.to.term); return (p === a && r2 === b) || (p === b && r2 === a); });
+        if (w) { wires[w.id] = 1; chainWires.push(w.id); }
+      }
+    });
     var pages = {};
     P.wires.forEach(function (w) { if (wires[w.id] && w.page) pages[w.page] = 1; });
+    /* מודל חי: מה מפעיל מה — לסימולציה של היום ואחרי השינוי */
+    var live = {
+      conds: conds.map(function (c, i) { return { i: i, text: c.text, signal: (c.inputs[0] || {}).signal || '', input: (c.inputs[0] || {}).pin || '', nc: !!(c.inputs[0] || {}).nc, tags: c.tags, ok: c.ok }; }),
+      permits: permitInfo.filter(function (pi) { return pi.drivers.length; }).map(function (pi) {
+        return { tag: pi.tag, contacts: pi.contacts, today: pi.drivers.map(function (d) { return { pin: d, cond: condOf(tagOf(d)) }; }), after: feeds[pi.tag] ? [{ pin: feeds[pi.tag], cond: condOf(tagOf(feeds[pi.tag])) }] : pi.drivers.map(function (d) { return { pin: d, cond: condOf(tagOf(d)) }; }), series: plan.mode === 'series' && plan.rewire.some(function (x) { return x.relay === pi.tag; }) };
+      }),
+      outputs: outs.map(function (c) {
+        var rel = c.steps.map(function (s) { return s.tag; }).filter(function (t) { return cmdRelays[t]; })[0] || '';
+        var ct = (c.contacts || [])[0];
+        return { pin: c.pin, signal: c.signal, relay: rel, contact: ct ? ct.tag + ':' + ct.term + ' → ' + ct.to : '', target: ct ? (targetPins[ct.to.split(':')[0] + ':' + String(ct.to.split(':').slice(1).join(':')).toUpperCase()] || ct.to) : '' };
+      }),
+      chains: chains.map(function (ch) { return { target: ch.target, pins: ch.pins, relays: ch.relays }; })
+    };
     return {
       ok: true, mode: 'design', question: q, action: { text: sp.action, outputs: outs.map(function (c) { return { pin: c.pin, signal: c.signal }; }), relays: Object.keys(cmdRelays), targets: Object.keys(targets) },
       conds: conds.map(function (c) { return { text: c.text, ok: c.ok, comps: c.comps.slice(0, 8), inputs: c.inputs, warn: c.warn }; }),
       permits: permitInfo.map(function (pi) { return { tag: pi.tag, name: pi.name, contacts: pi.contacts, drivers: pi.drivers, parallel: pi.parallel }; }),
-      plan: plan, circuits: circuits, wires: Object.keys(wires), comps: Object.keys(targets).concat(Object.keys(permits)), pages: Object.keys(pages).map(Number).sort(function (a, b) { return a - b; }),
+      chains: live.chains, live: live,
+      plan: plan, circuits: circuits, wires: Object.keys(wires), chainWires: chainWires, comps: Object.keys(cmdRelays).concat(Object.keys(permits)), pages: Object.keys(pages).map(Number).sort(function (a, b) { return a - b; }),
       summary: ''
     };
   }

@@ -10,6 +10,7 @@ import { Site3D } from './site3d.js';
 import { SitePlan } from './siteplan.js';
 import { partSvg } from './partart.js';
 import { schematicSvg } from './schem.js';
+import { liveHtml, bindLive, wiringTable } from './live.js';
 
 const C = window.WCat, E = window.WEngine, Pr = window.WPrompts, Demo = window.WDemo, S = window.WSite;
 const $ = (s, el = document) => el.querySelector(s);
@@ -3325,7 +3326,7 @@ function drawAnswer(r) {
       <p class="ask-sum">${isoTags(r.summary)}</p>
       ${claudeAi && pgImgs.length ? `<button class="btn ${r.mode === 'design' ? '' : 'ghost'} small" type="button" id="askClaude">${r.mode === 'design' ? 'תשובה מלאה מ-Claude לפי השרטוטים' : 'לשאול את Claude על העמודים האלה'}</button><div id="askAi"></div>` : ''}
     </div>
-    ${r.mode === 'design' ? designHtml(r) : ''}
+    ${r.mode === 'design' ? designHtml(r) + liveHtml(r) + wiringTable(r, wireById) : ''}
     ${r.circuits.length ? `<div class="card schem-card"><div class="card-head"><h2>תכנית החיווט של השאלה</h2><div class="row gap"><span class="muted small">${r.circuits.length} מסלולים</span><button class="btn ghost small" type="button" id="schemDl">הורדה (SVG)</button><button class="btn ghost small" type="button" id="schemPrint">הדפסה</button></div></div><div class="schem-wrap" id="schemWrap">${schematicSvg(P, r, { C, title: raw.name, drawingNo: (raw.meta || {}).drawingNo })}</div><p class="muted small">כל אות הוא מסלול זרם: מלמעלה ההזנה או יציאת הבקר, למטה הכניסה בבקר או ה-0V. ליד כל קו מספר החוט, הצבע והחתך, ו-/מספר הוא העמוד בתכנית.</p></div>` : ''}
     ${r.circuits.length ? `<h3 class="ask-h">המסלול החשמלי לפי השרטוטים</h3><div class="circ-grid">${circ}</div>` : ''}
     <h3 class="ask-h">השרטוטים החשמליים ${pgImgs.length ? `<span class="muted small">החוטים של התשובה מסומנים</span>` : ''}</h3>
@@ -3344,6 +3345,7 @@ function drawAnswer(r) {
   askView.render(P, L, { C });
   askView.setLayout(false);
   askView.highlight(r.wires);
+  if (r.mode === 'design') bindLive(out, r);
 }
 async function askRun(q) {
   q = String(q || '').trim();
@@ -3368,9 +3370,9 @@ function designHtml(r) {
   const conds = r.conds.map((c) => `<li class="${c.ok ? (c.warn ? 'warn' : 'ok') : 'bad'}"><span class="led ${c.ok ? (c.warn ? 'warn' : 'ok') : 'err'}"></span><div><b>${esc(c.text)}</b>
       ${c.ok ? `<div class="small">${c.inputs.length ? c.inputs.map((x) => `כניסה ${pin(x.pin)} — ${esc(x.signal)}${x.from ? ` (מ-${pin(x.from)}${x.nc ? ', מגע NC — ייתכן ש-1 = <b>לא</b> מזוהה' : ''})` : ''}`).join('<br>') : 'רכיבים: ' + c.comps.map(pin).join(' ')}</div>` : '<div class="small">לא נמצא בתכנית.</div>'}
       ${c.warn ? `<div class="small warn-t">⚠ ${esc(c.warn)}</div>` : ''}</div></li>`).join('');
-  const permits = r.permits.length ? `<ul class="dz-list">${r.permits.map((p) => `<li><span class="led ${p.parallel ? 'warn' : 'ok'}"></span><div>${pin(p.tag)} <span class="muted small">${esc(p.name)}</span> — מגעים ${esc(p.contacts.join(', '))} במעגל של ${r.action.targets.map(pin).join(', ')}.<br><span class="small">הסליל מוזן מ-${p.drivers.map(pin).join(p.parallel ? ' <b>או</b> ' : ' ')}${p.parallel ? ' — <b>במקביל</b>: מספיק שאחד מהם סגור' : ''}</span></div></li>`).join('')}</ul>` : '<p class="small muted">לא נמצאו מגעי היתר בחומרה במעגלים של הציוד הזה — ההתניה כולה בבקר.</p>';
+  const permits = r.permits.length ? `<ul class="dz-list">${r.permits.map((p) => `<li><span class="led ${p.parallel ? 'warn' : 'ok'}"></span><div>${pin(p.tag)} <span class="muted small">${esc(String(p.name).split(/\s{2,}/)[0])}</span> — מגעים ${esc(p.contacts.join(', '))} במעגל של ${r.action.targets.map(pin).join(', ')}.<br><span class="small">הסליל מוזן מ-${p.drivers.map(pin).join(p.parallel ? ' <b>או</b> ' : ' ')}${p.parallel ? ' — <b>במקביל</b>: מספיק שאחד מהם סגור' : ''}</span></div></li>`).join('')}</ul>` : '<p class="small muted">לא נמצאו מגעי היתר בחומרה במעגלים של הציוד הזה — ההתניה כולה בבקר.</p>';
   const logic = r.plan.logic.map((l) => `<div class="dz-logic" dir="ltr"><b>${esc(l.out)}</b> (${esc(l.signal)}) = בקשה ${l.inputs.map((x) => `AND ${x.nc ? 'NOT? ' : ''}<b>${esc(x.pin)}</b> (${esc(x.signal)})`).join(' ')}</div>`).join('');
-  const rewire = r.plan.rewire.map((w) => `<div class="dz-rw"><b>${pin(w.relay)} ${esc(w.name)}: מקביל ← טור</b><ol>${w.steps.map((st) => `<li class="${st.op}"><span class="op">${st.op === 'remove' ? 'להוריד' : 'לחבר'}</span> <span dir="ltr">${esc(st.text)}</span></li>`).join('')}</ol><div class="small muted" dir="ltr">${w.order.map(esc).join(' → ')}</div></div>`).join('');
+  const rewire = r.plan.rewire.map((w) => `<div class="dz-rw"><b>${pin(w.relay)} ${/[א-ת]/.test(w.name) ? esc(w.name) : ''}: ${w.to === 'טור' ? 'מקביל ← טור' : `מקביל ← רק מ-${pin(w.feed)} (${esc(w.cond)})`}</b><ol>${w.steps.map((st) => `<li class="${st.op}"><span class="op">${st.op === 'remove' ? 'להוריד' : st.op === 'keep' ? 'נשאר' : 'לחבר'}</span> <span dir="ltr">${esc(st.text)}</span></li>`).join('')}</ol><div class="small muted" dir="ltr">${w.order.map(esc).join(' → ')}</div></div>`).join('');
   return `<div class="card dz-card">
     <div class="card-head"><h2>שאלת תכנון: מה צריך כדי ש${esc(r.action.text)} רק בתנאים</h2></div>
     <div class="dz-grid">

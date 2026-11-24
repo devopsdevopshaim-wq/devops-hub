@@ -66,6 +66,8 @@
     if (type === 'mcb' && has(/^A[12]$/) && !has(/^(95|96|97|98)$/)) return 'contactor';
     if (type === 'mcb' && has(/^(95|96|97|98)$/) && !has(/^A[12]$/)) return 'overload';
     if (type === 'other' && has(/^%?[IQ]\d|^D[IOQ][A-Z]?[.\d]/)) return 'plc';
+    /* R1, R2… עם סליל A1/A2 ומגעים — ממסרים (לא גוף חימום) */
+    if ((type === 'heater' || type === 'other' || type === 'meter') && has(/^A1$/) && has(/^A2$/)) return 'relay';
     return type;
   }
 
@@ -76,22 +78,64 @@
   }
 
   /* ---------- שליפה אוטומטית מטקסט של PDF (רשימות חוטים / תכניות מהדקים) ---------- */
-  var EP_RE = /([=+\-][A-Z0-9.=+\-]*?[A-Z]{1,4}\d{0,4}[A-Z0-9.]*|\b[A-Z]{1,4}\d{1,4}(?:\.\d+)?)\s*:\s*([A-Za-z0-9+\-\/%.]{1,8})/g;
+  /* תג:הדק, ואחריו אולי מספר נקודת החיבור במהדק (EPLAN: -X9:5:2) — לא חלק מההדק */
+  var EP_RE = /([=+\-][A-Z0-9.=+\-]*?[A-Z]{1,4}\d{0,4}[A-Z0-9.]*|\b[A-Z]{1,4}\d{1,4}(?:\.\d+)?)\s*:\s*([A-Za-z0-9+\-\/%.]{1,8})(?::\d{1,2}(?![\w.]))?/g;
   var SEC_RE = /(\d+(?:[.,]\d+)?)\s*(?:mm²|mm2|mm\^2|qmm|ממ"ר|ממ״ר|sqmm)/i;
   var AWG_RE = /\b(\d{1,2})\s*AWG\b|\bAWG\s*(\d{1,2})\b/i;
   var TYPE_RE = /\b(H0[57]V-?[KUR]|H05VV5-F|LiYCY|LiYY|NYY|N2XY|YSLY|ÖLFLEX|OLFLEX|UL\s?1015|MTW)\b/i;
   var AWG_TO_MM = { 24: 0.25, 22: 0.34, 20: 0.5, 18: 0.75, 17: 1, 16: 1.5, 14: 2.5, 12: 4, 10: 6, 8: 10, 6: 16, 4: 25, 2: 35, 1: 50 };
 
+  /* טבלה בכמה טורים באותו עמוד (רשימת חיבורים של EPLAN: שני טורים של Connection / Target 1 / Target 2):
+     גבולות הטורים לפי הכותרות שחוזרות באותה שורה */
+  var HEAD_RE = /^(Connection|Verbindung|Connexion|חיבור|Wire|Wire\s*no\.?|Draht)$/i;
+  var HEAD2_RE = /^(Target\s*1|Ziel\s*1|Cible\s*1|From|Von|De|מ-?)$/i;
+  var EPT_RE = /^[=+\-]?[A-Z][A-Z0-9.]*\d[A-Z0-9.]*:[A-Za-z0-9+\-\/%.:]+$/;
+  function columnCuts(items) {
+    var byHead = headCuts(items);
+    if (byHead.length) return byHead;
+    /* בלי כותרת לכל טור: שורות עם 4 קצוות ויותר — הטור השני מתחיל בשם החיבור שלפני הקצה השלישי */
+    var rows = [], cur = null;
+    items.forEach(function (it) {
+      if (cur && Math.abs(it.y - cur.y) <= Math.max(0.003, (it.h || 0.01) * 0.5)) cur.items.push(it);
+      else { cur = { y: it.y, items: [it] }; rows.push(cur); }
+    });
+    var xs = [];
+    rows.forEach(function (r) {
+      var its = r.items.slice().sort(function (a, b) { return a.x - b.x; });
+      var ep = [];
+      its.forEach(function (it, i) { if (EPT_RE.test(String(it.s).trim())) ep.push(i); });
+      if (ep.length < 4) return;
+      var i3 = ep[2], prev = its[i3 - 1];
+      xs.push(prev && i3 - 1 > ep[1] && !EPT_RE.test(prev.s.trim()) && !/^\d+([.,]\d+)?$/.test(prev.s.trim()) && !C.colorCode(prev.s.trim()) ? prev.x : its[i3].x);
+    });
+    if (xs.length < 3) return [];
+    xs.sort(function (a, b) { return a - b; });
+    return [xs[Math.floor(xs.length / 2)] - 0.006];
+  }
+  function headCuts(items) {
+    var heads = items.filter(function (it) { return HEAD_RE.test(String(it.s).trim()); });
+    var t1 = items.filter(function (it) { return HEAD2_RE.test(String(it.s).trim()); });
+    if (heads.length < 2 || t1.length < 2) return [];
+    heads.sort(function (a, b) { return a.x - b.x; });
+    var y0 = heads[0].y;
+    heads = heads.filter(function (h) { return Math.abs(h.y - y0) < 0.01; });
+    if (heads.length < 2) return [];
+    return heads.slice(1).map(function (h) { return h.x - 0.012; });
+  }
   function textLines(pages) {
     var lines = [];
     (pages || []).forEach(function (pg) {
       var items = (pg.items || []).filter(function (it) { return it.s && it.s.trim(); });
       items.sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); });
-      var cur = null;
+      var cuts = columnCuts(items);
+      var colOf = function (it) { var c = 0; cuts.forEach(function (x, i) { if (it.x >= x) c = i + 1; }); return c; };
+      var open = {};
       items.forEach(function (it) {
         var tol = Math.max(0.003, (it.h || 0.01) * 0.5);
+        var col = cuts.length ? colOf(it) : 0;
+        var cur = open[col];
         if (cur && Math.abs(it.y - cur.y) <= tol) { cur.items.push(it); }
-        else { cur = { page: pg.page, y: it.y, items: [it] }; lines.push(cur); }
+        else { cur = { page: pg.page, y: it.y, col: col, items: [it] }; open[col] = cur; lines.push(cur); }
       });
       if (!items.length && pg.text) {
         String(pg.text).split(/\n+/).forEach(function (s) { lines.push({ page: pg.page, y: 0, items: [{ s: s, x: 0 }] }); });
@@ -131,7 +175,10 @@
         var section = sec ? parseFloat(sec[1].replace(',', '.')) : awg ? AWG_TO_MM[Number(awg[1] || awg[2])] || null : null;
         var colors = colorsInText(rest);
         var no = '';
-        var noM = /(?:^|\s)(?:W|WN|#)?\s*(\d{1,4}[A-Z]?|[A-Z]?\d{1,4}(?:\.\d{1,2})?)(?=\s|$)/.exec(rest.replace(SEC_RE, ' ').replace(AWG_RE, ' '));
+        /* בטבלת חיבורים: הטוקן שלפני הקצה הראשון הוא שם החיבור (מספר החוט / האות) */
+        var lead = s.slice(0, a.at).trim();
+        if (lead && !/\s/.test(lead) && lead.length <= 12 && !SEC_RE.test(lead)) no = lead;
+        var noM = no ? null : /(?:^|\s)(?:W|WN|#)?\s*(\d{1,4}[A-Z]?|[A-Z]?\d{1,4}(?:\.\d{1,2})?)(?=\s|$)/.exec(rest.replace(SEC_RE, ' ').replace(AWG_RE, ' '));
         if (noM) no = noM[1];
         var key = [a.tag, a.term, b.tag, b.term].join('|');
         if (seen[key]) return;
@@ -147,13 +194,71 @@
       }
       /* שורה שמתחילה בתג ואחריה תיאור — רשימת חלקים */
       var cm = /^([=+\-][A-Z0-9.=+\-]*?[A-Z]{1,4}\d{1,4}[A-Z0-9.]*)\s{1,}(.{3,120})$/.exec(s);
-      if (cm && !/:/.test(cm[1])) {
+      if (cm && !/:/.test(cm[1]) && !/^[=+\-][A-Z]{1,4}\d/.test(cm[2].trim())) {
         var tg = normTag(cm[1]);
-        var desc = cm[2].trim();
+        var desc = cm[2].trim().replace(/^\d{1,3}\s{2,}/, '');
         if (!comps[tg] || !comps[tg].name) comps[tg] = { tag: tg, name: desc.slice(0, 80), desc: desc, page: l.page };
       }
     });
-    return { components: Object.keys(comps).map(function (k) { return comps[k]; }), wires: wires, lines: lines.length };
+    /* שמות האותות מעמודי הבקר: "I1.0 — מעלית ב0", "Q1.1 — שער קדמי פתיחה" */
+    var labels = ioLabels(pages);
+    wires.forEach(function (w) {
+      var key = String(w.no || '').toUpperCase();
+      if (labels[key] && !w.desc) { w.desc = labels[key].text; w.labelPage = labels[key].page; }
+    });
+    /* ממסר שיציאת בקר מפעילה מקבל את שם היציאה */
+    wires.forEach(function (w) {
+      if (!w.desc || !/^Q/i.test(String(w.no || ''))) return;
+      [w.from, w.to].forEach(function (e) {
+        if (e.term !== 'A1') return;
+        var c = comps[e.tag];
+        if (c && (!c.name || /relay|module|ממסר/i.test(c.name))) { c.desc = c.desc || c.name; c.name = w.desc + (c.name ? ' (' + c.name.split(/\s{2,}/)[0] + ')' : ''); }
+      });
+    });
+    return { components: Object.keys(comps).map(function (k) { return comps[k]; }), wires: wires, lines: lines.length, labels: labels };
+  }
+
+  /* בעמודי כרטיסי הבקר: כתובת I/Q ליד כל ערוץ, ומתחתיה (או מעליה) הטקסט של מה שמחובר.
+     מעדיפים את הטקסט שמתחת לתווית החוט (הציוד בשטח) על פני הטקסט שבתוך הכרטיס. */
+  var ADDR_RE = /^%?([IQ])X?(\d{1,3}\.\d{1,2})$/i;
+  function ioLabels(pages) {
+    var out = {};
+    var isLabel = function (s) {
+      s = String(s).trim();
+      if (!/[\u05d0-\u05ea]/.test(s) || s.length > 40) return false;
+      if (/^(גשר|ספייר|ספיר)$/.test(s)) return false;
+      return !C.colorCode(s);
+    };
+    (pages || []).forEach(function (pg) {
+      var items = (pg.items || []).filter(function (it) { return it.s && it.s.trim(); });
+      var cx = function (it) { return it.x + (it.w || 0) / 2; };
+      var addrs = items.filter(function (it) { return ADDR_RE.test(it.s.trim()); });
+      if (addrs.length < 2) return;
+      var xs = addrs.map(cx).sort(function (a, b) { return a - b; });
+      var gap = 1;
+      for (var i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] > 0.01) gap = Math.min(gap, xs[i] - xs[i - 1]);
+      var tol = Math.min(0.05, gap * 0.48);
+      var heb = items.filter(function (it) { return isLabel(it.s); });
+      var by = {};
+      addrs.forEach(function (it) { var k = it.s.trim().toUpperCase().replace(/^%/, '').replace(/^([IQ])X/, '$1'); (by[k] = by[k] || []).push(it); });
+      Object.keys(by).forEach(function (k) {
+        var occ = by[k].sort(function (a, b) { return a.y - b.y; });
+        var last = occ[occ.length - 1], x0 = cx(last);
+        var col = heb.filter(function (h) { return Math.abs(cx(h) - x0) <= tol; }).sort(function (a, b) { return a.y - b.y; });
+        var below = col.filter(function (h) { return h.y > last.y && h.y - last.y < 0.3; });
+        var above = col.filter(function (h) { return h.y < last.y && (occ.length < 2 || h.y > occ[occ.length - 2].y); });
+        var pick = below.length ? below : above.reverse();
+        if (!pick.length) return;
+        var grp = [pick[0]], prev = pick[0];
+        for (var j = 1; j < pick.length; j++) {
+          if (Math.abs(pick[j].y - prev.y) > 0.025) break;
+          grp.push(pick[j]); prev = pick[j];
+        }
+        var text = grp.sort(function (a, b) { return a.y - b.y; }).map(function (h) { return h.s.trim(); }).join(' ').replace(/\s+/g, ' ');
+        if (!out[k]) out[k] = { text: text, page: pg.page };
+      });
+    });
+    return out;
   }
 
   /* ---------- תפקידי הדקים ---------- */
@@ -1233,7 +1338,7 @@
 
   return {
     natCmp: natCmp, expandMultiCore: expandMultiCore, checkWiring: checkWiring, compWiring: compWiring, compPurpose: compPurpose, normTag: normTag, normTerm: normTerm, tagBody: tagBody, pinKey: pinKey, uid: uid,
-    inferType: inferType, typeInfo: typeInfo, termRole: termRole, extractFromText: extractFromText, textLines: textLines,
+    inferType: inferType, typeInfo: typeInfo, termRole: termRole, extractFromText: extractFromText, textLines: textLines, ioLabels: ioLabels,
     enrich: enrich, settingsOf: settingsOf, DEFAULT_SETTINGS: DEFAULT_SETTINGS, explainWire: explainWire,
     layout: layout, wireOrder: wireOrder, assemblySteps: assemblySteps, GROUPS: GROUPS,
     wireListCsv: wireListCsv, bomCsv: bomCsv, cutList: cutList, enclosure: enclosure, depthOf: depthOf, routeDucts: routeDucts, routeHe: routeHe
