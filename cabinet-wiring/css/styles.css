@@ -1189,3 +1189,21 @@ ul.setup li { padding: 8px 10px; border-radius: 6px; background: var(--surface-2
 .schem-card { margin-top: 14px; }
 .schem-wrap { overflow: auto; border: 1px solid var(--line-2); border-radius: 8px; background: #fff; max-height: 80vh; }
 .schem-wrap svg { display: block; max-width: none; height: auto; }
+/* שאלת תכנון */
+.dz-card { margin-top: 14px; border-top: 3px solid var(--copper); }
+.dz-card h4 { margin: 12px 0 8px; font-size: .95rem; }
+.dz-card h5 { margin: 0 0 6px; font-size: .88rem; }
+.dz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.dz-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.dz-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 6px; background: var(--surface-2); line-height: 1.55; }
+.dz-list li .led { margin-top: 6px; }
+.warn-t { color: var(--warn); font-weight: 600; margin-top: 3px; }
+.dz-plan { display: grid; gap: 12px; }
+.dz-plan > div { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.dz-logic { font-family: var(--mono); font-size: .84rem; padding: 8px 10px; background: #151a1d; color: #cfe8d8; border-radius: 6px; margin-bottom: 6px; line-height: 1.6; }
+.dz-logic b { color: #7ef0a8; }
+.dz-rw { margin-bottom: 10px; }
+.dz-rw ol { margin: 6px 0; padding-inline-start: 20px; display: grid; gap: 3px; font-size: .86rem; }
+.dz-rw li .op { font-weight: 700; font-size: .74rem; padding: 1px 6px; border-radius: 3px; margin-inline-end: 4px; }
+.dz-rw li.remove .op { background: #f7dedb; color: var(--danger); }
+.dz-rw li.add .op { background: var(--ok-soft); color: var(--ok); }

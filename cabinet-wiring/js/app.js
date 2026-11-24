@@ -3245,6 +3245,7 @@ function askExamples() {
   const ex = [];
   const has = (re) => P.wires.some((w) => re.test((w.desc || '') + ' ' + (w.explain || '')));
   if (has(/gate|שער/i)) ex.push('לאן מחובר חיישן שער 1 במצב פתוח ובמצב סגור?');
+  if (has(/gate|שער/i) && has(/מעלית|lift/i)) ex.push('אני רוצה שהשער ייפתח רק כאשר המעלית למעלה');
   if (P.components.some((c) => /estop/.test(c.type) || /safety|חירום|בטיחות|KSFT|PSR/i.test(c.name + ' ' + c.tag))) ex.push('מה התכנית רושמת על הסייפטי?');
   if (P.components.some((c) => c.type === 'plc')) ex.push('איך מוזן הבקר?');
   if (has(/traffic|מגדל|רמזור|light tower/i)) ex.push('מה מפעיל את מגדל האור?');
@@ -3322,8 +3323,9 @@ function drawAnswer(r) {
   out.innerHTML = `<div class="card ask-ans">
       <div class="card-head"><h2>${esc(r.question)}</h2><span class="muted small">${r.circuits.length} מסלולים · ${wires.length} חוטים${r.pages.length ? ' · עמודים ' + r.pages.join(', ') : ''}</span></div>
       <p class="ask-sum">${isoTags(r.summary)}</p>
-      ${claudeAi && pgImgs.length ? '<button class="btn ghost small" type="button" id="askClaude">לשאול את Claude על העמודים האלה</button><div id="askAi"></div>' : ''}
+      ${claudeAi && pgImgs.length ? `<button class="btn ${r.mode === 'design' ? '' : 'ghost'} small" type="button" id="askClaude">${r.mode === 'design' ? 'תשובה מלאה מ-Claude לפי השרטוטים' : 'לשאול את Claude על העמודים האלה'}</button><div id="askAi"></div>` : ''}
     </div>
+    ${r.mode === 'design' ? designHtml(r) : ''}
     ${r.circuits.length ? `<div class="card schem-card"><div class="card-head"><h2>תכנית החיווט של השאלה</h2><div class="row gap"><span class="muted small">${r.circuits.length} מסלולים</span><button class="btn ghost small" type="button" id="schemDl">הורדה (SVG)</button><button class="btn ghost small" type="button" id="schemPrint">הדפסה</button></div></div><div class="schem-wrap" id="schemWrap">${schematicSvg(P, r, { C, title: raw.name, drawingNo: (raw.meta || {}).drawingNo })}</div><p class="muted small">כל אות הוא מסלול זרם: מלמעלה ההזנה או יציאת הבקר, למטה הכניסה בבקר או ה-0V. ליד כל קו מספר החוט, הצבע והחתך, ו-/מספר הוא העמוד בתכנית.</p></div>` : ''}
     ${r.circuits.length ? `<h3 class="ask-h">המסלול החשמלי לפי השרטוטים</h3><div class="circ-grid">${circ}</div>` : ''}
     <h3 class="ask-h">השרטוטים החשמליים ${pgImgs.length ? `<span class="muted small">החוטים של התשובה מסומנים</span>` : ''}</h3>
@@ -3346,11 +3348,44 @@ function drawAnswer(r) {
 async function askRun(q) {
   q = String(q || '').trim();
   if (!q) { toast('כתבו שאלה.'); return; }
-  const r = WA.ask(P, q);
+  const r = (WA.isDesign(q) && WA.design(P, q)) || WA.ask(P, q);
+  if (r.mode === 'design') r.summary = designText(r);
   r.pid = raw.id;
   askHist.unshift(r);
   drawAnswer(r);
   $('#askOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+/* שאלת תכנון: טקסט מסכם (גם ל-Claude) */
+function designText(r) {
+  const L1 = [];
+  L1.push('הפעולה: ' + (r.action.outputs.length ? r.action.outputs.map((o) => `${o.pin} (${o.signal})`).join(', ') : 'לא נמצאה יציאה בבקר שמבצעת אותה') + (r.action.targets.length ? ' → ' + r.action.targets.join(', ') : ''));
+  r.conds.forEach((c) => L1.push(`תנאי "${c.text}": ` + (c.ok ? (c.inputs.length ? c.inputs.map((x) => `${x.pin} (${x.signal})${x.nc ? ' ממגע NC' : ''}`).join(', ') : c.comps.join(', ')) : 'לא נמצא בתכנית') + (c.warn ? ' ⚠ ' + c.warn : '')));
+  r.permits.forEach((p) => L1.push(`היום: היתר דרך ${p.tag}; הסליל מוזן מ-${p.drivers.join(p.parallel ? ' או ' : ', ') || '—'}${p.parallel ? ' (במקביל)' : ''}`));
+  return L1.join('\n');
+}
+function designHtml(r) {
+  const pin = (k) => `<span class="ep mono" dir="ltr">${esc(k)}</span>`;
+  const conds = r.conds.map((c) => `<li class="${c.ok ? (c.warn ? 'warn' : 'ok') : 'bad'}"><span class="led ${c.ok ? (c.warn ? 'warn' : 'ok') : 'err'}"></span><div><b>${esc(c.text)}</b>
+      ${c.ok ? `<div class="small">${c.inputs.length ? c.inputs.map((x) => `כניסה ${pin(x.pin)} — ${esc(x.signal)}${x.from ? ` (מ-${pin(x.from)}${x.nc ? ', מגע NC — ייתכן ש-1 = <b>לא</b> מזוהה' : ''})` : ''}`).join('<br>') : 'רכיבים: ' + c.comps.map(pin).join(' ')}</div>` : '<div class="small">לא נמצא בתכנית.</div>'}
+      ${c.warn ? `<div class="small warn-t">⚠ ${esc(c.warn)}</div>` : ''}</div></li>`).join('');
+  const permits = r.permits.length ? `<ul class="dz-list">${r.permits.map((p) => `<li><span class="led ${p.parallel ? 'warn' : 'ok'}"></span><div>${pin(p.tag)} <span class="muted small">${esc(p.name)}</span> — מגעים ${esc(p.contacts.join(', '))} במעגל של ${r.action.targets.map(pin).join(', ')}.<br><span class="small">הסליל מוזן מ-${p.drivers.map(pin).join(p.parallel ? ' <b>או</b> ' : ' ')}${p.parallel ? ' — <b>במקביל</b>: מספיק שאחד מהם סגור' : ''}</span></div></li>`).join('')}</ul>` : '<p class="small muted">לא נמצאו מגעי היתר בחומרה במעגלים של הציוד הזה — ההתניה כולה בבקר.</p>';
+  const logic = r.plan.logic.map((l) => `<div class="dz-logic" dir="ltr"><b>${esc(l.out)}</b> (${esc(l.signal)}) = בקשה ${l.inputs.map((x) => `AND ${x.nc ? 'NOT? ' : ''}<b>${esc(x.pin)}</b> (${esc(x.signal)})`).join(' ')}</div>`).join('');
+  const rewire = r.plan.rewire.map((w) => `<div class="dz-rw"><b>${pin(w.relay)} ${esc(w.name)}: מקביל ← טור</b><ol>${w.steps.map((st) => `<li class="${st.op}"><span class="op">${st.op === 'remove' ? 'להוריד' : 'לחבר'}</span> <span dir="ltr">${esc(st.text)}</span></li>`).join('')}</ol><div class="small muted" dir="ltr">${w.order.map(esc).join(' → ')}</div></div>`).join('');
+  return `<div class="card dz-card">
+    <div class="card-head"><h2>שאלת תכנון: מה צריך כדי ש${esc(r.action.text)} רק בתנאים</h2></div>
+    <div class="dz-grid">
+      <section><h4>הפעולה</h4>${r.action.outputs.length ? r.action.outputs.map((o) => `<p>יציאה ${pin(o.pin)} — ${esc(o.signal)}${r.action.relays.length ? ' ← ממסר ' + r.action.relays.map(pin).join(', ') : ''}${r.action.targets.length ? ' ← ' + r.action.targets.map(pin).join(', ') : ''}</p>`).join('') : '<p class="muted">לא נמצאה בתכנית יציאה שמבצעת את הפעולה.</p>'}
+        <h4>התנאים</h4><ul class="dz-list">${conds}</ul></section>
+      <section><h4>מה יש היום בתכנית</h4>${permits}</section>
+    </div>
+    <h4>התוכנית</h4>
+    <div class="dz-plan">
+      <div><h5>1. בבקר (תוכנה)</h5>${logic || '<p class="muted small">אין יציאה בבקר לפעולה הזו.</p>'}<p class="small muted">כך רק פקודת הפעולה מותנית, ושאר התנועות (למשל סגירה) לא נחסמות.</p></div>
+      ${rewire ? `<div><h5>2. בחיווט (חסימה בחומרה)</h5>${rewire}</div>` : ''}
+      ${r.plan.add.length ? `<div><h5>להוסיף</h5><ul>${r.plan.add.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+      <div><h5>לפני ביצוע</h5><ul class="small">${r.plan.notes.map((x) => `<li>${isoTags(x)}</li>`).join('')}</ul></div>
+    </div>
+  </div>`;
 }
 async function askClaude() {
   const r = askHist[0];
@@ -3359,7 +3394,9 @@ async function askClaude() {
   const imgs = [];
   for (const n of r.pages.slice(0, Math.max(1, claudeAi.maxImages))) { const pg = pages.find((x) => x.page === n); if (pg) imgs.push(await pageCrop(pg.img, 0, 0, 1, 1)); }
   const wl = r.wires.map(wireById).filter(Boolean).slice(0, 160).map((w) => `${w.no}: ${w.from.tag}:${w.from.term} -> ${w.to.tag}:${w.to.term} | ${w.desc || ''} | עמ' ${w.page || '?'}`).join('\n');
-  const prompt = `אתה מהנדס חשמל שעוזר לחשמלאי למצוא תקלות חיווט בארון פיקוד. ענה בעברית, קצר ומדויק, רק לפי השרטוטים המצורפים והחוטים ברשימה. ציין תגים, הדקים ומספרי חוטים, ואת העמוד. אם משהו לא מופיע בשרטוטים — אמור זאת.\n\nהשאלה: ${r.question}\n\nהמסלולים שהמערכת מצאה:\n${r.circuits.map((c) => c.steps.map((s) => s.tag + ':' + s.term).join(' → ')).join('\n')}\n\nחוטים רלוונטיים:\n${wl}\n\nמצורפים העמודים ${r.pages.slice(0, imgs.length).join(', ')} מה-PDF, בסדר הזה.`;
+  const prompt = r.mode === 'design'
+    ? `אתה מהנדס חשמל ובונה לוחות. המשתמש רוצה שינוי בלוגיקה של ארון פיקוד: "${r.question}". ענה בעברית, מעשי ומדויק, רק לפי השרטוטים המצורפים: (1) איך זה עובד היום (תגים, מגעים, חוטים, עמודים); (2) התוכנית — בבקר (אילו כניסות ויציאות) ובחיווט (איזה חוט להוריד ואיזה לחבר, הדק אל הדק); (3) מה לבדוק לפני ביצוע (בטיחות, מצב "פתוח/סגור/למעלה" של החיישנים, השפעה על תנועות אחרות). אם תנאי לא קיים בשרטוטים — אמור זאת והצע מה להוסיף.\n\nהניתוח של המערכת:\n${r.summary}\n\nשינוי חיווט מוצע:\n${r.plan.rewire.map((w) => w.relay + ': ' + w.steps.map((s) => (s.op === 'remove' ? 'להוריד ' : 'לחבר ') + s.text).join('; ')).join('\n') || '—'}\n\nחוטים רלוונטיים:\n${wl}\n\nמצורפים העמודים ${r.pages.slice(0, imgs.length).join(', ')} מה-PDF, בסדר הזה.`
+    : `אתה מהנדס חשמל שעוזר לחשמלאי למצוא תקלות חיווט בארון פיקוד. ענה בעברית, קצר ומדויק, רק לפי השרטוטים המצורפים והחוטים ברשימה. ציין תגים, הדקים ומספרי חוטים, ואת העמוד. אם משהו לא מופיע בשרטוטים — אמור זאת.\n\nהשאלה: ${r.question}\n\nהמסלולים שהמערכת מצאה:\n${r.circuits.map((c) => c.steps.map((s) => s.tag + ':' + s.term).join(' → ')).join('\n')}\n\nחוטים רלוונטיים:\n${wl}\n\nמצורפים העמודים ${r.pages.slice(0, imgs.length).join(', ')} מה-PDF, בסדר הזה.`;
   box.innerHTML = '<p class="muted">Claude קורא את העמודים…</p>';
   try {
     const res = await claudeAi.fn(prompt, { images: imgs, modelTier: 'complex' });
