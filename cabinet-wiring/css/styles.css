@@ -1185,3 +1185,7 @@ ul.setup li { padding: 8px 10px; border-radius: 6px; background: var(--surface-2
 .zooms { display: grid; gap: 10px; padding: 10px; }
 .zooms .zoom-fig { margin: 0; }
 .ask-page .page.full { border-top: 1px solid var(--line); }
+/* תכנית החיווט של השאלה */
+.schem-card { margin-top: 14px; }
+.schem-wrap { overflow: auto; border: 1px solid var(--line-2); border-radius: 8px; background: #fff; max-height: 80vh; }
+.schem-wrap svg { display: block; max-width: none; height: auto; }

@@ -9,6 +9,7 @@ import { bookHtml, labelsHtml, siteBookHtml } from './book.js';
 import { Site3D } from './site3d.js';
 import { SitePlan } from './siteplan.js';
 import { partSvg } from './partart.js';
+import { schematicSvg } from './schem.js';
 
 const C = window.WCat, E = window.WEngine, Pr = window.WPrompts, Demo = window.WDemo, S = window.WSite;
 const $ = (s, el = document) => el.querySelector(s);
@@ -3323,6 +3324,7 @@ function drawAnswer(r) {
       <p class="ask-sum">${isoTags(r.summary)}</p>
       ${claudeAi && pgImgs.length ? '<button class="btn ghost small" type="button" id="askClaude">לשאול את Claude על העמודים האלה</button><div id="askAi"></div>' : ''}
     </div>
+    ${r.circuits.length ? `<div class="card schem-card"><div class="card-head"><h2>תכנית החיווט של השאלה</h2><div class="row gap"><span class="muted small">${r.circuits.length} מסלולים</span><button class="btn ghost small" type="button" id="schemDl">הורדה (SVG)</button><button class="btn ghost small" type="button" id="schemPrint">הדפסה</button></div></div><div class="schem-wrap" id="schemWrap">${schematicSvg(P, r, { C, title: raw.name, drawingNo: (raw.meta || {}).drawingNo })}</div><p class="muted small">כל אות הוא מסלול זרם: מלמעלה ההזנה או יציאת הבקר, למטה הכניסה בבקר או ה-0V. ליד כל קו מספר החוט, הצבע והחתך, ו-/מספר הוא העמוד בתכנית.</p></div>` : ''}
     ${r.circuits.length ? `<h3 class="ask-h">המסלול החשמלי לפי השרטוטים</h3><div class="circ-grid">${circ}</div>` : ''}
     <h3 class="ask-h">השרטוטים החשמליים ${pgImgs.length ? `<span class="muted small">החוטים של התשובה מסומנים</span>` : ''}</h3>
     ${pgImgs.length ? `<div class="ask-pages">${pgImgs.map((pg) => {
@@ -3373,6 +3375,12 @@ function bindAsk() {
     const pg = e.target.closest('[data-askpage]'); if (pg) { const f = document.getElementById('askpg-' + pg.dataset.askpage); if (f) { const full = f.querySelector('.page.full'); if (full && full.hidden) { full.hidden = false; f.classList.add('big'); const b = f.querySelector('[data-askzoom]'); if (b) b.textContent = 'רק האזור המסומן'; } f.scrollIntoView({ behavior: 'smooth', block: 'start' }); } else { curPage = Number(pg.dataset.askpage); location.hash = '#p/plan'; } return; }
     const z = e.target.closest('[data-askzoom]'); if (z) { const f = document.getElementById('askpg-' + z.dataset.askzoom); if (f) { const full = f.querySelector('.page.full'); const show = full.hidden; full.hidden = !show; f.classList.toggle('big', show); z.textContent = show ? 'רק האזור המסומן' : 'העמוד המלא'; } return; }
     if (e.target.closest('#askClaude')) { askClaude(); return; }
+    if (e.target.closest('#schemDl')) { const svg = $('#schemWrap svg'); if (svg) download(fileBase() + '-תכנית-חיווט.svg', '<?xml version="1.0" encoding="UTF-8"?>\n' + svg.outerHTML, 'image/svg+xml'); return; }
+    if (e.target.closest('#schemPrint')) {
+      const svg = $('#schemWrap svg'), r0 = askHist[0];
+      if (svg) openPrint(`<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>${esc(r0 ? r0.question : 'תכנית חיווט')}</title><style>@page{size:A3 landscape;margin:8mm}body{margin:0;font-family:Arial,sans-serif}h1{font-size:14pt;margin:0 0 6px}svg{width:100%;height:auto}</style></head><body><h1>${esc(r0 ? r0.question : '')}</h1>${svg.outerHTML}<script>setTimeout(()=>print(),300)<\/script></body></html>`);
+      return;
+    }
     const tr = e.target.closest('.ask-wires tr[data-id]'); if (tr) openDrawer(tr.dataset.id);
   });
 }
