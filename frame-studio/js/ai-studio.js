@@ -272,8 +272,25 @@
       });
     });
   }
-  FS.runAI = function (prompt, label, list) {
+  FS.runAI = function (prompt, label, list, teamReady) {
     list = list || FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
+    /* v215: 🦸 the hero team: a group photo is first split into a photo per person (✂️), then each photo gets the next hero of
+       the team (p._hero), so every person is a different hero, each on a magnet of their own */
+    if (/^\[TEAM\]/.test(prompt) && !teamReady && FS.splitPeople) {
+      FS.busy('✂️ מפריד את האנשים לתמונות נפרדות…');
+      var out = [];
+      return list.reduce(function (ch, p) {
+        return ch.then(function () {
+          if (p.solo) { out.push(p); return; }
+          return FS.loadImg(p.src).then(function () { return FS.splitPeople(p); }).then(function (added) { if (added && added.length) out = out.concat(added); else out.push(p); }, function () { out.push(p); });
+        });
+      }, Promise.resolve()).then(function () {
+        FS.busy(); out.forEach(function (p, i) { p._hero = i; });
+        if (FS.state) { FS.state.marked = {}; out.forEach(function (p) { FS.state.marked[p.id] = true; }); }
+        FS.emit && FS.emit('doc');
+        return FS.runAI(prompt, label, out, true);
+      });
+    }
     if (FS.aiBatch) FS.aiBatch(list.length > 1);
     if ((navigator.onLine === false || noNet) && !localReady()) return FS.offlineChooser(label);
     if (variantsOn() && list.length === 1 && navigator.onLine !== false) return runVariants(list[0], prompt, label);

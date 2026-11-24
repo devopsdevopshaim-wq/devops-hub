@@ -383,17 +383,9 @@
       }
       if (p.solo) prompt += ' This is a portrait of ONE person, the person in the middle. Any other people or parts of people at the edges are removed and replaced by the background.';
       var n0 = main.length; p._main = main[0] && main[0].fake ? null : main;
-      /* v215: 🦸 the hero team: each person a different hero, one at a time on the same photo (onePerson: the crop around the
-         person, the design, the person laid back); someone the AI could not do stays as shot, the rest are done */
-      if (/^\[TEAM\]/.test(prompt) && FS.HERO_TEAM) {
-        if (n0 < 2 || main[0].fake) return guarded(p, FS.HERO_TEAM[0], engine, n0);
-        var order = main.slice().sort(function (a, b) { return a.x - b.x; }), cur = orig, made = 0, lastErr = null;
-        return order.reduce(function (ch, f, i) {
-          return ch.then(function () {
-            return onePerson(p, cur, f, main, FS.HERO_TEAM[i % FS.HERO_TEAM.length], engine).then(function (im) { cur = im; made++; }, function (e) { lastErr = e; });
-          });
-        }, Promise.resolve()).then(function () { if (!made) throw lastErr || new Error('ai-failed'); cur.aiTeam = made + '/' + order.length; return cur; });
-      }
+      /* v215: 🦸 the hero team: each photo (a person split from a group) gets its own hero of the team, by its place in the
+         batch (p._hero, set by FS.runAI). Laying several heroes into one group photo came out in patches, so it is not done. */
+      if (/^\[TEAM\]/.test(prompt) && FS.HERO_TEAM) prompt = FS.HERO_TEAM[(p._hero || 0) % FS.HERO_TEAM.length] + (p.solo ? ' This is a portrait of ONE person, the person in the middle. Any other people or parts of people at the edges are removed and replaced by the background.' : '');
       if (FS.aiOnePerson() && n0 >= 2 && !main[0].fake) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
       return whoIsWho(p, orig, n0, prompt).then(function (who) { return guarded(p, prompt + who, engine, n0); }).catch(function (e) {
         if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message)) && !/caricature|oversized heads|illustration|drawing|painting|cartoon|anime|watercolou?r|sketch/i.test(prompt)) {

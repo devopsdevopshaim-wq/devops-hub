@@ -169,12 +169,14 @@
 
   /* ---------- ✂️ each person apart (v215): a group photo becomes one more photo per person, cropped around them (3:4, the face
      in the upper third), so each can get a design of their own. The original stays. ---------- */
-  function split(p) {
+  FS.splitPeople = function (p) { return split(p, true); };
+  function split(p, quiet) {
     var img = imgOf(p); if (!img || !FS.detectFaces || !FS.addPhotoFile) return Promise.resolve(false);
     return FS.detectFaces(img).then(function (all) {
       var faces = (FS.mainFaces ? FS.mainFaces(all) : all).slice().sort(function (a, b) { return a.x - b.x; });
-      if (faces.length < 2) { if (FS.toast) FS.toast('✂️ בתמונה הזאת יש אדם אחד בלבד, אין מה להפריד.', 4000); return false; }
+      if (faces.length < 2) { if (FS.toast && !quiet) FS.toast('✂️ בתמונה הזאת יש אדם אחד בלבד, אין מה להפריד.', 4000); return false; }
       var W = img.naturalWidth || img.width, H = img.naturalHeight || img.height, base = String(p.name || 'photo').replace(/\.\w+$/, '');
+      var added = [];
       return faces.reduce(function (ch, f, i) {
         return ch.then(function () {
           /* a portrait around the person: 2.5 face-widths wide (neighbours stand close at events), the face at a third from the top, kept inside the photo */
@@ -185,12 +187,12 @@
           return new Promise(function (ok) { c.toBlob(ok, 'image/jpeg', 0.94); }).then(function (b) {
             var file = new File([b], base + '-' + (i + 1) + '.jpg', { type: 'image/jpeg' });
             /* a photo of one person: a design keeps only the person in the middle (styles.js, p.solo) */
-            return FS.addPhotoFile(file).then(function (q) { if (q) q.solo = true; }, function () {});
+            return FS.addPhotoFile(file).then(function (q) { if (q) { q.solo = true; added.push(q); } }, function () {});
           });
         });
       }, Promise.resolve()).then(function () {
-        FS.emit && FS.emit('doc'); if (FS.toast) FS.toast('✂️ ' + faces.length + ' תמונות נפרדות נוספו (כל אדם בתמונה משלו). עכשיו אפשר לסמן אותן ולתת לכל אחת עיצוב.', 7000);
-        return true;
+        FS.emit && FS.emit('doc'); if (FS.toast && !quiet) FS.toast('✂️ ' + faces.length + ' תמונות נפרדות נוספו (כל אדם בתמונה משלו). עכשיו אפשר לסמן אותן ולתת לכל אחת עיצוב.', 7000);
+        return added.length ? added : false;
       });
     });
   }
