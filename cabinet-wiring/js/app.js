@@ -3263,6 +3263,49 @@ function stepHtml(st, i, last) {
   const via = st.via ? (st.via.wire ? (() => { const w = wireById(st.via.wire); const col = w && C.COLORS[w.color]; return `<div class="hop wire"><span class="sw" style="${col ? swStyle(col) : ''}"></span><b class="mono">חוט ${esc(st.via.no)}</b>${w ? ` <span class="muted small">${esc(C.fmtSection(w.section))} ממ"ר · ${esc(col ? col.he : '')}</span>` : ''}${st.via.desc ? ` <span class="small">${isoTags(st.via.desc)}</span>` : ''}${st.via.page ? ` <button type="button" class="pg-link" data-askpage="${st.via.page}">עמ׳ ${st.via.page}</button>` : ''}</div>`; })() : `<div class="hop inside">${esc(st.via.inside)}</div>`) : '';
   return `${via}<div class="node ${i === 0 ? 'first' : ''} ${last ? 'last' : ''}"><button type="button" class="ep-link mono" data-comp="${esc(st.tag)}" dir="ltr">${esc(st.tag)}:${esc(st.term)}</button> <span class="nm">${esc(st.name)}</span> ${zone}</div>`;
 }
+/* הקטע בשרטוט סביב הסימונים: אותה תמונת עמוד, מוגדלת על האזור */
+function markBox(list) {
+  const x1 = Math.min(...list.map((m) => m.x)), y1 = Math.min(...list.map((m) => m.y));
+  const x2 = Math.max(...list.map((m) => m.x + m.w)), y2 = Math.max(...list.map((m) => m.y + m.h));
+  return { x1, y1, x2, y2 };
+}
+function clusterMarks(marks) {
+  const cl = [];
+  marks.forEach((m) => {
+    const cx = m.x + m.w / 2, cy = m.y + m.h / 2;
+    const hit = cl.find((c) => { const b = markBox(c); return cx > b.x1 - 0.16 && cx < b.x2 + 0.16 && cy > b.y1 - 0.14 && cy < b.y2 + 0.14; });
+    if (hit) hit.push(m); else cl.push([m]);
+  });
+  cl.sort((a, b) => b.length - a.length);
+  while (cl.length > 3) { const last = cl.pop(); cl[cl.length - 1].push(...last); }
+  return cl;
+}
+function zoomHtml(pg, marks, label) {
+  if (!pg || !marks.length) return '';
+  const b = markBox(marks);
+  let cw = Math.max(0.3, b.x2 - b.x1 + 0.12), ch = Math.max(0.2, b.y2 - b.y1 + 0.1);
+  cw = Math.min(1, cw); ch = Math.min(1, ch);
+  let cx = (b.x1 + b.x2) / 2 - cw / 2, cy = (b.y1 + b.y2) / 2 - ch / 2;
+  cx = Math.max(0, Math.min(1 - cw, cx)); cy = Math.max(0, Math.min(1 - ch, cy));
+  const ar = ((cw * (pg.w || 1400)) / (ch * (pg.h || 990))).toFixed(3);
+  const mk = marks.map((it) => `<div class="mark ${it.kind === 'no' ? 'no' : ''}" style="left:${(it.x * 100).toFixed(2)}%;top:${(it.y * 100).toFixed(2)}%;width:${Math.max(0.6, it.w * 100).toFixed(2)}%;height:${Math.max(0.6, it.h * 100).toFixed(2)}%"></div>`).join('');
+  return `<figure class="zoom-fig"><div class="zoom" style="aspect-ratio:${ar}" role="img" aria-label="${esc(label || 'קטע מעמוד ' + pg.page)}"><div class="zin" style="width:${(100 / cw).toFixed(3)}%;left:${(-cx / cw * 100).toFixed(3)}%;top:${(-cy / ch * 100).toFixed(3)}%"><img src="${pg.url}" alt=""><div class="marks">${mk}</div></div></div><figcaption>${esc(label || '')} <button type="button" class="pg-link" data-askpage="${pg.page}">עמוד ${pg.page} המלא</button></figcaption></figure>`;
+}
+/* הקטע בשרטוט של מסלול אחד: העמוד שבו רוב החוטים שלו */
+function circuitZoom(c) {
+  const ws = c.wires.map(wireById).filter(Boolean).concat((c.contacts || []).map((x) => wireById(x.wire)).filter(Boolean));
+  let best = null;
+  pages.forEach((pg) => {
+    const mk = [];
+    ws.forEach((w) => pageMatches(w, pg).forEach((it) => mk.push(it)));
+    const pref = ws.some((w) => w.page === pg.page) ? 1000 : 0;
+    if (mk.length && (!best || mk.length + pref > best.n)) best = { pg, mk, n: mk.length + pref };
+  });
+  if (!best) return '';
+  const cl = clusterMarks(best.mk);
+  return zoomHtml(best.pg, cl[0], 'מהשרטוט החשמלי');
+}
+
 function drawAnswer(r) {
   const out = $('#askOut');
   if (!r.ok) { out.innerHTML = `<div class="card ask-ans"><h3>${esc(r.question)}</h3><p>${esc(r.summary)}</p></div>`; return; }
@@ -3271,6 +3314,7 @@ function drawAnswer(r) {
   const circ = r.circuits.map((c) => `<article class="circ ${c.out ? 'out' : 'in'}">
       <h4><span class="dirb">${c.out ? 'יציאה מהבקר' : 'כניסה לבקר'}</span> ${isoTags(c.signal || c.pin)}</h4>
       <div class="chain">${c.steps.map((st, i) => stepHtml(st, i, i === c.steps.length - 1)).join('')}</div>
+      ${circuitZoom(c)}
       ${c.complete ? '' : '<p class="muted small">המסלול ממשיך מחוץ לארון (בשטח או בארון אחר) — הצד השני לא מופיע בשרטוטים של הארון הזה.</p>'}
       ${c.contacts && c.contacts.length ? `<div class="contacts"><b>המגעים של ${esc(c.contacts[0].tag)} מפעילים:</b><ul>${c.contacts.map((x) => `<li><span class="mono" dir="ltr">${esc(x.tag)}:${esc(x.term)}</span> → חוט <b class="mono">${esc(x.no)}</b> → <button type="button" class="ep-link mono" data-comp="${esc(x.to.split(':')[0])}" dir="ltr">${esc(x.to)}</button> <span class="muted small">${esc(x.toName)}</span>${x.page ? ` <button type="button" class="pg-link" data-askpage="${x.page}">עמ׳ ${x.page}</button>` : ''}</li>`).join('')}</ul></div>` : ''}
     </article>`).join('');
@@ -3284,7 +3328,8 @@ function drawAnswer(r) {
     ${pgImgs.length ? `<div class="ask-pages">${pgImgs.map((pg) => {
       const mk = [];
       wires.forEach((w) => pageMatches(w, pg).forEach((it) => mk.push(it)));
-      return `<figure class="ask-page" id="askpg-${pg.page}"><figcaption>עמוד ${pg.page} <span class="muted small">${mk.length} סימונים</span> <button type="button" class="btn ghost small" data-askzoom="${pg.page}">הגדלה</button></figcaption><div class="page"><img src="${pg.url}" alt="עמוד ${pg.page} של התכנית" loading="lazy"><div class="marks">${mk.map((it) => `<div class="mark ${it.kind === 'no' ? 'no' : ''}" style="left:${(it.x * 100).toFixed(2)}%;top:${(it.y * 100).toFixed(2)}%;width:${Math.max(0.6, it.w * 100).toFixed(2)}%;height:${Math.max(0.6, it.h * 100).toFixed(2)}%"></div>`).join('')}</div></div></figure>`;
+      const zooms = mk.length ? clusterMarks(mk).map((c, i, a) => zoomHtml(pg, c, a.length > 1 ? `אזור ${i + 1} מתוך ${a.length}` : 'האזור המסומן')).join('') : '';
+      return `<figure class="ask-page" id="askpg-${pg.page}"><figcaption>עמוד ${pg.page} <span class="muted small">${mk.length} סימונים</span> <button type="button" class="btn ghost small" data-askzoom="${pg.page}">העמוד המלא</button></figcaption>${zooms ? `<div class="zooms">${zooms}</div>` : ''}<div class="page full" ${zooms ? 'hidden' : ''}><img src="${pg.url}" alt="עמוד ${pg.page} של התכנית" loading="lazy"><div class="marks">${mk.map((it) => `<div class="mark ${it.kind === 'no' ? 'no' : ''}" style="left:${(it.x * 100).toFixed(2)}%;top:${(it.y * 100).toFixed(2)}%;width:${Math.max(0.6, it.w * 100).toFixed(2)}%;height:${Math.max(0.6, it.h * 100).toFixed(2)}%"></div>`).join('')}</div></div></figure>`;
     }).join('')}</div>` : `<p class="muted">${pages.length ? 'לחוטים האלה לא נשמר מספר עמוד.' : 'בפרויקט אין PDF, ולכן אין עמודים להראות. העלו את התכנית כדי לראות את השרטוטים עם החוטים מסומנים.'}${r.pages.length && !pages.length ? ' לפי הקריאה הם בעמודים ' + r.pages.join(', ') + '.' : ''}</p>`}
     <h3 class="ask-h">בארון <span class="muted small">החוטים של התשובה מודגשים</span></h3>
     <div class="cab-host ask-host" id="askHost"></div>
@@ -3325,8 +3370,8 @@ function bindAsk() {
   $('#askEx').addEventListener('click', (e) => { const b = e.target.closest('[data-askq]'); if (b) { $('#askQ').value = b.dataset.askq; askRun(b.dataset.askq); } });
   $('#askOut').addEventListener('click', (e) => {
     const c = e.target.closest('[data-comp]'); if (c) { openComp(c.dataset.comp); return; }
-    const pg = e.target.closest('[data-askpage]'); if (pg) { const f = document.getElementById('askpg-' + pg.dataset.askpage); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); else { curPage = Number(pg.dataset.askpage); location.hash = '#p/plan'; } return; }
-    const z = e.target.closest('[data-askzoom]'); if (z) { const f = document.getElementById('askpg-' + z.dataset.askzoom); if (f) { f.classList.toggle('big'); z.textContent = f.classList.contains('big') ? 'הקטנה' : 'הגדלה'; } return; }
+    const pg = e.target.closest('[data-askpage]'); if (pg) { const f = document.getElementById('askpg-' + pg.dataset.askpage); if (f) { const full = f.querySelector('.page.full'); if (full && full.hidden) { full.hidden = false; f.classList.add('big'); const b = f.querySelector('[data-askzoom]'); if (b) b.textContent = 'רק האזור המסומן'; } f.scrollIntoView({ behavior: 'smooth', block: 'start' }); } else { curPage = Number(pg.dataset.askpage); location.hash = '#p/plan'; } return; }
+    const z = e.target.closest('[data-askzoom]'); if (z) { const f = document.getElementById('askpg-' + z.dataset.askzoom); if (f) { const full = f.querySelector('.page.full'); const show = full.hidden; full.hidden = !show; f.classList.toggle('big', show); z.textContent = show ? 'רק האזור המסומן' : 'העמוד המלא'; } return; }
     if (e.target.closest('#askClaude')) { askClaude(); return; }
     const tr = e.target.closest('.ask-wires tr[data-id]'); if (tr) openDrawer(tr.dataset.id);
   });
