@@ -179,4 +179,24 @@ test('שאלות על התכנית: מסלול האות של שער 1 פתוח /
   assert.equal(A.ask(P, 'קשקוש בלי שום קשר').ok, false);
 });
 
+test('שאלת תכנון (L-RO): השער ייפתח רק כשהמעלית למעלה וגם הגג — מקביל ← טור', () => {
+  const A = require('../js/ask.js');
+  const P = E.enrich(require('./fixtures/lobby-ro.cjs')());
+  const q = 'אני רוצה שהשער יפתח רק כאשר המעלית למעלה ויש לי אינדיקציה של גג למעלה';
+  assert.ok(A.isDesign(q) && !A.isDesign('לאן מחובר K1?'));
+  assert.deepEqual(A.splitDesign(q).conds, ['המעלית למעלה', 'גג למעלה']);
+  const r = A.design(P, q);
+  assert.deepEqual(r.action.outputs.map((o) => o.pin), ['-PLC1.3:QX0.1']);
+  assert.deepEqual(r.action.targets, ['-GC1']);
+  assert.deepEqual(r.permits.map((p) => p.tag).sort(), ['-RS1', '-RS2']);
+  assert.ok(r.permits.every((p) => p.parallel));
+  assert.equal(r.conds[0].inputs[0].pin, '-PLC1.1:I1.0');
+  assert.equal(r.conds[1].inputs[0].pin, '-PLC1.1:I1.1');
+  assert.ok(r.conds[1].inputs[0].nc && /גג סגור/.test(r.conds[1].warn));
+  const rs1 = r.plan.rewire.find((w) => w.relay === '-RS1');
+  assert.deepEqual(rs1.order, ['-SR3:14', '-SR2:33', '-SR2:34', '-RS1:A1']);
+  assert.equal(rs1.steps.filter((s) => s.op === 'remove').length, 3);
+  assert.ok(r.pages.includes(16) && r.pages.includes(10));
+});
+
 console.log(`\n${n} בדיקות עברו`);

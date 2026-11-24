@@ -10,8 +10,8 @@
   /* מילים בשאלה → מה לחפש בתכנית */
   var SYN = [
     [/שער|gate/i, ['GATE', 'שער', 'G1', 'G2', 'MG1', 'MG2']],
-    [/פתוח|פתיחה|נפתח|open/i, ['OPEN', 'פתוח', 'פתיחה']],
-    [/סגור|סגירה|נסגר|close/i, ['CLOSE', 'סגור', 'סגירה']],
+    [/פתוח|פתיחה|נפתח|יפתח|ייפתח|לפתוח|פותח|open/i, ['OPEN', 'פתוח', 'פתיחה']],
+    [/סגור|סגירה|נסגר|יסגר|ייסגר|לסגור|close/i, ['CLOSE', 'סגור', 'סגירה']],
     [/סייפטי|safety|בטיחות|ממסר בטיחות|psr/i, ['SAFETY', 'SFT', 'KSFT', 'KES', 'PSR', 'EMERGENCY', 'חירום', 'ENABLE', 'בטיחות']],
     [/חירום|emergency|e-?stop|מפסק חירום/i, ['EMERGENCY', 'חירום', 'ES', 'ESTOP']],
     [/דלת|door/i, ['DOOR', 'דלת', 'D1', 'D2']],
@@ -27,6 +27,7 @@
     [/קורא|כרטיס|reader|tibbo/i, ['READER', 'קורא', 'TIBBO']],
     [/משטח|פלטה|plt|pup|parking|חניה/i, ['PLT', 'PUP', 'PARKING', 'משטח', 'חניה']],
     [/מעלית|lift/i, ['LIFT', 'מעלית']],
+    [/גג|roof/i, ['ROOF', 'גג']],
     [/איפוס|reset/i, ['RESET', 'איפוס']],
     [/מתג|switch/i, ['SWITCH', 'מתג']],
     [/פאנל|panel|לוח לקוח/i, ['PANEL', 'פאנל']],
@@ -165,7 +166,7 @@
     var t = terms(q);
     var G = graph(P);
     var by = G.by;
-    var wantOpen = /פתוח|פתיחה|open/i.test(q), wantClose = /סגור|סגירה|close/i.test(q);
+    var wantOpen = /פתוח|פתיחה|יפתח|ייפתח|לפתוח|open/i.test(q), wantClose = /סגור|סגירה|יסגר|ייסגר|לסגור|close/i.test(q);
     /* ציון לכל חוט */
     var scored = P.wires.map(function (w) {
       var a = by[w.from.tag] || {}, b = by[w.to.tag] || {};
@@ -265,5 +266,148 @@
     return { ok: true, question: q, broad: broad, summary: summary, circuits: circuits, wires: wires.map(function (w) { return w.id; }), comps: comps, pages: pageList };
   }
 
-  return { ask: ask, terms: terms, graph: graph, trace: trace };
+  /* ---------- שאלות תכנון: "אני רוצה ש-X יקרה רק כש-Y וגם Z" ---------- */
+  var DESIGN_RE = /(?:רק|אך ורק)\s*(?:כאשר|כש|אם|בזמן ש|כל עוד)|only\s+(?:when|if|while)|\binterlock\b|בתנאי ש/i;
+  function isDesign(q) { return DESIGN_RE.test(String(q || '')); }
+  var clean = function (t) {
+    return String(t || '').replace(/^\s*(?:אני\s+)?(?:רוצה|צריך|מבקש|חייב)\s+ש?/, '').replace(/^\s*ש(?=[א-ת])/, '').replace(/^(?:יש\s+לי|יש|קיימת|קיים)\s+/, '').replace(/^(?:אינדיקציה|אינדקציה|סימן|חיווי)\s+(?:של|ל-?|ש)\s*/, '').replace(/[?!.]+$/, '').trim();
+  };
+  function splitDesign(q) {
+    var m = /^(.*?)(?:(?:רק|אך ורק)\s*(?:כאשר|כש|אם|בזמן ש|כל עוד)|only\s+(?:when|if|while)|בתנאי ש)(.*)$/i.exec(String(q || ''));
+    if (!m) return null;
+    var conds = m[2].split(/\s+(?:וגם|and|&)\s+|\s+ו(?=יש\s|גם\s|כש|ש[א-ת]|ה[א-ת]|ה?מעלית|ה?גג|ה?שער|ה?דלת)/i).map(clean).filter(function (x) { return x.length > 1; });
+    return { action: clean(m[1]), conds: conds };
+  }
+  var STATE = [[/למעלה|עליון|מורם|\bup\b|פתוח|open/i, 'up'], [/למטה|תחתון|מונמך|\bdown\b|סגור|close/i, 'down']];
+  var stateOf = function (t) { var r = STATE.find(function (s) { return s[0].test(t); }); return r ? r[1] : ''; };
+  /* כל ההדקים שמחוברים בחוטים בלבד (רשת אחת) */
+  function netPins(G, key) {
+    var seen = {}, q = [key]; seen[key] = 1;
+    while (q.length) { var k = q.shift(); (G.adj[k] || []).forEach(function (x) { if (x.e.kind === 'wire' && !seen[x.to]) { seen[x.to] = 1; q.push(x.to); } }); }
+    return Object.keys(seen);
+  }
+  function wiresOfNet(G, pins) {
+    var set = {}, out = [];
+    pins.forEach(function (k) { (G.adj[k] || []).forEach(function (x) { if (x.e.kind === 'wire' && !set[x.e.wire.id]) { set[x.e.wire.id] = 1; out.push(x.e.wire); } }); });
+    return out;
+  }
+  var partnerOf = function (G, key) { var x = (G.adj[key] || []).find(function (e) { return e.e.kind === 'inside' && !/סליל/.test(e.e.label); }); return x ? x.to : null; };
+  var tagOf = function (k) { return k.split(':')[0]; };
+  var termOf = function (k) { return k.slice(k.indexOf(':') + 1); };
+
+  function design(P, question) {
+    var q = String(question || '').trim();
+    var sp = splitDesign(q);
+    if (!sp) return null;
+    var G = graph(P), by = G.by;
+    var act = ask(P, sp.action);
+    var outs = (act.circuits || []).filter(function (c) { return c.out; });
+    /* ממסרי הפקודה של הפעולה, והציוד שהם מפעילים */
+    var cmdRelays = {}, targets = {};
+    outs.forEach(function (c) {
+      c.steps.forEach(function (st) { var cc = by[st.tag]; if (cc && /relay|contactor/.test(cc.type) && st.term === 'A1') cmdRelays[st.tag] = 1; });
+      (c.contacts || []).forEach(function (x) {
+        netPins(G, x.to.split(':')[0] + ':' + String(x.to.split(':').slice(1).join(':')).toUpperCase()).forEach(function (k) {
+          var cc = by[tagOf(k)]; if (cc && cc.type !== 'terminal' && cc.tag !== x.tag && !/plc|io/.test(cc.type)) targets[cc.tag] = 1;
+        });
+      });
+    });
+    /* ממסרים שהבקר מפעיל ישירות (פקודות) — לא היתרים */
+    var plcDriven = {};
+    P.components.forEach(function (c) {
+      if (!/relay|contactor/.test(c.type)) return;
+      if (netPins(G, c.tag + ':A1').some(function (k) { var cc = by[tagOf(k)]; return cc && /plc|io/.test(cc.type); })) plcDriven[c.tag] = 1;
+    });
+    Object.keys(targets).forEach(function (t) { if (plcDriven[t]) delete targets[t]; });
+    /* היתרים קיימים: מגעים של ממסרים אחרים במעגלים של הציוד המופעל */
+    var permits = {};
+    Object.keys(targets).forEach(function (tg) {
+      Object.keys(G.adj).filter(function (k) { return tagOf(k) === tg; }).forEach(function (start) {
+        var seen = {}, q2 = [start]; seen[start] = 1;
+        while (q2.length) {
+          var k = q2.shift();
+          (G.adj[k] || []).forEach(function (x) {
+            if (seen[x.to]) return;
+            var cc = by[tagOf(x.to)] || {};
+            if (x.e.kind === 'inside') { if (/סליל/.test(x.e.label) || !/relay|contactor|timer/.test((by[tagOf(k)] || {}).type || '')) return; if (!cmdRelays[tagOf(k)] && !plcDriven[tagOf(k)]) permits[tagOf(k)] = (permits[tagOf(k)] || []).concat([termOf(k) + '-' + termOf(x.to)]); }
+            if (/plc|io|psu/.test(cc.type || '')) return;
+            seen[x.to] = 1; q2.push(x.to);
+          });
+        }
+      });
+    });
+    /* מי מפעיל כל ממסר היתר: המגעים שמזינים את הסליל — יותר ממקור אחד = מקביל (או) */
+    var permitInfo = Object.keys(permits).map(function (tag) {
+      var a1 = tag + ':A1';
+      var pins = netPins(G, a1);
+      var drivers = pins.filter(function (k) { var cc = by[tagOf(k)]; return k !== a1 && cc && cc.type !== 'terminal' && partnerOf(G, k); });
+      return { tag: tag, name: (by[tag] || {}).name || '', contacts: permits[tag].filter(function (v, i, a) { return a.indexOf(v) === i; }), drivers: drivers, parallel: new Set(drivers.map(tagOf)).size > 1, netWires: wiresOfNet(G, pins) };
+    });
+    /* התנאים */
+    var conds = sp.conds.map(function (ct) {
+      var r = ask(P, ct);
+      var ins = (r.circuits || []).filter(function (c) { return !c.out; }).map(function (c) {
+        var src = c.steps[c.steps.length - 2] || {};
+        var n = Number(src.term), nc = !isNaN(n) && n >= 11 && n <= 99 && (n % 10 === 1 || n % 10 === 2) && /relay|contactor|timer|other/.test(src.type || '');
+        return { pin: c.pin, signal: c.signal, from: src.tag ? src.tag + ':' + src.term : '', nc: nc };
+      });
+      var names = r.ok ? r.comps.map(function (t) { return t + ' ' + ((by[t] || {}).name || ''); }).concat(ins.map(function (x) { return x.signal; })).join(' ') : '';
+      var want = stateOf(ct), have = stateOf(names);
+      var shown = ins.length ? ins[0].signal : r.comps.length ? ((by[r.comps[0]] || {}).name || r.comps[0]) : '';
+      return { text: ct, ok: r.ok && (r.comps.length > 0 || ins.length > 0), comps: r.ok ? r.comps : [], inputs: ins, warn: want && have && want !== have ? 'בשאלה כתוב "' + ct + '", ובתכנית האות הוא "' + shown + '". לוודא שזה אותו מצב, או להוסיף חיישן למצב שביקשת.' : '', circuits: r.circuits || [] };
+    });
+    /* התוכנית */
+    var plan = { logic: [], rewire: [], add: [], notes: [] };
+    var condIns = conds.map(function (c) { return c.inputs[0]; }).filter(Boolean);
+    outs.forEach(function (c) {
+      plan.logic.push({ out: c.pin, signal: c.signal, inputs: condIns.map(function (x) { return { pin: x.pin, signal: x.signal, nc: x.nc }; }) });
+    });
+    permitInfo.forEach(function (pi) {
+      if (!pi.parallel) return;
+      /* מקביל → טור: רק אם המקורות הם הרכיבים של התנאים */
+      var condTags = {};
+      conds.forEach(function (c, i) { c.comps.forEach(function (t) { condTags[t] = i; }); });
+      var ds = pi.drivers.slice().sort(function (a, b) { return (condTags[tagOf(a)] == null ? 99 : condTags[tagOf(a)]) - (condTags[tagOf(b)] == null ? 99 : condTags[tagOf(b)]); });
+      if (ds.filter(function (d) { return condTags[tagOf(d)] != null; }).length < 2) return;
+      var d1 = ds[0], d2 = ds[1], p2 = partnerOf(G, d2);
+      var feed2 = p2 ? wiresOfNet(G, [p2]).filter(function (w) { return /^\+?24|^L[123]$|^12/i.test(String(w.potential || w.no || '')); }) : [];
+      var steps2 = [];
+      pi.netWires.forEach(function (w) { steps2.push({ op: 'remove', text: 'חוט ' + (w.no || '') + ': ' + w.from.tag + ':' + w.from.term + ' ↔ ' + w.to.tag + ':' + w.to.term, wire: w.id }); });
+      feed2.forEach(function (w) { steps2.push({ op: 'remove', text: 'ההזנה ל-' + p2 + ' (חוט ' + (w.no || '') + ' מ-' + (w.from.tag + ':' + w.from.term === p2 ? w.to.tag + ':' + w.to.term : w.from.tag + ':' + w.from.term) + ')', wire: w.id }); });
+      steps2.push({ op: 'add', text: d1 + ' → ' + p2 });
+      steps2.push({ op: 'add', text: d2 + ' → ' + pi.tag + ':A1' });
+      plan.rewire.push({ relay: pi.tag, name: pi.name, from: 'מקביל', steps: steps2, order: [d1, p2, d2, pi.tag + ':A1'] });
+    });
+    conds.forEach(function (c) { if (!c.ok) plan.add.push('התנאי "' + c.text + '" לא נמצא בתכנית: צריך להוסיף חיישן (ואם זו פונקציית בטיחות — ממסר בטיחות משלו) ולחבר אותו לכניסה פנויה בבקר.'); });
+    var spare = P.components.filter(function (c) { return /relay/.test(c.type) && /ספייר|spare|רזרבה/i.test(c.name || ''); }).map(function (c) { return c.tag; });
+    if (permitInfo.length) plan.notes.push('ההיתר בחומרה (' + permitInfo.map(function (x) { return x.tag; }).join(', ') + ') מנתק את כל התנועה של ' + Object.keys(targets).join(', ') + ', לא רק את הפעולה. אם רוצים להגביל רק אותה — לעשות את ההתניה בבקר, או להכניס מגע בטור לקו הפקודה' + (spare.length ? ' (ממסרים פנויים: ' + spare.join(', ') + ')' : '') + '.');
+    plan.notes.push('שינוי בפונקציית בטיחות: לבדוק עם המתכנן שהשינוי לא חוסם מצב תפעולי נדרש, ולבצע בדיקת הפעלה אחרי הביצוע.');
+    /* המסלולים לתכנית החיווט: הפעולה, התנאים, והסלילים של ממסרי ההיתר */
+    var circuits = outs.slice();
+    conds.forEach(function (c) { c.circuits.filter(function (x) { return !x.out; }).slice(0, 2).forEach(function (x) { if (!circuits.some(function (y) { return y.pin === x.pin; })) circuits.push(x); }); });
+    permitInfo.forEach(function (pi) {
+      pi.drivers.forEach(function (d) {
+        var tr = trace(G, d, isFeed);
+        var st = steps(G, tr, true);
+        var w = pi.netWires.find(function (x) { return K(x.from.tag, x.from.term) === pi.tag + ':A1' || K(x.to.tag, x.to.term) === pi.tag + ':A1'; });
+        st.push({ pin: pi.tag + ':A1', tag: pi.tag, term: 'A1', name: pi.name, type: 'relay', zone: 'cabinet', via: w ? { wire: w.id, no: w.no || '', color: w.color || '', desc: w.desc || '', page: w.page || null } : { inside: 'מחובר' } });
+        st.push({ pin: pi.tag + ':A2', tag: pi.tag, term: 'A2', name: pi.name, type: 'relay', zone: 'cabinet', via: { inside: 'דרך הסליל' } });
+        circuits.push({ title: 'סליל ' + pi.tag + ' דרך ' + tagOf(d), signal: 'סליל ' + pi.tag + ' ← ' + d, pin: d, out: true, complete: tr.complete, steps: st, wires: st.filter(function (s) { return s.via && s.via.wire; }).map(function (s) { return s.via.wire; }), contacts: [] });
+      });
+    });
+    var wires = {};
+    circuits.forEach(function (c) { c.wires.forEach(function (id) { wires[id] = 1; }); (c.contacts || []).forEach(function (x) { wires[x.wire] = 1; }); });
+    permitInfo.forEach(function (pi) { pi.netWires.forEach(function (w) { wires[w.id] = 1; }); });
+    var pages = {};
+    P.wires.forEach(function (w) { if (wires[w.id] && w.page) pages[w.page] = 1; });
+    return {
+      ok: true, mode: 'design', question: q, action: { text: sp.action, outputs: outs.map(function (c) { return { pin: c.pin, signal: c.signal }; }), relays: Object.keys(cmdRelays), targets: Object.keys(targets) },
+      conds: conds.map(function (c) { return { text: c.text, ok: c.ok, comps: c.comps.slice(0, 8), inputs: c.inputs, warn: c.warn }; }),
+      permits: permitInfo.map(function (pi) { return { tag: pi.tag, name: pi.name, contacts: pi.contacts, drivers: pi.drivers, parallel: pi.parallel }; }),
+      plan: plan, circuits: circuits, wires: Object.keys(wires), comps: Object.keys(targets).concat(Object.keys(permits)), pages: Object.keys(pages).map(Number).sort(function (a, b) { return a - b; }),
+      summary: ''
+    };
+  }
+
+  return { ask: ask, design: design, isDesign: isDesign, splitDesign: splitDesign, terms: terms, graph: graph, trace: trace };
 });
