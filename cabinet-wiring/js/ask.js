@@ -26,7 +26,45 @@
     [/מאוורר|fan/i, ['FAN', 'מאוורר']],
     [/קורא|כרטיס|reader|tibbo/i, ['READER', 'קורא', 'TIBBO']],
     [/משטח|פלטה|plt|pup|parking|חניה/i, ['PLT', 'PUP', 'PARKING', 'משטח', 'חניה']],
-    [/מעלית|lift/i, ['LIFT', 'מעלית']],
+    [/מעלית|lift|elevator|hoist/i, ['LIFT', 'ELEVATOR', 'HOIST', 'מעלית']],
+    [/לימיט|לימט|גבול|limit|end\s*switch|end\s*stop/i, ['LIMIT', 'END SWITCH', 'END STOP', 'לימיט', 'גבול']],
+    [/עליון|עליונה|למעלה|upper|\btop\b/i, ['UPPER', 'TOP', 'עליון', 'למעלה']],
+    [/תחתון|תחתונה|למטה|lower|bottom/i, ['LOWER', 'BOTTOM', 'תחתון', 'למטה']],
+    [/חיישן|sensor|פוטו|photo|קרבה|prox/i, ['SENSOR', 'PROX', 'PHOTO', 'חיישן']],
+    [/לחצן|כפתור|button|push\s*button/i, ['BUTTON', 'PUSHBUTTON', 'לחצן']],
+    [/מגען|contactor/i, ['CONTACTOR', 'מגען']],
+    [/ממסר(?!\s*בטיחות)|relay/i, ['RELAY', 'ממסר']],
+    [/ממיר|דרייבר|drive|vfd|inverter|מהפך|סרוו|servo/i, ['VFD', 'DRIVE', 'INVERTER', 'SERVO', 'ממיר']],
+    [/בלם|brake/i, ['BRAKE', 'בלם']],
+    [/מקודד|אנקודר|encoder/i, ['ENCODER', 'אנקודר']],
+    [/זמזם|צופר|buzzer|horn|siren/i, ['BUZZER', 'HORN', 'SIREN', 'זמזם']],
+    [/תקלה|תקלות|fault|alarm|error|אזעקה/i, ['FAULT', 'ALARM', 'ERROR', 'תקלה']],
+    [/מוכן|ready/i, ['READY', 'מוכן']],
+    [/משוב|feedback/i, ['FEEDBACK', 'FB', 'משוב']],
+    [/רכב|vehicle/i, ['VEHICLE', 'רכב']],
+    [/קדימה|קדמי|forward|front/i, ['FORWARD', 'FRONT', 'FWD', 'קדימה', 'קדמי']],
+    [/אחורה|אחורי|backward|reverse|rear/i, ['BACKWARD', 'REVERSE', 'REAR', 'אחורה', 'אחורי']],
+    [/ימינה|ימין|right/i, ['RIGHT', 'ימין']],
+    [/שמאלה|שמאל|left/i, ['LEFT', 'שמאל']],
+    [/מהירות|speed/i, ['SPEED', 'מהירות']],
+    [/איטי|האטה|slow/i, ['SLOW', 'איטי']],
+    [/נתיך|fuse/i, ['FUSE', 'נתיך']],
+    [/מא"?ז|מאמ"?ת|breaker|\bmcb\b/i, ['MCB', 'BREAKER', 'CIRCUIT BREAKER']],
+    [/מהדק|קלמה|terminal/i, ['TERMINAL', 'מהדק']],
+    [/טמפרטורה|חום|temperature|\btemp\b/i, ['TEMPERATURE', 'TEMP', 'טמפ']],
+    [/לחץ|pressure/i, ['PRESSURE', 'לחץ']],
+    [/מפלס|level/i, ['LEVEL', 'מפלס']],
+    [/מיקום|position/i, ['POSITION', 'POS', 'מיקום']],
+    [/גובה|height/i, ['HEIGHT', 'גובה']],
+    [/התחלה|הפעל|start/i, ['START', 'הפעל']],
+    [/עצירה|עצור|\bstop\b/i, ['STOP', 'עצור', 'עצירה']],
+    [/קומה|floor/i, ['FLOOR', 'קומה']],
+    [/מסוע|conveyor/i, ['CONVEYOR', 'מסוע']],
+    [/משאבה|pump/i, ['PUMP', 'משאבה']],
+    [/מדחס|compressor/i, ['COMPRESSOR', 'מדחס']],
+    [/שסתום|סולנואיד|valve|solenoid/i, ['VALVE', 'SOLENOID', 'שסתום']],
+    [/מצלמה|camera/i, ['CAMERA', 'מצלמה']],
+    [/תקשורת|רשת|network|ethernet|modbus|profinet|ethercat/i, ['NETWORK', 'ETHERNET', 'MODBUS', 'PROFINET', 'ETHERCAT', 'תקשורת']],
     [/גג|roof/i, ['ROOF', 'גג']],
     [/איפוס|reset/i, ['RESET', 'איפוס']],
     [/מתג|switch/i, ['SWITCH', 'מתג']],
@@ -49,6 +87,23 @@
     (q.match(/\b\d{1,4}\b/g) || []).forEach(function (n) { out.nums.push(n); });
     q.split(/[\s,.?!:;()"'״׳\-–—/]+/).forEach(function (w) { if (w.length >= 3 && !STOP.test(w) && !SYN.some(function (s) { return s[0].test(w); })) out.words.push(up(w)); });
     return out;
+  }
+
+  /* תרגום השאלה לאנגלית — לחיפוש בשרטוטים שכתובים באנגלית (התשובה נשארת בעברית) */
+  var EN_RE = /^[A-Z][A-Z0-9 ]*$/;
+  function enOf(word) {
+    var hit = SYN.find(function (x) { return x[0].test(word); });
+    return hit ? hit[1].filter(function (k) { return EN_RE.test(k); }) : [];
+  }
+  function translate(q) {
+    var words = [], all = [];
+    String(q || '').split(/[\s,.?!:;()"'״׳/]+/).forEach(function (w) {
+      if (!w) return;
+      if (/^-?[A-Z]{1,4}\d/i.test(w) || /^\d+$/.test(w)) { words.push(w); return; }
+      var en = enOf(w);
+      if (en.length) { if (words.indexOf(en[0]) < 0) words.push(en[0]); en.forEach(function (k) { if (all.indexOf(k) < 0) all.push(k); }); }
+    });
+    return { text: words.join(' '), terms: all };
   }
 
   /* כמה התיאור של חוט / רכיב מתאים לשאלה */
@@ -499,8 +554,8 @@
   var HOWTO_RE = /מה\s+(?:ה)?תכנית\s+(?:של|ל|עבור)|מה\s+(?:ה)?תוכנית\s+(?:של|ל|עבור)|איך\s+(?:לחבר|לחווט|לטפל|מחברים|מחווטים|להתקין|מתקינים)|תכנית\s+(?:ה)?חיווט\s+(?:של|ל)|how\s+(?:to|do\s+i)\s+(?:wire|connect|install)|wiring\s+(?:plan|of|for)/i;
   function isHowto(q) { return HOWTO_RE.test(String(q || '')) && !isDesign(q); }
   var LIMIT_RE = /לימיט|לימט|גבול|limit|קצה\s*מהלך|סוף\s*מהלך|end\s*switch|\bLS\d|מפסק\s*גבול/i;
-  var UPPER_RE = /עליון|עליונה|למעלה|\btop\b|upper|\bup\b|גבוה|מעלה/i;
-  var LOWER_RE = /תחתון|תחתונה|למטה|bottom|lower|\bdown\b|נמוך|ב-?0\b|קומה\s*0/i;
+  var UPPER_RE = /עליון|עליונה|למעלה|\btop\b|upper|\bup\b|גבוה|מעלה|\bhigh\b|\bmax\b/i;
+  var LOWER_RE = /תחתון|תחתונה|למטה|bottom|lower|\bdown\b|נמוך|ב-?0\b|קומה\s*0|\blow\b|\bmin\b/i;
   var STOPW = /^(מה|של|את|עם|על|כל|איך|לחבר|לחווט|לטפל|תכנית|תוכנית|התכנית|התוכנית|חיווט|החיווט|הזו|הזה|זה|לי|אני|רוצה|צריך|בבקשה|ה?לימיט|ה?גבול|ה?עליון|ה?עליונה|ה?תחתון|ה?תחתונה|למעלה|למטה|plan|wiring|of|the|for|how|to|wire|limit|upper|lower|top|switch)$/i;
   function subjectOf(q) {
     var t = String(q || '').replace(HOWTO_RE, ' ').replace(/[?!.,"׳״']/g, ' ');
@@ -535,7 +590,9 @@
     opt = opt || {};
     var q = String(question || '').trim();
     var sub = subjectOf(q);
-    var objRe = sub.objects.length ? new RegExp(sub.objects.map(function (o) { return o.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'i') : null;
+    var objWords = [];
+    sub.objects.forEach(function (o) { [o].concat(enOf(o)).forEach(function (k) { if (objWords.indexOf(k) < 0) objWords.push(k); }); });
+    var objRe = objWords.length ? new RegExp(objWords.map(function (o) { return o.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'i') : null;
     var found = [], related = [], searched = [];
     projects.forEach(function (pr) {
       var P = pr.P, by = {};
@@ -596,7 +653,7 @@
     wires.forEach(function (id) { var w = wireInfo(home.P, id); if (w && w.page) pages[w.page] = 1; });
     related.forEach(function (h) { if (h.pid === home.id && h.page) pages[h.page] = 1; });
     return {
-      ok: true, mode: 'howto', question: q, subject: sub, title: title, source: src,
+      ok: true, mode: 'howto', question: q, subject: sub, title: title, source: src, searchedWords: objWords,
       searched: searched, found: found, related: related.slice(0, 12), home: { id: home.id, name: home.name },
       chain: chain, stages: stages, notes: chain.notes || [],
       circuits: circuits, newWires: newWires, newComps: newComps, wires: wires, comps: chain.nodes.map(function (n) { return n.tag; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; }),
@@ -768,5 +825,5 @@
     return 'הכניסה לא נקלטת: בדקו את הכתובת בתוכנה, את ה-COM של הכרטיס (חיבור ל-0V), ושהכרטיס מוזן.';
   }
 
-  return { howto: howto, isHowto: isHowto, subjectOf: subjectOf, labRead: labRead, labDiag: labDiag, ask: ask, design: design, isDesign: isDesign, splitDesign: splitDesign, terms: terms, graph: graph, trace: trace };
+  return { translate: translate, enOf: enOf, howto: howto, isHowto: isHowto, subjectOf: subjectOf, labRead: labRead, labDiag: labDiag, ask: ask, design: design, isDesign: isDesign, splitDesign: splitDesign, terms: terms, graph: graph, trace: trace };
 });

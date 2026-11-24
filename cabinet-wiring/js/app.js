@@ -3318,7 +3318,13 @@ function schemProject(r) {
 }
 function drawAnswer(r) {
   const out = $('#askOut');
-  if (!r.ok) { out.innerHTML = `<div class="card ask-ans"><h3>${esc(r.question)}</h3><p>${esc(r.summary)}</p></div>`; return; }
+  const enLine = r.en && r.en.text ? `<p class="small muted ask-en">חיפשתי גם באנגלית: <span dir="ltr" class="mono">${esc(r.en.terms.slice(0, 10).join(' · '))}</span>${r.via === 'en' ? ' — <b>התשובה נמצאה לפי המונחים באנגלית</b>' : ''}</p>` : '';
+  if (!r.ok) {
+    out.innerHTML = `<div class="card ask-ans"><div class="card-head"><h2>${esc(r.question)}</h2></div><p>${esc(r.summary)}</p>${enLine}
+      ${r.pages.length ? `<p>המילים מהשאלה מופיעות בעמודים: ${r.pages.map((n) => `<button type="button" class="pg-link" data-askpage="${n}">עמ׳ ${n}</button>`).join(' ')}</p>` : ''}
+      ${claudeAi && r.pages.length ? `<button class="btn small" type="button" id="askClaude">לשאול את Claude על העמודים האלה</button><div id="askAi"></div>` : (!claudeAi ? '<p class="small muted">בגרסת Claude של האתר אפשר לשלוח את השאלה עם העמודים ל-Claude לתשובה חופשית.</p>' : '')}</div>`;
+    return;
+  }
   const wires = r.wires.map(wireById).filter(Boolean);
   const pgImgs = r.pages.map((n) => pages.find((x) => x.page === n)).filter(Boolean);
   const circ = r.circuits.map((c) => `<article class="circ ${c.out ? 'out' : 'in'}">
@@ -3330,7 +3336,8 @@ function drawAnswer(r) {
     </article>`).join('');
   out.innerHTML = `<div class="card ask-ans">
       <div class="card-head"><h2>${esc(r.question)}</h2><span class="muted small">${r.circuits.length} מסלולים · ${wires.length} חוטים${r.pages.length ? ' · עמודים ' + r.pages.join(', ') : ''}</span></div>
-      <p class="ask-sum">${isoTags(r.summary)}</p>
+      <p class="ask-sum">${isoTags(r.summary)}</p>${enLine}
+      ${r.alsoPages && r.alsoPages.length ? `<p class="small">המילים מהשאלה מופיעות גם בעמודים: ${r.alsoPages.map((n) => `<button type="button" class="pg-link" data-askpage="${n}">עמ׳ ${n}</button>`).join(' ')}</p>` : ''}
       ${claudeAi && pgImgs.length ? `<button class="btn ${r.mode === 'design' || r.mode === 'howto' ? '' : 'ghost'} small" type="button" id="askClaude">${r.mode === 'design' || r.mode === 'howto' ? 'תשובה מלאה מ-Claude לפי השרטוטים' : 'לשאול את Claude על העמודים האלה'}</button><div id="askAi"></div>` : ''}
     </div>
     ${r.mode === 'design' ? designHtml(r) + liveHtml(r) + wiringTable(r, wireById) : ''}
@@ -3359,13 +3366,30 @@ function drawAnswer(r) {
 async function askRun(q) {
   q = String(q || '').trim();
   if (!q) { toast('כתבו שאלה.'); return; }
-  const r = (WA.isHowto(q) && WA.howto(howtoProjects(), q)) || (WA.isDesign(q) && WA.design(P, q)) || WA.ask(P, q);
+  let r = (WA.isHowto(q) && WA.howto(howtoProjects(), q)) || (WA.isDesign(q) && WA.design(P, q)) || WA.ask(P, q);
+  /* השאלה בעברית — מחפשים גם במונחים באנגלית (שרטוטים רבים כתובים באנגלית); התשובה בעברית */
+  const tr = WA.translate(q);
+  if (!r.ok && tr.text) { const r2 = WA.ask(P, tr.text + ' ' + tr.terms.join(' ')); if (r2.ok) { r = { ...r2, question: q, via: 'en' }; } }
+  r.en = tr;
+  if (!r.ok) { r.pages = guessPages(q, tr); r.wires = r.wires || []; r.circuits = r.circuits || []; }
+  else r.alsoPages = guessPages(q, tr).filter((n) => !r.pages.includes(n));
   if (r.mode === 'design') r.summary = designText(r);
   if (r.mode === 'howto') r.summary = howtoText(r);
   r.pid = raw.id;
   askHist.unshift(r);
   drawAnswer(r);
   $('#askOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+/* כשלא נמצא בחוטים: העמודים ב-PDF שבהם מופיעות מילים מהשאלה (בעברית או באנגלית) */
+function guessPages(q, tr) {
+  const words = q.split(/[\s,.?!:;()"'״׳/]+/).filter((w) => w.length >= 3 && !/^(מה|של|את|איך|לאן|התכנית|התוכנית|תכנית|מחובר|אני|רוצה)$/.test(w)).map((w) => w.replace(/^(?:ו?ה|ש|ל|ב)(?=[א-ת]{3,})/, '')).concat(tr.terms);
+  if (!words.length) return [];
+  return pages.map((pg) => {
+    const T = pg.items.map((it) => it.s).join(' ').toUpperCase();
+    const phrase = q.replace(/^(?:מה|איך|לאן|איפה)\s+(?:מצב\s+|מחובר\s+)?/, '').replace(/[?!.]/g, '').trim().toUpperCase();
+    const n = words.reduce((a, w) => a + (T.includes(w.toUpperCase()) ? 1 : 0), 0) + (phrase.length > 4 && T.includes(phrase) ? 5 : 0);
+    return { page: pg.page, n };
+  }).filter((x) => x.n > 0).sort((a, b) => b.n - a.n).slice(0, 4).map((x) => x.page);
 }
 /* כל התכניות של הפרויקט: הנוכחית, הארונות האחרים באותו אתר, ואם אין אתר — כל התכניות השמורות */
 function howtoProjects() {
@@ -3419,9 +3443,10 @@ async function askClaude() {
     : r.mode === 'design'
     ? `אתה מהנדס חשמל ובונה לוחות. המשתמש רוצה שינוי בלוגיקה של ארון פיקוד: "${r.question}". ענה בעברית, מעשי ומדויק, רק לפי השרטוטים המצורפים: (1) איך זה עובד היום (תגים, מגעים, חוטים, עמודים); (2) התוכנית — בבקר (אילו כניסות ויציאות) ובחיווט (איזה חוט להוריד ואיזה לחבר, הדק אל הדק); (3) מה לבדוק לפני ביצוע (בטיחות, מצב "פתוח/סגור/למעלה" של החיישנים, השפעה על תנועות אחרות). אם תנאי לא קיים בשרטוטים — אמור זאת והצע מה להוסיף.\n\nהניתוח של המערכת:\n${r.summary}\n\nשינוי חיווט מוצע:\n${r.plan.rewire.map((w) => w.relay + ': ' + w.steps.map((s) => (s.op === 'remove' ? 'להוריד ' : 'לחבר ') + s.text).join('; ')).join('\n') || '—'}\n\nחוטים רלוונטיים:\n${wl}\n\nמצורפים העמודים ${r.pages.slice(0, imgs.length).join(', ')} מה-PDF, בסדר הזה.`
     : `אתה מהנדס חשמל שעוזר לחשמלאי למצוא תקלות חיווט בארון פיקוד. ענה בעברית, קצר ומדויק, רק לפי השרטוטים המצורפים והחוטים ברשימה. ציין תגים, הדקים ומספרי חוטים, ואת העמוד. אם משהו לא מופיע בשרטוטים — אמור זאת.\n\nהשאלה: ${r.question}\n\nהמסלולים שהמערכת מצאה:\n${r.circuits.map((c) => c.steps.map((s) => s.tag + ':' + s.term).join(' → ')).join('\n')}\n\nחוטים רלוונטיים:\n${wl}\n\nמצורפים העמודים ${r.pages.slice(0, imgs.length).join(', ')} מה-PDF, בסדר הזה.`;
+  const enHint = r.en && r.en.text ? `\n\nהשאלה נכתבה בעברית. השרטוטים יכולים להיות באנגלית — חפש גם את המונחים באנגלית: ${r.en.terms.join(', ')}. ענה בעברית בלבד, וציין את המונח המקורי מהשרטוט בסוגריים.` : '\n\nענה בעברית.';
   box.innerHTML = '<p class="muted">Claude קורא את העמודים…</p>';
   try {
-    const res = await claudeAi.fn(prompt, { images: imgs, modelTier: 'complex' });
+    const res = await claudeAi.fn(prompt + enHint, { images: imgs, modelTier: 'complex' });
     box.innerHTML = `<div class="ai-ans">${esc(res.text).replace(/\n/g, '<br>')}</div>`;
   } catch (e) { box.innerHTML = `<p class="muted">${esc((e && SAMPLE_ERR[e.code]) || 'Claude לא ענה. נסו שוב.')}</p>`; }
 }

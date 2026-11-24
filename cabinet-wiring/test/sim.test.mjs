@@ -266,4 +266,26 @@ test('מה התכנית של לימיט עליון של המעלית: חיפוש
   assert.ok(r.circuits[0].steps.length === 6 && r.newWires.length === 2 && r.newComps.some((c) => c.tag === '-SQ1'));
 });
 
+test('שאלה בעברית, שרטוט באנגלית: מתרגמים ומוצאים (לימיט עליון של המעלית → LIFT TOP LIMIT)', () => {
+  const A = require('../js/ask.js');
+  assert.deepEqual(A.translate('מה התכנית של לימיט עליון של המעלית?').text.split(' ').sort(), ['LIFT', 'LIMIT', 'UPPER']);
+  const base = require('./fixtures/lobby-ro.cjs')();
+  base.components.push({ tag: '-B12', type: 'sensor', name: 'Limit switch', location: 'field' }, { tag: '-X8', type: 'terminal', name: 'Terminals' });
+  base.wires.push(
+    { no: 'I1.12', from: { tag: '-PLC1.1', term: '12' }, to: { tag: '-X8', term: '2' }, desc: 'LIFT TOP LIMIT', page: 5, color: 'GY', section: 0.5 },
+    { no: 'W12', from: { tag: '-X8', term: '2' }, to: { tag: '-B12', term: '12' }, desc: 'LIFT TOP LIMIT', page: 9, color: 'BK', section: 0.75 },
+    { no: 'W11', from: { tag: '-X8', term: '1' }, to: { tag: '-B12', term: '11' }, desc: '+24V', potential: '+24V', page: 9, color: 'BN', section: 0.75 },
+    { no: '24V+', from: { tag: '-X8', term: '1' }, to: { tag: '-XS1', term: '24V' }, desc: '', potential: '+24V', page: 21, color: 'RD', section: 1 });
+  const P = E.enrich(base);
+  P.wires.forEach((w, i) => { w.id = w.id || 'w' + i; });
+  const r = A.howto([{ id: 'a', name: 'ארון', P, current: true }], 'מה התכנית של לימיט עליון של המעלית?');
+  assert.equal(r.source, 'drawing');
+  assert.equal(r.found[0].pin, '-PLC1.1:12');
+  assert.ok(r.searchedWords.includes('LIFT'));
+  assert.ok(r.chain.nodes.some((n) => n.tag === '-B12'));
+  /* שאלה רגילה בעברית מוצאת את האות האנגלי */
+  const a = A.ask(P, 'לאן מחובר הלימיט העליון של המעלית?');
+  assert.ok(a.ok && a.circuits.some((c) => c.pin === '-PLC1.1:12'));
+});
+
 console.log(`\n${n} בדיקות עברו`);
