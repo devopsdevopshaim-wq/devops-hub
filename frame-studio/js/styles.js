@@ -185,9 +185,13 @@
   FS.AI_WOW = [
     /* (crochet dolls and vinyl figures were tried too and left out: every person came out a bearded man with glasses and a
        kippah, the details named in the prompt laid on everyone) */
-    /* v217: two premium looks, each tried on five event photos (people kept, faces recognisable) before they went in */
+    /* (v218 also tried: cinematic anime, which made older women young and blonde, and soft pastel, too pale for a printed
+       magnet; both left out) */
+    /* v217-218: premium looks, each tried on five event photos (people kept, faces recognisable) before they went in */
     ['premium-paint', 'ציור דיגיטלי יוקרתי', '🖼️', 'Repaint this photo as a premium semi-realistic digital portrait painting, like a commissioned artwork: soft painterly brush strokes, glowing skin, luminous warm light, rich deep colours, every face painted true to the photo so each person is instantly recognisable, the background turned into a soft painted version of the same place.'],
     ['gouache-story', 'איור ספר מעוצב', '📕', 'Redraw this photo as a beautiful modern picture-book illustration in gouache: soft matte colours, gentle textured brush work, warm light, charming simplified shapes, every person drawn true to the photo with their own face, hair and clothes, the background a cosy illustrated version of the same place.'],
+    ['gold-art', 'ציור עם עלי זהב', '🪙', 'Repaint this photo as a luxurious fine-art painting with real gold leaf: warm oil paint for the people, every face painted true to the photo so each person is instantly recognisable, the background turned into shimmering gold leaf patterns and soft ornaments, rich and elegant like a gallery piece.'],
+    ['fashion-illus', 'איור אופנה', '👗', 'Redraw this photo as an elegant fashion magazine illustration: confident ink lines and soft alcohol-marker colour, white paper showing through, graceful stylish figures, every face drawn true to the photo so each person is instantly recognisable, their own hair and clothes, a light sketched hint of the same place behind them.'],
     ['fantasy-portrait', 'פורטרט פנטזיה', '🧝', 'Turn this photo into an epic fantasy portrait painting: ethereal glowing light, flowing fabrics, sparkling magic in the air, rich jewel colours, detailed digital painting.'],
     ['galaxy', 'גלקסיה', '🌌', 'Place the people inside a breathtaking galaxy: purple and blue nebulae, glowing stars and cosmic dust swirling around them, their outlines softly lit by starlight.'],
     ['double-exp', 'חשיפה כפולה', '🌲', 'Make an artistic double exposure: the people\'s silhouettes filled with a misty pine forest at sunrise, blended softly into a clean white background, fine-art poster.'],
