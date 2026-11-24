@@ -3022,15 +3022,11 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - Live test (`people-test.yml`, `STYLE=caricature`): 5 of 5 event photos, every person kept, no crash on a dropped connection.
 - Every design's prompt now says "No Christmas trees or Christmas decorations" (a brit came back with Christmas trees).
 
-## ✂️ Each person apart, 🦸 a hero for each (v215)
+## Removed: each person apart and the hero team (v216)
 
-- **✂️ כל אחד בנפרד** (`ai-plus.js` `split`, `FS.splitPeople`; a chip in "🖥️ מיד, על המחשב"):
-  - A group photo gets one more photo per person (main faces, left to right). Each is cropped 3:4, 2.5 face widths wide, with the face a third from the top. The original stays.
-  - Each new photo is marked `p.solo`. In `restyleTry` a solo photo counts only the person nearest the middle (top third), and the prompt says the neighbours' edges become background. `aiCheck` (`o.solo`) checks only that person.
-  - Live: a hero style on the 2nd split person of 5 event photos came out right on 5 of 5.
-- **🦸 צוות גיבורים – לכל אחד גיבור אחר** (`AI_HEROES[0]`, prompt starting with `[TEAM]`):
-  - `FS.runAI` first splits every group photo (`splitPeople`). Each resulting photo gets `p._hero` = its place, and `restyleTry` swaps in `FS.HERO_TEAM[p._hero % 6]` (gold-silver tech armour, blue lightning, crimson fire, white ice, violet stars, green-bronze guardian; each with `HERO_KEEP`).
-  - Laying several heroes into one group photo one by one (`onePerson`) came out in patches and was dropped.
-  - A first one-picture prompt with "suits, nothing revealing" was stopped by Workers AI's safety filter (3030 "output flagged"). The costumes are now armour with capes.
-- Marvel or other studio characters are not offered: they are trademarks and the magnets are sold. The heroes are original, flattering and modest.
-- Known: a split photo is only as sharp as that part of the original (a small face in a small photo comes out soft).
+- v215 (✂️ כל אחד בנפרד, 🦸 צוות גיבורים – לכל אחד גיבור אחר) was reverted in full.
+- The owner's test and a reproduction through `FS.runAI` on the live server showed:
+  - a person could be left out of the split (the man beside two women disappeared);
+  - the real face laid onto a hero body came out smeared and blurry;
+  - a couple in profile failed both split photos.
+- Judging AI results by the people count alone is not enough: look at every result as the owner will, before calling it good.
