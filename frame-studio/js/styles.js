@@ -183,10 +183,10 @@
   var KEEP = ' IMPORTANT: this is a photo of real people at an event. Keep each person\'s identity: same face shape, features, skin tone, hair, expression and age, so family members recognize them instantly. Keep the same number of people, the same poses, positions and camera framing, and the same aspect ratio. Do not crop, do not add or remove people, no text, no watermark. Highly detailed, professional quality.';
   /* ✨ the stunning pack: [id, name, icon, prompt]. Like every style it runs on the local engine with no internet (FS.askServer routes) */
   FS.AI_WOW = [
-    /* v217: four premium looks, each tried on five event photos (people kept, faces recognisable) before they went in */
+    /* (crochet dolls and vinyl figures were tried too and left out: every person came out a bearded man with glasses and a
+       kippah, the details named in the prompt laid on everyone) */
+    /* v217: two premium looks, each tried on five event photos (people kept, faces recognisable) before they went in */
     ['premium-paint', 'ציור דיגיטלי יוקרתי', '🖼️', 'Repaint this photo as a premium semi-realistic digital portrait painting, like a commissioned artwork: soft painterly brush strokes, glowing skin, luminous warm light, rich deep colours, every face painted true to the photo so each person is instantly recognisable, the background turned into a soft painted version of the same place.'],
-    ['crochet', 'בובות סרוגות', '🧶', 'Turn this photo into a scene of adorable handmade crochet amigurumi dolls, one doll for each person of the photo in the same places: each doll has the person\'s own hair colour and hairstyle in yarn, their glasses, beard or kippah, and their clothes knitted in the same colours, visible yarn stitches, soft studio light, a cosy knitted background of the same scene.'],
-    ['vinyl', 'בובות ויניל לאספנים', '🧸', 'Turn the people of this photo into glossy collectible vinyl toy figures with slightly bigger heads, standing in the same places: each figure has the person\'s own face, hair colour and hairstyle, glasses, beard or kippah and clothes in the same colours, smooth shiny plastic, soft studio product photo lighting, a clean pastel backdrop.'],
     ['gouache-story', 'איור ספר מעוצב', '📕', 'Redraw this photo as a beautiful modern picture-book illustration in gouache: soft matte colours, gentle textured brush work, warm light, charming simplified shapes, every person drawn true to the photo with their own face, hair and clothes, the background a cosy illustrated version of the same place.'],
     ['fantasy-portrait', 'פורטרט פנטזיה', '🧝', 'Turn this photo into an epic fantasy portrait painting: ethereal glowing light, flowing fabrics, sparkling magic in the air, rich jewel colours, detailed digital painting.'],
     ['galaxy', 'גלקסיה', '🌌', 'Place the people inside a breathtaking galaxy: purple and blue nebulae, glowing stars and cosmic dust swirling around them, their outlines softly lit by starlight.'],
@@ -586,7 +586,7 @@
     if (faces === 1) { /* above */ }
     else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces. Each person keeps their own age, gender, face, hair and clothes: never mix features between people.';
     /* v217: the people as the photo shows them, each one looked at in the photo (not guessed from a style's typical look) */
-    if (faces) prompt += ' Copy every person from the photo itself: the same gender, age, face shape, skin tone, hair colour, hair length and hairstyle, beard, glasses, kippah and clothes as in the photo. A man stays a man, a woman stays a woman, dark hair stays dark, curly hair stays curly.';
+    if (faces) prompt += ' Copy every person from the photo itself: the same gender, age, face shape, skin tone, hair colour, hair length, hairstyle and clothes as in the photo, and nothing on a face or head that the photo does not show. A man stays a man, a woman stays a woman, dark hair stays dark, curly hair stays curly.';
     /* v217: said as what to draw, not what to leave out: FLUX does not read "no …" and naming Christmas trees drew them (a brit came
        back with a Christmas tree and snow) */
     if (!/snow|winter|frost|ice\b|christmas|hanukkah/i.test(prompt)) prompt += ' The season is a warm, sunny Israeli spring.';
