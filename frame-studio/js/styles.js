@@ -183,6 +183,11 @@
   var KEEP = ' IMPORTANT: this is a photo of real people at an event. Keep each person\'s identity: same face shape, features, skin tone, hair, expression and age, so family members recognize them instantly. Keep the same number of people, the same poses, positions and camera framing, and the same aspect ratio. Do not crop, do not add or remove people, no text, no watermark. Highly detailed, professional quality.';
   /* ✨ the stunning pack: [id, name, icon, prompt]. Like every style it runs on the local engine with no internet (FS.askServer routes) */
   FS.AI_WOW = [
+    /* (crochet dolls and vinyl figures were tried too and left out: every person came out a bearded man with glasses and a
+       kippah, the details named in the prompt laid on everyone) */
+    /* v217: two premium looks, each tried on five event photos (people kept, faces recognisable) before they went in */
+    ['premium-paint', 'ציור דיגיטלי יוקרתי', '🖼️', 'Repaint this photo as a premium semi-realistic digital portrait painting, like a commissioned artwork: soft painterly brush strokes, glowing skin, luminous warm light, rich deep colours, every face painted true to the photo so each person is instantly recognisable, the background turned into a soft painted version of the same place.'],
+    ['gouache-story', 'איור ספר מעוצב', '📕', 'Redraw this photo as a beautiful modern picture-book illustration in gouache: soft matte colours, gentle textured brush work, warm light, charming simplified shapes, every person drawn true to the photo with their own face, hair and clothes, the background a cosy illustrated version of the same place.'],
     ['fantasy-portrait', 'פורטרט פנטזיה', '🧝', 'Turn this photo into an epic fantasy portrait painting: ethereal glowing light, flowing fabrics, sparkling magic in the air, rich jewel colours, detailed digital painting.'],
     ['galaxy', 'גלקסיה', '🌌', 'Place the people inside a breathtaking galaxy: purple and blue nebulae, glowing stars and cosmic dust swirling around them, their outlines softly lit by starlight.'],
     ['double-exp', 'חשיפה כפולה', '🌲', 'Make an artistic double exposure: the people\'s silhouettes filled with a misty pine forest at sunrise, blended softly into a clean white background, fine-art poster.'],
@@ -390,8 +395,15 @@
      (gender, age, hair, what is really on the head or face), asked once per photo from the AI that reads pictures and added
      to the design's words. A drawn style turned a young man at the edge into a woman, and moved a braid to the next person.
      Looks that keep the real faces need none. At most 20 seconds; without an answer the design goes on as before. */
+  var WHO_LIST = false;
+  /* v217: drawn looks change the face's proportions on purpose (big anime eyes, a comic jaw): the face shape is not compared and the
+     people count decides, not the exact place. Only caricatures were loose before, so a good anime design of 3 people was
+     turned down ("צורת פנים אחרת", score 44-49) and the photo was not edited (owner report). */
+  var DRAWN = /caricature|oversized heads|chibi|cartoon|anime|manga|comic|illustration|animation|animated|drawing|drawn|painting|painted|sketch|watercolou?r|pastel|charcoal|crayon|ink |clay|plush|doll|toy brick|pixel art|mosaic|origami|stained glass|paper.?cut|embroider|low.?poly|ukiyo|pop.?art|graffiti/i;
   function whoIsWho(p, orig, n0, prompt) {
-    if (!(n0 >= 1) || /very same people|Keep everything else exactly as it is/.test(prompt) || !FS.askServer) return Promise.resolve('');
+    /* v217: off. The written list (a vision model's words) was often wrong (a young man called a woman, brown curls called
+       blonde) and the drawing followed the words over the photo: a man came out a blonde woman. The photo itself is the truth. */
+    if (!WHO_LIST || !(n0 >= 1) || /very same people|Keep everything else exactly as it is/.test(prompt) || !FS.askServer) return Promise.resolve('');
     var key = p.origSrc || p.src; if (p._whoKey === key) return Promise.resolve(p._who || '');
     var k = Math.min(1, 640 / Math.max(orig.naturalWidth, orig.naturalHeight)), c = FS.canvas(Math.round(orig.naturalWidth * k), Math.round(orig.naturalHeight * k));
     c.getContext('2d').drawImage(orig, 0, 0, c.width, c.height);
@@ -430,8 +442,8 @@
       /* the heads are the photo's own pixels, laid back where they were (keepHeads): the faces are the same by construction; the
          people count above has already been checked (v179) */
       if (im.headsKept) { im.aiPhoto = photoLook; im.aiScene = sameScene; return Promise.resolve(im); }
-      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt) }).then(function (r) {
-        im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene; im.aiLoose = !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt);
+      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && DRAWN.test(prompt) }).then(function (r) {
+        im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene; im.aiLoose = !photoLook && DRAWN.test(prompt);
         if (r.ok) return im;
         if (window.console) console.warn('AI guard: ' + r.why + ' (score ' + r.score + '), from ' + (im.aiSource || '?'));
         if (i + 1 < plan.length) return go(i + 1);
@@ -465,7 +477,7 @@
         if (!n0 || !FS.countFaces) return same(im, i);
         /* v214: a caricature (big drawn heads) is counted twice (the face finder misses drawn faces; the landmarker sees more) and
            its heads may sit a little off where the people stood: the count decides, not the exact place */
-        var loose = /caricature|oversized heads|chibi|cartoon/i.test(prompt) && !/very same people|Keep everything else exactly as it is/.test(prompt);
+        var loose = DRAWN.test(prompt) && !/very same people|Keep everything else exactly as it is/.test(prompt);
         return FS.countFaces(im, true).catch(function () { return n0; }).then(function (n) {
           if (!loose || n >= n0 || !FS.countFacesLm) return n;
           return FS.countFacesLm(im).then(function (m) { return Math.max(n, m); }, function () { return n; });
@@ -573,7 +585,11 @@
     if (faces >= 2 && /\bportrait\b/i.test(prompt)) prompt = prompt.replace(/\bportrait\b/i, 'group portrait') + ' The group portrait shows all ' + faces + ' people of the photo, each one as themselves, side by side where they stand; never one figure.';
     if (faces === 1) { /* above */ }
     else if (faces) prompt += ' There are exactly ' + faces + ' people in the photo. The result must show exactly these ' + faces + ' people: do not add or remove anyone, no extra figures or faces. Each person keeps their own age, gender, face, hair and clothes: never mix features between people.';
-    prompt += ' No Christmas trees or Christmas decorations.';   /* v214: Israeli events (a brit came back with Christmas trees behind) */
+    /* v217: the people as the photo shows them, each one looked at in the photo (not guessed from a style's typical look) */
+    if (faces) prompt += ' Copy every person from the photo itself: the same gender, age, face shape, skin tone, hair colour, hair length, hairstyle and clothes as in the photo, and nothing on a face or head that the photo does not show. A man stays a man, a woman stays a woman, dark hair stays dark, curly hair stays curly.';
+    /* v217: said as what to draw, not what to leave out: FLUX does not read "no …" and naming Christmas trees drew them (a brit came
+       back with a Christmas tree and snow) */
+    if (!/snow|winter|frost|ice\b|christmas|hanukkah/i.test(prompt)) prompt += ' The season is a warm, sunny Israeli spring.';
     prompt += ' High-end professional result: the face sharp, well lit and fully visible (never covered by a mask, hood or shadow), rich true-to-life detail, clean cinematic colour grading, like a magazine cover or a big-budget film still.';
     /* 🧍 the real people kept (v173, on by default): the AI makes only the world around them, and the people of the photo are
        laid back over it, cut out on this computer. Models redraw faces, and in a group they swap people; this way every face
