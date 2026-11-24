@@ -39,7 +39,7 @@ const PHOTOS = (process.env.PHOTOS || 'real/barmitzvah-1.webp,real/birthday-2.we
         const out = await FS.restyleTry(ph, st[3]);
         const after = FS.mainFaces(await FS.detectFaces(out)).length;
         const c = FS.canvas(out.naturalWidth, out.naturalHeight); c.getContext('2d').drawImage(out, 0, 0);
-        return { before, after, n0: ph._n0, who: ph._who, ms: Date.now() - t, src: out.aiSource, a: im.src, b: c.toDataURL('image/jpeg', 0.9) };
+        return { before, after, n0: ph._n0, who: (out.aiTeam ? 'team ' + out.aiTeam + ' ' : '') + (ph._who || ''), ms: Date.now() - t, src: out.aiSource, a: im.src, b: c.toDataURL('image/jpeg', 0.9) };
       } catch (e) { return { before, n0: ph._n0, ms: Date.now() - t, err: String(e && e.message || e) }; }
     }, { f, STYLE });
     const name = f.split('/').pop().replace(/\.\w+$/, '');
