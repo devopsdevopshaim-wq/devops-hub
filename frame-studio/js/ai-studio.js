@@ -411,6 +411,9 @@
   /* superheroes on the real people (Oct 25): original costumes of our own (no known characters, logos or brands), a movie-still look */
   var HERO_KEEP = ' Original costume design, no logos of existing characters or brands, the faces uncovered and clearly visible. Like a still from a big-budget superhero movie.' + REAL_KEEP;
   var HEROES = [
+    /* v215: a team, each person another hero (the owner wanted a choice of famous studio heroes; those are trademarks, so
+       original heroes of the same power and style, in order left to right). Flattering and modest: full suits, nothing revealing. */
+    ['צוות גיבורים – לכל אחד גיבור אחר', '🦸‍♂️', 'Make the people a superhero team where EVERY person wears a DIFFERENT original hero suit, given in order from left to right, one per person: first a gold and silver high-tech armour with glowing lines, second a dark blue lightning-speed suit with silver bolts and a short cape, third a crimson and amber fire suit with flame patterns, fourth a white and ice-blue frost armour, fifth a violet star-guardian suit with glowing constellations, sixth a forest-green and bronze guardian armour. Powerful, heroic, flattering and family-friendly: full-coverage suits, nothing revealing. Dramatic city skyline at dusk behind them'],
     ['גיבור על קלאסי', '🦸', 'Dress each person in a heroic superhero suit with a flowing cape and a bold emblem, standing proudly on a city rooftop at sunset'],
     ['שריון היי־טק', '🤖', 'Dress each person in sleek high-tech metallic armour with glowing blue lines, the helmet open so the face shows, sparks and city lights behind'],
     ['גיבור הלילה', '🦇', 'Dress each person as a dark night vigilante in black tactical armour and a long cape, on a gothic rooftop in the rain with the city lights below'],

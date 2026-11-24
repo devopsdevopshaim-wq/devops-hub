@@ -20,9 +20,18 @@ const PHOTOS = (process.env.PHOTOS || 'real/barmitzvah-1.webp,real/birthday-2.we
   fs.mkdirSync('out', { recursive: true });
   for (const f of PHOTOS) {
     const r = await p.evaluate(async ({ f, STYLE }) => {
-      const st = (FS.AI_WOW || []).concat(FS.AI_STYLES || []).find((x) => x[0] === STYLE); if (!st) return { err: 'no style' };
-      const im = await FS.loadImg('/frame-studio/media/' + f);
-      const doc = FS.newDoc(im), ph = { id: 't' + Math.random(), src: '/frame-studio/media/' + f, doc, cache: {} };
+      // a style by its id (designs) or by its Hebrew name (heroes, whose prompt is the third field); "split:N:" = the Nth person of a split
+      const he = (FS.AI_HEROES || []).find((x) => x[0] === STYLE.replace(/^split:\d+:/, ''));
+      const st = he ? [he[0], he[1], he[1], he[2]] : (FS.AI_WOW || []).concat(FS.AI_STYLES || []).find((x) => x[0] === STYLE.replace(/^split:\d+:/, '')); if (!st) return { err: 'no style' };
+      let im = await FS.loadImg('/frame-studio/media/' + f), src = '/frame-studio/media/' + f, solo = false;
+      const sp = /^split:(\d+):/.exec(STYLE);
+      if (sp) {
+        const blob = await (await fetch(src)).blob(); const g = await FS.addPhotoFile(new File([blob], 'g.webp', { type: 'image/webp' }));
+        const n0 = FS.state.photos.length; await FS.loadImg(g.src); await FS.localPlus.split(g);
+        const one = FS.state.photos[n0 + Number(sp[1]) - 1]; if (!one) return { err: 'no split photo' };
+        src = one.src; im = await FS.loadImg(src); solo = true;
+      }
+      const doc = FS.newDoc(im), ph = { id: 't' + Math.random(), src, doc, cache: {}, solo };
       FS.aiBatch(true);
       const before = FS.mainFaces(await FS.detectFaces(im)).length;
       const t = Date.now();
