@@ -318,9 +318,9 @@
   function start() {
     if (!ev) return; if (!ev.open) FS.toast('שימו לב: האירוע סגור להעלאות של אורחים', 4000);
     if (ev.design && isAdmin() && !cfg.tpl) dzFrame(ev.design).then(function (u) { cfg.tplFrame = u.id; keep(KS, cfg); }).catch(function () { FS.toast('העיצוב של הלקוח לא נטען. התמונות ייכנסו בלעדיו.', 5000); });
-    run.on = true; document.body.classList.add('live'); draw(); tick(); run.timer = setInterval(tick, 4000);
+    run.on = true; document.body.classList.add('live'); draw(); tick(); run.timer = setInterval(tick, 4000); FS.emit('live-state');
   }
-  function stop() { run.on = false; clearInterval(run.timer); document.body.classList.remove('live'); draw(); stats(); }
+  function stop() { run.on = false; clearInterval(run.timer); document.body.classList.remove('live'); draw(); stats(); FS.emit('live-state'); }
   function tick() {
     if (!run.on || run.busy || !ev) return; run.busy = true;
     api('claim', { e: ev.id, station: cfg.station, max: 3 }).then(function (r) {
@@ -328,7 +328,7 @@
       run.waiting = r.waiting; run.stations = r.stations || {}; ev.n = r.n || ev.n; ev.stations = r.stations;
       status(r.photos.length ? '📥 התקבלו ' + r.photos.length + ' תמונות' : '🔴 העמדה פעילה · ממתינה לתמונות');
       return r.photos.reduce(function (ch, ph) { return ch.then(function () { return take(ph); }); }, Promise.resolve());
-    }).then(function () { run.busy = false; stats(); maybePrint(); }, function () { run.busy = false; });
+    }).then(function () { run.busy = false; stats(); maybePrint(); FS.emit('live-state'); }, function () { run.busy = false; });
   }
   function take(ph) {
     var bin = atob(ph.img), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
@@ -341,7 +341,7 @@
       if (cfg.wish && (ph.text || '').trim()) addWish(p, ph.text, ph.name);
       return (cfg.albumQr ? FS.albumTag(p, ev) : Promise.resolve()).then(function () { return cfg.magic !== false ? FS.magicTag(p, ev) : null; }).catch(function () { /* printed without the QR */ }).then(function () { return p; });
     }).then(function (p) {
-      run.got++; run.queue.push(p);
+      run.got++; run.queue.push(p); FS.emit('live-got', p);
       if (FS.faceIndex) FS.faceIndex(p, ev);   /* "find me": this photo's faces, in the background */
       FS.buildStrip(); FS.select(S.photos.indexOf(p));
       FS.toast('📸 תמונה חדשה' + (ph.name ? ' מ' + ph.name : '') + (ph.text ? ' · 💌 עם ברכה' : ''), 3000);
@@ -710,5 +710,28 @@
   /* the home screen's "📱 QR לאפליקציה" (home.js): the studio's main QR when there is one, else this event's guests' page */
   FS.liveLinks = function () { return { main: mainUrl(), guest: ev ? guestUrl() : '', event: ev ? ev.title : '' }; };
   FS.liveMainGet = function () { return api('main-get').then(function (r) { if (r && r.ok) main = r; return mainUrl(); }); };
-  setTimeout(function () { if (token()) refresh(); }, 1200);
+  /* v218: on the event's day the station takes the guests' photos by itself, from the moment the studio opens: the owner sent a
+     photo from his phone through the QR and nothing came in, because the station was waiting for "▶ הפעלת העמדה". The event
+     is the one the main QR points to when it is today's, else the chosen one when it is today's. Off with cfg.autoRun = false. */
+  function autoRun() {
+    if (run.on || cfg.autoRun === false || !token() || !events.length) return;
+    var t = today(), byMain = main && main.e ? events.filter(function (e) { return e.id === main.e && e.date === t; })[0] : null;
+    var target = byMain || (ev && ev.date === t ? ev : null) || events.filter(function (e) { return e.date === t; })[0];
+    if (!target || target.open === false || target.purged) return;
+    if (!ev || ev.id !== target.id) { ev = target; cfg.ev = ev.id; keep(KS, cfg); }
+    start(); FS.toast('🔴 האירוע "' + ev.title + '" היום: תמונות האורחים מה־QR נכנסות לבד (גם בלשונית 👥 תמונות לקוחות)', 6000);
+  }
+  /* what the customers' tab shows of the live event (js/customers.js) */
+  FS.liveState = function () {
+    var t = today();
+    return { ev: ev, on: run.on, waiting: run.waiting || 0, got: run.got, today: !!(ev && ev.date === t), auto: cfg.autoRun !== false,
+      mainElse: !!(main && main.e && ev && main.e !== ev.id), signed: !!token() };
+  };
+  FS.liveRun = function (on) { if (on && !run.on) start(); else if (!on && run.on) stop(); };
+  FS.liveAuto = function (on) { cfg.autoRun = !!on; keep(KS, cfg); if (on) autoRun(); FS.emit('live-state'); };
+  setTimeout(function () {
+    if (!token()) return;
+    Promise.all([refresh(), api('main-get').then(function (r) { if (r && r.ok) main = r; })]).then(autoRun);
+  }, 1200);
+  setInterval(function () { if (!run.on && token() && cfg.autoRun !== false) refresh().then(autoRun); }, 5 * 60000);
 })();

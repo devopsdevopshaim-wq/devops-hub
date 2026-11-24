@@ -82,7 +82,45 @@
   function when(iso) { var d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }); }
   function wa(it) { var p = String(it.phone || '').replace(/\D/g, '').replace(/^0/, '972'); return p ? 'https://wa.me/' + p + '?text=' + encodeURIComponent('שלום ' + it.name + ', ') : ''; }
 
-  function draw() {
+  /* v218: the live event's guests too (the QR on the tables, js/live.js), on top of this tab: is the station taking photos,
+     how many wait, and every photo that came in, newest first. One click opens it for editing. */
+  function draw() { drawMain(); paintLive(); }
+  function paintLive() {
+    var old = $('.cu-live', box); if (old) old.remove();
+    var st = FS.liveState && FS.liveState(); if (!st || !st.signed) return;
+    var el = document.createElement('div'); el.className = 'card cu-live';
+    if (!st.ev) el.innerHTML = '<h3>🎉 אורחים מה־QR</h3><p class="hint">אין אירוע חי פתוח. פותחים אירוע בלשונית "🎉 אירוע חי", ותמונות האורחים יופיעו כאן.</p>';
+    else {
+      var mine = S.photos.filter(function (p) { return p.liveEv === st.ev.id; }).reverse();
+      el.innerHTML = '<h3>🎉 אורחים מה־QR · ' + esc(st.ev.title || '') + '</h3>' +
+        '<p class="cu-lv-st">' + (st.on ? '🔴 קולט תמונות עכשיו' : '⏸ לא קולט עכשיו') + ' · התקבלו <b>' + mine.length + '</b>' + (st.waiting ? ' · ממתינות בשרת <b>' + st.waiting + '</b>' : '') + '</p>' +
+        (st.mainElse ? '<p class="hint">⚠️ הקוד הראשי (QR קבוע) מכוון לאירוע אחר. בלשונית "🎉 אירוע חי" לוחצים "לכוון את הקוד הראשי לאירוע הזה".</p>' : '') +
+        (!st.today && !st.on ? '<p class="hint">האירוע הזה לא היום. כדי לקלוט בכל זאת, לוחצים "▶ לקלוט תמונות".</p>' : '') +
+        '<div class="row2"><button class="btn ' + (st.on ? '' : 'primary') + '" id="cu-lv-run">' + (st.on ? '⏹ להפסיק לקלוט' : '▶ לקלוט תמונות') + '</button></div>' +
+        '<label class="check"><input type="checkbox" id="cu-lv-auto"' + (st.auto ? ' checked' : '') + '> ביום האירוע לקלוט לבד, מהרגע שהתוכנה נפתחת</label>' +
+        (mine.length ? '<div class="cu-lv-g">' + mine.slice(0, 80).map(function (p) {
+          return '<button type="button" data-lv="' + esc(p.id) + '" title="' + esc((p.liveName || 'אורח') + (p.liveText ? ' · ' + p.liveText : '')) + '"><img src="' + esc(p.src) + '" alt="" loading="lazy"><span>' + esc(p.liveName || 'אורח') + (p.liveText ? ' 💌' : '') + '</span></button>';
+        }).join('') + '</div>' : '<p class="hint">' + (st.on ? 'כל תמונה שאורח שולח מה־QR מופיעה כאן תוך כמה שניות.' : 'עוד לא התקבלו תמונות.') + '</p>');
+    }
+    var h = $('h2', box); if (h) h.insertAdjacentElement('afterend', el); else box.insertBefore(el, box.firstChild);
+    var rb = $('#cu-lv-run', el); if (rb) rb.addEventListener('click', function () { FS.liveRun(!st.on); });
+    var ab = $('#cu-lv-auto', el); if (ab) ab.addEventListener('change', function () { FS.liveAuto(this.checked); });
+    var g = $('.cu-lv-g', el); if (g) g.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-lv]'); if (!b) return;
+      var i = S.photos.map(function (p) { return p.id; }).indexOf(b.dataset.lv); if (i < 0) return;
+      FS.select(i); if (inQuick()) FS.mate.show('main');
+    });
+  }
+  FS.on('live-got', function () { if (box.isConnected) paintLive(); });
+  FS.on('live-state', function () { if (box.isConnected) paintLive(); });
+  if (!document.getElementById('cu-lv-css')) {
+    var css = document.createElement('style'); css.id = 'cu-lv-css';
+    css.textContent = '.cu-live{margin:10px 0}.cu-live h3{margin:0 0 6px}.cu-lv-st{margin:4px 0}.cu-lv-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px}' +
+      '.cu-lv-g button{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:3px;font-size:12px;text-align:center}.cu-lv-g img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:8px;background:#0002}' +
+      '.cu-lv-g span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}';
+    document.head.appendChild(css);
+  }
+  function drawMain() {
     if (!cfg.token) {
       box.innerHTML = '<h2>👥 תמונות לקוחות</h2><p class="hint">כל התמונות שלקוחות אפליקציית פריים אירועים שלחו להדפסה: מהאירוע (QR) ומהחנות. עם שם הלקוח, הטלפון, האירוע או ההזמנה, המוצר והגודל.</p>' +
         '<form class="card lv-card" id="cu-login"><h3>חיבור לפריים אירועים</h3><div class="field"><label>סיסמת הניהול (כמו באתר הניהול)</label><input type="password" id="cu-pw" autocomplete="current-password" required></div>' +
