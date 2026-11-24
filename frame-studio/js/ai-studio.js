@@ -272,8 +272,25 @@
       });
     });
   }
-  FS.runAI = function (prompt, label, list) {
+  FS.runAI = function (prompt, label, list, teamReady) {
     list = list || FS.targets(); if (!list.length) return FS.toast('בוחרים תמונה קודם');
+    /* v215: 🦸 the hero team: a group photo is first split into a photo per person (✂️), then each photo gets the next hero of
+       the team (p._hero), so every person is a different hero, each on a magnet of their own */
+    if (/^\[TEAM\]/.test(prompt) && !teamReady && FS.splitPeople) {
+      FS.busy('✂️ מפריד את האנשים לתמונות נפרדות…');
+      var out = [];
+      return list.reduce(function (ch, p) {
+        return ch.then(function () {
+          if (p.solo) { out.push(p); return; }
+          return FS.loadImg(p.src).then(function () { return FS.splitPeople(p); }).then(function (added) { if (added && added.length) out = out.concat(added); else out.push(p); }, function () { out.push(p); });
+        });
+      }, Promise.resolve()).then(function () {
+        FS.busy(); out.forEach(function (p, i) { p._hero = i; });
+        if (FS.state) { FS.state.marked = {}; out.forEach(function (p) { FS.state.marked[p.id] = true; }); }
+        FS.emit && FS.emit('doc');
+        return FS.runAI(prompt, label, out, true);
+      });
+    }
     if (FS.aiBatch) FS.aiBatch(list.length > 1);
     if ((navigator.onLine === false || noNet) && !localReady()) return FS.offlineChooser(label);
     if (variantsOn() && list.length === 1 && navigator.onLine !== false) return runVariants(list[0], prompt, label);
@@ -411,6 +428,9 @@
   /* superheroes on the real people (Oct 25): original costumes of our own (no known characters, logos or brands), a movie-still look */
   var HERO_KEEP = ' Original costume design, no logos of existing characters or brands, the faces uncovered and clearly visible. Like a still from a big-budget superhero movie.' + REAL_KEEP;
   var HEROES = [
+    /* v215: a team, each person another hero (the owner wanted a choice of famous studio heroes; those are trademarks, so
+       original heroes of the same power and style, in order left to right). Flattering and modest: full suits, nothing revealing. */
+    ['צוות גיבורים – לכל אחד גיבור אחר', '🦸‍♂️', '[TEAM] Make each person a superhero, every one in a different original armoured costume'],
     ['גיבור על קלאסי', '🦸', 'Dress each person in a heroic superhero suit with a flowing cape and a bold emblem, standing proudly on a city rooftop at sunset'],
     ['שריון היי־טק', '🤖', 'Dress each person in sleek high-tech metallic armour with glowing blue lines, the helmet open so the face shows, sparks and city lights behind'],
     ['גיבור הלילה', '🦇', 'Dress each person as a dark night vigilante in black tactical armour and a long cape, on a gothic rooftop in the rain with the city lights below'],
@@ -425,6 +445,16 @@
     ['מגן החלל', '🌌', 'Dress each person in a cosmic hero suit with glowing star patterns, floating in space with planets and a nebula behind']
   ];
   FS.AI_HEROES = HEROES.map(function (e) { return [e[0], e[1], e[2] + '.' + HERO_KEEP]; });
+  /* v215: the hero team, one costume per person, left to right (styles.js gives each person their own design, one at a time,
+     and lays them back into the same photo: in one picture the model dropped people or was stopped by its safety filter) */
+  FS.HERO_TEAM = [
+    'Dress the person in sleek gold and silver high-tech armour with glowing lines, the helmet open so the face shows',
+    'Dress the person in dark blue armour with silver lightning bolts and a short flowing cape',
+    'Dress the person in crimson and amber armour with flame patterns and a long cape',
+    'Dress the person in white and ice-blue frost armour with a silver cape',
+    'Dress the person in violet armour with glowing star patterns and a dark cape',
+    'Dress the person in forest-green and bronze guardian armour with a leaf-patterned cape'
+  ].map(function (t) { return t + '. Heroic proud pose, family-friendly.' + HERO_KEEP; });
   /* 🧸 kids and 🐉 fantasy (v164): the same children, faces kept, in a world made for them. Original designs only: no existing
      characters, films, brands or logos. 'd' = drawn (a picture-book or animated-film look, the face redrawn in that style but
      still the child); the rest stay a photograph of the very same people. */

@@ -375,7 +375,17 @@
       /* the face finder saw nobody: the landmarker counts again, so the people are still counted and checked (v174) */
       return FS.countFacesLm(orig).then(function (n) { var a = []; for (var i = 0; i < n; i++) a.push({ x: 0, y: 0, w: 1, h: 1, score: 1, fake: 1 }); return a; });
     }).then(function (main) {
+      /* v215: a photo split from a group (✂️ כל אחד בנפרד): only the person in the middle counts; the neighbours' edges go */
+      if (p.solo && main.length > 1 && !main[0].fake) {
+        var W0 = orig.naturalWidth, H0 = orig.naturalHeight;
+        main = [main.slice().sort(function (a, b) { return Math.hypot(a.x + a.w / 2 - W0 / 2, a.y + a.h / 2 - H0 / 3) - Math.hypot(b.x + b.w / 2 - W0 / 2, b.y + b.h / 2 - H0 / 3); })[0]];
+        p._nAll = 1; p._all = main.slice();
+      }
+      if (p.solo) prompt += ' This is a portrait of ONE person, the person in the middle. Any other people or parts of people at the edges are removed and replaced by the background.';
       var n0 = main.length; p._main = main[0] && main[0].fake ? null : main;
+      /* v215: 🦸 the hero team: each photo (a person split from a group) gets its own hero of the team, by its place in the
+         batch (p._hero, set by FS.runAI). Laying several heroes into one group photo came out in patches, so it is not done. */
+      if (/^\[TEAM\]/.test(prompt) && FS.HERO_TEAM) prompt = FS.HERO_TEAM[(p._hero || 0) % FS.HERO_TEAM.length] + (p.solo ? ' This is a portrait of ONE person, the person in the middle. Any other people or parts of people at the edges are removed and replaced by the background.' : '');
       if (FS.aiOnePerson() && n0 >= 2 && !main[0].fake) return pickPerson(p, main, orig).then(function (f) { return onePerson(p, orig, f, main, prompt, engine); });
       return whoIsWho(p, orig, n0, prompt).then(function (who) { return guarded(p, prompt + who, engine, n0); }).catch(function (e) {
         if (n0 > 0 && FS.aiKeepPeople() && /lost-people|extra-people|not-same/.test(String(e && e.message)) && !/caricature|oversized heads|illustration|drawing|painting|cartoon|anime|watercolou?r|sketch/i.test(prompt)) {
@@ -430,7 +440,7 @@
       /* the heads are the photo's own pixels, laid back where they were (keepHeads): the faces are the same by construction; the
          people count above has already been checked (v179) */
       if (im.headsKept) { im.aiPhoto = photoLook; im.aiScene = sameScene; return Promise.resolve(im); }
-      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt) }).then(function (r) {
+      return FS.aiCheck(orig, im, { photo: photoLook, scene: sameScene, loose: !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt), solo: !!p.solo }).then(function (r) {
         im.aiCheck = r; im.aiPhoto = photoLook; im.aiScene = sameScene; im.aiLoose = !photoLook && /caricature|oversized heads|chibi|cartoon/i.test(prompt);
         if (r.ok) return im;
         if (window.console) console.warn('AI guard: ' + r.why + ' (score ' + r.score + '), from ' + (im.aiSource || '?'));
