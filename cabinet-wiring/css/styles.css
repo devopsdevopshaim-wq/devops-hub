@@ -1251,3 +1251,51 @@ ul.setup li { padding: 8px 10px; border-radius: 6px; background: var(--surface-2
 .lv-tbl tr.rm td { text-decoration: line-through; color: var(--danger); }
 .lv-tbl tr.rm td:last-child { text-decoration: none; }
 .lv-tbl tr.add td { background: var(--ok-soft); }
+/* "מה התכנית של X" + מעבדה לכל שלב */
+.ht-card { margin-top: 14px; border-top: 3px solid var(--ok); }
+.ht-src { font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: var(--ok-soft); color: var(--ok); }
+.ht-src.recommended { background: #fdf0d9; color: #8a5a00; }
+.ht-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.ht-grid h4 { margin: 4px 0 6px; font-size: .92rem; }
+.ht-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.ht-list li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ht-miss { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 8px 10px; background: #fdf0d9; border-radius: 6px; line-height: 1.5; }
+.ht-miss .led { margin-top: 6px; }
+.ht-rel { margin-top: 8px; font-size: .88rem; }
+.ht-rel summary { cursor: pointer; color: var(--ink-2); }
+.ht-lab { margin: 14px 0; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: #fbfbfa; box-shadow: 0 4px 12px rgba(0, 0, 0, .06); }
+.ht-labh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ht-labh h4 { margin: 0; }
+.ht-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.ht-fault { display: inline-flex; gap: 6px; align-items: center; }
+.ht-fault select { min-height: 40px; max-width: 100%; border: 1px solid var(--line-2); border-radius: 6px; padding: 4px 8px; font: inherit; font-size: .88rem; background: #fff; }
+.ht-chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 4px; direction: ltr; }
+.htn { display: grid; gap: 1px; min-width: 92px; padding: 6px 8px; border: 2px solid var(--line-2); border-radius: 6px; background: #fff; font-size: .78rem; direction: rtl; text-align: center; }
+.htn b { font-family: var(--mono); font-size: .8rem; }
+.htn .small { color: var(--muted); line-height: 1.25; }
+.htn.fld { border-style: dashed; }
+.htn.new { background: #f4fbf6; }
+.htn.live { border-color: #e0392b; box-shadow: 0 0 0 2px #ffd9d4; }
+.htv { font-family: var(--mono); font-weight: 700; color: var(--muted); }
+.htn.live .htv { color: #e0392b; }
+.hts { display: grid; place-items: center; min-width: 34px; color: #9aa3a8; font-size: 1rem; }
+.hts small { font-size: .66rem; font-family: var(--mono); }
+.hts.live { color: #e0392b; }
+.hts.broken { color: var(--danger); font-weight: 700; }
+.hts.sw.open span { color: var(--ink); }
+.ht-stage { padding: 12px 0; border-top: 1px solid var(--line); }
+.ht-stage h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 1rem; }
+.ht-n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; font-family: var(--mono); }
+.ht-text { margin: 0 0 8px; padding-inline-start: 20px; display: grid; gap: 4px; line-height: 1.55; }
+.ht-h { margin: 10px 0 6px; font-size: .9rem; }
+.ht-tests { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ht-test { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.ht-test.pass { border-color: var(--ok); background: #f4fbf6; }
+.ht-test.fail { border-color: var(--danger); background: #fdf3f2; }
+.ht-th { display: flex; gap: 8px; align-items: center; }
+.ht-row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 6px; font-size: .86rem; }
+.ht-in { display: inline-flex; gap: 6px; align-items: center; }
+.ht-in input { width: 84px; min-height: 36px; border: 1px solid var(--line-2); border-radius: 6px; padding: 4px 8px; font: inherit; font-family: var(--mono); direction: ltr; }
+.ht-diag { margin-top: 6px; padding: 6px 8px; background: #fdf0d9; border-radius: 6px; color: #6b4600; }
+.ht-tbl tr.new td { background: #f4fbf6; }
+.badge-new { font-size: .68rem; font-weight: 700; padding: 1px 6px; border-radius: 3px; background: var(--ok-soft); color: var(--ok); }

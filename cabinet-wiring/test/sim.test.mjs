@@ -229,4 +229,41 @@ test('רשימת חיבורים של EPLAN בשני טורים, ושמות הא�
   assert.equal(ex.wires.find((w) => w.no === 'I1.1').desc, 'גג סגור');
 });
 
+test('מה התכנית של לימיט עליון של המעלית: חיפוש בכל התכניות, המלצה מהכניסה הפנויה, ובדיקה לכל שלב', () => {
+  const A = require('../js/ask.js');
+  const base = require('./fixtures/lobby-ro.cjs')();
+  base.wires.push(
+    { no: 'I1.7', from: { tag: '-PLC1.1', term: '15' }, to: { tag: '-X7', term: '4' }, desc: 'SPARE', page: 21, color: 'GY', section: 0.5 },
+    { no: '24V', from: { tag: '-X7', term: '3' }, to: { tag: '-XS1', term: '24V' }, desc: '', page: 21, color: 'RD', section: 1 });
+  base.components.push({ tag: '-X7', type: 'terminal', name: 'מהדקים' });
+  const P = E.enrich(base);
+  P.wires.forEach((w, i) => { w.id = w.id || 'w' + i; });
+  const other = E.enrich(require('./fixtures/lobby-ro.cjs')());
+  const q = 'מה התכנית של לימיט עליון של המעלית?';
+  assert.ok(A.isHowto(q) && !A.isHowto('לאן מחובר K1?'));
+  assert.deepEqual(A.subjectOf(q).objects, ['מעלית']);
+  const r = A.howto([{ id: 'a', name: 'לובי', P, current: true }, { id: 'b', name: 'ארון 2', P: other }], q);
+  assert.equal(r.searched.length, 2);
+  assert.equal(r.source, 'recommended');
+  assert.ok(r.related.some((h) => /מעלית ב0/.test(h.signal)));
+  assert.deepEqual(r.chain.nodes.map((n) => n.pin), ['-XS1:24V', '-X7:3', '-SQ1:11', '-SQ1:12', '-X7:4', '-PLC1.1:15']);
+  assert.ok(r.chain.segs.find((s) => s.kind === 'switch').nc);
+  assert.ok(r.stages.length >= 6 && r.stages.every((s) => s.title));
+  const tests = r.stages.flatMap((s) => s.tests);
+  const t = (re) => tests.find((x) => re.test(x.title));
+  /* צפוי בלי תקלה */
+  assert.equal(A.labRead(r.chain, t(/במצב רגיל/), { power: false }).v < 1, true);
+  assert.equal(A.labRead(r.chain, t(/כשהמפסק לחוץ/), { power: false }).v, Infinity);
+  assert.equal(A.labRead(r.chain, t(/לא לחוץ/), { power: true }).v, 24);
+  assert.equal(A.labRead(r.chain, t(/^כניסת הבקר.*המפסק לחוץ/), { power: true }).v, 0);
+  /* חוט קטוע בגיד 2: אין מתח בכניסה, והגיד לא מצפצף */
+  const brk = { kind: 'break', seg: 3 };
+  assert.equal(A.labRead(r.chain, t(/לא לחוץ/), { power: true, fault: brk }).v, 0);
+  assert.equal(A.labRead(r.chain, t(/גיד 2/), { power: false, fault: brk }).v, Infinity);
+  assert.ok(/קטוע/.test(A.labDiag(r.chain, t(/גיד 2/))));
+  /* NO במקום NC: הכניסה הפוכה */
+  assert.equal(A.labRead(r.chain, t(/לא לחוץ/), { power: true, fault: { kind: 'swap' } }).v, 0);
+  assert.ok(r.circuits[0].steps.length === 6 && r.newWires.length === 2 && r.newComps.some((c) => c.tag === '-SQ1'));
+});
+
 console.log(`\n${n} בדיקות עברו`);

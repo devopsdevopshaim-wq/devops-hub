@@ -11,6 +11,7 @@ import { SitePlan } from './siteplan.js';
 import { partSvg } from './partart.js';
 import { schematicSvg } from './schem.js';
 import { liveHtml, bindLive, wiringTable } from './live.js';
+import { howtoHtml, bindHowto, howtoText } from './howto.js';
 
 const C = window.WCat, E = window.WEngine, Pr = window.WPrompts, Demo = window.WDemo, S = window.WSite;
 const $ = (s, el = document) => el.querySelector(s);
@@ -3247,6 +3248,7 @@ function askExamples() {
   const has = (re) => P.wires.some((w) => re.test((w.desc || '') + ' ' + (w.explain || '')));
   if (has(/gate|שער/i)) ex.push('לאן מחובר חיישן שער 1 במצב פתוח ובמצב סגור?');
   if (has(/gate|שער/i) && has(/מעלית|lift/i)) ex.push('אני רוצה שהשער ייפתח רק כאשר המעלית למעלה');
+  if (has(/מעלית|lift/i)) ex.push('מה התכנית של לימיט עליון של המעלית?');
   if (P.components.some((c) => /estop/.test(c.type) || /safety|חירום|בטיחות|KSFT|PSR/i.test(c.name + ' ' + c.tag))) ex.push('מה התכנית רושמת על הסייפטי?');
   if (P.components.some((c) => c.type === 'plc')) ex.push('איך מוזן הבקר?');
   if (has(/traffic|מגדל|רמזור|light tower/i)) ex.push('מה מפעיל את מגדל האור?');
@@ -3309,6 +3311,11 @@ function circuitZoom(c) {
   return zoomHtml(best.pg, cl[0], 'מהשרטוט החשמלי');
 }
 
+/* תכנית החיווט של שאלת "מה התכנית": התכנית שבה זה נמצא, עם החוטים והרכיבים החדשים */
+function schemProject(r) {
+  const home = r.home.id === raw.id ? P : (() => { const p = state.projects.find((x) => x.id === r.home.id); return p ? E.enrich(p) : P; })();
+  return { ...home, components: home.components.concat(r.newComps || []), wires: home.wires.concat(r.newWires || []) };
+}
 function drawAnswer(r) {
   const out = $('#askOut');
   if (!r.ok) { out.innerHTML = `<div class="card ask-ans"><h3>${esc(r.question)}</h3><p>${esc(r.summary)}</p></div>`; return; }
@@ -3324,10 +3331,11 @@ function drawAnswer(r) {
   out.innerHTML = `<div class="card ask-ans">
       <div class="card-head"><h2>${esc(r.question)}</h2><span class="muted small">${r.circuits.length} מסלולים · ${wires.length} חוטים${r.pages.length ? ' · עמודים ' + r.pages.join(', ') : ''}</span></div>
       <p class="ask-sum">${isoTags(r.summary)}</p>
-      ${claudeAi && pgImgs.length ? `<button class="btn ${r.mode === 'design' ? '' : 'ghost'} small" type="button" id="askClaude">${r.mode === 'design' ? 'תשובה מלאה מ-Claude לפי השרטוטים' : 'לשאול את Claude על העמודים האלה'}</button><div id="askAi"></div>` : ''}
+      ${claudeAi && pgImgs.length ? `<button class="btn ${r.mode === 'design' || r.mode === 'howto' ? '' : 'ghost'} small" type="button" id="askClaude">${r.mode === 'design' || r.mode === 'howto' ? 'תשובה מלאה מ-Claude לפי השרטוטים' : 'לשאול את Claude על העמודים האלה'}</button><div id="askAi"></div>` : ''}
     </div>
     ${r.mode === 'design' ? designHtml(r) + liveHtml(r) + wiringTable(r, wireById) : ''}
-    ${r.circuits.length ? `<div class="card schem-card"><div class="card-head"><h2>תכנית החיווט של השאלה</h2><div class="row gap"><span class="muted small">${r.circuits.length} מסלולים</span><button class="btn ghost small" type="button" id="schemDl">הורדה (SVG)</button><button class="btn ghost small" type="button" id="schemPrint">הדפסה</button></div></div><div class="schem-wrap" id="schemWrap">${schematicSvg(P, r, { C, title: raw.name, drawingNo: (raw.meta || {}).drawingNo })}</div><p class="muted small">כל אות הוא מסלול זרם: מלמעלה ההזנה או יציאת הבקר, למטה הכניסה בבקר או ה-0V. ליד כל קו מספר החוט, הצבע והחתך, ו-/מספר הוא העמוד בתכנית.</p></div>` : ''}
+    ${r.mode === 'howto' ? howtoHtml(r, { C, swStyle }) : ''}
+    ${r.circuits.length ? `<div class="card schem-card"><div class="card-head"><h2>תכנית החיווט של השאלה</h2><div class="row gap"><span class="muted small">${r.circuits.length} מסלולים</span><button class="btn ghost small" type="button" id="schemDl">הורדה (SVG)</button><button class="btn ghost small" type="button" id="schemPrint">הדפסה</button></div></div><div class="schem-wrap" id="schemWrap">${schematicSvg(r.mode === 'howto' ? schemProject(r) : P, r, { C, title: raw.name, drawingNo: (raw.meta || {}).drawingNo })}</div><p class="muted small">כל אות הוא מסלול זרם: מלמעלה ההזנה או יציאת הבקר, למטה הכניסה בבקר או ה-0V. ליד כל קו מספר החוט, הצבע והחתך, ו-/מספר הוא העמוד בתכנית.</p></div>` : ''}
     ${r.circuits.length ? `<h3 class="ask-h">המסלול החשמלי לפי השרטוטים</h3><div class="circ-grid">${circ}</div>` : ''}
     <h3 class="ask-h">השרטוטים החשמליים ${pgImgs.length ? `<span class="muted small">החוטים של התשובה מסומנים</span>` : ''}</h3>
     ${pgImgs.length ? `<div class="ask-pages">${pgImgs.map((pg) => {
@@ -3346,16 +3354,26 @@ function drawAnswer(r) {
   askView.setLayout(false);
   askView.highlight(r.wires);
   if (r.mode === 'design') bindLive(out, r);
+  if (r.mode === 'howto') bindHowto(out, r, WA);
 }
 async function askRun(q) {
   q = String(q || '').trim();
   if (!q) { toast('כתבו שאלה.'); return; }
-  const r = (WA.isDesign(q) && WA.design(P, q)) || WA.ask(P, q);
+  const r = (WA.isHowto(q) && WA.howto(howtoProjects(), q)) || (WA.isDesign(q) && WA.design(P, q)) || WA.ask(P, q);
   if (r.mode === 'design') r.summary = designText(r);
+  if (r.mode === 'howto') r.summary = howtoText(r);
   r.pid = raw.id;
   askHist.unshift(r);
   drawAnswer(r);
   $('#askOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+/* כל התכניות של הפרויקט: הנוכחית, הארונות האחרים באותו אתר, ואם אין אתר — כל התכניות השמורות */
+function howtoProjects() {
+  const st = siteOf(raw);
+  const others = st ? st.cabinets.map((pid) => state.projects.find((x) => x.id === pid)).filter((p) => p && p.id !== raw.id) : state.projects.filter((p) => p.id !== raw.id);
+  const list = [{ id: raw.id, name: raw.name, P, current: true }];
+  others.forEach((p) => { if (p.wires && p.wires.length) { try { list.push({ id: p.id, name: p.name, P: E.enrich(p) }); } catch (e) { /* תכנית פגומה — מדלגים */ } } });
+  return list;
 }
 /* שאלת תכנון: טקסט מסכם (גם ל-Claude) */
 function designText(r) {
@@ -3396,7 +3414,9 @@ async function askClaude() {
   const imgs = [];
   for (const n of r.pages.slice(0, Math.max(1, claudeAi.maxImages))) { const pg = pages.find((x) => x.page === n); if (pg) imgs.push(await pageCrop(pg.img, 0, 0, 1, 1)); }
   const wl = r.wires.map(wireById).filter(Boolean).slice(0, 160).map((w) => `${w.no}: ${w.from.tag}:${w.from.term} -> ${w.to.tag}:${w.to.term} | ${w.desc || ''} | עמ' ${w.page || '?'}`).join('\n');
-  const prompt = r.mode === 'design'
+  const prompt = r.mode === 'howto'
+    ? `אתה מהנדס חשמל ובונה לוחות. המשתמש שואל: "${r.question}". ענה בעברית, מעשי ומדויק, לפי השרטוטים המצורפים: (1) האם זה קיים בתכנית ואיפה (תגים, הדקים, חוטים, עמודים); (2) תכנית החיווט — הדק אל הדק, צבע וחתך לפי המוסכמות של התכנית; (3) שלבי ביצוע; (4) בדיקה לכל שלב (מה למדוד, איפה, ומה הערך הצפוי); (5) בטיחות. אם זה לא בשרטוטים — אמור זאת והסבר את ההמלצה.\n\nהניתוח של המערכת:\n${r.summary}\n\nשלבים:\n${r.stages.map((sg, i) => (i + 1) + '. ' + sg.title + ': ' + sg.text.join(' ') + sg.items.map((x) => ' [' + x.no + ' ' + x.from + '→' + x.to + ']').join('')).join('\n')}\n\nמצורפים העמודים ${r.pages.slice(0, imgs.length).join(', ')} מה-PDF, בסדר הזה.`
+    : r.mode === 'design'
     ? `אתה מהנדס חשמל ובונה לוחות. המשתמש רוצה שינוי בלוגיקה של ארון פיקוד: "${r.question}". ענה בעברית, מעשי ומדויק, רק לפי השרטוטים המצורפים: (1) איך זה עובד היום (תגים, מגעים, חוטים, עמודים); (2) התוכנית — בבקר (אילו כניסות ויציאות) ובחיווט (איזה חוט להוריד ואיזה לחבר, הדק אל הדק); (3) מה לבדוק לפני ביצוע (בטיחות, מצב "פתוח/סגור/למעלה" של החיישנים, השפעה על תנועות אחרות). אם תנאי לא קיים בשרטוטים — אמור זאת והצע מה להוסיף.\n\nהניתוח של המערכת:\n${r.summary}\n\nשינוי חיווט מוצע:\n${r.plan.rewire.map((w) => w.relay + ': ' + w.steps.map((s) => (s.op === 'remove' ? 'להוריד ' : 'לחבר ') + s.text).join('; ')).join('\n') || '—'}\n\nחוטים רלוונטיים:\n${wl}\n\nמצורפים העמודים ${r.pages.slice(0, imgs.length).join(', ')} מה-PDF, בסדר הזה.`
     : `אתה מהנדס חשמל שעוזר לחשמלאי למצוא תקלות חיווט בארון פיקוד. ענה בעברית, קצר ומדויק, רק לפי השרטוטים המצורפים והחוטים ברשימה. ציין תגים, הדקים ומספרי חוטים, ואת העמוד. אם משהו לא מופיע בשרטוטים — אמור זאת.\n\nהשאלה: ${r.question}\n\nהמסלולים שהמערכת מצאה:\n${r.circuits.map((c) => c.steps.map((s) => s.tag + ':' + s.term).join(' → ')).join('\n')}\n\nחוטים רלוונטיים:\n${wl}\n\nמצורפים העמודים ${r.pages.slice(0, imgs.length).join(', ')} מה-PDF, בסדר הזה.`;
   box.innerHTML = '<p class="muted">Claude קורא את העמודים…</p>';
