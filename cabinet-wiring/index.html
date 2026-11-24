@@ -28,6 +28,7 @@
 <script src="js/split.js"></script>
 <script src="js/sim.js"></script>
 <script src="js/config.js"></script>
+<script src="js/ask.js"></script>
 <script src="js/prompts.js"></script>
 <script src="js/demo.js"></script>
 <script src="js/library/plan-208b.js"></script>
@@ -61,17 +62,18 @@
       <strong class="proj-title" id="projTitle"></strong>
       <ol class="strip">
         <li><a href="#p/plan" data-tab="plan"><span class="num">1</span><span class="t">תכנית</span></a></li>
-        <li><a href="#p/parts" data-tab="parts"><span class="num">2</span><span class="t">רכיבים</span></a></li>
-        <li><a href="#p/wires" data-tab="wires"><span class="num">3</span><span class="t">רשימת חוטים</span></a></li>
-        <li><a href="#p/cabinet" data-tab="cabinet"><span class="num">4</span><span class="t">פריסת ארון</span></a></li>
-        <li><a href="#p/rec" data-tab="rec"><span class="num">5</span><span class="t">המלצת הרכבה</span></a></li>
-        <li><a href="#p/conn" data-tab="conn"><span class="num">6</span><span class="t">חיבורים ומהדקים</span></a></li>
-        <li><a href="#p/cfg" data-tab="cfg"><span class="num">7</span><span class="t">הגדרות בקרים וציוד</span></a></li>
-        <li><a href="#p/three" data-tab="three"><span class="num">8</span><span class="t">ארון בתלת־ממד</span></a></li>
-        <li><a href="#p/wiring" data-tab="wiring"><span class="num">9</span><span class="t">חיווט שלב אחר שלב</span></a></li>
-        <li><a href="#p/assembly" data-tab="assembly"><span class="num">10</span><span class="t">הרכבה ובדיקות</span></a></li>
-        <li><a href="#p/lab" data-tab="lab"><span class="num">11</span><span class="t">מעבדה</span></a></li>
-        <li><a href="#p/export" data-tab="export"><span class="num">12</span><span class="t">הדפסה והגדרות</span></a></li>
+        <li><a href="#p/ask" data-tab="ask"><span class="num">2</span><span class="t">שאלות על התכנית</span></a></li>
+        <li><a href="#p/parts" data-tab="parts"><span class="num">3</span><span class="t">רכיבים</span></a></li>
+        <li><a href="#p/wires" data-tab="wires"><span class="num">4</span><span class="t">רשימת חוטים</span></a></li>
+        <li><a href="#p/cabinet" data-tab="cabinet"><span class="num">5</span><span class="t">פריסת ארון</span></a></li>
+        <li><a href="#p/rec" data-tab="rec"><span class="num">6</span><span class="t">המלצת הרכבה</span></a></li>
+        <li><a href="#p/conn" data-tab="conn"><span class="num">7</span><span class="t">חיבורים ומהדקים</span></a></li>
+        <li><a href="#p/cfg" data-tab="cfg"><span class="num">8</span><span class="t">הגדרות בקרים וציוד</span></a></li>
+        <li><a href="#p/three" data-tab="three"><span class="num">9</span><span class="t">ארון בתלת־ממד</span></a></li>
+        <li><a href="#p/wiring" data-tab="wiring"><span class="num">10</span><span class="t">חיווט שלב אחר שלב</span></a></li>
+        <li><a href="#p/assembly" data-tab="assembly"><span class="num">11</span><span class="t">הרכבה ובדיקות</span></a></li>
+        <li><a href="#p/lab" data-tab="lab"><span class="num">12</span><span class="t">מעבדה</span></a></li>
+        <li><a href="#p/export" data-tab="export"><span class="num">13</span><span class="t">הדפסה והגדרות</span></a></li>
       </ol>
       <span class="progress-pill" id="progressPill" title="חוטים שסומנו כמחוברים"></span>
     </div>
@@ -363,6 +365,19 @@
     </div>
     <div class="card" id="connX" hidden></div>
     <div id="connStrips"></div>
+  </section>
+
+  <!-- ===== שאלות על התכנית ===== -->
+  <section class="view" id="v-ask" data-view="ask" hidden>
+    <form class="ask-box" id="askForm">
+      <label for="askQ">שאלה על התכנית</label>
+      <div class="ask-row">
+        <textarea id="askQ" rows="2" placeholder="למשל: לאן מחובר חיישן שער 1 במצב פתוח ובמצב סגור?"></textarea>
+        <button class="btn" type="submit" id="askGo">לשאול</button>
+      </div>
+      <div class="ask-ex" id="askEx" aria-label="שאלות לדוגמה"></div>
+    </form>
+    <div id="askOut" aria-live="polite"></div>
   </section>
 
   <!-- ===== הגדרות בקרים וציוד ===== -->

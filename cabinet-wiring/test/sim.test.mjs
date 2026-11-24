@@ -162,4 +162,21 @@ test('הגדרות ציוד: בקר ומפת I/O, ראוטר לפי החיווט
   assert.equal(pv('p1121').src, 'recommended');
 });
 
+test('שאלות על התכנית: מסלול האות של שער 1 פתוח / סגור, וכל חיווט הסייפטי', () => {
+  const A = require('../js/ask.js');
+  const P = E.enrich(lib.project());
+  const r = A.ask(P, 'לאן מחובר חיישן שער 1 מצב פתוח ומצב סגור?');
+  const open = r.circuits.find((c) => c.pin === '-IO1:5'), closed = r.circuits.find((c) => c.pin === '-IO1:6');
+  assert.ok(open && closed);
+  assert.deepEqual(open.steps.map((s) => s.tag + ':' + s.term), ['-GATE1:+24V', '-GATE1:OPENED', '-XG1:105', '-IO1:5']);
+  assert.deepEqual(closed.steps.map((s) => s.tag + ':' + s.term), ['-GATE1:+24V', '-GATE1:CLOSED', '-XG1:106', '-IO1:6']);
+  assert.ok(r.pages.includes(7));
+  const s = A.ask(P, 'מה התכנית רושמת על הסייפטי?');
+  assert.ok(s.broad && s.comps.includes('-KSFT') && s.wires.length > 50);
+  const pw = A.ask(P, 'איך מוזן הבקר?').circuits.find((c) => c.pin === '-A1:24V');
+  assert.equal(pw.steps[0].tag, '-PS1');
+  assert.ok(pw.steps.some((x) => x.tag === '-RPLC'));
+  assert.equal(A.ask(P, 'קשקוש בלי שום קשר').ok, false);
+});
+
 console.log(`\n${n} בדיקות עברו`);
