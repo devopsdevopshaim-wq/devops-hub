@@ -34,11 +34,30 @@ const out = (body, code) => ({ code: code || 200, body });
 function ownerView(ev) {
   return { id: ev.id, title: ev.title, date: ev.date, dealId: ev.dealId || '', couple: ev.couple || {}, open: ev.open !== false, copies: ev.copies || 1,
     cost: ev.cost || 0, price: ev.price || 0, album: ev.album !== false, design: ev.design || null, k: ev.k, v: ev.v, n: ev.n || {}, stations: ev.stations || {}, created: ev.created,
-    reviewAt: ev.reviewAt || null, purged: !!ev.purged };
+    reviewAt: ev.reviewAt || null, purged: !!ev.purged, products: ev.products || [], offer: ev.offer || null };
 }
 const isOwner = (who, ev) => who && ev && (ev.owner === who.email);
 async function getEv(storage, e) { return ID.test(String(e || '')) ? storage.get('lv:' + e) : null; }
-const metaOf = (m) => ({ id: m.id, at: m.at, name: m.name || '', text: m.text || '', audio: !!m.audio, src: m.src, st: m.st, station: m.station || '', copies: m.copies || 1 });
+// v219: what a guest may order from the QR (2 or 3 products the owner sets per event: a magnet, a wooden block, a cardboard
+// frame…), each with its size in cm; and the guests' benefit, shown in their app a day (or more) after the event
+const PRODUCT_ID = /^[a-z0-9-]{1,24}$/;
+function cleanProducts(list) {
+  return (Array.isArray(list) ? list : []).slice(0, 3).map((x, i) => ({ id: PRODUCT_ID.test(String(x && x.id || '')) ? String(x.id) : 'p' + (i + 1), name: clean(x && x.name, 40).trim(),
+    icon: clean(x && x.icon, 4).trim(), w: num(x && x.w, 2, 60, 0), h: num(x && x.h, 2, 60, 0), price: num(x && x.price, 0, 10000, 0) })).filter((x) => x.name);
+}
+function cleanOffer(o) {
+  if (!o || !o.on) return null;
+  const url = clean(o.url, 300).trim();
+  return { on: true, pct: num(o.pct, 1, 90, 10), what: clean(o.what, 60).trim() || 'אלבום', after: num(o.after, 0, 30, 1), days: num(o.days, 1, 60, 7),
+    url: /^https:\/\//.test(url) ? url : '', code: clean(o.code, 24).replace(/[^\w-]/g, '').toUpperCase() };
+}
+// the guest sees the benefit only between its first and last day (counted from the event's date)
+function offerNow(ev) {
+  const o = ev.offer; if (!o || !o.on) return null;
+  const from = addDays(ev.date || today(), o.after), to = addDays(from, o.days - 1), t = today();
+  return { pct: o.pct, what: o.what, url: o.url, code: o.code, from, to, live: t >= from && t <= to };
+}
+const metaOf = (m) => ({ id: m.id, at: m.at, name: m.name || '', text: m.text || '', audio: !!m.audio, src: m.src, st: m.st, station: m.station || '', copies: m.copies || 1, product: m.product || null });
 
 // one photo or its voice message, for the big screen and the gallery (viewing key) or the owner's station
 // kind: '' (the photo), 'audio', 'mask', 'hero' (the couple's photo for the mosaic), 'cap' (a capsule's voice, once it opened);
@@ -138,14 +157,16 @@ export async function frameLive(storage, who, b, site) {
     const ev = await getEv(storage, b.e);
     if (!ev || ev.purged || !KEY.test(String(b.k || '')) || b.k !== ev.k) return out({ ok: false, error: 'not-found' }, 404);
     if (a === 'guest-info') { ev.n = ev.n || {}; ev.n.scans = (ev.n.scans || 0) + 1; await storage.put('lv:' + ev.id, ev); }
-    if (a === 'guest-info') return out({ ok: true, title: ev.title, date: ev.date, open: ev.open !== false, biz: { name: ev.bizName || biz.name } });
+    if (a === 'guest-info') return out({ ok: true, title: ev.title, date: ev.date, open: ev.open !== false, biz: { name: ev.bizName || biz.name }, products: ev.products || [], offer: offerNow(ev) });
     if (ev.open === false) return out({ ok: false, error: 'closed' }, 403);
     if ((ev.n && ev.n.in || 0) >= MAX_PHOTOS) return out({ ok: false, error: 'full' }, 413);
     const img = checkImg(b.img, MAX_IMG); if (!img) return out({ ok: false, error: 'bad-image' }, 400);
     const audio = b.audio ? checkImg(b.audio, MAX_AUDIO) : null; if (b.audio && !audio) return out({ ok: false, error: 'bad-audio' }, 400);
     const name = clean(b.name, 40).trim(), text = clean(b.text, 300).trim();
     if (hasCard(name + ' ' + text)) return out({ ok: false, error: 'card-number' }, 400);
-    const m = { id: sid(), at: Date.now(), name, text, audio: !!audio, amime: /^audio\/(webm|ogg|mp4|mpeg|aac)(;.*)?$/.test(String(b.amime || '')) ? String(b.amime).split(';')[0] : 'audio/webm', src: 'guest', st: 'new' };
+    const prods = ev.products || [], prod = prods.filter((x) => x.id === String(b.product || ''))[0] || (prods.length === 1 ? prods[0] : null);
+    if (prods.length > 1 && !prod) return out({ ok: false, error: 'no-product' }, 400);
+    const m = { id: sid(), at: Date.now(), name, text, product: prod ? { id: prod.id, name: prod.name, w: prod.w, h: prod.h } : null, audio: !!audio, amime: /^audio\/(webm|ogg|mp4|mpeg|aac)(;.*)?$/.test(String(b.amime || '')) ? String(b.amime).split(';')[0] : 'audio/webm', src: 'guest', st: 'new' };
     await savePhoto(storage, ev, m, img, audio);
     ev.n = ev.n || {}; ev.n.in = (ev.n.in || 0) + 1; if (text || audio) ev.n.wishes = (ev.n.wishes || 0) + 1;
     await storage.put('lv:' + ev.id, ev);
@@ -234,7 +255,8 @@ export async function frameLive(storage, who, b, site) {
     if (hasCard(JSON.stringify(e))) return out({ ok: false, error: 'card-number' }, 400);
     Object.assign(ev, { title, date: DAY.test(e.date || '') ? e.date : today(), dealId: clean(e.dealId, 48), couple, open: e.open !== false, album: e.album !== false,
       design: e.design && EMAIL.test(String(e.design.email || '')) && /^[\w-]{1,48}$/.test(String(e.design.id || '')) ? { email: String(e.design.email).toLowerCase(), id: String(e.design.id), name: clean(e.design.name, 60) } : null,
-      copies: num(e.copies, 1, 4, 1), cost: num(e.cost, 0, 1000, 0), price: num(e.price, 0, 1e6, 0), bizName: clean(e.bizName || (site && site.name), 60), google: clean(e.google, 300) });
+      copies: num(e.copies, 1, 4, 1), cost: num(e.cost, 0, 1000, 0), price: num(e.price, 0, 1e6, 0), bizName: clean(e.bizName || (site && site.name), 60), google: clean(e.google, 300),
+      products: cleanProducts(e.products), offer: cleanOffer(e.offer) });
     await storage.put('lv:' + ev.id, ev);
     if (isNew) { idx[ev.id] = who.email; await storage.put('lvidx', idx); }
     return out({ ok: true, event: ownerView(ev) });

@@ -52,7 +52,7 @@
     if (standalone || !env.phone || snoozed() || document.getElementById('lv-app')) return;
     css();
     var b = document.createElement('div'); b.id = 'lv-app'; b.setAttribute('role', 'region'); b.setAttribute('aria-label', 'התקנת האפליקציה');
-    b.innerHTML = '<span>📲 שמרו את האפליקציה בטלפון: התמונות שלכם מהאירוע, תמיד בלחיצה</span><button type="button" data-i>התקנה</button>' +
+    b.innerHTML = '<span>📲 שמרו את האפליקציה בטלפון: התמונות שלכם מהאירוע והטבות לאורחים, תמיד בלחיצה</span><button type="button" data-i>התקנה</button>' +
       (store ? '<a href="' + esc(store) + '" target="_blank" rel="noopener" aria-label="חנות המתנות">🛍️</a>' : '') +
       '<button type="button" data-x aria-label="לא עכשיו">✕</button>';
     b.addEventListener('click', function (ev) {
@@ -64,7 +64,7 @@
 
   fetch('guest-app.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
     .then(function (j) { var u = String((j && j.storeUrl) || ''); store = /^https:\/\//.test(u) ? u : ''; })
-    .then(function () { setTimeout(bar, 2500); });
+    .then(function () { setTimeout(bar, 1200); });
 
   window.FLApp = {
     remember: remember,
@@ -77,6 +77,7 @@
       var b = document.getElementById('lv-app'); if (b) b.remove();
       setTimeout(install, 900);
     },
+    store: function () { return store; },
     storeHtml: function () { return store ? '<p class="lv-store"><a class="lv-send alt" href="' + esc(store) + '" target="_blank" rel="noopener">🛍️ מגנטים, מתנות וחבילות לאירועים</a></p>' : ''; }
   };
 })();
