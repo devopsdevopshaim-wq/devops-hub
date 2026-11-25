@@ -64,3 +64,13 @@
 .lv-lead select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,.15); font: inherit; background: #fff; }
 .lv-consent { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.5; margin-top: 8px; opacity: .85; }
 .lv-consent input { margin-top: 3px; flex: none; width: 18px; height: 18px; }
+
+/* v219: what to print (2-3 products) and the guests' benefit */
+.lv-prods { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; }
+.lv-prod { display: grid; place-items: center; gap: 2px; padding: 14px 6px; border-radius: 16px; border: 2px solid var(--gold); background: #fff; color: var(--plum); font: inherit; cursor: pointer; }
+.lv-prod span { font-size: 30px; line-height: 1; } .lv-prod b { font-size: 16px; } .lv-prod small { opacity: .75; font-size: 13px; }
+.lv-prod.on { background: var(--plum); color: #fff; box-shadow: 0 0 0 3px var(--gold); }
+.lv-offer { text-align: center; border: 2px solid var(--gold); }
+.lv-offer-t { font-weight: 800; font-size: 18px; margin: 0; } .lv-offer-b { font-size: 26px; margin: 6px 0; }
+.lv-offer .hello { margin-bottom: 12px; }
+.lv-offer .lv-send { display: flex; align-items: center; justify-content: center; margin-top: 8px; text-decoration: none; }

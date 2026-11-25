@@ -3,7 +3,7 @@
    couple's album. The photo is made smaller on the phone first (long side 1600px), so it goes up fast on the venue's network. */
 (function () {
   'use strict';
-  var L = window.FL, app = document.getElementById('app'), esc = L.esc, info = null, photo = null, voice = null, rec = null, sent = 0;
+  var L = window.FL, app = document.getElementById('app'), esc = L.esc, info = null, photo = null, voice = null, rec = null, sent = 0, product = '';
   var NAME = 'fs-live-name';
 
   function fail(t) { app.innerHTML = '<div class="card hero"><p class="brand">📸</p><p class="hello">' + esc(t) + '</p></div>'; }
@@ -28,10 +28,30 @@
     if (!r.ok) return fail(L.msg(r));
     info = r; document.title = 'צלמו מגנט · ' + r.title;
     if (window.FLApp) FLApp.remember(r.title);
-    if (!r.open) { fail('העלאת התמונות לאירוע הזה נסגרה. תודה שהייתם איתנו! 💛'); if (window.FLApp) app.insertAdjacentHTML('beforeend', FLApp.storeHtml()); return; }
+    if (!r.open) { fail('העלאת התמונות לאירוע הזה נסגרה. תודה שהייתם איתנו! 💛'); app.insertAdjacentHTML('afterbegin', offerHtml()); if (window.FLApp) app.insertAdjacentHTML('beforeend', FLApp.storeHtml()); return; }
     form();
   });
 
+  /* v219: the guests' benefit, set by the studio for the event: shown from the day after the event (or the day the studio set)
+     for its week, every time the app opens, with the code and the store */
+  function offerHtml() {
+    var o = info && info.offer; if (!o || !o.live) return '';
+    var to = new Date(o.to + 'T12:00:00Z').toLocaleDateString('he-IL', { day: 'numeric', month: 'long' }), url = o.url || (window.FLApp && FLApp.store && FLApp.store()) || '';
+    return '<section class="card lv-offer"><p class="lv-offer-t">🎁 הטבה לאורחי ' + esc(info.title) + '</p>' +
+      '<p class="lv-offer-b"><b>' + o.pct + '% הנחה</b> על ' + esc(o.what) + '</p><p class="hello">בתוקף עד ' + esc(to) + (o.code ? ' · קוד ההטבה: <b dir="ltr">' + esc(o.code) + '</b>' : '') + '</p>' +
+      (url ? '<a class="lv-send" href="' + esc(url) + (o.code ? (url.indexOf('?') < 0 ? '?' : '&') + 'promo=' + encodeURIComponent(o.code) : '') + '" target="_blank" rel="noopener">להזמנה עם ההנחה 🛍️</a>' : '') + '</section>';
+  }
+  /* v219: what to print, when the studio offers more than one product (a magnet, a wooden block, a cardboard frame…) */
+  function productsHtml() {
+    var ps = (info && info.products) || [];
+    if (ps.length < 2) return ps.length ? '<p class="lv-note">' + esc((ps[0].icon || '🧲') + ' ' + ps[0].name + size(ps[0])) + '</p>' : '';
+    if (!ps.some(function (x) { return x.id === product; })) product = '';
+    return '<section class="card"><h2>מה להדפיס? 👇</h2><div class="lv-prods" id="prods">' + ps.map(function (x) {
+      return '<button type="button" class="lv-prod' + (x.id === product ? ' on' : '') + '" data-p="' + esc(x.id) + '"><span>' + esc(x.icon || '🧲') + '</span><b>' + esc(x.name) + '</b><small>' + esc(size(x).replace(/^ · /, '')) + '</small></button>';
+    }).join('') + '</div></section>';
+  }
+  function size(x) { return x.w && x.h ? ' · ' + x.w + '×' + x.h + ' ס״מ' : ''; }
+  function canSend() { var ps = (info && info.products) || []; return !!photo && (ps.length < 2 || !!product); }
   function form() {
     var name = ''; try { name = localStorage.getItem(NAME) || ''; } catch (e) { /* private mode */ }
     app.innerHTML =
@@ -41,6 +61,7 @@
         '<label class="lv-big"><input type="file" accept="image/*" capture="environment" id="cam" hidden><span>📸</span><b>צילום עכשיו</b></label>' +
         '<label class="lv-big alt"><input type="file" accept="image/*" id="gal" hidden><span>🖼️</span><b>מהגלריה</b></label></div>' +
         '<div class="lv-prev" id="prev" hidden><img id="prev-img" alt="התמונה שבחרתם"><button type="button" class="lv-x" id="prev-x" aria-label="בחירת תמונה אחרת">✕</button></div></section>' +
+      productsHtml() +
       '<section class="card"><h2>💌 ברכה לבעלי השמחה <small>(לא חובה)</small></h2>' +
         '<label class="lv-f">השם שלכם<input id="nm" maxlength="40" autocomplete="name" value="' + esc(name) + '" placeholder="למשל: דודה מירי"></label>' +
         '<label class="lv-f">ברכה<textarea id="tx" maxlength="300" rows="3" placeholder="מזל טוב! שתזכו לאושר גדול…"></textarea></label>' +
@@ -48,6 +69,11 @@
       L.lead.html('lead', '📲 רוצים את כל התמונות מהאירוע לוואטסאפ?', 'משאירים טלפון ומקבלים את האלבום כשהוא מוכן.', info.biz && info.biz.name) +
       '<button class="lv-send" id="send" disabled>שליחה להדפסה 🧲</button>' +
       '<p class="lv-note">התמונה נשלחת רק לצלם המגנטים של האירוע ולאלבום של בעלי השמחה.</p>';
+    app.insertAdjacentHTML('afterbegin', offerHtml());
+    var pr = document.getElementById('prods'); if (pr) pr.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-p]'); if (!b) return; product = b.dataset.p;
+      Array.prototype.forEach.call(pr.querySelectorAll('[data-p]'), function (x) { x.classList.toggle('on', x === b); }); show();
+    });
     ['cam', 'gal'].forEach(function (id) { document.getElementById(id).addEventListener('change', function () { if (this.files && this.files[0]) take(this.files[0]); this.value = ''; }); });
     document.getElementById('prev-x').addEventListener('click', function () { photo = null; show(); });
     document.getElementById('send').addEventListener('click', send);
@@ -58,7 +84,7 @@
   function show() {
     var has = !!photo; document.getElementById('pick').hidden = has; document.getElementById('prev').hidden = !has;
     if (has) document.getElementById('prev-img').src = photo.url;
-    document.getElementById('send').disabled = !has;
+    var sb = document.getElementById('send'); sb.disabled = !canSend(); sb.textContent = has && !canSend() ? 'בוחרים מה להדפיס ☝️' : 'שליחה להדפסה 🧲';
   }
   /* the photo, made smaller: long side 1600px, JPEG */
   function take(file) {
@@ -104,11 +130,11 @@
     a.hidden = !voice; x.hidden = !voice; m.hidden = !!voice; m.textContent = '🎤 ברכה קולית (עד 30 שניות)'; if (voice) a.src = voice.url;
   }
   function send() {
-    if (!photo) return;
+    if (!canSend()) return;
     var b = document.getElementById('send'), name = document.getElementById('nm').value.trim(), text = document.getElementById('tx').value.trim();
     try { localStorage.setItem(NAME, name); } catch (e) { /* private mode */ }
     b.disabled = true; b.textContent = 'שולח…';
-    L.call({ action: 'guest-up', e: L.e, k: L.k, img: photo.b64, name: name, text: text, audio: voice ? voice.b64 : '', amime: voice ? voice.mime : '' }).then(function (r) {
+    L.call({ action: 'guest-up', e: L.e, k: L.k, img: photo.b64, name: name, text: text, product: product, audio: voice ? voice.b64 : '', amime: voice ? voice.mime : '' }).then(function (r) {
       if (!r.ok) { b.disabled = false; b.textContent = 'שליחה להדפסה 🧲'; L.toast(L.msg(r), 5000); return; }
       sent++; photo = null; voice = null;
       var ld = L.lead.read(document.getElementById('lead') || document.body);

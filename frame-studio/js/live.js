@@ -190,6 +190,43 @@
       ev = r.event; events = events.map(function (x) { return x.id === ev.id ? ev : x; }); draw();
     });
   }
+  /* v219: what the guests may order from the QR (2 or 3 products, each with its size) and their benefit after the event.
+     The last ones set are offered again for the next event. */
+  var PROD_DEF = [{ id: 'magnet', icon: '🧲', name: 'מגנט', w: 7.5, h: 10 }], PROD_IDS = ['magnet', 'block', 'frame'];
+  function productsForm(e) {
+    var ps = (e.products && e.products.length ? e.products : cfg.products && cfg.products.length ? cfg.products : PROD_DEF).slice(0, 3);
+    while (ps.length < 3) ps.push({ icon: '', name: '', w: '', h: '' });
+    return '<details class="lv-more"' + (e.products && e.products.length > 1 ? ' open' : '') + '><summary>🛍️ מה האורחים בוחרים להדפיס (עד 3 מוצרים)</summary>' +
+      '<p class="hint">כשיש יותר ממוצר אחד, האורח בוחר באפליקציה. למשל: 🧲 מגנט 7.5×10, 🪵 בלוק עץ 10×15, 🖼️ מסגרת קרטון 13×18. מוצר בלי שם לא מוצג.</p>' +
+      ps.map(function (x, i) {
+        return '<div class="lv-prow"><input class="lp-icon" maxlength="4" value="' + esc(x.icon || '') + '" placeholder="' + ['🧲', '🪵', '🖼️'][i] + '" style="width:3.2em">' +
+          '<input class="lp-name" maxlength="40" value="' + esc(x.name || '') + '" placeholder="' + ['מגנט', 'בלוק עץ', 'מסגרת קרטון'][i] + '">' +
+          '<input class="lp-w" type="number" min="2" max="60" step="0.5" value="' + esc(x.w || '') + '" placeholder="רוחב" style="width:5em">×<input class="lp-h" type="number" min="2" max="60" step="0.5" value="' + esc(x.h || '') + '" placeholder="גובה" style="width:5em"> ס״מ</div>';
+      }).join('') + '</details>';
+  }
+  function readProducts(body) {
+    return Array.prototype.map.call(body.querySelectorAll('.lv-prow'), function (r, i) {
+      var v = function (c) { return r.querySelector(c).value.trim(); };
+      return { id: PROD_IDS[i], icon: v('.lp-icon'), name: v('.lp-name'), w: Number(v('.lp-w')) || 0, h: Number(v('.lp-h')) || 0 };
+    }).filter(function (x) { return x.name; });
+  }
+  function offerForm(e) {
+    var o = e.offer || cfg.offer || { pct: 20, what: 'אלבום', after: 1, days: 7, url: '', code: '' }, on = !!(e.offer && e.offer.on);
+    return '<details class="lv-more"' + (on ? ' open' : '') + '><summary>🎁 הטבה לאורחים אחרי האירוע</summary>' +
+      '<label class="check"><input type="checkbox" id="lo-on"' + (on ? ' checked' : '') + '> להציג לאורחים הטבה באפליקציה שלהם</label>' +
+      '<div class="row2"><div class="field"><label>אחוז הנחה</label><input type="number" id="lo-pct" min="1" max="90" value="' + (o.pct || 20) + '"></div>' +
+      '<div class="field"><label>על מה</label><input id="lo-what" maxlength="60" value="' + esc(o.what || 'אלבום') + '" placeholder="אלבום, מגנטים נוספים…"></div></div>' +
+      '<div class="row2"><div class="field"><label>מתחיל כמה ימים אחרי האירוע</label><input type="number" id="lo-after" min="0" max="30" value="' + (o.after == null ? 1 : o.after) + '"></div>' +
+      '<div class="field"><label>למשך (ימים)</label><input type="number" id="lo-days" min="1" max="60" value="' + (o.days || 7) + '"></div></div>' +
+      '<div class="row2"><div class="field"><label>קישור לחנות / לאתר (ריק = החנות שלנו)</label><input id="lo-url" dir="ltr" value="' + esc(o.url || '') + '" placeholder="https://…"></div>' +
+      '<div class="field"><label>קוד הטבה (לא חובה)</label><input id="lo-code" dir="ltr" maxlength="24" value="' + esc(o.code || '') + '" placeholder="GUEST20"></div></div>' +
+      '<p class="hint">האורח רואה את ההטבה כשהוא פותח את האפליקציה שהתקין מהקוד, בימים שנקבעו. כדי שהמחיר יירד בקופה, מגדירים בחנות מבצע עם אותו אחוז.</p></details>';
+  }
+  function readOffer(body) {
+    if (!body.querySelector('#lo-on').checked) return { on: false };
+    return { on: true, pct: Number(body.querySelector('#lo-pct').value) || 20, what: body.querySelector('#lo-what').value.trim(), after: Number(body.querySelector('#lo-after').value),
+      days: Number(body.querySelector('#lo-days').value) || 7, url: body.querySelector('#lo-url').value.trim(), code: body.querySelector('#lo-code').value.trim() };
+  }
   function editEvent(e) {
     var isNew = !e; e = e || { title: '', date: today(), couple: {}, copies: 1, cost: Number(cfg.cost) || 1.5, price: 0, open: true, album: true };
     var body = FS.dialog(isNew ? '🎉 אירוע חי חדש' : '✏️ פרטי האירוע',
@@ -200,6 +237,7 @@
       '<div class="row2"><div class="field"><label>מחיר האירוע (₪)</label><input type="number" id="lf-price" min="0" value="' + (e.price || 0) + '"></div><div class="field"><label>עלות נייר + מגנט ליחידה (₪)</label><input type="number" id="lf-cost" min="0" step="0.1" value="' + (e.cost || 0) + '"></div></div>' +
       '<label class="check"><input type="checkbox" id="lf-dbl"' + (e.copies > 1 ? ' checked' : '') + '> הדפסה כפולה: מגנט לאורח ועוד אחד לאלבום של הזוג</label>' +
       '<label class="check"><input type="checkbox" id="lf-album"' + (e.album !== false ? ' checked' : '') + '> המגנטים שמודפסים נכנסים גם לאלבום הדיגיטלי</label>' +
+      productsForm(e) + offerForm(e) +
       '<div class="inline"><button class="btn primary" id="lf-save">' + (isNew ? '✔ פתיחת האירוע' : '✔ שמירה') + '</button>' + (isNew ? '' : '<button class="btn danger" id="lf-del">🗑 מחיקת האירוע</button>') + '</div></div>');
     if (isNew && FS.deals && FS.account && FS.account.isAdmin()) {
       FS.deals.all().then(function (ds) {
@@ -218,7 +256,9 @@
     $('#lf-save', body).addEventListener('click', function () {
       var o = Object.assign({}, isNew ? {} : e, { title: $('#lf-title', body).value.trim(), date: $('#lf-date', body).value, couple: { name: $('#lf-name', body).value.trim(), phone: $('#lf-phone', body).value.trim(), email: $('#lf-email', body).value.trim() },
         price: Number($('#lf-price', body).value) || 0, cost: Number($('#lf-cost', body).value) || 0, copies: $('#lf-dbl', body).checked ? 2 : 1, album: $('#lf-album', body).checked, dealId: body.dataset.deal || e.dealId || '',
-        bizName: FS.BIZ && FS.BIZ.name || '', google: (FS.BIZ && FS.BIZ.googleReviews) || (FS.BIZ_SITE && FS.BIZ_SITE.googleReviews) || '' });
+        bizName: FS.BIZ && FS.BIZ.name || '', google: (FS.BIZ && FS.BIZ.googleReviews) || (FS.BIZ_SITE && FS.BIZ_SITE.googleReviews) || '',
+        products: readProducts(body), offer: readOffer(body) });
+      cfg.products = o.products; if (o.offer && o.offer.on) cfg.offer = o.offer;
       if (!o.title) return FS.toast('כותבים שם לאירוע');
       cfg.cost = o.cost; keep(KS, cfg);
       api('ev-save', { event: o }).then(function (r) {
@@ -332,19 +372,26 @@
   }
   function take(ph) {
     var bin = atob(ph.img), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-    var file = new File([u8], (ph.name ? 'אורח - ' + ph.name : 'אורח') + '.jpg', { type: 'image/jpeg' });
+    var file = new File([u8], (ph.name ? 'אורח - ' + ph.name : 'אורח') + (ph.product ? ' · ' + ph.product.name : '') + '.jpg', { type: 'image/jpeg' });
     return FS.addPhotoFile(file).then(function (p) {
-      p.liveId = ph.id; p.liveEv = ev.id; p.liveName = ph.name; p.liveText = ph.text; p.copies = ev.copies || 1;
+      p.liveId = ph.id; p.liveEv = ev.id; p.liveName = ph.name; p.liveText = ph.text; p.liveProduct = ph.product || null; p.copies = ev.copies || 1;
       if (cfg.tpl) {
         try { var d = JSON.parse(JSON.stringify(cfg.tpl)); p.doc = d; FS.fitPhoto(p.doc, FS.img(p.src)); FS.snap(p); } catch (e) { /* keeps its own design */ }
       } else if (cfg.tplFrame && FS.USER_FRAMES && FS.USER_FRAMES[cfg.tplFrame]) putDesign(p, cfg.tplFrame);
+      /* v219: the product the guest picked (a block, a frame…) at its own size, when it is not the size of the design */
+      var pr = ph.product, im = FS.img(p.src);
+      if (pr && pr.w && pr.h && im) {
+        var mm = FS.mmOf(p.doc), want = [pr.w * 10, pr.h * 10];
+        var same = Math.abs(Math.min(mm[0], mm[1]) - Math.min(want[0], want[1])) < 2 && Math.abs(Math.max(mm[0], mm[1]) - Math.max(want[0], want[1])) < 2;
+        if (!same) { FS.applyFormat(p.doc, 'cm', im, want[0], want[1]); FS.matchOrient(p.doc, im); p.cache = {}; FS.snap(p); }
+      }
       if (cfg.wish && (ph.text || '').trim()) addWish(p, ph.text, ph.name);
       return (cfg.albumQr ? FS.albumTag(p, ev) : Promise.resolve()).then(function () { return cfg.magic !== false ? FS.magicTag(p, ev) : null; }).catch(function () { /* printed without the QR */ }).then(function () { return p; });
     }).then(function (p) {
       run.got++; run.queue.push(p); FS.emit('live-got', p);
       if (FS.faceIndex) FS.faceIndex(p, ev);   /* "find me": this photo's faces, in the background */
       FS.buildStrip(); FS.select(S.photos.indexOf(p));
-      FS.toast('📸 תמונה חדשה' + (ph.name ? ' מ' + ph.name : '') + (ph.text ? ' · 💌 עם ברכה' : ''), 3000);
+      FS.toast('📸 תמונה חדשה' + (ph.name ? ' מ' + ph.name : '') + (ph.product ? ' · ' + ph.product.name : '') + (ph.text ? ' · 💌 עם ברכה' : ''), 3000);
     }).catch(function () { api('mark', { e: ev.id, ids: [ph.id], st: 'new' }); });
   }
   /* ✨ the living magnet: a small QR with the magnet's own code. At home the guest scans it and the magnet wakes up (m.html):
@@ -727,6 +774,7 @@
     return { ev: ev, on: run.on, waiting: run.waiting || 0, got: run.got, today: !!(ev && ev.date === t), auto: cfg.autoRun !== false,
       mainElse: !!(main && main.e && ev && main.e !== ev.id), signed: !!token() };
   };
+  FS.liveGet = function () { return ev ? api('ev-get', { e: ev.id }) : Promise.resolve({ ok: false, error: 'not-found' }); };
   FS.liveRun = function (on) { if (on && !run.on) start(); else if (!on && run.on) stop(); };
   FS.liveAuto = function (on) { cfg.autoRun = !!on; keep(KS, cfg); if (on) autoRun(); FS.emit('live-state'); };
   setTimeout(function () {

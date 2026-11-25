@@ -85,6 +85,25 @@
   /* v218: the live event's guests too (the QR on the tables, js/live.js), on top of this tab: is the station taking photos,
      how many wait, and every photo that came in, newest first. One click opens it for editing. */
   function draw() { drawMain(); paintLive(); }
+  /* 💌 every guest of the event by name: their greetings (written or spoken), what they ordered and how many photos they sent,
+     read from the server, so the ones from before this computer opened are there too */
+  var lvView = 'photos', lvNames = null;
+  function namesHtml() {
+    if (!lvNames) return '<p class="hint">טוען…</p>';
+    var g = {}, order = [];
+    lvNames.filter(function (m) { return m.src === 'guest'; }).sort(function (a, b) { return (a.at || 0) - (b.at || 0); }).forEach(function (m) {
+      var k = (m.name || '').trim() || 'ללא שם'; if (!g[k]) { g[k] = []; order.push(k); } g[k].push(m);
+    });
+    if (!order.length) return '<p class="hint">עוד אין אורחים.</p>';
+    order.sort(function (a, b) { return a === 'ללא שם' ? 1 : b === 'ללא שם' ? -1 : a.localeCompare(b, 'he'); });
+    return order.map(function (k) {
+      var l = g[k], words = l.filter(function (m) { return (m.text || '').trim(); }), voices = l.filter(function (m) { return m.audio; }).length;
+      var prods = {}; l.forEach(function (m) { if (m.product) prods[m.product.name] = (prods[m.product.name] || 0) + 1; });
+      return '<section class="cu-lv-who"><header><b>👤 ' + esc(k) + '</b><span class="hint">' + l.length + ' תמונות' + (voices ? ' · 🎤 ' + voices + ' ברכות קוליות' : '') +
+        (Object.keys(prods).length ? ' · ' + Object.keys(prods).map(function (n) { return esc(n) + (prods[n] > 1 ? ' ×' + prods[n] : ''); }).join(', ') : '') + '</span></header>' +
+        (words.length ? words.map(function (m) { return '<p class="cu-lv-wish">💌 ' + esc(m.text) + '</p>'; }).join('') : '<p class="hint">בלי ברכה כתובה</p>') + '</section>';
+    }).join('');
+  }
   function paintLive() {
     var old = $('.cu-live', box); if (old) old.remove();
     var st = FS.liveState && FS.liveState(); if (!st || !st.signed) return;
@@ -98,11 +117,18 @@
         (!st.today && !st.on ? '<p class="hint">האירוע הזה לא היום. כדי לקלוט בכל זאת, לוחצים "▶ לקלוט תמונות".</p>' : '') +
         '<div class="row2"><button class="btn ' + (st.on ? '' : 'primary') + '" id="cu-lv-run">' + (st.on ? '⏹ להפסיק לקלוט' : '▶ לקלוט תמונות') + '</button></div>' +
         '<label class="check"><input type="checkbox" id="cu-lv-auto"' + (st.auto ? ' checked' : '') + '> ביום האירוע לקלוט לבד, מהרגע שהתוכנה נפתחת</label>' +
+        '<div class="cu-seg"><button type="button" class="btn small' + (lvView !== 'names' ? ' on' : '') + '" data-lvv="photos">📸 התמונות</button><button type="button" class="btn small' + (lvView === 'names' ? ' on' : '') + '" data-lvv="names">💌 הברכות לפי שם</button></div>' +
+        (lvView === 'names' ? '<div class="cu-lv-names">' + namesHtml() + '</div>' :
         (mine.length ? '<div class="cu-lv-g">' + mine.slice(0, 80).map(function (p) {
-          return '<button type="button" data-lv="' + esc(p.id) + '" title="' + esc((p.liveName || 'אורח') + (p.liveText ? ' · ' + p.liveText : '')) + '"><img src="' + esc(p.src) + '" alt="" loading="lazy"><span>' + esc(p.liveName || 'אורח') + (p.liveText ? ' 💌' : '') + '</span></button>';
-        }).join('') + '</div>' : '<p class="hint">' + (st.on ? 'כל תמונה שאורח שולח מה־QR מופיעה כאן תוך כמה שניות.' : 'עוד לא התקבלו תמונות.') + '</p>');
+          return '<button type="button" data-lv="' + esc(p.id) + '" title="' + esc((p.liveName || 'אורח') + (p.liveProduct ? ' · ' + p.liveProduct.name : '') + (p.liveText ? ' · ' + p.liveText : '')) + '"><img src="' + esc(p.src) + '" alt="" loading="lazy"><span>' + esc(p.liveName || 'אורח') + (p.liveText ? ' 💌' : '') + '</span>' + (p.liveProduct ? '<small>' + esc(p.liveProduct.name) + '</small>' : '') + '</button>';
+        }).join('') + '</div>' : '<p class="hint">' + (st.on ? 'כל תמונה שאורח שולח מה־QR מופיעה כאן תוך כמה שניות.' : 'עוד לא התקבלו תמונות.') + '</p>'));
     }
     var h = $('h2', box); if (h) h.insertAdjacentElement('afterend', el); else box.insertBefore(el, box.firstChild);
+    var sg = $('[data-lvv]', el); if (sg) sg.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-lvv]'); if (!b) return; lvView = b.dataset.lvv;
+      if (lvView === 'names') { lvNames = null; FS.liveGet().then(function (r) { lvNames = r && r.ok ? r.photos : []; if (box.isConnected) paintLive(); }); }
+      paintLive();
+    });
     var rb = $('#cu-lv-run', el); if (rb) rb.addEventListener('click', function () { FS.liveRun(!st.on); });
     var ab = $('#cu-lv-auto', el); if (ab) ab.addEventListener('change', function () { FS.liveAuto(this.checked); });
     var g = $('.cu-lv-g', el); if (g) g.addEventListener('click', function (e) {
@@ -117,7 +143,8 @@
     var css = document.createElement('style'); css.id = 'cu-lv-css';
     css.textContent = '.cu-live{margin:10px 0}.cu-live h3{margin:0 0 6px}.cu-lv-st{margin:4px 0}.cu-lv-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px}' +
       '.cu-lv-g button{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:3px;font-size:12px;text-align:center}.cu-lv-g img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:8px;background:#0002}' +
-      '.cu-lv-g span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}';
+      '.cu-lv-g span,.cu-lv-g small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cu-lv-g small{opacity:.7}' +
+      '.cu-lv-names{margin-top:10px;display:grid;gap:8px}.cu-lv-who{border:1px solid #8884;border-radius:10px;padding:8px 10px}.cu-lv-who header{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}.cu-lv-wish{margin:6px 0 0;white-space:pre-wrap}';
     document.head.appendChild(css);
   }
   function drawMain() {
