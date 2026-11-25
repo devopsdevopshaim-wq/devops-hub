@@ -396,3 +396,13 @@ test('event frames for portrait and landscape photos are saved and reach the gue
   assert.equal(pub.framePortrait, p);
   assert.equal(pub.frameLandscape, '');
 });
+
+test('free shipping from 0 = shipping on every order (the owner asked for shipping on every delivery)', async () => {
+  let q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-henna', qty: 1 }] })).data;
+  assert.equal(q.shipping, 0, 'above 300: free, as set');
+  await call('PUT', '/api/admin/settings', { businessName: 'פריים אירועים', shippingPrice: 30, freeShippingFrom: 0, slaHours: {} });
+  q = (await call('POST', '/api/cart/quote', { items: [{ productId: 'pkg-henna', qty: 1 }] })).data;
+  assert.equal(q.shipping, 30, '0: never free');
+  assert.equal(q.total, q.subtotal + 30);
+  await call('PUT', '/api/admin/settings', { businessName: 'פריים אירועים', shippingPrice: 30, freeShippingFrom: 300, slaHours: {} });
+});

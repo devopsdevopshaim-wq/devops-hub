@@ -4,7 +4,13 @@
 (function () {
   'use strict';
   var L = window.FL, app = document.getElementById('app'), esc = L.esc, info = null, photo = null, voice = null, rec = null, sent = 0, product = '';
-  var NAME = 'fs-live-name';
+  var NAME = 'fs-live-name', MINE = 'fs-live-mine', SHOP_API = 'https://regaim-events.devopsdevopshaim.workers.dev', frameSrc = '';
+  /* the photos this phone sent, per event: { e: [{ id, gk, at }] } (gk = the photo's own key, from the server) */
+  function mine() { try { return (JSON.parse(localStorage.getItem(MINE) || '{}') || {})[L.e] || []; } catch (e) { return []; } }
+  function keepMine(id, gk) {
+    try { var all = JSON.parse(localStorage.getItem(MINE) || '{}') || {}; all[L.e] = [{ id: id, gk: gk, at: Date.now() }].concat(all[L.e] || []).slice(0, 80); localStorage.setItem(MINE, JSON.stringify(all)); } catch (e) { /* private mode */ }
+  }
+  function mineUrl(m) { return L.base.then(function (u) { return u + '/frame-live-img?e=' + L.e + '&p=' + m.id + '&v=' + m.gk; }); }
 
   function fail(t) { app.innerHTML = '<div class="card hero"><p class="brand">📸</p><p class="hello">' + esc(t) + '</p></div>'; }
   /* the studio's main QR (live.html?m=…): the server says which event it leads to now */
@@ -28,12 +34,54 @@
     if (!r.ok) return fail(L.msg(r));
     info = r; document.title = 'צלמו מגנט · ' + r.title;
     if (window.FLApp) FLApp.remember(r.title);
-    if (!r.open) { fail('העלאת התמונות לאירוע הזה נסגרה. תודה שהייתם איתנו! 💛'); app.insertAdjacentHTML('afterbegin', offerHtml()); if (window.FLApp) app.insertAdjacentHTML('beforeend', FLApp.storeHtml()); return; }
+    if (!r.open || r.night) return after(r.night && r.open);
+    if (r.frame) L.base.then(function (u) { frameSrc = u + '/frame-live-img?e=' + L.e + '&fr=1&v=' + L.k; var im = new Image(); im.src = frameSrc; });
     form();
   });
 
   /* v219: the guests' benefit, set by the studio for the event: shown from the day after the event (or the day the studio set)
      for its week, every time the app opens, with the code and the store */
+  /* v220: after the event (uploads closed, or closed for the night at the event's hour): the photos this phone sent, and the
+     upgrades: an enlargement 15×20 (a magnet or a block), an album of the guest's own photos, more albums */
+  function after(night) {
+    var hour = info.closeAt || '23:00';
+    app.innerHTML = '<section class="card hero"><p class="brand">' + (night ? '🌙' : '💛') + '</p><p class="hello">' + (night
+      ? 'ההעלאה להדפסה באירוע נסגרה ב־' + esc(hour) + '.<br><b>מחר</b> תוכלו לשלוח את התמונות שלכם ולהזמין מהן מגנטים, הגדלות ואלבום, דרך האפליקציה 🛍️'
+      : 'העלאת התמונות לאירוע הזה נסגרה. תודה שהייתם איתנו! 💛') + '</p></section>' + offerHtml() + '<div id="mine"></div>' + (window.FLApp ? FLApp.storeHtml() : '');
+    drawMine();
+  }
+  function drawMine() {
+    var box = document.getElementById('mine'), list = mine(), o = info.offer && info.offer.live ? info.offer : null; if (!box) return;
+    if (!list.length) { box.innerHTML = ''; return; }
+    var up = [];
+    if (o && o.enlarge) up.push('⬆️ הגדלה 15×20 (מגנט או בלוק): <b>' + o.enlarge.pct + '% הנחה</b>');
+    if (o) up.push('📖 אלבום מהאירוע עם ' + list.length + ' התמונות שלכם: <b>' + o.pct + '% הנחה</b>' + (o.what && !/אלבום/.test(o.what) ? ' על ' + esc(o.what) : ''));
+    if (o && o.extra) up.push('📚 עוד אלבום (לסבתא, לחברים): <b>' + o.extra.pct + '% הנחה</b> על כל אלבום נוסף');
+    box.innerHTML = '<section class="card"><h2>📸 התמונות ששלחתם (' + list.length + ')</h2>' + (up.length ? '<ul class="lv-ups">' + up.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>' : '') +
+      '<div class="lv-mine">' + list.map(function (m, i) { return '<figure data-i="' + i + '"><img alt="תמונה ששלחתם" loading="lazy"><figcaption>' +
+        (o ? '<button type="button" class="lv-up" data-up="enl" data-i="' + i + '">⬆️ להגדלה</button><button type="button" class="lv-up alt" data-up="alb" data-i="' + i + '">📖 לאלבום</button>' : '<a class="lv-up alt" data-save="' + i + '">⬇️ שמירה</a>') + '</figcaption></figure>'; }).join('') + '</div></section>';
+    list.forEach(function (m, i) { mineUrl(m).then(function (u) { var f = box.querySelector('figure[data-i="' + i + '"]'), im = f && f.querySelector('img'); if (!im) return; im.src = u; im.onerror = function () { f.remove(); }; var a = f.querySelector('[data-save]'); if (a) { a.href = u; a.setAttribute('download', 'אירוע-' + (i + 1) + '.jpg'); } }); });
+    box.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-up]'); if (!b) return;
+      var m = list[Number(b.dataset.i)], code = b.dataset.up === 'enl' ? (o.enlarge && o.enlarge.code) || o.code : o.code;
+      shop(m, code, b);
+    });
+  }
+  /* to the store with this photo (it goes up to the store first) and the benefit's code; another store: the link with the code */
+  function shop(m, code, btn) {
+    var o = info.offer || {}, store = (window.FLApp && FLApp.store && FLApp.store()) || '';
+    var withCode = function (u) { return code ? u + (u.indexOf('?') < 0 ? '?' : '&') + 'promo=' + encodeURIComponent(code) : u; };
+    if (o.url && (!store || o.url.indexOf(store) !== 0)) { window.open(withCode(o.url), '_blank', 'noopener'); return; }
+    if (!store) { L.toast('החנות עוד לא מחוברת. פנו לצלם 📸', 4000); return; }
+    var t = btn.textContent; btn.disabled = true; btn.textContent = '⏳';
+    mineUrl(m).then(function (u) { return fetch(u); }).then(function (r) { if (!r.ok) throw new Error('img'); return r.blob(); }).then(function (b) {
+      var fd = new FormData(); fd.append('file', new File([b], 'event.jpg', { type: 'image/jpeg' }));
+      return fetch(SHOP_API + '/api/uploads', { method: 'POST', body: fd }).then(function (r) { return r.json(); });
+    }).then(function (j) {
+      if (!j || !/^\/img\/[a-f0-9]{24}$/.test(j.url || '')) throw new Error('up');
+      location.href = withCode(store.replace(/[#?].*$/, '') + '?photo=' + encodeURIComponent(j.url)) + '#store';
+    }).catch(function () { btn.disabled = false; btn.textContent = t; L.toast('לא הצלחנו להעביר את התמונה לחנות. נסו שוב בעוד רגע.', 4500); });
+  }
   function offerHtml() {
     var o = info && info.offer; if (!o || !o.live) return '';
     var to = new Date(o.to + 'T12:00:00Z').toLocaleDateString('he-IL', { day: 'numeric', month: 'long' }), url = o.url || (window.FLApp && FLApp.store && FLApp.store()) || '';
@@ -84,6 +132,11 @@
   function show() {
     var has = !!photo; document.getElementById('pick').hidden = has; document.getElementById('prev').hidden = !has;
     if (has) document.getElementById('prev-img').src = photo.url;
+    var pv = document.getElementById('prev'), fo = document.getElementById('prev-fr');
+    if (has && frameSrc) {
+      if (!fo) { fo = document.createElement('img'); fo.id = 'prev-fr'; fo.className = 'lv-frov'; fo.alt = ''; pv.appendChild(fo); fo.onload = function () { pv.classList.add('framed'); pv.style.aspectRatio = fo.naturalWidth + ' / ' + fo.naturalHeight; }; }
+      fo.src = frameSrc;
+    }
     var sb = document.getElementById('send'); sb.disabled = !canSend(); sb.textContent = has && !canSend() ? 'בוחרים מה להדפיס ☝️' : 'שליחה להדפסה 🧲';
   }
   /* the photo, made smaller: long side 1600px, JPEG */
@@ -135,7 +188,9 @@
     try { localStorage.setItem(NAME, name); } catch (e) { /* private mode */ }
     b.disabled = true; b.textContent = 'שולח…';
     L.call({ action: 'guest-up', e: L.e, k: L.k, img: photo.b64, name: name, text: text, product: product, audio: voice ? voice.b64 : '', amime: voice ? voice.mime : '' }).then(function (r) {
+      if (!r.ok && r.error === 'night') { info.closeAt = info.closeAt || '23:00'; return after(true); }
       if (!r.ok) { b.disabled = false; b.textContent = 'שליחה להדפסה 🧲'; L.toast(L.msg(r), 5000); return; }
+      if (r.id && r.gk) keepMine(r.id, r.gk);
       sent++; photo = null; voice = null;
       var ld = L.lead.read(document.getElementById('lead') || document.body);
       if (ld.phone && !ld.consent) L.toast('הטלפון לא נשמר: צריך לסמן את האישור.', 5000);
