@@ -78,7 +78,8 @@
   var toastEl = document.getElementById('toast');
   function toast(t, ms) { if (L.toast) L.toast(t, ms); else if (toastEl) toastEl.textContent = t; }
   function applyCfg() {
-    root.style.setProperty('--strip', Math.max(14, Math.min(40, cfg.strip)) + 'vh');
+    root.style.setProperty('--strip', cfg.strip === 0 ? '0vh' : Math.max(14, Math.min(40, cfg.strip)) + 'vh');
+    root.classList.toggle('no-strip', cfg.strip === 0);
     root.classList.toggle('dir-left', cfg.dir === 'left');
     root.classList.toggle('no-names', !cfg.names);
     $('#hw-title').hidden = !cfg.title || !($('#hw-t').textContent);
@@ -87,12 +88,14 @@
   }
 
   /* ---------- the owners' slideshow ---------- */
-  var slides = [], si = -1, sTimer = 0, cur = null, paused = false, urls = [];
+  var slides = [], si = -1, sTimer = 0, cur = null, paused = false, urls = [], remote = [];   /* remote: the owners' photos the studio put on the server */
   var FX = ['fx-fade', 'fx-zoom', 'fx-slide', 'fx-rise'];   /* no blur: a filter on a big moving layer goes blank on weak graphics */
   function loadMain() {
     return listPhotos().then(function (a) {
       urls.forEach(function (u) { URL.revokeObjectURL(u); });
-      urls = []; slides = a.map(function (x) { var u = URL.createObjectURL(x.blob); urls.push(u); return { id: x.id, src: u }; });
+      urls = []; slides = (cfg.local === false ? [] : a).map(function (x) { var u = URL.createObjectURL(x.blob); urls.push(u); return { id: x.id, src: u }; });
+      return L.base.then(function (b) { remote.forEach(function (id) { slides.push({ id: 'o:' + id, src: b + '/frame-live-img?e=' + L.e + '&p=' + id + '&v=' + L.v + '&o=1' }); }); });
+    }).then(function () {
       if (cfg.order === 'mix') for (var i = slides.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = slides[i]; slides[i] = slides[j]; slides[j] = t; }
       si = -1; restart();
     });
@@ -105,7 +108,7 @@
   function emptyMain() {
     main.innerHTML = '<div class="hw-none"><p class="hw-none-t">🎬 כאן ירוצו התמונות של בעלי השמחה</p><p>החתן והכלה, בר או בת המצווה: מוסיפים את התמונות שלהם, והן ירוצו כאן בגדול כל האירוע.</p>' +
       '<div class="hw-none-b"><button type="button" class="hw-btn gold" data-add="files">➕ הוספת תמונות</button><button type="button" class="hw-btn" data-add="dir">📁 תיקייה שלמה</button></div>' +
-      '<p class="hw-none-s">או מהסטודיו: מסמנים את התמונות ← ״🎉 אירוע חי״ ← ״🎬 מסך בעלי השמחה״.</p></div>';
+      '<p class="hw-none-s">או מאופטימוס: מסמנים את התמונות ← ״🎉 אירוע חי״ ← ״📺 שליטה במסך״ ← ״שליחת המסומנות למסך״.</p></div>';
     cur = null;
   }
   function nextSlide(step) {
@@ -186,7 +189,7 @@
     return L.call({ action: 'feed', e: L.e, v: L.v, since: since }).then(function (r) {
       if (!r || !r.ok) { if (firstFeed && r && r.error !== 'offline') toast(L.msg(r), 6000); return; }
       $('#hw-t').dataset.ev = r.title || '';
-      if (!title && r.title) { $('#hw-t').textContent = r.title; document.title = r.title + ' · מסך בעלי השמחה'; applyCfg(); }
+      if (!title && !remoteTitle && r.title) { $('#hw-t').textContent = r.title; document.title = r.title + ' · מסך בעלי השמחה'; applyCfg(); }
       $('#hw-biz').textContent = r.biz && r.biz.name ? r.biz.name : '';
       if (firstFeed) qr(r.k);
       (r.photos || []).slice().sort(function (a, b) { return a.at - b.at; }).forEach(function (p) { since = Math.max(since, p.at || 0); addGuest(p, !firstFeed); });
@@ -291,6 +294,38 @@
   var lock = null; function wakeLock() { if (navigator.wakeLock && document.visibilityState === 'visible') navigator.wakeLock.request('screen').then(function (l) { lock = l; }).catch(function () {}); }
   document.addEventListener('visibilitychange', wakeLock); wakeLock();
   var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(relayout, 200); });
+
+  /* ---------- 📺 run from the studio (tv-remote.js) ---------- */
+  var say = document.createElement('div'); say.className = 'hw-say'; say.hidden = true; root.appendChild(say);
+  var big = document.createElement('div'); big.className = 'hw-big'; big.hidden = true; root.appendChild(big);
+  var sayT = 0, bigT = 0, remoteTitle = '';
+  function showSay(text, sec) { clearTimeout(sayT); say.innerHTML = '<p>' + esc(text) + '</p>'; say.hidden = false; requestAnimationFrame(function () { say.classList.add('on'); }); sayT = setTimeout(hideSay, sec * 1000); }
+  function hideSay() { clearTimeout(sayT); say.classList.remove('on'); setTimeout(function () { if (!say.classList.contains('on')) say.hidden = true; }, 700); }
+  function showBig(p, sec) {
+    var it = items[p]; if (!it || !it.src) return;
+    clearTimeout(bigT); big.innerHTML = '<div class="hw-bg" style="background-image:url(\'' + it.src + '\')"></div><img src="' + it.src + '" alt="">' + (it.p.name || it.p.text ? '<p>' + (it.p.text ? '“' + esc(it.p.text) + '” ' : '') + (it.p.name ? '<b>' + esc(it.p.name) + '</b>' : '') + '</p>' : '');
+    big.hidden = false; requestAnimationFrame(function () { big.classList.add('on'); });
+    bigT = setTimeout(function () { big.classList.remove('on'); setTimeout(function () { big.hidden = true; }, 800); }, sec * 1000);
+  }
+  if (window.FLTV) window.FLTV.on(function (r, cmd, only) {
+    if (only) return runCmd(cmd);
+    var S = r.set || {}, old = JSON.stringify([cfg.sec, cfg.order, cfg.local]), oldStudio = cfg.studio;
+    ['sec', 'order', 'strip', 'speed', 'dir', 'names', 'qr', 'studio', 'title', 'local'].forEach(function (k) { if (k in S) cfg[k] = S[k]; });
+    remoteTitle = S.text || '';
+    if (remoteTitle) { $('#hw-t').textContent = remoteTitle; } else if (!title) $('#hw-t').textContent = $('#hw-t').dataset.ev || '';
+    keep(); applyCfg(); relayout();
+    if (oldStudio !== cfg.studio && cfg.studio) { since = 0; firstFeed = true; poll(); }
+    if ('paused' in S && !!S.paused !== paused) setPaused(!!S.paused);
+    var ids = (r.owners || []).join(','), changed = ids !== remote.join(',');
+    remote = r.owners || [];
+    if (changed || old !== JSON.stringify([cfg.sec, cfg.order, cfg.local])) loadMain();
+  });
+  function runCmd(cmd) {
+    if (cmd.c === 'next' || cmd.c === 'prev') { if (slides.length) { nextSlide(cmd.c === 'next' ? 1 : -1); setPaused(paused); } }
+    else if (cmd.c === 'say' && cmd.text) showSay(cmd.text, cmd.sec || 15);
+    else if (cmd.c === 'unsay') hideSay();
+    else if (cmd.c === 'show' && cmd.p) showBig(cmd.p, cmd.sec || 12);
+  }
 
   $('#hw-t').textContent = title; document.title = (title || 'מסך בעלי השמחה') + ' · פריים מגנטים';
   applyCfg(); count();

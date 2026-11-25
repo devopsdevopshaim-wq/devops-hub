@@ -3071,3 +3071,32 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **Leads**: a 🎁 button sends the guest on WhatsApp the link to their event's guests' app (their photos and the benefits).
 - **events-hub**: "משלוח חינם מעל" 0 = shipping on every order (pricing.quote). Test in events-hub/test/api.test.js.
 - Tests: cloudflare/test/live-products.test.mjs (night closing in winter and summer time, frame, the photo's own key).
+
+## 📺 The hall's TV run from Optimus (v222)
+- **Pairing:** the TV (any browser: a smart TV, a TV stick, a computer on a projector) opens `tv.html` (`js/tv-pair.js`, `css/tv.css`), which shows a 6-digit code.
+  - Server `tv-pair-new` → `ltv:<code>` = {at, secret}, valid 20 minutes. The page renews it by itself.
+  - The owner types the code in Optimus: `screen` op `pair` sets {e, v} on it. The TV's `tv-pair-get` (code + secret) gets {e, v} once and moves to `wall.html?host=1`.
+  - The last event is kept in `fs-tv-last` and offered for 3 days ("↩ חזרה").
+- **The TV listens** (`js/tv-remote.js`, loaded in wall.html *before* host-wall.js, so `FLTV.on` exists when host-wall subscribes):
+  - action `tv` {e, v, seq, name} every 2 s (6 s while hidden). It answers `same` when nothing changed; otherwise {seq, set, cmd, cmds, owners, tvAt}. The TV's name is kept in `fs-tv-name`, and `ev.screen.tvAt` is written at most every 20 s.
+  - It switches between the three screens by `set.mode` (host / wall / mosaic) and reloads on the `reload` command.
+  - Commands run from `cmds`, the server's last 12, so two commands sent within the 2 s are both applied. Commands sent before the screen opened are not replayed.
+- **Server** (`cloudflare/src/live.mjs`, owner action `screen` {e, op}):
+  - `state`, `set` (merged and cleaned by `cleanScreenSet`: mode, sec 3–30, order, strip 0–40 (0 = no strip), speed, dir, names, qr, studio, title, local, text = the screen's title), `cmd` (pause, play, next, prev, reload, say {text, sec}, unsay, show {p, sec}), `owner-put` {img} / `owner-del` {id | '*'} and `pair` {code}.
+  - The owners' photos live in `lo:<e>:<id>` (putBig), at most 150. The TV loads them with `frame-live-img?…&o=1`, and only with the viewing key. Deleting the event deletes them.
+  - Tests: `cloudflare/test/live-screen.test.mjs` (23), in `npm test` and the deploy.
+- **The owners' screen** (`host-wall.js`): it applies `set` (saved like its own settings), puts the server's owners' photos after the local ones (`local: false` hides the local ones), and runs the commands:
+  - `say`: a large message across the screen (`.hw-say`);
+  - `show`: one guest's photo large, with the name and greeting (`.hw-big`);
+  - next / prev, pause / play.
+- **Optimus:** 🎉 אירוע חי → "📺 שליטה במסך" (`js/tv-control.js`, `FS.tvControl()`; live.js exposes `FS.liveApi` and `FS.liveSiteBase`). The panel:
+  - TV status, refreshed every 5 s ("🟢 מסך מחובר: name");
+  - the tv.html address with copy, and the code box;
+  - "🖥️ open on this computer";
+  - what runs (3 buttons); ⏮ ⏸/▶ ⏭ 🔄;
+  - a message with seconds and 4 quick messages;
+  - sending the marked photos (each ≤ 2000 px JPEG, ≤ 1.65 MB) and removing them;
+  - the latest 18 guest photos (a click shows one large for 15 s);
+  - the settings.
+  - Settings send only the changes (`pend`, debounced 350 ms), so a status answer in between never undoes a change.
+- Tested end to end in Chromium against the real `frameLive` in memory: pairing, sending 2 photos, the title, a message, hiding it and showing a photo right after, and switching to mosaic and back.
