@@ -136,3 +136,12 @@ body.staff-mode .sb-more, body.staff-mode .lv-owner, body.staff-mode .lv-staff, 
 .cu-who header .btn { margin-inline-start: auto; }
 .cu-mt .cu-who { grid-column: 1 / -1; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
 .cu-mt .cu-who header { grid-column: 1 / -1; }
+/* v219-220: the event form's extra parts (products, frame, offers) */
+.lv-more { margin: 10px 0; border: 1px solid #8884; border-radius: 10px; padding: 8px 10px; }
+.lv-more summary { cursor: pointer; font-weight: 700; }
+.lv-prow, .lv-oline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.lv-prow .lp-name { flex: 1; min-width: 8em; }
+.lv-frrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+.lv-frprev { width: 96px; height: 128px; border-radius: 8px; display: grid; place-items: center; text-align: center;
+  background: repeating-conic-gradient(#8883 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
+.lv-frprev img { max-width: 100%; max-height: 100%; }

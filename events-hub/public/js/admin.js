@@ -917,7 +917,7 @@
         <div class="fields">
           <div class="field"><label>שם העסק</label><input name="businessName" value="${esc(s.businessName)}"></div>
           <div class="field"><label>מחיר משלוח (₪)</label><input name="shippingPrice" type="number" value="${s.shippingPrice}"></div>
-          <div class="field"><label>משלוח חינם מעל (₪)</label><input name="freeShippingFrom" type="number" value="${s.freeShippingFrom}"></div>
+          <div class="field"><label>משלוח חינם מעל (₪) · 0 = משלוח בתשלום בכל הזמנה</label><input name="freeShippingFrom" type="number" value="${s.freeShippingFrom}"></div>
           <div class="field" style="grid-column:1/-1"><label>קיצור דרך - כתובת ממשק חברת הסליקה (לכפתור למעלה)</label><input name="paymentDashboardUrl" id="dash-url" type="url" value="${esc(s.paymentDashboardUrl)}" placeholder="https://..."></div>
         </div>
         <h3>זמני יעד לכל שלב במשלוח (שעות) - מעבר לזמן ההזמנה תסומן "תקועה"</h3>

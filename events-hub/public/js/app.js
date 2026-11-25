@@ -2,6 +2,9 @@
 (function () {
   let catalog = { categories: [], collections: [], products: [], promotions: [], events: [], banners: [] };
   let coupon = store.get('coupon', '');
+  // קוד הטבה שהגיע מהקישור (אפליקציית האורחים של פריים מגנטים: ?promo=CODE) נכנס לבד לסל
+  const promoIn = (new URLSearchParams(location.search).get('promo') || '').replace(/[^\w\u0590-\u05FF-]/g, '').slice(0, 30);
+  if (promoIn) { coupon = promoIn; store.set('coupon', coupon); }
   let lastQuote = null;
   let cfg = {};
   let activeCat = 'all';

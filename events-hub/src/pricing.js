@@ -66,7 +66,9 @@ export function quote(lines, { code = '', settings = db.settings() } = {}) {
   });
   const subtotal = round(priced.reduce((s, l) => s + l.price * l.qty, 0));
   const discount = round(subtotalBefore - subtotal);
-  const shipping = subtotal >= settings.freeShippingFrom ? 0 : settings.shippingPrice;
+  // משלוח חינם רק כשמוגדר סכום (מעל 0). 0 = משלוח בתשלום בכל הזמנה
+  const free = Number(settings.freeShippingFrom) > 0 && subtotal >= settings.freeShippingFrom;
+  const shipping = free ? 0 : settings.shippingPrice;
   const c = normCode(code);
   const codeValid = !c || promos.some((p) => p.code === c);
   const codeUsed = Boolean(c) && priced.some((l) => l.coupon);
