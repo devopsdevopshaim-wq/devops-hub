@@ -3051,6 +3051,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - "👥 תמונות לקוחות" → the live card has "💌 הברכות לפי שם": every guest of the event from the server (FS.liveGet = ev-get), by name: photos, voice greetings, products, and each written greeting.
 - Tests: cloudflare/test/live-products.test.mjs (12 checks, in npm test).
 
+## 🎬 The event owners' screen (v221)
+- `wall.html?host=1&e=…&v=…` (`js/host-wall.js` + `css/host-wall.css`; wall.js and mosaic.js step aside when `host=1`). The top of the screen runs the owners' photos (the couple, the bar or bat mitzvah child) as a large slideshow: blurred fill, contain, Ken Burns, fade / zoom / slide / rise. There is no blur transition and no drop-shadow, because a filter on a big moving layer drew blank in a software-GPU test.
+- **The strip** (`--strip`, 16–38% of the height, default 26%): every guest photo from the QR (feed `src: 'guest'`, optionally also the station's magnets) travels across, to the right by default.
+  - Photos come out from behind the QR at the entry end. A new photo goes ahead of the loop queue (`newQ` before `loopQ`) and enters next, with a gold glow and "✨ חדש" for 30 s.
+  - Photos that leave the far end go back to the loop, so it runs all evening.
+  - It polls `feed` every 5 s. The animation is rAF with translate3d, and only the photos on screen are in the DOM.
+- **The owners' photos** stay on that computer only: IndexedDB `fs-host-wall`, store `p` {id, ev, n, name, blob}, shrunk to 2560 px JPEG. They come in from:
+  - ⚙️ הגדרות (files or a whole folder), or drag and drop;
+  - the studio: live tab → "🎬 מסך בעלי השמחה" (`hostScreen` in live.js) opens the window and sends the marked photos with `postMessage({hostPhotos, title, batch})`, after the screen's `hostReady` (5 s fallback). The screen accepts messages only from `window.opener`, and dedupes by batch and name.
+- **Settings** (`fs-hostwall`; the title per event in `fs-hostwall-title-<e>`): title and its toggle, seconds per photo, order (in sequence / mixed), strip height, speed, direction, sender's name, the QR, the station's magnets.
+- **Controls:** keys Space (pause), ← → (next / previous), F (fullscreen), S (settings). The controls and the cursor hide after 3.5 s idle, and a screen wake lock keeps the display on. Without `e`/`v` it still runs the owners' slideshow and says how to open it from the studio. `window.FSHost` is exposed for tests.
+
 ## The event's frame, closing at 23:00, the guest's own photos and upgrades after the event, shipping on every order (v220)
 - **The event's frame**: ✏️ event details → "🖼️ המסגרת של האירוע": a PNG file or the PNG frame of the photo on screen (framePng: long side ≤2000, under 1.65M base64). Server `ev-frame` (PNG only, 'lfr:'+e, ev.frame = time), served by `frame-live-img?e=&fr=1&v=` with the guests' key or the viewing key. Every station loads it on start (loadEventFrame → FS.addUserFrame, cached per event in 'fs-live-evfr') and take() puts it on each guest photo. Order: the design chosen at this station for this event (cfg.tpl with cfg.tplEv), else the event's frame, else the customer's approved design. The guests see their photo inside the frame on the preview (live.html).
 - **Closing at night**: `ev.closeAt` (default '23:00', '' = never), `nightClosed(ev)` in Israel time (Intl Asia/Jerusalem): closed from that hour on the event's day and on every later day; open before the event's day (try-outs). guest-info gives `night`, guest-up answers 403 `night`; the guests' page then says uploads closed and that tomorrow they can order through the app.
