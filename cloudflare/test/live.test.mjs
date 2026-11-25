@@ -23,7 +23,7 @@ let r = await call(null, { action: 'ev-list' });
 check('no session: no events', r.code === 401);
 r = await call(CLIENT, { action: 'ev-list' });
 check('a site customer cannot run events', r.code === 401);
-r = await call(OWNER, { action: 'ev-save', event: { title: 'החתונה של נועה ודניאל', date: '2026-10-21', couple: { name: 'נועה', phone: '050-1234567', email: 'noa@example.com' }, copies: 2, cost: 1.2, price: 2500 } });
+r = await call(OWNER, { action: 'ev-save', event: { title: 'החתונה של נועה ודניאל', date: '2026-10-21', closeAt: '', couple: { name: 'נועה', phone: '050-1234567', email: 'noa@example.com' }, copies: 2, cost: 1.2, price: 2500 } });
 check('the owner creates an event, with keys', r.body.ok && /^[a-f0-9]{24}$/.test(r.body.event.k) && /^[a-f0-9]{24}$/.test(r.body.event.v) && r.body.event.copies === 2, r.body);
 const ev = r.body.event;
 r = await call(LIC, { action: 'ev-get', e: ev.id });

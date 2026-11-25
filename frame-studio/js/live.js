@@ -168,7 +168,7 @@
     on('#lv-faces', function () { if (FS.faceIndexEvent) FS.faceIndexEvent(ev, imgUrl); });
     on('#lv-qr1', function () { var p = FS.cur(); if (!p) return FS.toast('פותחים תמונה'); FS.magicTag(p, ev).then(function () { FS.toast('✨ נוסף QR חי. כשהיא מודפסת בזמן שהעמדה פעילה, המגנט מתעורר בסריקה.', 6000); }); });
     on('#lv-wish', function () { cfg.wish = this.checked; keep(KS, cfg); }, 'change');
-    on('#lv-tpl', function () { var p = FS.cur(); if (!p) return FS.toast('פותחים קודם תמונה עם העיצוב הרצוי (מסגרת, גודל, טקסט)'); cfg.tpl = JSON.parse(JSON.stringify(p.doc)); cfg.tplFrame = null; keep(KS, cfg); FS.toast('🎯 כל תמונה חדשה של אורח תקבל את העיצוב הזה', 4000); draw(); });
+    on('#lv-tpl', function () { var p = FS.cur(); if (!p) return FS.toast('פותחים קודם תמונה עם העיצוב הרצוי (מסגרת, גודל, טקסט)'); cfg.tpl = JSON.parse(JSON.stringify(p.doc)); cfg.tplEv = ev && ev.id; cfg.tplFrame = null; keep(KS, cfg); FS.toast('🎯 כל תמונה חדשה של אורח תקבל את העיצוב הזה', 4000); draw(); });
     on('#lv-tpl-x', function () { cfg.tpl = null; cfg.tplFrame = null; keep(KS, cfg); draw(); });
     on('#lv-run', function () { if (run.on) stop(); else start(); });
     on('#lv-print-now', function () { printQueue(true); });
@@ -239,12 +239,68 @@
       '<div class="field"><label>למשך (ימים)</label><input type="number" id="lo-days" min="1" max="60" value="' + (o.days || 7) + '"></div></div>' +
       '<div class="row2"><div class="field"><label>קישור לחנות / לאתר (ריק = החנות שלנו)</label><input id="lo-url" dir="ltr" value="' + esc(o.url || '') + '" placeholder="https://…"></div>' +
       '<div class="field"><label>קוד הטבה (לא חובה)</label><input id="lo-code" dir="ltr" maxlength="24" value="' + esc(o.code || '') + '" placeholder="GUEST20"></div></div>' +
-      '<p class="hint">האורח רואה את ההטבה כשהוא פותח את האפליקציה שהתקין מהקוד, בימים שנקבעו. כדי שהמחיר יירד בקופה, מגדירים בחנות מבצע עם אותו אחוז.</p></details>';
+      offerLine('enl', '⬆️ הגדלה 15×20 של התמונות שלהם (מגנט או בלוק)', o.enlarge, 20) +
+      offerLine('ext', '📚 אלבום נוסף (מעבר לראשון)', o.extra, 30) +
+      '<p class="hint">האורח רואה את ההטבות באפליקציה שהתקין מהקוד, בימים שנקבעו, עם כל התמונות ששלח. כדי שהמחיר יירד בקופה, יוצרים בחנות קופון עם אותו קוד ואותו אחוז (ניהול החנות ← מבצעים).</p></details>';
+  }
+  /* v220: the event's frame (a PNG): it goes up with the event, every station puts it on each guest's photo by itself, and the
+     guests see their photo in it before sending */
+  function frameForm(e) {
+    return '<details class="lv-more"' + (e.frame ? ' open' : '') + '><summary>🖼️ המסגרת של האירוע (עולה לבד על כל תמונה של אורח)</summary>' +
+      '<div class="lv-frrow"><div class="lv-frprev" id="lfr-prev">' + (e.frame ? '<span class="hint">טוען…</span>' : '<span class="hint">אין מסגרת</span>') + '</div><div class="inline" style="flex-wrap:wrap">' +
+      '<label class="btn small">📁 קובץ PNG<input type="file" id="lfr-file" accept="image/png" hidden></label>' +
+      '<button type="button" class="btn small" id="lfr-cur">🖼️ המסגרת של התמונה שעל המסך</button>' +
+      '<button type="button" class="btn small ghost" id="lfr-x">🗑️ בלי מסגרת</button></div></div>' +
+      '<p class="hint">PNG עם חלון שקוף באמצע. האורחים רואים את התמונה שלהם בתוך המסגרת לפני השליחה.</p></details>';
+  }
+  function closeForm(e) {
+    var at = e.closeAt === '' ? '' : e.closeAt || '23:00';
+    return '<div class="field"><label>🌙 סגירת ההעלאות של האורחים ביום האירוע בשעה (ריק = בלי סגירה)</label><input type="time" id="lf-close" value="' + esc(at) + '" style="max-width:9em"></div>';
+  }
+  /* the frame as a PNG small enough for the server (long side 2000, then smaller) */
+  function framePng(src) {
+    return FS.loadImg(src).then(function (img) {
+      var sizes = [2000, 1600, 1300, 1000], out = '';
+      for (var i = 0; i < sizes.length; i++) {
+        var k = Math.min(1, sizes[i] / Math.max(img.naturalWidth, img.naturalHeight)), c = FS.canvas(Math.round(img.naturalWidth * k), Math.round(img.naturalHeight * k));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); out = c.toDataURL('image/png');
+        if (out.length < 1650000) return out;
+      }
+      throw new Error('big');
+    });
+  }
+  function frameUrl(e2) { return (FS.account && FS.account.apiBase ? FS.account.apiBase() : Promise.resolve('')).then(function (u) { return u + '/frame-live-img?e=' + e2.id + '&fr=1&v=' + e2.v + '&t=' + (e2.frameAt || 0); }); }
+  function bindFrame(body, e) {
+    var prev = $('#lfr-prev', body);
+    function show(src) { prev.innerHTML = src ? '<img src="' + esc(src) + '" alt="המסגרת של האירוע">' : '<span class="hint">אין מסגרת</span>'; }
+    if (e.frame && e.id) frameUrl(e).then(show);
+    function take(src) { FS.busy('מכין את המסגרת…'); framePng(src).then(function (png) { FS.busy(); body._frame = png; show(png); }, function () { FS.busy(); FS.toast('המסגרת גדולה מדי. נסו קובץ קטן יותר.', 5000); }); }
+    $('#lfr-file', body).addEventListener('change', function () {
+      var f = this.files && this.files[0]; if (!f) return;
+      if (!/png/i.test(f.type)) return FS.toast('צריך קובץ PNG (עם חלון שקוף)');
+      var r = new FileReader(); r.onload = function () { take(String(r.result)); }; r.readAsDataURL(f);
+    });
+    $('#lfr-cur', body).addEventListener('click', function () {
+      var p = FS.cur(), fr = p && p.doc.frame, u = fr && fr.kind === 'png' && FS.USER_FRAMES && FS.USER_FRAMES[fr.id];
+      if (!u || !u.src) return FS.toast('בתמונה שעל המסך אין מסגרת PNG. בוחרים מסגרת מ"המסגרות שלי", או מעלים קובץ.', 5000);
+      take(u.src);
+    });
+    $('#lfr-x', body).addEventListener('click', function () { body._frame = ''; show(''); });
+  }
+  function offerLine(k, label, o, def) {
+    o = o || {};
+    return '<div class="lv-oline"><label class="check"><input type="checkbox" id="lo-' + k + '"' + (o.on ? ' checked' : '') + '> ' + label + '</label>' +
+      '<input type="number" id="lo-' + k + '-pct" min="1" max="90" value="' + (o.pct || def) + '" style="width:5em"> % · קוד <input id="lo-' + k + '-code" dir="ltr" maxlength="24" value="' + esc(o.code || '') + '" placeholder="לא חובה" style="width:8em"></div>';
+  }
+  function readLine(body, k) {
+    var on = body.querySelector('#lo-' + k); if (!on || !on.checked) return null;
+    return { on: true, pct: Number(body.querySelector('#lo-' + k + '-pct').value) || 0, code: body.querySelector('#lo-' + k + '-code').value.trim() };
   }
   function readOffer(body) {
     if (!body.querySelector('#lo-on').checked) return { on: false };
     return { on: true, pct: Number(body.querySelector('#lo-pct').value) || 20, what: body.querySelector('#lo-what').value.trim(), after: Number(body.querySelector('#lo-after').value),
-      days: Number(body.querySelector('#lo-days').value) || 7, url: body.querySelector('#lo-url').value.trim(), code: body.querySelector('#lo-code').value.trim() };
+      days: Number(body.querySelector('#lo-days').value) || 7, url: body.querySelector('#lo-url').value.trim(), code: body.querySelector('#lo-code').value.trim(),
+      enlarge: readLine(body, 'enl'), extra: readLine(body, 'ext') };
   }
   function editEvent(e) {
     var isNew = !e; e = e || { title: '', date: today(), couple: {}, copies: 1, cost: Number(cfg.cost) || 1.5, price: 0, open: true, album: true };
@@ -256,7 +312,7 @@
       '<div class="row2"><div class="field"><label>מחיר האירוע (₪)</label><input type="number" id="lf-price" min="0" value="' + (e.price || 0) + '"></div><div class="field"><label>עלות נייר + מגנט ליחידה (₪)</label><input type="number" id="lf-cost" min="0" step="0.1" value="' + (e.cost || 0) + '"></div></div>' +
       '<label class="check"><input type="checkbox" id="lf-dbl"' + (e.copies > 1 ? ' checked' : '') + '> הדפסה כפולה: מגנט לאורח ועוד אחד לאלבום של הזוג</label>' +
       '<label class="check"><input type="checkbox" id="lf-album"' + (e.album !== false ? ' checked' : '') + '> המגנטים שמודפסים נכנסים גם לאלבום הדיגיטלי</label>' +
-      productsForm(e) + offerForm(e) +
+      frameForm(e) + closeForm(e) + productsForm(e) + offerForm(e) +
       '<div class="inline"><button class="btn primary" id="lf-save">' + (isNew ? '✔ פתיחת האירוע' : '✔ שמירה') + '</button>' + (isNew ? '' : '<button class="btn danger" id="lf-del">🗑 מחיקת האירוע</button>') + '</div></div>');
     if (isNew && FS.deals && FS.account && FS.account.isAdmin()) {
       FS.deals.all().then(function (ds) {
@@ -276,16 +332,18 @@
       var o = Object.assign({}, isNew ? {} : e, { title: $('#lf-title', body).value.trim(), date: $('#lf-date', body).value, couple: { name: $('#lf-name', body).value.trim(), phone: $('#lf-phone', body).value.trim(), email: $('#lf-email', body).value.trim() },
         price: Number($('#lf-price', body).value) || 0, cost: Number($('#lf-cost', body).value) || 0, copies: $('#lf-dbl', body).checked ? 2 : 1, album: $('#lf-album', body).checked, dealId: body.dataset.deal || e.dealId || '',
         bizName: FS.BIZ && FS.BIZ.name || '', google: (FS.BIZ && FS.BIZ.googleReviews) || (FS.BIZ_SITE && FS.BIZ_SITE.googleReviews) || '',
-        products: readProducts(body), offer: readOffer(body) });
+        products: readProducts(body), offer: readOffer(body), closeAt: $('#lf-close', body).value || '' });
       cfg.products = o.products; if (o.offer && o.offer.on) cfg.offer = o.offer;
       if (!o.title) return FS.toast('כותבים שם לאירוע');
       cfg.cost = o.cost; keep(KS, cfg);
       api('ev-save', { event: o }).then(function (r) {
         if (!r.ok) return FS.toast('לא נשמר: ' + err(r), 4500);
+        var fr = body._frame === undefined ? Promise.resolve() : api('ev-frame', { e: r.event.id, img: body._frame ? body._frame.split(',')[1] : '' }).then(function (x) { if (!x.ok) FS.toast('המסגרת לא נשמרה: ' + err(x), 5000); });
         FS.closeDialog(); cfg.ev = r.event.id; keep(KS, cfg);
-        refresh().then(function () { if (isNew) FS.toast('🎉 האירוע נפתח. מדפיסים את שלט ה־QR לשולחנות ומפעילים את העמדה.', 6000); });
+        fr.then(refresh).then(function () { if (isNew) FS.toast('🎉 האירוע נפתח. מדפיסים את שלט ה־QR לשולחנות ומפעילים את העמדה.', 6000); if (run.on) loadEventFrame(); });
       });
     });
+    bindFrame(body, e);
     var del = $('#lf-del', body); if (del) del.addEventListener('click', function () {
       if (!confirm('למחוק את האירוע "' + e.title + '" עם כל התמונות והברכות שלו? אי אפשר לשחזר.')) return;
       if (run.on) stop();
@@ -296,6 +354,20 @@
   /* ---------- the customers' approved designs (from the designer, design.html): the event's magnet ---------- */
   function isAdmin() { return !!(FS.account && FS.account.isAdmin()); }
   var dzCache = load('fs-live-dz', {});
+  /* v220: the event's own frame, once per event (and again when it changes), as one of the studio's frames */
+  var evFrames = load('fs-live-evfr', {}), evFrameId = '';
+  function loadEventFrame() {
+    evFrameId = '';
+    if (!ev || !ev.frame) return Promise.resolve();
+    var have = evFrames[ev.id];
+    if (have && have.at === ev.frameAt && FS.USER_FRAMES && FS.USER_FRAMES[have.id]) { evFrameId = have.id; return Promise.resolve(); }
+    var e2 = ev;
+    return frameUrl(e2).then(function (u) { return fetch(u); }).then(function (r) { if (!r.ok) throw new Error('no-frame'); return r.blob(); })
+      .then(function (b) { return new Promise(function (ok) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result)); }; fr.readAsDataURL(b); }); })
+      .then(function (src) { return FS.addUserFrame(src, '🎉 ' + e2.title, true); })
+      .then(function (u) { evFrames[e2.id] = { at: e2.frameAt, id: u.id }; keep('fs-live-evfr', evFrames); if (ev === e2) evFrameId = u.id; if (FS.buildFrames) FS.buildFrames(); })
+      .catch(function () { FS.toast('המסגרת של האירוע לא נטענה. התמונות ייכנסו בלעדיה.', 5000); });
+  }
   function frameRef(id) { return { kind: 'png', id: id, opacity: 1, tint: '#d4a843', tintAmt: 0, clip: false }; }
   /* the customer's frame already carries the business line at the bottom: the studio's own copy goes, so it isn't printed twice */
   function putDesign(p, id) { FS.setFrame(p, frameRef(id), { quiet: true }); p.noCredit = true; p.doc.layers = p.doc.layers.filter(function (L) { return !L.credit; }); FS.snap(p); }
@@ -376,7 +448,8 @@
   }
   function start() {
     if (!ev) return; if (!ev.open) FS.toast('שימו לב: האירוע סגור להעלאות של אורחים', 4000);
-    if (ev.design && isAdmin() && !cfg.tpl) dzFrame(ev.design).then(function (u) { cfg.tplFrame = u.id; keep(KS, cfg); }).catch(function () { FS.toast('העיצוב של הלקוח לא נטען. התמונות ייכנסו בלעדיו.', 5000); });
+    loadEventFrame();
+    if (ev.design && isAdmin() && !cfg.tpl && !ev.frame) dzFrame(ev.design).then(function (u) { cfg.tplFrame = u.id; keep(KS, cfg); }).catch(function () { FS.toast('העיצוב של הלקוח לא נטען. התמונות ייכנסו בלעדיו.', 5000); });
     run.on = true; document.body.classList.add('live'); draw(); tick(); run.timer = setInterval(tick, 4000); FS.emit('live-state');
   }
   function stop() { run.on = false; clearInterval(run.timer); document.body.classList.remove('live'); draw(); stats(); FS.emit('live-state'); }
@@ -394,9 +467,12 @@
     var file = new File([u8], (ph.name ? 'אורח - ' + ph.name : 'אורח') + (ph.product ? ' · ' + ph.product.name : '') + '.jpg', { type: 'image/jpeg' });
     return FS.addPhotoFile(file).then(function (p) {
       p.liveId = ph.id; p.liveEv = ev.id; p.liveName = ph.name; p.liveText = ph.text; p.liveProduct = ph.product || null; p.copies = ev.copies || 1;
-      if (cfg.tpl) {
+      /* the design chosen at this station for this event, else the event's own frame, else the customer's approved design */
+      var ownTpl = cfg.tpl && (cfg.tplEv ? cfg.tplEv === ev.id : !ev.frame);
+      if (ownTpl) {
         try { var d = JSON.parse(JSON.stringify(cfg.tpl)); p.doc = d; FS.fitPhoto(p.doc, FS.img(p.src)); FS.snap(p); } catch (e) { /* keeps its own design */ }
-      } else if (cfg.tplFrame && FS.USER_FRAMES && FS.USER_FRAMES[cfg.tplFrame]) putDesign(p, cfg.tplFrame);
+      } else if (evFrameId && FS.USER_FRAMES && FS.USER_FRAMES[evFrameId]) putDesign(p, evFrameId);
+      else if (cfg.tplFrame && FS.USER_FRAMES && FS.USER_FRAMES[cfg.tplFrame]) putDesign(p, cfg.tplFrame);
       /* v219: the product the guest picked (a block, a frame…) at its own size, when it is not the size of the design */
       var pr = ph.product, im = FS.img(p.src);
       if (pr && pr.w && pr.h && im) {
@@ -674,7 +750,7 @@
           ll.map(function (x) {
             return '<tr' + (x.soon ? ' class="lg-hotrow"' : '') + '><td>' + esc(x.name || '—') + '</td><td dir="ltr"><a href="tel:' + esc(x.phone) + '">' + esc(x.phone) + '</a></td><td>' + esc(SOON[x.soon] || '') + '</td><td>' + esc(monthHe(x.when)) + '</td>' +
               '<td>' + esc(x.title) + '<br><small>' + (x.from === 'album' ? 'מהאלבום' : 'מהקוד בשולחן') + '</small></td><td>' + esc(new Date(x.at).toLocaleDateString('he-IL')) + '</td>' +
-              '<td class="lg-act"><button class="btn small" data-wa="' + esc(x.phone) + '" data-wn="' + esc(x.name || '') + '" data-ws="' + esc(x.soon || '') + '">💬</button><button class="btn small" data-ldel="' + esc(x.e) + '|' + esc(x.phone) + '" title="מחיקה (לבקשת האורח)">🗑</button></td></tr>';
+              '<td class="lg-act"><button class="btn small" data-wa="' + esc(x.phone) + '" data-wn="' + esc(x.name || '') + '" data-ws="' + esc(x.soon || '') + '">💬</button><button class="btn small" data-wg="' + esc(x.phone) + '" data-wn="' + esc(x.name || '') + '" data-we="' + esc(x.e) + '" title="התמונות שלו מהאירוע וההטבות, בוואטסאפ">🎁</button><button class="btn small" data-ldel="' + esc(x.e) + '|' + esc(x.phone) + '" title="מחיקה (לבקשת האורח)">🗑</button></td></tr>';
           }).join('') + '</tbody></table>' + (ll.length ? '' : '<p class="hint">עוד אין. אורחים שסורקים את הקוד בשולחן או נכנסים לאלבום יכולים להשאיר טלפון ולספר על אירוע משלהם (רק אם הם מאשרים).</p>');
       } else {
         var cl = clientsOf(events.filter(match));
@@ -688,6 +764,15 @@
     body.addEventListener('click', function (e2) {
       var t = e2.target.closest('[data-t]'); if (t) { tab = t.dataset.t; $$('[data-t]', body).forEach(function (x) { x.classList.toggle('on', x === t); }); draw2(); return; }
       var qb = e2.target.closest('[data-qr]'); if (qb) return codes(events.filter(function (x) { return x.id === qb.dataset.qr; })[0]);
+      /* v220: after the event, the guest's photos and the benefits: the guests' app of that event (on the phone that sent them) */
+      var g = e2.target.closest('[data-wg]');
+      if (g) {
+        var ge = events.filter(function (x) { return x.id === g.dataset.we; })[0];
+        if (!ge) return FS.toast('האירוע כבר לא ברשימה');
+        var gu = siteBase + 'live.html?e=' + ge.id + '&k=' + ge.k;
+        return wa(g.dataset.wg, 'שלום' + (g.dataset.wn ? ' ' + g.dataset.wn : '') + ', כאן ' + ((FS.BIZ && FS.BIZ.name) || 'פריים מגנטים') + ' 🧲 תודה שהייתם איתנו ב' + ge.title + '! ' +
+          'כל התמונות ששלחתם מחכות לכם באפליקציה, עם הטבות מיוחדות לאורחים: הגדלות, מגנטים ואלבום מהאירוע 🎁\n' + gu);
+      }
       var w = e2.target.closest('[data-wa]'); if (w) wa(w.dataset.wa, 'שלום' + (w.dataset.wn ? ' ' + w.dataset.wn : '') + ', כאן ' + ((FS.BIZ && FS.BIZ.name) || 'פריים מגנטים') + ' 🧲 ' + (w.dataset.ws ? 'שמחנו לשמוע שיש לכם ' + (SOON[w.dataset.ws] || 'אירוע').replace(/^\S+\s/, '') + ' בקרוב! ' : '') + '');
       var dl = e2.target.closest('[data-ldel]'); if (dl) { var pr = dl.dataset.ldel.split('|'); if (!confirm('למחוק את הפרטים של ' + pr[1] + '?')) return; api('lead-del', { e: pr[0], phone: pr[1] }).then(function (r) { if (!r.ok) return FS.toast('לא נמחק: ' + err(r)); leads = leads.filter(function (x) { return !(x.e === pr[0] && x.phone === pr[1]); }); draw2(); }); }
     });

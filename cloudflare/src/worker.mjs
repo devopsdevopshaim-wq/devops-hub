@@ -124,7 +124,7 @@ export default {
       return ics ? new Response(ics, { headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'private, max-age=300', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } }) : reply({ ok: false, error: 'not-found' }, 404);
     }
     if (rt.kind === 'frame-live-img') {
-      const q = url.searchParams, kind = q.get('a') === '1' ? 'audio' : q.get('m') === '1' ? 'mask' : q.get('h') === '1' ? 'hero' : q.get('cap') === '1' ? 'cap' : '';
+      const q = url.searchParams, kind = q.get('a') === '1' ? 'audio' : q.get('m') === '1' ? 'mask' : q.get('h') === '1' ? 'hero' : q.get('cap') === '1' ? 'cap' : q.get('fr') === '1' ? 'frame' : '';
       const f = await env.STATE.get(env.STATE.idFromName('frame')).liveFileData(q.get('e') || '', q.get('p') || '', q.get('v') || '', kind, q.get('c') || '', q.get('k') || '');
       return f ? new Response(f.u, { headers: { 'Content-Type': f.mime, 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': SITE_ORIGIN, 'Cross-Origin-Resource-Policy': 'cross-origin' } }) : reply({ ok: false, error: 'not-found' }, 404);
     }

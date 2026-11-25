@@ -34,7 +34,7 @@ const out = (body, code) => ({ code: code || 200, body });
 function ownerView(ev) {
   return { id: ev.id, title: ev.title, date: ev.date, dealId: ev.dealId || '', couple: ev.couple || {}, open: ev.open !== false, copies: ev.copies || 1,
     cost: ev.cost || 0, price: ev.price || 0, album: ev.album !== false, design: ev.design || null, k: ev.k, v: ev.v, n: ev.n || {}, stations: ev.stations || {}, created: ev.created,
-    reviewAt: ev.reviewAt || null, purged: !!ev.purged, products: ev.products || [], offer: ev.offer || null };
+    reviewAt: ev.reviewAt || null, purged: !!ev.purged, products: ev.products || [], offer: ev.offer || null, closeAt: ev.closeAt === '' ? '' : ev.closeAt || '23:00', frame: !!ev.frame, frameAt: ev.frame || 0 };
 }
 const isOwner = (who, ev) => who && ev && (ev.owner === who.email);
 async function getEv(storage, e) { return ID.test(String(e || '')) ? storage.get('lv:' + e) : null; }
@@ -49,13 +49,29 @@ function cleanOffer(o) {
   if (!o || !o.on) return null;
   const url = clean(o.url, 300).trim();
   return { on: true, pct: num(o.pct, 1, 90, 10), what: clean(o.what, 60).trim() || 'אלבום', after: num(o.after, 0, 30, 1), days: num(o.days, 1, 60, 7),
-    url: /^https:\/\//.test(url) ? url : '', code: clean(o.code, 24).replace(/[^\w-]/g, '').toUpperCase() };
+    url: /^https:\/\//.test(url) ? url : '', code: clean(o.code, 24).replace(/[^\w-]/g, '').toUpperCase(),
+    enlarge: cleanLine(o.enlarge, 20), extra: cleanLine(o.extra, 30) };
 }
+// v220: uploads close at the event's closing hour (Israel time, default 23:00) on the event's day, and on any later day
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+export function ilNow(t) {
+  const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  const o = {}; for (const x of f.formatToParts(new Date(t == null ? Date.now() : t))) o[x.type] = x.value;
+  return { day: o.year + '-' + o.month + '-' + o.day, hm: (o.hour === '24' ? '00' : o.hour) + ':' + o.minute };
+}
+export function nightClosed(ev, t) {
+  const at = ev.closeAt === '' ? '' : HHMM.test(String(ev.closeAt || '')) ? ev.closeAt : '23:00';
+  if (!at || !ev.date) return false;
+  const n = ilNow(t);
+  return n.day > ev.date || (n.day === ev.date && n.hm >= at);
+}
+// the after-event offers: enlargements (15×20 as a magnet or a block), an album of the guest's own photos, more albums
+function cleanLine(o, defPct) { return o && o.on ? { on: true, pct: num(o.pct, 1, 90, defPct), code: clean(o.code, 24).replace(/[^\w-]/g, '').toUpperCase() } : null; }
 // the guest sees the benefit only between its first and last day (counted from the event's date)
 function offerNow(ev) {
   const o = ev.offer; if (!o || !o.on) return null;
   const from = addDays(ev.date || today(), o.after), to = addDays(from, o.days - 1), t = today();
-  return { pct: o.pct, what: o.what, url: o.url, code: o.code, from, to, live: t >= from && t <= to };
+  return { pct: o.pct, what: o.what, url: o.url, code: o.code, enlarge: o.enlarge || null, extra: o.extra || null, from, to, live: t >= from && t <= to };
 }
 const metaOf = (m) => ({ id: m.id, at: m.at, name: m.name || '', text: m.text || '', audio: !!m.audio, src: m.src, st: m.st, station: m.station || '', copies: m.copies || 1, product: m.product || null });
 
@@ -71,6 +87,16 @@ export async function liveFile(storage, e, p, v, kind, c, k) {
     const id = await storage.get('lcode:' + e + ':' + c), m = id && await storage.get('lp:' + e + ':' + id); if (!m || m.st === 'hidden') return null;
     const key = k === 'mask' ? 'lm:' : k === 'audio' ? 'la:' : 'li:', b64 = await st.getBig(key + e + ':' + id); if (!b64) return null;
     return { u: bytes(b64), mime: k === 'audio' ? (m.amime || 'audio/webm') : k === 'mask' ? (m.mmime || 'image/jpeg') : 'image/jpeg' };
+  }
+  if (kind === 'frame') {
+    if (!KEY.test(String(v || '')) || (v !== ev.v && v !== ev.k) || !ev.frame) return null;
+    const b64 = await st.getBig('lfr:' + e); return b64 ? { u: bytes(b64), mime: 'image/png' } : null;
+  }
+  // v220: a guest's own photo, by its own key (given only to the phone that sent it, kept there): the photo only.
+  // The guests' key of the QR opens no photo.
+  if (KEY.test(String(v || '')) && v !== ev.v && !kind && PID.test(String(p || ''))) {
+    const m = await storage.get('lp:' + e + ':' + p); if (!m || m.st === 'hidden' || m.src !== 'guest' || !m.gk || m.gk !== v) return null;
+    const b64 = await st.getBig('li:' + e + ':' + p); return b64 ? { u: bytes(b64), mime: 'image/jpeg' } : null;
   }
   if (!KEY.test(String(v || '')) || v !== ev.v) return null;
   if (kind === 'hero') { const b64 = await st.getBig('lh:' + e); return b64 ? { u: bytes(b64), mime: 'image/jpeg' } : null; }
@@ -157,8 +183,10 @@ export async function frameLive(storage, who, b, site) {
     const ev = await getEv(storage, b.e);
     if (!ev || ev.purged || !KEY.test(String(b.k || '')) || b.k !== ev.k) return out({ ok: false, error: 'not-found' }, 404);
     if (a === 'guest-info') { ev.n = ev.n || {}; ev.n.scans = (ev.n.scans || 0) + 1; await storage.put('lv:' + ev.id, ev); }
-    if (a === 'guest-info') return out({ ok: true, title: ev.title, date: ev.date, open: ev.open !== false, biz: { name: ev.bizName || biz.name }, products: ev.products || [], offer: offerNow(ev) });
+    if (a === 'guest-info') return out({ ok: true, title: ev.title, date: ev.date, open: ev.open !== false, night: nightClosed(ev), closeAt: ev.closeAt === '' ? '' : ev.closeAt || '23:00',
+      frame: !!ev.frame, biz: { name: ev.bizName || biz.name }, products: ev.products || [], offer: offerNow(ev) });
     if (ev.open === false) return out({ ok: false, error: 'closed' }, 403);
+    if (nightClosed(ev)) return out({ ok: false, error: 'night' }, 403);
     if ((ev.n && ev.n.in || 0) >= MAX_PHOTOS) return out({ ok: false, error: 'full' }, 413);
     const img = checkImg(b.img, MAX_IMG); if (!img) return out({ ok: false, error: 'bad-image' }, 400);
     const audio = b.audio ? checkImg(b.audio, MAX_AUDIO) : null; if (b.audio && !audio) return out({ ok: false, error: 'bad-audio' }, 400);
@@ -166,11 +194,11 @@ export async function frameLive(storage, who, b, site) {
     if (hasCard(name + ' ' + text)) return out({ ok: false, error: 'card-number' }, 400);
     const prods = ev.products || [], prod = prods.filter((x) => x.id === String(b.product || ''))[0] || (prods.length === 1 ? prods[0] : null);
     if (prods.length > 1 && !prod) return out({ ok: false, error: 'no-product' }, 400);
-    const m = { id: sid(), at: Date.now(), name, text, product: prod ? { id: prod.id, name: prod.name, w: prod.w, h: prod.h } : null, audio: !!audio, amime: /^audio\/(webm|ogg|mp4|mpeg|aac)(;.*)?$/.test(String(b.amime || '')) ? String(b.amime).split(';')[0] : 'audio/webm', src: 'guest', st: 'new' };
+    const m = { id: sid(), gk: rid(12), at: Date.now(), name, text, product: prod ? { id: prod.id, name: prod.name, w: prod.w, h: prod.h } : null, audio: !!audio, amime: /^audio\/(webm|ogg|mp4|mpeg|aac)(;.*)?$/.test(String(b.amime || '')) ? String(b.amime).split(';')[0] : 'audio/webm', src: 'guest', st: 'new' };
     await savePhoto(storage, ev, m, img, audio);
     ev.n = ev.n || {}; ev.n.in = (ev.n.in || 0) + 1; if (text || audio) ev.n.wishes = (ev.n.wishes || 0) + 1;
     await storage.put('lv:' + ev.id, ev);
-    return out({ ok: true, id: m.id });
+    return out({ ok: true, id: m.id, gk: m.gk });
   }
 
   /* ---------- a printed magnet's own QR (its code): the living magnet, and the time capsule ---------- */
@@ -256,7 +284,7 @@ export async function frameLive(storage, who, b, site) {
     Object.assign(ev, { title, date: DAY.test(e.date || '') ? e.date : today(), dealId: clean(e.dealId, 48), couple, open: e.open !== false, album: e.album !== false,
       design: e.design && EMAIL.test(String(e.design.email || '')) && /^[\w-]{1,48}$/.test(String(e.design.id || '')) ? { email: String(e.design.email).toLowerCase(), id: String(e.design.id), name: clean(e.design.name, 60) } : null,
       copies: num(e.copies, 1, 4, 1), cost: num(e.cost, 0, 1000, 0), price: num(e.price, 0, 1e6, 0), bizName: clean(e.bizName || (site && site.name), 60), google: clean(e.google, 300),
-      products: cleanProducts(e.products), offer: cleanOffer(e.offer) });
+      products: cleanProducts(e.products), offer: cleanOffer(e.offer), closeAt: e.closeAt === '' ? '' : HHMM.test(String(e.closeAt || '')) ? e.closeAt : '23:00' });
     await storage.put('lv:' + ev.id, ev);
     if (isNew) { idx[ev.id] = who.email; await storage.put('lvidx', idx); }
     return out({ ok: true, event: ownerView(ev) });
@@ -354,6 +382,12 @@ export async function frameLive(storage, who, b, site) {
     return out({ ok: true, id: m.id });
   }
   // the couple's photo, for the live mosaic on the big screen
+  if (a === 'ev-frame') {
+    const img = b.img ? checkImg(b.img, MAX_IMG) : null; if (b.img && !img) return out({ ok: false, error: 'bad-image' }, 400);
+    if (img && !/^iVBORw0KGg/.test(img)) return out({ ok: false, error: 'not-png' }, 400);
+    const st = new FrameStore(storage); if (img) await st.putBig('lfr:' + ev.id, img); else await st.delBig('lfr:' + ev.id);
+    ev.frame = img ? Date.now() : 0; await storage.put('lv:' + ev.id, ev); return out({ ok: true, frame: !!ev.frame });
+  }
   if (a === 'ev-hero') {
     const img = b.img ? checkImg(b.img, MAX_IMG) : null; if (b.img && !img) return out({ ok: false, error: 'bad-image' }, 400);
     const st = new FrameStore(storage); if (img) await st.putBig('lh:' + ev.id, img); else await st.delBig('lh:' + ev.id);
