@@ -3050,3 +3050,15 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - The install bar of the guests' app comes up after 1.2s (was 2.5s) and mentions the benefits; after the first photo the install steps open by themselves (as before). A browser never installs an app by itself: the guest taps once.
 - "👥 תמונות לקוחות" → the live card has "💌 הברכות לפי שם": every guest of the event from the server (FS.liveGet = ev-get), by name: photos, voice greetings, products, and each written greeting.
 - Tests: cloudflare/test/live-products.test.mjs (12 checks, in npm test).
+
+## 🎬 The event owners' screen (v220)
+- `wall.html?host=1&e=…&v=…` (`js/host-wall.js` + `css/host-wall.css`; wall.js and mosaic.js step aside when `host=1`). The top of the screen runs the owners' photos (the couple, the bar or bat mitzvah child) as a large slideshow: blurred fill, contain, Ken Burns, fade / zoom / slide / rise. There is no blur transition and no drop-shadow, because a filter on a big moving layer drew blank in a software-GPU test.
+- **The strip** (`--strip`, 16–38% of the height, default 26%): every guest photo from the QR (feed `src: 'guest'`, optionally also the station's magnets) travels across, to the right by default.
+  - Photos come out from behind the QR at the entry end. A new photo goes ahead of the loop queue (`newQ` before `loopQ`) and enters next, with a gold glow and "✨ חדש" for 30 s.
+  - Photos that leave the far end go back to the loop, so it runs all evening.
+  - It polls `feed` every 5 s. The animation is rAF with translate3d, and only the photos on screen are in the DOM.
+- **The owners' photos** stay on that computer only: IndexedDB `fs-host-wall`, store `p` {id, ev, n, name, blob}, shrunk to 2560 px JPEG. They come in from:
+  - ⚙️ הגדרות (files or a whole folder), or drag and drop;
+  - the studio: live tab → "🎬 מסך בעלי השמחה" (`hostScreen` in live.js) opens the window and sends the marked photos with `postMessage({hostPhotos, title, batch})`, after the screen's `hostReady` (5 s fallback). The screen accepts messages only from `window.opener`, and dedupes by batch and name.
+- **Settings** (`fs-hostwall`; the title per event in `fs-hostwall-title-<e>`): title and its toggle, seconds per photo, order (in sequence / mixed), strip height, speed, direction, sender's name, the QR, the station's magnets.
+- **Controls:** keys Space (pause), ← → (next / previous), F (fullscreen), S (settings). The controls and the cursor hide after 3.5 s idle, and a screen wake lock keeps the display on. Without `e`/`v` it still runs the owners' slideshow and says how to open it from the studio. `window.FSHost` is exposed for tests.
