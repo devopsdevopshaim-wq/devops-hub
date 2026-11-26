@@ -95,6 +95,7 @@
     <button class="tab" role="tab" id="tab-rooms" aria-controls="rooms" data-tab="rooms">כתובות לפי חדר</button>
     <button class="tab" role="tab" id="tab-configs" aria-controls="configs" data-tab="configs">הגדרות לציוד</button>
     <button class="tab" role="tab" id="tab-install" aria-controls="install" data-tab="install">תכנית התקנה</button>
+    <button class="tab" role="tab" id="tab-livescan" aria-controls="livescan" data-tab="livescan">סריקה חיה</button>
     <button class="tab" role="tab" id="tab-monitor" aria-controls="monitor" data-tab="monitor">ניטור תעבורה</button>
     <button class="tab" role="tab" id="tab-stats" aria-controls="stats" data-tab="stats">סטטיסטיקות</button>
     <button class="tab" role="tab" id="tab-guide" aria-controls="guide" data-tab="guide">מדריך והסברים</button>
@@ -454,6 +455,16 @@
   </section>
 
   <!-- ============ GUIDE ============ -->
+  <!-- ============ LIVE SCAN (local agent) ============ -->
+  <section class="panel" id="livescan" role="tabpanel" aria-labelledby="tab-livescan" tabindex="-1" hidden>
+    <div class="section-head">
+      <div><span class="eyebrow">סוכן מקומי</span><h2>סריקה חיה של הרשת</h2>
+        <p>מחברים את המחשב הנייד לרשת, והסוכן מזהה את החיבור, סורק את כל המכשירים, הנתבים בדרך, האבטחה והתקלות. כאן רואים את התוצאות ומשווים אותן לתכנית: מה תואם, מה לא מתוכנן ומה חסר.</p></div>
+      <span id="liveBadge" class="badge-sim" role="status"><span class="pulse" aria-hidden="true"></span> מתחבר לסוכן…</span>
+    </div>
+    <div id="liveBody"></div>
+  </section>
+
   <section class="panel" id="guide" role="tabpanel" aria-labelledby="tab-guide" tabindex="-1" hidden>
     <div class="section-head">
       <div><span class="eyebrow">ידע</span><h2>מדריך: איך בונים ומגדירים את הרשת</h2>

@@ -6,6 +6,7 @@ import { allConfigs } from './configgen.js';
 import { riserSvg, logicSvg, rackSvg, resolveSvgVars, TYPE_META } from './diagram.js';
 import { Monitor, drawScope, fmtRate, fmtBytes, stats as seriesStats } from './monitor.js';
 import { hbars } from './charts.js';
+import { createLive } from './live.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -103,6 +104,32 @@ function icon(kind) {
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
 }
 
+// ---------------------------------------------------------------- live scan (local agent)
+const live = createLive({
+  root: $('#livescan'),
+  getPlan: () => state.plan,
+  toast,
+  applyToPlan(key, { mac, hostname }) {
+    const prev = state.cfg.overrides?.[key] || {};
+    const ov = { ...prev, mac };
+    if (hostname && !prev.hostname) ov.hostname = hostname.slice(0, 63);
+    state.cfg.overrides = state.cfg.overrides || {};
+    state.cfg.overrides[key] = ov;
+    recompute({ save: false });
+    logChange(activeProject(), `${key}: MAC ${mac} נשמר מסריקה חיה${ov.hostname ? ` · ${ov.hostname}` : ''}`);
+    persist();
+    toast(`נשמר בתכנית: ${key} ← MAC ${mac}`);
+  },
+  goMonitor(url) {
+    activate('monitor');
+    $('#monSrc').value = 'json';
+    $('#monSrc').dispatchEvent(new Event('change'));
+    $('#monUrl').value = url;
+    $('#monUrl').dispatchEvent(new Event('change'));
+    toast('הניטור מחובר לסוכן המקומי (התעבורה של המחשב הזה)');
+  },
+});
+
 // ---------------------------------------------------------------- tabs
 const TABS = $$('.tab').map((t) => t.dataset.tab);
 function activate(tab, { focus = false, push = true } = {}) {
@@ -118,6 +145,7 @@ function activate(tab, { focus = false, push = true } = {}) {
   renderTab(tab);
   if (focus) $(`#${tab}`).focus({ preventScroll: false });
   if (tab === 'monitor' || tab === 'stats') ensureMonitor();
+  if (tab === 'livescan') live.show(); else live.hide();
   if (v3) { if (tab === 'view3d') v3.resume(); else v3.pause(); }
 }
 
@@ -127,7 +155,7 @@ function renderTab(tab) {
   ({
     overview: renderOverview, plan: renderForm, topology: renderTopology, racks: renderRacks,
     addresses: renderSubnets, rooms: renderRooms, install: renderInstall, view3d: render3d, configs: renderConfigs, monitor: renderMonitor,
-    stats: renderStats, guide: () => {},
+    stats: renderStats, guide: () => {}, livescan: () => {},
   })[tab]?.();
 }
 

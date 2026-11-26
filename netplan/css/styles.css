@@ -544,6 +544,28 @@ footer.site { max-width: 1440px; margin: 0 auto; padding: 20px; color: var(--mut
 #printRoot { display: none; }
 
 /* ---------- print ---------- */
+
+/* ---------- live scan (local agent) ---------- */
+.kpi.ok .k-value { color: var(--ok); }
+.kpi.warn .k-value { color: var(--warn); }
+.kpi.bad .k-value { color: var(--bad); }
+.chip.st-ok { border-color: color-mix(in srgb, var(--ok) 60%, transparent); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.chip.st-warn { border-color: color-mix(in srgb, var(--warn) 60%, transparent); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.chip.st-bad { border-color: color-mix(in srgb, var(--bad) 60%, transparent); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+.live-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 12px; }
+.live-chips .chip { cursor: pointer; color: var(--text); font: inherit; font-size: 0.82rem; font-weight: 700; }
+.live-chips .chip.on { border-color: var(--cyan); box-shadow: inset 0 0 0 1px var(--cyan); }
+.live-steps { padding-inline-start: 20px; line-height: 1.9; }
+.live-steps code, #livescan code { font-family: var(--mono); direction: ltr; unicode-bidi: isolate; background: var(--surface-2); padding: 1px 6px; border-radius: 6px; }
+.live-prog { display: inline-flex; align-items: center; gap: 8px; min-width: 220px; position: relative; font-size: 0.82rem; color: var(--muted); }
+.live-prog i { position: absolute; inset-inline-start: 0; bottom: -6px; height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--gold), var(--cyan)); transition: width .4s; }
+.live-ev { padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: baseline; }
+.live-ev:last-child { border-bottom: 0; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.live-dot.ok { background: var(--ok); } .live-dot.warn { background: var(--warn); } .live-dot.bad { background: var(--bad); } .live-dot.info { background: var(--cyan); }
+#livescan .alert details summary { cursor: pointer; color: var(--cyan); margin-top: 4px; }
+#livescan .codebox { margin: 6px 0 0; padding: 6px 10px; }
+
 @media print {
   @page { size: A4; margin: 14mm 12mm; }
   :root { --text: #000; --text-2: #222; --muted: #444; --line: #bbb; --line-strong: #888; --surface: #fff; --surface-solid: #fff; --surface-2: #f2f2f2; --gold: #6d4e16; --cyan: #075a6e; }
