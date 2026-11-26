@@ -3100,3 +3100,8 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
   - the settings.
   - Settings send only the changes (`pend`, debounced 350 ms), so a status answer in between never undoes a change.
 - Tested end to end in Chromium against the real `frameLive` in memory: pairing, sending 2 photos, the title, a message, hiding it and showing a photo right after, and switching to mosaic and back.
+## One guests' app: three steps, the print followed live, "פריים אירועים" only the store (v223)
+- The owner asked for one guest feature, no duplicates. Decided: the guest's only app is live.html (Optimus "🎉 אירוע חי"); events-hub ("פריים אירועים") is only the store after the event. Its admin no longer opens new events ("➕ אירוע חדש (באופטימוס)" links to the studio, with a note); events already open there keep working. Its own QR flow, products and frames were the duplicates of v219-220.
+- live.html (js/live-guest.js, rewritten): a header with "📸 התמונות שלי (n)", steps ① מה מדפיסים (only with 2-3 products; a tap moves on) ② התמונה (camera / gallery, then "ככה זה ייצא": the photo cropped to the print's shape, the frame's when there is one, else the product's turned like the photo, with the frame over it; "✓ מעולה, ממשיכים" / "↻ תמונה אחרת") ③ ברכה ושליחה (name remembered, quick greetings, words, voice, phone for WhatsApp). After sending: the photo and its live state, polled every 5s up to 15 minutes ("⏳ בתור" → "🖨️ מודפס עכשיו בעמדה" → "✅ הודפס! מחכה לכם בעמדה").
+- Server `guest-status` {e, k, items: [{id, gk}]}: each photo's state only with its own key (new / claimed / printed / hidden). "התמונות שלי" shows a badge on each photo.
+- Step classes are lv-s-on / lv-s-done (pay.css has its own .done).

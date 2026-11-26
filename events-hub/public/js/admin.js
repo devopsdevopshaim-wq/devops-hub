@@ -114,7 +114,7 @@
     view.innerHTML = `<div class="stage" style="grid-template-columns:1fr"><div>
         <span class="eyebrow"><img src="icon.svg" alt="">פריים אירועים · ניהול</span>
         <h1>${(() => { const h = new Date().getHours(); return h < 12 ? 'בוקר טוב' : h < 18 ? 'צהריים טובים' : 'ערב טוב'; })()}, <em>הנה מה שקורה היום</em></h1>
-        <div class="row"><button class="btn gold" data-go="events:new">${icon('plus')}אירוע חדש</button><button class="btn ghost light" data-go="promotions">${icon('tag')}מבצעים</button></div>
+        <div class="row"><a class="btn gold" href="https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/studio.html" target="_blank" rel="noopener">${icon('plus')}אירוע חדש (באופטימוס)</a><button class="btn ghost light" data-go="promotions">${icon('tag')}מבצעים</button></div>
       </div></div>
       <div class="stat-grid">
       ${stat('box', 'הזמנות פתוחות', d.ordersOpen, '', 'orders')}
@@ -271,7 +271,8 @@
 
   async function events(arg) {
     const list = await api(`${A}/events`);
-    view.innerHTML = `<div class="row between"><h1>אירועים ו-QR</h1><button class="btn" id="new-ev">➕ אירוע חדש</button></div>
+    view.innerHTML = `<div class="row between"><h1>אירועים ו-QR</h1><a class="btn" href="https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/studio.html" target="_blank" rel="noopener">➕ אירוע חדש (באופטימוס)</a></div>
+      <p class="muted small">אפליקציה אחת לאורחים: אירועים חדשים נפתחים באופטימוס ← "🎉 אירוע חי" (QR, בחירת מוצר, מסגרת, הדפסה בעמדה). החנות כאן נשארת החנות של האורחים אחרי האירוע. האירועים שכבר פתוחים כאן ממשיכים לעבוד כרגיל.</p>
       <div class="grid">${list.map((e) => `<div class="card stack">
         <div class="row between"><h3 style="margin:0">${esc(e.name)}</h3>${ACTIVE(e.active)}</div>
         <div class="muted small">${esc(e.type || '')} · ${e.date ? new Date(e.date).toLocaleDateString('he-IL') : ''}</div>
@@ -283,7 +284,7 @@
         <div class="row"><button class="btn sm" data-photos="${e.id}">תמונות להדפסה</button><button class="btn soft sm" data-edit="${e.id}">עריכה</button>
         <button class="btn ghost sm" data-qrdl="${esc(e.link)}" data-name="qr-${esc(e.code)}.png">הורדת QR</button></div>
       </div>`).join('') || '<p class="muted">אין אירועים עדיין</p>'}</div>`;
-    $('#new-ev').onclick = () => editEvent(null);
+
     if (arg === 'new') editEvent(null);
     $$('[data-edit]').forEach((b) => { b.onclick = () => editEvent(list.find((e) => e.id === b.dataset.edit)); });
     $$('[data-photos]').forEach((b) => { b.onclick = () => eventPhotos(list.find((e) => e.id === b.dataset.photos)); });

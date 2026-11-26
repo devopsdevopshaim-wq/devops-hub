@@ -86,6 +86,14 @@ check("and not its voice or anything else", f === null);
 r = await call(null, { action: 'guest-up', e: ev.id, k: ev.k, img: JPG, name: 'אחר', product: 'magnet' });
 f = await liveFile(S, ev.id, r.body.id, gk, '');
 check("one photo's key opens no other photo", f === null);
+r = await call(null, { action: 'guest-status', e: ev.id, k: ev.k, items: [{ id: mine, gk }, { id: mine, gk: 'c'.repeat(24) }] });
+check('the guest sees where their photo is, only with its key', r.body.ok && r.body.items.length === 1 && r.body.items[0].st === 'new', r.body);
+await call(OWNER, { action: 'claim', e: ev.id, station: 'עמדה 1', max: 6 });
+r = await call(null, { action: 'guest-status', e: ev.id, k: ev.k, items: [{ id: mine, gk }] });
+check('taken by a station', r.body.items[0].st === 'claimed', r.body);
+await call(OWNER, { action: 'mark', e: ev.id, ids: [mine], st: 'printed' });
+r = await call(null, { action: 'guest-status', e: ev.id, k: ev.k, items: [{ id: mine, gk }] });
+check('printed', r.body.items[0].st === 'printed');
 r = await call(OWNER, { action: 'ev-save', event: Object.assign({}, ev, { offer: { on: true, pct: 25, enlarge: { on: true, pct: 20, code: 'big20' }, extra: { on: true, pct: 35 } } }) });
 check('the enlargement and the extra albums kept', r.body.event.offer.enlarge.pct === 20 && r.body.event.offer.enlarge.code === 'BIG20' && r.body.event.offer.extra.pct === 35, r.body.event.offer);
 
