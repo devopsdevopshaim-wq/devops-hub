@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NetPlan – ניהול וניטור רשת</title>
+<meta name="description" content="NetPlan: זיהוי אוטומטי של חיבור הרשת, מיפוי מכשירים, נתבים בדרך, בדיקות אבטחה וזליגה, וניטור תקלות עם פתרונות.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css?v=1">
+<script>try{var t=localStorage.getItem('np-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M12 7.2v4.3M12 11.5 6.6 16.3M12 11.5l5.4 4.8"/></svg></div>
+      <div><b>NetPlan</b><small>ניהול וניטור רשת</small></div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="foot" id="foot"></div>
+  </aside>
+  <main class="main">
+    <div id="banner"></div>
+    <header class="top">
+      <button class="btn ghost menu-btn" onclick="document.getElementById('side').classList.toggle('open')" aria-label="תפריט">☰</button>
+      <div>
+        <h1 id="title">סקירה</h1>
+        <div class="net" id="netname"></div>
+      </div>
+      <span id="linkpill"></span>
+      <div class="sp"></div>
+      <div class="prog hidden" id="prog"><div class="bar"><i id="progbar"></i></div><div class="msg" id="progmsg"></div></div>
+      <button class="btn pri" id="scanbtn" onclick="NP.scan('full')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        סריקה מלאה</button>
+      <button class="btn ghost" onclick="NP.toggleTheme()" title="ערכת צבעים" aria-label="ערכת צבעים">◐</button>
+    </header>
+    <section class="content" id="view"></section>
+  </main>
+</div>
+<div class="drawer-bg" id="dbg" onclick="NP.closeDrawer()"></div>
+<aside class="drawer" id="drawer" aria-hidden="true"></aside>
+<div class="toasts" id="toasts"></div>
+<script src="demo.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
