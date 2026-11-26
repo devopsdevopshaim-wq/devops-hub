@@ -32,24 +32,8 @@
   function guestUrl() { return link('live.html', 'k', ev.k); }
   function mainUrl() { return main && main.m ? siteBase + 'live.html?m=' + main.m : ''; }
   function wallUrl() { return link('wall.html', 'v', ev.v); }
-  /* 🎬 the event owners' screen (wall.html?host=1, host-wall.js): the marked photos (the couple / the bar mitzvah child) are
-     sent to it; they are kept on the screen's computer, and the guests' QR photos travel along the strip at the bottom */
-  function hostScreen() {
-    var list = FS.marked().filter(function (p) { return !p.craft && !p.strip; });
-    var w = window.open(wallUrl() + '&host=1', '_blank');
-    if (!w) return FS.toast('הדפדפן חסם את החלון. מאשרים חלונות קופצים ומנסים שוב.', 6000);
-    if (!list.length) return FS.toast('🎬 המסך נפתח. מוסיפים בו את התמונות של בעלי השמחה (⚙️ הגדרות), או מסמנים אותן כאן ולוחצים שוב.', 7000);
-    var batch = Date.now().toString(36), sent = false;
-    var send = function () {
-      if (sent) return; sent = true;
-      Promise.all(list.map(function (p, i) { return fetch(p.src).then(function (r) { return r.blob(); }).then(function (b) { return { blob: b, name: (p.name || 'photo') + ':' + i + ':' + b.size }; }, function () { return null; }); }))
-        .then(function (a) { try { w.postMessage({ hostPhotos: a.filter(Boolean), title: ev.title, batch: batch }, '*'); } catch (e) { /* closed */ } });
-    };
-    var onMsg = function (e) { if (e.source !== w) return; if (e.data && e.data.hostReady) send(); if (e.data && e.data.hostGot === batch) { window.removeEventListener('message', onMsg); FS.toast('🎬 ' + list.length + ' תמונות נשלחו למסך בעלי השמחה', 4000); } };
-    window.addEventListener('message', onMsg);
-    setTimeout(send, 5000);
-    FS.toast('🎬 שולחים ' + list.length + ' תמונות למסך… גוררים את החלון למסך הגדול ולוחצים ⛶', 6000);
-  }
+  /* 📺 the hall's TV, run from here (tv-control.js): pairing by a code, what runs, messages, the owners' photos, settings */
+  function hostScreen() { if (FS.tvControl) FS.tvControl(); else window.open(wallUrl() + '&host=1', '_blank'); }
   function albumUrl() { return link('album.html', 'v', ev.v); }
   function imgUrl(id) { return (FS.account && FS.account.apiBase ? FS.account.apiBase() : Promise.resolve('')).then(function (u) { return u + '/frame-live-img?e=' + ev.id + '&p=' + id + '&v=' + ev.v; }); }
   function copy(t, msg) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { FS.toast(msg); }, function () { window.prompt('העתקה:', t); }); }
@@ -80,7 +64,7 @@
         '<button class="btn small" id="lv-new">➕ חדש</button><button class="btn small" id="lv-log" title="כל האירועים, הלקוחות והקודים של כל אירוע">📒 תיעוד</button>' + (ev ? '<button class="btn small" id="lv-edit" title="עריכת פרטי האירוע">✏️</button>' : '') + '</div></div>' +
       (!ev ? '<p class="hint">פותחים אירוע חדש (אפשר מתוך עסקה), ואז מדפיסים את שלט ה־QR לשולחנות.</p>' :
       '<div class="card lv-card"><h3>' + esc(ev.title) + '</h3><p class="lv-meta">' + esc(heDate(ev.date)) + (ev.couple && ev.couple.name ? ' · ' + esc(ev.couple.name) : '') + (ev.open ? ' · <b class="ok">פתוח להעלאות</b>' : ' · <b class="no">סגור להעלאות</b>') + '</p>' +
-        '<div class="lv-links"><button class="btn primary" id="lv-sign">🖨️ שלט QR לשולחנות</button><button class="btn" id="lv-wall">📺 מסך ענק לאולם</button><button class="btn" id="lv-host" title="התמונות של בעלי השמחה רצות בגדול, ותמונות האורחים מה־QR זזות בפס למטה">🎬 מסך בעלי השמחה</button>' +
+        '<div class="lv-links"><button class="btn primary" id="lv-sign">🖨️ שלט QR לשולחנות</button><button class="btn" id="lv-wall">📺 מסך ענק לאולם</button><button class="btn primary" id="lv-host" title="מחברים טלוויזיה באולם ושולטים בה מכאן: תמונות בעלי השמחה, פס תמונות האורחים, הודעות על המסך">📺 שליטה במסך</button>' +
         '<button class="btn" id="lv-guest">🔗 קישור לאורחים</button><button class="btn lv-owner" id="lv-album">💞 האלבום של הזוג</button>' +
         '<button class="btn lv-owner" id="lv-photos">🗂️ ניהול התמונות</button><button class="btn lv-owner" id="lv-send">💬 אלבום + המלצה לזוג</button></div>' +
         '<div class="lv-links lv-wow"><button class="btn" id="lv-mirror" title="מצלמה באירוע: האורחים רואים את עצמם בתוך המגנט, עם רקע לבחירה, ומצלמים להדפסה">🪞 מראה קסם</button>' +
@@ -858,6 +842,8 @@
   draw();
   FS.liveRefresh = refresh;
   FS.liveCurrent = function () { return ev; };
+  FS.liveApi = api;
+  FS.liveSiteBase = function () { return siteBase; };
   /* the home screen's "📱 QR לאפליקציה" (home.js): the studio's main QR when there is one, else this event's guests' page */
   FS.liveLinks = function () { return { main: mainUrl(), guest: ev ? guestUrl() : '', event: ev ? ev.title : '' }; };
   FS.liveMainGet = function () { return api('main-get').then(function (r) { if (r && r.ok) main = r; return mainUrl(); }); };
