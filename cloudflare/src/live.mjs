@@ -29,6 +29,23 @@ const sid = () => { const a = new Uint8Array(10); crypto.getRandomValues(a); ret
 const B64 = /^[A-Za-z0-9+/]+={0,2}$/;
 const addDays = (iso, n) => new Date(Date.parse(iso + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const out = (body, code) => ({ code: code || 200, body });
+// v222: the hall's TV run from the studio (Optimus): the screen's settings, one command at a time, the owners' photos kept on
+// the server (so a TV in the hall shows what the studio's computer sent), and pairing a TV by a 6-digit code on its screen
+const MAX_OWNERS = 150, TV_CODE = /^\d{6}$/, TV_SECRET = /^[a-f0-9]{32}$/, TV_PAIR_MS = 20 * 60000;
+const SCREEN_MODES = ['host', 'wall', 'mosaic'];
+function cleanScreenSet(o, cur) {
+  const r = Object.assign({}, cur || {}), x = o || {};
+  if ('mode' in x && SCREEN_MODES.includes(x.mode)) r.mode = x.mode;
+  if ('sec' in x) r.sec = num(x.sec, 3, 30, 7);
+  if ('order' in x) r.order = x.order === 'mix' ? 'mix' : 'seq';
+  if ('strip' in x) r.strip = num(x.strip, 0, 40, 26);
+  if ('speed' in x) r.speed = ['slow', 'mid', 'fast'].includes(x.speed) ? x.speed : 'mid';
+  if ('dir' in x) r.dir = x.dir === 'left' ? 'left' : 'right';
+  for (const k of ['names', 'qr', 'studio', 'title', 'local']) if (k in x) r[k] = !!x[k];
+  if ('text' in x) r.text = clean(x.text, 80).trim();
+  return r;
+}
+const screenOut = (ev) => { const S = ev.screen || {}; return { seq: S.seq || 0, set: S.set || {}, cmd: S.cmd || null, cmds: S.cmds || [], owners: S.owners || [], tvAt: S.tvAt || 0, tv: S.tvName || '' }; };
 
 // what the owner sees of an event (with the keys) and what the public sees (without)
 function ownerView(ev) {
@@ -100,6 +117,7 @@ export async function liveFile(storage, e, p, v, kind, c, k) {
   }
   if (!KEY.test(String(v || '')) || v !== ev.v) return null;
   if (kind === 'hero') { const b64 = await st.getBig('lh:' + e); return b64 ? { u: bytes(b64), mime: 'image/jpeg' } : null; }
+  if (kind === 'owner') { if (!PID.test(String(p || '')) || !((ev.screen && ev.screen.owners) || []).includes(p)) return null; const b64 = await st.getBig('lo:' + e + ':' + p); return b64 ? { u: bytes(b64), mime: 'image/jpeg' } : null; }
   if (!PID.test(String(p || ''))) return null;
   if (kind === 'cap') {
     if (today() < capsuleOpens(ev)) return null;
@@ -138,7 +156,7 @@ async function dropPhotos(storage, e, all) {
     if (m && m.code) await storage.delete('lcode:' + e + ':' + m.code);
   }
   await st.delBig('lf:' + e);
-  if (all) { await st.delBig('lh:' + e); await dropCapsules(storage, e); }
+  if (all) { await st.delBig('lh:' + e); await dropCapsules(storage, e); for (const [k] of await storage.list({ prefix: 'lo:' + e + ':' })) { if (!k.includes('#')) await st.delBig(k); } }
 }
 async function dropCapsules(storage, e) {
   const st = new FrameStore(storage);
@@ -245,6 +263,31 @@ export async function frameLive(storage, who, b, site) {
     const list = ev.purged ? [] : (await photos(storage, ev.id)).filter((m) => m.st !== 'hidden' && (m.src === 'guest' || ev.album !== false) && m.at > since);
     return out({ ok: true, title: ev.title, date: ev.date, k: ev.open !== false ? ev.k : '', purged: !!ev.purged, biz: { name: ev.bizName || biz.name, google: ev.google || biz.google }, hero: !!ev.hero, faces: !!(ev.n && ev.n.faces),
       photos: list.map((m) => ({ id: m.id, at: m.at, name: m.name || '', text: m.text || '', audio: !!m.audio, src: m.src })) });
+  }
+
+  // the TV asks, every two seconds, whether the studio changed anything (cheap: the event only, no photo list)
+  if (a === 'tv') {
+    const ev = await getEv(storage, b.e);
+    if (!ev || !KEY.test(String(b.v || '')) || b.v !== ev.v) return out({ ok: false, error: 'not-found' }, 404);
+    const S = ev.screen = ev.screen || {}, now = Date.now();
+    if (now - (S.tvAt || 0) > 20000) { S.tvAt = now; S.tvName = clean(b.name, 40); await storage.put('lv:' + ev.id, ev); }
+    return out(Object.assign({ ok: true }, (b.seq != null && Number(b.seq) >= 0 ? Number(b.seq) : -1) === (S.seq || 0) ? { same: true, seq: S.seq || 0 } : screenOut(ev)));
+  }
+  // pairing a TV: it shows a 6-digit code (with a secret only it knows); the studio types the code and picks the event
+  if (a === 'tv-pair-new') {
+    const now = Date.now();
+    for (const [k, m] of await storage.list({ prefix: 'ltv:' })) if (!m || now - (m.at || 0) > TV_PAIR_MS) await storage.delete(k);
+    let code = ''; for (let i = 0; i < 8 && !code; i++) { const c = String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000)); if (!(await storage.get('ltv:' + c))) code = c; }
+    if (!code) return out({ ok: false, error: 'busy' }, 503);
+    const secret = rid(16); await storage.put('ltv:' + code, { at: now, secret });
+    return out({ ok: true, code, secret, ttl: TV_PAIR_MS });
+  }
+  if (a === 'tv-pair-get') {
+    const code = String(b.code || ''), m = TV_CODE.test(code) ? await storage.get('ltv:' + code) : null;
+    if (!m || !TV_SECRET.test(String(b.secret || '')) || m.secret !== b.secret || Date.now() - m.at > TV_PAIR_MS) return out({ ok: false, error: 'not-found' }, 404);
+    if (!m.e) return out({ ok: true, wait: true });
+    await storage.delete('ltv:' + code);
+    return out({ ok: true, e: m.e, v: m.v });
   }
 
   // the time capsule: sealed until a year after the event (the count only); then every message, for the couple
@@ -404,6 +447,34 @@ export async function frameLive(storage, who, b, site) {
     const img = b.img ? checkImg(b.img, MAX_IMG) : null; if (b.img && !img) return out({ ok: false, error: 'bad-image' }, 400);
     const st = new FrameStore(storage); if (img) await st.putBig('lh:' + ev.id, img); else await st.delBig('lh:' + ev.id);
     ev.hero = !!img; await storage.put('lv:' + ev.id, ev); return out({ ok: true, hero: ev.hero });
+  }
+  // 📺 the TV: settings, a command, the owners' photos, pairing
+  if (a === 'screen') {
+    const S = ev.screen = ev.screen || {}, op = String(b.op || ''), st = new FrameStore(storage);
+    S.owners = S.owners || [];
+    if (op === 'set') S.set = cleanScreenSet(b.set, S.set);
+    else if (op === 'cmd') {
+      const c = String(b.cmd || '');
+      if (!['pause', 'play', 'next', 'prev', 'reload', 'say', 'unsay', 'show'].includes(c)) return out({ ok: false, error: 'bad-cmd' }, 400);
+      if (c === 'show' && !PID.test(String(b.p || ''))) return out({ ok: false, error: 'bad-photo' }, 400);
+      if (c === 'say' && hasCard(String(b.text || ''))) return out({ ok: false, error: 'card-number' }, 400);
+      S.cmd = { n: (S.cmd && S.cmd.n || 0) + 1, c, p: c === 'show' ? String(b.p) : undefined, text: c === 'say' ? clean(b.text, 160).trim() : undefined, sec: num(b.sec, 3, 600, c === 'say' ? 15 : 12), at: Date.now() };
+      S.cmds = (S.cmds || []).concat([S.cmd]).slice(-12);   /* the last few: a TV that looks every 2 s gets them all, in order */
+      if (c === 'pause' || c === 'play') S.set = Object.assign({}, S.set, { paused: c === 'pause' });
+    } else if (op === 'owner-put') {
+      if (S.owners.length >= MAX_OWNERS) return out({ ok: false, error: 'full' }, 400);
+      const img = checkImg(b.img, MAX_IMG); if (!img) return out({ ok: false, error: 'bad-image' }, 400);
+      const id = sid(); await st.putBig('lo:' + ev.id + ':' + id, img); S.owners.push(id);
+    } else if (op === 'owner-del') {
+      const ids = b.id === '*' ? S.owners.slice() : [String(b.id || '')];
+      for (const id of ids) { if (!S.owners.includes(id)) continue; await st.delBig('lo:' + ev.id + ':' + id); S.owners = S.owners.filter((x) => x !== id); }
+    } else if (op === 'pair') {
+      const code = String(b.code || '').replace(/\D/g, ''), m = TV_CODE.test(code) ? await storage.get('ltv:' + code) : null;
+      if (!m || Date.now() - m.at > TV_PAIR_MS) return out({ ok: false, error: 'tv-code' }, 404);
+      m.e = ev.id; m.v = ev.v; await storage.put('ltv:' + code, m);
+    } else if (op !== 'state') return out({ ok: false, error: 'bad-op' }, 400);
+    if (op !== 'state' && op !== 'pair') { S.seq = (S.seq || 0) + 1; await storage.put('lv:' + ev.id, ev); }
+    return out(Object.assign({ ok: true }, screenOut(ev)));
   }
   // faces found by the studio in the event's photos (for "find me"): { p: [desc, …] }, merged
   if (a === 'faces') {

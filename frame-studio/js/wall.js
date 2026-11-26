@@ -8,6 +8,7 @@
   var FX = ['fx-fade', 'fx-zoom', 'fx-slide', 'fx-rise', 'fx-turn', 'fx-blur'];
 
   function msg(t) { stage.innerHTML = '<div class="w-empty">' + t + '</div>'; }
+  if (/[?&]host=1/.test(location.search)) return;   /* the event owners' screen runs instead (host-wall.js) */
   if (!L.e || !L.v) { msg('הקישור למסך לא שלם.'); return; }
   if (/[?&]mosaic=1/.test(location.search)) return;   /* the live mosaic runs this screen instead (mosaic.js) */
 

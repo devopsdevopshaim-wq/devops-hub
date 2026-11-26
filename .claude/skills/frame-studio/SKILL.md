@@ -3051,6 +3051,18 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - "👥 תמונות לקוחות" → the live card has "💌 הברכות לפי שם": every guest of the event from the server (FS.liveGet = ev-get), by name: photos, voice greetings, products, and each written greeting.
 - Tests: cloudflare/test/live-products.test.mjs (12 checks, in npm test).
 
+## 🎬 The event owners' screen (v221)
+- `wall.html?host=1&e=…&v=…` (`js/host-wall.js` + `css/host-wall.css`; wall.js and mosaic.js step aside when `host=1`). The top of the screen runs the owners' photos (the couple, the bar or bat mitzvah child) as a large slideshow: blurred fill, contain, Ken Burns, fade / zoom / slide / rise. There is no blur transition and no drop-shadow, because a filter on a big moving layer drew blank in a software-GPU test.
+- **The strip** (`--strip`, 16–38% of the height, default 26%): every guest photo from the QR (feed `src: 'guest'`, optionally also the station's magnets) travels across, to the right by default.
+  - Photos come out from behind the QR at the entry end. A new photo goes ahead of the loop queue (`newQ` before `loopQ`) and enters next, with a gold glow and "✨ חדש" for 30 s.
+  - Photos that leave the far end go back to the loop, so it runs all evening.
+  - It polls `feed` every 5 s. The animation is rAF with translate3d, and only the photos on screen are in the DOM.
+- **The owners' photos** stay on that computer only: IndexedDB `fs-host-wall`, store `p` {id, ev, n, name, blob}, shrunk to 2560 px JPEG. They come in from:
+  - ⚙️ הגדרות (files or a whole folder), or drag and drop;
+  - the studio: live tab → "🎬 מסך בעלי השמחה" (`hostScreen` in live.js) opens the window and sends the marked photos with `postMessage({hostPhotos, title, batch})`, after the screen's `hostReady` (5 s fallback). The screen accepts messages only from `window.opener`, and dedupes by batch and name.
+- **Settings** (`fs-hostwall`; the title per event in `fs-hostwall-title-<e>`): title and its toggle, seconds per photo, order (in sequence / mixed), strip height, speed, direction, sender's name, the QR, the station's magnets.
+- **Controls:** keys Space (pause), ← → (next / previous), F (fullscreen), S (settings). The controls and the cursor hide after 3.5 s idle, and a screen wake lock keeps the display on. Without `e`/`v` it still runs the owners' slideshow and says how to open it from the studio. `window.FSHost` is exposed for tests.
+
 ## The event's frame, closing at 23:00, the guest's own photos and upgrades after the event, shipping on every order (v220)
 - **The event's frame**: ✏️ event details → "🖼️ המסגרת של האירוע": a PNG file or the PNG frame of the photo on screen (framePng: long side ≤2000, under 1.65M base64). Server `ev-frame` (PNG only, 'lfr:'+e, ev.frame = time), served by `frame-live-img?e=&fr=1&v=` with the guests' key or the viewing key. Every station loads it on start (loadEventFrame → FS.addUserFrame, cached per event in 'fs-live-evfr') and take() puts it on each guest photo. Order: the design chosen at this station for this event (cfg.tpl with cfg.tplEv), else the event's frame, else the customer's approved design. The guests see their photo inside the frame on the preview (live.html).
 - **Closing at night**: `ev.closeAt` (default '23:00', '' = never), `nightClosed(ev)` in Israel time (Intl Asia/Jerusalem): closed from that hour on the event's day and on every later day; open before the event's day (try-outs). guest-info gives `night`, guest-up answers 403 `night`; the guests' page then says uploads closed and that tomorrow they can order through the app.
@@ -3060,7 +3072,35 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - **events-hub**: "משלוח חינם מעל" 0 = shipping on every order (pricing.quote). Test in events-hub/test/api.test.js.
 - Tests: cloudflare/test/live-products.test.mjs (night closing in winter and summer time, frame, the photo's own key).
 
-## One guests' app: three steps, the print followed live, "פריים אירועים" only the store (v221)
+## 📺 The hall's TV run from Optimus (v222)
+- **Pairing:** the TV (any browser: a smart TV, a TV stick, a computer on a projector) opens `tv.html` (`js/tv-pair.js`, `css/tv.css`), which shows a 6-digit code.
+  - Server `tv-pair-new` → `ltv:<code>` = {at, secret}, valid 20 minutes. The page renews it by itself.
+  - The owner types the code in Optimus: `screen` op `pair` sets {e, v} on it. The TV's `tv-pair-get` (code + secret) gets {e, v} once and moves to `wall.html?host=1`.
+  - The last event is kept in `fs-tv-last` and offered for 3 days ("↩ חזרה").
+- **The TV listens** (`js/tv-remote.js`, loaded in wall.html *before* host-wall.js, so `FLTV.on` exists when host-wall subscribes):
+  - action `tv` {e, v, seq, name} every 2 s (6 s while hidden). It answers `same` when nothing changed; otherwise {seq, set, cmd, cmds, owners, tvAt}. The TV's name is kept in `fs-tv-name`, and `ev.screen.tvAt` is written at most every 20 s.
+  - It switches between the three screens by `set.mode` (host / wall / mosaic) and reloads on the `reload` command.
+  - Commands run from `cmds`, the server's last 12, so two commands sent within the 2 s are both applied. Commands sent before the screen opened are not replayed.
+- **Server** (`cloudflare/src/live.mjs`, owner action `screen` {e, op}):
+  - `state`, `set` (merged and cleaned by `cleanScreenSet`: mode, sec 3–30, order, strip 0–40 (0 = no strip), speed, dir, names, qr, studio, title, local, text = the screen's title), `cmd` (pause, play, next, prev, reload, say {text, sec}, unsay, show {p, sec}), `owner-put` {img} / `owner-del` {id | '*'} and `pair` {code}.
+  - The owners' photos live in `lo:<e>:<id>` (putBig), at most 150. The TV loads them with `frame-live-img?…&o=1`, and only with the viewing key. Deleting the event deletes them.
+  - Tests: `cloudflare/test/live-screen.test.mjs` (23), in `npm test` and the deploy.
+- **The owners' screen** (`host-wall.js`): it applies `set` (saved like its own settings), puts the server's owners' photos after the local ones (`local: false` hides the local ones), and runs the commands:
+  - `say`: a large message across the screen (`.hw-say`);
+  - `show`: one guest's photo large, with the name and greeting (`.hw-big`);
+  - next / prev, pause / play.
+- **Optimus:** 🎉 אירוע חי → "📺 שליטה במסך" (`js/tv-control.js`, `FS.tvControl()`; live.js exposes `FS.liveApi` and `FS.liveSiteBase`). The panel:
+  - TV status, refreshed every 5 s ("🟢 מסך מחובר: name");
+  - the tv.html address with copy, and the code box;
+  - "🖥️ open on this computer";
+  - what runs (3 buttons); ⏮ ⏸/▶ ⏭ 🔄;
+  - a message with seconds and 4 quick messages;
+  - sending the marked photos (each ≤ 2000 px JPEG, ≤ 1.65 MB) and removing them;
+  - the latest 18 guest photos (a click shows one large for 15 s);
+  - the settings.
+  - Settings send only the changes (`pend`, debounced 350 ms), so a status answer in between never undoes a change.
+- Tested end to end in Chromium against the real `frameLive` in memory: pairing, sending 2 photos, the title, a message, hiding it and showing a photo right after, and switching to mosaic and back.
+## One guests' app: three steps, the print followed live, "פריים אירועים" only the store (v223)
 - The owner asked for one guest feature, no duplicates. Decided: the guest's only app is live.html (Optimus "🎉 אירוע חי"); events-hub ("פריים אירועים") is only the store after the event. Its admin no longer opens new events ("➕ אירוע חדש (באופטימוס)" links to the studio, with a note); events already open there keep working. Its own QR flow, products and frames were the duplicates of v219-220.
 - live.html (js/live-guest.js, rewritten): a header with "📸 התמונות שלי (n)", steps ① מה מדפיסים (only with 2-3 products; a tap moves on) ② התמונה (camera / gallery, then "ככה זה ייצא": the photo cropped to the print's shape, the frame's when there is one, else the product's turned like the photo, with the frame over it; "✓ מעולה, ממשיכים" / "↻ תמונה אחרת") ③ ברכה ושליחה (name remembered, quick greetings, words, voice, phone for WhatsApp). After sending: the photo and its live state, polled every 5s up to 15 minutes ("⏳ בתור" → "🖨️ מודפס עכשיו בעמדה" → "✅ הודפס! מחכה לכם בעמדה").
 - Server `guest-status` {e, k, items: [{id, gk}]}: each photo's state only with its own key (new / claimed / printed / hidden). "התמונות שלי" shows a badge on each photo.

@@ -52,6 +52,7 @@ jobs:
           node test/notify.test.mjs
           node test/magic.test.mjs
           node test/live.test.mjs
+          node test/live-screen.test.mjs
           node test/smtp.test.mjs
           printf 'ADMIN_PASSWORD_HASH=%s\nSHARED_KEY=test-shared-key\n' "$(node test/hash.mjs 'Test-Passw0rd-xyz')" > .dev.vars
           (npx wrangler dev --local --port 8787 > /tmp/wrangler-dev.log 2>&1 &)
