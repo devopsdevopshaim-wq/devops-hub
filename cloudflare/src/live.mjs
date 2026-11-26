@@ -179,6 +179,18 @@ export async function frameLive(storage, who, b, site) {
   }
 
   /* ---------- guests (the QR code's key) ---------- */
+  // v221: where the guest's own photos are (sent / taken by a station / printed), by each photo's own key
+  if (a === 'guest-status') {
+    const ev = await getEv(storage, b.e);
+    if (!ev || ev.purged || !KEY.test(String(b.k || '')) || b.k !== ev.k) return out({ ok: false, error: 'not-found' }, 404);
+    const list = [];
+    for (const it of (Array.isArray(b.items) ? b.items : []).slice(0, 80)) {
+      if (!PID.test(String(it && it.id || '')) || !KEY.test(String(it && it.gk || ''))) continue;
+      const m = await storage.get('lp:' + ev.id + ':' + it.id);
+      if (m && m.src === 'guest' && m.gk === it.gk) list.push({ id: m.id, st: m.st === 'printed' ? 'printed' : m.st === 'claimed' ? 'claimed' : m.st === 'hidden' ? 'hidden' : 'new', product: m.product ? m.product.name : '' });
+    }
+    return out({ ok: true, items: list });
+  }
   if (a === 'guest-info' || a === 'guest-up') {
     const ev = await getEv(storage, b.e);
     if (!ev || ev.purged || !KEY.test(String(b.k || '')) || b.k !== ev.k) return out({ ok: false, error: 'not-found' }, 404);
