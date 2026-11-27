@@ -90,3 +90,50 @@ jobs:
             gh release create screen-latest out/OptimusScreen.apk out/OptimusScreen-USB.zip --repo "$GITHUB_REPOSITORY" \
               --title "Optimus Screen (latest: 1.0.${{ github.run_number }})" --notes "$NOTES" --latest=false
           fi
+
+  # a real run: an Android TV emulator installs the APK, opens it and takes a screenshot of the pairing page;
+  # the picture is pushed to the branch ci-screen-app (screen-app/<run>/tv.png)
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: optimus-screen-${{ github.run_number }}
+          path: out
+      - name: KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Android TV emulator: install, open, screenshot
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: |
+            adb install -r out/OptimusScreen.apk
+            adb shell monkey -p il.framemagnets.screen -c android.intent.category.LEANBACK_LAUNCHER 1
+            sleep 40
+            mkdir -p shots
+            adb exec-out screencap -p > shots/tv.png
+            adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" | head -2 > shots/activity.txt || true
+            adb logcat -d | grep -iE "chromium|OptimusScreen|il.framemagnets|AndroidRuntime" | tail -60 > shots/log.txt || true
+            adb shell input keyevent KEYCODE_MENU
+            sleep 8
+            adb exec-out screencap -p > shots/tv-menu.png
+            cat shots/activity.txt
+      - name: Push the screenshots to ci-screen-app
+        run: |
+          git config user.name "github-actions" && git config user.email "github-actions@users.noreply.github.com"
+          D="screen-app/${{ github.run_number }}"
+          git fetch origin ci-screen-app || true
+          git checkout -B ci-screen-app origin/ci-screen-app 2>/dev/null || git checkout --orphan ci-screen-app
+          git rm -rqf . 2>/dev/null || true
+          git checkout origin/ci-screen-app -- . 2>/dev/null || true
+          mkdir -p "$D" && cp shots/* "$D/"
+          git add "$D" && git commit -qm "Optimus Screen on an Android TV emulator, run ${{ github.run_number }}" && git push -q origin ci-screen-app
