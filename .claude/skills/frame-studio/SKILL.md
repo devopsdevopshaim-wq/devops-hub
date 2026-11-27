@@ -3105,3 +3105,24 @@ A tab of its own in the quick workspace (after "הדפסה"), with three panels:
 - live.html (js/live-guest.js, rewritten): a header with "📸 התמונות שלי (n)", steps ① מה מדפיסים (only with 2-3 products; a tap moves on) ② התמונה (camera / gallery, then "ככה זה ייצא": the photo cropped to the print's shape, the frame's when there is one, else the product's turned like the photo, with the frame over it; "✓ מעולה, ממשיכים" / "↻ תמונה אחרת") ③ ברכה ושליחה (name remembered, quick greetings, words, voice, phone for WhatsApp). After sending: the photo and its live state, polled every 5s up to 15 minutes ("⏳ בתור" → "🖨️ מודפס עכשיו בעמדה" → "✅ הודפס! מחכה לכם בעמדה").
 - Server `guest-status` {e, k, items: [{id, gk}]}: each photo's state only with its own key (new / claimed / printed / hidden). "התמונות שלי" shows a badge on each photo.
 - Step classes are lv-s-on / lv-s-done (pay.css has its own .done).
+
+## 📲 אופטימוס מסך: the screen app for TVs, sticks and USB (v224)
+- **`screen-app/`: an Android app** (Java, no libraries; package `il.framemagnets.screen`, minSdk 21; a LEANBACK launcher and a 320×180 banner, so it shows on the Android TV / Google TV / Fire TV home screen).
+  - A full-screen WebView of `tv.html?app=1`, locked to the site: any other address is refused.
+  - `FLAG_KEEP_SCREEN_ON` and immersive mode. Without the internet, `assets/offline.html`, retried every 5 s.
+  - The remote: OK → Enter, which pauses and resumes the owners' screen (host-wall now takes Enter as well as Space); Menu → `tv.html?app=1&pair=1` for a new code; Back twice → leave.
+  - `BootReceiver` opens it when the device starts (on unless the page calls `OptimusScreen.setAutostart(false)`). `window.OptimusScreen` = {version, autostart, setAutostart}.
+- **Back to the last event:** with `?app=1` and an event from the last 3 days (`fs-tv-last`), tv.html goes back to it by itself after a 10 s countdown. OK, Space or Backspace stays on the code page. `tv-ver` shows the app's version.
+- **The build:** `.github/workflows/screen-app.yml`, on a push under `screen-app/**`, `frame-studio/screen.html` or the workflow file. Gradle 8.11.1, AGP 8.7.3, JDK 17, versionCode = the run number.
+  - It checks the signature (`apksigner`) and the badging, and builds `OptimusScreen-USB.zip` (the APK, `Optimus-Screen-Windows.cmd`, `Optimus-Screen-Mac.command`, `Install-Guide.html` = screen.html).
+  - On main it publishes both to the release `screen-latest` (stable links). On other branches they are only the run's artifact.
+- **Signing:** the `SCREEN_KEYSTORE` (base64) + `SCREEN_KEYSTORE_PASS` secrets when set, else `screen-app/optimus-screen.keystore` from the repository (alias `screen`, password `optimus-screen`).
+  - Updates install over an older version only with the same key, so don't change keys once devices have the app.
+  - A key in a public repository lets anyone sign an APK with this name. The fix is to move it to the secret before the app is spread widely.
+- **USB launchers:**
+  - Windows `.cmd` (CRLF): finds Edge by its install path, else Chrome, else the default browser. It runs `--kiosk` with its own profile `%LOCALAPPDATA%\OptimusScreen` (the last event is kept), and sets the screen and sleep timeouts to 0 on mains power.
+  - Mac `.command`: Chrome or Edge `--kiosk`, else Safari, with `caffeinate`.
+- **`frame-studio/screen.html`:** the download and installation page, self-contained, because it is also the guide on the stick. It covers:
+  - per device: Android TV from USB (File Commander, unknown sources, Play Protect), sticks through Downloader, Fire TV (developer options), and a computer with the USB launchers;
+  - Samsung / LG / Hisense VIDAA: no installs outside their stores, so a stick or the built-in browser.
+- **In Optimus:** the panel "📺 שליטה במסך" links to screen.html.

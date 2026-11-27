@@ -21,6 +21,23 @@
     });
   }
   var last = null; try { last = JSON.parse(localStorage.getItem(KL) || 'null'); } catch (x) { /* private */ }
-  if (last && last.e && Date.now() - (last.at || 0) < 3 * 864e5) { var b = $('tv-last'); b.hidden = false; b.onclick = function () { go(last.e, last.v); }; }
+  if (last && last.e && Date.now() - (last.at || 0) < 3 * 864e5) {
+    var b = $('tv-last'); b.hidden = false; b.onclick = function () { go(last.e, last.v); };
+    /* in the screen app (אופטימוס מסך: ?app=1), after a power cut or a restart it goes back to the event by itself in 10 seconds,
+       unless the owner asked for a new code (the remote's Menu key opens ?app=1&pair=1) or presses OK to stay here */
+    var q = location.search;
+    if (/[?&]app=1/.test(q) && !/[?&]pair=1/.test(q)) {
+      var n = 10, stay = false, t = setInterval(function () {
+        if (stay) return clearInterval(t);
+        b.textContent = '↩ חוזרים לאירוע האחרון בעוד ' + n + ' שנ׳ · OK כדי להישאר כאן';
+        if (--n < 0) { clearInterval(t); go(last.e, last.v); }
+      }, 1000);
+      var hold = function (e) { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Backspace') { stay = true; b.textContent = '↩ חזרה למסך של האירוע הקודם'; document.removeEventListener('keydown', hold, true); e.preventDefault(); } };
+      document.addEventListener('keydown', hold, true);
+    }
+    b.focus();
+  }
+  /* the screen app's version, small at the bottom */
+  try { if (window.OptimusScreen) $('tv-ver').textContent = 'אופטימוס מסך ' + window.OptimusScreen.version(); } catch (x) { /* older app */ }
   (function loop() { look().then(function () { setTimeout(loop, 2000); }, function () { setTimeout(loop, 4000); }); })();
 })();

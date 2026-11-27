@@ -283,7 +283,7 @@
   document.addEventListener('keydown', function (e) {
     if (setDlg.open || /INPUT|SELECT|TEXTAREA/.test((e.target || {}).tagName || '')) return;
     var k = e.key;
-    if (k === ' ') { e.preventDefault(); setPaused(!paused); }
+    if (k === ' ' || k === 'Enter') { e.preventDefault(); setPaused(!paused); }   /* Enter = the TV remote's OK */
     else if (k === 'ArrowLeft' || k === 'ArrowRight') { if (slides.length) { nextSlide(k === 'ArrowLeft' ? 1 : -1); setPaused(paused); } }
     else if (/^[fFכ]$/.test(k)) full();
     else if (/^[sSד]$/.test(k)) openSet();

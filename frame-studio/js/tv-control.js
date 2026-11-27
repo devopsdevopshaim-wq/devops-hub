@@ -34,10 +34,11 @@
     var mode = S.mode || 'host', strip = 'strip' in S ? S.strip : 26;
     body.innerHTML = '<div class="tvc">' +
       '<div class="tvc-st ' + (on ? 'on' : '') + '">' + (on ? '🟢 מסך מחובר: <b>' + esc(st.tv || 'מסך') + '</b> · ' + ago(st.tvAt) : st && st.tvAt ? '🟠 המסך האחרון (' + esc(st.tv || '') + ') נראה ' + ago(st.tvAt) : '⚪ עוד לא מחובר מסך לאירוע הזה') + '</div>' +
-      '<section><h4>🔗 חיבור טלוויזיה</h4><p class="hint">בדפדפן של הטלוויזיה (או של מחשב שמחובר אליה) פותחים את הכתובת הזו. על המסך יופיע קוד של 6 ספרות:</p>' +
+      '<section><h4>🔗 חיבור טלוויזיה</h4><p class="hint">באפליקציה "אופטימוס מסך" (או בדפדפן של הטלוויזיה בכתובת הזו) מופיע קוד של 6 ספרות:</p>' +
         '<p class="tvc-url"><b dir="ltr">' + esc(site().replace(/^https?:\/\//, '') + 'tv.html') + '</b> <button type="button" class="btn small" id="tvc-copy">📋 העתקה</button></p>' +
         '<div class="lv-row"><input id="tvc-code" inputmode="numeric" maxlength="7" placeholder="הקוד מהמסך, למשל 482 913" dir="ltr" autocomplete="off"><button type="button" class="btn primary" id="tvc-pair">חיבור</button></div>' +
-        '<button type="button" class="btn small" id="tvc-here">🖥️ לפתוח את המסך במחשב הזה (מסך שני / מקרן)</button></section>' +
+        '<div class="tvc-row"><button type="button" class="btn small" id="tvc-here">🖥️ לפתוח את המסך במחשב הזה (מסך שני / מקרן)</button>' +
+        '<a class="btn small" href="' + esc(site()) + 'screen.html" target="_blank" rel="noopener">📲 אפליקציית המסך לטלוויזיה / סטרימר / USB</a></div></section>' +
       '<section><h4>🎬 מה רץ על המסך</h4>' + seg('mode', mode, [['host', '🎬 בעלי השמחה + פס אורחים'], ['wall', '📸 מצגת האורחים'], ['mosaic', '🧩 פסיפס חי']]) +
         '<div class="tvc-play"><button type="button" class="btn" data-cmd="prev" title="הקודמת">⏮</button><button type="button" class="btn primary" data-cmd="' + (S.paused ? 'play' : 'pause') + '">' + (S.paused ? '▶ המשך' : '⏸ עצירה') + '</button><button type="button" class="btn" data-cmd="next" title="הבאה">⏭</button><button type="button" class="btn" data-cmd="reload" title="טעינה מחדש של המסך">🔄</button></div></section>' +
       '<section><h4>📣 הודעה על המסך</h4><div class="lv-row"><input id="tvc-say" maxlength="160" placeholder="למשל: כולם לרחבה! 💃"><select id="tvc-sec"><option value="10">10 שנ׳</option><option value="20" selected>20 שנ׳</option><option value="60">דקה</option><option value="300">5 דק׳</option></select></div>' +
