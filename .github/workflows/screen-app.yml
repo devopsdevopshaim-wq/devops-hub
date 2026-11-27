@@ -1,0 +1,139 @@
+name: Build Optimus Screen (TV app + USB kit)
+
+# Builds the hall screen app for Android TV / Google TV / Fire TV / TV sticks (screen-app/) and the USB kit, and publishes
+# both on the release screen-latest (stable links, used by frame-studio/screen.html):
+#   https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/screen-latest/OptimusScreen.apk
+#   https://github.com/devopsdevopshaim-wq/devops-hub/releases/download/screen-latest/OptimusScreen-USB.zip
+# On a branch other than main it only builds and keeps the files as the run's artifact.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'screen-app/**'
+      - 'frame-studio/screen.html'
+      - '.github/workflows/screen-app.yml'
+
+concurrency:
+  group: screen-app-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SCREEN_VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: A signing key from the SCREEN_KEYSTORE secret, when set
+        env:
+          KS: ${{ secrets.SCREEN_KEYSTORE }}
+          KS_PASS: ${{ secrets.SCREEN_KEYSTORE_PASS }}
+        run: |
+          if [ -n "$KS" ] && [ -n "$KS_PASS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/screen.keystore"
+            echo "SCREEN_KEYSTORE_FILE=$RUNNER_TEMP/screen.keystore" >> "$GITHUB_ENV"
+            echo "SCREEN_KEYSTORE_PASS=$KS_PASS" >> "$GITHUB_ENV"
+            echo "Signing with the key from the secret"
+          else
+            echo "::notice::Signing with the key kept in the repository (screen-app/optimus-screen.keystore)"
+          fi
+
+      - name: Build the APK
+        working-directory: screen-app
+        run: gradle --no-daemon assembleRelease
+
+      - name: Check the APK
+        run: |
+          APK=screen-app/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "$APK" | head -3
+          "$BT/aapt2" dump badging "$APK" | grep -E "^package:|leanback-launchable|^application-label" || true
+          mkdir -p out/OptimusScreen-USB
+          cp "$APK" out/OptimusScreen.apk
+          cp "$APK" out/OptimusScreen-USB/OptimusScreen.apk
+          cp screen-app/usb/Optimus-Screen-Windows.cmd screen-app/usb/Optimus-Screen-Mac.command out/OptimusScreen-USB/
+          cp frame-studio/screen.html out/OptimusScreen-USB/Install-Guide.html
+          chmod +x out/OptimusScreen-USB/Optimus-Screen-Mac.command
+          (cd out && zip -r -X OptimusScreen-USB.zip OptimusScreen-USB)
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: optimus-screen-${{ github.run_number }}
+          path: |
+            out/OptimusScreen.apk
+            out/OptimusScreen-USB.zip
+
+      - name: Publish (main only)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          NOTES="אופטימוס מסך 1.0.${{ github.run_number }}: האפליקציה למסך האולם (Android TV, Google TV, Fire TV, סטרימרים) וערכת USB. מדריך: https://devopsdevopshaim-wq.github.io/devops-hub/frame-studio/screen.html"
+          if gh release view screen-latest --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload screen-latest out/OptimusScreen.apk out/OptimusScreen-USB.zip --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit screen-latest --repo "$GITHUB_REPOSITORY" --title "Optimus Screen (latest: 1.0.${{ github.run_number }})" --notes "$NOTES"
+          else
+            gh release create screen-latest out/OptimusScreen.apk out/OptimusScreen-USB.zip --repo "$GITHUB_REPOSITORY" \
+              --title "Optimus Screen (latest: 1.0.${{ github.run_number }})" --notes "$NOTES" --latest=false
+          fi
+
+  # a real run: an Android TV emulator installs the APK, opens it and takes a screenshot of the pairing page;
+  # the picture is pushed to the branch ci-screen-app (screen-app/<run>/tv.png)
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: optimus-screen-${{ github.run_number }}
+          path: out
+      - name: KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: 'Android TV emulator: install, open, screenshot'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: |
+            adb install -r out/OptimusScreen.apk
+            adb shell monkey -p il.framemagnets.screen -c android.intent.category.LEANBACK_LAUNCHER 1
+            sleep 40
+            mkdir -p shots
+            adb exec-out screencap -p > shots/tv.png
+            adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" | head -2 > shots/activity.txt || true
+            adb logcat -d | grep -iE "chromium|OptimusScreen|il.framemagnets|AndroidRuntime" | tail -60 > shots/log.txt || true
+            adb shell input keyevent KEYCODE_MENU
+            sleep 8
+            adb exec-out screencap -p > shots/tv-menu.png
+            cat shots/activity.txt
+      - name: Push the screenshots to ci-screen-app
+        run: |
+          git config user.name "github-actions" && git config user.email "github-actions@users.noreply.github.com"
+          D="screen-app/${{ github.run_number }}"
+          git fetch origin ci-screen-app || true
+          git checkout -B ci-screen-app origin/ci-screen-app 2>/dev/null || git checkout --orphan ci-screen-app
+          git rm -rqf . 2>/dev/null || true
+          git checkout origin/ci-screen-app -- . 2>/dev/null || true
+          mkdir -p "$D" && cp shots/* "$D/"
+          git add "$D" && git commit -qm "Optimus Screen on an Android TV emulator, run ${{ github.run_number }}" && git push -q origin ci-screen-app

@@ -1,0 +1,4 @@
+*.cmd text eol=crlf
+*.command text eol=lf
+*.keystore binary
+*.png binary

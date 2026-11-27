@@ -1,0 +1,29 @@
+// אופטימוס מסך: the hall screen as an app for Android TV, Google TV, Fire TV and TV sticks.
+// The version code comes from the CI run (SCREEN_VERSION_CODE), so every build installs over the last one.
+plugins { id 'com.android.application' }
+def vc = (System.getenv('SCREEN_VERSION_CODE') ?: '1') as int
+android {
+    namespace 'il.framemagnets.screen'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'il.framemagnets.screen'
+        minSdk 21
+        targetSdk 34
+        versionCode vc
+        versionName "1.0.${vc}"
+    }
+    signingConfigs {
+        release {
+            // a key from the SCREEN_KEYSTORE secret when there is one, else the key kept in the repository (a sideloaded app)
+            storeFile file(System.getenv('SCREEN_KEYSTORE_FILE') ?: '../optimus-screen.keystore')
+            storePassword System.getenv('SCREEN_KEYSTORE_PASS') ?: 'optimus-screen'
+            keyAlias System.getenv('SCREEN_KEY_ALIAS') ?: 'screen'
+            keyPassword System.getenv('SCREEN_KEYSTORE_PASS') ?: 'optimus-screen'
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.release }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
