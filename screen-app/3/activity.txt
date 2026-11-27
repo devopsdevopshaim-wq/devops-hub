@@ -1,0 +1,1 @@
+    mResumedActivity: ActivityRecord{f298706 u0 il.framemagnets.screen/.MainActivity t5}
