@@ -1,0 +1,13 @@
+/* tv.html: pairing a TV. Big, high-contrast, readable from across the hall. */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: radial-gradient(ellipse at 50% 30%, #241a33, #0b0910 70%); color: #F5EFE4; font-family: 'Heebo', system-ui, sans-serif; }
+.tv { min-height: 100%; display: grid; place-content: center; text-align: center; gap: 2vh; padding: 4vh 6vw; direction: rtl; }
+.tv-brand { margin: 0; letter-spacing: .12em; color: #c9bfd8; font-size: clamp(14px, 1.6vw, 26px); }
+.tv h1 { margin: 0; font-family: 'Frank Ruhl Libre', serif; font-weight: 900; font-size: clamp(30px, 4.6vw, 80px); color: #F3DDA6; }
+.tv-steps { margin: 0 auto; padding: 0; list-style-position: inside; font-size: clamp(16px, 2.2vw, 38px); line-height: 1.6; }
+.tv-steps b { color: #F3DDA6; }
+.tv-code { margin: 1vh 0; font: 800 clamp(70px, 15vw, 260px)/1 'Heebo', sans-serif; letter-spacing: .12em; direction: ltr; background: linear-gradient(115deg, #A9864C, #F3DDA6 45%, #C9A35F 70%, #F3DDA6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tv-st { margin: 0; font-size: clamp(16px, 2vw, 34px); color: #dcd2e6; }
+.tv-last { justify-self: center; border: 1px solid rgba(255,255,255,.35); background: rgba(0,0,0,.4); color: #fff; border-radius: 999px; padding: 12px 26px; font: 700 clamp(15px, 1.6vw, 26px) 'Heebo', sans-serif; cursor: pointer; }
+.tv-last:focus-visible { outline: 4px solid #F3DDA6; outline-offset: 3px; }
+.tv-foot { margin: 0; color: #8f86a0; font-size: clamp(12px, 1.2vw, 20px); }

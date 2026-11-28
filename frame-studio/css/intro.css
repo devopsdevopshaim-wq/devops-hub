@@ -1,0 +1,99 @@
+/* The entry screen: a design studio's portfolio wall and gold foil */
+.intro {
+  --ink: #fbf8f2; --dim: #b9aec6; --night: #120c18; --plum: #2a1c35; --foil-a: #f3e2b8; --foil-b: #c99c4f; --foil-c: #8a6326; --safe: #d23a2e;
+  position: fixed; inset: 0; z-index: 100; display: grid; grid-template-columns: minmax(380px, 0.9fr) 1.1fr; align-items: center;
+  background: radial-gradient(120% 90% at 30% 40%, #2b1d38 0%, #170f20 45%, #0b070f 100%); color: var(--ink); overflow: hidden;
+  font-family: 'Heebo', system-ui, sans-serif;
+}
+body.intro-on { overflow: hidden; }
+.intro-stage { position: relative; grid-column: 2; grid-row: 1; height: 100vh; }
+.intro-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.intro-grain { position: absolute; inset: -50%; pointer-events: none; opacity: .07; z-index: 3;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 1.2s steps(6) infinite; }
+@keyframes grain { 0% { transform: translate(0, 0); } 33% { transform: translate(-3%, 2%); } 66% { transform: translate(2%, -3%); } 100% { transform: translate(0, 0); } }
+.intro-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 5; }
+.intro.flashed .intro-flash { animation: flash .75s ease-out; }
+@keyframes flash { 0% { opacity: 0; } 8% { opacity: .92; } 100% { opacity: 0; } }
+
+.intro-copy { grid-column: 1; grid-row: 1; position: relative; z-index: 4; padding: 0 clamp(24px, 5vw, 80px); max-width: 640px; justify-self: end; }
+.intro-eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 18px; font: 600 13px 'Assistant', 'Heebo', sans-serif; letter-spacing: .18em; color: var(--dim); opacity: 0; animation: up .7s .9s cubic-bezier(.2,.8,.2,1) forwards; }
+.rec { width: 9px; height: 9px; border-radius: 50%; background: var(--safe); box-shadow: 0 0 12px var(--safe); animation: rec 1.6s ease-in-out infinite; }
+@keyframes rec { 50% { opacity: .35; } }
+.foil {
+  margin: 0; font: 900 clamp(52px, 6.4vw, 112px)/0.95 'Frank Ruhl Libre', serif; white-space: nowrap; letter-spacing: -.01em;
+  background: linear-gradient(100deg, var(--foil-c) 0%, var(--foil-b) 18%, var(--foil-a) 32%, #fff8e6 38%, var(--foil-b) 52%, var(--foil-c) 70%, var(--foil-a) 86%, var(--foil-b) 100%);
+  background-size: 260% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.35)) drop-shadow(0 18px 40px rgba(201,156,79,.25));
+  opacity: 0; transform: translateY(18px); animation: up .9s 1s cubic-bezier(.2,.8,.2,1) forwards, foil 6s 1.6s ease-in-out infinite;
+}
+@keyframes foil { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0 0; } }
+.intro-lead { font-size: clamp(17px, 1.5vw, 21px); line-height: 1.55; color: #e6dcef; margin: 18px 0 30px; max-width: 30em; opacity: 0; animation: up .8s 1.15s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+.intro-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ia { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; text-align: right;
+  padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(231,207,156,.18); background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015));
+  color: var(--ink); cursor: pointer; font: inherit; backdrop-filter: blur(6px); overflow: hidden;
+  opacity: 0; transform: translateY(16px); animation: up .7s cubic-bezier(.2,.8,.2,1) forwards; transition: transform .25s cubic-bezier(.2,.8,.2,1), border-color .25s, box-shadow .25s, background .25s; }
+.ia:nth-child(1) { animation-delay: 1.3s; } .ia:nth-child(2) { animation-delay: 1.38s; } .ia:nth-child(3) { animation-delay: 1.46s; } .ia:nth-child(4) { animation-delay: 1.54s; }
+.ia svg { grid-row: span 2; width: 30px; height: 30px; fill: none; stroke: var(--foil-a); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+.ia b { font: 700 17px 'Heebo', sans-serif; }
+.ia small { color: var(--dim); font-size: 12.5px; }
+.ia::after { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(243,226,184,.18) 48%, transparent 66%); transform: translateX(120%); transition: transform .8s cubic-bezier(.2,.8,.2,1); pointer-events: none; }
+.ia:hover, .ia:focus-visible { transform: translateY(-3px); border-color: rgba(231,207,156,.55); box-shadow: 0 18px 40px -20px rgba(201,156,79,.65); background: linear-gradient(160deg, rgba(255,255,255,.1), rgba(255,255,255,.02)); }
+.ia:hover::after { transform: translateX(-120%); }
+.ia:hover svg { transform: scale(1.15) rotate(-6deg); }
+.ia:active { transform: translateY(0) scale(.98); }
+.ia.main { background: linear-gradient(135deg, #e9cf92, #b9883e); color: #1d1225; border-color: transparent; box-shadow: 0 16px 36px -16px rgba(201,156,79,.9); }
+.ia.main svg { stroke: #1d1225; }
+.ia.main small { color: #4a3420; }
+.ia:focus-visible { outline: 2px solid var(--foil-a); outline-offset: 3px; }
+.ia.wide { grid-column: 1 / -1; padding: 20px 22px; }
+.ia.wide b { font-size: 20px; }
+
+.intro .link { background: none; border: 0; padding: 0; color: #e8dcc0; font: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(231,207,156,.35); text-underline-offset: 4px; }
+.intro .link:hover { color: #fff; text-decoration-color: var(--foil-a); }
+kbd { font: 600 11px 'Heebo', sans-serif; border: 1px solid rgba(255,255,255,.25); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; margin-inline-start: 4px; color: var(--ink); }
+.intro-stats { list-style: none; padding: 18px 0 0; margin: 26px 0 0; display: flex; gap: 30px; border-top: 1px solid rgba(231,207,156,.14); opacity: 0; animation: up .7s 1.85s cubic-bezier(.2,.8,.2,1) forwards; }
+.intro-stats li { display: grid; }
+.intro-stats b { font: 900 30px 'Frank Ruhl Libre', serif; color: var(--foil-a); line-height: 1; }
+.intro-stats span { font: 600 12px 'Assistant', sans-serif; letter-spacing: .08em; color: var(--dim); margin-top: 4px; }
+.intro-stats li.first span { font-size: 14px; letter-spacing: 0; }
+
+/* leaving: the darkroom opens onto the studio */
+.intro.leaving { animation: leave .75s cubic-bezier(.7,0,.2,1) forwards; pointer-events: none; }
+@keyframes leave { to { opacity: 0; transform: scale(1.06); filter: blur(8px); } }
+
+/* the portfolio wall: three columns of matted prints drifting slowly (transform only, so it costs nothing) */
+.folio { position: absolute; inset: 0 4vw 0 2vw; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 1.6vw, 26px); overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%); }
+.fcol { position: relative; overflow: hidden; }
+.fcol:nth-child(2) { margin-top: -18vh; }
+.ftrack { display: grid; gap: clamp(14px, 1.6vw, 26px); animation: drift var(--dur) linear infinite; will-change: transform; }
+.fcol:nth-child(2) .ftrack { animation-direction: reverse; }
+@keyframes drift { from { transform: translateY(0); } to { transform: translateY(calc(-50% - clamp(7px, .8vw, 13px))); } }
+.folio figure { margin: 0; padding: 10px 10px 0; background: #F5EFE4; border-radius: 2px; box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 30px 60px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(214,183,126,.25);
+  opacity: 0; animation: up 1s cubic-bezier(.2,.8,.2,1) forwards; }
+.fcol:nth-child(1) figure { animation-delay: .25s; } .fcol:nth-child(2) figure { animation-delay: .45s; } .fcol:nth-child(3) figure { animation-delay: .65s; }
+.folio img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
+.folio figcaption { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 2px 10px; font: 600 11px 'Heebo', sans-serif; letter-spacing: .14em; color: #2A2230; }
+.folio figcaption i { font: italic 400 13px 'Frank Ruhl Libre', serif; letter-spacing: 0; color: #A9864C; }
+.intro-stage:hover .ftrack { animation-play-state: paused; }
+.intro-x { position: absolute; top: 22px; inset-inline-start: 26px; z-index: 6; display: inline-flex; align-items: center; gap: 8px; background: rgba(13,11,16,.55); color: #F5EFE4;
+  border: 1px solid rgba(214,183,126,.35); border-radius: 999px; padding: 9px 16px; font: 600 14px 'Assistant', 'Heebo', sans-serif; cursor: pointer; backdrop-filter: blur(8px); transition: border-color .25s, background .25s; }
+.intro-x:hover, .intro-x:focus-visible { border-color: #D6B77E; background: rgba(214,183,126,.14); outline: none; }
+
+@media (max-width: 900px) {
+  .intro { grid-template-columns: 1fr; grid-template-rows: 46vh auto; align-items: start; overflow-y: auto; }
+  .intro-stage { grid-column: 1; grid-row: 1; height: 46vh; }
+  .intro-copy { grid-column: 1; grid-row: 2; justify-self: stretch; padding: 8px 20px 36px; max-width: none; }
+  .foil { font-size: clamp(48px, 15vw, 76px); }
+  .intro-actions { grid-template-columns: 1fr; }
+  .folio { inset: 0 12px; }
+  .intro-x { top: 12px; inset-inline-start: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro *, .intro { animation: none !important; transition: none !important; }
+  .intro-eyebrow, .foil, .intro-lead, .ia, .intro-stats, .folio figure { opacity: 1; transform: none; }
+}

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#FBF7F0">
+  <title>מעקב הזמנה</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700;800&family=Rubik:wght@500;700&display=swap">
+  <link rel="stylesheet" href="css/app.css?v=13">
+  <link rel="stylesheet" href="css/theme.css?v=13">
+</head>
+<body>
+  <header class="topbar"><div class="wrap"><a class="brand" href="./"><img class="logo" src="icons/icon.svg" alt=""><span>פריים אירועים</span></a><span class="spacer"></span><a class="btn ghost sm" href="./#orders">ההזמנות שלי</a></div></header>
+  <main class="wrap narrow stack" id="root"><p class="muted">טוען…</p></main>
+  <script src="js/install-help.js?v=13"></script>
+  <script src="js/common.js?v=13"></script>
+  <script>
+    (async () => {
+      const q = new URLSearchParams(location.search);
+      const root = $('#root');
+      try {
+        const o = await api(`/api/orders/${encodeURIComponent(q.get('id'))}?t=${encodeURIComponent(q.get('t'))}`);
+        myOrders.add({ id: o.id, number: o.number, t: q.get('t'), at: o.createdAt });
+        if (o.clubToken) club.set(o.clubToken);
+        const ok = !['payment_failed', 'cancelled', 'issue'].includes(o.status);
+        root.innerHTML = `
+          ${q.get('new') && o.status !== 'payment_failed' ? '<div class="card"><h2>תודה! ההזמנה התקבלה 🎉</h2><p class="muted">נעדכן אתכם בכל שלב.</p></div>' : ''}
+          ${o.status === 'payment_failed' ? '<div class="card"><h2>התשלום לא הושלם</h2><p>אפשר לנסות שוב מהסל.</p><a class="btn" href="./">חזרה לחנות</a></div>' : ''}
+          <div class="card">
+            <div class="row between"><h1 style="margin:0">הזמנה #${esc(o.number)}</h1><span class="badge ${ok ? 'primary' : 'bad'}">${esc(o.statusName)}</span></div>
+            <p class="muted">משלוח ל${esc(o.city)} · ${fmtDate(o.createdAt)}</p>
+            <h3>מצב המשלוח</h3>
+            <ul class="timeline">${o.timeline.slice().reverse().map((t) => `<li class="${t.status ? '' : 'note'}"><b>${esc(t.statusName || 'עדכון')}</b>${t.note ? `<div>${esc(t.note)}</div>` : ''}<time>${fmtDate(t.at)}</time></li>`).join('')}</ul>
+          </div>
+          <div class="card">
+            <h3>פרטי ההזמנה</h3>
+            ${o.items.map((i) => `<div class="row between"><span>${esc(i.name)} × ${i.qty}</span><b>${money(i.price * i.qty)}</b></div>`).join('')}
+            ${o.discount ? `<div class="row between" style="color:var(--bad);font-weight:700"><span>🏷️ הנחה${o.coupon ? ` (קופון ${esc(o.coupon)})` : ''}</span><span>−${money(o.discount)}</span></div>` : ''}
+            <div class="row between muted"><span>משלוח</span><span>${o.shipping ? money(o.shipping) : 'חינם'}</span></div>
+            ${o.reward ? `<div class="row between" style="color:var(--ok);font-weight:700"><span>💎 ${esc(o.reward.name)}</span><span>−${o.reward.points} נק׳</span></div>` : ''}
+            <div class="row between"><b>סה"כ</b><span class="price">${money(o.total)}</span></div>
+          </div>
+          ${o.loyaltyEarned ? `<div class="card club-card"><h3 style="margin:0">💎 צברתם ${o.loyaltyEarned} נקודות במועדון פריים</h3><p class="small" style="margin:6px 0 0">אפשר לראות את היתרה ולממש ב"ההזמנות שלי".</p></div>` : ''}`;
+      } catch (e) {
+        root.innerHTML = `<div class="card"><h2>ההזמנה לא נמצאה</h2><p class="muted">${esc(e.message)}</p></div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

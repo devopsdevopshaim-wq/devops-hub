@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<defs><linearGradient id="opg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1C9"/><stop offset=".45" stop-color="#E3C48A"/><stop offset="1" stop-color="#A9864C"/></linearGradient>
+<linearGradient id="opg2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3DDA6"/><stop offset="1" stop-color="#8E6B36"/></linearGradient><radialGradient id="opc" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#FFE7AE"/><stop offset="1" stop-color="#FFE7AE" stop-opacity="0"/></radialGradient>
+<clipPath id="opk"><circle cx="50" cy="50" r="38.5"/></clipPath></defs>
+<circle cx="50" cy="50" r="47" fill="#121318"/>
+<circle class="op-ring" cx="50" cy="50" r="43.5" fill="none" stroke="url(#opg)" stroke-width="3.2"/>
+<g clip-path="url(#opk)"><g class="op-blades" fill="url(#opg)" stroke="#121318" stroke-width="2.4" stroke-linejoin="round"><path class="op-blade" style="--i:0" d="M50.00 37.50 L30.16 -4.50 L94.43 12.72 L60.83 43.75Z"/><path class="op-blade" style="--i:1" fill="url(#opg2)" d="M60.83 43.75 L87.28 5.57 L104.50 69.84 L60.83 56.25Z"/><path class="op-blade" style="--i:2" d="M60.83 56.25 L107.12 60.07 L60.07 107.12 L50.00 62.50Z"/><path class="op-blade" style="--i:3" fill="url(#opg2)" d="M50.00 62.50 L69.84 104.50 L5.57 87.28 L39.17 56.25Z"/><path class="op-blade" style="--i:4" d="M39.17 56.25 L12.72 94.43 L-4.50 30.16 L39.17 43.75Z"/><path class="op-blade" style="--i:5" fill="url(#opg2)" d="M39.17 43.75 L-7.12 39.93 L39.93 -7.12 L50.00 37.50Z"/></g></g>
+<circle class="op-glow" cx="50" cy="50" r="11" fill="url(#opc)" opacity=".6"/>
+<path class="op-spark" fill="#FFFFFF" d="M50 40.5 C51.1 46.8 53.2 48.9 59.5 50 C53.2 51.1 51.1 53.2 50 59.5 C48.9 53.2 46.8 51.1 40.5 50 C46.8 48.9 48.9 46.8 50 40.5Z"/>
+</svg>

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FBF7F0">
+  <meta name="description" content="מגנטים, בלוקים, מסגרות, חבילות ומתנות לאירועים">
+  <title>פריים אירועים - מזכרות לאירועים</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="פריים אירועים">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700;800&family=Rubik:wght@500;700&display=swap">
+  <link rel="stylesheet" href="css/app.css?v=13">
+  <link rel="stylesheet" href="css/theme.css?v=13">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="./"><img class="logo" src="icons/icon.svg" alt=""><span id="brand-name">פריים אירועים</span></a>
+      <span class="spacer"></span>
+      <button class="btn soft sm hidden hide-sm" data-install><span data-icon="install"></span>התקנה</button>
+      <button class="icon-btn" id="cart-btn" aria-label="סל קניות"><span data-icon="cart" data-icon-class=""></span><span class="count-dot hidden" id="cart-count">0</span></button>
+    </div>
+    <div class="wrap hide-sm" style="padding-top:0">
+      <nav class="tabs" id="nav">
+        <button class="tab active" data-view="store">חנות</button>
+        <button class="tab" data-view="events">האירועים שלי</button>
+        <button class="tab" data-view="orders">ההזמנות שלי</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="view-store">
+      <section class="stage" aria-label="פריים אירועים">
+        <div>
+          <span class="eyebrow"><img src="icons/icon.svg" alt="">פריים אירועים · מזכרות לאירועים</span>
+          <h1>הרגע מהאירוע,<br><em>מודפס ונשאר.</em></h1>
+          <p>מגנטים, בלוקי עץ ומסגרות מהתמונות שלכם, וחבילות ומתנות לכל שמחה.</p>
+          <div class="row">
+            <a class="btn gold lg" href="#shop" id="go-shop"><span data-icon="store"></span>לבחירת מוצר</a>
+            <button class="btn ghost light lg" data-view="events"><span data-icon="camera"></span>התמונות שלי</button>
+          </div>
+        </div>
+        <div class="fan" id="hero-fan" aria-hidden="true"></div>
+      </section>
+      <div class="banners-wrap hidden" id="banners-wrap">
+        <div class="banners" id="banners" aria-label="מבצעים וקולקציות"></div>
+        <div class="banner-dots" id="banner-dots"></div>
+      </div>
+
+      <div class="section-head"><h2>קנו לפי אירוע</h2><span class="muted small">מה חוגגים?</span></div>
+      <div class="events-row" id="events-row"></div>
+
+      <div class="promo-strip" id="promo-strip"></div>
+      <div id="club-strip"></div>
+      <div id="collections"></div>
+
+      <div class="section-head" id="shop"><h2>מה מדפיסים היום?</h2><span class="muted small" id="shop-count"></span></div>
+      <div class="prints" id="cat-tabs" role="tablist" aria-label="קטגוריות"></div>
+      <div class="shop-tools">
+        <label class="search"><span data-icon="search" data-icon-class="" aria-hidden="true"></span><input type="search" id="q" placeholder="חיפוש: מגנט, חינה, מסגרת…" aria-label="חיפוש מוצר" autocomplete="off"></label>
+        <select id="sort" aria-label="מיון">
+          <option value="recommended">מומלצים</option>
+          <option value="sold">הנמכרים ביותר</option>
+          <option value="low">מחיר: מהנמוך</option>
+          <option value="high">מחיר: מהגבוה</option>
+          <option value="sale">רק מבצעים</option>
+        </select>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="grid" id="products"></div>
+    </section>
+
+    <section id="view-events" class="hidden">
+      <div class="card">
+        <h2>האירועים שלי</h2>
+        <p class="muted">כאן נשמרים האירועים שבהם סרקתם QR. אפשר לחזור לתמונות בכל זמן ולהזמין מהן מוצרים.</p>
+        <div id="events-list" class="stack"></div>
+        <button class="btn soft hidden" data-install style="margin-top:12px">📲 שמירת האפליקציה במסך הבית</button>
+      </div>
+    </section>
+
+    <section id="view-orders" class="hidden">
+      <div id="club-card"></div>
+      <div class="card">
+        <h2>ההזמנות שלי</h2>
+        <div id="orders-list" class="stack"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- סרגל ניווט תחתון (אפליקציה) -->
+  <nav class="bottom-nav" aria-label="ניווט ראשי">
+    <button data-view="store" class="active"><span class="ico" data-icon="store" data-icon-class=""></span>חנות</button>
+    <button data-view="events"><span class="ico" data-icon="camera" data-icon-class=""></span>האירועים שלי</button>
+    <button data-view="orders"><span class="ico" data-icon="box" data-icon-class=""></span>הזמנות</button>
+    <button data-open-cart><span class="ico" data-icon="cart" data-icon-class=""></span>סל<span class="count-dot hidden" id="cart-count-nav">0</span></button>
+  </nav>
+
+  <!-- סל קניות וקופה -->
+  <div id="cart-bg" class="drawer-bg hidden"></div>
+  <aside id="cart" class="drawer hidden" aria-label="סל קניות">
+    <div class="row between"><h2 style="margin:0">הסל שלי</h2><button class="icon-btn" id="cart-close" aria-label="סגירה">✕</button></div>
+    <div id="cart-items" class="stack" style="margin:12px 0"></div>
+    <div id="cart-summary"></div>
+    <div id="cart-extra"></div>
+    <form id="checkout" class="hidden" style="margin-top:16px">
+      <h3>פרטי משלוח</h3>
+      <div class="field"><label for="c-name">שם מלא</label><input id="c-name" required autocomplete="name"></div>
+      <div class="field"><label for="c-phone">טלפון</label><input id="c-phone" required type="tel" inputmode="tel" autocomplete="tel"></div>
+      <div class="field"><label for="c-email">אימייל (לקבלה)</label><input id="c-email" type="email" autocomplete="email"></div>
+      <div class="field"><label for="c-city">עיר</label><input id="c-city" required list="cities" autocomplete="address-level2"><datalist id="cities"></datalist></div>
+      <div class="field"><label for="c-address">כתובת</label><input id="c-address" required autocomplete="street-address"></div>
+      <div class="field"><label for="c-notes">הערות להזמנה</label><textarea id="c-notes"></textarea></div>
+      <button class="btn gold lg block" id="pay-btn">🔒 מעבר לתשלום מאובטח</button>
+      <p class="muted small">התשלום מתבצע בדף מאובטח של חברת הסליקה. פרטי האשראי אינם נשמרים אצלנו.</p>
+    </form>
+  </aside>
+
+  <!-- דף מוצר -->
+  <div id="product-modal" class="modal hidden"><div class="card" id="product-body"></div></div>
+
+  <!-- בחירת תמונה למוצר -->
+  <div id="photo-modal" class="modal hidden">
+    <div class="card">
+      <div class="row between"><h2 style="margin:0">בחירת תמונה למוצר</h2><button class="icon-btn" data-close aria-label="סגירה">✕</button></div>
+      <p class="muted">בחרו תמונה מהאירועים שלכם או העלו תמונה חדשה.</p>
+      <div class="grid sm" id="my-photos"></div>
+      <label class="btn gold" for="store-upload" style="margin-top:12px"><span data-icon="image"></span>העלאת תמונה מהטלפון</label>
+      <input type="file" id="store-upload" accept="image/*" class="hidden">
+    </div>
+  </div>
+
+  <!-- עורך התמונות בחנות: חיתוך, AI, פילטרים, טקסט, מדבקות, מסגרות -->
+  <div id="editor-modal" class="modal editor-modal hidden" role="dialog" aria-label="עריכת התמונה"><div class="card" id="store-editor"></div></div>
+
+  <script src="js/install-help.js?v=13"></script>
+  <script src="js/common.js?v=13"></script>
+  <script src="js/editor.js?v=13"></script>
+  <script src="js/photos.js?v=13"></script>
+  <script src="js/app.js?v=13"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+/* SPIDER · future layer styles */
+#future-bg{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;z-index:-2;pointer-events:none;display:block}
+#future-veil{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 0%,rgba(0,0,0,0) 0%,rgba(3,5,14,.3) 100%),linear-gradient(180deg,rgba(3,5,14,.1),rgba(3,5,14,.32))}
+html.has-future body{background:transparent!important;isolation:isolate}
+#future-switch{position:fixed;inset-block-end:max(14px,env(safe-area-inset-bottom));inset-inline-start:max(14px,env(safe-area-inset-left));z-index:40;
+  display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;cursor:pointer;
+  font:600 13px/1 system-ui,'Segoe UI',Arial,sans-serif;color:#eaf2ff;background:rgba(10,14,30,.62);
+  border:1px solid var(--fa,#22d3ee);box-shadow:0 0 0 1px rgba(255,255,255,.04),0 6px 24px rgba(0,0,0,.45),0 0 18px -4px var(--fa,#22d3ee);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:transform .15s,box-shadow .2s}
+#future-switch:hover{transform:translateY(-2px)}
+#future-switch:focus-visible{outline:2px solid #fff;outline-offset:3px}
+#future-switch span{color:var(--fa,#22d3ee);font-size:16px}
+#future-name{font-weight:600;max-width:0;overflow:hidden;white-space:nowrap;opacity:0}
+#future-name.on{animation:fname 3.2s ease both}
+@keyframes fname{0%{max-width:0;opacity:0}12%,80%{max-width:120px;opacity:1;margin-inline-start:2px}100%{max-width:0;opacity:0}}
+#future-switch:hover #future-name,#future-switch:focus-visible #future-name{max-width:120px;opacity:1;animation:none}
+html.has-future::before{content:"";position:fixed;inset-inline:0;top:0;height:2px;z-index:41;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--fa,#22d3ee),var(--fb,#e879f9),transparent);opacity:.85}
+@media (max-width:760px){#future-switch{padding:0 12px}}
+@media (prefers-reduced-motion:reduce){#future-name.on{animation:none}}
+@media print{#future-bg,#future-veil,#future-switch{display:none}}
+/* let the landscape show through the big hero cards */
+html.has-future .lux-hero{background:linear-gradient(120deg,rgba(5,8,20,.58),rgba(5,8,20,.34))!important;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+html.has-future .gate{background:radial-gradient(800px 500px at 50% 0%,rgba(12,10,30,.25),rgba(12,10,30,.5))!important}
